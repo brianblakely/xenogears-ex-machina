@@ -145,7 +145,7 @@ extern void *D_80076EA0;        /* FAT check read buffer */
 extern s32 D_80076E4C;
 extern s32 D_80076EAC;
 extern s32 D_80076EB0;
-extern s32 D_80076F3C[13];      /* reads per result class */
+extern s32 D_80076F3C[16];      /* reads per result class */
 extern u8 D_80076F84[8];        /* CD command result */
 extern s32 D_8007700C;
 extern u8 *D_8004FDF0;          /* disc directory records, 7 bytes each */
@@ -243,5 +243,110 @@ s32 func_80076488(void);
 void func_800768D8(u16 frame, u16 x, u16 y);
 void func_800769A4(void);
 void func_80076CA4(void);
+
+/* CD-ROM monitor. */
+typedef struct StreamEntry {
+    u16 file; /* 0 ends the list */
+    s32 *dest;
+} StreamEntry;
+
+extern s32 D_80076E48;          /* read check state */
+extern StreamEntry *D_80076E7C; /* stream list */
+extern s32 *D_80076E84;         /* stream destination */
+extern s32 D_80076E94;          /* stream bytes left */
+extern s32 *D_80076E9C;         /* arrived stream chunk */
+extern s32 D_80076EA4;          /* reads ended */
+extern s32 D_80076EB4;          /* stream list entry */
+extern s32 D_80076EB8;          /* 1: stream copy; 2: host read */
+extern s32 D_80076EBC;          /* random commands */
+extern s32 D_80076F7C;
+extern s32 D_80076F80;
+s32 *func_80028B14(void);             /* next arrived stream chunk */
+void func_8002945C(void *chunk);      /* release a stream chunk */
+s32 func_80028F30(s32 *arg0, s32 *arg1);
+void func_800294B4(s32 arg0);
+void func_80071BA0(void);
+void func_80070DCC(void);
+void func_80071C34(s32 command);
+s32 func_80074AF0(void);
+
+/* FAT check. */
+extern s32 D_8007744C;                           /* buffer index */
+void func_800284B4(s32 *directory, s32 *offset); /* current directory */
+void func_8003700C(char *format, ...);           /* debug font print */
+void func_8003278C(s32 a, s32 value, s32 c, s32 d);
+void func_80037324(u32 *ot);                     /* draw the debug font */
+void func_80072F98(u32 *ot, POLY_G4 *poly, s32 x, s32 y, s32 w, s32 h);
+void func_800734B8(u32 *ot, POLY_G4 *poly, s32 x, s32 y, s32 w, s32 h);
+s32 func_800747AC(s32 first, s32 last, s32 *button);
+void func_80074B58(void);
+u32 func_80075D4C(s32 index);
+extern char D_8007042C[]; /* "\n", shared with the asm-backed FAT check */
+extern char D_80070430[]; /* "\nPUSH CIRCLE BUTTON TO MENU." */
+s32 func_80039850(void *sequence); /* load a music sequence */
+
+/* CD-ROM monitor screen. */
+extern s32 D_80076E64;          /* read phase: waiting, reading, verifying */
+extern s32 D_80076E68, D_80076E6C, D_80076E70, D_80076E74, D_80076E78; /* last error */
+extern StreamEntry *D_80076E80; /* verify copy of the stream list */
+extern s32 *D_80076E8C;         /* verify copy of the read */
+void func_8002A524(StreamEntry *list); /* release a file list's buffers */
+extern s32 *D_80076E98;         /* stream buffer */
+extern s32 D_80076EA8;          /* reads in total */
+extern s32 D_8005A4DC;          /* resident read error count */
+extern s32 D_8004FE1C;          /* resident read status */
+extern s32 D_8005A488, D_8005A48C, D_8005A490, D_8005A494, D_8005A498, D_8005A49C;
+extern s32 D_8005A4A4, D_8005A4A8, D_8005A4B4; /* resident CD event counters */
+extern s32 D_8004FDE4, D_8004FDE8, D_8004FDEC;
+extern u16 D_8004FE26, D_8004FE28;
+extern char D_8006FC70[], D_8006FC8C[], D_8006FC98[], D_8006FCA4[], D_8006FCAC[];
+extern char D_8006FCB4[], D_8006FCD8[]; /* strings shared with the asm-backed functions */
+void *func_80028A94(void *ring); /* replace the stream ring */
+s32 func_800286CC(void);         /* files left to read */
+s32 func_800286BC(void);         /* bytes left to read */
+void func_800712C4(void);
+extern s32 D_80076EFC;          /* monitor sector */
+extern s32 D_80076F00;          /* monitor row */
+extern s32 D_80076E90;          /* read size */
+extern s32 *D_80076E88;         /* read buffer */
+StreamEntry *func_8002A57C(s32 list, s32 mode);          /* a directory's file list */
+void func_80029AFC(StreamEntry *list, s32 mode, s32 flags); /* stream a file list */
+void func_800295D8(s32 file, void *dest, s32 mode, s32 flags); /* host-file stream */
+void func_80029EB0(s32 file, void *ring, s32 a2, s32 a3, s32 a4, s32 a5, s32 a6, s32 a7, s32 a8,
+                   s32 a9);
+void *func_8002A260(s32 blocks, s32 mode);                /* allocate a stream ring */
+
+/* Mode entry and menu. */
+extern u8 D_8004FE44;           /* request: movie kind (bit 7: last frame from 80062514) */
+extern u8 D_8004FE45;           /* request: movie index */
+extern u8 D_8004FE47;           /* request: buttons do not end the movie */
+extern u16 D_80062514;          /* the requested movie's last frame */
+extern s16 D_8005A4B8;
+extern s32 D_801E89D4;          /* movie library: frames skipped */
+extern s32 D_80077440;          /* menu shown */
+extern s32 D_80077444;          /* start frame: 1 changed, 2 sought */
+extern s32 D_8007743C;          /* end frame: 0 changed, 1 found, 2 not found */
+extern s32 D_80077450;          /* disc mode: 0, -1 or host */
+void func_80032498(s32 arg0, s32 arg1);
+void func_800374E8(s32 a0, s32 a1, s32 a2, s32 a3, s32 a4, s32 a5, s32 a6, s32 a7, s32 a8, s32 a9,
+                   s32 a10); /* debug font setup */
+void func_8001996C(s32 mode); /* select the next mode */
+void func_80019ACC(s32 arg0); /* leave the mode */
+void func_80072D84(POLY_G4 *poly0, POLY_G4 *poly1, s32 x, s32 y, s32 w, s32 h);
+void func_80073328(POLY_G4 *poly0, POLY_G4 *poly1, s32 x, s32 y, s32 w, s32 h);
+s32 func_80074BA4(s32 frame);
+s32 func_8007519C(void);
+void func_80075534(void);
+void func_80075D8C(void);
+void func_8007625C(void);
+s32 func_800763BC(u8 keep);
+void func_800704E8(void);
+void func_80072480(void);
+
+/* Disc change test. */
+extern char D_8006FC6C[]; /* "\n", first used by the menu (800704E8) */
+s32 func_80028530(void);  /* the disc in the drive */
+void func_8007293C(void);
+s32 func_80072A08(s32 disc, s32 state, s32 *error, s32 *done);
 
 #endif

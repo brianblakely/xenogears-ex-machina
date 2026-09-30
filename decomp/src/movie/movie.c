@@ -8,11 +8,244 @@
 #include "common.h"
 #include "movie_mode.h"
 
-INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_8006FAF0);
+/* The menu's CD-ROM monitor: at 640x240, show the read statistics, the
+ * resident's error counters and stream state, a dump of the stream buffer
+ * and the reads per result class, run the monitor's input every frame and
+ * return to the 320-wide menu on Start once no read is running. The unused
+ * locals (mode included) reproduce the original's frame; the original also
+ * reads the menu cursor before the exit test and stores it back after. */
+void func_800704E8(void) {
+    u8 unused[8];
+    char mode[3] = {0, 2, 2};
+    u8 unused2[0x18];
+    s32 button;
+    s32 i;
+    s32 hours;
+    s32 cursor;
+    MovieBuffer *buffer;
+    u32 *ot;
 
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_800704E8);
+    func_80028A94(NULL);
+    func_80074B58();
+    D_80076EA0 = NULL;
+    D_80076EB8 = 1;
+    for (i = 15; i >= 0; i--) {
+        D_80076F3C[i] = 0;
+    }
+    SetDefDrawEnv(&D_80077124[0].draw, 0, 0, 640, 240);
+    SetDefDispEnv(&D_80077124[0].disp, 0, 240, 640, 240);
+    SetDefDrawEnv(&D_80077124[1].draw, 0, 240, 640, 240);
+    SetDefDispEnv(&D_80077124[1].disp, 0, 0, 640, 240);
+    D_80077124[0].draw.isbg = 1;
+    D_80077124[1].draw.isbg = 1;
+    func_80028470(0xC, 3);
+    for (;;) {
+        if (D_80077120 == &D_80077124[0]) {
+            buffer = &D_80077124[1];
+        } else {
+            buffer = &D_80077124[0];
+        }
+        ot = buffer->ot;
+        D_80077120 = buffer;
+        D_8007744C = 1 - D_8007744C;
+        ClearOTagR(ot, 32);
+        func_800712C4();
+        func_800747AC(0, 0, &button);
+        func_80070DCC();
+        if (D_80076EBC != 0) {
+            func_8003700C("Random Mode\n");
+        }
+        if (D_80076EB8 == 0) {
+            func_8003700C("Stream Pause\n");
+        }
+        func_8003700C("Read %3d Error %3d VSync %8d EC %2d ST %2d ", D_80076E48, D_80076E4C,
+                      D_80076E5C, D_8005A4DC, D_8004FE1C);
+        switch (D_80076E64) {
+        case 0:
+            func_8003700C("Waiting\n");
+            break;
+        case 1:
+            func_8003700C("Reading\n");
+            break;
+        case 2:
+            func_8003700C("Verifing\n");
+            break;
+        }
+        func_8003700C("C1 %3d C2 %3d C3 %3d C4 %3d C5 %3d C6 %3d C7 %3d C8 %3d C9 %3d\n",
+                      D_8005A488, D_8005A48C, D_8005A490, D_8005A494, D_8005A498, D_8005A49C,
+                      D_8005A4A4, D_8005A4A8, D_8005A4B4);
+        func_8003700C("RestFile %7d RestSize %7d N1 %4d N2 %4d N3 %4d R%3d D%3d\n",
+                      func_800286CC(), func_800286BC(), D_8004FDE4, D_8004FDE8, D_8004FDEC,
+                      D_8004FE26, D_8004FE28);
+        func_8003700C("ErrorAddress %8x ErrorSize %8x N%3d N%3d N%3d\n", D_80076E68, D_80076E6C,
+                      D_80076E70, D_80076E74, D_80076E78);
+        func_8003700C("FrdPtr1 %8x FrdPtr2 %8x Buf1 %8x Buf2 %8x\n", D_80076E7C, D_80076E80,
+                      D_80076E88, D_80076E8C);
+        if (D_80076E48 >= 11 || D_80076E94 > 0) {
+            func_8003700C("S %8x Adrs %8x Write %8x Rest %8x\n", D_80076E98, D_80076E9C,
+                          D_80076E84, D_80076E94);
+            for (i = 0; i < 7; i++) {
+                func_8003700C("%08x ", D_80076E98[i]);
+            }
+            func_8003700C(D_8006FC6C);
+            for (i = 0; i < 7; i++) {
+                func_8003700C("%08x ", D_80076E98[i + 7]);
+            }
+            func_8003700C(D_8006FC6C);
+            for (i = 0; i < 7; i++) {
+                func_8003700C("%08x ", D_80076E98[i + 14]);
+            }
+            func_8003700C(D_8006FC6C);
+            for (i = 0; i < 7; i++) {
+                func_8003700C("%08x ", D_80076E98[i + 21]);
+            }
+            func_8003700C(D_8006FC6C);
+            if (D_80076E7C != NULL) {
+                func_8003700C(D_8006FC70, D_80076E7C[0].dest, D_80076E7C[1].dest,
+                              D_80076E7C[2].dest, D_80076E7C[3].dest);
+            }
+        }
+        D_80076EA8 = 0;
+        func_8003700C(D_8006FC8C, D_80076EA4);
+        for (i = 0; i < 13; i++) {
+            func_8003700C(D_8006FC98, i, D_80076F3C[i]);
+            D_80076EA8 += D_80076F3C[i];
+            if (D_80076EB0 == i) {
+                func_8003700C(D_8006FCA4);
+            }
+            if (D_80076EAC == i) {
+                func_8003700C(D_8006FCAC);
+            }
+            func_8003700C(D_8006FC6C);
+        }
+        hours = D_80076EC8 / 3600;
+        func_8003700C(D_8006FCB4, D_80076EA8, hours, D_80076EC8 / 60 - hours * 60,
+                      D_80076EC8 % 60);
+        func_8003700C(D_8006FCD8);
+        if (D_80077394 > 0) {
+            func_8003278C(1, 0, 6, 0x808D);
+        }
+        func_80037324(D_80077120->ot);
+        func_80072F98(D_80077120->ot, (POLY_G4 *)D_80077120->box, 8, 12, 624, 216);
+        func_800734B8(D_80077120->ot, (POLY_G4 *)D_80077120->frame, 7, 11, 626, 218);
+        DrawSync(0);
+        VSync(0);
+        PutDrawEnv(&D_80077120->draw);
+        PutDispEnv(&D_80077120->disp);
+        DrawOTag(&D_80077120->ot[31]);
+        cursor = D_80077118;
+        if (!(D_800773B4 & 0x800) && (D_800773AC & 0x800) && D_80076E48 == 0) {
+            D_80077394 = 0;
+            func_8002A498(0);
+            func_80028A60(0);
+            if (D_80076EA0 != NULL) {
+                func_800320E8(D_80076EA0);
+            }
+            D_80076EA0 = NULL;
+            if (D_80076E98 != NULL) {
+                func_800320E8(D_80076E98);
+            }
+            D_80076E98 = NULL;
+            func_80074B58();
+            SetDefDrawEnv(&D_80077124[0].draw, 0, 0, 320, 240);
+            SetDefDispEnv(&D_80077124[0].disp, 0, 240, 320, 240);
+            SetDefDrawEnv(&D_80077124[1].draw, 0, 240, 320, 240);
+            SetDefDispEnv(&D_80077124[1].disp, 0, 0, 320, 240);
+            D_80077124[0].disp.screen.x = 0;
+            D_80077124[0].disp.screen.y = 10;
+            D_80077124[0].disp.screen.w = 256;
+            D_80077124[0].disp.screen.h = 216;
+            D_80077124[1].disp.screen.x = 0;
+            D_80077124[1].disp.screen.y = 10;
+            D_80077124[1].disp.screen.w = 256;
+            D_80077124[1].disp.screen.h = 216;
+            D_80077124[0].draw.isbg = 1;
+            D_80077124[1].draw.isbg = 1;
+            return;
+        }
+        D_80077118 = cursor;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80070DCC);
+/* CD-ROM monitor input: newly pressed buttons issue the monitor's CD
+ * commands or read steps; R1 toggles the stream copy (1) or host read (2),
+ * Select random commands. A running stream copies each arrived chunk
+ * into the destination and moves to the next list entry when it ends. */
+void func_80070DCC(void) {
+    s32 i;
+    s32 command;
+
+    if (!(D_800773B4 & 0x20) && (D_800773AC & 0x20)) {
+        func_80071C34(1);
+    }
+    if (!(D_800773B4 & 0x10) && (D_800773AC & 0x10)) {
+        func_80071C34(2);
+    }
+    if (!(D_800773B4 & 0x80) && (D_800773AC & 0x80)) {
+        func_80071C34(3);
+    }
+    if (!(D_800773B4 & 0x40) && (D_800773AC & 0x40)) {
+        D_80076EA4++;
+        func_8002A498(0);
+    }
+    if (!(D_800773B4 & 0x1000) && (D_800773AC & 0x1000)) {
+        func_80071C34(7);
+    }
+    if (!(D_800773B4 & 0x4000) && (D_800773AC & 0x4000)) {
+        func_80071C34(9);
+    }
+    if (!(D_800773B4 & 8) && (D_800773AC & 8)) {
+        D_80076EB8 = 1 - D_80076EB8;
+    }
+    if (!(D_800773B4 & 4) && (D_800773AC & 4) && D_80076E48 < 11) {
+        func_80071BA0();
+    }
+    if (D_80076EB8 == 1) {
+        D_80076E9C = func_80028B14();
+        if (D_80076E9C != NULL) {
+            i = 0;
+            if (D_80076E94 > 0x800) {
+                do {
+                    *D_80076E84++ = D_80076E9C[i++];
+                } while (i < 0x200);
+            } else {
+                while (i < D_80076E94 / 4) {
+                    *D_80076E84++ = D_80076E9C[i++];
+                }
+            }
+            D_80076E94 -= 0x800;
+            if (D_80076E94 <= 0 && D_80076E48 == 12) {
+                i = D_80076E7C[++D_80076EB4].file;
+                if (i != 0) {
+                    D_80076E94 = func_800288EC(i);
+                }
+                D_80076E84 = D_80076E7C[D_80076EB4].dest;
+            }
+            func_8002945C(D_80076E9C);
+        }
+    }
+    if (D_80076EB8 == 2 && func_80028F30(&D_80076F7C, &D_80076F80) == 0) {
+        func_800294B4(D_80076F80);
+    }
+    if (!(D_800773B4 & 0x2000) && (D_800773AC & 0x2000)) {
+        func_80071C34(11);
+    }
+    if (!(D_800773B4 & 0x8000) && (D_800773AC & 0x8000)) {
+        func_80071C34(13);
+    }
+    if (D_80076EBC != 0) {
+        command = func_80074AF0() & 0xFF;
+        if (command == 0 && D_80076E48 < 11) {
+            func_80071BA0();
+        }
+        if ((u32)(command - 1) < 12) {
+            func_80071C34(command);
+        }
+    }
+    if (!(D_800773B4 & 0x100) && (D_800773AC & 0x100)) {
+        D_80076EBC = 1 - D_80076EBC;
+    }
+}
 
 INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_8006FC6C);
 
@@ -30,7 +263,188 @@ INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_8006FCB4);
 
 INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_8006FCD8);
 
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_800712C4);
+/* Fill `size` bytes of `words` with `value`, counting in `n`. */
+#define FILL_WORDS(words, size, n, value)  \
+    for (n = 0; n < (size) / 4; n++) {    \
+        (words)[n] = (value);              \
+    }
+
+/* Record a verify mismatch at byte `offset` of a `size`-byte read: the
+ * first one keeps its place and the resident's stream counters. */
+#define VERIFY_ERROR(offset, size)         \
+    {                                      \
+        if (D_80076E4C == 0) {             \
+            D_80076E68 = (offset);         \
+            D_80076E6C = (size);           \
+            D_80076E70 = D_8004FDE4;       \
+            D_80076E74 = D_8004FDE8;       \
+            D_80076E78 = D_8004FDEC;       \
+        }                                  \
+        D_80076E4C++;                      \
+    }
+
+/* Monitor read check, run every frame: once the command's read (phase 1)
+ * ends, read the same data again into a second buffer or file list filled
+ * with -1 (phase 2); once that ends, compare both copies word by word,
+ * record the first mismatch and release the copies. */
+void func_800712C4(void) {
+    s32 i;
+    s32 *dest;
+    s32 index;
+    s32 file;
+    s32 *buffer;
+    s32 *copy;
+
+    if (D_80076E64 == 0) {
+        return;
+    }
+    if (func_800286CC() == 0 && D_80076E64 == 1) {
+        D_80076E64 = 2;
+        switch (D_80076E48) {
+        case 1:
+            D_80076E90 = 0x2000;
+            D_80076E8C = buffer = func_80031BDC(0x2000, 0);
+            FILL_WORDS(buffer, D_80076E90, i, -1);
+            func_8002954C(0x40, D_80076E8C, D_80076E90, 0, 0);
+            break;
+        case 2:
+            D_80076E90 = func_800288EC(7);
+            D_80076E8C = buffer = func_80031BDC(D_80076E90, 0);
+            FILL_WORDS(buffer, D_80076E90, i, -1);
+            func_800295D8(7, D_80076E8C, 0, 0);
+            break;
+        case 3:
+        case 12:
+            D_80076E80 = func_8002A57C(2, 0);
+            if (D_80076E80 == NULL) {
+                D_80076E64 = 0;
+                D_80076E48 = 0;
+                break;
+            }
+            for (index = 0; (file = D_80076E80[index].file) > 0; index++) {
+                copy = D_80076E80[index].dest;
+                D_80076E90 = func_800288EC(file);
+                FILL_WORDS(copy, D_80076E90, i, -1);
+            }
+            func_80029AFC(D_80076E80, 0, 0);
+            break;
+        case 4:
+            D_80076E90 = 0x2000;
+            D_80076E8C = buffer = func_80031BDC(0x2000, 0);
+            FILL_WORDS(buffer, D_80076E90, i, -1);
+            func_8002954C(0x40, D_80076E8C, D_80076E90, 0, 0);
+            break;
+        case 5:
+            D_80076E90 = func_800288EC(7);
+            D_80076E8C = buffer = func_80031BDC(D_80076E90, 0);
+            FILL_WORDS(buffer, D_80076E90, i, -1);
+            func_800295D8(7, D_80076E8C, 1, 0);
+            break;
+        case 6:
+            D_80076E80 = func_8002A57C(2, 0);
+            if (D_80076E80 == NULL) {
+                D_80076E64 = 0;
+                D_80076E48 = 0;
+                break;
+            }
+            for (index = 0; (file = D_80076E80[index].file) > 0; index++) {
+                copy = D_80076E80[index].dest;
+                D_80076E90 = func_800288EC(file);
+                FILL_WORDS(copy, D_80076E90, i, -1);
+            }
+            func_80029AFC(D_80076E80, 1, 0);
+            break;
+        case 7:
+        case 8:
+            D_80076E64 = 0;
+            D_80076E48 = 0;
+            break;
+        case 11:
+            D_80076E90 = func_800288EC(6);
+            D_80076E8C = buffer = func_80031BDC(D_80076E90, 0);
+            FILL_WORDS(buffer, D_80076E90, i, -1);
+            func_800295D8(6, D_80076E8C, 0, 0);
+            break;
+        }
+    }
+    if (func_800286CC() == 0 && D_80076E64 == 2) {
+        D_80076E64 = 0;
+        switch (D_80076E48) {
+        case 1:
+        case 4:
+            for (i = 0; i < 0x800; i++) {
+                if (D_80076E88[i] != D_80076E8C[i]) {
+                    VERIFY_ERROR(i * 4, 0x2000);
+                    break;
+                }
+            }
+            func_800320E8(D_80076E88);
+            func_800320E8(D_80076E8C);
+            D_80076E64 = 0;
+            break;
+        case 2:
+        case 5:
+            D_80076E90 = func_800288EC(7);
+            for (i = 0; i < D_80076E90 / 4; i++) {
+                if (D_80076E88[i] != D_80076E8C[i]) {
+                    VERIFY_ERROR(i * 4, func_800288EC(7));
+                    break;
+                }
+            }
+            func_800320E8(D_80076E88);
+            func_800320E8(D_80076E8C);
+            D_80076E64 = 0;
+            break;
+        case 3:
+        case 6:
+        case 12:
+            index = 0;
+            file = D_80076E7C[0].file;
+            if (file > 0) {
+                do {
+                    copy = D_80076E80[index].dest;
+                    dest = D_80076E7C[index].dest;
+                    D_80076E90 = func_800288EC(file);
+                    for (i = 0; i < D_80076E90 / 4; i++) {
+                        if (dest[i] != copy[i]) {
+                            VERIFY_ERROR(i * 4, func_800288EC(file));
+                            break;
+                        }
+                    }
+                } while ((file = D_80076E7C[++index].file) > 0);
+            }
+            func_8002A524(D_80076E7C);
+            func_8002A524(D_80076E80);
+            func_800320E8(D_80076E7C);
+            func_800320E8(D_80076E80);
+            D_80076E64 = 0;
+            break;
+        case 7:
+        case 8:
+        case 9:
+        case 10:
+            D_80076E64 = 0;
+            break;
+        case 11:
+            if (D_80076E94 > 0) {
+                D_80076E64 = 2;
+            } else {
+                D_80076E90 = func_800288EC(6);
+                for (i = 0; i < D_80076E90 / 4; i++) {
+                    if (D_80076E88[i] != D_80076E8C[i]) {
+                        VERIFY_ERROR(i * 4, func_800288EC(6));
+                        break;
+                    }
+                }
+                func_800320E8(D_80076E88);
+                func_800320E8(D_80076E8C);
+            }
+            D_80076E64 = 0;
+            break;
+        }
+        D_80076E48 = 0;
+    }
+}
 
 /* FAT check step: read file 40h into the check buffer (allocated once) and
  * count the read; a pass without errors keeps its tally. */
@@ -51,7 +465,162 @@ void func_80071BA0(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80071C34);
+/* Clear `size` bytes of words at `dest`, counting in `n`. */
+#define ZERO_WORDS(dest, size, n)          \
+    {                                      \
+        s32 *word;                         \
+        n = 0;                             \
+        word = (dest);                     \
+        for (; n < (size) / 4; n++) {      \
+            *word++ = 0;                   \
+        }                                  \
+    }
+
+/* Start monitor command `command` when no read is running: 1/4 read file
+ * 40h into a fresh 8 KB buffer, 2/5 file 7 through the host-file stream,
+ * 3/6 the directory's file list, 7/8 the stream ring, 11 stream file 6 and
+ * 12 the file list into the ring, 13 file 3 into a new 64-block ring. Each
+ * destination is cleared first; the command counts in its class. */
+void func_80071C34(s32 command) {
+    s32 i;
+    s32 index;
+    s32 file;
+    s32 *dest;
+
+    if (D_80076E48 != 0 || D_80076E64 != 0) {
+        return;
+    }
+    func_80028470(0xC, 3);
+    D_80076E64 = 1;
+    D_80076E48 = command;
+    switch (command) {
+    case 1:
+        D_80076E90 = 0x2000;
+        D_80076F3C[1]++;
+        D_80076E88 = func_80031BDC(0x2000, 0);
+        ZERO_WORDS(D_80076E88, D_80076E90, i);
+        func_8002954C(0x40, D_80076E88, D_80076E90, 0, 0);
+        break;
+    case 2:
+        D_80076F3C[2]++;
+        D_80076E90 = func_800288EC(7);
+        D_80076E88 = func_80031BDC(D_80076E90, 0);
+        ZERO_WORDS(D_80076E88, D_80076E90, i);
+        func_800295D8(7, D_80076E88, 0, 0);
+        break;
+    case 3:
+        D_80076F3C[3]++;
+        D_80076E7C = func_8002A57C(2, 0);
+        if (D_80076E7C == NULL) {
+            D_80076E64 = 0;
+            D_80076E48 = 0;
+            break;
+        }
+        for (index = 0; (file = D_80076E7C[index].file) > 0; index++) {
+            dest = D_80076E7C[index].dest;
+            D_80076E90 = func_800288EC(file);
+            ZERO_WORDS(dest, D_80076E90, i);
+        }
+        func_80029AFC(D_80076E7C, 0, 0);
+        break;
+    case 4:
+        D_80076E90 = 0x2000;
+        D_80076F3C[4]++;
+        D_80076E88 = func_80031BDC(0x2000, 0);
+        ZERO_WORDS(D_80076E88, D_80076E90, i);
+        func_8002954C(0x40, D_80076E88, D_80076E90, 0, 0);
+        break;
+    case 5:
+        D_80076F3C[5]++;
+        D_80076E90 = func_800288EC(7);
+        D_80076E88 = func_80031BDC(D_80076E90, 0);
+        ZERO_WORDS(D_80076E88, D_80076E90, i);
+        func_800295D8(7, D_80076E88, 1, 0);
+        break;
+    case 6:
+        D_80076F3C[6]++;
+        D_80076E7C = func_8002A57C(2, 0);
+        if (D_80076E7C == NULL) {
+            D_80076E64 = 0;
+            D_80076E48 = 0;
+            break;
+        }
+        for (index = 0; (file = D_80076E7C[index].file) > 0; index++) {
+            dest = D_80076E7C[index].dest;
+            D_80076E90 = func_800288EC(file);
+            ZERO_WORDS(dest, D_80076E90, i);
+        }
+        func_80029AFC(D_80076E7C, 1, 0);
+        break;
+    case 7:
+        D_80076F3C[7]++;
+        if (D_80076E98 == NULL) {
+            D_80076E98 = func_8002A260(4, 0);
+        }
+        func_80029EB0(1, D_80076E98, 0, 0, 1, 0, 0, 0, 0, 0);
+        break;
+    case 8:
+        D_80076F3C[8]++;
+        if (D_80076E98 == NULL) {
+            D_80076E98 = func_8002A260(4, 0);
+        }
+        func_80029EB0(1, D_80076E98, 1, 0, 1, 0, 0, 0, 0, 0);
+        break;
+    case 11:
+        if (D_80076EB8 == 2) {
+            D_80076EB8 = 1;
+        }
+        D_80076F3C[11]++;
+        if (D_80076E98 == NULL) {
+            D_80076E98 = func_8002A260(4, 0);
+        }
+        D_80076E94 = D_80076E90 = func_800288EC(6);
+        D_80076E84 = D_80076E88 = func_80031BDC(D_80076E90, 0);
+        ZERO_WORDS(D_80076E88, D_80076E90, i);
+        func_800295D8(6, D_80076E98, 1, 0x100);
+        break;
+    case 12:
+        if (D_80076EB8 == 2) {
+            D_80076EB8 = 1;
+        }
+        D_80076F3C[12]++;
+        if (D_80076E98 == NULL) {
+            D_80076E98 = func_8002A260(4, 0);
+        }
+        D_80076E7C = func_8002A57C(2, 0);
+        if (D_80076E7C == NULL) {
+            D_80076E64 = 0;
+            D_80076E48 = 0;
+            break;
+        }
+        file = D_80076E7C[0].file;
+        D_80076E94 = func_800288EC(file);
+        D_80076EB4 = 0;
+        D_80076E84 = D_80076E7C[0].dest;
+        for (index = 0; file > 0; file = D_80076E7C[++index].file) {
+            dest = D_80076E7C[index].dest;
+            D_80076E90 = func_800288EC(file);
+            ZERO_WORDS(dest, D_80076E90, i);
+        }
+        func_80028A94(D_80076E98);
+        func_80029AFC(D_80076E7C, 1, 0x100);
+        break;
+    case 13:
+        D_80076EB8 = 2;
+        D_80076F3C[13]++;
+        if (D_80076E98 != NULL) {
+            func_800320E8(D_80076E98);
+        }
+        D_80076E98 = func_8002A260(0x40, 0);
+        func_80028470(0x18, 0);
+        func_800295D8(3, D_80076E98, 0, 0x200);
+        break;
+    }
+    if (D_80076E4C == 0) {
+        D_80076EAC = D_80076EB0;
+        D_80076EB0 = D_80076E48;
+    }
+}
 
 /* Vertical-blank tick: count frames and whole seconds. */
 void func_80072428(void) {
@@ -62,7 +631,123 @@ void func_80072428(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80072480);
+/* The menu's disc change test: show the test state (the steps reached, the
+ * error and the last CD command result); Start begins a test from a stopped
+ * or failed state, Cross steps a waiting one, and each frame runs one step
+ * of it for the other disc. Circle returns to the menu. */
+void func_80072480(void) {
+    s32 button;
+    s32 error;
+    s32 done;
+    s32 step;
+    s32 state;
+    s32 frames;
+    MovieBuffer *buffer;
+    u32 *ot;
+
+    frames = 0;
+    state = 0;
+    error = 0;
+    done = 1;
+    for (;;) {
+        if (D_80077120 == &D_80077124[0]) {
+            buffer = &D_80077124[1];
+        } else {
+            buffer = &D_80077124[0];
+        }
+        ot = buffer->ot;
+        D_80077120 = buffer;
+        D_8007744C = 1 - D_8007744C;
+        ClearOTagR(ot, 32);
+        func_8003700C("\n[ DISC CHANGE TEST NOW DISC %2d ]\n\n", func_80028530());
+        func_800747AC(0, 0, &button);
+        func_8003700C("  STATUS ");
+        if (error == 1) {
+            func_8003700C("[ IT IS NOT PLAY STATION DISC ]\n");
+        } else if (error == 2) {
+            func_8003700C("[ NOT XENOGEARS DISC ]\n");
+        } else if (error == 3) {
+            func_8003700C("[ NO CHANGE DISC ]\n");
+        } else if (error == 4) {
+            func_8003700C("[ RETRY SET DISC ]\n");
+        } else {
+            func_8003700C("[ NOP ]\n");
+        }
+        func_8003700C(D_8006FC6C);
+        for (step = 0; step < 9; step++) {
+            if (step < state) {
+                switch (step) {
+                case 0:
+                    func_8003700C("  1 : NORMAL SPEED\n");
+                    break;
+                case 1:
+                    func_8003700C("  2 : CD STOPED\n");
+                    break;
+                case 2:
+                    func_8003700C("  3 : CD OPENED\n");
+                    break;
+                case 3:
+                    func_8003700C("  4 : CD CLOSED\n");
+                    break;
+                case 4:
+                    func_8003700C("  5 : SPINDLE OK\n");
+                    break;
+                case 5:
+                    func_8003700C("  6 : TOC OK\n");
+                    break;
+                case 6:
+                    func_8003700C("  7 : SET LOCATION OK\n");
+                    break;
+                case 7:
+                    func_8003700C("  8 : PLAY STATION DISC OK\n");
+                    break;
+                case 8:
+                    func_8003700C("  9 : XENOGEARS %2d DISC OK\n", func_80028530());
+                    break;
+                }
+            } else {
+                func_8003700C(" %2d :\n", step + 1);
+            }
+        }
+        if (done) {
+            func_8003700C("\n MODE %1d : NO ERROR  COUNT %6d\n", state, frames);
+        } else {
+            func_8003700C("\n MODE %1d : %2d ERROR COUNT %6d\n", state, done, frames);
+        }
+        func_8003700C(" RESULT %02x %02x %02x %02x %02x %02x %02x %02x\n", D_80076F84[0],
+                      D_80076F84[1], D_80076F84[2], D_80076F84[3], D_80076F84[4], D_80076F84[5],
+                      D_80076F84[6], D_80076F84[7]);
+        func_8003700C("\n\n PUSH START TO TEST.\n");
+        func_8003700C(" PUSH CIRCLE BUTTON TO MENU.\n");
+        if (state > 0) {
+            state = func_80072A08(3 - func_80028530(), state, &error, &done);
+        }
+        if ((D_800773AC & 0x40) && !(D_800773B4 & 0x40) && state > 0 && state < 8) {
+            state++;
+        }
+        if ((D_800773AC & 0x800) && !(D_800773B4 & 0x800) &&
+            (state == 0 || state == 9 || error != 0)) {
+            error = 0;
+            state = 2;
+            func_8007293C();
+        }
+        if (D_80077394 > 0) {
+            D_80077394 = 0;
+        }
+        func_80037324(D_80077120->ot);
+        func_80072F98(D_80077120->ot, (POLY_G4 *)D_80077120->box, 8, 20, 304, 192);
+        func_800734B8(D_80077120->ot, (POLY_G4 *)D_80077120->frame, 7, 19, 306, 194);
+        DrawSync(0);
+        VSync(0);
+        PutDrawEnv(&D_80077120->draw);
+        PutDispEnv(&D_80077120->disp);
+        DrawOTag(&D_80077120->ot[31]);
+        if (button == 2) {
+            break;
+        }
+        frames++;
+    }
+}
 
 /* Stop the resident disc read and wait until the drive reports its status. */
 void func_8007293C(void) {
@@ -86,15 +771,12 @@ void func_800729A8(char *name, void *buffer, s32 size) {
     PCclose(fd);
 }
 
-#ifdef NON_MATCHING
 /* One step of the disc change test for disc `disc`: stop the drive, wait for
  * the lid to open and close and the spindle, read the TOC, seek sector 0 and
  * check the disc label, then reload the directory tables. With the host PC
  * the tables are read from its files instead. `*error` gets 1 (seek error),
  * 2 (not a Xenogears disc) or 3 (wrong disc); `*done` the command result.
- * Returns the next state. The instructions match; the original rodata also
- * holds an unreferenced "" after the host file names (dead code?), which this
- * source does not emit. */
+ * Returns the next state. */
 s32 func_80072A08(s32 disc, s32 state, s32 *error, s32 *done) {
     u32 label[4] = {0, 0, 0, 0};
     CdlLOC loc;
@@ -192,9 +874,6 @@ s32 func_80072A08(s32 disc, s32 state, s32 *error, s32 *done) {
     }
     return state;
 }
-#else
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80072A08);
-#endif
 
 /* Set up the menu backdrop quads of both buffers at (x, y), w by h, with
  * random dark blue corner fades. */
@@ -404,7 +1083,361 @@ void func_800734B8(u32 *ot, POLY_G4 *poly, s32 x, s32 y, s32 w, s32 h) {
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_800734B8);
 #endif
 
+#ifdef NON_MATCHING
+/* Mode 6 entry. Load the movie library below the heap top and open it at
+ * 320x256; with a movie request (8004fe44..47) play it and select the next
+ * mode. Otherwise run the development menu: movie type, number, start and
+ * end frame (Circle seeks them), channel, colour depth, rows drawn, rewind,
+ * then the movie test, CD-ROM monitor, CD-ROM check, FAT check, disc change
+ * test and a return to the kernel. Square and Cross speed up the frame
+ * settings. The menu cursor is kept across the screens it opens. The unused
+ * name reproduces the original's frame. Draft: the register count and most
+ * code match; the constant 1 of the setup stores gets another register
+ * (scheduling differs), and the request byte 8004fe44 is reread in the
+ * original where this source reuses the value. */
+void func_800737EC(void) {
+    char name[8] = "trouble";
+    s32 button;
+    s32 step;
+    s32 dir;
+    s32 line;
+    s32 last;
+    s32 cursor;
+    void *top;
+    void *library;
+    MovieBuffer *buffer;
+    u32 *ot;
+
+    func_80032498(4, 0);
+    func_80028470(0x18, 0);
+    func_80038D18(0, 0);
+    DrawSync(0);
+    VSync(0);
+    SetDispMask(0);
+    top = func_80031BDC(4, 1);
+    library = func_80031BDC(((u32)top & 0xFFFFFF) - 0x1D3008, 1);
+    func_800320E8(top);
+    func_800295D8(1, library, 0, 0);
+    func_80028A60(0);
+    func_801D3538(320, 256, 128, 16, 32, 0x800, 3);
+    D_80077450 = func_8002C3D8();
+    D_800773A0 = -1;
+    D_8007739C = 0xC80;
+    D_80077394 = 0;
+    D_800773B0 = 0;
+    D_80077454 = 1;
+    D_80077448 = 1;
+    D_8007711C = 0;
+    D_800773A4 = 1;
+    D_80077398 = 1;
+    D_80077444 = 2;
+    D_8007743C = 0;
+    D_800773A8 = 0;
+    D_80077438 = 0;
+    SetDefDrawEnv(&D_80077124[0].draw, 0, 0, 320, 240);
+    SetDefDispEnv(&D_80077124[0].disp, 0, 240, 320, 240);
+    SetDefDrawEnv(&D_80077124[1].draw, 0, 240, 320, 240);
+    SetDefDispEnv(&D_80077124[1].disp, 0, 0, 320, 240);
+    D_80077124[0].draw.dtd = 1;
+    D_80077124[0].draw.isbg = 1;
+    D_80077124[1].draw.dtd = 1;
+    D_80077124[1].draw.isbg = 1;
+    D_80077124[0].draw.r0 = 0;
+    D_80077124[0].draw.g0 = 0;
+    D_80077124[0].draw.b0 = 0;
+    D_80077124[0].disp.isinter = 0;
+    D_80077124[1].draw.r0 = 0;
+    D_80077124[1].draw.g0 = 0;
+    D_80077124[1].draw.b0 = 0;
+    D_80077124[1].disp.isinter = 0;
+    D_80077124[0].disp.screen.x = 0;
+    D_80077124[0].disp.screen.y = 10;
+    D_80077124[0].disp.screen.w = 256;
+    D_80077124[0].disp.screen.h = 216;
+    D_80077124[1].disp.screen.x = 0;
+    D_80077124[1].disp.screen.y = 10;
+    D_80077124[1].disp.screen.w = 256;
+    D_80077124[1].disp.screen.h = 216;
+    D_80077120 = &D_80077124[0];
+    D_8007744C = 0;
+    PutDrawEnv(&D_80077124[0].draw);
+    PutDispEnv(&D_80077120->disp);
+    if (D_80077450 != 0) {
+        VSync(2);
+        D_800773AC = func_8003569C(0);
+    } else {
+        D_800773AC = 0;
+    }
+    if (D_8004FE44 != 0xFF && !(D_800773AC & 0x100)) {
+        D_80077440 = 0;
+        D_80077398 = 1;
+        D_800773A4 = 1;
+        D_80077448 = D_8004FE44 & 0x7F;
+        D_8007711C = D_8004FE45;
+        D_8007739C = (D_8004FE44 & 0x80) ? D_80062514 : 0xE9;
+        func_800763BC(D_8004FE47);
+        func_801D43B0();
+        func_800320E8(library);
+        func_8001996C(D_8004FE46);
+        func_80019ACC(0);
+    }
+    func_80072D84((POLY_G4 *)D_80077124[0].box, (POLY_G4 *)D_80077124[1].box, 0, 0, 0, 0);
+    func_80073328((POLY_G4 *)D_80077124[0].frame, (POLY_G4 *)D_80077124[1].frame, 0, 0, 0, 0);
+    func_800374E8(16, 16, 640, 240, 0x400, 0, 640, 0, 640, 256, 0);
+    D_80077440 = 1;
+    SetDispMask(1);
+    for (;;) {
+        if (D_80077120 == &D_80077124[0]) {
+            buffer = &D_80077124[1];
+        } else {
+            buffer = &D_80077124[0];
+        }
+        ot = buffer->ot;
+        D_80077120 = buffer;
+        D_8007744C = 1 - D_8007744C;
+        ClearOTagR(ot, 32);
+        if (D_80077450 == 0) {
+            func_8003700C("  [ MOVIE CD-ROM MODE1 DISK %1d ]  \n\n", func_80028530());
+        } else if (D_80077450 == -1) {
+            func_8003700C("  [ MOVIE CD-ROM MODE2 DISK %1d ]  \n\n", func_80028530());
+        } else {
+            func_8003700C("  [ MOVIE PC HDD MODE  DISK %1d ]  \n\n", func_80028530());
+        }
+        step = 1;
+        func_8003700C("    ERROR %2d Sect %2d:%2d FM%3d\n", D_8005A4DC, D_8005A4A8, D_8005A4B4,
+                      D_8005A4B8);
+        func_8003700C("    LesMem%2d NoMem%2d Skp%3d\n", D_8005A49C, D_8005A4A4, D_801E89D4,
+                      D_80062514);
+        dir = func_800747AC(0, 13, &button);
+        if (D_800773AC & 0x10) {
+            step = 32;
+        }
+        if (D_800773AC & 0x80) {
+            step <<= 7;
+        }
+        if (D_80077118 == 0 && dir != 0) {
+            D_80077448 += dir;
+            if (D_80077448 < 0) {
+                D_80077448 = 2;
+            }
+            if (D_80077448 >= 3) {
+                D_80077448 = 0;
+            }
+            D_800773A4 = 1;
+            D_800773A8 = 0;
+            D_8007743C = 0;
+            D_80077444 = 2;
+        }
+        if (D_80077118 == 1 && dir != 0) {
+            D_8007711C += dir;
+            if (D_8007711C < 0) {
+                D_8007711C = 63;
+            }
+            if (D_8007711C >= 64) {
+                D_8007711C = 0;
+            }
+            D_800773A4 = 1;
+            D_800773A8 = 0;
+            D_8007743C = 0;
+            D_80077444 = 2;
+        }
+        if (D_80077118 == 2 && dir != 0) {
+            D_800773A4 += dir * step;
+            if (D_800773A4 <= 0) {
+                D_800773A4 = 1;
+            }
+            if (D_800773A4 >= 0x2000) {
+                D_800773A4 = 0x1FFF;
+            }
+            if (D_800773A4 > D_8007739C) {
+                D_800773A4 = D_8007739C;
+            }
+            D_80077444 = 1;
+        }
+        if (D_80077118 == 2 && button == 2 && D_80077444 == 1) {
+            D_800773A8 = func_80074BA4(D_800773A4);
+            if (D_800773A4 >= D_8007739C) {
+                D_8007739C = D_800773A4;
+                D_8007743C = 0;
+            }
+            D_80077444 = 2;
+        }
+        if (D_80077118 == 3 && dir != 0) {
+            D_8007739C += dir * step;
+            if (D_8007739C <= 0) {
+                D_8007739C = 1;
+            }
+            if (D_8007739C >= 0x2000) {
+                D_8007739C = 0x1FFF;
+            }
+            if (D_8007739C < D_800773A4) {
+                D_8007739C = D_800773A4;
+            }
+            D_8007743C = 0;
+        }
+        if (D_80077118 == 3 && button == 2 && D_8007743C == 0) {
+            last = func_8007519C();
+            if (last >= 0) {
+                D_8007739C = last;
+                D_8007743C = 1;
+                if (D_800773A4 >= last) {
+                    D_800773A4 = last;
+                    D_80077444 = 1;
+                }
+            } else {
+                D_8007743C = 2;
+            }
+        }
+        if (D_80077118 == 4 && dir != 0) {
+            D_80077398 += dir;
+            if (D_80077398 < 0) {
+                D_80077398 = 7;
+            }
+            if (D_80077398 >= 8) {
+                D_80077398 = 0;
+            }
+        }
+        if (D_80077118 == 5 && dir != 0) {
+            D_80077454 = 1 - D_80077454;
+        }
+        if (D_80077118 == 6) {
+            if (dir != 0) {
+                D_800773A0 = (D_800773A0 + dir * step) & 0xFF;
+            }
+            if (button == 2) {
+                D_800773A0 = -1;
+            }
+        }
+        if (D_80077118 == 7 && dir != 0) {
+            D_80077438 = 1 - D_80077438;
+        }
+        for (line = 0; line < 14; line++) {
+            func_8003700C(D_80077118 == line ? "  >" : "   ");
+            switch (line) {
+            case 0:
+                func_8003700C(" MOVIE TYPE   ");
+                if (D_80077448 == 0) {
+                    func_8003700C("PICTURE ONLY\n");
+                } else if (D_80077448 == 1) {
+                    func_8003700C("PICTURE+ADPCM\n");
+                } else if (D_80077448 == 2) {
+                    func_8003700C("ADPCM ONLY\n");
+                }
+                break;
+            case 1:
+                func_8003700C(" MOVIE NUMBER %4d\n\n", D_8007711C);
+                break;
+            case 2:
+                func_8003700C(" START FRAME  %4d ", D_800773A4);
+                if (D_80077444 == 1) {
+                    func_8003700C("SET");
+                }
+                if (D_80077444 == 2) {
+                    if (D_800773A8 < 0) {
+                        func_8003700C("EOF");
+                    } else {
+                        func_8003700C("+%4dSECT", D_800773A8);
+                    }
+                }
+                func_8003700C("\n");
+                break;
+            case 3:
+                func_8003700C(" END   FRAME  %4d ", D_8007739C);
+                if (D_8007743C == 0) {
+                    func_8003700C("SET");
+                }
+                if (D_8007743C == 2) {
+                    func_8003700C("???");
+                }
+                func_8003700C("\n");
+                break;
+            case 4:
+                func_8003700C(" MOVIE CHANNEL %3d\n", D_80077398);
+                break;
+            case 5:
+                func_8003700C(" SCREEN MODE  ");
+                func_8003700C(D_80077454 ? "24 BIT COLOR" : "16 BIT COLOR");
+                func_8003700C("\n");
+                break;
+            case 6:
+                func_8003700C(" SCREEN DRAW  ");
+                if (D_800773A0 < 0) {
+                    func_8003700C("ALL");
+                } else {
+                    func_8003700C("%3d", D_800773A0);
+                }
+                func_8003700C("\n");
+                break;
+            case 7:
+                func_8003700C(" REWIND       ");
+                func_8003700C(D_80077438 ? "ON" : "OFF");
+                func_8003700C("\n\n");
+                break;
+            case 8:
+                func_8003700C(" MOVIE START.\n\n");
+                break;
+            case 9:
+                func_8003700C(" CD-ROM MONITOR.\n\n");
+                break;
+            case 10:
+                func_8003700C(" CD-ROM CHECK.\n");
+                break;
+            case 11:
+                func_8003700C(" FAT CHECK.\n\n");
+                break;
+            case 12:
+                func_8003700C(" [DISC CHANGE.]\n");
+                break;
+            case 13:
+                func_8003700C(" [RETURN TO KERNEL.]\n");
+                break;
+            }
+        }
+        if (D_80077394 > 0) {
+            func_8003278C(1, 0, 6, 0x808D);
+        }
+        func_80037324(D_80077120->ot);
+        func_80072F98(D_80077120->ot, (POLY_G4 *)D_80077120->box, 20, 12, 284, 198);
+        func_800734B8(D_80077120->ot, (POLY_G4 *)D_80077120->frame, 19, 11, 286, 200);
+        DrawSync(0);
+        VSync(0);
+        PutDrawEnv(&D_80077120->draw);
+        PutDispEnv(&D_80077120->disp);
+        DrawOTag(&D_80077120->ot[31]);
+        cursor = D_80077118;
+        if ((cursor == 0 || cursor == 1 || cursor == 4 || cursor == 5 || cursor == 7 ||
+             cursor == 8) &&
+            button == 2) {
+            D_8005A49C = 0;
+            D_8005A4A4 = 0;
+            D_8005A4A8 = 0;
+            D_8005A4B4 = 0;
+            func_8007625C();
+            D_800773AC = -1;
+        }
+        if (D_80077118 == 9 && button == 2) {
+            func_80075534();
+        }
+        if (D_80077118 == 10 && button == 2) {
+            func_800704E8();
+        }
+        if (D_80077118 == 11 && button == 2) {
+            func_80075D8C();
+        }
+        if (D_80077118 == 12 && button == 2) {
+            func_80072480();
+        }
+        if (D_80077118 == 13 && button == 2) {
+            func_800320E8(library);
+            func_80019ACC(0);
+        }
+        D_80077118 = cursor;
+        func_80019CA0();
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_800737EC);
+#endif
 
 /* Menu input: read controller port 0 with a repeat after 16 frames held; Up
  * and Down move the cursor between `first` and `last`, wrapping; the four
@@ -727,13 +1760,192 @@ void func_800753B8(void) {
     func_800320E8(bank);
 }
 
+#ifdef NON_MATCHING
+/* Load the battle sound bank from the host PC, waiting for its transfer,
+ * then the battle music sequence. The instructions match; the original
+ * rodata has a non-zero padding byte (0x08) after "battle2.smd". */
+void func_8007548C(void) {
+    void *bank;
+
+    bank = func_80028570("c:\\work\\cdrom\\sound\\wave\\battle2.wd", 0);
+    func_80037FD8(bank, 0);
+    while (func_8003BDFC(0) != 0) {
+    }
+    func_800320E8(bank);
+    D_8007700C = func_80039850(func_80028570("c:\\work\\cdrom\\sound\\music\\battle2.smd", 0));
+}
+#else
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_8007548C);
+#endif
 
 void func_80075508(void) {
     func_80039A80(D_8007700C, 0x7F, 0);
 }
 
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80075534);
+/* The menu's sector monitor: at 640x240, dump 192 bytes of the current
+ * sector (Up/Down by a row, Triangle/Cross by twelve) with its position;
+ * Left/Right step the sector by one, L1/R1 by 75 (a second) and L2/R2 by
+ * 4500 (a minute), rereading it when it changes. Circle returns to the
+ * 320-wide menu. The original reads the menu cursor before the exit test and
+ * stores it back after. */
+void func_80075534(void) {
+    CdlLOC loc;
+    s32 button;
+    u8 *buffer;
+    s32 sector;
+    s32 row;
+    s32 i;
+    u8 *hex;
+    u8 *text;
+    u8 c;
+    s32 cursor;
+    MovieBuffer *draw;
+    u32 *ot;
+
+    func_80074B58();
+    buffer = func_80031BDC(0x800, 0);
+    if (buffer == NULL) {
+        return;
+    }
+    SetDefDrawEnv(&D_80077124[0].draw, 0, 0, 640, 240);
+    SetDefDispEnv(&D_80077124[0].disp, 0, 240, 640, 240);
+    SetDefDrawEnv(&D_80077124[1].draw, 0, 240, 640, 240);
+    SetDefDispEnv(&D_80077124[1].disp, 0, 0, 640, 240);
+    D_80077124[0].draw.isbg = 1;
+    D_80077124[1].draw.isbg = 1;
+    D_80077124[0].disp.screen.x = 0;
+    D_80077124[0].disp.screen.y = 10;
+    D_80077124[0].disp.screen.w = 256;
+    D_80077124[0].disp.screen.h = 216;
+    D_80077124[1].disp.screen.x = 0;
+    D_80077124[1].disp.screen.y = 10;
+    D_80077124[1].disp.screen.w = 256;
+    D_80077124[1].disp.screen.h = 216;
+    func_8002954C(D_80076EFC, buffer, 0x800, 0, 0);
+    func_80028A60(0);
+    for (;;) {
+        if (D_80077120 == &D_80077124[0]) {
+            draw = &D_80077124[1];
+        } else {
+            draw = &D_80077124[0];
+        }
+        ot = draw->ot;
+        D_80077120 = draw;
+        D_8007744C = 1 - D_8007744C;
+        ClearOTagR(ot, 32);
+        func_8003700C("\n[ MONITOR ]\n");
+        func_800747AC(0, 0, &button);
+        sector = D_80076EFC;
+        if (!(D_800773B4 & 0x1000) && (D_800773AC & 0x1000) && D_80076F00 > 0) {
+            D_80076F00--;
+        }
+        if (!(D_800773B4 & 0x10) && (D_800773AC & 0x10)) {
+            D_80076F00 -= 12;
+            if (D_80076F00 < 0) {
+                D_80076F00 = 0;
+            }
+        }
+        if (!(D_800773B4 & 0x4000) && (D_800773AC & 0x4000) && D_80076F00 < 116) {
+            D_80076F00++;
+        }
+        if (!(D_800773B4 & 0x40) && (D_800773AC & 0x40)) {
+            D_80076F00 += 12;
+            if (D_80076F00 >= 116) {
+                D_80076F00 = 116;
+            }
+        }
+        if (!(D_800773B4 & 0x8000) && (D_800773AC & 0x8000) && D_80076EFC > 0) {
+            D_80076EFC--;
+        }
+        if (!(D_800773B4 & 0x2000) && (D_800773AC & 0x2000)) {
+            D_80076EFC++;
+        }
+        if (!(D_800773B4 & 4) && (D_800773AC & 4)) {
+            D_80076EFC -= 75;
+            if (D_80076EFC < 0) {
+                D_80076EFC = 0;
+            }
+        }
+        if (!(D_800773B4 & 8) && (D_800773AC & 8)) {
+            D_80076EFC += 75;
+        }
+        if (!(D_800773B4 & 1) && (D_800773AC & 1)) {
+            D_80076EFC -= 4500;
+            if (D_80076EFC < 0) {
+                D_80076EFC = 0;
+            }
+        }
+        if (!(D_800773B4 & 2) && (D_800773AC & 2)) {
+            D_80076EFC += 4500;
+        }
+        if (sector != D_80076EFC) {
+            func_8002954C(D_80076EFC, buffer, 0x800, 0, 0);
+            func_80028A60(0);
+        }
+        CdIntToPos(D_80076EFC, &loc);
+        func_8003700C("ABSPOS %8d POS %04x\nMINUTE %02x SECOND %02x SECTOR %02x\n\n", D_80076EFC,
+                      D_80076F00 * 16, loc.minute, loc.second, loc.sector);
+        text = buffer + D_80076F00 * 16;
+        hex = text;
+        for (row = 0; row < 12; row++) {
+            func_8003700C("%03x:", (row + D_80076F00) * 16);
+            for (i = 0; i < 15; i++) {
+                func_8003700C("%02x ", *hex);
+                hex++;
+            }
+            func_8003700C("%02x", *hex);
+            hex++;
+            func_8003700C(":");
+            for (i = 0; i < 16; i++) {
+                c = *text;
+                if (c >= 0x20 && c < 0x7E) {
+                    func_8003700C("%c", c);
+                } else {
+                    func_8003700C(" ");
+                }
+                text++;
+            }
+            func_8003700C(D_8007042C);
+        }
+        func_8003700C(D_80070430);
+        if (D_80077394 > 0) {
+            func_8003278C(1, 0, 6, 0x808D);
+        }
+        func_80037324(D_80077120->ot);
+        func_80072F98(D_80077120->ot, (POLY_G4 *)D_80077120->box, 8, 20, 624, 160);
+        func_800734B8(D_80077120->ot, (POLY_G4 *)D_80077120->frame, 7, 19, 626, 162);
+        DrawSync(0);
+        VSync(0);
+        PutDrawEnv(&D_80077120->draw);
+        PutDispEnv(&D_80077120->disp);
+        DrawOTag(&D_80077120->ot[31]);
+        cursor = D_80077118;
+        if (button == 2) {
+            break;
+        }
+        D_80077118 = cursor;
+    }
+    func_800320E8(buffer);
+    func_80074B58();
+    SetDefDrawEnv(&D_80077124[0].draw, 0, 0, 320, 240);
+    SetDefDispEnv(&D_80077124[0].disp, 0, 240, 320, 240);
+    SetDefDrawEnv(&D_80077124[1].draw, 0, 240, 320, 240);
+    SetDefDispEnv(&D_80077124[1].disp, 0, 0, 320, 240);
+    D_80077124[0].draw.isbg = 1;
+    D_80077124[1].draw.isbg = 1;
+    D_80077124[0].disp.screen.x = 0;
+    D_80077124[0].disp.screen.y = 10;
+    D_80077124[0].disp.screen.w = 256;
+    D_80077124[0].disp.screen.h = 216;
+    D_80077124[1].disp.screen.x = 0;
+    D_80077124[1].disp.screen.y = 10;
+    D_80077124[1].disp.screen.w = 256;
+    D_80077124[1].disp.screen.h = 216;
+}
+
+INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_8007042C);
+
+INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_80070430);
 
 /* The first sector of directory record `index` (bytes 3..6). */
 u32 func_80075D4C(s32 index) {
@@ -743,11 +1955,136 @@ u32 func_80075D4C(s32 index) {
     return ((record[6] << 24) + (record[5] << 16) + (record[4] << 8)) | record[3];
 }
 
-INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_8007042C);
+#ifdef NON_MATCHING
+/* The menu's FAT check: list twenty directory records from the cursor
+ * (Up/Down by one, Triangle/Cross by twenty) with their first sector and
+ * their size or, toggled by L1, their host file name; R1 switches between
+ * decimal and hexadecimal. Circle returns to the menu. The instructions
+ * match; the original rodata has two non-zero padding bytes (0x0894) after
+ * "Size%9d\n" that a C literal cannot reproduce. */
+void func_80075D8C(void) {
+    s32 directory;
+    s32 offset;
+    s32 button;
+    s32 top;
+    s32 hex;
+    s32 names;
+    s32 index;
+    s32 count;
+    char *name;
+    char *p;
+    MovieBuffer *buffer;
+    u32 *ot;
 
-INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_80070430);
-
+    func_80074B58();
+    top = 0;
+    func_800284B4(&directory, &offset);
+    func_80028470(0, 0);
+    hex = 0;
+    names = 0;
+    do {
+        count = 0x1249;
+        if (D_80077120 == &D_80077124[0]) {
+            buffer = &D_80077124[1];
+        } else {
+            buffer = &D_80077124[0];
+        }
+        ot = buffer->ot;
+        D_80077120 = buffer;
+        D_8007744C = 1 - D_8007744C;
+        ClearOTagR(ot, 32);
+        func_8003700C("\n[ FAT CHECK MODE ");
+        func_8003700C(hex ? "HEX ]\n" : "DEC ]\n");
+        func_800747AC(0, 0, &button);
+        if (!(D_800773B4 & 0x1000) && (D_800773AC & 0x1000) && top > 0) {
+            top--;
+        }
+        if (!(D_800773B4 & 0x10) && (D_800773AC & 0x10)) {
+            top -= 20;
+            if (top < 0) {
+                top = 0;
+            }
+        }
+        if (!(D_800773B4 & 0x4000) && (D_800773AC & 0x4000) && top < count - 20) {
+            top++;
+        }
+        if (!(D_800773B4 & 0x40) && (D_800773AC & 0x40)) {
+            top += 20;
+            if (top > count - 20) {
+                top = count - 20;
+            }
+        }
+        if (!(D_800773B4 & 8) && (D_800773AC & 8)) {
+            hex = 1 - hex;
+        }
+        if (!(D_800773B4 & 4) && (D_800773AC & 4)) {
+            names = 1 - names;
+        }
+        index = top;
+        do {
+            if (func_80075D4C(index) == 0) {
+                if (hex) {
+                    func_8003700C("No %4x NullFile\n", index);
+                    index++;
+                } else {
+                    func_8003700C("No %4d NullFile\n", index);
+                    index++;
+                }
+            } else {
+                if (hex) {
+                    func_8003700C("No %4x Sect%6x ", index, func_800289D0(index + 1));
+                } else {
+                    func_8003700C("No %4d Sect%6d ", index, func_800289D0(index + 1));
+                }
+                if (names) {
+                    if ((s32)func_80075D4C(index) < 0) {
+                        func_8003700C("[P%3d]\n", -func_80075D4C(index));
+                        index++;
+                    } else {
+                        name = func_80028998(index + 1);
+                        if (name != NULL) {
+                            if (*name != 0) {
+                                p = name;
+                                do {
+                                    if (*p == '\\') {
+                                        name = p + 1;
+                                    }
+                                    p++;
+                                } while (*p != 0);
+                            }
+                            func_8003700C("%s\n", name);
+                        } else {
+                            func_8003700C(D_8007042C);
+                        }
+                        index++;
+                    }
+                } else if (hex) {
+                    func_8003700C("Size%9x\n", func_80075D4C(index));
+                    index++;
+                } else {
+                    func_8003700C("Size%9d\n", func_80075D4C(index));
+                    index++;
+                }
+            }
+        } while (index < top + 20);
+        func_8003700C(D_80070430);
+        if (D_80077394 > 0) {
+            func_8003278C(1, 0, 6, 0x808D);
+        }
+        func_80037324(D_80077120->ot);
+        func_80072F98(D_80077120->ot, (POLY_G4 *)D_80077120->box, 8, 20, 304, 192);
+        func_800734B8(D_80077120->ot, (POLY_G4 *)D_80077120->frame, 7, 19, 306, 194);
+        DrawSync(0);
+        VSync(0);
+        PutDrawEnv(&D_80077120->draw);
+        PutDispEnv(&D_80077120->disp);
+        DrawOTag(&D_80077120->ot[31]);
+    } while (button != 2);
+    func_80028470(directory, offset);
+}
+#else
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80075D8C);
+#endif
 
 /* The menu's movie test: play the selected movie with the display blanked
  * until it starts, then clear the screen and restore the menu's buffers.

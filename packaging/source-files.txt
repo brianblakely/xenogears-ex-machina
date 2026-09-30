@@ -116,7 +116,9 @@ decomp/include/psyq/libcd.h
 decomp/include/psyq/libsn.h
 decomp/src/battle/battle.c
 decomp/src/battle/battle_core.h
+decomp/src/debug2611/battle_debug.h
 decomp/src/debug2611/debug2611.c
+decomp/src/debug2611/pages.c
 decomp/src/debug595/debug595.c
 decomp/src/debug595/debug595.h
 decomp/src/field/field.c
@@ -142,6 +144,7 @@ decomp/src/menu/system.h
 decomp/src/menu/window.h
 decomp/src/movie/movie.c
 decomp/src/movie/movie_mode.h
+decomp/src/ovl2143/gte.h
 decomp/src/ovl2143/ovl2143.c
 decomp/src/ovl2143/ovl2143.h
 decomp/src/ovl2596/battle_results.h
@@ -211,6 +214,7 @@ decomp/targets/overlays/battle.mk
 decomp/targets/overlays/battle.symbols.txt
 decomp/targets/overlays/battle.yaml
 decomp/targets/overlays/debug2611.mk
+decomp/targets/overlays/debug2611.resident.ld
 decomp/targets/overlays/debug2611.symbols.txt
 decomp/targets/overlays/debug2611.yaml
 decomp/targets/overlays/debug595.field.ld

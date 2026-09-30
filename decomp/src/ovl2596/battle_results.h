@@ -127,7 +127,8 @@ typedef struct {
  * character id byte. */
 typedef struct {
     u8 id;                /* 0x7f: empty */
-    u8 pad[0x1B];
+    u8 flag01;            /* nonzero: no rewards for this enemy */
+    u8 pad[0x1A];
 } SlotInfo;
 
 extern BattleUi *D_800D2D28;
@@ -258,7 +259,11 @@ s32 func_80076A10(s32 id, POLY_FT4 *prims, s16 x, s16 y);   /* glyph sprite */
 /* Per character growth data (0x110 each; the block 801e44e8 points to). */
 typedef struct {
     u16 requirements[13][7];  /* 0x00: counter thresholds per counter skill */
-    u8 padB6[0x16];
+    u8 padB6[2];
+    u16 maxHpTargets[2];      /* 0xB8: below level 100, from 100 */
+    u8 statTargets[6][2];     /* 0xBC: stats 58 59 5e 5f 5b 5c, per level range */
+    u8 maxEpTargets[2];       /* 0xC8 */
+    u8 padCA[2];
     u8 tierLevels[3];         /* 0xCC: levels for tiers 4, 5 and 6 */
     u8 padCF;
     u8 unlocksA[16];          /* 0xD0: 0xff ends */
@@ -270,7 +275,21 @@ typedef struct {
 /* The growth data file: one block per character. */
 typedef struct {
     Growth characters[11];
+    s32 experience[99];       /* 0xBB0: experience to the next level, per level - 1 */
 } GrowthFile;
+
+/* A gear record (0xa4 bytes), in the game data and in each combatant. */
+typedef struct {
+    u8 pad0[0x38];
+    u16 fuel;                 /* 0x38 */
+    u16 maxFuel;              /* 0x3A */
+    u8 pad3C[0x24];
+    u32 hp;                   /* 0x60 */
+    u32 maxHp;                /* 0x64 */
+    u8 pad68[0x14];
+    u16 flags;                /* 0x7C: 0x8000 destroyed */
+    u8 pad7E[0xA4 - 0x7E];
+} Gear;
 
 /* Per character skill state in the game data (0x20 each, at +0x16c0). */
 typedef struct {
@@ -287,47 +306,180 @@ typedef struct {
 typedef struct {
     u8 pad0[0x26C];
     Character characters[11]; /* 0x26C */
-    u8 pad978[0xE30 - 0x978];
-    u8 value_E30;             /* 0xE30 */
-    u8 padE31[0x27];
-    s32 value_E58;            /* 0xE58 */
-    u8 padE5C[8];
-    s16 value_E64;            /* 0xE64 */
-    s16 value_E66;            /* 0xE66 */
-    u8 padE68[0x16C0 - 0xE68];
+    union {
+        Gear gears[17];       /* 0x978: per gear id; 7 is not a gear */
+        struct {
+            u8 pad[0xE30 - 0x978];
+            u8 value_E30;     /* 0xE30 */
+            u8 padE31[0x27];
+            s32 value_E58;    /* 0xE58 */
+            u8 padE5C[8];
+            s16 value_E64;    /* 0xE64 */
+            s16 value_E66;    /* 0xE66 */
+        } id7;                /* character 7's derived values */
+    } u978;
+    u8 pad145C[0x16C0 - 0x145C];
     CharacterSkills skills[11]; /* 0x16C0 */
+    u8 pad1820[0x22B6 - 0x1820];
+    u16 options;              /* 0x22B6: 8006f8ea */
 } GameData;
 
-/* A battle combatant record (0x170 each from 800ccce8). */
+/* A battle combatant record (0x170 each from 800ccce8). It begins with the
+ * character record's layout, and D_801E44EC also points at game data
+ * character records (func_801E2ACC). */
 typedef struct {
-    u8 pad0[0x4E];
+    u8 pad0[4];
+    u8 value04;               /* 0x04 */
+    u8 pad5[0x17];
+    u8 value1C;               /* 0x1C */
+    u8 pad1D[0x10];
+    u8 value2D;               /* 0x2D */
+    u8 pad2E[4];
+    u16 flags32;              /* 0x32: 0x2000 and 0x1000 raise the experience gained */
+    u8 pad34[6];
+    u16 value_3A;             /* 0x3A */
+    s32 totalA;               /* 0x3C: experience totals (levels A and B) */
+    s32 totalB;               /* 0x40 */
+    s32 nextA;                /* 0x44: experience to the next level */
+    s32 nextB;                /* 0x48 */
+    u16 hp;                   /* 0x4C */
     u16 maxHp;                /* 0x4E */
-    u8 pad50[6];
+    u16 ep;                   /* 0x50 */
+    u16 maxEp;                /* 0x52 */
+    u8 pad54[2];
     u8 id;                    /* 0x56 */
     u8 pad57;
-    u8 attack;                /* 0x58 */
-    u8 pad59[0x7C - 0x59];
+    u8 attack;                /* 0x58: grown stats 58, 59, 5e, 5f (level A) */
+    u8 stat59;                /* 0x59 */
+    u8 stat5A;                /* 0x5A */
+    u8 stat5B;                /* 0x5B: grown stats 5b, 5c (level B) */
+    u8 stat5C;                /* 0x5C */
+    u8 pad5D;
+    u8 stat5E;                /* 0x5E */
+    u8 stat5F;                /* 0x5F */
+    u8 pad60[2];
+    u8 level;                 /* 0x62 */
+    u8 level2;                /* 0x63 */
+    u8 pad64[0x7C - 0x64];
     u16 flags7C;              /* 0x7C: 0x8000 knocked out */
     u8 pad7E[0x90 - 0x7E];
     u16 counters[7];          /* 0x90 */
-    u8 pad9E[0x170 - 0x9E];
+    u8 pad9E[2];
+    u8 gearId;                /* 0xA0 */
+    u8 padA1[3];
+    Gear gear;                /* 0xA4 */
+    u8 pad148[4];
+    u32 experience;           /* 0x14C: enemy experience */
+    u8 dropChances[2];        /* 0x150: enemy drop chances (percent) */
+    u8 dropIds[2];            /* 0x152 */
+    u8 dropCategories[2];     /* 0x154 */
+    u16 gold;                 /* 0x156: enemy gold */
+    u8 weightA;               /* 0x158: experience share weights of levels A and B */
+    u8 weightB;               /* 0x159 */
+    u8 flags15A;              /* 0x15A: 0x80 (character 7) HP from the gear HP */
+    u8 pad15B[0x170 - 0x15B];
 } Combatant;
 
 extern GameData D_8006D634;
 extern Combatant D_800CCCE8[];
 extern GameData *D_801E44C4;    /* 8006d634 */
+/* The drops rolled for the defeated enemies (800ccce8 + 0x100c). */
+typedef struct {
+    u8 categories[8];
+    u8 ids[8];
+} Drops;
+
 /* The battle work area (800ccce8): the combatant records, then the
  * results state. */
 typedef struct {
     Combatant records[11];    /* 0x0000 */
-    u8 padFD0[0x5F20 - 0xFD0];
+    u8 padFD0[0xFE8 - 0xFD0];
+    MemberWide gained[3];     /* 0xFE8: experience pools per slot (800cdcd0) */
+    u8 pad1000[0x100C - 0x1000];
+    Drops drops;              /* 0x100C: 800cdcf4 */
+    u8 learntCounter[3];      /* 0x101C: counter skill learnt per slot */
+    u8 learntLevel[3];        /* 0x101F: level skill learnt per slot */
+    u8 levelGains[3][2];      /* 0x1022: levels A and B gained per slot */
+    u8 pad1028[0x1040 - 0x1028];
+    u8 stats[3][8];           /* 0x1040: the result stats per slot */
+    u8 pad1058[0x5F20 - 0x1058];
     GrowthFile *growth;       /* 0x5F20 */
+    u8 pad5F24[0x5F9C - 0x5F24];
+    u32 experience;           /* 0x5F9C: experience won */
+    u8 pad5FA0[0x5FB4 - 0x5FA0];
+    u16 defeated;             /* 0x5FB4: enemies defeated, bit per enemy */
+    u8 pad5FB6[0x5FC4 - 0x5FB6];
+    s8 penalty;               /* 0x5FC4: experience lost in quarters */
 } BattleWork;
 
 extern BattleWork *D_801E44C8;  /* 800ccce8 */
 extern GrowthFile *D_801E44E8;  /* the growth data file */
 extern Combatant *D_801E44EC;   /* the record being processed */
 extern u16 D_8006F8EA;          /* option flags */
+extern u32 D_801E44F0;          /* experience pool for level A */
+extern u32 D_801E44F4;
+extern u8 D_801E44F8[3][2];
+
+/* The battle's winnings (800ccce8 + 0x5f9c). */
+typedef struct {
+    u32 experience;           /* 0x00 */
+    u8 pad4[0x14];
+    u16 defeated;             /* 0x18: 800d2c9c */
+} Winnings;
+extern Winnings D_800D2C84;
+extern u8 D_800D2FC4;           /* rewards are skipped */
+extern u8 D_800D2DCC[11];       /* per slot: present */
+extern u8 D_800C3D1B[8][4];     /* per enemy: [0] nonzero, no rewards */
+extern u8 D_800D3294;
+extern u8 D_800D2D50;
+extern u8 D_8006F9DD;
+u16 func_80089C08(u8 enemy);
+void func_800BCD98(s32 arg);
+void func_801E1FB8(u32 experience);
+void func_801E2794(void);
+void func_801E211C(void);
+void func_801E24B0(void);
+
+/* Battle exit (func_801E252C). */
+typedef struct {
+    void *data;
+    u8 pad[0x5C];
+} BattleBlock;
+extern BattleBlock D_800D3720[8]; /* every other one is released */
+typedef struct {
+    void *data;
+} BattleHandle;
+extern BattleHandle D_800C3E5C[10];
+extern u8 D_800C3D48;
+extern void *D_800D3284;
+extern void *D_800D328C;
+extern void *D_800D329C;
+extern void *D_800C3E24;
+extern void *D_800D39F0;
+extern void *D_800C3EA4;
+extern u8 D_800594F8;
+extern u8 D_800D3338;
+extern u8 D_8005947C;
+extern u16 D_8006F94E;
+extern u8 D_800594D0;
+extern s32 D_800C3E54;
+void func_8001ACA4(void);
+void func_800199CC(s32 mode);
+void func_800BFBA0(void);
+void func_8003218C(s32 arg);
+void func_80039C4C(s32 arg);
+void func_800399D4(s32 arg);
+void func_800B8774(void);     /* levels A and B per slot before the battle */
+void func_801E2EB0(u32 experience, s16 slot, s16 reserve);
+void func_801E308C(void);          /* experience pool for level B */
+void func_801E335C(void);
+u8 func_801E3BE0(u8 id);
+u8 func_801E3D54(u8 id);
+void func_801E3E14(u8 id);
+void func_801E3EA4(void);
+void func_801E3F28(u8 id);
+void func_801E3FB0(void);
+void func_801E3500(void);
 
 /* Sound and input. */
 typedef struct {
@@ -381,11 +533,6 @@ typedef struct {
 } Inventory;
 extern Inventory D_8006F36C;
 
-/* The drops rolled for the defeated enemies (800ccce8 + 0x100c). */
-typedef struct {
-    u8 categories[8];
-    u8 ids[8];
-} Drops;
 extern Drops D_800CDCF4;
 
 void func_801E1370(u8 id, u8 count, u8 *ids, u8 *counts, u8 size);
@@ -442,6 +589,21 @@ void func_801E41B4(void);
 void *func_8008ABB8(s32 size, s32 top);        /* heap allocate */
 void bzero(void *dest, s32 size);
 void func_80039FF8(void);
+s32 rand(void);                                 /* libc */
+u8 func_801E3610(u8 stat, u8 target, u8 cap, u8 level);
+u16 func_801E3700(u16 maxHp, u8 level);
+u8 func_801E38CC(u8 maxEp, u8 level);
 void func_801E0ACC(u8 member);
+
+/* The skills each member knew before the battle (counter, level bits). */
+typedef struct {
+    u16 counterSkills;
+    u16 levelSkills;
+} KnownSkills;
+extern KnownSkills D_800C3E0C[3];
+extern u8 D_800D2FA0[4];        /* the skill mark icon: width, -, u, v */
+u16 func_80089C6C(u16 bits, u8 k);              /* bit k of a skill set */
+void *func_80033784(u8 id, s32 k);              /* counter skill names */
+void *func_80033908(s32 index);                 /* level skill names */
 
 #endif

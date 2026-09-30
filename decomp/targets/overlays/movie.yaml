@@ -42,7 +42,10 @@ segments:
     start: 0x0
     vram: 0x8006faf0
     subsegments:
-      - [0x0, .rodata, movie]
+      # An unreferenced word (8) ahead of the unit's rodata; the unit's own
+      # rodata starts at 0x4 (its 8-aligned jump tables sit at 4 mod 8).
+      - [0x0, rodata, movie_prefix]
+      - [0x4, .rodata, movie]
       - [0x9f8, c, movie]
       - [0x7358, data, movie_data]
       # The decoded length is not word-aligned; its final bytes are zero.

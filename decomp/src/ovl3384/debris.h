@@ -59,10 +59,12 @@ typedef struct {
     u8 kind;
 } PacketDesc;
 
-/* A model; only the member the module reads. */
+/* A model; only the members the module reads. */
 typedef struct {
-    u8 unk0[0x10];
-    s32 packets; /* +10: offset of the packet descriptors */
+    s32 vertices; /* +00: offset of the vertices */
+    u8 unk4[0xC];
+    s32 packets;  /* +10: offset of the packet descriptors */
+    s32 count;    /* +14: primitives */
 } Model;
 
 /* One flying piece of the broken model (0x54 bytes). */
@@ -89,5 +91,25 @@ typedef struct {
     Model *model;       /* +6c */
     Piece *pieces;      /* +70 */
 } DebrisTask;
+
+typedef struct {
+    s32 vx, vy, vz, pad;
+} VECTOR;
+
+VECTOR *ApplyMatrixLV(MATRIX *m, VECTOR *v0, VECTOR *v1);
+void *func_80031BDC(s32 size, s32 mode); /* allocate a heap block */
+void *func_8001D1D8(s32 size, void *owner, void (*update)(TaskNode *),
+                    void (*draw)(TaskNode *), void (*destroy)(TaskNode *)); /* create a task */
+void *memcpy(void *dst, const void *src, u32 n);
+s32 rand(void);
+s32 func_800B16A4(Model *model);  /* size of the model's primitives */
+void func_800B1720(Model *model, void *prims, s32 arg2, s32 arg3); /* build the model's primitives */
+void func_800C0828(SVECTOR *from, SVECTOR *to, SVECTOR *angles); /* direction angles */
+
+extern SVECTOR D_801FCE14; /* origin */
+
+void func_801FC074(TaskNode *node);
+void func_801FC0CC(TaskNode *node);
+void func_801FC1A8(TaskNode *node);
 
 #endif

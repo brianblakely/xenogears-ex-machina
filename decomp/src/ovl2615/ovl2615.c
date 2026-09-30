@@ -48,7 +48,7 @@ void func_801E4160(void) {
 
     D_800D3280 = 0;
     D_800D3364 = D_8005949C;
-    D_800C3EB0 = D_8005949C;
+    D_800C3EB0.scene = D_8005949C;
     for (i = 0; i < 3; i++) {
         if ((D_800C3EB4.slot[i].id & 0x7F) != NO_COMBATANT) {
             D_800D2DCC.present[i] = 1;
