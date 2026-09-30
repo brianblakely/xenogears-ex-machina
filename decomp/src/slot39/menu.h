@@ -578,17 +578,26 @@ typedef struct MenuBlock434 {
     u8 padA19[0x3];
 } MenuBlock434;
 
-/* A portrait frame (*(state + 364)). */
+/* A portrait window (*(state + 364), 720 bytes): a 3D panel of corner, edge
+ * and frame sprites around a translucent fill, two quads per piece (one per
+ * draw buffer); the same layout as ovl2600's panels. */
 typedef struct MenuPortrait {
-    POLY_FT4 pieces[15][2]; /* 0: twelve border pieces, then the frame's side, top and bottom */
-    POLY_G4 fill[2]; /* 4B0: window background */
-    DR_MODE fillMode[2]; /* 4F8 */
-    SVECTOR verts[16][4]; /* 510: per piece; 12 the whole window, 13 side, 14 top, 15 bottom */
-    u8 pad710[0x4];
-    s32 unk714; /* 714: drawn in the current view (else under an identity rotation) */
-    s32 unk718; /* 718: ordering table depth */
-    u8 buffer; /* 71C */
-    u8 unk71D; /* 71D: has the frame pieces */
+    POLY_FT4 corner[8];      /* 0: corner sprite parts */
+    POLY_FT4 edge[4][4];     /* 140: top, bottom, left and right edges, two pieces each */
+    POLY_FT4 frameSide[2];   /* 3C0: sprite 106 */
+    POLY_FT4 frameEnds[4];   /* 410: sprite 105 at the top, flipped at the bottom */
+    POLY_G4 fill[2];         /* 4B0 */
+    DR_MODE fillMode[2];     /* 4F8 */
+    SVECTOR cornerAt[16];    /* 510: four corner quads */
+    SVECTOR edgeAt[4][2][4]; /* 590: two quads per edge */
+    SVECTOR fillAt[4];       /* 690 */
+    SVECTOR sideAt[4];       /* 6B0 */
+    SVECTOR endsAt[8];       /* 6D0: top and bottom quads */
+    s32 cornerParts;         /* 710: corner parts built */
+    s32 style;               /* 714: 0 draws under an identity rotation */
+    s32 depth;               /* 718: ordering table depth */
+    u8 buffer;               /* 71C: buffer it was laid out for */
+    u8 framed;               /* 71D: frame sprites built */
 } MenuPortrait;
 
 /* The menu mode's state (*D_800625A0). */
@@ -1007,6 +1016,7 @@ void func_801E8DA8(u8 image, u8 row);
 void func_801E7C50(MenuLabelSlot *label, s32 row, s32 arg2, s32 arg3);
 void func_801E920C(POLY_FT4 *poly, s32 x, s32 y, s32 u, s32 v, s32 w, s32 h);
 void func_801E927C(POLY_FT4 *poly);
+void func_801E91C4(POLY_FT4 *poly);
 void func_801E5B3C(void);
 void func_801E61B0(void);
 void func_801E6AE8(u8 index, MenuViewSet *set);
