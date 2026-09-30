@@ -14,6 +14,7 @@
 #include "effect.h"
 #include "objects.h"
 #include "screen.h"
+#include "sprite.h"
 
 /* Select script index of an effect script file: copy its entry into
  * D_800C3BD0 (relocating its offsets to addresses unless the file is already
@@ -376,11 +377,86 @@ void func_800B3E04(void) {
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B3F04);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B4EDC);
+/* Copy the sprite's current part's 8 x 8 texture block and its 16-colour
+ * CLUT row to VRAM (0x3F0, 0x1F0) and (0x3F0, 0x1EE). */
+void func_800B4EDC(BattleSprite *sprite) {
+    SpriteImagePart *part = sprite->view->part;
+    RECT rect;
+    u16 tpage;
+    u16 clut;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B4F88);
+    tpage = part->tpage;
+    rect.x = (part->u >> 2) + ((tpage & 0xF) << 6);
+    rect.y = part->v + ((tpage << 4) & 0x100);
+    rect.w = 8;
+    rect.h = 8;
+    MoveImage(&rect, 0x3F0, 0x1F0);
+    clut = part->clut;
+    rect.w = 16;
+    rect.h = 1;
+    rect.x = clut & 0x3F;
+    rect.y = (clut >> 6) & 0x1FF;
+    MoveImage(&rect, 0x3F0, 0x1EE);
+}
 
+/* The matrix of the sprite's anchor index: its angles, at the anchor's
+ * offset (mirrored with the sprite, scaled) from the sprite's position, in
+ * the sprite's screen matrix. */
+void func_800B4F88(BattleSprite *sprite, s32 index, Matrix *m) {
+    SpriteAnchor *anchor;
+    s32 x;
+    s32 y;
+    SVector angles;
+
+    if (sprite->view != NULL) {
+        anchor = (SpriteAnchor *)(index * sizeof(SpriteAnchor) + (s32)sprite->view->anchors);
+        y = anchor->y;
+        x = anchor->x;
+        if ((sprite->motion.word >> 2) & 1) {
+            x = -x;
+        }
+        y = y * sprite->scale / 4096;
+        x = x * sprite->scale / 4096;
+        angles.vx = anchor->angle[0];
+        angles.vy = sprite->view->anchors[index].angle[1];
+        angles.vz = sprite->view->anchors[index].angle[2];
+        func_8003F738(&angles, m);
+        m->t[0] = sprite->view->matrix.t[0] + x;
+        m->t[1] = sprite->view->matrix.t[1] + y;
+        m->t[2] = sprite->view->matrix.t[2];
+        SetMulMatrix(m, &sprite->view->matrix);
+    }
+}
+
+#ifdef NON_MATCHING
+/* The offsets of the sprite's five trail anchors (D_800C356C), mirrored with
+ * the sprite and scaled, as points (x, y, 0) of out, when it is drawn one
+ * sided. */
+void func_800B50D4(BattleSprite *sprite, SVector *out) {
+    SpriteAnchor *anchor;
+    s32 i;
+    s32 x;
+    s32 y;
+
+    if ((sprite->render.word & 3) == 1 && sprite->view != NULL && sprite->view->anchors != NULL) {
+        for (i = 0; i != 5; i++) {
+            anchor = &sprite->view->anchors[D_800C356C[i]];
+            x = anchor->x;
+            y = anchor->y;
+            if ((sprite->motion.word >> 2) & 1) {
+                x = -x;
+            }
+            x = x * sprite->scale / 8192;
+            y = y * sprite->scale / 8192;
+            out[i].vx = x;
+            out[i].vy = y;
+            out[i].vz = 0;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B50D4);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B51B0);
 
@@ -390,7 +466,17 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B56
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B572C);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B57E4);
+/* The distance from the sprite to its target. */
+s32 func_800B57E4(BattleSprite *sprite) {
+    Vector delta;
+    Vector squares;
+
+    delta.vx = sprite->target[0] - sprite->x.part.whole;
+    delta.vy = sprite->target[1] - sprite->y.part.whole;
+    delta.vz = sprite->target[2] - sprite->z.part.whole;
+    func_8004A414(&delta, &squares);
+    return SquareRoot0(squares.vx + squares.vz + squares.vy);
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B5854);
 

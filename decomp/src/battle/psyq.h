@@ -155,6 +155,7 @@ void func_80049BDC(Matrix *m0, Matrix *m1);              /* multiply m1 by m0 */
 void OuterProduct0(Vector *v0, Vector *v1, Vector *out);
 void SetLightMatrix(Matrix *m);
 void SetTransMatrix(Matrix *m);
+Matrix *SetMulMatrix(Matrix *m0, Matrix *m1);
 s32 SquareRoot0(s32 value);
 void SetBackColor(s32 rbk, s32 gbk, s32 bbk);
 void SetColorMatrix(Matrix *m);
