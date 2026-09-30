@@ -3157,14 +3157,13 @@ void func_8008EC30(void) {
     FIELD_MOVIE.unk2A = func_800ACDEC(3);
     FIELD_MOVIE.unk2E = func_800ACDEC(5);
     mode = func_800ACDEC(7);
-    layout = mode & 0xF;
     FIELD_MOVIE.mode = mode;
     D_800ADB80 = mode & 0xC0;
     FIELD_MOVIE.width = 0x140;
     FIELD_MOVIE.height = 0x100;
-    FIELD_MOVIE.mode = layout;
+    FIELD_MOVIE.mode &= 0xF;
     FIELD_MOVIE.sound_start = 1;
-    switch (layout) {
+    switch (FIELD_MOVIE.mode) {
     case 0:
         FIELD_MOVIE.x = 0x140;
         FIELD_MOVIE.y = 0;
@@ -3457,7 +3456,9 @@ s32 func_8008A558(void);
 
 #ifdef NON_MATCHING
 /* Select the field music track (operand 1). Without D_800ADB1C the track is
- * only recorded; otherwise yield until the music system can take a change. */
+ * only recorded; otherwise yield until the music system can take a change.
+ * NON_MATCHING: the original places the second yield after the change branch,
+ * storing the comparison's constant 1. */
 void func_8008F7B8(void) {
     s32 track;
 
@@ -3472,7 +3473,9 @@ void func_8008F7B8(void) {
         D_800B0078->pc += 3;
     } else if (func_8008A558() != 0 || D_800ADBDC == 0) {
         D_800B00C0 = 1;
-    } else if (D_8004F354 != 1 && D_8004F308 != -1) {
+    } else if (D_8004F354 == 1 || D_8004F308 == -1) {
+        D_800B00C0 = 1;
+    } else {
         if (track != D_8004F324) {
             func_8001B66C();
             D_8004F324 = track;
@@ -3480,8 +3483,6 @@ void func_8008F7B8(void) {
             func_80085B20(track, 0);
         }
         D_800B0078->pc += 3;
-    } else {
-        D_800B00C0 = 1;
     }
 }
 #else
@@ -5054,7 +5055,6 @@ void func_80094158(void) {
     func_80072254(D_800AFD1C);
 }
 
-#ifdef NON_MATCHING
 /* Event 0xe9: the reverse shake of 0xe8, run while flag 0x100000 is set
  * (cleared once op3 frames have passed); the direction offsets are negated
  * and the target is not reset first. */
@@ -5098,8 +5098,7 @@ void func_800943AC(void) {
                 done->unkE2 = 0;
                 done->flags &= ~0x100000;
                 done->state.word &= ~0x20;
-                actor = D_800B0078;
-                actor->pc += 7;
+                D_800B0078->pc += 7;
             }
         }
     } else {
@@ -5107,9 +5106,6 @@ void func_800943AC(void) {
     }
     func_80072254(D_800AFD1C);
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_800943AC);
-#endif
 
 extern s32 D_8004F318;
 extern s32 D_8004F328;
@@ -9494,7 +9490,9 @@ void func_800A06E8(void) {
 }
 
 #ifdef NON_MATCHING
-/* Event 16: the current actor becomes party character operand 1 (ff, fe, fd: party slots 2, 1, 0). A party member takes its slot (slot 0 becomes the controlled actor), its sprite (or sprite 800ae294[character] of the alternate set 800b2268) and map entry variable 2; others hide and end their script. The sprite-table address keeps 800b2268 in a different register order (a1*4+4 first). */
+/* Event 16: the current actor becomes party character operand 1 (ff, fe, fd: party slots 2, 1, 0). A party member takes its slot (slot 0 becomes the controlled actor), its sprite (or sprite 800ae294[character] of the alternate set 800b2268) and map entry variable 2; others hide and end their script.
+ * NON_MATCHING: the original reuses the 800b2268 value loaded for the test in
+ * the sprite index; this form reloads it. */
 void func_800A08B8(void) {
     FieldDescriptor *descriptor;
     s32 character;
@@ -9517,7 +9515,7 @@ void func_800A08B8(void) {
         if (D_800B2078.unk2268 != 0) {
             sprites = D_800AF880.components.sprites;
             func_80076AC0(D_800AFD1C, D_800AE294[character] + D_800B2078.unk2268,
-                          (u8 *)(sprites[D_800AE294[character] + D_800B2078.unk2268 + 1] + (s32)sprites),
+                          (u8 *)(*(sprites + D_800AE294[character] + 1 + D_800B2078.unk2268) + (s32)sprites),
                           0, 0, (D_800AE294[character] + D_800B2078.unk2268) | 0x80, 1);
             D_800B0078->flags = (D_800B0078->flags | 0x400) & ~0x300;
             if (D_8005A39C->unk22B1[slot] != 0) {
