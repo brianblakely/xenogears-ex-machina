@@ -139,16 +139,21 @@ typedef struct MenuParty {
     u8 ready[3]; /* 60 */
     u8 pad63[0x4];
     u8 unk67; /* 67 */
-    u8 pad68[0x4];
+    u8 unk68; /* 68: card headers shown */
+    u8 pad69[0x3];
 } MenuParty;
 
 /* Screen images (*(state + 350)). */
 typedef struct MenuImages {
-    u8 pad0[0x1180];
+    POLY_FT4 packets[56]; /* 0 */
+    POLY_FT4 packets2[56]; /* 8C0 */
     RECT copy; /* 1180: the screen area copied into the other buffer each frame */
-    u8 pad1188[0xA];
-    u8 captured; /* 1192 */
-    u8 refresh; /* 1193 */
+    s32 count; /* 1188 */
+    s32 count2; /* 118C */
+    u8 buffer; /* 1190 */
+    u8 buffer2; /* 1191 */
+    u8 captured; /* 1192: images dimmed (inside a command) */
+    u8 refresh; /* 1193: dimming last applied */
 } MenuImages;
 
 /* Shared primitive block (*(state + 348)). */
@@ -168,12 +173,18 @@ typedef struct MenuPrims {
 
 /* One file entry of a card listing. */
 typedef struct MenuCardFile {
-    u8 pad0[0x18];
+    s32 iconV[6]; /* 0: icon texture row per animation frame (+4cc) */
     char name[21]; /* 18: directory entry name */
     u8 pad2D[0x2B];
     u8 state; /* 58 */
     u8 pad59[0x3];
 } MenuCardFile;
+
+/* A memory card's header on the file screen: its label and name sprites. */
+typedef struct MenuCardHeader {
+    POLY_FT4 label[2]; /* 0 */
+    POLY_FT4 name[4];  /* 50 */
+} MenuCardHeader;
 
 /* Memory-card state (*(state + 32c)). */
 typedef struct MenuCard {
@@ -186,7 +197,8 @@ typedef struct MenuCard {
     char saveTitle[0x5C]; /* 4B98: Shift-JIS */
     u8 savePalette[0x20]; /* 4BF4 */
     u8 saveIcon[0x80]; /* 4C14 */
-    u8 pad4C94[0x2E0];
+    u8 pad4C94[0x100];
+    MenuCardHeader cardHeaders[2]; /* 4D94: per port */
     s32 result[2]; /* 4F74: per port: last card check result */
     s32 cursor; /* 4F7C: file cursor over both ports (port 2 from 15) */
     s32 unk4F80; /* 4F80 */
@@ -564,19 +576,39 @@ typedef struct MenuBlock358 {
 
 /* The equipment panel block (*(state + 35c)). */
 typedef struct MenuBlock35C {
-    POLY_FT4 polys[231]; /* 0 */
-    u8 pad2418[0x8];
-    SVECTOR verts[474]; /* 2420 */
-    u8 pad32F0[0x1];
-    u8 buffer; /* 32F1 */
-    u8 pad32F2[0x1];
-    u8 kind; /* 32F3: parts built */
+    POLY_FT4 polys[94];            /* 0: stat name parts (801d7f50) */
+    POLY_FT4 rowA[7][8];           /* EB0: per row: parts, two per buffer */
+    POLY_FT4 rowB[7][8];           /* 1770 */
+    POLY_G4 bars[7][2];            /* 2030: per row, per buffer */
+    POLY_G4 highlights[7][2];      /* 2228 */
+    SVECTOR verts[188];            /* 2420: stat name quads */
+    SVECTOR rowAAt[7][16];         /* 2A00 */
+    SVECTOR rowBAt[7][16];         /* 2D80 */
+    SVECTOR barAt[7][4];           /* 3100 */
+    SVECTOR highlightAt[7][4];     /* 31E0 */
+    u8 rowACount[7];               /* 32C0 */
+    u8 rowABuffer[7];              /* 32C7 */
+    u8 rowBCount[7];               /* 32CE */
+    u8 rowBBuffer[7];              /* 32D5 */
+    u8 barBuffer[7];               /* 32DC */
+    u8 highlightBuffer[7];         /* 32E3 */
+    u8 rowShown[7];                /* 32EA */
+    u8 buffer;                     /* 32F1 */
+    u8 highlighted;                /* 32F2 */
+    u8 kind;                       /* 32F3: stat name parts built */
 } MenuBlock35C;
 
 /* A position record passed to the panel builders (+28 base). */
 typedef struct MenuAnchor {
-    u8 pad0[0x28];
-    s32 base; /* 28 */
+    s32 parts[9]; /* 0: layout sprite positions */
+    s32 frame; /* 24: frame sprite */
+    s32 base; /* 28: level digits */
+    s32 unk2C; /* 2C */
+    s32 hp; /* 30 */
+    s32 hpMax; /* 34 */
+    s32 ep; /* 38 */
+    s32 epMax; /* 3C */
+    s32 label; /* 40: name label */
 } MenuAnchor;
 
 /* A panel built by 801ce0cc: frame quads and part lists (two quads per entry). */
@@ -701,6 +733,19 @@ typedef struct MenuIndicator {
     u8 pad7B9[0x3];
 } MenuIndicator;
 
+/* A file screen slot (*(state + 3a8 + 4 * slot)): its icon, the two
+ * connector lines to the next slot and the cursor box, one per buffer. */
+typedef struct MenuSlotImage {
+    POLY_FT4 icon[2];  /* 0 */
+    LINE_F3 lineA[2];  /* 50 */
+    LINE_F3 lineB[2];  /* 80 */
+    POLY_F4 box[2];    /* B0 */
+    SVECTOR iconAt[4]; /* E0: also the cursor box */
+    SVECTOR lineAAt[4]; /* 100 */
+    SVECTOR lineBAt[4]; /* 120 */
+    DR_MODE boxMode[2]; /* 140 */
+} MenuSlotImage;
+
 /* The menu mode's state (*D_800625A0). */
 typedef struct MenuState {
     MenuMover movers[3]; /* 0 */
@@ -749,7 +794,7 @@ typedef struct MenuState {
     MenuPortrait *portraits[7]; /* 364 */
     MenuMark *portraitMarks[7]; /* 380 */
     MenuFieldBlock *fieldBlocks[3]; /* 39C: three 127c-byte field blocks */
-    u8 *images[32]; /* 3A8 */
+    MenuSlotImage *images[32]; /* 3A8: file screen slots */
     MenuMarkers *markers; /* 428: marker block (14c bytes) */
     MenuBlock42C *block42C; /* 42C: 1198 bytes */
     MenuBlock430 *block430; /* 430: 1094 bytes */
@@ -908,6 +953,7 @@ extern s32 D_801E977C[2]; /* detail panel tab sprites */
 extern s32 D_801E9D40[7]; /* stat name positions per row: x */
 extern s32 D_801E9D5C[7]; /* y */
 extern s32 D_801EA45C[];  /* stat name sprites, seven per start row */
+extern s32 D_801EA4DC[]; /* status panel layout sprites, nine per layout, ffff none */
 extern s32 D_801E9CF0;   /* hp */
 extern s32 D_801E9CF4;
 extern s32 D_801E9CF8;   /* hp max */
@@ -1008,9 +1054,12 @@ void func_8003F738(SVECTOR *angles, MATRIX *m); /* RotMatrix */
 void TransMatrix(MATRIX *m, VECTOR *t);      /* TransMatrix */
 void SetRotMatrix(MATRIX *m);                 /* SetRotMatrix */
 void SetTransMatrix(MATRIX *m);                 /* SetTransMatrix */
+void RotTransPers3(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, s32 *sxy0, s32 *sxy1, s32 *sxy2, s32 *p,
+                   s32 *flag); /* RotTransPers3 */
 void PushMatrix(void);
 void PopMatrix(void);
 u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y);
+u16 GetClut(s32 x, s32 y);                   /* GetClut */
 void ClearOTagR(u32 *ot, s32 count);  /* ClearOTagR */
 void MoveImage(RECT *rect, s32 x, s32 y); /* MoveImage */
 void DrawOTag(u32 *ot);             /* DrawOTag */
@@ -1056,6 +1105,7 @@ u8 func_801CB304(void);
 u8 func_801CBD90(u8 arg);
 u8 func_801CC6D8(void);
 u8 func_801CD2AC(void);
+u8 func_801C93A8(void);
 void func_801C7BF4(void);
 void func_801C7D78(void);
 void func_801C7F34(u32 frames);
@@ -1169,7 +1219,7 @@ void func_801CE860(void);
 void func_801CEC40(void);
 void func_801CF308(void);
 void func_801CF37C(void);
-void func_801CF5E4(s32 arg0, s32 arg1, s32 arg2);
+void func_801CF5E4(s32 first, s32 firstSlot, s32 end);
 void func_801CF8D8(void);
 void func_801CFB48(void);
 void func_801CFF64(void);
@@ -1208,7 +1258,8 @@ void func_801D22C4(void);
 void func_801C8164(POLY_G4 *poly, u8 r, u8 g, u8 b);
 void SetLineF3(LINE_F3 *line);         /* SetLineF3 */
 void SetPolyF4(POLY_F4 *poly);         /* SetPolyF4 */
-u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y); /* GetTPage */
+u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y);
+u16 GetClut(s32 x, s32 y);                   /* GetClut */ /* GetTPage */
 void SetDrawMode(DR_MODE *p, s32 dfe, s32 dtd, s32 tpage, RECT *tw); /* SetDrawMode */
 void func_801D22F4(u8 arg0);
 void func_801D2484(void);

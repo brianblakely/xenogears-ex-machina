@@ -2315,7 +2315,88 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CBD90);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CC6D8);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CD2AC);
+/* The file screen's delete command: pick a file with the cursor, confirm and
+ * erase it, then force the cards to be scanned again. Returns 1 when the
+ * card check ended the screen. */
+u8 func_801CD2AC(void) {
+    char path[64];
+    u8 first;
+    s32 again;
+    u8 ended;
+    s32 i;
+
+    first = 1;
+    again = 1;
+    ended = 0;
+    func_801CADB0();
+    do {
+        if (func_801C93A8()) {
+            ended = 1;
+            break;
+        }
+        if (first) {
+            first = 0;
+            if (D_800625A0->party->unk33 != 0) {
+                func_801D32B4();
+            }
+            D_800625A0->markers->visible[0] = 1;
+        }
+        if (func_801C9BCC(0) == 0 && (D_800625A0->card->cursor = func_801C9D34(0)) == 0xff) {
+            D_800625A0->markers->visible[0] = 0;
+            D_800625A0->party->unkB = 0;
+            func_801CACF8(0x62, 0xff, 0);
+            break;
+        }
+        D_800625A0->party->unk2F = 1;
+        switch (func_801CA750(0)) {
+        case 1:
+            D_800625A0->markers->unk144[0] = 0;
+            D_800625A0->card->mode = 0;
+            if ((u8)func_801CACF8(0x56, 0x59, 1)) {
+                func_801D2F4C(0x50);
+                D_800625A0->party->unk2F = 0;
+                D_800625A0->party->unkB = 0;
+                D_800625A0->card->unk4F80 = 0xff;
+                if (D_800625A0->card->cursor < 15) {
+                    __builtin_memcpy(path, D_801C50A8, 6);
+                } else {
+                    __builtin_memcpy(path, D_801C50B0, 6);
+                }
+                strcat(path, D_800625A0->card->files[D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]]]
+                                 .name);
+                func_800405B4(path);
+                func_801D32B4();
+                D_800625A0->sounds = 1;
+                func_801C8574(0x34);
+                D_800625A0->sounds = 0;
+                func_801CACF8(0x5c, 0xff, 0);
+                D_800625A0->card->mode = 2;
+                while (D_800625A0->cardPollTimer != 1) {
+                    func_801C7BF4();
+                }
+                for (i = 0; i < 32; i++) {
+                    D_800625A0->card->fileSlots[i] = 0xff;
+                    D_800625A0->card->ours[i] = 0;
+                    D_800625A0->card->files[i].state = 0;
+                }
+                D_800625A0->card->scanned[0] = 0;
+                D_800625A0->card->scanned[1] = 0;
+                D_800625A0->card->unk4F8C[0] = 0xff;
+                D_800625A0->card->unk4F8C[1] = 0xff;
+                D_801E9778 = 1;
+            }
+            D_800625A0->markers->unk144[0] = 1;
+            /* fallthrough */
+        case 2:
+            again = 0;
+            break;
+        }
+    } while (again);
+    D_800625A0->card->mode = 1;
+    D_800625A0->cardsPresent = 1;
+    D_800625A0->sounds = 1;
+    return ended;
+}
 
 /* Run the card command chosen on the file screen (0 copy?, 1 delete?, 2 the
  * save or load of the menu kind); returns 0 when the menu should close. */
@@ -2356,7 +2437,39 @@ u8 func_801CD710(u8 arg) {
     return stay;
 }
 
+/* Build status panel `panel`'s layout sprites (layout `layout`) for character
+ * `ch` on row `row` at the positions of `x` and `y`, its frame sprite (14b +
+ * row) and its name label (the character's or, in layout 1, its gear's).
+ * Register allocation and the order of the last call's argument arithmetic
+ * differ. */
+#ifdef NON_MATCHING
+void func_801CD81C(MenuPanel *panel, u8 ch, u8 row, MenuAnchor *x, MenuAnchor *y, u8 layout) {
+    s32 i;
+
+    panel->count0 = 0;
+    for (i = 0; i < 9; i++) {
+        if (D_801EA4DC[layout * 9 + i] != 0xffff) {
+            panel->count0 += func_8002675C(D_800625A0->sheet, D_801EA4DC[layout * 9 + i],
+                                           &panel->list0[panel->count0 * 2], D_800625A0->bufferIndex,
+                                           x->parts[i], row * 56 + y->parts[i], 0x1000);
+        }
+    }
+    func_8002675C(D_800625A0->sheet, row + 0x14b, panel->frameA, D_800625A0->bufferIndex, x->frame,
+                  row * 56 + y->frame, 0x1000);
+    func_801E927C(&panel->frameB[D_800625A0->bufferIndex]);
+    panel->frameB[D_800625A0->bufferIndex].tpage = GetTPage(0, 0, 0x180, 0);
+    if (layout == 0) {
+        panel->frameB[D_800625A0->bufferIndex].clut = (ch & 1) ? D_80059414 : D_800595D4;
+    } else {
+        panel->frameB[D_800625A0->bufferIndex].clut = (D_8006D8A0[ch].gear & 1) ? D_800595D4 : D_80059414;
+    }
+    func_801E920C(&panel->frameB[D_800625A0->bufferIndex], (u16)x->label, (u16)(y->label + row * 56),
+                  (u8)(D_801EA578[layout * 3 + row] * 4), (u8)D_801EA5C4[layout * 3 + row], (layout * 3) * 8 + 0x48,
+                  13);
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CD81C);
+#endif
 
 /* Lay out character `ch`'s level digits (the last three of +62) at row `row`
  * of `panel` and prepare the +63 digits. */
@@ -2378,7 +2491,71 @@ void func_801CDB1C(MenuPanel *panel, u8 ch, u8 row, MenuAnchor *x, MenuAnchor *y
     panel->counts[1] = 0;
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CDC6C);
+/* Lay out status panel `panel`'s numbers for character `ch` on row `row`:
+ * hp (by digit position) and hp maximum (packed) of the character (three
+ * digits) or, in layout 1, of its gear (five digits); in layout 0 also ep and
+ * ep maximum (two digits). */
+void func_801CDC6C(MenuPanel *panel, u8 ch, u8 row, MenuAnchor *x, MenuAnchor *y, u8 layout) {
+    s32 digits;
+    s32 first;
+    s32 i;
+    s32 n;
+    u8 digit;
+
+    if (layout == 0) {
+        func_801C80B8(D_8006D8A0[ch].hp);
+        digits = 3;
+        first = 6;
+    } else {
+        digits = 5;
+        func_801C80B8(D_8006DFAC[D_8006D8A0[ch].gear].unk60);
+        first = 4;
+    }
+    panel->counts[2] = 0;
+    for (i = 0; i < digits; i++) {
+        digit = D_800625A0->digits[first + i];
+        if (digit != 0xff) {
+            panel->counts[2] += func_8002675C(D_800625A0->sheet, digit, &panel->list3[panel->counts[2] * 2],
+                                              D_800625A0->bufferIndex, i * 8 + x->hp, row * 56 + y->hp, 0x1000);
+        }
+    }
+    if (layout == 0) {
+        func_801C80B8(D_8006D8A0[ch].hpMax);
+    } else {
+        func_801C80B8(D_8006DFAC[D_8006D8A0[ch].gear].unk64);
+    }
+    panel->counts[3] = 0;
+    for (i = 0, n = 0; i < digits; i++) {
+        digit = D_800625A0->digits[first + i];
+        if (digit != 0xff) {
+            panel->counts[3] += func_8002675C(D_800625A0->sheet, digit, &panel->list4[panel->counts[3] * 2],
+                                              D_800625A0->bufferIndex, n * 8 + x->hpMax, row * 56 + y->hpMax, 0x1000);
+            n++;
+        }
+    }
+    if (layout == 0) {
+        func_801C80B8(D_8006D8A0[ch].ep);
+        panel->counts[4] = 0;
+        for (i = 0; i < 2; i++) {
+            digit = D_800625A0->digits[7 + i];
+            if (digit != 0xff) {
+                panel->counts[4] += func_8002675C(D_800625A0->sheet, digit, &panel->list5[panel->counts[4] * 2],
+                                                  D_800625A0->bufferIndex, i * 8 + x->ep, row * 56 + y->ep, 0x1000);
+            }
+        }
+        func_801C80B8(D_8006D8A0[ch].epMax);
+        panel->counts[5] = 0;
+        for (i = 0, n = 0; i < 2; i++) {
+            digit = D_800625A0->digits[7 + i];
+            if (digit != 0xff) {
+                panel->counts[5] += func_8002675C(D_800625A0->sheet, digit, &panel->list6[panel->counts[5] * 2],
+                                                  D_800625A0->bufferIndex, n * 8 + x->epMax, row * 56 + y->epMax,
+                                                  0x1000);
+                n++;
+            }
+        }
+    }
+}
 
 /* Build the parts of `panel` (801cd81c, 801cdb1c, 801cdc6c) and show it. */
 void func_801CE0CC(MenuPanel *panel, u8 a, u8 b, MenuAnchor *c, MenuAnchor *d, u8 e) {
@@ -2469,9 +2646,54 @@ void func_801CE540(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CE660);
+/* While party flag +7 is set, draw the detail panel: frame, portrait, tabs,
+ * layout parts and the number lists (level2, value40 and expNext are not
+ * drawn here). */
+void func_801CE660(void) {
+    if (D_800625A0->party->redraw7 != 0) {
+        func_801CE198(1, D_800625A0->block358->frameAt, D_800625A0->block358->frame, D_800625A0->block358->buffer);
+        func_801CE198(1, D_800625A0->block358->portraitAt, D_800625A0->block358->portrait, D_800625A0->block358->buffer);
+        func_801CE198(D_800625A0->block358->tabCount, D_800625A0->block358->tabsAt[0], D_800625A0->block358->tabs, D_800625A0->block358->tabBuffer);
+        func_801CE198(D_800625A0->block358->count, D_800625A0->block358->partsAt[0], D_800625A0->block358->parts, D_800625A0->block358->buffer);
+        func_801CE198(D_800625A0->block358->hpCount, D_800625A0->block358->hpAt[0], D_800625A0->block358->hp, D_800625A0->block358->buffer);
+        func_801CE198(D_800625A0->block358->hpMaxCount, D_800625A0->block358->hpMaxAt[0], D_800625A0->block358->hpMax, D_800625A0->block358->buffer);
+        func_801CE198(D_800625A0->block358->epCount, D_800625A0->block358->epAt[0], D_800625A0->block358->ep, D_800625A0->block358->buffer);
+        func_801CE198(D_800625A0->block358->epMaxCount, D_800625A0->block358->epMaxAt[0], D_800625A0->block358->epMax, D_800625A0->block358->buffer);
+        func_801CE198(D_800625A0->block358->levelCount, D_800625A0->block358->levelAt[0], D_800625A0->block358->level, D_800625A0->block358->buffer);
+        func_801CE198(D_800625A0->block358->value3CCount, D_800625A0->block358->value3CAt[0], D_800625A0->block358->value3C, D_800625A0->block358->buffer);
+        func_801CE198(D_800625A0->block358->expCount, D_800625A0->block358->expAt[0], D_800625A0->block358->exp, D_800625A0->block358->buffer);
+        func_801CE198(D_800625A0->block358->list1C70Count, D_800625A0->block358->list1C70At[0], D_800625A0->block358->list1C70, D_800625A0->block358->buffer);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CE860);
+/* Draw the shown rows of the block at +35c: while highlighted, each row's
+ * highlight quad and second part list; then its bar and first part list. */
+void func_801CE860(void) {
+    s32 i;
+    s32 p;
+    s32 flag;
+
+    for (i = 0; i < 7; i++) {
+        if (D_800625A0->block35C->rowShown[i] != 0) {
+            if (D_800625A0->block35C->highlighted != 0) {
+                RotTransPers4(&D_800625A0->block35C->highlightAt[i][0], &D_800625A0->block35C->highlightAt[i][1], &D_800625A0->block35C->highlightAt[i][2],
+                              &D_800625A0->block35C->highlightAt[i][3],
+                              (s32 *)&D_800625A0->block35C->highlights[i][D_800625A0->block35C->highlightBuffer[i]].x0,
+                              (s32 *)&D_800625A0->block35C->highlights[i][D_800625A0->block35C->highlightBuffer[i]].x1,
+                              (s32 *)&D_800625A0->block35C->highlights[i][D_800625A0->block35C->highlightBuffer[i]].x2,
+                              (s32 *)&D_800625A0->block35C->highlights[i][D_800625A0->block35C->highlightBuffer[i]].x3, &p, &flag);
+                AddPrim(&D_800625A0->current->ot[4], &D_800625A0->block35C->highlights[i][D_800625A0->block35C->highlightBuffer[i]]);
+                func_801CE198(D_800625A0->block35C->rowBCount[i], D_800625A0->block35C->rowBAt[i], D_800625A0->block35C->rowB[i], D_800625A0->block35C->rowBBuffer[i]);
+            }
+            RotTransPers4(&D_800625A0->block35C->barAt[i][0], &D_800625A0->block35C->barAt[i][1], &D_800625A0->block35C->barAt[i][2], &D_800625A0->block35C->barAt[i][3],
+                          (s32 *)&D_800625A0->block35C->bars[i][D_800625A0->block35C->barBuffer[i]].x0, (s32 *)&D_800625A0->block35C->bars[i][D_800625A0->block35C->barBuffer[i]].x1,
+                          (s32 *)&D_800625A0->block35C->bars[i][D_800625A0->block35C->barBuffer[i]].x2, (s32 *)&D_800625A0->block35C->bars[i][D_800625A0->block35C->barBuffer[i]].x3, &p,
+                          &flag);
+            AddPrim(&D_800625A0->current->ot[4], &D_800625A0->block35C->bars[i][D_800625A0->block35C->barBuffer[i]]);
+            func_801CE198(D_800625A0->block35C->rowACount[i], D_800625A0->block35C->rowAAt[i], D_800625A0->block35C->rowA[i], D_800625A0->block35C->rowABuffer[i]);
+        }
+    }
+}
 
 /* While party flag +8 is set, draw the sprites of the block at +35c. */
 void func_801CEB5C(void) {
@@ -2498,7 +2720,54 @@ void func_801CEBB4(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CEC40);
+/* While party flag +9 is set, draw both screen image lists, first applying
+ * a changed dimming (semi-transparent, 20h grey). */
+void func_801CEC40(void) {
+    s32 i;
+
+    if (D_800625A0->party->redraw9 != 0) {
+        if (D_800625A0->screenImages->captured != D_800625A0->screenImages->refresh) {
+            if (D_800625A0->screenImages->captured != 0) {
+                for (i = 0; i < D_800625A0->screenImages->count2; i++) {
+                    SetSemiTrans(D_800625A0->screenImages->packets2 + (i * 2 + D_800625A0->screenImages->buffer2), 1);
+                    SetShadeTex(D_800625A0->screenImages->packets2 + (i * 2 + D_800625A0->screenImages->buffer2), 0);
+                    D_800625A0->screenImages->packets2[i * 2 + D_800625A0->screenImages->buffer2].tpage |= 0x20;
+                    (D_800625A0->screenImages->packets2 + (i * 2 + D_800625A0->screenImages->buffer2))->r0 = 0x20;
+                    (D_800625A0->screenImages->packets2 + (i * 2 + D_800625A0->screenImages->buffer2))->g0 = 0x20;
+                    (D_800625A0->screenImages->packets2 + (i * 2 + D_800625A0->screenImages->buffer2))->b0 = 0x20;
+                }
+                for (i = 0; i < D_800625A0->screenImages->count; i++) {
+                    SetSemiTrans(D_800625A0->screenImages->packets + (i * 2 + D_800625A0->screenImages->buffer), 1);
+                    SetShadeTex(D_800625A0->screenImages->packets + (i * 2 + D_800625A0->screenImages->buffer), 0);
+                    D_800625A0->screenImages->packets[i * 2 + D_800625A0->screenImages->buffer].tpage |= 0x20;
+                    (D_800625A0->screenImages->packets + (i * 2 + D_800625A0->screenImages->buffer))->r0 = 0x20;
+                    (D_800625A0->screenImages->packets + (i * 2 + D_800625A0->screenImages->buffer))->g0 = 0x20;
+                    (D_800625A0->screenImages->packets + (i * 2 + D_800625A0->screenImages->buffer))->b0 = 0x20;
+                }
+            } else {
+                for (i = 0; i < D_800625A0->screenImages->count2; i++) {
+                    SetSemiTrans(D_800625A0->screenImages->packets2 + (i * 2 + D_800625A0->screenImages->buffer2), 0);
+                    SetShadeTex(D_800625A0->screenImages->packets2 + (i * 2 + D_800625A0->screenImages->buffer2), 0);
+                    D_800625A0->screenImages->packets2[i * 2 + D_800625A0->screenImages->buffer2].tpage |= 0x20;
+                    (D_800625A0->screenImages->packets2 + (i * 2 + D_800625A0->screenImages->buffer2))->r0 = 0x80;
+                    (D_800625A0->screenImages->packets2 + (i * 2 + D_800625A0->screenImages->buffer2))->g0 = 0x80;
+                    (D_800625A0->screenImages->packets2 + (i * 2 + D_800625A0->screenImages->buffer2))->b0 = 0x80;
+                }
+                for (i = 0; i < D_800625A0->screenImages->count; i++) {
+                    SetSemiTrans(D_800625A0->screenImages->packets + (i * 2 + D_800625A0->screenImages->buffer), 0);
+                    SetShadeTex(D_800625A0->screenImages->packets + (i * 2 + D_800625A0->screenImages->buffer), 0);
+                    D_800625A0->screenImages->packets[i * 2 + D_800625A0->screenImages->buffer].tpage |= 0x20;
+                    (D_800625A0->screenImages->packets + (i * 2 + D_800625A0->screenImages->buffer))->r0 = 0x80;
+                    (D_800625A0->screenImages->packets + (i * 2 + D_800625A0->screenImages->buffer))->g0 = 0x80;
+                    (D_800625A0->screenImages->packets + (i * 2 + D_800625A0->screenImages->buffer))->b0 = 0x80;
+                }
+            }
+            D_800625A0->screenImages->refresh = D_800625A0->screenImages->captured;
+        }
+        func_801CE2B4(D_800625A0->screenImages->count2, D_800625A0->screenImages->packets2, D_800625A0->screenImages->buffer2);
+        func_801CE2B4(D_800625A0->screenImages->count, D_800625A0->screenImages->packets, D_800625A0->screenImages->buffer);
+    }
+}
 
 /* While party flag +a is set, draw the two sprite lists of the block at +354. */
 void func_801CF308(void) {
@@ -2510,15 +2779,186 @@ void func_801CF308(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CF37C);
+/* In file selection (+4d8 == 2), draw the pulsing cursor box of every slot
+ * of the selected slot's file (only the selected slot when it is empty). */
+void func_801CF37C(void) {
+    MenuSlotImage *image;
+    s32 i;
+    s32 p;
+    s32 flag;
+    u8 file;
+    u8 match;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CF5E4);
+    if (D_800625A0->loadState == 2) {
+        file = D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]];
+        for (i = 0; i < 32; i++) {
+            match = 1;
+            if (file == D_800625A0->card->fileSlots[i]) {
+                if (file == 0xff) {
+                    match = i == D_801E981C[D_800625A0->card->cursor];
+                }
+                if (match) {
+                    image = D_800625A0->images[i];
+                    (image->box + D_800625A0->bufferIndex)->r0 = D_800625A0->unk4D4;
+                    (image->box + D_800625A0->bufferIndex)->g0 = D_800625A0->unk4D4;
+                    (image->box + D_800625A0->bufferIndex)->b0 = D_800625A0->unk4D4;
+                    RotTransPers4(&image->iconAt[0], &image->iconAt[1], &image->iconAt[2], &image->iconAt[3],
+                                  (s32 *)&image->box[D_800625A0->bufferIndex].x0,
+                                  (s32 *)&image->box[D_800625A0->bufferIndex].x1,
+                                  (s32 *)&image->box[D_800625A0->bufferIndex].x2,
+                                  (s32 *)&image->box[D_800625A0->bufferIndex].x3, &p, &flag);
+                    AddPrim(&D_800625A0->current->ot[4], &image->box[D_800625A0->bufferIndex]);
+                    AddPrim(&D_800625A0->current->ot[4], &image->boxMode[D_800625A0->bufferIndex]);
+                }
+            }
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CF8D8);
+/* Draw the file icons of card rows `first`..`end` - 1 that are in use into
+ * the file screen slots from `firstSlot` on: each icon's texture window (u by row,
+ * v by animation frame +4cc) and palette, projected and drawn. */
+void func_801CF5E4(s32 first, s32 firstSlot, s32 end) {
+    MenuSlotImage *image;
+    s32 row;
+    s32 slot;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CFB48);
+    row = first;
+    slot = firstSlot;
+    for (; row < end; row++) {
+        if (D_800625A0->card->files[row].state != 0) {
+            for (i = 0; i < D_800625A0->card->headers[row][3]; i++, slot++) {
+                image = D_800625A0->images[slot];
+                (image->icon + D_800625A0->bufferIndex)->u0 = row * 16;
+                (image->icon + D_800625A0->bufferIndex)->v0 = D_800625A0->card->files[row].iconV[D_800625A0->unk4CC];
+                (image->icon + D_800625A0->bufferIndex)->u1 = row * 16 + 16;
+                (image->icon + D_800625A0->bufferIndex)->v1 = D_800625A0->card->files[row].iconV[D_800625A0->unk4CC];
+                (image->icon + D_800625A0->bufferIndex)->u2 = row * 16;
+                (image->icon + D_800625A0->bufferIndex)->v2 = D_800625A0->card->files[row].iconV[D_800625A0->unk4CC] + 16;
+                (image->icon + D_800625A0->bufferIndex)->u3 = row * 16 + 16;
+                (image->icon + D_800625A0->bufferIndex)->v3 = D_800625A0->card->files[row].iconV[D_800625A0->unk4CC] + 16;
+                image->icon[D_800625A0->bufferIndex].clut = GetClut(row * 16, row / 16 + 0x1c1);
+                func_801CE198(1, image->iconAt, image->icon, D_800625A0->bufferIndex);
+            }
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CFF64);
+/* While the file screen is up, build (while party flag +68 is set) and draw
+ * the header of each present card: its label (122 on the cursor's card
+ * while +2f is set, else 115) and its name sprite. */
+void func_801CF8D8(void) {
+    u8 built[2];
+    s32 side;
+    s32 parts;
+    s32 i;
+    u8 normal;
+
+    built[1] = 0;
+    built[0] = 0;
+    if (D_800625A0->loadState != 0) {
+        for (side = 0; side < 2; side++) {
+            if (D_800625A0->card->present[side] != 0 && D_800625A0->party->unk68 != 0) {
+                normal = 1;
+                if (D_800625A0->party->unk2F != 0 && side == D_801E981C[D_800625A0->card->cursor] / 16) {
+                    normal = 0;
+                }
+                if (normal) {
+                    func_8002675C(D_800625A0->sheet, 0x115, D_800625A0->card->cardHeaders[side].label,
+                                  D_800625A0->bufferIndex, side * 0x90 + 0x1e, 0x36, 0x1000);
+                } else {
+                    func_8002675C(D_800625A0->sheet, 0x122, D_800625A0->card->cardHeaders[side].label,
+                                  D_800625A0->bufferIndex, side * 0x90 + 0x1e, 0x36, 0x1000);
+                }
+                parts = func_8002675C(D_800625A0->sheet, side + 0x162, D_800625A0->card->cardHeaders[side].name,
+                                      D_800625A0->bufferIndex, side * 0x90 + 0x1b, 0x36, 0x1000);
+                built[side] = 1;
+            }
+            if (built[side]) {
+                for (i = 0; i < parts; i++) {
+                    AddPrim(&D_800625A0->current->ot[4],
+                            &D_800625A0->card->cardHeaders[side].name[i * 2 + D_800625A0->bufferIndex]);
+                }
+                AddPrim(&D_800625A0->current->ot[4],
+                        &D_800625A0->card->cardHeaders[side].label[D_800625A0->bufferIndex]);
+            }
+        }
+    }
+}
+
+/* While the file screen is up, draw the connector lines of every slot but
+ * the last of each present card: red within the selected file during file
+ * selection, green otherwise. */
+void func_801CFB48(void) {
+    MenuSlotImage *image;
+    s32 i;
+    s32 p;
+    s32 flag;
+    u8 file;
+    u8 match;
+
+    if (D_800625A0->loadState != 0) {
+        file = D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]];
+        for (i = 0; i < 32; i++) {
+            image = D_800625A0->images[i];
+            if (D_800625A0->card->present[i / 16] && (i / 16) * 16 != i - 15) {
+                match = 0;
+                if (file == D_800625A0->card->fileSlots[i] && D_800625A0->loadState == 2) {
+                    match = 1;
+                    if (file == 0xff) {
+                        match = i == D_801E981C[D_800625A0->card->cursor];
+                    }
+                }
+                if (match) {
+                    (image->lineA + D_800625A0->bufferIndex)->r0 = 0xff;
+                    (image->lineA + D_800625A0->bufferIndex)->g0 = 0;
+                    (image->lineA + D_800625A0->bufferIndex)->b0 = 0;
+                    (image->lineB + D_800625A0->bufferIndex)->r0 = 0xff;
+                    (image->lineB + D_800625A0->bufferIndex)->g0 = 0;
+                    (image->lineB + D_800625A0->bufferIndex)->b0 = 0;
+                } else {
+                    (image->lineA + D_800625A0->bufferIndex)->r0 = 0;
+                    (image->lineA + D_800625A0->bufferIndex)->g0 = 0xff;
+                    (image->lineA + D_800625A0->bufferIndex)->b0 = 0;
+                    (image->lineB + D_800625A0->bufferIndex)->r0 = 0;
+                    (image->lineB + D_800625A0->bufferIndex)->g0 = 0xff;
+                    (image->lineB + D_800625A0->bufferIndex)->b0 = 0;
+                }
+                RotTransPers3(&image->lineAAt[0], &image->lineAAt[1], &image->lineAAt[3],
+                              (s32 *)&image->lineA[D_800625A0->bufferIndex].x0,
+                              (s32 *)&image->lineA[D_800625A0->bufferIndex].x1,
+                              (s32 *)&image->lineA[D_800625A0->bufferIndex].x2, &p, &flag);
+                AddPrim(&D_800625A0->current->ot[4], &image->lineA[D_800625A0->bufferIndex]);
+                RotTransPers3(&image->lineBAt[0], &image->lineBAt[2], &image->lineBAt[3],
+                              (s32 *)&image->lineB[D_800625A0->bufferIndex].x0,
+                              (s32 *)&image->lineB[D_800625A0->bufferIndex].x1,
+                              (s32 *)&image->lineB[D_800625A0->bufferIndex].x2, &p, &flag);
+                AddPrim(&D_800625A0->current->ot[4], &image->lineB[D_800625A0->bufferIndex]);
+            }
+        }
+    }
+}
+
+/* While the card access indicator is shown, draw its bar (as long as the
+ * progress +7b0), its sprite and the blinking arrows (steady while closing);
+ * while running, advance the progress and wrap it past 100. */
+void func_801CFF64(void) {
+    if (D_800625A0->party->unk50[2] != 0) {
+        setXY4(&MENU_INDICATOR->fills[MENU_INDICATOR->buffer], 0x20, 0x61, MENU_INDICATOR->unk7B0 + 0x20, 0x61,
+               0x20, 0x68, MENU_INDICATOR->unk7B0 + 0x20, 0x68);
+        if ((u32)D_800625A0->frameCounter % 6 >= 4 || D_800625A0->party->unk50[2] == 2) {
+            func_801CE2B4(2, MENU_INDICATOR->spriteB, MENU_INDICATOR->buffer);
+        }
+        func_801CE2B4(12, MENU_INDICATOR->spriteA, MENU_INDICATOR->buffer);
+        AddPrim(&D_800625A0->current->ot[4], &MENU_INDICATOR->fills[MENU_INDICATOR->buffer]);
+        if (D_800625A0->party->unk50[2] == 1) {
+            if ((MENU_INDICATOR->unk7B0 += MENU_INDICATOR->unk7B4) > 0x100) {
+                MENU_INDICATOR->unk7B0 = 0;
+            }
+        }
+    }
+}
 
 /* Animate the file screen: its layers, the 15-frame x 6 blink and the
  * 4-step pulse between 4 and 128. */
