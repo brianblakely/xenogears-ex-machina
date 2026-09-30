@@ -838,7 +838,67 @@ void func_80078154(Actor *actor) {
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80078194);
 
+#ifdef NON_MATCHING
+/* Which of an actor's two anchor points (0x92c and home) lie on the other
+ * side of the line from `a` to `b` than its round start position: 0 both
+ * (choosing 0x92c when home is nearer to `a`), 1 or 2 only that one, 3
+ * neither (choosing the nearer); the choice goes to *anchor. Does not
+ * match: the actor and the home pointer swap $s0/$s1 around the second
+ * distance call. */
+s32 func_80078704(Vector *a, Vector *b, Actor *actor, Vector **anchor) {
+    s32 dz = a->vz - b->vz;
+    s32 dx = b->vx - a->vx;
+    s32 start = dz * actor->start.vx + dx * actor->start.vz + a->vx * b->vz - b->vx * a->vz;
+    s32 first = dz * actor->unk92C.vx + dx * actor->unk92C.vz + a->vx * b->vz - b->vx * a->vz;
+    s32 second = dz * actor->home.vx + dx * actor->home.vz + a->vx * b->vz - b->vx * a->vz;
+    s32 d1;
+    s32 d2;
+    Vector *p1;
+    Vector *p2;
+
+    if (start < 0) {
+        start = -1;
+    } else if (start > 0) {
+        start = 1;
+    }
+    if (first < 0) {
+        first = -1;
+    } else if (first > 0) {
+        first = 1;
+    }
+    if (second < 0) {
+        second = -1;
+    } else if (second > 0) {
+        second = 1;
+    }
+    first *= start;
+    second *= start;
+    if (first < 0) {
+        if (second < 0) {
+            p1 = &actor->unk92C;
+            d1 = func_80088838(p1, a);
+            p2 = &actor->home;
+            d2 = func_80088838(p2, a);
+            *anchor = d2 < d1 ? p1 : p2;
+            return 0;
+        }
+        *anchor = &actor->unk92C;
+        return 1;
+    }
+    if (second < 0) {
+        *anchor = &actor->home;
+        return 2;
+    }
+    p1 = &actor->unk92C;
+    d1 = func_80088838(p1, a);
+    p2 = &actor->home;
+    d2 = func_80088838(p2, a);
+    *anchor = d1 < d2 ? p1 : p2;
+    return 3;
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80078704);
+#endif
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80078920);
 

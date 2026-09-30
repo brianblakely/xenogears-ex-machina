@@ -282,7 +282,8 @@ typedef struct Actor {
     u8 unk913[0x3];
     s16 unk916;
     u8 glow;             /* 0x918: light level, fades by 0x18 a frame */
-    u8 unk919[0x23];
+    u8 unk919[0x13];
+    Vector unk92C;       /* 0x92C: a second anchor point beside home */
     Vector home;         /* 0x93C */
     Vector core;         /* 0x94C: where shots home in */
     Vector start_home;   /* 0x95C: home at the round start */
