@@ -765,6 +765,9 @@ extern s32 func_8009D000(s32 offset, s32 flags); /* operand, immediate with flag
 extern void func_80086590(VECTOR *target);
 extern s32 func_8009CFBC(s32 offset, s32 flags); /* operand, immediate with flag 0x40 */
 extern void func_80074700(void);
+extern s32 func_8007CD80(VECTOR *point, SVECTOR *edge, DVECTOR *segment);
+extern void func_800723E4(DVECTOR *a, DVECTOR *b, DVECTOR *out);
+extern void func_80073684(VECTOR *point, VECTOR *center);
 extern void func_80073750(MATRIX *view, VECTOR *eye, VECTOR *target, VECTOR *up);
 extern void func_8008004C(u32 *ot, s32 buffer);
 extern void func_800805F4(void);

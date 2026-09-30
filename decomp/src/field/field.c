@@ -784,7 +784,71 @@ void func_800726E8(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80072A38);
+/* Place the camera's target goal on the followed position (clamped to the
+ * walkable edge when the position leaves the floor mesh) and its eye goal
+ * at the elevation and distance around it; then step the distance and
+ * elevation interpolations. Declared int but returns nothing. */
+s32 func_80072A38(VECTOR *position, s32 floor) {
+    SVECTOR edge[2];
+    DVECTOR line[2];
+    DVECTOR segment[2];
+    DVECTOR hit;
+    VECTOR point;
+    MATRIX unused; /* unreferenced, but part of the frame */
+
+    point.vx = position->vx;
+    point.vy = 0;
+    point.vz = position->vz;
+    if (func_8007CD80(&point, edge, segment) == -1) {
+        line[0].vx = edge[0].vx;
+        line[0].vy = edge[0].vz;
+        line[1].vx = edge[1].vx;
+        line[1].vy = edge[1].vz;
+        func_800723E4(line, segment, &hit);
+        D_800AF880.target_goal.vx = hit.vx << 16;
+        D_800AF880.target_goal.vz = hit.vy << 16;
+        if (D_800B2078.camera_floor_fixed == 0) {
+            if (D_800ADBA8 == 0) {
+                D_800AF880.target_goal.vy = floor << 16;
+                D_800ADBA8 = 1;
+            }
+        } else {
+            D_800AF880.target_goal.vy = position->vy - 0x200000;
+        }
+    } else {
+        D_800AF880.target_goal.vx = position->vx;
+        D_800ADBA8 = 0;
+        D_800AF880.target_goal.vy = position->vy;
+        D_800AF880.target_goal.vz = position->vz;
+        D_800AF880.target_goal.vy -= 0x200000;
+    }
+    D_800AF880.eye_goal.vy =
+        ((-((func_8003F8CC((((s16)D_800AF880.elevation * 0x5B) >> 3) + 0xC00) * D_800AF880.projection) << 5)) >> 16) *
+            D_800AF880.distance * 16 +
+        D_800AF880.target_goal.vy;
+    D_800AF880.eye_goal.vz =
+        (((func_8003F8B0((((s16)D_800AF880.elevation * 0x5B) >> 3) + 0xC00) * D_800AF880.projection) << 5) >> 16) *
+            D_800AF880.distance * 16 +
+        D_800AF880.target_goal.vz;
+    D_800AF880.eye_goal.vx = D_800AF880.target_goal.vx;
+    func_80073684(&D_800AF880.eye_goal, &D_800AF880.target_goal);
+    if (D_800AF880.flags & 1) {
+        if (D_800AF880.steps != 0) {
+            D_800AF880.start += D_800AF880.step;
+            D_800AF880.distance = D_800AF880.start >> 16;
+        }
+        if (--D_800AF880.steps == 0) {
+            D_800AF880.flags &= 0xFFFE;
+        }
+    }
+    if (D_800AF880.flags & 8) {
+        D_800AF880.elevation_value += D_800AF880.elevation_step;
+        D_800AF880.elevation = D_800AF880.elevation_value >> 16;
+        if (--D_800AF880.elevation_steps == 0) {
+            D_800AF880.flags &= 0xFFF7;
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80072D74);
 
