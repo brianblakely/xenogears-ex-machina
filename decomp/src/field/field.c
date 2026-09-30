@@ -1199,16 +1199,12 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007EE0C);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007F5AC);
 
-#ifdef NON_MATCHING
 /* Close dialogue window `window` unless it is busy; -1 when busy. */
 s32 func_8007F6F8(s16 window) {
-    s32 result = -1;
-
     if (D_800C2698[window].busy == 0) {
         func_80034614(&D_800C2698[window].text);
         func_800345E0(&D_800C2698[window].text);
         func_800346D4(&D_800C2698[window].text);
-        result = 0;
         D_800C2698[window].status = -1;
         D_800C2698[window].busy = -1;
         D_800C2698[window].cleared = -1;
@@ -1217,12 +1213,10 @@ s32 func_8007F6F8(s16 window) {
         D_800B2078.open_windows &= (1 << window) ^ 0xFF;
         D_800C2698[window].owner = 0xFF;
         D_800C2698[window].unk412 = 0;
+        return 0;
     }
-    return result;
+    return -1;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007F6F8);
-#endif
 
 /* The screen position of a point `height` above descriptor `index`. */
 void func_8007F814(s32 index, s32 *x, s32 *y, s32 height) {
