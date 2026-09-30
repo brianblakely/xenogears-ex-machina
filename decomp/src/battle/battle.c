@@ -3783,8 +3783,8 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AAB34);
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AAD54);
 
 /* Turn a part to rotation (x, y, z): at once for a duration below 2, else by
- * a turning effect (kind 0xFE) over duration frames along the shortest way (x, y, z become the
- * turns). */
+ * a turning effect (kind 0xFE) over duration frames along the shortest way
+ * (x, y, z become the turns). */
 void func_800ADF1C(EffectPool *pool, ModelPart *part, s32 duration, s32 x, s32 y, s32 z) {
     EffectEntry *entry;
 
