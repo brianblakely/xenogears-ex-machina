@@ -5271,7 +5271,67 @@ void func_80085E78(void) {
     D_800C3EAC->unk2D6 = 0;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085EB4);
+/* Mode 4: whether the combo input history (+0x2cc) matches one of the 13
+ * combo patterns whose deathblow the member's character knows. */
+u8 func_80085EB4(u8 mode, u8 member) {
+    u8 result = 0;
+    s32 match;
+    s32 combo;
+    s32 i;
+
+    if (D_800C3EAC->unk2D6 != 0 && mode == 4) {
+        for (combo = 0; combo < 13; combo++) {
+            for (i = 0; i < 7; i++) {
+                if (D_800C3EAC->unk2CC[i] == D_800C3160[combo][i]) {
+                    match = 1;
+                } else {
+                    match = 0;
+                    break;
+                }
+            }
+            i = 0;
+            if (match) {
+                break;
+            }
+        }
+        /* The deathblow index counts down from the last combo (the switch
+         * reuses the match flag's variable). */
+        match = combo;
+        switch (match) {
+        case 0:
+            i++;
+        case 1:
+            i++;
+        case 2:
+            i++;
+        case 3:
+            i++;
+        case 4:
+            i++;
+        case 5:
+            i++;
+        case 6:
+            i++;
+        case 7:
+            i++;
+        case 8:
+            i++;
+        case 9:
+            i++;
+        case 10:
+            i++;
+        case 11:
+            i++;
+        case 12:
+            if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask0,
+                              D_800C31AC[D_800CCCE8.records[member].pilot.characterId][12 - i])) {
+                result = 1;
+            }
+            break;
+        }
+    }
+    return result;
+}
 
 /* Add entry `index` to list 11 (the combo chain display): render the
  * member's text `id` into the shared image (two entries per image cell),
