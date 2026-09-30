@@ -110,6 +110,7 @@ void func_80280A9C(void) {
     SVECTOR watch;
     s32 sxy, z;
     POLY_FT4 *page;
+    POLY_FT4 *page2;
     TILE_1 *mark;
     s32 yaw, pitch;
 
@@ -132,7 +133,11 @@ void func_80280A9C(void) {
     }
     if (D_800C3EB0.pressed & 0x100) {
         D_80282040 = 1 - D_80282040;
-        func_800BC2F0(D_80282040 != 0 ? 4 : 1);
+        if (D_80282040 == 0) {
+            func_800BC2F0(1);
+        } else {
+            func_800BC2F0(4);
+        }
     }
     if (D_80282040 != 0) {
         page = (POLY_FT4 *)D_80059580;
@@ -158,29 +163,29 @@ void func_80280A9C(void) {
         page->tpage = GetTPage(1, 0, 0x3C0, 0);
         page->clut = GetClut(0, 0x1CC);
         AddPrim(D_8005956C, page);
-        page = (POLY_FT4 *)D_80059580;
+        page2 = (POLY_FT4 *)D_80059580;
         D_80059580 += sizeof(POLY_FT4);
-        SetPolyFT4(page);
-        SetShadeTex(page, 1);
-        page->x0 = 0x40;
-        page->y0 = -0x40;
-        page->x1 = 0x80;
-        page->y1 = -0x40;
-        page->x2 = 0x40;
-        page->y2 = 0xBF;
-        page->x3 = 0x80;
-        page->y3 = 0xBF;
-        page->u0 = 0;
-        page->v0 = 0;
-        page->u1 = 0x7F;
-        page->v1 = 0;
-        page->u2 = 0;
-        page->v2 = 0xFF;
-        page->u3 = 0x7F;
-        page->v3 = 0xFF;
-        page->tpage = GetTPage(1, 0, 0x340, 0x100);
-        page->clut = GetClut(0, 0x1CC);
-        AddPrim(D_8005956C, page);
+        SetPolyFT4(page2);
+        SetShadeTex(page2, 1);
+        page2->x0 = 0x40;
+        page2->y0 = -0x40;
+        page2->x1 = 0x80;
+        page2->y1 = -0x40;
+        page2->x2 = 0x40;
+        page2->y2 = 0xBF;
+        page2->x3 = 0x80;
+        page2->y3 = 0xBF;
+        page2->u0 = 0;
+        page2->v0 = 0;
+        page2->u1 = 0x7F;
+        page2->v1 = 0;
+        page2->u2 = 0;
+        page2->v2 = 0xFF;
+        page2->u3 = 0x7F;
+        page2->v3 = 0xFF;
+        page2->tpage = GetTPage(1, 0, 0x340, 0x100);
+        page2->clut = GetClut(0, 0x1CC);
+        AddPrim(D_8005956C, page2);
         func_8003700C("lenge:  %d\n", D_800D309C.range);
         func_8003700C("camera: %d,%d,%d\n", D_800D3354.vx, D_800D3354.vy, D_800D3354.vz);
         func_8003700C("watch:  %d,%d,%d\n", D_800D335C.vx, D_800D335C.vy, D_800D335C.vz);
@@ -190,13 +195,13 @@ void func_80280A9C(void) {
         D_802820EC++;
         SetRotMatrix(&D_800D309C.matrix);
         SetTransMatrix(&D_800D309C.matrix);
-        mark = (TILE_1 *)D_80059580;
-        D_80059580 += sizeof(TILE_1);
         watch.vx = D_800D335C.vx;
         watch.vy = D_800D335C.vy;
         watch.vz = D_800D335C.vz;
-        mark->code = 0x70;
+        mark = (TILE_1 *)D_80059580;
+        D_80059580 += sizeof(TILE_1);
         ((u8 *)mark)[3] = 2;
+        mark->code = 0x70;
         mark->r0 = 0xFF;
         mark->g0 = 0xFF;
         mark->b0 = 0;
@@ -208,7 +213,11 @@ void func_80280A9C(void) {
             func_80023FD8(2, D_8006BE10, &watch, 0);
         }
         if (D_800C3EB0.pressed & 0x80) {
-            SetGeomOffset(0xA0, ++D_80282044 & 1 ? 0x70 : 0xA5);
+            if (++D_80282044 & 1) {
+                SetGeomOffset(0xA0, 0x70);
+            } else {
+                SetGeomOffset(0xA0, 0xA5);
+            }
         }
         if (D_800C3EB0.held & 0x40) {
             func_80280960(D_800C3EB0.held);
@@ -238,7 +247,6 @@ void func_8028103C(void) {
 
 /* The heap monitor: buttons toggle its display flags and step, left/right
  * (repeating after 8 frames) scroll its first block. */
-#ifdef NON_MATCHING
 void func_802810C4(void) {
     s32 scroll;
 
@@ -279,7 +287,7 @@ void func_802810C4(void) {
         D_80282064 = 0;
     }
     if ((D_800C3EB0.held & 0x1000) && D_80282064 >= 8) {
-        scroll = -1;
+        scroll--;
     }
     if ((D_800C3EB0.held & 0x4000) && D_80282064 >= 8) {
         scroll++;
@@ -295,9 +303,6 @@ void func_802810C4(void) {
     }
     func_8003278C(3, D_80282060, D_80282068, D_8028205C);
 }
-#else
-INCLUDE_ASM(".local/decomp/debug2611/asm/nonmatchings/debug2611", func_802810C4);
-#endif
 
 /* Load meter update: ease the averages toward this frame's CPU and GPU times
  * and hold each peak for 80 frames. */
@@ -510,9 +515,9 @@ void func_80281980(void) {
         D_802820BC = 0;
     }
     func_8003700C("control mode: %s\n", D_802820C0[D_802820BC]);
-    v.vx = actor->pos[0].part.whole;
-    v.vy = actor->pos[1].part.whole;
-    v.vz = actor->pos[2].part.whole;
+    v.vx = actor->pos[0].raw >> 16;
+    v.vy = actor->pos[1].raw >> 16;
+    v.vz = actor->pos[2].raw >> 16;
     SetRotMatrix(&D_800D309C.matrix);
     SetTransMatrix(&D_800D309C.matrix);
     otz = RotTransPers(&v, &sxy, &p, &flag);
@@ -571,8 +576,8 @@ void func_80281980(void) {
         break;
     case 2:
         step.vx *= 16;
-        step.vz *= 16;
         step.vy *= 16;
+        step.vz *= 16;
         actor->model->scale.vx += step.vx;
         actor->model->scale.vy += step.vy;
         actor->model->scale.vz += step.vz;
