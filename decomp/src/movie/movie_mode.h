@@ -316,6 +316,33 @@ void func_80029EB0(s32 file, void *ring, s32 a2, s32 a3, s32 a4, s32 a5, s32 a6,
                    s32 a9);
 void *func_8002A260(s32 blocks, s32 mode);                /* allocate a stream ring */
 
+/* Mode entry and menu. */
+extern u8 D_8004FE44;           /* request: movie kind (bit 7: last frame from 80062514) */
+extern u8 D_8004FE45;           /* request: movie index */
+extern u8 D_8004FE47;           /* request: buttons do not end the movie */
+extern u16 D_80062514;          /* the requested movie's last frame */
+extern s16 D_8005A4B8;
+extern s32 D_801E89D4;          /* movie library: frames skipped */
+extern s32 D_80077440;          /* menu shown */
+extern s32 D_80077444;          /* start frame: 1 changed, 2 sought */
+extern s32 D_8007743C;          /* end frame: 0 changed, 1 found, 2 not found */
+extern s32 D_80077450;          /* disc mode: 0, -1 or host */
+void func_80032498(s32 arg0, s32 arg1);
+void func_800374E8(s32 a0, s32 a1, s32 a2, s32 a3, s32 a4, s32 a5, s32 a6, s32 a7, s32 a8, s32 a9,
+                   s32 a10); /* debug font setup */
+void func_8001996C(s32 mode); /* select the next mode */
+void func_80019ACC(s32 arg0); /* leave the mode */
+void func_80072D84(POLY_G4 *poly0, POLY_G4 *poly1, s32 x, s32 y, s32 w, s32 h);
+void func_80073328(POLY_G4 *poly0, POLY_G4 *poly1, s32 x, s32 y, s32 w, s32 h);
+s32 func_80074BA4(s32 frame);
+s32 func_8007519C(void);
+void func_80075534(void);
+void func_80075D8C(void);
+void func_8007625C(void);
+s32 func_800763BC(u8 keep);
+void func_800704E8(void);
+void func_80072480(void);
+
 /* Disc change test. */
 extern char D_8006FC6C[]; /* "\n", first used by the menu (800704E8) */
 s32 func_80028530(void);  /* the disc in the drive */

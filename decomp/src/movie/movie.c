@@ -1083,7 +1083,361 @@ void func_800734B8(u32 *ot, POLY_G4 *poly, s32 x, s32 y, s32 w, s32 h) {
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_800734B8);
 #endif
 
+#ifdef NON_MATCHING
+/* Mode 6 entry. Load the movie library below the heap top and open it at
+ * 320x256; with a movie request (8004fe44..47) play it and select the next
+ * mode. Otherwise run the development menu: movie type, number, start and
+ * end frame (Circle seeks them), channel, colour depth, rows drawn, rewind,
+ * then the movie test, CD-ROM monitor, CD-ROM check, FAT check, disc change
+ * test and a return to the kernel. Square and Cross speed up the frame
+ * settings. The menu cursor is kept across the screens it opens. The unused
+ * name reproduces the original's frame. Draft: the register count and most
+ * code match; the constant 1 of the setup stores gets another register
+ * (scheduling differs), and the request byte 8004fe44 is reread in the
+ * original where this source reuses the value. */
+void func_800737EC(void) {
+    char name[8] = "trouble";
+    s32 button;
+    s32 step;
+    s32 dir;
+    s32 line;
+    s32 last;
+    s32 cursor;
+    void *top;
+    void *library;
+    MovieBuffer *buffer;
+    u32 *ot;
+
+    func_80032498(4, 0);
+    func_80028470(0x18, 0);
+    func_80038D18(0, 0);
+    DrawSync(0);
+    VSync(0);
+    SetDispMask(0);
+    top = func_80031BDC(4, 1);
+    library = func_80031BDC(((u32)top & 0xFFFFFF) - 0x1D3008, 1);
+    func_800320E8(top);
+    func_800295D8(1, library, 0, 0);
+    func_80028A60(0);
+    func_801D3538(320, 256, 128, 16, 32, 0x800, 3);
+    D_80077450 = func_8002C3D8();
+    D_800773A0 = -1;
+    D_8007739C = 0xC80;
+    D_80077394 = 0;
+    D_800773B0 = 0;
+    D_80077454 = 1;
+    D_80077448 = 1;
+    D_8007711C = 0;
+    D_800773A4 = 1;
+    D_80077398 = 1;
+    D_80077444 = 2;
+    D_8007743C = 0;
+    D_800773A8 = 0;
+    D_80077438 = 0;
+    SetDefDrawEnv(&D_80077124[0].draw, 0, 0, 320, 240);
+    SetDefDispEnv(&D_80077124[0].disp, 0, 240, 320, 240);
+    SetDefDrawEnv(&D_80077124[1].draw, 0, 240, 320, 240);
+    SetDefDispEnv(&D_80077124[1].disp, 0, 0, 320, 240);
+    D_80077124[0].draw.dtd = 1;
+    D_80077124[0].draw.isbg = 1;
+    D_80077124[1].draw.dtd = 1;
+    D_80077124[1].draw.isbg = 1;
+    D_80077124[0].draw.r0 = 0;
+    D_80077124[0].draw.g0 = 0;
+    D_80077124[0].draw.b0 = 0;
+    D_80077124[0].disp.isinter = 0;
+    D_80077124[1].draw.r0 = 0;
+    D_80077124[1].draw.g0 = 0;
+    D_80077124[1].draw.b0 = 0;
+    D_80077124[1].disp.isinter = 0;
+    D_80077124[0].disp.screen.x = 0;
+    D_80077124[0].disp.screen.y = 10;
+    D_80077124[0].disp.screen.w = 256;
+    D_80077124[0].disp.screen.h = 216;
+    D_80077124[1].disp.screen.x = 0;
+    D_80077124[1].disp.screen.y = 10;
+    D_80077124[1].disp.screen.w = 256;
+    D_80077124[1].disp.screen.h = 216;
+    D_80077120 = &D_80077124[0];
+    D_8007744C = 0;
+    PutDrawEnv(&D_80077124[0].draw);
+    PutDispEnv(&D_80077120->disp);
+    if (D_80077450 != 0) {
+        VSync(2);
+        D_800773AC = func_8003569C(0);
+    } else {
+        D_800773AC = 0;
+    }
+    if (D_8004FE44 != 0xFF && !(D_800773AC & 0x100)) {
+        D_80077440 = 0;
+        D_80077398 = 1;
+        D_800773A4 = 1;
+        D_80077448 = D_8004FE44 & 0x7F;
+        D_8007711C = D_8004FE45;
+        D_8007739C = (D_8004FE44 & 0x80) ? D_80062514 : 0xE9;
+        func_800763BC(D_8004FE47);
+        func_801D43B0();
+        func_800320E8(library);
+        func_8001996C(D_8004FE46);
+        func_80019ACC(0);
+    }
+    func_80072D84((POLY_G4 *)D_80077124[0].box, (POLY_G4 *)D_80077124[1].box, 0, 0, 0, 0);
+    func_80073328((POLY_G4 *)D_80077124[0].frame, (POLY_G4 *)D_80077124[1].frame, 0, 0, 0, 0);
+    func_800374E8(16, 16, 640, 240, 0x400, 0, 640, 0, 640, 256, 0);
+    D_80077440 = 1;
+    SetDispMask(1);
+    for (;;) {
+        if (D_80077120 == &D_80077124[0]) {
+            buffer = &D_80077124[1];
+        } else {
+            buffer = &D_80077124[0];
+        }
+        ot = buffer->ot;
+        D_80077120 = buffer;
+        D_8007744C = 1 - D_8007744C;
+        ClearOTagR(ot, 32);
+        if (D_80077450 == 0) {
+            func_8003700C("  [ MOVIE CD-ROM MODE1 DISK %1d ]  \n\n", func_80028530());
+        } else if (D_80077450 == -1) {
+            func_8003700C("  [ MOVIE CD-ROM MODE2 DISK %1d ]  \n\n", func_80028530());
+        } else {
+            func_8003700C("  [ MOVIE PC HDD MODE  DISK %1d ]  \n\n", func_80028530());
+        }
+        step = 1;
+        func_8003700C("    ERROR %2d Sect %2d:%2d FM%3d\n", D_8005A4DC, D_8005A4A8, D_8005A4B4,
+                      D_8005A4B8);
+        func_8003700C("    LesMem%2d NoMem%2d Skp%3d\n", D_8005A49C, D_8005A4A4, D_801E89D4,
+                      D_80062514);
+        dir = func_800747AC(0, 13, &button);
+        if (D_800773AC & 0x10) {
+            step = 32;
+        }
+        if (D_800773AC & 0x80) {
+            step <<= 7;
+        }
+        if (D_80077118 == 0 && dir != 0) {
+            D_80077448 += dir;
+            if (D_80077448 < 0) {
+                D_80077448 = 2;
+            }
+            if (D_80077448 >= 3) {
+                D_80077448 = 0;
+            }
+            D_800773A4 = 1;
+            D_800773A8 = 0;
+            D_8007743C = 0;
+            D_80077444 = 2;
+        }
+        if (D_80077118 == 1 && dir != 0) {
+            D_8007711C += dir;
+            if (D_8007711C < 0) {
+                D_8007711C = 63;
+            }
+            if (D_8007711C >= 64) {
+                D_8007711C = 0;
+            }
+            D_800773A4 = 1;
+            D_800773A8 = 0;
+            D_8007743C = 0;
+            D_80077444 = 2;
+        }
+        if (D_80077118 == 2 && dir != 0) {
+            D_800773A4 += dir * step;
+            if (D_800773A4 <= 0) {
+                D_800773A4 = 1;
+            }
+            if (D_800773A4 >= 0x2000) {
+                D_800773A4 = 0x1FFF;
+            }
+            if (D_800773A4 > D_8007739C) {
+                D_800773A4 = D_8007739C;
+            }
+            D_80077444 = 1;
+        }
+        if (D_80077118 == 2 && button == 2 && D_80077444 == 1) {
+            D_800773A8 = func_80074BA4(D_800773A4);
+            if (D_800773A4 >= D_8007739C) {
+                D_8007739C = D_800773A4;
+                D_8007743C = 0;
+            }
+            D_80077444 = 2;
+        }
+        if (D_80077118 == 3 && dir != 0) {
+            D_8007739C += dir * step;
+            if (D_8007739C <= 0) {
+                D_8007739C = 1;
+            }
+            if (D_8007739C >= 0x2000) {
+                D_8007739C = 0x1FFF;
+            }
+            if (D_8007739C < D_800773A4) {
+                D_8007739C = D_800773A4;
+            }
+            D_8007743C = 0;
+        }
+        if (D_80077118 == 3 && button == 2 && D_8007743C == 0) {
+            last = func_8007519C();
+            if (last >= 0) {
+                D_8007739C = last;
+                D_8007743C = 1;
+                if (D_800773A4 >= last) {
+                    D_800773A4 = last;
+                    D_80077444 = 1;
+                }
+            } else {
+                D_8007743C = 2;
+            }
+        }
+        if (D_80077118 == 4 && dir != 0) {
+            D_80077398 += dir;
+            if (D_80077398 < 0) {
+                D_80077398 = 7;
+            }
+            if (D_80077398 >= 8) {
+                D_80077398 = 0;
+            }
+        }
+        if (D_80077118 == 5 && dir != 0) {
+            D_80077454 = 1 - D_80077454;
+        }
+        if (D_80077118 == 6) {
+            if (dir != 0) {
+                D_800773A0 = (D_800773A0 + dir * step) & 0xFF;
+            }
+            if (button == 2) {
+                D_800773A0 = -1;
+            }
+        }
+        if (D_80077118 == 7 && dir != 0) {
+            D_80077438 = 1 - D_80077438;
+        }
+        for (line = 0; line < 14; line++) {
+            func_8003700C(D_80077118 == line ? "  >" : "   ");
+            switch (line) {
+            case 0:
+                func_8003700C(" MOVIE TYPE   ");
+                if (D_80077448 == 0) {
+                    func_8003700C("PICTURE ONLY\n");
+                } else if (D_80077448 == 1) {
+                    func_8003700C("PICTURE+ADPCM\n");
+                } else if (D_80077448 == 2) {
+                    func_8003700C("ADPCM ONLY\n");
+                }
+                break;
+            case 1:
+                func_8003700C(" MOVIE NUMBER %4d\n\n", D_8007711C);
+                break;
+            case 2:
+                func_8003700C(" START FRAME  %4d ", D_800773A4);
+                if (D_80077444 == 1) {
+                    func_8003700C("SET");
+                }
+                if (D_80077444 == 2) {
+                    if (D_800773A8 < 0) {
+                        func_8003700C("EOF");
+                    } else {
+                        func_8003700C("+%4dSECT", D_800773A8);
+                    }
+                }
+                func_8003700C("\n");
+                break;
+            case 3:
+                func_8003700C(" END   FRAME  %4d ", D_8007739C);
+                if (D_8007743C == 0) {
+                    func_8003700C("SET");
+                }
+                if (D_8007743C == 2) {
+                    func_8003700C("???");
+                }
+                func_8003700C("\n");
+                break;
+            case 4:
+                func_8003700C(" MOVIE CHANNEL %3d\n", D_80077398);
+                break;
+            case 5:
+                func_8003700C(" SCREEN MODE  ");
+                func_8003700C(D_80077454 ? "24 BIT COLOR" : "16 BIT COLOR");
+                func_8003700C("\n");
+                break;
+            case 6:
+                func_8003700C(" SCREEN DRAW  ");
+                if (D_800773A0 < 0) {
+                    func_8003700C("ALL");
+                } else {
+                    func_8003700C("%3d", D_800773A0);
+                }
+                func_8003700C("\n");
+                break;
+            case 7:
+                func_8003700C(" REWIND       ");
+                func_8003700C(D_80077438 ? "ON" : "OFF");
+                func_8003700C("\n\n");
+                break;
+            case 8:
+                func_8003700C(" MOVIE START.\n\n");
+                break;
+            case 9:
+                func_8003700C(" CD-ROM MONITOR.\n\n");
+                break;
+            case 10:
+                func_8003700C(" CD-ROM CHECK.\n");
+                break;
+            case 11:
+                func_8003700C(" FAT CHECK.\n\n");
+                break;
+            case 12:
+                func_8003700C(" [DISC CHANGE.]\n");
+                break;
+            case 13:
+                func_8003700C(" [RETURN TO KERNEL.]\n");
+                break;
+            }
+        }
+        if (D_80077394 > 0) {
+            func_8003278C(1, 0, 6, 0x808D);
+        }
+        func_80037324(D_80077120->ot);
+        func_80072F98(D_80077120->ot, (POLY_G4 *)D_80077120->box, 20, 12, 284, 198);
+        func_800734B8(D_80077120->ot, (POLY_G4 *)D_80077120->frame, 19, 11, 286, 200);
+        DrawSync(0);
+        VSync(0);
+        PutDrawEnv(&D_80077120->draw);
+        PutDispEnv(&D_80077120->disp);
+        DrawOTag(&D_80077120->ot[31]);
+        cursor = D_80077118;
+        if ((cursor == 0 || cursor == 1 || cursor == 4 || cursor == 5 || cursor == 7 ||
+             cursor == 8) &&
+            button == 2) {
+            D_8005A49C = 0;
+            D_8005A4A4 = 0;
+            D_8005A4A8 = 0;
+            D_8005A4B4 = 0;
+            func_8007625C();
+            D_800773AC = -1;
+        }
+        if (D_80077118 == 9 && button == 2) {
+            func_80075534();
+        }
+        if (D_80077118 == 10 && button == 2) {
+            func_800704E8();
+        }
+        if (D_80077118 == 11 && button == 2) {
+            func_80075D8C();
+        }
+        if (D_80077118 == 12 && button == 2) {
+            func_80072480();
+        }
+        if (D_80077118 == 13 && button == 2) {
+            func_800320E8(library);
+            func_80019ACC(0);
+        }
+        D_80077118 = cursor;
+        func_80019CA0();
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_800737EC);
+#endif
 
 /* Menu input: read controller port 0 with a repeat after 16 frames held; Up
  * and Down move the cursor between `first` and `last`, wrapping; the four
