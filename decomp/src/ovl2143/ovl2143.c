@@ -1332,33 +1332,25 @@ void func_801DF6A8(SlotPool *pool) {
 }
 
 /* Take the first free slot (the caller marks it used) and advance the search
- * position past used slots; NULL when the pool is full. Differs only in the
- * allocation of two argument registers. */
-#ifdef NON_MATCHING
+ * position past used slots; NULL when the pool is full. */
 PoolSlot *func_801DF6F0(SlotPool *pool) {
     PoolSlot *slot;
     u32 capacity;
 
     if (pool->next < pool->capacity) {
         slot = &pool->slots[pool->next];
-        if (slot->used != 0) {
+        if (slot->used) {
             return NULL;
         }
         pool->next++;
         capacity = pool->capacity;
-        while (pool->next < capacity) {
-            if (pool->slots[pool->next].used == 0) {
-                return slot;
-            }
+        while (pool->next < capacity && pool->slots[pool->next].used != 0) {
             pool->next++;
         }
         return slot;
     }
     return NULL;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DF6F0);
-#endif
 
 /* Free a slot, moving the search position back to it; returns its index or
  * -1 without a slot. */
@@ -1830,15 +1822,14 @@ s16 func_801E0850(s16 angle, s16 divisor, s32 base) {
     return base + (func_8003F8CC(angle) + 0x1000) / divisor;
 }
 
-/* base + value / divisor, or -1 past 32. Differs only in register choice. */
-#ifdef NON_MATCHING
+/* base + value / divisor, or -1 past 32. */
 s16 func_801E08D4(s16 value, s16 divisor, s16 base) {
     base += value / divisor;
-    return base < 0x21 ? base : -1;
+    if (base > 0x20) {
+        return -1;
+    }
+    return base;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E08D4);
-#endif
 
 /* base - value / divisor. */
 s16 func_801E0938(s16 value, s16 divisor, s32 base) {
@@ -2027,9 +2018,8 @@ ImageAnim *func_801E0A00(ImageAnim *anim, ImageAnim *target, u16 mode, u16 flags
 /* Advance an image animation by `ticks` + 1: when its curve selects another
  * frame, rebuild the image (resident decoders or fades) and copy the
  * overlap into its target image. Returns the frame, or a negative value
- * once the animation ended. Differs only in the unchanged-frame branch,
- * which the original sends straight to the epilogue. */
-#ifdef NON_MATCHING
+ * once the animation ended; an unchanged frame returns nothing (the
+ * original falls off the end). */
 s16 func_801E1258(ImageAnim *anim, s32 ticks) {
     RECT src;
     RECT dst;
@@ -2112,12 +2102,9 @@ s16 func_801E1258(ImageAnim *anim, s32 ticks) {
                 }
             }
         }
+        return frame;
     }
-    return frame;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E1258);
-#endif
 
 /* Stop an image animation: restore its original pixels to VRAM (resident
  * decoder modes) and release its blocks. */
