@@ -249,7 +249,9 @@ typedef struct MenuEffect {
 
 /* A character record of the game data (D_8006D8A0; gears follow from 11). */
 typedef struct CharRecord {
-    u8 pad0[0x44];
+    u8 pad0[0x3C];
+    u32 unk3C; /* 3C */
+    u32 unk40; /* 40 */
     u32 exp; /* 44 */
     u32 expNext; /* 48 */
     u16 hp; /* 4C */
@@ -471,19 +473,56 @@ typedef struct MenuFieldMenu2 {
     u8 pad371[0x3];
 } MenuFieldMenu2;
 
-/* The detail panel block (*(state + 358)): a frame, a portrait and up to 96
- * sprite parts, two quads per piece. */
+/* The detail panel block (*(state + 358)): a frame, a portrait, the layout
+ * parts and the digit lists of the numbers shown, two quads per part (one per
+ * draw buffer) with a screen quad each. */
 typedef struct MenuBlock358 {
-    POLY_FT4 frame[2];      /* 0 */
-    POLY_FT4 portrait[2];   /* 50 */
-    POLY_FT4 parts[192];    /* A0 */
-    SVECTOR frameAt[4];     /* 1EA0 */
-    SVECTOR portraitAt[4];  /* 1EC0 */
-    SVECTOR partsAt[96][4]; /* 1EE0 */
-    u8 buffer;              /* 2AE0 */
-    u8 pad2AE1[0xB];
-    u8 count;               /* 2AEC: parts built */
-    u8 pad2AED[0x3];
+    POLY_FT4 frame[2];           /* 0 */
+    POLY_FT4 portrait[2];        /* 50 */
+    POLY_FT4 parts[66];          /* A0: layout parts (801d6194) */
+    POLY_FT4 level[6];           /* AF0: record +62 */
+    POLY_FT4 level2[6];          /* BE0: record +63 */
+    POLY_FT4 value3C[16];        /* CD0 */
+    POLY_FT4 value40[16];        /* F50 */
+    POLY_FT4 exp[14];            /* 11D0 */
+    POLY_FT4 expNext[14];        /* 1400 */
+    POLY_FT4 hp[10];             /* 1630 */
+    POLY_FT4 hpMax[10];          /* 17C0 */
+    POLY_FT4 ep[10];             /* 1950 */
+    POLY_FT4 epMax[10];          /* 1AE0 */
+    POLY_FT4 list1C70[10];       /* 1C70 */
+    POLY_FT4 list1E00[4];        /* 1E00 */
+    SVECTOR frameAt[4];          /* 1EA0 */
+    SVECTOR portraitAt[4];       /* 1EC0 */
+    SVECTOR partsAt[33][4];      /* 1EE0 */
+    SVECTOR levelAt[3][4];       /* 2300 */
+    SVECTOR level2At[3][4];      /* 2360 */
+    SVECTOR value3CAt[8][4];     /* 23C0 */
+    SVECTOR value40At[8][4];     /* 24C0 */
+    SVECTOR expAt[7][4];         /* 25C0 */
+    SVECTOR expNextAt[7][4];     /* 26A0 */
+    SVECTOR hpAt[5][4];          /* 2780 */
+    SVECTOR hpMaxAt[5][4];       /* 2820 */
+    SVECTOR epAt[5][4];          /* 28C0 */
+    SVECTOR epMaxAt[5][4];       /* 2960 */
+    SVECTOR list1C70At[5][4];    /* 2A00 */
+    SVECTOR list1E00At[2][4];    /* 2AA0 */
+    u8 buffer;                   /* 2AE0 */
+    u8 levelCount;               /* 2AE1 */
+    u8 level2Count;              /* 2AE2 */
+    u8 value3CCount;             /* 2AE3 */
+    u8 value40Count;             /* 2AE4 */
+    u8 expCount;                 /* 2AE5 */
+    u8 expNextCount;             /* 2AE6 */
+    u8 hpCount;                  /* 2AE7 */
+    u8 hpMaxCount;               /* 2AE8 */
+    u8 epCount;                  /* 2AE9 */
+    u8 epMaxCount;               /* 2AEA */
+    u8 list1C70Count;            /* 2AEB */
+    u8 count;                    /* 2AEC: layout parts built */
+    u8 unk2AED;                  /* 2AED */
+    u8 unk2AEE;                  /* 2AEE */
+    u8 pad2AEF[0x1];
 } MenuBlock358;
 
 /* The equipment panel block (*(state + 35c)). */
@@ -799,6 +838,10 @@ extern s32 D_801E9B54;
 extern s32 D_801E9B60[48]; /* detail panel part positions, 24 per layout: x */
 extern s32 D_801E9C20[48]; /* y */
 extern s32 D_801EA39C[48]; /* detail panel part sprites, 24 per layout, ffff none */
+extern s32 D_801E9CF0;   /* detail panel number positions (x, y): hp */
+extern s32 D_801E9CF4;
+extern s32 D_801E9CF8;   /* hp max */
+extern s32 D_801E9CFC;
 extern s32 D_801E9D38;   /* detail panel portrait position: x */
 extern s32 D_801E9D3C;   /* y */
 extern s32 D_801E9B58;   /* field block portrait offset: x */
