@@ -244,7 +244,9 @@ typedef struct CharRecord {
     u8 pad5C[0x6];
     u8 unk62; /* 62 */
     u8 unk63; /* 63 */
-    u8 pad64[0x3C];
+    u8 pad64[0x6];
+    u8 equip[3][5]; /* 6A: equipment ids (three kinds, five slots) */
+    u8 pad79[0x27];
     u8 gear; /* A0: gear record (+11), ff none */
     u8 padA1[0x3];
 } CharRecord;
@@ -276,8 +278,8 @@ typedef struct MenuTables {
     u8 unkB3; /* B3 */
     u8 unkB4; /* B4 */
     u8 padB5[0x3];
-    u16 shown[6]; /* B8: stats shown on the equipment screen */
-    u8 padC4[0x8];
+    u16 shown[9]; /* B8: stats shown on the equipment screen */
+    u8 padCA[0x2];
 } MenuTables;
 
 /* A gear record of the game data (D_8006DFAC). */
@@ -285,9 +287,11 @@ typedef struct GearRecord {
     u8 pad0[0x2];
     u8 engine; /* 2: record of table +8 */
     u8 unk3; /* 3: record of table +c */
-    u8 pad4[0x4];
+    u8 unk4[0x4]; /* 4: part ids */
     u8 frame; /* 8 */
-    u8 pad9[0x2F];
+    u8 unk9[3]; /* 9: part ids; the equipment screen reads four from here */
+    u8 unkC[4]; /* C: part ids */
+    u8 pad10[0x28];
     u16 unk38; /* 38 */
     u16 unk3A; /* 3A */
     u8 unk3C; /* 3C */
@@ -391,9 +395,12 @@ typedef struct MenuBlock34C {
 /* Five labels (*(state + 360)). */
 typedef struct MenuLabels360 {
     MenuLabelSlot labels[5]; /* 0 */
-    u8 pad280[0x14];
+    u16 stats[9]; /* 280: stats kept from the equipment screen */
+    u8 pad292[0x2];
     u8 visible[5]; /* 294 */
     u8 count; /* 299 */
+    u8 pad29A[0x2];
+    u8 parts[3][5]; /* 29C: equipment kept from the character or gear */
 } MenuLabels360;
 
 /* The marker block (*(state + 428)): two quads per marker. */

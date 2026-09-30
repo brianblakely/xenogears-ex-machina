@@ -3673,7 +3673,28 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DE5CC);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DF0D4);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DF5D0);
+/* Keep the shown stats and the equipment of party slot `slot` (its gear's
+ * parts when `gear`) in the equipment screen's block. */
+void func_801DF5D0(u8 slot, u8 gear) {
+    s32 i;
+
+    for (i = 0; i < 9; i++) {
+        D_800625A0->labels360->stats[i] = D_800625A0->tables->shown[i];
+    }
+    if (!gear) {
+        for (i = 0; i < 5; i++) {
+            D_800625A0->labels360->parts[0][i] = D_8006D8A0[D_800625A0->party->ids[slot]].equip[0][i];
+            D_800625A0->labels360->parts[1][i] = D_8006D8A0[D_800625A0->party->ids[slot]].equip[1][i];
+            D_800625A0->labels360->parts[2][i] = D_8006D8A0[D_800625A0->party->ids[slot]].equip[2][i];
+        }
+    } else {
+        for (i = 0; i < 4; i++) {
+            D_800625A0->labels360->parts[0][i] = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unkC[i];
+            D_800625A0->labels360->parts[1][i] = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk4[i];
+            D_800625A0->labels360->parts[2][i] = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk9[i];
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DF890);
 
