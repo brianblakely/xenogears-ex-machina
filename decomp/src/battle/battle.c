@@ -6358,12 +6358,179 @@ void func_80097D08(void) {
     } while (--slot != -1);
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80097D5C);
+/* Derive each present party member's battle stats: keep the base values,
+ * add the equipment bonuses and percentage HP/EP bonuses (capped at 999 and
+ * 99), total the gear's equipment, set its fuel cost (command 37's shown
+ * value), the attack level limit and scale, the status-driven command rate
+ * changes and the character-specific adjustments; then count the members. */
+void func_80097D5C(void) {
+    u8 member;
+    u8 i;
+    u8 *level;
+    u8 rate;
+    u16 immunities;
+    CharacterRecord *pilot;
+    Combatant *record;
+    GearRecord *gear;
+
+    for (member = 0; member < 3; member++) {
+        if (D_800D2D24[member] == 0x7F) {
+            continue;
+        }
+        D_800C3E00 = &D_800C34B0->records[member];
+        D_800D2D6C = &D_800C34B0->records[member].gear;
+        level = &D_800C34B0->records[member].field148;
+        if (D_800D2D24[member] == 9) {
+            D_8006D8A0.characters[9].characterId = 9;
+            D_800C3E00->pilot.characterId = 9;
+        }
+        if (D_800D2D24[member] == 10) {
+            D_8006D8A0.characters[10].characterId = 10;
+            D_800C3E00->pilot.characterId = 10;
+        }
+        if (D_800C3E00->pilot.characterId == 4) {
+            D_800C34B0->savedStats[member][0] = D_800C3E00->pilot.entries[0].value4 + D_800C3E00->pilot.entries[3].value4;
+        } else {
+            D_800C34B0->savedStats[member][0] = D_800C3E00->pilot.attack + D_800C3E00->pilot.entries[0].value4;
+        }
+        D_800C34B0->savedStats[member][1] = D_800C3E00->pilot.field5E;
+        D_800C34B0->savedStats[member][2] = D_800C3E00->pilot.defense + D_800C3E00->pilot.bodyDefense;
+        D_800C34B0->savedStats[member][3] = D_800C3E00->pilot.field5F;
+        D_800C34B0->savedStats[member][4] = D_800C3E00->pilot.accuracy;
+        D_800C34B0->savedStats[member][5] = D_800C3E00->pilot.etherDefense;
+        D_800C34B0->savedStats[member][6] = D_800C3E00->pilot.speed;
+        pilot = &D_800C3E00->pilot;
+        D_800C34B0->savedWords[member][0] = pilot->expTotalA;
+        D_800C34B0->savedWords[member][1] = pilot->expTotalB;
+        D_800C34B0->savedMax[member][0] = pilot->maxHp;
+        D_800C34B0->savedMax[member][1] = pilot->maxEp;
+        pilot->attack += pilot->equipAttack;
+        pilot->flags34 = 0;
+        D_800C3E00->pilot.defense += D_800C3E00->pilot.equipDefense;
+        D_800C3E00->pilot.speed += D_800C3E00->pilot.equipSpeed;
+        D_800C3E00->pilot.accuracy += D_800C3E00->pilot.equipAccuracy;
+        D_800C3E00->pilot.etherDefense += D_800C3E00->pilot.equipEtherDefense;
+        D_800C3E00->pilot.field5E += D_800C3E00->pilot.equip5E;
+        D_800C3E00->pilot.field5F += D_800C3E00->pilot.equip5F;
+        if (D_800C3E00->pilot.speed > 16) {
+            D_800C3E00->pilot.speed = 16;
+        }
+        if (D_800C3E00->pilot.flags32 & 0x100) {
+            D_800C3E00->pilot.field5E += D_800C3E00->pilot.field5E >> 2;
+            D_800C3E00->pilot.field5F += D_800C3E00->pilot.field5F >> 2;
+        }
+        D_800C3E00->pilot.hp += D_800C3E00->pilot.maxHp * D_800C3E00->pilot.hpBonus / 20;
+        D_800C3E00->pilot.ep += D_800C3E00->pilot.maxEp * D_800C3E00->pilot.epBonus / 20;
+        D_800C3E00->pilot.maxHp += D_800C3E00->pilot.maxHp * D_800C3E00->pilot.hpBonus / 20;
+        D_800C3E00->pilot.maxEp += D_800C3E00->pilot.maxEp * D_800C3E00->pilot.epBonus / 20;
+        if (D_800C3E00->pilot.hp >= 1000) {
+            D_800C3E00->pilot.hp = 999;
+        }
+        if (D_800C3E00->pilot.ep >= 100) {
+            D_800C3E00->pilot.ep = 99;
+        }
+        if (D_800C3E00->pilot.maxHp >= 1000) {
+            D_800C3E00->pilot.maxHp = 999;
+        }
+        if (D_800C3E00->pilot.maxEp >= 100) {
+            D_800C3E00->pilot.maxEp = 99;
+        }
+        record = &D_800C34B0->records[member];
+        record->expWeightA = 5;
+        record->expWeightB = 5;
+        level[0] = 0;
+        gear = D_800D2D6C;
+        gear->bodyDefense += gear->equipBodyDefense;
+        gear->armor += gear->equipArmor;
+        gear->field68 += gear->equip68a + gear->equip68b;
+        gear->guard += gear->equipGuard;
+        D_800D2D6C->hitBonus += D_800D2D6C->equipHitBonus;
+        D_800D2D6C->speed += D_800D2D6C->equipSpeed - D_800D2D6C->speedPenalty;
+        D_800D2D6C->frameFactor += D_800D2D6C->equipFrameFactor;
+        rate = D_800D2D6C->field4F;
+        if (rate != 0 && D_800C3E00->pilot.gearId != 0x12) {
+            D_800C34B0->gearCommands[member][37].hudState = D_800D2D6C->maxHp / 10 * rate * 2 / 9;
+            D_800C34B0->gearCommands[member][37].hudState /= 10;
+            D_800C34B0->gearCommands[member][37].hudState *= 10;
+        }
+        level[1] = 0;
+        if (D_8006ECF4[D_800C3E00->pilot.characterId].mask4 & 0x1C00) {
+            level[1] = 1;
+        }
+        if (D_8006ECF4[D_800C3E00->pilot.characterId].mask4 & 0x380) {
+            level[1] = 2;
+        }
+        if (D_8006ECF4[D_800C3E00->pilot.characterId].mask4 & 0x70) {
+            level[1] = 3;
+        }
+        D_800D2D6C->attackScale = D_800D2D6C->field74;
+        D_800D2D6C->field3E = D_800D2D6C->field74;
+        D_800D2D6C->attackScale += D_800D2D6C->equipAttackScale;
+        D_800D2D6C->field3E += D_800D2D6C->equipAttackScale;
+        if (D_800C3E00->pilot.status88.half.permanent & 0x2000) {
+            for (i = 0; i < 38; i++) {
+                D_800C34B0->partyCommands[member][i].field13 *= 2;
+            }
+            for (i = 0; i < 42; i++) {
+                D_800C34B0->gearCommands[member][i].field13 *= 2;
+            }
+        }
+        if (D_800C3E00->pilot.flags32 & 0x4000) {
+            for (i = 0; i < 38; i++) {
+                D_800C34B0->partyCommands[member][i].field13 = (D_800C34B0->partyCommands[member][i].field13 + 1) >> 1;
+            }
+            for (i = 0; i < 42; i++) {
+                D_800C34B0->gearCommands[member][i].field13 = (D_800C34B0->gearCommands[member][i].field13 + 1) >> 1;
+            }
+        }
+        if (D_800C3E00->pilot.field62 >= 50) {
+            D_8006ECF4[D_800C3E00->pilot.characterId].mask4 |= 8;
+        }
+        if (D_800C3E00->pilot.characterId == 7) {
+            D_800D2D6C->hp = D_800C3E00->pilot.hp * 50;
+            D_800D2D6C->maxHp = D_800C3E00->pilot.maxHp * 50;
+            D_800D2D6C->attack = D_800C3E00->pilot.attack;
+            D_800D2D6C->bodyDefense = D_800C3E00->pilot.defense * 12;
+            D_800D2D6C->armor = D_800C3E00->pilot.etherDefense * 6;
+            D_800D2D6C->speed = D_800C3E00->pilot.speed;
+            immunities = D_800D2D6C->field7E;
+            D_800D2D6C->field7E = immunities | 0x3C4;
+            if (D_800C3E00->pilot.status82 & 0x2000) {
+                D_800D2D6C->field7E = immunities | 0x13C4;
+            }
+        }
+        if (D_800C3E00->pilot.gearId == 0xF) {
+            D_8006ECF4[D_800C3E00->pilot.characterId].flags1A &= 0x8FFF;
+        }
+        if (D_800C3E00->pilot.gearId == 0x12) {
+            D_800C3E00->pilot.status7A = 0x238;
+            D_800D2D6C->fuel = 0x26AC;
+            D_800D2D6C->maxFuel = 0x26AC;
+            level[1] = 0;
+            D_8006ECF4[3].flags1A = 0x8000;
+        }
+        if (D_8006D634.value1930 >= 231 && !(D_8006D634.flags2355 & 0x80)) {
+            D_8006D634.characters[9].field6A = 0x27;
+            D_8006D634.characters[9].entries[0].value4 = 0x1E;
+            D_8006D634.flags2355 |= 0x80;
+        }
+    }
+    D_800C34AD = 3;
+    for (member = 0; member < 3; member++) {
+        if (D_800D2D24[member] == 0x7F) {
+            D_800C34AD--;
+        }
+    }
+    for (member = 0; member < 3; member++) {
+        D_800C34B0->field5F54[member] = 0;
+        D_800C34B0->field5F60[member] = 0;
+    }
+}
 
 /* Party adjustments at battle start: keep each present member's status
  * word 7A, replace the listed part speeds of its gear by the parts' own
  * (at most 16), set character 8's speed and battle flag, and before game
- * data word D_8006EF64 reaches 0xbb set the early gears' values. */
+ * data word 0x1930 reaches 0xbb set the early gears' values. */
 void func_8009892C(void) {
     u8 member;
     u8 i;
@@ -6391,7 +6558,7 @@ void func_8009892C(void) {
     if (D_8006ECF4[8].flags1A & 0x2000) {
         D_8006ECF4[8].mask2 |= 0x800;
     }
-    if (D_8006EF64 < 0xBB) {
+    if (D_8006D634.value1930 < 0xBB) {
         D_8006D8A0.gears[0].field74 = 10;
         D_8006D8A0.gears[1].field74 = 10;
         D_8006D8A0.gears[11].field74 = 9;
@@ -6619,8 +6786,8 @@ void func_80098D2C(u8 slot, u8 param) {
             D_800C34B0->message = 0x28;
             break;
         case 14:
-            D_8006D8A0.characters[record->pilot.characterId].field44 = 1;
-            D_8006D8A0.characters[record->pilot.characterId].field48 = 1;
+            D_8006D8A0.characters[record->pilot.characterId].expNextA = 1;
+            D_8006D8A0.characters[record->pilot.characterId].expNextB = 1;
             break;
         case 15:
             for (i = 0; i < 7; i++) {

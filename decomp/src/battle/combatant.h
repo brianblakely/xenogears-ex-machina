@@ -29,18 +29,26 @@ typedef struct {
  * bytes stay padding. */
 typedef struct {
     CharacterEntry entries[4]; /* 0x00 */
-    u8 pad20[0x2D - 0x20];
-    u8 bodyDefense; /* 0x2D */
-    u8 pad2E[0x32 - 0x2E];
+    u8 pad20[0x28 - 0x20];
+    u8 equipAttack;       /* 0x28: equipment bonuses to +0x58.. */
+    u8 equipDefense;      /* 0x29 */
+    u8 equipSpeed;        /* 0x2A */
+    u8 equipAccuracy;     /* 0x2B */
+    u8 equipEtherDefense; /* 0x2C */
+    u8 bodyDefense;       /* 0x2D */
+    u8 equip5E;           /* 0x2E */
+    u8 equip5F;           /* 0x2F */
+    u8 hpBonus;           /* 0x30: maximum HP bonus in twentieths */
+    u8 epBonus;           /* 0x31: maximum EP bonus in twentieths */
     u16 flags32; /* 0x32: bit 0x40 doubles status durations */
     u16 flags34; /* 0x34: bit 0x800 reacts while down */
     u16 flags36; /* 0x36 */
     u16 weakness; /* 0x38: weak element bits 0x3f, 0x40 very weak */
     u16 field3A; /* 0x3A */
-    u32 field3C;
-    u32 field40;
-    u32 field44;
-    u32 field48;
+    u32 expTotalA; /* 0x3C: experience totals of levels A and B */
+    u32 expTotalB;
+    u32 expNextA; /* 0x44: experience to the next levels */
+    u32 expNextB;
     u16 hp;     /* 0x4C */
     u16 maxHp;  /* 0x4E */
     u16 ep;     /* 0x50 */
@@ -60,7 +68,9 @@ typedef struct {
     u8 field60; /* 0x60: chance in percent */
     u8 pad61;
     u8 field62; /* 0x62 */
-    u8 pad63[0x6F - 0x63];
+    u8 pad63[0x6A - 0x63];
+    u8 field6A;
+    u8 pad6B[0x6F - 0x6B];
     u8 entryItems[4]; /* 0x6F: item slot of each entry */
     u8 pad73[0x7A - 0x73];
     u16 status7A;
@@ -103,17 +113,30 @@ typedef struct {
     u16 fuel;    /* 0x38 */
     u16 maxFuel; /* 0x3A */
     u8 attack;   /* 0x3C */
-    u8 pad3D[0x3F - 0x3D];
+    u8 pad3D;
+    u8 field3E;
     u8 attackScale; /* 0x3F */
-    u8 pad40[0x4F - 0x40];
+    u16 equipBodyDefense; /* 0x40 */
+    u16 equipArmor;       /* 0x42 */
+    u16 equip68a;         /* 0x44 */
+    u16 equip68b;         /* 0x46 */
+    u8 pad48[2];
+    u8 speedPenalty; /* 0x4A */
+    u8 pad4B;
+    u8 equipGuard;    /* 0x4C */
+    u8 equipHitBonus; /* 0x4D */
+    u8 equipSpeed;    /* 0x4E */
     u8 field4F; /* 0x4F */
     u8 speedBonus[4]; /* 0x50: speed of each part */
-    u8 pad54[0x57 - 0x54];
+    u8 equipFrameFactor; /* 0x54 */
+    u8 pad55;
+    u8 equipAttackScale; /* 0x56 */
     u8 chargeRate; /* 0x57 */
     u8 pad58[0x60 - 0x58];
     u32 hp;    /* 0x60 */
     u32 maxHp; /* 0x64 */
-    u8 pad68[0x70 - 0x68];
+    u16 field68;
+    u8 pad6A[0x70 - 0x6A];
     u16 bodyDefense; /* 0x70 */
     u16 armor;       /* 0x72 */
     u8 field74;
@@ -189,7 +212,8 @@ typedef struct {
     s32 field14C;
     u8 field150[6];
     u16 field156;
-    u8 pad158[0x15A - 0x158];
+    u8 expWeightA; /* 0x158: experience share weights */
+    u8 expWeightB;
     u8 flags15A; /* bit 0x80: fighting in a gear */
     u8 pad15B;
     u8 statusTimers[0x10]; /* remaining turns per timed status; [0] the
@@ -208,7 +232,8 @@ typedef struct {
     u8 padC[0x10 - 0xC];
     u8 itemKinds; /* 0x10: 0x80 uses entry 0's item, 0x10 entry 3's */
     u8 power; /* 0x11 */
-    u8 pad12[0x14 - 0x12];
+    u8 pad12;
+    u8 field13; /* 0x13: doubled/halved by statuses at battle start */
     u8 accuracy; /* 0x14 */
     s8 hitBonus; /* 0x15 */
     u8 formula; /* 0x16: index into the formula table */
@@ -245,7 +270,12 @@ typedef struct {
 /* Battle work area D_800CCCE8; D_800C34B0 points at it. */
 typedef struct {
     Combatant records[11]; /* 0x0000 */
-    u8 padFD0[0x1058 - 0xFD0];
+    u32 savedWords[3][2]; /* 0x0FD0: each member's experience totals */
+    u8 padFE8[0x1000 - 0xFE8];
+    u16 savedMax[3][2]; /* 0x1000: each member's maximum HP and EP */
+    u8 pad100C[0x1028 - 0x100C];
+    u8 savedStats[3][8]; /* 0x1028: each member's base stats */
+    u8 pad1040[0x1058 - 0x1040];
     CommandDescriptor partyCommands[3][38]; /* 0x1058 */
     CommandDescriptor gearCommands[3][42];  /* 0x2228 */
     CommandDescriptor enemyCommands[199];   /* 0x35D8 */
