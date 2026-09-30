@@ -826,6 +826,9 @@ extern u16 D_801D705C[6];       /* indicator x choices */
 extern u16 D_801D7068[6];       /* indicator y choices */
 extern u16 D_801D7074[6];       /* flicker x choices */
 extern u16 D_801D7080[6];       /* flicker y choices */
+extern s16 D_801D6DFC[];        /* camera x per gear */
+extern s16 D_801D6E18[];        /* camera y per gear, command and list cursor (three commands of four) */
+extern s16 D_801D6FB0[];        /* camera distance per command and list cursor */
 extern u16 D_801D708C[14];      /* gear parts frame sprite ids */
 extern u16 D_801D70A8[14];      /* their x */
 extern u16 D_801D70C4[14];      /* their y */

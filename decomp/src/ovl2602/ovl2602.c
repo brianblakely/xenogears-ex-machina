@@ -2660,7 +2660,46 @@ void func_801CF9BC(u8 model, u8 slot) {
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CFAB8);
 
+/*
+ * Swing the camera to the edited gear's view for the current command, open
+ * the lamps, indicator and flicker, and wait until the lamps and indicator
+ * are open. Nonmatching: the first two stores are scheduled in the other order.
+ */
+#ifdef NON_MATCHING
+void func_801CFC60(void) {
+    D_801D9050.from[0] = D_801D9050.to[0];
+    D_801D9050.from[1] = D_801D9050.to[1];
+    D_801D9050.from[2] = D_801D9050.to[2];
+    D_801D9050.to[0] = D_801D6DFC[D_801D9084];
+    D_801D9050.to[1] = D_801D6E18[(D_801D9084 * 3 + D_800625A0->top_cursor) * 4 + D_800625A0->list_cursor];
+    D_801D9050.to[2] = D_801D6FB0[D_800625A0->top_cursor * 4 + D_800625A0->list_cursor];
+    func_801CB690();
+    D_800625A0->view_motion = 7;
+    D_800625A0->unk454->flicker_shown = 1;
+    D_800625A0->unk454->lamp_state[0] = 1;
+    D_800625A0->unk454->lamp_state[1] = 1;
+    D_800625A0->unk454->lamp_state[2] = 1;
+    D_800625A0->unk454->flicker_timer = 0;
+    D_800625A0->unk454->lamp_timer[0] = 0;
+    D_800625A0->unk454->lamp_timer[1] = 0;
+    D_800625A0->unk454->lamp_timer[2] = 0;
+    D_800625A0->unk454->flicker_frame = 0;
+    D_800625A0->unk454->lamp_frame[0] = 0;
+    D_800625A0->unk454->lamp_frame[1] = 0;
+    D_800625A0->unk454->indicator_frame = 0;
+    D_800625A0->unk454->flicker_x = 0x18;
+    D_800625A0->unk454->flicker_y = 0x6E;
+    D_800625A0->flags->gear_shown = 1;
+    while (D_800625A0->unk454->lamp_state[0] != 2) {
+        func_801CC1C4();
+    }
+    while (D_800625A0->unk454->lamp_state[2] != 2) {
+        func_801CC1C4();
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CFC60);
+#endif
 
 /* Show the gear screen: close its lamps and indicator, swing the camera and start its motion (7). */
 void func_801CFF18(void) {
