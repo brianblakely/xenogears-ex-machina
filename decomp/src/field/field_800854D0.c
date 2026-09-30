@@ -120,7 +120,10 @@ void func_80085788(void) {
         func_80028470(4, 0);
         pos = 0;
         for (i = 0; i < bank + 1; i++) {
-            while (D_800AE060[pos][0] != 0xFFFF) {
+            while (1) {
+                if (D_800AE060[pos][0] == 0xFFFF) {
+                    break;
+                }
                 pos++;
             }
             pos++;
@@ -5500,9 +5503,9 @@ void func_8009533C(void) {
     s32 c;
     s32 d;
 
+    zone = &D_800ADBF4[EVENT_OPERAND_BYTE(1)];
     player = D_800AF880.components.descriptors[D_800B2078.controlled].actor;
     point = (WHOLE(player->position[2]) << 16) + WHOLE(player->position[0]);
-    zone = &D_800ADBF4[EVENT_OPERAND_BYTE(1)];
     a = (zone->corner[0].z << 16) + zone->corner[0].x;
     b = (zone->corner[1].z << 16) + zone->corner[1].x;
     c = (zone->corner[2].z << 16) + zone->corner[2].x;
