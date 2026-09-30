@@ -94,6 +94,8 @@ typedef struct {
 
 extern u32 *D_800CCB04; /* current ordering table */
 extern s32 D_800CCB34;  /* draw buffer index */
+extern void *D_800D2F5C; /* glyph table */
+extern u8 D_800C3E4C;   /* battle end state */
 
 /* The battle message image (800d39b8): upload rectangle and pixels. */
 typedef struct {
@@ -226,6 +228,8 @@ extern u8 D_800D2DE4[11];  /* slot ready to act */
 extern s16 D_800D2DF0[2][11]; /* turn timers: [0] reload values, [1] counters */
 extern u16 D_800D2E1C[11]; /* slow-status alternation */
 extern s32 *D_8005917C;
+extern u8 D_8005959C;
+extern s32 D_800595A0;
 extern s16 D_8005A3A0[];
 extern s32 D_8006EF58;     /* party gold */
 
@@ -233,6 +237,9 @@ extern s32 D_8006EF58;     /* party gold */
 u8 func_8001BD40(u8 low, u8 high);
 void func_80043B48(u32 *ot, void *prim);
 void func_80043C24(void *prim, s32 abe);
+void func_80043BFC(void *prim, s32 tge);
+void func_800445D0(s32 mode);
+s32 func_8002675C(void *table, s32 id, POLY_FT4 *prims, s32 buffer, s32 x, s32 y, s32 scale);
 void *func_80033728(void *table, s32 index);
 s32 func_80034EAC(void *text, u32 *pixels, s32 width, s32 mode);
 void func_80044894(RECT *rect, u32 *pixels);
@@ -243,6 +250,18 @@ void func_8003A89C(s32, s32, s32);
 void func_8008AB4C(void);
 s32 func_8008ABB8(s32 size, s32 mode);
 void func_8008AC50(void);
+void func_8008FAD8(void);
+void func_80073FB8(void);
+void func_80073538(void);
+void func_80073F08(void);
+void func_8007500C(void);
+void func_80074F70(void);
+void func_80088B80(void);
+void func_80074AB8(void);
+void func_80076418(void);
+void func_800764B4(void);
+void func_800764EC(void);
+void func_80076AC8(POLY_FT4 *prim);
 s32 func_80098AF8(s32 slot, s32 mode);
 void func_80079E18(s32);
 void func_80079E4C(s32);
@@ -266,6 +285,7 @@ void func_800BE790(void);
 
 /* The 801e5000 module and the 80280000 module. */
 void func_801E5160(void);
+void func_801DE594(void);
 s32 func_801E563C(void);
 void func_801E879C(s32);
 void func_8028022C(void);

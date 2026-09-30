@@ -353,37 +353,157 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80075938);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80076418);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800764B4);
+/* Battle end, outcome state 0: leave the result screens (8008fad8), run the
+ * post-battle module's exit and release the battle display. */
+void func_800764B4(void) {
+    D_8005959C = 0;
+    func_8008FAD8();
+    func_801DE594();
+    func_80073FB8();
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800764EC);
+/* Battle end, outcome state 2: release the battle's resources. */
+void func_800764EC(void) {
+    func_8008FAD8();
+    func_80073538();
+    func_80073F08();
+    func_8007500C();
+    func_80074F70();
+    func_80073FB8();
+    func_80088B80();
+    func_80074AB8();
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80076544);
+/* Battle end by outcome state 800c3e4c. */
+void func_80076544(void) {
+    switch (D_800C3E4C) {
+    case 0:
+        func_800764B4();
+        break;
+    case 1:
+        func_80076418();
+        break;
+    case 2:
+        func_800764EC();
+        break;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800765C4);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80076710);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800769E8);
+/* Upload an image and wait for the transfer. */
+void func_800769E8(RECT *rect, u32 *pixels) {
+    func_80044894(rect, pixels);
+    func_800445D0(0);
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80076A10);
+/* Build glyph `id` as primitives at `prims`, full scale. */
+s32 func_80076A10(s32 id, POLY_FT4 *prims, s16 x, s16 y) {
+    return func_8002675C(D_800D2F5C, id, prims, D_800CCB34, x, y, 0x1000);
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80076A6C);
+/* Build glyph `id` as primitives at `prims`, half scale. */
+s32 func_80076A6C(s32 id, POLY_FT4 *prims, s16 x, s16 y) {
+    return func_8002675C(D_800D2F5C, id, prims, D_800CCB34, x, y, 0x800);
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80076AC8);
+/* Initialise a textured quad: raw texture, opaque. */
+void func_80076AC8(POLY_FT4 *prim) {
+    func_80043BFC(prim, 1);
+    func_80043C24(prim, 0);
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80076B00);
+/* Initialise a textured quad at full brightness; tpage bit 0x40 follows
+ * 800595a0. */
+void func_80076B00(POLY_FT4 *prim) {
+    func_80076AC8(prim);
+    prim->r0 = 0x80;
+    prim->g0 = 0x80;
+    prim->b0 = 0x80;
+    if (D_800595A0 != 0) {
+        prim->tpage |= 0x40;
+    } else {
+        prim->tpage &= ~0x40;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80076B68);
+/* Initialise a textured quad at full brightness with tpage bit 0x20. */
+void func_80076B68(POLY_FT4 *prim) {
+    func_80076AC8(prim);
+    prim->r0 = 0x80;
+    prim->g0 = 0x80;
+    prim->b0 = 0x80;
+    prim->tpage |= 0x20;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80076BAC);
+/* Initialise a textured quad at half brightness with tpage bit 0x20. */
+void func_80076BAC(POLY_FT4 *prim) {
+    func_80076AC8(prim);
+    prim->r0 = 0x40;
+    prim->g0 = 0x40;
+    prim->b0 = 0x40;
+    prim->tpage |= 0x20;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80076BF0);
+/* Initialise a textured quad at full brightness with tpage bit 0x40. */
+void func_80076BF0(POLY_FT4 *prim) {
+    func_80076AC8(prim);
+    prim->r0 = 0x80;
+    prim->g0 = 0x80;
+    prim->b0 = 0x80;
+    prim->tpage |= 0x40;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80076C34);
+/* Initialise a textured quad at half brightness with tpage bit 0x40. */
+void func_80076C34(POLY_FT4 *prim) {
+    func_80076AC8(prim);
+    prim->r0 = 0x40;
+    prim->g0 = 0x40;
+    prim->b0 = 0x40;
+    prim->tpage |= 0x40;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80076C78);
+/* Place a quad of width `w` and height 13 at (x, y) with texture (u, v). */
+void func_80076C78(POLY_FT4 *prim, s16 x, s16 y, u8 u, u8 v, u8 w) {
+    prim->x0 = x;
+    prim->y0 = y;
+    prim->y1 = y;
+    prim->x2 = x;
+    prim->y2 = y + 13;
+    prim->y3 = y + 13;
+    prim->u0 = u;
+    prim->u2 = u;
+    prim->x1 = x + w;
+    prim->x3 = x + w;
+    prim->v0 = v;
+    prim->u1 = u + w;
+    prim->v1 = v;
+    prim->v2 = v + 13;
+    prim->u3 = u + w;
+    prim->v3 = v + 13;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80076CE8);
+/* Place a quad of `w` x `h` at (x, y) with texture (u, v). */
+void func_80076CE8(POLY_FT4 *prim, s16 x, s16 y, u8 u, u8 v, s32 w, s32 h) {
+    prim->x0 = x;
+    prim->y0 = y;
+    prim->y1 = y;
+    prim->x2 = x;
+    prim->u0 = u;
+    prim->u2 = u;
+    prim->x1 = x + w;
+    prim->y2 = y + h;
+    prim->x3 = x + w;
+    prim->y3 = y + h;
+    prim->v0 = v;
+    prim->u1 = u + w;
+    prim->v1 = v;
+    prim->v2 = v + h;
+    prim->u3 = u + w;
+    prim->v3 = v + h;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80076D58);
 
