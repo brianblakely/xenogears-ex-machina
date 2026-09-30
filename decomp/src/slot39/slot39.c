@@ -3346,7 +3346,52 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E5178);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E53CC);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E56E8);
+/* Set up image block `index`'s 16x16 sprite and semi-transparent cover at
+ * its position for both buffers, and the two draw modes (blend mode 2). */
+void func_801E56E8(s32 index) {
+    MenuImage *image;
+    u16 *x;
+    u16 *y;
+    s32 i;
+    RECT window;
+
+    i = 0;
+    x = D_801E9894[index];
+    y = D_801E9914[index];
+    image = D_800625A0->images[index];
+    for (; i < 2; i++) {
+        func_801E927C(&image->polys[i]);
+        image->polys[i].x0 = *x;
+        image->polys[i].y0 = *y;
+        image->polys[i].x1 = *x + 0x10;
+        image->polys[i].y1 = *y;
+        image->polys[i].x2 = *x;
+        image->polys[i].y2 = *y + 0x10;
+        image->polys[i].x3 = *x + 0x10;
+        image->polys[i].y3 = *y + 0x10;
+        image->polys[i].tpage = GetTPage(0, 0, 0x140, 0x80);
+        SetPolyF4(&image->shade[i]);
+        image->shade[i].r0 = 0x80;
+        image->shade[i].g0 = 0x80;
+        image->shade[i].b0 = 0x80;
+        SetSemiTrans(&image->shade[i], 1);
+        image->shade[i].x0 = *x;
+        image->shade[i].y0 = *y;
+        image->shade[i].x1 = *x + 0x10;
+        image->shade[i].y1 = *y;
+        image->shade[i].x2 = *x;
+        image->shade[i].y2 = *y + 0x10;
+        image->shade[i].x3 = *x + 0x10;
+        image->shade[i].y3 = *y + 0x10;
+        func_801C851C(image->shadeVerts, *x, *y, 0x10, 0x10);
+    }
+    window.y = 0;
+    window.x = 0;
+    window.h = 0x100;
+    window.w = 0x100;
+    SetDrawMode(&image->modes[0], 0, 0, GetTPage(0, 2, 0x140, 0x80), &window);
+    SetDrawMode(&image->modes[1], 0, 0, GetTPage(0, 2, 0x140, 0x80), &window);
+}
 
 /* Set up image block `index`'s green 16x16 frame at its position: the
  * top/right and left/bottom lines and their vertices, for both buffers. */

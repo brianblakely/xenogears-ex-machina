@@ -50,6 +50,20 @@ typedef struct LINE_F3 {
     u32 pad;
 } LINE_F3;
 
+typedef struct POLY_F4 {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    s16 x1, y1;
+    s16 x2, y2;
+    s16 x3, y3;
+} POLY_F4;
+
+typedef struct DR_MODE {
+    u32 tag;
+    u32 code[2];
+} DR_MODE;
+
 typedef struct POLY_FT4 {
     u32 tag;
     u8 r0, g0, b0, code;
@@ -629,10 +643,11 @@ typedef struct MenuImage {
     POLY_FT4 polys[2]; /* 0 */
     LINE_F3 top[2]; /* 50: per buffer: top and right edges */
     LINE_F3 bottom[2]; /* 80: per buffer: left and bottom edges */
-    u8 padB0[0x50];
+    POLY_F4 shade[2]; /* B0: per buffer: semi-transparent cover */
+    SVECTOR shadeVerts[4]; /* E0 */
     SVECTOR topVerts[4]; /* 100 */
     SVECTOR bottomVerts[4]; /* 120 */
-    u8 pad140[0x18];
+    DR_MODE modes[2]; /* 140 */
 } MenuImage;
 
 /* The menu mode's state (*D_800625A0). */
@@ -856,6 +871,10 @@ void SetShadeTex(void *prim, s32 on);  /* SetShadeTex */
 void SetPolyFT4(POLY_FT4 *poly);      /* SetPolyFT4 */
 void SetPolyG4(POLY_G4 *poly);       /* SetPolyG4 */
 void SetLineF3(LINE_F3 *line);       /* SetLineF3 */
+void SetPolyF4(POLY_F4 *poly);       /* SetPolyF4 */
+u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y); /* GetTPage */
+void SetDrawMode(DR_MODE *p, s32 dfe, s32 dtd, s32 tpage, RECT *tw); /* SetDrawMode */
+void func_801E927C(POLY_FT4 *poly);
 void func_8003F738(SVECTOR *angles, MATRIX *m); /* RotMatrix */
 void TransMatrix(MATRIX *m, VECTOR *t);      /* TransMatrix */
 void SetRotMatrix(MATRIX *m);                 /* SetRotMatrix */
