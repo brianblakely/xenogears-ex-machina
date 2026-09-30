@@ -582,11 +582,13 @@ void func_800739B8(void) {
 /* Scroll the horizon texture with the camera yaw, transform the two horizon
  * quads of this buffer and link them, inside their texture windows, into the
  * ordering table. */
-#ifdef NON_MATCHING /* original reloads D_8009D7F0 after each texture-coordinate pair */
+#ifdef NON_MATCHING /* loop keeps the quad row offset apart from the buffer base; uv registers differ */
 void func_80073B04(void) {
     SVECTOR *corners;
-    u16 u;
-    u16 right;
+    HorizonScratch *scratch;
+    PolyFT4 *quad;
+    s32 u;
+    s32 right;
     s32 i;
     s32 offset;
     s32 otz;
@@ -596,39 +598,37 @@ void func_80073B04(void) {
     i = 0;
     u = (D_8009BD38.vy >> 2) & 0x7F;
     right = u | 0x80;
-    HORIZON_QUADS[D_8009D7F0].uv0 = HORIZON_QUADS[D_8009D7F0 + 2].uv0 = u;
-    HORIZON_QUADS[D_8009D7F0].uv1 = HORIZON_QUADS[D_8009D7F0 + 2].uv1 = right;
+    *(u16 *)&D_8009C744[D_8009D7F0].u0 = *(u16 *)&D_8009C744[D_8009D7F0 + 2].u0 = u;
+    *(u16 *)&D_8009C744[D_8009D7F0].u1 = *(u16 *)&D_8009C744[D_8009D7F0 + 2].u1 = right;
     u |= 0x3F00;
-    HORIZON_QUADS[D_8009D7F0].uv2 = HORIZON_QUADS[D_8009D7F0 + 2].uv2 = u;
+    *(u16 *)&D_8009C744[D_8009D7F0].u2 = *(u16 *)&D_8009C744[D_8009D7F0 + 2].u2 = u;
     right |= 0x3F00;
-    HORIZON_QUADS[D_8009D7F0].uv3 = HORIZON_QUADS[D_8009D7F0 + 2].uv3 = right;
+    *(u16 *)&D_8009C744[D_8009D7F0].u3 = *(u16 *)&D_8009C744[D_8009D7F0 + 2].u3 = right;
     HORIZON_SCRATCH->angle.vz = 0;
-    HORIZON_SCRATCH->angle.vx = 0;
-    HORIZON_SCRATCH->angle.vy = D_8009BD38.vy;
+    scratch = HORIZON_SCRATCH;
+    scratch->angle.vx = 0;
+    scratch->angle.vy = D_8009BD38.vy;
+    func_8004A92C(&scratch->angle, &scratch->rotation);
     offset = 0;
-    func_8004A92C(&HORIZON_SCRATCH->angle, &HORIZON_SCRATCH->rotation);
-    HORIZON_SCRATCH->rotation.t[2] = 0;
-    HORIZON_SCRATCH->rotation.t[1] = 0;
-    HORIZON_SCRATCH->rotation.t[0] = 0;
-    CompMatrix(&D_8009C808, &HORIZON_SCRATCH->rotation, &HORIZON_SCRATCH->view);
-    SetRotMatrix(&HORIZON_SCRATCH->view);
-    SetTransMatrix(&HORIZON_SCRATCH->view);
+    scratch->rotation.t[2] = 0;
+    scratch->rotation.t[1] = 0;
+    scratch->rotation.t[0] = 0;
+    CompMatrix(&D_8009C808, &scratch->rotation, &scratch->view);
+    SetRotMatrix(&scratch->view);
+    SetTransMatrix(&scratch->view);
     do {
-        PolyFT4uv *quad;
-
         i++;
-        quad = (PolyFT4uv *)((u8 *)&HORIZON_QUADS[D_8009D7F0] + offset);
+        quad = (PolyFT4 *)((u8 *)&D_8009C744[D_8009D7F0] + offset);
         otz = RotTransPers4(&corners[0], &corners[1], &corners[2], &corners[3], (s32 *)&quad->x0,
-                            (s32 *)&quad->x1, (s32 *)&quad->x2, (s32 *)&quad->x3, &HORIZON_SCRATCH->p,
-                            &HORIZON_SCRATCH->flag);
+                            (s32 *)&quad->x1, (s32 *)&quad->x2, (s32 *)&quad->x3, &scratch->p, &scratch->flag);
         corners += 4;
-        offset += 2 * sizeof(PolyFT4uv);
+        offset += 2 * sizeof(PolyFT4);
     } while (i < 2);
-    if (HORIZON_SCRATCH->flag >= 0) {
+    if (scratch->flag >= 0) {
         ot = &D_8009BE3C->ot[otz >> D_80050100];
         addPrim(ot, &D_8009D3D8[1]);
-        addPrim(ot, &HORIZON_QUADS[D_8009D7F0]);
-        addPrim(ot, &HORIZON_QUADS[D_8009D7F0 + 2]);
+        addPrim(ot, &D_8009C744[D_8009D7F0]);
+        addPrim(ot, &D_8009C744[D_8009D7F0 + 2]);
         addPrim(ot, &D_8009D3D8[0]);
     }
 }
