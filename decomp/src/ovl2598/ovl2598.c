@@ -14,6 +14,8 @@ void func_801C9F80(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_h
 void func_801CA24C(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_height);
 void func_801CAD14(void);
 extern u8 D_801CB400[];
+extern s32 D_801CB180[]; /* marker home x */
+extern s32 D_801CB190[]; /* marker home y */
 extern s32 D_801CB1A0[]; /* marker x by list row */
 extern s32 D_801CB1C4[]; /* marker y by list row */
 extern s32 D_801CB1E8[]; /* member panel layout x */
@@ -1411,7 +1413,37 @@ void func_801CA810(u8 list, s32 row, u8 marker) {
     D_800625A0->flags->markers_on = 1;
 }
 
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801CA944);
+/* Allocate the markers and set them up for `mode`: 0 and 2 build all four
+ * at their home positions (0 also turns them on following the cursor), 3
+ * builds the first at the origin and turns them on, 1 leaves them empty. */
+void func_801CA944(u8 mode) {
+    s32 i;
+    Markers *markers = func_80031BDC(0x14C, 0);
+
+    D_800625A0->markers = markers;
+    func_8003F8E8(markers, 0x14C);
+    switch (mode) {
+    case 0:
+        D_800625A0->flags->markers_on = 1;
+        D_800625A0->markers->follow[0] = 1;
+        D_800625A0->markers->follow[1] = 1;
+    case 2:
+        for (i = 0; i < 4; i++) {
+            func_8002675C(D_800625A0->sprite_sheet, 0x108, D_800625A0->markers->poly + i * 2,
+                          D_800625A0->buffer_index, D_801CB180[i], D_801CB190[i], 0x800);
+            D_800625A0->markers->buffer[i] = D_800625A0->buffer_index;
+        }
+        break;
+    case 3:
+        func_8002675C(D_800625A0->sprite_sheet, 0x108, D_800625A0->markers->poly,
+                      D_800625A0->buffer_index, 0, 0, 0x800);
+        D_800625A0->markers->buffer[0] = D_800625A0->buffer_index;
+        D_800625A0->flags->markers_on = 1;
+        break;
+    case 1:
+        break;
+    }
+}
 
 /* Hide the markers, let one frame pass and release them. */
 void func_801CAB04(void) {
