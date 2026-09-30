@@ -3,9 +3,11 @@
 
 #include "battle_core.h"
 #include "../resident/pad.h"
+#include "../resident/console.h"
 
 /* Battle input with pausing (8008a3ec). */
 extern u8 D_800C3444;  /* the battle is paused */
+extern u8 D_800C3AA0;  /* the debug console is open */
 extern s32 D_80059488; /* vsync count */
 
 /* A party member's result screen block (the 801de000 module). */

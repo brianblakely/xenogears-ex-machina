@@ -72,8 +72,8 @@ void func_80070F40(void) {
     bzero(D_800D2D28, 0x10C);
     bzero(D_800C3EAC, 0x2F8);
     D_8005959C = 0;
-    D_800C3E29 = 0xFF;
-    D_800C3E28 = 0xFF;
+    D_800C3E28[1] = 0xFF;
+    D_800C3E28[0] = 0xFF;
     D_800D366C = 0;
     D_800C3E54 = D_80062528;
     if (D_8005947C != 0) {
