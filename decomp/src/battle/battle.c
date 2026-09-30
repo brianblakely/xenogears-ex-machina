@@ -8402,7 +8402,159 @@ s32 func_8009DB54(s32 damage) {
     return damage;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009DBFC);
+/* Roll a status onto the target's gear, from the attacking gear's first
+ * part (`fromGear`: chance +0x13, kind +0x14, flag +0x10, 5 turns) or from
+ * the command (+0x1c/+0x1d/+0x1e, turns +0x11): cancel opposite statuses,
+ * check immunities, set the kind's status word and turn timer, or apply the
+ * special kinds 10-16. Returns 1 when it took. */
+s8 func_8009DBFC(u8 fromGear) {
+    Combatant *record = &D_800C34B0->records[D_800C3E50];
+    CharacterRecord *pilot = &record->pilot;
+    s8 chance;
+    u8 kind;
+    u16 flags;
+    u8 turns;
+
+    if (fromGear) {
+        chance = D_800D2D6C->entries[0].value10;
+        kind = D_800D2D6C->entries[0].value11;
+        flags = D_800D2D6C->entries[0].field0;
+        turns = 5;
+    } else {
+        chance = D_800C3DFC->field1C;
+        kind = D_800C3DFC->field1D;
+        flags = D_800C3DFC->field1E;
+        turns = D_800C3DFC->power;
+    }
+    if (!(D_800C34B0->records[D_800C3E50].flags15A & 0x80)) {
+        return 0;
+    }
+    if (chance < rand() % 100) {
+        return 0;
+    }
+    switch (kind) {
+    case 0:
+        if ((flags & 0x20) && (D_800D2DC8->status80 & 0x8000)) {
+            D_800D2DC8->status80 &= 0x7FFF;
+            D_800C3E34->pilot.status84.half.active &= 0x7FFF;
+            return 1;
+        }
+        break;
+    case 1:
+        if (flags & 0xA) {
+            if (D_800D2DC8->status80 & 5) {
+                D_800D2DC8->status80 &= 0xFFFA;
+                return 1;
+            }
+        } else if (flags & 5) {
+            if (D_800D2DC8->status80 & 0xA) {
+                D_800D2DC8->status80 &= 0xFFF5;
+                return 1;
+            }
+        }
+        break;
+    }
+    if (kind == 0) {
+        if (flags & D_800D2DC8->field7E) {
+            return 0;
+        }
+        switch (flags) {
+        case 0x400:
+            record->statusTimers[0] = turns;
+            D_800D2DC8->status7C &= 0xFBFF;
+            pilot->status7C |= 0x2000;
+            break;
+        case 0x1000:
+            D_800D2DC8->status7C &= 0xEFFF;
+            pilot->status80 |= 0x2000;
+            break;
+        case 0x200:
+            record->statusTimers[1] = turns;
+            break;
+        case 0x100:
+            record->statusTimers[2] = turns;
+            break;
+        case 0x80:
+            record->statusTimers[3] = turns;
+            break;
+        case 0x20:
+            record->statusTimers[4] = turns;
+            pilot->status7C |= 0x1000;
+            break;
+        case 0x10:
+            record->statusTimers[5] = turns;
+            break;
+        }
+        D_800D2DC8->status7C |= flags;
+    }
+    if (kind == 1) {
+        D_800D2DC8->status80 |= flags;
+        switch (flags) {
+        case 0x1000:
+            record->statusTimers[10] = turns;
+            break;
+        case 0x40:
+            record->statusTimers[11] = turns;
+            break;
+        case 0x20:
+            record->statusTimers[12] = turns;
+            break;
+        }
+    }
+    if (kind == 3) {
+        if (flags & 0xF000) {
+            if (D_800D2DC8->status84.half.permanent & 0xF000) {
+                return 0;
+            }
+            D_800D2DC8->status84.half.active = flags | (D_800D2DC8->status84.half.active & 0xFFF);
+            record->statusTimers[7] = turns;
+        }
+        if (flags & 0xF00) {
+            if (D_800D2DC8->status84.half.permanent & 0xF00) {
+                return 0;
+            }
+            D_800D2DC8->status84.half.active = flags | (D_800D2DC8->status84.half.active & 0xF0FF);
+            record->statusTimers[8] = turns;
+        }
+    }
+    if (kind == 10) {
+        D_800D2DC8->status84.half.active &= ~flags;
+    }
+    if (kind == 11 && !(D_800D2DC8->field7E & 0x40)) {
+        D_800D2DC8->defense += flags;
+        kind = 0;
+        if (D_800D2DC8->defense >= 100) {
+            D_800D2DC8->defense = 99;
+        }
+        flags = 0x40;
+    }
+    if (kind == 12) {
+        D_800C34B0->resultCode[D_800C3E50] = 0;
+        D_800C34B0->damage[D_800C3E50] = D_800D2DC8->hp / flags;
+    }
+    if (kind == 13) {
+        D_800C34B0->resultCode[D_800C3E50] = 0;
+        D_800C34B0->damage[D_800C3E50] = D_800D2DC8->hp - 1;
+    }
+    if (kind == 14) {
+        D_800D2DC8->status80 = 0;
+        D_800D2DC8->status84.half.active = 0;
+        if (flags == 1) {
+            D_800D2DC8->status82 = 0;
+            D_800D2DC8->status84.half.permanent = 0;
+        }
+    }
+    if (kind == 16) {
+        D_800D2DC8->status7C |= 1;
+        D_800C3E34->pilot.status7C |= 0x80;
+    }
+    if (kind == 15) {
+        D_800D2DC8->status7C &= 0xFFFE;
+        D_800C3E34->pilot.status7C &= 0xFF7F;
+    }
+    func_8009E868(kind, flags);
+    return 1;
+}
 
 /* Clear the target gear's defense percentage. */
 void func_8009E268(void) {

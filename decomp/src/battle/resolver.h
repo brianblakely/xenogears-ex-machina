@@ -17,5 +17,6 @@ s8 func_8009D3A0(void);
 u16 func_8009D948(void);
 u16 func_8009DA04(void);
 s32 func_8009DB54(s32 damage);
+void func_8009E868(u8 kind, u16 flag);
 
 #endif

@@ -81,7 +81,7 @@ typedef struct {
 
 /* One of a gear record's four 8-byte part entries at +0x10. */
 typedef struct {
-    u8 pad0[2];
+    u16 field0; /* +0: a status flag bit */
     u8 valueE;  /* +2 */
     u8 value10; /* +3 */
     u8 value11; /* +4 */
@@ -339,7 +339,7 @@ void func_800995A0(u8 slot, u8 kind, u16 flag, u8 amount);
 void func_8009CA90(void);
 void func_8009CB68(u8 slot);
 void func_8009E788(void);
-s8 func_8009DBFC(s32 arg0);
+s8 func_8009DBFC(u8 fromGear);
 s16 func_80096FBC(void);
 s16 func_80097610(void);
 
