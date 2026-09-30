@@ -2072,9 +2072,75 @@ void func_8008E0C8(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008E120);
+#ifdef NON_MATCHING
+/* Advance the glow field one step: seed the two bottom rows with random
+ * heat, let every cell take the cooled average of its neighbours below,
+ * then keep the result for the next step.
+ * Does not match: GCC does not strength-reduce the five neighbour loads
+ * into separate pointers as the original does. */
+void func_8008E120(void) {
+    s16 *new;
+    s16 *old;
+    s16 *seed;
+    s32 heat;
+    s32 value;
+    s32 row;
+    s32 i;
+    s32 x;
+    s32 y;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008E2B8);
+    if (D_80092844 != NULL) {
+        heat = 0;
+        new = D_80092840;
+        seed = &new[47 * 0x70];
+        for (x = 0; x < 0x70; x++) {
+            switch (func_8003FA38() & 3) {
+            case 0:
+                heat = 0x180;
+                break;
+            case 1:
+                heat = 0;
+                break;
+            }
+            seed[x] = seed[x + 0x70] = heat;
+        }
+        old = D_8009283C;
+        for (y = 0x2F; y > 1; y--) {
+            for (x = 1; x < 0x70; x++) {
+                value = (old[(y - 1) * 0x70 + x] + old[y * 0x70 + x + 1] + old[y * 0x70 + x - 1] +
+                         old[(y + 1) * 0x70 + x + 1] + old[(y + 1) * 0x70 + x - 1]) /
+                        5;
+                if (value > 3) {
+                    value -= 3;
+                }
+                new[(y - 1) * 0x70 + x] = value;
+            }
+        }
+        func_8008E0C8();
+    }
+}
+#else
+INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008E120);
+#endif
+
+/* Draw a full-screen grey tile of the given level, additive or subtractive,
+ * with the draw mode that selects the blend. */
+void func_8008E2B8(u32 *ot, s32 level, s32 subtract) {
+    Tile *tile = &D_80096DE0[D_800928A0];
+
+    *(u32 *)&tile->r0 = level | (level << 8) | (level << 16) | 0x60000000;
+    setlen(tile, 3);
+    *(u32 *)&tile->x0 = 0;
+    *(u32 *)&tile->w = 0xDA0140;
+    setSemiTrans(tile, 1);
+    func_80043B48(ot, tile);
+    if (subtract) {
+        func_800454DC(&D_80096E00[D_800928A0], 0, 1, func_80043A1C(0, 2, 0, 0), NULL);
+    } else {
+        func_800454DC(&D_80096E00[D_800928A0], 0, 1, func_80043A1C(0, 1, 0, 0), NULL);
+    }
+    func_80043B48(ot, &D_80096E00[D_800928A0]);
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008E3CC);
 

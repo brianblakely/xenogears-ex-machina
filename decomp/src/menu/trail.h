@@ -290,10 +290,21 @@ typedef struct {
 
 /* Glow field buffers: bytes, previous and current halfword fields. */
 extern u8 *D_80092844;
-extern u16 *D_8009283C;
-extern u16 *D_80092840;
+extern s16 *D_8009283C;
+extern s16 *D_80092840;
 extern u16 D_80091CE0[]; /* glow palette (256 entries) */
 void func_80044894(Rect *rect, void *data); /* LoadImage */
+
+typedef struct {
+    u32 tag;
+    u32 code[2];
+} DrawMode;
+
+extern Tile D_80096DE0[2];     /* full-screen shade tile per draw buffer */
+extern DrawMode D_80096E00[2]; /* its blend mode per draw buffer */
+void func_80043B48(u32 *ot, void *prim); /* AddPrim */
+u16 func_80043A1C(s32 tp, s32 abr, s32 x, s32 y); /* GetTPage */
+void func_800454DC(DrawMode *p, s32 dfe, s32 dtd, s32 tpage, Rect *tw); /* SetDrawMode */
 
 int abs(int x);
 s32 func_8003FA38(void); /* rand */
