@@ -92,18 +92,48 @@ typedef struct {
 
 /* The six outputs of func_80026338 for one sprite. */
 typedef struct {
-    s32 value[6];
+    s32 unk0;
+    s32 tpage_mode; /* texture depth for GetTPage */
+    s32 clut_x;
+    s32 clut_y;
+    s32 page_x;
+    s32 page_y;
 } SpriteInfo;
 
-/* The party list block (0x6C bytes). */
+/* Sprite part packets built by func_8002675C. */
+typedef struct {
+    u8 data[0x50];
+} SpriteParts;
+
+/* A 3D menu panel: four edge strips (two pieces per draw buffer), the frame
+ * sprites, the translucent fill and the corner vectors it is projected from. */
+typedef struct {
+    u8 pad_0[0x140];
+    POLY_FT4 edge[4][4];      /* 0x140 */
+    SpriteParts frame_side;   /* 0x3C0: sprite 0x106 */
+    SpriteParts frame_top;    /* 0x410: sprite 0x105 */
+    SpriteParts frame_bottom; /* 0x460: sprite 0x105, flipped */
+    POLY_G4 fill[2];          /* 0x4B0 */
+    DR_MODE fill_mode[2];     /* 0x4F8 */
+    u8 pad_510[0x6B0 - 0x510];
+    SVECTOR side[4];          /* 0x6B0 */
+    SVECTOR top[4];           /* 0x6D0 */
+    SVECTOR bottom[4];        /* 0x6F0 */
+} Panel;
+
+/* The menu flag block (0x6C bytes): per-window/panel state bytes and the
+ * party being edited. */
 typedef struct {
     u8 pad_0[3];
     u8 flag_3; /* 0x3 */
     u8 flag_4; /* 0x4 */
-    u8 pad_5[0x30 - 0x5];
-    u8 ids[3]; /* 0x30: party members, 0xFF empty */
+    u8 pad_5[0x20 - 0x5];
+    u8 panel_20[7]; /* 0x20: per panel */
+    u8 panel_27[7]; /* 0x27: per panel */
+    u8 pad_2E[0x30 - 0x2E];
+    u8 party[3]; /* 0x30: party members, 0xFF empty */
     u8 pad_33[0x6C - 0x33];
-} PartyList;
+} MenuFlags;
 
 /* The shared menu state (*D_800625A0), as far as this overlay uses it. */
 typedef struct {
@@ -126,13 +156,15 @@ typedef struct {
     u8 top_cursor;       /* 0x336 */
     u8 b_337;            /* 0x337 */
     u8 pad_338[0x33C - 0x338];
-    PartyList *party;    /* 0x33C */
+    MenuFlags *flags;    /* 0x33C */
     u8 pad_340[0x348 - 0x340];
     Backdrop *backdrop;  /* 0x348 */
     u8 pad_34C[0x350 - 0x34C];
     u8 *block_350;       /* 0x350: 0x1194 bytes */
     u8 *block_354;       /* 0x354: 0x140C bytes */
-    u8 pad_358[0x46C - 0x358];
+    u8 pad_358[0x364 - 0x358];
+    Panel *panels[7];      /* 0x364 */
+    u8 pad_380[0x46C - 0x380];
     SpriteInfo sprites[4]; /* 0x46C: sprites 0xFE, 0x103, 0x100, 0x101 */
     u8 pad_4CC[0x4E0 - 0x4CC];
     MenuLabel labels[4];   /* 0x4E0: the screen's command labels */
@@ -181,6 +213,11 @@ extern void func_800454DC(DR_MODE *p, s32 dfe, s32 dtd, s32 tpage, RECT *tw); /*
 extern void func_80043BFC(void *p, s32 abe);   /* SetSemiTrans */
 extern void func_80043C24(void *p, s32 tge);   /* SetShadeTex */
 extern u16 func_80043A1C(s32 tp, s32 abr, s32 x, s32 y); /* GetTPage */
+extern u16 func_80043A58(s32 x, s32 y);                   /* GetClut */
+extern void func_8002675C(void *sheet, s32 id, SpriteParts *parts, s32 buffer, s32 x, s32 y,
+                          s32 scale);
+extern void func_800263E4(void *sheet, s32 id, SpriteParts *parts, s32 buffer, s32 x, s32 y,
+                          s32 scale, s32 a, s32 b);
 extern void *func_80033728(void *table, s32 index);      /* message address */
 extern u8 func_80034EAC(void *text, u8 *image, s32 a, s32 b); /* render text */
 extern void func_80033698(s32 a, s32 b);

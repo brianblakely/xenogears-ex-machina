@@ -26,14 +26,14 @@ void func_801C5034(u8 allocate) {
     }
 }
 
-/* Allocate (nonzero) or release the party list. */
+/* Allocate (nonzero) or release the menu flag block. */
 void func_801C5098(u8 allocate) {
     if (allocate) {
         void *block = func_80031BDC(0x6C, 0);
-        D_800625A0->party = block;
+        D_800625A0->flags = block;
         func_8003F8E8(block, 0x6C);
     } else {
-        func_800320E8(D_800625A0->party);
+        func_800320E8(D_800625A0->flags);
     }
 }
 
@@ -166,9 +166,9 @@ void func_801C559C(void) {
     for (i = 0; i < 3; i++) {
         id = D_8006F368[i];
         if (id != 0xFF && D_800625A0->available[id]) {
-            D_800625A0->party->ids[i] = id;
+            D_800625A0->flags->party[i] = id;
         } else {
-            D_800625A0->party->ids[i] = 0xFF;
+            D_800625A0->flags->party[i] = 0xFF;
         }
     }
     func_801C5390();
@@ -306,28 +306,28 @@ void func_801C5B90(void) {
 void func_801C5BEC(void) {
     u8 unused[0x28];
 
-    func_80026338(D_800625A0->sprite_sheet, 0xFE, &D_800625A0->sprites[0].value[0],
-                  &D_800625A0->sprites[0].value[1], &D_800625A0->sprites[0].value[2],
-                  &D_800625A0->sprites[0].value[3], &D_800625A0->sprites[0].value[4],
-                  &D_800625A0->sprites[0].value[5]);
-    func_80026338(D_800625A0->sprite_sheet, 0x103, &D_800625A0->sprites[1].value[0],
-                  &D_800625A0->sprites[1].value[1], &D_800625A0->sprites[1].value[2],
-                  &D_800625A0->sprites[1].value[3], &D_800625A0->sprites[1].value[4],
-                  &D_800625A0->sprites[1].value[5]);
-    func_80026338(D_800625A0->sprite_sheet, 0x100, &D_800625A0->sprites[2].value[0],
-                  &D_800625A0->sprites[2].value[1], &D_800625A0->sprites[2].value[2],
-                  &D_800625A0->sprites[2].value[3], &D_800625A0->sprites[2].value[4],
-                  &D_800625A0->sprites[2].value[5]);
-    func_80026338(D_800625A0->sprite_sheet, 0x101, &D_800625A0->sprites[3].value[0],
-                  &D_800625A0->sprites[3].value[1], &D_800625A0->sprites[3].value[2],
-                  &D_800625A0->sprites[3].value[3], &D_800625A0->sprites[3].value[4],
-                  &D_800625A0->sprites[3].value[5]);
+    func_80026338(D_800625A0->sprite_sheet, 0xFE, &D_800625A0->sprites[0].unk0,
+                  &D_800625A0->sprites[0].tpage_mode, &D_800625A0->sprites[0].clut_x,
+                  &D_800625A0->sprites[0].clut_y, &D_800625A0->sprites[0].page_x,
+                  &D_800625A0->sprites[0].page_y);
+    func_80026338(D_800625A0->sprite_sheet, 0x103, &D_800625A0->sprites[1].unk0,
+                  &D_800625A0->sprites[1].tpage_mode, &D_800625A0->sprites[1].clut_x,
+                  &D_800625A0->sprites[1].clut_y, &D_800625A0->sprites[1].page_x,
+                  &D_800625A0->sprites[1].page_y);
+    func_80026338(D_800625A0->sprite_sheet, 0x100, &D_800625A0->sprites[2].unk0,
+                  &D_800625A0->sprites[2].tpage_mode, &D_800625A0->sprites[2].clut_x,
+                  &D_800625A0->sprites[2].clut_y, &D_800625A0->sprites[2].page_x,
+                  &D_800625A0->sprites[2].page_y);
+    func_80026338(D_800625A0->sprite_sheet, 0x101, &D_800625A0->sprites[3].unk0,
+                  &D_800625A0->sprites[3].tpage_mode, &D_800625A0->sprites[3].clut_x,
+                  &D_800625A0->sprites[3].clut_y, &D_800625A0->sprites[3].page_x,
+                  &D_800625A0->sprites[3].page_y);
 }
 
 /* Clear the party list's flags 3 and 4. */
 void func_801C5CF4(void) {
-    D_800625A0->party->flag_4 = 0;
-    D_800625A0->party->flag_3 = 0;
+    D_800625A0->flags->flag_4 = 0;
+    D_800625A0->flags->flag_3 = 0;
 }
 
 /* Make `poly` a gouraud quad fading from (r, g, b) at the top to black. */
@@ -390,7 +390,7 @@ void func_801C5DA0(void) {
 }
 
 /* Place a quad's four vertices around the screen centre (160, 112). */
-void func_801C60EC(SVECTOR *v, u16 x, u16 y, s16 w, s16 h) {
+void func_801C60EC(SVECTOR *v, u16 x, u16 y, u16 w, u16 h) {
     v[0].vx = x - 160;
     v[0].vy = y - 112;
     v[0].vz = 0;
@@ -414,9 +414,98 @@ void func_801C6144(POLY_FT4 *poly) {
     poly->b0 = 0x80;
 }
 
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C618C);
+/* Set up panel `index`'s primitives: its translucent grey fill and draw
+ * modes, and the textured edge strips from the four frame sprites. */
+void func_801C618C(u8 index) {
+    Panel *panel = D_800625A0->panels[index];
+    RECT window;
+    u8 i;
 
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C64A8);
+    window.y = 0;
+    window.x = 0;
+    window.h = 0x100;
+    window.w = 0x100;
+    D_800625A0->flags->panel_20[index] = 0;
+    D_800625A0->flags->panel_27[index] = 0;
+    for (i = 0; i < 2; i++) {
+        func_80043CC4(&panel->fill[i]);
+        (panel->fill + i)->r0 = 0x68;
+        (panel->fill + i)->g0 = 0x68;
+        (panel->fill + i)->b0 = 0x68;
+        (panel->fill + i)->r1 = 0x68;
+        (panel->fill + i)->g1 = 0x68;
+        (panel->fill + i)->b1 = 0x68;
+        (panel->fill + i)->r2 = 0x68;
+        (panel->fill + i)->g2 = 0x68;
+        (panel->fill + i)->b2 = 0x68;
+        (panel->fill + i)->r3 = 0x68;
+        (panel->fill + i)->g3 = 0x68;
+        (panel->fill + i)->b3 = 0x68;
+        func_80043BFC(&panel->fill[i], 1);
+        func_800454DC(&panel->fill_mode[i], 0, 0,
+                      func_80043A1C(0, 0, D_800625A0->sprites[0].page_x,
+                                    D_800625A0->sprites[0].page_y),
+                      &window);
+    }
+    for (i = 0; i < 4; i++) {
+        func_80043CB0(&panel->edge[0][i]);
+        func_80043C24(&panel->edge[0][i], 1);
+        (panel->edge[0] + i)->r0 = 0xFF;
+        (panel->edge[0] + i)->g0 = 0xFF;
+        (panel->edge[0] + i)->b0 = 0xFF;
+        (panel->edge[0] + i)->tpage =
+            func_80043A1C(D_800625A0->sprites[0].tpage_mode, 0, D_800625A0->sprites[0].page_x,
+                          D_800625A0->sprites[0].page_y);
+        (panel->edge[0] + i)->clut =
+            func_80043A58(D_800625A0->sprites[0].clut_x, D_800625A0->sprites[0].clut_y);
+        func_80043CB0(&panel->edge[1][i]);
+        func_80043C24(&panel->edge[1][i], 1);
+        (panel->edge[1] + i)->r0 = 0xFF;
+        (panel->edge[1] + i)->g0 = 0xFF;
+        (panel->edge[1] + i)->b0 = 0xFF;
+        (panel->edge[1] + i)->tpage =
+            func_80043A1C(D_800625A0->sprites[1].tpage_mode, 0, D_800625A0->sprites[1].page_x,
+                          D_800625A0->sprites[1].page_y);
+        (panel->edge[1] + i)->clut =
+            func_80043A58(D_800625A0->sprites[1].clut_x, D_800625A0->sprites[1].clut_y);
+        func_80043CB0(&panel->edge[2][i]);
+        func_80043C24(&panel->edge[2][i], 1);
+        (panel->edge[2] + i)->r0 = 0xFF;
+        (panel->edge[2] + i)->g0 = 0xFF;
+        (panel->edge[2] + i)->b0 = 0xFF;
+        (panel->edge[2] + i)->tpage =
+            func_80043A1C(D_800625A0->sprites[2].tpage_mode, 0, D_800625A0->sprites[2].page_x,
+                          D_800625A0->sprites[2].page_y);
+        (panel->edge[2] + i)->clut =
+            func_80043A58(D_800625A0->sprites[2].clut_x, D_800625A0->sprites[2].clut_y);
+        func_80043CB0(&panel->edge[3][i]);
+        func_80043C24(&panel->edge[3][i], 1);
+        (panel->edge[3] + i)->r0 = 0xFF;
+        (panel->edge[3] + i)->g0 = 0xFF;
+        (panel->edge[3] + i)->b0 = 0xFF;
+        (panel->edge[3] + i)->tpage =
+            func_80043A1C(D_800625A0->sprites[3].tpage_mode, 0, D_800625A0->sprites[3].page_x,
+                          D_800625A0->sprites[3].page_y);
+        (panel->edge[3] + i)->clut =
+            func_80043A58(D_800625A0->sprites[3].clut_x, D_800625A0->sprites[3].clut_y);
+    }
+}
+
+/* Build panel `index`'s frame sprites for this buffer at (x, y) with height
+ * `h` and place its top, bottom and side vectors. */
+void func_801C64A8(u8 index, u16 x, u16 y, s32 unused, u16 h) {
+    Panel *panel = D_800625A0->panels[index];
+
+    func_8002675C(D_800625A0->sprite_sheet, 0x105, &panel->frame_top, D_800625A0->buffer_index,
+                  x, y, 0x1000);
+    func_800263E4(D_800625A0->sprite_sheet, 0x105, &panel->frame_bottom,
+                  D_800625A0->buffer_index, x, y + h - 8, 0x1000, 0, 1);
+    func_8002675C(D_800625A0->sprite_sheet, 0x106, &panel->frame_side, D_800625A0->buffer_index,
+                  x, y + 8, 0x1000);
+    func_801C60EC(panel->top, x, y, 8, 8);
+    func_801C60EC(panel->bottom, x, y + h, 8, -8);
+    func_801C60EC(panel->side, x, y + 8, 8, h - 8);
+}
 
 INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C660C);
 

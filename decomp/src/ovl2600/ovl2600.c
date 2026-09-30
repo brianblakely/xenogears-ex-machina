@@ -26,14 +26,14 @@ void func_801C505C(u8 allocate) {
     }
 }
 
-/* Allocate (nonzero) or release the party list. */
+/* Allocate (nonzero) or release the menu flag block. */
 void func_801C50C0(u8 allocate) {
     if (allocate) {
         void *block = func_80031BDC(0x6C, 0);
-        D_800625A0->party = block;
+        D_800625A0->flags = block;
         func_8003F8E8(block, 0x6C);
     } else {
-        func_800320E8(D_800625A0->party);
+        func_800320E8(D_800625A0->flags);
     }
 }
 
@@ -117,9 +117,9 @@ void func_801C58B8(void) {
     for (i = 0; i < 3; i++) {
         id = D_8006F368[i];
         if (id != 0xFF && D_800625A0->available[id]) {
-            D_800625A0->party->ids[i] = id;
+            D_800625A0->flags->party[i] = id;
         } else {
-            D_800625A0->party->ids[i] = 0xFF;
+            D_800625A0->flags->party[i] = 0xFF;
         }
     }
     func_801C5318();
@@ -186,28 +186,28 @@ void func_801C5EAC(void) {
 void func_801C5F08(void) {
     u8 unused[0x28];
 
-    func_80026338(D_800625A0->sprite_sheet, 0xFE, &D_800625A0->sprites[0].value[0],
-                  &D_800625A0->sprites[0].value[1], &D_800625A0->sprites[0].value[2],
-                  &D_800625A0->sprites[0].value[3], &D_800625A0->sprites[0].value[4],
-                  &D_800625A0->sprites[0].value[5]);
-    func_80026338(D_800625A0->sprite_sheet, 0x103, &D_800625A0->sprites[1].value[0],
-                  &D_800625A0->sprites[1].value[1], &D_800625A0->sprites[1].value[2],
-                  &D_800625A0->sprites[1].value[3], &D_800625A0->sprites[1].value[4],
-                  &D_800625A0->sprites[1].value[5]);
-    func_80026338(D_800625A0->sprite_sheet, 0x100, &D_800625A0->sprites[2].value[0],
-                  &D_800625A0->sprites[2].value[1], &D_800625A0->sprites[2].value[2],
-                  &D_800625A0->sprites[2].value[3], &D_800625A0->sprites[2].value[4],
-                  &D_800625A0->sprites[2].value[5]);
-    func_80026338(D_800625A0->sprite_sheet, 0x101, &D_800625A0->sprites[3].value[0],
-                  &D_800625A0->sprites[3].value[1], &D_800625A0->sprites[3].value[2],
-                  &D_800625A0->sprites[3].value[3], &D_800625A0->sprites[3].value[4],
-                  &D_800625A0->sprites[3].value[5]);
+    func_80026338(D_800625A0->sprite_sheet, 0xFE, &D_800625A0->sprites[0].unk0,
+                  &D_800625A0->sprites[0].tpage_mode, &D_800625A0->sprites[0].clut_x,
+                  &D_800625A0->sprites[0].clut_y, &D_800625A0->sprites[0].page_x,
+                  &D_800625A0->sprites[0].page_y);
+    func_80026338(D_800625A0->sprite_sheet, 0x103, &D_800625A0->sprites[1].unk0,
+                  &D_800625A0->sprites[1].tpage_mode, &D_800625A0->sprites[1].clut_x,
+                  &D_800625A0->sprites[1].clut_y, &D_800625A0->sprites[1].page_x,
+                  &D_800625A0->sprites[1].page_y);
+    func_80026338(D_800625A0->sprite_sheet, 0x100, &D_800625A0->sprites[2].unk0,
+                  &D_800625A0->sprites[2].tpage_mode, &D_800625A0->sprites[2].clut_x,
+                  &D_800625A0->sprites[2].clut_y, &D_800625A0->sprites[2].page_x,
+                  &D_800625A0->sprites[2].page_y);
+    func_80026338(D_800625A0->sprite_sheet, 0x101, &D_800625A0->sprites[3].unk0,
+                  &D_800625A0->sprites[3].tpage_mode, &D_800625A0->sprites[3].clut_x,
+                  &D_800625A0->sprites[3].clut_y, &D_800625A0->sprites[3].page_x,
+                  &D_800625A0->sprites[3].page_y);
 }
 
 /* Clear the party list's flags 3 and 4. */
 void func_801C6010(void) {
-    D_800625A0->party->flag_4 = 0;
-    D_800625A0->party->flag_3 = 0;
+    D_800625A0->flags->flag_4 = 0;
+    D_800625A0->flags->flag_3 = 0;
 }
 
 /* Make `poly` a gouraud quad fading from (r, g, b) at the top to black. */
