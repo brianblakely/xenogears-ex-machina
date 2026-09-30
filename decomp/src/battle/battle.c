@@ -3839,7 +3839,32 @@ void func_800883AC(u8 slot) {
     D_800D301C[D_800C3EB4[slot].group + base].members &= func_80089C48(D_800C3EB4[slot].member);
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80088490);
+/* Give slot a formation group of its own: keep its group when that is empty,
+ * else take the first empty one; it becomes the group's only member and is
+ * placed at the group's position. */
+void func_80088490(slot)
+u8 slot;
+{
+    u8 group;
+    s32 i;
+
+    if (D_800D301C[D_800C3EB4[slot].group + 16].count == 0) {
+        group = D_800C3EB4[slot].group;
+    } else {
+        for (i = 0; i < 8; i++) {
+            if (D_800D301C[16 + i].count == 0) {
+                group = i;
+                break;
+            }
+        }
+    }
+    D_800C3EB4[slot].group = group;
+    D_800C3EB4[slot].member = 0;
+    D_800D301C[D_800C3EB4[slot].group + 16].members = 1;
+    D_800D301C[D_800C3EB4[slot].group + 16].count = 1;
+    D_800C3EB4[slot].x = D_800D3364->positions[D_800C3EB4[slot].group].x;
+    D_800C3EB4[slot].z = D_800D3364->positions[D_800C3EB4[slot].group].z;
+}
 
 /* The member count of the slot's group among the flagged enemy groups. */
 u8 func_800885D0(u8 slot) {

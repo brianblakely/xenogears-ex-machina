@@ -209,9 +209,17 @@ typedef struct {
     u8 unk1[7];
 } GroupLink;
 
+/* A formation group's position (8 bytes). */
 typedef struct {
-    u8 unk0[0x140];
-    GroupLink links[8][8]; /* +0x140 per formation-group pair */
+    s16 x;
+    s16 z;
+    u8 pad4[4];
+} GroupPosition;
+
+typedef struct {
+    u8 unk0[0x100];
+    GroupPosition positions[8]; /* +0x100 */
+    GroupLink links[8][8];      /* +0x140 per formation-group pair */
 } Formation;
 
 extern Formation *D_800D3364;
