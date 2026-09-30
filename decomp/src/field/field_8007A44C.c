@@ -3068,22 +3068,23 @@ void func_800831D0(SVECTOR *out, VECTOR *in) {
 #ifdef NON_MATCHING
 /* While the actor moves, turn its heading a quarter (left with flag bit 0,
  * else right) once, apply it, and mark the heading as turned.
- * NON_MATCHING: the original copies the loaded goal into a second register
- * and keeps the goal store ahead of the heading reload. */
+ * NON_MATCHING: the original keeps the goal store ahead of the heading reload
+ * for the call (ours moves the store into its delay slot). */
 void func_800831F4(void *owner, FieldActor *actor, FieldDescriptor *descriptor, s32 flags) {
-    s32 heading;
+    s16 heading;
+    s16 turned;
     s32 unused[2]; /* never used; the original frame reserves it */
 
     if (actor->unk030[0] != 0 || actor->unk030[2] != 0) {
-        if (!(actor->heading_goal & 0x8000)) {
+        heading = actor->heading_goal;
+        if (!(heading & 0x8000)) {
             if (flags & 1) {
-                heading = actor->heading_goal - 0x400;
+                turned = heading - 0x400;
             } else {
-                heading = actor->heading_goal + 0x400;
+                turned = heading + 0x400;
             }
-            heading &= 0xFFF;
-            actor->heading = heading;
-            actor->heading_goal = heading;
+            actor->heading = turned & 0xFFF;
+            actor->heading_goal = turned & 0xFFF;
             func_80081F80(owner, actor->heading, descriptor);
             actor->heading = actor->heading_goal = actor->heading_goal | 0x8000;
         }
@@ -3599,7 +3600,8 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_80084158
 #endif
 
 #ifdef NON_MATCHING
-/* -1 when the actor's motion, collision state or layer prevents idling. */
+/* -1 when the actor's motion, collision state or layer prevents idling.
+ * NON_MATCHING: the original places the layer-1 -1 return after the last test. */
 s32 func_8008492C(FieldActor *actor) {
     if ((actor->unk014 & 0x420000) || D_800ADB98 != 0 || actor->unk030[0] != 0 ||
         actor->unk030[1] != 0 || actor->unk030[2] != 0 || D_800ADC0C != 1 || actor->unk074 != 0xFF ||
@@ -3612,10 +3614,11 @@ s32 func_8008492C(FieldActor *actor) {
     if ((actor->layer_flags & 2) && actor->layer == 1) {
         return -1;
     }
-    if (actor->layer_flags & 4) {
-        return -(actor->layer == 2);
+    if ((actor->layer_flags & 4) && actor->layer == 2) {
+        return -1;
+    } else {
+        return 0;
     }
-    return 0;
 }
 #else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8008492C);
