@@ -1471,7 +1471,27 @@ void func_8003748C(void) {
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800374E8);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80037878);
+/* Sort `count` elements of `size` bytes at `base` in place (selection
+ * sort): `compare` is positive when its second element goes first. */
+void func_80037878(u8 *base, s32 count, s32 size, s32 (*compare)(void *a, void *b)) {
+    u8 *temp = func_80031BDC(size, 0);
+    s32 i;
+    s32 j;
+    s32 best;
+
+    for (i = 0; i < count; i++) {
+        best = i;
+        for (j = i; j < count; j++) {
+            if (compare(base + size * best, base + j * size) > 0) {
+                best = j;
+            }
+        }
+        memcpy(temp, base + i * size, size);
+        memcpy(base + i * size, base + size * best, size);
+        memcpy(base + size * best, temp, size);
+    }
+    func_800320E8(temp);
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800379B4);
 
