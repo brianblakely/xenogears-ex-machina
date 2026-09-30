@@ -519,7 +519,8 @@ typedef struct MenuFieldBlock {
     POLY_FT4 frameA[2]; /* 0 */
     POLY_FT4 frameB[2]; /* 50 */
     POLY_FT4 list0[54]; /* A0 */
-    POLY_FT4 list6[12]; /* 910 */
+    POLY_FT4 list6[6]; /* 910 */
+    POLY_FT4 list8[6]; /* A00 */
     POLY_FT4 list1[6]; /* AF0 */
     POLY_FT4 list2[6]; /* BE0 */
     POLY_FT4 list3[4]; /* CD0 */
@@ -528,7 +529,7 @@ typedef struct MenuFieldBlock {
     POLY_FT4 list7[14]; /* 1040 */
     u8 buffer; /* 1270 */
     u8 count6; /* 1271 */
-    u8 pad1272[0x1];
+    u8 count8; /* 1272 */
     u8 count1; /* 1273 */
     u8 count2; /* 1274 */
     u8 count3; /* 1275 */
@@ -771,6 +772,10 @@ extern s32 D_801EA584[]; /* gear portrait u / 4 per slot */
 extern s32 D_801EA5C4[]; /* character portrait v per slot */
 extern u16 D_80059414;   /* portrait palette of odd images */
 extern u16 D_800595D4;   /* portrait palette of even images */
+extern s32 D_801E9B18;   /* field block number offsets (x, y): +62 */
+extern s32 D_801E9B1C;
+extern s32 D_801E9B20;   /* +63 */
+extern s32 D_801E9B24;
 extern s32 D_801E9B28;   /* field block number offsets (x, y): hp */
 extern s32 D_801E9B2C;
 extern s32 D_801E9B30;   /* hp max */

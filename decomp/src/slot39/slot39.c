@@ -2804,7 +2804,38 @@ void func_801D55B4(u8 index, u8 ch, s32 x, s32 y) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D5794);
+/* Lay out character `ch`'s +62 and +63 values (three digits each, by digit
+ * position) on field block `index` at (x, y), the second tinted green. */
+void func_801D5794(u8 index, u8 ch, s32 x, s32 y) {
+    MenuFieldBlock *block = D_800625A0->fieldBlocks[index];
+    s32 i;
+    u8 digit;
+
+    func_801C80B8(D_8006D8A0[ch].unk62);
+    block->count6 = 0;
+    for (i = 0; i < 3; i++) {
+        digit = D_800625A0->digits[6 + i];
+        if (digit != 0xff) {
+            block->count6 += func_8002675C(D_800625A0->sheet, digit, &block->list6[block->count6 * 2],
+                                           D_800625A0->bufferIndex, x + D_801E9B18 + i * 8, y + D_801E9B1C, 0x1000);
+        }
+    }
+    func_801C80B8(D_8006D8A0[ch].unk63);
+    block->count8 = 0;
+    for (i = 0; i < 3; i++) {
+        digit = D_800625A0->digits[6 + i];
+        if (digit != 0xff) {
+            block->count8 += func_8002675C(D_800625A0->sheet, digit, &block->list8[block->count8 * 2],
+                                           D_800625A0->bufferIndex, x + D_801E9B20 + i * 8, y + D_801E9B24, 0x1000);
+        }
+    }
+    for (i = 0; i < block->count8; i++) {
+        SetShadeTex(&block->list8[i * 2 + D_800625A0->bufferIndex], 0);
+        (block->list8 + (i * 2 + D_800625A0->bufferIndex))->r0 = 0;
+        (block->list8 + (i * 2 + D_800625A0->bufferIndex))->g0 = 0x80;
+        (block->list8 + (i * 2 + D_800625A0->bufferIndex))->b0 = 0;
+    }
+}
 
 /* Lay out field block `index` (none for ff) at its mover's position in
  * `mode` and show it. */
