@@ -359,7 +359,11 @@ typedef struct {
     u8 gearId;                /* 0xA0 */
     u8 padA1[3];
     Gear gear;                /* 0xA4 */
-    u8 pad148[0x10];
+    u8 pad148[8];
+    u8 dropChances[2];        /* 0x150: enemy drop chances (percent) */
+    u8 dropIds[2];            /* 0x152 */
+    u8 dropCategories[2];     /* 0x154 */
+    u8 pad156[2];
     u8 weightA;               /* 0x158: experience share weights of levels A and B */
     u8 weightB;               /* 0x159 */
     u8 flags15A;              /* 0x15A: 0x80 (character 7) HP from the gear HP */
@@ -369,17 +373,26 @@ typedef struct {
 extern GameData D_8006D634;
 extern Combatant D_800CCCE8[];
 extern GameData *D_801E44C4;    /* 8006d634 */
+/* The drops rolled for the defeated enemies (800ccce8 + 0x100c). */
+typedef struct {
+    u8 categories[8];
+    u8 ids[8];
+} Drops;
+
 /* The battle work area (800ccce8): the combatant records, then the
  * results state. */
 typedef struct {
     Combatant records[11];    /* 0x0000 */
     u8 padFD0[0xFE8 - 0xFD0];
     MemberWide gained[3];     /* 0xFE8: experience pools per slot (800cdcd0) */
-    u8 pad1000[0x101C - 0x1000];
+    u8 pad1000[0x100C - 0x1000];
+    Drops drops;              /* 0x100C: 800cdcf4 */
     u8 learntCounter[3];      /* 0x101C: counter skill learnt per slot */
     u8 learntLevel[3];        /* 0x101F: level skill learnt per slot */
     u8 pad1022[0x5F20 - 0x1022];
     GrowthFile *growth;       /* 0x5F20 */
+    u8 pad5F24[0x5FB4 - 0x5F24];
+    u16 defeated;             /* 0x5FB4: enemies defeated, bit per enemy */
 } BattleWork;
 
 extern BattleWork *D_801E44C8;  /* 800ccce8 */
@@ -449,11 +462,6 @@ typedef struct {
 } Inventory;
 extern Inventory D_8006F36C;
 
-/* The drops rolled for the defeated enemies (800ccce8 + 0x100c). */
-typedef struct {
-    u8 categories[8];
-    u8 ids[8];
-} Drops;
 extern Drops D_800CDCF4;
 
 void func_801E1370(u8 id, u8 count, u8 *ids, u8 *counts, u8 size);
