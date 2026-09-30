@@ -5326,7 +5326,26 @@ void func_8009FE4C(void) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009FEE4);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A0158);
+/* Read party slot `slot`'s variable triple (see func_8009FD10). */
+void func_800A0158(s32 slot, s32 *a, s32 *b, s32 *c) {
+    switch (slot) {
+    case 0:
+        *a = func_800A3018(0x2A);
+        *b = func_800A3018(0x2C);
+        *c = func_800A3018(0x2E);
+        break;
+    case 1:
+        *a = func_800A3018(0x30);
+        *b = func_800A3018(0x32);
+        *c = func_800A3018(0x34);
+        break;
+    case 2:
+        *a = func_800A3018(0x36);
+        *b = func_800A3018(0x38);
+        *c = func_800A3018(0x3A);
+        break;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A0228);
 
@@ -5336,19 +5355,86 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A06E8);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A08B8);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A0C4C);
+/* Set flag 0x80 on the controlled actor. */
+void func_800A0C4C(void) {
+    FieldActor *player;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A0C94);
+    player = D_800AFA64.descriptors[D_800B226C].actor;
+    player->flags |= 0x80;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A0D3C);
+/* Mirror the current actor's position into its descriptor and model. */
+void func_800A0C94(void) {
+    FieldModel *model;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A0DC0);
+    model = D_800AFA64.descriptors[D_800AFD1C].model;
+    D_800AFA64.descriptors[D_800AFD1C].transform.t[0] = D_800AFA64.descriptors[D_800AFD1C].position[0] =
+        D_800B0078->position[0].s.whole;
+    D_800AFA64.descriptors[D_800AFD1C].transform.t[1] = D_800AFA64.descriptors[D_800AFD1C].position[1] =
+        D_800B0078->position[1].s.whole;
+    D_800AFA64.descriptors[D_800AFD1C].transform.t[2] = D_800AFA64.descriptors[D_800AFD1C].position[2] =
+        D_800B0078->position[2].s.whole;
+    model->position[0] = D_800B0078->position[0].value;
+    model->position[1] = D_800B0078->position[1].value;
+    model->position[2] = D_800B0078->position[2].value;
+    model->unk10 = 0;
+    D_800B0078->unk72 = model->unk84 = D_800B0078->position[1].s.whole;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A0DFC);
+void func_80076AC0(s32 index, s32 a, void *sprite, s32 b, s32 c, s32 d, s32 e);
+void func_800A0C94(void);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A0E54);
+/* Give the current actor the field's first sprite and show it. */
+void func_800A0D3C(void) {
+    FieldActor *actor;
+    s32 *sprites;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A0EB0);
+    sprites = D_800AFA64.sprites;
+    func_80076AC0(D_800AFD1C, 0, (u8 *)(sprites[1] + (s32)sprites), 0, 0, 0x80, 1);
+    func_800A0C94();
+    actor = D_800B0078;
+    actor->flags |= 0x100;
+    actor->layer_flags |= 0x800;
+    actor->pc++;
+}
+
+/* Set D_800B234A (mode block unk34A) from an operand. */
+void func_800A0DC0(void) {
+    D_800B233C.unk34A = func_800ACDEC(1);
+    D_800B0078->pc += 3;
+}
+
+s32 func_80028530(void);
+
+/* Store resident 80028530() in a variable. */
+void func_800A0DFC(void) {
+    s32 reference;
+
+    reference = func_800ACDB8(1) & 0xFFFF;
+    func_800A3074(reference, func_80028530());
+    D_800B0078->pc += 3;
+}
+
+extern s32 D_800ADB74;
+
+/* Yield; advance once D_800ADB74 is zero. */
+void func_800A0E54(void) {
+    if (D_800ADB74 == 0) {
+        D_800B0078->pc += 1;
+    } else {
+        D_800B0078->pc -= 1;
+    }
+    D_800B00C0 = 1;
+}
+
+extern s32 D_800ADB84;
+
+/* Count D_800ADB84 up and yield. */
+void func_800A0EB0(void) {
+    D_800B00C0 = 1;
+    D_800ADB84 += 1;
+    D_800B0078->pc += 1;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A0EE8);
 

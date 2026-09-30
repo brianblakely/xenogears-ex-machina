@@ -86,9 +86,11 @@ typedef struct FieldActor {
 typedef struct FieldModel {
     s32 position[3];    /* 00 */
     s32 unk0C;          /* 0C */
-    u8 unk10[0x14 - 0x10];
+    s32 unk10;          /* 10 */
     s32 unk14;          /* 14 */
     s32 unk18;          /* 18 */
+    u8 unk1C[0x84 - 0x1C];
+    u16 unk84;          /* 84 */
 } FieldModel;
 
 /* One 0x5C-byte event descriptor; one per event actor. */
@@ -223,7 +225,7 @@ typedef struct FieldScene {
     FieldDescriptor *descriptors;   /* b10 */
     s32 unkB14;                     /* b14 */
     void *collision;                /* b18 */
-    s32 unkB1C;                     /* b1c */
+    s32 *sprites;                   /* b1c: sprite resource (offset table) */
     Attribute *attributes;          /* b20 */
     Triangle *triangles[4];         /* b24 */
     void *vertices[4];              /* b34 */
