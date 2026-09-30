@@ -488,18 +488,20 @@ void func_80072270(void) {
 #ifdef NON_MATCHING
 void func_80072324(void) {
     s32 slot;
-    s32 i;
+    s32 offset;
     u8 *p;
+    u8 *end;
     u8 *actions;
 
     for (slot = 3; slot < 11; slot++) {
         if (func_80089C9C(D_800D39E0, slot)) {
             p = actions;
+            end = p + 0x100;
             do {
                 *p++ = 0;
-            } while (p < actions + 0x100);
-            for (i = 31; i >= 0; i--) {
-                D_800C3FE8[i].type = 0xFF;
+            } while (p < end);
+            for (offset = 31 * sizeof(BattleEvent); offset >= 0; offset -= sizeof(BattleEvent)) {
+                ((BattleEvent *)((u8 *)D_800C3FE8 + offset))->type = 0xFF;
             }
             D_800D2E5C[0].type = 4;
             D_800D2E5C[0].param = 0x17;
@@ -1361,22 +1363,22 @@ void func_80079948(u8 **pc) {
 
 /* Run enemy `slot`'s AI script: clear the action list and event types, then
  * evaluate conditions and actions until 0xfd or 0xff. */
-#ifdef NON_MATCHING
 void func_800799C8(u8 slot, u16 attacking) {
     u8 *pc;
     u8 count;
     u8 enemy;
     u8 *p;
-    s32 i;
+    s32 offset;
 
     count = 0;
     enemy = slot - 3;
     pc = D_800D3400[enemy].script;
-    for (p = (u8 *)D_800D2E5C; p < (u8 *)D_800D2E5C + 0x100; p++) {
-        *p = 0;
-    }
-    for (i = 31; i >= 0; i--) {
-        D_800C3FE8[i].type = 0xFF;
+    p = (u8 *)D_800D2E5C;
+    do {
+        *p++ = 0;
+    } while (p < (u8 *)D_800D2E5C + 0x100);
+    for (offset = 31 * sizeof(BattleEvent); offset >= 0; offset -= sizeof(BattleEvent)) {
+        ((BattleEvent *)((u8 *)D_800C3FE8 + offset))->type = 0xFF;
     }
     while (*pc != 0xFD && *pc != 0xFF) {
         if (*pc >= 0x80) {
@@ -1388,9 +1390,6 @@ void func_800799C8(u8 slot, u16 attacking) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800799C8);
-#endif
 
 /* Run enemy `slot`'s reaction script when armed (and the enemy is not down,
  * unless +0x34 bit 0x800 lets it react), then execute its action list.
