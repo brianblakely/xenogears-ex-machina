@@ -238,14 +238,14 @@ void func_801C5C1C(u8 allocate) {
     }
 }
 
-/* Allocate and clear (nonzero) or free (zero) the 140c-byte block at +354. */
+/* Allocate and clear (nonzero) or free (zero) the sprite lists (+354). */
 void func_801C5C80(u8 allocate) {
     if (allocate) {
         void *block = func_80031BDC(0x140c, 0);
-        D_800625A0->block354 = block;
+        D_800625A0->spriteLists = block;
         func_8003F8E8(block, 0x140c);
     } else {
-        func_800320E8(D_800625A0->block354);
+        func_800320E8(D_800625A0->spriteLists);
     }
 }
 
@@ -1285,7 +1285,15 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CEBB4);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CEC40);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CF308);
+/* While party flag +a is set, draw the two sprite lists of the block at +354. */
+void func_801CF308(void) {
+    if (D_800625A0->party->redrawA != 0) {
+        func_801CE2B4(D_800625A0->spriteLists->secondKind, D_800625A0->spriteLists->second,
+                      D_800625A0->spriteLists->secondCount);
+        func_801CE2B4(D_800625A0->spriteLists->firstKind, D_800625A0->spriteLists->first,
+                      D_800625A0->spriteLists->firstCount);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CF37C);
 
@@ -1402,7 +1410,18 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D17C4);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D1914);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D1AAC);
+/* Draw the sprites of the two image blocks (+444) whose party flags are set. */
+void func_801D1AAC(void) {
+    s32 i;
+    u8 *block;
+
+    for (i = 0; i < 2; i++) {
+        if (D_800625A0->party->unk50[i] != 0) {
+            block = D_800625A0->blocks444[i];
+            func_801CE198(1, block + 0x50, block, block[0x75]);
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D1B20);
 
@@ -1644,7 +1663,17 @@ void func_801D9F34(void) {
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D9F98);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DA4A8);
+/* Open the save/load screen: its labels, its 1198-byte block and view 0. */
+void func_801DA4A8(void) {
+    void *block;
+
+    func_801D22F4(2);
+    func_801E8018(8, &D_800625A0->labelSlots[10], D_801EA548, D_800625A0->party->unk38);
+    block = func_80031BDC(0x1198, 0);
+    D_800625A0->block42C = block;
+    func_8003F8E8(block, 0x1198);
+    func_801C72BC(0);
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DA518);
 
@@ -1708,7 +1737,14 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DE2C8);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DE36C);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DE400);
+/* Close the 801ddf24 screen: hide its sprites and free its blocks. */
+void func_801DE400(void) {
+    D_800625A0->party->unk8 = 0;
+    D_800625A0->party->unk4B = 0;
+    func_801C7BF4();
+    func_800320E8(D_800625A0->block35C);
+    func_800320E8(D_800625A0->block360);
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DE474);
 
@@ -1815,7 +1851,18 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E433C);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E4754);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E4928);
+/* Gear `gear`'s value: (its +44 / 120 - its +75) / 2, at least 0. */
+u8 func_801E4928(u8 gear) {
+    GearRecord *record;
+    s16 value;
+
+    record = &D_8006DFAC[gear];
+    value = ((u16)(record->unk44 / 120) - record->unk75) / 2;
+    if (value < 0) {
+        value = 0;
+    }
+    return value;
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E4998);
 
@@ -1833,7 +1880,19 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E56E8);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E5924);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E5ACC);
+/* Allocate and set up the 32 image blocks (+3a8). */
+void func_801E5ACC(void) {
+    s32 i;
+    void *block;
+
+    for (i = 0; i < 32; i++) {
+        block = func_80031BDC(0x158, 0);
+        D_800625A0->images[i] = block;
+        func_8003F8E8(block, 0x158);
+        func_801E56E8(i);
+        func_801E5924(i);
+    }
+}
 
 /* Free the 32 image blocks at +3a8. */
 void func_801E5B3C(void) {
@@ -1949,7 +2008,21 @@ void func_801E91C4(POLY_FT4 *poly) {
     poly->b0 = 0x80;
 }
 
+/* Place `poly` at (x, y) with size (w, h) and texture origin (u, v). */
+#ifdef NON_MATCHING
+void func_801E920C(POLY_FT4 *poly, s32 x, s32 y, s32 u, s32 v, s32 w, s32 h) {
+    poly->x2 = poly->x0 = x;
+    poly->y1 = poly->y0 = y;
+    poly->x3 = poly->x1 = x + w;
+    poly->y3 = poly->y2 = y + h;
+    poly->u2 = poly->u0 = u;
+    poly->v1 = poly->v0 = v;
+    poly->u3 = poly->u1 = u + w;
+    poly->v3 = poly->v2 = v + h;
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E920C);
+#endif
 
 /* Initialise `poly` as an opaque textured quad at neutral colour. */
 void func_801E927C(POLY_FT4 *poly) {
@@ -1961,7 +2034,20 @@ void func_801E927C(POLY_FT4 *poly) {
     poly->b0 = 0x80;
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E92CC);
+/* Unless 8002c3d8 reports ready, reset the drive and retry command 8 until it
+ * succeeds. */
+void func_801E92CC(void) {
+    if (func_8002C3D8() == 0) {
+        func_8002A498(0);
+        func_80028A60(0);
+        func_8002A428(0);
+        func_80028A60(0);
+        func_8004B54C(3);
+        do {
+            func_8004B54C(3);
+        } while (func_80041248(8, 0, D_801EA8F4) == 0);
+    }
+}
 
 /* Run 8004c398 on a handle opened by 8004c318(`arg0`, 0, 0), then close it. */
 void func_801E9340(s32 arg0, s32 arg1, s32 arg2) {
