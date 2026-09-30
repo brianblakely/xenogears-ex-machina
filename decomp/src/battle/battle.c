@@ -681,7 +681,22 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80076EA4);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80077074);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80077364);
+/* Initialise four quads, white and semi-transparent, with the texture page
+ * and CLUT of graphics texture entry `index`. */
+void func_80077364(POLY_FT4 *prims, u8 index) {
+    s32 i;
+
+    for (i = 0; i < 4; i++) {
+        func_80043CB0(&prims[i]);
+        func_80043C24(&prims[i], 1);
+        prims[i].r0 = 0xFF;
+        prims[i].g0 = 0xFF;
+        prims[i].b0 = 0xFF;
+        prims[i].tpage = func_80043A1C(D_800C3EA4->textures[index].mode, 0, D_800C3EA4->textures[index].x,
+                                       D_800C3EA4->textures[index].y);
+        prims[i].clut = func_80043A58(D_800C3EA4->textures[index].clutX, D_800C3EA4->textures[index].clutY);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80077454);
 
@@ -709,7 +724,24 @@ void func_80077980(void) {
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80077990);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800780A8);
+/* Initialise a battle message's quad pair for texture row `row` (13 pixels
+ * per pair of rows; odd rows use the alternate CLUT) and hide it. */
+void func_800780A8(BattleMessage *message, u32 row) {
+    s32 i;
+
+    for (i = 0; i < 2; i++) {
+        func_80043CB0(&message->prims[i]);
+        message->prims[i].r0 = 0x80;
+        message->prims[i].g0 = 0x80;
+        message->prims[i].b0 = 0x80;
+        func_80043BFC(&message->prims[i], 0);
+        func_80043C24(&message->prims[i], 1);
+        message->alternate = row & 1;
+        message->prims[i].clut = message->alternate ? D_80059414 : D_800595D4;
+        message->prims[i].tpage = func_80043A1C(0, 0, 0x3C0, (s32)row / 2 * 13);
+    }
+    message->shown = 0;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007819C);
 
@@ -717,11 +749,27 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80078310);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80078508);
 
+/* Close the current event for `actor` with the action entry's parameter and
+ * advance the event count. */
+#ifdef NON_MATCHING
+void func_800785D4(u8 actor, u8 index) {
+    D_800C3FE8[D_800C3EAC->eventCount].actor = actor;
+    D_800C3FE8[D_800C3EAC->eventCount].param = D_800D2E5C[index].param | (D_800D2E5C[index].unk5 << 8);
+    D_800C3EAC->eventCount++;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800785D4);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80078658);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800787E0);
+/* Queue event type 0xf7 for `actor` with parameter `value`. */
+void func_800787E0(u8 value, u8 actor) {
+    D_800C3FE8[D_800C3EAC->eventCount].actor = actor;
+    D_800C3FE8[D_800C3EAC->eventCount].type = 0xF7;
+    D_800C3FE8[D_800C3EAC->eventCount].param = value;
+    D_800C3EAC->eventCount++;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007887C);
 

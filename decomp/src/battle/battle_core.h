@@ -153,6 +153,16 @@ typedef struct {
     u8 unk66B[0x670 - 0x66B];
 } GraphicsBlock;
 
+/* A texture location of the graphics state (0x18 bytes). */
+typedef struct {
+    s32 mode;
+    s32 clutX;
+    s32 clutY;
+    s32 x;
+    s32 y;
+    s32 unk14;
+} GraphicsTexture;
+
 /* Battle graphics state (*800c3ea4). */
 typedef struct {
     u8 unk0[0xBA8];
@@ -170,6 +180,8 @@ typedef struct {
     POLY_FT4 unk641C[2][100];
     u8 unk835C[0xA230 - 0x835C];
     GraphicsBlock *unkA230;
+    u8 unkA234[4];
+    GraphicsTexture textures[1]; /* +0xA238 */
 } BattleGraphics;
 
 extern BattleGraphics *D_800C3EA4;
@@ -204,7 +216,8 @@ extern u16 D_800D2C9E;     /* party members whose timers are held */
 /* Eight 0x60-byte message entries from 800d36c8. */
 typedef struct {
     POLY_FT4 prims[2];
-    u8 unk50[0x5D - 0x50];
+    u8 unk50[0x5C - 0x50];
+    u8 alternate;      /* +0x5C odd texture row */
     u8 shown;          /* +0x5D */
     u8 width;          /* +0x5E */
     u8 unk5F;
@@ -350,6 +363,7 @@ void func_80043C24(void *prim, s32 abe);
 void func_80043BFC(void *prim, s32 tge);
 void func_80043CB0(void *prim);
 u16 func_80043A1C(s32 tp, s32 abr, s32 x, s32 y);
+u16 func_80043A58(s32 x, s32 y);
 void func_800445D0(s32 mode);
 void func_8003F8E8(void *block, s32 size);
 void func_800320E8(void *block);
