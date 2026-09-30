@@ -1577,7 +1577,31 @@ void func_80076EA4(void) {
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80076EA4);
 #endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80077074);
+/* Hide the command panel's quads and reset each quad pair's texture and
+ * CLUT for its page kind. */
+void func_80077074(void) {
+    D_800C3EA4->unkA230->unk669 = 0;
+    D_800C3EA4->unkA230->unk66B = 0;
+    D_800C3EA4->unkA230->unk66D = 0;
+    func_80076D58(D_800C3EA4->unkA230->unk0, 0, 1);
+    func_80076D58(D_800C3EA4->unkA230->unk50, 0, 1);
+    func_80076D58(D_800C3EA4->unkA230->unkA0, 0, 2);
+    func_80076D58(D_800C3EA4->unkA230->unkF0, 0, 2);
+    func_80076D58(D_800C3EA4->unkA230->unk140, 0, 1);
+    func_80076D58(&D_800C3EA4->unkA230->unk190[0], 0, 2);
+    func_80076D58(&D_800C3EA4->unkA230->unk190[2], 0, 2);
+    func_80076D58(&D_800C3EA4->unkA230->unk190[4], 0, 2);
+    func_80076D58(D_800C3EA4->unkA230->unk280, 0, 3);
+    func_80076D58(D_800C3EA4->unkA230->unk2D0, 1, 3);
+    func_80076D58(D_800C3EA4->unkA230->unk320, 0, 2);
+    func_80076D58(D_800C3EA4->unkA230->unk370, 1, 2);
+    func_80076D58(COMMAND_BLOCK->unk3C0, 0, 2);
+    func_80076D58(COMMAND_BLOCK->unk410[0], 0, 2);
+    func_80076D58(COMMAND_BLOCK->unk410[1], 0, 2);
+    func_80076D58(COMMAND_BLOCK->unk410[2], 0, 2);
+    func_80076D58(COMMAND_BLOCK->unk410[3], 0, 2);
+    func_80076D58(COMMAND_BLOCK->unk410[4], 0, 2);
+}
 
 /* Initialise four quads, white and semi-transparent, with the texture page
  * and CLUT of graphics texture entry `index`. */
