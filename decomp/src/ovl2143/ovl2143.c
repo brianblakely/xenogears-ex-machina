@@ -1512,21 +1512,190 @@ void func_801E1880(Actor **actors) {
     }
 }
 
+/* Build a record's surface from `table`: a scaled centre per ring (offset by
+ * ox/oy/oz), each ring's points (radius and angle index), and two textured
+ * triangles per point pair between neighbouring rings, their texture
+ * spanning u_span x v_span from (tx, ty) with the CLUT at (clut_x, clut_y);
+ * then `count` zeroed entries. On an allocation failure the record is left
+ * empty. The original keeps the loop state in caller-saved registers across
+ * SetPolyGT3 (saved on the stack). */
+#ifdef NON_MATCHING
+void func_801E1A14(Record24 *record, u16 *table, s16 angle_base, s32 scale, s16 ox, s16 oy, s16 oz,
+                   s16 count, s16 tx, s16 ty, s16 u_span, s16 v_span, s16 clut_x, s16 clut_y, u8 b0,
+                   u8 b1, u8 b2, u8 b3, u8 b4, u8 b5) {
+    SVECTOR *centres;
+    SVECTOR *centre;
+    RingPoint **rings;
+    RingPoint *points;
+    RingPoint *point;
+    RingPoly *polys;
+    POLY_GT3 *prim;
+    u16 *counts;
+    u16 *radii;
+    u8 *angles;
+    u16 tpage, clut;
+    s32 page_x, page_y;
+    s32 u_base, v_base;
+    s32 u_step, u, u_next;
+    s32 v_step;
+    s32 first;
+    s32 i, k, b, n;
+
+    record->h0 = *table++;
+    record->polys = *table * 2;
+    func_80032498(4, 0);
+    table++;
+    centres = func_80031BDC(record->rings * sizeof(SVECTOR), 0);
+    if (centres == NULL) {
+        record->centres = NULL;
+        return;
+    }
+    record->centres = centres;
+    for (i = 0; i < record->rings; i++, centres++) {
+        centres->vx = (*table++ + ox) * scale / 4096;
+        centres->vy = (*table++ + oy) * scale / 4096;
+        centres->vz = (*table++ + oz) * scale / 4096;
+    }
+    n = table[record->rings];
+    record->points = n + record->rings;
+    rings = func_80031BDC(record->rings * sizeof(RingPoint *), 0);
+    if (rings == NULL) {
+        record->centres = NULL;
+        func_800320E8(NULL);
+        return;
+    }
+    record->block1C = rings;
+    counts = table;
+    radii = table + record->rings + 1;
+    angles = (u8 *)(radii + n);
+    points = func_80031BDC((n + record->rings) * sizeof(RingPoint), 0);
+    if (points == NULL) {
+        record->centres = NULL;
+        func_800320E8(NULL);
+        func_800320E8(record->block1C);
+        return;
+    }
+    centre = record->centres;
+    point = points;
+    for (i = 0; i < record->rings; i++, counts++, centre++) {
+        *rings++ = point;
+        for (k = 0; k < *counts; k++, point++) {
+            point->radius = *radii++ * scale / 4096;
+            point->angle = *angles++ + angle_base;
+            point->centre[0] = centre->vx;
+            point->centre[1] = centre->vy;
+            point->centre[2] = centre->vz;
+        }
+        point->radius = 0;
+        point->angle = 0;
+        point->centre[0] = centre->vx;
+        point->centre[1] = centre->vy;
+        point->centre[2] = centre->vz;
+        point++;
+    }
+    counts = table;
+    polys = func_80031BDC(record->polys * sizeof(RingPoly), 0);
+    if (polys == NULL) {
+        record->centres = NULL;
+        func_800320E8(record->block1C);
+        func_800320E8(points);
+        return;
+    }
+    record->block20 = polys;
+    page_x = tx / 64;
+    page_y = ty / 256;
+    tpage = GetTPage(0, 1, (s16)(page_x << 6), (s16)(page_y << 8));
+    clut = GetClut(clut_x, clut_y);
+    u_base = (tx - (s16)(page_x << 6)) * 4;
+    v_base = ty - (page_y << 8);
+    first = 0;
+    u_step = u_span / (record->rings - 1);
+    for (i = 0, u = 0, u_next = u_step; i < record->rings - 1; i++, u += u_step, u_next += u_step) {
+        n = counts[1];
+        if (counts[0] < n) {
+            n = counts[0];
+        }
+        v_step = (s16)(v_span / n);
+        for (k = 0; k < n; k++, first++) {
+            polys->index[0] = first;
+            polys->index[2] = first + 1;
+            polys->index[1] = first + counts[0] + 1;
+            for (b = 0; b < 2; b++) {
+                prim = &polys->prim[b];
+                SetPolyGT3(prim);
+                prim->tpage = tpage;
+                prim->u0 = u_base + u;
+                prim->v0 = v_base + v_step * k;
+                prim->clut = clut;
+                prim->u1 = u_base + u_next;
+                prim->v1 = v_base + v_step * k;
+                prim->u2 = u_base + u;
+                prim->v2 = v_base + v_step * (k + 1);
+            }
+            polys++;
+            polys->index[0] = first + counts[0] + 1;
+            polys->index[2] = first + 1;
+            polys->index[1] = first + counts[0] + 2;
+            for (b = 0; b < 2; b++) {
+                prim = &polys->prim[b];
+                SetPolyGT3(prim);
+                prim->tpage = tpage;
+                prim->u0 = u_base + u_next;
+                prim->v0 = v_base + v_step * k;
+                prim->clut = clut;
+                prim->u1 = u_base + u_next;
+                prim->v1 = v_base + v_step * (k + 1);
+                prim->u2 = u_base + u;
+                prim->v2 = v_base + v_step * (k + 1);
+            }
+            polys++;
+        }
+        first = (first - k) + 1 + counts[0];
+        counts++;
+    }
+    record->b[0] = b0;
+    record->b[1] = b1;
+    record->b[2] = b2;
+    record->b[3] = b3;
+    record->b[4] = b4;
+    record->b[5] = b5;
+    record->entry_count = count;
+    if (count > 0) {
+        record->block18 = func_80031BDC(count * sizeof(Record24Entry), 0);
+        if (record->block18 == NULL) {
+            record->entry_count = 0;
+        }
+        for (i = 0; i < record->entry_count; i++) {
+            record->block18[i].h0 = 0;
+            record->block18[i].h2 = 0;
+            record->block18[i].h4 = 0;
+            record->block18[i].h6 = 0;
+            record->block18[i].h8 = 0;
+            record->block18[i].hA = 0;
+            record->block18[i].hC = 0;
+            record->block18[i].hE = 0;
+        }
+    } else {
+        record->block18 = NULL;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E1A14);
+#endif
 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E22F8);
 
 /* Release a record's heap blocks. */
 void func_801E3438(Record24 *record) {
-    if (record->block14 != NULL) {
-        func_800320E8(record->block14);
+    if (record->centres != NULL) {
+        func_800320E8(record->centres);
         func_800320E8(*record->block1C);
         func_800320E8(record->block1C);
         func_800320E8(record->block20);
         if (record->block18 != NULL) {
             func_800320E8(record->block18);
         }
-        record->block14 = NULL;
+        record->centres = NULL;
     }
 }
 
@@ -2591,7 +2760,7 @@ void func_801E742C(s32 index, u16 flags, ActorScript *script, ActorFile *file, s
         for (i = 0; i < actor->count10D; i++, tables++, entries = (Record24Entry **)((u8 *)entries + sizeof(Record24)), record++) {
             count = (s16)p[17];
             record->h0 = *p++;
-            func_801E1A14(record, *tables, p[0], p[1], p[2], p[3], p[4], count, x + p[5], y + p[6],
+            func_801E1A14(record, (u16 *)*tables, p[0], p[1], p[2], p[3], p[4], count, x + p[5], y + p[6],
                           p[7], p[8], z + p[9], w, p[10], p[11], p[12], p[13], p[14], p[15]);
             p += 17;
             for (k = 0; k < count; k++) {

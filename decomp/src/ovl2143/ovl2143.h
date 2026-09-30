@@ -32,6 +32,25 @@ typedef struct {
     u16 pad2;
 } POLY_FT4;
 
+/* libgpu gouraud textured triangle. */
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    u8 u0, v0;
+    u16 clut;
+    u8 r1, g1, b1, p1;
+    s16 x1, y1;
+    u8 u1, v1;
+    u16 tpage;
+    u8 r2, g2, b2, p2;
+    s16 x2, y2;
+    u8 u2, v2;
+    u16 pad2;
+} POLY_GT3;
+
+void SetPolyGT3(POLY_GT3 *p);
+
 /* libgpu rectangle. */
 typedef struct {
     s16 x, y, w, h;
@@ -193,19 +212,40 @@ typedef struct {
 
 /* An entry of a records24 table (0x10 bytes). */
 typedef struct {
-    s16 h0, h2, h4, h6;
-    u8 pad8[6];
-    s16 hE;
+    s16 h0, h2, h4, h6, h8, hA, hC, hE;
 } Record24Entry;
 
-/* An actor's 0x24-byte record (records24): four heap blocks. */
+/* A point of a records24 ring (0x18 bytes): its radius and angle index
+ * about the ring's centre; a ring ends with a zero radius. */
+typedef struct {
+    s16 radius;
+    s16 angle;
+    s16 centre[3];
+    u8 padA[0xE];
+} RingPoint;
+
+/* Two triangles' textured primitives (one per buffer) and their vertex
+ * indices (0x58 bytes). */
+typedef struct {
+    u16 index[3];
+    u8 pad6[2];
+    POLY_GT3 prim[2];
+} RingPoly;
+
+/* An actor's 0x24-byte record (records24): a surface of rings of points. */
 typedef struct {
     u16 h0;
-    u8 pad2[0x12];
-    void *block14;          /* +14 */
+    u8 pad2[2];
+    s16 rings;              /* +4 */
+    s16 polys;              /* +6: twice the rings' first point counts */
+    s16 points;             /* +8 */
+    s16 entry_count;        /* +a */
+    u8 b[6];                /* +c */
+    u8 pad12[2];
+    SVECTOR *centres;       /* +14: a centre per ring */
     Record24Entry *block18; /* +18 */
-    void **block1C;         /* +1c */
-    void *block20;          /* +20 */
+    RingPoint **block1C;    /* +1c: each ring's first point */
+    RingPoly *block20;      /* +20 */
 } Record24;
 
 /* A node's tracks of a keyframe (read through a u16 cursor): byte offsets
@@ -563,9 +603,9 @@ s32 func_80031894(u8 *group);       /* the group's size */
 ModelList *func_801DC22C(u8 *group, ModelList *list);
 ModelPart *func_801DC2D0(ModelList *group, HierarchyLink *links, s32 mode, s32 configure,
                          s16 param0, s16 param1, s16 param2, s16 param3);
-void func_801E1A14(Record24 *record, s32 *table, s16 a2, s16 a3, s16 a4, s16 a5, s16 a6, s16 count,
-                   s16 x, s16 y, s16 a10, s16 a11, s16 z, s16 w, u8 b0, u8 b1, u8 b2, u8 b3,
-                   u8 b4, u8 b5);
+void func_801E1A14(Record24 *record, u16 *table, s16 angle_base, s32 scale, s16 ox, s16 oy, s16 oz,
+                   s16 count, s16 tx, s16 ty, s16 u_span, s16 v_span, s16 clut_x, s16 clut_y, u8 b0,
+                   u8 b1, u8 b2, u8 b3, u8 b4, u8 b5);
 void func_801E3534(Actor *actor, SlotPool *pool, s32 *entries, s32 *locals);
 void func_801E8510(Actor *actor);
 
