@@ -68,7 +68,9 @@ typedef struct MenuParty {
     u8 pad20[0xF];
     u8 unk2F; /* 2F */
     u8 ids[3]; /* 30: character ids of the party slots, ff empty */
-    u8 pad33[0x16];
+    u8 pad33[0x13];
+    u8 unk46; /* 46 */
+    u8 pad47[0x2];
     u8 unk49; /* 49 */
     u8 pad4A[0x4];
     u8 unk4E; /* 4E */
@@ -78,7 +80,9 @@ typedef struct MenuParty {
     u8 unk54; /* 54 */
     u8 pad55[0xB];
     u8 ready; /* 60 */
-    u8 pad61[0xB];
+    u8 pad61[0x6];
+    u8 unk67; /* 67 */
+    u8 pad68[0x4];
 } MenuParty;
 
 /* Screen images (*(state + 350)). */
@@ -242,9 +246,9 @@ typedef struct MenuState {
     u8 *block34C; /* 34C: 2dc0 bytes */
     MenuImages *screenImages; /* 350: screen images (1194 bytes) */
     u8 *block354; /* 354: 140c bytes */
-    u8 pad358[0x4];
+    u8 *block358; /* 358 */
     u8 *block35C; /* 35C */
-    u8 pad360[0x4];
+    u8 *block360; /* 360 */
     u8 *portraits[2]; /* 364: two 720-byte blocks */
     u8 pad36C[0x14];
     u8 *portraitMarks[2]; /* 380 */
@@ -268,7 +272,9 @@ typedef struct MenuState {
     u8 labelImages[0x78]; /* 4E0: label image records (801e7e68) */
     u8 *labelPixels; /* 558: 38e-byte label pixel block */
     u8 pad55C[0x184];
-    MenuLabelSlot labelSlots[24]; /* 6E0: laid-out labels (801e7e68) */
+    MenuLabelSlot labelSlots[23]; /* 6E0: laid-out labels (801e7e68) */
+    u8 pad1DE0[0x28];
+    u8 *panels[3]; /* 1E08 */
 } MenuState;
 /* structs: end */
 
@@ -278,6 +284,8 @@ extern u8 D_80059171;         /* the triangle menu opened the menu */
 extern u8 D_80059178;         /* menu sound effects loaded */
 extern u8 D_800594CC;         /* field menu cursor kept between openings */
 extern GearRecord D_8006DFAC[]; /* game data: gear records */
+extern u8 D_8006F5C4[150];    /* game data: inventory item counts */
+extern u8 D_8006F65A[150];    /* game data: inventory item ids */
 extern u8 D_8006F008;         /* game data: disc of the loaded file */
 extern u16 D_8006EF64;        /* game data: save title line of text file 1 */
 extern u8 D_800594D0;         /* load result: 0, 1 title timeout, 2 loaded */
@@ -355,6 +363,7 @@ s32 func_8004C318(s32 arg0, s32 arg1, s32 arg2);
 void func_8004C338(s32 handle);
 void func_8004C398(s32 handle, s32 arg1, s32 arg2);
 s32 func_8004E784(s32 channel); /* start a card check */
+void func_80044764(RECT *rect, s32 r, s32 g, s32 b); /* ClearImage */
 void func_800445D0(s32 mode);                /* DrawSync */
 void func_80044894(RECT *rect, void *pixels); /* LoadImage */
 void func_8003852C(void *bank);
@@ -375,6 +384,7 @@ void func_801C6D90(void);
 void func_801C6E0C(void);
 void func_801C6E68(void);
 void func_801C6F70(void);
+void func_801C72BC(u8 arg0);
 void func_801C7B0C(void);
 void func_801C7BF4(void);
 void func_801C7D78(void);
@@ -398,6 +408,17 @@ void func_801D01D0(void);
 void func_801D02D8(void);
 void func_801D0C78(void);
 void func_801D11F0(void);
+void func_801D0D90(void);
+void func_801D0E20(void);
+void func_801D0E38(void);
+void func_801D0EBC(void);
+void func_801D0ED4(void);
+void func_801D0F54(void);
+void func_801D0FD4(void);
+void func_801D1030(void);
+void func_801D10DC(void);
+void func_801D1160(void);
+void func_801D12D4(u8 *panel, s32 arg1);
 void func_801D1CA0(void);
 void func_801D1D40(void);
 void func_801D1E80(void);
