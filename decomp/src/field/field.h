@@ -712,7 +712,7 @@ extern void func_80033698(s32, s32);
 extern void func_8003747C(s32);
 extern void func_800374E8(s32, s32, s32, s32, s32, s32, s32, s32, s32, s32, s32);
 extern void func_80021B98(void *, s32 r, s32 g, s32 b);
-extern s32 func_80028A60(s32 mode);
+extern s32 func_80028A60(s32 mode); /* wait for the disc (1: poll) */
 extern void func_80029EB0(s32 file, void *ring, s32, s32, s32, s32, s32, s32, s32, s32);
 extern void *func_8002A260(s32 sectors, s32);
 extern void func_800320E8(void *);

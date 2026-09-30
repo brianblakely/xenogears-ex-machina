@@ -23,7 +23,7 @@ extern FieldDescriptor *D_800B06B8; /* descriptor of the running actor */
 extern s32 D_8006F990[3];            /* party member descriptor per slot */
 extern s32 D_800AFFEC;
 extern s32 func_800A3090(s32 actor, s32 event);
-extern void func_800A1EC8(s32 limit);
+extern s32 func_800A1EC8(s32 limit);
 extern void func_80077268(void);
 extern void func_80080A74(s32 actor);
 
@@ -71,7 +71,7 @@ extern u8 D_800AE1E0[][2];             /* portrait files per character, - 0x46 *
 extern void *D_800ADB10;               /* first portrait image */
 extern void *D_800ADB14;               /* second portrait image */
 extern PortraitRequest D_800B00C8[3];  /* file list read by 80029afc */
-extern s32 func_80029AFC(PortraitRequest *list, s32 mode, s32 a2);
+extern s32 func_80029AFC(void *list, s32 mode, s32 a2);
 extern s32 func_8009C538(s32 id);
 
 #endif
