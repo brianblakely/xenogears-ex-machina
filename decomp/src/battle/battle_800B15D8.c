@@ -460,11 +460,68 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B50
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B51B0);
 
+#ifdef NON_MATCHING
+/* Trail update: publish its colours and blend for drawing, refresh the
+ * anchors when the sprite's frame changed and ease the trail towards them;
+ * end once the sprite's motion changes or its phase is 0 or 1. */
+void func_800B5588(BattleTask *task) {
+    SpriteTrail *trail = task->data;
+    BattleSprite *sprite;
+    s32 phase;
+    s32 i;
+
+    D_800D2FD8 = trail->colours;
+    sprite = trail->sprite;
+    D_800C3E9C = trail->count;
+    D_800C3D4C = trail->blend;
+    D_800D3334 = sprite->field2E;
+    if (sprite->frame != trail->frame) {
+        trail->frame = sprite->frame;
+        func_800B50D4(sprite, trail->anchors);
+    }
+    for (i = 1; i != 5; i++) {
+        trail->trail[i].vx += (trail->anchors[i].vx - trail->trail[i].vx) / 2;
+        trail->trail[i].vy += (trail->anchors[i].vy - trail->trail[i].vy) / 2;
+        trail->trail[i].vz += (trail->anchors[i].vz - trail->trail[i].vz) / 2;
+    }
+    trail->trail[0].vx = trail->anchors[0].vx;
+    trail->trail[0].vy = trail->anchors[0].vy;
+    trail->trail[0].vz = trail->anchors[0].vz;
+    sprite = trail->sprite;
+    if (trail->motion != sprite->motion.bytes[3] || (phase = (sprite->frameBits >> 28) & 3) == 0 || phase == 1) {
+        trail->task.destroy(&trail->task);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B5588);
+#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B56E4);
+/* Trail draw: the sprite, then the trail (800C08CC). */
+void func_800B56E4(BattleTask *draw) {
+    SpriteTrail *trail = draw->data;
 
+    func_8001E148(trail->sprite);
+    func_800C08CC(5, trail->trail, func_800B51B0);
+}
+
+#ifdef NON_MATCHING
+/* Give sprite a trail in colours (the first byte the colour count, 0 for
+ * 4). */
+void func_800B572C(BattleSprite *sprite, u8 *colours) {
+    SpriteTrail *trail = func_8001D1D8(0xB8, sprite->task, func_800B5588, func_800B56E4, NULL);
+
+    trail->sprite = sprite;
+    trail->frame = sprite->frame;
+    trail->motion = sprite->motion.bytes[3];
+    trail->colours = colours;
+    trail->blend = sprite->render.bytes[0] >> 5;
+    trail->count = colours[0] == 0 ? 4 : colours[0];
+    func_800B50D4(sprite, trail->trail);
+    func_800B50D4(sprite, trail->anchors);
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B572C);
+#endif
 
 /* The distance from the sprite to its target. */
 s32 func_800B57E4(BattleSprite *sprite) {
@@ -478,25 +535,154 @@ s32 func_800B57E4(BattleSprite *sprite) {
     return SquareRoot0(squares.vx + squares.vz + squares.vy);
 }
 
+#ifdef NON_MATCHING
+/* Approach watch update: stop the sprite (after frames) once it passes its
+ * target or comes near it; end when it stopped or its motion changed. */
+void func_800B5854(SpriteApproach *approach) {
+    u8 done = 0;
+    BattleSprite *sprite = approach->sprite;
+    s32 last = approach->distance;
+    s32 distance = func_800B57E4(sprite);
+
+    approach->distance = distance;
+    if (last < distance || distance < approach->near) {
+        done = 1;
+        sprite->countdown = 1;
+        sprite->framesLeft = approach->frames;
+    }
+    if (sprite->countdown == 0) {
+        done = 1;
+    }
+    if (sprite->motion.bytes[3] != approach->motion) {
+        done = 1;
+    }
+    if (done) {
+        approach->task.destroy(&approach->task);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B5854);
+#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B5924);
+/* Watch sprite approach its target (800B5854). */
+SpriteApproach *func_800B5924(BattleSprite *sprite, s32 near, s32 frames) {
+    SpriteApproach *approach = func_8001CD08(sprite->task, sizeof(SpriteApproach) - sizeof(BattleTask));
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B59BC);
+    func_8001CD6C(approach, func_800B5854);
+    approach->sprite = sprite;
+    approach->distance = func_800B57E4(sprite);
+    approach->near = near;
+    approach->frames = frames;
+    approach->motion = sprite->motion.bytes[3];
+    sprite->motion.word |= 0x20;
+    return approach;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B5AC4);
+/* The offset of the sprite's anchor index (mirrored with the sprite,
+ * scaled), when it is drawn one sided. */
+Point2 func_800B59BC(BattleSprite *sprite, s32 index) {
+    Point2 offset;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B5B3C);
+    if (sprite->view != NULL && (sprite->render.word & 3) == 1 && sprite->view->anchors != NULL) {
+        offset.y = sprite->view->anchors[index].y;
+        offset.x = sprite->view->anchors[index].x;
+        if ((sprite->motion.word >> 2) & 1) {
+            offset.x = -offset.x;
+        }
+        offset.y = offset.y * sprite->scale / 4096;
+        offset.x = offset.x * sprite->scale / 4096;
+        return offset;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B5C18);
+/* The screen position of the sprite's anchor index. */
+Point2 func_800B5AC4(BattleSprite *sprite, s32 index) {
+    Point2 point = func_800B59BC(sprite, index);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B5CC0);
+    point.x += sprite->x.fixed >> 16;
+    point.y += sprite->y.fixed >> 16;
+    return point;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B5DC4);
+/* Link update: move the partner so that its anchor meets the sprite's;
+ * end once the sprite's motion changes or its phase is 0 or 1. */
+void func_800B5B3C(SpriteLink *link) {
+    BattleSprite *partner = link->sprite->partner;
+    Point2 a = func_800B5AC4(link->sprite, link->anchor);
+    Point2 b = func_800B5AC4(partner, link->partnerAnchor);
+    Point2 delta;
+    BattleSprite *sprite;
+    s32 phase;
+
+    delta.x = a.x - b.x;
+    delta.y = a.y - b.y;
+    partner->x.fixed += delta.x << 16;
+    partner->y.fixed += delta.y << 16;
+    sprite = link->sprite;
+    if (link->motion != sprite->motion.bytes[3] || (phase = (sprite->frameBits >> 28) & 3) == 0 || phase == 1) {
+        link->task.destroy(&link->task);
+    }
+}
+
+/* Link sprite's partner to it at anchors (low nibble the sprite's, high
+ * nibble the partner's). */
+SpriteLink *func_800B5C18(BattleSprite *sprite, u8 *anchors) {
+    SpriteLink *link = func_8001CD08(sprite->task, sizeof(SpriteLink) - sizeof(BattleTask));
+
+    func_8001CD6C(link, func_800B5B3C);
+    link->sprite = sprite;
+    link->partner = sprite->partner;
+    link->frame = sprite->frame;
+    link->motion = sprite->motion.bytes[3];
+    link->anchor = *anchors & 0xF;
+    link->partnerAnchor = *anchors >> 4;
+    func_800B5B3C(link);
+    return link;
+}
+
+/* Sprite orbit update: place the sprite around its target by its speeds
+ * (radius and angles); end with its frames. */
+void func_800B5CC0(BattleTask *task) {
+    BattleSprite *sprite = task->data;
+    Matrix m;
+    SVector offset;
+    SVector angles;
+    Vector position;
+
+    func_80023210(sprite);
+    angles.vy = sprite->speed[1] >> 13;
+    angles.vz = sprite->speed[2] >> 13;
+    angles.vx = 0;
+    offset.vx = func_80022CAC(sprite, sprite->speed[0] >> 13);
+    offset.vy = 0;
+    offset.vz = 0;
+    func_8003F738(&angles, &m);
+    ApplyMatrix(&m, &offset, &position);
+    position.vx += sprite->target[0];
+    position.vy += sprite->target[1];
+    position.vz += sprite->target[2];
+    sprite->x.fixed = position.vx << 16;
+    sprite->y.fixed = position.vy << 16;
+    sprite->z.fixed = position.vz << 16;
+    if (sprite->framesLeft == 0) {
+        task->destroy(task);
+    }
+}
+
+/* Start sprite's orbit (800B5CC0). */
+void func_800B5DC4(BattleSprite *sprite) {
+    sprite->frame = 1;
+    func_8001CD6C(sprite->task, func_800B5CC0);
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B5DF4);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B5FBC);
+/* Draw sprite with 800B5DF4, uncoloured. */
+void func_800B5FBC(BattleSprite *sprite) {
+    sprite->frame = 1;
+    func_8001CD64(sprite->task + 1, func_800B5DF4);
+    sprite->colourFlags = 0x40;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B6004);
 

@@ -96,8 +96,8 @@ extern u8 *D_80059534;  /* its end */
 extern u32 *D_8005956C; /* resident: the ordering table */
 
 /* Resident tasks. */
-void *func_8001CD08(s32 owner, s32 size);          /* create a task */
-void *func_8001D1D8(s32 size, s32 owner, void (*update)(), void (*draw)(), void (*destroy)());
+void *func_8001CD08(void *owner, s32 size);        /* create a task */
+void *func_8001D1D8(s32 size, void *owner, void (*update)(), void (*draw)(), void (*destroy)());
 void func_8001CC18(s32 owner, void *task);
 void func_8001CA58(void *owner, void *node);
 void func_8001CD64(void *task, void (*update)());
