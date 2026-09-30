@@ -13,7 +13,11 @@ typedef struct FieldActor {
     u32 layer_flags;    /* 004 */
     u8 unk008[0x20 - 0x008];
     Fixed position[3];  /* 020: x, y, z */
-    u8 unk02C[0xCC - 0x02C];
+    u8 unk02C[0x060 - 0x02C];
+    s16 unk60;           /* 060 */
+    u8 unk062[0x064 - 0x062];
+    s16 unk64;           /* 064 */
+    u8 unk066[0x0CC - 0x066];
     u16 pc;             /* 0CC: working PC, relative to the bytecode */
     u8 slot;            /* 0CE: selected script slot */
     u8 unk0CF[0xEE - 0x0CF];
@@ -33,7 +37,9 @@ typedef struct FieldDescriptor {
     s32 unk04;          /* 04 */
     u8 unk08[0x4C - 0x08];
     FieldActor *actor;  /* 4C */
-    u8 unk50[0x58 - 0x50];
+    u8 unk50[0x52 - 0x50];
+    s16 unk52;           /* 52 */
+    u8 unk54[0x58 - 0x54];
     u16 flags;          /* 58 */
     u8 unk5A[0x5C - 0x5A];
 } FieldDescriptor;

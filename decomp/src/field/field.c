@@ -1646,11 +1646,14 @@ void func_80092044(void) {
     D_800B0078->pc += 5;
 }
 
+/* Up to 32 entries created by func_800921E8. */
 typedef struct {
     s16 count;
-    s32 handles[1];
-} HandleList;
-extern HandleList D_800AFEA8;
+    s32 handles[32];
+    u8 *buffers[32];
+    s16 lengths[32];
+} WindowList;
+extern WindowList D_800AFEA8;
 void func_80027EAC(s32 handle);
 
 /* Pass every handle in the list at 800afea8 to resident 80027EAC. */
@@ -1684,27 +1687,166 @@ void func_80092148(void) {
     D_800B0078->pc += 7;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800921E8);
+extern s32 D_800ADB8C;
+void *func_80031BDC(s32 size, s32 flags);
+void func_80027D64(s32 handle, s16 x, s16 y, s16 width, s16 height, s16 length, s16 a, s16 b, u8 *buffer);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800923E4);
+/* Open a new entry in the list at 800afea8: allocate its handle and a
+ * filled buffer, then create it through resident 80027D64. */
+void func_800921E8(void) {
+    s32 length;
+    s32 fill;
+    s32 i;
+    s32 x;
+    s32 y;
+    s32 width;
+    s32 height;
+    s32 a;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80092404);
+    if (D_800ADB8C == 0 && D_800AFEA8.count < 32) {
+        length = func_800ACDB8(9) & 0xFFFF;
+        D_800AFEA8.lengths[D_800AFEA8.count] = length;
+        D_800AFEA8.buffers[D_800AFEA8.count] = func_80031BDC(length + 1, 0);
+        D_800AFEA8.handles[D_800AFEA8.count] = (s32)func_80031BDC(0x18, 0);
+        fill = func_800ACDB8(15) & 0xFFFF;
+        for (i = 0; i < length; i++) {
+            D_800AFEA8.buffers[D_800AFEA8.count][i] = fill;
+        }
+        x = (s16)func_800ACDB8(1);
+        y = (s16)func_800ACDB8(3);
+        width = (s16)func_800ACDB8(5);
+        height = (s16)func_800ACDB8(7);
+        a = (s16)func_800ACDB8(11);
+        func_80027D64(D_800AFEA8.handles[D_800AFEA8.count], x, y, width, height, length, a,
+                      func_800ACDB8(13), D_800AFEA8.buffers[D_800AFEA8.count]);
+        D_800AFEA8.count++;
+    }
+    D_800B0078->pc += 17;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80092424);
+/* No operation. */
+void func_800923E4(void) {
+    D_800B0078->pc += 1;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800924D4);
+/* No operation. */
+void func_80092404(void) {
+    D_800B0078->pc += 1;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800925A0);
+typedef union {
+    u32 word;
+    u8 bytes[4];
+} Attribute;
+extern Attribute *D_800AFB20;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80092628);
+/* Return byte `which` of collision attribute `index`. */
+s32 func_80092424(s32 index, s32 which) {
+    switch (which) {
+    case 0:
+        return D_800AFB20[index].bytes[0];
+    case 1:
+        return D_800AFB20[index].bytes[1];
+    case 2:
+        return D_800AFB20[index].bytes[2];
+    case 3:
+        return D_800AFB20[index].bytes[3];
+    }
+    return 0;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80092664);
+/* Replace byte `which` of collision attribute `index`. */
+void func_800924D4(s32 index, s32 which, s32 value) {
+    switch (which) {
+    case 0:
+        D_800AFB20[index].word = (D_800AFB20[index].word & ~0xFF) | value;
+        break;
+    case 1:
+        value <<= 8;
+        D_800AFB20[index].word = (D_800AFB20[index].word & 0xFFFF00FF) | value;
+        break;
+    case 2:
+        value <<= 16;
+        D_800AFB20[index].word = (D_800AFB20[index].word & 0xFF00FFFF) | value;
+        break;
+    case 3:
+        value <<= 24;
+        D_800AFB20[index].word = (D_800AFB20[index].word & 0x00FFFFFF) | value;
+        break;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800926C8);
+extern s32 D_800B217C;
+extern s16 D_800B21D6;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80092768);
+/* Select mode 0..2 in D_800B217C and set D_800B21D6 to 8, 6 or 4. */
+void func_800925A0(void) {
+    s32 mode;
 
+    mode = func_800ACDEC(1);
+    D_800B217C = mode;
+    switch (mode) {
+    case 0:
+        D_800B21D6 = 8;
+        break;
+    case 1:
+        D_800B21D6 = 6;
+        break;
+    case 2:
+        D_800B21D6 = 4;
+        break;
+    }
+    D_800B0078->pc += 3;
+}
+
+extern s16 D_800B217A[];
+
+/* Set D_800B217A from a raw operand. */
+void func_80092628(void) {
+    D_800B217A[0] = func_800ACDB8(1);
+    D_800B0078->pc += 3;
+}
+
+/* Set a collision attribute byte (operands: index, byte, value). */
+void func_80092664(void) {
+    func_800924D4(EVENT_OPERAND_BYTE(1), EVENT_OPERAND_BYTE(2), func_800ACDEC(3));
+    D_800B0078->pc += 5;
+}
+
+/* OR a value into a collision attribute byte. */
+void func_800926C8(void) {
+    s32 value;
+
+    value = func_80092424(EVENT_OPERAND_BYTE(1), EVENT_OPERAND_BYTE(2));
+    value |= func_800ACDEC(3);
+    func_800924D4(EVENT_OPERAND_BYTE(1), EVENT_OPERAND_BYTE(2), value);
+    D_800B0078->pc += 5;
+}
+
+/* AND a value into a collision attribute byte. */
+void func_80092768(void) {
+    s32 value;
+
+    value = func_80092424(EVENT_OPERAND_BYTE(1), EVENT_OPERAND_BYTE(2));
+    value &= func_800ACDEC(3);
+    func_800924D4(EVENT_OPERAND_BYTE(1), EVENT_OPERAND_BYTE(2), value);
+    D_800B0078->pc += 5;
+}
+
+#ifdef NON_MATCHING
+extern FieldDescriptor *D_800B06B8;
+
+/* Give the current actor a step along the published descriptor's facing
+ * and set its layer flag 0x800. */
+void func_80092808(void) {
+    D_800B0078->unk60 = (func_8003F8CC(D_800B06B8->unk52) * 36) >> 12;
+    D_800B0078->unk64 = (func_8003F8B0(D_800B06B8->unk52) * -36) >> 12;
+    D_800B0078->layer_flags |= 0x800;
+    D_800B0078->pc += 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80092808);
+#endif
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80092894);
 
