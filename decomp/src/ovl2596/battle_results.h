@@ -396,4 +396,11 @@ typedef struct {
 } BattleState;
 extern BattleState *D_800C3EAC;
 
+extern u8 D_800CDD0A[3][2];   /* per member: [0] a stat changed */
+extern u8 D_800C48EA;
+void *func_8008ABB8(s32 size, s32 top);        /* heap allocate */
+void bzero(void *dest, s32 size);
+void func_80039FF8(void);
+void func_801E0ACC(u8 member);
+
 #endif
