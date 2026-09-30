@@ -37,7 +37,113 @@ void func_801E4048(void) {
     D_800D2DC0 = 0;
 }
 
+/* Place the formation: party and enemy presence, ids and groups from the
+ * formation record, group membership and each member's standing position
+ * from the battle scene data. */
+#ifdef NON_MATCHING
+void func_801E4160(void) {
+    s32 i;
+    u8 id;
+    BattleScene *scene;
+
+    D_800D3280 = 0;
+    D_800D3364 = D_8005949C;
+    D_800C3EB0 = D_8005949C;
+    for (i = 0; i < 3; i++) {
+        if ((D_800C3EB4.slot[i].id & 0x7F) != NO_COMBATANT) {
+            D_800D2DCC.present[i] = 1;
+            D_800D3280++;
+        } else {
+            D_800D2DCC.present[i] = 0;
+        }
+        if (D_800C3EB4.slot[i].alone == 0) {
+            D_800C3EB4.slot[i].group = FORMATION_PARTY_GROUP(i) & 0x7F;
+        } else {
+            D_800C3EB4.slot[i].group = i;
+        }
+    }
+    D_800D3280 += 0xFF; /* one less */
+    for (i = 3; i < SLOT_COUNT; i++) {
+        id = FORMATION_ID(i) & 0x7F;
+        if (id != NO_COMBATANT) {
+            D_800C3EB4.slot[i].id = id;
+            D_800C3EB4.slot[i].flag3 = FORMATION_FLAGS3(i) & 0x80;
+            D_800C3EB4.slot[i].alone = FORMATION_ID(i) & 0x80;
+            D_800C3EB4.slot[i].flag5 = FORMATION_FLAGS3(i) & 1;
+            D_800D2DCC.present[i] = 1;
+            D_800C3EB4.slot[i].group = FORMATION_GROUP(i) & 0x7F;
+        } else {
+            D_800CCCE8[i].pos4E = 0;
+            D_800CCCE8[i].pos4C = 0;
+            D_800C3EB4.slot[i].id = NO_COMBATANT;
+            D_800C3EB4.slot[i].flag3 = 0;
+            D_800C3EB4.slot[i].alone = 0;
+            D_800D2DCC.present[i] = 0;
+        }
+        D_800C3E3D[i] = D_800C3EB4.slot[i].id + 1;
+    }
+    for (i = 0; i < 32; i++) {
+        D_800D301C[i].count = 0;
+        D_800D301C[i].mask = 0;
+    }
+    for (i = 0; i < 3; i++) {
+        if (D_800C3EB4.slot[i].id != NO_COMBATANT) {
+            if (D_800C3EB4.slot[i].alone == 0) {
+                D_800C3EB4.slot[i].index = D_800D301C[D_800C3EB4.slot[i].group].count;
+                D_800D301C[D_800C3EB4.slot[i].group].mask |= func_80089C08(D_800C3EB4.slot[i].index);
+                D_800D301C[D_800C3EB4.slot[i].group].count++;
+            } else {
+                D_800C3EB4.slot[i].index = 0;
+                D_800D301C[D_800C3EB4.slot[i].group + 16].mask = 1;
+                D_800D301C[D_800C3EB4.slot[i].group + 16].count = 1;
+            }
+        }
+    }
+    for (i = 3; i < SLOT_COUNT; i++) {
+        if (D_800C3EB4.slot[i].id != NO_COMBATANT) {
+            if (D_800C3EB4.slot[i].alone == 0) {
+                D_800C3EB4.slot[i].index = D_800D301C[D_800C3EB4.slot[i].group + 8].count;
+                D_800D301C[D_800C3EB4.slot[i].group + 8].mask |= func_80089C08(D_800C3EB4.slot[i].index);
+                D_800D301C[D_800C3EB4.slot[i].group + 8].count++;
+            } else {
+                D_800C3EB4.slot[i].index = 0;
+                D_800D301C[D_800C3EB4.slot[i].group + 24].mask = 1;
+                D_800D301C[D_800C3EB4.slot[i].group + 24].count = 1;
+            }
+        }
+    }
+    scene = D_800D3364;
+    for (i = 0; i < 3; i++) {
+        if (D_800C3EB4.slot[i].id != NO_COMBATANT) {
+            if (D_800C3EB4.slot[i].alone == 0) {
+                D_800C3EB4.slot[i].x =
+                    scene->group[D_800C3EB4.slot[i].group].party[D_800C3EB4.slot[i].index].x;
+                D_800C3EB4.slot[i].z =
+                    scene->group[D_800C3EB4.slot[i].group].party[D_800C3EB4.slot[i].index].z;
+            } else {
+                D_800C3EB4.slot[i].x = scene->alone[D_800C3EB4.slot[i].group].party.x;
+                D_800C3EB4.slot[i].z = scene->alone[D_800C3EB4.slot[i].group].party.z;
+            }
+        }
+    }
+    for (i = 3; i < SLOT_COUNT; i++) {
+        if (D_800C3EB4.slot[i].id != NO_COMBATANT) {
+            if (D_800C3EB4.slot[i].alone == 0) {
+                D_800C3EB4.slot[i].x =
+                    D_800D3364->group[D_800C3EB4.slot[i].group].enemy[D_800C3EB4.slot[i].index].x;
+                D_800C3EB4.slot[i].z =
+                    D_800D3364->group[D_800C3EB4.slot[i].group].enemy[D_800C3EB4.slot[i].index].z;
+            } else {
+                D_800C3EB4.slot[i].x = D_800D3364->alone[D_800C3EB4.slot[i].group].enemy.x;
+                D_800C3EB4.slot[i].z = D_800D3364->alone[D_800C3EB4.slot[i].group].enemy.z;
+            }
+            D_800C3EB4.slot[i].flag6 = FORMATION_FLAG6(i) & 0x80;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E4160);
+#endif
 
 /* Copy each present enemy's combatant record from the enemy data file and
  * point its AI state at its scripts (absent enemies are cleared). */
@@ -241,7 +347,7 @@ void func_801E5014(void) {
     s32 j;
     u8 k;
 
-    if (D_8006F9DC.flags & 0x20) {
+    if (FORMATION_FLAGS & 0x20) {
         D_800C3D48 = 1;
     }
     for (i = 0; i < 3; i++) {
@@ -262,11 +368,11 @@ void func_801E5014(void) {
         for (k = 0; k < 16; k++) {
             D_800C3EAC->slot[i].commands[k] = D_800CCCE8[i].commands & D_800C3234[k];
         }
-        if (D_800CCCE8[i].bA0 == 0xFF || (D_8006F9DC.flags & 0x40)) {
+        if (D_800CCCE8[i].bA0 == 0xFF || (FORMATION_FLAGS & 0x40)) {
             D_800C3EAC->slot[i].commands[7] = D_800C3234[7];
             D_800CCCE8[i].commands |= D_800C3234[7];
         }
-        if (D_8006F9DC.flags & 0x80) {
+        if (FORMATION_FLAGS & 0x80) {
             D_800C3EAC->slot[i].commands[8] = D_800C3234[8];
             D_800CCCE8[i].commands |= D_800C3234[8];
         }

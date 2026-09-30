@@ -125,7 +125,10 @@ extern TurnState *D_800C3EAC;
 typedef struct {
     u8 pad0[0x34];
     u16 flags;  /* 0x34: 0x200 acts first */
-    u8 pad36[0x56 - 0x36];
+    u8 pad36[0x4C - 0x36];
+    s16 pos4C;  /* 0x4C */
+    s16 pos4E;  /* 0x4E */
+    u8 pad50[0x56 - 0x50];
     u8 menu_layout; /* 0x56 */
     u8 pad57[0x62 - 0x57];
     u8 stat62;  /* 0x62 */
@@ -261,19 +264,16 @@ extern s16 D_800D39E0;
 
 void func_8003F99C(void *dest, void *src, s32 size); /* memmove */
 
-/* The battle formation record (resident game data at 0x8006F9DC). */
-typedef struct {
-    u8 b0;
-    u8 flags;          /* 0x20 alternate module, 0x40 command 7, 0x80 command 8 */
-    u8 pad2[2];
-    u8 party_group[3]; /* 0x04 */
-    u8 pad7;
-    u8 enemy_id[8];    /* 0x08 */
-    u8 enemy_flags[8]; /* 0x10 */
-    u8 enemy_group[8]; /* 0x18 */
-} Formation;
+/* The battle formation record (resident game data at 0x8006F9DC). Its
+ * per-combatant bytes are laid out relative to the slot number. */
+extern u8 D_8006F9DC[];
 
-extern Formation D_8006F9DC;
+#define FORMATION_FLAGS D_8006F9DC[1] /* 0x20 alternate module, 0x40/0x80 commands 7/8 */
+#define FORMATION_PARTY_GROUP(member) D_8006F9DC[4 + (member)]
+#define FORMATION_ID(slot) D_8006F9DC[5 + (slot)]      /* 0x80: placed alone */
+#define FORMATION_FLAGS3(slot) D_8006F9DC[0xD + (slot)]
+#define FORMATION_GROUP(slot) D_8006F9DC[0x15 + (slot)]
+#define FORMATION_FLAG6(slot) D_8006F9DC[0x18 + (slot)]
 extern u8 D_800C3D48;
 extern u8 D_8006ED0B[][0x20];   /* character table (+0xB) */
 extern u8 *D_800C20F0[];        /* command menu layouts */
@@ -284,5 +284,45 @@ extern u16 D_800C3234[16];      /* command masks */
 
 u8 func_800841E0(u8 slot);            /* default target */
 u8 func_80085310(u8 slot, u8 target); /* facing towards the target */
+
+/* Battle scene data (resident pointer 0x8005949C): standing positions of
+ * each formation group, then the positions of the members placed alone. */
+typedef struct {
+    u16 x, z;
+} ScenePos;
+
+typedef struct {
+    u8 pad0[4];
+    ScenePos party[3];  /* 0x04 */
+    ScenePos enemy[4];  /* 0x10 */
+} SceneGroup;
+
+typedef struct {
+    ScenePos party;
+    ScenePos enemy;
+} SceneAlone;
+
+typedef struct {
+    SceneGroup group[8];  /* 0x000 */
+    SceneAlone alone[8];  /* 0x100 */
+} BattleScene;
+
+extern BattleScene *D_8005949C;
+extern BattleScene *D_800D3364;
+extern BattleScene *D_800C3EB0;
+
+/* Formation groups: member count and member bits (party 0-7, enemies 8-15,
+ * members placed alone 16-23 and 24-31). */
+typedef struct {
+    u8 count;
+    u8 mask;
+    u8 pad2[2];
+} FormationGroup;
+
+extern FormationGroup D_800D301C[32];
+extern u8 D_800D3280;        /* present party members - 1 */
+extern u8 D_800C3E3D[SLOT_COUNT];
+
+u16 func_80089C08(s32 index); /* bit of a group member index */
 
 #endif
