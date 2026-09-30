@@ -732,7 +732,8 @@ extern u8 D_801EA548[];  /* save/load screen labels */
 extern u8 D_801EA8F4[];
 extern u8 D_801EA8FC;
 extern u8 D_801EA8C0;    /* the last printed character was two-byte */
-extern u16 D_801EA5D0[0x80]; /* ASCII to two-byte character codes */
+extern u16 D_801EA5D0[0x80]; /* ASCII to two-byte character codes (used from 0x20); the first
+                              * 12 bytes also serve as the gear portrait v per slot (s32) */
 extern s32 D_801EA6FC;   /* gauge: from, to, difference and lengths */
 extern s32 D_801EA700;
 extern s32 D_801EA704;
@@ -749,6 +750,13 @@ extern s32 D_801E9A48[]; /* y */
 extern s32 D_801E9E94[]; /* choice label x offsets */
 extern s32 D_801EA164[2]; /* party window sprite x */
 extern s32 D_801EA16C[]; /* party window sprite y per row */
+extern s32 D_801EA17C[]; /* portrait panel x per mode */
+extern s32 D_801EA18C[]; /* portrait panel y per mode */
+extern s32 D_801EA578[]; /* character portrait u / 4 per slot */
+extern s32 D_801EA584[]; /* gear portrait u / 4 per slot */
+extern s32 D_801EA5C4[]; /* character portrait v per slot */
+extern u16 D_80059414;   /* portrait palette of odd images */
+extern u16 D_800595D4;   /* portrait palette of even images */
 extern s32 D_801E9AC8[20];
 extern s32 D_801E9A58[4]; /* marker positions */
 extern s32 D_801E9A68[4];
@@ -813,6 +821,7 @@ void SetRotMatrix(MATRIX *m);                 /* SetRotMatrix */
 void SetTransMatrix(MATRIX *m);                 /* SetTransMatrix */
 void PushMatrix(void);
 void PopMatrix(void);
+u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y);
 void ClearOTagR(u32 *ot, s32 count);  /* ClearOTagR */
 void MoveImage(RECT *rect, s32 x, s32 y); /* MoveImage */
 void DrawOTag(u32 *ot);             /* DrawOTag */
@@ -997,6 +1006,7 @@ void func_801E56E8(s32 index);
 void func_801E8DA8(u8 image, u8 row);
 void func_801E7C50(MenuLabelSlot *label, s32 row, s32 arg2, s32 arg3);
 void func_801E920C(POLY_FT4 *poly, s32 x, s32 y, s32 u, s32 v, s32 w, s32 h);
+void func_801E927C(POLY_FT4 *poly);
 void func_801E5B3C(void);
 void func_801E61B0(void);
 void func_801E6AE8(u8 index, MenuViewSet *set);

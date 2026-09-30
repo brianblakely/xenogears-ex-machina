@@ -2403,7 +2403,31 @@ void func_801D3674(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D36E0);
+/* Lay out `label` as the portrait of party slot `slot` (its character, or
+ * its gear when `gear`) at the panel position of `mode`. */
+void func_801D36E0(MenuLabelSlot *label, u8 slot, u8 gear, u8 mode) {
+    s32 x;
+    s32 w;
+
+    func_801E927C(&label->polys[D_800625A0->bufferIndex]);
+    label->polys[D_800625A0->bufferIndex].tpage = GetTPage(0, 0, 0x180, 0);
+    if (!gear) {
+        w = 0x48;
+        label->polys[D_800625A0->bufferIndex].clut = (D_800625A0->party->ids[slot] & 1) ? D_80059414 : D_800595D4;
+        x = D_801EA17C[mode] - 0x24;
+        func_801E920C(&label->polys[D_800625A0->bufferIndex], (u16)x, (u16)D_801EA18C[mode],
+                      (u8)(D_801EA578[slot] * 4), (u8)D_801EA5C4[slot], w, 13);
+    } else {
+        w = 0x60;
+        label->polys[D_800625A0->bufferIndex].clut =
+            ((D_8006D8A0[D_800625A0->party->ids[slot]].gear + 11) & 1) ? D_80059414 : D_800595D4;
+        x = D_801EA17C[mode] - 0x30;
+        func_801E920C(&label->polys[D_800625A0->bufferIndex], (u16)x, (u16)D_801EA18C[mode],
+                      (u8)(D_801EA584[slot] * 4), (u8)((s32 *)D_801EA5D0)[slot], w, 13);
+    }
+    func_801C851C(label->verts, x, D_801EA18C[mode], w, 13);
+    label->count = D_800625A0->bufferIndex;
+}
 
 /* Open portrait window `index` at (x, y) of w x h: grow it in (`grow`) or
  * lay it out at once. Windows from 2 get their own blocks. */
