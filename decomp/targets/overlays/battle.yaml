@@ -48,12 +48,15 @@ segments:
       - [0x0, rodata, battle_prefix]
       # Units change where the jump tables change phase mod 8 (GCC's .align 3
       # is relative to the unit's rodata, placed at 4-byte boundaries; see
-      # docs/matching.md). battle.c keeps 8008115C-8009E53C, which still
-      # spans the phase changes at 80070314 and 80070370.
+      # docs/matching.md). The tables at 80070314-80070370 (8008B478,
+      # 8008BED8, 8008C81C) sit at 4 mod 8 between runs at 0 mod 8; their
+      # unit's text starts after 800861D0 and ends before 80094EE4.
       - [0x4, .rodata, battle_80070E2C]
       - [0x18, .rodata, battle_800792F8]
       - [0x8C, .rodata, battle_80079ED8]
       - [0x520, .rodata, battle]
+      - [0x824, .rodata, battle_8008B478]
+      - [0x880, .rodata, battle_8008CCCC]
       - [0x9DC, .rodata, battle_8009E53C]
       - [0xCEC, .rodata, battle_800B15D8]
       - [0xF20, .rodata, battle_800B8098]
@@ -61,6 +64,8 @@ segments:
       - [0x9808, c, battle_800792F8]
       - [0xA3E8, c, battle_80079ED8]
       - [0x1166C, c, battle]
+      - [0x1B988, c, battle_8008B478]
+      - [0x1D1DC, c, battle_8008CCCC]
       - [0x2EA4C, c, battle_8009E53C]
       - [0x41AE8, c, battle_800B15D8]
       - [0x485A8, c, battle_800B8098]

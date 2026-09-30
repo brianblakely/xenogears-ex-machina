@@ -9,6 +9,14 @@
 #include "menu_pages.h"
 #include "resolver.h"
 #include "action_resolve.h"
+#include "hud_draw.h"
+#include "battle_command.h"
+#include "window_draw.h"
+#include "formation_route.h"
+#include "gear_menu.h"
+#include "glyph_lists.h"
+#include "item_command.h"
+#include "result_input.h"
 
 /* Start the 801e5000 module: reserve its heap span and load it. */
 void func_80070E2C(void) {
@@ -64,8 +72,8 @@ void func_80070F40(void) {
     bzero(D_800D2D28, 0x10C);
     bzero(D_800C3EAC, 0x2F8);
     D_8005959C = 0;
-    D_800C3E29 = 0xFF;
-    D_800C3E28 = 0xFF;
+    D_800C3E28[1] = 0xFF;
+    D_800C3E28[0] = 0xFF;
     D_800D366C = 0;
     D_800C3E54 = D_80062528;
     if (D_8005947C != 0) {
@@ -815,37 +823,94 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80072F
 
 /* Build the member's four-digit panel value (the 800d32a0 value or record
  * +0xdc) as glyphs. */
-#ifdef NON_MATCHING
 void func_80073380(s32 member) {
     s16 value;
     s32 i;
-    s32 x;
     u8 digit;
 
-    if (D_800C3EA4->panels[member].unk1E1 == 1) {
+    if (D_800C3EA4->panels[member].state == 1) {
         value = D_800D32A0[member].unk0;
     } else {
         value = D_800CCCE8.records[member].gear.fuel;
     }
     func_8008AAA0(value);
-    i = 0;
-    x = 0;
-    for (; i < 4; i++) {
+    for (i = 0; i < 4; i++) {
         digit = D_800C3CF4[i + 5];
         if (digit != 0xFF) {
             D_800D2D28->unkEC[member] +=
                 func_80076A10(digit + 0x83, &D_800C3EA4->unk6008[member][D_800D2D28->unkEC[member] * 2],
-                              member * 0x60 + (D_800C3254[D_800D3280 * 3 + member] + 0x4A) + x, 0x25);
+                              member * 0x60 + (D_800C3254[D_800D3280 * 3 + member] + 0x4A) + i * 6, 0x25);
         }
-        x += 6;
     }
     D_800D2D28->unk99[member] = D_800CCB04.buffer;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80073380);
-#endif
 
+/* Build each present member's status glyphs by its panel state (0: the
+ * status label, 1: the party-wide label, 2/3: the cursor window), and
+ * record the draw buffer they were built for. */
+#ifdef NON_MATCHING
+void func_80073538(void) {
+    s32 member;
+    s32 first;
+    s32 part;
+
+    D_800D2D28->statusParts[3] = 0;
+    for (member = 0; member < 3; member++) {
+        if (D_800C3EB4[member].field2 == 0x7F) {
+            continue;
+        }
+        switch (D_800D2D28->unk90[member]) {
+        case 0:
+            D_800D2D28->statusParts[member] = 0;
+            D_800D2D28->statusParts[member] += func_80076A10(
+                0x8F, D_800C3EA4->status[member][D_800D2D28->statusParts[member]],
+                member * 0x60 + (D_800C3254[D_800D3280 * 3 + member] + 0x44), 0x1F);
+            D_800D2D28->statusParts[member] += func_80076A6C(
+                0x52, D_800C3EA4->status[member][D_800D2D28->statusParts[member]],
+                member * 0x60 + (D_800C3254[D_800D3280 * 3 + member] + 0x48), 0x1C);
+            first = D_800D2D28->statusParts[member];
+            part = first * 2;
+            D_800D2D28->statusParts[member] += func_80076A6C(
+                0x53, D_800C3EA4->status[member][first],
+                member * 0x60 + (D_800C3254[D_800D3280 * 3 + member] + 0x48), 0x1C);
+            for (; part < D_800D2D28->statusParts[member] * 2; part += 2) {
+                func_80076C34(&D_800C3EA4->status[member][0][part + D_800CCB04.buffer]);
+            }
+            D_800D2D28->statusBuffer[member] = D_800CCB04.buffer;
+            D_800D2D28->unkCC[member] = 1;
+            break;
+        case 1:
+            D_800D2D28->statusParts[3] = func_80025FA8(D_800D2F5C, 0x52, D_800C3EA4->status[3][0], D_800CCB04.buffer,
+                                            0x10, 0x98, 0x1000, 0x1000, 0xC00);
+            first = D_800D2D28->statusParts[3];
+            part = first * 2;
+            D_800D2D28->statusParts[3] += func_80025FA8(D_800D2F5C, 0x53, D_800C3EA4->status[3][first],
+                                             D_800CCB04.buffer, 0x10, 0x98, 0x1000, 0x1000, 0xC00);
+            for (; part < D_800D2D28->statusParts[3] * 2; part += 2) {
+                func_80076C34(&D_800C3EA4->status[3][0][part + D_800CCB04.buffer]);
+            }
+            D_800D2D28->statusBuffer[3] = D_800CCB04.buffer;
+            break;
+        case 3:
+            if (D_800D32A0[member].unk1 != 0 && D_800D2D24[member] != 7) {
+                D_800D2D28->unkCC[member] = 0;
+            } else {
+                D_800D2D28->statusParts[member] = 0;
+            }
+            func_800765C4(member);
+            /* fallthrough */
+        case 2:
+            func_80076710(member);
+            if (D_800D32A0[member].unk1 == 0 || D_800D2D24[member] == 7) {
+                D_800D2D28->barShown[member] = 0;
+            }
+            break;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80073538);
+#endif
 
 /* When enabled, shade the current flat quad at graphics +0x63c8 grey by
  * +0x6410 and add it with its draw mode to the ordering table. */
@@ -863,7 +928,49 @@ void func_80073A58(void) {
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80073A58);
 #endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80073B64);
+/* Draw the party panel: the list separator lines, the status glyphs, each
+ * member's panel value and digits, the command portrait and name glyphs,
+ * and each present member's portrait, gauge and gauge shade. */
+void func_80073B64(void) {
+    s32 i;
+
+    for (i = 0; i < D_800D2D28->unk97; i++) {
+        AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unk908[D_800D2D28->unk98 + i * 2]);
+    }
+    for (i = 0; i < 4; i++) {
+        func_800728B8(D_800C3EA4->status[i][0], D_800D2D28->statusParts[i], D_800D2D28->statusBuffer[i]);
+    }
+    for (i = 0; i < 3; i++) {
+        if (D_800D2D28->unkCC[i] != 0) {
+            switch (D_800C3EA4->panels[i].state) {
+            case 1:
+                func_800728B8(D_800C3EA4->panels[i].value[0], D_800C3EA4->panels[i].parts[0],
+                              D_800C3EA4->panels[i].buffer);
+                break;
+            case 2:
+                func_800728B8(D_800C3EA4->panels[i].alone[0], D_800C3EA4->panels[i].parts[1],
+                              D_800C3EA4->panels[i].buffer);
+                break;
+            }
+            func_800728B8(D_800C3EA4->unk6008[i], D_800D2D28->unkEC[i], D_800D2D28->unk99[i]);
+        }
+    }
+    if (D_800D2D28->unkAF != 0) {
+        func_800728B8(D_800C3EA4->unk9C8[0], D_800D2D28->unk7B, D_800D2D28->unkA4);
+    }
+    for (i = 0; i < 3; i++) {
+        func_800728B8(D_800C3EA4->unk3A88[i], D_800D2D28->unkE0[i], D_800D2D28->unk93[i]);
+    }
+    for (i = 0; i < 3; i++) {
+        if (D_800C3EB4[i].field2 != 0x7F) {
+            func_800728B8(D_800C3EA4->portrait[i], 1, D_800D2D28->portraitBuffer);
+            if (D_800D2D28->unkCC[i] != 0) {
+                func_800728B8(D_800C3EA4->gauge[i][0], D_800D2D28->gaugeParts[i], D_800D2D28->gaugeBuffer);
+                AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->shade[i * 2 + D_800CCB04.buffer]);
+            }
+        }
+    }
+}
 
 /* Draw both 100-primitive lists at graphics +0x641c when UI +0xcb is set. */
 void func_80073E88(void) {
@@ -889,7 +996,36 @@ void func_80073F08(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80073FB8);
+/* Add the panel draw modes, the shown gauge bars (while the battle runs)
+ * and every shown window's fill, frame, background and draw mode. */
+void func_80073FB8(void) {
+    s32 i;
+    WindowBlock *window;
+
+    AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unk8920[D_800CCB04.buffer]);
+    for (i = 0; i < 4; i++) {
+        if (D_800D2D28->barShown[i] != 0 && D_800C3E4C == 1) {
+            AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->gaugeBars[i * 2 + D_800D2D28->statusBuffer[i]]);
+        }
+    }
+    AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unk8908[D_800CCB04.buffer]);
+    for (i = 0; i < 7; i++) {
+        if (D_800D2D28->windows[i] != 0) {
+            window = (WindowBlock *)D_800D2E38[i];
+            func_800728B8(window->corners, window->cornerCount, window->buffer);
+            AddPrim(D_800CCB04.ot + 1, &window->frame[2][window->buffer]);
+            AddPrim(D_800CCB04.ot + 1, &window->frame[2][2 + window->buffer]);
+            AddPrim(D_800CCB04.ot + 1, &window->frame[3][window->buffer]);
+            AddPrim(D_800CCB04.ot + 1, &window->frame[3][2 + window->buffer]);
+            AddPrim(D_800CCB04.ot + 1, &window->frame[0][window->buffer]);
+            AddPrim(D_800CCB04.ot + 1, &window->frame[0][2 + window->buffer]);
+            AddPrim(D_800CCB04.ot + 1, &window->frame[1][window->buffer]);
+            AddPrim(D_800CCB04.ot + 1, &window->frame[1][2 + window->buffer]);
+            AddPrim(D_800CCB04.ot + 1, &window->shade[window->buffer]);
+            AddPrim(D_800CCB04.ot + 1, &window->mode[window->buffer]);
+        }
+    }
+}
 
 /* Redraw the party markers flagged in UI +0x7c. */
 void func_800742A0(void) {
@@ -1000,7 +1136,38 @@ void func_800745EC(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80074AB8);
+/* Draw the *800d2db4 primitive lists the UI enables: the target lists
+ * (UI +0xc7) and the menu lists (UI +0xad), one of which blinks: shown for
+ * 15 of every 21 frames. */
+void func_80074AB8(void) {
+    if (D_800D2D28->unkC7 != 0) {
+        func_800728B8(D_800D2DB4->list2, D_800D2DB4->counts[2], D_800D2DB4->buffers[2]);
+        func_800728B8(D_800D2DB4->list7, D_800D2DB4->counts[7], D_800D2DB4->buffers[7]);
+        func_800728B8(D_800D2DB4->list8, D_800D2DB4->counts[8], D_800D2DB4->buffers[8]);
+        func_800728B8(D_800D2DB4->list10, D_800D2DB4->counts[10], D_800D2DB4->buffers[10]);
+    }
+    if (D_800D2D28->unkAD != 0) {
+        func_800728B8(D_800D2DB4->unk46A0, 20, D_800D2DB4->buffer46A0);
+        func_800728B8(D_800D2DB4->extra0, D_800D2DB4->extraCounts[0], D_800D2DB4->extraBuffers[0]);
+        func_800728B8(D_800D2DB4->extra4, D_800D2DB4->extraCounts[4], D_800D2DB4->extraBuffer4);
+        if (++D_800D2DB4->blink < 15) {
+            func_800728B8(D_800D2DB4->unk4CE0, D_800D2DB4->count4CE0, D_800D2DB4->buffer4CE0);
+        } else if (D_800D2DB4->blink >= 21) {
+            D_800D2DB4->blink = 0;
+        }
+        func_800728B8(D_800D2DB4->list0, D_800D2DB4->counts[0], D_800D2DB4->buffers[0]);
+        func_800728B8(D_800D2DB4->list1, D_800D2DB4->counts[1], D_800D2DB4->buffers[1]);
+        func_800728B8(D_800D2DB4->list3, D_800D2DB4->counts[3], D_800D2DB4->buffers[3]);
+        func_800728B8(D_800D2DB4->list4, D_800D2DB4->counts[4], D_800D2DB4->buffers[4]);
+        func_800728B8(D_800D2DB4->list5, D_800D2DB4->counts[5], D_800D2DB4->buffers[5]);
+        func_800728B8(D_800D2DB4->list6, D_800D2DB4->counts[6], D_800D2DB4->buffers[6]);
+        func_800728B8(D_800D2DB4->list9, D_800D2DB4->counts[9], D_800D2DB4->buffers[9]);
+        func_800728B8(D_800D2DB4->unk32A0, D_800D2DB4->count32A0, D_800D2DB4->buffer32A0);
+        func_800728B8(D_800D2DB4->extra1, D_800D2DB4->extraCounts[1], D_800D2DB4->extraBuffers[1]);
+        func_800728B8(D_800D2DB4->extra2, D_800D2DB4->extraCounts[2], D_800D2DB4->extraBuffers[2]);
+        func_800728B8(D_800D2DB4->extra3, D_800D2DB4->extraCounts[3], D_800D2DB4->extraBuffers[3]);
+    }
+}
 
 /* While a target is being chosen, pulse the direction arrows (red between
  * 0x40 and 0xfc) and draw the ones pointing at targets. The block is
@@ -1036,9 +1203,9 @@ void func_80074D4C(void) {
 /* Draw the three primitive lists of *800d2db4 when UI +0xa8 is set. */
 void func_80074EEC(void) {
     if (D_800D2D28->unkA8 != 0) {
-        func_800728B8(D_800D2DB4->unk5550, D_800D2DB4->counts[11], D_800D2DB4->buffers[11]);
-        func_800728B8(D_800D2DB4->unk5640, D_800D2DB4->counts[12], D_800D2DB4->buffers[12]);
-        func_800728B8(D_800D2DB4->unk5C80, D_800D2DB4->counts[13], D_800D2DB4->buffers[13]);
+        func_800728B8(D_800D2DB4->list11, D_800D2DB4->counts[11], D_800D2DB4->buffers[11]);
+        func_800728B8(D_800D2DB4->list12, D_800D2DB4->counts[12], D_800D2DB4->buffers[12]);
+        func_800728B8(D_800D2DB4->list13, D_800D2DB4->counts[13], D_800D2DB4->buffers[13]);
     }
 }
 
@@ -1056,15 +1223,14 @@ void func_80074F70(void) {
 /* Place and add the shown battle messages: the first centred at (0x40,
  * 0x2c), the others centred at (0x9a, 0xca), texture rows 13 apart per
  * pair. */
-#ifdef NON_MATCHING
 void func_8007500C(void) {
     s32 i;
 
     for (i = 0; i < 8; i++) {
         if (D_800D36C8[i].shown != 0) {
             if (i == 0) {
-                func_80076C78(&D_800D36C8[0].prims[D_800CCB04.buffer], 0x40 - (D_800D36C8[0].width >> 1), 0x2C, 0, 0,
-                              D_800D36C8[0].width);
+                func_80076C78(&D_800D36C8[i].prims[D_800CCB04.buffer], 0x40 - (D_800D36C8[i].width >> 1), 0x2C, 0, 0,
+                              D_800D36C8[i].width);
             } else {
                 func_80076C78(&D_800D36C8[i].prims[D_800CCB04.buffer], 0x9A - (D_800D36C8[i].width >> 1), 0xCA, 0,
                               (i / 2) * 13, D_800D36C8[i].width);
@@ -1073,13 +1239,174 @@ void func_8007500C(void) {
         }
     }
 }
+
+/* Size and colour each member's gauge shade in the current draw buffer:
+ * panel state 1 shows the 800d32a0 value (green, two pixels per point),
+ * state 2 the gear's fuel over 56 pixels (blue, yellow below a quarter,
+ * pale red below an eighth).
+ * Nonmatching: address operand order and register allocation. */
+#ifdef NON_MATCHING
+void func_80075168(void) {
+    s32 i;
+    u16 fuel;
+    u16 maxFuel;
+    s32 width;
+    u16 *panelX;
+
+    for (i = 0; i < 3; i++) {
+        switch (D_800C3EA4->panels[i].state) {
+        case 1:
+            panelX = &D_800C3254[D_800D3280 * 3 + i];
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].x0 = i * 0x60 + (*panelX + 0x28);
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].y0 = 0x22;
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].x1 =
+                i * 0x60 + (*panelX + 0x28) + D_800D32A0[i].unk0 * 2;
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].y1 = 0x22;
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].x2 = i * 0x60 + (*panelX + 0x28);
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].y2 = 0x26;
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].x3 =
+                i * 0x60 + (*panelX + 0x28) + D_800D32A0[i].unk0 * 2;
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].y3 = 0x26;
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].r0 = 0;
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].g0 = 0xFF;
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].b0 = 0;
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].r1 = 0;
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].g1 = 0xFF;
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].b1 = 0;
+            break;
+        case 2:
+            fuel = D_800CCCE8.records[i].gear.fuel;
+            maxFuel = D_800CCCE8.records[i].gear.maxFuel;
+            panelX = &D_800C3254[D_800D3280 * 3 + i];
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].x0 = i * 0x60 + (*panelX + 0x28);
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].y0 = 0x22;
+            width = (u32)(fuel * 100) / maxFuel * 5600 / 10000;
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].x1 = i * 0x60 + 0x28 + *panelX + width;
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].y1 = 0x22;
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].x2 = i * 0x60 + (*panelX + 0x28);
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].y2 = 0x26;
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].x3 = i * 0x60 + 0x28 + *panelX + width;
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].y3 = 0x26;
+            if (fuel >= maxFuel >> 2) {
+                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].r0 = 0;
+                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].g0 = 0;
+                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].b0 = 0xFF;
+                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].r1 = 0;
+                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].g1 = 0;
+                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].b1 = 0xFF;
+            } else if (fuel >= maxFuel >> 3) {
+                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].r0 = 0xFF;
+                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].g0 = 0xFF;
+                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].b0 = 0;
+                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].r1 = 0xFF;
+                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].g1 = 0xFF;
+                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].b1 = 0;
+            } else {
+                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].r0 = 0xFF;
+                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].g0 = 0x7F;
+                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].b0 = 0x7F;
+                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].r1 = 0xFF;
+                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].g1 = 0x7F;
+                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].b1 = 0x7F;
+            }
+            break;
+        }
+    }
+}
 #else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_8007500C);
+INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80075168);
 #endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80075168);
+/* Update the gauge shades, then each present member's time bar in the
+ * current draw buffer: filled by the turn counter over 56 pixels, coloured
+ * for haste or slow. With the member's panel open (state != 0) the bar is
+ * the upright party-wide one instead, showing the fuel of a member in a
+ * gear.
+ * Nonmatching: the original hoists more constants out of the loop. */
+#ifdef NON_MATCHING
+void func_80075938(void) {
+    s32 widths[3];
+    s32 i;
+    u16 clut;
 
+    func_80075168();
+    D_800D2D28->barShown[3] = 0;
+    for (i = 0; i < 3; i++) {
+        if (D_800C3EB4[i].field2 != 0x7F) {
+            if (widths[i] < 0) {
+                widths[i] = 0;
+            }
+            if (D_800D2D28->unk90[i] == 0) {
+                widths[i] = (100 - D_800D2DCC.timers[1][i] * 100 / D_800D2DCC.timers[0][i]) * 5600 / 10000;
+                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].x0 =
+                    D_800C3254[D_800D3280 * 3 + i] + i * 0x60 + 0x2D;
+                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].y0 = 0x1A;
+                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].x1 =
+                    i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x2C) + ((u16)widths[i] + 1);
+                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].y1 = 0x1A;
+                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].x2 =
+                    D_800C3254[D_800D3280 * 3 + i] + i * 0x60 + 0x2D;
+                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].y2 = 0x1E;
+                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].x3 =
+                    i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x2C) + ((u16)widths[i] + 1);
+                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].y3 = 0x1E;
+                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].u0 = (D_800C3EA4->sprites[0].pageX & 0x3F) * 2;
+                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].v0 = D_800C3EA4->sprites[0].pageY;
+                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].u1 =
+                    (widths[i] + (D_800C3EA4->sprites[0].pageX & 0x3F)) * 2;
+                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].v1 = D_800C3EA4->sprites[0].pageY;
+                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].u2 = (D_800C3EA4->sprites[0].pageX & 0x3F) * 2;
+                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].v2 = D_800C3EA4->sprites[0].pageY + 4;
+                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].u3 =
+                    (widths[i] + (D_800C3EA4->sprites[0].pageX & 0x3F)) * 2;
+                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].v3 = D_800C3EA4->sprites[0].pageY + 4;
+                if ((D_800CCCE8.records[i].pilot.status84.half.active |
+                     D_800CCCE8.records[i].pilot.status84.half.permanent) & 0x8000) {
+                    clut = D_800C3EA4->barCluts[3];
+                } else if (D_800CCCE8.records[i].pilot.status7C & 0x1000) {
+                    clut = D_800C3EA4->barCluts[2];
+                } else {
+                    clut = D_800C3EA4->barCluts[0];
+                }
+                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].clut = clut;
+                D_800D2D28->barShown[i] = 1;
+            } else {
+                widths[i] = (100 - D_800D2DCC.timers[1][i]) * 5600 / 10000;
+                if (D_800D32A0[i].unk1 != 0 && D_800D2D24[i] != 7) {
+                    widths[i] = D_800CCCE8.records[i].gear.fuel * 100 / D_800CCCE8.records[i].gear.maxFuel * 5600 /
+                                10000;
+                }
+                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].x0 = 0xC;
+                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].y0 = 0xCE;
+                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].x1 = 0xC;
+                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].y1 = 0xCE - widths[i] * 2;
+                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].x2 = 0x14;
+                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].y2 = 0xCE;
+                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].x3 = 0x14;
+                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].y3 = 0xCE - widths[i] * 2;
+                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].u0 = (D_800C3EA4->sprites[0].pageX & 0x3F) * 2;
+                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].v0 = D_800C3EA4->sprites[0].pageY;
+                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].u1 =
+                    (widths[i] + (D_800C3EA4->sprites[0].pageX & 0x3F)) * 2;
+                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].v1 = D_800C3EA4->sprites[0].pageY;
+                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].u2 = (D_800C3EA4->sprites[0].pageX & 0x3F) * 2;
+                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].v2 = D_800C3EA4->sprites[0].pageY + 4;
+                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].u3 =
+                    (widths[i] + (D_800C3EA4->sprites[0].pageX & 0x3F)) * 2;
+                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].v3 = D_800C3EA4->sprites[0].pageY + 4;
+                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].clut = D_800C3EA4->barCluts[1];
+                if (D_800D2D28->unkCB != 0) {
+                    D_800D2D28->barShown[3] = 1;
+                }
+            }
+        } else {
+            D_800D2D28->barShown[i] = 0;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80075938);
+#endif
 
 /* Battle end, outcome state 1: unless 800c492a is set, release every battle
  * resource. */
@@ -1169,7 +1496,49 @@ void func_800765C4(s32 member) {
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_800765C4);
 #endif
 
+/* Step the panel cursor window's opening: move the party-wide status label
+ * by the pending steps, rebuild it semi-transparent at its growing scale,
+ * and mark the member's panel open once the label reaches the window.
+ * The original keeps x and y in 8-byte stack slots. */
+#ifdef NON_MATCHING
+void func_80076710(s32 member) {
+    u16 x;
+    u16 y;
+    s32 i;
+    s32 part;
+
+    for (i = 0; i < D_800D2D28->unkA9; i++) {
+        D_800D2D28->unk64 -= D_800D2D28->unk54;
+        D_800D2D28->unk6C += D_800D2D28->unk5C;
+        x = ((u32)D_800D2D28->unk64 >> 8) + D_800D2D28->unk34;
+        y = ((u32)D_800D2D28->unk6C >> 8) + D_800D2D28->unk44;
+    }
+    D_800D2D28->unkA9 = 0;
+    D_800D2D28->statusParts[3] = 0;
+    D_800D2D28->statusParts[3] = func_80025FA8(D_800D2F5C, 0x52, D_800C3EA4->status[3][0], D_800CCB04.buffer, x, y,
+                                       D_800D2D28->unk104, D_800D2D28->unk104, D_800D2D28->unk106);
+    part = D_800D2D28->statusParts[3];
+    D_800D2D28->statusParts[3] += func_80025FA8(D_800D2F5C, 0x53, D_800C3EA4->status[3][part], D_800CCB04.buffer, x, y,
+                                        D_800D2D28->unk104, D_800D2D28->unk104, D_800D2D28->unk106);
+    for (part = part * 2; part < D_800D2D28->statusParts[3] * 2; part += 2) {
+        SetSemiTrans(&D_800C3EA4->status[3][0][part + D_800CCB04.buffer], 1);
+    }
+    D_800D2D28->statusBuffer[3] = D_800CCB04.buffer;
+    for (i = 0; i < D_800D2D28->unkAB; i++) {
+        D_800D2D28->unk104 += 0x66;
+        D_800D2D28->unk106 += 0x80;
+    }
+    D_800D2D28->unkAB = 0;
+    if (D_800D2D28->unk3C >= x) {
+        D_800D2D28->unk90[member] = 1;
+    }
+    if (y >= D_800D2D28->unk4C) {
+        D_800D2D28->unk90[member] = 1;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80076710);
+#endif
 
 /* Upload an image and wait for the transfer. */
 void func_800769E8(RECT *rect, u32 *pixels) {
@@ -1286,7 +1655,6 @@ void func_80076CE8(POLY_FT4 *prim, s16 x, s16 y, u8 u, u8 v, s32 w, s32 h) {
 /* Initialise a quad pair: semi-transparent, raw texture, texture page by
  * `page` (0/1 at x 0x380, 2/3 at 0x3c0; odd pages at y 0x100) and the CLUT
  * chosen by `alternate`. */
-#ifdef NON_MATCHING
 void func_80076D58(POLY_FT4 *prims, u8 alternate, u8 page) {
     s32 i;
 
@@ -1311,20 +1679,73 @@ void func_80076D58(POLY_FT4 *prims, u8 alternate, u8 page) {
             prims[i].tpage = GetTPage(0, 0, 0x3C0, 0);
             break;
         }
-        if (alternate != 0) {
-            prims[i].clut = D_80059414;
-        } else {
-            prims[i].clut = D_800595D4;
-        }
+        prims[i].clut = alternate != 0 ? D_80059414 : D_800595D4;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80076D58);
-#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80076EA4);
+/* Render the eleven command names (messages 10-20, and 21-31 in the
+ * alternate colours) into text images, record their icon cells and upload
+ * them to VRAM rows below (0x3de, 0x10d); then upload the ten message images
+ * 0-9 side by side at (0x3de, 0x100). */
+void func_80076EA4(void) {
+    TextImage images[11];
+    RECT rect;
+    u32 *image;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80077074);
+    for (i = 0; i < 11; i++) {
+        image = (u32 *)func_8008AC00(0x1B);
+        images[i].pixels = image;
+        bzero(image, 0x30C);
+        D_800D2F68[i].w = func_80034EAC(func_800338D8(i + 10), images[i].pixels, 0x1B, 0);
+        D_800D2F68[i + 11].w = func_80034EAC(func_800338D8(i + 21), images[i].pixels, 0x1B, 1);
+        D_800D2F68[i].u = D_800D2F68[i + 11].u = 0x78;
+        D_800D2F68[i].v = D_800D2F68[i + 11].v = i * 0xD + 0xD;
+        D_800D2F68[i].alternate = 0;
+        D_800D2F68[i + 11].alternate = 1;
+        rect.x = 0x3DE;
+        rect.y = i * 0xD + 0x10D;
+        rect.w = 0x1E;
+        rect.h = 0xD;
+        func_800769E8(&rect, images[i].pixels);
+    }
+    for (i = 0; i < 11; i++) {
+        func_800320E8(images[i].pixels);
+    }
+    for (i = 0; i < 10; i++) {
+        rect.x = i * 2 + 0x3DE;
+        rect.y = 0x100;
+        rect.w = 6;
+        rect.h = 0xD;
+        func_800769E8(&rect, D_800C3E5C[i].pixels);
+    }
+}
+
+/* Hide the command panel's quads and reset each quad pair's texture and
+ * CLUT for its page kind. */
+void func_80077074(void) {
+    D_800C3EA4->unkA230->unk669 = 0;
+    D_800C3EA4->unkA230->unk66B = 0;
+    D_800C3EA4->unkA230->unk66D = 0;
+    func_80076D58(D_800C3EA4->unkA230->unk0, 0, 1);
+    func_80076D58(D_800C3EA4->unkA230->unk50, 0, 1);
+    func_80076D58(D_800C3EA4->unkA230->unkA0, 0, 2);
+    func_80076D58(D_800C3EA4->unkA230->unkF0, 0, 2);
+    func_80076D58(D_800C3EA4->unkA230->unk140, 0, 1);
+    func_80076D58(&D_800C3EA4->unkA230->unk190[0], 0, 2);
+    func_80076D58(&D_800C3EA4->unkA230->unk190[2], 0, 2);
+    func_80076D58(&D_800C3EA4->unkA230->unk190[4], 0, 2);
+    func_80076D58(D_800C3EA4->unkA230->unk280, 0, 3);
+    func_80076D58(D_800C3EA4->unkA230->unk2D0, 1, 3);
+    func_80076D58(D_800C3EA4->unkA230->unk320, 0, 2);
+    func_80076D58(D_800C3EA4->unkA230->unk370, 1, 2);
+    func_80076D58(D_800C3EA4->unkA230->unk3C0, 0, 2);
+    func_80076D58(D_800C3EA4->unkA230->unk410, 0, 2);
+    func_80076D58(D_800C3EA4->unkA230->unk460, 0, 2);
+    func_80076D58(D_800C3EA4->unkA230->unk4B0, 0, 2);
+    func_80076D58(D_800C3EA4->unkA230->unk500, 0, 2);
+    func_80076D58(D_800C3EA4->unkA230->unk550, 0, 2);
+}
 
 /* Initialise four quads, white and semi-transparent, with the texture page
  * and CLUT of graphics texture entry `index`. */
@@ -1337,9 +1758,9 @@ void func_80077364(POLY_FT4 *prims, u8 index) {
         prims[i].r0 = 0xFF;
         prims[i].g0 = 0xFF;
         prims[i].b0 = 0xFF;
-        prims[i].tpage = GetTPage(D_800C3EA4->textures[index].mode, 0, D_800C3EA4->textures[index].x,
-                                       D_800C3EA4->textures[index].y);
-        prims[i].clut = GetClut(D_800C3EA4->textures[index].clutX, D_800C3EA4->textures[index].clutY);
+        prims[i].tpage = GetTPage(D_800C3EA4->sprites[index].tpageMode, 0, D_800C3EA4->sprites[index].pageX,
+                                       D_800C3EA4->sprites[index].pageY);
+        prims[i].clut = GetClut(D_800C3EA4->sprites[index].clutX, D_800C3EA4->sprites[index].clutY);
     }
 }
 
@@ -1368,7 +1789,7 @@ void func_80077454(u8 window) {
         (block->shade + i)->b3 = D_800594D4[2];
         SetSemiTrans(&block->shade[i], 1);
         SetDrawMode(&block->mode[i], 0, 0,
-                    GetTPage(0, D_800595A0, D_800C3EA4->textures[1].x, D_800C3EA4->textures[1].y),
+                    GetTPage(0, D_800595A0, D_800C3EA4->sprites[1].pageX, D_800C3EA4->sprites[1].pageY),
                     (RECT *)D_800D2D28);
     }
     func_80077364(block->frame[0], 1);
@@ -1392,14 +1813,176 @@ void func_8007765C(void) {
     func_800320E8(D_800C3EA4->unkA230);
 }
 
+/* Set up the four direction arrows (down, left, up, right triangles, red
+ * fading to dark) in both draw buffers and start their pulse. Nonmatching: the original
+ * adds the primitive offsets before the block address and keeps one offset
+ * register per arrow. */
+#ifdef NON_MATCHING
+void func_80077698(void) {
+    s32 dir;
+    s32 buf;
+
+    bzero(D_800C3E24, sizeof(DirectionArrows));
+    for (dir = 0; dir < 4; dir++) {
+        for (buf = 0; buf < 2; buf++) {
+            SetPolyG3(&D_800C3E24->prims[dir * 2 + buf]);
+            switch (dir) {
+            case 0:
+                D_800C3E24->prims[buf].x0 = 0xC0;
+                D_800C3E24->prims[buf].y0 = 0x70;
+                D_800C3E24->prims[buf].y1 = 0x78;
+                D_800C3E24->prims[buf].x1 = 0xB0;
+                D_800C3E24->prims[buf].x2 = 0xB0;
+                D_800C3E24->prims[buf].y2 = 0x68;
+                break;
+            case 1:
+                D_800C3E24->prims[buf + 2].x0 = 0xA0;
+                D_800C3E24->prims[buf + 2].x1 = 0x98;
+                D_800C3E24->prims[buf + 2].y0 = 0x90;
+                D_800C3E24->prims[buf + 2].y1 = 0x80;
+                D_800C3E24->prims[buf + 2].x2 = 0xA8;
+                D_800C3E24->prims[buf + 2].y2 = 0x80;
+                break;
+            case 2:
+                D_800C3E24->prims[buf + 4].y0 = 0x70;
+                D_800C3E24->prims[buf + 4].y1 = 0x68;
+                D_800C3E24->prims[buf + 4].x0 = 0x80;
+                D_800C3E24->prims[buf + 4].x1 = 0x90;
+                D_800C3E24->prims[buf + 4].x2 = 0x90;
+                D_800C3E24->prims[buf + 4].y2 = 0x78;
+                break;
+            case 3:
+                D_800C3E24->prims[buf + 6].x0 = 0xA0;
+                D_800C3E24->prims[buf + 6].y0 = 0x50;
+                D_800C3E24->prims[buf + 6].x1 = 0x98;
+                D_800C3E24->prims[buf + 6].y1 = 0x60;
+                D_800C3E24->prims[buf + 6].x2 = 0xA8;
+                D_800C3E24->prims[buf + 6].y2 = 0x60;
+                break;
+            }
+            D_800C3E24->prims[dir * 2 + buf].r0 = 0xFF;
+            D_800C3E24->prims[dir * 2 + buf].g0 = 0;
+            D_800C3E24->prims[dir * 2 + buf].b0 = 0;
+            D_800C3E24->prims[dir * 2 + buf].r1 = 0x40;
+            D_800C3E24->prims[dir * 2 + buf].g1 = 0;
+            D_800C3E24->prims[dir * 2 + buf].b1 = 0;
+            D_800C3E24->prims[dir * 2 + buf].r2 = 0x40;
+            D_800C3E24->prims[dir * 2 + buf].g2 = 0;
+            D_800C3E24->prims[dir * 2 + buf].b2 = 0;
+        }
+    }
+    D_800C3E24->shade = 0xFF;
+    D_800C3E24->fading = 1;
+    D_800C3E24->buffer = D_800CCB04.buffer;
+    D_800D2D28->unkC6 = 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80077698);
+#endif
 
 /* Clear UI byte +0xc6. */
 void func_80077980(void) {
     D_800D2D28->unkC6 = 0;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80077990);
+/* Save four copies of the four CLUT rows above the panel sprite's CLUT
+ * (for the CLUT cycle), look up the cursor and arrow sprites, place two of
+ * them in VRAM, and set the texture windows and draw modes that use them. */
+void func_80077990(void) {
+    u32 *strip0 = D_800C3EA4->unk8970[0];
+    u32 *strip1 = D_800C3EA4->unk8970[1];
+    u32 *strip2 = D_800C3EA4->unk8970[2];
+    u32 *strip3 = D_800C3EA4->unk8970[3];
+
+    D_800C3EA4->unk8950[0].x = 1;
+    D_800C3EA4->unk8950[0].y = D_800C3EA4->sprites[0].clutY - 1;
+    D_800C3EA4->unk8950[0].w = 0xC6;
+    D_800C3EA4->unk8950[0].h = 1;
+    D_800C3EA4->unk8950[1].x = 1;
+    D_800C3EA4->unk8950[1].y = D_800C3EA4->sprites[0].clutY;
+    D_800C3EA4->unk8950[1].w = 0xC6;
+    D_800C3EA4->unk8950[1].h = 1;
+    D_800C3EA4->unk8950[2].x = 1;
+    D_800C3EA4->unk8950[2].y = D_800C3EA4->sprites[0].clutY - 2;
+    D_800C3EA4->unk8950[2].w = 0xC6;
+    D_800C3EA4->unk8950[2].h = 1;
+    D_800C3EA4->unk8950[3].x = 1;
+    D_800C3EA4->unk8950[3].y = D_800C3EA4->sprites[0].clutY - 3;
+    D_800C3EA4->unk8950[3].w = 0xC6;
+    D_800C3EA4->unk8950[3].h = 1;
+    StoreImage(&D_800C3EA4->unk8950[0], strip0);
+    StoreImage(&D_800C3EA4->unk8950[1], strip1);
+    StoreImage(&D_800C3EA4->unk8950[2], strip2);
+    StoreImage(&D_800C3EA4->unk8950[3], strip3);
+    StoreImage(&D_800C3EA4->unk8950[0], strip0 + 0x63);
+    StoreImage(&D_800C3EA4->unk8950[1], strip1 + 0x63);
+    StoreImage(&D_800C3EA4->unk8950[2], strip2 + 0x63);
+    StoreImage(&D_800C3EA4->unk8950[3], strip3 + 0x63);
+    StoreImage(&D_800C3EA4->unk8950[0], strip0 + 0x63 * 2);
+    StoreImage(&D_800C3EA4->unk8950[1], strip1 + 0x63 * 2);
+    StoreImage(&D_800C3EA4->unk8950[2], strip2 + 0x63 * 2);
+    StoreImage(&D_800C3EA4->unk8950[3], strip3 + 0x63 * 2);
+    StoreImage(&D_800C3EA4->unk8950[0], strip0 + 0x63 * 3);
+    StoreImage(&D_800C3EA4->unk8950[1], strip1 + 0x63 * 3);
+    StoreImage(&D_800C3EA4->unk8950[2], strip2 + 0x63 * 3);
+    StoreImage(&D_800C3EA4->unk8950[3], strip3 + 0x63 * 3);
+    func_80026338(D_800D2F5C, 0x4B, &D_800C3EA4->sprites[1].unk0, &D_800C3EA4->sprites[1].tpageMode,
+                  &D_800C3EA4->sprites[1].clutX, &D_800C3EA4->sprites[1].clutY,
+                  &D_800C3EA4->sprites[1].pageX, &D_800C3EA4->sprites[1].pageY);
+    func_80026338(D_800D2F5C, 0x50, &D_800C3EA4->sprites[2].unk0, &D_800C3EA4->sprites[2].tpageMode,
+                  &D_800C3EA4->sprites[2].clutX, &D_800C3EA4->sprites[2].clutY,
+                  &D_800C3EA4->sprites[2].pageX, &D_800C3EA4->sprites[2].pageY);
+    func_80026338(D_800D2F5C, 0x4D, &D_800C3EA4->sprites[3].unk0, &D_800C3EA4->sprites[3].tpageMode,
+                  &D_800C3EA4->sprites[3].clutX, &D_800C3EA4->sprites[3].clutY,
+                  &D_800C3EA4->sprites[3].pageX, &D_800C3EA4->sprites[3].pageY);
+    func_80026338(D_800D2F5C, 0x4E, &D_800C3EA4->sprites[4].unk0, &D_800C3EA4->sprites[4].tpageMode,
+                  &D_800C3EA4->sprites[4].clutX, &D_800C3EA4->sprites[4].clutY,
+                  &D_800C3EA4->sprites[4].pageX, &D_800C3EA4->sprites[4].pageY);
+    D_800D2D28->textureWindows[0].y = 0;
+    D_800D2D28->textureWindows[0].x = 0;
+    D_800D2D28->textureWindows[0].h = 0x100;
+    D_800D2D28->textureWindows[0].w = 0x100;
+    D_800C3EA4->sprites[1].pageX = 0x3C0;
+    D_800C3EA4->sprites[2].pageX = 0x3C8;
+    D_800C3EA4->sprites[1].pageY = 0x34;
+    D_800C3EA4->sprites[2].pageY = 0x34;
+    D_800D2D28->textureWindows[1].x = ((u16)D_800C3EA4->sprites[0].pageX & 0x3F) * 2;
+    D_800D2D28->textureWindows[1].y = D_800C3EA4->sprites[0].pageY;
+    D_800D2D28->textureWindows[1].w = 0x100;
+    D_800D2D28->textureWindows[1].h = 0x100;
+    D_800D2D28->textureWindows[2].x = ((u16)D_800C3EA4->sprites[1].pageX & 0x3F) * 2;
+    D_800D2D28->textureWindows[2].y = D_800C3EA4->sprites[1].pageY;
+    D_800D2D28->textureWindows[2].w = 8;
+    D_800D2D28->textureWindows[2].h = 0x10;
+    D_800D2D28->textureWindows[3].x = ((u16)D_800C3EA4->sprites[2].pageX & 0x3F) * 2;
+    D_800D2D28->textureWindows[3].y = D_800C3EA4->sprites[2].pageY;
+    D_800D2D28->textureWindows[3].w = 8;
+    D_800D2D28->textureWindows[3].h = 0x10;
+    D_800D2D28->textureWindows[4].x = ((u16)D_800C3EA4->sprites[3].pageX & 0x3F) * 2 + 0xE;
+    D_800D2D28->textureWindows[4].y = D_800C3EA4->sprites[3].pageY;
+    D_800D2D28->textureWindows[4].w = 0x10;
+    D_800D2D28->textureWindows[4].h = 8;
+    D_800D2D28->textureWindows[5].x = ((u16)D_800C3EA4->sprites[4].pageX & 0x3F) * 2 + 0xE;
+    D_800D2D28->textureWindows[5].y = D_800C3EA4->sprites[4].pageY;
+    D_800D2D28->textureWindows[5].w = 0x10;
+    D_800D2D28->textureWindows[5].h = 8;
+    SetDrawMode(&D_800C3EA4->unk8908[0], 0, 0,
+                GetTPage(D_800C3EA4->sprites[0].tpageMode, 0, D_800C3EA4->sprites[0].pageX,
+                         D_800C3EA4->sprites[0].pageY),
+                &D_800D2D28->textureWindows[1]);
+    SetDrawMode(&D_800C3EA4->unk8908[1], 0, 0,
+                GetTPage(D_800C3EA4->sprites[0].tpageMode, 0, D_800C3EA4->sprites[0].pageX,
+                         D_800C3EA4->sprites[0].pageY),
+                &D_800D2D28->textureWindows[1]);
+    SetDrawMode(&D_800C3EA4->unk8920[0], 0, 0,
+                GetTPage(D_800C3EA4->sprites[0].tpageMode, 0, D_800C3EA4->sprites[0].pageX,
+                         D_800C3EA4->sprites[0].pageY),
+                &D_800D2D28->textureWindows[0]);
+    SetDrawMode(&D_800C3EA4->unk8920[1], 0, 0,
+                GetTPage(D_800C3EA4->sprites[0].tpageMode, 0, D_800C3EA4->sprites[0].pageX,
+                         D_800C3EA4->sprites[0].pageY),
+                &D_800D2D28->textureWindows[0]);
+}
 
 /* Initialise a battle message's quad pair for texture row `row` (13 pixels
  * per pair of rows; odd rows use the alternate CLUT) and hide it. */
@@ -1446,7 +2029,41 @@ void func_8007819C(void) {
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_8007819C);
 #endif
 
+/* Upload each present member's portrait TIM (0x460 bytes per character in
+ * `portraits`; character 0xb for the second and third member when 800d3294
+ * is set) to the texture and CLUT places of sprite `glyph + member`, the
+ * image moved 6 per member.
+ * Nonmatching: the original keeps one address register per sprite field. */
+#ifdef NON_MATCHING
+void func_80078310(u8 *portraits, u8 glyph) {
+    TIM_IMAGE tim;
+    SpriteInfo sprites[3];
+    s32 i;
+    u8 character;
+
+    for (i = 0; i < 3; i++) {
+        character = D_800D2D24[i];
+        if (character != 0x7F) {
+            if (D_800D3294 != 0 && (i == 1 || i == 2)) {
+                character = 0xB;
+            }
+            OpenTIM((u32 *)(portraits + character * 0x460));
+            ReadTIM(&tim);
+            func_80026338(D_800D2F5C, glyph + i, &sprites[i].unk0, &sprites[i].tpageMode, &sprites[i].clutX,
+                          &sprites[i].clutY, &sprites[i].pageX, &sprites[i].pageY);
+            tim.crect->x = sprites[i].clutX;
+            tim.crect->y = sprites[i].clutY;
+            tim.prect->x = sprites[i].pageX + i * 6;
+            tim.prect->y = sprites[i].pageY;
+            LoadImage(tim.crect, tim.caddr);
+            LoadImage(tim.prect, tim.paddr);
+            DrawSync(0);
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80078310);
+#endif
 
 /* Reset every slot's turn timers from its speed (unused slots 0xff), its
  * ready flag and slow alternation, and clear the order buffer. */
@@ -1523,7 +2140,7 @@ void func_8007893C(u8 index, u8 actor) {
 /* Execute the actor's action `index`: commit it, queue its animation event
  * with the committed targets and, when those differ from the action's own,
  * retarget the queued move event (0xfd). */
-void func_80078998(u8 actor, u8 index) {
+void func_80078998(u8 actor, u8 index, u8 target) {
     s32 i;
 
     func_8007893C(index, actor);
@@ -1563,25 +2180,25 @@ void func_80078B34(u8 actor, u8 index, u8 target) {
 }
 
 /* Queue event type 0xfc for the actor. */
-void func_80078C9C(u8 actor, u8 index) {
+void func_80078C9C(u8 actor, u8 index, u8 target) {
     D_800C3FE8[D_800C3EAC->eventCount].type = 0xFC;
     func_800785D4(actor, index);
 }
 
 /* Queue the action entry's parameter as the event type for the actor. */
-void func_80078CEC(u8 actor, u8 index) {
+void func_80078CEC(u8 actor, u8 index, u8 target) {
     D_800C3FE8[D_800C3EAC->eventCount].type = D_800D2E5C[index].param;
     func_800785D4(actor, index);
 }
 
 /* The action entry's targets act together. */
-void func_80078D48(u8 actor, u8 index) {
+void func_80078D48(u8 actor, u8 index, u8 target) {
     D_800D39E0 = D_800D2E5C[index].targets;
 }
 
 /* Action entry type: the actor leaves the battle (event 0xf9); its reaction
  * reaction byte +3 is set and only its 0x8000 flag is kept. */
-void func_80078D6C(u8 actor, u8 index) {
+void func_80078D6C(u8 actor, u8 index, u8 target) {
     D_800C3FE8[D_800C3EAC->eventCount].type = 0xF9;
     func_800785D4(actor, index);
     D_800D2DCC.ready[actor] = 0xFF;
@@ -1589,26 +2206,56 @@ void func_80078D6C(u8 actor, u8 index) {
     D_800CCCE8.records[actor].pilot.status7C &= 0x8000;
 }
 
+/* Make enemy `slot` a copy of the first slot action `index` targets: its
+ * name, AI scripts, reaction state and combatant record, and queue the
+ * split event (0xfb) for it.
+ * Nonmatching: register allocation of the slot indexes. */
+#ifdef NON_MATCHING
+void func_80078E24(u8 slot, u8 index, u8 target) {
+    s32 i;
+    u8 source;
+
+    for (i = 0; i < 11; i++) {
+        if (func_80089C9C(D_800D2E5C[index].targets, i)) {
+            source = i;
+            break;
+        }
+    }
+    D_800C3E3D[slot] = D_800C3E3D[source];
+    D_800D3400[slot - 3].script = D_800D3400[source - 3].script;
+    D_800D3400[slot - 3].unk4 = D_800D3400[source - 3].unk4;
+    D_800D3400[slot - 3].reaction = D_800D3400[source - 3].reaction;
+    *(s32 *)D_800D3400[slot - 3].unkC = *(s32 *)D_800D3400[source - 3].unkC;
+    D_800C3D18[slot - 3].armed = D_800C3D18[source - 3].armed;
+    D_800C3D18[slot - 3].unk1[0] = D_800C3D18[source - 3].unk1[0];
+    memmove(&D_800CCCE8.records[slot], &D_800CCCE8.records[source], sizeof(Combatant));
+    D_800C3FE8[D_800C3EAC->eventCount].parameter = source;
+    D_800C3FE8[D_800C3EAC->eventCount].type = 0xFB;
+    D_800C3FE8[D_800C3EAC->eventCount].actor = slot;
+    D_800C3EAC->eventCount++;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80078E24);
+#endif
 
 /* Set the actor's attribute arg1 to the entry's parameter byte. */
-void func_80079054(u8 actor, u8 index) {
+void func_80079054(u8 actor, u8 index, u8 target) {
     func_80079ED8(actor, D_800D2E5C[index].arg1, D_800D2E5C[index].param, 0);
 }
 
 /* Add the entry's parameter byte to the actor's attribute arg1. */
-void func_80079098(u8 actor, u8 index) {
+void func_80079098(u8 actor, u8 index, u8 target) {
     func_80079ED8(actor, D_800D2E5C[index].arg1,
                   D_800D2E5C[index].param + func_80079ED8(actor, D_800D2E5C[index].arg1, 0, 1), 0);
 }
 
 /* Set the actor's 16-bit attribute arg1 to the entry's parameter halfword. */
-void func_80079114(u8 actor, u8 index) {
+void func_80079114(u8 actor, u8 index, u8 target) {
     func_8007A280(actor, D_800D2E5C[index].arg1, D_800D2E5C[index].param | (D_800D2E5C[index].unk5 << 8), 0);
 }
 
 /* Add the entry's parameter halfword to the actor's 16-bit attribute arg1. */
-void func_8007916C(u8 actor, u8 index) {
+void func_8007916C(u8 actor, u8 index, u8 target) {
     func_8007A280(actor, D_800D2E5C[index].arg1,
                   D_800D2E5C[index].param +
                       (func_8007A280(actor, D_800D2E5C[index].arg1, 0, 1) + (D_800D2E5C[index].unk5 << 8)),
@@ -1616,14 +2263,14 @@ void func_8007916C(u8 actor, u8 index) {
 }
 
 /* Named-action text, then event 0xf4 for the actor. */
-void func_800791FC(u8 actor, u8 index) {
+void func_800791FC(u8 actor, u8 index, u8 target) {
     func_8007893C(index, actor);
     D_800C3FE8[D_800C3EAC->eventCount].type = 0xF4;
     func_800785D4(actor, index);
 }
 
 /* Event 0xf6 for the actor with the entry's targets. */
-void func_80079270(u8 actor, u8 index) {
+void func_80079270(u8 actor, u8 index, u8 target) {
     D_800C3FE8[D_800C3EAC->eventCount].type = 0xF6;
     D_800C3FE8[D_800C3EAC->eventCount].targetMask = D_800D2E5C[index].targets;
     func_800785D4(actor, index);

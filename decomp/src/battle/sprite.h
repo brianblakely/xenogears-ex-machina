@@ -40,7 +40,7 @@ typedef struct {
 typedef struct {
     s16 angle[3];            /* 0x00 */
     s16 scale[3];            /* 0x06 */
-    Matrix matrix;           /* 0x0C: local screen matrix */
+    MATRIX matrix;           /* 0x0C: local screen matrix */
     void *parts;             /* 0x2C */
     SpriteImagePart *part;   /* 0x30 */
     SpriteAnchor *anchors;   /* 0x34: 8 of them */
@@ -171,8 +171,8 @@ typedef struct {
     s32 blend;              /* 0x44 */
     s32 count;              /* 0x48 */
     u8 *colours;            /* 0x4C */
-    SVector anchors[5];     /* 0x50 */
-    SVector trail[5];       /* 0x78 */
+    SVECTOR anchors[5];     /* 0x50 */
+    SVECTOR trail[5];       /* 0x78 */
 } SpriteTrail;
 
 /* A watch of a sprite approaching its target (800B5924, 0x34 bytes). */
@@ -206,8 +206,8 @@ extern s16 D_800D3334;
 void func_80023210(BattleSprite *sprite);
 s32 func_80022CAC(BattleSprite *sprite, s32 value);
 void func_8001E148(BattleSprite *sprite);
-void func_800C08CC(s32 count, SVector *points, void (*draw)());
-void func_800B50D4(BattleSprite *sprite, SVector *out);
+void func_800C08CC(s32 count, SVECTOR *points, void (*draw)());
+void func_800B50D4(BattleSprite *sprite, SVECTOR *out);
 void func_800B51B0();
 void func_800B5DF4();
 void func_800B5854(SpriteApproach *approach);
@@ -233,8 +233,8 @@ void func_800A979C(s32 index, s16 x, s16 y, s16 z, s16 angle);
 void func_800B3CD4(); /* unprototyped (to, frames, red, blue, field4C, field4E) */
 void func_800BEE2C(s32 index, s32 mask, s32 mode);
 void func_800B6004();
-void func_80021B04(SVector *v, s32 x, s32 y, s32 z);
-void func_801FC4C4(SpriteAnchor *anchors, void *parts, Matrix *m, s32 a, s32 b, s32 c, s32 d, s32 e);
+void func_80021B04(SVECTOR *v, s32 x, s32 y, s32 z);
+void func_801FC4C4(SpriteAnchor *anchors, void *parts, MATRIX *m, s32 a, s32 b, s32 c, s32 d, s32 e);
 void func_801FC53C(BattleSprite *sprite, s32 a, s32 b, s32 c, s32 d, s32 e, s32 f);
 
 #endif

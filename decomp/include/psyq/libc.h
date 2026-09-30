@@ -8,6 +8,7 @@ char *strcpy(char *dst, const char *src);
 char *strcat(char *dst, const char *src);
 void *bzero(unsigned char *p, int n);
 void *memcpy(void *dest, void *src, int n);
+void *memset(void *dest, int c, int n);
 void *memmove(void *dest, void *src, int n);
 int rand(void);
 int abs(int i);

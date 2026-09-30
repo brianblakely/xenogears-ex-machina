@@ -14,7 +14,8 @@ extern u8 D_800D2D10[4];  /* speeds 8009892c replaces by each gear part speed */
 typedef struct {
     u8 pad0[0x26C];
     CharacterRecord characters[11]; /* 0x26C */
-    u8 pad978[0x1930 - 0x978];
+    GearRecord gears[24];           /* 0x978 */
+    u8 pad18D8[0x1930 - 0x18D8];
     u16 value1930; /* 0x1930: 8009892c adjusts gears below 0xbb, 80097d5c
                     * raises character 9 from 231 */
     u8 pad1932[0x2355 - 0x1932];

@@ -78,7 +78,7 @@ s32 func_80031894(void *block); /* a block's size */
 void func_800AA6E0(BattleObject *object);
 void func_800A8A88(Surface *surface);
 void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *scriptFile, ObjectModelFile *modelFile, s16 x, s16 y,
-                   s16 z, s16 w, SVector *position);
+                   s16 z, s16 w, SVECTOR *position);
 void func_800AA898(BattleObject *object, EffectPool *pool, u8 **scripts, u8 **animations);
 
 /* Per-frame update and drawing of the stage objects. */
@@ -86,11 +86,11 @@ extern s16 D_800C3B80;     /* pulse level of the highlight colour */
 extern s16 D_800D39E8;     /* a slow wave (4..9) */
 extern u16 D_800C3D14;     /* highlighted slots */
 extern u8 D_800C3DF8;      /* effects run */
-extern Matrix *D_800D2FC0; /* the stage colour matrix */
+extern MATRIX *D_800D2FC0; /* the stage colour matrix */
 extern s32 D_80050104;     /* resident: drawing with lighting */
 extern SoundSystem *D_800C4924;
-extern SVector D_800D3354; /* camera position */
-extern SVector D_800D335C; /* camera look-at point */
+extern SVECTOR D_800D3354; /* camera position */
+extern SVECTOR D_800D335C; /* camera look-at point */
 extern s16 D_800C3542;     /* last scene triangle under the camera's view point */
 extern s16 D_800C3544;     /* its ground height */
 extern s16 D_800C3546;     /* key of the last update */
@@ -98,7 +98,7 @@ extern s16 D_800C3546;     /* key of the last update */
 /* Resident services. */
 s32 func_8003F8B0(s32 angle); /* rcos (4096 = 1.0) */
 
-void func_8009F844(BattleObject *object, Matrix *m, s32 arg2, s32 arg3, s32 skipped, u32 *ot, s32 buffer);
+void func_8009F844(BattleObject *object, MATRIX *m, s32 arg2, s32 arg3, s32 skipped, u32 *ot, s32 buffer);
 s32 func_800AAA20(BattleObject *object, EffectPool *pool, s32 steps, s32 arg3, s32 arg4);
 void func_800AAB34(BattleObject *object);
 u8 func_800AA514(s16 a, s16 b, s32 c);
@@ -123,7 +123,7 @@ typedef struct {
     BattleObject *object;                 /* 0x08 */
     s16 part;                             /* 0x0C: 0 the root */
     s16 onGround;                         /* 0x0E: keep the object's ground height */
-    SVector offset;                       /* 0x10: from the part */
+    SVECTOR offset;                       /* 0x10: from the part */
 } SpriteFollow;
 
 /* The start of an animation event: the frame it runs on and its type. */
@@ -243,7 +243,7 @@ void func_800AA454(u16 index, u16 mask, s32 script);
 void func_800AA564(BattleObject *target, u16 index, u16 mask, s32 script);
 void func_800BF6CC(void);
 s32 func_800B12D0(s32 slot, u8 mask);
-void func_800AFB4C(void *resource, s32 kind, SVector *position, s16 direction, s16 scale, SpriteCommand *command,
+void func_800AFB4C(void *resource, s32 kind, SVECTOR *position, s16 direction, s16 scale, SpriteCommand *command,
                    BattleObject *object);
 
 /* A camera channel: an effect entry of D_800C3BAC seen as signed values. */
@@ -272,7 +272,7 @@ extern s16 D_800C3BA0; /* look-at yaw */
 extern s16 D_800C3BA4; /* look-at distance */
 extern s16 D_800C3BA8; /* look-at height */
 
-s32 func_800B0FF4(SVector *from, SVector *point);
+s32 func_800B0FF4(SVECTOR *from, SVECTOR *point);
 s16 func_800B0B14(s32 key);
 
 /* An entry of an effect script file (0x1C bytes); the offsets are from the
@@ -298,7 +298,7 @@ typedef struct {
 extern ScriptEntry D_800C3BD0; /* the selected script */
 
 /* Resident sprites. */
-EffectSprite *func_80023FD8(s32 kind, void *resource, SVector *position, s32 size);
+EffectSprite *func_80023FD8(s32 kind, void *resource, SVECTOR *position, s32 size);
 void func_80021FE0(void *body, s32 direction);
 void func_800223B0(void *body, s32 direction);
 void func_80022000(s32 *body, s32 scale);

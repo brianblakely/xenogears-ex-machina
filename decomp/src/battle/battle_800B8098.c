@@ -304,9 +304,9 @@ void func_800BA59C(BattleSprite *sprite, s16 direction) {
  * rising speed that lands it on the ground there (or the target's height
  * when that is higher). */
 void func_800BA614(BattleSprite *sprite) {
-    Vector delta;
-    SVector point;
-    Vector out;
+    VECTOR delta;
+    SVECTOR point;
+    VECTOR out;
     s32 triangle;
     s32 height;
     s16 angle;
@@ -335,9 +335,9 @@ void func_800BA614(BattleSprite *sprite) {
  * whole units, turn it towards the target and set the speed that covers the
  * distance (and the height difference) in the jump's frames. */
 void func_800BA768(BattleSprite *sprite) {
-    Vector delta;
-    SVector point;
-    Vector out;
+    VECTOR delta;
+    SVECTOR point;
+    VECTOR out;
     s32 frames;
     s32 triangle;
     s32 angle;
@@ -378,8 +378,8 @@ void func_800BA768(BattleSprite *sprite) {
 
 /* Put sprite on the scene's ground: its triangle and ground height. */
 void func_800BA8F4(BattleSprite *sprite) {
-    SVector point;
-    Vector out;
+    SVECTOR point;
+    VECTOR out;
     s32 triangle;
 
     point.vx = sprite->x.fixed >> 16;
@@ -423,9 +423,9 @@ ActorTask *func_800BA984(s32 resource, s16 a, s16 b, s16 c, s16 d, s16 e, s16 x,
 
 /* Draw a sprite task: its depth in the view, and its parts when visible. */
 void func_800BAB0C(ActorTask *task) {
-    SVector point;
+    SVECTOR point;
     s32 result[2]; /* screen position, then the GTE flags */
-    Vector unused;
+    VECTOR unused;
     BattleSprite *sprite;
     s32 depth;
 
@@ -484,7 +484,7 @@ void func_800BAC50(ActorTask *task) {
 
 /* Party slot's sprite on screen: its position, depth and a box around it. */
 void func_800BACBC(s32 slot, s16 *x, s16 *y, s16 *depth, s16 *left, s16 *width, s16 *centre) {
-    SVector point;
+    SVECTOR point;
     s16 sxy[2];
     s32 p;
     BattleSprite *sprite = BATTLE_AREA.sprites[slot];
@@ -596,7 +596,7 @@ void func_800BB080(s32 keep) {
 /* Update of a sprite following its slot's stage object: step its animation
  * while it runs, then put it at the object's position. */
 void func_800BB13C(ActorTask *task) {
-    SVector unused; /* the original's frame has this unused local */
+    SVECTOR unused; /* the original's frame has this unused local */
     BattleSprite *sprite = task->data;
     u32 low = sprite->frameBits.bits.slotLow;
     BattleObject *object = D_800D3368[sprite->motion.bits.slotHigh << 2 | low];
@@ -622,7 +622,7 @@ void func_800BB13C(ActorTask *task) {
 /* Draw of a slot-following sprite: its size from the slot's object and its
  * depth in the view. */
 void func_800BB248(ActorTask *task) {
-    SVector point;
+    SVECTOR point;
     s32 result[2]; /* screen position, then the GTE flags */
     BattleSprite *sprite = task->data;
     s32 depth;
@@ -645,7 +645,7 @@ void func_800BB248(ActorTask *task) {
 
 /* Destroy a task node. */
 void func_800BB314(ActorTask *task) {
-    SVector unused; /* the original's frame has this unused local */
+    SVECTOR unused; /* the original's frame has this unused local */
 
     func_8001CB48(&task->draw);
     func_8001CD94(task);
@@ -776,11 +776,11 @@ void func_800BB7F8(void) {
 }
 
 /* Build view matrix m looking from eye at target with up vector up. */
-void func_800BB844(Matrix *m, SVector *eye, SVector *target, SVector *up) {
-    Vector v;
-    Vector forward;
-    Vector right;
-    Vector upward;
+void func_800BB844(MATRIX *m, SVECTOR *eye, SVECTOR *target, SVECTOR *up) {
+    VECTOR v;
+    VECTOR forward;
+    VECTOR right;
+    VECTOR upward;
 
     func_80021B14(&v, target->vx - eye->vx, target->vy - eye->vy, target->vz - eye->vz);
     upward.vx = up->vx;
@@ -825,12 +825,12 @@ void func_800BB9D4(void) {
  * the eye and look-at points a fraction (800c3674) of the way there, and
  * derive its angles and range. */
 void func_800BBAB8(void) {
-    SVector *point;
-    Vector step;
-    Vector unused[2]; /* the original's frame has these unused locals */
-    Vector delta;
-    Vector unused2;
-    Vector square;
+    SVECTOR *point;
+    VECTOR step;
+    VECTOR unused[2]; /* the original's frame has these unused locals */
+    VECTOR delta;
+    VECTOR unused2;
+    VECTOR square;
     s32 horizontal;
 
     switch (D_800C3CC0) {
@@ -850,13 +850,13 @@ void func_800BBAB8(void) {
         break;
     case 3:
         /* step holds the wanted look-at, then eye point */
-        ((SVector *)&step)[1].vx = ((SVector *)&step)[0].vx = D_800D39EC->x.fixed >> 16;
-        ((SVector *)&step)[0].vy = D_800D39EC->y.fixed >> 16;
-        ((SVector *)&step)[0].vz = D_800D39EC->z.fixed >> 16;
-        ((SVector *)&step)[1].vz = ((SVector *)&step)[0].vz - func_8003F8CC(D_800C373C) * D_800C3738 / 4096;
-        ((SVector *)&step)[1].vy = ((SVector *)&step)[0].vy - func_8003F8B0(D_800C373C) * D_800C3738 / 4096;
-        D_800D309C.eye = ((SVector *)&step)[1];
-        D_800D309C.target = ((SVector *)&step)[0];
+        ((SVECTOR *)&step)[1].vx = ((SVECTOR *)&step)[0].vx = D_800D39EC->x.fixed >> 16;
+        ((SVECTOR *)&step)[0].vy = D_800D39EC->y.fixed >> 16;
+        ((SVECTOR *)&step)[0].vz = D_800D39EC->z.fixed >> 16;
+        ((SVECTOR *)&step)[1].vz = ((SVECTOR *)&step)[0].vz - func_8003F8CC(D_800C373C) * D_800C3738 / 4096;
+        ((SVECTOR *)&step)[1].vy = ((SVECTOR *)&step)[0].vy - func_8003F8B0(D_800C373C) * D_800C3738 / 4096;
+        D_800D309C.eye = ((SVECTOR *)&step)[1];
+        D_800D309C.target = ((SVECTOR *)&step)[0];
         break;
     }
     if (D_800C3CBC == 1) {
@@ -872,7 +872,7 @@ void func_800BBAB8(void) {
             D_800D3354.vy += step.vy;
             D_800D3354.vz += step.vz;
         } else {
-            SVector *wanted = &D_800D309C.eye;
+            SVECTOR *wanted = &D_800D309C.eye;
 
             D_800D3354.vx = wanted->vx;
             D_800D3354.vy = wanted->vy;
@@ -889,7 +889,7 @@ void func_800BBAB8(void) {
             D_800D335C.vy += step.vy;
             D_800D335C.vz += step.vz;
         } else {
-            SVector *wanted = &D_800D309C.target;
+            SVECTOR *wanted = &D_800D309C.target;
 
             D_800D335C.vx = wanted->vx;
             D_800D335C.vy = wanted->vy;
@@ -911,7 +911,7 @@ void func_800BBAB8(void) {
  * saved point unless effects are off), free it, and when the last one ends
  * return to camera mode 800c367c. */
 void func_800BBEE0(ActorTask *task) {
-    SVector *point;
+    SVECTOR *point;
     BattleSprite *sprite = task->data;
 
     if (sprite->flags.bits.group == 0xA) {
@@ -986,7 +986,7 @@ void func_800BC018(ActorTask *task) {
  * saving the camera point or taking over (field34 1) from a running one,
  * else stopping the new one; then camera mode 2 follows the sprites. */
 void func_800BC158(ActorTask *task) {
-    SVector *point;
+    SVECTOR *point;
     BattleSprite *sprite = (BattleSprite *)(task + 1);
 
     if (sprite->flags.bits.group == 0xA) {
@@ -1033,7 +1033,7 @@ void func_800BC158(ActorTask *task) {
 /* Set the camera mode: 2 puts the eye and look-at sprites at the saved
  * points, 4 sets D_800C3CBC to 5, others release them. */
 void func_800BC2F0(s32 mode) {
-    SVector *point;
+    SVECTOR *point;
 
     D_800C3CC0 = mode;
     D_800C3CBC = 1;
@@ -1093,21 +1093,21 @@ void func_800BC454(s16 value) {
  * (and its gear top) on screen; the points go to the camera's wanted eye and
  * look-at points. */
 void func_800BC460(u32 mask) {
-    Vector center;
-    SVector eye;
-    SVector target;
-    Matrix m;
-    Vector offset;
-    SVector point;
+    VECTOR center;
+    SVECTOR eye;
+    SVECTOR target;
+    MATRIX m;
+    VECTOR offset;
+    SVECTOR point;
     s32 screen[2];
-    SVector v;
+    SVECTOR v;
     s32 result[2];
-    Matrix m2;
-    Vector out;
-    SVector v2;
-    Matrix m3;
-    Vector unused;
-    SVector v3;
+    MATRIX m2;
+    VECTOR out;
+    SVECTOR v2;
+    MATRIX m3;
+    VECTOR unused;
+    SVECTOR v3;
     BattleSprite *sprite;
     s32 i;
     s32 count;
@@ -1219,21 +1219,21 @@ void func_800BC460(u32 mask) {
             v2.vy = 0;
             v2.vz = ReadGeomScreen() * 2;
             D_800C3CDC = ReadGeomScreen() * 2;
-            ApplyMatrix(&m2, &v2, (Vector *)&point);
+            ApplyMatrix(&m2, &v2, (VECTOR *)&point);
             eye.vx = center.vx;
             eye.vy = center.vy;
             eye.vz = center.vz;
             target.vx = center.vx;
             target.vy = center.vy;
             target.vz = center.vz;
-            eye.vx -= (*(Vector *)&point).vx;
-            eye.vy += (*(Vector *)&point).vy;
-            eye.vz -= (*(Vector *)&point).vz;
+            eye.vx -= (*(VECTOR *)&point).vx;
+            eye.vy += (*(VECTOR *)&point).vy;
+            eye.vz -= (*(VECTOR *)&point).vz;
             D_800D30A0[0].vx = eye.vx;
             D_800D30A0[0].vy = eye.vy;
             D_800D30A0[0].vz = eye.vz;
             {
-                SVector *p = &D_800D30A0[1];
+                SVECTOR *p = &D_800D30A0[1];
 
                 p->vx = target.vx;
                 p->vy = target.vy;
@@ -1262,7 +1262,7 @@ void func_800BC460(u32 mask) {
             D_800D30A0[0].vy = eye.vy;
             D_800D30A0[0].vz = eye.vz;
             {
-                SVector *p = &D_800D30A0[1];
+                SVECTOR *p = &D_800D30A0[1];
 
                 p->vx = target.vx;
                 p->vy = target.vy;
@@ -1391,11 +1391,11 @@ void func_800BE11C(NumberPopup *popup) {
 /* Popup drawing: its glyphs six times, each copy turned back 5 more and
  * shrunk by 0x330, centred on the screen from the geometry offset. */
 void func_800BE1C4(PopupTask *task) {
-    Matrix m;
-    SVector unused; /* allocated in the original frame */
-    SVector angle;
-    Vector offset;
-    Vector scale;
+    MATRIX m;
+    SVECTOR unused; /* allocated in the original frame */
+    SVECTOR angle;
+    VECTOR offset;
+    VECTOR scale;
     s32 x;
     s32 y;
     NumberPopup *popup = task->popup;
@@ -2188,8 +2188,8 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800C03
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800C0564);
 
 /* The distance between two points. */
-s32 func_800C06E4(Vector *a, Vector *b) {
-    Vector d;
+s32 func_800C06E4(VECTOR *a, VECTOR *b) {
+    VECTOR d;
 
     d.vx = a->vx - b->vx;
     d.vy = a->vy - b->vy;
@@ -2199,8 +2199,8 @@ s32 func_800C06E4(Vector *a, Vector *b) {
 }
 
 /* The distance between two short points. */
-s32 func_800C0758(SVector *a, SVector *b) {
-    Vector d;
+s32 func_800C0758(SVECTOR *a, SVECTOR *b) {
+    VECTOR d;
 
     d.vx = a->vx - b->vx;
     d.vy = a->vy - b->vy;
@@ -2211,7 +2211,7 @@ s32 func_800C0758(SVector *a, SVector *b) {
 
 /* The distance between two points on the ground. */
 s32 func_800C07CC(GroundPoint a, GroundPoint b) {
-    Vector d;
+    VECTOR d;
 
     d.vx = a.x - b.x;
     d.vz = a.z - b.z;
@@ -2220,10 +2220,10 @@ s32 func_800C07CC(GroundPoint a, GroundPoint b) {
 }
 
 /* The direction angles from point to to point from (no roll). */
-void func_800C0828(SVector *from, SVector *to, SVector *angles) {
-    Vector unused[2];
-    Vector d;
-    Vector squares;
+void func_800C0828(SVECTOR *from, SVECTOR *to, SVECTOR *angles) {
+    VECTOR unused[2];
+    VECTOR d;
+    VECTOR squares;
     s32 ground;
 
     d.vx = from->vx - to->vx;
@@ -2240,8 +2240,8 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800C08
 
 /* The average of the four points weighted by the weights of cell
  * (row, column). */
-void func_800C0D18(s32 row, s32 column, SVector *points, Vector *out) {
-    Vector v;
+void func_800C0D18(s32 row, s32 column, SVECTOR *points, VECTOR *out) {
+    VECTOR v;
     s32 cell = row * 8 + column;
 
     gte_lddp(D_800C3A68[cell][0]);

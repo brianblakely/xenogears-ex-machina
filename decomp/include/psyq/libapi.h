@@ -12,6 +12,7 @@ void SwEnterCriticalSection(void);
 void SwExitCriticalSection(void);
 void FlushCache(void);
 long open(char *devname, unsigned long flag);
+long write(long fd, void *buf, long n);
 void InitPAD(char *bufA, long lenA, char *bufB, long lenB);
 int StartPAD(void);
 void StopPAD(void);

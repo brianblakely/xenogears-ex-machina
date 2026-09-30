@@ -8,7 +8,6 @@
 
 extern s32 D_80050100; /* resident: depth shift */
 
-extern s16 D_800B00B4; /* camera elevation */
 
 void func_800495DC(SVECTOR *v, VECTOR *out);  /* resident: rotate by the GTE matrix */
 void func_8004998C(VECTOR *v, VECTOR *out);   /* resident: rotate a long vector */

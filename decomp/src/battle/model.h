@@ -45,11 +45,11 @@ typedef struct ModelPart {
     u8 flag7;
     u16 modelId;      /* 0x08: 0xFFFF none */
     u16 index;        /* 0x0A: the root holds the part count */
-    Matrix transform; /* 0x0C: rotation and translation (the root's scaled) */
-    Matrix world;     /* 0x2C: composed with the parents' */
+    MATRIX transform; /* 0x0C: rotation and translation (the root's scaled) */
+    MATRIX world;     /* 0x2C: composed with the parents' */
     s16 scale[3];     /* 0x4C: 4.12 */
     u16 field52;
-    SVector rotation;        /* 0x54: angles */
+    SVECTOR rotation;        /* 0x54: angles */
     s32 translation[3];      /* 0x5C */
     void *packets[2];        /* 0x68: one buffer per frame */
     EffectEntry *effects[3]; /* 0x70: attached effects */

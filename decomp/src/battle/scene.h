@@ -130,7 +130,7 @@ typedef struct {
     s16 lookAt[3]; /* 0x47C: the camera's look-at point */
     s16 eye[3];    /* 0x482: the camera's eye */
     u8 pad488[0x4DC - 0x488];
-    SVector centre; /* 0x4DC */
+    SVECTOR centre; /* 0x4DC */
 } BattleSceneData;
 
 /* An effect sprite record (0x7C bytes) of a sprite pool. */
@@ -181,7 +181,7 @@ typedef struct {
     s16 y;
     s16 z;
     s16 active;     /* 0x06 */
-    SVector offset; /* 0x08 */
+    SVECTOR offset; /* 0x08 */
     s16 object;     /* 0x10: stage object, negative none */
     s16 part;       /* 0x12: its part less one */
 } Tracker;
@@ -218,7 +218,7 @@ typedef struct {
 } BattleSlot;
 
 /* Battle scene and effect state. */
-extern SVector *D_800D3344;       /* scene points */
+extern SVECTOR *D_800D3344;       /* scene points */
 extern SceneTriangle *D_800D39CC; /* scene triangles */
 extern s32 D_800D3348;            /* scene triangle count */
 extern u8 D_800D2F64;             /* triangle visit stamp */
@@ -289,12 +289,12 @@ void func_800A22A8(EffectPool *pool);
 void func_800A2D1C(SpritePool *pool);
 s32 func_800AF400(void);
 void func_800AFA98(BattleObject *object, ModelPart *part, s32 flags);
-void func_800A5BE8(SVector *a, SVector *b, SVector *c, SVector *point, Vector *normal);
-s32 func_800A5870(SVector *point, s32 index, void *out);
-s32 func_800A579C(SVector *point);
-s32 func_800A5A48(SVector *a, SVector *b, SVector *c, SVector *point);
-s32 func_800A5914(SVector *point, s32 triangle, s32 depth);
-s32 func_800A5D54(SVector *point, s32 triangle, s32 depth);
+void func_800A5BE8(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *point, VECTOR *normal);
+s32 func_800A5870(SVECTOR *point, s32 index, void *out);
+s32 func_800A579C(SVECTOR *point);
+s32 func_800A5A48(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *point);
+s32 func_800A5914(SVECTOR *point, s32 triangle, s32 depth);
+s32 func_800A5D54(SVECTOR *point, s32 triangle, s32 depth);
 s32 func_800AA650(s32 index);
 void func_800B10EC(s32 index, s32 x, s32 z, s32 distance);
 void func_800A2D5C(SpritePool *pool);

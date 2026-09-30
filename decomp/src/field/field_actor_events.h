@@ -55,7 +55,6 @@ void func_800A30FC(void);
 s32 func_8009FEE4(s32 slot);
 
 /* Floor triangle of `layer` under (x, z), with its point and normal. */
-s16 func_8007B1C4(s32 x, s32 z, s32 layer, SVECTOR *point, VECTOR *normal);
 
 /* The field snapshot (8005a4e4) and its read cursor. */
 extern u8 D_8005A4E4[];
@@ -71,40 +70,6 @@ typedef struct {
 extern s32 D_800ADB24;         /* distortion buffers allocated */
 extern RECT D_800AEB24[15];    /* saved strip sources */
 
-/* The 801e effect layers (800a0fd8). */
-extern u8 *D_801E8670[];
-extern void func_801E8030(s32 layer);
-/* The resident file-list entry of 80029afc (resident/cd.h FileRequest). */
-typedef struct {
-    u16 file;
-    void *destination;
-} LayerFileRequest;
-typedef struct {
-    u8 unk00[0x5C];
-    s32 x;       /* 5C */
-    u8 unk60[4];
-    s32 z;       /* 64 */
-} LayerModel;
-typedef struct {
-    u8 unk00[4];
-    LayerModel *model; /* 04 */
-    u8 unk08[0x1C - 0x08];
-    s16 scale;         /* 1C */
-    u8 unk1E[0x34 - 0x1E];
-    u8 active;         /* 34 */
-    u8 unk35[0x60 - 0x35];
-    s16 y;             /* 60 */
-} EffectLayer;
-typedef struct {
-    s32 motion[4][2];  /* 800b21ec */
-    s32 scale[4];      /* 800b220c */
-} LayerState;
-#define LAYER_STATE (*(LayerState *)&D_800B2078.unk21E4[4])
-extern LayerFileRequest D_800B2394[3];
-extern void *D_8005A420[4];
-extern void *D_8005A450[4];
-s32 func_80029AFC(void *list, s32 mode, s32 a2);
-void func_801E742C(s32 layer, s32 a1, void *data0, void *data1, s16 x, s32 a5, s32 a6, s16 a7, void *state);
 
 
 void func_80021EBC(FieldModel *model, u8 *checkpoint);

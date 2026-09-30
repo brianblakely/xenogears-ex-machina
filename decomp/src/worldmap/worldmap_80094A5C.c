@@ -3,6 +3,8 @@
 
 /* Declared here only: other units call it without a prototype. */
 void func_80093354(VECTOR *position);
+/* Defined returning s16 (worldmap_80083A00); this unit uses the value as an int. */
+s32 func_80084D00(s32 probe, s16 *hit);
 
 /* Move a position along a direction across the terrain cells: probe the
  * cell boundaries crossed (by the corner's side for diagonal moves); 1 when
@@ -171,7 +173,14 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80
 
 /* Probe a move and choose the direction to slide along: 1 when free, 0 when
  * the obstacle deflects it (out holds the slide direction). */
-s32 func_800951A8(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s16 mode) {
+/* Old-style definition: callers pass `mode` as an int, unconverted. */
+s32 func_800951A8(position, direction, out, scale, mode)
+    VECTOR *position;
+    VECTOR *direction;
+    VECTOR *out;
+    s32 scale;
+    s16 mode;
+{
     s32 result;
 
     switch (func_80094A5C(position, direction, scale, mode)) {
@@ -223,7 +232,6 @@ void func_800952B0(VECTOR *direction, VECTOR *out, VECTOR *normal) {
 
 /* Orient the horizontal tangent of a wall normal towards `direction` (zero
  * when perpendicular). */
-#ifdef NON_MATCHING /* second product lands in v0 instead of v1 */
 void func_80095324(VECTOR *normal, VECTOR *direction, VECTOR *out) {
     s32 tangent;
     s32 dot;
@@ -247,63 +255,377 @@ void func_80095324(VECTOR *normal, VECTOR *direction, VECTOR *out) {
     }
     out->vy = 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80095324);
-#endif
 
+/* Scratchpad work area of the structure walk. */
+typedef struct {
+    VECTOR p[3];    /* 0x00: transformed face corners */
+    VECTOR side[3]; /* 0x30: normalised face edge directions */
+    VECTOR probe;   /* 0x60 */
+    VECTOR offset;  /* 0x70: object-relative point; vy is the face height */
+    VECTOR normal;  /* 0x80 */
+} WalkScratch;
+
+#define WALK_SCRATCH ((WalkScratch *)0x1F800000)
+
+void func_80085158(VECTOR *position, VECTOR *offset, VECTOR *normal, u16 index, u16 face);
+s32 func_80085760(VECTOR *from, VECTOR *to, s32 index, s32 face);
+
+/* Move a walking position over the solid scene objects. Off a structure, look
+ * for a face under the probe at about the current height and step onto it;
+ * on one, follow the move across the face edges (bit n of the edge test: the
+ * move leaves through edge n) onto the neighbouring faces, sliding along an
+ * edge whose neighbour is a wall (kind 1) and dropping back to the terrain
+ * when an edge has no neighbour. Returns 1 when the position stands on a face. */
+#ifdef NON_MATCHING /* register allocation: the original hoists -1 (not 1) out of the walk loop and
+                    * keeps the scratch base in $fp */
+s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s32 mode) {
+    s16 object;
+    WalkScratch *scratch;
+    MeshFace *faces;
+    s32 state;
+    s32 count;
+    s32 cleared;
+    s32 i;
+    s32 height;
+    s32 result;
+    u16 face;
+    s16 first;
+    s16 second;
+    s32 edges;
+    s32 walls;
+
+    scratch = WALK_SCRATCH;
+    scratch->probe.vx = position->vx + ((direction->vx * scale) >> 12);
+    scratch->probe.vz = position->vz + ((direction->vz * scale) >> 12);
+    func_80093354(&scratch->probe);
+    scratch->probe.vy = func_80093978(scratch->probe.vx, scratch->probe.vz) - 0x4000;
+    out->vx = position->vx + ((direction->vx * scale) >> 12);
+    out->vz = position->vz + ((direction->vz * scale) >> 12);
+    func_80093354(out);
+    out->vy = func_80093978(out->vx, out->vz) - 0x4000;
+    state = 1;
+    if (D_8009C840 != -1) {
+        state = 3;
+    }
+    switch (state) {
+    case 0:
+        result = func_800951A8(position, direction, out, scale, mode);
+        D_8009C16C = -1;
+        D_8009C840 = -1;
+        break;
+    case 1:
+        count = func_80084D00((s32)&scratch->probe, &object);
+        cleared = 0;
+        if (count != 0) {
+            for (i = 0; i < count; i += 2) {
+                if (func_80085418(&scratch->probe, 0x70, object, D_8009D718[i]) == 0) {
+                    D_8009D718[i] = -1;
+                    cleared += 2;
+                }
+            }
+            if (cleared != count) {
+                result = 0;
+                for (i = 0; i < count; i += 2) {
+                    if (D_8009D718[i] != -1 && D_8009D718[i + 1] != 1) {
+                        func_80085158(&scratch->probe, &scratch->offset, &scratch->normal, object, D_8009D718[i]);
+                        height = scratch->offset.vy - (position->vy >> 12);
+                        if (height < 0) {
+                            height = -height;
+                        }
+                        if (height < 0xB) {
+                            out->vy = scratch->offset.vy << 12;
+                            D_8009C840 = object;
+                            D_8009C16C = D_8009D718[i];
+                            result = 1;
+                            break;
+                        }
+                    }
+                }
+                if (result == 0) {
+                    func_80095324(&scratch->normal, direction, out);
+                }
+                break;
+            }
+        }
+        result = func_800951A8(position, direction, out, scale, mode);
+        D_8009C16C = -1;
+        D_8009C840 = -1;
+        break;
+    case 2:
+    case 3:
+        count = 1;
+        object = D_8009C840;
+        face = D_8009C16C;
+        faces = ((Mesh *)D_8009C620[object].unk44)->faces;
+        do {
+            i = func_80085760(position, &scratch->probe, object, (s16)face);
+            switch (i) {
+            case 0:
+                func_80085158(&scratch->probe, &scratch->offset, &scratch->normal, object, face);
+                result = 1;
+                count = 0;
+                D_8009C16C = (s16)face;
+                out->vy = scratch->offset.vy << 12;
+                D_8009C840 = object;
+                break;
+            case 1:
+                first = faces[(s16)face].next[0];
+                if (first == -1) {
+                    goto fall;
+                }
+                face = first;
+                if (faces[first].kind == 1) {
+                    result = 0;
+                    count = 0;
+                    func_800952B0(direction, out, &scratch->side[0]);
+                }
+                break;
+            case 2:
+                first = faces[(s16)face].next[1];
+                if (first == -1) {
+                    goto fall;
+                }
+                face = first;
+                if (faces[first].kind == 1) {
+                    result = 0;
+                    count = 0;
+                    func_800952B0(direction, out, &scratch->side[1]);
+                }
+                break;
+            case 4:
+                first = faces[(s16)face].next[2];
+                if (first == -1) {
+                    goto fall;
+                }
+                face = first;
+                if (faces[first].kind == 1) {
+                    result = 0;
+                    count = 0;
+                    func_800952B0(direction, out, &scratch->side[2]);
+                }
+                break;
+            case 3:
+                first = faces[(s16)face].next[0];
+                second = faces[(s16)face].next[1];
+                edges = first != -1;
+                if (second != -1) {
+                    edges |= 2;
+                }
+                switch (edges) {
+                case 0:
+                    goto fall;
+                case 1:
+                    face = first;
+                    if (faces[first].kind == edges) {
+                        result = 0;
+                        count = 0;
+                        func_800952B0(direction, out, &scratch->side[0]);
+                    }
+                    break;
+                case 2:
+                    face = second;
+                    if (faces[second].kind == 1) {
+                        result = 0;
+                        count = 0;
+                        func_800952B0(direction, out, &scratch->side[1]);
+                    }
+                    break;
+                case 3:
+                    walls = faces[first].kind == 0;
+                    if (faces[second].kind == 0) {
+                        walls |= 2;
+                    }
+                    switch (walls) {
+                    case 0:
+                        result = 0;
+                        count = 0;
+                        out->vx = out->vy = out->vz = 0;
+                        break;
+                    case 1:
+                        face = faces[(s16)face].next[0];
+                        break;
+                    case 2:
+                        face = second;
+                        break;
+                    case 3:
+                        face = faces[(s16)face].next[0];
+                        break;
+                    }
+                    break;
+                }
+                break;
+            case 5:
+                first = faces[(s16)face].next[0];
+                second = faces[(s16)face].next[2];
+                edges = first != -1;
+                if (second != -1) {
+                    edges |= 2;
+                }
+                switch (edges) {
+                case 0:
+                    goto fall;
+                case 1:
+                    face = first;
+                    if (faces[first].kind == edges) {
+                        result = 0;
+                        count = 0;
+                        func_800952B0(direction, out, &scratch->side[0]);
+                    }
+                    break;
+                case 2:
+                    face = second;
+                    if (faces[second].kind == 1) {
+                        result = 0;
+                        count = 0;
+                        func_800952B0(direction, out, &scratch->side[2]);
+                    }
+                    break;
+                case 3:
+                    walls = faces[first].kind == 0;
+                    if (faces[second].kind == 0) {
+                        walls |= 2;
+                    }
+                    switch (walls) {
+                    case 0:
+                        result = 0;
+                        count = 0;
+                        out->vx = out->vy = out->vz = 0;
+                        break;
+                    case 1:
+                        face = faces[(s16)face].next[0];
+                        break;
+                    case 2:
+                        face = second;
+                        break;
+                    case 3:
+                        face = faces[(s16)face].next[0];
+                        break;
+                    }
+                    break;
+                }
+                break;
+            case 6:
+                first = faces[(s16)face].next[1];
+                second = faces[(s16)face].next[2];
+                edges = first != -1;
+                if (second != -1) {
+                    edges |= 2;
+                }
+                switch (edges) {
+                case 0:
+                    goto fall;
+                case 1:
+                    face = first;
+                    if (faces[first].kind == edges) {
+                        result = 0;
+                        count = 0;
+                        func_800952B0(direction, out, &scratch->side[1]);
+                    }
+                    break;
+                case 2:
+                    face = second;
+                    if (faces[second].kind == 1) {
+                        result = 0;
+                        count = 0;
+                        func_800952B0(direction, out, &scratch->side[2]);
+                    }
+                    break;
+                case 3:
+                    walls = faces[first].kind == 0;
+                    if (faces[second].kind == 0) {
+                        walls |= 2;
+                    }
+                    switch (walls) {
+                    case 0:
+                        result = 0;
+                        count = 0;
+                        out->vx = out->vy = out->vz = 0;
+                        break;
+                    case 1:
+                        face = faces[(s16)face].next[1];
+                        break;
+                    case 2:
+                        face = second;
+                        break;
+                    case 3:
+                        face = faces[(s16)face].next[1];
+                        break;
+                    }
+                    break;
+                }
+                break;
+            case 7:
+                break;
+            fall:
+                result = func_800951A8(position, direction, out, scale, mode);
+                D_8009C16C = -1;
+                D_8009C840 = -1;
+                count = 0;
+                break;
+            }
+        } while (count);
+        break;
+    }
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80095414);
+#endif
 
 /* Move a flying position: clamp its height between the ground and the
  * ceiling, bounce back off solid objects, else slide along the terrain. */
-#ifdef NON_MATCHING /* the probe address is kept in a saved register */
 s32 func_80095CD4(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s32 mode) {
     s16 hit;
     s32 floor;
     s32 count;
     s32 i;
     s32 cleared;
+    s32 result;
+    WalkScratch *scratch;
 
-    SCRATCH_PROBE->vx = position->vx + ((direction->vx * scale) >> 12);
-    SCRATCH_PROBE->vy = position->vy + ((direction->vy * scale) >> 12);
-    SCRATCH_PROBE->vz = position->vz + ((direction->vz * scale) >> 12);
-    func_80093354(SCRATCH_PROBE);
+    scratch = WALK_SCRATCH;
+    scratch->probe.vx = position->vx + ((direction->vx * scale) >> 12);
+    scratch->probe.vy = position->vy + ((direction->vy * scale) >> 12);
+    scratch->probe.vz = position->vz + ((direction->vz * scale) >> 12);
+    func_80093354(&scratch->probe);
     out->vx = position->vx + ((direction->vx * scale) >> 12);
     out->vy = position->vy + ((direction->vy * scale) >> 12);
     out->vz = position->vz + ((direction->vz * scale) >> 12);
     func_80093354(out);
-    floor = func_80093978(SCRATCH_PROBE->vx, SCRATCH_PROBE->vz) - 0x20000;
+    floor = func_80093978(scratch->probe.vx, scratch->probe.vz) - 0x20000;
     if (floor > 0x20000) {
         floor = 0x20000;
     }
-    if ((floor < SCRATCH_PROBE->vy) | (floor < -0x280000)) {
-        SCRATCH_PROBE->vy = floor;
+    if ((floor < scratch->probe.vy) | (floor < -0x280000)) {
+        scratch->probe.vy = floor;
         out->vy = floor;
     }
-    if ((floor > -0x280000) & (SCRATCH_PROBE->vy < -0x280000)) {
-        SCRATCH_PROBE->vy = -0x280000;
+    if ((floor > -0x280000) & (scratch->probe.vy < -0x280000)) {
+        scratch->probe.vy = -0x280000;
         out->vy = -0x280000;
     }
-    count = func_80084D00((s32)SCRATCH_PROBE, &hit);
+    count = func_80084D00((s32)&scratch->probe, &hit);
     if (count != 0) {
         cleared = 0;
         for (i = 0; i < count; i += 2) {
-            if (func_80085418(SCRATCH_PROBE, 0x70, hit, D_8009D718[i]) == 0) {
+            if (func_80085418(&scratch->probe, 0x70, hit, D_8009D718[i]) == 0) {
                 D_8009D718[i] = -1;
                 cleared += 2;
             }
         }
+        result = 0;
         if (cleared != count) {
             out->vx = -direction->vx >> 1;
             out->vy = -direction->vy >> 1;
             out->vz = -direction->vz >> 1;
-            return 0;
+        } else {
+            result = func_800951A8(position, direction, out, scale, mode);
         }
+    } else {
+        result = func_800951A8(position, direction, out, scale, mode);
     }
-    return func_800951A8(position, direction, out, scale, mode);
+    return result;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80095CD4);
-#endif
 
 /* Reset the stream queue and allocate its command buffers (disc or host). */
 void func_80095F78(void) {
@@ -746,36 +1068,48 @@ void func_80096C0C(s32 status, u8 *result) {
     }
 }
 
+/* Scratchpad work area of the orbit camera. */
+typedef struct {
+    VECTOR offset;    /* 0x00 */
+    VECTOR eye;       /* 0x10 */
+    u8 pad20[0x80];
+    SVECTOR angle;    /* 0xA0 */
+    u8 padA8[0x48];
+    MATRIX rotation;  /* 0xF0 */
+} OrbitScratch;
+
+#define ORBIT_SCRATCH ((OrbitScratch *)0x1F800000)
+
 /* Place a camera orbiting above a position: look at its height from
  * `distance` along the angle, with the up direction rolled by the angle. */
-#ifdef NON_MATCHING /* the scratch vector address is shared by all three x stores */
-void func_80096F18(LookAt *view, VECTOR *position, s32 distance, SVECTOR *angle) {
+void func_80096F18(u8 *buffer, Camera *camera, s32 distance, SVECTOR *angle) {
+    LookAt *view = (LookAt *)buffer;
+    SVECTOR *rotation;
+
     view->target.vx = 0;
+    view->target.vy = camera->target.vy >> 12;
     view->target.vz = 0;
-    view->target.vy = position->vy >> 12;
-    SCRATCH_SVECTOR->vx = angle->vx;
-    SCRATCH_SVECTOR->vz = 0;
-    SCRATCH_SVECTOR->vy = angle->vy;
-    func_8004A92C(SCRATCH_SVECTOR, SCRATCH_MATRIX_A);
-    SCRATCH_VECTOR[0].vx = 0;
-    SCRATCH_VECTOR[0].vy = 0;
-    SCRATCH_VECTOR[0].vz = -(distance >> 12);
-    ApplyMatrixLV(SCRATCH_MATRIX_A, &SCRATCH_VECTOR[0], &SCRATCH_VECTOR[1]);
-    view->eye.vx = SCRATCH_VECTOR[1].vx;
-    view->eye.vy = view->target.vy + SCRATCH_VECTOR[1].vy;
-    view->eye.vz = SCRATCH_VECTOR[1].vz;
-    SCRATCH_SVECTOR->vx = 0;
-    SCRATCH_SVECTOR->vy = angle->vy;
-    SCRATCH_SVECTOR->vz = angle->vz;
-    func_8004A92C(SCRATCH_SVECTOR, SCRATCH_MATRIX_A);
-    SCRATCH_SVECTOR->vx = 0;
-    SCRATCH_SVECTOR->vy = -0x1000;
-    SCRATCH_SVECTOR->vz = 0;
-    ApplyMatrix(SCRATCH_MATRIX_A, SCRATCH_SVECTOR, &view->up);
+    ORBIT_SCRATCH->angle.vx = angle->vx;
+    rotation = &ORBIT_SCRATCH->angle;
+    ORBIT_SCRATCH->angle.vy = angle->vy;
+    ORBIT_SCRATCH->angle.vz = 0;
+    func_8004A92C(&ORBIT_SCRATCH->angle, &ORBIT_SCRATCH->rotation);
+    ORBIT_SCRATCH->offset.vx = 0;
+    ORBIT_SCRATCH->offset.vy = 0;
+    ORBIT_SCRATCH->offset.vz = -(distance >> 12);
+    ApplyMatrixLV(&ORBIT_SCRATCH->rotation, &ORBIT_SCRATCH->offset, &ORBIT_SCRATCH->eye);
+    view->eye.vx = ORBIT_SCRATCH->eye.vx;
+    view->eye.vy = view->target.vy + ORBIT_SCRATCH->eye.vy;
+    view->eye.vz = ORBIT_SCRATCH->eye.vz;
+    rotation->vx = 0;
+    rotation->vy = angle->vy;
+    rotation->vz = angle->vz;
+    func_8004A92C(rotation, &ORBIT_SCRATCH->rotation);
+    rotation->vx = 0;
+    rotation->vy = -0x1000;
+    rotation->vz = 0;
+    ApplyMatrix(&ORBIT_SCRATCH->rotation, rotation, &view->up);
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80096F18);
-#endif
 
 /* Recover rotation angles (yaw, then pitch, then roll) from a matrix. */
 void func_80097070(MATRIX *m, SVECTOR *angle) {
@@ -965,36 +1299,26 @@ void func_80097800(void) {
     }
 }
 
+/* The 2048-triangle terrain packet buffer, copied as a whole. */
+typedef struct {
+    PolyFT3 prims[0x800];
+} TriangleBuffer;
+
 /* Allocate both 2048-triangle terrain packet buffers and initialise them. */
-#ifdef NON_MATCHING /* loop counter increment scheduled late */
 void func_800978FC(void) {
     PolyFT3 *prim;
     s32 i;
-    struct {
-        s32 words[4];
-    } *from, *to, *end;
 
     D_8009BC38[1] = func_80031BDC(0x10000, 1);
     D_8009BCB0[1] = func_80031BDC(0x10000, 1);
     prim = D_8009BC38[1];
-    for (i = 0; i < 0x800; i++) {
-        ((u8 *)prim)[3] = 7;
-        prim->code = 0x24;
-        prim->r0 = 0x80;
-        prim->g0 = 0x80;
-        prim->b0 = 0x80;
-        prim++;
+    for (i = 0; i < 0x800; i++, prim++) {
+        setlen(prim, 7);
+        setcode(prim, 0x24);
+        setRGB0(prim, 0x80, 0x80, 0x80);
     }
-    from = D_8009BC38[1];
-    to = D_8009BCB0[1];
-    end = (void *)((u8 *)from + 0x10000);
-    do {
-        *to++ = *from++;
-    } while (from != end);
+    *(TriangleBuffer *)D_8009BCB0[1] = *(TriangleBuffer *)D_8009BC38[1];
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_800978FC);
-#endif
 
 /* Upload the terrain texture image (its buffer is then reused for the
  * palettes), build the faded terrain palettes and their CLUT and texture

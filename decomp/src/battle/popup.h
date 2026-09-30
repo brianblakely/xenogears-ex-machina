@@ -22,8 +22,8 @@ typedef struct NumberPopup {
     u8 pad0[0xC];
     void (*destroy)(struct NumberPopup *popup); /* 0x0C */
     u8 pad10[0x38 - 0x10];
-    SVector angle;        /* 0x38 */
-    Vector scale;         /* 0x40 */
+    SVECTOR angle;        /* 0x38 */
+    VECTOR scale;         /* 0x40 */
     u8 pad50[0x60 - 0x50];
     s32 life;             /* 0x60: frames left */
     s32 spin;             /* 0x64: per frame */
@@ -43,7 +43,7 @@ typedef struct {
 
 extern struct ActorTask *D_800D2D68; /* the running effect task */
 extern s32 D_800C374C;
-extern Matrix D_800C3760; /* the popups' view */
+extern MATRIX D_800C3760; /* the popups' view */
 extern s32 D_800C377C;    /* the projection distance when drawn */
 extern s16 D_800C3752[];  /* the first glyph's x by digit count */
 extern s32 D_800D3630;    /* the popup colour kind */
@@ -51,7 +51,7 @@ extern u8 D_800C3784[];   /* hexadecimal digit glyphs */
 extern u32 D_800C37A4[];  /* powers of ten */
 
 /* Resident services. */
-void func_80021B24(SVector *out, SVector *in);
+void func_80021B24(SVECTOR *out, SVECTOR *in);
 s32 func_80026DCC(void *font, s32 character, PopupGlyph *out, s16 x, s32 y); /* glyphs added */
 
 void func_800BD810(PopupGlyph *glyph, s32 colour);

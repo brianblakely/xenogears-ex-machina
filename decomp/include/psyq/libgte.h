@@ -43,6 +43,9 @@ MATRIX *TransMatrix(MATRIX *m, VECTOR *v);
 VECTOR *ApplyMatrix(MATRIX *m, SVECTOR *v0, VECTOR *v1);
 VECTOR *ApplyMatrixLV(MATRIX *m, VECTOR *v0, VECTOR *v1);
 MATRIX *ScaleMatrix(MATRIX *m, VECTOR *v);
+MATRIX *SetMulMatrix(MATRIX *m0, MATRIX *m1);
+void ReadGeomOffset(long *ofx, long *ofy);
+long ReadGeomScreen(void);
 void SetRotMatrix(MATRIX *m);
 void SetTransMatrix(MATRIX *m);
 void RotTransSV(SVECTOR *v0, SVECTOR *v1, long *flag);
@@ -53,6 +56,7 @@ long RotTransPers4(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *v3, long *sxy
                    long *sxy2, long *sxy3, long *p, long *flag);
 long RotAverage4(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *v3, long *sxy0, long *sxy1,
                  long *sxy2, long *sxy3, long *p, long *flag);
+long VectorNormalS(VECTOR *v0, SVECTOR *v1);
 void OuterProduct0(VECTOR *v0, VECTOR *v1, VECTOR *v2);
 long ratan2(long y, long x);
 long SquareRoot0(long a);

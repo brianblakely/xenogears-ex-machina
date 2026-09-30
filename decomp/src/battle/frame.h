@@ -136,7 +136,6 @@ extern u8 D_800591B2;    /* the loaded battle module */
 extern u8 D_800591B3;    /* the requested battle module */
 
 /* SDK calls of the frame loop. */
-void DrawOTag(u32 *ot);
 
 /* Resident services. */
 void func_80019CA0(void);
@@ -144,7 +143,7 @@ void func_8001C964(void);
 void func_8001C9F8(void);
 void func_8001D468(void);
 void func_80024FE4(u32 *ot);
-void func_80024FF4(Matrix *view);
+void func_80024FF4(MATRIX *view);
 void func_80025044(void);
 void func_800250E0(s32 buffer);
 void func_80037324(u32 *ot);
@@ -196,7 +195,7 @@ void func_800AA320(u16 index, u16 mask, s32 arg2);
 
 void func_80076544(void);
 void func_8008A9C0(s32 skipped);
-void func_800A9A50(Matrix *m, s32 arg1, u32 *ot, s32 buffer);
+void func_800A9A50(MATRIX *m, s32 arg1, u32 *ot, s32 buffer);
 void func_800B8068(s32 sound);
 void func_800BB9D4(void);
 void func_800BBAB8(void);

@@ -301,7 +301,6 @@ void func_80072BB0(void) {
 /* Fade the saved screen (VRAM x 0x2C0) for `frames` frames: redraw it as three
  * textured quads under a translucent black quad whose level starts at `level`
  * and changes by `step`, blended with mode `abr`. */
-#ifdef NON_MATCHING /* register allocation: original spills the step and three link words */
 void func_80072DB4(s32 frames, s32 level, s32 step, s32 abr) {
     PolyFT4 *quads;
     PolyG4v *shades;
@@ -319,77 +318,22 @@ void func_80072DB4(s32 frames, s32 level, s32 step, s32 abr) {
         setRGB0(&quads[i], 0x80, 0x80, 0x80);
         setShadeTex(&quads[i], 1);
     }
-    quads[1].x1 = 0x100;
-    quads[1].x3 = 0x100;
-    quads[2].x0 = 0x100;
-    quads[2].x2 = 0x100;
-    quads[0].x1 = 0x80;
-    quads[0].x3 = 0x80;
-    quads[1].x0 = 0x80;
-    quads[1].x2 = 0x80;
-    quads[0].x0 = 0;
-    quads[0].y0 = 0;
-    quads[0].y1 = 0;
-    quads[0].x2 = 0;
-    quads[0].y2 = 0xEF;
-    quads[0].y3 = 0xEF;
-    quads[1].y0 = 0;
-    quads[1].y1 = 0;
-    quads[1].y2 = 0xEF;
-    quads[1].y3 = 0xEF;
-    quads[2].y0 = 0;
-    quads[2].x1 = 0x140;
-    quads[2].y1 = 0;
-    quads[2].y2 = 0xEF;
-    quads[2].x3 = 0x140;
-    quads[2].y3 = 0xEF;
-    quads[0].u0 = 0;
-    quads[0].v0 = 0;
-    quads[0].u1 = 0x80;
-    quads[0].v1 = 0;
-    quads[0].u2 = 0;
-    quads[0].v2 = 0xEF;
-    quads[0].u3 = 0x80;
-    quads[0].v3 = 0xEF;
-    quads[1].u0 = 0;
-    quads[1].v0 = 0;
-    quads[1].u1 = 0x80;
-    quads[1].u3 = 0x80;
-    quads[1].v1 = 0;
-    quads[1].u2 = 0;
-    quads[1].v2 = 0xEF;
-    quads[1].v3 = 0xEF;
-    quads[2].u0 = 0;
-    quads[2].v0 = 0;
-    quads[2].u1 = 0x40;
-    quads[2].v1 = 0;
-    quads[2].u2 = 0;
-    quads[2].v2 = 0xEF;
-    quads[2].u3 = 0x40;
-    quads[2].v3 = 0xEF;
+    setXY4(&quads[0], 0, 0, 0x80, 0, 0, 0xEF, 0x80, 0xEF);
+    setXY4(&quads[1], 0x80, 0, 0x100, 0, 0x80, 0xEF, 0x100, 0xEF);
+    setXY4(&quads[2], 0x100, 0, 0x140, 0, 0x100, 0xEF, 0x140, 0xEF);
+    setUV4(&quads[0], 0, 0, 0x80, 0, 0, 0xEF, 0x80, 0xEF);
+    setUV4(&quads[1], 0, 0, 0x80, 0, 0, 0xEF, 0x80, 0xEF);
+    setUV4(&quads[2], 0, 0, 0x40, 0, 0, 0xEF, 0x40, 0xEF);
     quads[0].tpage = GetTPage(2, 0, 0x2C0, 0x100);
     quads[1].tpage = GetTPage(2, 0, 0x340, 0x100);
     quads[2].tpage = GetTPage(2, 0, 0x3C0, 0x100);
     SetDrawTPage(mode, 0, 1, GetTPage(0, abr, 0, 0));
     setPolyG4(&shades[0]);
-    shades[0].x0 = 0;
-    shades[0].y0 = 0;
-    shades[0].x1 = 0x140;
-    shades[0].y1 = 0;
-    shades[0].x2 = 0;
-    shades[0].y2 = 0xF0;
-    shades[0].x3 = 0x140;
-    shades[0].y3 = 0xF0;
+    setXY4(&shades[0], 0, 0, 0x140, 0, 0, 0xF0, 0x140, 0xF0);
     setRGB0(&shades[0], 0, 0, 0);
-    shades[0].r1 = 0;
-    shades[0].g1 = 0;
-    shades[0].b1 = 0;
-    shades[0].r2 = 0;
-    shades[0].g2 = 0;
-    shades[0].b2 = 0;
-    shades[0].r3 = 0;
-    shades[0].g3 = 0;
-    shades[0].b3 = 0;
+    setRGB1(&shades[0], 0, 0, 0);
+    setRGB2(&shades[0], 0, 0, 0);
+    setRGB3(&shades[0], 0, 0, 0);
     SetSemiTrans(&shades[0], 1);
     setShadeTex(&shades[0], 1);
     shades[1] = shades[0];
@@ -399,31 +343,26 @@ void func_80072DB4(s32 frames, s32 level, s32 step, s32 abr) {
     PutDrawEnv(&D_8009BBC8[1].draw);
     buffer = &D_8009BBC8[0];
     side = 0;
-    while (frames--) {
+    i = level;
+    for (frames--; frames != -1; frames--) {
         buffer = (buffer == D_8009BBC8) ? buffer + 1 : D_8009BBC8;
         ClearOTagR((u32 *)buffer->unk70, 0x400);
         addPrim((u32 *)buffer->unk70 + 1, &quads[0]);
         addPrim((u32 *)buffer->unk70 + 1, &quads[1]);
         addPrim((u32 *)buffer->unk70 + 1, &quads[2]);
         side ^= 1;
-        shade = &shades[side];
-        setRGB0(shade, level, level, level);
-        shade->r1 = level;
-        shade->g1 = level;
-        shade->b1 = level;
-        shade->r2 = level;
-        shade->g2 = level;
-        shade->b2 = level;
-        shade->r3 = level;
-        shade->g3 = level;
-        shade->b3 = level;
+        shade = (PolyG4v *)(side * sizeof(PolyG4v) + (u32)shades);
+        setRGB0(shade, i, i, i);
+        setRGB1(shade, i, i, i);
+        setRGB2(shade, i, i, i);
+        setRGB3(shade, i, i, i);
         addPrim((u32 *)buffer->unk70, shade);
         addPrim((u32 *)buffer->unk70, mode);
         DrawSync(0);
         VSync(0);
         PutDispEnv(&buffer->disp);
         PutDrawEnv(&buffer->draw);
-        level += step;
+        i += step;
         DrawOTag((u32 *)buffer->unk70 + 0x3FF);
     }
     DrawSync(0);
@@ -433,9 +372,6 @@ void func_80072DB4(s32 frames, s32 level, s32 step, s32 abr) {
     func_800320E8(shades);
     func_800320E8(mode);
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80072DB4);
-#endif
 
 /* Choose the movement mode from the saved state: a vehicle kind, or on foot
  * (1 when no party flag is set, else 2). */
@@ -552,7 +488,6 @@ void func_8007369C(void) {
 }
 
 /* Initialise the sky gradient: four bands of Gouraud quads in both buffers. */
-#ifdef NON_MATCHING /* store order and base register differ */
 void func_800736DC(void) {
     D_8009D194[0][0].rgb0 = D_8009D194[0][0].rgb1 = D_8009D194[0][1].rgb0 = D_8009D194[0][1].rgb1 = 0xFF7A70;
     D_8009D194[0][0].rgb2 = D_8009D194[0][0].rgb3 = D_8009D194[0][1].rgb2 = D_8009D194[0][1].rgb3 = 0xFFF5E0;
@@ -571,46 +506,37 @@ void func_800736DC(void) {
     setPolyG4(&D_8009D194[3][0]);
     setPolyG4(&D_8009D194[3][1]);
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_800736DC);
-#endif
 
 /* Transform the four sky bands with the camera yaw and link them into the
  * ordering table. */
-#ifdef NON_MATCHING /* register allocation and scheduling differ */
 void func_800737EC(void) {
     SVECTOR *corners;
     PolyG4 *band;
     s32 otz;
     s32 i;
-    s32 offset;
+    SkyScratch *scratch;
 
+    scratch = SKY_SCRATCH;
+    scratch->angle.vz = 0;
+    scratch->angle.vx = 0;
+    scratch->angle.vy = D_8009BD38.vy;
+    func_8004A92C(&scratch->angle, &scratch->rotation);
     corners = D_8009A280[0];
-    SKY_SCRATCH->angle.vz = 0;
-    SKY_SCRATCH->angle.vx = 0;
-    SKY_SCRATCH->angle.vy = D_8009BD38.vy;
-    offset = 0;
-    func_8004A92C(&SKY_SCRATCH->angle, &SKY_SCRATCH->rotation);
-    SKY_SCRATCH->rotation.t[2] = 0;
-    SKY_SCRATCH->rotation.t[1] = 0;
-    SKY_SCRATCH->rotation.t[0] = 0;
-    CompMatrix(&D_8009C808, &SKY_SCRATCH->rotation, &SKY_SCRATCH->view);
-    SetRotMatrix(&SKY_SCRATCH->view);
-    SetTransMatrix(&SKY_SCRATCH->view);
-    for (i = 0; i < 4; i++) {
-        band = (PolyG4 *)((u8 *)&D_8009D194[0][D_8009D7F0] + offset);
+    scratch->rotation.t[2] = 0;
+    scratch->rotation.t[1] = 0;
+    scratch->rotation.t[0] = 0;
+    CompMatrix(&D_8009C808, &scratch->rotation, &scratch->view);
+    SetRotMatrix(&scratch->view);
+    SetTransMatrix(&scratch->view);
+    for (i = 0; i < 4; i++, corners += 4) {
+        band = &D_8009D194[i][D_8009D7F0];
         otz = RotTransPers4(&corners[0], &corners[1], &corners[2], &corners[3], &band->xy0, &band->xy1,
-                            &band->xy2, &band->xy3, &SKY_SCRATCH->p, &SKY_SCRATCH->flag);
-        if (SKY_SCRATCH->flag >= 0) {
+                            &band->xy2, &band->xy3, &scratch->p, &scratch->flag);
+        if (scratch->flag >= 0) {
             addPrim(&D_8009BE3C->ot[otz >> D_80050100], band);
         }
-        offset += sizeof(D_8009D194[0]);
-        corners += 4;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_800737EC);
-#endif
 
 /* Initialise the four textured horizon quads and the two texture windows. */
 void func_800739B8(void) {
@@ -656,11 +582,13 @@ void func_800739B8(void) {
 /* Scroll the horizon texture with the camera yaw, transform the two horizon
  * quads of this buffer and link them, inside their texture windows, into the
  * ordering table. */
-#ifdef NON_MATCHING /* original reloads D_8009D7F0 after each texture-coordinate pair */
+#ifdef NON_MATCHING /* loop keeps the quad row offset apart from the buffer base; uv registers differ */
 void func_80073B04(void) {
     SVECTOR *corners;
-    u16 u;
-    u16 right;
+    HorizonScratch *scratch;
+    PolyFT4 *quad;
+    s32 u;
+    s32 right;
     s32 i;
     s32 offset;
     s32 otz;
@@ -670,39 +598,37 @@ void func_80073B04(void) {
     i = 0;
     u = (D_8009BD38.vy >> 2) & 0x7F;
     right = u | 0x80;
-    HORIZON_QUADS[D_8009D7F0].uv0 = HORIZON_QUADS[D_8009D7F0 + 2].uv0 = u;
-    HORIZON_QUADS[D_8009D7F0].uv1 = HORIZON_QUADS[D_8009D7F0 + 2].uv1 = right;
+    *(u16 *)&D_8009C744[D_8009D7F0].u0 = *(u16 *)&D_8009C744[D_8009D7F0 + 2].u0 = u;
+    *(u16 *)&D_8009C744[D_8009D7F0].u1 = *(u16 *)&D_8009C744[D_8009D7F0 + 2].u1 = right;
     u |= 0x3F00;
-    HORIZON_QUADS[D_8009D7F0].uv2 = HORIZON_QUADS[D_8009D7F0 + 2].uv2 = u;
+    *(u16 *)&D_8009C744[D_8009D7F0].u2 = *(u16 *)&D_8009C744[D_8009D7F0 + 2].u2 = u;
     right |= 0x3F00;
-    HORIZON_QUADS[D_8009D7F0].uv3 = HORIZON_QUADS[D_8009D7F0 + 2].uv3 = right;
+    *(u16 *)&D_8009C744[D_8009D7F0].u3 = *(u16 *)&D_8009C744[D_8009D7F0 + 2].u3 = right;
     HORIZON_SCRATCH->angle.vz = 0;
-    HORIZON_SCRATCH->angle.vx = 0;
-    HORIZON_SCRATCH->angle.vy = D_8009BD38.vy;
+    scratch = HORIZON_SCRATCH;
+    scratch->angle.vx = 0;
+    scratch->angle.vy = D_8009BD38.vy;
+    func_8004A92C(&scratch->angle, &scratch->rotation);
     offset = 0;
-    func_8004A92C(&HORIZON_SCRATCH->angle, &HORIZON_SCRATCH->rotation);
-    HORIZON_SCRATCH->rotation.t[2] = 0;
-    HORIZON_SCRATCH->rotation.t[1] = 0;
-    HORIZON_SCRATCH->rotation.t[0] = 0;
-    CompMatrix(&D_8009C808, &HORIZON_SCRATCH->rotation, &HORIZON_SCRATCH->view);
-    SetRotMatrix(&HORIZON_SCRATCH->view);
-    SetTransMatrix(&HORIZON_SCRATCH->view);
+    scratch->rotation.t[2] = 0;
+    scratch->rotation.t[1] = 0;
+    scratch->rotation.t[0] = 0;
+    CompMatrix(&D_8009C808, &scratch->rotation, &scratch->view);
+    SetRotMatrix(&scratch->view);
+    SetTransMatrix(&scratch->view);
     do {
-        PolyFT4uv *quad;
-
         i++;
-        quad = (PolyFT4uv *)((u8 *)&HORIZON_QUADS[D_8009D7F0] + offset);
+        quad = (PolyFT4 *)((u8 *)&D_8009C744[D_8009D7F0] + offset);
         otz = RotTransPers4(&corners[0], &corners[1], &corners[2], &corners[3], (s32 *)&quad->x0,
-                            (s32 *)&quad->x1, (s32 *)&quad->x2, (s32 *)&quad->x3, &HORIZON_SCRATCH->p,
-                            &HORIZON_SCRATCH->flag);
+                            (s32 *)&quad->x1, (s32 *)&quad->x2, (s32 *)&quad->x3, &scratch->p, &scratch->flag);
         corners += 4;
-        offset += 2 * sizeof(PolyFT4uv);
+        offset += 2 * sizeof(PolyFT4);
     } while (i < 2);
-    if (HORIZON_SCRATCH->flag >= 0) {
+    if (scratch->flag >= 0) {
         ot = &D_8009BE3C->ot[otz >> D_80050100];
         addPrim(ot, &D_8009D3D8[1]);
-        addPrim(ot, &HORIZON_QUADS[D_8009D7F0]);
-        addPrim(ot, &HORIZON_QUADS[D_8009D7F0 + 2]);
+        addPrim(ot, &D_8009C744[D_8009D7F0]);
+        addPrim(ot, &D_8009C744[D_8009D7F0 + 2]);
         addPrim(ot, &D_8009D3D8[0]);
     }
 }
@@ -712,74 +638,41 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80
 
 /* Initialise the overlay picture quad (both buffers), its texture page, eight
  * red Gouraud triangles and 64 small tiles. */
-#ifdef NON_MATCHING /* x3 store addressed from the copy base register */
 void func_80073E30(void) {
     PolyG3 *triangle;
     Tile *tile;
     s32 i;
 
-    setlen(&D_8009C5C0[0], 9);
-    D_8009C5C0[0].code = 0x2C;
-    D_8009C5C0[0].x0 = 0xD0;
-    D_8009C5C0[0].y0 = 0x78;
-    D_8009C5C0[0].x1 = 0x137;
-    D_8009C5C0[0].y1 = 0x78;
-    D_8009C5C0[0].x2 = 0xD0;
-    D_8009C5C0[0].y2 = 0xD7;
-    D_8009C5C0[0].x3 = 0x137;
-    D_8009C5C0[0].y3 = 0xD7;
-    D_8009C5C0[0].u0 = 0;
-    D_8009C5C0[0].v0 = 0x80;
-    D_8009C5C0[0].u1 = 0x7F;
-    D_8009C5C0[0].v1 = 0x80;
-    D_8009C5C0[0].u2 = 0;
-    D_8009C5C0[0].v2 = 0xFF;
-    D_8009C5C0[0].u3 = 0x7F;
-    D_8009C5C0[0].v3 = 0xFF;
-    D_8009C5C0[0].r0 = 0x80;
-    D_8009C5C0[0].g0 = 0x80;
-    D_8009C5C0[0].b0 = 0x80;
+    setPolyFT4(&D_8009C5C0[0]);
+    setXY4(&D_8009C5C0[0], 0xD0, 0x78, 0x137, 0x78, 0xD0, 0xD7, 0x137, 0xD7);
+    setUV4(&D_8009C5C0[0], 0, 0x80, 0x7F, 0x80, 0, 0xFF, 0x7F, 0xFF);
+    setRGB0(&D_8009C5C0[0], 0x80, 0x80, 0x80);
     D_8009C5C0[0].tpage = GetTPage(0, 0, 0x380, 0x100);
     D_8009C5C0[0].clut = GetClut(0x100, 0x1FE);
     SetSemiTrans(&D_8009C5C0[0], 1);
     D_8009C5C0[1] = D_8009C5C0[0];
     SetDrawTPage(&D_8009C5A0, 1, 0, GetTPage(0, 1, 0x380, 0x100));
     triangle = D_8009C664;
-    for (i = 0; i < 8; i++) {
-        ((u8 *)triangle)[3] = 6;
-        triangle->code = 0x30;
-        triangle->r0 = 0xFF;
-        triangle->g0 = 0x40;
-        triangle->b0 = 0x40;
-        triangle->r1 = 0;
-        triangle->g1 = 0;
-        triangle->b1 = 0;
-        triangle->r2 = 0;
-        triangle->g2 = 0;
-        triangle->b2 = 0;
+    for (i = 0; i < 8; i++, triangle++) {
+        setPolyG3(triangle);
+        setRGB0(triangle, 0xFF, 0x40, 0x40);
+        setRGB1(triangle, 0, 0, 0);
+        setRGB2(triangle, 0, 0, 0);
         SetSemiTrans(triangle, 1);
-        triangle++;
     }
     tile = D_8009C898;
-    for (i = 0; i < 0x40; i++) {
-        ((u8 *)tile)[3] = 3;
-        tile->code = 0x60;
-        tile->r0 = 0x80;
-        tile->g0 = 0x80;
-        tile->b0 = 0x10;
-        tile->w = 2;
-        tile->h = 2;
-        tile++;
+    for (i = 0; i < 0x40; i++, tile++) {
+        setTile(tile);
+        setRGB0(tile, 0x80, 0x80, 0x10);
+        setWH(tile, 2, 2);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80073E30);
-#endif
 
 /* Draw the map overlay: the player marker (four triangles rotated by the camera
  * yaw at the player's map position) and one dot per set bit of the resident
  * map flags; bits 24-26 are the vehicles. */
-#ifdef NON_MATCHING /* original keeps the scratch, matrix and camera addresses and the link masks in saved registers */
+#ifdef NON_MATCHING /* dot loop: the original steps two pointers through the position table and keeps
+                    * the division constants in other registers */
 void func_800740B8(void) {
     MapScratch *scratch;
     MATRIX *matrix;
@@ -788,6 +681,7 @@ void func_800740B8(void) {
     PolyG3 *marker;
     Tile *dot;
     u32 bits;
+    u16 (*positions)[2];
     s32 i;
 
     scratch = (MapScratch *)0x1F800000;
@@ -796,16 +690,16 @@ void func_800740B8(void) {
     matrix = &scratch->matrix;
     target = &D_8009D55C.target;
     marker = &D_8009C664[D_8009D7F0 * 4];
-    scratch->angle.vy = 0;
-    scratch->angle.vx = 0;
-    scratch->angle.vz = D_8009BD38.vy;
-    func_8003F738(&scratch->angle, matrix);
-    matrix->t[0] = (target->vx >> 12) / 315 + 0x30;
-    matrix->t[2] = D_8009BCDC;
-    matrix->t[1] = (target->vz >> 12) / 341 + 0x78 - D_8009BE0C;
-    gte_SetRotMatrix(matrix);
-    gte_SetTransMatrix(matrix);
     do {
+        scratch->angle.vy = 0;
+        scratch->angle.vx = 0;
+        scratch->angle.vz = D_8009BD38.vy;
+        func_8003F738(&scratch->angle, matrix);
+        scratch->matrix.t[0] = (target->vx >> 12) / 315 + 0x30;
+        scratch->matrix.t[2] = D_8009BCDC;
+        scratch->matrix.t[1] = 0x78 - D_8009BE0C + (target->vz >> 12) / 341;
+        gte_SetRotMatrix(matrix);
+        gte_SetTransMatrix(matrix);
         gte_ldv3(&corners[0], &corners[1], &corners[2]);
         gte_rtpt();
         gte_stsxy3(&marker->x0, &marker->x1, &marker->x2);
@@ -817,6 +711,7 @@ void func_800740B8(void) {
     dot = &D_8009C898[D_8009D7F0 * 32];
     addPrim(D_8009BE3C->ot, &D_8009C5A0);
     bits = STATE_U32(0x30C);
+    positions = D_8009B6F4;
     for (i = 0; i < 32; i++) {
         if (bits & 1) {
             switch (i) {
@@ -833,8 +728,8 @@ void func_800740B8(void) {
                 dot->y0 = STATE_U16(0x26) / 341 + 0x77;
                 break;
             default:
-                dot->x0 = D_8009B6F4[i][0] + 0xD0;
-                dot->y0 = D_8009B6F4[i][1] + 0x78;
+                dot->x0 = positions[i][0] + 0xD0;
+                dot->y0 = positions[i][1] + 0x78;
                 break;
             }
             addPrim(D_8009BE3C->ot, dot);
@@ -901,7 +796,110 @@ void func_80074794(s16 id, VECTOR *position) {
     D_8009BE38 = (D_8009BE38 + 1) & 0xF;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_800747DC);
+/* Draw the recorded footprints: lay a quad on the ground at each ring position
+ * (sized by the spot id, turned with the vehicle for id 2) and add it to the
+ * ordering table; then empty the ring. */
+void func_800747DC(void) {
+    FootprintScratch *scratch;
+    WorldmapSpot *spot;
+    PolyFT4 *quad;
+    s32 i;
+    s32 z;
+    s32 flag;
+    s32 camera_x;
+    s32 camera_z;
+
+    if (D_8009BE38 != 0) {
+        scratch = FOOTPRINT_SCRATCH;
+        scratch->corner[0].vx = -0x10;
+        scratch->corner[0].vz = 0x10;
+        scratch->corner[1].vx = 0x10;
+        scratch->corner[1].vz = 0x10;
+        scratch->corner[2].vx = -0x10;
+        scratch->corner[2].vz = -0x10;
+        scratch->corner3.vx = 0x10;
+        scratch->corner3.vz = -0x10;
+        scratch->corner[0].vy = scratch->corner[1].vy = scratch->corner[2].vy = scratch->corner3.vy = 0;
+        scratch->view = D_8009C808;
+        spot = D_8009D30C;
+        i = D_8009BE38;
+        scratch->up.vz = 0x1000;
+        scratch->up.vx = 0;
+        scratch->up.vy = 0;
+        quad = (&D_8009BE14)[D_8009D7F0];
+        camera_x = D_8009BE28.target.vx;
+        camera_z = D_8009BE28.target.vz;
+        for (i--; i != -1; i--) {
+            scratch->position.vx = spot->x << 12;
+            scratch->position.vz = spot->z << 12;
+            scratch->position.vy = func_80093978(scratch->position.vx, scratch->position.vz);
+            func_80093740(&scratch->normal, scratch->position.vx, scratch->position.vz);
+            func_8004A480(&scratch->up, &scratch->normal, &scratch->side);
+            func_80048D7C(&scratch->side, &scratch->forward);
+            func_8004A480(&scratch->normal, &scratch->forward, &scratch->scale);
+            func_80048D7C(&scratch->scale, &scratch->side);
+            scratch->local.m[0][0] = scratch->forward.vx;
+            scratch->local.m[0][1] = scratch->forward.vy;
+            scratch->local.m[0][2] = scratch->forward.vz;
+            scratch->local.m[1][0] = scratch->normal.vx;
+            scratch->local.m[1][1] = scratch->normal.vy;
+            scratch->local.m[1][2] = scratch->normal.vz;
+            scratch->local.m[2][0] = scratch->side.vx;
+            scratch->local.m[2][1] = scratch->side.vy;
+            scratch->local.m[2][2] = scratch->side.vz;
+            switch (spot->id) {
+            case 0:
+                break;
+            case 1:
+                scratch->scale.vx = scratch->scale.vy = scratch->scale.vz = 0x1800;
+                ScaleMatrix(&scratch->local, &scratch->scale);
+                break;
+            case 2:
+                scratch->heading = D_8009A180;
+                func_8004AFEC(D_8006EE66, &scratch->heading);
+                func_80049ACC(&scratch->local, &scratch->heading);
+                scratch->scale.vx = 0x1800;
+                scratch->scale.vy = 0x1000;
+                scratch->scale.vz = 0x4800;
+                ScaleMatrix(&scratch->local, &scratch->scale);
+                break;
+            }
+            scratch->local.t[0] = (scratch->position.vx - camera_x) >> 12;
+            scratch->local.t[2] = (camera_z - scratch->position.vz) >> 12;
+            scratch->local.t[1] = scratch->position.vy >> 12;
+            gte_CompMatrix(&scratch->view, &scratch->local, &scratch->screen);
+            gte_SetRotMatrix(&scratch->screen);
+            gte_SetTransMatrix(&scratch->screen);
+            gte_ldv3(&scratch->corner[0], &scratch->corner[1], &scratch->corner[2]);
+            gte_rtpt();
+            gte_stflg(&flag);
+            if (flag >= 0) {
+                gte_stsxy3(&quad->x0, &quad->x1, &quad->x2);
+                gte_stsz3(&scratch->scale.vx, &scratch->scale.vy, &scratch->scale.vz);
+                z = scratch->scale.vx;
+                if (scratch->scale.vy < z) {
+                    z = scratch->scale.vy;
+                }
+                if (scratch->scale.vz < z) {
+                    z = scratch->scale.vz;
+                }
+                gte_ldv0(&scratch->corner3);
+                gte_rtps();
+                gte_stsxy(&quad->x3);
+                gte_stsz(&scratch->scale.vx);
+                if (scratch->scale.vx < z) {
+                    z = scratch->scale.vx;
+                }
+                if (z < 0x1000) {
+                    addPrim(D_8009BE3C->ot + (z >> 4), quad);
+                    quad++;
+                }
+            }
+            spot++;
+        }
+        D_8009BE38 = 0;
+    }
+}
 
 /* Create the terrain texture animations from their area section. */
 void func_80074E58(void) {
@@ -1253,7 +1251,7 @@ void func_80075D4C(void) {
 /* Roll an encounter for the terrain at a position and a party level: pick a
  * formation by the bracket's weights and copy the terrain's encounter set.
  * Returns 0 when the bracket has no formations. */
-#ifdef NON_MATCHING /* formation search: original keeps a second copy of the weight pointer */
+#ifdef NON_MATCHING /* formation search: the original tests the weight through a copy of the pointer */
 s32 func_80075E7C(VECTOR *position, s32 level) {
     u8 weights[16];
     s32 kind;
@@ -1289,9 +1287,11 @@ s32 func_80075E7C(VECTOR *position, s32 level) {
         weight = weights;
         do {
             roll--;
-            while (*weight == 0) {
+        next:
+            if (*weight == 0) {
                 weight++;
                 formation++;
+                goto next;
             }
             (*weight)--;
         } while (roll > 0);
@@ -1717,7 +1717,7 @@ void func_80076FA8(WorldmapActor *actor, VECTOR *work) {
 }
 
 /* Step `value` towards `target` by `delta`, stopping on it. */
-#ifdef NON_MATCHING /* first branch delay slot filled with the delta copy */
+#ifdef NON_MATCHING /* one instruction: the step magnitude is negated from delta, not from its copy */
 s32 func_800771D8(s32 value, s32 target, s32 delta) {
     s32 distance;
     s32 size;
@@ -1727,10 +1727,14 @@ s32 func_800771D8(s32 value, s32 target, s32 delta) {
         if (distance < 0) {
             distance = -distance;
         }
-        size = ABS(delta);
-        value += delta;
+        size = delta;
+        if (size < 0) {
+            size = -size;
+        }
         if (distance < size) {
             value = target;
+        } else {
+            value += delta;
         }
     }
     return value;

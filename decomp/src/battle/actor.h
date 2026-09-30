@@ -16,7 +16,7 @@
 void func_8001CE74(ActorTask *task);
 void func_8001D3F4(BattleSprite *sprite);
 void func_8001E298(BattleSprite *sprite, u32 *ot);
-void func_80021B14(Vector *out, s32 x, s32 y, s32 z);
+void func_80021B14(VECTOR *out, s32 x, s32 y, s32 z);
 void func_80022B2C(BattleSprite *sprite);
 void func_80022CDC(BattleSprite *sprite);
 void func_80023804(BattleSprite *sprite);
@@ -29,7 +29,7 @@ extern s32 D_800591A8;
 
 extern u8 D_800C3664;  /* sprite updates paused */
 extern s32 D_800C367C;
-extern SVector D_800C3740;       /* the camera's framing angles */
+extern SVECTOR D_800C3740;       /* the camera's framing angles */
 
 /* Where the gear objects' images go (three places). */
 typedef struct {
@@ -51,32 +51,32 @@ extern s32 D_800C3CBC;
 extern s32 D_800C3CC0;           /* camera mode */
 extern ActorTask *D_800C3680;    /* the eye sprite's task */
 extern ActorTask *D_800C3684;    /* the look-at sprite's task */
-extern Vector D_8006F99C;        /* resident: the eye sprite's position (16.16) */
-extern Vector D_8006F9AC;        /* resident: the look-at sprite's position (16.16) */
-extern SVector D_800D30A0[2];    /* the camera's wanted eye and look-at points */
-extern SVector D_800C3CCC;       /* the eye point saved while the camera sprites run */
-extern SVector D_800C3CD4;       /* the look-at point saved while they run */
+extern VECTOR D_8006F99C;        /* resident: the eye sprite's position (16.16) */
+extern VECTOR D_8006F9AC;        /* resident: the look-at sprite's position (16.16) */
+extern SVECTOR D_800D30A0[2];    /* the camera's wanted eye and look-at points */
+extern SVECTOR D_800C3CCC;       /* the eye point saved while the camera sprites run */
+extern SVECTOR D_800C3CD4;       /* the look-at point saved while they run */
 extern u16 D_80059454;
 extern s32 D_800C3CDC;            /* the framed camera range */
 
-extern Matrix D_800D30BC; /* the battle view matrix */
+extern MATRIX D_800D30BC; /* the battle view matrix */
 
 /* The battle camera (800d309c); its view matrix is also named D_800D30BC and
  * its eye and look-at points D_800D30A0. */
 typedef struct {
     s32 field0;
-    SVector eye;    /* +04 */
-    SVector target; /* +0C */
-    SVector rot;    /* +14 */
+    SVECTOR eye;    /* +04 */
+    SVECTOR target; /* +0C */
+    SVECTOR rot;    /* +14 */
     s32 range;      /* +1C */
-    Matrix matrix;  /* +20 */
+    MATRIX matrix;  /* +20 */
     s32 drawn;      /* +40: vertical blank after drawing */
     s32 synced;     /* +44: after the GPU finished */
     s32 start;      /* +48: at the frame's start */
 } BattleCamera;
 extern BattleCamera D_800D309C;
 extern u8 D_800C372C;      /* stage drawing off */
-extern SVector D_800C3730; /* the camera's up vector */
+extern SVECTOR D_800C3730; /* the camera's up vector */
 extern u8 D_800C3688;      /* frame the sprites without their gear heights */
 extern BattleSprite *D_800D39EC; /* the sprite the camera circles */
 extern s32 D_800C3738;           /* its distance from it */
@@ -100,7 +100,7 @@ void func_800BC460(u32 mask);
 void func_800B136C(void);
 void func_800B14CC(s32 keep);
 void func_800A9540(s32 slot);
-void func_800A4654(Matrix *view, Matrix *light, s32 arg2, u32 *ot, s32 buffer, SVector *eye, SVector *target,
+void func_800A4654(MATRIX *view, MATRIX *light, s32 arg2, u32 *ot, s32 buffer, SVECTOR *eye, SVECTOR *target,
                    s32 depth);
 
 #endif

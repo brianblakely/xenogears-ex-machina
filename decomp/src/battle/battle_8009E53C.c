@@ -327,7 +327,7 @@ ModelPart *func_8009EC4C(ModelList *list, u16 *hierarchy, s32 mode, s32 offset, 
  * under a marked parent) its translation and world matrix. Clears the marks
  * and returns the part count. */
 u16 func_8009EF3C(ModelPart *part, s32 scale) {
-    Matrix *diagonal = (Matrix *)0x1F800000;
+    MATRIX *diagonal = (MATRIX *)0x1F800000;
     ModelPart *root = part;
     u32 count = root->index;
     u32 i;
@@ -389,8 +389,8 @@ u16 func_8009EF3C(ModelPart *part, s32 scale) {
  * parent's, and a part changes or is marked with its parent. Clears the marks
  * and returns the part count. */
 u16 func_8009F1C4(ModelPart *part, s32 scale) {
-    Matrix *diagonal = (Matrix *)0x1F800000;
-    Matrix *scratch;
+    MATRIX *diagonal = (MATRIX *)0x1F800000;
+    MATRIX *scratch;
     ModelPart *root;
     s32 product;
     u32 count;
@@ -436,7 +436,7 @@ u16 func_8009F1C4(ModelPart *part, s32 scale) {
             }
         }
         if (part->flag5) {
-            scratch = (Matrix *)0x1F800000;
+            scratch = (MATRIX *)0x1F800000;
             if (part->flag6) {
                 func_8004A92C(&part->rotation, &part->transform);
             } else {
@@ -490,11 +490,11 @@ void func_8009F5B0(void) {
 /* Draw a posed hierarchy's parts into packet buffer `buffer`: each part's light
  * matrix from `light` and its world matrix, and its rotation and translation
  * composed with `view` and the root's transform, then its model (8002C700). */
-void func_8009F5B8(ModelList *list, ModelPart *part, Matrix *view, Matrix *light, s32 arg4, s32 arg5,
+void func_8009F5B8(ModelList *list, ModelPart *part, MATRIX *view, MATRIX *light, s32 arg4, s32 arg5,
                    s32 buffer) {
-    Matrix *scratch = (Matrix *)0x1F800000;
-    Matrix *lighting = (Matrix *)0x1F800020;
-    Matrix *camera = (Matrix *)0x1F800040;
+    MATRIX *scratch = (MATRIX *)0x1F800000;
+    MATRIX *lighting = (MATRIX *)0x1F800020;
+    MATRIX *camera = (MATRIX *)0x1F800040;
     u32 count;
     u32 i;
 
@@ -568,8 +568,8 @@ s32 func_800A0838(EffectPool *pool, ModelPart *parts, u16 tag, s16 scale) {
     Tween *slot;
     Tween *last;
     u8 *track;
-    SVector move;
-    Vector moved;
+    SVECTOR move;
+    VECTOR moved;
     u32 count;
     u32 i;
     s32 result = 0;
@@ -1632,7 +1632,7 @@ s32 func_800A2F94(SpritePool *pool, SpriteRecord *record) {
 /* Draw the live sprites of a pool into the ordering table (3D ones projected
  * with the GTE at their depth, 2D ones at the front), free the expired ones
  * and fade the rest by steps ticks. */
-void func_800A2FD8(SpritePool *pool, Matrix *m, s32 steps, u32 *ot, s32 buffer) {
+void func_800A2FD8(SpritePool *pool, MATRIX *m, s32 steps, u32 *ot, s32 buffer) {
     Sprite *sprite;
     s32 otz;
     s32 i;
@@ -2080,10 +2080,10 @@ void func_800A43F8(ImageAnim *anim, s16 level) {
 /* Update the active trackers' positions: an offset from a part of a stage
  * object's hierarchy when the object exists, else the offset itself. */
 void func_800A44C0(BattleObject **objects) {
-    Matrix *m = (Matrix *)0x1F800000;
+    MATRIX *m = (MATRIX *)0x1F800000;
     s32 i;
     ModelPart *root;
-    Vector position;
+    VECTOR position;
 
     for (i = 0; i < 2; i++) {
         if (D_800D3304[i].active != 0) {
@@ -2111,7 +2111,7 @@ void func_800A44C0(BattleObject **objects) {
  * stage update (800A6AE8) on the scratchpad stack, step both resident
  * records, draw the stage hierarchy (800A48EC), both resident handles and
  * the sky (800A4DB8) seen from eye towards target into ot[depth - 1]. */
-void func_800A4654(Matrix *view, Matrix *light, s32 arg2, u32 *ot, s32 buffer, SVector *eye, SVector *target,
+void func_800A4654(MATRIX *view, MATRIX *light, s32 arg2, u32 *ot, s32 buffer, SVECTOR *eye, SVECTOR *target,
                    s32 depth) {
     ImageAnim *anim;
     s32 i;
@@ -2170,16 +2170,16 @@ void func_800A4820(void) {
  * (field52 1: upright, 2: facing the view) drop the parts' rotation, and
  * field52 selects the model drawing mode (4-7: 2-5); plain parts (field52 0)
  * draw at ordering-table depth 16 into ot[depth - 1]. */
-void func_800A48EC(ModelList *models, ModelPart *root, Matrix *view, s32 arg3, s32 arg4, u32 *ot, s32 buffer,
+void func_800A48EC(ModelList *models, ModelPart *root, MATRIX *view, s32 arg3, s32 arg4, u32 *ot, s32 buffer,
                    s32 depth) {
-    Matrix *m;
+    MATRIX *m;
     ModelPart *part;
     s32 shift;
     u32 count;
     s32 i;
     s32 mode;
 
-    m = (Matrix *)0x1F800040;
+    m = (MATRIX *)0x1F800040;
     part = root;
     shift = D_80050100;
     count = part++->index - 1;
@@ -2240,7 +2240,7 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A48
 /* Push point (relative to origin, in the ground plane) out of the first
  * listed circle (x, z, radius) it lies inside, onto its rim; whether it was
  * pushed. */
-s32 func_800A4B3C(SVector *origin, SVector *point) {
+s32 func_800A4B3C(SVECTOR *origin, SVECTOR *point) {
     u16 *circle = D_800D2FD0;
     s32 i;
     s32 pushed = 0;
@@ -2292,18 +2292,18 @@ void func_800A4CF8(s32 index) {
  * each front-facing tile textured from the scroll position. Differs in the
  * tile loop's register allocation (the original keeps three copies of the
  * half tile size and reloads the tag masks per row). */
-void func_800A4DB8(StageGeometry *sky, SVector *eye, SVector *target, Matrix *view, u32 *ot,
+void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *view, u32 *ot,
                    s32 buffer) {
-    SVector unused; /* declared, never used (its slot stays in the frame) */
-    Matrix camera;
-    Matrix turn;
-    SVector angles;
-    Vector delta;
-    SVector top;
-    SVector bottom;
-    Vector direction;
-    SVector point;
-    SVector normal;
+    SVECTOR unused; /* declared, never used (its slot stays in the frame) */
+    MATRIX camera;
+    MATRIX turn;
+    SVECTOR angles;
+    VECTOR delta;
+    SVECTOR top;
+    SVECTOR bottom;
+    VECTOR direction;
+    SVECTOR point;
+    SVECTOR normal;
     s32 clip;
     s32 angle;
     s32 tilt;
@@ -2317,7 +2317,7 @@ void func_800A4DB8(StageGeometry *sky, SVector *eye, SVector *target, Matrix *vi
     s32 row;
     s32 col;
     s32 n;
-    SVector *vertex;
+    SVECTOR *vertex;
 
     if (sky == NULL) {
         return;
@@ -2452,7 +2452,7 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A4D
 #endif
 
 /* The scene's points. */
-SVector *func_800A577C(void) {
+SVECTOR *func_800A577C(void) {
     return D_800D3344;
 }
 
@@ -2463,7 +2463,7 @@ SceneTriangle *func_800A578C(void) {
 
 /* The first scene triangle containing point (800A5A48 gives -1), -1 for
  * none. */
-s32 func_800A579C(SVector *point) {
+s32 func_800A579C(SVECTOR *point) {
     s32 i;
 
     if (D_800D3344 != NULL && D_800D39CC != NULL) {
@@ -2480,7 +2480,7 @@ s32 func_800A579C(SVector *point) {
 
 /* Relate point to scene triangle index (800A5BE8, into out); the triangle's
  * id, or -1 without scene geometry. */
-s32 func_800A5870(SVector *point, s32 index, void *out) {
+s32 func_800A5870(SVECTOR *point, s32 index, void *out) {
     SceneTriangle *triangle;
 
     if (D_800D3344 == NULL || D_800D39CC == NULL || index < 0) {
@@ -2495,7 +2495,7 @@ s32 func_800A5870(SVector *point, s32 index, void *out) {
 /* The scene triangle containing point, searched from triangle through its
  * neighbours (800A5D54, depth levels, up to depth tries); -1 for none. Each
  * search uses a new visit stamp; when the stamp wraps the marks are cleared. */
-s32 func_800A5914(SVector *point, s32 triangle, s32 depth) {
+s32 func_800A5914(SVECTOR *point, s32 triangle, s32 depth) {
     s32 found;
     s32 i;
 
@@ -2527,10 +2527,10 @@ s32 func_800A5914(SVector *point, s32 triangle, s32 depth) {
 /* Whether point lies within triangle (a, b, c) in the ground plane: -1 when
  * it is on the inner side of all three edges (cross products, 8004A4D8),
  * otherwise 0. */
-s32 func_800A5A48(SVector *a, SVector *b, SVector *c, SVector *point) {
-    Vector edge;
-    Vector toPoint;
-    Vector cross;
+s32 func_800A5A48(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *point) {
+    VECTOR edge;
+    VECTOR toPoint;
+    VECTOR cross;
 
     edge.vx = b->vx - a->vx;
     edge.vy = 0;
@@ -2564,10 +2564,10 @@ s32 func_800A5A48(SVector *a, SVector *b, SVector *c, SVector *point) {
 
 /* The ground height of point on the plane through triangle (a, b, c): the
  * plane's unit normal goes to normal; a vertical plane leaves height 0. */
-void func_800A5BE8(SVector *a, SVector *b, SVector *c, SVector *point, Vector *normal) {
-    Vector edgeB;
-    Vector edgeC;
-    Vector edge;
+void func_800A5BE8(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *point, VECTOR *normal) {
+    VECTOR edgeB;
+    VECTOR edgeC;
+    VECTOR edge;
 
     edge.vx = b->vx - a->vx;
     edge.vy = b->vy - a->vy;
@@ -2588,7 +2588,7 @@ void func_800A5BE8(SVector *a, SVector *b, SVector *c, SVector *point, Vector *n
 /* Search triangle and, up to depth levels, its neighbours for the one
  * containing point (800A5A48 gives -1), testing each triangle once per visit
  * stamp; -1 for none. */
-s32 func_800A5D54(SVector *point, s32 triangle, s32 depth) {
+s32 func_800A5D54(SVECTOR *point, s32 triangle, s32 depth) {
     s32 found;
 
     if (triangle < 0) {
@@ -2630,7 +2630,7 @@ void func_800A5E9C(s32 first, s32 second) {
  * the stage object's active image animations, and save the stage's colours
  * twice (as loaded and a working copy). */
 void func_800A5EB4(void) {
-    CVector *color;
+    CVECTOR *color;
     ImageAnim *anim;
     s32 i;
 
@@ -2648,7 +2648,7 @@ void func_800A5EB4(void) {
     D_800D3600.work = NULL;
     D_800C3AC4 = func_80031BDC(sizeof(StageColors), 1);
     D_800C3AC8 = func_80031BDC(sizeof(StageColors), 1);
-    color = (CVector *)D_800C3AC4;
+    color = (CVECTOR *)D_800C3AC4;
     for (i = 0; i < 4; i++) {
         if (D_800C3EA0 != NULL) {
             color->r = ((StageGeometry *)D_800C3EA0)->quads[i].r0;
@@ -2732,10 +2732,10 @@ void func_800A6444(s32 index, s32 r, s32 g, s32 b, s32 field4, s32 field5) {
 
 /* Restore the stage's colours as loaded (saved by 800A5EB4). */
 void func_800A64E4(void) {
-    CVector *color;
+    CVECTOR *color;
     s32 i;
 
-    color = (CVector *)D_800C3AC4;
+    color = (CVECTOR *)D_800C3AC4;
     for (i = 0; i < 4; i++) {
         if (D_800C3EA0 != NULL) {
             ((StageGeometry *)D_800C3EA0)->quads[i].r0 = color->r;
@@ -2879,7 +2879,7 @@ void func_800A6884(u8 *out, s32 index, u8 *color) {
  * mode 4 through 80026F44) and to every stage colour (800A6884), and load
  * the image into VRAM. */
 void func_800A6AE8(void) {
-    CVector *color;
+    CVECTOR *color;
     s32 i;
     s32 j;
 
@@ -2903,7 +2903,7 @@ void func_800A6AE8(void) {
                                   D_800D3600.pixels);
                     break;
                 }
-                color = (CVector *)D_800C3AC8;
+                color = (CVECTOR *)D_800C3AC8;
                 for (j = 0; j < 4; j++) {
                     if (D_800C3EA0 != NULL) {
                         func_800A6884(&((StageGeometry *)D_800C3EA0)->quads[j].r0, i, (u8 *)color++);
@@ -2972,8 +2972,8 @@ void func_800A6F98(void) {
 void func_800A7064(Surface *surface, u16 *table, s16 angle_base, s32 scale, s16 ox, s16 oy, s16 oz,
                    s16 count, s16 tx, s16 ty, s16 u_span, s16 v_span, s16 clut_x, s16 clut_y, u8 b0,
                    u8 b1, u8 b2, u8 b3, u8 b4, u8 b5) {
-    SVector *centres;
-    SVector *centre;
+    SVECTOR *centres;
+    SVECTOR *centre;
     SurfacePoint **rings;
     SurfacePoint *points;
     SurfacePoint *point;
@@ -2994,7 +2994,7 @@ void func_800A7064(Surface *surface, u16 *table, s16 angle_base, s32 scale, s16 
     surface->polys = *table * 2;
     func_80032498(4, 0);
     table++;
-    centres = func_80031BDC(surface->rings * sizeof(SVector), 0);
+    centres = func_80031BDC(surface->rings * sizeof(SVECTOR), 0);
     if (centres == NULL) {
         surface->centres = NULL;
         return;
@@ -3140,11 +3140,11 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A70
  * triangles, and the visible triangles are lit (front and back colours) and
  * queued. As in the original, a triangle the GTE flags as off screen does
  * not advance the triangle pointer. */
-void func_800A7948(Surface *surface, SVector *wind, Matrix *m, u32 *ot, s32 buffer, s32 scale,
+void func_800A7948(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buffer, s32 scale,
                    s32 floor) {
-    Vector d;
-    Vector e1, e2, n;
-    SVector normal;
+    VECTOR d;
+    VECTOR e1, e2, n;
+    SVECTOR normal;
     u8 rgb[4];
     s32 flag, opz, otz;
     SurfacePoint *p, *q;
@@ -3376,7 +3376,7 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A8B
  * group), its root at position when given. Nonmatching: the register
  * allocator keeps header in $fp and spills flags, the original the reverse. */
 void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *scriptFile, ObjectModelFile *modelFile, s16 x, s16 y,
-                   s16 z, s16 w, SVector *position) {
+                   s16 z, s16 w, SVECTOR *position) {
     BattleObject *object;
     ObjectScripts *scripts;
     struct ObjectData *data;
@@ -3697,7 +3697,7 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A97
  * and the objects it overlaps apart (800B10EC), animate the objects, run the
  * effects, attach the child objects and draw the objects (the highlighted
  * slots in the pulse colour) and the sprites. */
-void func_800A9A50(Matrix *m, s32 arg1, u32 *ot, s32 buffer) {
+void func_800A9A50(MATRIX *m, s32 arg1, u32 *ot, s32 buffer) {
     u8 pulse[3];
     s32 steps;
     s32 i;
@@ -4127,8 +4127,8 @@ s32 func_800AAA20(BattleObject *object, EffectPool *pool, s32 steps, s32 arg3, s
  * 0x10, turn it with the parent (or a part of the parent) when field5D is set,
  * and place its hierarchy's root at its offset from there. */
 void func_800AAB34(BattleObject *object) {
-    Matrix *m = (Matrix *)0x1F800000;
-    SVector offset;
+    MATRIX *m = (MATRIX *)0x1F800000;
+    SVECTOR offset;
 
     if (D_800D3368[object->field5C] != NULL) {
         if (!(object->flags4A & 0x10)) {
@@ -4304,10 +4304,10 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
     SoundEvent *sound;
     SlotEvent *slots;
     BattleObject *target;
-    Matrix *m;
-    SVector point;
-    Vector out;
-    Vector ground;
+    MATRIX *m;
+    SVECTOR point;
+    VECTOR out;
+    VECTOR ground;
     s16 kind;
     u16 offset;
     s16 slot;
@@ -4344,7 +4344,7 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                 switch (event->header.type) {
                 case 1:
                     slot = 0;
-                    m = (Matrix *)0x1F800000;
+                    m = (MATRIX *)0x1F800000;
                     sprite = &event->sprite;
                     if (sprite->flags & 0x80) {
                         offset = D_800CCCE8.records[object->slot].gear.spriteVariants[sprite->kind] - 1;
@@ -4613,8 +4613,8 @@ s32 func_800AEEF8(BattleObject *object) {
 void func_800AEF68(BattleObject *object) {
     s32 slot = 0;
     BattleObject *target;
-    Matrix *m;
-    Vector position;
+    MATRIX *m;
+    VECTOR position;
     EffectEntry *entry;
 
     if (object->field58 == 0xFF) {
@@ -4641,7 +4641,7 @@ void func_800AEF68(BattleObject *object) {
     }
     target = D_800D3368[slot];
     if (target != NULL && slot != object->slot) {
-        m = (Matrix *)0x1F800000;
+        m = (MATRIX *)0x1F800000;
         if (object->targetPart != 0) {
             CompMatrix(&target->hierarchy->transform, &target->hierarchy[object->targetPart].world, m);
         } else {
@@ -4715,8 +4715,8 @@ void func_800AF270(ModelPart *from, ModelPart *to) {
 
 /* The dot product of direction with the unit normal (the cross product) of
  * a and b, in 4.12 through 16 << 8 / its length, divided by scale. */
-s16 func_800AF2C4(Vector *direction, Vector *a, Vector *b, s32 scale) {
-    Vector normal;
+s16 func_800AF2C4(VECTOR *direction, VECTOR *a, VECTOR *b, s32 scale) {
+    VECTOR normal;
     s32 dot;
     s32 length;
 
@@ -4935,7 +4935,7 @@ void func_800AFA98(BattleObject *object, ModelPart *part, s32 flags) {
 
 /* Create a sprite of kind from resource at position with a direction and a
  * scale; when the command says so, it follows a part of object (800AFC68). */
-void func_800AFB4C(void *resource, s32 kind, SVector *position, s16 direction, s16 scale, SpriteCommand *command,
+void func_800AFB4C(void *resource, s32 kind, SVECTOR *position, s16 direction, s16 scale, SpriteCommand *command,
                    BattleObject *object) {
     EffectSprite *sprite;
     SpriteFollow *follow;
@@ -4961,8 +4961,8 @@ void func_800AFB4C(void *resource, s32 kind, SVector *position, s16 direction, s
  * part (on the object's ground height when asked), then run its own update. */
 void func_800AFC68(EffectSprite *sprite) {
     SpriteFollow *follow = (SpriteFollow *)((u8 *)sprite + sprite->link);
-    Matrix *m = (Matrix *)0x1F800000;
-    Vector out;
+    MATRIX *m = (MATRIX *)0x1F800000;
+    VECTOR out;
 
     if (follow->part != 0) {
         CompMatrix(&follow->object->hierarchy->transform, &follow->object->hierarchy[follow->part].world, m);
@@ -5037,7 +5037,7 @@ void func_800AFD98(BattleObject *object, ModelPart *part, u8 mode, s16 x, s16 y,
  * field36 is set). */
 void func_800AFF9C(BattleObject *object) {
     u8 out[16];
-    SVector point;
+    SVECTOR point;
 
     point.vx = object->hierarchy->translation[0];
     point.vy = object->hierarchy->translation[1];
@@ -5148,7 +5148,7 @@ void func_800B026C(EffectPool *pool, s32 steps, s32 arg2, s32 key) {
     ModelPart *root;
     s32 vertical;
     s32 horizontal;
-    SVector point;
+    SVECTOR point;
     s16 ground;
 
     D_800C3B88 = 0;
@@ -5315,8 +5315,8 @@ s16 func_800B0AB4(s16 *point) {
  * point, the height difference quartered) for view key; the previous height
  * when the point is off the stage or the key is unchanged. */
 s16 func_800B0B14(s32 key) {
-    Vector out;
-    SVector point;
+    VECTOR out;
+    SVECTOR point;
     s16 dx;
     s32 dy;
     s16 dz;
@@ -5360,7 +5360,7 @@ s16 func_800B0B14(s32 key) {
  * plus 0x80, centred at its position less a sixth of motion) point is inside
  * and above the foot of, the largest such; point is pushed out to its
  * edge. */
-s32 func_800B0D70(SVector *motion, SVector *point) {
+s32 func_800B0D70(SVECTOR *motion, SVECTOR *point) {
     s16 best = -1;
     s32 i;
     s16 radius;
@@ -5403,8 +5403,8 @@ s32 func_800B0D70(SVector *motion, SVector *point) {
 
 /* Push point out of the objects' footprints (800B0D70) moving from from
  * (the motion is the direction from from, 512 long); the object hit. */
-s32 func_800B0FF4(SVector *from, SVector *point) {
-    SVector motion;
+s32 func_800B0FF4(SVECTOR *from, SVECTOR *point) {
+    SVECTOR motion;
     s32 length;
 
     motion.vx = from->vx - point->vx;

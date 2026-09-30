@@ -22,9 +22,9 @@ typedef struct BattleTask {
  * another, applied with alternating signs to the view offset D_800C354C. */
 typedef struct {
     BattleTask task;
-    SVector amplitude; /* 0x1C */
-    SVector from;      /* 0x24 */
-    SVector to;        /* 0x2C */
+    SVECTOR amplitude; /* 0x1C */
+    SVECTOR from;      /* 0x24 */
+    SVECTOR to;        /* 0x2C */
     s32 tick;          /* 0x34 */
     s32 left;          /* 0x38 */
     s32 total;         /* 0x3C */
@@ -79,13 +79,13 @@ typedef struct {
 /* A shard of the shattered screen (0x7C bytes): turning and falling, drawn
  * as a textured triangle per buffer. */
 typedef struct {
-    SVector angles;    /* 0x00 */
-    SVector spin;      /* 0x08: added to the angles each frame */
-    Vector position;   /* 0x10 */
+    SVECTOR angles;    /* 0x00 */
+    SVECTOR spin;      /* 0x08: added to the angles each frame */
+    VECTOR position;   /* 0x10 */
     u8 pad20[4];
     POLY_FT3 poly[2];  /* 0x24: one per drawing buffer */
     s32 delay;         /* 0x64: frames before it moves */
-    Vector velocity;   /* 0x68: 16.16, easing out, with gravity */
+    VECTOR velocity;   /* 0x68: 16.16, easing out, with gravity */
     s32 fall;          /* 0x78: added to velocity.vy each frame */
 } ScreenShard;
 
@@ -102,7 +102,7 @@ extern DrawPrim8 D_800C3BF8; /* a draw mode primitive */
 extern RECT D_800C3C9C;
 
 extern Quake *D_800C3548;
-extern SVector D_800C354C; /* the quake's view offset */
+extern SVECTOR D_800C354C; /* the quake's view offset */
 extern ScreenFade *D_800C3554;
 extern ScreenFade *D_800C3558;
 extern u8 D_800C355C; /* fade on the second screen fade */
@@ -143,8 +143,8 @@ void func_800B3C74(BattleTask *draw);
 void func_800B3C2C(LightFade *fade);
 
 extern u32 *D_800C3CB4; /* the ordering table the shatter draws into */
-extern SVector D_800C3594[3]; /* the shards' triangles, per layer */
-extern SVector D_800C35AC[3];
+extern SVECTOR D_800C3594[3]; /* the shards' triangles, per layer */
+extern SVECTOR D_800C35AC[3];
 u8 func_80021AD8(u8 value, s32 delta); /* add, clamped to 0-255 */
 void func_800B6F0C(BattleTask *task);
 void func_800B7134(BattleTask *draw);

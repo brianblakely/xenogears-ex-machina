@@ -108,9 +108,13 @@ typedef struct MenuCardHeader {
 } MenuCardHeader;
 
 /* The second half of a listed file's header block (+100). */
+typedef struct MenuSaveName {
+    u8 text[0x14]; /* two-byte text */
+} MenuSaveName;
+
 typedef struct MenuSaveInfo {
     u8 pad0[0x24];
-    u8 names[4][0x14]; /* 24: names of the sheet entries (two-byte text) */
+    MenuSaveName names[4]; /* 24: names of the sheet entries */
 } MenuSaveInfo;
 
 /* Memory-card state (*(state + 32c)). */
@@ -346,9 +350,21 @@ typedef struct MenuAccessory {
 /* A gear accessory record of the data tables (+14). */
 typedef struct MenuGearAccessory {
     u32 users; /* 0 */
-    u8 pad4[0x4];
+    u8 pad4[0x2];
+    u16 unk6; /* 6: added to the gear's +44 */
     u16 groups; /* 8 */
-    u8 padA[0x12];
+    u8 padA[0x3];
+    u8 unkD; /* D: added to the gear's +40 */
+    u8 unkE; /* E: added to the gear's +42 */
+    u8 padF[0x1];
+    u8 unk10[4]; /* 10: added to the gear's +50 */
+    u8 unk14; /* 14: added to the gear's +4d */
+    u8 kind; /* 15: effect kind (801e433c) */
+    u16 value; /* 16: effect bits or amount */
+    u8 unk18; /* 18: added to the gear's +4c */
+    u8 pad19[0x1];
+    u8 unk1A; /* 1A: added to the gear's +88 entries of kind 4 bits */
+    u8 unk1B; /* 1B: added to the gear's +54 */
 } MenuGearAccessory;
 
 /* The data table directory (*(state + 330)). */
@@ -401,28 +417,36 @@ typedef struct GearRecord {
     u16 unk40; /* 40 */
     u16 unk42; /* 42 */
     u16 unk44; /* 44 */
-    u8 pad46[0x4];
-    u8 unk4A; /* 4A */
-    u8 pad4B[0x2];
+    u8 pad46[0x2];
+    u16 unk48; /* 48: part kind 9 bits */
+    u8 unk4A; /* 4A: level (801e4928) */
+    u8 pad4B[0x1];
+    u8 unk4C; /* 4C */
     u8 unk4D; /* 4D */
-    u8 pad4E[0x6];
+    u8 unk4E; /* 4E */
+    u8 unk4F; /* 4F: part kind 5 amount; nonzero sets the pilot's flag 8000 */
+    u8 unk50[4]; /* 50 */
     u8 unk54; /* 54 */
-    u8 pad55[0x1];
-    u8 unk56; /* 56 */
-    u8 pad57[0x5];
+    u8 unk55[3]; /* 55: part kinds 9/10 and 11 amounts at [1], [2] */
+    u8 pad58[0x4];
     u8 attrs[4]; /* 5C */
     u32 unk60; /* 60 */
     u32 unk64; /* 64 */
     u16 unk68; /* 68 */
     u16 unk6A; /* 6A */
-    u8 pad6C[0x4];
+    u8 pad6C[0x2];
+    u16 unk6E; /* 6E: part kind 4 bits */
     u16 unk70; /* 70 */
     u16 unk72; /* 72 */
     u8 unk74; /* 74 */
     u8 unk75; /* 75 */
-    u8 pad76[0x10];
-    u16 unk86; /* 86 */
-    u8 pad88[0x10];
+    u8 pad76[0x8];
+    u16 unk7E; /* 7E: part kind 1 bits */
+    u8 pad80[0x2];
+    u16 unk82; /* 82: part kind 2 bits */
+    u8 pad84[0x2];
+    u16 unk86; /* 86: part kind 3 bits (low 12), weapon value */
+    u8 unk88[16]; /* 88: per kind 4 bit, part amounts */
     u8 unk98; /* 98 */
     u8 unk99; /* 99 */
     u8 pad9A[0x2];
@@ -1133,6 +1157,7 @@ extern s32 D_801E9D78;    /* stat bar x offset */
 extern s32 D_801E9D7C;    /* stat bar y offset */
 extern s32 D_801E9D80;    /* stat digit x offset */
 extern s32 D_801E9D84;    /* stat digit y offset */
+extern s32 D_801E9DBC[8]; /* equipment screen: part cursor y by special * 4 + part */
 extern s32 D_801E9D88[];
 extern s32 D_801E9DDC[];  /* arts list cost x positions */
 extern s32 D_801E9E14[];  /* arts list cost y positions */
@@ -1308,9 +1333,12 @@ s32 func_80040494(s32 event);            /* TestEvent */
 u16 *func_800405C4(s32 code);   /* 16x16 font glyph of a two-byte code, -1 none */
 s32 func_80040544(s32 fd, void *buf, s32 size); /* read */
 void func_80040564(s32 fd);               /* close */
+s32 func_80040574(char *device);          /* format */
+s32 func_800405A4(char *from, char *to);  /* rename */
 u32 func_801E1418(u8 slot, u8 row);
 void func_801E3A80(MenuTables *tables, u8 id);
 void func_801E433C(MenuTables *tables, u8 gear);
+u8 func_801E4928(u8 gear);
 void func_801E8B4C(u8 offset);
 void func_801E86C8(u8 offset);
 void func_801E5058(void);
@@ -1582,7 +1610,10 @@ void func_801DE36C(void);
 void func_801DE400(void);
 void func_801DDF24(u8 slot, u8 zoom, u8 kind);
 u8 func_801DE29C(u8 slot, u8 arg1);
-void func_801E05D0(u8 slot, u8 arg1, s32 arg2);
+s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear);
+s32 func_801DF0D4(u8 slot, u8 part, u8 special, u8 gear);
+void func_801DFF5C(s32 part, s32 row, s32 top, u8 special, u8 gear, u8 current, u8 slot);
+void func_801E05D0(u8 slot, u8 fade, u8 gear);
 u8 func_801E0F78(u8 slot, u8 arg1);
 void func_801E2368(void);
 u8 func_801E23CC(void);
@@ -1629,13 +1660,13 @@ s32 func_801E93A0(s32 disc);
 void func_801E6668(s32 index);
 void func_801E76EC(s32 index);
 void func_801E8978(u8 count, u8 cursor, MenuCommandImages *images);
-s32 func_801D9704(s32 slot, u8 dir, u8 readyOnly);
 u16 func_801C8640(u16 flags, u8 bit);
 void func_801D1EE0(s32 index, u8 outline);
 void func_801D261C(void);
 void func_801D2EC0(u8 slot, u8 mode);
 void func_801D3344(s32 x, s32 y, s32 h);
 void func_801D36E0(MenuLabelSlot *label, u8 slot, u8 gear, u8 mode);
+s32 func_801D9704(s32 slot, u8 dir, u8 readyOnly);
 void func_801DA4A8(void);
 void func_801DB02C(u8 index);
 void func_801DB0A8(s32 entry, s32 row, u8 kind, u8 index);
@@ -1643,5 +1674,6 @@ void func_801DB340(u8 index);
 void func_801DBD4C(s32 a, s32 b);
 void func_801DBDB4(void);
 void func_801E4A28(SaveData *save);
+void func_801CBA4C(MenuSavePayload *payload, u8 port, u8 digit);
 
 #endif

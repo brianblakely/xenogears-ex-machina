@@ -18,9 +18,6 @@ extern void *D_80065AFC[3]; /* resident: party character file blocks */
 
 extern s32 D_801E89E0; /* movie library: 1 lets it present frames itself */
 
-extern s32 D_8004F370;   /* resident: movie library already resident */
-extern s32 D_800ADB20;   /* 801e module block */
-extern s32 D_800ADB30;   /* heap top */
 extern u16 D_800C3900;   /* buttons pressed */
 
 void func_8002A2D0(s32 file);                  /* resident: select the stream file */
@@ -37,7 +34,5 @@ void func_800AC99C(void);
 void func_800ACB90(void);
 void func_800ACCB0(void);
 void func_800ACCF4(void);
-
-s32 func_80029AFC(void *list, s32 mode, s32 a2); /* resident: read a file list */
 
 #endif

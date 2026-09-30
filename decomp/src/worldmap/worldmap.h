@@ -579,6 +579,8 @@ typedef struct {
     SVECTOR angle;    /* 0xA8 */
 } ActorScratch;
 
+#define ACTOR_SCRATCH ((ActorScratch *)0x1F800000)
+
 extern MATRIX D_8009A180; /* identity matrix */
 extern MATRIX D_8009D534;
 extern s32 D_8009C618;
@@ -767,6 +769,8 @@ s32 func_800968E0(void);
 #define SCRATCH_VECTOR ((VECTOR *)0x1F800000)
 
 MATRIX *func_8004AFEC(s32 angle, MATRIX *m); /* RotMatrixY */
+MATRIX *func_80049ACC(MATRIX *m0, MATRIX *m1); /* m0 = m0 * m1 */
+void func_80093740(VECTOR *normal, s32 x, s32 z); /* ground normal */
 MATRIX *func_8004AE4C(s32 angle, MATRIX *m); /* RotMatrixX */
 
 /* Camera placement: eye, target and up direction. */
@@ -867,9 +871,8 @@ void func_8008E034(VECTOR *position);
 /* Movement probe: the scratchpad position a move is tested at. */
 #define SCRATCH_PROBE ((VECTOR *)0x1F800060)
 
-extern u16 D_8009D718[]; /* probe hits: object pairs */
+extern s16 D_8009D718[]; /* probe hits: face and kind pairs */
 
-s16 func_80084D00(s32 probe, s16 *hit);
 s32 func_80085418(VECTOR *probe, s32 radius, u16 object, u16 other);
 
 extern s16 D_8009BBAC[4]; /* grid corner cells */
@@ -1230,7 +1233,8 @@ typedef struct {
 /* Collision mesh of a scene object (behind SceneObject.unk44). */
 typedef struct {
     s16 corner[3];
-    s16 unk6[4];
+    s16 next[3]; /* neighbouring face across each edge; -1 at the border */
+    u16 kind;    /* 1: wall */
 } MeshFace;
 
 typedef struct {
@@ -1685,6 +1689,35 @@ typedef struct {
         gte_stlvnl(r2);          \
         gte_stflg(r3);           \
     }
+#define gte_stsz3(r0, r1, r2) \
+    __asm__ volatile("swc2 $17, 0(%0);" \
+                     "swc2 $18, 0(%1);" \
+                     "swc2 $19, 0(%2)" \
+                     : \
+                     : "r"(r0), "r"(r1), "r"(r2) \
+                     : "memory")
+
+/* Scratchpad work area of the footprint pass (worldmap_80072238). */
+typedef struct {
+    u8 pad0[0x30];
+    VECTOR normal;     /* 0x30: ground normal */
+    VECTOR up;         /* 0x40 */
+    VECTOR side;       /* 0x50 */
+    VECTOR forward;    /* 0x60 */
+    VECTOR position;   /* 0x70 */
+    VECTOR scale;      /* 0x80: also a cross product and the corner depths */
+    u8 pad90[0x10];
+    SVECTOR corner[3]; /* 0xA0 */
+    u8 padB8[0x20];
+    SVECTOR corner3;   /* 0xD8 */
+    u8 padE0[0x10];
+    MATRIX local;      /* 0xF0 */
+    MATRIX screen;     /* 0x110 */
+    MATRIX view;       /* 0x130 */
+    MATRIX heading;    /* 0x150 */
+} FootprintScratch;
+
+#define FOOTPRINT_SCRATCH ((FootprintScratch *)0x1F800000)
 
 /* Scratchpad work area of the scene object pass. */
 typedef struct {

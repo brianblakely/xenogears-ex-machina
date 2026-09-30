@@ -71,13 +71,13 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B17
 
 /* Scale a vertex list's points by 1 << shift, once. */
 void func_800B1EA0(VertexList *list, s32 shift) {
-    SVector *vertex;
+    SVECTOR *vertex;
     s32 count;
     s32 i;
 
     if (!(list->flags & 0x8000)) {
         list->flags |= 0x8000;
-        vertex = (SVector *)(list->offset + (s32)list);
+        vertex = (SVECTOR *)(list->offset + (s32)list);
         count = list->count;
         for (i = 0; i != count; i++) {
             vertex[i].vx <<= shift;
@@ -113,7 +113,7 @@ void func_800B3350(void) {
  * frames left, and shake the view offset by it with the sign flipping every
  * two frames; end once it is zero and done. */
 void func_800B3358(Quake *quake) {
-    Vector delta;
+    VECTOR delta;
 
     if (quake->left == 0) {
         quake->amplitude.vx = quake->to.vx;
@@ -186,7 +186,7 @@ Quake *func_800B35C0(void) {
 }
 
 /* Quake the view towards amplitude over frames * 2 frames. */
-void func_800B3658(SVector *amplitude, s32 frames) {
+void func_800B3658(SVECTOR *amplitude, s32 frames) {
     Quake *quake = func_800B35C0();
 
     quake->to.vx = amplitude->vx;
@@ -201,7 +201,7 @@ void func_800B3658(SVector *amplitude, s32 frames) {
 /* Screen fade update: ease the colour to the target over the frames left;
  * end once it is black. */
 void func_800B36BC(ScreenFade *fade) {
-    Vector delta;
+    VECTOR delta;
 
     if (fade->left == 0) {
         fade->colour[0] = fade->to[0];
@@ -415,11 +415,11 @@ void func_800B4EDC(BattleSprite *sprite) {
 /* The matrix of the sprite's anchor index: its angles, at the anchor's
  * offset (mirrored with the sprite, scaled) from the sprite's position, in
  * the sprite's screen matrix. */
-void func_800B4F88(BattleSprite *sprite, s32 index, Matrix *m) {
+void func_800B4F88(BattleSprite *sprite, s32 index, MATRIX *m) {
     SpriteAnchor *anchor;
     s32 x;
     s32 y;
-    SVector angles;
+    SVECTOR angles;
 
     if (sprite->view != NULL) {
         anchor = (SpriteAnchor *)(index * sizeof(SpriteAnchor) + (s32)sprite->view->anchors);
@@ -445,7 +445,7 @@ void func_800B4F88(BattleSprite *sprite, s32 index, Matrix *m) {
 /* The offsets of the sprite's five trail anchors (D_800C356C), mirrored with
  * the sprite and scaled, as points (x, y, 0) of out, when it is drawn one
  * sided. */
-void func_800B50D4(BattleSprite *sprite, SVector *out) {
+void func_800B50D4(BattleSprite *sprite, SVECTOR *out) {
     SpriteAnchor *anchor;
     s32 i;
     s32 x;
@@ -538,8 +538,8 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B57
 
 /* The distance from the sprite to its target. */
 s32 func_800B57E4(BattleSprite *sprite) {
-    Vector delta;
-    Vector squares;
+    VECTOR delta;
+    VECTOR squares;
 
     delta.vx = sprite->target[0] - sprite->x.part.whole;
     delta.vy = sprite->target[1] - sprite->y.part.whole;
@@ -657,10 +657,10 @@ SpriteLink *func_800B5C18(BattleSprite *sprite, u8 *anchors) {
  * (radius and angles); end with its frames. */
 void func_800B5CC0(BattleTask *task) {
     BattleSprite *sprite = task->data;
-    Matrix m;
-    SVector offset;
-    SVector angles;
-    Vector position;
+    MATRIX m;
+    SVECTOR offset;
+    SVECTOR angles;
+    VECTOR position;
 
     func_80023210(sprite);
     angles.vy = sprite->velocity[1] >> 13;
@@ -815,14 +815,14 @@ void func_800B6518(BattleSprite *sprite) {
 /* Script command: turn the sprite's speed towards its target by at most
  * args[0] * 4 (of 4096) in each angle, keeping its length. */
 void func_800B65B0(BattleSprite *sprite, u8 *args) {
-    SVector want;
-    SVector angles;
-    Vector delta;
-    Vector squares;
-    Vector velocity;
-    SVector length;
-    Matrix m;
-    Vector speed;
+    SVECTOR want;
+    SVECTOR angles;
+    VECTOR delta;
+    VECTOR squares;
+    VECTOR velocity;
+    SVECTOR length;
+    MATRIX m;
+    VECTOR speed;
     s16 distance;
     s16 speedLength;
     s32 step;
@@ -879,12 +879,12 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B65
 /* Script command: aim the sprite's speed (its speed setting, field18) at
  * its target and face it that way. */
 void func_800B6808(BattleSprite *sprite) {
-    SVector angles;
-    Vector delta;
-    Vector squares;
-    SVector length;
-    Matrix m;
-    Vector speed;
+    SVECTOR angles;
+    VECTOR delta;
+    VECTOR squares;
+    SVECTOR length;
+    MATRIX m;
+    VECTOR speed;
     s32 distance;
 
     delta.vx = sprite->target[0] - sprite->x.part.whole;
@@ -1011,8 +1011,8 @@ void func_800B6C98(BattleSprite *sprite) {
 
 /* Script command: turn the sprite to its speed's direction. */
 void func_800B6CEC(BattleSprite *sprite) {
-    Vector speed;
-    Vector squares;
+    VECTOR speed;
+    VECTOR squares;
     s32 distance;
 
     speed.vx = sprite->velocity[0] >> 8;
@@ -1048,13 +1048,13 @@ void func_800B6DC0(BattleSprite *sprite) {
 
 /* Script command: turn the sprite's speed about z by args[0] * 16. */
 void func_800B6E84(BattleSprite *sprite, s8 *args) {
-    SVector angles;
-    Matrix m;
-    Vector velocity;
+    SVECTOR angles;
+    MATRIX m;
+    VECTOR velocity;
 
     func_80021B04(&angles, 0, 0, args[0] * 16);
     func_8003F738(&angles, &m);
-    ApplyMatrixLV(&m, (Vector *)sprite->velocity, &velocity);
+    ApplyMatrixLV(&m, (VECTOR *)sprite->velocity, &velocity);
     sprite->velocity[0] = velocity.vx;
     sprite->velocity[1] = velocity.vy;
     sprite->velocity[2] = velocity.vz;
@@ -1069,7 +1069,7 @@ void func_800B6F0C(BattleTask *task) {
     s32 column;
     ScreenShard *shard;
     POLY_FT3 *poly;
-    SVector step;
+    SVECTOR step;
 
     shatter->frame++;
     for (layer = 0; layer != 2; layer++) {
@@ -1116,7 +1116,7 @@ void func_800B7160(BattleTask *draw) {
     ScreenShatter *shatter = draw->data;
     s32 offsetX;
     s32 offsetY;
-    Matrix m;
+    MATRIX m;
     s32 p;
     s32 flag;
     s32 screen;
@@ -1125,7 +1125,7 @@ void func_800B7160(BattleTask *draw) {
     s32 column;
     ScreenShard *shard;
     POLY_FT3 *poly;
-    SVector *triangle;
+    SVECTOR *triangle;
 
     ReadGeomOffset(&offsetX, &offsetY);
     screen = ReadGeomScreen();
