@@ -75,6 +75,30 @@ struct Menu {
     Tile panel[2];     /* 0x1C: one per buffer */
 };
 
+/* A 3D panel's per-buffer packet block. */
+typedef struct {
+    u32 unk0;
+    u8 unk4[4];
+    u8 unk8[4];
+} PanelPacket;
+
+typedef struct {
+    s32 unk0;
+    PanelPacket *buffers[2];
+} Panel;
+
+typedef struct {
+    u8 unk0[0x284];
+    Panel *panel;      /* 0x284 */
+} PanelOwner;
+
+/* Fading overlay. */
+extern s16 D_80092780; /* fade level */
+extern s32 D_80092784;
+extern void *D_80092938; /* overlay packets */
+extern s32 D_80092948;
+extern s32 D_8009292C;
+
 extern u8 D_8009273C; /* caption text shown in D_80095510 */
 extern u8 D_80092740; /* caption text shown in D_80095540 */
 extern u8 D_800928A0; /* buffer being built */
@@ -116,6 +140,16 @@ s32 func_80081A44(void);
 void func_80087698(s32 x0, s32 y0, s32 x1, s32 y1); /* draw a line */
 void func_80044764(Rect *rect, s32 r, s32 g, s32 b); /* clear a VRAM area */
 void func_800445D0(s32 mode); /* wait for drawing */
+void func_8008AC0C(Panel *panel);
+void func_8008AE1C(Panel *panel);
+void func_80080D20(void *packets);
+void func_80086E24(void);
+void func_8008E3CC(void *packets, s32 level, s32 arg);
+void func_8008E120(void);
+void func_8007F258(void *packets, s32 arg);
+void func_8008BC04(void);
+void func_8003A838(s32 arg0, s32 arg1, s32 arg2);
+void func_8008E064(void);
 s32 func_80033728(s32 table, s32 index); /* text string of an index */
 s32 func_80034EAC(s32 string, s32 image, s32 colour, s32 arg); /* returns width */
 void func_80043B48(void *ot, void *packet); /* link a packet into an ordering table */

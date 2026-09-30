@@ -1111,15 +1111,61 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800840CC);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800846A0);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800849E0);
+/* Draw a 3D panel: update it, link this buffer's packets, finish. */
+s32 func_800849E0(PanelOwner *owner) {
+    Panel *panel = owner->panel;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80084A40);
+    func_8008AC0C(panel);
+    func_80080D20(&panel->buffers[D_800928A0]->unk4);
+    func_8008AE1C(panel);
+    func_80086E24();
+    return 0;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80084A64);
+/* Update a 3D panel without drawing it. */
+void func_80084A40(PanelOwner *owner) {
+    func_8008AC0C(owner->panel);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80084AE0);
+/* Draw a 3D panel with its shading packet at brightness 0xC0. */
+s32 func_80084A64(PanelOwner *owner) {
+    Panel *panel = owner->panel;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80084B48);
+    func_8008E3CC(&panel->buffers[D_800928A0]->unk8, 0xC0, 0);
+    func_80080D20(&panel->buffers[D_800928A0]->unk4);
+    func_8008AE1C(panel);
+    func_80086E24();
+    return 0;
+}
+
+/* Draw the fading overlay while a fade is running. */
+void func_80084AE0(void) {
+    if (D_80092780 != 0) {
+        func_8008E120();
+        func_8007F258(D_80092938, 0);
+        func_80080D20(D_80092938);
+        func_8008E3CC(D_80092938, 0xC0, 1);
+        func_8008BC04();
+    }
+}
+
+/* Step the overlay fade down by 4; when it ends, reset it. */
+void func_80084B48(void) {
+    if (D_80092780 != 0) {
+        D_80092780 -= 4;
+        if (D_80092780 <= 0) {
+            D_80092780 = 0;
+            D_80092784 = 0;
+            func_8003A838(D_80092948, 0x100, 0);
+            D_8009292C = 0x100;
+            func_8008E064();
+        } else {
+            func_8008E3CC(D_80092938, D_80092780, 1);
+        }
+    } else {
+        D_80092784 = 0;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80084BEC);
 
