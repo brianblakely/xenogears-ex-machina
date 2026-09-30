@@ -16,10 +16,6 @@ extern u8 D_80059468[3]; /* per party member: its character data index */
 void func_80085C48(); /* commit an item's targets; K&R, callers pass them unconverted */
 void func_8008B108(u8 keep);                    /* hide the command windows */
 u8 func_8008B224(u8 member, u8 column, u8 row); /* confirm a technique */
-void func_80091064(u8 member);
-void func_80091604(s32 y);
-void func_80091D38(); /* K&R: (member, column, row) */
-void func_80091EC4(u8 v);
 void func_800BAF40(u8 slot, s32 mode);
 extern s8 D_800C4928;
 

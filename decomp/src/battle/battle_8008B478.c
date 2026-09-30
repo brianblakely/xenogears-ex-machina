@@ -27,7 +27,6 @@
  * turn state +0x2e6) or the menu is cancelled (0). (Nonmatching: GCC aligns
  * the jump table to 8 where the original's is at 0x80070314, and the cursor
  * x multiply is synthesised differently.) */
-#ifdef NON_MATCHING
 u8 func_8008B478(u8 member) {
     s32 frame;
     u8 ticks;
@@ -67,7 +66,7 @@ u8 func_8008B478(u8 member) {
             func_80091EC4(D_800D3288);
             shownScroll = D_800D3288;
         }
-        func_80090B90((cell % 2) * 0x84 + 0x2A, (cell / 2) * 16 + 0x38, &frame, &ticks);
+        func_80090B90((cell % 2) * 0x80 + (cell % 2) * 4 + 0x2A, (cell / 2) * 16 + 0x38, &frame, &ticks);
         func_800716D8();
         switch (D_800D3014) {
         case 5:
@@ -162,9 +161,6 @@ u8 func_8008B478(u8 member) {
     func_8008FA60(3);
     return result;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8008B478", func_8008B478);
-#endif
 
 /* Execute the chosen item (turn state +0x2e6) for the member: reset the
  * events, show the member's use model, commit the item against its targets
