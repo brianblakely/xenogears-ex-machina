@@ -2120,7 +2120,25 @@ void func_801CE540(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CE660);
+/* While party flag +7 is set, draw the detail panel: frame, portrait, tabs,
+ * layout parts and the number lists (level2, value40 and expNext are not
+ * drawn here). */
+void func_801CE660(void) {
+    if (D_800625A0->party->redraw7 != 0) {
+        func_801CE198(1, D_800625A0->block358->frameAt, D_800625A0->block358->frame, D_800625A0->block358->buffer);
+        func_801CE198(1, D_800625A0->block358->portraitAt, D_800625A0->block358->portrait, D_800625A0->block358->buffer);
+        func_801CE198(D_800625A0->block358->tabCount, D_800625A0->block358->tabsAt[0], D_800625A0->block358->tabs, D_800625A0->block358->tabBuffer);
+        func_801CE198(D_800625A0->block358->count, D_800625A0->block358->partsAt[0], D_800625A0->block358->parts, D_800625A0->block358->buffer);
+        func_801CE198(D_800625A0->block358->hpCount, D_800625A0->block358->hpAt[0], D_800625A0->block358->hp, D_800625A0->block358->buffer);
+        func_801CE198(D_800625A0->block358->hpMaxCount, D_800625A0->block358->hpMaxAt[0], D_800625A0->block358->hpMax, D_800625A0->block358->buffer);
+        func_801CE198(D_800625A0->block358->epCount, D_800625A0->block358->epAt[0], D_800625A0->block358->ep, D_800625A0->block358->buffer);
+        func_801CE198(D_800625A0->block358->epMaxCount, D_800625A0->block358->epMaxAt[0], D_800625A0->block358->epMax, D_800625A0->block358->buffer);
+        func_801CE198(D_800625A0->block358->levelCount, D_800625A0->block358->levelAt[0], D_800625A0->block358->level, D_800625A0->block358->buffer);
+        func_801CE198(D_800625A0->block358->value3CCount, D_800625A0->block358->value3CAt[0], D_800625A0->block358->value3C, D_800625A0->block358->buffer);
+        func_801CE198(D_800625A0->block358->expCount, D_800625A0->block358->expAt[0], D_800625A0->block358->exp, D_800625A0->block358->buffer);
+        func_801CE198(D_800625A0->block358->list1C70Count, D_800625A0->block358->list1C70At[0], D_800625A0->block358->list1C70, D_800625A0->block358->buffer);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CE860);
 
