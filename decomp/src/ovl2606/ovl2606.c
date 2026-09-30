@@ -1,4 +1,4 @@
-#include "common.h"
+#include "scene_select.h"
 
 INCLUDE_ASM(".local/decomp/ovl2606/asm/nonmatchings/ovl2606", func_801E0124);
 

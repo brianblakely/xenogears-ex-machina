@@ -1,4 +1,4 @@
-#include "common.h"
+#include "ovl2143.h"
 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DC22C);
 

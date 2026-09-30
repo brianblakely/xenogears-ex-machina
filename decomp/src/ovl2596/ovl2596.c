@@ -1,4 +1,4 @@
-#include "common.h"
+#include "battle_results.h"
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801DE048);
 

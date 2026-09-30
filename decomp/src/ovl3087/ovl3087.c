@@ -1,4 +1,4 @@
-#include "common.h"
+#include "ovl3087.h"
 
 INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E5160);
 
