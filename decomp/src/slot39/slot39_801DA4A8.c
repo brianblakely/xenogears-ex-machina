@@ -2520,7 +2520,6 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DA4A8", func_801E2B
 #endif
 
 /* Close the screen of the command at `offset` past the top cursor. */
-#ifdef NON_MATCHING
 void func_801E3088(u8 offset) {
     switch (D_800625A0->cursor + offset) {
     case 1:
@@ -2556,9 +2555,6 @@ void func_801E3088(u8 offset) {
         break;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DA4A8", func_801E3088);
-#endif
 
 /* Use item `item` on character `id`: restore HP (x50) and/or EP (x10),
  * raise stats (capped at 200, HP max 999, EP max 99), change +78, or run a
@@ -2906,10 +2902,7 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DA4A8", func_801E3C
 
 /* Compute gear `gear`'s part and weapon values, then mirror its +9 values
  * (and for gears 4, 5 its weapons) into its other form (gears 1, 15, 10-14)
- * and compute that too. Matches except the jump table address: its original
- * table sits 4 mod 8 (jtbl_801C522C), so this code belongs to a separate
- * unit whose rodata starts 4 mod 8. */
-#ifdef NON_MATCHING
+ * and compute that too. */
 void func_801E3ECC(MenuTables *tables, u8 gear) {
     u8 i;
 
@@ -2967,9 +2960,6 @@ void func_801E3ECC(MenuTables *tables, u8 gear) {
         break;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DA4A8", func_801E3ECC);
-#endif
 
 /* Recompute gear `gear`'s derived values from the data tables. */
 void func_801E4170(MenuTables *tables, u8 gear) {
