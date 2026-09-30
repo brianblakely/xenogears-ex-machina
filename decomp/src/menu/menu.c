@@ -1033,7 +1033,58 @@ void func_800828F8(Vector *pos, Vector *step, s32 radius) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80082A70);
+/* Apply the current stage's colours: sky gradient (top and bottom), back
+ * and far (fog) colours, fade tiles and the GTE primitive colour. */
+void func_80082A70(void) {
+    Environment *env;
+    s32 top_r;
+    s32 top_g;
+    s32 top_b;
+    s32 bottom_r;
+    s32 bottom_g;
+    s32 bottom_b;
+
+    env = &D_8009178C[D_800928B4];
+    D_8009288C = env;
+    top_r = env->top[0];
+    top_g = env->top[1];
+    top_b = env->top[2];
+    D_8009291C = env->unk4;
+    D_80092910 = env->unk5;
+    D_80092908 = env->unk6;
+    bottom_r = env->bottom[0];
+    bottom_g = env->bottom[1];
+    bottom_b = env->bottom[2];
+    func_8002C6E0(env->back[0], env->back[1], env->back[2]);
+    func_8004A10C(bottom_r, bottom_g, bottom_b);
+    D_80095580[0].r0 = top_r;
+    D_80095580[1].r0 = top_r;
+    D_80095580[0].g0 = top_g;
+    D_80095580[1].g0 = top_g;
+    D_80095580[0].b0 = top_b;
+    D_80095580[1].b0 = top_b;
+    *(u16 *)&D_80095580[0].r1 = top_r | (top_g << 8);
+    D_80095580[0].b1 = top_b;
+    *(u16 *)&D_80095580[1].r1 = top_r | (top_g << 8);
+    D_80095580[1].b1 = top_b;
+    *(u16 *)&D_80095580[0].r2 = bottom_r | (bottom_g << 8);
+    D_80095580[0].b2 = bottom_b;
+    *(u16 *)&D_80095580[1].r2 = bottom_r | (bottom_g << 8);
+    D_80095580[1].b2 = bottom_b;
+    *(u16 *)&D_80095580[0].r3 = bottom_r | (bottom_g << 8);
+    D_80095580[0].b3 = bottom_b;
+    *(u16 *)&D_80095580[1].r3 = bottom_r | (bottom_g << 8);
+    D_80095580[1].b3 = bottom_b;
+    D_8009A1C0.r0 = bottom_r;
+    D_8009A1C0.g0 = bottom_g;
+    D_8009A1C0.b0 = bottom_b;
+    D_8009A2B8.r0 = bottom_r;
+    D_8009A2B8.g0 = bottom_g;
+    D_8009A2B8.b0 = bottom_b;
+    func_80048AB0(0x800, 0x1800, 0xC0);
+    D_80059598 = (D_80059598 & 0xFFFFFF) | 0x28000000;
+    gte_ldrgb(&D_80059598);
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80082C4C);
 

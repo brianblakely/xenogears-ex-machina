@@ -41,6 +41,19 @@ typedef struct {
     s16 x3, y3;
 } PolyF4;
 
+/* Gouraud-shaded quadrilateral packet (libgpu POLY_G4). */
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    u8 r1, g1, b1, pad1;
+    s16 x1, y1;
+    u8 r2, g2, b2, pad2;
+    s16 x2, y2;
+    u8 r3, g3, b3, pad3;
+    s16 x3, y3;
+} PolyG4;
+
 /* Gouraud-less textured triangle packet (libgpu POLY_FT3). */
 typedef struct {
     u32 tag;

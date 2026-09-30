@@ -116,6 +116,29 @@ extern u32 D_80059598; /* resident map colour (r, g, b, code) */
 extern u8 D_80091934[0x30];
 void func_80072D18(s32 arg0, s32 arg1, s32 arg2);
 
+/* Stage colours (17 bytes each). */
+typedef struct {
+    u8 top[3];         /* sky gradient top */
+    u8 unk3;
+    u8 unk4, unk5, unk6;
+    u8 unk7;
+    u8 bottom[3];      /* sky gradient bottom, far and fade colour */
+    u8 unkB;
+    u8 back[3];        /* back colour */
+    u8 unkF[2];
+} Environment;
+
+extern Environment D_8009178C[];
+extern u8 D_800928B4;          /* stage */
+extern Environment *D_8009288C; /* current stage colours */
+extern s32 D_8009291C;
+extern s32 D_80092910;
+extern s32 D_80092908;
+extern PolyG4 D_80095580[2];   /* sky gradient, one per buffer */
+void func_8002C6E0(s32 r, s32 g, s32 b); /* back colour */
+void func_8004A10C(s32 r, s32 g, s32 b); /* far colour */
+void func_80048AB0(s32 near, s32 far, s32 arg);
+
 /* Fading overlay. */
 extern s16 D_80092780; /* fade level */
 extern s32 D_80092784;
