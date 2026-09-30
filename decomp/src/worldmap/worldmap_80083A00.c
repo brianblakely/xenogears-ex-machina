@@ -225,7 +225,64 @@ void func_800848B4(s32 parent, s32 child) {
     D_8009C620[child].parent = &D_8009C620[parent];
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_800848F4);
+/* Draw the visible scene objects: build each one's matrix through its
+ * parent chain, place it relative to the camera target, and add its sprite
+ * set to the ordering table when it projects in front and near enough. */
+void func_800848F4(void) {
+    SceneScratch *scratch;
+    SceneObject *parent;
+    s32 i;
+    s32 x;
+    s32 z;
+
+    scratch = (SceneScratch *)0x1F800000;
+    scratch->scale.vz = 0x800;
+    scratch->scale.vy = 0x800;
+    scratch->scale.vx = 0x800;
+    D_80050104 = 3;
+    x = D_8009BE28.target.vx >> 12;
+    z = D_8009BE28.target.vz >> 12;
+    D_800595C0 = 0;
+    D_80059578 = 0;
+    scratch->origin.vz = 0;
+    scratch->origin.vy = 0;
+    scratch->origin.vx = 0;
+    for (i = 0; i < D_8009D7E0; i++) {
+        if (D_8009C620[i].visible == 0) {
+            scratch->m = D_8009C620[i].matrix;
+            scratch->m.t[0] = D_8009C620[i].position.vx;
+            scratch->m.t[1] = D_8009C620[i].position.vy;
+            scratch->m.t[2] = -D_8009C620[i].position.vz;
+            parent = &D_8009C620[i];
+            while (parent->parent != NULL) {
+                parent = parent->parent;
+                parent->matrix.t[0] = parent->position.vx;
+                parent->matrix.t[1] = parent->position.vy;
+                parent->matrix.t[2] = -parent->position.vz;
+                gte_CompMatrix(&parent->matrix, &scratch->m, &scratch->m);
+            }
+            scratch->offset.vx = scratch->m.t[0] - x;
+            scratch->offset.vz = -scratch->m.t[2] - z;
+            func_80093534(&scratch->offset);
+            scratch->m.t[0] = scratch->offset.vx;
+            scratch->m.t[2] = -scratch->offset.vz;
+            ScaleMatrix(&scratch->m, &scratch->scale);
+            CompMatrix(&D_8009C808, &scratch->m, &scratch->out);
+            SetRotMatrix(&scratch->out);
+            SetTransMatrix(&scratch->out);
+            gte_ldv0(&scratch->origin);
+            gte_rtps();
+            gte_stflg(&scratch->flag);
+            if (scratch->flag >= 0) {
+                gte_stsz(&scratch->sz);
+                if (scratch->sz < 0xD80) {
+                    func_8002C700(D_8009C620[i].def, (&D_8009C620[i].prims)[D_8009D7F0], D_8009BE3C->ot,
+                                  D_8009AD2C[(s16)D_8009C620[i].flags]);
+                }
+            }
+        }
+    }
+}
 
 /* Probe the solid scene objects; the first hit's result, with its index. */
 s16 func_80084D00(s32 probe, s16 *hit) {

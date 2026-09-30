@@ -1637,4 +1637,142 @@ typedef struct {
 
 s32 func_80090A84(WorldmapActor *actor);
 
+/* PsyQ inline_c.h style GTE macros (worldmap_80083A00). */
+#define gte_SetRotMatrix(r0) \
+    __asm__ volatile("lw $12, 0(%0);" \
+                     "lw $13, 4(%0);" \
+                     "ctc2 $12, $0;" \
+                     "ctc2 $13, $1;" \
+                     "lw $12, 8(%0);" \
+                     "lw $13, 12(%0);" \
+                     "lw $14, 16(%0);" \
+                     "ctc2 $12, $2;" \
+                     "ctc2 $13, $3;" \
+                     "ctc2 $14, $4" \
+                     : \
+                     : "r"(r0) \
+                     : "$12", "$13", "$14")
+#define gte_SetTransMatrix(r0) \
+    __asm__ volatile("lw $12, 20(%0);" \
+                     "lw $13, 24(%0);" \
+                     "ctc2 $12, $5;" \
+                     "lw $14, 28(%0);" \
+                     "ctc2 $13, $6;" \
+                     "ctc2 $14, $7" \
+                     : \
+                     : "r"(r0) \
+                     : "$12", "$13", "$14")
+#define gte_ldclmv(r0) \
+    __asm__ volatile("lhu $12, 0(%0);" \
+                     "lhu $13, 6(%0);" \
+                     "lhu $14, 12(%0);" \
+                     "mtc2 $12, $9;" \
+                     "mtc2 $13, $10;" \
+                     "mtc2 $14, $11" \
+                     : \
+                     : "r"(r0) \
+                     : "$12", "$13", "$14")
+#define gte_stclmv(r0) \
+    __asm__ volatile("mfc2 $12, $9;" \
+                     "mfc2 $13, $10;" \
+                     "mfc2 $14, $11;" \
+                     "sh $12, 0(%0);" \
+                     "sh $13, 6(%0);" \
+                     "sh $14, 12(%0)" \
+                     : \
+                     : "r"(r0) \
+                     : "$12", "$13", "$14", "memory")
+#define gte_ldlv0(r0) \
+    __asm__ volatile("lhu $13, 4(%0);" \
+                     "lhu $12, 0(%0);" \
+                     "sll $13, $13, 16;" \
+                     "or $12, $12, $13;" \
+                     "mtc2 $12, $0;" \
+                     "lwc2 $1, 8(%0)" \
+                     : \
+                     : "r"(r0) \
+                     : "$12", "$13")
+#define gte_ldv3(r0, r1, r2) \
+    __asm__ volatile("lwc2 $0, 0(%0);" \
+                     "lwc2 $1, 4(%0);" \
+                     "lwc2 $2, 0(%1);" \
+                     "lwc2 $3, 4(%1);" \
+                     "lwc2 $4, 0(%2);" \
+                     "lwc2 $5, 4(%2)" \
+                     : \
+                     : "r"(r0), "r"(r1), "r"(r2))
+#define gte_rtir() __asm__ volatile("nop;nop;.word 0x4A49E012")
+#define gte_rt() __asm__ volatile("nop;nop;.word 0x4A480012")
+#define gte_rtpt() __asm__ volatile("nop;nop;.word 0x4A280030")
+#define gte_nclip() __asm__ volatile("nop;nop;.word 0x4B400006")
+#define gte_stlvnl(r0) \
+    __asm__ volatile("swc2 $25, 0(%0);" \
+                     "swc2 $26, 4(%0);" \
+                     "swc2 $27, 8(%0)" \
+                     : \
+                     : "r"(r0) \
+                     : "memory")
+#define gte_stflg(r0) \
+    __asm__ volatile("cfc2 $12, $31;" \
+                     "nop;" \
+                     "sw $12, 0(%0)" \
+                     : \
+                     : "r"(r0) \
+                     : "$12", "memory")
+#define gte_stsxy(r0) __asm__ volatile("swc2 $14, 0(%0)" : : "r"(r0) : "memory")
+#define gte_stsxy3(r0, r1, r2) \
+    __asm__ volatile("swc2 $12, 0(%0);" \
+                     "swc2 $13, 0(%1);" \
+                     "swc2 $14, 0(%2)" \
+                     : \
+                     : "r"(r0), "r"(r1), "r"(r2) \
+                     : "memory")
+#define gte_stopz(r0) __asm__ volatile("swc2 $24, 0(%0)" : : "r"(r0) : "memory")
+#define gte_MulMatrix0(r1, r2, r3) \
+    {                                  \
+        gte_SetRotMatrix(r1);          \
+        gte_ldclmv(r2);                \
+        gte_rtir();                    \
+        gte_stclmv(r3);                \
+        gte_ldclmv((u8 *)(r2) + 2);    \
+        gte_rtir();                    \
+        gte_stclmv((u8 *)(r3) + 2);    \
+        gte_ldclmv((u8 *)(r2) + 4);    \
+        gte_rtir();                    \
+        gte_stclmv((u8 *)(r3) + 4);    \
+    }
+#define gte_CompMatrix(r1, r2, r3)       \
+    {                                    \
+        gte_MulMatrix0(r1, r2, r3);      \
+        gte_SetTransMatrix(r1);          \
+        gte_ldlv0((u8 *)(r2) + 20);      \
+        gte_rt();                        \
+        gte_stlvnl((u8 *)(r3) + 20);     \
+    }
+#define gte_RotTrans(r1, r2, r3) \
+    {                            \
+        gte_ldv0(r1);            \
+        gte_rt();                \
+        gte_stlvnl(r2);          \
+        gte_stflg(r3);           \
+    }
+
+/* Scratchpad work area of the scene object pass. */
+typedef struct {
+    VECTOR offset;  /* 0x00 */
+    VECTOR scale;   /* 0x10 */
+    s32 flag;       /* 0x20 */
+    s32 pad24;
+    s32 sz;         /* 0x28 */
+    u8 pad2C[0x74];
+    SVECTOR origin; /* 0xA0 */
+    u8 padA8[0x48];
+    MATRIX m;       /* 0xF0 */
+    MATRIX out;     /* 0x110 */
+} SceneScratch;
+
+extern s32 D_80050104, D_800595C0, D_80059578;
+extern s16 D_8009AD2C[]; /* per object flags: draw mode */
+void func_8002C700(SpriteDef *def, void *prims, u32 *ot, s32 mode);
+
 #endif
