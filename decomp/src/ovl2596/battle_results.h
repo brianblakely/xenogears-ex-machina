@@ -104,7 +104,11 @@ extern ResultSummary *D_800D334C;
 
 /* The battle UI state block (pointer 800d2d28). */
 typedef struct {
-    u8 pad0[0x8F];
+    u8 pad0[0x7F];
+    u8 unk7F;             /* 0x7F */
+    u8 unk80;             /* 0x80 */
+    u8 unk81;             /* 0x81 */
+    u8 pad82[0xD];
     u8 show8F;            /* 0x8F */
     u8 pad90[0x10];
     u8 showCards;         /* 0xA0 */
@@ -302,7 +306,9 @@ typedef struct {
     u8 id;                    /* 0x56 */
     u8 pad57;
     u8 attack;                /* 0x58 */
-    u8 pad59[0x37];
+    u8 pad59[0x7C - 0x59];
+    u16 flags7C;              /* 0x7C: 0x8000 knocked out */
+    u8 pad7E[0x90 - 0x7E];
     u16 counters[7];          /* 0x90 */
     u8 pad9E[0x170 - 0x9E];
 } Combatant;
@@ -310,7 +316,15 @@ typedef struct {
 extern GameData D_8006D634;
 extern Combatant D_800CCCE8[];
 extern GameData *D_801E44C4;    /* 8006d634 */
-extern Combatant *D_801E44C8;   /* 800ccce8 */
+/* The battle work area (800ccce8): the combatant records, then the
+ * results state. */
+typedef struct {
+    Combatant records[11];    /* 0x0000 */
+    u8 padFD0[0x5F20 - 0xFD0];
+    GrowthFile *growth;       /* 0x5F20 */
+} BattleWork;
+
+extern BattleWork *D_801E44C8;  /* 800ccce8 */
 extern GrowthFile *D_801E44E8;  /* the growth data file */
 extern Combatant *D_801E44EC;   /* the record being processed */
 extern u16 D_8006F8EA;          /* option flags */
@@ -398,6 +412,33 @@ extern BattleState *D_800C3EAC;
 
 extern u8 D_800CDD0A[3][2];   /* per member: [0] a stat changed */
 extern u8 D_800C48EA;
+extern u8 D_800C3E4C;
+extern void *D_800D2F5C;        /* glyph sprite table */
+extern void *D_800D2C08[1];     /* the results text; the original addresses it as a table */
+
+/* The results archive (directory 0x10 file 2): a count, then its items. */
+typedef struct {
+    s32 count;
+    void *items[4];
+} ResultArchive;
+extern u8 D_8006DB2C;           /* scenario byte */
+extern u8 D_8006E7AB;
+extern u16 D_8006ED6E;
+void func_80028470(s32 directory, s32 mode);    /* select a disc directory */
+s32 func_800288EC(s32 file);                    /* a file's size */
+void func_800295D8(s32 file, void *dest, s32 arg2, s32 arg3); /* load a file */
+void func_8008AC50(void);
+void func_8003342C(void *table);                /* relocate an offset table in place */
+void *func_80032E88(void *item, s32 unpack);    /* unpack an archive item */
+void func_8002DD20(void *data);
+void func_80078310(void *portraits, s32 glyph);
+void func_80076EA4(void);
+void func_801E2ACC(void);
+void func_801E3A18(void);
+void func_801E2888(void);
+void func_801E42C4(void);
+void func_801E403C(void);
+void func_801E41B4(void);
 void *func_8008ABB8(s32 size, s32 top);        /* heap allocate */
 void bzero(void *dest, s32 size);
 void func_80039FF8(void);

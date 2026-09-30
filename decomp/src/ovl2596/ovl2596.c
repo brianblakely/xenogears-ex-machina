@@ -1035,7 +1035,39 @@ void func_801E1FB8(u32 experience) {
     func_80039FF8();
 }
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E211C);
+/* Hide the battle windows and reload the results resources: archive file
+ * 2 of directory 0x10 (its items 1-4: text, a table, the glyph sprites and
+ * the portraits). */
+void func_801E211C(void) {
+    u8 unused[0x60]; /* the original frame reserves 0x60 unused bytes */
+    ResultArchive *archive;
+    void *data;
+
+    D_800C3E4C = 0;
+    D_800D2D28->showCards = 0;
+    D_800D2D28->showSummary = 0;
+    D_800D2D28->show8F = 0;
+    D_800D2D28->showSpoils = 0;
+    D_800D2D28->unk7F = D_800D2D28->unk80 = D_800D2D28->unk81 = 0;
+    func_800716D8();
+    func_800716D8();
+    func_800320E8(D_800D2F5C);
+    func_80028470(0x10, 2);
+    archive = func_8008ABB8(func_800288EC(2), 1);
+    func_800295D8(2, archive, 0, 0x80);
+    func_8008AC50();
+    func_8003342C(archive);
+    D_800D2C08[0] = func_80032E88(archive->items[0], 0);
+    data = func_80032E88(archive->items[2], 0);
+    func_8002DD20(data);
+    func_800320E8(data);
+    D_800D2F5C = func_80032E88(archive->items[1], 0);
+    data = func_80032E88(archive->items[3], 0);
+    func_80078310(data, 0xFC);
+    func_800320E8(data);
+    func_800320E8(archive);
+    func_80076EA4();
+}
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E2280);
 
@@ -1059,7 +1091,35 @@ void func_801E24B0(void) {
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E252C);
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E2794);
+/* Grant the battle rewards unless the whole party is knocked out. */
+void func_801E2794(void) {
+    u8 slot;
+    u8 knockedOut;
+    u8 extra;
+
+    knockedOut = 0;
+    for (slot = 0; slot < 3; slot++) {
+        if (D_800CCCE8[slot].flags7C & 0x8000) {
+            knockedOut++;
+        }
+    }
+    if (knockedOut != 3) {
+        D_801E44E8 = D_801E44C8->growth;
+        func_801E2ACC();
+        func_801E3A18();
+        func_801E403C();
+        func_801E41B4();
+        func_801E2888();
+        func_801E42C4();
+        if (D_8006DB2C == 0x12) {
+            extra = D_8006E7AB;
+            D_8006ED6E = 0x4000;
+            if (extra != 0) {
+                D_8006ED6E = 0xC000;
+            }
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E2888);
 
