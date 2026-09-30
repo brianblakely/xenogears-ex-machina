@@ -145,8 +145,13 @@ Burst *func_801FC470(void) {
 
 /* Set up the effect: the screen as two triangles per 16x16 cell over a
  * 320x224 grid (textured from the copy at 0x2c0,0x100), each corner's
- * distance from the centre (variant 1: twice it; otherwise 3/10 of it). */
+ * distance from the centre (variant 1: twice it; otherwise 3/5 of it). */
 #ifdef NON_MATCHING
+/* Same operations; the original keeps v (row * 16) apart and computes the
+ * second triangle's (v - 101) * 16 per column, steps both column x offsets
+ * (col * 256 - 0x9b0 / - 0x950) as spilled induction variables and needs a
+ * 0x78-byte frame; here GCC folds (v - 101) * 16 into a row induction
+ * variable and allocates a 0x68-byte frame. */
 Burst *func_801FC4A8(Burst *burst) {
     BurstCell *cell;
     SVECTOR *triangle;
@@ -198,7 +203,7 @@ Burst *func_801FC4A8(Burst *burst) {
                     if (D_801FCE14 != 0) {
                         cell->distance[k] = SquareRoot0(square.vx + square.vy) * 2;
                     } else {
-                        cell->distance[k] = SquareRoot0(square.vx + square.vy) * 3 / 10;
+                        cell->distance[k] = SquareRoot0(square.vx + square.vy) * 3 / 5;
                     }
                 }
                 for (k = 0; k != 2; k++) {
@@ -257,6 +262,11 @@ void func_801FC898(void) {
  * background colour fades, then restore the pages, clear the screen and the
  * background colour. */
 #ifdef NON_MATCHING
+/* Same operations; the original's 0x58-byte frame keeps the saved background
+ * colour bytes at sp+0x10 and the page copies at sp+0x1c/0x20 below the RECT
+ * at sp+0x28 (no fp) and walks the screen copy with a pointer beside the
+ * counter; here they live in registers or spill slots above the RECT
+ * (0x48-byte frame). */
 void func_801FC8F4(void) {
     RECT rect;
     u8 *pages0, *pages1;
