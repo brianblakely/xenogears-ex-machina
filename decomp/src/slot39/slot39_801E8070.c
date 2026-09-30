@@ -6,27 +6,24 @@
 /* Place label `selected` for layout `mode` (0: window row `row`, clearing the
  * other flags first; 1-3, 5, 6: 3D label vertices from the mode's tables;
  * 4: fixed at (4c, 12)) and mark it shown in `flags`. */
-#ifdef NON_MATCHING
 void func_801E8070(u8 count, MenuLabelSlot *labels, u8 *table, s32 *offsets, u8 *flags, u8 selected, u8 row,
                    u8 mode) {
-    MenuLabelSlot *label;
     s32 first;
 
     first = 0;
     switch (mode) {
     case 0:
         func_801E8044(count, flags);
-        label = &labels[selected];
-        (label->polys + D_800625A0->bufferIndex)->x0 = D_801E9A00[row + selected] + (offsets[selected] + 0x16);
-        (label->polys + D_800625A0->bufferIndex)->y0 = D_801E9A2C[row + selected] - 0x22;
-        (label->polys + D_800625A0->bufferIndex)->x1 =
-            D_801E9A00[row + selected] + 0x16 + offsets[selected] + label->width;
-        (label->polys + D_800625A0->bufferIndex)->y1 = D_801E9A2C[row + selected] - 0x22;
-        (label->polys + D_800625A0->bufferIndex)->x2 = D_801E9A00[row + selected] + (offsets[selected] + 0x16);
-        (label->polys + D_800625A0->bufferIndex)->y2 = D_801E9A2C[row + selected] - 0x15;
-        (label->polys + D_800625A0->bufferIndex)->x3 =
-            D_801E9A00[row + selected] + 0x16 + offsets[selected] + label->width;
-        (label->polys + D_800625A0->bufferIndex)->y3 = D_801E9A2C[row + selected] - 0x15;
+        (labels[selected].polys + D_800625A0->bufferIndex)->x0 = D_801E9A00[row + selected] + 0x16 + offsets[selected];
+        (labels[selected].polys + D_800625A0->bufferIndex)->y0 = D_801E9A2C[row + selected] - 0x22;
+        (labels[selected].polys + D_800625A0->bufferIndex)->x1 =
+            D_801E9A00[row + selected] + 0x16 + offsets[selected] + labels[selected].width;
+        (labels[selected].polys + D_800625A0->bufferIndex)->y1 = D_801E9A2C[row + selected] - 0x22;
+        (labels[selected].polys + D_800625A0->bufferIndex)->x2 = D_801E9A00[row + selected] + 0x16 + offsets[selected];
+        (labels[selected].polys + D_800625A0->bufferIndex)->y2 = D_801E9A2C[row + selected] - 0x15;
+        (labels[selected].polys + D_800625A0->bufferIndex)->x3 =
+            D_801E9A00[row + selected] + 0x16 + offsets[selected] + labels[selected].width;
+        (labels[selected].polys + D_800625A0->bufferIndex)->y3 = D_801E9A2C[row + selected] - 0x15;
         break;
     case 1:
         func_801C851C(labels[selected].verts, D_801E9EC4[selected], D_801E9EE4, labels[selected].width, 0xd);
@@ -57,9 +54,6 @@ void func_801E8070(u8 count, MenuLabelSlot *labels, u8 *table, s32 *offsets, u8 
     labels[selected].count = D_800625A0->bufferIndex;
     flags[selected] = 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801E8070", func_801E8070);
-#endif
 
 /* Open the command window: grow the cursor column one command per two
  * frames (the label column one behind), up to `count` commands. */
