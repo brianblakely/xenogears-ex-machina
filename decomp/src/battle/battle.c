@@ -771,9 +771,25 @@ void func_800787E0(u8 value, u8 actor) {
     D_800C3EAC->eventCount++;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007887C);
+/* Queue event type 0xf8 for `actor` with the pending message 800c3e8c - 1. */
+void func_8007887C(u8 actor) {
+    if (D_800C3E8C != 0) {
+        D_800C3FE8[D_800C3EAC->eventCount].actor = actor;
+        D_800C3FE8[D_800C3EAC->eventCount].type = 0xF8;
+        D_800C3FE8[D_800C3EAC->eventCount].param = D_800C3E8C - 1;
+        D_800C3EAC->eventCount++;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007893C);
+/* For a named action entry: its name text (80078658), event 0xf7 with 0x1e
+ * and the pending message event. */
+void func_8007893C(u8 index, u8 actor) {
+    if (D_800D2E5C[index].named != 0) {
+        func_80078658(index, actor);
+        func_800787E0(0x1E, actor);
+        func_8007887C(actor);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80078998);
 
@@ -796,7 +812,15 @@ void func_80078D48(u8 actor, u8 index) {
     D_800D39E0 = D_800D2E5C[index].targets;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80078D6C);
+/* Action entry type: the actor leaves the battle (event 0xf9); its reaction
+ * script is armed and only its 0x8000 flag is kept. */
+void func_80078D6C(u8 actor, u8 index) {
+    D_800C3FE8[D_800C3EAC->eventCount].type = 0xF9;
+    func_800785D4(actor, index);
+    D_800D2DE4[actor] = 0xFF;
+    D_800C3D18[actor - 3].armed = 1;
+    D_800CCCE8[actor].flags7C &= 0x8000;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80078E24);
 
@@ -805,18 +829,38 @@ void func_80079054(u8 actor, u8 index) {
     func_80079ED8(actor, D_800D2E5C[index].arg1, D_800D2E5C[index].param, 0);
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80079098);
+/* Add the entry's parameter byte to the actor's attribute arg1. */
+void func_80079098(u8 actor, u8 index) {
+    func_80079ED8(actor, D_800D2E5C[index].arg1,
+                  D_800D2E5C[index].param + func_80079ED8(actor, D_800D2E5C[index].arg1, 0, 1), 0);
+}
 
 /* Set the actor's 16-bit attribute arg1 to the entry's parameter halfword. */
 void func_80079114(u8 actor, u8 index) {
     func_8007A280(actor, D_800D2E5C[index].arg1, D_800D2E5C[index].param | (D_800D2E5C[index].unk5 << 8), 0);
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007916C);
+/* Add the entry's parameter halfword to the actor's 16-bit attribute arg1. */
+void func_8007916C(u8 actor, u8 index) {
+    func_8007A280(actor, D_800D2E5C[index].arg1,
+                  D_800D2E5C[index].param +
+                      (func_8007A280(actor, D_800D2E5C[index].arg1, 0, 1) + (D_800D2E5C[index].unk5 << 8)),
+                  0);
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800791FC);
+/* Named-action text, then event 0xf4 for the actor. */
+void func_800791FC(u8 actor, u8 index) {
+    func_8007893C(index, actor);
+    D_800C3FE8[D_800C3EAC->eventCount].type = 0xF4;
+    func_800785D4(actor, index);
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80079270);
+/* Event 0xf6 for the actor with the entry's targets. */
+void func_80079270(u8 actor, u8 index) {
+    D_800C3FE8[D_800C3EAC->eventCount].type = 0xF6;
+    D_800C3FE8[D_800C3EAC->eventCount].targets = D_800D2E5C[index].targets;
+    func_800785D4(actor, index);
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800792F8);
 

@@ -306,6 +306,15 @@ typedef struct {
 
 extern EnemyAi D_800D3400[8];
 
+/* Enemy reaction state (4 bytes per enemy from 800c3d18). */
+typedef struct {
+    u8 unk0[3];
+    u8 armed;
+} EnemyReaction;
+
+extern EnemyReaction D_800C3D18[8];
+extern u8 D_800C3E8C;      /* pending battle message + 1 */
+
 /* Per-slot formation information (0x1c bytes from 800c3eb4). */
 typedef struct {
     u8 group;          /* +0x0 formation group */
@@ -401,6 +410,10 @@ void func_800745EC(void);
 void func_80074D4C(void);
 void func_80077074(void);
 void func_800785D4(u8 actor, u8 index);
+void func_80078658(u8 index, u8 actor);
+void func_800787E0(u8 value, u8 actor);
+void func_8007887C(u8 actor);
+void func_8007893C(u8 index, u8 actor);
 void func_80079934(u8 **pc);
 void func_800728B8(POLY_FT4 *prims, s32 count, s32 first);
 void func_80073380(s32 member);
