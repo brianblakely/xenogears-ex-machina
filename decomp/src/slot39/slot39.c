@@ -1966,7 +1966,88 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CBD90);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CC6D8);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CD2AC);
+/* The file screen's delete command: pick a file with the cursor, confirm and
+ * erase it, then force the cards to be scanned again. Returns 1 when the
+ * card check ended the screen. */
+u8 func_801CD2AC(void) {
+    char path[64];
+    u8 first;
+    s32 again;
+    u8 ended;
+    s32 i;
+
+    first = 1;
+    again = 1;
+    ended = 0;
+    func_801CADB0();
+    do {
+        if (func_801C93A8()) {
+            ended = 1;
+            break;
+        }
+        if (first) {
+            first = 0;
+            if (D_800625A0->party->unk33 != 0) {
+                func_801D32B4();
+            }
+            D_800625A0->markers->visible[0] = 1;
+        }
+        if (func_801C9BCC(0) == 0 && (D_800625A0->card->cursor = func_801C9D34(0)) == 0xff) {
+            D_800625A0->markers->visible[0] = 0;
+            D_800625A0->party->unkB = 0;
+            func_801CACF8(0x62, 0xff, 0);
+            break;
+        }
+        D_800625A0->party->unk2F = 1;
+        switch (func_801CA750(0)) {
+        case 1:
+            D_800625A0->markers->unk144[0] = 0;
+            D_800625A0->card->mode = 0;
+            if ((u8)func_801CACF8(0x56, 0x59, 1)) {
+                func_801D2F4C(0x50);
+                D_800625A0->party->unk2F = 0;
+                D_800625A0->party->unkB = 0;
+                D_800625A0->card->unk4F80 = 0xff;
+                if (D_800625A0->card->cursor < 15) {
+                    __builtin_memcpy(path, D_801C50A8, 6);
+                } else {
+                    __builtin_memcpy(path, D_801C50B0, 6);
+                }
+                strcat(path, D_800625A0->card->files[D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]]]
+                                 .name);
+                func_800405B4(path);
+                func_801D32B4();
+                D_800625A0->sounds = 1;
+                func_801C8574(0x34);
+                D_800625A0->sounds = 0;
+                func_801CACF8(0x5c, 0xff, 0);
+                D_800625A0->card->mode = 2;
+                while (D_800625A0->cardPollTimer != 1) {
+                    func_801C7BF4();
+                }
+                for (i = 0; i < 32; i++) {
+                    D_800625A0->card->fileSlots[i] = 0xff;
+                    D_800625A0->card->ours[i] = 0;
+                    D_800625A0->card->files[i].state = 0;
+                }
+                D_800625A0->card->scanned[0] = 0;
+                D_800625A0->card->scanned[1] = 0;
+                D_800625A0->card->unk4F8C[0] = 0xff;
+                D_800625A0->card->unk4F8C[1] = 0xff;
+                D_801E9778 = 1;
+            }
+            D_800625A0->markers->unk144[0] = 1;
+            /* fallthrough */
+        case 2:
+            again = 0;
+            break;
+        }
+    } while (again);
+    D_800625A0->card->mode = 1;
+    D_800625A0->cardsPresent = 1;
+    D_800625A0->sounds = 1;
+    return ended;
+}
 
 /* Run the card command chosen on the file screen (0 copy?, 1 delete?, 2 the
  * save or load of the menu kind); returns 0 when the menu should close. */

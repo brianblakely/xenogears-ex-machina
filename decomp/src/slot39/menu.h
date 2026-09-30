@@ -1104,6 +1104,7 @@ u8 func_801CB304(void);
 u8 func_801CBD90(u8 arg);
 u8 func_801CC6D8(void);
 u8 func_801CD2AC(void);
+u8 func_801C93A8(void);
 void func_801C7BF4(void);
 void func_801C7D78(void);
 void func_801C7F34(u32 frames);
