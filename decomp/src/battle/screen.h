@@ -100,12 +100,9 @@ typedef struct {
 
 extern DrawPrim8 D_800C3BF8; /* a draw mode primitive */
 extern RECT D_800C3C9C;
-extern s16 D_800C3668[3][2]; /* VRAM places (x, y) */
 
 extern Quake *D_800C3548;
-extern s16 D_800C354C; /* the quake's view offset */
-extern s16 D_800C354E;
-extern s16 D_800C3550;
+extern SVector D_800C354C; /* the quake's view offset */
 extern ScreenFade *D_800C3554;
 extern ScreenFade *D_800C3558;
 extern u8 D_800C355C; /* fade on the second screen fade */
@@ -127,23 +124,6 @@ void func_8001CD74(void *task, void (*destroy)());
 void func_8001CD94(void *task); /* end a task */
 void func_8001CB48(void *node);
 void func_80025180(void *owner); /* end the owner's sprites */
-
-/* GTE: IR0, IR1-IR3 and the general purpose interpolation (no shift). */
-#define gte_lddp(r0) __asm__ volatile("mtc2 %0, $8" : : "r"(r0))
-#define gte_ldlvl(r0)                                                                              \
-    __asm__ volatile("lwc2 $9, 0(%0);"                                                             \
-                     "lwc2 $10, 4(%0);"                                                            \
-                     "lwc2 $11, 8(%0)"                                                             \
-                     :                                                                             \
-                     : "r"(r0))
-#define gte_gpf0() __asm__ volatile("nop;nop;.word 0x4B90003D")
-#define gte_stlvl(r0)                                                                              \
-    __asm__ volatile("swc2 $9, 0(%0);"                                                             \
-                     "swc2 $10, 4(%0);"                                                            \
-                     "swc2 $11, 8(%0)"                                                             \
-                     :                                                                             \
-                     : "r"(r0)                                                                     \
-                     : "memory")
 
 /* Run the calls between the two on a stack ending at top. */
 #define STACK_ENTER(top)                                                                           \

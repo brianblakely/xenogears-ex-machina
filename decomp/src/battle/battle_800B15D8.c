@@ -15,6 +15,7 @@
 #include "objects.h"
 #include "screen.h"
 #include "sprite.h"
+#include "actor.h"
 
 /* Select script index of an effect script file: copy its entry into
  * D_800C3BD0 (relocating its offsets to addresses unless the file is already
@@ -132,19 +133,19 @@ void func_800B3358(Quake *quake) {
     }
     quake->tick++;
     if (quake->tick & 2) {
-        D_800C354C = -quake->amplitude.vx;
+        D_800C354C.vx = -quake->amplitude.vx;
     } else {
-        D_800C354C = quake->amplitude.vx;
+        D_800C354C.vx = quake->amplitude.vx;
     }
     if (quake->tick & 2) {
-        D_800C354E = -quake->amplitude.vy;
+        D_800C354C.vy = -quake->amplitude.vy;
     } else {
-        D_800C354E = quake->amplitude.vy;
+        D_800C354C.vy = quake->amplitude.vy;
     }
     if (quake->tick & 2) {
-        D_800C3550 = -quake->amplitude.vz;
+        D_800C354C.vz = -quake->amplitude.vz;
     } else {
-        D_800C3550 = quake->amplitude.vz;
+        D_800C354C.vz = quake->amplitude.vz;
     }
     /* x and y tested as one word */
     if (*(s32 *)&quake->amplitude == 0 && quake->amplitude.vz == 0 && quake->left == 0) {
@@ -368,17 +369,17 @@ void func_800B3E04(void) {
     D_800C3C9C.y = 0x100;
     D_800C3C9C.w = 0x40;
     D_800C3C9C.h = 0x100;
-    MoveImage(&D_800C3C9C, D_800C3668[0][0], D_800C3668[0][1]);
+    MoveImage(&D_800C3C9C, D_800C3668[0].x, D_800C3668[0].y);
     D_800C3C9C.x = 0x240;
     D_800C3C9C.y = 0x100;
     D_800C3C9C.w = 0x40;
     D_800C3C9C.h = 0x100;
-    MoveImage(&D_800C3C9C, D_800C3668[1][0], D_800C3668[1][1]);
+    MoveImage(&D_800C3C9C, D_800C3668[1].x, D_800C3668[1].y);
     D_800C3C9C.x = 0x200;
     D_800C3C9C.y = 0x100;
     D_800C3C9C.w = 0x40;
     D_800C3C9C.h = 0x100;
-    MoveImage(&D_800C3C9C, D_800C3668[2][0], D_800C3668[2][1]);
+    MoveImage(&D_800C3C9C, D_800C3668[2].x, D_800C3668[2].y);
     STACK_LEAVE();
     func_800320E8(stack);
 }
@@ -482,7 +483,7 @@ void func_800B5588(BattleTask *task) {
     sprite = trail->sprite;
     D_800C3E9C = trail->count;
     D_800C3D4C = trail->blend;
-    D_800D3334 = sprite->field2E;
+    D_800D3334 = sprite->depth;
     if (sprite->frame != trail->frame) {
         trail->frame = sprite->frame;
         func_800B50D4(sprite, trail->anchors);
@@ -496,7 +497,7 @@ void func_800B5588(BattleTask *task) {
     trail->trail[0].vy = trail->anchors[0].vy;
     trail->trail[0].vz = trail->anchors[0].vz;
     sprite = trail->sprite;
-    if (trail->motion != sprite->motion.bytes[3] || (phase = (sprite->frameBits >> 28) & 3) == 0 || phase == 1) {
+    if (trail->motion != sprite->motion.bytes[3] || (phase = (sprite->frameBits.word >> 28) & 3) == 0 || phase == 1) {
         trail->task.destroy(&trail->task);
     }
 }
@@ -627,7 +628,7 @@ void func_800B5B3C(SpriteLink *link) {
     partner->x.fixed += delta.x << 16;
     partner->y.fixed += delta.y << 16;
     sprite = link->sprite;
-    if (link->motion != sprite->motion.bytes[3] || (phase = (sprite->frameBits >> 28) & 3) == 0 || phase == 1) {
+    if (link->motion != sprite->motion.bytes[3] || (phase = (sprite->frameBits.word >> 28) & 3) == 0 || phase == 1) {
         link->task.destroy(&link->task);
     }
 }
@@ -658,10 +659,10 @@ void func_800B5CC0(BattleTask *task) {
     Vector position;
 
     func_80023210(sprite);
-    angles.vy = sprite->speed[1] >> 13;
-    angles.vz = sprite->speed[2] >> 13;
+    angles.vy = sprite->velocity[1] >> 13;
+    angles.vz = sprite->velocity[2] >> 13;
     angles.vx = 0;
-    offset.vx = func_80022CAC(sprite, sprite->speed[0] >> 13);
+    offset.vx = func_80022CAC(sprite, sprite->velocity[0] >> 13);
     offset.vy = 0;
     offset.vz = 0;
     func_8003F738(&angles, &m);
@@ -688,7 +689,7 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B5D
 /* Draw sprite with 800B5DF4, uncoloured. */
 void func_800B5FBC(BattleSprite *sprite) {
     sprite->frame = 1;
-    func_8001CD64(sprite->task + 1, func_800B5DF4);
+    func_8001CD64(&sprite->task->draw, func_800B5DF4);
     sprite->colourFlags = 0x40;
 }
 
@@ -697,7 +698,7 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B60
 /* Draw sprite with 800B6004, uncoloured. */
 void func_800B61B0(BattleSprite *sprite) {
     sprite->frame = 1;
-    func_8001CD64(sprite->task + 1, func_800B6004);
+    func_8001CD64(&sprite->task->draw, func_800B6004);
     sprite->colourFlags = 0x40;
 }
 
@@ -733,7 +734,7 @@ void func_800B62C8(BattleSprite *sprite, u8 *args) {
     STACK_ENTER(stack + 0x3E00);
     if (args[0] == 2) {
         func_800A979C(0xB, 0x300, 0x100, 0, 0x1DB);
-        func_800BEE2C(0xB, 1 << (((D_800C3E1C->motion.word & 3) << 2) | (D_800C3E1C->frameBits >> 30)), args[0]);
+        func_800BEE2C(0xB, 1 << (((D_800C3E1C->motion.word & 3) << 2) | (D_800C3E1C->frameBits.word >> 30)), args[0]);
     } else {
         func_800BEE2C(0xB, D_800D3634, args[0]);
     }
@@ -759,7 +760,7 @@ void func_800B63F0(BattleSprite *sprite, u8 *args) {
 
 /* Script command: draw sprite with the resident sprite drawer (80025A88). */
 void func_800B6438(BattleSprite *sprite) {
-    func_8001CD64(sprite->task + 1, func_80025A88);
+    func_8001CD64(&sprite->task->draw, func_80025A88);
 }
 
 #ifdef NON_MATCHING
@@ -767,7 +768,7 @@ void func_800B6438(BattleSprite *sprite) {
  * args[1]). */
 void func_800B6464(BattleSprite *sprite, u8 *args) {
     SpriteImagePart *part = sprite->view->part;
-    u32 count = sprite->partBits >> 2;
+    u32 count = sprite->flags.bytes[0] >> 2;
     s16 i = 0;
     s32 x;
     s32 y;
@@ -788,7 +789,7 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B64
 
 /* Script command: set battle sprite args[1]'s value (800245D8) to args[0]. */
 void func_800B64D4(BattleSprite *sprite, u8 *args) {
-    func_800245D8(BATTLE_STATE.sprites[args[1]], args[0]);
+    func_800245D8(BATTLE_AREA.sprites[args[1]], args[0]);
 }
 
 /* Script command: turn the sprite towards its target (on the x-z plane). */
@@ -832,9 +833,9 @@ void func_800B65B0(BattleSprite *sprite, u8 *args) {
     want.vy = -ratan2(delta.vz, delta.vx);
     want.vz = ratan2(delta.vy, distance);
     want.vx = 0;
-    velocity.vx = sprite->speed[0] >> 7;
-    velocity.vy = sprite->speed[1] >> 7;
-    velocity.vz = sprite->speed[2] >> 7;
+    velocity.vx = sprite->velocity[0] >> 7;
+    velocity.vy = sprite->velocity[1] >> 7;
+    velocity.vz = sprite->velocity[2] >> 7;
     func_8004A414(&velocity, &squares);
     speedLength = SquareRoot0(squares.vy + squares.vx + squares.vz);
     distance = SquareRoot0(squares.vx + squares.vz);
@@ -863,9 +864,9 @@ void func_800B65B0(BattleSprite *sprite, u8 *args) {
     func_80021B04(&length, speedLength, 0, 0);
     func_8003F738(&angles, &m);
     ApplyMatrix(&m, &length, &speed);
-    sprite->speed[0] = speed.vx << 7;
-    sprite->speed[1] = speed.vy << 7;
-    sprite->speed[2] = speed.vz << 7;
+    sprite->velocity[0] = speed.vx << 7;
+    sprite->velocity[1] = speed.vy << 7;
+    sprite->velocity[2] = speed.vz << 7;
 }
 #else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B65B0);
@@ -891,12 +892,12 @@ void func_800B6808(BattleSprite *sprite) {
     angles.vz = ratan2(delta.vy, distance);
     angles.vx = 0;
     sprite->direction = angles.vy;
-    func_80021B04(&length, (sprite->field18 << 9) >> 16, 0, 0);
+    func_80021B04(&length, (sprite->speed << 9) >> 16, 0, 0);
     func_8003F738(&angles, &m);
     ApplyMatrix(&m, &length, &speed);
-    sprite->speed[0] = speed.vx << 7;
-    sprite->speed[1] = speed.vy << 7;
-    sprite->speed[2] = speed.vz << 7;
+    sprite->velocity[0] = speed.vx << 7;
+    sprite->velocity[1] = speed.vy << 7;
+    sprite->velocity[2] = speed.vz << 7;
 }
 
 /* Script command: set a 16.16 point to the script's three s16s. */
@@ -940,9 +941,9 @@ void func_800B69E4(s16 *vector, u8 *args) {
 void func_800B6A50(BattleSprite *sprite) {
     BattleSprite *parent = sprite->parent;
 
-    sprite->speed[0] = parent->speed[0];
-    sprite->speed[1] = parent->speed[1];
-    sprite->speed[2] = parent->speed[2];
+    sprite->velocity[0] = parent->velocity[0];
+    sprite->velocity[1] = parent->velocity[1];
+    sprite->velocity[2] = parent->velocity[2];
 }
 
 /* Script command: break the sprite's image into pieces (801FC4C4) with the
@@ -994,13 +995,13 @@ void func_800B6BFC(void) {
 
 /* Script command: turn the sprite about z to its speed's direction in x-y. */
 void func_800B6C44(BattleSprite *sprite) {
-    sprite->view->angle[2] = ratan2(sprite->speed[1] >> 8, sprite->speed[0] >> 8);
+    sprite->view->angle[2] = ratan2(sprite->velocity[1] >> 8, sprite->velocity[0] >> 8);
     sprite->render.word |= 0x10000000;
 }
 
 /* Script command: turn the sprite about x to its speed's direction in x-z. */
 void func_800B6C98(BattleSprite *sprite) {
-    sprite->view->angle[0] = ratan2(sprite->speed[2] >> 8, sprite->speed[0] >> 8);
+    sprite->view->angle[0] = ratan2(sprite->velocity[2] >> 8, sprite->velocity[0] >> 8);
     sprite->render.word |= 0x10000000;
 }
 
@@ -1010,9 +1011,9 @@ void func_800B6CEC(BattleSprite *sprite) {
     Vector squares;
     s32 distance;
 
-    speed.vx = sprite->speed[0] >> 8;
-    speed.vy = sprite->speed[1] >> 8;
-    speed.vz = sprite->speed[2] >> 8;
+    speed.vx = sprite->velocity[0] >> 8;
+    speed.vy = sprite->velocity[1] >> 8;
+    speed.vz = sprite->velocity[2] >> 8;
     if (speed.vz == 0) {
         speed.vz = 4;
     }
@@ -1045,14 +1046,14 @@ void func_800B6DC0(BattleSprite *sprite) {
 void func_800B6E84(BattleSprite *sprite, s8 *args) {
     SVector angles;
     Matrix m;
-    Vector speed;
+    Vector velocity;
 
     func_80021B04(&angles, 0, 0, args[0] * 16);
     func_8003F738(&angles, &m);
-    ApplyMatrixLV(&m, (Vector *)sprite->speed, &speed);
-    sprite->speed[0] = speed.vx;
-    sprite->speed[1] = speed.vy;
-    sprite->speed[2] = speed.vz;
+    ApplyMatrixLV(&m, (Vector *)sprite->velocity, &velocity);
+    sprite->velocity[0] = velocity.vx;
+    sprite->velocity[1] = velocity.vy;
+    sprite->velocity[2] = velocity.vz;
 }
 
 /* Shatter update: after its delay each shard fades, moves, turns and
@@ -1074,7 +1075,7 @@ void func_800B6F0C(BattleTask *task) {
                 if (shard->delay != 0) {
                     shard->delay--;
                 } else {
-                    poly = &shard->poly[BATTLE_STATE.buffer];
+                    poly = &shard->poly[BATTLE_AREA.buffer];
                     poly->r0 = func_80021AD8(poly->r0, -6);
                     poly->g0 = func_80021AD8(poly->g0, -6);
                     poly->b0 = func_80021AD8(poly->b0, -6);
@@ -1130,7 +1131,7 @@ void func_800B7160(BattleTask *draw) {
         for (row = 0; row != 14; row++) {
             for (column = 0; column != 20; column++) {
                 shard = &shatter->shards[layer][row][column];
-                poly = &shard->poly[BATTLE_STATE.buffer];
+                poly = &shard->poly[BATTLE_AREA.buffer];
                 if (shard->position.vz >= 64) {
                     func_8003F738(&shard->angles, &m);
                     TransMatrix(&m, &shard->position);
@@ -1249,78 +1250,1008 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B9C
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B9F78);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BA4E0);
+/* End slot's turn presentation: wait for the stage objects (800B136C), then
+ * restore the view (800B8D7C) and, for a gear, 800BFBA0; for a party member
+ * on foot its sprite's state (800BF2B8). */
+void func_800BA4E0(s32 slot) {
+    D_80059464 = 0;
+    D_800591AC = 0;
+    func_800B136C();
+    if (BATTLE_AREA.slots[slot].gear) {
+        func_800B8D7C();
+        func_800BFBA0();
+    } else if (slot < 3) {
+        if (BATTLE_AREA.sprites[slot] != NULL) {
+            func_800BF2B8(BATTLE_AREA.sprites[slot]);
+        }
+    } else {
+        func_800B8D7C();
+    }
+    func_800BC454(0xC0);
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BA59C);
+/* Turn sprite to direction, its horizontal speed a quarter of its speed
+ * along it. */
+void func_800BA59C(BattleSprite *sprite, s16 direction) {
+    s32 speed;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BA614);
+    sprite->direction = direction;
+    speed = sprite->speed >> 3;
+    sprite->velocity[0] = (func_8003F8CC(direction) >> 1) * speed >> 8;
+    sprite->velocity[2] = -((func_8003F8B0(sprite->direction) >> 1) * speed) >> 8;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BA768);
+/* Aim sprite's jump at its target: turn it towards the target and set the
+ * rising speed that lands it on the ground there (or the target's height
+ * when that is higher). */
+void func_800BA614(BattleSprite *sprite) {
+    Vector delta;
+    SVector point;
+    Vector out;
+    s32 triangle;
+    s32 height;
+    s16 angle;
+    s32 distance;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BA8F4);
+    func_80021B04(&point, sprite->target[0], sprite->target[1], sprite->target[2]);
+    triangle = func_800A5914(&point, sprite->triangle, 4);
+    if (triangle < 0) {
+        triangle = func_800A579C(&point);
+    }
+    func_800A5870(&point, triangle, &out);
+    if (point.vy > sprite->target[1]) {
+        point.vy = sprite->target[1];
+    }
+    height = ((point.vy << 16) - sprite->y.fixed) >> 16;
+    delta.vx = sprite->target[0] - (sprite->x.fixed >> 16);
+    delta.vz = sprite->target[2] - (sprite->z.fixed >> 16);
+    angle = -ratan2(delta.vz, delta.vx);
+    func_8004A414(&delta, &delta);
+    distance = SquareRoot0(delta.vx + delta.vz);
+    sprite->velocity[1] = -sprite->gravity * distance * 16 / (sprite->speed >> 11) + sprite->speed * height / distance;
+    func_800BA59C(sprite, angle);
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BA984);
+/* Aim sprite's jump at its target keeping its rising speed: snap it to
+ * whole units, turn it towards the target and set the speed that covers the
+ * distance (and the height difference) in the jump's frames. */
+void func_800BA768(BattleSprite *sprite) {
+    Vector delta;
+    SVector point;
+    Vector out;
+    s32 frames;
+    s32 triangle;
+    s32 angle;
+    s32 distance;
+    s32 height;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BAB0C);
+    frames = -(sprite->velocity[1] * 2 / sprite->gravity);
+    sprite->x.fixed &= 0xFFFF0000;
+    sprite->y.fixed &= 0xFFFF0000;
+    sprite->z.fixed &= 0xFFFF0000;
+    delta.vx = sprite->target[0] - (sprite->x.fixed >> 16);
+    delta.vz = sprite->target[2] - (sprite->z.fixed >> 16);
+    delta.vy = 0;
+    angle = -ratan2(delta.vz, delta.vx);
+    func_8004A414(&delta, &delta);
+    distance = SquareRoot0(delta.vx + delta.vz) << 16;
+    if (frames != 0) {
+        sprite->speed = distance / frames;
+    } else {
+        sprite->speed = 0;
+    }
+    func_80021B04(&point, sprite->target[0], sprite->target[1], sprite->target[2]);
+    triangle = func_800A5914(&point, sprite->triangle, 4);
+    if (triangle < 0) {
+        triangle = func_800A579C(&point);
+    }
+    func_800A5870(&point, triangle, &out);
+    if (point.vy > sprite->target[1]) {
+        point.vy = sprite->target[1];
+    }
+    height = (point.vy << 16) - sprite->y.fixed;
+    if (frames != 0) {
+        sprite->velocity[1] += height / frames;
+    }
+    func_800BA59C(sprite, angle);
+    func_80022B2C(sprite);
+}
 
+/* Put sprite on the scene's ground: its triangle and ground height. */
+void func_800BA8F4(BattleSprite *sprite) {
+    SVector point;
+    Vector out;
+    s32 triangle;
+
+    point.vx = sprite->x.fixed >> 16;
+    point.vy = sprite->y.fixed >> 16;
+    point.vz = sprite->z.fixed >> 16;
+    triangle = func_800A5914(&point, sprite->triangle, 4);
+    if (triangle < 0) {
+        triangle = func_800A579C(&point);
+    }
+    func_800A5870(&point, triangle, &out);
+    sprite->ground = point.vy;
+    sprite->triangle = triangle;
+}
+
+/* Create a sprite task (updated by 800BAC50, drawn by 800BAB0C) at x, y, z
+ * facing direction, running animation. */
+ActorTask *func_800BA984(s32 resource, s16 a, s16 b, s16 c, s16 d, s16 e, s16 x, s16 y, s16 z, s16 animation,
+                         s16 direction, s32 unused11, s32 unused12, s32 g) {
+    ActorTask *task;
+    BattleSprite *sprite;
+
+    task = func_8001D1D8(0x19C, NULL, func_800BAC50, func_800BAB0C, func_800BABDC);
+    sprite = (BattleSprite *)(task + 1);
+    task->data = sprite;
+    task->draw.data = sprite;
+    task->draw.owner = NULL;
+    func_800242F4(sprite, resource, a, b, c, d, e, g);
+    sprite->task = task;
+    sprite->x.fixed = x << 16;
+    sprite->y.fixed = y << 16;
+    sprite->z.fixed = z << 16;
+    sprite->fieldB0 = animation;
+    sprite->render.word |= 4;
+    sprite->direction = direction;
+    func_80022000(&sprite->x.fixed, 0x2000);
+    sprite->field82 = 0x2000;
+    sprite->triangle = 0;
+    func_800245D8(sprite, animation);
+    return task;
+}
+
+/* Draw a sprite task: its depth in the view, and its parts when visible. */
+void func_800BAB0C(ActorTask *task) {
+    SVector point;
+    s32 result[2]; /* screen position, then the GTE flags */
+    Vector unused;
+    BattleSprite *sprite;
+    s32 depth;
+
+    if (D_800C3664 == 0) {
+        sprite = task->data;
+        point.vx = sprite->x.fixed >> 16;
+        point.vy = sprite->y.fixed >> 16;
+        point.vz = sprite->z.fixed >> 16;
+        SetRotMatrix(&D_800D30BC);
+        SetTransMatrix(&D_800D30BC);
+        depth = (RotTransPers(&point, &result[0], &result[0], &result[1]) >> D_80050100) + sprite->depthBias;
+        if (result[1] & 0x8000) {
+            depth = 0;
+        }
+        sprite->depth = depth;
+        if ((u32)(depth - 1) < 0xFFF) {
+            func_8001E298(sprite, D_8005956C + depth);
+        }
+    }
+}
+
+#ifdef NON_MATCHING
+/* Destroy a sprite task: its part block, children, sprite and node.
+ * Nonmatching: the original computes the sprite from $a0 before copying the
+ * task to $s0. */
+void func_800BABDC(ActorTask *task) {
+    BattleSprite *sprite = (BattleSprite *)(task + 1);
+    void *parts = sprite->view->parts;
+
+    if (parts != NULL) {
+        func_800320E8(parts);
+    }
+    func_8001CE74(task);
+    func_8001D3F4(sprite);
+    func_8001CB48(&task->draw);
+    func_8001CD94(task);
+    func_800320E8(task);
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BABDC);
+#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BAC50);
+/* Update a sprite task (twice with double steps) unless paused. */
+void func_800BAC50(ActorTask *task) {
+    BattleSprite *sprite = task->data;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BACBC);
+    if (D_800C3664 == 0) {
+        func_80023210(sprite);
+        func_80022CDC(sprite);
+        if (sprite->motion.bits.doubleStep) {
+            func_80023210(sprite);
+            func_80022CDC(sprite);
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BADD4);
+/* Party slot's sprite on screen: its position, depth and a box around it. */
+void func_800BACBC(s32 slot, s16 *x, s16 *y, s16 *depth, s16 *left, s16 *width, s16 *centre) {
+    SVector point;
+    s16 sxy[2];
+    s32 p;
+    BattleSprite *sprite = BATTLE_AREA.sprites[slot];
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BAEB8);
+    point.vx = sprite->x.fixed >> 16;
+    point.vy = sprite->y.fixed >> 16;
+    point.vz = sprite->z.fixed >> 16;
+    PushMatrix();
+    SetRotMatrix(&D_800D30BC);
+    SetTransMatrix(&D_800D30BC);
+    *depth = RotTransPers(&point, (s32 *)sxy, &p, &p) >> 4;
+    *x = sxy[0];
+    *y = sxy[1];
+    *left = sxy[0] - 0x30;
+    *width = 0x30;
+    *centre = sxy[0] - 0x18;
+    PopMatrix();
+}
+
+/* Remove party slot's sprite task: stop its effects (800BFC80), free its
+ * sprite source, destroy the task and clear the slot's sprite. */
+void func_800BADD4(s32 slot) {
+    ActorTask *task = BATTLE_AREA.tasks[slot];
+
+    if (task != NULL) {
+        func_800BFC80(task, 0, 2);
+        if (slot < 3) {
+            if (BATTLE_AREA.sources[slot].data != NULL) {
+                func_800320E8(BATTLE_AREA.sources[slot].data);
+            }
+            BATTLE_AREA.sources[slot].data = NULL;
+        }
+        task->destroy(task);
+        func_8001CE74(task);
+        BATTLE_AREA.sprites[slot] = NULL;
+        BATTLE_AREA.tasks[slot] = NULL;
+    }
+}
+
+/* Face slot's sprite along its side (turned for a nonzero target code),
+ * unless it runs animation 0x15. */
+void func_800BAEB8(s32 slot) {
+    BattleSprite *sprite = BATTLE_AREA.sprites[slot];
+    s32 direction;
+
+    if (sprite->motion.bytes[3] != 0x15) {
+        direction = (BATTLE_AREA.slots[slot].targetCode != 0) << 11;
+        func_800223B0(&sprite->x.fixed, direction);
+        func_80021FE0(&sprite->x.fixed, direction);
+    }
+}
 
 void func_800BAF40(void) {
 }
 
+#ifdef NON_MATCHING
+/* Send party slot's sprite off: select it (800BC404), run its exit
+ * animation 0x16 and wait for it and its tasks, then remove the sprite and
+ * load the slot's gear object in its place (800BB760), waiting for it.
+ * Nonmatching: battle_core.h declares slot u8 and 800BC404's mask u16; the
+ * original takes and passes words, unextended. */
+void func_800BAF48(u8 slot) {
+    BattleSprite *sprite;
+    s32 tasks;
+
+    func_800BC404(1 << slot);
+    func_800BC404(0);
+    tasks = D_80059188;
+    sprite = BATTLE_AREA.sprites[slot];
+    func_800B8D7C();
+    func_800245D8(sprite, 0x16);
+    while (sprite->countdown != 0 && sprite->motion.bytes[3] == 0x16) {
+        func_800BE790();
+    }
+    while (D_80059188 != tasks) {
+        func_800BE790();
+    }
+    func_800BADD4(slot);
+    func_800BE790();
+    func_800BE790();
+    func_800BB760(slot);
+    while (D_800C35D8 != 0) {
+        func_800BE790();
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BAF48);
+#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BB080);
+/* Destroy the party members' sprites other than keep's that are not in
+ * use, then end their stage objects (800B14CC). */
+void func_800BB080(s32 keep) {
+    s32 i;
+    BattleSprite *sprite;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BB13C);
+    for (i = 0; i != 3; i++) {
+        if (i != keep) {
+            sprite = BATTLE_AREA.sprites[i];
+            if (sprite != NULL && sprite->field48 == 0) {
+                sprite->task->destroy(sprite->task);
+                BATTLE_AREA.sprites[i] = NULL;
+                BATTLE_AREA.tasks[i] = NULL;
+            }
+        }
+    }
+    func_800B14CC(keep);
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BB248);
+/* Update of a sprite following its slot's stage object: step its animation
+ * while it runs, then put it at the object's position. */
+void func_800BB13C(ActorTask *task) {
+    SVector unused; /* the original's frame has this unused local */
+    BattleSprite *sprite = task->data;
+    u32 low = sprite->frameBits.bits.slotLow;
+    BattleObject *object = D_800D3368[sprite->motion.bits.slotHigh << 2 | low];
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BB314);
+    if (object != NULL) {
+        if (sprite->countdown == 0) {
+            sprite->framesLeft = 0;
+        }
+        if (sprite->framesLeft != 0) {
+            func_80023210(sprite);
+            func_80022CDC(sprite);
+            if (sprite->motion.bits.doubleStep) {
+                func_80023210(sprite);
+                func_80022CDC(sprite);
+            }
+        }
+        sprite->x.fixed = object->hierarchy->translation[0] << 16;
+        sprite->y.fixed = object->hierarchy->translation[1] << 16;
+        sprite->z.fixed = object->hierarchy->translation[2] << 16;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BB350);
+/* Draw of a slot-following sprite: its size from the slot's object and its
+ * depth in the view. */
+void func_800BB248(ActorTask *task) {
+    SVector point;
+    s32 result[2]; /* screen position, then the GTE flags */
+    BattleSprite *sprite = task->data;
+    s32 depth;
+    u32 low;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BB540);
+    low = sprite->frameBits.bits.slotLow;
+    sprite->size = func_800AA600(sprite->motion.bits.slotHigh << 2 | low);
+    sprite->halfSize = sprite->size / 2;
+    point.vx = sprite->x.fixed >> 16;
+    point.vy = sprite->y.fixed >> 16;
+    point.vz = sprite->z.fixed >> 16;
+    SetRotMatrix(&D_800D30BC);
+    SetTransMatrix(&D_800D30BC);
+    depth = (RotTransPers(&point, &result[0], &result[0], &result[1]) >> D_80050100) + sprite->depthBias;
+    if (result[1] & 0x8000) {
+        depth = 0;
+    }
+    sprite->depth = depth;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BB620);
+/* Destroy a task node. */
+void func_800BB314(ActorTask *task) {
+    SVector unused; /* the original's frame has this unused local */
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BB690);
+    func_8001CB48(&task->draw);
+    func_8001CD94(task);
+    func_800320E8(task);
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BB6E0);
+/* Create slot's sprite following its stage object (800BB13C, 800BB248),
+ * unless it has one. */
+void func_800BB350(u32 slot) {
+    ActorTask *task;
+    BattleSprite *sprite;
+    u8 saved;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BB760);
+    if (BATTLE_AREA.sprites[slot] == NULL) {
+        saved = D_800591AC;
+        D_800591AC = 0;
+        task = func_8001D1D8(0x19C, NULL, func_800BB13C, func_800BB248, func_800BB314);
+        sprite = (BattleSprite *)(task + 1);
+        sprite->task = task;
+        task->data = sprite;
+        task->draw.data = sprite;
+        func_80023804(sprite);
+        func_800239A0(sprite);
+        sprite->flags.bits.group = 4;
+        sprite->task = task;
+        sprite->render.word &= ~3;
+        sprite->frameBits.bits.sequencerOwned = 0;
+        sprite->sequencer->field8 = 0;
+        sprite->sequencer->fieldC = 0;
+        sprite->field82 = D_800591A8;
+        sprite->x.fixed = (u16)BATTLE_AREA.slots[slot].x << 16;
+        sprite->z.fixed = (u16)BATTLE_AREA.slots[slot].z << 16;
+        sprite->y.fixed = 0;
+        sprite->size = func_800AA600(slot);
+        sprite->field82 = 0x2000;
+        sprite->halfSize = sprite->size >> 1;
+        func_80022000(&sprite->x.fixed, 0x2000);
+        sprite->resource = D_8006BE10;
+        BATTLE_AREA.sprites[slot] = sprite;
+        BATTLE_AREA.tasks[slot] = task;
+        sprite->field4C = 0;
+        sprite->field48 = 0;
+        D_800591AC = saved;
+        sprite->frameBits.bits.slotLow = slot;
+        sprite->motion.bits.slotHigh = slot >> 2;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BB7F8);
+/* Task step: take a free stage place (of three), create the gear object of
+ * the task's slot there, its sprite (800BB350), and end the task; the last
+ * one sets D_800C37CC. */
+void func_800BB540(SlotTask *task) {
+    s32 i;
+    s32 bit;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BB844);
+    for (i = 0, bit = 1; i != 3; i++, bit <<= 1) {
+        if (!(D_800C3666 & bit)) {
+            D_800C3666 |= bit;
+            break;
+        }
+    }
+    func_800A979C(task->slot, D_800C3668[i].x, D_800C3668[i].y, 0, task->slot + 0x1C0);
+    D_800C3CB8--;
+    func_800BB350(task->slot);
+    task->task.destroy(&task->task);
+    if (--D_800C35D8 == 0) {
+        D_800C37CC = 1;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BB9D4);
+/* Task step: once the disc is idle, run 800BB540 on a separate stack. */
+void func_800BB620(SlotTask *task) {
+    u8 *stack;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BBAB8);
+    if (func_800286CC() == 0) {
+        stack = func_80031BDC(0x1000, 1);
+        STACK_ENTER(stack + 0xF00);
+        func_800BB540(task);
+        STACK_LEAVE();
+        func_800320E8(stack);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BBEE0);
+/* Task step: read the gear files of the task's slot (800A9540), then
+ * continue with 800BB620. */
+void func_800BB690(SlotTask *task) {
+    func_800A9540(task->slot);
+    D_800C3CB8++;
+    func_8001CD6C((EffectSprite *)task, (void (*)(EffectSprite *))func_800BB620);
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BC018);
+/* Task step: once the disc and the file reads are idle, run 800BB690 on a
+ * separate stack. */
+void func_800BB6E0(SlotTask *task) {
+    u8 *stack;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BC158);
+    if (func_800286CC() == 0 && D_800C3CB8 == 0) {
+        stack = func_80031BDC(0x1000, 1);
+        STACK_ENTER(stack + 0xF00);
+        func_800BB690(task);
+        STACK_LEAVE();
+        func_800320E8(stack);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BC2F0);
+/* Start a task loading slot's gear object (800BB6E0). */
+void func_800BB760(s32 slot) {
+    u8 saved = D_800591AC;
+    SlotTask *task;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BC3F8);
+    D_800591AC = 0;
+    D_800591AF = 1;
+    task = func_8001CD08(NULL, 4);
+    func_8001CD6C((EffectSprite *)task, (void (*)(EffectSprite *))func_800BB6E0);
+    task->slot = slot;
+    D_800591AF = 0;
+    D_800C35D8++;
+    D_800591AC = saved;
+}
 
+/* Reset the camera modes. */
+void func_800BB7F8(void) {
+    D_800C3674 = 0x200;
+    D_800C3678 = -1;
+    D_800C3CC4 = 0;
+    D_800C3CBC = 1;
+    func_800BC2F0(0);
+}
+
+/* Build view matrix m looking from eye at target with up vector up. */
+void func_800BB844(Matrix *m, SVector *eye, SVector *target, SVector *up) {
+    Vector v;
+    Vector forward;
+    Vector right;
+    Vector upward;
+
+    func_80021B14(&v, target->vx - eye->vx, target->vy - eye->vy, target->vz - eye->vz);
+    upward.vx = up->vx;
+    upward.vy = up->vy;
+    upward.vz = up->vz;
+    func_80048D7C(&v, &forward);
+    func_8004A480(&upward, &forward, &v);
+    func_80048D7C(&v, &right);
+    func_8004A480(&forward, &right, &v);
+    func_80048D7C(&v, &upward);
+    m->m[0][0] = right.vx;
+    m->m[0][1] = right.vy;
+    m->m[0][2] = right.vz;
+    m->m[1][0] = upward.vx;
+    m->m[1][1] = upward.vy;
+    m->m[1][2] = upward.vz;
+    m->m[2][0] = forward.vx;
+    m->m[2][1] = forward.vy;
+    m->m[2][2] = forward.vz;
+    PushMatrix();
+    ApplyMatrix(m, eye, &v);
+    m->t[0] = -v.vx;
+    m->t[1] = -v.vy;
+    m->t[2] = -v.vz;
+    PopMatrix();
+}
+
+/* Set the battle view from the camera points, shaken by 800c354c, and draw
+ * the stage unless that is off. */
+void func_800BB9D4(void) {
+    func_800BB844(&D_800D309C.matrix, &D_800D3354, &D_800D335C, &D_800C3730);
+    D_800D309C.matrix.t[0] += D_800C354C.vx;
+    D_800D309C.matrix.t[1] += D_800C354C.vy;
+    D_800D309C.matrix.t[2] += D_800C354C.vz;
+    if (D_800C372C == 0) {
+        func_800A4654(&D_800D309C.matrix, NULL, 0, BATTLE_AREA.ot, BATTLE_AREA.buffer, &D_800D3354, &D_800D335C,
+                      0x1000);
+    }
+}
+
+/* Step the battle camera: take its wanted points from the camera mode, move
+ * the eye and look-at points a fraction (800c3674) of the way there, and
+ * derive its angles and range. */
+void func_800BBAB8(void) {
+    SVector *point;
+    Vector step;
+    Vector unused[2]; /* the original's frame has these unused locals */
+    Vector delta;
+    Vector unused2;
+    Vector square;
+    s32 horizontal;
+
+    switch (D_800C3CC0) {
+    case 0:
+        break;
+    case 1:
+        func_800BC460(D_800C3678);
+        break;
+    case 2:
+        D_800D30A0[0].vx = D_8006F99C.vx >> 16;
+        D_800D30A0[0].vy = D_8006F99C.vy >> 16;
+        D_800D30A0[0].vz = D_8006F99C.vz >> 16;
+        point = &D_800D30A0[1];
+        point->vx = D_8006F9AC.vx >> 16;
+        point->vy = D_8006F9AC.vy >> 16;
+        point->vz = D_8006F9AC.vz >> 16;
+        break;
+    case 3:
+        /* step holds the wanted look-at, then eye point */
+        ((SVector *)&step)[1].vx = ((SVector *)&step)[0].vx = D_800D39EC->x.fixed >> 16;
+        ((SVector *)&step)[0].vy = D_800D39EC->y.fixed >> 16;
+        ((SVector *)&step)[0].vz = D_800D39EC->z.fixed >> 16;
+        ((SVector *)&step)[1].vz = ((SVector *)&step)[0].vz - func_8003F8CC(D_800C373C) * D_800C3738 / 4096;
+        ((SVector *)&step)[1].vy = ((SVector *)&step)[0].vy - func_8003F8B0(D_800C373C) * D_800C3738 / 4096;
+        D_800D309C.eye = ((SVector *)&step)[1];
+        D_800D309C.target = ((SVector *)&step)[0];
+        break;
+    }
+    if (D_800C3CBC == 1) {
+        gte_lddp(D_800C3674);
+        step.vx = D_800D309C.eye.vx - D_800D3354.vx;
+        step.vy = D_800D309C.eye.vy - D_800D3354.vy;
+        step.vz = D_800D309C.eye.vz - D_800D3354.vz;
+        gte_ldlvl(&step);
+        gte_gpf12();
+        gte_stlvl(&step);
+        if (step.vx | step.vz | step.vy) {
+            D_800D3354.vx += step.vx;
+            D_800D3354.vy += step.vy;
+            D_800D3354.vz += step.vz;
+        } else {
+            SVector *wanted = &D_800D309C.eye;
+
+            D_800D3354.vx = wanted->vx;
+            D_800D3354.vy = wanted->vy;
+            D_800D3354.vz = wanted->vz;
+        }
+        step.vx = D_800D309C.target.vx - D_800D335C.vx;
+        step.vy = D_800D309C.target.vy - D_800D335C.vy;
+        step.vz = D_800D309C.target.vz - D_800D335C.vz;
+        gte_ldlvl(&step);
+        gte_gpf12();
+        gte_stlvl(&step);
+        if (step.vx | step.vz | step.vy) {
+            D_800D335C.vx += step.vx;
+            D_800D335C.vy += step.vy;
+            D_800D335C.vz += step.vz;
+        } else {
+            SVector *wanted = &D_800D309C.target;
+
+            D_800D335C.vx = wanted->vx;
+            D_800D335C.vy = wanted->vy;
+            D_800D335C.vz = wanted->vz;
+        }
+    }
+    delta.vx = D_800D335C.vx - D_800D3354.vx;
+    delta.vy = D_800D335C.vy - D_800D3354.vy;
+    delta.vz = D_800D335C.vz - D_800D3354.vz;
+    func_8004A414(&delta, &square);
+    horizontal = SquareRoot0(square.vx + square.vz);
+    D_800D309C.range = SquareRoot0(square.vx + square.vy + square.vz);
+    D_800D309C.rot.vy = -ratan2(delta.vz, delta.vx);
+    D_800D309C.rot.vx = -ratan2(delta.vy, horizontal);
+    D_800D309C.rot.vz = 0;
+}
+
+/* Destroy of a camera sprite task: release its camera role (restoring the
+ * saved point unless effects are off), free it, and when the last one ends
+ * return to camera mode 800c367c. */
+void func_800BBEE0(ActorTask *task) {
+    SVector *point;
+    BattleSprite *sprite = task->data;
+
+    if (sprite->flags.bits.group == 0xA) {
+        if (D_800C3680 == task) {
+            D_800C3680 = NULL;
+            if (D_800C37C8 == 0) {
+                D_800D30A0[0].vx = D_800C3CCC.vx;
+                D_800D30A0[0].vy = D_800C3CCC.vy;
+                D_800D30A0[0].vz = D_800C3CCC.vz;
+            }
+        }
+    } else if (D_800C3684 == task) {
+        D_800C3684 = NULL;
+        if (D_800C37C8 == 0) {
+            point = &D_800D30A0[1];
+            point->vx = D_800C3CD4.vx;
+            point->vy = D_800C3CD4.vy;
+            point->vz = D_800C3CD4.vz;
+        }
+    }
+    if (sprite->motion.bits.owned) {
+        func_8001CE74(task);
+    }
+    func_8001CD94(task);
+    func_8001CB48(&task->draw);
+    func_800320E8(task);
+    if (--D_800C3CC4 == 0) {
+        func_800BC2F0(D_800C367C);
+    }
+}
+
+/* Update of a camera sprite task: step its animation (twice when double
+ * stepping), make its position the camera eye (group 0xA) or look-at point,
+ * and destroy it when its animation ends. */
+void func_800BC018(ActorTask *task) {
+    BattleSprite *sprite = task->data;
+
+    func_80023210(sprite);
+    func_80022CDC(sprite);
+    if (sprite->flags.bits.group == 0xA) {
+        D_8006F99C.vx = sprite->x.fixed;
+        D_8006F99C.vy = sprite->y.fixed;
+        D_8006F99C.vz = sprite->z.fixed;
+    } else {
+        D_8006F9AC.vx = sprite->x.fixed;
+        D_8006F9AC.vy = sprite->y.fixed;
+        D_8006F9AC.vz = sprite->z.fixed;
+    }
+    if (sprite->framesLeft != 0) {
+        if (sprite->motion.bits.doubleStep) {
+            func_80023210(sprite);
+            func_80022CDC(sprite);
+            if (sprite->flags.bits.group == 0xA) {
+                D_8006F99C.vx = sprite->x.fixed;
+                D_8006F99C.vy = sprite->y.fixed;
+                D_8006F99C.vz = sprite->z.fixed;
+            } else {
+                D_8006F9AC.vx = sprite->x.fixed;
+                D_8006F9AC.vy = sprite->y.fixed;
+                D_8006F9AC.vz = sprite->z.fixed;
+            }
+            if (sprite->framesLeft == 0) {
+                task->destroy(task);
+            }
+        }
+    } else {
+        task->destroy(task);
+    }
+}
+
+/* Make sprite task a camera sprite: the eye (group 0xA) or look-at sprite,
+ * saving the camera point or taking over (field34 1) from a running one,
+ * else stopping the new one; then camera mode 2 follows the sprites. */
+void func_800BC158(ActorTask *task) {
+    SVector *point;
+    BattleSprite *sprite = (BattleSprite *)(task + 1);
+
+    if (sprite->flags.bits.group == 0xA) {
+        if (D_800C3680 != NULL) {
+            if (((BattleSprite *)(D_800C3680 + 1))->frame != 1 && sprite->frame == 1) {
+                D_800C3680->destroy(D_800C3680);
+                D_800C3680 = task;
+            } else {
+                sprite->countdown = 0;
+                sprite->framesLeft = 0;
+            }
+        } else {
+            D_800C3680 = task;
+            D_800C3CCC.vx = D_800D30A0[0].vx;
+            D_800C3CCC.vy = D_800D30A0[0].vy;
+            D_800C3CCC.vz = D_800D30A0[0].vz;
+        }
+    } else if (D_800C3684 != NULL) {
+        if (((BattleSprite *)(D_800C3684 + 1))->frame != 1 && sprite->frame == 1) {
+            D_800C3684->destroy(D_800C3684);
+            D_800C3684 = task;
+        } else {
+            sprite->countdown = 0;
+            sprite->framesLeft = 0;
+        }
+    } else {
+        D_800C3684 = task;
+        point = &D_800D30A0[1];
+        D_800C3CD4.vx = point->vx;
+        D_800C3CD4.vy = point->vy;
+        D_800C3CD4.vz = point->vz;
+    }
+    D_800C3CC4++;
+    if (sprite->motion.bits.flip) {
+        sprite->direction = 0x800;
+    } else {
+        sprite->direction = 0;
+    }
+    func_8001CD74(task, func_800BBEE0);
+    func_8001CD6C((EffectSprite *)task, (void (*)(EffectSprite *))func_800BC018);
+    func_800BC2F0(2);
+}
+
+/* Set the camera mode: 2 puts the eye and look-at sprites at the saved
+ * points, 4 sets D_800C3CBC to 5, others release them. */
+void func_800BC2F0(s32 mode) {
+    SVector *point;
+
+    D_800C3CC0 = mode;
+    D_800C3CBC = 1;
+    switch (mode) {
+    case 4:
+        D_800C3CBC = 5;
+        break;
+    case 2:
+        D_8006F99C.vx = D_800D30A0[0].vx << 16;
+        D_8006F99C.vy = D_800D30A0[0].vy << 16;
+        D_8006F99C.vz = D_800D30A0[0].vz << 16;
+        point = &D_800D30A0[1];
+        D_8006F9AC.vx = point->vx << 16;
+        D_8006F9AC.vy = point->vy << 16;
+        D_8006F9AC.vz = point->vz << 16;
+        break;
+    default:
+        if (D_800C3680 != NULL) {
+            D_800C3680->destroy(D_800C3680);
+            D_800C3680 = NULL;
+        }
+        if (D_800C3684 != NULL) {
+            D_800C3684->destroy(D_800C3684);
+            D_800C3684 = NULL;
+        }
+        break;
+    }
+}
+
+/* Set D_800C367C. */
+void func_800BC3F8(s32 value) {
+    D_800C367C = value;
+}
+
+#ifdef NON_MATCHING
+/* Start camera move (800BC460) unless effects are off; restore D_80059454.
+ * Nonmatching: battle_core.h declares mask u16, which the original passes on
+ * unextended (its own parameter is a word). */
+void func_800BC404(u16 mask) {
+    if (D_800C37C8 == 0) {
+        func_800BC2F0(1);
+        func_800BC460(mask);
+    }
+    D_80059454 = D_800C3CDC;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BC404);
+#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BC454);
+/* Set the camera framing pitch. */
+void func_800BC454(s16 value) {
+    D_800C3740.vx = value;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BC460);
+/* Frame the camera on the party slots in mask: look at the middle of their
+ * sprites from the framing angles, at a range that keeps the farthest sprite
+ * (and its gear top) on screen; the points go to the camera's wanted eye and
+ * look-at points. */
+void func_800BC460(u32 mask) {
+    Vector center;
+    SVector eye;
+    SVector target;
+    Matrix m;
+    Vector offset;
+    SVector point;
+    s32 screen[2];
+    SVector v;
+    s32 result[2];
+    Matrix m2;
+    Vector out;
+    SVector v2;
+    Matrix m3;
+    Vector unused;
+    SVector v3;
+    BattleSprite *sprite;
+    s32 i;
+    s32 count;
+    s32 farthest;
+    s32 minX, maxX, minY, maxY, minZ, maxZ;
+    s32 distance;
+    s32 range;
+    u32 bits;
+
+    memset(&center, 0, sizeof(center));
+    farthest = 0;
+    D_800C3678 = mask;
+    i = 0;
+    count = 0;
+    for (bits = mask; i != 11; i++, bits = (bits & 0xFFFF) >> 1) {
+        if ((bits & 1) && !BATTLE_AREA.slots[i].hidden && (sprite = BATTLE_AREA.sprites[i]) != NULL) {
+            count++;
+            center.vx += sprite->x.fixed >> 1;
+            center.vy += sprite->y.fixed >> 1;
+            center.vz += sprite->z.fixed >> 1;
+        }
+    }
+    if (count != 0) {
+        center.vx = center.vx / count * 2;
+        center.vy = center.vy / count * 2;
+        center.vz = center.vz / count * 2;
+        maxX = minX = center.vx;
+        maxZ = minZ = center.vz;
+        maxY = minY = center.vy;
+        for (i = 0, bits = mask; i != 11; i++, bits = (bits & 0xFFFF) >> 1) {
+            if ((bits & 1) && !BATTLE_AREA.slots[i].hidden && (sprite = BATTLE_AREA.sprites[i]) != NULL) {
+                if (maxX < sprite->x.fixed) {
+                    maxX = sprite->x.fixed;
+                }
+                if (sprite->x.fixed < minX) {
+                    minX = sprite->x.fixed;
+                }
+                if (maxZ < sprite->z.fixed) {
+                    maxZ = sprite->z.fixed;
+                }
+                if (sprite->z.fixed < minZ) {
+                    minZ = sprite->z.fixed;
+                }
+                if (maxY < sprite->y.fixed) {
+                    maxY = sprite->y.fixed;
+                }
+                if (sprite->y.fixed < minY) {
+                    minY = sprite->y.fixed;
+                }
+            }
+        }
+        center.vx = (minX + maxX) / 2;
+        center.vy = (maxY + minY) / 2;
+        center.vz = (minZ + maxZ) / 2;
+        center.vx >>= 16;
+        center.vy >>= 16;
+        center.vz >>= 16;
+        func_8004ABBC(&D_800C3740, &m);
+        v.vx = 0;
+        v.vy = 0;
+        v.vz = ReadGeomScreen() * 8;
+        ApplyMatrix(&m, &v, &offset);
+        eye.vx = center.vx;
+        eye.vy = center.vy;
+        eye.vz = center.vz;
+        target.vx = center.vx;
+        target.vy = center.vy;
+        target.vz = center.vz;
+        eye.vx -= offset.vx;
+        eye.vy += offset.vy;
+        eye.vz -= offset.vz;
+        func_800BB844(&m, &eye, &target, &D_800C3730);
+        SetRotMatrix(&m);
+        SetTransMatrix(&m);
+        for (i = 0, bits = mask; i != 11; i++, bits = (bits & 0xFFFF) >> 1) {
+            if ((bits & 1) && !BATTLE_AREA.slots[i].hidden && (sprite = BATTLE_AREA.sprites[i]) != NULL) {
+                point.vx = sprite->x.fixed >> 16;
+                point.vy = sprite->y.fixed >> 16;
+                point.vz = sprite->z.fixed >> 16;
+                RotTransPers(&point, screen, &result[0], &result[1]);
+                ((s16 *)screen)[0] -= 160;
+                ((s16 *)screen)[1] -= 164;
+                ((s16 *)screen)[0] <<= 2;
+                ((s16 *)screen)[1] <<= 2;
+                distance = ((s16 *)screen)[0] * ((s16 *)screen)[0];
+                distance += ((s16 *)screen)[1] * ((s16 *)screen)[1];
+                if (farthest < distance) {
+                    farthest = distance;
+                }
+                if (BATTLE_AREA.slots[i].gear && D_800C3688 == 0) {
+                    point.vy -= sprite->size;
+                    RotTransPers(&point, screen, &result[0], &result[1]);
+                    ((s16 *)screen)[0] -= 160;
+                    ((s16 *)screen)[1] -= 164;
+                    ((s16 *)screen)[0] <<= 2;
+                    ((s16 *)screen)[1] <<= 2;
+                    distance = ((s16 *)screen)[0] * ((s16 *)screen)[0];
+                    distance += ((s16 *)screen)[1] * ((s16 *)screen)[1];
+                    if (farthest < distance) {
+                        farthest = distance;
+                    }
+                }
+            }
+        }
+        farthest = SquareRoot0(farthest);
+        if (farthest < 120) {
+            func_8004ABBC(&D_800C3740, &m2);
+            v2.vx = 0;
+            v2.vy = 0;
+            v2.vz = ReadGeomScreen() * 2;
+            D_800C3CDC = ReadGeomScreen() * 2;
+            ApplyMatrix(&m2, &v2, (Vector *)&point);
+            eye.vx = center.vx;
+            eye.vy = center.vy;
+            eye.vz = center.vz;
+            target.vx = center.vx;
+            target.vy = center.vy;
+            target.vz = center.vz;
+            eye.vx -= (*(Vector *)&point).vx;
+            eye.vy += (*(Vector *)&point).vy;
+            eye.vz -= (*(Vector *)&point).vz;
+            D_800D30A0[0].vx = eye.vx;
+            D_800D30A0[0].vy = eye.vy;
+            D_800D30A0[0].vz = eye.vz;
+            {
+                SVector *p = &D_800D30A0[1];
+
+                p->vx = target.vx;
+                p->vy = target.vy;
+                p->vz = target.vz;
+            }
+        } else {
+            range = (farthest << 14) / 120;
+            range = (range << 1) * ReadGeomScreen();
+            range >>= 14;
+            D_800C3CDC = range;
+            func_8004ABBC(&D_800C3740, &m3);
+            v3.vx = 0;
+            v3.vy = 0;
+            v3.vz = range;
+            ApplyMatrix(&m3, &v3, &out);
+            eye.vx = center.vx;
+            eye.vy = center.vy;
+            eye.vz = center.vz;
+            target.vx = center.vx;
+            target.vy = center.vy;
+            target.vz = center.vz;
+            eye.vx -= out.vx;
+            eye.vy += out.vy;
+            eye.vz -= out.vz;
+            D_800D30A0[0].vx = eye.vx;
+            D_800D30A0[0].vy = eye.vy;
+            D_800D30A0[0].vz = eye.vz;
+            {
+                SVector *p = &D_800D30A0[1];
+
+                p->vx = target.vx;
+                p->vy = target.vy;
+                p->vz = target.vz;
+            }
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BCAA4);
 

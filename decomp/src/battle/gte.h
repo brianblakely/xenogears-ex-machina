@@ -103,4 +103,23 @@
 #define gte_nccs() __asm__ volatile("nop;nop;.word 0x4B08041B")
 #define gte_strgb(r0) __asm__ volatile("swc2 $22, 0(%0)" : : "r"(r0) : "memory")
 
+/* Scale a 32-bit vector by a factor: load the factor into IR0 and the vector
+ * into IR1-IR3, GPF (sf = 1), store IR1-IR3. */
+#define gte_lddp(r0) __asm__ volatile("mtc2 %0, $8" : : "r"(r0))
+#define gte_ldlvl(r0)                                                          \
+    __asm__ volatile("lwc2 $9, 0(%0);"                                         \
+                     "lwc2 $10, 4(%0);"                                        \
+                     "lwc2 $11, 8(%0)"                                         \
+                     :                                                         \
+                     : "r"(r0))
+#define gte_gpf0() __asm__ volatile("nop;nop;.word 0x4B90003D") /* sf = 0 */
+#define gte_gpf12() __asm__ volatile("nop;nop;.word 0x4B98003D")
+#define gte_stlvl(r0)                                                          \
+    __asm__ volatile("swc2 $9, 0(%0);"                                         \
+                     "swc2 $10, 4(%0);"                                        \
+                     "swc2 $11, 8(%0)"                                         \
+                     :                                                         \
+                     : "r"(r0)                                                 \
+                     : "memory")
+
 #endif

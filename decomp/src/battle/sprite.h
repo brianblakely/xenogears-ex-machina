@@ -49,42 +49,99 @@ typedef struct {
     u8 field3D;
 } SpriteView;
 
-/* A resident sprite (fields as far as used). */
+/* A sprite's task (resident Task) with its draw task after it (0x38
+ * bytes); the task's data is the sprite. */
+typedef struct ActorTask {
+    struct ActorTask *owner;
+    void *data;                                /* 0x04: its sprite */
+    void (*update)(struct ActorTask *task);    /* 0x08 */
+    void (*destroy)(struct ActorTask *task);   /* 0x0C */
+    u32 id;                                    /* 0x10 */
+    u32 link;                                  /* 0x14 */
+    struct ActorTask *next;                    /* 0x18 */
+    BattleTask draw;                           /* 0x1C: its data the drawn sprite */
+} ActorTask;
+
+/* A task with a slot argument after it. */
+typedef struct {
+    BattleTask task;
+    s32 slot; /* 0x1C */
+} SlotTask;
+
+/* A resident sprite (resident Sprite, 0xB4 bytes; fields as far as used). */
 typedef struct BattleSprite {
-    Fixed16 x, y, z;       /* 0x00 */
-    s32 speed[3];          /* 0x0C */
-    s32 field18;           /* 0x18: bits 7-22 its speed setting */
-    u8 pad1C[0x20 - 0x1C];
+    Fixed16 x, y, z;       /* 0x00: 16.16 */
+    s32 velocity[3];       /* 0x0C */
+    s32 speed;             /* 0x18: bits 7-22 its speed setting */
+    s32 gravity;           /* 0x1C */
     SpriteView *view;      /* 0x20 */
-    u8 pad24[0x2B - 0x24];
+    void *resource;        /* 0x24 */
+    u8 pad28[0x2B - 0x28];
     u8 colourFlags;        /* 0x2B */
     s16 scale;             /* 0x2C */
-    s16 field2E;           /* 0x2E */
-    u8 pad30[0x32 - 0x30];
+    s16 depth;             /* 0x2E: ordering-table depth, 0 hidden */
+    s16 depthBias;         /* 0x30 */
     s16 direction;         /* 0x32 */
-    u16 frame;             /* 0x34 */
-    u8 pad36[0x3A - 0x36];
+    u16 frame;             /* 0x34: 1 takes over a running camera sprite */
+    u16 size;              /* 0x36 */
+    s16 halfSize;          /* 0x38 */
     u16 field3A;           /* 0x3A: scale script lengths with the sprite */
     union {
         u32 word;
         u8 bytes[4];
     } render;              /* 0x3C: bits 0-1 sides, bits 5-7 blend */
-    u8 partBits;           /* 0x40: bits 2-7 the part count */
-    u8 pad41[0x64 - 0x41];
+    union {
+        u32 word;
+        u8 bytes[4];       /* [0] bits 2-7: the part count */
+        struct {
+            unsigned pad0 : 13;
+            unsigned group : 4; /* 0x0A the camera's eye sprite */
+            unsigned pad17 : 15;
+        } bits;
+    } flags;               /* 0x40 */
+    u8 pad44[0x48 - 0x44];
+    s32 field48;           /* 0x48 */
+    s32 field4C;           /* 0x4C */
+    u8 pad50[0x64 - 0x50];
     s32 framesLeft;        /* 0x64 */
     u8 pad68[0x6C - 0x68];
-    struct BattleTask *task; /* 0x6C: its task (and draw task after it) */
+    ActorTask *task;       /* 0x6C */
     struct BattleSprite *parent;  /* 0x70 */
     struct BattleSprite *partner; /* 0x74 */
-    u8 pad78[0x9E - 0x78];
+    s32 triangle;          /* 0x78: scene triangle under it */
+    struct {
+        u8 pad0[8];
+        s32 field8;
+        s16 fieldC;
+    } *sequencer;          /* 0x7C */
+    u16 field80;
+    u16 field82;           /* 0x82 */
+    s16 ground;            /* 0x84 */
+    u8 pad86[0x9E - 0x86];
     s16 countdown;         /* 0x9E */
     s16 target[3];         /* 0xA0 */
     u8 padA6[0xA8 - 0xA6];
-    u32 frameBits;         /* 0xA8: bits 28-29 the phase */
+    union {
+        u32 word;          /* bits 28-29 the phase */
+        struct {
+            unsigned sequencerOwned : 1;
+            unsigned pad1 : 29;
+            unsigned slotLow : 2; /* the slot's low bits */
+        } bits;
+    } frameBits;           /* 0xA8 */
     union {
         u32 word;
-        s8 bytes[4];
-    } motion;              /* 0xAC: bit 2 mirrored */
+        struct {
+            unsigned slotHigh : 2; /* the slot's high bits */
+            unsigned flip : 1;     /* mirrored */
+            unsigned pad3 : 2;
+            unsigned owned : 1;    /* bit 5: destroy its child tasks with it */
+            unsigned doubleStep : 1;
+            unsigned pad7 : 25;
+        } bits;
+        s8 bytes[4];               /* [3]: the running animation */
+    } motion;              /* 0xAC */
+    s8 fieldB0;            /* 0xB0 */
 } BattleSprite;
 
 /* A little-endian s16 at index i of a sprite script, and the script data
@@ -152,20 +209,10 @@ void func_800B5DF4();
 void func_800B5854(SpriteApproach *approach);
 void func_800B5588(BattleTask *task);
 
-void func_8004A414(Vector *v, Vector *out); /* Square0 */
 s16 func_80023124(Point2 to, Point2 from); /* direction from from to to */
 void func_80025A88();                      /* the resident sprite drawer */
 void func_800245D8(BattleSprite *sprite, s32 value);
 
-/* The battle state at 800C3EB0 (battle_core.h declares its first word,
- * the formation), as far as the sprite code reaches it from its base. */
-typedef struct {
-    u8 pad0[0x8C84];
-    s32 buffer;                  /* 0x8C84: the drawing buffer, 0 or 1 */
-    u8 pad8C88[0x8C8C - 0x8C88];
-    BattleSprite *sprites[1];    /* 0x8C8C */
-} BattleState;
-#define BATTLE_STATE (*(BattleState *)&D_800C3EB0)
 
 /* Sprite script commands (800B3F04). */
 extern BattleSprite *D_800C3E1C;

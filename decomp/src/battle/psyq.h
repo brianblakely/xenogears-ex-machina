@@ -186,5 +186,12 @@ void SetGeomScreen(s32 h);
 s32 ratan2(s32 y, s32 x);
 s32 func_80048D7C(Vector *v, Vector *out);                /* VectorNormal */
 void func_8004A480(Vector *a, Vector *b, Vector *out);   /* OuterProduct12 */
+/* Used by the late battle unit (800B15D8-). */
+void PushMatrix(void);
+void PopMatrix(void);
+s32 RotTransPers(SVector *v0, s32 *sxy, s32 *p, s32 *flag);
+void func_8004A414(Vector *in, Vector *out);              /* Square0 */
+Matrix *func_8004ABBC(SVector *angles, Matrix *m);        /* RotMatrix */
+void *memset(void *dst, s32 c, u32 n);
 
 #endif
