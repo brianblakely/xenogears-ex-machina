@@ -1,5 +1,6 @@
 #include "common.h"
 #include "psyq/libapi.h"
+#include "psyq/libspu.h"
 #include "sound.h"
 
 extern void func_80039FF8(void);
@@ -1112,28 +1113,90 @@ s32 func_8003BB40(s32 index) {
     return index * sizeof(SoundSeqChannel) + 0x94;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003BB64);
+/* One queued SPU transfer (the ring D_80059458 holds eight). */
+typedef struct {
+    u16 type;          /* 1: write, 2: read, 3/4: read decoded CD data */
+    u16 unk2;
+    u8 *data;
+    u32 address;       /* SPU address */
+    s32 size;
+    void (*callback)(void);
+} SoundTransfer;
 
-extern void func_8003BCA0(s32 a, s32 b, s32 c, s32 d, s32 mode);
+extern SoundTransfer *D_80059458; /* transfer ring */
+extern u16 D_800594F4;            /* transfer ring write index */
+extern u16 D_80059510;            /* transfer ring read index */
+extern void func_8003BE68(void);
 
-/* 8003bca0 with modes 1-4, passing the other arguments through. */
-void func_8003BC10(s32 a, s32 b, s32 c, s32 d) {
-    func_8003BCA0(a, b, c, d, 1);
+/* SPU transfer completion: run the finished transfer's callback (flagged
+ * busy), then start the next queued transfer. */
+void func_8003BB64(void) {
+    void (*callback)(void) = D_80059458[D_80059510].callback;
+
+    D_8005957C |= 4;
+    if (callback != NULL) {
+        callback();
+    }
+    D_8005957C &= ~0x10;
+    if (D_80059510 != D_800594F4) {
+        func_8003BE68();
+    }
+    D_8005957C &= ~4;
 }
 
-void func_8003BC34(s32 a, s32 b, s32 c, s32 d) {
-    func_8003BCA0(a, b, c, d, 2);
+extern void func_8003BCA0(u32 address, u8 *data, s32 size, void (*callback)(void), u16 type);
+
+/* SPU transfers of each type: 1 write, 2 read, 3 and 4 decoded CD data. */
+void func_8003BC10(u32 address, u8 *data, s32 size, void (*callback)(void)) {
+    func_8003BCA0(address, data, size, callback, 1);
 }
 
-void func_8003BC58(s32 a, s32 b, s32 c, s32 d) {
-    func_8003BCA0(a, b, c, d, 3);
+void func_8003BC34(u32 address, u8 *data, s32 size, void (*callback)(void)) {
+    func_8003BCA0(address, data, size, callback, 2);
 }
 
-void func_8003BC7C(s32 a, s32 b, s32 c, s32 d) {
-    func_8003BCA0(a, b, c, d, 4);
+void func_8003BC58(u32 address, u8 *data, s32 size, void (*callback)(void)) {
+    func_8003BCA0(address, data, size, callback, 3);
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003BCA0);
+void func_8003BC7C(u32 address, u8 *data, s32 size, void (*callback)(void)) {
+    func_8003BCA0(address, data, size, callback, 4);
+}
+
+extern s32 func_8003BDBC(void);
+
+/* Queue an SPU transfer of `size` bytes between `data` and SPU address
+ * `address` (8-byte aligned), starting it when the SPU is idle. Outside a
+ * transfer callback, waits for ring space and runs in a critical section. */
+void func_8003BCA0(u32 address, u8 *data, s32 size, void (*callback)(void), u16 type) {
+    u16 flags = D_8005957C;
+    u16 index;
+    SoundTransfer *transfer;
+
+    if (!(flags & 4)) {
+        while (func_8003BDBC() != 0) {
+        }
+        EnterCriticalSection();
+    }
+    index = D_800594F4 + 1;
+    if (index >= 8) {
+        index = 0;
+    }
+    D_800594F4 = index;
+    transfer = &D_80059458[index];
+    transfer->type = type & 0xF;
+    transfer->unk2 = 0;
+    transfer->data = data;
+    transfer->address = address & 0x7FFF8;
+    transfer->size = size;
+    transfer->callback = callback;
+    if (!(D_8005957C & 0x10)) {
+        func_8003BE68();
+    }
+    if (!(flags & 4)) {
+        ExitCriticalSection();
+    }
+}
 
 extern u16 D_800594F4; /* command ring write index */
 extern u16 D_80059510; /* command ring read index */
@@ -1151,9 +1214,61 @@ s32 func_8003BDBC(void) {
 void func_8003BDF4(void) {
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003BDFC);
+/* The type of the transfer in progress (0 when idle), after waiting for it
+ * to finish when `wait` has bit 4. */
+s32 func_8003BDFC(s32 wait) {
+    if (wait & 0x10) {
+    busy:
+        if (D_8005957C & 0x10) {
+            goto busy;
+        }
+    }
+    if (D_8005957C & 0x10) {
+        return (s16)D_80059458[D_80059510].type;
+    }
+    return 0;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003BE68);
+extern s16 D_80059548;            /* result of the last decoded-data read */
+extern void func_8004D818(u8 *data, s32 size);
+extern void func_8004D878(u8 *data, s32 size);
+
+/* Start the next queued SPU transfer; its completion callback continues
+ * the ring. */
+void func_8003BE68(void) {
+    u16 index = D_80059510 + 1;
+    SoundTransfer *transfer;
+    void *previous;
+
+    if (index >= 8) {
+        index = 0;
+    }
+    D_80059510 = index;
+    D_8005957C |= 0x10;
+    transfer = &D_80059458[index];
+    previous = SpuSetTransferCallback(func_8003BB64);
+    SpuSetTransferMode(0);
+    SpuSetTransferStartAddr(transfer->address);
+    switch (transfer->type) {
+    case 0:
+        break;
+    case 1:
+        func_8004D878(transfer->data, transfer->size);
+        break;
+    case 2:
+        func_8004D818(transfer->data, transfer->size);
+        break;
+    case 3:
+        D_80059548 = SpuReadDecodedData(transfer->data, 0);
+        break;
+    case 4:
+        D_80059548 = SpuReadDecodedData(transfer->data, 5);
+        break;
+    }
+    if (previous != func_8003BB64) {
+        func_8003F6B0(0x26);
+    }
+}
 
 extern void (*D_8005950C)(void);
 extern s32 D_80059514;
