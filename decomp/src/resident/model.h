@@ -102,6 +102,14 @@ typedef struct {
     MorphChannel *channels;
 } MorphState;
 
+/* A quad of a model: its four vertex indices, the first two read as one
+ * word. */
+typedef struct {
+    u32 v01;
+    u16 v2;
+    u16 v3;
+} QuadFace;
+
 /* A model light: its direction vector and color. */
 typedef struct {
     s32 vx, vy, vz;
@@ -122,6 +130,9 @@ extern RenderPacket *D_80059424; /* the primitive being built */
 extern s32 *D_80059498;          /* lit-color cache: color word, then the face normal */
 extern SVECTOR *D_8005952C;      /* vertex normals of the model being drawn */
 extern SVECTOR *D_8005953C;      /* vertices of the model being drawn */
+extern u32 *D_80059568;          /* the ordering table models are drawn into */
+extern s32 D_80059578;           /* primitives drawn */
+extern s32 D_80050100;           /* depth shift into the ordering table */
 
 void func_8002DB84(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *normal); /* face normal */
 

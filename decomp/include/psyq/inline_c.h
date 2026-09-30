@@ -104,4 +104,73 @@
         gte_stclmv((char *)(r2) + 4);                                          \
     }
 
+/* Vertices V0 (and V1, V2) from short vectors. */
+#define gte_ldv0(r0)                                                           \
+    __asm__ volatile("lwc2 $0, 0(%0);"                                         \
+                     "lwc2 $1, 4(%0)"                                          \
+                     :                                                         \
+                     : "r"(r0))
+
+#define gte_ldv3(r0, r1, r2)                                                   \
+    __asm__ volatile("lwc2 $0, 0(%0);"                                         \
+                     "lwc2 $1, 4(%0);"                                         \
+                     "lwc2 $2, 0(%1);"                                         \
+                     "lwc2 $3, 4(%1);"                                         \
+                     "lwc2 $4, 0(%2);"                                         \
+                     "lwc2 $5, 4(%2)"                                          \
+                     :                                                         \
+                     : "r"(r0), "r"(r1), "r"(r2))
+
+/* The color RGB and the screen depths SZ0-SZ3. */
+#define gte_ldrgb(r0) __asm__ volatile("lwc2 $6, 0(%0)" : : "r"(r0))
+
+#define gte_ldsz4(r0, r1, r2, r3)                                              \
+    __asm__ volatile("mtc2 %0, $16;"                                           \
+                     "mtc2 %1, $17;"                                           \
+                     "mtc2 %2, $18;"                                           \
+                     "mtc2 %3, $19"                                            \
+                     :                                                         \
+                     : "r"(r0), "r"(r1), "r"(r2), "r"(r3))
+
+/* Commands. */
+#define gte_rtps() __asm__ volatile("nop;nop;.word 0x4A180001")
+#define gte_rtpt() __asm__ volatile("nop;nop;.word 0x4A280030")
+#define gte_nclip() __asm__ volatile("nop;nop;.word 0x4B400006")
+#define gte_avsz4() __asm__ volatile("nop;nop;.word 0x4B68002E")
+#define gte_nccs() __asm__ volatile("nop;nop;.word 0x4B08041B")
+
+/* Results: the flag register, the outer product (MAC0), screen points,
+ * depths, the average depth (OTZ) and the color. */
+#define gte_stflg(r0)                                                          \
+    __asm__ volatile("cfc2 $12, $31;"                                          \
+                     "nop;"                                                    \
+                     "sw $12, 0(%0)"                                           \
+                     :                                                         \
+                     : "r"(r0)                                                 \
+                     : "$12", "memory")
+
+#define gte_stopz(r0) __asm__ volatile("swc2 $24, 0(%0)" : : "r"(r0) : "memory")
+#define gte_stsxy(r0) __asm__ volatile("swc2 $14, 0(%0)" : : "r"(r0) : "memory")
+
+#define gte_stsxy3(r0, r1, r2)                                                 \
+    __asm__ volatile("swc2 $12, 0(%0);"                                        \
+                     "swc2 $13, 0(%1);"                                        \
+                     "swc2 $14, 0(%2)"                                         \
+                     :                                                         \
+                     : "r"(r0), "r"(r1), "r"(r2)                               \
+                     : "memory")
+
+#define gte_stsz(r0) __asm__ volatile("swc2 $19, 0(%0)" : : "r"(r0) : "memory")
+
+#define gte_stsz3(r0, r1, r2)                                                  \
+    __asm__ volatile("swc2 $17, 0(%0);"                                        \
+                     "swc2 $18, 0(%1);"                                        \
+                     "swc2 $19, 0(%2)"                                         \
+                     :                                                         \
+                     : "r"(r0), "r"(r1), "r"(r2)                               \
+                     : "memory")
+
+#define gte_stotz(r0) __asm__ volatile("swc2 $7, 0(%0)" : : "r"(r0) : "memory")
+#define gte_strgb(r0) __asm__ volatile("swc2 $22, 0(%0)" : : "r"(r0) : "memory")
+
 #endif

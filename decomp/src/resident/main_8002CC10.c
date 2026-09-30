@@ -762,7 +762,57 @@ void func_80030C78(s32 r, s32 g, s32 b) {
     gte_SetBackColor(r, g, b);
 }
 
+/* Render `count` flat quads lit from the lit-color cache: transform the
+ * four vertices, drop quads with a GTE error or facing away, fill a
+ * POLY_F4 and link it into the ordering table at its average depth.
+ * Nonmatching: the loop counter and the face index pointer (the original
+ * addresses the last two indices from +4) swap registers. */
+#ifdef NON_MATCHING
+void func_80030C98(QuadFace *faces, s32 count) {
+    POLY_F4 *poly;
+    s32 flag;
+    s32 sz0, sz1, sz2, sz3;
+    s32 otz;
+    s32 i;
+
+    for (i = count - 1; i != -1; i--) {
+        poly = (POLY_F4 *)D_80059424;
+        gte_ldv3(&D_8005953C[faces->v01 & 0xFFFF], &D_8005953C[faces->v01 >> 16],
+                 &D_8005953C[faces->v2]);
+        gte_rtpt();
+        gte_stflg(&flag);
+        if (flag >= 0) {
+            gte_nclip();
+            gte_stopz(&flag);
+            if (flag > 0) {
+                gte_stsxy3(&poly->x0, &poly->x1, &poly->x2);
+                gte_stsz3(&sz0, &sz1, &sz2);
+                gte_ldv0(&D_8005953C[faces->v3]);
+                gte_rtps();
+                gte_stsxy(&poly->x3);
+                gte_stsz(&sz3);
+                gte_ldsz4(sz0, sz1, sz2, sz3);
+                gte_avsz4();
+                gte_stotz(&otz);
+                gte_ldrgb(D_80059498);
+                gte_ldv0(D_80059498 + 1);
+                gte_nccs();
+                gte_strgb(&poly->r0);
+                setlen(poly, 5);
+                setcode(poly, 0x28);
+                otz >>= D_80050100;
+                addPrim(&D_80059568[otz], poly);
+                D_80059578++;
+            }
+        }
+        faces++;
+        D_80059424 = (RenderPacket *)((u8 *)D_80059424 + sizeof(POLY_F4));
+        D_80059498 += 3;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_80030C98);
+#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_80030EE8);
 
