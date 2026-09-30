@@ -97,7 +97,9 @@ typedef struct {
     u8 field4F; /* 0x4F */
     u8 pad50[0x57 - 0x50];
     u8 chargeRate; /* 0x57 */
-    u8 pad58[0x60 - 0x58];
+    u8 pad58[0x5C - 0x58];
+    u8 soundVariant; /* 0x5C: extra sound bank of the gear's set, 0 none */
+    u8 pad5D[0x60 - 0x5D];
     u32 hp;    /* 0x60 */
     u32 maxHp; /* 0x64 */
     u8 pad68[0x72 - 0x68];

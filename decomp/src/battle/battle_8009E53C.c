@@ -16,6 +16,8 @@
 #include "model.h"
 #include "scene.h"
 #include "gte.h"
+#include "mesh.h"
+#include "sound.h"
 
 /* Whether gear part 50 + index is one of the parts of character 4's gear. */
 s32 func_8009E53C(u8 index) {
@@ -1132,7 +1134,19 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A70
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A7948);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A8A88);
+/* Free a stage mesh's buffers (once). */
+void func_800A8A88(StageMesh *mesh) {
+    if (mesh->points != NULL) {
+        func_800320E8(mesh->points);
+        func_800320E8(mesh->rows[0]);
+        func_800320E8(mesh->rows);
+        func_800320E8(mesh->polys);
+        if (mesh->keys != NULL) {
+            func_800320E8(mesh->keys);
+        }
+        mesh->points = NULL;
+    }
+}
 
 #ifdef NON_MATCHING
 /* Reset the battle scene: its flags, the effect and sprite pools sized by the
@@ -1167,7 +1181,50 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A8B
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A8BF0);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A9540);
+/* Load the sound banks of combatant slot's gear into a new zero-terminated
+ * list D_800C3B78: its set's banks base + 1 and base + 2, and base + 2 +
+ * the gear's sound variant when the set has that many. */
+void func_800A9540(s32 slot) {
+    s32 saved0;
+    s32 saved1;
+    u8 gearId;
+    s32 variant;
+    SoundBank *end;
+    SoundBank *banks;
+    s32 base;
+    s32 bank;
+
+    func_800284B4(&saved0, &saved1);
+    func_80028470(0x28, 1);
+    func_80032498(4, 0);
+    gearId = D_800CCCE8.records[slot].pilot.gearId;
+    variant = D_800CCCE8.records[slot].gear.soundVariant;
+    if (D_800C3508[gearId * 2 + 1] < variant) {
+        variant = 0;
+    }
+    banks = func_80031BDC(sizeof(SoundBank) * 4, 1);
+    D_800C3B78 = (SoundBanks *)banks;
+    base = D_800C3508[gearId * 2];
+    bank = base + 1;
+    end = banks;
+    end->id = bank;
+    end->data = func_80031BDC(func_800288EC(bank), 1);
+    end++;
+    bank = base + 2;
+    end->id = bank;
+    end->data = func_80031BDC(func_800288EC(bank), 0);
+    end++;
+    if (variant != 0) {
+        bank += variant;
+        end->id = bank;
+        end->data = func_80031BDC(func_800288EC(bank), 1);
+        end++;
+    }
+    end->id = 0;
+    end->data = NULL;
+    func_80029AFC(D_800C3B78, 0, 0);
+    func_80028470(saved0, saved1);
+}
 
 /* Load the battle's sound banks for set: banks 2 * set + 1 and 2 * set + 2,
  * each with a buffer of its size (800288EC), into a new record D_800C3B78. */
