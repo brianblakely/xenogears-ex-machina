@@ -24,8 +24,8 @@ typedef struct {
     s32 field8;             /* 0x08 */
     void *packets;          /* 0x0C */
     s32 field10;            /* 0x10 */
-    s32 field14;            /* 0x14 */
-    s32 field18;            /* 0x18 */
+    u8 **animations;        /* 0x14: count, then animations 0-63 */
+    u8 **moreAnimations;    /* 0x18: animations from 64 */
     s16 scale1C;            /* 0x1C */
     s16 field1E;            /* 0x1E */
     u8 slot;                /* 0x20 */

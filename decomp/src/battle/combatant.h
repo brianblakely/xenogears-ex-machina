@@ -261,6 +261,7 @@ s32 func_8003FA38(void);                /* resident rand: 0..0x7FFF */
 void func_80099CF0(GearRecord *gear, Combatant *record, volatile u8 *timers);
 void func_8009B104(u8 slot, Combatant *chuchu);
 void func_8009BE0C(void);
+s32 func_8009C050(u8 slot);
 void func_80096824(void);
 void func_8009AC48(u8 member, u8 checked);
 void func_8009C4B4(void);

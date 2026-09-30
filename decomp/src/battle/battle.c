@@ -2038,7 +2038,7 @@ void func_8009BE0C(void) {
 
 /* Gear warning flags of slot: 1 gear status 0x400, 2 gear HP below an eighth
  * (unless the pilot's flag 1 at +0x36), 4 when field 0x148 is 4. */
-u8 func_8009C050(u8 slot) {
+s32 func_8009C050(u8 slot) {
     Combatant *record = &D_800CCCE8.records[slot];
     GearRecord *gear = &D_800CCCE8.records[slot].gear;
     u8 *state = &D_800CCCE8.records[slot].field148;
@@ -3543,15 +3543,15 @@ void *func_800AA820(s32 mode) {
 
 #ifdef NON_MATCHING
 /* Reset a battle object's state. */
-void func_800AA898(BattleObject *object, s32 arg1, s32 field8, s32 field14) {
+void func_800AA898(BattleObject *object, s32 arg1, s32 field8, u8 **animations) {
     object->field3C = 0xFFFF;
     object->field5C = 0xFF;
     object->field39 = 0x6B;
     object->field8 = field8;
     object->packets = NULL;
     object->field10 = 0;
-    object->field14 = field14;
-    object->field18 = 0;
+    object->animations = animations;
+    object->moreAnimations = NULL;
     object->field2B = 0;
     object->animation = -1;
     object->field58 = 0;
@@ -3781,7 +3781,37 @@ void func_800AF438(BattleObject *object, s32 code, u16 *mask) {
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AF438);
 #endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AF518);
+/* The animation of a battle object for index; 0xFE repeats the object's
+ * current one and 0xFF chooses it from the slot's gear warnings (0x1B, 6 or
+ * 1; bit 0x80 when the gear status is on), reporting that bit in flag. */
+u8 *func_800AF518(BattleObject *object, u8 index, s32 *flag) {
+    s32 warnings;
+
+    *flag = 0;
+    if (index >= 0xFE) {
+        if (index == 0xFF) {
+            warnings = func_8009C050(object->slot);
+            if ((warnings & 4) && (object->flags4A & 0x100)) {
+                object->field2A = 0x1B;
+            } else if ((warnings & 2) && (object->flags4A & 0x80)) {
+                if (!(D_800CCCE8.records[object->slot].pilot.flags36 & 1)) {
+                    object->field2A = 6;
+                }
+            } else if (!(object->flags4A & 0x400)) {
+                object->field2A = 1;
+            }
+            if (warnings & 1) {
+                object->field2A |= 0x80;
+            }
+        }
+        index = object->field2A & 0x7F;
+        *flag = object->field2A & 0x80;
+    }
+    if (index < 0x40) {
+        return object->animations[index + 1];
+    }
+    return object->moreAnimations[index - 0x3F];
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AF678);
 
@@ -3839,7 +3869,7 @@ void func_800B0060(BattleObject *object) {
         }
         func_800320E8(object->packets);
         object->packets = NULL;
-        object->field18 = 0;
+        object->moreAnimations = NULL;
     }
 }
 
