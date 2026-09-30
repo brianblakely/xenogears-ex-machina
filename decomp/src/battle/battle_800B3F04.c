@@ -102,7 +102,103 @@ void func_800B50D4(BattleSprite *sprite, SVECTOR *out) {
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B3F04", func_800B50D4);
 #endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B3F04", func_800B51B0);
+/* Draw one segment of a sprite trail (800C08CC) from point a to point b: a
+ * light line, and when on screen a quad as wide as the trail (D_800C3E9C)
+ * textured from the sprite's copied 8 x 8 block (800B4EDC), joined to the
+ * previous segment's far corners; counts the segments in D_800D2FCC. */
+void func_800B51B0(VECTOR *a, VECTOR *b) {
+    SVECTOR from;
+    SVECTOR to;
+    long scratch;
+    long flag;
+    LINE_F2 *line;
+    POLY_FT4 *quad;
+    s32 abr;
+    s32 depth;
+    s32 width;
+    s32 angle;
+    s32 dx;
+    s32 dy;
+
+    if (a->vx == b->vx && a->vy == b->vy && a->vz == b->vz) {
+        return;
+    }
+    from.vx = a->vx;
+    from.vy = a->vy;
+    from.vz = a->vz;
+    to.vx = b->vx;
+    to.vy = b->vy;
+    to.vz = b->vz;
+    if (D_80059580 + sizeof(LINE_F2) >= D_80059534) {
+        return;
+    }
+    line = (LINE_F2 *)D_80059580;
+    D_80059580 += sizeof(LINE_F2);
+    SetLineF2(line);
+    abr = D_800C3D4C;
+    if (abr != 0) {
+        abr--;
+        SetSemiTrans(line, 1);
+    } else {
+        SetSemiTrans(line, 0);
+    }
+    line->r0 = 0xF0;
+    line->g0 = 0xF0;
+    line->b0 = 0xF0;
+    if (D_800D2FD8[D_800D2FCC / 8] != 0) {
+        depth = 2;
+    } else {
+        depth = -2;
+    }
+    depth += D_800D3334;
+    RotTransPers3(&from, &to, &from, (long *)&line->x0, (long *)&line->x1, &scratch, &scratch, &flag);
+    if (depth <= 0 || depth >= 0x1000) {
+        return;
+    }
+    dx = line->x1 - line->x0;
+    dy = line->y1 - line->y0;
+    width = D_800C3E9C;
+    angle = ratan2(dy, dx) + 0x400; /* across the line */
+    dx = func_8003F8CC(angle) * width / 8192;
+    dy = func_8003F8B0(angle) * width / 8192;
+    if (D_80059580 + sizeof(POLY_FT4) >= D_80059534) {
+        return;
+    }
+    quad = (POLY_FT4 *)D_80059580;
+    D_80059580 += sizeof(POLY_FT4);
+    SetPolyFT4(quad);
+    SetShadeTex(quad, 1);
+    quad->u0 = 0xC0 + (D_800D2FCC & 7);
+    quad->v0 = 0xF0;
+    quad->u1 = 0xC1 + (D_800D2FCC & 7);
+    quad->v1 = 0xF0;
+    quad->u2 = 0xC0 + (D_800D2FCC & 7);
+    quad->v2 = 0xF7;
+    quad->u3 = 0xC1 + (D_800D2FCC & 7);
+    quad->v3 = 0xF7;
+    quad->tpage = GetTPage(0, abr, 0x3F0, 0x1F0);
+    quad->clut = GetClut(0x3F0, 0x1EE);
+    quad->r0 = 0xF0;
+    quad->g0 = 0xF0;
+    quad->b0 = 0xF0;
+    if (D_800D2FCC == 0) {
+        quad->x0 = line->x0 - dx;
+        quad->y0 = line->y0 - dy;
+        quad->x1 = line->x0 + dx;
+        quad->y1 = line->y0 + dy;
+    } else {
+        quad->x0 = D_800C3CA4;
+        quad->y0 = D_800C3CA6;
+        quad->x1 = D_800C3CA8;
+        quad->y1 = D_800C3CAA;
+    }
+    D_800C3CA4 = quad->x2 = line->x1 - dx;
+    D_800C3CA6 = quad->y2 = line->y1 - dy;
+    D_800C3CA8 = quad->x3 = line->x1 + dx;
+    D_800C3CAA = quad->y3 = line->y1 + dy;
+    AddPrim(D_8005956C + depth, quad);
+    D_800D2FCC++;
+}
 
 #ifdef NON_MATCHING
 /* Trail update: publish its colours and blend for drawing, refresh the

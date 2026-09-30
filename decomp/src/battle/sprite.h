@@ -240,5 +240,10 @@ void func_801FC53C(BattleSprite *sprite, s32 a, s32 b, s32 c, s32 d, s32 e, s32 
 /* Sprite streaks and sprite effects (800B5DF4-800B7424). */
 extern MATRIX D_8004FBB8; /* resident: the sprite camera */
 extern MATRIX D_800C3574; /* the screen-space camera (render bit 24) */
+extern s32 D_800D2FCC;     /* the trail segment being drawn */
+extern s16 D_800C3CA4; /* the last trail segment's far corners */
+extern s16 D_800C3CA6;
+extern s16 D_800C3CA8;
+extern s16 D_800C3CAA;
 
 #endif

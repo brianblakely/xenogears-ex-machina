@@ -267,6 +267,7 @@ void SetPolyGT3(POLY_GT3 *p);
 void SetPolyFT3(POLY_FT3 *p);
 void SetPolyFT4(POLY_FT4 *p);
 void SetPolyGT4(POLY_GT4 *p);
+void SetLineF2(LINE_F2 *p);
 void SetLineF3(LINE_F3 *p);
 void SetTile(TILE *p);
 void SetSprt(SPRT *p);
