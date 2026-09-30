@@ -939,9 +939,7 @@ void func_80080B58(void) {
     DrawSync(0);
 }
 
-#ifdef NON_MATCHING
-/* Open the system menu: mode 1 at page 0, mode 2 at page 7, else close.
- * Does not match: the shared tail is cross-jumped one instruction early. */
+/* Open the system menu: mode 1 at page 0, mode 2 at page 7, else close. */
 void func_80080C48(s32 mode) {
     func_80039FF8();
     func_8008EB4C(0x1F);
@@ -955,18 +953,17 @@ void func_80080C48(s32 mode) {
         func_80080964(7);
         ((MenuPage *)D_800915AC)[7].cursor = 1;
     } else {
-        func_8007F8B4();
-        return;
+        goto close;
     }
     func_80083C0C(0);
     D_80092758 = 1;
     D_800926FC = 0;
     D_8009275C = 1;
     func_80080B58();
+    return;
+close:
+    func_8007F8B4();
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_80080C48);
-#endif
 
 void func_80080D10(void) {
     D_800926DC = 0;
