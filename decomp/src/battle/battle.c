@@ -3024,7 +3024,17 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A9F94);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A9FF0);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA320);
+/* Select stage object index with slot mask, and start its effect (800AA934). */
+void func_800AA320(u16 index, s16 mask, s32 arg2) {
+    BattleObject *object = D_800D3368[index];
+
+    D_800C3D40 = index;
+    D_800C3E30 = mask;
+    object->field35 = 0;
+    if (D_800D3368[index] != NULL) {
+        func_800AA934(D_800D3368[index], D_800D3368[index], &D_800C3D0C, arg2);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA384);
 
@@ -3044,7 +3054,7 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA564);
 
 /* The scaled size of stage object index (0 when absent). */
 s32 func_800AA600(s32 index) {
-    StageObject *object = D_800D3368[index];
+    BattleObject *object = D_800D3368[index];
     s32 size = 0;
 
     if (object != NULL) {
@@ -3071,10 +3081,10 @@ void func_800AA788(s32 value) {
 
 /* Swap stage objects a and b, deactivating a and activating b first. */
 void func_800AA79C(s32 a, s32 b) {
-    StageObject **objects = D_800D3368;
-    StageObject **first = &objects[a];
-    StageObject **second = &objects[b];
-    StageObject *swap;
+    BattleObject **objects = D_800D3368;
+    BattleObject **first = &objects[a];
+    BattleObject **second = &objects[b];
+    BattleObject *swap;
 
     (*first)->active = 0;
     (*second)->active = 1;
@@ -3113,18 +3123,46 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800ADF1C);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AE098);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AE1BC);
+/* Start an animation on a battle object (looping when loop is set); an empty
+ * animation stops it. */
+void func_800AE1BC(BattleObject *object, Animation *animation, s32 loop) {
+    u8 *data;
+
+    if (animation->length != 0) {
+        object->animation = 0;
+        if (loop) {
+            object->animationLoop = animation->loop;
+        } else {
+            object->animationLoop = -1;
+        }
+        object->animationFrame = 0;
+        object->animationLength = animation->length;
+        data = (u8 *)animation + animation->dataOffset;
+        object->animationStart = data;
+        object->animationCursor = data;
+    } else {
+        object->animation = -1;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AE220);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AE2A4);
 
-/* Mark an effect object's field 0x98 unset. */
-void func_800AEEEC(EffectObject *object) {
-    object->field98 = -1;
+/* Stop a battle object's animation. */
+void func_800AEEEC(BattleObject *object) {
+    object->animation = -1;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AEEF8);
+/* Distance from a battle object's position to its hierarchy's translation. */
+s32 func_800AEEF8(BattleObject *object) {
+    ModelPart *root = object->hierarchy;
+    s32 dx = object->position[0] - root->translation[0];
+    s32 dy = object->position[1] - root->translation[1];
+    s32 dz = object->position[2] - root->translation[2];
+
+    return func_80048C4C(dx * dx + dy * dy + dz * dz);
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AEF68);
 
@@ -3176,24 +3214,59 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AFD98);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AFF9C);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B0060);
+/* Free a battle object's packets (and its texture when it has one). */
+void func_800B0060(BattleObject *object) {
+    if (object->packets != NULL) {
+        if (object->hasTexture) {
+            func_8003852C(*(u8 **)(object->textureInfo + 8));
+            object->hasTexture = 0;
+        }
+        func_800320E8(object->packets);
+        object->packets = NULL;
+        object->field18 = 0;
+    }
+}
 
 /* Clear the words D_800C3BAC[0..8]. */
 void func_800B00D0(void) {
     s32 i;
 
     for (i = 8; i >= 0; i--) {
-        D_800C3BAC[i] = 0;
+        D_800C3BAC[i] = NULL;
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B00F4);
+/* Release the nine effect entries of D_800C3BAC to pool, then clear them. */
+void func_800B00F4(EffectPool *pool) {
+    s32 i;
+
+    for (i = 0; i < 9; i++) {
+        if (D_800C3BAC[i] != NULL) {
+            func_800A23E8(pool, D_800C3BAC[i]);
+        }
+    }
+    func_800B00D0();
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B0164);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B026C);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B0AB4);
+/* Whether a point (x at [0], z at [2]) lies strictly inside the scene's
+ * bounds. */
+s32 func_800B0AB4(s16 *point) {
+    BattleSceneData *scene = D_800658C8;
+    s16 x = point[0];
+    s16 z;
+
+    if (scene->minX < x && x < scene->maxX) {
+        z = point[2];
+        if (z > scene->minZ && z < scene->maxZ) {
+            return 1;
+        }
+    }
+    return 0;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B0B14);
 
