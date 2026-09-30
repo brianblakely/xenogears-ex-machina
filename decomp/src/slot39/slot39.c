@@ -700,7 +700,140 @@ void func_801C6F70(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C72BC);
+/* Load (codes below 10h, read from file 2 of directory 10h) or release
+ * (10h + the same code) the menu data set `code` into the table directory and
+ * the screen blocks. */
+void func_801C72BC(u8 code) {
+    MenuDataArchive *archive;
+    s32 i;
+    u8 id;
+    u8 gear;
+
+    if (code < 0x10) {
+        func_80028470(0x10, 0);
+        archive = func_80031BDC(func_800288EC(2), 1);
+        func_800295D8(2, archive, 0, 0x80);
+        func_80028A60(0);
+        func_8003342C(archive);
+    }
+    switch (code) {
+    case 0:
+        D_800625A0->tables->items = func_80032E88(archive->items, 0);
+        D_800625A0->block42C->unk1180 = func_80032E88(archive->unk3C, 0);
+        break;
+    case 1:
+        D_800625A0->tables->engines = func_80032E88(archive->engines, 0);
+        D_800625A0->tables->frames = func_80032E88(archive->frames, 0);
+        D_800625A0->tables->parts = func_80032E88(archive->parts, 0);
+        D_800625A0->tables->unk14 = func_80032E88(archive->unk50, 0);
+        break;
+    case 2:
+        for (i = 0; i < 3; i++) {
+            id = D_800625A0->party->ids[i];
+            if (id != 0xff) {
+                D_800625A0->tables->effects[D_800625A0->party->ids[i]] = func_80032E88(archive->effects[id], 0);
+            }
+        }
+        D_800625A0->block430->unk1080 = func_80032E88(archive->unk40, 0);
+        break;
+    case 3:
+        D_800625A0->tables->weapons = func_80032E88(archive->weapons, 0);
+        D_800625A0->tables->accessories = func_80032E88(archive->accessories, 0);
+        D_800625A0->tables->unk18 = func_80032E88(archive->unkAC, 0);
+        D_800625A0->tables->unk14 = func_80032E88(archive->unk50, 0);
+        break;
+    case 4:
+        for (i = 0; i < 3; i++) {
+            id = D_800625A0->party->ids[i];
+            if (id != 0xff) {
+                D_800625A0->tables->effects[D_800625A0->party->ids[i]] = func_80032E88(archive->effects[id], 0);
+            }
+        }
+        D_800625A0->block438->unk2578 = func_80032E88(archive->unkB0, 0);
+        break;
+    case 5:
+    case 6:
+        for (i = 0; i < 3; i++) {
+            id = D_800625A0->party->ids[i];
+            if (id != 0xff) {
+                gear = D_8006D8A0[id].gear;
+                if (gear != 0xff) {
+                    D_800625A0->tables->gears[D_8006D8A0[D_800625A0->party->ids[i]].gear] =
+                        func_80032E88(archive->gears[gear], 0);
+                    func_801E4998((MenuGearViews *)D_800625A0->tables, D_8006D8A0[D_800625A0->party->ids[i]].gear);
+                }
+            }
+        }
+        if (code == 5) {
+            D_800625A0->block430->unk1080 = func_80032E88(archive->unk54, 0);
+        } else {
+            D_800625A0->block430->unk1080 = func_80032E88(archive->unk58, 0);
+        }
+        break;
+    case 7:
+        D_800625A0->block434->unkA00[0] = func_80032E88(archive->unkD4[0], 0);
+        D_800625A0->block434->unkA00[1] = func_80032E88(archive->unkD4[1], 0);
+        D_800625A0->block434->unkA00[2] = func_80032E88(archive->unkD4[2], 0);
+        D_800625A0->block434->unkA00[3] = func_80032E88(archive->unkD4[3], 0);
+        break;
+    case 0x10:
+        func_800320E8(D_800625A0->tables->items);
+        func_800320E8(D_800625A0->block42C->unk1180);
+        break;
+    case 0x11:
+        func_800320E8(D_800625A0->tables->engines);
+        func_800320E8(D_800625A0->tables->frames);
+        func_800320E8(D_800625A0->tables->parts);
+        func_800320E8(D_800625A0->tables->unk14);
+        break;
+    case 0x12:
+        for (i = 0; i < 3; i++) {
+            id = D_800625A0->party->ids[i];
+            if (id != 0xff) {
+                func_800320E8(D_800625A0->tables->effects[id]);
+            }
+        }
+        func_800320E8(D_800625A0->block430->unk1080);
+        break;
+    case 0x13:
+        func_800320E8(D_800625A0->tables->weapons);
+        func_800320E8(D_800625A0->tables->accessories);
+        func_800320E8(D_800625A0->tables->unk18);
+        func_800320E8(D_800625A0->tables->unk14);
+        break;
+    case 0x14:
+        for (i = 0; i < 3; i++) {
+            id = D_800625A0->party->ids[i];
+            if (id != 0xff) {
+                func_800320E8(D_800625A0->tables->effects[id]);
+            }
+        }
+        func_800320E8(D_800625A0->block438->unk2578);
+        break;
+    case 0x15:
+    case 0x16:
+        for (i = 0; i < 3; i++) {
+            id = D_800625A0->party->ids[i];
+            if (id != 0xff) {
+                gear = D_8006D8A0[id].gear;
+                if (gear != 0xff) {
+                    func_800320E8(D_800625A0->tables->gears[gear]);
+                }
+            }
+        }
+        func_800320E8(D_800625A0->block430->unk1080);
+        break;
+    case 0x17:
+        func_800320E8(D_800625A0->block434->unkA00[0]);
+        func_800320E8(D_800625A0->block434->unkA00[1]);
+        func_800320E8(D_800625A0->block434->unkA00[2]);
+        func_800320E8(D_800625A0->block434->unkA00[3]);
+        break;
+    }
+    if (code < 0x10) {
+        func_800320E8(archive);
+    }
+}
 
 /* Set up the screen: the copied screen area, the environments, labels,
  * palettes and sheet records, then the card state and load state. */

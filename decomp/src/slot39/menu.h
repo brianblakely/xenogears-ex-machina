@@ -310,10 +310,11 @@ typedef struct MenuTables {
     GearEngine *engines; /* 8 */
     GearPart *parts; /* C */
     GearFrame *frames; /* 10 */
-    u8 pad14[0x8];
+    void *unk14; /* 14 */
+    void *unk18; /* 18 */
     u8 *items; /* 1C */
     MenuEffect *effects[11]; /* 20: per character */
-    u8 pad4C[0x58];
+    void *gears[22]; /* 4C: per gear */
     u16 unkA4; /* A4 */
     u16 unkA6; /* A6 */
     u8 padA8[0x8];
@@ -471,7 +472,7 @@ typedef struct MenuBlock430 {
     MenuLabelSlot headB; /* E80 */
     MenuLabelSlot extra[2]; /* F00 */
     MenuLabelSlot footer; /* 1000 */
-    u8 pad1080[0x4];
+    void *unk1080; /* 1080 */
     u8 shown[14]; /* 1084 */
     u8 extraShown; /* 1092 */
     u8 pad1093[0x1];
@@ -661,7 +662,7 @@ typedef struct MenuBlock434 {
     MenuLabelSlot values[8]; /* 400 */
     MenuLabelSlot title; /* 800 */
     MenuLabelSlot extra[3]; /* 880 */
-    u8 padA00[0x10];
+    void *unkA00[4]; /* A00 */
     u8 shown[8]; /* A10 */
     u8 extraShown; /* A18 */
     u8 padA19[0x3];
@@ -1084,6 +1085,29 @@ s32 func_800405B4(char *name);    /* erase */
 void func_801D9B08(void);
 void func_801C9EF4(s32 mode, s32 slot);
 void func_801CADB0(void);
+void func_801E4998(MenuGearViews *views, u8 gear);
+
+/* The menu data archive (file 2 of directory 10h): packed files by index. */
+typedef struct MenuDataArchive {
+    s32 count; /* 0 */
+    void *items; /* 4 */
+    void *weapons; /* 8 */
+    void *accessories; /* C */
+    void *effects[11]; /* 10: per character */
+    void *unk3C; /* 3C */
+    void *unk40; /* 40 */
+    void *engines; /* 44 */
+    void *frames; /* 48 */
+    void *parts; /* 4C */
+    void *unk50; /* 50 */
+    void *unk54; /* 54 */
+    void *unk58; /* 58 */
+    void *gears[20]; /* 5C: per gear */
+    void *unkAC; /* AC */
+    void *unkB0; /* B0 */
+    void *padB4[8];
+    void *unkD4[4]; /* D4 */
+} MenuDataArchive;
 void func_801CB28C(s32 *save);
 void func_801C8CA4(u8 port);
 u8 func_801C93A8(void);
