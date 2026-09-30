@@ -191,6 +191,18 @@ typedef struct {
 
 extern MemberPair D_800CDCE8[3];
 
+/* The level gauge animation (module data). */
+extern s32 D_801E44CC;      /* start value */
+extern s32 D_801E44D0;      /* end value */
+extern s32 D_801E44D4;      /* distance */
+extern s32 D_801E44D8;      /* start length */
+extern s32 D_801E44DC;      /* distance length */
+extern u8 D_801E44E0;       /* bar colour */
+extern u8 D_801E44E4;       /* arrow glyph */
+
+/* Per slot byte tables, 8 bytes per slot; the second set starts 3 slots on. */
+extern u8 D_800CDD10[6][8];
+
 /* The member card's label glyphs: ids and positions. */
 extern u8 D_800C3268[18];
 extern s16 D_800C327C[18];
@@ -198,6 +210,7 @@ extern s16 D_800C32A0[18];
 
 void func_80043B48(void *ot, void *prim);                   /* AddPrim */
 void func_80043C24(void *prim, s32 textured);               /* SetShadeTex */
+void func_80043CC4(POLY_G4 *prim);                          /* SetPolyG4 */
 void func_800728B8(POLY_FT4 *prims, s32 count, s32 buffer);
 s32 func_80076A10(s32 id, POLY_FT4 *prims, s16 x, s16 y);   /* glyph sprite */
 

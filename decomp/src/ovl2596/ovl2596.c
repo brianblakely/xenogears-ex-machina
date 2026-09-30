@@ -299,13 +299,103 @@ void func_801DF4C0(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801DF710);
+/* Set up a gauge bar's two primitives: a gradient from colour (0 pink,
+ * 1 light green, 2 red, 3 blue) at the top to black. */
+void func_801DF710(POLY_G4 *bar, u8 colour) {
+    u8 rgb[3];
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801DF840);
+    switch (colour) {
+    case 0:
+        rgb[0] = 0xFF;
+        rgb[1] = 0x80;
+        rgb[2] = 0x80;
+        break;
+    case 1:
+        rgb[0] = 0x80;
+        rgb[1] = 0xFF;
+        rgb[2] = 0x80;
+        break;
+    case 2:
+        rgb[0] = 0xFF;
+        rgb[1] = 0;
+        rgb[2] = 0;
+        break;
+    case 3:
+        rgb[0] = 0;
+        rgb[1] = 0;
+        rgb[2] = 0xFF;
+        break;
+    }
+    for (i = 0; i < 2; i++) {
+        func_80043CC4(&bar[i]);
+        bar[i].r0 = rgb[0];
+        bar[i].g0 = rgb[1];
+        bar[i].b0 = rgb[2];
+        bar[i].r1 = rgb[0];
+        bar[i].g1 = rgb[1];
+        bar[i].b1 = rgb[2];
+        bar[i].r2 = 0;
+        bar[i].g2 = 0;
+        bar[i].b2 = 0;
+        bar[i].r3 = 0;
+        bar[i].g3 = 0;
+        bar[i].b3 = 0;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801DF910);
+/* Shade count glyph parts from the given draw buffer red (or blue). */
+void func_801DF840(POLY_FT4 *prims, u8 blue, u8 count, u8 buffer) {
+    u8 rgb[3];
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801DFA38);
+    rgb[1] = 0x40;
+    if (blue == 0) {
+        rgb[0] = 0x80;
+        rgb[2] = 0x40;
+    } else {
+        rgb[0] = 0x40;
+        rgb[2] = 0x80;
+    }
+    for (i = 0; i < count; i++) {
+        func_80043C24(&prims[i * 2 + buffer], 0);
+        setRGB0(&prims[i * 2 + buffer], rgb[0], rgb[1], rgb[2]);
+    }
+}
+
+/* Start the level gauge animation from one value to another out of max:
+ * lengths on a 64-pixel scale, the colour and arrow for up or down. */
+void func_801DF910(u8 from, u8 to, s32 max) {
+    D_801E44CC = from;
+    D_801E44D0 = to;
+    D_801E44D4 = to - from;
+    D_801E44D8 = from * 100 / max * 0x1900 / 10000;
+    if (D_801E44D4 >= 0) {
+        D_801E44E0 = 2;
+        D_801E44E4 = 0xE3;
+    } else {
+        D_801E44E0 = 3;
+        D_801E44E4 = 0xE5;
+        D_801E44D4 = from - to;
+    }
+    D_801E44DC = D_801E44D4 * 100 / max * 0x1900 / 10000;
+}
+
+/* The highest of a slot's seven entries in both byte tables. */
+u8 func_801DFA38(u8 slot) {
+    u8 best = 0;
+    s32 i;
+
+    for (i = 0; i < 7; i++) {
+        if (D_800CDD10[slot][i] >= best) {
+            best = D_800CDD10[slot][i];
+        }
+        if (D_800CDD10[slot + 3][i] >= best) {
+            best = D_800CDD10[slot + 3][i];
+        }
+    }
+    return best;
+}
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801DFAA8);
 
