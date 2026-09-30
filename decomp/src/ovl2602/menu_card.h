@@ -764,8 +764,16 @@ u8 func_801D5828(void);
 void func_801CCE90(u8 count, Label *labels, u8 *text_ids, u8 *shown);
 extern u8 D_801D6A24[];    /* sell list label text ids */
 extern s32 D_801D6FDC;     /* index of the gear screen's member among the available ones */
-extern s32 D_801D905C, D_801D9060, D_801D9064; /* camera target */
-extern s32 D_801D9050, D_801D9054, D_801D9058; /* previous camera target */
+/* The camera's move between two points (801d9050). */
+typedef struct {
+    s32 from[3];     /* 00: previous target */
+    s32 to[3];       /* 0c: target */
+    s32 step[3];     /* 18: 16.16 step per frame */
+    s32 offset[3];   /* 24: 16.16 distance travelled */
+    u8 negative[3];  /* 30: moving towards smaller coordinates */
+    u8 frames;       /* 33: steps per update */
+} CameraMove;
+extern CameraMove D_801D9050;
 extern u32 D_8006EF58;     /* party gold */
 void ClearImage(void *env, s32 unk1, s32 unk2, s32 unk3);
 void AddPrims(u32 *ot, u32 *first, u32 *last); /* link an OT range into another OT */
@@ -781,7 +789,6 @@ void func_801CE82C(void);
 void func_801CF33C(void);
 void func_801CE7E0(void);
 void func_801C962C(void);
-extern u8 D_801D9083;
 void func_801C5C98(void);
 void func_801C6114(void);
 void func_801C6708(void);

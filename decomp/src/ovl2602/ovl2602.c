@@ -1525,7 +1525,99 @@ void func_801CB4E4(void) {
     D_800625A0->input = code;
 }
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CB690);
+/* Plan the camera's move from `from` to `to`: steps per axis so x and y arrive together, z over the same count. */
+void func_801CB690(void) {
+    u8 done;
+    u8 count_x;
+    u8 count_y;
+    s32 i;
+
+    count_y = 0;
+    count_x = 0;
+    D_801D9050.offset[0] = D_801D9050.offset[1] = D_801D9050.offset[2] = 0;
+    if (D_801D9050.to[0] >= D_801D9050.from[0]) {
+        D_801D9050.step[0] = D_801D9050.to[0] - D_801D9050.from[0];
+        D_801D9050.negative[0] = 0;
+    } else {
+        D_801D9050.step[0] = D_801D9050.to[0] - D_801D9050.from[0];
+        D_801D9050.negative[0] = 1;
+    }
+    if (D_801D9050.to[1] >= D_801D9050.from[1]) {
+        D_801D9050.step[1] = D_801D9050.to[1] - D_801D9050.from[1];
+        D_801D9050.negative[1] = 0;
+    } else {
+        D_801D9050.step[1] = D_801D9050.to[1] - D_801D9050.from[1];
+        D_801D9050.negative[1] = 1;
+    }
+    if (D_801D9050.step[0] < 0) {
+        D_801D9050.step[0] = ~D_801D9050.step[0] + 1;
+    }
+    if (D_801D9050.step[1] < 0) {
+        D_801D9050.step[1] = ~D_801D9050.step[1] + 1;
+    }
+    if (D_801D9050.step[0] >= D_801D9050.step[1]) {
+        D_801D9050.step[1] = (D_801D9050.step[1] << 16) / D_801D9050.step[0];
+        D_801D9050.step[0] = 0x10000;
+    } else {
+        D_801D9050.step[0] = (D_801D9050.step[0] << 16) / D_801D9050.step[1];
+        D_801D9050.step[1] = 0x10000;
+    }
+    done = 1;
+    do {
+        for (i = 0; i < D_801D9050.frames; i++) {
+            D_801D9050.offset[0] += D_801D9050.step[0];
+        }
+        if (D_801D9050.negative[0] == 0) {
+            if (D_801D9050.offset[0] / 0x10000 + D_801D9050.from[0] >= D_801D9050.to[0]) {
+                done = 0;
+            } else {
+                count_x++;
+            }
+        } else {
+            if (D_801D9050.to[0] >= D_801D9050.from[0] - D_801D9050.offset[0] / 0x10000) {
+                done = 0;
+            } else {
+                count_x++;
+            }
+        }
+    } while (done);
+    done = 1;
+    do {
+        for (i = 0; i < D_801D9050.frames; i++) {
+            D_801D9050.offset[1] += D_801D9050.step[1];
+        }
+        if (D_801D9050.negative[1] == 0) {
+            if (D_801D9050.offset[1] / 0x10000 + D_801D9050.from[1] >= D_801D9050.to[1]) {
+                done = 0;
+            } else {
+                count_y++;
+            }
+        } else {
+            if (D_801D9050.to[1] >= D_801D9050.from[1] - D_801D9050.offset[1] / 0x10000) {
+                done = 0;
+            } else {
+                count_y++;
+            }
+        }
+    } while (done);
+    if (count_x < count_y) {
+        count_x = count_y;
+    }
+    if (D_801D9050.to[2] >= D_801D9050.from[2]) {
+        D_801D9050.step[2] = D_801D9050.to[2] - D_801D9050.from[2];
+        D_801D9050.negative[2] = 0;
+    } else {
+        D_801D9050.step[2] = D_801D9050.to[2] - D_801D9050.from[2];
+        D_801D9050.negative[2] = 1;
+    }
+    if (D_801D9050.step[2] < 0) {
+        D_801D9050.step[2] = ~D_801D9050.step[2] + 1;
+    }
+    D_801D9050.offset[2] = 0;
+    D_801D9050.offset[1] = 0;
+    D_801D9050.offset[0] = 0;
+    D_801D9050.step[2] = (D_801D9050.step[2] << 16) / count_x;
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CBA2C);
 
@@ -2068,13 +2160,13 @@ void func_801CE024(void) {
     D_800625A0->model_rotation.vx = 0;
     D_800625A0->model_rotation.vy = 0x400;
     D_800625A0->view_motion = 0;
-    D_801D9058 = -0x400;
-    D_801D9064 = -0x400;
-    D_801D9050 = 0x400;
-    D_801D9054 = 0;
-    D_801D905C = 0x400;
-    D_801D9060 = 0;
-    D_801D9083 = 0x10;
+    D_801D9050.from[2] = -0x400;
+    D_801D9050.to[2] = -0x400;
+    D_801D9050.from[0] = 0x400;
+    D_801D9050.from[1] = 0;
+    D_801D9050.to[0] = 0x400;
+    D_801D9050.to[1] = 0;
+    D_801D9050.frames = 0x10;
     func_801C5B08();
     func_801C5C98();
     func_801C6114();
@@ -2193,15 +2285,12 @@ void func_801CFF18(void) {
     D_800625A0->unk454->unk1ED9[5] = 0;
     D_800625A0->unk454->unk1ED9[6] = 0;
     D_800625A0->flags->gear_shown = 1;
-    x = D_801D905C;
-    y = D_801D9060;
-    z = D_801D9064;
-    D_801D905C = 0x400;
-    D_801D9060 = 0;
-    D_801D9064 = -0x400;
-    D_801D9050 = x;
-    D_801D9054 = y;
-    D_801D9058 = z;
+    D_801D9050.from[0] = D_801D9050.to[0];
+    D_801D9050.from[1] = D_801D9050.to[1];
+    D_801D9050.from[2] = D_801D9050.to[2];
+    D_801D9050.to[0] = 0x400;
+    D_801D9050.to[1] = 0;
+    D_801D9050.to[2] = -0x400;
     func_801CB690();
     D_800625A0->view_motion = 7;
 }
