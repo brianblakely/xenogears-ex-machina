@@ -295,6 +295,26 @@ typedef struct CharRecord {
     u8 padA1[0x3];
 } CharRecord;
 
+/* A weapon slot of a gear record. */
+typedef struct GearSlot {
+    u16 value; /* 0 */
+    u8 unk2; /* 2 */
+    u8 unk3; /* 3 */
+    u8 unk4; /* 4 */
+    u8 pad5[0x3];
+} GearSlot;
+
+/* A gear weapon record of the data tables (+18). */
+typedef struct GearWeapon {
+    u8 attrs[4]; /* 0 */
+    u8 pad4[0xA];
+    u8 unkE; /* E */
+    u8 padF[0x1];
+    u8 unk10; /* 10 */
+    u8 unk11; /* 11 */
+    u16 unk12; /* 12 */
+} GearWeapon;
+
 /* The data table directory (*(state + 330)). */
 typedef struct MenuTables {
     u8 *weapons; /* 0 */
@@ -302,7 +322,8 @@ typedef struct MenuTables {
     GearEngine *engines; /* 8 */
     GearPart *parts; /* C */
     GearFrame *frames; /* 10 */
-    u8 pad14[0x8];
+    u8 pad14[0x4];
+    GearWeapon *weapons18; /* 18: gear weapons */
     u8 *items; /* 1C */
     MenuEffect *effects[11]; /* 20: per character */
     u8 pad4C[0x58];
@@ -324,10 +345,16 @@ typedef struct GearRecord {
     u8 pad0[0x2];
     u8 engine; /* 2: record of table +8 */
     u8 unk3; /* 3: record of table +c */
-    u8 part; /* 4: inventory list 4 entry (801e0434) */
-    u8 pad5[0x3];
+    u8 part; /* 4: inventory list 4 entry (801e0434); first slot weapon of gears 5, d */
+    u8 part1; /* 5: second slot weapon of gears 5, d */
+    u8 pad6[0x1];
+    u8 part2; /* 7: third slot weapon of gears 5, d */
     u8 frame; /* 8 */
-    u8 pad9[0x2F];
+    u8 pad9[0x3];
+    u8 weapon; /* C: record of table +18 */
+    u8 padD[0x3];
+    GearSlot slots[3]; /* 10 */
+    u8 pad28[0x10];
     u16 unk38; /* 38 */
     u16 unk3A; /* 3A */
     u8 unk3C; /* 3C */
@@ -336,7 +363,8 @@ typedef struct GearRecord {
     u8 unk3F; /* 3F */
     u8 pad40[0x4];
     u16 unk44; /* 44 */
-    u8 pad46[0x1A];
+    u8 pad46[0x16];
+    u8 attrs[4]; /* 5C */
     u32 unk60; /* 60 */
     u32 unk64; /* 64 */
     u8 pad68[0x8];
@@ -344,7 +372,9 @@ typedef struct GearRecord {
     u16 unk72; /* 72 */
     u8 pad74[0x1];
     u8 unk75; /* 75 */
-    u8 pad76[0x22];
+    u8 pad76[0x10];
+    u16 unk86; /* 86 */
+    u8 pad88[0x10];
     u8 unk98; /* 98 */
     u8 pad99[0x4];
     u8 unk9D; /* 9D */

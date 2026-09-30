@@ -3284,7 +3284,51 @@ void func_801E42AC(MenuTables *tables, u8 gear) {
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E433C);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E4754);
+/* Take gear `gear`'s weapon values (table +18) into its first slot and
+ * attributes; gears 5 and 13 instead take their three slot weapons. */
+void func_801E4754(MenuTables *tables, u8 gear) {
+    GearRecord *record;
+    GearWeapon *weapon;
+
+    record = &D_8006DFAC[gear];
+    weapon = tables->weapons18;
+    weapon += record->weapon;
+    record->slots[0].unk2 = weapon->unkE;
+    record->slots[0].value = weapon->unk12;
+    record->slots[0].unk3 = weapon->unk10;
+    record->slots[0].unk4 = weapon->unk11;
+    record->attrs[0] = weapon->attrs[0];
+    record->attrs[1] = weapon->attrs[1];
+    record->attrs[2] = weapon->attrs[2];
+    record->attrs[3] = weapon->attrs[3];
+    if (record->slots[0].unk4 == 100) {
+        record->unk86 &= 0xfff;
+        record->unk86 |= record->slots[0].value;
+    }
+    if (gear == 5 || gear == 13) {
+        weapon = tables->weapons18;
+        weapon += record->part;
+        record->slots[0].unk2 = weapon->unkE;
+        record->slots[0].value = weapon->unk12;
+        record->slots[0].unk3 = weapon->unk10;
+        record->slots[0].unk4 = weapon->unk11;
+        record->attrs[1] = weapon->attrs[1];
+        weapon = tables->weapons18;
+        weapon += record->part1;
+        record->slots[1].unk2 = weapon->unkE;
+        record->slots[1].value = weapon->unk12;
+        record->slots[1].unk3 = weapon->unk10;
+        record->slots[1].unk4 = weapon->unk11;
+        record->attrs[2] = weapon->attrs[2];
+        weapon = tables->weapons18;
+        weapon += record->part2;
+        record->slots[2].unk2 = weapon->unkE;
+        record->slots[2].value = weapon->unk12;
+        record->slots[2].unk3 = weapon->unk10;
+        record->slots[2].unk4 = weapon->unk11;
+        record->attrs[3] = weapon->attrs[3];
+    }
+}
 
 /* Gear `gear`'s value: (its +44 / 120 - its +75) / 2, at least 0. */
 u8 func_801E4928(u8 gear) {
