@@ -89,7 +89,7 @@ typedef struct Sprite {
     u8 red, green, blue;     /* +0x28: colour of one-sided parts */
     u8 colour_flags;         /* +0x2b: bit 0 set: no colour */
     s16 scale;               /* +0x2c */
-    u8 unknown2e[2];
+    s16 depth;               /* +0x2e: ordering-table depth of its last draw */
     s16 half30;              /* +0x30 */
     s16 direction;           /* +0x32 */
     u16 frame;               /* +0x34: pending frame, 0 none */
@@ -267,6 +267,20 @@ extern u8 D_800591B3;
 extern u8 D_8005A474[];
 extern u8 *D_800594B8; /* end of the queue entry block */
 extern s32 D_800591B8;    /* extra argument of 80024524/8002435c for one call */
+
+/* The point and draw-mode primitives 8002541c takes from the queue block. */
+typedef struct {
+    u8 addr[3];
+    u8 len;
+    u32 colour;
+    u32 xy;
+} PointPrim;
+
+typedef struct {
+    u8 addr[3];
+    u8 len;
+    u32 code;
+} ModePrim;
 
 /* An entry of the two sprite queues (bump-allocated from 800594b4). */
 typedef struct SpriteQueueEntry {

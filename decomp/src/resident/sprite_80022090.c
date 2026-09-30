@@ -34,6 +34,8 @@ SpriteQueueEntry *D_80059300[2]; /* the two queues */
 u8 *D_800594B4;               /* the queue entry block */
 s32 D_800594C4;
 SpriteQueueEntry *D_80059580; /* the next free queue entry */
+u8 *D_80059524;                /* the queue block being filled */
+u8 *D_80059534;                /* its end */
 
 /* Rebuild a sprite renderer's matrix: rotation by its angles, scaled by
  * its scales (flag bit 0: scale before rotating), then halved by the
@@ -931,7 +933,47 @@ void func_80025224(Task *task, s32 kind) {
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80025258);
 
+/* Sprite task draw for a sprite without a frame: a point primitive at its
+ * screen position (its colour word) and a draw-mode primitive with its
+ * blend bits, both from the queue entry block, at its depth. */
+/* Nonmatching: the original copies the point to $a1 for the call before storing its colour through that copy, and its first AddPrim argument is set up later. */
+#ifdef NON_MATCHING
+void func_8002541C(Task *task) {
+    SVECTOR position;
+    s32 flag;
+    Sprite *sprite = task->data;
+    PointPrim *point;
+    ModePrim *mode;
+    s32 depth;
+
+    if (sprite->frame != 0) {
+        return;
+    }
+    point = (PointPrim *)D_80059580;
+    if ((u8 *)(point + 1) < D_80059534) {
+        position.vx = sprite->x >> 16;
+        position.vy = sprite->y >> 16;
+        D_80059580 = (SpriteQueueEntry *)(point + 1);
+        position.vz = sprite->z >> 16;
+        SetRotMatrix(&D_8004FBB8);
+        SetTransMatrix(&D_8004FBB8);
+        depth = RotTransPers(&position, (long *)&point->xy, &flag, &flag) >> D_80050100;
+        sprite->depth = depth;
+        point->len = 2;
+        point->colour = *(u32 *)&sprite->red;
+        AddPrim((u32 *)D_8005956C + depth, point);
+        mode = (ModePrim *)D_80059580;
+        if ((u8 *)(mode + 1) < D_80059534) {
+            D_80059580 = (SpriteQueueEntry *)(mode + 1);
+            mode->len = 1;
+            mode->code = (sprite->render.word & 0x60) | 0xE1000000;
+            AddPrim((u32 *)D_8005956C + depth, mode);
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_8002541C);
+#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80025544);
 
