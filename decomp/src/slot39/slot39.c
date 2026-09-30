@@ -2719,11 +2719,90 @@ void func_801D50EC(u8 index, s32 x, s32 y) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D51EC);
+/* Lay out character `ch`'s hp (by digit position) and hp maximum (packed)
+ * on field block `index` at (x, y). */
+void func_801D51EC(u8 index, u8 ch, s32 x, s32 y) {
+    MenuFieldBlock *block = D_800625A0->fieldBlocks[index];
+    s32 i;
+    s32 n;
+    u8 digit;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D53D0);
+    func_801C80B8(D_8006D8A0[ch].hp);
+    block->count1 = 0;
+    for (i = 0; i < 3; i++) {
+        digit = D_800625A0->digits[6 + i];
+        if (digit != 0xff) {
+            block->count1 += func_8002675C(D_800625A0->sheet, digit, &block->list1[block->count1 * 2],
+                                           D_800625A0->bufferIndex, x + D_801E9B28 + i * 8, y + D_801E9B2C, 0x1000);
+        }
+    }
+    func_801C80B8(D_8006D8A0[ch].hpMax);
+    block->count2 = 0;
+    for (i = 0, n = 0; i < 3; i++) {
+        digit = D_800625A0->digits[6 + i];
+        if (digit != 0xff) {
+            block->count2 += func_8002675C(D_800625A0->sheet, digit, &block->list2[block->count2 * 2],
+                                           D_800625A0->bufferIndex, x + D_801E9B30 + n * 8, y + D_801E9B34, 0x1000);
+            n++;
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D55B4);
+/* Lay out character `ch`'s ep (by digit position) and ep maximum (packed)
+ * on field block `index` at (x, y). */
+void func_801D53D0(u8 index, u8 ch, s32 x, s32 y) {
+    MenuFieldBlock *block = D_800625A0->fieldBlocks[index];
+    s32 i;
+    s32 n;
+    u8 digit;
+
+    func_801C80B8(D_8006D8A0[ch].ep);
+    block->count3 = 0;
+    for (i = 0; i < 2; i++) {
+        digit = D_800625A0->digits[7 + i];
+        if (digit != 0xff) {
+            block->count3 += func_8002675C(D_800625A0->sheet, digit, &block->list3[block->count3 * 2],
+                                           D_800625A0->bufferIndex, x + D_801E9B38 + i * 8, y + D_801E9B3C, 0x1000);
+        }
+    }
+    func_801C80B8(D_8006D8A0[ch].epMax);
+    block->count4 = 0;
+    for (i = 0, n = 0; i < 2; i++) {
+        digit = D_800625A0->digits[7 + i];
+        if (digit != 0xff) {
+            block->count4 += func_8002675C(D_800625A0->sheet, digit, &block->list4[block->count4 * 2],
+                                           D_800625A0->bufferIndex, x + D_801E9B40 + n * 8, y + D_801E9B44, 0x1000);
+            n++;
+        }
+    }
+}
+
+/* Lay out character `ch`'s experience and experience to the next level
+ * (seven digits each, by digit position) on field block `index` at (x, y). */
+void func_801D55B4(u8 index, u8 ch, s32 x, s32 y) {
+    MenuFieldBlock *block = D_800625A0->fieldBlocks[index];
+    s32 i;
+    u8 digit;
+
+    func_801C80B8(D_8006D8A0[ch].exp);
+    block->count5 = 0;
+    for (i = 0; i < 7; i++) {
+        digit = D_800625A0->digits[2 + i];
+        if (digit != 0xff) {
+            block->count5 += func_8002675C(D_800625A0->sheet, digit, &block->list5[block->count5 * 2],
+                                           D_800625A0->bufferIndex, x + D_801E9B48 + i * 8, y + D_801E9B4C, 0x1000);
+        }
+    }
+    func_801C80B8(D_8006D8A0[ch].expNext);
+    block->count7 = 0;
+    for (i = 0; i < 7; i++) {
+        digit = D_800625A0->digits[2 + i];
+        if (digit != 0xff) {
+            block->count7 += func_8002675C(D_800625A0->sheet, digit, &block->list7[block->count7 * 2],
+                                           D_800625A0->bufferIndex, x + D_801E9B50 + i * 8, y + D_801E9B54, 0x1000);
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D5794);
 

@@ -249,10 +249,14 @@ typedef struct MenuEffect {
 
 /* A character record of the game data (D_8006D8A0; gears follow from 11). */
 typedef struct CharRecord {
-    u8 pad0[0x4C];
+    u8 pad0[0x44];
+    u32 exp; /* 44 */
+    u32 expNext; /* 48 */
     u16 hp; /* 4C */
     u16 hpMax; /* 4E */
-    u8 pad50[0xB];
+    u16 ep; /* 50 */
+    u16 epMax; /* 52 */
+    u8 pad54[0x7];
     u8 unk5B; /* 5B */
     u8 pad5C[0x6];
     u8 unk62; /* 62 */
@@ -520,7 +524,8 @@ typedef struct MenuFieldBlock {
     POLY_FT4 list2[6]; /* BE0 */
     POLY_FT4 list3[4]; /* CD0 */
     POLY_FT4 list4[4]; /* D70 */
-    POLY_FT4 list5[28]; /* E10 */
+    POLY_FT4 list5[14]; /* E10 */
+    POLY_FT4 list7[14]; /* 1040 */
     u8 buffer; /* 1270 */
     u8 count6; /* 1271 */
     u8 pad1272[0x1];
@@ -529,7 +534,7 @@ typedef struct MenuFieldBlock {
     u8 count3; /* 1275 */
     u8 count4; /* 1276 */
     u8 count5; /* 1277 */
-    u8 pad1278[0x1];
+    u8 count7; /* 1278 */
     u8 count0; /* 1279 */
     u8 pad127A[0x2];
 } MenuFieldBlock;
@@ -766,6 +771,18 @@ extern s32 D_801EA584[]; /* gear portrait u / 4 per slot */
 extern s32 D_801EA5C4[]; /* character portrait v per slot */
 extern u16 D_80059414;   /* portrait palette of odd images */
 extern u16 D_800595D4;   /* portrait palette of even images */
+extern s32 D_801E9B28;   /* field block number offsets (x, y): hp */
+extern s32 D_801E9B2C;
+extern s32 D_801E9B30;   /* hp max */
+extern s32 D_801E9B34;
+extern s32 D_801E9B38;   /* ep */
+extern s32 D_801E9B3C;
+extern s32 D_801E9B40;   /* ep max */
+extern s32 D_801E9B44;
+extern s32 D_801E9B48;   /* exp */
+extern s32 D_801E9B4C;
+extern s32 D_801E9B50;   /* exp to next level */
+extern s32 D_801E9B54;
 extern s32 D_801E9B58;   /* field block portrait offset: x */
 extern s32 D_801E9B5C;   /* y */
 extern s32 D_801E9AC8[20];
