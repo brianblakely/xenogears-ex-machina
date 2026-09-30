@@ -968,13 +968,57 @@ void func_80074AB4(Actor *actor) {
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80074BA4);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80075060);
+/* Record the outcome of a bout from the player's side: how it was lost,
+ * or which limit the win stayed within and how the opponent ended. */
+void func_80075060(s32 lost) {
+    Actor *player = &D_8009872C;
+    s32 limit;
+
+    if (lost) {
+        if (func_8008F4F4(player, 0xE0)) {
+            D_80050622 = 2;
+        } else if (func_8008F4F4(player, 0x10)) {
+            D_80050622 = 1;
+        } else {
+            D_80050622 = 3;
+        }
+    } else if (D_80099D8C == 0 && D_80099D88 == 0) {
+        D_80050622 = 0x88;
+    } else if (D_80099D88 == 0) {
+        D_80050622 = 0x82;
+    } else {
+        limit = player->max_hp * 0xB0 / 255;
+        if (limit < player->unk1654) {
+            D_80050622 = 0x83;
+        } else if (player->max_hp * 0xA0 / 255 < player->unk1658) {
+            D_80050622 = 0x84;
+        } else if (limit < player->unk1658 + player->unk1654) {
+            D_80050622 = 0x85;
+        } else {
+            player = player->opponent;
+            if (func_8008F4F4(player, 0xE0)) {
+                D_80050622 = 0x86;
+            } else if (func_8008F4F4(player, 0x10)) {
+                D_80050622 = 0x81;
+            } else {
+                D_80050622 = 0x87;
+            }
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800751C8);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007570C);
+/* The other actor's value 15EC scaled by amount / 32, less this actor's
+ * value 15EE. */
+s32 func_8007570C(Actor *actor, Actor *other, s32 amount) {
+    return other->unk15EC * amount / 32 - actor->unk15EE;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80075738);
+/* The other actor's value 15EA less this actor's value 15E8. */
+s32 func_80075738(Actor *actor, Actor *other) {
+    return other->unk15EA - actor->unk15E8;
+}
 
 void func_80075748(void) {
 }

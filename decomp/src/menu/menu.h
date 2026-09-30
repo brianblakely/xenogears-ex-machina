@@ -192,7 +192,12 @@ typedef struct Actor {
     u8 unk9A0[0xC2C];
     Pose *pose;          /* 0x15CC */
     Move *move;          /* 0x15D0 */
-    u8 unk15D4[0x2C];
+    u8 unk15D4[0x14];
+    s16 unk15E8;
+    s16 unk15EA;
+    s16 unk15EC;
+    s16 unk15EE;
+    u8 unk15F0[0x10];
     u8 *unk1600;
     u8 unk1604[0x50];
     s32 unk1654;
@@ -346,6 +351,9 @@ extern Matrix D_80091C0C;
 extern ShotKind D_800910F4[];
 extern SideHits D_80096FB8[2];
 extern s32 D_8009112C;
+extern s32 D_80099D88;
+extern s32 D_80099D8C;
+extern u8 D_80050622; /* resident: result of the last menu battle */
 extern Effect *D_80092644;
 extern s32 D_80092650; /* trail segments added */
 
@@ -413,6 +421,7 @@ void func_800828F8(Vector *position, Vector *step, s32 limit);
 void func_80083738(Actor *actor, Actor *other);
 void func_80083C0C(s32 arg);
 s32 func_80083CD8(void);
+s32 func_8008F4F4(Actor *actor, s32 mask);
 void func_8008EB4C(s32 id);
 void func_8007E954(s32 arg);
 void func_8007F834(void);
