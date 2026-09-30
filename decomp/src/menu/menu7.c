@@ -2064,10 +2064,8 @@ void func_8008E6F8(Actor *owner) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Start a sound on a free positional voice (or a matching unpositioned
- * one, else the oldest); positioned sounds follow pos or its snapshot.
- * Does not match: the search pointer and the age temporary swap $v1/$a0. */
+ * one, else the oldest); positioned sounds follow pos or its snapshot. */
 void func_8008E78C(s32 sound, s32 mode, Vector *pos, s32 arg3) {
     s32 oldest = 0;
     SoundVoice *chosen = &D_80096EA0[3];
@@ -2076,7 +2074,11 @@ void func_8008E78C(s32 sound, s32 mode, Vector *pos, s32 arg3) {
 
     for (i = 0; i < 4; i++) {
         voice = &D_80096EA0[i];
-        if (!voice->active || (mode == 0 && voice->mode == 0)) {
+        if (voice->active == 0) {
+            chosen = voice;
+            break;
+        }
+        if (mode == 0 && voice->mode == 0) {
             chosen = voice;
             break;
         }
@@ -2100,9 +2102,6 @@ void func_8008E78C(s32 sound, s32 mode, Vector *pos, s32 arg3) {
         func_80039F9C(voice->sound, voice->voice, 0x7F, 0x40);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008E78C);
-#endif
 
 /* Pan and attenuate every positioned voice from its screen position and
  * depth; a voice just started is keyed on with those values. */
