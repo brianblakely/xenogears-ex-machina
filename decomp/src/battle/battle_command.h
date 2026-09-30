@@ -8,6 +8,9 @@
 
 u8 func_8008C4A8(u8 member); /* the member has a special available */
 u8 func_8008CFB8(u8 member); /* the gear has a part list */
+u8 func_80084548(u8 side, u8 any, u8 partyFirst);
+u8 func_80084750(u8 member);
+u16 func_80084DE4(u16 selection, u16 fallback, u8 member, u8 mode, u8 own);
 
 /* A slot's ground position, read unsigned. */
 #define SLOT_X(slot) ((u16)D_800C3EB4[slot].x)

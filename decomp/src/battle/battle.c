@@ -4933,7 +4933,85 @@ u16 func_80084D28(void) {
     return mask;
 }
 
+/* Set up the target candidates for a target selection word (mode 0: the
+ * fallback's, 1: 0x3000, 2: 0x2001). Bit 0x1000 selects the enemies, else
+ * the party; 0x2000 both; 0x8000 keeps only downed slots (+0x7c bit
+ * 0x8000); 0x4000 the member alone. `own` takes the member's reachable
+ * enemies (80084750). Sets the current target 800c3e2c and returns the
+ * selection. */
+#ifdef NON_MATCHING
+u16 func_80084DE4(u16 selection, u16 fallback, u8 member, u8 mode, u8 own) {
+    u8 downed = 0;
+    u8 side;
+    u8 partyFirst;
+    u16 mask;
+    s32 count;
+    s32 i;
+    u8 slot;
+
+    switch (mode) {
+    case 0:
+        selection = fallback;
+        break;
+    case 1:
+        selection = 0x3000;
+        break;
+    case 2:
+        selection = 0x2001;
+        break;
+    }
+    if (selection & 0x8000) {
+        downed = 1;
+    }
+    partyFirst = 0;
+    if (selection & 0x1000) {
+        side = 0;
+        mask = 0xFFF8;
+    } else {
+        partyFirst = 1;
+        side = 1;
+        mask = 7;
+    }
+    if (selection & 0x2000) {
+        side = 2;
+        mask = 0xFFFF;
+    }
+    if (own) {
+        D_800C3E2C = func_80084750(member);
+    } else {
+        D_800C3E2C = func_80084548(side, downed, partyFirst);
+    }
+    D_800C3D64 &= mask;
+    if (selection & 0x8000) {
+        count = 0;
+        D_800C3E2C = 0xFF;
+        for (i = 0; i < 11; i++) {
+            slot = i;
+            if (func_80089C9C(D_800C3D64, slot)) {
+                if (D_800D32A0[i].unk1 == 0 ? D_800CCCE8.records[i].pilot.status7C & 0x8000
+                                            : D_800CCCE8.records[i].gear.status7C & 0x8000) {
+                    D_800C3E2C = slot;
+                    D_800C3E90[count++] = slot;
+                } else {
+                    D_800C3D64 &= func_80089C48(slot);
+                }
+            }
+        }
+        for (; count < 11; count++) {
+            D_800C3E90[count] = 0xFF;
+        }
+    } else if (selection & 0x4000) {
+        D_800C3E2C = member;
+        D_800C3D64 = func_80089C08(member);
+        for (i = 0; i < 11; i++) {
+            D_800C3E90[i] = 0xFF;
+        }
+    }
+    return selection;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80084DE4);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085084);
 
