@@ -2886,9 +2886,8 @@ void func_801DA518(void) {
  * 99 and the item name and two-digit count are rendered into the image area
  * and laid out, greyed when the item cannot be used here. */
 #ifdef NON_MATCHING
-/* Differs in register allocation: the loop keeps other invariants in saved
- * registers (the original materialises 0xcccccccd per use and passes the
- * x positions without an extra -8 mask). */
+/* Differs in register allocation: this keeps 0xcccccccd in a saved register
+ * and spills `row`; the original materialises the constant at each use. */
 void func_801DA5BC(s32 row) {
     u8 codes[4];
     u8 text[8];
@@ -2896,31 +2895,32 @@ void func_801DA5BC(s32 row) {
     s32 i;
     s32 tens;
     s32 x;
+    s32 left;
     u16 y;
     u8 kind;
     u8 grey;
     u8 *image;
-    u8 *id;
-    u8 *count;
+    u8 *ids;
+    u8 *counts;
 
     image = func_80031BDC(0x3f6, 0);
     codes[1] = 0;
     codes[3] = 0;
+    ids = D_8006F65A;
+    counts = ids - 150;
     for (i = 0; i < 16; i++) {
-        id = &INVENTORY->ids[row * 2 + i];
-        count = &INVENTORY->counts[row * 2 + i];
-        if (*id != 0) {
-            if (*count != 0) {
-                if (*count >= 100) {
-                    *count = 99;
+        if (ids[row * 2 + i] != 0) {
+            if (counts[row * 2 + i] != 0) {
+                if (counts[row * 2 + i] >= 100) {
+                    counts[row * 2 + i] = 99;
                 }
-                D_800625A0->block42C->names[i].width = func_80034EAC(func_80033818(*id), image, 0x24, 0);
-                tens = *count / 10;
+                D_800625A0->block42C->names[i].width = func_80034EAC(func_80033818(ids[row * 2 + i]), image, 0x24, 0);
+                tens = counts[row * 2 + i] / 10;
                 codes[0] = tens + 0x10;
                 if (tens == 0) {
                     codes[0] = 0xc3;
                 }
-                codes[2] = INVENTORY->counts[row * 2 + i] % 10 + 0x10;
+                codes[2] = counts[row * 2 + i] % 10 + 0x10;
                 func_80033B34(codes, text, 2);
                 D_800625A0->block42C->values[i].width = func_80034EAC(text, image, 0x24, 1);
                 rect.x = (i & 1) * 0x18 + 0x180;
@@ -2929,7 +2929,7 @@ void func_801DA5BC(s32 row) {
                 rect.h = 0xd;
                 LoadImage(&rect, image);
                 DrawSync(0);
-                kind = D_800625A0->tables->items[INVENTORY->ids[row * 2 + i]].use;
+                kind = D_800625A0->tables->items[ids[row * 2 + i]].use;
                 if (kind & 0x20) {
                     grey = kind & 0x80;
                     if (D_80059171 == 0) {
@@ -2942,19 +2942,21 @@ void func_801DA5BC(s32 row) {
                 func_801E7C50(&D_800625A0->block42C->values[i], i, 0x80, grey | 2);
                 x = (i % 2) * 0x88;
                 y = (i / 2) * 0x10 | 0xe;
-                func_801C851C(D_800625A0->block42C->names[i].verts, (x + 0x28) & 0xfff8, y,
-                              D_800625A0->block42C->names[i].width, 0xd);
-                func_801C851C(D_800625A0->block42C->values[i].verts, (x + 0x90) & 0xfff8, y,
-                              D_800625A0->block42C->values[i].width, 0xd);
+                left = (x + 0x28) & 0xfff8;
+                func_801C851C(D_800625A0->block42C->names[i].verts, left, y, D_800625A0->block42C->names[i].width,
+                              0xd);
+                left = (x + 0x90) & 0xfff8;
+                func_801C851C(D_800625A0->block42C->values[i].verts, left, y, D_800625A0->block42C->values[i].width,
+                              0xd);
                 D_800625A0->block42C->names[i].count = D_800625A0->bufferIndex;
                 D_800625A0->block42C->values[i].count = D_800625A0->bufferIndex;
                 D_800625A0->block42C->shown[i] = 1;
             } else {
-                *id = 0;
+                ids[row * 2 + i] = 0;
                 D_800625A0->block42C->shown[i] = 0;
             }
         } else {
-            *count = 0;
+            counts[row * 2 + i] = 0;
             D_800625A0->block42C->shown[i] = 0;
         }
     }

@@ -1030,6 +1030,7 @@ void func_801E8044(u8 count, u8 *flags);
 void func_801E8070(u8 count, MenuLabelSlot *labels, u8 *table, u8 *arg3, u8 *flags, u8 selected, u8 arg6,
                    s32 arg7);
 void func_801E8474(u8 count, u8 *positions);
+void func_801E920C(POLY_FT4 *poly, s32 x, s32 y, s32 u, s32 v, s32 w, s32 h);
 void func_801E92CC(void);
 s32 func_801E93A0(s32 disc);
 void func_801E6668(s32 index);
