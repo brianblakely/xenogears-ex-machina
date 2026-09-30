@@ -48,8 +48,55 @@ typedef struct {
 extern BattleFrame D_800C4A20[2];
 extern BattleFrame *D_800CCB00; /* the frame being built */
 
-/* Game data party order: three character ids. */
-extern u8 D_8006F368[3];
+/* Persistent character record (game data, 0xa4 bytes). */
+typedef struct {
+    u8 unk0[0x4C];
+    u16 hp;
+    u16 maxHp;
+    u16 ep;
+    u16 maxEp;
+    u8 unk54[0x4C];
+    u8 gear; /* gear id, ff none */
+    u8 unkA1[3];
+} CharacterRecord;
+
+extern CharacterRecord D_8006D8A0[11];
+
+/* Game data party state: members who have joined, the three party character
+ * ids (ff none) and whether each party slot starts in its gear. */
+typedef struct {
+    u16 joined;
+    u16 available;
+    u8 party[3];
+    u8 unk7[0x57A];
+    u8 inGear[3];
+} PartyState;
+
+extern PartyState D_8006F364;
+
+extern u8 D_80059508;  /* battle selector: enemy set */
+extern u8 D_8005947C;
+extern u8 D_8005954C;  /* battle mode */
+extern u8 D_800658DC[]; /* field formation table */
+extern u8 D_80062648[]; /* event data */
+extern void *D_800D39D8;
+
+extern void func_8001B66C(void);                /* stop the music */
+extern void func_80028470(s32, s32);
+extern s32 func_800288EC(s32 file);             /* file size in bytes */
+extern void func_800295D8(s32 file, void *dst, s32 offset, s32 mode); /* read a file */
+extern void func_80028A60(s32);                 /* wait for the disc */
+extern void func_80032498(s32 tag, s32);        /* select the heap owner tag */
+extern void func_800320E8(void *block);         /* free */
+extern void func_8003748C(void);
+extern void *func_8003F99C(void *dst, void *src, s32 n); /* memmove */
+extern void func_8008AB70(void);
+extern void *func_8008ABB8(s32 size, s32 mode); /* battle allocation */
+extern void func_8009B1E4(void);
+
+/* Per-character gear for the gear columns 1 and 2. */
+extern u8 D_801E1D80[16];
+extern u8 D_801E1D90[16];
 
 /* Selector state (overlay data). The four rows are the scene number, the
  * three party slots, ... ; each row has three decimal digit columns. */
