@@ -704,15 +704,14 @@ void func_800BE790(void) {
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BE790);
 #endif
 
-#ifdef NON_MATCHING
 /* Load the requested battle module (D_800591B3) into 0x801FC000 when it
  * changed, around the module switch 800B8354, and mark it loaded. */
 void func_800BEB04(void) {
     s32 saved0;
     s32 saved1;
-    u8 module = D_800591B3;
+    u8 module;
 
-    if (D_800591B2 != module) {
+    if (D_800591B2 != (module = D_800591B3)) {
         D_800591B2 = D_800591B3;
         func_800B8354();
         func_800284B4(&saved0, &saved1);
@@ -728,9 +727,6 @@ void func_800BEB04(void) {
     }
     D_800591B0 = 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BEB04);
-#endif
 
 /* Read the controllers; holding select (0x100) slows the frame down. */
 void func_800BEBC4(void) {
@@ -774,29 +770,25 @@ void func_800BED30(void) {
     D_800D2E54 = 0;
 }
 
-#ifdef NON_MATCHING
 /* Open the battle menu (800B9F78 its update). */
 BattleMenu *func_800BED4C(void) {
     BattleMenu *menu = func_80031BDC(sizeof(BattleMenu), 0);
 
-    menu->update = func_800B9F78;
     D_800C3610 = menu;
+    menu->update = func_800B9F78;
     D_800C360C = 0;
     menu->field4A = 0;
-    D_800C3610->field48 = 1;
     D_800C3610->field30 = 0;
-    D_800C3610->field49 = 0;
+    D_800C3610->field48 = 1;
     D_800C3610->field2C = 1;
     D_800C3610->field4 = 0;
+    D_800C3610->field49 = 0;
     D_800C3610->field34 = 0;
     func_800BF0B4(0);
     D_80059464 = 0;
     D_800591AC = 1;
     return D_800C3610;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BED4C);
-#endif
 
 /* Close the battle menu. */
 void func_800BEDE8(void) {
@@ -816,25 +808,22 @@ void func_800BEE2C(s32 index, s32 mask, s32 arg2) {
     func_800320E8(stack);
 }
 
-#ifdef NON_MATCHING
 /* List the slot sprites of the slots in mask (up to 11, NULL-terminated),
  * setting their field74 to value; their count. */
 s32 func_800BEEB4(u32 mask, SlotSprite **list, s32 value) {
     s32 i;
     s32 count;
-    SlotSprite **out;
     SlotSprite *sprite;
 
     i = 0;
     count = i;
-    out = list;
 
     for (; i != 11; i++, mask = (mask & 0xFFFF) >> 1) {
         if (mask & 1) {
             sprite = BATTLE_FRAME.slotSprites[i];
             if (sprite != NULL) {
                 sprite->field74 = value;
-                *out++ = sprite;
+                list[count] = sprite;
                 count++;
             }
         }
@@ -842,9 +831,6 @@ s32 func_800BEEB4(u32 mask, SlotSprite **list, s32 value) {
     list[count] = NULL;
     return count;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BEEB4);
-#endif
 
 
 /* The direction from sprite from to sprite to on the ground. */
