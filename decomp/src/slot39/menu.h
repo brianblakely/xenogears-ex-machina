@@ -916,7 +916,7 @@ void func_80039DB8(s32 id, s32 sound); /* play a sound effect */
 void func_800404C4(u32 event, s32 spec); /* UnDeliverEvent */
 void CloseEvent(s32 event);           /* EnableEvent */
 s32 func_80040494(s32 event);            /* TestEvent */
-void func_800405C4(s32 code);
+u16 *func_800405C4(s32 code);   /* 16x16 font glyph of a two-byte code, -1 none */
 void CdSyncCallback(s32 event);  /* CloseEvent */
 void CdReadyCallback(s32 event);
 void CdReadCallback(s32 arg0);

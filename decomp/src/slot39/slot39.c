@@ -3554,9 +3554,10 @@ void func_801E6544(u8 rows[16][16]) {
     }
 }
 
-/* Print the character at `s`: ASCII is converted to its two-byte code
- * (control characters to a space), two-byte codes pass through. */
-void func_801E65E4(u8 *s) {
+/* Return the 16x16 font glyph of the character at `s`: ASCII is converted
+ * to its two-byte code (control characters to a space), two-byte codes pass
+ * through. */
+u16 *func_801E65E4(u8 *s) {
     u8 hi;
     u8 lo;
 
@@ -3574,10 +3575,74 @@ void func_801E65E4(u8 *s) {
             D_801EA8C0 = 0;
         }
     }
-    func_800405C4(lo | (hi << 8));
+    return func_800405C4(lo | (hi << 8));
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E6668);
+/* Render listed file `index`'s save title (up to 32 characters, 64 bytes)
+ * as 12-pixel glyphs into the 4-bit 256x32 image at (140, e0). */
+void func_801E6668(s32 index) {
+    u8 *pixels;
+    u16 *image;
+    u8 *text;
+    u16 *glyph;
+    u8 *pixel;
+    s32 bytes;
+    s32 chars;
+    s32 row;
+    s32 col;
+    RECT rect;
+
+    pixels = func_80031BDC(0x100, 1);
+    image = func_80031BDC(0x1000, 1);
+    bzero(image, 0x1000);
+    bytes = 0;
+    chars = 0;
+    text = (u8 *)D_800625A0->card + (index << 9) + 0xb98;
+    while (1) {
+        if (*text == 0) {
+            break;
+        }
+        pixel = pixels;
+        glyph = func_801E65E4(text);
+        if (glyph != (u16 *)-1) {
+            for (row = 0; row < 16; row++, glyph++) {
+                for (col = 7; col >= 0; col--) {
+                    *pixel++ = (*glyph >> col) & 1;
+                }
+                for (col = 15; col >= 8; col--) {
+                    *pixel++ = (*glyph >> col) & 1;
+                }
+            }
+            func_801E6544((u8(*)[16])pixels);
+            for (row = 0; row < 16; row++) {
+                for (col = 0; col < 12; col++) {
+                    image[col / 4 + row * 64 + chars % 16 * 4 + chars / 16 * 1024] |= pixels[row * 16 + col]
+                                                                                    << (col % 4 * 4);
+                }
+            }
+        }
+        text++;
+        bytes++;
+        if (D_801EA8C0) {
+            text++;
+            bytes++;
+        }
+        if (bytes >= 0x40) {
+            break;
+        }
+        if (++chars >= 0x20) {
+            break;
+        }
+    }
+    rect.x = 0x140;
+    rect.y = 0xe0;
+    rect.w = 0x40;
+    rect.h = 0x20;
+    LoadImage(&rect, image);
+    DrawSync(0);
+    func_800320E8(pixels);
+    func_800320E8(image);
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E68AC);
 
