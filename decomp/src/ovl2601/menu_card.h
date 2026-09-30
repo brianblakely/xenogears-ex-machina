@@ -64,6 +64,26 @@ typedef struct {
     s16 vx, vy, vz, pad;
 } SVECTOR;
 
+/* libgs/libgpu TIM description (OpenTIM/ReadTIM). */
+typedef struct {
+    u32 mode;
+    RECT *crect;
+    u32 *caddr;
+    RECT *prect;
+    u32 *paddr;
+} TIM_IMAGE;
+
+/* A save file name prefix (13 bytes with its terminator). */
+typedef struct {
+    char name[13];
+} CardPrefix;
+
+/* The menu resources block (*8005945c): packed files by index. */
+typedef struct {
+    s32 count;
+    void *files[8];
+} MenuResources;
+
 /* Texture of a sprite sheet entry (80026338's six outputs). */
 typedef struct {
     s32 unk0;
@@ -285,11 +305,7 @@ typedef struct {
  */
 typedef struct {
     u8 unk0[0xB80];
-    u32 icon_mode;     /* b80: TIM_IMAGE of the save icon */
-    RECT *icon_crect;  /* b84 */
-    u32 *icon_caddr;   /* b88 */
-    RECT *icon_prect;  /* b8c */
-    u32 *icon_paddr;   /* b90 */
+    TIM_IMAGE icon;    /* b80: the save icon TIM */
     u8 heads[32][0x200]; /* b94: first 200h bytes of each file */
     u8 save_magic[2];  /* 4b94: "SC" */
     u8 save_icon_flag; /* 4b96 */
@@ -511,6 +527,14 @@ extern u16 D_80059414;   /* highlighted text CLUT */
 extern u16 D_800595D4;   /* plain text CLUT */
 
 /* Resident services. */
+extern MenuResources *D_8005945C;        /* the menu resources block */
+extern EffectBank *D_8006259C;           /* the loaded menu sound bank */
+extern const CardPrefix D_801C5000;      /* "BISLPS-00800" */
+void func_800471B4(void *tim);           /* OpenTIM */
+s32 func_800471C4(TIM_IMAGE *image);     /* ReadTIM */
+void func_8002DD20(void *list);          /* load a TIM list into VRAM */
+void func_80028470(s32 unk0, s32 unk1);  /* disc access mode */
+void func_80038428(EffectBank *bank);    /* link an effect bank */
 extern u8 D_80059171;                    /* shop number */
 void func_80043D78(LINE_F2 *prim);       /* SetLineF2 */
 extern s32 *D_8005917C;                  /* debug word; not -1 stops at a break */
