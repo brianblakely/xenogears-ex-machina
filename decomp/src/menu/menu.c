@@ -584,9 +584,76 @@ s32 func_80073DE4(Actor *actor, s32 amount) {
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80073DE4);
 #endif
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80073E2C);
+/* Add charge to an actor. Past full charge the excess / 20 is spent from
+ * its HP-bound reserve (and counted by kind); if it cannot be, the charge
+ * is refused with a buzzer. Always accepted in modes 4 and 6. */
+s32 func_80073E2C(Actor *actor, s32 amount, s32 kind) {
+    s32 excess;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80073F34);
+    if (D_800928C8 == 4) {
+        return 1;
+    }
+    if (D_800928C8 == 6) {
+        return 1;
+    }
+    actor->unkB6 += amount;
+    if (actor->unkB6 > 0x1000) {
+        excess = (actor->unkB6 - 0x1000) / 20;
+        if (excess >= actor->hp) {
+            actor->unkB6 -= amount;
+            actor->unkBA = 0;
+            if (func_80083CD8() != 4) {
+                func_8008EB4C(0x2E);
+            }
+            return 0;
+        }
+        actor->unkB6 = 0x1000;
+        actor->unkBA = excess;
+        switch (kind) {
+        case 1:
+            actor->unk1654 += actor->unkBA;
+            break;
+        case 2:
+            actor->unk1658 += actor->unkBA;
+            break;
+        default:
+            return 1;
+        }
+    }
+    return 1;
+}
+
+/* Spawn the effect of a hit: between two model points for line types,
+ * otherwise at the midpoint of the given points. */
+void func_80073F34(Actor *actor, HitSpec *hit) {
+    Vector a;
+    Vector b;
+    s32 style;
+
+    style = func_8007CD14((actor->flags >> 27) & 1, hit->part_a, hit->vertex_a, 1);
+    func_80073B7C(actor, hit->part_a, hit->vertex_a, &a);
+    if (func_8007D25C(hit->type) != 0) {
+        func_80073B7C(actor, hit->part_b, hit->vertex_b, &b);
+        if (hit->type == 0x10) {
+            func_8007CD44((actor->flags >> 27) & 1, &a, &b, style);
+        } else {
+            func_8007D65C(&a, &b, hit->type);
+        }
+        return;
+    }
+    if (hit->part_a != hit->part_b || hit->vertex_a != hit->vertex_b) {
+        func_80073B7C(actor, hit->part_b, hit->vertex_b, &b);
+        a.vx = (a.vx + b.vx) / 2;
+        a.vy = (a.vy + b.vy) / 2;
+        a.vz = (a.vz + b.vz) / 2;
+    }
+    func_8007C100(actor->unk15D4);
+    if (hit->type >= 0x20) {
+        func_8007C880((actor->flags >> 27) & 1, &a, style, hit->type - 0x20);
+    } else {
+        func_8007D190(&a, hit->type);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800740E4);
 

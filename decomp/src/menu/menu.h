@@ -58,16 +58,21 @@ typedef struct {
     u8 unk88[0x28];
     s32 floor_y;         /* 0xB0 */
     s16 hp;              /* 0xB4 */
-    s16 unkB6;
-    u8 unkB8[0x4];
+    s16 unkB6;           /* 0xB6: charge, 0x1000 = full */
+    u8 unkB8[0x2];
+    s16 unkBA;
     s16 max_hp;          /* 0xBC */
     u8 unkBE[0x10];
     s16 unkCE;
-    s32 flags;           /* 0xD0 */
+    u32 flags;           /* 0xD0: bit 27 = side */
     u8 unkD4[0x14];
     s32 unkE8;
     u8 unkEC[0x558];
     s32 unk644;
+    u8 unk648[0xF8C];
+    u8 unk15D4[0x80];
+    s32 unk1654;
+    s32 unk1658;
 } Actor;
 
 /* libgte matrix. */
@@ -125,6 +130,16 @@ typedef struct {
     u8 unk0[0x104];
     Trail trails[16];
 } TrailPool;
+
+/* Where a hit effect goes: model part and vertex of one or two points. */
+typedef struct {
+    u8 unk0;
+    u8 type;
+    u8 part_a;
+    u8 part_b;
+    s16 vertex_a;
+    s16 vertex_b;
+} HitSpec;
 
 /* A sprite effect from the overlay's effect pool (func_8008D3F4). */
 typedef struct {
@@ -190,7 +205,7 @@ extern MenuFrame *D_80092868; /* frame being built */
 extern s32 D_80092880;
 extern u8 D_80092884;
 extern u8 D_800928A0; /* index of the frame being built */
-extern s32 D_800928C8;
+extern s32 D_800928C8; /* menu mode */
 extern u8 D_800928D4;
 extern s32 D_80092900;
 extern s32 D_80092904;
@@ -262,6 +277,14 @@ void func_8007099C(u32 mode);
 void func_80070F80(u8 *script);
 void func_8007107C(void);
 void func_80071724(u32 *ot);
+void func_80073B7C(Actor *actor, s32 part, s32 vertex, Vector *out);
+void func_8007C100(u8 *arg);
+void func_8007C880(s32 side, Vector *at, s32 style, s32 type);
+s32 func_8007CD14(s32 side, s32 part, s32 vertex, s32 arg);
+void func_8007CD44(s32 side, Vector *a, Vector *b, s32 style);
+void func_8007D190(Vector *at, s32 type);
+s32 func_8007D25C(s32 type);
+void func_8007D65C(Vector *a, Vector *b, s32 type);
 void func_80079DF0(Actor *actor, Actor *other);
 u32 func_800828C4(Actor *actor);
 void func_8007191C(s32 scene);
@@ -271,6 +294,7 @@ s32 func_80082488(Vector *position, s32 arg);
 void func_800828F8(Vector *position, Vector *step, s32 limit);
 void func_80083738(Actor *actor, Actor *other);
 void func_80083C0C(s32 arg);
+s32 func_80083CD8(void);
 void func_8008EB4C(s32 id);
 void func_8007E954(s32 arg);
 void func_8007F834(void);
