@@ -151,7 +151,49 @@ INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_80070430);
 
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80075D8C);
 
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_8007625C);
+/* The menu's movie test: play the selected movie with the display blanked
+ * until it starts, then clear the screen and restore the menu's buffers.
+ * The unused array reproduces the original's frame. */
+void func_8007625C(void) {
+    u8 unused[0x18];
+    RECT screen;
+
+    screen = D_800704E0;
+    D_80077028 = 0;
+    D_800773AC = -1;
+    if (D_80077448 == 0) {
+        func_80028470(0x18, 0);
+        if (D_8007711C >= func_80028928(2)) {
+            return;
+        }
+        SetDispMask(0);
+    } else if (D_80077448 == 1) {
+        func_80028470(0x18, 1);
+        if (D_8007711C >= func_80028928(1)) {
+            return;
+        }
+        SetDispMask(0);
+    } else if (D_80077448 == 2) {
+        return;
+    }
+    D_80077124[0].draw.isbg = 0;
+    D_80077124[1].draw.isbg = 0;
+    if (D_80077454 != 0) {
+        D_80077124[0].disp.isrgb24 = 1;
+        D_80077124[1].disp.isrgb24 = 1;
+    }
+    func_80076488();
+    VSync(0);
+    ClearImage(&screen, 0, 0, 0);
+    DrawSync(0);
+    VSync(0);
+    D_80077124[0].draw.isbg = 1;
+    D_80077124[1].draw.isbg = 1;
+    if (D_80077454 != 0) {
+        D_80077124[0].disp.isrgb24 = 0;
+        D_80077124[1].disp.isrgb24 = 0;
+    }
+}
 
 /* Play the requested movie when its directory list holds it; `keep` stops
  * the buttons from ending it. Declared int without a value, as the original
