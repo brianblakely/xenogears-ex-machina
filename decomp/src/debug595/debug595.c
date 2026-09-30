@@ -466,4 +466,368 @@ s32 func_80284FB4(u32 *archive, s16 mode0, s16 x0, s16 y0, s16 mode1, u16 x1, u1
 INCLUDE_ASM(".local/decomp/debug595/asm/nonmatchings/debug595", func_80284FB4);
 #endif
 
-INCLUDE_ASM(".local/decomp/debug595/asm/nonmatchings/debug595", func_802851B0);
+/* Print the name of sound bank `bank` (effects, music and voice banks). */
+void func_802851B0(s32 bank) {
+    switch (bank) {
+    case 0:
+        func_800379C8("main_se");
+        break;
+    case 1:
+        func_800379C8("bat_se");
+        break;
+    case 2:
+        func_800379C8("gear_se");
+        break;
+    case 3:
+        func_800379C8("ambi");
+        break;
+    case 4:
+        func_800379C8("ambi2");
+        break;
+    case 5:
+        func_800379C8("ambi3");
+        break;
+    case 6:
+        func_800379C8("ambi4");
+        break;
+    case 32:
+        func_800379C8("minato");
+        break;
+    case 33:
+        func_800379C8("lahan");
+        break;
+    case 34:
+        func_800379C8("jyukai");
+        break;
+    case 35:
+        func_800379C8("shitan");
+        break;
+    case 36:
+        func_800379C8("musi");
+        break;
+    case 37:
+        func_800379C8("church");
+        break;
+    case 38:
+        func_800379C8("battle2");
+        break;
+    case 39:
+        func_800379C8("chuchu");
+        break;
+    case 40:
+        func_800379C8("over");
+        break;
+    case 41:
+        func_800379C8("orgel");
+        break;
+    case 42:
+        func_800379C8("battle3");
+        break;
+    case 43:
+        func_800379C8("ajito");
+        break;
+    case 44:
+        func_800379C8("emerada");
+        break;
+    case 45:
+        func_800379C8("ellie");
+        break;
+    case 46:
+        func_800379C8("world");
+        break;
+    case 47:
+        func_800379C8("sad");
+        break;
+    case 48:
+        func_800379C8("ave");
+        break;
+    case 49:
+        func_800379C8("ellie2");
+        break;
+    case 50:
+        func_800379C8("balto");
+        break;
+    case 51:
+        func_800379C8("dajil");
+        break;
+    case 52:
+        func_800379C8("maria1");
+        break;
+    case 53:
+        func_800379C8("maria2");
+        break;
+    case 54:
+        func_800379C8("heshu");
+        break;
+    case 55:
+        func_800379C8("kaisou");
+        break;
+    case 56:
+        func_800379C8("pinch");
+        break;
+    case 57:
+        func_800379C8("porgan");
+        break;
+    case 58:
+        func_800379C8("babel");
+        break;
+    case 59:
+        func_800379C8("solachu");
+        break;
+    case 60:
+        func_800379C8("shinnyu");
+        break;
+    case 61:
+        func_800379C8("inbou");
+        break;
+    case 62:
+        func_800379C8("ido");
+        break;
+    case 63:
+        func_800379C8("takeoff");
+        break;
+    case 64:
+        func_800379C8("glaerf");
+        break;
+    case 65:
+        func_800379C8("last");
+        break;
+    case 66:
+        func_800379C8("shebat");
+        break;
+    case 67:
+        func_800379C8("dungeon");
+        break;
+    case 68:
+        func_800379C8("lastbat");
+        break;
+    case 69:
+        func_800379C8("solaris");
+        break;
+    case 181:
+        func_800379C8("vomaria");
+        break;
+    case 182:
+        func_800379C8("melmv");
+        break;
+    case 183:
+        func_800379C8("yugumv");
+        break;
+    case 184:
+        func_800379C8("zoharumv");
+        break;
+    case 185:
+        func_800379C8("vomagic5");
+        break;
+    case 186:
+        func_800379C8("vomagic4");
+        break;
+    case 187:
+        func_800379C8("vomagic3");
+        break;
+    case 188:
+        func_800379C8("voivent3");
+        break;
+    case 189:
+        func_800379C8("voivent2");
+        break;
+    case 190:
+        func_800379C8("vobossm");
+        break;
+    case 191:
+        func_800379C8("vobossl");
+        break;
+    case 192:
+        func_800379C8("vochu6");
+        break;
+    case 193:
+        func_800379C8("vomagic2");
+        break;
+    case 194:
+        func_800379C8("vomagic1");
+        break;
+    case 7:
+        func_800379C8("movie14");
+        break;
+    case 195:
+        func_800379C8("movie15");
+        break;
+    case 196:
+        func_800379C8("movie16");
+        break;
+    case 197:
+        func_800379C8("movie18");
+        break;
+    case 198:
+        func_800379C8("voivent");
+        break;
+    case 199:
+        func_800379C8("damage");
+        break;
+    case 200:
+        func_800379C8("vofei");
+        break;
+    case 201:
+        func_800379C8("vofei1");
+        break;
+    case 202:
+        func_800379C8("vofei2");
+        break;
+    case 203:
+        func_800379C8("vofei3");
+        break;
+    case 204:
+        func_800379C8("vofei4");
+        break;
+    case 205:
+        func_800379C8("vofei5");
+        break;
+    case 206:
+        func_800379C8("vofei6");
+        break;
+    case 207:
+        func_800379C8("voellie");
+        break;
+    case 208:
+        func_800379C8("voellie1");
+        break;
+    case 209:
+        func_800379C8("voellie2");
+        break;
+    case 210:
+        func_800379C8("voellie3");
+        break;
+    case 211:
+        func_800379C8("voellie4");
+        break;
+    case 212:
+        func_800379C8("voellie5");
+        break;
+    case 213:
+        func_800379C8("voellie6");
+        break;
+    case 214:
+        func_800379C8("voellie7");
+        break;
+    case 215:
+        func_800379C8("voellie8");
+        break;
+    case 216:
+        func_800379C8("voshita");
+        break;
+    case 217:
+        func_800379C8("voshita1");
+        break;
+    case 218:
+        func_800379C8("voshita2");
+        break;
+    case 219:
+        func_800379C8("voshita3");
+        break;
+    case 220:
+        func_800379C8("voshita4");
+        break;
+    case 221:
+        func_800379C8("voshita5");
+        break;
+    case 222:
+        func_800379C8("voshita6");
+        break;
+    case 223:
+        func_800379C8("vobaluto");
+        break;
+    case 224:
+        func_800379C8("vobalu1");
+        break;
+    case 225:
+        func_800379C8("vobalu2");
+        break;
+    case 226:
+        func_800379C8("vobalu3");
+        break;
+    case 227:
+        func_800379C8("vobalu4");
+        break;
+    case 228:
+        func_800379C8("vobalu5");
+        break;
+    case 229:
+        func_800379C8("vobalu6");
+        break;
+    case 230:
+        func_800379C8("vobalu7");
+        break;
+    case 231:
+        func_800379C8("vorico");
+        break;
+    case 232:
+        func_800379C8("vorico1");
+        break;
+    case 233:
+        func_800379C8("vorico2");
+        break;
+    case 234:
+        func_800379C8("vorico3");
+        break;
+    case 235:
+        func_800379C8("vorico4");
+        break;
+    case 236:
+        func_800379C8("vorico5");
+        break;
+    case 237:
+        func_800379C8("vobilly");
+        break;
+    case 238:
+        func_800379C8("vobilly1");
+        break;
+    case 239:
+        func_800379C8("vobilly2");
+        break;
+    case 240:
+        func_800379C8("vobilly3");
+        break;
+    case 241:
+        func_800379C8("vobilly4");
+        break;
+    case 242:
+        func_800379C8("vobilly5");
+        break;
+    case 243:
+        func_800379C8("voeme");
+        break;
+    case 244:
+        func_800379C8("voeme1");
+        break;
+    case 245:
+        func_800379C8("voeme2");
+        break;
+    case 246:
+        func_800379C8("voeme3");
+        break;
+    case 247:
+        func_800379C8("voeme4");
+        break;
+    case 248:
+        func_800379C8("voeme5");
+        break;
+    case 249:
+        func_800379C8("vochu");
+        break;
+    case 250:
+        func_800379C8("vochu1");
+        break;
+    case 251:
+        func_800379C8("vochu2");
+        break;
+    case 252:
+        func_800379C8("vochu3");
+        break;
+    case 253:
+        func_800379C8("vochu4");
+        break;
+    case 254:
+        func_800379C8("vochu5");
+        break;
+    }
+}
