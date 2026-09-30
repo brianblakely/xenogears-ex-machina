@@ -1479,7 +1479,77 @@ void func_80082458(SVector *out) {
     *out = D_80092768;
 }
 
+/* Raise a ground corner by its square's kind: 1 by 0x100, 3 by 0x40. */
+#define GROUND_KIND_LIFT(corner, x, z)                                          \
+    switch (((u32 *)D_800928DC)[(z) * 128 + (x)] & 0x3000000) {                \
+    case 0x1000000:                                                            \
+        (corner).vy += 0xC0;                                                   \
+    case 0x3000000:                                                            \
+        (corner).vy += 0x40;                                                   \
+    }
+
+#ifdef NON_MATCHING
+/* Ground height under a position: the plane through the triangle of its
+ * 256-unit square that contains it (corners optionally raised by their
+ * square's kind); the plane's normal is kept in D_80092768.
+ * Does not match: only the frame layout differs: the original frame is 8 bytes larger, with the corners at sp+0x18, the triangle at sp+0x40 and the plane point sharing sp+0x30 with the last corner. */
+s32 func_80082488(Vector *pos, s32 lift) {
+    SVector corner[4];
+    SVector tri[3];
+    GroundSquare *square;
+    s32 x;
+    s32 z;
+    s32 x0;
+    s32 z0;
+
+    x0 = pos->vx & ~0xFF;
+    x = pos->vx >> 8;
+    z0 = pos->vz & ~0xFF;
+    z = pos->vz >> 8;
+    square = &D_800928DC[z * 128 + x];
+    corner[0].vx = x0;
+    corner[0].vy = square[0].height;
+    corner[0].vz = z0;
+    corner[1].vx = x0 + 0x100;
+    corner[1].vy = square[129].height;
+    corner[1].vz = z0 + 0x100;
+    corner[2].vx = x0 + 0x100;
+    corner[2].vy = square[1].height;
+    corner[2].vz = z0;
+    corner[3].vx = x0;
+    corner[3].vy = square[128].height;
+    corner[3].vz = z0 + 0x100;
+    if (lift) {
+        GROUND_KIND_LIFT(corner[0], x, z);
+        GROUND_KIND_LIFT(corner[1], x + 1, z + 1);
+        GROUND_KIND_LIFT(corner[2], x + 1, z);
+        GROUND_KIND_LIFT(corner[3], x, z + 1);
+    }
+    if ((corner[0].vz - corner[1].vz) * pos->vx + (corner[1].vx - corner[0].vx) * pos->vz +
+            corner[0].vx * corner[1].vz - corner[1].vx * corner[0].vz < 0) {
+        tri[0] = corner[0];
+        tri[1] = corner[1];
+        tri[2] = corner[2];
+    } else {
+        tri[0] = corner[0];
+        tri[1] = corner[3];
+        tri[2] = corner[1];
+    }
+    func_8002DB84(&tri[0], &tri[1], &tri[2], &D_80092768);
+    {
+        Vector point;
+
+        point.vx = tri[0].vx;
+        point.vy = tri[0].vy;
+        point.vz = tri[0].vz;
+        return pos->vy + (point.vx * D_80092768.vx + point.vy * D_80092768.vy + point.vz * D_80092768.vz -
+                          (pos->vx * D_80092768.vx + pos->vy * D_80092768.vy + pos->vz * D_80092768.vz)) /
+                             D_80092768.vy;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_80082488);
+#endif
 
 /* Ground height of the map cell under a position (cells of 256 units). Does not match:
  * two shift instructions are scheduled differently. */

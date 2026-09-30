@@ -553,6 +553,7 @@ void func_8007191C(s32 scene);
 void func_80071DA4(Actor *actor);
 void func_8007E24C(void);
 s32 func_80082488(Vector *position, s32 arg);
+void func_8002DB84(SVector *a, SVector *b, SVector *c, SVector *normal); /* plane normal of a triangle */
 void func_800828F8(Vector *position, Vector *step, s32 limit);
 void func_80083738(Actor *actor, Actor *other);
 void func_80083C0C(s32 arg);
