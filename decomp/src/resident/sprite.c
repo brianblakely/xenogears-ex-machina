@@ -964,7 +964,115 @@ void func_8001E3D8(Sprite *sprite, u_long *ot) {
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001E3D8);
 #endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001E9BC);
+/* Draw a sprite's shadow: its parts as black quads (POLY_FT4 from the queue
+ * block) flattened onto its floor height, the view matrix scaled by the
+ * sprite scale (half height), linked at `ot`. */
+void func_8001E9BC(Sprite *sprite, u_long *ot) {
+    MATRIX m;
+    SVECTOR position;
+    VECTOR view;
+    VECTOR scale;
+    long depth;
+    long flag;
+    SpritePart *parts;
+    s32 count;
+    s32 group;
+    s32 i;
+    u8 visible;
+    u32 part_flags;
+    u32 render;
+    POLY_FT4 *poly;
+    s16 w, h, x, y;
+
+    m = D_8004FBB8;
+    position.vx = sprite->x >> 16;
+    position.vy = sprite->y >> 16;
+    position.vz = sprite->z >> 16;
+    scale.vx = sprite->scale;
+    scale.vy = sprite->scale / 2;
+    scale.vz = 0;
+    ScaleMatrixL(&m, &scale);
+    position.vy = sprite->ground;
+    ApplyMatrix(&D_8004FBB8, &position, &view);
+    m.t[0] += view.vx;
+    m.t[1] += view.vy;
+    m.t[2] += view.vz;
+    SetRotMatrix(&m);
+    SetTransMatrix(&m);
+    count = (u8)sprite->flags >> 2;
+    group = -1;
+    parts = sprite->renderer->parts[1];
+    if ((u8 *)D_80059580 + count * sizeof(POLY_FT4) < D_80059534) {
+        for (i = 0; i != (u8)sprite->flags >> 2; i++) {
+            part_flags = parts[i].flags;
+            if (group != (part_flags & 7)) {
+                group = part_flags & 7;
+                visible = (D_8004FAF8[group] & ((u8 *)&sprite->render)[1]) == 0;
+            }
+            if (visible) {
+                w = parts[i].w + (s8)parts[i].byte8;
+                h = parts[i].h + (s8)parts[i].byte9;
+                w <<= (sprite->flags >> 8) & 0x1F;
+                h <<= (sprite->flags >> 8) & 0x1F;
+                x = parts[i].x << ((sprite->flags >> 8) & 0x1F);
+                y = parts[i].y << ((sprite->flags >> 8) & 0x1F);
+                render = sprite->render.word;
+                if ((render >> 3) & 1) {
+                    w = -w;
+                    x = -x;
+                }
+                if (((render >> 4) & 1) != ((part_flags >> 5) & 1)) {
+                    h = -h;
+                    y = -y;
+                }
+                if (!((part_flags >> 4) & 1)) {
+                    D_8004FAD8[0].vx = x;
+                    D_8004FAD8[1].vx = x + w;
+                    D_8004FAD8[2].vx = x + w;
+                    D_8004FAD8[3].vx = x;
+                } else {
+                    D_8004FAD8[0].vx = x + w;
+                    D_8004FAD8[1].vx = x;
+                    D_8004FAD8[2].vx = x;
+                    D_8004FAD8[3].vx = x + w;
+                }
+                if (!((parts[i].flags >> 5) & 1)) {
+                    D_8004FAD8[2].vz = y + h;
+                    D_8004FAD8[3].vz = y + h;
+                    D_8004FAD8[0].vz = y;
+                    D_8004FAD8[1].vz = y;
+                } else {
+                    D_8004FAD8[2].vz = y;
+                    D_8004FAD8[3].vz = y;
+                    D_8004FAD8[0].vz = y + h;
+                    D_8004FAD8[1].vz = y + h;
+                }
+                poly = (POLY_FT4 *)D_80059580;
+                D_80059580 = (SpriteQueueEntry *)(poly + 1);
+                setlen(poly, 9);
+                poly->code = 0x2C;
+                poly->r0 = 0;
+                poly->g0 = 0;
+                poly->b0 = 0;
+                RotAverage4(&D_8004FAD8[0], &D_8004FAD8[1], &D_8004FAD8[2], &D_8004FAD8[3], (long *)&poly->x0,
+                            (long *)&poly->x1, (long *)&poly->x3, (long *)&poly->x2, &depth, &flag);
+                poly->y0 = poly->y1 = (s16)(poly->y0 + poly->y1) / 2;
+                poly->y2 = poly->y3 = (s16)(poly->y2 + poly->y3) / 2;
+                poly->tpage = parts[i].tpage;
+                poly->clut = parts[i].clut;
+                poly->u0 = parts[i].u;
+                poly->v0 = parts[i].v;
+                poly->u1 = parts[i].w + (u8)(parts[i].u - 1);
+                poly->v1 = parts[i].v;
+                poly->u2 = parts[i].u;
+                poly->v2 = parts[i].h + (u8)(parts[i].v - 1);
+                poly->u3 = parts[i].w + (u8)(parts[i].u - 1);
+                poly->v3 = parts[i].h + (u8)(parts[i].v - 1);
+                addPrim(ot, poly);
+            }
+        }
+    }
+}
 
 /* Whether a frame table entry takes its image from the sequencer (second byte bit 7). */
 u8 func_8001EE68(u8 *frame) {

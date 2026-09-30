@@ -373,6 +373,7 @@ extern SpriteQueueEntry *D_80059580; /* the next free queue entry */
 extern u8 *D_80059534;                /* its end */
 extern u16 D_8004FAF8[8];  /* group masks tested against render byte 1 */
 extern SVECTOR D_8004FB98[4]; /* the corners of the quad being drawn */
+extern SVECTOR D_8004FAD8[4]; /* the corners of the shadow quad being drawn */
 
 /* Texture positions of the resident cell pages (two-byte cell kinds). */
 typedef struct {
