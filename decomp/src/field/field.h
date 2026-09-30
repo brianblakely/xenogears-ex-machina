@@ -765,6 +765,17 @@ extern s32 func_8009D000(s32 offset, s32 flags); /* operand, immediate with flag
 extern void func_80086590(VECTOR *target);
 extern s32 func_8009CFBC(s32 offset, s32 flags); /* operand, immediate with flag 0x40 */
 extern void func_80074700(void);
+/* The compass (80074108). */
+extern u16 D_800ADC24[8];     /* heading octant bit per palette row */
+extern DVECTOR D_800ADC34[4]; /* letter x, z offsets */
+extern s16 D_800ADB48;        /* needle heading */
+extern s16 D_800ADB4A;        /* needle goal */
+extern u16 D_800AFC08[16];    /* compass colors */
+extern u16 D_800AFD24[128];   /* compass palette */
+extern RECT D_800B004C;       /* compass palette area */
+extern FieldMarker D_800B06BC[25]; /* ring, letters, needle and pointer quads */
+extern u32 D_800B1E00[2][0x30]; /* compass background packets per buffer */
+extern s32 D_8004F378;
 extern void func_8008110C(void);
 extern void func_800722F4(void);
 extern s32 func_80073988(s32 angle, s32 goal, s32 step);

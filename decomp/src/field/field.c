@@ -1306,7 +1306,107 @@ void func_8007409C(MATRIX *to, MATRIX *from) {
     to->m[2][2] = from->m[2][2];
 }
 
+/* Draw the compass: upload its palette (rows of blocked heading octants
+ * black), look at it from the camera's height and distance, turn the
+ * needle toward the controlled actor's heading, and draw the needle,
+ * letters, ring and pointer quads; also leave the upright view in the
+ * model pass matrix. */
+#ifdef NON_MATCHING
+void func_80074108(void) {
+    MATRIX base;
+    MATRIX look;
+    MATRIX turn;
+    MATRIX placed;
+    MATRIX tilt;
+    SVECTOR angles;
+    VECTOR eye;
+    VECTOR origin;
+    s32 i;
+    s32 j;
+    u8 blocked;
+
+    blocked = D_800AF880.heading_blocks[1];
+    for (i = 0; i < 8; i++) {
+        if (blocked & D_800ADC24[i]) {
+            for (j = 0; j < 16; j++) {
+                D_800AFD24[i * 16 + j] = 0;
+            }
+        } else {
+            for (j = 0; j < 16; j++) {
+                D_800AFD24[i * 16 + j] = D_800AFC08[j];
+            }
+        }
+    }
+    D_800B004C.w = 0x80;
+    LoadImage(&D_800B004C, (u_long *)D_800AFD24);
+    SetGeomScreen(0x80);
+    SetGeomOffset(0x10A, 0xA6);
+    origin.vx = 0;
+    origin.vy = 0;
+    origin.vz = 0;
+    eye.vx = 0;
+    eye.vy = D_800AF880.eye.vy - D_800AF880.target.vy;
+    eye.vz = -func_80099A4C((D_800AF880.eye.vx - D_800AF880.target.vx) >> 16,
+                            (D_800AF880.eye.vz - D_800AF880.target.vz) >> 16) << 16;
+    func_80073750(&look, &eye, &origin, &D_800AF880.up);
+    func_80070594(&base);
+    base.t[2] = 0x80;
+    SetRotMatrix(&base);
+    SetTransMatrix(&base);
+    D_800ADB4A = D_800AF880.components.descriptors[D_800B2078.unk233E].actor->heading_goal + (D_800AF880.view_angle + 0x400);
+    D_800ADB48 = func_80073988(D_800ADB48, D_800ADB4A, 0x40);
+    angles.vx = 0;
+    angles.vy = D_800ADB48;
+    angles.vz = 0;
+    func_80072140(&turn);
+    func_8003F738(&angles, &turn);
+    func_80049BDC(&look, &turn);
+    turn.t[2] = 0x1000;
+    CompMatrix(&base, &turn, &placed);
+    if (D_800B2078.script_control[1] == 0 && D_800ADC18 == 0 && D_8004F378 == 0) {
+        for (i = 20; i < 21; i++) {
+            func_8007AB6C(D_800C426C->overlay_ot, &D_800B06BC[i], &placed, D_800ADB08);
+        }
+    }
+    func_80070594(&turn);
+    func_80049BDC(&look, &turn);
+    turn.t[2] = 0x1000;
+    CompMatrix(&base, &turn, &placed);
+    MulMatrix0(&base, &turn, &D_800AF880.unk204);
+    SetRotMatrix(&base);
+    SetTransMatrix(&base);
+    func_80070594(&turn);
+    func_80049BDC(&D_800AF880.previous_view, &turn);
+    turn.t[2] = 0x1000;
+    CompMatrix(&base, &turn, &placed);
+    func_80074038(&base, &placed);
+    angles.vx = 0x400;
+    angles.vy = 0;
+    angles.vz = 0;
+    func_8003F738(&angles, &tilt);
+    if (D_800B2078.script_control[1] == 0 && D_800ADC18 == 0 && D_8004F378 == 0) {
+        for (i = 16; i < 20; i++) {
+            func_80070594(&turn);
+            turn.t[0] = D_800ADC34[i - 16].vx;
+            turn.t[2] = D_800ADC34[i - 16].vy;
+            CompMatrix(&base, &turn, &placed);
+            func_8007409C(&placed, &tilt);
+            func_8007AC58(D_800C426C->overlay_ot, &D_800B06BC[i], &placed, D_800ADB08);
+        }
+        for (i = 0; i < 16; i++) {
+            func_8007AB6C(D_800C426C->overlay_ot, &D_800B06BC[i], &base, D_800ADB08);
+        }
+        for (i = 21; i < 25; i++) {
+            func_8007AB6C(D_800C426C->overlay_ot, &D_800B06BC[i], &base, D_800ADB08);
+        }
+    }
+    addPrim(D_800C426C->overlay_ot, D_800B1E00[D_800ADB08]);
+    SetGeomOffset(0xA0, 0x70);
+    SetGeomScreen(D_800AF880.projection);
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80074108);
+#endif
 
 /* Whether any shown descriptor (flag 0x40 clear) has flag 0x8000. */
 s32 func_8007469C(void) {
