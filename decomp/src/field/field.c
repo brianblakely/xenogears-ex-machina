@@ -8597,13 +8597,12 @@ void func_8009AE0C(void) {
     D_800B0078->pc += 1;
 }
 
-#ifdef NON_MATCHING
 /* Blend the camera projection toward `target` over `steps` frames (at
  * once when zero). */
 void func_8009AE3C(s32 target, s32 steps) {
     if (steps != 0) {
-        D_800AF880.projection_steps = steps;
         D_800AF880.flags |= 0x10;
+        D_800AF880.projection_steps = steps;
         D_800AF880.projection_value = D_800AF880.projection << 16;
         D_800AF880.projection_step = -((D_800AF880.projection - target) << 16) / steps;
     } else {
@@ -8613,9 +8612,6 @@ void func_8009AE3C(s32 target, s32 steps) {
     }
     D_800AF880.flags &= 0xDFFF;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009AE3C);
-#endif
 
 #ifdef NON_MATCHING
 /* Walk party slot `slot`'s member one gather step toward (x, z). Returns 0
