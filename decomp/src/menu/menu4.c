@@ -324,6 +324,8 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_8007F05C);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_8007F258);
 
+INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu4", D_8006FE8C);
+
 void func_8007F834(void) {
     D_80092740 = 0;
     D_8009273C = 0;

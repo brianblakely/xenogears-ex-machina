@@ -675,6 +675,8 @@ INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu3", D_8006FCB4);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80076438);
 
+INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu3", D_8006FCCC);
+
 /* Start an actor's turn: clear its per-turn state and flags, set its
  * gauge, place its gauge at its side and record the pending combo. */
 void func_800764CC(Actor *actor) {
