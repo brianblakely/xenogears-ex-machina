@@ -1,1 +1,2 @@
 D_800AFF2C = 0x800AFF2C; // size:0xA0
+D_800B11AC = 0x800B11AC; // size:0x2F8

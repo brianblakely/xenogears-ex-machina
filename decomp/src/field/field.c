@@ -8742,16 +8742,26 @@ void func_800A55C8(void) {
     func_800320E8(D_800B069C);
 }
 
-extern POLY_FT4 D_800B1274[5][2]; /* screen pieces, per draw buffer */
+/* The five screen pieces (800b11ac), each with a quad and draw mode per
+ * draw buffer. */
+typedef struct {
+    DR_MODE modes[5][2];   /* 000 */
+    RECT windows[5][2];    /* 078: texture windows */
+    POLY_FT4 quads[5][2];  /* 0C8 */
+    SVECTOR corners[5][4]; /* 258 */
+} ScreenPieces;
+extern ScreenPieces D_800B11AC;
+extern s32 D_800C2684;     /* piece scale, 0x1000 = 1 */
+extern SVECTOR D_800B00B8; /* piece rotation */
 
 /* Set the five screen pieces of the next draw buffer to grey `shade`. */
 void func_800A5600(u8 shade) {
     s32 i;
 
     for (i = 0; i < 5; i++) {
-        (D_800B1274[i] + ((D_800ADB08 + 1) & 1))->r0 = shade;
-        (D_800B1274[i] + ((D_800ADB08 + 1) & 1))->g0 = shade;
-        (D_800B1274[i] + ((D_800ADB08 + 1) & 1))->b0 = shade;
+        (D_800B11AC.quads[i] + ((D_800ADB08 + 1) & 1))->r0 = shade;
+        (D_800B11AC.quads[i] + ((D_800ADB08 + 1) & 1))->g0 = shade;
+        (D_800B11AC.quads[i] + ((D_800ADB08 + 1) & 1))->b0 = shade;
     }
 }
 
@@ -8841,7 +8851,39 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A5924);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A5C40);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A6408);
+extern s32 RotAverage4(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *v3, s32 *sxy0, s32 *sxy1, s32 *sxy2,
+                       s32 *sxy3, s32 *p, s32 *flag);
+
+/* Rotate and scale the screen pieces (when scaled) into their quads and
+ * link the quads and draw modes of the current buffer. */
+void func_800A6408(void) {
+    MATRIX m;
+    VECTOR scale;
+    s32 p;
+    s32 flag;
+    s32 i;
+
+    func_8003F738(&D_800B00B8, &m);
+    m.t[2] = 0;
+    m.t[1] = 0;
+    m.t[0] = 0;
+    scale.vx = D_800C2684;
+    scale.vy = D_800C2684;
+    scale.vz = D_800C2684;
+    ScaleMatrix(&m, &scale);
+    SetRotMatrix(&m);
+    SetTransMatrix(&m);
+    for (i = 0; i < 5; i++) {
+        if (D_800C2684 != 0x1000) {
+            RotAverage4(&D_800B11AC.corners[i][0], &D_800B11AC.corners[i][1], &D_800B11AC.corners[i][2],
+                        &D_800B11AC.corners[i][3], (s32 *)&D_800B11AC.quads[i][D_800ADB08].x0,
+                        (s32 *)&D_800B11AC.quads[i][D_800ADB08].x1, (s32 *)&D_800B11AC.quads[i][D_800ADB08].x2,
+                        (s32 *)&D_800B11AC.quads[i][D_800ADB08].x3, &p, &flag);
+        }
+        addPrim(&D_800C426C->overlay_ot[0], &D_800B11AC.quads[i][D_800ADB08]);
+        addPrim(&D_800C426C->overlay_ot[0], &D_800B11AC.modes[i][D_800ADB08]);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A663C);
 
