@@ -380,7 +380,7 @@ typedef struct {
     u8 top_cursor;       /* 336 */
     u8 unk337;
     u8 list_cursor;      /* 338 */
-    u8 unk339;
+    u8 unk339;           /* 339: list cursor last drawn */
     u8 list_count;       /* 33a */
     u8 unk33B;
     ScreenFlags *flags;  /* 33c */
@@ -556,6 +556,9 @@ void func_801C9054(u8 index);
 void func_801C5EE8(Label *labels, u8 *text_ids, s32 row, s32 count);
 void func_801CC9A0(void);
 void func_801CC1C4(void);
+void func_801CD564(u8 menu);
+void func_801C782C(void);
+void func_801C7A88(u8 index);
 void func_80033B34(u8 *codes, u8 *text, s32 count); /* codes to text */
 void func_801C5298(u32 value);
 u16 func_801C5244(u8 id);

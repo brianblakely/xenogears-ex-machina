@@ -2323,11 +2323,118 @@ void func_801D1928(void) {
     func_801D0E68(150, D_8006F65A, D_8006F65A - 150, 2, 1, D_8006F65A - 150, 0);
 }
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801D1968);
+/* Hide the transfer screen's packets; with `close` also close its panels (5 too with `all`), scroll bar and marker. */
+void func_801D1968(u8 close, u8 all) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801D1B18);
+    D_800625A0->flags->unk5A = 0;
+    D_800625A0->details->label4430_shown = 0;
+    D_800625A0->details->label44B0_shown = 0;
+    D_800625A0->details->digits_shown = 0;
+    D_800625A0->details->heading_count = 0;
+    D_800625A0->details->group2D0_count = 0;
+    D_800625A0->details->members_count = 0;
+    for (i = 0; i < 9; i++) {
+        D_800625A0->details->bar_shown[i] = 0;
+        D_800625A0->details->cells_a_count[i] = 0;
+        D_800625A0->details->cells_b_count[i] = 0;
+    }
+    for (i = 0; i < 8; i++) {
+        D_800625A0->details->name_shown[i] = 0;
+        D_800625A0->details->row_count[i] = 0;
+    }
+    if (close) {
+        func_801C88E0(2);
+        func_801C88E0(3);
+        if (all) {
+            func_801C88E0(5);
+        }
+        func_801C70B8();
+        func_801C7314(0);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801D1CA4);
+/* Run the chosen transfer list (0 imports, 1-3 the three inventories), then restore the list labels. */
+void func_801D1B18(void) {
+    u8 close;
+
+    D_800625A0->flags->unk4 = 0;
+    D_800625A0->flags->cursor_shown = 0;
+    D_800625A0->flags->lists_shown = 0;
+    func_801CBC88(0, 4, D_800625A0->list_labels, D_801D1FD0, D_800625A0->flags->list_label_shown);
+    close = 1;
+    switch (D_800625A0->list_cursor) {
+    case 0:
+        close = func_801D1658();
+        break;
+    case 1:
+        func_801D18A8();
+        break;
+    case 2:
+        func_801D18E8();
+        break;
+    case 3:
+        func_801D1928();
+        break;
+    }
+    func_801D1968(close, 0);
+    D_800625A0->flags->lists_shown = 1;
+    D_800625A0->flags->unk4 = 1;
+    D_800625A0->flags->cursor_shown = 1;
+    func_801CBC88(1, 4, D_800625A0->list_labels, D_801D1FD0, D_800625A0->flags->list_label_shown);
+}
+
+/* Command 1: choose one of the transfer lists until cancelled. */
+u8 func_801D1CA4(void) {
+    u8 running;
+    u8 first;
+
+    running = 1;
+    first = 1;
+    D_800625A0->list_cursor = 3;
+    D_800625A0->unk339 = 0xFF;
+    do {
+        func_801CB014();
+        if (first) {
+            func_801CBC88(1, 4, D_800625A0->list_labels, D_801D1FD0, D_800625A0->flags->list_label_shown);
+            first = 0;
+            func_801CB340();
+            func_801CC278(0);
+        }
+        if (D_800625A0->list_cursor != D_800625A0->unk339) {
+            func_801CBCF0(4, D_800625A0->list_labels, D_801D1FD0, D_801D1FE8,
+                          D_800625A0->flags->list_label_shown, D_800625A0->list_cursor, 3, 0);
+            func_801CC720(0);
+            D_800625A0->unk339 = D_800625A0->list_cursor;
+        }
+        switch (D_800625A0->input) {
+        case 4:
+            func_801CAC7C(2);
+            func_801D1B18();
+            D_800625A0->unk339 = 0xFF;
+            break;
+        case 5:
+            running = 0;
+            break;
+        case 1:
+            if (D_800625A0->list_cursor != 0) {
+                D_800625A0->list_cursor--;
+            } else {
+                D_800625A0->list_cursor = D_800625A0->list_count - 1;
+            }
+            break;
+        case 3:
+            if (++D_800625A0->list_cursor >= D_800625A0->list_count) {
+                D_800625A0->list_cursor = 0;
+            }
+            break;
+        }
+    } while (running);
+    D_800625A0->flags->unk4 = 0;
+    D_800625A0->flags->cursor_shown = 0;
+    func_801CBC88(0, 4, D_800625A0->list_labels, D_801D1FD0, D_800625A0->flags->list_label_shown);
+    return 1;
+}
 
 /* Follow-up after a command returns: command 2 redraws its screen. */
 void func_801D1F10(void) {

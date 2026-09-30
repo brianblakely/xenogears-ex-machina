@@ -380,7 +380,7 @@ typedef struct {
     u8 top_cursor;       /* 336 */
     u8 unk337;
     u8 list_cursor;      /* 338 */
-    u8 unk339;
+    u8 unk339;           /* 339: list cursor last drawn */
     u8 list_count;       /* 33a */
     u8 unk33B;
     ScreenFlags *flags;  /* 33c */
@@ -425,6 +425,8 @@ extern u8 D_801D2018[];  /* label text ids */
 extern s32 D_801D1F54[]; /* command picture pairs */
 extern u8 D_801D1FCC[];  /* command label text ids */
 extern s32 D_801D1FD8[]; /* command label x offsets */
+extern u8 D_801D1FD0[];  /* transfer list label text ids */
+extern s32 D_801D1FE8[]; /* transfer list label x offsets */
 extern s32 D_801D1F6C[]; /* list picture pairs (sprite, second layer), eight words per command */
 extern s32 D_801D1FF8[]; /* marker x */
 extern s32 D_801D2008[]; /* marker y */
@@ -566,6 +568,16 @@ void func_801CB7F4(void);
 u8 func_801CB894(u8 wait);
 void func_801CBC88(u8 render, u8 count, Label *labels, u8 *text_ids, u8 *shown);
 void func_801CB014(void);
+u8 func_801D1658(void);
+void func_801D18A8(void);
+void func_801D18E8(void);
+void func_801D1928(void);
+void func_801D1B18(void);
+void func_801CB340(void);
+void func_801CC278(u8 menu);
+void func_801CC720(u8 menu);
+void func_801C70B8(void);
+void func_801C7314(u8 index);
 void func_80033B34(u8 *codes, u8 *text, s32 count); /* codes to text */
 void func_801D0E68(s32 n, u8 *ids, u8 *counts, u8 kind, u8 unk4, u8 *counts2, u8 unk6);
 void func_801D1968(u8 unk0, u8 unk1);
