@@ -16,7 +16,9 @@ typedef struct MenuParty {
     u8 pad0[0x3];
     u8 redraw3; /* 3 */
     u8 redraw4; /* 4 */
-    u8 pad5[0x4];
+    u8 redraw5; /* 5 */
+    u8 redraw6; /* 6 */
+    u8 pad7[0x2];
     u8 redraw9; /* 9 */
     u8 redrawA; /* A */
     u8 padB[0x1];
@@ -56,7 +58,9 @@ typedef struct MenuState {
     void *sheet; /* 2DC: sprite sheet */
     void *labels; /* 2E0: label text */
     void *effectBank; /* 2E4: menu sound effect bank */
-    u8 pad2E8[0x3D];
+    u8 pad2E8[0x20];
+    s32 bufferIndex; /* 308: 0/1: the buffer being built; the drawing callback clears it */
+    u8 pad30C[0x19];
     u8 input; /* 325: decoded input of this frame */
     u8 cardPollTimer; /* 326 */
     u8 drawing; /* 327: nonzero draws the screen each frame */
@@ -81,13 +85,19 @@ typedef struct MenuState {
     u8 pad34C[0x4];
     MenuImages *screenImages; /* 350: screen images (1194 bytes) */
     u8 *block354; /* 354: 140c bytes */
-    u8 pad358[0x44];
+    u8 pad358[0xC];
+    u8 *portraits[2]; /* 364: two 720-byte blocks */
+    u8 pad36C[0x14];
+    u8 *portraitMarks[2]; /* 380 */
+    u8 pad388[0x14];
     u8 *fieldBlocks[3]; /* 39C: three 127c-byte field blocks */
     u8 pad3A8[0x80];
     u8 *markers; /* 428: marker block (14c bytes) */
     u8 pad42C[0xB0];
     u8 firstMember; /* 4DC: first occupied party slot */
-    u8 pad4DD[0x203];
+    u8 pad4DD[0x7B];
+    u8 *labelPixels; /* 558 */
+    u8 pad55C[0x184];
     u8 commandLabels[0x700]; /* 6E0 */
 } MenuState;
 /* structs: end */
@@ -95,6 +105,9 @@ typedef struct MenuState {
 extern MenuState *D_800625A0; /* the menu state */
 extern u8 D_80059460;         /* menu kind: 0 field menu, 2 title file screen, 6 other */
 extern u8 D_80059171;         /* the triangle menu opened the menu */
+extern u8 D_80059178;         /* menu sound effects loaded */
+extern u8 D_800594CC;         /* field menu cursor kept between openings */
+extern u8 D_8006F008;         /* game data: disc of the loaded file */
 extern u8 D_800594D0;         /* load result: 0, 1 title timeout, 2 loaded */
 
 /* Overlay statics. */
@@ -115,11 +128,17 @@ void *func_80031BDC(s32 size, s32 flags); /* allocate */
 void func_800320E8(void *block);          /* free */
 void func_8003F8E8(void *dst, s32 size);  /* bzero */
 void func_8001B970(void);
+void func_8003852C(void *bank);
+void func_8003A094(void *bank);
 
 s32 func_80028530(void);
 
 /* Overlay functions. */
 u8 func_801C531C(u8 offset);
+void func_801C55A0(void);
+void func_801C57A4(void);
+void func_801C58EC(void);
+void func_801C7B0C(void);
 void func_801C7BF4(void);
 void func_801C8574(u8 sound);
 void func_801C8694(u8 arg0);
@@ -128,6 +147,7 @@ void func_801D1E80(void);
 void func_801D22C4(void);
 void func_801D22F4(u8 arg0);
 void func_801D2484(void);
+void func_801D2D38(void);
 u8 func_801D9808(void);
 u8 func_801D9F98(u8 mode, u8 save);
 void func_801D1EB0(void);

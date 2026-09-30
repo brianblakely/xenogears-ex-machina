@@ -78,7 +78,6 @@ u8 func_801C531C(u8 offset) {
 
 /* The field menu's command loop: move the cursor over the seven commands and
  * run the chosen one until the menu is left. */
-#ifdef NON_MATCHING
 void func_801C55A0(void) {
     u8 ok;
     u8 stay;
@@ -124,9 +123,6 @@ void func_801C55A0(void) {
         }
     } while (stay);
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C55A0);
-#endif
 
 /* Menu kind 6: wait for the pad to be released, check the cards and, when a
  * file can be saved, run the save file screen; then the loaded-disc check. */
@@ -161,7 +157,6 @@ void func_801C57A4(void) {
 
 /* The title screen's file screen loop: choose among its three commands; after
  * 600 idle frames on the first screen it returns with D_800594D0 = 1. */
-#ifdef NON_MATCHING
 void func_801C58EC(void) {
     u8 stay;
 
@@ -209,9 +204,6 @@ void func_801C58EC(void) {
     } while (stay);
     func_801E8044(8, D_800625A0->party->labels);
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C58EC);
-#endif
 
 /* Allocate and clear (nonzero) or free (zero) the memory-card state block. */
 void func_801C5B54(u8 allocate) {
@@ -346,9 +338,102 @@ void func_801C5F10(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C5FE4);
+/* Leave the menu: keep the field menu's cursor, stop drawing, free the sound
+ * bank and every block, then the state itself. */
+void func_801C5FE4(void) {
+    switch (D_80059460) {
+    case 0:
+        func_801D22C4();
+        func_801D29A8(0, 0);
+        D_800625A0->party->redraw6 = 0;
+        D_800625A0->party->redraw5 = 0;
+        if (D_80059171 == 0) {
+            D_800594CC = D_800625A0->cursor;
+        }
+        break;
+    case 2:
+    case 6:
+        break;
+    }
+    func_801C7BF4();
+    func_801C7BF4();
+    D_800625A0->drawing = 0;
+    func_801C7BF4();
+    do {
+        func_801C7BF4();
+    } while (D_800625A0->bufferIndex != 0);
+    func_801C5BB8(0);
+    func_801C5C1C(0);
+    func_801C5C80(0);
+    func_801C5CE4(0);
+    func_801C5E10(0);
+    func_800320E8(D_800625A0->markers);
+    func_800320E8(D_800625A0->sheet);
+    func_800320E8(D_800625A0->labels);
+    func_800320E8(D_800625A0->labelPixels);
+    if (D_80059178 != 0) {
+        func_8003A094(D_800625A0->effectBank);
+        func_801C7BF4();
+        func_8003852C(D_800625A0->effectBank);
+        func_801C7BF4();
+        func_800320E8(D_800625A0->effectBank);
+    }
+    switch (D_80059460) {
+    case 0:
+        func_801C5B54(0);
+        func_801C5D48(0);
+        func_801C5DAC(0);
+        func_801C5E74(0);
+        func_800320E8(D_800625A0->portraits[0]);
+        func_800320E8(D_800625A0->portraitMarks[0]);
+        func_800320E8(D_800625A0->portraits[1]);
+        func_800320E8(D_800625A0->portraitMarks[1]);
+        break;
+    case 2:
+    case 6:
+        func_801C5B54(0);
+        break;
+    }
+    func_800320E8(D_800625A0);
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C62A8);
+/* The menu mode: allocate, set up the screen, run the menu of kind
+ * D_80059460 (then, after the title file screen, the disc check of the loaded
+ * file) and tear down. */
+void func_801C62A8(void) {
+    u8 kind;
+
+    func_801C5F10();
+    func_801C7B0C();
+    D_800625A0->drawing = 1;
+    D_800625A0->sounds = 1;
+    kind = D_80059460;
+    switch (kind) {
+    case 0:
+        func_801D2D38();
+        func_801C55A0();
+        break;
+    case 2:
+        D_800594D0 = 0;
+        func_801C58EC();
+        D_800625A0->party->redraw9 = 0;
+        D_800625A0->party->redraw4 = 0;
+        D_800625A0->party->redraw3 = 0;
+        switch (D_800594D0) {
+        case 0:
+            func_801C8694(0);
+            break;
+        case 2:
+            func_801C8694(D_8006F008);
+            break;
+        }
+        break;
+    case 6:
+        func_801C57A4();
+        break;
+    }
+    func_801C5FE4();
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C6400);
 
