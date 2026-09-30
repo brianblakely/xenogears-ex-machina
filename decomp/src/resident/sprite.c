@@ -22,6 +22,17 @@
 #include "console.h"
 #include "sound.h"
 
+/* The unit's own small globals ($gp-relative; the assembler knows them as
+ * this unit's small commons). */
+u32 D_80059184;
+s32 D_80059188;
+s32 D_8005918C;
+s32 D_80059190;
+Task *D_800594C0;
+Task *D_8005958C;
+Task *D_80059590;
+Task *D_80059594;
+
 /* Destroy every task of both lists. */
 void func_8001C8DC(void) {
     Task *task;
@@ -85,17 +96,102 @@ void func_8001C9F8(void) {
     }
 }
 
+/* Link `node` at the head of the second task list under `owner`. */
+/* Nonmatching: the original loads the serial counter and list head first and builds the id words in another order. */
+#ifdef NON_MATCHING
+void func_8001CA58(Task *owner, Task *node) {
+    node->owner = owner;
+    node->next = D_80059594;
+    D_80059594 = node;
+    node->link.owner_serial = owner->id.serial;
+    node->id.serial = D_80059184++;
+    node->link.flag29 = 0;
+    node->link.flag30 = 0;
+    node->link.active = 0;
+    node->update = NULL;
+    node->destroy = func_8001CB48;
+    D_8005918C++;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001CA58);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001CAF0);
+/* Allocate a task with `size` bytes after its node on the second list. */
+Task *func_8001CAF0(Task *owner, s32 size) {
+    Task *node = func_80031BDC(size + sizeof(Task), D_800591AF[0]);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001CB48);
+    func_8001CA58(owner, node);
+    node->destroy = func_8001CBE8;
+    return node;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001CBE8);
+/* Unlink a task from the second list. */
+void func_8001CB48(Task *task) {
+    Task *prev = NULL;
+    Task *current;
 
+    for (current = D_80059594; current != NULL; current = current->next) {
+        if (current == task) {
+            if (prev != NULL) {
+                prev->next = current->next;
+            } else {
+                D_80059594 = current->next;
+            }
+            if (D_80059590 == task) {
+                D_80059590 = task->next;
+            }
+            break;
+        }
+        prev = current;
+    }
+    if (current == NULL) {
+        D_8005918C++;
+    }
+    D_8005918C--;
+}
+
+/* Destroy callback of an allocated second-list task: unlink and free it. */
+void func_8001CBE8(Task *task) {
+    func_8001CB48(task);
+    func_800320E8(task);
+}
+
+/* Link `node` at the head of the main task list under `owner`; it counts as
+ * active while the active flag (800591ac) is set. */
+/* Nonmatching: id-word scheduling as in 8001ca58, and the active count (absolute) is kept in a register. */
+#ifdef NON_MATCHING
+void func_8001CC18(Task *owner, Task *node) {
+    node->owner = owner;
+    node->destroy = func_8001CD94;
+    node->update = NULL;
+    node->next = D_8005958C;
+    D_8005958C = node;
+    node->id.serial = D_80059184++;
+    node->link.owner_serial = owner->id.serial;
+    node->link.flag29 = 0;
+    node->link.flag30 = 0;
+    node->link.active = 0;
+    if (D_800591AC[0] != 0) {
+        D_80059464[0]++;
+        node->link.active = 1;
+    } else {
+        node->link.active = 0;
+    }
+    D_80059188++;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001CC18);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001CD08);
+/* Allocate a task with `size` bytes after its node on the main list. */
+Task *func_8001CD08(Task *owner, s32 size) {
+    Task *node = func_80031BDC(size + sizeof(Task), D_800591AF[0]);
+
+    func_8001CC18(owner, node);
+    node->destroy = func_8001CE44;
+    node->data = NULL;
+    return node;
+}
 
 /* Set a task's update callback. */
 void func_8001CD64(Task *task, void (*update)(Task *)) {
@@ -122,11 +218,89 @@ void *func_8001CD88(Task *task) {
     return task->destroy;
 }
 
+/* Unlink a task from the main list. */
+/* Nonmatching: the active count, addressed absolutely, is kept in a register here. */
+#ifdef NON_MATCHING
+void func_8001CD94(Task *task) {
+    Task *prev = NULL;
+    Task *current;
+
+    for (current = D_8005958C; current != NULL; current = current->next) {
+        if (current == task) {
+            if (prev != NULL) {
+                prev->next = task->next;
+            } else {
+                D_8005958C = task->next;
+            }
+            if (D_80059590 == task) {
+                D_80059590 = task->next;
+            }
+            break;
+        }
+        prev = current;
+    }
+    if (task->link.active) {
+        D_80059464[0]--;
+    }
+    D_80059188--;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001CD94);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001CE44);
+/* Destroy callback of an allocated main-list task: unlink and free it. */
+void func_8001CE44(Task *task) {
+    func_8001CD94(task);
+    func_800320E8(task);
+}
 
+/* Destroy every task `owner` created (both lists). */
+/* Nonmatching: the original tests flag 30 by shifting it down (srl/andi); GCC masks it in place. */
+#ifdef NON_MATCHING
+void func_8001CE74(Task *owner) {
+    Task *prev;
+    Task *task;
+
+    prev = NULL;
+    for (task = D_80059594; task != NULL; task = task->next) {
+        if (task->owner == owner && !task->link.flag30 && task->link.owner_serial == owner->id.serial) {
+            if (prev != NULL) {
+                prev->next = task->next;
+            } else {
+                D_80059594 = task->next;
+            }
+            if (D_80059590 == task) {
+                D_80059590 = task->next;
+            }
+            if (task->destroy != NULL) {
+                task->destroy(task);
+            }
+        } else {
+            prev = task;
+        }
+    }
+    prev = NULL;
+    for (task = D_8005958C; task != NULL; task = task->next) {
+        if (task->owner == owner && !task->link.flag30 && task->link.owner_serial == owner->id.serial) {
+            if (prev != NULL) {
+                prev->next = task->next;
+            } else {
+                D_8005958C = task->next;
+            }
+            if (D_80059590 == task) {
+                D_80059590 = task->next;
+            }
+            if (task->destroy != NULL) {
+                task->destroy(task);
+            }
+        } else {
+            prev = task;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001CE74);
+#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001D034);
 

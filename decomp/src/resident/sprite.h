@@ -127,6 +127,8 @@ typedef struct {
 extern u8 D_800591AF[]; /* [0]: allocation mode for sprite tasks */
 extern s32 D_80059428[];  /* [0]: frames the main task list stays paused */
 extern s16 D_80059494[];
+extern u8 D_800591AC[];   /* [0]: new main-list tasks count as active */
+extern s32 D_80059464[];  /* [0]: active main-list tasks */
 extern s32 D_8005956C[];
 
 /* 0x20 bytes of lighting state copied by 80024ff4. */
@@ -137,6 +139,10 @@ extern SpriteLight D_8004FBB8;
 extern void (*D_8004FD40[])(Task *); /* task update callbacks by kind */
 void func_8001CD64(Task *task, void (*update)(Task *));
 void func_8001CA58(Task *owner, Task *node);
+void func_8001CB48(Task *task);
+void func_8001CBE8(Task *task);
+void func_8001CD94(Task *task);
+void func_8001CE44(Task *task);
 void func_8001CC18(Task *owner, Task *node);
 void func_8001CD6C(Task *task, void (*update)(Task *));
 void func_8001CD74(Task *task, void (*destroy)(Task *));

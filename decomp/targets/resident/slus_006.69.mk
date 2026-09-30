@@ -19,4 +19,4 @@ CC_sound := 2.6.3
 # (ASPSX 2.50+; the rest of the game code uses `ori`, the default 2.34) and
 # addresses its small globals through $gp.
 GP_sprite := 8
-MASPSX_sprite := --aspsx-version=2.79
+MASPSX_sprite := --aspsx-version=2.79 --use-comm-section
