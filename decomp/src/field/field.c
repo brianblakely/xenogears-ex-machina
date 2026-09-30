@@ -2934,9 +2934,31 @@ void func_80089004(void) {
     D_800B0078->pc += 9;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80089174);
+/* Event: set the current emitter record's +0c and +14 vectors from the
+ * selected operands 1..11 (flags byte 13); four batch steps. */
+void func_80089174(void) {
+    D_800B02CC[D_800B2078.unk2384].unk0C.vx = func_8009CF78(1, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2078.unk2384].unk0C.vy = func_8009CFBC(3, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2078.unk2384].unk0C.vz = func_8009D000(5, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2078.unk2384].unk14.vx = func_8009D044(7, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2078.unk2384].unk14.vy = func_8009D088(9, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2078.unk2384].unk14.vz = func_8009D0CC(0xB, EVENT_OPERAND_BYTE(0xD));
+    D_800AFC7C += 4;
+    D_800B0078->pc += 0xE;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80089374);
+/* Event: set the current emitter record's +08, +1c vector, +26 and +28 from
+ * the selected operands 1..11 (flags byte 13); four batch steps. */
+void func_80089374(void) {
+    D_800B02CC[D_800B2078.unk2384].unk08 = func_8009CF78(1, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2078.unk2384].unk1C.vx = func_8009CFBC(3, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2078.unk2384].unk1C.vy = func_8009D000(5, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2078.unk2384].unk1C.vz = func_8009D044(7, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2078.unk2384].unk26 = func_8009D088(9, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2078.unk2384].unk28 = func_8009D0CC(0xB, EVENT_OPERAND_BYTE(0xD));
+    D_800AFC7C += 4;
+    D_800B0078->pc += 0xE;
+}
 
 /* Event: set the current record's +56, +58 and +54 from operands 1..5, its
  * flags from op7, op9 and the effect kind, and +72/+74 from the effect
@@ -2968,7 +2990,18 @@ void func_800896D4(void) {
     D_800B0078->pc += 10;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80089880);
+/* Event: set the current emitter record's bytes +6a..+6c and +6e..+70 from
+ * the selected operands 1..11 (flags byte 13); four batch steps. */
+void func_80089880(void) {
+    D_800B02CC[D_800B2078.unk2384].unk6A = func_8009CF78(1, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2078.unk2384].unk6B = func_8009CFBC(3, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2078.unk2384].unk6C = func_8009D000(5, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2078.unk2384].unk6E = func_8009D044(7, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2078.unk2384].unk6F = func_8009D088(9, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2078.unk2384].unk70 = func_8009D0CC(0xB, EVENT_OPERAND_BYTE(0xD));
+    D_800AFC7C += 4;
+    D_800B0078->pc += 0xE;
+}
 
 /* Event: use four batch steps and, unless 800adb8c is set, 800a99a8 for the
  * current actor. */
@@ -3122,7 +3155,54 @@ void func_8008A2A0(void) {
     D_800B0078->pc += 3;
 }
 
+#ifdef NON_MATCHING
+/* Event 0x77: once the display is idle, load TIM file 0x7fb + op5 (mode 0),
+ * upload it to VRAM at op4/op6 with CLUT row op8 + 0xe8 (mode 1) or free
+ * it (other modes). */
+void func_8008A2E8(void) {
+    s32 index;
+    s32 file;
+    s32 clut_y;
+    s32 x;
+    s32 y;
+    s32 row;
+    u32 *image;
+
+    if (func_8008A558() == -1) {
+        D_800B00C0 = 1;
+        D_800B0078->pc -= 1;
+        return;
+    }
+    if (EVENT_OPERAND_BYTE(1) == 0) {
+        index = func_8009CF78(5, EVENT_OPERAND_BYTE(0xD));
+        func_80028470(4, 0);
+        file = index + 0x7FB;
+        image = func_80031BDC(func_800288EC(file), 0);
+        D_800B1F74 = image;
+        func_800295D8(file, image, 0, 0x80);
+        D_800B0078->pc += 2;
+    } else if (EVENT_OPERAND_BYTE(1) == 1) {
+        row = func_8009D044(8, EVENT_OPERAND_BYTE(0xA));
+        clut_y = row + 0xE8;
+        if (row == 0xFF) {
+            clut_y = -1;
+        }
+        x = func_8009CFBC(4, EVENT_OPERAND_BYTE(0xA));
+        y = func_8009D000(6, EVENT_OPERAND_BYTE(0xA));
+        if (y >= 0x100 && x >= 0x2C0) {
+            func_800A915C();
+        }
+        func_80070340(D_800B1F74, x, y, 0, clut_y, 0, 0);
+        D_800B0078->pc += 0xB;
+    } else {
+        func_800320E8(D_800B1F74);
+        D_800B0078->pc += 2;
+    }
+    D_800B00C0 = 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008A2E8);
+#endif
 
 void func_8008A4E0(void) {
 }

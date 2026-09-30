@@ -7,5 +7,6 @@
 #include "field.h"
 
 extern u16 D_800B236C; /* script flag set by instruction FE 99 (read by 80094xxx) */
+extern u32 *D_800B1F74; /* TIM image held by instruction 0x77 */
 
 #endif
