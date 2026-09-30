@@ -78,6 +78,41 @@ typedef struct {
     u8 unk7;
 } ShotKind;
 
+/* A trail segment: two end points with their previous positions. */
+typedef struct {
+    Vector a;          /* 0x00 */
+    Vector a_prev;     /* 0x10 */
+    Vector b;          /* 0x20 */
+    Vector b_prev;     /* 0x30 */
+    u8 unk40[3];
+    u8 unk43;
+    u32 unk44_0 : 1;
+    u32 flip : 1;
+    u32 unk44_2 : 6;
+    u32 state : 8;     /* 0x45: 0 free, 1 fading, 2 new */
+    u32 unk46 : 8;
+    u32 unk47 : 8;
+    u8 frame;          /* 0x48: frame it was last extended */
+    u8 unk49[0x3];
+    s32 style;         /* 0x4C */
+    u8 *unk50;
+} Trail;
+
+/* A part of an actor's model; bit 15 of flags marks a charged part. */
+typedef struct {
+    u8 unk0[0x6];
+    u16 flags;
+} ModelPart;
+
+/* Per-side hit bookkeeping (D_80096FB8, one record per side). */
+typedef struct {
+    s32 unk0;
+    u8 unk4;
+    s32 unk8;
+    s32 unkC;
+    s32 unk10;
+} SideHits;
+
 /* A character moved in the menu scene. */
 typedef struct Actor {
     Vector pos;          /* 0x00 */
@@ -87,7 +122,7 @@ typedef struct Actor {
     s32 angle;           /* 0x54: facing, 4096 = full turn */
     s32 target_angle;    /* 0x58 */
     u8 unk5C[0x28];
-    s32 unk84;
+    u8 *unk84;
     u8 unk88[0x28];
     s32 floor_y;         /* 0xB0 */
     s16 hp;              /* 0xB4 */
@@ -95,14 +130,16 @@ typedef struct Actor {
     u8 unkB8[0x2];
     s16 unkBA;
     s16 max_hp;          /* 0xBC */
-    u8 unkBE[0x10];
+    s16 unkBE;
+    u8 unkC0[0xE];
     s16 unkCE;
     u32 flags;           /* 0xD0: bit 27 = side */
     u8 unkD4[0x4];
     struct Actor *opponent; /* 0xD8 */
     u8 unkDC[0xC];
     s32 unkE8;
-    u8 unkEC[0x558];
+    u8 unkEC[0x18];
+    Trail trails[16];    /* 0x104 */
     s32 unk644;
     u8 unk648[0x4];
     Shot shots[9];       /* 0x64C */
@@ -111,8 +148,14 @@ typedef struct Actor {
     Shot *nearest_shot;  /* 0x8F8 */
     u8 unk8FC[0x50];
     Vector core;         /* 0x94C: where shots home in */
-    u8 unk95C[0xC78];
-    u8 unk15D4[0x80];
+    u8 unk95C[0x42];
+    s16 unk99E;
+    u8 unk9A0[0xC2C];
+    ModelPart *unk15CC;
+    ModelPart *unk15D0;
+    u8 unk15D4[0x2C];
+    u8 *unk1600;
+    u8 unk1604[0x50];
     s32 unk1654;
     s32 unk1658;
 } Actor;
@@ -150,29 +193,6 @@ typedef struct {
     s32 z;
 } SceneModel;
 
-/* A trail segment: two end points with their previous positions. */
-typedef struct {
-    Vector a;          /* 0x00 */
-    Vector a_prev;     /* 0x10 */
-    Vector b;          /* 0x20 */
-    Vector b_prev;     /* 0x30 */
-    u8 unk40[3];
-    u8 unk43;
-    u32 unk44_0 : 1;
-    u32 flip : 1;
-    u32 unk44_2 : 6;
-    u32 state : 8;     /* 0x45: 0 free, 1 fading, 2 new */
-    u32 unk46 : 8;
-    u32 unk47 : 8;
-    u8 unk48[0x8];
-    s32 unk50;
-} Trail;
-
-typedef struct {
-    u8 unk0[0x104];
-    Trail trails[16];
-} TrailPool;
-
 /* Where a hit effect goes: model part and vertex of one or two points. */
 typedef struct {
     u8 unk0;
@@ -197,6 +217,8 @@ typedef struct {
     u8 unk6C[0x8];
     u8 r, g, b; /* 0x74 */
 } Effect;
+
+#define ACTOR_SIDE(actor) (((actor)->flags >> 27) & 1)
 
 /* Menu window (resident window code at 80032f54). */
 typedef struct {
@@ -283,6 +305,8 @@ extern s16 D_800928D0;
 extern Vector D_80096FA8; /* scene origin */
 extern Matrix D_80091C0C;
 extern ShotKind D_800910F4[];
+extern SideHits D_80096FB8[2];
+extern s32 D_8009112C;
 extern Effect *D_80092644;
 extern s32 D_80092650; /* trail segments added */
 
@@ -330,6 +354,7 @@ void func_8007E31C(Vector *from, Vector *to, u8 *colour);
 void func_8008EBD0(Actor *actor, s32 sound, Shot *shot, s32 arg);
 void func_80073B7C(Actor *actor, s32 part, s32 vertex, Vector *out);
 void func_8007C100(u8 *arg);
+void func_80076424(Actor *actor);
 void func_8007C880(s32 side, Vector *at, s32 style, s32 type);
 s32 func_8007CD14(s32 side, s32 part, s32 vertex, s32 arg);
 void func_8007CD44(s32 side, Vector *a, Vector *b, s32 style);

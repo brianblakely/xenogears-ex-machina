@@ -700,13 +700,13 @@ s32 func_80073644(Actor *actor) {
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80073B7C);
 
-/* Age the trail segments: new ones start fading, fading ones are freed. */
-void func_80073CA4(TrailPool *pool) {
+/* Age an actor's trail segments: new ones start fading, fading ones are freed. */
+void func_80073CA4(Actor *actor) {
     s32 i;
     Trail *trail;
 
     for (i = 0; i < 16; i++) {
-        trail = &pool->trails[i];
+        trail = &actor->trails[i];
         if (trail->state == 2) {
             trail->state = 1;
         } else {
@@ -716,7 +716,7 @@ void func_80073CA4(TrailPool *pool) {
 }
 
 /* Record a new trail segment between two points. */
-void func_80073CEC(Vector *a, Vector *b, s32 flip, u8 *style, Trail *trail, s32 arg5, Actor *owner) {
+void func_80073CEC(Vector *a, Vector *b, s32 flip, HitSpec *hit, Trail *trail, s32 arg5, Actor *owner) {
     trail->a_prev = trail->a;
     trail->b_prev = trail->b;
     trail->a = *a;
@@ -726,7 +726,7 @@ void func_80073CEC(Vector *a, Vector *b, s32 flip, u8 *style, Trail *trail, s32 
     trail->state = 2;
     trail->unk47 = owner->unk644;
     trail->unk50 = owner->unk84;
-    trail->unk46 = style[1];
+    trail->unk46 = hit->type;
     D_80092650++;
 }
 
@@ -816,7 +816,104 @@ void func_80073F34(Actor *actor, HitSpec *hit) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800740E4);
+/* Resolve a hit on an actor's model: impact effects at the hit points and,
+ * when it lands, a charged shot, a projectile or a trail segment. */
+void func_800740E4(Actor *actor, HitSpec *hit, s32 lands) {
+    Vector a;
+    Vector b;
+    Vector unused; /* the original frame reserves 16 more bytes */
+    s32 style;
+    s32 power;
+    s32 single;
+    s32 found;
+    s32 i;
+    Trail *trail;
+
+    style = func_8007CD14(ACTOR_SIDE(actor), hit->part_a, hit->vertex_a, 0);
+    if (hit->part_a == hit->part_b && hit->vertex_a == hit->vertex_b) {
+        func_80073B7C(actor, hit->part_a, hit->vertex_a, &a);
+        if (actor->unk84[2] != 0 && !(hit->type & 0x40)) {
+            func_8007C880(ACTOR_SIDE(actor), &a, style, 0);
+        }
+        b = a;
+        single = 1;
+    } else {
+        func_80073B7C(actor, hit->part_a, hit->vertex_a, &a);
+        func_80073B7C(actor, hit->part_b, hit->vertex_b, &b);
+        if (actor->unk84[2] != 0 && !(hit->type & 0x40)) {
+            func_8007CD44(ACTOR_SIDE(actor), &a, &b, style);
+        }
+        single = 0;
+    }
+    if (!lands) {
+        return;
+    }
+    if (hit->type == 0x20) {
+        if ((func_80073E2C(actor, actor->unkBE, 1) && func_80083CD8() != 4)
+            || (func_80083CD8() == 4 && (actor->unk15D0->flags & 0x8000))) {
+            if (!single) {
+                a.vx = (a.vx + b.vx) / 2;
+                a.vy = (a.vy + b.vy) / 2;
+                a.vz = (a.vz + b.vz) / 2;
+            }
+            func_80073424(&a, NULL, actor, 0, actor->unk1600[0x18], style);
+            func_80076424(actor);
+            actor->unk15CC->flags |= 0x8000;
+        } else {
+            func_8007D190(&a, 9);
+            func_80076424(actor);
+            actor->unk15CC->flags &= 0x7FFF;
+        }
+        D_80096FB8[ACTOR_SIDE(actor)].unkC = D_80096FB8[ACTOR_SIDE(actor)].unk10 = actor->unk99E;
+        D_80096FB8[ACTOR_SIDE(actor)].unk0 = D_80096FB8[ACTOR_SIDE(actor)].unk8 = D_8009112C;
+        D_80096FB8[ACTOR_SIDE(actor)].unk4 = actor->unk1600[0x18];
+        return;
+    }
+    if (D_80096FB8[ACTOR_SIDE(actor)].unk8 != D_80096FB8[ACTOR_SIDE(actor)].unk0) {
+        D_80096FB8[ACTOR_SIDE(actor)].unkC = actor->unk99E;
+        D_80096FB8[ACTOR_SIDE(actor)].unk8 = D_80096FB8[ACTOR_SIDE(actor)].unk0;
+    }
+    D_80096FB8[ACTOR_SIDE(actor)].unk10 = actor->unk99E;
+    power = actor->unk644;
+    switch (hit->type) {
+    case 4:
+        func_80073424(&a, NULL, actor, 1, power, style);
+        return;
+    case 0x21:
+    case 0x22:
+    case 0x23:
+    case 0x24:
+    case 0x25:
+    case 0x26:
+        if (single) {
+            func_80073424(&a, NULL, actor, hit->type - 0x20, power, style);
+        } else {
+            func_80073424(&a, &b, actor, hit->type - 0x20, power, style);
+        }
+        return;
+    }
+    found = 0;
+    for (i = 0; i < 16; i++) {
+        trail = &actor->trails[i];
+        if (trail->state == 1 && trail->style == style && trail->frame != D_800928E8) {
+            func_80073CEC(&a, &b, single, hit, trail, hit->part_a, actor);
+            trail->unk44_0 = 0;
+            trail->frame = D_800928E8;
+            return;
+        }
+    }
+    for (i = 0; i < 16 && !found; i++) {
+        trail = &actor->trails[i];
+        if (trail->state == 0) {
+            func_80073CEC(&a, &b, single, hit, trail, hit->part_a, actor);
+            trail->style = style;
+            trail->unk44_0 = 1;
+            trail->frame = D_800928E8;
+            found = 1;
+            break;
+        }
+    }
+}
 
 INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu", D_8006FC10);
 
