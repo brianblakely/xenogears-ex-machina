@@ -579,6 +579,8 @@ typedef struct {
     SVECTOR angle;    /* 0xA8 */
 } ActorScratch;
 
+#define ACTOR_SCRATCH ((ActorScratch *)0x1F800000)
+
 extern MATRIX D_8009A180; /* identity matrix */
 extern MATRIX D_8009D534;
 extern s32 D_8009C618;
