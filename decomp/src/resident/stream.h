@@ -20,8 +20,18 @@ typedef struct {
 extern StreamRing *D_8004FE30; /* the ring */
 extern StreamSlot *D_8004FE2C; /* its slots */
 extern s32 D_8004FE40;         /* its slot count */
+extern u16 D_8004FE24;
+extern u16 D_8004FE26;
+extern u16 D_8004FE28;
+extern u16 D_80059F60;
+extern u8 D_80059F18[4];       /* CD mode parameter */
 
+StreamRing *func_80028A94(StreamRing *ring);
+s32 func_80028AAC(void);
 void func_8002A394(s32 mode);
+void func_8002B084(void);
+void func_8002B2F0(void);
+void func_8002BA58(void);
 void func_8002A68C(void);
 void func_8002AC24(void);
 void func_8002BA40(void);

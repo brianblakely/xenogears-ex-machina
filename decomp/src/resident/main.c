@@ -2417,7 +2417,131 @@ s32 func_800295D8(s32 file, void *destination, s32 a2, s32 a3) {
     return func_80029690(file, destination, a2, a3);
 }
 
+/* Start reading `D_8004FDF8` bytes from sector D_8004FE04: into a stream ring (flags 0x100, or 0x200 with CD mode byte flags | 0xa0) or into memory; with the PC file server the file is opened (ring) or read now. */
+/* GCC 2.6.3 disc-unit code; under 2.6.3 + --expand-div this C differs only in the file/destination register assignment (s3/s2 swapped). */
+#ifdef NON_MATCHING
+s32 func_80029690(s32 file, void *destination, s32 mode, s32 flags) {
+    StreamRing *ring;
+    char *name;
+    s32 fd;
+    s32 i;
+    u8 *position = D_80059F10;
+    u8 *mode_byte;
+
+    D_80059F0C = file;
+    for (i = 2; i >= 0; i--) {
+        D_80059EF8[i] = 0;
+    }
+    D_8004FDFC = 1;
+    D_8004FE08 = destination;
+    D_8004FE38 = mode & 0xFFFF;
+    D_8004FE10 = 0;
+    D_8004FE0C = NULL;
+    D_8004FE34 = 0;
+    D_8005A4DC = 0;
+    func_80041430(D_8004FE04, position);
+    if (flags & 0x100) {
+        func_80028A94(destination);
+        ring = D_8004FE30;
+        if (ring->count == 0) {
+            return -4;
+        }
+        D_8004FE08 = (u8 *)ring + ring->count * 8 + 0x24;
+        D_8004FE2C = ring->slots;
+        D_8004FE40 = ring->count;
+        D_8004FE26 = 0;
+        D_8004FE28 = 0;
+        D_8004FE24 = 0;
+        func_80028AAC();
+        if (D_8004FE48 != NULL) {
+            name = func_80028998(file);
+            for (i = 0; i < 4; i++) {
+                D_8004FE4C = func_8004C318(name, 0, 0);
+                if (D_8004FE4C != -1) {
+                    break;
+                }
+                func_8002804C(i, 0xFF, 0, 0);
+            }
+            return D_8004FE4C == -1 ? -3 : 0;
+        }
+        D_8004FE1C = 1;
+        func_800413EC(func_8002BA58);
+        func_80040FB4(func_8002A68C);
+        func_80040FCC(func_8002B2F0);
+    } else if (flags & 0x200) {
+        func_80028A94(destination);
+        ring = D_8004FE30;
+        if (ring->count == 0) {
+            return -4;
+        }
+        D_8004FE08 = (u8 *)ring + ring->count * 8 + 0x24;
+        D_8004FE2C = ring->slots;
+        D_8004FE40 = ring->count;
+        D_80059F60 = 0;
+        D_8004FE26 = 0;
+        D_8004FE28 = 0;
+        D_8004FE24 = 0;
+        func_80028AAC();
+        for (i = 3, mode_byte = &D_80059F18[3]; i >= 0; i--) {
+            *mode_byte-- = 0;
+        }
+        D_80059F18[0] = flags | 0xA0;
+        if (D_8004FE48 == NULL) {
+            return 0;
+        }
+        name = func_80028998(file);
+        for (i = 0; i < 4; i++) {
+            D_8004FE4C = func_8004C318(name, 0, 0);
+            if (D_8004FE4C != -1) {
+                break;
+            }
+            func_8002804C(i, 0xFF, 0, 0);
+        }
+        return D_8004FE4C == -1 ? -3 : 0;
+    } else {
+        if (D_8004FE48 != NULL) {
+            name = func_80028998(file);
+            for (i = 0; i < 4; i++) {
+                fd = func_8004C318(name, 0, 0);
+                if (fd != -1) {
+                    goto opened;
+                }
+                func_8002804C(i, 0xFF, 0, 0);
+            }
+            if (fd == -1) {
+                return -4;
+            }
+        opened:
+            if (destination != NULL) {
+                for (i = 0; i < 4; i++) {
+                    if (func_8004C398(fd, destination, D_8004FDF8) != 0) {
+                        break;
+                    }
+                    func_8002804C(i, 0, 0xFF, 0);
+                }
+            }
+            for (i = 0; i < 4; i++) {
+                if (func_8004C338(fd) == 0) {
+                    D_8004FDF8 = 0;
+                    D_8004FDFC = 0;
+                    return 0;
+                }
+                func_8002804C(i, 0, 0, 0xFF);
+            }
+            return -6;
+        }
+        D_8004FE1C = 1;
+        func_800413EC(NULL);
+        func_80040FB4(func_8002A68C);
+        func_80040FCC(func_8002B084);
+    }
+    D_8005A488++;
+    func_8004111C(2, position);
+    return 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80029690);
+#endif
 
 /* Read a zero-terminated file list: sort it by file, then start the CD reads (the callbacks continue them), or with the PC file server read every file now. Returns 0, or -3 for an empty list. */
 /* GCC 2.6.3 code with div checks (the disc unit): this C matches under 2.6.3 + maspsx --expand-div (object compare with relocations masked), not in this build. */
