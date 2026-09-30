@@ -233,7 +233,49 @@ void func_801E4E7C(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E5014);
+/* Set up each slot's command menu: the party's layouts, menu sources and
+ * command masks (commands 7 and 8 forced by the formation), and every slot's
+ * default target and facing. */
+void func_801E5014(void) {
+    s32 i;
+    s32 j;
+    u8 k;
+
+    if (D_8006F9DC.flags & 0x20) {
+        D_800C3D48 = 1;
+    }
+    for (i = 0; i < 3; i++) {
+        D_800D32A1[i].character_b = D_8006ED0B[D_800D2D24[i]][0];
+        for (j = 0; j < 8; j++) {
+            D_800C3EAC->slot[i].layout[j] = D_800C20F0[D_800CCCE8[i].menu_layout][j];
+        }
+        for (j = 0; j < 4; j++) {
+            if (D_800D2D24[i] != 7) {
+                D_800C3EAC->slot[i].menu8[j] = D_800C2130[j];
+            } else {
+                D_800C3EAC->slot[i].menu8[j] = D_800C2138[j];
+            }
+            D_800C3EAC->slot[i].menuC[j] = D_800C2134[j];
+        }
+        D_800C3EAC->slot[i].target = func_800841E0(i);
+        D_800C3EB4.slot[i].flag6 = func_80085310(i, D_800C3EAC->slot[i].target);
+        for (k = 0; k < 16; k++) {
+            D_800C3EAC->slot[i].commands[k] = D_800CCCE8[i].commands & D_800C3234[k];
+        }
+        if (D_800CCCE8[i].bA0 == 0xFF || (D_8006F9DC.flags & 0x40)) {
+            D_800C3EAC->slot[i].commands[7] = D_800C3234[7];
+            D_800CCCE8[i].commands |= D_800C3234[7];
+        }
+        if (D_8006F9DC.flags & 0x80) {
+            D_800C3EAC->slot[i].commands[8] = D_800C3234[8];
+            D_800CCCE8[i].commands |= D_800C3234[8];
+        }
+    }
+    for (i = 3; i < SLOT_COUNT; i++) {
+        D_800C3EAC->slot[i].target = func_800841E0(i);
+        D_800C3EB4.slot[i].flag6 = func_80085310(i, D_800C3EAC->slot[i].target);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E5384);
 

@@ -102,9 +102,21 @@ extern u8 D_800C3D70[BATTLE_ITEMS]; /* special item ids 50..72 */
 extern u8 D_800D3688[BATTLE_ITEMS];
 
 /* Battle turn and menu state (pointer 0x800C3EAC). */
+/* A slot's command menu state (0x40 bytes). */
 typedef struct {
-    u8 pad0[0x2D9];
-    u8 last_item; /* 0x2D9 */
+    u8 layout[8];      /* 0x00: menu layout */
+    u8 menu8[4];       /* 0x08 */
+    u8 menuC[4];       /* 0x0C */
+    u8 pad10[0xC];
+    u16 commands[16];  /* 0x1C: per-command masks */
+    u8 target;         /* 0x3C: default target slot */
+    u8 pad3D[3];
+} TurnSlot;
+
+typedef struct {
+    TurnSlot slot[SLOT_COUNT]; /* 0x000 */
+    u8 pad2C0[0x2D9 - 0x2C0];
+    u8 last_item;              /* 0x2D9 */
 } TurnState;
 
 extern TurnState *D_800C3EAC;
@@ -113,10 +125,16 @@ extern TurnState *D_800C3EAC;
 typedef struct {
     u8 pad0[0x34];
     u16 flags;  /* 0x34: 0x200 acts first */
-    u8 pad36[0x62 - 0x36];
+    u8 pad36[0x56 - 0x36];
+    u8 menu_layout; /* 0x56 */
+    u8 pad57[0x62 - 0x57];
     u8 stat62;  /* 0x62 */
     u8 stat63;  /* 0x63 */
-    u8 pad64[0x15A - 0x64];
+    u8 pad64[0x7A - 0x64];
+    u16 commands; /* 0x7A: available command mask */
+    u8 pad7C[0xA0 - 0x7C];
+    u8 bA0;     /* 0xA0: 0xFF forces command 7 */
+    u8 padA1[0x15A - 0xA1];
     u8 state;   /* 0x15A: 0x80 placed alone */
     u8 pad15B[0x170 - 0x15B];
 } CombatantRecord;
@@ -200,7 +218,8 @@ void func_8003342C(s32 *table); /* relocate an offset table in place */
 /* Per-slot battle state (0x800D32A1, 8 bytes per slot). */
 typedef struct {
     u8 alone;   /* placed alone */
-    u8 pad1[3];
+    u8 pad1[2];
+    u8 character_b; /* from the character table */
     u8 stat62;  /* copied from the record */
     u8 stat63;
     u8 pad6[2];
@@ -241,5 +260,29 @@ extern u8 *D_800C3DDC;
 extern s16 D_800D39E0;
 
 void func_8003F99C(void *dest, void *src, s32 size); /* memmove */
+
+/* The battle formation record (resident game data at 0x8006F9DC). */
+typedef struct {
+    u8 b0;
+    u8 flags;          /* 0x20 alternate module, 0x40 command 7, 0x80 command 8 */
+    u8 pad2[2];
+    u8 party_group[3]; /* 0x04 */
+    u8 pad7;
+    u8 enemy_id[8];    /* 0x08 */
+    u8 enemy_flags[8]; /* 0x10 */
+    u8 enemy_group[8]; /* 0x18 */
+} Formation;
+
+extern Formation D_8006F9DC;
+extern u8 D_800C3D48;
+extern u8 D_8006ED0B[][0x20];   /* character table (+0xB) */
+extern u8 *D_800C20F0[];        /* command menu layouts */
+extern u8 *D_800C2130;          /* command menu sources */
+extern u8 *D_800C2134;
+extern u8 *D_800C2138;
+extern u16 D_800C3234[16];      /* command masks */
+
+u8 func_800841E0(u8 slot);            /* default target */
+u8 func_80085310(u8 slot, u8 target); /* facing towards the target */
 
 #endif
