@@ -42,6 +42,18 @@ extern s32 D_800C4268;
 void func_800AD898(void);
 extern s32 D_8004F30C;          /* returning to the field */
 
+/* The play record (800a31e8). */
+extern u8 D_800B02C8;
+extern u16 D_800AFC6C;         /* buttons held since the last record */
+extern s32 D_8004F2F4;
+extern s32 D_8004F318;         /* frames since the play clock stepped */
+extern s32 D_8004F328;
+extern u8 D_80059418;
+extern u8 D_80059420;
+extern u8 D_80059484;
+void func_800A30FC(void);
+s32 func_8009FEE4(s32 slot);
+
 s32 func_8009EB48(FieldActor *actor, s32 tag); /* -1 when a slot has `tag` */
 s32 func_800A3090(s32 actor, s32 event);       /* entry PC of an actor's event */
 

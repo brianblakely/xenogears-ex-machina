@@ -10057,7 +10057,63 @@ void func_800A30FC(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A31E8);
+/* Update the play record once per frame (not while 800b02c8 is 1): the
+ * held buttons seen, the party, the departure data, the party slots'
+ * positions, the play clock in variable 10 (minutes:seconds stepped
+ * every 31 frames; counting down with 8004f328 bit 2, stopped by bit 7)
+ * and the controlled actor's position in variables 1e-22. */
+void func_800A31E8(void) {
+    s32 i;
+    s32 value;
+    s32 seconds;
+    s32 minutes;
+
+    if (D_800B02C8 == 1) {
+        return;
+    }
+    D_800AFC6C |= D_800AFE9C;
+    for (i = 0; i < 3; i++) {
+        D_8005A39C->unk1D34[i] = D_80062590[i];
+    }
+    func_800A30FC();
+    D_8004F2F4 = 0;
+    D_8004F318++;
+    for (i = 0; i < 3; i++) {
+        if (D_8005A39C->unk22B1[i] == 1) {
+            func_8009FEE4(i);
+        }
+    }
+    if (D_8004F318 > 30) {
+        D_8004F318 = 0;
+        if (!(D_8004F328 & 0x80)) {
+            value = func_800A3018(0xA);
+            seconds = value & 0xFF;
+            minutes = (value >> 8) & 0xFF;
+            if (!(D_8004F328 & 4)) {
+                if (seconds != 0xFF3B) { /* never equal: the original's limit check */
+                    seconds++;
+                    if (seconds > 60) {
+                        seconds = 0;
+                        minutes++;
+                    }
+                }
+            } else if (seconds == 0) {
+                if (minutes != 0) {
+                    seconds = 59;
+                    minutes--;
+                }
+            } else {
+                seconds--;
+            }
+            func_800A3074(0xA, (minutes << 8) | (seconds & 0xFF));
+        }
+    }
+    func_800A3074(0xC, D_80059418 | (D_80059420 << 8));
+    func_800A3074(0xE, D_80059484);
+    func_800A3074(0x1E, WHOLE(D_800AF880.components.descriptors[D_800B2078.controlled].actor->position[0]));
+    func_800A3074(0x20, WHOLE(D_800AF880.components.descriptors[D_800B2078.controlled].actor->position[2]));
+    func_800A3074(0x22, WHOLE(D_800AF880.components.descriptors[D_800B2078.controlled].actor->position[1]));
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A3474);
 
