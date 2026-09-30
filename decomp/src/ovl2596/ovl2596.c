@@ -6,18 +6,18 @@ void func_801DE048(void) {
 
     if (D_800D2D28->showCards != 0) {
         for (i = 0; i < 3; i++) {
-            func_800728B8(D_800D32F8[i]->portrait[0], D_800D32F8[i]->runs[0].count, D_800D32F8[i]->runs[0].buffer);
+            func_800728B8(D_800D32F8[i]->portrait, D_800D32F8[i]->runs[0].count, D_800D32F8[i]->runs[0].buffer);
             func_800728B8(D_800D32F8[i]->labels, D_800D32F8[i]->runs[1].count, D_800D32F8[i]->runs[1].buffer);
-            func_800728B8(D_800D32F8[i]->field960[0], D_800D32F8[i]->runs[4].count, D_800D32F8[i]->runs[4].buffer);
-            func_800728B8(D_800D32F8[i]->fieldB40[0], D_800D32F8[i]->runs[6].count, D_800D32F8[i]->runs[6].buffer);
-            func_800728B8(D_800D32F8[i]->fieldA50[0], D_800D32F8[i]->runs[5].count, D_800D32F8[i]->runs[5].buffer);
-            func_800728B8(D_800D32F8[i]->fieldBE0[0], D_800D32F8[i]->runs[7].count, D_800D32F8[i]->runs[7].buffer);
-            func_800728B8(D_800D32F8[i]->field780[0], D_800D32F8[i]->runs[2].count, D_800D32F8[i]->runs[2].buffer);
-            func_800728B8(D_800D32F8[i]->field870[0], D_800D32F8[i]->runs[3].count, D_800D32F8[i]->runs[3].buffer);
-            func_800728B8(D_800D32F8[i]->fieldC80[0], D_800D32F8[i]->runs[8].count, D_800D32F8[i]->runs[8].buffer);
-            func_800728B8(D_800D32F8[i]->fieldF00[0], D_800D32F8[i]->runs[9].count, D_800D32F8[i]->runs[9].buffer);
-            func_800728B8(D_800D32F8[i]->field1180[0], D_800D32F8[i]->runs[10].count, D_800D32F8[i]->runs[10].buffer);
-            func_800728B8(D_800D32F8[i]->field13B0[0], D_800D32F8[i]->runs[11].count, D_800D32F8[i]->runs[11].buffer);
+            func_800728B8(D_800D32F8[i]->field960, D_800D32F8[i]->runs[4].count, D_800D32F8[i]->runs[4].buffer);
+            func_800728B8(D_800D32F8[i]->fieldB40, D_800D32F8[i]->runs[6].count, D_800D32F8[i]->runs[6].buffer);
+            func_800728B8(D_800D32F8[i]->fieldA50, D_800D32F8[i]->runs[5].count, D_800D32F8[i]->runs[5].buffer);
+            func_800728B8(D_800D32F8[i]->fieldBE0, D_800D32F8[i]->runs[7].count, D_800D32F8[i]->runs[7].buffer);
+            func_800728B8(D_800D32F8[i]->field780, D_800D32F8[i]->runs[2].count, D_800D32F8[i]->runs[2].buffer);
+            func_800728B8(D_800D32F8[i]->field870, D_800D32F8[i]->runs[3].count, D_800D32F8[i]->runs[3].buffer);
+            func_800728B8(D_800D32F8[i]->fieldC80, D_800D32F8[i]->runs[8].count, D_800D32F8[i]->runs[8].buffer);
+            func_800728B8(D_800D32F8[i]->fieldF00, D_800D32F8[i]->runs[9].count, D_800D32F8[i]->runs[9].buffer);
+            func_800728B8(D_800D32F8[i]->field1180, D_800D32F8[i]->runs[10].count, D_800D32F8[i]->runs[10].buffer);
+            func_800728B8(D_800D32F8[i]->field13B0, D_800D32F8[i]->runs[11].count, D_800D32F8[i]->runs[11].buffer);
         }
     }
 }
@@ -81,7 +81,7 @@ void func_801DE5C4(void) {
     for (i = 0; i < 3; i++) {
         D_800D32F8[i]->runs[0].count = 0;
         if (D_800C3EB6[i].id != 0x7F) {
-            D_800D32F8[i]->runs[0].count += func_80076A10(i + 0xFC, D_800D32F8[i]->portrait[D_800D32F8[i]->runs[0].count], 0x20, i * 0x20 + 0x24);
+            D_800D32F8[i]->runs[0].count += func_80076A10(i + 0xFC, &D_800D32F8[i]->portrait[D_800D32F8[i]->runs[0].count * 2], 0x20, i * 0x20 + 0x24);
         }
         D_800D32F8[i]->runs[0].buffer = D_800CCB00.buffer;
     }
@@ -116,7 +116,59 @@ void func_801DE69C(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801DEA18);
+/* Build each present member's four numbers as digit glyphs: two stats (three
+ * and two digits) and two further values beside them. */
+void func_801DEA18(void) {
+    s32 i;
+    s32 j;
+    s32 n;
+    s32 digit;
+
+    for (i = 0; i < 3; i++) {
+        D_800D32F8[i]->runs[4].count = 0;
+        D_800D32F8[i]->runs[6].count = 0;
+        D_800D32F8[i]->runs[5].count = 0;
+        D_800D32F8[i]->runs[7].count = 0;
+        if (D_800C3EB6[i].id != 0x7F) {
+            func_8008AAA0(D_800CCD34[i].value4C);
+            for (j = 0; j < 3; j++) {
+                n = j + 9;
+                digit = D_800C3CF1[n];
+                if (digit != 0xFF) {
+                    D_800D32F8[i]->runs[4].count += func_80076A10(digit, &D_800D32F8[i]->field960[D_800D32F8[i]->runs[4].count * 2], j * 8 + 0x48, i * 0x20 + 0x20);
+                }
+            }
+            D_800D32F8[i]->runs[4].buffer = D_800CCB00.buffer;
+            func_8008AAA0(D_800CCD34[i].value50);
+            for (j = 0; j < 2; j++) {
+                n = j + 10;
+                digit = D_800C3CF1[n];
+                if (digit != 0xFF) {
+                    D_800D32F8[i]->runs[6].count += func_80076A10(digit, &D_800D32F8[i]->fieldB40[D_800D32F8[i]->runs[6].count * 2], j * 8 + 0x50, i * 0x20 + 0x28);
+                }
+            }
+            D_800D32F8[i]->runs[6].buffer = D_800CCB00.buffer;
+            func_8008AAA0(D_800CDCE8[i].valueA);
+            for (j = 0; j < 3; j++) {
+                n = j + 13;
+                digit = D_800C3CED[n];
+                if (digit != 0xFF) {
+                    D_800D32F8[i]->runs[5].count += func_80076A10(digit, &D_800D32F8[i]->fieldA50[D_800D32F8[i]->runs[5].count * 2], j * 8 + 0x68, i * 0x20 + 0x20);
+                }
+            }
+            D_800D32F8[i]->runs[5].buffer = D_800CCB00.buffer;
+            func_8008AAA0(D_800CDCE8[i].valueB);
+            for (j = 0; j < 2; j++) {
+                n = j + 14;
+                digit = D_800C3CED[n];
+                if (digit != 0xFF) {
+                    D_800D32F8[i]->runs[7].count += func_80076A10(digit, &D_800D32F8[i]->fieldBE0[D_800D32F8[i]->runs[7].count * 2], j * 8 + 0x70, i * 0x20 + 0x28);
+                }
+            }
+            D_800D32F8[i]->runs[7].buffer = D_800CCB00.buffer;
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801DEDC0);
 

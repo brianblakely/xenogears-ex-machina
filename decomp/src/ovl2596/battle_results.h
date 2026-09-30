@@ -43,20 +43,21 @@ typedef struct {
     u8 buffer;
 } GlyphRun;
 
-/* Per party member result card (pointers 800d32f8, one per slot). */
+/* Per party member result card (pointers 800d32f8, one per slot). Each
+ * glyph part is two primitives, one per draw buffer. */
 typedef struct {
-    Glyph portrait[4];    /* 0x0000 */
+    POLY_FT4 portrait[8];    /* 0x0000 */
     POLY_FT4 labels[40];  /* 0x0140, two per glyph (one per buffer) */
-    Glyph field780[3];    /* 0x0780 */
-    Glyph field870[3];    /* 0x0870 */
-    Glyph field960[3];    /* 0x0960 */
-    Glyph fieldA50[3];    /* 0x0A50 */
-    Glyph fieldB40[2];    /* 0x0B40 */
-    Glyph fieldBE0[2];    /* 0x0BE0 */
-    Glyph fieldC80[8];    /* 0x0C80 */
-    Glyph fieldF00[8];    /* 0x0F00 */
-    Glyph field1180[7];   /* 0x1180 */
-    Glyph field13B0[7];   /* 0x13B0 */
+    POLY_FT4 field780[6];    /* 0x0780 */
+    POLY_FT4 field870[6];    /* 0x0870 */
+    POLY_FT4 field960[6];    /* 0x0960 */
+    POLY_FT4 fieldA50[6];    /* 0x0A50 */
+    POLY_FT4 fieldB40[4];    /* 0x0B40 */
+    POLY_FT4 fieldBE0[4];    /* 0x0BE0 */
+    POLY_FT4 fieldC80[16];    /* 0x0C80 */
+    POLY_FT4 fieldF00[16];    /* 0x0F00 */
+    POLY_FT4 field1180[14];   /* 0x1180 */
+    POLY_FT4 field13B0[14];   /* 0x13B0 */
     GlyphRun runs[12];    /* 0x15E0 */
     u8 flag15F8;          /* 0x15F8 */
     u8 flag15F9;          /* 0x15F9 */
@@ -130,6 +131,30 @@ typedef struct {
 
 extern DrawState D_800CCB00;
 extern s32 D_800CCB34;      /* D_800CCB00.buffer, also addressed directly */
+
+/* func_8008AAA0 writes a value's nine decimal digits to 800c3cf4, leading
+ * zeros as 0xff; the cards read the last digits through these two views. */
+extern u8 D_800C3CF1[12];
+extern u8 D_800C3CED[16];
+void func_8008AAA0(u32 value);
+
+/* Per member combatant values (0x170 per member; the symbol names +0x4c). */
+typedef struct {
+    u16 value4C;
+    u16 pad4E;
+    u16 value50;
+    u8 pad52[0x170 - 6];
+} MemberStats;
+
+extern MemberStats D_800CCD34[3];
+
+/* Two further values per member. */
+typedef struct {
+    u16 valueA;
+    u16 valueB;
+} MemberPair;
+
+extern MemberPair D_800CDCE8[3];
 
 /* The member card's label glyphs: ids and positions. */
 extern u8 D_800C3268[18];
