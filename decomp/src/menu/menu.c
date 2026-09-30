@@ -1738,7 +1738,38 @@ void func_80086E24(void) {
     func_80043B48(D_80092938, D_8009A2F8[D_800928A0].packets);
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80086E70);
+/* Link a gauge bar filled to `value`: the first part up to 0x38, a sloped
+ * second part up to 0x48, then the third part. */
+void func_80086E70(void *ot, GaugeBar *bar, s32 value, s32 mirrored) {
+    s32 over;
+
+    if (value >= 0x38) {
+        func_80085E90(mirrored, &bar->parts[0].x1, 0x38);
+        func_80085E90(mirrored, &bar->parts[0].x3, 0x34);
+        func_80043B48(ot, &bar->parts[0]);
+    } else {
+        func_80085E90(mirrored, &bar->parts[0].x1, value);
+        func_80085E90(mirrored, &bar->parts[0].x3, value - 4);
+        func_80043B48(ot, &bar->parts[0]);
+        return;
+    }
+    if (value >= 0x48) {
+        func_80085E90(mirrored, &bar->parts[1].x1, 0x48);
+        func_80085E90(mirrored, &bar->parts[1].x3, 0x40);
+        func_80085EAC(mirrored, &bar->parts[1].y3, 0x10);
+        func_80043B48(ot, &bar->parts[1]);
+    } else {
+        func_80085E90(mirrored, &bar->parts[1].x1, value);
+        over = value - 0x38;
+        func_80085E90(mirrored, &bar->parts[1].x3, value - (over / 4 + 4));
+        func_80085EAC(mirrored, &bar->parts[1].y3, over / 2 + 8);
+        func_80043B48(ot, &bar->parts[1]);
+        return;
+    }
+    func_80085E90(mirrored, &bar->parts[2].x1, value);
+    func_80085E90(mirrored, &bar->parts[2].x3, value - 8);
+    func_80043B48(ot, &bar->parts[2]);
+}
 
 /* Colour a marker packet by the state of an entry: none (returns 0),
  * yellow when set, red otherwise. */
@@ -1934,7 +1965,33 @@ void func_80088308(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008832C);
+/* Project and link every live debug line, counting its frames down. */
+void func_8008832C(void *ot) {
+    SVector ends[2];
+    Line3D *line;
+    s32 i;
+
+    for (i = 0; i < 100; i++) {
+        if (D_80095938[i].timer != 0) {
+            line = &D_80095938[i];
+            line->timer--;
+            ends[0] = line->from;
+            ends[1] = line->to;
+            ends[0].vx -= D_80096FA8.vx;
+            ends[0].vy -= D_80096FA8.vy;
+            ends[0].vz -= D_80096FA8.vz;
+            ends[1].vx -= D_80096FA8.vx;
+            ends[1].vy -= D_80096FA8.vy;
+            ends[1].vz -= D_80096FA8.vz;
+            gte_ldv01(&ends[0], &ends[1]);
+            gte_rtpt();
+            gte_stsxy01(&line->packets[D_800928A0].x0, &line->packets[D_800928A0].x1);
+            ((PacketTag *)&line->packets[D_800928A0])->len = 3;
+            ((PacketTag *)&line->packets[D_800928A0])->code = 0x40;
+            func_800316C0(ot, &line->packets[D_800928A0]);
+        }
+    }
+}
 
 /* Scale a vector down by the square root of its (absolute) length measure
  * and pass it on. */

@@ -92,6 +92,8 @@ typedef struct {
 } Line3D;
 
 extern Line3D D_80095938[100];
+extern Vector D_80096FA8; /* view origin */
+void func_800316C0(void *ot, void *packet);
 
 s32 func_8002DC9C(s32 x, s32 y, s32 z);
 void func_80048D7C(Vector *vector, void *out);
@@ -154,6 +156,14 @@ void func_800471B4(void *tim); /* open a TIM */
 void func_800471C4(TimImage *image); /* read the next TIM image */
 u16 func_80043A58(s32 x, s32 y); /* palette id */
 u16 func_80043A1C(s32 mode, s32 rate, s32 x, s32 y); /* texture page id */
+
+/* A three-part gauge bar. */
+typedef struct {
+    PolyF4 parts[3];
+} GaugeBar;
+
+void func_80085E90(s32 mirrored, s16 *out, s32 x);
+void func_80085EAC(s32 mirrored, s16 *out, s32 y);
 
 /* Fading overlay. */
 extern s16 D_80092780; /* fade level */
