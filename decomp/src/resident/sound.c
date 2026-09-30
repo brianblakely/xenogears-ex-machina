@@ -1900,23 +1900,149 @@ u8 *func_8003D884(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003D8B8);
+extern s32 func_8003E290(s32 depth, s16 rate, s32 shape);
+extern void func_8003E3E0(SoundModulator *modulator);
+extern void func_8003F2A0(void *modulator);
 
+/* Vibrato: start the pitch modulator with a signed depth (squared), a rate
+ * (with a quadratic boost), a delay and the triangle shape. */
+u8 *func_8003D8B8(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    s32 depth = ((s8 *)data)[1];
+    s16 rate = data[0];
+    SoundModulator *modulator;
+
+    if (depth != 0 && rate != 0) {
+        if (depth < 0) {
+            depth = depth * -depth;
+        } else {
+            depth = depth * depth;
+        }
+        rate += rate * rate / 64;
+        modulator = &channel->modulator[0];
+        modulator->step = func_8003E290(depth << 14, rate, 3);
+        modulator->rate = rate;
+        modulator->delay = data[2] * 4;
+        modulator->unk1A = 0x400;
+        modulator->wave = func_8003F2A0;
+        modulator->shape = 3;
+        modulator->flags = 3;
+        modulator->unk1C = 0;
+        channel->unkCE |= 1;
+        func_8003E3E0(modulator);
+    }
+    return data + 3;
+}
+
+extern void (*D_800508A4[])(void *modulator); /* modulator waves by shape */
+
+/* Vibrato with an explicit shape (low nibble of the third operand; bit 4
+ * selects a one-sided wave).
+ * Nonmatching: register allocation of rate/mode and the shape copy
+ * differ. */
+#ifdef NON_MATCHING
+u8 *func_8003D9A4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    s16 rate = data[0];
+    s32 depth = ((s8 *)data)[1];
+    s32 mode = data[2];
+    SoundModulator *modulator;
+    s32 flags;
+    s32 shape;
+
+    if (depth != 0 && rate != 0) {
+        if (depth < 0) {
+            depth = depth * -depth;
+        } else {
+            depth = depth * depth;
+        }
+        rate += rate * rate / 64;
+        flags = ((mode & 0x10) == 0) * 2;
+        shape = mode & 0xF;
+        modulator = &channel->modulator[0];
+        modulator->step = func_8003E290(depth << 14, rate, shape);
+        modulator->unk1A = 0x400;
+        modulator->rate = rate;
+        modulator->delay = 0;
+        modulator->shape = shape;
+        modulator->unk1C = 0;
+        modulator->flags = flags + 1;
+        modulator->wave = D_800508A4[shape];
+        channel->unkCE |= 1;
+        func_8003E3E0(modulator);
+    }
+    return data + 3;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003D9A4);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003DAB0);
+/* Set the pitch modulator's period. */
+u8 *func_8003DAB0(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    u8 period = *data++ + 1;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003DAEC);
+    if (period != 0) {
+        channel->modulator[0].unk18 = channel->modulator[0].unk1A = 0x400 / (period * 4);
+    }
+    return data;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003DB0C);
+/* Pitch modulator on and off. */
+u8 *func_8003DAEC(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    channel->unkCE |= 1;
+    channel->modulator[0].flags |= 1;
+    return data;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003DB2C);
+u8 *func_8003DB0C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    channel->unkCE &= ~1;
+    channel->modulator[0].flags &= ~1;
+    return data;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003DB58);
+/* Set the channel level, ending its slides. */
+u8 *func_8003DB2C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    channel->level.value = *data << 24;
+    channel->flags2 |= 0x100;
+    channel->flags3 &= ~0x108;
+    return data + 1;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003DB98);
+/* Add to the channel level. */
+u8 *func_8003DB58(s8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    channel->level.value = ((*data << 24) + channel->level.value) & 0x7FFFFFFF;
+    channel->flags2 |= 0x100;
+    channel->flags3 &= ~0x108;
+    return data + 1;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003DBE4);
+/* Slide the channel level to a target over `frames`. */
+u8 *func_8003DB98(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    u16 frames = data[0];
+    s32 delta = (((s8 *)data)[1] << 24) - channel->level.value;
+
+    if (frames != 0 && delta != 0) {
+        channel->unk96 = frames;
+        channel->flags3 = (channel->flags3 | 8) & ~0x100;
+        channel->unk88 = delta / frames;
+    }
+    return data + 2;
+}
+
+/* Sweep the channel level between two values in steps of `frames`. */
+u8 *func_8003DBE4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    s32 from = data[0] << 24;
+    s16 frames = data[1];
+    s32 delta = (data[2] << 24) - from;
+
+    if (delta != 0 && frames != 0) {
+        channel->unk82 = from >> 16;
+        channel->unk80 = frames;
+        channel->flags3 = (channel->flags3 | 0x100) & ~8;
+        channel->unk7C = delta / frames;
+    } else {
+        channel->flags3 &= ~0x100;
+    }
+    return data + 3;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003DC50);
 

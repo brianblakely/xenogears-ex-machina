@@ -65,10 +65,21 @@ typedef union {
     } part;
 } SoundFixed;
 
-/* A per-channel modulator (four per channel). */
+/* A per-channel low-frequency modulator (four per channel; the first
+ * modulates the pitch). */
 typedef struct {
-    u8 unk0[0x1E];
-    u16 unk1E;
+    void (*wave)(void *modulator);
+    u8 unk4[8];
+    s32 step;
+    u8 unk10[2];
+    s16 rate;
+    u8 unk14[2];
+    s16 delay;
+    s16 unk18;
+    s16 unk1A;
+    u8 unk1C;
+    u8 shape;
+    u16 flags;
 } SoundModulator;
 
 /* A repeat of a channel's sequence data. */
@@ -126,14 +137,17 @@ typedef struct {
     s16 pan;           /* 0 left, 0x4000 centre, 0x7F00 right */
     s16 volume;
     SoundFixed level;  /* its whole part scales the volume */
-    u8 unk7C[8];
+    s32 unk7C;
+    s16 unk80;
+    s16 unk82;
     s32 unk84;
-    u8 unk88[4];
+    s32 unk88;
     s16 volume_step;
     s16 volume_target;
     u8 unk90[4];
     s16 unk94;
-    u8 unk96[4];
+    s16 unk96;
+    u8 unk98[2];
     s16 volume_frames;
     SoundLoop loops[4];
     u8 unkCC[2];
