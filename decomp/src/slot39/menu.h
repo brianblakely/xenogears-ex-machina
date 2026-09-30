@@ -1029,6 +1029,7 @@ void RotTransPers3(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, s32 *sxy0, s32 *sxy1, 
 void PushMatrix(void);
 void PopMatrix(void);
 u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y);
+u16 GetClut(s32 x, s32 y);                   /* GetClut */
 void ClearOTagR(u32 *ot, s32 count);  /* ClearOTagR */
 void MoveImage(RECT *rect, s32 x, s32 y); /* MoveImage */
 void DrawOTag(u32 *ot);             /* DrawOTag */
@@ -1139,7 +1140,7 @@ void func_801CE860(void);
 void func_801CEC40(void);
 void func_801CF308(void);
 void func_801CF37C(void);
-void func_801CF5E4(s32 arg0, s32 arg1, s32 arg2);
+void func_801CF5E4(s32 first, s32 firstSlot, s32 end);
 void func_801CF8D8(void);
 void func_801CFB48(void);
 void func_801CFF64(void);
@@ -1178,7 +1179,8 @@ void func_801D22C4(void);
 void func_801C8164(POLY_G4 *poly, u8 r, u8 g, u8 b);
 void SetLineF3(LINE_F3 *line);         /* SetLineF3 */
 void SetPolyF4(POLY_F4 *poly);         /* SetPolyF4 */
-u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y); /* GetTPage */
+u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y);
+u16 GetClut(s32 x, s32 y);                   /* GetClut */ /* GetTPage */
 void SetDrawMode(DR_MODE *p, s32 dfe, s32 dtd, s32 tpage, RECT *tw); /* SetDrawMode */
 void func_801D22F4(u8 arg0);
 void func_801D2484(void);

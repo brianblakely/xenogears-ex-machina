@@ -2262,7 +2262,35 @@ void func_801CF37C(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CF5E4);
+/* Draw the file icons of card rows `first`..`end` - 1 that are in use into
+ * the file screen slots from `firstSlot` on: each icon's texture window (u by row,
+ * v by animation frame +4cc) and palette, projected and drawn. */
+void func_801CF5E4(s32 first, s32 firstSlot, s32 end) {
+    MenuSlotImage *image;
+    s32 row;
+    s32 slot;
+    s32 i;
+
+    row = first;
+    slot = firstSlot;
+    for (; row < end; row++) {
+        if (D_800625A0->card->files[row].state != 0) {
+            for (i = 0; i < D_800625A0->card->headers[row][3]; i++, slot++) {
+                image = D_800625A0->images[slot];
+                (image->icon + D_800625A0->bufferIndex)->u0 = row * 16;
+                (image->icon + D_800625A0->bufferIndex)->v0 = D_800625A0->card->files[row].iconV[D_800625A0->unk4CC];
+                (image->icon + D_800625A0->bufferIndex)->u1 = row * 16 + 16;
+                (image->icon + D_800625A0->bufferIndex)->v1 = D_800625A0->card->files[row].iconV[D_800625A0->unk4CC];
+                (image->icon + D_800625A0->bufferIndex)->u2 = row * 16;
+                (image->icon + D_800625A0->bufferIndex)->v2 = D_800625A0->card->files[row].iconV[D_800625A0->unk4CC] + 16;
+                (image->icon + D_800625A0->bufferIndex)->u3 = row * 16 + 16;
+                (image->icon + D_800625A0->bufferIndex)->v3 = D_800625A0->card->files[row].iconV[D_800625A0->unk4CC] + 16;
+                image->icon[D_800625A0->bufferIndex].clut = GetClut(row * 16, row / 16 + 0x1c1);
+                func_801CE198(1, image->iconAt, image->icon, D_800625A0->bufferIndex);
+            }
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CF8D8);
 
