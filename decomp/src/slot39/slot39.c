@@ -370,7 +370,7 @@ void func_801C5FE4(void) {
     func_800320E8(D_800625A0->markers);
     func_800320E8(D_800625A0->sheet);
     func_800320E8(D_800625A0->labels);
-    func_800320E8(D_800625A0->labelPixels);
+    func_800320E8(D_800625A0->topLabels[0].pixels);
     if (D_80059178 != 0) {
         func_8003A094(D_800625A0->effectBank);
         func_801C7BF4();
@@ -530,8 +530,8 @@ void func_801C6D90(void) {
  * four label image records, and the label palette. */
 void func_801C6E0C(void) {
     func_80033698(0, 0x1d1);
-    D_800625A0->labelPixels = func_80031BDC(0x38e, 0);
-    func_801E7E68(D_800625A0->labelImages, D_801EA524, 0, 4);
+    D_800625A0->topLabels[0].pixels = func_80031BDC(0x38e, 0);
+    func_801E7E68(D_800625A0->topLabels, D_801EA524, 0, 4);
     func_801C6D90();
 }
 
@@ -1356,7 +1356,17 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D09F0);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D0C78);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D0D90);
+/* Add the current quad of each top label whose party flag (+34) is set. */
+void func_801D0D90(void) {
+    s32 i;
+
+    for (i = 0; i < 4; i++) {
+        if (D_800625A0->party->unk34[i] != 0) {
+            func_80043B48(&D_800625A0->current->ot[4],
+                          &D_800625A0->topLabels[i].polys[D_800625A0->topLabels[i].count]);
+        }
+    }
+}
 
 /* A short busy delay (eight iterations). */
 void func_801D0E20(void) {
@@ -1432,7 +1442,17 @@ void func_801D10DC(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D1160);
+/* Add the current quad of each sound label whose party flag (+5c) is set. */
+void func_801D1160(void) {
+    s32 i;
+
+    for (i = 0; i < 4; i++) {
+        if (D_800625A0->party->unk5C[i] != 0) {
+            func_80043B48(&D_800625A0->current->ot[4],
+                          &D_800625A0->soundLabels[i].polys[D_800625A0->soundLabels[i].count]);
+        }
+    }
+}
 
 /* Draw the label layers of the field menu screen. */
 void func_801D11F0(void) {
@@ -1615,7 +1635,20 @@ void func_801D2EC0(u8 slot, u8 mode) {
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D2F4C);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D32B4);
+/* Close the notice when open (party +22): free portrait 2 and its four
+ * blocks (+1de0), then finish a frame. */
+void func_801D32B4(void) {
+    s32 i;
+
+    if (D_800625A0->party->unk20[2] != 0) {
+        func_801D4EA0(2);
+        D_800625A0->party->unk2E = 0;
+        for (i = 0; i < 4; i++) {
+            func_800320E8(D_800625A0->blocks1DE0[i]);
+        }
+    }
+    func_801C7BF4();
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D3344);
 
@@ -1843,7 +1876,19 @@ u8 func_801DE29C(u8 slot, u8 arg1) {
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DE2C8);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DE36C);
+/* Close the 801ddf24 screen: portraits 2-5, its labels and block (+434); view 17. */
+void func_801DE36C(void) {
+    D_800625A0->party->unk4C = 0;
+    func_801D4EA0(2);
+    func_801D4EA0(3);
+    func_801D4EA0(4);
+    func_801D4EA0(5);
+    func_801C7BF4();
+    func_801E8044(6, D_800625A0->party->unk40);
+    func_801C72BC(0x17);
+    func_800320E8(D_800625A0->block434);
+    func_801D3444();
+}
 
 /* Close the 801ddf24 screen: hide its sprites and free its blocks. */
 void func_801DE400(void) {
@@ -1947,7 +1992,24 @@ void func_801E4170(MenuTables *tables, u8 gear) {
     func_801E4258(tables, gear);
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E41C0);
+/* Take gear `gear`'s engine values from the tables, keeping +60 within +64. */
+void func_801E41C0(MenuTables *tables, u8 gear) {
+    GearRecord *record;
+    GearEngine *engine;
+
+    record = &D_8006DFAC[gear];
+    engine = tables->engines;
+    engine += record->engine;
+    record->unk60 = engine->unk4;
+    record->unk64 = engine->unk4;
+    record->unk98 = engine->unk14;
+    record->unk9E = engine->unk15;
+    record->unk9D = engine->unk16;
+    record->unk9F = engine->unk17;
+    if (record->unk64 < record->unk60) {
+        record->unk60 = record->unk64;
+    }
+}
 
 /* Copy gear `gear`'s two frame values (+8, +a of its frame record) into the
  * gear record (+70, +72). */
@@ -1962,7 +2024,23 @@ void func_801E4258(MenuTables *tables, u8 gear) {
     record->unk72 = frame->unkA;
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E42AC);
+/* Take gear `gear`'s part values from the tables, keeping +38 within +3a. */
+void func_801E42AC(MenuTables *tables, u8 gear) {
+    GearRecord *record;
+    GearPart *part;
+
+    record = &D_8006DFAC[gear];
+    part = tables->parts;
+    part += record->unk3;
+    record->unk3A = part->unk6;
+    record->unk3C = part->unkC;
+    record->unk3D = part->unkD;
+    record->unk3E = part->unkE;
+    record->unk3F = part->unkE;
+    if (record->unk38 > record->unk3A) {
+        record->unk38 = record->unk3A;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E433C);
 
@@ -1981,7 +2059,18 @@ u8 func_801E4928(u8 gear) {
     return value;
 }
 
+/* Set view `gear`'s value to 2/90 of the gear's +64, in steps of ten. */
+#ifdef NON_MATCHING
+void func_801E4998(MenuGearViews *views, u8 gear) {
+    MenuGearValue *value;
+
+    value = &views->views[gear]->value;
+    value->unk24 = D_8006DFAC[gear].unk64 / 10 * 2 / 9;
+    value->unk24 = value->unk24 / 10 * 10;
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E4998);
+#endif
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E4A28);
 

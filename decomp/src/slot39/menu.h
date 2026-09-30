@@ -65,13 +65,15 @@ typedef struct MenuParty {
     u8 labels[8]; /* C: shown flags of the command labels */
     u8 unk14[6]; /* 14 */
     u8 unk1A[6]; /* 1A */
-    u8 unk20[2]; /* 20 */
-    u8 pad22[0x5];
-    u8 unk27[2]; /* 27 */
-    u8 pad29[0x6];
+    u8 unk20[6]; /* 20 */
+    u8 unk26; /* 26 */
+    u8 unk27[6]; /* 27 */
+    u8 unk2D; /* 2D */
+    u8 unk2E; /* 2E */
     u8 unk2F; /* 2F */
     u8 ids[3]; /* 30 */
-    u8 pad33[0x5];
+    u8 pad33[0x1];
+    u8 unk34[4]; /* 34 */
     u8 unk38[8]; /* 38: character ids of the party slots, ff empty */
     u8 unk40[6]; /* 40 */
     u8 unk46; /* 46 */
@@ -79,14 +81,15 @@ typedef struct MenuParty {
     u8 unk49; /* 49 */
     u8 pad4A[0x1];
     u8 unk4B; /* 4B */
-    u8 pad4C[0x1];
+    u8 unk4C; /* 4C */
     u8 unk4D; /* 4D */
     u8 unk4E; /* 4E */
     u8 pad4F[0x1];
     u8 unk50[3]; /* 50 */
     u8 unk53; /* 53 */
     u8 unk54[6]; /* 54 */
-    u8 pad5A[0x6];
+    u8 pad5A[0x2];
+    u8 unk5C[4]; /* 5C */
     u8 ready; /* 60 */
     u8 pad61[0x6];
     u8 unk67; /* 67 */
@@ -192,11 +195,34 @@ typedef struct GearFrame {
     u8 padC[0x8];
 } GearFrame;
 
+/* A gear engine record of the data tables (+8). */
+typedef struct GearEngine {
+    u8 pad0[0x4];
+    u32 unk4; /* 4 */
+    u8 pad8[0xC];
+    u8 unk14; /* 14 */
+    u8 unk15; /* 15 */
+    u8 unk16; /* 16 */
+    u8 unk17; /* 17 */
+} GearEngine;
+
+/* A gear record of the data tables (+c). */
+typedef struct GearPart {
+    u8 pad0[0x6];
+    u16 unk6; /* 6 */
+    u8 pad8[0x4];
+    u8 unkC; /* C */
+    u8 unkD; /* D */
+    u8 unkE; /* E */
+    u8 padF[0x1];
+} GearPart;
+
 /* The data table directory (*(state + 330)). */
 typedef struct MenuTables {
     u8 *weapons; /* 0 */
     u8 *accessories; /* 4 */
-    u8 pad8[0x8];
+    GearEngine *engines; /* 8 */
+    GearPart *parts; /* C */
     GearFrame *frames; /* 10 */
     u8 pad14[0x8];
     u8 *items; /* 1C */
@@ -205,22 +231,43 @@ typedef struct MenuTables {
 
 /* A gear record of the game data (D_8006DFAC). */
 typedef struct GearRecord {
-    u8 pad0[0x8];
+    u8 pad0[0x2];
+    u8 engine; /* 2: record of table +8 */
+    u8 unk3; /* 3: record of table +c */
+    u8 pad4[0x4];
     u8 frame; /* 8 */
-    u8 pad9[0x3B];
+    u8 pad9[0x2F];
+    u16 unk38; /* 38 */
+    u16 unk3A; /* 3A */
+    u8 unk3C; /* 3C */
+    u8 unk3D; /* 3D */
+    u8 unk3E; /* 3E */
+    u8 unk3F; /* 3F */
+    u8 pad40[0x4];
     u16 unk44; /* 44 */
-    u8 pad46[0x2A];
+    u8 pad46[0x1A];
+    u32 unk60; /* 60 */
+    u32 unk64; /* 64 */
+    u8 pad68[0x8];
     u16 unk70; /* 70 */
     u16 unk72; /* 72 */
     u8 pad74[0x1];
     u8 unk75; /* 75 */
-    u8 pad76[0x2E];
+    u8 pad76[0x22];
+    u8 unk98; /* 98 */
+    u8 pad99[0x4];
+    u8 unk9D; /* 9D */
+    u8 unk9E; /* 9E */
+    u8 unk9F; /* 9F */
+    u8 padA0[0x4];
 } GearRecord;
 
 /* A laid-out label: its quads and sprite list. */
 typedef struct MenuLabelSlot {
     POLY_FT4 polys[2]; /* 0 */
-    u8 sprites[0x2d]; /* 50 */
+    u8 sprites[0x28]; /* 50 */
+    u8 *pixels; /* 78 */
+    u8 pad7C[0x1];
     u8 count; /* 7D: sprites in the list; also the quad shown */
     u8 pad7E[0x1];
     u8 visible; /* 7F */
@@ -252,6 +299,25 @@ typedef struct MenuViewSet {
     u8 pad0[0x1C];
     u8 images[4]; /* 1C: sheet image per view (+14e), ff none */
 } MenuViewSet;
+
+/* A sub-record of a gear view (+5c8). */
+typedef struct MenuGearValue {
+    u8 pad0[0x24];
+    u16 unk24; /* 24 */
+    u8 pad26[0x2];
+} MenuGearValue;
+
+/* A gear view (801e4998). */
+typedef struct MenuGearView {
+    u8 pad0[0x5C8];
+    MenuGearValue value; /* 5C8 */
+} MenuGearView;
+
+/* The record passed to 801e4998. */
+typedef struct MenuGearViews {
+    u8 pad0[0x4C];
+    MenuGearView *views[4]; /* 4C */
+} MenuGearViews;
 
 /* The 2dc0-byte block (*(state + 34c)). */
 typedef struct MenuBlock34C {
@@ -310,15 +376,16 @@ typedef struct MenuState {
     u8 *block358; /* 358 */
     u8 *block35C; /* 35C */
     MenuLabels360 *labels360; /* 360 */
-    u8 *portraits[2]; /* 364: two 720-byte blocks */
-    u8 pad36C[0x14];
-    u8 *portraitMarks[2]; /* 380 */
-    u8 pad388[0x14];
+    u8 *portraits[6]; /* 364 */
+    u8 pad37C[0x4];
+    u8 *portraitMarks[6]; /* 380 */
+    u8 pad398[0x4];
     u8 *fieldBlocks[3]; /* 39C: three 127c-byte field blocks */
     u8 *images[32]; /* 3A8 */
     u8 *markers; /* 428: marker block (14c bytes) */
     u8 *block42C; /* 42C: 1198 bytes */
-    u8 pad430[0x8];
+    u8 pad430[0x4];
+    u8 *block434; /* 434 */
     u8 *block438; /* 438 */
     u8 *block43C; /* 43C */
     u8 *block440; /* 440 */
@@ -332,9 +399,7 @@ typedef struct MenuState {
     u8 pad4DA[0x2];
     u8 firstMember; /* 4DC: first occupied party slot */
     u8 pad4DD[0x3];
-    u8 labelImages[0x78]; /* 4E0: label image records (801e7e68) */
-    u8 *labelPixels; /* 558: 38e-byte label pixel block */
-    u8 pad55C[0x184];
+    MenuLabelSlot topLabels[4]; /* 4E0: label images (801e7e68); the first owns the 38e-byte pixel block */
     MenuLabelSlot commandLabels[8]; /* 6E0: laid-out labels (801e7e68) */
     MenuLabelSlot partyLabels[6]; /* AE0 */
     MenuLabelSlot fileLabels[6]; /* DE0 */
@@ -343,7 +408,8 @@ typedef struct MenuState {
     MenuLabelSlot labels17E0[2]; /* 17E0 */
     MenuLabelSlot labels18E0[6]; /* 18E0 */
     MenuLabelSlot soundLabels[4]; /* 1BE0 */
-    u8 pad1DE0[0x28];
+    u8 *blocks1DE0[4]; /* 1DE0 */
+    u8 pad1DF0[0x18];
     u8 *panels[3]; /* 1E08 */
 } MenuState;
 /* structs: end */
@@ -529,6 +595,7 @@ u8 func_801D9808(void);
 u8 func_801D9F98(u8 mode, u8 save);
 void func_801D1EB0(void);
 void func_801D29A8(u8 arg0, u8 arg1);
+void func_801D3444(void);
 void func_801D3674(void);
 u8 func_801DBE54(void);
 void func_801DDF24(u8 slot, u8 arg1, s32 arg2);
