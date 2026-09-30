@@ -499,14 +499,10 @@ void func_800A5924(void) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Reload the field for a map change inside the field mode (800b0048 the
  * transition kind, 800afd14 its frames): stop effects, keep the map
  * read-ahead block across the heap reset, then per kind fade or dissolve
- * out, reload the components (80070cc8), restart the music and fade in.
- * Unrecovered details: the original passes 800adb08 as a second argument
- * to 80071cb4 and 0 as a second argument to 80085b20, and uses a jump
- * table. */
+ * out, reload the components (80070cc8), restart the music and fade in. */
 void func_800A5C40(void) {
     RECT rect;
     u8 *ahead;
@@ -548,6 +544,16 @@ void func_800A5C40(void) {
             func_80071CB4(&D_800C426C->overlay_ot[0], D_800ADB08);
             func_800A6924();
         }
+        goto reload;
+    case 0:
+        func_800A663C(0, 0);
+        func_80071DCC(D_800AFD14);
+        for (i = 0; i < D_800AFD14; i++) {
+            func_80073FE0();
+            func_80071CB4(&D_800C426C->overlay_ot[0], D_800ADB08);
+            func_800A6408();
+            func_800A6924();
+        }
     reload:
         func_80073FE0();
         func_800A6924();
@@ -565,16 +571,6 @@ void func_800A5C40(void) {
         }
         func_80071E58(D_800AFD14);
         break;
-    case 0:
-        func_800A663C(0, 0);
-        func_80071DCC(D_800AFD14);
-        for (i = 0; i < D_800AFD14; i++) {
-            func_80073FE0();
-            func_80071CB4(&D_800C426C->overlay_ot[0], D_800ADB08);
-            func_800A6408();
-            func_800A6924();
-        }
-        goto reload;
     case 1:
         func_800A663C(0, 0);
         func_800A5710(D_800AFD14);
@@ -706,9 +702,6 @@ void func_800A5C40(void) {
     func_80077544();
     func_80031FF8();
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800A4748", func_800A5C40);
-#endif
 
 /* Rotate and scale the screen pieces (when scaled) into their quads and
  * link the quads and draw modes of the current buffer. */
