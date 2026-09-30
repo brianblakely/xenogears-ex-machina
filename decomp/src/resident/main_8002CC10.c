@@ -198,13 +198,94 @@ s32 func_8002D180(CVECTOR *color, s16 *vertices) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002D244);
+/* Build a Gouraud-shaded textured quad lit by its vertex normals (after any
+ * texture page/CLUT override command). */
+s32 func_8002D244(u16 *command, s16 *vertices) {
+    POLY_GT4 *poly;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002D354);
+    if (func_8002CD64((u8 *)command) == 0) {
+        return 0;
+    }
+    poly = (POLY_GT4 *)D_80059424;
+    setlen(poly, 12);
+    NormalColor3(&D_8005952C[vertices[0]], &D_8005952C[vertices[1]], &D_8005952C[vertices[2]],
+                 (CVECTOR *)&poly->r0, (CVECTOR *)&poly->r1, (CVECTOR *)&poly->r2);
+    NormalColor(&D_8005952C[vertices[3]], (CVECTOR *)&poly->r3);
+    *(s32 *)&poly->u0 = command[2] | (D_8005930C << 16);
+    *(s32 *)&poly->u1 = command[3] | (D_80059308 << 16);
+    *(u16 *)&poly->u2 = command[4];
+    *(u16 *)&poly->u3 = command[5];
+    poly->code = ((u8 *)command)[3];
+    return 1;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002D420);
+/* Build a Gouraud quad whose corner colors are `color` lit by the vertex
+ * normals. */
+s32 func_8002D354(CVECTOR *color, s16 *vertices) {
+    POLY_G4 *poly = (POLY_G4 *)D_80059424;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002D530);
+    setlen(poly, 8);
+    *(s32 *)&poly->r0 = *(s32 *)color;
+    NormalColorCol3(&D_8005952C[vertices[0]], &D_8005952C[vertices[1]], &D_8005952C[vertices[2]],
+                    color, (CVECTOR *)&poly->r0, (CVECTOR *)&poly->r1, (CVECTOR *)&poly->r2);
+    NormalColorCol(&D_8005952C[vertices[3]], color, (CVECTOR *)&poly->r3);
+    poly->code = color->cd;
+    return 1;
+}
+
+/* The same Gouraud textured quad builder for a second primitive command. */
+s32 func_8002D420(u16 *command, s16 *vertices) {
+    POLY_GT4 *poly;
+
+    if (func_8002CD64((u8 *)command) == 0) {
+        return 0;
+    }
+    poly = (POLY_GT4 *)D_80059424;
+    setlen(poly, 12);
+    NormalColor3(&D_8005952C[vertices[0]], &D_8005952C[vertices[1]], &D_8005952C[vertices[2]],
+                 (CVECTOR *)&poly->r0, (CVECTOR *)&poly->r1, (CVECTOR *)&poly->r2);
+    NormalColor(&D_8005952C[vertices[3]], (CVECTOR *)&poly->r3);
+    *(s32 *)&poly->u0 = command[2] | (D_8005930C << 16);
+    *(s32 *)&poly->u1 = command[3] | (D_80059308 << 16);
+    *(u16 *)&poly->u2 = command[4];
+    *(u16 *)&poly->u3 = command[5];
+    poly->code = ((u8 *)command)[3];
+    return 1;
+}
+
+/* Build a flat textured quad lit by the face normal of `vertices` (flag 1;
+ * with flag 2 the normal goes to the lit-color cache) or by the cached
+ * normal (flag 4); the cache advances either way. */
+s32 func_8002D530(u16 *command, s16 *vertices, s32 flags) {
+    POLY_FT4 *poly;
+    SVECTOR normal;
+
+    if (func_8002CD64((u8 *)command) == 0) {
+        return 0;
+    }
+    poly = (POLY_FT4 *)D_80059424;
+    setlen(poly, 9);
+    *(s32 *)&poly->u0 = command[2] | (D_8005930C << 16);
+    *(s32 *)&poly->u1 = command[3] | (D_80059308 << 16);
+    *(u16 *)&poly->u2 = command[4];
+    *(u16 *)&poly->u3 = command[5];
+    if (flags & 1) {
+        if (flags & 2) {
+            func_8002DB84(&D_8005953C[vertices[0]], &D_8005953C[vertices[1]],
+                          &D_8005953C[vertices[2]], (SVECTOR *)D_80059498);
+            NormalColor((SVECTOR *)D_80059498, (CVECTOR *)&poly->r0);
+        } else {
+            func_8002DB84(&D_8005953C[vertices[0]], &D_8005953C[vertices[1]],
+                          &D_8005953C[vertices[2]], &normal);
+            NormalColor(&normal, (CVECTOR *)&poly->r0);
+        }
+    } else if (flags & 4) {
+        NormalColor((SVECTOR *)D_80059498, (CVECTOR *)&poly->r0);
+    }
+    D_80059498 += 2;
+    poly->code = ((u8 *)command)[3];
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002D6AC);
 
