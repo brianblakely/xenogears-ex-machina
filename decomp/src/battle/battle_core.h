@@ -663,6 +663,17 @@ extern u8 D_800C3E08[3]; /* panel value digits */
 extern u8 D_800D2D54[7]; /* panel maximum digits */
 void func_80072938(POLY_FT4 *prims, s32 first, s32 last, u8 mode);
 void func_80076C78(POLY_FT4 *prim, s16 x, s16 y, u8 u, u8 v, u8 w);
+void func_80076CE8(POLY_FT4 *prim, s16 x, s16 y, u8 u, u8 v, s32 w, s32 h);
+
+/* A menu icon cell of the icon image (4 bytes, 800d2f68). */
+typedef struct {
+    u8 w;
+    u8 alternate; /* uses the alternate CLUT */
+    u8 u;
+    u8 v;
+} IconCell;
+
+extern IconCell D_800D2F68[];
 s32 func_80098AF8(s32 slot, s32 mode);
 void func_80079E18(u8 index);
 void func_80079E4C(u8 index);

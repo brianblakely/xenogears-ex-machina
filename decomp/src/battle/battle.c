@@ -4949,7 +4949,45 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80092B74);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800930AC);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80093578);
+/* Point the gear page `kind` quads at their images: the page title cell, the
+ * command's state icon (9 sealed, 7 flag 0x1000, else 8) and its level frame
+ * (13 for level 1, 21 for level 2, else 12), each with its CLUT. */
+void func_80093578(u8 member, u8 kind) {
+    u16 state;
+    s32 icon;
+    s32 frame;
+
+    func_80076CE8(&D_800C3EA4->unkA230->unk140[D_800CCB04.buffer], 0x7C, 0xA4, 0, kind * 16, 0x60, 0x10);
+    state = D_800CCCE8.gearCommands[member][kind + 37].state;
+    if (state & 0x4000) {
+        icon = 9;
+    } else {
+        icon = 8;
+        if (state & 0x1000) {
+            icon = 7;
+        }
+    }
+    switch (state & 0xF) {
+    case 0:
+        frame = 12;
+        break;
+    case 1:
+        frame = 13;
+        break;
+    case 2:
+        frame = 21;
+        break;
+    default:
+        frame = 12;
+        break;
+    }
+    func_80076C78(&D_800C3EA4->unkA230->unk320[D_800CCB04.buffer], 0x24, 0xA6, D_800D2F68[icon].u, D_800D2F68[icon].v,
+                  D_800D2F68[icon].w);
+    D_800C3EA4->unkA230->unk320[D_800CCB04.buffer].clut = D_800D2F68[icon].alternate ? D_80059414 : D_800595D4;
+    func_80076C78(&D_800C3EA4->unkA230->unk370[D_800CCB04.buffer], 0x48, 0xA6, D_800D2F68[frame].u,
+                  D_800D2F68[frame].v, D_800D2F68[frame].w);
+    D_800C3EA4->unkA230->unk370[D_800CCB04.buffer].clut = D_800D2F68[frame].alternate ? D_80059414 : D_800595D4;
+}
 
 /* Build the name of the member's gear page `kind` (two text lines from the
  * file 3 block) into VRAM and point the page's two title quads at them. */
