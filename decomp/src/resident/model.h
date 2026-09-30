@@ -2,6 +2,7 @@
 #define RESIDENT_MODEL_H
 
 #include "common.h"
+#include "heap.h"
 
 /* Resident model renderer. Field names follow their observed use; unknown
  * bytes keep their offsets. */
@@ -33,9 +34,7 @@ typedef struct {
 
 extern RenderPacket *D_80059424;
 
-extern void *func_80031BDC(s32 size, s32 mode);
-extern void *func_80031F70(void *data, s32 size);
-extern s32 func_800320E8(void *data);
-extern void func_800324B8(s16 kind);
+void func_8002DDE4(void *image, s32 mode, s32 x, s32 y, s32 a4, s32 a5, s32 a6); /* upload an image */
+u8 *func_8002DFE0(void); /* the shared unpack buffer */
 
 #endif

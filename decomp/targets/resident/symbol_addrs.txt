@@ -319,4 +319,6 @@ _ExitCard = 0x8004EA20; // type:func
 // Data embedded in .text (0x8001c76c-0x8001c8dc before a game function, and
 // eight bytes at the head of libgte MSC00); kept as the original split names.
 func_8001C76C = 0x8001C76C; // type:func
+// The game function after that data opens the sprite unit.
+func_8001C8DC = 0x8001C8DC; // type:func
 func_80048BBC = 0x80048BBC; // type:func

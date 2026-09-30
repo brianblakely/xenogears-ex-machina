@@ -2,6 +2,8 @@
 #define RESIDENT_WINDOW_H
 
 #include "common.h"
+#include "psyq/libgpu.h"
+#include "heap.h"
 
 /* Resident message window: laid-out text lines drawn as sprites. Field
  * names follow their observed use; unknown bytes keep their offsets. */
@@ -14,16 +16,7 @@ typedef struct WindowQueue {
 
 /* One laid-out line: a textured sprite for each half, per draw buffer. */
 typedef struct {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    u8 u0, v0;
-    u16 clut;
-    s16 w, h;
-} Sprite;
-
-typedef struct {
-    Sprite sprite[4];
+    SPRT sprite[4];
     u8 unk50[8];
     s16 unk58;
     u8 unk5A;
@@ -64,8 +57,6 @@ typedef struct {
     WindowQueue *queue;
 } Window;
 
-extern void *func_80031BDC(s32 size, s32 mode);
-extern s32 func_800320E8(void *data);
-extern void func_800324B8(s16 kind);
+void func_80033DF0(Window *window);
 
 #endif

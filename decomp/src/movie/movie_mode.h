@@ -86,8 +86,6 @@ MATRIX *RotMatrixZ(s32 r, MATRIX *m);
 MATRIX *CompMatrix(MATRIX *m0, MATRIX *m1, MATRIX *m2);
 s32 SquareRoot0(s32 a);
 s32 ratan2(s32 y, s32 x);
-int PCopen(char *name, int flags, int perms);
-int PCclose(int fd);
 
 /* libcd commands not yet in psyq/libcd.h. */
 #ifndef CdlNop
@@ -118,7 +116,6 @@ void func_8002954C(s32 file, void *buffer, s32 size, s32 arg3, s32 arg4); /* rea
 s32 func_8003569C(s32 port);                   /* controller buttons */
 void func_80038D18(s32 volume, s32 speed);     /* CD input volume */
 void func_80039A80(s32 arg0, s32 arg1, s32 arg2);
-int func_8004C398(int fd, void *buffer, int size); /* libsn PCread */
 void func_8003F738(SVECTOR *rotation, MATRIX *m); /* rotation matrix */
 void func_80049BDC(MATRIX *m0, MATRIX *m1);    /* matrix product */
 

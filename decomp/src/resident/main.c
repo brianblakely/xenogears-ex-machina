@@ -1,4 +1,23 @@
 #include "common.h"
+#include "psyq/libapi.h"
+#include "psyq/libc.h"
+#include "psyq/libcd.h"
+#include "psyq/libetc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "psyq/libsn.h"
+#include "psyq/libspu.h"
+#include "mode.h"
+#include "menu.h"
+#include "sprite.h"
+#include "cd.h"
+#include "stream.h"
+#include "model.h"
+#include "heap.h"
+#include "text.h"
+#include "pad.h"
+#include "console.h"
+#include "sound.h"
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80019524);
 
@@ -6,996 +25,867 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80019548);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80019560);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80019578);
+/* Boot: initialise the system libraries, the disc index and the heap, load and install the resident data files, then enter the first mode. */
+void func_80019578(void) {
+    RECT screen;
+    void *file2;
+    void *file3;
+    void *file4;
+    void *file5;
+    void *data;
+    s32 tag;
+
+    ResetCallback();
+    SetGraphDebug(0);
+    SetVideoMode(0);
+    ResetGraph(0);
+    screen.x = 0;
+    screen.y = 0;
+    screen.w = 0x180;
+    screen.h = 0x1E0;
+    ClearImage(&screen, 0, 0, 0);
+    DrawSync(0);
+    SetDispMask(1);
+    InitGeom();
+    func_80036288();
+    InitCARD(1);
+    StartCARD();
+    _bu_init();
+    VSyncCallback(func_8003634C);
+    func_80031A68((HeapHeader *)func_8002DFE0(), (u8 *)0x801FC000);
+    SpuInit();
+    func_80028230(D_80010004, D_80018004, D_80010000);
+    func_80037B88(0);
+    func_80028470(0, 1);
+
+    file2 = func_80031BDC(func_80028738(2), 0);
+    file3 = func_80031BDC(func_80028738(3), 0);
+    file4 = func_80031BDC(func_80028738(4), 0);
+    file5 = func_80031BDC(func_80028738(5), 0);
+    func_800295D8(2, file2, 0, 0);
+    func_800295D8(3, file3, 0, 0);
+    func_800295D8(4, file4, 0, 0);
+    func_800295D8(5, file5, 0, 0);
+    func_80028A60(0);
+    func_80037FD8(file2, 0);
+    D_80059560 = func_80037FD8(file3, 0);
+    func_80037FD8(file4, 0);
+    D_800595AC = func_80037FD8(file5, 0);
+
+    tag = func_80031B9C();
+    func_80031BA8(6);
+    data = func_80031BDC(func_80028738(6), 0);
+    func_800295D8(6, data, 0, 0);
+    func_80028A60(0);
+    func_800324B8(0x30);
+    func_80033558(func_80032E88(data, 1));
+    func_800320E8(data);
+    data = func_80031BDC(func_80028738(7), 0);
+    func_800295D8(7, data, 0, 0);
+    func_80028A60(0);
+    func_800324B8(0x31);
+    func_800335F4(func_80032E88(data, 1));
+    func_800320E8(data);
+    func_80031BA8(tag);
+
+    func_8003BDFC(0x10);
+    func_800320E8(file2);
+    func_800320E8(file3);
+    func_800320E8(file4);
+    func_800320E8(file5);
+    func_8001AADC();
+    func_8001BB50();
+    func_80024F20();
+    func_800379B4(0);
+    D_800592C0 = -1;
+    D_800592BC = NULL;
+    D_8004FE44 = 1;
+    D_8004FE46 = 1;
+    D_8004FE47 = 0;
+    if (func_80028530() == 1) {
+        D_8004FE45 = 0x10;
+    } else {
+        D_8004FE45 = 7;
+    }
+    if (func_80035734(0) != 0) {
+        while (D_80059570 == 0x90C) {
+            func_80035CDC();
+        }
+    }
+    func_80019D48();
+    func_8001B6BC();
+    func_8001996C(6);
+    func_80019ACC(0);
+}
 
 void func_80019964(void) {
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001996C);
+/* Select the next mode; a different mode releases the cached mode block. */
+void func_8001996C(s32 mode) {
+    D_80018088 = mode;
+    if (mode != D_800592C0) {
+        if (D_800592BC != NULL) {
+            func_800320E8(D_800592BC);
+            D_800592BC = NULL;
+        }
+        D_800592C0 = -1;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800199CC);
+/* Load the mode's overlay file into a heap block (tag 6, from the top, quietly) unless it is already cached; returns the block. */
+void *func_800199CC(s32 mode) {
+    s32 tag;
+    s32 quiet;
+    s32 base;
+    s32 index;
+
+    if (D_800592C0 != mode) {
+        D_800592C0 = mode;
+        tag = func_80031B9C();
+        func_800284B4(&base, &index);
+        func_80031BA8(6);
+        func_80028470(0, 1);
+        quiet = func_80031BB4(1);
+        D_800592BC = func_80031BDC(func_80028738(D_8004EAA0[mode]), 1);
+        if (D_800592BC != NULL) {
+            func_800295D8(D_8004EAA0[mode], D_800592BC, 0, 0);
+        } else {
+            D_800592C0 = -1;
+        }
+        func_80031BB4(quiet);
+        func_80028470(base, index);
+        func_80031BA8(tag);
+    }
+    return D_800592BC;
+}
 
 INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/main", D_80018080);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80019ACC);
+/* Where a mode's overlay block is decoded. */
+u8 *const D_80018084 = D_8006FAF0;
+
+/* Mode dispatcher: report a fatal error (with the caller) if given, reset graphics and the heap, clear the next mode's BSS, load its overlay, then run it and dispatch again. */
+void func_80019ACC(s32 error) {
+    ModeEntry *mode;
+    void *block;
+    u32 unused[2]; /* an unused local the original frame reserves */
+    u32 caller;
+
+    if (error != 0) {
+        __asm__ volatile("move $15, %0\n\tsw $31, 0($15)" : : "r"(&caller) : "$15");
+        func_80019EF8(error, caller);
+    }
+    mode = &D_8001808C[D_80018088];
+    ResetGraph(1);
+    DrawSyncCallback(0);
+    func_800363F0(0);
+    DrawSync(0);
+    VSync(2);
+    func_80031B10((HeapHeader *)(mode->bss_end + 0x800));
+    func_80019C7C();
+    if (mode->loaded) {
+        func_80019560(mode->bss_start, mode->bss_end);
+        block = func_800199CC(D_80018088);
+        func_80028A60(0);
+        func_80032EB4(block, D_80018084);
+        DrawSync(0);
+        VSync(0);
+        EnterCriticalSection();
+        DrawSync(0);
+        VSync(0);
+        FlushCache();
+        ExitCriticalSection();
+    }
+    func_80019548();
+    func_80031B10((HeapHeader *)(mode->bss_end + 4));
+    func_80031A30();
+    func_80035DB0();
+    func_8001996C(0);
+    mode->entry();
+    func_80019ACC(0);
+}
 
 INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/main", D_80018088);
 
 INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/main", D_8001808C);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80019C2C);
+/* Write main RAM (2 MiB) to the development PC as c:\core. */
+void func_80019C2C(void) {
+    s32 fd;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80019C7C);
+    func_8004C38C();
+    fd = PCcreat("c:\\core", 0);
+    func_8004C470(fd, (void *)0x80000000, 0x200000);
+    PCclose(fd);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80019CA0);
+/* Heap diagnostics, listed by the message table 8004f2c0. */
+const char D_80018104[] = "LsFreeMem:This ptr isn't MCB";
+const char D_80018124[] = "LsGetMem:MCB Broken";
+const char D_80018138[] = "LsFreeMem:Can't Release NULL Pointer";
+const char D_80018160[] = "LsGetMem:Memory Not Enough";
+const char D_8001817C[] = "LsKernel:PC File Not Found";
+const char D_80018198[] = "LsKernel:Program Not Defined";
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80019CD0);
+/* Select heap owner tag 10 (clearing its word and the quiet flag). */
+void func_80019C7C(void) {
+    func_80032498(10, 0);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80019D48);
+/* Soft reset while the reset button combination is held. */
+void func_80019CA0(void) {
+    if (D_80059570 == 0x90C) {
+        func_80019CD0();
+    }
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80019EF8);
+/* Shut down the libraries and restart from the entry point. */
+void func_80019CD0(void) {
+    SwExitCriticalSection();
+    ResetGraph(0);
+    func_800283D4();
+    func_80037DC0();
+    SpuQuit();
+    func_800363F0(0);
+    DrawSyncCallback(0);
+    VSyncCallback(NULL);
+    CdFlush();
+    StopPAD();
+    SwEnterCriticalSection();
+    func_80019524();
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001A1E4);
+/* Boot logo: upload the logo image and its palette, then fade the logo sprite in, hold it and fade it out. */
+void func_80019D48(void) {
+    DRAWENV draw;
+    DISPENV disp;
+    SPRT logo;
+    RECT rect;
+    u8 *image;
+    s32 level;
+    s32 frame;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001A250);
+    func_80031BA8(6);
+    image = func_80032E88(D_8004EABC, 1);
+    rect.x = 0;
+    rect.y = 0xF0;
+    rect.w = 0x10;
+    rect.h = 1;
+    LoadImage(&rect, (u_long *)(image + 0x14));
+    rect.x = 0x280;
+    rect.y = 0;
+    rect.w = 0x40;
+    rect.h = 0x30;
+    LoadImage(&rect, (u_long *)(image + 0x40));
+    setSprt(&logo);
+    logo.x0 = 0x20;
+    logo.y0 = 0x58;
+    logo.v0 = 0;
+    logo.u0 = 0;
+    logo.w = 0x100;
+    logo.h = 0x30;
+    logo.clut = GetClut(0, 0xF0);
+    SetDefDrawEnv(&draw, 0, 0, 0x140, 0xE0);
+    SetDefDispEnv(&disp, 0, 0, 0x140, 0xE0);
+    PutDrawEnv(&draw);
+    PutDispEnv(&disp);
+    DrawSync(0);
+    for (level = 0; level < 0x80; level += 8) {
+        logo.r0 = level;
+        logo.g0 = level;
+        logo.b0 = level;
+        DrawPrim(&logo);
+        VSync(0);
+    }
+    for (frame = 0x6D; frame != -1; frame--) {
+        VSync(0);
+    }
+    for (level = 0x80; level >= 0; level -= 8) {
+        logo.r0 = level;
+        logo.g0 = level;
+        logo.b0 = level;
+        DrawPrim(&logo);
+        VSync(0);
+    }
+    func_800320E8(image);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001A344);
+/* Fatal error screen: dump the heap log to the PC (or, without one, clear the screen red and hang), then print the error, its caller and heap details every frame forever. */
+void func_80019EF8(s32 error, u32 caller) {
+    DRAWENV draw[2];
+    DISPENV disp[2];
+    RECT rect;
+    u32 unused[2]; /* an unused local the original frame reserves */
+    s32 frame;
+    s32 first;
+    s32 second;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001A4B4);
+    frame = 0;
+    if (D_80010000 != 0 && D_80010000 != -1) {
+        func_80032E04("c:\\lserrmem.txt");
+    } else {
+        rect.x = 0;
+        rect.y = 0;
+        rect.w = 0x280;
+        rect.h = 0x1E0;
+        ClearImage(&rect, 0xFF, 0, 0);
+        for (;;) {
+        }
+    }
+    func_800322B4();
+    SetDefDrawEnv(&draw[0], 0, 0, 0x180, 0xF0);
+    SetDefDispEnv(&disp[0], 0, 0xF0, 0x180, 0xF0);
+    SetDefDrawEnv(&draw[1], 0, 0xF0, 0x180, 0xF0);
+    SetDefDispEnv(&disp[1], 0, 0, 0x180, 0xF0);
+    DrawSyncCallback(0);
+    func_800363F0(0);
+    func_800374E8(0x10, 0x10, 0x120, 0xF0, 0x1F4, 0, 0x3C0, 0x100, 0x3C0, 0x1FF, 0);
+    D_8004F2BC++;
+    draw[1].isbg = 1;
+    draw[0].isbg = 1;
+    draw[0].r0 = 0;
+    draw[0].g0 = 0;
+    draw[0].b0 = 0;
+    draw[1].r0 = 0;
+    draw[1].g0 = 0;
+    draw[1].b0 = 0;
+    SetDispMask(1);
+loop:
+    {
+        PutDrawEnv((frame & 1) ? &draw[0] : &draw[1]);
+        PutDispEnv((frame & 1) ? &disp[0] : &disp[1]);
+        func_80037324(0);
+        func_8003700C("System Error No %d\n", error);
+        func_8003700C("From  %08x\n", caller);
+        func_8003700C("Count %d\n", D_8004F2BC);
+        func_8003700C("Frame %d\n", frame);
+        func_8003700C("MCBlog -> c:\\lserrmem.txt\n");
+        func_8003700C("\n");
+        if (error & 0x80) {
+            func_8003700C("%s\n", D_8004F0C0[error]);
+            if (error == 0x82) {
+                func_80031BC4(&first, &second);
+                func_8003700C("Program From %08x\n", first);
+                func_8003700C("Failure Size %d (%xh) byte \n", second, second);
+            }
+            if (error == 0x85) {
+                func_80031BC4(&first, &second);
+                func_8003700C("Program From %08x\n", first);
+                func_8003700C("Failure Pointer %p\n", second);
+            }
+        }
+        VSync(0);
+        frame++;
+    }
+    goto loop;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001A5CC);
+/* Names listed by the table at 8004f2dc. */
+const char D_8001826C[] = "MASAKI";
+const char D_80018274[] = "HIGUCHI";
+const char D_8001827C[] = "SUGIMOTO";
+const char D_80018288[] = "KAZUMI";
+const char D_80018290[] = "HIGUCHI,MIYAGAWA,MASAKI";
+const char D_800182A8[] = "YOSHII";
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001A684);
+/* Kernel menu buffer: clear to dark blue and set up the white cursor triangle. */
+void func_8001A1E4(s32 index) {
+    KernelBuffer *buffer = &D_800595E8[index];
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001A6E8);
+    buffer->draw.isbg = 1;
+    buffer->draw.dtd = 1;
+    buffer->draw.r0 = 0;
+    buffer->draw.g0 = 0;
+    buffer->draw.b0 = 0x20;
+    SetPolyF3(&buffer->cursor);
+    buffer->cursor.r0 = 0xFF;
+    buffer->cursor.g0 = 0xFF;
+    buffer->cursor.b0 = 0xFF;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001AADC);
+/* Kernel menu set-up: debug text window and the two display buffers. */
+void func_8001A250(void) {
+    u32 unused[2]; /* an unused local the original frame reserves */
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001AC94);
+    func_80032498(6, 0);
+    func_800374E8(8, 0x10, 0x170, 0x1E0, 0x3E8, 1, 0x3C0, 0x100, 0x3C0, 0x1FF, 0);
+    SetDefDrawEnv(&D_800595E8[0].draw, 0, 0, 0x140, 0xE0);
+    SetDefDrawEnv(&D_800595E8[1].draw, 0, 0xF0, 0x140, 0xE0);
+    SetDefDispEnv(&D_800595E8[0].disp, 0, 0xF0, 0x140, 0xE0);
+    SetDefDispEnv(&D_800595E8[1].disp, 0, 0, 0x140, 0xE0);
+    func_8001A1E4(0);
+    func_8001A1E4(1);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001ACA4);
+/* Kernel menu frame: move the cursor over the six modes, start the chosen one, print the menu with the play time and place the cursor. */
+void func_8001A344(void) {
+    char clock[24];
+    s32 y;
+    KernelBuffer *buffer;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001ACF0);
+    if (D_800594A4 & 0x1000) {
+        if (--D_8004F2D8 < 0) {
+            D_8004F2D8 = 5;
+        }
+    }
+    if (D_800594A4 & 0x4000) {
+        if (++D_8004F2D8 >= 6) {
+            D_8004F2D8 = 0;
+        }
+    }
+    if (D_8005948C & 0x20) {
+        func_8001996C(D_8004F2D8 + 1);
+        D_800592D0 = 0;
+    }
+    sprintf(clock, "%02d:%02d:%02d", D_80059484, D_80059420, D_80059418);
+    func_8003700C(" XENOGEARS Kernel MENU\n  %s %s MODE\n\n", clock, D_80010000 ? "PC HDD" : "CD EMU");
+    func_8003700C("    Field\n    Battle\n    Worldmap\n    Battling\n    Menu\n    Movie\n\n");
+    y = D_8004F2D8 * 8;
+    buffer = D_800592CC;
+    *(u32 *)&buffer->cursor.x0 = ((y + 0x28) << 16) | 0x20;
+    *(u32 *)&buffer->cursor.x1 = ((y + 0x2C) << 16) | 0x27;
+    *(u32 *)&buffer->cursor.x2 = ((y + 0x30) << 16) | 0x20;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001AD1C);
+/* Mode 0, the kernel menu: run its frame loop until a mode is chosen, then dispatch. */
+void func_8001A4B4(void) {
+    u_long *ot;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001AD4C);
+    func_8001A250();
+    D_800592D0 = 1;
+    D_800592C8 = 0;
+    do {
+        D_800592C4++;
+        D_800592C8 = D_800592C4 & 1;
+        D_800592CC = &D_800595E8[D_800592C8];
+        ot = D_800592CC->ot;
+        TermPrim(ot);
+        func_80037324(ot);
+        func_8001A344();
+        AddPrim(ot, &D_800592CC->cursor);
+        DrawSync(0);
+        VSync(0);
+        PutDrawEnv(&D_800592CC->draw);
+        PutDispEnv(&D_800592CC->disp);
+        DrawOTag(ot);
+    } while (D_800592D0 != 0 || D_800592C8 == 0);
+    DrawSync(0);
+    func_80019ACC(0);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001AEB8);
+/* Allocate the debug screen buffers and clear the two 40x28 cell grids. */
+void func_8001A5CC(void) {
+    s32 row;
+    s32 column;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001B044);
+    D_800592DC[0] = func_80031BDC(0x3480, 1);
+    D_800592DC[1] = func_80031BDC(0x3480, 1);
+    D_800592D4 = func_80031BDC(0x460, 1);
+    D_800592D8 = func_80031BDC(0x460, 1);
+    for (row = 0; row < 28; row++) {
+        for (column = 0; column < 40; column++) {
+            D_800592D4[row * 40 + column] = 0;
+            D_800592D8[row * 40 + column] = 0;
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001B158);
+/* Count a hit in a cell of the second grid; out-of-range coordinates wrap to the other edge. */
+void func_8001A684(s32 row, s32 column) {
+    if (row < 0) {
+        row = 28;
+    }
+    if (row > 28) {
+        row = 0;
+    }
+    if (column < 0) {
+        column = 40;
+    }
+    if (column > 40) {
+        column = 0;
+    }
+    D_800592D8[row * 40 + column]++;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001B3A8);
+/* Debug screen, one Game of Life generation on the 40x28 grid: draw each live cell as an 8x8 tile, count its neighbours, apply the rules and reseed a random walk of 20 cells when fewer than 20 live, plus one random neighbourhood. */
+void func_8001A6E8(u_long *ot) {
+    LifeTile *tile;
+    s32 live;
+    s32 row; /* also the cell index of the update pass */
+    s32 column;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001B484);
+    live = 0;
+    tile = D_800592DC[D_800592C8];
+    for (row = 0; row < 28; row++) {
+        for (column = 0; column < 40; column++) {
+            if (D_800592D4[row * 40 + column] != 0) {
+                setlen(tile, 2);
+                tile->rgbc = 0x70280000;
+                tile->xy = (column << 3) | (row << 19);
+                AddPrim(ot, tile);
+                tile++;
+                live++;
+                func_8001A684(row - 1, column - 1);
+                func_8001A684(row - 1, column);
+                func_8001A684(row - 1, column + 1);
+                func_8001A684(row, column - 1);
+                func_8001A684(row, column + 1);
+                func_8001A684(row + 1, column - 1);
+                func_8001A684(row + 1, column);
+                func_8001A684(row + 1, column + 1);
+            }
+        }
+    }
+    for (row = 0; row < 28 * 40; row++) {
+        if (D_800592D8[row] != 2) {
+            D_800592D4[row] = D_800592D8[row] == 3;
+        }
+        D_800592D8[row] = 0;
+    }
+    if (live < 20) {
+        live = 0;
+        row = rand() % 28;
+        column = rand() % 40;
+        do {
+            row += rand() % 3 - 1;
+            column += rand() % 3 - 1;
+            if (row < 0) {
+                row = 28;
+            }
+            if (row > 28) {
+                row = 0;
+            }
+            if (column < 0) {
+                column = 40;
+            }
+            if (column > 40) {
+                column = 0;
+            }
+            live++;
+            D_800592D4[row * 40 + column] = 1;
+        } while (live < 20);
+    }
+    row = rand() % 28;
+    column = rand() % 40;
+    func_8001A684(row - 1, column - 1);
+    func_8001A684(row - 1, column);
+    func_8001A684(row - 1, column + 1);
+    func_8001A684(row, column - 1);
+    func_8001A684(row, column + 1);
+    func_8001A684(row + 1, column - 1);
+    func_8001A684(row + 1, column);
+    func_8001A684(row + 1, column + 1);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001B53C);
+/* Reset the game-wide state words and flags. */
+void func_8001AADC(void) {
+    s32 i;
+    s32 *last;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001B5A8);
+    D_8004F364 = 1;
+    D_8004F328 = 0xFF;
+    D_8004F324 = 0xFF;
+    D_8004F2FC = 0;
+    D_8004F36C = 0;
+    D_8004F2F8 = 0;
+    D_8004F31C = 0;
+    D_8004F320 = 0;
+    D_8004F314 = 0;
+    D_8004F310 = 0;
+    D_8004F30C = 0;
+    D_8004F370 = 0;
+    D_8004F35C = 0;
+    D_8004F360 = 0;
+    D_8004F374 = 0;
+    D_8004F358 = 0;
+    D_8004F354 = 0;
+    D_8004F350 = 0;
+    D_8004F2F4 = 0;
+    D_8004F344 = 0;
+    D_8004F348 = 0;
+    D_8004F304 = 0;
+    D_8004F368 = 0;
+    D_8004F300 = 0;
+    D_8004F380 = 0;
+    D_8004F37C = 0;
+    D_8004F378 = 0;
+    D_8005942C = 0;
+    D_800594D0 = 0;
+    D_8004F384 = 0;
+    D_8004F318 = 0;
+    D_8004F334 = -1;
+    D_8004F34C = -1;
+    D_8004F33C = -1;
+    D_8004F338 = -1;
+    D_8004F330 = -1;
+    D_8004F32C = -1;
+    D_8004F340 = -1;
+    D_8004F308 = -1;
+    for (i = 0; i < 3; i++) {
+        D_8006FABC[i] = 0;
+        D_8006F990[i] = 0;
+        D_8005A444[i] = 0;
+        D_80062590[i] = 0;
+    }
+    for (i = 3, last = &D_80062524; i >= 0; i--) {
+        *last-- = 0;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001B5E8);
+/* Clear the state word 8004f30c (also cleared by a battle defeat). */
+void func_8001AC94(void) {
+    D_8004F30C = 0;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001B66C);
+/* Select heap tag 8 and directory 4, then load file 1 of it. */
+void func_8001ACA4(void) {
+    D_8004F334 = -1;
+    D_8004F330 = -1;
+    func_80032498(8, 0);
+    func_80028470(4, 0);
+    func_8001B158(1);
+}
+
+/* The first byte of character record `index` in the game data. */
+s32 func_8001ACF0(s32 index) {
+    return D_8005A39C->characters[index].first;
+}
+
+/* Wait until the disc is idle, then for the pending read (80028a60). */
+void func_8001AD1C(void) {
+    while (func_800286CC() != 0) {
+    }
+    func_80028A60(0);
+}
+
+/* Take the party from the game data and load each member's field character file (member + 5) into a kept block. */
+void func_8001AD4C(void) {
+    s32 i;
+    s32 count;
+    u8 member;
+
+    D_8005A39C = &D_8006D634;
+    for (i = 0, count = 0; i < 3; i++) {
+        D_80062590[i] = 0xFF;
+        member = D_8005A39C->party[i];
+        if (member != 0xFF) {
+            D_80062590[count++] = member;
+        }
+    }
+    for (i = 0, count = 0; i < 3; i++) {
+        if (D_80062590[i] != 0xFF) {
+            D_800625A4[count].file = D_80062590[i] + 5;
+            D_8006FABC[i] = D_80062590[i];
+            D_80065AFC[count] = func_80031BDC(func_800288EC(D_80062590[i] + 5), 0);
+            D_800625A4[count].destination = D_80065AFC[count];
+            func_800320A4(D_80065AFC[count]);
+            count++;
+        }
+    }
+    D_800625A4[count].destination = NULL;
+    D_800625A4[count].file = 0;
+    func_80029AFC(D_800625A4, 0, 0);
+    D_8004F31C = 1;
+}
+
+/* As 8001ad4c, but load each member's gear file instead (16 + the gear of the character record, 0xff meaning none). */
+void func_8001AEB8(void) {
+    s32 i;
+    s32 count;
+    s32 file;
+    u8 member;
+
+    D_8005A39C = &D_8006D634;
+    for (i = 0, count = 0; i < 3; i++) {
+        D_80062590[i] = 0xFF;
+        member = D_8005A39C->party[i];
+        if (member != 0xFF) {
+            D_80062590[count++] = member;
+        }
+    }
+    for (i = 0, count = 0; i < 3; i++) {
+        if (D_80062590[i] != 0xFF) {
+            file = func_8001ACF0(D_80062590[i]);
+            if (file == 0xFF) {
+                file = 0;
+            }
+            file += 0x10;
+            D_800625A4[count].file = file + 5;
+            D_8006FABC[i] = file;
+            D_80065AFC[count] = func_80031BDC(func_800288EC(file + 5), 0);
+            D_800625A4[count].destination = D_80065AFC[count];
+            func_800320A4(D_80065AFC[count]);
+            count++;
+        }
+    }
+    D_800625A4[count].destination = NULL;
+    D_800625A4[count].file = 0;
+    func_80029AFC(D_800625A4, 0, 0);
+    D_8004F31C = 2;
+}
+
+/* Make sure the party files match the current state: characters on foot, gears when 8004f34c has 0xc000 set. */
+void func_8001B044(void) {
+    func_8001AD1C();
+    if (D_8004F374 != 1) {
+        if (D_8004F30C != 0) {
+            func_8001B158(0);
+            return;
+        }
+    } else {
+        func_8001B3A8();
+        if (D_8004F30C != 0) {
+            return;
+        }
+    }
+    if ((D_8004F34C & 0xC000) == 0) {
+        D_8004F320 = 0;
+    } else {
+        D_8004F320 = 1;
+    }
+    D_8004F374 = 0;
+    if (D_8004F320 == 0) {
+        if (D_8004F31C != 1) {
+            func_8001AD4C();
+            D_8004F374 = 1;
+        }
+    } else {
+        if (D_8004F31C != 2) {
+            func_8001AEB8();
+            D_8004F374 = 1;
+        }
+    }
+}
+
+/* Reload the party files listed in 8006fabc (quietly, from the heap top), plus files 0xa7/0xa8 when asked; on a failed allocation release what was loaded. */
+void func_8001B158(s32 extra) {
+    s32 i;
+    s32 count;
+
+    func_80031BB4(1);
+    if (D_8004F374 == 1) {
+        func_8001B3A8();
+    }
+    func_8001AD1C();
+    for (i = 0, count = 0; i < 3; i++) {
+        if (D_8006FABC[i] != 0xFF) {
+            D_800625A4[count].file = D_8006FABC[i] + 5;
+            D_80065AFC[count] = func_80031BDC(func_800288EC(D_8006FABC[i] + 5), 1);
+            D_800625A4[count].destination = D_80065AFC[count];
+            if (D_800625A4[count].destination == NULL) {
+                for (i = 0; i < count; i++) {
+                    func_800320B8(D_80065AFC[i]);
+                    func_800320E8(D_80065AFC[i]);
+                }
+                func_80031BB4(0);
+                return;
+            }
+            func_800320A4(D_80065AFC[count]);
+            count++;
+        }
+    }
+    if (extra) {
+        D_8005A4A0 = func_80031BDC(func_800288EC(0xA7), 1);
+        D_800625A4[count].destination = D_8005A4A0;
+        if (D_8005A4A0 != NULL) {
+            func_800320A4(D_8005A4A0);
+            D_800625A4[count++].file = 0xA7;
+            D_8004F344 = 1;
+        }
+        D_8005A4BC = func_80031BDC(func_800288EC(0xA8), 1);
+        D_800625A4[count].destination = D_8005A4BC;
+        if (D_8005A4BC != NULL) {
+            func_800320A4(D_8005A4BC);
+            D_800625A4[count++].file = 0xA8;
+            D_8004F32C = 0;
+        }
+    }
+    D_800625A4[count].destination = NULL;
+    D_800625A4[count].file = 0;
+    func_80029AFC(D_800625A4, 0, 0);
+    D_8004F374 = 1;
+    func_80031BB4(0);
+}
+
+/* Once the party files are read, unpack each member's file into its field sprite block (8005a414) and release it. */
+void func_8001B3A8(void) {
+    s32 i;
+
+    if (D_8004F374 != 0) {
+        func_8001AD1C();
+        for (i = 0; i < 3; i++) {
+            func_800320B8(D_8005A414[i]);
+            if (D_80062590[i] != 0xFF) {
+                func_800320B8(D_80065AFC[i]);
+                func_80032EB4(D_80065AFC[i], D_8005A414[i]);
+                func_800320E8(D_80065AFC[i]);
+            }
+        }
+        D_8004F374 = 0;
+    }
+}
+
+/* Read a map's data ahead into its own block unless that map is already loaded; returns 0 when loaded, -1 while the disc is busy or after starting the read. */
+s32 func_8001B484(s32 map, s32 slot) {
+    if (D_8004F334 != slot || D_8004F330 != map) {
+        if (func_800286CC() == 0) {
+            func_80028A60(0);
+            if (D_8004F334 != -1) {
+                func_800320B8(D_8005A4E0);
+                func_800320E8(D_8005A4E0);
+            }
+            func_8001B53C(map);
+            D_8004F334 = slot;
+            D_8004F330 = map;
+        }
+        return -1;
+    }
+    return 0;
+}
+
+/* Start reading map file 0xb8 + map into a kept block from the heap top. */
+void func_8001B53C(s32 map) {
+    s32 file = map + 0xB8;
+
+    D_8005A4C0 = func_800288EC(file);
+    D_8005A4E0 = func_80031BDC(D_8005A4C0, 1);
+    func_800320A4(D_8005A4E0);
+    func_800295D8(file, D_8005A4E0, 0, 0x80);
+}
+
+/* Release the transferred wave bank if it was loaded for this music. */
+void func_8001B5A8(void) {
+    if (D_8004F360 == 1) {
+        func_80038310(D_8006258C);
+        D_8004F360 = 0;
+    }
+}
+
+/* Stop the active sequence; release it unless it is kept for reuse, in which case it becomes the cached sequence. */
+void func_8001B5E8(void) {
+    if (D_8004F35C == 1) {
+        func_80039C4C((SoundTrack *)D_80062528);
+        if (D_8004F348 == 0) {
+            func_800399D4(D_80062528);
+        } else {
+            D_8004F2FC = D_80062528;
+        }
+        D_8004F35C = 0;
+        D_8004F348 = 0;
+    }
+}
+
+/* Stop the music and forget the loaded sequence and wave bank. */
+void func_8001B66C(void) {
+    if (D_8004F36C != 0) {
+        func_8001B5E8();
+        func_8001B5A8();
+    }
+    D_8004F33C = -1;
+    D_8004F338 = -1;
+    D_8004F36C = 0;
+}
 
 void func_8001B6BC(void) {
 }
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001B6C4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001B844);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001B94C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001B970);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001BB0C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001BB50);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001BBAC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001BD40);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001BDDC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001BE14);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001BEEC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001BF38);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001C074);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001C1A8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001C634);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001C76C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001C944);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001CA58);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001CB48);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001CC18);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001CD64);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001CD6C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001CD74);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001CD94);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001CE74);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001D034);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001D298);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001D2A4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001D2B0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001D3F4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001D4E8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001D53C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001DAE8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001E148);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001E298);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001E3D8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001E9BC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001EE68);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001EE74);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001EE88);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001F1D4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001F530);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001F5BC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001F6B0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001F750);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001F8E8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001FAB4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001FB30);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001FBA4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001FBE4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021AD8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021B04);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021B14);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021B24);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021B48);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021B6C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021B98);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021BCC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021BF0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021BF8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021C00);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021C20);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021C3C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021C6C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021CA0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021CC4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021CF8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021D3C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021D50);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021EBC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021FB8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021FC0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021FE0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80022000);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80022038);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80022090);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80022224);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800222BC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800223B0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80022660);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80022974);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80022A00);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80022A0C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80022A70);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80022B2C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80022CAC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80022CDC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80022D44);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80022DF4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80022E8C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80022EB8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80022FC4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002303C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800230A8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80023124);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80023170);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800231E0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800231F8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80023210);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80023290);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80023340);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800233A4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80023440);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80023468);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800234AC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80023538);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80023804);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002393C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80023950);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80023958);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800239A0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800239F4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80023A48);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80023B84);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80023FD8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80024294);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800242F4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002435C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80024524);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800245D8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80024730);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800248D4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80024F20);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80024F64);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80024FB8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80024FE4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80024FF4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80025044);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800250E0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80025180);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800251C8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80025224);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80025258);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002541C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80025544);
-
-void func_80025710(void) {
-}
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80025718);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800257F0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80025A88);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80025C04);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80025D4C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80025FA8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80026338);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800263E4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002675C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80026A0C);
-
-void func_80026B9C(void) {
-}
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80026BA4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80026DCC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80026F44);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80026FE8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002709C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800273C4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800278F8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80027D40);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80027D64);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80027EAC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002800C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002804C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028230);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800283D4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028470);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800284B4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028530);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028548);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028570);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800286BC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800286CC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028738);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028808);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800288EC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028928);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028998);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800289D0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028A18);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028A60);
-
-/* Disc stream ring (EVID: analysis/formats/disc-stream-source.md). The ring
- * header holds the slot count, then eight bytes per slot. */
-typedef struct {
-    u16 state;
-    u16 sequence;
-    u16 w4;
-    u16 w6;
-} StreamSlot;
-
-typedef struct {
-    s32 count;
-    StreamSlot slots[1];
-} StreamRing;
-
-extern StreamRing *D_8004FE30;
-
-/* Replace the shared ring and return the previous one. */
-StreamRing *func_80028A94(StreamRing *ring) {
-    StreamRing *previous = D_8004FE30;
-    D_8004FE30 = ring;
-    return previous;
-}
-
-/* Clear every slot; the first slot's third halfword (ring offset 8) keeps
- * the low count. Returns the count, or -1 without a ring. */
-s32 func_80028AAC(void) {
-    StreamRing *ring = D_8004FE30;
-    StreamSlot *slots;
-    s32 i;
-    s32 count;
-
-    if (ring == NULL) {
-        return -1;
-    }
-    count = ring->count;
-    slots = ring->slots;
-    for (i = 0; i < count; i++) {
-        slots[i].state = 0;
-        slots[i].sequence = 0;
-        slots[i].w4 = 0;
-        slots[i].w6 = 0;
-    }
-    slots->w4 = count;
-    return count;
-}
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028B14);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028E60);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028ECC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028F30);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002945C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800294B4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002954C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800295D8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80029690);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80029AFC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80029EB0);
-
-#include "cd.h"
-#include "heap.h"
-
-/* Allocate a stream ring of `count` 2,048-byte sectors (plus the slot
- * header), then select and reset it. Returns the ring or NULL. */
-StreamRing *func_8002A260(s32 count, s32 mode) {
-    StreamRing *ring;
-
-    if (count > 0) {
-        ring = func_80031BDC(count * 0x808 + 0x24, mode);
-        if (ring == NULL) {
-            return NULL;
-        }
-        ring->count = count;
-        func_80028A94(ring);
-        func_80028AAC();
-        return ring;
-    }
-    return NULL;
-}
-
-/* Unless a read is already running, seek to `file` (or pause for a
- * nonpositive file) with the resident CD ready callback installed. */
-void func_8002A2D0(s32 file) {
-    if (D_8004FE48 == 0 && func_800286CC() == 0) {
-        D_8004FE18 = D_8004FE14;
-        if (file > 0) {
-            CdIntToPos(func_800289D0(file), D_80059F10);
-            D_8004FE1C = 3;
-            CdSyncCallback(func_8002A68C);
-            CdControlF(2, D_80059F10);
-        } else {
-            D_8004FE1C = 5;
-            CdSyncCallback(func_8002A68C);
-            CdControlF(9, NULL);
-        }
-    }
-}
-
-/* Seek to `file` (or pause) unconditionally. */
-void func_8002A394(s32 file) {
-    if (file > 0) {
-        CdIntToPos(func_800289D0(file), D_80059F10);
-        D_8004FE1C = 3;
-        CdSyncCallback(func_8002A68C);
-        CdControlF(2, D_80059F10);
-    } else {
-        D_8004FE1C = 5;
-        CdSyncCallback(func_8002A68C);
-        CdControlF(9, NULL);
-    }
-}
-
-/* Issue CdlSetmode with `mode`. */
-void func_8002A428(u8 mode) {
-    u8 *param;
-    s32 i;
-
-    D_8004FE1C = 9;
-    CdSyncCallback(func_8002A68C);
-    for (i = 3, param = &D_80059F18[3]; i >= 0; i--) {
-        *param-- = 0;
-    }
-    D_80059F18[0] = mode;
-    CdControlF(0xE, D_80059F18);
-}
-
-/* Request a stop with `reason`; when a read is active, drop it and close the
- * open host file handle (retrying a few transient results). */
-void func_8002A498(s32 reason) {
-    s32 result;
-
-    D_8004FE34 = 1;
-    D_8004FE38 = reason;
-    if (D_8004FE48 != 0) {
-        D_8004FDF8 = 0;
-        D_8004FDFC = 0;
-        if (D_8004FE4C != -1) {
-            do {
-                result = PCclose(D_8004FE4C);
-            } while (result != 0 && result + 1 < 4);
-            D_8004FE4C = -1;
-        }
-    }
-}
-
-/* Free every loaded file's data in a zero-terminated file table. */
-void func_8002A524(FileEntry *table) {
-    FileEntry *entry;
-    void *data;
-
-    if (table->id != 0) {
-        entry = table;
-        do {
-            data = entry->data;
-            entry++;
-            if (data != NULL) {
-                func_800320E8(data);
-            }
-        } while (entry->id != 0);
-    }
-}
-
-/* Load the files following `first` into `table` (allocated when NULL). On an
- * allocation failure everything loaded is freed and NULL returned.
- * Nonmatching: GCC strength-reduces &table[i]; the original recomputes it. */
-#ifdef NON_MATCHING
-FileEntry *func_8002A57C(s32 first, FileEntry *table) {
-    s32 count;
-    s32 owned = 0;
-    s32 i;
-
-    count = func_80028928();
-    if (count > 0) {
-        if (table == NULL) {
-            table = func_80031BDC((count + 1) * 8, 0);
-            owned = 1;
-            if (table == NULL) {
-                return NULL;
-            }
-        }
-        for (i = 0; i < count; i++) {
-            table[i].id = first + i + 1;
-            table[i].data = func_80031BDC(func_800288EC(first + i + 1), 0);
-            if (table[i].data == NULL) {
-                func_8002A524(table);
-                if (owned > 0) {
-                    func_800320E8(table);
-                }
-                return NULL;
-            }
-        }
-        table[count].id = 0;
-        table[count].data = NULL;
-    } else {
-        table = NULL;
-    }
-    return table;
-}
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002A57C);
-#endif
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002A68C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002AC24);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002B084);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002B2F0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002B5D0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002B8B0);
-
-extern s32 D_8004FE00;
-
-void func_8002BA40(void) {
-    D_8004FDFC = D_8004FE00;
-}
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002BA58);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002BB50);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002BF38);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002C310);
-
-/* Whether a disc read is active. */
-s32 func_8002C3D8(void) {
-    return D_8004FE48;
-}
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002C3E8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002C4BC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002C59C);
-
-#include "model.h"
-
-/* Trim a model group's heap block to its data (once). Returns 1 when it
- * was already trimmed. */
-s32 func_8002C644(ModelGroup *group) {
-    if (group->flags & 2) {
-        return 1;
-    }
-    group->flags |= 2;
-    func_80031F70(group, group->primitives - (u8 *)group);
-    return 0;
-}
-
-/* Trim a model buffer's heap block at its end (once). Returns 1 when it
- * was already trimmed. */
-s32 func_8002C68C(ModelBuffer *buffer) {
-    if (buffer->flags & 0x40) {
-        return 1;
-    }
-    buffer->flags |= 0x40;
-    func_80031F70(buffer, buffer->end - (u8 *)buffer);
-    buffer->end = NULL;
-    return 0;
-}
-
-extern u8 D_80059598;
-extern u8 D_80059599;
-extern u8 D_8005959A;
-
-void func_8002C6E0(u8 r, u8 g, u8 b) {
-    D_80059598 = r;
-    D_80059599 = g;
-    D_8005959A = b;
-}
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002C700);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002C8CC);
-
-/* Allocate a model buffer's two halves of `size` bytes each. */
-void func_8002CB54(ModelBuffer *buffer, u8 **first, u8 **second) {
-    u8 *block;
-
-    func_800324B8(0x25);
-    block = func_80031BDC(buffer->size * 2, 0);
-    *first = block;
-    *second = block + buffer->size;
-}
-
-/* Release a model buffer's owned block. */
-void func_8002CBBC(ModelBuffer *buffer) {
-    if (buffer->flags & 1) {
-        func_800320E8(buffer->buffer);
-        buffer->flags &= ~1;
-    }
-}
-
-extern s32 D_80050108; /* texture page override: 0 none, 1 page, 2 raw */
-extern s32 D_8005010C; /* CLUT override: 0 on */
-extern s32 D_80059310;
-extern s32 D_80059314;
-extern u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y);
-extern u16 GetClut(s32 x, s32 y);
-
-/* Override model texture pages with the page at (x, y). */
-void func_8002CC10(u16 x, u16 y) {
-    D_80059310 = GetTPage(0, 0, x, y) & 0x1F;
-    D_80050108 = 1;
-}
-
-void func_8002CC54(u16 tpage) {
-    D_80059310 = tpage;
-    D_80050108 = 2;
-}
-
-/* Override model CLUTs with the CLUT at (x, y). */
-void func_8002CC74(u16 x, u16 y) {
-    D_80059314 = GetClut(x, y) & 0xFFF0;
-    D_8005010C = 0;
-}
-
-void func_8002CCAC(void) {
-    D_80050108 = 0;
-    D_8005010C = 1;
-}
-
-extern u16 D_80059308;
-extern u16 D_8005930C;
-
-/* Apply the texture page override to a primitive's page. */
-void func_8002CCC8(u16 *tpage) {
-    u16 value = *tpage;
-
-    D_80059308 = value;
-    if (D_80050108 == 1) {
-        D_80059308 = value & 0xFFE0;
-        D_80059308 = (value & 0xFFE0) | D_80059310;
-    } else if (D_80050108 == 2) {
-        D_80059308 = D_80059310;
-    }
-}
-
-/* Apply the CLUT override to a primitive's CLUT. */
-void func_8002CD24(u16 *clut) {
-    u16 value = *clut;
-
-    D_8005930C = value;
-    if (D_8005010C == 0) {
-        D_8005930C = value & 0xF;
-        D_8005930C = (value & 0xF) | D_80059314;
-    }
-}
-
-/* Handle a texture page (0xC4) or CLUT (0xC8) command. Returns 1 for any
- * other command. */
-s32 func_8002CD64(u8 *command) {
-    if ((command[3] & 0xF0) != 0xC0) {
-        return 1;
-    }
-    switch (command[3]) {
-    case 0xC4:
-        func_8002CCC8((u16 *)command);
-        return 0;
-    case 0xC8:
-        func_8002CD24((u16 *)command);
-        return 0;
-    }
-    return 1;
-}
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002CDCC);
-
-s32 func_8002CF34(s32 *value) {
-    RenderPacket *packet = D_80059424;
-
-    packet->code = 4;
-    packet->value = *value;
-    return 1;
-}
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002CF58);
-
-s32 func_8002D0C0(s32 *value) {
-    RenderPacket *packet = D_80059424;
-
-    packet->code = 5;
-    packet->value = *value;
-    return 1;
-}
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002D0E4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002D180);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002D244);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002D354);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002D420);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002D530);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002D6AC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002D77C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002D814);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002D984);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002DA14);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002DAFC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002DB84);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002DC9C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002DD20);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002DDE4);
-
-extern u8 D_8006FAF0[];
-
-/* The shared unpack buffer. */
-u8 *func_8002DFE0(void) {
-    return D_8006FAF0;
-}
-
-extern s32 D_800500F8;
-extern s32 D_800500FC;
-
-void func_8002DFF0(s32 a, s32 b) {
-    D_800500FC = (b - 1) << 16;
-    D_800500F8 = a;
-}
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002E010);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002E448);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002E64C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002E8B4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002EAB8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002ED20);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002EEF8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002F0E4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002F2E0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002F4B4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002F6B4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002F8D0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002FAE8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002FCFC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002FF0C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003014C);
-
-typedef struct {
-    s16 vx, vy, vz, pad;
-} SVECTOR;
-
-/* Copy the vertices listed in `indices` (last first) from `in` to `out`. */
-void func_800301C8(SVECTOR *out, SVECTOR *in, s32 count, s16 *indices) {
-    s32 i;
-    s32 k;
-
-    for (i = count - 1; i != -1; i--) {
-        k = indices[i];
-        out[k].vx = in[k].vx;
-        out[k].vy = in[k].vy;
-        out[k].vz = in[k].vz;
-    }
-}
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80030228);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800302D4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800303C8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800305D8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800306D0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80030750);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80030988);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80030A30);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80030B14);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80030C40);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80030C78);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80030C98);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80030EE8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003101C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800315A0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800315C4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800315E8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003160C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80031630);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80031654);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80031678);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003169C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800316C0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800316E4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80031708);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003172C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80031750);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80031774);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80031798);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800317BC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800317E0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80031804);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80031828);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003184C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80031870);

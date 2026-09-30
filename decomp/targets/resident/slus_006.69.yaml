@@ -51,6 +51,12 @@ segments:
       # directory table (EVID-REF-007); user-supplied disc data, not code.
       - [0x800, rodatabin, disc2_index]
       - [0x8880, .rodata, main]
+      - [0x8B3C, .rodata, main_8001B6C4]
+      # Sprite/actor engine unit (8001C8DC-8002709C): its jump tables and
+      # constants open at 0x800183D8.
+      - [0x8BD8, .rodata, sprite]
+      - [0x90EC, .rodata, main_8002709C]
+      - [0x90F4, .rodata, main_8002A260]
       # Heap unit (80031894-80032E7C): its allocation-name strings open the
       # rodata (0x80018998 "DelayFree"), its $gp-relative accesses need -G8.
       - [0x9198, .rodata, heap]
@@ -60,6 +66,23 @@ segments:
       # Hand-written rotation helpers and the PsyQ library objects.
       - [0x93F0, .rodata, main3]
       - [0x9D24, c, main]
+      # Menu-support unit (GCC 2.6.3): 8001BF38 and 8001C1A8 match only so,
+      # its rodata opens at 0x8001833C and it addresses small globals through
+      # $gp from 8001B6C4. It starts after 8001A4B4 (GCC 2.7.2: its epilogue
+      # fills the jr delay slot); 8001B6C4, the first $gp use, is chosen.
+      - [0xBEC4, c, main_8001B6C4]
+      # Sprite/actor engine unit (8001C8DC-8002709C): -G8 ($gp-relative
+      # small globals) and positive `li` assembled as `addiu` (ASPSX 2.50+),
+      # unlike its neighbours. The 0x170 bytes of constant data in text
+      # before it (8001C76C) stay at the end of main.c; which object held
+      # them is not established.
+      - [0xD0DC, c, sprite]
+      # Texture-scroll and disc unit (GCC 2.6.3, inline division checks):
+      # 80027D64/80027EAC/80028808/80029AFC match only so. It ends after
+      # 80029EB0 and before 8002DB84 (a register division without checks);
+      # 8002A260, where the rodata continues at 0x800188F4, is chosen.
+      - [0x1789C, c, main_8002709C]
+      - [0x1AA60, c, main_8002A260]
       - [0x22094, c, heap]
       - [0x2367C, c, main2]
       # Sound driver unit (GCC 2.6.3) to 8003F738. Its start lies in

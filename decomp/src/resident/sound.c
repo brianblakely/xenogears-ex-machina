@@ -2,10 +2,6 @@
 #include "psyq/libapi.h"
 #include "sound.h"
 
-extern void func_80039FF8(void);
-extern s32 D_80059404;
-extern s32 D_80059478;           /* voice count of the effect channels */
-extern void func_8003B644(s16 id, s32 channel, s16 volume, s16 pan);
 
 void func_80039E18(s32 channel) {
     if (D_8005957C & 0x800) {
@@ -13,8 +9,6 @@ void func_80039E18(s32 channel) {
         func_8003B644(0x600C, channel, 0x6000, 0x4000);
     }
 }
-
-extern u32 func_8003A65C(s32 id, s32 width);
 
 void func_80039E60(s32 channel) {
     if (D_8005957C & 0x800) {
@@ -50,9 +44,7 @@ void func_80039F9C(s32 channel, s32 sound, s32 volume, s32 pan) {
     }
 }
 
-extern s32 D_800595BC;           /* driver event */
 extern SoundSeq *D_800595D8;     /* sound effect channels */
-extern void func_8003E83C(SoundChannel *state, u32 voice);
 
 /* Stop every sound effect channel and release its voice. */
 void func_80039FF8(void) {
@@ -295,7 +287,6 @@ s32 func_8003A5D0(s32 id) {
     return mask;
 }
 
-extern s32 D_80059544;           /* voices kept for music */
 
 /* Stop the effect channels playing effect `id`, then choose `width`
  * adjacent effect channels for it: the highest free group below the
@@ -378,8 +369,6 @@ void func_8003A838(SoundSeq *seq, s32 tempo, s32 frames) {
 }
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003A89C);
-
-extern void func_8003E680(s32 bits, SoundSeq *seq);
 
 /* Set a sequence's volume, at once or over `frames`. */
 void func_8003A948(SoundSeq *seq, s32 volume, s32 frames) {
@@ -501,8 +490,6 @@ s32 func_8003BB40(s32 index) {
 }
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003BB64);
-
-extern void func_8003BCA0(s32 a, s32 b, s32 c, s32 d, s32 mode);
 
 /* 8003bca0 with modes 1-4, passing the other arguments through. */
 void func_8003BC10(s32 a, s32 b, s32 c, s32 d) {

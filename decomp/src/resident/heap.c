@@ -2,18 +2,11 @@
  * report. Compiled with -G8: its small globals are $gp-relative. */
 #include "common.h"
 
+#include "psyq/libc.h"
+#include "psyq/libsn.h"
+#include "console.h"
 #include "heap.h"
-
-extern void func_8003747C(s32 arg);
-extern void func_800324B8(s16 kind);
-extern void func_800320B8(void *data);
-extern void func_80031A30(void);
-extern void func_80031FF8(void);
-extern void func_8003223C(void);
-extern void func_8003278C(s32 a, s32 b, s32 c, s32 d);
-extern void func_800379C8(char *line);
-extern void func_80032DCC(char *line);
-extern void func_800320A4(void *data);
+#include "mode.h"
 
 /* Usable size of a block: the distance to the next block's header. */
 s32 func_80031894(u8 *data) {
@@ -133,11 +126,11 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_80031B10);
 #endif
 
 /* Owner tag given to the next blocks. */
-u16 func_80031B9C(void) {
+s32 func_80031B9C(void) {
     return D_8005931C;
 }
 
-void func_80031BA8(s16 tag) {
+void func_80031BA8(s32 tag) {
     D_8005931C = tag;
 }
 

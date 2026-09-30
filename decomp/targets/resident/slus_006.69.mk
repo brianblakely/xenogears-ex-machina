@@ -15,3 +15,18 @@ CLASSIFICATION := decomp/targets/resident/classification.txt
 GP_heap := 8
 # The sound driver unit is compiled by GCC 2.6.3.
 CC_sound := 2.6.3
+# The sprite unit (8001C8DC-8002709C) assembles positive `li` as `addiu`
+# (ASPSX 2.50+; the rest of the game code uses `ori`, the default 2.34) and
+# addresses the small globals it defines through $gp (as small commons, so
+# maspsx knows them); globals of other units it addresses absolutely.
+GP_sprite := 8
+MASPSX_sprite := --aspsx-version=2.79 --use-comm-section
+# The texture-scroll and disc unit (8002709C-8002A260) is compiled by GCC
+# 2.6.3 with inline division checks.
+CC_main_8002709C := 2.6.3
+MASPSX_main_8002709C := --aspsx-version=2.34 --expand-div
+# The menu-support unit (8001B6C4-8001C8DC) is compiled by GCC 2.6.3; its
+# $gp accesses (8001B6C4-8001BBAC) stay assembly: they need small data the
+# unit defines, which cc1 -G8 cannot express here (all small externs would
+# become $gp-relative).
+CC_main_8001B6C4 := 2.6.3
