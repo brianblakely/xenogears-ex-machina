@@ -8277,7 +8277,6 @@ void func_800A0DFC(void) {
     D_800B0078->pc += 3;
 }
 
-extern s32 D_800ADB74;
 
 /* Yield; advance once D_800ADB74 is zero. */
 void func_800A0E54(void) {
@@ -8685,9 +8684,65 @@ void func_800A5710(s32 frames) {
     D_800B2078.fades[0].step[0] = D_800B2078.fades[0].step[1] = D_800B2078.fades[0].step[2] = step;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A5774);
+/* Set the mask bit of every pixel of the 64-pixel-wide VRAM column at
+ * (x, y), `h` rows tall. */
+void func_800A5774(s32 x, s32 y, s32 h) {
+    RECT rect;
+    u32 *pixels;
+    u32 *p;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A5884);
+    rect.x = x;
+    rect.y = y;
+    rect.w = 0x40;
+    rect.h = h;
+    pixels = func_80031BDC(h << 7, 1);
+    StoreImage(&rect, pixels);
+    DrawSync(0);
+    p = pixels;
+    for (i = 0; i < h * 32; i += 8) {
+        p[0] |= 0x80008000;
+        p[1] |= 0x80008000;
+        p[2] |= 0x80008000;
+        p[3] |= 0x80008000;
+        p[4] |= 0x80008000;
+        p[5] |= 0x80008000;
+        p[6] |= 0x80008000;
+        p[7] |= 0x80008000;
+        p += 8;
+    }
+    LoadImage(&rect, pixels);
+    DrawSync(0);
+    func_800320E8(pixels);
+}
+
+void func_800A663C(void);
+void func_800A6408(void);
+void func_800A6924(void);
+
+/* Draw the screen pieces twice, mask the saved screen columns at
+ * (2c0..3c0, 100) and draw twice more. */
+void func_800A5884(void) {
+    s32 i;
+    s32 x;
+
+    func_800A663C();
+    for (i = 0; i < 2; i++) {
+        func_80073FE0();
+        func_800A6408();
+        func_800A6924();
+    }
+    x = 0x2C0;
+    for (i = 0; i < 5; i++) {
+        func_800A5774(x, 0x100, 0xE0);
+        x += 0x40;
+    }
+    for (i = 0; i < 2; i++) {
+        func_80073FE0();
+        func_800A6408();
+        func_800A6924();
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A5924);
 
@@ -8697,7 +8752,16 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A6408);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A663C);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A6924);
+/* Present the current draw block: clear, set environments and draw its
+ * overlay ordering table. */
+void func_800A6924(void) {
+    DrawSync(0);
+    VSync(2);
+    ClearImage(&D_800C426C->draw.clip, 0, 0, 0);
+    PutDrawEnv(&D_800C426C->draw);
+    PutDispEnv(&D_800C426C->disp);
+    DrawOTag(&D_800C426C->overlay_ot[7]);
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A6998);
 
@@ -8705,13 +8769,69 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A6C40);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A6E70);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A7064);
+extern void *D_800B00C4;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A708C);
+/* Release the block at 800b00c4. */
+void func_800A7064(void) {
+    func_800320E8(D_800B00C4);
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A7120);
+extern s32 D_801D68B4;
+extern void func_801D3538(s32 w, s32 h, s32, s32, s32, s32, s32 rgb24);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A7218);
+/* Set up the movie player for a 320x224 picture. */
+void func_800A708C(void) {
+    func_80032498(4, 0);
+    if (D_800ADB74 == 2) {
+        D_801D68B4 = 1;
+    } else {
+        D_801D68B4 = 0;
+    }
+    func_801D3538(0x140, 0xE0, 0x80, 0x10, 0x20, 0x800, D_800C3A36);
+    D_800ADB6C = 0;
+    func_80032498(8, 0);
+}
+
+/* Movie frame callback: record the frame, select the draw block for the
+ * decoded buffer (24-bit display when set). */
+void func_800A7120(u16 frame, s32 unused, u16 buffer) {
+    D_800B06A0 = frame;
+    D_800B00E4 = 0;
+    if (buffer == 0) {
+        D_800ADB78 = 1;
+    } else {
+        D_800ADB78 = 0;
+    }
+    if (D_800ADB74 == 0 && D_800AFE74 == 0) {
+        DrawSync(0);
+        D_800C426C = &D_800B249C[D_800ADB78];
+        if ((s16)D_800C3A36 == 1) {
+            D_800B249C[D_800ADB78 & 1].disp.isrgb24 = 1;
+        }
+    }
+}
+
+extern void func_801D37CC(s32 file, s32, s32, s32, s32, s32 mode, s32, s32, s32, s32, s32, s32 h,
+                          void (*callback)(u16, s32, u16));
+
+/* Start the field movie with the current parameters. */
+void func_800A7218(void) {
+    s32 mode;
+
+    D_800B06A0 = 0;
+    func_80032498(4, 0);
+    if (D_800ADB6C == 0) {
+        func_80028470(0x18, 1);
+        mode = 1;
+        if (D_800C3A38 != 0xFF || (D_800ADB80 & 0x40)) {
+            mode = 3;
+        }
+        func_801D37CC(D_800C3A20 + 2, D_800C3A2A, D_800C3A2C, D_800C3A2E, 1, mode, D_800C3A3A, D_800C3A22,
+                      D_800C3A24, D_800C3A26, D_800C3A28, 0xE0, func_800A7120);
+        func_80028470(4, 0);
+    }
+    func_80032498(8, 0);
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A732C);
 

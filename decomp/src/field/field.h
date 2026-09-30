@@ -775,7 +775,22 @@ extern s32 D_800ADBCC; /* pending party slot */
 extern FieldEventParams D_800B0080;
 extern Record78 D_800B02CC[];
 extern u16 D_800AE060[][2]; /* movie sound timeline: time, sound */
+/* Field movie parameters (800c3a20..800c3a3a), set by the movie events. */
+extern s16 D_800C3A20; /* movie file */
+extern u16 D_800C3A22;
+extern u16 D_800C3A24;
+extern u16 D_800C3A26;
+extern u16 D_800C3A28;
+extern u16 D_800C3A2A;
 extern u16 D_800C3A2C; /* movie sound time origin */
+extern u16 D_800C3A2E;
+extern u16 D_800C3A36; /* 1: 24-bit display */
+extern u16 D_800C3A3A;
+extern s32 D_800ADB6C; /* movie stopped */
+extern s32 D_800ADB74; /* movie mode */
+extern s32 D_800ADB80;
+extern s32 D_800AFE74;
+extern s32 D_800B00E4;
 extern s32 D_800C3A64; /* movie sound timeline position */
 extern s32 D_800ADB50;
 extern s32 D_800ADB78;
