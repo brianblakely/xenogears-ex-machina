@@ -89,6 +89,23 @@ s32 ratan2(s32 y, s32 x);
 int PCopen(char *name, int flags, int perms);
 int PCclose(int fd);
 
+/* libcd commands not yet in psyq/libcd.h. */
+#ifndef CdlNop
+#define CdlNop 0x01
+#endif
+#ifndef CdlStop
+#define CdlStop 0x08
+#endif
+#ifndef CdlGetTN
+#define CdlGetTN 0x13
+#endif
+#ifndef CdlSeekL
+#define CdlSeekL 0x15
+#endif
+
+extern void *D_8004FDF4;        /* disc directory counts */
+extern void *D_8004FE48;        /* disc file names (host builds) */
+
 /* Resident services. */
 void func_80028470(s32 directory, s32 offset); /* select a directory */
 s16 func_80028928(s32 list);                   /* files in a directory list */

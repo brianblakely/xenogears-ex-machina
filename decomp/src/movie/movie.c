@@ -86,7 +86,115 @@ void func_800729A8(char *name, void *buffer, s32 size) {
     PCclose(fd);
 }
 
+#ifdef NON_MATCHING
+/* One step of the disc change test for disc `disc`: stop the drive, wait for
+ * the lid to open and close and the spindle, read the TOC, seek sector 0 and
+ * check the disc label, then reload the directory tables. With the host PC
+ * the tables are read from its files instead. `*error` gets 1 (seek error),
+ * 2 (not a Xenogears disc) or 3 (wrong disc); `*done` the command result.
+ * Returns the next state. The instructions match; the original rodata also
+ * holds an unreferenced "" after the host file names (dead code?), which this
+ * source does not emit. */
+s32 func_80072A08(s32 disc, s32 state, s32 *error, s32 *done) {
+    u32 label[4] = {0, 0, 0, 0};
+    CdlLOC loc;
+    s32 result;
+
+    CdIntToPos(0, &loc);
+    result = 1;
+    if (*error == 0) {
+        if (func_8002C3D8() != 0 && state < 9) {
+            if (disc == 1) {
+                func_800729A8("c:\\work\\cdrom.mdg", D_8004FDF0, 0x8000);
+                func_800729A8("c:\\work\\cdrom.fid", D_8004FDF4, 0x7A);
+                func_800729A8("c:\\work\\cdrom.fnd", D_8004FE48, 0x40000);
+            } else {
+                func_800729A8("c:\\work\\cdrom2.mdg", D_8004FDF0, 0x8000);
+                func_800729A8("c:\\work\\cdrom2.fid", D_8004FDF4, 0x7A);
+                func_800729A8("c:\\work\\cdrom2.fnd", D_8004FE48, 0x40000);
+            }
+            state = 9;
+        } else {
+            switch (state) {
+            case 1:
+                result = CdControlB(CdlStop, NULL, D_80076F84);
+                if (result != 0) {
+                    state++;
+                }
+                break;
+            case 2:
+                CdControlB(CdlNop, NULL, D_80076F84);
+                if (D_80076F84[0] & 0x10) {
+                    state++;
+                }
+                break;
+            case 3:
+                CdControlB(CdlNop, NULL, D_80076F84);
+                if (!(D_80076F84[0] & 0x10)) {
+                    state++;
+                }
+                break;
+            case 4:
+                result = CdControlB(CdlNop, NULL, D_80076F84);
+                if (D_80076F84[0] & 2) {
+                    if (result != 0) {
+                        state++;
+                    }
+                }
+                break;
+            case 5:
+                result = CdControlB(CdlGetTN, NULL, D_80076F84);
+                if (result != 0) {
+                    state++;
+                }
+                break;
+            case 6:
+                result = CdControlB(CdlSetloc, (u8 *)&loc, D_80076F84);
+                if (result != 0) {
+                    state++;
+                }
+                break;
+            case 7:
+                result = CdControlB(CdlSeekL, NULL, D_80076F84);
+                if ((D_80076F84[0] & 1) && (D_80076F84[1] & 0x40) && result == 0) {
+                    *error = 1;
+                } else if (result != 0) {
+                    state++;
+                }
+                if (result == 0) {
+                    state = 5;
+                }
+                break;
+            case 8:
+                func_8002A428(0xA0);
+                func_80028A60(0);
+                VSync(3);
+                func_8002954C(0x17, label, 0x10, 0, 0);
+                func_80028A60(0);
+                if (label[1] == 0x4E45585F) { /* "_XEN" */
+                    if (((u8 *)label)[3] == disc + '0') {
+                        func_8002954C(0x18, D_8004FDF0, 0x8000, 0, 0);
+                        state++;
+                        func_80028A60(0);
+                        func_8002954C(0x28, D_8004FDF4, 0x7A, 0, 0);
+                        func_80028A60(0);
+                        *error = 0;
+                    } else {
+                        *error = 3;
+                    }
+                } else {
+                    *error = 2;
+                }
+                break;
+            }
+        }
+        *done = result;
+    }
+    return state;
+}
+#else
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80072A08);
+#endif
 
 /* Set up the menu backdrop quads of both buffers at (x, y), w by h, with
  * random dark blue corner fades. */
