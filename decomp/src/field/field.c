@@ -1924,7 +1924,114 @@ s32 func_8007B814(VECTOR *delta, FieldActor *actor, SVECTOR *edge, s16 heading) 
     return 0;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007BAC0);
+s32 func_8007BEF4(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge, SVECTOR *floor, s32 mode,
+                  s32 *attribute);
+
+/* Move `actor` by `delta` (in/out) heading `heading`, as 8007b814 but with
+ * the attribute-aware floor search (8007bef4): probe 0x100 to each side and
+ * straight ahead, sliding along a blocking edge. The delta is pushed back
+ * away from the floor found (flag 4000000) when its height is above the
+ * actor's (smaller y), it has attribute 200000, it has 420000 while the
+ * actor's +14 does too, or (without 420000) it is less than 0x40 below;
+ * -1 when no floor remains. */
+s32 func_8007BAC0(VECTOR *delta, FieldActor *actor, SVECTOR *edge, s16 heading) {
+    VECTOR probe;
+    VECTOR saved;
+    SVECTOR floor;
+    SVECTOR saved_floor;
+    VECTOR d;
+    VECTOR n;
+    s32 attribute;
+    s32 angle;
+    s32 speed;
+
+    angle = heading - 0x100;
+    angle &= 0xFFF;
+    probe.vx = delta->vx + (func_8003F8CC(angle) << 6);
+    probe.vz = delta->vz - (func_8003F8B0(angle) << 6);
+    if (func_8007BEF4(&probe, actor->position, actor, edge, &floor, -1, &attribute) == -1) {
+        probe.vx = delta->vx;
+        probe.vy = delta->vy;
+        probe.vz = delta->vz;
+        func_8007B6C4(heading, edge, &probe, attribute);
+    } else {
+        angle = heading + 0x100;
+        angle &= 0xFFF;
+        probe.vx = delta->vx + (func_8003F8CC(angle) << 6);
+        probe.vz = delta->vz - (func_8003F8B0(angle) << 6);
+        if (func_8007BEF4(&probe, actor->position, actor, edge, &floor, -1, &attribute) == -1) {
+            probe.vx = delta->vx;
+            probe.vy = delta->vy;
+            probe.vz = delta->vz;
+            func_8007B6C4(heading, edge, &probe, attribute);
+        } else {
+            angle = heading & 0xFFF;
+            probe.vx = delta->vx + (func_8003F8CC(angle) << 6);
+            probe.vz = delta->vz - (func_8003F8B0(angle) << 6);
+            if (func_8007BEF4(&probe, actor->position, actor, edge, &floor, -1, &attribute) == -1) {
+                probe.vx = delta->vx;
+                probe.vy = delta->vy;
+                probe.vz = delta->vz;
+                func_8007B6C4(heading, edge, &probe, attribute);
+            } else {
+                probe.vx = delta->vx;
+                probe.vy = delta->vy;
+                probe.vz = delta->vz;
+            }
+        }
+    }
+    if (func_8007BEF4(&probe, actor->position, actor, edge, &floor, 0, &attribute) == -1) {
+        return -1;
+    }
+    saved.vx = probe.vx;
+    saved.vy = probe.vy;
+    saved.vz = probe.vz;
+    saved_floor.vx = floor.vx;
+    saved_floor.vy = floor.vy;
+    saved_floor.vz = floor.vz;
+    if (WHOLE(actor->position[1]) > floor.vy) {
+    push:
+        d.vx = -probe.vx >> 8;
+        d.vy = ((floor.vy << 16) - actor->position[1]) >> 8;
+        d.vz = -probe.vz >> 8;
+        func_80048D7C(&d, &n);
+        speed = func_80099A4C(probe.vx >> 8, probe.vz >> 8);
+        probe.vx = -(speed * n.vx) >> 4;
+        probe.vy = (speed * n.vy) >> 4;
+        probe.vz = -(speed * n.vz) >> 4;
+        if (func_8007BEF4(&probe, actor->position, actor, edge, &floor, 0, &attribute) == -1) {
+            return -1;
+        }
+        actor->flags |= 0x4000000;
+        goto done;
+    }
+    if (attribute & 0x200000) {
+        goto push;
+    }
+    if (attribute & 0x420000) {
+        if (!(actor->unk014 & 0x420000)) {
+            goto restore;
+        }
+        goto push;
+    }
+    if (floor.vy < WHOLE(actor->position[1]) + 0x40) {
+        goto push;
+    }
+restore:
+    probe.vx = saved.vx;
+    probe.vy = saved.vy;
+    probe.vz = saved.vz;
+    floor.vx = saved_floor.vx;
+    floor.vy = saved_floor.vy;
+    floor.vz = saved_floor.vz;
+done:
+    probe.vy = (floor.vy << 16) - actor->position[1];
+    delta->vx = probe.vx;
+    delta->vy = probe.vy;
+    delta->vz = probe.vz;
+    actor->unk72 = (actor->position[1] + delta->vy) >> 16;
+    return 0;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007BEF4);
 
