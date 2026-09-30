@@ -5,6 +5,7 @@
 #include "psyq/libetc.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
+#include "psyq/inline_c.h"
 #include "psyq/libsn.h"
 #include "psyq/libspu.h"
 #include "mode.h"
@@ -727,13 +728,39 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_800307
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_80030988);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_80030A30);
+/* Set light `index` (0-2): its row of the light direction matrix is the
+ * normalized reverse of the light's vector and its color a column of the
+ * light color matrix, which is loaded into the GTE. */
+void func_80030A30(u16 index, ModelLight *light) {
+    VECTOR reverse;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_80030B14);
+    reverse.vx = -light->vx;
+    reverse.vy = -light->vy;
+    reverse.vz = -light->vz;
+    VectorNormalS(&reverse, (SVECTOR *)D_80059F64.m[index]);
+    D_80059F84.m[0][index] = light->r;
+    D_80059F84.m[1][index] = light->g;
+    D_80059F84.m[2][index] = light->b;
+    gte_SetColorMatrix(&D_80059F84);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_80030C40);
+/* Load the GTE light matrix: the light directions turned by `rotation`. */
+void func_80030B14(MATRIX *rotation) {
+    MATRIX light;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_80030C78);
+    gte_MulMatrix0(&D_80059F64, rotation, &light);
+    gte_SetLightMatrix(&light);
+}
+
+/* Set the GTE background color from 16-bit color components. */
+void func_80030C40(u16 r, u16 g, u16 b) {
+    gte_SetBackColor(r >> 4, g >> 4, b >> 4);
+}
+
+/* Set the GTE background color. */
+void func_80030C78(s32 r, s32 g, s32 b) {
+    gte_SetBackColor(r, g, b);
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_80030C98);
 

@@ -102,6 +102,15 @@ typedef struct {
     MorphChannel *channels;
 } MorphState;
 
+/* A model light: its direction vector and color. */
+typedef struct {
+    s32 vx, vy, vz;
+    u16 r, g, b;
+} ModelLight;
+
+extern MATRIX D_80059F64; /* light directions, one per row */
+extern MATRIX D_80059F84; /* light colors, one per column */
+
 /* Renderer output packet header. */
 typedef struct {
     u8 unk0[3];

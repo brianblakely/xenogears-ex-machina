@@ -111,6 +111,7 @@ decomp/README.md
 decomp/include/common.h
 decomp/include/include_asm.h
 decomp/include/macro.inc
+decomp/include/psyq/inline_c.h
 decomp/include/psyq/libapi.h
 decomp/include/psyq/libc.h
 decomp/include/psyq/libcd.h
