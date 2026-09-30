@@ -244,4 +244,44 @@ void func_800768D8(u16 frame, u16 x, u16 y);
 void func_800769A4(void);
 void func_80076CA4(void);
 
+/* CD-ROM monitor. */
+typedef struct StreamEntry {
+    u16 file; /* 0 ends the list */
+    s32 *dest;
+} StreamEntry;
+
+extern s32 D_80076E48;          /* read check state */
+extern StreamEntry *D_80076E7C; /* stream list */
+extern s32 *D_80076E84;         /* stream destination */
+extern s32 D_80076E94;          /* stream bytes left */
+extern s32 *D_80076E9C;         /* arrived stream chunk */
+extern s32 D_80076EA4;          /* reads ended */
+extern s32 D_80076EB4;          /* stream list entry */
+extern s32 D_80076EB8;          /* 1: stream copy; 2: host read */
+extern s32 D_80076EBC;          /* random commands */
+extern s32 D_80076F7C;
+extern s32 D_80076F80;
+s32 *func_80028B14(void);             /* next arrived stream chunk */
+void func_8002945C(void *chunk);      /* release a stream chunk */
+s32 func_80028F30(s32 *arg0, s32 *arg1);
+void func_800294B4(s32 arg0);
+void func_80071BA0(void);
+void func_80071C34(s32 command);
+s32 func_80074AF0(void);
+
+/* FAT check. */
+extern s32 D_8007744C;                           /* buffer index */
+void func_800284B4(s32 *directory, s32 *offset); /* current directory */
+void func_8003700C(char *format, ...);           /* debug font print */
+void func_8003278C(s32 a, s32 value, s32 c, s32 d);
+void func_80037324(u32 *ot);                     /* draw the debug font */
+void func_80072F98(u32 *ot, POLY_G4 *poly, s32 x, s32 y, s32 w, s32 h);
+void func_800734B8(u32 *ot, POLY_G4 *poly, s32 x, s32 y, s32 w, s32 h);
+s32 func_800747AC(s32 first, s32 last, s32 *button);
+void func_80074B58(void);
+u32 func_80075D4C(s32 index);
+s32 func_80039850(void *sequence); /* load a music sequence */
+extern char D_8007042C[]; /* "\n", first used by the monitor (80075534) */
+extern char D_80070430[]; /* "\nPUSH CIRCLE BUTTON TO MENU." */
+
 #endif

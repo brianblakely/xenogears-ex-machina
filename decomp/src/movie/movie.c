@@ -12,7 +12,85 @@ INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_8006FAF0);
 
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_800704E8);
 
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80070DCC);
+/* CD-ROM monitor input: newly pressed buttons issue the monitor's CD
+ * commands or read steps; R1 toggles the stream copy (1) or host read (2),
+ * Select random commands. A running stream copies each arrived chunk
+ * into the destination and moves to the next list entry when it ends. */
+void func_80070DCC(void) {
+    s32 i;
+    s32 command;
+
+    if (!(D_800773B4 & 0x20) && (D_800773AC & 0x20)) {
+        func_80071C34(1);
+    }
+    if (!(D_800773B4 & 0x10) && (D_800773AC & 0x10)) {
+        func_80071C34(2);
+    }
+    if (!(D_800773B4 & 0x80) && (D_800773AC & 0x80)) {
+        func_80071C34(3);
+    }
+    if (!(D_800773B4 & 0x40) && (D_800773AC & 0x40)) {
+        D_80076EA4++;
+        func_8002A498(0);
+    }
+    if (!(D_800773B4 & 0x1000) && (D_800773AC & 0x1000)) {
+        func_80071C34(7);
+    }
+    if (!(D_800773B4 & 0x4000) && (D_800773AC & 0x4000)) {
+        func_80071C34(9);
+    }
+    if (!(D_800773B4 & 8) && (D_800773AC & 8)) {
+        D_80076EB8 = 1 - D_80076EB8;
+    }
+    if (!(D_800773B4 & 4) && (D_800773AC & 4) && D_80076E48 < 11) {
+        func_80071BA0();
+    }
+    if (D_80076EB8 == 1) {
+        D_80076E9C = func_80028B14();
+        if (D_80076E9C != NULL) {
+            i = 0;
+            if (D_80076E94 > 0x800) {
+                do {
+                    *D_80076E84++ = D_80076E9C[i++];
+                } while (i < 0x200);
+            } else {
+                while (i < D_80076E94 / 4) {
+                    *D_80076E84++ = D_80076E9C[i++];
+                }
+            }
+            D_80076E94 -= 0x800;
+            if (D_80076E94 <= 0 && D_80076E48 == 12) {
+                i = D_80076E7C[++D_80076EB4].file;
+                if (i != 0) {
+                    D_80076E94 = func_800288EC(i);
+                }
+                D_80076E84 = D_80076E7C[D_80076EB4].dest;
+            }
+            func_8002945C(D_80076E9C);
+        }
+    }
+    if (D_80076EB8 == 2 && func_80028F30(&D_80076F7C, &D_80076F80) == 0) {
+        func_800294B4(D_80076F80);
+    }
+    if (!(D_800773B4 & 0x2000) && (D_800773AC & 0x2000)) {
+        func_80071C34(11);
+    }
+    if (!(D_800773B4 & 0x8000) && (D_800773AC & 0x8000)) {
+        func_80071C34(13);
+    }
+    if (D_80076EBC != 0) {
+        command = func_80074AF0() & 0xFF;
+        if (command == 0 && D_80076E48 < 11) {
+            func_80071BA0();
+        }
+        if ((u32)(command - 1) < 12) {
+            func_80071C34(command);
+        }
+    }
+    if (!(D_800773B4 & 0x100) && (D_800773AC & 0x100)) {
+        D_80076EBC = 1 - D_80076EBC;
+    }
+}
 
 INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_8006FC6C);
 
@@ -727,7 +805,23 @@ void func_800753B8(void) {
     func_800320E8(bank);
 }
 
+#ifdef NON_MATCHING
+/* Load the battle sound bank from the host PC, waiting for its transfer,
+ * then the battle music sequence. The instructions match; the original
+ * rodata has a non-zero padding byte (0x08) after "battle2.smd". */
+void func_8007548C(void) {
+    void *bank;
+
+    bank = func_80028570("c:\\work\\cdrom\\sound\\wave\\battle2.wd", 0);
+    func_80037FD8(bank, 0);
+    while (func_8003BDFC(0) != 0) {
+    }
+    func_800320E8(bank);
+    D_8007700C = func_80039850(func_80028570("c:\\work\\cdrom\\sound\\music\\battle2.smd", 0));
+}
+#else
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_8007548C);
+#endif
 
 void func_80075508(void) {
     func_80039A80(D_8007700C, 0x7F, 0);
@@ -747,7 +841,136 @@ INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_8007042C);
 
 INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_80070430);
 
+#ifdef NON_MATCHING
+/* The menu's FAT check: list twenty directory records from the cursor
+ * (Up/Down by one, Triangle/Cross by twenty) with their first sector and
+ * their size or, toggled by L1, their host file name; R1 switches between
+ * decimal and hexadecimal. Circle returns to the menu. The instructions
+ * match; the original rodata has two non-zero padding bytes (0x0894) after
+ * "Size%9d\n" that a C literal cannot reproduce. */
+void func_80075D8C(void) {
+    s32 directory;
+    s32 offset;
+    s32 button;
+    s32 top;
+    s32 hex;
+    s32 names;
+    s32 index;
+    s32 count;
+    char *name;
+    char *p;
+    MovieBuffer *buffer;
+    u32 *ot;
+
+    func_80074B58();
+    top = 0;
+    func_800284B4(&directory, &offset);
+    func_80028470(0, 0);
+    hex = 0;
+    names = 0;
+    do {
+        count = 0x1249;
+        if (D_80077120 == &D_80077124[0]) {
+            buffer = &D_80077124[1];
+        } else {
+            buffer = &D_80077124[0];
+        }
+        ot = buffer->ot;
+        D_80077120 = buffer;
+        D_8007744C = 1 - D_8007744C;
+        ClearOTagR(ot, 32);
+        func_8003700C("\n[ FAT CHECK MODE ");
+        func_8003700C(hex ? "HEX ]\n" : "DEC ]\n");
+        func_800747AC(0, 0, &button);
+        if (!(D_800773B4 & 0x1000) && (D_800773AC & 0x1000) && top > 0) {
+            top--;
+        }
+        if (!(D_800773B4 & 0x10) && (D_800773AC & 0x10)) {
+            top -= 20;
+            if (top < 0) {
+                top = 0;
+            }
+        }
+        if (!(D_800773B4 & 0x4000) && (D_800773AC & 0x4000) && top < count - 20) {
+            top++;
+        }
+        if (!(D_800773B4 & 0x40) && (D_800773AC & 0x40)) {
+            top += 20;
+            if (top > count - 20) {
+                top = count - 20;
+            }
+        }
+        if (!(D_800773B4 & 8) && (D_800773AC & 8)) {
+            hex = 1 - hex;
+        }
+        if (!(D_800773B4 & 4) && (D_800773AC & 4)) {
+            names = 1 - names;
+        }
+        index = top;
+        do {
+            if (func_80075D4C(index) == 0) {
+                if (hex) {
+                    func_8003700C("No %4x NullFile\n", index);
+                    index++;
+                } else {
+                    func_8003700C("No %4d NullFile\n", index);
+                    index++;
+                }
+            } else {
+                if (hex) {
+                    func_8003700C("No %4x Sect%6x ", index, func_800289D0(index + 1));
+                } else {
+                    func_8003700C("No %4d Sect%6d ", index, func_800289D0(index + 1));
+                }
+                if (names) {
+                    if ((s32)func_80075D4C(index) < 0) {
+                        func_8003700C("[P%3d]\n", -func_80075D4C(index));
+                        index++;
+                    } else {
+                        name = func_80028998(index + 1);
+                        if (name != NULL) {
+                            if (*name != 0) {
+                                p = name;
+                                do {
+                                    if (*p == '\\') {
+                                        name = p + 1;
+                                    }
+                                    p++;
+                                } while (*p != 0);
+                            }
+                            func_8003700C("%s\n", name);
+                        } else {
+                            func_8003700C(D_8007042C);
+                        }
+                        index++;
+                    }
+                } else if (hex) {
+                    func_8003700C("Size%9x\n", func_80075D4C(index));
+                    index++;
+                } else {
+                    func_8003700C("Size%9d\n", func_80075D4C(index));
+                    index++;
+                }
+            }
+        } while (index < top + 20);
+        func_8003700C(D_80070430);
+        if (D_80077394 > 0) {
+            func_8003278C(1, 0, 6, 0x808D);
+        }
+        func_80037324(D_80077120->ot);
+        func_80072F98(D_80077120->ot, (POLY_G4 *)D_80077120->box, 8, 20, 304, 192);
+        func_800734B8(D_80077120->ot, (POLY_G4 *)D_80077120->frame, 7, 19, 306, 194);
+        DrawSync(0);
+        VSync(0);
+        PutDrawEnv(&D_80077120->draw);
+        PutDispEnv(&D_80077120->disp);
+        DrawOTag(&D_80077120->ot[31]);
+    } while (button != 2);
+    func_80028470(directory, offset);
+}
+#else
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80075D8C);
+#endif
 
 /* The menu's movie test: play the selected movie with the display blanked
  * until it starts, then clear the screen and restore the menu's buffers.
