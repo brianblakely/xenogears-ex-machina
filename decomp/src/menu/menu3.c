@@ -970,7 +970,21 @@ void func_80079DE0(void) {
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80079DF0);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007A21C);
+/* Save both actors' positions and homes (at height 0x100) and set the
+ * countdown from the given frame count. */
+void func_8007A21C(s32 frames) {
+    if (frames < 0xFF) {
+        D_800928AC = frames - 2;
+        D_800928C0 -= frames;
+    } else {
+        D_800928AC = 0xFF;
+    }
+    D_80092A34[0] = D_8009872C.pos;
+    D_80092A34[1] = D_80097010.pos;
+    D_80092A34[2] = D_8009872C.home;
+    D_80092A34[3] = D_80097010.home;
+    D_80092A34[0].vy = D_80092A34[1].vy = D_80092A34[2].vy = D_80092A34[3].vy = 0x100;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007A344);
 
@@ -1051,13 +1065,32 @@ void func_8007A884(void) {
     }
     D_8009872C.pos.vy = 0x100;
     D_80097010.pos.vy = 0x100;
-    D_8009872C.unk70 = 0x100;
-    D_80097010.unk70 = 0x100;
+    D_8009872C.start.vy = 0x100;
+    D_80097010.start.vy = 0x100;
 }
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007A958);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007AC3C);
+/* Restore the saved positions and homes, make them the round start and
+ * set up the camera on the leading actor. */
+void func_8007AC3C(void) {
+    D_800928AC = 0x96;
+    D_8009292C = 0x100;
+    SetGeomScreen(0x200);
+    D_8009872C.pos = D_80092A34[0];
+    D_80097010.pos = D_80092A34[1];
+    D_8009872C.home = D_80092A34[2];
+    D_80097010.home = D_80092A34[3];
+    D_8009872C.start_home = D_8009872C.home;
+    D_80097010.start_home = D_80097010.home;
+    D_8009872C.start = D_8009872C.pos;
+    D_80097010.start = D_80097010.pos;
+    if (D_80092890 != 0) {
+        func_8007A768(&D_80097010);
+    } else {
+        func_8007A768(&D_8009872C);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007AE10);
 

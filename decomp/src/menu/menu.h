@@ -227,9 +227,8 @@ typedef struct Actor {
     s32 target_angle;    /* 0x58 */
     Node *node;          /* 0x5C: model set node */
     void *object;        /* 0x60 */
-    u8 unk64[0xC];
-    s32 unk70;
-    u8 unk74[0x8];
+    u8 unk64[0x8];
+    Vector start;        /* 0x6C: position at the round start */
     s32 unk7C;
     struct MoveSlot *move_slots; /* 0x80: one per combo number */
     u8 *unk84;
@@ -286,7 +285,8 @@ typedef struct Actor {
     u8 unk919[0x23];
     Vector home;         /* 0x93C */
     Vector core;         /* 0x94C: where shots home in */
-    u8 unk95C[0x3C];
+    Vector start_home;   /* 0x95C: home at the round start */
+    u8 unk96C[0x2C];
     s16 unk998;
     s16 unk99A;
     u8 unk99C[0x2];
@@ -414,6 +414,9 @@ extern s32 D_8009266C;
 extern s32 D_80092670;
 extern s32 D_80092674;
 extern s32 D_800928AC;
+extern u8 D_800928C0;
+extern Vector D_80092A34[4]; /* saved positions: both actors, then both homes */
+void func_8007A768(Actor *actor);
 extern s32 D_80092638;
 extern s32 D_8009263C;
 extern s32 D_80092648;
