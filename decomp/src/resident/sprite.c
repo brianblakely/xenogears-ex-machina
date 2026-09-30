@@ -786,7 +786,24 @@ void func_80021D3C(VECTOR *position, s32 x, s32 z) {
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80021D50);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80021EBC);
+/* Save a sprite's position and animation state. */
+void func_80021EBC(Sprite *sprite, SpriteState *state) {
+    state->x = sprite->x;
+    state->y = sprite->y;
+    state->z = sprite->z;
+    state->word80 = sprite->word80;
+    state->frame = sprite->frame_bits.frame;
+    state->byteaf = (s8)sprite->motion.bytes[3];
+    state->byteb0 = (s8)sprite->b0.byteb0;
+    state->field22 = sprite->frame_bits.field22;
+    state->sequencer0 = ((SpriteSequencer *)sprite->sequencer)->word0;
+    state->sequencer4 = ((SpriteSequencer *)sprite->sequencer)->word4;
+    state->scale_x = sprite->renderer->scale_x;
+    state->scale_y = sprite->renderer->scale_y;
+    state->scale_z = sprite->renderer->scale_z;
+    state->word82 = sprite->word82;
+    state->scale = sprite->scale;
+}
 
 void func_80021FB8(Sprite *sprite, u8 value) {
     sprite->b0.byteb0 = value;

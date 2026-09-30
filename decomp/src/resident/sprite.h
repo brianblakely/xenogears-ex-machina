@@ -117,7 +117,9 @@ typedef struct Sprite {
     s32 word70;              /* +0x70 */
     u8 unknown74[8];
     void *sequencer;         /* +0x7c */
-    u8 unknown80[8];
+    u16 word80;              /* +0x80 */
+    u16 word82;              /* +0x82 */
+    u8 unknown84[4];
     u8 *frames;              /* +0x88 */
     s8 stack_top;            /* +0x8c: byte stack index, growing down */
     u8 unknown8d;
@@ -130,7 +132,8 @@ typedef struct Sprite {
         unsigned frame : 6;      /* frame table index */
         unsigned step : 3;
         unsigned phase : 2;
-        unsigned unknown22 : 10;
+        unsigned field22 : 6;
+        unsigned unknown28 : 4;
     } frame_bits;            /* +0xa8 */
     union {
         u32 word;
@@ -143,6 +146,7 @@ typedef struct Sprite {
         unsigned divisor : 12;   /* gravity divisor */
         unsigned unknown19 : 13;
         } bits;
+        u8 bytes[4];
     } motion;                /* +0xac */
     union {
         u32 wordb0;          /* bit 11: destroy flag-29 child tasks with the sprite */
@@ -152,7 +156,9 @@ typedef struct Sprite {
 
 /* A sprite's animation sequencer (0x1c bytes; inline at sprite + 0xf4). */
 typedef struct {
-    u8 unknown0[0x18];
+    s32 word0;
+    s32 word4;
+    u8 unknown8[0x10];
     u16 *buffer;           /* +0x18: allocated by 8002303c */
 } SpriteSequencer;
 
@@ -176,6 +182,25 @@ typedef struct {
     u8 *section3;          /* +0xc */
     u16 *section1;         /* +0x10 */
 } SpriteResource;
+
+/* A snapshot of a sprite's position and animation state (80021ebc). */
+typedef struct {
+    s32 x, y, z;           /* +0x0 */
+    u8 unknownc[4];
+    u16 word80;            /* +0x10 */
+    s16 frame;             /* +0x12 */
+    s16 byteaf;            /* +0x14 */
+    s16 byteb0;            /* +0x16 */
+    s16 field22;           /* +0x18 */
+    u8 unknown1a[2];
+    s32 sequencer0;        /* +0x1c */
+    s32 sequencer4;        /* +0x20 */
+    u16 scale_x;           /* +0x24: renderer scales */
+    u16 scale_y;
+    u16 scale_z;
+    u16 scale;             /* +0x2a */
+    u16 word82;            /* +0x2c */
+} SpriteState;
 
 /* A sprite with its two task nodes, as 800233a4 allocates it. */
 typedef struct {
