@@ -1816,7 +1816,7 @@ s32 func_8007B694(VECTOR *v) {
  * velocity is cleared.
  * Does not match: the original keeps the edge heading in two more
  * registers (one for the sum and early return, one for the result). */
-s32 func_8007B6C4(s16 heading, SVECTOR *edge, VECTOR *velocity) {
+s32 func_8007B6C4(s16 heading, SVECTOR *edge, VECTOR *velocity, s32 unused) {
     VECTOR d;
     VECTOR n;
     s32 angle;
@@ -1855,7 +1855,74 @@ s32 func_8007B6C4(s16 heading, SVECTOR *edge, VECTOR *velocity) {
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007B6C4);
 #endif
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007B814);
+s32 func_8007B6C4(s16 heading, SVECTOR *edge, VECTOR *velocity, s32 unused);
+s32 func_8007C694(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge, SVECTOR *floor, s32 mode);
+
+/* Move `actor` by `delta` (in/out) heading `heading`: probe 64 units ahead
+ * and 0x100 to each side (8007c694 mode -1); when any probe is blocked, slide
+ * the delta along the blocking edge (8007b6c4). Then find the floor under the
+ * moved point: -1 when there is none or it rises above the actor (unless
+ * 800adb98 is set or the actor has flag 40000, which keeps its +ec height),
+ * else put the delta's height on the floor, update the actor's +72 and
+ * return 0. */
+s32 func_8007B814(VECTOR *delta, FieldActor *actor, SVECTOR *edge, s16 heading) {
+    VECTOR probe;
+    SVECTOR floor;
+    u8 unused[0x20]; /* never used; the original frame reserves it */
+    s32 angle;
+
+    angle = heading & 0xFFF;
+    probe.vx = delta->vx + (func_8003F8CC(angle) << 6);
+    probe.vz = delta->vz - (func_8003F8B0(angle) << 6);
+    if (func_8007C694(&probe, actor->position, actor, edge, &floor, -1) == -1) {
+        probe.vx = delta->vx;
+        probe.vy = delta->vy;
+        probe.vz = delta->vz;
+        func_8007B6C4(heading, edge, &probe, 0);
+    } else {
+        angle = heading - 0x100;
+        angle &= 0xFFF;
+        probe.vx = delta->vx + (func_8003F8CC(angle) << 6);
+        probe.vz = delta->vz - (func_8003F8B0(angle) << 6);
+        if (func_8007C694(&probe, actor->position, actor, edge, &floor, -1) == -1) {
+            probe.vx = delta->vx;
+            probe.vy = delta->vy;
+            probe.vz = delta->vz;
+            func_8007B6C4(heading, edge, &probe, 0);
+        } else {
+            angle = heading + 0x100;
+            angle &= 0xFFF;
+            probe.vx = delta->vx + (func_8003F8CC(angle) << 6);
+            probe.vz = delta->vz - (func_8003F8B0(angle) << 6);
+            if (func_8007C694(&probe, actor->position, actor, edge, &floor, -1) == -1) {
+                probe.vx = delta->vx;
+                probe.vy = delta->vy;
+                probe.vz = delta->vz;
+                func_8007B6C4(heading, edge, &probe, 0);
+            } else {
+                probe.vx = delta->vx;
+                probe.vy = delta->vy;
+                probe.vz = delta->vz;
+            }
+        }
+    }
+    if (func_8007C694(&probe, actor->position, actor, edge, &floor, 0) == -1) {
+        return -1;
+    }
+    if (!(actor->flags & 0x40000)) {
+        if ((floor.vy << 16) < actor->position[1] && D_800ADB98 == 0) {
+            return -1;
+        }
+    } else {
+        floor.vy = actor->unkEC;
+    }
+    probe.vy = (floor.vy << 16) - actor->position[1];
+    delta->vx = probe.vx;
+    delta->vy = probe.vy;
+    delta->vz = probe.vz;
+    actor->unk72 = (actor->position[1] + delta->vy) >> 16;
+    return 0;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007BAC0);
 
