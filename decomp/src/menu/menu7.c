@@ -1142,6 +1142,8 @@ void func_8008BCC8(Mesh *mesh, u8 *work) {
     func_8008C3A8(mesh->data, work, mesh->count);
 }
 
+/* Draw a mesh's primitive groups (flag 8: quads, else triangles) into the
+ * given packets and ordering table using the vertex work area. */
 void func_8008BD70(Mesh *mesh, ModelPrim *prims, u32 *ot, u8 *work) {
     u8 *group;
     s32 groups = mesh->groups;
