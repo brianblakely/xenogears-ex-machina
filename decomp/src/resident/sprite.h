@@ -167,6 +167,14 @@ void func_80022090(Sprite *sprite); /* rebuild the orientation */
 void func_80022974(Sprite *sprite); /* velocity from speed and direction */
 void func_80023210(Sprite *sprite);
 void func_8001D2B0(Sprite *sprite, s32 frame);
+void func_8001DAE8(Sprite *sprite, s32 frame, void *image);
+void func_8001E148(Sprite *sprite);
+void func_8001E3D8(Sprite *sprite, s32 frame);
+void func_8001E9BC(Sprite *sprite, s32 frame);
+void func_8001EE88(Sprite *sprite, s32 frame, void *image);
+void func_8001F1D4(Sprite *sprite, s32 frame, void *image);
+void func_8001F8E8(Sprite *sprite, s32 frame);
+void func_800234AC(Sprite *sprite);
 s32 func_8003F8B0(s32 angle); /* rcos */
 s32 func_8003F8CC(s32 angle); /* rsin */
 void func_800248D4(Sprite *sprite); /* run the next script command */

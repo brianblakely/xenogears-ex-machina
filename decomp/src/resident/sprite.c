@@ -468,11 +468,32 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001DAE8);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001E148);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001E298);
+/* Build frame `frame` with 8001e3d8 (and 8001e9bc for render flag 2). */
+void func_8001E298(Sprite *sprite, s32 frame) {
+    func_8001E148(sprite);
+    func_8001E3D8(sprite, frame);
+    if ((sprite->render.word >> 2) & 1) {
+        func_8001E9BC(sprite, frame);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001E2F8);
+/* Build frame `frame` from `image` with 8001ee88 (and 8001e9bc for render flag 2). */
+void func_8001E2F8(Sprite *sprite, s32 frame, void *image) {
+    func_8001E148(sprite);
+    func_8001EE88(sprite, frame, image);
+    if ((sprite->render.word >> 2) & 1) {
+        func_8001E9BC(sprite, frame);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001E368);
+/* Build frame `frame` from `image` with 8001f1d4 (and 8001e9bc for render flag 2). */
+void func_8001E368(Sprite *sprite, s32 frame, void *image) {
+    func_8001E148(sprite);
+    func_8001F1D4(sprite, frame, image);
+    if ((sprite->render.word >> 2) & 1) {
+        func_8001E9BC(sprite, frame);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001E3D8);
 
