@@ -671,7 +671,8 @@ void func_80073E30(void) {
 /* Draw the map overlay: the player marker (four triangles rotated by the camera
  * yaw at the player's map position) and one dot per set bit of the resident
  * map flags; bits 24-26 are the vehicles. */
-#ifdef NON_MATCHING /* original keeps the scratch, matrix and camera addresses and the link masks in saved registers */
+#ifdef NON_MATCHING /* dot loop: the original steps two pointers through the position table and keeps
+                    * the division constants in other registers */
 void func_800740B8(void) {
     MapScratch *scratch;
     MATRIX *matrix;
@@ -680,6 +681,7 @@ void func_800740B8(void) {
     PolyG3 *marker;
     Tile *dot;
     u32 bits;
+    u16 (*positions)[2];
     s32 i;
 
     scratch = (MapScratch *)0x1F800000;
@@ -688,16 +690,16 @@ void func_800740B8(void) {
     matrix = &scratch->matrix;
     target = &D_8009D55C.target;
     marker = &D_8009C664[D_8009D7F0 * 4];
-    scratch->angle.vy = 0;
-    scratch->angle.vx = 0;
-    scratch->angle.vz = D_8009BD38.vy;
-    func_8003F738(&scratch->angle, matrix);
-    matrix->t[0] = (target->vx >> 12) / 315 + 0x30;
-    matrix->t[2] = D_8009BCDC;
-    matrix->t[1] = (target->vz >> 12) / 341 + 0x78 - D_8009BE0C;
-    gte_SetRotMatrix(matrix);
-    gte_SetTransMatrix(matrix);
     do {
+        scratch->angle.vy = 0;
+        scratch->angle.vx = 0;
+        scratch->angle.vz = D_8009BD38.vy;
+        func_8003F738(&scratch->angle, matrix);
+        scratch->matrix.t[0] = (target->vx >> 12) / 315 + 0x30;
+        scratch->matrix.t[2] = D_8009BCDC;
+        scratch->matrix.t[1] = 0x78 - D_8009BE0C + (target->vz >> 12) / 341;
+        gte_SetRotMatrix(matrix);
+        gte_SetTransMatrix(matrix);
         gte_ldv3(&corners[0], &corners[1], &corners[2]);
         gte_rtpt();
         gte_stsxy3(&marker->x0, &marker->x1, &marker->x2);
@@ -709,6 +711,7 @@ void func_800740B8(void) {
     dot = &D_8009C898[D_8009D7F0 * 32];
     addPrim(D_8009BE3C->ot, &D_8009C5A0);
     bits = STATE_U32(0x30C);
+    positions = D_8009B6F4;
     for (i = 0; i < 32; i++) {
         if (bits & 1) {
             switch (i) {
@@ -725,8 +728,8 @@ void func_800740B8(void) {
                 dot->y0 = STATE_U16(0x26) / 341 + 0x77;
                 break;
             default:
-                dot->x0 = D_8009B6F4[i][0] + 0xD0;
-                dot->y0 = D_8009B6F4[i][1] + 0x78;
+                dot->x0 = positions[i][0] + 0xD0;
+                dot->y0 = positions[i][1] + 0x78;
                 break;
             }
             addPrim(D_8009BE3C->ot, dot);
