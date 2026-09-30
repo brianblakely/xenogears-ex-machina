@@ -138,6 +138,7 @@ void OuterProduct0(Vector *v0, Vector *v1, Vector *out);
 void SetLightMatrix(Matrix *m);
 void SetTransMatrix(Matrix *m);
 s32 SquareRoot0(s32 value);
+Vector *ApplyMatrix(Matrix *m, SVector *v0, Vector *v1);
 s32 VectorNormalS(Vector *v, SVector *out);
 void SetGeomScreen(s32 h);
 s32 ratan2(s32 y, s32 x);

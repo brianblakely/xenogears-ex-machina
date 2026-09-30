@@ -28,19 +28,23 @@ typedef struct {
     u8 types[2];
 } TrackEntry;
 
-/* An effect entry playing a keyframe track (the EffectEntry layout with the
- * track cursor in place of its parameters). */
+/* An effect entry seen as a tween of a part (the EffectEntry layout): start
+ * values and deltas or targets, or a keyframe track cursor. */
 typedef struct {
     u8 used;
-    u8 field1;
-    u8 field2;
+    u8 field1;     /* +1: smooth / looping */
+    u8 field2;     /* +2: type: 3 rotation, 7 + n movement, 0-2 tracks */
     u8 kind;       /* +3: 0xFF persistent */
-    u8 *start;     /* +4: track data */
-    u8 *cursor;    /* +8 */
-    u8 pad0C[4];
-    u16 field10;
-    u16 field12;
-} EffectTrack;
+    union {
+        s16 values[6]; /* +4 */
+        struct {
+            u8 *start;  /* +4: track data */
+            u8 *cursor; /* +8 */
+        } track;
+    } u;
+    s16 time;     /* +0x10 */
+    s16 duration; /* +0x12 */
+} Tween;
 
 /* An effect sprite (the SpriteRecord of a sprite pool, 0x7C bytes): a
  * quadrilateral of four vertices, a colour fading each tick, and its

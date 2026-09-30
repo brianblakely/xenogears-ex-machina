@@ -248,7 +248,7 @@ void func_8003852C(u8 *texture);
 void func_800AA934(BattleObject *object, BattleObject *target, EffectPool *pool, s32 arg3);
 void func_800B00D0(void);
 void func_800AFF9C(BattleObject *object);
-s32 func_800A0838(ModelList *models, ModelPart *root, u16 animation, s16 scale);
+s32 func_800A0838(EffectPool *pool, ModelPart *root, u16 tag, s16 scale);
 void func_800AE2A4(BattleObject *object, ModelList *models, s32 arg2);
 void func_800AAD54(BattleObject *object, ModelList *models, s32 flags, s32 steps, s32 arg4);
 void func_800AF180(EffectPool *pool, s32 index, ModelPart *from, ModelPart *to);

@@ -551,7 +551,433 @@ void func_8009F794(ModelList *list, s32 release) {
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_8009F844);
 
+#ifdef NON_MATCHING
+/* Step the tweens attached to each node of a hierarchy: its rotation
+ * (attachment 0: set, delta or add from a track, interpolate, approach,
+ * spin, or turn toward a point within a growing limit), position
+ * (attachment 1: the same, or a move in the node's frame scaled by `scale`)
+ * and scale (attachment 2: interpolate, approach, spin). A finished tween is
+ * released (or restarted when looping: tracks rewind, others stop). Returns
+ * flags: 0x100/0x200/0x400 some tween ran/ended/looped (1/2/4 when it has
+ * `tag`). As in the original, the "spin" stop clears the step of the last
+ * slot a computing kind used, which may belong to an earlier node. */
+s32 func_800A0838(EffectPool *pool, ModelPart *parts, u16 tag, s16 scale) {
+    ModelPart *part = parts;
+    Tween *slot;
+    Tween *last;
+    u8 *track;
+    SVector move;
+    Vector moved;
+    u32 count;
+    u32 i;
+    s32 result = 0;
+    s32 kind;
+    s32 time;
+    s32 dx, dy, dz, dist, limit, turn, angle;
+    s16 sx, sy, sz;
+
+    count = parts->index;
+    for (i = 0; i < count; i++, part++) {
+        slot = (Tween *)part->effects[0];
+        if (slot != NULL) {
+            kind = slot->field2;
+            switch (kind & 0xF) {
+            case 0:
+                track = slot->u.track.cursor;
+                if (!(kind & 0x10)) {
+                    part->rotation.vx = *(u16 *)track;
+                    track += 2;
+                    slot->u.track.cursor += 2;
+                }
+                if (!(kind & 0x20)) {
+                    part->rotation.vy = *(u16 *)track;
+                    track += 2;
+                    slot->u.track.cursor += 2;
+                }
+                if (!(kind & 0x40)) {
+                    part->rotation.vz = *(u16 *)track;
+                    slot->u.track.cursor += 2;
+                }
+                goto check_rot;
+            case 1:
+                if (!(kind & 0x10)) {
+                    track = slot->u.track.cursor++;
+                    if ((s8)track[0] != -0x80) {
+                        part->rotation.vx += (s8)track[0];
+                    } else {
+                        slot->u.track.cursor = track + 2;
+                        slot->u.track.cursor = track + 3;
+                        part->rotation.vx = track[1] | ((s8)track[2] << 8);
+                    }
+                }
+                if (!(kind & 0x20)) {
+                    track = slot->u.track.cursor++;
+                    if ((s8)track[0] != -0x80) {
+                        part->rotation.vy += (s8)track[0];
+                    } else {
+                        slot->u.track.cursor = track + 2;
+                        slot->u.track.cursor = track + 3;
+                        part->rotation.vy = track[1] | ((s8)track[2] << 8);
+                    }
+                }
+                if (!(kind & 0x40)) {
+                    track = slot->u.track.cursor++;
+                    if ((s8)track[0] != -0x80) {
+                        part->rotation.vz += (s8)track[0];
+                    } else {
+                        slot->u.track.cursor = track + 2;
+                        slot->u.track.cursor = track + 3;
+                        part->rotation.vz = track[1] | ((s8)track[2] << 8);
+                    }
+                }
+                goto check_rot;
+            case 2:
+                track = slot->u.track.cursor;
+                if (!(kind & 0x10)) {
+                    part->rotation.vx += *(u16 *)track;
+                    track += 2;
+                    slot->u.track.cursor += 2;
+                }
+                if (!(kind & 0x20)) {
+                    part->rotation.vy += *(u16 *)track;
+                    track += 2;
+                    slot->u.track.cursor += 2;
+                }
+                if (!(kind & 0x40)) {
+                    part->rotation.vz += *(u16 *)track;
+                    slot->u.track.cursor += 2;
+                }
+                goto check_rot;
+            case 3:
+                time = (s16)(slot->time + 1);
+                part->rotation.vx = slot->u.values[0] + slot->u.values[3] * time / slot->duration;
+                part->rotation.vy = slot->u.values[1] + slot->u.values[4] * time / slot->duration;
+                last = slot;
+                part->rotation.vz = slot->u.values[2] + slot->u.values[5] * time / slot->duration;
+                goto check_rot;
+            case 4:
+                sx = (slot->u.values[3] - part->rotation.vx) / slot->duration;
+                sy = (slot->u.values[4] - part->rotation.vy) / slot->duration;
+                sz = (slot->u.values[5] - part->rotation.vz) / slot->duration;
+                last = slot;
+                if (sx == 0 && sy == 0 && sz == 0) {
+                    slot->time = slot->duration;
+                    part->rotation.vx = slot->u.values[3];
+                    part->rotation.vy = slot->u.values[4];
+                    part->rotation.vz = slot->u.values[5];
+                } else {
+                    part->rotation.vx += sx;
+                    part->rotation.vz += sz;
+                    part->rotation.vy += sy;
+                    slot->time = 0;
+                }
+                goto check_rot;
+            case 5:
+                slot->u.values[0] += slot->u.values[3];
+                part->rotation.vx += slot->u.values[0];
+                slot->u.values[1] += slot->u.values[4];
+                part->rotation.vy += slot->u.values[1];
+                slot->u.values[2] += slot->u.values[5];
+                last = slot;
+                part->rotation.vz += slot->u.values[2];
+                goto check_rot;
+            case 7:
+            case 8:
+                dx = slot->u.values[3] - part->translation[0];
+                dy = slot->u.values[4] - part->translation[1];
+                dz = slot->u.values[5] - part->translation[2];
+                dist = SquareRoot0(dx * dx + dy * dy + dz * dz) + 1;
+                last = slot;
+                turn = (ratan2(-dx, -dz) - part->rotation.vy) & 0xFFF;
+                if (turn >= 0x800) {
+                    turn -= 0x1000;
+                }
+                limit = slot->u.values[1] + (dist + slot->time) * slot->u.values[2] / slot->u.values[0];
+                angle = turn < 0 ? -turn : turn;
+                if (angle < limit) {
+                    part->rotation.vy += turn;
+                } else if (turn < 0) {
+                    part->rotation.vy -= limit;
+                } else {
+                    part->rotation.vy += limit;
+                }
+                if ((kind & 0xF) == 7) {
+                    turn = (ratan2(dy, SquareRoot0(dx * dx + dz * dz)) - part->rotation.vx) & 0xFFF;
+                    if (turn >= 0x800) {
+                        turn -= 0x1000;
+                    }
+                    angle = turn < 0 ? -turn : turn;
+                    if (angle < limit) {
+                        part->rotation.vx += turn;
+                    } else if (turn < 0) {
+                        part->rotation.vx -= limit;
+                    } else {
+                        part->rotation.vx += limit;
+                    }
+                }
+                if (last->time < 0x7D00) {
+                    last->time += last->duration;
+                }
+                goto rot_done;
+            default:
+            check_rot:
+                if (++slot->time < slot->duration) {
+                    if (slot->kind == tag) {
+                        result |= 1;
+                    }
+                    result |= 0x100;
+                } else if (!slot->field1) {
+                    if (slot->kind == tag) {
+                        result |= 2;
+                    }
+                    result |= 0x200;
+                    func_800A23E8(pool, (EffectEntry *)slot);
+                    part->effects[0] = NULL;
+                } else {
+                    if (slot->kind == tag) {
+                        result |= 4;
+                    }
+                    result |= 0x400;
+                    if ((kind & 0xF) < 3) {
+                        slot->time = 0;
+                        slot->u.track.cursor = slot->u.track.start;
+                    } else {
+                        slot->time = -1;
+                        if ((kind & 0xF) == 5) {
+                            last->u.values[3] = 0;
+                            last->u.values[4] = 0;
+                            last->u.values[5] = 0;
+                        }
+                    }
+                }
+                break;
+            }
+        rot_done:
+            part->flag5 = 1;
+            part->flag4 = 1;
+        }
+        slot = (Tween *)part->effects[1];
+        if (slot != NULL) {
+            kind = slot->field2;
+            switch (kind & 0xF) {
+            case 0:
+                track = slot->u.track.cursor;
+                if (!(kind & 0x10)) {
+                    part->translation[0] = *(s16 *)track;
+                    track += 2;
+                    slot->u.track.cursor += 2;
+                }
+                if (!(kind & 0x20)) {
+                    part->translation[1] = *(s16 *)track;
+                    track += 2;
+                    slot->u.track.cursor += 2;
+                }
+                if (!(kind & 0x40)) {
+                    part->translation[2] = *(s16 *)track;
+                    slot->u.track.cursor += 2;
+                }
+                break;
+            case 1:
+                if (!(kind & 0x10)) {
+                    track = slot->u.track.cursor++;
+                    if ((s8)track[0] != -0x80) {
+                        part->translation[0] += (s8)track[0];
+                    } else {
+                        slot->u.track.cursor = track + 2;
+                        slot->u.track.cursor = track + 3;
+                        part->translation[0] = track[1] | ((s8)track[2] << 8);
+                    }
+                }
+                if (!(kind & 0x20)) {
+                    track = slot->u.track.cursor++;
+                    if ((s8)track[0] != -0x80) {
+                        part->translation[1] += (s8)track[0];
+                    } else {
+                        slot->u.track.cursor = track + 2;
+                        slot->u.track.cursor = track + 3;
+                        part->translation[1] = track[1] | ((s8)track[2] << 8);
+                    }
+                }
+                if (!(kind & 0x40)) {
+                    track = slot->u.track.cursor++;
+                    if ((s8)track[0] != -0x80) {
+                        part->translation[2] += (s8)track[0];
+                    } else {
+                        slot->u.track.cursor = track + 2;
+                        slot->u.track.cursor = track + 3;
+                        part->translation[2] = track[1] | ((s8)track[2] << 8);
+                    }
+                }
+                break;
+            case 2:
+                track = slot->u.track.cursor;
+                if (!(kind & 0x10)) {
+                    move.vx = *(u16 *)track;
+                    track += 2;
+                    slot->u.track.cursor += 2;
+                } else {
+                    move.vx = 0;
+                }
+                if (!(kind & 0x20)) {
+                    move.vy = *(u16 *)track;
+                    track += 2;
+                    slot->u.track.cursor += 2;
+                } else {
+                    move.vy = 0;
+                }
+                if (!(kind & 0x40)) {
+                    move.vz = *(u16 *)track;
+                    slot->u.track.cursor += 2;
+                } else {
+                    move.vz = 0;
+                }
+                move.vx = move.vx * part->scale[0] >> 12;
+                move.vy = move.vy * part->scale[1] >> 12;
+                move.vz = move.vz * part->scale[2] >> 12;
+                ApplyMatrix(&part->world, &move, &moved);
+                part->translation[0] += scale * moved.vx >> 12;
+                part->translation[1] += scale * moved.vy >> 12;
+                part->translation[2] += scale * moved.vz >> 12;
+                break;
+            case 3:
+                time = (s16)(slot->time + 1);
+                part->translation[0] = slot->u.values[0] + slot->u.values[3] * time / slot->duration;
+                part->translation[1] = slot->u.values[1] + slot->u.values[4] * time / slot->duration;
+                last = slot;
+                part->translation[2] = slot->u.values[2] + slot->u.values[5] * time / slot->duration;
+                break;
+            case 4:
+                sx = (slot->u.values[3] - part->translation[0]) / slot->duration;
+                sy = (slot->u.values[4] - part->translation[1]) / slot->duration;
+                sz = (slot->u.values[5] - part->translation[2]) / slot->duration;
+                last = slot;
+                if (sx == 0 && sy == 0 && sz == 0) {
+                    slot->time = slot->duration;
+                    part->translation[0] = slot->u.values[3];
+                    part->translation[1] = slot->u.values[4];
+                    part->translation[2] = slot->u.values[5];
+                } else {
+                    part->translation[0] += sx;
+                    part->translation[1] += sy;
+                    part->translation[2] += sz;
+                    slot->time = 0;
+                }
+                break;
+            case 5:
+                slot->u.values[0] += slot->u.values[3];
+                part->translation[0] += slot->u.values[0];
+                slot->u.values[1] += slot->u.values[4];
+                part->translation[1] += slot->u.values[1];
+                slot->u.values[2] += slot->u.values[5];
+                last = slot;
+                part->translation[2] += slot->u.values[2];
+                break;
+            }
+            if (++slot->time < slot->duration) {
+                if (slot->kind == tag) {
+                    result |= 1;
+                }
+                result |= 0x100;
+            } else if (!slot->field1) {
+                if (slot->kind == tag) {
+                    result |= 2;
+                }
+                result |= 0x200;
+                func_800A23E8(pool, (EffectEntry *)slot);
+                part->effects[1] = NULL;
+            } else {
+                if (slot->kind == tag) {
+                    result |= 4;
+                }
+                result |= 0x400;
+                if ((kind & 0xF) < 3) {
+                    slot->time = 0;
+                    slot->u.track.cursor = slot->u.track.start;
+                } else {
+                    slot->time = -1;
+                    if ((kind & 0xF) == 5) {
+                        last->u.values[3] = 0;
+                        last->u.values[4] = 0;
+                        last->u.values[5] = 0;
+                    }
+                }
+            }
+            part->flag4 = 1;
+        }
+        slot = (Tween *)part->effects[2];
+        if (slot != NULL) {
+            kind = slot->field2 & 0xF;
+            switch (kind) {
+            case 3:
+                time = (s16)(slot->time + 1);
+                part->scale[0] = slot->u.values[0] + slot->u.values[3] * time / slot->duration;
+                part->scale[1] = slot->u.values[1] + slot->u.values[4] * time / slot->duration;
+                last = slot;
+                part->scale[2] = slot->u.values[2] + slot->u.values[5] * time / slot->duration;
+                break;
+            case 4:
+                sx = (slot->u.values[3] - slot->u.values[0]) / slot->duration;
+                sy = (slot->u.values[4] - slot->u.values[1]) / slot->duration;
+                sz = (slot->u.values[5] - slot->u.values[2]) / slot->duration;
+                last = slot;
+                if (sx == 0 && sy == 0 && sz == 0) {
+                    slot->time = slot->duration;
+                    part->scale[0] = slot->u.values[3];
+                    part->scale[1] = slot->u.values[4];
+                    part->scale[2] = slot->u.values[5];
+                } else {
+                    last->u.values[0] += sx;
+                    last->u.values[1] += sy;
+                    last->u.values[2] += sz;
+                    part->scale[0] = last->u.values[0];
+                    part->scale[1] = last->u.values[1];
+                    part->scale[2] = last->u.values[2];
+                    slot->time = 0;
+                }
+                break;
+            case 5:
+                slot->u.values[0] += slot->u.values[3];
+                part->scale[0] += slot->u.values[0];
+                slot->u.values[1] += slot->u.values[4];
+                part->scale[1] += slot->u.values[1];
+                slot->u.values[2] += slot->u.values[5];
+                last = slot;
+                part->scale[2] += slot->u.values[2];
+                break;
+            }
+            if (++slot->time < slot->duration) {
+                if (slot->kind == tag) {
+                    result |= 1;
+                }
+                result |= 0x100;
+            } else if (!slot->field1) {
+                if (slot->kind == tag) {
+                    result |= 2;
+                }
+                result |= 0x200;
+                func_800A23E8(pool, (EffectEntry *)slot);
+                part->effects[2] = NULL;
+            } else {
+                if (slot->kind == tag) {
+                    result |= 4;
+                }
+                result |= 0x400;
+                slot->time = -1;
+                if (kind == 5) {
+                    last->u.values[3] = 0;
+                    last->u.values[4] = 0;
+                    last->u.values[5] = 0;
+                }
+            }
+            part->flag5 = 1;
+            part->flag4 = 1;
+        }
+    }
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A0838);
+#endif
 
 /* Apply an animation frame to a hierarchy's parts: the listed rotations (unless
  * flag 1) and translations (unless flag 2), marking each changed part; parts
@@ -857,7 +1283,7 @@ s32 func_800A23E8(EffectPool *pool, EffectEntry *entry) {
 s32 func_800A2434(EffectPool *pool, ModelPart *part, u16 *data, s32 mode, s32 tag) {
     AnimationFrame *frame;
     u8 *types;
-    EffectTrack *entry;
+    Tween *entry;
     u8 *tracks;
     u16 count;
     u16 rotationCount;
@@ -896,21 +1322,21 @@ s32 func_800A2434(EffectPool *pool, ModelPart *part, u16 *data, s32 mode, s32 ta
         types = (u8 *)(data + 2);
         if (*data != 0xFFFF) {
             if (part->effects[0] != NULL) {
-                entry = (EffectTrack *)part->effects[0];
+                entry = (Tween *)part->effects[0];
                 if (entry->kind == 0xFF) {
                     goto translation;
                 }
             } else {
-                entry = (EffectTrack *)func_800A2330(pool);
+                entry = (Tween *)func_800A2330(pool);
             }
             if (entry != NULL) {
                 entry->used = 1;
                 entry->field1 = mode;
                 entry->field2 = types[0];
                 entry->kind = tag;
-                entry->cursor = entry->start = tracks + *data;
-                entry->field10 = 0;
-                entry->field12 = duration;
+                entry->u.track.cursor = entry->u.track.start = tracks + *data;
+                entry->time = 0;
+                entry->duration = duration;
                 part->effects[0] = (EffectEntry *)entry;
             }
         } else {
@@ -923,21 +1349,21 @@ s32 func_800A2434(EffectPool *pool, ModelPart *part, u16 *data, s32 mode, s32 ta
         data++;
         if (*data != 0xFFFF) {
             if (part->effects[1] != NULL) {
-                entry = (EffectTrack *)part->effects[1];
+                entry = (Tween *)part->effects[1];
                 if (entry->kind == 0xFF) {
                     goto next;
                 }
             } else {
-                entry = (EffectTrack *)func_800A2330(pool);
+                entry = (Tween *)func_800A2330(pool);
             }
             if (entry != NULL) {
                 entry->used = 1;
                 entry->field1 = mode;
                 entry->field2 = types[1];
                 entry->kind = tag;
-                entry->cursor = entry->start = tracks + *data;
-                entry->field10 = 0;
-                entry->field12 = duration;
+                entry->u.track.cursor = entry->u.track.start = tracks + *data;
+                entry->time = 0;
+                entry->duration = duration;
                 part->effects[1] = (EffectEntry *)entry;
             }
         } else {
@@ -958,7 +1384,7 @@ s32 func_800A2434(EffectPool *pool, ModelPart *part, u16 *data, s32 mode, s32 ta
 s32 func_800A2704(EffectPool *pool, ModelPart *part, u16 *data, s32 mode, s32 tag) {
     AnimationFrame *frame;
     u8 *types;
-    EffectTrack *entry;
+    Tween *entry;
     s16 *values;
     u8 *tracks;
     u16 rotationCount;
@@ -1003,12 +1429,12 @@ s32 func_800A2704(EffectPool *pool, ModelPart *part, u16 *data, s32 mode, s32 ta
         types = (u8 *)(data + 2);
         if (*data != 0xFFFF) {
             if (part->effects[0] != NULL) {
-                entry = (EffectTrack *)part->effects[0];
+                entry = (Tween *)part->effects[0];
                 if (entry->kind == 0xFF) {
                     goto skipRotation;
                 }
             } else {
-                entry = (EffectTrack *)func_800A2330(pool);
+                entry = (Tween *)func_800A2330(pool);
             }
             if (!(flags & 1) && i != 0 && rotations < rotationCount) {
                 part->rotation.vx = *values++;
@@ -1023,9 +1449,9 @@ s32 func_800A2704(EffectPool *pool, ModelPart *part, u16 *data, s32 mode, s32 ta
                 entry->field1 = mode;
                 entry->field2 = types[0];
                 entry->kind = tag;
-                entry->cursor = entry->start = tracks + *data;
-                entry->field10 = 0;
-                entry->field12 = duration;
+                entry->u.track.cursor = entry->u.track.start = tracks + *data;
+                entry->time = 0;
+                entry->duration = duration;
                 part->effects[0] = (EffectEntry *)entry;
             }
         } else {
@@ -1038,12 +1464,12 @@ s32 func_800A2704(EffectPool *pool, ModelPart *part, u16 *data, s32 mode, s32 ta
         data++;
         if (*data != 0xFFFF) {
             if (part->effects[1] != NULL) {
-                entry = (EffectTrack *)part->effects[1];
+                entry = (Tween *)part->effects[1];
                 if (entry->kind == 0xFF) {
                     goto skipTranslation;
                 }
             } else {
-                entry = (EffectTrack *)func_800A2330(pool);
+                entry = (Tween *)func_800A2330(pool);
             }
             if (!(flags & 2) && i != 0 && translations < translationCount) {
                 part->translation[0] = *values++;
@@ -1057,9 +1483,9 @@ s32 func_800A2704(EffectPool *pool, ModelPart *part, u16 *data, s32 mode, s32 ta
                 entry->field1 = mode;
                 entry->field2 = types[1];
                 entry->kind = tag;
-                entry->cursor = entry->start = tracks + *data;
-                entry->field10 = 0;
-                entry->field12 = duration;
+                entry->u.track.cursor = entry->u.track.start = tracks + *data;
+                entry->time = 0;
+                entry->duration = duration;
                 part->effects[1] = (EffectEntry *)entry;
             }
         } else {
