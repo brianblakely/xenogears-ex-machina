@@ -246,6 +246,7 @@ typedef struct {
     s32 gpu;          /* +44: GPU time last frame */
 } BattleCamera;
 extern BattleCamera D_800D309C;
+extern SVECTOR D_800D30B0; /* the camera's rot, addressed on its own by 80280960 */
 extern SVECTOR D_800D3354; /* camera position */
 extern SVECTOR D_800D335C; /* look-at point */
 

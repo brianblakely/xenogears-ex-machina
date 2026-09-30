@@ -53,7 +53,6 @@ void func_80280844(s32 buttons) {
 
 /* Move the look-at point like the camera position, in the frame of the
  * camera's heading only. */
-#ifdef NON_MATCHING
 void func_80280960(s32 buttons) {
     VECTOR moved;
     SVECTOR step;
@@ -83,9 +82,9 @@ void func_80280960(s32 buttons) {
     if (buttons & 0x2000) {
         step.vz = -speed;
     }
-    rot.vx = D_800D309C.rot.vx;
-    rot.vy = D_800D309C.rot.vy;
-    rot.vz = D_800D309C.rot.vz;
+    rot.vx = D_800D30B0.vx;
+    rot.vy = D_800D30B0.vy;
+    rot.vz = D_800D30B0.vz;
     rot.vx = 0;
     func_8003F738(&rot, &m);
     ApplyMatrix(&m, &step, &moved);
@@ -99,9 +98,6 @@ void func_80280960(s32 buttons) {
         D_800D335C.vy -= speed;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/debug2611/asm/nonmatchings/debug2611", func_80280960);
-#endif
 
 /* The tools' frame: the actor tool, then buttons toggle the heap monitor
  * (0x800), the performance counters (0x20) and the camera tool (0x100, which
@@ -230,17 +226,15 @@ INCLUDE_ASM(".local/decomp/debug2611/asm/nonmatchings/debug2611", func_80280A9C)
 #endif
 
 /* Open the debug text window while any button is pressed. */
-#ifdef NON_MATCHING
 void func_8028103C(void) {
+    s32 unused[12]; /* an unreferenced 0x30-byte local: the frame is 0x68 */
+
     if (D_800C3EB0.pressed != 0) {
         func_8003748C();
         func_800374E8(0x10, 0x10, 0x140, 0x100, 0x3E8, 0, 0x340, 0, 0x340, 0x20, 0);
         func_80036E4C(0x7FFF, 0x8000);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/debug2611/asm/nonmatchings/debug2611", func_8028103C);
-#endif
 
 /* The heap monitor: buttons toggle its display flags and step, left/right
  * (repeating after 8 frames) scroll its first block. */
@@ -307,7 +301,6 @@ INCLUDE_ASM(".local/decomp/debug2611/asm/nonmatchings/debug2611", func_802810C4)
 
 /* Load meter update: ease the averages toward this frame's CPU and GPU times
  * and hold each peak for 80 frames. */
-#ifdef NON_MATCHING
 void func_80281330(TaskNode *node) {
     LoadMeter *meter = node->object;
 
@@ -318,21 +311,18 @@ void func_80281330(TaskNode *node) {
     if (--meter->cpu_hold == 0) {
         meter->cpu_peak = 0;
     }
-    if (meter->cpu_peak < meter->cpu) {
+    if (meter->cpu > meter->cpu_peak) {
         meter->cpu_peak = meter->cpu;
         meter->cpu_hold = 80;
     }
     if (--meter->gpu_hold == 0) {
         meter->gpu_peak = 0;
     }
-    if (meter->gpu_peak < meter->gpu) {
+    if (meter->gpu > meter->gpu_peak) {
         meter->gpu_peak = meter->gpu;
         meter->gpu_hold = 80;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/debug2611/asm/nonmatchings/debug2611", func_80281330);
-#endif
 
 /* Draw a flat triangle through the current matrices. */
 void func_802813F4(SVECTOR *v, u8 r, u8 g, u8 b) {
@@ -358,14 +348,13 @@ void func_802813F4(SVECTOR *v, u8 r, u8 g, u8 b) {
 }
 
 /* Draw a dial tick (30 to 35 along the rotated x axis). */
-#ifdef NON_MATCHING
 void func_802814F8(u8 r, u8 g, u8 b) {
     SVECTOR from, to;
     SVECTOR xy0, xy1;
     s32 flag;
     LINE_F2 *prim = (LINE_F2 *)D_80059580;
 
-    D_80059580 += sizeof(LINE_F2);
+    D_80059580 += 0x18; /* reserves more than the 0x10-byte LINE_F2 */
     SetLineF2(prim);
     from.vx = 30;
     from.vy = 0;
@@ -384,20 +373,16 @@ void func_802814F8(u8 r, u8 g, u8 b) {
     prim->y1 = xy1.vy;
     AddPrim(D_8005956C, prim);
 }
-#else
-INCLUDE_ASM(".local/decomp/debug2611/asm/nonmatchings/debug2611", func_802814F8);
-#endif
 
 /* Draw a peak mark: a line from the dial centre `length` along the rotated
  * x axis. */
-#ifdef NON_MATCHING
 void func_802815E8(s16 length, u8 r, u8 g, u8 b) {
     SVECTOR tip;
     SVECTOR xy;
     s32 flag;
     LINE_F2 *prim = (LINE_F2 *)D_80059580;
 
-    D_80059580 += sizeof(LINE_F2);
+    D_80059580 += 0x18; /* reserves more than the 0x10-byte LINE_F2 */
     SetLineF2(prim);
     tip.vx = length;
     tip.vy = 0;
@@ -412,9 +397,6 @@ void func_802815E8(s16 length, u8 r, u8 g, u8 b) {
     prim->y1 = xy.vy;
     AddPrim(D_8005956C, prim);
 }
-#else
-INCLUDE_ASM(".local/decomp/debug2611/asm/nonmatchings/debug2611", func_802815E8);
-#endif
 
 /* Load meter drawing: the GPU (blue) and CPU (red) needles with their peak
  * marks, and a tick every 0x100 up to each needle. */
@@ -490,20 +472,21 @@ void func_802818C4(void) {
 }
 
 /* List the playing sound sequences on the debug console. */
-#ifdef NON_MATCHING
 void func_8028191C(void) {
     DebugSequence *seq = D_80059558;
     s32 i = 0;
 
-    while (seq->next != NULL) {
-        func_800379C8("%d W=%x\n", i, seq->next);
+    for (;;) {
+        DebugSequence *next = seq->next;
+
+        if (next == NULL) {
+            break;
+        }
+        func_800379C8("%d W=%x\n", i, next);
         seq = seq->next;
         i++;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/debug2611/asm/nonmatchings/debug2611", func_8028191C);
-#endif
 
 /* The actor tool: for the selected battle actor print its model state, and
  * with the pad move its position, rotation, scale or light (the control
