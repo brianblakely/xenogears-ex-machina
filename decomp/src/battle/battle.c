@@ -3973,7 +3973,37 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008F0A8);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008F6E4);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008F8F4);
+/* Open window `window` at (x, y) of w x h: allocate its blocks when it is not
+ * shown; `animate` grows it open, otherwise it is drawn at once (and a frame
+ * waited with `wait`). */
+void func_8008F8F4(u8 window, u16 x, u16 y, u16 w, u16 h, u8 animate, u8 wait) {
+    WindowRect *rect;
+
+    if (D_800D2D28->windows[window] == 0) {
+        D_800D2E38[window] = (void *)func_8008ABB8(0x5A8, 0);
+        func_8003F8E8(D_800D2E38[window], 0x5A8);
+        D_800D2D90[window] = (WindowRect *)func_8008ABB8(0xE, 0);
+        func_8003F8E8(D_800D2D90[window], 0xE);
+        func_80077454(window);
+    }
+    if (animate != 0) {
+        rect = D_800D2D90[window];
+        rect->style = window;
+        rect->x = x;
+        rect->y = y;
+        rect->w = w;
+        rect->h = h;
+        rect->curW = 0;
+        rect->curH = 0;
+        D_800D2D28->unkBF[window] = 0;
+        D_800D2D28->unkB8[window] = 1;
+    } else {
+        func_8008F6E4(window, x, y, w, h);
+        if (wait != 0) {
+            func_800716D8();
+        }
+    }
+}
 
 /* Close window `window` and release its two blocks after a frame. */
 void func_8008FA60(u8 window) {
@@ -4064,7 +4094,26 @@ void func_8009070C(u8 column, u8 row) {
     func_800320E8(pixels);
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009080C);
+/* Show the item list cell (column, row) of the item list or (from the
+ * 800c3d70 list) the other list: frame, name and count. */
+void func_8009080C(u8 column, u8 row, u8 other) {
+    u8 item;
+
+    if (other == 0) {
+        item = D_800D2CE0[row * 2 + column];
+    } else {
+        item = D_800C3D70[row * 2 + column];
+    }
+    D_800C3EA4->unkA230->unk66D = 0;
+    func_80090310(column, row);
+    if (item != 0 && other == 0) {
+        func_8009070C(column, row);
+        func_800904A0(column, row);
+        D_800C3EA4->unkA230->unk66D = 1;
+    }
+    D_800C3EA4->unkA230->buffer = D_800CCB04.buffer;
+    D_800C3EA4->unkA230->unk66B = 1;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009093C);
 

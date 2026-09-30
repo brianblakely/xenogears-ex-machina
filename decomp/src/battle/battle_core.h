@@ -200,7 +200,10 @@ typedef struct {
     u8 unk668;         /* buffer of the +0x0..+0xf0 quads */
     u8 unk669;
     u8 buffer;         /* +0x66A */
-    u8 unk66B[0x670 - 0x66B];
+    u8 unk66B;
+    u8 unk66C;
+    u8 unk66D;
+    u8 unk66E[2];
 } GraphicsBlock;
 
 /* Party status panel state of the graphics block (0x1e4 bytes). */
@@ -407,6 +410,7 @@ extern u8 D_800D366C;      /* menu effects enabled */
 extern u8 D_800D2CA4[5];
 extern u8 D_800C204C;
 extern u8 D_800C3E18;
+extern u8 D_800C3D70[0x30];
 extern u8 D_800D2D24[3];   /* party character ids */
 extern void *D_800D367C;   /* menu module block */
 extern void *D_800C3DE8;   /* file 3 block */
@@ -743,6 +747,10 @@ void func_8007171C(void);
 void func_80076B68(POLY_FT4 *prim);
 void func_8008FC1C(s32 x, s32 y, s32 w, s32 h, s32 style);
 void func_8008F6E4(u8 style, u16 x, u16 y, u16 w, u16 h);
+void func_80077454(u8 window);
+void func_80090310(u8 column, u8 row);
+void func_8009070C(u8 column, u8 row);
+void func_800904A0(u8 column, u8 row);
 s8 func_80097964(u8 a, u8 b, u16 c);
 void func_800995A0(u8 slot, u8 a, u16 b, s32 mode);
 void func_80078508(u8 *order);
