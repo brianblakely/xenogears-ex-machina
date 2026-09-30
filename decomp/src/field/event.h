@@ -40,7 +40,9 @@ typedef struct FieldActor {
     s16 unk64;           /* 064 */
     u8 unk066[0x070 - 0x066];
     s16 unk70;           /* 070 */
-    u8 unk072[0x078 - 0x072];
+    s16 unk72;           /* 072 */
+    u8 unk074[0x076 - 0x074];
+    s16 unk76;           /* 076 */
     u16 call_stack[4];   /* 078: return PCs */
     u8 unk80;            /* 080 */
     u8 unk081[0x082 - 0x081];
@@ -59,9 +61,9 @@ typedef struct FieldActor {
     u8 unk0E3[0x0E4 - 0x0E3];
     s16 unkE4;           /* 0E4 */
     s16 unkE6;           /* 0E6 */
-    u8 unk0E8[0x0EA - 0x0E8];
+    s16 unkE8;           /* 0E8 */
     s16 unkEA;           /* 0EA */
-    u8 unk0EC[0x0EE - 0x0EC];
+    s16 unkEC;           /* 0EC */
     s16 unkEE;          /* 0EE */
     u8 unk0F0[0xFC - 0x0F0];
     u8 color0[3];       /* 0FC */

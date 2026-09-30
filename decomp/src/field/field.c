@@ -4764,47 +4764,265 @@ void func_8009D9A4(void) {
     D_800B0078->pc += 6;
 }
 
+#ifdef NON_MATCHING
+/* Set actor flag 0x20000. */
+void func_8009DA1C(void) {
+    D_800B0078->flags |= 0x20000;
+    D_800B0078->pc += 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009DA1C);
+#endif
 
+#ifdef NON_MATCHING
+/* Clear actor flag 0x20000. */
+void func_8009DA44(void) {
+    D_800B0078->flags &= ~0x20000;
+    D_800B0078->pc += 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009DA44);
+#endif
 
+#ifdef NON_MATCHING
+/* Set actor flag 0x800000. */
+void func_8009DA70(void) {
+    D_800B0078->flags |= 0x800000;
+    D_800B0078->pc += 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009DA70);
+#endif
 
+#ifdef NON_MATCHING
+/* Clear actor flag 0x800000. */
+void func_8009DA98(void) {
+    D_800B0078->flags &= ~0x800000;
+    D_800B0078->pc += 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009DA98);
+#endif
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009DAC4);
+/* Hide a selected actor, disable its descriptor and release the current
+ * actor's idle dialogue window. */
+void func_8009DAC4(void) {
+    FieldActor *actor;
+    FieldDescriptor *descriptor;
+    s32 window;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009DBC8);
+    if (func_8009CDB4(1) != 0xFF) {
+        actor = D_800AFA64.descriptors[func_8009CDB4(1)].actor;
+        actor->flags |= 1;
+        actor->layer_flags |= 0x100000;
+        descriptor = &D_800AFA64.descriptors[func_8009CDB4(1)];
+        descriptor->flags |= 0x20;
+        if (func_8009CD18(&window) == 0) {
+            D_800C26B0[window].cleared = 0;
+        }
+    }
+    D_800B0078->pc += 2;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009DC4C);
+/* Show a selected actor again. */
+void func_8009DBC8(void) {
+    FieldActor *actor;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009DD34);
+    if (func_8009CDB4(1) != 0xFF) {
+        actor = D_800AFA64.descriptors[func_8009CDB4(1)].actor;
+        actor->flags &= ~1;
+    }
+    D_800B0078->pc += 2;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009DDEC);
+/* Stop and hide a selected actor and release the current actor's idle
+ * dialogue window. */
+void func_8009DC4C(void) {
+    FieldActor *actor;
+    u16 state;
+    s32 window;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009DE94);
+    if (func_8009CDB4(1) != 0xFF) {
+        actor = D_800AFA64.descriptors[func_8009CDB4(1)].actor;
+        actor->unk30[0] = 0;
+        actor->unk30[1] = 0;
+        actor->unk30[2] = 0;
+        actor->unk40[0] = 0;
+        actor->unk40[1] = 0;
+        actor->unk40[2] = 0;
+        state = actor->unk104 | 0x8000;
+        actor->flags |= 1;
+        actor->unk106 = state;
+        actor->unk104 = state;
+        if (func_8009CD18(&window) == 0) {
+            D_800C26B0[window].cleared = 0;
+        }
+    }
+    D_800B0078->pc += 2;
+}
 
+/* Wait operand-1 frames (counted in the slot), yielding each frame. */
+void func_8009DD34(void) {
+    if (D_800B0078->slots[D_800B0078->slot].countdown == 0) {
+        D_800B0078->slots[D_800B0078->slot].countdown = func_800ACDEC(1);
+    } else {
+        D_800B0078->slots[D_800B0078->slot].countdown--;
+    }
+    if (D_800B0078->slots[D_800B0078->slot].countdown == 0) {
+        D_800B0078->pc += 3;
+    }
+    D_800B00C0 = 1;
+}
+
+/* Re-enable a selected, still visible actor's descriptor. */
+void func_8009DDEC(void) {
+    FieldDescriptor *descriptor;
+
+    if (func_8009CDB4(1) != 0xFF) {
+        descriptor = &D_800AFA64.descriptors[func_8009CDB4(1)];
+        if (!(descriptor->actor->layer_flags & 0x100000)) {
+            descriptor->flags &= 0xFFDF;
+            descriptor->actor->layer_flags &= ~0x2000000;
+        }
+    }
+    D_800B0078->pc += 2;
+}
+
+/* Disable a selected actor's descriptor (flag 0x20). */
+void func_8009DE94(void) {
+    FieldDescriptor *descriptor;
+
+    if (func_8009CDB4(1) != 0xFF) {
+        descriptor = &D_800AFA64.descriptors[func_8009CDB4(1)];
+        descriptor->flags |= 0x20;
+    }
+    D_800B0078->pc += 2;
+}
+
+#ifdef NON_MATCHING
+/* Re-enable the current descriptor. */
+void func_8009DF10(void) {
+    FieldDescriptor *descriptor;
+
+    descriptor = &D_800AFA64.descriptors[D_800AFD1C];
+    descriptor->flags &= 0xFFDF;
+    D_800B0078->unkE8 = 0xFF;
+    D_800B0078->layer_flags &= ~0x2000000;
+    D_800B0078->pc += 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009DF10);
+#endif
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009DF78);
+/* Set layer flags 0x2000000 and 0x800 on a selected actor. */
+void func_8009DF78(void) {
+    FieldDescriptor *descriptor;
 
+    if (func_8009CDB4(1) != 0xFF) {
+        descriptor = &D_800AFA64.descriptors[func_8009CDB4(1)];
+        descriptor->actor->layer_flags |= 0x2000000;
+        descriptor->actor->layer_flags |= 0x800;
+    }
+    D_800B0078->pc += 2;
+}
+
+#ifdef NON_MATCHING
+/* Set layer flags 0x2000000 and 0x800 on the current actor. */
+void func_8009E014(void) {
+    D_800B0078->layer_flags |= 0x2000800;
+    D_800B0078->pc += 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009E014);
+#endif
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009E040);
+/* Disable the current descriptor (flag 0x20). */
+void func_8009E040(void) {
+    FieldDescriptor *descriptor;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009E094);
+    descriptor = &D_800AFA64.descriptors[D_800AFD1C];
+    descriptor->flags |= 0x20;
+    D_800B0078->pc += 1;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009E10C);
+void func_80021BCC(FieldModel *model, u16 value);
+
+/* Set the current actor's unk76 and pass it to its model. */
+void func_8009E094(void) {
+    s16 value;
+
+    value = func_800ACDEC(1);
+    D_800B0078->unk76 = value;
+    func_80021BCC(D_800AFA64.descriptors[D_800AFD1C].model, value);
+    D_800B0078->pc += 3;
+}
+
+/* Map operand bits onto actor flags (1->0x80, 4->0x20, 8->0x10, 0x10->8,
+ * 0x20->4, 0x40->0x8000000). */
+void func_8009E10C(void) {
+    s32 bits;
+    s32 flags;
+
+    bits = func_800ACDEC(1);
+    flags = (bits & 1) << 7;
+    if (bits & 4) {
+        flags |= 0x20;
+    }
+    if (bits & 8) {
+        flags |= 0x10;
+    }
+    if (bits & 0x10) {
+        flags |= 8;
+    }
+    if (bits & 0x20) {
+        flags |= 4;
+    }
+    if (bits & 0x40) {
+        flags |= 0x8000000;
+    }
+    D_800B0078->flags = (D_800B0078->flags & 0xF7FFFF43) | flags;
+    D_800B0078->pc += 3;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009E1A0);
 
+#ifdef NON_MATCHING
+/* Enter mode 0x400000 (clearing 0x40000) from the current height. */
+void func_8009E208(void) {
+    D_800B0078->unkEC = 0;
+    D_800B0078->flags = (D_800B0078->flags & ~0x40000) | 0x400000;
+    D_800B0078->pc += 1;
+    D_800B0078->unk72 = D_800B0078->position[1].s.whole;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009E208);
+#endif
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009E248);
+void func_8009E574(s32 a, s32 b);
+void func_8009E810(s32 a);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009E2C8);
+/* Start a jump (func_8009E574 / func_8009E810 from signed operands). */
+void func_8009E248(void) {
+    s32 a;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009E330);
+    a = (s16)func_800ACD7C(1);
+    func_8009E574(a, (s16)func_800ACD7C(3));
+    func_8009E810((s16)func_800ACD7C(5));
+    D_800B0078->flags |= 0x40000;
+    D_800B0078->pc += 7;
+}
+
+/* Start func_8009E810 from a selected operand. */
+void func_8009E2C8(void) {
+    func_8009E810(func_8009CF78(1, EVENT_OPERAND_BYTE(3)));
+    D_800B0078->flags |= 0x40000;
+    D_800B0078->pc += 4;
+}
+
+/* Signed halfword of the bytecode at `offset`. */
+s16 func_8009E330(s32 offset) {
+    return D_800ADC00[offset] + (D_800ADC00[offset + 1] << 8);
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009E35C);
 
