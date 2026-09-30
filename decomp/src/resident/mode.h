@@ -150,7 +150,8 @@ extern s32 D_8004FDF8;
 extern s32 D_8004FDFC;
 extern s32 D_8004FE14;      /* selected directory (first file - 1) */
 extern s32 D_8004FE1C;
-extern s32 D_8004FE48;      /* nonzero: files come from the PC file server */
+extern char *D_8004FE48;    /* PC file server name table (64 bytes per file), or NULL */
+extern s32 D_8004FE18;      /* second directory selection */
 extern s32 D_8004FE4C;
 extern s32 D_8005A488, D_8005A48C, D_8005A490, D_8005A494, D_8005A498, D_8005A49C;
 extern s32 D_8005A4A4, D_8005A4A8, D_8005A4B4;
@@ -161,6 +162,7 @@ void func_800283D4(void);
 s32 func_80028470(s32 group, s32 index);
 s32 func_800284B4(s32 *group, s32 *index);
 s32 func_80028548(s32 group, s32 index);
+char *func_80028998(s32 file);
 void func_8002954C(s32 sector, void *destination, s32 size, s32 a3, s32 a4);
 void func_8002A428(s32 mode);
 void func_8002A498(s32 offset);
@@ -243,7 +245,11 @@ void func_8004B54C(s32 a0);
 void func_8004B740(void);
 void func_8004B7D0(void (*callback)(void));
 void func_8004C2F0(s32 a0);
-s32 func_8004C338(s32 fd);
+s32 func_8004C338(s32 fd);                       /* PCclose */
+s32 func_8004C318(char *name, s32 flags, s32 mode); /* PCopen */
+s32 func_8004C348(s32 fd, s32 offset, s32 whence); /* PClseek */
+s32 func_8004C398(s32 fd, void *buffer, s32 size); /* PCread */
+s32 func_80041410(s32 mode);                     /* CdSync */
 s32 func_8004C36C(char *name, s32 mode);
 s32 func_8004C38C(void);
 s32 func_8004C470(s32 fd, void *buffer, s32 size);

@@ -826,6 +826,7 @@ s32 func_8001B484(s32 map, s32 slot) {
     }
     return 0;
 }
+
 /* Start reading map file 0xb8 + map into a kept block from the heap top. */
 void func_8001B53C(s32 map) {
     s32 file = map + 0xB8;
@@ -961,7 +962,7 @@ void func_8001BEEC(void) {
 }
 
 /* Decode the menu input of this frame: directions 0-3, confirm 4, debug toggles; 8 when nothing applies. */
-/* Matches under GCC 2.6.3 (which reloads debug_value), not under 2.7.2. */
+/* GCC 2.6.3 code: the image matches exactly with this C under 2.6.3 (which reloads debug_value), not under 2.7.2. */
 #ifdef NON_MATCHING
 void func_8001BF38(void) {
     s32 input = 8;
@@ -1524,9 +1525,9 @@ void func_80028230(u8 *files, u16 *directories, u32 mode) {
         func_8004C38C();
     }
     if (mode != -1) {
-        D_8004FE48 = mode;
+        D_8004FE48 = (char *)mode;
     } else {
-        D_8004FE48 = 0;
+        D_8004FE48 = NULL;
     }
     D_8004FDF0 = files;
     D_8004FDF4 = directories;
@@ -1547,7 +1548,7 @@ void func_80028230(u8 *files, u16 *directories, u32 mode) {
 void func_800283D4(void) {
     func_8002A498(0);
     func_80028A60(0);
-    if (D_8004FE48 == 0) {
+    if (D_8004FE48 == NULL) {
         while (func_80041248(9, 0, D_80059F1C) == 0) {
         }
         func_8002A428(0xA0);
@@ -1601,25 +1602,193 @@ s32 func_80028548(s32 group, s32 index) {
     return D_8004FDF4[group + index] - D_8004FE14;
 }
 
+/* Load a whole PC file into a new heap block (four tries per file-server call); returns the block, or NULL. */
+/* A GCC 2.6.3 function (its first loop reproduces only there); the tail of the close loop still differs. */
+#ifdef NON_MATCHING
+void *func_80028570(char *name, s32 *size) {
+    s32 fd;
+    s32 length;
+    s32 read;
+    s32 i;
+    void *block;
+
+    for (i = 0; i < 4; i++) {
+        fd = func_8004C318(name, 0, 0);
+        if (fd != -1) {
+            break;
+        }
+    }
+    if (fd != -1) {
+        length = func_8004C348(fd, 0, 2);
+        if (size != NULL) {
+            *size = length;
+        }
+        func_8004C348(fd, 0, 0);
+        block = func_80031BDC(length, 0);
+        read = 0;
+        if (block != NULL) {
+            for (i = 0; i < 4; i++) {
+                read = func_8004C398(fd, block, length);
+                if (read != 0) {
+                    break;
+                }
+            }
+        }
+        if (read == 0) {
+            if (block != NULL) {
+                func_800320E8(block);
+            }
+            block = NULL;
+        }
+        for (i = 0; i < 4; i++) {
+            if (func_8004C338(fd) == 0) {
+                return block;
+            }
+        }
+        if (block != NULL) {
+            func_800320E8(block);
+        }
+    }
+    block = NULL;
+    return block;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028570);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800286BC);
+s32 func_800286BC(void) {
+    return D_8004FDF8;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800286CC);
+/* Nonzero while a disc read is pending, the drive is busy or a read is in progress. */
+s32 func_800286CC(void) {
+    s32 state = D_8004FDFC;
 
+    if (state == 0) {
+        if (D_8004FE48 == NULL && func_80041410(1) != 0) {
+            return 1;
+        }
+        if (D_8004FE1C != 0) {
+            return 1;
+        }
+    }
+    return state;
+}
+
+/* A file's byte size: from the PC file server when it knows the file, else from the file index. */
+/* Nonmatching: the original keeps the index sum as addu and holds file, fd and size in s2/s0/s1 (closest under GCC 2.6.3). */
+#ifdef NON_MATCHING
+s32 func_80028738(s32 file) {
+    s32 fd;
+    s32 size;
+    u8 *entry;
+
+    if (D_8004FE48 != NULL) {
+        fd = func_8004C318(func_80028998(file), 0, 0);
+        size = func_8004C348(fd, 0, 2);
+        func_8004C338(fd);
+        if (size > 0) {
+            return size;
+        }
+    }
+    entry = &D_8004FDF0[(file + D_8004FE14 - 1) * 7];
+    size = (entry[6] << 24) + (entry[5] << 16) + (entry[4] << 8) + entry[3];
+    return size;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028738);
+#endif
 
+/* As 80028738 in the second directory selection (8004fe18), rounded up to words. */
+/* GCC 2.6.3 code: the image matches exactly with this C under 2.6.3, not under 2.7.2. */
+#ifdef NON_MATCHING
+s32 func_80028808(s32 file) {
+    s32 fd;
+    s32 size;
+    u8 *entry;
+
+    if (D_8004FE48 != NULL) {
+        fd = func_8004C318(func_80028998(file), 0, 0);
+        size = func_8004C348(fd, 0, 2);
+        func_8004C338(fd);
+        if (size > 0) {
+            return (size + 3) / 4 * 4;
+        }
+    }
+    entry = &D_8004FDF0[(file + D_8004FE18 - 1) * 7];
+    size = (entry[6] << 24) + (entry[5] << 16) + (entry[4] << 8) + entry[3];
+    return (size + 3) / 4 * 4;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028808);
+#endif
 
+/* A file's byte size rounded up to words. */
+/* GCC 2.6.3 code: the image matches exactly with this C under 2.6.3, not under 2.7.2. */
+#ifdef NON_MATCHING
+s32 func_800288EC(s32 file) {
+    s32 size = func_80028738(file);
+
+    return (size + 3) / 4 * 4;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800288EC);
+#endif
 
+/* For an index entry with a negative size (a directory), its file count; 0 for a file. */
+/* Nonmatching: GCC turns the final addu of the index sum into or. */
+#ifdef NON_MATCHING
+s16 func_80028928(s32 file) {
+    u8 *entry = &D_8004FDF0[(file + D_8004FE14 - 1) * 7];
+    s32 size = (entry[6] << 24) + (entry[5] << 16) + (entry[4] << 8) + entry[3];
+
+    if (size >= 0) {
+        return 0;
+    }
+    return -size;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028928);
+#endif
 
+/* The PC file server name of a file (64 bytes per file), or NULL without the server. */
+/* GCC 2.6.3 code: the image matches exactly with this C under 2.6.3, not under 2.7.2. */
+#ifdef NON_MATCHING
+char *func_80028998(s32 file) {
+    char *name = NULL;
+
+    if (D_8004FE48 != NULL) {
+        name = D_8004FE48 + (file + D_8004FE14 - 1) * 64;
+    }
+    return name;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028998);
+#endif
 
+/* A file's first sector in the selected directory. */
+/* GCC 2.6.3 code: the image matches exactly with this C under 2.6.3, not under 2.7.2. */
+#ifdef NON_MATCHING
+s32 func_800289D0(s32 file) {
+    u8 *entry = &D_8004FDF0[(file + D_8004FE14 - 1) * 7];
+
+    return ((entry[2] << 16) + (entry[1] << 8)) | entry[0];
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800289D0);
+#endif
 
+/* A file's first sector in the second directory selection (8004fe18). */
+/* GCC 2.6.3 code: the image matches exactly with this C under 2.6.3, not under 2.7.2. */
+#ifdef NON_MATCHING
+s32 func_80028A18(s32 file) {
+    u8 *entry = &D_8004FDF0[(file + D_8004FE18 - 1) * 7];
+
+    return ((entry[2] << 16) + (entry[1] << 8)) | entry[0];
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028A18);
+#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028A60);
 
