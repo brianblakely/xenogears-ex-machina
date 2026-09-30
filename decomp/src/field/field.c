@@ -433,7 +433,26 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80075484);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007554C);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80075910);
+/* Finish the frame: draw the overlays, flush, sync, copy the shown half,
+ * then put this block's environments and draw its overlay table. */
+void func_80075910(void) {
+    RECT rect;
+
+    func_80074700();
+    func_800A2030();
+    func_800805F4();
+    func_8008004C(D_800C426C->overlay_ot, D_800ADB08);
+    func_800445D0(0);
+    func_8004B54C(0);
+    rect.x = 0x140;
+    rect.w = 0x140;
+    rect.h = 0xE0;
+    rect.y = ((D_800ADB78 + 1) & 1) << 8;
+    func_8004495C(&rect, 0, D_800ADB08 << 8);
+    func_80044E9C(&D_800C426C->disp);
+    func_80044C44(&D_800C426C->draw);
+    func_80044BD0(&D_800C426C->overlay_ot[7]);
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800759E4);
 
@@ -542,7 +561,16 @@ void func_80077C60(void) {
     func_80077AB4();
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80077C88);
+/* Allocate and keep the three party sprite blocks (0x14000 bytes each). */
+void func_80077C88(void) {
+    func_80032498(8, 0);
+    D_8005A414[0] = func_80031BDC(0x14000, 0);
+    D_8005A414[1] = func_80031BDC(0x14000, 0);
+    D_8005A414[2] = func_80031BDC(0x14000, 0);
+    func_800320A4(D_8005A414[0]);
+    func_800320A4(D_8005A414[1]);
+    func_800320A4(D_8005A414[2]);
+}
 
 /* Unlink, then release, the three blocks at 8005a414..8005a41c. */
 void func_80077D2C(void) {
@@ -605,7 +633,37 @@ s32 func_80078BC8(void) {
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80078BC8);
 #endif
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80078C5C);
+/* With 800b2344 set, brighten the 256x32 text strip at (0, 1e0) in VRAM
+ * (every non-transparent pixel gains 0x0c63) and disable both buffers'
+ * dithering. */
+void func_80078C5C(void) {
+    RECT rect;
+    u32 *pixels;
+    s32 i;
+
+    if (D_800B218C.unk2344 != 0) {
+        D_800B249C[0].draw.dtd = 0;
+        D_800B249C[1].draw.dtd = 0;
+        pixels = func_80031BDC(0x4000, 0);
+        rect.y = 0x1E0;
+        rect.w = 0x100;
+        rect.x = 0;
+        rect.h = 0x20;
+        func_800448F8(&rect, pixels);
+        func_800445D0(0);
+        for (i = 0; i < 0x1000; i++) {
+            if (pixels[i] & 0xFFFF) {
+                pixels[i] |= 0xC63;
+            }
+            if (pixels[i] & 0xFFFF0000) {
+                pixels[i] |= 0x0C630000;
+            }
+        }
+        func_80044894(&rect, pixels);
+        func_800445D0(0);
+        func_800320E8(pixels);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80078D44);
 
@@ -856,7 +914,24 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007F5AC);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007F6F8);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007F814);
+/* The screen position of a point `height` above descriptor `index`. */
+void func_8007F814(s32 index, s32 *x, s32 *y, s32 height) {
+    SVECTOR point;
+    MATRIX m;
+    s32 screen;
+    s32 depth;
+    s32 flag;
+
+    func_8004931C(&D_800AF880.scaled_world, &D_800AFB0C.descriptors[index].matrix, &m);
+    func_80049EFC(&m);
+    func_80049F8C(&m);
+    point.vx = 0;
+    point.vy = height;
+    point.vz = 0;
+    func_8004A64C(&point, &screen, &depth, &flag);
+    *y = screen >> 16;
+    *x = (s16)screen;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007F8DC);
 

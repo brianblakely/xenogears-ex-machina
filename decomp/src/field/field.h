@@ -383,6 +383,11 @@ typedef struct {
 } FieldSlot6;
 
 /* Resident services. */
+extern void func_800273C4(void *object, SVECTOR *eye, SVECTOR *target, MATRIX *world, u32 *ot, s32 buffer);
+extern void func_800320A4(void *block); /* keep a block */
+extern void func_80044BD0(u32 *ot); /* DrawOTag */
+extern void func_800448F8(RECT *rect, u32 *pixels); /* StoreImage */
+extern s32 func_8004A64C(SVECTOR *v, s32 *sxy, s32 *p, s32 *flag); /* RotTransPers */
 extern s32 func_8001ACF0(s32 member);
 extern void func_8003633C(s32);
 extern void func_80019CD0(void);
@@ -443,6 +448,10 @@ extern void func_800496AC(void);                               /* PopMatrix */
 extern void func_8004A6DC(SVECTOR *v, s32 *out, s32 *flag); /* RotTrans */
 
 /* Field overlay. */
+extern void func_80074700(void);
+extern void func_8008004C(u32 *ot, s32 buffer);
+extern void func_800805F4(void);
+extern void func_800A2030(void);
 extern void func_80071F64(s32 x, s32 y, s32 w, s32 h);
 extern void func_8008E0DC(s32 flags);
 extern void func_8008E148(s32 flags);
@@ -516,6 +525,10 @@ extern s32 D_8004F34C; /* current map */
 extern u8 D_800625FC[2][0x22]; /* pad buffers */
 
 /* Field state. */
+extern s32 D_800ADB50;
+extern s32 D_800ADB78;
+extern void *D_800B007C;
+extern s16 D_800B00B2;
 extern s32 D_800ADB38; /* requested transition */
 extern s32 D_800ADB3C; /* transition operand */
 extern s32 D_800ADB7C;
