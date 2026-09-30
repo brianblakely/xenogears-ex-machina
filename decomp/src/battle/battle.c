@@ -5,6 +5,7 @@
 #include "scene.h"
 #include "gte.h"
 #include "hud_draw.h"
+#include "battle_command.h"
 
 /* Start the 801e5000 module: reserve its heap span and load it. */
 void func_80070E2C(void) {
@@ -4629,15 +4630,329 @@ void func_80080C6C(u8 index) {
     D_800D3278->entries[index].active = 1;
 }
 
+/* Take an automatic turn for party member `member` (8009bac4 chooses):
+ * an attack (1) at a random reachable target other than itself, a skill (2)
+ * when its EP cover the cost, or defend in the gear (4); anything else, or
+ * too little EP, passes the turn. Then wait for the menu or the events to
+ * finish. */
+#ifdef NON_MATCHING
+void func_80080C94(u8 member) {
+    u8 choice[2];
+    u8 targets[11];
+    s32 i;
+    u8 *next;
+    u8 pass = 1;
+    u8 cost;
+    u16 ep;
+
+    func_800716D8();
+    for (i = 0; i < 11; i++) {
+        targets[i] = 0xFF;
+    }
+    D_800C3EAC->unk2EA = 1;
+    D_800C3EAC->menuDone = 0;
+    func_8009AB00(member);
+    func_8009BAC4(member, choice, (s16 *)&D_800C3EAC->slots[member].items[7]);
+    if (choice[0] == 1 || choice[0] == 2) {
+        for (i = 0, next = targets; i < 11; i++) {
+            if (func_80083FF4(member, i)) {
+                *next++ = i;
+            }
+        }
+        while ((D_800C3E2C = targets[func_8001BD40(0, 10)]) == 0xFF || D_800C3E2C == member) {
+        }
+    }
+    func_800879A8(member, D_800C3E2C);
+    D_800C3EAC->slots[member].defaultTarget = D_800C3E2C;
+    func_800BC404(func_80089C08(member) | func_80089C08(D_800C3EAC->slots[member].defaultTarget));
+    func_800716D8();
+    D_800C204C = 1;
+    switch (choice[0]) {
+    case 1:
+        D_800C3E18 = 0;
+        if (D_800D2D24[member] != 4) {
+            D_800C3FE8[D_800C3EAC->eventCount].actor = member;
+            D_800C3FE8[D_800C3EAC->eventCount].type = 0xFD;
+            D_800C3FE8[D_800C3EAC->eventCount].parameter = 0;
+            D_800C3FE8[D_800C3EAC->eventCount].targetMask = func_80089C08(D_800C3EAC->slots[member].defaultTarget);
+            D_800C3EAC->eventCount++;
+        }
+        if (D_800D32A0[member].unk1 == 0) {
+            D_800C3EAC->unk2DC = 0;
+        } else {
+            D_800C3EAC->unk2DC = choice[1];
+        }
+        pass = 0;
+        func_800B89FC(func_800877E0(member, D_800C3EAC->slots[member].defaultTarget), member,
+                      D_800C3EAC->slots[member].defaultTarget, func_80080AE4(member));
+        func_80087AF0(member, choice[1] + 1);
+        func_80080B64(member);
+        break;
+    case 2:
+        /* The skill's EP cost (descriptor byte 0x13). */
+        cost = D_800CCCE8.partyCommands[member][choice[1] + 0x16].pad12[1];
+        ep = D_800CCCE8.records[member].pilot.ep;
+        if (ep >= cost) {
+            D_800CCCE8.records[member].pilot.ep = ep - cost;
+            D_800C3EAC->unk2DF[7] = choice[1];
+            pass = 0;
+            func_8008ADD0(member);
+        }
+        break;
+    case 4:
+        func_800826CC(member);
+        pass = 0;
+        D_800C3EAC->menuDone = 1;
+        break;
+    }
+    if (pass) {
+        func_8009AA44(member);
+        D_800C3EAC->unk2EA = 0;
+        D_800C3EAC->menuDone = 1;
+    }
+    while (D_800C3EAC->menuDone == 0 && D_800C48EA == 0 && D_800C3EAC->eventsDone == 0) {
+        func_800716D8();
+    }
+    D_800C204C = 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80080C94);
+#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008115C);
+/* Confirm the selected entry of the member's on-foot window: entries 4, 6
+ * and 7 open the attack page (5) when the member has a target; 1 and 0 open
+ * pages 2 and 7 unless their item is unavailable (buzzer 0x4f); 2 opens page
+ * 3; 3 opens page 4 when available, else on a second press of the repeat
+ * entry (800c3e29 = 3) page 0xa. */
+void func_8008115C(member)
+u8 member;
+{
+    switch (D_800D3014) {
+    case 4:
+    case 6:
+    case 7:
+        if (D_800C3EAC->slots[member].defaultTarget != 0xFF) {
+            D_800D366C = 0;
+            func_80087A38(member);
+            func_80084A7C(member);
+            func_80077698();
+            D_800C3EAC->page = 5;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 1:
+        if (D_800C3EAC->slots[member].items[11] == 0) {
+            D_800C3EAC->page = 2;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 2:
+        D_800C3EAC->page = 3;
+        break;
+    case 3:
+        if (D_800C3EAC->slots[member].items[10] == 0) {
+            D_800C3EAC->page = 4;
+        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 3) {
+            if (D_800C3EAC->slots[member].items[7] != 0) {
+                func_8008AA74(0x4F);
+            } else {
+                D_800C3EAC->page = 0xA;
+            }
+            D_800C3EAC->repeatArmed = 0;
+        } else {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 0:
+        if (D_800C3EAC->slots[member].items[5] == 0) {
+            D_800C3EAC->page = 7;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80081318);
+/* Confirm the selected entry of the member's item command window: entries
+ * 4, 6 and 7 open the item list when the member has one (else page 2); 0
+ * opens page 1 when available, else on a repeat press (800c3e29 = 0) page 7;
+ * 2 opens page 3; 3 opens page 4, else on a repeat press page 0xa; 1 opens
+ * page 8 unless unavailable (buzzer 0x4f). */
+void func_80081318(member)
+u8 member;
+{
+    switch (D_800D3014) {
+    case 4:
+    case 6:
+    case 7:
+        if (func_8008BED8(member)) {
+            func_8008B908(member);
+        } else {
+            D_800C3EAC->page = 2;
+        }
+        break;
+    case 0:
+        if (D_800C3EAC->slots[member].items[9] == 0) {
+            D_800C3EAC->page = 1;
+        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 0) {
+            if (D_800C3EAC->slots[member].items[5] != 0) {
+                func_8008AA74(0x4F);
+            } else {
+                D_800C3EAC->page = 7;
+            }
+            D_800C3EAC->repeatArmed = 0;
+        } else {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 2:
+        D_800C3EAC->page = 3;
+        break;
+    case 3:
+        if (D_800C3EAC->slots[member].items[10] == 0) {
+            D_800C3EAC->page = 4;
+        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 3) {
+            if (D_800C3EAC->slots[member].items[7] != 0) {
+                func_8008AA74(0x4F);
+            } else {
+                D_800C3EAC->page = 0xA;
+            }
+            D_800C3EAC->repeatArmed = 0;
+        } else {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 1:
+        if (D_800C3EAC->slots[member].items[11] == 0) {
+            D_800C3EAC->page = 8;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80081504);
+/* Confirm the selected entry of the member's charge command window:
+ * entries 4, 6 and 7 charge and end the menu; 0 opens page 1 when available,
+ * else on a repeat press (800c3e29 = 0) page 7; 1 and 2 open pages 2 and 9
+ * unless unavailable (buzzer 0x4f); 3 opens page 4, else on a repeat press
+ * page 0xa. */
+void func_80081504(member)
+u8 member;
+{
+    switch (D_800D3014) {
+    case 4:
+    case 6:
+    case 7:
+        func_8009AA44(member);
+        D_800C3EAC->unk2EA = 0;
+        D_800C3EAC->menuDone = 1;
+        break;
+    case 0:
+        if (D_800C3EAC->slots[member].items[9] == 0) {
+            D_800C3EAC->page = 1;
+        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 0) {
+            if (D_800C3EAC->slots[member].items[5] != 0) {
+                func_8008AA74(0x4F);
+            } else {
+                D_800C3EAC->page = 7;
+            }
+            D_800C3EAC->repeatArmed = 0;
+        } else {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 1:
+        if (D_800C3EAC->slots[member].items[11] == 0) {
+            D_800C3EAC->page = 2;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 3:
+        if (D_800C3EAC->slots[member].items[10] == 0) {
+            D_800C3EAC->page = 4;
+        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 3) {
+            if (D_800C3EAC->slots[member].items[7] != 0) {
+                func_8008AA74(0x4F);
+            } else {
+                D_800C3EAC->page = 0xA;
+            }
+            D_800C3EAC->repeatArmed = 0;
+        } else {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 2:
+        if (D_800C3EAC->slots[member].items[8] == 0) {
+            D_800C3EAC->page = 9;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800816F8);
+/* Confirm the selected entry of the member's gear-list command window:
+ * entries 4, 6 and 7 open the gear list when the member has one (else page
+ * 4); 0 opens page 1 when available, else on a repeat press (800c3e29 = 0)
+ * page 7; 1 and 3 open pages 2 and 0xa unless unavailable (buzzer 0x4f); 2
+ * opens page 3. */
+void func_800816F8(member)
+u8 member;
+{
+    switch (D_800D3014) {
+    case 4:
+    case 6:
+    case 7:
+        func_8007FD38(member);
+        if (func_8008B478(member)) {
+            func_8008ADD0(member);
+        } else {
+            D_800C3EAC->page = 4;
+        }
+        break;
+    case 0:
+        if (D_800C3EAC->slots[member].items[9] == 0) {
+            D_800C3EAC->page = 1;
+        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 0) {
+            if (D_800C3EAC->slots[member].items[5] != 0) {
+                func_8008AA74(0x4F);
+            } else {
+                D_800C3EAC->page = 7;
+            }
+            D_800C3EAC->repeatArmed = 0;
+        } else {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 1:
+        if (D_800C3EAC->slots[member].items[11] == 0) {
+            D_800C3EAC->page = 2;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 2:
+        D_800C3EAC->page = 3;
+        break;
+    case 3:
+        if (D_800C3EAC->slots[member].items[7] == 0) {
+            D_800C3EAC->page = 0xA;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    }
+}
 
 /* Frame the camera and target cursor on the attack page target, mark the
  * four directions that lead to another target and show its name. */
@@ -4685,21 +5000,202 @@ u8 member;
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80081B58);
+/* The attack page (5) of the member's turn. The turn state bytes 0x2d4/0x2d5
+ * hold the AP left and the maximum, 0x2df the cost of the pressed attack,
+ * 0x2e0-0x2e5 the execution, closed, shown page, attacked, combo armed and
+ * reacted flags. Cancel (5) leaves the page while no AP were spent, else
+ * closes the command; attacks whose item is blocked beep; directions retarget
+ * until the combo starts. Attacks 6/7/4 cost 1/2/3 AP (4 also arms a known
+ * combo): with enough AP the combo is recorded and executed and the timer
+ * reload set from the AP left; the command closes when no AP remain or the
+ * target reacted. It is an int function that returns no value (the return
+ * register stays live at the exits). */
+s32 func_80081B58(u8 member) {
+    D_800D366C = 0;
+    if (D_800C3EAC->unk2DF[2] != 0) {
+        return;
+    }
+    D_800C3EAC->unk2DF[0] = 0;
+    func_8008189C(member);
+    switch (D_800D3014) {
+    case 5:
+        if (D_800C3EAC->unk2D4[0] != D_800C3EAC->unk2D4[1]) {
+            func_80080B64(member);
+            D_800C3EAC->unk2DF[2] = 1;
+        } else {
+            func_800B8DA4();
+            D_800D366C = 1;
+            D_800D2D28->unk7B = 0;
+            D_800D2D28->unkAF = 0;
+            D_800C3EAC->page = 1;
+            func_80077980();
+            func_8009413C(member, 1);
+        }
+        break;
+    case 4:
+        if (D_800C3EAC->slots[member].items[2] != 0) {
+            D_800D3014 = 5;
+            func_8008AA40(0x4F);
+        }
+        break;
+    case 7:
+        if (D_800C3EAC->slots[member].items[1] != 0) {
+            D_800D3014 = 5;
+            func_8008AA40(0x4F);
+        }
+        break;
+    case 6:
+        if (D_800C3EAC->slots[member].items[0] != 0) {
+            D_800D3014 = 5;
+            func_8008AA40(0x4F);
+        }
+        break;
+    }
+    if (D_800C3EAC->unk2E9 == 0) {
+        switch (D_800D3014) {
+        case 0:
+            D_800C3EAC->unk2E8 = func_80084854(D_800C3EAC->unk2E8, 0);
+            func_800879A8(D_800C3EAC->actor, D_800C3EAC->unk2E8);
+            func_8008AA40(0x4C);
+            break;
+        case 1:
+            D_800C3EAC->unk2E8 = func_80084854(D_800C3EAC->unk2E8, 1);
+            func_800879A8(D_800C3EAC->actor, D_800C3EAC->unk2E8);
+            func_8008AA40(0x4C);
+            break;
+        case 2:
+            D_800C3EAC->unk2E8 = func_80084854(D_800C3EAC->unk2E8, 2);
+            func_800879A8(D_800C3EAC->actor, D_800C3EAC->unk2E8);
+            func_8008AA40(0x4C);
+            break;
+        case 3:
+            D_800C3EAC->unk2E8 = func_80084854(D_800C3EAC->unk2E8, 3);
+            func_800879A8(D_800C3EAC->actor, D_800C3EAC->unk2E8);
+            func_8008AA40(0x4C);
+            break;
+        }
+        func_800877E0(member, D_800C3EAC->unk2E8);
+    }
+    D_800D2D28->unkAF = 1;
+    switch (D_800D3014) {
+    case 4:
+        if (func_80085EB4(4, member) && D_800C3EAC->unk2D4[0] - 3 >= 0) {
+            D_800C3EAC->unk2DF[5]++;
+        }
+        D_800C3EAC->unk2DF[0]++;
+    case 7:
+        D_800C3EAC->unk2DF[0]++;
+    case 6:
+        D_800C3EAC->unk2DF[0]++;
+        if (D_800C3EAC->unk2D4[0] - D_800C3EAC->unk2DF[0] >= 0) {
+            func_8008AA40(0x4D);
+            func_800819A4(member);
+            if (D_800D2D28->unkCB != 0) {
+                D_800C3EAC->page = 0x64;
+                D_800C3EAC->unk2DF[3] = 0xFF;
+                D_800C3EAC->unk2DF[1] = 1;
+            } else {
+                D_800C3EAC->page = 5;
+                D_800C3EAC->unk2DF[3] = 5;
+            }
+            D_800C3EAC->unk2D4[0] -= D_800C3EAC->unk2DF[0];
+            func_80085D34();
+            func_800861D0(D_800D3014, member);
+            D_800C3EAC->unk2DF[6] = func_80087AF0(member, D_800C3EAC->unk2DF[0]);
+            D_800D2E06[member] = D_800C31D4[D_800C3EAC->unk2D4[1]][D_800C3EAC->unk2D4[0]] * 100 / 56;
+            D_800C3EAC->unk2DF[4] = 1;
+        } else {
+            func_8008AA40(0x4F);
+        }
+        if (D_800C3EAC->unk2D4[0] == 0) {
+            func_80080B64(member);
+            D_800C3EAC->unk2DF[2] = 1;
+        }
+        if (D_800C3EAC->unk2DF[6] != 0) {
+            func_80080B64(member);
+            D_800C3EAC->unk2DF[2] = 1;
+        }
+        break;
+    case 5:
+        break;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800820A4);
+/* Confirm the selected entry of the member's special command window:
+ * entries 4, 6 and 7 start the selection (800c3eac +0x2e1) when the member
+ * has a target and a special is available, else open page 7; 1 and 0 open
+ * pages 8 and 1 unless unavailable (buzzer 0x4f); 2 opens page 9, else on a
+ * repeat press (800c3e29 = 2) page 3; 3 opens page 0xa, else on a repeat
+ * press page 4. */
+void func_800820A4(member)
+u8 member;
+{
+    switch (D_800D3014) {
+    case 4:
+    case 6:
+    case 7:
+        if (D_800C3EAC->slots[member].defaultTarget != 0xFF) {
+            if (func_8008C4A8(member)) {
+                D_800C3EAC->unk2DF[2] = 1;
+            } else {
+                D_800C3EAC->page = 7;
+                D_800C3EAC->unk2DF[3] = 0xFF;
+            }
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 1:
+        if (D_800C3EAC->slots[member].items[11] == 0) {
+            D_800C3EAC->page = 8;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 2:
+        if (D_800C3EAC->slots[member].items[8] == 0) {
+            D_800C3EAC->page = 9;
+        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 2) {
+            D_800C3EAC->page = 3;
+            D_800C3EAC->repeatArmed = 0;
+        } else {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 3:
+        if (D_800C3EAC->slots[member].items[7] == 0) {
+            D_800C3EAC->page = 0xA;
+        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 3) {
+            if (D_800C3EAC->slots[member].items[10] != 0) {
+                func_8008AA74(0x4F);
+            } else {
+                D_800C3EAC->page = 4;
+            }
+            D_800C3EAC->repeatArmed = 0;
+        } else {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 0:
+        if (D_800C3EAC->slots[member].items[9] == 0) {
+            D_800C3EAC->page = 1;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    }
+}
 
 /* Confirm the selected entry of the member's item window: entries 4, 6 and 7
  * open the item list when the member has one (else page 8); 0 opens page 7,
  * else on a repeat press (800c3e29 = 0) page 1; 2 opens page 9, else on a
  * repeat press (= 2) page 3; 3 opens page 0xa, else on a repeat press (= 3)
  * page 4; 1 opens page 2 unless unavailable (buzzer 0x4f). */
-#ifdef NON_MATCHING
 void func_800822C4(member)
 u8 member;
 {
-    TurnSlot *slot;
-
     switch (D_800D3014) {
     case 4:
     case 6:
@@ -4711,11 +5207,10 @@ u8 member;
         }
         break;
     case 0:
-        slot = &D_800C3EAC->slots[member];
-        if (slot->items[5] == 0) {
+        if (D_800C3EAC->slots[member].items[5] == 0) {
             D_800C3EAC->page = 7;
         } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 0) {
-            if (slot->items[9] != 0) {
+            if (D_800C3EAC->slots[member].items[9] != 0) {
                 func_8008AA74(0x4F);
             } else {
                 D_800C3EAC->page = 1;
@@ -4729,20 +5224,19 @@ u8 member;
     case 2:
         if (D_800C3EAC->slots[member].items[8] == 0) {
             D_800C3EAC->page = 9;
-        } else if (D_800C3EAC->repeatArmed == 0 || D_800C3E29 != 2) {
-            D_800C3EAC->repeatArmed = 1;
-            func_8008AA74(0x4F);
-        } else {
+        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 2) {
             D_800C3EAC->page = 3;
             D_800C3EAC->repeatArmed = 0;
+        } else {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
         }
         break;
     case 3:
-        slot = &D_800C3EAC->slots[member];
-        if (slot->items[7] == 0) {
+        if (D_800C3EAC->slots[member].items[7] == 0) {
             D_800C3EAC->page = 0xA;
         } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 3) {
-            if (slot->items[10] != 0) {
+            if (D_800C3EAC->slots[member].items[10] != 0) {
                 func_8008AA74(0x4F);
             } else {
                 D_800C3EAC->page = 4;
@@ -4762,21 +5256,15 @@ u8 member;
         break;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800822C4);
-#endif
 
 /* Confirm the selected entry of the escape command window: entries 4, 6 and
  * 7 try to flee (outcome 0x40 on success) and end the menu; 0 opens page 7
  * when available, else on a repeat press (800c3e29 = 0) page 1; 3 opens page
  * 0xa, else on a repeat press (800c3e29 = 3) page 4; 1 opens page 8 unless
  * unavailable (buzzer 0x4f); 2 opens page 3. */
-#ifdef NON_MATCHING
 void func_80082504(member)
 u8 member;
 {
-    TurnSlot *slot;
-
     switch (D_800D3014) {
     case 4:
     case 6:
@@ -4788,36 +5276,32 @@ u8 member;
         D_800C3EAC->menuDone = 1;
         break;
     case 0:
-        slot = &D_800C3EAC->slots[member];
-        if (slot->items[5] != 0) {
-            if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 0) {
-                if (slot->items[9] != 0) {
-                    func_8008AA74(0x4F);
-                } else {
-                    D_800C3EAC->page = 1;
-                }
-                D_800C3EAC->repeatArmed = 0;
-            } else {
-                D_800C3EAC->repeatArmed = 1;
-                func_8008AA74(0x4F);
-            }
-        } else {
+        if (D_800C3EAC->slots[member].items[5] == 0) {
             D_800C3EAC->page = 7;
+        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 0) {
+            if (D_800C3EAC->slots[member].items[9] != 0) {
+                func_8008AA74(0x4F);
+            } else {
+                D_800C3EAC->page = 1;
+            }
+            D_800C3EAC->repeatArmed = 0;
+        } else {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
         }
         break;
     case 1:
-        if (D_800C3EAC->slots[member].items[11] != 0) {
-            func_8008AA74(0x4F);
-        } else {
+        if (D_800C3EAC->slots[member].items[11] == 0) {
             D_800C3EAC->page = 8;
+        } else {
+            func_8008AA74(0x4F);
         }
         break;
     case 3:
-        slot = &D_800C3EAC->slots[member];
-        if (slot->items[7] == 0) {
+        if (D_800C3EAC->slots[member].items[7] == 0) {
             D_800C3EAC->page = 0xA;
         } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 3) {
-            if (slot->items[10] != 0) {
+            if (D_800C3EAC->slots[member].items[10] != 0) {
                 func_8008AA74(0x4F);
             } else {
                 D_800C3EAC->page = 4;
@@ -4833,9 +5317,6 @@ u8 member;
         break;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80082504);
-#endif
 
 /* The member boards its gear: it takes a formation group of its own, its
  * records and panel switch to the gear, and the game data notes that the
@@ -5138,15 +5619,427 @@ u8 member;
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800830A8);
+/* Confirm the selected entry of the member's gear command window with the
+ * guard toggle: entries 4, 6 and 7 toggle the guard (pilot and gear status
+ * bit 0x8000; setting it clears gear bit 0x20 and pilot bit 0x1000) and end
+ * the menu; 1 and 0 open pages 0x16 and 0x10 unless unavailable (buzzer
+ * 0x4f); 2 opens page 0x17, else on a repeat press (800c3e29 = 2) page 0x12;
+ * 3 opens page 0x18, else on a repeat press page 0x13. */
+void func_800830A8(member)
+u8 member;
+{
+    switch (D_800D3014) {
+    case 4:
+    case 6:
+    case 7:
+        if (D_800CCCE8.records[member].gear.status80 & 0x8000) {
+            D_800CCCE8.records[member].gear.status80 &= 0x7FFF;
+            D_800CCCE8.records[member].pilot.status84.half.active &= 0x7FFF;
+        } else {
+            D_800CCCE8.records[member].gear.status7C &= ~0x20;
+            D_800CCCE8.records[member].pilot.status7C &= ~0x1000;
+            D_800CCCE8.records[member].gear.status80 |= 0x8000;
+            D_800CCCE8.records[member].pilot.status84.half.active |= 0x8000;
+        }
+        D_800C3EAC->menuDone = 1;
+        break;
+    case 1:
+        if (D_800C3EAC->slots[member].items[12] == 0) {
+            D_800C3EAC->page = 0x16;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 2:
+        if (D_800C3EAC->slots[member].items[8] == 0) {
+            D_800C3EAC->page = 0x17;
+        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 2) {
+            D_800C3EAC->page = 0x12;
+            D_800C3EAC->repeatArmed = 0;
+        } else {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 3:
+        if (D_800C3EAC->slots[member].items[4] == 0) {
+            D_800C3EAC->page = 0x18;
+        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 3) {
+            if (D_800C3EAC->slots[member].items[6] != 0) {
+                func_8008AA74(0x4F);
+            } else {
+                D_800C3EAC->page = 0x13;
+            }
+            D_800C3EAC->repeatArmed = 0;
+        } else {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 0:
+        if (D_800C3EAC->slots[member].items[9] == 0) {
+            D_800C3EAC->page = 0x10;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80083340);
+/* Confirm the selected entry of the member's item window (gear pages):
+ * entries 4, 6 and 7 open the item list when the member has one (else page
+ * 0x16); 0 opens page 0x15, else on a repeat press (800c3e29 = 0) page 0x10;
+ * 2 opens page 0x17, else on a repeat press page 0x12; 3 opens page 0x18,
+ * else on a repeat press page 0x13; 1 opens page 0x11 unless unavailable
+ * (buzzer 0x4f). */
+void func_80083340(member)
+u8 member;
+{
+    switch (D_800D3014) {
+    case 4:
+    case 6:
+    case 7:
+        if (func_8008BED8(member)) {
+            func_8008B908(member);
+        } else {
+            D_800C3EAC->page = 0x16;
+        }
+        break;
+    case 0:
+        if (D_800C3EAC->slots[member].items[13] == 0) {
+            D_800C3EAC->page = 0x15;
+        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 0) {
+            if (D_800C3EAC->slots[member].items[9] != 0) {
+                func_8008AA74(0x4F);
+            } else {
+                D_800C3EAC->page = 0x10;
+            }
+            D_800C3EAC->repeatArmed = 0;
+        } else {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 2:
+        if (D_800C3EAC->slots[member].items[8] == 0) {
+            D_800C3EAC->page = 0x17;
+        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 2) {
+            D_800C3EAC->page = 0x12;
+            D_800C3EAC->repeatArmed = 0;
+        } else {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 3:
+        if (D_800C3EAC->slots[member].items[4] == 0) {
+            D_800C3EAC->page = 0x18;
+        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 3) {
+            if (D_800C3EAC->slots[member].items[6] != 0) {
+                func_8008AA74(0x4F);
+            } else {
+                D_800C3EAC->page = 0x13;
+            }
+            D_800C3EAC->repeatArmed = 0;
+        } else {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 1:
+        if (D_800C3EAC->slots[member].items[12] == 0) {
+            D_800C3EAC->page = 0x11;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80083580);
+/* Confirm the selected entry of the escape window (gear pages): entries 4,
+ * 6 and 7 try to flee (outcome 0x40 on success) and end the menu; 0 opens
+ * page 0x15, else on a repeat press (800c3e29 = 0) page 0x10; 1 opens page
+ * 0x16 unless unavailable (buzzer 0x4f); 3 opens page 0x18, else on a repeat
+ * press page 0x13; 2 opens page 0x12. */
+void func_80083580(member)
+u8 member;
+{
+    switch (D_800D3014) {
+    case 4:
+    case 6:
+    case 7:
+        /* 8009a9d0 takes no arguments; the call passes the actor. */
+        if (((s32 (*)())func_8009A9D0)(D_800C3EAC->actor)) {
+            D_800C48EA = 0x40;
+        }
+        D_800C3EAC->menuDone = 1;
+        break;
+    case 0:
+        if (D_800C3EAC->slots[member].items[13] == 0) {
+            D_800C3EAC->page = 0x15;
+        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 0) {
+            if (D_800C3EAC->slots[member].items[9] != 0) {
+                func_8008AA74(0x4F);
+            } else {
+                D_800C3EAC->page = 0x10;
+            }
+            D_800C3EAC->repeatArmed = 0;
+        } else {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 1:
+        if (D_800C3EAC->slots[member].items[12] == 0) {
+            D_800C3EAC->page = 0x16;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 3:
+        if (D_800C3EAC->slots[member].items[4] == 0) {
+            D_800C3EAC->page = 0x18;
+        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 3) {
+            if (D_800C3EAC->slots[member].items[6] != 0) {
+                func_8008AA74(0x4F);
+            } else {
+                D_800C3EAC->page = 0x13;
+            }
+            D_800C3EAC->repeatArmed = 0;
+        } else {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 2:
+        D_800C3EAC->page = 0x12;
+        break;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80083748);
+/* Confirm the selected entry of the member's gear part window: entries 4, 6
+ * and 7 load file 3 and open the part list when the gear has one (else page
+ * 0x18); 0 opens page 0x15, else on a repeat press (800c3e29 = 0) page 0x10;
+ * 1 and 3 open pages 0x16 and 0x13 unless unavailable (buzzer 0x4f); 2 opens
+ * page 0x17, else on a repeat press page 0x12. */
+void func_80083748(member)
+u8 member;
+{
+    switch (D_800D3014) {
+    case 4:
+    case 6:
+    case 7:
+        /* 8007fe3c takes no arguments; the call passes the member. */
+        ((void (*)())func_8007FE3C)(member);
+        if (func_8008CFB8(member)) {
+            func_8008ADD0(member);
+        } else {
+            D_800C3EAC->page = 0x18;
+        }
+        break;
+    case 0:
+        if (D_800C3EAC->slots[member].items[13] == 0) {
+            D_800C3EAC->page = 0x15;
+        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 0) {
+            if (D_800C3EAC->slots[member].items[9] != 0) {
+                func_8008AA74(0x4F);
+            } else {
+                D_800C3EAC->page = 0x10;
+            }
+            D_800C3EAC->repeatArmed = 0;
+        } else {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 1:
+        if (D_800C3EAC->slots[member].items[12] == 0) {
+            D_800C3EAC->page = 0x16;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 2:
+        if (D_800C3EAC->slots[member].items[8] == 0) {
+            D_800C3EAC->page = 0x17;
+        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 2) {
+            D_800C3EAC->page = 0x12;
+            D_800C3EAC->repeatArmed = 0;
+        } else {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 3:
+        if (D_800C3EAC->slots[member].items[6] == 0) {
+            D_800C3EAC->page = 0x13;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80083948);
+/* The gear attack page (0x19): like the attack page (80081b58) but paid in
+ * fuel. The gear HUD level (4: free combos) and the chain (+0x2d6, history
+ * +0x2cc) pick the step's fuel cost from the gear HUD table, indexed like the
+ * combo flags (80086b88). Cancel (5) leaves the page unless steps were
+ * taken; the command closes once the chain cannot continue, the target is
+ * down or the attack ended the chain. Int function without a value. */
+s32 func_80083948(u8 member) {
+    s32 steps = 0;
+    u16 fuel = D_800CCCE8.records[member].gear.fuel;
+    u8 enough = 0;
+    u8 leave;
+    s32 index;
+    s32 cost;
+
+    D_800D366C = 0;
+    if (D_800C3EAC->unk2DF[2] != 0) {
+        return;
+    }
+    func_8008189C(member);
+    switch (D_800D3014) {
+    case 5:
+        leave = 1;
+        if (D_800C3EAC->unk2DF[8] != 0 && D_800CCCE8.gearHud.level != 4) {
+            func_80080B64(member);
+            D_800C3EAC->unk2DF[2] = leave;
+            leave = 0;
+        }
+        if (leave) {
+            D_800D2D28->unkA8 = 0;
+            func_800B8DA4();
+            D_800D366C = 1;
+            D_800C3EAC->page = 0x10;
+            func_80077980();
+            if (D_800CCCE8.gearHud.level != 4) {
+                func_8009413C(member, 1);
+            } else {
+                D_800C3EAC->unk2DF[8] = 0;
+                D_800C3EAC->unk2D6 = 0;
+            }
+        }
+        break;
+    case 4:
+        if (D_800C3EAC->slots[member].items[2] != 0) {
+            D_800D3014 = 5;
+            func_8008AA40(0x4F);
+        }
+        break;
+    case 7:
+        if (D_800C3EAC->slots[member].items[1] != 0) {
+            D_800D3014 = 5;
+            func_8008AA40(0x4F);
+        }
+        break;
+    case 6:
+        if (D_800C3EAC->slots[member].items[0] != 0) {
+            D_800D3014 = 5;
+            func_8008AA40(0x4F);
+        }
+        break;
+    }
+    if (D_800C3EAC->unk2E9 == 0) {
+        switch (D_800D3014) {
+        case 0:
+            D_800C3EAC->unk2E8 = func_80084854(D_800C3EAC->unk2E8, 0);
+            func_8008AA40(0x4C);
+            break;
+        case 1:
+            D_800C3EAC->unk2E8 = func_80084854(D_800C3EAC->unk2E8, 1);
+            func_8008AA40(0x4C);
+            break;
+        case 2:
+            D_800C3EAC->unk2E8 = func_80084854(D_800C3EAC->unk2E8, 2);
+            func_8008AA40(0x4C);
+            break;
+        case 3:
+            D_800C3EAC->unk2E8 = func_80084854(D_800C3EAC->unk2E8, 3);
+            func_8008AA40(0x4C);
+            break;
+        }
+    }
+    D_800D2D28->reaction[member] = 1;
+    if (D_800C3EAC->unk2DF[8] != 0) {
+        if (D_800CCCE8.gearHud.level != 4 &&
+            (D_800CCCE8.gearHud.level == 0 || D_800CCCE8.gearHud.level - 1 < D_800C3EAC->unk2CC[0])) {
+            func_80080B64(member);
+            D_800C3EAC->unk2DF[2] = 1;
+            return;
+        }
+        if (func_80089C9C(D_800C48E8, D_800C3EAC->slots[member].defaultTarget)) {
+            func_80080B64(member);
+            D_800C3EAC->unk2DF[2] = 1;
+            return;
+        }
+    }
+    switch (D_800D3014) {
+    default:
+        if (D_800CCCE8.gearHud.level == 4 && D_800C3EAC->unk2DF[8] == 0) {
+            D_800C3EAC->unk2DF[8]++;
+            func_80086F98(0xFF, member);
+        }
+        break;
+    case 5:
+        break;
+    case 4:
+        steps++;
+    case 7:
+        steps++;
+    case 6:
+        steps++;
+        if (D_800CCCE8.gearHud.level == 4 && D_800C3EAC->unk2DF[8] == 0) {
+            D_800C3EAC->unk2DF[8]++;
+            func_80086F98(0xFF, member);
+            break;
+        }
+        /* The call narrows like a u8 (u8, u8) prototype. */
+        if ((u8)func_80086B88((u8)(steps - 1), member)) {
+            if (D_800C3EAC->unk2D6 == 0) {
+                cost = STEP_FUEL[steps];
+            } else if (D_800CCCE8.gearHud.level == 4) {
+                index = steps + 12;
+                cost = STEP_FUEL[index];
+            } else {
+                cost = STEP_FUEL[steps + (D_800C3EAC->unk2CC[0] + 1) * 3];
+            }
+            if (fuel - cost >= 0) {
+                enough = 1;
+            }
+            if (enough) {
+                func_8008AA40(0x4D);
+                D_800C4929 = 1;
+                func_800819A4(member);
+                if (D_800C3EAC->unk2D6 != 0) {
+                    D_800C3EAC->unk2DF[5]++;
+                }
+                if (D_800D2D28->unkCB != 0) {
+                    D_800C3EAC->page = 0x65;
+                    D_800C3EAC->unk2DF[3] = 0xFF;
+                    D_800C3EAC->unk2DF[1] = 1;
+                } else {
+                    D_800C3EAC->page = 0x19;
+                    D_800C3EAC->unk2DF[3] = 0x19;
+                }
+                D_800C3EAC->unk2DF[5] = func_80086F98(steps - 1, member) == 0;
+                func_80087AF0(member, steps);
+                D_800CCCE8.records[member].gear.fuel -= STEP_FUEL[D_800C3EAC->unk2DC];
+                func_800898F0(member);
+                D_800C3EAC->unk2DF[8]++;
+            } else {
+                D_800D366C = 1;
+                func_8008AA74(0x4F);
+                D_800D366C = 0;
+            }
+            if (D_800C3EAC->unk2DF[5] != 0) {
+                func_80080B64(member);
+                D_800C3EAC->unk2DF[2] = 1;
+            }
+        }
+        break;
+    }
+}
 
 /* Whether the member can attack `slot`: present and visible; an unflagged
  * slot must be adjacent (formation distance 0) and not down, a flagged slot
@@ -5259,7 +6152,72 @@ u8 func_800841E0(u8 member) {
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800841E0);
 #endif
 
+/* Collect the slots a party attack can target (80084108, `any` includes
+ * downed ones) as candidates with their mask: side 0 the enemies, 1 the
+ * party, 2 both (the party first unless `partyFirst` is clear). Returns the
+ * first candidate. */
+#ifdef NON_MATCHING
+u8 func_80084548(u8 side, u8 any, u8 partyFirst) {
+    s32 i;
+    s32 count;
+    s32 n1;
+    s32 n2 = 0;
+    u8 first1;
+    u8 first2;
+    s32 slot;
+
+    for (i = 0; i < 12; i++) {
+        D_800C3E90[i] = 0xFF;
+    }
+    switch (side) {
+    case 0:
+        first1 = 3;
+        n1 = 8;
+        break;
+    case 1:
+        first1 = 0;
+        n1 = 3;
+        break;
+    case 2:
+        if (partyFirst == 0) {
+            first1 = 3;
+            n1 = 8;
+            first2 = 0;
+            n2 = 3;
+        } else {
+            first1 = 0;
+            n1 = 3;
+            first2 = 3;
+            n2 = 8;
+        }
+        break;
+    }
+    count = 0;
+    D_800D3274 = 0;
+    D_800C3D64 = 0;
+    i = first1;
+    while (--n1 >= 0) {
+        slot = i++;
+        if (func_80084108(slot, any)) {
+            D_800C3E90[count++] = slot;
+            D_800C3D64 |= func_80089C08(slot);
+            D_800D3274++;
+        }
+    }
+    i = first2;
+    while (--n2 >= 0) {
+        slot = i++;
+        if (func_80084108(slot, any)) {
+            D_800C3E90[count++] = slot;
+            D_800C3D64 |= func_80089C08(slot);
+            D_800D3274++;
+        }
+    }
+    return D_800C3E90[0];
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80084548);
+#endif
 
 /* Collect the enemy slots the member can target (80083ff4) as candidates
  * and their mask; returns the first candidate. */
@@ -5271,7 +6229,7 @@ u8 func_80084750(u8 member) {
     s32 slot;
 
     n = 8;
-    for (i = 11; i >= 0; i--) {
+    for (i = 0; i < 12; i++) {
         D_800C3E90[i] = 0xFF;
     }
     count = 0;
@@ -5292,7 +6250,57 @@ u8 func_80084750(u8 member) {
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80084750);
 #endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80084854);
+/* The candidate nearest to `origin` that lies in screen direction
+ * `direction` (0-3, each a quarter turn around it); `origin` when none. */
+u8 func_80084854(u8 origin, u8 direction) {
+    s32 best = 0xFFFFFF;
+    s32 i;
+    s32 angle;
+    s32 inside;
+    s32 distance;
+    u8 nearest = origin;
+
+    for (i = 0; i < 11; i++) {
+        if (D_800C3E90[i] != 0xFF && D_800C3E90[i] != origin) {
+            inside = 0;
+            angle = ratan2(SLOT_Z(D_800C3E90[i]) - SLOT_Z(origin), SLOT_X(D_800C3E90[i]) - SLOT_X(origin));
+            switch (direction) {
+            case 0:
+                if ((u16)(angle + 0x200) < 0x400) {
+                    inside = 1;
+                }
+                break;
+            case 1:
+                if ((u16)(angle + 0x600) < 0x400) {
+                    inside = 1;
+                }
+                break;
+            case 2:
+                if ((u16)(angle + 0x800) < 0x200) {
+                    inside = 1;
+                }
+                if ((u16)(angle - 0x600) <= 0x200) {
+                    inside = 1;
+                }
+                break;
+            case 3:
+                if ((u16)(angle - 0x200) < 0x400) {
+                    inside = 1;
+                }
+                break;
+            }
+            if (inside) {
+                distance = SQUARE(SLOT_Z(D_800C3E90[i]) - SLOT_Z(origin));
+                distance += SQUARE(SLOT_X(D_800C3E90[i]) - SLOT_X(origin));
+                if (distance < best) {
+                    best = distance;
+                    nearest = D_800C3E90[i];
+                }
+            }
+        }
+    }
+    return nearest;
+}
 
 /* Keep the member's default target as the attack page target when it is
  * still a candidate, else take the first candidate. */
@@ -5313,7 +6321,50 @@ void func_80084A7C(u8 member) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80084B40);
+/* Pick a target with the direction keys, starting from the attack page
+ * target: highlight member and target each frame; 0-3 move to the nearest
+ * candidate that way, 4/6/7 confirm it as the member's default target (1)
+ * and 5 cancels back to the default target (0). */
+u8 func_80084B40(u8 member) {
+    u8 state = 2;
+    u8 target = D_800C3EAC->unk2E8;
+
+    D_800D3014 = 8;
+    do {
+        while (D_800D3014 == 8) {
+            func_800BC404(func_80089C08(member) | func_80089C08(target));
+            func_800BCD98(func_80089C08(target));
+            func_800716D8();
+        }
+        switch (D_800D3014) {
+        case 4:
+        case 6:
+        case 7:
+            state = 1;
+            D_800C3EAC->slots[member].defaultTarget = target;
+            break;
+        case 5:
+            func_800BC404(func_80089C08(member) | func_80089C08(D_800C3EAC->slots[member].defaultTarget));
+            state = 0;
+            func_800BCD98(func_80089C08(D_800C3EAC->slots[member].defaultTarget));
+            break;
+        case 0:
+            target = func_80084854(target, 0);
+            break;
+        case 1:
+            target = func_80084854(target, 1);
+            break;
+        case 2:
+            target = func_80084854(target, 2);
+            break;
+        case 3:
+            target = func_80084854(target, 3);
+            break;
+        }
+        D_800D3014 = 8;
+    } while (state == 2);
+    return state;
+}
 
 /* The mask of slots in 800c3d64 in the formation group of slot 800c3e2c. */
 u16 func_80084D28(void) {
@@ -5328,9 +6379,168 @@ u16 func_80084D28(void) {
     return mask;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80084DE4);
+/* Set up the target candidates for a target selection word (mode 0: the
+ * fallback's, 1: 0x3000, 2: 0x2001). Bit 0x1000 selects the enemies, else
+ * the party; 0x2000 both; 0x8000 keeps only downed slots (+0x7c bit
+ * 0x8000); 0x4000 the member alone. `own` takes the member's reachable
+ * enemies (80084750). Sets the current target 800c3e2c and returns the
+ * selection. */
+#ifdef NON_MATCHING
+u16 func_80084DE4(u16 selection, u16 fallback, u8 member, u8 mode, u8 own) {
+    u8 downed = 0;
+    u8 side;
+    u8 partyFirst;
+    u16 mask;
+    s32 count;
+    s32 i;
+    u8 slot;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085084);
+    switch (mode) {
+    case 0:
+        selection = fallback;
+        break;
+    case 1:
+        selection = 0x3000;
+        break;
+    case 2:
+        selection = 0x2001;
+        break;
+    }
+    if (selection & 0x8000) {
+        downed = 1;
+    }
+    partyFirst = 0;
+    if (selection & 0x1000) {
+        side = 0;
+        mask = 0xFFF8;
+    } else {
+        partyFirst = 1;
+        side = 1;
+        mask = 7;
+    }
+    if (selection & 0x2000) {
+        side = 2;
+        mask = 0xFFFF;
+    }
+    if (own) {
+        D_800C3E2C = func_80084750(member);
+    } else {
+        D_800C3E2C = func_80084548(side, downed, partyFirst);
+    }
+    D_800C3D64 &= mask;
+    if (selection & 0x8000) {
+        count = 0;
+        D_800C3E2C = 0xFF;
+        for (i = 0; i < 11; i++) {
+            slot = i;
+            if (func_80089C9C(D_800C3D64, slot)) {
+                if (D_800D32A0[i].unk1 == 0 ? D_800CCCE8.records[i].pilot.status7C & 0x8000
+                                            : D_800CCCE8.records[i].gear.status7C & 0x8000) {
+                    D_800C3E2C = slot;
+                    D_800C3E90[count++] = slot;
+                } else {
+                    D_800C3D64 &= func_80089C48(slot);
+                }
+            }
+        }
+        for (; count < 11; count++) {
+            D_800C3E90[count] = 0xFF;
+        }
+    } else if (selection & 0x4000) {
+        D_800C3E2C = member;
+        D_800C3D64 = func_80089C08(member);
+        for (i = 0; i < 11; i++) {
+            D_800C3E90[i] = 0xFF;
+        }
+    }
+    return selection;
+}
+#else
+INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80084DE4);
+#endif
+
+/* Select a target for selection word `target` (80084de4): each frame
+ * highlight the current target (mode 0), all candidates (1) or those in the
+ * current target's formation group (2); keys 0-3 move to the nearest
+ * candidate that way, 4 confirms (1) and 5 cancels (0). The direction
+ * arrows are refreshed whenever the key changes. Returns 0 when there is no
+ * candidate. */
+u8 func_80085084(u16 target, u8 member, s32 mode) {
+    u8 lastKey = 0xFE;
+    u8 state;
+    u16 group;
+    u8 next;
+    s32 direction;
+
+    func_80084DE4(target, target, member, 0, mode);
+    group = D_800C3D64;
+    state = D_800C3E2C == 0xFF;
+    while (state == 0) {
+        func_800716D8();
+        switch (target & 0xF) {
+        case 0:
+            func_800BCD98(func_80089C08(D_800C3E2C));
+            func_800BC404(func_80089C08(D_800C3E2C));
+            break;
+        case 1:
+            func_800BCD98(D_800C3D64);
+            func_800BC404(D_800C3D64);
+            break;
+        case 2:
+            group = func_80084D28();
+            func_800BCD98(group);
+            func_800BC404(group);
+            break;
+        }
+        switch (D_800D3014) {
+        case 5:
+            state = 1;
+            break;
+        case 4:
+            D_800C3D64 = group;
+            state = 2;
+            break;
+        case 0:
+            next = func_80084854(D_800C3E2C, 0);
+            if (func_80089C9C(D_800C3D64, next)) {
+                D_800C3E2C = next;
+            }
+            break;
+        case 1:
+            next = func_80084854(D_800C3E2C, 1);
+            if (func_80089C9C(D_800C3D64, next)) {
+                D_800C3E2C = next;
+            }
+            break;
+        case 2:
+            next = func_80084854(D_800C3E2C, 2);
+            if (func_80089C9C(D_800C3D64, next)) {
+                D_800C3E2C = next;
+            }
+            break;
+        case 3:
+            next = func_80084854(D_800C3E2C, 3);
+            if (func_80089C9C(D_800C3D64, next)) {
+                D_800C3E2C = next;
+            }
+            break;
+        case 6:
+        case 7:
+            break;
+        }
+        if (D_800D3014 != lastKey) {
+            lastKey = D_800D3014;
+            for (direction = 0; direction < 4; direction++) {
+                if (func_80084854(D_800C3E2C, direction) != D_800C3E2C) {
+                    D_800C3E24->arrows[direction] = 1;
+                } else {
+                    D_800C3E24->arrows[direction] = 0;
+                }
+            }
+        }
+    }
+    return state - 1;
+}
 
 /* Whether slot b's slot-info +0xa is below slot a's. */
 s32 func_80085310(u8 a, u8 b) {
@@ -5360,9 +6570,154 @@ void func_80085388(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085454);
+/* Copy the resolver's damage and result codes into event `queue` and
+ * accumulate them into the running amount and code of each slot: damage
+ * (codes 0 and 5) and healing (code 2) add up or cancel out, any other code
+ * replaces the running result. */
+void func_80085454(u8 queue) {
+    s32 slot;
 
+    for (slot = 0; slot < 11; slot++) {
+        D_800C3FE8[queue].amounts[slot] = D_800D2C54[slot];
+        D_800C3FE8[queue].codes[slot] = D_800D2C88[slot];
+        switch (D_800D2C88[slot]) {
+        case 0:
+        case 5:
+            if (D_800D2D5C[slot] == 0 || D_800D2D5C[slot] == 5) {
+                D_800D2D70[slot] += D_800D2C54[slot];
+            } else if (D_800D2D5C[slot] == 2) {
+                if ((s16)D_800D2C54[slot] - D_800D2D70[slot] < 0) {
+                    D_800D2D70[slot] = D_800D2D70[slot] - (s16)D_800D2C54[slot];
+                } else {
+                    D_800D2D70[slot] = (s16)D_800D2C54[slot] - D_800D2D70[slot];
+                    D_800D2D5C[slot] = 0;
+                }
+            } else {
+                D_800D2D70[slot] = D_800D2C54[slot];
+                D_800D2D5C[slot] = D_800D2C88[slot];
+            }
+            break;
+        case 2:
+            if (D_800D2D5C[slot] == 2) {
+                D_800D2D70[slot] += D_800D2C54[slot];
+            } else if (D_800D2D5C[slot] == 0 || D_800D2D5C[slot] == 5) {
+                if ((s16)D_800D2C54[slot] - D_800D2D70[slot] < 0) {
+                    D_800D2D70[slot] = D_800D2D70[slot] - (s16)D_800D2C54[slot];
+                } else {
+                    D_800D2D70[slot] = (s16)D_800D2C54[slot] - D_800D2D70[slot];
+                    D_800D2D5C[slot] = 2;
+                }
+            } else {
+                D_800D2D70[slot] = D_800D2C54[slot];
+                D_800D2D5C[slot] = D_800D2C88[slot];
+            }
+            break;
+        }
+        D_800C3FE8[queue].accumulated[slot] = D_800D2D70[slot];
+        D_800C3FE8[queue].accumulatedCodes[slot] = D_800D2D5C[slot];
+    }
+}
+
+/* Apply the results of event `queue` to every present slot: damage (codes
+ * 0, 5, 7, 8) to HP or, in a gear, gear HP (knocking the slot out at 0),
+ * healing (2) up to the maximum, EP loss (1, 9) and gain (3), fuel loss
+ * (10) and gain (11). A knocked-out slot only joins the 800c48e8 mask.
+ * Slots whose values changed get their refresh flag (+0x2eb). */
+#ifdef NON_MATCHING
+void func_80085618(u8 queue) {
+    s32 slot;
+    s32 left;
+
+    for (slot = 0; slot < 11; slot++) {
+        if (D_800D2DCC.present[slot] == 0) {
+            continue;
+        }
+        if (D_800CCCE8.records[slot].pilot.status7C & 0x8000) {
+            D_800C48E8 |= func_80089C08(slot);
+            continue;
+        }
+        switch (D_800C3FE8[queue].codes[slot]) {
+        case 0:
+        case 5:
+        case 7:
+        case 8:
+            if (D_800C3EB4[slot].gear == 0) {
+                left = D_800CCCE8.records[slot].pilot.hp - (s16)D_800C3FE8[queue].amounts[slot];
+                if (left > 0) {
+                    D_800CCCE8.records[slot].pilot.hp = left;
+                    break;
+                }
+                D_800CCCE8.records[slot].pilot.hp = 0;
+                D_800C48E8 |= func_80089C08(slot);
+                D_800CCCE8.records[slot].pilot.status7C |= 0x8000;
+            } else {
+                left = D_800CCCE8.records[slot].gear.hp - D_800C3FE8[queue].amounts[slot];
+                if (left > 0) {
+                    D_800CCCE8.records[slot].gear.hp = left;
+                    break;
+                }
+                D_800CCCE8.records[slot].gear.hp = 0;
+                D_800C48E8 |= func_80089C08(slot);
+                D_800CCCE8.records[slot].gear.status7C |= 0x8000;
+                D_800CCCE8.records[slot].pilot.status7C |= 0x8000;
+            }
+            if (slot >= 3) {
+                func_800883AC(slot);
+            }
+            break;
+        case 2:
+            if (D_800C3EB4[slot].gear != 0 && D_800C2050 == 0) {
+                D_800CCCE8.records[slot].gear.hp += D_800C3FE8[queue].amounts[slot];
+                if (D_800CCCE8.records[slot].gear.maxHp < D_800CCCE8.records[slot].gear.hp) {
+                    D_800CCCE8.records[slot].gear.hp = D_800CCCE8.records[slot].gear.maxHp;
+                }
+            } else {
+                D_800CCCE8.records[slot].pilot.hp += D_800C3FE8[queue].amounts[slot];
+                if (D_800CCCE8.records[slot].pilot.maxHp < D_800CCCE8.records[slot].pilot.hp) {
+                    D_800CCCE8.records[slot].pilot.hp = D_800CCCE8.records[slot].pilot.maxHp;
+                }
+            }
+            break;
+        case 1:
+        case 9:
+            left = (s16)D_800CCCE8.records[slot].pilot.ep - (s16)D_800C3FE8[queue].amounts[slot];
+            if (left > 0) {
+                D_800CCCE8.records[slot].pilot.ep = left;
+            } else {
+                D_800CCCE8.records[slot].pilot.ep = 0;
+            }
+            continue;
+        case 3:
+            if (D_800C3EB4[slot].gear != 0 && D_800C2050 == 0) {
+                continue;
+            }
+            D_800CCCE8.records[slot].pilot.ep += D_800C3FE8[queue].amounts[slot];
+            if (D_800CCCE8.records[slot].pilot.maxEp < D_800CCCE8.records[slot].pilot.ep) {
+                D_800CCCE8.records[slot].pilot.ep = D_800CCCE8.records[slot].pilot.maxEp;
+            }
+            continue;
+        case 10:
+            if (D_800CCCE8.records[slot].gear.fuel - D_800C3FE8[queue].amounts[slot] > 0) {
+                D_800CCCE8.records[slot].gear.fuel -= D_800C3FE8[queue].amounts[slot];
+            } else {
+                D_800CCCE8.records[slot].gear.fuel = 0;
+            }
+            break;
+        case 11:
+            D_800CCCE8.records[slot].gear.fuel += D_800C3FE8[queue].amounts[slot];
+            if (D_800CCCE8.records[slot].gear.maxFuel < D_800CCCE8.records[slot].gear.fuel) {
+                D_800CCCE8.records[slot].gear.fuel = D_800CCCE8.records[slot].gear.maxFuel;
+            }
+            break;
+        default:
+            continue;
+        }
+        D_800C3EAC->reaction[slot] = 1;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085618);
+#endif
 
 /* Revive slot at full HP and clear its timed statuses (the active halves of
  * the status words 0x7c-0x80 and 0x84-0x8c). */
@@ -5461,7 +6816,67 @@ void func_80085E78(void) {
     D_800C3EAC->unk2D6 = 0;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085EB4);
+/* Mode 4: whether the combo input history (+0x2cc) matches one of the 13
+ * combo patterns whose deathblow the member's character knows. */
+u8 func_80085EB4(u8 mode, u8 member) {
+    u8 result = 0;
+    s32 match;
+    s32 combo;
+    s32 i;
+
+    if (D_800C3EAC->unk2D6 != 0 && mode == 4) {
+        for (combo = 0; combo < 13; combo++) {
+            for (i = 0; i < 7; i++) {
+                if (D_800C3EAC->unk2CC[i] == D_800C3160[combo][i]) {
+                    match = 1;
+                } else {
+                    match = 0;
+                    break;
+                }
+            }
+            i = 0;
+            if (match) {
+                break;
+            }
+        }
+        /* The deathblow index counts down from the last combo (the switch
+         * reuses the match flag's variable). */
+        match = combo;
+        switch (match) {
+        case 0:
+            i++;
+        case 1:
+            i++;
+        case 2:
+            i++;
+        case 3:
+            i++;
+        case 4:
+            i++;
+        case 5:
+            i++;
+        case 6:
+            i++;
+        case 7:
+            i++;
+        case 8:
+            i++;
+        case 9:
+            i++;
+        case 10:
+            i++;
+        case 11:
+            i++;
+        case 12:
+            if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask0,
+                              D_800C31AC[D_800CCCE8.records[member].pilot.characterId][12 - i])) {
+                result = 1;
+            }
+            break;
+        }
+    }
+    return result;
+}
 
 /* Add entry `index` to list 11 (the combo chain display): render the
  * member's text `id` into the shared image (two entries per image cell),
@@ -5499,31 +6914,198 @@ u8 offset;
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80086028);
 #endif
 
+/* Record attack input `code` in the combo history (+0x2cc, length +0x2d6)
+ * and show it (list 12) with the deathblows it completes or leads into:
+ * the combo it spells when its character knows it and the attack is
+ * available, else (unless the chain is armed) the longer combos it
+ * continues. With an armed chain a completed deathblow becomes the combo step
+ * (+0x2dc). The three text image blocks live for one frame. */
+#ifdef NON_MATCHING
+void func_800861D0(u8 code, u8 member) {
+    s32 index = 0;
+    s32 shown = 0;
+    s32 block;
+    s32 combo;
+    s32 match;
+    s32 i;
+    u8 id;
+
+    for (block = 0; block < 3; block++) {
+        D_800C3A70[block] = (u32 *)func_8008AC00(0x1E);
+    }
+    D_800C3EAC->unk2CC[D_800C3EAC->unk2D6] = code - 4;
+    D_800C3EAC->unk2D6++;
+    if (D_800C3EAC->unk2DF[5] != 0) {
+        D_800C3EAC->unk2CC[D_800C3EAC->unk2D6 - 1] = 0xFF;
+    }
+    for (combo = 0; combo < 13; combo++) {
+        for (i = 0; i < 7; i++) {
+            if (D_800C3EAC->unk2CC[i] == D_800C3160[combo][i]) {
+                match = 1;
+            } else {
+                match = 0;
+                break;
+            }
+        }
+        if (match) {
+            break;
+        }
+    }
+    /* From here the match flag's variable holds the combo. */
+    match = combo;
+    if (D_800C3EAC->unk2DF[5] != 0) {
+        D_800C3EAC->unk2CC[D_800C3EAC->unk2D6 - 1] = code - 4;
+    }
+    D_800D2DB4->counts[12] = 0;
+    D_800D2DB4->counts[11] = 0;
+    for (combo = 0; combo < D_800C3EAC->unk2D6; combo++) {
+        switch (D_800C3EAC->unk2CC[combo]) {
+        case 0:
+            id = 0x5D;
+            break;
+        case 2:
+            id = 0x5E;
+            break;
+        case 3:
+            id = 0x5F;
+            break;
+        }
+        D_800D2DB4->counts[12] +=
+                func_80076A10(id, &D_800D2DB4->unk5640[D_800D2DB4->counts[12] * 2], 0x50 + combo * 16, 0xD0 - index * 16);
+    }
+    /* The deathblow index counts down from the last combo. */
+    i = 0;
+    switch (match) {
+    case 0:
+        i++;
+    case 1:
+        i++;
+    case 2:
+        i++;
+    case 3:
+        i++;
+    case 4:
+        i++;
+    case 5:
+        i++;
+    case 6:
+        i++;
+    case 7:
+        i++;
+    case 8:
+        i++;
+    case 9:
+        i++;
+    case 10:
+        i++;
+    case 11:
+        i++;
+    case 12:
+        if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask0, D_800C31AC[D_800CCCE8.records[member].pilot.characterId][12 - i]) &&
+            D_800C3EAC->slots[member].items[2] == 0) {
+            if (D_800C3EAC->unk2DF[5] == 0) {
+                D_800D2DB4->counts[12] +=
+                func_80076A10(7, &D_800D2DB4->unk5640[D_800D2DB4->counts[12] * 2], 0x50 + combo * 16, 0xD0 - index * 16);
+            } else {
+                combo--;
+            }
+            shown = 1;
+            index = func_80086028(member, index, combo, D_800C31AC[D_800CCCE8.records[member].pilot.characterId][12 - i], &D_800C3A70[index / 2], 0);
+        }
+        break;
+    }
+    if (D_800C3EAC->unk2DF[5] != 0 && shown) {
+        D_800D2DB4->buffers[12] = D_800CCB04.buffer;
+        D_800C3EAC->unk2DC = D_800C31AC[D_800CCCE8.records[member].pilot.characterId][12 - i] + 8;
+        D_800D2DB4->buffers[11] = D_800CCB04.buffer;
+        D_800D2D28->unkA8 = 1;
+        func_800716D8();
+        for (block = 0; block < 3; block++) {
+            func_800320E8(D_800C3A70[block]);
+        }
+        return;
+    }
+    /* The second, longer deathblow (index 13-18, or 19 after combo 8). */
+    i = 0;
+    switch (match) {
+    case 0:
+        i++;
+    case 1:
+        i++;
+    case 2:
+        i++;
+    case 3:
+        i++;
+    case 4:
+        i++;
+    case 5:
+        i++;
+    case 8:
+        if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask0, D_800C31AC[D_800CCCE8.records[member].pilot.characterId][19 - i]) &&
+            D_800C3EAC->slots[member].items[0] == 0 && D_800C3EAC->slots[member].items[2] == 0) {
+            D_800D2DB4->counts[12] +=
+                func_80076A10(8, &D_800D2DB4->unk5640[D_800D2DB4->counts[12] * 2], 0x54 + combo * 16, 0xD0 - index * 16);
+            D_800D2DB4->counts[12] +=
+                func_80076A10(7, &D_800D2DB4->unk5640[D_800D2DB4->counts[12] * 2], 0x64 + combo * 16, 0xD0 - index * 16);
+            index = func_80086028(member, index, combo, D_800C31AC[D_800CCCE8.records[member].pilot.characterId][19 - i], &D_800C3A70[index / 2], 1);
+        }
+        break;
+    case 6:
+    case 7:
+        break;
+    }
+    /* The third deathblow (index 20-22) after combos 0, 1 and 3. */
+    i = 0;
+    switch (match) {
+    case 0:
+        i++;
+    case 1:
+        i++;
+    case 3:
+        if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask0, D_800C31AC[D_800CCCE8.records[member].pilot.characterId][22 - i]) &&
+            D_800C3EAC->slots[member].items[1] == 0 && D_800C3EAC->slots[member].items[2] == 0) {
+            D_800D2DB4->counts[12] +=
+                func_80076A10(9, &D_800D2DB4->unk5640[D_800D2DB4->counts[12] * 2], 0x58 + combo * 16, 0xD0 - index * 16);
+            D_800D2DB4->counts[12] +=
+                func_80076A10(7, &D_800D2DB4->unk5640[D_800D2DB4->counts[12] * 2], 0x68 + combo * 16, 0xD0 - index * 16);
+            func_80086028(member, index, combo, D_800C31AC[D_800CCCE8.records[member].pilot.characterId][22 - i], &D_800C3A70[index / 2], 1);
+        }
+        break;
+    }
+    D_800D2DB4->buffers[12] = D_800CCB04.buffer;
+    D_800D2DB4->buffers[11] = D_800CCB04.buffer;
+    D_800D2D28->unkA8 = 1;
+    func_800716D8();
+    for (block = 0; block < 3; block++) {
+        func_800320E8(D_800C3A70[block]);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800861D0);
+#endif
 
 /* Whether the member can use combo step `step` now: without a combo chain
  * (+0x2d6) always; otherwise its character must know the combo flag
- * (800c34cc) and the chain must allow another step. */
-#ifdef NON_MATCHING
+ * (800c34cc) and the chain must allow another step. 800d2c34 is the gear
+ * HUD's level byte of the battle work area (the original addresses it through
+ * 800ccce8). */
 s32 func_80086B88(s32 step, u8 member) {
     u8 index = step + (D_800C3EAC->unk2CC[0] + 1) * 3;
     s32 result = 1;
 
     if (D_800C3EAC->unk2D6 != 0) {
-        if (D_800D2C34 == 4) {
+        if (D_800CCCE8.gearHud.level == 4) {
             index = step + 12;
         }
         if (!func_80089C6C(D_8006ECF8[D_800D2D24[member]].combos, D_800C34CC[index])) {
             result = 0;
-        } else if (D_800C3EAC->unk2CC[0] != 0xFF && D_800D2C34 != 4 && D_800D2C34 < D_800C3EAC->unk2CC[0] + 1) {
+        } else if (D_800C3EAC->unk2CC[0] != 0xFF && D_800CCCE8.gearHud.level != 4 &&
+                   D_800CCCE8.gearHud.level < D_800C3EAC->unk2CC[0] + 1) {
             result = 0;
         }
     }
     return result;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80086B88);
-#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80086C88);
 
