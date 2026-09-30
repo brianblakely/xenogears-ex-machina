@@ -73,6 +73,7 @@ extern s32 func_800825AC(s32 from, s32 to);
 
 /* The per-actor motion stages of the field update (8008110c). */
 extern s32 D_800AF858;
+extern s32 D_80065B08; /* actor in motion */
 extern void func_800815F0(void);
 extern void func_80082620(s32 index, FieldDescriptor *descriptor, FieldActor *actor);
 extern void func_80082BB8(s32 index, FieldDescriptor *descriptor, FieldActor *actor);

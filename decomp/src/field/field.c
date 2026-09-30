@@ -5737,7 +5737,155 @@ conveyed:
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80082620);
 #endif
 
+#ifdef NON_MATCHING
+/* Move actor `index` for this frame: choose its walk/run mode, turn its
+ * requested heading into a velocity (80081f80) plus its additive motion,
+ * sweep that against the collision layers, then pick its animation and
+ * store the result as its velocity (+30). */
+void func_80082BB8(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
+    VECTOR move;
+    SVECTOR edge[2];
+    FieldModel *model;
+    s32 moving;
+    s32 result;
+    u32 saved;
+    s32 heading;
+    s16 mode;
+
+    heading = actor->heading;
+    model = descriptor->model;
+    D_80065B08 = index;
+    if (actor->flags & 0x1000000) {
+        return;
+    }
+    mode = 1;
+    if ((actor->flags & 0x4000) && (D_800AFE9C & 0x40) && D_800ADB68 == 1) {
+        mode = 2;
+    }
+    if ((actor->flags & 0x1800) && actor->unkE8 != mode) {
+        switch (actor->unkE8) {
+        case 1:
+            mode = 1;
+            break;
+        case 2:
+            mode = 2;
+            break;
+        }
+    }
+    if (actor->unk0E3 >= 9) {
+        actor->unk0E3--;
+    }
+    moving = actor->unk40[0] | actor->unk40[1] | actor->unk40[2];
+    if (func_8008492C(actor) == -1) {
+        moving = 1;
+    }
+    if ((heading & 0x8000) && moving == 0 && !(actor->flags & 0x40800)) {
+        goto idle;
+    }
+    if (!(heading & 0x8000)) {
+        func_80081F80(model, heading, descriptor);
+        move.vx = model->velocity[0];
+        move.vy = model->velocity[1];
+        move.vz = model->velocity[2];
+        move.vx += actor->unk40[0];
+        move.vy += actor->unk40[1];
+        move.vz += actor->unk40[2];
+        actor->heading_goal = heading;
+    } else {
+        move.vx = actor->unk40[0];
+        move.vy = actor->unk40[1];
+        heading = actor->heading_goal & 0xFFF;
+        move.vz = actor->unk40[2];
+    }
+    if (func_80082494(&move.vx, actor) != 0) {
+        goto stop;
+    }
+    if (move.vx != 0 || move.vz != 0) {
+        heading = -(s16)ratan2(move.vz, move.vx) & 0xFFF;
+    }
+    result = -1;
+    if (actor->triangle[actor->layer] != -1) {
+        saved = actor->flags;
+        if (index == D_800B2078.controlled) {
+            if (D_8005A444[1] != 0xFF) {
+                actor->flags = saved | (D_800AF880.components.descriptors[D_8005A444[1]].actor->flags & 0x600);
+            }
+            if (D_8005A444[2] != 0xFF) {
+                actor->flags |= D_800AF880.components.descriptors[D_8005A444[2]].actor->flags & 0x600;
+            }
+        }
+        if (!(actor->flags & 0x41800) && actor->unk074 == 0xFF && D_800ADB98 == 0) {
+            result = func_8007BAC0(&move, actor, edge, heading);
+        } else {
+            result = func_8007B814(&move, actor, edge, heading);
+        }
+        actor->flags = (actor->flags & ~0x600) | (saved & 0x600);
+    }
+    if (result != -1) {
+        goto moved;
+    }
+    goto stop;
+idle:
+    mode = actor->unkE6;
+    actor->heading |= 0x8000;
+stop:
+    actor->unkF0 = 0x10000;
+    actor->unk40[0] = 0;
+    actor->unk40[1] = 0;
+    actor->unk40[2] = 0;
+    move.vx = 0;
+    move.vy = 0;
+    move.vz = 0;
+    model->velocity[0] = 0;
+    model->velocity[2] = 0;
+    actor->heading_goal |= 0x8000;
+moved:
+    actor->layer_flags &= ~0x1000;
+    if (actor->flags & 0x800) {
+        if (D_800B2078.jump_mode == 0) {
+            if (WHOLE(model->position[1]) != (s16)model->unk84) {
+                if (mode == 2) {
+                    model->unk18 = model->unk82 * 0x60;
+                } else {
+                    model->unk18 = model->unk82 * 0x30;
+                }
+            } else {
+                model->unk18 = 0;
+            }
+        }
+        mode = D_800B2078.animation_mode;
+    } else {
+        if (actor->heading & 0x8000) {
+            mode = actor->unkE6;
+        }
+        if (func_80080968(actor) & 0x200000) {
+            if ((actor->heading & 0x8000) && actor->unkE8 == 6) {
+                actor->layer_flags |= 0x1000;
+            }
+            mode = 6;
+        }
+    }
+    if (actor->unk0EA != 0xFF) {
+        mode = actor->unk0EA;
+    }
+    if (actor->unkE8 != mode && !(actor->flags & 0x2000000)) {
+        actor->unkE8 = mode;
+        func_800821F4(model, mode, descriptor);
+    }
+    if (actor->unk014 & 0x100) {
+        move.vx >>= 1;
+        move.vz >>= 1;
+    }
+    actor->unk030[0] = move.vx;
+    actor->unk030[1] = move.vy;
+    actor->unk40[0] = 0;
+    actor->unk40[1] = 0;
+    actor->unk40[2] = 0;
+    actor->unk030[2] = move.vz;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80082BB8);
+#endif
 
 /* Ease `value` 0x4000 towards zero, bounded by +-`limit`. */
 s32 func_80083178(s32 value, s32 limit) {
