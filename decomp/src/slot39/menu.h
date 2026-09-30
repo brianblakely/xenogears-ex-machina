@@ -77,7 +77,8 @@ typedef struct MenuParty {
     u8 unk38[8]; /* 38: character ids of the party slots, ff empty */
     u8 unk40[6]; /* 40 */
     u8 unk46; /* 46 */
-    u8 pad47[0x2];
+    u8 pad47[0x1];
+    u8 unk48; /* 48 */
     u8 unk49; /* 49 */
     u8 pad4A[0x1];
     u8 unk4B; /* 4B */
@@ -323,7 +324,9 @@ typedef struct MenuGearViews {
 typedef struct MenuBlock34C {
     u8 pad0[0xA98];
     u8 views[4][0x87c]; /* A98 */
-    u8 pad2C88[0x138];
+    u8 pad2C88[0x134];
+    u8 rebuilt; /* 2DBC */
+    u8 pad2DBD[0x3];
 } MenuBlock34C;
 
 /* Five labels (*(state + 360)). */
@@ -341,6 +344,13 @@ typedef struct MenuMarkers {
     u8 pad144[0x4];
     u8 current[4]; /* 148 */
 } MenuMarkers;
+
+/* The save/load screen block (*(state + 42c)). */
+typedef struct MenuBlock42C {
+    u8 pad0[0x1180];
+    u8 *unk1180; /* 1180 */
+    u8 pad1184[0x14];
+} MenuBlock42C;
 
 /* The menu mode's state (*D_800625A0). */
 typedef struct MenuState {
@@ -391,7 +401,7 @@ typedef struct MenuState {
     u8 *fieldBlocks[3]; /* 39C: three 127c-byte field blocks */
     u8 *images[32]; /* 3A8 */
     MenuMarkers *markers; /* 428: marker block (14c bytes) */
-    u8 *block42C; /* 42C: 1198 bytes */
+    MenuBlock42C *block42C; /* 42C: 1198 bytes */
     u8 pad430[0x4];
     u8 *block434; /* 434 */
     u8 *block438; /* 438 */
@@ -416,7 +426,7 @@ typedef struct MenuState {
     MenuLabelSlot labels17E0[2]; /* 17E0 */
     MenuLabelSlot labels18E0[6]; /* 18E0 */
     MenuLabelSlot soundLabels[4]; /* 1BE0 */
-    u8 *blocks1DE0[4]; /* 1DE0 */
+    MenuLabelSlot *blocks1DE0[4]; /* 1DE0 */
     u8 pad1DF0[0x18];
     u8 *panels[3]; /* 1E08 */
 } MenuState;
@@ -460,6 +470,7 @@ extern u8 D_801EA524[];  /* label image layout */
 extern u8 D_801EA530[];
 extern u8 D_801EA53C[];  /* save file screen command labels */
 extern u8 D_801EA542[];  /* title file screen load command labels */
+extern u8 D_801EA558[];
 extern u8 D_801EA568[];  /* title file screen command labels */
 extern u8 D_801EA548[];  /* save/load screen labels */
 extern u8 D_801EA8F4[];
@@ -562,7 +573,8 @@ void func_801C8BEC(void);
 void func_801C8EE8(void);
 void func_801C8574(s32 sound);
 void func_801C8694(u8 arg0);
-s32 func_801CACF8(u8 arg0, u8 arg1, u8 arg2);
+u8 func_801CAA38(u8 arg);
+s32 func_801CACF8(u8 message, u8 confirm, u8 arg);
 void func_801CE2B4(s32 count, POLY_FT4 *polys, s32 first);
 void func_801CE198(u8 kind, u8 *sprites, u8 *block, u8 count);
 void func_801CE338(void);
@@ -640,6 +652,8 @@ void func_801E8070(u8 count, MenuLabelSlot *labels, u8 *table, u8 *arg3, u8 *pla
 void func_801E8474(u8 count, u8 *positions);
 void func_801E92CC(void);
 s32 func_801E93A0(s32 disc);
+void func_801E6668(s32 index);
+void func_801E76EC(s32 index);
 void func_801E8978(u8 count, u8 cursor, u8 *positions);
 
 #endif

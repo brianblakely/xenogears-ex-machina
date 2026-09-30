@@ -1189,7 +1189,24 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CA8C0);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CAA38);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CACF8);
+/* Show card message `message` and ask (801caa38 with `arg`); when answered
+ * yes and a follow-up `confirm` is given (not ff), ask that too. Returns the
+ * last answer. */
+s32 func_801CACF8(u8 message, u8 confirm, u8 arg) {
+    u8 answer;
+
+    func_801D2F4C(message);
+    D_800625A0->markers->visible[3] = 1;
+    answer = func_801CAA38(arg);
+    func_801D32B4();
+    if (confirm != 0xff && answer) {
+        func_801D2F4C(confirm);
+        D_800625A0->markers->visible[3] = 1;
+        answer = func_801CAA38(arg);
+        func_801D32B4();
+    }
+    return answer;
+}
 
 /* Reset the file cursor: the first port with a card (port 2's slots start at 15). */
 void func_801CADB0(void) {
@@ -1451,7 +1468,23 @@ void func_801D0FD4(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D1030);
+/* While party flag +2e is set, draw the three notice labels (+1de0): their
+ * sprites when visible, else their current quad. */
+void func_801D1030(void) {
+    s32 i;
+    MenuLabelSlot *label;
+
+    if (D_800625A0->party->unk2E != 0) {
+        for (i = 0; i < 3; i++) {
+            label = D_800625A0->blocks1DE0[i];
+            if (label->visible != 0) {
+                func_801CE198(1, label->sprites, (u8 *)label, label->count);
+            } else {
+                func_80043B48(&D_800625A0->current->ot[4], &label->polys[label->count]);
+            }
+        }
+    }
+}
 
 /* Draw the visible labels at +18e0 whose party flags (+54) are set. */
 void func_801D10DC(void) {
@@ -1846,7 +1879,18 @@ void func_801DA4A8(void) {
     func_801C72BC(0);
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DA518);
+/* Close the save/load screen: its labels, portraits 3-4, blocks and the
+ * item table; view 10. */
+void func_801DA518(void) {
+    func_801D3444();
+    func_801D4EA0(3);
+    func_801D4EA0(4);
+    D_800625A0->party->unk48 = 0;
+    func_801C72BC(0x10);
+    func_800320E8(D_800625A0->block42C->unk1180);
+    func_800320E8(D_800625A0->block42C);
+    func_800320E8(D_800625A0->tables->items);
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DA5BC);
 
@@ -1934,7 +1978,19 @@ u8 func_801DE29C(u8 slot, u8 arg1) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DE2C8);
+/* Open the 801ddf24 screen on page `page`: its block, labels and view 7. */
+void func_801DE2C8(u8 page) {
+    void *block;
+
+    block = func_80031BDC(0xa1c, 0);
+    D_800625A0->block434 = block;
+    func_8003F8E8(block, 0xa1c);
+    func_801E8018(6, D_800625A0->labels14E0, D_801EA558 + page * 6, D_800625A0->party->unk40);
+    func_801C72BC(7);
+    func_801D22F4(3);
+    func_801DB02C(0);
+    func_801D3488(1, page);
+}
 
 /* Close the 801ddf24 screen: portraits 2-5, its labels and block (+434); view 17. */
 void func_801DE36C(void) {
@@ -2301,7 +2357,21 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E733C);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E76EC);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E781C);
+/* Redraw view `index` (none for ff), rebuilding it first when `rebuild`. */
+void func_801E781C(s32 index, u8 rebuild) {
+    func_801E64E0();
+    if (index != 0xff) {
+        if (rebuild) {
+            func_801E76EC(index);
+            func_801E6668(index);
+            D_800625A0->block34C->rebuilt = 1;
+        } else {
+            func_801E6668(index);
+            D_800625A0->block34C->rebuilt = 0;
+        }
+        D_800625A0->party->unkB = 1;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E78C8);
 
@@ -2335,7 +2405,37 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E8B4C);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E8DA8);
 
+/* Set `poly`'s blending for `mode`: 0 opaque, 1 additive-dim, 2 plain,
+ * 3 dim. */
+#ifdef NON_MATCHING
+void func_801E8EAC(POLY_FT4 *poly, u8 mode) {
+    u8 shade;
+
+    func_80043C24(poly, 0);
+    switch (mode) {
+    case 1:
+        poly->tpage |= 0x20;
+        func_80043BFC(poly, 1);
+        shade = 0x21;
+        break;
+    case 0:
+        func_80043BFC(poly, 0);
+    case 2:
+        shade = 0x80;
+        break;
+    case 3:
+        shade = 0x21;
+        break;
+    default:
+        return;
+    }
+    poly->r0 = shade;
+    poly->g0 = shade;
+    poly->b0 = shade;
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E8EAC);
+#endif
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E8F60);
 
