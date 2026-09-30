@@ -721,11 +721,97 @@ void func_801C84C4(s32 index) {
     func_80043B48(D_800625A0->draw_env->ot + panel->param, &panel->fill_mode[panel->buffer]);
 }
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C8600);
+/* Project panel `index`'s four corner sprites through the GTE and draw them. */
+void func_801C8600(s32 index) {
+    Panel *panel = D_800625A0->panels[index];
+    s32 depth;
+    s32 flag;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C874C);
+    for (i = 0; i < 4; i++) {
+        func_8004A73C(&panel->corner_at[i * 4], &panel->corner_at[i * 4 + 1], &panel->corner_at[i * 4 + 2],
+                      &panel->corner_at[i * 4 + 3], &panel->corner[i * 2 + panel->buffer].x0,
+                      &panel->corner[i * 2 + panel->buffer].x1,
+                      &panel->corner[i * 2 + panel->buffer].x2,
+                      &panel->corner[i * 2 + panel->buffer].x3, &depth, &flag);
+        func_80043B48(D_800625A0->draw_env->ot + panel->param,
+                      &panel->corner[i * 2 + panel->buffer]);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C8970);
+/* Project panel `index`'s frame sprites (top, bottom, side) and draw them. */
+void func_801C874C(s32 index) {
+    Panel *panel = D_800625A0->panels[index];
+    s32 depth;
+    s32 flag;
+    s32 i;
+
+    for (i = 0; i < 2; i++) {
+        func_8004A73C(&panel->ends_at[i * 4], &panel->ends_at[i * 4 + 1], &panel->ends_at[i * 4 + 2],
+                      &panel->ends_at[i * 4 + 3], &(panel->frame_ends + (i * 2 + panel->buffer))->x0,
+                      &(panel->frame_ends + (i * 2 + panel->buffer))->x1,
+                      &(panel->frame_ends + (i * 2 + panel->buffer))->x2,
+                      &(panel->frame_ends + (i * 2 + panel->buffer))->x3, &depth, &flag);
+        func_80043B48(D_800625A0->draw_env->ot + panel->param,
+                      &panel->frame_ends[i * 2 + panel->buffer]);
+    }
+    func_8004A73C(&panel->side_at[0], &panel->side_at[1], &panel->side_at[2], &panel->side_at[3],
+                  &(panel->frame_side + panel->buffer)->x0,
+                  &(panel->frame_side + panel->buffer)->x1,
+                  &(panel->frame_side + panel->buffer)->x2,
+                  &(panel->frame_side + panel->buffer)->x3, &depth, &flag);
+    func_80043B48(D_800625A0->draw_env->ot + panel->param, &panel->frame_side[panel->buffer]);
+}
+
+/* Draw every shown panel; style-0 panels are projected with an identity
+ * rotation at depth 0x200. */
+void func_801C8970(void) {
+    SVECTOR rotation;
+    VECTOR translation;
+    MATRIX matrix;
+    u8 unused[8];
+    Panel *panel;
+    s32 i;
+
+    for (i = 0; i < 7; i++) {
+        if (D_800625A0->flags->panel_20[i]) {
+            panel = D_800625A0->panels[i];
+            if (panel->style == 0) {
+                func_8004960C();
+                rotation.vz = 0;
+                rotation.vy = 0;
+                rotation.vx = 0;
+                translation.vy = 0;
+                translation.vx = 0;
+                translation.vz = 0x200;
+                func_8003F738(&rotation, &matrix);
+                func_80049D9C(&matrix, &translation);
+                func_80049EFC(&matrix);
+                func_80049F8C(&matrix);
+                func_801C8600(i);
+                if (panel->framed) {
+                    func_801C874C(i);
+                }
+                func_801C7D74(i);
+                func_801C7F48(i);
+                func_801C811C(i);
+                func_801C82F0(i);
+                func_801C84C4(i);
+                func_800496AC();
+            } else {
+                func_801C8600(i);
+                if (panel->framed) {
+                    func_801C874C(i);
+                }
+                func_801C7D74(i);
+                func_801C7F48(i);
+                func_801C811C(i);
+                func_801C82F0(i);
+                func_801C84C4(i);
+            }
+        }
+    }
+}
 
 /* Draw the four cursor markers when markers are on; a marker that follows
  * the file cursor is first moved to the selected slot's position. */
@@ -829,7 +915,18 @@ INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C9338);
 
 INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C97FC);
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C983C);
+/* Per-frame screen drawing: panels, markers, labels and the name entry while
+ * active, then the fade. */
+void func_801C983C(void) {
+    if (D_800625A0->active) {
+        func_801C7C28();
+        func_801C8AE8();
+        func_801C97FC();
+        func_801C9338();
+        func_801C8970();
+    }
+    func_801C92BC();
+}
 
 INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C989C);
 
