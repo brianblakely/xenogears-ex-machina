@@ -1919,9 +1919,76 @@ void func_80085EC8(OverlayBuffer *buf) {
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80085EC8);
 #endif
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800864B4);
+/* Build a textured quad (and its second-buffer copy) showing a whole TIM
+ * image at (x, y); `depth` is the TIM colour mode (0 = 4-bit, 1 = 8-bit,
+ * 2 = 16-bit), which sets how many pixels one VRAM word holds. */
+void func_800864B4(TimImage *tim, s32 x, s32 y, PolyFT4 *quad, s32 depth) {
+    s32 scale;
+    s32 right;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800866D4);
+    switch (depth) {
+    case 0:
+        scale = 4;
+        break;
+    case 1:
+        scale = 2;
+        break;
+    case 2:
+        scale = 1;
+        break;
+    }
+    ((PacketTag *)quad)->len = 9;
+    quad->code = 0x2D;
+    quad->clut = func_80043A58(tim->crect->x, tim->crect->y);
+    quad->tpage = func_80043A1C(depth, 0, tim->prect->x, tim->prect->y);
+    quad->x0 = quad->x2 = x;
+    right = x + tim->prect->w * scale;
+    if (scale == 2) {
+        quad->x3 = right + 1;
+    } else {
+        quad->x3 = right;
+    }
+    quad->y0 = quad->y1 = y;
+    quad->x1 = quad->x3 = quad->x3; /* the original stores x3 again */
+    quad->y2 = quad->y3 = tim->prect->h + y;
+    quad->u0 = quad->u2 = tim->prect->x * scale;
+    quad->u1 = quad->u3 = (tim->prect->x + tim->prect->w) * scale;
+    quad->v0 = quad->v1 = tim->prect->y;
+    quad->v2 = quad->v3 = tim->prect->y + tim->prect->h;
+    quad[1] = quad[0];
+}
+
+/* The same quad mirrored horizontally (texture u runs right to left). */
+void func_800866D4(TimImage *tim, s32 x, s32 y, PolyFT4 *quad, s32 depth) {
+    s32 scale;
+    s32 right;
+
+    switch (depth) {
+    case 0:
+        scale = 4;
+        break;
+    case 1:
+        scale = 2;
+        break;
+    case 2:
+        scale = 1;
+        break;
+    }
+    ((PacketTag *)quad)->len = 9;
+    quad->code = 0x2D;
+    quad->clut = func_80043A58(tim->crect->x, tim->crect->y);
+    quad->tpage = func_80043A1C(depth, 0, tim->prect->x, tim->prect->y);
+    right = x + tim->prect->w * scale;
+    quad->x1 = quad->x3 = x;
+    quad->x0 = quad->x2 = right;
+    quad->u0 = quad->u2 = tim->prect->x * scale - 1;
+    quad->u1 = quad->u3 = (tim->prect->x + tim->prect->w) * scale - 1;
+    quad->y0 = quad->y1 = y;
+    quad->y2 = quad->y3 = tim->prect->h + y;
+    quad->v0 = quad->v1 = tim->prect->y;
+    quad->v2 = quad->v3 = tim->prect->y + tim->prect->h;
+    quad[1] = quad[0];
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800868E0);
 
