@@ -37,8 +37,22 @@
                      : "r"(r0), "r"(r1)                                        \
                      : "memory")
 
-/* Store the second-last screen Z (SZ2). */
-#define gte_stsz1(r0) __asm__ volatile("swc2 $18, 0(%0)" : : "r"(r0) : "memory")
+/* Store one screen Z (SZ1-SZ3). */
+#define gte_stsz1(r0) __asm__ volatile("swc2 $17, 0(%0)" : : "r"(r0) : "memory")
+#define gte_stsz2(r0) __asm__ volatile("swc2 $18, 0(%0)" : : "r"(r0) : "memory")
+#define gte_stsz3(r0) __asm__ volatile("swc2 $19, 0(%0)" : : "r"(r0) : "memory")
+
+/* Load a short vector into V1 or V2. */
+#define gte_ldv1(r0)                                                           \
+    __asm__ volatile("lwc2 $2, 0(%0);"                                         \
+                     "lwc2 $3, 4(%0)"                                          \
+                     :                                                         \
+                     : "r"(r0))
+#define gte_ldv2(r0)                                                           \
+    __asm__ volatile("lwc2 $4, 0(%0);"                                         \
+                     "lwc2 $5, 4(%0)"                                          \
+                     :                                                         \
+                     : "r"(r0))
 
 /* Store MAC1-MAC3 as a 32-bit vector. */
 #define gte_stlvnl(r0)                                                         \

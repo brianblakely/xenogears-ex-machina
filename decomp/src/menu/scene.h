@@ -6,9 +6,11 @@
 /* Scratchpad work area of the scene drawing. */
 typedef struct {
     Vector camera; /* 0x00: camera position of this frame */
-    u8 unk10[0x8];
+    SVector point; /* 0x10: particle position relative to the camera */
     SVector from;  /* 0x18: line end points relative to the camera */
     SVector to;    /* 0x20 */
+    u8 unk28[0x88];
+    s32 depth;     /* 0xB0: projected depth */
 } SceneScratch;
 
 #define SCENE_SCRATCH ((SceneScratch *)0x1F800000)
@@ -97,8 +99,7 @@ typedef struct {
     s16 x0, y0;
 } Tile1;
 
-extern Tile1 *D_800926C0;
-extern Tile1 *D_800926C4;
+extern Tile1 *D_800926C0[2]; /* ground particle tiles per draw buffer */
 extern SceneCell12 *D_800926C8;
 extern SceneCell10 *D_800926BC;
 extern u8 D_80092708;

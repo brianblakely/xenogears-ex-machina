@@ -1550,31 +1550,25 @@ void func_8007D65C(Vector *from, Vector *to, s32 code) {
     }
 }
 
-#ifdef NON_MATCHING
-/* Allocate the scene cell table and both buffers' point primitives.
- * Does not match: the primitive pointer loads are hoisted over the
- * stores (the original keeps every access in order). */
+/* Allocate the scene cell table and both buffers' point primitives. */
 void func_8007D6B8(void) {
     SceneCell10 *cell;
     s32 i;
 
     D_800926BC = func_80031BDC(0x9F6, 0);
-    D_800926C0 = func_80031BDC(0xBF4, 0);
-    D_800926C4 = func_80031BDC(0xBF4, 0);
+    D_800926C0[0] = func_80031BDC(0xBF4, 0);
+    D_800926C0[1] = func_80031BDC(0xBF4, 0);
     cell = D_800926BC;
     for (i = 0; i < 0xFF; i++) {
-        D_800926C0[i].len = 2;
-        D_800926C0[i].rgbc = 0x6880B0F0;
-        D_800926C4[i].len = 2;
-        D_800926C4[i].rgbc = 0x6880B0F0;
+        D_800926C0[0][i].len = 2;
+        D_800926C0[0][i].rgbc = 0x6880B0F0;
+        D_800926C0[1][i].len = 2;
+        D_800926C0[1][i].rgbc = 0x6880B0F0;
         cell->unk0 = cell->unk2 = cell->unk4 = 0;
         cell->unk0 = cell->unk4 = cell->unk6 = 0;
         cell++;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007D6B8);
-#endif
 
 #ifdef NON_MATCHING
 /* Spawn up to count ground particles in free cells around a position: on
@@ -1713,7 +1707,7 @@ void func_8007E3CC(u32 *ot) {
         gte_ldv01(&scratch->from, &scratch->to);
         gte_rtpt();
         gte_stsxy01(&line->line.x0, &line->line.x1);
-        gte_stsz1(&z);
+        gte_stsz2(&z);
         prev = ot[z >> 4];
         addr = (u32)line & 0xFFFFFF;
         ot[z >> 4] = addr;
