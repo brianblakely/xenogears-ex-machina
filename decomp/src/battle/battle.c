@@ -2,6 +2,7 @@
 #include "combatant.h"
 #include "model.h"
 #include "scene.h"
+#include "gte.h"
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80070E2C);
 
@@ -3906,7 +3907,68 @@ s32 func_800AEEF8(BattleObject *object) {
     return func_80048C4C(dx * dx + dy * dy + dz * dz);
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AEF68);
+/* Place a battle object at its offset from its target (code 0xFF the first
+ * slot of its mask, 0xFE the selected object, 0xFD/0xFC its own slots, 0xFA
+ * slot 31, 1-127 the slot below): through the target's hierarchy (or a part
+ * of it) when the target exists and is not the object's own slot, carrying a
+ * following effect along; otherwise at the slot's battle position. */
+void func_800AEF68(BattleObject *object) {
+    s32 slot = 0;
+    BattleObject *target;
+    Matrix *m;
+    Vector position;
+    EffectEntry *entry;
+
+    if (object->field58 == 0xFF) {
+        for (slot = 0; slot < 13; slot++) {
+            if ((object->slotMask >> slot) & 1) {
+                break;
+            }
+        }
+    }
+    if (object->field58 == 0xFE) {
+        slot = D_800C3D40;
+    }
+    if (object->field58 == 0xFD) {
+        slot = object->slot;
+    }
+    if (object->field58 == 0xFC) {
+        slot = object->slot2;
+    }
+    if (object->field58 == 0xFA) {
+        slot = 31;
+    }
+    if (object->field58 > 0 && object->field58 < 0x80) {
+        slot = object->field58 - 1;
+    }
+    target = D_800D3368[slot];
+    if (target != NULL && slot != object->slot) {
+        m = (Matrix *)0x1F800000;
+        if (object->targetPart != 0) {
+            func_8004931C(&target->hierarchy->transform, &target->hierarchy[object->targetPart].world, m);
+        } else {
+            m = &target->hierarchy->transform;
+        }
+        func_80049EFC(m);
+        func_80049F8C(m);
+        gte_ldv0(object->offset);
+        gte_rtv0tr();
+        gte_stlvnl(&position);
+        object->position[0] = position.vx;
+        object->position[1] = position.vy;
+        object->position[2] = position.vz;
+        entry = object->hierarchy->effects[0];
+        if (entry != NULL && (u32)(entry->field2 - 7) < 2) {
+            entry->params[3] = position.vx;
+            entry->params[4] = position.vy;
+            entry->params[5] = position.vz;
+        }
+    } else {
+        object->position[0] = D_800C3EB4[slot].x;
+        object->position[1] = D_800C3EB4[slot].y;
+        object->position[2] = D_800C3EB4[slot].z;
+    }
+}
 
 #ifdef NON_MATCHING
 /* Detach part index of a hierarchy and its descendants: move their marks to

@@ -49,14 +49,15 @@ typedef struct {
     u8 pad3E[0x4A - 0x3E];
     u16 flags4A; /* 0x4A */
     u8 pad4C[0x58 - 0x4C];
-    s16 field58; /* 0x58 */
-    u8 pad5A[0x5C - 0x5A];
-    u8 field5C; /* 0x5C */
+    s16 field58;    /* 0x58: target code (0xFA-0xFF special, 1-127 a slot + 1) */
+    s16 targetPart; /* 0x5A: part of the target's hierarchy, 0 its root */
+    u8 field5C;     /* 0x5C */
     u8 pad5D[0x60 - 0x5D];
     s16 groundY; /* 0x60 */
     u8 pad62;
-    u8 hasTexture; /* 0x63 */
-    u8 pad64[0x70 - 0x64];
+    u8 hasTexture;   /* 0x63 */
+    s16 offset[3];   /* 0x64: position relative to the target */
+    s16 offset2[3];  /* 0x6A */
     s16 motion[12];  /* 0x70 */
     s16 position[3]; /* 0x88 */
     s16 field8E;     /* 0x8E */
@@ -70,6 +71,8 @@ typedef struct {
     u8 padA8[0xB0 - 0xA8];
     u8 *model;       /* 0xB0 */
     u8 *textureInfo; /* 0xB4 */
+    u8 padB8[0x10A - 0xB8];
+    u16 slotMask; /* 0x10A */
 } BattleObject;
 
 /* An animation header (fields as far as recovered). */
@@ -154,6 +157,19 @@ typedef struct {
     u8 pad[0x18];
 } ResidentRecord18;
 
+/* Per-slot battle placement (0x1C bytes, D_800C3EB4). */
+typedef struct {
+    u8 group;
+    u8 member;
+    u8 pad2;
+    u8 flag;
+    u8 pad4[0xA - 0x4];
+    s16 x; /* 0x0A */
+    s16 z; /* 0x0C */
+    s16 y; /* 0x0E */
+    u8 pad10[0x1C - 0x10];
+} BattleSlot;
+
 /* Battle scene and effect state. */
 extern SVector *D_800D3344;       /* scene points */
 extern SceneTriangle *D_800D39CC; /* scene triangles */
@@ -180,7 +196,7 @@ extern BattleEvent D_800C3FE8[];   /* presentation events */
 extern u8 *D_800C3BEC;             /* effect script cursor */
 extern s32 D_800C3BF0;             /* effect script step count */
 extern u16 D_800C3E30;             /* slot mask */
-extern s16 D_800C3D40;
+extern u16 D_800C3D40;
 extern EffectPool D_800C3D0C;
 extern SpritePool D_800C3D04;
 extern BattleSceneData *D_800658C8;
@@ -193,6 +209,7 @@ extern s32 D_80059464;
 extern u8 D_800591AC;
 extern s32 D_800C360C;
 extern u8 D_800C4000[]; /* per slot */
+extern BattleSlot D_800C3EB4[];
 
 void func_800BF85C(s32 index, s32 slot);
 void func_800BE790(void);
