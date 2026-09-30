@@ -1142,20 +1142,16 @@ void func_8008BCC8(Mesh *mesh, u8 *work) {
     func_8008C3A8(mesh->data, work, mesh->count);
 }
 
-#ifdef NON_MATCHING
-/* Draw a mesh's primitive groups (flag 8: quads, else triangles) into the
- * given packets and ordering table using the vertex work area. Does not match: the next-group pointer and
- * the primitive count swap registers (t0/v1 vs v1/a0). */
 void func_8008BD70(Mesh *mesh, ModelPrim *prims, u32 *ot, u8 *work) {
     u8 *group;
     s32 groups = mesh->groups;
-    u8 *next = mesh->groupData;
 
+    D_80059528 = mesh->groupData;
     D_80059424 = (s32)prims;
     D_80059568 = (s32)ot;
     D_8005953C = (s32)work;
     D_800595C0 += mesh->prims;
-    while (D_80059528 = next, --groups != -1) {
+    while (--groups != -1) {
         group = D_80059528;
         D_80059528 = group + 4;
         if (group[0] & 8) {
@@ -1163,12 +1159,9 @@ void func_8008BD70(Mesh *mesh, ModelPrim *prims, u32 *ot, u8 *work) {
         } else {
             func_8008C4B0(D_80059528, ((s16 *)group)[1]);
         }
-        next = D_80059528 + ((s16 *)group)[1] * 8;
+        D_80059528 += ((s16 *)group)[1] * 8;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008BD70);
-#endif
 
 /* Build a mesh's packet buffers: a vertex work area and, per display
  * buffer, a flat grey quad (0x18 bytes) or triangle (0x14 bytes) packet
