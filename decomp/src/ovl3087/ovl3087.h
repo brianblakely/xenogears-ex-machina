@@ -84,7 +84,7 @@ typedef struct {
     u16 window[5]; /* 0x7f6 message window layout (opcode 1a) */
     u8 halted;     /* 0x800 the script ended the battle */
     u8 unk801;
-    u8 unk802;
+    u8 windowOpen; /* 0x802 a message window is open */
     u8 pad803;
     u8 actionRunning[16]; /* 0x804 actor action in progress (cleared on completion) */
     u8 *music;            /* 0x814 music sequence buffer */
@@ -155,7 +155,11 @@ typedef struct {
     u8 portraitShown; /* 0x9e */
     u8 pad9F[8];
     u8 portraitBuffer; /* 0xa7 */
-    u8 padA8[0x22];
+    u8 padA8[0xBF - 0xA8];
+    u8 windowReady; /* 0xbf */
+    u8 padC0[8];
+    u8 unkC8;
+    u8 unkC9;
     u8 unkCA;
     u8 padCB[4];
     u8 unkCF;
@@ -225,7 +229,19 @@ typedef struct {
     u8 scriptSet;
 } GameDataScriptSet;
 extern GameDataScriptSet D_8006F9DF;
-extern void *D_800D2DAC;
+/* The message text window (0x98 bytes, pointer 800d2dac). */
+typedef struct {
+    s16 column; /* 0x00 cursor */
+    s16 row;    /* 0x02 */
+    u8 pad4[0xC];
+    u16 flags; /* 0x10 2 open, 4 printing, 8 waiting for a key */
+    u8 pad12[0x58 - 0x12];
+    u8 unk58;
+} TextWindow;
+extern TextWindow *D_800D2DAC;
+extern s32 D_801E9C30; /* text origin */
+extern s32 D_801E9C34;
+extern u8 D_800D3014;  /* pressed key */
 extern void *D_800D3340;
 extern SoundBank *D_800C4924;
 
@@ -247,6 +263,14 @@ extern u8 D_800D32A1;
 
 /* Resident / battle services. */
 void func_8001AC94(void);
+void func_80032F54(TextWindow *window, s32 vramX, s32 vramY, s32 x, s32 y, s32 columns, s32 lines);
+void *func_80033728(void *messages, u16 message);
+void func_800345E0(TextWindow *window);
+void func_80034614(TextWindow *window);
+void func_800346D4(TextWindow *window);
+void func_80034714(TextWindow *window, void *text);
+void func_8008F8F4(s32 id, u16 x, u16 y, u16 width, u16 height, s32 style, s32 arg6);
+void func_8008FA60(s32 id);
 void func_80028470(s32 arg0, s32 arg1);
 void func_800445D0(s32 mode);
 void func_80044894(Rect *rect, u32 *data);
@@ -308,6 +332,8 @@ u16 func_801E57C4(ScriptThread *thread);
 void func_801E57F8(u8 *insn, u8 count, u8 immediateMask, u8 signedForm);
 u8 func_801E58EC(s16 a, s16 b, u8 op);
 s32 func_801E5DCC(s32 thread, u8 *insn);
+void func_801E5B00(s16 x, s16 y);
+void func_801E6750(u8 actor, s32 flags, s32 x, s32 y, s32 width);
 u8 func_801E6CE8(u16 message, u8 actor, u16 flags);
 void func_801E7A5C(s32 thread, u8 *insn);
 s32 func_801E84A4(s32 thread, u8 *insn);

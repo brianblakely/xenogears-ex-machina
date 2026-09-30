@@ -533,7 +533,112 @@ void func_801E6750(u8 actor, s32 flags, s32 x, s32 y, s32 width) {
     D_800D3278->portraitBuffer = D_800CCB34.index;
 }
 
+#ifdef NON_MATCHING
+/* Show message of the script's message file in the layout of opcode 1a,
+ * with the speaker's portrait unless flag 2 is set; returns 1 once the
+ * message has been dismissed. Flags: 1 portrait left, 2 no portrait,
+ * 4 lower window, 8 no window, 0x10 window style. (The original sets the
+ * default line count after the window pointer reload.) */
+u8 func_801E6CE8(u16 message, u8 actor, u16 flags) {
+    u16 x;
+    u16 y;
+    u16 width;
+    u16 height;
+    u8 portrait;
+    s32 i;
+    s32 done;
+
+    portrait = 0;
+    done = 0;
+    x = D_800D3278->window[0];
+    y = D_800D3278->window[1];
+    width = D_800D3278->window[2] * 12 + 0x18;
+    if (flags == 0) {
+        flags = D_800D3278->window[4];
+    }
+    if (D_800D3278->windowOpen == 0) {
+        D_801E9C1C = 4;
+        if (D_800D3278->window[1] == 0x7FFF) {
+            y = 0x10;
+            if (flags & 4) {
+                y = 0x8C;
+            }
+        }
+        height = 4;
+        if (D_800D3278->window[3] < 5) {
+            height = D_800D3278->window[3];
+        }
+        height = height * 13 + 0x14;
+        if (D_800D3278->window[0] == 0x7FFF) {
+            x = 0xA0 - (width >> 1);
+        }
+        if (!(flags & 8)) {
+            if (!(flags & 2) && actor != 0xFF) {
+                width += 0x40;
+                portrait = 1;
+            }
+            if (D_800D3278->window[0] == 0x7FFF) {
+                x = 0xA0 - (width >> 1);
+            }
+            if (!portrait) {
+                func_8008F8F4(0, x, y, width, height, ((flags >> 4) ^ 1) & 1, 1);
+                while (D_800D2D28->windowReady == 0) {
+                    func_800716D8();
+                }
+            } else {
+                func_801E6750(actor, flags, x, y, width);
+                func_8008F8F4(0, x, y, width, height, ((flags >> 4) ^ 1) & 1, 1);
+                while (D_800D2D28->windowReady == 0) {
+                    func_800716D8();
+                }
+                D_800D2D28->unkC8 = 1;
+                if (!(flags & 1)) {
+                    x += 0x40;
+                }
+            }
+        }
+        D_801E9C34 = y + 8;
+        D_801E9C30 = x + 12;
+        func_80032F54(D_800D2DAC, 0x380, 0x100, D_801E9C30, D_801E9C34, D_800D3278->window[2] * 3,
+                      D_800D3278->window[3]);
+        D_800D2DAC->unk58 = 4;
+        D_800D2DAC->flags |= 2;
+        func_80034614(D_800D2DAC);
+        func_80034714(D_800D2DAC, func_80033728(D_800D3340, message));
+        D_800D2D28->unkC9 = 1;
+        D_800D3278->windowOpen = 1;
+        func_800716D8();
+    }
+    if (D_800D2DAC->flags & 8) {
+        if (!(flags & 8)) {
+            func_801E5B00(D_800D2DAC->column * 4 + D_801E9C30 + 2, D_800D2DAC->row * 14 + D_801E9C34 + 5);
+        }
+        D_800D2D28->unkCF = 1;
+        if (D_800D3014 == 4) {
+            func_800345E0(D_800D2DAC);
+            D_800D2D28->unkCF = 0;
+            D_800D2D28->portraitShown = 0;
+        }
+    }
+    if (!(D_800D2DAC->flags & 4)) {
+        D_800D2D28->unkC9 = 0;
+        func_800346D4(D_800D2DAC);
+        func_800716D8();
+        D_800D2D28->unkC8 = 0;
+        done = 1;
+        if (!(flags & 8)) {
+            func_8008FA60(0);
+        }
+        D_800D3278->windowOpen = 0;
+        for (i = 0; i < 5; i++) {
+            D_800D3278->window[i] = D_801E9C10[i];
+        }
+    }
+    return done;
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E6CE8);
+#endif
 
 /* Opcode 18: show a message from the thread's speaker; repeats until the
  * message is done. */
