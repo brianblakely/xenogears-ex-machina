@@ -68,9 +68,9 @@ typedef struct {
 /* The result summary windows' primitives (pointer 800d334c). */
 typedef struct {
     Glyph title[4];           /* 0x0000, runs[0] */
-    Glyph text[67];           /* 0x0140, runs[1] */
-    Glyph glyphs1630[3];      /* 0x1630, runs[2] */
-    Glyph glyphs1720[2];      /* 0x1720, runs[4] */
+    POLY_FT4 text[134];       /* 0x0140, runs[1]; two per glyph part */
+    POLY_FT4 glyphs1630[6];   /* 0x1630, runs[2] */
+    POLY_FT4 glyphs1720[4];   /* 0x1720, runs[4] */
     Glyph glyphs17C0[4];      /* 0x17C0, runs[3] */
     Glyph glyphs1900[3];      /* 0x1900, runs[5] */
     Glyph rowA[7][3];         /* 0x19F0 */
@@ -180,6 +180,7 @@ typedef struct {
 
 extern MemberWide D_800CDCB8[3];
 extern MemberWide D_800CDCD0[3];
+extern u8 D_800C3CE3[];
 extern u8 D_800C3CDF[];     /* digit buffer views, see D_800C3CF1 */
 extern u8 D_800C3CD7[];
 
@@ -202,6 +203,17 @@ extern u8 D_801E44E4;       /* arrow glyph */
 
 /* Per slot byte tables, 8 bytes per slot; the second set starts 3 slots on. */
 extern u8 D_800CDD10[6][8];
+
+/* The summary window's text: 27 glyph entries and their positions. */
+typedef struct {
+    u8 glyph;             /* 0xff: none */
+    u8 shaded;
+    u8 colour;            /* index into the shading colours */
+} SummaryGlyph;
+
+extern SummaryGlyph D_800C32C4[27];
+extern s16 D_800C3318[27];
+extern s16 D_800C3350[27];
 
 /* The member card's label glyphs: ids and positions. */
 extern u8 D_800C3268[18];

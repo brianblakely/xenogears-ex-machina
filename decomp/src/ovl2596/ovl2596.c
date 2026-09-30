@@ -37,9 +37,9 @@ void func_801DE1C4(void) {
 
     if (D_800D2D28->showSummary != 0) {
         func_800728B8(D_800D334C->title[0], D_800D334C->runs[0].count, D_800D334C->runs[0].buffer);
-        func_800728B8(D_800D334C->text[0], D_800D334C->runs[1].count, D_800D334C->runs[1].buffer);
-        func_800728B8(D_800D334C->glyphs1630[0], D_800D334C->runs[2].count, D_800D334C->runs[2].buffer);
-        func_800728B8(D_800D334C->glyphs1720[0], D_800D334C->runs[4].count, D_800D334C->runs[4].buffer);
+        func_800728B8(D_800D334C->text, D_800D334C->runs[1].count, D_800D334C->runs[1].buffer);
+        func_800728B8(D_800D334C->glyphs1630, D_800D334C->runs[2].count, D_800D334C->runs[2].buffer);
+        func_800728B8(D_800D334C->glyphs1720, D_800D334C->runs[4].count, D_800D334C->runs[4].buffer);
         func_800728B8(D_800D334C->glyphs17C0[0], D_800D334C->runs[3].count, D_800D334C->runs[3].buffer);
         func_800728B8(D_800D334C->glyphs1900[0], D_800D334C->runs[5].count, D_800D334C->runs[5].buffer);
         for (i = 0; i < 7; i++) {
@@ -397,11 +397,80 @@ u8 func_801DFA38(u8 slot) {
     return best;
 }
 
+/* Build the summary window: the member's portrait title and the 27 text
+ * glyphs, shading the marked ones with their colour. */
+#ifdef NON_MATCHING
+void func_801DFAA8(u8 member) {
+    s16 colours[2][3];
+    s32 i;
+    s32 start;
+    s32 k;
+
+    colours[0][0] = 0x80;
+    colours[0][1] = 0x40;
+    colours[0][2] = 0x40;
+    colours[1][0] = 0x40;
+    colours[1][1] = 0x40;
+    colours[1][2] = 0x40;
+    D_800D334C->runs[0].count = func_80076A10(member + 0xFC, D_800D334C->title[0], 0x3E, 0xA4);
+    D_800D334C->runs[0].buffer = D_800CCB34;
+    D_800D334C->runs[1].count = 0;
+    for (i = 0; i < 27; i++) {
+        start = D_800D334C->runs[1].count;
+        if (D_800C32C4[i].glyph != 0xFF) {
+            D_800D334C->runs[1].count += func_80076A10(D_800C32C4[i].glyph, &D_800D334C->text[start * 2], D_800C3318[i], D_800C3350[i]);
+            if (D_800C32C4[i].shaded != 0) {
+                for (k = start; k < D_800D334C->runs[1].count; k++) {
+                    func_80043C24(&D_800D334C->text[k * 2 + D_800CCB34], 0);
+                    setRGB0(&D_800D334C->text[k * 2 + D_800CCB34], colours[D_800C32C4[i].colour][0], colours[D_800C32C4[i].colour][1], colours[D_800C32C4[i].colour][2]);
+                }
+            }
+        }
+    }
+    D_800D334C->runs[1].buffer = D_800CCB34;
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801DFAA8);
+#endif
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801DFD58);
+/* Build the summary's first member value (three digits); clear the other
+ * summary number runs. */
+void func_801DFD58(u8 member) {
+    s32 j;
+    s32 n;
+    s32 digit;
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801DFE6C);
+    D_800D334C->runs[2].count = 0;
+    D_800D334C->runs[4].count = 0;
+    D_800D334C->runs[3].count = 0;
+    D_800D334C->runs[5].count = 0;
+    func_8008AAA0(D_800CDCE8[member].valueA);
+    for (j = 0; j < 3; j++) {
+        n = j + 23;
+        digit = D_800C3CE3[n];
+        if (digit != 0xFF) {
+            D_800D334C->runs[2].count += func_80076A10(digit, &D_800D334C->glyphs1630[D_800D334C->runs[2].count * 2], j * 8 + 0xB8, 0x80);
+        }
+    }
+    D_800D334C->runs[2].buffer = D_800CCB34;
+}
+
+/* Build the summary's second member value (two digits). */
+void func_801DFE6C(u8 member) {
+    s32 j;
+    s32 n;
+    s32 digit;
+
+    func_8008AAA0(D_800CDCE8[member].valueB);
+    for (j = 0; j < 2; j++) {
+        n = j + 24;
+        digit = D_800C3CE3[n];
+        if (digit != 0xFF) {
+            D_800D334C->runs[4].count += func_80076A10(digit, &D_800D334C->glyphs1720[D_800D334C->runs[4].count * 2], j * 8 + 0xC0, 0x88);
+        }
+    }
+    D_800D334C->runs[4].buffer = D_800CCB34;
+}
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801DFF50);
 
