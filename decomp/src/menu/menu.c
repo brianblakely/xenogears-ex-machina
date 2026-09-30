@@ -2972,9 +2972,76 @@ s32 func_80090258(Actor *actor, Brain *brain) {
     return 0;
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8009031C);
+/* The opponent's attack mode: after the retreat rule and guard reactions,
+ * when the step timer runs out pick the next action at random, then keep
+ * attacking while steps remain or fall back to the approach mode. */
+void func_8009031C(Actor *actor, Brain *brain) {
+    s32 dist;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80090504);
+    if (func_8008FACC(actor, brain)) {
+        return;
+    }
+    if (actor->unkC5 != 2 && actor->opponent->unkC5 == 2) {
+        func_8008FBD8(actor, brain);
+    }
+    dist = actor->opponent->nearest_dist;
+    if (dist > 0x200 && dist < 0x600 && brain->unkF) {
+        func_8008FBD8(actor, brain);
+    }
+    if (--brain->timer > 0) {
+        return;
+    }
+    if (D_8009284C > 0x300) {
+        switch (func_8003FA38() % 10) {
+        case 0:
+            if ((func_8003FA38() & 0xFF) >= brain->unk14) {
+                func_80090894(actor, 0);
+            }
+            break;
+        case 2:
+            if (actor->move_count != 0) {
+                func_8008FFEC(actor, brain);
+                break;
+            }
+            func_8008FC7C(actor);
+            break;
+        case 3:
+        case 4:
+        case 5:
+            if (!func_80090258(actor, brain)) {
+                break;
+            }
+            /* fallthrough */
+        case 1:
+            func_8008FC7C(actor);
+            break;
+        case 6:
+        case 7:
+        case 8:
+        case 9:
+            func_80090504(actor, 0);
+            break;
+        }
+    }
+    if (brain->unk9--) {
+        func_8008FF24(actor, brain);
+    } else {
+        func_80090894(actor, func_8003FA38() & 1);
+    }
+}
+
+/* Enter the opponent's special mode: a few steps, fresh rolls, and
+ * whether it closes in. */
+void func_80090504(Actor *actor, s32 kind) {
+    Brain *brain = actor->brain;
+
+    brain->mode = 3;
+    brain->unk9 = func_8003FA38() % 4 + 1;
+    brain->timer = 0;
+    func_8008F7B8(brain);
+    brain->unkE = func_8008F720(actor, 1);
+    brain->unk2E = 0;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80090580);
 

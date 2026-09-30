@@ -28,7 +28,9 @@ typedef struct Brain {
     u32 unk2C_11 : 1;
     u32 unk2C_12 : 1;
     u32 defending : 1;  /* 0x2C bit 13 */
-    u32 unk2C_14 : 18;
+    u32 unk2C_14 : 2;
+    u32 unk2E : 8;      /* 0x2E */
+    u32 unk2C_24 : 8;
     s16 unk30;
 } Brain;
 
@@ -63,5 +65,11 @@ void func_80090174(Actor *actor);
 void func_80090894(Actor *actor, s32 kind);
 void func_80090504(Actor *actor, s32 kind);
 s32 func_8008FACC(Actor *actor, struct Brain *brain);
+void func_8008FBD8(Actor *actor, struct Brain *brain);
+void func_8008FC7C(Actor *actor);
+void func_8008FF24(Actor *actor, struct Brain *brain);
+s32 func_8008FFEC(Actor *actor, struct Brain *brain);
+s32 func_80090258(Actor *actor, struct Brain *brain);
+s32 func_8008F720(Actor *actor, s32 eager);
 
 #endif
