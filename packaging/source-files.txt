@@ -136,6 +136,7 @@ decomp/src/ovl3387/ovl3387.c
 decomp/src/resident/main.c
 decomp/src/slot39/slot39.c
 decomp/src/worldmap/worldmap.c
+decomp/src/worldmap/worldmap.h
 decomp/targets/overlays/battle.mk
 decomp/targets/overlays/battle.symbols.txt
 decomp/targets/overlays/battle.yaml
