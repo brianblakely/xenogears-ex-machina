@@ -552,7 +552,6 @@ void func_8007369C(void) {
 }
 
 /* Initialise the sky gradient: four bands of Gouraud quads in both buffers. */
-#ifdef NON_MATCHING /* store order and base register differ */
 void func_800736DC(void) {
     D_8009D194[0][0].rgb0 = D_8009D194[0][0].rgb1 = D_8009D194[0][1].rgb0 = D_8009D194[0][1].rgb1 = 0xFF7A70;
     D_8009D194[0][0].rgb2 = D_8009D194[0][0].rgb3 = D_8009D194[0][1].rgb2 = D_8009D194[0][1].rgb3 = 0xFFF5E0;
@@ -571,9 +570,6 @@ void func_800736DC(void) {
     setPolyG4(&D_8009D194[3][0]);
     setPolyG4(&D_8009D194[3][1]);
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_800736DC);
-#endif
 
 /* Transform the four sky bands with the camera yaw and link them into the
  * ordering table. */
