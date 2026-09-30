@@ -134,6 +134,19 @@ typedef struct {
 
 extern BattleAction D_800D2E5C[32];
 extern u16 D_800D39E0;     /* mask of slots that act together */
+
+/* Enemy AI block (0x40 bytes per enemy slot 3..10, from 800d3400). */
+typedef struct {
+    u8 *script;        /* +0x00 */
+    u8 *unk4;
+    u8 *reaction;      /* +0x08 reaction script */
+    u8 unkC[4];
+    s32 longs[4];      /* +0x10 */
+    u16 vars[8];       /* +0x20 */
+    u8 bytes[16];      /* +0x30 */
+} EnemyAi;
+
+extern EnemyAi D_800D3400[8];
 extern u8 D_800D2DC0;      /* forced next turn: slot + 1 */
 extern u8 D_800D2DD7;      /* turn order cursor */
 extern u8 D_800D2DD8[11];  /* turn order */      /* decoded menu input code; 8 = none */
@@ -149,6 +162,7 @@ extern u8 D_800D2DE4[11];  /* slot ready to act */
 extern s16 D_800D2DF0[2][11]; /* turn timers: [0] reload values, [1] counters */
 extern u16 D_800D2E1C[11]; /* slow-status alternation */
 extern s32 *D_8005917C;
+extern s16 D_8005A3A0[];
 
 /* Resident services. */
 void func_80043B48(u32 *ot, void *prim);
