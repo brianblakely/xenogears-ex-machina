@@ -78,6 +78,8 @@ typedef struct {
     char name[13];
 } CardPrefix;
 
+extern const CardPrefix D_801C5000; /* "BISLPS-00800" */
+
 /* The menu resources block (*8005945c): packed files by index. */
 typedef struct {
     s32 count;
