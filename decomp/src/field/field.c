@@ -5682,7 +5682,39 @@ void func_80091ADC(s32 x, s32 y, s32 w, s32 h, s32 dx, s32 dy, s32 clear) {
     D_800AF768++;
 }
 
+#ifdef NON_MATCHING
+/* Event 0xe1: with op1 and op3 both zero, clear the VRAM rectangle
+ * (op5, op7, op9, op11) to black; otherwise move the rectangle at (op1, op3)
+ * of size op5 x op7 to (op9, op11). Selected operands, flags byte 13. The
+ * original frame has 8 more bytes of locals than this. */
+void func_80091BBC(void) {
+    s32 x;
+    s32 y;
+    s32 a;
+    s32 b;
+    s32 c;
+    s32 d;
+
+    x = func_8009CF78(1, EVENT_OPERAND_BYTE(0xD));
+    y = func_8009CFBC(3, EVENT_OPERAND_BYTE(0xD));
+    if (x == 0 && y == 0) {
+        a = func_8009D000(5, EVENT_OPERAND_BYTE(0xD));
+        b = func_8009D044(7, EVENT_OPERAND_BYTE(0xD));
+        c = func_8009D088(9, EVENT_OPERAND_BYTE(0xD));
+        d = func_8009D0CC(0xB, EVENT_OPERAND_BYTE(0xD));
+        func_80091ADC(a, b, c, d, 0, 0, 1);
+    } else {
+        a = func_8009D000(5, EVENT_OPERAND_BYTE(0xD));
+        b = func_8009D044(7, EVENT_OPERAND_BYTE(0xD));
+        c = func_8009D088(9, EVENT_OPERAND_BYTE(0xD));
+        d = func_8009D0CC(0xB, EVENT_OPERAND_BYTE(0xD));
+        func_80091ADC(x, y, a, b, c, d, 0);
+    }
+    D_800B0078->pc += 0xE;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80091BBC);
+#endif
 
 /* Set the current actor's two-bit mode (flags bits 5-6) and value EE from
  * selected operands. */
