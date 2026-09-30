@@ -806,7 +806,7 @@ extern u8 D_8006F84E[];
 extern u8 D_8006F368[3];      /* game data: character of each party slot, ff empty */
 extern u16 D_8006F364;        /* game data: party member bits */
 extern u16 D_8006F366;
-extern u8 D_8006F008;         /* game data: disc of the loaded file */
+extern u16 D_8006F008;        /* game data: disc of the saved file (0 based) */
 extern u16 D_8006EF64;
 extern s32 D_8006EF58;        /* game data: money */        /* game data: save title line of text file 1 */
 extern u8 D_800594D0;         /* load result: 0, 1 title timeout, 2 loaded */
@@ -1090,6 +1090,23 @@ void func_801E781C(s32 index, u8 rebuild);
 void func_80039E60(s32 sound);
 extern u8 D_8006D634[31 * 20]; /* game data: names (encoded in the save) */
 s32 func_80033B34(u8 *codes, u8 *text, s32 count); /* decode a name */
+void func_80033C20(u8 *text, u8 *codes);            /* encode a name */
+
+/* The summary at the start of a save payload (801cba4c). */
+typedef struct MenuSavePayload {
+    s32 time; /* 0: play time */
+    u16 hp[3]; /* 4: per party slot */
+    u16 hpMax[3]; /* A */
+    u8 ep[3]; /* 10 */
+    u8 epMax[3]; /* 13 */
+    u8 unk16[3]; /* 16 */
+    u8 unk19[3]; /* 19 */
+    u8 ids[3]; /* 1C: character, ff empty */
+    u8 unk1F; /* 1F */
+    u8 pad20[0x3];
+    u8 digit; /* 23: file digit */
+} MenuSavePayload;
+void func_801E4A28(MenuSavePayload *payload);
 /* Block 2 of state + 444 holds the card access indicator. */
 #define MENU_INDICATOR ((MenuIndicator *)D_800625A0->blocks444[2])
 void func_801E78C8(s32 file);

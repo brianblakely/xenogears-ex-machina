@@ -1979,7 +1979,61 @@ u8 func_801CB9E8(u8 port, u8 slot) {
     return slot;
 }
 
+/* Fill the zeroed save payload: the globals 8005a3a0 into the game data, the
+ * party summary (per slot: character id or ff, HP, maximum HP, EP, maximum EP
+ * and three more bytes), the play time and file digit `digit`, each name
+ * encoded in place, the disc, then the game data copy (801e4a28) and the names
+ * decoded back. */
+#ifdef NON_MATCHING
+void func_801CBA4C(MenuSavePayload *payload, u8 port, u8 digit) {
+    u8 codes[24];
+    u8 encoded[20];
+    s32 i;
+    s32 j;
+    u8 *name;
+
+    for (j = 0; j < 16; j++) {
+        D_8006F958[j] = D_8005A3A0[j];
+    }
+    for (i = 0; i < 3; i++) {
+        if (D_800625A0->party->ids[i] != 0xff) {
+            payload->ids[i] = D_800625A0->party->ids[i];
+            payload->hp[i] = D_8006D8A0[D_800625A0->party->ids[i]].hp;
+            payload->hpMax[i] = D_8006D8A0[D_800625A0->party->ids[i]].hpMax;
+            payload->ep[i] = D_8006D8A0[D_800625A0->party->ids[i]].ep;
+            payload->epMax[i] = D_8006D8A0[D_800625A0->party->ids[i]].epMax;
+            payload->unk16[i] = D_8006D8A0[D_800625A0->party->ids[i]].unk62;
+            payload->unk19[i] = D_8006D8A0[D_800625A0->party->ids[i]].unk63;
+        } else {
+            payload->ids[i] = 0xff;
+        }
+    }
+    payload->unk1F = 0;
+    payload->digit = digit;
+    payload->time = D_80059488;
+    name = D_8006D634;
+    for (i = 0; i < 31; i++) {
+        for (j = 0; j < 20; j++) {
+            codes[j] = name[j];
+            encoded[j] = 0;
+        }
+        func_80033C20(codes, encoded);
+        for (j = 0; j < 20; j++) {
+            name[j] = encoded[j];
+        }
+        name += 20;
+    }
+    if (!D_801E96A5) {
+        D_8006F008 = func_80028530() - 1;
+    } else {
+        D_8006F008 = 1;
+    }
+    func_801E4A28(payload);
+    func_801CB184();
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CBA4C);
+#endif
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CBD90);
 
