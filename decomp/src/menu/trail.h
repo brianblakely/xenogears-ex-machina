@@ -209,21 +209,12 @@ struct Emitter {
     s16 size;               /* 0x0C: bytes per spark */
     s16 unkE;
     u8 *sparks;             /* 0x10 */
-    s16 unk14;
-    s16 unk16;
-    s16 unk18;
-    s16 unk1A;
+    SVector base;           /* 0x14: added to the rotation's translation */
     SVector origin;         /* 0x1C: where sparks are emitted */
     SVector range;          /* 0x24: random spread per axis */
     SVector offset;         /* 0x2C: subtracted from the random spread */
-    s16 unk34;
-    s16 unk36;
-    s16 unk38;
-    s16 unk3A;
-    s16 unk3C;
-    s16 unk3E;
-    s16 unk40;
-    s16 unk42;
+    SVector angles;         /* 0x34: launch direction, applied first */
+    SVector turn;           /* 0x3C: rotation applied after the caller's */
     s16 spread;             /* 0x44: random launch angle range */
     s16 unk46;
     s16 speed;              /* 0x48: minimum launch speed */
@@ -309,6 +300,9 @@ void func_80031750(u32 *ot, LineF4 *prim);
 void func_80031804(u32 *ot, Tile *prim);
 void func_80031870(u32 *ot, Tile1 *prim);
 void func_80048E94(Matrix *m, Matrix *out); /* transpose */
+Matrix *func_8003F738(SVector *angles, Matrix *m); /* rotation matrix from angles */
+Matrix *func_80049ACC(Matrix *m0, Matrix *m1);     /* m0 = m0 * m1 */
+void func_80049EFC(Matrix *m);                      /* load the GTE rotation */
 Emitter *func_8008D3F4(s32 shape, s32 placement);
 void func_8008D5C0(Emitter *emitter, s32 count);
 void func_8008D680(Emitter *emitter, Matrix *rotation, s32 count);

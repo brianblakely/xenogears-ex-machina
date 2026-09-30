@@ -1751,15 +1751,15 @@ Emitter *func_8008D3F4(s32 shape, s32 placement) {
     emitter->unk2 = 0;
     emitter->unk4 = 0;
     emitter->unk6 = 0;
-    emitter->unk14 = 0;
-    emitter->unk16 = 0;
-    emitter->unk18 = 0;
-    emitter->unk34 = 0;
-    emitter->unk36 = 0;
-    emitter->unk38 = 0;
-    emitter->unk3C = 0;
-    emitter->unk3E = 0;
-    emitter->unk40 = 0;
+    emitter->base.vx = 0;
+    emitter->base.vy = 0;
+    emitter->base.vz = 0;
+    emitter->angles.vx = 0;
+    emitter->angles.vy = 0;
+    emitter->angles.vz = 0;
+    emitter->turn.vx = 0;
+    emitter->turn.vy = 0;
+    emitter->turn.vz = 0;
     emitter->gravity = 0;
     emitter->unk46 = 0;
     emitter->speed = 0x100;
@@ -1825,7 +1825,73 @@ void func_8008D5C0(Emitter *emitter, s32 count) {
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008D5C0);
 #endif
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008D680);
+/* Launch up to count idle sparks: each gets a random direction inside the
+ * emitter's spread cone and a random speed, both rotated into place, then a
+ * position from the placement rule, the emitter's life and a fresh shape. */
+void func_8008D680(Emitter *emitter, Matrix *rotation, s32 count) {
+    SVector dir;
+    SVector unit;
+    Matrix local;
+    Matrix world;
+    Matrix turned;
+    u8 *spark;
+    void (*place)(Emitter *, SVector *);
+    void (*reset)(void *);
+    s32 left;
+    s32 i;
+    s32 angle;
+    s32 heading;
+
+    reset = emitter->reset;
+    place = emitter->place;
+    world = *rotation;
+    emitter->origin.vx = emitter->base.vx + rotation->t[0];
+    emitter->origin.vy = emitter->base.vy + rotation->t[1];
+    emitter->origin.vz = emitter->base.vz + rotation->t[2];
+    func_8003F738(&emitter->angles, &local);
+    func_80049ACC(&world, &local);
+    func_8003F738(&emitter->turn, &turned);
+    func_80049ACC(&turned, &world);
+    func_80049EFC(&turned);
+    left = count;
+    spark = emitter->sparks;
+    for (i = 0; i < emitter->count; i++) {
+        if (((Spark *)spark)->pos.pad == 0) {
+            if (--left == -1) {
+                break;
+            }
+            angle = func_8003FA38() % emitter->spread;
+            heading = func_8003FA38();
+            dir.vy = -func_8003F8CC(angle);
+            angle = func_8003F8B0(angle);
+            dir.vx = (func_8003F8B0(heading) * angle) >> 12;
+            dir.vz = (func_8003F8CC(heading) * angle) >> 12;
+            heading = emitter->speed + func_8003FA38() % emitter->speed_range; /* now the speed */
+            gte_ldv0(&dir);
+            gte_rtv0();
+            gte_stsv(&unit);
+            gte_lddp(heading);
+            gte_ldsv(&unit);
+            gte_gpf12();
+            gte_stsv(&((Spark *)spark)->vel);
+        }
+        spark += emitter->size;
+    }
+    func_80049EFC(&world);
+    left = count;
+    spark = emitter->sparks;
+    for (i = 0; i < emitter->count; i++) {
+        if (((Spark *)spark)->pos.pad == 0) {
+            if (--left == -1) {
+                break;
+            }
+            place(emitter, (SVector *)spark);
+            ((Spark *)spark)->pos.pad = emitter->life;
+            reset(spark);
+        }
+        spark += emitter->size;
+    }
+}
 
 /* Bounce a falling spark off the floor under it, losing half its speed.
  * The floor query reads the spark position as a 32-bit vector. */
@@ -1921,15 +1987,15 @@ void func_8008DCB8(u32 *ot, Model *model, Matrix *view, Vector *pos) {
         func_8008DBC0(model, 0x27, &part);
         func_80048E94(&part, &rotation);
         rotation.t[0] = rotation.t[1] = rotation.t[2] = 0;
-        emitter->unk14 = pos->vx;
-        emitter->unk16 = pos->vy;
-        emitter->unk18 = pos->vz;
-        emitter->unk3C = 0;
-        emitter->unk3E = 0;
-        emitter->unk40 = 0;
-        emitter->unk34 = 0;
-        emitter->unk36 = 0;
-        emitter->unk38 = 0x800;
+        emitter->base.vx = pos->vx;
+        emitter->base.vy = pos->vy;
+        emitter->base.vz = pos->vz;
+        emitter->turn.vx = 0;
+        emitter->turn.vy = 0;
+        emitter->turn.vz = 0;
+        emitter->angles.vx = 0;
+        emitter->angles.vy = 0;
+        emitter->angles.vz = 0x800;
         func_8008D680(emitter, &rotation, D_80092838 >> 4);
         D_80092838 -= 4;
     }
