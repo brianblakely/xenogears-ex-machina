@@ -1026,7 +1026,7 @@ void func_800995A0(u8 slot, u8 kind, u16 flag, u8 amount) {
  * instead (80099CF0). Returns a mask of the statuses that ended. */
 u16 func_80099890(u8 slot) {
     Combatant *record = &D_800CCCE8.records[slot];
-    UnitRecord *gear = &D_800CCCE8.records[slot].gear;
+    GearRecord *gear = &D_800CCCE8.records[slot].gear;
     volatile u8 *timers = D_800CCCE8.records[slot].statusTimers;
     u16 ended;
 
@@ -1132,7 +1132,7 @@ u16 func_80099890(u8 slot) {
 
 /* Count down the timed statuses of a gear, clearing each one whose timer runs
  * out; the end of gear status 0x20 also ends the pilot's status 0x1000. */
-void func_80099CF0(UnitRecord *gear, Combatant *record, volatile u8 *timers) {
+void func_80099CF0(GearRecord *gear, Combatant *record, volatile u8 *timers) {
     if (gear->status7C & 0x200) {
         timers[1] += -1;
         if (timers[1] == 0) {
@@ -1309,18 +1309,19 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009A2D4);
 
 /* Byte 5 of game-data unit record id. */
 u8 func_8009A7B8(u8 id) {
-    return D_8006D8A0[id].entries[0].pad5;
+    return D_8006D8A0.characters[id].entries[0].pad5;
 }
 
 /* Whether gear item index is one of character 4's four entries. */
 s32 func_8009A7E4(u8 index) {
     BattleItem *item = &D_800C34B0->gearItems[index];
 
-    if (D_8006D8A0[4].entries[0].id == item->id || D_8006D8A0[4].entries[1].id == item->id
-        || D_8006D8A0[4].entries[2].id == item->id) {
+    if (D_8006D8A0.characters[4].entries[0].id == item->id
+        || D_8006D8A0.characters[4].entries[1].id == item->id
+        || D_8006D8A0.characters[4].entries[2].id == item->id) {
         return 1;
     }
-    return D_8006D8A0[4].entries[3].id == item->id;
+    return D_8006D8A0.characters[4].entries[3].id == item->id;
 }
 
 /* Put battle item index into character 4's entry holding its id (entry k when
@@ -1330,25 +1331,25 @@ void func_8009A854(u8 index, u8 k) {
     BattleItem *item = &D_800C34B0->items[index];
     u8 i;
 
-    if (D_8006D8A0[4].entries[0].id == item->id) {
+    if (D_8006D8A0.characters[4].entries[0].id == item->id) {
         k = 0;
     }
-    if (D_8006D8A0[4].entries[1].id == item->id) {
+    if (D_8006D8A0.characters[4].entries[1].id == item->id) {
         k = 1;
     }
-    if (D_8006D8A0[4].entries[2].id == item->id) {
+    if (D_8006D8A0.characters[4].entries[2].id == item->id) {
         k = 2;
     }
-    if (D_8006D8A0[4].entries[3].id == item->id) {
+    if (D_8006D8A0.characters[4].entries[3].id == item->id) {
         k = 3;
     }
-    D_8006D8A0[4].entries[k].value4 = item->valueC;
-    D_8006D8A0[4].entries[k].value3 = item->valueB;
-    D_8006D8A0[4].entries[k].value2 = item->valueA;
-    D_8006D8A0[4].entries[k].value3 = item->valueB;
-    D_8006D8A0[4].entryItems[k] = index;
+    D_8006D8A0.characters[4].entries[k].value4 = item->valueC;
+    D_8006D8A0.characters[4].entries[k].value3 = item->valueB;
+    D_8006D8A0.characters[4].entries[k].value2 = item->valueA;
+    D_8006D8A0.characters[4].entries[k].value3 = item->valueB;
+    D_8006D8A0.characters[4].entryItems[k] = index;
     D_8006F8BA[index] = item->durability;
-    D_8006D8A0[4].entryItems[k] = index;
+    D_8006D8A0.characters[4].entryItems[k] = index;
     for (i = 0; i < 3; i++) {
         Combatant *record = &D_800C34B0->records[i];
 
@@ -1473,7 +1474,7 @@ void func_8009AC48(u8 member, u8 checked) {
 }
 
 /* Regeneration amounts of slot for its turn: HP (maxHp / 20), EP (maxEp / 20,
- * from the pilot's or the gear's status) and gear HP (field3A / 50 for each of
+ * from the pilot's or the gear's status) and fuel (maxFuel / 50 for each of
  * two gear statuses). Returns whether any applies; nothing once KO'd. */
 s32 func_8009ADA0(u8 slot, s32 *amounts) {
     Combatant *record = &D_800C34B0->records[slot];
@@ -1499,11 +1500,11 @@ s32 func_8009ADA0(u8 slot, s32 *amounts) {
     *amounts = 0;
     if (record->gear.status7C & 0x80) {
         any = 1;
-        *amounts = (u16)(record->gear.field3A / 50);
+        *amounts = (u16)(record->gear.maxFuel / 50);
     }
     if (record->gear.status80 & 0x8000) {
         any = 1;
-        *amounts += (u16)(record->gear.field3A / 50);
+        *amounts += (u16)(record->gear.maxFuel / 50);
     }
     return any;
 }
@@ -1588,18 +1589,18 @@ void func_8009B098(void) {
 /* Chu-Chu's gear HP: fifty times her HP and maximum HP, capped at 99999. */
 void func_8009B104(u8 slot, Combatant *chuchu) {
     Combatant *record = &D_800C34B0->records[slot];
-    UnitRecord *gear = &record->gear;
+    GearRecord *gear = &record->gear;
 
     if (chuchu->pilot.maxHp * 50 > 99999) {
         if (chuchu->pilot.hp * 50 > 99999) {
-            record->gear.gearHp = 99999;
+            record->gear.hp = 99999;
         } else {
-            record->gear.gearHp = chuchu->pilot.hp * 50;
+            record->gear.hp = chuchu->pilot.hp * 50;
         }
-        gear->maxGearHp = 99999;
+        gear->maxHp = 99999;
     } else {
-        record->gear.gearHp = chuchu->pilot.hp * 50;
-        record->gear.maxGearHp = chuchu->pilot.maxHp * 50;
+        record->gear.hp = chuchu->pilot.hp * 50;
+        record->gear.maxHp = chuchu->pilot.maxHp * 50;
     }
 }
 
@@ -1695,12 +1696,12 @@ void func_8009B46C(u16 *damage) {
 
     for (i = 0; i < 3; i++) {
         Combatant *record = &D_800C34B0->records[i];
-        UnitRecord *gear = &record->gear;
+        GearRecord *gear = &record->gear;
 
         if (record->pilot.characterId == 0) {
             if (D_800CCCE8.records[i].flags15A & 0x80) {
-                maxHp = record->gear.maxGearHp;
-                hp = record->gear.gearHp;
+                maxHp = record->gear.maxHp;
+                hp = record->gear.hp;
             } else {
                 maxHp = record->pilot.maxHp;
                 hp = record->pilot.hp;
@@ -1714,8 +1715,8 @@ void func_8009B46C(u16 *damage) {
         }
         if (record->pilot.characterId == 3) {
             if (D_800CCCE8.records[i].flags15A & 0x80) {
-                maxHp = gear->maxGearHp;
-                hp = gear->gearHp;
+                maxHp = gear->maxHp;
+                hp = gear->hp;
             } else {
                 maxHp = record->pilot.maxHp;
                 hp = record->pilot.hp;
@@ -1948,7 +1949,7 @@ void func_8009BAC4(u8 slot, u8 *choice, s16 *busy) {
  * maximum HP. */
 void func_8009BD94(void) {
     D_800C34B0->resultCode[D_800C3E50] = 2;
-    D_800C34B0->damage[D_800C3E50] = D_800C3DFC->power * D_800D2DC8->maxGearHp / 20;
+    D_800C34B0->damage[D_800C3E50] = D_800C3DFC->power * D_800D2DC8->maxHp / 20;
 }
 
 /* Write the party back to the game data: each present member's HP (Chu-Chu in
@@ -1962,19 +1963,19 @@ void func_8009BE0C(void) {
 
     for (i = 0; i < 3; i++) {
         Combatant *record;
-        UnitRecord *character;
-        UnitRecord *gearRecord;
-        UnitRecord *gear;
+        CharacterRecord *character;
+        GearRecord *gearRecord;
+        GearRecord *gear;
 
         if (D_800D2D24[i] == 0x7F) {
             continue;
         }
         record = &D_800CCCE8.records[i];
-        character = &D_8006D8A0[record->pilot.characterId];
+        character = &D_8006D8A0.characters[record->pilot.characterId];
         gear = &D_800CCCE8.records[i].gear;
-        gearRecord = &D_8006D8A0[11 + record->pilot.gearId];
+        gearRecord = &D_8006D8A0.gears[record->pilot.gearId];
         if (record->pilot.characterId == 7 && (D_800CCCE8.records[i].flags15A & 0x80)) {
-            record->pilot.hp = (gear->gearHp + 1) / 50;
+            record->pilot.hp = (gear->hp + 1) / 50;
             if (record->pilot.hp == 0) {
                 record->pilot.hp = 1;
             }
@@ -2011,16 +2012,16 @@ void func_8009BE0C(void) {
         case 14:
         case 15:
         case 16:
-            gearRecord->gearHp = gear->gearHp;
-            gearRecord->field38 = gear->field38;
-            if (gearRecord->gearHp > gearRecord->maxGearHp) {
-                gearRecord->gearHp = gearRecord->maxGearHp;
+            gearRecord->hp = gear->hp;
+            gearRecord->fuel = gear->fuel;
+            if (gearRecord->hp > gearRecord->maxHp) {
+                gearRecord->hp = gearRecord->maxHp;
             }
-            if (gearRecord->field38 > gearRecord->field3A) {
-                gearRecord->field38 = gearRecord->field3A;
+            if (gearRecord->fuel > gearRecord->maxFuel) {
+                gearRecord->fuel = gearRecord->maxFuel;
             }
             if (gear->status7C & 0x8000) {
-                gearRecord->gearHp = gearRecord->maxGearHp / 10;
+                gearRecord->hp = gearRecord->maxHp / 10;
             }
             break;
         }
@@ -2031,7 +2032,7 @@ void func_8009BE0C(void) {
  * (unless the pilot's flag 1 at +0x36), 4 when field 0x148 is 4. */
 u8 func_8009C050(u8 slot) {
     Combatant *record = &D_800CCCE8.records[slot];
-    UnitRecord *gear = &D_800CCCE8.records[slot].gear;
+    GearRecord *gear = &D_800CCCE8.records[slot].gear;
     u8 *state = &D_800CCCE8.records[slot].field148;
     u8 flags = 0;
 
@@ -2039,7 +2040,7 @@ u8 func_8009C050(u8 slot) {
         flags = 1;
     }
 
-    if (gear->gearHp < gear->maxGearHp >> 3 && !(record->pilot.flags36 & 1)) {
+    if (gear->hp < gear->maxHp >> 3 && !(record->pilot.flags36 & 1)) {
         flags |= 2;
     }
     if (*state == 4) {
@@ -2071,19 +2072,74 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009C198);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009C4B4);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009C9C4);
+/* The gear version of 80099FB0: make the current command descriptor the
+ * battle's current command, a command without an element taking the gear's
+ * element statuses. */
+void func_8009C9C4(void) {
+    u16 elements = (D_800D2D6C->status84.half.active | D_800C3E00->pilot.status88.half.permanent) >> 12;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009CA90);
+    D_800C34B0->commandAttributes[0] = D_800C3DFC->attributes[0];
+    D_800C34B0->commandAttributes[1] = D_800C3DFC->attributes[1];
+    D_800C34B0->commandAttributes[2] = D_800C3DFC->attributes[2];
+    D_800C34B0->commandAttributes[3] = D_800C3DFC->attributes[3];
+    D_800C34B0->commandIndexCopy = D_800C34B0->commandIndex;
+    if ((D_800C34B0->commandAttributes[2] & 0x3F) == 0) {
+        D_800C34B0->commandAttributes[2] |= elements;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009CB68);
+/* Against a target on foot, switch the current descriptor to its on-foot
+ * variant: commands 12-14 three descriptors on, commands 0-2 fifteen. */
+void func_8009CA90(void) {
+    if ((u32)(D_800C34B0->commandIndex - 12) < 3 && !(D_800C34B0->records[D_800C3E50].flags15A & 0x80)) {
+        D_800C3DFC += 3;
+    } else if (D_800C34B0->commandIndex < 3 && !(D_800C34B0->records[D_800C3E50].flags15A & 0x80)) {
+        D_800C3DFC += 15;
+    }
+}
+
+/* Mirror the gear's status 0x200 (second word) as the pilot's status 0x20. */
+void func_8009CB68(u8 slot) {
+    GearRecord *gear = &D_800CCCE8.records[slot].gear;
+    Combatant *record = &D_800CCCE8.records[slot];
+
+    if (gear->status80 & 0x200) {
+        record->pilot.status84.half.active |= 0x20;
+    } else {
+        record->pilot.status84.half.active &= ~0x20;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009CBC4);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009D354);
+/* Mark the target missed (result 6) when 8009DBFC finds no hit. */
+void func_8009D354(void) {
+    if (func_8009DBFC(0) == 0) {
+        D_800C34B0->resultCode[D_800C3E50] = 6;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009D3A0);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009D948);
+/* Damage of a gear attack (80096FBC); a command with flag 0x100 scales it by
+ * the gear's frame factor in quarters (4 when unset or with status 0x100), and
+ * status 0x40 adds half again. */
+u16 func_8009D948(void) {
+    u16 damage = func_80096FBC();
+    u8 factor;
+
+    if (D_800C3DFC->flagsA & 0x100) {
+        factor = D_800D2D6C->frameFactor;
+        if ((D_800D2D6C->status7C & 0x100) || factor == 0) {
+            factor = 4;
+        }
+        damage = factor * damage / 4;
+        if ((D_800D2D6C->status80 | D_800D2D6C->status82) & 0x40) {
+            damage += damage >> 1;
+        }
+    }
+    return damage;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009DA04);
 

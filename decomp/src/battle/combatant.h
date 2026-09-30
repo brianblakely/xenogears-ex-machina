@@ -13,7 +13,7 @@ typedef union {
     } half;
 } StatusPair;
 
-/* One of a unit record's four 8-byte entries at +0. */
+/* One of a character record's four 8-byte entries at +0. */
 typedef struct {
     u8 pad0[2];
     u8 value2;
@@ -22,20 +22,19 @@ typedef struct {
     u8 pad5;
     u8 id;                  /* +6 */
     u8 pad7;
-} UnitEntry;
+} CharacterEntry;
 
-/* Unit record (0xA4 bytes): the game data's character and gear records
- * (D_8006D8A0, 31 of them: 11 characters, then 20 gears) and their battle
- * copies, the pilot's at combatant +0 and the gear's at +0xA4. Fields are named
- * as their uses are recovered; unknown bytes stay padding. */
+/* Character record (0xA4 bytes): the game data's (D_8006D8A0) and the battle
+ * copy at combatant +0. Fields are named as their uses are recovered; unknown
+ * bytes stay padding. */
 typedef struct {
-    UnitEntry entries[4];   /* 0x00 */
+    CharacterEntry entries[4]; /* 0x00 */
     u8 pad20[0x32 - 0x20];
     u16 flags32;            /* 0x32: bit 0x40 doubles status durations */
     u8 pad34[0x36 - 0x34];
     u16 flags36;            /* 0x36 */
-    u16 field38;            /* 0x38: a gear's fuel */
-    u16 field3A;            /* 0x3A: a gear's maximum fuel */
+    u8 pad38[0x3A - 0x38];
+    u16 field3A;            /* 0x3A */
     u8 pad3C[0x4C - 0x3C];
     u16 hp;                 /* 0x4C */
     u16 maxHp;              /* 0x4E */
@@ -48,9 +47,7 @@ typedef struct {
     u8 pad5C[0x5E - 0x5C];
     u8 field5E;
     u8 field5F;
-    u32 gearHp;             /* 0x60: gear records */
-    u32 maxGearHp;          /* 0x64 */
-    u8 pad68[0x6F - 0x68];
+    u8 pad60[0x6F - 0x60];
     u8 entryItems[4];       /* 0x6F: item slot of each entry */
     u8 pad73[0x7A - 0x73];
     u16 status7A;
@@ -63,9 +60,42 @@ typedef struct {
     StatusPair status8C;
     u16 useCounts[7];       /* 0x90 */
     u8 pad9E[0xA0 - 0x9E];
-    u8 gearId;              /* 0xA0: the pilot's gear (game-data record 11 + id) */
+    u8 gearId;              /* 0xA0: the pilot's gear */
     u8 padA1[0xA4 - 0xA1];
-} UnitRecord;
+} CharacterRecord;
+
+/* Gear record (0xA4 bytes): the game data's (after the characters) and the
+ * battle copy at combatant +0xA4. */
+typedef struct {
+    u8 pad0[0x38];
+    u16 fuel;               /* 0x38 */
+    u16 maxFuel;            /* 0x3A */
+    u8 pad3C[0x4F - 0x3C];
+    u8 field4F;             /* 0x4F */
+    u8 pad50[0x60 - 0x50];
+    u32 hp;                 /* 0x60 */
+    u32 maxHp;              /* 0x64 */
+    u8 pad68[0x72 - 0x68];
+    u16 field72;            /* 0x72 */
+    u8 pad74[0x7C - 0x74];
+    u16 status7C;
+    u8 pad7E[0x80 - 0x7E];
+    u16 status80;
+    u16 status82;
+    StatusPair status84;
+    u8 resistances[16];     /* 0x88: by element bit */
+    u8 pad98;
+    u8 field99;             /* 0x99 */
+    u8 pad9A[0x9E - 0x9A];
+    u8 frameFactor;         /* 0x9E: attack scale in quarters */
+    u8 pad9F[0xA4 - 0x9F];
+} GearRecord;
+
+/* The game data's unit records. */
+typedef struct {
+    CharacterRecord characters[11];
+    GearRecord gears[20];
+} UnitRecords;
 
 /* A 16-byte item entry of the battle work area. */
 typedef struct {
@@ -82,8 +112,8 @@ typedef struct {
 
 /* Combatant record: 11 slots (0-2 party, 3-10 enemies) of 0x170 bytes. */
 typedef struct {
-    UnitRecord pilot;
-    UnitRecord gear;
+    CharacterRecord pilot;
+    GearRecord gear;
     u8 field148;
     u8 field149;
     u8 pad14A[0x15A - 0x14A];
@@ -135,12 +165,12 @@ typedef struct {
 
 /* Layout checks (a negative array size fails the build). */
 #define BATTLE_OFFSET(type, field) ((u32)&((type *)0)->field)
-typedef char BattleLayoutCheck[(sizeof(UnitRecord) == 0xA4 && sizeof(Combatant) == 0x170
+typedef char BattleLayoutCheck[(sizeof(CharacterRecord) == 0xA4 && sizeof(GearRecord) == 0xA4 && sizeof(Combatant) == 0x170
                                && sizeof(CommandDescriptor) == 0x28 && sizeof(BattleItem) == 0x10
                                && BATTLE_OFFSET(BattleWork, targetMask) == 0x5FAC
                                && BATTLE_OFFSET(BattleWork, message) == 0x5FC7) ? 1 : -1];
 
-extern UnitRecord D_8006D8A0[31];
+extern UnitRecords D_8006D8A0;
 extern u8 D_8006F8BA[];                 /* item durability by slot */
 extern u8 D_8006F5C4[];                 /* inventory counts */
 extern u8 D_8006F65A[];                 /* inventory items */
@@ -166,17 +196,20 @@ extern BattleWork *D_800C34B0;
 extern u8 D_800C34AD;                   /* formation mode */
 extern CommandDescriptor *D_800C3DFC;   /* current command descriptor */
 extern Combatant *D_800C3E00;           /* attacker record */
+extern GearRecord *D_800D2D6C;          /* attacker's gear record */
 extern u8 D_800C3E04;                   /* attacker slot */
 extern Combatant *D_800C3E34;           /* target record */
 extern u8 D_800C3E50;                   /* target slot */
-extern UnitRecord *D_800D2DC8;          /* target's gear record */
+extern GearRecord *D_800D2DC8;          /* target's gear record */
 extern u8 D_800D2C34;
 extern u8 D_800D2D24[3];                /* party character ids, 0x7F none */
 
 s32 func_8003FA38(void);                /* resident rand: 0..0x7FFF */
 
-void func_80099CF0(UnitRecord *gear, Combatant *record, volatile u8 *timers);
+void func_80099CF0(GearRecord *gear, Combatant *record, volatile u8 *timers);
 void func_8009B104(u8 slot, Combatant *chuchu);
 void func_8009BE0C(void);
+s8 func_8009DBFC(s32 arg0);
+u16 func_80096FBC(void);
 
 #endif
