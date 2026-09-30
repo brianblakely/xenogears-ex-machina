@@ -1,0 +1,2 @@
+D_80088BFC = 0x80088BFC; // type:label
+func_80088C00 = 0x80088C00; // type:func

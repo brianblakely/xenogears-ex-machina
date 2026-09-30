@@ -370,7 +370,9 @@ extern volatile s32 D_80059488; /* vertical blanks counted */
 extern s32 D_80059578;   /* primitives drawn this frame */
 extern s32 D_800595C0;   /* primitive count this frame */
 
-void func_80088BFC(void);
+void func_800852C4(s32 arg); /* the menu task */
+extern void (*D_80088BFC[])(s32); /* mode tasks, by D_80050618 */
+void func_80088C00(void);
 void DrawSyncCallback(void *callback);
 void InitGeom(void);
 void func_80032498(s32 kind, void *data);
