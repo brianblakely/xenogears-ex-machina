@@ -842,6 +842,10 @@ extern s32 D_801E9CF0;   /* detail panel number positions (x, y): hp */
 extern s32 D_801E9CF4;
 extern s32 D_801E9CF8;   /* hp max */
 extern s32 D_801E9CFC;
+extern s32 D_801E9D00;   /* ep */
+extern s32 D_801E9D04;
+extern s32 D_801E9D08;   /* ep max */
+extern s32 D_801E9D0C;
 extern s32 D_801E9D38;   /* detail panel portrait position: x */
 extern s32 D_801E9D3C;   /* y */
 extern s32 D_801E9B58;   /* field block portrait offset: x */
