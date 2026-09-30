@@ -12117,7 +12117,7 @@ extern s32 D_800C2684;     /* piece scale, 0x1000 = 1 */
 extern SVECTOR D_800B00B8; /* piece rotation */
 
 /* Set the five screen pieces of the next draw buffer to grey `shade`. */
-void func_800A5600(u8 shade) {
+void func_800A5600(s32 shade) {
     s32 i;
 
     for (i = 0; i < 5; i++) {
@@ -12181,17 +12181,17 @@ void func_800A5774(s32 x, s32 y, s32 h) {
     func_800320E8(pixels);
 }
 
-void func_800A663C(void);
+void func_800A663C(s32 semitrans, s32 abr);
 void func_800A6408(void);
 void func_800A6924(void);
 
-/* Draw the screen pieces twice, mask the saved screen columns at
+/* Set up the screen pieces, draw them twice, mask the saved screen columns at
  * (2c0..3c0, 100) and draw twice more. */
-void func_800A5884(void) {
+void func_800A5884(s32 semitrans, s32 abr) {
     s32 i;
     s32 x;
 
-    func_800A663C();
+    func_800A663C(semitrans, abr);
     for (i = 0; i < 2; i++) {
         func_80073FE0();
         func_800A6408();
@@ -12209,9 +12209,304 @@ void func_800A5884(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A5924);
+#include "field_screen.h"
 
+/* Run the requested screen transition (800adb38) over 800adb3c frames:
+ * 1-2 fade the screen pieces out, 3 fades them in and holds while it
+ * stays requested, 4 dissolves the screen grid from the centre. */
+void func_800A5924(void) {
+    s32 i;
+    s32 x;
+    s32 level;
+
+    if (D_800ADB38 != 0) {
+        func_8003748C();
+        func_80070C84();
+        func_800A915C();
+        if (D_800ADB38 == 1 || D_800ADB38 == 4) {
+            func_800A4748();
+            DrawSync(0);
+            func_80073FE0();
+            func_800775F8();
+        }
+        func_800775F8();
+    dispatch:
+        switch (D_800ADB38) {
+        case 4:
+            func_800A5884(1, 1);
+            func_800A6E70();
+            D_800ADC08 = 1;
+            func_80071E58(D_800ADB3C);
+            D_800C3A40 = 0;
+            for (i = 0; i < D_800ADB3C; i++) {
+                func_80077DAC();
+                func_800A6C40();
+                func_8007554C();
+                func_80078B5C();
+                D_800C3A40 += 6;
+            }
+            DrawSync(0);
+            func_800A7064();
+            break;
+        case 1:
+        case 2:
+            func_800A5884(1, 1);
+            D_800ADC08 = 1;
+            func_80071E58(D_800ADB3C);
+            level = 0x800000;
+            for (i = 0; i < D_800ADB3C; i++) {
+                func_80077DAC();
+                func_800A6408();
+                func_8007554C();
+                func_80078B5C();
+                func_800A5600(level >> 16);
+                level -= 0x800000 / D_800ADB3C;
+                if (level < 0) {
+                    level = 0;
+                }
+            }
+            break;
+        case 3:
+            func_800A663C(1, 1);
+            for (i = 0, x = 0x2C0; i < 5; i++, x += 0x40) {
+                func_800A5774(x, 0x100, 0xE0);
+            }
+            level = 0;
+            func_80071DCC(D_800ADB3C);
+            func_800A5600(0);
+            for (i = 0; i < D_800ADB3C; i++) {
+                func_80077DAC();
+                func_800A6408();
+                func_8007554C();
+                func_80078B5C();
+                func_800A5600(level >> 16);
+                level += 0x800000 / D_800ADB3C;
+            }
+            for (;;) {
+                if (D_800ADB38 != 3) {
+                    goto dispatch;
+                }
+                func_80077DAC();
+                func_800A6408();
+                func_8007554C();
+                func_80078B5C();
+            }
+        }
+        D_800ADB38 = 0;
+        func_800A91F0();
+        func_80077544();
+    }
+}
+
+#ifdef NON_MATCHING
+/* Reload the field for a map change inside the field mode (800b0048 the
+ * transition kind, 800afd14 its frames): stop effects, keep the map
+ * read-ahead block across the heap reset, then per kind fade or dissolve
+ * out, reload the components (80070cc8), restart the music and fade in.
+ * Unrecovered details: the original passes 800adb08 as a second argument
+ * to 80071cb4, and uses a jump table. */
+void func_800A5C40(void) {
+    RECT rect;
+    u8 *ahead;
+    s32 kind;
+    s32 frames;
+    s32 level;
+    s32 i;
+
+    func_8003748C();
+    func_800A9460();
+    func_800864F0();
+    func_8007FFE8();
+    if (D_800B0048 != 6) {
+        func_800A915C();
+        if (D_800B0048 != 4) {
+            func_800A4748();
+        }
+    }
+    DrawSync(0);
+    func_80073FE0();
+    func_800775F8();
+    func_800700B0();
+    ahead = func_80031BDC(D_8005A4C0, 0);
+    memcpy(ahead, D_8005A4E0, D_8005A4C0);
+    func_800320B8(D_8005A4E0);
+    func_800320E8(D_8005A4E0);
+    if (D_800B0048 != 6) {
+        func_800A90B4(1);
+    }
+    D_8005A4E0 = func_80031BDC(D_8005A4C0, 1);
+    memcpy(D_8005A4E0, ahead, D_8005A4C0);
+    func_800320A4(D_8005A4E0);
+    func_800320E8(ahead);
+    switch (D_800B0048) {
+    case 6:
+        func_80071DCC(D_800AFD14);
+        for (i = 0; i < D_800AFD14; i++) {
+            func_80073FE0();
+            func_80071CB4(&D_800C426C->overlay_ot[0]);
+            func_800A6924();
+        }
+    reload:
+        func_80073FE0();
+        func_800A6924();
+        func_8001B044();
+        func_8001B3A8();
+        kind = D_800B0048;
+        frames = D_800AFD14;
+        func_80070CC8();
+        func_80070488();
+        func_80070508();
+        D_800B0048 = kind;
+        D_800AFD14 = frames;
+        if (D_8004F308 == -1) {
+            func_80085B20(D_8004F324, 0);
+        }
+        func_80071E58(D_800AFD14);
+        break;
+    case 0:
+        func_800A663C(0, 0);
+        func_80071DCC(D_800AFD14);
+        for (i = 0; i < D_800AFD14; i++) {
+            func_80073FE0();
+            func_80071CB4(&D_800C426C->overlay_ot[0]);
+            func_800A6408();
+            func_800A6924();
+        }
+        goto reload;
+    case 1:
+        func_800A663C(0, 0);
+        func_800A5710(D_800AFD14);
+        for (i = 0; i < D_800AFD14; i++) {
+            func_80073FE0();
+            func_80071CB4(&D_800C426C->overlay_ot[0]);
+            func_800A6408();
+            func_800A6924();
+        }
+        func_800775F8();
+        func_8001B044();
+        func_8001B3A8();
+        kind = D_800B0048;
+        frames = D_800AFD14;
+        func_80070CC8();
+        func_80070488();
+        func_80070508();
+        D_800B0048 = kind;
+        D_800AFD14 = frames;
+        if (D_8004F308 == -1) {
+            func_80085B20(D_8004F324, 0);
+        }
+        func_800A56A8(D_800AFD14);
+        break;
+    case 2:
+    case 4:
+        func_800A5884(1, 1);
+        func_8001B044();
+        func_8001B3A8();
+        kind = D_800B0048;
+        frames = D_800AFD14;
+        func_80070CC8();
+        func_80070488();
+        if (D_800ADB60 == 1) {
+            while (func_800286CC() != 0) {
+                func_80073FE0();
+                func_800A6408();
+                func_800A6924();
+                if (D_800C2684 < 0x22C0) {
+                    D_800C2684 += 0x20;
+                }
+            }
+            func_800320E8(D_800ADC14);
+            D_800ADB60 = 0;
+            func_80078C5C();
+        }
+        D_800AFD04 = 1;
+        D_800B0048 = kind;
+        D_800AFD14 = frames;
+        if (D_8004F308 == -1) {
+            func_80085B20(D_8004F324, 0);
+        }
+        level = 0x800000;
+        func_80071E58(D_800AFD14);
+        for (i = 0; i < D_800AFD14; i++) {
+            func_80077DAC();
+            func_800A6408();
+            func_8007554C();
+            func_80078B5C();
+            func_800A5600(level >> 16);
+            level -= 0x800000 / D_800AFD14;
+            if (level < 0) {
+                level = 0;
+            }
+            if (D_800C2684 < 0x22C0) {
+                D_800C2684 += 0x20;
+            }
+        }
+        break;
+    case 3:
+        func_800A663C(0, 0);
+        func_80070488();
+        func_80073FE0();
+        func_800A6408();
+        func_800A6924();
+        func_8001B044();
+        func_8001B3A8();
+        kind = D_800B0048;
+        frames = D_800AFD14;
+        D_800AFD04 = 1;
+        func_80070CC8();
+        func_80070508();
+        D_800B0048 = kind;
+        D_800AFD14 = frames;
+        if (D_8004F308 == -1) {
+            func_80085B20(D_8004F324, 0);
+        }
+        for (i = 0; i < 4; i++) {
+            func_80077DAC();
+            func_800A6408();
+            func_8007554C();
+            func_80078B5C();
+        }
+        break;
+    case 5:
+        func_800A663C(0, 0);
+        func_80070488();
+        func_80073FE0();
+        func_800A6408();
+        func_800A6924();
+        func_8001B044();
+        func_8001B3A8();
+        kind = D_800B0048;
+        frames = D_800AFD14;
+        D_800AFD04 = 1;
+        func_80070CC8();
+        func_80070508();
+        setRECT(&rect, 0x2C0, 0x100, 0x140, 0xFF);
+        D_800B0048 = kind;
+        D_800AFD14 = frames;
+        MoveImage(&rect, 0x140, 0xFF);
+        if (D_8004F308 == -1) {
+            func_80085B20(D_8004F324, 0);
+        }
+        for (i = 0; i < 4; i++) {
+            func_80077DAC();
+            func_800A6408();
+            func_8007554C();
+            func_80078B5C();
+        }
+        break;
+    }
+    if (D_800B0048 != 6) {
+        func_800A91F0();
+    }
+    D_800B0048 = 2;
+    D_800AFD14 = 0x20;
+    D_800AFD04 = 0;
+    func_80077544();
+    func_80031FF8();
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A5C40);
+#endif
 
 /* Rotate and scale the screen pieces (when scaled) into their quads and
  * link the quads and draw modes of the current buffer. */
@@ -12244,7 +12539,64 @@ void func_800A6408(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A663C);
+/* Set up the five 64x224 screen pieces (textured from the screen copy at
+ * (2c0, 100)) at full scale with no rotation, with semi-transparency
+ * `semitrans` and rate `abr`. */
+void func_800A663C(s32 semitrans, s32 abr) {
+    POLY_FT4 *quad;
+    POLY_FT4 *copy;
+    SVECTOR *corners;
+    s32 i;
+
+    D_800C2684 = 0x1000;
+    D_800B00B8.vx = 0;
+    D_800B00B8.vy = 0;
+    D_800B00B8.vz = 0;
+    for (i = 0; i < 5; i++) {
+        quad = &D_800B11AC.quads[i][0];
+        copy = &D_800B11AC.quads[i][1];
+        corners = D_800B11AC.corners[i];
+        SetPolyFT4(quad);
+        corners[0].vx = i * 0x20 - 0x50;
+        corners[0].vy = -0x38;
+        corners[0].vz = 0;
+        corners[1].vx = i * 0x20 - 0x30;
+        corners[1].vy = -0x38;
+        corners[1].vz = 0;
+        corners[2].vx = i * 0x20 - 0x50;
+        corners[2].vy = 0x38;
+        corners[2].vz = 0;
+        corners[3].vx = i * 0x20 - 0x30;
+        corners[3].vy = 0x38;
+        corners[3].vz = 0;
+        quad->x0 = i << 6;
+        quad->y0 = 0;
+        quad->x1 = (i << 6) + 0x40;
+        quad->y1 = 0;
+        quad->x2 = i << 6;
+        quad->y2 = 0xDF;
+        quad->x3 = (i << 6) + 0x40;
+        quad->y3 = 0xDF;
+        setRECT(&D_800B11AC.windows[i][0], 0, 0, 0xFF, 0xFF);
+        setRECT(&D_800B11AC.windows[i][1], 0, 0, 0xFF, 0xFF);
+        SetDrawMode(&D_800B11AC.modes[i][0], 0, 0, GetTPage(2, abr, 0x2C0 + i * 0x40, 0x100),
+                    &D_800B11AC.windows[i][0]);
+        SetDrawMode(&D_800B11AC.modes[i][1], 0, 0, GetTPage(2, abr, 0x2C0 + i * 0x40, 0x100),
+                    &D_800B11AC.windows[i][1]);
+        setRGB0(quad, 0x80, 0x80, 0x80);
+        SetSemiTrans(quad, semitrans);
+        quad->u0 = 0;
+        quad->v0 = 0;
+        quad->u1 = 0x40;
+        quad->v1 = 0;
+        quad->u2 = 0;
+        quad->v2 = 0xDF;
+        quad->u3 = 0x40;
+        quad->v3 = 0xDF;
+        quad->tpage = GetTPage(2, abr, 0x2C0 + i * 0x40, 0x100);
+        *copy = *quad;
+    }
+}
 
 /* Present the current draw block: clear, set environments and draw its
  * overlay ordering table. */
@@ -12257,15 +12609,151 @@ void func_800A6924(void) {
     DrawOTag(&D_800C426C->overlay_ot[7]);
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A6998);
+/* Darken corner `corner` of a grid quad by 6 (to 0) while it lies within
+ * `radius` of the screen centre (a0, 70). */
+void func_800A6998(POLY_GT4 *quad, s32 corner, s32 radius, s16 *shade) {
+    VECTOR offset;
+    VECTOR squares;
+    s32 centre_x;
+    s32 centre_y;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A6C40);
+    centre_x = 0xA0;
+    centre_y = 0x70;
+    offset.vz = 0;
+    switch (corner) {
+    case 0:
+        offset.vx = centre_x - quad->x0;
+        offset.vy = centre_y - quad->y0;
+        func_8004A414(&offset, &squares);
+        if (SquareRoot0(squares.vx + squares.vy) >> 1 < radius) {
+            *shade -= 6;
+            if (*shade < 0) {
+                *shade = 0;
+            }
+            quad->r0 = *shade;
+            quad->g0 = *shade;
+            quad->b0 = *shade;
+        }
+        break;
+    case 1:
+        offset.vx = centre_x - quad->x1;
+        offset.vy = centre_y - quad->y1;
+        func_8004A414(&offset, &squares);
+        if (SquareRoot0(squares.vx + squares.vy) >> 1 < radius) {
+            *shade -= 6;
+            if (*shade < 0) {
+                *shade = 0;
+            }
+            quad->r1 = *shade;
+            quad->g1 = *shade;
+            quad->b1 = *shade;
+        }
+        break;
+    case 2:
+        offset.vx = centre_x - quad->x2;
+        offset.vy = centre_y - quad->y2;
+        func_8004A414(&offset, &squares);
+        if (SquareRoot0(squares.vx + squares.vy) >> 1 < radius) {
+            *shade -= 6;
+            if (*shade < 0) {
+                *shade = 0;
+            }
+            quad->r2 = *shade;
+            quad->g2 = *shade;
+            quad->b2 = *shade;
+        }
+        break;
+    case 3:
+        offset.vx = centre_x - quad->x3;
+        offset.vy = centre_y - quad->y3;
+        func_8004A414(&offset, &squares);
+        if (SquareRoot0(squares.vx + squares.vy) >> 1 < radius) {
+            *shade -= 6;
+            if (*shade < 0) {
+                *shade = 0;
+            }
+            quad->r3 = *shade;
+            quad->g3 = *shade;
+            quad->b3 = *shade;
+        }
+        break;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A6E70);
+/* Fade the grid quads of the current buffer and link them, then the grid
+ * draw mode, into the overlay ordering table. */
+void func_800A6C40(void) {
+    POLY_GT4 *quad;
+    s32 row;
+    s32 column;
 
-extern void *D_800B00C4;
+    for (row = 0; row < GRID_ROWS; row++) {
+        for (column = 0; column < GRID_COLUMNS; column++) {
+            quad = &D_800B00C4->quads[D_800ADB08][row * GRID_COLUMNS + column];
+            func_800A6998(quad, 0, D_800C3A40, &D_800B00C4->shade[0][row * GRID_COLUMNS + column]);
+            func_800A6998(quad, 1, D_800C3A40, &D_800B00C4->shade[1][row * GRID_COLUMNS + column]);
+            func_800A6998(quad, 2, D_800C3A40, &D_800B00C4->shade[2][row * GRID_COLUMNS + column]);
+            func_800A6998(quad, 3, D_800C3A40, &D_800B00C4->shade[3][row * GRID_COLUMNS + column]);
+            addPrim(&D_800C426C->overlay_ot[0], &D_800B00C4->quads[D_800ADB08][row * GRID_COLUMNS + column]);
+        }
+    }
+    addPrim(&D_800C426C->overlay_ot[0], &D_800B1E24[D_800ADB08]);
+}
 
-/* Release the block at 800b00c4. */
+/* Build the screen grid: 16x16 half-bright quads textured from the
+ * 15-bit screen copy at (2c0, 100), their corners at full shade. */
+void func_800A6E70(void) {
+    POLY_GT4 *quad;
+    POLY_GT4 *copy;
+    s32 row;
+    s32 column;
+    s32 k;
+
+    D_800B00C4 = func_80031BDC(sizeof(ScreenGrid), 1);
+    for (row = 0; row < GRID_ROWS; row++) {
+        for (column = 0; column < GRID_COLUMNS; column++) {
+            k = row * GRID_COLUMNS + column;
+            quad = &D_800B00C4->quads[0][k];
+            copy = &D_800B00C4->quads[1][k];
+            D_800B00C4->shade[0][k] = 0x80;
+            D_800B00C4->shade[1][k] = 0x80;
+            D_800B00C4->shade[2][k] = 0x80;
+            D_800B00C4->shade[3][k] = 0x80;
+            SetPolyGT4(quad);
+            setRGB0(quad, 0x80, 0x80, 0x80);
+            quad->r1 = 0x80;
+            quad->g1 = 0x80;
+            quad->b1 = 0x80;
+            quad->r2 = 0x80;
+            quad->g2 = 0x80;
+            quad->b2 = 0x80;
+            quad->r3 = 0x80;
+            quad->g3 = 0x80;
+            quad->b3 = 0x80;
+            quad->x0 = column * 16;
+            quad->y0 = row * 16;
+            quad->x1 = column * 16 + 16;
+            quad->y1 = row * 16;
+            quad->x2 = column * 16;
+            quad->y2 = row * 16 + 16;
+            quad->x3 = column * 16 + 16;
+            quad->y3 = row * 16 + 16;
+            quad->u0 = (column * 16) & 0x3F;
+            quad->v0 = row * 16;
+            quad->u1 = ((column * 16) & 0x3F) + 16;
+            quad->v1 = row * 16;
+            quad->u2 = (column * 16) & 0x3F;
+            quad->v2 = row * 16 + 16;
+            quad->u3 = ((column * 16) & 0x3F) + 16;
+            quad->v3 = row * 16 + 16;
+            quad->tpage = GetTPage(2, 1, 0x2C0 + column / 4 * 0x40, 0x100);
+            SetSemiTrans(quad, 1);
+            *copy = *quad;
+        }
+    }
+}
+
+/* Release the screen grid. */
 void func_800A7064(void) {
     func_800320E8(D_800B00C4);
 }
@@ -12356,9 +12844,78 @@ void func_800A7394(void) {
     CdDataSync(0);
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A73E8);
+#include "field_movie.h"
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A74F8);
+/* After a movie: reload the VRAM kept in party sprite blocks 1 and 2
+ * (unless movie mode 2), then release both blocks. */
+void func_800A73E8(void) {
+    RECT rect;
+
+    if (D_800ADB74 == 2) {
+        func_800320B8(D_8005A414[1]);
+        func_800320B8(D_8005A41C);
+        func_800320E8(D_8005A414[1]);
+        func_800320E8(D_8005A41C);
+    } else {
+        setRECT(&rect, 0x200, 0, 0x140, 0x80);
+        LoadImage(&rect, D_8005A414[1]);
+        DrawSync(0);
+        setRECT(&rect, 0x200, 0x80, 0x140, 0x80);
+        LoadImage(&rect, D_8005A41C);
+        DrawSync(0);
+        func_800320B8(D_8005A414[1]);
+        func_800320B8(D_8005A41C);
+        func_800320E8(D_8005A414[1]);
+        func_800320E8(D_8005A41C);
+    }
+}
+
+/* Before a movie: allocate party sprite blocks 1 and 2 and save the VRAM
+ * at (200, 0) in them; in movie mode 2 instead reload the sprites of party
+ * slots 1 and 2 from their character files. */
+void func_800A74F8(void) {
+    RECT rect;
+    MovieFileRequest requests[4];
+    s32 count;
+    s32 i;
+
+    if (D_800ADB74 == 2) {
+        D_8005A414[1] = func_80031BDC(0x14000, 0);
+        D_8005A414[2] = func_80031BDC(0x14000, 0);
+        func_800320A4(D_8005A414[1]);
+        func_800320A4(D_8005A414[2]);
+        func_80028470(4, 0);
+        count = 0;
+        for (i = 1; i < 3; i++) {
+            if (D_8006FABC[i] != 0xFF) {
+                requests[count].file = D_8006FABC[i] + 5;
+                requests[count].destination = D_80065AFC[i] = func_80031BDC(func_800288EC(D_8006FABC[i] + 5), 1);
+                count++;
+            }
+        }
+        requests[count].destination = NULL;
+        requests[count].file = 0;
+        func_80029AFC(requests, 0, 0);
+        func_80028A60(0);
+        for (i = 1; i < 3; i++) {
+            if (D_80062590[i] != 0xFF) {
+                func_80032EB4(D_80065AFC[i], D_8005A414[i]);
+                func_800320E8(D_80065AFC[i]);
+            }
+        }
+        return;
+    }
+    D_8005A414[1] = func_80031BDC(0x14000, 0);
+    D_8005A414[2] = func_80031BDC(0x14000, 0);
+    func_800320A4(D_8005A414[1]);
+    func_800320A4(D_8005A414[2]);
+    setRECT(&rect, 0x200, 0, 0x140, 0x80);
+    StoreImage(&rect, D_8005A414[1]);
+    DrawSync(0);
+    setRECT(&rect, 0x200, 0x80, 0x140, 0x80);
+    StoreImage(&rect, D_8005A414[2]);
+    DrawSync(0);
+}
 
 extern s32 D_800B14A8; /* nibble counter */
 extern u32 *D_800C3904; /* packed stream */
@@ -12430,9 +12987,239 @@ void func_800A77C4(void) {
     func_800320E8(pixels);
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A7948);
+/* While movie frames 687..18e2 play (when the sequence is enabled),
+ * switch to 640-wide draw buffers and draw the file 0xab sequence over
+ * the movie each frame, then restore the 320-wide buffers. Declared int
+ * without a value, as the original's live result register shows. */
+s32 func_800A7948(void) {
+    RECT rect;
 
+    if (D_8004F300 == 0 || D_800B06A0 < 0x687) {
+        return;
+    }
+    if (D_800B06A0 < 0x18E2) {
+        D_800AFE74 = 1;
+        D_801E89E0 = 0;
+        setRECT(&rect, 0, 0, 0x500, 0x200);
+        ClearImage(&rect, 0, 0, 0);
+        DrawSync(0);
+        VSync(0);
+        SetDefDrawEnv(&D_800B249C[0].draw, 0, 0, 0x280, 0xE0);
+        SetDefDrawEnv(&D_800B249C[1].draw, 0, 0x100, 0x280, 0xE0);
+        SetDefDispEnv(&D_800B249C[0].disp, 0, 0x100, 0x280, 0xE0);
+        SetDefDispEnv(&D_800B249C[1].disp, 0, 0, 0x280, 0xE0);
+        D_800B249C[1].disp.isrgb24 = 0;
+        D_800B249C[0].disp.isrgb24 = 0;
+        PutDispEnv(&D_800C426C->disp);
+        PutDrawEnv(&D_800C426C->draw);
+        setRECT(&rect, 0x300, 0, 0x200, 0x100);
+        ClearImage(&rect, 0, 0, 0);
+        func_800ACB90();
+        VSync(0);
+        DrawSync(0);
+        while (D_800B06A0 < 0x18E2) {
+            func_80019CA0();
+            func_80073F50();
+            if (D_800B06A0 < 0x18DE) {
+                func_800AC99C();
+            }
+            DrawSync(0);
+            VSync(2);
+            ClearImage(&D_800C426C->draw.clip, 0, 0, 0);
+            PutDispEnv(&D_800C426C->disp);
+            PutDrawEnv(&D_800C426C->draw);
+            DrawOTag(&D_800C426C->overlay_ot[7]);
+            func_800ACCF4();
+            func_800A732C(5);
+        }
+        D_800AFE74 = 0;
+        D_801E89E0 = 1;
+        DrawSync(0);
+        VSync(0);
+        SetDefDrawEnv(&D_800B249C[0].draw, 0, 0, 0x140, 0xE0);
+        SetDefDrawEnv(&D_800B249C[1].draw, 0, 0x100, 0x140, 0xE0);
+        SetDefDispEnv(&D_800B249C[0].disp, 0, 0x100, 0x140, 0xE0);
+        SetDefDispEnv(&D_800B249C[1].disp, 0, 0, 0x140, 0xE0);
+        D_800B249C[1].disp.isrgb24 = 1;
+        D_800B249C[0].disp.isrgb24 = 1;
+        D_800B249C[1].disp.isinter = 0;
+        D_800B249C[0].disp.isinter = 0;
+        func_800ACCB0();
+    }
+}
+
+#ifdef NON_MATCHING
+/* Play the requested field movie (800c3a20..): move the movie library
+ * (file 0xa9) into place, park the VRAM the movie uses, stop the field's
+ * effects and the 801e module, then decode and present frames by movie
+ * mode until it ends or is skipped; finally restore VRAM, the display and
+ * the field stream. The original addresses the movie parameters as one
+ * aggregate (800c3a3a and 800c3a2e off one hoisted base), which field.h
+ * does not declare yet. */
+void func_800A7C58(void) {
+    RECT rect;
+    u8 *data;
+    u8 *library;
+    s32 top;
+    s32 i;
+
+    D_800ADB84 = 0;
+    D_800B00E4 = 0;
+    D_800ADB78 = 0;
+    data = func_80031BDC(func_800288EC(0xA9), 0);
+    func_800295D8(0xA9, data, 0, 0x80);
+    D_800B06A0 = 0;
+    D_800AFE74 = 0;
+    func_800A7394();
+    func_80028470(0x18, 0);
+    func_8002A2D0(D_800C3A20);
+    func_80028470(4, 0);
+    func_800A7394();
+    if (D_800B2078.unk2264 != 0) {
+        func_801E7FD4();
+        func_8007999C();
+        func_800775F8();
+        func_800320E8(D_800ADB20);
+    }
+    func_800A9460();
+    if (D_800ADB74 != 2) {
+        setRECT(&rect, 0x140, 0, 0xC0, 0x100);
+        LoadImage(&rect, (u_long *)data);
+        DrawSync(0);
+        func_800320E8(data);
+        data = func_80031BDC(0x18000, 0);
+        StoreImage(&rect, (u_long *)data);
+    }
+    top = D_800ADB30;
+    if (D_8004F370 == 0) {
+        library = func_80031BDC((top & 0xFFFFFF) - 0x1D3008, 1);
+        memcpy(library, data, func_800288EC(0xA9));
+    } else {
+        library = func_80031BDC(8, 1);
+    }
+    func_800320E8(data);
+    func_80085788();
+    func_800ACC58();
+    D_800B00E4 = 1;
+    func_800A73E8();
+    func_8007999C();
+    func_80031FF8();
+    func_800A708C();
+    func_800A7218();
+    D_800ADB7C = 1;
+    do {
+        VSync(0);
+        func_800A732C(3);
+    } while (D_800B00E4 != 0);
+    do {
+        switch (D_800ADB74) {
+        case 1:
+            func_80073F50();
+            func_80075910();
+            func_800A732C(6);
+            break;
+        case 0:
+            DrawSync(0);
+            VSync(0);
+            PutDispEnv(&D_800C426C->disp);
+            PutDrawEnv(&D_800C426C->draw);
+            func_800A732C(3);
+            DrawSync(0);
+            VSync(0);
+            PutDispEnv(&D_800C426C->disp);
+            PutDrawEnv(&D_800C426C->draw);
+            func_800A732C(3);
+            func_800A7948();
+            break;
+        case 2:
+            func_80077DAC();
+            func_8007554C();
+            func_800A732C(9);
+            break;
+        }
+        if (D_800C268C == 0) {
+            if (D_800ADB74 == 2) {
+                if ((D_800C3900 & 0x80) || D_800ADB84 != 0) {
+                    break;
+                }
+            } else {
+                func_80074700();
+                if (D_800C3900 & 0x20) {
+                    break;
+                }
+            }
+        } else if (D_800ADB80 & 0x80) {
+            func_80074700();
+            if (D_800C3900 & 0x20) {
+                func_80038D18(0, 10);
+                for (i = 0; i < 5; i++) {
+                    VSync(0);
+                }
+                break;
+            }
+        }
+        if (D_800ADB74 == 2 && D_800ADB84 != 0) {
+            break;
+        }
+    } while ((s16)D_800C3A3A != 0 || D_800B06A0 < D_800C3A2E);
+    VSync(0);
+    DrawSync(0);
+    func_801D43B0();
+    func_8007999C();
+    PutDispEnv(&D_800C426C->disp);
+    PutDrawEnv(&D_800C426C->draw);
+    VSync(0);
+    DrawSync(0);
+    func_800320E8(library);
+    func_80031FF8();
+    func_800A74F8();
+    func_80077884();
+    setRECT(&rect, 0, D_800ADB78 << 8, 0x1E0, 0xE0);
+    MoveImage(&rect, 0, 0);
+    DrawSync(0);
+    VSync(0);
+    D_800C426C = &D_800B249C[1];
+    PutDispEnv(&D_800B249C[1].disp);
+    PutDrawEnv(&D_800C426C->draw);
+    if (D_800ADB74 != 2) {
+        func_800A77C4();
+    }
+    VSync(0);
+    D_800B249C[0].disp.isrgb24 = 0;
+    D_800C426C = &D_800B249C[0];
+    PutDispEnv(&D_800B249C[0].disp);
+    PutDrawEnv(&D_800C426C->draw);
+    setRECT(&rect, 0, 0x100, 0x140, 0xE0);
+    MoveImage(&rect, 0, 0);
+    DrawSync(0);
+    VSync(0);
+    D_800B249C[1].disp.isrgb24 = 0;
+    D_800C426C = &D_800B249C[1];
+    PutDispEnv(&D_800B249C[1].disp);
+    PutDrawEnv(&D_800C426C->draw);
+    if (D_800AFE84 != 0) {
+        D_800ADB50 = 1;
+    } else {
+        D_800ADB50 = 0;
+    }
+    func_80077AB4();
+    if (D_800ADB74 != 2) {
+        func_80028470(4, 0);
+        func_80032498(8, 0);
+        D_800ADB60 = 0;
+        func_80070488();
+        func_80070508();
+        D_800ADB3C = 0x20;
+        D_800ADB38 = 1;
+    }
+    func_80085738();
+    D_800C3A38 = 0xFF;
+    D_800ADB74 = 0;
+    D_800ADB6C = -1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A7C58);
+#endif
 
 void func_80070340(u32 *tim, s16 x, s16 y, s16 clut_x, s16 clut_y, s16 clut_w, s16 clut_h);
 
@@ -12464,13 +13251,206 @@ void func_800A83B4(void) {
     }
 }
 
+#include "field_panel.h"
+
+#ifdef NON_MATCHING
+/* Texture panel piece `index` of the current buffer with its frame moved
+ * by (du, dv), flipped vertically. The original passes the coordinates to
+ * 8007a44c unconverted (no s16 prototype in scope: a separate unit). */
+void func_800A8408(s32 index, s32 du, s32 dv) {
+    s32 frame;
+    s32 u;
+    s32 v;
+    s32 w;
+    s32 h;
+    s32 unused[6]; /* the original frame reserves an unused 24-byte local */
+
+    frame = D_800AEF10[index].frame;
+    v = D_800AEB68[frame].v + dv;
+    w = D_800AEB68[frame].w;
+    u = D_800AEB68[frame].u + du;
+    h = D_800AEB68[frame].h;
+    func_8007A44C(&D_800AFC60[D_800ADB08][index], u, v + h - 1, u + w, v + h - 1, u, v - 1, u + w, v - 1);
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A8408);
+#endif
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A84C0);
+/* Draw the status panel: rotate the compass strip by the view angle, the
+ * pitch strip by the camera pitch, their digits, the blinking marker and
+ * the rest of the pieces. */
+void func_800A84C0(void) {
+    s32 pitch;
+    s32 angle;
+    s32 count;
+    s32 i;
 
+    if (D_800AF278 != 0) {
+        count = PANEL_PIECES;
+        pitch = ratan2(func_80099A4C((D_800AF880.target.vx - D_800AF880.eye.vx) >> 16,
+                                     (D_800AF880.target.vz - D_800AF880.eye.vz) >> 16),
+                       (D_800AF880.target.vy - D_800AF880.eye.vy) >> 16) &
+                0xFFF;
+        angle = D_800AF880.view_angle & 0xFFF;
+        for (i = 0; i < 16; i++) {
+            func_800A8408(i, (angle >> 4) & 0xF, 0);
+            addPrim(&D_800C426C->overlay_ot[4], &D_800AFC60[D_800ADB08][i]);
+        }
+        for (; i < 29; i++) {
+            func_800A8408(i, 0, (pitch >> 4) & 0xF);
+            addPrim(&D_800C426C->overlay_ot[4], &D_800AFC60[D_800ADB08][i]);
+        }
+        for (; i < 34; i++) {
+            func_800A8408(i, (angle & 0xF) * 8, 0);
+            angle >>= 2;
+            addPrim(&D_800C426C->overlay_ot[4], &D_800AFC60[D_800ADB08][i]);
+        }
+        for (; i < 39; i++) {
+            func_800A8408(i, (pitch & 0xF) * 8, 0);
+            pitch >>= 2;
+            addPrim(&D_800C426C->overlay_ot[4], &D_800AFC60[D_800ADB08][i]);
+        }
+        for (; i < 40; i++) {
+            if (!(D_800AEB60 & 0xF)) {
+                D_800AEB64++;
+            }
+            if (D_800AEB64 >= 3) {
+                D_800AEB64 = 0;
+            }
+            func_800A8408(i, 0, D_800AEB64 * 8);
+            addPrim(&D_800C426C->overlay_ot[4], &D_800AFC60[D_800ADB08][i]);
+        }
+        for (; i < 42; i++) {
+            func_800A8408(i, (D_800AEB60 >> 2) & 0xF, 0);
+            addPrim(&D_800C426C->overlay_ot[4], &D_800AFC60[D_800ADB08][i]);
+        }
+        for (; i < 43; i++) {
+            if (!(D_800AEB60 & 0x10)) {
+                addPrim(&D_800C426C->overlay_ot[4], &D_800AFC60[D_800ADB08][i]);
+            }
+        }
+        for (; i < count; i++) {
+            addPrim(&D_800C426C->overlay_ot[4], &D_800AFC60[D_800ADB08][i]);
+        }
+        D_800AEB60++;
+    }
+}
+
+#ifdef NON_MATCHING
+/* Build the status panel: load its image, allocate the quads of both
+ * buffers and texture each piece from its frame (flip in flags bits 0-3,
+ * 4- or 8-bit page by bits 4-7). The original passes the coordinates to
+ * 8007a44c unconverted (no s16 prototype in scope: a separate unit). */
+void func_800A8BA4(void) {
+    POLY_FT4 *quad;
+    POLY_FT4 *copy;
+    PanelFrame *frame;
+    s32 mode;
+    s32 i;
+
+    func_800A8314();
+    mode = 0;
+    D_800AEB64 = 0;
+    func_80032498(8, 0);
+    D_800AFC60[0] = func_80031BDC(PANEL_PIECES * sizeof(POLY_FT4), 0);
+    D_800AFC60[1] = func_80031BDC(PANEL_PIECES * sizeof(POLY_FT4), 0);
+    for (i = 0; i < PANEL_PIECES; i++) {
+        quad = &D_800AFC60[0][i];
+        copy = &D_800AFC60[1][i];
+        SetPolyFT4(quad);
+        setRGB0(quad, 0x80, 0x80, 0x80);
+        quad->clut = GetClut(0, 0xE8);
+        switch ((D_800AEF10[i].flags >> 4) & 0xF) {
+        case 0:
+            mode = 1;
+            break;
+        case 1:
+            mode = 2;
+            break;
+        }
+        quad->tpage = GetTPage(0, mode, 0x380, 0);
+        SetSemiTrans(quad, 1);
+        frame = &D_800AEB68[D_800AEF10[i].frame];
+        quad->x0 = D_800AEF10[i].x;
+        quad->y0 = D_800AEF10[i].y;
+        quad->y1 = D_800AEF10[i].y;
+        quad->x2 = D_800AEF10[i].x;
+        quad->x1 = D_800AEF10[i].x + frame->w;
+        quad->y2 = D_800AEF10[i].y + frame->h;
+        quad->x3 = D_800AEF10[i].x + frame->w;
+        quad->y3 = D_800AEF10[i].y + frame->h;
+        switch (D_800AEF10[i].flags & 0xF) {
+        case 0:
+            func_8007A44C(quad, frame->u, frame->v, frame->u + frame->w, frame->v, frame->u,
+                          frame->v + frame->h, frame->u + frame->w, frame->v + frame->h);
+            break;
+        case 1:
+            func_8007A44C(quad, frame->u + frame->w - 1, frame->v, frame->u - 1, frame->v,
+                          frame->u + frame->w - 1, frame->v + frame->h, frame->u - 1, frame->v + frame->h);
+            break;
+        case 2:
+            func_8007A44C(quad, frame->u, frame->v + frame->h - 1, frame->u + frame->w, frame->v + frame->h - 1,
+                          frame->u, frame->v - 1, frame->u + frame->w, frame->v - 1);
+            break;
+        case 3:
+            func_8007A44C(quad, frame->u + frame->w - 1, frame->v + frame->h - 1, frame->u - 1,
+                          frame->v + frame->h - 1, frame->u + frame->w - 1, frame->v - 1, frame->u - 1,
+                          frame->v - 1);
+            break;
+        }
+        *copy = *quad;
+    }
+    D_800AF278 = 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A8BA4);
+#endif
 
+/* A particle sprite (800af27c): half size, centre, and the four texture
+ * corners (u, v) within the sprite page. */
+typedef struct {
+    s16 half_w;
+    s16 half_h;
+    s16 x;
+    s16 y;
+    s16 uv[4][2];
+} ParticleSprite;
+extern ParticleSprite D_800AF27C[];
+
+#ifdef NON_MATCHING
+/* Set up a particle's quad in both buffers from sprite `sprite` with
+ * semi-transparency rate `abr`. The original passes the coordinates to
+ * 8007a44c unconverted (no s16 prototype in scope: a separate unit). */
+void func_800A8EAC(Particle *particle, s32 sprite, s32 abr) {
+    POLY_FT4 *quad;
+    ParticleSprite *entry;
+
+    quad = &particle->quads[0];
+    SetPolyFT4(quad);
+    entry = &D_800AF27C[sprite];
+    particle->corners[0].vz = 0;
+    particle->corners[1].vz = 0;
+    particle->corners[2].vz = 0;
+    particle->corners[3].vz = 0;
+    setRGB0(quad, 0x80, 0x80, 0x80);
+    particle->corners[0].vx = entry->x * 16 - entry->half_w * 16;
+    particle->corners[0].vy = entry->y * 16 - entry->half_h * 16;
+    particle->corners[1].vx = entry->half_w * 16 + entry->x * 16;
+    particle->corners[1].vy = particle->corners[0].vy;
+    particle->corners[2].vx = particle->corners[0].vx;
+    particle->corners[2].vy = entry->half_h * 16 + entry->y * 16;
+    particle->corners[3].vx = particle->corners[1].vx;
+    particle->corners[3].vy = particle->corners[2].vy;
+    func_8007A44C(quad, entry->uv[0][0], entry->uv[0][1] + 0x40, entry->uv[1][0] - 1, entry->uv[1][1] + 0x40,
+                  entry->uv[2][0], entry->uv[2][1] + 0x3F, entry->uv[3][0] - 1, entry->uv[3][1] + 0x3F);
+    SetSemiTrans(quad, 1);
+    quad->tpage = GetTPage(0, abr, 0x3C0, 0x140);
+    quad->clut = GetClut(0x100, 0xF7);
+    particle->quads[1] = *quad;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A8EAC);
+#endif
 
 extern RECT D_800AFC28;
 typedef struct {
@@ -12570,12 +13550,13 @@ void func_800A9374(s32 slot) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Stop the emitters of effect slot `slot` and release their particles. */
 void func_800A93CC(s32 slot) {
     Record78 *emitter;
     s32 i;
     s32 j;
+    Particle *particle;
+    s32 unused[1]; /* the original frame reserves an unused local */
 
     if (D_800B14B0[slot] == 1) {
         emitter = D_800C3918[slot];
@@ -12583,16 +13564,14 @@ void func_800A93CC(s32 slot) {
             if (emitter->count != 0) {
                 emitter->unk04 = 0;
                 for (j = 0; j < emitter->count; j++) {
-                    emitter->particles[j].unk04 = 1;
+                    particle = &emitter->particles[j];
+                    particle->unk04 = 1;
                 }
             }
             emitter++;
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A93CC);
-#endif
 
 /* Release all effect slots. */
 void func_800A9460(void) {
@@ -12646,7 +13625,66 @@ void func_800A94A4(s32 value) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A9688);
+#include "field_effect.h"
+
+/* Run the effect slots for a frame: count down emitter delays, spawn and
+ * draw particles, count down emitter lifetimes (7fff lasts), and release
+ * the slots with nothing left alive. */
+void func_800A9688(void) {
+    MATRIX view;
+    s32 spawned;
+    Record78 *emitter;
+    s32 alive;
+    s32 slot;
+    s32 i;
+    s32 j;
+
+    if (D_800ADB34 != 0) {
+        return;
+    }
+    view = *(MATRIX *)D_800AFA64;
+    for (slot = 0; slot < 64; slot++) {
+        alive = 0;
+        if (D_800B14B0[slot] == 1) {
+            emitter = D_800C3918[slot];
+            for (i = 0; i < 8; i++) {
+                spawned = 0;
+                if (emitter->count != 0) {
+                    if (emitter->unk02 == 0) {
+                        for (j = 0; j < emitter->count; j++) {
+                            if (emitter->particles[j].unk00 == 0) {
+                                if (emitter->unk04 != 0) {
+                                    func_800AA6B4(emitter, &emitter->particles[j], &spawned);
+                                    func_800A9F18(emitter, &emitter->particles[j], &view);
+                                    alive = 1;
+                                }
+                            } else {
+                                func_800A9F18(emitter, &emitter->particles[j], &view);
+                                alive = 1;
+                            }
+                        }
+                        if (emitter->unk04 != 0) {
+                            if (emitter->unk04 != 0x7FFF) {
+                                emitter->unk04--;
+                            }
+                            alive = 1;
+                        }
+                    } else {
+                        alive = 1;
+                        emitter->unk02--;
+                    }
+                }
+                emitter++;
+            }
+            if (alive == 0) {
+                func_800A92AC(slot);
+            }
+        }
+    }
+    if (D_800C268C == 0) {
+        func_80281B00("PARTICLE  ");
+    }
+}
 
 /* A random number in 0..range. */
 s32 func_800A987C(s32 range) {
@@ -12740,11 +13778,276 @@ s32 func_800A9B1C(s32 value, s32 delta) {
     return value;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A9B54);
+/* Transform a particle's quad: rotate it by `angle` at its position under
+ * `view` (mode 3 scales the view by `scale` and then the quad again),
+ * scale it by its size, tint it and link it at its depth (depth mode 0
+ * front, 1 nearer, 2 as is, 3 farther). */
+void func_800A9B54(Particle *particle, MATRIX *view, s16 angle, s32 depth_mode, VECTOR *scale, s32 mode) {
+    MATRIX m;
+    MATRIX local;
+    MATRIX scaled_view;
+    SVECTOR rotation;
+    VECTOR size;
+    s32 otz;
+    s32 p;
 
+    rotation.vx = 0;
+    rotation.vy = 0;
+    rotation.vz = angle;
+    func_8003F738(&rotation, &local);
+    local.t[0] = particle->position.vx >> 12;
+    local.t[1] = particle->position.vy >> 12;
+    local.t[2] = particle->position.vz >> 12;
+    if (mode == 3) {
+        scaled_view = *view;
+        ScaleMatrix(&scaled_view, scale);
+        CompMatrix(&scaled_view, &local, &m);
+        func_8007409C(&m, &local);
+        size.vx = particle->unk38.vx;
+        size.vy = particle->unk38.vy;
+        size.vz = particle->unk38.vz;
+        ScaleMatrix(&m, &size);
+        (particle->quads + D_800ADB08)->r0 = particle->unk48[0];
+        (particle->quads + D_800ADB08)->g0 = particle->unk48[1];
+        (particle->quads + D_800ADB08)->b0 = particle->unk48[2];
+        SetTransMatrix(&m);
+        ScaleMatrix(&m, scale);
+    } else {
+        CompMatrix(view, &local, &m);
+        func_8007409C(&m, &local);
+        size.vx = particle->unk38.vx;
+        size.vy = particle->unk38.vy;
+        size.vz = particle->unk38.vz;
+        ScaleMatrix(&m, &size);
+        (particle->quads + D_800ADB08)->r0 = particle->unk48[0];
+        (particle->quads + D_800ADB08)->g0 = particle->unk48[1];
+        (particle->quads + D_800ADB08)->b0 = particle->unk48[2];
+        SetTransMatrix(&m);
+    }
+    SetRotMatrix(&m);
+    otz = RotAverage4(&particle->corners[0], &particle->corners[1], &particle->corners[2], &particle->corners[3],
+                      (long *)&particle->quads[D_800ADB08].x0, (long *)&particle->quads[D_800ADB08].x1,
+                      (long *)&particle->quads[D_800ADB08].x2, (long *)&particle->quads[D_800ADB08].x3, &p, &p) >>
+          D_80050100;
+    switch (depth_mode) {
+    case 0:
+        p = 1;
+        break;
+    case 1:
+        p = otz - 0x10;
+        break;
+    case 2:
+        p = otz;
+        break;
+    case 3:
+        p = otz + 0x10;
+        break;
+    }
+    if (p > 0 && p < 0x1000) {
+        addPrim(&D_800C426C->ot[p], &particle->quads[D_800ADB08]);
+    }
+}
+
+#ifdef NON_MATCHING
+/* Step a particle: while delayed count down and at launch place it and
+ * its velocity in the emitter's frame (0 owner-facing, 1 801e module, 2
+ * owner's transform, 3 owner-facing and scaled); afterwards move it,
+ * fade its colour, draw it and count its life down. Differs in keeping
+ * &m in a saved register for the module and transform frames. */
+void func_800A9F18(Record78 *emitter, Particle *particle, MATRIX *view) {
+    VECTOR v;
+    SVECTOR sv;
+    MATRIX m;
+    MATRIX camera;
+    VECTOR origin;
+    VECTOR up;
+    VECTOR rotated;
+    VECTOR scale;
+    s32 flag;
+    s32 scaled;
+
+    if (particle->unk02 != 0) {
+        if (--particle->unk02 == 0) {
+            m.t[0] = m.t[1] = m.t[2] = 0;
+            scaled = 0;
+            switch ((emitter->flags >> 4) & 3) {
+            case 3:
+                sv.vx = 0;
+                sv.vy = D_800AF880.components.descriptors[emitter->unk52].actor->unk108;
+                sv.vz = 0;
+                func_8003F738(&sv, &m);
+                origin.vx = WHOLE(D_800AF880.components.descriptors[emitter->unk52].actor->position[0]);
+                origin.vy = WHOLE(D_800AF880.components.descriptors[emitter->unk52].actor->position[1]);
+                origin.vz = WHOLE(D_800AF880.components.descriptors[emitter->unk52].actor->position[2]);
+                emitter->unk50 = D_800AF880.components.descriptors[emitter->unk52].actor->scale[0];
+                scaled = 1;
+                break;
+            case 0:
+                sv.vx = 0;
+                sv.vy = D_800AF880.components.descriptors[emitter->unk52].actor->unk108;
+                sv.vz = 0;
+                func_8003F738(&sv, &m);
+                origin.vx = WHOLE(D_800AF880.components.descriptors[emitter->unk52].actor->position[0]);
+                origin.vy = WHOLE(D_800AF880.components.descriptors[emitter->unk52].actor->position[1]);
+                origin.vz = WHOLE(D_800AF880.components.descriptors[emitter->unk52].actor->position[2]);
+                emitter->unk50 = 0x1000;
+                break;
+            case 1:
+                func_801E72CC(&m, &camera, emitter->unk72, emitter->unk74);
+                goto place;
+            case 2:
+                m = D_800AF880.components.descriptors[emitter->unk52].transform;
+            place:
+                SetRotMatrix(&m);
+                SetTransMatrix(&m);
+                sv.vx = emitter->unk0C.vx;
+                sv.vy = emitter->unk0C.vy;
+                sv.vz = emitter->unk0C.vz;
+                func_8004A6DC(&sv, &origin.vx, &flag);
+                emitter->unk50 = 0x1000;
+                break;
+            }
+            m.t[0] = m.t[1] = m.t[2] = 0;
+            SetRotMatrix(&m);
+            SetTransMatrix(&m);
+            sv.vx = particle->velocity.vx;
+            sv.vy = particle->velocity.vy;
+            sv.vz = particle->velocity.vz;
+            func_800495DC(&sv, &v);
+            func_80048D7C(&v, &particle->velocity);
+            particle->velocity.vx = (particle->velocity.vx * emitter->unk08 >> 12) * emitter->unk24;
+            particle->velocity.vy = (particle->velocity.vy * emitter->unk08 >> 12) * emitter->unk24;
+            particle->velocity.vz = (particle->velocity.vz * emitter->unk08 >> 12) * emitter->unk24;
+            if (scaled == 1) {
+                particle->position.vx = particle->position.vx * emitter->unk50 >> 12;
+                particle->position.vy = particle->position.vy * emitter->unk50 >> 12;
+                particle->position.vz = particle->position.vz * emitter->unk50 >> 12;
+            }
+            SetRotMatrix(&m);
+            SetTransMatrix(&m);
+            sv.vx = particle->position.vx;
+            sv.vy = particle->position.vy;
+            sv.vz = particle->position.vz;
+            func_8004A6DC(&sv, &v.vx, &flag);
+            if (scaled == 1) {
+                sv.vz = 0;
+                sv.vx = D_800B00B4 - 0x400;
+                sv.vy = -D_800AF880.view_angle;
+                func_8004ABBC(&sv, &camera);
+                SetRotMatrix(&camera);
+                SetTransMatrix(&camera);
+                up.vx = 0;
+                up.vz = 0;
+                up.vy = v.vy;
+                func_8004998C(&up, &rotated);
+                v.vx += rotated.vx;
+                v.vy = rotated.vy;
+                v.vz += rotated.vz;
+                particle->position.vx = (origin.vx + v.vx) * (0x1000000 / emitter->unk50);
+                particle->position.vy = (origin.vy + v.vy) * (0x1000000 / emitter->unk50);
+                particle->position.vz = (origin.vz + v.vz) * (0x1000000 / emitter->unk50);
+                return;
+            }
+            particle->position.vx = (origin.vx + v.vx) << 12;
+            particle->position.vy = (origin.vy + v.vy) << 12;
+            particle->position.vz = (origin.vz + v.vz) << 12;
+        }
+    } else {
+        particle->velocity.vx += particle->unk28.vx;
+        particle->velocity.vy += particle->unk28.vy;
+        particle->velocity.vz += particle->unk28.vz;
+        particle->unk38.vy += particle->unk40.vy;
+        particle->unk38.vx += particle->unk40.vx;
+        particle->unk38.vz += particle->unk40.vz;
+        particle->position.vx += particle->velocity.vx;
+        particle->position.vy += particle->velocity.vy;
+        particle->position.vz += particle->velocity.vz;
+        particle->unk48[0] = func_800A9B1C(particle->unk48[0], particle->unk4C[0]);
+        particle->unk48[1] = func_800A9B1C(particle->unk48[1], particle->unk4C[1]);
+        particle->unk48[2] = func_800A9B1C(particle->unk48[2], particle->unk4C[2]);
+        scale.vx = emitter->unk50;
+        scale.vy = emitter->unk50;
+        scale.vz = emitter->unk50;
+        if (particle->unk04 != 1) {
+            func_800A9B54(particle, view, particle->angle, (emitter->flags >> 1) & 3, &scale,
+                          (emitter->flags >> 4) & 3);
+        }
+        if (--particle->unk04 == 0) {
+            particle->unk00 = 0;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A9F18);
+#endif
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AA6B4);
+extern u8 D_800AF474[8]; /* spawn offset per view octant */
+
+/* Spawn `particle` of `emitter`: its delay after the previous spawn, a
+ * random start within the spawn radius around the emitter (offset by the
+ * owner's view octant) and a velocity toward a random point of the
+ * target spread. */
+void func_800AA6B4(Record78 *emitter, Particle *particle, s32 *spawned) {
+    VECTOR unused; /* the original frame reserves an unused 16-byte local */
+    VECTOR start;
+    VECTOR end;
+    s32 radius;
+    s32 angle;
+    u32 facing;
+    s32 k;
+
+    particle->unk00 = 1;
+    particle->unk02 = emitter->unk56 + *spawned;
+    *spawned += emitter->unk56;
+    particle->unk04 = emitter->unk58;
+    if (emitter->flags & 1) {
+        particle->angle = rand() & 0xFFF;
+    } else {
+        particle->angle = emitter->unk76;
+    }
+    if (!(emitter->flags & 0x80)) {
+        radius = func_800A987C(emitter->unk26);
+    } else {
+        radius = emitter->unk26;
+    }
+    angle = func_800A987C(0xFFF);
+    start.vx = func_8003F8CC(angle) * radius >> 12;
+    if (!(emitter->flags & 0x40)) {
+        start.vz = func_8003F8B0(angle) * radius >> 12;
+    } else {
+        start.vz = 0;
+    }
+    facing = (D_800AF880.view_angle + D_800AF880.components.descriptors[emitter->unk52].actor->unk108) & 0xFFF;
+    k = D_800AF474[facing >> 9];
+    start.vx += emitter->unk0C.vx + emitter->unk30[k][0];
+    start.vz += emitter->unk0C.vz + emitter->unk30[k][1];
+    start.vy = emitter->unk0C.vy;
+    particle->position.vx = start.vx;
+    particle->position.vz = start.vz;
+    particle->position.vy = start.vy;
+    radius = func_800A987C(emitter->unk28);
+    end.vx = emitter->unk14.vx + (func_8003F8CC(angle) * radius >> 12);
+    end.vz = emitter->unk14.vz + (func_8003F8B0(angle) * radius >> 12);
+    end.vy = emitter->unk14.vy;
+    particle->velocity.vx = end.vx - start.vx;
+    particle->velocity.vy = end.vy - start.vy;
+    particle->velocity.vz = end.vz - start.vz;
+    particle->unk28.vx = emitter->unk1C.vx;
+    particle->unk28.vy = emitter->unk1C.vy;
+    particle->unk28.vz = emitter->unk1C.vz;
+    particle->unk38.vx = emitter->unk5A.vx;
+    particle->unk38.vy = emitter->unk5A.vy;
+    particle->unk38.vz = emitter->unk5A.vz;
+    particle->unk40.vx = emitter->unk62.vx;
+    particle->unk40.vy = emitter->unk62.vy;
+    particle->unk40.vz = emitter->unk62.vz;
+    particle->unk48[0] = emitter->unk6A;
+    particle->unk48[1] = emitter->unk6B;
+    particle->unk48[2] = emitter->unk6C;
+    particle->unk4C[0] = emitter->unk6E;
+    particle->unk4C[1] = emitter->unk6F;
+    particle->unk4C[2] = emitter->unk70;
+}
 
 /* Set an instance's bounding centre and radius from its mesh bounds. */
 void func_800AA9DC(FieldInstance *instance) {
@@ -12771,7 +14074,44 @@ void func_800AA9DC(FieldInstance *instance) {
     instance->radius = size * 2 + 1;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AAA74);
+extern MATRIX D_800B00E8; /* instance view: the rotation with its translation */
+
+/* 0 when an instance's bounding square (its radius around its centre) is
+ * on screen, else -1. */
+s32 func_800AAA74(FieldInstance *instance) {
+    VECTOR position;
+    SVECTOR corner;
+    s32 flag;
+    s32 sxy;
+    s32 depth;
+    s32 radius;
+    s32 top;
+    s32 left;
+    s32 bottom;
+    s32 right;
+
+    func_8004A6DC((SVECTOR *)instance->center, &position.vx, &flag);
+    D_800B00E8.t[0] = position.vx;
+    D_800B00E8.t[1] = position.vy;
+    D_800B00E8.t[2] = position.vz;
+    SetRotMatrix(&D_800B00E8);
+    SetTransMatrix(&D_800B00E8);
+    radius = instance->radius;
+    corner.vy = corner.vx = -radius;
+    corner.vz = 0;
+    RotTransPers(&corner, &sxy, &depth, &flag);
+    top = sxy >> 16;
+    left = (s16)sxy;
+    corner.vy = corner.vx = radius;
+    corner.vz = 0;
+    RotTransPers(&corner, &sxy, &depth, &flag);
+    bottom = sxy >> 16;
+    right = (s16)sxy;
+    if (top < D_800C3A60 + 0xE0 && -D_800C3A60 < bottom && left < D_800C3A5C + 0x140 && -D_800C3A5C < right) {
+        return 0;
+    }
+    return -1;
+}
 
 typedef struct {
     DR_MODE modes[33][2];
@@ -12785,14 +14125,12 @@ void func_800AABD8(void) {
     DrawSync(0);
 }
 
-#ifdef NON_MATCHING
 /* Allocate the 33 sprites (the first 16x16, the rest 8x8), each with a
- * draw mode per buffer. Differs only in the i/copy register choice. */
+ * draw mode per buffer. */
 void func_800AAC08(void) {
     RECT window;
     SPRT *sprite;
     SPRT *copy;
-    s32 size;
     s32 i;
 
     D_800AFC68 = func_80031BDC(0x840, 0);
@@ -12810,25 +14148,20 @@ void func_800AAC08(void) {
         sprite->g0 = 0x80;
         sprite->b0 = 0x80;
         if (i == 0) {
-            size = 0x10;
             sprite->u0 = 0xE0;
             sprite->v0 = 0x70;
+            sprite->h = sprite->w = 0x10;
         } else {
             sprite->v0 = 0x60;
-            size = 8;
             sprite->u0 = 0xE0;
+            sprite->h = sprite->w = 8;
         }
-        sprite->w = size;
-        sprite->h = size;
         sprite->x0 = 0xA0;
         sprite->y0 = 0x70;
         sprite->clut = GetClut(0x100, 0xF7);
         *copy = *sprite;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AAC08);
-#endif
 
 /* Set sprite `index`'s colour in both buffers. */
 void func_800AADC8(s32 index, s32 r, s32 g, s32 b) {
@@ -12840,9 +14173,99 @@ void func_800AADC8(s32 index, s32 r, s32 g, s32 b) {
     (D_800AFC68->sprites[index] + 1)->b0 = b;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AAE4C);
+/* Place sprite `index` at (x, y) (anchor 0: 4, 12 above-left; 1: 4, 4)
+ * and link it with its draw mode into the overlay ordering table. */
+void func_800AAE4C(s32 index, s32 x, s32 y, s32 anchor) {
+    switch (anchor) {
+    case 0:
+        y -= 12;
+        x -= 4;
+        break;
+    case 1:
+        y -= 4;
+        x -= 4;
+        break;
+    }
+    D_800AFC68->sprites[index][D_800ADB08].x0 = x;
+    D_800AFC68->sprites[index][D_800ADB08].y0 = y;
+    addPrim(&D_800C426C->overlay_ot[0], &D_800AFC68->sprites[index][D_800ADB08]);
+    addPrim(&D_800C426C->overlay_ot[0], &D_800AFC68->modes[index][D_800ADB08]);
+}
 
+#include "field_picture.h"
+
+#ifdef NON_MATCHING
+/* Set up the picture: four marker sprites (the first 16x16, the rest
+ * 8x8) and the three 128x224 picture pieces from the 8-bit pages at
+ * (300, 100). Differs only in the scheduling of one constant load. */
+void func_800AAF80(void) {
+    RECT window;
+    SPRT *sprite;
+    SPRT *copy;
+    POLY_FT4 *quad;
+    POLY_FT4 *quad_copy;
+    s32 i;
+
+    D_800C3A3C = func_80031BDC(sizeof(ScreenPieces), 0);
+    D_800B1DF0 = func_80031BDC(sizeof(PictureMarks), 0);
+    setRECT(&window, 0, 0, 0xFF, 0xFF);
+    for (i = 0; i < 4; i++) {
+        SetDrawMode(&D_800B1DF0->modes[i][0], 0, 0, GetTPage(0, 0, 0x3C0, 0x140), &window);
+        SetDrawMode(&D_800B1DF0->modes[i][1], 0, 0, GetTPage(0, 0, 0x3C0, 0x140), &window);
+        sprite = &D_800B1DF0->sprites[i][0];
+        SetSprt(sprite);
+        copy = sprite + 1;
+        setRGB0(sprite, 0x80, 0x80, 0x80);
+        sprite->x0 = 0xA0;
+        sprite->y0 = 0x70;
+        if (i == 0) {
+            sprite->u0 = 0xE0;
+            sprite->v0 = 0x70;
+            sprite->h = sprite->w = 0x10;
+        } else {
+            sprite->v0 = 0x60;
+            sprite->u0 = 0xE0;
+            sprite->h = sprite->w = 8;
+        }
+        sprite->clut = GetClut(0x100, 0xF7);
+        *copy = *sprite;
+    }
+    for (i = 0; i < 3; i++) {
+        quad = &D_800C3A3C->quads[i][0];
+        quad_copy = &D_800C3A3C->quads[i][1];
+        SetPolyFT4(quad);
+        quad->y2 = 0xDF;
+        quad->x0 = i << 7;
+        quad->x2 = i << 7;
+        quad->y0 = 0;
+        quad->x1 = (i << 7) + 0x80;
+        quad->y1 = 0;
+        quad->x3 = (i << 7) + 0x80;
+        quad->y3 = 0xDF;
+        setRECT(&D_800C3A3C->windows[i][0], 0, 0, 0xFF, 0xFF);
+        setRECT(&D_800C3A3C->windows[i][1], 0, 0, 0xFF, 0xFF);
+        SetDrawMode(&D_800C3A3C->modes[i][0], 0, 0, GetTPage(1, 0, 0x300 + i * 0x40, 0x100),
+                    &D_800C3A3C->windows[i][0]);
+        SetDrawMode(&D_800C3A3C->modes[i][1], 0, 0, GetTPage(1, 0, 0x300 + i * 0x40, 0x100),
+                    &D_800C3A3C->windows[i][1]);
+        setRGB0(quad, 0x80, 0x80, 0x80);
+        SetSemiTrans(quad, 1);
+        quad->v2 = 0xDF;
+        quad->u0 = 0;
+        quad->v0 = 0;
+        quad->u1 = 0x80;
+        quad->v1 = 0;
+        quad->u2 = 0;
+        quad->u3 = 0x80;
+        quad->v3 = 0xDF;
+        quad->tpage = GetTPage(1, 0, 0x300 + i * 0x40, 0x100);
+        quad->clut = GetClut(0, 0xF6);
+        *quad_copy = *quad;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AAF80);
+#endif
 
 /* 0 when item `item` is held in inventory list 0, else -1. */
 s32 func_800AB328(s32 item) {
@@ -12856,7 +14279,38 @@ s32 func_800AB328(s32 item) {
     return -1;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AB378);
+/* Draw the picture at brightness `level`: the marker at the controlled
+ * actor's scaled map position, then the three picture pieces. */
+void func_800AB378(s32 level) {
+    FieldActor *actor;
+    s32 x;
+    s32 y;
+    s32 i;
+
+    actor = D_800AF880.components.descriptors[D_800B2078.controlled].actor;
+    x = WHOLE(actor->position[0]) * D_800C3914 >> 16;
+    y = -(WHOLE(actor->position[2]) * D_800C3A18) >> 16;
+    for (i = 0; i < 1; i++) {
+        if (i == 0) {
+            y -= 12;
+            x -= 4;
+        }
+        D_800B1DF0->sprites[i][D_800ADB08].x0 = x + D_800AFE78;
+        D_800B1DF0->sprites[i][D_800ADB08].y0 = y + D_800AFE7C;
+        (D_800B1DF0->sprites[i] + (D_800ADB08 & 1))->r0 = level;
+        (D_800B1DF0->sprites[i] + (D_800ADB08 & 1))->g0 = level;
+        (D_800B1DF0->sprites[i] + (D_800ADB08 & 1))->b0 = level;
+        addPrim(&D_800C426C->overlay_ot[0], &D_800B1DF0->sprites[i][D_800ADB08]);
+        addPrim(&D_800C426C->overlay_ot[0], &D_800B1DF0->modes[i][D_800ADB08]);
+    }
+    for (i = 0; i < 3; i++) {
+        (D_800C3A3C->quads[i] + (D_800ADB08 & 1))->r0 = level;
+        (D_800C3A3C->quads[i] + (D_800ADB08 & 1))->g0 = level;
+        (D_800C3A3C->quads[i] + (D_800ADB08 & 1))->b0 = level;
+        addPrim(&D_800C426C->overlay_ot[0], &D_800C3A3C->quads[i][D_800ADB08]);
+        addPrim(&D_800C426C->overlay_ot[0], &D_800C3A3C->modes[i][D_800ADB08]);
+    }
+}
 
 /* 0 when game flag `which` (bits 3-6 of +1a16) is set; for 4, when bit 7
  * is clear; else -1. */
@@ -12891,17 +14345,158 @@ s32 func_800AB748(u32 which) {
     return -1;
 }
 
+extern RECT D_800AF5C0[5]; /* pieces of file 0x802's 320-wide image */
+
+#ifdef NON_MATCHING
+/* Upload the pieces of file 0x802's image whose game flag (800ab748) is
+ * clear to the 8-bit page area at (300, 100). The original keeps one
+ * pointer per piece field and spills most of its variables. */
+void func_800AB808(void) {
+    TIM_IMAGE tim;
+    u_long *file;
+    u8 *pixels;
+    u8 *row_pixels;
+    s32 i;
+    s32 row;
+
+    file = func_80031BDC(func_800288EC(0x802), 0);
+    func_800295D8(0x802, file, 0, 0x80);
+    func_80028A60(0);
+    pixels = func_80031BDC(0xF20, 0);
+    OpenTIM(file);
+    if (ReadTIM(&tim) != NULL) {
+        for (i = 0; i < 5; i++) {
+            if (func_800AB748(i) == -1 && tim.paddr != NULL) {
+                row_pixels = pixels;
+                for (row = 0; row < D_800AF5C0[i].h; row++) {
+                    memcpy(row_pixels, tim.paddr + (D_800AF5C0[i].y + row) * 0x50 + D_800AF5C0[i].x / 4,
+                           D_800AF5C0[i].w);
+                    row_pixels += D_800AF5C0[i].w / 4 * 4;
+                }
+                tim.prect->x = D_800AF5C0[i].x / 2 + 0x300;
+                tim.prect->y = D_800AF5C0[i].y + 0x100;
+                tim.prect->w = D_800AF5C0[i].w / 2;
+                tim.prect->h = D_800AF5C0[i].h;
+                LoadImage(tim.prect, (u_long *)pixels);
+                DrawSync(0);
+            }
+        }
+    }
+    func_800320E8(file);
+    func_800320E8(pixels);
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AB808);
+#endif
 
+#ifdef NON_MATCHING
+/* Show the current map's picture while its item is held: park the VRAM
+ * at (300, 100), load the picture, fade it in, hold until the button, fade
+ * it out and restore the VRAM. Differs in addressing the entry: the
+ * original keeps the table base and the entry offset apart. */
+void func_800ABA98(void) {
+    RECT rect;
+    Picture *table;
+    Picture *entry;
+    u8 *saved;
+    u32 *file;
+    s32 picture;
+    s32 i;
+
+    table = D_800AF47C;
+    i = 0;
+    entry = table;
+    for (;;) {
+        if (entry->map == 0xFFFF) {
+            return;
+        }
+        if ((D_8004F34C & 0x3FFF) == entry->map) {
+            break;
+        }
+        entry++;
+        i++;
+    }
+    if (func_800AB328(table[i].item) == -1) {
+        return;
+    }
+    picture = table[i].picture;
+    setRECT(&rect, 0x300, 0x100, 0xA0, 0x100);
+    D_800C3914 = table[i].unk04;
+    D_800C3A18 = table[i].unk08;
+    D_800AFE78 = table[i].x;
+    D_800AFE7C = table[i].y;
+    saved = func_80031BDC(0x14000, 0);
+    StoreImage(&rect, (u_long *)saved);
+    DrawSync(0);
+    func_80028A60(0);
+    func_80028470(4, 0);
+    file = func_80031BDC(func_800288EC(picture + 0x7FB), 0);
+    func_800295D8(picture + 0x7FB, file, 0, 0x80);
+    func_80028A60(0);
+    func_80070340(file, 0x300, 0x100, 0, 0xF6, 0, 0);
+    func_800320E8(file);
+    if (table[i].pieces == 1) {
+        func_800AB808();
+    }
+    func_800AAF80();
+    for (i = 0; i < 16; i++) {
+        func_80073FE0();
+        func_800AB378(i * 8);
+        func_800A6924();
+    }
+    do {
+        func_80073FE0();
+        func_800AB378(0x80);
+        func_800A6924();
+        func_80074700();
+    } while (!(D_800C3900 & 0x100));
+    for (i = 16; i > 0; i--) {
+        func_80073FE0();
+        func_800AB378(i * 8);
+        func_800A6924();
+    }
+    DrawSync(0);
+    func_800320E8(D_800C3A3C);
+    func_800320E8(D_800B1DF0);
+    LoadImage(&rect, (u_long *)saved);
+    DrawSync(0);
+    func_800320E8(saved);
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800ABA98);
-
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800ABD18);
+#endif
 
 typedef struct {
     DR_MODE modes[5][2];
     SPRT sprites[5][2];
 } OverlaySprites;
 extern OverlaySprites D_800B0188; /* per sprite and draw buffer */
+
+/* Set up the five 128x224 overlay sprites (8-bit pages from x 280) with
+ * their draw modes in both buffers. */
+void func_800ABD18(void) {
+    RECT window;
+    SPRT *sprite;
+    s32 i;
+
+    setRECT(&window, 0, 0, 0xFF, 0xFF);
+    for (i = 0; i < 5; i++) {
+        SetDrawMode(&D_800B0188.modes[i][0], 0, 0, GetTPage(1, 0, 0x280 + i * 0x40, 0), &window);
+        SetDrawMode(&D_800B0188.modes[i][1], 0, 0, GetTPage(1, 0, 0x280 + i * 0x40, 0), &window);
+        sprite = &D_800B0188.sprites[i][0];
+        SetSprt(sprite);
+        sprite->x0 = i << 7;
+        setRGB0(sprite, 0x80, 0x80, 0x80);
+        sprite->y0 = 0;
+        sprite->u0 = 0;
+        sprite->v0 = 0;
+        sprite->w = 0x80;
+        sprite->h = 0xE0;
+        SetSemiTrans(sprite, 0);
+        sprite->clut = GetClut(0, 0xE8);
+        D_800B0188.sprites[i][1] = *sprite;
+    }
+}
 
 /* Link the five overlay sprites and their draw modes of the current
  * buffer into the overlay ordering table. */
@@ -12916,14 +14511,110 @@ void func_800ABEC8(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800ABFDC);
+#include "field_glyph.h"
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AC03C);
+extern s32 D_800AF780; /* file 0xab bytes left */
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AC0F0);
+/* The glyph of the two-byte code at `text`: an index into the overlay font
+ * (*own 1) or the ROM font bitmap (*own 0). */
+s32 func_800ABFDC(u8 *text, s32 *own) {
+    u16 code;
+
+    code = text[1] | (text[0] << 8);
+    if ((u16)(code - GLYPH_OWN_FIRST) < GLYPH_OWN_COUNT) {
+        *own = 1;
+        return code - GLYPH_OWN_FIRST;
+    }
+    *own = 0;
+    return (s32)func_800405C4(code);
+}
+
+/* Expand a 16x15 1-bit ROM glyph into an 8-bit glyph cell (0xff set, 0
+ * clear); a -1 glyph fills the cell. */
+void func_800AC03C(u8 *cell, u16 *rows) {
+    s32 i;
+    s32 bit;
+
+    if (rows == (u16 *)-1) {
+        for (i = 0; i < GLYPH_CELL_BYTES; i++) {
+            *cell++ = 0xFF;
+        }
+        return;
+    }
+    for (i = 0; i < 15; i++) {
+        for (bit = 7; bit >= 0; bit--) {
+            *cell++ = (*rows >> bit) & 1 ? 0xFF : 0;
+        }
+        for (bit = 15; bit >= 8; bit--) {
+            *cell++ = (*rows >> bit) & 1 ? 0xFF : 0;
+        }
+        *cell++ = 0;
+        *cell++ = 0;
+        rows++;
+    }
+}
+
+/* Draw the next text line (ending at CR, up to 28 glyphs) into VRAM row
+ * `row` at x `left`, blanking the rest; return the text after it. */
+u8 *func_800AC0F0(u8 *text, s32 left, s32 row) {
+    GlyphCell cell;
+    RECT dest;
+    RECT source;
+    u8 line[0x40];
+    s32 own;
+    s32 used;
+    s32 count;
+    s32 glyph;
+    s32 x;
+    s32 i;
+
+    dest.w = 9;
+    dest.h = 16;
+    dest.y = row * 16;
+    for (i = 0; i < 0x40; i++) {
+        line[i] = text[i];
+    }
+    for (i = GLYPH_CELL_BYTES - 1; i >= 0; i--) {
+        cell.pixels[0][i] = 0;
+    }
+    used = 0;
+    if (D_800AF780 <= 0) {
+        count = 0;
+    } else {
+        for (count = 0, x = left; count < GLYPH_LINE_CELLS; count++, x += 9) {
+            if (line[used] == '\r') {
+                used++;
+                break;
+            }
+            glyph = func_800ABFDC(&line[used], &own);
+            used += 2;
+            if (own == 1) {
+                source.w = 9;
+                source.h = 16;
+                source.x = glyph % 7 * 9 + 0x380;
+                source.y = glyph / 7 * 16 + 0x100;
+                MoveImage(&source, x, row * 16);
+            } else {
+                func_800AC03C(cell.pixels[0], (u16 *)glyph);
+                dest.x = x;
+                LoadImage(&dest, (u_long *)&cell);
+            }
+            DrawSync(0);
+        }
+    }
+    for (i = GLYPH_CELL_BYTES - 1; i >= 0; i--) {
+        cell.pixels[0][i] = 0;
+    }
+    for (; count < GLYPH_LINE_CELLS; count++) {
+        dest.x = count * 9 + left;
+        LoadImage(&dest, (u_long *)&cell);
+        DrawSync(0);
+    }
+    D_800AF780 -= used;
+    return text + used;
+}
 
 extern s32 func_80028738(s32 file);
-extern s32 D_800AF780;  /* file 0xab size */
 extern void *D_800AF76C; /* file 0xab */
 extern void *D_800AF784; /* file 0xac */
 
@@ -12939,9 +14630,117 @@ void func_800AC308(void) {
     func_80028A60(0);
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AC3AC);
+#ifdef NON_MATCHING
+/* Set up the text roll: the white top and bottom fades (640 wide, 24
+ * tall at 0 and c8) and the 16 lines of sprites. Differs only in when
+ * the scheduler loads the constants 0x280 and 0x80. */
+void func_800AC3AC(void) {
+    SPRT *sprite;
+    s32 i;
+    s32 k;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AC99C);
+    SetPolyGT4(&D_800AF788[0][0]);
+    SetPolyGT4(&D_800AF788[1][0]);
+    D_800AF788[0][0].r0 = D_800AF788[0][0].g0 = D_800AF788[0][0].b0 = 0xFF;
+    D_800AF788[0][0].r1 = D_800AF788[0][0].g1 = D_800AF788[0][0].b1 = 0xFF;
+    D_800AF788[1][0].r2 = D_800AF788[1][0].g2 = D_800AF788[1][0].b2 = 0xFF;
+    D_800AF788[1][0].r3 = D_800AF788[1][0].g3 = D_800AF788[1][0].b3 = 0xFF;
+    D_800AF788[0][0].y3 = D_800AF788[0][0].y2 = 0x18;
+    D_800AF788[0][0].r2 = D_800AF788[0][0].g2 = D_800AF788[0][0].b2 = 0;
+    D_800AF788[0][0].r3 = D_800AF788[0][0].g3 = D_800AF788[0][0].b3 = 0;
+    D_800AF788[1][0].r0 = D_800AF788[1][0].g0 = D_800AF788[1][0].b0 = 0;
+    D_800AF788[1][0].r1 = D_800AF788[1][0].g1 = D_800AF788[1][0].b1 = 0;
+    D_800AF788[0][0].x0 = 0;
+    D_800AF788[0][0].y0 = 0;
+    D_800AF788[0][0].x1 = 0x280;
+    D_800AF788[0][0].y1 = 0;
+    D_800AF788[0][0].x2 = 0;
+    D_800AF788[0][0].x3 = 0x280;
+    D_800AF788[1][0].x0 = 0;
+    D_800AF788[1][0].y0 = 0xC8;
+    D_800AF788[1][0].y1 = 0xC8;
+    D_800AF788[1][0].y2 = 0xE0;
+    D_800AF788[1][0].y3 = 0xE0;
+    D_800AF788[1][0].x1 = 0x280;
+    D_800AF788[1][0].x2 = 0;
+    D_800AF788[1][0].x3 = 0x280;
+    D_800AF788[0][0].u0 = 0;
+    D_800AF788[0][0].v0 = 0;
+    D_800AF788[0][0].u1 = 2;
+    D_800AF788[0][0].v1 = 0;
+    D_800AF788[0][0].u2 = 0;
+    D_800AF788[0][0].v2 = 2;
+    D_800AF788[0][0].u3 = 2;
+    D_800AF788[0][0].v3 = 2;
+    D_800AF788[1][0].u0 = 0;
+    D_800AF788[1][0].v0 = 0;
+    D_800AF788[1][0].u1 = 2;
+    D_800AF788[1][0].v1 = 0;
+    D_800AF788[1][0].u2 = 0;
+    D_800AF788[1][0].v2 = 2;
+    D_800AF788[1][0].u3 = 2;
+    D_800AF788[1][0].v3 = 2;
+    D_800AF788[0][0].tpage = GetTPage(1, 2, 0x3C0, 0x100);
+    D_800AF788[1][0].tpage = GetTPage(1, 2, 0x3C0, 0x100);
+    D_800AF788[0][0].clut = GetClut(0, 0x1FF);
+    D_800AF788[1][0].clut = GetClut(0, 0x1FF);
+    SetSemiTrans(&D_800AF788[0][0], 1);
+    SetSemiTrans(&D_800AF788[1][0], 1);
+    D_800AF788[0][1] = D_800AF788[0][0];
+    D_800AF788[1][1] = D_800AF788[1][0];
+    D_800AF770 = func_80031BDC(16 * sizeof(TextRollLine), 1);
+    for (i = 0; i < 16; i++) {
+        sprite = &D_800AF770[i].sprites[0][0];
+        SetSprt(sprite);
+        setRGB0(sprite, 0x80, 0x80, 0x80);
+        SetSemiTrans(sprite, 0);
+        sprite->clut = GetClut(0, 0x1FF);
+        sprite->h = 0x10;
+        sprite->u0 = 0;
+        sprite->v0 = i * 16;
+        sprite->w = 0x80;
+        sprite->x0 = 0x40;
+        sprite->y0 = i * 16;
+        sprite[4] = *sprite;
+        sprite[1] = *sprite;
+        sprite[5] = *sprite;
+        sprite[2] = *sprite;
+        sprite[6] = *sprite;
+        sprite[3] = *sprite;
+        sprite[7] = *sprite;
+        for (k = 0; k < 4; k++) {
+            D_800AF770[i].sprites[0][k].x0 = 0x40 + k * 0x80;
+            D_800AF770[i].sprites[1][k].x0 = 0x40 + k * 0x80;
+            SetDrawMode(&D_800AF770[i].modes[0][k], 0, 0, GetTPage(1, 0, 0x300 + k * 0x40, 0), NULL);
+            SetDrawMode(&D_800AF770[i].modes[1][k], 0, 0, GetTPage(1, 0, 0x300 + k * 0x40, 0), NULL);
+        }
+    }
+}
+#else
+INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AC3AC);
+#endif
+
+/* Draw the text roll: its two fades, then each line scrolled up a pixel
+ * from the other buffer's position. */
+void func_800AC99C(void) {
+    s32 y;
+    s32 i;
+    s32 k;
+
+    addPrim(&D_800C426C->overlay_ot[0], &D_800AF788[1][D_800ADB08]);
+    addPrim(&D_800C426C->overlay_ot[0], &D_800AF788[0][D_800ADB08]);
+    for (i = 0; i < 16; i++) {
+        y = (D_800AF770[i].sprites[(D_800ADB08 + 1) & 1][0].y0 - 1) & 0xFF;
+        D_800AF770[i].sprites[D_800ADB08][0].y0 = y;
+        D_800AF770[i].sprites[D_800ADB08][1].y0 = y;
+        D_800AF770[i].sprites[D_800ADB08][2].y0 = y;
+        D_800AF770[i].sprites[D_800ADB08][3].y0 = y;
+        for (k = 0; k < 4; k++) {
+            addPrim(&D_800C426C->overlay_ot[0], &D_800AF770[i].sprites[D_800ADB08][k]);
+            addPrim(&D_800C426C->overlay_ot[0], &D_800AF770[i].modes[D_800ADB08][k]);
+        }
+    }
+}
 
 void func_80070340(u32 *tim, s16 x, s16 y, s16 clut_x, s16 clut_y, s16 clut_w, s16 clut_h);
 
@@ -12968,7 +14767,7 @@ void func_800ACB90(void) {
     func_800320E8(pixels);
 }
 
-extern s32 D_800AF774;
+extern u8 *D_800AF774; /* sequence text position */
 extern s32 D_800AF778;
 extern s32 D_800AF77C;
 void func_800AC3AC(void);
@@ -12982,11 +14781,10 @@ void func_800ACC58(void) {
         func_800AC3AC();
         D_800AF77C = 0;
         D_800AF778 = 15;
-        D_800AF774 = (s32)D_800AF76C;
+        D_800AF774 = D_800AF76C;
     }
 }
 
-extern void *D_800AF770;
 
 /* Release the sequence buffers when enabled. */
 void func_800ACCB0(void) {
@@ -12996,7 +14794,6 @@ void func_800ACCB0(void) {
     }
 }
 
-s32 func_800AC0F0(s32 position, s32 size, s32 frame);
 
 /* Advance the sequence one frame; every 16th frame decode the next step. */
 void func_800ACCF4(void) {
@@ -13076,9 +14873,72 @@ void func_800ACE90(void) {
     func_800AD978(1);
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800ACFD0);
+#include "field_party.h"
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AD4D4);
+#define DESCRIPTOR(index) (&D_800AF880.components.descriptors[index])
+
+#ifdef NON_MATCHING
+/* Return party slot `slot` to its member: swap the models back, hand the
+ * stand-in's heading over, and restart both animations. Differs in when
+ * the address of 8006f990 is formed. */
+void func_800ACFD0(s32 slot) {
+    FieldModel *model;
+
+    D_8005A39C->unk22B1[slot] = 0;
+    model = DESCRIPTOR(D_8005A444[slot])->model;
+    DESCRIPTOR(D_8005A444[slot])->model = DESCRIPTOR(D_8006F990[slot])->model;
+    DESCRIPTOR(D_8006F990[slot])->model = model;
+    DESCRIPTOR(D_8006F990[slot])->flags = (DESCRIPTOR(D_8006F990[slot])->flags & 0xF07F) | 0x200;
+    DESCRIPTOR(D_8006F990[slot])->flags &= 0xFFDF;
+    DESCRIPTOR(D_8006F990[slot])->actor->flags &= ~1;
+    func_800A0524(D_8006F990[slot], D_8005A444[slot]);
+    DESCRIPTOR(D_8005A444[slot])->model->position[0] = DESCRIPTOR(D_8005A444[slot])->actor->position[0];
+    DESCRIPTOR(D_8005A444[slot])->model->position[1] = DESCRIPTOR(D_8005A444[slot])->actor->position[1];
+    DESCRIPTOR(D_8005A444[slot])->model->position[2] = DESCRIPTOR(D_8005A444[slot])->actor->position[2];
+    DESCRIPTOR(D_8005A444[slot])->actor->flags |= 0x400;
+    DESCRIPTOR(D_8005A444[slot])->actor->flags &= ~0x300;
+    DESCRIPTOR(D_8006F990[slot])->actor->flags &= ~0x1800;
+    DESCRIPTOR(D_8005A444[slot])->actor->flags &= ~0x1800;
+    DESCRIPTOR(D_8006F990[slot])->actor->unk108 = DESCRIPTOR(D_8005A444[slot])->actor->unk108;
+    DESCRIPTOR(D_8006F990[slot])->actor->heading_goal = DESCRIPTOR(D_8005A444[slot])->actor->heading_goal;
+    DESCRIPTOR(D_8006F990[slot])->actor->unkE8 = DESCRIPTOR(D_8006F990[slot])->actor->unkE6;
+    DESCRIPTOR(D_8005A444[slot])->actor->unkE8 = DESCRIPTOR(D_8005A444[slot])->actor->unkE6;
+    func_800821F4(DESCRIPTOR(D_8006F990[slot])->model, 6, DESCRIPTOR(D_8006F990[slot]));
+    func_800821F4(DESCRIPTOR(D_8005A444[slot])->model, DESCRIPTOR(D_8005A444[slot])->actor->unkE6,
+                  DESCRIPTOR(D_8005A444[slot]));
+    func_8009FEE4(slot);
+    func_800A98E8(D_8006F990[slot], 0);
+}
+#else
+INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800ACFD0);
+#endif
+
+/* Put the current actor in for party slot `slot`: swap its model with the
+ * member's, mark the slot taken, and restart both animations. */
+void func_800AD4D4(s32 slot) {
+    FieldModel *model;
+
+    model = DESCRIPTOR(D_800AFD1C)->model;
+    DESCRIPTOR(D_800AFD1C)->model = DESCRIPTOR(D_8005A444[slot])->model;
+    DESCRIPTOR(D_8005A444[slot])->model = model;
+    DESCRIPTOR(D_8005A444[slot])->model->position[0] = DESCRIPTOR(D_8005A444[slot])->actor->position[0];
+    DESCRIPTOR(D_8005A444[slot])->model->position[1] = DESCRIPTOR(D_8005A444[slot])->actor->position[1];
+    DESCRIPTOR(D_8005A444[slot])->model->position[2] = DESCRIPTOR(D_8005A444[slot])->actor->position[2];
+    DESCRIPTOR(D_800AFD1C)->flags |= 0x20;
+    DESCRIPTOR(D_8005A444[slot])->actor->flags |= 0x200;
+    DESCRIPTOR(D_8005A444[slot])->actor->flags &= ~0x500;
+    D_8005A39C->unk22B1[slot] = 1;
+    DESCRIPTOR(D_8006F990[slot])->actor->flags &= ~0x1800;
+    DESCRIPTOR(D_8005A444[slot])->actor->flags &= ~0x1800;
+    DESCRIPTOR(D_8006F990[slot])->actor->unkE8 = DESCRIPTOR(D_8006F990[slot])->actor->unkE6;
+    DESCRIPTOR(D_8005A444[slot])->actor->unkE8 = DESCRIPTOR(D_8005A444[slot])->actor->unkE6;
+    func_800821F4(DESCRIPTOR(D_8006F990[slot])->model, DESCRIPTOR(D_8006F990[slot])->actor->unkE6,
+                  DESCRIPTOR(D_8006F990[slot]));
+    func_800821F4(DESCRIPTOR(D_8005A444[slot])->model, DESCRIPTOR(D_8005A444[slot])->actor->unkE6,
+                  DESCRIPTOR(D_8005A444[slot]));
+    func_800A98E8(D_8006F990[slot], 0);
+    func_8009FEE4(slot);
+}
 
 /* For party members in slot state 1, set actor flag 0x200 and clear
  * 0x500. */

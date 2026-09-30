@@ -589,32 +589,41 @@ typedef struct {
 /* One 0x78-byte particle emitter: the eight at 800b02cc, and copies of
  * them per effect slot (*800c3918). */
 typedef struct {
-    s16 unk00;       /* 00 */
-    u8 unk02[2];
-    s16 unk04;       /* 04: set to 1 to release */
-    u8 unk06[0xC0 - 6];
+    s16 unk00;       /* 00: alive */
+    u16 unk02;       /* 02: start delay */
+    u16 unk04;       /* 04: life; set to 1 to release */
+    u16 angle;       /* 06 */
+    VECTOR position; /* 08 */
+    VECTOR velocity; /* 18 */
+    VECTOR unk28;    /* 28 */
+    SVECTOR unk38;   /* 38 */
+    SVECTOR unk40;   /* 40 */
+    u8 unk48[4];     /* 48 */
+    s8 unk4C[4];     /* 4C */
+    POLY_FT4 quads[2];  /* 50: per draw buffer */
+    SVECTOR corners[4]; /* A0 */
 } Particle;
 
 typedef struct {
     s16 unk00;       /* 00 */
-    s16 unk02;       /* 02 */
-    s16 unk04;       /* 04 */
+    u16 unk02;       /* 02: start delay */
+    u16 unk04;       /* 04: lifetime, 7fff lasting */
     s16 count;       /* 06: particles */
     s32 unk08;       /* 08 */
     SVECTOR unk0C;   /* 0C */
     SVECTOR unk14;   /* 14 */
     SVECTOR unk1C;   /* 1C */
     s16 unk24;       /* 24 */
-    s16 unk26;       /* 26 */
-    s16 unk28;       /* 28 */
+    u16 unk26;       /* 26: spawn radius */
+    u16 unk28;       /* 28: velocity spread */
     u16 flags;       /* 2A */
     Particle *particles; /* 2C */
     s16 unk30[8][2]; /* 30 */
     s16 unk50;       /* 50 */
     s16 unk52;       /* 52 */
     s16 unk54;       /* 54 */
-    s16 unk56;       /* 56 */
-    s16 unk58;       /* 58 */
+    u16 unk56;       /* 56: spawn interval */
+    u16 unk58;       /* 58: particle life */
     SVECTOR unk5A;   /* 5A */
     SVECTOR unk62;   /* 62 */
     u8 unk6A;        /* 6A */
@@ -627,7 +636,7 @@ typedef struct {
     u8 unk71;
     s16 unk72;       /* 72 */
     s16 unk74;       /* 74 */
-    s16 unk76;       /* 76 */
+    u16 unk76;       /* 76: particle angle */
 } Record78;
 
 /* A pointer marker: its quad's corners and primitive per buffer. */
