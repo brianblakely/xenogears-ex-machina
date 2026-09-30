@@ -101,13 +101,15 @@ typedef struct {
     u8 unk25;
     u8 instrument;
     u8 voice;          /* hardware voice */
-    u8 unk28[4];
+    u8 unk28;
+    u8 unk29[3];
     struct SoundSequence *instruments;
     SoundChannel state;
     u8 unk38[4];
     u16 unk3C;
     u16 unk3E;
-    u8 unk40[0x1C];
+    u8 unk40[0x14];
+    u8 envelope[8];    /* ADSR parameters (state.flags 0x10-0x100 update them) */
     s16 unk5C;
     u8 unk5E[2];
     u8 unk60;
@@ -118,16 +120,20 @@ typedef struct {
     s16 transpose;     /* in semitones */
     s32 note;          /* 16.16 */
     s16 unk6C;
-    s16 unk6E;
+    s16 detune;
     u16 unk70;
     u16 loop_depth;    /* innermost entry of `loops`, 0xFFFF when none */
     s16 pan;           /* 0 left, 0x4000 centre, 0x7F00 right */
     s16 volume;
     SoundFixed level;  /* its whole part scales the volume */
-    u8 unk7C[0x10];
+    u8 unk7C[8];
+    s32 unk84;
+    u8 unk88[4];
     s16 volume_step;
     s16 volume_target;
-    u8 unk90[0xA];
+    u8 unk90[4];
+    s16 unk94;
+    u8 unk96[4];
     s16 volume_frames;
     SoundLoop loops[4];
     u8 unkCC[2];

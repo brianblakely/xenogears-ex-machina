@@ -893,7 +893,7 @@ void func_8003B424(SoundSeq *seq) {
             channel->unk22 = 0;
             channel->unk5C = 0;
             channel->unk60 = 0;
-            channel->unk6E = 0;
+            channel->detune = 0;
             channel->unk64 = 0;
             channel->pan = 0x4000;
             channel->unk70 = 0;
@@ -992,7 +992,7 @@ void func_8003B644(s16 code, s32 id, s16 volume, s16 pan) {
             channel->unk22 = 0;
             channel->unk5C = 0;
             channel->unk60 = 0;
-            channel->unk6E = 0;
+            channel->detune = 0;
             channel->unk64 = 0;
             channel->volume = level;
             channel->level.value = 0x7F000000;
@@ -1312,7 +1312,7 @@ void func_8003CC84(SoundSeq *seq, SoundSeqChannel *channel, s32 index) {
     u8 pan;
 
     func_8003E5BC(entry[0], channel);
-    channel->note = ((entry[1] << 8) + channel->unk6E + channel->unk6C) << 16;
+    channel->note = ((entry[1] << 8) + channel->detune + channel->unk6C) << 16;
     pan = entry[3];
     channel->flags2 |= 0x100;
     channel->pan = pan << 8;
@@ -1725,9 +1725,13 @@ u8 *func_8003D5BC(u8 *data) {
     return data + 3;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003D5C4);
+u8 *func_8003D5C4(u8 *data) {
+    return data;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003D5CC);
+u8 *func_8003D5CC(u8 *data) {
+    return data;
+}
 
 /* Reselect the channel's instrument. */
 u8 *func_8003D5D4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
@@ -1735,41 +1739,166 @@ u8 *func_8003D5D4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003D60C);
+/* Envelope: set parameters 0-2 at once. */
+u8 *func_8003D60C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    u8 value;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003D640);
+    channel->envelope[0] = data[0];
+    channel->envelope[1] = data[1];
+    value = data[2];
+    channel->state.flags |= 0x1F0;
+    channel->envelope[2] = value;
+    return data + 3;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003D65C);
+/* Envelope: set one parameter each, flagging its register update. */
+u8 *func_8003D640(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    u8 value = *data++;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003D678);
+    channel->state.flags |= 0x10;
+    channel->envelope[3] = value;
+    return data;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003D694);
+u8 *func_8003D65C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    u8 value = *data++;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003D6B4);
+    channel->state.flags |= 0x20;
+    channel->envelope[4] = value;
+    return data;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003D6D0);
+u8 *func_8003D678(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    u8 value = *data++;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003D6F8);
+    channel->state.flags |= 0x40;
+    channel->envelope[5] = value;
+    return data;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003D714);
+u8 *func_8003D694(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    u8 value = *data;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003D730);
+    channel->state.flags |= 0x80;
+    channel->unk28 = value;
+    channel->envelope[6] = value;
+    return data + 1;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003D74C);
+u8 *func_8003D6B4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    u8 value = *data++;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003D770);
+    channel->state.flags |= 0x100;
+    channel->envelope[7] = value;
+    return data;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003D79C);
+u8 *func_8003D6D0(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    u8 value;
 
+    channel->envelope[4] = data[0];
+    value = data[1];
+    channel->state.flags |= 0x120;
+    channel->envelope[7] = value;
+    return data + 2;
+}
+
+u8 *func_8003D6F8(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    u8 value = *data++;
+
+    channel->state.flags |= 0x10;
+    channel->envelope[0] = value;
+    return data;
+}
+
+u8 *func_8003D714(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    u8 value = *data++;
+
+    channel->state.flags |= 0x40;
+    channel->envelope[1] = value;
+    return data;
+}
+
+u8 *func_8003D730(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    u8 value = *data++;
+
+    channel->state.flags |= 0x80;
+    channel->envelope[2] = value;
+    return data;
+}
+
+/* Set the detune (signed operand, 1/8 semitone units). */
+u8 *func_8003D74C(s8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    channel->detune = *data << 5;
+    channel->flags2 |= 0x200;
+    return data + 1;
+}
+
+/* Add to the detune, coarse and fine. */
+u8 *func_8003D770(s8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    channel->detune += *data << 5;
+    channel->flags2 |= 0x200;
+    return data + 1;
+}
+
+u8 *func_8003D79C(s8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    channel->detune += *data << 3;
+    channel->flags2 |= 0x200;
+    return data + 1;
+}
+
+/* Add a 16-bit (big-endian) value to the detune.
+ * Nonmatching: the original adds the operand bytes before the flag
+ * update. */
+#ifdef NON_MATCHING
+u8 *func_8003D7C8(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    s32 delta = data[1] + (s16)(data[0] << 8);
+
+    channel->flags2 |= 0x200;
+    channel->detune += delta;
+    return data + 2;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003D7C8);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003D7FC);
+/* Start a slide of `unk84` per frame over `frames` frames (flags3 bit 0),
+ * or stop it. */
+u8 *func_8003D7FC(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    u16 frames = data[0];
+    s32 delta = ((s8 *)data)[1] << 24;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003D854);
+    if (frames != 0 && delta != 0) {
+        channel->unk94 = frames;
+        channel->flags3 |= 1;
+        channel->unk84 = delta / frames;
+    } else {
+        channel->flags3 &= ~1;
+    }
+    return data + 2;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003D86C);
+u8 *func_8003D854(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    channel->flags3 ^= 2;
+    return data;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003D884);
+u8 *func_8003D86C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    channel->flags3 &= ~1;
+    return data;
+}
+
+u8 *func_8003D884(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    u8 value = *data++;
+
+    channel->unk70 = value;
+    if (value != 0) {
+        channel->flags3 |= 4;
+    } else {
+        channel->flags3 &= ~4;
+    }
+    return data;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003D8B8);
 
