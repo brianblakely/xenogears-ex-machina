@@ -42,7 +42,11 @@ segments:
     start: 0x0
     vram: 0x801e4000
     subsegments:
-      - [0x0, .rodata, ovl2615]
+      - [0x0, .rodata, stage]
+      - [0x20, .rodata, load_modes]
       - [0x48, c, ovl2615]
+      - [0x22e0, c, battle_loader]
+      - [0x30e8, c, stage]
+      - [0x3f4c, c, load_modes]
       - [0x55bc, data, ovl2615_data]
   - [0x56c0]

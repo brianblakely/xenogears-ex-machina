@@ -90,7 +90,7 @@ typedef struct {
     u8 rowBCount[7];          /* 0x3A6A */
     u8 rowBBuffer[7];         /* 0x3A71 */
     u8 barBuffer[7];          /* 0x3A78 */
-    u8 pad3A7F;               /* 0x3A7F */
+    u8 count2D30;             /* 0x3A7F */
     u8 buffer2D30;            /* 0x3A80 */
     GlyphRun run2F60;         /* 0x3A81 */
     GlyphRun run3140;         /* 0x3A83 */
@@ -104,14 +104,22 @@ extern ResultSummary *D_800D334C;
 
 /* The battle UI state block (pointer 800d2d28). */
 typedef struct {
-    u8 pad0[0x8F];
+    u8 pad0[0x7F];
+    u8 unk7F;             /* 0x7F */
+    u8 unk80;             /* 0x80 */
+    u8 unk81;             /* 0x81 */
+    u8 pad82[0xD];
     u8 show8F;            /* 0x8F */
     u8 pad90[0x10];
     u8 showCards;         /* 0xA0 */
     u8 showSummary;       /* 0xA1 */
     u8 padA2[0xA];
     u8 showSpoils;        /* 0xAC */
-    u8 padAD[0x22];
+    u8 padAD[3];
+    u8 unkB0;             /* 0xB0 */
+    u8 unkB1;             /* 0xB1 */
+    u8 unkB2;             /* 0xB2 */
+    u8 padB3[0x1C];
     u8 waitingCross;      /* 0xCF: the prompt waits for Cross */
 } BattleUi;
 
@@ -158,7 +166,9 @@ extern SlotLevels D_800D32A5[3];
 typedef struct {
     u8 pad0[0x3A];
     u16 value_3A;         /* 0x3A */
-    u8 pad3C[0x10];
+    u32 value3C;          /* 0x3C */
+    u32 value40;          /* 0x40 */
+    u8 pad44[8];
     u16 hp;               /* 0x4C */
     u16 maxHp;            /* 0x4E */
     u16 ep;               /* 0x50 */
@@ -229,6 +239,11 @@ extern SummaryGlyph D_800C32C4[27];
 extern s16 D_800C3318[27];
 extern s16 D_800C3350[27];
 
+/* The seven glyphs of the summary's 2d30 label: ids and positions. */
+extern u8 D_800C3388[8];
+extern s16 D_800C3390[8];
+extern s16 D_800C33A0[8];
+
 /* The member card's label glyphs: ids and positions. */
 extern u8 D_800C3268[18];
 extern s16 D_800C327C[18];
@@ -252,6 +267,11 @@ typedef struct {
     u8 counterLevels[16];     /* 0x100 */
 } Growth;
 
+/* The growth data file: one block per character. */
+typedef struct {
+    Growth characters[11];
+} GrowthFile;
+
 /* Per character skill state in the game data (0x20 each, at +0x16c0). */
 typedef struct {
     u16 counterSkills;        /* 0x00 */
@@ -265,7 +285,9 @@ typedef struct {
 
 /* The persistent game data (8006d634). */
 typedef struct {
-    u8 pad0[0xE30];
+    u8 pad0[0x26C];
+    Character characters[11]; /* 0x26C */
+    u8 pad978[0xE30 - 0x978];
     u8 value_E30;             /* 0xE30 */
     u8 padE31[0x27];
     s32 value_E58;            /* 0xE58 */
@@ -284,14 +306,26 @@ typedef struct {
     u8 id;                    /* 0x56 */
     u8 pad57;
     u8 attack;                /* 0x58 */
-    u8 pad59[0x37];
+    u8 pad59[0x7C - 0x59];
+    u16 flags7C;              /* 0x7C: 0x8000 knocked out */
+    u8 pad7E[0x90 - 0x7E];
     u16 counters[7];          /* 0x90 */
     u8 pad9E[0x170 - 0x9E];
 } Combatant;
 
+extern GameData D_8006D634;
+extern Combatant D_800CCCE8[];
 extern GameData *D_801E44C4;    /* 8006d634 */
-extern Combatant *D_801E44C8;   /* 800ccce8 */
-extern Growth *D_801E44E8;      /* the growth data file */
+/* The battle work area (800ccce8): the combatant records, then the
+ * results state. */
+typedef struct {
+    Combatant records[11];    /* 0x0000 */
+    u8 padFD0[0x5F20 - 0xFD0];
+    GrowthFile *growth;       /* 0x5F20 */
+} BattleWork;
+
+extern BattleWork *D_801E44C8;  /* 800ccce8 */
+extern GrowthFile *D_801E44E8;  /* the growth data file */
 extern Combatant *D_801E44EC;   /* the record being processed */
 extern u16 D_8006F8EA;          /* option flags */
 
@@ -306,6 +340,57 @@ extern u8 D_80059180;
 extern u8 D_801E44C0;           /* the result fanfare has started */
 extern u8 D_800D3014;           /* decoded input command, 4 = Cross */
 void func_80039E60(s32 code);   /* start a sound effect */
+void func_80039DB8(s32 code);
+void func_8008F8F4(s32 id, u16 x, u16 y, u16 width, u16 height, s32 style, s32 arg6); /* open a window */
+void func_8008FA60(s32 id);     /* close a window */
+void func_80076D58(POLY_FT4 *prims, s32 arg1, s32 arg2);
+void func_80076C78(POLY_FT4 *prim, u16 x, u16 y, u8 u, u8 v, u8 width);
+
+typedef struct {
+    s16 x, y, w, h;
+} RECT;
+
+void *func_8008AC00(s32 kind);                  /* allocate a text image */
+s32 func_80034EAC(void *text, void *image, s32 mode, s32 flags); /* render text */
+void func_800769E8(RECT *rect, void *image);   /* load an image to VRAM */
+void func_800320E8(void *block);                /* heap release */
+void *func_80033848(u8 id);                     /* item names per list */
+void *func_800337E8(u8 id);
+void *func_80033818(u8 id);
+void *func_80033A5C(u8 id);
+void *func_80033A2C(u8 id);
+
+/* The spoils window: experience and gold digits, the item icons. */
+extern u8 D_800C3CDC[];       /* digit buffer view (see D_800C3CF1) */
+extern u32 D_8006EF58;        /* party gold */
+extern u8 D_800D2F90[8];      /* two icon records: arg5, -, arg3, arg4 */
+extern u8 D_800D2FE4[48];     /* battle item ids */
+extern u8 D_800D2CB0[48];     /* battle item counts */
+/* The inventory: five lists, each its counts then its ids. */
+typedef struct {
+    u8 counts0[100];
+    u8 ids0[100];
+    u8 counts1[200];
+    u8 ids1[200];
+    u8 counts2[150];
+    u8 ids2[150];
+    u8 counts3[100];
+    u8 ids3[100];
+    u8 counts4[150];
+    u8 ids4[150];
+} Inventory;
+extern Inventory D_8006F36C;
+
+/* The drops rolled for the defeated enemies (800ccce8 + 0x100c). */
+typedef struct {
+    u8 categories[8];
+    u8 ids[8];
+} Drops;
+extern Drops D_800CDCF4;
+
+void func_801E1370(u8 id, u8 count, u8 *ids, u8 *counts, u8 size);
+extern u8 D_8006F65A[150];    /* inventory list 2 ids */
+extern u8 D_8006F5C4[150];    /* inventory list 2 counts */
 void func_800716D8(void);       /* run one battle frame */
 
 void func_801DE1C4(void);
@@ -316,5 +401,47 @@ void func_801DF840(POLY_FT4 *prims, u8 blue, u8 count, u8 buffer);
 void func_801DF910(u8 from, u8 to, s32 max);
 u8 func_801DFA38(u8 slot);
 void func_801E0184(u8 member);
+void func_801E1690(void);
+
+/* The battle state (pointer 800c3eac), only the field this module uses. */
+typedef struct {
+    u8 pad0[0x2DB];
+    u8 unk2DB;
+} BattleState;
+extern BattleState *D_800C3EAC;
+
+extern u8 D_800CDD0A[3][2];   /* per member: [0] a stat changed */
+extern u8 D_800C48EA;
+extern u8 D_800C3E4C;
+extern void *D_800D2F5C;        /* glyph sprite table */
+extern void *D_800D2C08[1];     /* the results text; the original addresses it as a table */
+
+/* The results archive (directory 0x10 file 2): a count, then its items. */
+typedef struct {
+    s32 count;
+    void *items[4];
+} ResultArchive;
+extern u8 D_8006DB2C;           /* scenario byte */
+extern u8 D_8006E7AB;
+extern u16 D_8006ED6E;
+void func_80028470(s32 directory, s32 mode);    /* select a disc directory */
+s32 func_800288EC(s32 file);                    /* a file's size */
+void func_800295D8(s32 file, void *dest, s32 arg2, s32 arg3); /* load a file */
+void func_8008AC50(void);
+void func_8003342C(void *table);                /* relocate an offset table in place */
+void *func_80032E88(void *item, s32 unpack);    /* unpack an archive item */
+void func_8002DD20(void *data);
+void func_80078310(void *portraits, s32 glyph);
+void func_80076EA4(void);
+void func_801E2ACC(void);
+void func_801E3A18(void);
+void func_801E2888(void);
+void func_801E42C4(void);
+void func_801E403C(void);
+void func_801E41B4(void);
+void *func_8008ABB8(s32 size, s32 top);        /* heap allocate */
+void bzero(void *dest, s32 size);
+void func_80039FF8(void);
+void func_801E0ACC(u8 member);
 
 #endif

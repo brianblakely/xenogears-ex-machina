@@ -666,39 +666,460 @@ void func_801E0A4C(void) {
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E0ACC);
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E1044);
+/* Lay out the summary's seven-glyph label (2d30). */
+void func_801E1044(void) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E10F8);
+    for (i = 0; i < 7; i++) {
+        D_800D334C->count2D30 += func_80076A10(D_800C3388[i], D_800D334C->glyphs2D30[D_800D334C->count2D30], D_800C3390[i], D_800C33A0[i]);
+    }
+    D_800D334C->buffer2D30 = D_800CCB34;
+}
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E126C);
+/* Build the spoils window's numbers: the experience (six digits) and the
+ * party gold (nine digits). */
+void func_801E10F8(u32 experience) {
+    s32 i;
+    s32 n;
+    s32 digit;
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E1370);
+    func_8008AAA0(experience);
+    for (i = 0; i < 6; i++) {
+        n = i + 27;
+        digit = D_800C3CDC[n];
+        if (digit != 0xFF) {
+            D_800D334C->run2F60.count += func_80076A10(digit, D_800D334C->glyphs2F60[D_800D334C->run2F60.count], i * 8 + 0xD8, 0x50);
+        }
+    }
+    D_800D334C->run2F60.buffer = D_800CCB34;
+    func_8008AAA0(D_8006EF58);
+    for (i = 0; i < 9; i++) {
+        n = i + 24;
+        digit = D_800C3CDC[n];
+        if (digit != 0xFF) {
+            D_800D334C->run3140.count += func_80076A10(digit, D_800D334C->glyphs3140[D_800D334C->run3140.count], i * 8 + 0xC0, 0x60);
+        }
+    }
+    D_800D334C->run3140.buffer = D_800CCB34;
+}
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E1444);
+/* Build the spoils window's two icons. */
+void func_801E126C(void) {
+    s32 *buffer;
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E1590);
+    func_80076D58(D_800D334C->glyphs3410[0], 0, 2);
+    func_80076D58(D_800D334C->glyphs3410[1], 1, 2);
+    buffer = &D_800CCB34;
+    func_80076C78(&D_800D334C->glyphs3410[0][*buffer], 0x20, 0x20, D_800D2F90[2], D_800D2F90[3], D_800D2F90[0]);
+    func_80076C78(&D_800D334C->glyphs3410[1][*buffer], 0xB8, 0x40, D_800D2F90[6], D_800D2F90[7], D_800D2F90[4]);
+    D_800D334C->buffer3410 = *buffer;
+}
 
+/* Add count of item id to an inventory list of size entries (ids and
+ * counts): stack onto the item (at most 99) or take the first free entry;
+ * a full list drops the item. */
+void func_801E1370(u8 id, u8 count, u8 *ids, u8 *counts, u8 size) {
+    s32 i;
+
+    for (i = 0; i < size; i++) {
+        if (ids[i] == id) {
+            if (counts[i] + count >= 100) {
+                counts[i] = 99;
+            } else {
+                counts[i] = count + counts[i];
+            }
+            break;
+        }
+    }
+    if (i == size) {
+        for (i = 0; i < size; i++) {
+            if (ids[i] == 0) {
+                ids[i] = id;
+                counts[i] = count;
+                break;
+            }
+        }
+    }
+}
+
+/* Add eight drops (ids, counts and inventory list categories) to the
+ * inventory. */
+void func_801E1444(u8 *ids, u8 *counts, u8 *categories) {
+    s32 i;
+
+    for (i = 0; i < 8; i++) {
+        if (ids[i] != 0) {
+            switch (categories[i]) {
+            case 0:
+                func_801E1370(ids[i], counts[i], D_8006F36C.ids0, D_8006F36C.counts0, 100);
+                break;
+            case 1:
+                func_801E1370(ids[i], counts[i], D_8006F36C.ids1, D_8006F36C.counts1, 200);
+                break;
+            case 2:
+                func_801E1370(ids[i], counts[i], D_8006F36C.ids2, D_8006F36C.counts2, 150);
+                break;
+            case 3:
+                func_801E1370(ids[i], counts[i], D_8006F36C.ids3, D_8006F36C.counts3, 100);
+                break;
+            case 4:
+                func_801E1370(ids[i], counts[i], D_8006F36C.ids4, D_8006F36C.counts4, 150);
+                break;
+            }
+        }
+    }
+}
+
+/* Collect the rolled drops into eight distinct (category, id) entries
+ * with their counts. */
+void func_801E1590(u8 *ids, u8 *counts, u8 *categories) {
+    s32 i;
+    s32 j;
+    s32 k;
+
+    for (i = 0; i < 8; i++) {
+        ids[i] = 0;
+        counts[i] = 0;
+    }
+    k = 0;
+    for (i = 0; i < 8; i++) {
+        if (D_800CDCF4.ids[i] != 0) {
+            for (j = 0; j < 8; j++) {
+                if (D_800CDCF4.categories[i] == categories[j] && D_800CDCF4.ids[i] == ids[j]) {
+                    counts[j]++;
+                    break;
+                }
+            }
+            if (j == 8) {
+                categories[k] = D_800CDCF4.categories[i];
+                ids[k] = D_800CDCF4.ids[i];
+                counts[k]++;
+                k++;
+            }
+        }
+    }
+}
+
+/* Build the spoils window's item list: collect the drops, render each
+ * item's name into VRAM with its count, then add the drops to the
+ * inventory. */
+#ifdef NON_MATCHING
+void func_801E1690(void) {
+    u8 ids[8];
+    u8 categories[8];
+    u8 counts[8];
+    RECT rect;
+    void *text[8];
+    s32 i;
+    s32 count;
+    s32 width;
+
+    func_801E1590(ids, counts, categories);
+    for (i = 0, count = 0; i < 8; i++) {
+        if (ids[i] != 0) {
+            func_80076D58(D_800D334C->listA[count], 0, 1);
+            func_80076D58(D_800D334C->listB[count], 0, 2);
+            text[count] = func_8008AC00(0x1B);
+            switch (categories[i]) {
+            case 0:
+                width = func_80034EAC(func_80033848(ids[i]), text[count], 0x1B, 0);
+                break;
+            case 1:
+                width = func_80034EAC(func_800337E8(ids[i]), text[count], 0x1B, 0);
+                break;
+            case 2:
+                width = func_80034EAC(func_80033818(ids[i]), text[count], 0x1B, 0);
+                break;
+            case 3:
+                width = func_80034EAC(func_80033A5C(ids[i]), text[count], 0x1B, 0);
+                break;
+            case 4:
+                width = func_80034EAC(func_80033A2C(ids[i]), text[count], 0x1B, 0);
+                break;
+            }
+            rect.x = 0x380;
+            rect.y = count * 13 + 0x100;
+            rect.w = 0x1E;
+            rect.h = 0xD;
+            func_800769E8(&rect, text[count]);
+            func_80076C78(&D_800D334C->listA[count][D_800CCB34], 0x2C, count * 16 + 0x30, 0, count * 13, width);
+            func_80076C78(&D_800D334C->listB[count][D_800CCB34], 0x94, count * 16 + 0x30, counts[i] * 8 + 0x78, 0, 8);
+            count++;
+        }
+    }
+    func_801E1444(ids, counts, categories);
+    for (i = 0; i < count; i++) {
+        func_800320E8(text[i]);
+    }
+    D_800D334C->listCount = count;
+    D_800D334C->listBuffer = D_800CCB34;
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E1690);
+#endif
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E196C);
+/* Show the member cards over six frames, then wait for Cross. */
+void func_801E196C(void) {
+    u32 step;
+    u8 building;
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E1AA4);
+    step = 0;
+    building = 1;
+    do {
+        func_800716D8();
+        switch (step) {
+        case 0:
+            func_801DE5C4();
+            D_800D2D28->showCards = 1;
+            D_800C3EAC->unk2DB = 0;
+            break;
+        case 1:
+            func_801DE69C();
+            break;
+        case 2:
+            func_801DEA18();
+            break;
+        case 3:
+            func_801DEDC0(0);
+            break;
+        case 4:
+            func_801DF270();
+            break;
+        case 5:
+            func_801DF4C0();
+            building = 0;
+            break;
+        }
+        step++;
+    } while (building);
+    D_800D2D28->waitingCross = 1;
+    while (D_800D3014 != 4) {
+        func_800716D8();
+    }
+    D_800D2D28->waitingCross = 0;
+}
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E1C10);
+/* Wait for Cross on the first member card (repeating the prompt sound),
+ * then take each member's two values from the game data and rebuild the
+ * summary rows. */
+void func_801E1AA4(void) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E1E10);
+    func_800716D8();
+    D_800D2D28->waitingCross = 1;
+    D_800D32F8[0]->flag15F9 = 1;
+    while (D_800D32F8[0]->flag15F9 != 0) {
+        if (D_800D3014 == 4) {
+            break;
+        }
+        func_801E09C0(0x5B);
+        func_800716D8();
+    }
+    D_800D2D28->waitingCross = 0;
+    D_800D32F8[0]->flag15F9 = 0;
+    for (i = 0; i < 3; i++) {
+        D_800CDCB8[i].value = D_8006D8A0[D_800D2D24[i]].value3C;
+        D_800CDCB8[i].value2 = D_8006D8A0[D_800D2D24[i]].value40;
+        D_800CDCD0[i].value = 0;
+        D_800CDCD0[i].value2 = 0;
+    }
+    func_801DF270();
+    func_801DF4C0();
+}
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E1FB8);
+/* After Cross, show each present member's summary window when a stat
+ * changed (waiting for Cross), then its skill results (801e0acc). */
+void func_801E1C10(void) {
+    s32 i;
+    u8 shown;
+    u8 member;
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E211C);
+    func_801DEDC0(1);
+    func_800716D8();
+    D_800D2D28->waitingCross = 1;
+    while (D_800D3014 != 4) {
+        func_800716D8();
+    }
+    D_800D2D28->waitingCross = 0;
+    func_800716D8();
+    func_8008F8F4(1, 0x28, 0x78, 0xE8, 0x58, 0, 0);
+    D_800D2D28->unkB1 = 0;
+    for (i = 0; i < 3; i++) {
+        shown = 0;
+        if (D_800C3EB6[i].id != 0x7F) {
+            if (D_800CDD0A[i][0] != 0) {
+                member = i;
+                D_800D2D28->unkB1 = 1;
+                func_801DFAA8(member);
+                func_801E03B8(member);
+                func_801E03FC(member);
+                D_800D2D28->showSummary = 1;
+                func_801E09F4();
+                D_800D2D28->waitingCross = 0;
+                shown = 1;
+                func_800716D8();
+            }
+            D_800D2D28->waitingCross = 1;
+            while (D_800D3014 != 4 && shown) {
+                func_800716D8();
+            }
+            D_800D2D28->showSummary = 0;
+            func_800716D8();
+            func_801E0ACC(i);
+            D_800D2D28->waitingCross = 0;
+            D_800D2D28->unkB1 = 0;
+        }
+    }
+}
+
+/* Show the spoils window (experience, gold, items) until Cross. */
+void func_801E1E10(u32 experience) {
+    D_800D2D28->showCards = 0;
+    D_800D2D28->showSummary = 0;
+    D_800D2D28->show8F = 0;
+    func_800716D8();
+    func_8008F8F4(0, 0x18, 0x18, 0x90, 0xA0, 0, 1);
+    func_8008F8F4(2, 0xB0, 0x38, 0x70, 0x38, 0, 1);
+    func_800716D8();
+    func_801E1044();
+    func_801E10F8(experience);
+    func_801E126C();
+    func_801E1690();
+    D_800D2D28->showSpoils = 1;
+    func_80039DB8((D_8005919C->id << 16) | 0x5B);
+    D_800D2D28->waitingCross = 1;
+    while (D_800D3014 != 4) {
+        func_800716D8();
+    }
+    D_800D2D28->waitingCross = 0;
+    D_800D2D28->showSpoils = 0;
+    D_800D2D28->unkB0 = 0;
+    D_800D2D28->unkB1 = 0;
+    D_800D2D28->unkB2 = 0;
+    func_800716D8();
+    func_8008FA60(0);
+    func_8008FA60(1);
+    func_8008FA60(2);
+}
+
+/* The battle results: allocate the member cards and the summary, show the
+ * cards, the summaries and the spoils, then release them. */
+void func_801E1FB8(u32 experience) {
+    u8 saved;
+    s32 i;
+
+    saved = D_800C48EA;
+    D_800D2D28->waitingCross = 0;
+    for (i = 0; i < 3; i++) {
+        D_800D32F8[i] = func_8008ABB8(sizeof(MemberCard), 0);
+        bzero(D_800D32F8[i], sizeof(MemberCard));
+    }
+    D_800D334C = func_8008ABB8(sizeof(ResultSummary), 0);
+    bzero(D_800D334C, sizeof(ResultSummary));
+    D_800D32F8[0]->flag15F8 = (D_8006F8EA >> 15) ^ 1;
+    func_800716D8();
+    D_800C48EA = 0;
+    func_801E196C();
+    func_801E1AA4();
+    func_801E1C10();
+    func_801E1E10(experience);
+    D_800D2D28->showCards = 0;
+    D_800D2D28->showSummary = 0;
+    D_800D2D28->show8F = 0;
+    func_800716D8();
+    for (i = 0; i < 3; i++) {
+        func_800320E8(D_800D32F8[i]);
+    }
+    func_800320E8(D_800D334C);
+    D_800C48EA = saved;
+    func_80039FF8();
+}
+
+/* Hide the battle windows and reload the results resources: archive file
+ * 2 of directory 0x10 (its items 1-4: text, a table, the glyph sprites and
+ * the portraits). */
+void func_801E211C(void) {
+    u8 unused[0x60]; /* the original frame reserves 0x60 unused bytes */
+    ResultArchive *archive;
+    void *data;
+
+    D_800C3E4C = 0;
+    D_800D2D28->showCards = 0;
+    D_800D2D28->showSummary = 0;
+    D_800D2D28->show8F = 0;
+    D_800D2D28->showSpoils = 0;
+    D_800D2D28->unk7F = D_800D2D28->unk80 = D_800D2D28->unk81 = 0;
+    func_800716D8();
+    func_800716D8();
+    func_800320E8(D_800D2F5C);
+    func_80028470(0x10, 2);
+    archive = func_8008ABB8(func_800288EC(2), 1);
+    func_800295D8(2, archive, 0, 0x80);
+    func_8008AC50();
+    func_8003342C(archive);
+    D_800D2C08[0] = func_80032E88(archive->items[0], 0);
+    data = func_80032E88(archive->items[2], 0);
+    func_8002DD20(data);
+    func_800320E8(data);
+    D_800D2F5C = func_80032E88(archive->items[1], 0);
+    data = func_80032E88(archive->items[3], 0);
+    func_80078310(data, 0xFC);
+    func_800320E8(data);
+    func_800320E8(archive);
+    func_80076EA4();
+}
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E2280);
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E24B0);
+/* Write the battle item counts back to inventory list 2. */
+void func_801E24B0(void) {
+    s32 i;
+    s32 j;
+    u8 *item;
+
+    for (i = 0; i < 48; i++) {
+        item = &D_800D2FE4[i];
+        if (*item != 0) {
+            for (j = 0; j < 150; j++) {
+                if (*item == D_8006F65A[j]) {
+                    D_8006F5C4[j] = D_800D2CB0[i];
+                }
+            }
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E252C);
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E2794);
+/* Grant the battle rewards unless the whole party is knocked out. */
+void func_801E2794(void) {
+    u8 slot;
+    u8 knockedOut;
+    u8 extra;
+
+    knockedOut = 0;
+    for (slot = 0; slot < 3; slot++) {
+        if (D_800CCCE8[slot].flags7C & 0x8000) {
+            knockedOut++;
+        }
+    }
+    if (knockedOut != 3) {
+        D_801E44E8 = D_801E44C8->growth;
+        func_801E2ACC();
+        func_801E3A18();
+        func_801E403C();
+        func_801E41B4();
+        func_801E2888();
+        func_801E42C4();
+        if (D_8006DB2C == 0x12) {
+            extra = D_8006E7AB;
+            D_8006ED6E = 0x4000;
+            if (extra != 0) {
+                D_8006ED6E = 0xC000;
+            }
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E2888);
 
@@ -724,16 +1145,15 @@ INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E3BE0);
 
 /* Learn the first of the character's twelve level skills whose level is
  * reached and which is not yet known. Returns its number (1-12), or 0. */
-#ifdef NON_MATCHING
 u8 func_801E3D54(u8 id) {
     u32 bit;
     u8 k;
     u8 level;
-    u16 known;
+    u32 known;
 
     bit = 0x8000;
     for (k = 0; k < 12; k++, bit >>= 1) {
-        level = D_801E44E8[id].levelSkills[k];
+        level = D_801E44E8->characters[id].levelSkills[k];
         if (level == 0xFF) {
             return 0;
         }
@@ -747,19 +1167,15 @@ u8 func_801E3D54(u8 id) {
     }
     return 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E3D54);
-#endif
 
 /* For each of the character's nine unlock entries whose counter skill is
  * known, set the matching unlock bit (from bit 3). */
-#ifdef NON_MATCHING
 void func_801E3E14(u8 id) {
     u8 k;
     u8 entry;
 
     for (k = 0; k < 9; k++) {
-        entry = D_801E44E8[id].unlocksA[k];
+        entry = D_801E44E8->characters[id].unlocksA[k];
         if (entry == 0xFF) {
             return;
         }
@@ -768,20 +1184,16 @@ void func_801E3E14(u8 id) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E3E14);
-#endif
 
 /* Character 8's nine level entries: learn each one its level reaches. */
-#ifdef NON_MATCHING
 void func_801E3EA4(void) {
     u8 k;
     u8 level;
-    u16 known;
+    u32 known;
     s32 bit;
 
     for (k = 0; k < 9; k++) {
-        level = D_801E44E8[8].unlocksA[k];
+        level = D_801E44E8->characters[8].unlocksA[k];
         if (level == 0xFF) {
             return;
         }
@@ -789,24 +1201,20 @@ void func_801E3EA4(void) {
             known = D_801E44C4->skills[8].unlocksA;
             bit = 0x1000 >> k;
             if (!(known & bit)) {
-                D_801E44C4->skills[8].unlocksA = known | bit;
+                D_801E44C4->skills[8].unlocksA = bit | known;
             }
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E3EA4);
-#endif
 
 /* For each of the character's thirteen second unlock entries whose level
  * skill is known, set the matching unlock bit. */
-#ifdef NON_MATCHING
 void func_801E3F28(u8 id) {
     u8 k;
     u8 entry;
 
     for (k = 0; k < 13; k++) {
-        entry = D_801E44E8[id].unlocksB[k];
+        entry = D_801E44E8->characters[id].unlocksB[k];
         if (entry == 0) {
             return;
         }
@@ -815,31 +1223,73 @@ void func_801E3F28(u8 id) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E3F28);
-#endif
 
 /* Character 7's derived values from the current record's max HP and
  * attack. */
-#ifdef NON_MATCHING
 void func_801E3FB0(void) {
-    GameData *game;
-    Combatant *record;
+    GameData *game = D_801E44C4;
 
-    record = D_801E44EC;
-    game = D_801E44C4;
-    game->value_E58 = record->maxHp * 200;
-    game->value_E30 = record->attack / 5 + 1;
-    record = D_801E44EC;
-    game->value_E64 = record->maxHp * 10;
-    game->value_E66 = record->maxHp * 10;
+    game->value_E58 = D_801E44EC->maxHp * 200;
+    game->value_E30 = D_801E44EC->attack / 5 + 1;
+    game->value_E64 = D_801E44EC->maxHp * 10;
+    game->value_E66 = D_801E44EC->maxHp * 10;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E3FB0);
-#endif
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E403C);
+/* Advance each character's tier: 3, 4 and 5 at the growth data's tier
+ * levels, 6 to 7 at level 50 with option 0x4000. */
+void func_801E403C(void) {
+    u8 id;
+    Character *character;
+    CharacterSkills *skills;
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E41B4);
+    for (id = 0; id < 11; id++) {
+        character = &D_801E44C4->characters[id];
+        skills = &D_801E44C4->skills[id];
+        if (skills->tier == 7) {
+            continue;
+        }
+        switch (skills->tier) {
+        case 3:
+            if (character->level >= D_801E44E8->characters[id].tierLevels[0]) {
+                skills->tier = 4;
+            }
+            break;
+        case 4:
+            if (character->level >= D_801E44E8->characters[id].tierLevels[1]) {
+                skills->tier = 5;
+            }
+            break;
+        case 5:
+            if (character->level >= D_801E44E8->characters[id].tierLevels[2]) {
+                skills->tier = 6;
+            }
+            break;
+        case 6:
+            if (character->level >= 50 && (D_8006F8EA & 0x4000)) {
+                skills->tier = 7;
+            }
+            break;
+        }
+    }
+}
+
+/* Levels 50, 60 and 70 set unlock bits 8, 4 and 2 of each party member. */
+void func_801E41B4(void) {
+    u8 slot;
+    u8 id;
+
+    for (slot = 0; slot < 3; slot++) {
+        id = D_800CCCE8[slot].id;
+        if (D_8006D8A0[id].level >= 50) {
+            D_8006D634.skills[id].unlocksA |= 8;
+        }
+        if (D_8006D8A0[id].level >= 60) {
+            D_8006D634.skills[id].unlocksA |= 4;
+        }
+        if (D_8006D8A0[id].level >= 70) {
+            D_8006D634.skills[id].unlocksA |= 2;
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E42C4);
