@@ -3227,7 +3227,6 @@ s32 func_80083288(s32 index, PolyModel *model, s32 x, s32 z, s32 *height, VECTOR
 void func_80083994(void) {
 }
 
-#ifdef NON_MATCHING
 /* The controlled actor's talk (event 2) and touch (event 3) triggers: each
  * other actor within reach (rectangle 0x2000 or circle), facing and not
  * inhibited, turns toward it and gets the event in a free script slot. */
@@ -3242,7 +3241,7 @@ void func_8008399C(s32 index, FieldDescriptor *descriptor, FieldActor *player) {
     s32 talk;
     s32 py;
     s32 head;
-    s32 facing;
+    s16 facing;
     s32 px;
     s32 pz;
     s32 talked;
@@ -3397,9 +3396,6 @@ void func_8008399C(s32 index, FieldDescriptor *descriptor, FieldActor *player) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8008399C);
-#endif
 
 /* The controlled actor's contacts: against every other actor (its floor
  * polygon, its box, or its radius) either ride it, stand below it or push
