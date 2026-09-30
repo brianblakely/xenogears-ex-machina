@@ -93,7 +93,45 @@ s32 func_80092234(s32 index) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_800922AC);
+/* Ease the movement speed to 0x78 (command 9) or 0x8C (command 10); ends the step when settled. */
+s32 func_800922AC(s32 index) {
+    WorldmapActor *actor;
+    s32 result;
+
+    actor = &D_8009BE24[index];
+    result = 1;
+    if (actor->unk4 == 9) {
+        actor->unk4 = 0;
+        actor->state = 1;
+    } else if (actor->unk4 == 10) {
+        actor->unk4 = 0;
+        actor->state = 2;
+    }
+    switch (actor->state) {
+    case 0:
+        result = 3;
+        break;
+    case 1:
+        actor->u.step -= 0x1000;
+        D_8009BE0C = actor->u.step >> 12;
+        if (D_8009BE0C < 0x78) {
+            D_8009BE0C = 0x78;
+            actor->u.step = 0x78000;
+            actor->state = 0;
+        }
+        break;
+    case 2:
+        actor->u.step += 0x1000;
+        D_8009BE0C = actor->u.step >> 12;
+        if (D_8009BE0C >= 0x8C) {
+            D_8009BE0C = 0x8C;
+            actor->u.step = 0x8C000;
+            actor->state = 0;
+        }
+        break;
+    }
+    return result;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_800923A8);
 
@@ -109,7 +147,34 @@ s32 func_80092BE4(void) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80092C70);
+/* Show the current path's name in the text window while it changes. */
+s32 func_80092C70(s32 index) {
+    WorldmapActor *actor;
+
+    actor = &D_8009BE24[index];
+    switch (actor->state) {
+    case 0:
+        if (D_8009BD24 != -1) {
+            func_80034614(&D_8009D498);
+            func_80034714(&D_8009D498, func_80033728(D_8009D784, D_8009BD24));
+            actor->state = 1;
+            actor->u.step = D_8009BD24;
+        }
+        break;
+    case 1:
+        if (D_8009BD24 == -1) {
+            func_80034614(&D_8009D498);
+            actor->state = 0;
+        } else if (D_8009BD24 != actor->u.step) {
+            func_80034614(&D_8009D498);
+            func_80034714(&D_8009D498, func_80033728(D_8009D784, D_8009BD24));
+            actor->u.step = D_8009BD24;
+        }
+        break;
+    }
+    func_80034888(&D_8009D498, D_8009BE3C->ot, D_8009D7F0);
+    return 1;
+}
 
 /* Release a resident object. */
 void func_80092DD0(void) {

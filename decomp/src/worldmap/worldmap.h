@@ -950,6 +950,10 @@ typedef struct {
 
 extern QuadBuffer *D_8009D158[2]; /* per display buffer */
 extern s16 *D_8009D148; /* per-quad free flags */
+void func_80034714(void *window, s32 text);   /* set the window text */
+s32 func_80033728(void *table, s32 id);         /* text by id */
+void func_80034888(void *window, u32 *ot, s32 buffer); /* draw the window */
+
 /* worldmap_80072238, 80077E68, worldmap */
 
 #define VIEW_VECTORS ((SVECTOR *)D_8009BD40) /* two view vectors, swapped per frame */
