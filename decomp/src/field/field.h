@@ -466,7 +466,7 @@ typedef struct {
     s16 unk21D4;               /* 21D4 */
     s16 text_speed;            /* 21D6 */
     s32 camera_counter;        /* 21D8 */
-    u8 unk21DC[0x21E4 - 0x21DC];
+    s16 unk21DC[4];            /* 21DC: per 801e layer */
     s16 unk21E4[(0x221C - 0x21E4) / 2]; /* 21E4 */
     s16 unk221C[5][3];         /* 221C */
     u8 unk223A[2];

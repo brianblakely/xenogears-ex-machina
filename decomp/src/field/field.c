@@ -8386,7 +8386,30 @@ void func_800A0EE8(void) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A0FD8);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A1364);
+/* Give the current actor the field's first sprite on the next free 801e
+ * layer (operand 1: layer parameter) and show it. */
+void func_800A1364(void) {
+    FieldDescriptor *descriptor;
+    FieldActor *actor;
+    s32 *sprites;
+    s32 value;
+
+    descriptor = &D_800AF880.components.descriptors[D_800AFD1C];
+    descriptor->flags = (descriptor->flags & 0xF07F) | 0x200;
+    value = func_800ACDEC(1);
+    sprites = D_800AF880.components.sprites;
+    func_80076AC0(D_800AFD1C, 0, (u8 *)(sprites[1] + (s32)sprites), 0, 0, 0x80, 1);
+    func_800A0C94();
+    actor = D_800B0078;
+    actor->pc += 3;
+    actor->flags |= 0x100;
+    D_800AF880.components.descriptors[D_800AFD1C].flags &= 0xFFDF;
+    actor->layer_flags = (actor->layer_flags | 0x2000) & ~0x800;
+    D_800B2078.unk21DC[D_800B2078.unk2264] = value * 2;
+    D_800B2078.unk225F[D_800B2078.unk2264] = 0;
+    D_800B0078->state.bits.layer = D_800B2078.unk2264;
+    D_800B2078.unk2264++;
+}
 
 /* Give the current actor sprite operand 1 (parameter operand 3), mirror its
  * position and show it. */
@@ -9062,7 +9085,50 @@ u32 func_800A7744(void) {
     return value;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A77C4);
+extern u32 *D_800C390C; /* converted pixels */
+
+/* Convert the 24-bit screen (five 96-pixel columns at x 0) to 15-bit
+ * pixels at (0..0x140, 100). */
+void func_800A77C4(void) {
+    RECT rect;
+    u32 *packed;
+    u32 *pixels;
+    u32 value;
+    s32 i;
+    s32 j;
+
+    packed = func_80031BDC(0xA800, 0);
+    pixels = func_80031BDC(0x7000, 0);
+    for (i = 0; i < 5; i++) {
+        rect.x = i * 0x60;
+        rect.y = 0;
+        rect.w = 0x60;
+        rect.h = 0xE0;
+        StoreImage(&rect, packed);
+        DrawSync(0);
+        D_800C3904 = packed;
+        D_800C390C = pixels;
+        D_800B14A8 = 0;
+        for (j = 0; j < 0x1C00; j++) {
+            value = func_800A7744();
+            value |= func_800A7744() << 5;
+            value |= func_800A7744() << 10;
+            value |= func_800A7744() << 16;
+            value |= func_800A7744() << 21;
+            value |= func_800A7744() << 26;
+            *D_800C390C = value;
+            D_800C390C++;
+        }
+        rect.x = i << 6;
+        rect.y = 0x100;
+        rect.w = 0x40;
+        rect.h = 0xE0;
+        LoadImage(&rect, pixels);
+        DrawSync(0);
+    }
+    func_800320E8(packed);
+    func_800320E8(pixels);
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A7948);
 
