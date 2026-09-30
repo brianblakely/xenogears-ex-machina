@@ -38,6 +38,8 @@ CdlCB CdSyncCallback(CdlCB func);
 CdlCB CdReadyCallback(CdlCB func);
 void (*CdDataCallback(void (*func)()))();
 int CdControl(u_char com, u_char *param, u_char *result);
+int CdSync(int mode, u_char *result);
+int CdGetSector(void *madr, int size);
 int CdControlB(u_char com, u_char *param, u_char *result);
 int CdControlF(u_char com, u_char *param);
 int CdMix(CdlATV *vol);

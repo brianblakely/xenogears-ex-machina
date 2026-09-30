@@ -2,7 +2,149 @@
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap", func_80070CFC);
 
+/* The world-map main loop: gather input, flip the display buffers, run the
+ * frame, and handle pause, encounters and leaving for another scene until
+ * D_8009D554 clears. */
+#ifdef NON_MATCHING /* original hoists &D_8006F8E5 and reaches D_8006F368 from it; here &unk70 is hoisted */
+void func_800712D0(void) {
+    WorldmapView *view;
+    RECT rect;
+    s32 i;
+    s32 found;
+
+    D_8009BE3C = (WorldmapView *)&D_8009BBC8[1];
+    D_8009D7F0 = 1;
+    D_8009D554 = 1;
+    do {
+        D_8009BD1C = 0;
+        D_8009BD14 = 0;
+        D_8009CD50 = 0;
+        D_8009BD18 = 0;
+        D_8009BD10 = 0;
+        D_8009CD4C = 0;
+        while (func_80035CDC() != 0) {
+            D_8009CD4C |= D_80059570;
+            D_8009CD50 |= D_80059574;
+            D_8009BD10 |= D_8005948C;
+            D_8009BD14 |= D_80059490;
+            D_8009BD18 |= D_800594A4;
+            D_8009BD1C |= D_800594A8;
+        }
+        while (func_800967E4() == 3) {
+            VSync(0);
+        }
+        CdSync(1, D_8009C588);
+        view = (WorldmapView *)D_8009BBC8;
+        if (D_8009BE3C == view) {
+            view = (WorldmapView *)&D_8009BBC8[1];
+        }
+        D_8009BE3C = view;
+        D_8009D7F0 = D_8009D7F0 == 0;
+        ClearOTagR(view->ot, 0x400);
+        func_800250E0(D_8009D7F0);
+        func_8001D468();
+        func_80097800();
+        DrawSync(0);
+        VSync(2);
+        func_80019CA0();
+        PutDispEnv(&((DisplayBuffer *)D_8009BE3C)->disp);
+        PutDrawEnv(&((DisplayBuffer *)D_8009BE3C)->draw);
+        if (D_80059179 == 0 && D_8009BD34 != 0 && D_8009C178 == 0 && D_8009D804 == 0 &&
+            D_8009BD24 == -1 && D_8009CE68 == D_8009BD24 && D_8009D554 != 0 && D_8009D80C == 0) {
+            D_8009BD34 = 0;
+            if (func_80093F18(&D_8009D55C.target) != 4) {
+                for (i = 0; i < 3; i++) {
+                    (&D_8006EE54.unk70)[i] = (&D_8006F8E5)[i];
+                }
+                if ((&D_8006F8E5)[0] != 0) {
+                    (&D_8006F8E5)[2] = 0;
+                    (&D_8006F8E5)[1] = 0;
+                    (&D_8006F8E5)[0] = 0;
+                } else {
+                    if (D_8006D940[D_8006F368[0]].gear != 0xFF) {
+                        (&D_8006F8E5)[0] = 1;
+                    }
+                    if (D_8006D940[D_8006F368[1]].gear != 0xFF) {
+                        (&D_8006F8E5)[1] = 1;
+                    }
+                    if (D_8006D940[D_8006F368[2]].gear != 0xFF) {
+                        (&D_8006F8E5)[2] = 1;
+                    }
+                }
+                func_80075D4C();
+            }
+        } else {
+            D_8009BD34 = 0;
+        }
+        if (D_8009C178 == 0) {
+            if (D_8009D804 == 0 && D_8009D554 != 0 && D_8009D80C == 0 && (D_8009BD10 & 0x800)) {
+                func_8007634C();
+            }
+            if (D_8009C178 == 0) {
+                if (D_8009D804 == 0 && D_8009D554 != 0 && D_8009D80C == 0 && func_80035734(0) == 0) {
+                    func_80076594();
+                }
+                if (D_8009C178 == 0 && D_8009D804 == 0 && D_8009BD24 == -1 &&
+                    D_8009CE68 == D_8009BD24 && D_8009D554 != 0 && D_8009D80C != 0) {
+                    found = func_80075E7C(&D_8009D55C.target, D_8006EF64);
+                    if (found == 1) {
+                        D_8009D554 = 0;
+                        D_8009D7CC = found;
+                        D_8005954C = 0;
+                        D_8006EE54.unk70 = D_8006F8E5;
+                        D_8006EE54.unk72 = D_8006F8E6;
+                        D_8006EE54.unk74 = D_8006F8E7;
+                    }
+                }
+            }
+        }
+        D_8009D80C = 0;
+        if (D_8009BD10 & 0x100) {
+            D_8006EE76 ^= 1;
+        }
+        if (D_8009C178 == 0 && D_8009D804 != 0 && D_8009D554 != 0) {
+            if (D_8009BE10 > 0) {
+                if (D_8009BE10 < 4) {
+                    func_800758C0();
+                    D_80059460 = 0;
+                    D_80059178 = 0;
+                    D_80059171 = 1;
+                    func_800762FC();
+                    func_8001C634();
+                    func_800762FC();
+                    func_80075B58();
+                } else if (D_8009BE10 < 8) {
+                    D_8009D554 = 0;
+                    D_8009D7CC = 0;
+                    D_8009D7D8 = &D_8009B6C4[2];
+                    D_8006EE68 |= 0x2000;
+                }
+            }
+        } else {
+            D_8009D804 = 0;
+        }
+        func_80025044();
+        func_80074F2C();
+        func_80075104();
+        SetGeomOffset(0xA0, D_8009BE0C);
+        DrawOTag(D_8009BE3C->ot + 0x3FF);
+    } while (D_8009D554 != 0);
+    ResetGraph(1);
+    if (D_8009D7F0 == 0) {
+        rect.x = 0;
+        rect.y = 0xD8;
+        rect.w = 0x140;
+        rect.h = 0xD8;
+        MoveImage(&rect, 0, 0);
+    }
+    func_80096694();
+    DrawSync(0);
+    VSync(0);
+    PutDispEnv(&D_8009BBC8[1].disp);
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap", func_800712D0);
+#endif
 
 /* Mode step that has nothing to do; always reports done. */
 s32 func_80071A50(void) {

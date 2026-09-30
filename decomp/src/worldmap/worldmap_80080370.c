@@ -1,6 +1,65 @@
 #include "worldmap.h"
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80080370", func_80080370);
+/* Flight scene director: step through its timed sequence and run each cue. */
+s32 func_80080370(s32 index) {
+    WorldmapActor *actor;
+
+    actor = &D_8009BE24[index];
+    switch (actor->state) {
+    case 0:
+        break;
+    case 1:
+        if (--actor->wait < 0) {
+            actor->state = D_8009A698[actor->u.step];
+            actor->wait = D_8009A6AC[actor->u.step];
+            actor->u.step++;
+        }
+        break;
+    case 2:
+        func_80097770(3, 1);
+        actor->state = 1;
+        break;
+    case 3:
+        func_80097770(2, 2);
+        actor->state = 1;
+        break;
+    case 4:
+        func_80097770(0, 0xD);
+        D_8009CCA4 = 1;
+        D_8009D3CC = 0x80;
+        actor->state = 1;
+        break;
+    case 5:
+        func_80097770(0, 0xC);
+        func_80097770(4, 1);
+        D_8009CCA4 = 1;
+        D_8009D3CC = 0x80;
+        actor->state = 1;
+        break;
+    case 6:
+        func_80097770(2, 3);
+        actor->state = 1;
+        break;
+    case 7:
+        func_80097770(0, 0xD);
+        D_8009CCA4 = 2;
+        D_8009D3CC = 4;
+        actor->state = 1;
+        break;
+    case 8:
+        func_80039E60((D_8006259C->id << 16) | 0x16);
+        func_80039E60((D_8006259C->id << 16) | 0x17);
+        func_80039E60((D_8006259C->id << 16) | 0x18);
+        actor->state = 1;
+        break;
+    case 0x40:
+        D_8009D554 = 0;
+        D_8009D7CC = 0;
+        actor->state = 0;
+        break;
+    }
+    return 1;
+}
 
 /* Start a scripted camera at the player position. */
 s32 func_80080578(s32 index) {
@@ -18,7 +77,81 @@ s32 func_80080578(s32 index) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80080370", func_80080600);
+/* Scripted camera: pull in and tilt (command 1), shake (2) or settle the shake (3). */
+s32 func_80080600(s32 index) {
+    WorldmapActor *actor;
+    ActorScratch *scratch;
+    s32 delta;
+
+    scratch = (ActorScratch *)0x1F800000;
+    actor = &D_8009BE24[index];
+    switch (actor->unk4) {
+    case 1:
+        actor->state = 1;
+        actor->unk4 = 0;
+        D_8009BD38.vx = 0x10;
+        D_8009BD38.vy = 0x8E0;
+        D_8009BD38.vz = 0;
+        actor->u.step = 0x800000;
+        actor->unk54 = actor->unk58 = D_8009BD38.vx << 12;
+        D_8009D3F0 = 0x800000;
+        actor->unk5C = actor->unk60 = D_8009BD38.vy << 12;
+        break;
+    case 2:
+        actor->state = 2;
+        actor->unk4 = 0;
+        actor->unk7C = 0x8000;
+        break;
+    case 3:
+        actor->state = 3;
+        actor->unk4 = 0;
+        actor->unk7C = 0x80000;
+        break;
+    }
+    if (D_8009D144 == 0) {
+        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+    }
+    switch (actor->state) {
+    case 0:
+    case 2:
+        break;
+    case 1:
+        if ((actor->u.step -= 0x10000) < 0x300000) {
+            actor->u.step = 0x300000;
+        }
+        delta = actor->u.step - D_8009D3F0;
+        if (delta != 0) {
+            D_8009D3F0 += delta >> 5;
+        }
+        if ((actor->unk54 -= 0x4000) < -0x100000) {
+            actor->unk54 = -0x100000;
+        }
+        delta = actor->unk54 - actor->unk58;
+        if (delta != 0) {
+            actor->unk58 += delta >> 4;
+            D_8009BD38.vx = actor->unk58 >> 12;
+        }
+        if ((actor->unk5C -= 0x10000) < 0x2E0000) {
+            actor->unk5C = 0x2E0000;
+        }
+        delta = actor->unk5C - actor->unk60;
+        if (delta != 0) {
+            actor->unk60 += delta >> 5;
+            D_8009BD38.vy = actor->unk60 >> 12;
+        }
+        break;
+    case 3:
+        if ((actor->unk7C -= 0x4000) < 0x1000) {
+            actor->unk7C = 0x1000;
+            actor->state = 0;
+        }
+        break;
+    }
+    scratch->position.vy = rand() % (actor->unk7C >> 12) - (actor->unk7C >> 13);
+    ((s16 *)D_8009BD40)[1] += scratch->position.vy; /* VIEW_VECTORS[0].vy */
+    VIEW_VECTORS[1].vy += scratch->position.vy;
+    return 1;
+}
 
 /* Copy the player position into the actor. */
 s32 func_80080900(s32 index) {
@@ -76,23 +209,150 @@ s32 func_80080A28(s32 index) {
     return 3;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80080370", func_80080AC4);
+/* Grow and fade scene objects 0 and 1 at the actor; ends the step when faded out. */
+s32 func_80080AC4(s32 index) {
+    SceneObject *object;
+    WorldmapActor *actor;
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80080370", func_80080D00);
+    object = D_8009C620;
+    actor = &D_8009BE24[index];
+    if (actor->unk4 == 1) {
+        actor->unk4 = 0;
+    }
+    object[0].position.vx = object[1].position.vx = actor->position.vx >> 12;
+    object[0].position.vy = object[1].position.vy = actor->position.vy >> 12;
+    object[0].position.vz = object[1].position.vz = actor->position.vz >> 12;
+    object[1].matrix = D_8009A180;
+    object[0].matrix = object[1].matrix;
+    SCALE_SCRATCH->scale[0].vx = SCALE_SCRATCH->scale[0].vz = actor->u.step;
+    SCALE_SCRATCH->scale[1].vx = SCALE_SCRATCH->scale[1].vz = actor->unk54;
+    SCALE_SCRATCH->scale[0].vy = SCALE_SCRATCH->scale[1].vy = 0x1000;
+    ScaleMatrix(&object[0].matrix, &SCALE_SCRATCH->scale[0]);
+    ScaleMatrix(&object[1].matrix, &SCALE_SCRATCH->scale[1]);
+    if ((actor->u.step += 0x180) > 0x7FFF) {
+        actor->u.step = 0x7FFF;
+    }
+    if ((actor->unk54 += 0x180) > 0x7FFF) {
+        actor->unk54 = 0x7FFF;
+    }
+    func_800809EC((&object->prims)[D_8009D7F0], object->def->count, actor->unk58, actor->unk58, actor->unk58);
+    object++;
+    func_800809EC((&object->prims)[D_8009D7F0], object->def->count, actor->unk58, actor->unk58, actor->unk58);
+    if ((actor->unk58 -= 4) < 0) {
+        actor->unk58 = 0;
+        return 3;
+    }
+    return 1;
+}
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80080370", func_8008106C);
+/* Set up the heat-haze scene: fixed start position, music, its director and effect actors. */
+void func_80080D00(void) {
+    RECT rect;
+    void *sequence;
+    void *data;
+    u16 debug;
+
+    func_80072BB0();
+    rect.w = 0x140;
+    rect.x = 0;
+    rect.y = 0;
+    rect.h = 0xD8;
+    MoveImage(&rect, 0x2C0, 0x100);
+    DrawSync(0);
+    func_80072DB4(0x40, 0, 4, 2);
+    while (func_800286CC() >= 3) {
+    }
+    func_80076954();
+    func_8009766C();
+    D_8009BE4C = D_8009A180;
+    D_8009CCA4 = 2;
+    D_8009D3CC = 0x10;
+    D_8009D804 = 0;
+    D_8009D144 = 0;
+    D_8009CD40 = func_80086700;
+    func_80098044();
+    func_80028A60(0);
+    func_8001B66C();
+    D_8009C5AC.vx = 0x4000000;
+    D_8009C5AC.vy = -0xC0000;
+    D_8009C5AC.vz = 0x4000000;
+    func_80084580();
+    func_8008440C();
+    func_800979C8();
+    func_80072090();
+    func_800736DC();
+    func_800863E0();
+    func_80074E58();
+    func_80075030();
+    func_800739B8();
+    func_80088F64();
+    func_80028A60(0);
+    D_8006258C = func_80037FD8(D_8009C88C, 0);
+    func_80028470(0x24, 0);
+    func_80097BC0(&D_8009C5AC);
+    do {
+        func_800967E4();
+        VSync(0);
+    } while (func_80096668() > 0);
+    debug = D_8005957C & 0x10;
+    if (debug) {
+        while (debug) {
+        }
+    }
+    func_800320E8(D_8009C88C);
+    func_80038428(D_8006259C);
+    data = D_8009C884;
+    memcpy(D_80062648, data, func_800288EC(D_8009D3D0));
+    sequence = func_80039850(D_80062648);
+    D_80062528 = sequence;
+    func_80039A80(sequence, 0x7F, 0);
+    func_80097718((s32)func_800923A8, (s32)func_800925A0);
+    func_80097718((s32)func_80081174, (s32)func_800811C0);
+    func_80097718((s32)func_800813E8, (s32)func_80081470);
+    func_80097718((s32)func_800817A0, (s32)func_80081868);
+    func_80097718((s32)func_800819C8, (s32)func_80081B24);
+    func_80097718((s32)func_80081C3C, (s32)func_80081D80);
+    func_80097718((s32)func_80081FB4, (s32)func_80081FD8);
+    func_80097718((s32)func_80078948, (s32)func_80078950);
+    func_800978FC();
+    func_8008901C();
+    func_800865A0();
+    func_80075228();
+}
+
+/* Leave the world map for scene 0x1FA (flag word 0). */
+void func_8008106C(void) {
+    func_80039FF8();
+    func_8003852C(D_8006259C);
+    func_800320E8(D_8006259C);
+    func_80084818();
+    func_80086568();
+    func_800866C8();
+    func_80074F04();
+    func_800750DC();
+    func_80088FF4();
+    func_80089128();
+    func_80097D64();
+    func_800320E8(D_8009BC38[0]);
+    func_800320E8(D_8009BCB0[0]);
+    func_800320E8(D_8009BC38[1]);
+    func_800320E8(D_8009BCB0[1]);
+    func_800320E8(D_8009C180);
+    func_800976A0();
+    D_8006F94E = 0x1FA;
+    D_8006F954[0] = 0;
+    D_8009BBC4 = 1;
+    D_8006F950 = D_8009BD38.vy;
+}
 
 /* Start an actor's timed sequence: first state and its duration. */
-#ifdef NON_MATCHING /* state constant is loaded before the step reset */
 s32 func_80081174(s32 index) {
     WorldmapActor *actor;
 
     actor = &D_8009BE24[index];
     actor->u.step = 0;
-    actor->state = D_8009A6C0;
-    actor->wait = D_8009A70C[actor->u.step++];
+    actor->state = D_8009A6C0[0];
+    actor->wait = D_8009A70C[actor->u.step];
+    actor->u.step++;
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80080370", func_80081174);
-#endif
