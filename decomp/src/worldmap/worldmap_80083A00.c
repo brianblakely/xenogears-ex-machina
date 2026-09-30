@@ -91,12 +91,36 @@ void func_80085F58(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80085FE0);
+/* Allocate the two buffers of 512 opaque textured 32x48 quads on the
+ * 0x380,0x100 page, the second a copy of the first. */
+void func_80085FE0(void) {
+    PolyFT4 *quad;
+    s32 i;
+
+    D_8009D7E8[0] = func_80031BDC(sizeof(QuadBlock512), 1);
+    D_8009D7E8[1] = func_80031BDC(sizeof(QuadBlock512), 1);
+    quad = D_8009D7E8[0];
+    for (i = 0; i < 0x200; i++, quad++) {
+        setPolyFT4(quad);
+        setRGB0(quad, 0x80, 0x80, 0x80);
+        quad->u0 = 0;
+        quad->v0 = 0x40;
+        quad->u1 = 0x1F;
+        quad->v1 = 0x40;
+        quad->u2 = 0;
+        quad->v2 = 0x6F;
+        quad->u3 = 0x1F;
+        quad->v3 = 0x6F;
+        quad->clut = GetClut(0xF0, 0x1FF);
+        quad->tpage = GetTPage(0, 0, 0x380, 0x100);
+    }
+    *(QuadBlock512 *)D_8009D7E8[1] = *(QuadBlock512 *)D_8009D7E8[0];
+}
 
 /* Free two work buffers. */
 void func_80086124(void) {
-    func_800320E8(D_8009D7EC);
-    func_800320E8(D_8009D7E8);
+    func_800320E8(D_8009D7E8[1]);
+    func_800320E8(D_8009D7E8[0]);
 }
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008615C);
@@ -109,12 +133,33 @@ void func_80086568(void) {
     func_800320E8(D_8009D150);
 }
 
+/* Allocate the two buffers of 0x120 semi-transparent grey textured quads
+ * on the 0x3C0,0x100 page, the second a copy of the first. */
+#ifdef NON_MATCHING /* the code byte 0x2C is not hoisted out of the loop */
+void func_800865A0(void) {
+    PolyFT4 *quad;
+    s32 i;
+
+    D_8009D7F8[0] = func_80031BDC(sizeof(QuadBlock288), 1);
+    D_8009D7F8[1] = func_80031BDC(sizeof(QuadBlock288), 1);
+    quad = D_8009D7F8[0];
+    for (i = 0; i < 0x120; i++, quad++) {
+        setPolyFT4(quad);
+        setRGB0(quad, 0x26, 0x26, 0x26);
+        quad->tpage = GetTPage(0, 1, 0x3C0, 0x100);
+        quad->clut = GetClut(0x130, 0x1FE);
+        SetSemiTrans(quad, 1);
+    }
+    *(QuadBlock288 *)D_8009D7F8[1] = *(QuadBlock288 *)D_8009D7F8[0];
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_800865A0);
+#endif
 
 /* Free two work buffers. */
 void func_800866C8(void) {
-    func_800320E8(D_8009D7FC);
-    func_800320E8(D_8009D7F8);
+    func_800320E8(D_8009D7F8[1]);
+    func_800320E8(D_8009D7F8[0]);
 }
 
 /* Move the 80 drifting positions, wrapping them on the 0x2000-unit world. */
@@ -324,7 +369,38 @@ s32 func_80087F60(void) {
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80087FD0);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80088570);
+/* Start the actor circling above the map from the saved position (first
+ * time: from 0, 0x480), and save it back. */
+s32 func_80088570(s32 index) {
+    WorldmapActor *actor;
+
+    func_8008868C();
+    actor = &D_8009BE24[index];
+    actor->unk54 = 4;
+    actor->state = 0;
+    actor->u.step = 0;
+    actor->unk58 = 0;
+    actor->unk5C = 0xC;
+    if (D_8006EE80.count == 0) {
+        D_8006EE80.count++;
+        actor->position.vy = -0x280000;
+        actor->position.vx = 0;
+        actor->position.vz = 0x4800000;
+    } else {
+        actor->position.vx = (D_8006EE80.x << 12) + D_8006EE80.x_frac;
+        actor->position.vy = -0x280000;
+        actor->position.vz = (D_8006EE80.z << 12) + D_8006EE80.z_frac;
+    }
+    actor->motion.vz = 0xB50;
+    actor->motion.vx = 0xB50;
+    actor->motion.vy = 0;
+    actor->unk4A = 1;
+    D_8006EE80.x_frac = actor->position.vx;
+    D_8006EE80.x = actor->position.vx >> 12;
+    D_8006EE80.z_frac = actor->position.vz;
+    D_8006EE80.z = actor->position.vz >> 12;
+    return 1;
+}
 
 /* Link the area's scene objects in the listed (parent, child) pairs. */
 s32 func_8008868C(void) {

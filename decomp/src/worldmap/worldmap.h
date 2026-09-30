@@ -444,7 +444,7 @@ void func_80083108(SceneObject *object, PolyFT3 *prims, s32 count, s32 mode);
 
 void memcpy(void *dest, void *src, s32 size); /* copy memory */
 
-extern void *D_8009D7E8, *D_8009D7EC, *D_8009D7F8, *D_8009D7FC;
+extern void *D_8009D7E8[2], *D_8009D7F8[2]; /* quad buffers, per display buffer */
 extern u16 D_8009B64C[][2]; /* per area: two scene objects */
 extern u16 D_8009B674[];    /* per area: scene object */
 
@@ -718,6 +718,26 @@ s32 func_80093978(s32 x, s32 z); /* terrain height */
 typedef struct {
     PolyFT4 quads[256];
 } EffectQuads;
+
+typedef struct {
+    PolyFT4 quads[0x200];
+} QuadBlock512;
+
+typedef struct {
+    PolyFT4 quads[0x120];
+} QuadBlock288;
+
+/* Saved flight position: fraction and world-unit halves. */
+typedef struct {
+    u16 x_frac;
+    s16 x;
+    u16 z_frac;
+    s16 z;
+    u16 count; /* flights started */
+} FlightSave;
+
+extern FlightSave D_8006EE80;
+s32 func_8008868C(void);
 extern u16 D_8009B624[][2]; /* per area: two spinning scene objects */
 
 #endif
