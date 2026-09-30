@@ -397,6 +397,9 @@ extern s32 D_8009BBC4;
 typedef struct {
     u8 pad0[4];
     u16 count;
+    u16 pad6;
+    u8 pad8[0x2C];
+    s32 size; /* 0x34: primitive bytes */
 } SpriteDef;
 
 typedef struct SceneObject {
@@ -444,15 +447,15 @@ void func_80083108(SceneObject *object, PolyFT3 *prims, s32 count, s32 mode);
 
 void memcpy(void *dest, void *src, s32 size); /* copy memory */
 
-extern void *D_8009D7E8, *D_8009D7EC, *D_8009D7F8, *D_8009D7FC;
+extern void *D_8009D7E8[2], *D_8009D7F8[2]; /* quad buffers, per display buffer */
 extern u16 D_8009B64C[][2]; /* per area: two scene objects */
 extern u16 D_8009B674[];    /* per area: scene object */
 
 void func_80087904(SceneObject *object, PolyFT4 *quads, s32 count, s32 abr);
 
 extern s16 D_8009AFDC[]; /* scene objects to show; -1 ends */
-extern u16 D_8006EF64;
-extern void *D_8009BE1C, *D_8009BE20;
+extern u16 D_8006EF64[]; /* scene id (first of the scene words) */
+extern void *D_8009BE1C[2]; /* effect quads, per display buffer */
 
 void func_8008BFD4(s32 index, VECTOR *position, s32 x, s32 z);
 
@@ -1207,5 +1210,193 @@ s32 func_80094154(VECTOR *a, VECTOR *b);
 void func_80097070(MATRIX *m, SVECTOR *angle);
 void func_8003A2E4(s32 sound, s32 volume);
 
+
+/* worldmap_80083A00 */
+void func_8004A480(VECTOR *a, VECTOR *b, VECTOR *out); /* outer product */
+void func_8004A8EC(MATRIX *in, MATRIX *out);
+s32 func_80093978(s32 x, s32 z); /* terrain height */
+
+typedef struct {
+    PolyFT4 quads[256];
+} EffectQuads;
+
+typedef struct {
+    PolyFT4 quads[0x200];
+} QuadBlock512;
+
+typedef struct {
+    PolyFT4 quads[0x120];
+} QuadBlock288;
+
+/* Saved flight position: fraction and world-unit halves. */
+typedef struct {
+    u16 x_frac;
+    s16 x;
+    u16 z_frac;
+    s16 z;
+    u16 count; /* flights started */
+} FlightSave;
+
+extern FlightSave D_8006EE80;
+s32 func_8008868C(void);
+
+typedef struct {
+    u8 r, g, b, cd;
+} CVECTOR;
+
+extern u16 D_8009BCE0[16]; /* faded CLUT ids */
+void func_8002DD20(void *image);                            /* unpack an image to VRAM */
+void StoreImage(RECT *rect, void *data);                     /* read back from VRAM */
+
+extern Drift D_8009AF30[5]; /* drift template points */
+s32 rand(void);
+
+void func_80093534(VECTOR *delta); /* wrap a world-unit offset */
+
+/* Model sprite object behind an actor's handle. */
+typedef struct {
+    VECTOR position; /* world units << 4 */
+} ModelObject;
+
+/* Scratchpad work area of the actor sprite pass. */
+typedef struct {
+    SVECTOR vertex;
+    VECTOR offset;
+    s32 depth[64];
+} DepthScratch;
+
+#define DEPTH_SCRATCH ((DepthScratch *)0x1F800000)
+
+void func_80093484(VECTOR *offset);
+void func_80024FF4(MATRIX *m);
+void func_8001E298(s32 model, u32 *ot);
+void func_800223B0(s32 model, s32 angle);
+void func_80023210(s32 model);
+
+/* Scratchpad work area of the terrain pass. */
+typedef struct {
+    SVECTOR corner[4]; /* block quad */
+    u8 pad20[8];
+    MATRIX view;       /* 0x28 */
+    MATRIX roll;       /* 0x48 */
+    u16 clut[16];      /* 0x68 */
+} TerrainPassScratch;
+
+#define TERRAIN_PASS_SCRATCH ((TerrainPassScratch *)0x1F800000)
+
+extern s16 D_8009D618[25]; /* 5x5 visible blocks; -1 empty */
+extern s16 D_8009BE04;     /* quads used this frame */
+MATRIX *RotMatrixZ(s32 angle, MATRIX *m);
+void func_80099BFC(u8 *data, s32 count, u32 *ot, PolyFT4 *quads);
+
+/* Scene object placement (16 bytes; the list follows a count halfword). */
+typedef struct {
+    u16 def;
+    u16 flags;
+    s16 x, y, z;
+    s16 ax, ay, az;
+} ScenePlacement;
+
+/* Sprite definitions after a 16-byte header. */
+typedef struct {
+    u8 header[0x10];
+    SpriteDef defs[1];
+} SpriteDefTable;
+
+extern s16 D_8009BD28; /* animation count */
+extern s32 D_8009C16C, D_8009C840;
+extern MATRIX D_8009A140, D_8009A160; /* colour and light matrices */
+s32 func_8002C3E8(void *defs);
+void func_8002CB54(SpriteDef *def, void **prims, void **prims2, SceneObject *object);
+void func_8002C8CC(SpriteDef *def, void *prims, s32 mode);
+void SetColorMatrix(MATRIX *m);
+void SetLightMatrix(MATRIX *m);
+
+/* Scratchpad work area of the face probe. */
+typedef struct {
+    VECTOR p[3];      /* face corners; p[1] first holds the scale */
+    VECTOR normal;    /* 0x30 */
+    VECTOR side;      /* 0x40: probe ends against the plane */
+    u8 pad50[0xA0];
+    MATRIX m;         /* 0xF0 */
+    MATRIX probe;     /* 0x110: rows are the probe segment ends */
+} FaceScratch;
+
+VECTOR *ApplyMatrixLV(MATRIX *m, VECTOR *v, VECTOR *out);
+
+#define FACE_SCRATCH ((FaceScratch *)0x1F800000)
+
+/* Collision mesh of a scene object (behind SceneObject.unk44). */
+typedef struct {
+    s16 corner[3];
+    s16 unk6[4];
+} MeshFace;
+
+typedef struct {
+    s32 unk0;
+    SVECTOR *vertices;
+    MeshFace faces[1];
+} Mesh;
+
+/* Saved ferry route state: x, z (world units), next waypoint; and the
+ * number of runs started. */
+extern u16 D_8006EE78[3];
+extern u16 D_8006EE7E;
+extern u16 D_8009AF80[8], D_8009AF90[8]; /* ferry waypoints (x, z) */
+
+/* Ferry heading history (ring of 32). */
+typedef struct {
+    s16 dx;
+    s16 pad2;
+    s16 dz;
+    s16 pad6;
+} FerryHeading;
+
+extern FerryHeading D_8009CD68[32];
+s32 func_80094154(VECTOR *a, VECTOR *b); /* distance */
+s32 func_80087F60(void);
+
+/* Scratchpad work area of the airship update. */
+typedef struct {
+    VECTOR work;
+    u8 pad10[0x90];
+    SVECTOR rotor;       /* 0xA0 */
+    SVECTOR tail;        /* 0xA8 */
+    u8 padB0[0x40];
+    MATRIX rotor_matrix; /* 0xF0 */
+    MATRIX tail_matrix;  /* 0x110 */
+} FlightScratch;
+
+#define FLIGHT_SCRATCH ((FlightScratch *)0x1F800000)
+
+/* Scratchpad work area of the ferry update. */
+typedef struct {
+    VECTOR work;
+    VECTOR up;           /* 0x10 */
+    u8 pad20[0x80];
+    SVECTOR wake;        /* 0xA0 */
+    SVECTOR wake_angle;  /* 0xA8 */
+    u8 padB0[0x40];
+    MATRIX m;            /* 0xF0 */
+    u8 pad110[0x40];
+    MATRIX m2;           /* 0x150 */
+} FerryScratch;
+
+#define FERRY_SCRATCH ((FerryScratch *)0x1F800000)
+
+void func_80097070(MATRIX *m, SVECTOR *angle); /* matrix to angles */
+
+MATRIX *ScaleMatrix(MATRIX *m, VECTOR *scale);
+void func_8004A6DC(SVECTOR *v, VECTOR *out, s32 *flag); /* RotTrans */
+void func_800935DC(VECTOR *point, VECTOR *origin, VECTOR *normal);
+
+#define gte_ldv0(r0) \
+    __asm__ volatile("lwc2 $0, 0(%0);" \
+                     "lwc2 $1, 4(%0)" \
+                     : \
+                     : "r"(r0))
+#define gte_rtps() __asm__ volatile("nop;nop;.word 0x4A180001")
+#define gte_stsz(r0) __asm__ volatile("swc2 $19, 0(%0)" : : "r"(r0) : "memory")
+extern u16 D_8009B624[][2]; /* per area: two spinning scene objects */
 
 #endif
