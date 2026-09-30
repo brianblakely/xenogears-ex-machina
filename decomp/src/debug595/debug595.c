@@ -1036,10 +1036,10 @@ s32 func_80284670(s8 *v, s32 axis) {
 
 #ifdef NON_MATCHING
 /* Edit field `item` (component `axis`) of the selected particle emitter.
- * Differs only in the flag cases: the original masks the kept bits before
- * the step call (in its delay slot) where GCC here expands the call first. */
+ * Differs only in the flag cases: the original sign-extends the flags
+ * halfword (lhu, sll 16, sra) before masking and shifting it. */
 void func_802846CC(s32 axis, u32 item) {
-    s16 flags;
+    s32 flags;
     s32 kept;
 
     switch (item) {
@@ -1121,19 +1121,18 @@ void func_802846CC(s32 axis, u32 item) {
         break;
     case 17:
         flags = D_800B02CC[D_800B0044].flags.value;
-        D_800B02CC[D_800B0044].flags.value = (flags & 0xFFFE) | func_80284424(flags & 1, 0, 1);
+        kept = flags & 0xFFFE;
+        D_800B02CC[D_800B0044].flags.value = kept | func_80284424(flags & 1, 0, 1);
         break;
     case 18:
         flags = D_800B02CC[D_800B0044].flags.value;
-        D_800B02CC[D_800B0044].flags.value =
-            (flags & 0xFFF9) |
-            (func_80284424((flags >> 1) & 3, 0, 3) << 1);
+        kept = flags & 0xFFF9;
+        D_800B02CC[D_800B0044].flags.value = kept | (func_80284424((flags >> 1) & 3, 0, 3) << 1);
         break;
     case 19:
         flags = D_800B02CC[D_800B0044].flags.value;
-        D_800B02CC[D_800B0044].flags.value =
-            (flags & 0xFCFF) |
-            (func_80284424((flags >> 8) & 3, 0, 3) << 8);
+        kept = flags & 0xFCFF;
+        D_800B02CC[D_800B0044].flags.value = kept | (func_80284424((flags >> 8) & 3, 0, 3) << 8);
         break;
     case 20:
         D_800B02CC[D_800B0044].rot_angle =
@@ -1141,9 +1140,8 @@ void func_802846CC(s32 axis, u32 item) {
         break;
     case 21:
         flags = D_800B02CC[D_800B0044].flags.value;
-        D_800B02CC[D_800B0044].flags.value =
-            (flags & 0xFF3F) |
-            (func_80284424((flags >> 6) & 3, 0, 2) << 6);
+        kept = flags & 0xFF3F;
+        D_800B02CC[D_800B0044].flags.value = kept | (func_80284424((flags >> 6) & 3, 0, 2) << 6);
         break;
     case 22:
     case 23:
