@@ -60,4 +60,8 @@
                      : "r"(r0)                                                                     \
                      : "$12", "memory")
 
+/* Normal clipping (the screen triangle's winding into OPZ) and its store. */
+#define gte_nclip() __asm__ volatile("nop;nop;.word 0x4B400006")
+#define gte_stopz(r0) __asm__ volatile("swc2 $24, 0(%0)" : : "r"(r0) : "memory")
+
 #endif

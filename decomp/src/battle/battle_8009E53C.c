@@ -1678,8 +1678,9 @@ void func_800A44C0(BattleObject **objects) {
 /* Draw the stage: advance the stage object's image animations, run the
  * stage update (800A6AE8) on the scratchpad stack, step both resident
  * records, draw the stage hierarchy (800A48EC), both resident handles and
- * the stage geometry (800A4DB8) into ot[depth - 1]. */
-void func_800A4654(Matrix *view, Matrix *light, s32 arg2, u32 *ot, s32 buffer, s32 arg5, s32 arg6, s32 depth) {
+ * the sky (800A4DB8) seen from eye towards target into ot[depth - 1]. */
+void func_800A4654(Matrix *view, Matrix *light, s32 arg2, u32 *ot, s32 buffer, SVector *eye, SVector *target,
+                   s32 depth) {
     ImageAnim *anim;
     s32 i;
 
@@ -1700,9 +1701,9 @@ void func_800A4654(Matrix *view, Matrix *light, s32 arg2, u32 *ot, s32 buffer, s
         func_800A48EC(D_800C3E48, (ModelPart *)D_800C3E38, view, (s32)light, arg2, ot, buffer, depth);
     }
     for (i = 0; i < 2; i++) {
-        func_800273C4(D_800C3D50[i], arg5, arg6, view, ot + depth - 1, buffer);
+        func_800273C4(D_800C3D50[i], eye, target, view, ot + depth - 1, buffer);
     }
-    func_800A4DB8(D_800C3EA0, arg5, arg6, view, ot + depth - 1, buffer);
+    func_800A4DB8(D_800C3EA0, eye, target, view, ot + depth - 1, buffer);
 }
 
 /* Free the battle scene's resources: the stage objects, the scene data, both
@@ -1852,7 +1853,171 @@ void func_800A4CF8(s32 index) {
     }
 }
 
+#ifdef NON_MATCHING
+/* Draw the stage sky seen from eye towards target: the horizon bands at the
+ * projected horizon (near and far, clamped to the screen), then the tiles
+ * of the scrolling ceiling under a camera turned and tilted with the view,
+ * each front-facing tile textured from the scroll position. Differs in the
+ * tile loop's register allocation (the original keeps three copies of the
+ * half tile size and reloads the tag masks per row). */
+void func_800A4DB8(StageGeometry *sky, SVector *eye, SVector *target, Matrix *view, u32 *ot,
+                   s32 buffer) {
+    SVector unused; /* declared, never used (its slot stays in the frame) */
+    Matrix camera;
+    Matrix turn;
+    SVector angles;
+    Vector delta;
+    SVector top;
+    SVector bottom;
+    Vector direction;
+    SVector point;
+    SVector normal;
+    s32 clip;
+    s32 angle;
+    s32 tilt;
+    s32 size;
+    s32 half;
+    s32 u0;
+    s32 v0;
+    s32 u;
+    s32 v;
+    s32 vEnd;
+    s32 row;
+    s32 col;
+    s32 n;
+    SVector *vertex;
+
+    if (sky == NULL) {
+        return;
+    }
+    addPrim(ot, &sky->modes2[buffer]);
+    direction.vx = target->vx - eye->vx;
+    direction.vy = 0;
+    direction.vz = target->vz - eye->vz;
+    VectorNormalS(&direction, &normal);
+    point.vx = normal.vx * sky->distance / 4096 + target->vx;
+    point.vy = sky->horizon;
+    point.vz = normal.vz * sky->distance / 4096 + target->vz;
+    SetRotMatrix(view);
+    SetTransMatrix(view);
+    gte_ldv0(&point);
+    gte_rtps();
+    gte_stsxy(&top);
+    top.vx = top.vy;
+    if (top.vy > 240) {
+        top.vy = 240;
+    }
+    point.vx = normal.vx * sky->distance / 4096 * sky->nearScale / 256 + target->vx;
+    point.vy = sky->horizon * sky->nearScale / 256;
+    point.vz = normal.vz * sky->distance / 4096 * sky->nearScale / 256 + target->vz;
+    gte_ldv0(&point);
+    gte_rtps();
+    gte_stsxy(&bottom);
+    if (bottom.vy >= 0 && top.vy < 240) {
+        sky->quads[buffer + 2].y0 = top.vy;
+        sky->quads[buffer + 2].y1 = top.vy;
+        sky->quads[buffer + 2].y2 = bottom.vy;
+        sky->quads[buffer + 2].y3 = bottom.vy;
+        addPrim(ot, &sky->quads[buffer + 2]);
+    }
+    if (bottom.vy < 0) {
+        bottom.vy = 0;
+    }
+    if (bottom.vy < 240) {
+        sky->flats[buffer + 2].y0 = bottom.vy;
+        sky->flats[buffer + 2].y1 = bottom.vy;
+        addPrim(ot, &sky->flats[buffer + 2]);
+    }
+    point.vx = normal.vx * sky->distance / 4096 * sky->farScale / 256 + target->vx;
+    point.vy = sky->horizon * sky->farScale / 256;
+    point.vz = normal.vz * sky->distance / 4096 * sky->farScale / 256 + target->vz;
+    gte_ldv0(&point);
+    gte_rtps();
+    gte_stsxy(&bottom);
+    bottom.vy = top.vy * 2 - bottom.vy - 8;
+    if (top.vx >= 0 && top.vx < 480 && bottom.vy < 240) {
+        sky->quads[buffer].y0 = top.vx;
+        sky->quads[buffer].y1 = top.vx;
+        sky->quads[buffer].y2 = bottom.vy;
+        sky->quads[buffer].y3 = bottom.vy;
+        addPrim(ot, &sky->quads[buffer]);
+    }
+
+    delta.vx = target->vx - eye->vx;
+    delta.vy = 0;
+    delta.vz = target->vz - eye->vz;
+    angle = ratan2(target->vy - eye->vy, SquareRoot0(delta.vx * delta.vx + delta.vz * delta.vz));
+    tilt = (angle - 0x100) * sky->tilt / 512 * (0x400 - (angle < 0 ? -angle : angle)) / 1024;
+    SetGeomScreen(sky->screen);
+    angles.vx = 0;
+    angles.vy = -ratan2(delta.vx, delta.vz);
+    angles.vz = 0;
+    func_8003F738(&angles, &turn);
+    turn.t[0] = 0;
+    turn.t[1] = 0;
+    turn.t[2] = 0;
+    angles.vx = tilt;
+    angles.vy = -angles.vy;
+    func_8004A92C(&angles, &camera);
+    VectorNormalS(&delta, &angles);
+    delta.vx = eye->vx + angles.vx * 2;
+    delta.vy = eye->vy / 4 - sky->height;
+    delta.vz = eye->vz + angles.vz * 2;
+    camera.t[0] = delta.vx;
+    camera.t[1] = delta.vy;
+    camera.t[2] = delta.vz;
+    CompMatrix(&camera, &turn, &camera);
+    CompMatrix(view, &camera, &camera);
+    SetRotMatrix(&camera);
+    SetTransMatrix(&camera);
+
+    sky->scrollX += sky->speedX;
+    sky->scrollY += sky->speedY;
+    u0 = (sky->scrollX / 16 + delta.vx / 12) & ((size = sky->tileSize) - 1);
+    v0 = (sky->scrollY / 16 + delta.vz / 12) & (size - 1);
+    half = (s16)size / 2;
+    vertex = &sky->grid[0][0];
+    n = buffer * 64;
+    for (row = 0; row < 8; row++) {
+        v = (row & 1) * half + v0;
+        vEnd = v + half - 1;
+        for (col = 0; col < 8; col++) {
+            gte_ldv3(&vertex[0], &vertex[1], &vertex[9]);
+            gte_rtpt();
+            gte_nclip();
+            gte_stopz(&clip);
+            if (clip >= 0) {
+                gte_stsxy3(&sky->tiles[n].x0, &sky->tiles[n].x1, &sky->tiles[n].x2);
+                gte_ldv0(&vertex[10]);
+                gte_rtps();
+                gte_stsxy(&sky->tiles[n].x3);
+                sky->tiles[n].v0 = v;
+                sky->tiles[n].v1 = v;
+                sky->tiles[n].v2 = vEnd;
+                sky->tiles[n].v3 = vEnd;
+                u = (col & 1) * half + u0;
+                sky->tiles[n].u0 = u;
+                sky->tiles[n].u2 = u;
+                sky->tiles[n].u1 = u + half - 1;
+                sky->tiles[n].u3 = u + half - 1;
+                addPrim(ot, &sky->tiles[n]);
+            }
+            n++;
+            vertex++;
+        }
+        vertex++;
+    }
+    SetGeomScreen(0x200);
+    if (top.vy >= 0) {
+        sky->flats[buffer].y2 = top.vy;
+        sky->flats[buffer].y3 = top.vy;
+        addPrim(ot, &sky->flats[buffer]);
+    }
+    addPrim(ot, &sky->modes[buffer]);
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A4DB8);
+#endif
 
 /* The scene's points. */
 SVector *func_800A577C(void) {

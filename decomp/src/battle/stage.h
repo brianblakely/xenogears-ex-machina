@@ -17,11 +17,30 @@
                      : "$8", "memory")
 #define SPAD_STACK_LEAVE() __asm__ volatile("addiu $29, $29, 4\n\tlw $29, 0($29)" : : : "memory")
 
-/* The stage geometry block (D_800C3EA0; fields as far as recovered). */
+/* The stage sky (D_800C3EA0): a scrolling textured ceiling of 8 x 8 tiles
+ * over a 9 x 9 vertex grid, with horizon bands (the flats and quads; the
+ * second half of each for the far band) per frame buffer. */
 typedef struct {
-    u8 pad0[0x16DC];
-    POLY_F4 flats[4]; /* 0x16DC */
-    POLY_G4 quads[4]; /* 0x173C */
+    s16 scrollX;         /* 0x00: texture scroll, 1/16 texel */
+    s16 scrollY;         /* 0x02 */
+    s16 speedX;          /* 0x04 */
+    s16 speedY;          /* 0x06 */
+    u16 tileSize;        /* 0x08: texels per tile pair, a power of 2 */
+    s16 height;          /* 0x0A: subtracted from the eye height / 4 */
+    s16 farScale;        /* 0x0C: 8.8 */
+    s16 nearScale;       /* 0x0E: 8.8 */
+    s16 screen;          /* 0x10: projection distance */
+    s16 tilt;            /* 0x12: pitch scale */
+    u8 pad14[2];
+    s16 horizon;         /* 0x16: horizon height */
+    s16 distance;        /* 0x18: horizon distance */
+    u8 pad1A[0x24 - 0x1A];
+    DR_MODE modes[2];    /* 0x24: after the sky, per frame buffer */
+    DR_MODE modes2[2];   /* 0x3C: before it */
+    SVector grid[9][9];  /* 0x54 */
+    POLY_FT4 tiles[128]; /* 0x2DC: 64 per frame buffer */
+    POLY_F4 flats[4];    /* 0x16DC */
+    POLY_G4 quads[4];    /* 0x173C */
 } StageGeometry;
 
 /* The stage backdrop (the first resident handle of D_800C3D50; fields as far
@@ -58,11 +77,11 @@ extern s16 D_800C3EA8;          /* stage image height */
 /* Resident services. */
 void func_80027EAC(ResidentRecord18 *record);
 void func_80025D4C(s32 size, u16 *out, u16 *a, u16 *b, s32 r, s32 g, s32 bl, s32 mode, s32 level);
-void func_800273C4(void *handle, s32 arg1, s32 arg2, Matrix *view, u32 *ot, s32 buffer);
+void func_800273C4(void *handle, SVector *eye, SVector *target, Matrix *view, u32 *ot, s32 buffer);
 
 void func_800A48EC(ModelList *models, ModelPart *root, Matrix *view, s32 arg3, s32 arg4, u32 *ot, s32 buffer,
                    s32 depth);
-void func_800A4DB8(void *geometry, s32 arg1, s32 arg2, Matrix *view, u32 *ot, s32 buffer);
+void func_800A4DB8(StageGeometry *sky, SVector *eye, SVector *target, Matrix *view, u32 *ot, s32 buffer);
 void func_800A64E4(void);
 void func_800A6884(u8 *out, s32 index, u8 *color);
 void func_800A6AE8(void);
