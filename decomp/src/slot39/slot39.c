@@ -2267,7 +2267,55 @@ void func_801D2EC0(u8 slot, u8 mode) {
     func_801D8EA4(slot, 0, 0, mode);
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D2F4C);
+/* Open the notice window (portrait 2) and show three lines of label text
+ * from entry `message`: four line labels (pairs share one render buffer)
+ * rendered into VRAM and laid out as quads. */
+void func_801D2F4C(u8 message) {
+    s32 x;
+    MenuMark *mark;
+    MenuLabelSlot *line;
+    s32 i;
+
+    func_801D397C(2, 0x7a, 0x96, 0xbc, 0x40, 1, 1, 4, 0);
+    mark = D_800625A0->portraitMarks[2];
+    while (mark->done == 0) {
+        func_801C7BF4();
+    }
+    x = 0x84;
+    for (i = 0; i < 4; i++) {
+        void *block = func_80031BDC(0x80, 0);
+
+        D_800625A0->blocks1DE0[i] = block;
+        bzero(block, 0x80);
+        if (!(i & 1)) {
+            D_800625A0->blocks1DE0[i]->pixels = func_80031BDC(0x5ca, 0);
+            D_800625A0->blocks1DE0[i]->rect.x = 0x140;
+            D_800625A0->blocks1DE0[i]->rect.y = (i / 2) * 13 + 0x4e;
+            D_800625A0->blocks1DE0[i]->rect.w = 0x3a;
+            D_800625A0->blocks1DE0[i]->rect.h = 13;
+        } else {
+            D_800625A0->blocks1DE0[i]->pixels = D_800625A0->blocks1DE0[i - 1]->pixels;
+        }
+    }
+    for (i = 0; i < 3; i++) {
+        line = D_800625A0->blocks1DE0[i];
+        line->width = func_80034EAC(func_80033728(D_800625A0->labels, message + i), line->pixels, 0x36, i % 2);
+        func_801E7C50(line, i, 0, 0);
+        func_801E920C(&line->polys[D_800625A0->bufferIndex], (u16)x, (u16)(i * 16 + 0xa0), 0,
+                      (u8)((i / 2) * 13 + 0x4e), line->width, 13);
+        func_801C851C(line->verts, x, i * 16 + 0xa0, line->width, 13);
+        line->count = D_800625A0->bufferIndex;
+        line->visible = 1;
+    }
+    LoadImage(&D_800625A0->blocks1DE0[0]->rect, D_800625A0->blocks1DE0[0]->pixels);
+    LoadImage(&D_800625A0->blocks1DE0[2]->rect, D_800625A0->blocks1DE0[2]->pixels);
+    DrawSync(0);
+    D_800625A0->party->unk2E = 1;
+    func_800320E8(D_800625A0->blocks1DE0[0]->pixels);
+    func_800320E8(D_800625A0->blocks1DE0[2]->pixels);
+    func_801C7BF4();
+    func_801C7BF4();
+}
 
 /* Close the notice when open (party +22): free portrait 2 and its four
  * blocks (+1de0), then finish a frame. */

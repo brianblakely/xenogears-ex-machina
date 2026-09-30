@@ -322,7 +322,7 @@ typedef struct GearRecord {
 typedef struct MenuLabelSlot {
     POLY_FT4 polys[2]; /* 0 */
     SVECTOR verts[4]; /* 50 */
-    u8 pad70[0x8];
+    RECT rect; /* 70: VRAM area of the rendered text */
     u8 *pixels; /* 78 */
     u8 pad7C[0x1];
     u8 count; /* 7D: the quad shown */
@@ -831,6 +831,8 @@ void func_8003852C(void *bank);
 void func_8003A094(void *bank);
 
 s32 func_80028530(void);
+u8 *func_80033728(void *table, s32 index);                    /* entry of a text table */
+s32 func_80034EAC(u8 *text, void *pixels, s32 width, s32 line); /* render a text line, returns its width */
 
 /* Overlay functions. */
 u8 func_801C531C(u8 offset);
@@ -991,6 +993,8 @@ void func_801E4D10(s32 *save, MenuTables *tables);
 void func_801E53CC(u8 index);
 void func_801E56E8(s32 index);
 void func_801E8DA8(u8 image, u8 row);
+void func_801E7C50(MenuLabelSlot *label, s32 row, s32 arg2, s32 arg3);
+void func_801E920C(POLY_FT4 *poly, s32 x, s32 y, s32 u, s32 v, s32 w, s32 h);
 void func_801E5B3C(void);
 void func_801E61B0(void);
 void func_801E6AE8(u8 index, MenuViewSet *set);
