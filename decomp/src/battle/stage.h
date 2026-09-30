@@ -19,6 +19,9 @@
 
 extern ModelList *D_800C3E48; /* the stage's models (hierarchy D_800C3E38) */
 extern s32 D_800CCC5C;        /* frame steps */
+extern ImageAnim D_800D3600;  /* the stage's image animation */
+extern void *D_800C3AC4;      /* saved stage colours */
+extern void *D_800C3AC8;
 
 /* Resident services. */
 void func_80027EAC(ResidentRecord18 *record);
@@ -27,6 +30,7 @@ void func_800273C4(void *handle, s32 arg1, s32 arg2, Matrix *view, u32 *ot, s32 
 void func_800A48EC(ModelList *models, ModelPart *root, Matrix *view, s32 arg3, s32 arg4, u32 *ot, s32 buffer,
                    s32 depth);
 void func_800A4DB8(void *geometry, s32 arg1, s32 arg2, Matrix *view, u32 *ot, s32 buffer);
+void func_800A64E4(void);
 void func_800A6AE8(void);
 
 #endif

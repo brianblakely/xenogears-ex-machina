@@ -2054,7 +2054,28 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A68
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A6AE8);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A6F98);
+/* Release the stage image: detach the stage object's active image
+ * animations from their targets, restore the image's VRAM and stop it; then
+ * restore the stage colours (800A64E4) and free their saved copies. */
+void func_800A6F98(void) {
+    ImageAnim *anim;
+    s32 i;
+
+    if (D_800D3600.active) {
+        anim = D_800D3368[31]->images;
+        for (i = 0; i < D_800D3368[31]->imageCount; i++, anim++) {
+            if (anim->active) {
+                anim->target = NULL;
+            }
+        }
+        LoadImage(&D_800D3600.rect, (u32 *)D_800D3600.pixels);
+        DrawSync(0);
+        func_800A429C(&D_800D3600);
+    }
+    func_800A64E4();
+    func_800320E8(D_800C3AC4);
+    func_800320E8(D_800C3AC8);
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A7064);
 
