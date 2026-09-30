@@ -8300,7 +8300,100 @@ void func_80098C3C(void) {
     func_80098CAC(1);
 }
 
+#ifdef NON_MATCHING
+void func_80098CAC(s32 mode) {
+    VECTOR from;
+    FieldModel *model;
+    s32 speed;
+    s32 animation;
+    s32 x;
+    s32 y;
+    s32 z;
+    s32 steps;
+    u16 pc;
+    u8 *code;
+
+    model = D_800AF880.components.descriptors[D_800AFD1C].model;
+    if (D_800AF880.components.descriptors[D_800AFD1C].actor->layer_flags & 0x2000) {
+        speed = (0x8000000 / (u16)D_800B0078->unk76) >> 16;
+    } else {
+        speed = (0x4000000 / (u16)D_800B0078->unk76) >> 16;
+    }
+    if (speed == 0) {
+        speed = 1;
+    }
+    D_800B0078->flags |= 0x10000;
+    pc = D_800B0078->pc;
+    code = pc + D_800ADC00;
+    animation = 1;
+    if (code[1] == 0) {
+        x = func_8009CF78(2, code[8]) << 16;
+        z = func_8009CFBC(4, EVENT_OPERAND_BYTE(8)) << 16;
+        y = func_8009D000(6, EVENT_OPERAND_BYTE(8)) << 16;
+        steps = func_80099A04((x - D_800B0078->position[0]) >> 16, (y - D_800B0078->position[1]) >> 16,
+                              (z - D_800B0078->position[2]) >> 16) / speed;
+        D_800B0078->unk102 = steps;
+        if ((s16)steps == 0) {
+            D_800B0078->unk102 = steps + 1;
+        }
+        D_800B0078->target[0] = (x - D_800B0078->position[0]) / (s16)D_800B0078->unk102;
+        D_800B0078->target[1] = (y - D_800B0078->position[1]) / (s16)D_800B0078->unk102;
+        D_800B0078->target[2] = (z - D_800B0078->position[2]) / (s16)D_800B0078->unk102;
+        if (x >> 16 != WHOLE(D_800B0078->position[0]) || z >> 16 != WHOLE(D_800B0078->position[2])) {
+            D_800B0078->heading_goal = D_800B0078->heading = -ratan2(D_800B0078->target[2] >> 16, WHOLE(D_800B0078->target[0]));
+        }
+        D_800B0078->pc += 9;
+    } else {
+        if ((s16)D_800B0078->unk102 <= 0 || D_800B0078->slots[D_800B0078->slot].value == 0) {
+            D_800B0078->pc = pc - 9;
+            if (D_800B0078->slots[D_800B0078->slot].value != 0) {
+                from.vx = D_800B0078->position[0];
+                from.vy = D_800B0078->position[1];
+                from.vz = D_800B0078->position[2];
+                D_800B0078->position[0] = func_8009CF78(2, EVENT_OPERAND_BYTE(8)) << 16;
+                D_800B0078->position[2] = func_8009CFBC(4, EVENT_OPERAND_BYTE(8)) << 16;
+                D_800B0078->position[1] = func_8009D000(6, EVENT_OPERAND_BYTE(8)) << 16;
+                D_800B0078->unk030[0] = D_800B0078->position[0] - from.vx;
+                D_800B0078->unk030[1] = D_800B0078->position[1] - from.vy;
+                D_800B0078->unk030[2] = D_800B0078->position[2] - from.vz;
+            }
+            animation = D_800B0078->unkE6;
+            if (mode == 0) {
+                D_800B0078->pc += 11;
+            } else {
+                D_800B0078->pc += 13;
+            }
+            D_800B0078->slots[D_800B0078->slot].value = 0xFFFF;
+        } else {
+            D_800B0078->position[0] += D_800B0078->target[0];
+            D_800B0078->position[2] += D_800B0078->target[2];
+            D_800B0078->unk030[1] = D_800B0078->target[1];
+            D_800B0078->unk030[2] = D_800B0078->target[2];
+            D_800B0078->position[1] += D_800B0078->target[1];
+            D_800B0078->unk030[0] = D_800B0078->target[0];
+            D_800B00C0 = animation;
+            D_800B0078->slots[D_800B0078->slot].value--;
+            D_800B0078->unk102--;
+        }
+        D_800AF880.components.descriptors[D_800AFD1C].matrix.t[0] = WHOLE(D_800B0078->position[0]);
+        D_800AF880.components.descriptors[D_800AFD1C].matrix.t[1] = WHOLE(D_800B0078->position[1]);
+        D_800AF880.components.descriptors[D_800AFD1C].matrix.t[2] = WHOLE(D_800B0078->position[2]);
+        model->position[0] = D_800B0078->position[0];
+        model->position[1] = D_800B0078->position[1];
+        model->position[2] = D_800B0078->position[2];
+    }
+    if (D_800B0078->unk0EA != 0xFF) {
+        animation = D_800B0078->unk0EA;
+    }
+    if (D_800B0078->unkE8 != animation && !(D_800B0078->flags & 0x2000000)) {
+        D_800B0078->unkE8 = animation;
+        func_800821F4(model, animation, D_800B06B8);
+        ((void (*)(void *, s32, FieldDescriptor *))func_80081F80)(model, D_800B0078->heading, D_800B06B8);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80098CAC);
+#endif
 
 #ifdef NON_MATCHING
 void func_80099214(void) {

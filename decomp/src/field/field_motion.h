@@ -20,6 +20,7 @@ typedef struct {
 #define ACTOR_ARC_STEPS(actor) (*(s16 *)&(actor)->unk0DC[4])
 
 s32 func_80099A8C(s32 x);
+void func_800821F4(void *model, s32 animation, FieldDescriptor *descriptor);
 s16 func_8007B1C4(s32 x, s32 z, s32 layer, SVECTOR *point, VECTOR *normal);
 
 #endif
