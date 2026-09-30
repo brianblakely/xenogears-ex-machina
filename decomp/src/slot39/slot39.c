@@ -3348,7 +3348,42 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E53CC);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E56E8);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E5924);
+/* Set up image block `index`'s green 16x16 frame at its position: the
+ * top/right and left/bottom lines and their vertices, for both buffers. */
+void func_801E5924(s32 index) {
+    MenuImage *image;
+    u16 *x;
+    u16 *y;
+    s32 i;
+
+    x = D_801E9894[index];
+    y = D_801E9914[index];
+    image = D_800625A0->images[index];
+    for (i = 0; i < 2; i++) {
+        SetLineF3(&image->top[i]);
+        image->top[i].r0 = 0;
+        image->top[i].g0 = 0xff;
+        image->top[i].b0 = 0;
+        image->top[i].x0 = *x;
+        image->top[i].y0 = *y;
+        image->top[i].x1 = *x + 0x10;
+        image->top[i].y1 = *y;
+        image->top[i].x2 = *x + 0x10;
+        image->top[i].y2 = *y + 0x10;
+        func_801C851C(image->topVerts, *x, *y, 0x10, 0x10);
+        SetLineF3(&image->bottom[i]);
+        image->bottom[i].r0 = 0;
+        image->bottom[i].g0 = 0xff;
+        image->bottom[i].b0 = 0;
+        image->bottom[i].x0 = *x;
+        image->bottom[i].y0 = *y;
+        image->bottom[i].x1 = *x;
+        image->bottom[i].y1 = *y + 0x10;
+        image->bottom[i].x2 = *x + 0x10;
+        image->bottom[i].y2 = *y + 0x10;
+        func_801C851C(image->bottomVerts, *x, *y, 0x10, 0x10);
+    }
+}
 
 /* Allocate and set up the 32 image blocks (+3a8). */
 void func_801E5ACC(void) {

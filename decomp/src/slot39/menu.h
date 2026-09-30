@@ -41,6 +41,15 @@ typedef struct POLY_G4 {
     s16 x3, y3;
 } POLY_G4;
 
+typedef struct LINE_F3 {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    s16 x1, y1;
+    s16 x2, y2;
+    u32 pad;
+} LINE_F3;
+
 typedef struct POLY_FT4 {
     u32 tag;
     u8 r0, g0, b0, code;
@@ -614,6 +623,18 @@ typedef struct MenuPortrait {
     u8 unk71D; /* 71D */
 } MenuPortrait;
 
+/* An image block (*(state + 3a8)[i], 158 bytes): a sprite and a green
+ * frame drawn as two three-point lines. */
+typedef struct MenuImage {
+    POLY_FT4 polys[2]; /* 0 */
+    LINE_F3 top[2]; /* 50: per buffer: top and right edges */
+    LINE_F3 bottom[2]; /* 80: per buffer: left and bottom edges */
+    u8 padB0[0x50];
+    SVECTOR topVerts[4]; /* 100 */
+    SVECTOR bottomVerts[4]; /* 120 */
+    u8 pad140[0x18];
+} MenuImage;
+
 /* The menu mode's state (*D_800625A0). */
 typedef struct MenuState {
     MenuMover movers[3]; /* 0 */
@@ -662,7 +683,7 @@ typedef struct MenuState {
     MenuPortrait *portraits[7]; /* 364 */
     MenuMark *portraitMarks[7]; /* 380 */
     MenuFieldBlock *fieldBlocks[3]; /* 39C: three 127c-byte field blocks */
-    u8 *images[32]; /* 3A8 */
+    MenuImage *images[32]; /* 3A8 */
     MenuMarkers *markers; /* 428: marker block (14c bytes) */
     MenuBlock42C *block42C; /* 42C: 1198 bytes */
     MenuBlock430 *block430; /* 430: 1094 bytes */
@@ -770,6 +791,8 @@ extern u16 D_801EA578[][2];      /* label image x per row pair */
 extern u16 D_801EA5C4[][2];      /* label image y per row pair */
 extern u16 D_801EA590[][2];      /* view name image x (D_801EA578 from row 6) */
 extern u16 D_801EA5DC[][2];      /* view name image y */
+extern u16 D_801E9894[32][2];    /* image block x */
+extern u16 D_801E9914[32][2];    /* image block y */
 extern s32 D_801EA34C[20]; /* field block part images, ffff none */
 extern s32 D_801E9A78[20];
 extern s32 D_801E9AC8[20];
@@ -832,6 +855,7 @@ void SetSemiTrans(void *prim, s32 on);  /* SetSemiTrans */
 void SetShadeTex(void *prim, s32 on);  /* SetShadeTex */
 void SetPolyFT4(POLY_FT4 *poly);      /* SetPolyFT4 */
 void SetPolyG4(POLY_G4 *poly);       /* SetPolyG4 */
+void SetLineF3(LINE_F3 *line);       /* SetLineF3 */
 void func_8003F738(SVECTOR *angles, MATRIX *m); /* RotMatrix */
 void TransMatrix(MATRIX *m, VECTOR *t);      /* TransMatrix */
 void SetRotMatrix(MATRIX *m);                 /* SetRotMatrix */
