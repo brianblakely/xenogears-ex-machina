@@ -2827,7 +2827,259 @@ void func_8007999C(void) {
     ExitCriticalSection();
 }
 
+extern s32 D_8004F350;
+extern s16 D_8006BE2C[3];
+extern void *D_8005945C;    /* the menu's shared file (1) */
+extern u8 D_80059178;
+extern u8 D_80059460;       /* menu kind */
+extern u32 *D_8005A4AC;     /* the menu's order tables */
+extern u32 *D_8005A4B0;
+extern u16 D_800ADCB0[6][2]; /* VRAM blocks the menu overwrites */
+extern s16 D_800ADCC8[6][2]; /* where they are saved meanwhile */
+extern s32 D_8004F31C;
+extern s32 D_8004F320;
+void func_8001C634(void);
+
+#ifdef NON_MATCHING
+/* Run a menu (kind in 800adb64, 0x80 marks a pending event-only one) over
+ * the field: fade out, save the 801e module and the VRAM the menu uses,
+ * load the menu (file kind + 5, and the shared file 1), run it (8001c634),
+ * apply its results (entering a map from a save), then restore VRAM, fade
+ * back in and reload the module and the party sprites.
+ * Does not match yet: the original keeps more values in saved registers
+ * (the module in fp, the menu block in s7) and spills 800adb30's copy to
+ * the stack, giving a 0x78-byte frame. */
+void func_800799D4(void) {
+    RECT rect;
+    FieldFileRequest files[4];
+    u32 end;
+    void *module;
+    void *source;
+    void *menu;
+    u32 *saved_a;
+    u32 *saved_b;
+    s32 i;
+
+    module = NULL;
+    if (D_800ADB64 == 0x80 && D_800B2078.script_control[0] != 0) {
+        return;
+    }
+    setlen(&D_800AFE54[0], 3);
+    setcode(&D_800AFE54[0], 0x60);
+    SetSemiTrans(&D_800AFE54[0], 1);
+    D_800AFE54[0].w = 0x140;
+    D_800AFE54[0].b0 = 0;
+    D_800AFE54[0].g0 = 0;
+    D_800AFE54[0].r0 = 0;
+    D_800AFE54[0].y0 = 0;
+    D_800AFE54[0].x0 = 0;
+    D_800AFE54[0].h = 0xE0;
+    D_800AFE54[1] = D_800AFE54[0];
+    SetDrawMode(&D_800AFE24[0], 0, 0, GetTPage(0, 2, 0, 0), NULL);
+    SetDrawMode(&D_800AFE24[1], 0, 0, GetTPage(0, 2, 0, 0), NULL);
+    func_80077D2C();
+    if (D_800B2078.unk2264 != 0) {
+        func_80028470(4, 0);
+        module = func_80031BDC(func_800288EC(0x6B9), 0);
+        source = D_800ADB20;
+        memcpy(module, source, func_800288EC(0x6B9));
+        func_800320E8(D_800ADB20);
+    }
+    end = D_800ADB30;
+    func_80028470(0x10, 0);
+    if (D_8004F370 == 1) {
+        menu = func_80031BDC(func_800288EC((D_800ADB64 + 5) & 0x7F), 1);
+    } else {
+        menu = func_80031BDC((end & 0xFFFFFF) - 0x1C5008, 1);
+    }
+    files[2].file = 0;
+    files[2].destination = NULL;
+    files[3].file = 0;
+    files[3].destination = NULL;
+    files[0].file = 1;
+    D_8005945C = files[0].destination = func_80031BDC(func_800288EC(1), 1);
+    files[1].destination = menu;
+    files[1].file = (D_800ADB64 & 0x7F) + 5;
+    if ((D_800ADB64 & 0x7F) == 5 && D_8004F370 == 0) {
+        files[2].file = 0xC;
+        files[2].destination = (void *)0x1DC000;
+    }
+    func_80028A60(0);
+    func_80029AFC(files, 0, 0);
+    func_80028470(4, 0);
+    rect.w = 0x40;
+    rect.h = 0x20;
+    for (i = 0; i < 6; i++) {
+        rect.x = D_800ADCB0[i][0];
+        rect.y = D_800ADCB0[i][1];
+        MoveImage(&rect, D_800ADCC8[i][0], D_800ADCC8[i][1]);
+        DrawSync(0);
+    }
+    func_8007995C(0x40, 0x100, 0x3C0, 0x100, 0x300, 0);
+    func_8007995C(0x40, 0x100, 0x2C0, 0x100, 0x280, 0);
+    D_800AFE4C.x = 0x2C0;
+    D_800AFE4C.y = 0x100;
+    D_800AFE4C.w = 0x140;
+    D_800AFE4C.h = 0xE0;
+    func_800A4748();
+    MoveImage(&D_800AFE4C, 0, 0x100);
+    DrawSync(0);
+    for (i = 0; i < 0x20; i++) {
+        func_80079784(i);
+    }
+    func_800775F8();
+    D_800AFE4C.x = 0;
+    D_800AFE4C.y = 0;
+    func_800796FC();
+    func_8003748C();
+    MoveImage(&D_800AFE4C, 0, 0xE0);
+    func_800775F8();
+    func_80028A60(0);
+    D_800594D0 = 0;
+    D_80059178 = 0;
+    D_80059460 = D_800ADB64 & 0x7F;
+    for (i = 0; i < 3; i++) {
+        D_8006BE2C[i] = D_8005A39C->unk22B1[i];
+    }
+    func_800798BC();
+    D_8005A4AC = D_800B249C[0].ot;
+    D_8005A4B0 = D_800B249C[1].ot;
+    func_8007999C();
+    func_8001C634();
+    func_8007999C();
+    D_80050100 = 2;
+    if (D_800594D0 == 0 && (D_800ADB64 & 0x7F) == 2) {
+        D_800B02C8 = 1;
+        func_800A3074(0x46, 0);
+        func_800A3074(4, 4);
+        D_8004F34C = 4;
+        D_8005A39C->unk2320 = 0;
+        D_8005A39C->vars[1] = 0;
+        D_8005A39C->unk231A = 4;
+    }
+    if (D_800594D0 == 2) {
+        D_800B02C8 = 1;
+        func_800A3074(0x46, 2);
+        func_800A3074(4, D_8005A39C->unk231A & 0x3FFF);
+        if ((D_8005A39C->unk231A & 0x3FFF) < 0x400) {
+            D_8005A39C->unk2320 = D_8005A39C->vars[0x2A];
+        }
+    }
+    func_800775F8();
+    D_800AFE4C.x = 0;
+    D_800AFE4C.y = 0xE0;
+    D_800AFE4C.w = 0x140;
+    D_800AFE4C.h = 0xE0;
+    MoveImage(&D_800AFE4C, 0x140, 0);
+    func_800775F8();
+    D_800AFE4C.x = 0x140;
+    D_800AFE4C.y = 0;
+    MoveImage(&D_800AFE4C, 0, 0);
+    MoveImage(&D_800AFE4C, 0, 0x100);
+    func_800775F8();
+    PutDispEnv(&D_800C426C->disp);
+    PutDrawEnv(&D_800C426C->draw);
+    D_800AFE4C.x = 0x2C0;
+    D_800AFE4C.y = 0x100;
+    func_80079784(0x1F);
+    func_80079784(0x1F);
+    rect.w = 0x40;
+    rect.h = 0x100;
+    rect.x = 0x300;
+    rect.y = 0;
+    saved_a = func_80031BDC(0x8000, 1);
+    StoreImage(&rect, saved_a);
+    DrawSync(0);
+    rect.w = 0x40;
+    rect.h = 0x100;
+    rect.x = 0x280;
+    rect.y = 0;
+    saved_b = func_80031BDC(0x8000, 1);
+    StoreImage(&rect, saved_b);
+    DrawSync(0);
+    for (i = 0; i < 6; i++) {
+        rect.w = 0x40;
+        rect.h = 0x20;
+        rect.x = D_800ADCC8[i][0];
+        rect.y = D_800ADCC8[i][1];
+        MoveImage(&rect, D_800ADCB0[i][0], D_800ADCB0[i][1]);
+        DrawSync(0);
+    }
+    func_80028470(4, 0);
+    func_80032498(8, 0);
+    D_800ADB60 = 0;
+    func_80070488();
+    if (D_800AFE84 != 0) {
+        for (i = 0x20; i < 0x3F; i++) {
+            func_80079784(i);
+        }
+        D_800ADB50 = 1;
+    } else {
+        for (i = 0x1F; i >= 0; i--) {
+            func_80079784(i);
+        }
+        func_80079784(0);
+        D_800ADB50 = 0;
+    }
+    func_80070508();
+    func_800775F8();
+    rect.w = 0x40;
+    rect.h = 0x100;
+    rect.x = 0x2C0;
+    rect.y = 0x100;
+    LoadImage(&rect, saved_b);
+    DrawSync(0);
+    rect.x = 0x3C0;
+    LoadImage(&rect, saved_a);
+    DrawSync(0);
+    func_800320E8(saved_b);
+    func_800320E8(saved_a);
+    func_800320E8(menu);
+    func_80028470(4, 0);
+    if (D_800B2078.unk2264 != 0) {
+        if (D_8004F370 == 0) {
+            D_800ADB20 = func_80031BDC((end & 0xFFFFFF) - 0x1DC008, 1);
+        } else {
+            D_800ADB20 = func_80031BDC(func_800288EC(0x6B9), 1);
+        }
+        source = D_800ADB20;
+        memcpy(source, module, func_800288EC(0x6B9));
+        func_800320E8(module);
+    }
+    SetGeomOffset(0xA0, 0x70);
+    SetGeomScreen(D_800AF880.projection);
+    func_80077C88();
+    if (D_800ADB64 == 1) {
+        D_8006FABC[2] = 0xFF;
+        D_8006FABC[1] = 0xFF;
+        D_8006FABC[0] = 0xFF;
+        D_8004F320 = 0;
+        D_8004F31C = 0;
+        func_8001B044();
+        func_8001B3A8();
+        func_800775F8();
+        D_800ADBEC = 0;
+        D_800ADB05 = 1;
+    } else {
+        for (i = 0; i < 3; i++) {
+            if (D_8006FABC[i] != 0xFF) {
+                menu = func_80031BDC(func_800288EC(D_8006FABC[i] + 5), 1);
+                func_800295D8(D_8006FABC[i] + 5, menu, 0, 0x80);
+                func_80028A60(0);
+                func_80032EB4(menu, D_8005A414[i]);
+                func_800320E8(menu);
+            }
+        }
+        func_800A2488();
+        func_800775F8();
+    }
+    D_800ADB64 = 0xFF;
+    func_80077544();
+    D_8004F350 = 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800799D4);
+#endif
 
 /* Set a quad's texture coordinates, each clamped to 0..255. */
 void func_8007A44C(POLY_FT4 *poly, s16 u0, s16 v0, s16 u1, s16 v1, s16 u2, s16 v2, s16 u3, s16 v3) {
