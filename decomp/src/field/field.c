@@ -774,9 +774,47 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007CD80);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007D3D4);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007D818);
+/* Normalise a 20.12 vector, pointing it along its largest component. */
+void func_8007D818(VECTOR *v, SVECTOR *out) {
+    s32 largest = func_8007D8B4(v->vx, v->vy, v->vz);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007D8B4);
+    v->vx >>= 12;
+    v->vy >>= 12;
+    v->vz >>= 12;
+    if (largest < 0) {
+        v->vx = -v->vx;
+        v->vy = -v->vy;
+        v->vz = -v->vz;
+    }
+    func_80048D7C(v, out);
+}
+
+/* The component of largest magnitude (0 when none is strictly ahead). */
+s32 func_8007D8B4(s32 x, s32 y, s32 z) {
+    s32 ax = x;
+    s32 ay = y;
+    s32 az = z;
+
+    if (ax < 0) {
+        ax = -ax;
+    }
+    if (ay < 0) {
+        ay = -ay;
+    }
+    if (az < 0) {
+        az = -az;
+    }
+    if (ax >= ay && ax >= az) {
+        return x;
+    }
+    if (ay >= ax && ay >= az) {
+        return y;
+    }
+    if (az >= ax && az >= ay) {
+        return z;
+    }
+    return 0;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007D93C);
 
@@ -786,9 +824,33 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007DCF8);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007DECC);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007E114);
+/* Set a dialogue window's rectangle. */
+void func_8007E114(s32 window, s32 x, s32 y, s32 w, s32 h) {
+    D_800C2698[window].rect.x = x;
+    D_800C2698[window].rect.y = y;
+    D_800C2698[window].rect.w = w;
+    D_800C2698[window].rect.h = h;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007E16C);
+/* Place a quad's corners at (x, y) with size (w, h), optionally mirrored. */
+void func_8007E16C(POLY_FT4 *poly, s32 x, s32 y, s32 w, s32 h, s32 mirror) {
+    if (mirror == 0) {
+        x--;
+        poly->x0 = x;
+        poly->x1 = x + w;
+        poly->x2 = x;
+        poly->x3 = x + w;
+    } else {
+        poly->x1 = x;
+        poly->x0 = x + w;
+        poly->x3 = x;
+        poly->x2 = x + w;
+    }
+    poly->y0 = y;
+    poly->y1 = y;
+    poly->y2 = y + h;
+    poly->y3 = y + h;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007E1C0);
 
@@ -802,27 +864,111 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007F814);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007F8DC);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007FFE8);
+/* Close every dialogue window that is not busy. */
+void func_8007FFE8(void) {
+    s32 window;
+
+    for (window = 0; window < 4; window++) {
+        if (D_800C2698[window].busy == 0) {
+            func_8007F6F8(window);
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008004C);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800805F4);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800806E4);
+/* The first dialogue window whose age is zero, or 0xffff. */
+s32 func_800806E4(void) {
+    s32 window;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80080720);
+    for (window = 0; window < 4; window++) {
+        if (D_800C2698[window].age == 0) {
+            return window;
+        }
+    }
+    return 0xFFFF;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80080760);
+/* 0 when a dialogue window is free, else -1. */
+s32 func_80080720(void) {
+    s32 window;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800807B4);
+    for (window = 0; window < 4; window++) {
+        if (D_800C2698[window].age == 0xFFFF) {
+            return 0;
+        }
+    }
+    return -1;
+}
+
+/* The oldest dialogue window in use, or 0xffff. */
+s32 func_80080760(void) {
+    s32 oldest_age = 0;
+    s32 oldest = 0xFFFF;
+    s32 window;
+
+    for (window = 0; window < 4; window++) {
+        if (D_800C2698[window].age != 0xFFFF && D_800C2698[window].age >= oldest_age) {
+            oldest_age = D_800C2698[window].age;
+            oldest = window;
+        }
+    }
+    return oldest;
+}
+
+/* Age the windows in use and take the first free one (age 0); 0xffff when
+ * all are in use. */
+s32 func_800807B4(void) {
+    s32 window;
+
+    for (window = 0; window < 4; window++) {
+        if (D_800C2698[window].age != 0xFFFF) {
+            D_800C2698[window].age++;
+        }
+    }
+    for (window = 0; window < 4; window++) {
+        if (D_800C2698[window].age == 0xFFFF) {
+            D_800C2698[window].age = 0;
+            return window;
+        }
+    }
+    return 0xFFFF;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008083C);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80080968);
+/* The collision attribute under an actor on its layer, or 0 when the layer
+ * is switched off for it. */
+u32 func_80080968(FieldActor *actor) {
+    s16 layer = actor->layer;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800809D0);
+    if ((actor->layer_flags >> (layer + 3)) & 1) {
+        return 0;
+    }
+    return D_800AFB20[D_800AFB24[layer][actor->triangle[layer]].attribute];
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80080A18);
+/* Frames (in 800b14ac, two per step) and height of a jump under the actor's
+ * gravity from the fixed launch speed. */
+s32 func_800809D0(FieldActor *actor) {
+    s32 speed = -0x14D000;
+    s32 height = 0;
+
+    D_800B14AC = 0;
+    do {
+        height += speed;
+        speed += actor->gravity;
+        D_800B14AC += 2;
+    } while (speed <= 0);
+    return height >> 16;
+}
+
+/* The next word of the current descriptor's actor list. */
+s32 func_80080A18(void) {
+    return D_800AFB10[D_800ADB58].actor->list[D_800ADB5C++];
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80080A74);
 

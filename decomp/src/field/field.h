@@ -140,13 +140,53 @@ typedef struct {
 /* One 0x138-byte event actor record. */
 typedef struct FieldActor {
     u32 flags;       /* 000 */
-    u32 layer_flags; /* 004 */
-    u8 unk008[0x14 - 0x8];
+    u32 layer_flags; /* 004: bits 3+ switch collision layers off */
+    s16 triangle[4]; /* 008: current collision triangle per layer */
+    s16 layer;       /* 010 */
+    u8 unk012[2];
     u32 unk014;      /* 014 */
-    u8 unk018[0xF4 - 0x18];
-    s16 scale[3]; /* 0F4 */
-    u8 unk0FA[0x138 - 0xFA];
+    u8 unk018[4];
+    s32 gravity;     /* 01C */
+    u8 unk020[0xF4 - 0x20];
+    s16 scale[3];    /* 0F4 */
+    u8 unk0FA[0x118 - 0xFA];
+    s32 *list;       /* 118 */
+    u8 unk11C[0x138 - 0x11C];
 } FieldActor;
+
+/* A 14-byte collision triangle; +0c indexes the attribute table. */
+typedef struct {
+    s16 unk00[6];
+    u8 attribute;
+    u8 unk0D;
+} CollisionTriangle;
+
+/* One of the four 0x498-byte dialogue windows at 800c2698. */
+typedef struct {
+    u8 unk000[0xAC];
+    RECT rect;       /* 0AC */
+    u8 unk0B4[0x40E - 0xB4];
+    s16 busy;        /* 40E */
+    u16 age;         /* 410: 0xffff when free */
+    u8 unk412[0x498 - 0x412];
+} DialogueWindow;
+
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    u8 u0, v0;
+    u16 clut;
+    s16 x1, y1;
+    u8 u1, v1;
+    u16 tpage;
+    s16 x2, y2;
+    u8 u2, v2;
+    u16 pad1;
+    s16 x3, y3;
+    u8 u3, v3;
+    u16 pad2;
+} POLY_FT4;
 
 /* One 0x5C-byte descriptor; one per event actor. */
 typedef struct FieldDescriptor {
@@ -178,6 +218,7 @@ typedef struct {
 } FieldSlot6;
 
 /* Resident services. */
+extern void func_80048D7C(VECTOR *v, SVECTOR *out); /* VectorNormalS */
 extern s32 func_8003F8B0(s32 angle); /* rcos */
 extern s32 func_8003F8CC(s32 angle); /* rsin */
 extern void func_80040454(void);
@@ -221,6 +262,8 @@ extern void func_800496AC(void);                               /* PopMatrix */
 extern void func_8004A6DC(SVECTOR *v, s32 *out, s32 *flag); /* RotTrans */
 
 /* Field overlay. */
+extern s32 func_8007D8B4(s32 x, s32 y, s32 z);
+extern void func_8007F6F8(s16 window);
 extern void func_800775F8(void);
 extern void func_80071EE8(void);
 extern void func_80077884(void);
@@ -250,6 +293,12 @@ extern s32 D_8004F34C; /* current map */
 extern u8 D_800625FC[2][0x22]; /* pad buffers */
 
 /* Field state. */
+extern s32 D_800ADB58; /* descriptor whose list is read */
+extern s32 D_800ADB5C; /* list position */
+extern u32 *D_800AFB20; /* collision attributes */
+extern CollisionTriangle *D_800AFB24[4]; /* collision triangles per layer */
+extern u16 D_800B14AC;
+extern DialogueWindow D_800C2698[4];
 extern s32 D_800ADC10; /* scratchpad words in use */
 extern void *D_800B0054; /* pointer pad buffers */
 extern void *D_800B0058;
