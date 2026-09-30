@@ -734,7 +734,113 @@ void func_80075060(s32 lost) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_800751C8);
+/* Referee of the bout: ring-out and knock-out checks, the end of the bout
+ * (draw or winner, with the debug controller dump), the start captions
+ * while the start countdown runs, and the distance and angle between the
+ * two actors. */
+void func_800751C8(Actor *first, Actor *second) {
+    char text[16];
+
+    D_8009294C++;
+    func_8007E894(0xA0, 0x64);
+    if (!func_8008F4F4(first, 0x60) || !func_8008F4F4(second, 0x60)) {
+        if (D_800928C4 != 0 && !func_8008F9B0(first) && !func_8008F9B0(second)) {
+            D_80091144 = 1;
+            D_80091145 = 0xA;
+            func_800720D4();
+        }
+    }
+    if (D_80092638 != 0) {
+        if (D_80092640++ >= 0x3D) {
+            func_80083C0C(D_80092890 == 2 ? 2 : 4);
+            func_80019964("gm");
+            func_80031BDC(1, 0);
+            func_80019964(" fin\n");
+        }
+        if (D_80092890 == 2) {
+            func_8007EC54(D_8006FC3C);
+        } else {
+            func_8007EC54(D_8006FC48);
+        }
+    } else if (first->flags & 0x800000) {
+        if (second->flags & 0x800000) {
+            D_80092638 = 1;
+            D_800928D4 = 0;
+            D_80092890 = 2;
+            D_80092918++;
+        } else {
+            D_80097010.unkF2++;
+            D_800928D4 = 0;
+            D_80092638 = 1;
+            D_80092890 = 1;
+            if (second->flags & 0x40) {
+                D_800928FC = 0;
+            } else {
+                D_800928FC = 1;
+            }
+            func_80075060(0);
+        }
+    } else if (second->flags & 0x800000) {
+        D_8009872C.unkF2++;
+        D_80092638 = 1;
+        D_800928D4 = 0;
+        D_80092890 = 0;
+        D_800928FC = 0;
+        func_80075060(1);
+        if ((second->flags & 0x40) && D_800928C8 != 3) {
+            func_80019964(D_8006FC54);
+            func_80031BDC(1, 2);
+            func_80019964(" fin\n");
+            func_80088BD4(second->model_id);
+            func_80019964(D_8006FC58);
+            func_80031BDC(1, 2);
+            func_80019964(D_8006FC5C);
+        }
+    }
+    if (D_8009263C != 0) {
+        if (D_8009263C < 0x1E) {
+            if (func_80083CD8() != 7 && D_800928C8 != 4) {
+                func_8007EC54(D_8006FC64);
+            }
+            D_800928D4 = 1;
+        } else if (D_8009263C < 0x3C) {
+            if (func_80083CD8() != 7) {
+                if (D_800928C8 == 4) {
+                    func_8007EC54(D_8006FC6C);
+                    if (D_80092884 != 0) {
+                        func_8007EC54(D_8006FC74);
+                        func_8007EC54(D_8006FC78);
+                    }
+                } else {
+                    func_8007EC54(D_8006FC8C);
+                    if (D_80092884 != 0) {
+                        func_8007EC54(D_8006FC74);
+                        func_8007EC54(D_8006FC94);
+                    }
+                }
+            }
+        } else if (func_80083CD8() != 7) {
+            if (D_800928C8 == 4) {
+                func_8007EC54(D_8006FCA8);
+                if (D_80092884 != 0) {
+                    func_8007EC54(D_8006FC74);
+                    func_8007EC54(D_8006FC78);
+                }
+            } else {
+                sprintf(text, D_8006FCB4, D_80092950);
+                func_8007EC54(text);
+                if (D_80092884 != 0) {
+                    func_8007EC54(D_8006FC74);
+                    func_8007EC54(D_8006FC94);
+                }
+            }
+        }
+        D_8009263C--;
+    }
+    D_80092850 = func_800887A4(&first->pos, &second->pos);
+    D_8009284C = func_80088838(&first->pos, &second->pos);
+    D_80092934 = ratan2(first->pos.vx - second->pos.vx, first->pos.vz - second->pos.vz);
+}
 
 /* The other actor's value 15EC scaled by amount / 32, less this actor's
  * value 15EE. */
