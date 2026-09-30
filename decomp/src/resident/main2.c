@@ -1191,7 +1191,57 @@ void func_800372CC(void) {
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800372CC);
 #endif
 
+/* Flush this frame's console sprites (and texture page, and background
+ * tile) into `ot`, or into the console's own ordering table, drawn at once,
+ * when `ot` is NULL or -1; then flip the sprite buffers and home the cursor.
+ * Nonmatching: the original copies the buffer index and the own-table flag
+ * into fresh registers before their last uses. */
+#ifdef NON_MATCHING
+void func_80037324(u_long *ot) {
+    Console *con = D_80059394;
+    s32 own;
+    s32 index;
+    s32 n;
+    SPRT_8 *sprite;
+
+    if (con != NULL) {
+        own = 0;
+        if (con->flags & 1) {
+            index = 0;
+            con->flags2E &= ~1;
+        } else {
+            index = con->flags2E & 1;
+            if (index) {
+                con->flags2E &= ~1;
+            } else {
+                con->flags2E |= 1;
+            }
+        }
+        if (ot == NULL || ot == (u_long *)-1) {
+            DrawSync(0);
+            ot = &con->ot[index];
+            own = 1;
+            TermPrim(ot);
+        }
+        n = con->unk34;
+        sprite = (SPRT_8 *)con->buffer[index];
+        while (n != 0) {
+            func_800317E0(ot, sprite++);
+            n--;
+        }
+        AddPrim(ot, &con->tpage[index]);
+        if (con->flags & 0x10) {
+            func_80031804(ot, &con->tile[index]);
+        }
+        func_800372CC();
+        if (own) {
+            DrawOTag(ot);
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80037324);
+#endif
 
 void func_8003747C(s32 value) {
     D_800593A0 = value;

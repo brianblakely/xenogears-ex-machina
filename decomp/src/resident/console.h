@@ -16,7 +16,8 @@ typedef struct {
 /* Resident debug text console (the default heap/printf report output).
  * Unknown bytes keep their offsets. */
 typedef struct {
-    u16 flags;       /* bit 3: stop at the right edge instead of wrapping */
+    u16 flags;       /* bit 0: single buffered; bit 3: stop at the right edge
+                      * instead of wrapping; bit 4: background tile */
     u8 unk2[2];
     u8 *buffer[2];   /* sprite packet buffers, selected by flags2E bit 0 */
     s16 left;        /* window */
@@ -27,7 +28,7 @@ typedef struct {
     s16 unk16;       /* line height */
     u8 r, g, b;
     u8 mode;         /* bit 0: bright colour */
-    u8 unk1C[0x10];
+    DR_TPAGE tpage[2]; /* font texture page, per buffer */
     s16 capacity;    /* sprites per frame */
     u16 flags2E;     /* bit 1: 8-column font sheet; bit 2: upper case only;
                       * bit 3: proportional widths */
@@ -37,8 +38,9 @@ typedef struct {
     s16 unk36;       /* line start */
     u8 *current;     /* next sprite in the active buffer */
     u16 cluts[4];    /* font CLUTs */
-    u8 unk44[0x20];
-    u8 widths[0x68]; /* proportional widths from character 0x20 */
+    TILE tile[2];    /* background, per buffer */
+    u8 widths[0x60]; /* proportional widths from character 0x20 */
+    u_long ot[2];    /* own ordering tables, per buffer */
     s16 saved_x;
     s16 saved_y;
     s16 saved_36;
@@ -57,6 +59,10 @@ void func_800379B4(s32 a0);
 void func_800379C8(char *format, ...); /* report printf */
 void func_800379D8(s32 scene, s32 a1, void *a2, void *a3, void *a4);
 void func_80037B88(s32 a0);
+
+/* Hand-written ordering table link helpers (800315a0-80031894). */
+void func_800317E0(u_long *ot, void *prim);
+void func_80031804(u_long *ot, void *prim);
 void func_80037DC0(void);
 
 #endif
