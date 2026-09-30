@@ -8567,7 +8567,34 @@ void func_8009BB0C(void) {
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009BB0C);
 #endif
 
+#ifdef NON_MATCHING
+/* Event 0xa9: once this actor's dialogue window has its answer (or is
+ * still being typed), highlight lines op1 >> 4 .. op1 & 0xf as a choice. */
+void func_8009BC98(void) {
+    s32 window;
+    u32 first;
+
+    if (func_8009CD18(&window) == 0) {
+        D_800AFC7C += 8;
+        if (func_80033CD0(&D_800C2698[window].text) == 1 ||
+            (D_800C2698[window].text.unk84 != 0 && D_800C2698[window].text.unk6C != 0)) {
+            D_800C2698[window].status = 0;
+            D_800B0078->unk081 = 0xFF;
+            first = EVENT_OPERAND_BYTE(1) >> 4;
+            D_800C2698[window].unk37E = first;
+            D_800C2698[window].unk382 = 0;
+            D_800C2698[window].unk380 = (EVENT_OPERAND_BYTE(1) & 0xF) - first + 1;
+            func_80034800(&D_800C2698[window].text, 0xEF, 0x1E, 0xF0);
+            D_800B0078->pc += 2;
+        }
+    } else {
+        D_800B0078->pc += 2;
+    }
+    D_800B00C0 = 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009BC98);
+#endif
 
 /* Whether the current actor's octant (state bits 9-11) is within four
  * octants past the camera's. */

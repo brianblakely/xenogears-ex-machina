@@ -40,4 +40,8 @@ extern s32 D_800ADB70; /* movie requested */
 
 extern void func_800379C8(char *format, ...); /* resident debug print */
 
+/* Resident text box calls (main2.c). */
+extern s32 func_80033CD0(TextBox *box); /* chosen answer, 0 while open */
+extern void func_80034800(TextBox *box, s32 r, s32 g, s32 b);
+
 #endif
