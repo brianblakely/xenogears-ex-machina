@@ -14,6 +14,8 @@
 #include "effect.h"
 #include "objects.h"
 #include "popup.h"
+#include "frame.h"
+#include "stage.h"
 
 /* Select script index of an effect script file: copy its entry into
  * D_800C3BD0 (relocating its offsets to addresses unless the file is already
@@ -526,7 +528,45 @@ void func_800BE330(s32 value) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BE538);
+/* Run up to three commands (kinds 0, 1 and 10) on slot's sprite outside the
+ * battle menu and wait frames until they are done. */
+void func_800BE538(s32 slot, s32 first, s32 second, s32 third) {
+    SlotSprite *sprite;
+    s32 mode;
+    BattleMenu *menu;
+
+    D_80059464 = 0;
+    D_800591AC = 1;
+    sprite = BATTLE_FRAME.slotSprites[slot];
+    D_800C3780 = 1;
+    if (sprite != NULL) {
+        mode = sprite->mode;
+        func_800245D8(sprite, 10);
+        menu = D_800C3610;
+        D_800C3610 = (BattleMenu *)1;
+        if (first) {
+            func_800BD3AC(sprite, first, 0);
+        }
+        if (second) {
+            func_800BD3AC(sprite, second, 1);
+        }
+        if (third) {
+            func_800BD3AC(sprite, third, 10);
+        }
+        D_800C3610 = menu;
+        while (func_800BF6F8()) {
+            func_800BE790();
+        }
+        while (sprite->mode == 10) {
+            func_800BE790();
+        }
+        func_800245D8(sprite, mode);
+    }
+    D_800C3780 = 0;
+    func_800BE0DC();
+    D_80059464 = 0;
+    D_800591AC = 0;
+}
 
 /* Write value as digits hexadecimal glyphs (D_800C3784, plus base) after
  * the count in text. */
@@ -574,7 +614,95 @@ void func_800BE6E8(s32 value, u8 *text, s32 digits, u8 leading, s32 base) {
     text[0] = count + 1;
 }
 
+#ifdef NON_MATCHING
+/* Run one battle frame: swap the display buffers, read the controllers,
+ * update the sprites, the stage and the effects (the skipped frames once
+ * more each) with the stack in the scratchpad, draw, time the frame and
+ * present it; the outermost frame also runs the battle menu, a pending sound
+ * request and the deferred free of the objects' extra files. Nonmatching:
+ * the original rematerialises the frame's address at each use instead of
+ * keeping it in a saved register. */
+void func_800BE790(void) {
+    BattleFrame *frame = &BATTLE_FRAME;
+    FrameBuffer *buffer;
+    s32 skipped;
+
+    D_800C37D0++;
+    func_80019CA0();
+    D_800D309C.start = VSync(-1);
+    buffer = &frame->buffers[0];
+    if (frame->current == buffer) {
+        buffer = &frame->buffers[1];
+    }
+    frame->current = buffer;
+    frame->ot = buffer->ot;
+    ClearOTagR(buffer->ot, 0x1000);
+    frame->buffer = 1 - frame->buffer;
+    if (D_80010000 != -1) {
+        func_800BEBC4();
+        __asm__ volatile(".word 0x0001000D"); /* break 1: the debugger breakpoint */
+        func_80280A9C();
+    }
+    func_800250E0(frame->buffer);
+    func_800BBAB8();
+    func_800BB9D4();
+    func_80024FF4(&D_800D309C.view);
+    func_80024FE4(frame->ot);
+    if (D_80010000 != -1) {
+        func_80037324(frame->ot);
+    }
+    func_800A9A50(&D_800D309C.view, (s32)D_800CCB94, D_8005956C, frame->buffer);
+    SPAD_STACK_ENTER();
+    func_8001D468();
+    func_8001C9F8();
+    func_8001C964();
+    for (skipped = D_80059494 - 1; skipped != -1; skipped--) {
+        func_800BBAB8();
+        func_8001C964();
+    }
+    SPAD_STACK_LEAVE();
+    func_80076544();
+    func_8008A9C0(0);
+    while (--D_80059494 != -1) {
+        func_8008A9C0(1);
+    }
+    D_800D309C.drawn = VSync(1);
+    DrawSync(0);
+    D_800D309C.synced = VSync(1);
+    D_80059494 = VSync(-1) - D_800D309C.start - D_80059198;
+    if (D_80059494 < 0) {
+        D_80059494 = 0;
+    }
+    if (D_80059494 >= 5) {
+        D_80059494 = 4;
+    }
+    frame->frameTicks = D_80059494 + D_80059198;
+    VSync(D_80059198 != 0 ? D_80059198 + 1 : 0);
+    PutDispEnv(frame->current->dispEnv);
+    PutDrawEnv(frame->current->drawEnv);
+    func_80025044();
+    DrawOTag(&frame->current->ot[0xFFF]);
+    func_800BEB04();
+    if (D_800C37D0 == 1) {
+        if (D_800C3610 != NULL) {
+            D_800C3610->update(D_800C3610);
+        }
+        if (D_800591B4 != 0) {
+            u16 sound = D_800591B4;
+
+            D_800591B4 = 0;
+            func_800B8068(sound);
+        }
+        if (D_800C37CC != 0 && func_800286CC() == 0) {
+            D_800C37CC = 0;
+            func_800B136C();
+        }
+    }
+    D_800C37D0--;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BE790);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BEB04);
 

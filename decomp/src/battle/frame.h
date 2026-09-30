@@ -1,0 +1,135 @@
+#ifndef BATTLE_FRAME_H
+#define BATTLE_FRAME_H
+
+/* The battle's frame loop, controller state and slot sprites (800BE538-
+ * 800BF0B4): the late unit addresses the area from D_800C3EB0 as one
+ * aggregate, BattleFrame. */
+
+#include "common.h"
+#include "psyq.h"
+#include "psyq/libetc.h"
+#include "psyq/libapi.h"
+
+/* One of the two display buffers (0x4070 bytes). */
+typedef struct {
+    u8 drawEnv[0x5C];  /* DRAWENV */
+    u8 dispEnv[0x14];  /* 0x5C: DISPENV */
+    u32 ot[0x1000];    /* 0x70: cleared in reverse */
+} FrameBuffer;
+
+/* Controller state history entry (8 bytes). */
+typedef struct {
+    u16 held;
+    u16 pressed;
+    u16 released;
+    u16 time;
+} PadRecord;
+
+/* A slot's sprite (a resident sprite; fields as far as used). */
+typedef struct {
+    u8 pad0[0x74];
+    s32 field74;  /* 0x74 */
+    u8 pad78[0xA0 - 0x78];
+    u16 x;        /* 0xA0 */
+    u8 padA2[2];
+    u16 z;        /* 0xA4 */
+    u8 padA6[0xAF - 0xA6];
+    s8 mode;      /* 0xAF: 10 while running commands */
+} SlotSprite;
+
+/* The battle's frame state from D_800C3EB0. */
+typedef struct {
+    u8 pad0[0xB70];
+    FrameBuffer buffers[2];     /* 0x0B70 */
+    FrameBuffer *current;       /* 0x8C50 */
+    u32 *ot;                    /* 0x8C54 */
+    u16 held;                   /* 0x8C58 */
+    u16 held2;                  /* 0x8C5A: the second controller */
+    u16 pressed;                /* 0x8C5C */
+    u16 pressed2;               /* 0x8C5E */
+    u16 released;               /* 0x8C60 */
+    u16 heldOnly;               /* 0x8C62: held on the first, not the second */
+    PadRecord history[4];       /* 0x8C64: the last changes, newest first */
+    s32 buffer;                 /* 0x8C84: the buffer being drawn */
+    u8 pad8C88[4];
+    SlotSprite *slotSprites[11]; /* 0x8C8C */
+    u8 pad8CB8[0x8DAC - 0x8CB8];
+    s32 frameTicks;             /* 0x8DAC: vertical blanks of the last frame */
+} BattleFrame;
+
+#define BATTLE_FRAME (*(BattleFrame *)&D_800C3EB0)
+
+/* Frame timing and the view (D_800D309C). */
+typedef struct {
+    u8 pad0[0x20];
+    Matrix view;     /* 0x20 */
+    s32 drawn;       /* 0x40: vertical blank after drawing */
+    s32 synced;      /* 0x44: after the GPU finished */
+    s32 start;       /* 0x48: at the frame's start */
+} FrameClock;
+
+extern FrameClock D_800D309C;
+extern s32 D_800C37D0;    /* frame loop nesting */
+extern s16 D_80059494;    /* extra vertical blanks of the last frame (0-4) */
+extern s32 D_80059198;    /* frame skip */
+extern u16 D_800591B4;    /* a sound request */
+extern u8 D_800C37CC;     /* free the objects' extra files once idle */
+extern u8 D_800C3780;     /* a slot's sprite commands run */
+extern s32 D_80010000;    /* the debugger's word, -1 none */
+extern u32 *D_8005956C;
+extern u8 D_800CCB94[];
+extern u16 D_800D30E4;    /* the frame time */
+
+/* The battle menu (D_800C3610, 0x50 bytes). */
+typedef struct BattleMenu {
+    u8 pad0[4];
+    s32 field4;                             /* 0x04 */
+    void (*update)(struct BattleMenu *menu); /* 0x08 */
+    u8 padC[0x2C - 0xC];
+    s32 field2C;                            /* 0x2C */
+    s32 field30;                            /* 0x30 */
+    s32 field34;                            /* 0x34 */
+    u8 pad38[0x48 - 0x38];
+    u8 field48;                             /* 0x48 */
+    u8 field49;                             /* 0x49 */
+    u8 field4A;                             /* 0x4A */
+    u8 pad4B[0x50 - 0x4B];
+} BattleMenu;
+
+extern BattleMenu *D_800C3610;
+
+/* SDK calls of the frame loop. */
+void ClearOTagR(u32 *ot, s32 n);
+void DrawOTag(u32 *ot);
+void PutDrawEnv(void *env);
+void PutDispEnv(void *env);
+
+/* Resident services. */
+void func_80019CA0(void);
+void func_8001C964(void);
+void func_8001C9F8(void);
+void func_8001D468(void);
+void func_80024FE4(u32 *ot);
+void func_80024FF4(Matrix *view);
+void func_80025044(void);
+void func_800250E0(s32 buffer);
+s32 func_800286CC(void); /* the disc is busy */
+void func_80037324(u32 *ot);
+void func_80280A9C(void); /* the debugger's frame hook */
+void func_800245D8(SlotSprite *sprite, s32 mode);
+u16 func_8003569C(s32 pad);
+
+void func_80076544(void);
+void func_8008A9C0(s32 skipped);
+void func_800A9A50(Matrix *m, s32 arg1, u32 *ot, s32 buffer);
+void func_800B136C(void);
+void func_800B8068(u16 sound);
+void func_800BB9D4(void);
+void func_800BBAB8(void);
+void func_800BD3AC(SlotSprite *sprite, s32 command, s32 kind);
+void func_800BE0DC(void);
+void func_800BEB04(void);
+void func_800BEBC4(void);
+void func_800BEC18(void);
+
+#endif

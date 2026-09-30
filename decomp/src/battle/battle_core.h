@@ -741,7 +741,7 @@ void func_8009413C(u8 member, u8 release);
 void func_800800E8(u8 member);
 void func_8007FB70(u8 member);
 s32 func_8009ADA0(u8 slot, s32 *amounts);
-void func_800BE538(u8 slot, s32 a, s32 b, s32 c);
+void func_800BE538(s32 slot, s32 a, s32 b, s32 c);
 s32 func_80076A10(s32 id, POLY_FT4 *prims, s16 x, s16 y);
 s32 func_800877E0(u8 actor, u8 target);
 void func_80085D34(void);
