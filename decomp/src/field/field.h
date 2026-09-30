@@ -113,7 +113,7 @@ typedef struct FieldActor {
     void *unk110;    /* 110 */
     void *unk114;    /* 114 */
     s32 *list;       /* 118 */
-    u8 unk11C[2];
+    u16 unk11C;      /* 11C */
     s16 unk11E;      /* 11E */
     void *unk120;    /* 120 */
     s16 unk124;      /* 124: -1 when +120 is free */
@@ -175,7 +175,12 @@ typedef struct {
 
 /* One 0x5C-byte descriptor; one per event actor. */
 typedef struct {
-    u8 unk00[0x2C];
+    u8 unk00[0x0C];
+    s32 unk0C;      /* 0C */
+    u8 unk10[4];
+    s32 unk14;      /* 14 */
+    s32 unk18;      /* 18 */
+    u8 unk1C[0x2C - 0x1C];
     s16 unk2C;
     u8 unk2E[0x82 - 0x2E];
     s16 unk82;
@@ -478,6 +483,8 @@ typedef struct {
 } FieldSlot6;
 
 /* Resident services. */
+extern void func_8003A948(s32 sequence, s32, s32);
+extern void func_8003A9BC(s32 sequence, s32, s32);
 extern void func_8004A0EC(s32 r, s32 g, s32 b); /* SetBackColor */
 extern void func_800230A8(FieldModel *model);
 extern void func_800345E0(void *text);

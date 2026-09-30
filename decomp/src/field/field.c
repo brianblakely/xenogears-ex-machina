@@ -2796,7 +2796,23 @@ void func_8008C84C(void) {
     D_800B00C0 = 1;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008C938);
+/* Event: as 8008c84c through 8003a948 with selected operands 1 and 3. */
+void func_8008C938(void) {
+    s32 a;
+
+    if (D_8004F36C != 0) {
+        a = func_8009CF78(1, D_800ADC00[D_800B0078->pc + 5]);
+        func_8003A948(D_80062528, a, func_8009CFBC(3, D_800ADC00[D_800B0078->pc + 5]));
+        D_800B0078->pc += 6;
+    } else if (D_8004F324 == 0xFF) {
+        D_800B0078->pc += 6;
+    } else if (D_800ADB1C == 0) {
+        D_800B0078->pc += 6;
+    } else {
+        D_800B0078->pc--;
+    }
+    D_800B00C0 = 1;
+}
 
 /* Event: as 8008c84c through 8003a838. */
 void func_8008CA60(void) {
@@ -2816,7 +2832,23 @@ void func_8008CA60(void) {
     D_800B00C0 = 1;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008CB4C);
+/* Event: as 8008c938 through 8003a9bc. */
+void func_8008CB4C(void) {
+    s32 a;
+
+    if (D_8004F36C != 0) {
+        a = func_8009CF78(1, D_800ADC00[D_800B0078->pc + 5]);
+        func_8003A9BC(D_80062528, a, func_8009CFBC(3, D_800ADC00[D_800B0078->pc + 5]));
+        D_800B0078->pc += 6;
+    } else if (D_8004F324 == 0xFF) {
+        D_800B0078->pc += 6;
+    } else if (D_800ADB1C == 0) {
+        D_800B0078->pc += 6;
+    } else {
+        D_800B0078->pc--;
+    }
+    D_800B00C0 = 1;
+}
 
 /* Event: as 8008c84c through 8003aac4 with one operand. */
 void func_8008CC74(void) {
@@ -3296,7 +3328,35 @@ void func_8008E85C(void) {
     D_800B0078->pc += 5;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008E8C8);
+/* Event: by selector byte, clear (0) or set (1, keeping the heading goal)
+ * flag 0x8000, or set layer bit 19 (2); clearing also stops a model moving
+ * under bit 19. */
+void func_8008E8C8(void) {
+    FieldModel *model;
+
+    switch (D_800ADC00[D_800B0078->pc + 1]) {
+    case 0:
+        if (D_800B0078->flags & 0x8000) {
+            D_800B0078->flags &= ~0x8000;
+        }
+        if (D_800B0078->layer_flags & 0x80000) {
+            model = D_800AF880.components.descriptors[D_800AFD1C].model;
+            model->unk18 = 0;
+            model->unk14 = 0;
+            model->unk0C = 0;
+            D_800B0078->layer_flags &= ~0x80000;
+        }
+        break;
+    case 1:
+        D_800B0078->flags |= 0x8000;
+        D_800B0078->unk11C = D_800B0078->heading_goal;
+        break;
+    case 2:
+        D_800B0078->layer_flags |= 0x80000;
+        break;
+    }
+    D_800B0078->pc += 2;
+}
 
 /* Event: wait for 800adb7c, clearing it once seen; yield each time. */
 void func_8008E9F8(void) {
