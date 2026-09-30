@@ -1226,19 +1226,66 @@ void func_8008518C(Resource *resource, s32 arg) {
     resource->data = func_80031BDC(func_800288EC(resource->file), arg);
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800851D4);
+/* Leave the menu mode: stop its sound and streams, wait for drawing and
+ * dispatch the next mode. */
+void func_800851D4(void) {
+    func_8003852C(D_800927C4);
+    if (D_800917F0 != 0) {
+        func_80039C4C(D_80092948);
+        func_800399D4(D_80092948);
+    }
+    func_80088A40();
+    func_8001996C(1);
+    func_800445D0(0);
+    func_8004B54C(2);
+    D_8005061C = 1;
+    func_80019ACC(0);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80085264);
+/* Whether the scene is in a state that ends the menu mode. */
+s32 func_80085264(void) {
+    s32 done = 0;
+
+    if (D_80092794 == 5 || D_80092794 == 7 ||
+        (D_80092794 == 1 && D_800928C8 == 4 && D_8005061C == 0)) {
+        done = 1;
+    }
+    return done;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800852C4);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80085E34);
+/* Screen position of the left-hand gauge for a layout point. */
+void func_80085E34(DVector *point, DVector *out) {
+    out->vx = point->vx + 0x18;
+    out->vy = point->vy + 6;
+    out->vx += 0x4F;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80085E60);
+/* Screen position of the right-hand (mirrored) gauge for a layout point. */
+void func_80085E60(DVector *point, DVector *out) {
+    out->vx = 0x8B - point->vx;
+    out->vy = 0x20 - point->vy;
+    out->vx += 0x4F;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80085E90);
+/* Gauge x for a side (nonzero = mirrored). */
+void func_80085E90(s32 mirrored, s16 *out, s32 x) {
+    if (mirrored) {
+        *out = 0xDA - x;
+    } else {
+        *out = x + 0x67;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80085EAC);
+/* Gauge y for a side (nonzero = mirrored). */
+void func_80085EAC(s32 mirrored, s16 *out, s32 y) {
+    if (mirrored) {
+        *out = 0x20 - y;
+    } else {
+        *out = y + 6;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80085EC8);
 

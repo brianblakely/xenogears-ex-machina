@@ -11,6 +11,12 @@ typedef struct {
     s32 pad;
 } Vector;
 
+/* Screen point (libgte DVECTOR). */
+typedef struct {
+    s16 vx;
+    s16 vy;
+} DVector;
+
 /* libgte-layout short vector. */
 typedef struct {
     s16 vx;
@@ -98,5 +104,17 @@ void *func_800891C0(s32 id);
 s32 func_800288EC(s32 file);
 void *func_80031BDC(s32 file, s32 arg);
 void func_80083BB4(s32 both);
+
+/* Menu mode exit. */
+extern s32 D_800927C4;
+extern s32 D_800917F0;
+extern u8 D_8005061C;
+void func_8003852C(s32 arg);
+void func_80039C4C(s32 arg);
+void func_800399D4(s32 arg);
+void func_80088A40(void);
+void func_8001996C(s32 arg);
+void func_8004B54C(s32 arg);
+void func_80019ACC(s32 arg); /* resident mode dispatcher */
 
 #endif
