@@ -50,15 +50,18 @@ typedef struct {
 typedef struct BattleSprite {
     Fixed16 x, y, z;       /* 0x00 */
     s32 speed[3];          /* 0x0C */
-    u8 pad18[0x20 - 0x18];
+    s32 field18;           /* 0x18: bits 7-22 its speed setting */
+    u8 pad1C[0x20 - 0x1C];
     SpriteView *view;      /* 0x20 */
     u8 pad24[0x2B - 0x24];
     u8 colourFlags;        /* 0x2B */
     s16 scale;             /* 0x2C */
     s16 field2E;           /* 0x2E */
-    u8 pad30[0x34 - 0x30];
+    u8 pad30[0x32 - 0x30];
+    s16 direction;         /* 0x32 */
     u16 frame;             /* 0x34 */
-    u8 pad36[0x3C - 0x36];
+    u8 pad36[0x3A - 0x36];
+    u16 field3A;           /* 0x3A: scale script lengths with the sprite */
     union {
         u32 word;
         u8 bytes[4];
@@ -68,7 +71,7 @@ typedef struct BattleSprite {
     s32 framesLeft;        /* 0x64 */
     u8 pad68[0x6C - 0x68];
     struct BattleTask *task; /* 0x6C: its task (and draw task after it) */
-    u8 pad70[0x74 - 0x70];
+    struct BattleSprite *parent;  /* 0x70 */
     struct BattleSprite *partner; /* 0x74 */
     u8 pad78[0x9E - 0x78];
     s16 countdown;         /* 0x9E */
@@ -80,6 +83,11 @@ typedef struct BattleSprite {
         s8 bytes[4];
     } motion;              /* 0xAC: bit 2 mirrored */
 } BattleSprite;
+
+/* A little-endian s16 at index i of a sprite script, and the script data
+ * at the relative offset in a command's arguments. */
+#define SCRIPT_S16(p, i) ((((s8 *)(p))[(i) + 1] * 256) | (p)[i])
+#define SCRIPT_DATA(args) ((args) + SCRIPT_S16(args, 0))
 
 /* A point returned by value. */
 typedef struct {
@@ -154,5 +162,8 @@ void func_800A979C(s32 index, s16 x, s16 y, s16 z, s16 angle);
 void func_800B3CD4(); /* unprototyped (to, frames, red, blue, field4C, field4E) */
 void func_800BEE2C(s32 index, s32 mask, s32 mode);
 void func_800B6004();
+void func_80021B04(SVector *v, s32 x, s32 y, s32 z);
+void func_801FC4C4(SpriteAnchor *anchors, void *parts, Matrix *m, s32 a, s32 b, s32 c, s32 d, s32 e);
+void func_801FC53C(BattleSprite *sprite, s32 a, s32 b, s32 c, s32 d, s32 e, s32 f);
 
 #endif

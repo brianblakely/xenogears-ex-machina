@@ -747,14 +747,14 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B62
 /* Script command: fade the lights (800B3CD4) with the parameters at the
  * relative offset in args. */
 void func_800B639C(BattleSprite *sprite, u8 *args) {
-    s8 *fade = (s8 *)(args + ((((s8 *)args)[1] << 8) | args[0]));
+    s8 *fade = (s8 *)SCRIPT_DATA(args);
 
     func_800B3CD4((u8)fade[5], (u8)fade[3], (u8)fade[4], fade[0], fade[1], fade[2]);
 }
 
 /* Script command: upload the images at the relative offset in args. */
 void func_800B63F0(BattleSprite *sprite, u8 *args) {
-    func_8002DDE4(args + ((((s8 *)args)[1] << 8) | args[0]), 0, 0, 0, 0, 0, 0);
+    func_8002DDE4(SCRIPT_DATA(args), 0, 0, 0, 0, 0, 0);
 }
 
 /* Script command: draw sprite with the resident sprite drawer (80025A88). */
@@ -803,21 +803,178 @@ void func_800B6518(BattleSprite *sprite) {
     func_800223B0(sprite, direction);
 }
 
+#ifdef NON_MATCHING
+/* Script command: turn the sprite's speed towards its target by at most
+ * args[0] * 4 (of 4096) in each angle, keeping its length. */
+void func_800B65B0(BattleSprite *sprite, u8 *args) {
+    SVector want;
+    SVector angles;
+    Vector delta;
+    Vector squares;
+    Vector velocity;
+    SVector length;
+    Matrix m;
+    Vector speed;
+    s16 distance;
+    s16 speedLength;
+    s32 step;
+    s32 turn;
+    s32 difference;
+
+    delta.vx = sprite->target[0] - sprite->x.part.whole;
+    delta.vy = sprite->target[1] - sprite->y.part.whole;
+    delta.vz = sprite->target[2] - sprite->z.part.whole;
+    func_8004A414(&delta, &squares);
+    distance = SquareRoot0(squares.vx + squares.vz);
+    want.vy = -ratan2(delta.vz, delta.vx);
+    want.vz = ratan2(delta.vy, distance);
+    want.vx = 0;
+    velocity.vx = sprite->speed[0] >> 7;
+    velocity.vy = sprite->speed[1] >> 7;
+    velocity.vz = sprite->speed[2] >> 7;
+    func_8004A414(&velocity, &squares);
+    speedLength = SquareRoot0(squares.vy + squares.vx + squares.vz);
+    distance = SquareRoot0(squares.vx + squares.vz);
+    angles.vy = -ratan2(velocity.vz, velocity.vx);
+    angles.vz = ratan2(velocity.vy, distance);
+    angles.vx = 0;
+    step = args[0] * 4;
+    difference = ((s32)((u16)want.vy - (u16)angles.vy) << 20) >> 20;
+    turn = difference;
+    if (step < abs(difference)) {
+        turn = step;
+        if (difference < 0) {
+            turn = -step;
+        }
+    }
+    angles.vy += turn;
+    difference = ((s32)((u16)want.vz - (u16)angles.vz) << 20) >> 20;
+    turn = difference;
+    if (step < abs(difference)) {
+        turn = step;
+        if (difference < 0) {
+            turn = -step;
+        }
+    }
+    angles.vz += turn;
+    func_80021B04(&length, speedLength, 0, 0);
+    func_8003F738(&angles, &m);
+    ApplyMatrix(&m, &length, &speed);
+    sprite->speed[0] = speed.vx << 7;
+    sprite->speed[1] = speed.vy << 7;
+    sprite->speed[2] = speed.vz << 7;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B65B0);
+#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B6808);
+/* Script command: aim the sprite's speed (its speed setting, field18) at
+ * its target and face it that way. */
+void func_800B6808(BattleSprite *sprite) {
+    SVector angles;
+    Vector delta;
+    Vector squares;
+    SVector length;
+    Matrix m;
+    Vector speed;
+    s32 distance;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B6930);
+    delta.vx = sprite->target[0] - sprite->x.part.whole;
+    delta.vy = sprite->target[1] - sprite->y.part.whole;
+    delta.vz = sprite->target[2] - sprite->z.part.whole;
+    func_8004A414(&delta, &squares);
+    distance = SquareRoot0(squares.vx + squares.vz);
+    angles.vy = -ratan2(delta.vz, delta.vx);
+    angles.vz = ratan2(delta.vy, distance);
+    angles.vx = 0;
+    sprite->direction = angles.vy;
+    func_80021B04(&length, (sprite->field18 << 9) >> 16, 0, 0);
+    func_8003F738(&angles, &m);
+    ApplyMatrix(&m, &length, &speed);
+    sprite->speed[0] = speed.vx << 7;
+    sprite->speed[1] = speed.vy << 7;
+    sprite->speed[2] = speed.vz << 7;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B6990);
+/* Script command: set a 16.16 point to the script's three s16s. */
+void func_800B6930(Fixed16 *point, u8 *args) {
+    u8 *data = SCRIPT_DATA(args);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B69E4);
+    point[0].fixed = SCRIPT_S16(data, 0) << 16;
+    point[1].fixed = SCRIPT_S16(data, 2) << 16;
+    point[2].fixed = SCRIPT_S16(data, 4) << 16;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B6A50);
+/* Script command: set a vector to the script's three s16s. */
+void func_800B6990(s16 *vector, u8 *args) {
+    u8 *data = SCRIPT_DATA(args);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B6A7C);
+    s32 value;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B6B98);
+    value = SCRIPT_S16(data, 0);
+    vector[0] = value;
+    value = SCRIPT_S16(data, 2);
+    vector[1] = value;
+    value = SCRIPT_S16(data, 4);
+    vector[2] = value;
+}
+
+/* Script command: add the script's three s16s to a vector. */
+void func_800B69E4(s16 *vector, u8 *args) {
+    u8 *data = SCRIPT_DATA(args);
+
+    s32 value;
+
+    value = SCRIPT_S16(data, 0);
+    vector[0] += value;
+    value = SCRIPT_S16(data, 2);
+    vector[1] += value;
+    value = SCRIPT_S16(data, 4);
+    vector[2] += value;
+}
+
+/* Script command: take the speed of the sprite's parent. */
+void func_800B6A50(BattleSprite *sprite) {
+    BattleSprite *parent = sprite->parent;
+
+    sprite->speed[0] = parent->speed[0];
+    sprite->speed[1] = parent->speed[1];
+    sprite->speed[2] = parent->speed[2];
+}
+
+/* Script command: break the sprite's image into pieces (801FC4C4) with the
+ * script's parameters (scaled with the sprite when field3A is set), leaving
+ * it without an image. */
+void func_800B6A7C(BattleSprite *sprite, u8 *args) {
+    u8 *data = SCRIPT_DATA(args);
+    s32 a;
+    s32 b;
+    s32 c;
+    SpriteView *view;
+
+    if (sprite->field3A != 0) {
+        a = func_80022CAC(sprite, (((s8 *)data)[1] << 3) | data[0]) << 8;
+        b = func_80022CAC(sprite, data[2]) << 16;
+        c = func_80022CAC(sprite, data[3]) << 16;
+    } else {
+        a = ((((s8 *)data)[1] << 3) | data[0]) << 5;
+        b = data[2] << 13;
+        c = data[3] << 13;
+    }
+    view = sprite->view;
+    func_801FC4C4(view->anchors, view->parts, &view->matrix, a, b, c, data[4] * 16, data[5] * 4);
+    sprite->view->anchors = NULL;
+    sprite->view->parts = NULL;
+    sprite->view->part = NULL;
+}
+
+/* Script command: start a burst from the sprite (801FC53C) with the
+ * script's parameters. */
+void func_800B6B98(BattleSprite *sprite, u8 *args) {
+    u8 *data = SCRIPT_DATA(args);
+
+    func_801FC53C(sprite, data[0] * 16, data[1], ((s8 *)data)[2] * 8, data[3] * 8, ((s8 *)data)[4] * 8, data[5]);
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B6BFC);
 
