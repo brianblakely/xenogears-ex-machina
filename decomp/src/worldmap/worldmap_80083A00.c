@@ -456,7 +456,38 @@ s32 func_8008868C(void) {
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80088720);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80088B40);
+/* Link the listed scene objects to object 69 and place it at the actor;
+ * outside scene 0x99 also show them. */
+s32 func_80088B40(s32 index) {
+    WorldmapActor *actor;
+    SceneObject *object;
+    s32 i;
+    s32 result;
+
+    for (i = 0; D_8009AFDC[i] != -1; i++) {
+        func_800848B4(69, D_8009AFDC[i]);
+    }
+    actor = &D_8009BE24[index];
+    object = D_8009C620;
+    actor->state = 0;
+    if (D_8006EF64[0] == 0x99) {
+        result = 1;
+        actor->position.vx = 0x2000000;
+        actor->position.vz = 0x4120000;
+        actor->position.vy = 0;
+    } else {
+        object[69].visible = 1;
+        for (i = 0; D_8009AFDC[i] != -1; i++) {
+            object[D_8009AFDC[i]].visible = 1;
+        }
+        result = 3;
+    }
+    object += 69;
+    object->position.vx = actor->position.vx >> 12;
+    object->position.vy = actor->position.vy >> 12;
+    object->position.vz = actor->position.vz >> 12;
+    return result;
+}
 
 /* Show scene object 69 and the listed objects. */
 s32 func_80088C90(void) {
@@ -472,23 +503,20 @@ s32 func_80088C90(void) {
 }
 
 /* In scene 0x99, move scene object 69 to the actor (world units). */
-#ifdef NON_MATCHING /* object pointer folded into the field offsets */
 s32 func_80088D00(s32 index) {
     WorldmapActor *actor;
     SceneObject *object;
 
-    object = &D_8009C620[69];
+    object = D_8009C620;
     actor = &D_8009BE24[index];
-    if (D_8006EF64 == 0x99) {
+    object += 69;
+    if (D_8006EF64[0] == 0x99) {
         object->position.vx = actor->position.vx >> 12;
         object->position.vy = actor->position.vy >> 12;
         object->position.vz = actor->position.vz >> 12;
     }
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80088D00);
-#endif
 
 /* Place the actor just above the current area's scene object. */
 s32 func_80088D64(s32 index) {

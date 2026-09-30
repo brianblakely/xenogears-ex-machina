@@ -451,7 +451,7 @@ extern u16 D_8009B674[];    /* per area: scene object */
 void func_80087904(SceneObject *object, PolyFT4 *quads, s32 count, s32 abr);
 
 extern s16 D_8009AFDC[]; /* scene objects to show; -1 ends */
-extern u16 D_8006EF64;
+extern u16 D_8006EF64[]; /* scene id (first of the scene words) */
 extern void *D_8009BE1C[2]; /* effect quads, per display buffer */
 
 void func_8008BFD4(s32 index, VECTOR *position, s32 x, s32 z);
