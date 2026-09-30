@@ -107,7 +107,6 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8008C364", func_80
 /* Start party vehicle 1: place it, and while its member rides (movement
  * modes 1-3) put it under the player; modes 4-7 mark it boarded. Save its
  * spot and heading. */
-#ifdef NON_MATCHING /* store scheduling around the heading */
 s32 func_8008D3F0(s32 index) {
     WorldmapActor *actor;
     s32 result;
@@ -117,9 +116,9 @@ s32 func_8008D3F0(s32 index) {
     actor->motion.vz = 0;
     actor->motion.vy = 0;
     actor->motion.vx = 0;
+    actor->heading = D_8006EE54.unk5C;
     actor->turn = 0xC;
     actor->unk58 = 0xF;
-    actor->heading = D_8006EE54.unk5C;
     actor->unk5C = actor->heading;
     if (D_8009BE10 > 0) {
         if (D_8009BE10 < 4) {
@@ -140,9 +139,6 @@ s32 func_8008D3F0(s32 index) {
     D_8006EE54.unk5C = actor->heading;
     return result;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8008C364", func_8008D3F0);
-#endif
 
 /* Update a kind-1 actor; flag it while riding a vehicle. */
 s32 func_8008D520(s32 index) {
@@ -192,7 +188,6 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8008C364", func_80
 /* Start party vehicle 2: place it, and while its member rides (movement
  * modes 1-3) put it under the player; modes 4-7 mark it boarded. Save its
  * spot and heading. */
-#ifdef NON_MATCHING /* store scheduling around the heading */
 s32 func_8008DD6C(s32 index) {
     WorldmapActor *actor;
     s32 result;
@@ -202,9 +197,9 @@ s32 func_8008DD6C(s32 index) {
     actor->motion.vz = 0;
     actor->motion.vy = 0;
     actor->motion.vx = 0;
+    actor->heading = D_8006EE54.unk5E;
     actor->turn = 0xC;
     actor->unk58 = 0x1F;
-    actor->heading = D_8006EE54.unk5E;
     actor->unk5C = actor->heading;
     if (D_8009BE10 > 0) {
         if (D_8009BE10 < 4) {
@@ -225,9 +220,6 @@ s32 func_8008DD6C(s32 index) {
     D_8006EE54.unk5E = actor->heading;
     return result;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8008C364", func_8008DD6C);
-#endif
 
 /* Update a kind-2 actor; flag it while riding a vehicle. */
 s32 func_8008DE9C(s32 index) {
