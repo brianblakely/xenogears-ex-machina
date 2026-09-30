@@ -2000,7 +2000,12 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008C4B0);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008C620);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008C7C0);
+/* Shift a vector history: entries 4, 3 and 2 all take entry 0. */
+void func_8008C7C0(SVector *history) {
+    history[4] = history[0];
+    history[3] = history[4];
+    history[2] = history[3];
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008C828);
 
