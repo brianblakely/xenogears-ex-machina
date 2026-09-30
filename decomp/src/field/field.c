@@ -1361,9 +1361,70 @@ void func_8007D93C(s32 channel) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007DA44);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007DCF8);
+/* Move a displayed window's choice (+382 over +380 lines) with the pad and
+ * light its line; a window with +410 set lights none. */
+void func_8007DCF8(s32 window) {
+    if (D_800C2698[window].status == 0 && D_800C2698[window].timer == 0) {
+        if (D_800C2698[window].age == 0) {
+            if (D_800C3900 & 0x4000) {
+                D_800C2698[window].unk382++;
+                if (D_800C2698[window].unk380 - 1 < D_800C2698[window].unk382) {
+                    D_800C2698[window].unk382 = 0;
+                }
+            }
+            if (D_800C3900 & 0x1000) {
+                D_800C2698[window].unk382--;
+                if (D_800C2698[window].unk382 < 0) {
+                    D_800C2698[window].unk382 = D_800C2698[window].unk380 - 1;
+                }
+            }
+            func_80034874(&D_800C2698[window].text, D_800C2698[window].unk382 + D_800C2698[window].unk37E);
+        } else {
+            func_8003487C(&D_800C2698[window].text);
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007DECC);
+/* Reset the sixteen text texture windows and draw modes, and the four
+ * dialogue windows to free. */
+void func_8007DECC(void) {
+    RECT area;
+    RECT *window;
+    s32 i;
+
+    area.y = 0;
+    area.x = 0;
+    area.h = 0xFF;
+    area.w = 0xFF;
+    for (i = 0; i < 16; i++) {
+        window = &D_800AFC80[i];
+        window->y = 0;
+        D_800AFC80[i].x = 0;
+        window->h = 0xFF;
+        D_800AFC80[i].w = 0xFF;
+        window->y = 0;
+        D_800AFC80[i].x = 0;
+        window->h = 0xFF;
+        D_800AFC80[i].w = 0xFF;
+        SetDrawMode(&D_800B1DF4[0][i], 0, 0, GetTPage(0, 0, 0x380, 0x100), window);
+        SetDrawMode(&D_800B1DF4[1][i], 0, 0, GetTPage(0, 0, 0x380, 0x100), window);
+    }
+    for (i = 0; i < 4; i++) {
+        D_800C2698[i].owner = 0xFF;
+        D_800C2698[i].unk418 = 0xFF;
+        D_800C2698[i].status = -1;
+        D_800C2698[i].unk3C4 = -1;
+        D_800C2698[i].busy = -1;
+        D_800C2698[i].cleared = -1;
+        D_800C2698[i].age = 0xFFFF;
+        D_800C2698[i].owner = 0xFF;
+        D_800C2698[i].unk412 = 0;
+        func_8007EE0C(i);
+        D_800B068C[i] = -1;
+        SetDrawMode(&D_800C2698[i].modes[0], 0, 0, GetTPage(0, 0, 0x300, 0x100), &area);
+        SetDrawMode(&D_800C2698[i].modes[1], 0, 0, GetTPage(0, 0, 0x300, 0x100), &area);
+    }
+}
 
 /* Set a dialogue window's rectangle. */
 void func_8007E114(s32 window, s32 x, s32 y, s32 w, s32 h) {

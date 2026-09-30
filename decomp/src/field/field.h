@@ -179,14 +179,16 @@ typedef struct {
 
 /* One of the four 0x498-byte dialogue windows at 800c2698. */
 typedef struct {
-    u8 unk000[0x18];
+    DR_MODE modes[2]; /* 000: per buffer */
     TextBox text;    /* 018 */
     u8 unk0B4[0x37C - 0xB4];
     s16 status;      /* 37C: zero while displayed */
     s16 unk37E;      /* 37E: first line */
     s16 unk380;      /* 380: line count */
     s16 unk382;      /* 382 */
-    u8 unk384[0x408 - 0x384];
+    u8 unk384[0x3C4 - 0x384];
+    s16 unk3C4;      /* 3C4 */
+    u8 unk3C6[0x408 - 0x3C6];
     s16 timer;       /* 408 */
     u8 unk40A[0x40E - 0x40A];
     s16 busy;        /* 40E */
@@ -907,6 +909,12 @@ extern s32 D_800ADB5C; /* list position */
 
 extern u16 D_800B14AC;
 extern DialogueWindow D_800C2698[4];
+extern RECT D_800AFC80[16]; /* text texture windows */
+extern DR_MODE D_800B1DF4[2][16]; /* text draw modes per buffer */
+extern void func_8007EE0C(s32 window);
+extern u16 D_800C3900; /* pad buttons that move a window's choice */
+extern void func_80034874(TextBox *text, s32 line);
+extern void func_8003487C(TextBox *text);
 extern s32 D_800ADC10; /* scratchpad words in use */
 extern s8 *D_800B0054[2]; /* pointer pad buffers */
 extern u16 D_800B005C; /* pointer X divisor */
