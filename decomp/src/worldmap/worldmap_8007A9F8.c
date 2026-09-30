@@ -118,7 +118,43 @@ s32 func_8007B604(s32 index) {
     return 3;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007A9F8", func_8007B798);
+/* Grow scene objects 6 and 7 at the player (see func_8007B394). */
+s32 func_8007B798(s32 index) {
+    WorldmapActor *actor;
+    SceneObject *objects;
+    s32 x;
+
+    actor = &D_8009BE24[index];
+    objects = D_8009C620;
+    if (actor->unk4 != 0) {
+        actor->unk4 = 0;
+        objects[7].visible = 0;
+        objects[6].visible = 0;
+    }
+    x = D_8009C5AC.vx >> 12;
+    objects[6].position.vy = objects[7].position.vy = -0x40;
+    objects[6].position.vx = objects[7].position.vx = x;
+    objects[6].position.vz = objects[7].position.vz = D_8009C5AC.vz >> 12;
+    if ((actor->u.step += 0x180) > 0x800) {
+        actor->unk54 += 0x180;
+    }
+    if (actor->u.step > 0x7F00) {
+        actor->u.step = 0x7F00;
+    }
+    if (actor->unk54 > 0x7F00) {
+        actor->unk54 = 0x7F00;
+    }
+    SCALE_SCRATCH->matrix[0] = D_8009A180;
+    SCALE_SCRATCH->matrix[1] = SCALE_SCRATCH->matrix[0];
+    SCALE_SCRATCH->scale[0].vx = SCALE_SCRATCH->scale[0].vz = actor->u.step;
+    SCALE_SCRATCH->scale[1].vx = SCALE_SCRATCH->scale[1].vz = actor->unk54;
+    SCALE_SCRATCH->scale[0].vy = SCALE_SCRATCH->scale[1].vy = 0x1000;
+    ScaleMatrix(&SCALE_SCRATCH->matrix[0], &SCALE_SCRATCH->scale[0]);
+    ScaleMatrix(&SCALE_SCRATCH->matrix[1], &SCALE_SCRATCH->scale[1]);
+    objects[6].matrix = SCALE_SCRATCH->matrix[0];
+    objects[7].matrix = SCALE_SCRATCH->matrix[1];
+    return 1;
+}
 
 /* Scene step with nothing to do. */
 s32 func_8007BA08(void) {
@@ -175,7 +211,67 @@ s32 func_8007BB60(s32 index) {
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007A9F8", func_8007BBEC);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007A9F8", func_8007BF50);
+/* Set up the second vehicle scene: fixed start position, its director and object actors. */
+void func_8007BF50(void) {
+    RECT rect;
+
+    func_80072BB0();
+    rect.w = 0x140;
+    rect.x = 0;
+    rect.y = 0;
+    rect.h = 0xD8;
+    MoveImage(&rect, 0x2C0, 0x100);
+    DrawSync(0);
+    func_80072DB4(0x40, 0, 4, 2);
+    while (func_800286CC() >= 3) {
+    }
+    func_80076954();
+    func_8009766C();
+    D_8009BE4C = D_8009A180;
+    D_8009CCA4 = 2;
+    D_8009D3CC = 0x10;
+    D_8009D804 = 0;
+    D_8009D144 = 0;
+    D_8009CD40 = func_80086700;
+    func_80098044();
+    func_80028A60(0);
+    func_800721E4();
+    D_8009C5AC.vx = 0xD00000;
+    D_8009C5AC.vy = -0xA0000;
+    D_8009C5AC.vz = 0x400000;
+    func_80084580();
+    func_8008440C();
+    func_800979C8();
+    func_800736DC();
+    func_800863E0();
+    func_80074E58();
+    func_80075030();
+    func_800739B8();
+    func_80088F64();
+    func_80028A60(0);
+    func_80038428(D_8006259C);
+    func_80028470(0x24, 0);
+    func_80097BC0(&D_8009C5AC);
+    do {
+        func_800967E4();
+        VSync(0);
+    } while (func_80096668() > 0);
+    func_80097718((s32)func_800923A8, (s32)func_800925A0);
+    func_80097718((s32)func_8007C36C, (s32)func_8007C3B8);
+    func_80097718((s32)func_8007C724, (s32)func_8007C7D8);
+    func_80097718((s32)func_8007CC6C, (s32)func_8007CD20);
+    func_80097718((s32)func_8007CE84, (s32)func_8007CF18);
+    func_80097718((s32)func_8007D078, (s32)func_8007D110);
+    func_80097718((s32)func_8007D228, (s32)func_8007D2B8);
+    func_80097718((s32)func_8007D414, (s32)func_8007D4A4);
+    func_80097718((s32)func_8007D600, (s32)func_8007D690);
+    func_80097718((s32)func_8007D774, (s32)func_8007D7FC);
+    func_80097718((s32)func_80078948, (s32)func_80078950);
+    func_800978FC();
+    func_8008901C();
+    func_800865A0();
+    func_80075228();
+}
 
 /* Leave the world map for scene 0x111 (flag word 2), releasing its sound, subsystems and buffers. */
 void func_8007C260(void) {
