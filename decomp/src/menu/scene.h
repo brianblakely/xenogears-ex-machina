@@ -10,7 +10,8 @@ typedef struct {
     SVector from;  /* 0x18: line end points relative to the camera */
     SVector to;    /* 0x20 */
     SVector extra; /* 0x28: fourth corner of a projected quad */
-    u8 unk30[0x80];
+    Vector corner[6]; /* 0x30: view-rotated sprite corner offsets */
+    u8 unk90[0x20];
     s32 depth;     /* 0xB0: projected depth */
 } SceneScratch;
 

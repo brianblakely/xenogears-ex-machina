@@ -3138,7 +3138,116 @@ void func_8007BB7C(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007BBA0);
+/* Link a projected primitive of the given length tag into the ordering
+ * table at the depth left in the scratchpad. */
+#define LINK_PRIM(ot, scratch, prim, len)                                      \
+    prev = (ot)[(scratch)->depth >> 4];                                        \
+    addr = (u32)(prim) & 0xFFFFFF;                                             \
+    (ot)[(scratch)->depth >> 4] = addr;                                        \
+    prev |= (len);                                                             \
+    *(u32 *)addr = prev
+
+/* Draw the falling sparkles as camera-facing quads: rotate the corner
+ * offsets of the three sprite sizes by the local matrix once, then project
+ * each type-0 sparkle's position plus the offsets of its size. */
+void func_8007BBA0(Matrix *view, Matrix *local, u32 *ot) {
+    SceneScratch *scratch = SCENE_SCRATCH;
+    Sparkle *sparkle;
+    SparkleKind *kind;
+    PolyFT4 *prim;
+    s32 i;
+    u32 prev;
+    u32 addr;
+
+    scratch->point.vz = 0;
+    gte_SetRotMatrix(local);
+    scratch->point.vx = scratch->point.vy = -0x60;
+    gte_ldv0(&scratch->point);
+    gte_rtv0();
+    gte_stlvnl(&scratch->corner[0]);
+    scratch->point.vx = scratch->point.vy = 0x60;
+    gte_ldv0(&scratch->point);
+    gte_rtv0();
+    gte_stlvnl(&scratch->corner[1]);
+    scratch->point.vx = scratch->point.vy = -0x48;
+    gte_ldv0(&scratch->point);
+    gte_rtv0();
+    gte_stlvnl(&scratch->corner[2]);
+    scratch->point.vx = scratch->point.vy = 0x48;
+    gte_ldv0(&scratch->point);
+    gte_rtv0();
+    gte_stlvnl(&scratch->corner[3]);
+    scratch->point.vx = scratch->point.vy = -0x20;
+    gte_ldv0(&scratch->point);
+    gte_rtv0();
+    gte_stlvnl(&scratch->corner[4]);
+    scratch->point.vx = scratch->point.vy = 0x20;
+    gte_ldv0(&scratch->point);
+    gte_rtv0();
+    gte_stlvnl(&scratch->corner[5]);
+    gte_SetRotMatrix(view);
+    gte_SetTransMatrix(view);
+    for (sparkle = D_80092AD8, i = 0; i < SPARKLE_COUNT; i++, sparkle++) {
+        if (!sparkle->active || sparkle->type != 0) {
+            continue;
+        }
+        kind = sparkle->u.fall.kind;
+        scratch->point.vx = sparkle->x - scratch->camera.vx;
+        scratch->point.vy = sparkle->y - scratch->camera.vy;
+        scratch->point.vz = sparkle->z - scratch->camera.vz;
+        scratch->to = scratch->point;
+        prim = &sparkle->prim[D_800928A0];
+        switch (kind->unkB) {
+        case 0:
+            scratch->point.vx += scratch->corner[0].vx;
+            scratch->point.vy += scratch->corner[0].vy;
+            scratch->point.vz += scratch->corner[0].vz;
+            scratch->to.vx += scratch->corner[1].vx;
+            scratch->to.vy += scratch->corner[1].vy;
+            scratch->to.vz += scratch->corner[1].vz;
+            break;
+        case 1:
+            scratch->point.vx += scratch->corner[2].vx;
+            scratch->point.vy += scratch->corner[2].vy;
+            scratch->point.vz += scratch->corner[2].vz;
+            scratch->to.vx += scratch->corner[3].vx;
+            scratch->to.vy += scratch->corner[3].vy;
+            scratch->to.vz += scratch->corner[3].vz;
+            break;
+        case 2:
+            scratch->point.vx += scratch->corner[4].vx;
+            scratch->point.vy += scratch->corner[4].vy;
+            scratch->point.vz += scratch->corner[4].vz;
+            scratch->to.vx += scratch->corner[5].vx;
+            scratch->to.vy += scratch->corner[5].vy;
+            scratch->to.vz += scratch->corner[5].vz;
+            break;
+        }
+        gte_ldv01(&scratch->point, &scratch->to);
+        gte_rtpt();
+        gte_stsxy01(&prim->x0, &prim->x3);
+        gte_stsz2(&scratch->depth);
+        prim->x1 = prim->x3;
+        prim->y1 = prim->y0;
+        prim->x2 = prim->x0;
+        prim->y2 = prim->y3;
+        prim->u0 = kind->u[sparkle->frame - 1];
+        prim->v0 = kind->v[sparkle->frame - 1];
+        prim->u1 = prim->u0 + kind->w;
+        prim->v1 = prim->v0;
+        prim->u2 = prim->u0;
+        prim->v2 = prim->v0 + kind->h;
+        prim->u3 = prim->u0 + kind->w;
+        prim->v3 = prim->v0 + kind->h;
+        if ((s16)kind->clut == 0) {
+            prim->clut = D_80094800[sparkle->frame - 1];
+        }
+        if (scratch->depth > 0x40) {
+            scratch->depth -= 0x40;
+        }
+        LINK_PRIM(ot, scratch, prim, 0x09000000);
+    }
+}
 
 /* Set the colour of kind-2 sparkles. */
 void func_8007C100(Color *color) {
@@ -3185,7 +3294,131 @@ void func_8007C124(SVector *pos, s32 kind) {
     sparkle->prim[1] = *prim;
 }
 
+#ifdef NON_MATCHING
+/* Draw the trail sparkles as quads from the previous segment's edge to an
+ * edge across the direction of travel on screen (vertical for the first
+ * segment), sized by the trail and shaded by age.
+ * Does not match: the square root result is copied to $a1 and the scaled
+ * offsets land in $a0/$v1 in the original. */
+void func_8007C280(Matrix *view, Matrix *local, u32 *ot) {
+    SceneScratch *scratch = SCENE_SCRATCH;
+    Sparkle *sparkle;
+    SparkleTrail *prev;
+    PolyFT4 *prim;
+    s32 i;
+    s32 dx;
+    s32 dy;
+    s32 length;
+    s32 nx;
+    s32 ny;
+    s32 side;
+    u32 prevlink;
+    u32 addr;
+
+    scratch->from.vx = 0;
+    scratch->from.vz = 0;
+    gte_SetRotMatrix(view);
+    gte_SetTransMatrix(view);
+    for (sparkle = D_80092AD8, i = 0; i < SPARKLE_COUNT; i++, sparkle++) {
+        if (!sparkle->active || sparkle->type != 1) {
+            continue;
+        }
+        scratch->point.vx = sparkle->x - scratch->camera.vx;
+        scratch->point.vy = sparkle->y - scratch->camera.vy;
+        scratch->point.vz = sparkle->z - scratch->camera.vz;
+        scratch->to = scratch->point;
+        prim = &sparkle->prim[D_800928A0];
+        gte_ldv0(&scratch->point);
+        gte_rtps();
+        gte_stsxy(&prim->x0);
+        sparkle->u.trail.screen[4] = prim->x0;
+        sparkle->u.trail.screen[5] = prim->y0;
+        if (sparkle->u.trail.prev != NULL) {
+            prev = &sparkle->u.trail.prev->u.trail;
+            dx = sparkle->u.trail.screen[4] - prev->screen[4];
+            dy = sparkle->u.trail.screen[5] - prev->screen[5];
+            length = SquareRoot0(dx * dx + dy * dy);
+            nx = dx * sparkle->u.trail.size / length;
+            ny = dy * sparkle->u.trail.size / length;
+            scratch->point.vz = 0;
+            scratch->point.vy = -nx;
+            scratch->point.vx = ny;
+            gte_SetRotMatrix(local);
+            gte_ldv0(&scratch->point);
+            gte_rtv0();
+            gte_stlvnl(&scratch->corner[2]);
+            scratch->point.vy = nx;
+            scratch->point.vx = -ny;
+            gte_ldv0(&scratch->point);
+            gte_rtv0();
+            gte_stlvnl(&scratch->corner[3]);
+            scratch->point.vx = sparkle->x - scratch->camera.vx;
+            scratch->point.vy = sparkle->y - scratch->camera.vy;
+            scratch->point.vz = sparkle->z - scratch->camera.vz;
+            scratch->to = scratch->point;
+        } else {
+            gte_SetRotMatrix(local);
+            scratch->from.vy = -sparkle->u.trail.size;
+            gte_ldv0(&scratch->from);
+            gte_rtv0();
+            gte_stlvnl(&scratch->corner[2]);
+            scratch->from.vy = sparkle->u.trail.size;
+            gte_ldv0(&scratch->from);
+            gte_rtv0();
+            gte_stlvnl(&scratch->corner[3]);
+        }
+        scratch->point.vx += scratch->corner[2].vx;
+        scratch->point.vy += scratch->corner[2].vy;
+        scratch->point.vz += scratch->corner[2].vz;
+        scratch->to.vx += scratch->corner[3].vx;
+        scratch->to.vy += scratch->corner[3].vy;
+        scratch->to.vz += scratch->corner[3].vz;
+        gte_SetRotMatrix(view);
+        gte_SetTransMatrix(view);
+        gte_ldv01(&scratch->point, &scratch->to);
+        gte_rtpt();
+        gte_stsxy01(&prim->x0, &prim->x1);
+        gte_stsz2(&scratch->depth);
+        sparkle->u.trail.screen[0] = prim->x0;
+        sparkle->u.trail.screen[1] = prim->y0;
+        sparkle->u.trail.screen[2] = prim->x1;
+        sparkle->u.trail.screen[3] = prim->y1;
+        if (sparkle->u.trail.prev == NULL) {
+            continue;
+        }
+        /* which side of the line through both centres each edge start is */
+        side = ((prev->screen[5] - sparkle->u.trail.screen[5]) * sparkle->u.trail.screen[0] +
+                (sparkle->u.trail.screen[4] - prev->screen[4]) * sparkle->u.trail.screen[1] +
+                prev->screen[4] * sparkle->u.trail.screen[5] - sparkle->u.trail.screen[4] * prev->screen[5]) *
+               ((prev->screen[5] - sparkle->u.trail.screen[5]) * prev->screen[0] +
+                (sparkle->u.trail.screen[4] - prev->screen[4]) * prev->screen[1] +
+                prev->screen[4] * sparkle->u.trail.screen[5] - sparkle->u.trail.screen[4] * prev->screen[5]);
+        if (side > 0) {
+            prim->x2 = prev->screen[0];
+            prim->y2 = prev->screen[1];
+            prim->x3 = prev->screen[2];
+            prim->y3 = prev->screen[3];
+        } else {
+            prim->x3 = prev->screen[0];
+            prim->y3 = prev->screen[1];
+            prim->x2 = prev->screen[2];
+            prim->y2 = prev->screen[3];
+        }
+        /* the shade shares its register with the link address */
+        addr = 0x40 - sparkle->frame * 8;
+        prim->r0 = addr;
+        prim->g0 = addr;
+        prim->b0 = addr;
+        prevlink = ot[scratch->depth >> 4];
+        addr = (u32)prim & 0xFFFFFF;
+        ot[scratch->depth >> 4] = addr;
+        prevlink |= 0x09000000;
+        *(u32 *)addr = prevlink;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007C280);
+#endif
 
 #ifdef NON_MATCHING
 /* Start a trail segment of a key at a position for the current owner
@@ -3241,15 +3474,6 @@ void func_8007C880(s32 column, Vector *pos, s32 key, s32 size) {
 #else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007C880);
 #endif
-
-/* Link a projected primitive of the given length tag into the ordering
- * table at the depth left in the scratchpad. */
-#define LINK_PRIM(ot, scratch, prim, len)                                      \
-    prev = (ot)[(scratch)->depth >> 4];                                        \
-    addr = (u32)(prim) & 0xFFFFFF;                                             \
-    (ot)[(scratch)->depth >> 4] = addr;                                        \
-    prev |= (len);                                                             \
-    *(u32 *)addr = prev
 
 /* Draw the line sparkles that continue last frame's segment as quads
  * joining both segments, fading with their age. */
