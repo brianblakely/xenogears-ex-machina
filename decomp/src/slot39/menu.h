@@ -422,10 +422,13 @@ typedef struct MenuImageBlock {
 
 /* The record 801e76ec passes to 801e6ae8. */
 typedef struct MenuViewSet {
-    u8 pad0[0x16];
+    s32 time; /* 0: play time in frames */
+    u8 pad4[0x12];
     u8 levels[3]; /* 16: per view: number shown in the first digit row */
     u8 unk19[3]; /* 19: per view: number of the second digit row */
     u8 images[4]; /* 1C: sheet image per view (+14e), ff none */
+    u8 pad20[0x3];
+    u8 unk23; /* 23: shown plus one as two digits */
 } MenuViewSet;
 
 /* A sub-record of a gear view (+5c8). */
@@ -462,8 +465,14 @@ typedef struct MenuView {
 /* The 2dc0-byte block (*(state + 34c)). */
 typedef struct MenuBlock34C {
     u8 pad0[0xA98];
-    MenuView views[4]; /* A98 */
-    u8 pad2C88[0x134];
+    MenuView views[3]; /* A98 */
+    POLY_FT4 colon0[4]; /* 240C: play time separators */
+    POLY_FT4 colon1[4]; /* 24AC */
+    POLY_FT4 timeDigits[7][2]; /* 254C: play time digits, per buffer */
+    u8 pad277C[0x500];
+    POLY_FT4 discLabel[2]; /* 2C7C */
+    POLY_FT4 discMark[2]; /* 2CCC */
+    POLY_FT4 discDigits[2][2]; /* 2D1C: two digits */
     u8 rebuilt; /* 2DBC */
     u8 pad2DBD[0x3];
 } MenuBlock34C;
@@ -881,6 +890,7 @@ extern s32 D_801EA71C;
 extern s32 D_801EA720;
 extern s32 D_801EA004[];
 extern s32 D_801EA010[];
+extern s32 D_801E9FE0[9];     /* play time: x of the two separators and seven digits */
 extern s32 D_801EA01C;         /* view digit row x */
 extern s32 D_801EA020;         /* view digit row y */
 extern s32 D_801EA900[2];

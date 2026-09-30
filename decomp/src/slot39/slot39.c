@@ -3644,7 +3644,27 @@ void func_801E6668(s32 index) {
     func_800320E8(image);
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E68AC);
+/* Lay out the save's play time (two separators and seven digits at y 7a)
+ * and its two-digit number (+23, plus one) with its label at (8, 66). */
+void func_801E68AC(MenuViewSet *set) {
+    s32 i;
+
+    func_8002675C(D_800625A0->sheet, 0xee, D_800625A0->block34C->colon0, D_800625A0->bufferIndex, D_801E9FE0[0], 0x7a,
+                  0x1000);
+    func_8002675C(D_800625A0->sheet, 0xee, D_800625A0->block34C->colon1, D_800625A0->bufferIndex, D_801E9FE0[1], 0x7a,
+                  0x1000);
+    func_801C7F34(set->time);
+    for (i = 0; i < 7; i++) {
+        func_8002675C(D_800625A0->sheet, D_800625A0->time[i], D_800625A0->block34C->timeDigits[i],
+                      D_800625A0->bufferIndex, D_801E9FE0[i + 2], 0x7a, 0x1000);
+    }
+    func_8002675C(D_800625A0->sheet, 0x17, D_800625A0->block34C->discLabel, D_800625A0->bufferIndex, 8, 0x66, 0x1000);
+    func_8002675C(D_800625A0->sheet, 0x32, D_800625A0->block34C->discMark, D_800625A0->bufferIndex, 0x10, 0x66, 0x1000);
+    func_8002675C(D_800625A0->sheet, (set->unk23 + 1) / 10, D_800625A0->block34C->discDigits[0],
+                  D_800625A0->bufferIndex, 0x10, 0x6e, 0x1000);
+    func_8002675C(D_800625A0->sheet, (set->unk23 + 1) % 10, D_800625A0->block34C->discDigits[1],
+                  D_800625A0->bufferIndex, 0x18, 0x6e, 0x1000);
+}
 
 /* Set up view `index` of the block at +34c from its sheet image (14e + set). */
 void func_801E6AE8(u8 index, MenuViewSet *set) {
