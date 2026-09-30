@@ -1709,4 +1709,24 @@ typedef struct {
 
 #define MAP_SCRATCH ((MapScratch *)0x1F800000)
 
+/* worldmap_8008E190: flying vehicle (round 4) */
+s32 func_80090E14(WorldmapActor *actor);
+s32 func_80090FB4(WorldmapActor *actor);
+s32 func_8008E0F0(VECTOR *position, s32 unused, s32 range);
+s32 func_80095CD4(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s32 mode);
+void func_800767D4(void *data, s32 file);
+void func_8008E078(void);
+extern SVECTOR D_8009B1AC[], D_8009B1D4[]; /* scripted flight waypoints */
+
+/* Scratchpad work area of the flying vehicle. */
+typedef struct {
+    VECTOR target;     /* 0x00: waypoint */
+    u8 pad10[0x80];
+    VECTOR hit;        /* 0x90: move probe (SCRATCH_HIT) */
+    SVECTOR rotation;  /* 0xA0: model tilt/heading, or an effect spot */
+    SVECTOR spot;      /* 0xA8: effect spot */
+} VehicleScratch;
+
+#define VEHICLE_SCRATCH ((VehicleScratch *)0x1F800000)
+
 #endif
