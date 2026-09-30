@@ -1,4 +1,12 @@
+/* Mode 6, the movie mode (overlay image at 0x8006faf0, packed in disc 1 file
+ * 40 / disc 2 file 35). The resident mode dispatcher loads it into the mode
+ * overlay area and enters 800737ec: that loads the movie library (disc file
+ * 19 at 0x801d3000), plays the movie that the request bytes 8004fe44..47
+ * name and selects the next mode. Without a request it runs a development
+ * menu: movie test settings, a CD-ROM monitor, a CD-ROM read check, a FAT
+ * check and a disc change test, drawn with the resident debug font. */
 #include "common.h"
+#include "movie_mode.h"
 
 INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_8006FAF0);
 
@@ -24,49 +32,716 @@ INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_8006FCD8);
 
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_800712C4);
 
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80071BA0);
+/* FAT check step: read file 40h into the check buffer (allocated once) and
+ * count the read; a pass without errors keeps its tally. */
+void func_80071BA0(void) {
+    s32 tally;
+
+    if (D_80076EA0 == NULL) {
+        D_80076EA0 = func_80031BDC(0x2000, 0);
+    }
+    if (D_80076EA0 != NULL) {
+        func_8002954C(0x40, D_80076EA0, 0x2000, 0, 0);
+    }
+    D_80076F3C[0]++;
+    if (D_80076E4C == 0) {
+        tally = D_80076EB0;
+        D_80076EB0 = 0;
+        D_80076EAC = tally;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80071C34);
 
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80072428);
+/* Vertical-blank tick: count frames and whole seconds. */
+void func_80072428(void) {
+    D_80076E5C++;
+    if (++D_80076ECC >= 60) {
+        D_80076ECC = 0;
+        D_80076EC8++;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80072480);
 
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_8007293C);
+/* Stop the resident disc read and wait until the drive reports its status. */
+void func_8007293C(void) {
+    if (func_8002C3D8() == 0) {
+        func_8002A498(0);
+        func_80028A60(0);
+        func_8002A428(0);
+        func_80028A60(0);
+        VSync(3);
+        while (CdControlB(8, NULL, D_80076F84) == 0) {
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_800729A8);
+/* Read `size` bytes of the host file `name` into `buffer`. */
+void func_800729A8(char *name, void *buffer, s32 size) {
+    s32 fd;
 
+    fd = PCopen(name, 0, 0);
+    func_8004C398(fd, buffer, size);
+    PCclose(fd);
+}
+
+#ifdef NON_MATCHING
+/* One step of the disc change test for disc `disc`: stop the drive, wait for
+ * the lid to open and close and the spindle, read the TOC, seek sector 0 and
+ * check the disc label, then reload the directory tables. With the host PC
+ * the tables are read from its files instead. `*error` gets 1 (seek error),
+ * 2 (not a Xenogears disc) or 3 (wrong disc); `*done` the command result.
+ * Returns the next state. The instructions match; the original rodata also
+ * holds an unreferenced "" after the host file names (dead code?), which this
+ * source does not emit. */
+s32 func_80072A08(s32 disc, s32 state, s32 *error, s32 *done) {
+    u32 label[4] = {0, 0, 0, 0};
+    CdlLOC loc;
+    s32 result;
+
+    CdIntToPos(0, &loc);
+    result = 1;
+    if (*error == 0) {
+        if (func_8002C3D8() != 0 && state < 9) {
+            if (disc == 1) {
+                func_800729A8("c:\\work\\cdrom.mdg", D_8004FDF0, 0x8000);
+                func_800729A8("c:\\work\\cdrom.fid", D_8004FDF4, 0x7A);
+                func_800729A8("c:\\work\\cdrom.fnd", D_8004FE48, 0x40000);
+            } else {
+                func_800729A8("c:\\work\\cdrom2.mdg", D_8004FDF0, 0x8000);
+                func_800729A8("c:\\work\\cdrom2.fid", D_8004FDF4, 0x7A);
+                func_800729A8("c:\\work\\cdrom2.fnd", D_8004FE48, 0x40000);
+            }
+            state = 9;
+        } else {
+            switch (state) {
+            case 1:
+                result = CdControlB(CdlStop, NULL, D_80076F84);
+                if (result != 0) {
+                    state++;
+                }
+                break;
+            case 2:
+                CdControlB(CdlNop, NULL, D_80076F84);
+                if (D_80076F84[0] & 0x10) {
+                    state++;
+                }
+                break;
+            case 3:
+                CdControlB(CdlNop, NULL, D_80076F84);
+                if (!(D_80076F84[0] & 0x10)) {
+                    state++;
+                }
+                break;
+            case 4:
+                result = CdControlB(CdlNop, NULL, D_80076F84);
+                if (D_80076F84[0] & 2) {
+                    if (result != 0) {
+                        state++;
+                    }
+                }
+                break;
+            case 5:
+                result = CdControlB(CdlGetTN, NULL, D_80076F84);
+                if (result != 0) {
+                    state++;
+                }
+                break;
+            case 6:
+                result = CdControlB(CdlSetloc, (u8 *)&loc, D_80076F84);
+                if (result != 0) {
+                    state++;
+                }
+                break;
+            case 7:
+                result = CdControlB(CdlSeekL, NULL, D_80076F84);
+                if ((D_80076F84[0] & 1) && (D_80076F84[1] & 0x40) && result == 0) {
+                    *error = 1;
+                } else if (result != 0) {
+                    state++;
+                }
+                if (result == 0) {
+                    state = 5;
+                }
+                break;
+            case 8:
+                func_8002A428(0xA0);
+                func_80028A60(0);
+                VSync(3);
+                func_8002954C(0x17, label, 0x10, 0, 0);
+                func_80028A60(0);
+                if (label[1] == 0x4E45585F) { /* "_XEN" */
+                    if (((u8 *)label)[3] == disc + '0') {
+                        func_8002954C(0x18, D_8004FDF0, 0x8000, 0, 0);
+                        state++;
+                        func_80028A60(0);
+                        func_8002954C(0x28, D_8004FDF4, 0x7A, 0, 0);
+                        func_80028A60(0);
+                        *error = 0;
+                    } else {
+                        *error = 3;
+                    }
+                } else {
+                    *error = 2;
+                }
+                break;
+            }
+        }
+        *done = result;
+    }
+    return state;
+}
+#else
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80072A08);
+#endif
 
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80072D84);
+/* Set up the menu backdrop quads of both buffers at (x, y), w by h, with
+ * random dark blue corner fades. */
+void func_80072D84(POLY_G4 *poly0, POLY_G4 *poly1, s32 x, s32 y, s32 w, s32 h) {
+    s32 i;
 
+    for (i = 0; i < 4; i++) {
+        D_80076F8C[i].r = (func_80074AF0() & 0xFF) / 32 + 8;
+        D_80076F8C[i].g = 8;
+        D_80076F8C[i].b = (func_80074AF0() & 0xFF) / 3 + 16;
+        D_80076F9C[i].r = (func_80074AF0() & 0xFF) / 32 + 8;
+        D_80076F9C[i].g = 8;
+        D_80076F9C[i].b = (func_80074AF0() & 0xFF) / 3 + 16;
+    }
+    for (i = 0; i < 4; i++) {
+        D_80076FAC[i] = 0;
+        D_80076FBC[i] = (func_80074AF0() & 0xFF) + 32;
+    }
+    SetPolyG4(poly0);
+    SetSemiTrans(poly0, 0);
+    poly0->x0 = x;
+    poly0->y0 = y;
+    poly0->x1 = x + w;
+    poly0->y1 = y;
+    poly0->x2 = x;
+    poly0->y2 = y + h;
+    poly0->x3 = x + w;
+    poly0->y3 = y + h;
+    SetPolyG4(poly1);
+    SetSemiTrans(poly1, 0);
+    poly1->x0 = x;
+    poly1->y0 = y;
+    poly1->x1 = x + w;
+    poly1->y1 = y;
+    poly1->x2 = x;
+    poly1->y2 = y + h;
+    poly1->x3 = x + w;
+    poly1->y3 = y + h;
+}
+
+#ifdef NON_MATCHING
+/* Add the menu backdrop to `ot`: a gouraud quad at (x, y), w by h, whose
+ * corner colors each fade toward a new random color. Same instructions,
+ * different register allocation: the original keeps the corner index and its
+ * word offset apart, spilling the offset and the from-green pointer. */
+void func_80072F98(u32 *ot, POLY_G4 *poly, s32 x, s32 y, s32 w, s32 h) {
+    s32 i;
+    s32 r;
+    s32 g;
+    s32 b;
+
+    poly->x0 = x;
+    poly->y0 = y;
+    poly->y1 = y;
+    poly->x2 = x;
+    poly->x1 = x + w;
+    poly->y2 = y + h;
+    poly->x3 = x + w;
+    poly->y3 = y + h;
+    for (i = 0; i < 4; i++) {
+        if (++D_80076FAC[i] > D_80076FBC[i]) {
+            D_80076FAC[i] = 0;
+            D_80076FBC[i] = (func_80074AF0() & 0xFF) + 32;
+            D_80076F8C[i].r = D_80076F9C[i].r;
+            D_80076F8C[i].g = D_80076F9C[i].g;
+            D_80076F8C[i].b = D_80076F9C[i].b;
+            D_80076F9C[i].r = (func_80074AF0() & 0xFF) / 32 + 8;
+            D_80076F9C[i].g = 8;
+            D_80076F9C[i].b = (func_80074AF0() & 0xFF) / 3 + 16;
+        }
+        r = D_80076F8C[i].r +
+            (D_80076F9C[i].r - D_80076F8C[i].r) * D_80076FAC[i] / D_80076FBC[i];
+        g = D_80076F8C[i].g +
+            (D_80076F9C[i].g - D_80076F8C[i].g) * D_80076FAC[i] / D_80076FBC[i];
+        b = D_80076F8C[i].b +
+            (D_80076F9C[i].b - D_80076F8C[i].b) * D_80076FAC[i] / D_80076FBC[i];
+        switch (i) {
+        case 0:
+            poly->r0 = r;
+            poly->g0 = g;
+            poly->b0 = b;
+            break;
+        case 1:
+            poly->r1 = r;
+            poly->g1 = g;
+            poly->b1 = b;
+            break;
+        case 2:
+            poly->r2 = r;
+            poly->g2 = g;
+            poly->b2 = b;
+            break;
+        case 3:
+            poly->r3 = r;
+            poly->g3 = g;
+            poly->b3 = b;
+            break;
+        }
+    }
+    poly->tag = (poly->tag & 0xFF000000) | (*ot & 0xFFFFFF);
+    *ot = (*ot & 0xFF000000) | ((u32)poly & 0xFFFFFF);
+}
+#else
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80072F98);
+#endif
 
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80073328);
+/* Set up the menu frame quads of both buffers at (x, y), w by h, with random
+ * pale yellow corner fades. */
+void func_80073328(POLY_G4 *poly0, POLY_G4 *poly1, s32 x, s32 y, s32 w, s32 h) {
+    s32 i;
 
+    for (i = 0; i < 4; i++) {
+        D_80076FCC[i].r = 0xFF;
+        D_80076FCC[i].g = 0xFF;
+        D_80076FCC[i].b = (func_80074AF0() & 0x3F) - 0x42;
+        D_80076FDC[i].r = 0xFF;
+        D_80076FDC[i].g = 0xFF;
+        D_80076FDC[i].b = (func_80074AF0() & 0x3F) - 0x42;
+    }
+    for (i = 0; i < 4; i++) {
+        D_80076FEC[i] = 0;
+        D_80076FFC[i] = (func_80074AF0() & 0xFF) + 32;
+    }
+    SetPolyG4(poly0);
+    poly0->x0 = x;
+    poly0->y0 = y;
+    poly0->x1 = x + w;
+    poly0->y1 = y;
+    poly0->x2 = x;
+    poly0->y2 = y + h;
+    poly0->x3 = x + w;
+    poly0->y3 = y + h;
+    SetPolyG4(poly1);
+    poly1->x0 = x;
+    poly1->y0 = y;
+    poly1->x1 = x + w;
+    poly1->y1 = y;
+    poly1->x2 = x;
+    poly1->y2 = y + h;
+    poly1->x3 = x + w;
+    poly1->y3 = y + h;
+}
+
+#ifdef NON_MATCHING
+/* Add the menu frame to `ot`: a gouraud quad at (x, y), w by h, whose corner
+ * colors each fade toward a new random pale yellow. Same instructions but
+ * for register allocation and one difference: the original reloads each
+ * from-color after its division instead of keeping it. */
+void func_800734B8(u32 *ot, POLY_G4 *poly, s32 x, s32 y, s32 w, s32 h) {
+    s32 i;
+    s32 r;
+    s32 g;
+    s32 b;
+
+    poly->x0 = x;
+    poly->y0 = y;
+    poly->y1 = y;
+    poly->x2 = x;
+    poly->x1 = x + w;
+    poly->y2 = y + h;
+    poly->x3 = x + w;
+    poly->y3 = y + h;
+    for (i = 0; i < 4; i++) {
+        if (++D_80076FEC[i] > D_80076FFC[i]) {
+            D_80076FEC[i] = 0;
+            D_80076FFC[i] = (func_80074AF0() & 0xFF) + 32;
+            D_80076FCC[i].r = D_80076FDC[i].r;
+            D_80076FCC[i].g = D_80076FDC[i].g;
+            D_80076FCC[i].b = D_80076FDC[i].b;
+            D_80076FDC[i].r = 0xFF;
+            D_80076FDC[i].g = 0xFF;
+            D_80076FDC[i].b = (func_80074AF0() & 0x3F) - 0x42;
+        }
+        r = D_80076FCC[i].r +
+            (D_80076FDC[i].r - D_80076FCC[i].r) * D_80076FEC[i] / D_80076FFC[i];
+        g = D_80076FCC[i].g +
+            (D_80076FDC[i].g - D_80076FCC[i].g) * D_80076FEC[i] / D_80076FFC[i];
+        b = D_80076FCC[i].b +
+            (D_80076FDC[i].b - D_80076FCC[i].b) * D_80076FEC[i] / D_80076FFC[i];
+        switch (i) {
+        case 0:
+            poly->r0 = r;
+            poly->g0 = g;
+            poly->b0 = b;
+            break;
+        case 1:
+            poly->r1 = r;
+            poly->g1 = g;
+            poly->b1 = b;
+            break;
+        case 2:
+            poly->r2 = r;
+            poly->g2 = g;
+            poly->b2 = b;
+            break;
+        case 3:
+            poly->r3 = r;
+            poly->g3 = g;
+            poly->b3 = b;
+            break;
+        }
+    }
+    poly->tag = (poly->tag & 0xFF000000) | (*ot & 0xFFFFFF);
+    *ot = (*ot & 0xFF000000) | ((u32)poly & 0xFFFFFF);
+}
+#else
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_800734B8);
+#endif
 
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_800737EC);
 
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_800747AC);
+/* Menu input: read controller port 0 with a repeat after 16 frames held; Up
+ * and Down move the cursor between `first` and `last`, wrapping; the four
+ * face buttons report 1..4 in `button`; Select toggles the monitor and Start
+ * the statistics. Returns 1 for Right, -1 for Left, else 0. */
+s32 func_800747AC(s32 first, s32 last, s32 *button) {
+    D_800773B4 = D_800773AC;
+    D_800773AC = func_8003569C(0);
+    if (D_800773B4 == D_800773AC && D_800773B4 != 0) {
+        D_80076EEC++;
+        if (D_80076EF0 < D_80076EEC) {
+            D_800773B4 = 0;
+            D_80076EF0 = 1;
+            D_80076EEC = 0;
+        }
+    } else {
+        D_80076EF0 = 16;
+        D_80076EEC = 0;
+    }
+    if (!(D_800773B4 & 0x1000) && (D_800773AC & 0x1000)) {
+        if (--D_80077118 < first) {
+            D_80077118 = last;
+        }
+    }
+    if (!(D_800773B4 & 0x4000) && (D_800773AC & 0x4000)) {
+        if (++D_80077118 > last) {
+            D_80077118 = first;
+        }
+    }
+    *button = 0;
+    if (!(D_800773B4 & 0x10) && (D_800773AC & 0x10)) {
+        *button = 1;
+    }
+    if (!(D_800773B4 & 0x20) && (D_800773AC & 0x20)) {
+        *button = 2;
+    }
+    if (!(D_800773B4 & 0x40) && (D_800773AC & 0x40)) {
+        *button = 3;
+    }
+    if (!(D_800773B4 & 0x80) && (D_800773AC & 0x80)) {
+        *button = 4;
+    }
+    if (!(D_800773B4 & 0x100) && (D_800773AC & 0x100)) {
+        D_800773B0 = 1 - D_800773B0;
+    }
+    if (!(D_800773B4 & 0x800) && (D_800773AC & 0x800)) {
+        D_80077394 = 1 - D_80077394;
+    }
+    if (!(D_800773B4 & 0x2000) && (D_800773AC & 0x2000)) {
+        return 1;
+    }
+    if (!(D_800773B4 & 0x8000) && (D_800773AC & 0x8000)) {
+        return -1;
+    }
+    return 0;
+}
 
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80074AF0);
+/* Next pseudo-random number (two mixed linear congruential sequences). */
+s32 func_80074AF0(void) {
+    D_80076EF4 = D_80076EF4 * 5 + 1;
+    D_80076EF8 = D_80076EF8 * 7 + 3;
+    D_80076EF4 = (D_80076EF4 ^ D_80076EF8) + 1;
+    if (D_80076EF4 < 0) {
+        D_80076EF4 = -D_80076EF4;
+    }
+    return D_80076EF4;
+}
 
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80074B58);
+/* Clear all of VRAM to black. */
+void func_80074B58(void) {
+    RECT rect;
 
+    rect.x = 0;
+    rect.y = 0;
+    rect.w = 640;
+    rect.h = 480;
+    ClearImage(&rect, 0, 0, 0);
+    DrawSync(0);
+}
+
+#ifdef NON_MATCHING
+/* The sector of the selected movie where `frame` starts: guess from the
+ * first sector's sectors per frame, correct once, then step sector by
+ * sector (frame by frame on headers) until a header names the frame.
+ * Returns 0 for the first frame, -1 past the file; an index past the list
+ * returns without a value, as the original does. Draft: the control flow
+ * is right, the register allocation and header reloads are not (0x28 short). */
+s32 func_80074BA4(s32 frame) {
+    u8 buffer[0x1000];
+    s32 file;
+    char *name;
+    s32 sector_size;
+    s32 read_size;
+    s32 header;
+    s32 lower;
+    s32 fd;
+    s32 count;
+    s32 per_frame;
+    s32 pos;
+    s32 next;
+    s32 total;
+    s32 guess;
+    MovieSector *h;
+
+    lower = 0;
+    if (D_80077448 == 0) {
+        func_80028470(0x18, 0);
+        if (D_8007711C >= func_80028928(2)) {
+            return;
+        }
+        file = D_8007711C + 3;
+        name = func_80028998(file);
+        sector_size = 0x800;
+        read_size = 0x20;
+        header = 0;
+    } else if (D_80077448 == 1) {
+        func_80028470(0x18, 1);
+        if (D_8007711C >= func_80028928(1)) {
+            return;
+        }
+        file = D_8007711C + 2;
+        name = func_80028998(file);
+        sector_size = 0x920;
+        read_size = 0x28;
+        header = 8;
+    } else if (D_80077448 == 2) {
+        return -1;
+    }
+    if (frame < 2) {
+        return 0;
+    }
+    if (func_8002C3D8() != 0) {
+        fd = PCopen(name, 0, 0);
+        PClseek(fd, 0, 2);
+        PClseek(fd, 0, 0);
+        func_8004C398(fd, buffer, read_size);
+        h = (MovieSector *)(buffer + header);
+        per_frame = h->sectors;
+        pos = (frame - 1) * per_frame - (frame - 1) / 4;
+        PClseek(fd, pos * sector_size, 0);
+        count = func_8004C398(fd, buffer, read_size);
+        if (h->frame != frame || count == 0) {
+            if (h->frame < frame && pos > 0 && count != 0) {
+                lower = pos;
+            }
+            guess = (frame - 1) * per_frame - (frame - 1) / 4;
+            pos = guess + guess / 7;
+            PClseek(fd, pos * sector_size, 0);
+            h = (MovieSector *)(buffer + header);
+            count = func_8004C398(fd, buffer, read_size);
+            if (h->frame == frame && count != 0) {
+                goto found;
+            }
+            if (h->frame < frame && lower < pos && count != 0) {
+                lower = pos;
+            }
+            next = (per_frame - 1) * (frame - 1);
+            if (lower > 0) {
+                next = lower;
+            }
+            goto scan;
+        }
+    found:
+        if (h->sector != 0) {
+            next = pos - h->sector - 2;
+        scan:
+            h = (MovieSector *)(buffer + header);
+            do {
+                pos = next;
+                PClseek(fd, next * sector_size, 0);
+                count = func_8004C398(fd, buffer, read_size);
+                next = pos + 1;
+                if (h->magic == 0x160) {
+                    next = pos + (h->sectors - h->sector);
+                }
+            } while (h->frame != frame && count > 0);
+            if (count == 0) {
+                pos = -1;
+            }
+        }
+        PCclose(fd);
+        return pos;
+    }
+    h = (MovieSector *)buffer;
+    func_8002954C(func_800289D0(file), buffer, 0x800, 0, 0);
+    func_80028A60(0);
+    total = (func_800288EC(file) + sector_size - 1) / sector_size;
+    pos = (frame - 1) * h->sectors - (frame - 1) / 4;
+    func_8002954C(func_800289D0(file) + pos, buffer, 0x800, 0, 0);
+    func_80028A60(0);
+    if (h->frame == frame && pos < total) {
+        goto found_disc;
+    }
+    if (h->frame < frame && pos > 0 && pos < total) {
+        lower = pos;
+    }
+    guess = (frame - 1) * h->sectors - (frame - 1) / 4;
+    pos = guess + guess / 7;
+    func_8002954C(func_800289D0(file) + pos, buffer, 0x800, 0, 0);
+    func_80028A60(0);
+    if (h->frame == frame && pos < total) {
+    found_disc:
+        if (h->sector != 0) {
+            next = pos - h->sector - 2;
+            goto scan_disc;
+        }
+    } else {
+        if (h->frame < frame && lower < pos && pos < total) {
+            lower = pos;
+        }
+        next = (h->sectors - 1) * (frame - 1);
+        if (lower > 0) {
+            next = lower;
+        }
+    scan_disc:
+        do {
+            pos = next;
+            func_8002954C(func_800289D0(file) + pos, buffer, 0x800, 0, 0);
+            func_80028A60(0);
+            next = pos + 1;
+            if (h->magic == 0x160) {
+                next = pos + (h->sectors - h->sector);
+            }
+        } while (h->frame != frame && next < total);
+    }
+    if (next >= total) {
+        pos = -1;
+    }
+    return pos;
+}
+#else
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80074BA4);
+#endif
 
+#ifdef NON_MATCHING
+/* The last frame number of the selected movie, read from the header of its
+ * last sector (host PC file or disc), or -1. An index past the list returns
+ * without a value, and a kind above 2 reads with unset parameters, as the
+ * original does. Same instructions but for register allocation (frames and
+ * the read size swap $s3/$s4; the sector count takes $s0). */
+s32 func_8007519C(void) {
+    u8 buffer[0x1000];
+    s32 file;
+    char *name;
+    s32 sector_size;
+    s32 read_size;
+    s32 frames;
+    s32 header;
+    s32 fd;
+    s32 size;
+    s32 sectors;
+
+    frames = -1;
+    if (D_80077448 == 0) {
+        func_80028470(0x18, 0);
+        if (D_8007711C >= func_80028928(2)) {
+            return;
+        }
+        file = D_8007711C + 3;
+        name = func_80028998(file);
+        sector_size = 0x800;
+        read_size = 0x20;
+        header = 0;
+    } else if (D_80077448 == 1) {
+        func_80028470(0x18, 1);
+        if (D_8007711C >= func_80028928(1)) {
+            return;
+        }
+        file = D_8007711C + 2;
+        name = func_80028998(file);
+        sector_size = 0x920;
+        read_size = 0x28;
+        header = 8;
+    } else if (D_80077448 == 2) {
+        return -1;
+    }
+    if (func_8002C3D8() != 0) {
+        fd = PCopen(name, 0, 0);
+        size = PClseek(fd, 0, 2);
+        PClseek(fd, 0, 0);
+        PClseek(fd, size - sector_size, 0);
+        func_8004C398(fd, buffer, read_size);
+        if (((MovieSector *)(buffer + header))->magic == 0x160) {
+            frames = ((MovieSector *)(buffer + header))->frame;
+        }
+        PCclose(fd);
+        return frames;
+    }
+    sectors = (func_800288EC(file) + sector_size - 1) / sector_size;
+    func_8002954C(func_800289D0(file) + sectors - 1, buffer, 0x800, 0, 0);
+    func_80028A60(0);
+    if (((MovieSector *)buffer)->magic == 0x160) {
+        frames = ((MovieSector *)buffer)->frame;
+    }
+    return frames;
+}
+#else
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_8007519C);
+#endif
 
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_800753B8);
+/* Load the three sound effect banks from the host PC, waiting for each
+ * transfer to the sound memory. */
+void func_800753B8(void) {
+    void *bank;
+
+    bank = func_80028570("c:\\work\\cdrom\\sound\\wave\\main_se.wd", 0);
+    func_80037FD8(bank, 0);
+    while (func_8003BDFC(0) != 0) {
+    }
+    func_800320E8(bank);
+    bank = func_80028570("c:\\work\\cdrom\\sound\\wave\\bat_se.wd", 0);
+    func_80037FD8(bank, 0);
+    while (func_8003BDFC(0) != 0) {
+    }
+    func_800320E8(bank);
+    bank = func_80028570("c:\\work\\cdrom\\sound\\wave\\gear_se.wd", 0);
+    func_80037FD8(bank, 0);
+    while (func_8003BDFC(0) != 0) {
+    }
+    func_800320E8(bank);
+}
 
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_8007548C);
 
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80075508);
+void func_80075508(void) {
+    func_80039A80(D_8007700C, 0x7F, 0);
+}
 
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80075534);
 
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80075D4C);
+/* The first sector of directory record `index` (bytes 3..6). */
+u32 func_80075D4C(s32 index) {
+    u8 *record;
+
+    record = D_8004FDF0 + index * 7;
+    return ((record[6] << 24) + (record[5] << 16) + (record[4] << 8)) | record[3];
+}
 
 INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_8007042C);
 
@@ -74,20 +749,315 @@ INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_80070430);
 
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80075D8C);
 
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_8007625C);
+/* The menu's movie test: play the selected movie with the display blanked
+ * until it starts, then clear the screen and restore the menu's buffers.
+ * The unused array reproduces the original's frame. */
+void func_8007625C(void) {
+    u8 unused[0x18];
+    RECT screen;
 
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_800763BC);
+    screen = D_800704E0;
+    D_80077028 = 0;
+    D_800773AC = -1;
+    if (D_80077448 == 0) {
+        func_80028470(0x18, 0);
+        if (D_8007711C >= func_80028928(2)) {
+            return;
+        }
+        SetDispMask(0);
+    } else if (D_80077448 == 1) {
+        func_80028470(0x18, 1);
+        if (D_8007711C >= func_80028928(1)) {
+            return;
+        }
+        SetDispMask(0);
+    } else if (D_80077448 == 2) {
+        return;
+    }
+    D_80077124[0].draw.isbg = 0;
+    D_80077124[1].draw.isbg = 0;
+    if (D_80077454 != 0) {
+        D_80077124[0].disp.isrgb24 = 1;
+        D_80077124[1].disp.isrgb24 = 1;
+    }
+    func_80076488();
+    VSync(0);
+    ClearImage(&screen, 0, 0, 0);
+    DrawSync(0);
+    VSync(0);
+    D_80077124[0].draw.isbg = 1;
+    D_80077124[1].draw.isbg = 1;
+    if (D_80077454 != 0) {
+        D_80077124[0].disp.isrgb24 = 0;
+        D_80077124[1].disp.isrgb24 = 0;
+    }
+}
 
+/* Play the requested movie when its directory list holds it; `keep` stops
+ * the buttons from ending it. Declared int without a value, as the original
+ * (its return register stays live on every path). */
+s32 func_800763BC(u8 keep) {
+    u8 unused[0x18];
+
+    D_80077028 = keep;
+    D_800773AC = -1;
+    if (D_80077448 == 0) {
+        func_80028470(0x18, 0);
+        if (D_8007711C >= func_80028928(2)) {
+            return;
+        }
+    } else if (D_80077448 == 1) {
+        func_80028470(0x18, 1);
+        if (D_8007711C >= func_80028928(1)) {
+            return;
+        }
+    } else if (D_80077448 == 2) {
+        return;
+    }
+    D_80077124[0].draw.isbg = 0;
+    D_80077124[1].draw.isbg = 0;
+    D_80077124[0].disp.isrgb24 = 1;
+    D_80077124[1].disp.isrgb24 = 1;
+    func_80076488();
+}
+
+#ifdef NON_MATCHING
+/* Clear the screen, reopen the movie library and stream the movie, running
+ * three decode steps per frame (their VSync counters are kept for the
+ * monitor) until the frame callback or a button ends it; a movie that ended
+ * on the second buffer is copied to the first. The two unused arrays
+ * reproduce the original's frame. Same instructions except one delay slot:
+ * the original leaves the short-file exit's jump to the final return 0 unfilled. */
+s32 func_80076488(void) {
+    u8 unused0[0x90];
+    RECT screen;
+    u8 unused1[0x200];
+    RECT copy;
+    s32 file;
+    s32 select;
+    s32 budget;
+    s32 i;
+    s32 before;
+    s32 after;
+
+    screen = D_800704E0;
+    D_80077014 = 0;
+    D_80077020 = 0;
+    if (D_80077448 == 0) {
+        select = 0;
+        file = D_8007711C + 3;
+    } else {
+        select = 1;
+        file = D_8007711C + 2;
+    }
+    if (func_80028738(file) == 0x18) {
+        SetDispMask(1);
+        D_8004FE46 = 0;
+    } else {
+        VSync(0);
+        ClearImage(&screen, 0, 0, 0);
+        DrawSync(0);
+        VSync(0);
+        D_80077018 = 0;
+        D_8007701C = 0;
+        func_801D43B0();
+        if (D_800773A0 > 0) {
+            D_80077024 = (240 - D_800773A0) / 2;
+        } else {
+            D_80077024 = 0;
+        }
+        func_801D3538(320, 240, 0x80, 16, 32, 0x800, D_80077454);
+        D_801D68B4 = 0;
+        if (D_80077438 != 0) {
+            func_801D37CC(file, D_800773A8, D_800773A4, D_8007739C, D_80077398, select, 1, 0,
+                          D_80077024, 0, D_80077024 + 240, D_800773A0, func_800768D8);
+        } else {
+            func_801D37CC(file, D_800773A8, D_800773A4, D_8007739C, D_80077398, select, 0, 0,
+                          D_80077024, 0, D_80077024 + 240, D_800773A0, func_800768D8);
+        }
+        budget = 30;
+        PutDrawEnv(&D_80077124[D_80077018].draw);
+        PutDispEnv(&D_80077124[D_80077018].disp);
+        SetDispMask(1);
+        while (1) {
+            if (D_80077020 == 0) {
+                for (i = 0; i < budget / 10; i++) {
+                    before = VSync(1);
+                    func_801D3F7C();
+                    after = VSync(1);
+                    if (i * 2 + 1 < 32) {
+                        D_800773B8[i * 2] = before;
+                        D_800773B8[i * 2 + 1] = after;
+                    }
+                }
+                budget %= 10;
+            }
+            budget += 30;
+            func_800769A4();
+            func_80019CA0();
+            VSync(0);
+            PutDispEnv(&D_80077124[D_8007701C].disp);
+            D_8007701C = D_80077018;
+            if (D_80077014 == 1) {
+                break;
+            }
+            if (D_80077014 >= 2) {
+                D_80077014--;
+            }
+        }
+        func_801D4318();
+        if (D_8007701C == 0) {
+            DrawSync(0);
+            VSync(0);
+            copy.x = 0;
+            copy.y = 240;
+            copy.w = 480;
+            copy.h = 240;
+            MoveImage(&copy, 0, 0);
+            DrawSync(0);
+            VSync(0);
+            PutDispEnv(&D_80077124[1].disp);
+        }
+    }
+    return 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80076488);
+#endif
 
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_800768D8);
+/* The movie library's frame callback: the buffer the frame went to; the
+ * last frame ends the movie. */
+void func_800768D8(u16 frame, u16 x, u16 y) {
+    D_80077010 = frame;
+    if (D_801D68B4 == 1) {
+        if (y != D_80077024) {
+            D_80077018 = 0;
+        } else {
+            D_80077018 = 1;
+        }
+    } else if (y != D_80077024) {
+        D_80077018 = 0;
+        D_8007701C = 0;
+    } else {
+        D_80077018 = 1;
+        D_8007701C = 1;
+    }
+    if (frame >= D_8007739C && D_80077438 == 0) {
+        D_80077014 = 1;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_800769A4);
+/* Read controller port 0 with a repeat after 90 frames held; Circle or Start
+ * ends the movie in five frames, fading the CD volume, unless it is kept. */
+void func_800769A4(void) {
+    D_800773B4 = D_800773AC;
+    D_800773AC = func_8003569C(0);
+    if (D_800773B4 == D_800773AC && D_800773B4 != 0) {
+        D_80076F04++;
+        if (D_80076F08 < D_80076F04) {
+            D_800773B4 = 0;
+            D_80076F08 = 1;
+            D_80076F04 = 0;
+        }
+    } else {
+        D_80076F08 = 90;
+        D_80076F04 = 0;
+    }
+    if (!(D_800773B4 & 0x40) && (D_800773AC & 0x40) && D_80077028 == 0) {
+        func_80038D18(0, 10);
+        D_80077014 = 5;
+    }
+    if (!(D_800773B4 & 0x800) && (D_800773AC & 0x800) && D_80077028 == 0) {
+        func_80038D18(0, 10);
+        D_80077014 = 5;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80076AF0);
+/* Set up the geometry screen and the light and color matrices. */
+void func_80076AF0(void) {
+    SetGeomScreen(512);
+    SetGeomOffset(160, 120);
+    D_800770B8.m[0][0] = 0x1000;
+    D_800770B8.m[1][1] = 0x1000;
+    D_800770B8.m[2][2] = 0x1000;
+    D_800770F8.m[0][0] = 0x1000;
+    D_800770F8.m[1][1] = 0x1000;
+    D_800770F8.m[2][2] = 0x1000;
+    D_80077090.m[0][0] = 0x93D;
+    D_80077090.m[0][1] = -0x93D;
+    D_80077090.m[0][2] = -0x93D;
+    D_800770B8.m[0][1] = 0;
+    D_800770B8.m[0][2] = 0;
+    D_800770B8.m[1][0] = 0;
+    D_800770B8.m[1][2] = 0;
+    D_800770B8.m[2][0] = 0;
+    D_800770B8.m[2][1] = 0;
+    D_800770F8.m[0][1] = 0;
+    D_800770F8.m[0][2] = 0;
+    D_800770F8.m[1][0] = 0;
+    D_800770F8.m[1][2] = 0;
+    D_800770F8.m[2][0] = 0;
+    D_800770F8.m[2][1] = 0;
+    D_80077090.m[1][0] = 0;
+    D_80077090.m[1][1] = 0;
+    D_80077090.m[1][2] = 0;
+    D_80077090.m[2][0] = 0;
+    D_80077090.m[2][1] = 0;
+    D_80077090.m[2][2] = 0;
+    D_80077070.m[0][0] = 0x969;
+    D_80077070.m[0][1] = 0;
+    D_80077070.m[0][2] = 0;
+    D_80077070.m[1][0] = 0x969;
+    D_80077070.m[1][1] = 0;
+    D_80077070.m[1][2] = 0;
+    D_80077070.m[2][0] = 0x969;
+    D_80077070.m[2][1] = 0;
+    D_80077070.m[2][2] = 0;
+    SetColorMatrix(&D_80077070);
+    SetBackColor(0x60, 0x60, 0x60);
+}
 
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80076C68);
+/* Update the camera and load it as the rotation and translation. The unused
+ * local reproduces the original's frame. */
+void func_80076C68(void) {
+    u8 unused[0x18];
 
+    func_80076CA4();
+    SetRotMatrix(&D_80077050);
+    SetTransMatrix(&D_80077050);
+}
+
+#ifdef NON_MATCHING
+/* Aim the camera from the eye at the target, rolled, and compose the world
+ * to screen matrix. Same instructions except that the original keeps
+ * &D_8007703C (not &D_8007703C.vz) in $s5 for its two target.vx reads. */
+void func_80076CA4(void) {
+    s32 dz;
+    s32 dx;
+    s32 dy;
+    s32 dz2;
+    s32 dx2;
+
+    dz = D_8007703C.vz - D_8007702C.vz;
+    dz2 = dz * dz;
+    dx = D_8007703C.vx - D_8007702C.vx;
+    dx2 = dx * dx;
+    dy = D_8007703C.vy - D_8007702C.vy;
+    D_800770B0.vx = ratan2(dy, SquareRoot0(dz2 + dx2));
+    D_800770B0.vy = -ratan2(dx, dz);
+    func_8003F738(&D_800770B0, &D_800770D8);
+    RotMatrixZ(D_8007704C, &D_800770D8);
+    func_80049BDC(&D_800770F8, &D_800770D8);
+    D_800770D8.t[0] = 0;
+    D_800770D8.t[1] = 0;
+    D_800770D8.t[2] = SquareRoot0(dx2 + dy * dy + dz2);
+    D_800770B8.t[0] = D_80076F2C - D_8007703C.vx;
+    D_800770B8.t[1] = D_80076F30 - D_8007703C.vy;
+    D_800770B8.t[2] = D_80076F34 - D_8007703C.vz;
+    CompMatrix(&D_800770D8, &D_800770B8, &D_80077050);
+}
+#else
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80076CA4);
+#endif
 
 INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_800704E0);

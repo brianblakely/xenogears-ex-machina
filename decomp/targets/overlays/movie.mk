@@ -10,3 +10,5 @@ LINKER_EXTRA := .local/decomp/movie/undefined_syms_auto.txt .local/decomp/movie/
 SOURCE_DIRS := decomp/src/movie
 # Packed containers of this image (tools/packed_container.py).
 CONTAINERS := 1:40 2:35
+# Division checks (break 7 / break 6) are inline in the menu drawing code.
+MASPSX_FLAGS := --aspsx-version=2.34 --expand-div

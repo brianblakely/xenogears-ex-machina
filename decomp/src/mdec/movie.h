@@ -19,6 +19,22 @@ void *func_80031BDC(s32 size, s32 mode);  /* allocate a heap block */
 s32 func_8002C3D8(void);                  /* resident host-file table in use */
 void *func_8002A260(s32 blocks, s32 mode); /* resident stream ring */
 
+s32 func_80028F30(u32 **data, void *header); /* next host-stream frame */
+void func_800294B4(void *header);         /* release a host-stream frame */
+
+/* A movie sector's header (the first 32 bytes of each STR sector). */
+typedef struct MovieSectorHeader {
+    u16 magic;
+    u16 type;
+    u16 sector;
+    u16 sectors;
+    u32 frame;
+    u32 bytes;
+    u16 width;
+    u16 height;
+    u32 unused[3];
+} MovieSectorHeader;
+
 /* PsyQ libpress / CD streaming members linked into this image. */
 void DecDCTReset(s32 mode);
 void DecDCToutCallback(void (*callback)(void));
@@ -29,20 +45,49 @@ void StSetStream(s32 mode, s32 start_frame, s32 end_frame, void *func1, void *fu
 void movie_slice_decoded(void);
 void movie_stop(void);
 void movie_decode(void);
+void DecDCTin(void *buffer, s32 mode);
+void DecDCTout(void *buffer, s32 size);
+s32 DecDCTvlcSize(s32 size);
+s32 DecDCTvlc(u32 *bitstream, void *buffer);
+s32 StGetNext(u32 **data, void *header);
+void StFreeRing(void *data);
+void StCdInterrupt(void);
+u32 *movie_next_bitstream(u32 end_frame, MovieSectorHeader **header);
 void movie_restart(s32 file, s32 sector, s32 channel, s32 mode, CdlLOC *location);
 
-/* Player statics (movie library image). Layout evidence for later recovery:
- * movie_decode (801d3d54) keeps &movie_decode_display in $s0 and reaches
- * movie_vlc_buffers[i] as s0 - 0x14 + 4i and movie_slice_buffers as s0 - 8,
- * which GCC only does for members of one aggregate; the u8 flags at
- * 801e8958..801e8968 sit four bytes apart, so they are separate variables. */
+/* Decoder double-buffering state (801e8918..801e8958), one aggregate like the
+ * PsyQ movie samples' DECENV: movie_decode keeps &decode_display in $s0 and
+ * reaches vlc_buffers[i] as s0 - 0x14 + 4i and slice_buffers[i] as s0 - 8 + 4i,
+ * which GCC only does for members of one object. */
+typedef struct MovieArea {
+    s16 x, y;
+    s16 right, bottom; /* far corner of the frame drawn at (x, y) */
+} MovieArea;
+
+typedef struct MovieRect {
+    s16 x, y, w, h;
+} MovieRect;
+
+typedef struct MovieDecoder {
+    s32 vlc_index;           /* run-level buffer the next frame decodes into */
+    u32 *vlc_buffers[2];
+    s32 slice_index;         /* slice buffer the MDEC writes next */
+    void *slice_buffers[2];
+    s32 decode_display;      /* display buffer the next frame fills */
+    MovieArea display[2];    /* VRAM area of each display buffer */
+    s32 load_display;        /* display buffer slices load into */
+    MovieRect slice[2];      /* the slice each buffer loads next */
+} MovieDecoder;
+
+/* Player statics (movie library image). The u8 flags at 801e8958..801e8968
+ * sit four bytes apart, so they are separate variables. */
+extern MovieDecoder movie_decoder;
+void LoadImage(MovieRect *rect, u32 *data); /* libgpu */
 extern s32 movie_split_display;    /* frames span both display buffers */
 extern u16 movie_image_width;      /* 16-bit VRAM units */
 extern u16 movie_image_height;
 extern s32 movie_vlc_limit;        /* halfwords per decode call */
 extern s32 movie_color_mode;       /* bit 0: 24-bit output */
-extern s16 movie_display_buffers[2][4]; /* VRAM rectangle of each display buffer */
-extern s16 movie_slice_rects[2][4];     /* the slice each buffer loads next */
 extern s8 movie_player_state;
 extern u8 movie_mdec_idle;         /* the MDEC finished a frame */
 extern u8 movie_frame_waiting;     /* no frame was in the ring */
@@ -55,28 +100,27 @@ extern s16 movie_row_limit;        /* rows a slice loads at most */
 extern s32 movie_first_frame;
 extern s32 movie_shown_frame;      /* last frame fully loaded */
 extern s32 movie_end_frame;
-extern void (*movie_frame_callback)(); /* (frame, x, y) when loaded */
+extern void (*movie_frame_callback)(u16 frame, u16 x, u16 y); /* a frame is loaded */
+extern s32 movie_stream_deferred;  /* a ring interrupt waits for the MDEC DMA */
 extern s32 movie_load_enabled;     /* slices go to VRAM */
 extern s32 movie_load_restart;
-extern s32 movie_vlc_buffer_index;
-extern s32 movie_slice_buffer_index;
-extern s32 movie_decode_display;   /* display buffer the next frame fills */
-extern s32 movie_load_display;     /* display buffer slices load into */
 extern u16 movie_frame_width;      /* last frame header width */
 extern u16 movie_frame_height;
 extern u16 movie_slice_width;      /* 16 or 24 */
 extern s32 movie_stall_count;      /* polls without a ring frame */
-extern s32 movie_vlc_pending;      /* a frame's decode is resumable */
+extern volatile s32 movie_vlc_pending;      /* a frame's decode is resumable */
 extern s32 movie_skipped_frames;
+extern s32 movie_ring_frame;       /* frame of the last ring bitstream */
+extern s32 movie_previous_frame;
+extern s32 movie_loaded_frame;     /* frame the MDEC decodes */
+extern u32 *movie_frame_bitstream;
+extern MovieSectorHeader *movie_decoded_bitstream;
 extern s16 D_8005A4B8;             /* resident stream state */
 extern s32 D_8005A4DC;
 extern s32 D_8005A4A8;
 extern s32 D_8005A4B4;
 extern s16 D_80062514;      /* -1 stopped, 0 closed, 1, 2 */
 extern u8 movie_host_stream;       /* resident host-file table in use */
-extern void *movie_vlc_buffers[2];   /* the two run-level buffers */
-extern void *movie_slice_buffer0;    /* the two decoded-slice buffers */
-extern void *movie_slice_buffer1;
 extern void *movie_ring_buffer;    /* the stream ring */
 extern s32 movie_saved_directory[2]; /* directory of the movie files */
 extern s32 movie_fade_in_pending;

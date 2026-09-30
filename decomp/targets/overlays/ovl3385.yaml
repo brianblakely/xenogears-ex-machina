@@ -42,6 +42,5 @@ segments:
     start: 0x0
     vram: 0x801fc000
     subsegments:
-      - [0x0, .rodata, ovl3385]
-      - [0xdc, c, ovl3385]
+      - [0x0, c, ovl3385]
   - [0x814]
