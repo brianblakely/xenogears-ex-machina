@@ -5946,7 +5946,91 @@ void func_80092808(void) {
     actor->pc++;
 }
 
+#ifdef NON_MATCHING
+/* Walk the controlled actor one step toward (x, z); with `mode` 0 the goal
+ * is 40 units along direction `angle` from the running actor (publishing
+ * the field id first when 800adbec asks). Returns -1 while walking (mode 1
+ * retries the instruction) and 0 once it has arrived or is stuck, when it
+ * stops, turns and the instruction continues. */
+s32 func_80092894(s32 angle, s32 mode, s32 x, s32 z) {
+    FieldDescriptor *descriptor;
+    FieldActor *player;
+    FieldModel *model;
+    s16 from_x;
+    s16 from_z;
+    s32 reach;
+    s32 dx;
+    s32 dz;
+    s32 value;
+    s32 field;
+    VECTOR delta;
+    u16 heading;
+
+    D_800B2078.encounter_inhibition = -1;
+    descriptor = &D_800AF880.components.descriptors[D_800B2078.controlled];
+    player = descriptor->actor;
+    model = descriptor->model;
+    player->layer_flags |= 0x38;
+    model->unk18 = 0x80000;
+    from_x = WHOLE(player->position[0]);
+    from_z = WHOLE(player->position[2]);
+    reach = func_80099A8C(8) * 2;
+    if (mode == 0) {
+        if (D_800ADBDC == 0 || D_800ADBE4 == 0) {
+            D_800B00C0 = 1;
+        }
+        if (D_800ADBEC != 0) {
+            value = func_800ACDEC(4);
+            field = func_800ACDEC(2);
+            func_80092F44();
+            D_800ADBEC = 0;
+            func_800A3074(2, value);
+            D_8004F34C = field;
+        }
+        angle = D_800B06B8->rotation.vy + angle - 0x400;
+        x = D_800B0078->unk60 + WHOLE(D_800B0078->position[0]) + ((func_8003F8CC(angle) * 40) >> 12);
+        z = D_800B0078->unk64 + WHOLE(D_800B0078->position[2]) + (-(func_8003F8B0(angle) * 40) >> 12);
+    }
+    dx = x - from_x;
+    dz = z - from_z;
+    delta.vx = dx;
+    delta.vy = 0;
+    delta.vz = dz;
+    if (reach < func_80099A4C(dx, dz)) {
+        if (player->last_position[0] == WHOLE(player->position[0]) &&
+            player->last_position[1] == WHOLE(player->position[1]) &&
+            player->last_position[2] == WHOLE(player->position[2])) {
+            player->stuck++;
+        } else {
+            player->stuck = 0;
+        }
+        if ((s16)player->stuck <= 0x40) {
+            player->heading_goal = player->heading = func_8007B694(&delta);
+            D_800B00C0 = 1;
+            if (mode != 0) {
+                D_800B0078->pc -= 1;
+            }
+            return -1;
+        }
+    }
+    player->heading_goal = player->heading = player->heading_goal | 0x8000;
+    model->unk18 = 0;
+    player->unkE8 = 0;
+    func_800821F4(model, 0, &D_800AF880.components.descriptors[D_800B2078.controlled]);
+    D_800B00C0 = 1;
+    player->slots[player->slot].value = 0xFFFF;
+    player->slots[player->slot].move_mode = 0;
+    player->flags &= ~0x200000;
+    if (mode == 1) {
+        player->layer_flags &= ~0x38;
+    }
+    player->stuck = 0;
+    D_800B0078->pc += 6;
+    return 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80092894);
+#endif
 
 /* Walk the player to the selected x/z (800a0c4c/80092894) when the field
  * is idle, restoring its flag 0x80 on arrival; otherwise retry. */
