@@ -842,6 +842,8 @@ typedef struct {
 
 extern TrailPoint D_8009CEC4[32];
 extern s16 D_8009D154; /* trail index */
+
+MATRIX *func_8004ABBC(SVECTOR *angle, MATRIX *m); /* rotation matrix from angles */
 /* Parked vehicle headings; scalars inside D_8006EE54 (unk5A-unk5E), which
  * the vehicle starts address as separate variables. */
 extern u16 D_8006EE5A, D_8006EE5C, D_8006EE5E;

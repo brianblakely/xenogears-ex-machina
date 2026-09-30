@@ -108,7 +108,73 @@ s32 func_800907C4(void) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8008E190", func_800907F4);
+/* Spin the vehicle's two rotors (scene objects 2 and 3): command 9 spins
+ * up, 10 spins down; the second rotor follows the first. */
+s32 func_800907F4(s32 index) {
+    ActorScratch *scratch;
+    WorldmapActor *actor;
+    SceneObject *rotor;
+    SceneObject *tail;
+
+    scratch = (ActorScratch *)0x1F800000;
+    actor = &D_8009BE24[index];
+    rotor = &D_8009C620[2];
+    tail = &D_8009C620[3];
+    if (actor->unk4 == 9) {
+        actor->unk4 = 0;
+        actor->state = 1;
+    } else if (actor->unk4 == 10) {
+        actor->unk4 = 0;
+        actor->state = 2;
+    }
+    switch (actor->state) {
+    case 0:
+        actor->unk58 = 0;
+        actor->unk5C = 0;
+        break;
+    case 1:
+        actor->unk58 += 4;
+        if (actor->unk58 > 0x10) {
+            actor->unk5C += 4;
+        }
+        if (actor->unk58 >= 0x80) {
+            actor->unk58 = 0x80;
+        }
+        if (actor->unk5C >= 0x80) {
+            actor->unk5C = 0x80;
+        }
+        if ((actor->unk58 >= 0x80) & (actor->unk5C >= 0x80)) {
+            actor->state = 3;
+        }
+        break;
+    case 2:
+        actor->unk58 -= 4;
+        if (actor->unk58 < 0x70) {
+            actor->unk5C -= 4;
+        }
+        if (actor->unk58 < 0) {
+            actor->unk58 = 0;
+        }
+        if (actor->unk5C < 0) {
+            actor->unk5C = 0;
+        }
+        if ((actor->unk58 == 0) & (actor->unk5C == 0)) {
+            actor->state = 0;
+        }
+        break;
+    }
+    actor->u.step += actor->unk58;
+    actor->unk54 -= actor->unk5C;
+    scratch->angle.vx = 0;
+    scratch->position.vx = 0;
+    scratch->position.vy = actor->u.step;
+    scratch->angle.vy = actor->unk54;
+    scratch->position.vz = rotor->angle.vz;
+    scratch->angle.vz = tail->angle.vz;
+    func_8004ABBC(&scratch->position, &rotor->matrix);
+    func_8004ABBC(&scratch->angle, &tail->matrix);
+    return 1;
+}
 
 /* Track the two-button combination and latch its press edge. */
 void func_80090A18(void) {
