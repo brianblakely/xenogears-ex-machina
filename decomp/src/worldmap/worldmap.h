@@ -390,37 +390,27 @@ extern s16 D_8006F94E; /* next scene */
 extern u16 D_8006F950; /* heading carried into the next scene */
 extern s32 D_8009BBC4;
 
-/* Sprite set of a scene object: quads built from a definition. */
+/* Scene object (0x54 bytes): a transformed sprite set linked to a parent. */
 typedef struct {
     u8 pad0[4];
     u16 count;
 } SpriteDef;
 
-typedef struct {
-    u8 pad0[0x40];
-    SpriteDef *def;   /* 0x40 */
+typedef struct SceneObject {
+    s32 unk0;
+    s32 unk4;
+    Vec3 position;              /* 0x08 */
+    s32 unk14;
+    SVECTOR angle;              /* 0x18 */
+    MATRIX matrix;              /* 0x20 */
+    SpriteDef *def;             /* 0x40 */
     s32 unk44;
-    PolyFT4 *quads;   /* 0x48 */
+    void *prims;                /* 0x48 */
     s32 unk4C;
-    s32 unk50;
-} SceneSprite;
+    struct SceneObject *parent; /* 0x50 */
+} SceneObject;
 
-/* World-map scene state (layout recovered field by field). */
-/* BEGIN WorldmapScene */
-typedef struct {
-    u8 pad0[0x8];
-    Vec3 position; /* 0x8 */
-    u8 pad14[0x484];
-    SceneSprite sprites[2]; /* 0x498 */
-    u8 pad540[0x18];
-    SVECTOR angle; /* 0x558 */
-    MATRIX rotation; /* 0x560 */
-    u8 pad580[0x1418];
-    SceneSprite effects[3]; /* 0x1998 */
-} WorldmapScene;
-/* END WorldmapScene */
-
-extern WorldmapScene *D_8009C620;
+extern SceneObject *D_8009C620; /* scene objects */
 extern u16 D_8009A450;
 extern u16 D_8009A46C[];
 extern u16 D_8009A4D8;
@@ -446,9 +436,15 @@ typedef struct {
     u16 pad1;
 } PolyFT3;
 
-void func_80083108(SceneSprite *sprite, PolyFT3 *prims, s32 count, s32 mode);
+void func_80083108(SceneObject *object, PolyFT3 *prims, s32 count, s32 mode);
 
 void func_8003F968(void *a, void *b, s32 size);
+
+extern void *D_8009D7E8, *D_8009D7EC, *D_8009CEB4, *D_8009D150, *D_8009D7F8, *D_8009D7FC;
+extern u16 D_8009B64C[][2]; /* per area: two scene objects */
+extern u16 D_8009B674[];    /* per area: scene object */
+
+void func_80087904(SceneObject *object, void *prims, s32 count, s32 mode);
 
 /* Frame state. */
 typedef struct {

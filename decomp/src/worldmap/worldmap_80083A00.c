@@ -12,7 +12,10 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80084818);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_800848B4);
+/* Link scene object `child` to `parent`. */
+void func_800848B4(s32 parent, s32 child) {
+    D_8009C620[child].parent = &D_8009C620[parent];
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_800848F4);
 
@@ -32,35 +35,88 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80085FE0);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80086124);
+/* Free two work buffers. */
+void func_80086124(void) {
+    func_800320E8(D_8009D7EC);
+    func_800320E8(D_8009D7E8);
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008615C);
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_800863E0);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80086568);
+/* Free two work buffers. */
+void func_80086568(void) {
+    func_800320E8(D_8009CEB4);
+    func_800320E8(D_8009D150);
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_800865A0);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_800866C8);
+/* Free two work buffers. */
+void func_800866C8(void) {
+    func_800320E8(D_8009D7FC);
+    func_800320E8(D_8009D7F8);
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80086700);
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80086798);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80087710);
+/* Reset an actor to step 0 with parameter 8. */
+s32 func_80087710(s32 index) {
+    WorldmapActor *actor;
+
+    actor = &D_8009BE24[index];
+    actor->u.step = 0;
+    actor->unk54 = 8;
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80087734);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_800877E0);
+/* Reset an actor to step 0 with parameter 8. */
+s32 func_800877E0(s32 index) {
+    WorldmapActor *actor;
+
+    actor = &D_8009BE24[index];
+    actor->u.step = 0;
+    actor->unk54 = 8;
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80087804);
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80087904);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_800879A8);
+/* Reset an actor to step 0 with parameter 0x10 and rebuild the area's two
+ * scene objects. */
+#ifdef NON_MATCHING /* actor index scaled into a separate register */
+s32 func_800879A8(s32 index) {
+    WorldmapActor *actor;
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_800879E0);
+    actor = &D_8009BE24[index];
+    actor->u.step = 0;
+    actor->unk54 = 0x10;
+    func_800879E0();
+    return 1;
+}
+#else
+INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_800879A8);
+#endif
+
+/* Rebuild the primitives of the current area's two scene objects. */
+s32 func_800879E0(void) {
+    s32 unused[2]; /* unreferenced; the original frame reserves it */
+    SceneObject *first;
+    SceneObject *second;
+
+    first = &D_8009C620[D_8009B64C[D_8009C610][0]];
+    second = &D_8009C620[D_8009B64C[D_8009C610][1]];
+    func_80087904(first, first->prims, first->def->count, 3);
+    func_80087904(second, second->prims, second->def->count, 3);
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80087A8C);
 
@@ -68,7 +124,17 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80087C6C);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80087F60);
+/* Link the four objects before the area's scene object to it. */
+s32 func_80087F60(void) {
+    u16 object;
+
+    object = D_8009B674[D_8009C610];
+    func_800848B4(object, object - 4);
+    func_800848B4(object, object - 3);
+    func_800848B4(object, object - 2);
+    func_800848B4(object, object - 1);
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80087FD0);
 

@@ -60,10 +60,10 @@ void func_800831D8(PolyFT3 *prims, s32 count, s32 r, s32 g, s32 b) {
 
 /* Rebuild the triangles of scene effect `index`. */
 s32 func_80083214(s32 index) {
-    SceneSprite *sprite;
+    SceneObject *object;
 
-    sprite = &D_8009C620->effects[index];
-    func_80083108(sprite, (PolyFT3 *)sprite->quads, sprite->def->count, 3);
+    object = &D_8009C620[78 + index];
+    func_80083108(object, object->prims, object->def->count, 3);
     return 1;
 }
 

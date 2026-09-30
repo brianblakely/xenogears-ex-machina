@@ -47,10 +47,10 @@ s32 func_800794D8(s32 index) {
     actor->unk28 = 0x2000000;
     actor->unk30 = 0x1500000;
     actor->state = 0;
-    D_8009C620->angle.vx = 0;
-    D_8009C620->angle.vy = 0x780;
-    D_8009C620->angle.vz = 0;
-    func_8004A92C(&D_8009C620->angle, &D_8009C620->rotation);
+    D_8009C620[16].angle.vx = 0;
+    D_8009C620[16].angle.vy = 0x780;
+    D_8009C620[16].angle.vz = 0;
+    func_8004A92C(&D_8009C620[16].angle, &D_8009C620[16].matrix);
     return 1;
 }
 
@@ -61,7 +61,7 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80077E68", func_80
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80077E68", func_80079778);
 
 /* Build `count` semi-transparent textured quads for a scene sprite. */
-void func_8007A06C(SceneSprite *sprite, PolyFT4 *quads, s32 count) {
+void func_8007A06C(SceneObject *object, PolyFT4 *quads, s32 count) {
     PolyFT4 *quad;
     s32 i;
 
@@ -74,7 +74,7 @@ void func_8007A06C(SceneSprite *sprite, PolyFT4 *quads, s32 count) {
         setRGB0(quad, 0x80, 0x80, 0x80);
         quad++;
     }
-    func_8003F968((void *)sprite->unk4C, sprite->quads, count * sizeof(PolyFT4));
+    func_8003F968((void *)object->unk4C, object->prims, count * sizeof(PolyFT4));
 }
 
 /* Rebuild both scene sprites' quads. */
@@ -85,8 +85,8 @@ s32 func_8007A144(s32 index) {
     actor->state = 0;
     actor->unk70 = 0;
     actor->unk6C = 0;
-    func_8007A06C(&D_8009C620->sprites[0], D_8009C620->sprites[0].quads, D_8009C620->sprites[0].def->count);
-    func_8007A06C(&D_8009C620->sprites[1], D_8009C620->sprites[1].quads, D_8009C620->sprites[1].def->count);
+    func_8007A06C(&D_8009C620[14], D_8009C620[14].prims, D_8009C620[14].def->count);
+    func_8007A06C(&D_8009C620[15], D_8009C620[15].prims, D_8009C620[15].def->count);
     return 3;
 }
 
@@ -114,9 +114,9 @@ s32 func_8007A570(s32 index) {
 
     actor = &D_8009BE24[index];
     actor->unk4 = 0;
-    SCRIPT_VECTOR->vx = D_8009C620->position.vx;
-    SCRIPT_VECTOR->vy = D_8009C620->position.vy;
-    SCRIPT_VECTOR->vz = D_8009C620->position.vz;
+    SCRIPT_VECTOR->vx = D_8009C620[0].position.vx;
+    SCRIPT_VECTOR->vy = D_8009C620[0].position.vy;
+    SCRIPT_VECTOR->vz = D_8009C620[0].position.vz;
     func_80089160(0xA, SCRIPT_VECTOR, 0);
     return 3;
 }
