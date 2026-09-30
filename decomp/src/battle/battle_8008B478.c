@@ -378,4 +378,137 @@ u8 member;
     return cancelled;
 }
 
+/* Run the member's combo menu: list the known combo steps (0-6) with their
+ * AP costs, then move the cursor over the eight cells (cell 7 confirms),
+ * add the step under it while AP last (up to seven steps) or take the last
+ * one back, and on confirm pick the target. Returns 0 when confirmed with a
+ * target (the remaining AP stored), 1 when cancelled. Nonmatching: the
+ * cleared 8-byte list is filled ascending, the cursor x and the step
+ * count's increment schedule differently. */
+#ifdef NON_MATCHING
+u8 func_8008C81C(u8 member) {
+    u8 steps[7];
+    u8 marks[8];
+    u8 costs[7];
+    u8 spare[8];
+    u8 paid[7];
+    s32 frame;
+    u8 ticks;
+    u8 redraw;
+    u8 ap;
+    u8 cursor;
+    u8 count;
+    u8 done;
+    s32 i;
+    s32 n;
+
+    done = 0;
+    cursor = 0;
+    count = 0;
+    redraw = 1;
+    ap = D_800D32A0[member].unk0;
+    frame = 4;
+    ticks = 0;
+    D_800D2D28->unkCB = 0;
+    for (i = 0; i < 7; i++) {
+        steps[i] = 0xFF;
+        costs[i] = 0;
+        D_800C3EAC->combo[i] = 0xFF;
+        D_800C3DE0[i] = 0xFF;
+    }
+    for (i = 0; i < 8; i++) {
+        marks[i] = 0;
+    }
+    n = 0;
+    for (i = 0; i < 7; i++) {
+        if (func_80089C6C(D_8006ECF4[D_80059468[member]].mask0, i)) {
+            steps[n] = i;
+            costs[n] = D_800CCCE8.partyCommands[member][i + 7].apCost;
+            n++;
+        }
+    }
+    func_8008F8F4(0, 0x16, 0x5C, 0x122, 0x4C, 1, 1);
+    func_8008F8F4(1, 0x10, 0x2C, 0xE8, 0x2C, 1, 1);
+    while (D_800D2D28->unkBF[0] == 0 || D_800D2D28->unkBF[1] == 0) {
+        func_800716D8();
+    }
+    func_80092784(member, steps, costs);
+    func_80077698();
+    while (done == 0) {
+        if (redraw) {
+            func_80092B74(member, ap);
+            redraw = 0;
+        }
+        func_80090B90((cursor % 2) * 0x8C + 0x1E, (cursor / 2) * 16 + 0x64, &frame, &ticks);
+        func_800716D8();
+        switch (D_800D3014) {
+        case 5:
+            if (count != 0) {
+                count--;
+                redraw = 1;
+                ap += paid[count];
+                D_800C3EAC->combo[count] = 0xFF;
+                D_800C3DE0[count] = 0xFF;
+            } else {
+                done = 2;
+            }
+            break;
+        case 4:
+            if (cursor == 7) {
+                if (D_800C3EAC->combo[0] == 0xFF) {
+                    done = 2;
+                } else {
+                    func_8008C360(0);
+                    D_800D2D28->unkC6 = 1;
+                    if (func_80085084(0x1000, member, 1)) {
+                        D_800D32A0[member].unk0 = ap;
+                        done = 1;
+                    } else {
+                        D_800D2D28->unkC6 = 0;
+                        func_8008C3F0(member);
+                    }
+                }
+            } else if (count != 7 && steps[cursor] != 0xFF && ap >= costs[cursor]) {
+                D_800C3EAC->combo[count] = steps[cursor];
+                D_800C3DE0[count] = cursor;
+                redraw = 1;
+                ap -= costs[cursor];
+                paid[count] = costs[cursor];
+                count++;
+            }
+            break;
+        case 0:
+            cursor++;
+            if (cursor >= 8) {
+                cursor--;
+            }
+            break;
+        case 1:
+            cursor += 2;
+            if (cursor >= 8) {
+                cursor -= 2;
+            }
+            break;
+        case 2:
+            if (cursor != 0) {
+                cursor--;
+            }
+            break;
+        case 3:
+            if (cursor >= 2) {
+                cursor -= 2;
+            }
+            break;
+        case 6:
+        case 7:
+        case 9:
+        case 10:
+            cursor = 7;
+            break;
+        }
+    }
+    return done - 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8008B478", func_8008C81C);
+#endif
