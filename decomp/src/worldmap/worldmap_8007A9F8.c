@@ -35,7 +35,35 @@ s32 func_8007BA08(void) {
     return 3;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007A9F8", func_8007BA10);
+/* Exhaust trail: move the emitter along its path for 60 frames, then reset to the player and end the step. */
+s32 func_8007BA10(s32 index) {
+    WorldmapActor *actor;
+    s32 result;
+
+    result = 1;
+    actor = &D_8009BE24[index];
+    if (actor->unk4 == 1) {
+        actor->unk4 = 0;
+        actor->wait = 0x3C;
+        actor->position.vx = D_8009C5AC.vx;
+        actor->position.vy = D_8009C5AC.vy;
+        actor->position.vz = D_8009C5AC.vz;
+    }
+    if (--actor->wait > 0) {
+        actor->position.vx -= 0x95D0;
+        actor->position.vz += 0x2F130;
+        SCRIPT_VECTOR->vx = actor->position.vx >> 12;
+        SCRIPT_VECTOR->vy = actor->position.vy >> 12;
+        SCRIPT_VECTOR->vz = actor->position.vz >> 12;
+        func_80089160(9, SCRIPT_VECTOR, &D_8009A488);
+    } else {
+        actor->wait = 0x3C;
+        actor->position = D_8009C5AC;
+        func_800894C8(9);
+        result = 3;
+    }
+    return result;
+}
 
 /* Link scene objects 1-3 to object 0 and reset its rotation. */
 s32 func_8007BB60(s32 index) {
@@ -59,7 +87,30 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007A9F8", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007A9F8", func_8007BF50);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007A9F8", func_8007C260);
+/* Leave the world map for scene 0x111 (flag word 2), releasing its sound, subsystems and buffers. */
+void func_8007C260(void) {
+    func_80039FF8();
+    func_8003852C(D_8006259C);
+    func_800320E8(D_8006259C);
+    func_80084818();
+    func_80086568();
+    func_800866C8();
+    func_80074F04();
+    func_800750DC();
+    func_80088FF4();
+    func_80089128();
+    func_80097D64();
+    func_800320E8(D_8009BC38[0]);
+    func_800320E8(D_8009BCB0[0]);
+    func_800320E8(D_8009BC38[1]);
+    func_800320E8(D_8009BCB0[1]);
+    func_800320E8(D_8009C180);
+    func_800976A0();
+    D_8006F94E = 0x111;
+    D_8006F954[0] = 2;
+    D_8009BBC4 = 1;
+    D_8006F950 = D_8009BD38.vy;
+}
 
 /* Start an actor's timed sequence: first state and its duration. */
 s32 func_8007C36C(s32 index) {

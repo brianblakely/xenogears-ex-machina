@@ -768,5 +768,6 @@ extern u16 D_8005957C; /* debug switches */
 extern void *D_8006258C;
 extern s32 D_8009D804;
 extern SVECTOR D_8009A5B4[]; /* start position per entry */
+extern SVECTOR D_8009A488; /* exhaust effect angle */
 
 #endif
