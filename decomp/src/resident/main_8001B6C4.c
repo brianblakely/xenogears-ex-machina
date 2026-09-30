@@ -43,26 +43,25 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8001B6C4", func_8001BB
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8001B6C4", func_8001BBAC);
 
-/* A random byte in [low, high]; 0xff for an unset low, 0 for an unset high, any byte when the range is 0xff or wider. */
-/* Nonmatching under GCC 2.7.2 and 2.6.3: the low == high return merges with a shared exit. */
+/* A random byte in [low, high]: any byte for an unset low (0xff) or a range of 0xff or wider, 0 for an unset high. */
+/* Nonmatching: GCC 2.6.3 cross-jumps the low == high return into the tail of the modulo result; the original keeps its own. */
 #ifdef NON_MATCHING
 u8 func_8001BD40(u8 low, u8 high) {
     s32 span;
 
-    if (low == 0xFF) {
-        return 0xFF;
+    if (low != 0xFF) {
+        if (high == 0) {
+            return 0;
+        }
+        span = high - low;
+        if (low == high) {
+            return low;
+        }
+        if (span < 0xFF) {
+            return low + (u8)rand() % (span + 1);
+        }
     }
-    if (high == 0) {
-        return 0;
-    }
-    span = high - low;
-    if (low == high) {
-        return low;
-    }
-    if (span >= 0xFF) {
-        return rand();
-    }
-    return low + (u8)rand() % (span + 1);
+    return rand();
 }
 #else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8001B6C4", func_8001BD40);
