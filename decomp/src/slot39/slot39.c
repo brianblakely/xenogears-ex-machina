@@ -2880,6 +2880,8 @@ u8 func_801E0F78(u8 slot, u8 arg1) {
     return 1;
 }
 
+/* Open the 801e1544 screen: its block (+438), labels and window, the party
+ * panel when two or more members can take part, and the green gauges. */
 void func_801E1014(void) {
     MenuBlock438 *block;
     s32 i;
