@@ -561,6 +561,22 @@ typedef struct MenuBlock434 {
     u8 padA19[0x3];
 } MenuBlock434;
 
+/* A portrait frame (*(state + 364)). */
+typedef struct MenuPortrait {
+    u8 pad0[0x3C0];
+    POLY_FT4 side[2]; /* 3C0 */
+    POLY_FT4 top[2]; /* 410 */
+    POLY_FT4 bottom[2]; /* 460 */
+    u8 pad4B0[0x200];
+    SVECTOR sideVerts[4]; /* 6B0 */
+    SVECTOR topVerts[4]; /* 6D0 */
+    SVECTOR bottomVerts[4]; /* 6F0 */
+    u8 pad710[0x4];
+    u8 unk714; /* 714 */
+    u8 pad715[0x8];
+    u8 unk71D; /* 71D */
+} MenuPortrait;
+
 /* The menu mode's state (*D_800625A0). */
 typedef struct MenuState {
     MenuMover movers[3]; /* 0 */
@@ -606,7 +622,7 @@ typedef struct MenuState {
     MenuBlock358 *block358; /* 358 */
     MenuBlock35C *block35C; /* 35C */
     MenuLabels360 *labels360; /* 360 */
-    u8 *portraits[7]; /* 364 */
+    MenuPortrait *portraits[7]; /* 364 */
     MenuMark *portraitMarks[7]; /* 380 */
     MenuFieldBlock *fieldBlocks[3]; /* 39C: three 127c-byte field blocks */
     u8 *images[32]; /* 3A8 */
@@ -685,6 +701,7 @@ extern u32 D_801E96E8[];   /* single-bit masks */
 extern s32 D_801E9768[];
 extern u8 D_801E9E64[];
 extern u8 D_801E9E84[];
+extern u8 D_801E9EA0[];
 extern u8 D_801EA19C[];  /* field menu command cursor positions */
 extern u8 D_801EA1D4[];  /* title file screen cursor positions */
 extern u8 D_801EA528[];  /* field menu command labels */
@@ -740,6 +757,7 @@ void func_8002A498(s32 arg0);
 s32 func_8002C3D8(void);                                /* wait for the read */
 void func_80019CA0(void);
 void func_8001BD40(s32 arg0, s32 arg1);
+void func_800263E4(void *sheet, s32 image, void *dst, s32 buffer, s32 x, s32 y, s32 scale, s32 flipX, s32 flipY);
 s32 func_8002675C(void *sheet, s32 image, void *dst, s32 buffer, s32 x, s32 y, s32 scale);
 void func_80033698(s32 x, s32 y);
 s32 func_80035734(s32 port);  /* pad connected */
@@ -957,7 +975,7 @@ void func_801E5E4C(void);
 void func_801E7E68(void *records, u8 *layout, s32 arg2, s32 count);
 void func_801E8018(u8 count, MenuLabelSlot *labels, u8 *table, u8 *flags);
 void func_801E8044(u8 count, u8 *flags);
-void func_801E8070(u8 count, MenuLabelSlot *labels, u8 *table, u8 *arg3, u8 *placement, u8 selected, s32 arg6,
+void func_801E8070(u8 count, MenuLabelSlot *labels, u8 *table, u8 *arg3, u8 *flags, u8 selected, u8 arg6,
                    s32 arg7);
 void func_801E8474(u8 count, u8 *positions);
 void func_801E92CC(void);

@@ -2125,7 +2125,19 @@ void func_801D3B00(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D3C4C);
+/* Lay out portrait `slot`'s frame at (x, y), `h` high: the top, the flipped
+ * bottom and the side pieces. */
+void func_801D3C4C(u8 slot, u16 x, u16 y, s32 unused, u16 h) {
+    MenuPortrait *portrait;
+
+    portrait = D_800625A0->portraits[slot];
+    func_8002675C(D_800625A0->sheet, 0x105, portrait->top, D_800625A0->bufferIndex, x, y, 0x1000);
+    func_800263E4(D_800625A0->sheet, 0x105, portrait->bottom, D_800625A0->bufferIndex, x, y + h - 8, 0x1000, 0, 1);
+    func_8002675C(D_800625A0->sheet, 0x106, portrait->side, D_800625A0->bufferIndex, x, y + 8, 0x1000);
+    func_801C851C(portrait->topVerts, x, y, 8, 8);
+    func_801C851C(portrait->bottomVerts, x, y + h, 8, -8);
+    func_801C851C(portrait->sideVerts, x, y + 8, 8, h - 8);
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D3DB0);
 
@@ -2642,7 +2654,35 @@ void func_801DE400(void) {
     func_800320E8(D_800625A0->labels360);
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DE474);
+/* Lay out the page `page` labels of the 801ddf24 screen (rows 2-5 when
+ * `wide`, else 0-1) and its window. */
+void func_801DE474(u8 wide, u8 page) {
+    s32 i;
+    s32 first;
+    s32 end;
+    s32 h;
+
+    for (i = 0; i < 6; i++) {
+        D_800625A0->party->unk40[i] = 0;
+    }
+    if (wide) {
+        first = 2;
+        end = 6;
+        h = 0x72;
+    } else {
+        first = 0;
+        end = 2;
+        h = 0x5a;
+    }
+    for (i = first; i < end; i++) {
+        func_801E8070(6, D_800625A0->labels14E0, D_801EA558 + page * 6, D_801E9EA0, D_800625A0->party->unk40, i,
+                      i, 3);
+    }
+    if (D_800625A0->party->unk20[4] != 0) {
+        func_801D4EA0(4);
+    }
+    func_801D397C(4, 0x10, 0xc, 0x80, h, 0, 1, 4, 0);
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DE5CC);
 
