@@ -761,6 +761,8 @@ void func_801E7D14(void *a, void *b, u32 *ot, s32 buffer);
 u32 func_801C527C(u32 mask, u8 id);
 u32 func_801C5260(u8 id);
 u32 func_801D1078(u8 id, u8 kind);
+void func_801D06D8(u32 first, u32 second, u32 third, s32 unk3, s32 unk4);
+void func_801D18F8(s32 top, u8 *ids, u8 *kinds, u8 *chosen, u8 *held);
 void func_801CCEBC(u8 count, u8 *shown);
 void func_801D0EC8(u8 close);
 void func_801D61B8(GearTable *table, u8 id);
