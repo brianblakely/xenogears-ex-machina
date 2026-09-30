@@ -130,6 +130,7 @@ decomp/src/battle/gte.h
 decomp/src/battle/menu_pages.h
 decomp/src/battle/model.h
 decomp/src/battle/psyq.h
+decomp/src/battle/resolver.h
 decomp/src/battle/scene.h
 decomp/src/debug2611/battle_debug.h
 decomp/src/debug2611/debug2611.c
@@ -235,6 +236,7 @@ decomp/src/worldmap/worldmap_8008E190.c
 decomp/src/worldmap/worldmap_80090A84.c
 decomp/src/worldmap/worldmap_80094A5C.c
 decomp/targets/overlays/battle.mk
+decomp/targets/overlays/battle.resident.ld
 decomp/targets/overlays/battle.symbols.txt
 decomp/targets/overlays/battle.yaml
 decomp/targets/overlays/debug2611.mk
