@@ -19,4 +19,6 @@ typedef struct {
     u16 *phases;
 } TextureScroll;
 
+MATRIX *func_8003F738(SVECTOR *angles, MATRIX *m); /* rotation matrix of three angles */
+
 #endif

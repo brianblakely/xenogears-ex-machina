@@ -31,6 +31,9 @@ Sprite *D_80059190;
 s16 D_80059194; /* texture area row (0-2) of the next image */
 s16 D_80059196; /* texture area column of the next image */
 s32 D_800591B8;
+s32 *D_800592E4;              /* image list for 8001fb30 */
+s16 D_800592E8;               /* its position */
+s16 D_800592EA;
 s32 D_800592EC;
 RECT *D_800592F0;             /* LoadImage area for 80022a0c */
 u_long *D_800592F4;           /* LoadImage pixels for 80022a0c */
@@ -740,7 +743,16 @@ void func_8001FAB4(s32 x, s32 y) {
     func_800320E8(image);
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001FB30);
+/* Upload the image list at D_800592E4 to (D_800592E8, D_800592EA), running
+ * the upload on an 8 KB heap block as its stack. */
+void func_8001FB30(void) {
+    u8 *stack = func_80031BDC(0x2000, 1);
+
+    STACK_ENTER(stack + 0x1F00);
+    func_8002DDE4(D_800592E4, 1, D_800592E8, D_800592EA, 0, 0, 0);
+    STACK_LEAVE();
+    func_800320E8(stack);
+}
 
 /* The operand a script byte names: a frame table entry (bit 7 set) or a byte on the sprite's stack. */
 u8 *func_8001FBA4(Sprite *sprite, u8 *code) {
@@ -1048,7 +1060,54 @@ void func_80022A70(s32 *list, s32 x, s16 y) {
     }
 }
 
+/* Move a sprite vertically by its speed (scaled by its speed factor) under
+ * its gravity (word 0x1c): unless render bit 26 is set, the battle stage
+ * floor (800ba8f4) stops a falling sprite, which rebounds by its bounce
+ * factor and settles once the rebound is below the gravity. */
+/* Nonmatching: the rebound division reuses the product's register and the floor store follows mflo in the original; GCC copies the product first. */
+#ifdef NON_MATCHING
+void func_80022B2C(Sprite *sprite) {
+    s32 speed;
+    s32 gravity;
+
+    if (!((sprite->render.word >> 26) & 1)) {
+        func_800BA8F4(sprite);
+        if (sprite->speed_y > 0 && sprite->word1c > 0) {
+            if (((s16 *)&sprite->y)[1] == sprite->ground) {
+                return;
+            }
+            sprite->y += func_80022CAC(sprite, sprite->speed_y >> 4) << 4;
+            if ((sprite->y >> 16) >= sprite->ground) {
+                speed = -sprite->speed_y * sprite->frame_bits.bounce;
+                sprite->y = sprite->ground << 16;
+                sprite->speed_y = speed = speed / 256;
+                gravity = sprite->word1c;
+                if (speed < 0) {
+                    speed = -speed;
+                }
+                if (gravity < 0) {
+                    gravity = -gravity;
+                }
+                if (speed < gravity) {
+                    sprite->speed_y = 0;
+                }
+                return;
+            }
+        } else {
+            sprite->y += func_80022CAC(sprite, sprite->speed_y >> 4) << 4;
+            if ((sprite->y >> 16) >= sprite->ground) {
+                sprite->y = sprite->ground << 16;
+            }
+        }
+        sprite->speed_y += sprite->word1c;
+    } else {
+        sprite->y += func_80022CAC(sprite, sprite->speed_y >> 4) << 4;
+        sprite->speed_y += sprite->word1c;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80022B2C);
+#endif
 
 /* Scale a value by the sprite's speed factor (1024 = 1) when it has one. */
 s32 func_80022CAC(Sprite *sprite, s32 value) {
@@ -1482,7 +1541,27 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80025D4C);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80025FA8);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80026338);
+/* The texture of sheet entry `id`: its first word, mode, CLUT position and
+ * the VRAM position of its pixels (page plus column and row). */
+void func_80026338(u16 *sheet, s32 id, s32 *first, s32 *mode, s32 *clut_x, s32 *clut_y, s32 *x, s32 *y) {
+    s16 *entry = (s16 *)(sheet[id + 2] + (s32)sheet);
+    SheetPart *part = (SheetPart *)(entry + 2);
+    s32 u;
+    s32 column;
+
+    *first = entry[0];
+    u = part->u << 16;
+    if (part->mode != 0) {
+        column = u >> 18;
+    } else {
+        column = u >> 20;
+    }
+    *mode = part->mode;
+    *clut_x = part->clut_x;
+    *clut_y = part->clut_y;
+    *x = (s16)(part->page_x & 0xFFC0) + column;
+    *y = (s16)(part->page_y & 0xFF00) + part->v;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_800263E4);
 

@@ -43,6 +43,7 @@ MATRIX *TransMatrix(MATRIX *m, VECTOR *v);
 VECTOR *ApplyMatrix(MATRIX *m, SVECTOR *v0, VECTOR *v1);
 VECTOR *ApplyMatrixLV(MATRIX *m, VECTOR *v0, VECTOR *v1);
 MATRIX *ScaleMatrix(MATRIX *m, VECTOR *v);
+MATRIX *ScaleMatrixL(MATRIX *m, VECTOR *v);
 void SetRotMatrix(MATRIX *m);
 void SetTransMatrix(MATRIX *m);
 void RotTransSV(SVECTOR *v0, SVECTOR *v1, long *flag);

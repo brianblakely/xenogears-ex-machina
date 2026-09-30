@@ -119,7 +119,8 @@ typedef struct Sprite {
     void *sequencer;         /* +0x7c */
     u16 word80;              /* +0x80 */
     u16 word82;              /* +0x82 */
-    u8 unknown84[4];
+    s16 ground;              /* +0x84: floor height (whole units) */
+    u8 unknown86[2];
     u8 *frames;              /* +0x88 */
     s8 stack_top;            /* +0x8c: byte stack index, growing down */
     u8 unknown8d;
@@ -128,7 +129,7 @@ typedef struct Sprite {
     u8 unknowna0[8];
     struct {
         unsigned sequencer_owned : 1; /* the sequencer buffer is allocated */
-        unsigned unknown1 : 10;
+        unsigned bounce : 10;    /* rebound speed on landing, / 256 */
         unsigned frame : 6;      /* frame table index */
         unsigned step : 3;
         unsigned phase : 2;
@@ -169,6 +170,18 @@ typedef struct {
     u8 unknown4[0xC];
     u16 *animations;       /* +0x10 */
 } SpriteSource;
+
+/* The texture placement of one sheet entry (after its first word). */
+typedef struct {
+    u16 u;             /* +0x0: texture column, in its top bits */
+    s16 v;             /* +0x2 */
+    u8 unknown4[0xC];
+    s16 mode;          /* +0x10: nonzero: 8-bit texture (column / 4, else / 16) */
+    s16 clut_x;        /* +0x12 */
+    s16 clut_y;        /* +0x14 */
+    u16 page_x;        /* +0x16 */
+    u16 page_y;        /* +0x18 */
+} SheetPart;
 
 /* A sprite image header (inline at sprite + 0x110). */
 typedef struct {
@@ -284,6 +297,7 @@ void func_8001E3D8(Sprite *sprite, s32 frame);
 void func_8001E9BC(Sprite *sprite, s32 frame);
 void func_8001EE88(Sprite *sprite, s32 frame, void *image);
 void func_8001F1D4(Sprite *sprite, s32 frame, void *image);
+void func_800BA8F4(Sprite *sprite); /* battle overlay: rest a sprite on the stage floor */
 void func_8001F750(Sprite *sprite, s32 frame, SpriteSource *source);
 void func_8001F8E8(Sprite *sprite, s32 frame, SpriteSource *source);
 void func_800234AC(Sprite *sprite);
