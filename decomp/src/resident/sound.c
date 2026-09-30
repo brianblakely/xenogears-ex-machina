@@ -2966,41 +2966,142 @@ s32 func_8003F3C0(SoundModulator *modulator) {
     return modulator->phase;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003F42C);
+extern s32 D_800594E4;           /* random state */
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003F43C);
+/* Seed the driver's random generator. */
+void func_8003F42C(s32 seed) {
+    D_800594E4 = seed;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003F468);
+/* Next random number (0-0x7FFF) of a xorshift generator. */
+s32 func_8003F43C(void) {
+    s32 x = D_800594E4;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003F484);
+    x ^= x << 17;
+    x ^= x >> 15;
+    D_800594E4 = x;
+    return x & 0x7FFF;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003F4A0);
+/* Direct SPU writes: key on, key off and reverb voice masks. */
+void func_8003F468(u32 voices) {
+    D_800508E4->key_on[0] = voices;
+    D_800508E4->key_on[1] = voices >> 16;
+}
+
+void func_8003F484(u32 voices) {
+    D_800508E4->key_off[0] = voices;
+    D_800508E4->key_off[1] = voices >> 16;
+}
+
+void func_8003F4A0(u32 voices) {
+    D_800508E4->reverb[0] = voices;
+    D_800508E4->reverb[1] = voices >> 16;
+}
 
 void func_8003F4BC(void) {
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003F4C4);
+/* Direct SPU voice writes: sample start and loop addresses, volume,
+ * pitch and envelope parts. */
+void func_8003F4C4(s32 voice, s32 address) {
+    (voice + D_800508E4->voice)->address = address >> 3;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003F4E0);
+void func_8003F4E0(s32 voice, s32 address) {
+    (voice + D_800508E4->voice)->repeat = address >> 3;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003F4FC);
+void func_8003F4FC(s32 voice, s16 left, s16 right) {
+    SpuVoice *regs = &D_800508E4->voice[voice];
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003F518);
+    regs->volume_left = left;
+    regs->volume_right = right;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003F530);
+void func_8003F518(s32 voice, u16 pitch) {
+    (voice + D_800508E4->voice)->pitch = pitch;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003F560);
+void func_8003F530(s32 voice, s32 rate, s32 mode) {
+    SpuVoice *regs = &D_800508E4->voice[voice];
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003F588);
+    regs->adsr1 = (regs->adsr1 & 0xFF) + (rate << 8) + ((mode >> 2) << 15);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003F5BC);
+void func_8003F560(s32 voice, s32 rate) {
+    SpuVoice *regs = &D_800508E4->voice[voice];
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003F5EC);
+    regs->adsr1 = (regs->adsr1 & 0xFF0F) + (rate << 4);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003F614);
+void func_8003F588(s32 voice, s32 rate, s32 mode) {
+    SpuVoice *regs = &D_800508E4->voice[voice];
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003F67C);
+    regs->adsr2 = (regs->adsr2 & 0x3F) + (rate << 6) + ((mode >> 1) << 14);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003F684);
+void func_8003F5BC(s32 voice, s32 rate, s32 mode) {
+    SpuVoice *regs = &D_800508E4->voice[voice];
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003F6B0);
+    regs->adsr2 = (regs->adsr2 & 0xFFC0) + (rate + ((mode >> 2) << 5));
+}
+
+void func_8003F5EC(s32 voice, s32 level) {
+    SpuVoice *regs = &D_800508E4->voice[voice];
+
+    regs->adsr1 = (regs->adsr1 & 0xFFF0) + level;
+}
+
+extern s32 func_8003F684(u32 *data);
+
+/* Check a sound file: 1 wrong magic, 2 bad checksum, 4 wrong id, 0 good. */
+s32 func_8003F614(u32 *data, u32 magic, s32 id) {
+    if (data[0] != magic) {
+        return 1;
+    }
+    if (func_8003F684(data) != 0) {
+        return 2;
+    }
+    return (*(u16 *)&data[3] != (id & 0xFFFF)) * 4;
+}
+
+/* Sequence header check: always passes. */
+s16 func_8003F67C(SoundSeqHeader *header) {
+    return 0;
+}
+
+/* Sum of the words of a sound file (its byte size at word 2). */
+s32 func_8003F684(u32 *data) {
+    s32 sum = 0;
+    u32 count = (data[2] + 3) >> 2;
+
+    do {
+        sum += *data++;
+        count--;
+    } while (count != 0);
+    return sum;
+}
+
+extern s16 D_80059500;           /* last driver error */
+extern u8 D_80050940[];          /* error sound bank data */
+extern u8 D_80050910[];          /* error effect bank */
+extern u16 D_80050924;           /* its bank id */
+extern void func_800396E0(s32 address, s32 error);
+extern void func_80037FD8(void *data, s32 flags);
+extern void func_80038428(void *bank);
+
+/* Report a driver error once (until cleared): remember the code, load the
+ * built-in error bank and play its beep. */
+void func_8003F6B0(s32 error) {
+    if (D_8005957C & 0x88) {
+        return;
+    }
+    D_8005957C |= 8;
+    D_80059500 = error;
+    func_800396E0(0x10000, error);
+    func_80037FD8(D_80050940, 0);
+    func_80038428(D_80050910);
+    func_8003BDFC(0x10);
+    func_80039E60((D_80050924 << 16) | 1);
+}
