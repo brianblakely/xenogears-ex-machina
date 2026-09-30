@@ -154,19 +154,24 @@ typedef struct {
 
 extern SlotLevels D_800D32A5[3];
 
-/* The game data's character records (0xa4 per character; the symbol names
- * the first field these functions read). */
+/* The game data's character records (8006d634 + 0x26c, 0xa4 each). */
 typedef struct {
-    u16 statA;            /* 0x00 */
-    u16 pad02;
-    u16 statB;            /* 0x04 */
-    u8 pad06[0xE];
-    u8 level;             /* 0x14 */
-    u8 level2;            /* 0x15 */
-    u8 pad16[0xA4 - 0x16];
-} CharacterRecord;
+    u8 pad0[0x3A];
+    u16 value_3A;         /* 0x3A */
+    u8 pad3C[0x10];
+    u16 hp;               /* 0x4C */
+    u16 maxHp;            /* 0x4E */
+    u16 ep;               /* 0x50 */
+    u16 maxEp;            /* 0x52 */
+    u8 pad54[0xE];
+    u8 level;             /* 0x62 */
+    u8 level2;            /* 0x63 */
+    u8 pad64[0x2C];
+    u16 counters[7];      /* 0x90 */
+    u8 pad9E[0xA4 - 0x9E];
+} Character;
 
-extern CharacterRecord D_8006D8EE[];
+extern Character D_8006D8A0[];
 extern u8 D_800D2D24[3];    /* battle party character ids */
 
 /* Per member combatant values (0x170 per member; the symbol names +0x4c). */
@@ -234,6 +239,61 @@ void func_80043C24(void *prim, s32 textured);               /* SetShadeTex */
 void func_80043CC4(POLY_G4 *prim);                          /* SetPolyG4 */
 void func_800728B8(POLY_FT4 *prims, s32 count, s32 buffer);
 s32 func_80076A10(s32 id, POLY_FT4 *prims, s16 x, s16 y);   /* glyph sprite */
+
+/* Per character growth data (0x110 each; the block 801e44e8 points to). */
+typedef struct {
+    u16 requirements[13][7];  /* 0x00: counter thresholds per counter skill */
+    u8 padB6[0x16];
+    u8 tierLevels[3];         /* 0xCC: levels for tiers 4, 5 and 6 */
+    u8 padCF;
+    u8 unlocksA[16];          /* 0xD0: 0xff ends */
+    u8 unlocksB[16];          /* 0xE0: 0 ends */
+    u8 levelSkills[16];       /* 0xF0: 0xff ends */
+    u8 counterLevels[16];     /* 0x100 */
+} Growth;
+
+/* Per character skill state in the game data (0x20 each, at +0x16c0). */
+typedef struct {
+    u16 counterSkills;        /* 0x00 */
+    u16 levelSkills;          /* 0x02 */
+    u16 unlocksA;             /* 0x04 */
+    u16 unlocksB;             /* 0x06 */
+    u8 pad8[0xF];
+    u8 tier;                  /* 0x17 */
+    u8 pad18[8];
+} CharacterSkills;
+
+/* The persistent game data (8006d634). */
+typedef struct {
+    u8 pad0[0xE30];
+    u8 value_E30;             /* 0xE30 */
+    u8 padE31[0x27];
+    s32 value_E58;            /* 0xE58 */
+    u8 padE5C[8];
+    s16 value_E64;            /* 0xE64 */
+    s16 value_E66;            /* 0xE66 */
+    u8 padE68[0x16C0 - 0xE68];
+    CharacterSkills skills[11]; /* 0x16C0 */
+} GameData;
+
+/* A battle combatant record (0x170 each from 800ccce8). */
+typedef struct {
+    u8 pad0[0x4E];
+    u16 maxHp;                /* 0x4E */
+    u8 pad50[6];
+    u8 id;                    /* 0x56 */
+    u8 pad57;
+    u8 attack;                /* 0x58 */
+    u8 pad59[0x37];
+    u16 counters[7];          /* 0x90 */
+    u8 pad9E[0x170 - 0x9E];
+} Combatant;
+
+extern GameData *D_801E44C4;    /* 8006d634 */
+extern Combatant *D_801E44C8;   /* 800ccce8 */
+extern Growth *D_801E44E8;      /* the growth data file */
+extern Combatant *D_801E44EC;   /* the record being processed */
+extern u16 D_8006F8EA;          /* option flags */
 
 /* Sound and input. */
 typedef struct {

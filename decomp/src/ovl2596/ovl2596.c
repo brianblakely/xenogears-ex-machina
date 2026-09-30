@@ -191,7 +191,7 @@ void func_801DEDC0(u8 fromGameData) {
             if (fromGameData == 0) {
                 func_8008AAA0(D_800D32A5[i].level);
             } else {
-                func_8008AAA0(D_8006D8EE[D_800D2D24[i]].level);
+                func_8008AAA0(D_8006D8A0[D_800D2D24[i]].level);
             }
             for (j = 0; j < 3; j++) {
                 n = j + 18;
@@ -205,7 +205,7 @@ void func_801DEDC0(u8 fromGameData) {
                 if (fromGameData == 0) {
                     func_8008AAA0(D_800D32A5[i].level2);
                 } else {
-                    func_8008AAA0(D_8006D8EE[D_800D2D24[i]].level2);
+                    func_8008AAA0(D_8006D8A0[D_800D2D24[i]].level2);
                 }
                 for (j = 0; j < 3; j++) {
                     n = j + 18;
@@ -486,7 +486,7 @@ void func_801DFF50(u8 member) {
     s32 k;
 
     before = D_800CDCE8[member].valueA;
-    after = D_8006D8EE[D_800D2D24[member]].statA;
+    after = D_8006D8A0[D_800D2D24[member]].maxHp;
     difference = after - before;
     arrow = 0xE3;
     if (difference < 0) {
@@ -528,7 +528,7 @@ void func_801E0184(u8 member) {
     s32 k;
 
     before = D_800CDCE8[member].valueB;
-    after = D_8006D8EE[D_800D2D24[member]].statB;
+    after = D_8006D8A0[D_800D2D24[member]].maxEp;
     difference = after - before;
     arrow = 0xE3;
     if (difference < 0) {
@@ -722,15 +722,121 @@ INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E3A18);
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E3BE0);
 
+/* Learn the first of the character's twelve level skills whose level is
+ * reached and which is not yet known. Returns its number (1-12), or 0. */
+#ifdef NON_MATCHING
+u8 func_801E3D54(u8 id) {
+    u32 bit;
+    u8 k;
+    u8 level;
+    u16 known;
+
+    bit = 0x8000;
+    for (k = 0; k < 12; k++, bit >>= 1) {
+        level = D_801E44E8[id].levelSkills[k];
+        if (level == 0xFF) {
+            return 0;
+        }
+        if (D_8006D8A0[id].level >= level) {
+            known = D_801E44C4->skills[id].levelSkills;
+            if (!(bit & known)) {
+                D_801E44C4->skills[id].levelSkills = bit | known;
+                return k + 1;
+            }
+        }
+    }
+    return 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E3D54);
+#endif
 
+/* For each of the character's nine unlock entries whose counter skill is
+ * known, set the matching unlock bit (from bit 3). */
+#ifdef NON_MATCHING
+void func_801E3E14(u8 id) {
+    u8 k;
+    u8 entry;
+
+    for (k = 0; k < 9; k++) {
+        entry = D_801E44E8[id].unlocksA[k];
+        if (entry == 0xFF) {
+            return;
+        }
+        if (D_801E44C4->skills[id].counterSkills & (0x8000 >> (entry - 1))) {
+            D_801E44C4->skills[id].unlocksA |= 0x8000 >> (k + 3);
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E3E14);
+#endif
 
+/* Character 8's nine level entries: learn each one its level reaches. */
+#ifdef NON_MATCHING
+void func_801E3EA4(void) {
+    u8 k;
+    u8 level;
+    u16 known;
+    s32 bit;
+
+    for (k = 0; k < 9; k++) {
+        level = D_801E44E8[8].unlocksA[k];
+        if (level == 0xFF) {
+            return;
+        }
+        if (D_8006D8A0[8].level >= level) {
+            known = D_801E44C4->skills[8].unlocksA;
+            bit = 0x1000 >> k;
+            if (!(known & bit)) {
+                D_801E44C4->skills[8].unlocksA = known | bit;
+            }
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E3EA4);
+#endif
 
+/* For each of the character's thirteen second unlock entries whose level
+ * skill is known, set the matching unlock bit. */
+#ifdef NON_MATCHING
+void func_801E3F28(u8 id) {
+    u8 k;
+    u8 entry;
+
+    for (k = 0; k < 13; k++) {
+        entry = D_801E44E8[id].unlocksB[k];
+        if (entry == 0) {
+            return;
+        }
+        if (D_801E44C4->skills[id].levelSkills & (0x8000 >> (entry - 1))) {
+            D_801E44C4->skills[id].unlocksB |= 0x8000 >> k;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E3F28);
+#endif
 
+/* Character 7's derived values from the current record's max HP and
+ * attack. */
+#ifdef NON_MATCHING
+void func_801E3FB0(void) {
+    GameData *game;
+    Combatant *record;
+
+    record = D_801E44EC;
+    game = D_801E44C4;
+    game->value_E58 = record->maxHp * 200;
+    game->value_E30 = record->attack / 5 + 1;
+    record = D_801E44EC;
+    game->value_E64 = record->maxHp * 10;
+    game->value_E66 = record->maxHp * 10;
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E3FB0);
+#endif
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E403C);
 
