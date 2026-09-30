@@ -9,6 +9,8 @@
 
 extern u16 D_801CC114[];
 extern u8 D_801CBF98[];
+extern s32 D_801CBEA0[]; /* marker home x */
+extern s32 D_801CBEB0[]; /* marker home y */
 extern s32 D_801CBF9C[]; /* file cursor -> slot */
 extern s32 D_801CC014[]; /* slot x */
 extern s32 D_801CC094[]; /* slot y */
@@ -936,9 +938,44 @@ INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C9AF4);
 
 INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C9C34);
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C9D5C);
+/* Allocate the markers and set them up for `mode`: 0 and 2 build all four
+ * at their home positions (0 also turns them on following the cursor), 3
+ * builds the first at the origin and turns them on, 1 leaves them empty. */
+void func_801C9D5C(u8 mode) {
+    s32 i;
+    Markers *markers = func_80031BDC(0x14C, 0);
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C9F1C);
+    D_800625A0->markers = markers;
+    func_8003F8E8(markers, 0x14C);
+    switch (mode) {
+    case 0:
+        D_800625A0->flags->markers_on = 1;
+        D_800625A0->markers->follow[0] = 1;
+        D_800625A0->markers->follow[1] = 1;
+    case 2:
+        for (i = 0; i < 4; i++) {
+            func_8002675C(D_800625A0->sprite_sheet, 0x108, D_800625A0->markers->poly + i * 2,
+                          D_800625A0->buffer_index, D_801CBEA0[i], D_801CBEB0[i], 0x800);
+            D_800625A0->markers->buffer[i] = D_800625A0->buffer_index;
+        }
+        break;
+    case 3:
+        func_8002675C(D_800625A0->sprite_sheet, 0x108, D_800625A0->markers->poly,
+                      D_800625A0->buffer_index, 0, 0, 0x800);
+        D_800625A0->markers->buffer[0] = D_800625A0->buffer_index;
+        D_800625A0->flags->markers_on = 1;
+        break;
+    case 1:
+        break;
+    }
+}
+
+/* Hide the markers, let one frame pass and release them. */
+void func_801C9F1C(void) {
+    D_800625A0->flags->markers_on = 0;
+    func_801C9C34();
+    func_800320E8(D_800625A0->markers);
+}
 
 INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C9F60);
 
