@@ -25,6 +25,9 @@ typedef struct {
     s16 reverb_volume[2];
     u16 key_on[2];
     u16 key_off[2];
+    u16 pitch_mod[2];
+    u16 noise[2];
+    u16 reverb[2];
 } SpuRegs;
 
 /* A voice envelope in parts (SPU ADSR fields). */

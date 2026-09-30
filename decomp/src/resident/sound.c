@@ -2533,7 +2533,101 @@ void func_8003E8A4(SoundChannel *state, u32 voice) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003E900);
+/* Write the staged registers of every claimed hardware voice to the SPU
+ * (volume, pitch, sample addresses, envelope parts), then the pitch
+ * modulation, noise and reverb voice masks and the pending key-ons. */
+void func_8003E900(void) {
+    SoundChannel **owner = D_8006252C;
+    u32 reverb = 0;
+    u32 noise = 0;
+    u32 modulation = 0;
+    u16 masks = 0;
+    SpuVoice *regs = D_800508E4->voice;
+    s32 voice = 0;
+    SoundChannel *state;
+    u16 flags;
+    u16 mode;
+    u16 adsr;
+    u32 on;
+
+    do {
+        state = *owner;
+        if (state != NULL) {
+            flags = state->flags;
+            if (flags != 0) {
+                if (flags & 1) {
+                    regs->volume_left = state->volume_left;
+                    regs->volume_right = state->volume_right;
+                }
+                if (flags & 4) {
+                    regs->pitch = state->pitch;
+                }
+                if (flags & 8) {
+                    regs->address = state->sample_start >> 3;
+                    regs->repeat = state->sample_loop >> 3;
+                }
+                if (flags & 0x10) {
+                    adsr = regs->adsr1 & 0xFF;
+                    adsr += state->envelope.attack_rate << 8;
+                    adsr += (state->envelope.attack_mode >> 2) << 15;
+                    regs->adsr1 = adsr;
+                }
+                if (flags & 0x20) {
+                    adsr = regs->adsr1;
+                    adsr = (adsr & 0xFF0F) + (state->envelope.decay_rate << 4);
+                    regs->adsr1 = adsr;
+                }
+                if (flags & 0x40) {
+                    adsr = regs->adsr2;
+                    adsr = (adsr & 0x3F) + (state->envelope.sustain_rate << 6) +
+                           ((state->envelope.sustain_mode >> 1) << 14);
+                    regs->adsr2 = adsr;
+                }
+                if (flags & 0x80) {
+                    adsr = regs->adsr2 & 0xFFC0;
+                    adsr += state->envelope.release_rate + ((state->envelope.release_mode >> 2) << 5);
+                    regs->adsr2 = adsr;
+                }
+                if (flags & 0x100) {
+                    adsr = regs->adsr1;
+                    adsr = state->envelope.sustain_level + (adsr & 0xFFF0);
+                    regs->adsr1 = adsr;
+                }
+                masks |= flags & 0x7000;
+                state->flags = 0;
+            }
+            mode = state->mode;
+            modulation |= ((mode >> 4) & 1) << voice;
+            noise |= ((mode >> 5) & 1) << voice;
+            reverb |= ((mode >> 6) & 1) << voice;
+        }
+        regs++;
+        voice++;
+        owner++;
+    } while (voice < 24);
+    /* The same register variable addresses the voice masks. */
+    regs = D_800508E4->voice;
+    if (masks != 0) {
+        if (masks & 0x1000) {
+            ((SpuRegs *)regs)->pitch_mod[0] = modulation;
+            ((SpuRegs *)regs)->pitch_mod[1] = modulation >> 16;
+        }
+        if (masks & 0x2000) {
+            ((SpuRegs *)regs)->noise[0] = noise;
+            ((SpuRegs *)regs)->noise[1] = noise >> 16;
+        }
+        if (masks & 0x4000) {
+            ((SpuRegs *)regs)->reverb[0] = reverb;
+            ((SpuRegs *)regs)->reverb[1] = reverb >> 16;
+        }
+    }
+    on = D_800594FC;
+    if (on != 0) {
+        ((SpuRegs *)regs)->key_on[0] = on;
+        ((SpuRegs *)regs)->key_on[1] = on >> 16;
+        D_800594FC = 0;
+    }
+}
 
 extern u32 D_80059550;           /* voices to key off */
 
