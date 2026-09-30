@@ -20,6 +20,7 @@
 #include "frame.h"
 #include "stage.h"
 #include "highlight.h"
+#include "battle_flow.h"
 
 /* Start the battle in mode (1-4 the battle module's intros, 801E8588..;
  * others 800B7870): the display, the frame state and the formation's
@@ -97,9 +98,107 @@ void func_800B8354(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800B838C);
+/* Play battle sound index to its end: load its sound bank and its wave bank
+ * (the next bank, plus variant except for sound 8), start sound (plus
+ * variant) and run frames while it plays, then free both banks. */
+void func_800B838C(s32 index, s32 variant) {
+    SoundLoad banks;
+    SoundSystem *system;
+    void *waves;
+    s32 waveBank;
+    s32 sound;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800B853C);
+    func_800C0F70();
+    func_800B8354();
+    func_80028470(0x2C, 1);
+    banks.bank0 = D_800C35DC[index].bank;
+    system = func_80031BDC(func_800288EC(banks.bank0), 0);
+    banks.data0 = system;
+    if (index == 8) {
+        banks.bank1 = D_800C35DC[8].bank + 1;
+    } else {
+        banks.bank1 = D_800C35DC[index].bank + 1;
+        banks.bank1 += variant;
+    }
+    waves = func_80031BDC(func_800288EC(banks.bank1), 0);
+    banks.data1 = waves;
+    banks.field14 = 0;
+    banks.field10 = 0;
+    func_80029AFC((SoundBanks *)&banks, 0, 0);
+    func_800B8354();
+    func_80038428(system);
+    waveBank = func_80037FD8(waves, 0);
+    while (func_8003BDFC(0) != 0) {
+        func_800BE790();
+    }
+    sound = D_800C35DC[index].sound + variant + (system->bank << 16);
+    func_80039E60(sound);
+    while (func_8003A5D0(sound) != 0) {
+        func_800BE790();
+    }
+    func_8003852C(system);
+    func_80038310(waveBank);
+    func_800320E8(waves);
+    func_800320E8(system);
+}
+
+/* Close the battle: for mode 0 the party (on foot) turns to its pose 0x18,
+ * for mode 2 a white fade and pose 5 over 40 frames; then remove the enemy
+ * slots, load wave bank 5 as the battle's (D_800595AC) and free the enemy
+ * set data. */
+void func_800B853C(s32 mode) {
+    s32 i;
+    s32 slot;
+    BattleSprite *sprite;
+    BattleSprite *member;
+    void *waves;
+
+    switch (mode) {
+    case 0:
+        func_800BC404(-1);
+        for (i = 0; i != 3; i++) {
+            sprite = BATTLE_AREA.sprites[i];
+            if (sprite != NULL && sprite->motion.bytes[3] != 0x15) {
+                func_800BFC80(sprite, 0, 2);
+                func_800245D8(sprite, 0x18);
+            }
+        }
+        break;
+    case 2:
+        func_800BC404(0);
+        func_800B39C0(0x28, 2, 0xFF, 0xFF, 0xFF);
+        for (slot = 0; slot != 3; slot++) {
+            member = BATTLE_AREA.sprites[slot];
+            if (member != NULL && member->motion.bytes[3] != 0x15) {
+                func_800245D8(member, 5);
+            }
+        }
+        slot = 0x28;
+        do {
+            func_800BE790();
+            slot--;
+        } while (slot > 0);
+    case 1:
+        break;
+    }
+    for (slot = 3; slot != 11; slot++) {
+        func_800A9FF0(slot);
+        func_800BADD4(slot);
+    }
+    func_800C0F70();
+    func_800B8354();
+    func_80028470(0x2C, 0);
+    waves = func_80031BDC(func_800288EC(5), 1);
+    func_800295D8(5, (s32)waves, 0, 0x80);
+    func_800B8354();
+    D_800595AC = func_80037FD8(waves, 0);
+    while (func_8003BDFC(0) != 0) {
+        func_800BE790();
+    }
+    func_800320E8(waves);
+    func_800320E8(D_800D39C8);
+    BATTLE_AREA.field8DA8 = 0;
+}
 
 /* Leave the battle: finish drawing, remove the slots' sprites, the
  * resident sprites and tasks, the sound bank and the scene. */
@@ -1068,20 +1167,14 @@ void func_800BC3F8(s32 value) {
     D_800C367C = value;
 }
 
-#ifdef NON_MATCHING
-/* Start camera move (800BC460) unless effects are off; restore D_80059454.
- * Nonmatching: battle_core.h declares mask u16, which the original passes on
- * unextended (its own parameter is a word). */
-void func_800BC404(u16 mask) {
+/* Start camera move (800BC460) unless effects are off; restore D_80059454. */
+void func_800BC404(s32 mask) {
     if (D_800C37C8 == 0) {
         func_800BC2F0(1);
         func_800BC460(mask);
     }
     D_80059454 = D_800C3CDC;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800BC404);
-#endif
 
 /* Set the camera framing pitch. */
 void func_800BC454(s16 value) {

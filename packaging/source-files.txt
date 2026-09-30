@@ -140,6 +140,7 @@ decomp/src/battle/battle_800BFE48.c
 decomp/src/battle/battle_800C11CC.c
 decomp/src/battle/battle_command.h
 decomp/src/battle/battle_core.h
+decomp/src/battle/battle_flow.h
 decomp/src/battle/combatant.h
 decomp/src/battle/effect.h
 decomp/src/battle/files.h
