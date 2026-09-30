@@ -5163,7 +5163,32 @@ void func_80095B44(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80095BAC);
+/* With the command's chance (+0x1c in percent) clear the target's statuses
+ * named by the command's bits (+0x1d: 0x80 the state word except KO/down,
+ * 0x40 the timer holds and 0x20 of 7a, 0x20-0x08 the active status words);
+ * otherwise it misses (result 6). */
+void func_80095BAC(void) {
+    if (D_800C3DFC->field1C < rand() % 100) {
+        D_800C34B0->resultCode[D_800C3E50] = 6;
+        return;
+    }
+    if (D_800C3DFC->field1D & 0x80) {
+        D_800C3E34->pilot.status7C &= 0xC000;
+    }
+    if (D_800C3DFC->field1D & 0x40) {
+        D_800C3E34->pilot.status80 = 0;
+        D_800C3E34->pilot.status7A &= ~0x20;
+    }
+    if (D_800C3DFC->field1D & 0x20) {
+        D_800C3E34->pilot.status84.half.active = 0;
+    }
+    if (D_800C3DFC->field1D & 0x10) {
+        D_800C3E34->pilot.status88.half.active = 0;
+    }
+    if (D_800C3DFC->field1D & 8) {
+        D_800C3E34->pilot.status8C.half.active = 0;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80095D4C);
 
