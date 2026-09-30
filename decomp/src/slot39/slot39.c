@@ -3054,11 +3054,62 @@ void func_801DB02C(u8 index) {
     block = func_80031BDC(0x78, 0);
     D_800625A0->blocks444[index] = block;
     bzero(block, 0x78);
-    D_800625A0->blocks444[index]->unk70 = 4;
-    D_800625A0->blocks444[index]->unk74 = 0;
+    D_800625A0->blocks444[index]->frame = 4;
+    D_800625A0->blocks444[index]->timer = 0;
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DB0A8);
+/* Animate list cursor `index` (image block +444) and place it at entry
+ * `entry` of the list kind `kind` (0 item list, 1 scrolled item list at
+ * scroll row `row`, hidden when off the page, 2 two-column list, 3 one
+ * column). */
+void func_801DB0A8(s32 entry, s32 row, u8 kind, u8 index) {
+    MenuImageBlock *cursor;
+    POLY_FT4 *poly;
+    s32 x;
+    s32 y;
+    s32 shown;
+
+    cursor = D_800625A0->blocks444[index];
+    shown = 1;
+    if (++cursor->timer >= 6) {
+        if (--cursor->frame < 0) {
+            cursor->frame = 4;
+        }
+        cursor->timer = 0;
+    }
+    switch (kind) {
+    case 0:
+        x = (entry % 2) * 0x88 + 0x1c;
+        y = (entry / 2) * 0x10 + 0x11;
+        break;
+    case 1:
+        if (entry >= row * 2 && entry < row * 2 + 0x10) {
+            x = (entry % 2) * 0x88 + 0x18;
+            y = (entry - row * 2) / 2 * 0x10 + 0x11;
+        } else {
+            shown = 0;
+        }
+        break;
+    case 2:
+        x = (entry % 2) * 0x88 + 0x18;
+        y = entry / 2 * 0x10 + 0x14;
+        break;
+    case 3:
+        x = 0xa0;
+        y = entry * 0xd + 0x14;
+        shown = 2;
+        break;
+    }
+    if (shown) {
+        func_8002675C(D_800625A0->sheet, cursor->frame + 0x15b, cursor, D_800625A0->bufferIndex, 0, 0, 0x1000);
+        poly = &cursor->polys[D_800625A0->bufferIndex];
+        func_801C851C(cursor->verts, poly->x0 + x, poly->y0 + y, poly->x1 - poly->x0, poly->y3 - poly->y0);
+        cursor->count = D_800625A0->bufferIndex;
+        D_800625A0->party->unk50[index] = 1;
+    } else {
+        D_800625A0->party->unk50[index] = 0;
+    }
+}
 
 /* Free image block `index` (+444) and clear its party flag (+50). */
 void func_801DB340(u8 index) {

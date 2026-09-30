@@ -340,8 +340,8 @@ typedef struct MenuSpriteLists {
 typedef struct MenuImageBlock {
     POLY_FT4 polys[2]; /* 0 */
     SVECTOR verts[4]; /* 50 */
-    s32 unk70; /* 70 */
-    u8 unk74; /* 74 */
+    s32 frame; /* 70: animation frame, counts down from 4 */
+    u8 timer; /* 74: frames shown of the current animation frame */
     u8 count; /* 75 */
     u8 pad76[0x2];
 } MenuImageBlock;
