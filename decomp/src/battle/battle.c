@@ -1,3554 +1,17 @@
+/* Battle code from 8008115C to 8009E53C (the earlier units have files of
+ * their own). Its rodata starts at 80070010, where the jump tables return to
+ * 0 mod 8 right after 80080160's (docs/matching.md); the text boundary lies
+ * after 80080160. The range still spans original units: the tables change
+ * phase again at 80070314 (8008B478) and 80070370 (80094EE4). */
 #include "common.h"
 #include "battle_core.h"
 #include "combatant.h"
 #include "model.h"
 #include "scene.h"
 #include "gte.h"
-
-/* Start the 801e5000 module: reserve its heap span and load it. */
-void func_80070E2C(void) {
-    s32 block;
-
-    if (D_800C3D48 != 0) {
-        func_8008AB4C();
-        block = func_8008ABB8(4, 1);
-        D_800D3284 = block;
-        D_800D328C = func_8008ABB8(block - 0x801E5000, 1);
-        func_800295D8(1, 0x801E5000, 0, 0x80);
-        func_8008AC50();
-        func_801E5160();
-    }
-}
-
-/* Forward a byte argument to the 801e5000 module when it is loaded. */
-void func_80070EB0(s32 value) {
-    if (D_800C3D48 != 0) {
-        func_801E879C(value & 0xFF);
-    }
-}
-
-/* Fade the battle music out once the escape outcome is set, unless the
- * 801e5000 module handled it. */
-void func_80070EDC(void) {
-    s32 handled = 0;
-
-    if (D_800C3D48 != 0) {
-        handled = func_801E563C();
-    }
-    if ((handled & 0xFF) == 0 && D_800C48EA == 0x81) {
-        func_8003A89C(D_800C3E54, 0, 0xF0);
-    }
-}
-
-/* The battle: allocate the battle state, load the modules and the scene,
- * run turns until an outcome or an exit is set, then settle the outcome
- * (result code in D_800594D0) and hand over to the 801de000 module. */
-void func_80070F40(void) {
-    s32 span;
-    s32 block;
-    u8 result;
-    u8 mode = 1;
-    u8 *state;
-    s32 i;
-    u8 outcome;
-
-    D_800C3EA4 = (BattleGraphics *)func_8008ABB8(0xA2B4, 0);
-    D_800D2D28 = (BattleUi *)func_8008ABB8(0x10C, 0);
-    D_800C3EAC = (TurnState *)func_8008ABB8(0x2F8, 0);
-    bzero(D_800C3EA4, 0xA2B4);
-    bzero(D_800D2D28, 0x10C);
-    bzero(D_800C3EAC, 0x2F8);
-    D_8005959C = 0;
-    D_800C3E29 = 0xFF;
-    D_800C3E28 = 0xFF;
-    D_800D366C = 0;
-    D_800C3E54 = D_80062528;
-    if (D_8005947C != 0) {
-        D_80059508 = D_8005947C - 1;
-        if (D_80059180 != 0) {
-            D_80059180 = 0;
-            func_8003A89C(D_80062528, 0x7F, 0x3C);
-        }
-        if (D_800594F8 == 0) {
-            D_8005947C = 0;
-        }
-    }
-    if (D_800594F8 != 0) {
-        func_80028470(0x10, 2);
-        block = func_8008ABB8(4, 1);
-        span = func_8008ABB8(block - 0x801E0000, 1);
-        func_800295D8(1, 0x801E0000, 0, 0x80);
-        func_80028A60(0);
-        func_800320E8((void *)block);
-        func_800320E8((void *)span);
-        if (D_8005947C == 0) {
-            func_801E0A34();
-        } else {
-            D_80059508 = D_8005947C - 1;
-            D_8005947C = 0;
-        }
-    }
-    if (*D_8005917C != -1) {
-        func_80028470(0x10, 2);
-        func_800295D8(6, 0x80280000, 0, 0x80);
-        func_80028A60(0);
-    }
-    memmove(D_8006F9DC, D_800658DC[D_80059508], 0x20);
-    func_800B8098(D_8005954C);
-    func_8007252C();
-    D_800C3E4C = 2;
-    func_800B81BC(D_800C3DEC);
-    func_800B39C0(0, 2, 0xFF, 0xFF, 0xFF);
-    if (D_800C3D48 == 0) {
-        func_800B39C0(0x14, 2, 0, 0, 0);
-    }
-    if (D_800594F8 != 0) {
-        D_800C3E54 = func_800397FC(D_80062648, 0x7F, 0);
-    }
-    D_800D3364 = D_8005949C;
-    D_800C3EB0 = D_8005949C;
-    func_80077990();
-    D_800D3298 = 1;
-    func_800BC404(D_800D39DC);
-    func_800716D8();
-    func_8007819C();
-    while (D_800CCC58 == 0) {
-        func_800716D8();
-    }
-    func_800320E8(D_800595D0);
-    if (D_8005954C != 4) {
-        func_8003A094(D_800595D0);
-    }
-    func_8003852C(D_800595D0);
-    func_800320E8(D_80059480);
-    func_800320E8(D_800594AC);
-    func_80070E2C();
-    func_80070EB0(1);
-    if (D_800D2FC4 == 0) {
-        D_800C3E4C = 1;
-    }
-    func_8009892C();
-    for (i = 0; i < 3; i++) {
-        if (D_800D2D24[i] != 0x7F) {
-            D_800C3E0C[i].mask0 = D_8006ECF4[D_800D2D24[i]].mask0;
-            D_800C3E0C[i].mask2 = D_8006ECF4[D_800D2D24[i]].mask2;
-        }
-    }
-    while (D_800C48EA == 0 && D_800D2FC4 == 0) {
-        if (D_800CCC58 != 0) {
-            func_800723E0();
-        }
-        func_800716D8();
-    }
-    state = &D_800C48EA;
-    if (!(*state & 0xC0)) {
-        result = 0;
-    } else if (*state & 0x40) {
-        result = 1;
-    } else if (D_800C3D48 == 0) {
-        result = 2;
-    } else if (D_800C3D5C != 0) {
-        result = 3;
-        D_800594D0 = result;
-        *state = 1;
-    }
-    switch (result) {
-    case 0:
-        D_800594D0 = 0;
-        mode = 0;
-    case 3:
-        if (D_800C3D48 != 0) {
-            D_800D3278->unk394[0] = 0xFF;
-            if (D_800C3D44 != 0 || D_800D2FC4 == 0) {
-                u8 *battleOutcome = &D_800C48EA;
-
-                D_800D3278->unk800 = 0;
-                outcome = *battleOutcome;
-                *battleOutcome = 0;
-                for (i = 0; i < 3; i++) {
-                    D_800D3278->unk394[0x10 + i] = D_800CCCE8.records[i].pilot.status7C & 0x8000;
-                    D_800D3278->unk394[0x10 + i] |= D_800CCCE8.records[i].gear.status7C & 0x8000;
-                }
-                func_800C0F70();
-                func_80070EB0(1);
-                D_800C48EA = outcome;
-            }
-        }
-        break;
-    case 1:
-        D_800594D0 = 2;
-        mode = 2;
-        break;
-    case 2:
-        D_800594D0 = 1;
-        mode = 1;
-        break;
-    }
-    func_800B8D7C();
-    if (D_800D2D50 != 0) {
-        mode = 1;
-    }
-    func_80028470(0x10, 0);
-    D_800D2D3C = func_8008ABB8(4, 1);
-    D_800D2F60 = func_8008ABB8(D_800D2D3C - 0x801DE000, 1);
-    func_800295D8(4, 0x801DE000, 0, 0x80);
-    func_800B853C(mode);
-    while (D_800CCC58 != 0) {
-        func_800716D8();
-    }
-    if (D_800C3D48 == 0 && !(D_800C48EA & 0x40) && !(D_8006F9DC[1] & 8)) {
-        func_800B39C0(0x40, 2, 0x40, 0x40, 0x40);
-    }
-    func_80070EDC();
-    func_801E252C();
-    func_800320E8((void *)D_800D2D3C);
-    func_800320E8((void *)D_800D2F60);
-}
-
-/* One battle frame: the 80280000 module's hook when present, then the task
- * runner. */
-s32 func_800716D8(void) {
-    if (*D_8005917C != -1) {
-        func_8028022C();
-    }
-    func_800BE790();
-    return 0;
-}
-
-/* One ATB tick for every present slot that is not yet ready. */
-void func_8007171C(void) {
-    s32 slot;
-    s32 step;
-    u8 *ready;
-    u16 flags;
-    u8 delay;
-    s16 *toggle;
-    s16 *timer;
-
-    if (D_800D3298 != 0) {
-        slot = 0;
-        ready = D_800D2DCC.ready;
-        for (; slot < 11; ready++, slot++) {
-            if (D_800D2DCC.present[slot] == 0 || *ready != 0) {
-                continue;
-            }
-            step = 1;
-            if ((D_800CCCE8.records[slot].pilot.status84.half.active | D_800CCCE8.records[slot].pilot.status84.half.permanent) & 0x8000) {
-                step = 2;
-            }
-            if (D_800CCCE8.records[slot].pilot.status7C & 0x1000) {
-                toggle = &D_800D2DCC.timers[2][slot];
-                if ((*toggle ^= 1) != 0) {
-                    continue;
-                }
-            }
-            flags = D_800CCCE8.records[slot].pilot.status7C;
-            if (flags & 0x2000) {
-                delay = D_800CCCE8.records[slot].statusTimers[0] -= step;
-                if (delay == 0) {
-                    D_800CCCE8.records[slot].statusTimers[0] = 0;
-                    D_800CCCE8.records[slot].pilot.status7C &= 0xDFFF;
-                }
-                continue;
-            }
-            if ((flags & 0x80) || (D_800CCCE8.records[slot].pilot.status80 & 0x1000)) {
-                continue;
-            }
-            timer = &D_800D2DCC.timers[1][slot];
-            if ((*timer -= step) <= 0) {
-                *ready = 1;
-                *timer = 0;
-            }
-        }
-    }
-}
-
-/* Reload the acting slot's turn timer and clear its ready flag. */
-void func_800718BC(void) {
-    u8 actor = D_800C3EAC->actor;
-
-    if (D_800D2DCC.ready[actor] != 0xFF) {
-        D_800D2DCC.ready[actor] = 0;
-    }
-    D_800D2DCC.timers[1][D_800C3EAC->actor] = func_80098AF8(D_800C3EAC->actor, 0);
-    D_800D2DCC.timers[0][D_800C3EAC->actor] = D_800D2DCC.timers[1][D_800C3EAC->actor];
-}
-
-/* Render the pending battle message into its image, upload it and hold it
- * for three frames. */
-void func_80071964(void) {
-    s32 frames;
-
-    if (D_800D2C94.message != 0 && (D_800D2C94.targets & D_800C48E8) == 0) {
-        frames = 3;
-        D_800D39B8.width = func_80034EAC(func_80033728(D_800D39F0, D_800D2C94.message),
-                                         D_800D39B8.pixels, 0x39, 1);
-        LoadImage(&D_800D39B8.rect, D_800D39B8.pixels);
-        do {
-            frames--;
-            func_800716D8();
-        } while (frames != 0);
-    }
-}
-
-/* Clear the party's reaction flags. */
-void func_80071A08(void) {
-    s32 i;
-
-    for (i = 0; i < 3; i++) {
-        D_800C3EAC->reaction[i] = 0;
-    }
-}
-
-/* Publish the party's reaction flags to the UI, then wait a frame. */
-void func_80071A38(void) {
-    s32 i;
-
-    for (i = 0; i < 3; i++) {
-        D_800D2D28->reaction[i] = D_800C3EAC->reaction[i];
-    }
-    func_800716D8();
-}
-
-/* Hide the eight battle messages and clear two UI bytes, then wait a
- * frame. */
-/* Hide the eight battle messages and close windows 4 and 5, then run a
- * frame. */
-void func_80071A8C(void) {
-    s32 offset;
-
-    /* The loop steps a byte offset through the entries. */
-    for (offset = 7 * sizeof(BattleMessage); offset >= 0; offset -= sizeof(BattleMessage)) {
-        ((BattleMessage *)((u8 *)D_800D36C8 + offset))->shown = 0;
-    }
-    D_800D2D28->windows[5] = 0;
-    D_800D2D28->windows[4] = 0;
-    func_800716D8();
-}
-
-/* Show the pending battle message (window 7) until a button is pressed or
- * 59 frames pass. */
-void func_80071AE0(void) {
-    s32 frames;
-
-    if (D_800D2C94.message != 0 && (D_800D2C94.targets & D_800C48E8) == 0) {
-        func_80079E18(7);
-        frames = 0x3B;
-        D_800C3EAC->eventsDone = 0;
-        do {
-            func_800716D8();
-        } while (D_800D3014 == 8 && --frames != 0);
-        D_800C3EAC->eventsDone = 1;
-        func_80079E4C(7);
-        func_800716D8();
-    }
-}
-
-/* Start the turn of the acting slot (turn state actor + 1; none when 0). An
- * enemy runs its AI script (unless mode is set) and shows its name; a party
- * member gets its panel highlight and its command menu. Then each slot's
- * default target is chosen and the turn's actions play out. */
-#ifdef NON_MATCHING
-void func_80071B94(u8 mode) {
-    s32 i;
-    s32 offset;
-    u8 actor;
-    u16 flags;
-    s32 layout;
-    u8 *message;
-    u8 *bytes;
-
-    D_800C3E8C = 1;
-    message = &D_800D2C94.message;
-    *message = 0;
-    if (D_800C3EAC->actor == 0) {
-        return;
-    }
-    func_80085350();
-    func_80071A08();
-    D_800D3298 = 0;
-    D_800C3EAC->actor--;
-    D_800C4922 = D_800C3EAC->actor;
-    D_800C3EAC->eventCount = 0;
-    D_800C3EAC->eventsDone = 0;
-    for (i = 4, bytes = message - 7; i >= 0; i--) {
-        *bytes-- = 0;
-    }
-    D_800D2C94.targets = 0;
-    func_80099890(D_800C3EAC->actor);
-    if (D_800C3EAC->actor >= 3) {
-        if (mode == 0) {
-            func_800799C8(D_800C3EAC->actor, D_800CCCE8.records[D_800C3EAC->actor].pilot.status80 & 0x2000);
-            actor = D_800C3EAC->actor;
-            if (!(D_800C3EB4[actor].hidden & 0x80) && !(D_800CCCE8.records[actor].pilot.flags34 & 0x400)) {
-                D_800D2D28->windows[5] = 1;
-                D_800D36C8[0].width = func_80034EAC(func_80033728(D_800C3DDC, D_800C3E3D[D_800C3EAC->actor]),
-                                                    D_800D36C8[0].pixels, 0x39, 0);
-                func_800769E8(&D_800D36C8[0].rect, D_800D36C8[0].pixels);
-                D_800D36C8[0].shown = 1;
-            }
-        }
-        actor = D_800C3EAC->actor;
-        if (!(D_800CCCE8.records[actor].pilot.status7C & 0x2080) &&
-            !(D_800CCCE8.records[actor].pilot.status80 & 0x1000)) {
-            func_80079778(actor);
-            func_80071A8C();
-            func_80071964();
-            func_80071AE0();
-        }
-        func_80071A8C();
-        func_80070EB0(0);
-    } else {
-        /* The loop steps a byte offset through the entries. */
-        for (offset = 7 * sizeof(EnemyReaction); offset >= 0; offset -= sizeof(EnemyReaction)) {
-            ((EnemyReaction *)((u8 *)D_800C3D18 + offset))->unk1[1] = 0;
-        }
-        layout = D_800D3280 * 3;
-        D_800C3EA4->unk63C8[D_800CCB04.buffer].x0 = D_800C3254[layout + D_800C3EAC->actor] + 0x10 + D_800C3EAC->actor * 0x60;
-        D_800C3EA4->unk63C8[D_800CCB04.buffer].y0 = 8;
-        D_800C3EA4->unk63C8[D_800CCB04.buffer].x1 = D_800C3254[layout + D_800C3EAC->actor] + D_800C3EAC->actor * 0x60 + 0x28;
-        D_800C3EA4->unk63C8[D_800CCB04.buffer].y1 = 8;
-        D_800C3EA4->unk63C8[D_800CCB04.buffer].x2 = D_800C3254[layout + D_800C3EAC->actor] + 0x10 + D_800C3EAC->actor * 0x60;
-        D_800C3EA4->unk63C8[D_800CCB04.buffer].y2 = 0x20;
-        D_800C3EA4->unk63C8[D_800CCB04.buffer].x3 = D_800C3254[layout + D_800C3EAC->actor] + D_800C3EAC->actor * 0x60 + 0x28;
-        D_800C3EA4->unk63C8[D_800CCB04.buffer].y3 = 0x20;
-        D_800C3EA4->unk6414 = D_800CCB04.buffer;
-        D_800C3EA4->unk6415 = 1;
-        actor = D_800C3EAC->actor;
-        if (!(D_800CCCE8.records[actor].pilot.status7C & 0x2080)) {
-            flags = D_800CCCE8.records[actor].pilot.status80;
-            if (!(flags & 0x1000)) {
-                if (!(flags & 0x2000)) {
-                    func_80080160(actor);
-                } else {
-                    func_80080C94(actor);
-                }
-                if (D_800C3EAC->unk2EA != 0) {
-                    D_8005941C++;
-                }
-                D_800D36C0 = D_800C3EAC->actor;
-                D_800D2D28->unk97 = 0;
-                func_800BCD98(0);
-            }
-        }
-        func_80071964();
-        func_80071AE0();
-        func_80071A8C();
-        func_80070EB0(0);
-        for (i = 0; i < 8; i++) {
-            if (func_80089C9C(D_800D2C94.targets, i + 3)) {
-                D_800C3D18[i].unk1[1] = 1;
-            }
-        }
-        func_80079C24();
-    }
-    func_80071A38();
-    func_80072270();
-    D_800C3EA4->unk6415 = 0;
-    for (i = 0; i < 11; i++) {
-        D_800C3EAC->slots[i].defaultTarget = func_800841E0(i);
-        D_800C3EB4[i].targetCode = func_80085310(i, D_800C3EAC->slots[i].defaultTarget);
-    }
-    func_800BA4E0(func_80080AE4(D_800C3EAC->actor));
-    func_80071A08();
-    func_8007252C();
-    if (D_800C48EA == 0) {
-        func_80085B58(D_800C3EAC->actor);
-    }
-    func_8007252C();
-    func_80071A38();
-    func_800BFE48();
-    func_800718BC();
-    D_800D3298 = 1;
-}
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80071B94);
-#endif
-
-/* Party members held by the mask 800d2c9e lose their ready flag, restart
- * their turn timer from its reload value and show the held marker. */
-void func_80072270(void) {
-    s32 member;
-
-    if (D_800D2C94.held & 7) {
-        for (member = 0; member < 3; member++) {
-            if (func_80089C9C(D_800D2C94.held, member)) {
-                D_800D2DCC.ready[member] = 0;
-                D_800D2DCC.timers[1][member] = D_800D2DCC.timers[0][member];
-                D_800D2D28->reaction[member] = 1;
-            }
-        }
-    }
-    D_800D2C94.held = 0;
-}
-
-/* Give every enemy in the act-together mask its turn: clear the event types,
- * queue action 0x17 and run the turn procedure. The cleared 0x100-byte action
- * buffer pointer is never initialised in the original. */
-#ifdef NON_MATCHING
-void func_80072324(void) {
-    s32 slot;
-    s32 offset;
-    u8 *p;
-    u8 *end;
-    u8 *actions;
-
-    for (slot = 3; slot < 11; slot++) {
-        if (func_80089C9C(D_800D39E0, slot)) {
-            p = actions;
-            end = p + 0x100;
-            do {
-                *p++ = 0;
-            } while (p < end);
-            for (offset = 31 * sizeof(BattleEvent); offset >= 0; offset -= sizeof(BattleEvent)) {
-                ((BattleEvent *)((u8 *)D_800C3FE8 + offset))->type = 0xFF;
-            }
-            D_800D2E5C[0].type = 4;
-            D_800D2E5C[0].param = 0x17;
-            func_80085AC4(slot);
-            func_80071B94(1);
-        }
-    }
-}
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80072324);
-#endif
-
-/* Select the next slot to act: the forced slot, else the next ready slot in
- * the turn order from the cursor; then run the turn procedure. With slots
- * acting together, run their pass instead. */
-#ifdef NON_MATCHING
-void func_800723E0(void) {
-    s32 position;
-    u8 *cursor;
-    s32 slot;
-    u8 next;
-
-    if (D_800D39E0 == 0) {
-        if (D_800D2DC0 != 0) {
-            D_800C3EAC->actor = D_800D2DC0;
-            D_800D2DCC.ready[D_800D2DC0 - 1] = 1;
-            slot = D_800D2DC0;
-            D_800D2DC0 = 0;
-            D_800D2DCC.timers[1][slot - 1] = 0;
-        } else {
-            D_800C3EAC->actor = 0;
-            cursor = &D_800D2DCC.cursor;
-            position = *cursor;
-            do {
-                slot = D_800D2DCC.order[position];
-                if (D_800D2DCC.ready[slot] == 1) {
-                    D_800C3EAC->actor = slot + 1;
-                    *cursor = next = position + 1;
-                    if (next == 11) {
-                        *cursor = 0;
-                    }
-                }
-                position++;
-                if (position == 11) {
-                    position = 0;
-                }
-            } while (position != *cursor);
-        }
-        func_80071B94(0);
-    } else {
-        func_80072324();
-    }
-}
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800723E0);
-#endif
-
-/* Rebuild the alive mask: knocked-out slots lose their HP (gear +0x104) and
- * leave the turn order unless held by 800c3608; set the outcome when a side
- * is defeated; when every alive slot waits (+0x80 bit 0x1000), release the
- * first. */
-#ifdef NON_MATCHING
-void func_8007252C(void) {
-    s32 slot;
-    u16 waiting;
-
-    D_800D39DC = 0;
-    for (slot = 0; slot < 3; slot++) {
-        if (D_800D2DCC.present[slot] != 0) {
-            if (D_800CCCE8.records[slot].pilot.status7C & 0xC000) {
-                if (D_800CCCE8.records[slot].pilot.status7C & 0x8000) {
-                    D_800CCCE8.records[slot].pilot.hp = 0;
-                }
-                D_800D2DCC.ready[slot] = 0xFF;
-            } else if (D_800C3EB4[slot].hidden == 0) {
-                D_800D39DC |= func_80089C08(slot);
-            }
-        }
-    }
-    for (slot = 3; slot < 11; slot++) {
-        if (D_800D2DCC.present[slot] != 0) {
-            if (D_800C3EB4[slot].gear == 0) {
-                if (D_800CCCE8.records[slot].pilot.status7C & 0xC000) {
-                    if (!func_80089C9C(D_800C3608, slot)) {
-                        D_800CCCE8.records[slot].pilot.hp = 0;
-                        D_800D2DCC.ready[slot] = 0xFF;
-                        continue;
-                    }
-                    D_800D39DC |= func_80089C08(slot);
-                    continue;
-                }
-            } else if (D_800CCCE8.records[slot].gear.status7C & 0xC000) {
-                if (!func_80089C9C(D_800C3608, slot)) {
-                    D_800CCCE8.records[slot].gear.hp = 0;
-                    D_800D2DCC.ready[slot] = 0xFF;
-                    continue;
-                }
-                D_800D39DC |= func_80089C08(slot);
-                continue;
-            }
-            if (D_800C3EB4[slot].hidden == 0 && D_800C3D18[slot - 3].unk3 == 0) {
-                D_800D39DC |= func_80089C08(slot);
-            }
-        }
-    }
-    if (!(D_800D39DC & 0x7F8)) {
-        D_800C48EA = 1;
-    }
-    if (!(D_800D39DC & 7)) {
-        D_800C48EA = 0x81;
-    }
-    if (D_800C48EA == 0) {
-        waiting = D_800D39DC;
-        for (slot = 0; slot < 11; slot++) {
-            if (func_80089C9C(waiting, slot) && (D_800CCCE8.records[slot].pilot.status80 & 0x1000)) {
-                waiting &= func_80089C48(slot);
-            }
-        }
-        if (waiting == 0) {
-            for (slot = 0; slot < 11; slot++) {
-                if (func_80089C9C(D_800D39DC, slot) && (D_800CCCE8.records[slot].pilot.status80 & 0x1000)) {
-                    D_800CCCE8.records[slot].pilot.status80 &= 0xEFFF;
-                    return;
-                }
-            }
-        }
-    }
-}
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007252C);
-#endif
-
-/* Add every other primitive from `first` to the ordering table. */
-void func_800728B8(POLY_FT4 *prims, s32 count, s32 first) {
-    s32 i;
-
-    for (i = 0; i < count; i++) {
-        AddPrim(D_800CCB04.ot + 1, &prims[first + i * 2]);
-    }
-}
-
-/* Tint the current buffer's primitives from `first` to `last`: yellow for
- * mode 1, red otherwise. */
-#ifdef NON_MATCHING
-void func_80072938(POLY_FT4 *prims, s32 first, s32 last, u8 mode) {
-    s32 i;
-
-    for (i = first; i < last; i++) {
-        SetShadeTex(&prims[i * 2 + D_800CCB04.buffer], 0);
-        if (mode != 1) {
-            prims[i * 2 + D_800CCB04.buffer].r0 = 0x80;
-            prims[i * 2 + D_800CCB04.buffer].g0 = 0;
-        } else {
-            prims[i * 2 + D_800CCB04.buffer].r0 = 0x80;
-            prims[i * 2 + D_800CCB04.buffer].g0 = 0x80;
-        }
-        prims[i * 2 + D_800CCB04.buffer].b0 = 0;
-    }
-}
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80072938);
-#endif
-
-/* Build the member's panel HP glyphs: the current value's digits (800c3e08),
- * a '/', and the maximum's digits (800d2d54 from index 4), and tint them by
- * `mode`. */
-void func_80072A9C(member, mode)
-s32 member;
-u8 mode;
-{
-    s32 i;
-    s32 column;
-    s32 first;
-
-    first = D_800D2D28->unkE0[member];
-    for (i = 0; i < 3; i++) {
-        if (D_800C3E08[i] != 0xFF) {
-            D_800D2D28->unkE0[member] +=
-                func_80076A10(D_800C3E08[i] + 0x67, &D_800C3EA4->unk3A88[member][D_800D2D28->unkE0[member] * 2],
-                              D_800C3068[member * 24 + i] + D_800C3254[D_800D3280 * 3 + member], 0x10);
-        }
-    }
-    D_800D2D28->unkE0[member] +=
-        func_80076A10(0x71, &D_800C3EA4->unk3A88[member][D_800D2D28->unkE0[member] * 2],
-                      D_800C3068[member * 24 + 3] + D_800C3254[D_800D3280 * 3 + member], 0x10);
-    for (i = 4, column = 4; i < 7; i++) {
-        if (D_800D2D54[i] != 0xFF) {
-            D_800D2D28->unkE0[member] +=
-                func_80076A10(D_800D2D54[i] + 0x67, &D_800C3EA4->unk3A88[member][D_800D2D28->unkE0[member] * 2],
-                              D_800C3068[member * 24 + column] + D_800C3254[D_800D3280 * 3 + member], 0x10);
-            column++;
-        }
-    }
-    if (mode != 0) {
-        func_80072938(D_800C3EA4->unk3A88[member], first, D_800D2D28->unkE0[member], mode);
-    }
-}
-
-/* Build the member's panel name glyphs (800d2d88) and tint them by `mode`. */
-void func_80072DA8(member, mode)
-s32 member;
-u8 mode;
-{
-    s32 i;
-    s32 first;
-
-    i = 0;
-    first = D_800D2D28->unkE0[member];
-    for (; i < 5; i++) {
-        if (D_800D2D88[i] != 0xFF) {
-            D_800D2D28->unkE0[member] +=
-                func_80076A10(D_800D2D88[i] + 0x67, &D_800C3EA4->unk3A88[member][D_800D2D28->unkE0[member] * 2],
-                              D_800C3076[member * 24 + i] + D_800C3254[D_800D3280 * 3 + member], 0x10);
-        }
-    }
-    if (mode != 0) {
-        func_80072938(D_800C3EA4->unk3A88[member], first, D_800D2D28->unkE0[member], mode);
-    }
-}
-
-/* Split the member's panel values into digit glyph codes: HP (3 digits) and
- * maximum HP (3), or in a gear its HP (5); leading zeros become blanks (0xff).
- * Returns the warning level: 2 at an eighth of the maximum or less, 1 at a
- * quarter or less, else 0. */
-#ifdef NON_MATCHING
-u8 func_80072F38(s32 member, u8 inGear) {
-    u8 warning;
-    u8 *digit;
-    s16 hp100;
-    s16 hp10;
-    s16 max100;
-    s16 max10;
-    s32 gear10000;
-    s32 gear1000;
-    s32 gear100;
-    s32 gear10;
-
-    D_800D2FE0 = D_800D3330 = D_800CCCE8.records[member].pilot.maxHp;
-    D_800D2D38 = D_800D2E58 = D_800CCCE8.records[member].pilot.hp;
-    D_800D3018 = D_800D333C = D_800CCCE8.records[member].gear.hp;
-    D_800D3668 = D_800CCCE8.records[member].gear.maxHp;
-    warning = 0;
-    if (inGear) {
-        if (D_800D3668 / 8 >= D_800D333C) {
-            warning = 2;
-        } else if (D_800D3668 / 4 >= D_800D333C) {
-            warning = 1;
-        }
-    } else {
-        if (D_800D3330 / 8 >= D_800D2E58) {
-            warning = 2;
-        } else if (D_800D3330 / 4 >= D_800D2E58) {
-            warning = 1;
-        }
-    }
-    hp100 = D_800D2D38 / 100;
-    D_800D2D38 %= 100;
-    hp10 = D_800D2D38 / 10;
-    D_800D2D38 %= 10;
-    max100 = D_800D2FE0 / 100;
-    D_800D2FE0 %= 100;
-    max10 = D_800D2FE0 / 10;
-    D_800D2FE0 %= 10;
-    gear10000 = D_800D3018 / 10000;
-    D_800D3018 -= gear10000 * 10000;
-    gear1000 = D_800D3018 / 1000;
-    D_800D3018 -= gear1000 * 1000;
-    gear100 = D_800D3018 / 100;
-    D_800D3018 -= gear100 * 100;
-    gear10 = D_800D3018 / 10;
-    D_800D3018 -= gear10 * 10;
-    D_800C3E08[0] = hp100;
-    D_800C3E08[1] = hp10;
-    D_800D2D54[4] = max100;
-    D_800D2D54[5] = max10;
-    D_800D2D88[0] = gear10000;
-    D_800D2D88[1] = gear1000;
-    D_800D2D88[2] = gear100;
-    D_800D2D88[3] = gear10;
-    D_800C3E08[2] = D_800D2D38;
-    D_800D2D54[6] = D_800D2FE0;
-    D_800D2D88[4] = D_800D3018;
-    for (digit = D_800C3E08; digit < D_800C3E08 + 2; digit++) {
-        if (*digit != 0) {
-            break;
-        }
-        *digit = 0xFF;
-    }
-    for (digit = &D_800D2D54[4]; digit < &D_800D2D54[6]; digit++) {
-        if (*digit != 0) {
-            break;
-        }
-        *digit = 0xFF;
-    }
-    for (digit = D_800D2D88; digit < D_800D2D88 + 4; digit++) {
-        if (*digit != 0) {
-            break;
-        }
-        *digit = 0xFF;
-    }
-    return warning;
-}
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80072F38);
-#endif
-
-/* Build the member's four-digit panel value (the 800d32a0 value or record
- * +0xdc) as glyphs. */
-#ifdef NON_MATCHING
-void func_80073380(s32 member) {
-    s16 value;
-    s32 i;
-    s32 x;
-    u8 digit;
-
-    if (D_800C3EA4->panels[member].unk1E1 == 1) {
-        value = D_800D32A0[member].unk0;
-    } else {
-        value = D_800CCCE8.records[member].gear.fuel;
-    }
-    func_8008AAA0(value);
-    i = 0;
-    x = 0;
-    for (; i < 4; i++) {
-        digit = D_800C3CF4[i + 5];
-        if (digit != 0xFF) {
-            D_800D2D28->unkEC[member] +=
-                func_80076A10(digit + 0x83, &D_800C3EA4->unk6008[member][D_800D2D28->unkEC[member] * 2],
-                              member * 0x60 + (D_800C3254[D_800D3280 * 3 + member] + 0x4A) + x, 0x25);
-        }
-        x += 6;
-    }
-    D_800D2D28->unk99[member] = D_800CCB04.buffer;
-}
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80073380);
-#endif
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80073538);
-
-/* When enabled, shade the current flat quad at graphics +0x63c8 grey by
- * +0x6410 and add it with its draw mode to the ordering table. */
-#ifdef NON_MATCHING
-void func_80073A58(void) {
-    if (D_800C3EA4->unk6415 != 0) {
-        D_800C3EA4->unk63C8[D_800C3EA4->unk6414].r0 = D_800C3EA4->unk6410;
-        D_800C3EA4->unk63C8[D_800C3EA4->unk6414].g0 = D_800C3EA4->unk6410;
-        D_800C3EA4->unk63C8[D_800C3EA4->unk6414].b0 = D_800C3EA4->unk6410;
-        AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unk63C8[D_800C3EA4->unk6414]);
-        AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unk63F8[D_800C3EA4->unk6414]);
-    }
-}
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80073A58);
-#endif
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80073B64);
-
-/* Draw both 100-primitive lists at graphics +0x641c when UI +0xcb is set. */
-void func_80073E88(void) {
-    s32 i;
-
-    if (D_800D2D28->unkCB != 0) {
-        for (i = 0; i < 2; i++) {
-            func_800728B8(D_800C3EA4->unk641C[i], D_800D2D28->unkD0[i], D_800D2D28->unkA3);
-        }
-    }
-}
-
-/* Draw the three primitive lists the UI enables at +0x9c..+0x9e. */
-void func_80073F08(void) {
-    if (D_800D2D28->unk9C != 0) {
-        func_800728B8(D_800C3EA4->unkBA8, D_800D2D28->unkF8, D_800D2D28->unkA5);
-    }
-    if (D_800D2D28->unk9E != 0) {
-        func_800728B8(D_800C3EA4->unk27C8, D_800D2D28->unk100, D_800D2D28->unkA7);
-    }
-    if (D_800D2D28->unk9D != 0) {
-        func_800728B8(D_800C3EA4->unk1E68, D_800D2D28->unkFC, D_800D2D28->unkA6);
-    }
-}
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80073FB8);
-
-/* Redraw the party markers flagged in UI +0x7c. */
-void func_800742A0(void) {
-    s32 member;
-    u8 value;
-
-    for (member = 0; member < 3; member++) {
-        if (D_800D2D28->reaction[member] != 0) {
-            D_800D2D28->unkE0[member] = 0;
-            D_800D2D28->unkEC[member] = 0;
-            if (D_800C3EB4[member].field2 != 0x7F) {
-                func_80073380(member);
-                value = func_80072F38(member, D_800D32A0[member].unk1);
-                if (D_800D32A0[member].unk1 != 0) {
-                    func_80072DA8(member, value);
-                } else {
-                    func_80072A9C(member, value);
-                }
-                D_800D2D28->unk93[member] = D_800CCB04.buffer;
-                D_800D2D28->reaction[member] = 0;
-            }
-        }
-    }
-}
-
-/* When enabled, add the graphics block's four current quads to the ordering
- * table. */
-void func_800743A4(void) {
-    if (D_800C3EA4->unkA230->unk669 != 0) {
-        AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unkA230->unk0[D_800C3EA4->unkA230->unk668]);
-        AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unkA230->unk50[D_800C3EA4->unkA230->unk668]);
-        AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unkA230->unkA0[D_800C3EA4->unkA230->unk668]);
-        AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unkA230->unkF0[D_800C3EA4->unkA230->unk668]);
-    }
-}
-
-/* Add the graphics block's current +0x320 and +0x370 quads to the ordering
- * table. */
-void func_800744BC(void) {
-    AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unkA230->unk320[D_800C3EA4->unkA230->buffer]);
-    AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unkA230->unk370[D_800C3EA4->unkA230->buffer]);
-}
-
-/* Add the graphics block's current +0x280 and +0x2d0 quads to the ordering
- * table. */
-void func_80074554(void) {
-    AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unkA230->unk280[D_800C3EA4->unkA230->buffer]);
-    AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unkA230->unk2D0[D_800C3EA4->unkA230->buffer]);
-}
-
-INCLUDE_RODATA(".local/decomp/battle/asm/nonmatchings/battle", D_8006FAF0);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800745EC);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80074AB8);
-
-/* While a target is being chosen, pulse the direction arrows (red between
- * 0x40 and 0xfc) and draw the ones pointing at targets. The block is
- * addressed as its leading primitive array. */
-void func_80074D4C(void) {
-    s32 i;
-
-    if (D_800D2D28->unkC6 != 0) {
-        if (D_800C3E24->fading) {
-            D_800C3E24->shade -= 4;
-            if (D_800C3E24->shade < 0x40) {
-                D_800C3E24->fading = 0;
-                D_800C3E24->shade = 0x40;
-            }
-        } else {
-            D_800C3E24->shade += 4;
-            if (D_800C3E24->shade >= 0x100) {
-                D_800C3E24->fading = 1;
-                D_800C3E24->shade = 0xFC;
-            }
-        }
-        for (i = 0; i < 4; i++) {
-            if (D_800C3E24->arrows[i]) {
-                ((POLY_G3 *)D_800C3E24)[i * 2 + D_800C3E24->buffer].r0 = D_800C3E24->shade;
-                ((POLY_G3 *)D_800C3E24)[i * 2 + D_800C3E24->buffer].g0 = 0;
-                ((POLY_G3 *)D_800C3E24)[i * 2 + D_800C3E24->buffer].b0 = 0;
-                AddPrim(D_800CCB04.ot + 1, &((POLY_G3 *)D_800C3E24)[i * 2 + D_800C3E24->buffer]);
-            }
-        }
-    }
-}
-
-/* Draw the three primitive lists of *800d2db4 when UI +0xa8 is set. */
-void func_80074EEC(void) {
-    if (D_800D2D28->unkA8 != 0) {
-        func_800728B8(D_800D2DB4->unk5550, D_800D2DB4->counts[11], D_800D2DB4->buffers[11]);
-        func_800728B8(D_800D2DB4->unk5640, D_800D2DB4->counts[12], D_800D2DB4->buffers[12]);
-        func_800728B8(D_800D2DB4->unk5C80, D_800D2DB4->counts[13], D_800D2DB4->buffers[13]);
-    }
-}
-
-/* Add the current *800d3278 quad (UI +0xc8) and draw the 800d2dac object
- * (UI +0xc9). */
-void func_80074F70(void) {
-    if (D_800D2D28->unkC8 != 0) {
-        AddPrim(D_800CCB04.ot + 1, &D_800D3278->unk7A4[D_800D3278->unk7F4]);
-    }
-    if (D_800D2D28->unkC9 != 0) {
-        func_80034888(D_800D2DAC, D_800CCB04.ot + 1, D_800CCB04.buffer);
-    }
-}
-
-/* Place and add the shown battle messages: the first centred at (0x40,
- * 0x2c), the others centred at (0x9a, 0xca), texture rows 13 apart per
- * pair. */
-#ifdef NON_MATCHING
-void func_8007500C(void) {
-    s32 i;
-
-    for (i = 0; i < 8; i++) {
-        if (D_800D36C8[i].shown != 0) {
-            if (i == 0) {
-                func_80076C78(&D_800D36C8[0].prims[D_800CCB04.buffer], 0x40 - (D_800D36C8[0].width >> 1), 0x2C, 0, 0,
-                              D_800D36C8[0].width);
-            } else {
-                func_80076C78(&D_800D36C8[i].prims[D_800CCB04.buffer], 0x9A - (D_800D36C8[i].width >> 1), 0xCA, 0,
-                              (i / 2) * 13, D_800D36C8[i].width);
-            }
-            AddPrim(D_800CCB04.ot + 1, &D_800D36C8[i].prims[D_800CCB04.buffer]);
-        }
-    }
-}
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007500C);
-#endif
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80075168);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80075938);
-
-/* Battle end, outcome state 1: unless 800c492a is set, release every battle
- * resource. */
-void func_80076418(void) {
-    if (D_800C492A == 0) {
-        func_8008FAD8();
-        func_800742A0();
-        func_80075938();
-        func_80073538();
-        func_80073A58();
-        func_80073B64();
-        func_80073E88();
-        func_80073F08();
-        func_8007500C();
-        func_80074EEC();
-        func_800745EC();
-        func_80074D4C();
-        func_80073FB8();
-        func_80088B80();
-        func_80074AB8();
-    }
-}
-
-/* Battle end, outcome state 0: leave the result screens (8008fad8), run the
- * post-battle module's exit and release the battle display. */
-void func_800764B4(void) {
-    D_8005959C = 0;
-    func_8008FAD8();
-    func_801DE594();
-    func_80073FB8();
-}
-
-/* Battle end, outcome state 2: release the battle's resources. */
-void func_800764EC(void) {
-    func_8008FAD8();
-    func_80073538();
-    func_80073F08();
-    func_8007500C();
-    func_80074F70();
-    func_80073FB8();
-    func_80088B80();
-    func_80074AB8();
-}
-
-/* Battle end by outcome state 800c3e4c. */
-void func_80076544(void) {
-    switch (D_800C3E4C) {
-    case 0:
-        func_800764B4();
-        break;
-    case 1:
-        func_80076418();
-        break;
-    case 2:
-        func_800764EC();
-        break;
-    }
-}
-
-/* Start the panel cursor window's opening over the member's panel (wider
- * for a member with the 800d32a0 flag unless it is character 7). */
-#ifdef NON_MATCHING
-void func_800765C4(s32 member) {
-    u16 *panelX = &D_800C3254[D_800D3280 * 3 + member];
-
-    D_800D2D28->unk44 = 0x1C;
-    D_800D2D28->unk34 = member * 0x60 + (*panelX + 0x48);
-    if (D_800D32A0[member].unk1 != 0 && D_800D2D24[member] != 7) {
-        D_800D2D28->unk44 = 0x24;
-        D_800D2D28->unk34 = member * 0x60 + (*panelX + 0x44);
-    }
-    D_800D2D28->unk3C = 0x10;
-    D_800D2D28->unk4C = 0x98;
-    D_800D2D28->unk54 = D_800D2D28->unk34 - (D_800D2D28->unk3C + 5);
-    D_800D2D28->unk5C = D_800D2D28->unk4C - (D_800D2D28->unk44 + 5);
-    D_800D2D28->unk54 = (D_800D2D28->unk54 << 8) / D_800D2D28->unk5C;
-    D_800D2D28->unk104 = 0x800;
-    D_800D2D28->unkA9 = 6;
-    D_800D2D28->unk5C = 0x100;
-    D_800D2D28->unk64 = 0;
-    D_800D2D28->unk6C = 0;
-    D_800D2D28->unk106 = 0;
-    D_800D2D28->unkAB = 1;
-    D_800D2D28->unk90[member]--;
-}
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800765C4);
-#endif
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80076710);
-
-/* Upload an image and wait for the transfer. */
-void func_800769E8(RECT *rect, u32 *pixels) {
-    LoadImage(rect, pixels);
-    DrawSync(0);
-}
-
-/* Build glyph `id` as primitives at `prims`, full scale. */
-s32 func_80076A10(s32 id, POLY_FT4 *prims, s16 x, s16 y) {
-    return func_8002675C(D_800D2F5C, id, prims, D_800CCB04.buffer, x, y, 0x1000);
-}
-
-/* Build glyph `id` as primitives at `prims`, half scale. */
-s32 func_80076A6C(s32 id, POLY_FT4 *prims, s16 x, s16 y) {
-    return func_8002675C(D_800D2F5C, id, prims, D_800CCB04.buffer, x, y, 0x800);
-}
-
-/* Initialise a textured quad: raw texture, opaque. */
-void func_80076AC8(POLY_FT4 *prim) {
-    SetSemiTrans(prim, 1);
-    SetShadeTex(prim, 0);
-}
-
-/* Initialise a textured quad at full brightness; tpage bit 0x40 follows
- * 800595a0. */
-void func_80076B00(POLY_FT4 *prim) {
-    func_80076AC8(prim);
-    prim->r0 = 0x80;
-    prim->g0 = 0x80;
-    prim->b0 = 0x80;
-    if (D_800595A0 != 0) {
-        prim->tpage |= 0x40;
-    } else {
-        prim->tpage &= ~0x40;
-    }
-}
-
-/* Initialise a textured quad at full brightness with tpage bit 0x20. */
-void func_80076B68(POLY_FT4 *prim) {
-    func_80076AC8(prim);
-    prim->r0 = 0x80;
-    prim->g0 = 0x80;
-    prim->b0 = 0x80;
-    prim->tpage |= 0x20;
-}
-
-/* Initialise a textured quad at half brightness with tpage bit 0x20. */
-void func_80076BAC(POLY_FT4 *prim) {
-    func_80076AC8(prim);
-    prim->r0 = 0x40;
-    prim->g0 = 0x40;
-    prim->b0 = 0x40;
-    prim->tpage |= 0x20;
-}
-
-/* Initialise a textured quad at full brightness with tpage bit 0x40. */
-void func_80076BF0(POLY_FT4 *prim) {
-    func_80076AC8(prim);
-    prim->r0 = 0x80;
-    prim->g0 = 0x80;
-    prim->b0 = 0x80;
-    prim->tpage |= 0x40;
-}
-
-/* Initialise a textured quad at half brightness with tpage bit 0x40. */
-void func_80076C34(POLY_FT4 *prim) {
-    func_80076AC8(prim);
-    prim->r0 = 0x40;
-    prim->g0 = 0x40;
-    prim->b0 = 0x40;
-    prim->tpage |= 0x40;
-}
-
-/* Place a quad of width `w` and height 13 at (x, y) with texture (u, v). */
-void func_80076C78(POLY_FT4 *prim, u16 x, u16 y, u8 u, u8 v, u8 w) {
-    prim->x0 = x;
-    prim->y0 = y;
-    prim->y1 = y;
-    prim->x2 = x;
-    prim->y2 = y + 13;
-    prim->y3 = y + 13;
-    prim->u0 = u;
-    prim->u2 = u;
-    prim->x1 = x + w;
-    prim->x3 = x + w;
-    prim->v0 = v;
-    prim->u1 = u + w;
-    prim->v1 = v;
-    prim->v2 = v + 13;
-    prim->u3 = u + w;
-    prim->v3 = v + 13;
-}
-
-/* Place a quad of `w` x `h` at (x, y) with texture (u, v). */
-void func_80076CE8(POLY_FT4 *prim, s16 x, s16 y, u8 u, u8 v, s32 w, s32 h) {
-    prim->x0 = x;
-    prim->y0 = y;
-    prim->y1 = y;
-    prim->x2 = x;
-    prim->u0 = u;
-    prim->u2 = u;
-    prim->x1 = x + w;
-    prim->y2 = y + h;
-    prim->x3 = x + w;
-    prim->y3 = y + h;
-    prim->v0 = v;
-    prim->u1 = u + w;
-    prim->v1 = v;
-    prim->v2 = v + h;
-    prim->u3 = u + w;
-    prim->v3 = v + h;
-}
-
-/* Initialise a quad pair: semi-transparent, raw texture, texture page by
- * `page` (0/1 at x 0x380, 2/3 at 0x3c0; odd pages at y 0x100) and the CLUT
- * chosen by `alternate`. */
-#ifdef NON_MATCHING
-void func_80076D58(POLY_FT4 *prims, u8 alternate, u8 page) {
-    s32 i;
-
-    for (i = 0; i < 2; i++) {
-        SetPolyFT4(&prims[i]);
-        prims[i].r0 = 0x80;
-        prims[i].g0 = 0x80;
-        prims[i].b0 = 0x80;
-        SetSemiTrans(&prims[i], 0);
-        SetShadeTex(&prims[i], 1);
-        switch (page) {
-        case 0:
-            prims[i].tpage = GetTPage(0, 0, 0x380, 0);
-            break;
-        case 1:
-            prims[i].tpage = GetTPage(0, 0, 0x380, 0x100);
-            break;
-        case 2:
-            prims[i].tpage = GetTPage(0, 0, 0x3C0, 0x100);
-            break;
-        case 3:
-            prims[i].tpage = GetTPage(0, 0, 0x3C0, 0);
-            break;
-        }
-        if (alternate != 0) {
-            prims[i].clut = D_80059414;
-        } else {
-            prims[i].clut = D_800595D4;
-        }
-    }
-}
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80076D58);
-#endif
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80076EA4);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80077074);
-
-/* Initialise four quads, white and semi-transparent, with the texture page
- * and CLUT of graphics texture entry `index`. */
-void func_80077364(POLY_FT4 *prims, u8 index) {
-    s32 i;
-
-    for (i = 0; i < 4; i++) {
-        SetPolyFT4(&prims[i]);
-        SetShadeTex(&prims[i], 1);
-        prims[i].r0 = 0xFF;
-        prims[i].g0 = 0xFF;
-        prims[i].b0 = 0xFF;
-        prims[i].tpage = GetTPage(D_800C3EA4->textures[index].mode, 0, D_800C3EA4->textures[index].x,
-                                       D_800C3EA4->textures[index].y);
-        prims[i].clut = GetClut(D_800C3EA4->textures[index].clutX, D_800C3EA4->textures[index].clutY);
-    }
-}
-
-/* Initialise a window's primitives: its semi-transparent background in the
- * window colour (one per draw buffer, with its draw mode) and its four edge
- * piece sets (textures 1-4). The draw mode's texture window argument is the
- * UI block pointer. */
-void func_80077454(u8 window) {
-    WindowBlock *block;
-    u8 i;
-
-    block = D_800D2E38[window];
-    for (i = 0; i < 2; i++) {
-        SetPolyG4(&block->shade[i]);
-        (block->shade + i)->r0 = D_800594D4[0];
-        (block->shade + i)->g0 = D_800594D4[1];
-        (block->shade + i)->b0 = D_800594D4[2];
-        (block->shade + i)->r1 = D_800594D4[0];
-        (block->shade + i)->g1 = D_800594D4[1];
-        (block->shade + i)->b1 = D_800594D4[2];
-        (block->shade + i)->r2 = D_800594D4[0];
-        (block->shade + i)->g2 = D_800594D4[1];
-        (block->shade + i)->b2 = D_800594D4[2];
-        (block->shade + i)->r3 = D_800594D4[0];
-        (block->shade + i)->g3 = D_800594D4[1];
-        (block->shade + i)->b3 = D_800594D4[2];
-        SetSemiTrans(&block->shade[i], 1);
-        SetDrawMode(&block->mode[i], 0, 0,
-                    GetTPage(0, D_800595A0, D_800C3EA4->textures[1].x, D_800C3EA4->textures[1].y),
-                    (RECT *)D_800D2D28);
-    }
-    func_80077364(block->frame[0], 1);
-    func_80077364(block->frame[1], 2);
-    func_80077364(block->frame[2], 3);
-    func_80077364(block->frame[3], 4);
-}
-
-/* Allocate and clear the 0x670-byte graphics block, then initialise it. */
-void func_80077610(void) {
-    GraphicsBlock *block = (GraphicsBlock *)func_8008ABB8(0x670, 0);
-
-    D_800C3EA4->unkA230 = block;
-    bzero(block, 0x670);
-    func_80077074();
-}
-
-/* Wait a frame, then release the graphics block. */
-void func_8007765C(void) {
-    func_800716D8();
-    func_800320E8(D_800C3EA4->unkA230);
-}
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80077698);
-
-/* Clear UI byte +0xc6. */
-void func_80077980(void) {
-    D_800D2D28->unkC6 = 0;
-}
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80077990);
-
-/* Initialise a battle message's quad pair for texture row `row` (13 pixels
- * per pair of rows; odd rows use the alternate CLUT) and hide it. */
-void func_800780A8(BattleMessage *message, u32 row) {
-    s32 i;
-
-    for (i = 0; i < 2; i++) {
-        SetPolyFT4(&message->prims[i]);
-        message->prims[i].r0 = 0x80;
-        message->prims[i].g0 = 0x80;
-        message->prims[i].b0 = 0x80;
-        SetSemiTrans(&message->prims[i], 0);
-        SetShadeTex(&message->prims[i], 1);
-        message->alternate = row & 1;
-        message->prims[i].clut = message->alternate ? D_80059414 : D_800595D4;
-        message->prims[i].tpage = GetTPage(0, 0, 0x3C0, (s32)row / 2 * 13);
-    }
-    message->shown = 0;
-}
-
-/* Set up windows 5 and 4 (closed) and the eight battle messages: each pair
- * shares a text image block and a VRAM rectangle row. */
-#ifdef NON_MATCHING
-void func_8007819C(void) {
-    s32 i;
-
-    func_8008F8F4(5, 8, 0x2A, 0x70, 0x12, 0, 0);
-    D_800D2D28->windows[5] = 0;
-    func_8008F8F4(4, 0x20, 0xC8, 0xF4, 0x12, 0, 0);
-    D_800D2D28->windows[4] = 0;
-    for (i = 0; i < 8; i += 2) {
-        D_800D36C8[i].pixels = (u32 *)func_8008AC00(0x39);
-        D_800D36C8[i + 1].pixels = D_800D36C8[i].pixels;
-        D_800D36C8[i].rect.x = 0x3C0;
-        D_800D36C8[i].rect.y = (i / 2) * 13;
-        D_800D36C8[i].rect.w = 0x3C;
-        D_800D36C8[i].rect.h = 13;
-        D_800D36C8[i + 1].rect = D_800D36C8[i].rect;
-        func_800780A8(&D_800D36C8[i], i);
-        func_800780A8(&D_800D36C8[i + 1], i + 1);
-    }
-}
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007819C);
-#endif
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80078310);
-
-/* Reset every slot's turn timers from its speed (unused slots 0xff), its
- * ready flag and slow alternation, and clear the order buffer. */
-void func_80078508(u8 *order) {
-    s32 slot;
-
-    for (slot = 0; slot < 11; slot++) {
-        if (D_800D2DCC.present[slot] != 0) {
-            D_800D2DCC.timers[0][slot] = D_800D2DCC.timers[1][slot] = func_80098AF8(slot, 0);
-        } else {
-            D_800D2DCC.timers[0][slot] = D_800D2DCC.timers[1][slot] = 0xFF;
-        }
-        D_800D2DCC.ready[slot] = 0;
-        D_800D2DCC.timers[2][slot] = 0;
-        order[slot] = 0;
-    }
-}
-
-/* Close the current event for `actor` with the action entry's parameter and
- * advance the event count. */
-#ifdef NON_MATCHING
-void func_800785D4(u8 actor, u8 index) {
-    D_800C3FE8[D_800C3EAC->eventCount].actor = actor;
-    D_800C3FE8[D_800C3EAC->eventCount].parameter = D_800D2E5C[index].param | (D_800D2E5C[index].unk5 << 8);
-    D_800C3EAC->eventCount++;
-}
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800785D4);
-#endif
-
-/* Show the name of action `index` in the next battle message (up to eight)
- * and queue its event (0xfa) for `actor`. */
-void func_80078658(u8 index, u8 actor) {
-    if (D_800C3E8C < 9) {
-        D_800D36C8[D_800C3E8C].width =
-            func_80034EAC(func_80033728(D_800C3DDC, D_800D2E5C[index].named), D_800D36C8[D_800C3E8C].pixels, 0x39,
-                          D_800C3E8C & 1);
-        func_800769E8(&D_800D36C8[D_800C3E8C].rect, D_800D36C8[D_800C3E8C].pixels);
-        D_800C3FE8[D_800C3EAC->eventCount].actor = actor;
-        D_800C3FE8[D_800C3EAC->eventCount].type = 0xFA;
-        D_800C3FE8[D_800C3EAC->eventCount].parameter = D_800C3E8C++;
-        D_800C3EAC->eventCount++;
-    }
-}
-
-/* Queue event type 0xf7 for `actor` with parameter `value`. */
-void func_800787E0(u8 value, u8 actor) {
-    D_800C3FE8[D_800C3EAC->eventCount].actor = actor;
-    D_800C3FE8[D_800C3EAC->eventCount].type = 0xF7;
-    D_800C3FE8[D_800C3EAC->eventCount].parameter = value;
-    D_800C3EAC->eventCount++;
-}
-
-/* Queue event type 0xf8 for `actor` with the pending message 800c3e8c - 1. */
-void func_8007887C(u8 actor) {
-    if (D_800C3E8C != 0) {
-        D_800C3FE8[D_800C3EAC->eventCount].actor = actor;
-        D_800C3FE8[D_800C3EAC->eventCount].type = 0xF8;
-        D_800C3FE8[D_800C3EAC->eventCount].parameter = D_800C3E8C - 1;
-        D_800C3EAC->eventCount++;
-    }
-}
-
-/* For a named action entry: its name text (80078658), event 0xf7 with 0x1e
- * and the pending message event. */
-void func_8007893C(u8 index, u8 actor) {
-    if (D_800D2E5C[index].named != 0) {
-        func_80078658(index, actor);
-        func_800787E0(0x1E, actor);
-        func_8007887C(actor);
-    }
-}
-
-/* Execute the actor's action `index`: commit it, queue its animation event
- * with the committed targets and, when those differ from the action's own,
- * retarget the queued move event (0xfd). */
-void func_80078998(u8 actor, u8 index) {
-    s32 i;
-
-    func_8007893C(index, actor);
-    D_800C3EAC->unk2DC = D_800D2E5C[index].arg1 + 1;
-    func_80085CCC(actor, D_800D2E5C[index].targets, D_800D2E5C[index].animation);
-    func_80085C88(D_800C3EAC->eventCount);
-    D_800C3FE8[D_800C3EAC->eventCount].type = D_800D2E5C[index].animation;
-    D_800C3FE8[D_800C3EAC->eventCount].targetMask = D_800D2C94.targets;
-    func_800785D4(actor, index);
-    if (D_800D2E5C[index].targets != D_800D2C94.targets) {
-        for (i = 0; i < D_800C3EAC->eventCount; i++) {
-            if (D_800C3FE8[i].type == 0xFD) {
-                D_800C3FE8[i].targetMask = D_800D2C94.targets;
-                return;
-            }
-        }
-    }
-}
-
-/* Queue a move event (0xfd) for the actor's action `index` toward target:
- * compute the move, then (unless the action's parameter is 1) choose the
- * on-foot or gear approach, and redraw the slots involved. */
-void func_80078B34(u8 actor, u8 index, u8 target) {
-    D_800C3FE8[D_800C3EAC->eventCount].type = 0xFD;
-    D_800C3FE8[D_800C3EAC->eventCount].parameter = 0;
-    D_800C3FE8[D_800C3EAC->eventCount].targetMask = D_800D2E5C[index].targets;
-    func_800877E0(actor, target);
-    if (D_800D2E5C[index].param != 1) {
-        if (D_800D32A0[actor].unk1 == 0) {
-            func_80087EDC(actor, target);
-        } else {
-            func_800881B8(actor, target);
-        }
-    }
-    func_800BC404(D_800D2E5C[index].targets | func_80089C08(actor));
-    func_800785D4(actor, index);
-}
-
-/* Queue event type 0xfc for the actor. */
-void func_80078C9C(u8 actor, u8 index) {
-    D_800C3FE8[D_800C3EAC->eventCount].type = 0xFC;
-    func_800785D4(actor, index);
-}
-
-/* Queue the action entry's parameter as the event type for the actor. */
-void func_80078CEC(u8 actor, u8 index) {
-    D_800C3FE8[D_800C3EAC->eventCount].type = D_800D2E5C[index].param;
-    func_800785D4(actor, index);
-}
-
-/* The action entry's targets act together. */
-void func_80078D48(u8 actor, u8 index) {
-    D_800D39E0 = D_800D2E5C[index].targets;
-}
-
-/* Action entry type: the actor leaves the battle (event 0xf9); its reaction
- * reaction byte +3 is set and only its 0x8000 flag is kept. */
-void func_80078D6C(u8 actor, u8 index) {
-    D_800C3FE8[D_800C3EAC->eventCount].type = 0xF9;
-    func_800785D4(actor, index);
-    D_800D2DCC.ready[actor] = 0xFF;
-    D_800C3D18[actor - 3].unk3 = 1;
-    D_800CCCE8.records[actor].pilot.status7C &= 0x8000;
-}
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80078E24);
-
-/* Set the actor's attribute arg1 to the entry's parameter byte. */
-void func_80079054(u8 actor, u8 index) {
-    func_80079ED8(actor, D_800D2E5C[index].arg1, D_800D2E5C[index].param, 0);
-}
-
-/* Add the entry's parameter byte to the actor's attribute arg1. */
-void func_80079098(u8 actor, u8 index) {
-    func_80079ED8(actor, D_800D2E5C[index].arg1,
-                  D_800D2E5C[index].param + func_80079ED8(actor, D_800D2E5C[index].arg1, 0, 1), 0);
-}
-
-/* Set the actor's 16-bit attribute arg1 to the entry's parameter halfword. */
-void func_80079114(u8 actor, u8 index) {
-    func_8007A280(actor, D_800D2E5C[index].arg1, D_800D2E5C[index].param | (D_800D2E5C[index].unk5 << 8), 0);
-}
-
-/* Add the entry's parameter halfword to the actor's 16-bit attribute arg1. */
-void func_8007916C(u8 actor, u8 index) {
-    func_8007A280(actor, D_800D2E5C[index].arg1,
-                  D_800D2E5C[index].param +
-                      (func_8007A280(actor, D_800D2E5C[index].arg1, 0, 1) + (D_800D2E5C[index].unk5 << 8)),
-                  0);
-}
-
-/* Named-action text, then event 0xf4 for the actor. */
-void func_800791FC(u8 actor, u8 index) {
-    func_8007893C(index, actor);
-    D_800C3FE8[D_800C3EAC->eventCount].type = 0xF4;
-    func_800785D4(actor, index);
-}
-
-/* Event 0xf6 for the actor with the entry's targets. */
-void func_80079270(u8 actor, u8 index) {
-    D_800C3FE8[D_800C3EAC->eventCount].type = 0xF6;
-    D_800C3FE8[D_800C3EAC->eventCount].targetMask = D_800D2E5C[index].targets;
-    func_800785D4(actor, index);
-}
-
-/* Script error screen: clear the event types and, on a debug build (the
- * 8005917c flag), print "Language Error" with the actor and script number
- * forever, the text shifted one column every three frames. */
-#ifdef NON_MATCHING
-void func_800792F8(actor, number)
-u8 actor;
-u8 number;
-{
-    s32 offset;
-    s32 i;
-    s32 column;
-    s32 frames;
-
-    for (offset = 31 * sizeof(BattleEvent); offset >= 0; offset -= sizeof(BattleEvent)) {
-        ((BattleEvent *)((u8 *)D_800C3FE8 + offset))->type = 0xFF;
-    }
-    frames = 0;
-    column = 0;
-    if (*D_8005917C != -1) {
-        while (1) {
-            for (i = 0; i < column; i++) {
-                func_8003700C(" ");
-            }
-            frames++;
-            func_8003700C("\n\n\n\n\n\nLanguage Error\n");
-            func_8003700C("\t\t\tActor%X\t\tNo%x\n\n", actor, number);
-            func_800716D8();
-            if (frames >= 3) {
-                column++;
-                frames = 0;
-                if (column >= 21) {
-                    column = 0;
-                }
-            }
-        }
-    }
-}
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800792F8);
-#endif
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800793F0);
-
-/* Close the actor's event queue: event 0x1b for a flagged actor, then the
- * closing event 0xfe; menu effects off. */
-void func_80079674(u8 actor) {
-    if (D_800D32A0[actor].unk1 != 0) {
-        D_800C3FE8[D_800C3EAC->eventCount].actor = actor;
-        D_800C3FE8[D_800C3EAC->eventCount].type = 0x1B;
-        D_800C3EAC->eventCount++;
-    }
-    D_800C3FE8[D_800C3EAC->eventCount].actor = actor;
-    D_800C3FE8[D_800C3EAC->eventCount].type = 0xFE;
-    D_800D366C = 0;
-}
-
-/* Execute the actor's action list with its attack model and wait until the
- * queued events are done. */
-void func_80079778(u8 actor) {
-    D_800C3EAC->eventCount = 0;
-    func_80085350();
-    func_80085388();
-    D_800C3FE8[D_800C3EAC->eventCount].actor = actor;
-    func_800716D8();
-    func_800B89FC(1, actor, 0, func_80080AE4(actor));
-    func_800793F0(actor);
-    func_80079674(actor);
-    while (D_800C3EAC->eventsDone == 0) {
-        func_800716D8();
-    }
-}
-
-/* Tell enemy `target` who acts on it: var 7 = the actor's bit, bytes 9..13
- * from 800d2ca4 and byte 14 whether the actor's default target is in the
- * 800c48e8 mask. */
-void func_80079840(u8 actor, u8 target) {
-    s32 i;
-    u8 enemy;
-
-    if (target >= 3) {
-        enemy = target - 3;
-        D_800D3400[enemy].vars[7] = func_80089C08(actor);
-        for (i = 0; i < 5; i++) {
-            D_800D3400[enemy].bytes[9 + i] = D_800D2C94.enemyBytes[i];
-        }
-        if ((u16)D_800C48E8 & func_80089C08(D_800C3EAC->slots[actor].defaultTarget)) {
-            D_800D3400[enemy].bytes[14] = 1;
-        } else {
-            D_800D3400[enemy].bytes[14] = 0;
-        }
-    }
-}
-
-/* Advance the AI script by one four-byte instruction. */
-void func_80079934(u8 **pc) {
-    *pc += 4;
-}
-
-/* Skip the script's conditions (0x80 and up), then everything but
- * actions 0x80..0xef. */
-void func_80079948(u8 **pc) {
-    while (**pc >= 0x80) {
-        func_80079934(pc);
-    }
-    while ((u8)(**pc - 0x80) >= 0x70) {
-        func_80079934(pc);
-    }
-}
-
-/* Run enemy `slot`'s AI script: clear the action list and event types, then
- * evaluate conditions and actions until 0xfd or 0xff. */
-void func_800799C8(u8 slot, u16 attacking) {
-    u8 *pc;
-    u8 count;
-    u8 enemy;
-    u8 *p;
-    s32 offset;
-
-    count = 0;
-    enemy = slot - 3;
-    pc = D_800D3400[enemy].script;
-    p = (u8 *)D_800D2E5C;
-    do {
-        *p++ = 0;
-    } while (p < (u8 *)D_800D2E5C + 0x100);
-    for (offset = 31 * sizeof(BattleEvent); offset >= 0; offset -= sizeof(BattleEvent)) {
-        ((BattleEvent *)((u8 *)D_800C3FE8 + offset))->type = 0xFF;
-    }
-    while (*pc != 0xFD && *pc != 0xFF) {
-        if (*pc >= 0x80) {
-            if (!func_8007F8C0(&pc, enemy)) {
-                func_80079948(&pc);
-            }
-        } else {
-            count = func_8007EF6C(&pc, enemy, count);
-        }
-    }
-}
-
-/* Run enemy `slot`'s reaction script when armed (and the enemy is not down,
- * unless +0x34 bit 0x800 lets it react), then execute its action list.
- * Returns whether the script ran action 0x62. */
-s32 func_80079AB0(u8 slot) {
-    u8 *pc;
-    s32 ranAction62 = 0;
-    u8 enemy = slot - 3;
-    u8 count = 0;
-    u8 *p;
-
-    if (!(D_800CCCE8.records[enemy + 3].pilot.status7C & 0x8000) || (D_800CCCE8.records[enemy + 3].pilot.flags34 & 0x800)) {
-        D_800D2E5C[0].type = 0;
-        if (D_800C3D18[enemy].armed != 0) {
-            pc = D_800D3400[enemy].reaction;
-            p = (u8 *)D_800D2E5C;
-            do {
-                *p++ = 0;
-            } while (p < (u8 *)D_800D2E5C + 0x100);
-            while (*pc != 0xFD && *pc != 0xFF) {
-                if (*pc >= 0x80) {
-                    if (!func_8007F8C0(&pc, enemy)) {
-                        func_80079948(&pc);
-                    }
-                } else {
-                    if (*pc == 0x62) {
-                        ranAction62 = 1;
-                    }
-                    count = func_8007EF6C(&pc, enemy, count);
-                }
-            }
-        }
-        if (D_800D2E5C[0].type != 0) {
-            func_800793F0(enemy + 3);
-        }
-    }
-    return ranAction62;
-}
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80079C24);
-
-/* Show battle message window `index`. */
-void func_80079E18(u8 index) {
-    D_800D2D28->windows[4] = 1;
-    D_800D36C8[index].shown = 1;
-}
-
-/* Hide battle message window `index`. */
-void func_80079E4C(u8 index) {
-    D_800D2D28->windows[4] = 0;
-    D_800D36C8[index].shown = 0;
-}
-
-/* The first slot in `mask`; 11 when none. */
-u8 func_80079E7C(u16 mask) {
-    s32 slot;
-
-    for (slot = 0; slot < 11; slot++) {
-        if (func_80089C9C(mask, slot)) {
-            break;
-        }
-    }
-    return slot;
-}
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80079ED8);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007A280);
-
-/* Whether `slot` can be targeted: present, visible and not down (+0x7c
- * 0xc002); without `any` also not flagged 0x20 at +0x84. */
-#ifdef NON_MATCHING
-u8 func_8007A628(u8 slot, u8 any) {
-    u8 result = 0;
-    u16 status;
-
-    if (D_800D2DCC.present[slot] != 0 && D_800C3EB4[slot].hidden == 0 && !(D_800CCCE8.records[slot].pilot.status7C & 0xC002)) {
-        result = 1;
-        if (any == 0) {
-            status = D_800CCCE8.records[slot].pilot.status84.half.active & 0x20;
-            result = status == 0;
-        }
-    }
-    return result;
-}
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007A628);
-#endif
-
-/* As 8007a628 without the visibility test. */
-u8 func_8007A6C8(u8 slot, u8 any) {
-    u8 result = 0;
-    u16 status;
-
-    if (D_800D2DCC.present[slot] != 0 && !(D_800CCCE8.records[slot].pilot.status7C & 0xC002)) {
-        result = 1;
-        if (any == 0) {
-            status = D_800CCCE8.records[slot].pilot.status84.half.active & 0x20;
-            result = status == 0;
-        }
-    }
-    return result;
-}
-
-/* Whether `slot` is present, visible and alive (+0x7c without 0xc000). */
-u8 func_8007A744(u8 slot) {
-    u8 result = 0;
-
-    if (D_800D2DCC.present[slot] != 0 && D_800C3EB4[slot].hidden == 0) {
-        result = (D_800CCCE8.records[slot].pilot.status7C & 0xC000) == 0;
-    }
-    return result;
-}
-
-/* AI action default: queue an entry of type 0x80 carrying the four opcode
- * bytes. Returns the new entry count. */
-u8 func_8007A7BC(u8 **pc, u8 *list, u8 enemy, u8 count) {
-    list[count * 8] = 0x80;
-    list[count * 8 + 1] = (*pc)[0];
-    list[count * 8 + 2] = (*pc)[1];
-    list[count * 8 + 3] = (*pc)[2];
-    list[count * 8 + 4] = (*pc)[3];
-    return count + 1;
-}
-
-/* AI action 01: list entry byte b1 = b2; offset 0 starts the next entry. */
-u8 func_8007A828(u8 **pc, u8 *list, u8 count) {
-    list[count * 8 + (*pc)[1]] = (*pc)[2];
-    if ((*pc)[1] == 0) {
-        count++;
-    }
-    return count;
-}
-
-/* AI action 02: list entry byte b1 = byte variable b2. */
-void func_8007A874(u8 **pc, u8 *list, u8 enemy, u8 count) {
-    list[count * 8 + (*pc)[1]] = D_800D3400[enemy].bytes[(*pc)[2]];
-}
-
-/* AI action 03: copy list entry b1 to entry b2. */
-void func_8007A8B4(u8 **pc, u8 *list) {
-    s32 i;
-
-    for (i = 0; i < 8; i++) {
-        list[(*pc)[2] * 8 + i] = list[(*pc)[1] * 8 + i];
-    }
-}
-
-/* AI action 04: byte variable b1 = b2. */
-void func_8007A900(u8 **pc, u8 enemy) {
-    D_800D3400[enemy].bytes[(*pc)[1]] = (*pc)[2];
-}
-
-/* AI action 05: variable b1 = b2 | b3 << 8. */
-void func_8007A92C(u8 **pc, u8 enemy) {
-    u16 value = (*pc)[2] | ((*pc)[3] << 8);
-
-    D_800D3400[enemy].vars[(*pc)[1]] = value;
-}
-
-/* AI action 06: long b1 = (b2 | b3 << 8) * 16. */
-void func_8007A968(u8 **pc, u8 enemy) {
-    s32 value = (((*pc)[3] << 8) + (*pc)[2]) * 16;
-
-    D_800D3400[enemy].longs[(*pc)[1]] = value;
-}
-
-/* AI action 07: resident halfword b1 = b2. */
-void func_8007A9A8(u8 **pc) {
-    D_8005A3A0[(*pc)[1]] = (*pc)[2];
-}
-
-/* AI action 08: byte variable b1 += b2, saturating at 0xff. */
-void func_8007A9D0(u8 **pc, u8 enemy) {
-    u8 *value = &D_800D3400[enemy].bytes[(*pc)[1]];
-    s32 sum = *value + (*pc)[2];
-    u8 result = sum;
-
-    if (sum >= 0x100) {
-        result = 0xFF;
-    }
-    *value = result;
-}
-
-/* AI action 09: byte variable b1 -= b2, saturating at 0. */
-void func_8007AA1C(u8 **pc, u8 enemy) {
-    u8 *value = &D_800D3400[enemy].bytes[(*pc)[1]];
-    s32 difference = *value - (*pc)[2];
-    u8 result = difference;
-
-    if (difference < 0) {
-        result = 0;
-    }
-    *value = result;
-}
-
-/* AI action 0a: byte variable b1 *= b2, saturating at 0xff. */
-void func_8007AA60(u8 **pc, u8 enemy) {
-    u8 *value = &D_800D3400[enemy].bytes[(*pc)[1]];
-    s16 product = *value * (*pc)[2];
-
-    if (product >= 0x100) {
-        product = 0xFF;
-    }
-    *value = product;
-}
-
-/* AI action 0b: byte variable b1 /= b2. */
-void func_8007AAB8(u8 **pc, u8 enemy) {
-    u8 *value = &D_800D3400[enemy].bytes[(*pc)[1]];
-
-    *value = *value / (*pc)[2];
-}
-
-/* AI action 0c: byte variable b1 %= b2. */
-void func_8007AAF4(u8 **pc, u8 enemy) {
-    u8 *value = &D_800D3400[enemy].bytes[(*pc)[1]];
-
-    *value = *value % (*pc)[2];
-}
-
-/* AI action 0d: byte variable b1 &= b2. */
-void func_8007AB30(u8 **pc, u8 enemy) {
-    D_800D3400[enemy].bytes[(*pc)[1]] &= (*pc)[2];
-}
-
-/* AI action 0e: byte variable b1 |= b2. */
-void func_8007AB68(u8 **pc, u8 enemy) {
-    D_800D3400[enemy].bytes[(*pc)[1]] |= (*pc)[2];
-}
-
-/* AI action 0f: byte variable b1 ^= b2. */
-void func_8007ABA0(u8 **pc, u8 enemy) {
-    D_800D3400[enemy].bytes[(*pc)[1]] ^= (*pc)[2];
-}
-
-/* AI action 10: variable b1 += b2 | b3 << 8, saturating at 0xffff. */
-#ifdef NON_MATCHING
-void func_8007ABD8(u8 **pc, u8 enemy) {
-    u16 *value = &D_800D3400[enemy].vars[(*pc)[1]];
-    s32 sum = *value + (((*pc)[3] << 8) + (*pc)[2]);
-
-    if (sum > 0xFFFF) {
-        sum = 0xFFFF;
-    }
-    *value = sum;
-}
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007ABD8);
-#endif
-
-/* AI action 11: variable b1 -= b2 | b3 << 8, saturating at 0. */
-#ifdef NON_MATCHING
-void func_8007AC30(u8 **pc, u8 enemy) {
-    u16 *value = &D_800D3400[enemy].vars[(*pc)[1]];
-    s32 difference = *value - (((*pc)[3] << 8) + (*pc)[2]);
-
-    if (difference < 0) {
-        difference = 0;
-    }
-    *value = difference;
-}
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007AC30);
-#endif
-
-/* AI action 12: variable b1 *= b2 | b3 << 8, saturating at 0xffff. */
-#ifdef NON_MATCHING
-void func_8007AC80(u8 **pc, u8 enemy) {
-    u16 *value = &D_800D3400[enemy].vars[(*pc)[1]];
-    s32 product = *value * (((*pc)[3] << 8) + (*pc)[2]);
-
-    if (product > 0xFFFF) {
-        product = 0xFFFF;
-    }
-    *value = product;
-}
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007AC80);
-#endif
-
-/* AI action 13: variable b1 /= b2 | b3 << 8. */
-#ifdef NON_MATCHING
-void func_8007ACDC(u8 **pc, u8 enemy) {
-    u16 *value = &D_800D3400[enemy].vars[(*pc)[1]];
-
-    *value = *value / (((*pc)[3] << 8) + (*pc)[2]);
-}
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007ACDC);
-#endif
-
-/* AI action 14: variable b1 %= b2 | b3 << 8. */
-#ifdef NON_MATCHING
-void func_8007AD24(u8 **pc, u8 enemy) {
-    u16 *value = &D_800D3400[enemy].vars[(*pc)[1]];
-
-    *value = *value % (((*pc)[3] << 8) + (*pc)[2]);
-}
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007AD24);
-#endif
-
-/* AI action 15: variable b1 &= b2 | b3 << 8. */
-void func_8007AD6C(u8 **pc, u8 enemy) {
-    D_800D3400[enemy].vars[(*pc)[1]] &= (*pc)[2] + ((*pc)[3] << 8);
-}
-
-/* AI action 16: variable b1 |= b2 | b3 << 8. */
-void func_8007ADB0(u8 **pc, u8 enemy) {
-    D_800D3400[enemy].vars[(*pc)[1]] |= (*pc)[2] + ((*pc)[3] << 8);
-}
-
-/* AI action 17: variable b1 ^= b2 | b3 << 8. */
-void func_8007ADF4(u8 **pc, u8 enemy) {
-    D_800D3400[enemy].vars[(*pc)[1]] ^= (*pc)[2] + ((*pc)[3] << 8);
-}
-
-/* AI action 18: byte variable b3 = byte b1 + byte b2, saturating at 0xff. */
-void func_8007AE38(u8 **pc, u8 enemy) {
-    u8 *bytes = D_800D3400[enemy].bytes;
-    s32 sum = bytes[(*pc)[1]] + bytes[(*pc)[2]];
-    u8 result = sum;
-
-    if (sum >= 0x100) {
-        result = 0xFF;
-    }
-    bytes[(*pc)[3]] = result;
-}
-
-/* AI action 19: byte variable b3 = byte b1 - byte b2, saturating at 0. */
-void func_8007AE98(u8 **pc, u8 enemy) {
-    u8 *bytes = D_800D3400[enemy].bytes;
-    s32 difference = bytes[(*pc)[1]] - bytes[(*pc)[2]];
-    u8 result = difference;
-
-    if (difference < 0) {
-        result = 0;
-    }
-    bytes[(*pc)[3]] = result;
-}
-
-/* AI action 1a: byte variable b3 = byte b1 * byte b2, saturating at 0xff. */
-void func_8007AEF0(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-    u8 *bytes = D_800D3400[enemy].bytes;
-    s16 product = bytes[op[1]] * bytes[op[2]];
-
-    if (product >= 0x100) {
-        product = 0xFF;
-    }
-    bytes[op[3]] = product;
-}
-
-/* AI action 1b: byte variable b3 = byte b1 / byte b2. */
-void func_8007AF5C(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-    u8 *bytes = D_800D3400[enemy].bytes;
-
-    bytes[op[3]] = bytes[op[1]] / bytes[op[2]];
-}
-
-/* AI action 1c: byte variable b3 = byte b1 % byte b2. */
-void func_8007AFAC(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-    u8 *bytes = D_800D3400[enemy].bytes;
-
-    bytes[op[3]] = bytes[op[1]] % bytes[op[2]];
-}
-
-/* AI action 1d: byte variable b3 = byte b1 & byte b2. */
-void func_8007AFFC(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-    u8 *bytes = D_800D3400[enemy].bytes;
-
-    bytes[op[3]] = bytes[op[1]] & bytes[op[2]];
-}
-
-/* AI action 1e: byte variable b3 = byte b1 | byte b2. */
-void func_8007B040(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-    u8 *bytes = D_800D3400[enemy].bytes;
-
-    bytes[op[3]] = bytes[op[1]] | bytes[op[2]];
-}
-
-/* AI action 1f: byte variable b3 = byte b1 ^ byte b2. */
-void func_8007B084(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-    u8 *bytes = D_800D3400[enemy].bytes;
-
-    bytes[op[3]] = bytes[op[1]] ^ bytes[op[2]];
-}
-
-/* AI action 20: variable b3 = var b1 + var b2, saturating at 0xffff. */
-void func_8007B0C8(u8 **pc, u8 enemy) {
-    u16 *vars = D_800D3400[enemy].vars;
-    s32 sum = vars[(*pc)[1]] + vars[(*pc)[2]];
-
-    if (sum > 0xFFFF) {
-        sum = 0xFFFF;
-    }
-    vars[(*pc)[3]] = sum;
-}
-
-/* AI action 21: variable b3 = var b1 - var b2, saturating at 0. */
-void func_8007B134(u8 **pc, u8 enemy) {
-    u16 *vars = D_800D3400[enemy].vars;
-    s32 difference = vars[(*pc)[1]] - vars[(*pc)[2]];
-
-    if (difference < 0) {
-        difference = 0;
-    }
-    vars[(*pc)[3]] = difference;
-}
-
-/* AI action 22: variable b3 = var b1 * var b2, saturating at 0xffff. */
-void func_8007B198(u8 **pc, u8 enemy) {
-    u16 *vars = D_800D3400[enemy].vars;
-    s32 product = vars[(*pc)[1]] * vars[(*pc)[2]];
-
-    if (product > 0xFFFF) {
-        product = 0xFFFF;
-    }
-    vars[(*pc)[3]] = product;
-}
-
-/* AI action 23: variable b3 = var b1 / var b2. */
-void func_8007B208(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-    u16 *vars = D_800D3400[enemy].vars;
-
-    vars[op[3]] = vars[op[1]] / vars[op[2]];
-}
-
-/* AI action 24: variable b3 = var b1 % var b2. */
-void func_8007B264(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-    u16 *vars = D_800D3400[enemy].vars;
-
-    vars[op[3]] = vars[op[1]] % vars[op[2]];
-}
-
-/* AI action 25: variable b3 = var b1 & var b2. */
-#ifdef NON_MATCHING
-void func_8007B2C0(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-    u16 *vars = D_800D3400[enemy].vars;
-
-    vars[op[3]] = vars[op[1]] & vars[op[2]];
-}
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007B2C0);
-#endif
-
-/* AI action 26: variable b3 = var b1 | var b2. */
-#ifdef NON_MATCHING
-void func_8007B310(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-    u16 *vars = D_800D3400[enemy].vars;
-
-    vars[op[3]] = vars[op[1]] | vars[op[2]];
-}
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007B310);
-#endif
-
-/* AI action 27: variable b3 = var b1 ^ var b2. */
-#ifdef NON_MATCHING
-void func_8007B360(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-    u16 *vars = D_800D3400[enemy].vars;
-
-    vars[op[3]] = vars[op[1]] ^ vars[op[2]];
-}
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007B360);
-#endif
-
-/* AI action 28: 80079ed8 for the enemy's slot with b1, b2. */
-void func_8007B3B0(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-
-    func_80079ED8(enemy + 3, op[1], op[2], 0);
-}
-
-/* AI action 29: 8007a280 for the enemy's slot with b1 and b2 | b3 << 8. */
-void func_8007B3E4(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-
-    func_8007A280(enemy + 3, op[1], op[2] | (op[3] << 8), 0);
-}
-
-/* AI action 2a: byte variable b1 = attribute b2 of the first slot in var b3. */
-void func_8007B424(u8 **pc, u8 enemy) {
-    u8 slot = func_80079E7C(D_800D3400[enemy].vars[(*pc)[3]]);
-
-    D_800D3400[enemy].bytes[(*pc)[1]] = func_80079ED8(slot, (*pc)[2], 0, 1);
-}
-
-/* AI action 2b: set attribute b1 of the first slot in var b3 to byte b1's
- * value; a party slot instead queues action type 0x20. */
-u8 func_8007B4B8(u8 **pc, u8 enemy, u8 count) {
-    u8 slot = func_80079E7C(D_800D3400[enemy].vars[(*pc)[3]]);
-
-    if (slot < 3) {
-        D_800D2E5C[0].type = 0x20;
-        count++;
-    } else {
-        func_80079ED8(slot, (*pc)[2], D_800D3400[enemy].bytes[(*pc)[1]], 0);
-    }
-    return count;
-}
-
-/* AI action 2c: variable b1 = 16-bit attribute b2 of the first slot in var b3. */
-void func_8007B578(u8 **pc, u8 enemy) {
-    u16 *vars = D_800D3400[enemy].vars;
-    u8 slot = func_80079E7C(vars[(*pc)[3]]);
-
-    vars[(*pc)[1]] = func_8007A280(slot, (*pc)[2], 0, 1);
-}
-
-/* AI action 2d: set 16-bit attribute b2 of the first slot in var b3 to var b1;
- * a party slot instead queues action type 0x20. */
-u8 func_8007B608(u8 **pc, u8 enemy, u8 count) {
-    u16 *vars = D_800D3400[enemy].vars;
-    u8 slot = func_80079E7C(vars[(*pc)[3]]);
-
-    if (slot < 3) {
-        D_800D2E5C[0].type = 0x20;
-        count++;
-    } else {
-        func_8007A280(slot, (*pc)[2], vars[(*pc)[1]], 0);
-    }
-    return count;
-}
-
-/* AI action 2e: long b1 = (b2 1) record +0x104 of the first slot in var b3,
- * or (b2 2) the party's gold. */
-void func_8007B6C0(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-
-    switch (op[2]) {
-    case 1:
-        D_800D3400[enemy].longs[(*pc)[1]] =
-            D_800CCCE8.records[func_80079E7C(D_800D3400[enemy].vars[op[3]])].gear.hp;
-        break;
-    case 2:
-        D_800D3400[enemy].longs[op[1]] = D_8006EF58;
-        break;
-    }
-}
-
-/* AI action 2f: record +0x108 (b2 0) or +0x104 of the first slot in var b3 =
- * long b1; a party slot instead queues action type 0x20. */
-u8 func_8007B7B0(u8 **pc, u8 enemy, u8 count) {
-    u8 slot = func_80079E7C(D_800D3400[enemy].vars[(*pc)[3]]);
-
-    if (slot < 3) {
-        D_800D2E5C[0].type = 0x20;
-        count++;
-    } else if ((*pc)[2] == 0) {
-        D_800CCCE8.records[slot].gear.maxHp = D_800D3400[enemy].longs[(*pc)[1]];
-    } else {
-        D_800CCCE8.records[slot].gear.hp = D_800D3400[enemy].longs[(*pc)[1]];
-    }
-    return count;
-}
-
-/* AI action 30: variable b1 = resident halfword b2. */
-void func_8007B8D4(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-
-    D_800D3400[enemy].vars[op[1]] = D_8005A3A0[op[2]];
-}
-
-/* AI action 31: resident halfword b2 = variable b1. */
-void func_8007B914(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-
-    D_8005A3A0[op[2]] = D_800D3400[enemy].vars[op[1]];
-}
-
-/* AI action 32: byte variable b2 = byte variable b1. */
-void func_8007B958(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-    u8 *bytes = D_800D3400[enemy].bytes;
-
-    bytes[op[2]] = bytes[op[1]];
-}
-
-/* AI action 33: variable b2 = variable b1. */
-void func_8007B98C(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-
-    D_800D3400[enemy].vars[op[2]] = D_800D3400[enemy].vars[op[1]];
-}
-
-/* AI action 34: long b2 = long b1. */
-void func_8007B9C8(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-
-    D_800D3400[enemy].longs[op[2]] = D_800D3400[enemy].longs[op[1]];
-}
-
-/* AI action 35: variable b2 = byte variable b1. */
-void func_8007BA04(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-
-    D_800D3400[enemy].vars[op[2]] = D_800D3400[enemy].bytes[op[1]];
-}
-
-/* AI action 36: long b2 = variable b1. */
-void func_8007BA44(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-
-    D_800D3400[enemy].longs[op[2]] = D_800D3400[enemy].vars[op[1]];
-}
-
-/* AI action 37: clear the byte variables. */
-void func_8007BA88(u8 enemy) {
-    s32 i;
-
-    for (i = 15; i >= 0; i--) {
-        D_800D3400[enemy].bytes[i] = 0;
-    }
-}
-
-/* AI action 38: clear the variables. */
-void func_8007BAB8(u8 enemy) {
-    s32 i;
-
-    for (i = 7; i >= 0; i--) {
-        D_800D3400[enemy].vars[i] = 0;
-    }
-}
-
-/* AI action 39: the enemy record's +0x14c = b1 | b2 << 8. */
-#ifdef NON_MATCHING
-void func_8007BAE8(u8 **pc, u8 enemy) {
-    s32 value = (*pc)[1] | ((*pc)[2] << 8);
-
-    D_800CCCE8.records[enemy + 3].field14C = value;
-}
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007BAE8);
-#endif
-
-/* AI action 3a: the enemy record's +0x156 = b1 | b2 << 8. */
-void func_8007BB2C(u8 **pc, u8 enemy) {
-    u16 value = (*pc)[1] | ((*pc)[2] << 8);
-
-    D_800CCCE8.records[enemy + 3].field156 = value;
-}
-
-/* AI action 3b: the enemy record's bytes +0x155, +0x153, +0x151 = b1, b2, b3. */
-void func_8007BB70(u8 **pc, u8 enemy) {
-    D_800CCCE8.records[enemy + 3].field150[5] = (*pc)[1];
-    D_800CCCE8.records[enemy + 3].field150[3] = (*pc)[2];
-    D_800CCCE8.records[enemy + 3].field150[1] = (*pc)[3];
-}
-
-/* AI action 3c: the enemy record's bytes +0x154, +0x152, +0x150 = b1, b2, b3. */
-void func_8007BBD8(u8 **pc, u8 enemy) {
-    D_800CCCE8.records[enemy + 3].field150[4] = (*pc)[1];
-    D_800CCCE8.records[enemy + 3].field150[2] = (*pc)[2];
-    D_800CCCE8.records[enemy + 3].field150[0] = (*pc)[3];
-}
-
-/* AI action 3d: list entry halfword at b1 = b2 | b3 << 8 (two byte stores). */
-void func_8007BC40(u8 **pc, u8 *list, u8 count) {
-    list[count * 8 + (*pc)[1]] = (*pc)[2];
-    (&list[count * 8 + (*pc)[1]])[1] = (*pc)[3];
-}
-
-/* AI action 3e: byte variable b1 = random 0..b2. */
-void func_8007BC84(u8 **pc, u8 enemy) {
-    D_800D3400[enemy].bytes[(*pc)[1]] = func_8001BD40(0, (*pc)[2]);
-}
-
-/* AI action 3f: variable b1 = random 0..(b2 | b3 << 8). */
-void func_8007BCE8(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-
-    D_800D3400[enemy].vars[(*pc)[1]] = func_80089B50(0, op[2] | (op[3] << 8));
-}
-
-/* AI action 40: variable b1 = the bit of a random party slot passing the
- * targeting test b2 and not flagged at 800d32a1; 0 when none does. */
-void func_8007BD5C(u8 **pc, u8 enemy) {
-    u8 tried[3];
-    u8 slot;
-
-    tried[2] = 0;
-    tried[1] = 0;
-    tried[0] = 0;
-    D_800D3400[enemy].vars[(*pc)[1]] = 0;
-    while (!(tried[2] & (tried[0] & tried[1]))) {
-        slot = func_8001BD40(0, 2);
-        if (tried[slot] == 0) {
-            if (func_8007A628(slot, (*pc)[2]) && D_800D32A0[slot].unk1 == 0) {
-                D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(slot);
-                return;
-            }
-            tried[slot] = 1;
-        }
-    }
-}
-
-/* AI action 41: as action 40, limited to party slots in the enemy's
- * formation group. */
-void func_8007BEA8(u8 **pc, u8 enemy) {
-    u8 tried[3];
-    u8 slot;
-
-    tried[2] = 0;
-    tried[1] = 0;
-    tried[0] = 0;
-    D_800D3400[enemy].vars[(*pc)[1]] = 0;
-    while (!(tried[2] & (tried[0] & tried[1]))) {
-        slot = func_8001BD40(0, 2);
-        if (tried[slot] == 0) {
-            if (func_8007A628(slot, (*pc)[2]) && D_800C3EB4[enemy + 3].group == D_800C3EB4[slot].group &&
-                D_800D32A0[slot].unk1 == 0) {
-                D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(slot);
-                return;
-            }
-            tried[slot] = 1;
-        }
-    }
-}
-
-/* AI action 42: variable b1 = the bit of a random enemy slot passing the
- * targeting test b2 in the enemy's formation group and not flagged at
- * 800d32a1; 0 when none does. */
-void func_8007C040(u8 **pc, u8 enemy) {
-    u8 candidates[8];
-    s32 count;
-    s32 slot;
-
-    slot = 3;
-    count = 0;
-    D_800D3400[enemy].vars[(*pc)[1]] = 0;
-    for (; slot < 11; slot++) {
-        if (func_8007A628(slot, (*pc)[2]) && D_800C3EB4[enemy + 3].group == D_800C3EB4[slot].group &&
-            D_800D32A0[slot].unk1 == 0) {
-            candidates[count++] = slot;
-        }
-    }
-    if (count != 0) {
-        D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(candidates[func_8001BD40(0, count - 1)]);
-    }
-}
-
-/* AI action 43: as action 40, limited to party slots outside the enemy's
- * formation group. */
-void func_8007C1A4(u8 **pc, u8 enemy) {
-    u8 tried[3];
-    u8 slot;
-
-    tried[2] = 0;
-    tried[1] = 0;
-    tried[0] = 0;
-    D_800D3400[enemy].vars[(*pc)[1]] = 0;
-    while (!(tried[2] & (tried[0] & tried[1]))) {
-        slot = func_8001BD40(0, 2);
-        if (tried[slot] == 0) {
-            if (func_8007A628(slot, (*pc)[2]) && D_800C3EB4[enemy + 3].group != D_800C3EB4[slot].group &&
-                D_800D32A0[slot].unk1 == 0) {
-                D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(slot);
-                return;
-            }
-            tried[slot] = 1;
-        }
-    }
-}
-
-/* AI action 44: as action 42, limited to enemy slots outside the enemy's
- * formation group. */
-void func_8007C33C(u8 **pc, u8 enemy) {
-    u8 candidates[8];
-    s32 count;
-    s32 slot;
-
-    slot = 3;
-    count = 0;
-    D_800D3400[enemy].vars[(*pc)[1]] = 0;
-    for (; slot < 11; slot++) {
-        if (func_8007A628(slot, (*pc)[2]) && D_800C3EB4[enemy + 3].group != D_800C3EB4[slot].group &&
-            D_800D32A0[slot].unk1 == 0) {
-            candidates[count++] = slot;
-        }
-    }
-    if (count != 0) {
-        D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(candidates[func_8001BD40(0, count - 1)]);
-    }
-}
-
-/* AI action 45: variable b1 = the bit of the targetable party slot with the
- * lowest turn timer. */
-void func_8007C4A0(u8 **pc, u8 enemy) {
-    s32 slot;
-    u8 lowest = 0xFF;
-    s32 target = 0;
-
-    for (slot = 0; slot < 3; slot++) {
-        if (func_8007A628(slot, (*pc)[2]) && lowest >= D_800D2DCC.timers[1][slot]) {
-            lowest = D_800D2DCC.timers[1][slot];
-            target = slot;
-        }
-    }
-    D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(target);
-}
-
-/* AI action 46: variable b1 = the bit of the targetable other enemy slot
- * with the lowest turn timer. */
-void func_8007C580(u8 **pc, u8 enemy) {
-    s32 slot;
-    u8 lowest = 0xFF;
-    s32 target = 0;
-
-    for (slot = 3; slot < 11; slot++) {
-        if (func_8007A628(slot, (*pc)[2]) && lowest >= D_800D2DCC.timers[1][slot] && slot != enemy + 3) {
-            lowest = D_800D2DCC.timers[1][slot];
-            target = slot;
-        }
-    }
-    D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(target);
-}
-
-/* AI action 47: variable b1 = the bit of the targetable party slot with the
- * lowest HP. */
-void func_8007C678(u8 **pc, u8 enemy) {
-    s32 slot;
-    u16 lowest = 0xFFFF;
-    s32 target = 0;
-
-    for (slot = 0; slot < 3; slot++) {
-        if (func_8007A628(slot, (*pc)[2]) && lowest >= D_800CCCE8.records[slot].pilot.hp) {
-            lowest = D_800CCCE8.records[slot].pilot.hp;
-            target = slot;
-        }
-    }
-    D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(target);
-}
-
-/* AI action 48: variable b1 = the bit of the targetable enemy slot with the
- * lowest HP. */
-void func_8007C75C(u8 **pc, u8 enemy) {
-    s32 slot;
-    u16 lowest = 0xFFFF;
-    s32 target = 0;
-
-    for (slot = 3; slot < 11; slot++) {
-        if (func_8007A628(slot, (*pc)[2]) && lowest >= D_800CCCE8.records[slot].pilot.hp) {
-            lowest = D_800CCCE8.records[slot].pilot.hp;
-            target = slot;
-        }
-    }
-    D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(target);
-}
-
-/* AI action 49: variable b1 = the bit of a random party slot passing the
- * targeting test b2, flagged at 800d32a1 and in the enemy's formation group. */
-void func_8007C840(u8 **pc, u8 enemy) {
-    u8 tried[3];
-    u8 slot;
-
-    tried[2] = 0;
-    tried[1] = 0;
-    tried[0] = 0;
-    D_800D3400[enemy].vars[(*pc)[1]] = 0;
-    while (!(tried[2] & (tried[0] & tried[1]))) {
-        slot = func_8001BD40(0, 2);
-        if (tried[slot] == 0) {
-            if (func_8007A628(slot, (*pc)[2]) && D_800D32A0[slot].unk1 != 0 &&
-                D_800C3EB4[enemy + 3].group == D_800C3EB4[slot].group) {
-                D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(slot);
-                return;
-            }
-            tried[slot] = 1;
-        }
-    }
-}
-
-/* AI action 4a: variable b1 = the bit of a random party slot passing the
- * targeting test b2 and flagged at 800d32a1. */
-void func_8007C9D4(u8 **pc, u8 enemy) {
-    u8 tried[3];
-    u8 slot;
-
-    tried[2] = 0;
-    tried[1] = 0;
-    tried[0] = 0;
-    D_800D3400[enemy].vars[(*pc)[1]] = 0;
-    while (!(tried[2] & (tried[0] & tried[1]))) {
-        slot = func_8001BD40(0, 2);
-        if (tried[slot] == 0) {
-            if (func_8007A628(slot, (*pc)[2]) && D_800D32A0[slot].unk1 != 0) {
-                D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(slot);
-                return;
-            }
-            tried[slot] = 1;
-        }
-    }
-}
-
-/* AI action 4b: variable b1 = the bit of a random enemy slot passing the
- * targeting test b2 and flagged at 800d32a1; 0 when none does. */
-#ifdef NON_MATCHING
-void func_8007CB20(u8 **pc, u8 enemy) {
-    u8 candidates[8];
-    u8 *next;
-    s32 count;
-    s32 slot;
-
-    next = candidates;
-    slot = 3;
-    count = 0;
-    D_800D3400[enemy].vars[(*pc)[1]] = 0;
-    for (; slot < 11; slot++) {
-        if (func_8007A628(slot, (*pc)[2]) && D_800D32A0[slot].unk1 != 0) {
-            *next++ = slot;
-            count++;
-        }
-    }
-    if (count != 0) {
-        D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(candidates[func_8001BD40(0, count - 1)]);
-    }
-}
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007CB20);
-#endif
-
-/* AI action 4c: byte variable b1 = the number of targetable party slots in
- * formation group b2. */
-void func_8007CC50(u8 **pc, u8 enemy) {
-    s32 slot;
-    u8 count = 0;
-
-    for (slot = 0; slot < 3; slot++) {
-        if (func_8007A628(slot, 0) && D_800C3EB4[slot].group == (*pc)[2]) {
-            count++;
-        }
-    }
-    D_800D3400[enemy].bytes[(*pc)[1]] = count;
-}
-
-/* AI action 4d: byte variable b1 = the number of targetable enemy slots in
- * formation group b2. */
-void func_8007CD10(u8 **pc, u8 enemy) {
-    s32 slot;
-    u8 count = 0;
-
-    for (slot = 3; slot < 11; slot++) {
-        if (func_8007A628(slot, 0) && D_800C3EB4[slot].group == (*pc)[2]) {
-            count++;
-        }
-    }
-    D_800D3400[enemy].bytes[(*pc)[1]] = count;
-}
-
-/* AI action 4e: byte variable b1 = the formation's group distance from the
- * enemy's group to the group of the first slot in var b2. */
-void func_8007CDD0(u8 **pc, u8 enemy) {
-    u8 slot = func_80079E7C(D_800D3400[enemy].vars[(*pc)[2]]);
-
-    D_800D3400[enemy].bytes[(*pc)[1]] =
-        D_800D3364->links[D_800C3EB4[enemy + 3].group][D_800C3EB4[slot].group].distance;
-}
-
-/* AI action 4f: byte variable b1 = the number of targetable party slots in
- * the group of the first slot in var b2. */
-void func_8007CEA4(u8 **pc, u8 enemy) {
-    s32 slot;
-    u8 count = 0;
-
-    for (slot = 0; slot < 3; slot++) {
-        if (func_8007A628(slot, 0) &&
-            D_800C3EB4[slot].group == D_800C3EB4[func_80079E7C(D_800D3400[enemy].vars[(*pc)[2]])].group) {
-            count++;
-        }
-    }
-    D_800D3400[enemy].bytes[(*pc)[1]] = count;
-}
-
-/* AI action 50: byte variable b1 = the number of targetable enemy slots in
- * the group of the first slot in var b2. */
-void func_8007CFB8(u8 **pc, u8 enemy) {
-    s32 slot;
-    u8 count = 0;
-
-    for (slot = 3; slot < 11; slot++) {
-        if (func_8007A628(slot, 0) &&
-            D_800C3EB4[slot].group == D_800C3EB4[func_80079E7C(D_800D3400[enemy].vars[(*pc)[2]])].group) {
-            count++;
-        }
-    }
-    D_800D3400[enemy].bytes[(*pc)[1]] = count;
-}
-
-/* AI action 51: byte variable b1 = the count held for item b2 (0 when the
- * item is not held). */
-void func_8007D0CC(u8 **pc, u8 enemy) {
-    s32 i;
-
-    D_800D3400[enemy].bytes[(*pc)[1]] = 0;
-    for (i = 0; i < 0x30; i++) {
-        if (D_800D2CE0[i] == (*pc)[2]) {
-            D_800D3400[enemy].bytes[(*pc)[1]] = D_800D2CB0[i];
-            return;
-        }
-    }
-}
-
-/* AI action 52: list entry halfword at b1 = variable b2 (two byte stores). */
-void func_8007D148(u8 **pc, u8 *list, u8 enemy, u8 count) {
-    u16 value = D_800D3400[enemy].vars[(*pc)[2]];
-
-    list[count * 8 + (*pc)[1]] = value;
-    (&list[count * 8 + (*pc)[1]])[1] = value >> 8;
-}
-
-/* AI action 53: long b1 = the party's gold. */
-void func_8007D1A8(u8 **pc, u8 enemy) {
-    D_800D3400[enemy].longs[(*pc)[1]] = D_8006EF58;
-}
-
-/* AI action 54: variable b1 = the bit of a random slot passing 8007a744
- * whose record byte +0x56 is b2; 0 when none does. */
-#ifdef NON_MATCHING
-void func_8007D1DC(u8 **pc, u8 enemy) {
-    u8 candidates[11];
-    u8 *next;
-    s32 count;
-    s32 slot;
-
-    next = candidates;
-    slot = 0;
-    count = 0;
-    D_800D3400[enemy].vars[(*pc)[1]] = 0;
-    for (; slot < 11; slot++) {
-        if (func_8007A744(slot) && D_800CCCE8.records[slot].pilot.characterId == (*pc)[2]) {
-            *next++ = slot;
-            count++;
-        }
-    }
-    if (count != 0) {
-        D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(candidates[func_8001BD40(0, count - 1)]);
-    }
-}
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007D1DC);
-#endif
-
-/* AI action 55: long b1 = the enemy's byte at 800d2c8b. */
-void func_8007D30C(u8 **pc, u8 enemy) {
-    D_800D3400[enemy].longs[(*pc)[1]] = D_800D2C8B[enemy];
-}
-
-/* AI action 56: variable b1 = the bit of a random enemy slot passing
- * 8007a6c8(b2) with slot info +3 bit 0x80; 0 when none does. */
-#ifdef NON_MATCHING
-void func_8007D344(u8 **pc, u8 enemy) {
-    u8 candidates[8];
-    u8 *next;
-    s32 count;
-    s32 slot;
-
-    next = candidates;
-    slot = 3;
-    count = 0;
-    D_800D3400[enemy].vars[(*pc)[1]] = 0;
-    for (; slot < 11; slot++) {
-        if (func_8007A6C8(slot, (*pc)[2]) && (D_800C3EB4[slot].hidden & 0x80)) {
-            *next++ = slot;
-            count++;
-        }
-    }
-    if (count != 0) {
-        D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(candidates[func_8001BD40(0, count - 1)]);
-    }
-}
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007D344);
-#endif
-
-/* AI action 57: variable b1 = the bit of a random party slot flagged 0x8000
- * at +0x7c without 0x4002. */
-void func_8007D478(u8 **pc, u8 enemy) {
-    u8 tried[3];
-    u8 slot;
-    u16 flags;
-
-    tried[2] = 0;
-    tried[1] = 0;
-    tried[0] = 0;
-    D_800D3400[enemy].vars[(*pc)[1]] = 0;
-    while (!(tried[2] & (tried[0] & tried[1]))) {
-        slot = func_8001BD40(0, 2);
-        if (tried[slot] == 0) {
-            flags = D_800CCCE8.records[slot].pilot.status7C;
-            if ((flags & 0x8000) && !(flags & 0x4002)) {
-                D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(slot);
-                return;
-            }
-            tried[slot] = 1;
-        }
-    }
-}
-
-/* AI action 58: byte variable b1 = the number of party slots not down
- * (+0x7c without 0xc000). */
-void func_8007D5B0(u8 **pc, u8 enemy) {
-    s32 slot;
-    u8 count = 0;
-
-    for (slot = 0; slot < 3; slot++) {
-        if (!(D_800CCCE8.records[slot].pilot.status7C & 0xC000)) {
-            count++;
-        }
-    }
-    D_800D3400[enemy].bytes[(*pc)[1]] = count;
-}
-
-/* AI action 59: byte variable b1 = the number of present, visible enemy
- * slots not down. */
-void func_8007D610(u8 **pc, u8 enemy) {
-    s32 slot;
-    u8 count = 0;
-
-    for (slot = 3; slot < 11; slot++) {
-        if (D_800D2DCC.present[slot] != 0 && !(D_800CCCE8.records[slot].pilot.status7C & 0xC000) && D_800C3EB4[slot].hidden == 0) {
-            count++;
-        }
-    }
-    D_800D3400[enemy].bytes[(*pc)[1]] = count;
-}
-
-/* AI action 5a: variable b1 = the bit of the targetable party slot flagged
- * at 800d32a1 with the lowest record +0x104. */
-void func_8007D6A8(u8 **pc, u8 enemy) {
-    s32 slot;
-    u32 lowest = 0xFFFFFFFF;
-    s32 target = 0;
-
-    for (slot = 0; slot < 3; slot++) {
-        if (func_8007A628(slot, (*pc)[2]) && D_800D32A0[slot].unk1 != 0 && lowest >= D_800CCCE8.records[slot].gear.hp) {
-            lowest = D_800CCCE8.records[slot].gear.hp;
-            target = slot;
-        }
-    }
-    D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(target);
-}
-
-/* AI action 5b: variable b1 = the bit of the targetable enemy slot flagged
- * at 800d32a1 with the lowest HP. */
-void func_8007D7B4(u8 **pc, u8 enemy) {
-    s32 slot;
-    u32 lowest = 0xFFFFFFFF;
-    s32 target = 0;
-
-    for (slot = 3; slot < 11; slot++) {
-        if (func_8007A628(slot, (*pc)[2]) && D_800D32A0[slot].unk1 != 0 && lowest >= D_800CCCE8.records[slot].pilot.hp) {
-            lowest = D_800CCCE8.records[slot].pilot.hp;
-            target = slot;
-        }
-    }
-    D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(target);
-}
-
-/* AI action 5c: variable b2 = the bit of a random targetable party slot whose
- * 16-bit attribute b1 shares a bit with var b3; 0 when none does. */
-void func_8007D8C0(u8 **pc, u8 enemy) {
-    u8 candidates[3];
-    s32 count;
-    s32 slot;
-
-    slot = 0;
-    count = 0;
-    D_800D3400[enemy].vars[(*pc)[2]] = 0;
-    for (; slot < 3; slot++) {
-        if (func_8007A628(slot, 0) && (D_800D3400[enemy].vars[(*pc)[3]] & func_8007A280(slot, (*pc)[1], 0, 1))) {
-            candidates[count++] = slot;
-        }
-    }
-    if (count != 0) {
-        D_800D3400[enemy].vars[(*pc)[2]] = func_80089C08(candidates[func_8001BD40(0, count - 1)]);
-    }
-}
-
-/* AI action 5d: as action 5c for the enemy slots. */
-void func_8007DA1C(u8 **pc, u8 enemy) {
-    u8 candidates[8];
-    s32 count;
-    s32 slot;
-
-    count = 0;
-    D_800D3400[enemy].vars[(*pc)[2]] = 0;
-    for (slot = 3; slot < 11; slot++) {
-        if (func_8007A628(slot, 0) && (D_800D3400[enemy].vars[(*pc)[3]] & func_8007A280(slot, (*pc)[1], 0, 1))) {
-            candidates[count++] = slot;
-        }
-    }
-    if (count != 0) {
-        D_800D3400[enemy].vars[(*pc)[2]] = func_80089C08(candidates[func_8001BD40(0, count - 1)]);
-    }
-}
-
-/* AI action 5e: as action 5c, limited to party slots flagged at 800d32a1. */
-void func_8007DB78(u8 **pc, u8 enemy) {
-    u8 candidates[3];
-    s32 count;
-    s32 slot;
-
-    slot = 0;
-    count = 0;
-    D_800D3400[enemy].vars[(*pc)[2]] = 0;
-    for (; slot < 3; slot++) {
-        if (func_8007A628(slot, 0) && D_800D32A0[slot].unk1 != 0 &&
-            (D_800D3400[enemy].vars[(*pc)[3]] & func_8007A280(slot, (*pc)[1], 0, 1))) {
-            candidates[count++] = slot;
-        }
-    }
-    if (count != 0) {
-        D_800D3400[enemy].vars[(*pc)[2]] = func_80089C08(candidates[func_8001BD40(0, count - 1)]);
-    }
-}
-
-/* AI action 5f: as action 5d, limited to enemy slots flagged at 800d32a1. */
-void func_8007DCF8(u8 **pc, u8 enemy) {
-    u8 candidates[8];
-    s32 count;
-    s32 slot;
-
-    slot = 3;
-    count = 0;
-    D_800D3400[enemy].vars[(*pc)[2]] = 0;
-    for (; slot < 11; slot++) {
-        if (func_8007A628(slot, 0) && D_800D32A0[slot].unk1 != 0 &&
-            (D_800D3400[enemy].vars[(*pc)[3]] & func_8007A280(slot, (*pc)[1], 0, 1))) {
-            candidates[count++] = slot;
-        }
-    }
-    if (count != 0) {
-        D_800D3400[enemy].vars[(*pc)[2]] = func_80089C08(candidates[func_8001BD40(0, count - 1)]);
-    }
-}
-
-/* AI action 60: as action 5c with any targetable party slot. */
-void func_8007DE78(u8 **pc, u8 enemy) {
-    u8 candidates[3];
-    s32 count;
-    s32 slot;
-
-    slot = 0;
-    count = 0;
-    D_800D3400[enemy].vars[(*pc)[2]] = 0;
-    for (; slot < 3; slot++) {
-        if (func_8007A628(slot, 1) && (D_800D3400[enemy].vars[(*pc)[3]] & func_8007A280(slot, (*pc)[1], 0, 1))) {
-            candidates[count++] = slot;
-        }
-    }
-    if (count != 0) {
-        D_800D3400[enemy].vars[(*pc)[2]] = func_80089C08(candidates[func_8001BD40(0, count - 1)]);
-    }
-}
-
-/* AI action 61: as action 5e with any targetable party slot. */
-void func_8007DFD4(u8 **pc, u8 enemy) {
-    u8 candidates[3];
-    s32 count;
-    s32 slot;
-
-    slot = 0;
-    count = 0;
-    D_800D3400[enemy].vars[(*pc)[2]] = 0;
-    for (; slot < 3; slot++) {
-        if (func_8007A628(slot, 1) && D_800D32A0[slot].unk1 != 0 &&
-            (D_800D3400[enemy].vars[(*pc)[3]] & func_8007A280(slot, (*pc)[1], 0, 1))) {
-            candidates[count++] = slot;
-        }
-    }
-    if (count != 0) {
-        D_800D3400[enemy].vars[(*pc)[2]] = func_80089C08(candidates[func_8001BD40(0, count - 1)]);
-    }
-}
-
-/* AI action 63: set the enemy's slot info +3 to b1; with bit 0x80 the enemy
- * rejoins its own group, otherwise it leaves its formation group. */
-void func_8007E154(u8 **pc, u8 enemy) {
-    D_800C3EB4[enemy + 3].hidden = (*pc)[1];
-    if ((*pc)[1] & 0x80) {
-        func_80087EDC(enemy + 3, enemy + 3);
-    } else {
-        func_800883AC(enemy + 3);
-    }
-}
-
-/* AI action 64: variable b1 = the enemy's own slot bit. */
-void func_8007E1D0(u8 **pc, u8 enemy) {
-    D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(enemy + 3);
-}
-
-/* AI action 65: variable b1 = the mask of party slots passing 8007a744 and
- * (b2 1) flagged, (b2 2) not flagged at 800d32a1, or (other b2) any. */
-void func_8007E234(u8 **pc, u8 enemy) {
-    s32 slot;
-    u16 mask = 0;
-
-    for (slot = 2; slot >= 0; slot--) {
-        if (func_8007A744(slot)) {
-            switch ((*pc)[2]) {
-            case 1:
-                if (D_800D32A0[slot].unk1 != 0) {
-                    mask |= 1;
-                }
-                break;
-            case 2:
-                if (D_800D32A0[slot].unk1 == 0) {
-                    mask |= 1;
-                }
-                break;
-            default:
-                mask |= 1;
-                break;
-            }
-        }
-        mask <<= 1;
-    }
-    D_800D3400[enemy].vars[(*pc)[1]] = mask >> 1;
-}
-
-/* AI action 66: variable b1 = the mask of enemy slots passing 8007a744 and
- * (b2 1) flagged, (b2 2) not flagged at 800d32a1, or (other b2) any. */
-void func_8007E334(u8 **pc, u8 enemy) {
-    s32 slot;
-    u16 mask = 0;
-
-    for (slot = 10; slot >= 3; slot--) {
-        if (func_8007A744(slot)) {
-            switch ((*pc)[2]) {
-            case 1:
-                if (D_800D32A0[slot].unk1 != 0) {
-                    mask |= 1;
-                }
-                break;
-            case 2:
-                if (D_800D32A0[slot].unk1 == 0) {
-                    mask |= 1;
-                }
-                break;
-            default:
-                mask |= 1;
-                break;
-            }
-        }
-        mask <<= 1;
-    }
-    D_800D3400[enemy].vars[(*pc)[1]] = mask << 2;
-}
-
-/* AI action 67: variable b1 = the mask of party slots passing 8007a744 in the
- * group of the first slot in var b2. */
-void func_8007E438(u8 **pc, u8 enemy) {
-    s32 slot;
-    u16 mask = 0;
-
-    for (slot = 2; slot >= 0; slot--) {
-        if (func_8007A744(slot) &&
-            D_800C3EB4[func_80079E7C(D_800D3400[enemy].vars[(*pc)[2]])].group == D_800C3EB4[slot].group) {
-            mask |= 1;
-        }
-        mask <<= 1;
-    }
-    D_800D3400[enemy].vars[(*pc)[1]] = mask >> 1;
-}
-
-/* AI action 68: variable b1 = the mask of enemy slots passing 8007a744 in the
- * group of the first slot in var b2. */
-void func_8007E554(u8 **pc, u8 enemy) {
-    s32 slot;
-    u16 mask = 0;
-
-    for (slot = 10; slot >= 3; slot--) {
-        if (func_8007A744(slot) &&
-            D_800C3EB4[func_80079E7C(D_800D3400[enemy].vars[(*pc)[2]])].group == D_800C3EB4[slot].group) {
-            mask |= 1;
-        }
-        mask <<= 1;
-    }
-    D_800D3400[enemy].vars[(*pc)[1]] = mask << 2;
-}
-
-/* AI action 69: clear the enemy's 800d2c60 long and set its 800d2c8b byte
- * to 4. */
-void func_8007E674(u8 enemy) {
-    D_800D2C60[enemy] = 0;
-    D_800D2C8B[enemy] = 4;
-}
-
-/* AI action 6a: long b3 = long b1 + long b2. */
-#ifdef NON_MATCHING
-void func_8007E6A0(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-    s32 *longs = D_800D3400[enemy].longs;
-
-    longs[op[3]] = longs[op[1]] + longs[op[2]];
-}
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007E6A0);
-#endif
-
-/* AI action 6b: long b3 = long b1 - long b2. */
-#ifdef NON_MATCHING
-void func_8007E6F0(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-    s32 *longs = D_800D3400[enemy].longs;
-
-    longs[op[3]] = longs[op[1]] - longs[op[2]];
-}
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007E6F0);
-#endif
-
-/* AI action 6c: long b1 *= b2. */
-void func_8007E740(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-
-    D_800D3400[enemy].longs[op[1]] *= op[2];
-}
-
-/* AI action 6d: long b1 /= b2 (unsigned). */
-void func_8007E780(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-
-    D_800D3400[enemy].longs[op[1]] = (u32)D_800D3400[enemy].longs[op[1]] / op[2];
-}
-
-/* AI action 6e: halfword b1 of the table at *800d3278 + 0x394 = b2. */
-void func_8007E7C0(u8 **pc) {
-    u8 *op = *pc;
-
-    D_800D3278->unk394[op[1]] = op[2];
-}
-
-/* AI action 6f: set (b2 != 0) or clear flag b1 + 7 in every party record's
- * +0x7a. */
-#ifdef NON_MATCHING
-void func_8007E7E4(u8 **pc) {
-    Combatant *record = D_800CCCE8.records;
-    u8 set = (*pc)[2] != 0;
-
-    do {
-        if (set) {
-            record->pilot.status7A |= func_80089BEC((*pc)[1] + 7);
-        } else {
-            record->pilot.status7A &= ~func_80089BEC((*pc)[1] + 7);
-        }
-        record++;
-    } while (record < &D_800CCCE8.records[3]);
-}
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007E7E4);
-#endif
-
-/* AI action 70: formation group distance b1 -> b2 = b3. */
-void func_8007E8AC(u8 **pc) {
-    u8 *op = *pc;
-
-    D_800D3364->links[op[1]][op[2]].distance = op[3];
-}
-
-/* AI action 71: the first slot of var b1 takes the next turn. */
-void func_8007E8E0(u8 **pc, u8 enemy) {
-    D_800D2DC0 = func_80079E7C(D_800D3400[enemy].vars[(*pc)[1]]) + 1;
-}
-
-/* AI action 72: rebuild the turn order (80078508) into a scratch buffer. */
-void func_8007E934(void) {
-    u8 order[16];
-
-    func_80078508(order);
-}
-
-/* AI condition 81: byte variable b1 == b2. */
-s32 func_8007E954(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-
-    return D_800D3400[enemy].bytes[op[1]] == op[2];
-}
-
-/* AI condition 82: variable b1 == b2 | b3 << 8. */
-#ifdef NON_MATCHING
-s32 func_8007E98C(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-
-    return D_800D3400[enemy].vars[op[1]] == (op[2] | (op[3] << 8));
-}
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007E98C);
-#endif
-
-/* AI condition 83: byte variable b1 <= b2. */
-s32 func_8007E9D0(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-
-    return D_800D3400[enemy].bytes[op[1]] <= op[2];
-}
-
-/* AI condition 84: variable b1 <= b2 | b3 << 8. */
-#ifdef NON_MATCHING
-s32 func_8007EA08(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-
-    return D_800D3400[enemy].vars[op[1]] <= (op[2] | (op[3] << 8));
-}
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007EA08);
-#endif
-
-/* AI condition 85: byte variable b1 >= b2. */
-s32 func_8007EA4C(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-
-    return D_800D3400[enemy].bytes[op[1]] >= op[2];
-}
-
-/* AI condition 86: variable b1 >= b2 | b3 << 8. */
-#ifdef NON_MATCHING
-s32 func_8007EA84(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-
-    return D_800D3400[enemy].vars[op[1]] >= (op[2] | (op[3] << 8));
-}
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007EA84);
-#endif
-
-/* AI condition 87: byte variable b1 == byte variable b2. */
-s32 func_8007EAC8(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-    u8 *bytes = D_800D3400[enemy].bytes;
-
-    return bytes[op[1]] == bytes[op[2]];
-}
-
-/* AI condition 88: variable b1 == variable b2. */
-s32 func_8007EB08(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-    u16 *vars = D_800D3400[enemy].vars;
-
-    return vars[op[1]] == vars[op[2]];
-}
-
-/* AI condition 89: byte variable b1 <= byte variable b2. */
-s32 func_8007EB50(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-    u8 *bytes = D_800D3400[enemy].bytes;
-
-    return bytes[op[1]] <= bytes[op[2]];
-}
-
-/* AI condition 8a: variable b1 <= variable b2. */
-s32 func_8007EB90(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-    u16 *vars = D_800D3400[enemy].vars;
-
-    return vars[op[1]] <= vars[op[2]];
-}
-
-/* AI condition 8b: byte variable b1 & b2. */
-s32 func_8007EBD8(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-
-    return (D_800D3400[enemy].bytes[op[1]] & op[2]) != 0;
-}
-
-/* AI condition 8c: variable b1 & (b2 | b3 << 8). */
-#ifdef NON_MATCHING
-s32 func_8007EC10(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-
-    return (D_800D3400[enemy].vars[op[1]] & (op[2] + (op[3] << 8))) != 0;
-}
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007EC10);
-#endif
-
-/* AI condition 8d: byte variable b1 & byte variable b2. */
-s32 func_8007EC54(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-    u8 *bytes = D_800D3400[enemy].bytes;
-
-    return (bytes[op[1]] & bytes[op[2]]) != 0;
-}
-
-/* AI condition 8e: variable b1 & variable b2. */
-s32 func_8007EC94(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-    u16 *vars = D_800D3400[enemy].vars;
-
-    return (vars[op[1]] & vars[op[2]]) != 0;
-}
-
-/* AI condition 8f: byte variable b1 != b2. */
-s32 func_8007ECDC(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-
-    return D_800D3400[enemy].bytes[op[1]] != op[2];
-}
-
-/* AI condition 90: variable b1 != b2 | b3 << 8. */
-#ifdef NON_MATCHING
-s32 func_8007ED14(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-
-    return D_800D3400[enemy].vars[op[1]] != (op[2] | (op[3] << 8));
-}
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007ED14);
-#endif
-
-/* AI condition 91: byte variable b1 != byte variable b2. */
-s32 func_8007ED58(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-    u8 *bytes = D_800D3400[enemy].bytes;
-
-    return bytes[op[1]] != bytes[op[2]];
-}
-
-/* AI condition 92: variable b1 != variable b2. */
-s32 func_8007ED98(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-    u16 *vars = D_800D3400[enemy].vars;
-
-    return vars[op[1]] != vars[op[2]];
-}
-
-/* AI condition 93: long b1 == long b2. */
-s32 func_8007EDE0(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-    s32 *longs = D_800D3400[enemy].longs;
-
-    return longs[op[1]] == longs[op[2]];
-}
-
-/* AI condition 94: long b1 <= long b2 (unsigned). */
-s32 func_8007EE28(u8 **pc, u8 enemy) {
-    u8 *op = *pc;
-    u32 *longs = (u32 *)D_800D3400[enemy].longs;
-
-    return longs[op[1]] <= longs[op[2]];
-}
-
-/* AI condition 95: slot b1's record +0x7c bit 0x8000. */
-s32 func_8007EE70(u8 **pc) {
-    return D_800CCCE8.records[(*pc)[1]].pilot.status7C >> 15;
-}
-
-/* AI condition 96: formation group b1 is empty. */
-s32 func_8007EEA8(u8 **pc) {
-    return D_800D301C[(*pc)[1]].count == 0;
-}
-
-/* AI condition 97: no party member (slots 0 and 1) is alive. */
-s32 func_8007EED0(void) {
-    return (D_800D39DC & 3) == 0;
-}
-
-/* AI condition 98: false while any enemy without slot info bit 0x80 is
- * listed and the alive mask has a bit above 4 set. */
-s32 func_8007EEE8(void) {
-    s32 result = 1;
-    s32 i;
-
-    for (i = 0; i < 8; i++) {
-        if ((D_800D39DC >> 5) != 0 && !(D_800C3EB4[i + 3].hidden & 0x80)) {
-            result = 0;
-            break;
-        }
-    }
-    return result;
-}
-
-/* AI condition 9b: the enemy's slot info +3 bit 0x80. */
-s32 func_8007EF44(u8 enemy) {
-    return D_800C3EB4[enemy + 3].hidden >> 7;
-}
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007EF6C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007F8C0);
-
-/* For party character 4 with its UI flag +0x8e set: close window 0 and
- * release the graphics block. */
-void func_8007FB70(u8 member) {
-    if (D_800D2D24[member] == 4 && D_800D2D28->unk8E != 0) {
-        func_8008FA60(0);
-        func_8007765C();
-        D_800D2D28->unk8E = 0;
-    }
-}
-
-/* Place the separator lines of a `count`-row list (rows from the 800c3200
- * table) and remember the selected row (clamped below `count`). */
-#ifdef NON_MATCHING
-void func_8007FBE0(u8 count, u8 selected) {
-    s32 i;
-
-    if (count == selected) {
-        selected--;
-    }
-    for (i = 0; i < count - 1; i++) {
-        D_800C3EA4->unk908[i * 2 + D_800CCB04.buffer].x0 = 0xC;
-        D_800C3EA4->unk908[i * 2 + D_800CCB04.buffer].y0 = D_800C3200[count * 6 + i + 2] + 0x5E;
-        D_800C3EA4->unk908[i * 2 + D_800CCB04.buffer].x1 = 0x12;
-        D_800C3EA4->unk908[i * 2 + D_800CCB04.buffer].y1 = D_800C3200[count * 6 + i + 2] + 0x5E;
-    }
-    D_800D2D28->unk97 = selected;
-    D_800D2D28->unk98 = D_800CCB04.buffer;
-}
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007FBE0);
-#endif
-
-/* Release the loaded menu module block (UI +0xae). */
-void func_8007FCE8(void) {
-    if (D_800D2D28->unkAE != 0) {
-        func_800320E8(D_800D367C);
-        D_800D2D28->unkAE = 0;
-    }
-}
-
-/* Load file 2 (a member flagged at 800d32a1) or 1 into a new heap block
- * unless loaded (UI +0xae). */
-void func_8007FD38(u8 member) {
-    s32 file;
-
-    if (D_800D2D28->unkAE == 0) {
-        func_8008AC50();
-        file = 2;
-        if (D_800D32A0[member].unk1 == 0) {
-            file = 1;
-        }
-        func_8008AB94();
-        D_800D367C = (void *)func_8008ABB8(func_800288EC(file), 0);
-        func_800295D8(file, (s32)D_800D367C, 0, 0x80);
-        func_8008AC50();
-        D_800D2D28->unkAE = 1;
-    }
-}
-
-/* Release the loaded file-3 block (UI +0x96). */
-void func_8007FDEC(void) {
-    if (D_800D2D28->unk96 != 0) {
-        func_800320E8(D_800C3DE8);
-        D_800D2D28->unk96 = 0;
-    }
-}
-
-/* Load file 3 into a new heap block unless loaded (UI +0x96). */
-void func_8007FE3C(void) {
-    if (D_800D2D28->unk96 == 0) {
-        func_8008AC50();
-        func_8008AB94();
-        D_800C3DE8 = (void *)func_8008ABB8(func_800288EC(3), 0);
-        func_800295D8(3, (s32)D_800C3DE8, 0, 0x80);
-        func_8008AC50();
-        D_800D2D28->unk96 = 1;
-    }
-}
-
-/* Allocate and clear the 0x5da4-byte *800d2db4 block. */
-void func_8007FEC4(void) {
-    D_800D2DB4 = (BattleUnk2DB4 *)func_8008ABB8(0x5DA4, 0);
-    bzero(D_800D2DB4, 0x5DA4);
-    D_800D2DB4->unk5D9C = 0xA0;
-    D_800D2DB4->unk5D9E = 0x64;
-}
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007FF14);
-
-/* Leave a member's menu: clear UI +0xad, +0xc7, +0xa8, turn a 2 at 800d32a1
- * into 1 and release *800d2db4. */
-void func_800800E8(u8 member) {
-    D_800D2D28->unkAD = 0;
-    D_800D2D28->unkC7 = 0;
-    D_800D2D28->unkA8 = 0;
-    if (D_800D32A0[member].unk1 == 2) {
-        D_800D32A0[member].unk1 = 1;
-    }
-    func_800320E8(D_800D2DB4);
-}
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80080160);
-
-/* The next slot in turn order, other than `actor`, with the lowest turn
- * timer (undefined when there is none). */
-s32 func_80080AE4(u8 actor) {
-    u8 lowest = 0xFF;
-    s32 position = D_800D2DCC.cursor;
-    s32 slot;
-    u8 next;
-
-    do {
-        slot = D_800D2DCC.order[position];
-        position++;
-        if (D_800D2DCC.timers[1][slot] < lowest && slot != actor) {
-            next = slot;
-            lowest = D_800D2DCC.timers[1][slot];
-        }
-        if (position == 11) {
-            position = 0;
-        }
-    } while (position != D_800D2DCC.cursor);
-    return next;
-}
-
-/* Close the actor's event queue (event 0xfe); menu effects off. */
-void func_80080B64(u8 actor) {
-    D_800C3FE8[D_800C3EAC->eventCount].type = 0xFE;
-    D_800C3FE8[D_800C3EAC->eventCount].actor = actor;
-    D_800D366C = 0;
-}
-
-/* Events done; for a party actor outside 800c204c refresh its menu state. */
-void func_80080BD0(void) {
-    D_800C3EAC->eventsDone = 1;
-    if (D_800C3EAC->actor < 3 && D_800C204C == 0) {
-        func_8007FCE8();
-        func_8007FDEC();
-        func_800800E8(D_800C3EAC->actor);
-        func_8007FB70(D_800C3EAC->actor);
-    }
-}
-
-/* Set the 0x38-byte entry `index` of *800d3278 active (+0x34). */
-void func_80080C6C(u8 index) {
-    D_800D3278->entries[index].active = 1;
-}
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80080C94);
+#include "menu_pages.h"
+#include "resolver.h"
+#include "action_resolve.h"
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008115C);
 
@@ -5236,20 +1699,17 @@ void func_8008FAD8(void) {
 
 /* Build a message frame from glyphs into the +0x1e68 list: `rows` side
  * glyphs down from `top`, the corner at (x, y) and a stretched edge of
- * width `w`. */
+ * width `w`. Nonmatching: prologue scheduling (the original reads `rows`
+ * after clearing the count). */
 #ifdef NON_MATCHING
 void func_8008FC1C(s16 x, s16 y, s16 w, s16 top, u8 rows) {
     s32 i;
     s32 row;
 
-    i = 0;
     D_800D2D28->unkFC = 0;
-    if (rows != 0) {
-        row = top;
-        for (; i < rows; i++) {
-            D_800D2D28->unkFC += func_80076A10(0x65, &D_800C3EA4->unk1E68[D_800D2D28->unkFC * 2], x, row);
-            row += 8;
-        }
+    for (i = 0, row = top; i < rows; i++) {
+        D_800D2D28->unkFC += func_80076A10(0x65, &D_800C3EA4->unk1E68[D_800D2D28->unkFC * 2], x, row);
+        row += 8;
     }
     D_800D2D28->unkFC = func_80076A10(0x64, &D_800C3EA4->unk1E68[D_800D2D28->unkFC * 2], x, y) + D_800D2D28->unkFC;
     D_800D2D28->unkFC += func_800263E4(D_800D2F5C, 0x64, &D_800C3EA4->unk1E68[D_800D2D28->unkFC * 2],
@@ -5266,7 +1726,105 @@ void func_8008FDE4(void) {
     func_8008FC1C(0x20, 0x5C, 0xCC, 0x60, 0xE);
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008FE18);
+/* Build the item list page: (with `open`) set up the graphics block and the
+ * message frame, then render every list entry's two item names and their
+ * two-digit counts into VRAM text images (names at 0x380, digits at 0x3c0,
+ * one 13-line row per entry pair). */
+void func_8008FE18(u8 column, u8 row, u8 open) {
+    TextImage images[32];
+    RECT nameRect;
+    RECT tensRect;
+    RECT onesRect;
+    RECT tens2Rect;
+    RECT ones2Rect;
+    RECT rect;
+    s32 unused[2]; /* an unreferenced 8-byte local in the frame */
+    u8 counts[48];
+    u8 ids[48];
+    s32 i;
+    u8 tens;
+    u32 *digit;
+
+    if (open != 0) {
+        func_80077610();
+        func_80076EA4();
+        func_8008FC1C(0x20, 0x5C, 0xCC, 0x60, 0xE);
+    }
+    D_800D2DB0 = (u32 *)func_8008AC00(0x39);
+    bzero(D_800D2DB0, 0x618);
+    rect.x = 0x3C0;
+    rect.w = 0x3C;
+    rect.y = 0;
+    rect.h = 0xD;
+    func_800769E8(&rect, D_800D2DB0);
+    for (i = 0; i < 48; i++) {
+        ids[i] = D_800D2CE0[i];
+        counts[i] = D_800D2CB0[i];
+    }
+    for (i = 0; i < 32; i++) {
+        images[i].pixels = (u32 *)func_8008AC00(0x1B);
+        bzero(images[i].pixels, 0x30C);
+        nameRect.x = (i % 2) * 30 + 0x380;
+        nameRect.y = (i / 2) * 13 + 0x100;
+        nameRect.w = 30;
+        nameRect.h = 13;
+        tensRect.x = (i % 2) * 16 + 0x3C0;
+        tensRect.y = (i / 2) * 13 + 0x100;
+        tensRect.w = 6;
+        tensRect.h = 13;
+        onesRect.x = (i % 2) * 16 + 0x3C2;
+        onesRect.y = (i / 2) * 13 + 0x100;
+        onesRect.w = 6;
+        onesRect.h = 13;
+        tens2Rect.x = (i % 2) * 16 + 0x3C4;
+        tens2Rect.y = (i / 2) * 13 + 0x100;
+        tens2Rect.w = 6;
+        tens2Rect.h = 13;
+        ones2Rect.x = (i % 2) * 16 + 0x3C6;
+        ones2Rect.y = (i / 2) * 13 + 0x100;
+        ones2Rect.w = 6;
+        ones2Rect.h = 13;
+        if (ids[i] != 0) {
+            func_80034EAC(func_80033818(ids[i]), images[i].pixels, 0x1B, 0);
+        }
+        if (ids[i + 16] != 0) {
+            func_80034EAC(func_80033818(ids[i + 16]), images[i].pixels, 0x1B, 1);
+        }
+        func_800769E8(&nameRect, images[i].pixels);
+        tens = counts[i] / 10;
+        if (tens != 0) {
+            digit = D_800C3E5C[tens].pixels;
+        } else {
+            digit = D_800D2DB0;
+        }
+        func_800769E8(&tensRect, digit);
+        if (ids[i] != 0) {
+            digit = D_800C3E5C[(u8)(counts[i] % 10)].pixels;
+        } else {
+            digit = D_800D2DB0;
+        }
+        func_800769E8(&onesRect, digit);
+        if ((u8)(D_800D2CC0[i] / 10) != 0) {
+            digit = D_800C3E5C[counts[i + 16] / 10].pixels;
+        } else {
+            digit = D_800D2DB0;
+        }
+        func_800769E8(&tens2Rect, digit);
+        if (ids[i + 16] != 0) {
+            digit = D_800C3E5C[(u8)(counts[i + 16] % 10)].pixels;
+        } else {
+            digit = D_800D2DB0;
+        }
+        func_800769E8(&ones2Rect, digit);
+    }
+    for (i = 0; i < 32; i++) {
+        func_800320E8(images[i].pixels);
+    }
+    func_800320E8(D_800D2DB0);
+    func_800716D8();
+    D_800C3EA4->unkA230->unk669 = 1;
+    D_800D2D28->unkB7 = 2;
+}
 
 /* Build nine glyph rows (0x66) from y + 0x64 into the +0xba8 primitives. */
 void func_8009023C(s32 y) {
@@ -5306,7 +1864,41 @@ void func_80090310(u8 column, u8 row) {
                   (index / 2) * 13, 0x10);
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800904A0);
+/* Point the item page icon quads at the images for the item in list cell
+ * (column, row): its state icon (9 bit 0x4000, 7 bit 0x1000, else 8) and its
+ * level frame (12, 13 or 21 for levels 0-2), each with its CLUT. */
+void func_800904A0(u8 column, u8 row) {
+    u16 flags;
+    s32 icon;
+    u8 frame;
+
+    flags = D_800D2200[D_800D2CE0[row * 2 + column]].target;
+    if (flags & 0x4000) {
+        icon = 9;
+    } else {
+        icon = 8;
+        if (flags & 0x1000) {
+            icon = 7;
+        }
+    }
+    switch (flags & 0xF) {
+    case 0:
+        frame = 12;
+        break;
+    case 1:
+        frame = 13;
+        break;
+    case 2:
+        frame = 21;
+        break;
+    }
+    func_80076C78(&D_800C3EA4->unkA230->unk320[D_800CCB04.buffer], 0xA8, 0x33, D_800D2F68[icon].u, D_800D2F68[icon].v,
+                  D_800D2F68[icon].w);
+    D_800C3EA4->unkA230->unk320[D_800CCB04.buffer].clut = D_800D2F68[icon].alternate ? D_80059414 : D_800595D4;
+    func_80076C78(&D_800C3EA4->unkA230->unk370[D_800CCB04.buffer], 0xD0, 0x33, D_800D2F68[frame].u,
+                  D_800D2F68[frame].v, D_800D2F68[frame].w);
+    D_800C3EA4->unkA230->unk370[D_800CCB04.buffer].clut = D_800D2F68[frame].alternate ? D_80059414 : D_800595D4;
+}
 
 /* Render the name of the item in the list cell (column, row) into a text
  * image and place it on the graphics block's +0x280 quad. */
@@ -5348,7 +1940,26 @@ void func_8009080C(u8 column, u8 row, u8 other) {
     D_800C3EA4->unkA230->unk66B = 1;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009093C);
+/* Point the four list page quads at the list image from row offset `v`
+ * (offsets from 0x68 on the second image page with the alternate CLUT). */
+void func_8009093C(s32 v) {
+    s32 page = 0;
+
+    if (v >= 0x68) {
+        v -= 0x68;
+        D_800C3EA4->unkA230->unk0[D_800CCB04.buffer].clut = D_80059414;
+        D_800C3EA4->unkA230->unk50[D_800CCB04.buffer].clut = D_80059414;
+        page = 0x10;
+    } else {
+        D_800C3EA4->unkA230->unk0[D_800CCB04.buffer].clut = D_800595D4;
+        D_800C3EA4->unkA230->unk50[D_800CCB04.buffer].clut = D_800595D4;
+    }
+    func_80076CE8(&D_800C3EA4->unkA230->unk0[D_800CCB04.buffer], 0x30, 0x60, 0, v, 0x60, 0x68);
+    func_80076CE8(&D_800C3EA4->unkA230->unk50[D_800CCB04.buffer], 0xB4, 0x60, 0x78, v, 0x60, 0x68);
+    func_80076CE8(&D_800C3EA4->unkA230->unkA0[D_800CCB04.buffer], 0x98, 0x60, page, v, 0x10, 0x68);
+    func_80076CE8(&D_800C3EA4->unkA230->unkF0[D_800CCB04.buffer], 0x11C, 0x60, page | 0x40, v, 0x10, 0x68);
+    D_800C3EA4->unkA230->unk668 = D_800CCB04.buffer;
+}
 
 /* Animate the five-frame cursor glyph at (x, y): advance `frame` every third
  * tick. */
@@ -5365,11 +1976,148 @@ void func_80090B90(s32 x, s32 y, s32 *frame, u8 *ticks) {
     D_800D2D28->unk9E = 1;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80090C44);
+/* Show the member's EP and maximum EP as two digit glyphs each (no leading
+ * zero). */
+void func_80090C44(u8 member) {
+    u16 digit;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80090E7C);
+    digit = D_800CCCE8.records[member].pilot.ep / 10;
+    if (digit != 0) {
+        func_80076C78(&D_800C3EA4->unkA230->unk460[D_800CCB04.buffer], 0x104, 0xC6, digit * 8 + 0x78, 0, 8);
+    }
+    func_80076C78(&D_800C3EA4->unkA230->unk4B0[D_800CCB04.buffer], 0x10C, 0xC6,
+                  (u16)(D_800CCCE8.records[member].pilot.ep % 10) * 8 + 0x78, 0, 8);
+    digit = D_800CCCE8.records[member].pilot.maxEp / 10;
+    if (digit != 0) {
+        func_80076C78(&D_800C3EA4->unkA230->unk500[D_800CCB04.buffer], 0x11C, 0xC6, digit * 8 + 0x78, 0, 8);
+    }
+    func_80076C78(&D_800C3EA4->unkA230->unk550[D_800CCB04.buffer], 0x124, 0xC6,
+                  (u16)(D_800CCCE8.records[member].pilot.maxEp % 10) * 8 + 0x78, 0, 8);
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80091064);
+/* Show the member's EP panel: the two EP icons (cells 6 and 5), the EP
+ * digits and the EP label glyphs. */
+void func_80090E7C(u8 member) {
+    func_80076C78(&D_800C3EA4->unkA230->unk3C0[D_800CCB04.buffer], 0xA8, 0xA6, D_800D2F68[6].u, D_800D2F68[6].v,
+                  D_800D2F68[6].w);
+    D_800C3EA4->unkA230->unk3C0[D_800CCB04.buffer].clut = D_800D2F68[6].alternate ? D_80059414 : D_800595D4;
+    func_80076C78(&D_800C3EA4->unkA230->unk410[D_800CCB04.buffer], 0xEC, 0xC6, D_800D2F68[5].u, D_800D2F68[5].v,
+                  D_800D2F68[5].w);
+    D_800C3EA4->unkA230->unk410[D_800CCB04.buffer].clut = D_800D2F68[5].alternate ? D_80059414 : D_800595D4;
+    func_80090C44(member);
+    func_80076A10(0x71, D_800C3EA4->unkA230->unk5A0, 0x118, 0xD1);
+    D_800C3EA4->unkA230->unk66C = D_800CCB04.buffer;
+}
+
+/* Build the member's art list page: set up the graphics block and the
+ * message frame, then render the name and two-digit EP cost of every art its
+ * character (or its gear) knows into VRAM text images, then the EP panel. */
+void func_80091064(u8 member) {
+    RECT nameRect;
+    RECT tensRect;
+    RECT onesRect;
+    RECT rowRect;
+    RECT rightRect;
+    RECT rect;
+    TextImage images[16];
+    u8 known[16];
+    u8 costs[16];
+    s32 i;
+    u8 tens;
+    u32 *digit;
+
+    func_80077610();
+    func_80076EA4();
+    func_8008FC1C(0x20, 0x30, 0x98, 0x38, 0xC);
+    D_800D2DB0 = (u32 *)func_8008AC00(0x39);
+    bzero(D_800D2DB0, 0x618);
+    rect.x = 0x3C0;
+    rect.w = 0x3C;
+    rect.y = 0;
+    rect.h = 0xD;
+    func_800769E8(&rect, D_800D2DB0);
+    if (D_800D32A0[member].unk1 == 0) {
+        for (i = 0; i < 16; i++) {
+            if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask2, i)) {
+                known[i] = 1;
+                costs[i] = D_800CCCE8.partyCommands[member][i + 22].cost;
+            } else {
+                known[i] = 0;
+                costs[i] = 0;
+            }
+        }
+    } else {
+        for (i = 0; i < 16; i++) {
+            if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask6, i)) {
+                known[i] = 1;
+                costs[i] = D_800CCCE8.gearCommands[member][i + 21].cost;
+            } else {
+                known[i] = 0;
+                costs[i] = 0;
+            }
+        }
+    }
+    for (i = 0; i < 16; i++) {
+        images[i].pixels = (u32 *)func_8008AC00(0x1B);
+        bzero(images[i].pixels, 0x30C);
+        rowRect.x = (i % 2) * 30 + 0x380;
+        rowRect.y = (i / 2) * 16 + 0x100;
+        rowRect.w = 0x1B;
+        rowRect.h = 16;
+        func_800769E8(&rowRect, D_800D2DB0);
+        if (known[i] != 0) {
+            if (D_800D32A0[member].unk1 == 0) {
+                func_80034EAC(func_80033908(D_800CCCE8.records[member].pilot.characterId * 16 + i), images[i].pixels, 0x1B,
+                              0);
+            } else {
+                func_80034EAC(func_800339FC(D_800CCCE8.records[member].pilot.gearId * 16 + i), images[i].pixels, 0x1B, 0);
+            }
+            nameRect.x = (i % 2) * 30 + 0x380;
+            nameRect.y = (i / 2) * 16 + 0x102;
+            nameRect.w = 30;
+            nameRect.h = 13;
+            func_800769E8(&nameRect, images[i].pixels);
+        }
+        if (!(i & 1)) {
+            rightRect.x = 0x3C0;
+            rightRect.y = (i / 2) * 16 + 0x100;
+            rightRect.w = 0x1B;
+            rightRect.h = 16;
+            func_800769E8(&rightRect, D_800D2DB0);
+        }
+        tensRect.x = (i % 2) * 16 + 0x3C0;
+        tensRect.y = (i / 2) * 16 + 0x102;
+        tensRect.w = 6;
+        tensRect.h = 13;
+        tens = costs[i] / 10;
+        if (tens != 0) {
+            digit = D_800C3E5C[tens].pixels;
+        } else {
+            digit = D_800D2DB0;
+        }
+        func_800769E8(&tensRect, digit);
+        onesRect.x = (i % 2) * 16 + 0x3C2;
+        onesRect.y = (i / 2) * 16 + 0x102;
+        onesRect.w = 6;
+        onesRect.h = 13;
+        if (known[i] != 0) {
+            digit = D_800C3E5C[(u8)(costs[i] % 10)].pixels;
+        } else {
+            digit = D_800D2DB0;
+        }
+        func_800769E8(&onesRect, digit);
+    }
+    func_80090E7C(member);
+    for (i = 0; i < 16; i++) {
+        func_800320E8(images[i].pixels);
+    }
+    func_800320E8(D_800D2DB0);
+    func_800716D8();
+    D_800C3EA4->unkA230->unk140[0].clut = D_800595D4;
+    D_800C3EA4->unkA230->unk140[1].clut = D_800595D4;
+    D_800C3EA4->unkA230->unk669 = 1;
+    D_800D2D28->unkB7 = 1;
+}
 
 /* Build eight glyph rows (0x66) from y + 0x38 into the +0xba8 primitives. */
 void func_80091604(s32 y) {
@@ -5419,9 +2167,77 @@ void func_800916D4(u8 column, u8 row, u8 member) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009187C);
+/* Point the art page icon quads at the images for art (column, row) of the
+ * member (its gear's arts in a gear): its state icon (9 sealed, 7 flag
+ * 0x1000, else 8) and its level frame (13 level 1, 21 level 2, else 12). */
+void func_8009187C(u8 member, u8 column, u8 row) {
+    u16 state;
+    s32 icon;
+    s32 frame;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80091B38);
+    if (D_800D32A0[member].unk1 == 0) {
+        state = D_800CCCE8.partyCommands[member][row * 2 + column + 22].state;
+    } else {
+        state = D_800CCCE8.gearCommands[member][row * 2 + column + 21].state;
+    }
+    if (state & 0x4000) {
+        icon = 9;
+    } else {
+        icon = 8;
+        if (state & 0x1000) {
+            icon = 7;
+        }
+    }
+    switch (state & 0xF) {
+    case 0:
+        frame = 12;
+        break;
+    case 1:
+        frame = 13;
+        break;
+    case 2:
+        frame = 21;
+        break;
+    default:
+        frame = 12;
+        break;
+    }
+    func_80076C78(&D_800C3EA4->unkA230->unk320[D_800CCB04.buffer], 0xDA, 0xAA, D_800D2F68[icon].u, D_800D2F68[icon].v,
+                  D_800D2F68[icon].w);
+    D_800C3EA4->unkA230->unk320[D_800CCB04.buffer].clut = D_800D2F68[icon].alternate ? D_80059414 : D_800595D4;
+    func_80076C78(&D_800C3EA4->unkA230->unk370[D_800CCB04.buffer], 0xFE, 0xAA, D_800D2F68[frame].u,
+                  D_800D2F68[frame].v, D_800D2F68[frame].w);
+    D_800C3EA4->unkA230->unk370[D_800CCB04.buffer].clut = D_800D2F68[frame].alternate ? D_80059414 : D_800595D4;
+}
+
+/* Build the description of art (column, row) of the member (its gear's in
+ * a gear): two text lines from the menu module block into VRAM, placed on
+ * the page's two description quads. */
+void func_80091B38(u8 member, u8 column, u8 row) {
+    RECT rect;
+    u32 *pixels;
+    s32 text;
+    s32 width0;
+    s32 width1;
+
+    if (D_800D32A0[member].unk1 == 0) {
+        text = D_800D2D24[member] * 32 + (row * 2 + column) * 2;
+    } else {
+        text = D_8006D8A0.characters[D_800D2D24[member]].gearId * 32 + (row * 2 + column) * 2;
+    }
+    pixels = (u32 *)func_8008AC00(0x39);
+    bzero(pixels, 0x618);
+    width0 = func_80034EAC(func_80033728(D_800D367C, text & 0xFFFF), pixels, 0x39, 0);
+    width1 = func_80034EAC(func_80033728(D_800D367C, (text & 0xFFFF) | 1), pixels, 0x39, 1);
+    rect.x = 0x3C0;
+    rect.y = 0;
+    rect.w = 0x3C;
+    rect.h = 13;
+    func_800769E8(&rect, pixels);
+    func_80076C78(&D_800C3EA4->unkA230->unk280[D_800CCB04.buffer], 0x30, 0xB6, 0, 0, width0);
+    func_80076C78(&D_800C3EA4->unkA230->unk2D0[D_800CCB04.buffer], 0x30, 0xC6, 0, 0, width1);
+    func_800320E8(pixels);
+}
 
 /* Open the combo/technique entry (column, row) of the member's page when its
  * character knows it (mask +2 on foot, +6 in a gear): build its graphics for
@@ -5449,17 +2265,319 @@ u8 row;
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80091EC4);
+/* Point the four art page quads at the art list image from row `v`. */
+void func_80091EC4(u8 v) {
+    D_800C3EA4->unkA230->unk0[D_800CCB04.buffer].clut = D_800595D4;
+    D_800C3EA4->unkA230->unk50[D_800CCB04.buffer].clut = D_800595D4;
+    func_80076CE8(&D_800C3EA4->unkA230->unk0[D_800CCB04.buffer], 0x34, 0x34, 0, v, 0x60, 0x60);
+    func_80076CE8(&D_800C3EA4->unkA230->unk50[D_800CCB04.buffer], 0xB8, 0x34, 0x78, v, 0x60, 0x60);
+    func_80076CE8(&D_800C3EA4->unkA230->unkA0[D_800CCB04.buffer], 0x9C, 0x34, 0, v, 0x10, 0x60);
+    func_80076CE8(&D_800C3EA4->unkA230->unkF0[D_800CCB04.buffer], 0x120, 0x34, 0x40, v, 0x10, 0x60);
+    D_800C3EA4->unkA230->unk668 = D_800CCB04.buffer;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009209C);
+/* Show the gear page list image on the four page quads and mark the page
+ * (command window page 3) open. */
+void func_8009209C(void) {
+    D_800C3EA4->unkA230->unk0[D_800CCB04.buffer].clut = D_800595D4;
+    D_800C3EA4->unkA230->unk50[D_800CCB04.buffer].clut = D_800595D4;
+    func_80076CE8(&D_800C3EA4->unkA230->unk0[D_800CCB04.buffer], 0x36, 0x62, 0, 0, 0x60, 0x40);
+    func_80076CE8(&D_800C3EA4->unkA230->unk50[D_800CCB04.buffer], 0xC2, 0x62, 0x78, 0, 0x60, 0x40);
+    func_80076CE8(&D_800C3EA4->unkA230->unkA0[D_800CCB04.buffer], 0x96, 0x62, 0, 0, 0x10, 0x40);
+    func_80076CE8(&D_800C3EA4->unkA230->unkF0[D_800CCB04.buffer], 0x122, 0x62, 0x40, 0, 0x10, 0x40);
+    D_800C3EA4->unkA230->unk668 = D_800CCB04.buffer;
+    D_800C3EA4->unkA230->unk669 = 1;
+    D_800D2D28->unkB7 = 3;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80092298);
+/* Set up the gear page's shaded bar and black box primitives, then build its
+ * glyphs (from the 800c33b4 table) for every entry of `shown` that is not
+ * 0xff into the +0x1e68 list. */
+void func_80092298(u8 member, u8 *shown) {
+    s32 i;
+    s32 glyph;
 
+    for (i = 0; i < 2; i++) {
+        SetPolyG4(&D_800C3EA4->unkA230->unk5F0[i]);
+        (D_800C3EA4->unkA230->unk5F0 + i)->r0 = 0xFF;
+        (D_800C3EA4->unkA230->unk5F0 + i)->g0 = 0;
+        (D_800C3EA4->unkA230->unk5F0 + i)->b0 = 0;
+        (D_800C3EA4->unkA230->unk5F0 + i)->r1 = 0xFF;
+        (D_800C3EA4->unkA230->unk5F0 + i)->g1 = 0;
+        (D_800C3EA4->unkA230->unk5F0 + i)->b1 = 0;
+        (D_800C3EA4->unkA230->unk5F0 + i)->r2 = 0;
+        (D_800C3EA4->unkA230->unk5F0 + i)->g2 = 0;
+        (D_800C3EA4->unkA230->unk5F0 + i)->b2 = 0;
+        (D_800C3EA4->unkA230->unk5F0 + i)->r3 = 0;
+        (D_800C3EA4->unkA230->unk5F0 + i)->g3 = 0;
+        (D_800C3EA4->unkA230->unk5F0 + i)->b3 = 0;
+        (D_800C3EA4->unkA230->unk5F0 + i)->x0 = 0;
+        (D_800C3EA4->unkA230->unk5F0 + i)->y0 = 0;
+        (D_800C3EA4->unkA230->unk5F0 + i)->x1 = 0;
+        (D_800C3EA4->unkA230->unk5F0 + i)->y1 = 0;
+        (D_800C3EA4->unkA230->unk5F0 + i)->x2 = 0;
+        (D_800C3EA4->unkA230->unk5F0 + i)->y2 = 0;
+        (D_800C3EA4->unkA230->unk5F0 + i)->x3 = 0;
+        (D_800C3EA4->unkA230->unk5F0 + i)->y3 = 0;
+    }
+    for (i = 0; i < 2; i++) {
+        SetPolyF4(&D_800C3EA4->unkA230->unk638[i]);
+        (D_800C3EA4->unkA230->unk638 + i)->r0 = 0;
+        (D_800C3EA4->unkA230->unk638 + i)->g0 = 0;
+        (D_800C3EA4->unkA230->unk638 + i)->b0 = 0;
+        (D_800C3EA4->unkA230->unk638 + i)->x0 = 0;
+        (D_800C3EA4->unkA230->unk638 + i)->y0 = 0;
+        (D_800C3EA4->unkA230->unk638 + i)->x1 = 0;
+        (D_800C3EA4->unkA230->unk638 + i)->y1 = 0;
+        (D_800C3EA4->unkA230->unk638 + i)->x2 = 0;
+        (D_800C3EA4->unkA230->unk638 + i)->y2 = 0;
+        (D_800C3EA4->unkA230->unk638 + i)->x3 = 0;
+        (D_800C3EA4->unkA230->unk638 + i)->y3 = 0;
+    }
+    D_800D2D28->unkFC = 0;
+    for (glyph = 0; glyph < 16; glyph++) {
+        if (shown[glyph] != 0xFF) {
+            D_800D2D28->unkFC += func_80076A10(D_800C33B4[glyph], &D_800C3EA4->unk1E68[D_800D2D28->unkFC * 2],
+                                               D_800C33C4[glyph], D_800C3404[glyph]);
+        }
+    }
+    D_800D2D28->unkA6 = D_800CCB04.buffer;
+    D_800D2D28->unk9D = 1;
+}
+
+/* Build the member's gear page: set up the graphics block, render the name
+ * and two-digit count of each of the seven gear parts in `ids` (0xff none)
+ * and the fixed eighth entry (system text 10) into VRAM text images, then
+ * the page glyphs and quads. Nonmatching: the original keeps the name
+ * rectangle width 30 in $t0 on both paths. */
+#ifdef NON_MATCHING
+void func_80092784(u8 member, u8 *ids, u8 *counts) {
+    RECT nameRect;
+    RECT tensRect;
+    RECT onesRect;
+    RECT rowRect;
+    RECT rightRect;
+    RECT rect;
+    TextImage images[8];
+    s32 i;
+    u8 tens;
+    u32 *digit;
+
+    func_80077610();
+    func_80076EA4();
+    D_800D2DB0 = (u32 *)func_8008AC00(0x39);
+    bzero(D_800D2DB0, 0x618);
+    rect.x = 0x3C0;
+    rect.w = 0x3C;
+    rect.y = 0;
+    rect.h = 0xD;
+    func_800769E8(&rect, D_800D2DB0);
+    for (i = 0; i < 8; i++) {
+        images[i].pixels = (u32 *)func_8008AC00(0x1B);
+        bzero(images[i].pixels, 0x30C);
+        rowRect.x = (i % 2) * 30 + 0x380;
+        rowRect.y = (i / 2) * 16 + 0x100;
+        rowRect.w = 0x1B;
+        rowRect.h = 16;
+        func_800769E8(&rowRect, D_800D2DB0);
+        if (i != 7) {
+            if (ids[i] != 0xFF) {
+                func_80034EAC(func_80033784(D_800D2D24[member], ids[i]), images[i].pixels, 0x1B, 0);
+                nameRect.x = (i % 2) * 30 + 0x380;
+                nameRect.y = (i / 2) * 16 + 0x102;
+                nameRect.w = 30;
+                nameRect.h = 13;
+                func_800769E8(&nameRect, images[i].pixels);
+            }
+        } else {
+            func_80034EAC(func_800338D8(10), images[7].pixels, 0x1B, 0);
+            nameRect.x = 0x39E;
+            nameRect.y = 0x132;
+            nameRect.w = 30;
+            nameRect.h = 13;
+            func_800769E8(&nameRect, images[7].pixels);
+        }
+        if (!(i & 1)) {
+            rightRect.x = 0x3C0;
+            rightRect.y = (i / 2) * 16 + 0x100;
+            rightRect.w = 0x1B;
+            rightRect.h = 16;
+            func_800769E8(&rightRect, D_800D2DB0);
+        }
+        tensRect.x = (i % 2) * 16 + 0x3C0;
+        tensRect.y = (i / 2) * 16 + 0x102;
+        tensRect.w = 6;
+        tensRect.h = 13;
+        if (i != 7) {
+            tens = counts[i] / 10;
+            if (tens != 0) {
+                digit = D_800C3E5C[tens].pixels;
+            } else {
+                digit = D_800D2DB0;
+            }
+            func_800769E8(&tensRect, digit);
+            onesRect.x = (i % 2) * 16 + 0x3C2;
+            onesRect.y = (i / 2) * 16 + 0x102;
+            onesRect.w = 6;
+            onesRect.h = 13;
+            if (ids[i] != 0xFF) {
+                func_800769E8(&onesRect, D_800C3E5C[(u8)(counts[i] % 10)].pixels);
+            } else {
+                func_800769E8(&onesRect, D_800D2DB0);
+            }
+        } else {
+            func_800769E8(&tensRect, D_800D2DB0);
+            onesRect.x = 0x3D2;
+            onesRect.y = 0x132;
+            onesRect.w = 6;
+            onesRect.h = 13;
+            func_800769E8(&onesRect, D_800D2DB0);
+        }
+    }
+    func_80092298(member, ids);
+    for (i = 0; i < 8; i++) {
+        func_800320E8(images[i].pixels);
+    }
+    func_800320E8(D_800D2DB0);
+    func_8009209C();
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80092784);
+#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80092B74);
+/* Build the combo entry display: the AP count as one or two digit glyphs,
+ * the button glyph of each entered step with separators, and the remaining
+ * AP bar (4 pixels per point) on the shaded bar and black box. */
+void func_80092B74(u8 member, u8 ap) {
+    u8 digits[2];
+    u8 tens;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800930AC);
+    digits[0] = tens = ap / 10;
+    digits[1] = ap - tens * 10;
+    D_800D2D28->unkF8 = 0;
+    if (digits[0] != 0) {
+        D_800D2D28->unkF8 += func_80076A10(digits[0] + 0x67, &D_800C3EA4->unkBA8[D_800D2D28->unkF8 * 2], 0x56, 0x38);
+    }
+    D_800D2D28->unkF8 += func_80076A10(digits[1] + 0x67, &D_800C3EA4->unkBA8[D_800D2D28->unkF8 * 2], 0x5E, 0x38);
+    for (i = 0; i < 7; i++) {
+        if (D_800C3EAC->combo[i] == 0xFF) {
+            break;
+        }
+        D_800D2D28->unkF8 += func_80076A10(D_800C3DE0[i] + 0x39, &D_800C3EA4->unkBA8[D_800D2D28->unkF8 * 2], i * 32 + 0x2A, 0x4A);
+        if (i != 0) {
+            D_800D2D28->unkF8 += func_80076A10(0xA, &D_800C3EA4->unkBA8[D_800D2D28->unkF8 * 2],
+                                               (i - 1) * 32 + 0x3A, 0x4A);
+        }
+    }
+    D_800D2D28->unkA5 = D_800CCB04.buffer;
+    D_800D2D28->unk9C = 1;
+    (D_800C3EA4->unkA230->unk5F0 + D_800CCB04.buffer)->x0 = 0x80;
+    (D_800C3EA4->unkA230->unk5F0 + D_800CCB04.buffer)->y0 = 0x34;
+    (D_800C3EA4->unkA230->unk5F0 + D_800CCB04.buffer)->x1 = ap * 4 + 0x80;
+    (D_800C3EA4->unkA230->unk5F0 + D_800CCB04.buffer)->y1 = 0x34;
+    (D_800C3EA4->unkA230->unk5F0 + D_800CCB04.buffer)->x2 = 0x80;
+    (D_800C3EA4->unkA230->unk5F0 + D_800CCB04.buffer)->y2 = 0x3C;
+    (D_800C3EA4->unkA230->unk5F0 + D_800CCB04.buffer)->x3 = ap * 4 + 0x80;
+    (D_800C3EA4->unkA230->unk5F0 + D_800CCB04.buffer)->y3 = 0x3C;
+    (D_800C3EA4->unkA230->unk638 + D_800CCB04.buffer)->x0 = ap * 4 + 0x80;
+    (D_800C3EA4->unkA230->unk638 + D_800CCB04.buffer)->y0 = 0x34;
+    (D_800C3EA4->unkA230->unk638 + D_800CCB04.buffer)->x1 = 0xF0;
+    (D_800C3EA4->unkA230->unk638 + D_800CCB04.buffer)->y1 = 0x34;
+    (D_800C3EA4->unkA230->unk638 + D_800CCB04.buffer)->x2 = ap * 4 + 0x80;
+    (D_800C3EA4->unkA230->unk638 + D_800CCB04.buffer)->y2 = 0x3C;
+    (D_800C3EA4->unkA230->unk638 + D_800CCB04.buffer)->x3 = 0xF0;
+    (D_800C3EA4->unkA230->unk638 + D_800CCB04.buffer)->y3 = 0x3C;
+    D_800C3EA4->unkA230->unk66C = D_800CCB04.buffer;
+    D_800C3EA4->unkA230->unk66F = 1;
+}
+
+/* Build the member's gear value page: the four entries' names (gear text
+ * gearId * 4 + entry) and up to four-digit values (no leading zeros) into
+ * VRAM text images; each shown digit is taken off the value. */
+void func_800930AC(u8 member, u8 *present, u16 *values) {
+    RECT nameRect;
+    RECT onesRect;
+    RECT digitRect;
+    RECT rowRect;
+    RECT rightRect;
+    RECT rect;
+    TextImage images[4];
+    u16 divisors[3];
+    u8 shown;
+    s32 i;
+    s32 j;
+    u8 digit;
+
+    divisors[0] = 1000;
+    divisors[1] = 100;
+    divisors[2] = 10;
+    func_80077610();
+    func_80076EA4();
+    D_800D2DB0 = (u32 *)func_8008AC00(0x39);
+    bzero(D_800D2DB0, 0x618);
+    rect.x = 0x3C0;
+    rect.w = 0x3C;
+    rect.y = 0;
+    rect.h = 0xD;
+    func_800769E8(&rect, D_800D2DB0);
+    for (i = 0; i < 4; i++) {
+        images[i].pixels = (u32 *)func_8008AC00(0x1B);
+        bzero(images[i].pixels, 0x30C);
+        rowRect.x = 0x380;
+        rowRect.y = i * 16 + 0x100;
+        rowRect.w = 0x1B;
+        rowRect.h = 16;
+        func_800769E8(&rowRect, D_800D2DB0);
+        if (present[i] != 0xFF) {
+            func_80034EAC(func_80033A8C(D_800CCCE8.records[member].pilot.gearId * 4 + i), images[i].pixels, 0x1B, 0);
+            nameRect.x = 0x380;
+            nameRect.y = i * 16 + 0x102;
+            nameRect.w = 30;
+            nameRect.h = 13;
+            func_800769E8(&nameRect, images[i].pixels);
+        }
+        rightRect.x = 0x3C0;
+        rightRect.y = i * 16 + 0x100;
+        rightRect.w = 0x1B;
+        rightRect.h = 16;
+        func_800769E8(&rightRect, D_800D2DB0);
+        shown = 0;
+        for (j = 0; j < 3; j++) {
+            digitRect.x = j * 2 + 0x3C0;
+            digitRect.y = i * 16 + 0x102;
+            digitRect.w = 6;
+            digitRect.h = 13;
+            digit = values[i] / divisors[j];
+            if (digit != 0 || shown) {
+                func_800769E8(&digitRect, D_800C3E5C[digit].pixels);
+                shown = 1;
+                values[i] -= digit * divisors[j];
+            } else {
+                func_800769E8(&digitRect, D_800D2DB0);
+            }
+        }
+        onesRect.x = 0x3C6;
+        onesRect.y = i * 16 + 0x102;
+        onesRect.w = 6;
+        onesRect.h = 13;
+        if (present[i] != 0xFF) {
+            func_800769E8(&onesRect, D_800C3E5C[(u16)(values[i] % 10)].pixels);
+        } else {
+            func_800769E8(&onesRect, D_800D2DB0);
+        }
+    }
+    for (i = 0; i < 4; i++) {
+        func_800320E8(images[i].pixels);
+    }
+    func_800320E8(D_800D2DB0);
+    D_800C3EA4->unkA230->unk0[D_800CCB04.buffer].clut = D_800595D4;
+    func_80076CE8(&D_800C3EA4->unkA230->unk0[D_800CCB04.buffer], 0x94, 0x54, 0, 0, 0x60, 0x40);
+    func_80076CE8(&D_800C3EA4->unkA230->unkA0[D_800CCB04.buffer], 0xFC, 0x54, 0, 0, 0x20, 0x40);
+    D_800C3EA4->unkA230->unk668 = D_800CCB04.buffer;
+    D_800C3EA4->unkA230->unk669 = 1;
+    D_800D2D28->unkB7 = 4;
+}
 
 /* Point the gear page `kind` quads at their images: the page title cell, the
  * command's state icon (9 sealed, 7 flag 0x1000, else 8) and its level frame
@@ -5546,7 +2664,103 @@ void func_800939CC(u8 member, u8 kind) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80093B08);
+/* For party character 4 with no command page open: show the two equipped
+ * items' (in a gear: parts') names and durability (two digits, no leading
+ * zero) in window 0. */
+void func_80093B08(u8 member) {
+    RECT nameRect;
+    RECT onesRect;
+    RECT digitRect;
+    RECT rowRect;
+    RECT rightRect;
+    RECT rect; /* unused */
+    TextImage images[2];
+    u16 divisors[2];
+    u8 slots[2];
+    u16 values[2];
+    u8 shown;
+    s32 i;
+    s32 j;
+    u8 digit;
+
+    if (D_800D2D24[member] == 4 && D_800D2D28->unkB7 == 0) {
+        divisors[0] = 100;
+        divisors[1] = 10;
+        if (D_800D32A0[member].unk1 == 0) {
+            slots[0] = D_8006D8A0.characters[D_800D2D24[member]].entryItems[0];
+            slots[1] = D_8006D8A0.characters[D_800D2D24[member]].entryItems[3];
+            values[0] = D_8006F8BA[slots[0]];
+            values[1] = D_8006F8BA[slots[1]];
+        } else {
+            slots[0] = D_8006D8A0.gears[D_8006D8A0.characters[D_800D2D24[member]].gearId].partItems[0];
+            slots[1] = D_8006D8A0.gears[D_8006D8A0.characters[D_800D2D24[member]].gearId].partItems[3];
+            values[0] = D_8006F8EA[slots[0]];
+            values[1] = D_8006F8EA[slots[1]];
+        }
+        func_80077610();
+        func_80076EA4();
+        D_800D2DB0 = (u32 *)func_8008AC00(0x39);
+        bzero(D_800D2DB0, 0x618);
+        for (i = 0; i < 2; i++) {
+            images[i].pixels = (u32 *)func_8008AC00(0x1B);
+            bzero(images[i].pixels, 0x30C);
+            rowRect.x = 0x380;
+            rowRect.y = i * 16 + 0x100;
+            rowRect.w = 0x1B;
+            rowRect.h = 16;
+            func_800769E8(&rowRect, D_800D2DB0);
+            if (slots[i] != 0) {
+                func_80034EAC(func_80033848(slots[i]), images[i].pixels, 0x1B, 0);
+                nameRect.x = 0x380;
+                nameRect.y = i * 16 + 0x102;
+                nameRect.w = 30;
+                nameRect.h = 13;
+                func_800769E8(&nameRect, images[i].pixels);
+            }
+            rightRect.x = 0x3C0;
+            rightRect.y = i * 16 + 0x100;
+            rightRect.w = 0x1B;
+            rightRect.h = 16;
+            func_800769E8(&rightRect, D_800D2DB0);
+            shown = 0;
+            for (j = 0; j < 2; j++) {
+                digitRect.x = j * 2 + 0x3C0;
+                digitRect.y = i * 16 + 0x102;
+                digitRect.w = 6;
+                digitRect.h = 13;
+                digit = values[i] / divisors[j];
+                if (digit != 0 || shown) {
+                    func_800769E8(&digitRect, D_800C3E5C[digit].pixels);
+                    shown = 1;
+                    values[i] -= digit * divisors[j];
+                } else {
+                    func_800769E8(&digitRect, D_800D2DB0);
+                }
+            }
+            onesRect.x = 0x3C4;
+            onesRect.y = i * 16 + 0x102;
+            onesRect.w = 6;
+            onesRect.h = 13;
+            if (slots[i] != 0) {
+                func_800769E8(&onesRect, D_800C3E5C[(u16)(values[i] % 10)].pixels);
+            } else {
+                func_800769E8(&onesRect, D_800D2DB0);
+            }
+        }
+        for (i = 0; i < 2; i++) {
+            func_800320E8(images[i].pixels);
+        }
+        func_800320E8(D_800D2DB0);
+        D_800C3EA4->unkA230->unk0[D_800CCB04.buffer].clut = D_800595D4;
+        func_80076CE8(&D_800C3EA4->unkA230->unk0[D_800CCB04.buffer], 0xA0, 0xAC, 0, 0, 0x60, 0x20);
+        func_80076CE8(&D_800C3EA4->unkA230->unkA0[D_800CCB04.buffer], 0x104, 0xAC, 0, 0, 0x18, 0x20);
+        D_800C3EA4->unkA230->unk668 = D_800CCB04.buffer;
+        D_800C3EA4->unkA230->unk669 = 1;
+        func_8008F8F4(0, 0x98, 0xA8, 0x8C, 0x28, 0, 1);
+        D_800D2D28->unkB7 = 5;
+        D_800D2D28->unk8E = 1;
+    }
+}
 
 /* For party character 4: close its command window and, with `release`,
  * its extra resources. */
@@ -5560,9 +2774,173 @@ void func_8009413C(u8 member, u8 release) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800941A4);
+/* Resolve the committed action: select the attacker and its command
+ * descriptor (a gear's goes to 8009c198), then for every target in the
+ * target mask run the descriptor's formula, the post-adjustment and the
+ * status step its flags ask for; finally publish the command, hold the
+ * attacker's commands and raise the used command's use count. Returns the
+ * resolve status, except on the two gear paths, which return without a
+ * value. */
+u8 func_800941A4(void) {
+    u16 bit;
+    u8 member;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800946F4);
+    func_80097D08();
+    D_800D2DB8 = 0;
+    D_800C34AE = 0;
+    D_800C3E04 = D_800C34B0->attackerIndex;
+    D_800C3E00 = &D_800C34B0->records[D_800C3E04];
+    D_800D2D6C = &D_800C34B0->records[D_800C3E04].gear;
+    if (D_800C34B0->records[D_800C34B0->attackerIndex].flags15A & 0x80) {
+        func_8009C198();
+        func_8009AB38(D_800C3E04);
+        return;
+    }
+    if (D_800C3E04 < 3) {
+        D_800C3DFC = &D_800C34B0->partyCommands[D_800C3E04][D_800C34B0->commandIndex];
+    } else {
+        D_800C3DFC = &D_800C34B0->enemyCommands[D_800C34B0->commandIndex];
+    }
+    func_8009AC48(D_800C3E04, 1);
+    if (D_800C3DFC->flagsA & 0x10) {
+        func_8009C198();
+        func_8009AB38(D_800C3E04);
+        func_80094C78();
+        return;
+    }
+    D_800D2DC4 = 0;
+    if ((D_800C3DFC->flagsA & 0x100) && D_800C3E00->pilot.characterId == 1) {
+        func_80096824();
+    }
+    if (D_800C3E00->pilot.characterId == 4 && (D_800C34B0->commandIndex == 4 || D_800C34B0->commandIndex == 5)) {
+        D_800C3DFC->attributes[2] = D_800C3E00->pilot.entries[D_800C34B0->commandIndex - 3].value4;
+    }
+    if ((D_800C3E00->pilot.status80 & 0x20) && (D_800D2C94.targets & 7) && D_800D2C94.targets < 7) {
+        for (member = 0; member < 3; member++) {
+            if (D_800CCCE8.records[member].pilot.characterId == 3) {
+                D_800D2C94.targets = 1 << member;
+            }
+        }
+    }
+    bit = 1;
+    for (D_800C3E50 = 0; D_800C3E50 < 11; D_800C3E50++, bit <<= 1) {
+        if (bit & D_800C34B0->targetMask) {
+            D_800C3E34 = &D_800C34B0->records[D_800C3E50];
+            D_800D2DC8 = &D_800C34B0->records[D_800C3E50].gear;
+            D_800C3D60 = &D_800C34B0->records[D_800C3E50].field148;
+            if (D_800C3E50 < 3) {
+                func_800968C0();
+            }
+            D_800C348C[D_800C3DFC->formula]();
+            func_800946F4();
+            if (D_800C34B0->resultCode[D_800C3E50] == 0) {
+                if (D_800C3DFC->flagsA & 0x800) {
+                    func_80095B44();
+                } else if (D_800C3DFC->flagsA & 0x4000) {
+                    func_80095A78();
+                } else if (D_800C3DFC->flagsA & 4) {
+                    func_800958D8();
+                }
+            }
+            if (D_800C3DFC->flagsA & 1) {
+                D_800C34B0->shownCommand = D_800C3DFC->name;
+            } else {
+                D_800C34B0->shownCommand = D_800C34B0->commandIndex;
+            }
+        }
+    }
+    func_80099FB0();
+    func_8009AB38(D_800C3E04);
+    if (D_800C3E00->pilot.characterId == 4 && D_800C34AE == 0) {
+        func_8009AFD8();
+    }
+    if (D_800C3E04 < 3 && D_800C34B0->commandIndex < 7) {
+        if (D_800C3E00->pilot.useCounts[D_800C34B0->commandIndex] <= 0xFDE7) {
+            D_800C3E00->pilot.useCounts[D_800C34B0->commandIndex] +=
+                D_800C3E00->pilot.pad55 + D_800C3E00->pilot.padA1[0];
+        }
+    }
+    func_80094C78();
+    return D_800D2DB8;
+}
+
+/* Per-target follow-up of a party or enemy action. On a hit (result 0): a
+ * party attacker's counter +0x3a rises when the damage equals the target's
+ * HP; the target loses status80 bit 0x1000 and, on 70%, 0x2000; an ether
+ * command (flags 0x100) gets result 2 against flags36 0x4000 (or 0x2000
+ * without attribute 2 bits); flags32 0x80 halves (60%, 80% for character
+ * 0) or raises damage by half; flags32 0x20 turns it on the attacker; a
+ * party attack clears the target's status7c bit 2 (restoring status7a); a
+ * blow at least character 3's HP clears every enemy's status80 bit 0x20.
+ * Then flags36 0x8000 swaps results 0/5 and 2, status84 0x80 doubles
+ * result-2 damage and status88 0x200 nullifies result-1 damage. */
+void func_800946F4(void) {
+    s32 chance;
+    u8 slot;
+
+    if (D_800C34B0->resultCode[D_800C3E50] == 0) {
+        if (D_800C34B0->damage[D_800C3E50] == D_800C3E34->pilot.hp && D_800C3E04 < 3) {
+            if (++D_800C3E00->pilot.field3A > 0xFDE8) {
+                D_800C3E00->pilot.field3A--;
+            }
+        }
+        D_800C3E34->pilot.status80 &= ~0x1000;
+        if ((D_800C3E34->pilot.status80 & 0x2000) && rand() % 100 < 70) {
+            D_800C3E34->pilot.status80 &= ~0x2000;
+        }
+        if (D_800C3DFC->flagsA & 0x100) {
+            if (D_800C3E34->pilot.flags36 & 0x4000) {
+                D_800C34B0->resultCode[D_800C3E50] = 2;
+            }
+            if ((D_800C3E34->pilot.flags36 & 0x2000) && !(D_800C3DFC->attributes[2] & 0xF)) {
+                D_800C34B0->resultCode[D_800C3E50] = 2;
+            }
+        }
+        if (D_800C3E34->pilot.flags32 & 0x80) {
+            chance = 60;
+            if (D_800C3E34->pilot.characterId == 0) {
+                chance = 80;
+            }
+            if (rand() % 100 < chance) {
+                D_800C34B0->damage[D_800C3E50] >>= 1;
+            } else {
+                D_800C34B0->damage[D_800C3E50] += D_800C34B0->damage[D_800C3E50] >> 1;
+            }
+        }
+        if (D_800C3E34->pilot.flags32 & 0x20) {
+            D_800C34B0->resultCode[D_800C3E04] = 0;
+            D_800C34B0->damage[D_800C3E04] = D_800C34B0->damage[D_800C3E50];
+        }
+        if (D_800C3E04 < 3 && D_800C3E04 != D_800C3E50) {
+            if (D_800C34B0->records[D_800C3E50].pilot.status7C & 2) {
+                D_800C34B0->records[D_800C3E50].pilot.status7C &= ~2;
+                D_800C34B0->records[D_800C3E50].pilot.status7A = D_800C3AA4[D_800C3E50];
+            }
+        }
+        if (D_800C3E34->pilot.characterId == 3 && (u32)D_800D2C54[D_800C3E50] >= D_800C3E34->pilot.hp) {
+            for (slot = 3; slot < 11; slot++) {
+                D_800CCCE8.records[slot].pilot.status80 &= ~0x20;
+            }
+        }
+    }
+    if (D_800C3E34->pilot.flags36 & 0x8000) {
+        switch (D_800C34B0->resultCode[D_800C3E50]) {
+        case 0:
+        case 5:
+            D_800C34B0->resultCode[D_800C3E50] = 2;
+            break;
+        case 2:
+            D_800C34B0->resultCode[D_800C3E50] = 0;
+            break;
+        }
+    }
+    if ((D_800C3E34->pilot.status84.half.permanent & 0x80) && D_800C34B0->resultCode[D_800C3E50] == 2) {
+        D_800C34B0->damage[D_800C3E50] *= 2;
+    }
+    if ((D_800C3E34->pilot.status88.half.permanent & 0x200) && D_800C34B0->resultCode[D_800C3E50] == 1) {
+        D_800C34B0->damage[D_800C3E50] = 0;
+    }
+}
 
 /* Add the damage dealt to the target to each hit party member's running
  * total (+0x5f60 with record flag 0x80 at +0x15a, else +0x5f54). */
@@ -5580,9 +2958,185 @@ void func_80094C78(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80094D24);
+/* With one party member out of action (status7c 0xc000) and two carrying
+ * status7c bit 2, or two and one, clear bit 2 on the party and restore their
+ * status7a. */
+void func_80094D24(void) {
+    u8 member;
+    u8 down;
+    u8 marked;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80094EE4);
+    down = 0;
+    for (member = 0; member < 3; member++) {
+        if (D_800C34B0->records[member].pilot.status7C & 0xC000) {
+            down++;
+        }
+    }
+    marked = 0;
+    for (member = 0; member < 3; member++) {
+        if (D_800C34B0->records[member].pilot.status7C & 2) {
+            marked++;
+        }
+    }
+    if (down == 1 && marked == 2) {
+        for (member = 0; member < 3; member++) {
+            if (D_800C34B0->records[member].pilot.status7C & 2) {
+                D_800C34B0->records[member].pilot.status7C &= ~2;
+                D_800C34B0->records[member].pilot.status7A = D_800C3AA4[member];
+            }
+        }
+    }
+    if (down == 2 && marked == 1) {
+        for (member = 0; member < 3; member++) {
+            if (D_800C34B0->records[member].pilot.status7C & 2) {
+                D_800C34B0->records[member].pilot.status7C &= ~2;
+                D_800C34B0->records[member].pilot.status7A = D_800C3AA4[member];
+            }
+        }
+    }
+}
+
+/* Formula type 0 (physical and ether damage): none against an immune target
+ * (flags34 0x8000, 0x4000 for ether); otherwise attack and defense adjusted
+ * by both sides' statuses and the command's attributes, scaled 4:3 (5:4 for
+ * ether), by the power / 20 for kinds 0-1, randomised, then shaped by the hit
+ * outcome and clamped to 0-9999. */
+void func_80094EE4(void) {
+    u16 attack;
+    u16 defense;
+    s8 hit;
+    u8 power;
+    s32 attackScale;
+    s32 defenseScale;
+    s32 amount;
+    s32 immune;
+    s32 kind;
+
+    power = D_800C3DFC->power;
+    if (D_800C3DFC->flagsA & 0x100) {
+        immune = D_800C3E34->pilot.flags34 & 0x4000;
+    } else {
+        immune = D_800C3E34->pilot.flags34 & 0x8000;
+    }
+    if (immune) {
+        D_800C34B0->resultCode[D_800C3E50] = 0;
+        return;
+    }
+    hit = func_80096AB8();
+    attack = func_80096FBC();
+    defense = func_80097610();
+    if ((D_800C3E00->pilot.status88.half.active | D_800C3E00->pilot.status88.half.permanent) & 8) {
+        attack += attack / 5;
+    }
+    if ((D_800C3E00->pilot.status88.half.active | D_800C3E00->pilot.status88.half.permanent) & 2) {
+        attack += attack / 10;
+    }
+    if ((D_800C3E00->pilot.status88.half.active | D_800C3E00->pilot.status88.half.permanent) & 4) {
+        attack -= attack / 5;
+    }
+    if ((D_800C3E00->pilot.status88.half.active | D_800C3E00->pilot.status88.half.permanent) & 1) {
+        attack -= attack / 10;
+    }
+    if ((D_800C3E34->pilot.status88.half.active | D_800C3E34->pilot.status88.half.permanent) & 4) {
+        defense += defense / 5;
+    }
+    if ((D_800C3E34->pilot.status88.half.active | D_800C3E34->pilot.status88.half.permanent) & 1) {
+        defense += defense / 10;
+    }
+    if ((D_800C3E34->pilot.status88.half.active | D_800C3E34->pilot.status88.half.permanent) & 8) {
+        defense -= defense / 5;
+    }
+    if ((D_800C3E34->pilot.status88.half.active | D_800C3E34->pilot.status88.half.permanent) & 2) {
+        defense -= defense / 10;
+    }
+    if (D_800C3DFC->attributes[2] & 0x10) {
+        if (!(D_800C3E34->pilot.status82 & 0x40)) {
+            D_800C3E34->pilot.status80 |= 0x40;
+        }
+        if ((D_800C3E00->pilot.status8C.half.active | D_800C3E00->pilot.status8C.half.permanent) & 0x4000) {
+            D_800D2C88[D_800C3E04] = 3;
+            D_800D2C54[D_800C3E04] = (u16)(D_800C3E00->pilot.maxEp / 10) * 2;
+        }
+        if ((D_800C3E00->pilot.status8C.half.active | D_800C3E00->pilot.status8C.half.permanent) & 0x1000) {
+            D_800D2C88[D_800C3E04] = 2;
+            D_800D2C54[D_800C3E04] = (u16)(D_800C3E00->pilot.maxHp / 10) * 2;
+        }
+    }
+    if ((D_800C3DFC->attributes[2] & 0x20) && !(D_800C3E34->pilot.status82 & 0x80)) {
+        D_800C3E34->pilot.status80 |= 0x80;
+    }
+    if (D_800C3E34->pilot.status80 & 0x40) {
+        defense -= defense >> 2;
+        D_800C3E34->pilot.status80 &= ~0x40;
+    }
+    if (D_800C3E00->pilot.status80 & 0x80) {
+        attack -= attack >> 2;
+        D_800C3E00->pilot.status80 &= ~0x80;
+    }
+    if (D_800C3DFC->flagsA & 0x400) {
+        power = 20;
+    }
+    func_80096494(&attack, &defense, &hit);
+    attackScale = 5;
+    if (D_800C3DFC->flagsA & 0x100) {
+        defenseScale = 4;
+    } else {
+        attackScale = 4;
+        defenseScale = 3;
+    }
+    if (defense != 0) {
+        amount = attackScale * attack - defenseScale * defense;
+    } else {
+        amount = attackScale * attack;
+    }
+    kind = D_800C3DFC->amountKind;
+    if (kind >= 0) {
+        if (kind < 2) {
+            amount = power * amount / 20;
+        }
+    }
+    if (amount <= 0) {
+        amount = 0;
+    } else if (amount < 10) {
+        amount += rand() % 2;
+    } else {
+        amount += rand() % (amount / 10 + 2);
+    }
+    switch (hit) {
+    case 1:
+        if (amount > 0) {
+            D_800C34B0->resultCode[D_800C3E50] = 0;
+        } else {
+            amount = 1;
+            D_800C34B0->resultCode[D_800C3E50] = 0;
+        }
+        break;
+    case 2:
+        amount /= 2;
+        D_800C34B0->resultCode[D_800C3E50] = 5;
+        break;
+    case 3:
+        amount = 0;
+        D_800C34B0->resultCode[D_800C3E50] = 4;
+        break;
+    case 4:
+        D_800C34B0->resultCode[D_800C3E50] = 2;
+        break;
+    case 5:
+        D_800C34B0->resultCode[D_800C3E50] = 7;
+        break;
+    }
+    if (D_800D2DC4 != 0 && (D_800C3DFC->flagsA & 0x100) && amount != 0) {
+        amount /= 3;
+    }
+    if (amount >= 10000) {
+        amount = 9999;
+    }
+    if (amount < 0) {
+        amount = 0;
+    }
+    D_800C34B0->damage[D_800C3E50] = amount;
+}
 
 /* Formula: amount = attacker +0x5b times the descriptor's +0x11 (doubled
  * with attacker +0x8a bit 0x2000), scaled 0.7 / 1.3 by the target's
@@ -5610,13 +3164,19 @@ void func_80095690(void) {
 
 /* The target defends: a +0x56 state 2 target first leaves it (8009ac48),
  * its status words clear, result code 2 and a tenth of its +0x4e times the
- * descriptor's +0x11 as the amount; its timer is held. */
+ * descriptor's +0x11 as the amount; its timer is held. Nonmatching: the
+ * original addresses the held mask (800d2c9e) with its own %hi/%lo on the
+ * load and the store instead of one address register. */
 #ifdef NON_MATCHING
 void func_800957D8(void) {
     if (D_800CCCE8.records[D_800C3E50].pilot.characterId == 2) {
         func_8009AC48(D_800C3E50, 1);
     }
-    D_800C3E34->pilot.status8C.half.active = D_800C3E34->pilot.status88.half.active = D_800C3E34->pilot.status84.half.active = D_800C3E34->pilot.status80 = D_800C3E34->pilot.status7C = 0;
+    D_800C3E34->pilot.status7C = 0;
+    D_800C3E34->pilot.status80 = 0;
+    D_800C3E34->pilot.status84.half.active = 0;
+    D_800C3E34->pilot.status88.half.active = 0;
+    D_800C3E34->pilot.status8C.half.active = 0;
     D_800D2C88[D_800C3E50] = 2;
     D_800D2C54[D_800C3E50] = (D_800C3E34->pilot.maxHp * D_800C3DFC->power) / 10;
     D_800D2C94.held |= 1 << D_800C3E50;
@@ -5702,11 +3262,260 @@ void func_80095BAC(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80095D4C);
+/* Formula type 3: on a chance roll (the attacker's +0x60 or the command's
+ * +0x1c), transfer power / 20 of a maximum (attacker's or target's HP for
+ * kinds 0-1, EP for 2-3; kind 5 the target's HP less one) between attacker
+ * and target: both slots get the amount, HP kinds with results 2 / 0, EP
+ * kinds 3 / 1 unless the target nullifies (status88 0x200). A failed roll
+ * or nullified transfer is result 6. */
+void func_80095D4C(void) {
+    u8 chance;
+    u16 base;
+    u16 amount;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80096018);
+    switch (D_800C3DFC->chanceSource) {
+    case 0:
+        chance = D_800C3E00->pilot.field60;
+        break;
+    case 1:
+        chance = D_800C3DFC->field1C;
+        break;
+    }
+    if (chance < rand() % 100) {
+        goto missed;
+    }
+    switch (D_800C3DFC->amountKind) {
+    case 0:
+        base = D_800C3E00->pilot.maxHp;
+        break;
+    case 1:
+        base = D_800C3E34->pilot.maxHp;
+        break;
+    case 2:
+        base = D_800C3E00->pilot.maxEp;
+        break;
+    case 3:
+        base = D_800C3E34->pilot.maxEp;
+        break;
+    }
+    amount = base * D_800C3DFC->power / 20;
+    if (D_800C3DFC->amountKind == 5) {
+        amount = D_800C3E34->pilot.hp - 1;
+    }
+    switch (D_800C3DFC->amountKind) {
+    case 0:
+    case 1:
+    case 5:
+        D_800C34B0->resultCode[D_800C3E04] = 2;
+        D_800C34B0->resultCode[D_800C3E50] = 0;
+        D_800C34B0->damage[D_800C3E04] = amount;
+        D_800C34B0->damage[D_800C3E50] = amount;
+        break;
+    case 2:
+    case 3:
+        if ((D_800C3E34->pilot.status88.half.active | D_800C3E34->pilot.status88.half.permanent) & 0x200) {
+        missed:
+            D_800C34B0->resultCode[D_800C3E50] = 6;
+        } else {
+            D_800C34B0->resultCode[D_800C3E04] = 3;
+            D_800C34B0->resultCode[D_800C3E50] = 1;
+            D_800C34B0->damage[D_800C3E04] = amount;
+            D_800C34B0->damage[D_800C3E50] = amount;
+        }
+        break;
+    }
+}
 
+/* Chance roll (attacker +0x60 or the descriptor's +0x1c, by +0x18), then the
+ * amount by the descriptor's kind +0x1a: target HP / power, HP - 1, the
+ * attacker's missing HP, EP * 10, 1, HP, the maximum HP (capped at 9999)
+ * or the target's down state (gears refuse it). */
+void func_80096018(void) {
+    u8 chance;
+
+    switch (D_800C3DFC->chanceSource) {
+    case 0:
+        chance = D_800C3E00->pilot.field60;
+        break;
+    case 1:
+        chance = D_800C3DFC->field1C;
+        break;
+    }
+    if (chance < rand() % 100) {
+        D_800C34B0->resultCode[D_800C3E50] = 6;
+        return;
+    }
+    D_800C34B0->resultCode[D_800C3E50] = 0;
+    switch (D_800C3DFC->amountKind) {
+    case 0:
+        if (D_800C34B0->records[D_800C3E50].flags15A & 0x80) {
+            D_800C34B0->damage[D_800C3E50] = D_800D2DC8->hp / D_800C3DFC->power;
+        } else {
+            D_800C34B0->damage[D_800C3E50] = D_800C3E34->pilot.hp / D_800C3DFC->power;
+        }
+        break;
+    case 1:
+        if (D_800C34B0->records[D_800C3E50].flags15A & 0x80) {
+            D_800C34B0->damage[D_800C3E50] = D_800D2DC8->hp - 1;
+        } else {
+            D_800C34B0->damage[D_800C3E50] = D_800C3E34->pilot.hp - 1;
+        }
+        break;
+    case 2:
+        if (D_800C34B0->records[D_800C3E04].flags15A & 0x80) {
+            D_800C34B0->damage[D_800C3E50] = D_800D2D6C->maxHp - D_800D2D6C->hp;
+        } else {
+            D_800C34B0->damage[D_800C3E50] = D_800C3E00->pilot.maxHp - D_800C3E00->pilot.hp;
+        }
+        break;
+    case 3:
+        D_800C34B0->damage[D_800C3E50] = D_800C3E34->pilot.ep * 10;
+        break;
+    case 4:
+        D_800C34B0->damage[D_800C3E50] = 1;
+        break;
+    case 5:
+        D_800C34B0->damage[D_800C3E50] = D_800C3E34->pilot.hp;
+        break;
+    case 6:
+        D_800C34B0->resultCode[D_800C3E50] = 0;
+        if (D_800CCCE8.records[D_800C3E50].flags15A & 0x80) {
+            D_800C34B0->damage[D_800C3E50] = D_800D2DC8->maxHp;
+            if (D_800D2DC8->maxHp >= 10000) {
+                D_800D2DC8->maxHp = 9999;
+            }
+        } else {
+            D_800C34B0->damage[D_800C3E50] = D_800C3E34->pilot.maxHp;
+            if (D_800C3E34->pilot.maxHp >= 10000) {
+                D_800C3E34->pilot.maxHp = 9999;
+            }
+        }
+        break;
+    case 7:
+        if (D_800C34B0->records[D_800C3E50].flags15A & 0x80) {
+            D_800C34B0->resultCode[D_800C3E50] = 6;
+            return;
+        }
+        D_800C3E34->pilot.status7C |= 1;
+        D_800C3E34->pilot.status80 |= 1;
+        break;
+    }
+}
+
+#ifdef NON_MATCHING
+/* Element adjustment of an attack/defense pair: the command's element (or
+ * the attacker's own element status) against the target's weakness, its
+ * resistance statuses (which may also force hit result 4) and its single
+ * element guards, then a 20% boost for either side's +0x32 bit 0x10. */
+void func_80096494(u16 *attack, u16 *defense, s8 *hit) {
+    s32 ether = 0;
+    u8 flag = 0;
+    u8 element;
+    u8 bits;
+    u8 targetGear;
+    u16 status;
+    s8 scale;
+    s32 defenseScale;
+
+    targetGear = D_800C34B0->records[D_800C3E50].flags15A >> 7;
+    element = D_800C3DFC->attributes[2] & 0x3F;
+    bits = D_800C3E34->pilot.weakness & 0x3F;
+    if (!(D_800C34B0->records[D_800C3E04].flags15A >> 7)) {
+        status = D_800C3E00->pilot.status8C.half.active | D_800C3E00->pilot.status8C.half.permanent;
+    } else {
+        status = D_800D2D6C->status84.half.active | D_800D2D6C->status84.half.permanent;
+    }
+    status >>= 12;
+    if (D_800C3DFC->flagsA & 0x100) {
+        ether = 1;
+    }
+    if (element == 0 && status != 0) {
+        element = status;
+    }
+    if (element & status) {
+        flag = 1;
+    }
+    scale = 10;
+    defenseScale = 10;
+    if (element & bits) {
+        scale = 15;
+        if (D_800C3E34->pilot.weakness & 0x40) {
+            scale = 18;
+        }
+        if (flag) {
+            scale += 2;
+        }
+    }
+    flag = 0;
+    if (!targetGear) {
+        status = D_800C3E34->pilot.status8C.half.active | D_800C3E34->pilot.status8C.half.permanent;
+        bits = (status & 0xF00) >> 8;
+        flag = (status >> 1) & 1;
+    } else {
+        status = D_800D2DC8->status84.half.active | D_800D2DC8->status84.half.permanent;
+        bits = (status & 0xF00) >> 8;
+        if (status & 2) {
+            flag = 1;
+        }
+    }
+    if ((element & bits) && ether) {
+        scale -= 3;
+        if (status & 4) {
+            scale -= 3;
+        }
+        if (status & 8) {
+            *hit = 4;
+        }
+    }
+    if ((element & bits) && flag) {
+        scale -= 3;
+        if (status & 4) {
+            scale -= 3;
+        }
+        if (status & 8) {
+            *hit = 4;
+        }
+    }
+    switch (element) {
+    case 1:
+        if ((bits << 8) & 0x200) {
+            scale += 3;
+        }
+        break;
+    case 2:
+        if ((bits << 8) & 0x100) {
+            scale += 3;
+        }
+        break;
+    case 4:
+        if ((bits << 8) & 0x800) {
+            scale += 3;
+        }
+        break;
+    case 8:
+        if ((bits << 8) & 0x400) {
+            scale += 3;
+        }
+        break;
+    }
+    if (scale <= 0) {
+        scale = 1;
+    }
+    if (defenseScale == 0) {
+        defenseScale = 1;
+    }
+    *attack = *attack * scale / 10;
+    *defense = defenseScale * *defense / 10;
+    if (D_800C3E00->pilot.flags32 & 0x10) {
+        *attack += *attack / 5U;
+    }
+    if (D_800C3E34->pilot.flags32 & 0x10) {
+        *defense += *defense / 5U;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80096494);
+#endif
 
 /* Ether check: unless rand % 100 falls below the attacker's +0x5b plus the
  * descriptor's +0x14, the action fails (code 0x38 at +0x5fc7). */
@@ -5719,18 +3528,446 @@ void func_80096824(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800968C0);
+/* Counterattack: a target able to act (not down, turn timer free, an enemy
+ * or one holding status 0x2000, with the counter status 0x1000 of +0x88)
+ * answers a non-ether, non-gear attack with a 60% (character 0) or 50%
+ * chance: attacker and target swap and the target's command 20 runs with
+ * result 7 (message 0x34). */
+void func_800968C0(void) {
+    s32 chance;
+    u8 slot;
+    Combatant *record;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80096AB8);
+    if (D_800C3E34->pilot.status7C & 0xA000) {
+        return;
+    }
+    if (D_800C3E34->pilot.status80 & 0x1000) {
+        return;
+    }
+    if (D_800C3E04 < 3 && !(D_800C3E34->pilot.status80 & 0x2000)) {
+        return;
+    }
+    if (!(D_800C3E34->pilot.status88.half.active & 0x1000)) {
+        return;
+    }
+    if (D_800C3DFC->flagsA & 0x2000) {
+        return;
+    }
+    if (D_800C3DFC->flagsA & 0x100) {
+        return;
+    }
+    if (D_800C34B0->records[D_800C3E04].flags15A & 0x80) {
+        return;
+    }
+    chance = 50;
+    if (D_800C3E34->pilot.characterId == 0) {
+        chance = 60;
+    }
+    if (rand() % 100 <= chance && D_800C3DFC->formula != 2) {
+        slot = D_800C3E04;
+        D_800C3E04 = D_800C3E50;
+        record = D_800C3E00;
+        D_800C3E00 = D_800C3E34;
+        D_800C3E50 = slot;
+        D_800C3E34 = record;
+        D_800C3DFC = &D_800C34B0->partyCommands[D_800C3E04][20];
+        D_800C34B0->resultCode[D_800C3E04] = 7;
+        D_800C34B0->damage[D_800C3E04] = 0;
+        D_800C34B0->message = 0x34;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80096FBC);
+/* Hit outcome of the current command on the target: 1 hit, 2 half, 3 miss,
+ * 5 forced. Gear-only and weapon checks, sure-hit and never-hit statuses
+ * come first; then the attacker's +0x5e plus the command's +0x15 against
+ * the target's +0x5f sets a margin for the percent rolls. */
+s32 func_80096AB8(void) {
+    s16 bonus = 0;
+    s16 guard = 0;
+    u8 accuracy = D_800C3E00->pilot.field5E;
+    u8 evasion = D_800C3E34->pilot.field5F;
+    u16 flags;
+    u16 status;
+    s16 margin;
+    s16 roll;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80097610);
+    if ((D_800C3DFC->flagsA & 0x40) && (D_800CCCE8.records[D_800C3E50].flags15A & 0x80)) {
+        return 3;
+    }
+    if (D_800C3E00->pilot.characterId == 4) {
+        if ((D_800C3DFC->itemKinds & 0x80) && D_8006F8BA[D_800C3E00->pilot.entryItems[0]] == 0) {
+            D_800C34AE = 1;
+            return 3;
+        }
+        if ((D_800C3DFC->itemKinds & 0x10) && D_8006F8BA[D_800C3E00->pilot.entryItems[3]] == 0) {
+            D_800C34AE = 1;
+            return 3;
+        }
+    }
+    if (D_800C3DFC->flagsA & 0x200) {
+        if (D_800C3E34->pilot.flags34 & 8) {
+            return 3;
+        }
+        if (D_800CCCE8.records[D_800C3E50].flags15A & 0x80) {
+            return 3;
+        }
+    }
+    flags = D_800C3DFC->flagsA;
+    if (flags & 0x1000) {
+        return 3;
+    }
+    status = D_800C3E34->pilot.status84.half.active | D_800C3E34->pilot.status84.half.permanent;
+    if (status & 0x100) {
+        return 3;
+    }
+    if (D_800C3E34->pilot.status7C & 0x2000) {
+        return 1;
+    }
+    if (D_800C3E34->pilot.status80 & 0x1000) {
+        return 1;
+    }
+    if (flags & 0x8000) {
+        return 1;
+    }
+    if (flags & 2) {
+        return 5;
+    }
+    if (D_800C3E00->pilot.status7C & 0x400) {
+        bonus -= 50;
+    }
+    if ((D_800C3E00->pilot.status84.half.active | D_800C3E00->pilot.status84.half.permanent) & 0x1000) {
+        bonus += 30;
+    }
+    if (status & 0x800) {
+        guard += 50;
+    }
+    margin = D_800C3DFC->hitBonus + accuracy - evasion;
+    if (D_800C34B0->records[D_800C3E50].flags15A & 1) {
+        if (rand() % 100 < 95) {
+            return 2;
+        }
+        return 1;
+    }
+    if (status & 0x20) {
+        roll = rand() % 100 - margin;
+        if (roll >= 50) {
+            return 3;
+        }
+        return 1;
+    }
+    if ((D_800C3E34->pilot.status84.half.active | D_800C3E34->pilot.status84.half.permanent) & 0x40) {
+        roll = rand() % 100 - margin;
+        if (roll >= 50) {
+            return 2;
+        }
+        return 1;
+    }
+    roll = rand() % 100 - margin;
+    if (roll >= (s16)(bonus - (s16)(guard - 90))) {
+        return 3;
+    }
+    roll = rand() % 100 - margin;
+    if (roll >= (s16)(bonus - (s16)(guard - 85))) {
+        return 2;
+    }
+    return 1;
+}
+
+/* Attack value of the current command: the item/part values its +0x10 bits
+ * select plus the attack base (gear attack times scale, or the character's
+ * +0x58, both scaled by statuses), or the ether value; kind 2 scales either
+ * by the power over 20. Party attackers then get their character bonuses
+ * and the target's weakness bonuses. */
+s16 func_80096FBC(void) {
+    u8 parts[5];
+    u16 value;
+    u8 i;
+    u16 base;
+    u16 sum;
+    u16 ether;
+    u8 kinds;
+    u8 scale;
+    u16 status;
+    u16 flags;
+
+    if (D_800C34B0->records[D_800C3E04].flags15A & 0x80) {
+        for (i = 0; i < 3; i++) {
+            parts[i] = D_800D2D6C->entries[i].valueE;
+        }
+        base = D_800D2D6C->attack * D_800D2D6C->attackScale;
+        if ((D_800D2D6C->status80 | D_800D2D6C->status82) & 0x1000) {
+            base += D_800D2D6C->attack * 2;
+        }
+    } else {
+        for (i = 0; i < 4; i++) {
+            parts[i] = D_800C3E00->pilot.entries[i].value4;
+        }
+        base = D_800C3E00->pilot.attack;
+    }
+    kinds = D_800C3DFC->itemKinds;
+    ether = D_800C3E00->pilot.accuracy;
+    sum = 0;
+    if (kinds & 0x80) {
+        sum = parts[0];
+    }
+    if (kinds & 0x40) {
+        sum += parts[1];
+    }
+    if (kinds & 0x20) {
+        sum += parts[2];
+    }
+    if (kinds & 0x10) {
+        sum += parts[3];
+    }
+    if (kinds & 0x08) {
+        sum += parts[4];
+    }
+    if ((D_800C3E00->pilot.status8C.half.active | D_800C3E00->pilot.status8C.half.permanent) & 1) {
+        sum += sum >> 1;
+    }
+    if (D_800C3DFC->flagsA & 0x100) {
+        scale = 4;
+        if ((D_800C3E00->pilot.status88.half.active | D_800C3E00->pilot.status88.half.permanent) & 0x8000) {
+            scale = 5;
+        }
+        if (D_800C3E00->pilot.status80 & 0x400) {
+            scale--;
+        }
+        ether = ether * scale / 4;
+        if ((D_800C3E00->pilot.status88.half.active | D_800C3E00->pilot.status88.half.permanent) & 0x2000) {
+            ether *= 2;
+        }
+    } else if (!(D_800C34B0->records[D_800C3E04].flags15A & 0x80)) {
+        status = D_800C3E00->pilot.status84.half.active | D_800C3E00->pilot.status84.half.permanent;
+        scale = 4;
+        if (status & 0x2000) {
+            scale = 5;
+        }
+        if (D_800C3E00->pilot.status7C & 0x200) {
+            scale--;
+        }
+        if (status & 0x400) {
+            scale += 10 - D_800C3E00->pilot.hp / (u16)(D_800C3E00->pilot.maxHp / 10);
+        }
+        base = base * scale / 4;
+    }
+    flags = D_800C3DFC->flagsA;
+    if (flags & 0x20) {
+        base = 0;
+    }
+    switch (D_800C3DFC->amountKind) {
+    case 0:
+        value = sum + base;
+        break;
+    case 1:
+        value = ether;
+        break;
+    case 2:
+        if (D_800C3E00->pilot.characterId == 4) {
+            sum = sum * 6 / 10;
+        }
+        if (flags & 0x100) {
+            value = ether * D_800C3DFC->power / 20;
+        } else {
+            value = (sum + base) * D_800C3DFC->power / 20;
+        }
+        break;
+    }
+    if (D_800C3E04 < 3) {
+        if (D_800C3E00->pilot.characterId == 7) {
+            func_8009B46C(&value);
+        }
+        if (D_800C3E00->pilot.characterId == 4 || (D_800C3DFC->attributes[2] & 0x20)) {
+            if (D_800C3E34->pilot.weakness & 0x20) {
+                value += value >> 2;
+            }
+            if ((*(u32 *)&D_800C3E34->pilot.weakness & 0x60) == 0x60) {
+                value += value >> 2;
+            }
+        }
+        if (D_800C3E00->pilot.characterId == 8 && !(D_800CCCE8.records[D_800C3E04].flags15A & 0x80) &&
+            (D_800C3DFC->flagsA & 0x100)) {
+            value = value * D_800CCCE8.records[D_800C3E04].gear.frameFactor / 4;
+        }
+        if (D_800C3E00->pilot.characterId == 10) {
+            value += value / 5;
+        }
+        if ((D_800C3DFC->attributes[2] & 0x10) && (D_800C3E34->pilot.weakness & 0x10)) {
+            value += value >> 2;
+            if (D_800C3E34->pilot.weakness & 0x10) {
+                value += value >> 2;
+            }
+        }
+    }
+    return value;
+}
+
+/* Defense value of the target against the current command: body defense
+ * plus armor (1.5x with status 0x100), the ether defense (1.5x with status
+ * 0x4000 of +0x88) or the body alone, by the command's +0x1b. A character
+ * target's +0x32 bits then scale it by the party members down. */
+s16 func_80097610(void) {
+    u16 armor;
+    u16 body;
+    u16 ether;
+    u16 value;
+    u8 downed;
+    u8 i;
+
+    if (D_800C34B0->records[D_800C3E50].flags15A & 0x80) {
+        body = D_800D2DC8->bodyDefense;
+    } else {
+        armor = D_800C3E34->pilot.defense;
+        body = D_800C3E34->pilot.bodyDefense;
+    }
+    ether = D_800C3E34->pilot.etherDefense;
+    if (D_800C3DFC->flagsA & 0x100) {
+        if ((D_800C3E34->pilot.status88.half.active | D_800C3E34->pilot.status88.half.permanent) & 0x4000) {
+            ether = ether * 3 / 2;
+        }
+    } else if (!(D_800C34B0->records[D_800C3E50].flags15A & 0x80)) {
+        if ((D_800C3E34->pilot.status84.half.active | D_800C3E34->pilot.status84.half.permanent) & 0x100) {
+            armor = armor * 3 / 2;
+        }
+    }
+    if (D_800C34B0->records[D_800C3E50].flags15A & 0x80) {
+        armor = 0;
+    }
+    switch (D_800C3DFC->defenseKind) {
+    case 0:
+        value = body + armor;
+        break;
+    case 1:
+        value = ether;
+        break;
+    case 2:
+        value = body;
+        break;
+    }
+    if (D_800C34B0->records[D_800C3E50].flags15A & 0x80) {
+        return value;
+    }
+    downed = 0;
+    for (i = 0; i < 3; i++) {
+        if (D_800C34B0->records[i].pilot.status7C & 0x8000) {
+            downed++;
+        }
+    }
+    if ((D_800C3E34->pilot.flags32 & 4) && downed != 0 && !(D_800C3DFC->flagsA & 0x100)) {
+        value = value * (4 - downed) / 4;
+    }
+    if ((D_800C3E34->pilot.flags32 & 2) && downed != 0 && !(D_800C3DFC->flagsA & 0x100)) {
+        value = value * (downed + 2) / 2;
+    }
+    if ((D_800C3E34->pilot.flags32 & 1) && downed != 0) {
+        value = value * (downed + 2) / 2;
+    }
+    return value;
+}
 
 void func_8009795C(void) {
 }
 
+#ifdef NON_MATCHING
+/* Roll a status onto the target (never a gear): with the chance in percent,
+ * check the kind's immunities and clear the statuses it overrides, then set
+ * the flag bits in the kind's status word and show its message. Returns 1
+ * when the status took (or cancelled its opposite). */
+s8 func_80097964(u8 chance, u8 kind, u16 flags) {
+    if (D_800C34B0->records[D_800C3E50].flags15A & 0x80) {
+        return 0;
+    }
+    if (chance < rand() % 100) {
+        return 0;
+    }
+    switch (kind) {
+    case 0:
+        if (D_800C3E34->pilot.status7E & (flags & 0xFFFD)) {
+            return 0;
+        }
+        if (flags & 0x1000) {
+            D_800C3E34->pilot.status84.half.active &= 0x7FFF;
+        }
+        break;
+    case 2:
+        if (flags & D_800C3E34->pilot.status82) {
+            return 0;
+        }
+        break;
+    case 5:
+        if ((D_800C3E34->pilot.status7C | D_800C3E34->pilot.status7E) & 1) {
+            return 0;
+        }
+        if (flags & 0x8000) {
+            D_800C3E34->pilot.status7C &= 0xEFFF;
+        }
+        break;
+    case 7:
+        if ((D_800C3E34->pilot.status80 | D_800C3E34->pilot.status82) & 1) {
+            return 0;
+        }
+        if (flags & 0xA) {
+            if (!(D_800C3E34->pilot.status88.half.active & 5)) {
+                break;
+            }
+            D_800C3E34->pilot.status88.half.active &= 0xFFFA;
+            return 1;
+        }
+        if (flags & 5) {
+            if (!(D_800C3E34->pilot.status88.half.active & 0xA)) {
+                break;
+            }
+            D_800C3E34->pilot.status88.half.active &= 0xFFF5;
+            return 1;
+        }
+    case 9:
+        if (flags & 0xF000) {
+            if (D_800C3E34->pilot.status8C.half.permanent & 0xF000) {
+                D_800C34B0->message = 0x39;
+                return 0;
+            }
+            D_800C3E34->pilot.status8C.half.active &= 0xFFF;
+        }
+        if (flags & 0xF00) {
+            if (D_800C3E34->pilot.status8C.half.permanent & 0xF00) {
+                D_800C34B0->message = 0x39;
+                return 0;
+            }
+            D_800C3E34->pilot.status8C.half.active &= 0xF0FF;
+        }
+        break;
+    }
+    switch (kind) {
+    case 0:
+        D_800C3E34->pilot.status7C = (flags | D_800C3E34->pilot.status7C) & 0xFFFD;
+        if (flags & 2) {
+            if ((u8)func_80099498()) {
+                D_800C3E34->pilot.status7C |= flags;
+                D_800C34B0->message = 0x31;
+                D_800C3E34->pilot.status7A = 0xFFEF;
+            } else {
+                D_800C34B0->message = 0x32;
+            }
+        }
+        break;
+    case 2:
+        D_800C3E34->pilot.status80 |= flags;
+        if (flags & 0x800) {
+            D_800C3E34->pilot.status7A |= 0x20;
+        }
+        break;
+    case 5:
+    case 7:
+    case 9:
+        (&D_800C3E34->pilot.status7A)[kind] |= flags;
+        break;
+    }
+    func_8009B684(kind, flags);
+    return 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80097964);
+#endif
 
 /* Clear the per-slot damage and result codes (12 entries). */
 void func_80097D08(void) {
@@ -5742,9 +3979,219 @@ void func_80097D08(void) {
     } while (--slot != -1);
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80097D5C);
+/* Derive each present party member's battle stats: keep the base values,
+ * add the equipment bonuses and percentage HP/EP bonuses (capped at 999 and
+ * 99), total the gear's equipment, set its fuel cost (command 37's shown
+ * value), the attack level limit and scale, the status-driven command rate
+ * changes and the character-specific adjustments; then count the members. */
+void func_80097D5C(void) {
+    u8 member;
+    u8 i;
+    u8 *level;
+    u8 rate;
+    u16 immunities;
+    CharacterRecord *pilot;
+    Combatant *record;
+    GearRecord *gear;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009892C);
+    for (member = 0; member < 3; member++) {
+        if (D_800D2D24[member] == 0x7F) {
+            continue;
+        }
+        D_800C3E00 = &D_800C34B0->records[member];
+        D_800D2D6C = &D_800C34B0->records[member].gear;
+        level = &D_800C34B0->records[member].field148;
+        if (D_800D2D24[member] == 9) {
+            D_8006D8A0.characters[9].characterId = 9;
+            D_800C3E00->pilot.characterId = 9;
+        }
+        if (D_800D2D24[member] == 10) {
+            D_8006D8A0.characters[10].characterId = 10;
+            D_800C3E00->pilot.characterId = 10;
+        }
+        if (D_800C3E00->pilot.characterId == 4) {
+            D_800C34B0->savedStats[member][0] = D_800C3E00->pilot.entries[0].value4 + D_800C3E00->pilot.entries[3].value4;
+        } else {
+            D_800C34B0->savedStats[member][0] = D_800C3E00->pilot.attack + D_800C3E00->pilot.entries[0].value4;
+        }
+        D_800C34B0->savedStats[member][1] = D_800C3E00->pilot.field5E;
+        D_800C34B0->savedStats[member][2] = D_800C3E00->pilot.defense + D_800C3E00->pilot.bodyDefense;
+        D_800C34B0->savedStats[member][3] = D_800C3E00->pilot.field5F;
+        D_800C34B0->savedStats[member][4] = D_800C3E00->pilot.accuracy;
+        D_800C34B0->savedStats[member][5] = D_800C3E00->pilot.etherDefense;
+        D_800C34B0->savedStats[member][6] = D_800C3E00->pilot.speed;
+        pilot = &D_800C3E00->pilot;
+        D_800C34B0->savedWords[member][0] = pilot->expTotalA;
+        D_800C34B0->savedWords[member][1] = pilot->expTotalB;
+        D_800C34B0->savedMax[member][0] = pilot->maxHp;
+        D_800C34B0->savedMax[member][1] = pilot->maxEp;
+        pilot->attack += pilot->equipAttack;
+        pilot->flags34 = 0;
+        D_800C3E00->pilot.defense += D_800C3E00->pilot.equipDefense;
+        D_800C3E00->pilot.speed += D_800C3E00->pilot.equipSpeed;
+        D_800C3E00->pilot.accuracy += D_800C3E00->pilot.equipAccuracy;
+        D_800C3E00->pilot.etherDefense += D_800C3E00->pilot.equipEtherDefense;
+        D_800C3E00->pilot.field5E += D_800C3E00->pilot.equip5E;
+        D_800C3E00->pilot.field5F += D_800C3E00->pilot.equip5F;
+        if (D_800C3E00->pilot.speed > 16) {
+            D_800C3E00->pilot.speed = 16;
+        }
+        if (D_800C3E00->pilot.flags32 & 0x100) {
+            D_800C3E00->pilot.field5E += D_800C3E00->pilot.field5E >> 2;
+            D_800C3E00->pilot.field5F += D_800C3E00->pilot.field5F >> 2;
+        }
+        D_800C3E00->pilot.hp += D_800C3E00->pilot.maxHp * D_800C3E00->pilot.hpBonus / 20;
+        D_800C3E00->pilot.ep += D_800C3E00->pilot.maxEp * D_800C3E00->pilot.epBonus / 20;
+        D_800C3E00->pilot.maxHp += D_800C3E00->pilot.maxHp * D_800C3E00->pilot.hpBonus / 20;
+        D_800C3E00->pilot.maxEp += D_800C3E00->pilot.maxEp * D_800C3E00->pilot.epBonus / 20;
+        if (D_800C3E00->pilot.hp >= 1000) {
+            D_800C3E00->pilot.hp = 999;
+        }
+        if (D_800C3E00->pilot.ep >= 100) {
+            D_800C3E00->pilot.ep = 99;
+        }
+        if (D_800C3E00->pilot.maxHp >= 1000) {
+            D_800C3E00->pilot.maxHp = 999;
+        }
+        if (D_800C3E00->pilot.maxEp >= 100) {
+            D_800C3E00->pilot.maxEp = 99;
+        }
+        record = &D_800C34B0->records[member];
+        record->expWeightA = 5;
+        record->expWeightB = 5;
+        level[0] = 0;
+        gear = D_800D2D6C;
+        gear->bodyDefense += gear->equipBodyDefense;
+        gear->armor += gear->equipArmor;
+        gear->field68 += gear->equip68a + gear->equip68b;
+        gear->guard += gear->equipGuard;
+        D_800D2D6C->hitBonus += D_800D2D6C->equipHitBonus;
+        D_800D2D6C->speed += D_800D2D6C->equipSpeed - D_800D2D6C->speedPenalty;
+        D_800D2D6C->frameFactor += D_800D2D6C->equipFrameFactor;
+        rate = D_800D2D6C->field4F;
+        if (rate != 0 && D_800C3E00->pilot.gearId != 0x12) {
+            D_800C34B0->gearCommands[member][37].hudState = D_800D2D6C->maxHp / 10 * rate * 2 / 9;
+            D_800C34B0->gearCommands[member][37].hudState /= 10;
+            D_800C34B0->gearCommands[member][37].hudState *= 10;
+        }
+        level[1] = 0;
+        if (D_8006ECF4[D_800C3E00->pilot.characterId].mask4 & 0x1C00) {
+            level[1] = 1;
+        }
+        if (D_8006ECF4[D_800C3E00->pilot.characterId].mask4 & 0x380) {
+            level[1] = 2;
+        }
+        if (D_8006ECF4[D_800C3E00->pilot.characterId].mask4 & 0x70) {
+            level[1] = 3;
+        }
+        D_800D2D6C->attackScale = D_800D2D6C->field74;
+        D_800D2D6C->field3E = D_800D2D6C->field74;
+        D_800D2D6C->attackScale += D_800D2D6C->equipAttackScale;
+        D_800D2D6C->field3E += D_800D2D6C->equipAttackScale;
+        if (D_800C3E00->pilot.status88.half.permanent & 0x2000) {
+            for (i = 0; i < 38; i++) {
+                D_800C34B0->partyCommands[member][i].cost *= 2;
+            }
+            for (i = 0; i < 42; i++) {
+                D_800C34B0->gearCommands[member][i].cost *= 2;
+            }
+        }
+        if (D_800C3E00->pilot.flags32 & 0x4000) {
+            for (i = 0; i < 38; i++) {
+                D_800C34B0->partyCommands[member][i].cost = (D_800C34B0->partyCommands[member][i].cost + 1) >> 1;
+            }
+            for (i = 0; i < 42; i++) {
+                D_800C34B0->gearCommands[member][i].cost = (D_800C34B0->gearCommands[member][i].cost + 1) >> 1;
+            }
+        }
+        if (D_800C3E00->pilot.field62 >= 50) {
+            D_8006ECF4[D_800C3E00->pilot.characterId].mask4 |= 8;
+        }
+        if (D_800C3E00->pilot.characterId == 7) {
+            D_800D2D6C->hp = D_800C3E00->pilot.hp * 50;
+            D_800D2D6C->maxHp = D_800C3E00->pilot.maxHp * 50;
+            D_800D2D6C->attack = D_800C3E00->pilot.attack;
+            D_800D2D6C->bodyDefense = D_800C3E00->pilot.defense * 12;
+            D_800D2D6C->armor = D_800C3E00->pilot.etherDefense * 6;
+            D_800D2D6C->speed = D_800C3E00->pilot.speed;
+            immunities = D_800D2D6C->field7E;
+            D_800D2D6C->field7E = immunities | 0x3C4;
+            if (D_800C3E00->pilot.status82 & 0x2000) {
+                D_800D2D6C->field7E = immunities | 0x13C4;
+            }
+        }
+        if (D_800C3E00->pilot.gearId == 0xF) {
+            D_8006ECF4[D_800C3E00->pilot.characterId].flags1A &= 0x8FFF;
+        }
+        if (D_800C3E00->pilot.gearId == 0x12) {
+            D_800C3E00->pilot.status7A = 0x238;
+            D_800D2D6C->fuel = 0x26AC;
+            D_800D2D6C->maxFuel = 0x26AC;
+            level[1] = 0;
+            D_8006ECF4[3].flags1A = 0x8000;
+        }
+        if (D_8006D634.value1930 >= 231 && !(D_8006D634.flags2355 & 0x80)) {
+            D_8006D634.characters[9].field6A = 0x27;
+            D_8006D634.characters[9].entries[0].value4 = 0x1E;
+            D_8006D634.flags2355 |= 0x80;
+        }
+    }
+    D_800C34AD = 3;
+    for (member = 0; member < 3; member++) {
+        if (D_800D2D24[member] == 0x7F) {
+            D_800C34AD--;
+        }
+    }
+    for (member = 0; member < 3; member++) {
+        D_800C34B0->field5F54[member] = 0;
+        D_800C34B0->field5F60[member] = 0;
+    }
+}
+
+/* Party adjustments at battle start: keep each present member's status
+ * word 7A, replace the listed part speeds of its gear by the parts' own
+ * (at most 16), set character 8's speed and battle flag, and before game
+ * data word 0x1930 reaches 0xbb set the early gears' values. */
+void func_8009892C(void) {
+    u8 member;
+    u8 i;
+    Combatant *record;
+
+    for (member = 0; member < 3; member++) {
+        if (D_800D2D24[member] == 0x7F) {
+            continue;
+        }
+        record = &D_800C34B0->records[member];
+        D_800C3E00 = record;
+        D_800D2D6C = &record->gear;
+        D_800C3AA4[member] = record->pilot.status7A;
+        for (i = 0; i < 4; i++) {
+            if (D_800D2D10[i] != 0) {
+                D_800D2D6C->speed -= D_800D2D10[i];
+                D_800D2D6C->speed += D_800D2D6C->speedBonus[i];
+            }
+        }
+        if (D_800D2D6C->speed > 16) {
+            D_800D2D6C->speed = 16;
+        }
+    }
+    D_8006D8A0.characters[8].speed = 7;
+    if (D_8006ECF4[8].flags1A & 0x2000) {
+        D_8006ECF4[8].mask2 |= 0x800;
+    }
+    if (D_8006D634.value1930 < 0xBB) {
+        D_8006D8A0.gears[0].field74 = 10;
+        D_8006D8A0.gears[1].field74 = 10;
+        D_8006D8A0.gears[11].field74 = 9;
+        D_8006D8A0.gears[12].field74 = 9;
+        D_8006D8A0.gears[13].field74 = 8;
+        D_8006D8A0.gears[14].field74 = 12;
+        D_8006D8A0.gears[15].field74 = 12;
+        D_8006D8A0.gears[13].field2 = 0x58;
+        D_8006D8A0.gears[7].field3 = 0;
+        D_8006D8A0.gears[15].field8 = 0x28;
+    }
+}
 
 /* A slot's turn timer from its speed (party: less the current command's
  * weight, gear speed for a slot in gear), capped, with a random -3..4
@@ -5807,7 +4254,173 @@ void func_80098C6C(u16 param) {
     }
 }
 
+#ifdef NON_MATCHING
+/* Apply item effect `param` to `slot`: HP (amount x 50, doubled with status
+ * 0x80 of +0x86) and EP (amount x 10) restoration, and unless either ran,
+ * the status cures, revival (amount tenths of the maximum HP), status
+ * grants, immunities and the special effects of flags value 1. The item
+ * effect table lies inside the battle work area (+0x5518, D_800D2200). */
+void func_80098D2C(u8 slot, u8 param) {
+    u8 restored;
+    Combatant *record;
+    ItemEffect *effect;
+    GearRecord *gear;
+    u8 i;
+    s32 hpUnit;
+    s32 epUnit;
+
+    restored = 0;
+    record = &D_800CCCE8.records[slot];
+    effect = &((ItemEffect *)&D_800CCCE8.lists)[param + 2];
+    gear = &D_800CCCE8.records[slot].gear;
+    epUnit = 10;
+
+    if (effect->flags & 0x8000) {
+        hpUnit = 50;
+        D_800CCCE8.damage[slot] = effect->amount * hpUnit;
+        D_800D2C88[slot] = 2;
+        if (record->pilot.status84.half.permanent & 0x80) {
+            D_800C34B0->damage[slot] *= 2;
+        }
+        if (record->pilot.flags36 & 0x8000) {
+            D_800D2C88[slot] = 0;
+        }
+        restored = 1;
+    }
+    if (effect->flags & 0x4000) {
+        D_800D2C54[slot] = epUnit * effect->amount;
+        D_800D2C88[slot] = 3;
+        restored++;
+    }
+    if (restored) {
+        return;
+    }
+    if ((D_800CCCE8.records[slot].flags15A & 0x80) && effect->flags != 1) {
+        D_800D2C94.message = 0x30;
+        D_800D2C94.held |= 0x8000;
+        return;
+    }
+    if (effect->flags & 0x2000) {
+        record->pilot.status7C &= 0x8000;
+    }
+    if (effect->flags & 0x1000) {
+        record->pilot.status80 = 0;
+        record->pilot.status7A &= 0xFFDF;
+    }
+    if (effect->flags & 0x100) {
+        if (D_800CCCE8.records[slot].pilot.characterId == 2) {
+            func_8009AC48(slot, 0);
+        }
+        record->pilot.status7C = 0;
+        record->pilot.status80 = 0;
+        record->pilot.status84.half.active = 0;
+        record->pilot.status88.half.active = 0;
+        record->pilot.status8C.half.active = 0;
+        record->pilot.hp = record->pilot.maxHp * effect->amount / 10;
+        D_800C34B0->revived |= 1 << slot;
+    }
+    if (effect->flags & 0x800) {
+        record->pilot.status84.half.active |= effect->status;
+        func_800995A0(slot, 5, effect->status, 5);
+        func_8009B684(5, effect->status);
+    }
+    if (effect->flags & 0x400) {
+        record->pilot.status88.half.active |= effect->status;
+        func_800995A0(slot, 7, effect->status, 5);
+        func_8009B684(7, effect->status);
+    }
+    if (effect->flags & 0x200) {
+        record->pilot.status8C.half.active |= effect->status;
+        if ((effect->status & 0xF000) && !(record->pilot.status8C.half.permanent & 0xF000)) {
+            record->pilot.status8C.half.active &= 0xFFF;
+            record->pilot.status8C.half.active |= effect->status;
+            func_800995A0(slot, 9, effect->status, 5);
+            func_8009B684(9, effect->status);
+        }
+        if ((effect->status & 0xF00) && !(record->pilot.status8C.half.permanent & 0xF00)) {
+            record->pilot.status8C.half.active &= 0xF0FF;
+            record->pilot.status8C.half.active |= effect->status;
+            func_800995A0(slot, 9, effect->status, 5);
+            func_8009B684(9, effect->status);
+        }
+    }
+    if (effect->flags & 0x20) {
+        record->pilot.status7E |= 0x3F7C;
+    }
+    if (effect->flags & 0x10) {
+        record->pilot.status7E |= 0xFFFE;
+    }
+    if (effect->flags & 8) {
+        (&record->pilot.status84.half.active)[effect->amount] = 0;
+        switch (effect->amount) {
+        case 0:
+            D_800C34B0->message = 0x35;
+            break;
+        case 2:
+            D_800C34B0->message = 0x36;
+            break;
+        case 4:
+            D_800C34B0->message = 0x37;
+            break;
+        }
+    }
+    if ((effect->flags & 0x80) && (effect->status & 2)) {
+        if (slot >= 3) {
+            D_800C34B0->message = 0x33;
+            return;
+        }
+        if (effect->duration == 0) {
+            if ((u8)func_80099498()) {
+                record->pilot.status7C |= effect->status;
+                D_800C34B0->message = 0x31;
+                record->pilot.status7A = 0xFFEF;
+            } else {
+                D_800C34B0->message = 0x32;
+            }
+        } else {
+            record->pilot.status7C &= ~effect->status;
+            record->pilot.status7A = D_800C3AA4[slot];
+        }
+    }
+    if (effect->flags == 1) {
+        switch (effect->amount) {
+        case 10:
+            record->pilot.weakness = 0;
+            record->pilot.weakness = effect->status;
+            break;
+        case 11:
+            if (!(record->pilot.status7E & effect->status)) {
+                record->pilot.status7C |= effect->status;
+                func_800995A0(slot, 0, effect->status, effect->duration);
+                func_8009B684(0, effect->status);
+            }
+            break;
+        case 12:
+            if (!(record->pilot.status82 & effect->status)) {
+                record->pilot.status80 |= effect->status;
+                func_800995A0(slot, 2, effect->status, effect->duration);
+                func_8009B684(2, effect->status);
+            }
+            break;
+        case 13:
+            gear->defense += effect->status;
+            D_800C34B0->message = 0x28;
+            break;
+        case 14:
+            D_8006D8A0.characters[record->pilot.characterId].expNextA = 1;
+            D_8006D8A0.characters[record->pilot.characterId].expNextB = 1;
+            break;
+        case 15:
+            for (i = 0; i < 7; i++) {
+                record->pilot.useCounts[i] += 10;
+            }
+            break;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80098D2C);
+#endif
 
 /* Party gate on the formation mode: 1 when mode 2 has no member with status
  * bits 0xC002, or mode 3 does not have exactly two; otherwise 0. */
@@ -7247,7 +5860,142 @@ void func_8009CB68(u8 slot) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009CBC4);
+/* Gear attack damage: the gear hit outcome, attack and defense values with
+ * the element adjustment and both gears' boost/break statuses, the command's
+ * drain effects, then (5a - 4d for ether, else 4a - 3d) times the power over
+ * 20, a random spread, the element resistance and the hit outcome's result
+ * code; at most 9999. */
+void func_8009CBC4(void) {
+    u16 attack;
+    u16 defense;
+    s8 hit;
+    u8 power;
+    s32 damage;
+    s32 attackScale;
+    s32 defenseScale;
+    u16 flags;
+    u8 guard;
+
+    power = D_800C3DFC->power;
+    hit = func_8009D3A0();
+    attack = func_8009D948();
+    defense = func_8009DA04();
+    func_80096494(&attack, &defense, &hit);
+    if ((D_800D2D6C->status80 | D_800D2D6C->status82) & 8) {
+        attack += attack / 5;
+    }
+    if ((D_800D2D6C->status80 | D_800D2D6C->status82) & 2) {
+        attack += attack / 10;
+    }
+    if ((D_800D2D6C->status80 | D_800D2D6C->status82) & 4) {
+        attack -= attack / 5;
+    }
+    if ((D_800D2D6C->status80 | D_800D2D6C->status82) & 1) {
+        attack -= attack / 10;
+    }
+    if ((D_800D2DC8->status80 | D_800D2DC8->status82) & 4) {
+        defense += defense / 5;
+    }
+    if ((D_800D2DC8->status80 | D_800D2DC8->status82) & 1) {
+        defense += defense / 10;
+    }
+    if ((D_800D2DC8->status80 | D_800D2DC8->status82) & 8) {
+        defense -= defense / 5;
+    }
+    if ((D_800D2DC8->status80 | D_800D2DC8->status82) & 2) {
+        defense -= defense / 10;
+    }
+    if (D_800C3DFC->attributes[2] & 0x10) {
+        if (!(D_800C3E34->pilot.status82 & 0x40)) {
+            D_800C3E34->pilot.status80 |= 0x40;
+        }
+        if ((D_800D2D6C->status84.half.active | D_800D2D6C->status84.half.permanent) & 0x4000) {
+            D_800D2C88[D_800C3E04] = 3;
+            D_800D2C54[D_800C3E04] = (u16)(D_800C3E00->pilot.maxEp / 10) * 2;
+        }
+        if ((D_800D2D6C->status84.half.active | D_800D2D6C->status84.half.permanent) & 0x1000) {
+            D_800D2C88[D_800C3E04] = 2;
+            D_800D2C54[D_800C3E04] = D_800D2D6C->maxHp / 10 * 2;
+        }
+    }
+    if ((D_800C3DFC->attributes[2] & 0x20) && !(D_800C3E34->pilot.status82 & 0x80)) {
+        D_800C3E34->pilot.status80 |= 0x80;
+    }
+    if (D_800C3E34->pilot.status80 & 0x40) {
+        defense -= defense >> 2;
+        D_800C3E34->pilot.status80 &= 0xFFBF;
+    }
+    if (D_800C3E00->pilot.status80 & 0x80) {
+        attack -= attack >> 2;
+        D_800C3E00->pilot.status80 &= 0xFF7F;
+    }
+    flags = D_800C3DFC->flagsA;
+    if (flags & 0x400) {
+        power = 20;
+    }
+    if (flags & 0x100) {
+        attackScale = 5;
+        defenseScale = 4;
+    } else {
+        attackScale = 4;
+        defenseScale = 3;
+    }
+    if (defense != 0) {
+        damage = attackScale * attack - defenseScale * defense;
+    } else {
+        damage = attackScale * attack;
+    }
+    switch (D_800C3DFC->amountKind) {
+    case 0:
+    case 1:
+        damage = power * damage / 20;
+        break;
+    case 2:
+        break;
+    }
+    if (damage <= 0) {
+        damage = 0;
+    } else if (damage < 15) {
+        damage += rand() % 3;
+    } else {
+        damage += rand() % (damage / 15 + 2);
+    }
+    if (D_800C3DFC->elements != 0) {
+        damage = func_8009DB54(damage);
+    }
+    switch (hit) {
+    case 1:
+        D_800C34B0->resultCode[D_800C3E50] = 0;
+        break;
+    case 2:
+        D_800C34B0->resultCode[D_800C3E50] = 5;
+        guard = D_800D2DC8->guard;
+        if (guard >= 10) {
+            guard = 9;
+        }
+        if (damage != 0) {
+            damage = damage * (10 - guard) / 20;
+        }
+        break;
+    case 3:
+        damage = 0;
+        D_800C34B0->resultCode[D_800C3E50] = 4;
+        break;
+    case 4:
+        D_800C34B0->resultCode[D_800C3E50] = 2;
+        break;
+    }
+    if (D_800D2DC4 && (D_800C3DFC->flagsA & 0x100) && damage != 0) {
+        damage /= 3;
+    }
+    if (damage >= 10000) {
+        damage = 9999;
+    }
+    if (damage < 0) {
+        damage = 0;
+    }
+    D_800C34B0->damage[D_800C3E50] = damage;
+}
 
 /* Mark the target missed (result 6) when 8009DBFC finds no hit. */
 void func_8009D354(void) {
@@ -7256,7 +6004,120 @@ void func_8009D354(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009D3A0);
+/* Gear hit outcome of the current command on the target: 1 hit, 2 half,
+ * 3 miss. Like 80096ab8 with gear accuracy (+0x9f with a broken weapon,
+ * 1.5x with status 0x800), the target's evasion (half its gear's +0x9f,
+ * 1.5x with status 0x400) and the gears' blind/evade status 0x10. */
+s8 func_8009D3A0(void) {
+    s16 penalty = 0;
+    s16 bonus = 0;
+    s16 evasion;
+    s16 accuracy;
+    u8 durability;
+    s16 margin;
+    s16 roll;
+    u16 status;
+
+    if ((D_800C3DFC->flagsA & 0x200) && (D_800C3E34->pilot.flags34 & 8)) {
+        return 3;
+    }
+    if (D_800C3DFC->flagsA & 0x1000) {
+        return 3;
+    }
+    if ((D_800C3E34->pilot.status84.half.active | D_800C3E34->pilot.status84.half.permanent) & 0x100) {
+        return 3;
+    }
+    if (D_800C3E34->pilot.status7C & 0x2000) {
+        return 1;
+    }
+    if (D_800C3E34->pilot.status80 & 0x1000) {
+        return 1;
+    }
+    if (D_800C3DFC->flagsA & 0x8000) {
+        return 1;
+    }
+    evasion = D_800C3E34->pilot.field5F;
+    durability = D_8006F8EA[D_800D2D6C->partItems[0]];
+    accuracy = D_800C3E00->pilot.field5E;
+    if (durability == 0) {
+        accuracy += D_800D2D6C->hitBonus;
+    }
+    if (D_800D2DC8->hitBonus != 0) {
+        evasion += D_800D2DC8->hitBonus / 2;
+    }
+    if (D_800C3E00->pilot.characterId == 4) {
+        if ((D_800C3DFC->itemKinds & 0x80) && durability == 0) {
+            return 3;
+        }
+        if ((D_800C3DFC->itemKinds & 0x20) && D_8006F8EA[D_800D2D6C->partItems[3]] == 0) {
+            return 3;
+        }
+    }
+    if ((D_800D2D6C->status80 | D_800D2D6C->status82) & 0x800) {
+        accuracy += accuracy / 2;
+    }
+    if (D_800D2D6C->status7C & 0x10) {
+        penalty = 60;
+    }
+    if (D_800C3DFC->flagsA & 0x1000) {
+        return 3;
+    }
+    if (D_800C34B0->records[D_800C3E50].flags15A & 0x80) {
+        if ((D_800D2DC8->status80 | D_800D2DC8->status82) & 0x400) {
+            evasion += evasion / 2;
+        }
+        if (D_800D2DC8->status7C & 0x10) {
+            bonus = 30;
+        }
+        if (D_800D2DC8->status7C & 0xC00) {
+            return 1;
+        }
+    } else {
+        accuracy /= 2;
+        if (D_800C3E34->pilot.status7C & 0x2000) {
+            return 1;
+        }
+        if (D_800C3E34->pilot.status80 & 0x1000) {
+            return 1;
+        }
+        if ((D_800C3E34->pilot.status84.half.active | D_800C3E34->pilot.status84.half.permanent) & 0x800) {
+            evasion += evasion / 2;
+        }
+    }
+    if (D_800C34B0->records[D_800C3E50].flags15A & 1) {
+        if (rand() % 100 < 95) {
+            return 2;
+        }
+        return 1;
+    }
+    margin = accuracy + D_800C3DFC->hitBonus - evasion;
+    status = D_800C3E34->pilot.status84.half.active | D_800C3E34->pilot.status84.half.permanent;
+    if (status & 0x20) {
+        roll = rand() % 100 - margin;
+        if (roll >= 50) {
+            return 3;
+        }
+        return 1;
+    }
+    if (status & 0x40) {
+        roll = rand() % 100 - margin;
+        if (roll >= 50) {
+            return 2;
+        }
+        return 1;
+    }
+    roll = rand() % 100 - margin;
+    bonus += 85;
+    bonus -= penalty;
+    if (roll >= bonus) {
+        return 3;
+    }
+    roll = rand() % 100 - margin;
+    if (roll >= bonus) {
+        return 2;
+    }
+    return 1;
+}
 
 /* Damage of a gear attack (80096FBC); a command with flag 0x100 scales it by
  * the gear's frame factor in quarters (4 when unset or with status 0x100), and
@@ -7329,7 +6190,159 @@ s32 func_8009DB54(s32 damage) {
     return damage;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009DBFC);
+/* Roll a status onto the target's gear, from the attacking gear's first
+ * part (`fromGear`: chance +0x13, kind +0x14, flag +0x10, 5 turns) or from
+ * the command (+0x1c/+0x1d/+0x1e, turns +0x11): cancel opposite statuses,
+ * check immunities, set the kind's status word and turn timer, or apply the
+ * special kinds 10-16. Returns 1 when it took. */
+s8 func_8009DBFC(u8 fromGear) {
+    Combatant *record = &D_800C34B0->records[D_800C3E50];
+    CharacterRecord *pilot = &record->pilot;
+    s8 chance;
+    u8 kind;
+    u16 flags;
+    u8 turns;
+
+    if (fromGear) {
+        chance = D_800D2D6C->entries[0].value10;
+        kind = D_800D2D6C->entries[0].value11;
+        flags = D_800D2D6C->entries[0].field0;
+        turns = 5;
+    } else {
+        chance = D_800C3DFC->field1C;
+        kind = D_800C3DFC->field1D;
+        flags = D_800C3DFC->field1E;
+        turns = D_800C3DFC->power;
+    }
+    if (!(D_800C34B0->records[D_800C3E50].flags15A & 0x80)) {
+        return 0;
+    }
+    if (chance < rand() % 100) {
+        return 0;
+    }
+    switch (kind) {
+    case 0:
+        if ((flags & 0x20) && (D_800D2DC8->status80 & 0x8000)) {
+            D_800D2DC8->status80 &= 0x7FFF;
+            D_800C3E34->pilot.status84.half.active &= 0x7FFF;
+            return 1;
+        }
+        break;
+    case 1:
+        if (flags & 0xA) {
+            if (D_800D2DC8->status80 & 5) {
+                D_800D2DC8->status80 &= 0xFFFA;
+                return 1;
+            }
+        } else if (flags & 5) {
+            if (D_800D2DC8->status80 & 0xA) {
+                D_800D2DC8->status80 &= 0xFFF5;
+                return 1;
+            }
+        }
+        break;
+    }
+    if (kind == 0) {
+        if (flags & D_800D2DC8->field7E) {
+            return 0;
+        }
+        switch (flags) {
+        case 0x400:
+            record->statusTimers[0] = turns;
+            D_800D2DC8->status7C &= 0xFBFF;
+            pilot->status7C |= 0x2000;
+            break;
+        case 0x1000:
+            D_800D2DC8->status7C &= 0xEFFF;
+            pilot->status80 |= 0x2000;
+            break;
+        case 0x200:
+            record->statusTimers[1] = turns;
+            break;
+        case 0x100:
+            record->statusTimers[2] = turns;
+            break;
+        case 0x80:
+            record->statusTimers[3] = turns;
+            break;
+        case 0x20:
+            record->statusTimers[4] = turns;
+            pilot->status7C |= 0x1000;
+            break;
+        case 0x10:
+            record->statusTimers[5] = turns;
+            break;
+        }
+        D_800D2DC8->status7C |= flags;
+    }
+    if (kind == 1) {
+        D_800D2DC8->status80 |= flags;
+        switch (flags) {
+        case 0x1000:
+            record->statusTimers[10] = turns;
+            break;
+        case 0x40:
+            record->statusTimers[11] = turns;
+            break;
+        case 0x20:
+            record->statusTimers[12] = turns;
+            break;
+        }
+    }
+    if (kind == 3) {
+        if (flags & 0xF000) {
+            if (D_800D2DC8->status84.half.permanent & 0xF000) {
+                return 0;
+            }
+            D_800D2DC8->status84.half.active = flags | (D_800D2DC8->status84.half.active & 0xFFF);
+            record->statusTimers[7] = turns;
+        }
+        if (flags & 0xF00) {
+            if (D_800D2DC8->status84.half.permanent & 0xF00) {
+                return 0;
+            }
+            D_800D2DC8->status84.half.active = flags | (D_800D2DC8->status84.half.active & 0xF0FF);
+            record->statusTimers[8] = turns;
+        }
+    }
+    if (kind == 10) {
+        D_800D2DC8->status84.half.active &= ~flags;
+    }
+    if (kind == 11 && !(D_800D2DC8->field7E & 0x40)) {
+        D_800D2DC8->defense += flags;
+        kind = 0;
+        if (D_800D2DC8->defense >= 100) {
+            D_800D2DC8->defense = 99;
+        }
+        flags = 0x40;
+    }
+    if (kind == 12) {
+        D_800C34B0->resultCode[D_800C3E50] = 0;
+        D_800C34B0->damage[D_800C3E50] = D_800D2DC8->hp / flags;
+    }
+    if (kind == 13) {
+        D_800C34B0->resultCode[D_800C3E50] = 0;
+        D_800C34B0->damage[D_800C3E50] = D_800D2DC8->hp - 1;
+    }
+    if (kind == 14) {
+        D_800D2DC8->status80 = 0;
+        D_800D2DC8->status84.half.active = 0;
+        if (flags == 1) {
+            D_800D2DC8->status82 = 0;
+            D_800D2DC8->status84.half.permanent = 0;
+        }
+    }
+    if (kind == 16) {
+        D_800D2DC8->status7C |= 1;
+        D_800C3E34->pilot.status7C |= 0x80;
+    }
+    if (kind == 15) {
+        D_800D2DC8->status7C &= 0xFFFE;
+        D_800C3E34->pilot.status7C &= 0xFF7F;
+    }
+    func_8009E868(kind, flags);
+    return 1;
+}
 
 /* Clear the target gear's defense percentage. */
 void func_8009E268(void) {

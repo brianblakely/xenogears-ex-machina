@@ -750,8 +750,10 @@ typedef struct {
     s16 v9E;           /* +9e */
     s16 home[3];       /* +a0 */
     u8 padA6[2];
-    u32 flagsA8;       /* +a8: bits 30-31 the slot's low bits */
-    u32 flagsAC;       /* +ac: bits 0-1 the slot's high bits */
+    u32 flagsA8 : 30;  /* +a8 */
+    u32 slotLow : 2;   /* +a8 bits 30-31: the slot's low bits */
+    u32 slotHigh : 2;  /* +ac bits 0-1: the slot's high bits */
+    u32 flagsAC : 30;
 } BattleSprite;
 
 /* Battle overlay work area (800c3eb0) at battle setup. */
@@ -769,7 +771,7 @@ typedef struct {
     TaskNode *tasks[SLOT_COUNT]; /* +8cb8 */
     u8 pad8CE4[0x40];
     SpriteRow rows[SLOT_COUNT];  /* +8d24 */
-    s32 loaded;                  /* +8da8: set when loading ends */
+    u8 loaded;                   /* +8da8: set when loading ends */
 } BattleWork;
 extern BattleWork D_800C3EB0;
 
@@ -931,7 +933,7 @@ s32 func_8003F8CC(s32 angle);                       /* cosine (4096 = 1.0) */
 void func_801E5840(u8 phase);
 
 void func_801E6314(u8 *data);
-void func_801E6710(void);
+void func_801E6710(u8 *data);
 void func_801E67A4(s32 slot, s32 row, s32 animation);
 void func_801E693C(FileEntry *list);
 void func_801E6A4C(void);

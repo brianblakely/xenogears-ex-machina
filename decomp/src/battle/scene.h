@@ -74,6 +74,13 @@ typedef struct {
     u8 *textureInfo; /* 0xB4 */
     u8 padB8[0x10A - 0xB8];
     u16 slotMask; /* 0x10A */
+    u8 channelCount;          /* 0x10C */
+    u8 surfaceCount;          /* 0x10D */
+    u8 imageCount;            /* 0x10E: image animations at 0x118 */
+    u8 pad10F;
+    void *channels;           /* 0x110 */
+    void *surfaces;           /* 0x114 */
+    struct ImageAnim *images; /* 0x118 */
 } BattleObject;
 
 /* An animation header (fields as far as recovered). */
@@ -241,7 +248,7 @@ void func_8003852C(u8 *texture);
 void func_800AA934(BattleObject *object, BattleObject *target, EffectPool *pool, s32 arg3);
 void func_800B00D0(void);
 void func_800AFF9C(BattleObject *object);
-s32 func_800A0838(ModelList *models, ModelPart *root, u16 animation, s16 scale);
+s32 func_800A0838(EffectPool *pool, ModelPart *root, u16 tag, s16 scale);
 void func_800AE2A4(BattleObject *object, ModelList *models, s32 arg2);
 void func_800AAD54(BattleObject *object, ModelList *models, s32 flags, s32 steps, s32 arg4);
 void func_800AF180(EffectPool *pool, s32 index, ModelPart *from, ModelPart *to);
@@ -252,7 +259,7 @@ void func_800A22A8(EffectPool *pool);
 void func_800A2D1C(SpritePool *pool);
 s32 func_800AF400(void);
 void func_800AFA98(BattleObject *object, ModelPart *part, s32 flags);
-void func_800A5BE8(SVector *a, SVector *b, SVector *c, SVector *point, void *out);
+void func_800A5BE8(SVector *a, SVector *b, SVector *c, SVector *point, Vector *normal);
 s32 func_800A5870(SVector *point, s32 index, void *out);
 s32 func_800A579C(SVector *point);
 s32 func_800A5A48(SVector *a, SVector *b, SVector *c, SVector *point);
@@ -261,9 +268,9 @@ s32 func_800A5D54(SVector *point, s32 triangle, s32 depth);
 s32 func_800AA650(s32 index);
 void func_800B10EC(s32 index, s16 x, s16 z, s32 y);
 void func_800A2D5C(SpritePool *pool);
-void func_800A3490(void);
-void func_800A3514(void);
-void func_800A3578(void);
-void func_800A35C8(void);
+s16 func_800A3490(s16 angle, s16 divisor, s32 base);
+s16 func_800A3514(s16 value, s16 divisor, s16 base);
+s16 func_800A3578(s16 value, s16 divisor, s32 base);
+s16 func_800A35C8(s16 value, s16 divisor, s16 minimum);
 
 #endif

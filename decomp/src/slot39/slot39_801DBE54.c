@@ -1,516 +1,17 @@
-/*
- * Second translation unit of the menu overlay (801da4a8-801e9608). Its rodata
- * starts at 801c50fc (4 mod 8) with the first jump table (801dbe54): GCC
- * aligns a unit's jump tables to 8, so they cannot follow the first unit's
- * rodata, which ends with the "XENOGEARS/No." string of 801ca8c0. The text
- * boundary lies between 801ca8c0 and 801dbe54; it is placed where the item
- * screen's code begins.
- */
+/* Menu overlay unit from 801DBE54 (screens reached from the field menu).
+ * Its rodata starts at 801C50FC, 4 mod 8 (docs/matching.md, jump tables);
+ * the text boundary lies between 801CC6D8, the last function using the
+ * previous unit's rodata, and 801DBE54, the first using this unit's. */
 #include "menu.h"
-
-/* Open the save/load screen: its labels, its 1198-byte block and view 0. */
-void func_801DA4A8(void) {
-    void *block;
-
-    func_801D22F4(2);
-    func_801E8018(8, D_800625A0->labels10E0, D_801EA548, D_800625A0->party->unk38);
-    block = func_80031BDC(0x1198, 0);
-    D_800625A0->block42C = block;
-    bzero(block, 0x1198);
-    func_801C72BC(0);
-}
-
-/* Close the save/load screen: its labels, portraits 3-4, blocks and the
- * item table; view 10. */
-void func_801DA518(void) {
-    func_801D3444();
-    func_801D4EA0(3);
-    func_801D4EA0(4);
-    D_800625A0->party->unk48 = 0;
-    func_801C72BC(0x10);
-    func_800320E8(D_800625A0->block42C->unk1180);
-    func_800320E8(D_800625A0->block42C);
-    func_800320E8(D_800625A0->tables->items);
-}
-
-/* Build the 16 visible entries of the item list from scroll row `row`: an
- * entry without an id or count is emptied; otherwise the count is capped at
- * 99 and the item name and two-digit count are rendered into the image area
- * and laid out, greyed when the item cannot be used here. */
-#ifdef NON_MATCHING
-/* Differs in register allocation: this keeps 0xcccccccd in a saved register
- * and spills `row`; the original materialises the constant at each use. */
-void func_801DA5BC(s32 row) {
-    u8 codes[4];
-    u8 text[8];
-    RECT rect;
-    s32 i;
-    s32 tens;
-    s32 x;
-    s32 left;
-    u16 y;
-    u8 kind;
-    u8 grey;
-    u8 *image;
-    u8 *ids;
-    u8 *counts;
-
-    image = func_80031BDC(0x3f6, 0);
-    codes[1] = 0;
-    codes[3] = 0;
-    ids = D_8006F65A;
-    counts = ids - 150;
-    for (i = 0; i < 16; i++) {
-        if (ids[row * 2 + i] != 0) {
-            if (counts[row * 2 + i] != 0) {
-                if (counts[row * 2 + i] >= 100) {
-                    counts[row * 2 + i] = 99;
-                }
-                D_800625A0->block42C->names[i].width = func_80034EAC(func_80033818(ids[row * 2 + i]), image, 0x24, 0);
-                tens = counts[row * 2 + i] / 10;
-                codes[0] = tens + 0x10;
-                if (tens == 0) {
-                    codes[0] = 0xc3;
-                }
-                codes[2] = counts[row * 2 + i] % 10 + 0x10;
-                func_80033B34(codes, text, 2);
-                D_800625A0->block42C->values[i].width = func_80034EAC(text, image, 0x24, 1);
-                rect.x = (i & 1) * 0x18 + 0x180;
-                rect.y = (i / 2) * 0xd + 0x80;
-                rect.w = 0x28;
-                rect.h = 0xd;
-                LoadImage(&rect, image);
-                DrawSync(0);
-                kind = D_800625A0->tables->items[ids[row * 2 + i]].use;
-                if (kind & 0x20) {
-                    grey = kind & 0x80;
-                    if (D_80059171 == 0) {
-                        grey = 0;
-                    }
-                } else {
-                    grey = kind & 0x80;
-                }
-                func_801E7C50(&D_800625A0->block42C->names[i], i, 0x80, grey | 1);
-                func_801E7C50(&D_800625A0->block42C->values[i], i, 0x80, grey | 2);
-                x = (i % 2) * 0x88;
-                y = (i / 2) * 0x10 | 0xe;
-                left = (x + 0x28) & 0xfff8;
-                func_801C851C(D_800625A0->block42C->names[i].verts, left, y, D_800625A0->block42C->names[i].width,
-                              0xd);
-                left = (x + 0x90) & 0xfff8;
-                func_801C851C(D_800625A0->block42C->values[i].verts, left, y, D_800625A0->block42C->values[i].width,
-                              0xd);
-                D_800625A0->block42C->names[i].count = D_800625A0->bufferIndex;
-                D_800625A0->block42C->values[i].count = D_800625A0->bufferIndex;
-                D_800625A0->block42C->shown[i] = 1;
-            } else {
-                ids[row * 2 + i] = 0;
-                D_800625A0->block42C->shown[i] = 0;
-            }
-        } else {
-            counts[row * 2 + i] = 0;
-            D_800625A0->block42C->shown[i] = 0;
-        }
-    }
-    func_800320E8(image);
-    D_800625A0->party->unk48 = 1;
-}
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DA4A8", func_801DA5BC);
-#endif
-
-/* Show the description of item list entry `entry` at scroll row `row`: the
- * item's message line, a copy of its name and count texts and, for items
- * used from the menu, its target labels. An empty entry hides it. */
-void func_801DA9A8(s32 entry, s32 row) {
-    RECT rect;
-    u8 *ids;
-    u8 *id;
-    u8 *image;
-    s32 pad;
-    u8 all;
-    u8 kind;
-    u16 target;
-    MenuItem *item;
-
-    ids = D_8006F65A;
-    id = &ids[row * 2 + entry];
-    if (*id != 0) {
-        image = func_80031BDC(0x618, 0);
-        bzero(image, 0x618);
-        D_800625A0->block42C->extra[2].width =
-            func_80034EAC(func_80033728(D_800625A0->block42C->unk1180, *id), image, 0x39, 0);
-        rect.x = 0x140;
-        rect.y = 0x4e;
-        rect.w = 0x3c;
-        rect.h = 0xd;
-        LoadImage(&rect, image);
-        DrawSync(0);
-        func_801E7C50(&D_800625A0->block42C->extra[2], 0, 0, 0);
-        func_801E920C(&D_800625A0->block42C->extra[2].polys[D_800625A0->bufferIndex], 0x1c, 0xa1, 0, 0x4e,
-                      D_800625A0->block42C->extra[2].width, 0xd);
-        func_801C851C(D_800625A0->block42C->extra[2].verts, 0x1c, 0xa1, D_800625A0->block42C->extra[2].width, 0xd);
-        func_800320E8(image);
-        pad = D_800625A0->block42C->values[entry].width == 0x10 ? 4 : 0;
-        memmove(&D_800625A0->block42C->extra[0], &D_800625A0->block42C->names[entry], sizeof(MenuLabelSlot));
-        memmove(&D_800625A0->block42C->extra[1], &D_800625A0->block42C->values[entry], sizeof(MenuLabelSlot));
-        func_801C851C(D_800625A0->block42C->extra[0].verts, 0x10, 0x93, D_800625A0->block42C->names[entry].width,
-                      0xd);
-        func_801C851C(D_800625A0->block42C->extra[1].verts, pad | 0x78, 0x93,
-                      D_800625A0->block42C->values[entry].width, 0xd);
-        (D_800625A0->block42C->extra[0].polys + D_800625A0->bufferIndex)->r0 = 0x80;
-        (D_800625A0->block42C->extra[0].polys + D_800625A0->bufferIndex)->g0 = 0x80;
-        (D_800625A0->block42C->extra[0].polys + D_800625A0->bufferIndex)->b0 = 0x80;
-        SetSemiTrans(&D_800625A0->block42C->extra[0].polys[D_800625A0->bufferIndex], 0);
-        (D_800625A0->block42C->extra[1].polys + D_800625A0->bufferIndex)->r0 = 0x80;
-        (D_800625A0->block42C->extra[1].polys + D_800625A0->bufferIndex)->g0 = 0x80;
-        (D_800625A0->block42C->extra[1].polys + D_800625A0->bufferIndex)->b0 = 0x80;
-        SetSemiTrans(&D_800625A0->block42C->extra[1].polys[D_800625A0->bufferIndex], 0);
-        func_801E8044(8, D_800625A0->party->unk38);
-        item = &D_800625A0->tables->items[*id];
-        if (item->use & 0xc0) {
-            target = item->target;
-            if (target & 0x4000) {
-                all = 2;
-            } else if (target & 0x1000) {
-                all = 0;
-            } else {
-                all = 1;
-            }
-            func_801E8070(8, D_800625A0->labels10E0, D_801EA550, D_801E9EA0, D_800625A0->party->unk38, all, 0, 1);
-            kind = (item->target & 3) + 3;
-            func_801E8070(8, D_800625A0->labels10E0, D_801EA550, D_801E9EA0, D_800625A0->party->unk38, kind, 0, 1);
-            (D_800625A0->labels10E0[all].polys + D_800625A0->bufferIndex)->r0 = 0x80;
-            (D_800625A0->labels10E0[all].polys + D_800625A0->bufferIndex)->g0 = 0x80;
-            (D_800625A0->labels10E0[all].polys + D_800625A0->bufferIndex)->b0 = 0x80;
-            SetSemiTrans(&D_800625A0->labels10E0[all].polys[D_800625A0->bufferIndex], 0);
-            (D_800625A0->labels10E0[kind].polys + D_800625A0->bufferIndex)->r0 = 0x80;
-            (D_800625A0->labels10E0[kind].polys + D_800625A0->bufferIndex)->g0 = 0x80;
-            (D_800625A0->labels10E0[kind].polys + D_800625A0->bufferIndex)->b0 = 0x80;
-            SetSemiTrans(&D_800625A0->labels10E0[kind].polys[D_800625A0->bufferIndex], 0);
-        }
-        D_800625A0->block42C->extra[0].count = D_800625A0->bufferIndex;
-        D_800625A0->block42C->extra[1].count = D_800625A0->bufferIndex;
-        D_800625A0->block42C->extra[2].count = D_800625A0->bufferIndex;
-        D_800625A0->block42C->extraShown = 1;
-    } else {
-        func_801E8044(8, D_800625A0->party->unk38);
-        D_800625A0->block42C->extraShown = 0;
-    }
-}
-
-/* Allocate image block `index` (+444). */
-void func_801DB02C(u8 index) {
-    void *block;
-
-    block = func_80031BDC(0x78, 0);
-    D_800625A0->blocks444[index] = block;
-    bzero(block, 0x78);
-    D_800625A0->blocks444[index]->frame = 4;
-    D_800625A0->blocks444[index]->timer = 0;
-}
-
-/* Animate list cursor `index` (image block +444) and place it at entry
- * `entry` of the list kind `kind` (0 item list, 1 scrolled item list at
- * scroll row `row`, hidden when off the page, 2 two-column list, 3 one
- * column). */
-void func_801DB0A8(s32 entry, s32 row, u8 kind, u8 index) {
-    MenuImageBlock *cursor;
-    POLY_FT4 *poly;
-    s32 x;
-    s32 y;
-    s32 shown;
-
-    cursor = D_800625A0->blocks444[index];
-    shown = 1;
-    if (++cursor->timer >= 6) {
-        if (--cursor->frame < 0) {
-            cursor->frame = 4;
-        }
-        cursor->timer = 0;
-    }
-    switch (kind) {
-    case 0:
-        x = (entry % 2) * 0x88 + 0x1c;
-        y = (entry / 2) * 0x10 + 0x11;
-        break;
-    case 1:
-        if (entry >= row * 2 && entry < row * 2 + 0x10) {
-            x = (entry % 2) * 0x88 + 0x18;
-            y = (entry - row * 2) / 2 * 0x10 + 0x11;
-        } else {
-            shown = 0;
-        }
-        break;
-    case 2:
-        x = (entry % 2) * 0x88 + 0x18;
-        y = entry / 2 * 0x10 + 0x14;
-        break;
-    case 3:
-        x = 0xa0;
-        y = entry * 0xd + 0x14;
-        shown = 2;
-        break;
-    }
-    if (shown) {
-        func_8002675C(D_800625A0->sheet, cursor->frame + 0x15b, cursor, D_800625A0->bufferIndex, 0, 0, 0x1000);
-        poly = &cursor->polys[D_800625A0->bufferIndex];
-        func_801C851C(cursor->verts, poly->x0 + x, poly->y0 + y, poly->x1 - poly->x0, poly->y3 - poly->y0);
-        cursor->count = D_800625A0->bufferIndex;
-        D_800625A0->party->unk50[index] = 1;
-    } else {
-        D_800625A0->party->unk50[index] = 0;
-    }
-}
-
-/* Free image block `index` (+444) and clear its party flag (+50). */
-void func_801DB340(u8 index) {
-    func_800320E8(D_800625A0->blocks444[index]);
-    D_800625A0->party->unk50[index] = 0;
-}
-
-/* Shade the item screen's texts by `mode` (801e8eac): windows 3 and 4, the
- * window quad, each built entry name and count, the two cursors, the
- * selected entry, the description and the eight help labels. */
-void func_801DB39C(u8 mode) {
-    s32 i;
-
-    func_801E8F60(3, mode);
-    func_801E8F60(4, mode);
-    func_801E8EAC(&D_800625A0->block43C->polys[D_800625A0->block43C->buffer], mode);
-    i = 0;
-    do {
-        if (D_800625A0->block42C->names[i].polys[D_800625A0->block42C->names[i].count].r0 != 0x20) {
-            func_801E8EAC(&D_800625A0->block42C->names[i].polys[D_800625A0->block42C->names[i].count], mode);
-            func_801E8EAC(&D_800625A0->block42C->values[i].polys[D_800625A0->block42C->values[i].count], mode);
-        }
-        i++;
-    } while (i < 16);
-    for (i = 0; i < 2; i++) {
-        func_801E8EAC(&D_800625A0->blocks444[i]->polys[D_800625A0->blocks444[i]->count], mode);
-    }
-    func_801E8EAC(&D_800625A0->block42C->extra[0].polys[D_800625A0->block42C->extra[0].count], mode);
-    func_801E8EAC(&D_800625A0->block42C->extra[1].polys[D_800625A0->block42C->extra[1].count], mode);
-    func_801E8EAC(&D_800625A0->block42C->extra[2].polys[D_800625A0->block42C->extra[2].count], mode);
-    for (i = 0; i < 8; i++) {
-        func_801E8EAC(&D_800625A0->labels10E0[i].polys[D_800625A0->labels10E0[i].count], mode);
-    }
-}
-
-/* Build the target selection's party panels: allocate the three panel
- * blocks once, clear them and build each occupied slot's panel (layout 1
- * for `mode` 2, where only characters with a gear qualify; `mode` then
- * becomes that layout flag); then place the three target cursor quads. */
-void func_801DB5E4(u8 mode) {
-    MenuAnchor *xs;
-    MenuAnchor *ys;
-    MenuPanel *panel;
-    void *block;
-    s32 i;
-    u8 ok;
-    u8 id;
-
-    if (D_801E9785 == 0) {
-        for (i = 0; i < 3; i++) {
-            block = func_80031BDC(0xbec, 0);
-            D_800625A0->panels[i] = block;
-            bzero(block, 0xbec);
-        }
-        D_801E9785 = 1;
-    }
-    for (i = 0; i < 3; i++) {
-        bzero(D_800625A0->panels[i], 0xbec);
-    }
-    if (mode != 2) {
-        xs = D_801EA054;
-        ys = D_801EA0DC;
-        mode = 0;
-    } else {
-        xs = D_801EA098;
-        ys = D_801EA120;
-        mode = 1;
-    }
-    for (i = 0; i < 3; i++) {
-        panel = D_800625A0->panels[i];
-        id = D_800625A0->party->ids[i];
-        ok = 1;
-        if (id != 0xff) {
-            if (mode) {
-                ok = D_8006D8A0[id].gear != 0xff;
-            }
-            if (ok) {
-                func_801CE0CC(panel, id, i, xs, ys, mode);
-            }
-        } else {
-            panel->shown = 0;
-        }
-    }
-    D_800625A0->party->unk46 = 1;
-    for (i = 0; i < 3; i++) {
-        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->current[i]))->x0 = 0x90;
-        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->current[i]))->y0 = i * 0x38 + 0x30;
-        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->current[i]))->x1 = 0xa0;
-        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->current[i]))->y1 = i * 0x38 + 0x30;
-        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->current[i]))->x2 = 0x90;
-        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->current[i]))->y2 = i * 0x38 + 0x40;
-        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->current[i]))->x3 = 0xa0;
-        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->current[i]))->y3 = i * 0x38 + 0x40;
-    }
-}
-
-/* Use the item at visible entry `entry` of scroll row `row`: for an item
- * usable here, select targets (the whole party for all-target items, else
- * the cursor's slot; left/right move it) and use the item on them on
- * confirm until it runs out or the player cancels. Returns the targets
- * marked last (0 when cancelled or unusable). */
-#ifdef NON_MATCHING
-/* Register allocation differs: the original spills `row` and keeps the
- * inventory index in a saved register. */
-u8 func_801DB920(s32 row, s32 entry) {
-    u16 marks;
-    u8 running;
-    u8 redraw;
-    s32 slot;
-    u8 used;
-    s32 all;
-    s32 i;
-    MenuItem *item;
-
-    marks = 0;
-    running = 1;
-    slot = D_800625A0->firstMember;
-    D_801E9785 = 0;
-    item = &D_800625A0->tables->items[D_8006F65A[row * 2 + entry]];
-    redraw = 1;
-    if (item->use & 0x80) {
-        marks = 1;
-        if (item->use & 0x20) {
-            marks = D_80059171 != 0;
-        }
-    }
-    all = item->target & 1;
-    if (marks) {
-        func_801D397C(2, 0x10, 0xe, 0x90, 0xb0, 0, 0, 4, 0);
-        while (running) {
-            func_801C7BF4();
-            marks = 0;
-            if (redraw) {
-                redraw = 0;
-                func_801DA5BC(row);
-                func_801DA9A8(entry, row);
-                func_801DB39C(1);
-                func_801DB5E4(0);
-            }
-            D_800625A0->markers->visible[0] = D_800625A0->markers->visible[1] = D_800625A0->markers->visible[2] = 0;
-            if (all) {
-                for (i = 0; i < 3; i++) {
-                    if (D_800625A0->party->ids[i] != 0xff) {
-                        marks |= 1 << i;
-                        D_800625A0->markers->visible[i] = 1;
-                    }
-                }
-            } else {
-                marks = 1 << slot;
-                D_800625A0->markers->visible[slot] = 1;
-            }
-            D_800625A0->party->unk2F = 1;
-            if (INVENTORY->counts[row * 2 + entry] == 0) {
-                running = 0;
-            }
-            if (!running) {
-                break;
-            }
-            switch (D_800625A0->input) {
-            case 4:
-                used = 0;
-                for (i = 0; i < 3; i++) {
-                    if (func_801C865C(marks, i) &&
-                        func_801E31C0(D_800625A0->tables, D_800625A0->party->ids[i], D_8006F65A[row * 2 + entry]) == 0) {
-                        used |= 1;
-                    }
-                }
-                if (used) {
-                    func_801C8574(0x37);
-                    redraw = 1;
-                    if (--INVENTORY->counts[row * 2 + entry] == 0) {
-                        INVENTORY->ids[row * 2 + entry] = 0;
-                    }
-                } else {
-                    func_801C8574(4);
-                    redraw = 1;
-                }
-                break;
-            case 5:
-                running = 0;
-                marks = 0;
-                break;
-            case 1:
-                slot = func_801D9704(slot, 0, 0);
-                break;
-            case 3:
-                slot = func_801D9704(slot, 1, 0);
-                break;
-            }
-        }
-        D_800625A0->markers->visible[0] = D_800625A0->markers->visible[1] = D_800625A0->markers->visible[2] = 0;
-        func_801DB39C(0);
-        D_800625A0->party->unk46 = 0;
-        func_801C7BF4();
-        for (i = 0; i < 3; i++) {
-            func_800320E8(D_800625A0->panels[i]);
-        }
-        D_801E9785 = 0;
-        func_801D4EA0(2);
-    }
-    return marks;
-}
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DA4A8", func_801DB920);
-#endif
-
-/* Swap inventory entries `a` and `b` (item id and count). */
-void func_801DBD4C(s32 a, s32 b) {
-    u8 tmp;
-
-    tmp = D_8006F65A[a];
-    D_8006F65A[a] = D_8006F65A[b];
-    D_8006F65A[b] = tmp;
-    tmp = D_8006F5C4[a];
-    D_8006F5C4[a] = D_8006F5C4[b];
-    D_8006F5C4[b] = tmp;
-}
-
-/* Size the item list's scroll bar from the last occupied inventory entry. */
-void func_801DBDB4(void) {
-    s32 i;
-    s32 last;
-    s32 pages;
-
-    for (i = 0; i < 150; i++) {
-        if (D_8006F65A[i] != 0) {
-            last = i;
-        }
-    }
-    if (last < 16) {
-        D_801EA724 = 0x74;
-        D_801EA728 = 0;
-        D_801EA72C = 0;
-    } else {
-        pages = (last - 16) / 2 + 1;
-        D_801EA724 = 0x4a;
-        D_801EA728 = pages;
-        D_801EA72C = 0x1068 / pages;
-    }
-}
 
 /* The item screen: a two-column list of eight rows scrolled over the
  * inventory with a cursor, the selected entry's description and its
  * windows. Confirm selects an entry, uses it when selected again or swaps
  * it with the selected one; cancel clears the selection or leaves. */
 #ifdef NON_MATCHING
-/* Cannot match as C in this unit yet: GCC 8-aligns the input jump table
- * (the original's is at 801c50fc, only 4-aligned); the case-4 tails also
- * cross-jump differently. */
+/* Nonmatching: its jump table lands at 801c50fc now; the scheduling around
+ * the 0x51eb851f division differs and the case-4 tails cross-jump
+ * differently. */
 u8 func_801DBE54(void) {
     u8 running;
     u8 windows;
@@ -647,7 +148,7 @@ u8 func_801DBE54(void) {
     return 1;
 }
 #else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DA4A8", func_801DBE54);
+INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801DBE54);
 #endif
 
 /* Open the file list screen of `kind` (0 load, 1 save, 2 the other labels). */
@@ -865,7 +366,7 @@ void func_801DC3D8(u8 slot, u8 kind) {
     D_800625A0->party->unk4A = 1;
 }
 #else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DA4A8", func_801DC3D8);
+INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801DC3D8);
 #endif
 
 /* Show the description of file list row `row` for party slot `slot` (`kind`
@@ -963,7 +464,7 @@ void func_801DCE60(u8 slot, u8 row, u8 kind) {
     }
 }
 #else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DA4A8", func_801DCE60);
+INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801DCE60);
 #endif
 
 /* Shade the file list screen's texts by `mode` (801e8eac): windows 5 and 6,
@@ -1123,12 +624,12 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
     func_801D4EA0(2);
 }
 #else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DA4A8", func_801DD790);
+INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801DD790);
 #endif
 
 #ifdef NON_MATCHING
-/* Cannot match as C in this unit yet: GCC 8-aligns the input jump table (the
- * original's is at 801c512c, only 4-aligned). */
+/* Nonmatching: its jump table lands at 801c512c now; GCC allocates one
+ * more saved register (frame 0x70, the original's 0x68). */
 /* The arts screen of party slot `slot` (`kind` 0 the character's, 1 its
  * gear's, 2 the gear's other list): a cursor over twelve rows (two columns,
  * one for kind 2), the selected art's description; confirm uses a usable
@@ -1220,7 +721,7 @@ void func_801DDF24(u8 slot, u8 zoom, u8 kind) {
     func_801DB340(0);
 }
 #else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DA4A8", func_801DDF24);
+INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801DDF24);
 #endif
 
 /* Run the 801ddf24 screen for party slot `slot`; always continues the menu. */
@@ -1485,7 +986,7 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
     return length;
 }
 #else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DA4A8", func_801DE5CC);
+INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801DE5CC);
 #endif
 
 /* Commit the equipment change of part `part` of party slot `slot` (with
@@ -1621,7 +1122,7 @@ s32 func_801DF0D4(u8 slot, u8 part, u8 special, u8 gear) {
     return result;
 }
 #else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DA4A8", func_801DF0D4);
+INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801DF0D4);
 #endif
 
 /* Keep the shown stats and the equipment of party slot `slot` (its gear's
@@ -1802,7 +1303,7 @@ void func_801DFF5C(s32 part, s32 row, s32 top, u8 special, u8 gear, u8 current, 
     D_800625A0->block434->extraShown = 0;
 }
 #else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DA4A8", func_801DFF5C);
+INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801DFF5C);
 #endif
 
 /* Return party slot `slot`'s accessory (or with `gear` its gear's part) to
@@ -2095,7 +1596,7 @@ void func_801E05D0(u8 slot, u8 fade, u8 gear) {
     func_801DB340(0);
 }
 #else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DA4A8", func_801E05D0);
+INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801E05D0);
 #endif
 
 /* Run the 801e05d0 screen for party slot `slot` with its blocks; views 3 and 13. */
@@ -2223,7 +1724,7 @@ u32 func_801E1418(u8 slot, u8 row) {
     return 0;
 }
 #else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DA4A8", func_801E1418);
+INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801E1418);
 #endif
 
 /* Lay out row `row` of the 801e1544 screen: mode 1 its five sheet images
@@ -2470,9 +1971,10 @@ void func_801E2368(void) {
  * labels when its +f8e5 flag is set) and choose among four choices (0 the
  * 801e05d0 screen, 1 and 2 the 801ddf24 screen modes, 3 toggles the flag
  * when the member has a gear; member 7 and the flag D_80059179 refuse),
- * switching members with 9/10, until cancelled. The code matches except
- * the jump table address (see 801e3ecc). The first 801d9704 call passes
- * the slot before it is set, as the original does. */
+ * switching members with 9/10, until cancelled. The first 801d9704 call
+ * passes the slot before it is set, as the original does. Nonmatching: the
+ * original keeps that slot unmasked and masks 801e2250's result (register
+ * allocation differs from there). */
 #ifdef NON_MATCHING
 u8 func_801E23CC(void) {
     u8 slot;
@@ -2621,7 +2123,7 @@ u8 func_801E23CC(void) {
     return 1;
 }
 #else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DA4A8", func_801E23CC);
+INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801E23CC);
 #endif
 
 /* Open the 801d3488 screen: its three blocks and view 3. */
@@ -2652,8 +2154,9 @@ void func_801E2B80(void) {
 
 /* The equipment command: on the first party member's page, choose among
  * three choices (0 the 801e05d0 screen, 1 the 801ddf24 screen, 2 the
- * 801e1544 screen), switching members with 9/10, until cancelled. The code
- * matches except the jump table address (see 801e3ecc). */
+ * 801e1544 screen), switching members with 9/10, until cancelled.
+ * Nonmatching: GCC allocates one more saved register (frame 0x30, the
+ * original's 0x28). */
 #ifdef NON_MATCHING
 u8 func_801E2BE4(void) {
     u8 slot;
@@ -2763,7 +2266,7 @@ u8 func_801E2BE4(void) {
     return 1;
 }
 #else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DA4A8", func_801E2BE4);
+INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801E2BE4);
 #endif
 
 /* Close the screen of the command at `offset` past the top cursor. */
@@ -3139,7 +2642,7 @@ void func_801E3C2C(MenuTables *tables, u8 gear) {
     tables->unkB6 = record->unk9C;
 }
 #else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DA4A8", func_801E3C2C);
+INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801E3C2C);
 #endif
 
 /* Compute gear `gear`'s part and weapon values, then mirror its +9 values
@@ -3433,7 +2936,7 @@ void func_801E4998(MenuGearViews *views, u8 gear) {
     value->unk24 = value->unk24 / 10 * 10;
 }
 #else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DA4A8", func_801E4998);
+INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801E4998);
 #endif
 
 /* Copy the game data into save buffer `save`: characters, gears (their
@@ -3857,7 +3360,7 @@ void func_801E5E4C(void) {
     }
 }
 #else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DA4A8", func_801E5E4C);
+INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801E5E4C);
 #endif
 
 /* Lay out the three save views' frames (nine images each, 50 apart) and
@@ -4302,5 +3805,111 @@ void func_801E78C8(s32 file) {
     }
 }
 #else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DA4A8", func_801E78C8);
+INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801E78C8);
 #endif
+
+/* Set up `label`'s two quads for label image `index`: mode 0 takes the
+ * image from the 140 column pages (rows from `first`); otherwise from the
+ * 180 page (+80 keeps it opaque, else dimmed), with palette choice
+ * `mode & 7f` - 1. Hides the label. */
+#ifdef NON_MATCHING
+void func_801E7C50(MenuLabelSlot *label, s32 index, s32 first, u8 mode) {
+    POLY_FT4 *poly;
+    s32 i;
+    s32 semi;
+    s32 row;
+    u8 half;
+    u8 column;
+    u8 u;
+    u8 v;
+
+    half = index & 1;
+    row = index / 2;
+    column = (row & 1) << 7;
+    for (i = 0; i < 2; i++) {
+        poly = &label->polys[i];
+        semi = 0;
+        func_801E927C(poly);
+        if (mode == 0) {
+            label->palette = half;
+            poly->tpage = GetTPage(0, 0, 0x140, 0);
+            v = (index + first) / 4 * 0xd;
+            poly->u0 = column;
+            poly->v0 = v;
+            poly->u1 = column + label->width;
+            poly->v1 = v;
+            poly->u2 = column;
+            poly->v2 = v + 0xd;
+            poly->u3 = column + label->width;
+            poly->v3 = v + 0xd;
+        } else {
+            if (!(mode & 0x80)) {
+                semi = 0x20;
+                SetSemiTrans(poly, 1);
+                poly->r0 = 0x20;
+                poly->g0 = 0x20;
+                poly->b0 = 0x20;
+            }
+            label->palette = (mode & 0x7f) - 1;
+            u = half * 0x60;
+            poly->tpage = semi | GetTPage(0, 0, 0x180, 0x80);
+            v = row * 0xd + first;
+            poly->u0 = u;
+            poly->v0 = v;
+            poly->u1 = u + label->width;
+            poly->v1 = v;
+            poly->u2 = u;
+            poly->v2 = v + 0xd;
+            poly->u3 = u + label->width;
+            poly->v3 = v + 0xd;
+        }
+        if (label->palette != 0) {
+            poly->clut = D_80059414;
+        } else {
+            poly->clut = D_800595D4;
+        }
+    }
+    label->visible = 0;
+}
+#else
+INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801E7C50);
+#endif
+
+/* Render `count` labels (text ids in `layout`) in pairs into one 28x13
+ * image each (two columns of 32 from x 140, rows of 13 from label `first`),
+ * lay them out and upload the images. */
+void func_801E7E68(MenuLabelSlot *labels, u8 *layout, s32 first, s32 count) {
+    s32 i;
+    RECT *image;
+
+    for (i = 0; i < count; i += 2) {
+        labels[i].width = func_80034EAC(func_80033728(D_800625A0->labels, layout[i]), D_800625A0->topLabels[0].pixels,
+                                        0x18, 0);
+        image = &labels[i].rect;
+        labels[i + 1].width = func_80034EAC(func_80033728(D_800625A0->labels, layout[i + 1]), D_800625A0->topLabels[0].pixels,
+                                        0x18, 1);
+        labels[i].rect.x = (i / 2 & 1) * 0x20 + 0x140;
+        labels[i].rect.y = (i + first) / 4 * 0xd;
+        labels[i].rect.w = 0x1c;
+        labels[i].rect.h = 0xd;
+        labels[i + 1].rect = labels[i].rect;
+        func_801E7C50(&labels[i], i, first, 0);
+        func_801E7C50(&labels[i + 1], i + 1, first, 0);
+        LoadImage(image, D_800625A0->topLabels[0].pixels);
+        DrawSync(0);
+    }
+}
+
+/* Lay out `count` labels from `table` into `labels` (the placement is unused). */
+void func_801E8018(u8 count, MenuLabelSlot *labels, u8 *table, u8 *flags) {
+    func_801E7E68(labels, table, 4, count);
+}
+
+/* Clear `count` label flags. */
+void func_801E8044(u8 count, u8 *flags) {
+    s32 i;
+
+    for (i = 0; i < count; i++) {
+        flags[i] = 0;
+    }
+}

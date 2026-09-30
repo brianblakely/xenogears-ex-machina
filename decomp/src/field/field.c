@@ -2706,17 +2706,13 @@ void func_800883D4(void) {
     D_800B0078->pc += 4;
 }
 
-#ifdef NON_MATCHING
+#include "field_script.h"
+
 /* Event: set 800b236c to the inverse of its byte operand's low bit. */
 void func_8008848C(void) {
-    s32 value = D_800ADC00[D_800B0078->pc + 1] ^ 1;
-
+    D_800B236C = EVENT_OPERAND_BYTE(1) ^ 1;
     D_800B0078->pc += 2;
-    D_800B2078.unk236C = value;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008848C);
-#endif
 
 /* Event: set the sound-emitter range from operand 1. */
 void func_800884CC(void) {
@@ -2902,7 +2898,20 @@ void func_80088D18(void) {
     func_80088D38(4);
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80088D38);
+/* Set the current emitter record's four +30 pairs from index first on to the
+ * selected operands 1..15 (flags byte 0x11); four batch steps. */
+void func_80088D38(s32 first) {
+    D_800B02CC[D_800B2078.unk2384].unk30[first][0] = func_8009CF78(1, EVENT_OPERAND_BYTE(0x11));
+    D_800B02CC[D_800B2078.unk2384].unk30[first][1] = func_8009CFBC(3, EVENT_OPERAND_BYTE(0x11));
+    D_800B02CC[D_800B2078.unk2384].unk30[first + 1][0] = func_8009D000(5, EVENT_OPERAND_BYTE(0x11));
+    D_800B02CC[D_800B2078.unk2384].unk30[first + 1][1] = func_8009D044(7, EVENT_OPERAND_BYTE(0x11));
+    D_800B02CC[D_800B2078.unk2384].unk30[first + 2][0] = func_8009D088(9, EVENT_OPERAND_BYTE(0x11));
+    D_800B02CC[D_800B2078.unk2384].unk30[first + 2][1] = func_8009D0CC(0xB, EVENT_OPERAND_BYTE(0x11));
+    D_800B02CC[D_800B2078.unk2384].unk30[first + 3][0] = func_8009D110(0xD, EVENT_OPERAND_BYTE(0x11));
+    D_800B02CC[D_800B2078.unk2384].unk30[first + 3][1] = func_8009D154(0xF, EVENT_OPERAND_BYTE(0x11));
+    D_800AFC7C += 4;
+    D_800B0078->pc += 0x12;
+}
 
 extern s32 D_800ADB40;
 /* Event: select emitter record operand 1 and start it with the effect
@@ -2925,9 +2934,31 @@ void func_80089004(void) {
     D_800B0078->pc += 9;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80089174);
+/* Event: set the current emitter record's +0c and +14 vectors from the
+ * selected operands 1..11 (flags byte 13); four batch steps. */
+void func_80089174(void) {
+    D_800B02CC[D_800B2078.unk2384].unk0C.vx = func_8009CF78(1, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2078.unk2384].unk0C.vy = func_8009CFBC(3, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2078.unk2384].unk0C.vz = func_8009D000(5, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2078.unk2384].unk14.vx = func_8009D044(7, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2078.unk2384].unk14.vy = func_8009D088(9, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2078.unk2384].unk14.vz = func_8009D0CC(0xB, EVENT_OPERAND_BYTE(0xD));
+    D_800AFC7C += 4;
+    D_800B0078->pc += 0xE;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80089374);
+/* Event: set the current emitter record's +08, +1c vector, +26 and +28 from
+ * the selected operands 1..11 (flags byte 13); four batch steps. */
+void func_80089374(void) {
+    D_800B02CC[D_800B2078.unk2384].unk08 = func_8009CF78(1, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2078.unk2384].unk1C.vx = func_8009CFBC(3, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2078.unk2384].unk1C.vy = func_8009D000(5, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2078.unk2384].unk1C.vz = func_8009D044(7, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2078.unk2384].unk26 = func_8009D088(9, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2078.unk2384].unk28 = func_8009D0CC(0xB, EVENT_OPERAND_BYTE(0xD));
+    D_800AFC7C += 4;
+    D_800B0078->pc += 0xE;
+}
 
 /* Event: set the current record's +56, +58 and +54 from operands 1..5, its
  * flags from op7, op9 and the effect kind, and +72/+74 from the effect
@@ -2959,7 +2990,18 @@ void func_800896D4(void) {
     D_800B0078->pc += 10;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80089880);
+/* Event: set the current emitter record's bytes +6a..+6c and +6e..+70 from
+ * the selected operands 1..11 (flags byte 13); four batch steps. */
+void func_80089880(void) {
+    D_800B02CC[D_800B2078.unk2384].unk6A = func_8009CF78(1, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2078.unk2384].unk6B = func_8009CFBC(3, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2078.unk2384].unk6C = func_8009D000(5, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2078.unk2384].unk6E = func_8009D044(7, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2078.unk2384].unk6F = func_8009D088(9, EVENT_OPERAND_BYTE(0xD));
+    D_800B02CC[D_800B2078.unk2384].unk70 = func_8009D0CC(0xB, EVENT_OPERAND_BYTE(0xD));
+    D_800AFC7C += 4;
+    D_800B0078->pc += 0xE;
+}
 
 /* Event: use four batch steps and, unless 800adb8c is set, 800a99a8 for the
  * current actor. */
@@ -3113,7 +3155,54 @@ void func_8008A2A0(void) {
     D_800B0078->pc += 3;
 }
 
+#ifdef NON_MATCHING
+/* Event 0x77: once the display is idle, load TIM file 0x7fb + op5 (mode 0),
+ * upload it to VRAM at op4/op6 with CLUT row op8 + 0xe8 (mode 1) or free
+ * it (other modes). */
+void func_8008A2E8(void) {
+    s32 index;
+    s32 file;
+    s32 clut_y;
+    s32 x;
+    s32 y;
+    s32 row;
+    u32 *image;
+
+    if (func_8008A558() == -1) {
+        D_800B00C0 = 1;
+        D_800B0078->pc -= 1;
+        return;
+    }
+    if (EVENT_OPERAND_BYTE(1) == 0) {
+        index = func_8009CF78(5, EVENT_OPERAND_BYTE(0xD));
+        func_80028470(4, 0);
+        file = index + 0x7FB;
+        image = func_80031BDC(func_800288EC(file), 0);
+        D_800B1F74 = image;
+        func_800295D8(file, image, 0, 0x80);
+        D_800B0078->pc += 2;
+    } else if (EVENT_OPERAND_BYTE(1) == 1) {
+        row = func_8009D044(8, EVENT_OPERAND_BYTE(0xA));
+        clut_y = row + 0xE8;
+        if (row == 0xFF) {
+            clut_y = -1;
+        }
+        x = func_8009CFBC(4, EVENT_OPERAND_BYTE(0xA));
+        y = func_8009D000(6, EVENT_OPERAND_BYTE(0xA));
+        if (y >= 0x100 && x >= 0x2C0) {
+            func_800A915C();
+        }
+        func_80070340(D_800B1F74, x, y, 0, clut_y, 0, 0);
+        D_800B0078->pc += 0xB;
+    } else {
+        func_800320E8(D_800B1F74);
+        D_800B0078->pc += 2;
+    }
+    D_800B00C0 = 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008A2E8);
+#endif
 
 void func_8008A4E0(void) {
 }
@@ -3220,12 +3309,12 @@ s32 func_8008A790(s32 id, s32 *slot) {
     return -1;
 }
 
-#ifdef NON_MATCHING
 /* Start reading party member `member`'s sprite file for slot `slot` (a
  * character substitute while 8004f34c has 0xc000). */
 void func_8008A7DC(s32 member, s32 slot) {
     s32 file;
-    void *buffer;
+    s32 size;
+    s32 sprite;
 
     D_800ADBCC = slot;
     D_800ADBC8 = member;
@@ -3235,28 +3324,26 @@ void func_8008A7DC(s32 member, s32 slot) {
     }
     if (!(D_8004F34C & 0xC000)) {
         file = member + 5;
-        buffer = (void *)func_800288EC(file);
+        size = func_800288EC(file);
         D_8006FABC[D_800ADBCC] = member;
-        D_800ADBC0 = buffer = func_80031BDC((s32)buffer, 0);
+        D_800ADBC0 = func_80031BDC(size, 0);
+        func_800295D8(file, D_800ADBC0, 0, 0x80);
     } else {
-        member = func_8001ACF0(member);
-        if (member == 0xFF) {
-            member = 0;
+        sprite = func_8001ACF0(member);
+        if (sprite == 0xFF) {
+            sprite = 0;
         }
-        member += 0x10;
-        file = member + 5;
-        D_800ADBC0 = buffer = func_80031BDC(func_800288EC(file), 0);
-        D_8006FABC[D_800ADBCC] = member;
+        sprite += 0x10;
+        file = sprite + 5;
+        D_800ADBC0 = func_80031BDC(func_800288EC(file), 0);
+        D_8006FABC[D_800ADBCC] = sprite;
+        func_800295D8(file, D_800ADBC0, 0, 0x80);
     }
-    func_800295D8(file, buffer, 0, 0x80);
     if (D_800ADB1C == 0) {
         func_80028A60(0);
     }
     D_800ADBC4 = 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008A7DC);
-#endif
 
 /* Event: set actor field EA to the complement of operand byte 1. */
 void func_8008A93C(void) {
@@ -3296,14 +3383,58 @@ void func_8008AA60(void) {
     D_800B0078->pc++;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008AACC);
+/* Event 0xb0: load wave-bank file op4 into slot op2 (releasing the old bank)
+ * or, with mode byte 1, register the loaded bank; waits while the display
+ * is busy. */
+void func_8008AACC(void) {
+    s32 file;
+    s32 slot;
+    void *data;
 
-#ifdef NON_MATCHING
+    if (func_8008A558() == 0) {
+        if (EVENT_OPERAND_BYTE(1) == 1) {
+            D_80062518[D_800AFD18] = func_80037FD8(D_800AFD08, 0);
+            func_8003BDFC(0x10);
+            func_800320E8(D_800AFD08);
+            if (D_800AFD18 == 3) {
+                D_800595AC = D_80062524;
+            }
+            D_800B00C0 = 1;
+            D_800B0078->pc += 2;
+        } else {
+            slot = func_800ACDEC(2);
+            D_800AFD18 = slot;
+            func_80038310(D_80062518[slot]);
+            file = func_800ACDEC(4);
+            D_800AFD0C = file;
+            if (!(file & 0x80)) {
+            standard:
+                func_80028470(0x1C, 0);
+                D_800AFD0C += 2;
+            } else if (D_8004F370 == 1) {
+                D_800AFD0C = 4;
+                goto standard;
+            } else {
+                D_800AFD0C = (file & 0x7F) + 0x1F;
+                func_80028470(0x2C, 1);
+            }
+            data = func_80031BDC(func_800288EC(D_800AFD0C), 0);
+            D_800AFD08 = data;
+            func_800295D8(D_800AFD0C, data, 0, 0x80);
+            func_80028470(4, 0);
+            D_800B0078->pc += 6;
+        }
+    } else {
+        D_800B00C0 = 1;
+        D_800B0078->pc -= 1;
+    }
+}
+
 /* Event: load file op1 + 0x77a as the actor's block (+120), once the
  * stream and disc are idle; yields. */
 void func_8008ACE8(void) {
     s32 number;
-    s16 file;
+    s32 file;
     s32 size;
 
     if (D_800ADB90 == 0 && D_800ADB2C == 0) {
@@ -3333,9 +3464,6 @@ void func_8008ACE8(void) {
     }
     D_800B00C0 = 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008ACE8);
-#endif
 
 /* Event: set (selector 0) or clear the actor's layer bit 17. */
 void func_8008AE5C(void) {
@@ -3466,7 +3594,98 @@ void func_8008B518(void) {
     D_800B0078->pc += 8;
 }
 
+#ifdef NON_MATCHING
+/* Event 0x1b: scroll the current actor's textured polygons by (op1, op3)
+ * texels in both draw buffers. */
+void func_8008B5D4(void) {
+    FieldInstance *instance;
+    POLY_FT3 *ft3;
+    POLY_FT3 *ft3_other;
+    POLY_FT4 *ft4;
+    POLY_FT4 *ft4_other;
+    u8 *prims;
+    u8 *other;
+    FieldMesh *mesh;
+    u32 *group;
+    s32 du;
+    s32 dv;
+    s32 groups;
+    u32 header;
+    s32 count;
+    s32 code;
+    s32 i;
+
+    instance = D_800AF880.components.descriptors[D_800AFD1C].instance;
+    prims = instance->prims[D_800ADB08];
+    mesh = instance->mesh;
+    other = instance->prims[(D_800ADB08 + 1) & 1];
+    group = mesh->groups;
+    du = (s16)func_800ACD7C(1);
+    dv = (s16)func_800ACD7C(3);
+    for (groups = mesh->group_count; groups > 0; groups--) {
+        header = *group;
+        code = header & 0xFF;
+        count = header >> 16;
+        if (code == 0xC4 || code == 0xC8) {
+            group++;
+        } else {
+            group++;
+            if (!(header & 8)) {
+                ft3 = (POLY_FT3 *)prims;
+                ft3_other = (POLY_FT3 *)other;
+                for (i = 0; i < count; i++) {
+                    ft3->u0 += du;
+                    ft3->u1 += du;
+                    ft3->u2 += du;
+                    ft3->v0 += dv;
+                    ft3->v1 += dv;
+                    ft3->v2 += dv;
+                    ft3_other->u0 = ft3->u0;
+                    ft3_other->u1 = ft3->u1;
+                    ft3_other->u2 = ft3->u2;
+                    ft3_other->v0 = ft3->v0;
+                    ft3_other->v1 = ft3->v1;
+                    ft3_other->v2 = ft3->v2;
+                    group += 2;
+                    ft3++;
+                    ft3_other++;
+                }
+                prims = (u8 *)ft3;
+                other = (u8 *)ft3_other;
+            } else {
+                ft4 = (POLY_FT4 *)prims;
+                ft4_other = (POLY_FT4 *)other;
+                for (i = 0; i < count; i++) {
+                    ft4->u0 += du;
+                    ft4->u1 += du;
+                    ft4->u2 += du;
+                    ft4->u3 += du;
+                    ft4->v0 += dv;
+                    ft4->v1 += dv;
+                    ft4->v2 += dv;
+                    ft4->v3 += dv;
+                    ft4_other->u0 = ft4->u0;
+                    ft4_other->u1 = ft4->u1;
+                    ft4_other->u2 = ft4->u2;
+                    ft4_other->u3 = ft4->u3;
+                    ft4_other->v0 = ft4->v0;
+                    ft4_other->v1 = ft4->v1;
+                    ft4_other->v2 = ft4->v2;
+                    ft4_other->v3 = ft4->v3;
+                    group += 2;
+                    ft4++;
+                    ft4_other++;
+                }
+                prims = (u8 *)ft4;
+                other = (u8 *)ft4_other;
+            }
+        }
+    }
+    D_800B0078->pc += 5;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008B5D4);
+#endif
 
 /* Event: once the disc is idle, stop the stream, decode the pending party
  * sprite into its block, release the buffer and apply it; wait otherwise. */
@@ -3485,7 +3704,69 @@ void func_8008B894(void) {
     D_800B0078->pc--;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008B978);
+/* Run the join event of party member `member`: the first event actor whose
+ * event 0 starts with instruction 0x16 for that member is initialised and
+ * run (with the member's own actor while 8004f34c has 0xc000); the running
+ * actor's context is restored afterwards. */
+void func_8008B978(s32 member) {
+    FieldDescriptor *descriptor;
+    FieldActor *actor;
+    s32 yield;
+    s32 current;
+    s32 steps;
+    s32 pc;
+    s32 i;
+    s32 entry;
+    u8 *code;
+    s32 pc_new;
+
+    D_8005A39C->unk1D30 |= 1 << D_800ADBC8;
+    descriptor = D_800B06B8;
+    actor = D_800B0078;
+    if (D_800ADB1C != 0) {
+        pc = actor->pc;
+        yield = D_800B00C0;
+        steps = D_800AFC7C;
+        current = D_800AFD1C;
+        for (i = 0; i < D_800ADBFC; i++) {
+            entry = func_800A3090(i, 0);
+            code = &D_800ADC00[entry];
+            if (code[0] == 0x16 && code[1] == member) {
+                D_800B06B8 = &D_800AF880.components.descriptors[i];
+                D_800B0078 = D_800B06B8->actor;
+                func_80080A74(i);
+                D_800AFD1C = i;
+                D_800AF880.components.descriptors[i].actor->pc = entry;
+                pc_new = func_800A3090(i, 0);
+                D_800AFFEC = 0;
+                D_800B0078->pc = pc_new;
+                entry = func_800A3090(i, 0);
+                func_8008D380(i, D_800B2078.controlled);
+                func_800A1EC8(0xFFFF);
+                func_80077268();
+                D_8005A39C->unk1D30 |= 1 << D_800ADBC8;
+                if (D_8004F34C & 0xC000) {
+                    D_800B06B8 = &D_800AF880.components.descriptors[D_8006F990[D_800ADBCC]];
+                    D_800B0078 = D_800B06B8->actor;
+                    func_80080A74(D_8006F990[D_800ADBCC]);
+                    D_800AF880.components.descriptors[i].actor->pc = entry;
+                    D_800AFD1C = D_8006F990[D_800ADBCC];
+                    pc_new = func_800A3090(D_8006F990[D_800ADBCC], 0);
+                    D_800AFFEC = 0;
+                    D_800B0078->pc = pc_new;
+                    func_800A1EC8(0xFFFF);
+                }
+                break;
+            }
+        }
+        D_800B06B8 = descriptor;
+        D_800B0078 = actor;
+        D_800B00C0 = yield;
+        D_800AFD1C = current;
+        D_800AFC7C = steps;
+        actor->pc = pc;
+    }
+}
 
 /* Event: once idle, add character op1 to the party (a free slot starts its
  * sprite load) or mark it waiting (+1d30); yields while busy. */
@@ -3516,18 +3797,19 @@ void func_8008BC80(void) {
     D_800B0078->pc--;
 }
 
-#ifdef NON_MATCHING
 /* Event: once idle, add the character in its byte operand to the party (a
  * free slot starts its sprite load) or mark it waiting; yields while busy. */
 void func_8008BDD8(void) {
     s32 slot;
+    s32 member;
 
     if (D_800ADBC4 == 0xFF && D_800ADB2C == 0 && func_8008A558() == 0) {
         func_80028A60(0);
         if (func_8008A790(D_800ADC00[D_800B0078->pc + 1], &slot) == 0) {
             D_8005A39C->unk22B1[slot] = 0;
-            D_80062590[slot] = D_800ADC00[D_800B0078->pc + 1];
-            func_8008A7DC(D_800ADC00[D_800B0078->pc + 1], slot);
+            member = D_800ADC00[D_800B0078->pc + 1];
+            D_80062590[slot] = member;
+            func_8008A7DC(member, slot);
             D_800B0078->pc += 2;
             return;
         }
@@ -3538,15 +3820,180 @@ void func_8008BDD8(void) {
     D_800B00C0 = 1;
     D_800B0078->pc--;
 }
+
+/* Close party slot `slot` up: the next slot's member, sprite data and ids
+ * move down (its actor's sprite is set up again for this slot) and the next
+ * slot is emptied. */
+void func_8008BF38(s32 slot) {
+    s32 member;
+    s32 kind;
+    s32 *sprites;
+
+    member = D_8005A444[slot + 1];
+    if (member == 0xFF) {
+        D_8006FABC[slot] = D_8006FABC[slot + 1];
+        D_80062590[slot] = D_80062590[slot + 1];
+        D_8005A444[slot] = D_8005A444[slot + 1];
+        D_80062590[slot + 1] = member;
+        D_8006FABC[slot + 1] = member;
+        D_8005A444[slot + 1] = member;
+        return;
+    }
+    *(PartySprite *)D_8005A414[slot] = *(PartySprite *)D_8005A414[slot + 1];
+    D_8006FABC[slot] = D_8006FABC[slot + 1];
+    D_80062590[slot] = D_80062590[slot + 1];
+    D_8005A444[slot] = D_8005A444[slot + 1];
+    kind = D_800AF880.components.descriptors[member].actor->unk126[0];
+    if (!(kind & 0x80)) {
+        func_80076AC0(member, slot, D_8005A414[slot], 1, 0, slot, 1);
+    } else {
+        sprites = D_800AF880.components.sprites;
+        func_80076AC0(member, D_800AF880.components.descriptors[member].actor->unk126[1],
+                      (u8 *)(sprites[(kind & 0x7F) + 1] + (s32)sprites),
+                      D_800AF880.components.descriptors[member].actor->unk130_28,
+                      D_800AF880.components.descriptors[member].actor->unk134 & 0xF,
+                      D_800AF880.components.descriptors[member].actor->unk126[0],
+                      (D_800AF880.components.descriptors[member].actor->unk134 >> 4) & 1);
+    }
+    D_80062590[slot + 1] = 0xFF;
+    D_8006FABC[slot + 1] = 0xFF;
+    D_8005A444[slot + 1] = 0xFF;
+}
+
+#ifdef NON_MATCHING
+/* Take party slot `slot`'s member out of the party: its actor gets the
+ * lead's sprite and is hidden, and the slot's ids are cleared. */
+void func_8008C180(s32 slot) {
+    FieldDescriptor *descriptor;
+    FieldActor *actor;
+    FieldActor *member;
+    s32 current;
+    u16 pc;
+    s32 index;
+
+    if (D_8005A444[slot] != 0xFF) {
+        descriptor = D_800B06B8;
+        actor = D_800B0078;
+        current = D_800AFD1C;
+        pc = actor->pc;
+        D_800B06B8 = &D_800AF880.components.descriptors[D_8005A444[slot]];
+        D_800B0078 = D_800B06B8->actor;
+        func_80080A74(D_8005A444[slot]);
+        index = D_8005A444[slot];
+        D_800AFD1C = index;
+        D_800AF880.components.descriptors[index].flags = (D_800AF880.components.descriptors[index].flags & 0xF07F) | 0x200;
+        func_80076AC0(index, 0, D_8005A414[0], 1, 0, 0, 1);
+        member = D_800B0078;
+        member->flags |= 1;
+        member->layer_flags |= 0x100000;
+        D_800B00C0 = 0;
+        D_800B0078 = actor;
+        D_800B06B8 = descriptor;
+        D_800AFD1C = current;
+        member->pc = pc;
+        member->flags |= 0x20000;
+        member->layer_flags |= 0x400;
+        D_8005A444[slot] = 0xFF;
+    }
+    D_80062590[slot] = 0xFF;
+    D_8006FABC[slot] = 0xFF;
+}
 #else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008BDD8);
+INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008C180);
 #endif
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008BF38);
+/* Event 0x19: remove character op1 from the party once no sprite load is
+ * pending. Before the field is set up only the slot tables and sprite data
+ * close up; afterwards the member's actor is also released and the lead
+ * actor becomes the party leader again. */
+void func_8008C334(void) {
+    s32 slot;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008C180);
-
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008C334);
+    if (D_800ADBC4 != 0xFF) {
+        D_800B00C0 = 1;
+        D_800B0078->pc -= 1;
+        return;
+    }
+    DrawSync(0);
+    slot = func_8009FA00(func_8008CF3C(EVENT_OPERAND_BYTE(1)));
+    if (slot != -1) {
+        if (D_800ADB1C == 0) {
+            switch (slot) {
+            case 0:
+                if (D_80062590[1] == 0xFF) {
+                    D_80062590[0] = 0xFF;
+                    D_8006FABC[0] = 0xFF;
+                    D_8005A39C->unk22B1[0] = 0;
+                } else {
+                    *(PartySprite *)D_8005A414[0] = *(PartySprite *)D_8005A414[1];
+                    D_80062590[0] = D_80062590[1];
+                    D_8006FABC[0] = D_8006FABC[1];
+                    D_80062590[1] = 0xFF;
+                    D_8006FABC[1] = 0xFF;
+                    D_8005A39C->unk22B1[0] = D_8005A39C->unk22B1[1];
+                    if (D_80062590[2] != 0xFF) {
+                        *(PartySprite *)D_8005A414[1] = *(PartySprite *)D_8005A414[2];
+                        D_80062590[1] = D_80062590[2];
+                        D_8006FABC[1] = D_8006FABC[2];
+                        D_80062590[2] = 0xFF;
+                        D_8006FABC[2] = 0xFF;
+                        D_8005A39C->unk22B1[1] = D_8005A39C->unk22B1[2];
+                    }
+                }
+                break;
+            case 1:
+                if (D_80062590[2] == 0xFF) {
+                    D_80062590[1] = 0xFF;
+                    D_8006FABC[1] = 0xFF;
+                    D_8005A39C->unk22B1[1] = 0;
+                } else {
+                    *(PartySprite *)D_8005A414[1] = *(PartySprite *)D_8005A414[2];
+                    D_80062590[1] = D_80062590[2];
+                    D_8006FABC[1] = D_8006FABC[2];
+                    D_80062590[2] = 0xFF;
+                    D_8006FABC[2] = 0xFF;
+                    D_8005A39C->unk22B1[1] = D_8005A39C->unk22B1[2];
+                    D_8005A39C->unk22B1[2] = 0;
+                }
+                break;
+            case 2:
+                D_80062590[2] = 0xFF;
+                D_8006FABC[2] = 0xFF;
+                D_8005A39C->unk22B1[2] = 0;
+                break;
+            }
+        } else {
+            switch (slot) {
+            case 0:
+                D_8005A39C->unk22B1[0] = D_8005A39C->unk22B1[1];
+                D_8005A39C->unk22B1[1] = D_8005A39C->unk22B1[2];
+                D_8005A39C->unk22B1[2] = 0;
+                func_8008C180(0);
+                func_8008BF38(0);
+                func_8008BF38(1);
+                break;
+            case 1:
+                D_8005A39C->unk22B1[1] = D_8005A39C->unk22B1[2];
+                D_8005A39C->unk22B1[2] = 0;
+                func_8008C180(1);
+                func_8008BF38(1);
+                break;
+            case 2:
+                D_8005A39C->unk22B1[2] = 0;
+                func_8008C180(2);
+                break;
+            }
+            if (D_80062590[0] != 0xFF && D_8005A444[0] != 0xFF) {
+                D_800B2078.controlled = D_8005A444[0];
+                D_800AF880.components.descriptors[D_8005A444[0]].actor->flags =
+                    (D_800AF880.components.descriptors[D_8005A444[0]].actor->flags | 0x4400) & ~0x80;
+            } else {
+                D_800B2078.controlled = 0;
+            }
+        }
+    }
+    D_800B0078->pc += 2;
+}
 
 /* Event: release the actor's block at +114 when flag 0x1000 of +12c says it
  * holds one. */
@@ -3884,7 +4331,24 @@ void func_8008D780(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008D808);
+/* Write a 0x57 (arc move, mode 0x81) instruction with operands `a`, `b`,
+ * `c` and 0x0c at the pc, followed by ff 57 8f 26 01 80 57 0f. */
+void func_8008D808(s32 a, s32 b, s32 c) {
+    EVENT_OPERAND_BYTE(0) = 0x57;
+    EVENT_OPERAND_BYTE(1) = 0x81;
+    func_8008D2E0(a, D_800B0078->pc + 2);
+    func_8008D2E0(b, D_800B0078->pc + 4);
+    func_8008D2E0(c, D_800B0078->pc + 6);
+    func_8008D2E0(0xC, D_800B0078->pc + 8);
+    EVENT_OPERAND_BYTE(0xA) = 0xFF;
+    EVENT_OPERAND_BYTE(0xB) = 0x57;
+    EVENT_OPERAND_BYTE(0xC) = 0x8F;
+    EVENT_OPERAND_BYTE(0xD) = 0x26;
+    EVENT_OPERAND_BYTE(0xE) = 1;
+    EVENT_OPERAND_BYTE(0xF) = 0x80;
+    EVENT_OPERAND_BYTE(0x10) = 0x57;
+    EVENT_OPERAND_BYTE(0x11) = 0xF;
+}
 
 /* Write a 0x4b instruction with operands `a` and `b` into the event code at
  * pc+0xc (followed by ff ff 80) and advance the pc by 0xc. */
@@ -4250,11 +4714,135 @@ void func_8008E9F8(void) {
     D_800B00C0 = 1;
 }
 
+#ifdef NON_MATCHING
+/* Event 0xa0: once sound is available, request a movie: file op1, the
+ * parameters at 800c3a2a/2c/2e from op3/op5/op7 and its sound bank op9
+ * (selected operands, flags byte 11), with the default window and fade. */
+void func_8008EA58(void) {
+    if (D_800ADBDC == 0) {
+        D_800B00C0 = 1;
+        D_800B0078->pc -= 1;
+        return;
+    }
+    FIELD_MOVIE.file = func_8009CF78(1, EVENT_OPERAND_BYTE(0xB));
+    FIELD_MOVIE.unk2A = func_8009CFBC(3, EVENT_OPERAND_BYTE(0xB));
+    FIELD_MOVIE.sound_start = func_8009D000(5, EVENT_OPERAND_BYTE(0xB));
+    FIELD_MOVIE.unk2E = func_8009D044(7, EVENT_OPERAND_BYTE(0xB));
+    FIELD_MOVIE.sound_bank = func_8009D088(9, EVENT_OPERAND_BYTE(0xB));
+    FIELD_MOVIE.width = 0x140;
+    D_800ADB80 = 0x40;
+    FIELD_MOVIE.depth24 = 1;
+    FIELD_MOVIE.height = 0x100;
+    FIELD_MOVIE.source_x = 0;
+    FIELD_MOVIE.y = 0;
+    FIELD_MOVIE.x = 0;
+    FIELD_MOVIE.source_y = 0x100;
+    FIELD_MOVIE.unk3A = 0;
+    FIELD_MOVIE.mode &= 0xF;
+    D_800ADB74 = 0;
+    D_800ADB70 = 1;
+    D_800B00C0 = 1;
+    D_800B0078->pc += 0xC;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008EA58);
+#endif
 
+#ifdef NON_MATCHING
+/* Event 0x60: once sound is available, request movie op1 with parameters
+ * op3/op5; op7's low nibble picks the display layout (0: half-width at
+ * x 0x140, 1: full 16-bit, 2: full 24-bit) and its 0xc0 bits the fade. */
+void func_8008EC30(void) {
+    s32 mode;
+    s32 layout;
+
+    if (D_800ADBDC == 0) {
+        D_800B00C0 = 1;
+        D_800B0078->pc -= 1;
+        return;
+    }
+    FIELD_MOVIE.file = func_800ACDEC(1);
+    FIELD_MOVIE.unk2A = func_800ACDEC(3);
+    FIELD_MOVIE.unk2E = func_800ACDEC(5);
+    mode = func_800ACDEC(7);
+    layout = mode & 0xF;
+    FIELD_MOVIE.mode = mode;
+    D_800ADB80 = mode & 0xC0;
+    FIELD_MOVIE.width = 0x140;
+    FIELD_MOVIE.height = 0x100;
+    FIELD_MOVIE.mode = layout;
+    FIELD_MOVIE.sound_start = 1;
+    switch (layout) {
+    case 0:
+        FIELD_MOVIE.x = 0x140;
+        FIELD_MOVIE.y = 0;
+        FIELD_MOVIE.source_x = 0x140;
+        FIELD_MOVIE.source_y = 0x100;
+        D_800ADB74 = 1;
+        FIELD_MOVIE.depth24 = 0;
+        break;
+    case 1:
+        FIELD_MOVIE.source_x = 0;
+        FIELD_MOVIE.y = 0;
+        FIELD_MOVIE.x = 0;
+        FIELD_MOVIE.source_y = 0x100;
+        D_800ADB74 = 0;
+        FIELD_MOVIE.depth24 = 0;
+        break;
+    case 2:
+        FIELD_MOVIE.source_x = 0;
+        FIELD_MOVIE.y = 0;
+        FIELD_MOVIE.x = 0;
+        FIELD_MOVIE.source_y = 0x100;
+        D_800ADB74 = 0;
+        FIELD_MOVIE.depth24 = 1;
+        break;
+    }
+    FIELD_MOVIE.sound_bank = 0xFF;
+    FIELD_MOVIE.unk3A = 0;
+    D_800ADB70 = 1;
+    D_800B00C0 = 1;
+    D_800B0078->pc += 9;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008EC30);
+#endif
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008EE14);
+/* Event 0x67: request movie op1 with parameters op3/op5/op7, mode op9 (0xfe
+ * marks 800c3a3a, 0x40 the fade), window position op11/op13 and size
+ * op15/op17, without a sound bank. */
+void func_8008EE14(void) {
+    s32 mode;
+    u16 x;
+    u16 y;
+
+    FIELD_MOVIE.file = func_800ACDEC(1);
+    FIELD_MOVIE.unk2A = func_800ACDEC(3);
+    FIELD_MOVIE.sound_start = func_800ACDEC(5);
+    FIELD_MOVIE.unk2E = func_800ACDEC(7);
+    FIELD_MOVIE.mode = func_800ACDEC(9);
+    mode = FIELD_MOVIE.mode;
+    if (mode == 0xFE) {
+        FIELD_MOVIE.unk3A = 1;
+    } else {
+        FIELD_MOVIE.unk3A = 0;
+    }
+    x = func_800ACDEC(0xB);
+    FIELD_MOVIE.x = x;
+    FIELD_MOVIE.source_x = x;
+    y = func_800ACDEC(0xD);
+    FIELD_MOVIE.y = y;
+    FIELD_MOVIE.source_y = y;
+    FIELD_MOVIE.width = func_800ACDEC(0xF);
+    FIELD_MOVIE.height = func_800ACDEC(0x11);
+    D_800ADB80 = mode & 0x40;
+    FIELD_MOVIE.sound_bank = 0xFF;
+    D_800ADB74 = 2;
+    FIELD_MOVIE.depth24 = 0;
+    FIELD_MOVIE.mode &= 0xF;
+    D_800ADB70 = 1;
+    D_800B0078->pc += 0x13;
+}
 
 /* Event: request transition 1 with operand 1 (800adb38/800adb3c). */
 void func_8008EF5C(void) {
@@ -4474,7 +5062,6 @@ extern s32 D_8004F354;
 void func_80085EEC(void);
 void func_8001B66C(void);
 s32 func_8008A558(void);
-void func_80085B20(s32 track, s32 arg1);
 
 #ifdef NON_MATCHING
 /* Select the field music track (operand 1). Without D_800ADB1C the track is
@@ -4498,7 +5085,9 @@ void func_8008F7B8(void) {
             func_8001B66C();
             D_8004F324 = track;
             D_8004F308 = -1;
-            func_80085B20(track, 0);
+            /* The original also passes 0 as a second argument: this unit
+             * did not see 80085b20's one-parameter definition. */
+            func_80085B20(track);
         }
         D_800B0078->pc += 3;
     } else {
@@ -4731,7 +5320,110 @@ void func_80090300(void) {
     D_800B0078->pc += 1;
 }
 
+#ifdef NON_MATCHING
+/* Event 0xac: start a scripted camera move. Mode 0 (1) moves the target
+ * (eye) from its saved point to point A (B) over op2 steps; mode 2 (3) moves
+ * it along the same line at op2 units per step. Byte-1 bit 0x80 also snaps
+ * the live target (eye) to the start. */
+void func_800903BC(void) {
+    s32 mode;
+    VECTOR delta;
+    VECTOR direction;
+    s32 distance;
+    s32 speed;
+
+    mode = EVENT_OPERAND_BYTE(1) & 0xF;
+    switch (mode) {
+    case 0:
+        D_800AF880.target_steps = func_800ACDEC(2);
+        if (D_800AF880.target_steps == 0) {
+            D_800AF880.target_steps++;
+            D_800AF880.target_a = 1;
+        }
+        D_800AF880.scripted_target.vx = D_800AF880.saved_target.vx;
+        D_800AF880.scripted_target.vy = D_800AF880.saved_target.vy;
+        D_800AF880.scripted_target.vz = D_800AF880.saved_target.vz;
+        D_800AF880.scripted |= 1;
+        D_800AF880.target_step.vx = (D_800AF880.point_actor_a.vx - D_800AF880.saved_target.vx) / D_800AF880.target_steps;
+        D_800AF880.target_step.vy = (D_800AF880.point_actor_a.vy - D_800AF880.saved_target.vy) / D_800AF880.target_steps;
+        D_800AF880.target_step.vz = (D_800AF880.point_actor_a.vz - D_800AF880.saved_target.vz) / D_800AF880.target_steps;
+        if (EVENT_OPERAND_BYTE(1) & 0x80) {
+            D_800AF880.target.vx = D_800AF880.saved_target.vx;
+            D_800AF880.target.vy = D_800AF880.saved_target.vy;
+            D_800AF880.target.vz = D_800AF880.saved_target.vz;
+        }
+        break;
+    case 2:
+        delta.vx = (D_800AF880.saved_target.vx - D_800AF880.point_actor_a.vx) >> 16;
+        delta.vy = (D_800AF880.saved_target.vy - D_800AF880.point_actor_a.vy) >> 16;
+        delta.vz = (D_800AF880.saved_target.vz - D_800AF880.point_actor_a.vz) >> 16;
+        func_80048D7C(&delta, &direction);
+        distance = func_80099A04((D_800AF880.saved_target.vx - D_800AF880.point_actor_a.vx) >> 16,
+                                 (D_800AF880.saved_target.vy - D_800AF880.point_actor_a.vy) >> 16,
+                                 (D_800AF880.saved_target.vz - D_800AF880.point_actor_a.vz) >> 16);
+        speed = func_800ACDEC(2);
+        D_800AF880.scripted_target.vx = D_800AF880.saved_target.vx;
+        D_800AF880.scripted_target.vy = D_800AF880.saved_target.vy;
+        D_800AF880.scripted_target.vz = D_800AF880.saved_target.vz;
+        D_800AF880.scripted |= 1;
+        D_800AF880.target_step.vx = -(direction.vx * speed) * 16;
+        D_800AF880.target_step.vy = -(direction.vy * speed) * 16;
+        D_800AF880.target_step.vz = -(direction.vz * speed) * 16;
+        D_800AF880.target_steps = distance / speed;
+        if (EVENT_OPERAND_BYTE(1) & 0x80) {
+            D_800AF880.target.vx = D_800AF880.saved_target.vx;
+            D_800AF880.target.vy = D_800AF880.saved_target.vy;
+            D_800AF880.target.vz = D_800AF880.saved_target.vz;
+        }
+        break;
+    case 3:
+        delta.vx = (D_800AF880.saved_eye.vx - D_800AF880.point_actor_b.vx) >> 16;
+        delta.vy = (D_800AF880.saved_eye.vy - D_800AF880.point_actor_b.vy) >> 16;
+        delta.vz = (D_800AF880.saved_eye.vz - D_800AF880.point_actor_b.vz) >> 16;
+        func_80048D7C(&delta, &direction);
+        distance = func_80099A04((D_800AF880.saved_eye.vx - D_800AF880.point_actor_b.vx) >> 16,
+                                 (D_800AF880.saved_eye.vy - D_800AF880.point_actor_b.vy) >> 16,
+                                 (D_800AF880.saved_eye.vz - D_800AF880.point_actor_b.vz) >> 16);
+        speed = func_800ACDEC(2);
+        D_800AF880.scripted_eye[0] = D_800AF880.saved_eye.vx;
+        D_800AF880.scripted_eye[1] = D_800AF880.saved_eye.vy;
+        D_800AF880.scripted_eye[2] = D_800AF880.saved_eye.vz;
+        D_800AF880.scripted |= 2;
+        D_800AF880.eye_step[0] = -(direction.vx * speed) * 16;
+        D_800AF880.eye_step[1] = -(direction.vy * speed) * 16;
+        D_800AF880.eye_step[2] = -(direction.vz * speed) * 16;
+        D_800AF880.eye_steps = distance / speed;
+        if (EVENT_OPERAND_BYTE(1) & 0x80) {
+            D_800AF880.eye.vx = D_800AF880.saved_eye.vx;
+            D_800AF880.eye.vy = D_800AF880.saved_eye.vy;
+            D_800AF880.eye.vz = D_800AF880.saved_eye.vz;
+        }
+        break;
+    case 1:
+        D_800AF880.eye_steps = func_800ACDEC(2);
+        if (D_800AF880.eye_steps == 0) {
+            D_800AF880.eye_steps++;
+            D_800AF880.target_b = 1;
+        }
+        D_800AF880.scripted_eye[0] = D_800AF880.saved_eye.vx;
+        D_800AF880.scripted_eye[1] = D_800AF880.saved_eye.vy;
+        D_800AF880.scripted_eye[2] = D_800AF880.saved_eye.vz;
+        D_800AF880.scripted |= 2;
+        D_800AF880.eye_step[0] = (D_800AF880.point_actor_b.vx - D_800AF880.saved_eye.vx) / D_800AF880.eye_steps;
+        D_800AF880.eye_step[1] = (D_800AF880.point_actor_b.vy - D_800AF880.saved_eye.vy) / D_800AF880.eye_steps;
+        D_800AF880.eye_step[2] = (D_800AF880.point_actor_b.vz - D_800AF880.saved_eye.vz) / D_800AF880.eye_steps;
+        if (EVENT_OPERAND_BYTE(1) & 0x80) {
+            D_800AF880.eye.vx = D_800AF880.saved_eye.vx;
+            D_800AF880.eye.vy = D_800AF880.saved_eye.vy;
+            D_800AF880.eye.vz = D_800AF880.saved_eye.vz;
+        }
+        break;
+    }
+    D_800B0078->pc += 4;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800903BC);
+#endif
 
 /* Store the camera target's whole x, z, y in three variables. */
 void func_80090A10(void) {
@@ -5090,7 +5782,25 @@ void func_80091ADC(s32 x, s32 y, s32 w, s32 h, s32 dx, s32 dy, s32 clear) {
     D_800AF768++;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80091BBC);
+/* Event 0xe1: with op1 and op3 both zero, clear the VRAM rectangle
+ * (op5, op7, op9, op11) to black; otherwise move the rectangle at (op1, op3)
+ * of size op5 x op7 to (op9, op11). Selected operands, flags byte 13. */
+void func_80091BBC(void) {
+    s32 x;
+    s32 y;
+    RECT unused; /* the original frame holds an unused 8-byte local */
+
+    x = func_8009CF78(1, EVENT_OPERAND_BYTE(0xD));
+    y = func_8009CFBC(3, EVENT_OPERAND_BYTE(0xD));
+    if (x == 0 && y == 0) {
+        func_80091ADC(func_8009D000(5, EVENT_OPERAND_BYTE(0xD)), func_8009D044(7, EVENT_OPERAND_BYTE(0xD)),
+                      func_8009D088(9, EVENT_OPERAND_BYTE(0xD)), func_8009D0CC(0xB, EVENT_OPERAND_BYTE(0xD)), 0, 0, 1);
+    } else {
+        func_80091ADC(x, y, func_8009D000(5, EVENT_OPERAND_BYTE(0xD)), func_8009D044(7, EVENT_OPERAND_BYTE(0xD)),
+                      func_8009D088(9, EVENT_OPERAND_BYTE(0xD)), func_8009D0CC(0xB, EVENT_OPERAND_BYTE(0xD)), 0);
+    }
+    D_800B0078->pc += 0xE;
+}
 
 /* Set the current actor's two-bit mode (flags bits 5-6) and value EE from
  * selected operands. */
@@ -5336,7 +6046,91 @@ void func_80092808(void) {
     actor->pc++;
 }
 
+#ifdef NON_MATCHING
+/* Walk the controlled actor one step toward (x, z); with `mode` 0 the goal
+ * is 40 units along direction `angle` from the running actor (publishing
+ * the field id first when 800adbec asks). Returns -1 while walking (mode 1
+ * retries the instruction) and 0 once it has arrived or is stuck, when it
+ * stops, turns and the instruction continues. */
+s32 func_80092894(s32 angle, s32 mode, s32 x, s32 z) {
+    FieldDescriptor *descriptor;
+    FieldActor *player;
+    FieldModel *model;
+    s16 from_x;
+    s16 from_z;
+    s32 reach;
+    s32 dx;
+    s32 dz;
+    s32 value;
+    s32 field;
+    VECTOR delta;
+    u16 heading;
+
+    D_800B2078.encounter_inhibition = -1;
+    descriptor = &D_800AF880.components.descriptors[D_800B2078.controlled];
+    player = descriptor->actor;
+    model = descriptor->model;
+    player->layer_flags |= 0x38;
+    model->unk18 = 0x80000;
+    from_x = WHOLE(player->position[0]);
+    from_z = WHOLE(player->position[2]);
+    reach = func_80099A8C(8) * 2;
+    if (mode == 0) {
+        if (D_800ADBDC == 0 || D_800ADBE4 == 0) {
+            D_800B00C0 = 1;
+        }
+        if (D_800ADBEC != 0) {
+            value = func_800ACDEC(4);
+            field = func_800ACDEC(2);
+            func_80092F44();
+            D_800ADBEC = 0;
+            func_800A3074(2, value);
+            D_8004F34C = field;
+        }
+        angle = D_800B06B8->rotation.vy + angle - 0x400;
+        x = D_800B0078->unk60 + WHOLE(D_800B0078->position[0]) + ((func_8003F8CC(angle) * 40) >> 12);
+        z = D_800B0078->unk64 + WHOLE(D_800B0078->position[2]) + (-(func_8003F8B0(angle) * 40) >> 12);
+    }
+    dx = x - from_x;
+    dz = z - from_z;
+    delta.vx = dx;
+    delta.vy = 0;
+    delta.vz = dz;
+    if (reach < func_80099A4C(dx, dz)) {
+        if (player->last_position[0] == WHOLE(player->position[0]) &&
+            player->last_position[1] == WHOLE(player->position[1]) &&
+            player->last_position[2] == WHOLE(player->position[2])) {
+            player->stuck++;
+        } else {
+            player->stuck = 0;
+        }
+        if ((s16)player->stuck <= 0x40) {
+            player->heading_goal = player->heading = func_8007B694(&delta);
+            D_800B00C0 = 1;
+            if (mode != 0) {
+                D_800B0078->pc -= 1;
+            }
+            return -1;
+        }
+    }
+    player->heading_goal = player->heading = player->heading_goal | 0x8000;
+    model->unk18 = 0;
+    player->unkE8 = 0;
+    func_800821F4(model, 0, &D_800AF880.components.descriptors[D_800B2078.controlled]);
+    D_800B00C0 = 1;
+    player->slots[player->slot].value = 0xFFFF;
+    player->slots[player->slot].move_mode = 0;
+    player->flags &= ~0x200000;
+    if (mode == 1) {
+        player->layer_flags &= ~0x38;
+    }
+    player->stuck = 0;
+    D_800B0078->pc += 6;
+    return 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80092894);
+#endif
 
 /* Walk the player to the selected x/z (800a0c4c/80092894) when the field
  * is idle, restoring its flag 0x80 on arrival; otherwise retry. */
@@ -5825,9 +6619,115 @@ void func_80093FC0(void) {
     func_80072254(D_800AFD1C);
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80094158);
+/* Event 0xe8: shake the actor for op3 frames (0x100000 set once done): op5
+ * 0x1000/0x1001 moves the target down/up by op1 * 16, other values move it
+ * op1 along direction op5 relative to the actor's heading. */
+void func_80094158(void) {
+    s32 angle;
+    s32 sine;
+    s32 cosine;
+    FieldActor *actor;
 
+    if (!(D_800B0078->flags & 0x100000)) {
+        if (!(D_800B0078->state.word & 0x20)) {
+            D_800B0078->state.word |= 0x20;
+            D_800B0078->unkE2 = 0;
+            func_80085634(8, 3);
+            D_800B0078->target[0] = D_800B0078->position[0];
+            D_800B0078->target[1] = D_800B0078->position[1];
+            D_800B0078->target[2] = D_800B0078->position[2];
+        } else {
+            D_800B0078->unkE2++;
+            if (D_800B0078->unkE2 < func_800ACDEC(3)) {
+                switch (func_800ACDEC(5)) {
+                case 0x1000:
+                    D_800B0078->target[1] -= func_800ACDEC(1) * 16;
+                    D_800B06B8->matrix.t[1] = WHOLE(D_800B0078->target[2]);
+                    break;
+                case 0x1001:
+                    D_800B0078->target[1] += func_800ACDEC(1) * 16;
+                    D_800B06B8->matrix.t[1] = WHOLE(D_800B0078->target[2]);
+                    break;
+                default:
+                    angle = D_800B06B8->rotation.vy + func_800ACDEC(5) - 0x400;
+                    sine = func_8003F8CC(angle);
+                    D_800B0078->target[0] += sine * func_800ACDEC(1);
+                    cosine = func_8003F8B0(angle);
+                    D_800B0078->target[2] -= cosine * func_800ACDEC(1);
+                    D_800B06B8->matrix.t[0] = WHOLE(D_800B0078->target[0]);
+                    D_800B06B8->matrix.t[2] = WHOLE(D_800B0078->target[2]);
+                    break;
+                }
+            } else {
+                actor = D_800B0078;
+                actor->unkE2 = 0;
+                actor->flags |= 0x100000;
+                actor->state.word &= ~0x20;
+                D_800B0078->pc += 7;
+            }
+        }
+    } else {
+        D_800B0078->pc += 7;
+    }
+    func_80072254(D_800AFD1C);
+}
+
+#ifdef NON_MATCHING
+/* Event 0xe9: the reverse shake of 0xe8, run while flag 0x100000 is set
+ * (cleared once op3 frames have passed); the direction offsets are negated
+ * and the target is not reset first. */
+void func_800943AC(void) {
+    FieldActor *actor;
+    FieldActor *done;
+    s32 angle;
+    s32 sine;
+    s32 cosine;
+
+    actor = D_800B0078;
+    if (actor->flags & 0x100000) {
+        if (!(actor->state.word & 0x20)) {
+            actor->state.word |= 0x20;
+            actor->unkE2 = 0;
+            func_80085634(8, 3);
+        } else {
+            actor->unkE2++;
+            if (D_800B0078->unkE2 < func_800ACDEC(3)) {
+                switch (func_800ACDEC(5)) {
+                case 0x1000:
+                    D_800B0078->target[1] -= func_800ACDEC(1) * 16;
+                    D_800B06B8->matrix.t[1] = WHOLE(D_800B0078->target[2]);
+                    break;
+                case 0x1001:
+                    D_800B0078->target[1] += func_800ACDEC(1) * 16;
+                    D_800B06B8->matrix.t[1] = WHOLE(D_800B0078->target[2]);
+                    break;
+                default:
+                    angle = D_800B06B8->rotation.vy + func_800ACDEC(5) - 0x400;
+                    sine = func_8003F8CC(angle);
+                    D_800B0078->target[0] -= sine * func_800ACDEC(1);
+                    cosine = func_8003F8B0(angle);
+                    D_800B0078->target[2] += cosine * func_800ACDEC(1);
+                    D_800B06B8->matrix.t[0] = WHOLE(D_800B0078->target[0]);
+                    D_800B06B8->matrix.t[2] = WHOLE(D_800B0078->target[2]);
+                    break;
+                }
+            } else {
+                done = D_800B0078;
+                done->unkE2 = 0;
+                done->flags &= ~0x100000;
+                done->state.word &= ~0x20;
+                actor = D_800B0078;
+                actor->pc += 7;
+            }
+        }
+    } else {
+        actor->pc += 7;
+    }
+    func_80072254(D_800AFD1C);
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800943AC);
+#endif
 
 extern s32 D_8004F318;
 extern s32 D_8004F328;
@@ -6314,7 +7214,39 @@ void func_80095734(void) {
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80095734);
 #endif
 
+#ifdef NON_MATCHING
+/* Continue when the controlled actor is inside trigger zone operand 1 and
+ * the zone's height lies within the actor's body, else jump to operand 2. */
+void func_800958C0(void) {
+    FieldActor *player;
+    Zone *zone;
+    s32 point;
+    s32 a;
+    s32 b;
+    s32 c;
+    s32 d;
+
+    player = D_800AF880.components.descriptors[D_800B2078.controlled].actor;
+    zone = &D_800ADBF4[EVENT_OPERAND_BYTE(1)];
+    if (zone->corner[0].y < WHOLE(player->position[1]) &&
+        WHOLE(player->position[1]) - player->height < zone->corner[0].y) {
+        a = (zone->corner[0].z << 16) + zone->corner[0].x;
+        b = (zone->corner[1].z << 16) + zone->corner[1].x;
+        point = (WHOLE(player->position[2]) << 16) + WHOLE(player->position[0]);
+        c = (zone->corner[2].z << 16) + zone->corner[2].x;
+        d = (zone->corner[3].z << 16) + zone->corner[3].x;
+        if (func_8004A70C(a, b, point) >= 0 && func_8004A70C(b, c, point) >= 0 &&
+            func_8004A70C(c, d, point) >= 0 && func_8004A70C(d, a, point) >= 0) {
+            D_800B0078->pc += 4;
+            return;
+        }
+    }
+    D_800B0078->pc = func_800ACDB8(2);
+    D_800AFC7C += 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800958C0);
+#endif
 
 /* Project a selected actor's origin to the screen. */
 void func_80095A7C(s32 *x, s32 *y) {
@@ -6410,15 +7342,16 @@ void func_80095D6C(void) {
     D_800B0078->pc = func_800ACDB8(4);
 }
 
-#ifdef NON_MATCHING
 /* Continue when a selected actor is nearer than operand 2 to the published
  * actor, otherwise jump to operand 4. */
 void func_80095E48(void) {
     FieldActor *other;
+    FieldDescriptor *descriptor;
     s32 distance;
 
     if (func_8009CDB4(1) != 0xFF) {
-        other = D_800AF880.components.descriptors[func_8009CDB4(1)].actor;
+        descriptor = &D_800AF880.components.descriptors[func_8009CDB4(1)];
+        other = descriptor->actor;
         distance = func_80099A04(WHOLE(D_800B06B8->actor->position[0]) - WHOLE(other->position[0]),
                                  WHOLE(D_800B06B8->actor->position[1]) - WHOLE(other->position[1]),
                                  WHOLE(D_800B06B8->actor->position[2]) - WHOLE(other->position[2]));
@@ -6429,9 +7362,6 @@ void func_80095E48(void) {
     }
     D_800B0078->pc = func_800ACDB8(4);
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80095E48);
-#endif
 
 /* Continue when the party's gold is at least the 32-bit operand 1,
  * otherwise jump to operand 5. */
@@ -7047,7 +7977,117 @@ void func_800979F0(void) {
     }
 }
 
+#include "field_motion.h"
+
+#ifdef NON_MATCHING
+s32 func_80097A50(s32 speed) {
+    VECTOR unused; /* the original frame holds 0x10 unused bytes */
+    VECTOR delta;
+    VECTOR direction;
+    VECTOR step;
+    FieldModel *model;
+    s32 reach;
+    s32 extra;
+    s32 turning;
+    s32 x;
+    s32 y;
+    s32 z;
+    s32 from_x;
+    s32 from_y;
+    s32 from_z;
+    s32 angle;
+    s32 distance;
+    s32 scale;
+
+    turning = -1;
+    y = 0;
+    z = 0;
+    model = D_800AF880.components.descriptors[D_800AFD1C].model;
+    x = 0;
+    if (D_800AF880.components.descriptors[D_800AFD1C].actor->layer_flags & 0x2000) {
+        model->unk18 = 0x8000000 / (u16)D_800B0078->unk76;
+    } else {
+        model->unk18 = 0x4000000 / (u16)D_800B0078->unk76;
+    }
+    reach = func_80099A8C(model->unk18 >> 15) + 1;
+    extra = 0;
+    switch (D_800B0078->slots[D_800B0078->slot].move_mode) {
+    case 0:
+        x = func_8009CF78(1, EVENT_OPERAND_BYTE(5));
+        z = func_8009CFBC(3, EVENT_OPERAND_BYTE(5));
+        y = func_8009D000(6, EVENT_OPERAND_BYTE(5));
+        break;
+    case 1:
+        x = func_8009CF78(1, EVENT_OPERAND_BYTE(5)) + D_800B0078->target[0];
+        z = func_8009CFBC(3, EVENT_OPERAND_BYTE(5)) + D_800B0078->target[2];
+        y = D_800B0078->target[1] + func_8009D000(6, EVENT_OPERAND_BYTE(5));
+        break;
+    case 2:
+        if (func_8009CDB4(1) == 0xFF) {
+            return 0;
+        }
+        extra = func_80099A8C((u16)D_800AF880.components.descriptors[func_8009CDB4(1)].actor->gravity.s.whole +
+                              (u16)D_800B0078->gravity.s.whole);
+        x = D_800B0078->target[0];
+        z = D_800B0078->target[2];
+        y = func_8009CF78(2, EVENT_OPERAND_BYTE(4));
+        break;
+    case 3:
+        angle = func_800ACDEC(1) & 0xFFF;
+        x = (D_800B0078->target[0] + (func_8003F8CC(angle) << 5)) >> 12;
+        z = D_800B0078->target[2] + (-(func_8003F8B0(angle) << 5) >> 12);
+        y = D_800B0078->target[1] + func_8009CF78(3, EVENT_OPERAND_BYTE(7));
+        break;
+    }
+    from_x = WHOLE(D_800B0078->position[0]);
+    from_z = WHOLE(D_800B0078->position[2]);
+    from_y = WHOLE(D_800B0078->position[1]);
+    delta.vx = from_x - x;
+    delta.vy = from_y - y;
+    delta.vz = from_z - z;
+    func_80048D7C(&delta, &direction);
+    scale = model->unk18 >> 8;
+    step.vx = -((direction.vx * scale) >> 4);
+    step.vy = -((direction.vy * scale) >> 4);
+    step.vz = -((direction.vz * scale) >> 4);
+    D_800B0078->unk40[0] = step.vx;
+    D_800B0078->unk40[1] = step.vy;
+    D_800B0078->unk40[1] = 0;
+    D_800B0078->unk40[2] = step.vz;
+    distance = func_80099A04(x - from_x, y - from_y, z - from_z);
+    if (WHOLE(D_800B0078->unk40[0]) == 0 && WHOLE(D_800B0078->unk40[2]) == 0) {
+        turning = 0;
+    }
+    D_800B0078->flags |= 0x400000;
+    if (D_800B0078->slots[D_800B0078->slot].value == 0 || reach + extra >= distance) {
+        if (turning == -1) {
+            if (speed != 0) {
+                if (!(D_800B0078->flags & 0x8000)) {
+                    D_800B0078->heading_goal = D_800B0078->heading = (u16)D_800B0078->heading_goal | 0x8000;
+                } else {
+                    D_800B0078->heading_goal = D_800B0078->heading = D_800B0078->unk11C | 0x8000;
+                }
+            } else {
+                D_800B0078->heading_goal = D_800B0078->heading = func_8007B694(&step) | 0x8000;
+            }
+        }
+        D_800B0078->unkEC = (D_800B0078->position[1] + step.vy) >> 16;
+        D_800B0078->slots[D_800B0078->slot].move_mode = 0;
+        D_800B0078->slots[D_800B0078->slot].value = 0xFFFF;
+        return 0;
+    }
+    if (turning == -1) {
+        D_800B0078->heading_goal = D_800B0078->heading = func_8007B694(&step) | 0x8000;
+    }
+    D_800B0078->unkEC = (D_800B0078->position[1] + step.vy) >> 16;
+    D_800B0078->flags |= 0x40000;
+    D_800B00C0 = 1;
+    D_800B0078->slots[D_800B0078->slot].value--;
+    return -1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80097A50);
+#endif
 
 s32 func_80099AC0(s32 speed);
 
@@ -7137,7 +8177,16 @@ void func_800984EC(void) {
     D_800B0078->pc += 8;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800985BC);
+/* Event 0x74 (debug): print variable op1 unless 800c268c is set. */
+void func_800985BC(void) {
+    s32 value;
+
+    if (D_800C268C == 0) {
+        value = func_800A3018(func_800ACDB8(1) & 0xFFFF);
+        func_800379C8("DEB=%xh %d \n", value, value);
+    }
+    D_800B0078->pc += 3;
+}
 
 /* Store the planar length of (x2 - x1, z2 - z1) from selected operands in
  * a variable. */
@@ -7246,9 +8295,222 @@ void func_80098C3C(void) {
     func_80098CAC(1);
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80098CAC);
+#ifdef NON_MATCHING
+void func_80098CAC(s32 mode) {
+    VECTOR from;
+    FieldModel *model;
+    s32 speed;
+    s32 animation;
+    s32 x;
+    s32 y;
+    s32 z;
+    s32 steps;
+    u16 pc;
+    u8 *code;
 
+    model = D_800AF880.components.descriptors[D_800AFD1C].model;
+    if (D_800AF880.components.descriptors[D_800AFD1C].actor->layer_flags & 0x2000) {
+        speed = (0x8000000 / (u16)D_800B0078->unk76) >> 16;
+    } else {
+        speed = (0x4000000 / (u16)D_800B0078->unk76) >> 16;
+    }
+    if (speed == 0) {
+        speed = 1;
+    }
+    D_800B0078->flags |= 0x10000;
+    pc = D_800B0078->pc;
+    code = pc + D_800ADC00;
+    animation = 1;
+    if (code[1] == 0) {
+        x = func_8009CF78(2, code[8]) << 16;
+        z = func_8009CFBC(4, EVENT_OPERAND_BYTE(8)) << 16;
+        y = func_8009D000(6, EVENT_OPERAND_BYTE(8)) << 16;
+        steps = func_80099A04((x - D_800B0078->position[0]) >> 16, (y - D_800B0078->position[1]) >> 16,
+                              (z - D_800B0078->position[2]) >> 16) / speed;
+        D_800B0078->unk102 = steps;
+        if ((s16)steps == 0) {
+            D_800B0078->unk102 = steps + 1;
+        }
+        D_800B0078->target[0] = (x - D_800B0078->position[0]) / (s16)D_800B0078->unk102;
+        D_800B0078->target[1] = (y - D_800B0078->position[1]) / (s16)D_800B0078->unk102;
+        D_800B0078->target[2] = (z - D_800B0078->position[2]) / (s16)D_800B0078->unk102;
+        if (x >> 16 != WHOLE(D_800B0078->position[0]) || z >> 16 != WHOLE(D_800B0078->position[2])) {
+            D_800B0078->heading_goal = D_800B0078->heading = -ratan2(D_800B0078->target[2] >> 16, WHOLE(D_800B0078->target[0]));
+        }
+        D_800B0078->pc += 9;
+    } else {
+        if ((s16)D_800B0078->unk102 <= 0 || D_800B0078->slots[D_800B0078->slot].value == 0) {
+            D_800B0078->pc = pc - 9;
+            if (D_800B0078->slots[D_800B0078->slot].value != 0) {
+                from.vx = D_800B0078->position[0];
+                from.vy = D_800B0078->position[1];
+                from.vz = D_800B0078->position[2];
+                D_800B0078->position[0] = func_8009CF78(2, EVENT_OPERAND_BYTE(8)) << 16;
+                D_800B0078->position[2] = func_8009CFBC(4, EVENT_OPERAND_BYTE(8)) << 16;
+                D_800B0078->position[1] = func_8009D000(6, EVENT_OPERAND_BYTE(8)) << 16;
+                D_800B0078->unk030[0] = D_800B0078->position[0] - from.vx;
+                D_800B0078->unk030[1] = D_800B0078->position[1] - from.vy;
+                D_800B0078->unk030[2] = D_800B0078->position[2] - from.vz;
+            }
+            animation = D_800B0078->unkE6;
+            if (mode == 0) {
+                D_800B0078->pc += 11;
+            } else {
+                D_800B0078->pc += 13;
+            }
+            D_800B0078->slots[D_800B0078->slot].value = 0xFFFF;
+        } else {
+            D_800B0078->position[0] += D_800B0078->target[0];
+            D_800B0078->position[2] += D_800B0078->target[2];
+            D_800B0078->unk030[1] = D_800B0078->target[1];
+            D_800B0078->unk030[2] = D_800B0078->target[2];
+            D_800B0078->position[1] += D_800B0078->target[1];
+            D_800B0078->unk030[0] = D_800B0078->target[0];
+            D_800B00C0 = animation;
+            D_800B0078->slots[D_800B0078->slot].value--;
+            D_800B0078->unk102--;
+        }
+        D_800AF880.components.descriptors[D_800AFD1C].matrix.t[0] = WHOLE(D_800B0078->position[0]);
+        D_800AF880.components.descriptors[D_800AFD1C].matrix.t[1] = WHOLE(D_800B0078->position[1]);
+        D_800AF880.components.descriptors[D_800AFD1C].matrix.t[2] = WHOLE(D_800B0078->position[2]);
+        model->position[0] = D_800B0078->position[0];
+        model->position[1] = D_800B0078->position[1];
+        model->position[2] = D_800B0078->position[2];
+    }
+    if (D_800B0078->unk0EA != 0xFF) {
+        animation = D_800B0078->unk0EA;
+    }
+    if (D_800B0078->unkE8 != animation && !(D_800B0078->flags & 0x2000000)) {
+        D_800B0078->unkE8 = animation;
+        func_800821F4(model, animation, D_800B06B8);
+        ((void (*)(void *, s32, FieldDescriptor *))func_80081F80)(model, D_800B0078->heading, D_800B06B8);
+    }
+}
+#else
+INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80098CAC);
+#endif
+
+#ifdef NON_MATCHING
+void func_80099214(void) {
+    VECTOR normals[4];
+    SVECTOR points[4];
+    u8 unused[0x20];
+    ModelMotion *model;
+    u8 *code;
+    u16 pc;
+    u8 mode;
+    s32 steps;
+    s32 x;
+    s32 z;
+    s32 y;
+    s32 layer;
+    s32 peak;
+    s32 distance;
+
+    pc = D_800B0078->pc;
+    model = (ModelMotion *)D_800AF880.components.descriptors[D_800AFD1C].model;
+    code = pc + D_800ADC00;
+    D_800B0078->flags |= 0x10000;
+    mode = code[1];
+    switch (mode & 3) {
+    case 0:
+        steps = func_8009D044(8, code[10]);
+    setup:
+        if (steps == 0) {
+            steps = 1;
+        }
+        x = func_8009CF78(2, EVENT_OPERAND_BYTE(10));
+        z = func_8009CFBC(4, EVENT_OPERAND_BYTE(10));
+        if (!(EVENT_OPERAND_BYTE(1) & 0x80)) {
+            y = func_8009D000(6, EVENT_OPERAND_BYTE(10));
+        } else {
+            layer = func_8009D000(6, EVENT_OPERAND_BYTE(10));
+            func_8007B1C4(x, z, layer, &points[layer], &normals[layer]);
+            y = points[layer].vy;
+            D_800B0078->layer = layer;
+        }
+        model->velocity = -(model->gravity.value * steps / 2);
+        model->velocity += ((y << 16) - D_800B0078->position[1]) / steps;
+        D_800B0078->target[1] = 0;
+        ACTOR_ARC_STEPS(D_800B0078) = steps;
+        D_800B0078->unk102 = 0;
+        D_800B0078->pc += 11;
+        D_800B0078->target[0] = ((x << 16) - D_800B0078->position[0]) / (steps + 1);
+        D_800B0078->target[2] = ((z << 16) - D_800B0078->position[2]) / (steps + 1);
+        break;
+    case 1:
+        x = func_8009CF78(2, code[10]);
+        z = func_8009CFBC(4, EVENT_OPERAND_BYTE(10));
+        x = (x << 16) - D_800B0078->position[0];
+        z = (z << 16) - D_800B0078->position[2];
+        steps = func_8009D044(8, EVENT_OPERAND_BYTE(10));
+        steps = func_80099A4C(x >> 16, z >> 16) / steps;
+        goto setup;
+    case 2:
+        func_8009CF78(2, code[10]);
+        func_8009CFBC(4, EVENT_OPERAND_BYTE(10));
+        y = func_8009D000(6, EVENT_OPERAND_BYTE(10));
+        peak = -func_8009D044(8, EVENT_OPERAND_BYTE(10));
+        y = (y << 16) - D_800B0078->position[1];
+        model->velocity = -(SquareRoot0(model->gravity.s.whole * (peak << 1)) << 16);
+        SquareRoot0(peak);
+        steps = SquareRoot0(abs(peak - (y >> 16)));
+        if (steps < 0) {
+            steps = -steps;
+        }
+        goto setup;
+    case 3:
+        if (mode == 0xF) {
+            for (layer = 0; layer < D_800AF880.components.layer_count - 1; layer++) {
+                D_800B0078->triangle[layer] = func_8007B1C4(WHOLE(D_800B0078->position[0]), WHOLE(D_800B0078->position[2]),
+                                                            layer, &points[layer], &normals[layer]);
+            }
+            D_800B0078->flags &= ~0x10000;
+            D_800B0078->layer_flags &= ~0x200000;
+            D_800B0078->pc += 2;
+            break;
+        }
+        if ((s16)D_800B0078->unk102 < ACTOR_ARC_STEPS(D_800B0078)) {
+            D_800B0078->position[0] += D_800B0078->target[0];
+            D_800B0078->position[2] += D_800B0078->target[2];
+            D_800B0078->position[1] += model->velocity;
+            model->velocity += model->gravity.value;
+            if ((D_800B0078->target[0] != 0 || D_800B0078->target[2] != 0) && !(D_800B0078->flags & 0x8000)) {
+                D_800B0078->heading_goal = D_800B0078->heading = func_8007B694((VECTOR *)D_800B0078->target) | 0x8000;
+            }
+        } else {
+            D_800B0078->pc = pc - 11;
+            x = func_8009CF78(2, EVENT_OPERAND_BYTE(10));
+            z = func_8009CFBC(4, EVENT_OPERAND_BYTE(10));
+            if (EVENT_OPERAND_BYTE(1) & 0x80) {
+                layer = func_8009D000(6, EVENT_OPERAND_BYTE(10));
+                D_800B0078->triangle[layer] = func_8007B1C4(x, z, layer, &points[layer], &normals[layer]);
+                y = points[layer].vy;
+            } else {
+                y = func_8009D000(6, EVENT_OPERAND_BYTE(10));
+            }
+            model->velocity = 0;
+            D_800B0078->position[0] = x << 16;
+            D_800B0078->position[1] = y << 16;
+            D_800B0078->position[2] = z << 16;
+            D_800B0078->flags &= ~0x10000;
+            D_800B0078->layer_flags &= ~0x200000;
+            D_800B0078->pc += 13;
+        }
+        D_800AF880.components.descriptors[D_800AFD1C].matrix.t[0] = WHOLE(D_800B0078->position[0]);
+        D_800AF880.components.descriptors[D_800AFD1C].matrix.t[1] = WHOLE(D_800B0078->position[1]);
+        D_800AF880.components.descriptors[D_800AFD1C].matrix.t[2] = WHOLE(D_800B0078->position[2]);
+        model->position[0] = D_800B0078->position[0];
+        model->position[1] = D_800B0078->position[1];
+        model->position[2] = D_800B0078->position[2];
+        D_800B0078->unk102++;
+        break;
+    }
+    D_800B00C0 = 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80099214);
+#endif
 
 /* Turn-move in mode 0 at the default speed. */
 void func_80099980(void) {
@@ -7293,7 +8555,92 @@ s32 func_80099A8C(s32 x) {
     return SquareRoot0(squares.vx);
 }
 
+#ifdef NON_MATCHING
+s32 func_80099AC0(s32 speed) {
+    VECTOR delta;
+    FieldModel *model;
+    s32 reach;
+    s32 extra;
+    s32 from_x;
+    s32 from_z;
+    s32 x;
+    s32 z;
+    s32 angle;
+    s32 distance;
+    FieldActor *other;
+    u16 count;
+    s32 facing;
+
+    extra = 0;
+    z = 0;
+    model = D_800AF880.components.descriptors[D_800AFD1C].model;
+    x = 0;
+    if (D_800AF880.components.descriptors[D_800AFD1C].actor->layer_flags & 0x2000) {
+        model->unk18 = 0x8000000 / (u16)D_800B0078->unk76;
+    } else if (model->unk18 == 0) {
+        model->unk18 = 0x4000000 / (u16)D_800B0078->unk76;
+    }
+    reach = func_80099A8C(model->unk18 >> 15) + 1;
+    from_x = WHOLE(D_800B0078->position[0]);
+    from_z = WHOLE(D_800B0078->position[2]);
+    switch (D_800B0078->slots[D_800B0078->slot].move_mode) {
+    case 1:
+        x = func_8009CF78(1, EVENT_OPERAND_BYTE(5)) + D_800B0078->target[0];
+        z = func_8009CFBC(3, EVENT_OPERAND_BYTE(5)) + D_800B0078->target[2];
+        break;
+    case 2:
+        if (func_8009CDB4(1) == 0xFF) {
+            return 0;
+        }
+        other = D_800AF880.components.descriptors[func_8009CDB4(1)].actor;
+        extra = func_80099A8C((u16)other->gravity.s.whole + (u16)D_800B0078->gravity.s.whole);
+        x = WHOLE(other->position[0]);
+        z = WHOLE(other->position[2]);
+        if (EVENT_OPERAND_BYTE(1) == D_800B2078.controlled) {
+            D_800B0078->flags |= 0x200000;
+        }
+        break;
+    case 3:
+        angle = func_800ACDEC(1) & 0xFFF;
+        x = D_800B0078->target[0] + ((func_8003F8CC(angle) << 12) >> 12);
+        z = D_800B0078->target[2] + (-(func_8003F8B0(angle) << 12) >> 12);
+        break;
+    case 0:
+    case 4:
+        x = func_8009CF78(1, EVENT_OPERAND_BYTE(5));
+        z = func_8009CFBC(3, EVENT_OPERAND_BYTE(5));
+        break;
+    }
+    delta.vx = x - from_x;
+    delta.vy = 0;
+    delta.vz = z - from_z;
+    distance = func_80099A4C(delta.vx, delta.vz);
+    D_800B0078->flags |= 0x400000;
+    count = D_800B0078->slots[D_800B0078->slot].value;
+    if (count == 0 || reach + extra >= distance) {
+        if (speed != 0) {
+            if (!(D_800B0078->flags & 0x8000)) {
+                D_800B0078->heading_goal = D_800B0078->heading = (u16)D_800B0078->heading_goal | 0x8000;
+            } else {
+                D_800B0078->heading_goal = D_800B0078->heading = D_800B0078->unk11C | 0x8000;
+            }
+        } else {
+            D_800B0078->heading_goal = D_800B0078->heading = func_8007B694(&delta);
+        }
+        D_800B0078->slots[D_800B0078->slot].value = 0xFFFF;
+        D_800B0078->slots[D_800B0078->slot].move_mode = 0;
+        D_800B0078->flags &= 0xFDDFF7FF;
+        return 0;
+    }
+    D_800B0078->slots[D_800B0078->slot].value = count - 1;
+    facing = func_8007B694(&delta);
+    D_800B00C0 = 1;
+    D_800B0078->heading_goal = D_800B0078->heading = facing;
+    return -1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80099AC0);
+#endif
 
 /* Store the current actor's unkE4 in a variable. */
 void func_80099EF8(void) {
@@ -7658,13 +9005,12 @@ void func_8009AE0C(void) {
     D_800B0078->pc += 1;
 }
 
-#ifdef NON_MATCHING
 /* Blend the camera projection toward `target` over `steps` frames (at
  * once when zero). */
 void func_8009AE3C(s32 target, s32 steps) {
     if (steps != 0) {
-        D_800AF880.projection_steps = steps;
         D_800AF880.flags |= 0x10;
+        D_800AF880.projection_steps = steps;
         D_800AF880.projection_value = D_800AF880.projection << 16;
         D_800AF880.projection_step = -((D_800AF880.projection - target) << 16) / steps;
     } else {
@@ -7674,11 +9020,89 @@ void func_8009AE3C(s32 target, s32 steps) {
     }
     D_800AF880.flags &= 0xDFFF;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009AE3C);
-#endif
 
+#ifdef NON_MATCHING
+/* Walk party slot `slot`'s member one gather step toward (x, z). Returns 0
+ * when the member is absent, disabled or has arrived (it is then placed at
+ * (x, z) facing `facing`, or its own heading for 0xff) and -1 while it is
+ * still walking; a member stuck for 0x40 steps or an override warps. */
+s32 func_8009AEE0(s32 slot, s32 x, s32 z, s32 facing) {
+    FieldDescriptor *descriptor;
+    FieldModel *model;
+    FieldActor *actor;
+    FieldActor *saved;
+    s32 saved_index;
+    s32 member;
+    s32 step;
+    s32 dx;
+    s32 distance;
+    s32 dz;
+    VECTOR delta;
+    u16 heading;
+
+    member = D_8005A444[slot];
+    if (member == 0xFF) {
+        return 0;
+    }
+    descriptor = &D_800AF880.components.descriptors[member];
+    if (descriptor->flags & 0x20) {
+        return 0;
+    }
+    model = descriptor->model;
+    actor = descriptor->actor;
+    if (model->unk18 == 0) {
+        model->unk18 = 0x4000000 / (u16)actor->unk76;
+    }
+    step = func_80099A8C(model->unk18 >> 15) + 1;
+    dx = x - WHOLE(actor->position[0]);
+    dz = z - WHOLE(actor->position[2]);
+    delta.vx = dx;
+    delta.vy = 0;
+    delta.vz = dz;
+    distance = func_80099A4C(dx, dz);
+    actor->flags |= 0x400000;
+    if (step >= distance) {
+    arrive:
+        if (!(actor->flags & 0x8000)) {
+            if (facing == 0xFF) {
+                heading = actor->heading_goal | 0x8000;
+            } else {
+                heading = D_800AEA34[facing] | 0x8000;
+            }
+        } else {
+            heading = actor->unk11C | 0x8000;
+        }
+        actor->heading = heading;
+        actor->heading_goal = heading;
+        actor->position[0] = x << 16;
+        actor->position[2] = z << 16;
+        actor->stuck = 0;
+        actor->flags &= 0xFDDFF7FF;
+        return 0;
+    }
+    if (actor->last_position[0] == WHOLE(actor->position[0]) &&
+        actor->last_position[1] == WHOLE(actor->position[1]) &&
+        actor->last_position[2] == WHOLE(actor->position[2])) {
+        actor->stuck++;
+    } else {
+        actor->stuck = 0;
+    }
+    actor->heading_goal = actor->heading = func_8007B694(&delta);
+    if ((s16)actor->stuck > 0x40 || (s16)D_800B2078.unk2348 != 0) {
+        saved = D_800B0078;
+        saved_index = D_800AFD1C;
+        D_800B0078 = actor;
+        D_800AFD1C = D_8005A444[slot];
+        func_8009E574(x, z);
+        D_800B0078 = saved;
+        D_800AFD1C = saved_index;
+        goto arrive;
+    }
+    return -1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009AEE0);
+#endif
 
 /* Force the party position. */
 void func_8009B15C(void) {
@@ -7754,7 +9178,48 @@ void func_8009B338(void) {
     } while (i < 32);
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009B398);
+/* Event 0x23: gather the party at (op1, op3), (op5, op7) and (op9, op11)
+ * facing op15/op17/op19, retrying until all three have arrived; op1 0x7fff
+ * instead marks every member's heading as turned and continues. */
+void func_8009B398(void) {
+    FieldActor *actor;
+    s32 i;
+    s32 near;
+
+    if (func_8009CF78(1, EVENT_OPERAND_BYTE(0xD)) == 0x7FFF) {
+        D_800B0078->pc += 0x14;
+        D_800B2078.preserve_nonplayer_motion = 1;
+        i = 0;
+        do {
+            if (D_8005A444[i] != 0xFF) {
+                actor = D_800AF880.components.descriptors[D_8005A444[i]].actor;
+                actor->heading_goal = actor->heading = actor->heading_goal | 0x8000;
+            }
+            i++;
+        } while (i < 3);
+        return;
+    }
+    near = func_8009AEE0(0, func_8009CF78(1, EVENT_OPERAND_BYTE(0xD)), func_8009CFBC(3, EVENT_OPERAND_BYTE(0xD)),
+                         func_800ACDEC(0xE)) == 0;
+    if (func_8009AEE0(1, func_8009D000(5, EVENT_OPERAND_BYTE(0xD)), func_8009D044(7, EVENT_OPERAND_BYTE(0xD)),
+                      func_800ACDEC(0x10)) == 0) {
+        near |= 2;
+    }
+    if (func_8009AEE0(2, func_8009D088(9, EVENT_OPERAND_BYTE(0xD)), func_8009D0CC(0xB, EVENT_OPERAND_BYTE(0xD)),
+                      func_800ACDEC(0x12)) == 0) {
+        near |= 4;
+    }
+    D_800B00C0 = 1;
+    if (near == 7) {
+        D_800B2078.unk2348 = 0;
+        D_800B0078->pc += 0x14;
+        D_800B2078.party_processing_mode = 0;
+    } else {
+        D_800B2078.party_processing_mode = 1;
+        D_800B0078->pc -= 1;
+    }
+    D_800B2078.preserve_nonplayer_motion = 1;
+}
 
 /* Store the camera projection in a variable. */
 void func_8009B664(void) {
@@ -7791,7 +9256,6 @@ void func_8009B708(s32 octant, s32 steps) {
     D_800AF880.heading_velocity = velocity;
 }
 
-#ifdef NON_MATCHING
 /* Turn the camera one octant (direction 0: positive) over `steps` frames. */
 void func_8009B7A8(s32 direction, s32 steps) {
     s32 velocity;
@@ -7802,19 +9266,14 @@ void func_8009B7A8(s32 direction, s32 steps) {
         D_800B2078.camera_counter += 2;
     }
     if (direction == 0) {
-        velocity = 0x2000000 / steps;
-        heading = D_800AF880.heading + 0x200;
+        D_800AF880.heading_velocity = 0x2000000 / steps;
+        D_800AF880.heading += 0x200;
     } else {
-        velocity = (s32)0xFE000000 / steps;
-        heading = D_800AF880.heading - 0x200;
+        D_800AF880.heading_velocity = (s32)0xFE000000 / steps;
+        D_800AF880.heading -= 0x200;
     }
-    D_800AF880.heading = heading;
-    D_800AF880.heading_velocity = velocity;
     D_800AF880.heading_steps = steps;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009B7A8);
-#endif
 
 /* Once the camera is idle, turn one octant over operand-1 frames. */
 void func_8009B824(void) {
@@ -7899,7 +9358,6 @@ void func_8009BA7C(void) {
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009BA7C);
 #endif
 
-#ifdef NON_MATCHING
 /* Wait on the actor's dialogue window: with none, store the actor's +81
  * byte in variable 14 and continue; otherwise once its speaker has layer
  * flag 0x200 and the actor's low wait bit is clear, end the waiting script
@@ -7907,7 +9365,7 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009BA7C);
 void func_8009BB0C(void) {
     s32 window;
     u32 value;
-    u16 bits;
+    s32 bits;
 
     if (func_8009CD18(&window) == -1) {
         D_800AFC7C += 8;
@@ -7917,9 +9375,10 @@ void func_8009BB0C(void) {
     }
     if (D_800AF880.components.descriptors[D_800C2698[window].unk418].actor->layer_flags & 0x200) {
         value = D_800B0078->unk84;
-        bits = value >> 16;
-        if (bits == 0) {
-            bits = value;
+        if (value >> 16) {
+            bits = (value >> 16) & 0xFFFF;
+        } else {
+            bits = value & 0xFFFF;
         }
         if (!(bits & 1)) {
             if (D_800B0078->slots[D_800B0078->slot].priority != 7) {
@@ -7930,11 +9389,35 @@ void func_8009BB0C(void) {
     }
     D_800B00C0 = 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009BB0C);
-#endif
 
+#ifdef NON_MATCHING
+/* Event 0xa9: once this actor's dialogue window has its answer (or is
+ * still being typed), highlight lines op1 >> 4 .. op1 & 0xf as a choice. */
+void func_8009BC98(void) {
+    s32 window;
+    u32 first;
+
+    if (func_8009CD18(&window) == 0) {
+        D_800AFC7C += 8;
+        if (func_80033CD0(&D_800C2698[window].text) == 1 ||
+            (D_800C2698[window].text.unk84 != 0 && D_800C2698[window].text.unk6C != 0)) {
+            D_800C2698[window].status = 0;
+            D_800B0078->unk081 = 0xFF;
+            first = EVENT_OPERAND_BYTE(1) >> 4;
+            D_800C2698[window].unk37E = first;
+            D_800C2698[window].unk382 = 0;
+            D_800C2698[window].unk380 = (EVENT_OPERAND_BYTE(1) & 0xF) - first + 1;
+            func_80034800(&D_800C2698[window].text, 0xEF, 0x1E, 0xF0);
+            D_800B0078->pc += 2;
+        }
+    } else {
+        D_800B0078->pc += 2;
+    }
+    D_800B00C0 = 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009BC98);
+#endif
 
 /* Whether the current actor's octant (state bits 9-11) is within four
  * octants past the camera's. */
@@ -8018,7 +9501,86 @@ void func_8009C12C(void) {
     func_8009C5A8(D_800AFD1C, 3);
 }
 
+#ifdef NON_MATCHING
+/* Show the dialogue portrait of `character`: finish a pending slot first
+ * (upload loaded images, or release shown ones) and return -1; a slot
+ * already holding it is selected (bits 2-4 of the actor state) and 0
+ * returned; otherwise the next free slot starts loading its image files and
+ * -1 is returned. */
+s32 func_8009C154(s16 character) {
+    s32 i;
+    s32 tries;
+    s32 found;
+    s32 count;
+
+    for (i = 0; i < 3; i++) {
+        if (D_800B06A4[i].b == 1) {
+            if (func_80028A60(1) != 0) {
+                return -1;
+            }
+            D_800B06A4[i].b = 2;
+            func_80070340(D_800ADB10, D_800AEAE4[i][0].x, D_800AEAE4[i][0].y, D_800AEAE4[i][0].clut_x,
+                          D_800AEAE4[i][0].clut_y, 0x100, 1);
+            if (D_800B06A4[i].c == 0) {
+                func_80070340(D_800ADB10, D_800AEAE4[i][1].x, D_800AEAE4[i][1].y, D_800AEAE4[i][1].clut_x,
+                              D_800AEAE4[i][1].clut_y, 0x100, 1);
+            } else {
+                func_80070340(D_800ADB14, D_800AEAE4[i][1].x, D_800AEAE4[i][1].y, D_800AEAE4[i][1].clut_x,
+                              D_800AEAE4[i][1].clut_y, 0x100, 1);
+            }
+            return -1;
+        }
+        if (D_800B06A4[i].b == 2) {
+            D_800B06A4[i].b = 0;
+            func_800320E8(D_800ADB10);
+            if (D_800B06A4[i].c == 1) {
+                func_800320E8(D_800ADB14);
+            }
+            return -1;
+        }
+    }
+    for (i = 0; i < 3; i++) {
+        if (D_800B06A4[i].a == character) {
+            D_800B0078->state.bits.unk2 = i;
+            return 0;
+        }
+    }
+    found = 0;
+    for (tries = 0; tries < 3; tries++) {
+        D_800ADB0C++;
+        if (D_800ADB0C >= 3) {
+            D_800ADB0C = 0;
+        }
+        if (func_8009C538(D_800B06A4[D_800ADB0C].a) == 0) {
+            found = 1;
+            break;
+        }
+    }
+    if (found == 0) {
+        return -1;
+    }
+    D_800B0078->state.bits.unk2 = D_800ADB0C;
+    func_80028470(4, 0);
+    D_800B06A4[D_800ADB0C].a = character;
+    D_800B06A4[D_800ADB0C].b = 1;
+    D_800B06A4[D_800ADB0C].c = 0;
+    D_800B00C8[0].file = D_800AE1E0[character][0] + 0x46;
+    D_800ADB10 = D_800B00C8[0].data = func_80031BDC(func_800288EC(D_800B00C8[0].file), 0);
+    count = 1;
+    if (D_800AE1E0[character][1] != D_800AE1E0[character][0]) {
+        D_800B06A4[D_800ADB0C].c = 1;
+        D_800B00C8[1].file = D_800AE1E0[character][1] + 0x46;
+        count = 2;
+        D_800ADB14 = D_800B00C8[1].data = func_80031BDC(func_800288EC(D_800B00C8[1].file), 0);
+    }
+    D_800B00C8[count].file = 0;
+    D_800B00C8[count].data = NULL;
+    func_80029AFC(D_800B00C8, 0, 0);
+    return -1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009C154);
+#endif
 
 /* -1 when an idle window shows message kind 1 for `id`, else 0. */
 s32 func_8009C538(s32 id) {
@@ -8032,7 +9594,194 @@ s32 func_8009C538(s32 id) {
     return 0;
 }
 
+#ifdef NON_MATCHING
+/* Open this actor's dialogue window for message op1 above/below speaker
+ * `speaker` (mode 0 follows the speaker, mode 3 is centred, others use the
+ * fixed full-width box); op3 overrides the style byte. Returns -1 while the
+ * window cannot open yet (the instruction is retried) and 0 once opened. */
+s32 func_8009C5A8(s32 speaker, s32 mode) {
+    s32 owned;
+    s32 x;
+    s32 y;
+    u16 message;
+    s32 window;
+    s32 i;
+    s32 idle;
+    s32 combined;
+    s32 columns;
+    u8 rows;
+    s32 progress;
+    s32 low;
+    s32 style;
+    s32 top;
+    s16 left;
+    s32 flags;
+
+    D_800AFC7C += 0x20;
+    if (D_800ADB2C != 0 || D_800AFD04 != 0 || D_800C4268 != 0 || D_800ADB64 != 0xFF ||
+        (D_800ADB70 == 0 && func_8008A558() != 0) ||
+        ((u8)D_800B0078->character != 0xFF && func_8009C154((u8)D_800B0078->character) == -1)) {
+        D_800B00C0 = 1;
+        return -1;
+    }
+    D_800C4268++;
+    if (func_8009CD18(&owned) != -1) {
+        D_800B00C0 = 1;
+        D_800C2698[owned].cleared = 0;
+        return -1;
+    }
+    D_800AFC7C += 8;
+    message = func_800ACDB8(1);
+    if (func_80080720() != 0) {
+        window = func_80080760();
+        if (window != 0xFFFF) {
+            D_800C2698[window].cleared = 0;
+            D_800B00C0 = 1;
+            return -1;
+        }
+    } else {
+        window = func_800807B4();
+    }
+    idle = 0;
+    combined = 0;
+    for (i = 0; i < 4; i++) {
+        if (D_800C2698[i].busy == 0) {
+            idle++;
+            combined |= D_800C2698[i].layout;
+        }
+    }
+    columns = func_8003373C(D_800ADBF0, message);
+    rows = func_80033760(D_800ADBF0, message);
+    if (mode == 0 || mode == 3) {
+        if (D_800B0078->unk82 != 0) {
+            columns = D_800B0078->unk82;
+        }
+        if (D_800B0078->unk83 != 0) {
+            rows = D_800B0078->unk83;
+        }
+    }
+    progress = D_800B0078->unk84;
+    low = progress & 0xFFFF;
+    D_800B0078->unk84 = low;
+    style = low;
+    if (EVENT_OPERAND_BYTE(3) != 0) {
+        style = (progress & 0xFF00) | EVENT_OPERAND_BYTE(3);
+        D_800B0078->unk84 = low | (style << 16);
+    }
+    top = 0x10;
+    switch ((style >> 4) & 3) {
+    case 1:
+        goto above;
+    case 0:
+        if (((((D_800B0078->state.word >> 9) & 7) - func_8009A514()) & 7) >= 5) {
+            if (!(combined & 0x80) && idle == 0) {
+                goto above;
+            }
+        } else if (combined & 0x80) {
+            goto above;
+        }
+        /* fall through */
+    case 2:
+        D_800C2698[window].layout = 0x81;
+        if (mode == 0 || mode == 3) {
+            func_8007F814(speaker, &x, &y, -0x40);
+            top = 0x94;
+            if (mode == 0) {
+                top = y + 0x30;
+            } else {
+                x = 0xA0;
+            }
+            if ((u8)D_800B0078->character != 0xFF && !(style & 2)) {
+                columns += 0x11;
+                if (columns < 0x18) {
+                    columns = 0x29;
+                }
+                rows = 4;
+                top = 0x94;
+            }
+        } else {
+            columns = 0x48;
+            rows = 4;
+            top = 0x94;
+            x = 0xA0;
+        }
+        break;
+    above:
+        D_800C2698[window].layout = 1;
+        if (mode == 0 || mode == 3) {
+            func_8007F814(speaker, &x, &y, -0x40);
+            top = 0x14;
+            if (mode == 0) {
+                top = y - rows * 14 - 0x24;
+            } else {
+                x = 0xA0;
+            }
+            if ((u8)D_800B0078->character != 0xFF && !(style & 2)) {
+                rows = 4;
+                if (columns < 0x18) {
+                    columns = 0x18;
+                }
+                columns += 0x11;
+                top = 0x10;
+            }
+        } else {
+            columns = 0x48;
+            rows = 4;
+            top = 0x10;
+            x = 0xA0;
+        }
+        break;
+    }
+    left = x - 8 - columns * 2;
+    if (left < 0xC) {
+        left = 0xC;
+    }
+    if (left + 0x10 + columns * 4 >= 0x135) {
+        left = 0x124 - columns * 4;
+    }
+    if (top < 0x10) {
+        top = 0x10;
+    }
+    if (top + 8 + rows * 14 >= 0xD5) {
+        top = 0xCC - rows * 14;
+    }
+    if (mode == 0 || mode == 3) {
+        if (D_800B0078->unk88 != 0) {
+            left = D_800B0078->unk88;
+        }
+        if (D_800B0078->unk8A != 0) {
+            top = D_800B0078->unk8A;
+        }
+        if (D_800B0078->unk82 != 0) {
+            columns = D_800B0078->unk82;
+        }
+        if (D_800B0078->unk83 != 0) {
+            rows = D_800B0078->unk83;
+        }
+        if ((u8)D_800B0078->character != 0xFF && !(style & 2)) {
+            rows = 4;
+        }
+    }
+    if (style & 0x40) {
+        D_800C2698[window].layout |= 0x40;
+    }
+    flags = 0;
+    if (!(style & 0xC)) {
+        flags = (((((s16)D_800AF880.components.descriptors[speaker].actor->heading_goal >> 9) - func_8009A514()) + 1) &
+                 7) >= 4;
+        flags <<= 10;
+    } else if (style & 4) {
+        flags = 0x400;
+    }
+    func_8007F8DC(left, top, message, window, columns, rows, D_800AFD1C, speaker, mode, flags, style);
+    func_8009CCF8(window);
+    D_800B0078->heading |= 0x8000;
+    D_800B0078->pc += 4;
+    return 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009C5A8);
+#endif
 
 /* Set talk-inhibit bit `bit`. */
 void func_8009CCF8(s32 bit) {
@@ -8580,7 +10329,20 @@ void func_8009E10C(void) {
     D_800B0078->pc += 3;
 }
 
+#include "field_actor_events.h"
+
+#ifdef NON_MATCHING
+void func_8009E1A0(void) {
+    FieldActor *actor = D_800B0078;
+    u8 *code = D_800ADC00;
+
+    actor->layer_flags = (actor->layer_flags & ~7) | (code[actor->pc + 1] & 7);
+    actor->layer_flags = (actor->layer_flags & ~0x38) | ((code[actor->pc + 1] >> 1) & 0x38);
+    actor->pc += 2;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009E1A0);
+#endif
 
 /* Enter mode 0x400000 (clearing 0x40000) from the current height. */
 void func_8009E208(void) {
@@ -8653,7 +10415,54 @@ void func_8009E4BC(void) {
     D_800B0078->pc += 6;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009E574);
+/* Place the current actor at integer (x, z) on the floor of its layer:
+ * locate the floor triangle of every layer, take its terrain, normal and
+ * height, move the descriptor and model there and clear the motion. */
+void func_8009E574(s32 x, s32 z) {
+    VECTOR normals[4];
+    SVECTOR points[4];
+    FieldModel *model;
+    s32 layer;
+
+    model = D_800AF880.components.descriptors[D_800AFD1C].model;
+    for (layer = 0; layer < D_800AF880.components.layer_count - 1; layer++) {
+        D_800B0078->triangle[layer] = func_8007B1C4(x, z, layer, &points[layer], &normals[layer]);
+    }
+    D_800B0078->unk014 = func_80080968(D_800B0078);
+    D_800B0078->unk50[0] = (normals + D_800B0078->layer)->vx;
+    D_800B0078->unk50[1] = (normals + D_800B0078->layer)->vy;
+    D_800B0078->unk50[2] = (normals + D_800B0078->layer)->vz;
+    D_800AF880.components.descriptors[D_800AFD1C].transform.t[0] = D_800AF880.components.descriptors[D_800AFD1C].matrix.t[0] = x;
+    D_800AF880.components.descriptors[D_800AFD1C].transform.t[1] = D_800AF880.components.descriptors[D_800AFD1C].matrix.t[1] = points[D_800B0078->layer].vy;
+    D_800AF880.components.descriptors[D_800AFD1C].transform.t[2] = D_800AF880.components.descriptors[D_800AFD1C].matrix.t[2] = z;
+    model->unk84 = points[D_800B0078->layer].vy;
+    D_800B0078->position[0] = x << 16;
+    D_800B0078->position[1] = points[D_800B0078->layer].vy << 16;
+    D_800B0078->position[2] = z << 16;
+    D_800B0078->unk72 = points[D_800B0078->layer].vy;
+    model->position[0] = D_800B0078->position[0];
+    model->position[1] = D_800B0078->position[1];
+    model->position[2] = D_800B0078->position[2];
+    D_800B0078->unk40[0] = 0;
+    D_800B0078->unk40[1] = 0;
+    D_800B0078->unk40[2] = 0;
+    D_800B0078->unk030[0] = 0;
+    D_800B0078->unk030[1] = 0;
+    D_800B0078->unk030[2] = 0;
+    D_800B0078->target[0] = 0;
+    D_800B0078->target[1] = 0;
+    D_800B0078->target[2] = 0;
+    *(s16 *)D_800B0078->unk062 = 0;
+    D_800B0078->unk60 = 0;
+    D_800B0078->unk64 = 0;
+    model->unk0C = 0;
+    model->unk10 = 0;
+    model->unk14 = 0;
+    *(s32 *)D_800B0078->unk0F0 = 0;
+    D_800B0078->unkEC = 0;
+    D_800B0078->unk72 = D_800B0078->position[1] >> 16;
+    D_800B0078->flags = (D_800B0078->flags & ~0x40000) | 0x400000;
+}
 
 #ifdef NON_MATCHING
 /* Set the current actor's height `y` (whole units). */
@@ -8683,7 +10492,23 @@ void func_8009E83C(void) {
     D_800B0078->pc += 5;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009E91C);
+/* Event: give the current actor a boundary quadrilateral (+114, allocated
+ * once and marked by state bit 12) of four selected x/z corners. */
+void func_8009E91C(void) {
+    if (!(D_800B0078->state.word & 0x1000)) {
+        D_800B0078->unk114 = func_80031BDC(0x10, 0);
+    }
+    D_800B0078->state.word |= 0x1000;
+    ((ActorBoundary *)D_800B0078->unk114)->corners[0].x = func_8009CF78(1, EVENT_OPERAND_BYTE(17));
+    ((ActorBoundary *)D_800B0078->unk114)->corners[0].z = func_8009CFBC(3, EVENT_OPERAND_BYTE(17));
+    ((ActorBoundary *)D_800B0078->unk114)->corners[1].x = func_8009D000(5, EVENT_OPERAND_BYTE(17));
+    ((ActorBoundary *)D_800B0078->unk114)->corners[1].z = func_8009D044(7, EVENT_OPERAND_BYTE(17));
+    ((ActorBoundary *)D_800B0078->unk114)->corners[2].x = func_8009D088(9, EVENT_OPERAND_BYTE(17));
+    ((ActorBoundary *)D_800B0078->unk114)->corners[2].z = func_8009D0CC(11, EVENT_OPERAND_BYTE(17));
+    ((ActorBoundary *)D_800B0078->unk114)->corners[3].x = func_8009D110(13, EVENT_OPERAND_BYTE(17));
+    ((ActorBoundary *)D_800B0078->unk114)->corners[3].z = func_8009D154(15, EVENT_OPERAND_BYTE(17));
+    D_800B0078->pc += 18;
+}
 
 /* -1 when one of the actor's slots carries event tag `tag`, else 0. */
 s32 func_8009EB48(FieldActor *actor, s32 tag) {
@@ -8697,11 +10522,141 @@ s32 func_8009EB48(FieldActor *actor, s32 tag) {
     return 0;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009EB78);
+/* Event: request event (tag low five bits of operand 2, priority its high
+ * three) on a selected actor, in its first free slot; retried while none is
+ * free. An actor in a request handshake (+04 bit 20) instead releases both
+ * linked slots. */
+void func_8009EB78(void) {
+    s32 index;
+    FieldActor *other;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009ED68);
+    if (func_8009CDB4(1) != 0xFF) {
+        index = func_8009CDB4(1);
+        other = D_800AF880.components.descriptors[index].actor;
+        if (other->layer_flags & 0x100000) {
+            D_800B0078->slots[D_800B0078->slot].unk16 = 0;
+            other->slots[D_800B0078->unk0CF].unk22 = 0;
+        } else if (func_8009EB48(other, EVENT_OPERAND_BYTE(2) & 0x1F) != -1) {
+            for (i = 0; i < 8; i++) {
+                if (other->slots[i].priority == 0xF && other->slots[i].unk22 == 0) {
+                    other->slots[i].resume_pc = func_800A3090(index, EVENT_OPERAND_BYTE(2) & 0x1F);
+                    other->slots[i].priority = EVENT_OPERAND_BYTE(2) >> 5;
+                    other->slots[i].tag = EVENT_OPERAND_BYTE(2) & 0x1F;
+                    goto done;
+                }
+            }
+            return;
+        }
+    }
+done:
+    D_800B0078->pc += 3;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009F0A0);
+/* Event: request event operand 2 on a selected actor and wait until it has
+ * started: phase 0 (the current slot's bits 16-17) requests it, linking the
+ * two slots through +cf, and phase 1 waits for the target to run it. */
+void func_8009ED68(void) {
+    s32 index;
+    FieldActor *other;
+    s32 i;
+
+    if (func_8009CDB4(1) != 0xFF) {
+        index = func_8009CDB4(1);
+        other = D_800AF880.components.descriptors[index].actor;
+        if (other->layer_flags & 0x100000) {
+            D_800B0078->slots[D_800B0078->slot].unk16 = 0;
+            other->slots[D_800B0078->unk0CF].unk22 = 0;
+        } else {
+            switch (D_800B0078->slots[D_800B0078->slot].unk16) {
+            case 0:
+                if (func_8009EB48(other, EVENT_OPERAND_BYTE(2) & 0x1F) == -1) {
+                    break;
+                }
+                for (i = 0; i < 8; i++) {
+                    if (other->slots[i].priority == 0xF && other->slots[i].unk22 == 0) {
+                        other->slots[i].resume_pc = func_800A3090(index, EVENT_OPERAND_BYTE(2) & 0x1F);
+                        other->slots[i].priority = EVENT_OPERAND_BYTE(2) >> 5;
+                        other->slots[D_800B0078->unk0CF].unk22 = 1;
+                        other->slots[i].tag = EVENT_OPERAND_BYTE(2) & 0x1F;
+                        D_800B0078->unk0CF = i;
+                        D_800B0078->slots[D_800B0078->slot].unk16 = 1;
+                        return;
+                    }
+                }
+                return;
+            case 1:
+                if (other->slot == D_800B0078->unk0CF || other->slots[D_800B0078->unk0CF].priority == 0xF) {
+                    D_800B0078->pc += 3;
+                    D_800B0078->slots[D_800B0078->slot].unk16 = 0;
+                    other->slots[D_800B0078->unk0CF].unk22 = 0;
+                    return;
+                }
+                D_800B00C0 = 1;
+                return;
+            default:
+                return;
+            }
+        }
+    }
+    D_800B0078->pc += 3;
+}
+
+/* Event: request event operand 2 on a selected actor and wait until it has
+ * started (phase 1 of the current slot's bits 16-17) and then finished
+ * (phase 2, its slot free again). */
+void func_8009F0A0(void) {
+    s32 index;
+    FieldActor *other;
+    s32 i;
+
+    if (func_8009CDB4(1) != 0xFF) {
+        index = func_8009CDB4(1);
+        other = D_800AF880.components.descriptors[index].actor;
+        if (other->layer_flags & 0x100000) {
+            D_800B0078->slots[D_800B0078->slot].unk16 = 0;
+            other->slots[D_800B0078->unk0CF].unk22 = 0;
+        } else {
+            switch (D_800B0078->slots[D_800B0078->slot].unk16) {
+            case 0:
+                if (func_8009EB48(other, EVENT_OPERAND_BYTE(2) & 0x1F) == -1) {
+                    break;
+                }
+                for (i = 0; i < 8; i++) {
+                    if (other->slots[i].priority == 0xF && other->slots[i].unk22 == 0) {
+                        other->slots[i].resume_pc = func_800A3090(index, EVENT_OPERAND_BYTE(2) & 0x1F);
+                        other->slots[i].priority = EVENT_OPERAND_BYTE(2) >> 5;
+                        other->slots[D_800B0078->unk0CF].unk22 = 1;
+                        D_800B0078->unk0CF = i;
+                        D_800B0078->slots[D_800B0078->slot].unk16 = 1;
+                        other->slots[i].tag = EVENT_OPERAND_BYTE(2) & 0x1F;
+                        return;
+                    }
+                }
+                return;
+            case 1:
+                if (other->slot == D_800B0078->unk0CF || other->slots[D_800B0078->unk0CF].priority == 0xF) {
+                    D_800B0078->slots[D_800B0078->slot].unk16 = 2;
+                    return;
+                }
+                D_800B00C0 = 1;
+                return;
+            case 2:
+                if (other->slots[D_800B0078->unk0CF].priority == 0xF) {
+                    D_800B0078->slots[D_800B0078->slot].unk16 = 0;
+                    other->slots[D_800B0078->unk0CF].unk22 = 0;
+                    D_800B0078->pc += 3;
+                    return;
+                }
+                D_800B00C0 = 1;
+                return;
+            default:
+                return;
+            }
+        }
+    }
+    D_800B0078->pc += 3;
+}
 
 /* Wander: every 16 frames turn the facing target by +/- an octant. */
 void func_8009F424(void) {
@@ -8753,7 +10708,83 @@ void func_8009F5A8(void) {
     D_800B0078->pc = pc;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009F5F4);
+/* Event a7: player control. With dialogue closed and encounters allowed,
+ * poll the pad, count frames stuck against terrain, start a jump (0x800)
+ * on the jump button or after 32 stuck frames, and face the d-pad
+ * direction relative to the camera (0x8000 when none). Non-player actors
+ * are marked 0x1000000 instead. */
+void func_8009F5F4(void) {
+    u8 unused[0x48]; /* the original frame holds 0x48 unused bytes */
+    s32 i;
+    s32 idle;
+    s32 direction = 0;
+
+    if (D_800B0078->flags & 0x4000) {
+        for (i = 0; i < 4; i++) {
+            if (D_800C2698[i].status == 0) {
+                break;
+            }
+        }
+        idle = (i == 4) ? -1 : 0;
+        if (idle == -1 && D_800B2078.encounter_inhibition == 0) {
+            if (D_800AFE9C >> 12) {
+                func_80079288();
+            }
+            D_800ADB68 = 1;
+            if (D_800B0078->unk014 & 0x400000) {
+                if (ACTOR_CACHED_POSITION(D_800B0078)[0] == WHOLE(D_800B0078->position[0])
+                    && ACTOR_CACHED_POSITION(D_800B0078)[1] == WHOLE(D_800B0078->position[1])
+                    && ACTOR_CACHED_POSITION(D_800B0078)[2] == WHOLE(D_800B0078->position[2])) {
+                    D_800ADB02++;
+                }
+            } else {
+                D_800ADB02 = 0;
+            }
+            if (D_800ADB02 > 32 && (D_800ADB02 = 32, D_800AFE9C & 0x80) && !(D_800B0078->flags & 0x1800) && D_800ADB64 == 0xFF) {
+                goto jump;
+            }
+            if (D_800B2078.jump_mode == 0) {
+                if ((D_800C2694 & 0x80) && !(D_800B0078->flags & 0x1800) && !(D_800B0078->unk014 & 0x400000) && D_800ADB64 == 0xFF) {
+                jump:
+                    if (func_80081F5C(D_800B0078) == 0) {
+                        D_800B0078->flags |= 0x800;
+                        D_800ADB28 = D_800B2078.unk2360;
+                    }
+                }
+            } else {
+                if (D_800C2694 & 0x80) {
+                    if (D_800B2078.repeat_remaining != 0) {
+                        goto count;
+                    }
+                    if (D_800ADB64 == 0xFF && func_80081F5C(D_800B0078) == 0) {
+                        D_800B0078->flags |= 0x800;
+                        D_800ADB28 = D_800B2078.unk2360;
+                        D_800B0078->unkE8 = 0xFF;
+                        D_800B2078.repeat_remaining = D_800B2078.repeat_delay;
+                    }
+                }
+                if (D_800B2078.repeat_remaining != 0) {
+                count:
+                    D_800B2078.repeat_remaining--;
+                }
+            }
+            if (D_800B2078.unk2354 == 0) {
+                direction = D_800ADF68[(D_800AFE9C >> 12) ^ 0xF];
+            } else {
+                direction = D_800ADF88[(D_800AFE9C >> 12) ^ 0xF];
+            }
+            if (!(direction & 0x8000)) {
+                direction = (direction - D_800AF880.angle) & 0xFFF;
+            }
+            D_800B0078->heading = direction;
+        } else {
+            D_800B0078->heading = direction | 0x8000;
+        }
+    } else if (D_800B2078.preserve_nonplayer_motion == 0) {
+        D_800B0078->flags |= 0x1000000;
+    }
+    D_800B0078->pc += 1;
+}
 
 /* Party slot of character `id`, or -1. */
 s32 func_8009FA00(s32 id) {
@@ -8919,7 +10950,33 @@ void func_8009FE4C(void) {
     D_800B0078->pc += 2;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009FEE4);
+/* Record party slot `slot`'s map (its layer in bits 14 up) and integer x/z
+ * in event variables 2a/2c/2e, 30/32/34 or 36/38/3a. Declared int without
+ * a return value: the original keeps $v0 live on exit. */
+s32 func_8009FEE4(s32 slot) {
+    s32 layer;
+
+    if (D_8005A444[slot] != 0xFF) {
+        layer = D_800AF880.components.descriptors[D_8005A444[slot]].actor->layer << 14;
+        switch (slot) {
+        case 0:
+            func_800A3074(0x2A, (D_8004F34C & 0xFFF) | layer);
+            func_800A3074(0x2C, WHOLE(D_800AF880.components.descriptors[D_8005A444[slot]].actor->position[0]));
+            func_800A3074(0x2E, WHOLE(D_800AF880.components.descriptors[D_8005A444[slot]].actor->position[2]));
+            break;
+        case 1:
+            func_800A3074(0x30, (D_8004F34C & 0xFFF) | layer);
+            func_800A3074(0x32, WHOLE(D_800AF880.components.descriptors[D_8005A444[slot]].actor->position[0]));
+            func_800A3074(0x34, WHOLE(D_800AF880.components.descriptors[D_8005A444[slot]].actor->position[2]));
+            break;
+        case 2:
+            func_800A3074(0x36, (D_8004F34C & 0xFFF) | layer);
+            func_800A3074(0x38, WHOLE(D_800AF880.components.descriptors[D_8005A444[slot]].actor->position[0]));
+            func_800A3074(0x3A, WHOLE(D_800AF880.components.descriptors[D_8005A444[slot]].actor->position[2]));
+            break;
+        }
+    }
+}
 
 /* Read party slot `slot`'s variable triple (see func_8009FD10). */
 void func_800A0158(s32 slot, s32 *a, s32 *b, s32 *c) {
@@ -8942,7 +10999,65 @@ void func_800A0158(s32 slot, s32 *a, s32 *b, s32 *c) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A0228);
+/* Event 5c: the current actor becomes party slot operand 1 (at most 2):
+ * take its member's sprite and shown it at the slot's recorded map
+ * position (variables 2a..3a) when that is this map; with no member, show
+ * the field's first sprite instead. Members away from this map stay hidden
+ * (descriptor flag 0x20). */
+void func_800A0228(void) {
+    FieldDescriptor *descriptor;
+    s32 slot;
+    s32 shown;
+    s32 map;
+    s32 x;
+    s32 z;
+
+    descriptor = &D_800AF880.components.descriptors[D_800AFD1C];
+    slot = func_800ACDEC(1);
+    if (slot >= 3) {
+        slot = 2;
+    }
+    shown = 1;
+    D_8006F990[slot] = D_800AFD1C;
+    if (D_80062590[slot] != 0xFF && func_8001ACF0(D_80062590[slot]) != 0xFF) {
+        func_800A0158(slot, &map, &x, &z);
+        D_800B0078->layer = (map >> 14) & 3;
+        if ((D_8004F34C & 0xFFF) != (map & 0x3FFF)) {
+            shown = 0;
+            x = 0;
+            z = 0;
+            D_800B0078->layer = 0;
+        }
+        if (D_8005A39C->unk22B1[slot] != 0) {
+            shown = 0;
+        } else if (D_80062590[slot] == 7) {
+            shown = 0;
+        }
+        descriptor->flags = (descriptor->flags & 0xF07F) | 0x200;
+        func_80076AC0(D_800AFD1C, slot, D_8005A414[slot], 1, 0, slot, 1);
+        D_800AF880.components.descriptors[D_800AFD1C].flags &= 0xFFDF;
+        if ((D_8004F34C & 0xFFF) != (map & 0x3FFF)) {
+            D_800B0078->layer = 0;
+        }
+        func_8009E574(x, z);
+        func_800A0C94();
+        D_800B0078->flags = (D_800B0078->flags | 0x400) & ~0x300;
+        if (shown == 0) {
+            D_800AF880.components.descriptors[D_800AFD1C].flags |= 0x20;
+        }
+    } else {
+        func_800A0D3C();
+        D_800B0078->pc += 2;
+        D_800B0078->layer_flags |= 0x800;
+        return;
+    }
+    if (D_800AF880.components.layer_count - 1 < D_800B0078->layer) {
+        D_800B0078->layer = 0;
+    }
+    D_800B0078->flags |= 0x20000;
+    D_800B0078->layer_flags |= 0xC00;
+    D_800B0078->pc += 3;
+}
 
 /* Copy actor `from`'s collision state, height, +50 words, position and
  * matrix to actor `to` and move `to`'s model to it. */
@@ -9002,7 +11117,62 @@ void func_800A06E8(void) {
     D_800B0078->pc += 3;
 }
 
+#ifdef NON_MATCHING
+/* Event 16: the current actor becomes party character operand 1 (ff, fe, fd: party slots 2, 1, 0). A party member takes its slot (slot 0 becomes the controlled actor), its sprite (or sprite 800ae294[character] of the alternate set 800b2268) and map entry variable 2; others hide and end their script. The sprite-table address keeps 800b2268 in a different register order (a1*4+4 first). */
+void func_800A08B8(void) {
+    FieldDescriptor *descriptor;
+    s32 character;
+    s32 slot;
+    FieldModel *model;
+    s32 *sprites;
+
+    descriptor = &D_800AF880.components.descriptors[D_800AFD1C];
+    character = func_8008CF3C(func_800ACDEC(1));
+    slot = func_8009FA00(character);
+    D_800B0078->unkE4 = character;
+    descriptor->flags = (descriptor->flags & 0xF07F) | 0x200;
+    if (slot != -1) {
+        if (slot == 0) {
+            D_800B2078.controlled = D_800AFD1C;
+            D_800B2078.unk233E = D_800AFD1C;
+            D_800B0078->flags = (D_800B0078->flags | 0x4400) & ~0x80;
+        }
+        D_8005A444[slot] = D_800AFD1C;
+        if (D_800B2078.unk2268 != 0) {
+            sprites = D_800AF880.components.sprites;
+            func_80076AC0(D_800AFD1C, D_800AE294[character] + D_800B2078.unk2268,
+                          (u8 *)(sprites[D_800AE294[character] + D_800B2078.unk2268 + 1] + (s32)sprites),
+                          0, 0, (D_800AE294[character] + D_800B2078.unk2268) | 0x80, 1);
+            D_800B0078->flags = (D_800B0078->flags | 0x400) & ~0x300;
+            if (D_8005A39C->unk22B1[slot] != 0) {
+                model = D_800AF880.components.descriptors[D_800AFD1C].model;
+                D_800AF880.components.descriptors[D_800AFD1C].model = D_800AF880.components.descriptors[D_8006F990[slot]].model;
+                D_800AF880.components.descriptors[D_8006F990[slot]].model = model;
+                D_800B0078->flags = (D_800B0078->flags | 0x200) & ~0x500;
+            }
+        } else {
+            func_80076AC0(D_800AFD1C, slot, D_8005A414[slot], 1, 0, slot, 1);
+            D_800B0078->flags = (D_800B0078->flags | 0x400) & ~0x300;
+        }
+        D_800AFD20 = -0xC0;
+        D_800AF880.components.descriptors[D_800AFD1C].flags &= 0xFFDF;
+        func_8009FA54(func_800A3018(2));
+        func_800A0C94();
+        D_800B0078->layer_flags &= ~0x800;
+    } else {
+        func_80076AC0(D_800AFD1C, 0, D_8005A414[0], 1, 0, 0, 1);
+        D_800B0078->flags |= 1;
+        D_800AFFEC = 1;
+        D_800B00C0 = 1;
+        D_800B0078->layer_flags |= 0x100000;
+    }
+    D_800B0078->flags |= 0x20000;
+    D_800B0078->layer_flags |= 0x400;
+    D_800B0078->pc += 3;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A08B8);
+#endif
 
 /* Set flag 0x80 on the controlled actor. */
 void func_800A0C4C(void) {
@@ -9108,7 +11278,59 @@ void func_800A0EE8(void) {
     D_800B00C0 = 1;
 }
 
+#ifdef NON_MATCHING
+void func_800A0FD8(void) {
+    s32 layer;
+
+    if (D_800ADB2C != 0 || func_8008A558() != 0) {
+        D_800B00C0 = 1;
+        D_800B0078->pc--;
+        return;
+    }
+    layer = D_800B0078->state.bits.layer;
+    D_800B0078->layer_flags &= ~0x2000;
+    func_80028470(4, 0);
+    switch (D_800ADC00[D_800B0078->pc + 1]) {
+    case 0:
+        D_801E8670[layer][0x34] = 0;
+        D_800B0078->pc += 2;
+        break;
+    case 1:
+        func_801E8030(D_800B0078->state.bits.layer);
+        D_800B2078.unk21DC[layer] = func_800ACDEC(5) * 2;
+        D_800B2394[0].file = D_800B2078.unk21DC[layer] + 0x6BA;
+        D_800B2394[0].destination = D_8005A420[layer] = func_80031BDC(func_800288EC(D_800B2078.unk21DC[layer] + 0x6BA), 0);
+        D_800B2394[1].file = D_800B2078.unk21DC[layer] + 0x6BB;
+        D_800B2394[1].destination = D_8005A450[layer] = func_80031BDC(func_800288EC(D_800B2078.unk21DC[layer] + 0x6BB), 1);
+        D_800B2394[2].file = 0;
+        D_800B2394[2].destination = 0;
+        func_80029AFC(D_800B2394, 0, 0);
+        D_800B0078->pc += 2;
+        break;
+    case 2:
+        if (func_80028A60(1) != 0) {
+            D_800B0078->pc--;
+            break;
+        }
+        func_800ACDEC(2);
+        func_801E742C(layer, 0, D_8005A420[layer], D_8005A450[layer],
+                      0x240 - ((layer + D_800B2078.unk225F[layer]) << 6), 0x100, 0, layer + 0xFC,
+                      LAYER_STATE.motion[layer]);
+        LAYER_STATE.scale[layer] = ((EffectLayer *)D_801E8670[layer])->scale;
+        func_800320E8(D_8005A450[layer]);
+        D_800B0078->pc += 4;
+        D_800B0078->layer_flags |= 0x2000;
+        ((EffectLayer *)D_801E8670[layer])->scale = (D_800B0078->scale[0] * 5) >> 6;
+        ((EffectLayer *)D_801E8670[layer])->y = D_800B0078->position[1] >> 16;
+        ((EffectLayer *)D_801E8670[layer])->model->x = WHOLE(D_800B0078->position[0]);
+        ((EffectLayer *)D_801E8670[layer])->model->z = WHOLE(D_800B0078->position[2]);
+        break;
+    }
+    D_800B00C0 = 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A0FD8);
+#endif
 
 /* Give the current actor the field's first sprite on the next free 801e
  * layer (operand 1: layer parameter) and show it. */
@@ -9288,7 +11510,110 @@ void func_800A1B70(void) {
 
 INCLUDE_RODATA(".local/decomp/field/asm/nonmatchings/field", D_8006FD44);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A1BD0);
+/* Event 02: compare two halfword operands (bits 7/6 of operand byte 5
+ * select an event variable or a signed immediate; variables compare
+ * unsigned when flagged so) by condition bits 0-3 of byte 5, and jump to
+ * operand 6 unless it holds. */
+void func_800A1BD0(void) {
+    s32 left;
+    s32 right;
+    s32 result;
+
+    right = 0;
+    left = 0;
+    switch (EVENT_OPERAND_BYTE(5) & 0xF0) {
+    case 0x00:
+        left = func_800A3018(func_800ACDB8(1) & 0xFFFF);
+        right = func_800A3018(func_800ACDB8(3) & 0xFFFF);
+        if (func_800A2FE0(func_800ACDB8(1) & 0xFFFF) != 0) {
+            right &= 0xFFFF;
+        } else {
+            right = (s16)right;
+        }
+        break;
+    case 0x40:
+        left = func_800A3018(func_800ACDB8(1) & 0xFFFF);
+        right = (s16)func_800ACD7C(3);
+        if (func_800A2FE0(func_800ACDB8(1) & 0xFFFF) != 0) {
+            right &= 0xFFFF;
+        }
+        break;
+    case 0x80:
+        left = (s16)func_800ACD7C(1);
+        right = func_800A3018(func_800ACDB8(3) & 0xFFFF);
+        if (func_800A2FE0(func_800ACDB8(3) & 0xFFFF) != 0) {
+            left &= 0xFFFF;
+        }
+        break;
+    case 0xC0:
+        left = (s16)func_800ACD7C(1);
+        right = (s16)func_800ACD7C(3);
+        break;
+    }
+    result = 0;
+    switch (EVENT_OPERAND_BYTE(5) & 0xF) {
+    case 0:
+        if (left == right) {
+            result++;
+        }
+        break;
+    case 1:
+        if (left != right) {
+            result++;
+        }
+        break;
+    case 2:
+        if (left > right) {
+            result++;
+        }
+        break;
+    case 3:
+        if (left < right) {
+            result++;
+        }
+        break;
+    case 4:
+        if (left >= right) {
+            result++;
+        }
+        break;
+    case 5:
+        if (left <= right) {
+            result++;
+        }
+        break;
+    case 6:
+        if (left & right) {
+            result++;
+        }
+        break;
+    case 7:
+        if (left != right) {
+            result++;
+        }
+        break;
+    case 8:
+        if (left | right) {
+            result++;
+        }
+        break;
+    case 9:
+        if (left & right) {
+            result++;
+        }
+        break;
+    case 10:
+        if (~left & right) {
+            result++;
+        }
+        break;
+    }
+    if (result == 1) {
+        D_800B0078->pc += 8;
+    } else {
+        D_800B0078->pc = func_800ACDB8(6);
+    }
+}
 
 /* Jump to operand 1. */
 void func_800A1E74(void) {
@@ -9306,12 +11631,11 @@ extern s32 D_800ADBE0;
 extern s32 D_800ADBEC;
 extern s32 D_800AFFEC;
 
-#ifdef NON_MATCHING
 /* Run the current actor's event instructions until one yields, its script
  * slot ends, the field starts a transition or `limit` (raised by some
- * instructions) runs out; 1024 is an error. Differs only in the loop
- * branch delay slot (filled here, a nop in the original). */
-void func_800A1EC8(s32 limit) {
+ * instructions) runs out; 1024 is an error. Declared int without a
+ * value, as the original keeps $v0 live (its loop delay slot stays empty). */
+s32 func_800A1EC8(s32 limit) {
     s32 count;
 
     D_800B00C0 = 0;
@@ -9335,13 +11659,69 @@ void func_800A1EC8(s32 limit) {
         }
     }
 }
+
+#ifdef NON_MATCHING
+void func_800A2030(void) {
+    FieldDescriptor *descriptor;
+    FieldActor *actor;
+    s32 count;
+    s32 index;
+    s32 i;
+    s32 priority;
+
+    if (D_800ADB74 == 1) {
+        count = 1;
+    } else {
+        count = D_800ADBFC;
+    }
+    D_800ADB68 = 0;
+    D_800C4268 = 0;
+    for (index = 0; index < count; index++) {
+        descriptor = &D_800AF880.components.descriptors[index];
+        if (!(descriptor->flags & 0xF00) || (descriptor->actor->layer_flags & 0x100000)) {
+            continue;
+        }
+        if (D_800ADB1C != 0 && (D_800ADBE0 == 0 || D_800ADBE4 == 0 || D_800ADBEC == 0)) {
+            continue;
+        }
+        actor = descriptor->actor;
+        actor->flags &= ~0x1000000;
+        D_800B06B8 = descriptor;
+        D_800AFD1C = index;
+        D_800B0078 = actor;
+        priority = 0xF;
+        if (D_800B2078.party_processing_mode != 0) {
+            for (i = 0; i < 3; i++) {
+                if (D_8005A444[i] != 0xFF && D_8005A444[i] == index) {
+                    goto next;
+                }
+            }
+        }
+        for (i = 0; i < 8; i++) {
+            if (priority >= D_800B0078->slots[i].priority) {
+                priority = D_800B0078->slots[i].priority;
+                D_800B0078->slot = i;
+            }
+        }
+        if (priority == 0xF) {
+            D_800B0078->slots[0].resume_pc = func_800A3090(index, 1);
+            D_800B0078->slots[0].priority = 7;
+            D_800B0078->slot = 0;
+        }
+        D_800B0078->pc = D_800B0078->slots[D_800B0078->slot].resume_pc;
+        D_800AFFEC = 1;
+        if (!(D_800B0078->flags & 1)) {
+            func_800A1EC8(8);
+        }
+        D_800B0078->slots[D_800B0078->slot].resume_pc = D_800B0078->pc;
+    next:;
+    }
+}
 #else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A1EC8);
+INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A2030);
 #endif
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A2030);
-
-void func_800A1EC8(s32 limit);
+s32 func_800A1EC8(s32 limit);
 extern s32 D_800AFFEC;
 
 /* Run event `event` of actor 0 immediately with fresh script slots, then
@@ -9383,7 +11763,43 @@ void func_800A2488(void) {
     D_800ADB8C = 0;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A24C4);
+/* After a return to the field: run actor 0's event 2, show reassigned
+ * party members, restart each 801e layer's animation, lift the controlled
+ * actor 8 units unless its +74 is 0xff, and move the pieces by their
+ * accumulated drift (mode 0: non-event pieces, mode 1: all but moving
+ * event actors). `i` also holds the +74 byte, as in the original. */
+void func_800A24C4(void) {
+    u8 unused[0x10]; /* the original frame holds 0x10 unused bytes */
+    s32 i;
+
+    if (D_8004F30C != 0) {
+        func_800A22AC(2);
+        func_800AD898();
+        for (i = 0; i < D_800B2078.unk2264; i++) {
+            func_801E8330((u16)i, 0, D_800B2078.unk21E4[i]);
+        }
+        i = D_800AF880.components.descriptors[D_800B2078.controlled].actor->unk074;
+        if (i != 0xFF) {
+            D_800AF880.components.descriptors[D_800B2078.controlled].actor->position[1] -= 8;
+        }
+        for (i = 0; i < D_800AF880.components.descriptor_count; i++) {
+            if (i < D_800ADBFC) {
+                if (D_800AF880.components.descriptors[i].actor->state.word & 3) {
+                    continue;
+                }
+            } else if ((D_800B2078.piece_drift_mode & 0x7F) == 0) {
+                D_800AF880.components.descriptors[i].matrix.t[0] += PIECE_DRIFT_TOTAL[0];
+                D_800AF880.components.descriptors[i].matrix.t[1] += PIECE_DRIFT_TOTAL[1];
+                D_800AF880.components.descriptors[i].matrix.t[2] += PIECE_DRIFT_TOTAL[2];
+            }
+            if ((D_800B2078.piece_drift_mode & 0x7F) == 1) {
+                D_800AF880.components.descriptors[i].matrix.t[0] += PIECE_DRIFT_TOTAL[0];
+                D_800AF880.components.descriptors[i].matrix.t[1] += PIECE_DRIFT_TOTAL[1];
+                D_800AF880.components.descriptors[i].matrix.t[2] += PIECE_DRIFT_TOTAL[2];
+            }
+        }
+    }
+}
 
 extern s32 D_8004F30C;
 void func_800A3C8C(void);
@@ -9423,7 +11839,94 @@ void func_800A2714(void) {
     }
 }
 
+#ifdef NON_MATCHING
+void func_800A28D4(void) {
+    s32 i;
+    FieldModel *model;
+    FieldActor *actor;
+    s32 *sprites;
+
+    if (D_8004F30C != 0) {
+        func_800A3474();
+        for (i = 0; i < D_800ADBFC; i++) {
+            actor = D_800AF880.components.descriptors[i].actor;
+            if (!(actor->unk126[0] & 0x80)) {
+                func_80076AC0(i, actor->unk126[1], D_8005A414[actor->unk126[0]], actor->unk130_28 & 3,
+                              actor->unk134 & 0xF, D_800AF880.components.descriptors[i].actor->unk126[0],
+                              (D_800AF880.components.descriptors[i].actor->unk134 >> 4) & 1);
+            } else {
+                sprites = D_800AF880.components.sprites;
+                func_80076AC0(i, actor->unk126[1], (u8 *)(sprites[(actor->unk126[0] & 0x7F) + 1] + (s32)sprites),
+                              actor->unk130_28 & 3, actor->unk134 & 0xF,
+                              D_800AF880.components.descriptors[i].actor->unk126[0],
+                              (D_800AF880.components.descriptors[i].actor->unk134 >> 4) & 1);
+                switch (D_800AF880.components.descriptors[i].actor->state.bits.unk16) {
+                case 1:
+                    func_8002303C(D_800AF880.components.descriptors[i].model, 2, 0);
+                    D_800AF880.components.descriptors[i].model->animation->unk18[2] = D_800AF880.components.descriptors[i].actor->state.bits.unk18;
+                    D_800AF880.components.descriptors[i].model->animation->unk18[3] = D_800AF880.components.descriptors[i].actor->unk130;
+                    break;
+                case 2:
+                    func_8002303C(D_800AF880.components.descriptors[i].model, 3, 0);
+                    D_800AF880.components.descriptors[i].model->animation->unk18[2] = D_800AF880.components.descriptors[i].actor->state.bits.unk18;
+                    D_800AF880.components.descriptors[i].model->animation->unk18[3] = D_800AF880.components.descriptors[i].actor->unk130;
+                    D_800AF880.components.descriptors[i].model->animation->unk18[4] = D_800AF880.components.descriptors[i].actor->unk130_9;
+                    D_800AF880.components.descriptors[i].model->animation->unk18[5] = D_800AF880.components.descriptors[i].actor->unk130_19;
+                    break;
+                }
+            }
+        }
+        if (D_800B2078.unk2268 != 0) {
+            for (i = 0; i < 3; i++) {
+                if (D_8005A444[i] != 0xFF) {
+                    if (D_8005A39C->unk22B1[i] != 0) {
+                        model = D_800AF880.components.descriptors[D_8005A444[i]].model;
+                        D_800AF880.components.descriptors[D_8005A444[i]].model = D_800AF880.components.descriptors[D_8006F990[i]].model;
+                        D_800AF880.components.descriptors[D_8006F990[i]].model = model;
+                        D_800AF880.components.descriptors[D_8006F990[i]].actor->flags |= 0x200;
+                        D_800AF880.components.descriptors[D_8006F990[i]].actor->flags &= ~0x500;
+                        D_800AF880.components.descriptors[D_8006F990[i]].flags |= 0x20;
+                    } else {
+                        D_800AF880.components.descriptors[D_8006F990[i]].actor->flags |= 0x400;
+                        D_800AF880.components.descriptors[D_8006F990[i]].actor->flags &= ~0x300;
+                    }
+                }
+            }
+        }
+    } else {
+        func_800A3074(0x10, 0);
+        func_800A30B4();
+        for (i = 0; i < D_800ADBFC; i++) {
+            D_800AFD1C = i;
+            D_800B06B8 = &D_800AF880.components.descriptors[i];
+            D_800B0078 = D_800B06B8->actor;
+            D_800B0078->pc = func_800A3090(i, 2);
+            if (D_800ADC00[D_800B0078->pc] == 0) {
+                D_800B0078->layer_flags |= 0x4000000;
+            }
+            D_800AFD1C = i;
+            D_800B06B8 = &D_800AF880.components.descriptors[i];
+            D_800B0078 = D_800B06B8->actor;
+            D_800B0078->pc = func_800A3090(i, 0);
+        }
+        for (i = 0; i < D_800ADBFC; i++) {
+            D_800AFD1C = i;
+            D_800AFC74 = 0;
+            D_800AFFEC = 0;
+            D_800B06B8 = &D_800AF880.components.descriptors[i];
+            D_800B0078 = D_800B06B8->actor;
+            func_800A1EC8(0xFFFF);
+            if (D_800AFC74 == 0) {
+                sprites = D_800AF880.components.sprites;
+                func_80076AC0(i, 0, (u8 *)(sprites[1] + (s32)sprites), 0, 0, 0x80, 0);
+                D_800B0078->layer_flags |= 0x800;
+            }
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A28D4);
+#endif
 
 /* Advance one byte. */
 void func_800A2FC0(void) {
@@ -9500,13 +12003,209 @@ void func_800A30FC(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A31E8);
+/* Update the play record once per frame (not while 800b02c8 is 1): the
+ * held buttons seen, the party, the departure data, the party slots'
+ * positions, the play clock in variable 10 (minutes:seconds stepped
+ * every 31 frames; counting down with 8004f328 bit 2, stopped by bit 7)
+ * and the controlled actor's position in variables 1e-22. */
+void func_800A31E8(void) {
+    s32 i;
+    s32 value;
+    s32 seconds;
+    s32 minutes;
 
+    if (D_800B02C8 == 1) {
+        return;
+    }
+    D_800AFC6C |= D_800AFE9C;
+    for (i = 0; i < 3; i++) {
+        D_8005A39C->unk1D34[i] = D_80062590[i];
+    }
+    func_800A30FC();
+    D_8004F2F4 = 0;
+    D_8004F318++;
+    for (i = 0; i < 3; i++) {
+        if (D_8005A39C->unk22B1[i] == 1) {
+            func_8009FEE4(i);
+        }
+    }
+    if (D_8004F318 > 30) {
+        D_8004F318 = 0;
+        if (!(D_8004F328 & 0x80)) {
+            value = func_800A3018(0xA);
+            seconds = value & 0xFF;
+            minutes = (value >> 8) & 0xFF;
+            if (!(D_8004F328 & 4)) {
+                if (seconds != 0xFF3B) { /* never equal: the original's limit check */
+                    seconds++;
+                    if (seconds > 60) {
+                        seconds = 0;
+                        minutes++;
+                    }
+                }
+            } else if (seconds == 0) {
+                if (minutes != 0) {
+                    seconds = 59;
+                    minutes--;
+                }
+            } else {
+                seconds--;
+            }
+            func_800A3074(0xA, (minutes << 8) | (seconds & 0xFF));
+        }
+    }
+    func_800A3074(0xC, D_80059418 | (D_80059420 << 8));
+    func_800A3074(0xE, D_80059484);
+    func_800A3074(0x1E, WHOLE(D_800AF880.components.descriptors[D_800B2078.controlled].actor->position[0]));
+    func_800A3074(0x20, WHOLE(D_800AF880.components.descriptors[D_800B2078.controlled].actor->position[2]));
+    func_800A3074(0x22, WHOLE(D_800AF880.components.descriptors[D_800B2078.controlled].actor->position[1]));
+}
+
+#ifdef NON_MATCHING
+void func_800A3474(void) {
+    s32 i;
+    s32 flags;
+    s32 *list;
+
+    D_800AFC50 = D_8005A4E4;
+    D_800AF880.components.descriptor_count = *D_800AFC50;
+    D_800AFC50 += 4;
+    COPY_BLOCK(&D_800B007C, D_800AFC50, 0x38);
+    D_800AFC50 += 0x38;
+    COPY_BLOCK(&D_800AF880.world_angles, D_800AFC50, 0x74);
+    D_800AFC50 += 0x74;
+    COPY_BLOCK(D_800AF880.components.collision_attributes, D_800AFC50, 0x400);
+    D_800AFC50 += 0x400;
+    COPY_BLOCK(&D_800B2078, D_800AFC50, 0x2E4);
+    D_800AFC50 += 0x2E4;
+    COPY_BLOCK(&D_800AF880, D_800AFC50, 0x1C8);
+    D_800AFC50 += 0x1C8;
+    for (i = 0; i < D_800ADBFC; i++) {
+        COPY_BLOCK(&D_800AF880.components.descriptors[i].rotation, D_800AFC50, 8);
+        D_800AFC50 += 8;
+        COPY_BLOCK(&flags, D_800AFC50, 4);
+        D_800AFC50 += 4;
+        D_800AF880.components.descriptors[i].flags = flags;
+        D_800AFC50 += 0x30;
+        list = D_800AF880.components.descriptors[i].actor->list;
+        COPY_BLOCK(D_800AF880.components.descriptors[i].actor, D_800AFC50, 0x138);
+        D_800AF880.components.descriptors[i].actor->list = list;
+        D_800AFC50 += 0x138;
+        if (D_800AF880.components.descriptors[i].actor->unk134 & 0x80) {
+            D_800AF880.components.descriptors[i].actor->unk110 = func_80031BDC(0xC, 0);
+            COPY_BLOCK(D_800AF880.components.descriptors[i].actor->unk110, D_800AFC50, 0xC);
+            D_800AFC50 += 0xC;
+        }
+        if (D_800AF880.components.descriptors[i].actor->state.word & 0x1000) {
+            D_800AF880.components.descriptors[i].actor->unk114 = func_80031BDC(0x10, 0);
+            COPY_BLOCK(D_800AF880.components.descriptors[i].actor->unk114, D_800AFC50, 0x10);
+            D_800AFC50 += 0x10;
+        }
+    }
+    COPY_BLOCK(D_800C3A68, D_800AFC50, 0x800);
+    D_800AFC50 += 0x800;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A3474);
+#endif
 
+#ifdef NON_MATCHING
+void func_800A3C8C(void) {
+    s32 changed;
+    s32 i;
+    u8 *record;
+    FieldDescriptor *descriptor;
+
+    D_800AFC50 = D_8005A4E4;
+    D_800AF880.components.descriptor_count = *D_800AFC50;
+    D_800AFC50 += 0x3C;
+    *(ViewSnapshot *)&D_800AF880.world_angles = *(ViewSnapshot *)D_800AFC50;
+    D_800AFC50 += 0x920;
+    changed = 0;
+    for (i = 0; i < 3; i++) {
+        if (D_8005A408[i] != D_8005A39C->unk22B1[i]) {
+            changed++;
+        }
+    }
+    for (i = 0; i < D_800ADBFC; i++) {
+        record = D_800AFC50;
+        D_800AFC50 += 0xC;
+        if (D_800AF880.components.descriptors[i].actor->unk124 != -1 && D_800AF880.components.descriptors[i].actor->unk0EA != 0xFF) {
+            *(s16 *)(record + 0x20) = D_800AF880.components.descriptors[i].actor->unk0EA;
+        }
+        descriptor = &D_800AF880.components.descriptors[i];
+        if (!(descriptor->actor->layer_flags & 0x1000000)
+            && (D_800B2078.unk2268 == 0 || !(descriptor->actor->flags & 0x600) || changed == 0)) {
+            func_80021D50(descriptor->model, D_800AFC50);
+        }
+        record = D_800AFC50;
+        descriptor = &D_800AF880.components.descriptors[i];
+        D_800AFC50 = record + 0x168;
+        if (descriptor->actor->unk134 & 0x80) {
+            D_800AFC50 = record + 0x174;
+        }
+        if (descriptor->actor->state.word & 0x1000) {
+            D_800AFC50 += 0x10;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A3C8C);
+#endif
 
+#ifdef NON_MATCHING
+void func_800A3F4C(void) {
+    s32 i;
+    s32 flags;
+    s32 size;
+    u8 *snapshot;
+
+    D_800AFC50 = D_8005A4E4;
+    *D_800AFC50 = D_800AF880.components.descriptor_count;
+    D_800AFC50 += 4;
+    COPY_BLOCK(D_800AFC50, &D_800B007C, 0x38);
+    D_800AFC50 += 0x38;
+    COPY_BLOCK(D_800AFC50, &D_800AF880.world_angles, 0x74);
+    D_800AFC50 += 0x74;
+    COPY_BLOCK(D_800AFC50, D_800AF880.components.collision_attributes, 0x400);
+    D_800AFC50 += 0x400;
+    COPY_BLOCK(D_800AFC50, &D_800B2078, 0x2E4);
+    D_800AFC50 += 0x2E4;
+    COPY_BLOCK(D_800AFC50, &D_800AF880, 0x1C8);
+    D_800AFC50 += 0x1C8;
+    for (i = 0; i < D_800ADBFC; i++) {
+        COPY_BLOCK(D_800AFC50, &D_800AF880.components.descriptors[i].rotation, 8);
+        D_800AFC50 += 8;
+        flags = D_800AF880.components.descriptors[i].flags;
+        COPY_BLOCK(D_800AFC50, &flags, 4);
+        D_800AFC50 += 4;
+        func_80021EBC(D_800AF880.components.descriptors[i].model, D_800AFC50);
+        D_800AFC50 += 0x30;
+        COPY_BLOCK(D_800AFC50, D_800AF880.components.descriptors[i].actor, 0x138);
+        D_800AFC50 += 0x138;
+        if (D_800AF880.components.descriptors[i].actor->unk134 & 0x80) {
+            COPY_BLOCK(D_800AFC50, D_800AF880.components.descriptors[i].actor->unk110, 0xC);
+            D_800AFC50 += 0xC;
+        }
+        if (D_800AF880.components.descriptors[i].actor->state.word & 0x1000) {
+            COPY_BLOCK(D_800AFC50, D_800AF880.components.descriptors[i].actor->unk114, 0x10);
+            D_800AFC50 += 0x10;
+        }
+    }
+    COPY_BLOCK(D_800AFC50, D_800C3A68, 0x800);
+    D_800AFC50 += 0x800;
+    for (i = 0; i < 3; i++) {
+        D_8005A408[i] = D_8005A39C->unk22B1[i];
+    }
+    snapshot = D_8005A4E4;
+    size = D_800AFC50 - snapshot;
+    if (D_800C268C == 0) {
+        func_800379C8("SAVESIZE=%d %x\n", size, size);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A3F4C);
+#endif
 
 void func_800A476C(s32 x, s32 y);
 
@@ -9543,7 +12242,96 @@ void func_800A47D4(void) {
     }
 }
 
+#ifdef NON_MATCHING
+void func_800A484C(s32 resume) {
+    RECT rect;
+    s32 row;
+    s32 column;
+    s32 i;
+    POLY_FT4 *poly;
+    POLY_FT4 *copy;
+    s32 u;
+    s32 v;
+
+    D_800B2078.unk2078 = 1;
+    if (D_800ADB24 == 0) {
+        D_800B2078.effect_buffers[0] = func_80031BDC(0x180, 0);
+        D_800B2078.effect_buffers[1] = func_80031BDC(0x180, 0);
+        D_800B2078.effect_buffers[2] = func_80031BDC(0x3840, 0);
+        D_800B2078.effect_buffers[3] = func_80031BDC(0x3840, 0);
+        D_800ADB24 = 1;
+        for (row = 0; row < 17; row++) {
+            for (column = 0; column < 20; column++) {
+                poly = (POLY_FT4 *)D_800B2078.effect_buffers[2] + row * 20 + column;
+                copy = (POLY_FT4 *)D_800B2078.effect_buffers[3] + row * 20 + column;
+                SetPolyFT4(poly);
+                SetSemiTrans(poly, 0);
+                poly->r0 = 0x80;
+                poly->g0 = 0x80;
+                poly->b0 = 0x80;
+                poly->x0 = column * 16;
+                poly->y0 = row * 16;
+                poly->x1 = column * 16 + 16;
+                poly->y1 = row * 16;
+                poly->x2 = column * 16;
+                poly->y2 = row * 16 + 16;
+                poly->x3 = column * 16 + 16;
+                poly->y3 = row * 16 + 16;
+                if (row >= 14) {
+                    u = (column * 16) & 0x3F;
+                    v = (column >> 2) * 16 + (row - 14) * 80;
+                    poly->u0 = u;
+                    poly->v0 = v;
+                    poly->u1 = u + 16;
+                    poly->v1 = v;
+                    poly->u2 = u;
+                    poly->v2 = v + 16;
+                    poly->u3 = u + 16;
+                    poly->v3 = v + 16;
+                    poly->tpage = GetTPage(2, 0, 0x3C0, 0);
+                    *copy = *poly;
+                } else {
+                    u = (column * 16) & 0x3F;
+                    poly->u0 = u;
+                    poly->v0 = row * 16;
+                    poly->u1 = u + 16;
+                    poly->v1 = row * 16;
+                    poly->u2 = u;
+                    poly->v2 = row * 16 + 16;
+                    poly->u3 = u + 16;
+                    poly->v3 = row * 16 + 16;
+                    poly->tpage = GetTPage(2, 0, (column * 16) & 0xFFC0, 0);
+                    *copy = *poly;
+                    copy->tpage = GetTPage(2, 0, (column * 16) & 0xFFC0, 0x100);
+                }
+            }
+        }
+        rect.x = 0;
+        rect.y = 0x20;
+        rect.w = 0x140;
+        rect.h = 0xC0;
+        SetDrawMove(D_800B2078.effect_buffers[0], &rect, 0, 0);
+        rect.y = 0x120;
+        SetDrawMove(D_800B2078.effect_buffers[1], &rect, 0, 0x100);
+        rect.w = 0x40;
+        rect.h = 0x10;
+        for (i = 0; i < 15; i++) {
+            rect.x = D_800AEB24[i].x;
+            rect.y = D_800AEB24[i].y;
+            SetDrawMove((DR_MOVE *)D_800B2078.effect_buffers[0] + i + 1, &rect, 0x3C0, i * 16);
+            rect.y = D_800AEB24[i].y + 0x100;
+            SetDrawMove((DR_MOVE *)D_800B2078.effect_buffers[1] + i + 1, &rect, 0x3C0, i * 16);
+        }
+    }
+    if (resume == 0) {
+        func_800A4CC4(func_800ACDEC(1), func_800ACDEC(3), func_800ACDEC(5), func_800ACDEC(7),
+                      func_800ACDEC(9), func_800ACDEC(11), func_800ACDEC(13));
+    }
+    D_800B2078.unk207A = 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A484C);
+#endif
 
 /* Move the six screen effect values to the given whole targets over
  * `steps` frames. */
@@ -9573,7 +12361,133 @@ void func_800A4CC4(s32 a, s32 b, s32 c, s32 d, s32 e, s32 f, s32 steps) {
     D_800B2078.effect_step[5] = step5;
 }
 
+#ifdef NON_MATCHING
+void func_800A4DAC(void) {
+    s32 amplitude_x;
+    s32 amplitude_y;
+    s32 frequency_x;
+    s32 frequency_y;
+    s32 phase_x;
+    s32 phase_y;
+    s32 row;
+    s32 column;
+    s32 wave_x;
+    s32 wave_y;
+    s32 value;
+    POLY_FT4 *grid;
+    POLY_FT4 *poly;
+    DR_MOVE *moves;
+
+    if (D_800B2078.unk2078 == 0) {
+        return;
+    }
+    if (D_800B2078.effect_steps > 0) {
+        D_800B2078.effect_value[0] += D_800B2078.effect_step[0];
+        D_800B2078.effect_value[1] += D_800B2078.effect_step[1];
+        D_800B2078.effect_steps--;
+        D_800B2078.effect_value[2] += D_800B2078.effect_step[2];
+        D_800B2078.effect_value[3] += D_800B2078.effect_step[3];
+        D_800B2078.effect_value[4] += D_800B2078.effect_step[4];
+        D_800B2078.effect_value[5] += D_800B2078.effect_step[5];
+    } else if (D_800B2078.unk207A != 0) {
+        D_800B2078.effect_value[5] = 0;
+        D_800B2078.effect_value[4] = 0;
+        D_800B2078.effect_value[3] = 0;
+        D_800B2078.effect_value[2] = 0;
+        D_800B2078.effect_value[1] = 0;
+        D_800B2078.effect_value[0] = 0;
+        D_800B2078.unk2078 = 0;
+    }
+    amplitude_x = WHOLE(D_800B2078.effect_value[0]);
+    amplitude_y = WHOLE(D_800B2078.effect_value[1]);
+    frequency_x = WHOLE(D_800B2078.effect_value[2]);
+    frequency_y = WHOLE(D_800B2078.effect_value[3]);
+    EFFECT_PHASE[0] += WHOLE(D_800B2078.effect_value[4]);
+    EFFECT_PHASE[1] += WHOLE(D_800B2078.effect_value[5]);
+
+    /* Rows 14-16 (the saved strips) continue the wave below the screen. */
+    phase_y = EFFECT_PHASE[1] + frequency_y * 11;
+    for (row = 14; row < 17; row++) {
+        wave_y = (func_8003F8CC(phase_y) * amplitude_y) >> 12;
+        phase_y += frequency_y;
+        phase_x = EFFECT_PHASE[0];
+        for (column = 0; column < 20; column++) {
+            wave_x = (func_8003F8CC(phase_x) * amplitude_x) >> 12;
+            phase_x += frequency_x;
+            grid = D_800B2078.effect_buffers[2 + D_800ADB08];
+            poly = &grid[row * 20 + column];
+            if (column != 0) {
+                value = column * 16 + wave_x;
+                poly[-1].x3 = poly[-1].x1 = poly->x2 = poly->x0 = value;
+                if (column == 19) {
+                    grid[row * 20 + 19].x3 = grid[row * 20 + 19].x1 = wave_x + 0x140;
+                }
+            } else {
+                grid[row * 20].x2 = grid[row * 20].x0 = 0;
+            }
+            value = row * 16 + wave_y - 0x30;
+            grid = D_800B2078.effect_buffers[2 + D_800ADB08];
+            grid[row * 20 + column - 20].y3 = grid[row * 20 + column - 20].y2 =
+                grid[row * 20 + column].y1 = grid[row * 20 + column].y0 = value;
+            if (row == 16) {
+                grid[16 * 20 + column].y3 = grid[16 * 20 + column].y2 = 0xE0;
+            }
+            addPrim(&D_800C426C->ot[1], poly);
+        }
+    }
+    moves = D_800B2078.effect_buffers[D_800ADB08];
+    addPrim(&D_800C426C->ot[1], &moves[0]);
+
+    /* Rows 0-13: the screen itself. */
+    phase_y = EFFECT_PHASE[1];
+    for (row = 0; row < 14; row++) {
+        wave_y = (func_8003F8CC(phase_y) * amplitude_y) >> 12;
+        phase_y += frequency_y;
+        phase_x = EFFECT_PHASE[0];
+        for (column = 0; column < 20; column++) {
+            wave_x = (func_8003F8CC(phase_x) * amplitude_x) >> 12;
+            phase_x += frequency_x;
+            grid = D_800B2078.effect_buffers[2 + D_800ADB08];
+            poly = &grid[row * 20 + column];
+            if (row != 0) {
+                if (row == 13) {
+                    value = wave_y + 0xF0;
+                    grid[13 * 20 + column].y1 = grid[13 * 20 + column].y0 =
+                        grid[12 * 20 + column].y3 = grid[12 * 20 + column].y2 = value;
+                    wave_y = (func_8003F8CC(phase_y) * amplitude_y) >> 12;
+                    grid = D_800B2078.effect_buffers[2 + D_800ADB08];
+                    grid[13 * 20 + column].y3 = grid[13 * 20 + column].y2 = wave_y + 0xF0;
+                } else {
+                    value = row * 16 + wave_y + 0x20;
+                    poly[-20].y3 = poly[-20].y2 = poly->y1 = poly->y0 = value;
+                }
+            } else {
+                grid[column].y1 = grid[column].y0 = 0x20;
+            }
+            if (column != 0) {
+                value = column * 16 + wave_x;
+                grid = D_800B2078.effect_buffers[2 + D_800ADB08];
+                grid[row * 20 + column - 1].x3 = grid[row * 20 + column - 1].x1 =
+                    grid[row * 20 + column].x2 = grid[row * 20 + column].x0 = value;
+                if (column == 19) {
+                    grid[row * 20 + 19].x3 = grid[row * 20 + 19].x1 = 0x140;
+                }
+            } else {
+                grid = D_800B2078.effect_buffers[2 + D_800ADB08];
+                grid[row * 20].x2 = grid[row * 20].x0 = 0;
+            }
+            addPrim(&D_800C426C->ot[1], poly);
+        }
+    }
+    for (row = 0; row < 15; row++) {
+        moves = D_800B2078.effect_buffers[D_800ADB08];
+        addPrim(&D_800C426C->ot[1], &moves[row + 1]);
+    }
+    addPrim(&D_800C426C->ot[1], &D_800B1E18[D_800ADB08]);
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A4DAC);
+#endif
 
 /* Store three words at +14 of `object`. */
 void func_800A55B8(s32 *object, s32 a, s32 b, s32 c) {
@@ -9604,7 +12518,7 @@ extern s32 D_800C2684;     /* piece scale, 0x1000 = 1 */
 extern SVECTOR D_800B00B8; /* piece rotation */
 
 /* Set the five screen pieces of the next draw buffer to grey `shade`. */
-void func_800A5600(u8 shade) {
+void func_800A5600(s32 shade) {
     s32 i;
 
     for (i = 0; i < 5; i++) {
@@ -9668,17 +12582,17 @@ void func_800A5774(s32 x, s32 y, s32 h) {
     func_800320E8(pixels);
 }
 
-void func_800A663C(void);
+void func_800A663C(s32 semitrans, s32 abr);
 void func_800A6408(void);
 void func_800A6924(void);
 
-/* Draw the screen pieces twice, mask the saved screen columns at
+/* Set up the screen pieces, draw them twice, mask the saved screen columns at
  * (2c0..3c0, 100) and draw twice more. */
-void func_800A5884(void) {
+void func_800A5884(s32 semitrans, s32 abr) {
     s32 i;
     s32 x;
 
-    func_800A663C();
+    func_800A663C(semitrans, abr);
     for (i = 0; i < 2; i++) {
         func_80073FE0();
         func_800A6408();
@@ -9696,9 +12610,305 @@ void func_800A5884(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A5924);
+#include "field_screen.h"
 
+/* Run the requested screen transition (800adb38) over 800adb3c frames:
+ * 1-2 fade the screen pieces out, 3 fades them in and holds while it
+ * stays requested, 4 dissolves the screen grid from the centre. */
+void func_800A5924(void) {
+    s32 i;
+    s32 x;
+    s32 level;
+
+    if (D_800ADB38 != 0) {
+        func_8003748C();
+        func_80070C84();
+        func_800A915C();
+        if (D_800ADB38 == 1 || D_800ADB38 == 4) {
+            func_800A4748();
+            DrawSync(0);
+            func_80073FE0();
+            func_800775F8();
+        }
+        func_800775F8();
+    dispatch:
+        switch (D_800ADB38) {
+        case 4:
+            func_800A5884(1, 1);
+            func_800A6E70();
+            D_800ADC08 = 1;
+            func_80071E58(D_800ADB3C);
+            D_800C3A40 = 0;
+            for (i = 0; i < D_800ADB3C; i++) {
+                func_80077DAC();
+                func_800A6C40();
+                func_8007554C();
+                func_80078B5C();
+                D_800C3A40 += 6;
+            }
+            DrawSync(0);
+            func_800A7064();
+            break;
+        case 1:
+        case 2:
+            func_800A5884(1, 1);
+            D_800ADC08 = 1;
+            func_80071E58(D_800ADB3C);
+            level = 0x800000;
+            for (i = 0; i < D_800ADB3C; i++) {
+                func_80077DAC();
+                func_800A6408();
+                func_8007554C();
+                func_80078B5C();
+                func_800A5600(level >> 16);
+                level -= 0x800000 / D_800ADB3C;
+                if (level < 0) {
+                    level = 0;
+                }
+            }
+            break;
+        case 3:
+            func_800A663C(1, 1);
+            for (i = 0, x = 0x2C0; i < 5; i++, x += 0x40) {
+                func_800A5774(x, 0x100, 0xE0);
+            }
+            level = 0;
+            func_80071DCC(D_800ADB3C);
+            func_800A5600(0);
+            for (i = 0; i < D_800ADB3C; i++) {
+                func_80077DAC();
+                func_800A6408();
+                func_8007554C();
+                func_80078B5C();
+                func_800A5600(level >> 16);
+                level += 0x800000 / D_800ADB3C;
+            }
+            for (;;) {
+                if (D_800ADB38 != 3) {
+                    goto dispatch;
+                }
+                func_80077DAC();
+                func_800A6408();
+                func_8007554C();
+                func_80078B5C();
+            }
+        }
+        D_800ADB38 = 0;
+        func_800A91F0();
+        func_80077544();
+    }
+}
+
+#ifdef NON_MATCHING
+/* Reload the field for a map change inside the field mode (800b0048 the
+ * transition kind, 800afd14 its frames): stop effects, keep the map
+ * read-ahead block across the heap reset, then per kind fade or dissolve
+ * out, reload the components (80070cc8), restart the music and fade in.
+ * Unrecovered details: the original passes 800adb08 as a second argument
+ * to 80071cb4 and 0 as a second argument to 80085b20, and uses a jump
+ * table. */
+void func_800A5C40(void) {
+    RECT rect;
+    u8 *ahead;
+    s32 kind;
+    s32 frames;
+    s32 level;
+    s32 i;
+
+    func_8003748C();
+    func_800A9460();
+    func_800864F0();
+    func_8007FFE8();
+    if (D_800B0048 != 6) {
+        func_800A915C();
+        if (D_800B0048 != 4) {
+            func_800A4748();
+        }
+    }
+    DrawSync(0);
+    func_80073FE0();
+    func_800775F8();
+    func_800700B0();
+    ahead = func_80031BDC(D_8005A4C0, 0);
+    memcpy(ahead, D_8005A4E0, D_8005A4C0);
+    func_800320B8(D_8005A4E0);
+    func_800320E8(D_8005A4E0);
+    if (D_800B0048 != 6) {
+        func_800A90B4(1);
+    }
+    D_8005A4E0 = func_80031BDC(D_8005A4C0, 1);
+    memcpy(D_8005A4E0, ahead, D_8005A4C0);
+    func_800320A4(D_8005A4E0);
+    func_800320E8(ahead);
+    switch (D_800B0048) {
+    case 6:
+        func_80071DCC(D_800AFD14);
+        for (i = 0; i < D_800AFD14; i++) {
+            func_80073FE0();
+            func_80071CB4(&D_800C426C->overlay_ot[0]);
+            func_800A6924();
+        }
+    reload:
+        func_80073FE0();
+        func_800A6924();
+        func_8001B044();
+        func_8001B3A8();
+        kind = D_800B0048;
+        frames = D_800AFD14;
+        func_80070CC8();
+        func_80070488();
+        func_80070508();
+        D_800B0048 = kind;
+        D_800AFD14 = frames;
+        if (D_8004F308 == -1) {
+            func_80085B20(D_8004F324);
+        }
+        func_80071E58(D_800AFD14);
+        break;
+    case 0:
+        func_800A663C(0, 0);
+        func_80071DCC(D_800AFD14);
+        for (i = 0; i < D_800AFD14; i++) {
+            func_80073FE0();
+            func_80071CB4(&D_800C426C->overlay_ot[0]);
+            func_800A6408();
+            func_800A6924();
+        }
+        goto reload;
+    case 1:
+        func_800A663C(0, 0);
+        func_800A5710(D_800AFD14);
+        for (i = 0; i < D_800AFD14; i++) {
+            func_80073FE0();
+            func_80071CB4(&D_800C426C->overlay_ot[0]);
+            func_800A6408();
+            func_800A6924();
+        }
+        func_800775F8();
+        func_8001B044();
+        func_8001B3A8();
+        kind = D_800B0048;
+        frames = D_800AFD14;
+        func_80070CC8();
+        func_80070488();
+        func_80070508();
+        D_800B0048 = kind;
+        D_800AFD14 = frames;
+        if (D_8004F308 == -1) {
+            func_80085B20(D_8004F324);
+        }
+        func_800A56A8(D_800AFD14);
+        break;
+    case 2:
+    case 4:
+        func_800A5884(1, 1);
+        func_8001B044();
+        func_8001B3A8();
+        kind = D_800B0048;
+        frames = D_800AFD14;
+        func_80070CC8();
+        func_80070488();
+        if (D_800ADB60 == 1) {
+            while (func_800286CC() != 0) {
+                func_80073FE0();
+                func_800A6408();
+                func_800A6924();
+                if (D_800C2684 < 0x22C0) {
+                    D_800C2684 += 0x20;
+                }
+            }
+            func_800320E8(D_800ADC14);
+            D_800ADB60 = 0;
+            func_80078C5C();
+        }
+        D_800AFD04 = 1;
+        D_800B0048 = kind;
+        D_800AFD14 = frames;
+        if (D_8004F308 == -1) {
+            func_80085B20(D_8004F324);
+        }
+        level = 0x800000;
+        func_80071E58(D_800AFD14);
+        for (i = 0; i < D_800AFD14; i++) {
+            func_80077DAC();
+            func_800A6408();
+            func_8007554C();
+            func_80078B5C();
+            func_800A5600(level >> 16);
+            level -= 0x800000 / D_800AFD14;
+            if (level < 0) {
+                level = 0;
+            }
+            if (D_800C2684 < 0x22C0) {
+                D_800C2684 += 0x20;
+            }
+        }
+        break;
+    case 3:
+        func_800A663C(0, 0);
+        func_80070488();
+        func_80073FE0();
+        func_800A6408();
+        func_800A6924();
+        func_8001B044();
+        func_8001B3A8();
+        kind = D_800B0048;
+        frames = D_800AFD14;
+        D_800AFD04 = 1;
+        func_80070CC8();
+        func_80070508();
+        D_800B0048 = kind;
+        D_800AFD14 = frames;
+        if (D_8004F308 == -1) {
+            func_80085B20(D_8004F324);
+        }
+        for (i = 0; i < 4; i++) {
+            func_80077DAC();
+            func_800A6408();
+            func_8007554C();
+            func_80078B5C();
+        }
+        break;
+    case 5:
+        func_800A663C(0, 0);
+        func_80070488();
+        func_80073FE0();
+        func_800A6408();
+        func_800A6924();
+        func_8001B044();
+        func_8001B3A8();
+        kind = D_800B0048;
+        frames = D_800AFD14;
+        D_800AFD04 = 1;
+        func_80070CC8();
+        func_80070508();
+        setRECT(&rect, 0x2C0, 0x100, 0x140, 0xFF);
+        D_800B0048 = kind;
+        D_800AFD14 = frames;
+        MoveImage(&rect, 0x140, 0xFF);
+        if (D_8004F308 == -1) {
+            func_80085B20(D_8004F324);
+        }
+        for (i = 0; i < 4; i++) {
+            func_80077DAC();
+            func_800A6408();
+            func_8007554C();
+            func_80078B5C();
+        }
+        break;
+    }
+    if (D_800B0048 != 6) {
+        func_800A91F0();
+    }
+    D_800B0048 = 2;
+    D_800AFD14 = 0x20;
+    D_800AFD04 = 0;
+    func_80077544();
+    func_80031FF8();
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A5C40);
+#endif
 
 /* Rotate and scale the screen pieces (when scaled) into their quads and
  * link the quads and draw modes of the current buffer. */
@@ -9731,7 +12941,64 @@ void func_800A6408(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A663C);
+/* Set up the five 64x224 screen pieces (textured from the screen copy at
+ * (2c0, 100)) at full scale with no rotation, with semi-transparency
+ * `semitrans` and rate `abr`. */
+void func_800A663C(s32 semitrans, s32 abr) {
+    POLY_FT4 *quad;
+    POLY_FT4 *copy;
+    SVECTOR *corners;
+    s32 i;
+
+    D_800C2684 = 0x1000;
+    D_800B00B8.vx = 0;
+    D_800B00B8.vy = 0;
+    D_800B00B8.vz = 0;
+    for (i = 0; i < 5; i++) {
+        quad = &D_800B11AC.quads[i][0];
+        copy = &D_800B11AC.quads[i][1];
+        corners = D_800B11AC.corners[i];
+        SetPolyFT4(quad);
+        corners[0].vx = i * 0x20 - 0x50;
+        corners[0].vy = -0x38;
+        corners[0].vz = 0;
+        corners[1].vx = i * 0x20 - 0x30;
+        corners[1].vy = -0x38;
+        corners[1].vz = 0;
+        corners[2].vx = i * 0x20 - 0x50;
+        corners[2].vy = 0x38;
+        corners[2].vz = 0;
+        corners[3].vx = i * 0x20 - 0x30;
+        corners[3].vy = 0x38;
+        corners[3].vz = 0;
+        quad->x0 = i << 6;
+        quad->y0 = 0;
+        quad->x1 = (i << 6) + 0x40;
+        quad->y1 = 0;
+        quad->x2 = i << 6;
+        quad->y2 = 0xDF;
+        quad->x3 = (i << 6) + 0x40;
+        quad->y3 = 0xDF;
+        setRECT(&D_800B11AC.windows[i][0], 0, 0, 0xFF, 0xFF);
+        setRECT(&D_800B11AC.windows[i][1], 0, 0, 0xFF, 0xFF);
+        SetDrawMode(&D_800B11AC.modes[i][0], 0, 0, GetTPage(2, abr, 0x2C0 + i * 0x40, 0x100),
+                    &D_800B11AC.windows[i][0]);
+        SetDrawMode(&D_800B11AC.modes[i][1], 0, 0, GetTPage(2, abr, 0x2C0 + i * 0x40, 0x100),
+                    &D_800B11AC.windows[i][1]);
+        setRGB0(quad, 0x80, 0x80, 0x80);
+        SetSemiTrans(quad, semitrans);
+        quad->u0 = 0;
+        quad->v0 = 0;
+        quad->u1 = 0x40;
+        quad->v1 = 0;
+        quad->u2 = 0;
+        quad->v2 = 0xDF;
+        quad->u3 = 0x40;
+        quad->v3 = 0xDF;
+        quad->tpage = GetTPage(2, abr, 0x2C0 + i * 0x40, 0x100);
+        *copy = *quad;
+    }
+}
 
 /* Present the current draw block: clear, set environments and draw its
  * overlay ordering table. */
@@ -9744,15 +13011,151 @@ void func_800A6924(void) {
     DrawOTag(&D_800C426C->overlay_ot[7]);
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A6998);
+/* Darken corner `corner` of a grid quad by 6 (to 0) while it lies within
+ * `radius` of the screen centre (a0, 70). */
+void func_800A6998(POLY_GT4 *quad, s32 corner, s32 radius, s16 *shade) {
+    VECTOR offset;
+    VECTOR squares;
+    s32 centre_x;
+    s32 centre_y;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A6C40);
+    centre_x = 0xA0;
+    centre_y = 0x70;
+    offset.vz = 0;
+    switch (corner) {
+    case 0:
+        offset.vx = centre_x - quad->x0;
+        offset.vy = centre_y - quad->y0;
+        func_8004A414(&offset, &squares);
+        if (SquareRoot0(squares.vx + squares.vy) >> 1 < radius) {
+            *shade -= 6;
+            if (*shade < 0) {
+                *shade = 0;
+            }
+            quad->r0 = *shade;
+            quad->g0 = *shade;
+            quad->b0 = *shade;
+        }
+        break;
+    case 1:
+        offset.vx = centre_x - quad->x1;
+        offset.vy = centre_y - quad->y1;
+        func_8004A414(&offset, &squares);
+        if (SquareRoot0(squares.vx + squares.vy) >> 1 < radius) {
+            *shade -= 6;
+            if (*shade < 0) {
+                *shade = 0;
+            }
+            quad->r1 = *shade;
+            quad->g1 = *shade;
+            quad->b1 = *shade;
+        }
+        break;
+    case 2:
+        offset.vx = centre_x - quad->x2;
+        offset.vy = centre_y - quad->y2;
+        func_8004A414(&offset, &squares);
+        if (SquareRoot0(squares.vx + squares.vy) >> 1 < radius) {
+            *shade -= 6;
+            if (*shade < 0) {
+                *shade = 0;
+            }
+            quad->r2 = *shade;
+            quad->g2 = *shade;
+            quad->b2 = *shade;
+        }
+        break;
+    case 3:
+        offset.vx = centre_x - quad->x3;
+        offset.vy = centre_y - quad->y3;
+        func_8004A414(&offset, &squares);
+        if (SquareRoot0(squares.vx + squares.vy) >> 1 < radius) {
+            *shade -= 6;
+            if (*shade < 0) {
+                *shade = 0;
+            }
+            quad->r3 = *shade;
+            quad->g3 = *shade;
+            quad->b3 = *shade;
+        }
+        break;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A6E70);
+/* Fade the grid quads of the current buffer and link them, then the grid
+ * draw mode, into the overlay ordering table. */
+void func_800A6C40(void) {
+    POLY_GT4 *quad;
+    s32 row;
+    s32 column;
 
-extern void *D_800B00C4;
+    for (row = 0; row < GRID_ROWS; row++) {
+        for (column = 0; column < GRID_COLUMNS; column++) {
+            quad = &D_800B00C4->quads[D_800ADB08][row * GRID_COLUMNS + column];
+            func_800A6998(quad, 0, D_800C3A40, &D_800B00C4->shade[0][row * GRID_COLUMNS + column]);
+            func_800A6998(quad, 1, D_800C3A40, &D_800B00C4->shade[1][row * GRID_COLUMNS + column]);
+            func_800A6998(quad, 2, D_800C3A40, &D_800B00C4->shade[2][row * GRID_COLUMNS + column]);
+            func_800A6998(quad, 3, D_800C3A40, &D_800B00C4->shade[3][row * GRID_COLUMNS + column]);
+            addPrim(&D_800C426C->overlay_ot[0], &D_800B00C4->quads[D_800ADB08][row * GRID_COLUMNS + column]);
+        }
+    }
+    addPrim(&D_800C426C->overlay_ot[0], &D_800B1E24[D_800ADB08]);
+}
 
-/* Release the block at 800b00c4. */
+/* Build the screen grid: 16x16 half-bright quads textured from the
+ * 15-bit screen copy at (2c0, 100), their corners at full shade. */
+void func_800A6E70(void) {
+    POLY_GT4 *quad;
+    POLY_GT4 *copy;
+    s32 row;
+    s32 column;
+    s32 k;
+
+    D_800B00C4 = func_80031BDC(sizeof(ScreenGrid), 1);
+    for (row = 0; row < GRID_ROWS; row++) {
+        for (column = 0; column < GRID_COLUMNS; column++) {
+            k = row * GRID_COLUMNS + column;
+            quad = &D_800B00C4->quads[0][k];
+            copy = &D_800B00C4->quads[1][k];
+            D_800B00C4->shade[0][k] = 0x80;
+            D_800B00C4->shade[1][k] = 0x80;
+            D_800B00C4->shade[2][k] = 0x80;
+            D_800B00C4->shade[3][k] = 0x80;
+            SetPolyGT4(quad);
+            setRGB0(quad, 0x80, 0x80, 0x80);
+            quad->r1 = 0x80;
+            quad->g1 = 0x80;
+            quad->b1 = 0x80;
+            quad->r2 = 0x80;
+            quad->g2 = 0x80;
+            quad->b2 = 0x80;
+            quad->r3 = 0x80;
+            quad->g3 = 0x80;
+            quad->b3 = 0x80;
+            quad->x0 = column * 16;
+            quad->y0 = row * 16;
+            quad->x1 = column * 16 + 16;
+            quad->y1 = row * 16;
+            quad->x2 = column * 16;
+            quad->y2 = row * 16 + 16;
+            quad->x3 = column * 16 + 16;
+            quad->y3 = row * 16 + 16;
+            quad->u0 = (column * 16) & 0x3F;
+            quad->v0 = row * 16;
+            quad->u1 = ((column * 16) & 0x3F) + 16;
+            quad->v1 = row * 16;
+            quad->u2 = (column * 16) & 0x3F;
+            quad->v2 = row * 16 + 16;
+            quad->u3 = ((column * 16) & 0x3F) + 16;
+            quad->v3 = row * 16 + 16;
+            quad->tpage = GetTPage(2, 1, 0x2C0 + column / 4 * 0x40, 0x100);
+            SetSemiTrans(quad, 1);
+            *copy = *quad;
+        }
+    }
+}
+
+/* Release the screen grid. */
 void func_800A7064(void) {
     func_800320E8(D_800B00C4);
 }
@@ -9843,9 +13246,78 @@ void func_800A7394(void) {
     CdDataSync(0);
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A73E8);
+#include "field_movie.h"
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A74F8);
+/* After a movie: reload the VRAM kept in party sprite blocks 1 and 2
+ * (unless movie mode 2), then release both blocks. */
+void func_800A73E8(void) {
+    RECT rect;
+
+    if (D_800ADB74 == 2) {
+        func_800320B8(D_8005A414[1]);
+        func_800320B8(D_8005A41C);
+        func_800320E8(D_8005A414[1]);
+        func_800320E8(D_8005A41C);
+    } else {
+        setRECT(&rect, 0x200, 0, 0x140, 0x80);
+        LoadImage(&rect, D_8005A414[1]);
+        DrawSync(0);
+        setRECT(&rect, 0x200, 0x80, 0x140, 0x80);
+        LoadImage(&rect, D_8005A41C);
+        DrawSync(0);
+        func_800320B8(D_8005A414[1]);
+        func_800320B8(D_8005A41C);
+        func_800320E8(D_8005A414[1]);
+        func_800320E8(D_8005A41C);
+    }
+}
+
+/* Before a movie: allocate party sprite blocks 1 and 2 and save the VRAM
+ * at (200, 0) in them; in movie mode 2 instead reload the sprites of party
+ * slots 1 and 2 from their character files. */
+void func_800A74F8(void) {
+    RECT rect;
+    MovieFileRequest requests[4];
+    s32 count;
+    s32 i;
+
+    if (D_800ADB74 == 2) {
+        D_8005A414[1] = func_80031BDC(0x14000, 0);
+        D_8005A414[2] = func_80031BDC(0x14000, 0);
+        func_800320A4(D_8005A414[1]);
+        func_800320A4(D_8005A414[2]);
+        func_80028470(4, 0);
+        count = 0;
+        for (i = 1; i < 3; i++) {
+            if (D_8006FABC[i] != 0xFF) {
+                requests[count].file = D_8006FABC[i] + 5;
+                requests[count].destination = D_80065AFC[i] = func_80031BDC(func_800288EC(D_8006FABC[i] + 5), 1);
+                count++;
+            }
+        }
+        requests[count].destination = NULL;
+        requests[count].file = 0;
+        func_80029AFC(requests, 0, 0);
+        func_80028A60(0);
+        for (i = 1; i < 3; i++) {
+            if (D_80062590[i] != 0xFF) {
+                func_80032EB4(D_80065AFC[i], D_8005A414[i]);
+                func_800320E8(D_80065AFC[i]);
+            }
+        }
+        return;
+    }
+    D_8005A414[1] = func_80031BDC(0x14000, 0);
+    D_8005A414[2] = func_80031BDC(0x14000, 0);
+    func_800320A4(D_8005A414[1]);
+    func_800320A4(D_8005A414[2]);
+    setRECT(&rect, 0x200, 0, 0x140, 0x80);
+    StoreImage(&rect, D_8005A414[1]);
+    DrawSync(0);
+    setRECT(&rect, 0x200, 0x80, 0x140, 0x80);
+    StoreImage(&rect, D_8005A414[2]);
+    DrawSync(0);
+}
 
 extern s32 D_800B14A8; /* nibble counter */
 extern u32 *D_800C3904; /* packed stream */
@@ -9917,9 +13389,239 @@ void func_800A77C4(void) {
     func_800320E8(pixels);
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A7948);
+/* While movie frames 687..18e2 play (when the sequence is enabled),
+ * switch to 640-wide draw buffers and draw the file 0xab sequence over
+ * the movie each frame, then restore the 320-wide buffers. Declared int
+ * without a value, as the original's live result register shows. */
+s32 func_800A7948(void) {
+    RECT rect;
 
+    if (D_8004F300 == 0 || D_800B06A0 < 0x687) {
+        return;
+    }
+    if (D_800B06A0 < 0x18E2) {
+        D_800AFE74 = 1;
+        D_801E89E0 = 0;
+        setRECT(&rect, 0, 0, 0x500, 0x200);
+        ClearImage(&rect, 0, 0, 0);
+        DrawSync(0);
+        VSync(0);
+        SetDefDrawEnv(&D_800B249C[0].draw, 0, 0, 0x280, 0xE0);
+        SetDefDrawEnv(&D_800B249C[1].draw, 0, 0x100, 0x280, 0xE0);
+        SetDefDispEnv(&D_800B249C[0].disp, 0, 0x100, 0x280, 0xE0);
+        SetDefDispEnv(&D_800B249C[1].disp, 0, 0, 0x280, 0xE0);
+        D_800B249C[1].disp.isrgb24 = 0;
+        D_800B249C[0].disp.isrgb24 = 0;
+        PutDispEnv(&D_800C426C->disp);
+        PutDrawEnv(&D_800C426C->draw);
+        setRECT(&rect, 0x300, 0, 0x200, 0x100);
+        ClearImage(&rect, 0, 0, 0);
+        func_800ACB90();
+        VSync(0);
+        DrawSync(0);
+        while (D_800B06A0 < 0x18E2) {
+            func_80019CA0();
+            func_80073F50();
+            if (D_800B06A0 < 0x18DE) {
+                func_800AC99C();
+            }
+            DrawSync(0);
+            VSync(2);
+            ClearImage(&D_800C426C->draw.clip, 0, 0, 0);
+            PutDispEnv(&D_800C426C->disp);
+            PutDrawEnv(&D_800C426C->draw);
+            DrawOTag(&D_800C426C->overlay_ot[7]);
+            func_800ACCF4();
+            func_800A732C(5);
+        }
+        D_800AFE74 = 0;
+        D_801E89E0 = 1;
+        DrawSync(0);
+        VSync(0);
+        SetDefDrawEnv(&D_800B249C[0].draw, 0, 0, 0x140, 0xE0);
+        SetDefDrawEnv(&D_800B249C[1].draw, 0, 0x100, 0x140, 0xE0);
+        SetDefDispEnv(&D_800B249C[0].disp, 0, 0x100, 0x140, 0xE0);
+        SetDefDispEnv(&D_800B249C[1].disp, 0, 0, 0x140, 0xE0);
+        D_800B249C[1].disp.isrgb24 = 1;
+        D_800B249C[0].disp.isrgb24 = 1;
+        D_800B249C[1].disp.isinter = 0;
+        D_800B249C[0].disp.isinter = 0;
+        func_800ACCB0();
+    }
+}
+
+#ifdef NON_MATCHING
+/* Play the requested field movie (800c3a20..): move the movie library
+ * (file 0xa9) into place, park the VRAM the movie uses, stop the field's
+ * effects and the 801e module, then decode and present frames by movie
+ * mode until it ends or is skipped; finally restore VRAM, the display and
+ * the field stream. The original addresses the movie parameters as one
+ * aggregate (800c3a3a and 800c3a2e off one hoisted base), which field.h
+ * does not declare yet. */
+void func_800A7C58(void) {
+    RECT rect;
+    u8 *data;
+    u8 *library;
+    s32 top;
+    s32 i;
+
+    D_800ADB84 = 0;
+    D_800B00E4 = 0;
+    D_800ADB78 = 0;
+    data = func_80031BDC(func_800288EC(0xA9), 0);
+    func_800295D8(0xA9, data, 0, 0x80);
+    D_800B06A0 = 0;
+    D_800AFE74 = 0;
+    func_800A7394();
+    func_80028470(0x18, 0);
+    func_8002A2D0(D_800C3A20);
+    func_80028470(4, 0);
+    func_800A7394();
+    if (D_800B2078.unk2264 != 0) {
+        func_801E7FD4();
+        func_8007999C();
+        func_800775F8();
+        func_800320E8(D_800ADB20);
+    }
+    func_800A9460();
+    if (D_800ADB74 != 2) {
+        setRECT(&rect, 0x140, 0, 0xC0, 0x100);
+        LoadImage(&rect, (u_long *)data);
+        DrawSync(0);
+        func_800320E8(data);
+        data = func_80031BDC(0x18000, 0);
+        StoreImage(&rect, (u_long *)data);
+    }
+    top = D_800ADB30;
+    if (D_8004F370 == 0) {
+        library = func_80031BDC((top & 0xFFFFFF) - 0x1D3008, 1);
+        memcpy(library, data, func_800288EC(0xA9));
+    } else {
+        library = func_80031BDC(8, 1);
+    }
+    func_800320E8(data);
+    func_80085788();
+    func_800ACC58();
+    D_800B00E4 = 1;
+    func_800A73E8();
+    func_8007999C();
+    func_80031FF8();
+    func_800A708C();
+    func_800A7218();
+    D_800ADB7C = 1;
+    do {
+        VSync(0);
+        func_800A732C(3);
+    } while (D_800B00E4 != 0);
+    do {
+        switch (D_800ADB74) {
+        case 1:
+            func_80073F50();
+            func_80075910();
+            func_800A732C(6);
+            break;
+        case 0:
+            DrawSync(0);
+            VSync(0);
+            PutDispEnv(&D_800C426C->disp);
+            PutDrawEnv(&D_800C426C->draw);
+            func_800A732C(3);
+            DrawSync(0);
+            VSync(0);
+            PutDispEnv(&D_800C426C->disp);
+            PutDrawEnv(&D_800C426C->draw);
+            func_800A732C(3);
+            func_800A7948();
+            break;
+        case 2:
+            func_80077DAC();
+            func_8007554C();
+            func_800A732C(9);
+            break;
+        }
+        if (D_800C268C == 0) {
+            if (D_800ADB74 == 2) {
+                if ((D_800C3900 & 0x80) || D_800ADB84 != 0) {
+                    break;
+                }
+            } else {
+                func_80074700();
+                if (D_800C3900 & 0x20) {
+                    break;
+                }
+            }
+        } else if (D_800ADB80 & 0x80) {
+            func_80074700();
+            if (D_800C3900 & 0x20) {
+                func_80038D18(0, 10);
+                for (i = 0; i < 5; i++) {
+                    VSync(0);
+                }
+                break;
+            }
+        }
+        if (D_800ADB74 == 2 && D_800ADB84 != 0) {
+            break;
+        }
+    } while ((s16)D_800C3A3A != 0 || D_800B06A0 < D_800C3A2E);
+    VSync(0);
+    DrawSync(0);
+    func_801D43B0();
+    func_8007999C();
+    PutDispEnv(&D_800C426C->disp);
+    PutDrawEnv(&D_800C426C->draw);
+    VSync(0);
+    DrawSync(0);
+    func_800320E8(library);
+    func_80031FF8();
+    func_800A74F8();
+    func_80077884();
+    setRECT(&rect, 0, D_800ADB78 << 8, 0x1E0, 0xE0);
+    MoveImage(&rect, 0, 0);
+    DrawSync(0);
+    VSync(0);
+    D_800C426C = &D_800B249C[1];
+    PutDispEnv(&D_800B249C[1].disp);
+    PutDrawEnv(&D_800C426C->draw);
+    if (D_800ADB74 != 2) {
+        func_800A77C4();
+    }
+    VSync(0);
+    D_800B249C[0].disp.isrgb24 = 0;
+    D_800C426C = &D_800B249C[0];
+    PutDispEnv(&D_800B249C[0].disp);
+    PutDrawEnv(&D_800C426C->draw);
+    setRECT(&rect, 0, 0x100, 0x140, 0xE0);
+    MoveImage(&rect, 0, 0);
+    DrawSync(0);
+    VSync(0);
+    D_800B249C[1].disp.isrgb24 = 0;
+    D_800C426C = &D_800B249C[1];
+    PutDispEnv(&D_800B249C[1].disp);
+    PutDrawEnv(&D_800C426C->draw);
+    if (D_800AFE84 != 0) {
+        D_800ADB50 = 1;
+    } else {
+        D_800ADB50 = 0;
+    }
+    func_80077AB4();
+    if (D_800ADB74 != 2) {
+        func_80028470(4, 0);
+        func_80032498(8, 0);
+        D_800ADB60 = 0;
+        func_80070488();
+        func_80070508();
+        D_800ADB3C = 0x20;
+        D_800ADB38 = 1;
+    }
+    func_80085738();
+    D_800C3A38 = 0xFF;
+    D_800ADB74 = 0;
+    D_800ADB6C = -1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A7C58);
+#endif
 
 void func_80070340(u32 *tim, s16 x, s16 y, s16 clut_x, s16 clut_y, s16 clut_w, s16 clut_h);
 
@@ -9951,13 +13653,206 @@ void func_800A83B4(void) {
     }
 }
 
+#include "field_panel.h"
+
+#ifdef NON_MATCHING
+/* Texture panel piece `index` of the current buffer with its frame moved
+ * by (du, dv), flipped vertically. The original passes the coordinates to
+ * 8007a44c unconverted (no s16 prototype in scope: a separate unit). */
+void func_800A8408(s32 index, s32 du, s32 dv) {
+    s32 frame;
+    s32 u;
+    s32 v;
+    s32 w;
+    s32 h;
+    s32 unused[6]; /* the original frame reserves an unused 24-byte local */
+
+    frame = D_800AEF10[index].frame;
+    v = D_800AEB68[frame].v + dv;
+    w = D_800AEB68[frame].w;
+    u = D_800AEB68[frame].u + du;
+    h = D_800AEB68[frame].h;
+    func_8007A44C(&D_800AFC60[D_800ADB08][index], u, v + h - 1, u + w, v + h - 1, u, v - 1, u + w, v - 1);
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A8408);
+#endif
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A84C0);
+/* Draw the status panel: rotate the compass strip by the view angle, the
+ * pitch strip by the camera pitch, their digits, the blinking marker and
+ * the rest of the pieces. */
+void func_800A84C0(void) {
+    s32 pitch;
+    s32 angle;
+    s32 count;
+    s32 i;
 
+    if (D_800AF278 != 0) {
+        count = PANEL_PIECES;
+        pitch = ratan2(func_80099A4C((D_800AF880.target.vx - D_800AF880.eye.vx) >> 16,
+                                     (D_800AF880.target.vz - D_800AF880.eye.vz) >> 16),
+                       (D_800AF880.target.vy - D_800AF880.eye.vy) >> 16) &
+                0xFFF;
+        angle = D_800AF880.view_angle & 0xFFF;
+        for (i = 0; i < 16; i++) {
+            func_800A8408(i, (angle >> 4) & 0xF, 0);
+            addPrim(&D_800C426C->overlay_ot[4], &D_800AFC60[D_800ADB08][i]);
+        }
+        for (; i < 29; i++) {
+            func_800A8408(i, 0, (pitch >> 4) & 0xF);
+            addPrim(&D_800C426C->overlay_ot[4], &D_800AFC60[D_800ADB08][i]);
+        }
+        for (; i < 34; i++) {
+            func_800A8408(i, (angle & 0xF) * 8, 0);
+            angle >>= 2;
+            addPrim(&D_800C426C->overlay_ot[4], &D_800AFC60[D_800ADB08][i]);
+        }
+        for (; i < 39; i++) {
+            func_800A8408(i, (pitch & 0xF) * 8, 0);
+            pitch >>= 2;
+            addPrim(&D_800C426C->overlay_ot[4], &D_800AFC60[D_800ADB08][i]);
+        }
+        for (; i < 40; i++) {
+            if (!(D_800AEB60 & 0xF)) {
+                D_800AEB64++;
+            }
+            if (D_800AEB64 >= 3) {
+                D_800AEB64 = 0;
+            }
+            func_800A8408(i, 0, D_800AEB64 * 8);
+            addPrim(&D_800C426C->overlay_ot[4], &D_800AFC60[D_800ADB08][i]);
+        }
+        for (; i < 42; i++) {
+            func_800A8408(i, (D_800AEB60 >> 2) & 0xF, 0);
+            addPrim(&D_800C426C->overlay_ot[4], &D_800AFC60[D_800ADB08][i]);
+        }
+        for (; i < 43; i++) {
+            if (!(D_800AEB60 & 0x10)) {
+                addPrim(&D_800C426C->overlay_ot[4], &D_800AFC60[D_800ADB08][i]);
+            }
+        }
+        for (; i < count; i++) {
+            addPrim(&D_800C426C->overlay_ot[4], &D_800AFC60[D_800ADB08][i]);
+        }
+        D_800AEB60++;
+    }
+}
+
+#ifdef NON_MATCHING
+/* Build the status panel: load its image, allocate the quads of both
+ * buffers and texture each piece from its frame (flip in flags bits 0-3,
+ * 4- or 8-bit page by bits 4-7). The original passes the coordinates to
+ * 8007a44c unconverted (no s16 prototype in scope: a separate unit). */
+void func_800A8BA4(void) {
+    POLY_FT4 *quad;
+    POLY_FT4 *copy;
+    PanelFrame *frame;
+    s32 mode;
+    s32 i;
+
+    func_800A8314();
+    mode = 0;
+    D_800AEB64 = 0;
+    func_80032498(8, 0);
+    D_800AFC60[0] = func_80031BDC(PANEL_PIECES * sizeof(POLY_FT4), 0);
+    D_800AFC60[1] = func_80031BDC(PANEL_PIECES * sizeof(POLY_FT4), 0);
+    for (i = 0; i < PANEL_PIECES; i++) {
+        quad = &D_800AFC60[0][i];
+        copy = &D_800AFC60[1][i];
+        SetPolyFT4(quad);
+        setRGB0(quad, 0x80, 0x80, 0x80);
+        quad->clut = GetClut(0, 0xE8);
+        switch ((D_800AEF10[i].flags >> 4) & 0xF) {
+        case 0:
+            mode = 1;
+            break;
+        case 1:
+            mode = 2;
+            break;
+        }
+        quad->tpage = GetTPage(0, mode, 0x380, 0);
+        SetSemiTrans(quad, 1);
+        frame = &D_800AEB68[D_800AEF10[i].frame];
+        quad->x0 = D_800AEF10[i].x;
+        quad->y0 = D_800AEF10[i].y;
+        quad->y1 = D_800AEF10[i].y;
+        quad->x2 = D_800AEF10[i].x;
+        quad->x1 = D_800AEF10[i].x + frame->w;
+        quad->y2 = D_800AEF10[i].y + frame->h;
+        quad->x3 = D_800AEF10[i].x + frame->w;
+        quad->y3 = D_800AEF10[i].y + frame->h;
+        switch (D_800AEF10[i].flags & 0xF) {
+        case 0:
+            func_8007A44C(quad, frame->u, frame->v, frame->u + frame->w, frame->v, frame->u,
+                          frame->v + frame->h, frame->u + frame->w, frame->v + frame->h);
+            break;
+        case 1:
+            func_8007A44C(quad, frame->u + frame->w - 1, frame->v, frame->u - 1, frame->v,
+                          frame->u + frame->w - 1, frame->v + frame->h, frame->u - 1, frame->v + frame->h);
+            break;
+        case 2:
+            func_8007A44C(quad, frame->u, frame->v + frame->h - 1, frame->u + frame->w, frame->v + frame->h - 1,
+                          frame->u, frame->v - 1, frame->u + frame->w, frame->v - 1);
+            break;
+        case 3:
+            func_8007A44C(quad, frame->u + frame->w - 1, frame->v + frame->h - 1, frame->u - 1,
+                          frame->v + frame->h - 1, frame->u + frame->w - 1, frame->v - 1, frame->u - 1,
+                          frame->v - 1);
+            break;
+        }
+        *copy = *quad;
+    }
+    D_800AF278 = 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A8BA4);
+#endif
 
+/* A particle sprite (800af27c): half size, centre, and the four texture
+ * corners (u, v) within the sprite page. */
+typedef struct {
+    s16 half_w;
+    s16 half_h;
+    s16 x;
+    s16 y;
+    s16 uv[4][2];
+} ParticleSprite;
+extern ParticleSprite D_800AF27C[];
+
+#ifdef NON_MATCHING
+/* Set up a particle's quad in both buffers from sprite `sprite` with
+ * semi-transparency rate `abr`. The original passes the coordinates to
+ * 8007a44c unconverted (no s16 prototype in scope: a separate unit). */
+void func_800A8EAC(Particle *particle, s32 sprite, s32 abr) {
+    POLY_FT4 *quad;
+    ParticleSprite *entry;
+
+    quad = &particle->quads[0];
+    SetPolyFT4(quad);
+    entry = &D_800AF27C[sprite];
+    particle->corners[0].vz = 0;
+    particle->corners[1].vz = 0;
+    particle->corners[2].vz = 0;
+    particle->corners[3].vz = 0;
+    setRGB0(quad, 0x80, 0x80, 0x80);
+    particle->corners[0].vx = entry->x * 16 - entry->half_w * 16;
+    particle->corners[0].vy = entry->y * 16 - entry->half_h * 16;
+    particle->corners[1].vx = entry->half_w * 16 + entry->x * 16;
+    particle->corners[1].vy = particle->corners[0].vy;
+    particle->corners[2].vx = particle->corners[0].vx;
+    particle->corners[2].vy = entry->half_h * 16 + entry->y * 16;
+    particle->corners[3].vx = particle->corners[1].vx;
+    particle->corners[3].vy = particle->corners[2].vy;
+    func_8007A44C(quad, entry->uv[0][0], entry->uv[0][1] + 0x40, entry->uv[1][0] - 1, entry->uv[1][1] + 0x40,
+                  entry->uv[2][0], entry->uv[2][1] + 0x3F, entry->uv[3][0] - 1, entry->uv[3][1] + 0x3F);
+    SetSemiTrans(quad, 1);
+    quad->tpage = GetTPage(0, abr, 0x3C0, 0x140);
+    quad->clut = GetClut(0x100, 0xF7);
+    particle->quads[1] = *quad;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A8EAC);
+#endif
 
 extern RECT D_800AFC28;
 typedef struct {
@@ -10057,12 +13952,13 @@ void func_800A9374(s32 slot) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Stop the emitters of effect slot `slot` and release their particles. */
 void func_800A93CC(s32 slot) {
     Record78 *emitter;
     s32 i;
     s32 j;
+    Particle *particle;
+    s32 unused[1]; /* the original frame reserves an unused local */
 
     if (D_800B14B0[slot] == 1) {
         emitter = D_800C3918[slot];
@@ -10070,16 +13966,14 @@ void func_800A93CC(s32 slot) {
             if (emitter->count != 0) {
                 emitter->unk04 = 0;
                 for (j = 0; j < emitter->count; j++) {
-                    emitter->particles[j].unk04 = 1;
+                    particle = &emitter->particles[j];
+                    particle->unk04 = 1;
                 }
             }
             emitter++;
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A93CC);
-#endif
 
 /* Release all effect slots. */
 void func_800A9460(void) {
@@ -10133,7 +14027,66 @@ void func_800A94A4(s32 value) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A9688);
+#include "field_effect.h"
+
+/* Run the effect slots for a frame: count down emitter delays, spawn and
+ * draw particles, count down emitter lifetimes (7fff lasts), and release
+ * the slots with nothing left alive. */
+void func_800A9688(void) {
+    MATRIX view;
+    s32 spawned;
+    Record78 *emitter;
+    s32 alive;
+    s32 slot;
+    s32 i;
+    s32 j;
+
+    if (D_800ADB34 != 0) {
+        return;
+    }
+    view = *(MATRIX *)D_800AFA64;
+    for (slot = 0; slot < 64; slot++) {
+        alive = 0;
+        if (D_800B14B0[slot] == 1) {
+            emitter = D_800C3918[slot];
+            for (i = 0; i < 8; i++) {
+                spawned = 0;
+                if (emitter->count != 0) {
+                    if (emitter->unk02 == 0) {
+                        for (j = 0; j < emitter->count; j++) {
+                            if (emitter->particles[j].unk00 == 0) {
+                                if (emitter->unk04 != 0) {
+                                    func_800AA6B4(emitter, &emitter->particles[j], &spawned);
+                                    func_800A9F18(emitter, &emitter->particles[j], &view);
+                                    alive = 1;
+                                }
+                            } else {
+                                func_800A9F18(emitter, &emitter->particles[j], &view);
+                                alive = 1;
+                            }
+                        }
+                        if (emitter->unk04 != 0) {
+                            if (emitter->unk04 != 0x7FFF) {
+                                emitter->unk04--;
+                            }
+                            alive = 1;
+                        }
+                    } else {
+                        alive = 1;
+                        emitter->unk02--;
+                    }
+                }
+                emitter++;
+            }
+            if (alive == 0) {
+                func_800A92AC(slot);
+            }
+        }
+    }
+    if (D_800C268C == 0) {
+        func_80281B00("PARTICLE  ");
+    }
+}
 
 /* A random number in 0..range. */
 s32 func_800A987C(s32 range) {
@@ -10227,11 +14180,276 @@ s32 func_800A9B1C(s32 value, s32 delta) {
     return value;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A9B54);
+/* Transform a particle's quad: rotate it by `angle` at its position under
+ * `view` (mode 3 scales the view by `scale` and then the quad again),
+ * scale it by its size, tint it and link it at its depth (depth mode 0
+ * front, 1 nearer, 2 as is, 3 farther). */
+void func_800A9B54(Particle *particle, MATRIX *view, s16 angle, s32 depth_mode, VECTOR *scale, s32 mode) {
+    MATRIX m;
+    MATRIX local;
+    MATRIX scaled_view;
+    SVECTOR rotation;
+    VECTOR size;
+    s32 otz;
+    s32 p;
 
+    rotation.vx = 0;
+    rotation.vy = 0;
+    rotation.vz = angle;
+    func_8003F738(&rotation, &local);
+    local.t[0] = particle->position.vx >> 12;
+    local.t[1] = particle->position.vy >> 12;
+    local.t[2] = particle->position.vz >> 12;
+    if (mode == 3) {
+        scaled_view = *view;
+        ScaleMatrix(&scaled_view, scale);
+        CompMatrix(&scaled_view, &local, &m);
+        func_8007409C(&m, &local);
+        size.vx = particle->unk38.vx;
+        size.vy = particle->unk38.vy;
+        size.vz = particle->unk38.vz;
+        ScaleMatrix(&m, &size);
+        (particle->quads + D_800ADB08)->r0 = particle->unk48[0];
+        (particle->quads + D_800ADB08)->g0 = particle->unk48[1];
+        (particle->quads + D_800ADB08)->b0 = particle->unk48[2];
+        SetTransMatrix(&m);
+        ScaleMatrix(&m, scale);
+    } else {
+        CompMatrix(view, &local, &m);
+        func_8007409C(&m, &local);
+        size.vx = particle->unk38.vx;
+        size.vy = particle->unk38.vy;
+        size.vz = particle->unk38.vz;
+        ScaleMatrix(&m, &size);
+        (particle->quads + D_800ADB08)->r0 = particle->unk48[0];
+        (particle->quads + D_800ADB08)->g0 = particle->unk48[1];
+        (particle->quads + D_800ADB08)->b0 = particle->unk48[2];
+        SetTransMatrix(&m);
+    }
+    SetRotMatrix(&m);
+    otz = RotAverage4(&particle->corners[0], &particle->corners[1], &particle->corners[2], &particle->corners[3],
+                      (long *)&particle->quads[D_800ADB08].x0, (long *)&particle->quads[D_800ADB08].x1,
+                      (long *)&particle->quads[D_800ADB08].x2, (long *)&particle->quads[D_800ADB08].x3, &p, &p) >>
+          D_80050100;
+    switch (depth_mode) {
+    case 0:
+        p = 1;
+        break;
+    case 1:
+        p = otz - 0x10;
+        break;
+    case 2:
+        p = otz;
+        break;
+    case 3:
+        p = otz + 0x10;
+        break;
+    }
+    if (p > 0 && p < 0x1000) {
+        addPrim(&D_800C426C->ot[p], &particle->quads[D_800ADB08]);
+    }
+}
+
+#ifdef NON_MATCHING
+/* Step a particle: while delayed count down and at launch place it and
+ * its velocity in the emitter's frame (0 owner-facing, 1 801e module, 2
+ * owner's transform, 3 owner-facing and scaled); afterwards move it,
+ * fade its colour, draw it and count its life down. Differs in keeping
+ * &m in a saved register for the module and transform frames. */
+void func_800A9F18(Record78 *emitter, Particle *particle, MATRIX *view) {
+    VECTOR v;
+    SVECTOR sv;
+    MATRIX m;
+    MATRIX camera;
+    VECTOR origin;
+    VECTOR up;
+    VECTOR rotated;
+    VECTOR scale;
+    s32 flag;
+    s32 scaled;
+
+    if (particle->unk02 != 0) {
+        if (--particle->unk02 == 0) {
+            m.t[0] = m.t[1] = m.t[2] = 0;
+            scaled = 0;
+            switch ((emitter->flags >> 4) & 3) {
+            case 3:
+                sv.vx = 0;
+                sv.vy = D_800AF880.components.descriptors[emitter->unk52].actor->unk108;
+                sv.vz = 0;
+                func_8003F738(&sv, &m);
+                origin.vx = WHOLE(D_800AF880.components.descriptors[emitter->unk52].actor->position[0]);
+                origin.vy = WHOLE(D_800AF880.components.descriptors[emitter->unk52].actor->position[1]);
+                origin.vz = WHOLE(D_800AF880.components.descriptors[emitter->unk52].actor->position[2]);
+                emitter->unk50 = D_800AF880.components.descriptors[emitter->unk52].actor->scale[0];
+                scaled = 1;
+                break;
+            case 0:
+                sv.vx = 0;
+                sv.vy = D_800AF880.components.descriptors[emitter->unk52].actor->unk108;
+                sv.vz = 0;
+                func_8003F738(&sv, &m);
+                origin.vx = WHOLE(D_800AF880.components.descriptors[emitter->unk52].actor->position[0]);
+                origin.vy = WHOLE(D_800AF880.components.descriptors[emitter->unk52].actor->position[1]);
+                origin.vz = WHOLE(D_800AF880.components.descriptors[emitter->unk52].actor->position[2]);
+                emitter->unk50 = 0x1000;
+                break;
+            case 1:
+                func_801E72CC(&m, &camera, emitter->unk72, emitter->unk74);
+                goto place;
+            case 2:
+                m = D_800AF880.components.descriptors[emitter->unk52].transform;
+            place:
+                SetRotMatrix(&m);
+                SetTransMatrix(&m);
+                sv.vx = emitter->unk0C.vx;
+                sv.vy = emitter->unk0C.vy;
+                sv.vz = emitter->unk0C.vz;
+                func_8004A6DC(&sv, &origin.vx, &flag);
+                emitter->unk50 = 0x1000;
+                break;
+            }
+            m.t[0] = m.t[1] = m.t[2] = 0;
+            SetRotMatrix(&m);
+            SetTransMatrix(&m);
+            sv.vx = particle->velocity.vx;
+            sv.vy = particle->velocity.vy;
+            sv.vz = particle->velocity.vz;
+            func_800495DC(&sv, &v);
+            func_80048D7C(&v, &particle->velocity);
+            particle->velocity.vx = (particle->velocity.vx * emitter->unk08 >> 12) * emitter->unk24;
+            particle->velocity.vy = (particle->velocity.vy * emitter->unk08 >> 12) * emitter->unk24;
+            particle->velocity.vz = (particle->velocity.vz * emitter->unk08 >> 12) * emitter->unk24;
+            if (scaled == 1) {
+                particle->position.vx = particle->position.vx * emitter->unk50 >> 12;
+                particle->position.vy = particle->position.vy * emitter->unk50 >> 12;
+                particle->position.vz = particle->position.vz * emitter->unk50 >> 12;
+            }
+            SetRotMatrix(&m);
+            SetTransMatrix(&m);
+            sv.vx = particle->position.vx;
+            sv.vy = particle->position.vy;
+            sv.vz = particle->position.vz;
+            func_8004A6DC(&sv, &v.vx, &flag);
+            if (scaled == 1) {
+                sv.vz = 0;
+                sv.vx = D_800B00B4 - 0x400;
+                sv.vy = -D_800AF880.view_angle;
+                func_8004ABBC(&sv, &camera);
+                SetRotMatrix(&camera);
+                SetTransMatrix(&camera);
+                up.vx = 0;
+                up.vz = 0;
+                up.vy = v.vy;
+                func_8004998C(&up, &rotated);
+                v.vx += rotated.vx;
+                v.vy = rotated.vy;
+                v.vz += rotated.vz;
+                particle->position.vx = (origin.vx + v.vx) * (0x1000000 / emitter->unk50);
+                particle->position.vy = (origin.vy + v.vy) * (0x1000000 / emitter->unk50);
+                particle->position.vz = (origin.vz + v.vz) * (0x1000000 / emitter->unk50);
+                return;
+            }
+            particle->position.vx = (origin.vx + v.vx) << 12;
+            particle->position.vy = (origin.vy + v.vy) << 12;
+            particle->position.vz = (origin.vz + v.vz) << 12;
+        }
+    } else {
+        particle->velocity.vx += particle->unk28.vx;
+        particle->velocity.vy += particle->unk28.vy;
+        particle->velocity.vz += particle->unk28.vz;
+        particle->unk38.vy += particle->unk40.vy;
+        particle->unk38.vx += particle->unk40.vx;
+        particle->unk38.vz += particle->unk40.vz;
+        particle->position.vx += particle->velocity.vx;
+        particle->position.vy += particle->velocity.vy;
+        particle->position.vz += particle->velocity.vz;
+        particle->unk48[0] = func_800A9B1C(particle->unk48[0], particle->unk4C[0]);
+        particle->unk48[1] = func_800A9B1C(particle->unk48[1], particle->unk4C[1]);
+        particle->unk48[2] = func_800A9B1C(particle->unk48[2], particle->unk4C[2]);
+        scale.vx = emitter->unk50;
+        scale.vy = emitter->unk50;
+        scale.vz = emitter->unk50;
+        if (particle->unk04 != 1) {
+            func_800A9B54(particle, view, particle->angle, (emitter->flags >> 1) & 3, &scale,
+                          (emitter->flags >> 4) & 3);
+        }
+        if (--particle->unk04 == 0) {
+            particle->unk00 = 0;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A9F18);
+#endif
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AA6B4);
+extern u8 D_800AF474[8]; /* spawn offset per view octant */
+
+/* Spawn `particle` of `emitter`: its delay after the previous spawn, a
+ * random start within the spawn radius around the emitter (offset by the
+ * owner's view octant) and a velocity toward a random point of the
+ * target spread. */
+void func_800AA6B4(Record78 *emitter, Particle *particle, s32 *spawned) {
+    VECTOR unused; /* the original frame reserves an unused 16-byte local */
+    VECTOR start;
+    VECTOR end;
+    s32 radius;
+    s32 angle;
+    u32 facing;
+    s32 k;
+
+    particle->unk00 = 1;
+    particle->unk02 = emitter->unk56 + *spawned;
+    *spawned += emitter->unk56;
+    particle->unk04 = emitter->unk58;
+    if (emitter->flags & 1) {
+        particle->angle = rand() & 0xFFF;
+    } else {
+        particle->angle = emitter->unk76;
+    }
+    if (!(emitter->flags & 0x80)) {
+        radius = func_800A987C(emitter->unk26);
+    } else {
+        radius = emitter->unk26;
+    }
+    angle = func_800A987C(0xFFF);
+    start.vx = func_8003F8CC(angle) * radius >> 12;
+    if (!(emitter->flags & 0x40)) {
+        start.vz = func_8003F8B0(angle) * radius >> 12;
+    } else {
+        start.vz = 0;
+    }
+    facing = (D_800AF880.view_angle + D_800AF880.components.descriptors[emitter->unk52].actor->unk108) & 0xFFF;
+    k = D_800AF474[facing >> 9];
+    start.vx += emitter->unk0C.vx + emitter->unk30[k][0];
+    start.vz += emitter->unk0C.vz + emitter->unk30[k][1];
+    start.vy = emitter->unk0C.vy;
+    particle->position.vx = start.vx;
+    particle->position.vz = start.vz;
+    particle->position.vy = start.vy;
+    radius = func_800A987C(emitter->unk28);
+    end.vx = emitter->unk14.vx + (func_8003F8CC(angle) * radius >> 12);
+    end.vz = emitter->unk14.vz + (func_8003F8B0(angle) * radius >> 12);
+    end.vy = emitter->unk14.vy;
+    particle->velocity.vx = end.vx - start.vx;
+    particle->velocity.vy = end.vy - start.vy;
+    particle->velocity.vz = end.vz - start.vz;
+    particle->unk28.vx = emitter->unk1C.vx;
+    particle->unk28.vy = emitter->unk1C.vy;
+    particle->unk28.vz = emitter->unk1C.vz;
+    particle->unk38.vx = emitter->unk5A.vx;
+    particle->unk38.vy = emitter->unk5A.vy;
+    particle->unk38.vz = emitter->unk5A.vz;
+    particle->unk40.vx = emitter->unk62.vx;
+    particle->unk40.vy = emitter->unk62.vy;
+    particle->unk40.vz = emitter->unk62.vz;
+    particle->unk48[0] = emitter->unk6A;
+    particle->unk48[1] = emitter->unk6B;
+    particle->unk48[2] = emitter->unk6C;
+    particle->unk4C[0] = emitter->unk6E;
+    particle->unk4C[1] = emitter->unk6F;
+    particle->unk4C[2] = emitter->unk70;
+}
 
 /* Set an instance's bounding centre and radius from its mesh bounds. */
 void func_800AA9DC(FieldInstance *instance) {
@@ -10258,7 +14476,44 @@ void func_800AA9DC(FieldInstance *instance) {
     instance->radius = size * 2 + 1;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AAA74);
+extern MATRIX D_800B00E8; /* instance view: the rotation with its translation */
+
+/* 0 when an instance's bounding square (its radius around its centre) is
+ * on screen, else -1. */
+s32 func_800AAA74(FieldInstance *instance) {
+    VECTOR position;
+    SVECTOR corner;
+    s32 flag;
+    s32 sxy;
+    s32 depth;
+    s32 radius;
+    s32 top;
+    s32 left;
+    s32 bottom;
+    s32 right;
+
+    func_8004A6DC((SVECTOR *)instance->center, &position.vx, &flag);
+    D_800B00E8.t[0] = position.vx;
+    D_800B00E8.t[1] = position.vy;
+    D_800B00E8.t[2] = position.vz;
+    SetRotMatrix(&D_800B00E8);
+    SetTransMatrix(&D_800B00E8);
+    radius = instance->radius;
+    corner.vy = corner.vx = -radius;
+    corner.vz = 0;
+    RotTransPers(&corner, &sxy, &depth, &flag);
+    top = sxy >> 16;
+    left = (s16)sxy;
+    corner.vy = corner.vx = radius;
+    corner.vz = 0;
+    RotTransPers(&corner, &sxy, &depth, &flag);
+    bottom = sxy >> 16;
+    right = (s16)sxy;
+    if (top < D_800C3A60 + 0xE0 && -D_800C3A60 < bottom && left < D_800C3A5C + 0x140 && -D_800C3A5C < right) {
+        return 0;
+    }
+    return -1;
+}
 
 typedef struct {
     DR_MODE modes[33][2];
@@ -10272,14 +14527,12 @@ void func_800AABD8(void) {
     DrawSync(0);
 }
 
-#ifdef NON_MATCHING
 /* Allocate the 33 sprites (the first 16x16, the rest 8x8), each with a
- * draw mode per buffer. Differs only in the i/copy register choice. */
+ * draw mode per buffer. */
 void func_800AAC08(void) {
     RECT window;
     SPRT *sprite;
     SPRT *copy;
-    s32 size;
     s32 i;
 
     D_800AFC68 = func_80031BDC(0x840, 0);
@@ -10297,25 +14550,20 @@ void func_800AAC08(void) {
         sprite->g0 = 0x80;
         sprite->b0 = 0x80;
         if (i == 0) {
-            size = 0x10;
             sprite->u0 = 0xE0;
             sprite->v0 = 0x70;
+            sprite->h = sprite->w = 0x10;
         } else {
             sprite->v0 = 0x60;
-            size = 8;
             sprite->u0 = 0xE0;
+            sprite->h = sprite->w = 8;
         }
-        sprite->w = size;
-        sprite->h = size;
         sprite->x0 = 0xA0;
         sprite->y0 = 0x70;
         sprite->clut = GetClut(0x100, 0xF7);
         *copy = *sprite;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AAC08);
-#endif
 
 /* Set sprite `index`'s colour in both buffers. */
 void func_800AADC8(s32 index, s32 r, s32 g, s32 b) {
@@ -10327,9 +14575,99 @@ void func_800AADC8(s32 index, s32 r, s32 g, s32 b) {
     (D_800AFC68->sprites[index] + 1)->b0 = b;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AAE4C);
+/* Place sprite `index` at (x, y) (anchor 0: 4, 12 above-left; 1: 4, 4)
+ * and link it with its draw mode into the overlay ordering table. */
+void func_800AAE4C(s32 index, s32 x, s32 y, s32 anchor) {
+    switch (anchor) {
+    case 0:
+        y -= 12;
+        x -= 4;
+        break;
+    case 1:
+        y -= 4;
+        x -= 4;
+        break;
+    }
+    D_800AFC68->sprites[index][D_800ADB08].x0 = x;
+    D_800AFC68->sprites[index][D_800ADB08].y0 = y;
+    addPrim(&D_800C426C->overlay_ot[0], &D_800AFC68->sprites[index][D_800ADB08]);
+    addPrim(&D_800C426C->overlay_ot[0], &D_800AFC68->modes[index][D_800ADB08]);
+}
 
+#include "field_picture.h"
+
+#ifdef NON_MATCHING
+/* Set up the picture: four marker sprites (the first 16x16, the rest
+ * 8x8) and the three 128x224 picture pieces from the 8-bit pages at
+ * (300, 100). Differs only in the scheduling of one constant load. */
+void func_800AAF80(void) {
+    RECT window;
+    SPRT *sprite;
+    SPRT *copy;
+    POLY_FT4 *quad;
+    POLY_FT4 *quad_copy;
+    s32 i;
+
+    D_800C3A3C = func_80031BDC(sizeof(ScreenPieces), 0);
+    D_800B1DF0 = func_80031BDC(sizeof(PictureMarks), 0);
+    setRECT(&window, 0, 0, 0xFF, 0xFF);
+    for (i = 0; i < 4; i++) {
+        SetDrawMode(&D_800B1DF0->modes[i][0], 0, 0, GetTPage(0, 0, 0x3C0, 0x140), &window);
+        SetDrawMode(&D_800B1DF0->modes[i][1], 0, 0, GetTPage(0, 0, 0x3C0, 0x140), &window);
+        sprite = &D_800B1DF0->sprites[i][0];
+        SetSprt(sprite);
+        copy = sprite + 1;
+        setRGB0(sprite, 0x80, 0x80, 0x80);
+        sprite->x0 = 0xA0;
+        sprite->y0 = 0x70;
+        if (i == 0) {
+            sprite->u0 = 0xE0;
+            sprite->v0 = 0x70;
+            sprite->h = sprite->w = 0x10;
+        } else {
+            sprite->v0 = 0x60;
+            sprite->u0 = 0xE0;
+            sprite->h = sprite->w = 8;
+        }
+        sprite->clut = GetClut(0x100, 0xF7);
+        *copy = *sprite;
+    }
+    for (i = 0; i < 3; i++) {
+        quad = &D_800C3A3C->quads[i][0];
+        quad_copy = &D_800C3A3C->quads[i][1];
+        SetPolyFT4(quad);
+        quad->y2 = 0xDF;
+        quad->x0 = i << 7;
+        quad->x2 = i << 7;
+        quad->y0 = 0;
+        quad->x1 = (i << 7) + 0x80;
+        quad->y1 = 0;
+        quad->x3 = (i << 7) + 0x80;
+        quad->y3 = 0xDF;
+        setRECT(&D_800C3A3C->windows[i][0], 0, 0, 0xFF, 0xFF);
+        setRECT(&D_800C3A3C->windows[i][1], 0, 0, 0xFF, 0xFF);
+        SetDrawMode(&D_800C3A3C->modes[i][0], 0, 0, GetTPage(1, 0, 0x300 + i * 0x40, 0x100),
+                    &D_800C3A3C->windows[i][0]);
+        SetDrawMode(&D_800C3A3C->modes[i][1], 0, 0, GetTPage(1, 0, 0x300 + i * 0x40, 0x100),
+                    &D_800C3A3C->windows[i][1]);
+        setRGB0(quad, 0x80, 0x80, 0x80);
+        SetSemiTrans(quad, 1);
+        quad->v2 = 0xDF;
+        quad->u0 = 0;
+        quad->v0 = 0;
+        quad->u1 = 0x80;
+        quad->v1 = 0;
+        quad->u2 = 0;
+        quad->u3 = 0x80;
+        quad->v3 = 0xDF;
+        quad->tpage = GetTPage(1, 0, 0x300 + i * 0x40, 0x100);
+        quad->clut = GetClut(0, 0xF6);
+        *quad_copy = *quad;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AAF80);
+#endif
 
 /* 0 when item `item` is held in inventory list 0, else -1. */
 s32 func_800AB328(s32 item) {
@@ -10343,7 +14681,38 @@ s32 func_800AB328(s32 item) {
     return -1;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AB378);
+/* Draw the picture at brightness `level`: the marker at the controlled
+ * actor's scaled map position, then the three picture pieces. */
+void func_800AB378(s32 level) {
+    FieldActor *actor;
+    s32 x;
+    s32 y;
+    s32 i;
+
+    actor = D_800AF880.components.descriptors[D_800B2078.controlled].actor;
+    x = WHOLE(actor->position[0]) * D_800C3914 >> 16;
+    y = -(WHOLE(actor->position[2]) * D_800C3A18) >> 16;
+    for (i = 0; i < 1; i++) {
+        if (i == 0) {
+            y -= 12;
+            x -= 4;
+        }
+        D_800B1DF0->sprites[i][D_800ADB08].x0 = x + D_800AFE78;
+        D_800B1DF0->sprites[i][D_800ADB08].y0 = y + D_800AFE7C;
+        (D_800B1DF0->sprites[i] + (D_800ADB08 & 1))->r0 = level;
+        (D_800B1DF0->sprites[i] + (D_800ADB08 & 1))->g0 = level;
+        (D_800B1DF0->sprites[i] + (D_800ADB08 & 1))->b0 = level;
+        addPrim(&D_800C426C->overlay_ot[0], &D_800B1DF0->sprites[i][D_800ADB08]);
+        addPrim(&D_800C426C->overlay_ot[0], &D_800B1DF0->modes[i][D_800ADB08]);
+    }
+    for (i = 0; i < 3; i++) {
+        (D_800C3A3C->quads[i] + (D_800ADB08 & 1))->r0 = level;
+        (D_800C3A3C->quads[i] + (D_800ADB08 & 1))->g0 = level;
+        (D_800C3A3C->quads[i] + (D_800ADB08 & 1))->b0 = level;
+        addPrim(&D_800C426C->overlay_ot[0], &D_800C3A3C->quads[i][D_800ADB08]);
+        addPrim(&D_800C426C->overlay_ot[0], &D_800C3A3C->modes[i][D_800ADB08]);
+    }
+}
 
 /* 0 when game flag `which` (bits 3-6 of +1a16) is set; for 4, when bit 7
  * is clear; else -1. */
@@ -10378,17 +14747,158 @@ s32 func_800AB748(u32 which) {
     return -1;
 }
 
+extern RECT D_800AF5C0[5]; /* pieces of file 0x802's 320-wide image */
+
+#ifdef NON_MATCHING
+/* Upload the pieces of file 0x802's image whose game flag (800ab748) is
+ * clear to the 8-bit page area at (300, 100). The original keeps one
+ * pointer per piece field and spills most of its variables. */
+void func_800AB808(void) {
+    TIM_IMAGE tim;
+    u_long *file;
+    u8 *pixels;
+    u8 *row_pixels;
+    s32 i;
+    s32 row;
+
+    file = func_80031BDC(func_800288EC(0x802), 0);
+    func_800295D8(0x802, file, 0, 0x80);
+    func_80028A60(0);
+    pixels = func_80031BDC(0xF20, 0);
+    OpenTIM(file);
+    if (ReadTIM(&tim) != NULL) {
+        for (i = 0; i < 5; i++) {
+            if (func_800AB748(i) == -1 && tim.paddr != NULL) {
+                row_pixels = pixels;
+                for (row = 0; row < D_800AF5C0[i].h; row++) {
+                    memcpy(row_pixels, tim.paddr + (D_800AF5C0[i].y + row) * 0x50 + D_800AF5C0[i].x / 4,
+                           D_800AF5C0[i].w);
+                    row_pixels += D_800AF5C0[i].w / 4 * 4;
+                }
+                tim.prect->x = D_800AF5C0[i].x / 2 + 0x300;
+                tim.prect->y = D_800AF5C0[i].y + 0x100;
+                tim.prect->w = D_800AF5C0[i].w / 2;
+                tim.prect->h = D_800AF5C0[i].h;
+                LoadImage(tim.prect, (u_long *)pixels);
+                DrawSync(0);
+            }
+        }
+    }
+    func_800320E8(file);
+    func_800320E8(pixels);
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AB808);
+#endif
 
+#ifdef NON_MATCHING
+/* Show the current map's picture while its item is held: park the VRAM
+ * at (300, 100), load the picture, fade it in, hold until the button, fade
+ * it out and restore the VRAM. Differs in addressing the entry: the
+ * original keeps the table base and the entry offset apart. */
+void func_800ABA98(void) {
+    RECT rect;
+    Picture *table;
+    Picture *entry;
+    u8 *saved;
+    u32 *file;
+    s32 picture;
+    s32 i;
+
+    table = D_800AF47C;
+    i = 0;
+    entry = table;
+    for (;;) {
+        if (entry->map == 0xFFFF) {
+            return;
+        }
+        if ((D_8004F34C & 0x3FFF) == entry->map) {
+            break;
+        }
+        entry++;
+        i++;
+    }
+    if (func_800AB328(table[i].item) == -1) {
+        return;
+    }
+    picture = table[i].picture;
+    setRECT(&rect, 0x300, 0x100, 0xA0, 0x100);
+    D_800C3914 = table[i].unk04;
+    D_800C3A18 = table[i].unk08;
+    D_800AFE78 = table[i].x;
+    D_800AFE7C = table[i].y;
+    saved = func_80031BDC(0x14000, 0);
+    StoreImage(&rect, (u_long *)saved);
+    DrawSync(0);
+    func_80028A60(0);
+    func_80028470(4, 0);
+    file = func_80031BDC(func_800288EC(picture + 0x7FB), 0);
+    func_800295D8(picture + 0x7FB, file, 0, 0x80);
+    func_80028A60(0);
+    func_80070340(file, 0x300, 0x100, 0, 0xF6, 0, 0);
+    func_800320E8(file);
+    if (table[i].pieces == 1) {
+        func_800AB808();
+    }
+    func_800AAF80();
+    for (i = 0; i < 16; i++) {
+        func_80073FE0();
+        func_800AB378(i * 8);
+        func_800A6924();
+    }
+    do {
+        func_80073FE0();
+        func_800AB378(0x80);
+        func_800A6924();
+        func_80074700();
+    } while (!(D_800C3900 & 0x100));
+    for (i = 16; i > 0; i--) {
+        func_80073FE0();
+        func_800AB378(i * 8);
+        func_800A6924();
+    }
+    DrawSync(0);
+    func_800320E8(D_800C3A3C);
+    func_800320E8(D_800B1DF0);
+    LoadImage(&rect, (u_long *)saved);
+    DrawSync(0);
+    func_800320E8(saved);
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800ABA98);
-
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800ABD18);
+#endif
 
 typedef struct {
     DR_MODE modes[5][2];
     SPRT sprites[5][2];
 } OverlaySprites;
 extern OverlaySprites D_800B0188; /* per sprite and draw buffer */
+
+/* Set up the five 128x224 overlay sprites (8-bit pages from x 280) with
+ * their draw modes in both buffers. */
+void func_800ABD18(void) {
+    RECT window;
+    SPRT *sprite;
+    s32 i;
+
+    setRECT(&window, 0, 0, 0xFF, 0xFF);
+    for (i = 0; i < 5; i++) {
+        SetDrawMode(&D_800B0188.modes[i][0], 0, 0, GetTPage(1, 0, 0x280 + i * 0x40, 0), &window);
+        SetDrawMode(&D_800B0188.modes[i][1], 0, 0, GetTPage(1, 0, 0x280 + i * 0x40, 0), &window);
+        sprite = &D_800B0188.sprites[i][0];
+        SetSprt(sprite);
+        sprite->x0 = i << 7;
+        setRGB0(sprite, 0x80, 0x80, 0x80);
+        sprite->y0 = 0;
+        sprite->u0 = 0;
+        sprite->v0 = 0;
+        sprite->w = 0x80;
+        sprite->h = 0xE0;
+        SetSemiTrans(sprite, 0);
+        sprite->clut = GetClut(0, 0xE8);
+        D_800B0188.sprites[i][1] = *sprite;
+    }
+}
 
 /* Link the five overlay sprites and their draw modes of the current
  * buffer into the overlay ordering table. */
@@ -10403,14 +14913,110 @@ void func_800ABEC8(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800ABFDC);
+#include "field_glyph.h"
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AC03C);
+extern s32 D_800AF780; /* file 0xab bytes left */
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AC0F0);
+/* The glyph of the two-byte code at `text`: an index into the overlay font
+ * (*own 1) or the ROM font bitmap (*own 0). */
+s32 func_800ABFDC(u8 *text, s32 *own) {
+    u16 code;
+
+    code = text[1] | (text[0] << 8);
+    if ((u16)(code - GLYPH_OWN_FIRST) < GLYPH_OWN_COUNT) {
+        *own = 1;
+        return code - GLYPH_OWN_FIRST;
+    }
+    *own = 0;
+    return (s32)func_800405C4(code);
+}
+
+/* Expand a 16x15 1-bit ROM glyph into an 8-bit glyph cell (0xff set, 0
+ * clear); a -1 glyph fills the cell. */
+void func_800AC03C(u8 *cell, u16 *rows) {
+    s32 i;
+    s32 bit;
+
+    if (rows == (u16 *)-1) {
+        for (i = 0; i < GLYPH_CELL_BYTES; i++) {
+            *cell++ = 0xFF;
+        }
+        return;
+    }
+    for (i = 0; i < 15; i++) {
+        for (bit = 7; bit >= 0; bit--) {
+            *cell++ = (*rows >> bit) & 1 ? 0xFF : 0;
+        }
+        for (bit = 15; bit >= 8; bit--) {
+            *cell++ = (*rows >> bit) & 1 ? 0xFF : 0;
+        }
+        *cell++ = 0;
+        *cell++ = 0;
+        rows++;
+    }
+}
+
+/* Draw the next text line (ending at CR, up to 28 glyphs) into VRAM row
+ * `row` at x `left`, blanking the rest; return the text after it. */
+u8 *func_800AC0F0(u8 *text, s32 left, s32 row) {
+    GlyphCell cell;
+    RECT dest;
+    RECT source;
+    u8 line[0x40];
+    s32 own;
+    s32 used;
+    s32 count;
+    s32 glyph;
+    s32 x;
+    s32 i;
+
+    dest.w = 9;
+    dest.h = 16;
+    dest.y = row * 16;
+    for (i = 0; i < 0x40; i++) {
+        line[i] = text[i];
+    }
+    for (i = GLYPH_CELL_BYTES - 1; i >= 0; i--) {
+        cell.pixels[0][i] = 0;
+    }
+    used = 0;
+    if (D_800AF780 <= 0) {
+        count = 0;
+    } else {
+        for (count = 0, x = left; count < GLYPH_LINE_CELLS; count++, x += 9) {
+            if (line[used] == '\r') {
+                used++;
+                break;
+            }
+            glyph = func_800ABFDC(&line[used], &own);
+            used += 2;
+            if (own == 1) {
+                source.w = 9;
+                source.h = 16;
+                source.x = glyph % 7 * 9 + 0x380;
+                source.y = glyph / 7 * 16 + 0x100;
+                MoveImage(&source, x, row * 16);
+            } else {
+                func_800AC03C(cell.pixels[0], (u16 *)glyph);
+                dest.x = x;
+                LoadImage(&dest, (u_long *)&cell);
+            }
+            DrawSync(0);
+        }
+    }
+    for (i = GLYPH_CELL_BYTES - 1; i >= 0; i--) {
+        cell.pixels[0][i] = 0;
+    }
+    for (; count < GLYPH_LINE_CELLS; count++) {
+        dest.x = count * 9 + left;
+        LoadImage(&dest, (u_long *)&cell);
+        DrawSync(0);
+    }
+    D_800AF780 -= used;
+    return text + used;
+}
 
 extern s32 func_80028738(s32 file);
-extern s32 D_800AF780;  /* file 0xab size */
 extern void *D_800AF76C; /* file 0xab */
 extern void *D_800AF784; /* file 0xac */
 
@@ -10426,9 +15032,117 @@ void func_800AC308(void) {
     func_80028A60(0);
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AC3AC);
+#ifdef NON_MATCHING
+/* Set up the text roll: the white top and bottom fades (640 wide, 24
+ * tall at 0 and c8) and the 16 lines of sprites. Differs only in when
+ * the scheduler loads the constants 0x280 and 0x80. */
+void func_800AC3AC(void) {
+    SPRT *sprite;
+    s32 i;
+    s32 k;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AC99C);
+    SetPolyGT4(&D_800AF788[0][0]);
+    SetPolyGT4(&D_800AF788[1][0]);
+    D_800AF788[0][0].r0 = D_800AF788[0][0].g0 = D_800AF788[0][0].b0 = 0xFF;
+    D_800AF788[0][0].r1 = D_800AF788[0][0].g1 = D_800AF788[0][0].b1 = 0xFF;
+    D_800AF788[1][0].r2 = D_800AF788[1][0].g2 = D_800AF788[1][0].b2 = 0xFF;
+    D_800AF788[1][0].r3 = D_800AF788[1][0].g3 = D_800AF788[1][0].b3 = 0xFF;
+    D_800AF788[0][0].y3 = D_800AF788[0][0].y2 = 0x18;
+    D_800AF788[0][0].r2 = D_800AF788[0][0].g2 = D_800AF788[0][0].b2 = 0;
+    D_800AF788[0][0].r3 = D_800AF788[0][0].g3 = D_800AF788[0][0].b3 = 0;
+    D_800AF788[1][0].r0 = D_800AF788[1][0].g0 = D_800AF788[1][0].b0 = 0;
+    D_800AF788[1][0].r1 = D_800AF788[1][0].g1 = D_800AF788[1][0].b1 = 0;
+    D_800AF788[0][0].x0 = 0;
+    D_800AF788[0][0].y0 = 0;
+    D_800AF788[0][0].x1 = 0x280;
+    D_800AF788[0][0].y1 = 0;
+    D_800AF788[0][0].x2 = 0;
+    D_800AF788[0][0].x3 = 0x280;
+    D_800AF788[1][0].x0 = 0;
+    D_800AF788[1][0].y0 = 0xC8;
+    D_800AF788[1][0].y1 = 0xC8;
+    D_800AF788[1][0].y2 = 0xE0;
+    D_800AF788[1][0].y3 = 0xE0;
+    D_800AF788[1][0].x1 = 0x280;
+    D_800AF788[1][0].x2 = 0;
+    D_800AF788[1][0].x3 = 0x280;
+    D_800AF788[0][0].u0 = 0;
+    D_800AF788[0][0].v0 = 0;
+    D_800AF788[0][0].u1 = 2;
+    D_800AF788[0][0].v1 = 0;
+    D_800AF788[0][0].u2 = 0;
+    D_800AF788[0][0].v2 = 2;
+    D_800AF788[0][0].u3 = 2;
+    D_800AF788[0][0].v3 = 2;
+    D_800AF788[1][0].u0 = 0;
+    D_800AF788[1][0].v0 = 0;
+    D_800AF788[1][0].u1 = 2;
+    D_800AF788[1][0].v1 = 0;
+    D_800AF788[1][0].u2 = 0;
+    D_800AF788[1][0].v2 = 2;
+    D_800AF788[1][0].u3 = 2;
+    D_800AF788[1][0].v3 = 2;
+    D_800AF788[0][0].tpage = GetTPage(1, 2, 0x3C0, 0x100);
+    D_800AF788[1][0].tpage = GetTPage(1, 2, 0x3C0, 0x100);
+    D_800AF788[0][0].clut = GetClut(0, 0x1FF);
+    D_800AF788[1][0].clut = GetClut(0, 0x1FF);
+    SetSemiTrans(&D_800AF788[0][0], 1);
+    SetSemiTrans(&D_800AF788[1][0], 1);
+    D_800AF788[0][1] = D_800AF788[0][0];
+    D_800AF788[1][1] = D_800AF788[1][0];
+    D_800AF770 = func_80031BDC(16 * sizeof(TextRollLine), 1);
+    for (i = 0; i < 16; i++) {
+        sprite = &D_800AF770[i].sprites[0][0];
+        SetSprt(sprite);
+        setRGB0(sprite, 0x80, 0x80, 0x80);
+        SetSemiTrans(sprite, 0);
+        sprite->clut = GetClut(0, 0x1FF);
+        sprite->h = 0x10;
+        sprite->u0 = 0;
+        sprite->v0 = i * 16;
+        sprite->w = 0x80;
+        sprite->x0 = 0x40;
+        sprite->y0 = i * 16;
+        sprite[4] = *sprite;
+        sprite[1] = *sprite;
+        sprite[5] = *sprite;
+        sprite[2] = *sprite;
+        sprite[6] = *sprite;
+        sprite[3] = *sprite;
+        sprite[7] = *sprite;
+        for (k = 0; k < 4; k++) {
+            D_800AF770[i].sprites[0][k].x0 = 0x40 + k * 0x80;
+            D_800AF770[i].sprites[1][k].x0 = 0x40 + k * 0x80;
+            SetDrawMode(&D_800AF770[i].modes[0][k], 0, 0, GetTPage(1, 0, 0x300 + k * 0x40, 0), NULL);
+            SetDrawMode(&D_800AF770[i].modes[1][k], 0, 0, GetTPage(1, 0, 0x300 + k * 0x40, 0), NULL);
+        }
+    }
+}
+#else
+INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AC3AC);
+#endif
+
+/* Draw the text roll: its two fades, then each line scrolled up a pixel
+ * from the other buffer's position. */
+void func_800AC99C(void) {
+    s32 y;
+    s32 i;
+    s32 k;
+
+    addPrim(&D_800C426C->overlay_ot[0], &D_800AF788[1][D_800ADB08]);
+    addPrim(&D_800C426C->overlay_ot[0], &D_800AF788[0][D_800ADB08]);
+    for (i = 0; i < 16; i++) {
+        y = (D_800AF770[i].sprites[(D_800ADB08 + 1) & 1][0].y0 - 1) & 0xFF;
+        D_800AF770[i].sprites[D_800ADB08][0].y0 = y;
+        D_800AF770[i].sprites[D_800ADB08][1].y0 = y;
+        D_800AF770[i].sprites[D_800ADB08][2].y0 = y;
+        D_800AF770[i].sprites[D_800ADB08][3].y0 = y;
+        for (k = 0; k < 4; k++) {
+            addPrim(&D_800C426C->overlay_ot[0], &D_800AF770[i].sprites[D_800ADB08][k]);
+            addPrim(&D_800C426C->overlay_ot[0], &D_800AF770[i].modes[D_800ADB08][k]);
+        }
+    }
+}
 
 void func_80070340(u32 *tim, s16 x, s16 y, s16 clut_x, s16 clut_y, s16 clut_w, s16 clut_h);
 
@@ -10455,7 +15169,7 @@ void func_800ACB90(void) {
     func_800320E8(pixels);
 }
 
-extern s32 D_800AF774;
+extern u8 *D_800AF774; /* sequence text position */
 extern s32 D_800AF778;
 extern s32 D_800AF77C;
 void func_800AC3AC(void);
@@ -10469,11 +15183,10 @@ void func_800ACC58(void) {
         func_800AC3AC();
         D_800AF77C = 0;
         D_800AF778 = 15;
-        D_800AF774 = (s32)D_800AF76C;
+        D_800AF774 = D_800AF76C;
     }
 }
 
-extern void *D_800AF770;
 
 /* Release the sequence buffers when enabled. */
 void func_800ACCB0(void) {
@@ -10483,7 +15196,6 @@ void func_800ACCB0(void) {
     }
 }
 
-s32 func_800AC0F0(s32 position, s32 size, s32 frame);
 
 /* Advance the sequence one frame; every 16th frame decode the next step. */
 void func_800ACCF4(void) {
@@ -10563,9 +15275,72 @@ void func_800ACE90(void) {
     func_800AD978(1);
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800ACFD0);
+#include "field_party.h"
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AD4D4);
+#define DESCRIPTOR(index) (&D_800AF880.components.descriptors[index])
+
+#ifdef NON_MATCHING
+/* Return party slot `slot` to its member: swap the models back, hand the
+ * stand-in's heading over, and restart both animations. Differs in when
+ * the address of 8006f990 is formed. */
+void func_800ACFD0(s32 slot) {
+    FieldModel *model;
+
+    D_8005A39C->unk22B1[slot] = 0;
+    model = DESCRIPTOR(D_8005A444[slot])->model;
+    DESCRIPTOR(D_8005A444[slot])->model = DESCRIPTOR(D_8006F990[slot])->model;
+    DESCRIPTOR(D_8006F990[slot])->model = model;
+    DESCRIPTOR(D_8006F990[slot])->flags = (DESCRIPTOR(D_8006F990[slot])->flags & 0xF07F) | 0x200;
+    DESCRIPTOR(D_8006F990[slot])->flags &= 0xFFDF;
+    DESCRIPTOR(D_8006F990[slot])->actor->flags &= ~1;
+    func_800A0524(D_8006F990[slot], D_8005A444[slot]);
+    DESCRIPTOR(D_8005A444[slot])->model->position[0] = DESCRIPTOR(D_8005A444[slot])->actor->position[0];
+    DESCRIPTOR(D_8005A444[slot])->model->position[1] = DESCRIPTOR(D_8005A444[slot])->actor->position[1];
+    DESCRIPTOR(D_8005A444[slot])->model->position[2] = DESCRIPTOR(D_8005A444[slot])->actor->position[2];
+    DESCRIPTOR(D_8005A444[slot])->actor->flags |= 0x400;
+    DESCRIPTOR(D_8005A444[slot])->actor->flags &= ~0x300;
+    DESCRIPTOR(D_8006F990[slot])->actor->flags &= ~0x1800;
+    DESCRIPTOR(D_8005A444[slot])->actor->flags &= ~0x1800;
+    DESCRIPTOR(D_8006F990[slot])->actor->unk108 = DESCRIPTOR(D_8005A444[slot])->actor->unk108;
+    DESCRIPTOR(D_8006F990[slot])->actor->heading_goal = DESCRIPTOR(D_8005A444[slot])->actor->heading_goal;
+    DESCRIPTOR(D_8006F990[slot])->actor->unkE8 = DESCRIPTOR(D_8006F990[slot])->actor->unkE6;
+    DESCRIPTOR(D_8005A444[slot])->actor->unkE8 = DESCRIPTOR(D_8005A444[slot])->actor->unkE6;
+    func_800821F4(DESCRIPTOR(D_8006F990[slot])->model, 6, DESCRIPTOR(D_8006F990[slot]));
+    func_800821F4(DESCRIPTOR(D_8005A444[slot])->model, DESCRIPTOR(D_8005A444[slot])->actor->unkE6,
+                  DESCRIPTOR(D_8005A444[slot]));
+    func_8009FEE4(slot);
+    func_800A98E8(D_8006F990[slot], 0);
+}
+#else
+INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800ACFD0);
+#endif
+
+/* Put the current actor in for party slot `slot`: swap its model with the
+ * member's, mark the slot taken, and restart both animations. */
+void func_800AD4D4(s32 slot) {
+    FieldModel *model;
+
+    model = DESCRIPTOR(D_800AFD1C)->model;
+    DESCRIPTOR(D_800AFD1C)->model = DESCRIPTOR(D_8005A444[slot])->model;
+    DESCRIPTOR(D_8005A444[slot])->model = model;
+    DESCRIPTOR(D_8005A444[slot])->model->position[0] = DESCRIPTOR(D_8005A444[slot])->actor->position[0];
+    DESCRIPTOR(D_8005A444[slot])->model->position[1] = DESCRIPTOR(D_8005A444[slot])->actor->position[1];
+    DESCRIPTOR(D_8005A444[slot])->model->position[2] = DESCRIPTOR(D_8005A444[slot])->actor->position[2];
+    DESCRIPTOR(D_800AFD1C)->flags |= 0x20;
+    DESCRIPTOR(D_8005A444[slot])->actor->flags |= 0x200;
+    DESCRIPTOR(D_8005A444[slot])->actor->flags &= ~0x500;
+    D_8005A39C->unk22B1[slot] = 1;
+    DESCRIPTOR(D_8006F990[slot])->actor->flags &= ~0x1800;
+    DESCRIPTOR(D_8005A444[slot])->actor->flags &= ~0x1800;
+    DESCRIPTOR(D_8006F990[slot])->actor->unkE8 = DESCRIPTOR(D_8006F990[slot])->actor->unkE6;
+    DESCRIPTOR(D_8005A444[slot])->actor->unkE8 = DESCRIPTOR(D_8005A444[slot])->actor->unkE6;
+    func_800821F4(DESCRIPTOR(D_8006F990[slot])->model, DESCRIPTOR(D_8006F990[slot])->actor->unkE6,
+                  DESCRIPTOR(D_8006F990[slot]));
+    func_800821F4(DESCRIPTOR(D_8005A444[slot])->model, DESCRIPTOR(D_8005A444[slot])->actor->unkE6,
+                  DESCRIPTOR(D_8005A444[slot]));
+    func_800A98E8(D_8006F990[slot], 0);
+    func_8009FEE4(slot);
+}
 
 /* For party members in slot state 1, set actor flag 0x200 and clear
  * 0x500. */

@@ -18,7 +18,8 @@ typedef struct {
 /* Turn and menu state: the heap block at *800c3eac. */
 typedef struct {
     TurnSlot slots[11];
-    u8 unk2C0[0x2CC - 0x2C0];
+    u8 unk2C0[4];
+    u8 combo[8];       /* +0x2C4 entered combo steps, 0xff ends */
     u8 unk2CC[7];
     u8 actor;          /* +0x2D3 acting slot */
     u8 unk2D4[2];
@@ -125,7 +126,15 @@ typedef struct {
     POLY_FT4 unk2D0[2];
     POLY_FT4 unk320[2];
     POLY_FT4 unk370[2];
-    u8 unk3C0[0x668 - 0x3C0];
+    POLY_FT4 unk3C0[2]; /* EP page icons */
+    POLY_FT4 unk410[2];
+    POLY_FT4 unk460[2]; /* EP digits */
+    POLY_FT4 unk4B0[2];
+    POLY_FT4 unk500[2]; /* maximum EP digits */
+    POLY_FT4 unk550[2];
+    POLY_FT4 unk5A0[2]; /* EP label glyphs */
+    POLY_G4 unk5F0[2];
+    POLY_F4 unk638[2];
     u8 unk668;         /* buffer of the +0x0..+0xf0 quads */
     u8 unk669;
     u8 buffer;         /* +0x66A */
@@ -386,7 +395,11 @@ extern WindowRect *D_800D2D90[7];
 typedef struct {
     u8 unk0[4];
     u16 target;    /* +0x4 target selection */
-    u8 unk6[0xE - 0x6];
+    u8 unk6[0x8 - 0x6];
+    u8 amount;     /* +0x8 */
+    u8 duration;   /* +0x9 */
+    s16 flags;     /* +0xA effect bits; 1 selects the special effect amount */
+    s16 status;    /* +0xC status bits */
     u16 animation; /* +0xE */
 } ItemEffect;
 
@@ -652,6 +665,7 @@ void func_80074EEC(void);
 void func_800745EC(void);
 void func_80074D4C(void);
 void func_80077074(void);
+void func_80077610(void);
 void func_800785D4(u8 actor, u8 index);
 void func_80078658(u8 index, u8 actor);
 void func_800787E0(u8 value, u8 actor);
@@ -712,7 +726,7 @@ u16 func_80089C48(u8 slot);
 void func_80098C6C(u16 param);
 void func_80085454(u8 queue);
 void func_80085618(u8 queue);
-void func_800941A4(void);
+u8 func_800941A4(void);
 void func_8008860C(void);
 void func_80089038(void);
 void func_80089110(void);
@@ -776,8 +790,8 @@ void func_80087EDC(u8 actor, u8 target);
 void func_800881B8(u8 actor, u8 target);
 void func_800883AC(u8 slot);
 u16 func_80089B50(u16 low, u16 high);
-u8 func_80079ED8(u8 slot, u8 attribute, u8 value, u8 write);
-u16 func_8007A280(u8 slot, u8 attribute, u16 value, u8 write);
+u8 func_80079ED8(u8 slot, u8 attribute, u8 value, u8 read);
+u16 func_8007A280(u8 slot, u8 attribute, u16 value, u8 read);
 u16 func_80089C9C(u16 mask, u8 slot);
 void func_80085AC4(u8 slot);
 void func_80071B94(u8 mode);

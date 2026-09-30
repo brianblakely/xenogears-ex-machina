@@ -42,11 +42,15 @@ segments:
     start: 0x0
     vram: 0x801c5000
     subsegments:
+      # Translation units: jump tables keep their unit's rodata phase mod 8
+      # (docs/matching.md); 801DBE54's starts at 4 mod 8 after the previous
+      # unit's strings, and 801E8070's returns to 0 mod 8 right after
+      # 801E433C's odd-length table.
       - [0x0, .rodata, slot39]
-      - [0xfc, .rodata, slot39_801DA4A8]
-      - [0x278, .rodata, slot39_801E7C50]
+      - [0xFC, .rodata, slot39_801DBE54]
+      - [0x278, .rodata, slot39_801E8070]
       - [0x31c, c, slot39]
-      - [0x154a8, c, slot39_801DA4A8]
-      - [0x22c50, c, slot39_801E7C50]
+      - [0x16E54, c, slot39_801DBE54]
+      - [0x23070, c, slot39_801E8070]
       - [0x246a4, data, slot39_data]
   - [0x25908]

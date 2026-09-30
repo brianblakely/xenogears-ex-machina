@@ -37,7 +37,44 @@ positive `li` to `ori` as the original does (resident, movie library). Qualifica
 8-byte frame and reschedules the stores. The small-data threshold is a
 property of each translation unit: most code is `-G0`, while units that address
 `.sdata`/`.sbss` (around `_gp = 0x80059170`) through `$gp` need `-G8`; set
-`GP_<file> := 8` in the target fragment. SDK library code (PsyQ 3.x-4.x) is
+`GP_<file> := 8` in the target fragment.
+
+Jump tables: GCC emits `.align 3` before each table in `.rdata`. The original
+assembler honoured it relative to the unit's own rodata section, and the
+original linker placed each unit's section at a 4-byte boundary, so all tables
+of one unit share one phase mod 8. `tools/jump_table_phases.py` (after
+`all-verify`) finds every original switch dispatch in the 25 distinct images:
+45 odd-length tables followed by another table are padded with one zero word
+that keeps the phase, 20 of them at 4 mod 8 (resident 800188f4 -> 8001892c
+within 8002a68c; slot39 801c50fc -> 801c512c; battle 80070514 -> 8007053c);
+the phase changes 34 times, never within one function; no odd-length table
+abuts a same-phase table. Ignoring the directive or taking it as 4-byte would
+leave no pads; absolute 8-byte alignment would leave no tables at 4 mod 8.
+GNU as pads the same way, and splat's `SUBALIGN(4)` overrides the 8-byte
+section alignment it records, so maspsx passes `.align` through unchanged:
+what matters is that each object's rodata starts where the original unit's
+did. A phase change between two tables marks a unit boundary in the target
+yaml (menu, battle, slot39). The five overlays at 8006faf0 open with their
+number (field 4, worldmap 5, battle 6, menu 7, movie 8) ahead of the first
+unit's rodata. spimdisasm emits `.align 3` only before 8-aligned tables, so a
+file whose rodata starts at 4 mod 8 cannot hold assembly tables of a
+0-mod-8 unit.
+
+A third compiler builds the later battle code: the Cygnus CDK build of GCC
+2.7.2 (`psx-cc1-2.7.2-cdk`, old-gcc 0.17 `gcc-2.7.2-cdk`, cdk-gcc b18) at `-O2`
+with a later ASPSX (positive `li` as `addiu`; maspsx `--aspsx-version=2.56`).
+It keeps a symbol's `%hi` in a register and addresses members from it, leaves
+load-delay `nop`s and the epilogue `jr` slot of ovl3381 `801fc000`/`801fc278`
+unfilled, and fills other `jr` slots (debug2611 `802818c4`). Units: the six
+0x801fc000 battle modules (ovl3381, ovl3383-ovl3387), debug2611's tools unit
+(80280844-end) and ovl2615's battle_loader and load_modes. Qualification: of
+cc1 2.5.7, 2.6.0, 2.6.3, 2.7.2, 2.7.2-cdk, 2.8.0, 2.8.1, 2.91.66 and 2.95.2
+(`-O1`/`-O2`/`-O3`, `-fno-delayed-branch`, `-fno-schedule-insns[2]`) under
+ASPSX 2.34-2.86, only 2.7.2-cdk `-O2`/`-O3` with ASPSX >= 2.56 reproduces
+ovl3381 `801fc000` and `801fc278`; over the nine units' existing C, `-O2`
+reproduces 21 functions that 2.6.3/2.7.2 do not (`-O3` 18, `-O1` 1), and the
+units' previously matching C still matches. ASPSX 2.56-2.86 give identical
+bytes here. Set it with `CC_VERSION`/`CC_<file> := 2.7.2-cdk`. SDK library code (PsyQ 3.x-4.x) is
 located with `tools/psyq_signatures.py` and classified, not decompiled.
 
 Targets (`decomp/targets/`): both resident executables (SLUS_006.64/69 share all

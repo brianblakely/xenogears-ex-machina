@@ -1,117 +1,7 @@
-/*
- * Third translation unit of the menu overlay (801e7c50-801e9608). Its rodata
- * starts at 801c5278 with the jump table of 801e8070, which lies 4 mod 8 past
- * the second unit's rodata start (801c50fc) and so cannot share that unit.
- * The text boundary lies between 801e433c (the second unit's last jump
- * table) and 801e8070; it is placed where the label helpers begin.
- */
+/* Menu overlay unit 801E8070. Its rodata starts at 801C5278, where the jump
+ * tables return to 0 mod 8 after 801E433C's odd-length table: the text
+ * boundary lies between 801E433C and 801E8070. */
 #include "menu.h"
-
-/* Set up `label`'s two quads for label image `index`: mode 0 takes the
- * image from the 140 column pages (rows from `first`); otherwise from the
- * 180 page (+80 keeps it opaque, else dimmed), with palette choice
- * `mode & 7f` - 1. Hides the label. */
-#ifdef NON_MATCHING
-void func_801E7C50(MenuLabelSlot *label, s32 index, s32 first, u8 mode) {
-    POLY_FT4 *poly;
-    s32 i;
-    s32 semi;
-    s32 row;
-    u8 half;
-    u8 column;
-    u8 u;
-    u8 v;
-
-    half = index & 1;
-    row = index / 2;
-    column = (row & 1) << 7;
-    for (i = 0; i < 2; i++) {
-        poly = &label->polys[i];
-        semi = 0;
-        func_801E927C(poly);
-        if (mode == 0) {
-            label->palette = half;
-            poly->tpage = GetTPage(0, 0, 0x140, 0);
-            v = (index + first) / 4 * 0xd;
-            poly->u0 = column;
-            poly->v0 = v;
-            poly->u1 = column + label->width;
-            poly->v1 = v;
-            poly->u2 = column;
-            poly->v2 = v + 0xd;
-            poly->u3 = column + label->width;
-            poly->v3 = v + 0xd;
-        } else {
-            if (!(mode & 0x80)) {
-                semi = 0x20;
-                SetSemiTrans(poly, 1);
-                poly->r0 = 0x20;
-                poly->g0 = 0x20;
-                poly->b0 = 0x20;
-            }
-            label->palette = (mode & 0x7f) - 1;
-            u = half * 0x60;
-            poly->tpage = semi | GetTPage(0, 0, 0x180, 0x80);
-            v = row * 0xd + first;
-            poly->u0 = u;
-            poly->v0 = v;
-            poly->u1 = u + label->width;
-            poly->v1 = v;
-            poly->u2 = u;
-            poly->v2 = v + 0xd;
-            poly->u3 = u + label->width;
-            poly->v3 = v + 0xd;
-        }
-        if (label->palette != 0) {
-            poly->clut = D_80059414;
-        } else {
-            poly->clut = D_800595D4;
-        }
-    }
-    label->visible = 0;
-}
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801E7C50", func_801E7C50);
-#endif
-
-/* Render `count` labels (text ids in `layout`) in pairs into one 28x13
- * image each (two columns of 32 from x 140, rows of 13 from label `first`),
- * lay them out and upload the images. */
-void func_801E7E68(MenuLabelSlot *labels, u8 *layout, s32 first, s32 count) {
-    s32 i;
-    RECT *image;
-
-    for (i = 0; i < count; i += 2) {
-        labels[i].width = func_80034EAC(func_80033728(D_800625A0->labels, layout[i]), D_800625A0->topLabels[0].pixels,
-                                        0x18, 0);
-        image = &labels[i].rect;
-        labels[i + 1].width = func_80034EAC(func_80033728(D_800625A0->labels, layout[i + 1]), D_800625A0->topLabels[0].pixels,
-                                        0x18, 1);
-        labels[i].rect.x = (i / 2 & 1) * 0x20 + 0x140;
-        labels[i].rect.y = (i + first) / 4 * 0xd;
-        labels[i].rect.w = 0x1c;
-        labels[i].rect.h = 0xd;
-        labels[i + 1].rect = labels[i].rect;
-        func_801E7C50(&labels[i], i, first, 0);
-        func_801E7C50(&labels[i + 1], i + 1, first, 0);
-        LoadImage(image, D_800625A0->topLabels[0].pixels);
-        DrawSync(0);
-    }
-}
-
-/* Lay out `count` labels from `table` into `labels` (the placement is unused). */
-void func_801E8018(u8 count, MenuLabelSlot *labels, u8 *table, u8 *flags) {
-    func_801E7E68(labels, table, 4, count);
-}
-
-/* Clear `count` label flags. */
-void func_801E8044(u8 count, u8 *flags) {
-    s32 i;
-
-    for (i = 0; i < count; i++) {
-        flags[i] = 0;
-    }
-}
 
 /* Place label `selected` for layout `mode` (0: window row `row`, clearing the
  * other flags first; 1-3, 5, 6: 3D label vertices from the mode's tables;
@@ -168,7 +58,7 @@ void func_801E8070(u8 count, MenuLabelSlot *labels, u8 *table, s32 *offsets, u8 
     flags[selected] = 1;
 }
 #else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801E7C50", func_801E8070);
+INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801E8070", func_801E8070);
 #endif
 
 /* Open the command window: grow the cursor column one command per two
@@ -258,7 +148,7 @@ void func_801E86C8(u8 offset) {
     }
 }
 #else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801E7C50", func_801E86C8);
+INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801E8070", func_801E86C8);
 #endif
 
 /* Lay out the command cursor sprites for `count` commands (images of the
@@ -370,7 +260,7 @@ void func_801E8EAC(POLY_FT4 *poly, u8 mode) {
     poly->b0 = shade;
 }
 #else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801E7C50", func_801E8EAC);
+INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801E8070", func_801E8EAC);
 #endif
 
 /* Set the blending of portrait `index`'s quads of the current buffer: plain
@@ -406,7 +296,7 @@ void func_801E8F60(u8 index, u8 dim) {
     func_801E8EAC(&D_800625A0->portraits[index]->frameSide[D_800625A0->portraits[index]->buffer], mode);
 }
 #else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801E7C50", func_801E8F60);
+INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801E8070", func_801E8F60);
 #endif
 
 /* Make `poly` semi-transparent, textured without shading, at neutral colour. */
@@ -546,5 +436,5 @@ retry:
     return result;
 }
 #else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801E7C50", func_801E93A0);
+INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801E8070", func_801E93A0);
 #endif

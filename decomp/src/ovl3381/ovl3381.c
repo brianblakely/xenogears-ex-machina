@@ -9,35 +9,29 @@
  * screen broken into triangles (func_801FC2C0 starts it; no caller is known
  * from the overlays, so it is reached by address).
  *
- * The module was built by a compiler that schedules the %hi/%lo halves of
- * addresses separately (lui far from its lw/sw/addiu, even in delay slots)
- * and splits offsets above 0x7fff from a base register (ori 0x8000), with
- * positive li kept as addiu; the qualified GCC 2.6.3/2.7.2 + ASPSX 2.34 do
- * neither, so functions addressing symbols stay NON_MATCHING. */
+ * The module was built by the Cygnus CDK GCC 2.7.2 with a later ASPSX
+ * (see ovl3381.mk). */
+#include "psyq/libc.h"
 #include "tiles.h"
 
+#define ABS(x) ((x) >= 0 ? (x) : -(x))
+
 /* Count the effect's frames; the battle's flag 0x100 ends it. */
-#ifdef NON_MATCHING
 void func_801FC000(TaskNode *node) {
     ((TileTask *)node->object)->frame++;
     if (D_800C3EB0.flags & 0x100) {
         node->destroy(node);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3381/asm/nonmatchings/ovl3381", func_801FC000);
-#endif
 
 /* Queue every triangle of the current display buffer at a fixed 64,64
  * offset. */
-#ifdef NON_MATCHING
 void func_801FC064(TaskNode *node) {
     TileTask *task;
     Tile *tile;
     POLY_FT3 *prim;
     s32 ofx, ofy;
     s32 h;
-    s16 offset[2];
     s32 half, row, column;
 
     task = node->object;
@@ -45,61 +39,60 @@ void func_801FC064(TaskNode *node) {
     h = ReadGeomScreen();
     SetGeomOffset(64, 64);
     SetGeomScreen(0x200);
-    offset[0] = offset[1] = 64;
-    for (half = 0; half != 2; half++) {
-        for (row = 0; row < 16; row++) {
-            for (column = 0; column < 16; column++) {
-                tile = &task->tiles[half][row][column];
-                prim = &tile->prim[D_800C3EB0.buffer];
-                prim->x0 = tile->corner[0].vx + offset[0];
-                prim->y0 = tile->corner[0].vy + offset[1];
-                prim->x1 = tile->corner[1].vx + offset[0];
-                prim->y1 = tile->corner[1].vy + offset[1];
-                prim->x2 = tile->corner[2].vx + offset[0];
-                prim->y2 = tile->corner[2].vy + offset[1];
-                prim->x0 = tile->spread[0].vx + offset[0];
-                prim->y0 = tile->spread[0].vy + offset[1];
-                prim->x1 = tile->spread[1].vx + offset[0];
-                prim->y1 = tile->spread[1].vy + offset[1];
-                prim->x2 = tile->spread[2].vx + offset[0];
-                prim->y2 = tile->spread[2].vy + offset[1];
-                AddPrim(D_8005956C, prim);
+    {
+        SVECTOR offset;
+        u8 unused[0x28]; /* frame space of the original's unused locals (0x20..0x48) */
+        offset.vy = offset.vx = 64;
+        for (half = 0; half != 2; half++) {
+            for (row = 0; row < 16; row++) {
+                for (column = 0; column < 16; column++) {
+                    tile = &task->tiles[half][row][column];
+                    prim = &tile->prim[D_800C3EB0.buffer];
+                    prim->x0 = tile->corner[0].vx + offset.vx;
+                    prim->y0 = tile->corner[0].vy + offset.vy;
+                    prim->x1 = tile->corner[1].vx + offset.vx;
+                    prim->y1 = tile->corner[1].vy + offset.vy;
+                    prim->x2 = tile->corner[2].vx + offset.vx;
+                    prim->y2 = tile->corner[2].vy + offset.vy;
+                    prim->x0 = tile->spread[0].vx + offset.vx;
+                    prim->y0 = tile->spread[0].vy + offset.vy;
+                    prim->x1 = tile->spread[1].vx + offset.vx;
+                    prim->y1 = tile->spread[1].vy + offset.vy;
+                    prim->x2 = tile->spread[2].vx + offset.vx;
+                    prim->y2 = tile->spread[2].vy + offset.vy;
+                    AddPrim(D_8005956C, prim);
+                }
             }
         }
     }
     SetGeomOffset(ofx, ofy);
     SetGeomScreen(h);
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3381/asm/nonmatchings/ovl3381", func_801FC064);
-#endif
 
 /* Unlink the effect's nodes, release it and restore the depth shift. */
-#ifdef NON_MATCHING
 void func_801FC278(TaskNode *node) {
     func_8001CB48((TaskNode *)((u8 *)node + 0x1C));
     func_8001CD94(node);
     func_80025180(node);
     D_80050100 = 4;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3381/asm/nonmatchings/ovl3381", func_801FC278);
-#endif
 
 /* Start the effect: build both triangle halves of every 8x8 cell of the
  * 128x128 area around the screen centre, textured from the displayed buffer,
  * with each corner also pushed out onto the circle of its larger coordinate
- * (the square grid mapped onto a disc). */
+ * (the square grid mapped onto a disc).
+ * NON_MATCHING: the row loop strength-reduces row * 8 (for v) into its own
+ * induction slot where the original recomputes it from the row counter and
+ * keeps y0/y1 as copies of theirs; the rest follows from that allocation. */
 #ifdef NON_MATCHING
 void func_801FC2C0(void) {
     TileTask *task;
     Tile *tile;
     POLY_FT3 *prim;
-    SVECTOR *corner;
-    s32 half, row, column, i, buffer;
-    s32 x0, y0, x1, y1;
-    s32 radius, ax, ay, angle;
-    u8 u, v;
+    s32 i, column, row, half;
+    s32 y1, x1, y0, x0;
+    s32 radius, angle;
+    u8 u;
 
     D_80050100 = 0;
     task = func_8001D1D8(sizeof(TileTask), NULL, func_801FC000, func_801FC064, func_801FC278);
@@ -115,54 +108,55 @@ void func_801FC2C0(void) {
                 if (half == 0) {
                     tile->corner[0].vx = x0;
                     tile->corner[0].vy = y0;
+                    tile->corner[0].vz = 0x200;
                     tile->corner[1].vx = x1;
                     tile->corner[1].vy = y0;
+                    tile->corner[1].vz = 0x200;
                     tile->corner[2].vx = x0;
                     tile->corner[2].vy = y1;
+                    tile->corner[2].vz = 0x200;
                 } else {
                     tile->corner[0].vx = x1;
                     tile->corner[0].vy = y0;
+                    tile->corner[0].vz = 0x200;
                     tile->corner[1].vx = x1;
                     tile->corner[1].vy = y1;
+                    tile->corner[1].vz = 0x200;
                     tile->corner[2].vx = x0;
                     tile->corner[2].vy = y1;
+                    tile->corner[2].vz = 0x200;
                 }
-                tile->corner[0].vz = 0x200;
-                tile->corner[1].vz = 0x200;
-                tile->corner[2].vz = 0x200;
                 for (i = 0; i != 3; i++) {
-                    corner = &tile->corner[i];
-                    ax = corner->vx < 0 ? -corner->vx : corner->vx;
-                    ay = corner->vy < 0 ? -corner->vy : corner->vy;
-                    radius = ay < ax ? ax : ay;
-                    angle = ratan2(corner->vy, corner->vx);
+                    radius = ABS(abs(tile->corner[i].vx) > abs(tile->corner[i].vy)
+                                     ? tile->corner[i].vx
+                                     : tile->corner[i].vy);
+                    angle = ratan2(tile->corner[i].vy, tile->corner[i].vx);
                     tile->spread[i].vx = func_8003F8CC(angle) * radius / 4096;
                     tile->spread[i].vy = func_8003F8B0(angle) * radius / 4096;
                 }
-                u = (column * 8) & 0x3F;
-                v = row * 8;
-                for (buffer = 0; buffer != 2; buffer++) {
-                    prim = &tile->prim[buffer];
+                for (i = 0; i != 2; i++) {
+                    prim = &tile->prim[i];
                     SetPolyFT3(prim);
-                    prim->tpage = GetTPage(2, 0, column * 8, buffer != 0 ? 0 : 0xE0);
+                    prim->tpage = i != 0 ? GetTPage(2, 0, column * 8, 0) : GetTPage(2, 0, column * 8, 0xE0);
                     prim->r0 = 0x80;
                     prim->g0 = 0xA0;
                     prim->b0 = 0x80;
                     prim->tpage = GetTPage(2, 0, column * 8, (1 - D_800C3EB0.buffer) * 0xE0);
+                    u = (column * 8) & 0x3F;
                     if (half == 0) {
                         prim->u0 = u;
-                        prim->v0 = v;
+                        prim->v0 = row * 8;
                         prim->u1 = u + 8;
-                        prim->v1 = v;
+                        prim->v1 = row * 8;
                         prim->u2 = u;
-                        prim->v2 = v + 8;
+                        prim->v2 = row * 8 + 8;
                     } else {
                         prim->u0 = u + 8;
-                        prim->v0 = v;
+                        prim->v0 = row * 8;
                         prim->u1 = u + 8;
-                        prim->v1 = v + 8;
+                        prim->v1 = row * 8 + 8;
                         prim->u2 = u;
-                        prim->v2 = v + 8;
+                        prim->v2 = row * 8 + 8;
                     }
                 }
             }
