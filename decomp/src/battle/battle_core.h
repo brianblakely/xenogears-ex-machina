@@ -704,6 +704,7 @@ void func_8008963C(void);
 void func_800897CC(void);
 void func_8007FCE8(void);
 void func_8007FDEC(void);
+void func_8009413C(u8 member, u8 release);
 void func_800800E8(u8 member);
 void func_8007FB70(u8 member);
 s32 func_8009ADA0(u8 slot, s32 *amounts);

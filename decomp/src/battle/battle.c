@@ -3547,7 +3547,30 @@ void func_8008189C(u8 member) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800819A4);
+/* Confirm the attack page's target (once): make it the member's default
+ * target, close the page, highlight member and target and (except for
+ * character 4) queue a move event toward it. */
+void func_800819A4(member)
+u8 member;
+{
+    if (D_800C3EAC->unk2E9 == 0) {
+        D_800C3EAC->unk2E9 = 1;
+        func_800BCD98(0);
+        D_800C3EAC->slots[member].defaultTarget = D_800C3EAC->unk2E8;
+        func_8007FCE8();
+        func_8007FDEC();
+        func_80077980();
+        func_800BC404(func_80089C08(member) | func_80089C08(D_800C3EAC->slots[member].defaultTarget));
+        if (D_800D2D24[member] != 4) {
+            D_800C3FE8[D_800C3EAC->eventCount].actor = member;
+            D_800C3FE8[D_800C3EAC->eventCount].type = 0xFD;
+            D_800C3FE8[D_800C3EAC->eventCount].parameter = 0;
+            D_800C3FE8[D_800C3EAC->eventCount].targetMask = func_80089C08(D_800C3EAC->slots[member].defaultTarget);
+            D_800C3EAC->eventCount++;
+        }
+        func_8009413C(member, 0);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80081B58);
 
