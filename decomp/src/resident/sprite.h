@@ -36,7 +36,7 @@ extern Task *D_800594C0;   /* the running task */
 extern u32 D_80059184;     /* next task serial */
 extern s32 D_80059188;
 extern s32 D_8005918C;     /* live tasks */
-extern s32 D_80059190;
+extern struct Sprite *D_80059190; /* sprites awaiting a frame (through renderer->next_pending) */
 
 /* Resident sprite/actor engine (the unit around 0x8001c8dc-0x8002709c).
  * Only the fields the recovered functions use are named. */
@@ -48,12 +48,12 @@ typedef struct {
     void *parts;                   /* +0x2c: 0x18 bytes per part */
     void *part_cursor;             /* +0x30 */
     void *pointer34;               /* +0x34 */
-    void *pointer38;               /* +0x38 */
+    struct Sprite *next_pending;   /* +0x38 */
     u8 unknown3c[4];
     s32 word40;                    /* +0x40 */
 } SpriteRenderer;
 
-typedef struct {
+typedef struct Sprite {
     s32 x, y, z;                /* +0x0: position (16.16) */
     s32 speed_x, speed_y, speed_z; /* +0xc */
     s32 speed;                  /* +0x18: walking speed */
@@ -65,7 +65,8 @@ typedef struct {
     s16 scale;               /* +0x2c */
     u8 unknown2e[4];
     s16 direction;           /* +0x32 */
-    u8 unknown34[6];
+    u16 frame;               /* +0x34: pending frame, 0 none */
+    u8 unknown36[4];
     u16 rate;                /* +0x3a: speed factor, 1024 = 1 */
     union {
         u32 word;
@@ -137,6 +138,8 @@ extern s32 D_80059428[];  /* [0]: frames the main task list stays paused */
 extern s16 D_80059494[];
 extern u8 D_800591AC[];   /* [0]: new main-list tasks count as active */
 extern s32 D_80059464[];  /* [0]: active main-list tasks */
+extern u8 D_8005A474[];
+extern u8 D_8006BE10[];
 extern s32 D_8005956C[];
 
 /* 0x20 bytes of lighting state copied by 80024ff4. */

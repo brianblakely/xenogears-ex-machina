@@ -27,7 +27,7 @@
 u32 D_80059184;
 s32 D_80059188;
 s32 D_8005918C;
-s32 D_80059190;
+Sprite *D_80059190;
 Task *D_800594C0;
 Task *D_8005958C;
 Task *D_80059590;
@@ -378,20 +378,89 @@ Task *func_8001D1D8(s32 size, Task *owner, void (*update)(Task *), void (*update
 }
 
 void func_8001D298(void) {
-    D_80059190 = 0;
+    D_80059190 = NULL;
 }
 
 void func_8001D2A4(void) {
-    D_80059190 = 0;
+    D_80059190 = NULL;
 }
 
+/* Request frame `frame` for a one-sided sprite: it joins the pending list
+ * (drawn by 8001d468), or, already pending, first draws its previous one. */
+/* Nonmatching: in the pending-list scan the original builds the two image addresses through $v0 and walks the list in $v1. */
+#ifdef NON_MATCHING
+void func_8001D2B0(Sprite *sprite, s32 frame) {
+    Sprite *pending;
+
+    if ((sprite->render.word & 3) != 1) {
+        sprite->frame = 0;
+        return;
+    }
+    if ((sprite->flags >> 20) & 1) {
+        sprite->flags &= ~0x100000;
+        if (sprite->renderer->pointer34 != NULL) {
+            func_800234AC(sprite);
+        }
+    }
+    if ((sprite->flags >> 17) & 1) {
+        for (pending = D_80059190; pending != NULL; pending = pending->renderer->next_pending) {
+            if (pending == sprite) {
+                if (sprite->image != D_8005A474 && sprite->image != D_8006BE10 && !((sprite->flags >> 19) & 1)) {
+                    func_8001F8E8(sprite, sprite->frame);
+                }
+                sprite->frame = frame;
+                return;
+            }
+        }
+    }
+    sprite->frame = frame;
+    sprite->flags |= 0x20000;
+    sprite->renderer->next_pending = D_80059190;
+    D_80059190 = sprite;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001D2B0);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001D3F4);
+/* Remove a sprite from the pending list. */
+void func_8001D3F4(Sprite *sprite) {
+    Sprite *prev = NULL;
+    Sprite *pending;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001D468);
+    for (pending = D_80059190; pending != NULL; pending = pending->renderer->next_pending) {
+        if (pending == sprite) {
+            if (prev != NULL) {
+                prev->renderer->next_pending = pending->renderer->next_pending;
+            } else {
+                D_80059190 = pending->renderer->next_pending;
+            }
+        } else {
+            prev = pending;
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001D4E8);
+/* Draw the pending frame of every pending sprite and empty the list. */
+void func_8001D468(void) {
+    Sprite *sprite;
+
+    for (sprite = D_80059190; sprite != NULL; sprite = sprite->renderer->next_pending) {
+        if (sprite->frame == 0) {
+            sprite->flags &= ~0xFC;
+        } else {
+            func_8001DAE8(sprite, sprite->frame, sprite->image);
+        }
+    }
+    D_80059190 = NULL;
+}
+
+/* Give a sprite's renderer its 0x40-byte block (once). */
+void func_8001D4E8(Sprite *sprite) {
+    if (sprite->renderer->pointer34 == NULL) {
+        sprite->renderer->pointer34 = func_80031BDC(0x40, 0);
+        func_800234AC(sprite);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001D53C);
 
@@ -877,7 +946,7 @@ void func_800239A0(Sprite *sprite) {
     sprite->sequencer = (u8 *)sprite + 0xF4;
     sprite->renderer->pointer34 = (u8 *)sprite + 0x124;
     sprite->image = (u8 *)sprite + 0x110;
-    sprite->renderer->pointer38 = NULL;
+    sprite->renderer->next_pending = NULL;
 }
 
 /* Give a sprite its inline renderer with an inline part list. */
@@ -886,7 +955,7 @@ void func_800239F4(Sprite *sprite) {
     func_8002393C(sprite->renderer);
     sprite->renderer->part_cursor = (u8 *)sprite + 0xF4;
     sprite->renderer->pointer34 = NULL;
-    sprite->renderer->pointer38 = NULL;
+    sprite->renderer->next_pending = NULL;
 }
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80023A48);
