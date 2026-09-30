@@ -55,10 +55,17 @@ typedef struct {
     u32 *paddr;
 } TIM_IMAGE;
 
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    s16 w, h;
+} TILE;
+
 /* One screen fade channel (800b20c4 + 0x58 * channel). Levels are 8.8. */
 typedef struct {
     u8 modes[2][12]; /* DR_MODE per draw buffer */
-    u8 tiles[2][16]; /* TILE per draw buffer */
+    TILE tiles[2];   /* per draw buffer */
     s32 level[3];
     s32 step[3];
     u16 abr;
@@ -81,9 +88,10 @@ typedef struct FieldActor {
     s32 position[3]; /* 020: 16.16 */
     u8 unk02C[4];
     s32 unk030;      /* 030 */
-    u8 unk034[4];
+    s32 unk034;      /* 034 */
     s32 unk038;      /* 038 */
-    u8 unk03C[0x75 - 0x3C];
+    u8 unk03C[0x74 - 0x3C];
+    u8 unk074;       /* 074 */
     u8 unk075;       /* 075 */
     u8 unk076[0x80 - 0x76];
     s8 character;    /* 080 */
@@ -167,8 +175,14 @@ typedef struct {
     s16 unk82;
 } FieldModel;
 
+/* A model instance; +12 is its drawing mode. */
+typedef struct {
+    u8 unk00[0x12];
+    s16 mode;
+} FieldInstance;
+
 typedef struct FieldDescriptor {
-    u8 unk00[4];
+    FieldInstance *instance; /* 00 */
     FieldModel *model; /* 04 */
     u8 unk08[4];
     MATRIX matrix;     /* 0C */
@@ -331,9 +345,13 @@ typedef struct GameState {
     u16 unk2318;         /* 2318: bit per character */
 } GameState;
 
-/* Field work state 800b2184..800b2388, one object: stores to its members do
- * not pass loads of other members. */
+/* Field work state 800b2078..800b2388, one object: stores to its members do
+ * not pass loads of other members, and code addresses members relative to
+ * one another. */
 typedef struct {
+    u8 unk2078[0x20C4 - 0x2078];
+    FadeChannel fades[2];      /* 20C4: screen fade channels */
+    u8 unk2174[0x2184 - 0x2174];
     SVECTOR sprite_angles;     /* 2184: sprite view rotation */
     s16 scale;                 /* 218C: offset scale (8007b614) */
     s16 unk218E;               /* 218E: colour pass-through gate (80075b08) */
@@ -445,6 +463,8 @@ typedef struct {
 } FieldSlot6;
 
 /* Resident services. */
+extern void func_80043BFC(void *prim, s32 on); /* SetSemiTrans */
+extern void func_80043D64(TILE *tile);         /* setTile */
 extern void func_800379B4(s32);
 extern void func_8003A838(s32 sequence, s32, s32);
 extern void func_8003A89C(s32 sequence, s32, s32);
@@ -516,6 +536,7 @@ extern void func_800496AC(void);                               /* PopMatrix */
 extern void func_8004A6DC(SVECTOR *v, s32 *out, s32 *flag); /* RotTrans */
 
 /* Field overlay. */
+extern void func_800AA9DC(FieldInstance *instance);
 extern s32 func_8008DB68(s32 member, s32 amount);
 extern s32 func_8008DBF0(s32 member, s32 amount);
 extern s32 func_8009D044(s32 offset, s32 flags); /* operand, immediate with flag 0x10 */
@@ -606,6 +627,8 @@ extern s32 D_8004F34C; /* current map */
 extern u8 D_800625FC[2][0x22]; /* pad buffers */
 
 /* Field state. */
+extern s32 D_800ADB98;
+extern s32 D_800ADC0C;
 extern s16 D_800AEA2C[4]; /* party masks */
 extern s32 D_800ADBDC;
 extern s32 D_800ADBE4;
@@ -633,7 +656,7 @@ extern s32 D_800AFC7C; /* batch limit */
 extern s32 D_800AFD1C; /* current actor index */
 extern s32 D_800AFE84;
 extern s32 D_800B06A0;
-extern FieldWork D_800B2184;
+extern FieldWork D_800B2078;
 extern FieldSoundBank *D_800B235C; /* movie sound-effect bank */
 extern u8 *D_800ADC00; /* event bytecode */
 extern void (*D_800AE6A0[])(void); /* extended event instructions */
@@ -676,7 +699,6 @@ extern FieldDrawBlock *D_800C426C; /* current draw block */
 extern s32 D_800C268C;
 extern s32 D_800ADC18;
 extern u8 D_800ADC1C[8]; /* octant bits */
-extern FadeChannel D_800B20C4[2];
 extern FieldDrawBlock D_800B249C[2];
 extern s32 D_800ADB0C;
 extern s32 D_800ADB60; /* field stream running */

@@ -81,36 +81,36 @@ void func_80071A64(void) {
 /* Advance one fade channel a step; a finished channel whose levels reached
  * zero turns off unless a fade-out is still in progress. */
 void func_80071A8C(s32 channel) {
-    if (D_800B20C4[channel].active != 0) {
-        if (D_800B20C4[channel].steps <= 0) {
-            D_800B20C4[channel].steps = 0;
-            if (D_800ADC08 != 1 && D_800B20C4[channel].level[0] == 0 &&
-                D_800B20C4[channel].level[1] == 0 && D_800B20C4[channel].level[2] == 0) {
-                D_800B20C4[channel].active = 0;
+    if (D_800B2078.fades[channel].active != 0) {
+        if (D_800B2078.fades[channel].steps <= 0) {
+            D_800B2078.fades[channel].steps = 0;
+            if (D_800ADC08 != 1 && D_800B2078.fades[channel].level[0] == 0 &&
+                D_800B2078.fades[channel].level[1] == 0 && D_800B2078.fades[channel].level[2] == 0) {
+                D_800B2078.fades[channel].active = 0;
             }
         } else {
-            D_800B20C4[channel].level[0] = D_800B20C4[channel].level[0] + D_800B20C4[channel].step[0];
-            if (D_800B20C4[channel].level[0] >> 8 >= 0x100) {
-                D_800B20C4[channel].level[0] = 0xFF00;
+            D_800B2078.fades[channel].level[0] = D_800B2078.fades[channel].level[0] + D_800B2078.fades[channel].step[0];
+            if (D_800B2078.fades[channel].level[0] >> 8 >= 0x100) {
+                D_800B2078.fades[channel].level[0] = 0xFF00;
             }
-            if (D_800B20C4[channel].level[0] < 0) {
-                D_800B20C4[channel].level[0] = 0;
+            if (D_800B2078.fades[channel].level[0] < 0) {
+                D_800B2078.fades[channel].level[0] = 0;
             }
-            D_800B20C4[channel].level[1] = D_800B20C4[channel].level[1] + D_800B20C4[channel].step[1];
-            if (D_800B20C4[channel].level[1] >> 8 >= 0x100) {
-                D_800B20C4[channel].level[1] = 0xFF00;
+            D_800B2078.fades[channel].level[1] = D_800B2078.fades[channel].level[1] + D_800B2078.fades[channel].step[1];
+            if (D_800B2078.fades[channel].level[1] >> 8 >= 0x100) {
+                D_800B2078.fades[channel].level[1] = 0xFF00;
             }
-            if (D_800B20C4[channel].level[1] < 0) {
-                D_800B20C4[channel].level[1] = 0;
+            if (D_800B2078.fades[channel].level[1] < 0) {
+                D_800B2078.fades[channel].level[1] = 0;
             }
-            D_800B20C4[channel].level[2] = D_800B20C4[channel].level[2] + D_800B20C4[channel].step[2];
-            if (D_800B20C4[channel].level[2] >> 8 >= 0x100) {
-                D_800B20C4[channel].level[2] = 0xFF00;
+            D_800B2078.fades[channel].level[2] = D_800B2078.fades[channel].level[2] + D_800B2078.fades[channel].step[2];
+            if (D_800B2078.fades[channel].level[2] >> 8 >= 0x100) {
+                D_800B2078.fades[channel].level[2] = 0xFF00;
             }
-            if (D_800B20C4[channel].level[2] < 0) {
-                D_800B20C4[channel].level[2] = 0;
+            if (D_800B2078.fades[channel].level[2] < 0) {
+                D_800B2078.fades[channel].level[2] = 0;
             }
-            D_800B20C4[channel].steps = D_800B20C4[channel].steps - 1;
+            D_800B2078.fades[channel].steps = D_800B2078.fades[channel].steps - 1;
         }
     }
 }
@@ -126,16 +126,16 @@ void func_80071CB4(void *ot) {
 
 /* Start a fade on `channel` towards (red, green, blue) over `steps` frames. */
 void func_80071D08(s32 channel, s32 steps, s32 red, s32 green, s32 blue, s32 abr) {
-    s32 red_step = ((red << 8) - D_800B20C4[channel].level[0]) / steps;
-    s32 green_step = ((green << 8) - D_800B20C4[channel].level[1]) / steps;
-    s32 blue_step = ((blue << 8) - D_800B20C4[channel].level[2]) / steps;
+    s32 red_step = ((red << 8) - D_800B2078.fades[channel].level[0]) / steps;
+    s32 green_step = ((green << 8) - D_800B2078.fades[channel].level[1]) / steps;
+    s32 blue_step = ((blue << 8) - D_800B2078.fades[channel].level[2]) / steps;
 
-    D_800B20C4[channel].steps = steps;
-    D_800B20C4[channel].active = 1;
-    D_800B20C4[channel].abr = abr;
-    D_800B20C4[channel].step[0] = red_step;
-    D_800B20C4[channel].step[1] = green_step;
-    D_800B20C4[channel].step[2] = blue_step;
+    D_800B2078.fades[channel].steps = steps;
+    D_800B2078.fades[channel].active = 1;
+    D_800B2078.fades[channel].abr = abr;
+    D_800B2078.fades[channel].step[0] = red_step;
+    D_800B2078.fades[channel].step[1] = green_step;
+    D_800B2078.fades[channel].step[2] = blue_step;
 }
 
 /* Fade channel 0 out to white over `steps` frames, once. */
@@ -146,11 +146,11 @@ void func_80071DCC(s32 steps) {
         D_800ADC08 = 1;
         if (D_800ADC04 == 2) {
             rate = 0xFF00 / steps;
-            D_800B20C4[0].level[0] = D_800B20C4[0].level[1] = D_800B20C4[0].level[2] = 0;
-            D_800B20C4[0].steps = steps;
-            D_800B20C4[0].active = 1;
-            D_800B20C4[0].abr = 2;
-            D_800B20C4[0].step[0] = D_800B20C4[0].step[1] = D_800B20C4[0].step[2] = rate;
+            D_800B2078.fades[0].level[0] = D_800B2078.fades[0].level[1] = D_800B2078.fades[0].level[2] = 0;
+            D_800B2078.fades[0].steps = steps;
+            D_800B2078.fades[0].active = 1;
+            D_800B2078.fades[0].abr = 2;
+            D_800B2078.fades[0].step[0] = D_800B2078.fades[0].step[1] = D_800B2078.fades[0].step[2] = rate;
         }
     }
 }
@@ -163,11 +163,11 @@ void func_80071E58(s32 steps) {
         D_800ADC08 = 0;
         if (D_800ADC04 == 2) {
             rate = -0x10000 / steps;
-            D_800B20C4[0].level[0] = D_800B20C4[0].level[1] = D_800B20C4[0].level[2] = 0xFF00;
-            D_800B20C4[0].active = 1;
-            D_800B20C4[0].steps = steps;
-            D_800B20C4[0].abr = 2;
-            D_800B20C4[0].step[0] = D_800B20C4[0].step[1] = D_800B20C4[0].step[2] = rate;
+            D_800B2078.fades[0].level[0] = D_800B2078.fades[0].level[1] = D_800B2078.fades[0].level[2] = 0xFF00;
+            D_800B2078.fades[0].active = 1;
+            D_800B2078.fades[0].steps = steps;
+            D_800B2078.fades[0].abr = 2;
+            D_800B2078.fades[0].step[0] = D_800B2078.fades[0].step[1] = D_800B2078.fades[0].step[2] = rate;
         }
     }
 }
@@ -347,7 +347,40 @@ s32 func_80073988(s32 angle, s32 goal, s32 step) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800739C0);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80073E38);
+/* Refresh each shown model instance's bounds (800aa9dc) and choose its
+ * drawing mode from its descriptor flags. */
+void func_80073E38(void) {
+    s32 i;
+    FieldDescriptor *descriptor;
+    FieldInstance *instance;
+    u16 flags;
+
+    for (i = 0; i < D_800AF880.components.descriptor_count; i++) {
+        descriptor = &D_800AF880.components.descriptors[i];
+        if (!(descriptor->flags & 0x40)) {
+            instance = descriptor->instance;
+            func_800AA9DC(instance);
+            if (D_800B2078.unk218E != 0) {
+                if (descriptor->flags & 0x10) {
+                    instance->mode = 5;
+                } else {
+                    instance->mode = 4;
+                }
+            } else {
+                flags = descriptor->flags;
+                if (flags & 0xC) {
+                    instance->mode = 1;
+                } else if (flags & 0x4000) {
+                    instance->mode = 3;
+                } else if (flags & 0x10) {
+                    instance->mode = 2;
+                } else {
+                    instance->mode = 0;
+                }
+            }
+        }
+    }
+}
 
 #ifdef NON_MATCHING
 /* Switch to the other draw block and clear its overlay ordering table. */
@@ -458,7 +491,7 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800759E4);
 
 /* Pass a colour on to resident 80021b98 unless 800b218e is set. */
 void func_80075B08(void *target, u8 *color) {
-    if (D_800B2184.unk218E == 0) {
+    if (D_800B2078.unk218E == 0) {
         func_80021B98(target, color[0], color[1], color[2]);
     }
 }
@@ -590,8 +623,8 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80077DAC);
 s32 func_80077E10(void) {
     s32 result = 0;
 
-    if (D_800ADBD0 == 1 && D_800B2184.unk2344 == 0) {
-        result = -((D_800AF880.components.descriptors[D_800B2184.controlled].actor->flags & 0x800) != 0);
+    if (D_800ADBD0 == 1 && D_800B2078.unk2344 == 0) {
+        result = -((D_800AF880.components.descriptors[D_800B2078.controlled].actor->flags & 0x800) != 0);
     }
     return result;
 }
@@ -641,7 +674,7 @@ void func_80078C5C(void) {
     u32 *pixels;
     s32 i;
 
-    if (D_800B2184.unk2344 != 0) {
+    if (D_800B2078.unk2344 != 0) {
         D_800B249C[0].draw.dtd = 0;
         D_800B249C[1].draw.dtd = 0;
         pixels = func_80031BDC(0x4000, 0);
@@ -687,13 +720,13 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80079784);
 /* Set the battle-entry flag (80059179): clear only while the controlled
  * actor has neither bit 0x40 nor 0x80 of +14; 800b234c overrides it. */
 void func_800798BC(void) {
-    if (D_800B2184.unk2268 != 0 && !(D_800AF880.components.descriptors[D_800B2184.controlled].actor->unk014 & 0xC0)) {
+    if (D_800B2078.unk2268 != 0 && !(D_800AF880.components.descriptors[D_800B2078.controlled].actor->unk014 & 0xC0)) {
         D_80059179 = 0;
     } else {
         D_80059179 = 1;
     }
-    if (D_800B2184.battle_override != 0xFF) {
-        D_80059179 = D_800B2184.battle_override;
+    if (D_800B2078.battle_override != 0xFF) {
+        D_80059179 = D_800B2078.battle_override;
     }
 }
 
@@ -786,7 +819,7 @@ void func_8007B614(VECTOR *out, s32 distance, s32 angle) {
 
     distance *= 16;
     angle &= 0xFFF;
-    length = (distance * D_800B2184.scale) >> 12;
+    length = (distance * D_800B2078.scale) >> 12;
     out->vx = func_8003F8CC(angle) * length;
     out->vy = 0;
     out->vz = -(func_8003F8B0(angle) * length);
@@ -882,7 +915,21 @@ s32 func_8007D8B4(s32 x, s32 y, s32 z) {
     return 0;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007D93C);
+/* Prepare a fade channel: a full-screen semi-transparent tile in both
+ * buffers, inactive, levels zero, additive blend. */
+void func_8007D93C(s32 channel) {
+    func_80043D64(&D_800B2078.fades[channel].tiles[0]);
+    func_80043BFC(&D_800B2078.fades[channel].tiles[0], 1);
+    D_800B2078.fades[channel].tiles[0].w = 0x140;
+    D_800B2078.fades[channel].tiles[0].h = 0xE0;
+    D_800B2078.fades[channel].tiles[0].x0 = 0;
+    D_800B2078.fades[channel].tiles[0].y0 = 0;
+    D_800B2078.fades[channel].tiles[1] = D_800B2078.fades[channel].tiles[0];
+    D_800B2078.fades[channel].active = 0;
+    D_800B2078.fades[channel].steps = 0;
+    D_800B2078.fades[channel].level[0] = D_800B2078.fades[channel].level[1] = D_800B2078.fades[channel].level[2] = 0;
+    D_800B2078.fades[channel].abr = 2;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007DA44);
 
@@ -1172,7 +1219,28 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008399C);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80084158);
 
+#ifdef NON_MATCHING
+/* -1 when the actor's motion, collision state or layer prevents idling. */
+s32 func_8008492C(FieldActor *actor) {
+    if ((actor->unk014 & 0x420000) || D_800ADB98 != 0 || actor->unk030 != 0 ||
+        actor->unk034 != 0 || actor->unk038 != 0 || D_800ADC0C != 1 || actor->unk074 != 0xFF ||
+        (actor->flags & 0x401800)) {
+        return -1;
+    }
+    if ((actor->layer_flags & 1) && actor->layer == 0) {
+        return -1;
+    }
+    if ((actor->layer_flags & 2) && actor->layer == 1) {
+        return -1;
+    }
+    if (actor->layer_flags & 4) {
+        return -(actor->layer == 2);
+    }
+    return 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008492C);
+#endif
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80084A40);
 
@@ -1226,7 +1294,7 @@ void func_80085634(s32 id, s32 channel) {
     if (id == 0) {
         func_8003A20C(channel * 2);
     } else {
-        D_800B2184.last_sound_effect = id;
+        D_800B2078.last_sound_effect = id;
         func_800855C8(id, 0x7F, 0x40, channel);
     }
 }
@@ -1326,10 +1394,10 @@ void func_80086024(void) {
 void func_80086078(s32 distance, u32 *out, s32 volume) {
     s32 level;
 
-    if (distance > D_800B2184.emitter_range) {
-        distance = D_800B2184.emitter_range;
+    if (distance > D_800B2078.emitter_range) {
+        distance = D_800B2078.emitter_range;
     }
-    level = 0x80 - (((0x7F0000 / D_800B2184.emitter_range) * distance) >> 16);
+    level = 0x80 - (((0x7F0000 / D_800B2078.emitter_range) * distance) >> 16);
     *out = ((u32)(level << 16) / 127 * volume) >> 16;
 }
 
@@ -1409,10 +1477,10 @@ void func_800864F0(void) {
         D_800AFE88[i].id = 0xFFFF;
     }
     for (i = 0; i < 4; i++) {
-        if (!(D_800B2184.effects_kept & 1)) {
+        if (!(D_800B2078.effects_kept & 1)) {
             func_8003A20C(i * 2);
         }
-        D_800B2184.effects_kept >>= 1;
+        D_800B2078.effects_kept >>= 1;
     }
 }
 
@@ -1421,9 +1489,9 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80086590);
 /* Point the listener (80086590) at the controlled actor, the camera eye or
  * the camera target, as 800b22e0 selects. */
 void func_80086908(void) {
-    switch (D_800B2184.unk22E0) {
+    switch (D_800B2078.unk22E0) {
     case 0:
-        func_80086590((VECTOR *)D_800AF880.components.descriptors[D_800B2184.controlled].actor->position);
+        func_80086590((VECTOR *)D_800AF880.components.descriptors[D_800B2078.controlled].actor->position);
         break;
     case 1:
         func_80086590(&D_800AF880.eye);
@@ -1446,8 +1514,8 @@ void func_80086BA8(void) {
     s32 i;
 
     for (i = 0; i < 3; i++) {
-        if (D_800B2184.emitter_descriptor[i] != -1) {
-            func_80086A1C(i, D_800AF880.components.descriptors[D_800B2184.emitter_descriptor[i]].actor->position);
+        if (D_800B2078.emitter_descriptor[i] != -1) {
+            func_80086A1C(i, D_800AF880.components.descriptors[D_800B2078.emitter_descriptor[i]].actor->position);
         }
     }
 }
@@ -1475,7 +1543,7 @@ void func_80086D8C(void) {
 
 /* Event opcode e0: set 800b2358 from its byte operand. */
 void func_80086DE0(void) {
-    D_800B2184.unk2358 = D_800ADC00[D_800B0078->pc + 1];
+    D_800B2078.unk2358 = D_800ADC00[D_800B0078->pc + 1];
     D_800B0078->pc += 2;
 }
 
@@ -1506,7 +1574,7 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800871B0);
 void func_800873C4(void) {
     s32 index = func_800ACDEC(1);
 
-    D_800B2184.unk225F[index] = func_800ACDEC(3);
+    D_800B2078.unk225F[index] = func_800ACDEC(3);
     D_800B0078->pc += 5;
 }
 
@@ -1590,13 +1658,13 @@ void func_800879D0(void) {
 
 /* Event: set 800b2357 from its byte operand. */
 void func_80087A40(void) {
-    D_800B2184.unk2357 = D_800ADC00[D_800B0078->pc + 1];
+    D_800B2078.unk2357 = D_800ADC00[D_800B0078->pc + 1];
     D_800B0078->pc += 2;
 }
 
 /* Event: set 800b2354 from its byte operand. */
 void func_80087A7C(void) {
-    D_800B2184.unk2354 = D_800ADC00[D_800B0078->pc + 1];
+    D_800B2078.unk2354 = D_800ADC00[D_800B0078->pc + 1];
     D_800B0078->pc += 2;
 }
 
@@ -1654,16 +1722,16 @@ void func_80087DE0(void) {
     s32 value = func_800ACDEC(2);
 
     if (D_800ADC00[D_800B0078->pc + 1] == 0) {
-        D_800B2184.unk2355 = value;
+        D_800B2078.unk2355 = value;
     } else {
-        D_800B2184.unk2356 = value;
+        D_800B2078.unk2356 = value;
     }
     D_800B0078->pc += 4;
 }
 
 /* Event: set the battle-entry override (800b234c) from operand 1. */
 void func_80087E5C(void) {
-    D_800B2184.battle_override = func_800ACDEC(1);
+    D_800B2078.battle_override = func_800ACDEC(1);
     D_800B0078->pc += 3;
 }
 
@@ -1675,12 +1743,12 @@ void func_80087E98(void) {
 
     if (index != 0xFF) {
         if (index == D_8005A444[0]) {
-            D_800B2184.unk234E = 0;
+            D_800B2078.unk234E = 0;
         } else {
-            D_800B2184.unk234E = 1;
+            D_800B2078.unk234E = 1;
         }
-        D_800B2184.controlled = index;
-        D_800B2184.unk233E = index;
+        D_800B2078.controlled = index;
+        D_800B2078.unk233E = index;
         for (i = 0; i < D_800ADBFC; i++) {
             D_800AF880.components.descriptors[i].actor->flags &= ~0x01004000;
         }
@@ -1691,7 +1759,7 @@ void func_80087E98(void) {
 
 /* Event: count 800b2348 up. */
 void func_80087FA4(void) {
-    D_800B2184.unk2348++;
+    D_800B2078.unk2348++;
     D_800B0078->pc++;
 }
 
@@ -1776,7 +1844,7 @@ void func_8008848C(void) {
     s32 value = D_800ADC00[D_800B0078->pc + 1] ^ 1;
 
     D_800B0078->pc += 2;
-    D_800B2184.unk236C = value;
+    D_800B2078.unk236C = value;
 }
 #else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008848C);
@@ -1784,7 +1852,7 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008848C);
 
 /* Event: set the sound-emitter range from operand 1. */
 void func_800884CC(void) {
-    D_800B2184.emitter_range = func_800ACDEC(1);
+    D_800B2078.emitter_range = func_800ACDEC(1);
     D_800B0078->pc += 3;
 }
 
@@ -1802,24 +1870,24 @@ void func_80088790(void) {
     if (actor == 0xFF) {
         actor = 0;
     }
-    D_800B2184.unk2374 = actor;
-    D_800B2184.unk2378 = func_800ACDEC(2);
-    D_800B2184.unk237C = func_800ACDEC(4);
-    D_800B2184.unk2380 = func_800ACDEC(6);
+    D_800B2078.unk2374 = actor;
+    D_800B2078.unk2378 = func_800ACDEC(2);
+    D_800B2078.unk237C = func_800ACDEC(4);
+    D_800B2078.unk2380 = func_800ACDEC(6);
     D_800B0078->pc += 8;
     func_800A94A4(actor);
-    switch (D_800B2184.unk2378) {
+    switch (D_800B2078.unk2378) {
     case 0:
-        D_800B2184.unk2378 = 0;
+        D_800B2078.unk2378 = 0;
         break;
     case 1:
-        D_800B2184.unk2378 = 0x10;
+        D_800B2078.unk2378 = 0x10;
         break;
     case 2:
-        D_800B2184.unk2378 = 0x20;
+        D_800B2078.unk2378 = 0x20;
         break;
     case 3:
-        D_800B2184.unk2378 = 0x30;
+        D_800B2078.unk2378 = 0x30;
         break;
     }
     D_800AFC7C += 4;
@@ -1842,7 +1910,7 @@ void func_80088B68(void) {
         bits = 0x40;
         break;
     }
-    D_800B02CC[D_800B2184.unk2384].flags |= bits;
+    D_800B02CC[D_800B2078.unk2384].flags |= bits;
     D_800AFC7C += 4;
     D_800B0078->pc += 7;
 }
@@ -1850,9 +1918,9 @@ void func_80088B68(void) {
 /* Event: set the current record's +24, high flag byte and +76 from operands
  * 1, 3 and 5, using four batch steps. */
 void func_80088C1C(void) {
-    D_800B02CC[D_800B2184.unk2384].unk24 = func_800ACDEC(1);
-    D_800B02CC[D_800B2184.unk2384].flags |= func_800ACDEC(3) << 8;
-    D_800B02CC[D_800B2184.unk2384].unk76 = func_800ACDEC(5);
+    D_800B02CC[D_800B2078.unk2384].unk24 = func_800ACDEC(1);
+    D_800B02CC[D_800B2078.unk2384].flags |= func_800ACDEC(3) << 8;
+    D_800B02CC[D_800B2078.unk2384].unk76 = func_800ACDEC(5);
     D_800AFC7C += 4;
     D_800B0078->pc += 7;
 }
@@ -1920,13 +1988,13 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80089DCC);
 
 /* Event: set 800b22e0 from operand 1. */
 void func_80089F18(void) {
-    D_800B2184.unk22E0 = func_800ACDEC(1);
+    D_800B2078.unk22E0 = func_800ACDEC(1);
     D_800B0078->pc += 3;
 }
 
 /* Event: set 800b21d2 to operand 1 less 0x80. */
 void func_80089F54(void) {
-    D_800B2184.unk21D2 = func_800ACDEC(1) - 0x80;
+    D_800B2078.unk21D2 = func_800ACDEC(1) - 0x80;
     D_800B0078->pc += 3;
 }
 
@@ -2051,7 +2119,7 @@ void func_8008A5A0(void) {
 
 /* Event: set 800b21d4 from operand 1. */
 void func_8008A604(void) {
-    D_800B2184.unk21D4 = func_800ACDEC(1);
+    D_800B2078.unk21D4 = func_800ACDEC(1);
     D_800B0078->pc += 3;
 }
 
@@ -2155,9 +2223,9 @@ void func_8008AE5C(void) {
 void func_8008AEC8(void) {
     s32 index = func_8009CF78(1, D_800ADC00[D_800B0078->pc + 9]);
 
-    D_800B2184.unk221C[index][0] = func_8009CFBC(3, D_800ADC00[D_800B0078->pc + 9]);
-    D_800B2184.unk221C[index][1] = func_8009D000(5, D_800ADC00[D_800B0078->pc + 9]);
-    D_800B2184.unk221C[index][2] = func_8009D044(7, D_800ADC00[D_800B0078->pc + 9]);
+    D_800B2078.unk221C[index][0] = func_8009CFBC(3, D_800ADC00[D_800B0078->pc + 9]);
+    D_800B2078.unk221C[index][1] = func_8009D000(5, D_800ADC00[D_800B0078->pc + 9]);
+    D_800B2078.unk221C[index][2] = func_8009D044(7, D_800ADC00[D_800B0078->pc + 9]);
     D_800B0078->pc += 10;
 }
 
@@ -2166,23 +2234,23 @@ void func_8008AEC8(void) {
 void func_8008AFD8(void) {
     s32 index = func_8009CF78(1, D_800ADC00[D_800B0078->pc + 9]);
 
-    D_800B2184.unk223C[0][index] = func_8009CFBC(3, D_800ADC00[D_800B0078->pc + 9]);
-    D_800B2184.unk223C[1][index] = func_8009D000(5, D_800ADC00[D_800B0078->pc + 9]);
-    D_800B2184.unk223C[2][index] = func_8009D044(7, D_800ADC00[D_800B0078->pc + 9]);
+    D_800B2078.unk223C[0][index] = func_8009CFBC(3, D_800ADC00[D_800B0078->pc + 9]);
+    D_800B2078.unk223C[1][index] = func_8009D000(5, D_800ADC00[D_800B0078->pc + 9]);
+    D_800B2078.unk223C[2][index] = func_8009D044(7, D_800ADC00[D_800B0078->pc + 9]);
     D_800B0078->pc += 10;
 }
 
 /* Event: set the three bytes at 800b225c from operands 1, 3 and 5. */
 void func_8008B0E8(void) {
-    D_800B2184.unk225C[0] = func_800ACDEC(1);
-    D_800B2184.unk225C[1] = func_800ACDEC(3);
-    D_800B2184.unk225C[2] = func_800ACDEC(5);
+    D_800B2078.unk225C[0] = func_800ACDEC(1);
+    D_800B2078.unk225C[1] = func_800ACDEC(3);
+    D_800B2078.unk225C[2] = func_800ACDEC(5);
     D_800B0078->pc += 7;
 }
 
 /* Event: set 800b21b4 from operand 1. */
 void func_8008B144(void) {
-    D_800B2184.unk21B4 = func_800ACDEC(1);
+    D_800B2078.unk21B4 = func_800ACDEC(1);
     D_800B0078->pc += 3;
 }
 
@@ -2194,7 +2262,7 @@ void func_8008B180(void) {
     if (D_800ADB1C != 0) {
         index = func_800ACDEC(1) & 0xFFFF;
         func_801E8330(index, 0, func_800ACDEC(3));
-        D_800B2184.unk21E4[func_800ACDEC(1)] = func_800ACDEC(3);
+        D_800B2078.unk21E4[func_800ACDEC(1)] = func_800ACDEC(3);
     }
     D_800B0078->pc += 5;
 }
@@ -2228,9 +2296,9 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008B328);
 /* Event: set the sprite view rotation from operands 1, 3 and 5 (X, Z, Y;
  * immediate by flags 0x80/0x40/0x20 of byte 7). */
 void func_8008B45C(void) {
-    D_800B2184.sprite_angles.vx = func_8009CF78(1, D_800ADC00[D_800B0078->pc + 7]);
-    D_800B2184.sprite_angles.vz = func_8009CFBC(3, D_800ADC00[D_800B0078->pc + 7]);
-    D_800B2184.sprite_angles.vy = func_8009D000(5, D_800ADC00[D_800B0078->pc + 7]);
+    D_800B2078.sprite_angles.vx = func_8009CF78(1, D_800ADC00[D_800B0078->pc + 7]);
+    D_800B2078.sprite_angles.vz = func_8009CFBC(3, D_800ADC00[D_800B0078->pc + 7]);
+    D_800B2078.sprite_angles.vy = func_8009D000(5, D_800ADC00[D_800B0078->pc + 7]);
     D_800B0078->pc += 8;
 }
 
@@ -2411,12 +2479,12 @@ void func_8008CF9C(void) {
 
 /* Event: set the six halfwords at 800b21a0 from raw operands. */
 void func_8008CFEC(void) {
-    D_800B2184.unk21A0[0] = func_800ACDB8(1);
-    D_800B2184.unk21A0[2] = func_800ACDB8(3);
-    D_800B2184.unk21A0[1] = func_800ACDB8(5);
-    D_800B2184.unk21A0[3] = func_800ACDB8(7);
-    D_800B2184.unk21A0[5] = func_800ACDB8(9);
-    D_800B2184.unk21A0[4] = func_800ACDB8(11);
+    D_800B2078.unk21A0[0] = func_800ACDB8(1);
+    D_800B2078.unk21A0[2] = func_800ACDB8(3);
+    D_800B2078.unk21A0[1] = func_800ACDB8(5);
+    D_800B2078.unk21A0[3] = func_800ACDB8(7);
+    D_800B2078.unk21A0[5] = func_800ACDB8(9);
+    D_800B2078.unk21A0[4] = func_800ACDB8(11);
     D_800B0078->pc += 13;
 }
 
@@ -2458,7 +2526,7 @@ void func_8008D180(void) {
 
 /* Event: set 800b218c from operand 1. */
 void func_8008D230(void) {
-    D_800B2184.scale = func_800ACDEC(1);
+    D_800B2078.scale = func_800ACDEC(1);
     D_800B0078->pc += 3;
 }
 
@@ -2491,14 +2559,14 @@ void func_8008D570(void) {
 
     for (i = 0; i < 3; i++) {
         if (D_8005A444[i] == D_800AFD1C) {
-            D_800B2184.party_bits &= ~(1 << i);
+            D_800B2078.party_bits &= ~(1 << i);
         }
     }
 }
 
 /* Event: set 800b21cd from its byte operand. */
 void func_8008D5C8(void) {
-    D_800B2184.unk21CD = D_800ADC00[D_800B0078->pc + 1];
+    D_800B2078.unk21CD = D_800ADC00[D_800B0078->pc + 1];
     D_800B0078->pc += 2;
 }
 
@@ -2560,7 +2628,7 @@ void func_8008DAFC(void) {
 
 /* Event: set 800b233e to the selected actor. */
 void func_8008DB2C(void) {
-    D_800B2184.unk233E = func_8009CDB4(1);
+    D_800B2078.unk233E = func_8009CDB4(1);
     D_800B0078->pc += 2;
 }
 
@@ -2794,10 +2862,10 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008E718);
 /* Event: set 800b2298 and the 800b229c count (at most 32) from operands 1
  * and 3, then apply them (8008e718). */
 void func_8008E85C(void) {
-    D_800B2184.unk2298 = func_800ACDEC(1);
-    D_800B2184.unk229C = func_800ACDEC(3);
-    if (D_800B2184.unk229C > 0x20) {
-        D_800B2184.unk229C = 0x20;
+    D_800B2078.unk2298 = func_800ACDEC(1);
+    D_800B2078.unk229C = func_800ACDEC(3);
+    if (D_800B2078.unk229C > 0x20) {
+        D_800B2078.unk229C = 0x20;
     }
     func_8008E718();
     D_800B0078->pc += 5;
