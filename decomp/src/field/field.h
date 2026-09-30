@@ -244,9 +244,30 @@ typedef struct {
     u8 unk1C[4];
 } GameRecord;
 
+/* A 0xa4-byte party slot of the game state (+308). */
+typedef struct {
+    u8 unk00[4];
+    u8 unk04;
+    u8 unk05[0xA4 - 5];
+} GameSlot;
+
+/* A 0xa4-byte character of the game state (+9b0). */
+typedef struct {
+    u16 gauge;       /* 00 */
+    u16 gauge_max;   /* 02 */
+    u8 unk04[0x28 - 4];
+    s32 points;      /* 28 */
+    s32 points_max;  /* 2C */
+    u8 unk30[0xA4 - 0x30];
+} GameCharacter;
+
 /* Resident persistent game state (*8005a39c). */
 typedef struct GameState {
-    u8 unk0000[0x16C0];
+    u8 unk0000[0x308];
+    GameSlot party[10];          /* 0308 */
+    u8 unk0970[0x9B0 - 0x970];
+    GameCharacter characters[20]; /* 09B0 */
+    u8 unk1680[0x16C0 - 0x1680];
     GameRecord records[11]; /* 16C0 */
     u8 unk1820[0x1834 - 0x1820];
     u16 unk1834;         /* 1834 */
@@ -260,6 +281,38 @@ typedef struct GameState {
     u8 unk1854[0x22B6 - 0x1854];
     u16 unk22B6;         /* 22B6 */
 } GameState;
+
+/* Field work state 800b21ac..800b2388, one object: stores to its members do
+ * not pass loads of other members. */
+typedef struct {
+    s16 emitter_range;         /* 21AC */
+    u8 unk21AE[0x21B8 - 0x21AE];
+    s32 last_sound_effect;     /* 21B8 */
+    u8 unk21BC[0x225F - 0x21BC];
+    u8 unk225F[0x2268 - 0x225F]; /* 225F: event byte table */
+    s32 unk2268;               /* 2268 */
+    s32 controlled;            /* 226C: controlled descriptor */
+    u8 unk2270[0x22E2 - 0x2270];
+    s16 emitter_descriptor[3]; /* 22E2: descriptor each emitter follows, or -1 */
+    u8 unk22E8[0x233C - 0x22E8];
+    u16 effects_kept;          /* 233C: bit per effect pair still playing */
+    u8 unk233E[0x2344 - 0x233E];
+    s16 unk2344;               /* 2344 */
+    u8 unk2346[2];
+    u16 unk2348;               /* 2348 */
+    u8 unk234A[2];
+    s16 battle_override;       /* 234C: battle-entry flag override, 0xff none */
+    u8 unk234E[0x2354 - 0x234E];
+    u8 unk2354;                /* 2354 */
+    u8 unk2355;                /* 2355 */
+    u8 unk2356;                /* 2356 */
+    u8 unk2357;                /* 2357 */
+    u8 unk2358;                /* 2358 */
+    u8 unk2359[0x236C - 0x2359];
+    s16 unk236C;               /* 236C */
+    u8 unk236E[0x2384 - 0x236E];
+    s32 unk2384;               /* 2384 */
+} FieldWork;
 
 /* One of the three positional sound-emitter slots (800afe88). */
 typedef struct {
@@ -334,6 +387,10 @@ extern void func_800496AC(void);                               /* PopMatrix */
 extern void func_8004A6DC(SVECTOR *v, s32 *out, s32 *flag); /* RotTrans */
 
 /* Field overlay. */
+extern void func_80088D38(s32);
+extern void func_800A8BA4(void);
+extern void func_800A915C(void);
+extern void func_800A91F0(void);
 extern s32 func_8009CF78(s32 offset, s32 flags); /* operand, immediate with flag 0x80 */
 extern void func_800A3074(u16 reference, s32 value); /* write an event variable */
 extern s32 func_800ACDB8(s32 offset); /* raw halfword operand */
@@ -385,24 +442,17 @@ extern s32 D_8004F34C; /* current map */
 extern u8 D_800625FC[2][0x22]; /* pad buffers */
 
 /* Field state. */
-extern u8 D_800B225F[];
-extern u8 D_800B2354[];
-extern u8 D_800B2357[];
+extern FieldWork D_800B21AC;
+extern void *D_800B235C; /* movie sound-effect bank */
 extern u8 *D_800ADC00; /* event bytecode */
 extern void (*D_800AE6A0[])(void); /* extended event instructions */
 extern EmitterSlot D_800AFE88[3];
 extern FieldActor *D_800B0078; /* current event actor */
 extern s32 D_800B00C0; /* yield */
 extern void *D_800B00E0; /* shared wave bank buffer */
-extern s16 D_800B21AC; /* emitter range */
-extern s16 D_800B22E2[3]; /* descriptor each emitter follows, or -1 */
-extern u16 D_800B233C;
-extern u8 D_800B2358[]; /* first byte of a larger block (stores do not pass member loads) */
 extern void *D_800ADBB8; /* music-wave stream ring */
 extern s32 D_800ADBBC;   /* stream arrivals */
 extern void (*D_800AFEA4)(s32); /* stream chunk callback */
-extern s32 D_800B21B8; /* last sound effect */
-extern void *D_800B235C; /* movie sound-effect bank */
 extern s16 D_800C3A38;
 extern s32 D_800ADB58; /* descriptor whose list is read */
 extern s32 D_800ADB5C; /* list position */
@@ -417,8 +467,6 @@ extern u16 D_800B0060; /* pointer Y divisor */
 extern s32 D_800B0068[2]; /* pointer X per port */
 extern s32 D_800B0070[2]; /* pointer Y per port */
 extern s16 D_800B218C;
-extern s32 D_800B2268;
-extern s16 D_800B234C;
 extern s32 D_800C3A44; /* pointer bounds */
 extern s32 D_800C3A4C;
 extern s32 D_800C3A50;
@@ -429,8 +477,6 @@ extern s32 D_800ADB90;
 extern s32 D_800ADBA4;
 extern s32 D_800ADBC4;
 extern s32 D_800ADBD0;
-extern s32 D_800B226C; /* controlled descriptor */
-extern s16 D_800B2344;
 extern s32 D_800ADB08;
 extern s32 D_800ADC04; /* fade mode; fades start only in mode 2 */
 extern s16 D_800ADC08; /* fade started */
