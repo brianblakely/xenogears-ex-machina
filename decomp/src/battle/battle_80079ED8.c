@@ -11,9 +11,181 @@
 #include "resolver.h"
 #include "action_resolve.h"
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80079ED8", func_80079ED8);
+/* Byte attribute `attribute` (0-23) of combatant `slot`: store `value` when
+ * `read` is 0, else return it. */
+u8 func_80079ED8(u8 slot, u8 attribute, u8 value, u8 read) {
+    u8 *field;
+    u8 result;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80079ED8", func_8007A280);
+    switch (attribute) {
+    case 0:
+        field = &D_800CCCE8.records[slot].pilot.entries[0].value4;
+        break;
+    case 1:
+        field = &D_800CCCE8.records[slot].pilot.characterId;
+        break;
+    case 2:
+        field = &D_800CCCE8.records[slot].gear.attack;
+        break;
+    case 3:
+        field = &D_800CCCE8.records[slot].gear.attackScale;
+        break;
+    case 4:
+        field = &D_800CCCE8.records[slot].pilot.attack;
+        break;
+    case 5:
+        field = &D_800CCCE8.records[slot].pilot.defense;
+        break;
+    case 6:
+        field = &D_800CCCE8.records[slot].pilot.speed;
+        break;
+    case 7:
+        field = &D_800CCCE8.records[slot].pilot.bodyDefense;
+        break;
+    case 8:
+        field = &D_800CCCE8.records[slot].pilot.field5D;
+        break;
+    case 9:
+        field = &D_800CCCE8.records[slot].pilot.accuracy;
+        break;
+    case 10:
+        field = &D_800CCCE8.records[slot].pilot.etherDefense;
+        break;
+    case 11:
+        field = &D_800CCCE8.records[slot].pilot.field5E;
+        break;
+    case 12:
+        field = &D_800CCCE8.records[slot].pilot.field5F;
+        break;
+    case 13:
+        field = &D_800CCCE8.records[slot].pilot.field60;
+        break;
+    case 14:
+        field = &D_800CCCE8.records[slot].pilot.field61;
+        break;
+    case 15:
+        field = &D_800CCCE8.records[slot].pilot.field64[0];
+        break;
+    case 16:
+        field = &D_800CCCE8.records[slot].pilot.field64[1];
+        break;
+    case 17:
+        field = &D_800CCCE8.records[slot].pilot.field64[2];
+        break;
+    case 18:
+        field = &D_800CCCE8.records[slot].pilot.field64[3];
+        break;
+    case 19:
+        field = &D_800CCCE8.records[slot].gear.speed;
+        break;
+    case 20:
+        field = &D_800CCCE8.records[slot].gear.entries[0].valueE;
+        break;
+    case 21:
+        field = &D_800CCCE8.records[slot].gear.guard;
+        break;
+    case 22:
+        field = &D_800CCCE8.records[slot].gear.field9D;
+        break;
+    case 23:
+        field = &D_800CCCE8.records[slot].gear.frameFactor;
+        break;
+    }
+    if (!read) {
+        *field = value;
+    } else {
+        result = *field;
+    }
+    return result;
+}
+
+/* Halfword attribute `attribute` (0-23) of combatant `slot`: store `value`
+ * when `read` is 0, else return it. */
+u16 func_8007A280(u8 slot, u8 attribute, u16 value, u8 read) {
+    u16 *field;
+    u16 result;
+
+    switch (attribute) {
+    case 0:
+        field = &D_800CCCE8.records[slot].pilot.maxHp;
+        break;
+    case 1:
+        field = &D_800CCCE8.records[slot].pilot.hp;
+        break;
+    case 2:
+        field = &D_800CCCE8.records[slot].pilot.status7C;
+        break;
+    case 3:
+        field = &D_800CCCE8.records[slot].pilot.status7E;
+        break;
+    case 4:
+        field = &D_800CCCE8.records[slot].pilot.status80;
+        break;
+    case 5:
+        field = &D_800CCCE8.records[slot].pilot.status82;
+        break;
+    case 6:
+        field = &D_800CCCE8.records[slot].pilot.status84.half.active;
+        break;
+    case 7:
+        field = &D_800CCCE8.records[slot].pilot.status84.half.permanent;
+        break;
+    case 8:
+        field = &D_800CCCE8.records[slot].pilot.status88.half.active;
+        break;
+    case 9:
+        field = &D_800CCCE8.records[slot].pilot.status88.half.permanent;
+        break;
+    case 10:
+        field = &D_800CCCE8.records[slot].pilot.status8C.half.active;
+        break;
+    case 11:
+        field = &D_800CCCE8.records[slot].pilot.status8C.half.permanent;
+        break;
+    case 12:
+        field = &D_800CCCE8.records[slot].gear.field6C;
+        break;
+    case 13:
+        field = &D_800CCCE8.records[slot].gear.bodyDefense;
+        break;
+    case 14:
+        field = &D_800CCCE8.records[slot].gear.armor;
+        break;
+    case 15:
+        field = &D_800CCCE8.records[slot].gear.status7C;
+        break;
+    case 16:
+        field = &D_800CCCE8.records[slot].gear.field7E;
+        break;
+    case 17:
+        field = &D_800CCCE8.records[slot].gear.status80;
+        break;
+    case 18:
+        field = &D_800CCCE8.records[slot].gear.status82;
+        break;
+    case 19:
+        field = &D_800CCCE8.records[slot].gear.status84.half.active;
+        break;
+    case 20:
+        field = &D_800CCCE8.records[slot].gear.status84.half.permanent;
+        break;
+    case 21:
+        field = &D_800CCCE8.records[slot].pilot.flags34;
+        break;
+    case 22:
+        field = &D_800CCCE8.records[slot].pilot.flags36;
+        break;
+    case 23:
+        field = &D_800CCCE8.records[slot].pilot.weakness;
+        break;
+    }
+    if (!read) {
+        *field = value;
+    } else {
+        result = *field;
+    }
+    return result;
+}
 
 /* Whether `slot` can be targeted: present, visible and not down (+0x7c
  * 0xc002); without `any` also not flagged 0x20 at +0x84. */
