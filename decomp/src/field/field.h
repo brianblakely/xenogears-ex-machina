@@ -186,24 +186,35 @@ typedef struct {
 /* One of the four 0x498-byte dialogue windows at 800c2698. */
 typedef struct {
     DR_MODE modes[2]; /* 000: per buffer */
-    TextBox text;    /* 018 */
-    u8 unk0B4[0x37C - 0xB4];
+    TextBox text;    /* 018: its rect (0ac) is the window's area */
+    u8 unk0B4[0xC4 - 0xB4];
+    DR_MODE back_modes[2];      /* 0C4: per buffer */
+    TILE back[2];               /* 0DC: the backing tile per buffer */
+    DR_MODE border_modes[2][10]; /* 0FC: per buffer, eight used */
+    SPRT border[2][10];         /* 1EC: per buffer, eight used */
     s16 status;      /* 37C: zero while displayed */
     s16 unk37E;      /* 37E: first line */
     s16 unk380;      /* 380: line count */
     s16 unk382;      /* 382 */
-    u8 unk384[0x3C4 - 0x384];
+    DR_MODE choice_modes[2];    /* 384: per buffer */
+    SPRT choice[2];             /* 39C: the choice cursor per buffer */
     s16 unk3C4;      /* 3C4 */
-    u8 unk3C6[0x408 - 0x3C6];
-    s16 timer;       /* 408 */
-    u8 unk40A[0x40E - 0x40A];
+    u8 unk3C6[2];
+    DR_MODE prompt_modes[2];    /* 3C8: per buffer */
+    SPRT prompt[2];             /* 3E0: the waiting prompt per buffer */
+    s16 timer;       /* 408: opening steps left */
+    s16 prompt_delay; /* 40A */
+    u16 style;       /* 40C: 0x20 portrait on the right, 0x40 no frame */
     s16 busy;        /* 40E */
     u16 age;         /* 410: 0xffff when free */
     s16 unk412;      /* 412 */
     s16 cleared;     /* 414: cleared when its owner hides */
     s16 owner;       /* 416: owning event actor */
     s16 unk418;      /* 418: descriptor index */
-    u8 unk41A[0x444 - 0x41A];
+    u8 unk41A[2];
+    Fixed slide[2];  /* 41C: x, y offset while opening (16.16) */
+    s32 slide_step[2]; /* 424 */
+    DR_MODE icon_modes[2]; /* 42C: per buffer */
     POLY_FT4 icon[2];  /* 444: per buffer */
     u8 unk494;       /* 494 */
     u8 unk495;       /* 495 */
