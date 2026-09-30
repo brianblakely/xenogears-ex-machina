@@ -801,4 +801,18 @@ extern u16 D_8009B578[];        /* level bracket thresholds, from 1 */
 
 s32 func_80094028(VECTOR *position);
 
+/* Resident pad state, gathered per dequeued input event. */
+extern s32 D_80059488;
+extern u16 D_80059570, D_80059574; /* buttons held */
+extern u16 D_8005948C, D_80059490; /* buttons pressed */
+extern u16 D_800594A4, D_800594A8;
+extern u16 D_8009CD50, D_8009BD10, D_8009BD14, D_8009BD18, D_8009BD1C;
+
+void PutDispEnv(DISPENV *env);
+void PutDrawEnv(DRAWENV *env);
+s32 func_80035CDC(void); /* dequeue one input event */
+void func_80037E8C(void);
+void func_80037EE4(void);
+void func_8001FAB4(s32 a, s32 b);
+
 #endif

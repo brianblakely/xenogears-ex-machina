@@ -789,7 +789,56 @@ void func_800762FC(void) {
     ExitCriticalSection();
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_8007634C);
+/* Pause: show the pause screen on the other buffer until button 0x800 is
+ * pressed, then restore the display. */
+void func_8007634C(void) {
+    RECT rect;
+    s32 saved;
+
+    saved = D_80059488;
+    DrawSync(0);
+    VSync(0);
+    if (D_8009D7F0 == 0) {
+        rect.x = 0;
+        rect.y = 0xD8;
+        rect.w = 0x140;
+        rect.h = 0xD8;
+        MoveImage(&rect, 0, 0);
+    }
+    PutDispEnv(&D_8009BBC8[1].disp);
+    PutDrawEnv(&D_8009BBC8[1].draw);
+    func_80037EE4();
+    do {
+        DrawSync(0);
+        VSync(0);
+        func_8001FAB4(0x88, 0x64);
+        D_8009BD1C = 0;
+        D_8009BD14 = 0;
+        D_8009CD50 = 0;
+        D_8009BD18 = 0;
+        D_8009BD10 = 0;
+        D_8009CD4C = 0;
+        while (func_80035CDC() != 0) {
+            D_8009CD4C |= D_80059570;
+            D_8009CD50 |= D_80059574;
+            D_8009BD10 |= D_8005948C;
+            D_8009BD14 |= D_80059490;
+            D_8009BD18 |= D_800594A4;
+            D_8009BD1C |= D_800594A8;
+        }
+    } while (!(D_8009BD10 & 0x800));
+    func_80037E8C();
+    DrawSync(0);
+    VSync(0);
+    rect.x = 0;
+    rect.y = 0;
+    rect.w = 0x140;
+    rect.h = 0xD8;
+    MoveImage(&rect, 0, 0xD8);
+    PutDispEnv(&D_8009BBC8[D_8009D7F0].disp);
+    PutDrawEnv(&D_8009BBC8[D_8009D7F0].draw);
+    D_80059488 = saved;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80076594);
 
