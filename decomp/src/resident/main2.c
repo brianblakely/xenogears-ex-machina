@@ -2140,9 +2140,62 @@ void func_80039144(void *data) {
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039144);
 #endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800391CC);
+/* The largest free gap of the driver memory pool, in 16-byte units. */
+s32 func_800391CC(void) {
+    SoundBlock *block = D_80059410;
+    s32 largest = 0;
+    s32 gap;
 
+    while (block->next != NULL) {
+        gap = (u32)block->next - block->end;
+        if (largest < gap) {
+            largest = gap;
+        }
+        block = block->next;
+    }
+    gap = D_800595E4 - block->end;
+    if (largest < gap) {
+        largest = gap;
+    }
+    return largest & ~0xF;
+}
+
+typedef struct {
+    s32 word[4];
+} Quad;
+
+/* Copy `size` bytes: sixteen at a time, then words, then bytes.
+ * Nonmatching: the source and destination offset pointers swap registers. */
+#ifdef NON_MATCHING
+void func_80039248(void *dst, void *src, s32 size) {
+    s32 *d = dst;
+    s32 *s = src;
+    s32 n;
+    s32 a, b, c;
+
+    for (n = size >> 4; n != 0; n--) {
+        a = s[1];
+        b = s[2];
+        c = s[3];
+        d[0] = s[0];
+        d[1] = a;
+        d[2] = b;
+        d[3] = c;
+        d += 4;
+        s += 4;
+    }
+    for (n = (size >> 2) & 3; n != 0; n--) {
+        *d++ = *s++;
+    }
+    for (n = size & 3; n != 0; n--) {
+        *(u8 *)d = *(u8 *)s;
+        d = (s32 *)((u8 *)d + 1);
+        s = (s32 *)((u8 *)s + 1);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039248);
+#endif
 
 /* Clear `size` bytes: sixteen at a time, then words, then bytes.
  * Nonmatching: the pointer and its offset copy swap registers. */
