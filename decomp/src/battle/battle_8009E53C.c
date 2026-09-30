@@ -1997,7 +1997,7 @@ void func_800AEF68(BattleObject *object) {
  * the same parts of another hierarchy and release their effects. */
 void func_800AF180(EffectPool *pool, s32 index, ModelPart *from, ModelPart *to) {
     ModelPart *part = from + index;
-    u16 count = from->index;
+    s32 count = from->index;
     ModelPart *child;
     s32 i;
 
@@ -2037,7 +2037,18 @@ void func_800AF270(ModelPart *from, ModelPart *to) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800AF2C4);
+/* The dot product of direction with the unit normal (the cross product) of
+ * a and b, in 4.12 through 16 << 8 / its length, divided by scale. */
+s16 func_800AF2C4(Vector *direction, Vector *a, Vector *b, s32 scale) {
+    Vector normal;
+    s32 dot;
+    s32 length;
+
+    func_8004A480(a, b, &normal);
+    dot = normal.vx * direction->vx + normal.vy * direction->vy + normal.vz * direction->vz;
+    length = SquareRoot0(normal.vx * normal.vx + normal.vy * normal.vy + normal.vz * normal.vz) + 1;
+    return (dot * 16 / length << 8) / scale;
+}
 
 /* The lowest slot (0-12) set in the mask D_800C3E30; 13 when none. */
 s32 func_800AF400(void) {
