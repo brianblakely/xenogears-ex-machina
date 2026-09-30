@@ -1524,30 +1524,165 @@ void func_80091720(void) {
     D_800B0078->pc += 3;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80091944);
+extern s16 D_800B218E;
+extern u8 D_800B2190[3];
+extern u8 D_800B2194[3];
+extern s16 D_800B2198;
+extern s16 D_800B219A;
+void func_80073E38(void);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80091A08);
+/* Set two colour triples and two ranges from operands, then apply them. */
+void func_80091944(void) {
+    D_800B2190[0] = func_800ACDEC(1);
+    D_800B2190[1] = func_800ACDEC(3);
+    D_800B2190[2] = func_800ACDEC(5);
+    D_800B2194[0] = func_800ACDEC(7);
+    D_800B2194[1] = func_800ACDEC(9);
+    D_800B2194[2] = func_800ACDEC(11);
+    D_800B2198 = func_800ACDEC(13);
+    D_800B219A = func_800ACDEC(15);
+    D_800B218E = 1;
+    func_80073E38();
+    D_800B0078->pc += 17;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80091A78);
+/* Set the four camera bounds from signed operands (the last negated). */
+void func_80091A08(void) {
+    D_800AF930.bounds[0] = func_800ACD7C(1);
+    D_800AF930.bounds[1] = func_800ACD7C(3);
+    D_800AF930.bounds[2] = func_800ACD7C(5);
+    D_800AF930.bounds[3] = -func_800ACD7C(7);
+    D_800B0078->pc += 9;
+}
+
+extern u8 D_800B219C[3];
+
+/* Set a colour triple from three operands. */
+void func_80091A78(void) {
+    D_800B219C[0] = func_800ACDEC(1);
+    D_800B219C[1] = func_800ACDEC(3);
+    D_800B219C[2] = func_800ACDEC(5);
+    D_800B0078->pc += 7;
+}
 
 void func_80091AD4(void) {
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80091ADC);
+extern SVECTOR D_800AF5E8[32];
+extern s16 D_800AF6E8[32];
+extern s16 D_800AF728[32];
+extern u16 D_800AF768;
+void func_8004495C(SVECTOR *v, s16 a, s16 b);
+void func_80044764(SVECTOR *v, s32 a, s32 b, s32 c);
+
+/* Record an entry in the 32-slot ring at 800af5e8 and pass it to resident
+ * 8004495C (or 80044764 when `alternate` is set). */
+void func_80091ADC(s32 x, s32 y, s32 z, s32 w, s32 a, s32 b, s32 alternate) {
+    s32 slot;
+
+    slot = D_800AF768 & 0x1F;
+    D_800AF5E8[slot].vy = y;
+    D_800AF5E8[slot].vx = x;
+    D_800AF5E8[slot].vz = z;
+    D_800AF5E8[slot].pad = w;
+    D_800AF6E8[slot] = a;
+    D_800AF728[slot] = b;
+    if (alternate == 0) {
+        func_8004495C(&D_800AF5E8[slot], D_800AF6E8[slot], b);
+    } else {
+        func_80044764(&D_800AF5E8[slot], 0, 0, 0);
+    }
+    D_800AF768++;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80091BBC);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80091E00);
+/* Set the current actor's two-bit mode (flags bits 5-6) and value EE from
+ * selected operands. */
+void func_80091E00(void) {
+    D_800B0078->unk134 = (D_800B0078->unk134 & ~0x60) | ((func_8009CF78(1, EVENT_OPERAND_BYTE(5)) & 3) << 5);
+    D_800B0078->unkEE = func_8009CFBC(3, EVENT_OPERAND_BYTE(5));
+    D_800B0078->pc += 6;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80091E98);
+/* As func_80091E00, for a selected actor. */
+void func_80091E98(void) {
+    FieldActor *actor;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80091F84);
+    if (func_8009CDB4(1) != 0xFF) {
+        actor = D_800AFB10[func_8009CDB4(1)].actor;
+        actor->unk134 = (actor->unk134 & ~0x60) | ((func_8009CF78(2, EVENT_OPERAND_BYTE(6)) & 3) << 5);
+        actor->unkEE = func_8009CFBC(4, EVENT_OPERAND_BYTE(6));
+    }
+    D_800B0078->pc += 7;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80092044);
+/* Store an operand (clamped to 0xFFF) in slot operand 1 of the current
+ * actor's word table when its descriptor has flag 0x2000. */
+void func_80091F84(void) {
+    s32 index;
+    s32 value;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800920D8);
+    index = func_800ACDEC(1);
+    value = func_800ACDEC(3);
+    if (value >= 0x1000) {
+        value = 0xFFF;
+    }
+    if (D_800AFB10[D_800AFD1C].flags & 0x2000) {
+        D_800B0078->words[index] = value;
+    }
+    D_800B0078->pc += 5;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80092148);
+/* Swap two variables. */
+void func_80092044(void) {
+    s32 first;
+    s32 second;
+
+    first = func_800A3018(func_800ACDB8(1));
+    second = func_800A3018(func_800ACDB8(3));
+    func_800A3074(func_800ACDB8(3), first);
+    func_800A3074(func_800ACDB8(1), second);
+    D_800B0078->pc += 5;
+}
+
+typedef struct {
+    s16 count;
+    s32 handles[1];
+} HandleList;
+extern HandleList D_800AFEA8;
+void func_80027EAC(s32 handle);
+
+/* Pass every handle in the list at 800afea8 to resident 80027EAC. */
+void func_800920D8(void) {
+    s32 i;
+
+    for (i = 0; i < D_800AFEA8.count; i++) {
+        func_80027EAC(D_800AFEA8.handles[i]);
+    }
+}
+
+typedef struct {
+    u8 *data[32];
+    s16 size[32];
+} ByteTables;
+extern ByteTables D_800AFF2C;
+
+/* Store a raw operand byte at index operand 3 of table operand 1, within its
+ * size. */
+void func_80092148(void) {
+    s32 table;
+    s32 index;
+    s32 value;
+
+    table = func_800ACDEC(1);
+    index = func_800ACDEC(3);
+    value = func_800ACDB8(5) & 0xFFFF;
+    if (index < D_800AFF2C.size[table]) {
+        D_800AFF2C.data[table][index] = value;
+    }
+    D_800B0078->pc += 7;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800921E8);
 

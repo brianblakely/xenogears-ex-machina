@@ -1,0 +1,1 @@
+D_800AFF2C = 0x800AFF2C; // size:0xA0
