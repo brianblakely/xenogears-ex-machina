@@ -1491,7 +1491,108 @@ void func_8003748C(void) {
     D_800593A0 = 0;
 }
 
+extern u8 D_80050240[]; /* the built-in font (packed) */
+
+/* Open the debug text console at (left, top, width, height) with room for
+ * `capacity` characters per frame: allocate it (unless a block was
+ * supplied through 8003747C), load the font (packed; the built-in one when
+ * `font` is NULL) to VRAM at (tex_x, tex_y) with its four CLUTs at
+ * (clut_x, clut_y), and make it the report output.
+ * Nonmatching: the allocation's size arms are merged, and the font flags
+ * are read in another order. */
+#ifdef NON_MATCHING
+Console *func_800374E8(s32 left, s32 top, s32 width, s32 height, s32 capacity, u32 flags,
+                       s32 tex_x, s32 tex_y, s32 clut_x, s32 clut_y, void *font) {
+    Console *console;
+    u8 *data;
+    s16 lower;
+    s32 wide;
+    s32 rows;
+    u8 *pixels;
+    RECT rect;
+
+    if (D_800593A0 != 0) {
+        console = (Console *)D_800593A0;
+    } else {
+        func_800324B8(0x32);
+        console = func_80031BDC(((flags & 1) ? capacity * 16 : capacity * 32) + sizeof(Console),
+                                ((flags >> 2) ^ 1) & 1);
+    }
+    console->buffer[0] = (u8 *)(console + 1);
+    if (flags & 1) {
+        console->buffer[1] = console->buffer[0];
+    } else {
+        console->buffer[1] = console->buffer[0] + capacity * 16;
+    }
+    if (font == NULL) {
+        font = D_80050240;
+    }
+    data = func_80032E88(font, 0);
+    wide = data[0] & 1;
+    lower = data[0] & 2;
+    console->unk14 = data[2];
+    console->unk16 = data[3];
+    if (flags & 2) {
+        lower = 0;
+    }
+    console->x = console->left = left;
+    console->flags = flags;
+    console->y = console->top = top;
+    console->width = width;
+    console->height = height;
+    console->r = console->g = console->b = 0xFF;
+    console->capacity = capacity;
+    console->unk34 = 0;
+    console->flags2E = 0;
+    console->mode = wide ? 0x7D : 0x75;
+    console->texture_v = tex_y;
+    if (lower == 0) {
+        console->flags2E |= 4;
+    }
+    if (wide) {
+        console->flags2E |= 2;
+        rows = lower ? 0x30 : 0x20;
+    } else {
+        rows = lower ? 0x10 : 8;
+    }
+    rect.x = tex_x;
+    rect.y = tex_y;
+    rect.w = 0x20;
+    rect.h = rows;
+    pixels = data + 4;
+    if (console->unk14 == 0) {
+        console->flags2E |= 8;
+        memmove(console->widths, data + 4, 0x60);
+        pixels = data + 0x64;
+    }
+    LoadImage(&rect, (u_long *)pixels);
+    console->tpage_id = GetTPage(0, 0, tex_x, tex_y);
+    rect.x = clut_x;
+    rect.y = clut_y;
+    rect.w = 0x40;
+    rect.h = 1;
+    console->cluts[0] = GetClut(clut_x, clut_y);
+    console->cluts[1] = GetClut(clut_x + 0x10, clut_y);
+    console->cluts[2] = GetClut(clut_x + 0x20, clut_y);
+    console->cluts[3] = GetClut(clut_x + 0x30, clut_y);
+    D_80059398 = rect;
+    func_80036E4C(0x7FFF, 0);
+    SetDrawTPage(&console->tpage[0], 0, 0, console->tpage_id);
+    SetDrawTPage(&console->tpage[1], 0, 0, console->tpage_id);
+    setTile(&console->tile[0]);
+    setRGB0(&console->tile[0], 0, 0, 0);
+    *(u32 *)&console->tile[0].x0 = left | (top << 16);
+    *(u32 *)&console->tile[0].w = width | (height << 16);
+    setSemiTrans(&console->tile[0], 1);
+    console->tile[1] = console->tile[0];
+    D_80059394 = console;
+    func_800372CC();
+    func_800320E8(data);
+    return console;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800374E8);
+#endif
 
 /* Sort `count` elements of `size` bytes at `base` in place (selection
  * sort): `compare` is positive when its second element goes first. */
