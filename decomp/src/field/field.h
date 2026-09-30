@@ -374,7 +374,7 @@ typedef struct {
     MATRIX world_matrix;     /* 224 */
     s32 scale;               /* 244 */
     FieldLight lights[3];    /* 248 */
-    u16 back_color[3];       /* 284 */
+    s16 back_color[3];       /* 284 */
     u8 unk28A[2];
     FieldComponents components; /* 28C: 800afb0c */
 } FieldView;
@@ -765,6 +765,17 @@ extern s32 func_8009D000(s32 offset, s32 flags); /* operand, immediate with flag
 extern void func_80086590(VECTOR *target);
 extern s32 func_8009CFBC(s32 offset, s32 flags); /* operand, immediate with flag 0x40 */
 extern void func_80074700(void);
+/* The model pass (800748e8). */
+extern s32 D_80059578; /* models drawn */
+extern s32 D_800595C0; /* primitives drawn */
+extern s32 D_80050104; /* model level of detail */
+extern void func_8002C6E0(s32 r, s32 g, s32 b); /* fog color */
+extern void func_8004A10C(s32 r, s32 g, s32 b); /* far color */
+extern void func_80030C40(s32 r, s32 g, s32 b); /* background color */
+extern void func_800305D8(void *list);
+extern void func_8002C700(FieldMesh *mesh, void *packets, u32 *ot, s32 mode);
+extern s32 func_800AAA74(FieldInstance *instance);
+extern void func_801E72CC(MATRIX *m, MATRIX *work, s32 a, s32 b);
 /* The field frame (8007554c). */
 extern s32 D_800ADB9C; /* frame start time */
 extern s32 D_800ADBA0; /* frame draw time */

@@ -1,5 +1,6 @@
 #include "common.h"
 #include "field.h"
+#include "gte.h"
 
 /* Build the camera matrix from the eye, target and up vectors, the world
  * matrix under it, then the three lights and background color from the
@@ -1460,7 +1461,158 @@ void func_80074700(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800748E8);
+/* Draw the field models: set the fog, then for every drawn descriptor build
+ * its model matrix (turned about one axis, posed by the 801e bone routine,
+ * attached to another descriptor, or placed in the view with the piece
+ * drift and orientation modes), light it, and draw its instance unless it
+ * is culled. */
+void func_800748E8(void) {
+    SVECTOR angles;
+    VECTOR scale;
+    VECTOR half;
+    MATRIX view;
+    MATRIX placed;
+    MATRIX work;
+    s32 always;
+    FieldDescriptor *descriptor;
+    FieldInstance *instance;
+    FieldActor *actor;
+    u16 pose;
+    s32 i;
+    s32 orient;
+
+    D_80059578 = 0;
+    D_800595C0 = 0;
+    if (D_800B2078.sprite_gate != 0) {
+        func_8002C6E0(D_800B2078.fog_color[0], D_800B2078.fog_color[1], D_800B2078.fog_color[2]);
+        func_8004A10C(D_800B2078.far_color[0], D_800B2078.far_color[1], D_800B2078.far_color[2]);
+        SetFogNearFar(D_800B2078.fog_range[0], D_800B2078.fog_range[1], D_800AF880.projection);
+    }
+    half.vx = 0x800;
+    half.vy = 0x800;
+    half.vz = 0x800;
+    scale.vx = D_800AF880.scale;
+    scale.vy = D_800AF880.scale;
+    scale.vz = D_800AF880.scale;
+    ScaleMatrix(&D_800AF880.unk204, &scale);
+    CompMatrix(&D_800AF880.scaled_world, &D_800AFC30, &view);
+    D_80050104 = 0;
+    D_800B2078.unk21BC[0] += D_800B2078.piece_drift[0];
+    D_800B2078.unk21BC[1] += D_800B2078.piece_drift[2];
+    D_800B2078.unk21BC[2] += D_800B2078.piece_drift[1];
+    for (i = 0; i < D_800AF880.components.descriptor_count; i++) {
+        D_800AF880.components.descriptors[i].transform = D_800AF880.components.descriptors[i].matrix;
+        always = 0;
+        if (D_800AF880.components.descriptors[i].flags & 0x40) {
+            continue;
+        }
+        descriptor = &D_800AF880.components.descriptors[i];
+        if (i < D_800ADBFC) {
+            switch (descriptor->actor->state.bits.mode) {
+            case 1:
+                angles.vx = descriptor->actor->unk70;
+                angles.vy = 0;
+                angles.vz = 0;
+                goto turn;
+            case 2:
+                angles.vx = 0;
+                angles.vy = descriptor->actor->unk70;
+                angles.vz = 0;
+                goto turn;
+            case 3:
+                angles.vx = 0;
+                angles.vy = 0;
+                angles.vz = descriptor->actor->unk70;
+            turn:
+                func_8003F738(&angles, &work);
+                func_80049BDC(&D_800AF880.components.descriptors[i].matrix, &work);
+                work.t[0] = D_800AF880.components.descriptors[i].matrix.t[0];
+                work.t[1] = D_800AF880.components.descriptors[i].matrix.t[1];
+                work.t[2] = D_800AF880.components.descriptors[i].matrix.t[2];
+                CompMatrix(&D_800AF880.scaled_world, &work, &placed);
+                break;
+            default:
+                actor = descriptor->actor;
+                pose = actor->unk128;
+                if (pose != 0xFFFF) {
+                    func_801E72CC(&D_800AF880.components.descriptors[i].transform,
+                                  &D_800AF880.components.descriptors[i].transform, pose >> 12, pose & 0xFFF);
+                    CompMatrix(&D_800AF880.scaled_world, &D_800AF880.components.descriptors[i].transform, &work);
+                    CompMatrix(&work, &D_800AF880.components.descriptors[i].matrix, &placed);
+                    CompMatrix(&D_800AF880.components.descriptors[i].transform,
+                               &D_800AF880.components.descriptors[i].matrix,
+                               &D_800AF880.components.descriptors[i].transform);
+                } else if (actor->unk075 != 0xFF) {
+                    CompMatrix(&D_800AF880.scaled_world,
+                               &D_800AF880.components.descriptors[D_800AF880.components.descriptors[i].actor->unk075].transform,
+                               &work);
+                    CompMatrix(&work, &D_800AF880.components.descriptors[i].matrix, &placed);
+                    CompMatrix(&D_800AF880.components.descriptors[D_800AF880.components.descriptors[i].actor->unk075].transform,
+                               &D_800AF880.components.descriptors[i].matrix,
+                               &D_800AF880.components.descriptors[i].transform);
+                } else {
+                    goto general;
+                }
+                break;
+            }
+        } else {
+            if (!(D_800B2078.piece_drift_mode & 0x7F)) {
+                descriptor->matrix.t[0] += D_800B2078.piece_drift[0];
+                descriptor->matrix.t[1] += D_800B2078.piece_drift[2];
+                descriptor->matrix.t[2] += D_800B2078.piece_drift[1];
+            }
+        general:
+            if ((D_800B2078.piece_drift_mode & 0x7F) == 1) {
+                descriptor->matrix.t[0] += D_800B2078.piece_drift[0];
+                descriptor->matrix.t[1] += D_800B2078.piece_drift[2];
+                descriptor->matrix.t[2] += D_800B2078.piece_drift[1];
+            }
+            if (D_800B2078.piece_drift_mode & 0x80) {
+                always = 1;
+            }
+            gte_CompMatrix(&view, &descriptor->matrix, &placed);
+            orient = D_800AF880.components.descriptors[i].flags & 3;
+            if (orient != 0) {
+                if (orient == 1) {
+                    MulMatrix0(&D_800AF880.unk204, &D_800AF880.components.descriptors[i].matrix, &placed);
+                } else {
+                    func_8007409C(&placed, &D_800AF880.components.descriptors[i].matrix);
+                    ScaleMatrix(&placed, &scale);
+                }
+                func_80049BDC(&D_800AF880.orbit, &placed);
+            }
+        }
+        instance = descriptor->instance;
+        if (instance->mode == 1) {
+            work = placed;
+            ScaleMatrix(&work, &half);
+            func_80030B14(&work);
+            func_80030C40(D_800AF880.back_color[0], D_800AF880.back_color[1], D_800AF880.back_color[2]);
+        }
+        D_80050104 = 0;
+        if (!(D_800AF880.components.descriptors[i].flags & 0x20)) {
+            if ((descriptor->flags & 0x2000) && instance->unk14 != NULL) {
+                D_800ADB58 = i;
+                D_800ADB5C = 0;
+                func_800305D8(instance->unk14);
+            }
+            gte_SetRotMatrix(&placed);
+            gte_SetTransMatrix(&placed);
+            if (func_800AAA74(instance) == 0 || always == 1) {
+                gte_SetRotMatrix(&placed);
+                gte_SetTransMatrix(&placed);
+                if (!(descriptor->flags & 0x8000)) {
+                    func_8002C700(instance->mesh, instance->packets[D_800ADB08], D_800C426C->ot, instance->mode);
+                } else {
+                    func_8002C700(instance->mesh, instance->packets[D_800ADB08], D_800C426C->ot2, instance->mode);
+                }
+            }
+        }
+    }
+    if (D_800C268C == 0) {
+        func_80281B00("MODEL     ");
+    }
+}
 
 /* Draw the 801e module's layer (with the emitters updated and its back
  * colour set) when enabled, then the debug "GEAR" timer. */
