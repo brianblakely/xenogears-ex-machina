@@ -224,7 +224,9 @@ typedef struct {
 /* Battle work area D_800CCCE8; D_800C34B0 points at it. */
 typedef struct {
     Combatant records[11]; /* 0x0000 */
-    u8 padFD0[0x1058 - 0xFD0];
+    s32 counted[3][2];     /* 0x0FD0: result values shown so far, per member */
+    s32 toCount[3][2];     /* 0x0FE8: result values still to count */
+    u8 pad1000[0x1058 - 0x1000];
     CommandDescriptor partyCommands[3][38]; /* 0x1058 */
     CommandDescriptor gearCommands[3][42];  /* 0x2228 */
     CommandDescriptor enemyCommands[199];   /* 0x35D8 */

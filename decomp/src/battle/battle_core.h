@@ -78,7 +78,9 @@ typedef struct {
     u8 unk9C;
     u8 unk9D;
     u8 unk9E;
-    u8 unk9F[0xA3 - 0x9F];
+    u8 unk9F;
+    u8 unkA0;          /* the result screen counts */
+    u8 unkA1[0xA3 - 0xA1];
     u8 unkA3;
     u8 unkA4;
     u8 unkA5;

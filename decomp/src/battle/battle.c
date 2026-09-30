@@ -5163,7 +5163,100 @@ void func_8008A3EC(u8 member) {
     } while (D_800C3444 != 0);
 }
 
+/* Result screen input: wait for a controller as 8008a3ec does, read the
+ * input (confirm sets input code 4, start pauses or resumes) while paused,
+ * then count each member's two result values one step; while any is still
+ * counting redraw the panels (801df270, 801df4c0), else stop counting.
+ * (Nonmatching: the original addresses the work area's counters from an
+ * aggregate that starts at 0x800c3eb0, so the stores' base differs.) */
+#ifdef NON_MATCHING
+void func_8008A684(u8 member) {
+    u8 done = 1;
+    u8 waiting = 1;
+    u8 paused = 0;
+    s32 vsyncs;
+    s32 i;
+
+    do {
+        if (func_80035734(0) == 0) {
+            if (paused == 0) {
+                func_8001FAB4(0x88, 0x64);
+                func_8001FAB4(0x88, 0x144);
+                paused++;
+                func_80037EE4();
+                vsyncs = D_80059488;
+            }
+        } else {
+            waiting = 0;
+            if (paused) {
+                func_80037E8C();
+                D_80059488 = vsyncs;
+            }
+        }
+    } while (waiting);
+    if (D_800D2D28->unkCC[3] == 0) {
+        D_800D3014 = 0xFF;
+    }
+    do {
+        if (func_80036410()) {
+            func_80035DB0();
+        } else {
+            while (func_80035CDC()) {
+                if (D_8005948C & 0x20) {
+                    D_800D3014 = 4;
+                    break;
+                }
+                if (D_8005948C & 0x800) {
+                    if (D_800C3444 == 0) {
+                        func_80037EE4();
+                        func_8001FAB4(0x88, 0x64);
+                        func_8001FAB4(0x88, 0x144);
+                        vsyncs = D_80059488;
+                        D_800C3444 = 1;
+                    } else {
+                        func_80037E8C();
+                        D_80059488 = vsyncs;
+                        D_800C3444 = 0;
+                    }
+                    break;
+                }
+            }
+        }
+    } while (D_800C3444 != 0);
+    if (D_800D2D28->unkA0 != 0 && D_800D32F8[0]->counting != 0) {
+        for (i = 0; i < 3; i++) {
+            if (D_800D32F8[i]->done[0] == 0) {
+                if (D_800CCCE8.toCount[i][0] == 0) {
+                    D_800D32F8[i]->done[0] = 1;
+                } else {
+                    D_800CCCE8.toCount[i][0]--;
+                    D_800CCCE8.counted[i][0]++;
+                }
+            }
+            if (D_800D32F8[i]->done[1] == 0) {
+                if (D_800CCCE8.toCount[i][1] == 0) {
+                    D_800D32F8[i]->done[1] = 1;
+                } else {
+                    D_800CCCE8.toCount[i][1]--;
+                    D_800CCCE8.counted[i][1]++;
+                }
+            }
+            done &= D_800D32F8[i]->done[0];
+            if (D_800D32F8[0]->unk15F8 != 0) {
+                done &= D_800D32F8[i]->done[1];
+            }
+        }
+        if (!done) {
+            func_801DF270();
+            func_801DF4C0();
+        } else {
+            D_800D32F8[0]->counting = 0;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008A684);
+#endif
 
 /* Result-screen step by the battle end state 800c3e4c. */
 void func_8008A9C0(u8 member) {
