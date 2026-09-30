@@ -306,19 +306,19 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80
 #endif
 
 /* Restore the actor from the saved camera state; vehicles get state 3. */
-#ifdef NON_MATCHING /* saved-camera and yaw addresses not kept in registers */
 s32 func_80091430(s32 index) {
     WorldmapActor *actor;
     Camera *saved;
+    s16 *yaw;
 
     actor = &D_8009BE24[index];
     saved = &D_8009D55C;
     actor->position = saved->target;
-    actor->position.pad = saved->target.pad;
+    yaw = &D_8009BD38.vy;
     D_8009BD38.vz = 0;
     D_8009BD38.vy = D_8009D52C;
     actor->u.step = (s16)D_8009D52C;
-    actor->unk58 = D_8009BD38.vy << 12;
+    actor->unk58 = *yaw << 12;
     switch (D_8009BE10) {
     case 6:
     case 7:
@@ -327,9 +327,6 @@ s32 func_80091430(s32 index) {
     }
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80091430);
-#endif
 
 /* Camera yaw and target follower: turn by the shoulder buttons in 0x200
  * steps, ease towards requested yaws (commands 9, 10, 15-17), and move the
@@ -830,9 +827,7 @@ s32 func_800923A8(s32 index) {
 /* Screen fade actor: command 12 fades in (to clear), 13 fades out (to
  * black), stepping the fade quad's brightness by D_8009D3CC; returns 3 when
  * the fade-in has finished. */
-#ifdef NON_MATCHING /* the fade quad base, view pointer and tag masks get different registers */
 s32 func_800925A0(s32 index) {
-    u8 unused[0xC0]; /* unreferenced local: the original frame reserves it */
     WorldmapActor *actor;
     s32 result;
 
@@ -854,22 +849,12 @@ s32 func_800925A0(s32 index) {
     }
     switch (actor->state) {
     case 0:
-        D_8009CE6C[D_8009D7F0].r0 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].g0 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].b0 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].r1 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].g1 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].b1 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].r2 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].g2 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].b2 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].r3 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].g3 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].b3 = actor->u.step;
-        ((P_TAG *)&D_8009CE6C[D_8009D7F0])->addr = ((P_TAG *)D_8009BE3C->ot)->addr;
-        ((P_TAG *)D_8009BE3C->ot)->addr = (u32)&D_8009CE6C[D_8009D7F0];
-        ((P_TAG *)&D_8009D310)->addr = ((P_TAG *)D_8009BE3C->ot)->addr;
-        ((P_TAG *)D_8009BE3C->ot)->addr = (u32)&D_8009D310;
+        setRGB0(&D_8009CE6C[D_8009D7F0], actor->u.step, actor->u.step, actor->u.step);
+        setRGB1(&D_8009CE6C[D_8009D7F0], actor->u.step, actor->u.step, actor->u.step);
+        setRGB2(&D_8009CE6C[D_8009D7F0], actor->u.step, actor->u.step, actor->u.step);
+        setRGB3(&D_8009CE6C[D_8009D7F0], actor->u.step, actor->u.step, actor->u.step);
+        addPrim(D_8009BE3C->ot, &D_8009CE6C[D_8009D7F0]);
+        addPrim(D_8009BE3C->ot, &D_8009D310);
         actor->u.step -= D_8009D3CC;
         if (actor->u.step < 0) {
             result = 3;
@@ -878,22 +863,12 @@ s32 func_800925A0(s32 index) {
         }
         break;
     case 1:
-        D_8009CE6C[D_8009D7F0].r0 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].g0 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].b0 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].r1 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].g1 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].b1 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].r2 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].g2 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].b2 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].r3 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].g3 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].b3 = actor->u.step;
-        ((P_TAG *)&D_8009CE6C[D_8009D7F0])->addr = ((P_TAG *)D_8009BE3C->ot)->addr;
-        ((P_TAG *)D_8009BE3C->ot)->addr = (u32)&D_8009CE6C[D_8009D7F0];
-        ((P_TAG *)&D_8009D310)->addr = ((P_TAG *)D_8009BE3C->ot)->addr;
-        ((P_TAG *)D_8009BE3C->ot)->addr = (u32)&D_8009D310;
+        setRGB0(&D_8009CE6C[D_8009D7F0], actor->u.step, actor->u.step, actor->u.step);
+        setRGB1(&D_8009CE6C[D_8009D7F0], actor->u.step, actor->u.step, actor->u.step);
+        setRGB2(&D_8009CE6C[D_8009D7F0], actor->u.step, actor->u.step, actor->u.step);
+        setRGB3(&D_8009CE6C[D_8009D7F0], actor->u.step, actor->u.step, actor->u.step);
+        addPrim(D_8009BE3C->ot, &D_8009CE6C[D_8009D7F0]);
+        addPrim(D_8009BE3C->ot, &D_8009D310);
         actor->u.step += D_8009D3CC;
         if (actor->u.step >= 0xFF) {
             actor->u.step = 0xFF;
@@ -901,14 +876,12 @@ s32 func_800925A0(s32 index) {
         }
         break;
     default:
-        return result;
+        goto end;
     }
     actor->wait++;
+end:
     return result;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_800925A0);
-#endif
 
 /* Open the text window. */
 s32 func_80092BE4(void) {
@@ -955,7 +928,6 @@ void func_80092DD0(void) {
 }
 
 /* Open the destination-name window and build its marker quad (both display copies). */
-#ifdef NON_MATCHING /* struct-copy end address CSE'd into a register too early */
 s32 func_80092DF8(void) {
     D_8009CE68 = -1;
     func_80032F54(&D_8009BD64, 0x3C0, 0x18D, 0xA0, 0x78, 0x20, 4);
@@ -964,14 +936,7 @@ s32 func_80092DF8(void) {
     func_80034614(&D_8009BD64);
     setlen(&D_8009D2B8[0], 9);
     D_8009D2B8[0].code = 0x2C;
-    D_8009D2B8[0].y0 = 0x70;
-    D_8009D2B8[0].y1 = 0x70;
-    D_8009D2B8[0].x1 = 0x128;
-    D_8009D2B8[0].x3 = 0x128;
-    D_8009D2B8[0].x0 = 0x98;
-    D_8009D2B8[0].x2 = 0x98;
-    D_8009D2B8[0].y2 = 0xB4;
-    D_8009D2B8[0].y3 = 0xB4;
+    setXY4(&D_8009D2B8[0], 0x98, 0x70, 0x128, 0x70, 0x98, 0xB4, 0x128, 0xB4);
     D_8009D2B8[0].u0 = 0x80;
     D_8009D2B8[0].v0 = 0;
     D_8009D2B8[0].u1 = 0xFF;
@@ -987,16 +952,10 @@ s32 func_80092DF8(void) {
     D_8009D2B8[1] = D_8009D2B8[0];
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80092DF8);
-#endif
 
 /* Show the destination name while it changes and draw its marker. */
-#ifdef NON_MATCHING /* marker base address loaded later than the original */
 s32 func_80092FD8(s32 index) {
     WorldmapActor *actor;
-    PolyFT4 *marker;
-    WorldmapView *view;
 
     actor = &D_8009BE24[index];
     switch (actor->state) {
@@ -1021,16 +980,10 @@ s32 func_80092FD8(s32 index) {
     }
     func_80034888(&D_8009BD64, D_8009BE3C->ot, D_8009D7F0);
     if (actor->state == 1) {
-        view = D_8009BE3C;
-        marker = &D_8009D2B8[D_8009D7F0];
-        ((P_TAG *)marker)->addr = ((P_TAG *)view->ot)->addr;
-        ((P_TAG *)view->ot)->addr = (u32)marker;
+        addPrim(D_8009BE3C->ot, &D_8009D2B8[D_8009D7F0]);
     }
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80092FD8);
-#endif
 
 /* Release a resident object. */
 void func_800931B0(void) {
@@ -1393,20 +1346,21 @@ s32 func_80094088(VECTOR *position, VECTOR *direction, VECTOR *out) {
 /* Distance between two positions on the ground plane, in world units. */
 #ifdef NON_MATCHING /* delta held in the argument register */
 s32 func_80094154(VECTOR *a, VECTOR *b) {
-    s32 dx;
-    s32 dz;
+    s32 delta;
+    s32 sum;
 
-    dx = a->vx - b->vx;
-    if (dx < 0) {
-        dx = -dx;
+    delta = a->vx - b->vx;
+    if (delta < 0) {
+        delta = -delta;
     }
-    dx >>= 12;
-    dz = a->vz - b->vz;
-    if (dz < 0) {
-        dz = -dz;
+    delta >>= 12;
+    sum = delta * delta;
+    delta = a->vz - b->vz;
+    if (delta < 0) {
+        delta = -delta;
     }
-    dz >>= 12;
-    return SquareRoot0(dx * dx + dz * dz);
+    delta >>= 12;
+    return SquareRoot0(sum + delta * delta);
 }
 #else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80094154);

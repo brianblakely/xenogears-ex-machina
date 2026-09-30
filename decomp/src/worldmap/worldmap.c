@@ -406,24 +406,20 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap", func_80071CDC);
 
 /* Allocate and read the three area files into their resident buffers.
  * Differs in store scheduling of the read list. */
-#ifdef NON_MATCHING
 void func_80071EF0(void) {
     D_8009C59C = func_80031BDC(func_800288EC(D_8009C17C), 1);
     D_8009BD20 = func_80031BDC(func_800288EC(D_8009C174), 1);
     D_8009C180 = func_80031BDC(func_800288EC(D_8009D3C4), 1);
     D_8009D3F8[0].file = D_8009D3C4;
-    D_8009D3F8[0].dest = D_8009C180;
     D_8009D3F8[1].file = D_8009C17C;
-    D_8009D3F8[1].dest = D_8009C59C;
     D_8009D3F8[2].file = D_8009C174;
-    D_8009D3F8[2].dest = D_8009BD20;
     D_8009D3F8[3].file = 0;
+    D_8009D3F8[0].dest = D_8009C180;
+    D_8009D3F8[1].dest = D_8009C59C;
+    D_8009D3F8[2].dest = D_8009BD20;
     D_8009D3F8[3].dest = NULL;
     func_80029AFC(D_8009D3F8, 0, 0);
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap", func_80071EF0);
-#endif
 
 /* Allocate and read the two shared world-map files (0x25, 0x26).
  * Differs in store scheduling of the read list. */
