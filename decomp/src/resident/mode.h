@@ -87,6 +87,11 @@ extern FileRequest D_800625A4[4]; /* party file list, zero-terminated */
 extern void *D_80065AFC[3];       /* party character file blocks */
 extern void *D_8005A4A0;          /* file 0xa7 block */
 extern void *D_8005A4BC;          /* file 0xa8 block */
+extern void *D_8005A414[3];       /* party field sprite blocks */
+extern s32 D_8005A4C0;            /* map read-ahead size */
+extern void *D_8005A4E0;          /* map read-ahead block */
+extern s32 D_80062528;            /* the active sequence */
+extern s32 D_8006258C;            /* the transferred wave bank */
 
 extern u8 *const D_80018084; /* overlay decode destination */
 extern u8 D_8006FAF0[];
@@ -125,6 +130,7 @@ void func_8001AADC(void);
 void func_8001B6BC(void);
 void func_8001B158(s32 extra);
 void func_8001B3A8(void);
+void func_8001B53C(s32 map);
 void func_8001AD4C(void);
 void func_8001AEB8(void);
 void func_8001AD1C(void);
@@ -183,6 +189,9 @@ void func_80037DC0(void);
 s32 func_80037FD8(void *a0, s32 a1);
 void func_8003BDFC(s32 a0);
 s32 func_8003FA38(void); /* rand */
+void func_80038310(s32 bank);   /* release a wave bank */
+void func_800399D4(s32 sequence); /* release a sequence */
+void func_80039C4C(s32 sequence); /* stop a sequence */
 
 /* PsyQ library. */
 void func_80040454(void);

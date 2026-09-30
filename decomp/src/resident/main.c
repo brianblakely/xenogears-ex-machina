@@ -790,17 +790,83 @@ void func_8001B158(s32 extra) {
     func_80031BB4(0);
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001B3A8);
+/* Once the party files are read, unpack each member's file into its field sprite block (8005a414) and release it. */
+void func_8001B3A8(void) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001B484);
+    if (D_8004F374 != 0) {
+        func_8001AD1C();
+        for (i = 0; i < 3; i++) {
+            func_800320B8(D_8005A414[i]);
+            if (D_80062590[i] != 0xFF) {
+                func_800320B8(D_80065AFC[i]);
+                func_80032EB4(D_80065AFC[i], D_8005A414[i]);
+                func_800320E8(D_80065AFC[i]);
+            }
+        }
+        D_8004F374 = 0;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001B53C);
+/* Read a map's data ahead into its own block unless that map is already loaded; returns 0 when loaded, -1 while the disc is busy or after starting the read. */
+s32 func_8001B484(s32 map, s32 slot) {
+    if (D_8004F334 != slot || D_8004F330 != map) {
+        if (func_800286CC() == 0) {
+            func_80028A60(0);
+            if (D_8004F334 != -1) {
+                func_800320B8(D_8005A4E0);
+                func_800320E8(D_8005A4E0);
+            }
+            func_8001B53C(map);
+            D_8004F334 = slot;
+            D_8004F330 = map;
+        }
+        return -1;
+    }
+    return 0;
+}
+/* Start reading map file 0xb8 + map into a kept block from the heap top. */
+void func_8001B53C(s32 map) {
+    s32 file = map + 0xB8;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001B5A8);
+    D_8005A4C0 = func_800288EC(file);
+    D_8005A4E0 = func_80031BDC(D_8005A4C0, 1);
+    func_800320A4(D_8005A4E0);
+    func_800295D8(file, D_8005A4E0, 0, 0x80);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001B5E8);
+/* Release the transferred wave bank if it was loaded for this music. */
+void func_8001B5A8(void) {
+    if (D_8004F360 == 1) {
+        func_80038310(D_8006258C);
+        D_8004F360 = 0;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001B66C);
+/* Stop the active sequence; release it unless it is kept for reuse, in which case it becomes the cached sequence. */
+void func_8001B5E8(void) {
+    if (D_8004F35C == 1) {
+        func_80039C4C(D_80062528);
+        if (D_8004F348 == 0) {
+            func_800399D4(D_80062528);
+        } else {
+            D_8004F2FC = D_80062528;
+        }
+        D_8004F35C = 0;
+        D_8004F348 = 0;
+    }
+}
+
+/* Stop the music and forget the loaded sequence and wave bank. */
+void func_8001B66C(void) {
+    if (D_8004F36C != 0) {
+        func_8001B5E8();
+        func_8001B5A8();
+    }
+    D_8004F33C = -1;
+    D_8004F338 = -1;
+    D_8004F36C = 0;
+}
 
 void func_8001B6BC(void) {
 }
