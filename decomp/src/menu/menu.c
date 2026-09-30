@@ -1295,19 +1295,90 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800866D4);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800868E0);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80086E24);
+/* Link this buffer's overlay packets into the overlay ordering table. */
+void func_80086E24(void) {
+    func_80043B48(D_80092938, D_8009A2F8[D_800928A0].packets);
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80086E70);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80086FF8);
+/* Colour a marker packet by the state of an entry: none (returns 0),
+ * yellow when set, red otherwise. */
+s32 func_80086FF8(s32 entry, PolyF4 *packet) {
+    if (func_8008F530(entry, 0)) {
+        return 0;
+    }
+    if (func_8008F530(entry, 1)) {
+        ((PacketTag *)packet)->len = 5;
+        *(u32 *)&packet->r0 = 0x2800FFFF;
+    } else {
+        ((PacketTag *)packet)->len = 5;
+        *(u32 *)&packet->r0 = 0x280000FF;
+    }
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80087068);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800875EC);
+/* Build the overlay packets for buffer 0 and copy them to buffer 1. */
+void func_800875EC(void) {
+    func_80085EC8(&D_8009A2F8[0]);
+    D_8009A2F8[1] = D_8009A2F8[0];
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80087650);
+/* Empty the map's row spans (left 0xFF, right 0). */
+void func_80087650(void) {
+    s32 row;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80087698);
+    for (row = 0; row < 0x80; row++) {
+        D_800927CC[row] = 0;
+        D_800927D0[row] = 0xFF;
+    }
+}
+
+/* Widen the map's row spans along a line, clamped to each row's limits. */
+void func_80087698(s32 x0, s32 y0, s32 x1, s32 y1) {
+    s32 x;
+    s32 step;
+    s32 row;
+    s32 column;
+    s32 swap;
+
+    if (y0 == y1) {
+        return;
+    }
+    if (y1 < y0) {
+        swap = x1;
+        x1 = x0;
+        x0 = swap;
+        swap = y1;
+        y1 = y0;
+        y0 = swap;
+    }
+    x = x0 << 8;
+    step = ((x1 - x0) << 8) / (y1 - y0);
+    for (row = y0; row < y1; row++, x += step) {
+        if (row < 0) {
+            continue;
+        }
+        if (row >= 0x80) {
+            return;
+        }
+        column = x >> 8;
+        if (column < D_800927D0[row]) {
+            if (column < D_80091834[row]) {
+                column = D_80091834[row];
+            }
+            D_800927D0[row] = column;
+        }
+        if (D_800927CC[row] < column) {
+            if (D_800918B4[row] + 1 < column) {
+                column = D_800918B4[row] + 1;
+            }
+            D_800927CC[row] = column;
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008779C);
 

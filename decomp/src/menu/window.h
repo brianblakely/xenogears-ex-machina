@@ -29,6 +29,16 @@ typedef struct {
     s16 w, h;
 } Tile;
 
+/* Flat quadrilateral packet (libgpu POLY_F4). */
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    s16 x1, y1;
+    s16 x2, y2;
+    s16 x3, y3;
+} PolyF4;
+
 /* The common packet head (libgpu P_TAG). */
 typedef struct {
     u32 addr : 24;
@@ -91,6 +101,21 @@ typedef struct {
     u8 unk0[0x284];
     Panel *panel;      /* 0x284 */
 } PanelOwner;
+
+/* Per-buffer overlay packets (map screen). */
+typedef struct {
+    u32 unk0[2];
+    u8 packets[0x308];
+} OverlayBuffer;
+
+extern OverlayBuffer D_8009A2F8[2];
+extern u8 *D_800927CC; /* per map row: right edge of the drawn span */
+extern u8 *D_800927D0; /* per map row: left edge of the drawn span */
+extern u8 D_80091834[]; /* per map row: leftmost allowed column */
+extern u8 D_800918B4[]; /* per map row: rightmost allowed column */
+
+void func_80085EC8(OverlayBuffer *buffer);
+s32 func_8008F530(s32 entry, s32 which);
 
 /* Fading overlay. */
 extern s16 D_80092780; /* fade level */
