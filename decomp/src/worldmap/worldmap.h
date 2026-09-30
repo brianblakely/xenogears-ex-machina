@@ -204,9 +204,39 @@ typedef struct {
 } SpotHeader;
 
 extern void *D_8009D308, *D_8009CD48, *D_8009C7EC, *D_8009BD30, *D_8009D784;
-extern void *D_8009BCC0, *D_8009D7C8, *D_8009D77C;
+extern void *D_8009BCC0;
+extern s32 *D_8009D7C8, *D_8009D77C; /* texture animation sections: count, offsets */
 extern void *D_8009D73C[16];
 extern s32 *D_8009BD00;
+
+/* Texture animations: each slot uploads one image of a frame sequence. */
+typedef struct {
+    s16 image;    /* image index in the animation's data */
+    s16 duration; /* frames; negative ends the sequence */
+} TexAnimFrame;
+
+typedef struct {
+    RECT rect;
+    s32 unk8;
+    TexAnimFrame *frames;
+} TexAnimSlot;
+
+typedef struct {
+    u8 *images;
+    TexAnimSlot *slot;
+    s16 frame;
+    s16 timer;
+} TexAnim;
+
+extern TexAnimSlot D_8009A1E8[], D_8009A250[];
+extern TexAnim *D_8009D780, *D_8009D7D0;
+extern s32 D_8009CC9C, D_8009CD64;
+
+void func_80044894(RECT *rect, void *data); /* upload to VRAM */
+
+extern void *D_8009BE14, *D_8009BE18;
+extern WorldmapSpot *D_8009D30C; /* ring of 16 recent positions */
+extern s32 D_8009BE38;
 
 /* Frame state. */
 typedef struct {

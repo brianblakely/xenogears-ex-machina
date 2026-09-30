@@ -247,21 +247,85 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80074594);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_8007474C);
+/* Free the position ring and two work buffers. */
+void func_8007474C(void) {
+    func_800320E8(D_8009BE18);
+    func_800320E8(D_8009BE14);
+    func_800320E8(D_8009D30C);
+}
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80074794);
+/* Record a position (in world units) with an id in the 16-entry ring. */
+void func_80074794(s16 id, Vec3 *position) {
+    D_8009D30C[D_8009BE38].x = position->vx >> 12;
+    D_8009D30C[D_8009BE38].z = position->vz >> 12;
+    D_8009D30C[D_8009BE38].id = id;
+    D_8009BE38 = (D_8009BE38 + 1) & 0xF;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_800747DC);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80074E58);
+/* Create the terrain texture animations from their area section. */
+void func_80074E58(void) {
+    TexAnim *anim;
+    s32 i;
+    s32 count;
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80074F04);
+    count = *D_8009D77C;
+    D_8009CC9C = count;
+    D_8009D780 = anim = func_80031BDC(count * sizeof(TexAnim), 0);
+    for (i = 0; i < D_8009CC9C; i++, anim++) {
+        anim->images = (u8 *)D_8009D77C + D_8009D77C[i + 1];
+        anim->slot = &D_8009A1E8[i];
+        anim->frame = 0;
+        anim->timer = 1;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80074F2C);
+/* Free the terrain texture animations. */
+void func_80074F04(void) {
+    func_800320E8(D_8009D780);
+}
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80075030);
+/* Advance the terrain texture animations, uploading each new image. */
+void func_80074F2C(void) {
+    TexAnim *anim;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_800750DC);
+    anim = D_8009D780;
+    for (i = 0; i < D_8009CC9C; i++, anim++) {
+        if (--anim->timer == 0) {
+            anim->frame++;
+            anim->timer = anim->slot->frames[anim->frame].duration;
+            if (anim->timer < 0) {
+                anim->frame = 0;
+                anim->timer = anim->slot->frames[0].duration;
+            }
+            func_80044894(&anim->slot->rect, anim->images + anim->slot->frames[anim->frame].image * 16);
+        }
+    }
+}
+
+/* Create the second set of texture animations from their area section. */
+void func_80075030(void) {
+    TexAnim *anim;
+    s32 i;
+    s32 count;
+
+    count = *D_8009D7C8;
+    D_8009CD64 = count;
+    D_8009D7D0 = anim = func_80031BDC(count * sizeof(TexAnim), 0);
+    for (i = 0; i < D_8009CD64; i++, anim++) {
+        anim->images = (u8 *)D_8009D7C8 + D_8009D7C8[i + 1];
+        anim->slot = &D_8009A250[i];
+        anim->frame = 0;
+        anim->timer = 1;
+    }
+}
+
+/* Free the second set of texture animations. */
+void func_800750DC(void) {
+    func_800320E8(D_8009D7D0);
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80075104);
 
