@@ -2977,7 +2977,79 @@ u8 func_80084108(u8 slot, u8 any) {
     return result;
 }
 
+/* Order the member's attack candidates: the reachable opposing slots, those
+ * in its own formation group first, and the lowest-HP one (within the group
+ * when there is one) moved to the front. Returns the default target. */
+#ifdef NON_MATCHING
+u8 func_800841E0(u8 member) {
+    u8 slots[12];
+    u8 grouped[12];
+    s32 i;
+    s32 count;
+    s32 n;
+    u8 swap;
+
+    D_800D3274 = 0;
+    for (i = 0; i < 12; i++) {
+        slots[i] = 0xFF;
+        D_800C3E90[i] = 0xFF;
+        grouped[i] = 0;
+    }
+    if (member < 3) {
+        i = 3;
+        count = 0;
+        for (; i < 11; i++) {
+            if (func_80083FF4(member, i)) {
+                slots[count++] = i;
+                D_800D3274++;
+            }
+        }
+    } else {
+        i = 0;
+        count = 0;
+        for (; i < 3; i++) {
+            if (func_80083FF4(member, i)) {
+                slots[count++] = i;
+                D_800D3274++;
+            }
+        }
+    }
+    n = 0;
+    for (i = 0; i < count; i++) {
+        if (D_800C3EB4[member].group == D_800C3EB4[slots[i]].group) {
+            D_800C3E90[n] = slots[i];
+            slots[i] = 0xFF;
+            grouped[n] = 1;
+            n++;
+        }
+    }
+    for (i = 0; i < count; i++) {
+        if (slots[i] != 0xFF) {
+            D_800C3E90[n++] = slots[i];
+        }
+    }
+    if (grouped[0] != 0) {
+        for (i = 1; i < count; i++) {
+            if (grouped[i] != 0 && D_800CCCE8[D_800C3E90[i]].hp < D_800CCCE8[D_800C3E90[0]].hp) {
+                swap = D_800C3E90[0];
+                D_800C3E90[0] = D_800C3E90[i];
+                D_800C3E90[i] = swap;
+            }
+        }
+    } else {
+        for (i = 1; i < count; i++) {
+            if (D_800CCCE8[D_800C3E90[i]].hp < D_800CCCE8[D_800C3E90[0]].hp) {
+                swap = D_800C3E90[0];
+                D_800C3E90[0] = D_800C3E90[i];
+                D_800C3E90[i] = swap;
+            }
+        }
+    }
+    return D_800C3E90[0];
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800841E0);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80084548);
 
