@@ -717,6 +717,7 @@ void func_800904A0(u8 column, u8 row);
 s8 func_80097964(u8 a, u8 b, u16 c);
 void func_80078508(u8 *order);
 void func_80087EDC(u8 actor, u8 target);
+void func_800881B8(u8 actor, u8 target);
 void func_800883AC(u8 slot);
 u16 func_80089B50(u16 low, u16 high);
 u8 func_80079ED8(u8 slot, u8 attribute, u8 value, u8 write);

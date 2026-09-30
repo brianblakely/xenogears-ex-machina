@@ -1363,7 +1363,24 @@ void func_8007893C(u8 index, u8 actor) {
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80078998);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80078B34);
+/* Queue a move event (0xfd) for the actor's action `index` toward target:
+ * compute the move, then (unless the action's parameter is 1) choose the
+ * on-foot or gear approach, and redraw the slots involved. */
+void func_80078B34(u8 actor, u8 index, u8 target) {
+    D_800C3FE8[D_800C3EAC->eventCount].type = 0xFD;
+    D_800C3FE8[D_800C3EAC->eventCount].parameter = 0;
+    D_800C3FE8[D_800C3EAC->eventCount].targetMask = D_800D2E5C[index].targets;
+    func_800877E0(actor, target);
+    if (D_800D2E5C[index].param != 1) {
+        if (D_800D32A0[actor].unk1 == 0) {
+            func_80087EDC(actor, target);
+        } else {
+            func_800881B8(actor, target);
+        }
+    }
+    func_800BC404(D_800D2E5C[index].targets | func_80089C08(actor));
+    func_800785D4(actor, index);
+}
 
 /* Queue event type 0xfc for the actor. */
 void func_80078C9C(u8 actor, u8 index) {
