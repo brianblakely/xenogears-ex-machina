@@ -1,0 +1,81 @@
+#ifndef DEBUG595_DEBUG595_H
+#define DEBUG595_DEBUG595_H
+
+#include "common.h"
+
+/* libgte / libgpu types. */
+typedef struct {
+    s16 m[3][3];
+    s32 t[3];
+} MATRIX;
+
+typedef struct {
+    s16 vx, vy, vz, pad;
+} SVECTOR;
+
+typedef struct {
+    s32 vx, vy, vz, pad;
+} VECTOR;
+
+/* A primitive's tag: the next primitive's address and this one's length. */
+typedef struct {
+    u32 addr : 24;
+    u32 len : 8;
+} P_TAG;
+
+#define addPrim(ot, p) \
+    (((P_TAG *)(p))->addr = ((P_TAG *)(ot))->addr, ((P_TAG *)(ot))->addr = (u32)(p))
+
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    u8 r1, g1, b1, pad;
+    s16 x1, y1;
+} LINE_G2;
+
+/* One debug line: a segment in its own frame, drawn in both buffers. */
+typedef struct {
+    MATRIX matrix;   /* 0x00 */
+    SVECTOR rot;     /* 0x20 */
+    SVECTOR trans;   /* 0x28 */
+    SVECTOR start;   /* 0x30 */
+    SVECTOR end;     /* 0x38 */
+    LINE_G2 line[2]; /* 0x40: one per draw buffer */
+} DebugLine;         /* 0x68 */
+
+/* libgte / libgpu (resident). */
+void PushMatrix(void);
+void PopMatrix(void);
+void SetRotMatrix(MATRIX *m);
+void SetTransMatrix(MATRIX *m);
+s32 RotTransPers3(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, s32 *sxy0, s32 *sxy1, s32 *sxy2, s32 *p,
+                  s32 *flag);
+void SetLineG2(LINE_G2 *p);
+MATRIX *func_8003F738(SVECTOR *rot, MATRIX *m); /* RotMatrix */
+MATRIX *func_80049BDC(MATRIX *m0, MATRIX *m1);
+void func_8004A6DC(SVECTOR *v, s32 *t, SVECTOR *r);
+void func_80037324(u32 *ot);
+
+/* Field state. */
+extern s32 D_800C268C;
+extern u32 *D_800C426C;  /* field ordering tables */
+extern s32 D_800ADB08;   /* current draw buffer */
+extern MATRIX D_800AFA64;
+
+/* Tool statics. */
+extern s32 D_8028597C;
+extern s32 D_80285980;
+extern s32 D_80285988;   /* debug lines shown */
+extern s32 D_8028598C;
+extern s32 D_80285990;
+extern s32 D_80285994;
+extern s32 D_80285998;
+extern s16 D_802859A4;
+extern u16 D_80285B28[16];
+extern DebugLine D_80285B48[16];
+
+s32 func_80281B90(u32 *ot);
+void func_802814D4(u32 *ot, DebugLine *line, MATRIX *m, s32 buffer);
+
+#endif
