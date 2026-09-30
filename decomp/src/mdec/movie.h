@@ -24,8 +24,11 @@ void DecDCTReset(s32 mode);
 void DecDCToutCallback(void (*callback)(void));
 void StUnSetRing(void);
 void StSetRing(void *ring, s32 sectors);
+s32 StGetBackloc(CdlLOC *location);
 void StSetStream(s32 mode, s32 start_frame, s32 end_frame, void *func1, void *func2);
 void movie_slice_decoded(void);
+void movie_stop(void);
+void movie_decode(void);
 void movie_restart(s32 file, s32 sector, s32 channel, s32 mode, CdlLOC *location);
 
 /* Player statics (movie library image). */
@@ -61,7 +64,10 @@ extern u16 movie_slice_width;      /* 16 or 24 */
 extern s32 movie_stall_count;      /* polls without a ring frame */
 extern s32 movie_vlc_pending;      /* a frame's decode is resumable */
 extern s32 movie_skipped_frames;
-extern s16 D_8005A4B8;             /* resident stream state (host-file path) */
+extern s16 D_8005A4B8;             /* resident stream state */
+extern s32 D_8005A4DC;
+extern s32 D_8005A4A8;
+extern s32 D_8005A4B4;
 extern s16 D_80062514;      /* -1 stopped, 0 closed, 1, 2 */
 extern u8 movie_host_stream;       /* resident host-file table in use */
 extern void *movie_vlc_buffers[2];   /* the two run-level buffers */

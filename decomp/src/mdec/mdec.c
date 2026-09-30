@@ -164,7 +164,53 @@ INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", movie_next_bitstream);
 
 INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", movie_decode);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", movie_poll);
+/* One step of playback: fade the CD audio in once past the first frame and
+ * out three frames before the end, stop or loop at the end, decode, and seek
+ * again from the ring's last sector when no frame arrived for 2161 polls. */
+void movie_poll(void) {
+    CdlLOC location;
+    CdlLOC *seek;
+    s32 frame;
+
+    if (movie_player_state <= 0) {
+        return;
+    }
+    if (movie_shown_frame > movie_first_frame && movie_fade_in_pending != 0) {
+        movie_fade_in_pending = 0;
+        func_80038D18(0x7FFF, 0x28);
+    }
+    if (movie_shown_frame >= movie_end_frame - 3 && movie_fade_out_pending != 0) {
+        movie_fade_out_pending = 0;
+        func_80038D18(0, 0x28);
+    }
+    if (movie_shown_frame >= movie_end_frame) {
+        if (movie_player_state == 1) {
+            movie_stop();
+        } else {
+            movie_restarted = 0;
+            movie_shown_frame = -1;
+            movie_restart(movie_file, movie_start_sector, movie_xa_channel, movie_cd_mode, NULL);
+        }
+    }
+    if (movie_mdec_idle != 0 || movie_frame_waiting != 0 || movie_vlc_pending != 0) {
+        movie_decode();
+    }
+    if (movie_stall_count >= 0x871) {
+        movie_stall_count = 0;
+        frame = StGetBackloc(&location);
+        D_8005A4B8 = frame;
+        D_8005A4DC++;
+        D_8005A4A8 = CdPosToInt(&location);
+        D_8005A4B4 = movie_start_sector;
+        if (movie_end_frame < frame || frame <= 0) {
+            seek = NULL;
+        } else {
+            seek = &location;
+        }
+        movie_shown_frame = -1;
+        movie_restart(movie_file, movie_start_sector, movie_xa_channel, movie_cd_mode, seek);
+    }
+}
 
 /* Seek the stream to `sector` of `file` (or to `location` when given) and read
  * from there in `mode` at double speed; the current directory is kept. The

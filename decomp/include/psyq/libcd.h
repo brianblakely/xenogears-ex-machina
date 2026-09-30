@@ -21,6 +21,7 @@ typedef struct {
 
 int CdControlB(unsigned char com, unsigned char *param, unsigned char *result);
 CdlLOC *CdIntToPos(int i, CdlLOC *p);
+int CdPosToInt(CdlLOC *p);
 int CdRead2(long mode);
 
 #endif
