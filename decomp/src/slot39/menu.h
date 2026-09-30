@@ -117,7 +117,7 @@ typedef struct MenuParty {
     u8 unk2E; /* 2E */
     u8 unk2F; /* 2F */
     u8 ids[3]; /* 30 */
-    u8 pad33[0x1];
+    u8 unk33; /* 33 */
     u8 unk34[4]; /* 34 */
     u8 unk38[8]; /* 38: character ids of the party slots, ff empty */
     u8 unk40[6]; /* 40 */
@@ -936,6 +936,15 @@ struct DIRENTRY *func_80040594(struct DIRENTRY *dir);             /* nextfile */
 /* The card device names ("bu00:", "bu10:"), shared with assembly still. */
 extern char D_801C50A8[] __attribute__((aligned(4)));
 extern char D_801C50B0[] __attribute__((aligned(4)));
+extern char D_801C50B8[];         /* "__tmp_file" */
+s32 func_800405B4(char *name);    /* erase */
+void func_801D9B08(void);
+void func_801E78C8(s32 file);
+void func_801C9270(s32 port);
+extern u8 D_801EA6F8;
+extern s32 D_801E981C[];          /* card slot cursor: marker position */
+extern s32 D_801E9894[];          /* marker positions: x */
+extern s32 D_801E9914[];          /* y */
 void func_801C8BEC(void);
 void func_801C8EE8(void);
 void func_801C8574(s32 sound);
