@@ -735,4 +735,37 @@ s32 PCopen(char *name, s32 flags, s32 perms);
 s32 PCclose(s32 fd);
 s32 func_8004C398(s32 fd, void *buffer, s32 size); /* PCread */
 
+/* Scratchpad matrices of the angle and camera helpers. */
+#define SCRATCH_MATRIX_A ((MATRIX *)0x1F8000F0)
+#define SCRATCH_MATRIX_B ((MATRIX *)0x1F800110)
+#define SCRATCH_MATRIX_C ((MATRIX *)0x1F800130)
+
+MATRIX *MulMatrix0(MATRIX *a, MATRIX *b, MATRIX *out);
+MATRIX *func_8004AFEC(s32 angle, MATRIX *m); /* RotMatrixY */
+MATRIX *func_8004AE4C(s32 angle, MATRIX *m); /* RotMatrixX */
+
+/* Camera placement: eye, target and up direction. */
+typedef struct {
+    SVECTOR eye;
+    SVECTOR target;
+    VECTOR up;
+} LookAt;
+
+/* Scratchpad work area of the look-at camera. */
+typedef struct {
+    VECTOR work;
+    VECTOR right;
+    VECTOR up;
+    VECTOR forward;
+    SVECTOR eye;
+    MATRIX view;
+} LookAtScratch;
+
+#define LOOKAT_SCRATCH ((LookAtScratch *)0x1F800000)
+
+void func_80048D7C(VECTOR *v, VECTOR *out);           /* VectorNormal */
+void func_8004A480(VECTOR *a, VECTOR *b, VECTOR *out); /* OuterProduct12 */
+VECTOR *ApplyMatrix(MATRIX *m, SVECTOR *v, VECTOR *out);
+MATRIX *TransMatrix(MATRIX *m, VECTOR *t);
+
 #endif

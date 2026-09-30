@@ -398,9 +398,51 @@ void func_80096C0C(s32 status, u8 *result) {
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80096F18);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80097070);
+/* Recover rotation angles (yaw, then pitch, then roll) from a matrix. */
+void func_80097070(MATRIX *m, SVECTOR *angle) {
+    if (m->m[2][0] | m->m[2][2]) {
+        angle->vy = ratan2(m->m[2][0], m->m[2][2]) & 0xFFF;
+        *SCRATCH_MATRIX_A = *m;
+        *SCRATCH_MATRIX_B = *(MATRIX *)&D_8009A180;
+        func_8004AFEC(angle->vy, SCRATCH_MATRIX_B);
+        MulMatrix0(SCRATCH_MATRIX_A, SCRATCH_MATRIX_B, SCRATCH_MATRIX_C);
+        angle->vx = ratan2(SCRATCH_MATRIX_C->m[1][2], SCRATCH_MATRIX_C->m[1][1]);
+        *SCRATCH_MATRIX_B = *(MATRIX *)&D_8009A180;
+        func_8004AE4C(angle->vx, SCRATCH_MATRIX_B);
+        MulMatrix0(SCRATCH_MATRIX_C, SCRATCH_MATRIX_B, SCRATCH_MATRIX_A);
+        angle->vz = -ratan2(SCRATCH_MATRIX_A->m[1][0], SCRATCH_MATRIX_A->m[1][1]);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80097244);
+/* Build the camera matrix looking from the eye to the target. */
+void func_80097244(void *arg) {
+    LookAt *view;
+
+    view = arg;
+    LOOKAT_SCRATCH->work.vx = -view->eye.vx + view->target.vx;
+    LOOKAT_SCRATCH->work.vy = -view->eye.vy + view->target.vy;
+    LOOKAT_SCRATCH->work.vz = -view->eye.vz + view->target.vz;
+    func_80048D7C(&LOOKAT_SCRATCH->work, &LOOKAT_SCRATCH->forward);
+    func_8004A480(&LOOKAT_SCRATCH->forward, &view->up, &LOOKAT_SCRATCH->work);
+    func_80048D7C(&LOOKAT_SCRATCH->work, &LOOKAT_SCRATCH->right);
+    func_8004A480(&LOOKAT_SCRATCH->forward, &LOOKAT_SCRATCH->right, &LOOKAT_SCRATCH->work);
+    func_80048D7C(&LOOKAT_SCRATCH->work, &LOOKAT_SCRATCH->up);
+    D_8009C808.m[0][0] = LOOKAT_SCRATCH->right.vx;
+    D_8009C808.m[0][1] = LOOKAT_SCRATCH->right.vy;
+    D_8009C808.m[0][2] = LOOKAT_SCRATCH->right.vz;
+    D_8009C808.m[1][0] = LOOKAT_SCRATCH->up.vx;
+    D_8009C808.m[1][1] = LOOKAT_SCRATCH->up.vy;
+    D_8009C808.m[1][2] = LOOKAT_SCRATCH->up.vz;
+    D_8009C808.m[2][0] = LOOKAT_SCRATCH->forward.vx;
+    D_8009C808.m[2][1] = LOOKAT_SCRATCH->forward.vy;
+    D_8009C808.m[2][2] = LOOKAT_SCRATCH->forward.vz;
+    LOOKAT_SCRATCH->eye.vx = -view->eye.vx;
+    LOOKAT_SCRATCH->eye.vy = -view->eye.vy;
+    LOOKAT_SCRATCH->eye.vz = -view->eye.vz;
+    LOOKAT_SCRATCH->view = D_8009C808;
+    ApplyMatrix(&LOOKAT_SCRATCH->view, &LOOKAT_SCRATCH->eye, &LOOKAT_SCRATCH->work);
+    TransMatrix(&D_8009C808, &LOOKAT_SCRATCH->work);
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80097440);
 
