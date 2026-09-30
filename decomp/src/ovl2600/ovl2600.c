@@ -74,10 +74,10 @@ void func_801C51EC(u8 allocate) {
 void func_801C5250(u8 allocate) {
     if (allocate) {
         void *block = func_80031BDC(0x15C, 0);
-        D_800625A0->block_348 = block;
+        D_800625A0->backdrop = block;
         func_8003F8E8(block, 0x15C);
     } else {
-        func_800320E8(D_800625A0->block_348);
+        func_800320E8(D_800625A0->backdrop);
     }
 }
 

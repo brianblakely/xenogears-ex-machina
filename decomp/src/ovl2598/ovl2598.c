@@ -74,10 +74,10 @@ void func_801C51C4(u8 allocate) {
 void func_801C5228(u8 allocate) {
     if (allocate) {
         void *block = func_80031BDC(0x15C, 0);
-        D_800625A0->block_348 = block;
+        D_800625A0->backdrop = block;
         func_8003F8E8(block, 0x15C);
     } else {
-        func_800320E8(D_800625A0->block_348);
+        func_800320E8(D_800625A0->backdrop);
     }
 }
 
@@ -200,60 +200,68 @@ void func_801C5724(void) {
  * command column at row + index; otherwise the list layout, dimmed unless
  * bit 7 is set, with the highlight from the low bits. */
 #ifdef NON_MATCHING
-void func_801C57A0(MenuLabel *label, s32 index, s32 row, s32 mode) {
-    POLY_FT4 *poly;
+void func_801C57A0(MenuLabel *label, s32 index, s32 row, u8 mode) {
+    POLY_FT4 *poly = label->poly;
     s32 column = index & 1;
     s32 line = index / 2;
     s32 u = (line & 1) << 7;
-    s32 i;
+    s32 i = 0;
     s32 dim;
     s32 v;
+    s32 list_u;
 
-    for (i = 0; i < 2; i++) {
-        poly = &label->poly[i];
-        dim = 0;
-        func_80043CB0(poly);
-        func_80043BFC(poly, 0);
-        func_80043C24(poly, 0);
-        poly->r0 = 0x80;
-        poly->g0 = 0x80;
-        poly->b0 = 0x80;
-        if (!(mode & 0xFF)) {
-            label->highlight = column;
-            poly->tpage = func_80043A1C(0, 0, 0x140, 0);
-            poly->u0 = u;
-            v = ((index + row) / 4) * 13;
-            poly->v0 = v;
-            poly->u1 = u + label->width;
-            poly->v1 = v;
-            poly->u2 = u;
-            poly->v2 = v + 13;
-            poly->u3 = u + label->width;
-            poly->v3 = v + 13;
-        } else {
-            if (!(mode & 0x80)) {
-                dim = 0x20;
-                func_80043BFC(poly, 1);
-                poly->r0 = dim;
-                poly->g0 = dim;
-                poly->b0 = dim;
-            }
-            label->highlight = (mode & 0x7F) - 1;
-            poly->tpage = dim | func_80043A1C(0, 0, 0x180, 0x80);
-            poly->u0 = column * 0x60;
-            poly->v0 = line * 13 + row;
-            poly->v1 = line * 13 + row;
-            poly->u2 = column * 0x60;
-            poly->v2 = line * 13 + row + 13;
-            poly->u1 = column * 0x60 + label->width;
-            poly->v3 = line * 13 + row + 13;
-            poly->u3 = column * 0x60 + label->width;
+loop:
+    dim = 0;
+    func_80043CB0(poly);
+    func_80043BFC(poly, 0);
+    func_80043C24(poly, 0);
+    poly->r0 = 0x80;
+    poly->g0 = 0x80;
+    poly->b0 = 0x80;
+    if (mode == 0) {
+        label->highlight = column;
+        poly->tpage = func_80043A1C(0, 0, 0x140, 0);
+        poly->u0 = u;
+        v = ((index + row) / 4) * 13;
+        poly->v0 = v;
+        poly->u1 = u + label->width;
+        poly->v1 = v;
+        poly->u2 = u;
+        v += 13;
+        poly->v2 = v;
+        poly->u3 = u + label->width;
+        poly->v3 = v;
+    } else {
+        if (!(mode & 0x80)) {
+            dim = 0x20;
+            func_80043BFC(poly, 1);
+            poly->r0 = dim;
+            poly->g0 = dim;
+            poly->b0 = dim;
         }
-        if (label->highlight) {
-            poly->clut = D_80059414;
-        } else {
-            poly->clut = D_800595D4;
-        }
+        label->highlight = (mode & 0x7F) - 1;
+        poly->tpage = dim | func_80043A1C(0, 0, 0x180, 0x80);
+        list_u = column * 0x60;
+        v = line * 13 + row;
+        poly->u0 = list_u;
+        poly->v0 = v;
+        poly->v1 = v;
+        v += 13;
+        poly->u2 = list_u;
+        poly->v2 = v;
+        poly->u1 = list_u + label->width;
+        poly->v3 = v;
+        poly->u3 = list_u + label->width;
+    }
+    if (label->highlight) {
+        poly->clut = D_80059414;
+    } else {
+        poly->clut = D_800595D4;
+    }
+    i++;
+    poly++;
+    if (i < 2) {
+        goto loop;
     }
     label->shown = 0;
 }
@@ -339,11 +347,72 @@ void func_801C5D24(POLY_G4 *poly, u8 r, u8 g, u8 b) {
     poly->b3 = 0;
 }
 
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C5DA0);
+/* Set up the backdrop primitives of both draw buffers: the gradient, the
+ * full-screen fade quad, the two green frame lines and the draw modes. */
+void func_801C5DA0(void) {
+    RECT window;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C60EC);
+    window.y = 0;
+    window.x = 0;
+    window.h = 0x100;
+    window.w = 0x100;
+    func_801C5CF4();
+    for (i = 0; i < 2; i++) {
+        func_801C5D24(&D_800625A0->backdrop->gradient[i], 0x80, 0x80, 0);
+        func_80043BFC(&D_800625A0->backdrop->gradient[i], 1);
+        func_80043DA0(&D_800625A0->backdrop->line_a[i]);
+        (D_800625A0->backdrop->line_a + i)->r0 = 0;
+        (D_800625A0->backdrop->line_a + i)->g0 = 0x40;
+        (D_800625A0->backdrop->line_a + i)->b0 = 0;
+        func_80043DA0(&D_800625A0->backdrop->line_b[i]);
+        (D_800625A0->backdrop->line_b + i)->r0 = 0;
+        (D_800625A0->backdrop->line_b + i)->g0 = 0x40;
+        (D_800625A0->backdrop->line_b + i)->b0 = 0;
+        func_80043C9C(&D_800625A0->backdrop->fade[i]);
+        (D_800625A0->backdrop->fade + i)->x0 = 0;
+        (D_800625A0->backdrop->fade + i)->y0 = 0;
+        (D_800625A0->backdrop->fade + i)->x1 = 0x140;
+        (D_800625A0->backdrop->fade + i)->y1 = 0;
+        (D_800625A0->backdrop->fade + i)->x2 = 0;
+        (D_800625A0->backdrop->fade + i)->y2 = 0xE0;
+        (D_800625A0->backdrop->fade + i)->x3 = 0x140;
+        (D_800625A0->backdrop->fade + i)->y3 = 0xE0;
+        (D_800625A0->backdrop->fade + i)->r0 = 0x80;
+        (D_800625A0->backdrop->fade + i)->g0 = 0x80;
+        (D_800625A0->backdrop->fade + i)->b0 = 0x80;
+        func_80043BFC(&D_800625A0->backdrop->fade[i], 1);
+        func_800454DC(&D_800625A0->backdrop->mode_a[i], 0, 0, func_80043A1C(0, 0, 0x140, 0x80),
+                      &window);
+        func_800454DC(&D_800625A0->backdrop->mode_b[i], 0, 0, func_80043A1C(0, 2, 0x180, 0),
+                      &window);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C6144);
+/* Place a quad's four vertices around the screen centre (160, 112). */
+void func_801C60EC(SVECTOR *v, u16 x, u16 y, s16 w, s16 h) {
+    v[0].vx = x - 160;
+    v[0].vy = y - 112;
+    v[0].vz = 0;
+    v[1].vx = x + w - 160;
+    v[1].vy = y - 112;
+    v[1].vz = 0;
+    v[2].vx = x - 160;
+    v[2].vz = 0;
+    v[3].vx = x + w - 160;
+    v[3].vz = 0;
+    v[2].vy = y + h - 112;
+    v[3].vy = y + h - 112;
+}
+
+/* Make `poly` semi-transparent and untinted. */
+void func_801C6144(POLY_FT4 *poly) {
+    func_80043BFC(poly, 1);
+    func_80043C24(poly, 0);
+    poly->r0 = 0x80;
+    poly->g0 = 0x80;
+    poly->b0 = 0x80;
+}
 
 INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C618C);
 

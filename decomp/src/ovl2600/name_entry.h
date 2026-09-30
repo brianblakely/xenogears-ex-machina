@@ -37,6 +37,46 @@ typedef struct {
     s16 x3, y3;
 } POLY_G4;
 
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    s16 x1, y1;
+    s16 x2, y2;
+    s16 x3, y3;
+} POLY_F4;
+
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    s16 x1, y1;
+    s16 x2, y2;
+    u32 pad;
+} LINE_F3;
+
+typedef struct {
+    u32 tag;
+    u32 code[2];
+} DR_MODE;
+
+typedef struct {
+    s16 vx, vy, vz, pad;
+} SVECTOR;
+
+/* The screen backdrop primitives (0x15C bytes), one of each per buffer. */
+typedef struct {
+    u8 pad_0[0x50];
+    POLY_G4 gradient[2]; /* 0x50 */
+    POLY_F4 fade[2];     /* 0x98 */
+    LINE_F3 line_a[2];   /* 0xC8 */
+    LINE_F3 line_b[2];   /* 0xF8 */
+    DR_MODE mode_a[2];   /* 0x128 */
+    DR_MODE mode_b[2];   /* 0x140 */
+    u8 pad_158[3];
+    u8 b_15B;            /* 0x15B */
+} Backdrop;
+
 /* A menu text label: two textured quads (one per draw buffer) showing a
  * line rendered into VRAM at `rect`. */
 typedef struct {
@@ -88,7 +128,7 @@ typedef struct {
     u8 pad_338[0x33C - 0x338];
     PartyList *party;    /* 0x33C */
     u8 pad_340[0x348 - 0x340];
-    u8 *block_348;       /* 0x348: 0x15C bytes */
+    Backdrop *backdrop;  /* 0x348 */
     u8 pad_34C[0x350 - 0x34C];
     u8 *block_350;       /* 0x350: 0x1194 bytes */
     u8 *block_354;       /* 0x354: 0x140C bytes */
@@ -135,6 +175,9 @@ extern void func_80044894(RECT *rect, void *data); /* LoadImage */
 extern void func_800445D0(s32 mode);           /* DrawSync */
 extern void func_80043CB0(POLY_FT4 *p);        /* SetPolyFT4 */
 extern void func_80043CC4(POLY_G4 *p);         /* SetPolyG4 */
+extern void func_80043C9C(POLY_F4 *p);         /* SetPolyF4 */
+extern void func_80043DA0(LINE_F3 *p);         /* SetLineF3 */
+extern void func_800454DC(DR_MODE *p, s32 dfe, s32 dtd, s32 tpage, RECT *tw); /* SetDrawMode */
 extern void func_80043BFC(void *p, s32 abe);   /* SetSemiTrans */
 extern void func_80043C24(void *p, s32 tge);   /* SetShadeTex */
 extern u16 func_80043A1C(s32 tp, s32 abr, s32 x, s32 y); /* GetTPage */
