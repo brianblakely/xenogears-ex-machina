@@ -117,7 +117,77 @@ void func_800222BC(Sprite *sprite, s32 *data) {
     }
 }
 
+/* Face a sprite at `angle`: with an animation, choose the frame table of
+ * the angle's facing group (one, four or eight groups; the others mirror
+ * one), and when the group changes replay the animation's commands from its
+ * start up to the current command (80022660), keeping the countdown. */
+/* Nonmatching: the original keeps the angle unextended in $a3 (extending it only for the shifts) and orders the facing-group tests differently. */
+#ifdef NON_MATCHING
+void func_800223B0(Sprite *sprite, s16 angle) {
+    s32 old = sprite->frame_bits.step;
+    s16 countdown;
+    s32 flip;
+
+    sprite->word80 = angle;
+    if ((angle + 0x400) & 1) {
+        sprite->motion.word |= 4;
+    } else {
+        sprite->motion.word &= ~4;
+    }
+    if (sprite->animations == NULL) {
+        return;
+    }
+    switch (sprite->frame_bits.phase) {
+    case 0:
+        if (((angle + 0x400) & 0xFFF) > 0x800) {
+            sprite->motion.word |= 4;
+        } else {
+            sprite->motion.word &= ~4;
+        }
+        sprite->frame_bits.step = 0;
+        sprite->facings = sprite->animation + 3;
+        sprite->frame_table = (u16 *)(sprite->animation[2] + 4 + (s32)sprite->animation);
+        break;
+    case 1:
+        angle = ((angle + 0x600) >> 10) & 3;
+        if (angle >= 3) {
+            sprite->motion.word |= 4;
+            sprite->frame_table = (u16 *)(sprite->animation[3] + 6 + (s32)sprite->animation);
+        } else {
+            sprite->motion.word &= ~4;
+            sprite->frame_table = (u16 *)(*(u16 *)((u8 *)sprite->animation + angle * 2 + 4) + ((u8 *)sprite->animation + (angle * 2 + 4)));
+        }
+        sprite->frame_bits.step = angle;
+        break;
+    case 2:
+        angle = ((angle + 0x500) >> 9) & 7;
+        if (angle >= 5) {
+            angle = (angle - 5) ^ 3;
+            sprite->motion.word |= 4;
+            sprite->frame_table = (u16 *)(*(u16 *)((u8 *)sprite->animation + angle * 2 + 4) + ((u8 *)sprite->animation + (angle * 2 + 4)));
+        } else {
+            sprite->motion.word &= ~4;
+            sprite->frame_table = (u16 *)(*(u16 *)((u8 *)sprite->animation + angle * 2 + 4) + ((u8 *)sprite->animation + (angle * 2 + 4)));
+        }
+        sprite->frame_bits.step = angle;
+        break;
+    }
+    if (old != sprite->frame_bits.step) {
+        u8 *target = sprite->script;
+        s32 count = sprite->frame_bits.field22;
+
+        countdown = sprite->countdown;
+        sprite->frame_bits.frame = 0x3F;
+        sprite->frame_bits.field22 = 0;
+        sprite->script = (u8 *)(sprite->animation[1] + 2 + (s32)sprite->animation);
+        func_80022660(sprite, target, count);
+        sprite->countdown = countdown;
+    }
+    sprite->render.bits.flip = sprite->motion.bits.frame_flip ^ sprite->motion.bits.mirror;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_800223B0);
+#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80022660);
 
@@ -264,13 +334,13 @@ void func_80022DF4(Task *task) {
 
     func_80023210(sprite);
     func_80022CDC(sprite);
-    if (sprite->frames_left != 0) {
+    if (sprite->script != NULL) {
         if (!((sprite->motion.word >> 6) & 1)) {
             return;
         }
         func_80023210(sprite);
         func_80022CDC(sprite);
-        if (sprite->frames_left != 0) {
+        if (sprite->script != NULL) {
             return;
         }
     }

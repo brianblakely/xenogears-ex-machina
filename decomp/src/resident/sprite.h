@@ -107,18 +107,20 @@ typedef struct Sprite {
     } render;                /* +0x3c: tests read the word, as the original does */
     u32 flags;               /* +0x40: bits 8-12 facing group */
     s32 *resource_block;     /* +0x44: the block the image's sections come from */
-    u8 unknown48[4];
+    s32 *animations;         /* +0x48: the animation block, NULL none */
     s32 resource;            /* +0x4c */
     u8 unknown50[4];
-    u16 *frame_table;        /* +0x54 */
-    u8 unknown58[0xC];
-    s32 frames_left;         /* +0x64 */
+    u16 *frame_table;        /* +0x54: the facing's frame table */
+    u16 *animation;          /* +0x58: the animation header */
+    u16 *facings;            /* +0x5c */
+    u8 unknown60[4];
+    u8 *script;              /* +0x64: the next animation command, NULL once finished */
     void *callback;          /* +0x68: completion callback */
     u8 unknown6c[4];
     s32 word70;              /* +0x70 */
     u8 unknown74[8];
     void *sequencer;         /* +0x7c */
-    u16 word80;              /* +0x80 */
+    u16 word80;              /* +0x80: facing angle */
     u16 word82;              /* +0x82 */
     s16 ground;              /* +0x84: floor height (whole units) */
     u8 unknown86[2];
@@ -132,9 +134,9 @@ typedef struct Sprite {
         unsigned sequencer_owned : 1; /* the sequencer buffer is allocated */
         unsigned bounce : 10;    /* rebound speed on landing, / 256 */
         unsigned frame : 6;      /* frame table index */
-        unsigned step : 3;
-        unsigned phase : 2;
-        unsigned field22 : 6;
+        unsigned step : 3;       /* facing group of the current angle */
+        unsigned phase : 2;      /* facing groups: 0 one, 1 four, 2 eight */
+        unsigned field22 : 6;    /* commands run in the current step */
         unsigned unknown28 : 4;
     } frame_bits;            /* +0xa8 */
     union {
@@ -291,6 +293,8 @@ void func_8001F6B0(Sprite *sprite); /* recolour the parts */
 void func_80022090(Sprite *sprite); /* rebuild the orientation */
 void func_80022224(SpriteResource *resource, s32 *data, SVECTOR origin, s32 mode);
 void func_800222BC(Sprite *sprite, s32 *data);
+void func_800223B0(Sprite *sprite, s16 angle);
+void func_80022660(Sprite *sprite, u8 *target, s32 count);
 void func_80022974(Sprite *sprite); /* velocity from speed and direction */
 void func_80023210(Sprite *sprite);
 void func_800245D8(Sprite *sprite, s32 value);
