@@ -9772,12 +9772,11 @@ extern s32 D_800ADBE0;
 extern s32 D_800ADBEC;
 extern s32 D_800AFFEC;
 
-#ifdef NON_MATCHING
 /* Run the current actor's event instructions until one yields, its script
  * slot ends, the field starts a transition or `limit` (raised by some
- * instructions) runs out; 1024 is an error. Differs only in the loop
- * branch delay slot (filled here, a nop in the original). */
-void func_800A1EC8(s32 limit) {
+ * instructions) runs out; 1024 is an error. Declared int without a
+ * value, as the original keeps $v0 live (its loop delay slot stays empty). */
+s32 func_800A1EC8(s32 limit) {
     s32 count;
 
     D_800B00C0 = 0;
@@ -9801,13 +9800,10 @@ void func_800A1EC8(s32 limit) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A1EC8);
-#endif
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A2030);
 
-void func_800A1EC8(s32 limit);
+s32 func_800A1EC8(s32 limit);
 extern s32 D_800AFFEC;
 
 /* Run event `event` of actor 0 immediately with fresh script slots, then
