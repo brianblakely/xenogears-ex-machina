@@ -883,7 +883,36 @@ void func_800796FC(void) {
     PutDrawEnv(&D_800C426C->draw);
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80079784);
+#ifndef addPrim
+/* A primitive's tag: the next primitive's address and this one's length. */
+typedef struct {
+    u32 addr : 24;
+    u32 len : 8;
+} P_TAG;
+
+#define setaddr(p, _addr) (((P_TAG *)(p))->addr = (u32)(_addr))
+#define getaddr(p) (u32)(((P_TAG *)(p))->addr)
+#define addPrim(ot, p) setaddr(p, getaddr(ot)), setaddr(ot, p)
+#endif
+
+extern DR_MODE D_800AFE24[2]; /* fade draw mode per buffer */
+extern RECT D_800AFE4C;       /* fade copy source */
+extern TILE D_800AFE54[2];    /* fade tile per buffer */
+
+/* Present the current buffer under a full-screen tile of brightness
+ * `level * 4`: link the tile and its draw mode, copy the display area, then
+ * put the environments and draw. */
+void func_80079784(s32 level) {
+    func_80073FE0();
+    D_800AFE54[D_800ADB08].r0 = D_800AFE54[D_800ADB08].g0 = D_800AFE54[D_800ADB08].b0 = level * 4;
+    addPrim(D_800C426C->ot, &D_800AFE54[D_800ADB08]);
+    addPrim(D_800C426C->ot, &D_800AFE24[D_800ADB08]);
+    func_800775F8();
+    MoveImage(&D_800AFE4C, 0, D_800ADB08 << 8);
+    PutDispEnv(&D_800C426C->disp);
+    PutDrawEnv(&D_800C426C->draw);
+    DrawOTag(&D_800C426C->ot[1]);
+}
 
 /* Set the battle-entry flag (80059179): clear only while the controlled
  * actor has neither bit 0x40 nor 0x80 of +14; 800b234c overrides it. */
@@ -1021,33 +1050,20 @@ void func_8007AA44(FieldMarker *m) {
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007AA44);
 #endif
 
-typedef struct {
-    u32 addr : 24;
-    u32 len : 8;
-} P_TAG;
-
-#define addPrim(ot, p) \
-    (((P_TAG *)(p))->addr = ((P_TAG *)(ot))->addr, ((P_TAG *)(ot))->addr = (u32)(p))
-
-typedef struct {
-    SVECTOR corners[4];
-    POLY_FT4 polys[2];
-} FieldQuad;
-
 s32 RotAverage4(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *v3, s16 *sxy0, s16 *sxy1,
                 s16 *sxy2, s16 *sxy3, s32 *p, s32 *flag);
 
-/* Project a quad's four corners with the given matrix into its buffer's
+/* Project a marker quad's four corners with the given matrix into its buffer's
  * textured polygon and link that polygon into the ordering table entry. */
-void func_8007AB6C(u32 *ot, FieldQuad *quad, MATRIX *m, s32 buffer) {
-    POLY_FT4 *poly = &quad->polys[buffer];
+void func_8007AB6C(u32 *ot, FieldMarker *marker, MATRIX *m, s32 buffer) {
+    POLY_FT4 *poly = &marker->poly[buffer];
     s32 p;
     s32 flag;
 
     PushMatrix();
     SetRotMatrix(m);
     SetTransMatrix(m);
-    RotAverage4(&quad->corners[0], &quad->corners[1], &quad->corners[2], &quad->corners[3],
+    RotAverage4(&marker->v[0], &marker->v[1], &marker->v[2], &marker->v[3],
                 &poly->x0, &poly->x1, &poly->x2, &poly->x3, &p, &flag);
     addPrim(ot + 1, poly);
     PopMatrix();
@@ -1060,8 +1076,8 @@ void func_8007AB6C(u32 *ot, FieldQuad *quad, MATRIX *m, s32 buffer) {
 /* Project a quad, then replace it with a 16x10 screen-aligned sprite standing
  * on the midpoint of its projected bottom edge, and link it into the ordering
  * table entry. */
-void func_8007AC58(u32 *ot, FieldQuad *quad, MATRIX *m, s32 buffer) {
-    POLY_FT4 *poly = &quad->polys[buffer];
+void func_8007AC58(u32 *ot, FieldMarker *marker, MATRIX *m, s32 buffer) {
+    POLY_FT4 *poly = &marker->poly[buffer];
     s32 p;
     s32 flag;
     s32 x;
@@ -1071,7 +1087,7 @@ void func_8007AC58(u32 *ot, FieldQuad *quad, MATRIX *m, s32 buffer) {
     PushMatrix();
     SetRotMatrix(m);
     SetTransMatrix(m);
-    RotAverage4(&quad->corners[0], &quad->corners[1], &quad->corners[2], &quad->corners[3],
+    RotAverage4(&marker->v[0], &marker->v[1], &marker->v[2], &marker->v[3],
                 &poly->x0, &poly->x1, &poly->x2, &poly->x3, &p, &flag);
     x = (poly->x3 + poly->x2) / 2;
     right = x + 8;
