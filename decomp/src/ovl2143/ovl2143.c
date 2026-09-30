@@ -442,26 +442,23 @@ u16 func_801DEF10(ModelPart *parts, s16 *data) {
 }
 
 /* Tween the nodes after the root towards a keyframe over `duration` ticks
- * (at least 1): each changed rotation gets a kind-3 tween of the shortest
- * angle differences (mode 1: to the absolute angles), each changed position
- * a kind-3 tween of its movement; unchanged nodes lose their tweens unless
- * they are kept (tag 0xff). Returns the node count. */
-#ifdef NON_MATCHING
-u16 func_801DF0B4(SlotPool *pool, ModelPart *parts, Keyframe *key, s32 duration, s32 mode,
-                  s32 smooth, u8 tag) {
+ * (at least 1): each changed rotation gets a tween (kind mode + 3) of the
+ * shortest angle differences (mode 1: to the absolute angles), each changed
+ * position one of its movement (mode 1: to the absolute position); kept
+ * tweens (tag 0xff) stay, other nodes lose theirs. Returns the node count. */
+u16 func_801DF0B4(SlotPool *pool, ModelPart *parts, s16 *data, s32 duration, s32 mode,
+                  s32 smooth, s32 tag) {
     PoolSlot *tween;
-    s16 *data;
     u16 rot_count;
-    u16 pos_count;
     u16 rotations;
+    u16 pos_count;
     u16 positions;
-    u16 flags;
     u16 count;
-    s16 x;
-    s16 y;
-    s16 z;
+    u16 flags;
+    s32 x;
+    s32 y;
+    s32 z;
     s32 i;
-    s32 changed;
 
     if (duration == 0) {
         duration = 1;
@@ -469,35 +466,36 @@ u16 func_801DF0B4(SlotPool *pool, ModelPart *parts, Keyframe *key, s32 duration,
     rotations = 0;
     positions = 0;
     smooth &= 1;
-    rot_count = key->rot_count;
+    rot_count = ((Keyframe *)data)->rot_count;
+    i = data[3];
+    pos_count = ((Keyframe *)data)->pos_count;
     mode &= 1;
-    pos_count = key->pos_count;
-    flags = key->flags;
-    data = (s16 *)(key + 1);
-    if (key->packed == 0) {
+    flags = ((Keyframe *)data)->flags;
+    data += sizeof(Keyframe) / sizeof(s16);
+    if (i == 0) {
         data += (rot_count + 1) * 3;
     }
     count = parts->count - 1;
     for (i = 0; i < count; i++) {
         parts++;
-        changed = 0;
         if (!(flags & 1) && rotations < rot_count) {
             x = *data++;
             y = *data++;
             z = *data++;
             rotations++;
-            changed = parts->rot.vx != x || parts->rot.vy != y || parts->rot.vz != z;
-        }
-        if (changed) {
-            tween = parts->attachments[0];
-            if (tween == NULL || tween->tag != 0xFF) {
-                if (tween == NULL) {
+            if (parts->rot.vx != x || parts->rot.vy != y || parts->rot.vz != z) {
+                if (parts->attachments[0] != NULL) {
+                    tween = parts->attachments[0];
+                    if (tween->tag == 0xFF) {
+                        goto positions; /* a kept tween stays */
+                    }
+                } else {
                     tween = func_801DF6F0(pool);
                 }
                 if (tween != NULL) {
                     tween->used = 1;
-                    tween->kind = mode + 3;
                     tween->flag = smooth;
+                    tween->kind = mode + 3;
                     tween->tag = tag;
                     tween->u.value[0] = parts->rot.vx;
                     tween->u.value[1] = parts->rot.vy;
@@ -525,33 +523,33 @@ u16 func_801DF0B4(SlotPool *pool, ModelPart *parts, Keyframe *key, s32 duration,
                     tween->time = 0;
                     tween->duration = duration;
                     parts->attachments[0] = tween;
+                    goto positions;
                 }
             }
-        } else {
-            tween = parts->attachments[0];
-            if (tween != NULL && tween->tag != 0xFF) {
-                func_801DF7A8(pool, tween);
-                parts->attachments[0] = NULL;
-            }
         }
-        changed = 0;
+        if (parts->attachments[0] != NULL && parts->attachments[0]->tag != 0xFF) {
+            func_801DF7A8(pool, parts->attachments[0]);
+            parts->attachments[0] = NULL;
+        }
+    positions:
         if (!(flags & 2) && positions < pos_count) {
             x = *data++;
             y = *data++;
             z = *data++;
             positions++;
-            changed = parts->pos[0] != x || parts->pos[1] != y || parts->pos[2] != z;
-        }
-        if (changed) {
-            tween = parts->attachments[1];
-            if (tween == NULL || tween->tag != 0xFF) {
-                if (tween == NULL) {
+            if (parts->pos[0] != x || parts->pos[1] != y || parts->pos[2] != z) {
+                if (parts->attachments[1] != NULL) {
+                    tween = parts->attachments[1];
+                    if (tween->tag == 0xFF) {
+                        continue; /* a kept tween stays */
+                    }
+                } else {
                     tween = func_801DF6F0(pool);
                 }
                 if (tween != NULL) {
                     tween->used = 1;
-                    tween->kind = mode + 3;
                     tween->flag = smooth;
+                    tween->kind = mode + 3;
                     tween->tag = tag;
                     tween->u.value[0] = parts->pos[0];
                     tween->u.value[1] = parts->pos[1];
@@ -568,21 +566,17 @@ u16 func_801DF0B4(SlotPool *pool, ModelPart *parts, Keyframe *key, s32 duration,
                     tween->time = 0;
                     tween->duration = duration;
                     parts->attachments[1] = tween;
+                    continue;
                 }
             }
-        } else {
-            tween = parts->attachments[1];
-            if (tween != NULL && tween->tag != 0xFF) {
-                func_801DF7A8(pool, tween);
-                parts->attachments[1] = NULL;
-            }
+        }
+        if (parts->attachments[1] != NULL && parts->attachments[1]->tag != 0xFF) {
+            func_801DF7A8(pool, parts->attachments[1]);
+            parts->attachments[1] = NULL;
         }
     }
     return count;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DF0B4);
-#endif
 
 /* Release the attachments of node `index` selected by `mask` (bit 0: w70,
  * bit 1: w74, bit 2: w78) back to `pool`. */
