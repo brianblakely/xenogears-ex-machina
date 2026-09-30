@@ -4,7 +4,7 @@
 #include "menu.h"
 
 /* The computer opponent's decision state, handed to its command handlers. */
-typedef struct {
+typedef struct Brain {
     u8 unk0[0x4];
     s16 timer;          /* 0x04: frames until the next decision */
     u8 unk6[0x2];
@@ -21,6 +21,9 @@ typedef struct {
 } Brain;
 
 extern s32 D_8009284C;
+extern u8 D_80099DA2; /* the opponent's current command */
+extern u8 D_80092848; /* the command the brain last started */
+extern u8 D_80099D9E; /* nonzero while the opponent is being driven */
 
 s32 func_8008B650(s32 angle, s16 target, s32 step); /* turn angle toward target */
 void func_800767C8(Actor *actor);

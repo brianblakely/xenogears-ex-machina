@@ -2525,7 +2525,93 @@ void func_8008F260(Actor *actor, Brain *brain, u8 arg) {
     func_80090E10(actor);
 }
 
+#ifdef NON_MATCHING
+/* Drive the computer opponent one frame: reset its state when the command
+ * changes, count down to the next decision (some commands decide every
+ * frame), run the command and then steer and accelerate.
+ * Does not match: only the prologue schedule differs (the brain pointer
+ * and both command loads come before the driven-flag store). */
+void func_8008F280(Actor *actor) {
+    Brain *brain = actor->brain;
+
+    D_80099D9E = 1;
+    if (D_80092848 != D_80099DA2) {
+        brain->timer = 0;
+        brain->unkC = 0;
+        actor->flags &= ~2;
+        actor->state = 0;
+        actor->flags &= ~0x38;
+        brain->defending = 0;
+        D_80092848 = D_80099DA2;
+        actor->unkCE = actor->unkCC + 0x800;
+    }
+    if (brain->defending) {
+        actor->flags |= 2;
+    }
+    switch (D_80099DA2) {
+    case 2:
+    case 8:
+    case 9:
+    case 11:
+    case 12:
+    case 13:
+        break;
+    default:
+        if (--brain->timer != -1) {
+            return;
+        }
+        break;
+    }
+    switch (D_80099DA2) {
+    case 3:
+        func_8008EF30(actor, brain, 0);
+        break;
+    case 4:
+        func_8008EF30(actor, brain, 1);
+        break;
+    case 5:
+        func_8008EF74(actor, brain);
+        break;
+    case 6:
+        func_8008F014(actor, brain);
+        break;
+    case 7:
+        func_8008F060(actor, brain);
+        break;
+    case 9:
+        func_8008F094(actor, brain);
+        break;
+    case 8:
+        func_8008F17C(actor, brain);
+        break;
+    case 10:
+        func_8008EF00(actor, brain);
+        break;
+    case 11:
+        func_8008F260(actor, brain, 0);
+        return;
+    case 12:
+        func_8008F260(actor, brain, 1);
+        return;
+    case 13:
+        func_8008F260(actor, brain, 2);
+        return;
+    case 2:
+        D_80099D9E = 0;
+        return;
+    case 1:
+        func_8008EFA8(actor, brain);
+        break;
+    case 0:
+    default:
+        brain->timer = 1;
+        break;
+    }
+    func_8008EE1C(actor, brain->unkA, brain->unkC);
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008F280);
+#endif
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008F4F4);
 

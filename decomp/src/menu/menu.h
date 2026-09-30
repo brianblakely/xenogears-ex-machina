@@ -98,7 +98,8 @@ typedef struct Actor {
     u8 unkB8[0x2];
     s16 unkBA;
     s16 max_hp;          /* 0xBC */
-    u8 unkBE[0x10];
+    u8 unkBE[0xE];
+    s16 unkCC;
     s16 unkCE;
     u32 flags;           /* 0xD0: bit 27 = side */
     u8 unkD4[0x4];
@@ -115,7 +116,9 @@ typedef struct Actor {
     u8 unk8FC[0x50];
     Vector core;         /* 0x94C: where shots home in */
     u8 unk95C[0xC78];
-    u8 unk15D4[0x80];
+    u8 unk15D4[0x28];
+    struct Brain *brain; /* 0x15FC: the computer opponent's state */
+    u8 unk1600[0x54];
     s32 unk1654;
     s32 unk1658;
 } Actor;
