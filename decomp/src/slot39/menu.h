@@ -52,7 +52,7 @@ typedef struct POLY_FT4 {
 /* structs: begin */
 /* Party block (*(state + 33c)): per-part redraw flags, the label set and the party ids. */
 typedef struct MenuParty {
-    u8 pad0[0x3];
+    u8 fieldShown[3]; /* 0 */
     u8 redraw3; /* 3 */
     u8 redraw4; /* 4 */
     u8 redraw5; /* 5 */
@@ -80,7 +80,7 @@ typedef struct MenuParty {
     u8 pad47[0x1];
     u8 unk48; /* 48 */
     u8 unk49; /* 49 */
-    u8 pad4A[0x1];
+    u8 unk4A; /* 4A */
     u8 unk4B; /* 4B */
     u8 unk4C; /* 4C */
     u8 unk4D; /* 4D */
@@ -388,12 +388,48 @@ typedef struct MenuBlock35C {
     u8 kind; /* 32F3 */
 } MenuBlock35C;
 
-/* A panel built by 801ce0cc. */
+/* A panel built by 801ce0cc: frame quads and part lists (two quads per entry). */
 typedef struct MenuPanel {
-    u8 pad0[0xBE6];
+    POLY_FT4 list0[18]; /* 0 */
+    POLY_FT4 extra[10]; /* 2D0 */
+    POLY_FT4 frameA[2]; /* 460 */
+    POLY_FT4 frameB[2]; /* 4B0 */
+    POLY_FT4 list1[6]; /* 500 */
+    POLY_FT4 list2[6]; /* 5F0 */
+    POLY_FT4 list3[10]; /* 6E0 */
+    POLY_FT4 list4[10]; /* 870 */
+    POLY_FT4 list5[6]; /* A00 */
+    POLY_FT4 list6[6]; /* AF0 */
+    u8 counts[6]; /* BE0 */
     u8 buffer; /* BE6 */
     u8 shown; /* BE7 */
+    u8 count0; /* BE8 */
+    u8 padBE9[0x3];
 } MenuPanel;
+
+/* A field-menu block (*(state + 39c)): frame quads and part lists. */
+typedef struct MenuFieldBlock {
+    POLY_FT4 frameA[2]; /* 0 */
+    POLY_FT4 frameB[2]; /* 50 */
+    POLY_FT4 list0[54]; /* A0 */
+    POLY_FT4 list6[12]; /* 910 */
+    POLY_FT4 list1[6]; /* AF0 */
+    POLY_FT4 list2[6]; /* BE0 */
+    POLY_FT4 list3[4]; /* CD0 */
+    POLY_FT4 list4[4]; /* D70 */
+    POLY_FT4 list5[28]; /* E10 */
+    u8 buffer; /* 1270 */
+    u8 count6; /* 1271 */
+    u8 pad1272[0x1];
+    u8 count1; /* 1273 */
+    u8 count2; /* 1274 */
+    u8 count3; /* 1275 */
+    u8 count4; /* 1276 */
+    u8 count5; /* 1277 */
+    u8 pad1278[0x1];
+    u8 count0; /* 1279 */
+    u8 pad127A[0x2];
+} MenuFieldBlock;
 
 /* A one-quad sprite (*(state + 43c)). */
 typedef struct MenuBlock43C {
@@ -457,7 +493,7 @@ typedef struct MenuState {
     u8 pad37C[0x4];
     u8 *portraitMarks[6]; /* 380 */
     u8 pad398[0x4];
-    u8 *fieldBlocks[3]; /* 39C: three 127c-byte field blocks */
+    MenuFieldBlock *fieldBlocks[3]; /* 39C: three 127c-byte field blocks */
     u8 *images[32]; /* 3A8 */
     MenuMarkers *markers; /* 428: marker block (14c bytes) */
     MenuBlock42C *block42C; /* 42C: 1198 bytes */
@@ -487,7 +523,7 @@ typedef struct MenuState {
     MenuLabelSlot soundLabels[4]; /* 1BE0 */
     MenuLabelSlot *blocks1DE0[4]; /* 1DE0 */
     u8 pad1DF0[0x18];
-    u8 *panels[3]; /* 1E08 */
+    MenuPanel *panels[3]; /* 1E08 */
 } MenuState;
 /* structs: end */
 
@@ -502,6 +538,16 @@ extern u8 D_8006F65A[150];    /* game data: inventory item ids */
 extern u16 D_8006F958[16];    /* game data */
 extern u16 D_8005A3A0[16];
 extern u8 D_8006F8E5[];       /* game data */
+extern u8 D_8006F36C[];       /* game data inventory lists (counts, ids) */
+extern u8 D_8006F3D0[];
+extern u8 D_8006F434[];
+extern u8 D_8006F4FC[];
+extern u8 D_8006F5C6[];
+extern u8 D_8006F65C[];
+extern u8 D_8006F6F0[];
+extern u8 D_8006F754[];
+extern u8 D_8006F7B8[];
+extern u8 D_8006F84E[];
 extern u8 D_8006F008;         /* game data: disc of the loaded file */
 extern u16 D_8006EF64;        /* game data: save title line of text file 1 */
 extern u8 D_800594D0;         /* load result: 0, 1 title timeout, 2 loaded */
@@ -679,7 +725,7 @@ void func_801D0FD4(void);
 void func_801D1030(void);
 void func_801D10DC(void);
 void func_801D1160(void);
-void func_801D12D4(u8 *panel, s32 arg1);
+void func_801D12D4(MenuPanel *panel, u8 extra);
 void func_801D13F8(void);
 void func_801D1464(void);
 void func_801D14B0(void);

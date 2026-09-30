@@ -1385,7 +1385,26 @@ void func_801CE464(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CE540);
+/* Draw the shown field blocks: their two frame quads and part lists. */
+void func_801CE540(void) {
+    s32 i;
+    MenuFieldBlock *block;
+
+    for (i = 0; i < 3; i++) {
+        block = D_800625A0->fieldBlocks[i];
+        if (D_800625A0->party->fieldShown[i] != 0) {
+            func_80043B48(&D_800625A0->current->ot[4], &block->frameA[block->buffer]);
+            func_80043B48(&D_800625A0->current->ot[4], &block->frameB[block->buffer]);
+            func_801CE2B4(block->count0, block->list0, block->buffer);
+            func_801CE2B4(block->count1, block->list1, block->buffer);
+            func_801CE2B4(block->count2, block->list2, block->buffer);
+            func_801CE2B4(block->count3, block->list3, block->buffer);
+            func_801CE2B4(block->count4, block->list4, block->buffer);
+            func_801CE2B4(block->count5, block->list5, block->buffer);
+            func_801CE2B4(block->count6, block->list6, block->buffer);
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CE660);
 
@@ -1621,7 +1640,24 @@ void func_801D1258(void) {
     func_80043B48(&D_800625A0->current->ot[8], D_800625A0->primitives->modes[D_800625A0->bufferIndex]);
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D12D4);
+/* Draw `panel` when shown: its frame quads and part lists (and the extra list
+ * when `extra`). */
+void func_801D12D4(MenuPanel *panel, u8 extra) {
+    if (panel->shown != 0) {
+        func_80043B48(&D_800625A0->current->ot[4], &panel->frameA[panel->buffer]);
+        func_80043B48(&D_800625A0->current->ot[4], &panel->frameB[panel->buffer]);
+        func_801CE2B4(panel->count0, panel->list0, panel->buffer);
+        func_801CE2B4(panel->counts[0], panel->list1, panel->buffer);
+        func_801CE2B4(panel->counts[1], panel->list2, panel->buffer);
+        func_801CE2B4(panel->counts[2], panel->list3, panel->buffer);
+        func_801CE2B4(panel->counts[3], panel->list4, panel->buffer);
+        func_801CE2B4(panel->counts[4], panel->list5, panel->buffer);
+        func_801CE2B4(panel->counts[5], panel->list6, panel->buffer);
+        if (extra) {
+            func_801CE2B4(5, panel->extra, panel->buffer);
+        }
+    }
+}
 
 /* While party flag +46 is set, draw the three portrait panels (+1e08). */
 void func_801D13F8(void) {
@@ -2193,7 +2229,34 @@ void func_801DC1D4(u8 kind) {
     func_801D3488(2, kind);
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DC2CC);
+/* Close the file list screen of `kind`: portraits 3-6, its block; back to the
+ * view of the kind (| 10). */
+void func_801DC2CC(u8 kind) {
+    u8 view;
+
+    func_801D4EA0(3);
+    func_801D4EA0(4);
+    func_801D4EA0(5);
+    func_801D4EA0(6);
+    func_801D2484();
+    D_800625A0->party->unk4A = 0;
+    func_801C7BF4();
+    switch (kind) {
+    case 0:
+        view = 2;
+        break;
+    case 1:
+        view = 5;
+        break;
+    case 2:
+        view = 6;
+        break;
+    }
+    func_801C72BC(view | 0x10);
+    func_800320E8(D_800625A0->block430);
+    D_800625A0->party->redraw6 = 1;
+    D_800625A0->party->unk20[1] = 1;
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DC3D8);
 
@@ -2479,7 +2542,31 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E4A28);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E4D10);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E5058);
+/* Debug: put ten of every entry into the five inventory lists. */
+void func_801E5058(void) {
+    u8 i;
+
+    for (i = 1; i < 0x48; i++) {
+        D_8006F3D0[i] = i;
+        D_8006F36C[i] = 10;
+    }
+    for (i = 1; i < 0x96; i++) {
+        D_8006F4FC[i] = i;
+        D_8006F434[i] = 10;
+    }
+    for (i = 1; i < 0x4c; i++) {
+        D_8006F65C[i] = i;
+        D_8006F5C6[i] = 10;
+    }
+    for (i = 1; i < 0x48; i++) {
+        D_8006F754[i] = i;
+        D_8006F6F0[i] = 10;
+    }
+    for (i = 1; i < 0x69; i++) {
+        D_8006F84E[i] = i;
+        D_8006F7B8[i] = 10;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E5178);
 
