@@ -223,7 +223,6 @@ void func_800952B0(VECTOR *direction, VECTOR *out, VECTOR *normal) {
 
 /* Orient the horizontal tangent of a wall normal towards `direction` (zero
  * when perpendicular). */
-#ifdef NON_MATCHING /* second product lands in v0 instead of v1 */
 void func_80095324(VECTOR *normal, VECTOR *direction, VECTOR *out) {
     s32 tangent;
     s32 dot;
@@ -247,9 +246,6 @@ void func_80095324(VECTOR *normal, VECTOR *direction, VECTOR *out) {
     }
     out->vy = 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80095324);
-#endif
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80095414);
 
