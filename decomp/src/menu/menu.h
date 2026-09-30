@@ -277,7 +277,9 @@ typedef struct Actor {
     u8 model_id;         /* 0x909 */
     u8 kind;             /* 0x90A: bits 0-2 */
     u8 unk90B;
-    u8 unk90C[0x4];
+    u8 unk90C[0x2];
+    u8 unk90E;
+    u8 unk90F;
     u8 unk910;
     u8 move_count;       /* 0x911: special moves the opponent may pick */
     u8 parts_b;          /* 0x912 */

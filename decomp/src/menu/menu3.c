@@ -874,7 +874,164 @@ s32 func_800767C8(Actor *actor) {
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80076884);
 
+/* Per-frame actor status: count down its timers, drain its charge, apply
+ * this frame's damage to its hit points (with the hit sound), update its
+ * gauge and knock it out when the hit points run out.
+ * Does not match: the charge is tested in its load register and copied,
+ * and the knock-out block rereads the flags after each store. */
+#ifdef NON_MATCHING
+void func_80077038(Actor *actor) {
+    s32 charge;
+    u8 state;
+    u8 gauge;
+    u32 stance;
+
+    if (actor->level != 0) {
+        actor->level -= 0x10;
+    }
+    if (actor->unkC4 == 5) {
+        return;
+    }
+    if (actor->unkE8 > 0x14) {
+        actor->unkE8 = 0x14;
+    }
+    if (actor->unkE8 != 0) {
+        actor->unkE8--;
+    } else {
+        actor->flags &= ~0x1000;
+    }
+    if (actor->unk916 != 0) {
+        actor->unk916--;
+    }
+    if (actor->unk914 != 0) {
+        actor->unk914--;
+    }
+    if (actor->unkC8 != 0) {
+        actor->unkC8--;
+    } else {
+        actor->unkF0 = 0;
+        actor->flags = (actor->flags & ~0x700000) | 0x300000;
+    }
+    if (actor->unkC3 != 0) {
+        actor->unkC5 = 4;
+        actor->unkC3--;
+    } else if (actor->unkC5 == 4) {
+        actor->unkC5 = 0;
+    }
+    if (actor->unkCA != 0) {
+        actor->unkCA--;
+    }
+    charge = actor->charge;
+    if (charge != 0) {
+        if (actor->unkC4 & 1) {
+            stance = actor->flags & 0x60000000;
+            if (stance == 0x60000000) {
+                if (actor->kind & 4) {
+                    actor->charge = charge - 8;
+                } else {
+                    actor->charge = charge - 2;
+                }
+            } else if (stance == 0x20000000) {
+                actor->charge = charge - 6;
+            } else {
+                actor->charge = charge - 4;
+            }
+        } else {
+            actor->charge = charge - 8;
+        }
+        if (actor->charge < 0) {
+            actor->charge = 0;
+        }
+    }
+    state = actor->unkC4;
+    if (state == 4) {
+        if (actor->unkCA == 0) {
+            actor->unkC4 = 0;
+            actor->unkC5 = 0;
+        }
+    } else {
+        if (actor->floor_y - 0x30 < actor->pos.vy) {
+            actor->unkC4 = state & ~2;
+        }
+        if (actor->state != 0) {
+            actor->unkC4 |= 1;
+        } else {
+            actor->unkC4 &= ~1;
+        }
+    }
+    if (actor->flags & 0x800) {
+        switch (actor->unk90E) {
+        case 9:
+            if (actor->unkCA == 0) {
+                actor->flags |= 0x400;
+            }
+            break;
+        case 15:
+            if (actor->unkC5 != 4) {
+                actor->flags |= 0x400;
+            }
+            break;
+        case 2:
+            if (actor->unkC4 & 2) {
+                actor->flags |= 0x400;
+            }
+            break;
+        }
+    }
+    actor->hp -= actor->unkBA;
+    actor->hp -= actor->unk970;
+    if (actor->unkBA != 0) {
+        if (actor->unk910 == 0) {
+            if (func_80083CD8() != 4) {
+                func_8008EB4C(0x2D);
+            }
+            actor->unk910 = 0x14;
+        }
+        actor->unk910--;
+    } else {
+        actor->unk910 = 0;
+    }
+    if (D_800928C4 && !func_8008F4F4(actor, 0x50) && (actor->flags & 0x08000000)) {
+        actor->hp = actor->max_hp * 0x50 / 256;
+    }
+    if (actor->hp < 0) {
+        actor->hp = 0;
+    }
+    if (actor->unkB8 != actor->hp) {
+        actor->unkB8 = actor->hp;
+        gauge = ((actor->hp << 7) + actor->max_hp - 1) / actor->max_hp;
+        actor->unkC1 = actor->unkC0;
+        actor->unkC0 = gauge;
+        if (gauge == 1) {
+            actor->unkC0 = 2;
+        }
+        actor->level = 0xF0;
+    }
+    actor->unkBA = 0;
+    actor->unk970 = 0;
+    if (D_800928C8 != 4 && actor->hp == 0 && D_800928C8 != 6 && !(actor->flags & 0x800000)) {
+        actor->anim = 0xD;
+        actor->unk4E = 0xFF;
+        actor->unkC4 = 5;
+        actor->unkC5 = 0;
+        actor->flags |= 0x1000;
+        actor->velocity.vy -= 0x50;
+        actor->flags |= 0x400;
+        if (actor->flags & 0x08000000) {
+            actor->push.vx -= func_8003F8B0(D_80092934) >> 9;
+            actor->push.vz -= func_8003F8CC(D_80092934) >> 9;
+        } else {
+            actor->push.vx += func_8003F8B0(D_80092934) >> 9;
+            actor->push.vz += func_8003F8CC(D_80092934) >> 9;
+        }
+        actor->flags |= 0x800000;
+        func_800776A8(actor, 0x14);
+        actor->unk100 = 0;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80077038);
+#endif
 
 /* Push an actor along an angle (scaled down by shift) and let it rise by
  * lift, never faster than 0x82 upward. */
