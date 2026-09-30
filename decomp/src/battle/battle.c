@@ -1392,19 +1392,216 @@ void func_8009AB00(u8 member) {
     D_800C34B0->records[member].flags15A &= ~1;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009AB38);
+/* Enable member's Deathblow commands (descriptors 22 and 24-32; in a gear, gear
+ * descriptors 21 and 23-28) when its command flag is set. */
+void func_8009AB38(u8 member) {
+    s32 flag;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009AC48);
+    if (D_800C34B0->records[member].flags15A & 0x80) {
+        flag = D_800C34B0->records[member].gear.status80 & 0x2000;
+    } else {
+        flag = D_800C34B0->records[member].pilot.status88.half.active & 0x400;
+    }
+    if (flag) {
+        if (D_800C34B0->records[member].flags15A & 0x80) {
+            CommandDescriptor *commands = D_800C34B0->gearCommands[member];
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009ADA0);
+            commands[21].state = 1;
+            commands[23].state = 1;
+            commands[24].state = 1;
+            commands[25].state = 1;
+            commands[26].state = 1;
+            commands[27].state = 1;
+            commands[28].state = 1;
+        } else {
+            CommandDescriptor *commands = D_800C34B0->partyCommands[member];
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009AEFC);
+            commands[22].state = 1;
+            commands[24].state = 1;
+            commands[25].state = 1;
+            commands[26].state = 1;
+            commands[27].state = 1;
+            commands[28].state = 1;
+            commands[29].state = 1;
+            commands[30].state = 1;
+            commands[31].state = 1;
+            commands[32].state = 1;
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009AFD8);
+/* Seal the same commands again and clear member's command flag; unless
+ * checked is 0, only for a current command with flag 0x100. */
+void func_8009AC48(u8 member, u8 checked) {
+    s32 flag;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009B098);
+    if (checked == 0 || (D_800C3DFC->flagsA & 0x100)) {
+        if (D_800C34B0->records[member].flags15A & 0x80) {
+            flag = D_800C34B0->records[member].gear.status80 & 0x2000;
+        } else {
+            flag = D_800C34B0->records[member].pilot.status88.half.active & 0x400;
+        }
+        if (flag) {
+            if (D_800C34B0->records[member].flags15A & 0x80) {
+                CommandDescriptor *commands = D_800C34B0->gearCommands[member];
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009B104);
+                commands[21].state = 0x2000;
+                commands[23].state = 0x2000;
+                commands[24].state = 0x2000;
+                commands[25].state = 0x2000;
+                commands[26].state = 0x2000;
+                commands[27].state = 0x2000;
+                commands[28].state = 0x2000;
+                D_800C34B0->records[member].gear.status80 &= ~0x2000;
+            } else {
+                CommandDescriptor *commands = D_800C34B0->partyCommands[member];
+
+                commands[22].state = 0x2000;
+                commands[24].state = 0x2000;
+                commands[25].state = 0x2000;
+                commands[26].state = 0x2000;
+                commands[27].state = 0x2000;
+                commands[28].state = 0x2000;
+                commands[29].state = 0x2000;
+                commands[30].state = 0x2000;
+                commands[31].state = 0x2000;
+                commands[32].state = 0x2000;
+                D_800C34B0->records[member].pilot.status88.half.active &= ~0x400;
+            }
+        }
+    }
+}
+
+/* Regeneration amounts of slot for its turn: HP (maxHp / 20), EP (maxEp / 20,
+ * from the pilot's or the gear's status) and gear HP (field3A / 50 for each of
+ * two gear statuses). Returns whether any applies; nothing once KO'd. */
+s32 func_8009ADA0(u8 slot, s32 *amounts) {
+    Combatant *record = &D_800C34B0->records[slot];
+    s32 any = 0;
+
+    if (record->pilot.status7C & 0x8000) {
+        return 0;
+    }
+    if (record->pilot.status7C & 0x800) {
+        any = 1;
+        *amounts = (u16)(record->pilot.maxHp / 20);
+    }
+    amounts++;
+    if (record->pilot.status80 & 0x200) {
+        any = 1;
+        *amounts = (u16)(record->pilot.maxEp / 20);
+    }
+    if (record->gear.status7C & 0x200) {
+        any = 1;
+        *amounts = (u16)(record->pilot.maxEp / 20);
+    }
+    amounts++;
+    *amounts = 0;
+    if (record->gear.status7C & 0x80) {
+        any = 1;
+        *amounts = (u16)(record->gear.field3A / 50);
+    }
+    if (record->gear.status80 & 0x8000) {
+        any = 1;
+        *amounts += (u16)(record->gear.field3A / 50);
+    }
+    return any;
+}
+
+/* Revive slot's record: clear its statuses (keeping status 0x2000 of the
+ * second word), size Chu-Chu's gear HP (8009B104), and when character 3 is
+ * revived clear status 0x20 of every enemy. */
+void func_8009AEFC(u8 slot) {
+    Combatant *record;
+    u8 i;
+
+    D_800C34B0->commandIndex = 0;
+    record = &D_800C34B0->records[slot];
+    record->pilot.status7C = 0;
+    record->pilot.status84.half.active = 0;
+    record->pilot.status88.half.active = 0;
+    record->pilot.status8C.half.active = 0;
+    record->pilot.status80 &= 0x2000;
+    if (record->pilot.characterId == 7) {
+        func_8009B104(slot, record);
+    }
+    if (record->pilot.characterId == 3) {
+        for (i = 3; i < 11; i++) {
+            D_800CCCE8.records[i].pilot.status80 &= ~0x20;
+        }
+    }
+}
+
+/* Wear the attacker's weapon items for the current command: commands 0-3 the
+ * first entry's, 6 the fourth's, 7-19 both. */
+void func_8009AFD8(void) {
+    switch (D_800C34B0->commandIndex) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+        if (D_8006F8BA[D_800C3E00->pilot.entryItems[0]] != 0) {
+            D_8006F8BA[D_800C3E00->pilot.entryItems[0]] += -1;
+        }
+        break;
+    case 7:
+    case 8:
+    case 9:
+    case 10:
+    case 11:
+    case 12:
+    case 13:
+    case 14:
+    case 15:
+    case 16:
+    case 17:
+    case 18:
+    case 19:
+        if (D_8006F8BA[D_800C3E00->pilot.entryItems[0]] != 0) {
+            D_8006F8BA[D_800C3E00->pilot.entryItems[0]] += -1;
+        }
+        /* fallthrough */
+    case 6:
+        if (D_8006F8BA[D_800C3E00->pilot.entryItems[3]] != 0) {
+            D_8006F8BA[D_800C3E00->pilot.entryItems[3]] += -1;
+        }
+        break;
+    }
+}
+
+/* Debug party: members 1 and 2 get 100/100 HP and fixed stats. */
+void func_8009B098(void) {
+    u8 i;
+
+    for (i = 1; i < 3; i++) {
+        Combatant *record = &D_800C34B0->records[i];
+
+        record->pilot.hp = 100;
+        record->pilot.maxHp = 100;
+        record->pilot.field5E = 20;
+        record->pilot.field5F = 15;
+        record->pilot.status7A = 0x1FBF;
+        record->field149 = 0;
+    }
+}
+
+/* Chu-Chu's gear HP: fifty times her HP and maximum HP, capped at 99999. */
+void func_8009B104(u8 slot, Combatant *chuchu) {
+    Combatant *record = &D_800C34B0->records[slot];
+    UnitRecord *gear = &record->gear;
+
+    if (chuchu->pilot.maxHp * 50 > 99999) {
+        if (chuchu->pilot.hp * 50 > 99999) {
+            record->gear.gearHp = 99999;
+        } else {
+            record->gear.gearHp = chuchu->pilot.hp * 50;
+        }
+        gear->maxGearHp = 99999;
+    } else {
+        record->gear.gearHp = chuchu->pilot.hp * 50;
+        record->gear.maxGearHp = chuchu->pilot.maxHp * 50;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009B1E4);
 
