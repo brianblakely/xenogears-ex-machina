@@ -1200,22 +1200,125 @@ s32 func_800A2F94(SpritePool *pool, SpriteRecord *record) {
     return index;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A2FD8);
+/* Draw the live sprites of a pool into the ordering table (3D ones projected
+ * with the GTE at their depth, 2D ones at the front), free the expired ones
+ * and fade the rest by steps ticks. */
+void func_800A2FD8(SpritePool *pool, Matrix *m, s32 steps, u32 *ot, s32 buffer) {
+    Sprite *sprite;
+    s32 otz;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A32D8);
+    SetRotMatrix(m);
+    SetTransMatrix(m);
+    sprite = (Sprite *)pool->records;
+    for (i = 0; i < pool->count; i++, sprite++) {
+        if (sprite->age == -1) {
+            continue;
+        }
+        if (sprite->age >= sprite->lifetime) {
+            func_800A2F94(pool, (SpriteRecord *)sprite);
+            continue;
+        }
+        sprite->packets[buffer].r0 = sprite->color[0] >> 6;
+        sprite->packets[buffer].g0 = sprite->color[1] >> 6;
+        sprite->packets[buffer].b0 = sprite->color[2] >> 6;
+        if (sprite->projected == 0) {
+            sprite->packets[buffer].x0 = sprite->x0;
+            sprite->packets[buffer].y0 = sprite->y0;
+            sprite->packets[buffer].x1 = sprite->x1;
+            sprite->packets[buffer].y1 = sprite->y1;
+            sprite->packets[buffer].x2 = sprite->x2;
+            sprite->packets[buffer].y2 = sprite->y2;
+            sprite->packets[buffer].x3 = sprite->x3;
+            sprite->packets[buffer].y3 = sprite->y3;
+            addPrim(ot, &sprite->packets[buffer]);
+        } else {
+            gte_ldv3(&sprite->x0, &sprite->x1, &sprite->x2);
+            gte_rtpt();
+            gte_stsxy3(&sprite->packets[buffer].x0, &sprite->packets[buffer].x1, &sprite->packets[buffer].x2);
+            gte_stszotz(&otz);
+            otz >>= D_80050100;
+            gte_ldv0(&sprite->x3);
+            gte_rtps();
+            gte_stsxy(&sprite->packets[buffer].x3);
+            addPrim(ot + otz, &sprite->packets[buffer]);
+        }
+        sprite->age += steps;
+        sprite->color[0] -= sprite->fade[0] * steps;
+        sprite->color[1] -= sprite->fade[1] * steps;
+        sprite->color[2] -= sprite->fade[2] * steps;
+    }
+}
+
+/* Set up a colour fade from (r0, g0, b0) to (r1, g1, b1) over duration
+ * ticks. */
+s32 func_800A32D8(ColorFade *fade, s32 field4, s16 field0, u8 field2, s16 field60, s16 duration, u8 r0,
+                  u8 g0, u8 b0, u8 r1, u8 g1, u8 b1, u16 fieldC, u16 fieldE, u16 field10, u16 field14,
+                  u16 field16, u16 field18, u16 field3) {
+    if (fade != NULL) {
+        fade->field3 = field3;
+        fade->field5E = -1;
+        fade->field0 = field0;
+        fade->field2 = field2;
+        fade->field4 = field4;
+        fade->fieldC = fieldC;
+        fade->fieldE = fieldE;
+        fade->field10 = field10;
+        fade->field14 = field14;
+        fade->field16 = field16;
+        fade->field18 = field18;
+        fade->time = 0;
+        if (field60 < 7) {
+            fade->field60 = field60;
+        } else {
+            fade->field60 = 7;
+        }
+        fade->color[0] = r0 << 6;
+        fade->color[1] = g0 << 6;
+        fade->color[2] = b0 << 6;
+        fade->duration = duration;
+        fade->field8 = 0;
+        fade->step[0] = (fade->color[0] - (r1 << 6)) / duration;
+        fade->step[1] = (fade->color[1] - (g1 << 6)) / duration;
+        fade->step[2] = (fade->color[2] - (b1 << 6)) / duration;
+        return 0;
+    }
+}
 
 /* Mark a halfword slot empty. */
 void func_800A3484(s16 *slot) {
     *slot = -1;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A3490);
+/* A frame curve: base + (cos(angle) + 1.0) / divisor. */
+s16 func_800A3490(s16 angle, s16 divisor, s32 base) {
+    return base + (func_8003F8CC(angle) + 0x1000) / divisor;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A3514);
+/* A frame curve: base + value / divisor, or -1 past 32. */
+s16 func_800A3514(s16 value, s16 divisor, s16 base) {
+    base += value / divisor;
+    if (base > 0x20) {
+        return -1;
+    }
+    return base;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A3578);
+/* A frame curve: base - value / divisor. */
+s16 func_800A3578(s16 value, s16 divisor, s32 base) {
+    return base - value / divisor;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A35C8);
+/* A frame curve: 32 - value / divisor, at least minimum. */
+s16 func_800A35C8(s16 value, s16 divisor, s16 minimum) {
+    s16 result;
+
+    result = 0x20 - value / divisor;
+    if (result < minimum) {
+        result = minimum;
+    }
+    return result;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A3640);
 

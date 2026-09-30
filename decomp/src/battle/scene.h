@@ -261,9 +261,9 @@ s32 func_800A5D54(SVector *point, s32 triangle, s32 depth);
 s32 func_800AA650(s32 index);
 void func_800B10EC(s32 index, s16 x, s16 z, s32 y);
 void func_800A2D5C(SpritePool *pool);
-void func_800A3490(void);
-void func_800A3514(void);
-void func_800A3578(void);
-void func_800A35C8(void);
+s16 func_800A3490(s16 angle, s16 divisor, s32 base);
+s16 func_800A3514(s16 value, s16 divisor, s16 base);
+s16 func_800A3578(s16 value, s16 divisor, s32 base);
+s16 func_800A35C8(s16 value, s16 divisor, s16 minimum);
 
 #endif

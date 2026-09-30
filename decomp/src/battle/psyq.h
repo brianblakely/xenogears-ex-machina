@@ -109,6 +109,14 @@ u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y);
 u16 GetClut(s32 x, s32 y);
 void DrawSync(s32 mode);
 void LoadImage(RECT *rect, u32 *pixels);
+/* A primitive's tag: the next primitive's address and the word count. */
+typedef struct {
+    unsigned addr : 24;
+    unsigned len : 8;
+} P_TAG;
+#define setaddr(p, _addr) (((P_TAG *)(p))->addr = (u32)(_addr))
+#define getaddr(p) (u32)(((P_TAG *)(p))->addr)
+#define addPrim(ot, p) setaddr(p, getaddr(ot)), setaddr(ot, p)
 
 /* libgte. */
 void func_8003F738(SVector *angles, Matrix *m);          /* RotMatrix */
