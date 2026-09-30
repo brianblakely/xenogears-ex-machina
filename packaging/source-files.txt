@@ -119,7 +119,7 @@ decomp/src/mdec/mdec.c
 decomp/src/menu/menu.c
 decomp/src/menu/menu.h
 decomp/src/menu/sound.h
-decomp/src/menu/trail.h
+decomp/src/menu/spark.h
 decomp/src/movie/movie.c
 decomp/src/ovl2143/ovl2143.c
 decomp/src/ovl2596/ovl2596.c

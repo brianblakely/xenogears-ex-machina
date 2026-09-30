@@ -1,16 +1,9 @@
-#ifndef MENU_TRAIL_H
-#define MENU_TRAIL_H
+#ifndef MENU_SPARK_H
+#define MENU_SPARK_H
 
-#include "common.h"
+#include "menu.h"
 
-/* libgte/libgpu layouts used by the menu's small screen effects. */
-typedef struct {
-    s16 vx;
-    s16 vy;
-    s16 vz;
-    s16 pad;
-} SVector;
-
+/* libgpu primitive layouts used by the menu's small screen effects. */
 typedef struct {
     u32 addr : 24;
     u32 len : 8;
@@ -65,11 +58,6 @@ typedef struct {
 #define setSemiTrans(p, abe) \
     ((abe) ? setcode(p, getcode(p) | 0x02) : setcode(p, getcode(p) & ~0x02))
 #define setRGB0(p, _r0, _g0, _b0) ((p)->r0 = _r0, (p)->g0 = _g0, (p)->b0 = _b0)
-
-typedef struct {
-    s16 m[3][3];
-    s32 t[3];
-} Matrix;
 
 /* PsyQ inline_c.h GTE macros. */
 #define gte_ldv0(r0) \
@@ -242,6 +230,7 @@ extern SparkShape D_80091C74[];
 extern void (*D_80091CC4[])(Emitter *emitter, SVector *pos);
 extern void (*D_80091CDC)(Spark *spark);
 extern Emitter *D_80092834; /* the menu's spark emitter */
+extern Emitter *D_80092644; /* the menu's glow emitter */
 extern s32 D_80092838;      /* spark burst strength, fading by 4 per frame */
 
 /* Sparks drawn as a line through their last positions, with one primitive
@@ -279,22 +268,14 @@ typedef struct {
     Tile1 dot[2];
 } SparkDot;
 
-extern u8 D_800928A0;         /* draw buffer being built (0/1) */
 extern SVector *D_8009282C;   /* scratch vectors for GTE loads */
 extern SVector *D_80092830;   /* view origin subtracted before projection */
-extern Vector D_80096FA8;     /* camera position */
-
-typedef struct {
-    s16 x, y;
-    s16 w, h;
-} Rect;
 
 /* Glow field buffers: bytes, previous and current halfword fields. */
 extern u8 *D_80092844;
 extern s16 *D_8009283C;
 extern s16 *D_80092840;
 extern u16 D_80091CE0[]; /* glow palette (256 entries) */
-void func_80044894(Rect *rect, void *data); /* LoadImage */
 
 typedef struct {
     u32 tag;
@@ -324,13 +305,10 @@ typedef struct {
 extern PolyFT4 D_80096D90[2];  /* glow field quad per draw buffer */
 extern Tile D_80096DE0[2];     /* full-screen shade tile per draw buffer */
 extern DrawMode D_80096E00[2]; /* its blend mode per draw buffer */
-void func_80043B48(u32 *ot, void *prim); /* AddPrim */
-u16 func_80043A1C(s32 tp, s32 abr, s32 x, s32 y); /* GetTPage */
 u16 func_80043A58(s32 x, s32 y);                  /* GetClut */
 void func_800454DC(DrawMode *p, s32 dfe, s32 dtd, s32 tpage, Rect *tw); /* SetDrawMode */
 
 int abs(int x);
-s32 func_8003FA38(void); /* rand */
 void func_800324B8(s32 tag);                 /* heap allocation tag */
 void *func_80031BDC(s32 size, s32 arg);      /* heap allocation */
 void func_80032C18(void *block, s32 arg);    /* heap release */

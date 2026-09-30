@@ -1,5 +1,5 @@
 #include "menu.h"
-#include "trail.h"
+#include "spark.h"
 #include "sound.h"
 
 /* Start the menu camera: mode 3 setup and its script block. */
@@ -516,21 +516,21 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800731F8);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800732AC);
 
-/* Create the menu's glow effect. */
+/* Create the menu's glow emitter: 96 bluish tile sparks. */
 void func_800732CC(void) {
-    Effect *effect = func_8008D3F4(3, 0);
+    Emitter *emitter = func_8008D3F4(3, 0);
 
-    effect->r = 0x80;
-    effect->g = 0x80;
-    effect->b = 0xC0;
-    func_8008D5C0(effect, 0x60);
-    effect->kind = 4;
-    effect->unk44 = 0x300;
-    effect->unk48 = 8;
-    effect->unk4A = 0x20;
-    effect->unk68 = 0;
-    effect->unk6A = 0x20;
-    D_80092644 = effect;
+    emitter->r = 0x80;
+    emitter->g = 0x80;
+    emitter->b = 0xC0;
+    func_8008D5C0(emitter, 0x60);
+    emitter->gravity = 4;
+    emitter->spread = 0x300;
+    emitter->speed = 8;
+    emitter->speed_range = 0x20;
+    emitter->unk68 = 0;
+    emitter->life = 0x20;
+    D_80092644 = emitter;
 }
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007334C);
@@ -2041,7 +2041,7 @@ void func_8008DF50(void) {
     rect.w = 0xFF;
     rect.x = 0;
     rect.h = 1;
-    func_80044894(&rect, D_80091CE0);
+    func_80044894(&rect, (u32 *)D_80091CE0);
 }
 
 /* Release the glow buffers. */
@@ -2172,7 +2172,7 @@ void func_8008E3CC(u32 *ot, s32 level, s32 brighten) {
     rect.y = 0x100;
     rect.w = 0x38;
     rect.h = 0x2B;
-    func_80044894(&rect, D_80092844);
+    func_80044894(&rect, (u32 *)D_80092844);
     if (brighten) {
         tile = &D_80096DE0[D_800928A0];
         if (level > 0x80) {
