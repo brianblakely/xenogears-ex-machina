@@ -783,8 +783,14 @@ typedef struct {
 typedef struct {
     u8 unk0[4];
     ModelView *view; /* 04 */
+    u8 unk8[0x1C - 8];
+    s16 unk1C;       /* 1c */
+    u8 unk1E[0x60 - 0x1E];
+    s16 unk60;       /* 60 */
 } ModelState;
 extern ModelState *D_801E8674;
+extern POLY_FT4 D_801D7108[]; /* camera debug display packets, two per sprite */
+extern s32 D_801D9048;        /* their sprite count */
 extern u32 D_8006EF58;     /* party gold */
 void ClearImage(void *env, s32 unk1, s32 unk2, s32 unk3);
 void AddPrims(u32 *ot, u32 *first, u32 *last); /* link an OT range into another OT */

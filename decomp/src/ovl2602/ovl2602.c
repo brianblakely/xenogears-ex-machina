@@ -1722,7 +1722,52 @@ void func_801CBDA0(void) {
     SetTransMatrix(&D_800625A0->view_matrix);
 }
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CBE60);
+/* Debug display (when enabled and the model is loaded): the model translation, camera distance and two model values, in decimal with a minus sign. */
+void func_801CBE60(void) {
+    s32 values[6];
+    s32 i;
+    s32 j;
+    s32 x;
+    s32 y;
+    s32 negative;
+    s32 value;
+
+    if (D_801D697C != 0 && D_800625A0->model_parts[1]->unk12 != 0) {
+        func_8002675C(D_800625A0->sprite_sheet, 0x21, &D_801D7108[0], D_800625A0->buffer, 0x10, 0x10, 0x1000);
+        func_8002675C(D_800625A0->sprite_sheet, 0x22, &D_801D7108[2], D_800625A0->buffer, 0x10, 0x20, 0x1000);
+        func_8002675C(D_800625A0->sprite_sheet, 0x23, &D_801D7108[4], D_800625A0->buffer, 0x10, 0x30, 0x1000);
+        func_8002675C(D_800625A0->sprite_sheet, 0xA, &D_801D7108[6], D_800625A0->buffer, 0x10, 0x40, 0x1000);
+        func_8002675C(D_800625A0->sprite_sheet, 0x10, &D_801D7108[8], D_800625A0->buffer, 0x10, 0x50, 0x1000);
+        func_8002675C(D_800625A0->sprite_sheet, 0x1C, &D_801D7108[10], D_800625A0->buffer, 0x10, 0x60, 0x1000);
+        func_8002675C(D_800625A0->sprite_sheet, 0xE3, &D_801D7108[12], D_800625A0->buffer, 0xA0, 0x64, 0x1000);
+        values[0] = D_800625A0->model_translation.vx;
+        values[1] = D_800625A0->model_translation.vy;
+        values[2] = D_800625A0->model_translation.vz;
+        values[3] = D_801E8674->view->distance;
+        values[4] = D_801E8674->unk60;
+        values[5] = D_801E8674->unk1C;
+        D_801D9048 = 7;
+        for (i = 0; i < 6; i++) {
+            value = values[i];
+            negative = 0;
+            if (value < 0) {
+                negative = 1;
+                D_801D9048 += func_8002675C(D_800625A0->sprite_sheet, 0xE5, &D_801D7108[D_801D9048 * 2],
+                                            D_800625A0->buffer, 0x30, i * 0x10 + 0x10, 0x1000);
+                value = ~values[i] + 1;
+            }
+            func_801C5298(value);
+            for (j = 0, y = i * 0x10 + 0x10, x = negative * 8 + 0x30; j < 9; j++) {
+                if (D_800625A0->digits[j] != 0xFF) {
+                    D_801D9048 += func_8002675C(D_800625A0->sprite_sheet, D_800625A0->digits[j],
+                                                &D_801D7108[D_801D9048 * 2], D_800625A0->buffer, x, y, 0x1000);
+                    x += 8;
+                }
+            }
+        }
+        func_801C94CC(D_801D9048, D_801D7108, D_800625A0->buffer);
+    }
+}
 
 /* Run one frame: input, buffer swap, both ordering tables, view, packets, then present the finished buffer. */
 void func_801CC1C4(void) {
