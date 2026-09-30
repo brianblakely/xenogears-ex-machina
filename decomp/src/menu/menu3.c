@@ -1559,7 +1559,119 @@ void func_80078154(Actor *actor) {
     actor->flags |= 0x2000000;
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80078194);
+/* Per-frame actor motion: note the round-start position, steer the heading
+ * toward the camera-relative facing (the other way round on side 1), stop
+ * dead while stunned, turn the forward speed, gravity, bounce and (in the
+ * late round) a pull toward the opponent into this frame's velocity, and
+ * add the push scaled by the stance. */
+void func_80078194(Actor *actor) {
+    Vector pull;
+    s32 facing;
+    s32 speed;
+    s32 scale;
+
+    actor->start = actor->pos;
+    actor->start_home = actor->home;
+    speed = actor->unk40;
+    facing = D_80092934;
+    if (actor->flags & 0x08000000) {
+        facing += 0x800;
+    }
+    if (actor->unkC4 == 0) {
+        if (actor->unkFC != 0) {
+            actor->unk648 = facing;
+        } else {
+            actor->unk648 = func_8008B650(actor->unk648, facing, 0x100);
+        }
+        if (D_8009287C >= 5) {
+            D_8009287C = 4;
+        }
+    } else if (actor->unkC4 == 1) {
+        if (D_8009284C > 0x100) {
+            if (actor->unkFC != 0) {
+                actor->unk648 = facing;
+            } else {
+                actor->unk648 = func_8008B650(actor->unk648, facing, 0x100);
+            }
+        }
+        if (D_8009287C >= 3) {
+            D_8009287C = 2;
+        }
+    }
+    if (actor->unkC5 == 4) {
+        actor->angle = facing;
+        actor->unk648 = facing;
+        actor->unkFC = 0;
+        actor->unk40 = 0;
+        actor->unk94 = 0;
+        actor->unk8C = 0;
+        actor->unk88 = 0;
+        actor->unk90 = 0;
+        speed = -(actor->unkC3 * 0x50) / 3;
+    } else {
+        actor->angle = actor->unk648 + actor->unkFC;
+    }
+    if (actor->unkC5 == 2) {
+        if ((actor->flags & 1) || (actor->unkC4 & 2)) {
+            actor->unk90C = facing;
+        }
+        actor->angle = actor->unk90C;
+        actor->flags = (actor->flags | 0x100) & ~0x80000;
+    } else {
+        actor->flags = actor->flags & ~0x100;
+    }
+    if (actor->flags & 0x40000) {
+        actor->velocity.vx = -(func_8003F8B0(actor->unk648 + actor->unkFC) * speed) >> 12;
+        actor->velocity.vz = -(func_8003F8CC(actor->unk648 + actor->unkFC) * speed) >> 12;
+    } else {
+        actor->flags &= ~0x80000;
+    }
+    actor->velocity.vy += 0xA;
+    if (actor->unk44 != 0 && actor->pos.vy == actor->floor_y) {
+        actor->unk44 = actor->unk44 * 0xA0 / 256;
+        actor->unk30.vx = -(func_8003F8B0(facing) * actor->unk44) >> 12;
+        actor->unk30.vz = -(func_8003F8CC(facing) * actor->unk44) >> 12;
+        actor->velocity.vx += actor->unk30.vx;
+        actor->velocity.vy += actor->unk30.vy;
+        actor->velocity.vz += actor->unk30.vz;
+    }
+    if (D_80092850 > 0x280 && D_80092884 != 0) {
+        pull.vx = actor->opponent->pos.vx;
+        pull.vy = actor->opponent->pos.vy;
+        pull.vz = actor->opponent->pos.vz;
+        pull.vx -= actor->pos.vx;
+        pull.vy -= actor->pos.vy;
+        pull.vz -= actor->pos.vz;
+        pull.vx /= 48;
+        pull.vy /= 48;
+        pull.vz /= 48;
+        actor->velocity.vx += pull.vx;
+        actor->velocity.vy += pull.vy;
+        actor->velocity.vz += pull.vz;
+    }
+    scale = 0x80;
+    switch ((s32)((actor->flags >> 29) & 3)) {
+    case 0:
+        scale = 0xFF;
+        break;
+    case 1:
+    case 3:
+        scale = 0;
+        break;
+    case 2:
+        break;
+    }
+    if (actor->unkC4 == 4) {
+        scale = 0xFF;
+    }
+    if (actor->flags & 0x40000) {
+        actor->push.vx = actor->push.vx * scale / 256;
+        actor->push.vz = actor->push.vz * scale / 256;
+    }
+    actor->velocity.vx += actor->push.vx;
+    actor->velocity.vy += actor->push.vy;
+    actor->velocity.vz += actor->push.vz;
+}
 
 #ifdef NON_MATCHING
 /* Which of an actor's two anchor points (0x92c and home) lie on the other
