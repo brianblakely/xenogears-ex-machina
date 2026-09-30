@@ -811,4 +811,7 @@ s32 func_800962B0(s32 a, s32 b, s32 c, s32 d);
 s32 func_80096328(void);
 s32 func_800965A4(void);
 
+extern s16 D_800523F0[0x1000][2]; /* PsyQ rcossin_tbl: sine, cosine */
+void func_8009980C(u32 *heights, u32 *ot, s32 depth); /* terrain block draw (assembly) */
+
 #endif

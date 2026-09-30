@@ -1003,7 +1003,54 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_8009932C);
 
+/* Build a terrain block's 9x9 vertices in the scratchpad (heights of
+ * water cells follow two travelling sine waves), then draw the block. */
+#ifdef NON_MATCHING /* register allocation: the draw arguments are kept in a1/a2 */
+void func_80099708(u32 *heights, u32 *ot, s32 depth, SVECTOR *origin) {
+    SVECTOR *vertex;
+    u32 *cell;
+    s32 j;
+    s16 (*sine)[2];
+    s32 row_phase;
+    s32 left;
+    s32 z;
+    s32 x;
+    s32 i;
+    s32 phase;
+    s32 swell;
+    s32 y;
+
+    vertex = (SVECTOR *)0x1F800000;
+    cell = heights;
+    sine = D_800523F0;
+    row_phase = D_8009C618;
+    left = origin->vx;
+    z = origin->vz;
+    for (j = 8; j != -1; j--) {
+        x = left;
+        swell = sine[row_phase & 0xFFF][0] * 2;
+        phase = D_8009C5BC;
+        for (i = 8; i != -1; i--) {
+            if (*cell & 0x1000) {
+                y = (((sine[phase & 0xFFF][0] * swell) >> 20) + ((s32)(*cell << 24) >> 21)) << 16;
+            } else {
+                y = (s32)(*cell << 24) >> 5;
+            }
+            *(s32 *)&vertex->vx = y | (x & 0xFFFF);
+            vertex->vz = z;
+            x += 0x80;
+            vertex++;
+            cell++;
+            phase += 0x200;
+        }
+        z -= 0x80;
+        row_phase += 0x200;
+    }
+    func_8009980C(heights, ot, depth);
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80099708);
+#endif
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_8009980C);
 
