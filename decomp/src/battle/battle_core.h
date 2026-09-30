@@ -337,20 +337,21 @@ extern BattleUnk3278 *D_800D3278;
 
 typedef struct {
     u8 unk0[0x3AC0];
-    POLY_FT4 unk3AC0[116];
-    POLY_FT4 unk4CE0[27][2];
-    POLY_FT4 unk5550[6];
-    POLY_FT4 unk5640[40];
-    POLY_FT4 unk5C80[6];
+    POLY_FT4 unk3AC0[24];   /* list 0 */
+    POLY_FT4 unk3E80[34];   /* list 2 */
+    POLY_FT4 unk43D0[58];   /* list 10 */
+    POLY_FT4 unk4CE0[10];
+    POLY_FT4 unk4E70[8];    /* list 3 */
+    POLY_FT4 unk4FB0[6];    /* list 4 */
+    POLY_FT4 unk50A0[8];    /* list 5 */
+    POLY_FT4 unk51E0[22];   /* list 6 */
+    POLY_FT4 unk5550[6];    /* list 11 */
+    POLY_FT4 unk5640[40];   /* list 12 */
+    POLY_FT4 unk5C80[6];    /* list 13 */
     u8 unk5D70[5];
-    u8 unk5D75;
-    u8 unk5D76[0x5D80 - 0x5D76];
-    u8 unk5D80[3];
-    u8 unk5D83;
-    u8 unk5D84;
-    u8 unk5D85[0x5D8F - 0x5D85];
-    u8 unk5D8F[3];
-    u8 unk5D92[0x5D9C - 0x5D92];
+    u8 counts[15];          /* +0x5D75 primitive count per list */
+    u8 buffers[15];         /* +0x5D84 draw buffer per list */
+    u8 unk5D93[0x5D9C - 0x5D93];
     s16 unk5D9C;
     s16 unk5D9E;
     u8 unk5DA0;
@@ -490,6 +491,10 @@ extern u16 D_800C3D64;
 extern u8 D_800C3E2C;
 extern u16 D_800D2C30;
 extern u8 D_800D2C38;
+extern u16 D_800D2C2A;
+extern u8 D_800D2C35;
+extern u8 D_800D2C36;
+extern u16 D_800D2C3A;
 extern u8 D_800C3200[][6]; /* list separator rows by row count */
 extern u8 D_800D2C34;
 extern u8 D_800C34CC[];    /* combo step flags */
@@ -701,6 +706,8 @@ void func_80097D08(void);
 void func_80094D24(void);
 u8 func_800841E0(u8 member);
 u16 func_80089C6C(u16 mask, u8 bit);
+void func_8008AAA0(u32 value);
+void func_80076BF0(POLY_FT4 *prim);
 void func_80076B68(POLY_FT4 *prim);
 void func_8008FC1C(s32 x, s32 y, s32 w, s32 h, s32 style);
 void func_8008F6E4(u8 style, u16 x, u16 y, u16 w, u16 h);

@@ -419,9 +419,9 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80074D4C);
 /* Draw the three primitive lists of *800d2db4 when UI +0xa8 is set. */
 void func_80074EEC(void) {
     if (D_800D2D28->unkA8 != 0) {
-        func_800728B8(D_800D2DB4->unk5550, D_800D2DB4->unk5D80[0], D_800D2DB4->unk5D8F[0]);
-        func_800728B8(D_800D2DB4->unk5640, D_800D2DB4->unk5D80[1], D_800D2DB4->unk5D8F[1]);
-        func_800728B8(D_800D2DB4->unk5C80, D_800D2DB4->unk5D80[2], D_800D2DB4->unk5D8F[2]);
+        func_800728B8(D_800D2DB4->unk5550, D_800D2DB4->counts[11], D_800D2DB4->buffers[11]);
+        func_800728B8(D_800D2DB4->unk5640, D_800D2DB4->counts[12], D_800D2DB4->buffers[12]);
+        func_800728B8(D_800D2DB4->unk5C80, D_800D2DB4->counts[13], D_800D2DB4->buffers[13]);
     }
 }
 
@@ -3248,7 +3248,7 @@ void func_80089038(void) {
     D_800D2DB4->unk5DA1 = 0;
     for (; i < 5; i++) {
         if (func_80089C6C(D_800D2C30, i)) {
-            D_800D2DB4->unk5DA1 += func_80076A10(i + 0xC4, D_800D2DB4->unk4CE0[D_800D2DB4->unk5DA1], 0xE0, y >> 16);
+            D_800D2DB4->unk5DA1 += func_80076A10(i + 0xC4, &D_800D2DB4->unk4CE0[D_800D2DB4->unk5DA1 * 2], 0xE0, y >> 16);
             y += 10 << 16;
         }
     }
@@ -3265,22 +3265,144 @@ void func_80089110(void) {
     if (D_800D2C38 != 0) {
         id = 0xA1;
     }
-    D_800D2DB4->unk5D75 = func_80076A10(id, D_800D2DB4->unk3AC0, 0xA0, 0x64);
-    D_800D2DB4->unk5D84 = D_800CCB04.buffer;
-    for (i = 0; i < D_800D2DB4->unk5D75; i++) {
-        func_80076B68(&D_800D2DB4->unk3AC0[i * 2 + D_800D2DB4->unk5D84]);
+    D_800D2DB4->counts[0] = func_80076A10(id, D_800D2DB4->unk3AC0, 0xA0, 0x64);
+    D_800D2DB4->buffers[0] = D_800CCB04.buffer;
+    for (i = 0; i < D_800D2DB4->counts[0]; i++) {
+        func_80076B68(&D_800D2DB4->unk3AC0[i * 2 + D_800D2DB4->buffers[0]]);
     }
 }
 
+/* Build the two glyphs of the escape/limit page (800d2c34 - 0x5d and
+ * - 0x25) into lists 2 and 10 and initialise their quads. */
+#ifdef NON_MATCHING
+void func_800891E4(void) {
+    s32 i;
+    u8 second = D_800D2C34 - 0x25;
+
+    D_800D2DB4->counts[2] = func_80076A10((u8)(D_800D2C34 - 0x5D), D_800D2DB4->unk3E80, 0xA0, 0x64);
+    D_800D2DB4->buffers[2] = D_800CCB04.buffer;
+    D_800D2DB4->counts[10] = func_80076A10(second, D_800D2DB4->unk43D0, 0xA0, 0x64);
+    D_800D2DB4->buffers[10] = D_800CCB04.buffer;
+    for (i = 0; i < D_800D2DB4->counts[2]; i++) {
+        func_80076B68(&D_800D2DB4->unk3E80[i * 2 + D_800D2DB4->buffers[2]]);
+    }
+    for (i = 0; i < D_800D2DB4->counts[10]; i++) {
+        func_80076BF0(&D_800D2DB4->unk43D0[i * 2 + D_800D2DB4->buffers[10]]);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800891E4);
+#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80089348);
+/* Build the five-digit value 800d2c2a as glyphs into list 3 at (0x11a, 0x46)
+ * and initialise its quads. */
+void func_80089348(void) {
+    s32 i;
+    s32 x; /* 16.16 */
+    u8 digit;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008946C);
+    i = 0;
+    x = 0x11A << 16;
+    func_8008AAA0(D_800D2C2A);
+    for (; i < 5; i++) {
+        digit = D_800C3CF4[i + 4];
+        if (digit != 0xFF) {
+            D_800D2DB4->counts[3] +=
+                func_80076A10(digit + 0x92, &D_800D2DB4->unk4E70[D_800D2DB4->counts[3] * 2], x >> 16, 0x46);
+            x += 6 << 16;
+        }
+    }
+    D_800D2DB4->buffers[3] = D_800CCB04.buffer;
+    for (i = 0; i < D_800D2DB4->counts[3]; i++) {
+        func_80076B68(&D_800D2DB4->unk4E70[i * 2 + D_800D2DB4->buffers[3]]);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008963C);
+/* Build the two-digit value 800d2c3a and a '%' glyph into list 4 at
+ * (0x11a, 0x4e), or glyph 0xa2 from page 4 on, and initialise its quads. */
+void func_8008946C(void) {
+    s32 i;
+    s32 x; /* 16.16 */
+    s32 digits;
+    u8 digit;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800897CC);
+    if (D_800D2C34 < 4) {
+        func_8008AAA0(D_800D2C3A);
+        i = 0;
+        digits = 0;
+        x = 0x11A << 16;
+        for (; i < 2; i++) {
+            digit = D_800C3CF4[i + 7];
+            if (digit != 0xFF) {
+                    D_800D2DB4->counts[4] +=
+                    func_80076A10(digit + 0x92, &D_800D2DB4->unk4FB0[D_800D2DB4->counts[4] * 2], x >> 16, 0x4E);
+                digits++;
+                x += 6 << 16;
+            }
+        }
+        D_800D2DB4->counts[4] +=
+            func_80076A10(0x9D, &D_800D2DB4->unk4FB0[D_800D2DB4->counts[4] * 2], digits * 6 + 0x11A, 0x4E);
+    } else {
+        D_800D2DB4->counts[4] = func_80076A10(0xA2, D_800D2DB4->unk4FB0, 0x11A, 0x4E);
+    }
+    D_800D2DB4->buffers[4] = D_800CCB04.buffer;
+    for (i = 0; i < D_800D2DB4->counts[4]; i++) {
+        func_80076B68(&D_800D2DB4->unk4FB0[i * 2 + D_800D2DB4->buffers[4]]);
+    }
+}
+
+/* Build the three-digit value 800d2c36 and a '%' glyph into list 5 at
+ * (0x11a, 0x56) and initialise its quads. */
+void func_8008963C(void) {
+    s32 i;
+    s32 x; /* 16.16 */
+    s32 digits;
+    u8 digit;
+
+    i = 0;
+    digits = 0;
+    x = 0x11A << 16;
+    func_8008AAA0(D_800D2C36);
+    for (; i < 3; i++) {
+        digit = D_800C3CF4[i + 6];
+        if (digit != 0xFF) {
+            D_800D2DB4->counts[5] +=
+                func_80076A10(digit + 0x92, &D_800D2DB4->unk50A0[D_800D2DB4->counts[5] * 2], x >> 16, 0x56);
+            digits++;
+            x += 6 << 16;
+        }
+    }
+    D_800D2DB4->counts[5] +=
+        func_80076A10(0x9D, &D_800D2DB4->unk50A0[D_800D2DB4->counts[5] * 2], digits * 6 + 0x11A, 0x56);
+    D_800D2DB4->buffers[5] = D_800CCB04.buffer;
+    for (i = 0; i < D_800D2DB4->counts[5]; i++) {
+        func_80076B68(&D_800D2DB4->unk50A0[i * 2 + D_800D2DB4->buffers[5]]);
+    }
+}
+
+/* Build the two-digit value 800d2c35 as glyphs into list 6 at (0x11a,
+ * 0x5e) and initialise its quads. */
+void func_800897CC(void) {
+    s32 i;
+    s32 x; /* 16.16 */
+    u8 digit;
+
+    i = 0;
+    x = 0x11A << 16;
+    func_8008AAA0(D_800D2C35);
+    for (; i < 2; i++) {
+        digit = D_800C3CF4[i + 7];
+        if (digit != 0xFF) {
+            D_800D2DB4->counts[6] +=
+                func_80076A10(digit + 0x92, &D_800D2DB4->unk51E0[D_800D2DB4->counts[6] * 2], x >> 16, 0x5E);
+            x += 6 << 16;
+        }
+    }
+    D_800D2DB4->buffers[6] = D_800CCB04.buffer;
+    for (i = 0; i < D_800D2DB4->counts[6]; i++) {
+        func_80076B68(&D_800D2DB4->unk51E0[i * 2 + D_800D2DB4->buffers[6]]);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800898F0);
 
