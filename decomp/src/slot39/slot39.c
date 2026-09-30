@@ -3320,7 +3320,8 @@ u8 func_801E31C0(MenuTables *tables, u8 id, u8 item) {
 
     hpFull = 0;
     epFull = 0;
-    record = tables->items + item;
+    record = tables->items;
+    record += item;
     chara = D_8006D8A0 + id;
     epRate = 10;
     if (record->flags & 0x8000) {
