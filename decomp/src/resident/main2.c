@@ -299,27 +299,116 @@ void func_80033DD4(u8 *window, s32 value) {
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80033DF0);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800345E0);
+#include "window.h"
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80034614);
+/* Clear flag 8; a window with flag 0x200 also drops its pending state. */
+void func_800345E0(Window *window) {
+    u16 flags = window->flags;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003463C);
+    window->flags = flags & ~8;
+    if (flags & 0x200) {
+        window->unk84 = 0;
+        window->unk6C = 0;
+        window->flags &= ~0x200;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800346A4);
+/* Unless it is busy, reset a window to flag 2 only. */
+void func_80034614(Window *window) {
+    if (window->unk84 == 0) {
+        window->unk6C = 0;
+        window->flags &= 2;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800346D4);
+/* Unless it is busy, release a window's queued messages. */
+void func_8003463C(Window *window) {
+    WindowQueue *entry;
+    WindowQueue *current;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80034714);
+    if (window->unk84 == 0) {
+        entry = window->queue;
+        while (entry != NULL) {
+            current = entry;
+            entry = entry->next;
+            func_800320E8(current);
+        }
+        window->queue = NULL;
+        window->queued = 0;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800347AC);
+/* Reset a window and release its queue. */
+void func_800346A4(Window *window) {
+    window->unk6C = 0;
+    window->unk84 = 0;
+    window->flags &= 2;
+    func_8003463C(window);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800347C0);
+/* Close a window: reset it and release its layout and image. */
+void func_800346D4(Window *window) {
+    func_800346A4(window);
+    func_800320E8(window->layout);
+    func_800320E8(window->image);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80034800);
+/* Queue `message` after the window's current one. Returns the queue
+ * length. */
+s16 func_80034714(Window *window, s32 message) {
+    WindowQueue *last = window->queue;
+    WindowQueue *entry;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80034874);
+    window->queued++;
+    func_800324B8(0x2A);
+    entry = func_80031BDC(sizeof(WindowQueue), 2);
+    entry->message = message;
+    entry->next = NULL;
+    if (last == NULL) {
+        window->queue = entry;
+        return window->queued;
+    }
+    while (last->next != NULL) {
+        last = last->next;
+    }
+    last->next = entry;
+    return window->queued;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003487C);
+s32 func_800347AC(Window *window) {
+    return window->unk4 + window->x * 4;
+}
+
+/* Image row of the cursor line (wrapping to the last line). */
+s32 func_800347C0(Window *window) {
+    s32 row = window->y - window->unk16;
+
+    if (row < 0) {
+        row = window->lines - 1;
+    }
+    return window->unk6 + row * window->unk14;
+}
+
+/* Set the colour of every line's sprites. */
+void func_80034800(Window *window, u8 r, u8 g, u8 b) {
+    WindowLine *line;
+    s32 i;
+
+    for (i = 0; i < window->lines; i++) {
+        line = &window->layout[i];
+        line->sprite[0].r0 = line->sprite[1].r0 = line->sprite[2].r0 = line->sprite[3].r0 = r;
+        line->sprite[0].g0 = line->sprite[1].g0 = line->sprite[2].g0 = line->sprite[3].g0 = g;
+        line->sprite[0].b0 = line->sprite[1].b0 = line->sprite[2].b0 = line->sprite[3].b0 = b;
+    }
+}
+
+void func_80034874(Window *window, u8 value) {
+    window->unk6E = value;
+}
+
+void func_8003487C(Window *window) {
+    window->unk6E = 0xFF;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80034888);
 
