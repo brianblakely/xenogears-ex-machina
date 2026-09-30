@@ -57,7 +57,50 @@ s32 func_8008C364(WorldmapActor *actor, s32 member) {
     return result;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8008C364", func_8008C530);
+/* Start party vehicle 0: place it, and while its member rides (movement
+ * modes 1-3) put it under the player, reset the saved camera target and the
+ * trail; modes 4-7 mark it boarded. Save its spot and heading. */
+s32 func_8008C530(s32 index) {
+    WorldmapActor *actor;
+    TrailPoint *point;
+    s32 result;
+    s32 i;
+
+    actor = &D_8009BE24[index];
+    result = func_8008C364(actor, 0);
+    actor->motion.vz = 0;
+    actor->motion.vy = 0;
+    actor->motion.vx = 0;
+    actor->heading = D_8006EE54.unk5A;
+    actor->turn = 0xC;
+    actor->unk5C = actor->heading;
+    switch (D_8009BE10) {
+    case 1 ... 3:
+        if (D_8006F8E5 == 1) {
+            actor->state = 1;
+            actor->position.vx = D_8009C5AC.vx;
+            actor->position.vz = D_8009C5AC.vz;
+            actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+            actor->heading = D_8009C584;
+            D_8009D55C.target = actor->position;
+            D_8009D154 = 0;
+            D_8009D52C = actor->heading;
+            for (i = 0, point = D_8009CEC4; i < 0x20; i++, point++) {
+                point->position = actor->position;
+                point->heading = actor->heading;
+            }
+        }
+        break;
+    case 4 ... 7:
+        actor->state = 2;
+        actor->unk24 = 1;
+        break;
+    }
+    D_8006EF8E[0].x = actor->position.vx >> 12;
+    D_8006EF8E[0].z = actor->position.vz >> 12;
+    D_8006EE54.unk5A = actor->heading;
+    return result;
+}
 
 /* Update a kind-0 actor; flag it while riding a vehicle. */
 s32 func_8008C6EC(s32 index) {

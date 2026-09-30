@@ -832,6 +832,16 @@ extern VehicleSpot D_8006EF8E[3];
 extern VECTOR D_8009C5AC;
 
 void func_8008C28C(WorldmapActor *actor, s32 member);
+
+/* Recent positions of the player's vehicle (ring of 32). */
+typedef struct {
+    VECTOR position;
+    u16 heading;
+    u16 pad;
+} TrailPoint;
+
+extern TrailPoint D_8009CEC4[32];
+extern s16 D_8009D154; /* trail index */
 /* Parked vehicle headings; scalars inside D_8006EE54 (unk5A-unk5E), which
  * the vehicle starts address as separate variables. */
 extern u16 D_8006EE5A, D_8006EE5C, D_8006EE5E;
