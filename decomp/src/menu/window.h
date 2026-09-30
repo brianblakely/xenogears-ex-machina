@@ -1,7 +1,7 @@
 #ifndef MENU_WINDOW_H
 #define MENU_WINDOW_H
 
-#include "common.h"
+#include "menu.h"
 
 /* Screen rectangle (libgpu RECT). */
 typedef struct {
@@ -99,6 +99,21 @@ extern u8 D_80059438, D_8005943C; /* stick x */
 extern u8 D_80059430, D_80059434; /* stick y */
 extern s32 D_80092704;
 
+extern u8 D_8009275C;  /* menu refresh pending */
+extern u8 D_800926FC;
+extern u8 D_800928FC;  /* pad port driving the menus */
+extern Tile D_8009A1C0; /* screen fade tile, buffer 0 */
+extern Tile D_8009A2B8; /* screen fade tile, buffer 1 */
+extern u16 D_8009286C;  /* screen height */
+
+/* Map view. */
+extern SVector D_80092768; /* stored map position */
+extern s32 *D_800928DC;    /* 128 x 128 map cells; low half is the height */
+
+void func_80080AE8(void);
+void func_80036420(void);
+s32 func_80081A44(void);
+void func_80087698(s32 x0, s32 y0, s32 x1, s32 y1); /* draw a line */
 s32 func_80033728(s32 table, s32 index); /* text string of an index */
 s32 func_80034EAC(s32 string, s32 image, s32 colour, s32 arg); /* returns width */
 void func_80043B48(void *ot, void *packet); /* link a packet into an ordering table */

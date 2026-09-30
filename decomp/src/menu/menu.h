@@ -11,6 +11,14 @@ typedef struct {
     s32 pad;
 } Vector;
 
+/* libgte-layout short vector. */
+typedef struct {
+    s16 vx;
+    s16 vy;
+    s16 vz;
+    s16 pad;
+} SVector;
+
 /* A character moved in the menu scene. */
 typedef struct {
     Vector pos;          /* 0x00 */

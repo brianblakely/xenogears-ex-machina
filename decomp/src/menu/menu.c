@@ -831,25 +831,162 @@ INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu", D_8007008C);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80081A44);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80081D2C);
+/* One frame of the menu layer: pending refresh, the shown menu's input
+ * (with the extra-speed button) and its drawing. */
+void func_80081D2C(void) {
+    s32 unused[2]; /* the original frame has 8 bytes of unused locals */
+    Menu *menu;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80081E00);
+    if (D_8009275C != 0) {
+        func_80080AE8();
+        D_8009275C = 0;
+    }
+    func_80036420();
+    menu = D_80092734;
+    if (menu == &D_800915AC[5]) {
+        func_80081A44();
+        return;
+    }
+    if (menu != NULL) {
+        if ((D_8005948C & 1) && D_800926FC < 5) {
+            D_800926FC++;
+            func_80080AE8();
+        }
+        func_8008162C(menu, D_800928FC);
+    }
+    func_8008151C(D_80092734);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80081E6C);
+/* Dim the screen below the top band with the half-grey fade tiles. */
+void func_80081E00(void) {
+    D_8009A1C0.y0 = 0x60;
+    D_8009A2B8.y0 = 0x60;
+    D_8009A1C0.r0 = 0x7F;
+    D_8009A1C0.g0 = 0x7F;
+    D_8009A1C0.b0 = 0x7F;
+    D_8009A2B8.r0 = 0x7F;
+    D_8009A2B8.g0 = 0x7F;
+    D_8009A2B8.b0 = 0x7F;
+    D_8009A1C0.h = D_8009286C - 0x60;
+    D_8009A2B8.h = D_8009286C - 0x60;
+}
+
+/* Clear the fade tiles back to the full, black screen. */
+void func_80081E6C(void) {
+    D_8009A1C0.y0 = 0;
+    D_8009A2B8.y0 = 0;
+    D_8009A1C0.r0 = 0;
+    D_8009A1C0.g0 = 0;
+    D_8009A1C0.b0 = 0;
+    D_8009A2B8.r0 = 0;
+    D_8009A2B8.g0 = 0;
+    D_8009A2B8.b0 = 0;
+    D_8009A1C0.h = D_8009286C;
+    D_8009A2B8.h = D_8009286C;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80081ECC);
 
+/* Draw the large direction arrow at a map position (8.8 fixed point). Does not match:
+ * the start point is stored and re-read from the stack, and s5/s6 are swapped. */
+#ifdef NON_MATCHING
+void func_80082178(s32 x, s32 z, s32 direction) {
+    Vector start;
+    s32 centre_x;
+    s32 centre_z;
+    s32 last_x;
+    s32 last_z;
+    s32 next_x;
+    s32 next_z;
+    s32 angle;
+    s32 i;
+
+    centre_x = x >> 8;
+    centre_z = z >> 8;
+    last_x = start.vx = centre_x + ((func_8003F8B0(direction + 0x280) * 10) >> 12);
+    last_z = start.vz = centre_z + ((func_8003F8CC(direction + 0x280) * 10) >> 12);
+    angle = direction + 0x580;
+    for (i = 0; i < 6; i++) {
+        next_x = centre_x + ((func_8003F8B0(angle) * 24) >> 12);
+        next_z = centre_z + ((func_8003F8CC(angle) * 24) >> 12);
+        func_80087698(last_x, last_z, next_x, next_z);
+        last_x = next_x;
+        last_z = next_z;
+        angle += 0x100;
+    }
+    next_x = centre_x + ((func_8003F8B0(direction - 0x280) * 10) >> 12);
+    next_z = centre_z + ((func_8003F8CC(direction - 0x280) * 10) >> 12);
+    func_80087698(last_x, last_z, next_x, next_z);
+    func_80087698(start.vx, start.vz, next_x, next_z);
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80082178);
+#endif
 
+/* Draw the small direction arrow at a map position (8.8 fixed point). Does not match:
+ * the start point is stored and re-read from the stack, and s5/s6 are swapped. */
+#ifdef NON_MATCHING
+void func_80082300(s32 x, s32 z, s32 direction) {
+    Vector start;
+    s32 centre_x;
+    s32 centre_z;
+    s32 last_x;
+    s32 last_z;
+    s32 next_x;
+    s32 next_z;
+    s32 angle;
+    s32 i;
+
+    centre_x = x >> 8;
+    centre_z = z >> 8;
+    last_x = start.vx = centre_x + ((func_8003F8B0(direction + 0x100) * 16) >> 12);
+    last_z = start.vz = centre_z + ((func_8003F8CC(direction + 0x100) * 16) >> 12);
+    angle = direction + 0x78A;
+    for (i = 0; i < 3; i++) {
+        next_x = centre_x + ((func_8003F8B0(angle) * 32) >> 12);
+        next_z = centre_z + ((func_8003F8CC(angle) * 32) >> 12);
+        func_80087698(last_x, last_z, next_x, next_z);
+        last_x = next_x;
+        last_z = next_z;
+        angle += 0x75;
+    }
+    next_x = centre_x + ((func_8003F8B0(direction - 0x100) * 16) >> 12);
+    next_z = centre_z + ((func_8003F8CC(direction - 0x100) * 16) >> 12);
+    func_80087698(last_x, last_z, next_x, next_z);
+    func_80087698(start.vx, start.vz, next_x, next_z);
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80082300);
+#endif
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80082458);
+/* Copy the stored map position. */
+void func_80082458(SVector *out) {
+    *out = D_80092768;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80082488);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80082880);
+/* Ground height of the map cell under a position (cells of 256 units). Does not match:
+ * two shift instructions are scheduled differently. */
+#ifdef NON_MATCHING
+s32 func_80082880(SVector *pos) {
+    Vector unused[3]; /* the original frame has 0x30 unused bytes */
+    s16 x = pos->vx >> 8;
+    s16 z = pos->vz >> 8;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800828C4);
+    return *(s16 *)&D_800928DC[z * 128 + x];
+}
+#else
+INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80082880);
+#endif
+
+/* The map cell word under a position (cells of 256 units). */
+s32 func_800828C4(Vector *pos) {
+    s32 x = pos->vx >> 8;
+    s32 z = pos->vz >> 8;
+
+    return D_800928DC[z * 128 + x];
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800828F8);
 
