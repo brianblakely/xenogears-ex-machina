@@ -152,7 +152,7 @@ extern u16 D_800591A8;
 
 extern u8 D_800C3664;  /* sprite updates paused */
 extern s32 D_800C367C;
-extern s16 D_800C3740;
+extern SVector D_800C3740;       /* the camera's framing angles */
 
 /* Run the calls between the two on a stack ending at top. */
 #define STACK_ENTER(top)                                                                           \
@@ -188,7 +188,7 @@ extern SVector D_800D30A0[2];    /* the camera's wanted eye and look-at points *
 extern SVector D_800C3CCC;       /* the eye point saved while the camera sprites run */
 extern SVector D_800C3CD4;       /* the look-at point saved while they run */
 extern u16 D_80059454;
-extern u16 D_800C3CDC;
+extern s32 D_800C3CDC;            /* the framed camera range */
 
 extern Matrix D_800D30BC; /* the battle view matrix */
 
@@ -206,6 +206,7 @@ extern BattleCamera D_800D309C;
 extern SVector D_800C354C; /* view shake offset */
 extern u8 D_800C372C;      /* stage drawing off */
 extern SVector D_800C3730; /* the camera's up vector */
+extern u8 D_800C3688;      /* frame the sprites without their gear heights */
 extern BattleSprite *D_800D39EC; /* the sprite the camera circles */
 extern s32 D_800C3738;           /* its distance from it */
 extern s16 D_800C373C;           /* its angle round it */

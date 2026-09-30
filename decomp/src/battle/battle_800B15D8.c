@@ -1090,12 +1090,194 @@ void func_800BC404(u16 mask) {
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BC404);
 #endif
 
-/* Set D_800C3740. */
+/* Set the camera framing pitch. */
 void func_800BC454(s16 value) {
-    D_800C3740 = value;
+    D_800C3740.vx = value;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BC460);
+/* Frame the camera on the party slots in mask: look at the middle of their
+ * sprites from the framing angles, at a range that keeps the farthest sprite
+ * (and its gear top) on screen; the points go to the camera's wanted eye and
+ * look-at points. */
+void func_800BC460(u32 mask) {
+    Vector center;
+    SVector eye;
+    SVector target;
+    Matrix m;
+    Vector offset;
+    SVector point;
+    s32 screen[2];
+    SVector v;
+    s32 result[2];
+    Matrix m2;
+    Vector out;
+    SVector v2;
+    Matrix m3;
+    Vector unused;
+    SVector v3;
+    BattleSprite *sprite;
+    s32 i;
+    s32 count;
+    s32 farthest;
+    s32 minX, maxX, minY, maxY, minZ, maxZ;
+    s32 distance;
+    s32 range;
+    u32 bits;
+
+    memset(&center, 0, sizeof(center));
+    farthest = 0;
+    D_800C3678 = mask;
+    i = 0;
+    count = 0;
+    for (bits = mask; i != 11; i++, bits = (bits & 0xFFFF) >> 1) {
+        if ((bits & 1) && !BATTLE_AREA.slots[i].hidden && (sprite = BATTLE_AREA.sprites[i]) != NULL) {
+            count++;
+            center.vx += sprite->x >> 1;
+            center.vy += sprite->y >> 1;
+            center.vz += sprite->z >> 1;
+        }
+    }
+    if (count != 0) {
+        center.vx = center.vx / count * 2;
+        center.vy = center.vy / count * 2;
+        center.vz = center.vz / count * 2;
+        maxX = minX = center.vx;
+        maxZ = minZ = center.vz;
+        maxY = minY = center.vy;
+        for (i = 0, bits = mask; i != 11; i++, bits = (bits & 0xFFFF) >> 1) {
+            if ((bits & 1) && !BATTLE_AREA.slots[i].hidden && (sprite = BATTLE_AREA.sprites[i]) != NULL) {
+                if (maxX < sprite->x) {
+                    maxX = sprite->x;
+                }
+                if (sprite->x < minX) {
+                    minX = sprite->x;
+                }
+                if (maxZ < sprite->z) {
+                    maxZ = sprite->z;
+                }
+                if (sprite->z < minZ) {
+                    minZ = sprite->z;
+                }
+                if (maxY < sprite->y) {
+                    maxY = sprite->y;
+                }
+                if (sprite->y < minY) {
+                    minY = sprite->y;
+                }
+            }
+        }
+        center.vx = (minX + maxX) / 2;
+        center.vy = (maxY + minY) / 2;
+        center.vz = (minZ + maxZ) / 2;
+        center.vx >>= 16;
+        center.vy >>= 16;
+        center.vz >>= 16;
+        func_8004ABBC(&D_800C3740, &m);
+        v.vx = 0;
+        v.vy = 0;
+        v.vz = ReadGeomScreen() * 8;
+        ApplyMatrix(&m, &v, &offset);
+        eye.vx = center.vx;
+        eye.vy = center.vy;
+        eye.vz = center.vz;
+        target.vx = center.vx;
+        target.vy = center.vy;
+        target.vz = center.vz;
+        eye.vx -= offset.vx;
+        eye.vy += offset.vy;
+        eye.vz -= offset.vz;
+        func_800BB844(&m, &eye, &target, &D_800C3730);
+        SetRotMatrix(&m);
+        SetTransMatrix(&m);
+        for (i = 0, bits = mask; i != 11; i++, bits = (bits & 0xFFFF) >> 1) {
+            if ((bits & 1) && !BATTLE_AREA.slots[i].hidden && (sprite = BATTLE_AREA.sprites[i]) != NULL) {
+                point.vx = sprite->x >> 16;
+                point.vy = sprite->y >> 16;
+                point.vz = sprite->z >> 16;
+                RotTransPers(&point, screen, &result[0], &result[1]);
+                ((s16 *)screen)[0] -= 160;
+                ((s16 *)screen)[1] -= 164;
+                ((s16 *)screen)[0] <<= 2;
+                ((s16 *)screen)[1] <<= 2;
+                distance = ((s16 *)screen)[0] * ((s16 *)screen)[0];
+                distance += ((s16 *)screen)[1] * ((s16 *)screen)[1];
+                if (farthest < distance) {
+                    farthest = distance;
+                }
+                if (BATTLE_AREA.slots[i].gear && D_800C3688 == 0) {
+                    point.vy -= sprite->size;
+                    RotTransPers(&point, screen, &result[0], &result[1]);
+                    ((s16 *)screen)[0] -= 160;
+                    ((s16 *)screen)[1] -= 164;
+                    ((s16 *)screen)[0] <<= 2;
+                    ((s16 *)screen)[1] <<= 2;
+                    distance = ((s16 *)screen)[0] * ((s16 *)screen)[0];
+                    distance += ((s16 *)screen)[1] * ((s16 *)screen)[1];
+                    if (farthest < distance) {
+                        farthest = distance;
+                    }
+                }
+            }
+        }
+        farthest = SquareRoot0(farthest);
+        if (farthest < 120) {
+            func_8004ABBC(&D_800C3740, &m2);
+            v2.vx = 0;
+            v2.vy = 0;
+            v2.vz = ReadGeomScreen() * 2;
+            D_800C3CDC = ReadGeomScreen() * 2;
+            ApplyMatrix(&m2, &v2, (Vector *)&point);
+            eye.vx = center.vx;
+            eye.vy = center.vy;
+            eye.vz = center.vz;
+            target.vx = center.vx;
+            target.vy = center.vy;
+            target.vz = center.vz;
+            eye.vx -= (*(Vector *)&point).vx;
+            eye.vy += (*(Vector *)&point).vy;
+            eye.vz -= (*(Vector *)&point).vz;
+            D_800D30A0[0].vx = eye.vx;
+            D_800D30A0[0].vy = eye.vy;
+            D_800D30A0[0].vz = eye.vz;
+            {
+                SVector *p = &D_800D30A0[1];
+
+                p->vx = target.vx;
+                p->vy = target.vy;
+                p->vz = target.vz;
+            }
+        } else {
+            range = (farthest << 14) / 120;
+            range = (range << 1) * ReadGeomScreen();
+            range >>= 14;
+            D_800C3CDC = range;
+            func_8004ABBC(&D_800C3740, &m3);
+            v3.vx = 0;
+            v3.vy = 0;
+            v3.vz = range;
+            ApplyMatrix(&m3, &v3, &out);
+            eye.vx = center.vx;
+            eye.vy = center.vy;
+            eye.vz = center.vz;
+            target.vx = center.vx;
+            target.vy = center.vy;
+            target.vz = center.vz;
+            eye.vx -= out.vx;
+            eye.vy += out.vy;
+            eye.vz -= out.vz;
+            D_800D30A0[0].vx = eye.vx;
+            D_800D30A0[0].vy = eye.vy;
+            D_800D30A0[0].vz = eye.vz;
+            {
+                SVector *p = &D_800D30A0[1];
+
+                p->vx = target.vx;
+                p->vy = target.vy;
+                p->vz = target.vz;
+            }
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BCAA4);
 
