@@ -2505,9 +2505,9 @@ void func_80077268(void) {
             }
         }
     }
-    D_800B2078.unk2368 = 0;
-    D_800B2078.unk2364 = 0;
-    D_800B2078.unk2360 = 0;
+    D_800B2078.history[2] = 0;
+    D_800B2078.history[1] = 0;
+    D_800B2078.history[0] = 0;
     for (i = 0; i < 0x20; i++) {
         func_80081C54(D_800B2078.controlled);
     }
@@ -5397,7 +5397,138 @@ void func_8008110C(void) {
     }
 }
 
+/* Move the party followers: while they idle, return each to its idle
+ * animation; otherwise replay the leader's movement history, each follower
+ * lagging its own number of records behind, settling when it catches up. */
+#ifdef NON_MATCHING
+void func_800815F0(void) {
+    FieldDescriptor *descriptor;
+    FieldActor *actor;
+    FieldModel *sprite;
+    s32 i;
+    s32 k;
+    s32 slot;
+    s32 lag;
+    u32 recorded;
+    s32 *index;
+    s16 animation;
+    s16 idle;
+
+    if (D_800B2078.followers_idle != 0) {
+        for (i = 0; i < D_800ADBFC; i++) {
+            if ((D_800AF880.components.descriptors[i].actor->flags & 0x01000000) && i != D_800B2078.controlled &&
+                !(D_800AF880.components.descriptors[i].flags & 0x20)) {
+                actor = D_800AF880.components.descriptors[i].actor;
+                descriptor = &D_800AF880.components.descriptors[i];
+                sprite = descriptor->model;
+                idle = actor->unkE6;
+                if (actor->unkE8 != idle) {
+                    actor->unkE8 = idle;
+                    if (idle < 0) {
+                        actor->unkE8 = 0;
+                    }
+                    func_800821F4(sprite, actor->unkE8, descriptor);
+                }
+            }
+        }
+        return;
+    }
+    for (i = 0; i < D_800ADBFC; i++) {
+        if (!(D_800AF880.components.descriptors[i].actor->flags & 0x01000000) || i == D_800B2078.controlled ||
+            (D_800AF880.components.descriptors[i].flags & 0x20)) {
+            continue;
+        }
+        descriptor = &D_800AF880.components.descriptors[i];
+        actor = D_800AF880.components.descriptors[i].actor;
+        sprite = descriptor->model;
+        slot = func_8009FA00(actor->unkE4);
+        if (slot == -1) {
+            continue;
+        }
+        index = &D_800B2360[slot];
+        func_80081F80(sprite, D_800B14F0[*index].heading, descriptor);
+        recorded = D_800B14F0[*index].flags;
+        if (D_800B2078.forced_position == 1) {
+            *index = (D_800B2360[0] + 1) & 0x1F;
+        } else {
+            if (!(recorded & 0x800)) {
+                actor->layer_flags &= ~0x1000;
+                if (!(actor->unk014 & 0x420000)) {
+                    if (D_800C3910 == -1) {
+                        if ((s16)sprite->unk84 == actor->position[1] >> 16) {
+                            if (actor->unkE8 == 6) {
+                                actor->layer_flags |= 0x1000;
+                                continue;
+                            }
+                            if (actor->unkE8 == actor->unkE6) {
+                                continue;
+                            }
+                            actor->unkE8 = actor->unkE6;
+                            if (actor->unkE6 < 0) {
+                                actor->unkE8 = 0;
+                            }
+                            func_800821F4(sprite, actor->unkE8, descriptor);
+                            continue;
+                        }
+                    } else {
+                        lag = 20;
+                        if (slot == 1) {
+                            lag = 10;
+                        }
+                        if (((D_800B2360[0] + lag) & 0x1F) != *index) {
+                            continue;
+                        }
+                    }
+                }
+            }
+            if (D_800B2360[slot] == D_800B2360[0]) {
+                actor->flags &= ~0x800;
+                actor->unkE8 = actor->unkE6;
+                if (actor->unkE8 < 0) {
+                    actor->unkE8 = 0;
+                }
+                func_800821F4(sprite, actor->unkE8, descriptor);
+                continue;
+            }
+        }
+        if (recorded & 0x800) {
+            actor->flags |= 0x800;
+        } else {
+            actor->flags &= ~0x800;
+        }
+        animation = D_800B14F0[D_800B2360[slot]].unk12;
+        if (actor->unkE8 != animation) {
+            actor->unkE8 = animation;
+            if (animation < 0) {
+                actor->unkE8 = 0;
+            }
+            func_800821F4(sprite, actor->unkE8, descriptor);
+        }
+        for (k = 0; k < 4; k++) {
+            actor->triangle[k] = D_800B14F0[D_800B2360[slot]].triangle[k];
+        }
+        index = &D_800B2360[slot];
+        actor->layer = D_800B14F0[*index].layer;
+        actor->unk50[0] = D_800B14F0[*index].unk30[0];
+        actor->unk50[1] = D_800B14F0[*index].unk30[1];
+        actor->unk50[2] = D_800B14F0[*index].unk30[2];
+        sprite->velocity[0] = D_800B14F0[*index].model_c[0];
+        sprite->velocity[1] = D_800B14F0[*index].model_c[1];
+        sprite->velocity[2] = D_800B14F0[*index].model_c[2];
+        descriptor->matrix.t[0] = D_800B14F0[*index].position[0];
+        descriptor->matrix.t[1] = D_800B14F0[*index].position[1];
+        descriptor->matrix.t[2] = D_800B14F0[*index].position[2];
+        actor->position[0] = sprite->position[0] = descriptor->matrix.t[0] << 16;
+        actor->position[1] = sprite->position[1] = descriptor->matrix.t[1] << 16;
+        actor->position[2] = sprite->position[2] = descriptor->matrix.t[2] << 16;
+        sprite->unk84 = D_800B14F0[*index].model84;
+        actor->heading = actor->heading_goal = D_800B14F0[*index].heading;
+        *index = (*index - 1) & 0x1F;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800815F0);
+#endif
 
 #ifdef NON_MATCHING
 /* Record the controlled actor `index`'s state in the next movement-history
@@ -5410,27 +5541,27 @@ void func_80081C54(s32 index) {
     actor = D_800AF880.components.descriptors[index].actor;
     model = D_800AF880.components.descriptors[index].model;
     if (index == D_800B2078.controlled && D_800B2078.party_processing_mode == 0) {
-        D_800B14F0[D_800B2078.unk2360].model_c[0] = model->velocity[0];
-        D_800B14F0[D_800B2078.unk2360].model_c[1] = model->velocity[1];
-        D_800B14F0[D_800B2078.unk2360].model_c[2] = model->velocity[2];
-        D_800B14F0[D_800B2078.unk2360].unk30[0] = actor->unk50[0];
-        D_800B14F0[D_800B2078.unk2360].unk30[1] = actor->unk50[1];
-        D_800B14F0[D_800B2078.unk2360].unk30[2] = actor->unk50[2];
-        D_800B14F0[D_800B2078.unk2360].heading = actor->heading_goal & 0xFFF;
-        D_800B14F0[D_800B2078.unk2360].model84 = model->unk84;
-        D_800B14F0[D_800B2078.unk2360].position[0] = WHOLE(actor->position[0]);
-        D_800B14F0[D_800B2078.unk2360].position[1] = WHOLE(actor->position[1]);
-        D_800B14F0[D_800B2078.unk2360].position[2] = WHOLE(actor->position[2]);
-        D_800B14F0[D_800B2078.unk2360].unk12 = actor->unkE8;
-        D_800B14F0[D_800B2078.unk2360].unk40 = actor->unk014;
-        D_800B14F0[D_800B2078.unk2360].flags = actor->flags;
-        D_800B14F0[D_800B2078.unk2360].layer_flags = actor->layer_flags;
+        D_800B14F0[D_800B2078.history[0]].model_c[0] = model->velocity[0];
+        D_800B14F0[D_800B2078.history[0]].model_c[1] = model->velocity[1];
+        D_800B14F0[D_800B2078.history[0]].model_c[2] = model->velocity[2];
+        D_800B14F0[D_800B2078.history[0]].unk30[0] = actor->unk50[0];
+        D_800B14F0[D_800B2078.history[0]].unk30[1] = actor->unk50[1];
+        D_800B14F0[D_800B2078.history[0]].unk30[2] = actor->unk50[2];
+        D_800B14F0[D_800B2078.history[0]].heading = actor->heading_goal & 0xFFF;
+        D_800B14F0[D_800B2078.history[0]].model84 = model->unk84;
+        D_800B14F0[D_800B2078.history[0]].position[0] = WHOLE(actor->position[0]);
+        D_800B14F0[D_800B2078.history[0]].position[1] = WHOLE(actor->position[1]);
+        D_800B14F0[D_800B2078.history[0]].position[2] = WHOLE(actor->position[2]);
+        D_800B14F0[D_800B2078.history[0]].unk12 = actor->unkE8;
+        D_800B14F0[D_800B2078.history[0]].unk40 = actor->unk014;
+        D_800B14F0[D_800B2078.history[0]].flags = actor->flags;
+        D_800B14F0[D_800B2078.history[0]].layer_flags = actor->layer_flags;
         for (i = 0; i < 4; i++) {
-            D_800B14F0[D_800B2078.unk2360].triangle[i] = actor->triangle[i];
+            D_800B14F0[D_800B2078.history[0]].triangle[i] = actor->triangle[i];
         }
-        D_800B14F0[D_800B2078.unk2360].layer = actor->layer;
+        D_800B14F0[D_800B2078.history[0]].layer = actor->layer;
         D_800C3910 = 0;
-        D_800B2078.unk2360 = (D_800B2078.unk2360 - 1) & 0x1F;
+        D_800B2078.history[0] = (D_800B2078.history[0] - 1) & 0x1F;
     }
 }
 #else
@@ -11775,9 +11906,9 @@ void func_8009B184(void) {
     i = 0;
     D_800B2078.forced_position = 0;
     D_800B2078.party_processing_mode = 0;
-    D_800B2078.unk2368 = 0;
-    D_800B2078.unk2364 = 0;
-    D_800B2078.unk2360 = 0;
+    D_800B2078.history[2] = 0;
+    D_800B2078.history[1] = 0;
+    D_800B2078.history[0] = 0;
     D_800B2078.preserve_nonplayer_motion = 0;
     do {
         i++;
@@ -11824,9 +11955,9 @@ void func_8009B338(void) {
     s32 i;
 
     i = 0;
-    D_800B2078.unk2368 = 0;
-    D_800B2078.unk2364 = 0;
-    D_800B2078.unk2360 = 0;
+    D_800B2078.history[2] = 0;
+    D_800B2078.history[1] = 0;
+    D_800B2078.history[0] = 0;
     D_800B2078.preserve_nonplayer_motion = 0;
     do {
         i++;

@@ -577,9 +577,7 @@ typedef struct {
     u8 unk2357;                /* 2357 */
     u8 unk2358;                /* 2358 */
     u8 unk2359[0x2360 - 0x2359];
-    s32 unk2360;               /* 2360 */
-    s32 unk2364;               /* 2364 */
-    s32 unk2368;               /* 2368 */
+    s32 history[3];            /* 2360: movement history index per party slot */
     u16 unk236C;               /* 236C */
     u8 unk236E[2];
     s32 wave_chunks;           /* 2370: music-wave chunks gathered */
@@ -953,8 +951,10 @@ extern void func_800A3074(u16 reference, s32 value); /* write an event variable 
 extern s32 func_800ACDB8(s32 offset); /* raw halfword operand */
 extern s32 func_800ACDEC(s32 offset); /* operand: bit 15 immediate, else variable */
 extern void func_80086A1C(s32 emitter, s32 *position);
-struct FieldSpriteMotion;
-extern void func_80081F80(struct FieldSpriteMotion *sprite, s16 heading, FieldDescriptor *descriptor);
+extern void func_80081F80(FieldModel *sprite, s16 heading, FieldDescriptor *descriptor);
+extern void func_800821F4(void *model, s32 animation, FieldDescriptor *descriptor);
+extern s32 func_8009FA00(s32 character);
+extern s32 D_800B2360[3]; /* movement history index per party slot (FieldWork +2360) */
 extern s32 func_800854D0(void);
 extern void func_800855C8(s32 id, s32 volume, s32 pan, s32 channel);
 extern s32 func_80099A4C(s32 dx, s32 dz);
