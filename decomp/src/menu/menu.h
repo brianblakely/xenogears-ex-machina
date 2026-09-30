@@ -207,9 +207,9 @@ typedef struct Actor {
     Vector pos;          /* 0x00 */
     Vector velocity;     /* 0x10: vy is the vertical speed */
     Vector push;         /* 0x20: horizontal push (vx, vz) */
-    u8 unk30[0x10];
-    s32 unk40;
-    u8 unk44[0x4];
+    Vector unk30;        /* 0x30: bounce step */
+    s32 unk40;           /* 0x40: forward speed */
+    s32 unk44;           /* 0x44: bounce speed */
     s32 state;           /* 0x48 */
     u8 anim;             /* 0x4C */
     u8 unk4D;
@@ -227,7 +227,10 @@ typedef struct Actor {
     s32 unk7C;
     struct MoveSlot *move_slots; /* 0x80: one per combo number */
     u8 *unk84;
-    u8 unk88[0x10];
+    s32 unk88;
+    s32 unk8C;
+    s32 unk90;
+    s32 unk94;
     s32 accel;           /* 0x98 */
     s32 brake;           /* 0x9C */
     u8 unkA0[0x8];
@@ -261,11 +264,12 @@ typedef struct Actor {
     s16 unkF0;           /* 0xF0: frames since the last hit reaction */
     s16 unkF2;
     s32 unkF4;
-    u8 unkF8[0x8];
+    u8 unkF8[0x4];
+    s32 unkFC;           /* 0xFC: heading offset */
     s32 unk100;
     Trail trails[16];    /* 0x104 */
     s32 unk644;
-    u8 unk648[0x4];
+    s32 unk648;          /* 0x648: heading */
     Shot shots[9];       /* 0x64C */
     u8 unk8B0[0x44];
     s32 nearest_dist;    /* 0x8F4: distance of the closest shot */
@@ -277,7 +281,7 @@ typedef struct Actor {
     u8 model_id;         /* 0x909 */
     u8 kind;             /* 0x90A: bits 0-2 */
     u8 unk90B;
-    u8 unk90C[0x2];
+    s16 unk90C;          /* 0x90C: heading held during a move */
     u8 unk90E;
     u8 unk90F;
     u8 unk910;
