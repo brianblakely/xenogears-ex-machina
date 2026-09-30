@@ -7,6 +7,7 @@ int strlen(const char *s);
 char *strcpy(char *dst, const char *src);
 char *strcat(char *dst, const char *src);
 void *bzero(unsigned char *p, int n);
+void *memchr(void *s, int c, int n);
 void *memcpy(void *dest, void *src, int n);
 void *memmove(void *dest, void *src, int n);
 int rand(void);

@@ -4,6 +4,7 @@
 #include "common.h"
 #include "psyq/types.h"
 #include "psyq/libgpu.h"
+#include "psyq/stdarg.h"
 
 /* Header of a 16-bit TIM file written by the screenshot helper 80035F1C. */
 typedef struct {
@@ -50,7 +51,20 @@ typedef struct {
 extern Console *D_80059394;
 extern s32 D_800593A0; /* the console block is not owned (not released) */
 
-void func_80036718(s32 target, char *format, void *args);
+/* A conversion's settings (defaults at D_8005A1CC). */
+typedef struct {
+    union {
+        s32 flags;     /* 1 left-justified, 2 plus sign, 4 zero padded, 8 precision set */
+        u8 bytes[4];   /* bytes[1]: the sign character */
+    } u;
+    s32 width;
+    s32 precision;
+    u32 base;
+} FormatSpec;
+
+extern FormatSpec D_8005A1CC;
+
+s32 func_80036718(s32 target, char *format, va_list args); /* the console printf core */
 void func_8003700C(char *format, ...); /* printf to the console */
 void func_80037324(u_long *ot);            /* flush the debug text into ot */
 void func_8003747C(s32 value);

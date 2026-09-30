@@ -946,18 +946,224 @@ void func_800365FC(void) {
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800365FC);
 #endif
 
-extern void (*D_80050594)(void);
+extern void (*D_80050594)(s32 c);
 
-/* Install the callback run by 800366f0. */
-void func_800366E0(void (*callback)(void)) {
+/* Install the character output run by 800366f0. */
+void func_800366E0(void (*callback)(s32 c)) {
     D_80050594 = callback;
 }
 
-void func_800366F0(void) {
-    D_80050594();
+/* Output a character through the installed callback. */
+void func_800366F0(s32 c) {
+    D_80050594(c);
 }
 
+/* Format `format` with the word arguments at `args` through the console's
+ * character output (800366F0): flags - + space 0, width and precision (or
+ * *), conversions b d i u p X x c s n and %%. Returns the characters
+ * written; an unknown conversion ends the output.
+ * Nonmatching: the format and argument pointers (and the hoisted sign
+ * characters) take each other's registers, and the digit loops reuse the
+ * condition's c - '0'. */
+#ifdef NON_MATCHING
+s32 func_80036718(s32 target, char *format, va_list args) {
+    char buffer[0x100];
+    FormatSpec spec;
+    char *p;
+    char *digits;
+    char *end;
+    s32 count = 0;
+    s32 length;
+    u32 value;
+    s32 c;
+    s32 i;
+
+    c = *format;
+    while (c != 0) {
+        if (c == '%') {
+            spec = D_8005A1CC;
+            for (;;) {
+                c = *++format;
+                if (c == '-') {
+                    spec.u.flags |= 1;
+                } else if (c == '+') {
+                    spec.u.flags |= 2;
+                } else if (c == ' ') {
+                    spec.u.bytes[1] = c;
+                } else if (c == '0') {
+                    spec.u.flags |= 4;
+                } else {
+                    break;
+                }
+            }
+            if (c == '*') {
+                spec.width = va_arg(args, s32);
+                if (spec.width < 0) {
+                    spec.width = -spec.width;
+                    spec.u.flags |= 1;
+                }
+                c = *++format;
+            } else {
+                while ((u32)(c - '0') < 10) {
+                    spec.width = spec.width * 10 - '0' + c;
+                    c = *++format;
+                }
+            }
+            if (c == '.') {
+                c = *++format;
+                if (c == '*') {
+                    spec.precision = va_arg(args, s32);
+                    c = *++format;
+                } else {
+                    while ((u32)(c - '0') < 10) {
+                        spec.precision = spec.precision * 10 - '0' + c;
+                        c = *++format;
+                    }
+                }
+                if (spec.precision >= 0) {
+                    spec.u.flags |= 8;
+                }
+            }
+            p = (char *)&spec;
+            if (spec.u.flags & 1) {
+                spec.u.flags &= ~4;
+            }
+            switch (c) {
+            case 'b':
+                value = va_arg(args, s32);
+                spec.base = 2;
+                spec.u.bytes[1] = 0;
+                goto number;
+            case 'd':
+            case 'i':
+                value = va_arg(args, s32);
+                if ((s32)value < 0) {
+                    value = -value;
+                    spec.u.bytes[1] = '-';
+                } else if (spec.u.flags & 2) {
+                    spec.u.bytes[1] = '+';
+                }
+                spec.base = 10;
+                goto number;
+            case 'u':
+                value = va_arg(args, s32);
+                spec.base = 10;
+                spec.u.bytes[1] = 0;
+            number:
+                if (!(spec.u.flags & 8)) {
+                    if (spec.u.flags & 4) {
+                        spec.precision = spec.width;
+                        if (spec.u.bytes[1] != 0) {
+                            spec.precision = spec.width - 1;
+                        }
+                    }
+                    if (spec.precision <= 0) {
+                        spec.precision = 1;
+                    }
+                }
+                length = 0;
+                while (value != 0) {
+                    *--p = value % spec.base + '0';
+                    value /= spec.base;
+                    length++;
+                }
+                while (length < spec.precision) {
+                    *--p = '0';
+                    length++;
+                }
+                if (spec.u.bytes[1] != 0) {
+                    *--p = spec.u.bytes[1];
+                    length++;
+                }
+                break;
+            case 'p':
+                spec.precision = 8;
+                spec.u.flags |= 8;
+            case 'X':
+                digits = "0123456789ABCDEF";
+                goto hex;
+            case 'x':
+                digits = "0123456789abcdef";
+            hex:
+                value = va_arg(args, s32);
+                if (!(spec.u.flags & 8)) {
+                    if (spec.u.flags & 4) {
+                        spec.precision = spec.width;
+                    }
+                    if (spec.precision <= 0) {
+                        spec.precision = 1;
+                    }
+                }
+                length = 0;
+                while (value != 0) {
+                    *--p = digits[value & 0xF];
+                    value >>= 4;
+                    length++;
+                }
+                while (length < spec.precision) {
+                    *--p = '0';
+                    length++;
+                }
+                break;
+            case 'c':
+                *--p = va_arg(args, s32);
+                length = 1;
+                break;
+            case 's':
+                p = va_arg(args, char *);
+                if (!(spec.u.flags & 8)) {
+                    length = strlen(p);
+                } else {
+                    end = memchr(p, 0, spec.precision);
+                    length = end - p;
+                    if (end == NULL) {
+                        length = spec.precision;
+                    }
+                }
+                break;
+            case 'n':
+                *va_arg(args, s32 *) = count;
+                format++;
+                c = *format;
+                continue;
+            default:
+                if (c != '%') {
+                    return count;
+                }
+                func_800366F0(c);
+                count++;
+                format++;
+                c = *format;
+                continue;
+            }
+            if (length < spec.width && !(spec.u.flags & 1)) {
+                do {
+                    func_800366F0(' ');
+                    count++;
+                } while (length < --spec.width);
+            }
+            for (i = 0; i < length; i++) {
+                func_800366F0(p[i]);
+            }
+            count += length;
+            while (length < spec.width) {
+                func_800366F0(' ');
+                length++;
+                count++;
+            }
+            format++;
+        } else {
+            func_800366F0(c);
+            count++;
+            format++;
+        }
+        c = *format;
+    }
+    return count;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036718);
+#endif
 
 void func_80036CD8(s32 bits) {
     D_80059394->flags |= bits;
@@ -1085,8 +1291,11 @@ void func_80036FE4(void) {
 
 /* printf to the console, when there is one. */
 void func_8003700C(char *format, ...) {
+    va_list args;
+
     if (D_80059394 != NULL) {
-        func_80036718(0, format, &format + 1);
+        va_start(args, format);
+        func_80036718(0, format, args);
     }
 }
 
