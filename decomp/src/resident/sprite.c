@@ -559,7 +559,28 @@ DVECTOR func_8001F530(s32 width) {
     return position;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001F5BC);
+/* A sprite's extent (width, height, depth) at its scale, from the frame
+ * record its first animation's byte 4 selects (less one; the first record
+ * when the directory entry is below the index). */
+void func_8001F5BC(Sprite *sprite, s32 unused, s32 *width, s32 *height, s32 *depth) {
+    SpriteSource *source = sprite->image;
+    u8 *block = (u8 *)(source->animations[1] + (s32)source->animations);
+    u8 *animation = (u8 *)(((u16 *)block)[2] + (s32)block);
+    s32 index = animation[4];
+    u16 *frames = source->frames;
+    u8 *record;
+
+    if (index != 0) {
+        index--;
+    }
+    if (frames[index] < index) {
+        index = 0;
+    }
+    record = (u8 *)(frames[index + 1] + (s32)frames);
+    *height = record[3] * sprite->scale / 4096;
+    *depth = record[1] * sprite->scale / 4096;
+    *width = record[2] * sprite->scale / 4096;
+}
 
 /* Recolour a one-sided sprite's parts: the sprite's colour word and blend
  * mode (its blend rate - 1). */
@@ -591,9 +612,124 @@ void func_8001F6B0(Sprite *sprite) {
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001F6B0);
 #endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001F750);
+/* Apply the control bytes of frame `frame`'s parts: for each part, bytes
+ * with bit 7 set precede it; with bit 6 they set entry (bits 0-2) of the
+ * renderer's 0x40-byte block (bit 5: two bytes, bit 4: a depth byte * 16,
+ * else depth 0), otherwise bits 0-1 skip a byte each. Parts are 3 bytes (5
+ * when the frame's bit 7 is set). */
+void func_8001F750(Sprite *sprite, s32 frame, SpriteSource *source) {
+    u16 *frames = source->frames;
+    u8 *record = (u8 *)(frames[frame] + (s32)frames);
+    u8 wide = *record & 0x80;
+    s32 count = *record & 0x3F;
+    u8 *p = record + (count * 2 + 4);
+    s32 i;
+    u8 control;
+    s32 slot;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001F8E8);
+    for (i = 0; i != count; i++) {
+    next:
+        control = *p;
+        if (control & 0x80) {
+            p++;
+            if (control & 0x40) {
+                slot = control & 7;
+                if (sprite->renderer->pointer34 == NULL) {
+                    sprite->renderer->pointer34 = func_80031BDC(0x40, 0);
+                    func_800234AC(sprite);
+                }
+                if (control & 0x20) {
+                    sprite->renderer->pointer34[slot].byte0 = *p++;
+                    sprite->renderer->pointer34[slot].byte1 = *p++;
+                }
+                if (control & 0x10) {
+                    s16 depth = *p++ << 4;
+
+                    sprite->renderer->pointer34[slot].half6 = depth;
+                } else {
+                    sprite->renderer->pointer34[slot].half6 = 0;
+                }
+            } else {
+                if (control & 1) {
+                    p++;
+                }
+                if (control & 2) {
+                    p++;
+                }
+            }
+            goto next;
+        }
+        if (wide) {
+            p += 2;
+        }
+        p += 3;
+    }
+}
+
+/* Apply the control bytes of frame `frame`'s parts (as 8001f750 does, which
+ * handles directories with bit 15 set): here the part count is followed by
+ * four bytes per part. Frames beyond the directory's count (bits 0-8) are
+ * ignored. */
+void func_8001F8E8(Sprite *sprite, s32 frame, SpriteSource *source) {
+    u16 *frames = source->frames;
+    u8 *record;
+    u8 wide;
+    s32 count;
+    u8 *p;
+    s32 i;
+    u8 control;
+    s32 slot;
+    s32 unused[4]; /* the frame reserves 16 bytes no code uses */
+
+    if (frame >= (*frames & 0x1FF) + 1) {
+        return;
+    }
+    if (*frames & 0x8000) {
+        func_8001F750(sprite, frame, source);
+        return;
+    }
+    record = (u8 *)(frames[frame] + (s32)frames);
+    wide = *record & 0x80;
+    count = *record & 0x3F;
+    p = record + (count * 4 + 6);
+    for (i = 0; i != count; i++) {
+    next:
+        control = *p;
+        if (control & 0x80) {
+            p++;
+            if (control & 0x40) {
+                if (sprite->renderer->pointer34 == NULL) {
+                    sprite->renderer->pointer34 = func_80031BDC(0x40, 0);
+                    func_800234AC(sprite);
+                }
+                slot = control & 7;
+                if (control & 0x20) {
+                    sprite->renderer->pointer34[slot].byte0 = *p++;
+                    sprite->renderer->pointer34[slot].byte1 = *p++;
+                }
+                if (control & 0x10) {
+                    s16 depth = *p++ << 4;
+
+                    sprite->renderer->pointer34[slot].half6 = depth;
+                } else {
+                    sprite->renderer->pointer34[slot].half6 = 0;
+                }
+            } else {
+                if (control & 1) {
+                    p++;
+                }
+                if (control & 2) {
+                    p++;
+                }
+            }
+            goto next;
+        }
+        if (wide) {
+            p += 2;
+        }
+        p += 3;
+    }
+}
 
 /* Unpack and upload the image at 8004fbd8 to (x, y). */
 void func_8001FAB4(s32 x, s32 y) {

@@ -162,6 +162,14 @@ typedef struct {
     u16 *buffer;           /* +0x18: allocated by 8002303c */
 } SpriteSequencer;
 
+/* A sprite's source data (sprite->image): its frame directory (a count, then
+ * the offsets of the frame records from the directory) and its animations. */
+typedef struct {
+    u16 *frames;           /* +0x0 */
+    u8 unknown4[0xC];
+    u16 *animations;       /* +0x10 */
+} SpriteSource;
+
 /* A sprite image header (inline at sprite + 0x110). */
 typedef struct {
     u16 width;
@@ -276,7 +284,8 @@ void func_8001E3D8(Sprite *sprite, s32 frame);
 void func_8001E9BC(Sprite *sprite, s32 frame);
 void func_8001EE88(Sprite *sprite, s32 frame, void *image);
 void func_8001F1D4(Sprite *sprite, s32 frame, void *image);
-void func_8001F8E8(Sprite *sprite, s32 frame, void *image);
+void func_8001F750(Sprite *sprite, s32 frame, SpriteSource *source);
+void func_8001F8E8(Sprite *sprite, s32 frame, SpriteSource *source);
 void func_800234AC(Sprite *sprite);
 s32 func_8003F8B0(s32 angle); /* rcos */
 s32 func_8003F8CC(s32 angle); /* rsin */
