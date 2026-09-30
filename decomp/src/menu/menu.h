@@ -417,6 +417,10 @@ extern s32 D_80092668;
 extern s32 D_8009266C;
 extern s32 D_80092670;
 extern s32 D_80092674;
+extern s32 D_800911D4; /* debug: camera tuning with the pad */
+void func_80070808(Vector *target, s32 steps);
+void func_800708C4(Vector *target, s32 steps);
+s32 func_800887A4(Vector *from, Vector *to);
 extern s32 D_800928AC;
 extern u8 D_800928C0;
 extern Vector D_80092A34[4]; /* saved positions: both actors, then both homes */

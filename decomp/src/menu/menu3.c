@@ -1262,7 +1262,57 @@ void func_8007A884(void) {
     D_80097010.start.vy = 0x100;
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007A958);
+/* Follow an actor with the camera: look at its core at the reference
+ * height, place the eye behind it by the camera angle, height and length
+ * (tunable with the pad in debug), and back the look-at point off until it
+ * is at least 0x200 away. */
+void func_8007A958(Actor *actor) {
+    Vector target;
+    u16 held;
+
+    if (D_800911D4 != 0) {
+        held = D_80059570;
+        if (held & 0x1000) {
+            D_8009266C += 4;
+        }
+        if (held & 0x4000) {
+            D_8009266C -= 4;
+        }
+        if (held & 0x10) {
+            D_80092670 += 4;
+        }
+        if (held & 0x40) {
+            D_80092670 -= 4;
+        }
+        if (held & 0x2000) {
+            D_80092668 -= 0x20;
+        }
+        if (held & 0x8000) {
+            D_80092668 += 0x20;
+        }
+        if (held & 8) {
+            D_80092674 -= 0x10;
+        }
+        if (held & 2) {
+            D_80092674 += 0x10;
+        }
+        func_800379C8("ANG %x\n", D_80092668 & 0xFFF);
+        func_800379C8("REF %x\n", D_8009266C);
+        func_800379C8("CAM %x\n", D_80092670);
+        func_800379C8("LEN %x\n", D_80092674);
+    }
+    target = actor->core;
+    target.vy = actor->pos.vy - D_8009266C;
+    func_80070808(&target, 8);
+    target.vy = actor->pos.vy - D_80092670;
+    target.vx = actor->pos.vx + ((func_8003F8B0(actor->angle + D_80092668) * D_80092674) >> 12);
+    target.vz = actor->pos.vz + ((func_8003F8CC(actor->angle + D_80092668) * D_80092674) >> 12);
+    func_800708C4(&target, 0x10);
+    while (func_800887A4(&D_8009871C, &actor->pos) < 0x200) {
+        D_8009871C.vy -= 2;
+        D_8009871C.vx -= 2;
+    }
+}
 
 /* Restore the saved positions and homes, make them the round start and
  * set up the camera on the leading actor. */
