@@ -9951,7 +9951,30 @@ void func_800A83B4(void) {
     }
 }
 
+#include "field_panel.h"
+
+#ifdef NON_MATCHING
+/* Texture panel piece `index` of the current buffer with its frame moved
+ * by (du, dv), flipped vertically. The original passes the coordinates to
+ * 8007a44c unconverted (no s16 prototype in scope: a separate unit). */
+void func_800A8408(s32 index, s32 du, s32 dv) {
+    s32 frame;
+    s32 u;
+    s32 v;
+    s32 w;
+    s32 h;
+    s32 unused[6]; /* the original frame reserves an unused 24-byte local */
+
+    frame = D_800AEF10[index].frame;
+    v = D_800AEB68[frame].v + dv;
+    w = D_800AEB68[frame].w;
+    u = D_800AEB68[frame].u + du;
+    h = D_800AEB68[frame].h;
+    func_8007A44C(&D_800AFC60[D_800ADB08][index], u, v + h - 1, u + w, v + h - 1, u, v - 1, u + w, v - 1);
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A8408);
+#endif
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A84C0);
 
@@ -10403,14 +10426,110 @@ void func_800ABEC8(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800ABFDC);
+#include "field_glyph.h"
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AC03C);
+extern s32 D_800AF780; /* file 0xab bytes left */
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AC0F0);
+/* The glyph of the two-byte code at `text`: an index into the overlay font
+ * (*own 1) or the ROM font bitmap (*own 0). */
+s32 func_800ABFDC(u8 *text, s32 *own) {
+    u16 code;
+
+    code = text[1] | (text[0] << 8);
+    if ((u16)(code - GLYPH_OWN_FIRST) < GLYPH_OWN_COUNT) {
+        *own = 1;
+        return code - GLYPH_OWN_FIRST;
+    }
+    *own = 0;
+    return (s32)func_800405C4(code);
+}
+
+/* Expand a 16x15 1-bit ROM glyph into an 8-bit glyph cell (0xff set, 0
+ * clear); a -1 glyph fills the cell. */
+void func_800AC03C(u8 *cell, u16 *rows) {
+    s32 i;
+    s32 bit;
+
+    if (rows == (u16 *)-1) {
+        for (i = 0; i < GLYPH_CELL_BYTES; i++) {
+            *cell++ = 0xFF;
+        }
+        return;
+    }
+    for (i = 0; i < 15; i++) {
+        for (bit = 7; bit >= 0; bit--) {
+            *cell++ = (*rows >> bit) & 1 ? 0xFF : 0;
+        }
+        for (bit = 15; bit >= 8; bit--) {
+            *cell++ = (*rows >> bit) & 1 ? 0xFF : 0;
+        }
+        *cell++ = 0;
+        *cell++ = 0;
+        rows++;
+    }
+}
+
+/* Draw the next text line (ending at CR, up to 28 glyphs) into VRAM row
+ * `row` at x `left`, blanking the rest; return the text after it. */
+u8 *func_800AC0F0(u8 *text, s32 left, s32 row) {
+    GlyphCell cell;
+    RECT dest;
+    RECT source;
+    u8 line[0x40];
+    s32 own;
+    s32 used;
+    s32 count;
+    s32 glyph;
+    s32 x;
+    s32 i;
+
+    dest.w = 9;
+    dest.h = 16;
+    dest.y = row * 16;
+    for (i = 0; i < 0x40; i++) {
+        line[i] = text[i];
+    }
+    for (i = GLYPH_CELL_BYTES - 1; i >= 0; i--) {
+        cell.pixels[0][i] = 0;
+    }
+    used = 0;
+    if (D_800AF780 <= 0) {
+        count = 0;
+    } else {
+        for (count = 0, x = left; count < GLYPH_LINE_CELLS; count++, x += 9) {
+            if (line[used] == '\r') {
+                used++;
+                break;
+            }
+            glyph = func_800ABFDC(&line[used], &own);
+            used += 2;
+            if (own == 1) {
+                source.w = 9;
+                source.h = 16;
+                source.x = glyph % 7 * 9 + 0x380;
+                source.y = glyph / 7 * 16 + 0x100;
+                MoveImage(&source, x, row * 16);
+            } else {
+                func_800AC03C(cell.pixels[0], (u16 *)glyph);
+                dest.x = x;
+                LoadImage(&dest, (u_long *)&cell);
+            }
+            DrawSync(0);
+        }
+    }
+    for (i = GLYPH_CELL_BYTES - 1; i >= 0; i--) {
+        cell.pixels[0][i] = 0;
+    }
+    for (; count < GLYPH_LINE_CELLS; count++) {
+        dest.x = count * 9 + left;
+        LoadImage(&dest, (u_long *)&cell);
+        DrawSync(0);
+    }
+    D_800AF780 -= used;
+    return text + used;
+}
 
 extern s32 func_80028738(s32 file);
-extern s32 D_800AF780;  /* file 0xab size */
 extern void *D_800AF76C; /* file 0xab */
 extern void *D_800AF784; /* file 0xac */
 
@@ -10455,7 +10574,7 @@ void func_800ACB90(void) {
     func_800320E8(pixels);
 }
 
-extern s32 D_800AF774;
+extern u8 *D_800AF774; /* sequence text position */
 extern s32 D_800AF778;
 extern s32 D_800AF77C;
 void func_800AC3AC(void);
@@ -10469,7 +10588,7 @@ void func_800ACC58(void) {
         func_800AC3AC();
         D_800AF77C = 0;
         D_800AF778 = 15;
-        D_800AF774 = (s32)D_800AF76C;
+        D_800AF774 = D_800AF76C;
     }
 }
 
@@ -10483,7 +10602,6 @@ void func_800ACCB0(void) {
     }
 }
 
-s32 func_800AC0F0(s32 position, s32 size, s32 frame);
 
 /* Advance the sequence one frame; every 16th frame decode the next step. */
 void func_800ACCF4(void) {
