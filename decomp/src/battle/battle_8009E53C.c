@@ -16,6 +16,8 @@
 #include "model.h"
 #include "scene.h"
 #include "gte.h"
+#include "effect.h"
+#include "stage.h"
 
 /* Whether gear part 50 + index is one of the parts of character 4's gear. */
 s32 func_8009E53C(u8 index) {
@@ -380,17 +382,20 @@ u16 func_8009EF3C(ModelPart *part, s32 scale) {
     return count;
 }
 
-#ifdef NON_MATCHING
 /* Pose a model hierarchy with per-part scales: as 8009EF3C, but a changed
  * part's transform is scaled by its own scale and by the inverse of its
  * parent's, and a part changes or is marked with its parent. Clears the marks
  * and returns the part count. */
 u16 func_8009F1C4(ModelPart *part, s32 scale) {
     Matrix *diagonal = (Matrix *)0x1F800000;
-    ModelPart *root = part;
-    u32 count = root->index;
+    Matrix *scratch;
+    ModelPart *root;
+    s32 product;
+    u32 count;
     u32 i;
 
+    root = part;
+    count = root->index;
     root->world.t[0] = root->translation[0];
     root->world.t[1] = root->translation[1];
     root->world.t[2] = root->translation[2];
@@ -399,15 +404,21 @@ u16 func_8009F1C4(ModelPart *part, s32 scale) {
     } else {
         func_8003F738(&root->rotation, &root->world);
     }
-    diagonal->m[0][0] = scale * part->scale[0] >> 12;
+    product = scale * part->scale[0];
+    product >>= 12;
+    diagonal->m[0][0] = product;
     diagonal->m[0][1] = 0;
     diagonal->m[0][2] = 0;
     diagonal->m[1][0] = 0;
-    diagonal->m[1][1] = scale * part->scale[1] >> 12;
+    product = scale * part->scale[1];
+    product >>= 12;
+    diagonal->m[1][1] = product;
     diagonal->m[1][2] = 0;
     diagonal->m[2][0] = 0;
     diagonal->m[2][1] = 0;
-    diagonal->m[2][2] = scale * part->scale[2] >> 12;
+    product = scale * part->scale[2];
+    product >>= 12;
+    diagonal->m[2][2] = product;
     MulMatrix0(&part->world, diagonal, &part->transform);
     part->transform.t[0] = part->world.t[0];
     part->transform.t[1] = part->world.t[1];
@@ -423,32 +434,33 @@ u16 func_8009F1C4(ModelPart *part, s32 scale) {
             }
         }
         if (part->flag5) {
+            scratch = (Matrix *)0x1F800000;
             if (part->flag6) {
                 func_8004A92C(&part->rotation, &part->transform);
             } else {
                 func_8003F738(&part->rotation, &part->transform);
             }
-            diagonal->m[0][0] = part->scale[0];
-            diagonal->m[0][1] = 0;
-            diagonal->m[0][2] = 0;
-            diagonal->m[1][0] = 0;
-            diagonal->m[1][1] = part->scale[1];
-            diagonal->m[1][2] = 0;
-            diagonal->m[2][0] = 0;
-            diagonal->m[2][1] = 0;
-            diagonal->m[2][2] = part->scale[2];
-            MulMatrix0(&part->transform, diagonal, &part->transform);
+            scratch->m[0][0] = part->scale[0];
+            scratch->m[0][1] = 0;
+            scratch->m[0][2] = 0;
+            scratch->m[1][0] = 0;
+            scratch->m[1][1] = part->scale[1];
+            scratch->m[1][2] = 0;
+            scratch->m[2][0] = 0;
+            scratch->m[2][1] = 0;
+            scratch->m[2][2] = part->scale[2];
+            MulMatrix0(&part->transform, scratch, &part->transform);
             if (part->parent != NULL) {
-                diagonal->m[0][0] = 0x1000000 / part->parent->scale[0];
-                diagonal->m[0][1] = 0;
-                diagonal->m[0][2] = 0;
-                diagonal->m[1][0] = 0;
-                diagonal->m[1][1] = 0x1000000 / part->parent->scale[1];
-                diagonal->m[1][2] = 0;
-                diagonal->m[2][0] = 0;
-                diagonal->m[2][1] = 0;
-                diagonal->m[2][2] = 0x1000000 / part->parent->scale[2];
-                MulMatrix0(diagonal, &part->transform, &part->transform);
+                scratch->m[0][0] = 0x1000000 / part->parent->scale[0];
+                scratch->m[0][1] = 0;
+                scratch->m[0][2] = 0;
+                scratch->m[1][0] = 0;
+                scratch->m[1][1] = 0x1000000 / part->parent->scale[1];
+                scratch->m[1][2] = 0;
+                scratch->m[2][0] = 0;
+                scratch->m[2][1] = 0;
+                scratch->m[2][2] = 0x1000000 / part->parent->scale[2];
+                MulMatrix0(scratch, &part->transform, &part->transform);
             }
         }
         if (part->flag4) {
@@ -469,9 +481,6 @@ u16 func_8009F1C4(ModelPart *part, s32 scale) {
     }
     return count;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_8009F1C4);
-#endif
 
 void func_8009F5B0(void) {
 }
@@ -542,7 +551,433 @@ void func_8009F794(ModelList *list, s32 release) {
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_8009F844);
 
+#ifdef NON_MATCHING
+/* Step the tweens attached to each node of a hierarchy: its rotation
+ * (attachment 0: set, delta or add from a track, interpolate, approach,
+ * spin, or turn toward a point within a growing limit), position
+ * (attachment 1: the same, or a move in the node's frame scaled by `scale`)
+ * and scale (attachment 2: interpolate, approach, spin). A finished tween is
+ * released (or restarted when looping: tracks rewind, others stop). Returns
+ * flags: 0x100/0x200/0x400 some tween ran/ended/looped (1/2/4 when it has
+ * `tag`). As in the original, the "spin" stop clears the step of the last
+ * slot a computing kind used, which may belong to an earlier node. */
+s32 func_800A0838(EffectPool *pool, ModelPart *parts, u16 tag, s16 scale) {
+    ModelPart *part = parts;
+    Tween *slot;
+    Tween *last;
+    u8 *track;
+    SVector move;
+    Vector moved;
+    u32 count;
+    u32 i;
+    s32 result = 0;
+    s32 kind;
+    s32 time;
+    s32 dx, dy, dz, dist, limit, turn, angle;
+    s16 sx, sy, sz;
+
+    count = parts->index;
+    for (i = 0; i < count; i++, part++) {
+        slot = (Tween *)part->effects[0];
+        if (slot != NULL) {
+            kind = slot->field2;
+            switch (kind & 0xF) {
+            case 0:
+                track = slot->u.track.cursor;
+                if (!(kind & 0x10)) {
+                    part->rotation.vx = *(u16 *)track;
+                    track += 2;
+                    slot->u.track.cursor += 2;
+                }
+                if (!(kind & 0x20)) {
+                    part->rotation.vy = *(u16 *)track;
+                    track += 2;
+                    slot->u.track.cursor += 2;
+                }
+                if (!(kind & 0x40)) {
+                    part->rotation.vz = *(u16 *)track;
+                    slot->u.track.cursor += 2;
+                }
+                goto check_rot;
+            case 1:
+                if (!(kind & 0x10)) {
+                    track = slot->u.track.cursor++;
+                    if ((s8)track[0] != -0x80) {
+                        part->rotation.vx += (s8)track[0];
+                    } else {
+                        slot->u.track.cursor = track + 2;
+                        slot->u.track.cursor = track + 3;
+                        part->rotation.vx = track[1] | ((s8)track[2] << 8);
+                    }
+                }
+                if (!(kind & 0x20)) {
+                    track = slot->u.track.cursor++;
+                    if ((s8)track[0] != -0x80) {
+                        part->rotation.vy += (s8)track[0];
+                    } else {
+                        slot->u.track.cursor = track + 2;
+                        slot->u.track.cursor = track + 3;
+                        part->rotation.vy = track[1] | ((s8)track[2] << 8);
+                    }
+                }
+                if (!(kind & 0x40)) {
+                    track = slot->u.track.cursor++;
+                    if ((s8)track[0] != -0x80) {
+                        part->rotation.vz += (s8)track[0];
+                    } else {
+                        slot->u.track.cursor = track + 2;
+                        slot->u.track.cursor = track + 3;
+                        part->rotation.vz = track[1] | ((s8)track[2] << 8);
+                    }
+                }
+                goto check_rot;
+            case 2:
+                track = slot->u.track.cursor;
+                if (!(kind & 0x10)) {
+                    part->rotation.vx += *(u16 *)track;
+                    track += 2;
+                    slot->u.track.cursor += 2;
+                }
+                if (!(kind & 0x20)) {
+                    part->rotation.vy += *(u16 *)track;
+                    track += 2;
+                    slot->u.track.cursor += 2;
+                }
+                if (!(kind & 0x40)) {
+                    part->rotation.vz += *(u16 *)track;
+                    slot->u.track.cursor += 2;
+                }
+                goto check_rot;
+            case 3:
+                time = (s16)(slot->time + 1);
+                part->rotation.vx = slot->u.values[0] + slot->u.values[3] * time / slot->duration;
+                part->rotation.vy = slot->u.values[1] + slot->u.values[4] * time / slot->duration;
+                last = slot;
+                part->rotation.vz = slot->u.values[2] + slot->u.values[5] * time / slot->duration;
+                goto check_rot;
+            case 4:
+                sx = (slot->u.values[3] - part->rotation.vx) / slot->duration;
+                sy = (slot->u.values[4] - part->rotation.vy) / slot->duration;
+                sz = (slot->u.values[5] - part->rotation.vz) / slot->duration;
+                last = slot;
+                if (sx == 0 && sy == 0 && sz == 0) {
+                    slot->time = slot->duration;
+                    part->rotation.vx = slot->u.values[3];
+                    part->rotation.vy = slot->u.values[4];
+                    part->rotation.vz = slot->u.values[5];
+                } else {
+                    part->rotation.vx += sx;
+                    part->rotation.vz += sz;
+                    part->rotation.vy += sy;
+                    slot->time = 0;
+                }
+                goto check_rot;
+            case 5:
+                slot->u.values[0] += slot->u.values[3];
+                part->rotation.vx += slot->u.values[0];
+                slot->u.values[1] += slot->u.values[4];
+                part->rotation.vy += slot->u.values[1];
+                slot->u.values[2] += slot->u.values[5];
+                last = slot;
+                part->rotation.vz += slot->u.values[2];
+                goto check_rot;
+            case 7:
+            case 8:
+                dx = slot->u.values[3] - part->translation[0];
+                dy = slot->u.values[4] - part->translation[1];
+                dz = slot->u.values[5] - part->translation[2];
+                dist = SquareRoot0(dx * dx + dy * dy + dz * dz) + 1;
+                last = slot;
+                turn = (ratan2(-dx, -dz) - part->rotation.vy) & 0xFFF;
+                if (turn >= 0x800) {
+                    turn -= 0x1000;
+                }
+                limit = slot->u.values[1] + (dist + slot->time) * slot->u.values[2] / slot->u.values[0];
+                angle = turn < 0 ? -turn : turn;
+                if (angle < limit) {
+                    part->rotation.vy += turn;
+                } else if (turn < 0) {
+                    part->rotation.vy -= limit;
+                } else {
+                    part->rotation.vy += limit;
+                }
+                if ((kind & 0xF) == 7) {
+                    turn = (ratan2(dy, SquareRoot0(dx * dx + dz * dz)) - part->rotation.vx) & 0xFFF;
+                    if (turn >= 0x800) {
+                        turn -= 0x1000;
+                    }
+                    angle = turn < 0 ? -turn : turn;
+                    if (angle < limit) {
+                        part->rotation.vx += turn;
+                    } else if (turn < 0) {
+                        part->rotation.vx -= limit;
+                    } else {
+                        part->rotation.vx += limit;
+                    }
+                }
+                if (last->time < 0x7D00) {
+                    last->time += last->duration;
+                }
+                goto rot_done;
+            default:
+            check_rot:
+                if (++slot->time < slot->duration) {
+                    if (slot->kind == tag) {
+                        result |= 1;
+                    }
+                    result |= 0x100;
+                } else if (!slot->field1) {
+                    if (slot->kind == tag) {
+                        result |= 2;
+                    }
+                    result |= 0x200;
+                    func_800A23E8(pool, (EffectEntry *)slot);
+                    part->effects[0] = NULL;
+                } else {
+                    if (slot->kind == tag) {
+                        result |= 4;
+                    }
+                    result |= 0x400;
+                    if ((kind & 0xF) < 3) {
+                        slot->time = 0;
+                        slot->u.track.cursor = slot->u.track.start;
+                    } else {
+                        slot->time = -1;
+                        if ((kind & 0xF) == 5) {
+                            last->u.values[3] = 0;
+                            last->u.values[4] = 0;
+                            last->u.values[5] = 0;
+                        }
+                    }
+                }
+                break;
+            }
+        rot_done:
+            part->flag5 = 1;
+            part->flag4 = 1;
+        }
+        slot = (Tween *)part->effects[1];
+        if (slot != NULL) {
+            kind = slot->field2;
+            switch (kind & 0xF) {
+            case 0:
+                track = slot->u.track.cursor;
+                if (!(kind & 0x10)) {
+                    part->translation[0] = *(s16 *)track;
+                    track += 2;
+                    slot->u.track.cursor += 2;
+                }
+                if (!(kind & 0x20)) {
+                    part->translation[1] = *(s16 *)track;
+                    track += 2;
+                    slot->u.track.cursor += 2;
+                }
+                if (!(kind & 0x40)) {
+                    part->translation[2] = *(s16 *)track;
+                    slot->u.track.cursor += 2;
+                }
+                break;
+            case 1:
+                if (!(kind & 0x10)) {
+                    track = slot->u.track.cursor++;
+                    if ((s8)track[0] != -0x80) {
+                        part->translation[0] += (s8)track[0];
+                    } else {
+                        slot->u.track.cursor = track + 2;
+                        slot->u.track.cursor = track + 3;
+                        part->translation[0] = track[1] | ((s8)track[2] << 8);
+                    }
+                }
+                if (!(kind & 0x20)) {
+                    track = slot->u.track.cursor++;
+                    if ((s8)track[0] != -0x80) {
+                        part->translation[1] += (s8)track[0];
+                    } else {
+                        slot->u.track.cursor = track + 2;
+                        slot->u.track.cursor = track + 3;
+                        part->translation[1] = track[1] | ((s8)track[2] << 8);
+                    }
+                }
+                if (!(kind & 0x40)) {
+                    track = slot->u.track.cursor++;
+                    if ((s8)track[0] != -0x80) {
+                        part->translation[2] += (s8)track[0];
+                    } else {
+                        slot->u.track.cursor = track + 2;
+                        slot->u.track.cursor = track + 3;
+                        part->translation[2] = track[1] | ((s8)track[2] << 8);
+                    }
+                }
+                break;
+            case 2:
+                track = slot->u.track.cursor;
+                if (!(kind & 0x10)) {
+                    move.vx = *(u16 *)track;
+                    track += 2;
+                    slot->u.track.cursor += 2;
+                } else {
+                    move.vx = 0;
+                }
+                if (!(kind & 0x20)) {
+                    move.vy = *(u16 *)track;
+                    track += 2;
+                    slot->u.track.cursor += 2;
+                } else {
+                    move.vy = 0;
+                }
+                if (!(kind & 0x40)) {
+                    move.vz = *(u16 *)track;
+                    slot->u.track.cursor += 2;
+                } else {
+                    move.vz = 0;
+                }
+                move.vx = move.vx * part->scale[0] >> 12;
+                move.vy = move.vy * part->scale[1] >> 12;
+                move.vz = move.vz * part->scale[2] >> 12;
+                ApplyMatrix(&part->world, &move, &moved);
+                part->translation[0] += scale * moved.vx >> 12;
+                part->translation[1] += scale * moved.vy >> 12;
+                part->translation[2] += scale * moved.vz >> 12;
+                break;
+            case 3:
+                time = (s16)(slot->time + 1);
+                part->translation[0] = slot->u.values[0] + slot->u.values[3] * time / slot->duration;
+                part->translation[1] = slot->u.values[1] + slot->u.values[4] * time / slot->duration;
+                last = slot;
+                part->translation[2] = slot->u.values[2] + slot->u.values[5] * time / slot->duration;
+                break;
+            case 4:
+                sx = (slot->u.values[3] - part->translation[0]) / slot->duration;
+                sy = (slot->u.values[4] - part->translation[1]) / slot->duration;
+                sz = (slot->u.values[5] - part->translation[2]) / slot->duration;
+                last = slot;
+                if (sx == 0 && sy == 0 && sz == 0) {
+                    slot->time = slot->duration;
+                    part->translation[0] = slot->u.values[3];
+                    part->translation[1] = slot->u.values[4];
+                    part->translation[2] = slot->u.values[5];
+                } else {
+                    part->translation[0] += sx;
+                    part->translation[1] += sy;
+                    part->translation[2] += sz;
+                    slot->time = 0;
+                }
+                break;
+            case 5:
+                slot->u.values[0] += slot->u.values[3];
+                part->translation[0] += slot->u.values[0];
+                slot->u.values[1] += slot->u.values[4];
+                part->translation[1] += slot->u.values[1];
+                slot->u.values[2] += slot->u.values[5];
+                last = slot;
+                part->translation[2] += slot->u.values[2];
+                break;
+            }
+            if (++slot->time < slot->duration) {
+                if (slot->kind == tag) {
+                    result |= 1;
+                }
+                result |= 0x100;
+            } else if (!slot->field1) {
+                if (slot->kind == tag) {
+                    result |= 2;
+                }
+                result |= 0x200;
+                func_800A23E8(pool, (EffectEntry *)slot);
+                part->effects[1] = NULL;
+            } else {
+                if (slot->kind == tag) {
+                    result |= 4;
+                }
+                result |= 0x400;
+                if ((kind & 0xF) < 3) {
+                    slot->time = 0;
+                    slot->u.track.cursor = slot->u.track.start;
+                } else {
+                    slot->time = -1;
+                    if ((kind & 0xF) == 5) {
+                        last->u.values[3] = 0;
+                        last->u.values[4] = 0;
+                        last->u.values[5] = 0;
+                    }
+                }
+            }
+            part->flag4 = 1;
+        }
+        slot = (Tween *)part->effects[2];
+        if (slot != NULL) {
+            kind = slot->field2 & 0xF;
+            switch (kind) {
+            case 3:
+                time = (s16)(slot->time + 1);
+                part->scale[0] = slot->u.values[0] + slot->u.values[3] * time / slot->duration;
+                part->scale[1] = slot->u.values[1] + slot->u.values[4] * time / slot->duration;
+                last = slot;
+                part->scale[2] = slot->u.values[2] + slot->u.values[5] * time / slot->duration;
+                break;
+            case 4:
+                sx = (slot->u.values[3] - slot->u.values[0]) / slot->duration;
+                sy = (slot->u.values[4] - slot->u.values[1]) / slot->duration;
+                sz = (slot->u.values[5] - slot->u.values[2]) / slot->duration;
+                last = slot;
+                if (sx == 0 && sy == 0 && sz == 0) {
+                    slot->time = slot->duration;
+                    part->scale[0] = slot->u.values[3];
+                    part->scale[1] = slot->u.values[4];
+                    part->scale[2] = slot->u.values[5];
+                } else {
+                    last->u.values[0] += sx;
+                    last->u.values[1] += sy;
+                    last->u.values[2] += sz;
+                    part->scale[0] = last->u.values[0];
+                    part->scale[1] = last->u.values[1];
+                    part->scale[2] = last->u.values[2];
+                    slot->time = 0;
+                }
+                break;
+            case 5:
+                slot->u.values[0] += slot->u.values[3];
+                part->scale[0] += slot->u.values[0];
+                slot->u.values[1] += slot->u.values[4];
+                part->scale[1] += slot->u.values[1];
+                slot->u.values[2] += slot->u.values[5];
+                last = slot;
+                part->scale[2] += slot->u.values[2];
+                break;
+            }
+            if (++slot->time < slot->duration) {
+                if (slot->kind == tag) {
+                    result |= 1;
+                }
+                result |= 0x100;
+            } else if (!slot->field1) {
+                if (slot->kind == tag) {
+                    result |= 2;
+                }
+                result |= 0x200;
+                func_800A23E8(pool, (EffectEntry *)slot);
+                part->effects[2] = NULL;
+            } else {
+                if (slot->kind == tag) {
+                    result |= 4;
+                }
+                result |= 0x400;
+                slot->time = -1;
+                if (kind == 5) {
+                    last->u.values[3] = 0;
+                    last->u.values[4] = 0;
+                    last->u.values[5] = 0;
+                }
+            }
+            part->flag5 = 1;
+            part->flag4 = 1;
+        }
+    }
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A0838);
+#endif
 
 /* Apply an animation frame to a hierarchy's parts: the listed rotations (unless
  * flag 1) and translations (unless flag 2), marking each changed part; parts
@@ -608,7 +1043,143 @@ u16 func_800A1B50(ModelPart *root, s16 *data) {
     return count;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A1CF4);
+/* Tween the parts after the root towards an animation frame over duration
+ * ticks (at least 1): each changed rotation gets an effect entry (type
+ * mode + 3) of the shortest angle differences (mode 1: to the absolute
+ * angles), each changed translation one of its movement (mode 1: to the
+ * absolute translation); persistent entries (0xFF) stay, other parts lose
+ * theirs. Returns the part count less the root. */
+u16 func_800A1CF4(EffectPool *pool, ModelPart *part, s16 *data, s32 duration, s32 mode, s32 smooth,
+                  s32 tag) {
+    EffectEntry *entry;
+    u16 rotationCount;
+    u16 rotations;
+    u16 translationCount;
+    u16 translations;
+    u16 count;
+    u16 flags;
+    s32 x;
+    s32 y;
+    s32 z;
+    s32 i;
+
+    if (duration == 0) {
+        duration = 1;
+    }
+    rotations = 0;
+    translations = 0;
+    smooth &= 1;
+    rotationCount = data[6];
+    i = data[3]; /* the base flag */
+    translationCount = data[7];
+    mode &= 1;
+    flags = data[2];
+    data += 12;
+    if (i == 0) {
+        data += (rotationCount + 1) * 3;
+    }
+    count = part->index - 1;
+    for (i = 0; i < count; i++) {
+        part++;
+        if (!(flags & 1) && rotations < rotationCount) {
+            x = *data++;
+            y = *data++;
+            z = *data++;
+            rotations++;
+            if (part->rotation.vx != x || part->rotation.vy != y || part->rotation.vz != z) {
+                if (part->effects[0] != NULL) {
+                    entry = part->effects[0];
+                    if (entry->kind == 0xFF) {
+                        goto translation;
+                    }
+                } else {
+                    entry = func_800A2330(pool);
+                }
+                if (entry != NULL) {
+                    entry->used = 1;
+                    entry->field1 = smooth;
+                    entry->field2 = mode + 3;
+                    entry->kind = tag;
+                    entry->params[0] = part->rotation.vx;
+                    entry->params[1] = part->rotation.vy;
+                    entry->params[2] = part->rotation.vz;
+                    x = (x - part->rotation.vx) & 0xFFF;
+                    if (x >= 0x800) {
+                        x -= 0x1000;
+                    }
+                    entry->params[3] = x;
+                    y = (y - part->rotation.vy) & 0xFFF;
+                    if (y >= 0x800) {
+                        y -= 0x1000;
+                    }
+                    entry->params[4] = y;
+                    z = (z - part->rotation.vz) & 0xFFF;
+                    if (z >= 0x800) {
+                        z -= 0x1000;
+                    }
+                    entry->params[5] = z;
+                    if (mode) {
+                        entry->params[3] += part->rotation.vx;
+                        entry->params[4] += part->rotation.vy;
+                        entry->params[5] += part->rotation.vz;
+                    }
+                    entry->field10 = 0;
+                    entry->field12 = duration;
+                    part->effects[0] = entry;
+                    goto translation;
+                }
+            }
+        }
+        if (part->effects[0] != NULL && part->effects[0]->kind != 0xFF) {
+            func_800A23E8(pool, part->effects[0]);
+            part->effects[0] = NULL;
+        }
+    translation:
+        if (!(flags & 2) && translations < translationCount) {
+            x = *data++;
+            y = *data++;
+            z = *data++;
+            translations++;
+            if (part->translation[0] != x || part->translation[1] != y || part->translation[2] != z) {
+                if (part->effects[1] != NULL) {
+                    entry = part->effects[1];
+                    if (entry->kind == 0xFF) {
+                        continue;
+                    }
+                } else {
+                    entry = func_800A2330(pool);
+                }
+                if (entry != NULL) {
+                    entry->used = 1;
+                    entry->field1 = smooth;
+                    entry->field2 = mode + 3;
+                    entry->kind = tag;
+                    entry->params[0] = part->translation[0];
+                    entry->params[1] = part->translation[1];
+                    entry->params[2] = part->translation[2];
+                    if (mode) {
+                        entry->params[3] = x;
+                        entry->params[4] = y;
+                        entry->params[5] = z;
+                    } else {
+                        entry->params[3] = x - part->translation[0];
+                        entry->params[4] = y - part->translation[1];
+                        entry->params[5] = z - part->translation[2];
+                    }
+                    entry->field10 = 0;
+                    entry->field12 = duration;
+                    part->effects[1] = entry;
+                    continue;
+                }
+            }
+        }
+        if (part->effects[1] != NULL && part->effects[1]->kind != 0xFF) {
+            func_800A23E8(pool, part->effects[1]);
+            part->effects[1] = NULL;
+        }
+    }
+    return count;
+}
 
 /* Release the effects attached to part index of a hierarchy, those selected by
  * mask (bit n: attachment n). */
@@ -705,9 +1276,230 @@ s32 func_800A23E8(EffectPool *pool, EffectEntry *entry) {
     return index;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A2434);
+/* Start an animation frame on a hierarchy through track entries (a packed
+ * frame is applied at once, 800A1B50): each part with a track gets an entry
+ * (unless it holds a persistent one), a part after the root without one loses
+ * its entry. Returns 1 for a packed frame. */
+s32 func_800A2434(EffectPool *pool, ModelPart *part, u16 *data, s32 mode, s32 tag) {
+    AnimationFrame *frame;
+    u8 *types;
+    Tween *entry;
+    u8 *tracks;
+    u16 count;
+    u16 rotationCount;
+    u16 translationCount;
+    u16 duration;
+    u16 flags;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A2704);
+    frame = (AnimationFrame *)data;
+    if (frame->packed != 0) {
+        func_800A2ACC(pool, part);
+        func_800A1B50(part, (s16 *)frame);
+        return 1;
+    }
+    rotationCount = frame->rotationCount;
+    count = part->index;
+    translationCount = frame->translationCount;
+    if (rotationCount + 1 < count) {
+        count = rotationCount + 1;
+    }
+    mode &= 1;
+    duration = frame->duration;
+    if (!mode) {
+        duration--;
+    }
+    flags = frame->flags;
+    data = (u16 *)(frame + 1);
+    tracks = (u8 *)data + (rotationCount + 1) * sizeof(TrackEntry);
+    if (!(flags & 1)) {
+        tracks += rotationCount * 6;
+    }
+    if (!(flags & 2)) {
+        tracks += translationCount * 6;
+    }
+    for (i = 0; i < count; i++) {
+        types = (u8 *)(data + 2);
+        if (*data != 0xFFFF) {
+            if (part->effects[0] != NULL) {
+                entry = (Tween *)part->effects[0];
+                if (entry->kind == 0xFF) {
+                    goto translation;
+                }
+            } else {
+                entry = (Tween *)func_800A2330(pool);
+            }
+            if (entry != NULL) {
+                entry->used = 1;
+                entry->field1 = mode;
+                entry->field2 = types[0];
+                entry->kind = tag;
+                entry->u.track.cursor = entry->u.track.start = tracks + *data;
+                entry->time = 0;
+                entry->duration = duration;
+                part->effects[0] = (EffectEntry *)entry;
+            }
+        } else {
+            if (part->effects[0] != NULL && i != 0 && part->effects[0]->kind != 0xFF) {
+                func_800A23E8(pool, part->effects[0]);
+                part->effects[0] = NULL;
+            }
+        }
+    translation:
+        data++;
+        if (*data != 0xFFFF) {
+            if (part->effects[1] != NULL) {
+                entry = (Tween *)part->effects[1];
+                if (entry->kind == 0xFF) {
+                    goto next;
+                }
+            } else {
+                entry = (Tween *)func_800A2330(pool);
+            }
+            if (entry != NULL) {
+                entry->used = 1;
+                entry->field1 = mode;
+                entry->field2 = types[1];
+                entry->kind = tag;
+                entry->u.track.cursor = entry->u.track.start = tracks + *data;
+                entry->time = 0;
+                entry->duration = duration;
+                part->effects[1] = (EffectEntry *)entry;
+            }
+        } else {
+            if (part->effects[1] != NULL && i != 0 && part->effects[1]->kind != 0xFF) {
+                func_800A23E8(pool, part->effects[1]);
+                part->effects[1] = NULL;
+            }
+        }
+    next:
+        data += 2;
+        part++;
+    }
+    return 0;
+}
+
+/* As 800A2434, but each part after the root first takes the frame's start
+ * values of the tracks that are started. */
+s32 func_800A2704(EffectPool *pool, ModelPart *part, u16 *data, s32 mode, s32 tag) {
+    AnimationFrame *frame;
+    u8 *types;
+    Tween *entry;
+    s16 *values;
+    u8 *tracks;
+    u16 rotationCount;
+    u16 translationCount;
+    u16 count;
+    u16 duration;
+    u16 rotations;
+    u16 translations;
+    u16 flags;
+    s32 i;
+
+    frame = (AnimationFrame *)data;
+    if (frame->packed != 0) {
+        func_800A2ACC(pool, part);
+        func_800A1B50(part, (s16 *)frame);
+        return 1;
+    }
+    mode &= 1;
+    rotations = 0;
+    rotationCount = frame->rotationCount;
+    count = part->index;
+    translations = 0;
+    translationCount = frame->translationCount;
+    if (rotationCount + 1 < count) {
+        count = rotationCount + 1;
+    }
+    duration = frame->duration;
+    if (!mode) {
+        duration--;
+    }
+    flags = frame->flags;
+    data = (u16 *)(frame + 1);
+    values = (s16 *)(data + (rotationCount + 1) * 3);
+    tracks = (u8 *)values;
+    if (!(flags & 1)) {
+        tracks += rotationCount * 6;
+    }
+    if (!(flags & 2)) {
+        tracks += translationCount * 6;
+    }
+    for (i = 0; i < count; i++) {
+        types = (u8 *)(data + 2);
+        if (*data != 0xFFFF) {
+            if (part->effects[0] != NULL) {
+                entry = (Tween *)part->effects[0];
+                if (entry->kind == 0xFF) {
+                    goto skipRotation;
+                }
+            } else {
+                entry = (Tween *)func_800A2330(pool);
+            }
+            if (!(flags & 1) && i != 0 && rotations < rotationCount) {
+                part->rotation.vx = *values++;
+                part->rotation.vy = *values++;
+                part->rotation.vz = *values++;
+                rotations++;
+                part->flag4 = 1;
+                part->flag5 = 1;
+            }
+            if (entry != NULL) {
+                entry->used = 1;
+                entry->field1 = mode;
+                entry->field2 = types[0];
+                entry->kind = tag;
+                entry->u.track.cursor = entry->u.track.start = tracks + *data;
+                entry->time = 0;
+                entry->duration = duration;
+                part->effects[0] = (EffectEntry *)entry;
+            }
+        } else {
+        skipRotation:
+            if (!(flags & 1) && i != 0 && rotations < rotationCount) {
+                values += 3;
+                rotations++;
+            }
+        }
+        data++;
+        if (*data != 0xFFFF) {
+            if (part->effects[1] != NULL) {
+                entry = (Tween *)part->effects[1];
+                if (entry->kind == 0xFF) {
+                    goto skipTranslation;
+                }
+            } else {
+                entry = (Tween *)func_800A2330(pool);
+            }
+            if (!(flags & 2) && i != 0 && translations < translationCount) {
+                part->translation[0] = *values++;
+                part->translation[1] = *values++;
+                part->translation[2] = *values++;
+                translations++;
+                part->flag4 = 1;
+            }
+            if (entry != NULL) {
+                entry->used = 1;
+                entry->field1 = mode;
+                entry->field2 = types[1];
+                entry->kind = tag;
+                entry->u.track.cursor = entry->u.track.start = tracks + *data;
+                entry->time = 0;
+                entry->duration = duration;
+                part->effects[1] = (EffectEntry *)entry;
+            }
+        } else {
+        skipTranslation:
+            if (!(flags & 2) && i != 0 && translations < translationCount) {
+                values += 3;
+                translations++;
+            }
+        }
+        data += 2;
+        part++;
+    }
+    return 0;
+}
 
 /* Release every part's attached effects that are not persistent. */
 void func_800A2ACC(EffectPool *pool, ModelPart *part) {
@@ -835,32 +1627,453 @@ s32 func_800A2F94(SpritePool *pool, SpriteRecord *record) {
     return index;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A2FD8);
+/* Draw the live sprites of a pool into the ordering table (3D ones projected
+ * with the GTE at their depth, 2D ones at the front), free the expired ones
+ * and fade the rest by steps ticks. */
+void func_800A2FD8(SpritePool *pool, Matrix *m, s32 steps, u32 *ot, s32 buffer) {
+    Sprite *sprite;
+    s32 otz;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A32D8);
+    SetRotMatrix(m);
+    SetTransMatrix(m);
+    sprite = (Sprite *)pool->records;
+    for (i = 0; i < pool->count; i++, sprite++) {
+        if (sprite->age == -1) {
+            continue;
+        }
+        if (sprite->age >= sprite->lifetime) {
+            func_800A2F94(pool, (SpriteRecord *)sprite);
+            continue;
+        }
+        sprite->packets[buffer].r0 = sprite->color[0] >> 6;
+        sprite->packets[buffer].g0 = sprite->color[1] >> 6;
+        sprite->packets[buffer].b0 = sprite->color[2] >> 6;
+        if (sprite->projected == 0) {
+            sprite->packets[buffer].x0 = sprite->x0;
+            sprite->packets[buffer].y0 = sprite->y0;
+            sprite->packets[buffer].x1 = sprite->x1;
+            sprite->packets[buffer].y1 = sprite->y1;
+            sprite->packets[buffer].x2 = sprite->x2;
+            sprite->packets[buffer].y2 = sprite->y2;
+            sprite->packets[buffer].x3 = sprite->x3;
+            sprite->packets[buffer].y3 = sprite->y3;
+            addPrim(ot, &sprite->packets[buffer]);
+        } else {
+            gte_ldv3(&sprite->x0, &sprite->x1, &sprite->x2);
+            gte_rtpt();
+            gte_stsxy3(&sprite->packets[buffer].x0, &sprite->packets[buffer].x1, &sprite->packets[buffer].x2);
+            gte_stszotz(&otz);
+            otz >>= D_80050100;
+            gte_ldv0(&sprite->x3);
+            gte_rtps();
+            gte_stsxy(&sprite->packets[buffer].x3);
+            addPrim(ot + otz, &sprite->packets[buffer]);
+        }
+        sprite->age += steps;
+        sprite->color[0] -= sprite->fade[0] * steps;
+        sprite->color[1] -= sprite->fade[1] * steps;
+        sprite->color[2] -= sprite->fade[2] * steps;
+    }
+}
+
+/* Set up a colour fade from (r0, g0, b0) to (r1, g1, b1) over duration
+ * ticks. */
+s32 func_800A32D8(ColorFade *fade, s32 field4, s16 field0, u8 field2, s16 field60, s16 duration, u8 r0,
+                  u8 g0, u8 b0, u8 r1, u8 g1, u8 b1, u16 fieldC, u16 fieldE, u16 field10, u16 field14,
+                  u16 field16, u16 field18, u16 field3) {
+    if (fade != NULL) {
+        fade->field3 = field3;
+        fade->field5E = -1;
+        fade->field0 = field0;
+        fade->field2 = field2;
+        fade->field4 = field4;
+        fade->fieldC = fieldC;
+        fade->fieldE = fieldE;
+        fade->field10 = field10;
+        fade->field14 = field14;
+        fade->field16 = field16;
+        fade->field18 = field18;
+        fade->time = 0;
+        if (field60 < 7) {
+            fade->field60 = field60;
+        } else {
+            fade->field60 = 7;
+        }
+        fade->color[0] = r0 << 6;
+        fade->color[1] = g0 << 6;
+        fade->color[2] = b0 << 6;
+        fade->duration = duration;
+        fade->field8 = 0;
+        fade->step[0] = (fade->color[0] - (r1 << 6)) / duration;
+        fade->step[1] = (fade->color[1] - (g1 << 6)) / duration;
+        fade->step[2] = (fade->color[2] - (b1 << 6)) / duration;
+        return 0;
+    }
+}
 
 /* Mark a halfword slot empty. */
 void func_800A3484(s16 *slot) {
     *slot = -1;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A3490);
+/* A frame curve: base + (cos(angle) + 1.0) / divisor. */
+s16 func_800A3490(s16 angle, s16 divisor, s32 base) {
+    return base + (func_8003F8CC(angle) + 0x1000) / divisor;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A3514);
+/* A frame curve: base + value / divisor, or -1 past 32. */
+s16 func_800A3514(s16 value, s16 divisor, s16 base) {
+    base += value / divisor;
+    if (base > 0x20) {
+        return -1;
+    }
+    return base;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A3578);
+/* A frame curve: base - value / divisor. */
+s16 func_800A3578(s16 value, s16 divisor, s32 base) {
+    return base - value / divisor;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A35C8);
+/* A frame curve: 32 - value / divisor, at least minimum. */
+s16 func_800A35C8(s16 value, s16 divisor, s16 minimum) {
+    s16 result;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A3640);
+    result = 0x20 - value / divisor;
+    if (result < minimum) {
+        result = minimum;
+    }
+    return result;
+}
 
+/* Start an image animation (once): its target, curve and timing, the w x h
+ * VRAM rectangle at (x3, y3) (256 by default; modes 0/1 use an even width),
+ * the work and frame buffers `flags` bits 8-10 ask for, and each frame
+ * buffer's first contents (flags nibbles 0 and 1): 1 the VRAM rectangle at
+ * (x, y) / (x2, y2) (modes 4/5: rows of `colors` from there), 2 one colour
+ * (modes 4/5: the three values cycling by row). */
+ImageAnim *func_800A3640(ImageAnim *anim, ImageAnim *target, u16 mode, u16 flags, ColorRow *colors,
+                         s16 x, s16 y, s16 z, s16 x2, s16 y2, s16 z2, s16 x3, s16 y3, s16 w, s16 h,
+                         u16 speed, s16 divisor, s16 base, FrameCurve curve) {
+    RECT rect;
+    s32 half;
+    s32 i, col;
+    u16 color, fill;
+
+    if (anim->active != 0) {
+        return NULL;
+    }
+    func_80032498(4, 0);
+    anim->active = 1;
+    anim->mode = mode;
+    anim->dirty = 0;
+    anim->target = target;
+    anim->time = 0;
+    anim->frame = 0xFFFF;
+    anim->speed = speed;
+    anim->divisor = divisor;
+    anim->base = base;
+    anim->curve = curve;
+    anim->colors = colors;
+    if (!(mode & 1)) {
+        flags &= 0xFD0F;
+    }
+    if (mode & 4) {
+        flags &= 0xFEFF;
+    }
+    if (w == 0) {
+        w = 0x100;
+    }
+    if (h == 0) {
+        h = 0x100;
+    }
+    switch (mode) {
+    case 0:
+    case 1:
+        half = (w + 1) / 2;
+        w = half * 2;
+        anim->rect.x = x3;
+        anim->rect.y = y3;
+        anim->rect.w = w;
+        anim->rect.h = h;
+        anim->size = w * h;
+        if (flags & 0x100) {
+            anim->work = func_80031BDC((s16)(half * 2) * h * 2, 0);
+        }
+        if (flags & 0x200) {
+            anim->pixels2 = func_80031BDC((s16)(half * 2) * h * 2, 0);
+        }
+        if (flags & 0x400) {
+            anim->pixels = func_80031BDC((s16)(half * 2) * h * 2, 0);
+        }
+        switch (flags & 0xF) {
+        case 1:
+            rect.x = x;
+            rect.y = y;
+            rect.w = w;
+            rect.h = h;
+            StoreImage(&rect, (u32 *)anim->pixels);
+            DrawSync(0);
+            break;
+        case 2:
+            fill = ((z & 0x3F) << 10) + ((y & 0x1F) << 5) | (x & 0x1F);
+            for (i = 0; i < (s16)(half * 2) * h; i++) {
+                anim->pixels[i] = fill;
+            }
+            break;
+        }
+        switch ((flags >> 4) & 0xF) {
+        case 1:
+            rect.x = x2;
+            rect.y = y2;
+            rect.w = w;
+            rect.h = h;
+            StoreImage(&rect, (u32 *)anim->pixels2);
+            DrawSync(0);
+            break;
+        case 2:
+            fill = ((z2 & 0x3F) << 10) + ((y2 & 0x1F) << 5) | (x2 & 0x1F);
+            for (i = 0; i < w * h; i++) {
+                anim->pixels2[i] = fill;
+            }
+            break;
+        }
+        break;
+    case 4:
+    case 5:
+        anim->rect.x = x3;
+        anim->rect.y = y3;
+        anim->rect.w = w;
+        anim->rect.h = h;
+        anim->size = w * h;
+        if (flags & 0x100) {
+            anim->work = func_80031BDC(w * h * 2, 0);
+        }
+        if (flags & 0x200) {
+            anim->pixels2 = func_80031BDC(w * h * 2, 0);
+        }
+        if (flags & 0x400) {
+            anim->pixels = func_80031BDC(w * h * 2, 0);
+        }
+        switch (flags & 0xF) {
+        case 1:
+            for (i = 0; i < h; i++) {
+                for (col = 0; col < w; col++) {
+                    anim->pixels[i * w + col] = colors[y + i].c[x + col];
+                }
+            }
+            break;
+        case 2:
+            for (i = 0; i < h; i++) {
+                for (col = 0; col < w; col++) {
+                    switch ((y3 + i) % 3) {
+                    case 0:
+                        color = x;
+                        break;
+                    case 1:
+                        color = y;
+                        break;
+                    case 2:
+                        color = z;
+                        break;
+                    }
+                    anim->pixels[i * w + col] = color;
+                }
+            }
+            break;
+        }
+        switch ((flags >> 4) & 0xF) {
+        case 1:
+            for (i = 0; i < h; i++) {
+                for (col = 0; col < w; col++) {
+                    anim->pixels2[i * w + col] = colors[y2 + i].c[x2 + col];
+                }
+            }
+            break;
+        case 2:
+            for (i = 0; i < h; i++) {
+                for (col = 0; col < w; col++) {
+                    switch ((y3 + i) % 3) {
+                    case 0:
+                        color = x2;
+                        break;
+                    case 1:
+                        color = y2;
+                        break;
+                    case 2:
+                        color = z2;
+                        break;
+                    }
+                    anim->pixels2[i * w + col] = color;
+                }
+            }
+            break;
+        }
+        break;
+    }
+    return anim;
+}
+
+#ifdef NON_MATCHING
+/* Advance an image animation by `ticks` + 1: when its curve selects another
+ * frame, rebuild the image (resident decoders or fades) and copy the
+ * overlap into its target image. Returns the frame, or a negative value
+ * once the animation ended. The curve's result is used as a halfword and,
+ * as the frame, sign-extended. Differs only in the unchanged-frame branch,
+ * which the original sends straight to the epilogue (and in computing the
+ * frame from the saved result). */
+s16 func_800A3E98(ImageAnim *anim, s32 ticks) {
+    RECT src;
+    RECT dst;
+    ImageAnim *target;
+    u16 *pixels;
+    u16 *work;
+    u16 result;
+    s16 frame;
+    s32 x;
+    s32 y;
+
+    if (!anim->active) {
+        return -1;
+    }
+    anim->time += anim->speed * (ticks + 1);
+    result = anim->curve(anim->time, anim->divisor, anim->base);
+    frame = result;
+    if (frame < 0) {
+        func_800A429C(anim);
+        return frame;
+    }
+    if (frame != anim->frame) {
+        anim->frame = result;
+        switch (anim->mode) {
+        case 0:
+            func_80026F44(anim->size, frame, anim->work, anim->pixels);
+            if (anim->target == NULL) {
+                LoadImage(&anim->rect, (u32 *)anim->work);
+            }
+            break;
+        case 1:
+            func_80026FE8(anim->size, frame, anim->work, anim->pixels2, anim->pixels);
+            if (anim->target == NULL) {
+                LoadImage(&anim->rect, (u32 *)anim->work);
+            }
+            break;
+        case 4:
+            func_800A4348(anim, frame);
+            break;
+        case 5:
+            func_800A43F8(anim, frame);
+            break;
+        }
+        target = anim->target;
+        if (target != NULL && target->active) {
+            if (target->rect.x < anim->rect.x) {
+                dst.x = anim->rect.x - target->rect.x;
+                src.x = 0;
+                dst.w = target->rect.x + target->rect.w - anim->rect.x;
+            } else {
+                dst.x = 0;
+                src.x = target->rect.x - anim->rect.x;
+                dst.w = anim->rect.x + anim->rect.w - target->rect.x;
+            }
+            if (target->rect.y < anim->rect.y) {
+                dst.y = anim->rect.y - target->rect.y;
+                src.y = 0;
+                dst.h = target->rect.y + target->rect.h - anim->rect.y;
+            } else {
+                dst.y = 0;
+                src.y = target->rect.y - anim->rect.y;
+                dst.h = anim->rect.y + anim->rect.h - target->rect.y;
+            }
+            if (dst.w > 0 && dst.h > 0) {
+                target->dirty = 1;
+                pixels = target->pixels;
+                if (target->mode < 4) {
+                    work = anim->work;
+                    for (y = 0; y < dst.h; y++) {
+                        for (x = 0; x < dst.w; x++) {
+                            *(pixels + dst.x + x + (dst.y + y) * target->rect.w) =
+                                *(work + src.x + x + (src.y + y) * anim->rect.w);
+                        }
+                    }
+                } else {
+                    for (y = 0; y < dst.h; y++) {
+                        for (x = 0; x < dst.w; x++) {
+                            *(pixels + dst.x + x + (dst.y + y) * target->rect.w) =
+                                anim->colors[src.y + y].c[src.x + x];
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A3E98);
+#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A429C);
+/* Stop an image animation: restore its original pixels to VRAM (resident
+ * decoder modes) and release its blocks. */
+void func_800A429C(ImageAnim *anim) {
+    if (anim->active) {
+        if (anim->pixels != NULL) {
+            if (anim->mode < 4) {
+                LoadImage(&anim->rect, (u32 *)anim->pixels);
+            }
+            func_800320E8(anim->pixels);
+            anim->pixels = NULL;
+        }
+        if (anim->pixels2 != NULL) {
+            func_800320E8(anim->pixels2);
+            anim->pixels2 = NULL;
+        }
+        if (anim->work != NULL) {
+            func_800320E8(anim->work);
+            anim->work = NULL;
+        }
+        anim->active = 0;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A4348);
+/* Fade an image animation's colours to `level` / 32 of its pixels. */
+void func_800A4348(ImageAnim *anim, s16 level) {
+    u16 *pixel;
+    s32 x;
+    s32 y;
+    s32 value;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A43F8);
+    pixel = anim->pixels;
+    for (y = 0; y < anim->rect.h; y++) {
+        for (x = 0; x < anim->rect.w; x++) {
+            value = *pixel * level;
+            anim->colors[anim->rect.y + y].c[anim->rect.x + x] = value / 32;
+            pixel++;
+        }
+    }
+}
+
+/* Blend an image animation's colours from its second pixels towards its
+ * first by `level` / 32. */
+void func_800A43F8(ImageAnim *anim, s16 level) {
+    u16 *pixel;
+    u16 *from;
+    s32 x;
+    s32 y;
+    s32 value;
+
+    pixel = anim->pixels;
+    from = anim->pixels2;
+    for (y = 0; y < anim->rect.h; y++) {
+        for (x = 0; x < anim->rect.w; x++) {
+            value = (*pixel - *from) * level;
+            anim->colors[anim->rect.y + y].c[anim->rect.x + x] = *from + value / 32;
+            pixel++;
+            from++;
+        }
+    }
+}
 
 /* Update the active trackers' positions: an offset from a part of a stage
  * object's hierarchy when the object exists, else the offset itself. */
@@ -892,7 +2105,36 @@ void func_800A44C0(BattleObject **objects) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A4654);
+/* Draw the stage: advance the stage object's image animations, run the
+ * stage update (800A6AE8) on the scratchpad stack, step both resident
+ * records, draw the stage hierarchy (800A48EC), both resident handles and
+ * the sky (800A4DB8) seen from eye towards target into ot[depth - 1]. */
+void func_800A4654(Matrix *view, Matrix *light, s32 arg2, u32 *ot, s32 buffer, SVector *eye, SVector *target,
+                   s32 depth) {
+    ImageAnim *anim;
+    s32 i;
+
+    if (light != NULL) {
+        SetLightMatrix(light);
+    }
+    anim = D_800D3368[31]->images;
+    for (i = 0; i < D_800D3368[31]->imageCount; i++, anim++) {
+        func_800A3E98(anim, D_800CCC5C);
+    }
+    SPAD_STACK_ENTER();
+    func_800A6AE8();
+    SPAD_STACK_LEAVE();
+    for (i = 0; i < 2; i++) {
+        func_80027EAC(&D_800C3DA0[i]);
+    }
+    if (D_800C3E38 != 0) {
+        func_800A48EC(D_800C3E48, (ModelPart *)D_800C3E38, view, (s32)light, arg2, ot, buffer, depth);
+    }
+    for (i = 0; i < 2; i++) {
+        func_800273C4(D_800C3D50[i], eye, target, view, ot + depth - 1, buffer);
+    }
+    func_800A4DB8(D_800C3EA0, eye, target, view, ot + depth - 1, buffer);
+}
 
 /* Free the battle scene's resources: the stage objects, the scene data, both
  * resident handles of D_800C3D50 (80027D40), the block D_800C3EA0 and both
@@ -921,9 +2163,108 @@ void func_800A4820(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A48EC);
+#ifdef NON_MATCHING
+/* Draw the scene hierarchy's visible model parts under view: billboard parts
+ * (field52 1: upright, 2: facing the view) drop the parts' rotation, and
+ * field52 selects the model drawing mode (4-7: 2-5); plain parts (field52 0)
+ * draw at ordering-table depth 16 into ot[depth - 1]. */
+void func_800A48EC(ModelList *models, ModelPart *root, Matrix *view, s32 arg3, s32 arg4, u32 *ot, s32 buffer,
+                   s32 depth) {
+    Matrix *m;
+    ModelPart *part;
+    s32 shift;
+    u32 count;
+    s32 i;
+    s32 mode;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A4B3C);
+    m = (Matrix *)0x1F800040;
+    part = root;
+    shift = D_80050100;
+    count = part++->index - 1;
+    for (i = 0; i < count; i++, part++) {
+        if (part->modelId != 0xFFFF && part->flag7) {
+            CompMatrix(view, &part->world, m);
+            if ((u16)(part->field52 - 1) < 2) {
+                m->m[0][0] = 0x1000;
+                m->m[0][2] = 0;
+                m->m[1][0] = 0;
+                m->m[1][2] = 0;
+                m->m[2][0] = 0;
+                m->m[2][2] = 0x1000;
+                if ((s16)part->field52 == 1) {
+                    m->m[0][1] = view->m[0][1];
+                    m->m[1][1] = view->m[1][1];
+                    m->m[2][1] = view->m[2][1];
+                } else {
+                    m->m[0][1] = 0;
+                    m->m[1][1] = 0x1000;
+                    m->m[2][1] = 0;
+                }
+            }
+            SetRotMatrix(m);
+            SetTransMatrix(m);
+            switch ((s16)part->field52) {
+            case 4:
+                mode = 2;
+                break;
+            case 5:
+                mode = 3;
+                break;
+            case 6:
+                mode = 4;
+                break;
+            case 7:
+                mode = 5;
+                break;
+            default:
+                mode = 0;
+                break;
+            }
+            if ((s16)part->field52 == 0) {
+                D_80050100 = 16;
+                func_8002C700(models->models[part->modelId], part->packets[buffer], (s32)(ot + depth - 1), mode);
+            } else {
+                D_80050100 = shift;
+                func_8002C700(models->models[part->modelId], part->packets[buffer], (s32)ot, mode);
+            }
+        }
+    }
+    D_80050100 = shift;
+}
+#else
+INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A48EC);
+#endif
+
+/* Push point (relative to origin, in the ground plane) out of the first
+ * listed circle (x, z, radius) it lies inside, onto its rim; whether it was
+ * pushed. */
+s32 func_800A4B3C(SVector *origin, SVector *point) {
+    u16 *circle = D_800D2FD0;
+    s32 i;
+    s32 pushed = 0;
+    s16 cx;
+    s16 cz;
+    s16 radius;
+    s32 dx;
+    s32 dz;
+    s32 distance;
+
+    for (i = 0; i < D_800D2FC8; i++) {
+        cx = *circle++ - origin->vx;
+        dx = point->vx - cx;
+        cz = *circle++ - origin->vz;
+        dz = point->vz - cz;
+        radius = *circle++;
+        distance = SquareRoot0(dx * dx + dz * dz) + 1;
+        if (distance < radius) {
+            pushed = 1;
+            point->vx = cx + dx * radius / distance;
+            point->vz = cz + dz * radius / distance;
+            break;
+        }
+    }
+    return pushed;
+}
 
 /* Place a copy of stage object index (800B10EC) at every listed point, its
  * height raised by the object's size. */
@@ -942,7 +2283,171 @@ void func_800A4CF8(s32 index) {
     }
 }
 
+#ifdef NON_MATCHING
+/* Draw the stage sky seen from eye towards target: the horizon bands at the
+ * projected horizon (near and far, clamped to the screen), then the tiles
+ * of the scrolling ceiling under a camera turned and tilted with the view,
+ * each front-facing tile textured from the scroll position. Differs in the
+ * tile loop's register allocation (the original keeps three copies of the
+ * half tile size and reloads the tag masks per row). */
+void func_800A4DB8(StageGeometry *sky, SVector *eye, SVector *target, Matrix *view, u32 *ot,
+                   s32 buffer) {
+    SVector unused; /* declared, never used (its slot stays in the frame) */
+    Matrix camera;
+    Matrix turn;
+    SVector angles;
+    Vector delta;
+    SVector top;
+    SVector bottom;
+    Vector direction;
+    SVector point;
+    SVector normal;
+    s32 clip;
+    s32 angle;
+    s32 tilt;
+    s32 size;
+    s32 half;
+    s32 u0;
+    s32 v0;
+    s32 u;
+    s32 v;
+    s32 vEnd;
+    s32 row;
+    s32 col;
+    s32 n;
+    SVector *vertex;
+
+    if (sky == NULL) {
+        return;
+    }
+    addPrim(ot, &sky->modes2[buffer]);
+    direction.vx = target->vx - eye->vx;
+    direction.vy = 0;
+    direction.vz = target->vz - eye->vz;
+    VectorNormalS(&direction, &normal);
+    point.vx = normal.vx * sky->distance / 4096 + target->vx;
+    point.vy = sky->horizon;
+    point.vz = normal.vz * sky->distance / 4096 + target->vz;
+    SetRotMatrix(view);
+    SetTransMatrix(view);
+    gte_ldv0(&point);
+    gte_rtps();
+    gte_stsxy(&top);
+    top.vx = top.vy;
+    if (top.vy > 240) {
+        top.vy = 240;
+    }
+    point.vx = normal.vx * sky->distance / 4096 * sky->nearScale / 256 + target->vx;
+    point.vy = sky->horizon * sky->nearScale / 256;
+    point.vz = normal.vz * sky->distance / 4096 * sky->nearScale / 256 + target->vz;
+    gte_ldv0(&point);
+    gte_rtps();
+    gte_stsxy(&bottom);
+    if (bottom.vy >= 0 && top.vy < 240) {
+        sky->quads[buffer + 2].y0 = top.vy;
+        sky->quads[buffer + 2].y1 = top.vy;
+        sky->quads[buffer + 2].y2 = bottom.vy;
+        sky->quads[buffer + 2].y3 = bottom.vy;
+        addPrim(ot, &sky->quads[buffer + 2]);
+    }
+    if (bottom.vy < 0) {
+        bottom.vy = 0;
+    }
+    if (bottom.vy < 240) {
+        sky->flats[buffer + 2].y0 = bottom.vy;
+        sky->flats[buffer + 2].y1 = bottom.vy;
+        addPrim(ot, &sky->flats[buffer + 2]);
+    }
+    point.vx = normal.vx * sky->distance / 4096 * sky->farScale / 256 + target->vx;
+    point.vy = sky->horizon * sky->farScale / 256;
+    point.vz = normal.vz * sky->distance / 4096 * sky->farScale / 256 + target->vz;
+    gte_ldv0(&point);
+    gte_rtps();
+    gte_stsxy(&bottom);
+    bottom.vy = top.vy * 2 - bottom.vy - 8;
+    if (top.vx >= 0 && top.vx < 480 && bottom.vy < 240) {
+        sky->quads[buffer].y0 = top.vx;
+        sky->quads[buffer].y1 = top.vx;
+        sky->quads[buffer].y2 = bottom.vy;
+        sky->quads[buffer].y3 = bottom.vy;
+        addPrim(ot, &sky->quads[buffer]);
+    }
+
+    delta.vx = target->vx - eye->vx;
+    delta.vy = 0;
+    delta.vz = target->vz - eye->vz;
+    angle = ratan2(target->vy - eye->vy, SquareRoot0(delta.vx * delta.vx + delta.vz * delta.vz));
+    tilt = (angle - 0x100) * sky->tilt / 512 * (0x400 - (angle < 0 ? -angle : angle)) / 1024;
+    SetGeomScreen(sky->screen);
+    angles.vx = 0;
+    angles.vy = -ratan2(delta.vx, delta.vz);
+    angles.vz = 0;
+    func_8003F738(&angles, &turn);
+    turn.t[0] = 0;
+    turn.t[1] = 0;
+    turn.t[2] = 0;
+    angles.vx = tilt;
+    angles.vy = -angles.vy;
+    func_8004A92C(&angles, &camera);
+    VectorNormalS(&delta, &angles);
+    delta.vx = eye->vx + angles.vx * 2;
+    delta.vy = eye->vy / 4 - sky->height;
+    delta.vz = eye->vz + angles.vz * 2;
+    camera.t[0] = delta.vx;
+    camera.t[1] = delta.vy;
+    camera.t[2] = delta.vz;
+    CompMatrix(&camera, &turn, &camera);
+    CompMatrix(view, &camera, &camera);
+    SetRotMatrix(&camera);
+    SetTransMatrix(&camera);
+
+    sky->scrollX += sky->speedX;
+    sky->scrollY += sky->speedY;
+    u0 = (sky->scrollX / 16 + delta.vx / 12) & ((size = sky->tileSize) - 1);
+    v0 = (sky->scrollY / 16 + delta.vz / 12) & (size - 1);
+    half = (s16)size / 2;
+    vertex = &sky->grid[0][0];
+    n = buffer * 64;
+    for (row = 0; row < 8; row++) {
+        v = (row & 1) * half + v0;
+        vEnd = v + half - 1;
+        for (col = 0; col < 8; col++) {
+            gte_ldv3(&vertex[0], &vertex[1], &vertex[9]);
+            gte_rtpt();
+            gte_nclip();
+            gte_stopz(&clip);
+            if (clip >= 0) {
+                gte_stsxy3(&sky->tiles[n].x0, &sky->tiles[n].x1, &sky->tiles[n].x2);
+                gte_ldv0(&vertex[10]);
+                gte_rtps();
+                gte_stsxy(&sky->tiles[n].x3);
+                sky->tiles[n].v0 = v;
+                sky->tiles[n].v1 = v;
+                sky->tiles[n].v2 = vEnd;
+                sky->tiles[n].v3 = vEnd;
+                u = (col & 1) * half + u0;
+                sky->tiles[n].u0 = u;
+                sky->tiles[n].u2 = u;
+                sky->tiles[n].u1 = u + half - 1;
+                sky->tiles[n].u3 = u + half - 1;
+                addPrim(ot, &sky->tiles[n]);
+            }
+            n++;
+            vertex++;
+        }
+        vertex++;
+    }
+    SetGeomScreen(0x200);
+    if (top.vy >= 0) {
+        sky->flats[buffer].y2 = top.vy;
+        sky->flats[buffer].y3 = top.vy;
+        addPrim(ot, &sky->flats[buffer]);
+    }
+    addPrim(ot, &sky->modes[buffer]);
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A4DB8);
+#endif
 
 /* The scene's points. */
 SVector *func_800A577C(void) {
@@ -1055,44 +2560,62 @@ s32 func_800A5A48(SVector *a, SVector *b, SVector *c, SVector *point) {
     return -(cross.vy >= 0);
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A5BE8);
+/* The ground height of point on the plane through triangle (a, b, c): the
+ * plane's unit normal goes to normal; a vertical plane leaves height 0. */
+void func_800A5BE8(SVector *a, SVector *b, SVector *c, SVector *point, Vector *normal) {
+    Vector edgeB;
+    Vector edgeC;
+    Vector edge;
 
-#ifdef NON_MATCHING
-/* Search triangle and, up to depth levels, its unvisited neighbours for the one
- * containing point (800A5A48 gives -1); -1 for none. */
+    edge.vx = b->vx - a->vx;
+    edge.vy = b->vy - a->vy;
+    edge.vz = b->vz - a->vz;
+    func_80048D7C(&edge, &edgeB);
+    edge.vx = c->vx - a->vx;
+    edge.vy = c->vy - a->vy;
+    edge.vz = c->vz - a->vz;
+    func_80048D7C(&edge, &edgeC);
+    func_8004A480(&edgeB, &edgeC, normal);
+    if (normal->vy == 0) {
+        point->vy = 0;
+        return;
+    }
+    point->vy = a->vy + (-((point->vx - a->vx) * normal->vx) - (point->vz - a->vz) * normal->vz) / normal->vy;
+}
+
+/* Search triangle and, up to depth levels, its neighbours for the one
+ * containing point (800A5A48 gives -1), testing each triangle once per visit
+ * stamp; -1 for none. */
 s32 func_800A5D54(SVector *point, s32 triangle, s32 depth) {
     s32 found;
 
-    if (triangle >= 0) {
-        if (D_800D39CC[triangle].visited != D_800D2F64) {
-            D_800D39CC[triangle].visited = D_800D2F64;
-            if (func_800A5A48(&D_800D3344[D_800D39CC[triangle].vertices[0]],
-                              &D_800D3344[D_800D39CC[triangle].vertices[1]],
-                              &D_800D3344[D_800D39CC[triangle].vertices[2]], point)
-                == -1) {
-                return triangle;
-            }
-            if (depth > 0) {
-                found = func_800A5D54(point, D_800D39CC[triangle].neighbours[0], depth - 1);
-                if (found >= 0) {
-                    return found;
-                }
-                found = func_800A5D54(point, D_800D39CC[triangle].neighbours[1], depth - 1);
-                if (found >= 0) {
-                    return found;
-                }
-                found = func_800A5D54(point, D_800D39CC[triangle].neighbours[2], depth - 1);
-                if (found >= 0) {
-                    return found;
-                }
-            }
+    if (triangle < 0) {
+        return -1;
+    }
+    if (D_800D39CC[triangle].visited != D_800D2F64) {
+        D_800D39CC[triangle].visited = D_800D2F64;
+        if (func_800A5A48(&D_800D3344[D_800D39CC[triangle].vertices[0]], &D_800D3344[D_800D39CC[triangle].vertices[1]],
+                          &D_800D3344[D_800D39CC[triangle].vertices[2]], point)
+            == -1) {
+            return triangle;
+        }
+    }
+    if (depth > 0) {
+        found = func_800A5D54(point, D_800D39CC[triangle].neighbours[0], depth - 1);
+        if (found >= 0) {
+            return found;
+        }
+        found = func_800A5D54(point, D_800D39CC[triangle].neighbours[1], depth - 1);
+        if (found >= 0) {
+            return found;
+        }
+        found = func_800A5D54(point, D_800D39CC[triangle].neighbours[2], depth - 1);
+        if (found >= 0) {
+            return found;
         }
     }
     return -1;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A5D54);
-#endif
 
 /* Set the two words D_800D2D40 and D_800D2D48. */
 void func_800A5E9C(s32 first, s32 second) {
@@ -1100,7 +2623,92 @@ void func_800A5E9C(s32 first, s32 second) {
     D_800D2D48 = second;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A5EB4);
+/* Set up the stage lighting: turn the light slots off, make the stage image
+ * (the w x h VRAM rectangle at (x, y), with a working copy) the target of
+ * the stage object's active image animations, and save the stage's colours
+ * twice (as loaded and a working copy). */
+void func_800A5EB4(void) {
+    CVector *color;
+    ImageAnim *anim;
+    s32 i;
+
+    for (i = 0; i < 4; i++) {
+        D_800C3AAC[i].active = 0;
+    }
+    anim = D_800D3368[31]->images;
+    for (i = 0; i < D_800D3368[31]->imageCount; i++, anim++) {
+        if (anim->active) {
+            anim->target = &D_800D3600;
+        }
+    }
+    func_800A3640(&D_800D3600, NULL, 1, 0x601, NULL, D_800D2D30, D_800D2D34, 0, 0, 0, 0, D_800D2D30, D_800D2D34,
+                  D_800D2D2C, D_800C3EA8, 0, 0, 0, NULL);
+    D_800D3600.work = NULL;
+    D_800C3AC4 = func_80031BDC(sizeof(StageColors), 1);
+    D_800C3AC8 = func_80031BDC(sizeof(StageColors), 1);
+    color = (CVector *)D_800C3AC4;
+    for (i = 0; i < 4; i++) {
+        if (D_800C3EA0 != NULL) {
+            color->r = ((StageGeometry *)D_800C3EA0)->quads[i].r0;
+            color->g = ((StageGeometry *)D_800C3EA0)->quads[i].g0;
+            color->b = ((StageGeometry *)D_800C3EA0)->quads[i].b0;
+            color++;
+            color->r = ((StageGeometry *)D_800C3EA0)->quads[i].r1;
+            color->g = ((StageGeometry *)D_800C3EA0)->quads[i].g1;
+            color->b = ((StageGeometry *)D_800C3EA0)->quads[i].b1;
+            color++;
+            color->r = ((StageGeometry *)D_800C3EA0)->quads[i].r2;
+            color->g = ((StageGeometry *)D_800C3EA0)->quads[i].g2;
+            color->b = ((StageGeometry *)D_800C3EA0)->quads[i].b2;
+            color++;
+            color->r = ((StageGeometry *)D_800C3EA0)->quads[i].r3;
+            color->g = ((StageGeometry *)D_800C3EA0)->quads[i].g3;
+            color->b = ((StageGeometry *)D_800C3EA0)->quads[i].b3;
+            color++;
+            color->r = ((StageGeometry *)D_800C3EA0)->flats[i].r0;
+            color->g = ((StageGeometry *)D_800C3EA0)->flats[i].g0;
+            color->b = ((StageGeometry *)D_800C3EA0)->flats[i].b0;
+            color++;
+        } else {
+            color += 5;
+        }
+        if (D_800C3D50[0] != NULL) {
+            color->r = ((StageBackdrop *)D_800C3D50[0])->flats[i].r0;
+            color->g = ((StageBackdrop *)D_800C3D50[0])->flats[i].g0;
+            color->b = ((StageBackdrop *)D_800C3D50[0])->flats[i].b0;
+        }
+        color++;
+    }
+    for (i = 0; i < 2; i++) {
+        if (D_800C3D50[0] != NULL) {
+            color->r = ((StageBackdrop *)D_800C3D50[0])->quads[i].r0;
+            color->g = ((StageBackdrop *)D_800C3D50[0])->quads[i].g0;
+            color->b = ((StageBackdrop *)D_800C3D50[0])->quads[i].b0;
+            color++;
+            color->r = ((StageBackdrop *)D_800C3D50[0])->quads[i].r1;
+            color->g = ((StageBackdrop *)D_800C3D50[0])->quads[i].g1;
+            color->b = ((StageBackdrop *)D_800C3D50[0])->quads[i].b1;
+            color++;
+            color->r = ((StageBackdrop *)D_800C3D50[0])->quads[i].r2;
+            color->g = ((StageBackdrop *)D_800C3D50[0])->quads[i].g2;
+            color->b = ((StageBackdrop *)D_800C3D50[0])->quads[i].b2;
+            color++;
+            color->r = ((StageBackdrop *)D_800C3D50[0])->quads[i].r3;
+            color->g = ((StageBackdrop *)D_800C3D50[0])->quads[i].g3;
+            color->b = ((StageBackdrop *)D_800C3D50[0])->quads[i].b3;
+            color++;
+        } else {
+            color += 4;
+        }
+    }
+    color->r = ((u8 *)D_800D2D40)[0];
+    color->g = ((u8 *)D_800D2D40)[1];
+    color->b = ((u8 *)D_800D2D40)[2];
+    color++;
+    color->r = ((u8 *)D_800D2D48)[0];
+    color->g = ((u8 *)D_800D2D48)[1];
+    color->b = ((u8 *)D_800D2D48)[2];
+}
 
 /* Set light slot index (0-3) to a color and two values; a negative red turns
  * it off. */
@@ -1120,17 +2728,598 @@ void func_800A6444(s32 index, s32 r, s32 g, s32 b, s32 field4, s32 field5) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A64E4);
+/* Restore the stage's colours as loaded (saved by 800A5EB4). */
+void func_800A64E4(void) {
+    CVector *color;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A6884);
+    color = (CVector *)D_800C3AC4;
+    for (i = 0; i < 4; i++) {
+        if (D_800C3EA0 != NULL) {
+            ((StageGeometry *)D_800C3EA0)->quads[i].r0 = color->r;
+            ((StageGeometry *)D_800C3EA0)->quads[i].g0 = color->g;
+            ((StageGeometry *)D_800C3EA0)->quads[i].b0 = color->b;
+            color++;
+            ((StageGeometry *)D_800C3EA0)->quads[i].r1 = color->r;
+            ((StageGeometry *)D_800C3EA0)->quads[i].g1 = color->g;
+            ((StageGeometry *)D_800C3EA0)->quads[i].b1 = color->b;
+            color++;
+            ((StageGeometry *)D_800C3EA0)->quads[i].r2 = color->r;
+            ((StageGeometry *)D_800C3EA0)->quads[i].g2 = color->g;
+            ((StageGeometry *)D_800C3EA0)->quads[i].b2 = color->b;
+            color++;
+            ((StageGeometry *)D_800C3EA0)->quads[i].r3 = color->r;
+            ((StageGeometry *)D_800C3EA0)->quads[i].g3 = color->g;
+            ((StageGeometry *)D_800C3EA0)->quads[i].b3 = color->b;
+            color++;
+            ((StageGeometry *)D_800C3EA0)->flats[i].r0 = color->r;
+            ((StageGeometry *)D_800C3EA0)->flats[i].g0 = color->g;
+            ((StageGeometry *)D_800C3EA0)->flats[i].b0 = color->b;
+            color++;
+        } else {
+            color += 5;
+        }
+        if (D_800C3D50[0] != NULL) {
+            ((StageBackdrop *)D_800C3D50[0])->flats[i].r0 = color->r;
+            ((StageBackdrop *)D_800C3D50[0])->flats[i].g0 = color->g;
+            ((StageBackdrop *)D_800C3D50[0])->flats[i].b0 = color->b;
+        }
+        color++;
+    }
+    for (i = 0; i < 2; i++) {
+        if (D_800C3D50[0] != NULL) {
+            ((StageBackdrop *)D_800C3D50[0])->quads[i].r0 = color->r;
+            ((StageBackdrop *)D_800C3D50[0])->quads[i].g0 = color->g;
+            ((StageBackdrop *)D_800C3D50[0])->quads[i].b0 = color->b;
+            color++;
+            ((StageBackdrop *)D_800C3D50[0])->quads[i].r1 = color->r;
+            ((StageBackdrop *)D_800C3D50[0])->quads[i].g1 = color->g;
+            ((StageBackdrop *)D_800C3D50[0])->quads[i].b1 = color->b;
+            color++;
+            ((StageBackdrop *)D_800C3D50[0])->quads[i].r2 = color->r;
+            ((StageBackdrop *)D_800C3D50[0])->quads[i].g2 = color->g;
+            ((StageBackdrop *)D_800C3D50[0])->quads[i].b2 = color->b;
+            color++;
+            ((StageBackdrop *)D_800C3D50[0])->quads[i].r3 = color->r;
+            ((StageBackdrop *)D_800C3D50[0])->quads[i].g3 = color->g;
+            ((StageBackdrop *)D_800C3D50[0])->quads[i].b3 = color->b;
+            color++;
+        } else {
+            color += 4;
+        }
+    }
+    ((u8 *)D_800D2D40)[0] = color->r;
+    ((u8 *)D_800D2D40)[1] = color->g;
+    ((u8 *)D_800D2D40)[2] = color->b;
+    color++;
+    ((u8 *)D_800D2D48)[0] = color->r;
+    ((u8 *)D_800D2D48)[1] = color->g;
+    ((u8 *)D_800D2D48)[2] = color->b;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A6AE8);
+/* Light a colour with light slot index: when active, its mode (field r)
+ * adds the colour (0), half (1) or a quarter (2) of it, its grey level (3),
+ * or nothing (4) to the light's signed colour (b, field4, field5, times 8); the
+ * colour then moves towards that by field g / 32, clamped to 0-255, and is
+ * copied to out. */
+void func_800A6884(u8 *out, s32 index, u8 *color) {
+    s32 r;
+    s32 g;
+    s32 b;
+    s32 grey;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A6F98);
+    r = (s8)D_800C3AAC[index].b * 8;
+    g = (s8)D_800C3AAC[index].field4 * 8;
+    b = (s8)D_800C3AAC[index].field5 * 8;
+    if (D_800C3AAC[index].active) {
+        switch (D_800C3AAC[index].r) {
+        case 0:
+            r += color[0];
+            g += color[1];
+            b += color[2];
+            break;
+        case 1:
+            r += color[0] >> 1;
+            g += color[1] >> 1;
+            b += color[2] >> 1;
+            break;
+        case 2:
+            r += color[0] >> 2;
+            g += color[1] >> 2;
+            b += color[2] >> 2;
+            break;
+        case 3:
+            grey = (color[0] + color[1] + color[2]) / 3;
+            r += grey;
+            g += grey;
+            b += grey;
+            break;
+        case 4:
+            r = 0;
+            g = 0;
+            b = 0;
+            break;
+        }
+    }
+    r += (color[0] - r) * D_800C3AAC[index].g / 32;
+    g += (color[1] - g) * D_800C3AAC[index].g / 32;
+    b += (color[2] - b) * D_800C3AAC[index].g / 32;
+    if (r >= 0x100) {
+        color[0] = 0xFF;
+    } else if (r < 0) {
+        color[0] = 0;
+    } else {
+        color[0] = r;
+    }
+    if (g >= 0x100) {
+        color[1] = 0xFF;
+    } else if (g < 0) {
+        color[1] = 0;
+    } else {
+        color[1] = g;
+    }
+    if (b >= 0x100) {
+        color[2] = 0xFF;
+    } else if (b < 0) {
+        color[2] = 0;
+    } else {
+        color[2] = b;
+    }
+    out[0] = color[0];
+    out[1] = color[1];
+    out[2] = color[2];
+}
 
+/* Relight the stage when its image is marked dirty (800A6444 marks it on a
+ * light slot change, through D_800D3611): restart the stage image from
+ * its original pixels and the working colours from the loaded ones, then
+ * apply each active light slot to the image (modes 0-3 through 80025D4C,
+ * mode 4 through 80026F44) and to every stage colour (800A6884), and load
+ * the image into VRAM. */
+void func_800A6AE8(void) {
+    CVector *color;
+    s32 i;
+    s32 j;
+
+    if (D_800D3600.dirty && D_800D3600.active) {
+        D_800D3600.dirty = 0;
+        memcpy(D_800D3600.pixels2, D_800D3600.pixels, D_800D2D2C * D_800C3EA8 * 2);
+        *D_800C3AC8 = *D_800C3AC4;
+        for (i = 0; i < 4; i++) {
+            if (D_800C3AAC[i].active) {
+                switch (D_800C3AAC[i].r) {
+                case 0:
+                case 1:
+                case 2:
+                case 3:
+                    func_80025D4C(D_800D2D2C * D_800C3EA8, D_800D3600.pixels2, D_800D3600.pixels2,
+                                  D_800D3600.pixels2, (s8)D_800C3AAC[i].b, (s8)D_800C3AAC[i].field4,
+                                  (s8)D_800C3AAC[i].field5, D_800C3AAC[i].r, D_800C3AAC[i].g);
+                    break;
+                case 4:
+                    func_80026F44(D_800D2D2C * D_800C3EA8, D_800C3AAC[i].g, D_800D3600.pixels2,
+                                  D_800D3600.pixels);
+                    break;
+                }
+                color = (CVector *)D_800C3AC8;
+                for (j = 0; j < 4; j++) {
+                    if (D_800C3EA0 != NULL) {
+                        func_800A6884(&((StageGeometry *)D_800C3EA0)->quads[j].r0, i, (u8 *)color++);
+                        func_800A6884(&((StageGeometry *)D_800C3EA0)->quads[j].r1, i, (u8 *)color++);
+                        func_800A6884(&((StageGeometry *)D_800C3EA0)->quads[j].r2, i, (u8 *)color++);
+                        func_800A6884(&((StageGeometry *)D_800C3EA0)->quads[j].r3, i, (u8 *)color++);
+                        func_800A6884(&((StageGeometry *)D_800C3EA0)->flats[j].r0, i, (u8 *)color++);
+                    } else {
+                        color += 5;
+                    }
+                    if (D_800C3D50[0] != NULL) {
+                        func_800A6884(&((StageBackdrop *)D_800C3D50[0])->flats[j].r0, i, (u8 *)color++);
+                    } else {
+                        color++;
+                    }
+                }
+                for (j = 0; j < 2; j++) {
+                    if (D_800C3D50[0] != NULL) {
+                        func_800A6884(&((StageBackdrop *)D_800C3D50[0])->quads[j].r0, i, (u8 *)color++);
+                        func_800A6884(&((StageBackdrop *)D_800C3D50[0])->quads[j].r1, i, (u8 *)color++);
+                        func_800A6884(&((StageBackdrop *)D_800C3D50[0])->quads[j].r2, i, (u8 *)color++);
+                        func_800A6884(&((StageBackdrop *)D_800C3D50[0])->quads[j].r3, i, (u8 *)color++);
+                    } else {
+                        color += 4;
+                    }
+                }
+                func_800A6884((u8 *)D_800D2D40, i, (u8 *)color++);
+                func_800A6884((u8 *)D_800D2D48, i, (u8 *)color);
+            }
+        }
+        LoadImage(&D_800D3600.rect, (u32 *)D_800D3600.pixels2);
+    }
+}
+
+/* Release the stage image: detach the stage object's active image
+ * animations from their targets, restore the image's VRAM and stop it; then
+ * restore the stage colours (800A64E4) and free their saved copies. */
+void func_800A6F98(void) {
+    ImageAnim *anim;
+    s32 i;
+
+    if (D_800D3600.active) {
+        anim = D_800D3368[31]->images;
+        for (i = 0; i < D_800D3368[31]->imageCount; i++, anim++) {
+            if (anim->active) {
+                anim->target = NULL;
+            }
+        }
+        LoadImage(&D_800D3600.rect, (u32 *)D_800D3600.pixels);
+        DrawSync(0);
+        func_800A429C(&D_800D3600);
+    }
+    func_800A64E4();
+    func_800320E8(D_800C3AC4);
+    func_800320E8(D_800C3AC8);
+}
+
+#ifdef NON_MATCHING
+/* Build a surface from `table`: a scaled centre per ring (offset by
+ * ox/oy/oz), each strand's points (segment length and sag), and two textured
+ * triangles per point pair between neighbouring rings, their texture
+ * spanning u_span x v_span from (tx, ty) with the CLUT at (clut_x, clut_y);
+ * then `count` zeroed entries. On an allocation failure the surface is left
+ * empty. The original keeps the loop state in caller-saved registers across
+ * SetPolyGT3 (saved on the stack). */
+void func_800A7064(Surface *surface, u16 *table, s16 angle_base, s32 scale, s16 ox, s16 oy, s16 oz,
+                   s16 count, s16 tx, s16 ty, s16 u_span, s16 v_span, s16 clut_x, s16 clut_y, u8 b0,
+                   u8 b1, u8 b2, u8 b3, u8 b4, u8 b5) {
+    SVector *centres;
+    SVector *centre;
+    SurfacePoint **rings;
+    SurfacePoint *points;
+    SurfacePoint *point;
+    SurfacePoly *polys;
+    POLY_GT3 *prim;
+    u16 *counts;
+    u16 *radii;
+    u8 *angles;
+    u16 tpage, clut;
+    s32 page_x, page_y;
+    s32 u_base, v_base;
+    s32 u_step, u, u_next;
+    s32 v_step;
+    s32 first;
+    s32 i, k, b, n;
+
+    surface->h0 = *table++;
+    surface->polys = *table * 2;
+    func_80032498(4, 0);
+    table++;
+    centres = func_80031BDC(surface->rings * sizeof(SVector), 0);
+    if (centres == NULL) {
+        surface->centres = NULL;
+        return;
+    }
+    surface->centres = centres;
+    for (i = 0; i < surface->rings; i++, centres++) {
+        centres->vx = (*table++ + ox) * scale / 4096;
+        centres->vy = (*table++ + oy) * scale / 4096;
+        centres->vz = (*table++ + oz) * scale / 4096;
+    }
+    n = table[surface->rings];
+    surface->points = n + surface->rings;
+    rings = func_80031BDC(surface->rings * sizeof(SurfacePoint *), 0);
+    if (rings == NULL) {
+        surface->centres = NULL;
+        func_800320E8(NULL);
+        return;
+    }
+    surface->strands = rings;
+    counts = table;
+    radii = table + surface->rings + 1;
+    angles = (u8 *)(radii + n);
+    points = func_80031BDC((n + surface->rings) * sizeof(SurfacePoint), 0);
+    if (points == NULL) {
+        surface->centres = NULL;
+        func_800320E8(NULL);
+        func_800320E8(surface->strands);
+        return;
+    }
+    centre = surface->centres;
+    point = points;
+    for (i = 0; i < surface->rings; i++, counts++, centre++) {
+        *rings++ = point;
+        for (k = 0; k < *counts; k++, point++) {
+            point->length = *radii++ * scale / 4096;
+            point->sag = *angles++ + angle_base;
+            point->pos[0] = centre->vx;
+            point->pos[1] = centre->vy;
+            point->pos[2] = centre->vz;
+        }
+        point->length = 0;
+        point->sag = 0;
+        point->pos[0] = centre->vx;
+        point->pos[1] = centre->vy;
+        point->pos[2] = centre->vz;
+        point++;
+    }
+    counts = table;
+    polys = func_80031BDC(surface->polys * sizeof(SurfacePoly), 0);
+    if (polys == NULL) {
+        surface->centres = NULL;
+        func_800320E8(surface->strands);
+        func_800320E8(points);
+        return;
+    }
+    surface->polyList = polys;
+    page_x = tx / 64;
+    page_y = ty / 256;
+    tpage = GetTPage(0, 1, (s16)(page_x << 6), (s16)(page_y << 8));
+    clut = GetClut(clut_x, clut_y);
+    u_base = (tx - (s16)(page_x << 6)) * 4;
+    v_base = ty - (page_y << 8);
+    first = 0;
+    u_step = u_span / (surface->rings - 1);
+    for (i = 0, u = 0, u_next = u_step; i < surface->rings - 1; i++, u += u_step, u_next += u_step) {
+        n = counts[1];
+        if (counts[0] < n) {
+            n = counts[0];
+        }
+        v_step = (s16)(v_span / n);
+        for (k = 0; k < n; k++, first++) {
+            polys->index[0] = first;
+            polys->index[2] = first + 1;
+            polys->index[1] = first + counts[0] + 1;
+            for (b = 0; b < 2; b++) {
+                prim = &polys->prim[b];
+                SetPolyGT3(prim);
+                prim->tpage = tpage;
+                prim->u0 = u_base + u;
+                prim->v0 = v_base + v_step * k;
+                prim->clut = clut;
+                prim->u1 = u_base + u_next;
+                prim->v1 = v_base + v_step * k;
+                prim->u2 = u_base + u;
+                prim->v2 = v_base + v_step * (k + 1);
+            }
+            polys++;
+            polys->index[0] = first + counts[0] + 1;
+            polys->index[2] = first + 1;
+            polys->index[1] = first + counts[0] + 2;
+            for (b = 0; b < 2; b++) {
+                prim = &polys->prim[b];
+                SetPolyGT3(prim);
+                prim->tpage = tpage;
+                prim->u0 = u_base + u_next;
+                prim->v0 = v_base + v_step * k;
+                prim->clut = clut;
+                prim->u1 = u_base + u_next;
+                prim->v1 = v_base + v_step * (k + 1);
+                prim->u2 = u_base + u;
+                prim->v2 = v_base + v_step * (k + 1);
+            }
+            polys++;
+        }
+        first = (first - k) + 1 + counts[0];
+        counts++;
+    }
+    surface->b[0] = b0;
+    surface->b[1] = b1;
+    surface->b[2] = b2;
+    surface->b[3] = b3;
+    surface->b[4] = b4;
+    surface->b[5] = b5;
+    surface->entryCount = count;
+    if (count > 0) {
+        surface->entries = func_80031BDC(count * sizeof(SurfaceEntry), 0);
+        if (surface->entries == NULL) {
+            surface->entryCount = 0;
+        }
+        for (i = 0; i < surface->entryCount; i++) {
+            surface->entries[i].h0 = 0;
+            surface->entries[i].h2 = 0;
+            surface->entries[i].h4 = 0;
+            surface->entries[i].h6 = 0;
+            surface->entries[i].h8 = 0;
+            surface->entries[i].hA = 0;
+            surface->entries[i].hC = 0;
+            surface->entries[i].hE = 0;
+        }
+    } else {
+        surface->entries = NULL;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A7064);
+#endif
 
+#ifdef NON_MATCHING
+/* Simulate and draw a surface (hair or cloth): each strand's
+ * segments hang from their start pulled by `wind` (plus each point's sag),
+ * keep their length, stay above `floor` and are pushed out of the surface's
+ * collision spheres; then the points' normals are averaged from their
+ * triangles, and the visible triangles are lit (front and back colours) and
+ * queued. As in the original, a triangle the GTE flags as off screen does
+ * not advance the triangle pointer. */
+void func_800A7948(Surface *surface, SVector *wind, Matrix *m, u32 *ot, s32 buffer, s32 scale,
+                   s32 floor) {
+    Vector d;
+    Vector e1, e2, n;
+    SVector normal;
+    u8 rgb[4];
+    s32 flag, opz, otz;
+    SurfacePoint *p, *q;
+    SurfacePoint *points;
+    SurfacePoly *poly;
+    POLY_GT3 *prim;
+    SurfaceEntry *entry;
+    s32 len, radius;
+    s32 i, k;
+
+    if (surface->centres == NULL) {
+        return;
+    }
+    rgb[3] = surface->polyList->prim[0].code;
+    for (i = 0; i < surface->rings; i++) {
+        p = surface->strands[i];
+        if (p->length == 0) {
+            continue;
+        }
+        do {
+            q = p + 1;
+            d.vx = q->pos[0] - p->pos[0] + wind->vx;
+            d.vy = q->pos[1] - p->pos[1] + wind->vy + p->sag;
+            d.vz = q->pos[2] - p->pos[2] + wind->vz;
+            len = SquareRoot0(d.vx * d.vx + d.vy * d.vy + d.vz * d.vz);
+            if (len != 0) {
+                d.vx = (d.vx << 8) / len;
+                d.vy = (d.vy << 8) / len;
+                d.vz = (d.vz << 8) / len;
+            } else {
+                d.vx = 0;
+                d.vy = 0;
+                d.vz = 0;
+            }
+            q->pos[0] = p->pos[0] + p->length * d.vx * scale / 0x100000;
+            q->pos[1] = p->pos[1] + p->length * d.vy * scale / 0x100000;
+            q->pos[2] = p->pos[2] + p->length * d.vz * scale / 0x100000;
+            if ((s16)floor < q->pos[1]) {
+                q->pos[1] = floor;
+            }
+            entry = surface->entries;
+            for (k = 0; k < surface->entryCount; k++, entry++) {
+                d.vx = q->pos[0] - entry->h8;
+                d.vy = q->pos[1] - entry->hA;
+                d.vz = q->pos[2] - entry->hC;
+                len = SquareRoot0(d.vx * d.vx + d.vy * d.vy + d.vz * d.vz);
+                radius = (s16)(entry->h2 * scale / 4096);
+                if (len >= radius) {
+                    continue;
+                }
+                if (len != 0) {
+                    d.vx = entry->h8 + radius * d.vx / len;
+                    d.vy = entry->hA + radius * d.vy / len;
+                    d.vz = entry->hC + radius * d.vz / len;
+                } else {
+                    d.vx = entry->h8;
+                    d.vy = entry->hA;
+                    d.vz = entry->hC;
+                }
+                d.vx -= p->pos[0];
+                d.vy -= p->pos[1];
+                d.vz -= p->pos[2];
+                len = SquareRoot0(d.vx * d.vx + d.vy * d.vy + d.vz * d.vz);
+                if (len != 0) {
+                    d.vx = (d.vx << 8) / len;
+                    d.vy = (d.vy << 8) / len;
+                    d.vz = (d.vz << 8) / len;
+                } else {
+                    d.vx = 0;
+                    d.vy = 0;
+                    d.vz = 0;
+                }
+                q->pos[0] = p->pos[0] + p->length * d.vx * scale / 0x100000;
+                q->pos[1] = p->pos[1] + p->length * d.vy * scale / 0x100000;
+                q->pos[2] = p->pos[2] + p->length * d.vz * scale / 0x100000;
+            }
+            p++;
+        } while (p->length != 0);
+    }
+    points = *surface->strands;
+    for (i = 0; i < surface->points; i++) {
+        points[i].normalCount = 0;
+        points[i].normal[0] = 0;
+        points[i].normal[1] = 0;
+        points[i].normal[2] = 0;
+    }
+    poly = surface->polyList;
+    for (i = 0; i < surface->polys; i++, poly++) {
+        e1.vx = points[poly->index[0]].pos[0] - points[poly->index[1]].pos[0];
+        e1.vy = points[poly->index[0]].pos[1] - points[poly->index[1]].pos[1];
+        e1.vz = points[poly->index[0]].pos[2] - points[poly->index[1]].pos[2];
+        e2.vx = points[poly->index[0]].pos[0] - points[poly->index[2]].pos[0];
+        e2.vy = points[poly->index[0]].pos[1] - points[poly->index[2]].pos[1];
+        e2.vz = points[poly->index[0]].pos[2] - points[poly->index[2]].pos[2];
+        gte_ldopv1(&e1);
+        gte_ldopv2(&e2);
+        gte_op0();
+        gte_stlvnl(&n);
+        n.vx /= 8;
+        n.vy /= 8;
+        n.vz /= 8;
+        func_80048D7C(&n, &e1);
+        for (k = 0; k < 3; k++) {
+            points[poly->index[k]].normal[0] += e1.vx;
+            points[poly->index[k]].normal[1] += e1.vy;
+            points[poly->index[k]].normal[2] += e1.vz;
+            points[poly->index[k]].normalCount++;
+        }
+    }
+    for (i = 0; i < surface->points; i++) {
+        points[i].normal[0] /= (s16)points[i].normalCount;
+        points[i].normal[1] /= (s16)points[i].normalCount;
+        points[i].normal[2] /= (s16)points[i].normalCount;
+    }
+    SetRotMatrix(m);
+    SetTransMatrix(m);
+    poly = surface->polyList;
+    points = *surface->strands;
+    for (i = 0; i < surface->polys; i++) {
+        prim = &poly->prim[buffer];
+        gte_ldv3(points[poly->index[0]].pos, points[poly->index[1]].pos, points[poly->index[2]].pos);
+        gte_rtpt();
+        flag = 0;
+        gte_stflg(&flag);
+        if (flag & 0x40000) {
+            continue;
+        }
+        gte_nclip();
+        gte_stopz(&opz);
+        gte_stsxy3(&prim->x0, &prim->x1, &prim->x2);
+        gte_avsz3();
+        gte_stotz(&otz);
+        otz >>= D_80050100;
+        for (k = 0; k < 3; k++) {
+            if (opz < 0) {
+                if (k == 0) {
+                    rgb[0] = surface->b[0];
+                    rgb[1] = surface->b[1];
+                    rgb[2] = surface->b[2];
+                }
+                normal.vx = points[poly->index[k]].normal[0];
+                normal.vy = points[poly->index[k]].normal[1];
+                normal.vz = points[poly->index[k]].normal[2];
+            } else {
+                if (k == 0) {
+                    rgb[0] = surface->b[3];
+                    rgb[1] = surface->b[4];
+                    rgb[2] = surface->b[5];
+                }
+                normal.vx = -points[poly->index[k]].normal[0];
+                normal.vy = -points[poly->index[k]].normal[1];
+                normal.vz = -points[poly->index[k]].normal[2];
+            }
+            gte_ldv0(&normal);
+            if (k == 0) {
+                gte_ldrgb(rgb);
+            }
+            gte_nccs();
+            switch (k) {
+            case 0:
+                gte_strgb(&prim->r0);
+                break;
+            case 1:
+                gte_strgb(&prim->r1);
+                break;
+            case 2:
+                gte_strgb(&prim->r2);
+                break;
+            }
+        }
+        addPrim(ot + otz, prim);
+        poly++;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A7948);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A8A88);
 
