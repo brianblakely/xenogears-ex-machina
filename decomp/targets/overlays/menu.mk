@@ -10,3 +10,5 @@ LINKER_EXTRA := .local/decomp/menu/undefined_syms_auto.txt .local/decomp/menu/un
 SOURCE_DIRS := decomp/src/menu
 # Packed containers of this image (tools/packed_container.py).
 CONTAINERS := 1:35 2:30
+# Hand-written assembly ranges (coverage class handwritten).
+CLASSIFICATION := decomp/targets/overlays/menu.classification.txt

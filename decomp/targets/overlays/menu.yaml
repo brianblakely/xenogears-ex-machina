@@ -42,8 +42,30 @@ segments:
     start: 0x0
     vram: 0x8006faf0
     subsegments:
+      # Translation units. GCC puts `.align 3` before every jump table; the
+      # assembler honours it relative to the unit's .rodata section, and the
+      # original linker (like SUBALIGN(4) here) placed sections at 4-byte
+      # boundaries. Tables of one unit therefore share their address mod 8,
+      # and a zero word pads an odd-length table followed by another table
+      # (8006FB98). A change of that phase between two tables marks a unit
+      # boundary; the text boundary is placed at the nearest evidence:
+      # hand-written code (80072D18-800732CC), the start of a subsystem, or
+      # the data word at 80088BFC, which no compiled unit puts in .text.
       - [0x0, .rodata, menu]
+      - [0x4, .rodata, menu2]     # tables 8006FAF4-8006FB9C at 4 mod 8
+      - [0x108, .rodata, menu3]   # tables 8006FBF8-8006FDE8 at 0 mod 8
+      - [0x32C, .rodata, menu4]   # tables 8006FE1C-8007019C at 4 mod 8
+      - [0x6C0, .rodata, menu5]   # tables 800701C0, 80070260 at 0 mod 8
+      - [0x794, .rodata, menu6]   # strings only
+      - [0xBF8, .rodata, menu7]   # tables 800706E8-80070748 at 0 mod 8
       - [0xcb8, c, menu]
+      - [0xEAC, c, menu2]
+      - [0x37DC, c, menu3]
+      - [0xEB44, c, menu4]
+      - [0x141F8, c, menu5]
+      # menu6 opens with a data word in .text: the mode-task table D_80088BFC.
+      - [0x1910C, c, menu6]
+      - [0x196D0, c, menu7]
       - [0x21448, data, menu_data]
       # The decoded length is not word-aligned; its final bytes are zero.
       - [0x22e68, databin, menu_tail]
