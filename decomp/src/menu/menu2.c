@@ -388,7 +388,91 @@ void func_800720D4(void) {
         D_8009872C.unkE8 = 0;
     }
 }
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu2", func_80072170);
+/* Per-frame scene effects of the victory/defeat sequence (step
+ * D_80092900): the three sparking embers on the first actor's body, then
+ * the knock-down flash fading out and back in; then the camera view and
+ * any changed caption. */
+void func_80072170(void) {
+    Actor *actor;
+    MenuWindow *window;
+    Vector pos;
+    Node *part;
+    s32 i;
+    s32 count;
+
+    if (D_8009293C != 0) {
+        actor = &D_8009872C;
+        window = &D_8009868C;
+        switch (D_80092900) {
+        case 11:
+            func_8008EB4C(0x2A);
+            func_8008EB4C(0x2B);
+            func_8008EB4C(0x2C);
+            D_80092900 = 1;
+        case 1:
+            for (i = 0; i < 3; i++) {
+                if (--D_800929F4[i].pad == -1) {
+                    part = ((ModelSet *)D_8009872C.node->data)->nodes[rand() % ((ModelSet *)D_8009872C.node->data)->nodeCount];
+                    D_800929F4[i].vx = part->unk4C.t[0] + D_8009872C.pos.vx;
+                    D_800929F4[i].vy = part->unk4C.t[1] + D_8009872C.pos.vy;
+                    D_800929F4[i].vz = part->unk4C.t[2] + D_8009872C.pos.vz;
+                    D_800929F4[i].pad = rand() % 16 + 8;
+                }
+                if (D_800929F4[i].pad & 1) {
+                    func_8007D190(&D_800929F4[i], 9);
+                }
+            }
+            break;
+        case 2:
+            actor->hp = 1;
+            D_8009260C = 0xFF;
+            D_80092900++;
+        case 3:
+            func_8008E2B8(D_80092938, D_8009260C, 0);
+            if (D_8009260C < 0) {
+                D_8009260C = 0;
+            }
+            D_8009260C -= 8;
+        knocked:
+            actor->unk4F = 0x10;
+            actor->anim = 0xA;
+            actor->unk52 = 0;
+            actor->charge = 0x1000;
+            actor->flags |= 0x400;
+            if (rand() & 1) {
+                count = ((ModelSet *)D_8009872C.node->data)->nodeCount;
+                part = ((ModelSet *)D_8009872C.node->data)->nodes[rand() % count];
+                pos.vx = part->unk4C.t[0] + D_8009872C.pos.vx;
+                pos.vy = part->unk4C.t[1] + D_8009872C.pos.vy;
+                pos.vz = part->unk4C.t[2] + D_8009872C.pos.vz;
+                func_8007D190(&pos, 0xB);
+                func_8007D190(&pos, 8);
+            }
+            break;
+        case 4:
+            D_8009260C += 3;
+            if (D_8009260C >= 0x100) {
+                D_8009260C = 0xFF;
+                D_80050622 = 0x7F;
+                func_80083BB4(0);
+                func_800851D4();
+            }
+            func_8008E2B8(D_80092938, D_8009260C, 1);
+            goto knocked;
+        }
+        func_8007107C();
+        if (D_800925D4 != D_800925D8) {
+            window->unk68 = 1;
+            func_8003463C(window);
+            func_80034714(window, func_80033728(D_80092880, D_800925D4));
+            window->unkC = 2;
+            window->unk6 = 0xB4;
+            D_800925D8 = D_800925D4;
+        }
+        func_8007099C(D_80092904);
+        D_8009872C.state = 0;
+    }
+}
 
 void func_800725A8(void) {
 }

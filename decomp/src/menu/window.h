@@ -67,6 +67,13 @@ typedef struct {
 extern s32 D_800911D4; /* second actor also posed by func_8007661C */
 extern s32 D_800928B0; /* selects the look-at marker (func_80082300 or func_80082178) */
 
+/* Victory/defeat sequence effects. */
+extern Vector D_800929F4[3]; /* sparking embers; pad counts down to the next spark */
+extern s16 D_8009260C;       /* knock-down flash level */
+void func_8008E2B8(u32 *ot, s32 level, s32 subtract);
+void func_8003463C(MenuWindow *window);
+void func_800851D4(void);
+
 /* libgpu DR_TPAGE. */
 typedef struct {
     u32 tag;
