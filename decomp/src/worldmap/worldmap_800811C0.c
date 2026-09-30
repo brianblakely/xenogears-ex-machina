@@ -20,7 +20,15 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_80081D80);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_80081FB4);
+/* Reset an actor to state 0, step 1. */
+s32 func_80081FB4(s32 index) {
+    WorldmapActor *actor;
+
+    actor = &D_8009BE24[index];
+    actor->state = 0;
+    actor->u.step = 1;
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_80081FD8);
 
@@ -28,7 +36,11 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_800826B4);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_800827C8);
+/* Give an actor its script. */
+s32 func_800827C8(s32 index) {
+    D_8009BE24[index].u.script = D_8009A758;
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_800827EC);
 
@@ -38,13 +50,29 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_80083108);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_800831D8);
+/* Set the colour of `count` textured triangles. */
+void func_800831D8(PolyFT3 *prims, s32 count, s32 r, s32 g, s32 b) {
+    for (count--; count != -1; count--) {
+        setRGB0(prims, r, g, b);
+        prims++;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_80083214);
+/* Rebuild the triangles of scene effect `index`. */
+s32 func_80083214(s32 index) {
+    SceneSprite *sprite;
+
+    sprite = &D_8009C620->effects[index];
+    func_80083108(sprite, (PolyFT3 *)sprite->quads, sprite->def->count, 3);
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_80083264);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_800834D0);
+/* Mode step that has nothing to do; always reports done. */
+s32 func_800834D0(void) {
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_800834D8);
 
@@ -52,6 +80,10 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_800837DC);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_800838E8);
+/* Give an actor its script. */
+s32 func_800838E8(s32 index) {
+    D_8009BE24[index].u.script = D_8009AC60;
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_8008390C);

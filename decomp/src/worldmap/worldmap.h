@@ -415,12 +415,38 @@ typedef struct {
     u8 pad540[0x18];
     SVECTOR angle; /* 0x558 */
     MATRIX rotation; /* 0x560 */
+    u8 pad580[0x1418];
+    SceneSprite effects[3]; /* 0x1998 */
 } WorldmapScene;
 /* END WorldmapScene */
 
 extern WorldmapScene *D_8009C620;
 extern u16 D_8009A450;
 extern u16 D_8009A46C[];
+extern u16 D_8009A4D8;
+extern u16 D_8009A4E8[];
+extern u16 D_8009A698;
+extern u16 D_8009A6AC[];
+extern u16 D_8009A6C0;
+extern u16 D_8009A70C[];
+extern s16 D_8009A758[], D_8009AC60[]; /* scripts */
+
+/* Flat-textured triangle packet (PsyQ POLY_FT3 layout). */
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    u8 u0, v0;
+    u16 clut;
+    s16 x1, y1;
+    u8 u1, v1;
+    u16 tpage;
+    s16 x2, y2;
+    u8 u2, v2;
+    u16 pad1;
+} PolyFT3;
+
+void func_80083108(SceneSprite *sprite, PolyFT3 *prims, s32 count, s32 mode);
 
 void func_8003F968(void *a, void *b, s32 size);
 
