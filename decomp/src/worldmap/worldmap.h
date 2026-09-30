@@ -1516,5 +1516,6 @@ void func_8007528C(void);
 
 /* worldmap_80090A84 camera pitch choice */
 extern s32 D_8009B214[3]; /* camera distance per pitch */
+s32 func_80091FF8(s32 current, s16 *pitches, s16 *heights);
 
 #endif

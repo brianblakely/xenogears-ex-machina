@@ -202,13 +202,128 @@ s32 func_80091B54(s32 index) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80091C18);
+/* Camera actor: on commands choose the pitch tables (9 vehicle, 10 on foot)
+ * or zoom out (17); ease the distance and pitch towards the pitch that keeps
+ * the terrain in view, then place the camera. */
+s32 func_80091C18(s32 index) {
+    WorldmapActor *actor;
+    s16 *pitches;
+    s32 pitch;
+    s32 delta;
+    s32 target;
+    s32 current;
+    s16 result;
+
+    result = 1;
+    actor = &D_8009BE24[index];
+    switch (actor->unk4) {
+    case 14:
+        actor->unk4 = 0;
+        actor->state = 0;
+        D_8009D144 = 0;
+        break;
+    case 17:
+        D_8009D3F0 = 0x400000;
+        actor->state = 3;
+        actor->unk4 = 0;
+        actor->unk58 = -0x100;
+        break;
+    case 9:
+        actor->unk64 = (s32)D_8009B22C;
+        actor->unk4 = 0;
+        actor->unk68 = (s32)D_8009B23C;
+        if (actor->u.step == 0) {
+            actor->u.step = 1;
+        }
+        break;
+    case 10:
+        actor->unk64 = (s32)D_8009B224;
+        actor->unk4 = 0;
+        actor->unk68 = (s32)D_8009B234;
+        if (actor->u.step == 0) {
+            actor->u.step = 1;
+        }
+        break;
+    }
+    pitches = (s16 *)actor->unk64;
+    switch (actor->state) {
+    case 0:
+        pitch = func_80091FF8(actor->u.step, pitches, (s16 *)actor->unk68);
+        if (actor->u.step != pitch) {
+            actor->state = 1;
+            actor->wait = 0;
+            actor->u.step = pitch;
+            actor->unk54 = D_8009B214[pitch];
+            actor->unk58 = pitches[actor->u.step];
+            actor->unk60 = D_8009BD38.vx << 12;
+        }
+        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        break;
+    case 1:
+        if (actor->wait >= 5) {
+            pitch = func_80091FF8(actor->u.step, pitches, (s16 *)actor->unk68);
+            if (actor->u.step != pitch) {
+                actor->u.step = pitch;
+                actor->unk54 = D_8009B214[pitch];
+                actor->unk58 = pitches[actor->u.step];
+            }
+            actor->wait = 0;
+        }
+        target = actor->unk54;
+        current = D_8009D3F0;
+        if (target != current) {
+            delta = target - current;
+            if (delta > 0) {
+                if (delta > 0x40000) {
+                    delta = 0x40000;
+                }
+                delta >>= 3;
+                if (delta < 0x40) {
+                    D_8009D3F0 = target;
+                } else {
+                    D_8009D3F0 = current + delta;
+                }
+            } else {
+                D_8009D3F0 = current - 0x2000;
+            }
+        }
+        if (actor->unk58 != D_8009BD38.vx) {
+            delta = (actor->unk58 - D_8009BD38.vx) << 12;
+            if (delta < 0) {
+                actor->unk60 += delta >> 5;
+            } else if (actor->u.step == 0) {
+                actor->unk60 += 0xF32;
+            } else {
+                actor->unk60 += 0x799;
+            }
+            D_8009BD38.vx = actor->unk60 >> 12;
+        }
+        if ((actor->unk54 == D_8009D3F0) & (actor->unk58 == D_8009BD38.vx)) {
+            actor->state = 0;
+        }
+        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        break;
+    case 2:
+        VIEW.at.vx = 0;
+        VIEW.at.vz = 0;
+        VIEW.at.vy = D_8009BE28.target.vy >> 12;
+        break;
+    case 3:
+        if (actor->unk58 != D_8009BD38.vx) {
+            D_8009BD38.vx += 2;
+        }
+        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        break;
+    }
+    actor->wait++;
+    return result;
+}
 
 /* Pick the camera pitch (0-2) whose view stays above the terrain: for each
  * candidate place the camera and find the lowest of the 6x6 cells around
  * the viewed spot; keep the current one when it is within 0x40 of fitting. */
 #ifdef NON_MATCHING /* saved registers of the pitch index, lowest cell and row start differ */
-s32 func_80091FF8(s32 current, u16 *pitches, s16 *heights) {
+s32 func_80091FF8(s32 current, s16 *pitches, s16 *heights) {
     ActorScratch *scratch;
     s32 *distance;
     s32 i;
