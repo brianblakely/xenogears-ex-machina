@@ -397,7 +397,95 @@ s32 func_8007BB60(s32 index) {
     return 3;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007A9F8", func_8007BBEC);
+/* Fly scene object 0 along the rig path (speeding up, braking, then rolling
+ * out); orient it to the path and emit exhaust while low. Done (3) at the end
+ * of the path. */
+s32 func_8007BBEC(s32 index) {
+    s32 result;
+    WorldmapActor *actor;
+    FollowScratch *scratch;
+    SVECTOR *points;
+    SceneObject *object;
+
+    result = 1;
+    actor = &D_8009BE24[index];
+    scratch = (FollowScratch *)0x1F800000;
+    switch (actor->u.step >> 12) {
+    case 0:
+    case 1:
+        actor->u.step += actor->unk58;
+        actor->unk54 += 4;
+        break;
+    case 2:
+    case 3:
+    case 4:
+        actor->u.step += actor->unk58;
+        actor->unk58 -= 8;
+        if (actor->unk58 < 0x80) {
+            actor->unk58 = 0x80;
+        }
+        actor->unk54 += 4;
+        break;
+    case 5:
+    case 6:
+    case 7:
+        actor->u.step += actor->unk58;
+        actor->unk58 += 8;
+        if (actor->unk58 > 0x100) {
+            actor->unk58 = 0x100;
+        }
+        actor->unk54 -= 0x10;
+        break;
+    case 8:
+        result = 3;
+        break;
+    }
+    points = &D_8009A490[actor->u.step >> 12];
+    if (points[2].pad != -1) {
+        func_80076858(actor->u.step & 0xFFF, &points[0], &points[1], &points[2], &scratch->axis[0]);
+    }
+    points = &D_8009A490[(actor->u.step + 0x80) >> 12];
+    func_80076858((actor->u.step + 0x80) & 0xFFF, &points[0], &points[1], &points[2], &scratch->axis[1]);
+    object = D_8009C620;
+    object->position.vx = scratch->axis[0].vx >> 16;
+    object->position.vy = scratch->axis[0].vy >> 16;
+    object->position.vz = scratch->axis[0].vz >> 16;
+    scratch->axis[1].vx = (scratch->axis[1].vx - scratch->axis[0].vx) >> 12;
+    scratch->axis[1].vy = (scratch->axis[1].vy - scratch->axis[0].vy) >> 12;
+    scratch->axis[1].vz = -((scratch->axis[1].vz - scratch->axis[0].vz) >> 12);
+    func_80048D7C(&scratch->axis[1], &scratch->axis[0]);
+    scratch->angle.vx = 0;
+    scratch->angle.vy = ratan2(scratch->axis[0].vx, scratch->axis[0].vz) & 0xFFF;
+    scratch->angle.vz = actor->unk54;
+    func_8004A92C(&scratch->angle, &scratch->frame);
+    scratch->angle.vx = 0;
+    scratch->angle.vy = -0x1000;
+    scratch->angle.vz = 0;
+    ApplyMatrix(&scratch->frame, &scratch->angle, &scratch->axis[1]);
+    func_8004A480(&scratch->axis[0], &scratch->axis[1], &scratch->axis[3]);
+    func_80048D7C(&scratch->axis[3], &scratch->axis[2]);
+    func_8004A480(&scratch->axis[0], &scratch->axis[2], &scratch->axis[3]);
+    func_80048D7C(&scratch->axis[3], &scratch->axis[1]);
+    scratch->frame.m[0][0] = scratch->axis[2].vx;
+    scratch->frame.m[0][1] = scratch->axis[2].vy;
+    scratch->frame.m[0][2] = scratch->axis[2].vz;
+    scratch->frame.m[1][0] = scratch->axis[1].vx;
+    scratch->frame.m[1][1] = scratch->axis[1].vy;
+    scratch->frame.m[1][2] = scratch->axis[1].vz;
+    scratch->frame.m[2][0] = scratch->axis[0].vx;
+    scratch->frame.m[2][1] = scratch->axis[0].vy;
+    scratch->frame.m[2][2] = scratch->axis[0].vz;
+    func_8004A8EC(&scratch->frame, &object->matrix);
+    func_80097070(&scratch->frame, &scratch->heading);
+    if (object->position.vy >= -0x7F) {
+        scratch->angle.vx = object->position.vx;
+        scratch->angle.vy = object->position.vy;
+        scratch->angle.vz = object->position.vz;
+        scratch->heading.vz = -scratch->heading.vz;
+        func_80089160(0x12, &scratch->angle, &scratch->heading);
+    }
+    return result;
+}
 
 /* Set up the second vehicle scene: fixed start position, its director and object actors. */
 void func_8007BF50(void) {

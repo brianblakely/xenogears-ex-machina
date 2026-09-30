@@ -1538,4 +1538,15 @@ extern u16 D_8006EE68, D_8006EE76;
 
 void func_80039E18(s32 sound);
 
+extern SVECTOR D_8009A490[]; /* rig flight path; pad -1 ends */
+/* Scratchpad work area of the rig path follower. */
+typedef struct {
+    VECTOR axis[4];   /* 0x00 */
+    u8 pad40[0x60];
+    SVECTOR angle;    /* 0xA0 */
+    SVECTOR heading;  /* 0xA8 */
+    u8 padB0[0x40];
+    MATRIX frame;     /* 0xF0 */
+} FollowScratch;
+
 #endif
