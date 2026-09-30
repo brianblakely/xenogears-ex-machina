@@ -47,7 +47,7 @@ extern u16 D_80059F28, D_80059F2C;
 extern s16 D_80059F30;
 extern u16 D_80059F34, D_80059F38;
 extern s32 D_80059F3C;         /* images left in the stream */
-extern u16 D_80059F40, D_80059F44, D_80059F48; /* next strip: x, y, width */
+extern s16 D_80059F40, D_80059F44, D_80059F48; /* next strip: x, y, width */
 extern u16 *D_80059F4C;        /* heights of the remaining strips */
 extern s32 D_80059F50;         /* strips left in the current image */
 
@@ -61,7 +61,8 @@ void func_8002BB50(void);
 /* Defined without parameters; 80029EB0 calls it with the (0, 0) of a CD
  * callback. */
 void func_8002B8B0();
-void func_8002BF38(s32 a0, s32 a1);
+/* Defined without parameters; 80029EB0 calls it like a CD callback. */
+void func_8002BF38();
 void func_8002A68C(u8 intr, u8 *result);
 void func_8002AC24(u8 intr, u8 *result);
 void func_8002BA40(void);

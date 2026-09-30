@@ -810,9 +810,106 @@ void func_8002BB50(void) {
     D_8004FE28++;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002A260", func_8002BF38);
+/* Image stream step of PC file server reads (80029EB0): as 8002BB50, but
+ * each strip load is waited for and the read simply ends. */
+void func_8002BF38(void) {
+    StreamSlot *slot = D_8004FE2C;
+    s16 i;
+    u32 *p;
+    s32 type;
+    u16 *pos;
+    RECT rect;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002A260", func_8002C310);
+    for (i = 0; i < D_8004FE40; i++, slot++) {
+        if (slot->state == 1 && slot->sequence == D_8004FE28) {
+            break;
+        }
+    }
+    if (i == D_8004FE40) {
+        return;
+    }
+    slot->state = 2;
+    p = (u32 *)((u8 *)D_8004FE08 + i * 0x800);
+    if (D_80059F50 == 0) {
+        type = *p++;
+        pos = (u16 *)p;
+        if (type != 0x1200 && type != 0x1201) {
+            return;
+        }
+        if (type == 0x1200) {
+            switch (D_80059F24) {
+            case 1:
+                D_80059F40 = D_80059F28 + pos[2];
+                D_80059F44 = D_80059F2C + pos[3];
+                break;
+            case 2:
+                D_80059F40 = D_80059F28 + pos[0] + pos[2];
+                D_80059F44 = D_80059F2C + pos[1] + pos[3];
+                break;
+            default:
+                D_80059F40 = pos[0] + pos[2];
+                D_80059F44 = pos[1] + pos[3];
+                break;
+            }
+        }
+        if (type == 0x1201) {
+            switch (D_80059F30) {
+            case 1:
+                D_80059F40 = D_80059F34 + pos[2];
+                D_80059F44 = D_80059F38 + pos[3];
+                break;
+            case 2:
+                D_80059F40 = D_80059F34 + pos[0] + pos[2];
+                D_80059F44 = D_80059F38 + pos[1] + pos[3];
+                break;
+            default:
+                D_80059F40 = pos[0] + pos[2];
+                D_80059F44 = pos[1] + pos[3];
+                break;
+            }
+        }
+        p += 2;
+        D_80059F48 = *(u16 *)p;
+        p += 2;
+        if (D_80059F3C == 0) {
+            D_80059F3C = *p;
+        }
+        p++;
+        D_80059F50 = *p++;
+        D_80059F4C = (u16 *)p;
+    } else {
+        rect.x = D_80059F40;
+        rect.y = D_80059F44;
+        rect.w = D_80059F48;
+        rect.h = *D_80059F4C;
+        LoadImage(&rect, (u_long *)p);
+        DrawSync(0);
+        D_80059F44 += *D_80059F4C++;
+        if (--D_80059F50 <= 0) {
+            D_80059F50 = 0;
+            D_80059F3C--;
+            for (i = 0; i < D_8004FE40; i++) {
+                D_8004FE2C[i].state = 0;
+                D_8004FE2C[i].sequence = 0;
+            }
+            if (D_80059F3C <= 0) {
+                D_8004FDF8 = 0;
+                D_8004FDFC = 0;
+                return;
+            }
+        }
+        slot->state = 0;
+    }
+    D_8004FE28++;
+}
+
+/* Print the image stream state (debug report). */
+void func_8002C310(void) {
+    func_800379C8("F%8x A%8x S%8x\n", D_8004FDF0, D_8004FE08, D_8004FE2C);
+    func_800379C8("%d %d %d %d\n", D_8004FE40, D_8004FE10, D_80059F3C, D_80059F50);
+    func_800379C8("%d %d %d %8x\n", D_80059F40, D_80059F44, D_80059F48, D_80059F4C);
+    func_800379C8("%d %d %d\n", D_80059F4C[0], D_80059F4C[1], D_80059F4C[2]);
+}
 
 /* Nonzero when files come from the PC file server (its name table). */
 s32 func_8002C3D8(void) {

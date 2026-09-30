@@ -39,7 +39,7 @@ void func_80037324(u_long *ot);            /* flush the debug text into ot */
 void func_8003747C(s32 value);
 void func_800374E8(s32 a0, s32 a1, s32 a2, s32 a3, s32 a4, s32 a5, s32 a6, s32 a7, s32 a8, s32 a9, s32 a10);
 void func_800379B4(s32 a0);
-void func_800379C8(char *line);
+void func_800379C8(char *format, ...); /* report printf */
 void func_800379D8(s32 scene, s32 a1, void *a2, void *a3, void *a4);
 void func_80037B88(s32 a0);
 void func_80037DC0(void);
