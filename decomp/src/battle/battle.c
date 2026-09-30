@@ -1542,23 +1542,167 @@ void func_8007D7B4(u8 **pc, u8 enemy) {
     D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(target);
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007D8C0);
+/* AI action 5c: variable b2 = the bit of a random targetable party slot whose
+ * 16-bit attribute b1 shares a bit with var b3; 0 when none does. */
+void func_8007D8C0(u8 **pc, u8 enemy) {
+    u8 candidates[3];
+    s32 count;
+    s32 slot;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007DA1C);
+    slot = 0;
+    count = 0;
+    D_800D3400[enemy].vars[(*pc)[2]] = 0;
+    for (; slot < 3; slot++) {
+        if (func_8007A628(slot, 0) && (D_800D3400[enemy].vars[(*pc)[3]] & func_8007A280(slot, (*pc)[1], 0, 1))) {
+            candidates[count++] = slot;
+        }
+    }
+    if (count != 0) {
+        D_800D3400[enemy].vars[(*pc)[2]] = func_80089C08(candidates[func_8001BD40(0, count - 1)]);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007DB78);
+/* AI action 5d: as action 5c for the enemy slots. */
+void func_8007DA1C(u8 **pc, u8 enemy) {
+    u8 candidates[8];
+    s32 count;
+    s32 slot;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007DCF8);
+    count = 0;
+    D_800D3400[enemy].vars[(*pc)[2]] = 0;
+    for (slot = 3; slot < 11; slot++) {
+        if (func_8007A628(slot, 0) && (D_800D3400[enemy].vars[(*pc)[3]] & func_8007A280(slot, (*pc)[1], 0, 1))) {
+            candidates[count++] = slot;
+        }
+    }
+    if (count != 0) {
+        D_800D3400[enemy].vars[(*pc)[2]] = func_80089C08(candidates[func_8001BD40(0, count - 1)]);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007DE78);
+/* AI action 5e: as action 5c, limited to party slots flagged at 800d32a1. */
+void func_8007DB78(u8 **pc, u8 enemy) {
+    u8 candidates[3];
+    s32 count;
+    s32 slot;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007DFD4);
+    slot = 0;
+    count = 0;
+    D_800D3400[enemy].vars[(*pc)[2]] = 0;
+    for (; slot < 3; slot++) {
+        if (func_8007A628(slot, 0) && D_800D32A0[slot].unk1 != 0 &&
+            (D_800D3400[enemy].vars[(*pc)[3]] & func_8007A280(slot, (*pc)[1], 0, 1))) {
+            candidates[count++] = slot;
+        }
+    }
+    if (count != 0) {
+        D_800D3400[enemy].vars[(*pc)[2]] = func_80089C08(candidates[func_8001BD40(0, count - 1)]);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007E154);
+/* AI action 5f: as action 5d, limited to enemy slots flagged at 800d32a1. */
+void func_8007DCF8(u8 **pc, u8 enemy) {
+    u8 candidates[8];
+    s32 count;
+    s32 slot;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007E1D0);
+    slot = 3;
+    count = 0;
+    D_800D3400[enemy].vars[(*pc)[2]] = 0;
+    for (; slot < 11; slot++) {
+        if (func_8007A628(slot, 0) && D_800D32A0[slot].unk1 != 0 &&
+            (D_800D3400[enemy].vars[(*pc)[3]] & func_8007A280(slot, (*pc)[1], 0, 1))) {
+            candidates[count++] = slot;
+        }
+    }
+    if (count != 0) {
+        D_800D3400[enemy].vars[(*pc)[2]] = func_80089C08(candidates[func_8001BD40(0, count - 1)]);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007E234);
+/* AI action 60: as action 5c with any targetable party slot. */
+void func_8007DE78(u8 **pc, u8 enemy) {
+    u8 candidates[3];
+    s32 count;
+    s32 slot;
+
+    slot = 0;
+    count = 0;
+    D_800D3400[enemy].vars[(*pc)[2]] = 0;
+    for (; slot < 3; slot++) {
+        if (func_8007A628(slot, 1) && (D_800D3400[enemy].vars[(*pc)[3]] & func_8007A280(slot, (*pc)[1], 0, 1))) {
+            candidates[count++] = slot;
+        }
+    }
+    if (count != 0) {
+        D_800D3400[enemy].vars[(*pc)[2]] = func_80089C08(candidates[func_8001BD40(0, count - 1)]);
+    }
+}
+
+/* AI action 61: as action 5e with any targetable party slot. */
+void func_8007DFD4(u8 **pc, u8 enemy) {
+    u8 candidates[3];
+    s32 count;
+    s32 slot;
+
+    slot = 0;
+    count = 0;
+    D_800D3400[enemy].vars[(*pc)[2]] = 0;
+    for (; slot < 3; slot++) {
+        if (func_8007A628(slot, 1) && D_800D32A0[slot].unk1 != 0 &&
+            (D_800D3400[enemy].vars[(*pc)[3]] & func_8007A280(slot, (*pc)[1], 0, 1))) {
+            candidates[count++] = slot;
+        }
+    }
+    if (count != 0) {
+        D_800D3400[enemy].vars[(*pc)[2]] = func_80089C08(candidates[func_8001BD40(0, count - 1)]);
+    }
+}
+
+/* AI action 63: set the enemy's slot info +3 to b1; with bit 0x80 the enemy
+ * rejoins its own group, otherwise it leaves its formation group. */
+void func_8007E154(u8 **pc, u8 enemy) {
+    D_800C3EB4[enemy + 3].hidden = (*pc)[1];
+    if ((*pc)[1] & 0x80) {
+        func_80087EDC(enemy + 3, enemy + 3);
+    } else {
+        func_800883AC(enemy + 3);
+    }
+}
+
+/* AI action 64: variable b1 = the enemy's own slot bit. */
+void func_8007E1D0(u8 **pc, u8 enemy) {
+    D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(enemy + 3);
+}
+
+/* AI action 65: variable b1 = the mask of party slots passing 8007a744 and
+ * (b2 1) flagged, (b2 2) not flagged at 800d32a1, or (other b2) any. */
+void func_8007E234(u8 **pc, u8 enemy) {
+    s32 slot;
+    u16 mask = 0;
+
+    for (slot = 2; slot >= 0; slot--) {
+        if (func_8007A744(slot)) {
+            switch ((*pc)[2]) {
+            case 1:
+                if (D_800D32A0[slot].unk1 != 0) {
+                    mask |= 1;
+                }
+                break;
+            case 2:
+                if (D_800D32A0[slot].unk1 == 0) {
+                    mask |= 1;
+                }
+                break;
+            default:
+                mask |= 1;
+                break;
+            }
+        }
+        mask <<= 1;
+    }
+    D_800D3400[enemy].vars[(*pc)[1]] = mask >> 1;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007E334);
 

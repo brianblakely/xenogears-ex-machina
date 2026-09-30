@@ -234,6 +234,8 @@ u8 func_8007A628(u8 slot, u8 any);
 u8 func_8007A6C8(u8 slot, u8 arg1);
 u8 func_8007A744(u8 slot);
 u16 func_80089C08(u8 slot);
+void func_80087EDC(u8 actor, u8 target);
+void func_800883AC(u8 slot);
 u16 func_80089B50(u16 low, u16 high);
 u8 func_80079ED8(u8 slot, u8 attribute, u8 value, u8 write);
 u16 func_8007A280(u8 slot, u8 attribute, u16 value, u8 write);
