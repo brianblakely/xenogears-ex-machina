@@ -2581,7 +2581,70 @@ void func_801CF38C(u8 index) {
     func_800320E8(D_801D9088);
 }
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CF448);
+/* Build the gear parts panel: its fourteen frame sprites, five of the gear's values in decimal, and the gear's name. */
+void func_801CF448(void) {
+    s32 i;
+    s32 j;
+
+    for (j = 0; j < 14; j++) {
+        func_8002675C(D_800625A0->sprite_sheet, D_801D708C[j], &D_800625A0->unk454->frame[j * 2],
+                      D_800625A0->buffer, D_801D70A8[j], D_801D70C4[j], 0x1000);
+    }
+    func_801C5298(D_8006DFAC[D_801D9084].unk60);
+    D_800625A0->unk454->part_count[0] = 0;
+    for (i = 0; i < 5; i++) {
+        if (D_800625A0->digits[i + 4] != 0xFF) {
+            D_800625A0->unk454->part_count[0] +=
+                func_8002675C(D_800625A0->sprite_sheet, D_800625A0->digits[i + 4],
+                              &D_800625A0->unk454->parts[0][D_800625A0->unk454->part_count[0] * 2],
+                              D_800625A0->buffer, D_801D70E0 + i * 8, D_801D70E2, 0x1000);
+        }
+    }
+    func_801C5298(D_8006DFAC[D_801D9084].unk64);
+    D_800625A0->unk454->part_count[1] = 0;
+    for (i = 0, j = 0; i < 5; i++) {
+        if (D_800625A0->digits[i + 4] != 0xFF) {
+            D_800625A0->unk454->part_count[1] +=
+                func_8002675C(D_800625A0->sprite_sheet, D_800625A0->digits[i + 4],
+                              &D_800625A0->unk454->parts[1][D_800625A0->unk454->part_count[1] * 2],
+                              D_800625A0->buffer, D_801D70E4 + j * 8, D_801D70E6, 0x1000);
+            j++;
+        }
+    }
+    func_801C5298(D_8006DFAC[D_801D9084].unk38);
+    D_800625A0->unk454->part_count[2] = 0;
+    for (i = 0; i < 4; i++) {
+        if (D_800625A0->digits[i + 5] != 0xFF) {
+            D_800625A0->unk454->part_count[2] +=
+                func_8002675C(D_800625A0->sprite_sheet, D_800625A0->digits[i + 5],
+                              &D_800625A0->unk454->parts[2][D_800625A0->unk454->part_count[2] * 2],
+                              D_800625A0->buffer, D_801D70E8 + i * 8, D_801D70EA, 0x1000);
+        }
+    }
+    func_801C5298(D_8006DFAC[D_801D9084].unk3A);
+    D_800625A0->unk454->part_count[3] = 0;
+    for (i = 0, j = 0; i < 4; i++) {
+        if (D_800625A0->digits[i + 5] != 0xFF) {
+            D_800625A0->unk454->part_count[3] +=
+                func_8002675C(D_800625A0->sprite_sheet, D_800625A0->digits[i + 5],
+                              &D_800625A0->unk454->parts[3][D_800625A0->unk454->part_count[3] * 2],
+                              D_800625A0->buffer, D_801D70EC + j * 8, D_801D70EE, 0x1000);
+            j++;
+        }
+    }
+    func_801C5298(D_8006DFAC[D_801D9084].unk68);
+    D_800625A0->unk454->part_count[4] = 0;
+    for (i = 0; i < 5; i++) {
+        if (D_800625A0->digits[i + 4] != 0xFF) {
+            D_800625A0->unk454->part_count[4] +=
+                func_8002675C(D_800625A0->sprite_sheet, D_800625A0->digits[i + 4],
+                              &D_800625A0->unk454->parts[4][D_800625A0->unk454->part_count[4] * 2],
+                              D_800625A0->buffer, D_801D70F0 + i * 8, D_801D70F2, 0x1000);
+        }
+    }
+    func_801CF38C(D_801D9084 + 0xB);
+    D_800625A0->unk454->parts_buffer = D_800625A0->buffer;
+}
 
 /* Load model `model`'s two files (ids from the model table) into part block `slot`. */
 void func_801CF9BC(u8 model, u8 slot) {

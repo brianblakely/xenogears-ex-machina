@@ -826,6 +826,12 @@ extern u16 D_801D705C[6];       /* indicator x choices */
 extern u16 D_801D7068[6];       /* indicator y choices */
 extern u16 D_801D7074[6];       /* flicker x choices */
 extern u16 D_801D7080[6];       /* flicker y choices */
+extern u16 D_801D708C[14];      /* gear parts frame sprite ids */
+extern u16 D_801D70A8[14];      /* their x */
+extern u16 D_801D70C4[14];      /* their y */
+/* Gear value positions (x, y). */
+extern u16 D_801D70E0, D_801D70E2, D_801D70E4, D_801D70E6, D_801D70E8;
+extern u16 D_801D70EA, D_801D70EC, D_801D70EE, D_801D70F0, D_801D70F2;
 extern u32 D_8006EF58;     /* party gold */
 void ClearImage(void *env, s32 unk1, s32 unk2, s32 unk3);
 void AddPrims(u32 *ot, u32 *first, u32 *last); /* link an OT range into another OT */
