@@ -1638,7 +1638,6 @@ void func_801CB370(void) {
 }
 
 /* Open the message panel and show three lines of label text from entry `first`. */
-#ifdef NON_MATCHING
 void func_801CB384(u8 first) {
     PanelGrowth *growth;
     Label *label;
@@ -1679,9 +1678,9 @@ void func_801CB384(u8 first) {
         (label->poly + D_800625A0->buffer)->v2 = (i / 2) * 13 + 0x5B;
         (label->poly + D_800625A0->buffer)->u3 = label->width;
         (label->poly + D_800625A0->buffer)->v3 = (i / 2) * 13 + 0x5B;
-        i++;
-        label->projected = 1;
         label->buffer = D_800625A0->buffer;
+        label->projected = 1;
+        i++;
     } while (i < 3);
     LoadImage(&D_800625A0->message_labels[0]->rect, D_800625A0->message_labels[0]->pixels);
     LoadImage(&D_800625A0->message_labels[2]->rect, D_800625A0->message_labels[2]->pixels);
@@ -1695,9 +1694,6 @@ void func_801CB384(u8 first) {
     func_801CB014();
     func_801CB014();
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CB384);
-#endif
 
 /* Close the message panel and release its labels, then let a frame pass. */
 void func_801CB7F4(void) {

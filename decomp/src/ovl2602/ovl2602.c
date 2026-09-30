@@ -1945,7 +1945,6 @@ void func_801CC528(void) {
 }
 
 /* Open the message panel and show three lines of label text from entry `first`. */
-#ifdef NON_MATCHING
 void func_801CC530(u8 first) {
     PanelGrowth *growth;
     Label *label;
@@ -1986,9 +1985,9 @@ void func_801CC530(u8 first) {
         (label->poly + D_800625A0->buffer)->v2 = (i / 2) * 13 + 0x5B;
         (label->poly + D_800625A0->buffer)->u3 = label->width;
         (label->poly + D_800625A0->buffer)->v3 = (i / 2) * 13 + 0x5B;
-        i++;
-        label->projected = 1;
         label->buffer = D_800625A0->buffer;
+        label->projected = 1;
+        i++;
     } while (i < 3);
     LoadImage(&D_800625A0->message_labels[0]->rect, D_800625A0->message_labels[0]->pixels);
     LoadImage(&D_800625A0->message_labels[2]->rect, D_800625A0->message_labels[2]->pixels);
@@ -2002,9 +2001,6 @@ void func_801CC530(u8 first) {
     func_801CC1C4();
     func_801CC1C4();
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CC530);
-#endif
 
 /* Close the message panel and release its labels, then let a frame pass. */
 void func_801CC9A0(void) {
@@ -4314,14 +4310,11 @@ void func_801D5EB8(void) {
 
 /*
  * Summarise gear `id` for the parts screen: its values plus its parts' and
- * its pilot's bonuses. Nonmatching: the original has an unused 8-byte stack
- * frame.
+ * its pilot's bonuses.
  */
-#ifdef NON_MATCHING
 void func_801D5F94(GearTable *table, u8 id) {
     Gear *gear;
     Character *pilot;
-    s32 value;
     s32 bonus;
 
     if (D_8006D634.unk22B6 & 0x1000) {
@@ -4339,20 +4332,16 @@ void func_801D5F94(GearTable *table, u8 id) {
     table->unkAE = gear->unk3A;
     bonus = gear->unk3C * (gear->unk74 + gear->unk55[1]);
     if (id == 5 || id == 13) {
-        value = (gear->unk12 + gear->unk22) * 6 / 10;
+        table->unkB0 = (gear->unk12 + gear->unk22) * 6 / 10 + bonus;
     } else {
-        value = gear->unk12;
+        table->unkB0 = gear->unk12 + bonus;
     }
-    table->unkB0 = value + bonus;
     table->unkB2 = gear->unk9F + gear->unk4D;
     table->unkB3 = gear->unk98 - gear->unk4A;
     table->unkB4 = gear->unk9E;
     table->unkB5 = gear->unk9D;
     table->unkB6 = gear->unk9C;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D5F94);
-#endif
 
 /* Rebuild gear `id`'s derived values. */
 void func_801D6150(GearTable *table, u8 id) {
