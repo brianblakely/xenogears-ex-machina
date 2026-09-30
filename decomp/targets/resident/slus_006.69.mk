@@ -24,3 +24,8 @@ MASPSX_sprite := --aspsx-version=2.79 --use-comm-section
 # 2.6.3 with inline division checks.
 CC_main_8002709C := 2.6.3
 MASPSX_main_8002709C := --aspsx-version=2.34 --expand-div
+# The menu-support unit (8001B6C4-8001C8DC) is compiled by GCC 2.6.3; its
+# $gp accesses (8001B6C4-8001BBAC) stay assembly: they need small data the
+# unit defines, which cc1 -G8 cannot express here (all small externs would
+# become $gp-relative).
+CC_main_8001B6C4 := 2.6.3
