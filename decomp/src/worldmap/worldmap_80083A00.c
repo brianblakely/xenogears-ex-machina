@@ -1447,20 +1447,14 @@ void func_8008C1DC(s32 effect, WorldmapActor *actor, ActorScratch *scratch) {
 }
 
 /* Create a party member's gear sprite for the actor. */
-#ifdef NON_MATCHING /* mode selection compiled branch-free */
 void func_8008C28C(WorldmapActor *actor, s32 member) {
-    s32 mode;
-
     actor->handle = func_80024524(D_8009BDF8[member], D_8009B18C[member], D_8009B194[member],
                                   D_8009B19C[member], D_8009B1A4[member], 0x40);
-    mode = 3;
     if ((&D_8006F8E5)[member] == 1) {
-        mode = 0;
+        func_800245D8(actor->handle, 0);
+    } else {
+        func_800245D8(actor->handle, 3);
     }
-    func_800245D8(actor->handle, mode);
     func_80022000(actor->handle, 0x2000);
     ((s32 *)actor->handle)[15] &= ~4;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008C28C);
-#endif
