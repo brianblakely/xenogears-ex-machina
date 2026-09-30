@@ -58,7 +58,53 @@ s32 func_800817A0(s32 index) {
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_800817A0);
 #endif
 
+/* Fade scene object 2 in (command 1) or reset it to opaque grey (command 2). */
+#ifdef NON_MATCHING /* loop pointer biased to b0 instead of the code byte */
+s32 func_80081868(s32 index) {
+    WorldmapActor *actor;
+    SceneObject *object;
+    PolyFT4 *quad;
+    s32 i;
+
+    actor = &D_8009BE24[index];
+    object = &D_8009C620[2];
+    switch (actor->unk4) {
+    case 1:
+        actor->unk4 = 0;
+        actor->state = 1;
+        break;
+    case 2:
+        actor->unk4 = 0;
+        actor->state = 0;
+        quad = (&object->prims)[D_8009D7F0];
+        for (i = 0; i < object->def->count; i++) {
+            setRGB0(quad, 0x80, 0x80, 0x80);
+            setSemiTrans(quad, 0);
+            quad++;
+        }
+        break;
+    }
+    switch (actor->state) {
+    case 0:
+        break;
+    case 1:
+        actor->u.step += 1;
+        actor->unk54 += 1;
+        actor->unk58 += 1;
+        if (actor->u.step >= 0xFF) {
+            actor->unk58 = 0xFF;
+            actor->unk54 = 0xFF;
+            actor->u.step = 0xFF;
+            actor->state = 0;
+        }
+        break;
+    }
+    func_800809EC((&object->prims)[D_8009D7F0], object->def->count, actor->u.step, actor->unk54, actor->unk58);
+    return 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_80081868);
+#endif
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_800819C8);
 
@@ -195,7 +241,42 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_800828DC);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_80082F64);
+/* Pulse a scene object: spin it, stretch its x scale and bounce its tint between limits. */
+void func_80082F64(WorldmapActor *actor, SceneObject *object, ScaleScratch *scratch) {
+    switch (actor->state) {
+    case 0:
+        break;
+    case 1:
+        scratch->angle.vz = 0;
+        scratch->angle.vx = 0;
+        scratch->angle.vy = actor->unk68;
+        scratch->scale[0].vx = actor->unk70 & 0x7FFF;
+        scratch->scale[0].vy = 0x1000;
+        scratch->scale[0].vz = func_8003F8B0(actor->unk6C) * 6;
+        func_8003F738(&scratch->angle, &scratch->matrix[0]);
+        ScaleMatrix(&scratch->matrix[0], &scratch->scale[0]);
+        object->matrix = scratch->matrix[0];
+        actor->u.step += actor->unk5C;
+        actor->unk54 += actor->unk60;
+        if (actor->u.step >= 0x100) {
+            actor->u.step = 0xFF;
+            actor->unk5C = -actor->unk5C;
+        } else if (actor->u.step < 0x40) {
+            actor->u.step = 0x40;
+            actor->unk5C = -actor->unk5C;
+        }
+        if (actor->unk54 >= 0x100) {
+            actor->unk54 = 0xFF;
+            actor->unk60 = -actor->unk60;
+        } else if (actor->unk54 < 0x80) {
+            actor->unk54 = 0x80;
+            actor->unk60 = -actor->unk60;
+        }
+        actor->unk6C = (actor->unk6C + 8) & 0xFFF;
+        actor->unk70 += actor->unk74;
+        break;
+    }
+}
 
 /* Build `count` semi-transparent black textured triangles on page 0x2C0,0x100. */
 void func_80083108(SceneObject *object, PolyFT3 *prims, s32 count, s32 abr) {

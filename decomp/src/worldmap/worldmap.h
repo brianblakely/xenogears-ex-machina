@@ -777,7 +777,9 @@ extern SVECTOR D_8009A488; /* exhaust effect angle */
 /* Scratchpad work area of the scaled scene objects. */
 typedef struct {
     VECTOR scale[2];
-    u8 pad20[0xD0];
+    u8 pad20[0x80];
+    SVECTOR angle;    /* 0xA0 */
+    u8 padA8[0x48];
     MATRIX matrix[2]; /* 0xF0 */
 } ScaleScratch;
 
