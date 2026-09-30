@@ -39,6 +39,32 @@ typedef struct {
     s16 x3, y3;
 } PolyF4;
 
+/* Gouraud-less textured triangle packet (libgpu POLY_FT3). */
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    u16 uv0, clut;
+    s16 x1, y1;
+    u16 uv1, tpage;
+    s16 x2, y2;
+    u16 uv2, pad;
+} PolyFT3;
+
+/* Textured quadrilateral packet (libgpu POLY_FT4, texel pairs as u16). */
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    u16 uv0, clut;
+    s16 x1, y1;
+    u16 uv1, tpage;
+    s16 x2, y2;
+    u16 uv2, pad1;
+    s16 x3, y3;
+    u16 uv3, pad2;
+} PolyFT4;
+
 /* The common packet head (libgpu P_TAG). */
 typedef struct {
     u32 addr : 24;
@@ -116,6 +142,28 @@ extern u8 D_800918B4[]; /* per map row: rightmost allowed column */
 
 void func_80085EC8(OverlayBuffer *buffer);
 s32 func_8008F530(s32 entry, s32 which);
+
+/* A map view; only its backdrop quads are known. */
+typedef struct {
+    u8 unk0[0x1604];
+    PolyFT4 backdrop[2]; /* 0x1604: one per buffer */
+} View;
+
+/* A recorded path position. */
+typedef struct {
+    s16 x, y, z;
+    u8 unk6[0x62];
+} PathPoint;
+
+extern PathPoint D_8009A988[0x1F];
+extern s32 D_800928F8; /* recorded path points */
+extern PolyFT3 *D_80092854[2]; /* triangle pools: template, working copy */
+extern u16 D_800927D4; /* backdrop texture page */
+extern u16 D_800927D8; /* backdrop palette */
+extern u8 D_800927DC;  /* backdrop texel u */
+extern u8 D_800927E0;  /* backdrop texel v */
+
+void func_800732AC(void *dst, void *src, s32 size); /* copy bytes */
 
 /* Fading overlay. */
 extern s16 D_80092780; /* fade level */

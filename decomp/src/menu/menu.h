@@ -102,7 +102,7 @@ void func_80028470(s32 arg0, s32 arg1);
 void func_80028A60(s32 arg);
 void *func_800891C0(s32 id);
 s32 func_800288EC(s32 file);
-void *func_80031BDC(s32 file, s32 arg);
+void *func_80031BDC(s32 size, s32 arg); /* allocate */
 void func_80083BB4(s32 both);
 
 /* Menu mode exit. */

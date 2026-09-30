@@ -1382,15 +1382,62 @@ void func_80087698(s32 x0, s32 y0, s32 x1, s32 y1) {
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008779C);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80087830);
+/* Set up the map row spans in the scratchpad and the two textured
+ * triangle packet pools (0x708 triangles each). */
+void func_80087830(void) {
+    PolyFT3 *poly;
+    s32 i;
+
+    D_800927CC = (u8 *)0x1F800000;
+    D_800927D0 = (u8 *)0x1F800080;
+    D_80092854[0] = func_80031BDC(0xE100, 0);
+    D_80092854[1] = func_80031BDC(0xE100, 0);
+    poly = D_80092854[0];
+    for (i = 0; i < 0x708; i++) {
+        ((PacketTag *)poly)->len = 7;
+        poly->code = 0x24;
+        poly++;
+    }
+    func_800732AC(D_80092854[1], D_80092854[0], 0xE100);
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800878DC);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80087AB0);
+/* Build a view's textured backdrop quad (64x64 texels) for both buffers. */
+void func_80087AB0(View *view) {
+    PolyFT4 *quad = &view->backdrop[0];
+
+    *(u32 *)&quad->r0 = 0x2C101010;
+    ((PacketTag *)quad)->len = 9;
+    quad->code |= 2;
+    quad->clut = D_800927D8;
+    quad->tpage = D_800927D4;
+    quad->uv0 = D_800927DC | (D_800927E0 << 8);
+    quad->uv1 = (D_800927DC + 0x3F) | (D_800927E0 << 8);
+    quad->uv2 = D_800927DC | ((D_800927E0 + 0x3F) << 8);
+    quad->uv3 = (D_800927DC + 0x3F) | ((D_800927E0 + 0x3F) << 8);
+    view->backdrop[1] = view->backdrop[0];
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80087B74);
 
+/* Record a position in the path list (up to 31 entries). Does not match:
+ * the entry address is formed base-first and registers differ. */
+#ifdef NON_MATCHING
+void func_80087E38(Vector *pos) {
+    PathPoint *point;
+
+    if (D_800928F8 < 0x1F) {
+        point = &D_8009A988[D_800928F8];
+        point->x = pos->vx;
+        point->y = pos->vy;
+        D_800928F8++;
+        point->z = pos->vz;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80087E38);
+#endif
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80087EA0);
 
