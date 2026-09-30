@@ -1717,13 +1717,12 @@ void func_80077A88(Actor *actor) {
  * decoded command (combo attacks by button, the charged shot, the jump,
  * the dash), then set the animation, drift and turn for the current
  * stance, derive the walking speed and let a dash use up charge.
- * Does not match: in the charged-shot case the animation is computed in
- * $v1 and the flag word loaded before it is stored ($v0 in the original). */
+ * Does not match: in the charged-shot case bounce = 1 is scheduled
+ * before the 0x1000 flag update instead of after it. */
 #ifdef NON_MATCHING
 void func_80077A9C(Actor *actor) {
     MoveSlot *slot;
     s32 bounce;
-    u8 anim;
 
     if (actor->unkC4 == 5) {
         return;
@@ -1782,11 +1781,11 @@ void func_80077A9C(Actor *actor) {
             break;
         case 3:
             if (actor->unk914 == 0 && actor->moves->unk18 != 0 && actor->model_id != 0x29) {
-                anim = 4;
-                if (!(actor->unkC4 & 2)) {
-                    anim = 3;
+                if (actor->unkC4 & 2) {
+                    actor->anim = 4;
+                } else {
+                    actor->anim = 3;
                 }
-                actor->anim = anim;
                 actor->unk4E = 0xFF;
                 actor->flags |= 0x1000;
                 bounce = 1;
