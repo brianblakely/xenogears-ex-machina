@@ -276,7 +276,9 @@ typedef struct CharRecord {
     u8 pad30[0x1C];
     u16 hp; /* 4C */
     u16 hpMax; /* 4E */
-    u8 pad50[0x6];
+    u16 ep; /* 50 */
+    u16 epMax; /* 52 */
+    u8 pad54[0x2];
     u8 unk56; /* 56 */
     u8 pad57[0x1];
     u8 unk58; /* 58 */
@@ -292,7 +294,9 @@ typedef struct CharRecord {
     u8 unk63; /* 63 */
     u8 pad64[0xB];
     u8 accessory; /* 6F: inventory list 1 entry (801e0434) */
-    u8 pad70[0x20];
+    u8 pad70[0x8];
+    u8 unk78; /* 78 */
+    u8 pad79[0x17];
     u16 unk90[7]; /* 90: progress values (801e1418) */
     u8 pad9E[0x2];
     u8 gear; /* A0: gear record (+11), ff none */
@@ -319,6 +323,16 @@ typedef struct GearWeapon {
     u16 unk12; /* 12 */
 } GearWeapon;
 
+/* An item record of the data tables (+1c). */
+typedef struct MenuItem {
+    u8 pad0[0x8];
+    u8 amount; /* 8 */
+    u8 pad9[0x1];
+    s16 flags; /* A: 8000 HP, 4000 EP, 4 stats, 2 +78, 1 debug */
+    s16 stats; /* C: stats raised (flag 4) or +78 change (flag 2) */
+    u8 padE[0x2];
+} MenuItem;
+
 /* The data table directory (*(state + 330)). */
 typedef struct MenuTables {
     u8 *weapons; /* 0 */
@@ -328,7 +342,7 @@ typedef struct MenuTables {
     GearFrame *frames; /* 10 */
     u8 pad14[0x4];
     GearWeapon *weapons18; /* 18: gear weapons */
-    u8 *items; /* 1C */
+    MenuItem *items; /* 1C */
     MenuEffect *effects[11]; /* 20: per character */
     u8 pad4C[0x58];
     u16 unkA4; /* A4 */
@@ -1008,6 +1022,8 @@ u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y); /* GetTPage */
 u16 GetClut(s32 x, s32 y);          /* GetClut */
 void SetDrawMode(DR_MODE *p, s32 dfe, s32 dtd, s32 tpage, RECT *tw); /* SetDrawMode */
 void func_801E433C(MenuTables *tables, u8 gear);
+void func_801E5058(void);
+void func_801E5178(void);
 void func_801E4754(MenuTables *tables, u8 gear);
 void func_801E8EAC(POLY_FT4 *poly, u8 mode);
 void func_801E920C(POLY_FT4 *poly, u16 x, u16 y, u8 u, u8 v, u16 w, u16 h);

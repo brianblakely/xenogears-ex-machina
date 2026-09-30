@@ -3149,7 +3149,121 @@ void func_801E3088(u8 offset) {
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E3088);
 #endif
 
+/* Use item `item` on character `id`: restore HP (x50) and/or EP (x10),
+ * raise stats (capped at 200, HP max 999, EP max 99), change +78, or run a
+ * debug fill. Returns nonzero when the restoring item had no effect. */
+#ifdef NON_MATCHING
+u8 func_801E31C0(MenuTables *tables, u8 id, u8 item) {
+    CharRecord *chara;
+    MenuItem *record;
+    u8 hpFull;
+    u8 epFull;
+    s32 hpRate;
+    s32 epRate;
+
+    hpFull = 0;
+    epFull = 0;
+    record = tables->items + item;
+    chara = D_8006D8A0 + id;
+    epRate = 10;
+    if (record->flags & 0x8000) {
+        if (chara->hp == chara->hpMax) {
+            hpFull = 1;
+        } else {
+            hpRate = 50;
+            chara->hp += record->amount * hpRate;
+        }
+    }
+    if (record->flags & 0x4000) {
+        if (chara->ep == chara->epMax) {
+            epFull = 1;
+        } else {
+            chara->ep += epRate * record->amount;
+        }
+    }
+    if (chara->hp > chara->hpMax) {
+        chara->hp = chara->hpMax;
+    }
+    if (chara->ep > chara->epMax) {
+        chara->ep = chara->epMax;
+    }
+    if (record->flags & 4) {
+        if (record->stats & 0x8000) {
+            chara->unk58 += record->amount;
+        }
+        if (record->stats & 0x4000) {
+            chara->unk59 += record->amount;
+        }
+        if (record->stats & 0x2000) {
+            chara->unk5B += record->amount;
+        }
+        if (record->stats & 0x1000) {
+            chara->unk5C += record->amount;
+        }
+        if (record->stats & 0x800) {
+            chara->hpMax += record->amount;
+        }
+        if (record->stats & 0x400) {
+            chara->epMax += record->amount;
+        }
+        if (chara->unk58 > 200) {
+            chara->unk58 = 200;
+        }
+        if (chara->unk59 > 200) {
+            chara->unk59 = 200;
+        }
+        if (chara->unk5B > 200) {
+            chara->unk5B = 200;
+        }
+        if (chara->unk5C > 200) {
+            chara->unk5C = 200;
+        }
+        if (chara->hpMax >= 1000) {
+            chara->hpMax = 999;
+        }
+        if (chara->epMax >= 100) {
+            chara->epMax = 99;
+        }
+    }
+    if (record->flags & 2) {
+        if (record->stats & 0x8000) {
+            chara->unk78 += record->stats;
+            if (chara->unk78 > 200) {
+                chara->unk78 = 200;
+            }
+        } else if (chara->unk78 < (record->stats & 0xff)) {
+            chara->unk78 = 0;
+        } else {
+            chara->unk78 -= record->stats;
+        }
+    }
+    if (record->flags & 1) {
+        switch (record->amount) {
+        case 1:
+            func_801E5058();
+            break;
+        case 2:
+            func_801E5178();
+            break;
+        }
+    }
+    if (record->flags & 0x8000) {
+        if (record->flags & 0x4000) {
+            if (!hpFull) {
+                return 0;
+            }
+            return epFull;
+        }
+        return hpFull;
+    }
+    if (record->flags & 0x4000) {
+        return epFull;
+    }
+    return 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E31C0);
+#endif
 
 /* Apply `user`'s restoring effect: to `target`'s HP (its +5b times the
  * effect's +11, capped at the maximum), or with `gear` to the user's gear
