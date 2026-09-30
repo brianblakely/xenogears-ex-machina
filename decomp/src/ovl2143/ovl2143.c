@@ -1342,13 +1342,14 @@ s32 func_801E5CD8(Actor *actor, s32 which) {
 /* Run an actor's animation events of the current frame (anchors and their
  * light columns, channel stops, node visibility, calls into the masked
  * actors and image animations), then advance the frame, looping at the
- * loop frame. Differs in the call loop (type 8): the original hoists the
- * unset local and compares the entry as signed. */
+ * loop frame. Differs only in the scheduling of the call loop setup
+ * (type 8), where the original reads an unset local as u16. */
 #ifdef NON_MATCHING
 void func_801E5D44(Actor *actor, SlotPool *pool, s32 arg2) {
-    s16 unset[8];
+    u16 unset[4];
     AnimEvent *event;
     AnimEvent *call;
+    AnimEvent *anchor;
     Actor **other;
     ImageAnim *target;
     MATRIX *m;
@@ -1360,6 +1361,8 @@ void func_801E5D44(Actor *actor, SlotPool *pool, s32 arg2) {
     u16 saved_mask;
     s16 saved_index;
     s32 bit;
+    s32 entry;
+    s16 state;
     s32 i;
 
     if (actor->anim_state < 0) {
@@ -1377,19 +1380,20 @@ void func_801E5D44(Actor *actor, SlotPool *pool, s32 arg2) {
         case 2:
             if (event->u.anchor.active) {
                 if (event->index < 2) {
-                    if (event->u.anchor.fixed) {
-                        D_801E8648[event->index].actor = -1;
+                    anchor = event;
+                    if (anchor->u.anchor.fixed) {
+                        D_801E8648[anchor->index].actor = -1;
                     } else {
-                        D_801E8648[event->index].actor = actor->index;
+                        D_801E8648[anchor->index].actor = actor->index;
                     }
-                    D_801E8648[event->index].node = event->u.anchor.node;
-                    D_801E8644->m[0][event->index + 1] = event->u.anchor.color[0] << 4;
-                    D_801E8644->m[1][event->index + 1] = event->u.anchor.color[1] << 4;
-                    D_801E8644->m[2][event->index + 1] = event->u.anchor.color[2] << 4;
-                    D_801E8648[event->index].offset.vx = event->u.anchor.offset[0];
-                    D_801E8648[event->index].offset.vy = event->u.anchor.offset[1];
-                    D_801E8648[event->index].offset.vz = event->u.anchor.offset[2];
-                    D_801E8648[event->index].active = event->u.anchor.enable;
+                    D_801E8648[anchor->index].node = anchor->u.anchor.node;
+                    D_801E8644->m[0][anchor->index + 1] = anchor->u.anchor.color[0] << 4;
+                    D_801E8644->m[1][anchor->index + 1] = anchor->u.anchor.color[1] << 4;
+                    D_801E8644->m[2][anchor->index + 1] = anchor->u.anchor.color[2] << 4;
+                    D_801E8648[anchor->index].offset.vx = anchor->u.anchor.offset[0];
+                    D_801E8648[anchor->index].offset.vy = anchor->u.anchor.offset[1];
+                    D_801E8648[anchor->index].offset.vz = anchor->u.anchor.offset[2];
+                    D_801E8648[anchor->index].active = anchor->u.anchor.enable;
                 }
                 actor->anim_pos += 0x12;
             } else {
@@ -1418,17 +1422,19 @@ void func_801E5D44(Actor *actor, SlotPool *pool, s32 arg2) {
             break;
         case 8:
             /* The original tests a local it never sets. */
-            saved_mask = D_801E863C;
-            saved_index = D_801E86B0;
-            bit = 1 << D_801E86B0;
             call = event;
             other = D_801E8670;
+            state = unset[0];
+            saved_index = D_801E86B0;
+            saved_mask = D_801E863C;
+            bit = 1 << saved_index;
             for (i = 0; i < 8; i++, other++) {
-                if (((actor->mask >> i) & 1) && *other != NULL && call->u.call.entry > 0) {
-                    if (unset[0] != 0) {
-                        func_801E8394(actor, i, bit, call->u.call.entry);
+                if (((actor->mask >> i) & 1) && *other != NULL &&
+                    (entry = call->u.call.entry) > 0) {
+                    if (state != 0) {
+                        func_801E8394(actor, i, bit, entry);
                     } else {
-                        func_801E8330(i, bit, call->u.call.entry);
+                        func_801E8330(i, bit, entry);
                     }
                 }
             }
