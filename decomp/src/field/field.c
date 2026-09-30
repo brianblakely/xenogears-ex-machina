@@ -1,4 +1,5 @@
 #include "common.h"
+#include "camera.h"
 #include "event.h"
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8006FDEC);
@@ -936,21 +937,156 @@ void func_8008F6AC(void) {
     D_800B0078->pc += 7;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008F724);
+extern s32 D_800ADBDC;
+extern s32 D_8004F340;
+void func_8008F7B8(void);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008F76C);
+/* Request field music with D_8004F340 = 0, or yield while music is disabled. */
+void func_8008F724(void) {
+    if (D_800ADBDC == 0) {
+        D_800B00C0 = 1;
+        return;
+    }
+    D_8004F340 = 0;
+    func_8008F7B8();
+}
 
+/* Request field music with D_8004F340 = -1, or yield while music is disabled. */
+void func_8008F76C(void) {
+    if (D_800ADBDC == 0) {
+        D_800B00C0 = 1;
+        return;
+    }
+    D_8004F340 = -1;
+    func_8008F7B8();
+}
+
+#ifdef NON_MATCHING
+extern s32 D_800ADB1C;
+extern s32 D_8004F308;
+extern s32 D_8004F324;
+extern s32 D_8004F354;
+void func_80085EEC(void);
+void func_8001B66C(void);
+s32 func_8008A558(void);
+void func_80085B20(s32 track, s32 arg1);
+
+/* Select the field music track (operand 1). Without D_800ADB1C the track is
+ * only recorded; otherwise yield until the music system can take a change. */
+void func_8008F7B8(void) {
+    s32 track;
+
+    track = func_800ACDEC(1);
+    if (D_800ADB1C == 0) {
+        func_80085EEC();
+        if (track != D_8004F324) {
+            func_8001B66C();
+            D_8004F308 = -1;
+        }
+        D_8004F324 = track;
+        D_800B0078->pc += 3;
+    } else if (func_8008A558() != 0 || D_800ADBDC == 0) {
+        D_800B00C0 = 1;
+    } else if (D_8004F354 != 1 && D_8004F308 != -1) {
+        if (track != D_8004F324) {
+            func_8001B66C();
+            D_8004F324 = track;
+            D_8004F308 = -1;
+            func_80085B20(track, 0);
+        }
+        D_800B0078->pc += 3;
+    } else {
+        D_800B00C0 = 1;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008F7B8);
+#endif
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008F90C);
+/* Start a camera shake toward three amplitudes over a frame count. */
+void func_8008F90C(void) {
+    s32 x;
+    s32 y;
+    s32 z;
+    s32 frames;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008FA38);
+    x = func_800ACDEC(1);
+    y = func_800ACDEC(3);
+    z = func_800ACDEC(5);
+    frames = func_800ACDEC(7);
+    if (frames == 0) {
+        frames = 1;
+    }
+    D_800B0078->pc += 9;
+    D_800AFA2A = frames;
+    D_800AFA28 = 1;
+    D_800AFA3C[0] = ((x << 16) - D_800AFA30[0]) / frames;
+    D_800AFA3C[1] = ((z << 16) - D_800AFA30[1]) / frames;
+    D_800AFA3C[2] = ((y << 16) - D_800AFA30[1]) / frames;
+    if (x == 0 && z == 0 && y == 0) {
+        D_800AFA2A = frames + 2;
+        D_800AFA2C = 1;
+        return;
+    }
+    D_800AFA2C = 0;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008FABC);
+/* Yield; advance once the requested camera moves (bit 1: target, bit 0: eye)
+ * have no steps left. */
+void func_8008FA38(void) {
+    s32 mask;
+    s32 wanted;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008FB28);
+    wanted = func_800ACDEC(1);
+    mask = 3;
+    if (D_800AF930.target_steps == 0) {
+        mask = 2;
+    }
+    if (D_800AF930.eye_steps == 0) {
+        mask &= 1;
+    }
+    D_800B00C0 = 1;
+    if (!(mask & wanted)) {
+        D_800B0078->pc += 3;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008FB98);
+s32 func_8009CF78(s32 offset, s32 flags);
+
+/* Set the camera heading from a selected operand. */
+void func_8008FABC(void) {
+    s16 heading;
+
+    heading = func_8009CF78(1, EVENT_OPERAND_BYTE(3));
+    D_800AF930.heading_half = heading;
+    D_800AF930.heading = heading;
+    D_800B0078->pc += 4;
+}
+
+/* Copy the working elevation/heading/zoom into the scripted camera. */
+void func_8008FB28(void) {
+    D_800AF930.scripted_scale = 0x1000;
+    D_800AF930.scripted_heading = D_800AF930.heading_half;
+    D_800AF930.scripted_elevation = D_800AF930.elevation;
+    D_800AF930.scripted_zoom = (D_800AF930.projection * D_800AF930.distance) >> 12;
+    D_800B0078->pc += 1;
+}
+
+extern s32 D_800AFC7C;
+
+/* Switch to the scripted camera now, from the working parameters. */
+void func_8008FB98(void) {
+    D_800AF930.mode = 1;
+    D_800AFC7C += 4;
+    D_800B0078->pc += 1;
+    D_800AF930.scripted_scale = 0x1000;
+    D_800AF930.target_a = 12;
+    D_800AF930.target_b = 12;
+    D_800AF930.flags |= 0x8000;
+    D_800AF930.scripted_heading = D_800AF930.heading_half;
+    D_800AF930.scripted_elevation = D_800AF930.elevation;
+    D_800AF930.scripted_zoom = (D_800AF930.projection * D_800AF930.distance) >> 12;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008FC4C);
 

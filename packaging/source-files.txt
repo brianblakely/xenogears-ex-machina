@@ -114,6 +114,7 @@ decomp/include/macro.inc
 decomp/src/battle/battle.c
 decomp/src/debug2611/debug2611.c
 decomp/src/debug595/debug595.c
+decomp/src/field/camera.h
 decomp/src/field/event.h
 decomp/src/field/field.c
 decomp/src/mdec/mdec.c

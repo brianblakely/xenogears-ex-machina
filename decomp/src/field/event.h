@@ -36,8 +36,8 @@ extern FieldActor *D_800B0078;      /* current actor */
 extern s32 D_800B00C0;              /* yield: stop this actor's batch */
 
 /* Operand readers; each takes the byte offset from the working PC. */
-s16 func_800ACD7C(s32 offset);  /* signed halfword */
-u16 func_800ACDB8(s32 offset);  /* raw halfword */
+s32 func_800ACD7C(s32 offset);  /* signed halfword */
+s32 func_800ACDB8(s32 offset);  /* raw halfword */
 s32 func_800ACDEC(s32 offset);  /* bit 15: 15-bit immediate, else variable */
 s32 func_8009CDB4(s32 offset);  /* actor selector; 0xFF when none */
 s32 func_800A3018(u16 reference); /* read a variable */
