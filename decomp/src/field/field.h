@@ -57,6 +57,93 @@ typedef struct {
     u16 pad;
 } FadeChannel;
 
+/* The field view and camera state (800af880..800afacc), one object: code
+ * addresses its members relative to one another. */
+typedef struct {
+    VECTOR eye;              /* 000 */
+    VECTOR target;           /* 010 */
+    VECTOR up;               /* 020 */
+    VECTOR eye_goal;         /* 030 */
+    VECTOR target_goal;      /* 040 */
+    VECTOR unk050;           /* 050 */
+    VECTOR shake_offset;     /* 060 */
+    VECTOR saved_target;     /* 070 */
+    VECTOR point_actor_a;    /* 080 */
+    VECTOR saved_eye;        /* 090 */
+    VECTOR point_actor_b;    /* 0A0 */
+    s32 scripted_zoom;       /* 0B0 */
+    s16 mode;                /* 0B4 */
+    s16 scripted_elevation;  /* 0B6 */
+    s16 scripted_heading;    /* 0B8 */
+    s16 scripted_scale;      /* 0BA */
+    u16 scripted;            /* 0BC */
+    s16 target_steps;        /* 0BE */
+    VECTOR scripted_target;  /* 0C0 */
+    VECTOR target_step;      /* 0D0 */
+    s16 eye_steps;           /* 0E0 */
+    s32 scripted_eye[3];     /* 0E4 */
+    s32 unk0F0;              /* 0F0 */
+    s32 eye_step[3];         /* 0F4 */
+    s32 unk100;              /* 100 */
+    s32 target_a;            /* 104: target follow divisor */
+    s32 target_b;            /* 108: eye follow divisor */
+    s16 angle;               /* 10C */
+    s16 view_angle;          /* 10E */
+    MATRIX previous_view;    /* 110 */
+    MATRIX orbit;            /* 130 */
+    SVECTOR orbit_angles;    /* 150 */
+    u32 flags;               /* 158 */
+    s16 bounds[4];           /* 15C */
+    SVECTOR heading_angles;  /* 164 */
+    s32 heading_velocity;    /* 16C */
+    u32 heading_high;        /* 170 */
+    u8 heading_blocks[2];    /* 174 */
+    s16 heading_steps;       /* 176 */
+    s32 projection;          /* 178 */
+    u16 elevation;           /* 17C */
+    s16 distance;            /* 17E */
+    s16 elevation_steps;     /* 180 */
+    s32 elevation_value;     /* 184 */
+    s32 elevation_step;      /* 188 */
+    u32 heading;             /* 18C */
+    s16 projection_steps;    /* 190 */
+    s32 projection_value;    /* 194 */
+    s32 projection_step;     /* 198 */
+    u16 steps;               /* 19C */
+    s32 start;               /* 1A0 */
+    s32 step;                /* 1A4 */
+    s16 shake;               /* 1A8 */
+    s16 shake_time;          /* 1AA */
+    s16 shake_stop;          /* 1AC */
+    s32 shake_amplitude[3];  /* 1B0 */
+    s32 shake_step[3];       /* 1BC */
+    s32 unk1C8[3];           /* 1C8 */
+    SVECTOR world_angles;    /* 1D4 */
+    SVECTOR anchor;          /* 1DC */
+    MATRIX scaled_world;     /* 1E4 */
+    MATRIX unk204;           /* 204 */
+    MATRIX world_matrix;     /* 224 */
+    s32 scale;               /* 244 */
+    s32 unk248;              /* 248 */
+} FieldView;
+
+/* One 0x138-byte event actor record. */
+typedef struct FieldActor {
+    u8 unk000[0xF4];
+    s16 scale[3]; /* 0F4 */
+    u8 unk0FA[0x138 - 0xFA];
+} FieldActor;
+
+/* One 0x5C-byte descriptor; one per event actor. */
+typedef struct FieldDescriptor {
+    u8 unk00[0x0C];
+    MATRIX matrix;     /* 0C */
+    u8 unk2C[0x4C - 0x2C];
+    FieldActor *actor; /* 4C */
+    SVECTOR rotation;  /* 50 */
+    u8 unk58[0x5C - 0x58];
+} FieldDescriptor;
+
 /* One of the three field light/lookup slots at 800b06a4. */
 typedef struct {
     s16 a;
@@ -72,6 +159,15 @@ extern void func_800320E8(void *);
 extern void func_80032EB4(s32 index, void *destination);
 extern void func_8003F738(SVECTOR *angles, MATRIX *m); /* RotMatrix */
 extern void func_800445D0(s32);
+extern void func_8004931C(MATRIX *a, MATRIX *b, MATRIX *out); /* CompMatrix */
+extern void func_80049BDC(MATRIX *a, MATRIX *b);            /* MulRotMatrix */
+extern void func_80049DCC(MATRIX *m, VECTOR *scale);        /* ScaleMatrix */
+extern void func_80049EFC(MATRIX *m);                       /* SetRotMatrix */
+extern void func_80049F8C(MATRIX *m);                       /* SetTransMatrix */
+extern void func_8004947C(MATRIX *m, VECTOR *in, VECTOR *out); /* ApplyMatrixLV */
+extern void func_8004960C(void);                               /* PushMatrix */
+extern void func_800496AC(void);                               /* PopMatrix */
+extern void func_8004A6DC(SVECTOR *v, s32 *out, s32 *flag); /* RotTrans */
 
 /* Field overlay. */
 extern void func_8007D93C(s32 channel);
@@ -80,7 +176,13 @@ extern void func_8007ADA4(s32 left, s32 right, s32 top, s32 bottom);
 extern void func_8007AE14(s32 x_divisor, s32 y_divisor);
 extern void func_8007AE2C(s32 port, s32 x, s32 y);
 extern void func_8007DA44(void *ot, s32 buffer);
+extern void func_80074038(MATRIX *to, MATRIX *from);
+extern void func_80074078(MATRIX *to, MATRIX *from);
+extern void func_8007409C(MATRIX *to, MATRIX *from);
+extern void func_80072140(MATRIX *m);
+extern s32 func_80073930(s32 angle, s32 goal, s32 step);
 extern void func_80078C5C(void);
+extern void func_802815B0(void);
 
 /* Resident state. */
 extern s32 D_8004F34C; /* current map */
@@ -91,6 +193,11 @@ extern u8 D_800625FC[2][0x22]; /* pad buffers */
 extern s32 D_800ADB08;
 extern s32 D_800ADC04; /* fade mode; fades start only in mode 2 */
 extern s16 D_800ADC08; /* fade started */
+extern FieldView D_800AF880;
+extern FieldDescriptor *D_800AFB10; /* descriptor table */
+extern s32 D_800C268C;
+extern s32 D_800ADC18;
+extern u8 D_800ADC1C[8]; /* octant bits */
 extern FadeChannel D_800B20C4[2];
 extern FieldDrawBlock D_800B249C[2];
 extern s32 D_800ADB0C;

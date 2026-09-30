@@ -203,15 +203,84 @@ void func_80072140(MATRIX *m) {
     m->t[0] = 0;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80072150);
+/* Compose the view (orbit under the previous view), the world matrices, and
+ * leave the scaled world matrix loaded for drawing. */
+void func_80072150(void) {
+    VECTOR scale;
+    MATRIX unused;
+    MATRIX composed;
+    s32 flag;
 
+    func_8003F738(&D_800AF880.orbit_angles, &D_800AF880.orbit);
+    func_80072140(&D_800AF880.orbit);
+    func_8004931C(&D_800AF880.orbit, &D_800AF880.previous_view, &composed);
+    func_80074038(&D_800AF880.previous_view, &composed);
+    func_8003F738(&D_800AF880.world_angles, &D_800AF880.world_matrix);
+    func_80072140(&D_800AF880.world_matrix);
+    func_8003F738(&D_800AF880.world_angles, &D_800AF880.scaled_world);
+    func_80049BDC(&D_800AF880.previous_view, &D_800AF880.scaled_world);
+    func_80049EFC(&D_800AF880.previous_view);
+    func_80049F8C(&D_800AF880.previous_view);
+    func_8004A6DC(&D_800AF880.anchor, D_800AF880.scaled_world.t, &flag);
+    scale.vx = D_800AF880.scale;
+    scale.vy = D_800AF880.scale;
+    scale.vz = D_800AF880.scale;
+    func_80049DCC(&D_800AF880.scaled_world, &scale);
+    func_80049EFC(&D_800AF880.scaled_world);
+    func_80049F8C(&D_800AF880.scaled_world);
+}
+
+#ifdef NON_MATCHING
+/* Rebuild a descriptor's matrix from its rotation, scaled by its actor. */
+void func_80072254(s32 index) {
+    VECTOR scale;
+
+    scale.vx = D_800AFB10[index].actor->scale[0];
+    scale.vy = D_800AFB10[index].actor->scale[1];
+    scale.vz = D_800AFB10[index].actor->scale[2];
+    func_8003F738(&D_800AFB10[index].rotation, &D_800AFB10[index].matrix);
+    func_80049DCC(&D_800AFB10[index].matrix, &scale);
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80072254);
+#endif
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800722F4);
+/* Compose the view and reload the scaled world matrix; 802815b0 runs unless
+ * 800c268c is set. */
+void func_800722F4(void) {
+    func_80072150();
+    func_80049EFC(&D_800AF880.scaled_world);
+    func_80049F8C(&D_800AF880.scaled_world);
+    if (D_800C268C == 0) {
+        func_802815B0();
+    }
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007234C);
+/* Count the blocked octants from `start` upward; zero when all are blocked. */
+s32 func_8007234C(s32 mask, s32 start) {
+    s32 i;
+    s32 count;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80072398);
+    for (i = 0, count = 0; i < 8; i++, count++) {
+        if (!(mask & D_800ADC1C[start++ & 7])) {
+            return count;
+        }
+    }
+    return 0;
+}
+
+/* Count the blocked octants from `start` downward; zero when all are blocked. */
+s32 func_80072398(s32 mask, s32 start) {
+    s32 i;
+    s32 count;
+
+    for (i = 0, count = 0; i < 8; i++, count++) {
+        if (!(mask & D_800ADC1C[start-- & 7])) {
+            return count;
+        }
+    }
+    return 0;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800723E4);
 
@@ -225,15 +294,60 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80072D74);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80073230);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80073684);
+/* Rotate `point` in X/Z about `center` by the camera heading angles. */
+void func_80073684(VECTOR *point, VECTOR *center) {
+    MATRIX m;
+    VECTOR offset;
+    VECTOR rotated;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80073734);
+    func_8004960C();
+    func_8003F738(&D_800AF880.heading_angles, &m);
+    offset.vx = center->vx - point->vx;
+    offset.vy = center->vy - point->vy;
+    offset.vz = center->vz - point->vz;
+    func_8004947C(&m, &offset, &rotated);
+    point->vx = rotated.vx + center->vx;
+    point->vz = rotated.vz + center->vz;
+    func_800496AC();
+}
+
+/* Truncate a 16.16 vector to its integer parts. */
+void func_80073734(VECTOR *v) {
+    v->vx = ((s16 *)&v->vx)[1];
+    v->vy = ((s16 *)&v->vy)[1];
+    v->vz = ((s16 *)&v->vz)[1];
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80073750);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80073930);
+/* Turn angle `angle` towards `goal` by `step` the short way round, stopping
+ * at the goal; 12-bit angles. */
+s32 func_80073930(s32 angle, s32 goal, s32 step) {
+    if (((angle - goal) & 0xFFF) < 0x800) {
+        angle -= step;
+        if (((angle - goal) & 0xFFF) >= 0x800) {
+            angle = goal;
+        }
+    } else {
+        angle += step;
+        if (((angle - goal) & 0xFFF) < 0x800) {
+            angle = goal;
+        }
+    }
+    return angle & 0xFFF;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80073988);
+/* Turn towards `goal` by `step`, or jump there when 800adc18 is set. */
+s32 func_80073988(s32 angle, s32 goal, s32 step) {
+    s32 result;
+
+    if (D_800ADC18 == 0) {
+        result = func_80073930(angle, goal, step);
+    } else {
+        result = goal & 0xFFF;
+    }
+    return result;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800739C0);
 
@@ -243,9 +357,18 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80073F50);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80073FE0);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80074038);
+/* Copy a matrix's rotation and translation. */
+void func_80074038(MATRIX *to, MATRIX *from) {
+    func_8007409C(to, from);
+    func_80074078(to, from);
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80074078);
+/* Copy a matrix's translation. */
+void func_80074078(MATRIX *to, MATRIX *from) {
+    to->t[0] = from->t[0];
+    to->t[1] = from->t[1];
+    to->t[2] = from->t[2];
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007409C);
 
