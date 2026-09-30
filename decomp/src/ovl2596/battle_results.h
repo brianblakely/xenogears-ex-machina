@@ -33,6 +33,8 @@ typedef struct {
     s16 x3, y3;
 } POLY_G4;
 
+#define setRGB0(p, r, g, b) ((p)->r0 = (r), (p)->g0 = (g), (p)->b0 = (b))
+
 /* A glyph-table sprite part, one primitive per draw buffer. */
 typedef POLY_FT4 Glyph[2];
 
@@ -137,6 +139,28 @@ extern s32 D_800CCB34;      /* D_800CCB00.buffer, also addressed directly */
 extern u8 D_800C3CF1[12];
 extern u8 D_800C3CED[16];
 void func_8008AAA0(u32 value);
+
+/* The digit buffer as the level numbers address it. */
+extern u8 D_800C3CE8[];
+
+/* Battle slot levels (8 bytes per slot). */
+typedef struct {
+    u8 level;
+    u8 level2;
+    u8 pad[6];
+} SlotLevels;
+
+extern SlotLevels D_800D32A5[3];
+
+/* The game data's per character levels (0xa4 per character). */
+typedef struct {
+    u8 level;
+    u8 level2;
+    u8 pad[0xA2];
+} CharacterLevels;
+
+extern CharacterLevels D_8006D902[];
+extern u8 D_800D2D24[3];    /* battle party character ids */
 
 /* Per member combatant values (0x170 per member; the symbol names +0x4c). */
 typedef struct {

@@ -1,3 +1,12 @@
+/* Post-battle module (Disc 1 slot 2596, directory 10 file 4), loaded at
+ * 801de000 by the battle overlay's 80070f40 (the read at 800715d8). It
+ * builds and queues the victory result screens (member cards, summary and
+ * spoils windows), distributes experience and levels, grants skills, gold and
+ * drops, and writes the party back to the game data. The battle overlay calls
+ * 801de594 (queue the screens' primitives) and 801e252c.
+ *
+ * Compiled with GCC 2.6.3: only it reproduces the (index + base) operand
+ * order of this unit's address arithmetic (e.g. 801de5c4, 801de1c4). */
 #include "battle_results.h"
 
 /* Queue every member card's glyph runs while the cards are shown. */
@@ -103,13 +112,9 @@ void func_801DE69C(void) {
                 D_800D32F8[i]->runs[1].count += func_80076A10(0xE8, &D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2], 0x88, i * 0x20 + 0x20);
                 D_800D32F8[i]->runs[1].count += func_80076A10(0xE9, &D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2], 0x88, i * 0x20 + 0x28);
                 func_80043C24(&D_800D32F8[i]->labels[(D_800D32F8[i]->runs[1].count - 2) * 2 + D_800CCB00.buffer], 0);
-                (&D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2 + D_800CCB34] - 4)->r0 = 0x80;
-                (&D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2 + D_800CCB34] - 4)->g0 = 0x40;
-                (&D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2 + D_800CCB34] - 4)->b0 = 0x40;
+                setRGB0(&D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2 + D_800CCB34] - 4, 0x80, 0x40, 0x40);
                 func_80043C24(&D_800D32F8[i]->labels[(D_800D32F8[i]->runs[1].count - 1) * 2 + D_800CCB00.buffer], 0);
-                (&D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2 + D_800CCB34] - 2)->r0 = 0x40;
-                (&D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2 + D_800CCB34] - 2)->g0 = 0x80;
-                (&D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2 + D_800CCB34] - 2)->b0 = 0x40;
+                setRGB0(&D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2 + D_800CCB34] - 2, 0x40, 0x80, 0x40);
             }
         }
         D_800D32F8[i]->runs[1].buffer = D_800CCB00.buffer;
@@ -170,7 +175,58 @@ void func_801DEA18(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801DEDC0);
+/* Build each present member's level glyphs, from the battle slots or (with
+ * fromGameData) the game data; with the first card's flag also the second
+ * level, and shade the two numbers red and green. */
+void func_801DEDC0(u8 fromGameData) {
+    s32 i;
+    s32 j;
+    s32 n;
+    s32 digit;
+
+    for (i = 0; i < 3; i++) {
+        D_800D32F8[i]->runs[2].count = 0;
+        D_800D32F8[i]->runs[3].count = 0;
+        if (D_800C3EB6[i].id != 0x7F) {
+            if (fromGameData == 0) {
+                func_8008AAA0(D_800D32A5[i].level);
+            } else {
+                func_8008AAA0(D_8006D902[D_800D2D24[i]].level);
+            }
+            for (j = 0; j < 3; j++) {
+                n = j + 18;
+                digit = D_800C3CE8[n];
+                if (digit != 0xFF) {
+                    D_800D32F8[i]->runs[2].count += func_80076A10(digit, &D_800D32F8[i]->field780[D_800D32F8[i]->runs[2].count * 2], j * 8 + 0x90, i * 0x20 + 0x20);
+                }
+            }
+            D_800D32F8[i]->runs[2].buffer = D_800CCB34;
+            if (D_800D32F8[0]->flag15F8 != 0) {
+                if (fromGameData == 0) {
+                    func_8008AAA0(D_800D32A5[i].level2);
+                } else {
+                    func_8008AAA0(D_8006D902[D_800D2D24[i]].level2);
+                }
+                for (j = 0; j < 3; j++) {
+                    n = j + 18;
+                    digit = D_800C3CE8[n];
+                    if (digit != 0xFF) {
+                        D_800D32F8[i]->runs[3].count += func_80076A10(digit, &D_800D32F8[i]->field870[D_800D32F8[i]->runs[3].count * 2], j * 8 + 0x90, i * 0x20 + 0x28);
+                    }
+                }
+                D_800D32F8[i]->runs[3].buffer = D_800CCB34;
+                for (j = 0; j < D_800D32F8[i]->runs[2].count; j++) {
+                    func_80043C24(&D_800D32F8[i]->field780[j * 2 + D_800CCB34], 0);
+                    setRGB0(&D_800D32F8[i]->field780[j * 2 + D_800CCB34], 0x80, 0x40, 0x40);
+                }
+                for (j = 0; j < D_800D32F8[i]->runs[3].count; j++) {
+                    func_80043C24(&D_800D32F8[i]->field870[j * 2 + D_800CCB34], 0);
+                    setRGB0(&D_800D32F8[i]->field870[j * 2 + D_800CCB34], 0x40, 0x80, 0x40);
+                }
+            }
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801DF270);
 
