@@ -881,10 +881,8 @@ s32 func_80072398(s32 mask, s32 start) {
     return 0;
 }
 
-#ifdef NON_MATCHING
 /* The intersection of the lines through segments `a` and `b` (X/Z points);
- * `b`'s start when they are parallel. Differs only in the register of the
- * second product of each cross product (t0/v1 in the original). */
+ * `b`'s start when they are parallel. */
 void func_800723E4(DVECTOR *a, DVECTOR *b, DVECTOR *out) {
     VECTOR ua;
     VECTOR ub;
@@ -909,9 +907,6 @@ void func_800723E4(DVECTOR *a, DVECTOR *b, DVECTOR *out) {
     out->vx = b[0].vx + ((t * ub.vx) >> 12);
     out->vy = b[0].vy + ((t * ub.vz) >> 12);
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800723E4);
-#endif
 
 #ifdef NON_MATCHING
 /* The camera's initial state. */
@@ -2624,15 +2619,11 @@ void func_80077844(MATRIX *m, s32 m00, s32 m01, s32 m02, s32 m10, s32 m11, s32 m
 }
 
 
-#ifdef NON_MATCHING
 /* Load the 801e module and its per-layer resources when the layer is
  * enabled: allocate the module (file 6b9), two blocks per layer (files
- * 6bb and 6ba plus the layer's id), then read them all as one list.
- * Does not match: only the registers of the module size computation differ
- * (the original keeps 800adb30 in v1 and the size in a0). */
+ * 6bb and 6ba plus the layer's id), then read them all as one list. */
 void func_80077884(void) {
     u32 end;
-    s32 size;
     s32 i;
 
     if (D_800B2078.unk2264 != 0) {
@@ -2641,11 +2632,10 @@ void func_80077884(void) {
         func_800A90B4(0);
         end = D_800ADB30;
         if (D_8004F370 == 0) {
-            size = (end & 0xFFFFFF) - 0x1DC008;
+            D_800ADB20 = func_80031BDC((end & 0xFFFFFF) - 0x1DC008, 1);
         } else {
-            size = func_800288EC(0x6B9);
+            D_800ADB20 = func_80031BDC(func_800288EC(0x6B9), 1);
         }
-        D_800ADB20 = func_80031BDC(size, 1);
         func_800A90B4(1);
         for (i = 0; i < D_800B2078.unk2264; i++) {
             D_800B2394[i * 2 + 1].file = D_800B2078.unk21DC[i] + 0x6BB;
@@ -2665,9 +2655,6 @@ void func_80077884(void) {
         func_80029AFC(D_800B2394, 0, 0);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80077884);
-#endif
 
 
 /* Start the 801e module's layers when enabled: sync and flush the cache,
