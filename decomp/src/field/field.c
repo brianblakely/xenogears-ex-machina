@@ -836,11 +836,9 @@ void func_8008F348(void) {
     D_800B0078->pc += 5;
 }
 
-extern s16 D_800B233C[]; /* reload flags; addressed as an aggregate */
-
-/* Store an operand in D_800B233C. */
+/* Set which field effects are kept across a reload. */
 void func_8008F394(void) {
-    D_800B233C[0] = func_800ACDEC(1);
+    D_800B233C.effects_kept = func_800ACDEC(1);
     D_800B0078->pc += 3;
 }
 
@@ -3063,8 +3061,6 @@ void func_8009640C(void) {
     D_800B0078->pc += 3;
 }
 
-extern s32 D_80062590[3];
-
 /* Continue when character operand 1 is in the party, otherwise jump to
  * operand 2. */
 void func_800964B0(void) {
@@ -3153,21 +3149,90 @@ void func_800967E8(void) {
     D_800B0078->pc += 3;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80096844);
+/* Restore HP of party slot `slot`, up to its maximum. */
+void func_80096844(s32 slot, s32 amount) {
+    D_8005A39C->characters[D_80062590[slot]].hp += amount;
+    if (D_8005A39C->characters[D_80062590[slot]].max_hp < D_8005A39C->characters[D_80062590[slot]].hp) {
+        D_8005A39C->characters[D_80062590[slot]].hp = D_8005A39C->characters[D_80062590[slot]].max_hp;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800968CC);
+/* Reduce HP of party slot `slot`, leaving at least 1. */
+void func_800968CC(s32 slot, s32 amount) {
+    s32 hp;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80096920);
+    hp = D_8005A39C->characters[D_80062590[slot]].hp - amount;
+    if (hp <= 0) {
+        hp = 1;
+    }
+    D_8005A39C->characters[D_80062590[slot]].hp = hp;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800969A8);
+/* Restore EP of party slot `slot`, up to its maximum. */
+void func_80096920(s32 slot, s32 amount) {
+    D_8005A39C->characters[D_80062590[slot]].ep += amount;
+    if (D_8005A39C->characters[D_80062590[slot]].max_ep < D_8005A39C->characters[D_80062590[slot]].ep) {
+        D_8005A39C->characters[D_80062590[slot]].ep = D_8005A39C->characters[D_80062590[slot]].max_ep;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800969FC);
+/* Reduce EP of party slot `slot`, leaving at least 1. */
+void func_800969A8(s32 slot, s32 amount) {
+    s32 ep;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80096AF4);
+    ep = D_8005A39C->characters[D_80062590[slot]].ep - amount;
+    if (ep <= 0) {
+        ep = 1;
+    }
+    D_8005A39C->characters[D_80062590[slot]].ep = ep;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80096B58);
+extern s16 D_800AEA2C[4];
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80096C40);
+/* Reduce the HP of the party members selected by mask table entry
+ * (operand 3 & 3) by a selected operand. */
+void func_800969FC(void) {
+    s32 slot;
+    s32 amount;
+    s32 mask;
+
+    amount = func_8009CF78(1, EVENT_OPERAND_BYTE(3));
+    slot = 0;
+    mask = D_800AEA2C[EVENT_OPERAND_BYTE(3) & 3];
+    do {
+        if (D_80062590[slot] != 0xFF && (mask & 1)) {
+            func_800968CC(slot, amount);
+        }
+        mask >>= 1;
+        slot++;
+    } while (slot < 3);
+    D_800B0078->pc += 4;
+}
+
+/* Set the jump mode, animation mode and repeat delay. */
+void func_80096AF4(void) {
+    D_800B233C.jump_mode = func_800ACDEC(1);
+    D_800B233C.animation_mode = func_800ACDEC(3);
+    D_800B233C.repeat_delay = func_800ACDEC(5);
+    D_800B233C.repeat_remaining = 0;
+    D_800B0078->pc += 7;
+}
+
+/* Store the HP of party slot operand 3 in a variable. */
+void func_80096B58(void) {
+    if (D_80062590[EVENT_OPERAND_BYTE(3)] != 0xFF) {
+        func_800A3074(func_800ACDB8(1), D_8005A39C->characters[D_80062590[EVENT_OPERAND_BYTE(3)]].hp);
+    }
+    D_800B0078->pc += 4;
+}
+
+/* Store the EP of party slot operand 3 in a variable. */
+void func_80096C40(void) {
+    if (D_80062590[EVENT_OPERAND_BYTE(3)] != 0xFF) {
+        func_800A3074(func_800ACDB8(1), D_8005A39C->characters[D_80062590[EVENT_OPERAND_BYTE(3)]].ep);
+    }
+    D_800B0078->pc += 4;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80096D28);
 

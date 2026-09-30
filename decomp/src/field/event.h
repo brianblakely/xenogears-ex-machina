@@ -71,9 +71,21 @@ typedef struct FieldDescriptor {
     u8 unk5A[0x5C - 0x5A];
 } FieldDescriptor;
 
+/* One 0xA4-byte character record (src/reconstruction/battle_levels.cpp). */
+typedef struct Character {
+    u8 unk00[0x4C];
+    u16 hp;             /* 4C */
+    u16 max_hp;         /* 4E */
+    u16 ep;             /* 50 */
+    u16 max_ep;         /* 52 */
+    u8 unk54[0xA4 - 0x54];
+} Character;
+
 /* Resident persistent game state (*8005a39c). */
 typedef struct GameState {
-    u8 unk0000[0x1924 - 0x0000];
+    u8 unk0000[0x026C - 0x0000];
+    Character characters[11]; /* 026C: count unverified */
+    u8 unk0978[0x1924 - 0x0978];
     s32 gold;            /* 1924 */
     u8 unk1928[0x1932 - 0x1928];
     s16 unk1932;         /* 1932 */
@@ -96,6 +108,7 @@ typedef struct GameState {
 } GameState;
 
 extern GameState *D_8005A39C;
+extern s32 D_80062590[3];           /* party character ids (0xFF: empty) */
 extern s16 D_800C3A68[];            /* event variable bank */
 
 /* Field settings block at 800b2174 (meanings from src/reconstruction/
@@ -120,6 +133,22 @@ typedef struct FieldSettings {
 } FieldSettings;
 
 extern FieldSettings D_800B2174;
+
+/* Field mode block at 800b233c; addressed as one aggregate. */
+typedef struct FieldModes {
+    s16 effects_kept;           /* 33c */
+    s16 unk33E;                 /* 33e */
+    s16 repeat_delay;           /* 340 */
+    s16 repeat_remaining;       /* 342 */
+    s16 jump_mode;              /* 344 */
+    s16 animation_mode;         /* 346 */
+    s16 gather_override;        /* 348 */
+    s16 unk34A;                 /* 34a */
+    s16 unk34C;                 /* 34c */
+    s16 followers_idle;         /* 34e */
+} FieldModes;
+
+extern FieldModes D_800B233C;
 
 typedef union {
     u32 word;
