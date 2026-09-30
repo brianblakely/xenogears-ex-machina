@@ -1854,6 +1854,26 @@ void func_8003869C(void) {
     func_80039FF8();
 }
 
+/* The driver's SPU common attributes, the volumes they are built from and
+ * the master and CD volume fades (16.16 levels stepping toward targets). */
+typedef struct {
+    SpuCommonAttr attr;
+    s16 master;
+    s16 cd;
+    s16 unk2C;
+    s16 cd_request;
+    s32 master_level;
+    s32 master_step;
+    s16 master_frames;
+    s16 master_target;
+    s32 cd_level;
+    s32 cd_step;
+    s16 cd_frames;
+    s16 cd_target;
+} SoundVolumes;
+
+extern SoundVolumes D_8005A3C0;
+
 /* A voice whose volume pair follows the output mode (D_80059518). */
 typedef struct {
     u16 flags;         /* bit 0: in use */
@@ -1986,7 +2006,68 @@ void func_8003890C(SoundBank *bank, s32 enable) {
     }
 }
 
+extern u32 D_800594D8;     /* SPU address of the reverb work area, -1 none */
+extern s32 D_800508E8[10]; /* reverb work area size of each reverb type */
+void func_80038AD4(s32 address, s32 size);
+
+/* Set the reverb type, depth, delay and feedback: type 0 turns it off, -1
+ * keeps the current type and -2 changes nothing. A new type moves the work
+ * area to the top of SPU memory and clears it (error 0x20, reverb off,
+ * when there is no room).
+ * Nonmatching: the flag set for a new type is scheduled before the work area
+ * allocation instead of into the branch after it. */
+#ifdef NON_MATCHING
+void func_80038934(s32 type, s32 depth, s32 delay, s32 feedback) {
+    SpuReverbAttr attr; /* unused */
+    long current;
+    s32 changed = 0;
+    s32 size;
+    s32 address;
+
+    if (type == -2) {
+        return;
+    }
+    if (type == 0) {
+        feedback = 0;
+        delay = 0;
+        depth = 0;
+    } else if (type == -1) {
+        type = D_80059409;
+    }
+    SpuGetReverbModeType(&current);
+    if (current != type || type == 0) {
+        if (D_800594D8 != -1) {
+            func_800396E0(D_800594D8);
+        }
+        size = D_800508E8[type];
+        address = 0x80000 - size;
+        changed = 1;
+        if ((D_800594D8 = func_800395B8(size, address, 5)) == 0) {
+            func_8003F6B0(0x20);
+            type = 0;
+            feedback = 0;
+            delay = 0;
+            depth = 0;
+        }
+    }
+    D_80059409 = type;
+    D_8005A3C0.unk2C = depth;
+    D_8005940A = delay;
+    D_8005940B = feedback;
+    func_80038DF4();
+    if (changed) {
+        SpuSetReverbModeDepth(0, 0);
+        SpuSetReverbModeType(type);
+        func_80038AD4(address, size);
+    } else {
+        SpuSetReverbModeDepth(D_8005940C.left, D_8005940C.right);
+        SpuSetReverbModeDelayTime(delay);
+        SpuSetReverbModeFeedback(feedback);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038934);
+#endif
 
 extern s32 D_800595A4; /* the zeroed transfer buffer */
 extern s32 D_800595DC; /* next SPU address to clear */
@@ -2007,25 +2088,6 @@ void func_80038AD4(s32 address, s32 size) {
     func_80038B4C();
 }
 
-/* The driver's SPU common attributes, the volumes they are built from and
- * the master and CD volume fades (16.16 levels stepping toward targets). */
-typedef struct {
-    SpuCommonAttr attr;
-    s16 master;
-    s16 cd;
-    s16 unk2C;
-    s16 cd_request;
-    s32 master_level;
-    s32 master_step;
-    s16 master_frames;
-    s16 master_target;
-    s32 cd_level;
-    s32 cd_step;
-    s16 cd_frames;
-    s16 cd_target;
-} SoundVolumes;
-
-extern SoundVolumes D_8005A3C0;
 
 /* Clear the next part (at most 0x840 bytes, else 0x800) of the reverb work
  * area, chaining itself as the transfer callback; when done, release the

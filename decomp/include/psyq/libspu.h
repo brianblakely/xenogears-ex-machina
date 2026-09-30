@@ -17,6 +17,14 @@ typedef struct {
 
 typedef struct {
     u_long mask;
+    long mode;
+    SpuVolume depth;
+    long delay;
+    long feedback;
+} SpuReverbAttr;
+
+typedef struct {
+    u_long mask;
     SpuVolume mvol;
     SpuVolume mvolmode;
     SpuVolume mvolx;
