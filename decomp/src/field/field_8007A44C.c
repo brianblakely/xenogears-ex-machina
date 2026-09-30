@@ -308,10 +308,8 @@ void func_8007AF74(s32 port) {
     }
 }
 
-#ifdef NON_MATCHING
 /* The height of `p` on the plane through triangle a, b, c (0 for a vertical
- * plane); the plane normal is left in `normal`. Differs only in the register
- * of the second product (t1 in the original). */
+ * plane); the plane normal is left in `normal`. */
 void func_8007B07C(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *p, VECTOR *normal) {
     VECTOR edge_b;
     VECTOR edge_c;
@@ -332,9 +330,6 @@ void func_8007B07C(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *p, VECTOR *norma
     }
     p->vy = a->vy + (-(normal->vx * (p->vx - a->vx)) - normal->vz * (p->vz - a->vz)) / normal->vy;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8007B07C);
-#endif
 
 void func_8007B07C(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *p, VECTOR *normal);
 
