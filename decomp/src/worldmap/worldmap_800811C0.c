@@ -92,7 +92,30 @@ s32 func_80081B24(s32 index) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_80081C3C);
+/* Allocate the shared quad pool (two display copies) and mark every quad free. */
+s32 func_80081C3C(void) {
+    PolyFT4 *quads;
+    s32 i;
+    s16 *flags;
+
+    D_8009D158[0] = func_80031BDC(sizeof(QuadBuffer), 0);
+    D_8009D158[1] = func_80031BDC(sizeof(QuadBuffer), 0);
+    D_8009D148 = func_80031BDC(0xC0 * sizeof(s16), 0);
+    quads = D_8009D158[0]->quads;
+    for (i = 0; i < 0xC0; i++) {
+        setPolyFT4(quads);
+        setRGB0(quads, 0x80, 0x80, 0x80);
+        setShadeTex(quads, 1);
+        quads->tpage = GetTPage(2, 0, 0x280, 0x100);
+        quads++;
+    }
+    *D_8009D158[1] = *D_8009D158[0];
+    flags = D_8009D148;
+    for (i = 0; i < 0xC0; i++) {
+        *flags++ = 1;
+    }
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_80081D80);
 

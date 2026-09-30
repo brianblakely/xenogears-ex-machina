@@ -939,4 +939,14 @@ extern u16 D_8006EE5A, D_8006EE5C, D_8006EE5E, D_8006EE66;
 
 s32 func_80093978(s32 x, s32 z); /* ground height at a position */
 
+#define setShadeTex(p, tge) \
+    ((tge) ? (((u8 *)(p))[7] |= 1) : (((u8 *)(p))[7] &= ~1))
+
+/* Shared quad pool (192 quads), one copy per display buffer. */
+typedef struct {
+    PolyFT4 quads[0xC0];
+} QuadBuffer;
+
+extern QuadBuffer *D_8009D158[2]; /* per display buffer */
+extern s16 *D_8009D148; /* per-quad free flags */
 #endif
