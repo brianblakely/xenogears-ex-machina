@@ -2102,9 +2102,9 @@ void func_801CD7E4(void) {
     D_800625A0->details->heading_count = 0;
     for (i = 0; i < 2; i++) {
         D_800625A0->details->heading_count +=
-            func_8002675C(D_800625A0->sprite_sheet, D_801D2210[i + 4],
+            func_8002675C(D_800625A0->sprite_sheet, D_801D2214[i],
                           D_800625A0->details->heading + D_800625A0->details->heading_count * 2,
-                          D_800625A0->buffer, D_801D2218[i + 4], D_801D2230[i + 4], 0x1000);
+                          D_800625A0->buffer, D_801D2228[i], D_801D2240[i], 0x1000);
     }
     D_800625A0->details->heading_buffer = D_800625A0->buffer;
 }

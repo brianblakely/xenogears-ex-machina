@@ -434,8 +434,11 @@ extern s32 D_801D2114[]; /* marker y per list position */
 extern s32 D_801D2194[]; /* cursor x per position */
 extern s32 D_801D21CC[]; /* member portrait x */
 extern u8 D_801D2210[];  /* heading sprite ids */
+extern u8 D_801D2214[];  /* alternative heading sprite ids */
 extern s32 D_801D2218[]; /* heading x */
+extern s32 D_801D2228[]; /* alternative heading x */
 extern s32 D_801D2230[]; /* heading y */
+extern s32 D_801D2240[]; /* alternative heading y */
 extern s32 D_801D2248;   /* first number x */
 extern s32 D_801D224C;   /* first number y */
 extern s32 D_801D2250;   /* second number x */

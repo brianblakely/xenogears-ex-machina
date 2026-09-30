@@ -422,9 +422,6 @@ extern MenuState *D_800625A0;
 /* Overlay data. */
 extern u16 D_801D6C68[]; /* party bit of each member id */
 extern u8 D_801D6A80[];  /* label text ids */
-extern s32 D_801D1F54[]; /* command picture pairs */
-extern u8 D_801D1FCC[];  /* command label text ids */
-extern s32 D_801D1FD8[]; /* command label x offsets */
 extern s32 D_801D69A0[]; /* list picture pairs (sprite, second layer), eight words per command */
 extern s32 D_801D6A60[]; /* marker x */
 extern s32 D_801D6A70[]; /* marker y */
@@ -433,15 +430,16 @@ extern s32 D_801D6AFC[]; /* marker x per list position */
 extern s32 D_801D6B7C[]; /* marker y per list position */
 extern s32 D_801D6BFC[]; /* cursor x per position */
 extern s32 D_801D6C44[]; /* member portrait x */
-extern u8 D_801D2210[];  /* heading sprite ids */
-extern s32 D_801D2218[]; /* heading x */
-extern s32 D_801D2230[]; /* heading y */
-extern s32 D_801D2248;   /* first number x */
-extern s32 D_801D224C;   /* first number y */
-extern s32 D_801D2250;   /* second number x */
-extern s32 D_801D2254;   /* second number y */
-extern s32 D_801D2258;   /* third number x */
-extern s32 D_801D225C;   /* third number y */
+extern u8 D_801D6D10[];  /* alternative heading sprite ids */
+extern s32 D_801D6D14[]; /* heading x */
+extern s32 D_801D6D34[]; /* alternative heading x */
+extern s32 D_801D6D3C[]; /* heading y */
+extern s32 D_801D6D5C[]; /* alternative heading y */
+extern s32 D_801D6D64;   /* first number x */
+extern s32 D_801D6D68;   /* first number y */
+extern s32 D_801D6D6C;   /* second number x */
+extern s32 D_801D6D70;   /* second number y */
+extern s32 D_801D6D74;   /* third number x */
 extern s32 D_801D6C20[]; /* cursor y per position */
 
 /* Game state. */
