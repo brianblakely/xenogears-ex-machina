@@ -828,7 +828,91 @@ void func_800BB9D4(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BBAB8);
+/* Step the battle camera: take its wanted points from the camera mode, move
+ * the eye and look-at points a fraction (800c3674) of the way there, and
+ * derive its angles and range. */
+void func_800BBAB8(void) {
+    SVector *point;
+    Vector step;
+    Vector unused[2]; /* the original's frame has these unused locals */
+    Vector delta;
+    Vector unused2;
+    Vector square;
+    s32 horizontal;
+
+    switch (D_800C3CC0) {
+    case 0:
+        break;
+    case 1:
+        func_800BC460(D_800C3678);
+        break;
+    case 2:
+        D_800D30A0[0].vx = D_8006F99C.vx >> 16;
+        D_800D30A0[0].vy = D_8006F99C.vy >> 16;
+        D_800D30A0[0].vz = D_8006F99C.vz >> 16;
+        point = &D_800D30A0[1];
+        point->vx = D_8006F9AC.vx >> 16;
+        point->vy = D_8006F9AC.vy >> 16;
+        point->vz = D_8006F9AC.vz >> 16;
+        break;
+    case 3:
+        /* step holds the wanted look-at, then eye point */
+        ((SVector *)&step)[1].vx = ((SVector *)&step)[0].vx = D_800D39EC->x >> 16;
+        ((SVector *)&step)[0].vy = D_800D39EC->y >> 16;
+        ((SVector *)&step)[0].vz = D_800D39EC->z >> 16;
+        ((SVector *)&step)[1].vz = ((SVector *)&step)[0].vz - func_8003F8CC(D_800C373C) * D_800C3738 / 4096;
+        ((SVector *)&step)[1].vy = ((SVector *)&step)[0].vy - func_8003F8B0(D_800C373C) * D_800C3738 / 4096;
+        D_800D309C.eye = ((SVector *)&step)[1];
+        D_800D309C.target = ((SVector *)&step)[0];
+        break;
+    }
+    if (D_800C3CBC == 1) {
+        gte_lddp(D_800C3674);
+        step.vx = D_800D309C.eye.vx - D_800D3354.vx;
+        step.vy = D_800D309C.eye.vy - D_800D3354.vy;
+        step.vz = D_800D309C.eye.vz - D_800D3354.vz;
+        gte_ldlvl(&step);
+        gte_gpf12();
+        gte_stlvl(&step);
+        if (step.vx | step.vz | step.vy) {
+            D_800D3354.vx += step.vx;
+            D_800D3354.vy += step.vy;
+            D_800D3354.vz += step.vz;
+        } else {
+            SVector *wanted = &D_800D309C.eye;
+
+            D_800D3354.vx = wanted->vx;
+            D_800D3354.vy = wanted->vy;
+            D_800D3354.vz = wanted->vz;
+        }
+        step.vx = D_800D309C.target.vx - D_800D335C.vx;
+        step.vy = D_800D309C.target.vy - D_800D335C.vy;
+        step.vz = D_800D309C.target.vz - D_800D335C.vz;
+        gte_ldlvl(&step);
+        gte_gpf12();
+        gte_stlvl(&step);
+        if (step.vx | step.vz | step.vy) {
+            D_800D335C.vx += step.vx;
+            D_800D335C.vy += step.vy;
+            D_800D335C.vz += step.vz;
+        } else {
+            SVector *wanted = &D_800D309C.target;
+
+            D_800D335C.vx = wanted->vx;
+            D_800D335C.vy = wanted->vy;
+            D_800D335C.vz = wanted->vz;
+        }
+    }
+    delta.vx = D_800D335C.vx - D_800D3354.vx;
+    delta.vy = D_800D335C.vy - D_800D3354.vy;
+    delta.vz = D_800D335C.vz - D_800D3354.vz;
+    func_8004A414(&delta, &square);
+    horizontal = SquareRoot0(square.vx + square.vz);
+    D_800D309C.range = SquareRoot0(square.vx + square.vy + square.vz);
+    D_800D309C.rot.vy = -ratan2(delta.vz, delta.vx);
+    D_800D309C.rot.vx = -ratan2(delta.vy, horizontal);
+    D_800D309C.rot.vz = 0;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BBEE0);
 

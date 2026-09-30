@@ -204,6 +204,9 @@ extern BattleCamera D_800D309C;
 extern SVector D_800C354C; /* view shake offset */
 extern u8 D_800C372C;      /* stage drawing off */
 extern SVector D_800C3730; /* the camera's up vector */
+extern BattleSprite *D_800D39EC; /* the sprite the camera circles */
+extern s32 D_800C3738;           /* its distance from it */
+extern s16 D_800C373C;           /* its angle round it */
 
 /* This unit. */
 void func_800BB13C(ActorTask *task);
