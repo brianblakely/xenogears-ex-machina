@@ -318,14 +318,18 @@ typedef struct SoundSequence {
     SoundInstrument instrument[1];
 } SoundSequence;
 
-/* A block of the driver's SPU memory pool. */
-typedef struct {
-    u16 flags;
+/* The header of a block of the driver's memory pool (80038EC0); the block's
+ * data follows it. */
+typedef struct SoundBlock {
+    u16 flags;         /* 0x8000: the pool head; 2: allocated */
     u16 unk2;
     u32 unk4;
-    u32 next;
-    u32 unkC;
-} SpuBlock;
+    u32 end;           /* end of the block's data */
+    struct SoundBlock *next;
+} SoundBlock;
+
+extern SoundBlock *D_80059410;        /* the pool head */
+extern u32 D_800595E4;                /* end of the pool */
 
 extern SpuRegs *D_800508E4;           /* SPU registers */
 extern s16 D_8005957C;                /* driver state flags */
@@ -342,7 +346,7 @@ extern SoundSequence *D_80059558;     /* playing sequences */
 SoundSequence *func_80037FD8(SoundSequence *bank, s32 mode);
 s32 func_800381F4(SoundSequence *bank, s32 mode);
 void *func_80039024(s32 size);                         /* allocate driver memory */
-void func_80039144(void *block);                       /* release driver memory */
+void func_80039144(void *data);                        /* release driver memory */
 void func_80039248(void *dst, void *src, s32 size);    /* copy */
 void func_80038310(SoundSequence *bank); /* release a wave bank */
 void func_80038B4C(void);

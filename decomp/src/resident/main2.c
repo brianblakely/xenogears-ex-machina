@@ -1702,13 +1702,11 @@ void func_80038E6C(s32 volume, SpuVolume *out, u8 channel) {
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038E6C);
 #endif
 
-extern SpuBlock *D_80059410;
 extern s32 D_8005951C;
-extern u32 D_800595E4;
 
-/* Make [start, start + size) the SPU memory pool, aligned to 16 bytes. */
+/* Make [start, start + size) the driver memory pool, aligned to 16 bytes. */
 void func_80038EC0(u32 start, s32 size) {
-    SpuBlock *block;
+    SoundBlock *block;
 
     size &= ~0xF;
     if (start & 0xF) {
@@ -1716,21 +1714,93 @@ void func_80038EC0(u32 start, s32 size) {
         start = (start + 0xF) & ~0xF;
     }
     D_800595E4 = start + size;
-    block = (SpuBlock *)start;
+    block = (SoundBlock *)start;
     block->flags = 0x8000;
     D_80059410 = block;
     D_8005951C = size;
     block->unk2 = 0;
     block->unk4 = 0;
-    block->next = start + 0x10;
-    block->unkC = 0;
+    block->end = start + 0x10;
+    block->next = NULL;
 }
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038F18);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039024);
+/* Allocate `size` bytes of driver memory, cleared, from the highest gap
+ * that fits (between blocks or after the last one). Returns the data or
+ * NULL (then the driver event stays disabled).
+ * Nonmatching: the block pointers take other registers. */
+#ifdef NON_MATCHING
+void *func_80039024(s32 size) {
+    s32 need;
+    SoundBlock *after;
+    u32 limit;
+    SoundBlock *block;
+    u8 *data;
 
+    DisableEvent(D_800595BC);
+    need = ((size + 0xF) & ~0xF) + 0x10;
+    after = NULL;
+    limit = 0;
+    for (block = D_80059410;; block = block->next) {
+        if (block->next == NULL) {
+            if ((s32)(D_800595E4 - block->end) >= need) {
+                after = block;
+                limit = D_800595E4;
+            }
+            break;
+        }
+        if ((s32)((u32)block->next - block->end) >= need) {
+            after = block;
+            limit = (u32)block->next;
+        }
+    }
+    limit -= need;
+    if (after == NULL) {
+        return NULL;
+    }
+    block = (SoundBlock *)((limit + 0xF) & ~0xF);
+    data = (u8 *)(block + 1);
+    block->end = (u32)(data + size);
+    block->next = NULL;
+    block->unk4 = 0;
+    block->flags = 2;
+    block->unk2 = 0;
+    block->next = after->next;
+    after->next = block;
+    EnableEvent(D_800595BC);
+    func_800392EC((u32 *)data, size);
+    return data;
+}
+#else
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039024);
+#endif
+
+/* Release a block of driver memory.
+ * Nonmatching: the original keeps the pool head and the block address in
+ * separate registers from the walk. */
+#ifdef NON_MATCHING
+void func_80039144(void *data) {
+    SoundBlock *head = D_80059410;
+    SoundBlock *block = (SoundBlock *)data - 1;
+    SoundBlock *entry;
+    SoundBlock *prev;
+
+    DisableEvent(D_800595BC);
+    entry = head;
+    prev = NULL;
+    while (entry != block) {
+        prev = entry;
+        entry = entry->next;
+    }
+    if (prev != NULL) {
+        prev->next = block->next;
+    }
+    EnableEvent(D_800595BC);
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039144);
+#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800391CC);
 
