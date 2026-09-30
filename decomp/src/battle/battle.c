@@ -3208,7 +3208,6 @@ void func_80089AF8(u8 member) {
 }
 
 /* A random value in low..high (0xffff for low 0xffff, 0 for high 0). */
-#ifdef NON_MATCHING
 u16 func_80089B50(u16 low, u16 high) {
     s32 span;
 
@@ -3218,18 +3217,15 @@ u16 func_80089B50(u16 low, u16 high) {
     if (high == 0) {
         return 0;
     }
-    span = high - low;
     if (low == high) {
         return low;
     }
+    span = high - low;
     if (span >= 0xFFFF) {
         return rand();
     }
     return low + (u16)rand() % (span + 1);
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80089B50);
-#endif
 
 /* The mask bit `bit`. */
 u16 func_80089BEC(u8 bit) {
