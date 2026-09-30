@@ -146,7 +146,8 @@ typedef struct {
     POLY_FT4 heading[44];     /* 05a0: count 46ab, buffer 46aa */
     POLY_FT4 digits1[18];     /* 0c80: count 46ad, buffer 46ac */
     POLY_FT4 digits2[18];     /* 0f50: count 46af, buffer 46ae */
-    POLY_FT4 group1220[36];   /* 1220: count 46b4, buffer 46b3 */
+    POLY_FT4 group1220[18];   /* 1220: count 46b4, buffer 46b3 */
+    POLY_FT4 group14F0[18];   /* 14f0: ovl2602, count 46b8, buffer 46b7 */
     POLY_FT4 price[20];       /* 17c0: ovl2602, count 46bb, buffer 46ba */
     POLY_FT4 digits3[18];     /* 1ae0: count 46b1, buffer 46b0 */
     POLY_FT4 rows[8][8];      /* 1db0: counts 468c, buffers 4694 */
@@ -186,8 +187,10 @@ typedef struct {
     u8 group1220_buffer;      /* 46b3 */
     u8 group1220_count;       /* 46b4 */
     u8 label44B0_shown;       /* 46b5 */
-    u8 unk46B6;
-    u8 unk46B7[3];
+    u8 unk46B6;               /* 46b6: label4530 shown */
+    u8 group14F0_buffer;      /* 46b7 */
+    u8 group14F0_count;       /* 46b8 */
+    u8 group14F0_shown;       /* 46b9 */
     u8 price_buffer;          /* 46ba */
     u8 price_count;           /* 46bb */
     u8 cells_a_count[9];      /* 46bc */

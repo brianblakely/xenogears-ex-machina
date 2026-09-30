@@ -2074,7 +2074,82 @@ void func_801CE2E8(void) {
     func_800320E8(D_800625A0->marks_b);
 }
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CE32C);
+/* Draw the shop's detail packets: member bars, portraits, headings, list rows, labels, numbers and prices. */
+void func_801CE32C(void) {
+    s32 i;
+
+    if (D_800625A0->flags->unk5A != 0) {
+        for (i = 0; i < 9; i++) {
+            if (D_800625A0->details->bar_shown[i] != 0) {
+                AddPrim(&D_800625A0->draw_env->ot[4],
+                        &D_800625A0->details->bar_upper[i * 2 + D_800625A0->buffer]);
+                AddPrim(&D_800625A0->draw_env->ot[4],
+                        &D_800625A0->details->bar_lower[i * 2 + D_800625A0->buffer]);
+            }
+        }
+        func_801C94CC(D_800625A0->details->heading_count, D_800625A0->details->heading,
+                      D_800625A0->details->heading_buffer);
+        func_801C94CC(D_800625A0->details->group2D0_count, D_800625A0->details->group2D0,
+                      D_800625A0->details->group2D0_buffer);
+        func_801C94CC(D_800625A0->details->members_count, D_800625A0->details->members,
+                      D_800625A0->details->members_buffer);
+        for (i = 0; i < 8; i++) {
+            if (D_800625A0->details->name_shown[i] != 0) {
+                func_801C93B0(1, D_800625A0->details->names_a[i].quad, D_800625A0->details->names_a[i].poly,
+                              D_800625A0->details->names_a[i].buffer);
+                func_801C93B0(1, D_800625A0->details->names_b[i].quad, D_800625A0->details->names_b[i].poly,
+                              D_800625A0->details->names_b[i].buffer);
+            }
+        }
+        if (D_800625A0->details->unk46B6 != 0) {
+            func_801C93B0(1, D_800625A0->details->label4530.quad, D_800625A0->details->label4530.poly,
+                          D_800625A0->details->label4530.buffer);
+        }
+        if (D_800625A0->details->label4430_shown != 0) {
+            func_801C93B0(1, D_800625A0->details->label4430.quad, D_800625A0->details->label4430.poly,
+                          D_800625A0->details->label4430.buffer);
+        }
+        if (D_800625A0->details->label44B0_shown != 0) {
+            func_801C93B0(1, D_800625A0->details->label44B0.quad, D_800625A0->details->label44B0.poly,
+                          D_800625A0->details->label44B0.buffer);
+        }
+        if (D_800625A0->details->label45B0_shown != 0) {
+            func_801C93B0(1, D_800625A0->details->label45B0.quad, D_800625A0->details->label45B0.poly,
+                          D_800625A0->details->label45B0.buffer);
+        }
+        if (D_800625A0->details->digits_shown != 0) {
+            AddPrim(&D_800625A0->draw_env->ot[4], &D_800625A0->details->frame[D_800625A0->buffer]);
+            func_801C94CC(D_800625A0->details->digits1_count, D_800625A0->details->digits1,
+                          D_800625A0->details->digits1_buffer);
+            func_801C94CC(D_800625A0->details->digits2_count, D_800625A0->details->digits2,
+                          D_800625A0->details->digits2_buffer);
+            func_801C94CC(D_800625A0->details->digits3_count, D_800625A0->details->digits3,
+                          D_800625A0->details->digits3_buffer);
+            if (D_800625A0->details->group14F0_shown != 0) {
+                func_801C94CC(D_800625A0->details->group14F0_count, D_800625A0->details->group14F0,
+                              D_800625A0->details->group14F0_buffer);
+            }
+        }
+        for (i = 0; i < 8; i++) {
+            func_801C94CC(D_800625A0->details->row_count[i], D_800625A0->details->rows[i],
+                          D_800625A0->details->row_buffer[i]);
+        }
+        for (i = 0; i < 9; i++) {
+            func_801C94CC(D_800625A0->details->cells_a_count[i], D_800625A0->details->cells_a[i],
+                          D_800625A0->details->cells_a_buffer[i]);
+            func_801C94CC(D_800625A0->details->cells_b_count[i], D_800625A0->details->cells_b[i],
+                          D_800625A0->details->cells_b_buffer[i]);
+        }
+    }
+    if (D_800625A0->flags->unk5B == 1) {
+        func_801C94CC(D_800625A0->details->group1220_count, D_800625A0->details->group1220,
+                      D_800625A0->details->group1220_buffer);
+    }
+    if (D_800625A0->flags->price_shown != 0) {
+        func_801C94CC(D_800625A0->details->price_count, D_800625A0->details->price,
+                      D_800625A0->details->price_buffer);
+    }
+}
 
 /* Draw the separately loaded model when shown. */
 void func_801CE7E0(void) {
