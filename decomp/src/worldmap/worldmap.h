@@ -1399,4 +1399,18 @@ void func_800935DC(VECTOR *point, VECTOR *origin, VECTOR *normal);
 #define gte_stsz(r0) __asm__ volatile("swc2 $19, 0(%0)" : : "r"(r0) : "memory")
 extern u16 D_8009B624[][2]; /* per area: two spinning scene objects */
 
+/* Party slot spots (x, z world units), 6 bytes apart. */
+typedef struct {
+    u16 x;
+    u16 z;
+    u16 flags;
+} PartySpot;
+
+extern PartySpot D_8006EF8A[];
+extern u8 D_8006F8E4[];   /* per party slot: riding */
+extern u16 D_8006EE58[];  /* per party slot: saved heading */
+void func_800941C4(VECTOR *from, VECTOR *to, VECTOR *direction, s16 *heading);
+void func_80074794(s16 id, VECTOR *position);
+void func_8008C1DC(s32 effect, WorldmapActor *actor, ActorScratch *scratch);
+
 #endif
