@@ -184,19 +184,17 @@ typedef struct {
 
 extern MessageImage D_800D39B8;
 extern void *D_800D39F0;   /* battle message table */
-extern u8 D_800D2CAF;      /* pending battle message id */
 extern s16 D_800D2C94;     /* committed target mask */
 extern u16 D_800D2C96;     /* alive mask at commit */
 extern s16 D_800D2C98;     /* committed animation */
-extern u8 D_800D2CA9;      /* committing actor */
-extern u8 D_800D2CAA;      /* committed action index */
 extern s16 D_800C48E8;
 extern u16 D_800D2C9E;     /* party members whose timers are held */
 
 /* Eight 0x60-byte message entries from 800d36c8. */
 typedef struct {
     POLY_FT4 prims[2];
-    u8 unk50[0x5C - 0x50];
+    RECT rect;         /* +0x50 text image upload rectangle */
+    u32 *pixels;       /* +0x58 */
     u8 alternate;      /* +0x5C odd texture row */
     u8 shown;          /* +0x5D */
     u8 width;          /* +0x5E */
@@ -305,7 +303,16 @@ typedef struct {
 extern EnemyReaction D_800C3D18[8];
 extern u8 D_800C3E8C;      /* pending battle message + 1 */
 extern u8 D_800D366C;      /* menu effects enabled */
-extern u8 D_800D2CA4[5];
+/* The committed action (800d2ca4). */
+typedef struct {
+    u8 enemyBytes[5]; /* copied to an enemy's AI bytes 9-13 */
+    u8 actor;         /* +0x5 committing actor */
+    u8 action;        /* +0x6 committed action index */
+    u8 pad7[0xB - 0x7];
+    u8 message;       /* +0xB pending battle message id */
+} ActionCommit;
+
+extern ActionCommit D_800D2CA4;
 extern u8 D_800C204C;
 extern u8 D_800C3E18;
 extern u8 D_800C3D70[0x30];
@@ -452,6 +459,29 @@ extern u16 D_80059414;
 extern u16 D_800595D4;
 extern s16 D_8005A3A0[];
 extern s32 D_8006EF58;     /* party gold */
+
+/* Turn start (80071b94). */
+extern u8 D_800C4922;      /* acting slot */
+extern void *D_800C3DDC;   /* enemy name table */
+extern u8 D_800C3E3D[];    /* enemy name per slot */
+extern u16 D_8005941C;     /* count of turns taken with 2ea set */
+extern u8 D_800D36C0;      /* the party member whose menu is open */
+void func_80079778(u8 actor);
+void func_800799C8(u8 slot, u16 attacking);
+void func_80079C24(void);
+void func_80080160(u8 member);
+void func_80080C94(u8 member);
+void func_80085B58(u8 slot);
+s32 func_80085310(u8 slot, u8 target);
+void func_800BA4E0(s32 value);
+void func_800BFE48(void);
+void func_80071964(void);
+void func_80071AE0(void);
+void func_80071A38(void);
+void func_80071A08(void);
+void func_80072270(void);
+void func_800718BC(void);
+u16 func_80099890(u8 slot);
 
 /* Battle setup (80070f40). */
 extern u8 D_80059180;      /* battle music playing */
@@ -638,7 +668,7 @@ u8 func_80079ED8(u8 slot, u8 attribute, u8 value, u8 write);
 u16 func_8007A280(u8 slot, u8 attribute, u16 value, u8 write);
 u16 func_80089C9C(u16 mask, u8 slot);
 void func_80085AC4(u8 slot);
-void func_80071B94(s32 mode);
+void func_80071B94(u8 mode);
 
 /* The 801e5000 module and the 80280000 module. */
 void func_801E5160(void);

@@ -171,7 +171,9 @@ typedef struct {
     u8 field2; /* 0x7F none */
     u8 hidden; /* 0x03 */
     u8 gear;   /* 0x04: fights in a gear */
-    u8 pad5[0xA - 0x5];
+    u8 pad5;
+    u8 targetCode; /* 0x06: from the default target (80085310) */
+    u8 pad7[0xA - 0x7];
     s16 x; /* 0x0A */
     s16 z; /* 0x0C */
     s16 y; /* 0x0E */

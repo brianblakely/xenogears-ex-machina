@@ -279,9 +279,9 @@ void func_800718BC(void) {
 void func_80071964(void) {
     s32 frames;
 
-    if (D_800D2CAF != 0 && (D_800D2C94 & D_800C48E8) == 0) {
+    if (D_800D2CA4.message != 0 && (D_800D2C94 & D_800C48E8) == 0) {
         frames = 3;
-        D_800D39B8.width = func_80034EAC(func_80033728(D_800D39F0, D_800D2CAF),
+        D_800D39B8.width = func_80034EAC(func_80033728(D_800D39F0, D_800D2CA4.message),
                                          D_800D39B8.pixels, 0x39, 1);
         LoadImage(&D_800D39B8.rect, D_800D39B8.pixels);
         do {
@@ -312,27 +312,26 @@ void func_80071A38(void) {
 
 /* Hide the eight battle messages and clear two UI bytes, then wait a
  * frame. */
-#ifdef NON_MATCHING
+/* Hide the eight battle messages and close windows 4 and 5, then run a
+ * frame. */
 void func_80071A8C(void) {
-    s32 i;
+    s32 offset;
 
-    for (i = 7; i >= 0; i--) {
-        D_800D36C8[i].shown = 0;
+    /* The loop steps a byte offset through the entries. */
+    for (offset = 7 * sizeof(BattleMessage); offset >= 0; offset -= sizeof(BattleMessage)) {
+        ((BattleMessage *)((u8 *)D_800D36C8 + offset))->shown = 0;
     }
     D_800D2D28->windows[5] = 0;
     D_800D2D28->windows[4] = 0;
     func_800716D8();
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80071A8C);
-#endif
 
 /* Show the pending battle message (window 7) until a button is pressed or
  * 59 frames pass. */
 void func_80071AE0(void) {
     s32 frames;
 
-    if (D_800D2CAF != 0 && (D_800D2C94 & D_800C48E8) == 0) {
+    if (D_800D2CA4.message != 0 && (D_800D2C94 & D_800C48E8) == 0) {
         func_80079E18(7);
         frames = 0x3B;
         D_800C3EAC->eventsDone = 0;
@@ -345,7 +344,130 @@ void func_80071AE0(void) {
     }
 }
 
+/* Start the turn of the acting slot (turn state actor + 1; none when 0). An
+ * enemy runs its AI script (unless mode is set) and shows its name; a party
+ * member gets its panel highlight and its command menu. Then each slot's
+ * default target is chosen and the turn's actions play out. */
+#ifdef NON_MATCHING
+void func_80071B94(u8 mode) {
+    s32 i;
+    s32 offset;
+    u8 actor;
+    u16 flags;
+    BattleGraphics *graphics;
+    TurnState *turn;
+    s32 layout;
+    u8 *message;
+    u8 *bytes;
+
+    D_800C3E8C = 1;
+    message = &D_800D2CA4.message;
+    *message = 0;
+    if (D_800C3EAC->actor == 0) {
+        return;
+    }
+    func_80085350();
+    func_80071A08();
+    D_800D3298 = 0;
+    D_800C3EAC->actor--;
+    D_800C4922 = D_800C3EAC->actor;
+    D_800C3EAC->eventCount = 0;
+    D_800C3EAC->eventsDone = 0;
+    for (i = 4, bytes = message - 7; i >= 0; i--) {
+        *bytes-- = 0;
+    }
+    D_800D2C94 = 0;
+    func_80099890(D_800C3EAC->actor);
+    if (D_800C3EAC->actor >= 3) {
+        if (mode == 0) {
+            func_800799C8(D_800C3EAC->actor, D_800CCCE8.records[D_800C3EAC->actor].pilot.status80 & 0x2000);
+            actor = D_800C3EAC->actor;
+            if (!(D_800C3EB4[actor].hidden & 0x80) && !(D_800CCCE8.records[actor].pilot.flags34 & 0x400)) {
+                D_800D2D28->windows[5] = 1;
+                D_800D36C8[0].width = func_80034EAC(func_80033728(D_800C3DDC, D_800C3E3D[D_800C3EAC->actor]),
+                                                    D_800D36C8[0].pixels, 0x39, 0);
+                func_800769E8(&D_800D36C8[0].rect, D_800D36C8[0].pixels);
+                D_800D36C8[0].shown = 1;
+            }
+        }
+        actor = D_800C3EAC->actor;
+        if (!(D_800CCCE8.records[actor].pilot.status7C & 0x2080) &&
+            !(D_800CCCE8.records[actor].pilot.status80 & 0x1000)) {
+            func_80079778(actor);
+            func_80071A8C();
+            func_80071964();
+            func_80071AE0();
+        }
+        func_80071A8C();
+        func_80070EB0(0);
+    } else {
+        /* The loop steps a byte offset through the entries. */
+        for (offset = 7 * sizeof(EnemyReaction); offset >= 0; offset -= sizeof(EnemyReaction)) {
+            ((EnemyReaction *)((u8 *)D_800C3D18 + offset))->unk1[1] = 0;
+        }
+        turn = D_800C3EAC;
+        graphics = D_800C3EA4;
+        layout = D_800D3280 * 3;
+        graphics->unk63C8[D_800CCB04.buffer].x0 = D_800C3254[0][layout + turn->actor] + 0x10 + turn->actor * 0x60;
+        graphics->unk63C8[D_800CCB04.buffer].y0 = 8;
+        graphics->unk63C8[D_800CCB04.buffer].x1 = D_800C3254[0][layout + turn->actor] + turn->actor * 0x60 + 0x28;
+        graphics->unk63C8[D_800CCB04.buffer].y1 = 8;
+        graphics->unk63C8[D_800CCB04.buffer].x2 = D_800C3254[0][layout + turn->actor] + 0x10 + turn->actor * 0x60;
+        graphics->unk63C8[D_800CCB04.buffer].y2 = 0x20;
+        graphics->unk63C8[D_800CCB04.buffer].x3 = D_800C3254[0][layout + turn->actor] + turn->actor * 0x60 + 0x28;
+        graphics->unk63C8[D_800CCB04.buffer].y3 = 0x20;
+        graphics->unk6414 = D_800CCB04.buffer;
+        D_800C3EA4->unk6415 = 1;
+        actor = D_800C3EAC->actor;
+        if (!(D_800CCCE8.records[actor].pilot.status7C & 0x2080)) {
+            flags = D_800CCCE8.records[actor].pilot.status80;
+            if (!(flags & 0x1000)) {
+                if (!(flags & 0x2000)) {
+                    func_80080160(actor);
+                } else {
+                    func_80080C94(actor);
+                }
+                if (D_800C3EAC->unk2EA != 0) {
+                    D_8005941C++;
+                }
+                D_800D36C0 = D_800C3EAC->actor;
+                D_800D2D28->unk97 = 0;
+                func_800BCD98(0);
+            }
+        }
+        func_80071964();
+        func_80071AE0();
+        func_80071A8C();
+        func_80070EB0(0);
+        for (i = 0; i < 8; i++) {
+            if (func_80089C9C(D_800D2C94, i + 3)) {
+                D_800C3D18[i].unk1[1] = 1;
+            }
+        }
+        func_80079C24();
+    }
+    func_80071A38();
+    func_80072270();
+    D_800C3EA4->unk6415 = 0;
+    for (i = 0; i < 11; i++) {
+        D_800C3EAC->slots[i].defaultTarget = func_800841E0(i);
+        D_800C3EB4[i].targetCode = func_80085310(i, D_800C3EAC->slots[i].defaultTarget);
+    }
+    func_800BA4E0(func_80080AE4(D_800C3EAC->actor));
+    func_80071A08();
+    func_8007252C();
+    if (D_800C48EA == 0) {
+        func_80085B58(D_800C3EAC->actor);
+    }
+    func_8007252C();
+    func_80071A38();
+    func_800BFE48();
+    func_800718BC();
+    D_800D3298 = 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80071B94);
+#endif
 
 /* Party members held by the mask 800d2c9e lose their ready flag, restart
  * their turn timer from its reload value and show the held marker. */
@@ -1215,7 +1337,7 @@ void func_80079840(u8 actor, u8 target) {
         enemy = target - 3;
         D_800D3400[enemy].vars[7] = func_80089C08(actor);
         for (i = 0; i < 5; i++) {
-            D_800D3400[enemy].bytes[9 + i] = D_800D2CA4[i];
+            D_800D3400[enemy].bytes[9 + i] = D_800D2CA4.enemyBytes[i];
         }
         if ((u16)D_800C48E8 & func_80089C08(D_800C3EAC->slots[actor].defaultTarget)) {
             D_800D3400[enemy].bytes[14] = 1;
@@ -1244,7 +1366,7 @@ void func_80079948(u8 **pc) {
 /* Run enemy `slot`'s AI script: clear the action list and event types, then
  * evaluate conditions and actions until 0xfd or 0xff. */
 #ifdef NON_MATCHING
-void func_800799C8(u8 slot) {
+void func_800799C8(u8 slot, u16 attacking) {
     u8 *pc;
     u8 count;
     u8 enemy;
@@ -2982,6 +3104,7 @@ void func_8007FB70(u8 member) {
 #ifdef NON_MATCHING
 void func_8007FBE0(u8 count, u8 selected) {
     BattleGraphics *gfx;
+    LINE_F2 *line;
     s32 i;
 
     if (count == selected) {
@@ -2989,10 +3112,11 @@ void func_8007FBE0(u8 count, u8 selected) {
     }
     for (i = 0; i < count - 1; i++) {
         gfx = D_800C3EA4;
-        gfx->unk908[i * 2 + D_800CCB04.buffer].x0 = 0xC;
-        gfx->unk908[i * 2 + D_800CCB04.buffer].y0 = D_800C3200[count][i + 2] + 0x5E;
-        gfx->unk908[i * 2 + D_800CCB04.buffer].x1 = 0x12;
-        gfx->unk908[i * 2 + D_800CCB04.buffer].y1 = D_800C3200[count][i + 2] + 0x5E;
+        line = &gfx->unk908[i * 2];
+        line[D_800CCB04.buffer].x0 = 0xC;
+        line[D_800CCB04.buffer].y0 = D_800C3200[count][i + 2] + 0x5E;
+        line[D_800CCB04.buffer].x1 = 0x12;
+        line[D_800CCB04.buffer].y1 = D_800C3200[count][i + 2] + 0x5E;
     }
     D_800D2D28->unk97 = selected;
     D_800D2D28->unk98 = D_800CCB04.buffer;
@@ -3441,12 +3565,12 @@ void func_80085CCC(u8 actor, s16 targets, s16 animation) {
     u8 action; /* 1-based */
 
     D_800C48E8 = 0;
-    D_800D2CA9 = actor;
+    D_800D2CA4.actor = actor;
     action = D_800C3EAC->unk2DC;
     D_800D2C94 = targets;
     D_800D2C98 = animation;
     D_800D2C96 = D_800D39DC;
-    D_800D2CAA = action - 1;
+    D_800D2CA4.action = action - 1;
     func_800941A4();
 }
 
