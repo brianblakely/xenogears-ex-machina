@@ -2795,7 +2795,80 @@ void func_801D3A80(u8 kind, u8 id) {
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D3C78);
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D44FC);
+/*
+ * Set the party's gold (capped at 9999999) and apply the purchases: kinds
+ * 0-2 are fitted to the gear being edited, kinds 3 and 4 go into their
+ * inventories (added to a part already held, at most 99, or into the first
+ * free slot).
+ */
+void func_801D44FC(u32 gold) {
+    u32 *party_gold;
+    s32 i;
+    s32 j;
+    u8 new_item;
+
+    func_801CB498(0xD1);
+    party_gold = &D_8006EF58;
+    *party_gold = gold;
+    if (gold > 9999999) {
+        *party_gold = 9999999;
+    }
+    for (i = 0; i < 0x30; i++) {
+        if (D_800625A0->shop_items[i] != 0 && D_800625A0->details->amounts[i] != 0) {
+            switch (D_800625A0->shop_kinds[i]) {
+            case 0:
+                D_8006DFAC[D_801D9084].unk8 = D_800625A0->shop_items[i];
+                break;
+            case 1:
+                D_8006DFAC[D_801D9084].unk2 = D_800625A0->shop_items[i];
+                break;
+            case 2:
+                D_8006DFAC[D_801D9084].unk3 = D_800625A0->shop_items[i];
+                break;
+            case 4:
+                new_item = 1;
+                for (j = 0; j < 100; j++) {
+                    if (D_8006F754[j] == D_800625A0->shop_items[i]) {
+                        new_item = 0;
+                        if ((D_8006F6F0[j] += D_800625A0->details->amounts[i]) >= 100) {
+                            D_8006F6F0[j] = 99;
+                        }
+                    }
+                }
+                if (new_item) {
+                    for (j = 0; j < 100; j++) {
+                        if (D_8006F754[j] == 0) {
+                            D_8006F754[j] = D_800625A0->shop_items[i];
+                            D_8006F6F0[j] = D_800625A0->details->amounts[i];
+                            break;
+                        }
+                    }
+                }
+                break;
+            case 3:
+                new_item = 1;
+                for (j = 0; j < 150; j++) {
+                    if (D_8006F84E[j] == D_800625A0->shop_items[i]) {
+                        new_item = 0;
+                        if ((D_8006F7B8[j] += D_800625A0->details->amounts[i]) >= 100) {
+                            D_8006F7B8[j] = 99;
+                        }
+                    }
+                }
+                if (new_item) {
+                    for (j = 0; j < 150; j++) {
+                        if (D_8006F84E[j] == 0) {
+                            D_8006F84E[j] = D_800625A0->shop_items[i];
+                            D_8006F7B8[j] = D_800625A0->details->amounts[i];
+                            break;
+                        }
+                    }
+                }
+                break;
+            }
+        }
+    }
+}
 
 /* Whether shop part `index` differs from the edited gear's part of that kind (0 when the gear already has it or better). */
 u8 func_801D4888(s32 index) {

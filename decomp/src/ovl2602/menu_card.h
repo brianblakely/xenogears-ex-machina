@@ -667,6 +667,8 @@ void func_801C94CC(s32 count, POLY_FT4 *packets, s32 first);
 void func_801C93B0(s32 count, SVECTOR *quads, POLY_FT4 *packets, s32 first);
 
 /* ovl2602 only. */
+extern u8 D_8006F6F0[];  /* inventory 4 counts (100) */
+extern u8 D_8006F7B8[];  /* inventory 3 counts (150) */
 extern u8 D_8006F754[];  /* inventory 4 ids (100), counts just before */
 extern u8 D_8006F84E[];  /* inventory 3 ids (150), counts just before */
 void func_801C5600(u8 allocate);
