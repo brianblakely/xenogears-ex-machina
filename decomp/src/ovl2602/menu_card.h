@@ -775,7 +775,9 @@ typedef struct {
     Gear gears[20];            /* 0978: 8006dfac */
     u8 unk1648[0x16C4 - 0x1648];
     PilotRecord pilots[11];    /* 16c4: 8006ecf8 */
-    u8 unk1824[0x22B6 - 0x1824];
+    u8 unk1824[0x1924 - 0x1824];
+    u32 gold;                  /* 1924: 8006ef58 */
+    u8 unk1928[0x22B6 - 0x1928];
     u16 unk22B6;               /* 22b6: 8006f8ea */
 } GameData;
 extern GameData D_8006D634;

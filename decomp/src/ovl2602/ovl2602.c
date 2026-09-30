@@ -1967,7 +1967,7 @@ u8 func_801CCA40(u8 wait, u8 movable) {
 }
 
 /* Ask message `message` (movable only without a follow-up); a yes is confirmed by `confirm` unless it is ff. */
-u8 func_801CCC18(u8 message, u8 confirm, u8 wait) {
+s32 func_801CCC18(u8 message, u8 confirm, u8 wait) {
     u8 answer;
     u8 movable;
 
@@ -3162,7 +3162,84 @@ u8 func_801D4888(s32 index) {
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D498C);
 
+/*
+ * Refuel and repair the edited gear. Fuel costs 10 gold per 100 missing (at
+ * least 10); with too little gold, buy what the gold covers. Repairs are free
+ * and come with any purchase. Nonmatching: register allocation of the price
+ * and mode.
+ */
+#ifdef NON_MATCHING
+void func_801D5398(void) {
+    u8 message;
+    u8 mode;
+    u8 confirm;
+    u8 done;
+    u16 units;
+    u32 price;
+
+    done = 0;
+    message = 0xA6;
+    mode = 1;
+    confirm = 1;
+    if (D_8006DFAC[D_801D9084].unk3A == D_8006DFAC[D_801D9084].unk38) {
+        message = 0xB5;
+        if (D_8006DFAC[D_801D9084].unk60 == D_8006DFAC[D_801D9084].unk64) {
+            message = 0xB8;
+            mode = 0;
+            confirm = 0;
+        } else {
+            mode = 2;
+        }
+    }
+    units = (D_8006DFAC[D_801D9084].unk3A - D_8006DFAC[D_801D9084].unk38) / 100;
+    if (units == 0) {
+        units = 1;
+    }
+    price = units * 10;
+    func_801C90E0(5, 0xA2, 0xA6, 0x60, 0x14, 0, 1, 4, 0);
+    func_801D0D4C(D_8006D634.gold);
+    if (mode != 0) {
+        func_801D0C20(price, 1);
+    }
+    func_801CC1C4();
+    func_801CC31C(0);
+    if (func_801CCC18(message, 0xFF, confirm) != 0) {
+        D_800625A0->flags->unk5B = 0;
+        switch (mode) {
+        case 1:
+            if (D_8006D634.gold < price) {
+                if (func_801CCC18(0xA9, 0xFF, 1) != 0) {
+                    if (D_8006D634.gold != 0) {
+                        done = 1;
+                    }
+                    D_8006DFAC[D_801D9084].unk38 += D_8006D634.gold / 10 * 100;
+                    D_8006D634.gold %= 10;
+                    if (D_8006DFAC[D_801D9084].unk3A < D_8006DFAC[D_801D9084].unk38) {
+                        D_8006DFAC[D_801D9084].unk38 = D_8006DFAC[D_801D9084].unk3A;
+                    }
+                }
+            } else {
+                D_8006D634.gold -= price;
+                D_8006DFAC[D_801D9084].unk38 = D_8006DFAC[D_801D9084].unk3A;
+                done = 1;
+            }
+            break;
+        case 2:
+            done = 1;
+            break;
+        }
+    }
+    if (done) {
+        D_8006DFAC[D_801D9084].unk60 = D_8006DFAC[D_801D9084].unk64;
+        func_801CB498(0xD1);
+    }
+    func_801CC4DC();
+    D_800625A0->flags->price_shown = 0;
+    func_801C9054(5);
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D5398);
+#endif
 
 /* Leave the gear list: hide the cursor and labels and the shop list packets. */
 u8 func_801D573C(void) {
