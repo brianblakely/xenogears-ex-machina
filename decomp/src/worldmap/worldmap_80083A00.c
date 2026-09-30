@@ -2187,8 +2187,9 @@ void func_80089748(void) {
         }
         object->unk12 = object->unk10;
         if ((((s16 *)&object->life)[1] != 0) & (object->unk8 > 0) & (object->unkA < object->unk8)) {
+            j = 0xFF;
             slot = D_8009BDF4;
-            for (j = 0xFF; j != -1; j--) {
+            for (; j != -1; j--, slot++) {
                 if (EFFECT_ENABLED(slot) == 0) {
                     slot->id = i;
                     slot->timer = object->life;
@@ -2253,7 +2254,6 @@ void func_80089748(void) {
                     object->unkA++;
                     goto store;
                 }
-                slot++;
             }
         }
         goto store;

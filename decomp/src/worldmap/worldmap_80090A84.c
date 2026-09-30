@@ -1346,20 +1346,21 @@ s32 func_80094088(VECTOR *position, VECTOR *direction, VECTOR *out) {
 /* Distance between two positions on the ground plane, in world units. */
 #ifdef NON_MATCHING /* delta held in the argument register */
 s32 func_80094154(VECTOR *a, VECTOR *b) {
-    s32 dx;
-    s32 dz;
+    s32 delta;
+    s32 sum;
 
-    dx = a->vx - b->vx;
-    if (dx < 0) {
-        dx = -dx;
+    delta = a->vx - b->vx;
+    if (delta < 0) {
+        delta = -delta;
     }
-    dx >>= 12;
-    dz = a->vz - b->vz;
-    if (dz < 0) {
-        dz = -dz;
+    delta >>= 12;
+    sum = delta * delta;
+    delta = a->vz - b->vz;
+    if (delta < 0) {
+        delta = -delta;
     }
-    dz >>= 12;
-    return SquareRoot0(dx * dx + dz * dz);
+    delta >>= 12;
+    return SquareRoot0(sum + delta * delta);
 }
 #else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80094154);
