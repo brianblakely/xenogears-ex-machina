@@ -676,9 +676,44 @@ void func_801E1044(void) {
     D_800D334C->buffer2D30 = D_800CCB34;
 }
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E10F8);
+/* Build the spoils window's numbers: the experience (six digits) and the
+ * party gold (nine digits). */
+void func_801E10F8(u32 experience) {
+    s32 i;
+    s32 n;
+    s32 digit;
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E126C);
+    func_8008AAA0(experience);
+    for (i = 0; i < 6; i++) {
+        n = i + 27;
+        digit = D_800C3CDC[n];
+        if (digit != 0xFF) {
+            D_800D334C->run2F60.count += func_80076A10(digit, D_800D334C->glyphs2F60[D_800D334C->run2F60.count], i * 8 + 0xD8, 0x50);
+        }
+    }
+    D_800D334C->run2F60.buffer = D_800CCB34;
+    func_8008AAA0(D_8006EF58);
+    for (i = 0; i < 9; i++) {
+        n = i + 24;
+        digit = D_800C3CDC[n];
+        if (digit != 0xFF) {
+            D_800D334C->run3140.count += func_80076A10(digit, D_800D334C->glyphs3140[D_800D334C->run3140.count], i * 8 + 0xC0, 0x60);
+        }
+    }
+    D_800D334C->run3140.buffer = D_800CCB34;
+}
+
+/* Build the spoils window's two icons. */
+void func_801E126C(void) {
+    s32 *buffer;
+
+    func_80076D58(D_800D334C->glyphs3410[0], 0, 2);
+    func_80076D58(D_800D334C->glyphs3410[1], 1, 2);
+    buffer = &D_800CCB34;
+    func_80076C78(&D_800D334C->glyphs3410[0][*buffer], 0x20, 0x20, D_800D2F90[2], D_800D2F90[3], D_800D2F90[0]);
+    func_80076C78(&D_800D334C->glyphs3410[1][*buffer], 0xB8, 0x40, D_800D2F90[6], D_800D2F90[7], D_800D2F90[4]);
+    D_800D334C->buffer3410 = *buffer;
+}
 
 /* Add count of item id to an inventory list of size entries (ids and
  * counts): stack onto the item (at most 99) or take the first free entry;
@@ -719,7 +754,35 @@ INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E1AA4);
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E1C10);
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E1E10);
+/* Show the spoils window (experience, gold, items) until Cross. */
+void func_801E1E10(u32 experience) {
+    D_800D2D28->showCards = 0;
+    D_800D2D28->showSummary = 0;
+    D_800D2D28->show8F = 0;
+    func_800716D8();
+    func_8008F8F4(0, 0x18, 0x18, 0x90, 0xA0, 0, 1);
+    func_8008F8F4(2, 0xB0, 0x38, 0x70, 0x38, 0, 1);
+    func_800716D8();
+    func_801E1044();
+    func_801E10F8(experience);
+    func_801E126C();
+    func_801E1690();
+    D_800D2D28->showSpoils = 1;
+    func_80039DB8((D_8005919C->id << 16) | 0x5B);
+    D_800D2D28->waitingCross = 1;
+    while (D_800D3014 != 4) {
+        func_800716D8();
+    }
+    D_800D2D28->waitingCross = 0;
+    D_800D2D28->showSpoils = 0;
+    D_800D2D28->unkB0 = 0;
+    D_800D2D28->unkB1 = 0;
+    D_800D2D28->unkB2 = 0;
+    func_800716D8();
+    func_8008FA60(0);
+    func_8008FA60(1);
+    func_8008FA60(2);
+}
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E1FB8);
 
@@ -727,7 +790,23 @@ INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E211C);
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E2280);
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E24B0);
+/* Write the battle item counts back to inventory list 2. */
+void func_801E24B0(void) {
+    s32 i;
+    s32 j;
+    u8 *item;
+
+    for (i = 0; i < 48; i++) {
+        item = &D_800D2FE4[i];
+        if (*item != 0) {
+            for (j = 0; j < 150; j++) {
+                if (*item == D_8006F65A[j]) {
+                    D_8006F5C4[j] = D_800D2CB0[i];
+                }
+            }
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E252C);
 

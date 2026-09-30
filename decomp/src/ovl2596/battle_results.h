@@ -111,7 +111,11 @@ typedef struct {
     u8 showSummary;       /* 0xA1 */
     u8 padA2[0xA];
     u8 showSpoils;        /* 0xAC */
-    u8 padAD[0x22];
+    u8 padAD[3];
+    u8 unkB0;             /* 0xB0 */
+    u8 unkB1;             /* 0xB1 */
+    u8 unkB2;             /* 0xB2 */
+    u8 padB3[0x1C];
     u8 waitingCross;      /* 0xCF: the prompt waits for Cross */
 } BattleUi;
 
@@ -320,6 +324,20 @@ extern u8 D_80059180;
 extern u8 D_801E44C0;           /* the result fanfare has started */
 extern u8 D_800D3014;           /* decoded input command, 4 = Cross */
 void func_80039E60(s32 code);   /* start a sound effect */
+void func_80039DB8(s32 code);
+void func_8008F8F4(s32 id, u16 x, u16 y, u16 width, u16 height, s32 style, s32 arg6); /* open a window */
+void func_8008FA60(s32 id);     /* close a window */
+void func_80076D58(POLY_FT4 *prims, s32 arg1, s32 arg2);
+void func_80076C78(POLY_FT4 *prim, s32 x, s32 y, u8 arg3, u8 arg4, u8 arg5);
+
+/* The spoils window: experience and gold digits, the item icons. */
+extern u8 D_800C3CDC[];       /* digit buffer view (see D_800C3CF1) */
+extern u32 D_8006EF58;        /* party gold */
+extern u8 D_800D2F90[8];      /* two icon records: arg5, -, arg3, arg4 */
+extern u8 D_800D2FE4[48];     /* battle item ids */
+extern u8 D_800D2CB0[48];     /* battle item counts */
+extern u8 D_8006F65A[150];    /* inventory list 2 ids */
+extern u8 D_8006F5C4[150];    /* inventory list 2 counts */
 void func_800716D8(void);       /* run one battle frame */
 
 void func_801DE1C4(void);
@@ -330,5 +348,6 @@ void func_801DF840(POLY_FT4 *prims, u8 blue, u8 count, u8 buffer);
 void func_801DF910(u8 from, u8 to, s32 max);
 u8 func_801DFA38(u8 slot);
 void func_801E0184(u8 member);
+void func_801E1690(void);
 
 #endif
