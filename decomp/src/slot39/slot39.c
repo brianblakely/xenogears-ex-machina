@@ -2439,10 +2439,7 @@ u8 func_801CD710(u8 arg) {
 
 /* Build status panel `panel`'s layout sprites (layout `layout`) for character
  * `ch` on row `row` at the positions of `x` and `y`, its frame sprite (14b +
- * row) and its name label (the character's or, in layout 1, its gear's).
- * Register allocation and the order of the last call's argument arithmetic
- * differ. */
-#ifdef NON_MATCHING
+ * row) and its name label (the character's or, in layout 1, its gear's). */
 void func_801CD81C(MenuPanel *panel, u8 ch, u8 row, MenuAnchor *x, MenuAnchor *y, u8 layout) {
     s32 i;
 
@@ -2467,9 +2464,6 @@ void func_801CD81C(MenuPanel *panel, u8 ch, u8 row, MenuAnchor *x, MenuAnchor *y
                   (u8)(D_801EA578[layout * 3 + row] * 4), (u8)D_801EA5C4[layout * 3 + row], (layout * 3) * 8 + 0x48,
                   13);
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CD81C);
-#endif
 
 /* Lay out character `ch`'s level digits (the last three of +62) at row `row`
  * of `panel` and prepare the +63 digits. */
