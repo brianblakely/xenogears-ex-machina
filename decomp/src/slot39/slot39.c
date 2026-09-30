@@ -2999,7 +2999,45 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E1544);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E1AC8);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E20C8);
+/* The 801e1544 screen for party slot `slot`: members 7 and 8 are refused
+ * (sound 4); otherwise show the slot's page, switching members (9 previous,
+ * 10 next, skipping 7 and 8) until cancelled. */
+u8 func_801E20C8(u8 slot) {
+    u8 stay;
+    u8 shown;
+
+    stay = 1;
+    shown = 0xff;
+    if ((u32)(D_800625A0->party->ids[slot] - 7) < 2) {
+        func_801C8574(4);
+        return 1;
+    }
+    func_801E1014();
+    do {
+        func_801C7BF4();
+        if (slot != shown) {
+            shown = slot;
+            func_801E1AC8(slot);
+        }
+        switch (D_800625A0->input) {
+        case 5:
+            stay = 0;
+            break;
+        case 9:
+            do {
+                slot = func_801D9704(slot, 0, 0);
+            } while ((u32)(D_800625A0->party->ids[slot] - 7) < 2);
+            break;
+        case 10:
+            do {
+                slot = func_801D9704(slot, 1, 0);
+            } while ((u32)(D_800625A0->party->ids[slot] - 7) < 2);
+            break;
+        }
+    } while (stay);
+    func_801E1398();
+    return 1;
+}
 
 /* Open the 801d3488 screen on the first ready party slot, which it returns. */
 u8 func_801E2250(void) {
