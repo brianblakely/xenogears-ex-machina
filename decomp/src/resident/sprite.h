@@ -122,7 +122,7 @@ typedef struct Sprite {
     u16 *facings;            /* +0x5c */
     u16 *word60;             /* +0x60: after the first section's count */
     u8 *script;              /* +0x64: the next animation command, NULL once finished */
-    void *callback;          /* +0x68: completion callback */
+    void (*callback)(struct Sprite *sprite); /* +0x68: completion callback */
     void *block;             /* +0x6c: the allocation holding the sprite */
     s32 word70;              /* +0x70 */
     s32 word74;              /* +0x74 */
@@ -382,6 +382,12 @@ extern VECTOR D_8006F99C; /* the eye marker's position (16.16) */
 extern VECTOR D_8006F9AC; /* the look-at marker's position (16.16) */
 void func_800BC158(SpriteTask *task); /* battle overlay: register a camera marker */
 void func_80022E8C(Task *task);
-void func_80025224(Task *task, s32 kind); /* battle overlay: the current actor's sprite */
+void func_80025224(Task *task, s32 kind);
+void func_800C11CC(Sprite *sprite); /* battle overlay: run a sprite's script */
+void func_8001FBE4(Sprite *sprite, s32 op, u8 *args); /* run a script command */
+u8 *func_8001FBA4(Sprite *sprite, u8 *code);
+u8 func_80021C20(Sprite *sprite);
+s32 func_80021C6C(Sprite *sprite);
+void func_80021CA0(Sprite *sprite, u8 value); /* battle overlay: the current actor's sprite */
 
 #endif
