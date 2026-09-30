@@ -484,7 +484,7 @@ void func_8003AAC4(SoundSeq *seq, u32 mask) {
                 }
             } else if (channel->flags & 0x20) {
                 channel->flags &= ~0x20;
-                if ((*(u32 *)&channel->flags & 0x110) == 0x100 &&
+                if ((SEQ_CHANNEL_FLAGS32(channel) & 0x110) == 0x100 &&
                     ((s16)seq->flags & 0x8000)) {
                     func_8003EF04(&channel->state, channel->voice);
                 }
@@ -554,27 +554,204 @@ u8 *func_8003ACC8(SoundSeq *seq) {
     return it->data + *(u16 *)(it->data + 0x1E);
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003AD20);
+extern void func_8003AD98(SoundSeq *seq);
+extern void func_8003ADCC(SoundSeq *seq);
+extern void func_8003AE84(SoundSeq *seq);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003AD98);
+/* Snapshot operations: 0 discards, 1 takes, 2 restores. */
+void func_8003AD20(SoundSeq *seq, s32 op) {
+    switch (op) {
+    case 0:
+        func_8003AD98(seq);
+        break;
+    case 1:
+        func_8003ADCC(seq);
+        break;
+    case 2:
+        func_8003AE84(seq);
+        break;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003ADCC);
+extern void func_8003B930(SoundSeq *seq);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003AE84);
+/* Discard a sequence's snapshot. */
+void func_8003AD98(SoundSeq *seq) {
+    if (seq->flags & 0x10) {
+        seq->flags &= ~0x10;
+        func_8003B930(seq);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003AF24);
+extern void *func_80038F18(s32 size);
+extern void func_80039248(void *dst, void *src, s32 size);
+extern s32 func_8003BB40(s32 index);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003AFA0);
+/* Save a copy of a sequence to restart from (reusing an earlier one). The
+ * original leaves the copy pointer unset when one already exists. */
+void func_8003ADCC(SoundSeq *seq) {
+    s32 size;
+    SoundSeq *snapshot;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003AFFC);
+    DisableEvent(D_800595BC);
+    size = func_8003BB40(seq->channels);
+    if (seq->snapshot == NULL) {
+        snapshot = func_80038F18(size);
+    }
+    if (snapshot == NULL) {
+        EnableEvent(D_800595BC);
+        return;
+    }
+    seq->snapshot = snapshot;
+    seq->flags |= 0x10;
+    func_80039248(snapshot, seq, size);
+    snapshot->next = NULL;
+    snapshot->snapshot = NULL;
+    seq->unk2C = 0;
+    EnableEvent(D_800595BC);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003B060);
+extern void func_8003B060(SoundSeq *seq);
+extern void func_8003B97C(SoundSeq *seq, SoundSeq *snapshot);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003B0AC);
+/* Restart a sequence from its snapshot. */
+void func_8003AE84(SoundSeq *seq) {
+    s32 position;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003B148);
+    if (seq->snapshot != NULL && (seq->flags & 0x10)) {
+        DisableEvent(D_800595BC);
+        func_8003B060(seq);
+        position = seq->unk24;
+        func_8003B97C(seq, seq->snapshot);
+        seq->unk2C = position;
+        func_8003E6C0(seq, 0xFFFF);
+        func_8003AFA0(seq);
+        EnableEvent(D_800595BC);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003B1FC);
+/* Stop a sequence's voices and reset its tempo slide to 0x7F00, keeping
+ * `value` in `unk1E`. */
+void func_8003AF24(SoundSeq *seq, u16 value) {
+    s32 tempo = 0x7F00;
+
+    seq->unk1E = value;
+    seq->flags |= 0x20;
+    DisableEvent(D_800595BC);
+    func_8003B060(seq);
+    EnableEvent(D_800595BC);
+    seq->tempo_target = tempo;
+    seq->tempo_frames = 0;
+    seq->tempo = tempo << 16;
+    seq->tick_step = seq->resolution * tempo;
+}
+
+/* Request key-on for the unmuted channels that hold a sounding note. */
+void func_8003AFA0(SoundSeq *seq) {
+    s32 count = seq->channels;
+    SoundSeqChannel *channel = seq->channel;
+
+    do {
+        count--;
+        if ((SEQ_CHANNEL_FLAGS32(channel) & 0x101) == 0x101 && !(channel->flags & 0x30)) {
+            channel->flags2 |= 1;
+        }
+        channel++;
+    } while (count != 0);
+}
+
+extern void func_8003E8A4(SoundChannel *state, u32 voice);
+
+/* Apply 8003e8a4 to the voice of every active channel of a sequence. */
+void func_8003AFFC(SoundSeq *seq) {
+    s32 count = seq->channels;
+    SoundSeqChannel *channel = seq->channel;
+
+    do {
+        if (channel->flags != 0) {
+            func_8003E8A4(&channel->state, channel->voice);
+        }
+        channel++;
+        count--;
+    } while (count != 0);
+}
+
+/* Release the voices of every channel of a sequence. */
+void func_8003B060(SoundSeq *seq) {
+    SoundSeqChannel *channel = seq->channel;
+    s32 count = seq->channels;
+
+    do {
+        func_8003E83C(&channel->state, channel->voice);
+        channel++;
+        count--;
+    } while (count != 0);
+}
+
+/* Fill a sequence's table (placed after its channels) from the 5-byte
+ * (index, little-endian word) entries of its header. */
+void func_8003B0AC(SoundSeq *seq, SoundSeqHeader *header) {
+    u32 *table = (u32 *)((u8 *)seq + func_8003BB40(header->channels));
+    s32 count;
+    u8 *entry;
+
+    seq->table = table;
+    count = header->entries;
+    entry = (u8 *)header + header->table;
+    do {
+        u32 value = entry[1] | (entry[2] << 8) | (entry[3] << 16) | (entry[4] << 24);
+        u32 *slot = &table[entry[0]];
+
+        *slot = value;
+        entry += 5;
+        count--;
+    } while (count != 0);
+}
+
+extern void func_8003F6B0(s32 error);
+extern void func_8003B32C(SoundSeq *seq);
+extern void func_8003B9E4(SoundSeq *seq);
+
+/* Create the sound effect channel set with `count` (made even) channels on
+ * the top hardware voices. */
+SoundSeq *func_8003B148(s32 count) {
+    SoundSeq *effects;
+    SoundSeqChannel *channel;
+    s32 i;
+    s32 index;
+    s32 voice;
+
+    count &= ~1;
+    D_80059478 = count;
+    effects = func_80038F18(func_8003BB40(count));
+    if (effects == NULL) {
+        func_8003F6B0(0x1E);
+        return NULL;
+    }
+    func_8003B32C(effects);
+    channel = effects->channel;
+    voice = 24 - count;
+    i = count;
+    index = 0;
+    do {
+        channel->flags = 0;
+        channel->voice_bit = index++;
+        channel->voice = voice;
+        channel++;
+        i--;
+        voice++;
+    } while (i != 0);
+    func_8003B9E4(effects);
+    return effects;
+}
+
+extern void func_8003BA38(SoundSeq *seq);
+extern void func_80039144(void *block);
+
+void func_8003B1FC(SoundSeq *seq) {
+    func_8003BA38(seq);
+    func_80039144(seq);
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003B22C);
 

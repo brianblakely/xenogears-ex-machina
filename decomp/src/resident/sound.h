@@ -99,16 +99,18 @@ typedef struct {
  * listed through `next` (D_80059564). */
 typedef struct SoundSeq {
     struct SoundSeq *next;
-    u32 *work;         /* channel work block, allocated on start */
+    struct SoundSeq *snapshot; /* saved copy of the sequence to restart from */
     u8 *data;          /* sequence data */
-    u8 unkC[4];
+    u32 *table;        /* per-sequence table after the channels */
     u16 flags;         /* bit 15: playing, bit 8: stopped by a fade, bit 4: started */
     u8 unk12[2];
     u8 channels;
     u8 unk15[5];
     u8 unk1A;
     u8 unk1B;
-    u8 unk1C[8];
+    u8 unk1C[2];
+    u16 unk1E;
+    u8 unk20[4];
     s32 unk24;
     u32 ticks;
     s32 unk2C;
@@ -151,6 +153,19 @@ typedef struct SoundSeq {
     s16 pan_target;
     SoundSeqChannel channel[1];
 } SoundSeq;
+
+/* Some tests read a channel's flags and flags2 as one word. */
+#define SEQ_CHANNEL_FLAGS32(channel) (*(u32 *)&(channel)->flags)
+
+/* The header of sequence data. */
+typedef struct {
+    u8 unk0[0x14];
+    u8 channels;
+    u8 entries;        /* entries of the table at `table` */
+    u8 unk16[8];
+    u16 unk1E;
+    u16 table;         /* offset of 5-byte (index, word) entries */
+} SoundSeqHeader;
 
 typedef struct {
     s32 unk0;
