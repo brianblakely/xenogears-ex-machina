@@ -161,7 +161,9 @@ typedef struct {
     void *backdrop_tim;   /* 0x38 */
     u8 unk3C[0xC];
     void *icon_tims[4];   /* 0x48 */
-    u8 unk58[0x14];
+    void *name_tim;       /* 0x58 */
+    void *bar_tim;        /* 0x5C */
+    u8 unk60[0xC];
     void *floor_tim;      /* 0x6C */
     void *extra_tims[9];  /* 0x70 */
 } StageFiles;
@@ -204,6 +206,28 @@ extern Sprite D_800955F8[6];
 void func_80043E20(DrawTPage *packet, s32 dither, s32 draw, s32 tpage);
 void func_800875EC(void);
 void func_80087830(void);
+
+/* HUD packets (D_80095698, 0x280 bytes). */
+typedef struct {
+    Sprite s[2];
+} SpritePair;
+
+typedef struct {
+    PolyFT4 name_l[2];    /* 0x000 */
+    PolyFT4 name_r[2];    /* 0x050 */
+    SpritePair icon[4];   /* 0x0A0 */
+    SpritePair gauge[4];  /* 0x140 */
+    PolyFT4 bar_l[2];     /* 0x1E0 */
+    PolyFT4 bar_r[2];     /* 0x230 */
+} Hud;
+
+extern Hud D_80095698;
+extern DrawTPage D_80095918[4]; /* HUD texture page modes, two per buffer */
+extern u8 D_80092860; /* left bar texel row */
+extern u8 D_80092864; /* right bar texel row */
+extern u16 D_80091814[16]; /* gauge palette */
+void func_800864B4(TimImage *tim, s32 x, s32 y, PolyFT4 *quad, s32 depth);
+void func_800866D4(TimImage *tim, s32 x, s32 y, PolyFT4 *quad, s32 depth);
 
 /* Fading overlay. */
 extern s16 D_80092780; /* fade level */

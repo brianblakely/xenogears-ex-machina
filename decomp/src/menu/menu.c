@@ -1990,7 +1990,82 @@ void func_800866D4(TimImage *tim, s32 x, s32 y, PolyFT4 *quad, s32 depth) {
     quad[1] = quad[0];
 }
 
+/* Build the HUD packets: the two name plates (left and mirrored right)
+ * from the name TIM, the icon and gauge sprites, the gauge bar quads from
+ * the bar TIM, the HUD texture page modes and the gauge palette. Does not match:
+ * the HUD and icon base addresses are held in saved registers from early on. */
+#ifdef NON_MATCHING
+void func_800868E0(StageFiles *files) {
+    TimImage tim;
+    Rect rect;
+    s16 *clut;
+    Hud *hud = &D_80095698;
+    SpritePair *icon = hud->icon;
+
+    func_800471B4(files->name_tim);
+    func_800471C4(&tim);
+    clut = (s16 *)tim.caddr;
+    clut[0] = 0;
+    clut[1] = 0x8000;
+    func_80044894(tim.crect, tim.caddr);
+    func_80044894(tim.prect, tim.paddr);
+    func_800864B4(&tim, 6, 7, hud->name_l, 0);
+    func_800866D4(&tim, 0x13A - tim.prect->w * 4, 7, hud->name_r, 0);
+    func_80043E20(&D_80095918[0], 0, 1, func_80043A1C(1, 0, 0x380, 0x100));
+    D_80095918[1] = D_80095918[0];
+    func_80043E20(&D_80095918[2], 0, 1, func_80043A1C(0, 0, 0x380, 0x100));
+    D_80095918[3] = D_80095918[2];
+    ((PacketTag *)&icon[0].s[0])->len = 4;
+    icon[0].s[0].code = 0x65;
+    *(u32 *)&icon[0].s[0].x0 = 0x90007;
+    *(u16 *)&icon[0].s[0].u0 = 0;
+    *(u32 *)&icon[0].s[0].w = 0x160016;
+    icon[0].s[0].clut = func_80043A58(0, 0x1F6);
+    icon[1] = icon[0];
+    icon[2] = icon[1];
+    icon[2].s[0].x0 = 0x123;
+    icon[2].s[0].u0 = 0x20;
+    icon[2].s[0].clut = func_80043A58(0, 0x1F7);
+    icon[3] = icon[2];
+    func_800471B4(files->bar_tim);
+    func_800471C4(&tim);
+    func_80044894(tim.prect, tim.paddr);
+    func_800864B4(&tim, 6, 0x20, D_80095698.bar_l, 0);
+    func_800866D4(&tim, 0x13A - tim.prect->w * 4, 0x20, D_80095698.bar_r, 0);
+    *(u32 *)&D_80095698.gauge[0].s[0].w = 0x80040;
+    D_80092860 = D_80095698.bar_l[0].v0;
+    D_80092864 = D_80095698.bar_r[0].v0;
+    *(u32 *)&D_80095698.bar_l[0].r0 = 0x2C000080;
+    *(u32 *)&D_80095698.bar_l[1].r0 = 0x2C000080;
+    *(u32 *)&D_80095698.bar_r[0].r0 = 0x2C000080;
+    *(u32 *)&D_80095698.bar_r[1].r0 = 0x2C000080;
+    ((PacketTag *)&D_80095698.bar_l[0])->len = 9;
+    ((PacketTag *)&D_80095698.bar_l[1])->len = 9;
+    ((PacketTag *)&D_80095698.bar_r[0])->len = 9;
+    ((PacketTag *)&D_80095698.bar_r[1])->len = 9;
+    ((PacketTag *)&D_80095698.gauge[0].s[0])->len = 4;
+    D_80095698.gauge[0].s[0].code = 0x65;
+    *(u16 *)&D_80095698.gauge[0].s[0].u0 = 0x80;
+    D_80095698.bar_l[1].clut = hud->name_l[0].clut;
+    D_80095698.bar_l[0].clut = hud->name_l[0].clut;
+    D_80095698.bar_r[1].clut = hud->name_l[0].clut;
+    D_80095698.bar_r[0].clut = hud->name_l[0].clut;
+    D_80095698.gauge[0].s[0].clut = func_80043A58(0x3A0, 0x110);
+    *(u32 *)&D_80095698.gauge[0].s[0].x0 = 0xB001E;
+    D_80095698.gauge[2] = D_80095698.gauge[0];
+    *(u32 *)&D_80095698.gauge[2].s[0].x0 = 0x1500E3;
+    *(u16 *)&D_80095698.gauge[2].s[0].u0 = 0x880;
+    D_80095698.gauge[1] = D_80095698.gauge[0];
+    D_80095698.gauge[3] = D_80095698.gauge[2];
+    rect.x = 0x3A0;
+    rect.y = 0x110;
+    rect.w = 0x10;
+    rect.h = 1;
+    func_80044894(&rect, D_80091814);
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800868E0);
+#endif
 
 /* Link this buffer's overlay packets into the overlay ordering table. */
 void func_80086E24(void) {
