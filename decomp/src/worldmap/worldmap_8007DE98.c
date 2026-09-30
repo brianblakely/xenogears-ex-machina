@@ -41,7 +41,38 @@ void func_8007EBBC(SceneObject *object, PolyFT4 *quads, s32 count, s32 abr) {
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007DE98", func_8007EBBC);
 #endif
 
+/* Start the flight: link objects 2-3 to 1, build their quads, hide 1 and place the actor behind the player on its entry path. */
+#ifdef NON_MATCHING /* motion reload not hoisted into the load delay slot */
+s32 func_8007ECA4(s32 index) {
+    SceneObject *objects;
+    WorldmapActor *actor;
+
+    func_800848B4(1, 2);
+    func_800848B4(1, 3);
+    objects = D_8009C620;
+    actor = &D_8009BE24[index];
+    func_8007EBBC(&objects[1], objects[1].prims, objects[1].def->count, 3);
+    func_8007EBBC(&objects[2], objects[2].prims, objects[2].def->count, 3);
+    func_8007EBBC(&objects[3], objects[3].prims, objects[3].def->count, 1);
+    D_8009C620[1].visible = 0;
+    D_8009C620[1].angle.vz = 0;
+    D_8009C620[1].angle.vy = 0;
+    D_8009C620[1].angle.vx = 0;
+    func_8004A92C(&D_8009C620[1].angle, &D_8009C620[1].matrix);
+    actor->motion.vx = -0x85A;
+    actor->state = 0;
+    actor->motion.vy = 0;
+    actor->motion.vz = 0xDA6;
+    actor->u.step = D_8009A674[D_8009D3D4].vx << 12;
+    actor->unk54 = D_8009A674[D_8009D3D4].vz << 12;
+    actor->position.vx = D_8009C5AC.vx - actor->motion.vx * 0x3680;
+    actor->position.vy = D_8009C5AC.vy;
+    actor->position.vz = D_8009C5AC.vz - actor->motion.vz * 0x3680;
+    return 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007DE98", func_8007ECA4);
+#endif
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007DE98", func_8007EE34);
 
@@ -94,7 +125,48 @@ s32 func_8007FC8C(s32 index) {
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007DE98", func_8007FC8C);
 #endif
 
+/* Grow and fade scene objects 9 and 10 at the actor; ends the step when faded out. */
+#ifdef NON_MATCHING /* the two object pointers swap s2/s3 */
+s32 func_8007FD30(s32 index) {
+    SceneObject *objects;
+    WorldmapActor *actor;
+    SceneObject *object;
+    SceneObject *object2;
+
+    objects = D_8009C620;
+    actor = &D_8009BE24[index];
+    object = &objects[9];
+    if (actor->unk4 == 1) {
+        actor->unk4 = 0;
+    }
+    objects[9].position.vx = objects[10].position.vx = actor->position.vx >> 12;
+    objects[9].position.vy = objects[10].position.vy = actor->position.vy >> 12;
+    objects[9].position.vz = objects[10].position.vz = actor->position.vz >> 12;
+    objects[10].matrix = D_8009A180;
+    objects[9].matrix = objects[10].matrix;
+    SCALE_SCRATCH->scale[0].vx = SCALE_SCRATCH->scale[0].vz = actor->u.step;
+    SCALE_SCRATCH->scale[1].vx = SCALE_SCRATCH->scale[1].vz = actor->unk54;
+    SCALE_SCRATCH->scale[0].vy = SCALE_SCRATCH->scale[1].vy = 0x1000;
+    ScaleMatrix(&objects[9].matrix, &SCALE_SCRATCH->scale[0]);
+    ScaleMatrix(&objects[10].matrix, &SCALE_SCRATCH->scale[1]);
+    object2 = &objects[10];
+    if ((actor->u.step += 0x180) > 0x7FFF) {
+        actor->u.step = 0x7FFF;
+    }
+    if ((actor->unk54 += 0x180) > 0x7FFF) {
+        actor->unk54 = 0x7FFF;
+    }
+    func_800809EC((&object->prims)[D_8009D7F0], objects[9].def->count, actor->unk58, actor->unk58, actor->unk58);
+    func_800809EC((&object2->prims)[D_8009D7F0], objects[10].def->count, actor->unk58, actor->unk58, actor->unk58);
+    if ((actor->unk58 -= 3) < 0) {
+        actor->unk58 = 0;
+        return 3;
+    }
+    return 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007DE98", func_8007FD30);
+#endif
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007DE98", func_8007FF70);
 

@@ -781,5 +781,7 @@ typedef struct {
 #define SCALE_SCRATCH ((ScaleScratch *)0x1F800000)
 
 MATRIX *ScaleMatrix(MATRIX *m, VECTOR *v);
+extern SVECTOR D_8009A674[]; /* flight path start per entry */
+void func_800809EC(PolyFT4 *quads, s32 count, s32 r, s32 g, s32 b);
 
 #endif

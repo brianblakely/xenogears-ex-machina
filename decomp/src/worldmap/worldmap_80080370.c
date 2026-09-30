@@ -1,6 +1,65 @@
 #include "worldmap.h"
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80080370", func_80080370);
+/* Flight scene director: step through its timed sequence and run each cue. */
+s32 func_80080370(s32 index) {
+    WorldmapActor *actor;
+
+    actor = &D_8009BE24[index];
+    switch (actor->state) {
+    case 0:
+        break;
+    case 1:
+        if (--actor->wait < 0) {
+            actor->state = D_8009A698[actor->u.step];
+            actor->wait = D_8009A6AC[actor->u.step];
+            actor->u.step++;
+        }
+        break;
+    case 2:
+        func_80097770(3, 1);
+        actor->state = 1;
+        break;
+    case 3:
+        func_80097770(2, 2);
+        actor->state = 1;
+        break;
+    case 4:
+        func_80097770(0, 0xD);
+        D_8009CCA4 = 1;
+        D_8009D3CC = 0x80;
+        actor->state = 1;
+        break;
+    case 5:
+        func_80097770(0, 0xC);
+        func_80097770(4, 1);
+        D_8009CCA4 = 1;
+        D_8009D3CC = 0x80;
+        actor->state = 1;
+        break;
+    case 6:
+        func_80097770(2, 3);
+        actor->state = 1;
+        break;
+    case 7:
+        func_80097770(0, 0xD);
+        D_8009CCA4 = 2;
+        D_8009D3CC = 4;
+        actor->state = 1;
+        break;
+    case 8:
+        func_80039E60((D_8006259C->id << 16) | 0x16);
+        func_80039E60((D_8006259C->id << 16) | 0x17);
+        func_80039E60((D_8006259C->id << 16) | 0x18);
+        actor->state = 1;
+        break;
+    case 0x40:
+        D_8009D554 = 0;
+        D_8009D7CC = 0;
+        actor->state = 0;
+        break;
+    }
+    return 1;
+}
 
 /* Start a scripted camera at the player position. */
 s32 func_80080578(s32 index) {
