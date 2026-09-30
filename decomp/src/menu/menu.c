@@ -1473,9 +1473,60 @@ void func_8007A730(Actor *actor) {
     actor->flags |= 0x2000400;
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007A768);
+#ifdef NON_MATCHING
+/* Point the camera at an actor for its victory view: height and distance
+ * from its move header, a random direction around it. Does not match: GCC
+ * folds the look-at height into y - (D_80092670 + 0x400). */
+void func_8007A768(Actor *actor) {
+    SceneHeader *header = actor->unk8FC;
+    s32 angle;
+    s32 y;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007A884);
+    D_80092668 = header->unk24;
+    D_8009266C = header->unk28;
+    D_80092670 = header->unk26;
+    D_80092674 = header->unk2A;
+    func_8004A14C(0x200);
+    angle = func_8003FA38();
+    y = actor->pos.vy;
+    D_8009867C.vy = y;
+    D_8009867C.vx = actor->pos.vx;
+    D_8009871C.vy = y - 0x400 - D_80092670;
+    D_8009867C.vz = actor->pos.vz;
+    D_8009871C.vx = D_8009867C.vx + (((func_8003F8B0(angle) << 2) * D_80092674) >> 12);
+    D_8009871C.vz = D_8009867C.vz + (((func_8003F8CC(angle) << 2) * D_80092674) >> 12);
+}
+#else
+INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007A768);
+#endif
+
+/* End the bout's effects and pick the next stage from the winner's move
+ * header; both actors are lifted to the start height. */
+void func_8007A884(void) {
+    SceneHeader *header;
+
+    func_8007E24C();
+    func_8008D580(D_80092644);
+    func_8007BB7C();
+    func_8007F834();
+    func_8008E620();
+    if (D_80092890 != 0) {
+        header = D_80097010.unk8FC;
+    } else {
+        header = D_8009872C.unk8FC;
+    }
+    if (header->unk2C != 0) {
+        D_80091150 = 1;
+        D_80091151 = 0x10;
+    } else {
+        D_80091150 = 2;
+        D_80091151 = -1;
+    }
+    D_8009872C.pos.vy = 0x100;
+    D_80097010.pos.vy = 0x100;
+    D_8009872C.unk70 = 0x100;
+    D_80097010.unk70 = 0x100;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007A958);
 

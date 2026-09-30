@@ -140,6 +140,12 @@ typedef struct {
     s16 unk1A;
     s16 unk1C;
     u16 unk1E;
+    u8 unk20[0x4];
+    s16 unk24;       /* camera values for the victory view */
+    s16 unk26;
+    s16 unk28;
+    s16 unk2A;
+    s16 unk2C;       /* nonzero: the winner keeps the stage */
 } SceneHeader;
 
 /* A character moved in the menu scene. */
@@ -161,7 +167,9 @@ typedef struct Actor {
     s32 angle;           /* 0x54: facing, 4096 = full turn */
     s32 target_angle;    /* 0x58 */
     Node *node;          /* 0x5C: model set node */
-    u8 unk60[0x20];
+    u8 unk60[0x10];
+    s32 unk70;
+    u8 unk74[0xC];
     struct MoveSlot *move_slots; /* 0x80: one per combo number */
     u8 *unk84;
     u8 unk88[0x10];
@@ -332,6 +340,12 @@ extern s32 D_80092918;
 extern s32 D_80092944;
 extern s32 D_80092950;
 extern s32 D_80092640;
+extern u8 D_80091150;
+extern s8 D_80091151;
+extern s32 D_80092668;
+extern s32 D_8009266C;
+extern s32 D_80092670;
+extern s32 D_80092674;
 extern s32 D_800928AC;
 extern s32 D_80092638;
 extern s32 D_8009263C;
