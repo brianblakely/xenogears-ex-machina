@@ -2368,7 +2368,7 @@ void func_801CE82C(void) {
         }
         for (i = 0; i < 2; i++) {
             if (D_800625A0->unk454->lamp_state[i] != 0) {
-                func_801C94CC(D_800625A0->unk454->lamp_count[i], D_800625A0->unk454->lamps[i],
+                func_801C94CC(D_800625A0->unk454->lamp_count[i], &D_800625A0->unk454->lamps[i * 22],
                               D_800625A0->unk454->lamp_buffer[i]);
             }
         }
@@ -2393,7 +2393,76 @@ void func_801CE82C(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CEA68);
+/* Animate the two lamps: pick their position (from the cursor while opening, now and then at random while idle), draw the frame's sprites and step the frame. */
+void func_801CEA68(void) {
+    u16 at[2][4];
+    u8 moved;
+    s32 i;
+    s32 j;
+    u16 id;
+
+    for (i = 0; i < 2; i++) {
+        moved = 0;
+        if (D_800625A0->unk454->lamp_state[i] == 0) {
+            continue;
+        }
+        switch (D_800625A0->unk454->lamp_state[i]) {
+        case 1:
+            at[0][i] = D_801D7040[i];
+            at[1][i] = D_801D7044[i * 6 + D_801D7030[D_800625A0->top_cursor * 4 + D_800625A0->list_cursor]];
+            moved = 1;
+            break;
+        case 2:
+            if (func_8001BD40(0, 0xFF) < 0x10) {
+                at[0][i] = D_801D7040[i];
+                at[1][i] = D_801D7044[i * 6 + func_8001BD40(0, 5)];
+                moved = 1;
+            }
+            break;
+        }
+        if (moved) {
+            D_800625A0->unk454->lamp_x[i] = at[0][i];
+            D_800625A0->unk454->lamp_y[i] = at[1][i];
+        }
+        if (D_800625A0->unk454->lamp_timer[i] != 0) {
+            D_800625A0->unk454->lamp_timer[i]--;
+            continue;
+        }
+        D_800625A0->unk454->lamp_count[i] = 0;
+        for (j = 0; j < 4; j++) {
+            id = D_801D6FE0[i * 20 + (D_800625A0->unk454->lamp_frame[i] * 4 + j)];
+            if (id != 0xFFFF) {
+                D_800625A0->unk454->lamp_count[i] +=
+                    func_8002675C(D_800625A0->sprite_sheet, id,
+                                  &D_800625A0->unk454->lamps[i * 22 + D_800625A0->unk454->lamp_count[i] * 2],
+                                  D_800625A0->buffer, D_800625A0->unk454->lamp_x[i],
+                                  D_800625A0->unk454->lamp_y[i], 0x1000);
+            }
+        }
+        D_800625A0->unk454->lamp_buffer[i] = D_800625A0->buffer;
+        switch (D_800625A0->unk454->lamp_state[i]) {
+        case 1:
+            if (++D_800625A0->unk454->lamp_frame[i] == 4) {
+                D_800625A0->unk454->lamp_state[i] = 2;
+            }
+            D_800625A0->unk454->lamp_timer[i] = 2;
+            break;
+        case 2:
+            if (++D_800625A0->unk454->lamp_frame[i] >= 5) {
+                D_800625A0->unk454->lamp_frame[i] = 3;
+            }
+            D_800625A0->unk454->lamp_timer[i] = 8;
+            break;
+        case 3:
+            if (--D_800625A0->unk454->lamp_frame[i] < 0) {
+                D_800625A0->unk454->lamp_state[i] = 0;
+                D_800625A0->unk454->flicker_shown = 0;
+            }
+            D_800625A0->unk454->lamp_timer[i] = 2;
+            break;
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CEEA8);
 

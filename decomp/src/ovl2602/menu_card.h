@@ -209,7 +209,7 @@ typedef struct {
     u8 unk50[0x30];
     POLY_FT4 packets[2];       /* 0080 */
     POLY_FT4 flicker[3][4];    /* 00d0 */
-    POLY_FT4 lamps[3][22];     /* 02b0: lamps 0 and 1 */
+    POLY_FT4 lamps[66];        /* 02b0: 22 per lamp; lamps 0 and 1 */
     POLY_FT4 indicator[36];    /* 0d00 */
     POLY_FT4 frame[28];        /* 12a0 */
     POLY_FT4 parts[5][10];     /* 1700 */
@@ -228,10 +228,10 @@ typedef struct {
     u8 part_count[5];          /* 1ee8 */
     u8 parts_buffer;           /* 1eed */
     u8 unk1EEE[2];
-    s16 flicker_x, flicker_y;  /* 1ef0 */
-    s16 lamp_x[2];             /* 1ef4 */
-    s16 lamp_y[2];             /* 1ef8 */
-    s16 indicator_x, indicator_y; /* 1efc */
+    u16 flicker_x, flicker_y;  /* 1ef0 */
+    u16 lamp_x[2];             /* 1ef4 */
+    u16 lamp_y[2];             /* 1ef8 */
+    u16 indicator_x, indicator_y; /* 1efc */
 } GearScreen;
 
 /* A model part block (ovl2602, menu state + 458/45c). */
@@ -818,10 +818,10 @@ extern ModelState *D_801E8674;
 extern POLY_FT4 D_801D7108[]; /* camera debug display packets, two per sprite */
 extern s32 D_801D9048;        /* their sprite count */
 u8 func_8001BD40(u8 low, u8 high); /* random number in [low, high] */
-extern u16 D_801D6FE0[2][5][4]; /* lamp sprite ids per frame (ffff none) */
+extern u16 D_801D6FE0[];        /* lamp sprite ids, four per frame, five frames per lamp (ffff none) */
 extern u8 D_801D7030[];         /* lamp and indicator position per command and list cursor */
 extern u16 D_801D7040[2];       /* lamp x */
-extern u16 D_801D7044[2][6];    /* lamp y choices */
+extern u16 D_801D7044[];        /* lamp y choices, six per lamp */
 extern u16 D_801D705C[6];       /* indicator x choices */
 extern u16 D_801D7068[6];       /* indicator y choices */
 extern u16 D_801D7074[6];       /* flicker x choices */
