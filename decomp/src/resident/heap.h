@@ -30,7 +30,7 @@ typedef struct DelayedFree {
 } DelayedFree;
 
 /* Heap state ($gp-relative in the heap unit). */
-extern s16 D_80059318;     /* allocation class of the next block */
+extern u16 D_80059318;     /* allocation class of the next block */
 extern u16 D_8005931C;     /* owner tag of the next block */
 extern u8 *D_80059320;     /* data address of the first block */
 extern s32 D_8005932C;     /* free blocks await coalescing */

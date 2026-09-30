@@ -154,7 +154,131 @@ void func_80031BC4(s32 *caller, s32 *size) {
     *size = D_8005933C;
 }
 
+/* Allocate `size` bytes. Mode 0 takes the first fitting free block, mode 2
+ * the smallest fitting one, mode 1 carves from the top of the highest one
+ * (or takes the highest exact fit). The block is tagged with the current
+ * owner tag and allocation class and records its caller. Exhaustion is fatal
+ * unless failures are quiet (then NULL).
+ * Nonmatching: the original keeps the intermediate header-word stores and
+ * allocates registers differently. */
+#ifdef NON_MATCHING
+void *func_80031BDC(s32 size, s32 mode) {
+    u32 caller;
+    s32 none;
+    u32 best;
+    u32 available;
+    s32 spare;
+    u8 *data;
+    HeapHeader *header;
+    u8 *candidate_data;
+    HeapHeader *candidate;
+    HeapHeader *exact;
+    HeapHeader *rest;
+    u16 kind;
+
+    GET_RA(&caller);
+    caller -= 8;
+    D_80059340 = caller;
+    caller = (caller & 0x1FFFFFF) >> 2;
+    if (D_8005932C != 0) {
+        func_80031FF8();
+    }
+    none = 1;
+    D_8005933C = size;
+    size = (size + 3) & ~3;
+    candidate_data = NULL;
+    best = 0x800000;
+    candidate = NULL;
+    data = D_80059320;
+    exact = NULL;
+    header = HEAP_HEADER(data);
+    for (;;) {
+        if (header->tag != 0) {
+            do {
+                if (header->tag == 1) {
+                    goto end;
+                }
+                data = header->next;
+                header = HEAP_HEADER(data);
+            } while (header->tag != 0);
+        }
+        available = header->next - (u8 *)header - 0x10;
+        spare = available - size;
+        if (spare == 4 || spare == 0) {
+            none = 0;
+            if (mode == 1) {
+                exact = header;
+            } else {
+            whole:
+                kind = D_80059318;
+                D_80059318 = 0x20;
+                header->tag = D_8005931C;
+                header->kind = kind;
+                header->keep = 0;
+                header->caller = caller;
+                return header + 1;
+            }
+        } else if (spare >= 5) {
+            none = 0;
+            if (mode == 1) {
+                candidate = header;
+            } else if (mode == 2) {
+                if (available < best) {
+                    candidate_data = data;
+                    candidate = header;
+                    best = available;
+                }
+            } else {
+                candidate_data = data;
+                candidate = header;
+                goto split;
+            }
+        }
+        data = header->next;
+        header = HEAP_HEADER(data);
+    }
+end:
+    if (none) {
+        if (D_80059330 != 0) {
+            return NULL;
+        }
+        func_80019ACC(0x82);
+    }
+    if (mode == 1) {
+        if (candidate < exact) {
+            header = exact;
+            goto whole;
+        }
+        kind = D_80059318;
+        D_80059318 = 0x20;
+        data = candidate->next - (size + 8);
+        HEAP_HEADER(data)->next = candidate->next;
+        HEAP_HEADER(data)->tag = D_8005931C;
+        HEAP_HEADER(data)->kind = kind;
+        HEAP_HEADER(data)->keep = 0;
+        HEAP_HEADER(data)->caller = caller;
+        candidate->next = data;
+        return data;
+    }
+split:
+    rest = (HeapHeader *)(candidate_data + size);
+    kind = D_80059318;
+    D_80059318 = 0x20;
+    rest->next = candidate->next;
+    rest->tag = candidate->tag;
+    rest->kind = candidate->kind;
+    rest->keep = candidate->keep;
+    rest->caller = candidate->caller;
+    candidate->next = (u8 *)(rest + 1);
+    candidate->kind = kind;
+    candidate->tag = D_8005931C;
+    candidate->keep = 0;
+    candidate->caller = caller;
+    return candidate_data;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_80031BDC);
+#endif
 
 /* Shrink a block to `size` bytes, splitting the rest off as a free block.
  * Returns the block's header, or NULL when the rest would be too small.
