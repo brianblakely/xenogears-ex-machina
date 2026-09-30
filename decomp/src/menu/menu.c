@@ -642,7 +642,35 @@ void func_8007D6B8(void) {
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007D6B8);
 #endif
 
+#ifdef NON_MATCHING
+/* Spawn up to count ground particles in free cells around a position: on
+ * the ground below a random point within 32 units, rising for 20 frames.
+ * Does not match: the x coordinate is kept pre-shifted for the map index. */
+void func_8007D7A8(Vector *pos, s32 count) {
+    SceneCell10 *cell = D_800926BC;
+    s32 i;
+    s32 x;
+    s32 z;
+
+    for (i = 0; i < 251; i++, cell++) {
+        if (count == 0) {
+            break;
+        }
+        if (cell->unk6 == 0) {
+            x = pos->vx + (func_8003FA38() % 64 - 32);
+            cell->unk0 = x;
+            z = pos->vz + (func_8003FA38() % 64 - 32);
+            cell->unk4 = z;
+            cell->unk2 = cell->unk8 = D_800928DC[((s16)z >> 8) * 128 + ((s16)x >> 8)].height;
+            cell->unk7 = -(func_8003FA38() % 10 + 10);
+            count--;
+            cell->unk6 = 20;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007D7A8);
+#endif
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007D918);
 

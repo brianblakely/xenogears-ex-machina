@@ -61,11 +61,23 @@ typedef struct {
     u8 unk8[4];
 } SceneCell12;
 
+/* A ground particle of the scene (10 bytes; table at D_800926BC). */
 typedef struct {
-    s16 unk0, unk2, unk4;
-    u8 unk6;
-    u8 unk7[3];
+    s16 unk0; /* x */
+    s16 unk2; /* height */
+    s16 unk4; /* z */
+    s8 unk6;  /* remaining life */
+    s8 unk7;  /* vertical speed */
+    s16 unk8; /* ground height */
 } SceneCell10;
+
+/* Ground height map: 128 columns of 256-unit squares, 4 bytes each. */
+typedef struct {
+    u16 height;
+    u16 unk2;
+} GroundSquare;
+
+extern GroundSquare *D_800928DC;
 
 /* A model shown by the menu scene (fields known from 8007b210). */
 typedef struct {
