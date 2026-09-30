@@ -1514,4 +1514,26 @@ void func_8008C040(VECTOR *position, s32 radius, s32 height, u8 *hit, u8 *actor)
 s32 func_80094238(VECTOR *position, s32 table);
 void func_8007528C(void);
 
+/* worldmap.c main loop (round 3) */
+void CdSync(s32 mode, u8 *result);
+void SetGeomOffset(s32 x, s32 y);
+void func_800250E0(s32 buffer);
+void func_8001D468(void);
+void func_80097800(void);
+void func_80019CA0(void);
+void func_8001C634(void);
+void func_80025044(void);
+void func_80074F2C(void);
+void func_80075104(void);
+void func_800762FC(void);
+void func_8007634C(void);
+void func_80076594(void);
+void func_800758C0(void);
+void func_80075B58(void);
+s32 func_80075E7C(VECTOR *position, s32 level);
+extern u8 D_80059460, D_80059178, D_80059171, D_8005954C;
+/* Resident return-state words read-modify-written as their own variables
+ * (fields flags and unk76 of D_8006EE54). */
+extern u16 D_8006EE68, D_8006EE76;
+
 #endif
