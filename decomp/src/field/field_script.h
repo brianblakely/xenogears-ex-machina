@@ -22,7 +22,6 @@ extern s32 D_800AFD18;     /* bank slot being loaded */
 extern FieldDescriptor *D_800B06B8; /* descriptor of the running actor */
 extern s32 D_8006F990[3];            /* party member descriptor per slot */
 extern s32 D_800AFFEC;
-extern s32 D_800B226C;
 extern s32 func_800A3090(s32 actor, s32 event);
 extern void func_800A1EC8(s32 limit);
 extern void func_80077268(void);

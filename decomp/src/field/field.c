@@ -3741,7 +3741,7 @@ void func_8008B978(s32 member) {
                 D_800AFFEC = 0;
                 D_800B0078->pc = pc_new;
                 entry = func_800A3090(i, 0);
-                func_8008D380(i, D_800B226C);
+                func_8008D380(i, D_800B2078.controlled);
                 func_800A1EC8(0xFFFF);
                 func_80077268();
                 D_8005A39C->unk1D30 |= 1 << D_800ADBC8;
@@ -3902,7 +3902,98 @@ void func_8008C180(s32 slot) {
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008C180);
 #endif
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008C334);
+/* Event 0x19: remove character op1 from the party once no sprite load is
+ * pending. Before the field is set up only the slot tables and sprite data
+ * close up; afterwards the member's actor is also released and the lead
+ * actor becomes the party leader again. */
+void func_8008C334(void) {
+    s32 slot;
+
+    if (D_800ADBC4 != 0xFF) {
+        D_800B00C0 = 1;
+        D_800B0078->pc -= 1;
+        return;
+    }
+    DrawSync(0);
+    slot = func_8009FA00(func_8008CF3C(EVENT_OPERAND_BYTE(1)));
+    if (slot != -1) {
+        if (D_800ADB1C == 0) {
+            switch (slot) {
+            case 0:
+                if (D_80062590[1] == 0xFF) {
+                    D_80062590[0] = 0xFF;
+                    D_8006FABC[0] = 0xFF;
+                    D_8005A39C->unk22B1[0] = 0;
+                } else {
+                    *(PartySprite *)D_8005A414[0] = *(PartySprite *)D_8005A414[1];
+                    D_80062590[0] = D_80062590[1];
+                    D_8006FABC[0] = D_8006FABC[1];
+                    D_80062590[1] = 0xFF;
+                    D_8006FABC[1] = 0xFF;
+                    D_8005A39C->unk22B1[0] = D_8005A39C->unk22B1[1];
+                    if (D_80062590[2] != 0xFF) {
+                        *(PartySprite *)D_8005A414[1] = *(PartySprite *)D_8005A414[2];
+                        D_80062590[1] = D_80062590[2];
+                        D_8006FABC[1] = D_8006FABC[2];
+                        D_80062590[2] = 0xFF;
+                        D_8006FABC[2] = 0xFF;
+                        D_8005A39C->unk22B1[1] = D_8005A39C->unk22B1[2];
+                    }
+                }
+                break;
+            case 1:
+                if (D_80062590[2] == 0xFF) {
+                    D_80062590[1] = 0xFF;
+                    D_8006FABC[1] = 0xFF;
+                    D_8005A39C->unk22B1[1] = 0;
+                } else {
+                    *(PartySprite *)D_8005A414[1] = *(PartySprite *)D_8005A414[2];
+                    D_80062590[1] = D_80062590[2];
+                    D_8006FABC[1] = D_8006FABC[2];
+                    D_80062590[2] = 0xFF;
+                    D_8006FABC[2] = 0xFF;
+                    D_8005A39C->unk22B1[1] = D_8005A39C->unk22B1[2];
+                    D_8005A39C->unk22B1[2] = 0;
+                }
+                break;
+            case 2:
+                D_80062590[2] = 0xFF;
+                D_8006FABC[2] = 0xFF;
+                D_8005A39C->unk22B1[2] = 0;
+                break;
+            }
+        } else {
+            switch (slot) {
+            case 0:
+                D_8005A39C->unk22B1[0] = D_8005A39C->unk22B1[1];
+                D_8005A39C->unk22B1[1] = D_8005A39C->unk22B1[2];
+                D_8005A39C->unk22B1[2] = 0;
+                func_8008C180(0);
+                func_8008BF38(0);
+                func_8008BF38(1);
+                break;
+            case 1:
+                D_8005A39C->unk22B1[1] = D_8005A39C->unk22B1[2];
+                D_8005A39C->unk22B1[2] = 0;
+                func_8008C180(1);
+                func_8008BF38(1);
+                break;
+            case 2:
+                D_8005A39C->unk22B1[2] = 0;
+                func_8008C180(2);
+                break;
+            }
+            if (D_80062590[0] != 0xFF && D_8005A444[0] != 0xFF) {
+                D_800B2078.controlled = D_8005A444[0];
+                D_800AF880.components.descriptors[D_8005A444[0]].actor->flags =
+                    (D_800AF880.components.descriptors[D_8005A444[0]].actor->flags | 0x4400) & ~0x80;
+            } else {
+                D_800B2078.controlled = 0;
+            }
+        }
+    }
+    D_800B0078->pc += 2;
+}
 
 /* Event: release the actor's block at +114 when flag 0x1000 of +12c says it
  * holds one. */
