@@ -97,14 +97,52 @@ s32 func_8008C75C(s32 index) {
     actor->motion.vz = 0;
     actor->motion.vy = 0;
     actor->motion.vx = 0;
-    ACTOR_TURN(actor) = 0xC;
-    ACTOR_HEADING(actor) = D_8006EE5A;
+    actor->turn = 0xC;
+    actor->heading = D_8006EE5A;
     return 1;
 }
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8008C364", func_8008C844);
 
+/* Start party vehicle 1: place it, and while its member rides (movement
+ * modes 1-3) put it under the player; modes 4-7 mark it boarded. Save its
+ * spot and heading. */
+#ifdef NON_MATCHING /* store scheduling around the heading */
+s32 func_8008D3F0(s32 index) {
+    WorldmapActor *actor;
+    s32 result;
+
+    actor = &D_8009BE24[index];
+    result = func_8008C364(actor, 1);
+    actor->motion.vz = 0;
+    actor->motion.vy = 0;
+    actor->motion.vx = 0;
+    actor->turn = 0xC;
+    actor->unk58 = 0xF;
+    actor->heading = D_8006EE54.unk5C;
+    actor->unk5C = actor->heading;
+    if (D_8009BE10 > 0) {
+        if (D_8009BE10 < 4) {
+            if (D_8006F8E6 == 1) {
+                actor->state = 1;
+                actor->position.vx = D_8009C5AC.vx;
+                actor->position.vz = D_8009C5AC.vz;
+                actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+                actor->heading = D_8009C584;
+            }
+        } else if (D_8009BE10 < 8) {
+            actor->state = 2;
+            actor->unk24 = 1;
+        }
+    }
+    D_8006EF8E[1].x = actor->position.vx >> 12;
+    D_8006EF8E[1].z = actor->position.vz >> 12;
+    D_8006EE54.unk5C = actor->heading;
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8008C364", func_8008D3F0);
+#endif
 
 /* Update a kind-1 actor; flag it while riding a vehicle. */
 s32 func_8008D520(s32 index) {
@@ -144,14 +182,52 @@ s32 func_8008D590(s32 index) {
     actor->motion.vz = 0;
     actor->motion.vy = 0;
     actor->motion.vx = 0;
-    ACTOR_TURN(actor) = 0xC;
-    ACTOR_HEADING(actor) = D_8006EE5C;
+    actor->turn = 0xC;
+    actor->heading = D_8006EE5C;
     return 1;
 }
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8008C364", func_8008D678);
 
+/* Start party vehicle 2: place it, and while its member rides (movement
+ * modes 1-3) put it under the player; modes 4-7 mark it boarded. Save its
+ * spot and heading. */
+#ifdef NON_MATCHING /* store scheduling around the heading */
+s32 func_8008DD6C(s32 index) {
+    WorldmapActor *actor;
+    s32 result;
+
+    actor = &D_8009BE24[index];
+    result = func_8008C364(actor, 2);
+    actor->motion.vz = 0;
+    actor->motion.vy = 0;
+    actor->motion.vx = 0;
+    actor->turn = 0xC;
+    actor->unk58 = 0x1F;
+    actor->heading = D_8006EE54.unk5E;
+    actor->unk5C = actor->heading;
+    if (D_8009BE10 > 0) {
+        if (D_8009BE10 < 4) {
+            if (D_8006F8E7 == 1) {
+                actor->state = 1;
+                actor->position.vx = D_8009C5AC.vx;
+                actor->position.vz = D_8009C5AC.vz;
+                actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+                actor->heading = D_8009C584;
+            }
+        } else if (D_8009BE10 < 8) {
+            actor->state = 2;
+            actor->unk24 = 1;
+        }
+    }
+    D_8006EF8E[2].x = actor->position.vx >> 12;
+    D_8006EF8E[2].z = actor->position.vz >> 12;
+    D_8006EE54.unk5E = actor->heading;
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8008C364", func_8008DD6C);
+#endif
 
 /* Update a kind-2 actor; flag it while riding a vehicle. */
 s32 func_8008DE9C(s32 index) {
@@ -191,8 +267,8 @@ s32 func_8008DF0C(s32 index) {
     actor->motion.vz = 0;
     actor->motion.vy = 0;
     actor->motion.vx = 0;
-    ACTOR_TURN(actor) = 0xC;
-    ACTOR_HEADING(actor) = D_8006EE5E;
+    actor->turn = 0xC;
+    actor->heading = D_8006EE5E;
     return 1;
 }
 

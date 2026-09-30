@@ -186,7 +186,8 @@ typedef struct {
     s16 unk26;
     VECTOR position; /* 0x28 */
     VECTOR motion;   /* 0x38 */
-    s32 unk48;
+    s16 heading;  /* 0x48 */
+    s16 turn;     /* 0x4A: turn step */
     s32 handle;   /* 0x4C */
     union {
         s16 *script; /* script position */
@@ -813,10 +814,6 @@ s32 func_800965A4(void);
 
 extern s16 D_800523F0[0x1000][2]; /* PsyQ rcossin_tbl: sine, cosine */
 void func_8009980C(u32 *heights, u32 *ot, s32 depth); /* terrain block draw (assembly) */
-
-/* Actor heading and turn step, the two halves of WorldmapActor.unk48. */
-#define ACTOR_HEADING(actor) (((s16 *)&(actor)->unk48)[0])
-#define ACTOR_TURN(actor) (((s16 *)&(actor)->unk48)[1])
 
 /* Model instance returned by func_80024524 (actor handle). */
 typedef struct {
