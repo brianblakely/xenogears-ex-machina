@@ -691,7 +691,7 @@ extern void func_8003BDFC(s32);
 extern s32 func_80028B14(void);
 extern void func_800295D8(s32 file, void *ring, s32, s32);
 extern void func_8003852C(void *bank);
-extern void func_80039F9C(s32 id, s32 voice, s16 volume, s16 pan);
+extern void func_80039F9C(s32 id, s16 voice, s16 volume, s16 pan);
 extern void func_80039FF8(void);
 extern void func_8003A20C(s32 voice);
 extern void func_80048D7C(VECTOR *v, VECTOR *out); /* VectorNormal */
@@ -910,6 +910,7 @@ extern FieldSoundBank *D_800B235C; /* movie sound-effect bank */
 extern u8 *D_800ADC00; /* event bytecode */
 extern void (*D_800AE6A0[])(void); /* extended event instructions */
 extern EmitterSlot D_800AFE88[3];
+extern void func_800862CC(s32 sound, s32 volume, s32 unused, s32 distance, s32 actor);
 extern FieldActor *D_800B0078; /* current event actor */
 extern s32 D_800B00C0; /* yield */
 extern RECT D_800AFC58;    /* screen band saved by event op dd */

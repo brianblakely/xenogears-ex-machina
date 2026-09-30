@@ -2084,16 +2084,12 @@ void func_80085560(s32 file, s32 unused, void (*callback)(s32)) {
     D_800AFEA4 = callback;
 }
 
-#ifdef NON_MATCHING
 /* Play sound effect `id` on voice pair `channel` at a volume and pan. */
 void func_800855C8(s32 id, s32 volume, s32 pan, s32 channel) {
     channel &= 7;
     func_8003A20C(channel * 2);
     func_80039F9C(id, channel * 2, volume, pan);
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800855C8);
-#endif
 
 /* Play sound effect `id` on `channel` at full volume and centre pan; id 0
  * stops the channel. */
@@ -2452,14 +2448,14 @@ void func_80086200(s32 index, s32 *x, s32 *y) {
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80086200);
 #endif
 
-#ifdef NON_MATCHING
 /* Start `sound` on the first free emitter, following descriptor `actor`,
  * with volume by distance and pan by screen X. */
-void func_800862CC(u16 sound, s32 volume, s32 unused, s32 distance, s32 actor) {
+void func_800862CC(s32 sound, s32 volume, s32 unused, s32 distance, s32 actor) {
     s32 i;
     u32 level;
     s32 x;
     s32 y;
+    s32 pan;
 
     for (i = 0; i < 3; i++) {
         if (D_800AFE88[i].sound == 0xFFFF) {
@@ -2473,15 +2469,13 @@ void func_800862CC(u16 sound, s32 volume, s32 unused, s32 distance, s32 actor) {
             if (x < 0) {
                 x = 0;
             }
+            pan = (x * 0x6666) >> 16;
             func_8003A20C(i * 2);
-            func_80039F9C(sound, i * 2, level, (x * 0x6666) >> 16);
+            func_80039F9C(sound, i * 2, level, pan);
             return;
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800862CC);
-#endif
 
 /* Stop the emitter following descriptor `id`, freeing its slot. */
 void func_800863E8(s32 id) {
@@ -2538,7 +2532,85 @@ void func_800864F0(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80086590);
+/* Keep the sound emitters of the three actors nearest `listener` (actor
+ * +10d not ff): update those already playing, start the others and stop
+ * table entries no longer among them. */
+void func_80086590(VECTOR *listener) {
+    struct {
+        s32 distance[4];
+        s32 sound[4];
+        s32 volume[4];
+        s32 matched[4];
+        s32 kept[4];
+        s32 actor[4];
+        SVECTOR offset[3];
+    } near;
+    SVECTOR *offset;
+    FieldActor *emitter;
+    s32 length;
+    s32 far;
+    s32 slot;
+    s32 i;
+
+    for (i = 0; i < 3; i++) {
+        near.distance[i] = 0xFFFF;
+        near.sound[i] = -1;
+        near.kept[i] = 0;
+        near.matched[i] = 0;
+        near.actor[i] = 0;
+        near.volume[i] = 0;
+    }
+    for (i = 0; i < D_800ADBFC; i++) {
+        emitter = D_800AF880.components.descriptors[i].actor;
+        if (emitter->sound_mode != 0xFF) {
+            length = func_80099A04((listener->vx >> 16) - (emitter->position[0] >> 16),
+                                   (listener->vy >> 16) - (emitter->position[1] >> 16),
+                                   (listener->vz >> 16) - (emitter->position[2] >> 16));
+            if (near.distance[0] < near.distance[1]) {
+                far = 1;
+                if (near.distance[1] < near.distance[2]) {
+                    far = 2;
+                }
+            } else {
+                far = (near.distance[0] < near.distance[2]) * 2;
+            }
+            if (length < near.distance[far]) {
+                near.actor[far] = i;
+                near.distance[far] = length;
+                near.sound[far] = D_800AF880.components.descriptors[i].actor->sound;
+                near.volume[far] = D_800AF880.components.descriptors[i].actor->sound_volume;
+                (near.offset + far)->vx = (listener->vx >> 16) - (D_800AF880.components.descriptors[i].actor->position[0] >> 16);
+                (near.offset + far)->vy = (listener->vy >> 16) - (D_800AF880.components.descriptors[i].actor->position[1] >> 16);
+                (near.offset + far)->vz = (listener->vz >> 16) - (D_800AF880.components.descriptors[i].actor->position[2] >> 16);
+            }
+        } else {
+            emitter->sound_mode = 0xFF;
+        }
+    }
+    for (i = 0; i < 3; i++) {
+        slot = func_80086470(near.sound[i], near.actor[i]);
+        if (slot != -1) {
+            near.matched[slot] = 1;
+            near.kept[i] = 1;
+        }
+    }
+    for (i = 0; i < 3; i++) {
+        if (near.matched[i] == 0 && D_800AFE88[i].sound != 0xFFFF) {
+            func_8003A20C(i * 2);
+            D_800AFE88[i].sound = 0xFFFF;
+            D_800AFE88[i].actor = 0xFFFF;
+        }
+    }
+    for (i = 0, offset = near.offset; i < 3; offset++, i++) {
+        if (near.sound[i] != -1) {
+            if (near.kept[i] == 1) {
+                func_800860F0(near.sound[i], near.volume[i], offset->vx, near.distance[i], near.actor[i]);
+            } else {
+                func_800862CC(near.sound[i], near.volume[i], offset->vx, near.distance[i], near.actor[i]);
+            }
+        }
+    }
+}
 
 /* Point the listener (80086590) at the controlled actor, the camera eye or
  * the camera target, as 800b22e0 selects. */
