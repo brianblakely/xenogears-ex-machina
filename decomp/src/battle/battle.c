@@ -4658,7 +4658,26 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80093578);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009382C);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800939CC);
+/* Open the member's `kind` page (0-2 the special pages, 3 the item page)
+ * when its character has it and no status seals it; the page's graphics
+ * are built for the current draw buffer. Otherwise mark the page closed. */
+void func_800939CC(u8 member, u8 kind) {
+    u16 seals[4];
+
+    seals[0] = D_800C3234[13];
+    seals[1] = D_800C3234[14];
+    seals[2] = D_800C3234[15];
+    seals[3] = D_800C3234[3];
+    if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].flags1A, kind) &&
+        !(D_800CCCE8.records[member].pilot.status7A & seals[kind])) {
+        func_80093578(member, kind);
+        func_8009382C(member, kind);
+        D_800C3EA4->unkA230->buffer = D_800CCB04.buffer;
+        D_800C3EA4->unkA230->unk66B = 1;
+    } else {
+        D_800C3EA4->unkA230->unk66B = 0;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80093B08);
 

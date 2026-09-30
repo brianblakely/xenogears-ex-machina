@@ -658,6 +658,9 @@ void func_80097D08(void);
 void func_80094D24(void);
 u8 func_800841E0(u8 member);
 u16 func_80089C6C(u16 mask, u8 bit);
+void func_80093578(u8 member, u8 kind);
+void func_8009382C(u8 member, u8 kind);
+extern u16 D_800C3234[16]; /* single-bit masks: 0x80 down to 1, then 0x8000 down to 0x100 */
 void func_8008AAA0(u32 value);
 void func_80076BF0(POLY_FT4 *prim);
 void func_80089CCC(s32 mode);
