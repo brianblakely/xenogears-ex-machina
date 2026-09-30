@@ -82,7 +82,14 @@ segments:
       # 80029EB0 and before 8002DB84 (a register division without checks);
       # 8002A260, where the rodata continues at 0x800188F4, is chosen.
       - [0x1789C, c, main_8002709C]
+      # CD read callback, stream and model buffer unit: GCC 2.6.3 (8002BB50
+      # matches only so).
       - [0x1AA60, c, main_8002A260]
+      # GCC 2.7.2 by 8002CCC8 (it, 8002CD24 and 8002CD64 match only so); the
+      # C functions from 8002CB54 compile identically under both, and no rodata
+      # follows 8002C700's jump table. 8002CC10, the first of the texture
+      # override functions that 8002CCC8 applies, is chosen.
+      - [0x1D410, c, main_8002CC10]
       - [0x22094, c, heap]
       - [0x2367C, c, main2]
       # Sound driver unit (GCC 2.6.3) to 8003F738. Its start lies in
