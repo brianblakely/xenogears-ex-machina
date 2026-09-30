@@ -305,7 +305,7 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80
 
 /* Does the vertical segment from `position` down by `height` cross the plane
  * of face `face` of scene object `index`? Returns -1 if so, else 0. */
-#ifdef NON_MATCHING /* register allocation and load scheduling differ */
+#ifdef NON_MATCHING /* register allocation (face/vertices) and edge loads differ */
 s32 func_80085418(VECTOR *position, s32 height, u16 index, u16 face) {
     s32 flag;
     SceneObject *object;
@@ -322,10 +322,10 @@ s32 func_80085418(VECTOR *position, s32 height, u16 index, u16 face) {
     FACE_SCRATCH->m = object->matrix;
     FACE_SCRATCH->m.t[2] = 0;
     FACE_SCRATCH->m.t[0] = 0;
+    FACE_SCRATCH->m.t[1] = object->position.vy;
     FACE_SCRATCH->p[1].vz = 0x800;
     FACE_SCRATCH->p[1].vy = 0x800;
     FACE_SCRATCH->p[1].vx = 0x800;
-    FACE_SCRATCH->m.t[1] = object->position.vy;
     ScaleMatrix(&FACE_SCRATCH->m, &FACE_SCRATCH->p[1]);
     SetRotMatrix(&FACE_SCRATCH->m);
     SetTransMatrix(&FACE_SCRATCH->m);
