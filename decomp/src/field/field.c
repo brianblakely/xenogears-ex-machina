@@ -4472,64 +4472,297 @@ s32 func_8009CDB4(s32 offset) {
     return index;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009CE48);
+/* Set the current actor's speech parameters from operand bytes. */
+void func_8009CE48(void) {
+    D_800B0078->unk88 = EVENT_OPERAND_BYTE(1) * 2;
+    D_800B0078->unk8A = EVENT_OPERAND_BYTE(2);
+    D_800B0078->unk82 = EVENT_OPERAND_BYTE(3) * 3;
+    D_800B0078->unk83 = EVENT_OPERAND_BYTE(4);
+    D_800B0078->pc += 5;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009CEE0);
+/* Set the current actor's speech parameters from operands. */
+void func_8009CEE0(void) {
+    D_800B0078->unk88 = func_800ACDEC(1);
+    D_800B0078->unk8A = func_800ACDEC(3);
+    D_800B0078->unk82 = func_800ACDEC(5) * 3;
+    D_800B0078->unk83 = func_800ACDEC(7);
+    D_800B0078->unk84 = func_800ACDEC(9);
+    D_800B0078->pc += 11;
+}
 
 void func_8009CF70(void) {
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009CF78);
+/* Selected operand, immediate when flags bit 0x80 is set. */
+s32 func_8009CF78(s32 offset, s32 flags) {
+    s32 value;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009CFBC);
+    if (flags & 0x80) {
+        value = (s16)func_800ACD7C(offset);
+    } else {
+        value = func_800A3018(func_800ACDB8(offset));
+    }
+    return value;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009D000);
+/* Selected operand, immediate when flags bit 0x40 is set. */
+s32 func_8009CFBC(s32 offset, s32 flags) {
+    s32 value;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009D044);
+    if (flags & 0x40) {
+        value = (s16)func_800ACD7C(offset);
+    } else {
+        value = func_800A3018(func_800ACDB8(offset));
+    }
+    return value;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009D088);
+/* Selected operand, immediate when flags bit 0x20 is set. */
+s32 func_8009D000(s32 offset, s32 flags) {
+    s32 value;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009D0CC);
+    if (flags & 0x20) {
+        value = (s16)func_800ACD7C(offset);
+    } else {
+        value = func_800A3018(func_800ACDB8(offset));
+    }
+    return value;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009D110);
+/* Selected operand, immediate when flags bit 0x10 is set. */
+s32 func_8009D044(s32 offset, s32 flags) {
+    s32 value;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009D154);
+    if (flags & 0x10) {
+        value = (s16)func_800ACD7C(offset);
+    } else {
+        value = func_800A3018(func_800ACDB8(offset));
+    }
+    return value;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009D198);
+/* Selected operand, immediate when flags bit 0x08 is set. */
+s32 func_8009D088(s32 offset, s32 flags) {
+    s32 value;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009D1F0);
+    if (flags & 0x08) {
+        value = (s16)func_800ACD7C(offset);
+    } else {
+        value = func_800A3018(func_800ACDB8(offset));
+    }
+    return value;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009D260);
+/* Selected operand, immediate when flags bit 0x04 is set. */
+s32 func_8009D0CC(s32 offset, s32 flags) {
+    s32 value;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009D2D0);
+    if (flags & 0x04) {
+        value = (s16)func_800ACD7C(offset);
+    } else {
+        value = func_800A3018(func_800ACDB8(offset));
+    }
+    return value;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009D340);
+/* Selected operand, immediate when flags bit 0x02 is set. */
+s32 func_8009D110(s32 offset, s32 flags) {
+    s32 value;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009D3A4);
+    if (flags & 0x02) {
+        value = (s16)func_800ACD7C(offset);
+    } else {
+        value = func_800A3018(func_800ACDB8(offset));
+    }
+    return value;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009D408);
+/* Selected operand, immediate when flags bit 0x01 is set. */
+s32 func_8009D154(s32 offset, s32 flags) {
+    s32 value;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009D4A0);
+    if (flags & 0x01) {
+        value = (s16)func_800ACD7C(offset);
+    } else {
+        value = func_800A3018(func_800ACDB8(offset));
+    }
+    return value;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009D52C);
+s32 func_8003FA38(void);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009D5B8);
+/* Store a random number in a variable. */
+void func_8009D198(void) {
+    s32 reference;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009D644);
+    reference = func_800ACDB8(1) & 0xFFFF;
+    func_800A3074(reference, func_8003FA38());
+    D_800B0078->pc += 3;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009D6D8);
+/* Store a random number in 0..operand in a variable. */
+void func_8009D1F0(void) {
+    s32 value;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009D768);
+    value = (func_8003FA38() * (func_800ACDEC(3) + 1)) >> 15;
+    func_800A3074(func_800ACDB8(1), value);
+    D_800B0078->pc += 5;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009D804);
+/* Shift a variable right by an operand. */
+void func_8009D260(void) {
+    s32 value;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009D890);
+    value = func_800A3018(func_800ACDB8(1));
+    value = value >> func_800ACDEC(3);
+    func_800A3074(func_800ACDB8(1), value);
+    D_800B0078->pc += 5;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009D91C);
+/* Shift a variable left by an operand. */
+void func_8009D2D0(void) {
+    s32 value;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009D960);
+    value = func_800A3018(func_800ACDB8(1));
+    value = value << func_800ACDEC(3);
+    func_800A3074(func_800ACDB8(1), value);
+    D_800B0078->pc += 5;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009D9A4);
+/* Increment a variable. */
+void func_8009D340(void) {
+    s32 value;
+
+    value = func_800A3018(func_800ACDB8(1)) + 1;
+    func_800A3074(func_800ACDB8(1), value);
+    D_800B0078->pc += 3;
+}
+
+/* Decrement a variable. */
+void func_8009D3A4(void) {
+    s32 value;
+
+    value = func_800A3018(func_800ACDB8(1)) - 1;
+    func_800A3074(func_800ACDB8(1), value);
+    D_800B0078->pc += 3;
+}
+
+/* Clear bit (selected operand) of a variable. */
+void func_8009D408(void) {
+    s32 value;
+
+    value = func_800A3018(func_800ACDB8(1));
+    value &= ~(1 << func_8009CFBC(3, EVENT_OPERAND_BYTE(5)));
+    func_800A3074(func_800ACDB8(1), value);
+    D_800B0078->pc += 6;
+}
+
+/* XOR a variable with a selected operand. */
+void func_8009D4A0(void) {
+    s32 value;
+
+    value = func_800A3018(func_800ACDB8(1));
+    value ^= func_8009CFBC(3, EVENT_OPERAND_BYTE(5));
+    func_800A3074(func_800ACDB8(1), value);
+    D_800B0078->pc += 6;
+}
+
+/* OR a variable with a selected operand. */
+void func_8009D52C(void) {
+    s32 value;
+
+    value = func_800A3018(func_800ACDB8(1));
+    value |= func_8009CFBC(3, EVENT_OPERAND_BYTE(5));
+    func_800A3074(func_800ACDB8(1), value);
+    D_800B0078->pc += 6;
+}
+
+/* AND a variable with a selected operand. */
+void func_8009D5B8(void) {
+    s32 value;
+
+    value = func_800A3018(func_800ACDB8(1));
+    value &= func_8009CFBC(3, EVENT_OPERAND_BYTE(5));
+    func_800A3074(func_800ACDB8(1), value);
+    D_800B0078->pc += 6;
+}
+
+/* Set bit (selected operand) of a variable. */
+void func_8009D644(void) {
+    s32 value;
+
+    value = func_800A3018(func_800ACDB8(1));
+    value |= 1 << func_8009CFBC(3, EVENT_OPERAND_BYTE(5));
+    func_800A3074(func_800ACDB8(1), value);
+    D_800B0078->pc += 6;
+}
+
+/* Multiply a variable by a selected operand. */
+void func_8009D6D8(void) {
+    s32 value;
+
+    value = func_800A3018(func_800ACDB8(1));
+    value *= func_8009CFBC(3, EVENT_OPERAND_BYTE(5));
+    func_800A3074(func_800ACDB8(1), value);
+    D_800B0078->pc += 6;
+}
+
+/* Divide a variable by a selected operand (zero treated as one). */
+void func_8009D768(void) {
+    s32 value;
+    s32 divisor;
+
+    value = func_800A3018(func_800ACDB8(1));
+    divisor = func_8009CFBC(3, EVENT_OPERAND_BYTE(5));
+    if (divisor == 0) {
+        divisor = 1;
+    }
+    value /= divisor;
+    func_800A3074(func_800ACDB8(1), value);
+    D_800B0078->pc += 6;
+}
+
+/* Subtract a selected operand from a variable. */
+void func_8009D804(void) {
+    s32 value;
+
+    value = func_800A3018(func_800ACDB8(1));
+    value -= func_8009CFBC(3, EVENT_OPERAND_BYTE(5));
+    func_800A3074(func_800ACDB8(1), value);
+    D_800B0078->pc += 6;
+}
+
+/* Add a selected operand to a variable. */
+void func_8009D890(void) {
+    s32 value;
+
+    value = func_800A3018(func_800ACDB8(1));
+    value += func_8009CFBC(3, EVENT_OPERAND_BYTE(5));
+    func_800A3074(func_800ACDB8(1), value);
+    D_800B0078->pc += 6;
+}
+
+/* Clear a variable. */
+void func_8009D91C(void) {
+    func_800A3074(func_800ACDB8(1), 0);
+    D_800B0078->pc += 3;
+}
+
+/* Set a variable to one. */
+void func_8009D960(void) {
+    func_800A3074(func_800ACDB8(1), 1);
+    D_800B0078->pc += 3;
+}
+
+/* Set a variable from a selected operand. */
+void func_8009D9A4(void) {
+    s32 reference;
+
+    reference = func_800ACDB8(1) & 0xFFFF;
+    func_800A3074(reference, func_8009CFBC(3, EVENT_OPERAND_BYTE(5)));
+    D_800B0078->pc += 6;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009DA1C);
 
