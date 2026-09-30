@@ -698,6 +698,7 @@ tools/decomp_rename.py
 tools/extraction/README.md
 tools/extraction/disc_files.py
 tools/extraction/overlays.py
+tools/jump_table_phases.py
 tools/matching.py
 tools/matching_coverage.py
 tools/matching_diff.py
