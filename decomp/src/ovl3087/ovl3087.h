@@ -51,6 +51,25 @@ typedef struct {
 
 /* libgpu primitive colour macro. */
 #define setRGB0(p, r, g, b) ((p)->r0 = (r), (p)->g0 = (g), (p)->b0 = (b))
+#define setXY4(p, _x0, _y0, _x1, _y1, _x2, _y2, _x3, _y3) \
+    ((p)->x0 = (_x0), (p)->y0 = (_y0), (p)->x1 = (_x1), (p)->y1 = (_y1), \
+     (p)->x2 = (_x2), (p)->y2 = (_y2), (p)->x3 = (_x3), (p)->y3 = (_y3))
+#define setUV4(p, _u0, _v0, _u1, _v1, _u2, _v2, _u3, _v3) \
+    ((p)->u0 = (_u0), (p)->v0 = (_v0), (p)->u1 = (_u1), (p)->v1 = (_v1), \
+     (p)->u2 = (_u2), (p)->v2 = (_v2), (p)->u3 = (_u3), (p)->v3 = (_v3))
+
+typedef struct {
+    s16 x, y, w, h;
+} Rect;
+
+/* libgs TIM_IMAGE (ReadTIM). */
+typedef struct {
+    u32 mode;
+    Rect *crect;
+    u32 *caddr;
+    Rect *prect;
+    u32 *paddr;
+} TimImage;
 
 /* The interpreter state (0x828 bytes, pointer 800d3278). */
 typedef struct {
@@ -60,7 +79,7 @@ typedef struct {
     u16 vars[0x200]; /* 0x394 script variables */
     u8 order[16];   /* 0x794 thread run order */
     PolyFT4 quads[2]; /* 0x7a4 */
-    u8 unk7F4;
+    u8 portraitBuffer; /* 0x7f4 draw buffer the portrait quad was laid out for */
     u8 unk7F5;
     u16 window[5]; /* 0x7f6 message window layout (opcode 1a) */
     u8 halted;     /* 0x800 the script ended the battle */
@@ -156,6 +175,7 @@ extern u8 D_800D2D24[3]; /* battle party character ids (0xff none) */
 extern s32 D_801E9C1C;
 extern u16 D_801E9C10[5]; /* default message window layout */
 extern u8 D_8005942C;
+extern u8 D_801E9B5C[]; /* portrait file per actor (normal, mirrored) */
 extern u8 D_800C3D44; /* battle ends */
 extern u8 D_800C3E4C;
 extern u8 D_800C48EA;
@@ -227,6 +247,11 @@ extern u8 D_800D32A1;
 
 /* Resident / battle services. */
 void func_8001AC94(void);
+void func_80028470(s32 arg0, s32 arg1);
+void func_800445D0(s32 mode);
+void func_80044894(Rect *rect, u32 *data);
+void func_800471B4(void *tim);
+void func_800471C4(TimImage *image);
 void func_8001B66C(void);
 s32 func_800288EC(s32 file);
 void func_800295D8(s32 file, void *dest, s32 arg2, s32 arg3);

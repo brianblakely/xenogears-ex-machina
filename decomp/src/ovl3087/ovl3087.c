@@ -498,7 +498,40 @@ s32 func_801E66D8(s32 thread, u8 *insn) {
     return 6;
 }
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E6750);
+/* Load the portrait TIM of an actor (mirrored or not) into VRAM (clut
+ * 0,1d0; pixels 3c0,100) and lay the current buffer's portrait quad out
+ * in a 64x64 box inside the window at (x, y). */
+void func_801E6750(u8 actor, s32 flags, s32 x, s32 y, s32 width) {
+    TimImage tim;
+    s32 mirrored = flags & 1;
+    s32 file = D_801E9B5C[actor * 2 + mirrored] + 0x46;
+    void *data;
+
+    func_80028470(4, 0);
+    data = func_8008ABB8(func_800288EC(file), 1);
+    func_800295D8(file, data, 0, 0x80);
+    func_8008AC50();
+    func_800471B4(data);
+    func_800471C4(&tim);
+    tim.crect->x = 0;
+    tim.crect->y = 0x1D0;
+    tim.prect->x = 0x3C0;
+    tim.prect->y = 0x100;
+    func_80044894(tim.crect, tim.caddr);
+    func_80044894(tim.prect, tim.paddr);
+    func_800445D0(0);
+    func_800320E8(data);
+    if (mirrored) {
+        setXY4(&D_800D3278->quads[D_800CCB34.index], x + width - 4, y + 4, x + width - 0x44, y + 4,
+               x + width - 4, y + 0x44, x + width - 0x44, y + 0x44);
+        setUV4(&D_800D3278->quads[D_800CCB34.index], 0, 0, 0x3F, 0, 0, 0x40, 0x3F, 0x40);
+    } else {
+        setXY4(&D_800D3278->quads[D_800CCB34.index], x + 4, y + 4, x + 0x44, y + 4, x + 4, y + 0x44,
+               x + 0x44, y + 0x44);
+        setUV4(&D_800D3278->quads[D_800CCB34.index], 0, 0, 0x40, 0, 0, 0x40, 0x40, 0x40);
+    }
+    D_800D3278->portraitBuffer = D_800CCB34.index;
+}
 
 INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E6CE8);
 
