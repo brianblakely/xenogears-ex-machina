@@ -1,5 +1,35 @@
 #include "worldmap.h"
 
+/* Actor handlers this unit installs by address (see func_80097718). */
+s32 func_800923A8();
+s32 func_800925A0();
+s32 func_80078948();
+s32 func_80078950();
+s32 func_80078E2C();
+s32 func_80078EA4();
+s32 func_800794D8();
+s32 func_80079538();
+s32 func_800795E4();
+s32 func_80079778();
+s32 func_8007A144();
+s32 func_8007A1B4();
+s32 func_8007A410();
+s32 func_8007A430();
+s32 func_8007A568();
+s32 func_8007A570();
+s32 func_8007A9B4();
+s32 func_8007A9F8();
+s32 func_8007AD34();
+s32 func_8007ADD4();
+s32 func_8007B200();
+s32 func_8007B394();
+s32 func_8007B604();
+s32 func_8007B798();
+s32 func_8007BA08();
+s32 func_8007BA10();
+s32 func_8007BB60();
+s32 func_8007BBEC();
+
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80077E68", func_80077E68);
 
 /* Link scene objects 1-13 to object 0 and put the scene camera on the player. */
@@ -64,7 +94,65 @@ s32 func_80078950(void) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80077E68", func_80078A60);
+/* Set up the first cutscene mode: display, terrain loader, scene objects and
+ * its actors. */
+void func_80078A60(void) {
+    RECT rect;
+
+    func_80072BB0();
+    rect.x = 0;
+    rect.y = 0;
+    rect.w = 0x140;
+    rect.h = 0xD8;
+    MoveImage(&rect, 0x2C0, 0x100);
+    DrawSync(0);
+    func_80072DB4(0x40, 0, 4, 2);
+    while (func_800286CC() >= 3) {
+    }
+    func_80076954();
+    func_8009766C();
+    D_8009BE4C = D_8009A180;
+    D_8009CCA4 = 2;
+    D_8009D3CC = 0x10;
+    D_8009D804 = 0;
+    D_8009D144 = 0;
+    D_8009CD40 = func_80086700;
+    func_80098044();
+    func_80028A60(0);
+    func_800721E4();
+    D_8009C5AC.vx = 0x2000000;
+    D_8009C5AC.vy = -0x300000;
+    D_8009C5AC.vz = 0x2000000;
+    func_80084580();
+    func_8008440C();
+    func_800979C8();
+    func_800736DC();
+    func_800863E0();
+    func_80074E58();
+    func_80075030();
+    func_800739B8();
+    func_80088F64();
+    func_80028A60(0);
+    func_80038428(D_8006259C);
+    func_80028470(0x24, 0);
+    func_80097BC0(&D_8009C5AC);
+    do {
+        func_800967E4();
+        VSync(0);
+    } while (func_80096668() > 0);
+    func_80097718((s32)func_800923A8, (s32)func_800925A0);
+    func_80097718((s32)func_80078E2C, (s32)func_80078EA4);
+    func_80097718((s32)func_800795E4, (s32)func_80079778);
+    func_80097718((s32)func_8007A144, (s32)func_8007A1B4);
+    func_80097718((s32)func_8007A410, (s32)func_8007A430);
+    func_80097718((s32)func_8007A568, (s32)func_8007A570);
+    func_80097718((s32)func_800794D8, (s32)func_80079538);
+    func_80097718((s32)func_80078948, (s32)func_80078950);
+    func_800978FC();
+    func_8008901C();
+    func_800865A0();
+    func_80075228();
+}
 
 /* Leave the scene: release its resources and continue in scene 0x110. */
 void func_80078D24(void) {
@@ -301,7 +389,65 @@ s32 func_8007A570(s32 index) {
     return 3;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80077E68", func_8007A5DC);
+/* Set up the second cutscene mode: display, terrain loader, scene objects and
+ * its actors. */
+void func_8007A5DC(void) {
+    RECT rect;
+
+    func_80072BB0();
+    rect.x = 0;
+    rect.y = 0;
+    rect.w = 0x140;
+    rect.h = 0xD8;
+    MoveImage(&rect, 0x2C0, 0x100);
+    DrawSync(0);
+    func_80072DB4(0x40, 0, 4, 2);
+    while (func_800286CC() >= 3) {
+    }
+    func_80076954();
+    func_8009766C();
+    D_8009BE4C = D_8009A180;
+    D_8009CCA4 = 2;
+    D_8009D3CC = 0x10;
+    D_8009D804 = 0;
+    D_8009D144 = 0;
+    D_8009CD40 = func_80086700;
+    func_80098044();
+    func_80028A60(0);
+    func_800721E4();
+    D_8009C5AC.vx = 0x5BED000;
+    D_8009C5AC.vy = -0xA0000;
+    D_8009C5AC.vz = 0x62A8000;
+    func_80084580();
+    func_8008440C();
+    func_800979C8();
+    func_800736DC();
+    func_800863E0();
+    func_80074E58();
+    func_80075030();
+    func_800739B8();
+    func_80088F64();
+    func_80028A60(0);
+    func_80038428(D_8006259C);
+    func_80028470(0x24, 0);
+    func_80097BC0(&D_8009C5AC);
+    do {
+        func_800967E4();
+        VSync(0);
+    } while (func_80096668() > 0);
+    func_80097718((s32)func_800923A8, (s32)func_800925A0);
+    func_80097718((s32)func_8007A9B4, (s32)func_8007A9F8);
+    func_80097718((s32)func_8007AD34, (s32)func_8007ADD4);
+    func_80097718((s32)func_8007B200, (s32)func_8007B394);
+    func_80097718((s32)func_8007B604, (s32)func_8007B798);
+    func_80097718((s32)func_8007BA08, (s32)func_8007BA10);
+    func_80097718((s32)func_8007BB60, (s32)func_8007BBEC);
+    func_80097718((s32)func_80078948, (s32)func_80078950);
+    func_800978FC();
+    func_8008901C();
+    func_800865A0();
+    func_80075228();
+}
 
 /* Leave the scene: release its resources and continue in scene 0x11A. */
 void func_8007A8AC(void) {

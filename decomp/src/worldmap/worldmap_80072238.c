@@ -1,5 +1,21 @@
 #include "worldmap.h"
 
+/* Actor handlers this unit installs by address (see func_80097718). */
+s32 func_800923A8();
+s32 func_800925A0();
+s32 func_80077DC8();
+s32 func_80077E68();
+s32 func_8007828C();
+s32 func_800783E8();
+s32 func_80078948();
+s32 func_80078950();
+s32 func_8007756C();
+s32 func_800776E0();
+s32 func_80087710();
+s32 func_80087734();
+s32 func_80071A50();
+s32 func_80071A58();
+
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80072238);
 
 /* Leave the world map: stop audio, release actor handles, shut down each

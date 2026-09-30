@@ -830,24 +830,8 @@ void func_80097718(s32 kind, s32 update);
 extern void (*D_8009CD40)(void); /* per-frame hook */
 extern LoaderState D_8009BE4C;   /* terrain loader state */
 
-/* Actor handlers (installed by address). */
-s32 func_800923A8();
-s32 func_800925A0();
-s32 func_80077DC8();
-s32 func_80077E68();
-s32 func_8007828C();
-s32 func_800783E8();
-s32 func_80078948();
-s32 func_80078950();
-
 void func_80073530(void);
 void func_80085F58(void);
-s32 func_8007756C();
-s32 func_800776E0();
-s32 func_80087710();
-s32 func_80087734();
-s32 func_80071A50();
-s32 func_80071A58();
 
 MATRIX *ScaleMatrix(MATRIX *m, VECTOR *scale);
 
@@ -906,5 +890,11 @@ typedef struct {
 } P_TAG;
 
 #define setPrimLen(p, n) (((P_TAG *)(p))->len = (n))
+
+void func_80076954(void);
+void func_80074E58(void);
+void func_80075030(void);
+void func_800739B8(void);
+void func_80075228(void);
 
 #endif
