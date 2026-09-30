@@ -509,40 +509,34 @@ void func_800736DC(void) {
 
 /* Transform the four sky bands with the camera yaw and link them into the
  * ordering table. */
-#ifdef NON_MATCHING /* register allocation and scheduling differ */
 void func_800737EC(void) {
     SVECTOR *corners;
     PolyG4 *band;
     s32 otz;
     s32 i;
-    s32 offset;
+    SkyScratch *scratch;
 
+    scratch = SKY_SCRATCH;
+    scratch->angle.vz = 0;
+    scratch->angle.vx = 0;
+    scratch->angle.vy = D_8009BD38.vy;
+    func_8004A92C(&scratch->angle, &scratch->rotation);
     corners = D_8009A280[0];
-    SKY_SCRATCH->angle.vz = 0;
-    SKY_SCRATCH->angle.vx = 0;
-    SKY_SCRATCH->angle.vy = D_8009BD38.vy;
-    offset = 0;
-    func_8004A92C(&SKY_SCRATCH->angle, &SKY_SCRATCH->rotation);
-    SKY_SCRATCH->rotation.t[2] = 0;
-    SKY_SCRATCH->rotation.t[1] = 0;
-    SKY_SCRATCH->rotation.t[0] = 0;
-    CompMatrix(&D_8009C808, &SKY_SCRATCH->rotation, &SKY_SCRATCH->view);
-    SetRotMatrix(&SKY_SCRATCH->view);
-    SetTransMatrix(&SKY_SCRATCH->view);
-    for (i = 0; i < 4; i++) {
-        band = (PolyG4 *)((u8 *)&D_8009D194[0][D_8009D7F0] + offset);
+    scratch->rotation.t[2] = 0;
+    scratch->rotation.t[1] = 0;
+    scratch->rotation.t[0] = 0;
+    CompMatrix(&D_8009C808, &scratch->rotation, &scratch->view);
+    SetRotMatrix(&scratch->view);
+    SetTransMatrix(&scratch->view);
+    for (i = 0; i < 4; i++, corners += 4) {
+        band = &D_8009D194[i][D_8009D7F0];
         otz = RotTransPers4(&corners[0], &corners[1], &corners[2], &corners[3], &band->xy0, &band->xy1,
-                            &band->xy2, &band->xy3, &SKY_SCRATCH->p, &SKY_SCRATCH->flag);
-        if (SKY_SCRATCH->flag >= 0) {
+                            &band->xy2, &band->xy3, &scratch->p, &scratch->flag);
+        if (scratch->flag >= 0) {
             addPrim(&D_8009BE3C->ot[otz >> D_80050100], band);
         }
-        offset += sizeof(D_8009D194[0]);
-        corners += 4;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_800737EC);
-#endif
 
 /* Initialise the four textured horizon quads and the two texture windows. */
 void func_800739B8(void) {
