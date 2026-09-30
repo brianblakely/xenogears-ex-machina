@@ -1778,11 +1778,16 @@ void func_8002C700(SpriteDef *def, void *prims, u32 *ot, s32 mode);
 /* Scratchpad work area of the face containment test. */
 typedef struct {
     VECTOR p[3];    /* 0x00: transformed corners; p[0] first holds the scale */
-    s32 edge[2];    /* 0x30: packed (x, z) corner pairs */
-    s32 point;      /* 0x38: packed (x, z) probe */
-    s32 pad3C;
-    VECTOR delta;   /* 0x40: probe relative to the object */
-    u8 pad50[0xA0];
+    union {
+        struct {
+            s32 edge[2];  /* 0x30: packed (x, z) corner pairs */
+            s32 point;    /* 0x38: packed (x, z) probe */
+            s32 pad3C;
+            VECTOR delta; /* 0x40: probe relative to the object */
+        } test;
+        VECTOR side[3];   /* 0x30: normalised edge directions */
+    } u;
+    u8 pad60[0x90];
     MATRIX m;       /* 0xF0 */
 } FaceTestScratch;
 
