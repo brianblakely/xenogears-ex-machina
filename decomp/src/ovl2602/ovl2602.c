@@ -138,11 +138,47 @@ void func_801C5600(u8 allocate) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801C5664);
+/* Allocate (nonzero) or release the 1f00h-byte block at menu state +454. */
+void func_801C5664(u8 allocate) {
+    if (allocate) {
+        D_800625A0->unk454 = func_80031BDC(0x1F00, 0);
+        func_8003F8E8(D_800625A0->unk454, 0x1F00);
+    } else {
+        func_800320E8(D_800625A0->unk454);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801C56C8);
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801C5B08);
+/* Reset the screen state, note which party members are available (and selectable) and load the resources. */
+void func_801C5B08(void) {
+    u16 available;
+    s32 i;
+    s32 id;
+
+    D_800625A0->top_cursor = 4;
+    D_800625A0->unk337 = 0xFF;
+    D_800625A0->poll_timer = 0x3C;
+    D_800625A0->unk334 = 0;
+    D_800625A0->unk335 = 0;
+    available = D_8006F364 & D_8006F366 & 0x77F;
+    for (i = 0; i < 16; i++) {
+        if (func_801C5228(available, i) && D_8006D8A0[i].unkA0 != 0xFF) {
+            D_800625A0->member_present[i] = 1;
+        } else {
+            D_800625A0->member_present[i] = 0;
+        }
+    }
+    for (i = 0; i < 3; i++) {
+        id = D_8006F368[i];
+        if (id != 0xFF && D_800625A0->member_present[id] != 0) {
+            D_800625A0->flags->members[i] = id;
+        } else {
+            D_800625A0->flags->members[i] = 0xFF;
+        }
+    }
+    func_801C56C8();
+}
 
 /* Start building draw buffer 0. */
 void func_801C5C98(void) {
@@ -1119,7 +1155,17 @@ void func_801CA874(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CA9EC);
+/* Link the shown extra labels. */
+void func_801CA9EC(void) {
+    s32 i;
+
+    for (i = 0; i < 6; i++) {
+        if (D_800625A0->flags->extra_label_shown[i] != 0) {
+            func_80043B48(&D_800625A0->draw_env->ot[4],
+                          &D_800625A0->extra_labels[i].poly[D_800625A0->extra_labels[i].buffer]);
+        }
+    }
+}
 
 /* Link the message labels while the message is shown, projecting the 3D ones first. */
 void func_801CAA7C(void) {
@@ -1304,11 +1350,90 @@ void func_801CC9A0(void) {
     func_801CC1C4();
 }
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CCA40);
+/* Let the player choose yes or no (1 = yes; moving only when `movable`); without `wait` the choice ends after 60 idle frames. */
+u8 func_801CCA40(u8 wait, u8 movable) {
+    u8 choosing;
+    u8 yes;
+    u8 timer;
+
+    choosing = 1;
+    yes = 0;
+    timer = 60;
+    while (choosing) {
+        if (!wait) {
+            D_800625A0->marks->shown[2] = 0;
+            D_800625A0->marks->shown[3] = 0;
+            if (D_800625A0->input != 8) {
+                break;
+            }
+            if (--timer == 0) {
+                break;
+            }
+        }
+        func_801CC1C4();
+        switch (D_800625A0->input) {
+        case 4:
+            func_801CB498(2);
+            choosing = 0;
+            break;
+        case 5:
+            yes = 0;
+            choosing = 0;
+            break;
+        case 2:
+            if (movable) {
+                D_800625A0->marks->shown[2] = 1;
+                yes = 1;
+                D_800625A0->marks->shown[3] = 0;
+            }
+            break;
+        case 0:
+            if (movable) {
+                D_800625A0->marks->shown[2] = 0;
+                yes = 0;
+                D_800625A0->marks->shown[3] = 1;
+            }
+            break;
+        }
+    }
+    D_800625A0->marks->shown[2] = 0;
+    D_800625A0->marks->shown[3] = 0;
+    return yes;
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CCC18);
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CCD20);
+/* Close the screen: stop drawing, release every block and resource, then the menu state itself. */
+void func_801CCD20(void) {
+    func_801CC1C4();
+    func_801CC1C4();
+    D_800625A0->drawing = 0;
+    func_801CC1C4();
+    do {
+        func_801CC1C4();
+    } while (D_800625A0->buffer != 0);
+    func_801C5344(0);
+    func_801C53A8(0);
+    func_801C540C(0);
+    func_801C5470(0);
+    func_801C54D4(0);
+    func_801C5538(0);
+    func_801C6A54(0x10);
+    func_801C5600(0);
+    func_801C5664(0);
+    func_800320E8(D_800625A0->sprite_sheet);
+    func_800320E8(D_800625A0->label_text);
+    func_800320E8(D_800625A0->labels[0].pixels);
+    if (D_80059178 != 0) {
+        func_8003A094(D_800625A0->effect_bank);
+        func_801CC1C4();
+        func_8003852C(D_800625A0->effect_bank);
+        func_801CC1C4();
+        func_800320E8(D_800625A0->effect_bank);
+    }
+    func_801C559C(0);
+    func_800320E8(D_800625A0);
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CCE90);
 
@@ -1433,7 +1558,33 @@ void func_801CD838(u8 count, u8 selected, s32 *ids) {
     D_800625A0->flags->unk4 = 1;
 }
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CDA0C);
+/* Draw the current command's list pictures with the chosen one highlighted (+0dh), and put the cursor on it. */
+void func_801CDA0C(u8 menu) {
+    s32 id;
+    s32 i;
+
+    D_800625A0->lists->count = 0;
+    D_800625A0->lists->count2 = 0;
+    for (i = 0; i < D_800625A0->list_count; i++) {
+        if (i == D_800625A0->list_cursor) {
+            id = D_801D69A0[(menu + D_800625A0->top_cursor) * 8 + i * 2] + 0xD;
+        } else {
+            id = D_801D69A0[(menu + D_800625A0->top_cursor) * 8 + i * 2];
+        }
+        D_800625A0->lists->count +=
+            func_8002675C(D_800625A0->sprite_sheet, id,
+                          D_800625A0->lists->packets + D_800625A0->lists->count * 2, D_800625A0->buffer,
+                          0xA0, 0x96, 0x1000);
+        D_800625A0->lists->count2 += func_8002675C(
+            D_800625A0->sprite_sheet, D_801D69A0[(menu + D_800625A0->top_cursor) * 8 + i * 2 + 1],
+            D_800625A0->lists->packets2 + D_800625A0->lists->count2 * 2, D_800625A0->buffer, 0xA0, 0x96,
+            0x1000);
+    }
+    D_800625A0->lists->buffer = D_800625A0->buffer;
+    D_800625A0->lists->buffer2 = D_800625A0->buffer;
+    func_801C6278(D_800625A0->list_cursor + 4, 1);
+    D_800625A0->flags->unk4 = 1;
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CDC68);
 
@@ -1443,7 +1594,12 @@ INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CE024);
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CE1D0);
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CE2E8);
+/* Hide the second marker block, let a frame pass, and release it. */
+void func_801CE2E8(void) {
+    D_800625A0->flags->marks_b_shown = 0;
+    func_801CC1C4();
+    func_800320E8(D_800625A0->marks_b);
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CE32C);
 
@@ -1537,11 +1693,63 @@ void func_801D05EC(void) {
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D06D8);
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D0C20);
+/* Draw a nine-digit number (the party's gold) at (6bh, 54h), or lower at (53h, 64h). */
+void func_801D0C20(u32 value, u8 lower) {
+    s32 i;
+    s32 x;
+    s32 y;
+
+    x = 0x68;
+    y = 0x54;
+    if (lower) {
+        x = 0x50;
+        y = 0x64;
+    }
+    func_801C5298(value);
+    i = 0;
+    D_800625A0->details->group1220_count = 0;
+    for (; i < 9; i++, x += 8) {
+        if (D_800625A0->digits[i] != 0xFF) {
+            D_800625A0->details->group1220_count +=
+                func_8002675C(D_800625A0->sprite_sheet, D_800625A0->digits[i],
+                              D_800625A0->details->group1220 + D_800625A0->details->group1220_count * 2,
+                              D_800625A0->buffer, x + 3, y, 0x1000);
+        }
+    }
+    D_800625A0->details->group1220_buffer = D_800625A0->buffer;
+    D_800625A0->flags->unk5B = 2;
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D0D4C);
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D0EC8);
+/* Hide the transfer screen's packets; with `close` also close its panels, scroll bar and marker. */
+void func_801D0EC8(u8 close) {
+    s32 i;
+
+    D_800625A0->flags->unk5A = 0;
+    D_800625A0->details->label4430_shown = 0;
+    D_800625A0->details->label44B0_shown = 0;
+    D_800625A0->details->digits_shown = 0;
+    D_800625A0->details->heading_count = 0;
+    D_800625A0->details->group2D0_count = 0;
+    D_800625A0->details->members_count = 0;
+    for (i = 0; i < 9; i++) {
+        D_800625A0->details->bar_shown[i] = 0;
+        D_800625A0->details->cells_a_count[i] = 0;
+        D_800625A0->details->cells_b_count[i] = 0;
+    }
+    for (i = 0; i < 8; i++) {
+        D_800625A0->details->name_shown[i] = 0;
+        D_800625A0->details->row_count[i] = 0;
+    }
+    D_800625A0->details->unk46B6 = 0;
+    if (close) {
+        func_801C9054(2);
+        func_801C9054(3);
+        func_801C782C();
+        func_801C7A88(0);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D1078);
 
@@ -1553,9 +1761,15 @@ INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D1F20);
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D2054);
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D2784);
+/* Run the transfer list for inventory 3 (150 entries). */
+void func_801D2784(void) {
+    func_801D2054(150, D_8006F84E, D_8006F84E - 150, 3, 1, D_8006F84E - 150, 0);
+}
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D27C4);
+/* Run the transfer list for inventory 4 (100 entries). */
+void func_801D27C4(void) {
+    func_801D2054(100, D_8006F754, D_8006F754 - 100, 4, 1, D_8006F754 - 100, 0);
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D2804);
 
@@ -1580,7 +1794,62 @@ u16 func_801D3A3C(u8 *ids, u8 *counts, s32 n, u8 id) {
     return count;
 }
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D3A80);
+/* Show how many of item `id` the party holds in inventory `kind` (3 or 4) beside the list. */
+void func_801D3A80(u8 kind, u8 id) {
+    RECT rect;
+    u8 codes[4];
+    u8 text[8];
+    u8 *ids;
+    u8 *counts;
+    s32 n;
+    u8 *pixels;
+    u16 count;
+    u8 known;
+
+    known = 0;
+    switch (kind) {
+    case 4:
+        ids = D_8006F754;
+        counts = ids - 100;
+        n = 100;
+        known = 1;
+        break;
+    case 3:
+        ids = D_8006F84E;
+        counts = ids - 150;
+        n = 150;
+        known = 1;
+        break;
+    }
+    if (!known) {
+        return;
+    }
+    count = func_801D3A3C(ids, counts, n, id);
+    D_801D904C = count;
+    pixels = func_80031BDC(0x3F6, 0);
+    codes[1] = 0;
+    codes[3] = 0;
+    if (count / 10) {
+        codes[0] = count / 10 + 0x10;
+    } else {
+        codes[0] = 0xC3;
+    }
+    codes[2] = count % 10 + 0x10;
+    func_80033B34(codes, text, 2);
+    D_800625A0->details->label45B0.width = func_80034EAC(text, pixels, 0x24, 1);
+    rect.x = 0x198;
+    rect.y = 0xB4;
+    rect.w = 0x28;
+    rect.h = 13;
+    func_80044894(&rect, pixels);
+    func_800445D0(0);
+    func_801C5CA8(&D_800625A0->details->label45B0, 9, 0x80, 0x82);
+    func_801C7604(D_800625A0->details->label45B0.quad, 0xF8, 0x8E, D_800625A0->details->label45B0.width,
+                  13);
+    D_800625A0->details->label45B0.buffer = D_800625A0->buffer;
+    D_800625A0->details->label45B0_shown = 1;
+    func_800320E8(pixels);
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D3C78);
 

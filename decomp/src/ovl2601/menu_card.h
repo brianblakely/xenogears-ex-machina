@@ -165,7 +165,8 @@ typedef struct {
     u8 group1220_buffer;      /* 46b3 */
     u8 group1220_count;       /* 46b4 */
     u8 label44B0_shown;       /* 46b5 */
-    u8 unk46B6[6];
+    u8 unk46B6;
+    u8 unk46B7[5];
     u8 cells_a_count[9];      /* 46bc */
     u8 cells_b_count[9];      /* 46c5 */
     u8 cells_a_buffer[9];     /* 46ce */
@@ -285,7 +286,7 @@ typedef struct {
     u8 unkB;
     u8 list_label_shown[8]; /* 0c */
     u8 info_label_shown[6]; /* 14 */
-    u8 unk1A[0x20 - 0x1A];
+    u8 extra_label_shown[6]; /* 1a: ovl2602 */
     u8 panel_shown[7];   /* 20 */
     u8 panel_growing[7]; /* 27 */
     u8 message_shown;    /* 2e */
@@ -297,7 +298,9 @@ typedef struct {
     u8 scroll_shown; /* 49 */
     u8 unk4A[0x50 - 0x4A];
     u8 marker_shown[2]; /* 50 */
-    u8 unk52[0x5A - 0x52];
+    u8 unk52;
+    u8 marks_b_shown; /* 53: ovl2602 */
+    u8 unk54[0x5A - 0x54];
     u8 unk5A;
     u8 unk5B;
     u8 unk5C[0x6C - 0x5C];
@@ -341,7 +344,9 @@ typedef struct {
     u8 bonus[8];   /* 58 */
     u8 unk60[0x6A - 0x60];
     u8 gear[13];   /* 6a: equipped items */
-    u8 unk77[0xA4 - 0x77];
+    u8 unk77[0xA0 - 0x77];
+    u8 unkA0;      /* a0: ff for a member who cannot be chosen */
+    u8 unkA1[3];
 } Character;
 
 /* A party member's detail view; its nine stat words at +b8. */
@@ -396,17 +401,19 @@ typedef struct {
     MarkerBlock *marks;  /* 428 */
     u8 unk42C[0x43C - 0x42C];
     ScrollBar *scroll;   /* 43c */
-    u8 unk440[4];
+    MarkerBlock *marks_b; /* 440: ovl2602's marker block */
     Marker *markers[2];  /* 444 */
     u8 unk44C[4];
     DetailBlock *details; /* 450 */
-    u8 unk454[0x46C - 0x454];
+    u8 *unk454;          /* 454: ovl2602's 1f00h-byte block */
+    u8 unk458[0x46C - 0x458];
     SheetEntry sheet_entries[4]; /* 46c */
     u8 unk4CC[0x4E0 - 0x4CC];
     Label labels[4];     /* 4e0: command labels */
     Label list_labels[8]; /* 6e0 */
     Label info_labels[6]; /* ae0 */
-    u8 unkDE0[0x1DE0 - 0xDE0];
+    Label extra_labels[6]; /* de0: ovl2602 */
+    u8 unk10E0[0x1DE0 - 0x10E0];
     Label *message_labels[4]; /* 1de0 */
     u8 unk1DF0[0x1E20 - 0x1DF0];
     void *unk1E20;       /* 1e20: dech bytes */
