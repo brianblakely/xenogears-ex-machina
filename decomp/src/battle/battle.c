@@ -2910,7 +2910,16 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A2D5C);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A2E88);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A2F94);
+/* Return a record to its sprite pool; its index. */
+s32 func_800A2F94(SpritePool *pool, SpriteRecord *record) {
+    s32 index = ((u32)record - (u32)pool->records) / sizeof(SpriteRecord);
+
+    if (index <= pool->next) {
+        pool->next = index;
+    }
+    record->id = -1;
+    return index;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A2FD8);
 
@@ -3021,11 +3030,28 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA384);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA454);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA514);
+/* c plus a * b / 256, capped at 255. */
+u8 func_800AA514(s16 a, s16 b, s32 c) {
+    s16 value = c + b * a / 256;
+
+    if (value > 255) {
+        value = 255;
+    }
+    return value;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA564);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA600);
+/* The scaled size of stage object index (0 when absent). */
+s32 func_800AA600(s32 index) {
+    StageObject *object = D_800D3368[index];
+    s32 size = 0;
+
+    if (object != NULL) {
+        size = object->scale24 * (object->scale1C * object->hierarchy->scale[1] >> 12) >> 12;
+    }
+    return size;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA650);
 
@@ -3034,7 +3060,7 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA6E0);
 /* Set stage object index's byte 0x2A, when it exists. */
 void func_800AA760(s32 index, u8 value) {
     if (D_800D3368[index] != NULL) {
-        D_800D3368[index][0x2A] = value;
+        D_800D3368[index]->field2A = value;
     }
 }
 
@@ -3043,9 +3069,33 @@ void func_800AA788(s32 value) {
     D_800C3B74 = value & 1;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA79C);
+/* Swap stage objects a and b, deactivating a and activating b first. */
+void func_800AA79C(s32 a, s32 b) {
+    StageObject **objects = D_800D3368;
+    StageObject **first = &objects[a];
+    StageObject **second = &objects[b];
+    StageObject *swap;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA7DC);
+    (*first)->active = 0;
+    (*second)->active = 1;
+    swap = *first;
+    *first = *second;
+    *second = swap;
+}
+
+/* The type of the first event from index on that is not a continuation
+ * (0xF7); 0xFE for the end (0xFF). */
+u8 func_800AA7DC(s32 index) {
+    u8 type;
+
+    do {
+        type = D_800C3FE8[index++].type;
+    } while (type == 0xF7);
+    if (type == 0xFF) {
+        type = 0xFE;
+    }
+    return type;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA820);
 
@@ -3069,7 +3119,10 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AE220);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AE2A4);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AEEEC);
+/* Mark an effect object's field 0x98 unset. */
+void func_800AEEEC(EffectObject *object) {
+    object->field98 = -1;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AEEF8);
 
@@ -3077,7 +3130,21 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AEF68);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AF180);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AF270);
+/* Move the parts' marks (flag7) of a hierarchy to another of the same
+ * shape. */
+void func_800AF270(ModelPart *from, ModelPart *to) {
+    s32 count = from->index;
+    s32 i;
+
+    for (i = 1; i < count; i++) {
+        from++;
+        to++;
+        if (from->flag7) {
+            from->flag7 = 0;
+            to->flag7 = 1;
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AF2C4);
 
