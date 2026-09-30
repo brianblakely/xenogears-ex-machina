@@ -5492,7 +5492,26 @@ void func_8009080C(u8 column, u8 row, u8 other) {
     D_800C3EA4->unkA230->unk66B = 1;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009093C);
+/* Point the four list page quads at the list image from row offset `v`
+ * (offsets from 0x68 on the second image page with the alternate CLUT). */
+void func_8009093C(s32 v) {
+    s32 page = 0;
+
+    if (v >= 0x68) {
+        v -= 0x68;
+        D_800C3EA4->unkA230->unk0[D_800CCB04.buffer].clut = D_80059414;
+        D_800C3EA4->unkA230->unk50[D_800CCB04.buffer].clut = D_80059414;
+        page = 0x10;
+    } else {
+        D_800C3EA4->unkA230->unk0[D_800CCB04.buffer].clut = D_800595D4;
+        D_800C3EA4->unkA230->unk50[D_800CCB04.buffer].clut = D_800595D4;
+    }
+    func_80076CE8(&D_800C3EA4->unkA230->unk0[D_800CCB04.buffer], 0x30, 0x60, 0, v, 0x60, 0x68);
+    func_80076CE8(&D_800C3EA4->unkA230->unk50[D_800CCB04.buffer], 0xB4, 0x60, 0x78, v, 0x60, 0x68);
+    func_80076CE8(&D_800C3EA4->unkA230->unkA0[D_800CCB04.buffer], 0x98, 0x60, page, v, 0x10, 0x68);
+    func_80076CE8(&D_800C3EA4->unkA230->unkF0[D_800CCB04.buffer], 0x11C, 0x60, page | 0x40, v, 0x10, 0x68);
+    D_800C3EA4->unkA230->unk668 = D_800CCB04.buffer;
+}
 
 /* Animate the five-frame cursor glyph at (x, y): advance `frame` every third
  * tick. */
@@ -5509,7 +5528,24 @@ void func_80090B90(s32 x, s32 y, s32 *frame, u8 *ticks) {
     D_800D2D28->unk9E = 1;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80090C44);
+/* Show the member's EP and maximum EP as two digit glyphs each (no leading
+ * zero). */
+void func_80090C44(u8 member) {
+    u16 digit;
+
+    digit = D_800CCCE8.records[member].pilot.ep / 10;
+    if (digit != 0) {
+        func_80076C78(&D_800C3EA4->unkA230->unk460[D_800CCB04.buffer], 0x104, 0xC6, digit * 8 + 0x78, 0, 8);
+    }
+    func_80076C78(&D_800C3EA4->unkA230->unk4B0[D_800CCB04.buffer], 0x10C, 0xC6,
+                  (u16)(D_800CCCE8.records[member].pilot.ep % 10) * 8 + 0x78, 0, 8);
+    digit = D_800CCCE8.records[member].pilot.maxEp / 10;
+    if (digit != 0) {
+        func_80076C78(&D_800C3EA4->unkA230->unk500[D_800CCB04.buffer], 0x11C, 0xC6, digit * 8 + 0x78, 0, 8);
+    }
+    func_80076C78(&D_800C3EA4->unkA230->unk550[D_800CCB04.buffer], 0x124, 0xC6,
+                  (u16)(D_800CCCE8.records[member].pilot.maxEp % 10) * 8 + 0x78, 0, 8);
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80090E7C);
 

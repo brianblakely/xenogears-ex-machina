@@ -125,7 +125,13 @@ typedef struct {
     POLY_FT4 unk2D0[2];
     POLY_FT4 unk320[2];
     POLY_FT4 unk370[2];
-    u8 unk3C0[0x668 - 0x3C0];
+    POLY_FT4 unk3C0[2];
+    POLY_FT4 unk410[2];
+    POLY_FT4 unk460[2]; /* EP digits */
+    POLY_FT4 unk4B0[2];
+    POLY_FT4 unk500[2]; /* maximum EP digits */
+    POLY_FT4 unk550[2];
+    u8 unk5A0[0x668 - 0x5A0];
     u8 unk668;         /* buffer of the +0x0..+0xf0 quads */
     u8 unk669;
     u8 buffer;         /* +0x66A */
