@@ -181,6 +181,41 @@ typedef struct {
     void *block20;          /* +20 */
 } Record24;
 
+/* A keyframe: rotations then positions of the nodes after the root. */
+typedef struct {
+    u8 pad0[4];
+    u16 flags;              /* +4: bit 0 no rotations, bit 1 no positions */
+    s16 packed;             /* +6: 0: rotations follow a skipped block */
+    u8 pad8[4];
+    u16 rot_count;          /* +c */
+    u16 pos_count;          /* +e */
+    u8 pad10[8];
+    s16 data[1];            /* +18 */
+} Keyframe;
+
+/* A colour fade record. */
+typedef struct {
+    s16 h0;
+    u8 b2;
+    u8 b3;
+    s32 w4;
+    s32 w8;
+    s16 hC;
+    s16 hE;
+    s16 h10;
+    u8 pad12[2];
+    s16 h14;
+    s16 h16;
+    s16 h18;
+    u8 pad1A[0x42];
+    s16 time;               /* +5c */
+    s16 h5E;                /* +5e */
+    s16 h60;                /* +60: at most 7 */
+    s16 duration;           /* +62 */
+    s16 color[3];           /* +64: 10.6 fixed point */
+    s16 step[3];            /* +6a */
+} ColorFade;
+
 /* An animation record: frame count and the offset of its frame data. */
 typedef struct {
     u8 pad0[2];
@@ -234,14 +269,16 @@ typedef struct Actor {
     s32 w4C;                /* +4c */
     s32 w50;                /* +50 */
     s32 w54;                /* +54 */
-    s16 h58;                /* +58 */
-    u8 pad5A[2];
-    u8 b5C;                 /* +5c */
-    u8 pad5D[3];
-    s16 h60;                /* +60 */
+    s16 aim_actor;          /* +58: reference of the actor aimed at */
+    s16 aim_node;           /* +5a */
+    u8 parent;              /* +5c: actor carrying this one, 0xff none */
+    u8 inherit;             /* +5d: take the carrier node's rotation */
+    s16 parent_node;        /* +5e */
+    s16 h60;                /* +60: root height */
     u8 b62;                 /* +62 */
     u8 b63;                 /* +63 */
-    u8 pad64[0xC];
+    s16 aim_offset[3];      /* +64: point aimed at in the node's space */
+    s16 offset[3];          /* +6a: position in the carrier node's space */
     s16 h70[12];            /* +70 */
     s16 target[3];          /* +88 */
     s16 h8E;                /* +8e */
@@ -385,6 +422,7 @@ void func_801E35D0(Actor *actor, Actor *source, SlotPool *pool, s32 entry);
 void func_801E39F0(Actor *actor, SlotPool *pool, s32 arg2, s32 arg3, s32 arg4);
 s32 func_801E67F8(void);
 s32 func_801E08D4(s16 value, s16 divisor, s32 base);
+void func_80049BDC(MATRIX *m, MATRIX *out);  /* out = m * out (rotation) */
 u32 func_801DC5C0(ModelPart *parts, s32 scale);
 u32 func_801DC848(ModelPart *parts, s32 scale);
 s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, u16 arg2, s16 scale);

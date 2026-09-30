@@ -382,7 +382,71 @@ INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DCEC8);
 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DDBF8);
 
+/* Apply a keyframe to the nodes after the root: each rotation or position
+ * that changed is set unless the node's tween is kept (tag 0xff). Returns
+ * the node count. Differs in the register of the data pointer (the original
+ * reuses the keyframe's). */
+#ifdef NON_MATCHING
+u16 func_801DEF10(ModelPart *parts, Keyframe *key) {
+    u16 rotations;
+    u16 positions;
+    u16 rot_count;
+    u16 pos_count;
+    u16 flags;
+    u16 count;
+    s16 packed;
+    s16 *data;
+    s32 x;
+    s32 y;
+    s32 z;
+    s32 i;
+
+    rotations = 0;
+    positions = 0;
+    packed = key->packed;
+    rot_count = key->rot_count;
+    pos_count = key->pos_count;
+    flags = key->flags;
+    data = key->data;
+    if (packed == 0) {
+        data += (rot_count + 1) * 3;
+    }
+    count = parts->count - 1;
+    for (i = 0; i < count; i++) {
+        parts++;
+        if (!(flags & 1) && rotations < rot_count) {
+            x = *data++;
+            y = *data++;
+            z = *data++;
+            rotations++;
+            if ((parts->rot.vx != x || parts->rot.vy != y || parts->rot.vz != z) &&
+                (parts->attachments[0] == NULL || parts->attachments[0]->tag != 0xFF)) {
+                parts->rot.vx = x;
+                parts->rot.vy = y;
+                parts->rot.vz = z;
+                parts->dirty = 1;
+                parts->rotate = 1;
+            }
+        }
+        if (!(flags & 2) && positions < pos_count) {
+            x = *data++;
+            y = *data++;
+            z = *data++;
+            positions++;
+            if ((parts->pos[0] != x || parts->pos[1] != y || parts->pos[2] != z) &&
+                (parts->attachments[1] == NULL || parts->attachments[1]->tag != 0xFF)) {
+                parts->pos[0] = x;
+                parts->pos[1] = y;
+                parts->pos[2] = z;
+                parts->dirty = 1;
+            }
+        }
+    }
+    return count;
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DEF10);
+#endif
 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DF0B4);
 
@@ -626,7 +690,40 @@ s32 func_801E0354(ParticlePool *pool, Particle *particle) {
 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E0398);
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E0698);
+/* Set up a colour fade from (r0, g0, b0) to (r1, g1, b1) over `duration`
+ * ticks. */
+s32 func_801E0698(ColorFade *fade, s32 w4, s16 h0, u8 b2, s16 h60, s16 duration, u8 r0, u8 g0,
+                  u8 b0, u8 r1, u8 g1, u8 b1, u16 hC, u16 hE, u16 h10, u16 h14, u16 h16, u16 h18,
+                  u16 b3) {
+    if (fade != NULL) {
+        fade->b3 = b3;
+        fade->h5E = -1;
+        fade->h0 = h0;
+        fade->b2 = b2;
+        fade->w4 = w4;
+        fade->hC = hC;
+        fade->hE = hE;
+        fade->h10 = h10;
+        fade->h14 = h14;
+        fade->h16 = h16;
+        fade->h18 = h18;
+        fade->time = 0;
+        if (h60 < 7) {
+            fade->h60 = h60;
+        } else {
+            fade->h60 = 7;
+        }
+        fade->color[0] = r0 << 6;
+        fade->color[1] = g0 << 6;
+        fade->color[2] = b0 << 6;
+        fade->duration = duration;
+        fade->w8 = 0;
+        fade->step[0] = (fade->color[0] - (r1 << 6)) / duration;
+        fade->step[1] = (fade->color[1] - (g1 << 6)) / duration;
+        fade->step[2] = (fade->color[2] - (b1 << 6)) / duration;
+        return 0;
+    }
+}
 
 /* Mark a particle free. */
 void func_801E0844(s16 *age) {
@@ -800,7 +897,7 @@ void func_801E3534(Actor *actor, SlotPool *pool, s32 *entries, s32 *locals) {
 
     none = -1;
     actor->h3C = 0xFFFF;
-    actor->b5C = 0xFF;
+    actor->parent = 0xFF;
     actor->b39 = 0x6B;
     actor->entries = entries;
     actor->shared = NULL;
@@ -809,7 +906,7 @@ void func_801E3534(Actor *actor, SlotPool *pool, s32 *entries, s32 *locals) {
     actor->globals = NULL;
     actor->depth = 0;
     actor->anim_state = none;
-    actor->h58 = 0;
+    actor->aim_actor = 0;
     actor->b35 = 0;
     actor->scaled = 0;
     actor->b38 = 0;
@@ -895,7 +992,49 @@ s32 func_801E36BC(Actor *actor, SlotPool *pool, s32 ticks, s32 arg3, s32 arg4) {
     return changed;
 }
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E37D0);
+/* Carry an actor on its carrier's node: optionally take the node's rotation,
+ * then place its root at its offset in the node's space. Without a carrier
+ * the link is dropped. */
+void func_801E37D0(Actor *actor) {
+    SVECTOR offset;
+    MATRIX *m;
+
+    m = SCRATCH_MATRIX;
+    if (D_801E8670[actor->parent] != NULL) {
+        if (!(actor->flags & 0x10)) {
+            actor->active = D_801E8670[actor->parent]->active;
+        }
+        if (actor->active) {
+            if (actor->inherit) {
+                if (actor->parent_node != 0) {
+                    MulMatrix0(&D_801E8670[actor->parent]->parts->world,
+                               &D_801E8670[actor->parent]->parts[actor->parent_node].world, SCRATCH_MATRIX);
+                } else {
+                    m = &D_801E8670[actor->parent]->parts->world;
+                }
+                func_80049BDC(m, &actor->parts->local);
+                func_80049BDC(m, &actor->parts->world);
+            }
+            if (actor->parent_node != 0) {
+                CompMatrix(&D_801E8670[actor->parent]->parts->local,
+                           &D_801E8670[actor->parent]->parts[actor->parent_node].world, m);
+            } else {
+                m = &D_801E8670[actor->parent]->parts->local;
+            }
+            SetRotMatrix(m);
+            SetTransMatrix(m);
+            offset.vx = actor->offset[0];
+            offset.vy = actor->offset[1];
+            offset.vz = actor->offset[2];
+            gte_ldv0(&offset);
+            gte_rtv0tr();
+            gte_stlvnl(actor->parts->local.t);
+            gte_stlvnl(actor->parts->pos);
+        }
+    } else {
+        actor->parent = 0xFF;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E39F0);
 
@@ -1035,7 +1174,63 @@ s32 func_801E6338(Actor *actor) {
     return SquareRoot0(dx * dx + dy * dy + dz * dz);
 }
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E63A8);
+/* Aim an actor at a point of another actor's node (`aim_actor` is a
+ * reference: 0xff the mask's lowest actor, 0xfe the current one, 1-0x7f an
+ * index + 1), updating its target and a running movement tween. */
+void func_801E63A8(Actor *actor) {
+    VECTOR world;
+    PoolSlot *tween;
+    Actor *other;
+    MATRIX *m;
+    s32 index;
+
+    index = 0;
+    if (actor->aim_actor == 0xFF) {
+        for (index = 0; index < 8; index++) {
+            if ((actor->mask >> index) & 1) {
+                break;
+            }
+        }
+    }
+    if (actor->aim_actor == 0xFE) {
+        index = D_801E86B0;
+    }
+    if (actor->aim_actor == 0xFD) {
+        index = actor->index;
+    }
+    if (actor->aim_actor == 0xFC) {
+        index = actor->b21;
+    }
+    if (actor->aim_actor == 0xFA) {
+        index = 10;
+    }
+    if (actor->aim_actor > 0 && actor->aim_actor < 0x80) {
+        index = actor->aim_actor - 1;
+    }
+    other = D_801E8670[index];
+    if (other != NULL && index != actor->index) {
+        m = SCRATCH_MATRIX;
+        if (actor->aim_node != 0) {
+            CompMatrix(&other->parts->local, &other->parts[actor->aim_node].world, SCRATCH_MATRIX);
+        } else {
+            m = &other->parts->local;
+        }
+        SetRotMatrix(m);
+        SetTransMatrix(m);
+        gte_ldv0(actor->aim_offset);
+        gte_rtv0tr();
+        gte_stlvnl(&world);
+        actor->target[0] = world.vx;
+        actor->target[1] = world.vy;
+        actor->target[2] = world.vz;
+        tween = actor->parts->attachments[0];
+        if (tween != NULL && (u32)(tween->kind - 7) < 2) {
+            tween->value[3] = world.vx;
+            tween->value[4] = world.vy;
+            tween->value[5] = world.vz;
+        }
+    }
+}
 
 /* Hide node `index` of `parts` and its descendants, showing the same nodes of
  * `other`, and release their attachments. Differs in register assignment and
