@@ -277,7 +277,7 @@ extern MATRIX D_8009C808;       /* camera matrix */
 extern s32 D_8009D7F0;          /* current buffer */
 extern s32 D_80050100;          /* ordering-table depth shift */
 
-void func_8004A92C(SVECTOR *angle, MATRIX *m); /* RotMatrix */
+MATRIX *func_8004A92C(SVECTOR *angle, MATRIX *m); /* RotMatrixYXZ */
 
 /* Textured quad packet (PsyQ POLY_FT4 layout). */
 typedef struct {
@@ -567,7 +567,9 @@ extern u16 D_8009B688[];
 extern s16 D_8009D7E0; /* scene object count */
 extern u16 D_8009D52C;
 
-void func_8007A06C(SceneObject *object, PolyFT4 *quads, s32 count);
+/* func_8007A06C (void, worldmap_80077E68) has no prototype here: the other units
+ * call it undeclared (implicit int), which lets the caller schedule its return value
+ * early after the call (8007FC8C). */
 void func_8002CBBC(void *def);
 s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *hit, s32 range, s32 mode);
 

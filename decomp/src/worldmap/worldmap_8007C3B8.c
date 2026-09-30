@@ -246,7 +246,6 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007C3B8", func_80
 #endif
 
 /* Link scene objects 0-3 to 4, hide 4 and reset its rotation; place the actor. */
-#ifdef NON_MATCHING /* actor and constants swap registers */
 s32 func_8007CC6C(s32 index) {
     WorldmapActor *actor;
 
@@ -268,9 +267,6 @@ s32 func_8007CC6C(s32 index) {
     actor->position.vz = 0x400000;
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007C3B8", func_8007CC6C);
-#endif
 
 /* Drift scene object 4 with the actor along z; commands 1/2 start its effects (state 1 also follows with the camera). */
 s32 func_8007CD20(s32 index) {
@@ -311,7 +307,6 @@ s32 func_8007CD20(s32 index) {
 }
 
 /* Link scene object 6 to 5, hide 5 and reset its rotation; place the actor. */
-#ifdef NON_MATCHING /* actor and constants swap registers */
 s32 func_8007CE84(s32 index) {
     WorldmapActor *actor;
 
@@ -331,9 +326,6 @@ s32 func_8007CE84(s32 index) {
     actor->position.vz = 0x200000;
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007C3B8", func_8007CE84);
-#endif
 
 /* Drift scene object 5 with the actor over the terrain along z; command 1 starts its trail effect. */
 s32 func_8007CF18(s32 index) {
@@ -368,7 +360,6 @@ s32 func_8007CF18(s32 index) {
 }
 
 /* Link scene objects 7 and 8 to 9, hide 9 and reset its rotation; place the actor. */
-#ifdef NON_MATCHING /* actor and constants swap registers */
 s32 func_8007D078(s32 index) {
     WorldmapActor *actor;
 
@@ -388,9 +379,6 @@ s32 func_8007D078(s32 index) {
     actor->position.vz = 0;
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007C3B8", func_8007D078);
-#endif
 
 /* Drift scene object 9 with the actor over the terrain; command 1 shows objects 7-9 and ends the step. */
 s32 func_8007D110(s32 index) {
@@ -421,7 +409,6 @@ s32 func_8007D110(s32 index) {
 }
 
 /* Link scene object 11 to 10, hide 10 and reset its rotation; place the actor. */
-#ifdef NON_MATCHING /* actor and constants swap registers */
 s32 func_8007D228(s32 index) {
     WorldmapActor *actor;
 
@@ -440,9 +427,6 @@ s32 func_8007D228(s32 index) {
     actor->position.vz = 0x100000;
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007C3B8", func_8007D228);
-#endif
 
 /* Drift scene object 10 with the actor over the terrain; command 1 shows objects 10-11, bursts and ends the step. */
 s32 func_8007D2B8(s32 index) {
@@ -476,7 +460,6 @@ s32 func_8007D2B8(s32 index) {
 }
 
 /* Link scene object 15 to 12, hide 12 and reset its rotation; place the actor. */
-#ifdef NON_MATCHING /* actor and constants swap registers */
 s32 func_8007D414(s32 index) {
     WorldmapActor *actor;
 
@@ -495,9 +478,6 @@ s32 func_8007D414(s32 index) {
     actor->position.vz = 0x280000;
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007C3B8", func_8007D414);
-#endif
 
 /* Drift scene object 12 with the actor over the terrain; command 1 shows objects 12 and 15, bursts and ends the step. */
 s32 func_8007D4A4(s32 index) {
@@ -531,7 +511,6 @@ s32 func_8007D4A4(s32 index) {
 }
 
 /* Link scene object 14 to 13, hide 13 and reset its rotation; place the actor. */
-#ifdef NON_MATCHING /* actor and constants swap registers */
 s32 func_8007D600(s32 index) {
     WorldmapActor *actor;
 
@@ -550,9 +529,6 @@ s32 func_8007D600(s32 index) {
     actor->position.vz = 0x380000;
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007C3B8", func_8007D600);
-#endif
 
 /* Drift scene object 13 with the actor over the terrain. */
 s32 func_8007D690(s32 index) {
@@ -575,7 +551,6 @@ s32 func_8007D690(s32 index) {
 }
 
 /* Show scene object 16, reset its rotation and place the actor. */
-#ifdef NON_MATCHING /* actor and constants swap registers */
 s32 func_8007D774(s32 index) {
     WorldmapActor *actor;
 
@@ -593,9 +568,6 @@ s32 func_8007D774(s32 index) {
     actor->motion.vz = -0x6000;
     return 3;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007C3B8", func_8007D774);
-#endif
 
 /* Drift scene object 16 with the actor; command 1 hides it and moves ahead of the camera, command 2 makes the camera follow. */
 s32 func_8007D7FC(s32 index) {
