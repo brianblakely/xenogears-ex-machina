@@ -354,8 +354,6 @@ void func_80071B94(u8 mode) {
     s32 offset;
     u8 actor;
     u16 flags;
-    BattleGraphics *graphics;
-    TurnState *turn;
     s32 layout;
     u8 *message;
     u8 *bytes;
@@ -405,18 +403,16 @@ void func_80071B94(u8 mode) {
         for (offset = 7 * sizeof(EnemyReaction); offset >= 0; offset -= sizeof(EnemyReaction)) {
             ((EnemyReaction *)((u8 *)D_800C3D18 + offset))->unk1[1] = 0;
         }
-        turn = D_800C3EAC;
-        graphics = D_800C3EA4;
         layout = D_800D3280 * 3;
-        graphics->unk63C8[D_800CCB04.buffer].x0 = D_800C3254[0][layout + turn->actor] + 0x10 + turn->actor * 0x60;
-        graphics->unk63C8[D_800CCB04.buffer].y0 = 8;
-        graphics->unk63C8[D_800CCB04.buffer].x1 = D_800C3254[0][layout + turn->actor] + turn->actor * 0x60 + 0x28;
-        graphics->unk63C8[D_800CCB04.buffer].y1 = 8;
-        graphics->unk63C8[D_800CCB04.buffer].x2 = D_800C3254[0][layout + turn->actor] + 0x10 + turn->actor * 0x60;
-        graphics->unk63C8[D_800CCB04.buffer].y2 = 0x20;
-        graphics->unk63C8[D_800CCB04.buffer].x3 = D_800C3254[0][layout + turn->actor] + turn->actor * 0x60 + 0x28;
-        graphics->unk63C8[D_800CCB04.buffer].y3 = 0x20;
-        graphics->unk6414 = D_800CCB04.buffer;
+        D_800C3EA4->unk63C8[D_800CCB04.buffer].x0 = D_800C3254[0][layout + D_800C3EAC->actor] + 0x10 + D_800C3EAC->actor * 0x60;
+        D_800C3EA4->unk63C8[D_800CCB04.buffer].y0 = 8;
+        D_800C3EA4->unk63C8[D_800CCB04.buffer].x1 = D_800C3254[0][layout + D_800C3EAC->actor] + D_800C3EAC->actor * 0x60 + 0x28;
+        D_800C3EA4->unk63C8[D_800CCB04.buffer].y1 = 8;
+        D_800C3EA4->unk63C8[D_800CCB04.buffer].x2 = D_800C3254[0][layout + D_800C3EAC->actor] + 0x10 + D_800C3EAC->actor * 0x60;
+        D_800C3EA4->unk63C8[D_800CCB04.buffer].y2 = 0x20;
+        D_800C3EA4->unk63C8[D_800CCB04.buffer].x3 = D_800C3254[0][layout + D_800C3EAC->actor] + D_800C3EAC->actor * 0x60 + 0x28;
+        D_800C3EA4->unk63C8[D_800CCB04.buffer].y3 = 0x20;
+        D_800C3EA4->unk6414 = D_800CCB04.buffer;
         D_800C3EA4->unk6415 = 1;
         actor = D_800C3EAC->actor;
         if (!(D_800CCCE8.records[actor].pilot.status7C & 0x2080)) {
@@ -3103,20 +3099,16 @@ void func_8007FB70(u8 member) {
  * table) and remember the selected row (clamped below `count`). */
 #ifdef NON_MATCHING
 void func_8007FBE0(u8 count, u8 selected) {
-    BattleGraphics *gfx;
-    LINE_F2 *line;
     s32 i;
 
     if (count == selected) {
         selected--;
     }
     for (i = 0; i < count - 1; i++) {
-        gfx = D_800C3EA4;
-        line = &gfx->unk908[i * 2];
-        line[D_800CCB04.buffer].x0 = 0xC;
-        line[D_800CCB04.buffer].y0 = D_800C3200[count][i + 2] + 0x5E;
-        line[D_800CCB04.buffer].x1 = 0x12;
-        line[D_800CCB04.buffer].y1 = D_800C3200[count][i + 2] + 0x5E;
+        D_800C3EA4->unk908[D_800CCB04.buffer + i * 2].x0 = 0xC;
+        D_800C3EA4->unk908[D_800CCB04.buffer + i * 2].y0 = D_800C3200[count][i + 2] + 0x5E;
+        D_800C3EA4->unk908[D_800CCB04.buffer + i * 2].x1 = 0x12;
+        D_800C3EA4->unk908[D_800CCB04.buffer + i * 2].y1 = D_800C3200[count][i + 2] + 0x5E;
     }
     D_800D2D28->unk97 = selected;
     D_800D2D28->unk98 = D_800CCB04.buffer;
