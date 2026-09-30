@@ -22,7 +22,24 @@ s32 func_8007E450(s32 index) {
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007DE98", func_8007E4E4);
 
+/* Set up `count` translucent blue textured quads of a scene object and copy them to its second buffer. */
+#ifdef NON_MATCHING /* loop pointer biased to b0 instead of the code byte */
+void func_8007EBBC(SceneObject *object, PolyFT4 *quads, s32 count, s32 abr) {
+    s32 i;
+
+    for (i = 0; i < count; i++) {
+        setPolyFT4(quads);
+        quads->tpage = GetTPage(0, abr, 0x300, 0x100);
+        quads->clut = GetClut(0, 0x1FF);
+        setRGB0(quads, 0x3C, 0x3C, 0xC0);
+        setSemiTrans(quads, 1);
+        quads++;
+    }
+    memcpy(object->prims2, object->prims, count * sizeof(PolyFT4));
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007DE98", func_8007EBBC);
+#endif
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007DE98", func_8007ECA4);
 
@@ -81,7 +98,31 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007DE98", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007DE98", func_8007FF70);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007DE98", func_80080218);
+/* Leave the world map for scene 0x84 (flag word 2). */
+void func_80080218(void) {
+    func_80039FF8();
+    func_8003852C(D_8006259C);
+    func_800320E8(D_8006259C);
+    func_80084818();
+    func_80086124();
+    func_80086568();
+    func_800866C8();
+    func_80074F04();
+    func_800750DC();
+    func_80088FF4();
+    func_80089128();
+    func_80097D64();
+    func_800320E8(D_8009BC38[0]);
+    func_800320E8(D_8009BCB0[0]);
+    func_800320E8(D_8009BC38[1]);
+    func_800320E8(D_8009BCB0[1]);
+    func_800320E8(D_8009C180);
+    func_800976A0();
+    D_8006F94E = 0x84;
+    D_8006F954[0] = 2;
+    D_8009BBC4 = 1;
+    D_8006F950 = D_8009BD38.vy;
+}
 
 /* Restart an actor's timed sequence at its first step. */
 s32 func_8008032C(s32 index) {
