@@ -4799,7 +4799,166 @@ u8 member;
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80083948);
+/* The gear attack page (0x19): like the attack page (80081b58) but paid in
+ * fuel. The gear HUD level (4: free combos) and the chain (+0x2d6, history
+ * +0x2cc) pick the step's fuel cost from the gear HUD table, indexed like the
+ * combo flags (80086b88). Cancel (5) leaves the page unless steps were
+ * taken; the command closes once the chain cannot continue, the target is
+ * down or the attack ended the chain. Int function without a value. */
+s32 func_80083948(u8 member) {
+    s32 steps = 0;
+    u16 fuel = D_800CCCE8.records[member].gear.fuel;
+    u8 enough = 0;
+    u8 leave;
+    s32 index;
+    s32 cost;
+
+    D_800D366C = 0;
+    if (D_800C3EAC->unk2DF[2] != 0) {
+        return;
+    }
+    func_8008189C(member);
+    switch (D_800D3014) {
+    case 5:
+        leave = 1;
+        if (D_800C3EAC->unk2DF[8] != 0 && D_800CCCE8.gearHud.level != 4) {
+            func_80080B64(member);
+            D_800C3EAC->unk2DF[2] = leave;
+            leave = 0;
+        }
+        if (leave) {
+            D_800D2D28->unkA8 = 0;
+            func_800B8DA4();
+            D_800D366C = 1;
+            D_800C3EAC->page = 0x10;
+            func_80077980();
+            if (D_800CCCE8.gearHud.level != 4) {
+                func_8009413C(member, 1);
+            } else {
+                D_800C3EAC->unk2DF[8] = 0;
+                D_800C3EAC->unk2D6 = 0;
+            }
+        }
+        break;
+    case 4:
+        if (D_800C3EAC->slots[member].items[2] != 0) {
+            D_800D3014 = 5;
+            func_8008AA40(0x4F);
+        }
+        break;
+    case 7:
+        if (D_800C3EAC->slots[member].items[1] != 0) {
+            D_800D3014 = 5;
+            func_8008AA40(0x4F);
+        }
+        break;
+    case 6:
+        if (D_800C3EAC->slots[member].items[0] != 0) {
+            D_800D3014 = 5;
+            func_8008AA40(0x4F);
+        }
+        break;
+    }
+    if (D_800C3EAC->unk2E9 == 0) {
+        switch (D_800D3014) {
+        case 0:
+            D_800C3EAC->unk2E8 = func_80084854(D_800C3EAC->unk2E8, 0);
+            func_8008AA40(0x4C);
+            break;
+        case 1:
+            D_800C3EAC->unk2E8 = func_80084854(D_800C3EAC->unk2E8, 1);
+            func_8008AA40(0x4C);
+            break;
+        case 2:
+            D_800C3EAC->unk2E8 = func_80084854(D_800C3EAC->unk2E8, 2);
+            func_8008AA40(0x4C);
+            break;
+        case 3:
+            D_800C3EAC->unk2E8 = func_80084854(D_800C3EAC->unk2E8, 3);
+            func_8008AA40(0x4C);
+            break;
+        }
+    }
+    D_800D2D28->reaction[member] = 1;
+    if (D_800C3EAC->unk2DF[8] != 0) {
+        if (D_800CCCE8.gearHud.level != 4 &&
+            (D_800CCCE8.gearHud.level == 0 || D_800CCCE8.gearHud.level - 1 < D_800C3EAC->unk2CC[0])) {
+            func_80080B64(member);
+            D_800C3EAC->unk2DF[2] = 1;
+            return;
+        }
+        if (func_80089C9C(D_800C48E8, D_800C3EAC->slots[member].defaultTarget)) {
+            func_80080B64(member);
+            D_800C3EAC->unk2DF[2] = 1;
+            return;
+        }
+    }
+    switch (D_800D3014) {
+    default:
+        if (D_800CCCE8.gearHud.level == 4 && D_800C3EAC->unk2DF[8] == 0) {
+            D_800C3EAC->unk2DF[8]++;
+            func_80086F98(0xFF, member);
+        }
+        break;
+    case 5:
+        break;
+    case 4:
+        steps++;
+    case 7:
+        steps++;
+    case 6:
+        steps++;
+        if (D_800CCCE8.gearHud.level == 4 && D_800C3EAC->unk2DF[8] == 0) {
+            D_800C3EAC->unk2DF[8]++;
+            func_80086F98(0xFF, member);
+            break;
+        }
+        /* The call narrows like a u8 (u8, u8) prototype. */
+        if ((u8)func_80086B88((u8)(steps - 1), member)) {
+            if (D_800C3EAC->unk2D6 == 0) {
+                cost = STEP_FUEL[steps];
+            } else if (D_800CCCE8.gearHud.level == 4) {
+                index = steps + 12;
+                cost = STEP_FUEL[index];
+            } else {
+                cost = STEP_FUEL[steps + (D_800C3EAC->unk2CC[0] + 1) * 3];
+            }
+            if (fuel - cost >= 0) {
+                enough = 1;
+            }
+            if (enough) {
+                func_8008AA40(0x4D);
+                D_800C4929 = 1;
+                func_800819A4(member);
+                if (D_800C3EAC->unk2D6 != 0) {
+                    D_800C3EAC->unk2DF[5]++;
+                }
+                if (D_800D2D28->unkCB != 0) {
+                    D_800C3EAC->page = 0x65;
+                    D_800C3EAC->unk2DF[3] = 0xFF;
+                    D_800C3EAC->unk2DF[1] = 1;
+                } else {
+                    D_800C3EAC->page = 0x19;
+                    D_800C3EAC->unk2DF[3] = 0x19;
+                }
+                D_800C3EAC->unk2DF[5] = func_80086F98(steps - 1, member) == 0;
+                func_80087AF0(member, steps);
+                D_800CCCE8.records[member].gear.fuel -= STEP_FUEL[D_800C3EAC->unk2DC];
+                func_800898F0(member);
+                D_800C3EAC->unk2DF[8]++;
+            } else {
+                D_800D366C = 1;
+                func_8008AA74(0x4F);
+                D_800D366C = 0;
+            }
+            if (D_800C3EAC->unk2DF[5] != 0) {
+                func_80080B64(member);
+                D_800C3EAC->unk2DF[2] = 1;
+            }
+        }
+        break;
+    }
+}
 
 /* Whether the member can attack `slot`: present and visible; an unflagged
  * slot must be adjacent (formation distance 0) and not down, a flagged slot

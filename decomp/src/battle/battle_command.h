@@ -16,13 +16,20 @@ void func_8009BAC4(u8 slot, u8 *choice, s16 *busy);
 u8 func_80087AF0(u8 member, u8 cost); /* execute the attack; the target reacted */
 void func_800861D0(u8 code, u8 member);
 u8 func_80085EB4(u8 mode, u8 member);
+u8 func_80086F98(u8 step, u8 member);
+void func_800898F0(u8 member);
 void func_800B8DA4(void);
 
 extern u16 D_800D2E06[11]; /* per slot: turn timer reload */
 extern u8 D_800C31D4[][8];  /* timer reload by maximum and remaining AP */
-extern u8 D_800C2050;       /* healing ignores the gear */
+extern u8 D_800C2050;
+extern u8 D_800C4929;       /* healing ignores the gear */
 extern u8 *D_800C3160[13]; /* combo input patterns (seven inputs each) */
 extern u8 *D_800C31AC[];   /* per character: the deathblow of each combo */
+
+/* The fuel cost of each combo step (1-based, indexed like the combo flags
+ * 800c34cc) at the gear HUD of the battle work area. */
+#define STEP_FUEL (&D_800CCCE8.gearHud.commands[-1])
 
 /* A slot's ground position, read unsigned. */
 #define SLOT_X(slot) ((u16)D_800C3EB4[slot].x)
