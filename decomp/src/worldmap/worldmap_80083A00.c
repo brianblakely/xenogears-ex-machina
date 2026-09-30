@@ -21,7 +21,47 @@ s32 func_80083FE4(s32 index) {
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80084068);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008440C);
+/* Unpack the area image to VRAM, then build 15 CLUT rows fading the
+ * 0,0x1F0 CLUT row towards a pale blue and record the 16 CLUT ids. */
+void func_8008440C(void) {
+    RECT rect;
+    CVECTOR fade = {0xE0, 0xF5, 0xFF, 0x00};
+    s32 i;
+    u16 *clut;
+    void *source;
+    void *faded;
+
+    source = func_80032E88(D_8009BD20, 1);
+    i = 0;
+    func_8002DD20(source);
+    DrawSync(0);
+    func_800320E8(source);
+    clut = D_8009BCE0;
+    func_800320E8(D_8009BD20);
+    source = func_80031BDC(0x200, 1);
+    faded = func_80031BDC(0x2000, 1);
+    rect.x = 0;
+    rect.y = 0x1F0;
+    rect.w = 0x100;
+    rect.h = 1;
+    StoreImage(&rect, source);
+    DrawSync(0);
+    func_800931D8(source, faded, 0x10, &fade);
+    rect.x = 0;
+    rect.y = 0x1F0;
+    rect.w = 0x100;
+    rect.h = 0xF;
+    LoadImage(&rect, faded);
+    DrawSync(0);
+    do {
+        i++;
+        *clut = GetClut(rect.x, rect.y);
+        rect.y++;
+        clut++;
+    } while (i < 0x10);
+    func_800320E8(faded);
+    func_800320E8(source);
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80084580);
 

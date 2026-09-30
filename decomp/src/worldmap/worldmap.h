@@ -738,6 +738,15 @@ typedef struct {
 
 extern FlightSave D_8006EE80;
 s32 func_8008868C(void);
+
+typedef struct {
+    u8 r, g, b, cd;
+} CVECTOR;
+
+extern u16 D_8009BCE0[16]; /* faded CLUT ids */
+void func_8002DD20(void *image);                            /* unpack an image to VRAM */
+void StoreImage(RECT *rect, void *data);                     /* read back from VRAM */
+void func_800931D8(u16 *src, u16 *dst, s32 steps, CVECTOR *colour); /* fade CLUT rows */
 extern u16 D_8009B624[][2]; /* per area: two spinning scene objects */
 
 #endif
