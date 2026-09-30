@@ -56,7 +56,178 @@ s32 func_801E70E8(s32 *images) {
     return width * height;
 }
 
+/* Set up the battle stage: register the stage model and place its parts,
+ * move the scene data into its own block, start the stage motion, take the
+ * origin and colour matrix, build the stage objects (lights, backdrop, fog,
+ * animations) and publish the actors and lights. Returns whether the stage
+ * has fog (its colour goes to tint); 0 without a stage or scene. */
+#ifdef NON_MATCHING
+/* Register allocation differs: the original keeps stage and colours on the
+ * stack, the scene data in s6 and computes actors/entries with store-flag
+ * masks (sltu/negu/and). */
+u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin, s16 *colours,
+                 u8 *tint) {
+    BattleScene *data;
+    BattleScene *source;
+    StageInfo *info;
+    StageObject *object;
+    ModelPart *part;
+    PartPosition *position;
+    s32 *table;
+    u8 *motions[4];
+    void *actors;
+    s32 *lights;
+    StageLight *entries;
+    s32 size;
+    s32 i;
+    s32 j;
+    s32 made;
+    s32 placed;
+    u8 fog;
+
+    data = *scene;
+    if (stage == NULL || scene == NULL || data == NULL) {
+        return 0;
+    }
+    func_80032498(4, 0);
+    D_800C3E38 = NULL;
+    D_800C3EA0 = NULL;
+    D_800D3344 = NULL;
+    D_800D39CC = NULL;
+    D_800D3348 = 0;
+    for (i = 1; i >= 0; i--) {
+        D_800C3D50[i] = NULL;
+    }
+    for (j = 1; j >= 0; j--) {
+        D_800C3DA0[j].motion = NULL;
+    }
+    D_800D361A = 0;
+    if (stage != NULL) {
+        func_800320B8(stage);
+        func_800A8BF0(0x1F, 0xC4, stage, stage, 0, 0, 0, 0, 0);
+        func_801E70E8(stage->images);
+        position = stage->positions;
+        part = D_800D33E4->parts;
+        D_800C3E38 = part;
+        D_800C3E48 = D_800D33E4->model;
+        for (i = 1; i < part->count; i++, position++) {
+            part[i].x = position->x;
+            part[i].y = position->y;
+            part[i].z = position->z;
+            part[i].rotation = position->rotation;
+        }
+    }
+    source = data;
+    size = ((s32 *)source)[-1];
+    data = func_80031BDC(size, 0);
+    D_800658C8 = data;
+    if (data == NULL) {
+        return 0;
+    }
+    memcpy(data, source, size);
+    func_800320B8((s32 *)source - 1);
+    func_800320E8((s32 *)source - 1);
+    made = 0;
+    placed = 0;
+    actors = data->actors != 0 ? (u8 *)data + data->actors : NULL;
+    lights = (s32 *)((u8 *)data + data->lights);
+    entries = data->lights != 0 ? (StageLight *)(lights + 1) : NULL;
+    table = (s32 *)((u8 *)data + data->motion);
+    func_8003342C(table);
+    info = &data->info;
+    table = (s32 *)table[1];
+    if (stage != NULL) {
+        func_800AA898(D_800D33E4, D_800C3D0C, table + 2, 0);
+        func_800AA934(D_800D33E4, D_800D33E4, D_800C3D0C, 0);
+        func_8009EF3C(D_800C3E38, D_800D33E4->pose);
+    }
+    for (i = 0; i < 4; i++) {
+        motions[i] = (u8 *)table + *table;
+    }
+    origin[0] = data->origin[0];
+    origin[1] = data->origin[1];
+    origin[2] = data->origin[2];
+    origin[3] = 0;
+    origin[4] = 0;
+    origin[5] = 0;
+    origin[6] = 0;
+    origin[7] = 0;
+    origin[8] = 0;
+    colours[0] = data->colours[0];
+    colours[1] = 0;
+    colours[2] = 0;
+    colours[3] = data->colours[1];
+    colours[4] = 0;
+    colours[5] = 0;
+    colours[6] = data->colours[2];
+    colours[7] = 0;
+    colours[8] = 0;
+    D_800D2FD0 = motions[0] + 2;
+    D_800D2FC8 = *(u16 *)motions[0];
+    D_800D2FC0 = colours;
+    SetColorMatrix(colours);
+    SetBackColor(data->back[0], data->back[1], data->back[2]);
+    for (i = 0; i < 6; i++) {
+        object = &info->objects[i];
+        switch (object->type) {
+        case 0:
+            break;
+        case 1:
+            if (D_800C3D50[made] == NULL && made < 2) {
+                D_800C3D50[made] = func_8002709C(object->v10, object->v12, object->v14, object->v16,
+                    object->v1A, object->v1C, object->v1E, object->v20, object, NULL, 0,
+                    object->v24, object->v26);
+            }
+            made++;
+            break;
+        case 2:
+            if (D_800C3D50[made] == NULL && made < 2) {
+                D_800C3D50[made] = func_8002709C(object->v10, object->v12, object->v14, object->v16,
+                    object->v1A, object->v1C, object->v1E, object->v20, object, info->fogColour,
+                    object->v22, object->v24, object->v26);
+            }
+            made++;
+            break;
+        case 3:
+            if (D_800C3EA0 == NULL) {
+                D_800C3EA0 = func_801E7914(object->v10, object->v12, info->backdrop[2],
+                    info->backdrop[3], object->v14, object->v1E, object->v16, object->v1A,
+                    object->v1C, info->backdrop[0], info->backdrop[1], (VECTOR *)object,
+                    (CVECTOR *)info->fogColour, object->v20, object->v22);
+            }
+            break;
+        case 5:
+            info->fog = 1;
+            break;
+        case 7:
+            if (D_800C3DA0[placed].motion == NULL && placed < 2 && i + 1 < 4) {
+                func_80027D64(&D_800C3DA0[placed], object->v10, object->v12, object->v14,
+                    object->v16, object->v20, object->v1A, object->v1C, motions[i + 1]);
+            }
+            placed++;
+            break;
+        }
+    }
+    fog = info->fog;
+    if (fog != 0 && tint != NULL) {
+        tint[0] = info->fogColour[0];
+        tint[1] = info->fogColour[1];
+        tint[2] = info->fogColour[2];
+    }
+    if (actors != NULL && entries != NULL) {
+        func_801E7EC4(actors, entries, *lights);
+    }
+    for (i = 0; i < 4; i++) {
+        D_800D2D10[i] = D_800658C8->info.flags[i];
+    }
+    DrawSync(0);
+    func_800320E8(stage);
+    *scene = data;
+    return fog;
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/stage", func_801E7210);
+#endif
 
 /* Build the stage backdrop: its placement, the 9 x 9 floor grid spaced by
  * step, the tiles' texture page and palette, the fills and fades in the
