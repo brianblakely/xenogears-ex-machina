@@ -1688,23 +1688,65 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003B9E4);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003BA38);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003BB08);
+/* Set `bits` in every active channel of a sequence.
+ * Nonmatching: the original reloads the channel flags before the update. */
+#ifdef NON_MATCHING
+void func_8003BB08(s32 bits, SoundSeq *seq) {
+    SoundSeqChannel *channel = seq->channel;
+    s32 count = seq->channels;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003BB40);
+    do {
+        count--;
+        if (channel->flags != 0) {
+            channel->flags = bits | channel->flags;
+        }
+        channel++;
+    } while (count != 0);
+}
+#else
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003BB08);
+#endif
+
+/* Byte offset of channel `index` in a sequence. */
+s32 func_8003BB40(s32 index) {
+    return index * sizeof(SoundSeqChannel) + 0x94;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003BB64);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003BC10);
+extern void func_8003BCA0(s32 a, s32 b, s32 c, s32 d, s32 mode);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003BC34);
+/* 8003bca0 with modes 1-4, passing the other arguments through. */
+void func_8003BC10(s32 a, s32 b, s32 c, s32 d) {
+    func_8003BCA0(a, b, c, d, 1);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003BC58);
+void func_8003BC34(s32 a, s32 b, s32 c, s32 d) {
+    func_8003BCA0(a, b, c, d, 2);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003BC7C);
+void func_8003BC58(s32 a, s32 b, s32 c, s32 d) {
+    func_8003BCA0(a, b, c, d, 3);
+}
+
+void func_8003BC7C(s32 a, s32 b, s32 c, s32 d) {
+    func_8003BCA0(a, b, c, d, 4);
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003BCA0);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003BDBC);
+extern u16 D_800594F4; /* command ring write index */
+extern u16 D_80059510; /* command ring read index */
+
+/* Whether the eight-entry command ring has at least six entries queued. */
+s32 func_8003BDBC(void) {
+    u16 write = D_800594F4;
+
+    if (write < D_80059510) {
+        write += 8;
+    }
+    return write - D_80059510 >= 6;
+}
 
 void func_8003BDF4(void) {
 }
@@ -1713,13 +1755,33 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003BDFC);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003BE68);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003BFA0);
+extern void (*D_8005950C)(void);
+extern s32 D_80059514;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003C010);
+/* Driver tick: count it and run the tick callback, flagged busy. */
+void func_8003BFA0(void) {
+    D_8005957C |= 4;
+    D_80059514++;
+    if (D_8005950C != NULL) {
+        D_8005950C();
+    }
+    D_8005957C &= ~4;
+}
+
+void func_8003C010(void (*callback)(void)) {
+    D_8005950C = callback;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003C020);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003C484);
+/* Step a linear slide; on its last frame land exactly on the target. */
+void func_8003C484(SoundSlide *slide) {
+    if (--slide->frames != 0) {
+        slide->value += slide->step;
+    } else {
+        slide->value = slide->target << 16;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003C4C4);
 

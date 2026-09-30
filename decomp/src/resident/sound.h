@@ -40,7 +40,21 @@ typedef struct SoundTrack {
     u16 flags;
 } SoundTrack;
 
-/* A sequence being played: header, then 0x158-byte channels. */
+/* One channel of a playing sequence. */
+typedef struct {
+    u16 flags;
+    u8 unk2[0x156];
+} SoundSeqChannel;
+
+/* A linear slide of a 16.16 value. */
+typedef struct {
+    s32 value;
+    s32 step;
+    s16 frames;
+    s16 target;
+} SoundSlide;
+
+/* A sequence being played: header, then its channels. */
 typedef struct {
     u8 unk0[0x10];
     u16 flags;         /* bit 15: paused */
@@ -71,6 +85,7 @@ typedef struct {
     s32 pan_step;
     s16 pan_frames;
     s16 pan_target;
+    SoundSeqChannel channel[1];
 } SoundSeq;
 
 typedef struct {
