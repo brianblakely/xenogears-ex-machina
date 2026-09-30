@@ -471,12 +471,29 @@ void func_80088FF4(void) {
     func_800320E8(D_8009BDF4);
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008901C);
+/* Allocate the two effect quad buffers: semi-transparent textured quads
+ * on the 0x340,0x100 page, the second a copy of the first. */
+void func_8008901C(void) {
+    PolyFT4 *quad;
+    s32 i;
+
+    D_8009BE1C[0] = func_80031BDC(sizeof(EffectQuads), 1);
+    D_8009BE1C[1] = func_80031BDC(sizeof(EffectQuads), 1);
+    quad = D_8009BE1C[0];
+    for (i = 0xFF; i != -1; i--) {
+        setPolyFT4(quad);
+        quad->tpage = GetTPage(1, 1, 0x340, 0x100);
+        quad->clut = GetClut(0x100, 0x1FF);
+        setSemiTrans(quad, 1);
+        quad++;
+    }
+    *(EffectQuads *)D_8009BE1C[1] = *(EffectQuads *)D_8009BE1C[0];
+}
 
 /* Free two effect buffers. */
 void func_80089128(void) {
-    func_800320E8(D_8009BE1C);
-    func_800320E8(D_8009BE20);
+    func_800320E8(D_8009BE1C[0]);
+    func_800320E8(D_8009BE1C[1]);
 }
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80089160);
@@ -583,7 +600,36 @@ s32 func_8008BD1C(s32 index) {
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008BDD0);
 
+/* Step the actor towards its target (x, z in world units) at half its
+ * speed; bit 0/1 of the result report x/z arrival. */
+#ifdef NON_MATCHING /* target and position registers swapped */
+s32 func_8008BEC8(WorldmapActor *actor) {
+    s32 arrived;
+    s32 distance;
+    s32 position;
+
+    position = actor->position.vx;
+    distance = actor->u.step - (position >> 12);
+    arrived = 0;
+    if (ABS(distance) >= 5) {
+        actor->position.vx = position + actor->motion.vx * (actor->unk4A / 2);
+    } else {
+        arrived = 1;
+    }
+    position = actor->position.vz;
+    distance = actor->unk54 - (position >> 12);
+    if (ABS(distance) >= 5) {
+        actor->position.vz = position + actor->motion.vz * (actor->unk4A / 2);
+    } else {
+        arrived |= 2;
+    }
+    func_80093354(&actor->position);
+    actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+    return arrived;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008BEC8);
+#endif
 
 /* Queue a placement of actor `index` at `position`, facing (x, z). */
 void func_8008BFD4(s32 index, VECTOR *position, s32 x, s32 z) {

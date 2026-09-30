@@ -186,7 +186,8 @@ typedef struct {
     s16 unk26;
     VECTOR position; /* 0x28 */
     VECTOR motion;   /* 0x38 */
-    s32 unk48;
+    s16 unk48;
+    s16 unk4A;
     s32 handle;   /* 0x4C */
     union {
         s16 *script; /* script position */
@@ -451,7 +452,7 @@ void func_80087904(SceneObject *object, PolyFT4 *quads, s32 count, s32 abr);
 
 extern s16 D_8009AFDC[]; /* scene objects to show; -1 ends */
 extern u16 D_8006EF64;
-extern void *D_8009BE1C, *D_8009BE20;
+extern void *D_8009BE1C[2]; /* effect quads, per display buffer */
 
 void func_8008BFD4(s32 index, VECTOR *position, s32 x, s32 z);
 
@@ -711,6 +712,12 @@ void func_8009932C(u32 *ot, s32, Camera *);
 void func_8004A480(VECTOR *a, VECTOR *b, VECTOR *out); /* outer product */
 void func_80048D7C(VECTOR *in, VECTOR *out);           /* normalize */
 void func_8004A8EC(MATRIX *in, MATRIX *out);
+void func_80093354(VECTOR *position);
+s32 func_80093978(s32 x, s32 z); /* terrain height */
+
+typedef struct {
+    PolyFT4 quads[256];
+} EffectQuads;
 extern u16 D_8009B624[][2]; /* per area: two spinning scene objects */
 
 #endif
