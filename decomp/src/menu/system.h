@@ -156,12 +156,12 @@ typedef struct {
     u8 *groupData;     /* 0x10: per group a flag byte, a count, count x 8 bytes */
 } Mesh;
 
-/* Packet buffers built for a model. */
+/* Packet buffers built for a model's mesh. */
 typedef struct {
-    s16 unk0;
-    s16 count;         /* 0x02 */
-    s32 unk4;
-    void *unk8;
+    s16 vertices;      /* 0x00 */
+    s16 count;         /* 0x02: primitives */
+    void *vertexData;  /* 0x04 */
+    u8 *work;          /* 0x08: 8 bytes per vertex */
     Mesh *mesh;        /* 0x0C */
     ModelPrim *prims[2]; /* 0x10: per display buffer */
 } ModelPrims;
@@ -193,6 +193,14 @@ typedef struct {
     void *unk4;
     ModelEntry *entries; /* 0x08 */
 } ModelSet;
+
+/* Instance payload (type 5, 0x10 bytes): draws another node's model. */
+typedef struct {
+    s32 type;          /* the source node's type */
+    Node *source;      /* 0x04 */
+    s32 unk8;
+    ModelPrims *prims; /* 0x0C: own packet buffers for model sources */
+} Instance;
 
 /* Scale payload (0x1C bytes). */
 typedef struct {
@@ -311,7 +319,9 @@ extern s32 D_80092810;
 extern CVector D_80092818[2]; /* current colour per display buffer */
 extern s32 D_80092914;        /* colour changed this frame */
 
-extern s32 D_80091C2C;   /* nonzero: model set entries are not owned */
+extern s32 D_80091C2C;
+extern s32 D_80092824;   /* nodes instanced by the last copy */
+extern Node *D_80092828; /* root being instanced */   /* nonzero: model set entries are not owned */
 extern s16 D_80092800;   /* model texture page x (-1: none) */
 extern s16 D_80092804;   /* model texture page y */
 extern s16 D_80092808;   /* model CLUT x (-1: none) */
@@ -382,13 +392,17 @@ void func_8002CB54(ModelFile *file, void **resource, ModelPrims **prims);
 void func_8002CC54(u16 tpage);
 void func_8002CC74(s32 x, s32 y);
 void func_8002C8CC(ModelFile *file, void *resource, s32 mode);
-void func_800732AC(ModelPrims *prims, void *resource, s32 b);
+void func_800732AC(void *dst, void *src, s32 size);
 void func_8002DDE4(void *target, s32 on, s32 a, s32 b, s32 c, s32 d, s32 e);
 Node *func_80089B44(Node *node);
 void func_80089D5C(Node *node);
 void func_80089EB4(ModelSet *set);
 void func_80089FF8(Model *model);
-void func_8008C120(void *data);
+void func_8008C120(Instance *instance);
+void func_8008BE4C(ModelPrims *prims, Mesh *mesh);
+void func_8008BD70(Mesh *mesh, ModelPrim *prims, u32 *ot, u8 *work);
+Node *func_8008C188(Node *source, Node *parent);
+Node *func_8008C298(Node *source);
 s32 func_8003FA38(void); /* rand */
 u32 func_800405E4(void);
 void func_8008BB3C(Task *task);

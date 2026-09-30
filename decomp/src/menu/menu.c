@@ -1809,17 +1809,17 @@ void func_8008BCC8(Mesh *mesh, s32 arg) {
 }
 
 #ifdef NON_MATCHING
-/* Draw a mesh's primitive groups (flag 8 selects the second drawer) with
- * the given drawing parameters. Does not match: the next-group pointer and
+/* Draw a mesh's primitive groups (flag 8: quads, else triangles) into the
+ * given packets and ordering table using the vertex work area. Does not match: the next-group pointer and
  * the primitive count swap registers (t0/v1 vs v1/a0). */
-void func_8008BD70(Mesh *mesh, s32 a, s32 b, s32 c) {
+void func_8008BD70(Mesh *mesh, ModelPrim *prims, u32 *ot, u8 *work) {
     u8 *group;
     s32 groups = mesh->groups;
     u8 *next = mesh->groupData;
 
-    D_80059424 = a;
-    D_80059568 = b;
-    D_8005953C = c;
+    D_80059424 = (s32)prims;
+    D_80059568 = (s32)ot;
+    D_8005953C = (s32)work;
     D_800595C0 += mesh->prims;
     while (D_80059528 = next, --groups != -1) {
         group = D_80059528;
@@ -1836,21 +1836,163 @@ void func_8008BD70(Mesh *mesh, s32 a, s32 b, s32 c) {
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008BD70);
 #endif
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008BE4C);
+/* Build a mesh's packet buffers: a vertex work area and, per display
+ * buffer, a flat grey quad (0x18 bytes) or triangle (0x14 bytes) packet
+ * for every primitive. */
+void func_8008BE4C(ModelPrims *mp, Mesh *mesh) {
+    s32 n; /* vertex, then group counter, then packet bytes per buffer */
+    s32 i;
+    s32 j;
+    s32 triangles;
+    s32 quads;
+    u8 *group;
+    u8 *vertex;
+    u8 *packet;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008C0BC);
+    mp->vertices = mesh->count;
+    mp->count = mesh->prims;
+    mp->vertexData = mesh->data;
+    mp->mesh = mesh;
+    D_80059528 = mesh->groupData;
+    func_800324B8(0x13);
+    vertex = mp->work = func_80031BDC(mp->vertices * 8, 2);
+    n = mp->vertices;
+    while (--n != -1) {
+        ((s16 *)vertex)[1] = 0;
+        vertex += 8;
+    }
+    func_800324B8(5);
+    triangles = 0;
+    quads = 0;
+    n = mesh->groups;
+    while (--n != -1) {
+        group = D_80059528;
+        D_80059528 = group + 4;
+        if (group[0] & 8) {
+            quads += ((s16 *)group)[1];
+        } else {
+            triangles += ((s16 *)group)[1];
+        }
+        D_80059528 += ((s16 *)group)[1] * 8;
+    }
+    n = triangles * 0x14 + quads * 0x18;
+    packet = func_80031BDC(n * 2, 2);
+    mp->prims[0] = (ModelPrim *)packet;
+    mp->prims[1] = (ModelPrim *)(packet + n);
+    i = mesh->groups;
+    D_80059528 = mesh->groupData;
+    while (--i != -1) {
+        group = D_80059528;
+        D_80059528 = group + 4;
+        if (group[0] & 8) {
+            j = ((s16 *)group)[1];
+            while (--j != -1) {
+                TAG_LEN(packet) = 5;
+                ((u32 *)packet)[1] = 0x28403030;
+                packet += 0x18;
+            }
+        } else {
+            j = ((s16 *)group)[1];
+            while (--j != -1) {
+                TAG_LEN(packet) = 4;
+                ((u32 *)packet)[1] = 0x20403030;
+                packet += 0x14;
+            }
+        }
+        D_80059528 += ((s16 *)group)[1] * 8;
+    }
+    func_800732AC(mp->prims[1], mp->prims[0], n);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008C0CC);
+/* Make a node an instance node. */
+void func_8008C0BC(Node *node, Instance *instance) {
+    node->type = 5;
+    node->data = instance;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008C120);
+/* Allocate an instance payload drawing source. */
+Instance *func_8008C0CC(Node *source) {
+    Instance *instance;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008C188);
+    func_800324B8(7);
+    instance = func_80031BDC(sizeof(Instance), 2);
+    instance->type = source->type;
+    instance->unk8 = (s32)D_80092828;
+    instance->source = source;
+    instance->prims = NULL;
+    return instance;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008C298);
+/* Free an instance payload's packet buffers. */
+void func_8008C120(Instance *instance) {
+    ModelPrims *prims = instance->prims;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008C2C0);
+    if (prims != NULL) {
+        if (prims->work != NULL) {
+            func_800320E8(prims->work);
+        }
+        if (prims->prims[0] != NULL) {
+            func_80032C18(prims->prims[0], 2);
+        }
+        func_800320E8(prims);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008C2E8);
+/* Copy a node tree as instance nodes (model sources get their own packet
+ * buffers); following siblings are appended to parent. */
+Node *func_8008C188(Node *source, Node *parent) {
+    Node *node;
+    Instance *instance;
+    Mesh *mesh;
+
+    func_800324B8(6);
+    node = func_80089C54();
+    instance = func_8008C0CC(source);
+    func_8008C0BC(node, instance);
+    if (instance->type == 1) {
+        mesh = (Mesh *)((Model *)source->data)->file;
+        func_800324B8(5);
+        instance->prims = func_80031BDC(sizeof(ModelPrims), 2);
+        func_8008BE4C(instance->prims, mesh);
+    }
+    D_80092824++;
+    if (source->child != NULL) {
+        func_80089C88(node, func_8008C188(source->child, node));
+    }
+    if (source->next != NULL) {
+        func_80089C88(parent, func_8008C188(source->next, parent));
+    }
+    return node;
+}
+
+/* Copy a node tree as instances. */
+Node *func_8008C298(Node *source) {
+    D_80092824 = 0;
+    return func_8008C188(source, NULL);
+}
+
+/* Copy a node tree as instances of itself. */
+Node *func_8008C2C0(Node *source) {
+    D_80092828 = source;
+    return func_8008C298(source);
+}
+
+/* Draw a tree of instance nodes whose model sources are shown. */
+void func_8008C2E8(Node *node) {
+    Instance *instance = node->data;
+    ModelPrims *prims;
+
+    if (instance->type == 1 && !(((Model *)instance->source->data)->flags & 1)) {
+        prims = instance->prims;
+        func_8008BD70(prims->mesh, prims->prims[D_800928A0], D_800928E4 + 1, prims->work);
+    }
+    if (node->child != NULL) {
+        func_8008C2E8(node->child);
+    }
+    if (node->next != NULL) {
+        func_8008C2E8(node->next);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008C3A8);
 
