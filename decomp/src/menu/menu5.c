@@ -1168,35 +1168,32 @@ s32 func_80088838(Vector *from, Vector *to) {
     return SquareRoot0(delta.vx + delta.vz);
 }
 
-/* Set a bit of the resident flag array. Does not match:
- * the constant 1 is loaded first and registers differ. */
-#ifdef NON_MATCHING
+/* Set a bit of the resident flag array. */
 void func_800888B0(s32 flag) {
-    D_8006F978.flags[flag >> 3] |= 1 << (flag & 7);
-}
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_800888B0);
-#endif
+    s32 bit;
 
-/* Test a bit of the resident flag array. Does not match:
- * the constant 1 is loaded first. */
-#ifdef NON_MATCHING
+    bit = 1;
+    bit <<= flag & 7;
+    D_8006F978.flags[flag >> 3] |= bit;
+}
+
+/* Test a bit of the resident flag array. */
 s32 func_800888E4(s32 flag) {
-    return D_8006F978.flags[flag >> 3] & (1 << (flag & 7));
-}
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_800888E4);
-#endif
+    s32 bit;
 
-/* Clear a bit of the resident flag array. Does not match:
- * the constant 1 is loaded first and registers differ. */
-#ifdef NON_MATCHING
-void func_80088908(s32 flag) {
-    D_8006F978.flags[flag >> 3] &= ~(1 << (flag & 7));
+    bit = 1;
+    bit <<= flag & 7;
+    return D_8006F978.flags[flag >> 3] & bit;
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_80088908);
-#endif
+
+/* Clear a bit of the resident flag array. */
+void func_80088908(s32 flag) {
+    s32 bit;
+
+    bit = 1;
+    bit <<= flag & 7;
+    D_8006F978.flags[flag >> 3] &= ~bit;
+}
 
 /* Set bit 16 of the resident state word. */
 void func_80088940(void) {
