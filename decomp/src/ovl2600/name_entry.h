@@ -122,7 +122,25 @@ typedef struct {
     SVECTOR top[4];           /* 0x6D0 */
     SVECTOR bottom[4];        /* 0x6F0 */
     s32 corner_parts;         /* 0x710: corner parts built */
+    s32 style;                /* 0x714 */
+    s32 param;                /* 0x718 */
+    u8 buffer;                /* 0x71C: buffer it was laid out for */
+    u8 framed;                /* 0x71D: frame sprites built */
+    u8 pad_71E[2];
 } Panel;
+
+/* A panel's opening animation (0x18 bytes). */
+typedef struct {
+    u16 x, y, w, h; /* final rectangle */
+    u16 cur_w;      /* 0x8 */
+    u16 cur_h;      /* 0xA */
+    s32 param;      /* 0xC */
+    u8 index;       /* 0x10 */
+    u8 open;        /* 0x11: fully grown */
+    u8 style;       /* 0x12 */
+    u8 framed;      /* 0x13 */
+    u8 pad_14[4];
+} PanelGrowth;
 
 /* The menu flag block (0x6C bytes): per-window/panel state bytes and the
  * party being edited. */
@@ -167,7 +185,8 @@ typedef struct {
     u8 *block_354;       /* 0x354: 0x140C bytes */
     u8 pad_358[0x364 - 0x358];
     Panel *panels[7];      /* 0x364 */
-    u8 pad_380[0x46C - 0x380];
+    PanelGrowth *growth[7]; /* 0x380 */
+    u8 pad_39C[0x46C - 0x39C];
     SpriteInfo sprites[4]; /* 0x46C: sprites 0xFE, 0x103, 0x100, 0x101 */
     u8 pad_4CC[0x4E0 - 0x4CC];
     MenuLabel labels[4];   /* 0x4E0: the screen's command labels */
