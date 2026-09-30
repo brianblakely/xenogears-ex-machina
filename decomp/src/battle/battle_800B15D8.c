@@ -13,6 +13,7 @@
 #include "gte.h"
 #include "effect.h"
 #include "objects.h"
+#include "actor.h"
 
 /* Select script index of an effect script file: copy its entry into
  * D_800C3BD0 (relocating its offsets to addresses unless the file is already
@@ -275,23 +276,97 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B9C
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B9F78);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BA4E0);
+/* End slot's turn presentation: wait for the stage objects (800B136C), then
+ * restore the view (800B8D7C) and, for a gear, 800BFBA0; for a party member
+ * on foot its sprite's state (800BF2B8). */
+void func_800BA4E0(s32 slot) {
+    D_80059464 = 0;
+    D_800591AC = 0;
+    func_800B136C();
+    if (BATTLE_AREA.slots[slot].gear) {
+        func_800B8D7C();
+        func_800BFBA0();
+    } else if (slot < 3) {
+        if (BATTLE_AREA.sprites[slot] != NULL) {
+            func_800BF2B8(BATTLE_AREA.sprites[slot]);
+        }
+    } else {
+        func_800B8D7C();
+    }
+    func_800BC454(0xC0);
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BA59C);
+/* Turn sprite to direction, its horizontal speed a quarter of its speed
+ * along it. */
+void func_800BA59C(BattleSprite *sprite, s16 direction) {
+    s32 speed;
+
+    sprite->direction = direction;
+    speed = sprite->speed >> 3;
+    sprite->speedX = (func_8003F8CC(direction) >> 1) * speed >> 8;
+    sprite->speedZ = -((func_8003F8B0(sprite->direction) >> 1) * speed) >> 8;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BA614);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BA768);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BA8F4);
+/* Put sprite on the scene's ground: its triangle and ground height. */
+void func_800BA8F4(BattleSprite *sprite) {
+    SVector point;
+    Vector out;
+    s32 triangle;
+
+    point.vx = sprite->x >> 16;
+    point.vy = sprite->y >> 16;
+    point.vz = sprite->z >> 16;
+    triangle = func_800A5914(&point, sprite->triangle, 4);
+    if (triangle < 0) {
+        triangle = func_800A579C(&point);
+    }
+    func_800A5870(&point, triangle, &out);
+    sprite->ground = point.vy;
+    sprite->triangle = triangle;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BA984);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BAB0C);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BABDC);
+#ifdef NON_MATCHING
+/* Destroy a sprite task: its part block, children, sprite and node.
+ * Nonmatching: the original computes the sprite from $a0 before copying the
+ * task to $s0. */
+void func_800BABDC(ActorTask *task) {
+    BattleSprite *sprite = (BattleSprite *)(task + 1);
+    void *parts = sprite->renderer->parts;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BAC50);
+    if (parts != NULL) {
+        func_800320E8(parts);
+    }
+    func_8001CE74(task);
+    func_8001D3F4(sprite);
+    func_8001CB48(&task->field1C);
+    func_8001CD94(task);
+    func_800320E8(task);
+}
+#else
+INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BABDC);
+#endif
+
+/* Update a sprite task (twice with double steps) unless paused. */
+void func_800BAC50(ActorTask *task) {
+    BattleSprite *sprite = task->data;
+
+    if (D_800C3664 == 0) {
+        func_80023210(sprite);
+        func_80022CDC(sprite);
+        if (sprite->motion.bits.doubleStep) {
+            func_80023210(sprite);
+            func_80022CDC(sprite);
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BACBC);
 
@@ -310,7 +385,14 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BB1
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BB248);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BB314);
+/* Destroy a task node. */
+void func_800BB314(ActorTask *task) {
+    SVector unused; /* the original's frame has this unused local */
+
+    func_8001CB48(&task->field1C);
+    func_8001CD94(task);
+    func_800320E8(task);
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BB350);
 
@@ -340,11 +422,17 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BC1
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BC2F0);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BC3F8);
+/* Set D_800C367C. */
+void func_800BC3F8(s32 value) {
+    D_800C367C = value;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BC404);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BC454);
+/* Set D_800C3740. */
+void func_800BC454(s16 value) {
+    D_800C3740 = value;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BC460);
 
