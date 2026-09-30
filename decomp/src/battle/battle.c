@@ -3166,7 +3166,32 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A44C0);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A4654);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A4820);
+/* Free the battle scene's resources: the stage objects, the scene data, both
+ * resident handles of D_800C3D50 (80027D40), the block D_800C3EA0 and both
+ * records of D_800C3DA0 (8002800C). */
+void func_800A4820(void) {
+    s32 i;
+
+    func_800A9FF0(31);
+    D_800C3E38 = 0;
+    if (D_800658C8 != NULL) {
+        func_800320E8(D_800658C8);
+    }
+    D_800658C8 = NULL;
+    for (i = 0; i < 2; i++) {
+        if (D_800C3D50[i] != NULL) {
+            func_80027D40(D_800C3D50[i]);
+        }
+        D_800C3D50[i] = NULL;
+    }
+    if (D_800C3EA0 != NULL) {
+        func_800320E8(D_800C3EA0);
+    }
+    D_800C3EA0 = NULL;
+    for (i = 0; i < 2; i++) {
+        func_8002800C(&D_800C3DA0[i]);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A48EC);
 
@@ -3380,7 +3405,32 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A8BF0);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A9540);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A96B4);
+/* Load the battle's sound banks for set: banks 2 * set + 1 and 2 * set + 2,
+ * each with a buffer of its size (800288EC), into a new record D_800C3B78. */
+void func_800A96B4(s32 set) {
+    s32 saved0;
+    s32 saved1;
+    SoundBanks *banks;
+    s32 bank;
+
+    func_800284B4(&saved0, &saved1);
+    func_80028470(0x28, 0);
+    func_80032498(4, 0);
+    banks = func_80031BDC(sizeof(SoundBanks), 1);
+    set *= 2;
+    bank = set + 1;
+    D_800C3B78 = banks;
+    func_80028998(bank);
+    banks->bank0 = bank;
+    banks->data0 = func_80031BDC(func_800288EC(bank), 1);
+    bank = set + 2;
+    banks->bank1 = bank;
+    banks->data1 = func_80031BDC(func_800288EC(bank), 1);
+    banks->field10 = 0;
+    banks->field14 = 0;
+    func_80029AFC(D_800C3B78, 0, 0);
+    func_80028470(saved0, saved1);
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A979C);
 

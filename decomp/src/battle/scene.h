@@ -139,6 +139,21 @@ typedef struct {
     u8 pad2[0x14 - 2];
 } SceneEntry14;
 
+/* The battle's two loaded sound banks (0x18 bytes). */
+typedef struct {
+    s16 bank0;
+    void *data0;
+    s16 bank1;
+    void *data1;
+    s16 field10;
+    s32 field14;
+} SoundBanks;
+
+/* A 0x18-byte resident record of D_800C3DA0. */
+typedef struct {
+    u8 pad[0x18];
+} ResidentRecord18;
+
 /* Battle scene and effect state. */
 extern SVector *D_800D3344;             /* scene points */
 extern SceneTriangle *D_800D39CC;       /* scene triangles */
@@ -169,6 +184,20 @@ extern s16 D_800C3D40;
 extern EffectPool D_800C3D0C;
 extern SpritePool D_800C3D04;
 extern BattleSceneData *D_800658C8;
+extern s32 D_800C3E38;
+extern void *D_800C3D50[2];
+extern void *D_800C3EA0;
+extern ResidentRecord18 D_800C3DA0[2];
+extern SoundBanks *D_800C3B78;
+
+/* Resident services. */
+void func_80027D40(void *handle);
+void func_8002800C(ResidentRecord18 *record);
+void func_800284B4(s32 *a, s32 *b);
+void func_80028470(s32 a, s32 b);
+void func_80028998(s32 bank);
+s32 func_800288EC(s32 bank);
+void func_80029AFC(SoundBanks *banks, s32 a, s32 b);
 
 s32 func_80048C4C(s32 value);           /* square root */
 void func_8003852C(u8 *texture);
