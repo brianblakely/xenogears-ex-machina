@@ -146,6 +146,8 @@ extern s32 D_80092774;
 extern u8 D_8009287C;
 extern s32 D_8009290C;
 extern s32 D_800927AC; /* orbit angle */
+extern s32 D_80092890; /* which actor the idle camera follows */
+extern s32 D_800928AC; /* idle camera frame */
 extern s32 D_800927B0; /* orbit speed */
 extern s32 D_80092794; /* scene mode */
 extern s32 D_80092790;

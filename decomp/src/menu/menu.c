@@ -1169,7 +1169,81 @@ void func_800832C0(s32 buttons) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80083310);
+/* Idle orbit camera: move the eye toward a point between the two actors
+ * (further toward the other actor late in the orbit, a third of the way
+ * when smoothing) and swing the look-at point around it, kept inside the
+ * arena and above the ground. */
+void func_80083310(s32 smooth) {
+    Vector look;
+    Vector step;
+    Vector offset;
+    Vector unused;   /* the original frame has 0x18 unused bytes */
+    SVector unused2;
+    Actor *subject;
+    Actor *other;
+    s32 value; /* the other actor's share, then the orbit angle, then the ground */
+
+    if (D_80092890 != 0) {
+        subject = &D_80097010;
+        other = &D_8009872C;
+    } else {
+        subject = &D_8009872C;
+        other = &D_80097010;
+    }
+    func_8004B32C(subject->pos.vx - other->pos.vx, subject->pos.vz - other->pos.vz);
+    if (D_800928AC > 0xB0) {
+        value = 0x100;
+    } else if (D_800928AC > 0xA0) {
+        value = (D_800928AC - 0xA0) << 4;
+    } else {
+        value = 0;
+    }
+    offset.vx = other->pos.vx;
+    offset.vy = other->pos.vy;
+    offset.vz = other->pos.vz;
+    offset.vx -= subject->pos.vx;
+    offset.vy -= subject->pos.vy;
+    offset.vz -= subject->pos.vz;
+    offset.vx *= value;
+    offset.vy *= value;
+    offset.vz *= value;
+    offset.vx /= 256;
+    offset.vy /= 256;
+    offset.vz /= 256;
+    offset.vx += subject->pos.vx;
+    offset.vy += subject->pos.vy;
+    offset.vz += subject->pos.vz;
+    offset.vy -= 0xA0;
+    offset.vx -= D_8009867C.vx;
+    offset.vy -= D_8009867C.vy;
+    offset.vz -= D_8009867C.vz;
+    if (smooth) {
+        offset.vx /= 3;
+        offset.vy /= 3;
+        offset.vz /= 3;
+    }
+    D_80092770 = 0xC00;
+    D_8009867C.vx += offset.vx;
+    D_8009867C.vy += offset.vy;
+    D_8009867C.vz += offset.vz;
+    value = D_800927AC + D_800928AC * D_800927B0;
+    look.vx = (func_8003F8B0(value) * D_80092770) >> 12;
+    look.vz = (func_8003F8CC(value) * D_80092770) >> 12;
+    look.vy = -(D_800928AC * 6 + 0x200);
+    look.vx += D_8009867C.vx;
+    look.vy += D_8009867C.vy;
+    look.vz += D_8009867C.vz;
+    step.vx = look.vx - D_8009871C.vx;
+    step.vz = look.vz - D_8009871C.vz;
+    func_800828F8(&D_8009871C, &step, 0x3D00);
+    D_8009871C.vx += step.vx;
+    D_8009871C.vz += step.vz;
+    value = func_80082488(&D_8009871C, 0);
+    if (value < look.vy) {
+        look.vy = value;
+    }
+    D_8009871C.vy = look.vy;
+}
 
 /* Start an idle camera orbit at a random angle, speed and direction. */
 void func_8008369C(void) {
