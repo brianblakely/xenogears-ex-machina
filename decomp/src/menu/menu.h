@@ -368,6 +368,8 @@ TimImage *func_800471C4(TimImage *image);                   /* ReadTIM */
 s32 func_8004B32C(s32 x, s32 z);                            /* ratan2 */
 Matrix *func_8004931C(Matrix *m0, Matrix *m1, Matrix *m2);  /* CompMatrix */
 s32 func_8003FA38(void);                                    /* rand */
+void func_8004A414(Vector *v, Vector *squares);             /* Square0 */
+s32 func_80048C4C(s32 x);                                   /* SquareRoot0 */
 void func_80048D68(Vector *v, SVector *unit);               /* VectorNormalS */
 void func_8004901C(SVector *a, SVector *b, s32 pa, s32 pb, SVector *out); /* LoadAverageShort12 */
 void func_8004A14C(s32 h);                                  /* SetGeomScreen */

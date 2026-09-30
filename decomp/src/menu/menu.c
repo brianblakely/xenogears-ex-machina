@@ -1023,7 +1023,40 @@ s32 func_80075738(Actor *actor, Actor *other) {
 void func_80075748(void) {
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80075750);
+/* Whether point (px, pz) lies within radius of the segment from (x0, z0)
+ * to (x1, z1), on its forward side. */
+s32 func_80075750(s32 x0, s32 z0, s32 x1, s32 z1, s32 px, s32 pz, s32 radius) {
+    Vector d;
+    Vector sq;
+    s32 rx;
+    s32 rz;
+    s32 len;
+    s32 ux;
+    s32 uz;
+    s32 along;
+    s32 across;
+    s32 hit;
+
+    d.vx = x1 - x0;
+    d.vy = z1 - z0;
+    rx = px - x0;
+    rz = pz - z0;
+    d.vz = radius;
+    func_8004A414(&d, &sq);
+    len = func_80048C4C(sq.vx + sq.vy);
+    if (len == 0) {
+        return 0;
+    }
+    ux = (d.vx << 12) / len;
+    uz = (d.vy << 12) / len;
+    along = (rx * ux + rz * uz) / 4096;
+    across = (-(rx * uz) + rz * ux) / 4096;
+    hit = (u32)(across * across - sq.vz) >> 31;
+    if (along < 0) {
+        return 0;
+    }
+    return along <= len + radius ? hit : 0;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80075888);
 
