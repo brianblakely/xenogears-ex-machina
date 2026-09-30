@@ -345,10 +345,18 @@ typedef struct MenuGearViews {
     MenuGearView *views[4]; /* 4C */
 } MenuGearViews;
 
+/* A save information view (801e76ec). */
+typedef struct MenuView {
+    u8 pad0[0x877];
+    u8 buffer; /* 877 */
+    u8 shown; /* 878 */
+    u8 pad879[0x3];
+} MenuView;
+
 /* The 2dc0-byte block (*(state + 34c)). */
 typedef struct MenuBlock34C {
     u8 pad0[0xA98];
-    u8 views[4][0x87c]; /* A98 */
+    MenuView views[4]; /* A98 */
     u8 pad2C88[0x134];
     u8 rebuilt; /* 2DBC */
     u8 pad2DBD[0x3];
@@ -781,6 +789,7 @@ void func_801D22F4(u8 arg0);
 void func_801D2484(void);
 void func_801D2968(void);
 void func_801D249C(s32 arg0);
+void func_801D25E4(void);
 void func_801D2D38(void);
 void func_801D2F4C(u8 message);
 void func_801D3B00(void);
@@ -804,18 +813,25 @@ void func_801D5BA4(s32 x, s32 y);
 void func_801D5CF8(s32 x, s32 y);
 void func_801D32B4(void);
 u8 func_801D9808(void);
+void func_801D9E3C(void);
 u8 func_801D9F98(u8 mode, u8 save);
 void func_801D1EB0(void);
 void func_801D29A8(u8 arg0, u8 arg1);
 void func_801D3444(void);
 void func_801D3488(s32 arg0, s32 arg1);
 void func_801D3674(void);
+void func_801DA518(void);
 u8 func_801DBE54(void);
+void func_801DC2CC(u8 kind);
+void func_801DE36C(void);
+void func_801DE400(void);
 void func_801DDF24(u8 slot, u8 arg1, s32 arg2);
 u8 func_801DE29C(u8 slot, u8 arg1);
 void func_801E05D0(u8 slot, u8 arg1, s32 arg2);
 u8 func_801E0F78(u8 slot, u8 arg1);
+void func_801E2368(void);
 u8 func_801E23CC(void);
+void func_801E2B80(void);
 u8 func_801E2BE4(void);
 void func_801E3088(u8 command);
 void func_801E3C2C(MenuTables *tables, u8 gear);
@@ -826,6 +842,14 @@ void func_801E4258(MenuTables *tables, u8 gear);
 void func_801E4D10(s32 *save, MenuTables *tables);
 void func_801E56E8(s32 index);
 void func_801E5B3C(void);
+void func_801E61B0(void);
+void func_801E6AE8(u8 index, MenuViewSet *set);
+void func_801E6B70(u8 index, MenuViewSet *set);
+void func_801E6CFC(u8 index, MenuViewSet *set);
+void func_801E6F5C(u8 index, MenuViewSet *set);
+void func_801E71B4(u8 index, MenuViewSet *set, s32 file);
+void func_801E68AC(MenuViewSet *set);
+void func_801E733C(void);
 void func_801E649C(void);
 void func_801E64E0(void);
 void func_801E5924(s32 index);

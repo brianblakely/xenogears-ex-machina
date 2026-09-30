@@ -2524,7 +2524,46 @@ void func_801E2B80(void) {
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E2BE4);
 
+/* Close the screen of the command at `offset` past the top cursor. */
+#ifdef NON_MATCHING
+void func_801E3088(u8 offset) {
+    switch (D_800625A0->cursor + offset) {
+    case 1:
+    case 8:
+        func_801D9E3C();
+        break;
+    case 2:
+        D_800625A0->party->redraw7 = 0;
+        D_800625A0->party->unk8 = 0;
+        D_800625A0->party->unk4B = 0;
+        func_801E2368();
+        break;
+    case 3:
+        func_801DC2CC(0);
+        break;
+    case 4:
+        func_801DA518();
+        break;
+    case 5:
+        func_801DE36C();
+        func_801DE400();
+        break;
+    case 6:
+        D_800625A0->party->redraw7 = 0;
+        D_800625A0->party->unk8 = 0;
+        D_800625A0->party->unk4B = 0;
+        func_801D25E4();
+        func_801E2B80();
+        break;
+    case 0:
+    case 7:
+    case 9:
+        break;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E3088);
+#endif
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E31C0);
 
@@ -2797,7 +2836,7 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E68AC);
 
 /* Set up view `index` of the block at +34c from its sheet image (14e + set). */
 void func_801E6AE8(u8 index, MenuViewSet *set) {
-    func_8002675C(D_800625A0->sheet, set->images[index] + 0x14e, D_800625A0->block34C->views[index],
+    func_8002675C(D_800625A0->sheet, set->images[index] + 0x14e, &D_800625A0->block34C->views[index],
                   D_800625A0->bufferIndex, D_801EA004[index], D_801EA010[index], 0x1000);
 }
 
@@ -2811,7 +2850,29 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E71B4);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E733C);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E76EC);
+/* Build the three views of card file `index`'s save information. */
+void func_801E76EC(s32 index) {
+    MenuViewSet *set;
+    s32 i;
+
+    set = (MenuViewSet *)(D_800625A0->card->headers[index] + 0x100);
+    func_801E61B0();
+    for (i = 0; i < 3; i++) {
+        if (set->images[i] != 0xff) {
+            D_800625A0->block34C->views[i].shown = 1;
+            func_801E6AE8(i, set);
+            func_801E6B70(i, set);
+            func_801E6CFC(i, set);
+            func_801E6F5C(i, set);
+            func_801E71B4(i, set, index);
+        } else {
+            D_800625A0->block34C->views[i].shown = 0;
+        }
+        D_800625A0->block34C->views[i].buffer = D_800625A0->bufferIndex;
+    }
+    func_801E68AC(set);
+    func_801E733C();
+}
 
 /* Redraw view `index` (none for ff), rebuilding it first when `rebuild`. */
 void func_801E781C(s32 index, u8 rebuild) {
