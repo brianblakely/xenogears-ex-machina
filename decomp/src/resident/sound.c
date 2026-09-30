@@ -1901,7 +1901,7 @@ u8 *func_8003D884(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
 /* Declared without a prototype: callers pass the rate as an int. */
 extern s32 func_8003E290();
 extern void func_8003E3E0(SoundModulator *modulator);
-extern s32 func_8003F2A0(void *modulator);
+extern s32 func_8003F2A0(SoundModulator *modulator);
 
 /* Vibrato: start the pitch modulator with a signed depth (squared), a rate
  * (with a quadratic boost), a delay and the triangle shape. */
@@ -1932,7 +1932,7 @@ u8 *func_8003D8B8(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 3;
 }
 
-extern s32 (*D_800508A4[])(void *modulator); /* modulator waves by shape */
+extern s32 (*D_800508A4[])(SoundModulator *modulator); /* modulator waves by shape */
 
 /* Vibrato with an explicit shape (low nibble of the third operand; bit 4
  * selects a one-sided wave).
@@ -2043,7 +2043,7 @@ u8 *func_8003DBE4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 3;
 }
 
-extern s32 func_8003F240(void *modulator);
+extern s32 func_8003F240(SoundModulator *modulator);
 
 /* Tremolo: start the volume modulator with a signed depth, a rate (with a
  * quadratic boost), a delay and the sawtooth shape. */
@@ -2327,7 +2327,7 @@ u8 *func_8003E360(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
 
 /* Restart a modulator: counters reloaded, phase 0. */
 void func_8003E3E0(SoundModulator *modulator) {
-    modulator->unk10 = 1;
+    modulator->count = 1;
     modulator->phase = 0;
     modulator->flags &= ~0xC;
     modulator->delay_count = modulator->delay;
@@ -2855,21 +2855,116 @@ void func_8003EFE4(SoundSeq *seq, SoundSeqChannel *channel, s16 count) {
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003EFE4);
 #endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003F190);
+/* Switch a modulator off. */
+void func_8003F190(SoundModulator *modulator) {
+    modulator->flags &= ~1;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003F1A4);
+/* Modulator waves: each advances one frame and returns the output.
+ * Pulse: alternates between 0 and the depth every `rate` frames. */
+s32 func_8003F1A4(SoundModulator *modulator) {
+    s32 phase;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003F1EC);
+    if (--modulator->count == 0) {
+        modulator->count = modulator->rate;
+        phase = 0;
+        if (modulator->phase == 0) {
+            phase = modulator->step;
+        }
+        modulator->phase = phase;
+    }
+    return modulator->phase;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003F240);
+/* Square: alternates between +depth and -depth. */
+s32 func_8003F1EC(SoundModulator *modulator) {
+    s32 phase;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003F2A0);
+    if (--modulator->count == 0) {
+        phase = modulator->step;
+        modulator->count = modulator->rate;
+        if (modulator->flags & 8) {
+            phase = -phase;
+        }
+        modulator->phase = phase;
+        modulator->flags ^= 8;
+    }
+    return modulator->phase;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003F308);
+/* Sawtooth-like: the slope flips sign every `rate` frames. */
+s32 func_8003F240(SoundModulator *modulator) {
+    s32 slope;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003F354);
+    if (--modulator->count == 0) {
+        slope = modulator->step;
+        modulator->count = modulator->rate;
+        if (modulator->flags & 8) {
+            slope = -slope;
+        }
+        modulator->slope = slope;
+        modulator->flags ^= 8;
+    }
+    return modulator->phase += modulator->slope;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003F3C0);
+/* Triangle: the slope flips sign after `rate` frames, then every
+ * 2 * `rate` frames. */
+s32 func_8003F2A0(SoundModulator *modulator) {
+    s32 count;
+    u16 flags;
+    s32 step;
+
+    count = modulator->count;
+    if (--count == 0) {
+        flags = modulator->flags;
+        count = modulator->rate;
+        if (flags & 4) {
+            count *= 2;
+        }
+        step = modulator->step;
+        modulator->slope = step;
+        if (flags & 8) {
+            modulator->slope = -step;
+        }
+        flags = (flags | 4) ^ 8;
+        modulator->flags = flags;
+    }
+    modulator->count = count;
+    return modulator->phase += modulator->slope;
+}
+
+/* Ramp: rises by the step each frame, back to 0 every `rate` frames. */
+s32 func_8003F308(SoundModulator *modulator) {
+    if (--modulator->count == 0) {
+        modulator->phase = 0;
+        modulator->count = modulator->rate;
+    } else {
+        modulator->phase += modulator->step;
+    }
+    return modulator->phase;
+}
+
+extern s32 func_8003F43C(void);
+
+/* Random: a new random level (0..depth) every `rate` frames. */
+s32 func_8003F354(SoundModulator *modulator) {
+    func_8003F43C();
+    if (--modulator->count == 0) {
+        modulator->count = modulator->rate;
+        modulator->phase = (modulator->step >> 15) * func_8003F43C();
+    }
+    return modulator->phase;
+}
+
+/* Random: a new random level (-depth..depth) every `rate` frames. */
+s32 func_8003F3C0(SoundModulator *modulator) {
+    if (--modulator->count == 0) {
+        modulator->count = modulator->rate;
+        modulator->phase = (modulator->step >> 14) * func_8003F43C() - modulator->step;
+    }
+    return modulator->phase;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003F42C);
 
