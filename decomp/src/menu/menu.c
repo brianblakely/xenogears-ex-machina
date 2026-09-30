@@ -2340,15 +2340,79 @@ void func_8008E8B0(void) {
     func_8008E67C();
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008EADC);
+/* Free the voices whose sound has stopped, then age them all. */
+void func_8008EADC(void) {
+    SoundVoice *voice;
+    s32 i;
 
+    for (i = 0; i < 4; i++) {
+        voice = &D_80096EA0[i];
+        if (!(func_8003A5D0(voice->sound) & voice->mask)) {
+            voice->active = 0;
+        }
+    }
+    func_8008E67C();
+}
+
+#ifdef NON_MATCHING
+/* Play a menu sound effect (unpositioned).
+ * Does not match: the tag load is scheduled after the sound id. */
+void func_8008EB4C(s32 id) {
+    if (id != 0) {
+        func_8008E78C(0x60000 + id, 0, NULL, D_80059488);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008EB4C);
+#endif
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008EB88);
+/* Play a character's sound effect, tagged with its id and side. */
+void func_8008EB88(SoundOwner *owner, s32 id, Vector *pos, s32 mode) {
+    if (id != 0) {
+        func_8008E78C(id + 0x60000, mode, pos, (id & 0x7F) | ((owner->flags >> 20) & 0x80));
+    }
+}
 
+#ifdef NON_MATCHING
+/* Play one of a character's command sounds (random 1-6 when index is 0):
+ * up to two effects from the shared pair table.
+ * Does not match: the original keeps the pair table address in
+ * a saved register for the second id. */
+void func_8008EBD0(SoundOwner *owner, s32 index, Vector *pos, s32 mode) {
+    s32 entry;
+
+    if (index == 0) {
+        index = func_8003FA38() % 6 + 1;
+    }
+    entry = owner->sounds[index];
+    if (entry != 0xFF) {
+        index = D_80091EE0[entry].first;
+        if (index != 0) {
+            func_8008E78C(index | 0x60000, mode, pos, (index & 0x7F) | ((owner->flags >> 20) & 0x80));
+        }
+        index = D_80091EE0[entry].second;
+        if (index != 0) {
+            func_8008E78C(index | 0x60000, mode, pos, (index & 0x7F) | ((owner->flags >> 20) & 0x80));
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008EBD0);
+#endif
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008ECEC);
+/* Stop every voice started with the given tag. */
+void func_8008ECEC(u8 tag) {
+    SoundVoice *voice;
+    s32 i;
+
+    for (i = 0; i < 4; i++) {
+        voice = &D_80096EA0[i];
+        if (voice->active && voice->unk3 == tag) {
+            func_8003A20C(voice->voice);
+            voice->active = 0;
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008ED6C);
 
