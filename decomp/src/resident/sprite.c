@@ -1084,9 +1084,242 @@ s32 func_8001EE74(u16 *header) {
     return (*header >> 9) & 0x3F;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001EE88);
+/* Draw a sprite's parts as textured quads (POLY_FT4 from the queue block)
+ * cut off below `height` (in the parts' units before the sprite's shift):
+ * parts entirely past it are skipped, parts crossing it lose the rows past
+ * it, texture included. Linked at `ot`. */
+/* Nonmatching: register allocation only: the original gives the cut-off height $s5, the sprite $s6 and the part index $s7. */
+#ifdef NON_MATCHING
+void func_8001EE88(Sprite *sprite, u_long *ot, s32 height) {
+    u32 flags;
+    s32 limit;
+    s32 count;
+    SpritePart *parts;
+    s32 i;
+    POLY_FT4 *poly;
+    s32 w, h, x, y;
+    s32 top, bottom;
+    s32 cut;
+    long depth;
+    long flag;
+    u8 u;
+    s32 v, du, dv;
 
+    limit = height << ((sprite->flags >> 8) & 0x1F);
+    count = (sprite->flags >> 2) & 0x3F;
+    parts = sprite->renderer->parts[1];
+    if ((u8 *)D_80059580 + count * sizeof(POLY_FT4) < D_80059534) {
+        for (i = 0; i != ((sprite->flags >> 2) & 0x3F); i++) {
+            poly = (POLY_FT4 *)D_80059580;
+            D_80059580 = (SpriteQueueEntry *)(poly + 1);
+            setlen(poly, 9);
+            *(u32 *)&poly->r0 = parts[i].colour;
+            poly->tpage = parts[i].tpage;
+            poly->clut = parts[i].clut;
+            x = parts[i].x;
+            w = parts[i].w + (s8)parts[i].byte8;
+            y = parts[i].y;
+            h = parts[i].h + (s8)parts[i].byte9;
+            w <<= (sprite->flags >> 8) & 0x1F;
+            h <<= (sprite->flags >> 8) & 0x1F;
+            x <<= (sprite->flags >> 8) & 0x1F;
+            y <<= (sprite->flags >> 8) & 0x1F;
+            if ((sprite->render.word >> 3) & 1) {
+                w = -w;
+                x = -x;
+            }
+            if ((sprite->render.word >> 4) & 1) {
+                h = -h;
+                y = -y;
+            }
+            if (!((parts[i].flags >> 4) & 1)) {
+                D_8004FB98[0].vx = x;
+                D_8004FB98[1].vx = x + w;
+                D_8004FB98[2].vx = x + w;
+                D_8004FB98[3].vx = x;
+            } else {
+                D_8004FB98[0].vx = x + w;
+                D_8004FB98[1].vx = x;
+                D_8004FB98[2].vx = x;
+                D_8004FB98[3].vx = x + w;
+            }
+            if (h > 0) {
+                top = y;
+                bottom = y + h;
+            } else {
+                top = y + h;
+                bottom = y;
+            }
+            if (limit < top) {
+                continue;
+            }
+            cut = 0;
+            if (limit < bottom) {
+                cut = bottom - limit;
+            }
+            h -= cut;
+            if (h < 0) {
+                y -= cut;
+            }
+            if (!((parts[i].flags >> 5) & 1)) {
+                D_8004FB98[0].vy = y;
+                D_8004FB98[1].vy = y;
+                D_8004FB98[2].vy = y + h;
+                D_8004FB98[3].vy = y + h;
+            } else {
+                D_8004FB98[0].vy = y + h;
+                D_8004FB98[1].vy = y + h;
+                D_8004FB98[2].vy = y;
+                D_8004FB98[3].vy = y;
+            }
+            RotAverage4(&D_8004FB98[0], &D_8004FB98[1], &D_8004FB98[2], &D_8004FB98[3], (long *)&poly->x0,
+                        (long *)&poly->x1, (long *)&poly->x3, (long *)&poly->x2, &depth, &flag);
+            cut >>= (sprite->flags >> 8) & 0x1F;
+            v = parts[i].v;
+            if (h > 0) {
+                dv = parts[i].h - cut;
+            } else {
+                v -= cut;
+                dv = parts[i].h - cut;
+            }
+            u = parts[i].u;
+            du = parts[i].w;
+            if (poly->x3 < poly->x0) {
+                if (u - 1 >= 0) {
+                    u--;
+                } else {
+                    u = 0;
+                    du--;
+                }
+            }
+            setUV4(poly, u, v, u + du, v, u, v + dv, u + du, v + dv);
+            addPrim(ot, poly);
+        }
+    }
+}
+#else
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001EE88);
+#endif
+
+/* Draw a sprite's parts as 8001ee88 does, cut off above `height` instead:
+ * parts entirely above it are skipped, parts crossing it lose the rows
+ * above it, texture included. Linked at `ot`. */
+/* Nonmatching: register allocation only, as in 8001ee88 ($s5-$s7), and the row base $a1 against $a3 here. */
+#ifdef NON_MATCHING
+void func_8001F1D4(Sprite *sprite, u_long *ot, s32 height) {
+    u32 flags;
+    s32 limit;
+    s32 count;
+    SpritePart *parts;
+    s32 i;
+    POLY_FT4 *poly;
+    s32 w, h, x, y;
+    s32 top, bottom;
+    s32 cut;
+    long depth;
+    long flag;
+    u8 u;
+    s32 v, du, dv;
+
+    limit = height << ((sprite->flags >> 8) & 0x1F);
+    count = (sprite->flags >> 2) & 0x3F;
+    parts = sprite->renderer->parts[1];
+    if ((u8 *)D_80059580 + count * sizeof(POLY_FT4) < D_80059534) {
+        for (i = 0; i != ((sprite->flags >> 2) & 0x3F); i++) {
+            poly = (POLY_FT4 *)D_80059580;
+            D_80059580 = (SpriteQueueEntry *)(poly + 1);
+            setlen(poly, 9);
+            *(u32 *)&poly->r0 = parts[i].colour;
+            poly->tpage = parts[i].tpage;
+            poly->clut = parts[i].clut;
+            x = parts[i].x;
+            w = parts[i].w + (s8)parts[i].byte8;
+            y = parts[i].y;
+            h = parts[i].h + (s8)parts[i].byte9;
+            w <<= (sprite->flags >> 8) & 0x1F;
+            h <<= (sprite->flags >> 8) & 0x1F;
+            x <<= (sprite->flags >> 8) & 0x1F;
+            y <<= (sprite->flags >> 8) & 0x1F;
+            if ((sprite->render.word >> 3) & 1) {
+                w = -w;
+                x = -x;
+            }
+            if ((sprite->render.word >> 4) & 1) {
+                h = -h;
+                y = -y;
+            }
+            if (!((parts[i].flags >> 4) & 1)) {
+                D_8004FB98[0].vx = x;
+                D_8004FB98[1].vx = x + w;
+                D_8004FB98[2].vx = x + w;
+                D_8004FB98[3].vx = x;
+            } else {
+                D_8004FB98[0].vx = x + w;
+                D_8004FB98[1].vx = x;
+                D_8004FB98[2].vx = x;
+                D_8004FB98[3].vx = x + w;
+            }
+            if (h > 0) {
+                top = y;
+                bottom = y + h;
+            } else {
+                top = y + h;
+                bottom = y;
+            }
+            if (bottom < limit) {
+                continue;
+            }
+            cut = 0;
+            if (top < limit) {
+                cut = limit - top;
+            }
+            if (h > 0) {
+                y += cut;
+                h -= cut;
+            } else {
+                y += cut;
+                h += cut;
+            }
+            if (!((parts[i].flags >> 5) & 1)) {
+                D_8004FB98[0].vy = y;
+                D_8004FB98[1].vy = y;
+                D_8004FB98[2].vy = y + h;
+                D_8004FB98[3].vy = y + h;
+            } else {
+                D_8004FB98[0].vy = y + h;
+                D_8004FB98[1].vy = y + h;
+                D_8004FB98[2].vy = y;
+                D_8004FB98[3].vy = y;
+            }
+            RotAverage4(&D_8004FB98[0], &D_8004FB98[1], &D_8004FB98[2], &D_8004FB98[3], (long *)&poly->x0,
+                        (long *)&poly->x1, (long *)&poly->x3, (long *)&poly->x2, &depth, &flag);
+            cut >>= (sprite->flags >> 8) & 0x1F;
+            if (h > 0) {
+                v = parts[i].v + cut;
+                dv = parts[i].h;
+            } else {
+                v = parts[i].v - cut;
+                dv = parts[i].h;
+            }
+            dv -= cut;
+            u = parts[i].u;
+            du = parts[i].w;
+            if (poly->x3 < poly->x0) {
+                if (u - 1 >= 0) {
+                    u--;
+                } else {
+                    u = 0;
+                    du--;
+                }
+            }
+            setUV4(poly, u, v, u + du, v, u, v + dv, u + du, v + dv);
+            addPrim(ot, poly);
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001F1D4);
+#endif
 
 /* Reserve `width` columns of the sprite texture area (three 64-line rows from
  * (0x300, 0x140), 0x40 columns each) and return their position. */
