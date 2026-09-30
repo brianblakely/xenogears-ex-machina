@@ -4081,7 +4081,84 @@ void func_80080F44(s32 index) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008110C);
+/* The field update: run the events, then move every actor (motion stages,
+ * the controlled actor's contact and position, the others' positions,
+ * encounters) and the followers. */
+void func_8008110C(void) {
+    FieldDescriptor *descriptor;
+    FieldActor *actor;
+    s32 i;
+
+    D_800C3910 = -1;
+    func_800A2030();
+    for (i = 0; i < D_800ADBFC; i++) {
+        D_800AF880.components.descriptors[i].actor->previous[0] = D_800AF880.components.descriptors[i].actor->position[0] >> 16;
+        D_800AF880.components.descriptors[i].actor->previous[1] = D_800AF880.components.descriptors[i].actor->position[1] >> 16;
+        D_800AF880.components.descriptors[i].actor->previous[2] = D_800AF880.components.descriptors[i].actor->position[2] >> 16;
+    }
+    if (D_800C268C == 0) {
+        func_80281B00("EVENT CODE");
+    }
+    D_800AF858 = 0;
+    for (i = 0; i < D_800ADBFC; i++) {
+        descriptor = &D_800AF880.components.descriptors[i];
+        actor = descriptor->actor;
+        if ((descriptor->flags & 0xF80) == 0x200) {
+            if (!(actor->flags & 0x10001)) {
+                if ((actor->layer_flags & 0x600) != 0x200) {
+                    actor->unk014 = func_80080968(actor);
+                    func_80082620(i, descriptor, actor);
+                    func_80082BB8(i, descriptor, actor);
+                }
+            } else if ((actor->layer_flags & 0x1000000) && !(actor->flags & 0x10000)) {
+                if (actor->unkE8 != actor->unk0EA) {
+                    actor->unk0EA = 2;
+                    D_800AF880.components.descriptors[i].actor->unkE8 = D_800AF880.components.descriptors[i].actor->unk0EA;
+                    func_800245D8(D_800AF880.components.descriptors[i].model, actor->unk0EA);
+                }
+            } else if (actor->layer_flags & 0x200000) {
+                if (D_800AF880.components.descriptors[i].actor->unkE8 != D_800AF880.components.descriptors[i].actor->unk0EA) {
+                    D_800AF880.components.descriptors[i].actor->unkE8 = D_800AF880.components.descriptors[i].actor->unk0EA;
+                    func_800821F4(D_800AF880.components.descriptors[i].model, D_800AF880.components.descriptors[i].actor->unk0EA,
+                                  &D_800AF880.components.descriptors[i]);
+                }
+            }
+        }
+    }
+    if (D_800C268C == 0) {
+        func_80281B00("MOV CHECK0");
+    }
+    descriptor = &D_800AF880.components.descriptors[D_800B2078.controlled];
+    func_80084158(D_800B2078.controlled, descriptor, descriptor->actor);
+    if (D_800C268C == 0) {
+        func_80281B00("MOV CHECK1");
+    }
+    for (i = 0; i < D_800ADBFC; i++) {
+        if (D_800AF880.components.descriptors[i].flags & 0xF00) {
+            descriptor = &D_800AF880.components.descriptors[i];
+            actor = descriptor->actor;
+            if ((actor->layer_flags & 0x600) != 0x200 && (descriptor->flags & 0xF80) == 0x200
+                && !(actor->flags & 0x10001) && i != D_800B2078.controlled) {
+                func_80084A40(i, 0x7FFFFFFF, descriptor, actor, 0);
+                if (D_800AF880.components.descriptors[i].model->animation->unk0C == 1) {
+                    actor->flags &= ~0x800;
+                }
+            }
+        }
+    }
+    if (D_800C268C == 0) {
+        func_80281B00("MOV CHECK2");
+    }
+    if (D_800B2078.encounter_inhibition == 0 && D_800B2078.party_processing_mode == 0) {
+        func_8008399C(D_800B2078.controlled, &D_800AF880.components.descriptors[D_800B2078.controlled],
+                      D_800AF880.components.descriptors[D_800B2078.controlled].actor);
+    }
+    D_800ADC0C = 1;
+    func_800815F0();
+    if (D_800C268C == 0) {
+        func_80281B00("MOV CHECK3");
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800815F0);
 

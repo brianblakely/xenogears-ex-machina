@@ -2,6 +2,7 @@
 #define FIELD_FIELD_MOTION_H
 
 #include "common.h"
+#include "field.h"
 
 /* An object of the 801e module layer table; +128/+130 hold its planar
  * speed. */
@@ -37,5 +38,13 @@ typedef struct {
 
 extern FieldHistory D_800B14F0[32];
 extern s32 D_800C3910; /* history reset */
+
+/* The per-actor motion stages of the field update (8008110c). */
+extern s32 D_800AF858;
+extern void func_800815F0(void);
+extern void func_80082620(s32 index, FieldDescriptor *descriptor, FieldActor *actor);
+extern void func_80082BB8(s32 index, FieldDescriptor *descriptor, FieldActor *actor);
+extern void func_8008399C(s32 index, FieldDescriptor *descriptor, FieldActor *actor);
+extern void func_80084158(s32 index, FieldDescriptor *descriptor, FieldActor *actor);
 
 #endif

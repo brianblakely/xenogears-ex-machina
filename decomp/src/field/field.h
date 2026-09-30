@@ -92,7 +92,8 @@ typedef struct FieldActor {
     s16 unk60;           /* 060 */
     s16 unk62;           /* 062 */
     s16 unk64;           /* 064 */
-    u8 unk066[0x6E - 0x66];
+    u8 unk066[2];
+    s16 previous[3];     /* 068: whole x, y, z before the update */
     s16 unk6E;           /* 06E */
     s16 unk70;           /* 070 */
     s16 unk72;           /* 072 */
