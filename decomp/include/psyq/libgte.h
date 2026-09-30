@@ -21,6 +21,8 @@ typedef struct {
     s32 t[3];
 } MATRIX;
 
+#define setVector(v, _x, _y, _z) (v)->vx = _x, (v)->vy = _y, (v)->vz = _z
+
 void InitGeom(void);
 void SetGeomOffset(s32 x, s32 y);
 void SetGeomScreen(s32 h);

@@ -527,17 +527,44 @@ typedef struct {
     s16 enabled;  /* 800b00b2 */
 } FieldEventParams;
 
-/* One 0x78-byte record of the table at 800b02cc. */
+/* One 0x78-byte particle emitter: the eight at 800b02cc, and copies of
+ * them per effect slot (*800c3918). */
 typedef struct {
-    u8 unk00[0x24];
+    u8 unk00[4];
+    s16 unk04;       /* 04: set to 1 to release */
+    u8 unk06[0xC0 - 6];
+} Particle;
+
+typedef struct {
+    s16 unk00;       /* 00 */
+    s16 unk02;       /* 02 */
+    s16 unk04;       /* 04 */
+    s16 count;       /* 06: particles */
+    s32 unk08;       /* 08 */
+    SVECTOR unk0C;   /* 0C */
+    SVECTOR unk14;   /* 14 */
+    SVECTOR unk1C;   /* 1C */
     s16 unk24;       /* 24 */
-    u8 unk26[4];
+    s16 unk26;       /* 26 */
+    s16 unk28;       /* 28 */
     u16 flags;       /* 2A */
-    u8 unk2C[0x54 - 0x2C];
+    Particle *particles; /* 2C */
+    s16 unk30[8][2]; /* 30 */
+    s16 unk50;       /* 50 */
+    s16 unk52;       /* 52 */
     s16 unk54;       /* 54 */
     s16 unk56;       /* 56 */
     s16 unk58;       /* 58 */
-    u8 unk5A[0x72 - 0x5A];
+    SVECTOR unk5A;   /* 5A */
+    SVECTOR unk62;   /* 62 */
+    u8 unk6A;        /* 6A */
+    u8 unk6B;        /* 6B */
+    u8 unk6C;        /* 6C */
+    u8 unk6D;
+    s8 unk6E;        /* 6E */
+    s8 unk6F;        /* 6F */
+    u8 unk70;        /* 70 */
+    u8 unk71;
     s16 unk72;       /* 72 */
     s16 unk74;       /* 74 */
     s16 unk76;       /* 76 */

@@ -8935,35 +8935,248 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A8BA4);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A8EAC);
 
+extern RECT D_800AFC28;
+typedef struct {
+    u32 words[4];
+} Block16;
+extern Block16 *D_800AFC70; /* saved screen column */
+
+#ifdef NON_MATCHING
+/* Move the saved screen column into a new block allocated with `flags`. */
+void func_800A90B4(s32 flags) {
+    Block16 *copy;
+    Block16 *dst;
+    Block16 *src;
+    Block16 *end;
+
+    if (D_800ADB34 == 1) {
+        func_80032498(8, 0);
+        copy = func_80031BDC(0x8000, flags);
+        src = D_800AFC70;
+        end = src + 0x800;
+        dst = copy;
+        do {
+            *dst++ = *src++;
+        } while (src != end);
+        func_800320E8(D_800AFC70);
+        D_800AFC70 = copy;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A90B4);
+#endif
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A915C);
+/* Save the 64x256 VRAM column at (3c0, 100) once. */
+void func_800A915C(void) {
+    if (D_800ADB34 != 1) {
+        D_800ADB34 = 1;
+        func_80032498(8, 0);
+        D_800AFC70 = func_80031BDC(0x8000, 1);
+        D_800AFC28.x = 0x3C0;
+        D_800AFC28.y = 0x100;
+        D_800AFC28.w = 0x40;
+        D_800AFC28.h = 0x100;
+        StoreImage(&D_800AFC28, (u32 *)D_800AFC70);
+        DrawSync(0);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A91F0);
+/* Restore the saved VRAM column and release it. */
+void func_800A91F0(void) {
+    if (D_800ADB34 != 0) {
+        D_800AFC28.x = 0x3C0;
+        D_800ADB34 = 0;
+        D_800AFC28.y = 0x100;
+        D_800AFC28.w = 0x40;
+        D_800AFC28.h = 0x100;
+        LoadImage(&D_800AFC28, (u32 *)D_800AFC70);
+        DrawSync(0);
+        func_800320E8(D_800AFC70);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A9274);
+extern s16 D_800B0108[64]; /* effect slot owners, -1 free */
+extern u8 D_800B14B0[64];  /* effect slot states */
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A92AC);
+/* Free all 64 effect slots. */
+void func_800A9274(void) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A9374);
+    for (i = 0; i < 64; i++) {
+        D_800B14B0[i] = 0;
+        D_800B0108[i] = -1;
+    }
+}
 
+extern Record78 *D_800C3918[64]; /* effect slot emitters */
+
+/* Release effect slot `slot` and its particles. */
+void func_800A92AC(s32 slot) {
+    Record78 *emitter;
+    s32 i;
+
+    if (D_800B14B0[slot] == 1) {
+        emitter = D_800C3918[slot];
+        for (i = 0; i < 8; i++) {
+            if (emitter->count != 0) {
+                func_800320E8(emitter->particles);
+            }
+            emitter++;
+        }
+        func_800320E8(D_800C3918[slot]);
+    }
+    D_800B14B0[slot] = 0;
+    D_800B0108[slot] = -1;
+}
+
+/* Stop the emitters of effect slot `slot`. */
+void func_800A9374(s32 slot) {
+    Record78 *emitter;
+    s32 i;
+
+    if (D_800B14B0[slot] == 1) {
+        emitter = D_800C3918[slot];
+        for (i = 0; i < 8; i++) {
+            if (emitter->count != 0) {
+                emitter->unk04 = 0;
+            }
+            emitter++;
+        }
+    }
+}
+
+#ifdef NON_MATCHING
+/* Stop the emitters of effect slot `slot` and release their particles. */
+void func_800A93CC(s32 slot) {
+    Record78 *emitter;
+    s32 i;
+    s32 j;
+
+    if (D_800B14B0[slot] == 1) {
+        emitter = D_800C3918[slot];
+        for (i = 0; i < 8; i++) {
+            if (emitter->count != 0) {
+                emitter->unk04 = 0;
+                for (j = 0; j < emitter->count; j++) {
+                    emitter->particles[j].unk04 = 1;
+                }
+            }
+            emitter++;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A93CC);
+#endif
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A9460);
+/* Release all effect slots. */
+void func_800A9460(void) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A94A4);
+    for (i = 0; i < 64; i++) {
+        func_800A92AC(i);
+    }
+    func_800775F8();
+}
+
+extern s32 D_800B0044;
+
+/* Reset the eight particle emitters at 800b02cc with parameter `value`. */
+void func_800A94A4(s32 value) {
+    s32 i;
+    s32 j;
+
+    D_800B0044 = 0;
+    for (i = 0; i < 8; i++) {
+        D_800B02CC[i].unk52 = value;
+        D_800B02CC[i].unk00 = 0;
+        D_800B02CC[i].unk02 = 0;
+        D_800B02CC[i].unk04 = 0x80;
+        D_800B02CC[i].count = 0;
+        setVector(&D_800B02CC[i].unk0C, 0, 0, 0);
+        setVector(&D_800B02CC[i].unk14, 0, -1000, 0);
+        D_800B02CC[i].unk08 = 0x8000;
+        D_800B02CC[i].unk50 = 0x800;
+        D_800B02CC[i].unk24 = 1;
+        setVector(&D_800B02CC[i].unk1C, 0, 0, 0);
+        D_800B02CC[i].unk28 = 0x100;
+        D_800B02CC[i].unk58 = 0x1C;
+        D_800B02CC[i].unk26 = 0;
+        D_800B02CC[i].flags = 0;
+        D_800B02CC[i].unk76 = 0;
+        D_800B02CC[i].unk56 = 1;
+        D_800B02CC[i].unk54 = 0;
+        setVector(&D_800B02CC[i].unk5A, 0x1C8, 0x1C8, 0x1C8);
+        setVector(&D_800B02CC[i].unk62, 0x20, 0x20, 0x20);
+        D_800B02CC[i].unk6A = 0x80;
+        D_800B02CC[i].unk6B = 0x20;
+        D_800B02CC[i].unk6C = 0;
+        D_800B02CC[i].unk6E = -4;
+        D_800B02CC[i].unk6F = -1;
+        D_800B02CC[i].unk70 = 0;
+        for (j = 0; j < 8; j++) {
+            D_800B02CC[i].unk30[j][0] = 0;
+            D_800B02CC[i].unk30[j][1] = 0;
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A9688);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A987C);
+/* A random number in 0..range. */
+s32 func_800A987C(s32 range) {
+    return (rand() * range + 1) >> 15;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A98B4);
+/* The first free effect slot, or -1. */
+s32 func_800A98B4(void) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A98E8);
+    for (i = 0; i < 64; i++) {
+        if (D_800B14B0[i] == 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/* Stop the effect slots owned by `owner`; with `release` also release
+ * their particles. */
+void func_800A98E8(s32 owner, s32 release) {
+    s32 i;
+
+    for (i = 0; i < 64; i++) {
+        if (D_800B0108[i] == owner) {
+            if (release == 0) {
+                D_800C3918[i]->unk04 = 0;
+                D_800C3918[i]->unk02 = 0;
+                func_800A9374(i);
+            } else {
+                D_800C3918[i]->unk04 = 0;
+                D_800C3918[i]->unk02 = 0;
+                func_800A93CC(i);
+            }
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A99A8);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A9B1C);
+/* `value` + `delta`, clamped to 0..255. */
+s32 func_800A9B1C(s32 value, s32 delta) {
+    if (delta < 0) {
+        value += delta;
+        if (value < 0) {
+            value = 0;
+        }
+    } else {
+        value += delta;
+        if (value >= 0x100) {
+            value = 0xFF;
+        }
+    }
+    return value;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A9B54);
 
