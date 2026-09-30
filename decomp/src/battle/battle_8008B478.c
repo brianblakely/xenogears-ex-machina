@@ -516,8 +516,8 @@ u8 member;
  * add the step under it while AP last (up to seven steps) or take the last
  * one back, and on confirm pick the target. Returns 0 when confirmed with a
  * target (the remaining AP stored), 1 when cancelled. Nonmatching: the
- * cleared 8-byte list is filled ascending, the cursor x and the step
- * count's increment schedule differently. */
+ * original clears the unused 8-byte list ascending (GCC reverses this loop)
+ * and schedules the step count's increment earlier. */
 #ifdef NON_MATCHING
 u8 func_8008C81C(u8 member) {
     u8 steps[7];
@@ -537,8 +537,8 @@ u8 func_8008C81C(u8 member) {
 
     done = 0;
     cursor = 0;
-    count = 0;
     redraw = 1;
+    count = 0;
     ap = D_800D32A0[member].unk0;
     frame = 4;
     ticks = 0;
@@ -572,7 +572,7 @@ u8 func_8008C81C(u8 member) {
             func_80092B74(member, ap);
             redraw = 0;
         }
-        func_80090B90((cursor % 2) * 0x8C + 0x1E, (cursor / 2) * 16 + 0x64, &frame, &ticks);
+        func_80090B90((cursor % 2) * 0x88 + 0x1E + (cursor % 2) * 4, (cursor / 2) * 16 + 0x64, &frame, &ticks);
         func_800716D8();
         switch (D_800D3014) {
         case 5:
