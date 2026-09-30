@@ -149,7 +149,7 @@ typedef struct {
     POLY_FT4 digits1[18];     /* 0c80: count 46ad, buffer 46ac */
     POLY_FT4 digits2[18];     /* 0f50: count 46af, buffer 46ae */
     POLY_FT4 group1220[18];   /* 1220: count 46b4, buffer 46b3 */
-    POLY_FT4 group14F0[18];   /* 14f0: ovl2602, count 46b8, buffer 46b7 */
+    POLY_FT4 digits4[18];     /* 14f0: count 46b8, buffer 46b7 */
     POLY_FT4 price[20];       /* 17c0: ovl2602, count 46bb, buffer 46ba */
     POLY_FT4 digits3[18];     /* 1ae0: count 46b1, buffer 46b0 */
     POLY_FT4 rows[8][8];      /* 1db0: counts 468c, buffers 4694 */
@@ -165,8 +165,7 @@ typedef struct {
     Label label44B0;          /* 44b0 */
     Label label4530;          /* 4530 */
     Label label45B0;          /* 45b0 */
-    void *resources[3];       /* 4630 */
-    u8 unk463C[0x4654 - 0x463C];
+    void *resources[9];       /* 4630: unpacked from file 2 */
     u8 amounts[0x30];         /* 4654 */
     u8 name_shown[8];         /* 4684 */
     u8 row_count[8];          /* 468c */
@@ -189,30 +188,57 @@ typedef struct {
     u8 group1220_buffer;      /* 46b3 */
     u8 group1220_count;       /* 46b4 */
     u8 label44B0_shown;       /* 46b5 */
-    u8 unk46B6;               /* 46b6: label4530 shown */
-    u8 group14F0_buffer;      /* 46b7 */
-    u8 group14F0_count;       /* 46b8 */
-    u8 group14F0_shown;       /* 46b9 */
+    u8 label4530_shown;       /* 46b6 */
+    u8 digits4_buffer;        /* 46b7 */
+    u8 digits4_count;         /* 46b8 */
+    u8 digits4_shown;         /* 46b9 */
     u8 price_buffer;          /* 46ba */
     u8 price_count;           /* 46bb */
     u8 cells_a_count[9];      /* 46bc */
     u8 cells_b_count[9];      /* 46c5 */
     u8 cells_a_buffer[9];     /* 46ce */
     u8 cells_b_buffer[9];     /* 46d7 */
-    u8 unk46E0[0x4785 - 0x46E0];
+    u16 stat_b0[16];          /* 46e0: per member, the gear summary's b0 value */
+    u16 stat_a4[16];          /* 4700: and its a4 value */
+    u8 unk4720[0x4785 - 0x4720];
     u8 label45B0_shown;       /* 4785 */
     u8 unk4786[2];
 } DetailBlock;
 
-/* The gear screen block (ovl2602, menu state + 454, 1f00h bytes). */
+/*
+ * The gear screen block (ovl2602, menu state + 454, 1f00h bytes): its
+ * backdrop and part pictures, and three animated sprite groups: a flicker of
+ * three sprites, two lamps that open, idle and close, and a third indicator.
+ * States: 0 off, 1 opening, 2 idle, 3 closing (the indicator has 4 steps).
+ */
 typedef struct {
-    u8 unk0[0x80];
-    POLY_FT4 packets[2]; /* 80 */
-    u8 unkD0[0x1ED9 - 0xD0];
-    u8 unk1ED9[7];       /* 1ed9 */
-    u8 unk1EE0;
-    u8 buffer;           /* 1ee1 */
-    u8 unk1EE2[0x1F00 - 0x1EE2];
+    POLY_FT4 backdrop[2];      /* 0000: drawn with the menu's buffer */
+    u8 unk50[0x30];
+    POLY_FT4 packets[2];       /* 0080 */
+    POLY_FT4 flicker[3][4];    /* 00d0 */
+    POLY_FT4 lamps[66];        /* 02b0: 22 per lamp; lamps 0 and 1 */
+    POLY_FT4 indicator[36];    /* 0d00 */
+    POLY_FT4 frame[28];        /* 12a0 */
+    POLY_FT4 parts[5][10];     /* 1700 */
+    u8 flicker_count;          /* 1ed0 */
+    u8 lamp_count[3];          /* 1ed1: [2] the indicator's */
+    u8 flicker_buffer;         /* 1ed4 */
+    u8 lamp_buffer[3];         /* 1ed5 */
+    u8 flicker_shown;          /* 1ed8 */
+    u8 lamp_state[3];          /* 1ed9: [2] the indicator's */
+    u8 flicker_timer;          /* 1edc */
+    u8 lamp_timer[3];          /* 1edd */
+    u8 flicker_frame;          /* 1ee0 */
+    u8 buffer;                 /* 1ee1 */
+    s16 indicator_frame;       /* 1ee2 */
+    s16 lamp_frame[2];         /* 1ee4 */
+    u8 part_count[5];          /* 1ee8 */
+    u8 parts_buffer;           /* 1eed */
+    u8 unk1EEE[2];
+    u16 flicker_x, flicker_y;  /* 1ef0 */
+    u16 lamp_x[2];             /* 1ef4 */
+    u16 lamp_y[2];             /* 1ef8 */
+    u16 indicator_x, indicator_y; /* 1efc */
 } GearScreen;
 
 /* A model part block (ovl2602, menu state + 458/45c). */
@@ -357,7 +383,8 @@ typedef struct {
     u8 model_shown;  /* 63: ovl2602 */
     u8 price_shown;  /* 64: ovl2602 */
     u8 gear_shown;   /* 65: ovl2602 */
-    u8 unk66[0x6C - 0x66];
+    u8 gear_parts_shown; /* 66: ovl2602 */
+    u8 unk67[0x6C - 0x67];
 } ScreenFlags;
 
 /* A linked sound effect bank. */
@@ -409,6 +436,15 @@ typedef struct {
     u16 stats[9]; /* b8 */
 } MemberView;
 
+/* The Gear model's light (menu state + 298, handed to the model code). */
+typedef struct {
+    SVECTOR direction;  /* 00 */
+    s16 unk8[5];        /* 08 */
+    u8 unk12[0x20 - 0x12];
+    MATRIX color;       /* 20: light colour matrix */
+    u8 unk40[4];
+} ModelLight;
+
 /* Menu state (*800625a0); only the fields this overlay touches are named. */
 typedef struct {
     u8 unk0[0x6C];
@@ -422,7 +458,7 @@ typedef struct {
     VECTOR model_translation; /* 220 */
     MATRIX model_matrix;      /* 230 */
     u8 unk250[0x298 - 0x250];
-    u8 model_b[0x2DC - 0x298]; /* 298 */
+    ModelLight model_light;   /* 298: ovl2602 */
     void *sprite_sheet;  /* 2dc */
     void *label_text;    /* 2e0 */
     EffectBank *effect_bank; /* 2e4 */
@@ -510,6 +546,7 @@ extern s32 D_801D6D68;   /* first number y */
 extern s32 D_801D6D6C;   /* second number x */
 extern s32 D_801D6D70;   /* second number y */
 extern s32 D_801D6D74;   /* third number x */
+extern s32 D_801D6D78;   /* third number y */
 extern s32 D_801D6C20[]; /* cursor y per position */
 
 /* Game state. */
@@ -682,31 +719,79 @@ typedef struct {
     u8 unk0[2];
     u8 unk2;       /* 02: entry of the 18h-byte table */
     u8 unk3;       /* 03: entry of the 10h-byte table */
-    u8 unk4[4];    /* 04: fitted parts (items of 32h and above) */
+    u8 unk4[4];    /* 04: weapons (items 32h and up), entries of the 14h-byte weapon table */
     u8 unk8;       /* 08: entry of the 14h-byte table */
-    u8 unk9[3];    /* 09: kind 3 parts */
-    u8 unkC[4];    /* 0c: fitted parts (items below 32h) */
-    u8 unk10[0x38 - 0x10];
+    u8 unk9[3];    /* 09: entries of the 1ch-byte part table */
+    u8 unkC[4];    /* 0c: weapons (items below 32h); [0] entry of the weapon table */
+    u16 unk10;     /* 10: weapon slots of 8 bytes */
+    u8 unk12, unk13, unk14;
+    u8 unk15[3];
+    u16 unk18;     /* 18 */
+    u8 unk1A, unk1B, unk1C;
+    u8 unk1D[3];
+    u16 unk20;     /* 20 */
+    u8 unk22, unk23, unk24;
+    u8 unk25[0x38 - 0x25];
     u16 unk38;     /* 38 */
     u16 unk3A;     /* 3a */
     u8 unk3C, unk3D, unk3E, unk3F; /* 3c */
-    u8 unk40[4];
+    u16 unk40;     /* 40 */
+    u16 unk42;     /* 42 */
     u16 unk44;     /* 44 */
-    u8 unk46[0x60 - 0x46];
+    u8 unk46[2];
+    u16 unk48;     /* 48 */
+    u8 unk4A;      /* 4a */
+    u8 unk4B;
+    u8 unk4C, unk4D, unk4E, unk4F; /* 4c */
+    u8 unk50[4];   /* 50 */
+    u8 unk54;      /* 54 */
+    u8 unk55[3];   /* 55 */
+    u8 unk58[0x5C - 0x58];
+    u8 unk5C, unk5D, unk5E, unk5F; /* 5c */
     u32 unk60;     /* 60 */
     u32 unk64;     /* 64 */
     u16 unk68;     /* 68 */
-    u8 unk6A[0x70 - 0x6A];
+    u16 unk6A;     /* 6a */
+    u8 unk6C[2];
+    u16 unk6E;     /* 6e */
     u16 unk70;     /* 70 */
     u16 unk72;     /* 72 */
     u8 unk74;
     u8 unk75;      /* 75 */
-    u8 unk76[0x98 - 0x76];
+    u8 unk76[0x7E - 0x76];
+    u16 unk7E;     /* 7e */
+    u8 unk80[2];
+    u16 unk82;     /* 82 */
+    u8 unk84[2];
+    u16 unk86;     /* 86 */
+    u8 unk88[16];  /* 88 */
     u8 unk98;      /* 98 */
-    u8 unk99[4];
-    u8 unk9D, unk9E, unk9F; /* 9d */
+    u8 unk99[3];
+    u8 unk9C, unk9D, unk9E, unk9F; /* 9c */
     u8 unkA0[4];
 } Gear;
+
+/* A pilot's record of the game data (20h bytes, 8006ecf8). */
+typedef struct {
+    u16 flags;     /* 00: pilot ability bits */
+    u8 unk2[0x16 - 2];
+    u16 unk16;     /* 16 */
+    u8 unk18[8];
+} PilotRecord;
+
+/* The game data (8006d634): names, character and gear records, pilots. */
+typedef struct {
+    u8 names[31][0x14];        /* 0000 */
+    Character characters[11];  /* 026c: 8006d8a0 */
+    Gear gears[20];            /* 0978: 8006dfac */
+    u8 unk1648[0x16C4 - 0x1648];
+    PilotRecord pilots[11];    /* 16c4: 8006ecf8 */
+    u8 unk1824[0x1924 - 0x1824];
+    u32 gold;                  /* 1924: 8006ef58 */
+    u8 unk1928[0x22B6 - 0x1928];
+    u16 unk22B6;               /* 22b6: 8006f8ea */
+} GameData;
+extern GameData D_8006D634;
 
 typedef struct {
     u8 unk0[4];
@@ -730,31 +815,57 @@ typedef struct {
     u8 unkC[0x14 - 0xC];
 } GearEntry;
 
-/* Gear parts for sale: frames (1ch bytes) and other parts (14h bytes). */
+/* A part record (1ch bytes). */
 typedef struct {
-    u32 users; /* 00: party bits of the members who can use it */
-    u16 price; /* 04 */
-    u8 unk6[0x1C - 6];
-} GearPart1C;
+    u32 users;     /* 00: party bits of the members who can use it */
+    u16 price;     /* 04 */
+    u16 unk6;      /* 06 */
+    u16 unk8;      /* 08: part type (0 none) */
+    u8 unkA[3];
+    u8 unkD, unkE; /* 0d: unkD the part's rank */
+    u8 unkF;
+    u8 unk10[4];   /* 10 */
+    u8 unk14;      /* 14 */
+    u8 unk15;      /* 15: effect kind 1-11 */
+    u16 unk16;     /* 16: effect value */
+    u8 unk18;      /* 18 */
+    u8 unk19;
+    u8 unk1A;      /* 1a */
+    u8 unk1B;
+} GearPart;
 
+/* A weapon record (14h bytes). */
 typedef struct {
-    u8 unk0[4];
-    u32 users; /* 04 */
-    u16 price; /* 08 */
-    u8 unkA[0x14 - 0xA];
-} GearPart14;
+    u8 unk0, unk1, unk2, unk3; /* 00 */
+    u32 users;     /* 04: party bits of the members who can use it */
+    u16 price;     /* 08 */
+    u8 unkA[0xE - 0xA];
+    u8 unkE;       /* 0e */
+    u8 unkF;
+    u8 unk10, unk11; /* 10 */
+    u16 unk12;     /* 12 */
+} GearWeapon;
 
 typedef struct {
     u8 unk0[8];
     GearRecord18 *records18; /* 08 */
     GearRecord10 *records10; /* 0c */
     GearEntry *entries;      /* 10 */
-    GearPart1C *parts1C;     /* 14: kind 3 */
-    GearPart14 *parts14;     /* 18: kind 4 */
+    GearPart *parts;         /* 14 */
+    GearWeapon *weapons;     /* 18 */
+    u8 unk1C[0x9C - 0x1C];
+    u32 unk9C;               /* 9c: the edited gear's summary */
+    u32 unkA0;               /* a0 */
+    u16 unkA4, unkA6, unkA8; /* a4 */
+    u16 unkAA, unkAC, unkAE; /* aa */
+    u16 unkB0;               /* b0 */
+    u8 unkB2, unkB3, unkB4, unkB5, unkB6; /* b2 */
 } GearTable;
+extern u8 D_801D70FD;
 
 extern Gear D_8006DFAC[];
 extern u32 D_801D6C88[];  /* party bit of each member id */
+extern u8 D_801D70F4[];   /* pilot of each gear */
 extern s32 D_801D6FD8;    /* available members 1-10 */
 s32 rand(void);  /* rand */
 void func_801E7D14(void *a, void *b, u32 *ot, s32 buffer);
@@ -771,7 +882,6 @@ void func_801D6738(GearTable *table, u8 id);
 extern u8 D_801D9084;      /* gear being edited */
 extern u8 *D_801D9088;     /* name pixel buffer */
 extern u8 D_801D697C;
-extern u8 D_8006D634[][0x14]; /* names */
 void func_801D498C(u8 unk0, u8 unk1);
 void func_801D5398(void);
 void func_801D6150(GearTable *table, u8 id);
@@ -793,8 +903,63 @@ u8 func_801D5828(void);
 void func_801CCE90(u8 count, Label *labels, u8 *text_ids, u8 *shown);
 extern u8 D_801D6A24[];    /* sell list label text ids */
 extern s32 D_801D6FDC;     /* index of the gear screen's member among the available ones */
-extern s32 D_801D905C, D_801D9060, D_801D9064; /* camera target */
-extern s32 D_801D9050, D_801D9054, D_801D9058; /* previous camera target */
+/* The camera's move between two points (801d9050). */
+typedef struct {
+    s32 from[3];     /* 00: previous target */
+    s32 to[3];       /* 0c: target */
+    s32 step[3];     /* 18: 16.16 step per frame */
+    s32 offset[3];   /* 24: 16.16 distance travelled */
+    u8 negative[3];  /* 30: moving towards smaller coordinates */
+    u8 frames;       /* 33: steps per update */
+} CameraMove;
+extern CameraMove D_801D9050;
+
+/* The Gear model code's state (801e8674, outside this overlay). */
+typedef struct {
+    u8 unk0[0x54];
+    s16 unk54;    /* 54 */
+    s16 distance; /* 56: camera distance */
+} ModelView;
+typedef struct {
+    u8 unk0[4];
+    ModelView *view; /* 04 */
+    u8 unk8[0x1C - 8];
+    s16 unk1C;       /* 1c */
+    u8 unk1E[0x60 - 0x1E];
+    s16 unk60;       /* 60 */
+} ModelState;
+extern ModelState *D_801E8674;
+extern MATRIX *D_801E8644;        /* the model code's light colour matrix */
+extern u32 *D_8005A4AC[2];        /* the large ordering tables of the two draw buffers */
+void func_801E738C(s32 unk0);     /* model code setup */
+void SetBackColor(s32 r, s32 g, s32 b); /* SetBackColor */
+extern ModelState *D_801E8670[2]; /* per model slot */
+extern s32 D_80050100;            /* ordering-table depth shift */
+extern u8 D_801D6DA0[];           /* model variant per gear */
+extern u16 D_801D6DB4[];          /* model value 60h per gear */
+extern u16 D_801D6DD8[];          /* model value 1ch per gear */
+void func_801E742C(u8 slot, s32 unk1, void *data0, void *data1, s32 unk4, s32 unk5, s32 unk6, s32 unk7, void *unk8);
+void func_801E8330(u8 slot, s32 unk1, u8 variant);
+extern POLY_FT4 D_801D7108[]; /* camera debug display packets, two per sprite */
+extern s32 D_801D9048;        /* their sprite count */
+u8 func_8001BD40(u8 low, u8 high); /* random number in [low, high] */
+extern u16 D_801D6FE0[];        /* lamp sprite ids, four per frame, five frames per lamp (ffff none) */
+extern u8 D_801D7030[];         /* lamp and indicator position per command and list cursor */
+extern u16 D_801D7040[2];       /* lamp x */
+extern u16 D_801D7044[];        /* lamp y choices, six per lamp */
+extern u16 D_801D705C[6];       /* indicator x choices */
+extern u16 D_801D7068[6];       /* indicator y choices */
+extern u16 D_801D7074[6];       /* flicker x choices */
+extern u16 D_801D7080[6];       /* flicker y choices */
+extern s16 D_801D6DFC[];        /* camera x per gear */
+extern s16 D_801D6E18[];        /* camera y per gear, command and list cursor (three commands of four) */
+extern s16 D_801D6FB0[];        /* camera distance per command and list cursor */
+extern u16 D_801D708C[14];      /* gear parts frame sprite ids */
+extern u16 D_801D70A8[14];      /* their x */
+extern u16 D_801D70C4[14];      /* their y */
+/* Gear value positions (x, y). */
+extern u16 D_801D70E0, D_801D70E2, D_801D70E4, D_801D70E6, D_801D70E8;
+extern u16 D_801D70EA, D_801D70EC, D_801D70EE, D_801D70F0, D_801D70F2;
 extern u32 D_8006EF58;     /* party gold */
 void ClearImage(void *env, s32 unk1, s32 unk2, s32 unk3);
 void AddPrims(u32 *ot, u32 *first, u32 *last); /* link an OT range into another OT */
@@ -810,7 +975,6 @@ void func_801CE82C(void);
 void func_801CF33C(void);
 void func_801CE7E0(void);
 void func_801C962C(void);
-extern u8 D_801D9083;
 void func_801C5C98(void);
 void func_801C6114(void);
 void func_801C6708(void);
