@@ -1355,7 +1355,20 @@ void func_800785D4(u8 actor, u8 index) {
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800785D4);
 #endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80078658);
+/* Show the name of action `index` in the next battle message (up to eight)
+ * and queue its event (0xfa) for `actor`. */
+void func_80078658(u8 index, u8 actor) {
+    if (D_800C3E8C < 9) {
+        D_800D36C8[D_800C3E8C].width =
+            func_80034EAC(func_80033728(D_800C3DDC, D_800D2E5C[index].named), D_800D36C8[D_800C3E8C].pixels, 0x39,
+                          D_800C3E8C & 1);
+        func_800769E8(&D_800D36C8[D_800C3E8C].rect, D_800D36C8[D_800C3E8C].pixels);
+        D_800C3FE8[D_800C3EAC->eventCount].actor = actor;
+        D_800C3FE8[D_800C3EAC->eventCount].type = 0xFA;
+        D_800C3FE8[D_800C3EAC->eventCount].parameter = D_800C3E8C++;
+        D_800C3EAC->eventCount++;
+    }
+}
 
 /* Queue event type 0xf7 for `actor` with parameter `value`. */
 void func_800787E0(u8 value, u8 actor) {
