@@ -1704,31 +1704,157 @@ void func_8007E234(u8 **pc, u8 enemy) {
     D_800D3400[enemy].vars[(*pc)[1]] = mask >> 1;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007E334);
+/* AI action 66: variable b1 = the mask of enemy slots passing 8007a744 and
+ * (b2 1) flagged, (b2 2) not flagged at 800d32a1, or (other b2) any. */
+void func_8007E334(u8 **pc, u8 enemy) {
+    s32 slot;
+    u16 mask = 0;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007E438);
+    for (slot = 10; slot >= 3; slot--) {
+        if (func_8007A744(slot)) {
+            switch ((*pc)[2]) {
+            case 1:
+                if (D_800D32A0[slot].unk1 != 0) {
+                    mask |= 1;
+                }
+                break;
+            case 2:
+                if (D_800D32A0[slot].unk1 == 0) {
+                    mask |= 1;
+                }
+                break;
+            default:
+                mask |= 1;
+                break;
+            }
+        }
+        mask <<= 1;
+    }
+    D_800D3400[enemy].vars[(*pc)[1]] = mask << 2;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007E554);
+/* AI action 67: variable b1 = the mask of party slots passing 8007a744 in the
+ * group of the first slot in var b2. */
+void func_8007E438(u8 **pc, u8 enemy) {
+    s32 slot;
+    u16 mask = 0;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007E674);
+    for (slot = 2; slot >= 0; slot--) {
+        if (func_8007A744(slot) &&
+            D_800C3EB4[func_80079E7C(D_800D3400[enemy].vars[(*pc)[2]])].group == D_800C3EB4[slot].group) {
+            mask |= 1;
+        }
+        mask <<= 1;
+    }
+    D_800D3400[enemy].vars[(*pc)[1]] = mask >> 1;
+}
 
+/* AI action 68: variable b1 = the mask of enemy slots passing 8007a744 in the
+ * group of the first slot in var b2. */
+void func_8007E554(u8 **pc, u8 enemy) {
+    s32 slot;
+    u16 mask = 0;
+
+    for (slot = 10; slot >= 3; slot--) {
+        if (func_8007A744(slot) &&
+            D_800C3EB4[func_80079E7C(D_800D3400[enemy].vars[(*pc)[2]])].group == D_800C3EB4[slot].group) {
+            mask |= 1;
+        }
+        mask <<= 1;
+    }
+    D_800D3400[enemy].vars[(*pc)[1]] = mask << 2;
+}
+
+/* AI action 69: clear the enemy's 800d2c60 long and set its 800d2c8b byte
+ * to 4. */
+void func_8007E674(u8 enemy) {
+    D_800D2C60[enemy] = 0;
+    D_800D2C8B[enemy] = 4;
+}
+
+/* AI action 6a: long b3 = long b1 + long b2. */
+#ifdef NON_MATCHING
+void func_8007E6A0(u8 **pc, u8 enemy) {
+    u8 *op = *pc;
+    s32 *longs = D_800D3400[enemy].longs;
+
+    longs[op[3]] = longs[op[1]] + longs[op[2]];
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007E6A0);
+#endif
 
+/* AI action 6b: long b3 = long b1 - long b2. */
+#ifdef NON_MATCHING
+void func_8007E6F0(u8 **pc, u8 enemy) {
+    u8 *op = *pc;
+    s32 *longs = D_800D3400[enemy].longs;
+
+    longs[op[3]] = longs[op[1]] - longs[op[2]];
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007E6F0);
+#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007E740);
+/* AI action 6c: long b1 *= b2. */
+void func_8007E740(u8 **pc, u8 enemy) {
+    u8 *op = *pc;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007E780);
+    D_800D3400[enemy].longs[op[1]] *= op[2];
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007E7C0);
+/* AI action 6d: long b1 /= b2 (unsigned). */
+void func_8007E780(u8 **pc, u8 enemy) {
+    u8 *op = *pc;
 
+    D_800D3400[enemy].longs[op[1]] = (u32)D_800D3400[enemy].longs[op[1]] / op[2];
+}
+
+/* AI action 6e: halfword b1 of the table at *800d3278 + 0x394 = b2. */
+void func_8007E7C0(u8 **pc) {
+    u8 *op = *pc;
+
+    D_800D3278->unk394[op[1]] = op[2];
+}
+
+/* AI action 6f: set (b2 != 0) or clear flag b1 + 7 in every party record's
+ * +0x7a. */
+#ifdef NON_MATCHING
+void func_8007E7E4(u8 **pc) {
+    BattleRecord *record = D_800CCCE8;
+    u8 set = (*pc)[2] != 0;
+
+    do {
+        if (set) {
+            record->unk7A |= func_80089BEC((*pc)[1] + 7);
+        } else {
+            record->unk7A &= ~func_80089BEC((*pc)[1] + 7);
+        }
+        record++;
+    } while (record < &D_800CCCE8[3]);
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007E7E4);
+#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007E8AC);
+/* AI action 70: formation group distance b1 -> b2 = b3. */
+void func_8007E8AC(u8 **pc) {
+    u8 *op = *pc;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007E8E0);
+    D_800D3364->links[op[1]][op[2]].distance = op[3];
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007E934);
+/* AI action 71: the first slot of var b1 takes the next turn. */
+void func_8007E8E0(u8 **pc, u8 enemy) {
+    D_800D2DC0 = func_80079E7C(D_800D3400[enemy].vars[(*pc)[1]]) + 1;
+}
+
+/* AI action 72: rebuild the turn order (80078508) into a scratch buffer. */
+void func_8007E934(void) {
+    u8 order[16];
+
+    func_80078508(order);
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007E954);
 
