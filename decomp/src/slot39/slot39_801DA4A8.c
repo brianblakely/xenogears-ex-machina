@@ -2882,7 +2882,7 @@ void func_801E3C2C(MenuTables *tables, u8 gear) {
     tables->unkAA = record->unk6A;
     tables->unkAC = record->unk38;
     tables->unkAE = record->unk3A;
-    bonus = record->unk3C * (record->unk74 + record->unk56);
+    bonus = record->unk3C * (record->unk74 + record->unk55[1]);
     if (gear == 5 || gear == 13) {
         value = (record->slots[0].unk2 + record->slots[2].unk2) * 6 / 10;
     } else {
@@ -3017,7 +3017,109 @@ void func_801E42AC(MenuTables *tables, u8 gear) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DA4A8", func_801E433C);
+/* Sum gear `gear`'s three parts (table +14) into its record: their stats,
+ * and by each part's kind its bit words, amounts or the pilot's flag bits;
+ * then its level (801e4928) and the pilot's flag 8000 (set while +4f, else
+ * cleared when the pilot flies this gear). */
+void func_801E433C(MenuTables *tables, u8 gear) {
+    GearRecord *record;
+    MenuGearAccessory *part;
+    u16 *bits;
+    u16 *flags;
+    u8 i;
+    u8 j;
+
+    record = &D_8006D634.gears[gear];
+    bits = &D_8006D634.records[D_801E9808[gear]].values[2];
+    flags = &D_8006D634.records[D_801E9808[gear]].unk1A;
+    record->unk40 = 0;
+    record->unk42 = 0;
+    record->unk44 = 0;
+    record->unk48 = 0;
+    record->unk4C = 0;
+    record->unk4D = 0;
+    record->unk4E = 0;
+    record->unk4F = 0;
+    record->unk6E = 0;
+    record->unk54 = 0;
+    for (i = 0; i < 16; i++) {
+        record->unk88[i] = 0;
+    }
+    for (i = 0; i < 4; i++) {
+        record->unk50[i] = 0;
+    }
+    for (i = 0; i < 3; i++) {
+        record->unk55[i] = 0;
+    }
+    record->unk7E = 0;
+    record->unk82 = 0;
+    record->unk86 &= 0xf000;
+    *bits &= 0xfb6f;
+    for (j = 0; j < 3; j++) {
+        part = tables->gearAccessories;
+        part += record->unk9[j];
+        record->unk40 += part->unkD;
+        record->unk42 += part->unkE;
+        record->unk44 += part->unk6;
+        record->unk4C += part->unk18;
+        record->unk4D += part->unk14;
+        record->unk54 += part->unk1B;
+        for (i = 0; i < 4; i++) {
+            record->unk50[i] += part->unk10[i];
+        }
+        switch (part->kind) {
+        case 1:
+            record->unk7E |= part->value;
+            break;
+        case 2:
+            record->unk82 |= part->value;
+            break;
+        case 3:
+            record->unk86 |= part->value;
+            break;
+        case 4:
+            record->unk6E |= part->value;
+            for (i = 0; i < 16; i++) {
+                if (part->value & (0x8000 >> i)) {
+                    record->unk88[i] += part->unk1A;
+                }
+            }
+            break;
+        case 5:
+            record->unk4F += part->value;
+            break;
+        case 6:
+            if ((*bits & 0x1000) && (*bits & 0x800)) {
+                *bits |= 0x400;
+            }
+            break;
+        case 7:
+            if ((*bits & 0x200) && (*bits & 0x100)) {
+                *bits |= 0x80;
+            }
+            break;
+        case 8:
+            if ((*bits & 0x40) && (*bits & 0x20)) {
+                *bits |= 0x10;
+            }
+            break;
+        case 9:
+            record->unk48 |= part->value;
+        case 10:
+            record->unk55[1] += part->value;
+            break;
+        case 11:
+            record->unk55[2] += part->value;
+            break;
+        }
+    }
+    record->unk4A = func_801E4928(gear);
+    if (record->unk4F) {
+        *flags |= 0x8000;
+    } else if (gear == D_8006D8A0[D_801E9808[gear]].gear) {
+        *flags &= 0x7fff;
+    }
+}
 
 /* Take gear `gear`'s weapon values (table +18) into its first slot and
  * attributes; gears 5 and 13 instead take their three slot weapons. */

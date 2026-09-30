@@ -346,9 +346,21 @@ typedef struct MenuAccessory {
 /* A gear accessory record of the data tables (+14). */
 typedef struct MenuGearAccessory {
     u32 users; /* 0 */
-    u8 pad4[0x4];
+    u8 pad4[0x2];
+    u16 unk6; /* 6: added to the gear's +44 */
     u16 groups; /* 8 */
-    u8 padA[0x12];
+    u8 padA[0x3];
+    u8 unkD; /* D: added to the gear's +40 */
+    u8 unkE; /* E: added to the gear's +42 */
+    u8 padF[0x1];
+    u8 unk10[4]; /* 10: added to the gear's +50 */
+    u8 unk14; /* 14: added to the gear's +4d */
+    u8 kind; /* 15: effect kind (801e433c) */
+    u16 value; /* 16: effect bits or amount */
+    u8 unk18; /* 18: added to the gear's +4c */
+    u8 pad19[0x1];
+    u8 unk1A; /* 1A: added to the gear's +88 entries of kind 4 bits */
+    u8 unk1B; /* 1B: added to the gear's +54 */
 } MenuGearAccessory;
 
 /* The data table directory (*(state + 330)). */
@@ -401,28 +413,36 @@ typedef struct GearRecord {
     u16 unk40; /* 40 */
     u16 unk42; /* 42 */
     u16 unk44; /* 44 */
-    u8 pad46[0x4];
-    u8 unk4A; /* 4A */
-    u8 pad4B[0x2];
+    u8 pad46[0x2];
+    u16 unk48; /* 48: part kind 9 bits */
+    u8 unk4A; /* 4A: level (801e4928) */
+    u8 pad4B[0x1];
+    u8 unk4C; /* 4C */
     u8 unk4D; /* 4D */
-    u8 pad4E[0x6];
+    u8 unk4E; /* 4E */
+    u8 unk4F; /* 4F: part kind 5 amount; nonzero sets the pilot's flag 8000 */
+    u8 unk50[4]; /* 50 */
     u8 unk54; /* 54 */
-    u8 pad55[0x1];
-    u8 unk56; /* 56 */
-    u8 pad57[0x5];
+    u8 unk55[3]; /* 55: part kinds 9/10 and 11 amounts at [1], [2] */
+    u8 pad58[0x4];
     u8 attrs[4]; /* 5C */
     u32 unk60; /* 60 */
     u32 unk64; /* 64 */
     u16 unk68; /* 68 */
     u16 unk6A; /* 6A */
-    u8 pad6C[0x4];
+    u8 pad6C[0x2];
+    u16 unk6E; /* 6E: part kind 4 bits */
     u16 unk70; /* 70 */
     u16 unk72; /* 72 */
     u8 unk74; /* 74 */
     u8 unk75; /* 75 */
-    u8 pad76[0x10];
-    u16 unk86; /* 86 */
-    u8 pad88[0x10];
+    u8 pad76[0x8];
+    u16 unk7E; /* 7E: part kind 1 bits */
+    u8 pad80[0x2];
+    u16 unk82; /* 82: part kind 2 bits */
+    u8 pad84[0x2];
+    u16 unk86; /* 86: part kind 3 bits (low 12), weapon value */
+    u8 unk88[16]; /* 88: per kind 4 bit, part amounts */
     u8 unk98; /* 98 */
     u8 unk99; /* 99 */
     u8 pad9A[0x2];
@@ -1311,6 +1331,7 @@ void func_80040564(s32 fd);               /* close */
 u32 func_801E1418(u8 slot, u8 row);
 void func_801E3A80(MenuTables *tables, u8 id);
 void func_801E433C(MenuTables *tables, u8 gear);
+u8 func_801E4928(u8 gear);
 void func_801E8B4C(u8 offset);
 void func_801E86C8(u8 offset);
 void func_801E5058(void);
