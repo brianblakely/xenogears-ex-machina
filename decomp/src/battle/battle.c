@@ -8,6 +8,7 @@
 #include "formation_route.h"
 #include "gear_menu.h"
 #include "glyph_lists.h"
+#include "item_command.h"
 
 /* Start the 801e5000 module: reserve its heap span and load it. */
 void func_80070E2C(void) {
@@ -4334,7 +4335,11 @@ void func_80085B58(u8 slot) {
 }
 
 /* Commit the targets for an item/effect and run 80098c6c with `param`. */
-void func_80085C48(u8 actor, s16 targets, u16 param) {
+void func_80085C48(actor, targets, param)
+u8 actor;
+s16 targets;
+u16 param;
+{
     D_800C48E8 = 0;
     D_800D2C94.targets = targets;
     D_800D2C94.alive = D_800D39DC;
@@ -5250,7 +5255,59 @@ u8 func_8008B224(u8 member, u8 column, u8 row) {
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008B478);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008B908);
+/* Execute the chosen item (turn state +0x2e6) for the member: reset the
+ * events, show the member's use model, commit the item against its targets
+ * (the target candidates, or the chosen target), use one up unless the
+ * item keeps (0x8000), apply its results as event 0xf5, react the targeted
+ * enemies, and wait for the presentation; targeted party members react. */
+void func_8008B908(member)
+u8 member;
+{
+    u16 targets;
+    s32 i;
+
+    D_800D366C = 0;
+    func_800BCD98(0);
+    for (i = 0; i < 32; i++) {
+        D_800C3FE8[i].type = 0xFF;
+    }
+    func_800B89FC(1, member, D_800C3EAC->slots[member].defaultTarget, func_80080AE4(member));
+    if (D_800D2200[D_800C3EAC->unk2E6].target & 7) {
+        targets = D_800C3D64;
+    } else {
+        targets = func_80089C08(D_800C3E2C);
+    }
+    func_8008AC88(targets, member);
+    func_80085388();
+    func_80085C48(member, targets, D_800C3EAC->unk2E6);
+    if (!(D_800D2C94.held & 0x8000)) {
+        if (--D_800D2C94.itemCounts[D_800C3D00 * 2 + D_800D3670] == 0) {
+            D_800D2C94.itemIds[D_800C3D00 * 2 + D_800D3670] = 0;
+        }
+    }
+    D_800C2050 = 1;
+    func_80085C88(D_800C3EAC->eventCount);
+    D_800C2050 = 0;
+    D_800C3FE8[D_800C3EAC->eventCount].type = 0xF5;
+    D_800C3FE8[D_800C3EAC->eventCount].parameter = D_800D2C94.animation;
+    D_800C3FE8[D_800C3EAC->eventCount].actor = member;
+    D_800C3FE8[D_800C3EAC->eventCount].targetMask = D_800D2C94.targets;
+    for (i = 3; i < 11; i++) {
+        if (func_80089C9C(D_800D2C94.targets, i)) {
+            func_80079840(member, i);
+        }
+    }
+    D_800C3EAC->eventCount++;
+    func_80080B64(member);
+    while (D_800C3EAC->eventsDone == 0) {
+        func_800716D8();
+    }
+    for (i = 0; i < 3; i++) {
+        if (func_80089C9C(targets, i)) {
+            D_800D2D28->reaction[i] = 1;
+        }
+    }
+}
 
 /* Hide the command windows (two panels); without `keep` show the +0x641c
  * lists. */

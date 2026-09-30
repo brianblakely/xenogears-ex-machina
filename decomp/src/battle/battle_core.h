@@ -364,6 +364,8 @@ typedef struct {
     u8 action;        /* +0x16 committed action index */
     u8 pad17[0x1B - 0x17];
     u8 message;       /* +0x1B pending battle message id */
+    u8 itemCounts[0x30]; /* +0x1C the item list (also D_800D2CB0) */
+    u8 itemIds[0x30];    /* +0x4C (also D_800D2CE0) */
 } ActionCommit;
 
 extern ActionCommit D_800D2C94;
