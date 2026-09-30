@@ -8299,21 +8299,142 @@ void func_800A0EB0(void) {
     D_800B0078->pc += 1;
 }
 
+extern u8 *D_801E8670[]; /* 801e module layers; +34 is a byte flag */
+extern void func_801E8030(s32 layer);
+
+#ifdef NON_MATCHING
+/* Close the current actor's 801e layer (unk12C bits 13-15): mode 0 clears
+ * its flag, mode 1 releases it. Yields. */
+void func_800A0EE8(void) {
+    FieldActor *actor;
+    s32 layer;
+
+    actor = D_800B0078;
+    layer = (actor->unk12C >> 13) & 7;
+    actor->layer_flags &= ~0x2000;
+    switch (D_800ADC00[actor->pc + 1]) {
+    case 0:
+        D_801E8670[layer][0x34] = 0;
+        D_800B0078->pc += 2;
+        break;
+    case 1:
+        func_801E8030((actor->unk12C >> 13) & 7);
+        D_800B2078.unk2264--;
+        D_800B0078->pc += 2;
+        break;
+    }
+    D_800B00C0 = 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A0EE8);
+#endif
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A0FD8);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A1364);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A14F0);
+/* Give the current actor sprite operand 1 (parameter operand 3), mirror its
+ * position and show it. */
+void func_800A14F0(void) {
+    FieldDescriptor *descriptor;
+    FieldActor *actor;
+    s32 sprite;
+    s32 *sprites;
+    u8 *data;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A1624);
+    descriptor = &D_800AF880.components.descriptors[D_800AFD1C];
+    descriptor->flags = (descriptor->flags & 0xF07F) | 0x200;
+    sprite = func_800ACDEC(1);
+    sprites = D_800AF880.components.sprites;
+    data = (u8 *)(sprites[sprite + 1] + (s32)sprites);
+    func_80076AC0(D_800AFD1C, sprite, data, 0, func_800ACDEC(3), sprite | 0x80, 1);
+    func_800A0C94();
+    actor = D_800B0078;
+    actor->pc += 5;
+    actor->flags = (actor->flags | 0x100) & ~0x80;
+    actor->layer_flags &= ~0x800;
+    D_800AF880.components.descriptors[D_800AFD1C].flags &= 0xFFDF;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A1730);
+/* As func_800A14F0 with parameter 0. */
+void func_800A1624(void) {
+    FieldDescriptor *descriptor;
+    FieldActor *actor;
+    s32 sprite;
+    s32 *sprites;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A17F4);
+    descriptor = &D_800AF880.components.descriptors[D_800AFD1C];
+    descriptor->flags = (descriptor->flags & 0xF07F) | 0x200;
+    sprite = func_800ACDEC(1);
+    sprites = D_800AF880.components.sprites;
+    func_80076AC0(D_800AFD1C, sprite, (u8 *)(sprites[sprite + 1] + (s32)sprites), 0, 0, sprite | 0x80, 0);
+    func_800A0C94();
+    actor = D_800B0078;
+    actor->pc += 3;
+    actor->flags = (actor->flags | 0x100) & ~0x80;
+    actor->layer_flags &= ~0x800;
+    D_800AF880.components.descriptors[D_800AFD1C].flags &= 0xFFDF;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A18B8);
+extern char D_8006FD44[]; /* "STACKERR ACT=%d\n" */
+extern void func_800379C8(char *format, ...);
+
+/* Call the script at operand 1, pushing the return PC (after the 5-byte
+ * instruction); with the four-entry call stack full, report and yield. */
+void func_800A1730(void) {
+    FieldActor *actor;
+
+    actor = D_800B0078;
+    if ((actor->unk12C & 0x1C0) != 0x100) {
+        actor->call_stack[(actor->unk12C >> 6) & 7] = actor->pc + 5;
+        D_800B0078->pc = func_800ACDB8(1);
+        D_800B0078->unk12C = (D_800B0078->unk12C & ~0x1C0) | ((((D_800B0078->unk12C >> 6) & 7) + 1) & 7) << 6;
+    } else {
+        if (D_800C268C == 0) {
+            func_800379C8(D_8006FD44, D_800AFD1C);
+        }
+        D_800B00C0 = 1;
+    }
+}
+
+/* As func_800A1730 for a 3-byte instruction. */
+void func_800A17F4(void) {
+    FieldActor *actor;
+
+    actor = D_800B0078;
+    if ((actor->unk12C & 0x1C0) != 0x100) {
+        actor->call_stack[(actor->unk12C >> 6) & 7] = actor->pc + 3;
+        D_800B0078->pc = func_800ACDB8(1);
+        D_800B0078->unk12C = (D_800B0078->unk12C & ~0x1C0) | ((((D_800B0078->unk12C >> 6) & 7) + 1) & 7) << 6;
+    } else {
+        if (D_800C268C == 0) {
+            func_800379C8(D_8006FD44, D_800AFD1C);
+        }
+        D_800B00C0 = 1;
+    }
+}
+
+extern s32 D_800AFFEC;
+
+/* Return from a script call; with the call stack empty, report, end the
+ * current script slot (priority 15, tag 0xff) and yield. */
+void func_800A18B8(void) {
+    FieldActor *actor;
+
+    actor = D_800B0078;
+    if ((actor->unk12C & 0x1C0) == 0) {
+        if (D_800C268C == 0) {
+            func_800379C8(D_8006FD44, D_800AFD1C);
+        }
+        D_800B0078->slots[D_800B0078->slot].priority = 15;
+        D_800B0078->slots[D_800B0078->slot].tag = 0xFF;
+        D_800AFFEC = 1;
+        D_800B00C0 = 1;
+    } else {
+        actor->unk12C = (actor->unk12C & ~0x1C0) | ((((actor->unk12C >> 6) & 7) - 1) & 7) << 6;
+        actor->pc = actor->call_stack[(actor->unk12C >> 6) & 7];
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A19B0);
 
