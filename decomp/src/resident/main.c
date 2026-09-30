@@ -1581,15 +1581,57 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002303C);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800230A8);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80023124);
+/* The direction (0-0xfff) from one ground point to another. */
+s32 func_80023124(DVECTOR from, DVECTOR to) {
+    VECTOR delta;
 
+    delta.vx = from.vx - to.vx;
+    delta.vz = from.vy - to.vy;
+    return -func_8004B32C(delta.vz, delta.vx) & 0xFFF;
+}
+
+/* Show a frame with the given mirroring, restarting the frame countdown and step. */
+/* Nonmatching: same operations, different register allocation and scheduling of the two bitfield updates. */
+#ifdef NON_MATCHING
+void func_80023170(Sprite *sprite, s32 frame, s32 flip, s32 flip_y) {
+    sprite->countdown = 0;
+    sprite->render.bits.flip_y = flip_y;
+    sprite->render.bits.flip = flip;
+    sprite->frame_bits.phase = 0;
+    sprite->frame_bits.step = 0;
+    func_8001D2B0(sprite, frame);
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80023170);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800231E0);
+/* The first word of the section a block's fourth word locates. */
+s32 func_800231E0(s32 *block) {
+    return *(s32 *)(block[3] + (s32)block);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800231F8);
+/* One more than the second word of that section. */
+s32 func_800231F8(s32 *block) {
+    return ((s32 *)(block[3] + (s32)block))[1] + 1;
+}
 
+/* Count down the frame timer once per displayed frame, running the next command when it expires. */
+/* Nonmatching: the original reads the countdown twice (lh to test, lhu to decrement), which GCC 2.7.2/2.6.3 do not reproduce here. */
+#ifdef NON_MATCHING
+void func_80023210(Sprite *sprite) {
+    s32 i;
+
+    for (i = 0; i != D_80059198 + 1; i++) {
+        if (sprite->countdown != 0) {
+            if (--sprite->countdown == 0) {
+                func_800248D4(sprite);
+            }
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80023210);
+#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80023290);
 

@@ -64,7 +64,9 @@ typedef struct {
     u8 *frames;              /* +0x88 */
     s8 stack_top;            /* +0x8c: byte stack index, growing down */
     u8 unknown8d;
-    u8 stack[0x1A];          /* +0x8e */
+    u8 stack[0x10];          /* +0x8e */
+    s16 countdown;           /* +0x9e: frames to the next command */
+    u8 unknowna0[8];
     struct {
         unsigned unknown0 : 11;
         unsigned frame : 6;      /* frame table index */
@@ -94,6 +96,9 @@ void func_80023210(Sprite *sprite);
 void func_8001D2B0(Sprite *sprite, s32 frame);
 s32 func_8003F8B0(s32 angle); /* rcos */
 s32 func_8003F8CC(s32 angle); /* rsin */
+s32 func_8004B32C(s32 y, s32 x); /* ratan2 */
+void func_800248D4(Sprite *sprite); /* run the next script command */
+extern s32 D_80059198; /* extra frames per update (frame skip) */
 void func_80022B2C(Sprite *sprite);
 s32 func_80022CAC(Sprite *sprite, s32 value);
 void func_80022CDC(Sprite *sprite);
