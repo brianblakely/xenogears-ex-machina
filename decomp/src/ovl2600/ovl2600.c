@@ -239,7 +239,78 @@ void func_801C5A40(void) {
     func_800320E8(clut);
 }
 
+/* Set up label `index`'s two quads: mode 0 maps the text rendered for the
+ * command column at row + index; otherwise the list layout, dimmed unless
+ * bit 7 is set, with the highlight from the low bits. */
+#ifdef NON_MATCHING
+void func_801C5ABC(MenuLabel *label, s32 index, s32 row, u8 mode) {
+    POLY_FT4 *poly = label->poly;
+    s32 column = index & 1;
+    s32 line = index / 2;
+    s32 u = (line & 1) << 7;
+    s32 i = 0;
+    s32 dim;
+    s32 v;
+    s32 list_u;
+
+loop:
+    dim = 0;
+    func_80043CB0(poly);
+    func_80043BFC(poly, 0);
+    func_80043C24(poly, 0);
+    poly->r0 = 0x80;
+    poly->g0 = 0x80;
+    poly->b0 = 0x80;
+    if (mode == 0) {
+        label->highlight = column;
+        poly->tpage = func_80043A1C(0, 0, 0x140, 0);
+        poly->u0 = u;
+        v = ((index + row) / 4) * 13;
+        poly->v0 = v;
+        poly->u1 = u + label->width;
+        poly->v1 = v;
+        poly->u2 = u;
+        v += 13;
+        poly->v2 = v;
+        poly->u3 = u + label->width;
+        poly->v3 = v;
+    } else {
+        if (!(mode & 0x80)) {
+            dim = 0x20;
+            func_80043BFC(poly, 1);
+            poly->r0 = dim;
+            poly->g0 = dim;
+            poly->b0 = dim;
+        }
+        label->highlight = (mode & 0x7F) - 1;
+        poly->tpage = dim | func_80043A1C(0, 0, 0x180, 0x80);
+        list_u = column * 0x60;
+        v = line * 13 + row;
+        poly->u0 = list_u;
+        poly->v0 = v;
+        poly->v1 = v;
+        v += 13;
+        poly->u2 = list_u;
+        poly->v2 = v;
+        poly->u1 = list_u + label->width;
+        poly->v3 = v;
+        poly->u3 = list_u + label->width;
+    }
+    if (label->highlight) {
+        poly->clut = D_80059414;
+    } else {
+        poly->clut = D_800595D4;
+    }
+    i++;
+    poly++;
+    if (i < 2) {
+        goto loop;
+    }
+    label->projected = 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C5ABC);
+#endif
 
 /* Render `count` label texts (pairs of text ids) into VRAM, two per line,
  * and set up their quads. */
