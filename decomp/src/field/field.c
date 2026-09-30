@@ -2409,7 +2409,23 @@ done:
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80089BF0);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80089DCC);
+/* Event: place sound emitter op1 at (op3, op7, op5) and attach it to the
+ * actor byte 10 selects (-1 for none). */
+void func_80089DCC(void) {
+    s32 index = func_8009CF78(1, D_800ADC00[D_800B0078->pc + 9]);
+    s32 actor;
+
+    D_800B2078.emitter_position[index][0] = func_8009CFBC(3, D_800ADC00[D_800B0078->pc + 9]);
+    D_800B2078.emitter_position[index][2] = func_8009D000(5, D_800ADC00[D_800B0078->pc + 9]);
+    D_800B2078.emitter_position[index][1] = func_8009D044(7, D_800ADC00[D_800B0078->pc + 9]);
+    actor = func_8009CDB4(10);
+    if (actor != 0xFF) {
+        D_800B2078.emitter_descriptor[index] = actor;
+    } else {
+        D_800B2078.emitter_descriptor[index] = -1;
+    }
+    D_800B0078->pc += 11;
+}
 
 /* Event: set 800b22e0 from operand 1. */
 void func_80089F18(void) {
@@ -2596,7 +2612,43 @@ s32 func_8008A790(s32 id, s32 *slot) {
     return -1;
 }
 
+#ifdef NON_MATCHING
+/* Start reading party member `member`'s sprite file for slot `slot` (a
+ * character substitute while 8004f34c has 0xc000). */
+void func_8008A7DC(s32 member, s32 slot) {
+    s32 file;
+    void *buffer;
+
+    D_800ADBCC = slot;
+    D_800ADBC8 = member;
+    func_80028470(4, 0);
+    if (D_800ADB1C == 0) {
+        func_80028A60(0);
+    }
+    if (!(D_8004F34C & 0xC000)) {
+        file = member + 5;
+        buffer = (void *)func_800288EC(file);
+        D_8006FABC[D_800ADBCC] = member;
+        D_800ADBC0 = buffer = func_80031BDC((s32)buffer, 0);
+    } else {
+        member = func_8001ACF0(member);
+        if (member == 0xFF) {
+            member = 0;
+        }
+        member += 0x10;
+        file = member + 5;
+        D_800ADBC0 = buffer = func_80031BDC(func_800288EC(file), 0);
+        D_8006FABC[D_800ADBCC] = member;
+    }
+    func_800295D8(file, buffer, 0, 0x80);
+    if (D_800ADB1C == 0) {
+        func_80028A60(0);
+    }
+    D_800ADBC4 = 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008A7DC);
+#endif
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008A93C);
 
@@ -2716,7 +2768,33 @@ void func_8008B2F0(void) {
     D_800B0078->pc += 15;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008B328);
+/* Event: 801e effect control by selector byte: start with operand 2 (0),
+ * wait for 800b2078 to clear (1), clear it (2) or stop (3); yields. */
+void func_8008B328(void) {
+    switch (D_800ADC00[D_800B0078->pc + 1]) {
+    case 0:
+        func_800A4CC4(0, 0, 0, 0, 0, 0, func_800ACDEC(2));
+        D_800B2078.unk207A = 1;
+        D_800B0078->pc += 4;
+        break;
+    case 1:
+        if (D_800B2078.unk2078 == 0) {
+            D_800B0078->pc += 2;
+        } else {
+            D_800B0078->pc--;
+        }
+        break;
+    case 2:
+        D_800B2078.unk2078 = 0;
+        D_800B0078->pc += 2;
+        break;
+    case 3:
+        func_800A47D4();
+        D_800B0078->pc += 2;
+        break;
+    }
+    D_800B00C0 = 1;
+}
 
 /* Event: set the sprite view rotation from operands 1, 3 and 5 (X, Z, Y;
  * immediate by flags 0x80/0x40/0x20 of byte 7). */

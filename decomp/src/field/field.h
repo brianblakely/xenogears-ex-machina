@@ -361,7 +361,9 @@ typedef struct GameState {
  * not pass loads of other members, and code addresses members relative to
  * one another. */
 typedef struct {
-    u8 unk2078[0x20C4 - 0x2078];
+    s16 unk2078;               /* 2078 */
+    s16 unk207A;               /* 207A */
+    u8 unk207C[0x20C4 - 0x207C];
     FadeChannel fades[2];      /* 20C4: screen fade channels */
     u16 open_windows;          /* 2174: bit per open dialogue window */
     u8 unk2176[0x2184 - 0x2176];
@@ -401,7 +403,10 @@ typedef struct {
     u8 unk22A0[0x22E0 - 0x22A0];
     s16 unk22E0;               /* 22E0 */
     s16 emitter_descriptor[3]; /* 22E2: descriptor each emitter follows, or -1 */
-    u8 unk22E8[0x233C - 0x22E8];
+    s16 unk22E8[3][4];         /* 22E8 */
+    s16 unk2300[3][4];         /* 2300 */
+    s32 unk2318[3];            /* 2318 */
+    s16 emitter_position[3][4]; /* 2324 */
     u16 effects_kept;          /* 233C: bit per effect pair still playing */
     s16 unk233E;               /* 233E */
     u8 unk2340[0x2344 - 0x2340];
@@ -576,6 +581,8 @@ extern void func_800496AC(void);                               /* PopMatrix */
 extern void func_8004A6DC(SVECTOR *v, s32 *out, s32 *flag); /* RotTrans */
 
 /* Field overlay. */
+extern void func_800A47D4(void);
+extern void func_800A4CC4(s32, s32, s32, s32, s32, s32, s32);
 extern void func_80086BA8(void);
 extern void func_801E7D14(MATRIX *world, s16 (*table)[3], u32 *ot, s32 buffer, s32);
 extern void func_80281B00(char *name);
@@ -653,6 +660,7 @@ extern void func_80078C5C(void);
 extern void func_802815B0(void);
 
 /* Resident state. */
+extern s32 D_8006FABC[3]; /* party sprite ids per slot */
 extern s32 D_8004F380;
 extern s32 D_80059198;
 extern void *D_8005A4BC; /* field sound-effect bank copy */
