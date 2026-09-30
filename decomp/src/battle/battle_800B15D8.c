@@ -540,7 +540,7 @@ void func_800BE538(s32 slot, s32 first, s32 second, s32 third) {
     sprite = BATTLE_FRAME.slotSprites[slot];
     D_800C3780 = 1;
     if (sprite != NULL) {
-        mode = sprite->mode;
+        mode = sprite->motion.b.mode;
         func_800245D8(sprite, 10);
         menu = D_800C3610;
         D_800C3610 = (BattleMenu *)1;
@@ -557,7 +557,7 @@ void func_800BE538(s32 slot, s32 first, s32 second, s32 third) {
         while (func_800BF6F8()) {
             func_800BE790();
         }
-        while (sprite->mode == 10) {
+        while (sprite->motion.b.mode == 10) {
             func_800BE790();
         }
         func_800245D8(sprite, mode);
@@ -781,7 +781,7 @@ BattleMenu *func_800BED4C(void) {
     D_800C3610->field30 = 0;
     D_800C3610->field48 = 1;
     D_800C3610->field2C = 1;
-    D_800C3610->field4 = 0;
+    D_800C3610->sprite = NULL;
     D_800C3610->field49 = 0;
     D_800C3610->field34 = 0;
     func_800BF0B4(0);
@@ -809,8 +809,8 @@ void func_800BEE2C(s32 index, s32 mask, s32 arg2) {
 }
 
 /* List the slot sprites of the slots in mask (up to 11, NULL-terminated),
- * setting their field74 to value; their count. */
-s32 func_800BEEB4(u32 mask, SlotSprite **list, s32 value) {
+ * setting their target; their count. */
+s32 func_800BEEB4(u32 mask, SlotSprite **list, SlotSprite *target) {
     s32 i;
     s32 count;
     SlotSprite *sprite;
@@ -822,7 +822,7 @@ s32 func_800BEEB4(u32 mask, SlotSprite **list, s32 value) {
         if (mask & 1) {
             sprite = BATTLE_FRAME.slotSprites[i];
             if (sprite != NULL) {
-                sprite->field74 = value;
+                sprite->target = target;
                 list[count] = sprite;
                 count++;
             }

@@ -7,6 +7,8 @@
 
 #include "common.h"
 #include "psyq.h"
+#include "scene.h"
+#include "battle_core.h"
 #include "psyq/libetc.h"
 #include "psyq/libapi.h"
 
@@ -26,17 +28,40 @@ typedef struct {
 } PadRecord;
 
 /* A slot's sprite (a resident sprite; fields as far as used). */
-typedef struct {
-    s32 x, y, z;  /* 16.16 */
-    u8 padC[0x74 - 0xC];
-    s32 field74;  /* 0x74 */
-    u8 pad78[0xA0 - 0x78];
-    s16 targetX;  /* 0xA0 */
-    u8 padA2[2];
-    s16 targetZ;  /* 0xA4 */
-    u8 padA6[0xAF - 0xA6];
-    s8 mode;      /* 0xAF: 10 while running commands */
+typedef struct SlotSprite {
+    s32 x, y, z;                /* 16.16 */
+    u8 padC[0x48 - 0xC];
+    s32 field48;                /* 0x48 */
+    u8 pad4C[0x74 - 0x4C];
+    struct SlotSprite *target;  /* 0x74 */
+    u8 pad78[0x7C - 0x78];
+    s32 *resource;              /* 0x7C: its file first */
+    u8 pad80[0xA0 - 0x80];
+    s16 targetX;                /* 0xA0 */
+    s16 targetY;                /* 0xA2 */
+    s16 targetZ;                /* 0xA4 */
+    u8 padA6[0xA8 - 0xA6];
+    u32 frameBits;              /* 0xA8: bits 30-31 the slot's low bits */
+    union {
+        u32 word;               /* bits 0-1 the slot's high bits */
+        struct {
+            u8 pad[3];
+            s8 mode;            /* 10 while running commands, 0x15 ... */
+        } b;
+    } motion;                   /* 0xAC */
+    s8 idleMode;                /* 0xB0 */
 } SlotSprite;
+
+/* The battle slot of a slot's sprite. */
+#define SPRITE_SLOT(sprite) (((sprite)->motion.word & 3) << 2 | (sprite)->frameBits >> 30)
+
+/* A point of the battle menu's walk (6 bytes); x and z 0xFFFF end it. */
+typedef struct {
+    u16 x;
+    u16 z;
+    u8 run; /* 0x04 */
+    u8 pad5;
+} PathPoint;
 
 /* A point on the ground passed by value. */
 typedef struct {
@@ -52,9 +77,14 @@ typedef struct {
                      : "$8", "memory")
 #define STACK_LEAVE() __asm__ volatile("addiu $29, $29, 4\n\tlw $29, 0($29)" : : : "memory")
 
-/* The battle's frame state from D_800C3EB0. */
+/* The battle's state from D_800C3EB0 (as the late unit sees it). */
 typedef struct {
-    u8 pad0[0xB70];
+    Formation *formation;       /* 0x0000 */
+    BattleSlot slots[11];       /* 0x0004 */
+    BattleEvent events[32];     /* 0x0138 */
+    u8 padA38[4];
+    PathPoint path[51];         /* 0x0A3C */
+    u8 padB6E[2];
     FrameBuffer buffers[2];     /* 0x0B70 */
     FrameBuffer *current;       /* 0x8C50 */
     u32 *ot;                    /* 0x8C54 */
@@ -73,6 +103,9 @@ typedef struct {
 } BattleFrame;
 
 #define BATTLE_FRAME (*(BattleFrame *)&D_800C3EB0)
+
+/* Layout checks. */
+typedef char BattleFrameCheck[(sizeof(BattleSlot) == 0x1C && sizeof(BattleEvent) == 0x48 && sizeof(PathPoint) == 6) ? 1 : -1];
 
 /* Frame timing and the view (D_800D309C). */
 typedef struct {
@@ -98,17 +131,23 @@ extern u16 D_800D30E4;    /* the frame time */
 /* The battle menu (D_800C3610, 0x50 bytes). */
 typedef struct BattleMenu {
     u8 pad0[4];
-    s32 field4;                             /* 0x04 */
+    struct SlotSprite *sprite;              /* 0x04: the acting slot's */
     void (*update)(struct BattleMenu *menu); /* 0x08 */
-    u8 padC[0x2C - 0xC];
-    s32 field2C;                            /* 0x2C */
+    u8 padC[0x1C - 0xC];
+    s32 state;                              /* 0x1C */
+    u8 pad20[0x24 - 0x20];
+    s32 slot;                               /* 0x24: the acting slot */
+    s32 targetSlot;                         /* 0x28 */
+    s32 field2C;                            /* 0x2C: the next path point */
     s32 field30;                            /* 0x30 */
     s32 field34;                            /* 0x34 */
-    u8 pad38[0x48 - 0x38];
+    u8 pad38[0x44 - 0x38];
+    s32 field44;                            /* 0x44 */
     u8 field48;                             /* 0x48 */
     u8 field49;                             /* 0x49 */
     u8 field4A;                             /* 0x4A */
-    u8 pad4B[0x50 - 0x4B];
+    u8 pad4B;
+    struct SlotSprite *target;              /* 0x4C */
 } BattleMenu;
 
 extern BattleMenu *D_800C3610;
