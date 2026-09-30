@@ -37,19 +37,40 @@ typedef struct {
     u8 unk12[2];
 } SparkleKind;
 
-/* A sprite particle of the menu scene: a quad per draw buffer. */
-typedef struct {
+/* A sprite particle of the menu scene: a quad per draw buffer. Type 0
+ * falls; types 1 and 2 are trail and line segments linked to the previous
+ * frame's segment of the same key and owner. */
+typedef struct Sparkle {
     PolyFT4 prim[2];     /* 0x00 */
     u8 active;           /* 0x50 */
     s8 frame;            /* 0x51 */
     u8 frame_count;      /* 0x52 */
-    u8 still;            /* 0x53: nonzero keeps its height */
+    u8 type;             /* 0x53 */
     s16 x, y, z;         /* 0x54 */
     u8 unk5A[6];
-    SparkleKind *kind;   /* 0x60 */
-    u16 gravity;         /* 0x64 */
-    u16 fall_speed;      /* 0x66 */
-    u8 unk68[0x14];
+    union {
+        struct {
+            SparkleKind *kind; /* 0x60 */
+            u16 gravity;       /* 0x64 */
+            u16 fall_speed;    /* 0x66 */
+        } fall;
+        struct {
+            u8 unk60[0xC];
+            struct Sparkle *prev; /* 0x6C */
+            u16 stamp;            /* 0x70: frame counter when started */
+            s16 owner;            /* 0x72 */
+            s32 size;             /* 0x74 */
+            s32 key;              /* 0x78 */
+        } trail;
+        struct {
+            struct Sparkle *prev; /* 0x60 */
+            s16 x, y, z;          /* 0x64: the other end */
+            u16 stamp;            /* 0x6A */
+            s16 owner;            /* 0x6C */
+            u8 unk6E[2];
+            s32 key;              /* 0x70 */
+        } line;
+    } u;
 } Sparkle;
 
 #define SPARKLE_COUNT 60
@@ -68,5 +89,10 @@ extern s16 D_80092698;
 extern s16 D_8009269C;
 extern u16 D_800926A0; /* its CLUT id */
 u16 func_800438C0(u16 *clut, s32 x, s32 y); /* load a CLUT, return its id */
+
+/* Texture of the trail and line sprites. */
+extern u16 D_80092694;   /* texture page */
+extern s32 D_800928E8;   /* owner of the segments started now */
+extern s16 D_80091228[]; /* trail sizes */
 
 #endif

@@ -483,9 +483,9 @@ void func_8007BACC(void) {
                 sparkle->active = 0;
             } else {
                 sparkle->frame++;
-                if (!sparkle->still) {
-                    sparkle->fall_speed += sparkle->gravity;
-                    sparkle->y += sparkle->fall_speed;
+                if (sparkle->type == 0) {
+                    sparkle->u.fall.fall_speed += sparkle->u.fall.gravity;
+                    sparkle->y += sparkle->u.fall.fall_speed;
                 }
             }
         }
@@ -530,12 +530,12 @@ void func_8007C124(SVector *pos, s32 kind) {
     }
     sparkle->active = 1;
     info = &D_80092A74[kind];
-    sparkle->still = 0;
+    sparkle->type = 0;
     sparkle->frame = 0;
-    sparkle->kind = info;
+    sparkle->u.fall.kind = info;
     sparkle->frame_count = info->frame_count;
-    sparkle->gravity = info->gravity;
-    sparkle->fall_speed = 0;
+    sparkle->u.fall.gravity = info->gravity;
+    sparkle->u.fall.fall_speed = 0;
     sparkle->x = pos->vx;
     sparkle->y = pos->vy;
     sparkle->z = pos->vz;
@@ -555,7 +555,60 @@ void func_8007C124(SVector *pos, s32 kind) {
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007C280);
 
+#ifdef NON_MATCHING
+/* Start a trail segment of a key at a position for the current owner
+ * (once per key and owner), with the given texture column and size, linked
+ * to the segment started on the previous frame.
+ * Does not match: the texture and header stores are scheduled in a different order. */
+void func_8007C880(s32 column, Vector *pos, s32 key, s32 size) {
+    Sparkle *sparkle;
+    Sparkle *other;
+    PolyFT4 *prim;
+    s32 i;
+
+    for (i = 0, sparkle = D_80092AD8; i < SPARKLE_COUNT; i++, sparkle++) {
+        if (sparkle->active && sparkle->u.trail.key == key && sparkle->u.trail.owner == D_800928E8) {
+            return;
+        }
+    }
+    sparkle = D_80092AD8;
+    for (i = 0; i < SPARKLE_COUNT; i++, sparkle++) {
+        if (!sparkle->active) {
+            break;
+        }
+    }
+    if (i == SPARKLE_COUNT) {
+        return;
+    }
+    prim = sparkle->prim;
+    prim->u0 = prim->u1 = prim->u2 = prim->u3 = (u8)D_80092698 * 4 + 8 + column * 4;
+    prim->v0 = prim->v1 = prim->v2 = prim->v3 = D_8009269C;
+    prim->code &= ~1;
+    prim->tpage = D_80092694;
+    prim->clut = D_800926A0;
+    sparkle->prim[1] = *prim;
+    sparkle->frame_count = 7;
+    sparkle->type = 1;
+    sparkle->active = 1;
+    sparkle->frame = 0;
+    sparkle->x = pos->vx;
+    sparkle->y = pos->vy;
+    sparkle->u.trail.owner = D_800928E8;
+    sparkle->u.trail.key = key;
+    sparkle->u.trail.prev = NULL;
+    sparkle->u.trail.stamp = D_800926A4;
+    sparkle->z = pos->vz;
+    sparkle->u.trail.size = D_80091228[size];
+    for (i = 0, other = D_80092AD8; i < SPARKLE_COUNT; i++, other++) {
+        if (other->active && other->u.trail.key == key && other != sparkle && other->type == 1 &&
+            other->u.trail.stamp == (u16)(D_800926A4 - 1)) {
+            sparkle->u.trail.prev = other;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007C880);
+#endif
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007CAA4);
 

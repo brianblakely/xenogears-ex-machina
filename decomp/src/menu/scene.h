@@ -54,7 +54,6 @@ typedef struct {
 
 extern SceneSprite D_800954D8[2];
 extern u8 D_800928A0;   /* draw buffer being built */
-extern s32 D_800928E8;
 
 typedef struct {
     s16 unk0, unk2, unk4, unk6;
