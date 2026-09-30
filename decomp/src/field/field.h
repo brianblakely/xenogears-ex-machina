@@ -216,15 +216,24 @@ typedef struct {
     s16 *unk18;      /* 18 */
 } FieldAnimation;
 
+/* A sprite's renderer: +0c is its billboard matrix. */
+typedef struct SpriteRenderer {
+    u8 unk00[0xC];
+    MATRIX matrix; /* 0C */
+} SpriteRenderer;
+
 /* The model object at descriptor offset 04. */
 typedef struct {
     s32 position[3]; /* 00 */
     s32 velocity[3]; /* 0C: 16.16 x, y, z */
     s32 unk18;       /* 18 */
     s32 unk1C;       /* 1C */
-    u8 unk20[0x2C - 0x20];
+    struct SpriteRenderer *renderer; /* 20 */
+    u8 unk24[0x2C - 0x24];
     s16 unk2C;       /* 2C */
-    u8 unk2E[0x40 - 0x2E];
+    u8 unk2E[0x3D - 0x2E];
+    u8 unk3D;        /* 3D: sprite draw mode */
+    u8 unk3E[2];
     u32 unk40;       /* 40 */
     u8 unk44[0x7C - 0x44];
     FieldAnimation *animation; /* 7C */
@@ -782,6 +791,12 @@ extern s32 func_8009D000(s32 offset, s32 flags); /* operand, immediate with flag
 extern void func_80086590(VECTOR *target);
 extern s32 func_8009CFBC(s32 offset, s32 flags); /* operand, immediate with flag 0x40 */
 extern void func_80074700(void);
+/* The sprite pass (80075b44). */
+extern CVECTOR D_80059598; /* fog color */
+extern s32 func_8009A514(void); /* camera octant */
+extern void func_8001E298(FieldModel *sprite, u32 *ot);
+extern void func_8001E2F8(FieldModel *sprite, u32 *ot, s32 height);
+extern void func_8001E368(FieldModel *sprite, u32 *ot, s32 height);
 /* The field sprite factory (80076ac0). */
 extern u16 D_800B1F78[][4];  /* per sprite slot: VRAM x, y */
 extern s32 D_800AFC74;       /* sprites created */

@@ -1841,7 +1841,167 @@ void func_80075B08(void *target, u8 *color) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80075B44);
+/* Draw the sprite actors: keep each one's previous placement, project it to
+ * set its off-screen flag, then scale, fog and draw its sprite at its depth
+ * in `ot` (layered sprites twice, split sprites in two parts); party actors
+ * drawn by the 801e module get their layer object's state instead. */
+void func_80075B44(u32 *ot, s32 buffer) {
+    SVECTOR v;
+    SVECTOR raised;
+    VECTOR scale;
+    MATRIX placed;
+    MATRIX unused; /* unreferenced, but part of the frame */
+    MATRIX orient;
+    CVECTOR color;
+    s32 sxy;
+    s32 interpolation;
+    s32 flag;
+    s32 depth;
+    s32 elevation;
+    s32 octant;
+    s32 upper;
+    s32 i;
+    s32 party;
+    u16 kind;
+    s32 x;
+    s32 y;
+    u32 layer_flags;
+    FieldActor *actor;
+    FieldModel *sprite;
+    u32 side;
+
+    elevation = (s16)D_800AF880.elevation;
+    octant = func_8009A514() & 0xFFFF;
+    func_8007409C(&orient, &D_800AF880.orbit);
+    raised.vx = 0;
+    raised.vz = 0;
+    raised.vy = -(elevation / 3 * 2);
+    party = 0;
+    for (i = 0; i < D_800ADBFC; i++) {
+        kind = D_800AF880.components.descriptors[i].flags;
+        if (!(kind & 0x40)) {
+            continue;
+        }
+        actor = D_800AF880.components.descriptors[i].actor;
+        sprite = D_800AF880.components.descriptors[i].model;
+        layer_flags = actor->layer_flags;
+        D_800AF880.components.descriptors[i].transform = D_800AF880.components.descriptors[i].matrix;
+        if (!(layer_flags & 0x2000)) {
+            gte_CompMatrix(&D_800AF880.scaled_world, &D_800AF880.components.descriptors[i].matrix, &placed);
+            gte_SetRotMatrix(&placed);
+            gte_SetTransMatrix(&placed);
+            gte_RotTransPers(&raised, &sxy, &interpolation, &flag, &depth);
+            y = sxy >> 16;
+            x = (s16)sxy;
+            if ((u32)(y + 9) < 0x143 && (u32)(x + 0x27) < 0x18F) {
+                actor->layer_flags &= ~0x200;
+            } else {
+                actor->layer_flags |= 0x200;
+            }
+            if (D_8004F37C != 0 || (kind & 0x20) || flag < 0) {
+                continue;
+            }
+            scale.vx = actor->scale[0] * 3 >> 2;
+            scale.vy = actor->scale[1] * 3 >> 2;
+            scale.vz = actor->scale[2] * 3 >> 2;
+            if (actor->unkE4 == 7 && D_800B2078.unk2268 != 0) {
+                scale.vx = scale.vx * 5 >> 2;
+                scale.vy = scale.vy * 5 >> 2;
+                scale.vz = scale.vz * 5 >> 2;
+            }
+            sprite->renderer->matrix = orient;
+            ScaleMatrix(&sprite->renderer->matrix, &scale);
+            if (D_800AF880.components.descriptors[i].actor->unk014 & 0x200000) {
+                side = (octant - (((D_800AF880.components.descriptors[i].actor->unk014 >> 11) - 2) & 7)) & 7;
+                if (side != 0) {
+                    if (side < 4) {
+                        v.vx = 0;
+                        v.vy = -0x80;
+                        v.vz = 0;
+                        depth = RotTransPers(&v, (long *)&sxy, (long *)&interpolation, (long *)&flag);
+                    } else if (side < 8) {
+                        if (side >= 5) {
+                            v.vx = 0;
+                            v.vy = 0x80;
+                            v.vz = 0;
+                            depth = RotTransPers(&v, (long *)&sxy, (long *)&interpolation, (long *)&flag);
+                        }
+                    }
+                }
+            }
+            if (D_800B2078.unk2357 == 0 && D_800B2078.sprite_gate != 0) {
+                gte_ldrgb(&D_80059598);
+                gte_dpcs();
+                gte_strgb(&color);
+                func_80021B98(D_800AF880.components.descriptors[i].model, color.r, color.g, color.b);
+            }
+            depth >>= D_80050100;
+            if (depth >= 2) {
+                depth -= 2;
+            }
+            if ((u16)(actor->unkE8 + 0x22) < 2) {
+                if (!(actor->layer_flags & 0x02000000)) {
+                    func_80021B98(sprite, actor->color0[0], actor->color0[1], actor->color0[2]);
+                    sprite->unk3D = 0xEF;
+                    func_8001E298(sprite, ot + depth - 0x10);
+                    v.vx = 0;
+                    v.vy = 300;
+                    v.vz = 0;
+                    upper = RotTransPers(&v, (long *)&sxy, (long *)&interpolation, (long *)&flag) >> D_80050100;
+                    func_80021B98(sprite, actor->color1[0], actor->color1[1], actor->color1[2]);
+                    sprite->unk3D = 0xF7;
+                    func_8001E298(sprite, ot + upper);
+                }
+            } else {
+                sprite->unk3D = 0;
+                if (!(actor->layer_flags & 0x02000000)) {
+                    if (!(actor->unk134 & 0x60)) {
+                        func_80075B08(sprite, actor->color0);
+                        func_8001E298(sprite, ot + depth);
+                    } else {
+                        if ((actor->unk134 >> 5) & 1) {
+                            func_80075B08(sprite, actor->color0);
+                            v.vx = 0;
+                            v.vy = (actor->unkEE - elevation / 3) * 2;
+                            v.vz = 0;
+                            upper = RotTransPers(&v, (long *)&sxy, (long *)&interpolation, (long *)&flag) >> D_80050100;
+                            if (upper >= 2) {
+                                upper -= 2;
+                            }
+                            func_8001E2F8(sprite, ot + upper, actor->unkEE);
+                        }
+                        if ((actor->unk134 >> 5) & 2) {
+                            func_80075B08(sprite, actor->color1);
+                            func_8001E368(sprite, ot + depth, actor->unkEE);
+                        }
+                    }
+                }
+            }
+        } else if (D_8004F380 == 0) {
+            if (!(actor->flags & 0x10000) && !(actor->unk014 & 0x200002) && !(actor->layer_flags & 0x800)) {
+                LAYER_OBJECT(party)->unk4A &= 0xFFFE;
+            } else {
+                LAYER_OBJECT(party)->unk4A |= 1;
+            }
+            if (!(kind & 0x20)) {
+                LAYER_OBJECT(party)->unk34 = 1;
+            } else {
+                LAYER_OBJECT(party)->unk34 = 0;
+            }
+            if (!(actor->layer_flags & 0x20000)) {
+                LAYER_OBJECT(party)->model->unk56 = actor->unk108 + 0xC00;
+            } else {
+                actor->heading_goal = actor->unk108 = LAYER_OBJECT(party)->model->unk56 - 0xC00;
+            }
+            LAYER_OBJECT(party)->unk1C = (actor->scale[0] * D_800B2078.layer_depths[party]) >> 12;
+            LAYER_OBJECT(party)->unk60 = actor->position[1] >> 16;
+            LAYER_OBJECT(party)->model->unk5C = actor->position[0] >> 16;
+            LAYER_OBJECT(party)->model->unk64 = actor->position[2] >> 16;
+            party++;
+            actor->layer_flags &= ~0x200;
+        }
+    }
+}
 
 /* Draw the drop shadows: for every visible sprite actor build a matrix that
  * lays the shadow quad on the floor under it (its axes from the floor

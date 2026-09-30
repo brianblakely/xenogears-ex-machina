@@ -17,6 +17,61 @@
 /* Store MAC0 (the outer product). */
 #define gte_stopz(r0) __asm__ volatile("swc2 $24, 0(%0)" : : "r"(r0) : "memory")
 
+/* Load a short vector into V0. */
+#define gte_ldv0(r0)                                                           \
+    __asm__ volatile("lwc2 $0, 0(%0);"                                         \
+                     "lwc2 $1, 4(%0)"                                          \
+                     :                                                         \
+                     : "r"(r0))
+
+/* Perspective-transform V0. */
+#define gte_rtps() __asm__ volatile("nop;nop;.word 0x4A180001")
+
+/* Store the transformed screen point (SXY2). */
+#define gte_stsxy(r0) __asm__ volatile("swc2 $14, 0(%0)" : : "r"(r0) : "memory")
+
+/* Store the depth-cue interpolation factor (IR0). */
+#define gte_stdp(r0) __asm__ volatile("swc2 $8, 0(%0)" : : "r"(r0) : "memory")
+
+/* Store the GTE flag register. */
+#define gte_stflg(r0)                                                          \
+    __asm__ volatile("cfc2 $12, $31;"                                          \
+                     "nop;"                                                    \
+                     "sw $12, 0(%0)"                                           \
+                     :                                                         \
+                     : "r"(r0)                                                 \
+                     : "$12", "memory")
+
+/* Store SZ3 / 4 (the ordering-table depth). */
+#define gte_stszotz(r0)                                                        \
+    __asm__ volatile("mfc2 $12, $19;"                                          \
+                     "nop;"                                                    \
+                     "sra $12, $12, 2;"                                        \
+                     "sw $12, 0(%0)"                                           \
+                     :                                                         \
+                     : "r"(r0)                                                 \
+                     : "$12", "memory")
+
+/* RotTransPers in line: the screen point, interpolation, flag and depth. */
+#define gte_RotTransPers(r1, r2, r3, r4, r5)                                   \
+    {                                                                          \
+        gte_ldv0(r1);                                                          \
+        gte_rtps();                                                            \
+        gte_stsxy(r2);                                                         \
+        gte_stdp(r3);                                                          \
+        gte_stflg(r4);                                                         \
+        gte_stszotz(r5);                                                       \
+    }
+
+/* Load a colour (CVECTOR) into RGBC. */
+#define gte_ldrgb(r0) __asm__ volatile("lwc2 $6, 0(%0)" : : "r"(r0))
+
+/* Depth-cue the colour (DPCS). */
+#define gte_dpcs() __asm__ volatile("nop;nop;.word 0x4A780010")
+
+/* Store the last colour of the colour FIFO (RGB2). */
+#define gte_strgb(r0) __asm__ volatile("swc2 $22, 0(%0)" : : "r"(r0) : "memory")
+
 /* Load a matrix's rotation into the GTE. */
 #define gte_SetRotMatrix(r0)                                                   \
     __asm__ volatile("lw $12, 0(%0);"                                          \
