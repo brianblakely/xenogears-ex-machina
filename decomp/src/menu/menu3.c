@@ -842,7 +842,42 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80078704);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80078920);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80078D20);
+/* Move an actor by its velocity: take the floor height and cell kind (bits
+ * 29-30; both set also sets 0x90b), keep it in the arena, and land it on
+ * the floor (a mode-4 landing bounces once, with a sound and effect). */
+void func_80078D20(Actor *actor) {
+    Vector unused; /* keeps the original's 16-byte frame slot */
+
+    actor->floor_y = func_80082488(&actor->pos, 1);
+    actor->flags = (actor->flags & ~0x60000000) |
+                   ((((u32)func_800828C4(&actor->pos) >> 24) & 3) << 29);
+    if ((actor->flags & 0x60000000) == 0x60000000) {
+        actor->unk90B = 0xF;
+    }
+    func_800828F8(&actor->pos, &actor->velocity, 0x3E80);
+    actor->flags &= ~0x40000;
+    if (actor->floor_y < actor->pos.vy + actor->velocity.vy) {
+        actor->flags |= 0x40000;
+        if (actor->unkC4 == 4) {
+            if (!(actor->unkD4 & 0x10)) {
+                func_8008EBD0(actor, 0xD, &actor->pos, 2);
+                func_800776A8(actor, 6);
+            }
+            actor->unkD4 |= 0x10;
+            if (actor->velocity.vy >= 0x40) {
+                actor->velocity.vy = -actor->velocity.vy / 3;
+            } else {
+                actor->velocity.vy = 0;
+            }
+        } else {
+            actor->velocity.vy = 0;
+        }
+        actor->pos.vy = actor->floor_y;
+    }
+    actor->pos.vx += actor->velocity.vx;
+    actor->pos.vy += actor->velocity.vy;
+    actor->pos.vz += actor->velocity.vz;
+}
 
 /* Place an actor's model at the actor's position and facing. */
 void func_80078E94(Actor *actor) {
