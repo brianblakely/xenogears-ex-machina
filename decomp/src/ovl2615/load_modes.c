@@ -5,6 +5,19 @@
  * (see ovl2615.mk). */
 #include "battle_setup.h"
 
+/* Flip to the other display buffer and clear its ordering table. */
+static inline void swap_buffers(void) {
+    BattleWork *work = &D_800C3EB0;
+    DrawBuffer *next = &work->buffers[0];
+
+    if (work->current == next) {
+        next = &work->buffers[1];
+    }
+    work->current = next;
+    work->ot = next->ot;
+    ClearOTagR(next->ot, 0x1000);
+}
+
 /* Shatter update: fade every cell and (variant 0) push it away. */
 void func_801E7F4C(TaskNode *node) {
     ShatterTask *task = node->object;
@@ -173,15 +186,21 @@ INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/load_modes", func_801E8320);
 void func_801E8588(void) {
     RECT rect;
     u16 *screen;
-    DrawBuffer *next;
+    u16 *pixel;
+    BattleWork *work;
+    DrawBuffer *first;
     ShatterTask *shatter;
-    s32 frames = 0x52;
-    u32 state = 1;
-    s32 phase = 0;
+    s32 frames;
+    u32 state;
+    s32 phase;
     s32 i;
 
+    frames = 0x52;
     func_8001C944();
+    state = 1;
+    phase = 0;
     screen = func_80031BDC(0x30000, 1);
+    pixel = screen;
     rect.w = 0x140;
     rect.x = 0;
     rect.y = 0;
@@ -189,7 +208,7 @@ void func_801E8588(void) {
     StoreImage(&rect, screen);
     DrawSync(0);
     for (i = 0; i != 0x14000; i++) {
-        screen[i] |= 0x8000;
+        *pixel++ |= 0x8000;
     }
     rect.x = 0x2C0;
     rect.y = 0x100;
@@ -198,35 +217,25 @@ void func_801E8588(void) {
     LoadImage(&rect, screen);
     DrawSync(0);
     func_800320E8(screen);
-    next = &D_800C3EB0.buffers[0];
-    if (D_800C3EB0.current == next) {
-        next = &D_800C3EB0.buffers[1];
-    }
-    D_800C3EB0.current = next;
-    D_800C3EB0.ot = next->ot;
-    ClearOTagR(next->ot, 0x1000);
-    D_800C3EB0.buffer = 0;
-    D_800C3EB0.current = &D_800C3EB0.buffers[0];
-    D_800C3EB0.buffers[0].draw.isbg = 1;
-    D_800C3EB0.buffers[1].draw.isbg = 1;
-    D_800C3EB0.buffers[0].draw.r0 = 0;
-    D_800C3EB0.buffers[1].draw.r0 = 0;
-    D_800C3EB0.buffers[0].draw.g0 = 0;
-    D_800C3EB0.buffers[1].draw.g0 = 0;
-    D_800C3EB0.buffers[0].draw.b0 = 0;
-    D_800C3EB0.buffers[1].draw.b0 = 0;
+    work = &D_800C3EB0;
+    first = &work->buffers[0];
+    swap_buffers();
+    work->buffer = 0;
+    work->current = first;
+    work->buffers[0].draw.isbg = 1;
+    work->buffers[1].draw.isbg = 1;
+    work->buffers[0].draw.r0 = 0;
+    work->buffers[1].draw.r0 = 0;
+    work->buffers[0].draw.g0 = 0;
+    work->buffers[1].draw.g0 = 0;
+    work->buffers[0].draw.b0 = 0;
+    work->buffers[1].draw.b0 = 0;
     shatter = func_801E82EC();
     while (frames != 0 || state != 5) {
         if (frames > 0) {
             frames--;
         }
-        next = &D_800C3EB0.buffers[0];
-        if (D_800C3EB0.current == next) {
-            next = &D_800C3EB0.buffers[1];
-        }
-        D_800C3EB0.current = next;
-        D_800C3EB0.ot = next->ot;
-        ClearOTagR(next->ot, 0x1000);
+        swap_buffers();
         D_800C3EB0.buffer = 1 - D_800C3EB0.buffer;
         D_801E96B8 = D_800C3EB0.ot;
         if (func_800286CC() == 0) {
@@ -330,33 +339,43 @@ void func_801E8A64(TaskNode *node) {
     BurstTask *burst = node->object;
     BurstCell *cell;
     POLY_GT3 *prim;
-    MATRIX m;
+    SVECTOR *corner;
     s32 ofx, ofy, screen;
     s32 p, flag;
-    s32 half, row, col, k;
+    s32 row, half, col, k;
     s32 wave, light, otz;
+    s32 twist;
 
     ReadGeomOffset(&ofx, &ofy);
     screen = ReadGeomScreen();
     SetGeomOffset(0xA0, 0x70);
     SetGeomScreen(0x200);
-    func_8003F738(&burst->rot, &m);
-    TransMatrix(&m, &burst->trans);
-    SetRotMatrix(&m);
-    SetTransMatrix(&m);
+    {
+        MATRIX m;
+
+        func_8003F738(&burst->rot, &m);
+        TransMatrix(&m, &burst->trans);
+        SetRotMatrix(&m);
+        SetTransMatrix(&m);
+    }
     for (half = 0; half != 2; half++) {
         for (row = 0; row != 14; row++) {
             for (col = 0; col != 20; col++) {
                 cell = &burst->cells[half][row][col];
+                corner = cell->corner;
                 prim = &cell->prim[D_800C3EB0.buffer];
                 for (k = 0; k != 3; k++) {
                     if (D_801E9680 != 0) {
-                        wave = func_8003F8B0(burst->angle + cell->distance[k]) * burst->twist / 4096;
+                        twist = burst->twist;
+                        wave = func_8003F8B0(burst->angle + cell->distance[k]);
                     } else {
-                        wave = func_8003F8CC(cell->distance[k]) * burst->twist / 4096;
+                        twist = burst->twist;
+                        wave = func_8003F8CC(cell->distance[k]);
                     }
-                    cell->corner[k].vz = wave >> 2;
-                    light = (wave >> 7) + burst->brightness;
+                    wave = wave * twist / 4096;
+                    corner[k].vz = wave >> 2;
+                    light = wave >> 7;
+                    light += burst->brightness;
                     if (light < 0) {
                         light = 0;
                     }
@@ -375,10 +394,10 @@ void func_801E8A64(TaskNode *node) {
                         break;
                     }
                 }
-                otz = RotTransPers3(&cell->corner[0], &cell->corner[1], &cell->corner[2],
-                                    (s32 *)&prim->x0, (s32 *)&prim->x1, (s32 *)&prim->x2, &p, &flag);
+                otz = RotTransPers3(&corner[0], &corner[1], &corner[2], (s32 *)&prim->x0,
+                                    (s32 *)&prim->x1, (s32 *)&prim->x2, &p, &flag) >> 6;
                 if (!(flag & 0x8000)) {
-                    AddPrim(D_801E96BC + (otz >> 6), prim);
+                    AddPrim(D_801E96BC + otz, prim);
                 }
             }
         }
@@ -512,15 +531,21 @@ INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/load_modes", func_801E8DF0);
 void func_801E91E8(void) {
     RECT rect;
     u16 *screen;
-    DrawBuffer *next;
+    u16 *pixel;
+    BattleWork *work;
+    DrawBuffer *first;
     BurstTask *burst;
-    s32 frames = 0x52;
-    u32 state = 1;
-    s32 phase = 0;
+    s32 frames;
+    u32 state;
+    s32 phase;
     s32 i;
 
+    frames = 0x52;
     func_8001C944();
+    state = 1;
+    phase = 0;
     screen = func_80031BDC(0x30000, 1);
+    pixel = screen;
     rect.w = 0x140;
     rect.x = 0;
     rect.y = 0;
@@ -528,7 +553,7 @@ void func_801E91E8(void) {
     StoreImage(&rect, screen);
     DrawSync(0);
     for (i = 0; i != 0x14000; i++) {
-        screen[i] |= 0x8000;
+        *pixel++ |= 0x8000;
     }
     rect.x = 0x2C0;
     rect.y = 0x100;
@@ -537,35 +562,25 @@ void func_801E91E8(void) {
     LoadImage(&rect, screen);
     DrawSync(0);
     func_800320E8(screen);
-    next = &D_800C3EB0.buffers[0];
-    if (D_800C3EB0.current == next) {
-        next = &D_800C3EB0.buffers[1];
-    }
-    D_800C3EB0.current = next;
-    D_800C3EB0.ot = next->ot;
-    ClearOTagR(next->ot, 0x1000);
-    D_800C3EB0.buffer = 0;
-    D_800C3EB0.current = &D_800C3EB0.buffers[0];
-    D_800C3EB0.buffers[0].draw.isbg = 1;
-    D_800C3EB0.buffers[1].draw.isbg = 1;
-    D_800C3EB0.buffers[0].draw.r0 = 0;
-    D_800C3EB0.buffers[1].draw.r0 = 0;
-    D_800C3EB0.buffers[0].draw.g0 = 0;
-    D_800C3EB0.buffers[1].draw.g0 = 0;
-    D_800C3EB0.buffers[0].draw.b0 = 0;
-    D_800C3EB0.buffers[1].draw.b0 = 0;
+    work = &D_800C3EB0;
+    first = &work->buffers[0];
+    swap_buffers();
+    work->buffer = 0;
+    work->current = first;
+    work->buffers[0].draw.isbg = 1;
+    work->buffers[1].draw.isbg = 1;
+    work->buffers[0].draw.r0 = 0;
+    work->buffers[1].draw.r0 = 0;
+    work->buffers[0].draw.g0 = 0;
+    work->buffers[1].draw.g0 = 0;
+    work->buffers[0].draw.b0 = 0;
+    work->buffers[1].draw.b0 = 0;
     burst = func_801E8DB8();
     while (frames != 0 || state != 5) {
         if (frames > 0) {
             frames--;
         }
-        next = &D_800C3EB0.buffers[0];
-        if (D_800C3EB0.current == next) {
-            next = &D_800C3EB0.buffers[1];
-        }
-        D_800C3EB0.current = next;
-        D_800C3EB0.ot = next->ot;
-        ClearOTagR(next->ot, 0x1000);
+        swap_buffers();
         D_800C3EB0.buffer = 1 - D_800C3EB0.buffer;
         D_801E96BC = D_800C3EB0.ot;
         if (func_800286CC() == 0) {
