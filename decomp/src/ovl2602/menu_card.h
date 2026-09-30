@@ -178,8 +178,10 @@ typedef struct {
 
 /* A model part block (ovl2602, menu state + 458/45c). */
 typedef struct {
-    u8 unk0[0x12];
-    u8 unk12; /* 12 */
+    void *data0; /* 00 */
+    void *data1; /* 04 */
+    u8 unk8[0x12 - 8];
+    u8 unk12;    /* 12 */
 } ModelParts;
 
 /* Projected markers (ovl2602, menu state + 440). */
@@ -428,8 +430,7 @@ typedef struct {
     u8 unk44C[4];
     DetailBlock *details; /* 450 */
     u8 *unk454;          /* 454: ovl2602's 1f00h-byte block */
-    ModelParts *model_parts_a; /* 458: ovl2602 */
-    ModelParts *model_parts_b; /* 45c */
+    ModelParts *model_parts[2]; /* 458: ovl2602 */
     u8 unk460[0x46C - 0x460];
     SheetEntry sheet_entries[4]; /* 46c */
     u8 unk4CC[0x4E0 - 0x4CC];
@@ -713,5 +714,16 @@ void func_801CEA68(void);
 void func_801CEEA8(void);
 void func_801CF184(void);
 void func_801E7FD4(void);
+extern u16 D_801D6D7C[];   /* model file ids */
+extern u8 D_801D6A20[];    /* command label text ids */
+extern s32 D_801D6FD0[];   /* second marker x */
+extern u8 D_801D6D08[];    /* heading sprite ids, four per set */
+extern s32 D_801D6D14[];   /* heading x */
+extern s32 D_801D6D3C[];   /* heading y */
+void func_801CC530(u8 first);
+void func_801CC9A0(void);
+void func_801CC528(void);
+u8 func_801D5828(void);
+void func_801CCE90(u8 count, Label *labels, u8 *text_ids, u8 *shown);
 
 #endif

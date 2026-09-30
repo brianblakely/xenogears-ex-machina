@@ -1447,7 +1447,31 @@ u8 func_801CCA40(u8 wait, u8 movable) {
     return yes;
 }
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CCC18);
+/* Ask message `message` (movable only without a follow-up); a yes is confirmed by `confirm` unless it is ff. */
+u8 func_801CCC18(u8 message, u8 confirm, u8 wait) {
+    u8 answer;
+    u8 movable;
+
+    movable = 1;
+    func_801CC530(message);
+    if (confirm == 0xFF) {
+        D_800625A0->marks->shown[3] = 1;
+    } else {
+        D_800625A0->marks->shown[2] = 0;
+        movable = 0;
+        D_800625A0->marks->shown[3] = 0;
+    }
+    answer = func_801CCA40(wait, movable);
+    func_801CC9A0();
+    if (confirm != 0xFF) {
+        D_800625A0->marks->shown[3] = 1;
+        func_801CC530(confirm);
+        D_800625A0->marks->shown[3] = 1;
+        answer = func_801CCA40(wait, 1);
+        func_801CC9A0();
+    }
+    return answer;
+}
 
 /* Close the screen: stop drawing, release every block and resource, then the menu state itself. */
 void func_801CCD20(void) {
@@ -1481,8 +1505,8 @@ void func_801CCD20(void) {
     func_800320E8(D_800625A0);
 }
 
-/* Render `count` labels into VRAM. */
-void func_801CCE90(u8 count, Label *labels, u8 *text_ids) {
+/* Render `count` labels into VRAM (their shown flags are left alone). */
+void func_801CCE90(u8 count, Label *labels, u8 *text_ids, u8 *shown) {
     func_801C5EE8(labels, text_ids, 2, count);
 }
 
@@ -1642,13 +1666,54 @@ void func_801CDA0C(u8 menu) {
     D_800625A0->flags->unk4 = 1;
 }
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CDC68);
+/* Run the chosen top command (0 leaves); afterwards restore the command screen. Returns 0 to leave. */
+u8 func_801CDC68(void) {
+    u8 running;
+    u8 redraw;
+
+    running = 1;
+    if (D_800625A0->top_cursor != 0) {
+        redraw = func_801D5828();
+    } else {
+        running = 0;
+    }
+    if (redraw) {
+        func_801CC528();
+        func_801CCE90(4, D_800625A0->list_labels, D_801D6A20, D_800625A0->flags->list_label_shown);
+    }
+    D_800625A0->images->dim = 0;
+    D_800625A0->images->dimmed = 1;
+    D_800625A0->flags->unk4 = 1;
+    D_800625A0->flags->cursor_shown = 1;
+    D_800625A0->unk337 = 0xFF;
+    D_800625A0->flags->lists_shown = 0;
+    return running;
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CDD74);
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CE024);
 
+/* Draw the two second-marker sprites and set their four quads. */
+#ifdef NON_MATCHING
+void func_801CE1D0(void) {
+    POLY_FT4 *poly;
+    s32 i;
+
+    for (i = 0; i < 2; i++) {
+        func_8002675C(D_800625A0->sprite_sheet, i + 0x164, &D_800625A0->marks_b->packets[i * 4],
+                      D_800625A0->buffer, D_801D6FD0[i], 0x64, 0x1000);
+    }
+    for (i = 0; i < 4; i++) {
+        poly = &D_800625A0->marks_b->packets[i * 2 + D_800625A0->buffer];
+        func_801C7604(&D_800625A0->marks_b->quads[i * 4], poly->x0, poly->y0, poly->x1 - poly->x0,
+                      poly->y3 - poly->y0);
+    }
+    D_800625A0->marks_b->buffer = D_800625A0->buffer;
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CE1D0);
+#endif
 
 /* Hide the second marker block, let a frame pass, and release it. */
 void func_801CE2E8(void) {
@@ -1701,7 +1766,17 @@ void func_801CF38C(u8 index) {
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CF448);
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CF9BC);
+/* Load model `model`'s two files (ids from the model table) into part block `slot`. */
+void func_801CF9BC(u8 model, u8 slot) {
+    func_80028470(4, 0);
+    D_800625A0->model_parts[slot]->data0 = func_80031BDC(func_800288EC(D_801D6D7C[model]), 0);
+    func_800295D8(D_801D6D7C[model], D_800625A0->model_parts[slot]->data0, 0, 0x80);
+    func_80028A60(0);
+    D_800625A0->model_parts[slot]->data1 = func_80031BDC(func_800288EC(D_801D6D7C[model] + 1), 0);
+    func_800295D8(D_801D6D7C[model] + 1, D_800625A0->model_parts[slot]->data1, 0, 0x80);
+    func_80028A60(0);
+    func_80028470(0x10, 0);
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CFAB8);
 
@@ -1766,7 +1841,19 @@ void func_801D0348(void) {
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D0398);
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D04E8);
+/* Draw heading set `set` (four sprites). */
+void func_801D04E8(u8 set) {
+    s32 i;
+
+    D_800625A0->details->heading_count = 0;
+    for (i = 0; i < 4; i++) {
+        D_800625A0->details->heading_count +=
+            func_8002675C(D_800625A0->sprite_sheet, D_801D6D08[set * 4 + i],
+                          D_800625A0->details->heading + D_800625A0->details->heading_count * 2,
+                          D_800625A0->buffer, D_801D6D14[set * 4 + i], D_801D6D3C[set * 4 + i], 0x1000);
+    }
+    D_800625A0->details->heading_buffer = D_800625A0->buffer;
+}
 
 /* Draw the two alternative heading sprites. */
 void func_801D05EC(void) {
@@ -1946,7 +2033,30 @@ INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D3C78);
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D44FC);
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D4888);
+/* Whether import entry `index` is still wanted: the edited gear holds less than its value. */
+u8 func_801D4888(s32 index) {
+    u8 wanted;
+
+    wanted = 1;
+    switch (D_800625A0->import_pages[index]) {
+    case 0:
+        if (D_8006DFAC[D_801D9084].unk8 >= D_800625A0->import_values[index]) {
+            wanted = 0;
+        }
+        break;
+    case 1:
+        if (D_8006DFAC[D_801D9084].unk2 >= D_800625A0->import_values[index]) {
+            wanted = 0;
+        }
+        break;
+    case 2:
+        if (D_8006DFAC[D_801D9084].unk3 >= D_800625A0->import_values[index]) {
+            wanted = 0;
+        }
+        break;
+    }
+    return wanted;
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D498C);
 
@@ -1989,10 +2099,10 @@ void func_801D5EB8(void) {
     D_800625A0->flags->model_shown = 0;
     func_801CC1C4();
     func_801E7FD4();
-    D_800625A0->model_parts_a->unk12 = 0;
-    D_800625A0->model_parts_b->unk12 = 0;
-    func_800320E8(D_800625A0->model_parts_a);
-    func_800320E8(D_800625A0->model_parts_b);
+    D_800625A0->model_parts[0]->unk12 = 0;
+    D_800625A0->model_parts[1]->unk12 = 0;
+    func_800320E8(D_800625A0->model_parts[0]);
+    func_800320E8(D_800625A0->model_parts[1]);
 }
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D5F94);
