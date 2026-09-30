@@ -77,7 +77,7 @@ void func_8007293C(void) {
     }
 }
 
-/* Write `size` bytes of `buffer` to the host file `name`. */
+/* Read `size` bytes of the host file `name` into `buffer`. */
 void func_800729A8(char *name, void *buffer, s32 size) {
     s32 fd;
 
@@ -377,7 +377,159 @@ void func_80074B58(void) {
     DrawSync(0);
 }
 
+#ifdef NON_MATCHING
+/* The sector of the selected movie where `frame` starts: guess from the
+ * first sector's sectors per frame, correct once, then step sector by
+ * sector (frame by frame on headers) until a header names the frame.
+ * Returns 0 for the first frame, -1 past the file; an index past the list
+ * returns without a value, as the original does. Draft: the control flow
+ * is right, the register allocation and header reloads are not (0x28 short). */
+s32 func_80074BA4(s32 frame) {
+    u8 buffer[0x1000];
+    s32 file;
+    char *name;
+    s32 sector_size;
+    s32 read_size;
+    s32 header;
+    s32 lower;
+    s32 fd;
+    s32 count;
+    s32 per_frame;
+    s32 pos;
+    s32 next;
+    s32 total;
+    s32 guess;
+    MovieSector *h;
+
+    lower = 0;
+    if (D_80077448 == 0) {
+        func_80028470(0x18, 0);
+        if (D_8007711C >= func_80028928(2)) {
+            return;
+        }
+        file = D_8007711C + 3;
+        name = func_80028998(file);
+        sector_size = 0x800;
+        read_size = 0x20;
+        header = 0;
+    } else if (D_80077448 == 1) {
+        func_80028470(0x18, 1);
+        if (D_8007711C >= func_80028928(1)) {
+            return;
+        }
+        file = D_8007711C + 2;
+        name = func_80028998(file);
+        sector_size = 0x920;
+        read_size = 0x28;
+        header = 8;
+    } else if (D_80077448 == 2) {
+        return -1;
+    }
+    if (frame < 2) {
+        return 0;
+    }
+    if (func_8002C3D8() != 0) {
+        fd = PCopen(name, 0, 0);
+        PClseek(fd, 0, 2);
+        PClseek(fd, 0, 0);
+        func_8004C398(fd, buffer, read_size);
+        h = (MovieSector *)(buffer + header);
+        per_frame = h->sectors;
+        pos = (frame - 1) * per_frame - (frame - 1) / 4;
+        PClseek(fd, pos * sector_size, 0);
+        count = func_8004C398(fd, buffer, read_size);
+        if (h->frame != frame || count == 0) {
+            if (h->frame < frame && pos > 0 && count != 0) {
+                lower = pos;
+            }
+            guess = (frame - 1) * per_frame - (frame - 1) / 4;
+            pos = guess + guess / 7;
+            PClseek(fd, pos * sector_size, 0);
+            h = (MovieSector *)(buffer + header);
+            count = func_8004C398(fd, buffer, read_size);
+            if (h->frame == frame && count != 0) {
+                goto found;
+            }
+            if (h->frame < frame && lower < pos && count != 0) {
+                lower = pos;
+            }
+            next = (per_frame - 1) * (frame - 1);
+            if (lower > 0) {
+                next = lower;
+            }
+            goto scan;
+        }
+    found:
+        if (h->sector != 0) {
+            next = pos - h->sector - 2;
+        scan:
+            h = (MovieSector *)(buffer + header);
+            do {
+                pos = next;
+                PClseek(fd, next * sector_size, 0);
+                count = func_8004C398(fd, buffer, read_size);
+                next = pos + 1;
+                if (h->magic == 0x160) {
+                    next = pos + (h->sectors - h->sector);
+                }
+            } while (h->frame != frame && count > 0);
+            if (count == 0) {
+                pos = -1;
+            }
+        }
+        PCclose(fd);
+        return pos;
+    }
+    h = (MovieSector *)buffer;
+    func_8002954C(func_800289D0(file), buffer, 0x800, 0, 0);
+    func_80028A60(0);
+    total = (func_800288EC(file) + sector_size - 1) / sector_size;
+    pos = (frame - 1) * h->sectors - (frame - 1) / 4;
+    func_8002954C(func_800289D0(file) + pos, buffer, 0x800, 0, 0);
+    func_80028A60(0);
+    if (h->frame == frame && pos < total) {
+        goto found_disc;
+    }
+    if (h->frame < frame && pos > 0 && pos < total) {
+        lower = pos;
+    }
+    guess = (frame - 1) * h->sectors - (frame - 1) / 4;
+    pos = guess + guess / 7;
+    func_8002954C(func_800289D0(file) + pos, buffer, 0x800, 0, 0);
+    func_80028A60(0);
+    if (h->frame == frame && pos < total) {
+    found_disc:
+        if (h->sector != 0) {
+            next = pos - h->sector - 2;
+            goto scan_disc;
+        }
+    } else {
+        if (h->frame < frame && lower < pos && pos < total) {
+            lower = pos;
+        }
+        next = (h->sectors - 1) * (frame - 1);
+        if (lower > 0) {
+            next = lower;
+        }
+    scan_disc:
+        do {
+            pos = next;
+            func_8002954C(func_800289D0(file) + pos, buffer, 0x800, 0, 0);
+            func_80028A60(0);
+            next = pos + 1;
+            if (h->magic == 0x160) {
+                next = pos + (h->sectors - h->sector);
+            }
+        } while (h->frame != frame && next < total);
+    }
+    if (next >= total) {
+        pos = -1;
+    }
+    return pos;
+}
+#else
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80074BA4);
+#endif
 
 #ifdef NON_MATCHING
 /* The last frame number of the selected movie, read from the header of its

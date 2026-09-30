@@ -101,7 +101,7 @@ void func_8002954C(s32 file, void *buffer, s32 size, s32 arg3, s32 arg4); /* rea
 s32 func_8003569C(s32 port);                   /* controller buttons */
 void func_80038D18(s32 volume, s32 speed);     /* CD input volume */
 void func_80039A80(s32 arg0, s32 arg1, s32 arg2);
-int func_8004C398(int fd, void *buffer, int size); /* libsn host-file write */
+int func_8004C398(int fd, void *buffer, int size); /* libsn PCread */
 void func_8003F738(SVECTOR *rotation, MATRIX *m); /* rotation matrix */
 void func_80049BDC(MATRIX *m0, MATRIX *m1);    /* matrix product */
 
@@ -165,7 +165,7 @@ typedef struct MovieSector {
     u16 type;
     u16 sector;
     u16 sectors;
-    s32 frame;
+    u32 frame;
 } MovieSector;
 
 s32 func_800288EC(s32 file);   /* a file's size */
