@@ -1026,7 +1026,7 @@ void func_800995A0(u8 slot, u8 kind, u16 flag, u8 amount) {
  * instead (80099CF0). Returns a mask of the statuses that ended. */
 u16 func_80099890(u8 slot) {
     Combatant *record = &D_800CCCE8.records[slot];
-    UnitStatus *gear = &D_800CCCE8.records[slot].gear;
+    UnitRecord *gear = &D_800CCCE8.records[slot].gear;
     volatile u8 *timers = D_800CCCE8.records[slot].statusTimers;
     u16 ended;
 
@@ -1132,7 +1132,7 @@ u16 func_80099890(u8 slot) {
 
 /* Count down the timed statuses of a gear, clearing each one whose timer runs
  * out; the end of gear status 0x20 also ends the pilot's status 0x1000. */
-void func_80099CF0(UnitStatus *gear, Combatant *record, volatile u8 *timers) {
+void func_80099CF0(UnitRecord *gear, Combatant *record, volatile u8 *timers) {
     if (gear->status7C & 0x200) {
         timers[1] += -1;
         if (timers[1] == 0) {
@@ -1307,17 +1307,90 @@ u8 func_8009A258(u8 member, u8 command) {
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009A2D4);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009A7B8);
+/* Byte 5 of game-data unit record id. */
+u8 func_8009A7B8(u8 id) {
+    return D_8006D8A0[id].entries[0].pad5;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009A7E4);
+/* Whether gear item index is one of character 4's four entries. */
+s32 func_8009A7E4(u8 index) {
+    BattleItem *item = &D_800C34B0->gearItems[index];
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009A854);
+    if (D_8006D8A0[4].entries[0].id == item->id || D_8006D8A0[4].entries[1].id == item->id
+        || D_8006D8A0[4].entries[2].id == item->id) {
+        return 1;
+    }
+    return D_8006D8A0[4].entries[3].id == item->id;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009A9D0);
+/* Put battle item index into character 4's entry holding its id (entry k when
+ * none does): copy its values, record the item slot and durability, and update
+ * the battle copies of character 4. */
+void func_8009A854(u8 index, u8 k) {
+    BattleItem *item = &D_800C34B0->items[index];
+    u8 i;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009AA44);
+    if (D_8006D8A0[4].entries[0].id == item->id) {
+        k = 0;
+    }
+    if (D_8006D8A0[4].entries[1].id == item->id) {
+        k = 1;
+    }
+    if (D_8006D8A0[4].entries[2].id == item->id) {
+        k = 2;
+    }
+    if (D_8006D8A0[4].entries[3].id == item->id) {
+        k = 3;
+    }
+    D_8006D8A0[4].entries[k].value4 = item->valueC;
+    D_8006D8A0[4].entries[k].value3 = item->valueB;
+    D_8006D8A0[4].entries[k].value2 = item->valueA;
+    D_8006D8A0[4].entries[k].value3 = item->valueB;
+    D_8006D8A0[4].entryItems[k] = index;
+    D_8006F8BA[index] = item->durability;
+    D_8006D8A0[4].entryItems[k] = index;
+    for (i = 0; i < 3; i++) {
+        Combatant *record = &D_800C34B0->records[i];
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009AB00);
+        if (record->pilot.characterId == 4) {
+            record->pilot.entries[k].value4 = item->valueC;
+            record->pilot.entries[k].value3 = item->valueB;
+            record->pilot.entries[k].value2 = item->valueA;
+            record->pilot.entries[k].value3 = item->valueB;
+            record->pilot.entryItems[k] = index;
+        }
+    }
+}
+
+/* The Escape command: succeeds on half of the rolls, writing the party back
+ * to the game data (8009BE0C). */
+s32 func_8009A9D0(void) {
+    D_800C34B0->commandIndex = 0;
+    if (func_8003FA38() % 100 < 50) {
+        func_8009BE0C();
+        return 1;
+    }
+    return 0;
+}
+
+/* The Defense command for member: mark it defending; a gear with status 0x10
+ * in its second word drops its gear statuses 0x1B0 and the pilot's 0x1000. */
+void func_8009AA44(u8 member) {
+    D_800C34B0->commandIndex = 0;
+    D_800C34B0->records[member].flags15A |= 1;
+    if ((D_800C34B0->records[member].flags15A & 0x80) && (D_800C34B0->records[member].gear.status82 & 0x10)) {
+        D_800C34B0->records[member].gear.status7C &= 0xFE4F;
+        D_800C34B0->records[member].pilot.status7C &= ~0x1000;
+    }
+    if (D_800D2C34 == 4) {
+        D_800C34B0->defendEffect = 0x3D;
+    }
+}
+
+/* End member's defending. */
+void func_8009AB00(u8 member) {
+    D_800C34B0->records[member].flags15A &= ~1;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009AB38);
 
