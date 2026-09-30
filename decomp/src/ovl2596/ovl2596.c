@@ -228,9 +228,76 @@ void func_801DEDC0(u8 fromGameData) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801DF270);
+/* Build each present member's first eight-digit number (and with the first
+ * card's flag the second) as glyphs. */
+void func_801DF270(void) {
+    s32 i;
+    s32 j;
+    s32 n;
+    s32 digit;
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801DF4C0);
+    for (i = 0; i < 3; i++) {
+        D_800D32F8[i]->runs[8].count = 0;
+        D_800D32F8[i]->runs[9].count = 0;
+        if (D_800C3EB6[i].id != 0x7F) {
+            func_8008AAA0(D_800CDCB8[i].value);
+            for (j = 0; j < 8; j++) {
+                n = j + 22;
+                digit = D_800C3CDF[n];
+                if (digit != 0xFF) {
+                    D_800D32F8[i]->runs[8].count += func_80076A10(digit, &D_800D32F8[i]->fieldC80[D_800D32F8[i]->runs[8].count * 2], j * 8 + 0xB0, i * 0x20 + 0x20);
+                }
+            }
+            D_800D32F8[i]->runs[8].buffer = D_800CCB34;
+            if (D_800D32F8[0]->flag15F8 != 0) {
+                func_8008AAA0(D_800CDCB8[i].value2);
+                for (j = 0; j < 8; j++) {
+                    n = j + 22;
+                    digit = D_800C3CDF[n];
+                    if (digit != 0xFF) {
+                        D_800D32F8[i]->runs[9].count += func_80076A10(digit, &D_800D32F8[i]->fieldF00[D_800D32F8[i]->runs[9].count * 2], j * 8 + 0xB0, i * 0x20 + 0x28);
+                    }
+                }
+                D_800D32F8[i]->runs[9].buffer = D_800CCB34;
+            }
+        }
+    }
+}
+
+/* Build each present member's seven-digit numbers as glyphs, like 801df270. */
+void func_801DF4C0(void) {
+    s32 i;
+    s32 j;
+    s32 n;
+    s32 digit;
+
+    for (i = 0; i < 3; i++) {
+        D_800D32F8[i]->runs[10].count = 0;
+        D_800D32F8[i]->runs[11].count = 0;
+        if (D_800C3EB6[i].id != 0x7F) {
+            func_8008AAA0(D_800CDCD0[i].value);
+            for (j = 0; j < 7; j++) {
+                n = j + 31;
+                digit = D_800C3CD7[n];
+                if (digit != 0xFF) {
+                    D_800D32F8[i]->runs[10].count += func_80076A10(digit, &D_800D32F8[i]->field1180[D_800D32F8[i]->runs[10].count * 2], j * 8 + 0xF8, i * 0x20 + 0x20);
+                }
+            }
+            D_800D32F8[i]->runs[10].buffer = D_800CCB34;
+            if (D_800D32F8[0]->flag15F8 != 0) {
+                func_8008AAA0(D_800CDCD0[i].value2);
+                for (j = 0; j < 7; j++) {
+                    n = j + 31;
+                    digit = D_800C3CD7[n];
+                    if (digit != 0xFF) {
+                        D_800D32F8[i]->runs[11].count += func_80076A10(digit, &D_800D32F8[i]->field13B0[D_800D32F8[i]->runs[11].count * 2], j * 8 + 0xF8, i * 0x20 + 0x28);
+                    }
+                }
+                D_800D32F8[i]->runs[11].buffer = D_800CCB34;
+            }
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801DF710);
 

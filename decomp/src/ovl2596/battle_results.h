@@ -172,6 +172,17 @@ typedef struct {
 
 extern MemberStats D_800CCD34[3];
 
+/* Two pairs of 32-bit values per member (8 digits and 7 digits wide). */
+typedef struct {
+    u32 value;
+    u32 value2;
+} MemberWide;
+
+extern MemberWide D_800CDCB8[3];
+extern MemberWide D_800CDCD0[3];
+extern u8 D_800C3CDF[];     /* digit buffer views, see D_800C3CF1 */
+extern u8 D_800C3CD7[];
+
 /* Two further values per member. */
 typedef struct {
     u16 valueA;
