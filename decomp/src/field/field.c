@@ -1990,37 +1990,138 @@ s32 func_8008D30C(s32 a, s32 b) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008D380);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008D570);
+/* Clear the current actor's party bit in 800b219f. */
+void func_8008D570(void) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008D5C8);
+    for (i = 0; i < 3; i++) {
+        if (D_8005A444[i] == D_800AFD1C) {
+            D_800B218C.party_bits &= ~(1 << i);
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008D604);
+/* Event: set 800b21cd from its byte operand. */
+void func_8008D5C8(void) {
+    D_800B218C.unk21CD = D_800ADC00[D_800B0078->pc + 1];
+    D_800B0078->pc += 2;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008D684);
+/* Event: clear (selector 0) or set (selector 1) the actor's layer bit 10. */
+void func_8008D604(void) {
+    switch (D_800ADC00[D_800B0078->pc + 1]) {
+    case 0:
+        D_800B0078->layer_flags &= ~0x400;
+        break;
+    case 1:
+        D_800B0078->layer_flags |= 0x400;
+        break;
+    }
+    D_800B0078->pc += 2;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008D700);
+/* Event: set flag bit op1 (variable op1 >> 4, bit op1 & 15). */
+void func_8008D684(void) {
+    u16 reference = func_800ACDB8(1);
+    u32 variable = reference >> 4;
+    s32 bit = 1 << (func_800ACDB8(1) & 0xF);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008D780);
+    func_800A3074(variable, func_800A3018(variable) | bit);
+    D_800B0078->pc += 3;
+}
+
+/* Event: clear flag bit op1 (variable op1 >> 4, bit op1 & 15). */
+void func_8008D700(void) {
+    u16 reference = func_800ACDB8(1);
+    u32 variable = reference >> 4;
+    s32 bit = 1 << (func_800ACDB8(1) & 0xF);
+
+    func_800A3074(variable, func_800A3018(variable) & ~bit);
+    D_800B0078->pc += 3;
+}
+
+/* Event: continue when flag bit op1 is set, else jump to op3. */
+void func_8008D780(void) {
+    u16 reference = func_800ACDB8(1);
+    u32 variable = reference >> 4;
+    s32 bit = 1 << (func_800ACDB8(1) & 0xF);
+
+    if (func_800A3018(variable) & bit) {
+        D_800B0078->pc += 5;
+    } else {
+        D_800B0078->pc = func_800ACDB8(3);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008D808);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008DA04);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008DAFC);
+/* Event: clear the actor's +75 (0xff). */
+void func_8008DAFC(void) {
+    D_800B0078->unk075 = 0xFF;
+    D_800B0078->pc++;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008DB2C);
+/* Event: set 800b233e to the selected actor. */
+void func_8008DB2C(void) {
+    D_800B218C.unk233E = func_8009CDB4(1);
+    D_800B0078->pc += 2;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008DB68);
+/* Add to party member `member`'s points, capped at its maximum. Declared
+ * int but returns nothing. */
+s32 func_8008DB68(s32 member, s32 amount) {
+    s32 character = func_8001ACF0(D_80062590[member]);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008DBF0);
+    if (character != 0xFF) {
+        D_8005A39C->characters[character].points += amount;
+        if (D_8005A39C->characters[character].points_max < D_8005A39C->characters[character].points) {
+            D_8005A39C->characters[character].points = D_8005A39C->characters[character].points_max;
+        }
+    }
+}
+
+/* Take from party member `member`'s points, leaving at least one. Declared
+ * int but returns nothing. */
+s32 func_8008DBF0(s32 member, s32 amount) {
+    s32 character = func_8001ACF0(D_80062590[member]);
+    s32 points;
+
+    if (character != 0xFF) {
+        points = D_8005A39C->characters[character].points - amount;
+        if (points <= 0) {
+            points = 1;
+        }
+        D_8005A39C->characters[character].points = points;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008DC74);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008DD6C);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008DE64);
+/* Event: set the actor's +75 to the selected actor, if any. */
+void func_8008DE64(void) {
+    s32 actor = func_8009CDB4(1);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008DEBC);
+    if (actor != 0xFF) {
+        D_800B0078->unk075 = actor;
+    }
+    D_800B0078->pc += 2;
+}
+
+/* Event: store the selected actor's flags in variable op1. */
+void func_8008DEBC(void) {
+    s32 index = func_8009CDB4(1);
+    FieldActor *actor;
+
+    if (index != 0xFF) {
+        actor = D_800AFB0C.descriptors[index].actor;
+        func_800A3074(func_800ACDB8(1) & 0xFFFF, actor->flags);
+    }
+    D_800B0078->pc += 3;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008DF44);
 

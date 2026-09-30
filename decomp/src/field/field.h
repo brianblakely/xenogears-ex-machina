@@ -153,7 +153,9 @@ typedef struct FieldActor {
     s32 unk030;      /* 030 */
     u8 unk034[4];
     s32 unk038;      /* 038 */
-    u8 unk03C[0x80 - 0x3C];
+    u8 unk03C[0x75 - 0x3C];
+    u8 unk075;       /* 075 */
+    u8 unk076[0x80 - 0x76];
     s8 character;    /* 080 */
     u8 unk081[0xCC - 0x81];
     u16 pc;          /* 0CC: event working PC */
@@ -280,8 +282,8 @@ typedef struct {
     u16 gauge;       /* 00 */
     u16 gauge_max;   /* 02 */
     u8 unk04[0x28 - 4];
-    s32 points;      /* 28 */
-    s32 points_max;  /* 2C */
+    u32 points;      /* 28 */
+    u32 points_max;  /* 2C */
     u8 unk30[0xA4 - 0x30];
 } GameCharacter;
 
@@ -313,7 +315,9 @@ typedef struct GameState {
 typedef struct {
     s16 scale;                 /* 218C: offset scale (8007b614) */
     s16 unk218E;               /* 218E: colour pass-through gate (80075b08) */
-    u8 unk2190[0x21A0 - 0x2190];
+
+    u8 unk2190[0x219F - 0x2190];
+    u8 party_bits;             /* 219F */
     s16 unk21A0[6];            /* 21A0: set by event 8008cfec */
     s16 emitter_range;         /* 21AC */
 
@@ -321,7 +325,9 @@ typedef struct {
     s16 unk21B4;               /* 21B4 */
     u8 unk21B6[2];
     s32 last_sound_effect;     /* 21B8 */
-    u8 unk21BC[0x21D2 - 0x21BC];
+    u8 unk21BC[0x21CD - 0x21BC];
+    u8 unk21CD;                /* 21CD */
+    u8 unk21CE[0x21D2 - 0x21CE];
     s8 unk21D2;                /* 21D2 */
     u8 unk21D3;
     s16 unk21D4;               /* 21D4 */
@@ -336,7 +342,8 @@ typedef struct {
     s16 emitter_descriptor[3]; /* 22E2: descriptor each emitter follows, or -1 */
     u8 unk22E8[0x233C - 0x22E8];
     u16 effects_kept;          /* 233C: bit per effect pair still playing */
-    u8 unk233E[0x2344 - 0x233E];
+    s16 unk233E;               /* 233E */
+    u8 unk2340[0x2344 - 0x2340];
     s16 unk2344;               /* 2344 */
     u8 unk2346[2];
     u16 unk2348;               /* 2348 */
@@ -369,6 +376,7 @@ typedef struct {
 } FieldSlot6;
 
 /* Resident services. */
+extern s32 func_8001ACF0(s32 member);
 extern void func_8003633C(s32);
 extern void func_80019CD0(void);
 extern s32 func_800288EC(s32 file);
@@ -428,6 +436,8 @@ extern void func_800496AC(void);                               /* PopMatrix */
 extern void func_8004A6DC(SVECTOR *v, s32 *out, s32 *flag); /* RotTrans */
 
 /* Field overlay. */
+extern s32 func_8009CDB4(s32 offset); /* actor selector; 0xff when none */
+extern s32 func_800A3018(u32 reference); /* read an event variable */
 extern void func_80072254(s32 index);
 extern void func_800863E8(s32 id);
 extern s32 func_8008CF3C(s32 id);
