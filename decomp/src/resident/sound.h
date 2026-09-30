@@ -18,9 +18,13 @@ typedef struct {
     u16 repeat;
 } SpuVoice;
 
+/* A voice's claim on a hardware SPU voice (D_8006252C holds the owner of
+ * each hardware voice). */
 typedef struct {
-    u8 unk0[6];
-    u16 flags;
+    u16 voice;         /* hardware voice */
+    u16 mode;
+    s16 priority;
+    u16 flags;         /* registers to update */
 } SoundChannel;
 
 /* A loaded sound bank (list through `next`). */
@@ -40,19 +44,45 @@ typedef struct SoundTrack {
     u16 flags;
 } SoundTrack;
 
-/* One channel of a playing sequence. */
+/* The effect id of a channel: bank id in the high half, effect in the low. */
+typedef union {
+    s32 full;
+    struct {
+        u16 effect;
+        s16 bank;
+    } part;
+} SoundEffectId;
+
+/* One channel of a playing sequence (0x158 bytes). */
 typedef struct {
-    u16 flags;
+    u16 flags;         /* bit 0: active */
     u16 flags2;
-    u8 unk4[0x14];
+    u16 flags3;        /* bit 0x20: volume slide */
+    u8 voice_bit;      /* bit of the channel in the sequence's voice mask */
+    u8 unk7;
+    SoundEffectId id;
+    u32 stamp;
+    u8 unk10[8];
     u8 *loop;          /* sequence data position to return to */
     u8 unk1C[7];
     u8 unk23;
-    u8 unk24[0x38];
+    u8 unk24[3];
+    u8 voice;          /* hardware voice */
+    u8 unk28[8];
+    SoundChannel state;
+    u8 unk38[0x24];
     s16 unk5C;
     u8 unk5E[8];
     s16 transpose;     /* in semitones */
-    u8 unk68[0xF0];
+    u8 unk68[0xC];
+    s16 pan;
+    s16 volume;
+    u8 unk78[0x14];
+    s16 volume_step;
+    s16 volume_target;
+    u8 unk90[0xA];
+    s16 volume_frames;
+    u8 unk9C[0xBC];
 } SoundSeqChannel;
 
 /* A linear slide of a 16.16 value. */
@@ -84,7 +114,9 @@ typedef struct {
     u16 unk3A;
     s16 unk3C;
     s16 unk3E;
-    u8 unk40[0x14];
+    u8 unk40[8];
+    u32 voices;        /* mask of the channels holding a voice */
+    u8 unk4C[8];
     s32 tick_step;
     u8 unk58[2];
     s16 resolution;

@@ -54,9 +54,18 @@ segments:
       # rodata (0x80018998 "DelayFree"), its $gp-relative accesses need -G8.
       - [0x9198, .rodata, heap]
       - [0x927C, .rodata, main2]
+      # Sound driver unit (GCC 2.6.3): its opcode-table jump table.
+      - [0x93DC, .rodata, sound]
+      # Hand-written rotation helpers and the PsyQ library objects.
+      - [0x93F0, .rodata, main3]
       - [0x9D24, c, main]
       - [0x22094, c, heap]
       - [0x2367C, c, main2]
+      # Sound driver unit (GCC 2.6.3) to 8003F738. Its start lies in
+      # 80039E18-8003A094: 80039DB8 needs 2.7.2, 8003A094 and later match
+      # only under 2.6.3, and the functions between compile identically.
+      - [0x2A618, c, sound]
+      - [0x2FF38, c, main3]
       - [0x3F288, data, data]
       - { start: 0x49ABC, type: bss, vram: 0x800592BC }
   - [0x4A000]
