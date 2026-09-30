@@ -808,22 +808,19 @@ void func_801C81E0(s32 x0, s32 y0, s32 x1, s32 y1, u8 speed, u8 slot) {
 
 /* Advance mover `slot` by its speed and mark it done once the major axis
  * passes the end point. */
-#ifdef NON_MATCHING
 void func_801C8324(u8 slot) {
-    MenuMover *mover;
     s32 i;
 
-    mover = &D_800625A0->movers[slot];
     for (i = 0; i < D_800625A0->movers[slot].speed; i++) {
         if (D_800625A0->movers[slot].negX) {
             D_800625A0->movers[slot].accX -= D_800625A0->movers[slot].stepX;
         } else {
             D_800625A0->movers[slot].accX += D_800625A0->movers[slot].stepX;
         }
-        if (mover->negY) {
-            mover->accY -= mover->stepY;
+        if (D_800625A0->movers[slot].negY) {
+            D_800625A0->movers[slot].accY -= D_800625A0->movers[slot].stepY;
         } else {
-            mover->accY += mover->stepY;
+            D_800625A0->movers[slot].accY += D_800625A0->movers[slot].stepY;
         }
     }
     if (D_800625A0->movers[slot].stepX == 0x100) {
@@ -842,9 +839,6 @@ void func_801C8324(u8 slot) {
         D_800625A0->movers[slot].done = 1;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C8324);
-#endif
 
 /* Set the four corners of a screen rectangle as vertices centred on (a0, 70). */
 void func_801C851C(SVECTOR *v, u16 x, u16 y, u16 w, u16 h) {
