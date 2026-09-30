@@ -309,6 +309,7 @@ extern u16 D_8006F364;   /* characters that may join */
 extern u16 D_8006F366;
 extern u8 D_8006F368[3]; /* current party (0xFF empty) */
 extern u8 D_8006D634[][0x14]; /* character names (text codes) */
+extern u16 D_8006F94C;   /* characters locked in place */
 
 extern void *func_80031BDC(s32 size, s32 mode); /* allocate */
 extern void func_800320E8(void *block);         /* release */
