@@ -10327,7 +10327,178 @@ s32 func_800A7948(void) {
     }
 }
 
+#ifdef NON_MATCHING
+/* Play the requested field movie (800c3a20..): move the movie library
+ * (file 0xa9) into place, park the VRAM the movie uses, stop the field's
+ * effects and the 801e module, then decode and present frames by movie
+ * mode until it ends or is skipped; finally restore VRAM, the display and
+ * the field stream. The original addresses the movie parameters as one
+ * aggregate (800c3a3a and 800c3a2e off one hoisted base), which field.h
+ * does not declare yet. */
+void func_800A7C58(void) {
+    RECT rect;
+    u8 *data;
+    u8 *library;
+    s32 top;
+    s32 i;
+
+    D_800ADB84 = 0;
+    D_800B00E4 = 0;
+    D_800ADB78 = 0;
+    data = func_80031BDC(func_800288EC(0xA9), 0);
+    func_800295D8(0xA9, data, 0, 0x80);
+    D_800B06A0 = 0;
+    D_800AFE74 = 0;
+    func_800A7394();
+    func_80028470(0x18, 0);
+    func_8002A2D0(D_800C3A20);
+    func_80028470(4, 0);
+    func_800A7394();
+    if (D_800B2078.unk2264 != 0) {
+        func_801E7FD4();
+        func_8007999C();
+        func_800775F8();
+        func_800320E8(D_800ADB20);
+    }
+    func_800A9460();
+    if (D_800ADB74 != 2) {
+        setRECT(&rect, 0x140, 0, 0xC0, 0x100);
+        LoadImage(&rect, (u_long *)data);
+        DrawSync(0);
+        func_800320E8(data);
+        data = func_80031BDC(0x18000, 0);
+        StoreImage(&rect, (u_long *)data);
+    }
+    top = D_800ADB30;
+    if (D_8004F370 == 0) {
+        library = func_80031BDC((top & 0xFFFFFF) - 0x1D3008, 1);
+        memcpy(library, data, func_800288EC(0xA9));
+    } else {
+        library = func_80031BDC(8, 1);
+    }
+    func_800320E8(data);
+    func_80085788();
+    func_800ACC58();
+    D_800B00E4 = 1;
+    func_800A73E8();
+    func_8007999C();
+    func_80031FF8();
+    func_800A708C();
+    func_800A7218();
+    D_800ADB7C = 1;
+    do {
+        VSync(0);
+        func_800A732C(3);
+    } while (D_800B00E4 != 0);
+    do {
+        switch (D_800ADB74) {
+        case 1:
+            func_80073F50();
+            func_80075910();
+            func_800A732C(6);
+            break;
+        case 0:
+            DrawSync(0);
+            VSync(0);
+            PutDispEnv(&D_800C426C->disp);
+            PutDrawEnv(&D_800C426C->draw);
+            func_800A732C(3);
+            DrawSync(0);
+            VSync(0);
+            PutDispEnv(&D_800C426C->disp);
+            PutDrawEnv(&D_800C426C->draw);
+            func_800A732C(3);
+            func_800A7948();
+            break;
+        case 2:
+            func_80077DAC();
+            func_8007554C();
+            func_800A732C(9);
+            break;
+        }
+        if (D_800C268C == 0) {
+            if (D_800ADB74 == 2) {
+                if ((D_800C3900 & 0x80) || D_800ADB84 != 0) {
+                    break;
+                }
+            } else {
+                func_80074700();
+                if (D_800C3900 & 0x20) {
+                    break;
+                }
+            }
+        } else if (D_800ADB80 & 0x80) {
+            func_80074700();
+            if (D_800C3900 & 0x20) {
+                func_80038D18(0, 10);
+                for (i = 0; i < 5; i++) {
+                    VSync(0);
+                }
+                break;
+            }
+        }
+        if (D_800ADB74 == 2 && D_800ADB84 != 0) {
+            break;
+        }
+    } while ((s16)D_800C3A3A != 0 || D_800B06A0 < D_800C3A2E);
+    VSync(0);
+    DrawSync(0);
+    func_801D43B0();
+    func_8007999C();
+    PutDispEnv(&D_800C426C->disp);
+    PutDrawEnv(&D_800C426C->draw);
+    VSync(0);
+    DrawSync(0);
+    func_800320E8(library);
+    func_80031FF8();
+    func_800A74F8();
+    func_80077884();
+    setRECT(&rect, 0, D_800ADB78 << 8, 0x1E0, 0xE0);
+    MoveImage(&rect, 0, 0);
+    DrawSync(0);
+    VSync(0);
+    D_800C426C = &D_800B249C[1];
+    PutDispEnv(&D_800B249C[1].disp);
+    PutDrawEnv(&D_800C426C->draw);
+    if (D_800ADB74 != 2) {
+        func_800A77C4();
+    }
+    VSync(0);
+    D_800B249C[0].disp.isrgb24 = 0;
+    D_800C426C = &D_800B249C[0];
+    PutDispEnv(&D_800B249C[0].disp);
+    PutDrawEnv(&D_800C426C->draw);
+    setRECT(&rect, 0, 0x100, 0x140, 0xE0);
+    MoveImage(&rect, 0, 0);
+    DrawSync(0);
+    VSync(0);
+    D_800B249C[1].disp.isrgb24 = 0;
+    D_800C426C = &D_800B249C[1];
+    PutDispEnv(&D_800B249C[1].disp);
+    PutDrawEnv(&D_800C426C->draw);
+    if (D_800AFE84 != 0) {
+        D_800ADB50 = 1;
+    } else {
+        D_800ADB50 = 0;
+    }
+    func_80077AB4();
+    if (D_800ADB74 != 2) {
+        func_80028470(4, 0);
+        func_80032498(8, 0);
+        D_800ADB60 = 0;
+        func_80070488();
+        func_80070508();
+        D_800ADB3C = 0x20;
+        D_800ADB38 = 1;
+    }
+    func_80085738();
+    D_800C3A38 = 0xFF;
+    D_800ADB74 = 0;
+    D_800ADB6C = -1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A7C58);
+#endif
 
 void func_80070340(u32 *tim, s16 x, s16 y, s16 clut_x, s16 clut_y, s16 clut_w, s16 clut_h);
 
