@@ -30,6 +30,19 @@ typedef struct {
     u32 count;
 } ModelList;
 
+/* An effect entry (0x14 bytes) of an effect pool. */
+typedef struct {
+    u8 used;
+    u8 pad1[0x14 - 1];
+} EffectEntry;
+
+/* A pool of effect entries; next is the first entry that may be free. */
+typedef struct {
+    EffectEntry *entries;
+    u16 next;
+    u16 count;
+} EffectPool;
+
 /* A posed part of a model hierarchy (0x7C bytes); a hierarchy is a root part
  * followed by one part per (model, parent) pair. */
 typedef struct ModelPart {
@@ -47,9 +60,7 @@ typedef struct ModelPart {
     SVector rotation;       /* 0x54: angles */
     s32 translation[3];     /* 0x5C */
     void *packets[2];       /* 0x68: one buffer per frame */
-    s32 field70;
-    s32 field74;
-    s32 field78;
+    EffectEntry *effects[3]; /* 0x70: attached effects */
 } ModelPart;
 
 /* Resident services. */
@@ -65,6 +76,8 @@ void func_800320E8(void *block);                           /* free */
 void func_8002CBBC(Model *model);                          /* release a model */
 
 void func_8009F708(ModelPart *root);
+void func_800A22E8(EffectPool *pool);
+s32 func_800A23E8(EffectPool *pool, EffectEntry *entry);
 
 /* GTE library. */
 void func_8003F738(SVector *angles, Matrix *m);              /* RotMatrix */

@@ -2512,9 +2512,9 @@ ModelPart *func_8009EC4C(ModelList *list, u16 *hierarchy, s32 mode, s32 offset, 
     root->translation[0] = 0;
     root->translation[1] = 0;
     root->translation[2] = 0;
-    root->field70 = 0;
-    root->field74 = 0;
-    root->field78 = 0;
+    root->effects[0] = NULL;
+    root->effects[1] = NULL;
+    root->effects[2] = NULL;
     while (id < list->count || id == 0xFFFF) {
         if (parent == 0xFFFF) {
             part->parent = NULL;
@@ -2555,9 +2555,9 @@ ModelPart *func_8009EC4C(ModelList *list, u16 *hierarchy, s32 mode, s32 offset, 
         part->translation[0] = 0;
         part->translation[1] = 0;
         part->translation[2] = 0;
-        part->field70 = 0;
-        part->field74 = 0;
-        part->field78 = 0;
+        part->effects[0] = NULL;
+        part->effects[1] = NULL;
+        part->effects[2] = NULL;
         part++;
         pair += 2;
         id = pair[0];
@@ -2681,17 +2681,100 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A1B50);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A1CF4);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A216C);
+/* Release the effects attached to part index of a hierarchy, those selected by
+ * mask (bit n: attachment n). */
+void func_800A216C(EffectPool *pool, ModelPart *part, s32 index, s32 mask) {
+    if (index < part->index) {
+        part += index;
+        if (part->effects[0] != NULL && (mask & 1)) {
+            func_800A23E8(pool, part->effects[0]);
+            part->effects[0] = NULL;
+        }
+        if (part->effects[1] != NULL && (mask & 2)) {
+            func_800A23E8(pool, part->effects[1]);
+            part->effects[1] = NULL;
+        }
+        if (part->effects[2] != NULL && (mask & 4)) {
+            func_800A23E8(pool, part->effects[2]);
+            part->effects[2] = NULL;
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A2234);
+/* Create a pool of count effect entries. */
+EffectPool *func_800A2234(EffectPool *pool, s32 count) {
+    if (count <= 0) {
+        return NULL;
+    }
+    pool->count = count;
+    func_80032498(4, 0);
+    pool->entries = func_80031BDC(count * sizeof(EffectEntry), 0);
+    if (pool->entries != NULL) {
+        func_800A22E8(pool);
+        return pool;
+    }
+    return NULL;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A22A8);
+/* Free a pool's entries. */
+void func_800A22A8(EffectPool *pool) {
+    pool->next = 0;
+    if (pool->entries != NULL) {
+        func_800320E8(pool->entries);
+    }
+    pool->entries = NULL;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A22E8);
+/* Mark every entry of a pool free. */
+void func_800A22E8(EffectPool *pool) {
+    EffectEntry *entry;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A2330);
+    if (pool->entries != NULL) {
+        entry = pool->entries;
+        pool->next = 0;
+        for (i = 0; i < pool->count; i++) {
+            entry->used = 0;
+            entry++;
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A23E8);
+/* Take the first free entry of a pool (NULL when none), advancing the free
+ * index past the entries in use. */
+EffectEntry *func_800A2330(EffectPool *pool) {
+    EffectEntry *entry;
+    u32 count;
+
+    if (pool->next < pool->count) {
+        entry = &pool->entries[pool->next];
+        if (entry->used) {
+            return NULL;
+        }
+        pool->next++;
+        count = pool->count;
+        while (pool->next < count && pool->entries[pool->next].used != 0) {
+            pool->next++;
+        }
+        return entry;
+    }
+    return NULL;
+}
+
+/* Return an entry to its pool; its index, or -1 for none. */
+s32 func_800A23E8(EffectPool *pool, EffectEntry *entry) {
+    s32 index;
+
+    if (entry == NULL) {
+        return -1;
+    }
+    index = ((u32)entry - (u32)pool->entries) / sizeof(EffectEntry);
+    if (index < pool->next) {
+        pool->next = index;
+    }
+    entry->used = 0;
+    return index;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A2434);
 
