@@ -3501,7 +3501,31 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E5B88);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E5E4C);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E61B0);
+/* Lay out the three save views' frames (nine images each, 50 apart) and
+ * their 72x13 name quads (label rows 6 + view). */
+void func_801E61B0(void) {
+    s32 view;
+    s32 i;
+
+    for (view = 0; view < 3; view++) {
+        D_800625A0->block34C->views[view].frameCount = 0;
+        for (i = 0; i < 9; i++) {
+            if (D_801EA494[i] != 0xffff) {
+                D_800625A0->block34C->views[view].frameCount +=
+                    func_8002675C(D_800625A0->sheet, D_801EA494[i],
+                                  D_800625A0->block34C->views[view].frame[D_800625A0->block34C->views[view].frameCount],
+                                  D_800625A0->bufferIndex, view * 0x50 + D_801E9F98[i], D_801E9FBC[i], 0x1000);
+            }
+        }
+        D_800625A0->block34C->views[view].frameBuffer = D_800625A0->bufferIndex;
+        func_801E927C(&D_800625A0->block34C->views[view].name[D_800625A0->bufferIndex]);
+        D_800625A0->block34C->views[view].name[D_800625A0->bufferIndex].tpage = GetTPage(0, 0, 0x180, 0);
+        D_800625A0->block34C->views[view].name[D_800625A0->bufferIndex].clut = D_800595D4;
+        func_801E920C(&D_800625A0->block34C->views[view].name[D_800625A0->bufferIndex], D_801E9F98[0] + view * 0x50,
+                      D_801E9FBC[0] + 7, D_801EA590[view] * 4, D_801EA5DC[view], 0x48, 0xd);
+        D_800625A0->block34C->views[view].nameBuffer = D_800625A0->bufferIndex;
+    }
+}
 
 /* Allocate and clear the 2dc0-byte block at +34c, then set it up. */
 void func_801E6450(void) {
@@ -3783,8 +3807,8 @@ void func_801E71B4(u8 index, MenuViewSet *set, s32 file) {
     pixels = func_80031BDC(0x3f6, 0);
     bzero(pixels, 0x3f6);
     func_80034EAC(text, pixels, 0x24, 0);
-    rect.x = D_801EA590[index][0] + 0x180;
-    rect.y = D_801EA5DC[index][0];
+    rect.x = D_801EA590[index] + 0x180;
+    rect.y = D_801EA5DC[index];
     rect.w = 0x28;
     rect.h = 0xd;
     LoadImage(&rect, pixels);
@@ -4134,8 +4158,8 @@ void func_801E8DA8(u8 image, u8 row) {
         func_80034EAC(D_8006D634[image >> 1][0], pixels, 0x24, 0);
         func_80034EAC(D_8006D634[image >> 1][1], pixels, 0x24, 1);
     }
-    rect.x = D_801EA578[row >> 1][0] + 0x180;
-    rect.y = D_801EA5C4[row >> 1][0];
+    rect.x = D_801EA578[row >> 1] + 0x180;
+    rect.y = D_801EA5C4[row >> 1];
     rect.w = 0x28;
     rect.h = 0xd;
     LoadImage(&rect, pixels);
@@ -4221,7 +4245,7 @@ void func_801E91C4(POLY_FT4 *poly) {
 }
 
 /* Place `poly` at (x, y) with size (w, h) and texture origin (u, v). */
-void func_801E920C(POLY_FT4 *poly, s16 x, s16 y, u8 u, u8 v, s16 w, s16 h) {
+void func_801E920C(POLY_FT4 *poly, u16 x, u16 y, u8 u, u8 v, u16 w, u16 h) {
     poly->x0 = x;
     poly->y0 = y;
     poly->x1 = x + w;

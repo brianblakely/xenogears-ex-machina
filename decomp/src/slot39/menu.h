@@ -455,23 +455,26 @@ typedef struct MenuGearViews {
 
 /* A save information view (801e76ec). */
 typedef struct MenuView {
-    u8 pad0[0x320];
+    POLY_FT4 image[2]; /* 0: the entry's sheet image (801e6ae8) */
+    POLY_FT4 frame[9][2]; /* 50: frame sprite list */
     POLY_FT4 levelDigits[6][2]; /* 320: digit sprite list of the set's level (+16), per buffer */
     POLY_FT4 aDigits[3][2]; /* 500: of value A (+4) */
     POLY_FT4 bDigits[3][2]; /* 5F0: of value B (+a) */
     POLY_FT4 cDigits[2][2]; /* 6E0: of value C (+10) */
     POLY_FT4 dDigits[2][2]; /* 780: of value D (+13) */
-    u8 pad820[0x50];
+    POLY_FT4 name[2]; /* 820: the entry's name image */
     u8 levelCount; /* 870 */
     u8 unk871; /* 871 */
     u8 aCount; /* 872 */
     u8 bCount; /* 873 */
     u8 cCount; /* 874 */
     u8 dCount; /* 875 */
-    u8 pad876[0x1];
+    u8 frameBuffer; /* 876 */
     u8 buffer; /* 877 */
     u8 shown; /* 878 */
-    u8 pad879[0x3];
+    u8 nameBuffer; /* 879 */
+    u8 frameCount; /* 87A */
+    u8 pad87B[0x1];
 } MenuView;
 
 /* The 2dc0-byte block (*(state + 34c)). */
@@ -883,10 +886,10 @@ extern s32 D_801EA70C;
 extern u8 D_801EA710;
 extern u8 D_801EA714;
 extern u8 D_8006D634[][2][0x14]; /* game data: name line pairs */
-extern u16 D_801EA578[][2];      /* label image x per row pair */
-extern u16 D_801EA5C4[][2];      /* label image y per row pair */
-extern u16 D_801EA590[][2];      /* view name image x (D_801EA578 from row 6) */
-extern u16 D_801EA5DC[][2];      /* view name image y */
+extern s32 D_801EA578[];         /* label image x per row pair */
+extern s32 D_801EA5C4[];         /* label image y per row pair */
+extern s32 D_801EA590[];         /* view name image x (D_801EA578 from row 6) */
+extern s32 D_801EA5DC[];         /* view name image y */
 extern u16 D_801E9894[32][2];    /* image block x */
 extern u16 D_801E9914[32][2];    /* image block y */
 extern s32 D_801EA34C[20]; /* field block part images, ffff none */
@@ -902,6 +905,9 @@ extern s32 D_801EA71C;
 extern s32 D_801EA720;
 extern s32 D_801EA004[];
 extern s32 D_801EA010[];
+extern s32 D_801EA494[9];     /* view frame images, ffff none */
+extern s32 D_801E9F98[9];     /* view frame x (first view) */
+extern s32 D_801E9FBC[9];     /* view frame y */
 extern s32 D_801E9FE0[9];     /* play time: x of the two separators and seven digits */
 extern s32 D_801EA01C;         /* view digit row x */
 extern s32 D_801EA020;         /* view digit row y */
@@ -968,6 +974,7 @@ u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y); /* GetTPage */
 u16 GetClut(s32 x, s32 y);          /* GetClut */
 void SetDrawMode(DR_MODE *p, s32 dfe, s32 dtd, s32 tpage, RECT *tw); /* SetDrawMode */
 void func_801E8EAC(POLY_FT4 *poly, u8 mode);
+void func_801E920C(POLY_FT4 *poly, u16 x, u16 y, u8 u, u8 v, u16 w, u16 h);
 void func_801E927C(POLY_FT4 *poly);
 void func_8003F738(SVECTOR *angles, MATRIX *m); /* RotMatrix */
 void TransMatrix(MATRIX *m, VECTOR *t);      /* TransMatrix */
