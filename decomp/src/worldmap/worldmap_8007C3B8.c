@@ -734,20 +734,18 @@ void func_8007DCE0(void) {
 }
 
 /* Start the selected timed sequence on an actor. */
-#ifdef NON_MATCHING /* register allocation of the sequence index and actor differ */
 s32 func_8007DE14(s32 index) {
+    s32 unused[2]; /* unreferenced local: the original frame reserves it */
     WorldmapActor *actor;
     s32 sequence;
 
     sequence = D_8009D3D4;
     actor = &D_8009BE24[index];
     actor->unk54 = (s32)D_8009A65C[sequence].states;
-    actor->u.step = 0;
     actor->unk58 = (s32)D_8009A65C[sequence].durations;
+    actor->u.step = 0;
     actor->state = *(s16 *)actor->unk54;
-    actor->wait = ((u16 *)actor->unk58)[actor->u.step++];
+    actor->wait = ((u16 *)actor->unk58)[actor->u.step];
+    actor->u.step++;
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007C3B8", func_8007DE14);
-#endif
