@@ -660,7 +660,94 @@ void func_80025C04(s32 count, s32 scale, u16 *dst, u16 *src) {
     }
 }
 
+/* Blend `count` 15-bit pixels towards a tinted copy of `src` with the
+ * GTE: each source pixel is taken whole (mode 0), halved (1), quartered (2)
+ * or made grey (3), offset by the tint and clamped; the result moves from
+ * that towards the `base` pixel by `factor` / 32 (at most 1) and goes to
+ * `dst`, except for transparent (zero) source pixels. */
+/* Nonmatching: register allocation differs (the original moves the count and source pointer out of $a0/$a1, keeps the tint in $s0 and needs one callee-saved register fewer). */
+#ifdef NON_MATCHING
+void func_80025D4C(s32 count, u16 *src, u16 *base, u16 *dst, s32 red, s32 green, s32 blue, s32 mode,
+                   s32 factor) {
+    VECTOR delta;
+    u16 pixel;
+    s32 source_r;
+    s32 source_g;
+    s32 source_b;
+    s16 r;
+    s16 g;
+    s16 b;
+    s32 grey;
+
+    if (factor > 0x20) {
+        factor = 0x20;
+    }
+    gte_lddp(factor << 7);
+    blue <<= 10;
+    green <<= 5;
+    while (--count != -1) {
+        pixel = *src;
+        switch (mode) {
+        case 0:
+            source_r = pixel & 0x1F;
+            source_g = pixel & 0x3E0;
+            source_b = pixel & 0x7C00;
+            break;
+        case 1:
+            source_r = (pixel & 0x1E) >> 1;
+            source_g = (pixel & 0x3C0) >> 1;
+            source_b = (pixel & 0x7800) >> 1;
+            break;
+        case 2:
+            source_r = (pixel & 0x1C) >> 2;
+            source_g = (pixel & 0x380) >> 2;
+            source_b = (pixel & 0x7000) >> 2;
+            break;
+        case 3:
+            grey = ((pixel & 0x1F) + ((pixel & 0x3E0) >> 5) + ((pixel & 0x7C00) >> 10)) / 3;
+            source_r = grey;
+            source_g = grey << 5;
+            source_b = grey << 10;
+            break;
+        }
+        r = source_r + red;
+        if (r < 0) {
+            r = 0;
+        }
+        g = source_g + green;
+        if (g < 0) {
+            g = 0;
+        }
+        b = source_b + blue;
+        if (b < 0) {
+            b = 0;
+        }
+        if (r > 0x1F) {
+            r = 0x1F;
+        }
+        if (g > 0x3E0) {
+            g = 0x3E0;
+        }
+        if (b > 0x7C00) {
+            b = 0x7C00;
+        }
+        delta.vx = (*base & 0x1F) - r;
+        delta.vy = (*base & 0x3E0) - g;
+        delta.vz = (*base & 0x7C00) - b;
+        gte_ldlvl(&delta);
+        gte_gpf12();
+        gte_stlvl(&delta);
+        if (pixel != 0) {
+            *dst = ((r + (delta.vx & 0x1F)) | 0x8000) | (g + (delta.vy & 0x3E0)) | (b + (delta.vz & 0x7C00));
+        }
+        src++;
+        base++;
+        dst++;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_800248D4", func_80025D4C);
+#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_800248D4", func_80025FA8);
 
