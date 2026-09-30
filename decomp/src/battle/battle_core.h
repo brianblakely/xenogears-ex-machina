@@ -42,13 +42,18 @@ typedef struct {
 /* Combatant record: 11 slots (0-2 party, 3-10 enemies) of 0x170 bytes,
  * addressed absolutely from 800ccce8. */
 typedef struct {
-    u8 unk0[0x34];
+    u16 unk0;
+    u8 unk2;
+    u8 unk3;
+    u8 unk4[0x34 - 4];
     u16 unk34;         /* 0x800 reacts while down */
     u8 unk36[0x4C - 0x36];
     u16 hp;           /* +0x4C */
     u8 unk4E[0x56 - 0x4E];
     u8 unk56;
-    u8 unk57[0x7A - 0x57];
+    u8 unk57[0x5B - 0x57];
+    u8 unk5B;
+    u8 unk5C[0x7A - 0x5C];
     u16 unk7A;
     u16 flags7C;  /* 0x80 inactive, 0x1000 slow (ticks every other frame),
                    * 0x2000 delay counter +0x15C active */
@@ -60,11 +65,15 @@ typedef struct {
     u8 unk88[0x104 - 0x88];
     u32 unk104;
     s32 unk108;
-    u8 unk10C[0x14C - 0x10C];
+    u8 unk10C[0x120 - 0x10C];
+    u16 unk120;
+    u8 unk122[0x14C - 0x122];
     s32 unk14C;
     u8 unk150[6];
     u16 unk156;
-    u8 unk158[0x15C - 0x158];
+    u8 unk158[2];
+    u8 unk15A;
+    u8 unk15B;
     u8 delay15C;
     u8 unk15D[0x170 - 0x15D];
 } BattleRecord;
@@ -378,28 +387,40 @@ extern void *D_800D2D90[4];
 /* Battle state (800ccce8): the records and per-action arrays. */
 typedef struct {
     BattleRecord records[11];
-    u8 unkFD0[0x5F6C - 0xFD0];
+    u8 unkFD0[0x5F54 - 0xFD0];
+    s32 unk5F54[3];
+    s32 unk5F60[3];
     s32 damage[12];    /* +0x5F6C */
     u8 unk5F9C[4];
     u8 resultCodes[12]; /* +0x5FA0 */
+    u16 unk5FAC;       /* effect target mask */
+    u8 unk5FAE[2];
+    u16 unk5FB0;
+    u8 unk5FB2[0x5FC7 - 0x5FB2];
+    u8 unk5FC7;
 } BattleState;
+
+/* Effect table (0x10 bytes from 800d2200). */
+typedef struct {
+    u8 unk0[0xE];
+    u16 unkE;
+} EffectEntry;
+
+extern EffectEntry D_800D2200[];
+extern u8 D_800D2DC4;
 
 extern BattleState *D_800C34B0;
 
 /* Resolver globals. */
 typedef struct {
-    u16 unk0;
-    u8 unk2;
-    u8 unk3;
-} ResolverAttacker;
-
-typedef struct {
-    u8 unk0[0x1D];
+    u8 unk0[0x14];
+    u8 unk14;
+    u8 unk15[0x1D - 0x15];
     u8 unk1D;
     u16 unk1E;
 } CommandDescriptor;
 
-extern ResolverAttacker *D_800C3E00;
+extern BattleRecord *D_800C3E00; /* attacker record */
 extern CommandDescriptor *D_800C3DFC;
 extern u8 D_800C3E50;      /* target slot */
 extern u8 D_800C3E90[12];  /* default-target candidates */
@@ -588,6 +609,9 @@ void func_8008A3EC(u8 member);
 void func_800BC404(u16 mask);
 void func_800BCD98(u16 mask);
 void func_80077980(void);
+u8 func_80083FF4(u8 member, u8 slot);
+void func_80098D2C(u8 slot, u8 param);
+void func_80097D08(void);
 u8 func_800841E0(u8 member);
 u16 func_80089C6C(u16 mask, u8 bit);
 void func_80076B68(POLY_FT4 *prim);

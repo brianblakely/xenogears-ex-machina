@@ -2847,13 +2847,59 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80083948);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80083FF4);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80084108);
+/* Whether `slot` can be targeted by a party attack: present and visible;
+ * unflagged slots also not down (+0x7c 0xc001) unless `any`, flagged slots
+ * not down by +0x120 unless `any`. */
+u8 func_80084108(u8 slot, u8 any) {
+    u8 result = 0;
+
+    if (D_800D2DCC.present[slot] != 0 && D_800C3EB4[slot].hidden == 0) {
+        if (D_800D32A0[slot].unk1 == 0) {
+            result = 1;
+            if (any == 0) {
+                result = (D_800CCCE8[slot].flags7C & 0xC001) == 0;
+            }
+        } else if (any != 0 || !(D_800CCCE8[slot].unk120 & 0xC001)) {
+            result = 1;
+        }
+    }
+    return result;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800841E0);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80084548);
 
+/* Collect the enemy slots the member can target (80083ff4) as candidates
+ * and their mask; returns the first candidate. */
+#ifdef NON_MATCHING
+u8 func_80084750(u8 member) {
+    s32 i;
+    s32 n;
+    s32 count;
+    s32 slot;
+
+    n = 8;
+    for (i = 11; i >= 0; i--) {
+        D_800C3E90[i] = 0xFF;
+    }
+    count = 0;
+    D_800D3274 = 0;
+    D_800C3D64 = 0;
+    i = 3;
+    while (--n >= 0) {
+        slot = i++;
+        if (func_80083FF4(member, slot)) {
+            D_800C3E90[count++] = slot;
+            D_800C3D64 |= func_80089C08(slot);
+            D_800D3274++;
+        }
+    }
+    return D_800C3E90[0];
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80084750);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80084854);
 
@@ -3510,7 +3556,21 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800941A4);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800946F4);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80094C78);
+/* Add the damage dealt to the target to each hit party member's running
+ * total (+0x5f60 with record flag 0x80 at +0x15a, else +0x5f54). */
+void func_80094C78(void) {
+    u8 member;
+
+    for (member = 0; member < 3; member++) {
+        if (D_800C34B0->resultCodes[member] == 0) {
+            if (D_800C34B0->records[member].unk15A & 0x80) {
+                D_800C34B0->unk5F60[member] += D_800C34B0->damage[D_800C3E50];
+            } else {
+                D_800C34B0->unk5F54[member] += D_800C34B0->damage[D_800C3E50];
+            }
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80094D24);
 
@@ -3540,7 +3600,16 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80096018);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80096494);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80096824);
+/* Ether check: unless rand % 100 falls below the attacker's +0x5b plus the
+ * descriptor's +0x14, the action fails (code 0x38 at +0x5fc7). */
+void func_80096824(void) {
+    s32 chance = D_800C3E00->unk5B + D_800C3DFC->unk14;
+
+    if (func_8003FA38() % 100 >= chance) {
+        D_800C34B0->unk5FC7 = 0x38;
+        D_800D2DC4 = 1;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800968C0);
 
@@ -3571,7 +3640,29 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009892C);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80098AF8);
 
+/* Resolve an item/effect `param` on every slot in the +0x5fac mask, then
+ * set its animation from the effect table. */
+#ifdef NON_MATCHING
+void func_80098C6C(u16 param) {
+    s32 slot;
+    s32 bit;
+
+    func_80097D08();
+    bit = 1;
+    for (slot = 0; (u8)slot < 11; slot++) {
+        if (bit & D_800C34B0->unk5FAC) {
+            func_80098D2C(slot, param);
+        }
+        bit <<= 1;
+    }
+    D_800C34B0->unk5FB0 = D_800D2200[param & 0xFF].unkE;
+    if (D_800D2C9E & 0x8000) {
+        D_800D2C98 = 0xC2;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80098C6C);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80098D2C);
 
