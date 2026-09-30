@@ -71,19 +71,21 @@ void func_801FC0EC(TaskNode *node) {
  * scale; cells right of the screen's left edge are clipped to it, cells
  * wholly left of it skipped. Returns how many cells have a corner inside
  * the screen. */
-#ifdef NON_MATCHING
 u8 func_801FC110(SpriteCell *cell, s32 count, s32 x, s32 y, Actor *actor) {
     SVECTOR quad[4];
     s32 p, flag;
     POLY_FT4 *prim;
-    s32 left, top, right, bottom;
+    s16 left, top;
+    s32 w, h;
+    u16 u, v;
+    u16 du, dv;
     s32 depth;
     s32 visible = 0;
     s32 i;
 
-    memset(quad, visible, sizeof(quad));
+    memset(quad, 0, sizeof(quad));
     if (D_80059580 + count * sizeof(POLY_FT4) >= D_80059534) {
-        return 0;
+        return; /* no value (a bug in the original: v0 keeps the failed test's 0) */
     }
     for (i = 0; i != count; i++, cell++) {
         prim = (POLY_FT4 *)D_80059580;
@@ -92,29 +94,29 @@ u8 func_801FC110(SpriteCell *cell, s32 count, s32 x, s32 y, Actor *actor) {
         prim->color = cell->color;
         prim->tpage = cell->tpage;
         prim->clut = cell->clut;
+        w = cell->width;
+        h = cell->height;
         left = cell->x;
         top = cell->y;
-        right = left + cell->width;
         if (!((cell->flags >> 4) & 1)) {
             quad[0].vx = left;
-            quad[1].vx = right;
-            quad[2].vx = right;
+            quad[1].vx = left + w;
+            quad[2].vx = left + w;
             quad[3].vx = left;
         } else {
-            quad[0].vx = right;
+            quad[0].vx = left + w;
             quad[1].vx = left;
             quad[2].vx = left;
-            quad[3].vx = right;
+            quad[3].vx = left + w;
         }
-        bottom = top + cell->height;
         if (!((cell->flags >> 5) & 1)) {
             quad[0].vy = top;
             quad[1].vy = top;
-            quad[2].vy = bottom;
-            quad[3].vy = bottom;
+            quad[2].vy = top + h;
+            quad[3].vy = top + h;
         } else {
-            quad[0].vy = bottom;
-            quad[1].vy = bottom;
+            quad[0].vy = top + h;
+            quad[1].vy = top + h;
             quad[2].vy = top;
             quad[3].vy = top;
         }
@@ -141,24 +143,28 @@ u8 func_801FC110(SpriteCell *cell, s32 count, s32 x, s32 y, Actor *actor) {
             quad[0].vx = 0;
             quad[3].vx = 0;
         }
-        depth = (RotAverage4(&quad[0], &quad[1], &quad[2], &quad[3], (s32 *)&prim->x0,
-                             (s32 *)&prim->x1, (s32 *)&prim->x3, (s32 *)&prim->x2, &p, &flag) >>
-                 D_80050100) +
-                actor->depth_bias;
+        depth = RotAverage4(&quad[0], &quad[1], &quad[2], &quad[3], (s32 *)&prim->x0,
+                            (s32 *)&prim->x1, (s32 *)&prim->x3, (s32 *)&prim->x2, &p, &flag) >>
+                D_80050100;
+        depth += actor->depth_bias;
         if (flag & 0x8000) {
             continue;
         }
         if ((u32)(depth - 1) >= 0xFFF) {
             continue;
         }
-        prim->u0 = cell->u;
-        prim->v0 = cell->v;
-        prim->u1 = cell->u + cell->width - 1;
-        prim->v1 = cell->v;
-        prim->u2 = cell->u;
-        prim->v2 = cell->v + cell->height - 1;
-        prim->u3 = cell->u + cell->width - 1;
-        prim->v3 = cell->v + cell->height - 1;
+        u = cell->u;
+        v = cell->v;
+        du = cell->width - 1;
+        dv = cell->height - 1;
+        prim->u0 = u;
+        prim->v0 = v;
+        prim->u1 = u + du;
+        prim->v1 = v;
+        prim->u2 = u;
+        prim->v2 = v + dv;
+        prim->u3 = u + du;
+        prim->v3 = v + dv;
         addPrim(D_8005956C + depth, prim);
         if (((u16)(prim->x0 - 1) < 319 && (u16)(prim->y0 - 1) < 223) ||
             ((u16)(prim->x1 - 1) < 319 && (u16)(prim->y1 - 1) < 223) ||
@@ -169,9 +175,6 @@ u8 func_801FC110(SpriteCell *cell, s32 count, s32 x, s32 y, Actor *actor) {
     }
     return visible;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3386/asm/nonmatchings/ovl3386", func_801FC110);
-#endif
 
 /* Keep the actor at its held position and draw its sprite sixteen times in a
  * row, offset by the scroll (wrapped to the sprite's width). */
