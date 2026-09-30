@@ -5113,7 +5113,32 @@ void func_800957D8(void) {
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800957D8);
 #endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800958D8);
+/* With the command's chance (+0x1c in percent) and kind 0x6e, clear the
+ * target's status words named by the command's bits 0x8000-0x400 (message
+ * 0x3a). */
+void func_800958D8(void) {
+    if (rand() % 100 <= D_800C3DFC->field1C && D_800C3DFC->field1D == 0x6E) {
+        if (D_800C3DFC->field1E & 0x8000) {
+            D_800C3E34->pilot.status84.half.active = 0;
+        }
+        if (D_800C3DFC->field1E & 0x4000) {
+            D_800C3E34->pilot.status84.half.permanent = 0;
+        }
+        if (D_800C3DFC->field1E & 0x2000) {
+            D_800C3E34->pilot.status88.half.active = 0;
+        }
+        if (D_800C3DFC->field1E & 0x1000) {
+            D_800C3E34->pilot.status88.half.permanent = 0;
+        }
+        if (D_800C3DFC->field1E & 0x800) {
+            D_800C3E34->pilot.status8C.half.active = 0;
+        }
+        if (D_800C3DFC->field1E & 0x400) {
+            D_800C3E34->pilot.status8C.half.permanent = 0;
+        }
+        D_800C34B0->message = 0x3A;
+    }
+}
 
 /* Status effect of the descriptor on the target (mode +0x11, or 5 with
  * +0xa bit 0x4000); a refused status marks the target's result 6. */
