@@ -17,6 +17,14 @@ typedef struct {
     u8 type;                 /* 0x47: 0xF7 continues, 0xFF ends */
 } BattleEvent;
 
+/* A channel of a battle object's animation script effects (0x70 bytes). */
+typedef struct {
+    s16 id; /* -1 idle */
+    u8 pad2[6];
+    void *data; /* 0x08 */
+    u8 padC[0x70 - 0xC];
+} ObjectChannel;
+
 /* A battle object: a stage object or an effect (fields as far as
  * recovered). */
 typedef struct {
@@ -76,11 +84,11 @@ typedef struct {
     u8 *textureInfo; /* 0xB4 */
     u8 padB8[0x10A - 0xB8];
     u16 slotMask; /* 0x10A */
-    u8 field10C;      /* 0x10C: block field110 allocated */
+    u8 channelCount;  /* 0x10C */
     u8 meshCount;     /* 0x10D */
     u8 imageAnimCount; /* 0x10E */
     u8 pad10F;
-    void *field110;   /* 0x110 */
+    ObjectChannel *channels; /* 0x110 */
     StageMesh *meshes; /* 0x114 */
     u8 *imageAnims;    /* 0x118: 0x30 bytes each, VRAM images restored on free */
 } BattleObject;

@@ -1450,8 +1450,8 @@ void func_800A9FF0(s32 index) {
             func_800A2BB8(&D_800C3D0C, (*slot)->hierarchy, 0xFF);
             func_800320E8((*slot)->hierarchy);
         }
-        if (D_800D3368[index]->field10C) {
-            func_800320E8(D_800D3368[index]->field110);
+        if (D_800D3368[index]->channelCount) {
+            func_800320E8(D_800D3368[index]->channels);
         }
         if (D_800D3368[index]->imageAnimCount != 0) {
             for (i = 0; i < D_800D3368[index]->imageAnimCount; i++) {
@@ -1579,7 +1579,20 @@ s32 func_800AA650(s32 index) {
     return size;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800AA6E0);
+/* Allocate object's script effect channels, all idle. */
+void func_800AA6E0(BattleObject *object) {
+    ObjectChannel *channels;
+    s32 i;
+
+    if (object->channelCount != 0) {
+        channels = func_80031BDC(object->channelCount * sizeof(ObjectChannel), 0);
+        for (i = 0; i < object->channelCount; i++) {
+            channels[i].id = -1;
+            channels[i].data = NULL;
+        }
+        object->channels = channels;
+    }
+}
 
 /* Set stage object index's byte 0x2A, when it exists. */
 void func_800AA760(s32 index, u8 value) {
