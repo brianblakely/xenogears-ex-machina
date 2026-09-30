@@ -1542,7 +1542,123 @@ s32 func_801E6910(Actor *actor, u8 ref, s32 *flag) {
     return actor->globals[ref - 0x3F];
 }
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E6974);
+/* Start a tween (kind `mode` + 3) of a node's rotation (flags & 7 = 0),
+ * position (1) or scale from (x0, y0, z0) to (x1, y1, z1), both optionally
+ * relative to the current values (flag bits 5 and 6; mode 0: the end is a
+ * target, else a delta); modes below 2 also set the start at once. With
+ * flag bit 7 the node's descendants get the same tween. */
+void func_801E6974(Actor *actor, SlotPool *pool, ModelPart *part, u8 flags, u8 mode, u8 tag,
+                   u8 smooth, s16 x0, s16 y0, s16 z0, s16 x1, s16 y1, s16 z1, s16 duration) {
+    PoolSlot *tween;
+    ModelPart *child;
+    s16 bx;
+    s16 by;
+    s16 bz;
+    s16 ex;
+    s16 ey;
+    s16 ez;
+    s32 i;
+    u8 type;
+
+    type = flags & 7;
+    if (type == 0) {
+        tween = part->attachments[0];
+    } else if (type == 1) {
+        tween = part->attachments[1];
+    } else {
+        tween = part->attachments[2];
+    }
+    if (tween != NULL || (tween = func_801DF6F0(pool)) != NULL) {
+        tween->used = 1;
+        tween->flag = smooth;
+        tween->kind = mode + 3;
+        tween->tag = tag;
+        if (flags & 0x20) {
+            if (type == 0) {
+                bx = part->rot.vx;
+                by = part->rot.vy;
+                bz = part->rot.vz;
+            } else if (type == 1) {
+                bx = part->pos[0];
+                by = part->pos[1];
+                bz = part->pos[2];
+            } else {
+                bx = part->scale[0];
+                by = part->scale[1];
+                bz = part->scale[2];
+            }
+        } else {
+            bx = 0;
+            by = 0;
+            bz = 0;
+        }
+        if (flags & 0x40) {
+            if (type == 0) {
+                ex = part->rot.vx;
+                ey = part->rot.vy;
+                ez = part->rot.vz;
+            } else if (type == 1) {
+                ex = part->pos[0];
+                ey = part->pos[1];
+                ez = part->pos[2];
+            } else {
+                ex = part->scale[0];
+                ey = part->scale[1];
+                ez = part->scale[2];
+            }
+        } else {
+            ex = 0;
+            ey = 0;
+            ez = 0;
+        }
+        tween->u.value[0] = x0 + bx;
+        tween->u.value[1] = y0 + by;
+        tween->u.value[2] = z0 + bz;
+        if (mode == 0) {
+            tween->u.value[3] = x1 + ex - tween->u.value[0];
+            tween->u.value[4] = y1 + ey - tween->u.value[1];
+            tween->u.value[5] = z1 + ez - tween->u.value[2];
+        } else {
+            tween->u.value[3] = x1 + ex;
+            tween->u.value[4] = y1 + ey;
+            tween->u.value[5] = z1 + ez;
+        }
+        tween->time = 0;
+        tween->duration = duration;
+        if (type == 0) {
+            if (mode < 2) {
+                part->rot.vx = tween->u.value[0];
+                part->rot.vy = tween->u.value[1];
+                part->rot.vz = tween->u.value[2];
+            }
+            part->attachments[0] = tween;
+        } else if (type == 1) {
+            if (mode < 2) {
+                part->pos[0] = tween->u.value[0];
+                part->pos[1] = tween->u.value[1];
+                part->pos[2] = tween->u.value[2];
+            }
+            part->attachments[1] = tween;
+        } else {
+            if (mode < 2) {
+                part->scale[0] = tween->u.value[0];
+                part->scale[1] = tween->u.value[1];
+                part->scale[2] = tween->u.value[2];
+            }
+            part->attachments[2] = tween;
+        }
+    }
+    if (flags & 0x80) {
+        child = actor->parts;
+        for (i = 1; i < actor->parts->count; i++) {
+            child++;
+            if (child->parent == part) {
+                func_801E6974(actor, pool, child, flags, mode, tag, smooth, x0, y0, z0, x1, y1, z1,
+                              duration);
+            }
+        }
+    }
+}
 
 /* Show or hide (flag bit 0) a node, and with bit 7 its descendants. */
 void func_801E6D94(Actor *actor, ModelPart *part, s32 flags) {
