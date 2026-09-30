@@ -163,15 +163,16 @@ void func_80048AB0(s32 a, s32 b, s32 c);
 
 /* Actor slots (0x80 bytes each). */
 typedef struct {
-    s32 unk0;
+    s16 command;     /* 0x00: pending command */
+    s16 command_arg;
     s16 unk4;
     s16 unk6;
     s32 unk8;
     s32 unkC;
     s32 unk10;
     s32 unk14;
-    s32 unk18;
-    s32 unk1C;
+    s32 kind;        /* 0x18 */
+    s32 update;      /* 0x1C: nonzero while the slot is in use */
     s16 state;    /* 0x20 */
     s16 wait;     /* 0x22: script wait counter */
     s16 unk24;
@@ -375,7 +376,7 @@ void func_80039CC4(void);
 void func_800399D4(void *seq);
 void *func_80039850(void *header);
 void func_80039A80(void *seq, s32 volume, s32 c);
-void func_80097770(s32 a, s32 b);
+s32 func_80097770(s32 index, s32 arg);
 void func_80089160(s32 a, SVECTOR *v, s32 c);
 void func_800894C8(s32 a);
 void func_80089514(s32 a);
@@ -506,6 +507,10 @@ s32 func_8003F8CC(s32 angle);                  /* rcos */
 s32 func_8002C3D8(void);
 void func_800967E4(void);
 s32 func_80096668(void);
+
+extern void *D_8009C184[0x100]; /* terrain block buffers */
+
+void func_800976C8(void);
 
 /* Frame state. */
 typedef struct {

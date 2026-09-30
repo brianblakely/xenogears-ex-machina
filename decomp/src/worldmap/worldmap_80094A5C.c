@@ -130,23 +130,93 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80097440);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_8009766C);
+/* Allocate and clear the 64 actor slots. */
+void func_8009766C(void) {
+    D_8009BE24 = func_80031BDC(0x2000, 0);
+    func_800976C8();
+}
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_800976A0);
+/* Free the actor slots. */
+void func_800976A0(void) {
+    func_800320E8(D_8009BE24);
+}
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_800976C8);
+/* Mark every actor slot free. */
+void func_800976C8(void) {
+    WorldmapActor *actor;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_800976FC);
+    for (i = 0; i < 0x40; i++) {
+        actor = &D_8009BE24[i];
+        actor->handle = 0;
+        actor->kind = 0;
+        actor->update = 0;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80097718);
+/* Change an actor's kind and clear its command. */
+void func_800976FC(s32 kind, s32 index) {
+    D_8009BE24[index].command = 0;
+    D_8009BE24[index].kind = kind;
+}
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80097770);
+/* Start an actor in the first free slot. */
+void func_80097718(s32 kind, s32 update) {
+    WorldmapActor *actor;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_800977A8);
+    for (i = 0; i < 0x40; i++) {
+        actor = &D_8009BE24[i];
+        if (actor->update == 0) {
+            actor->command = 0;
+            actor->command_arg = 0;
+            actor->unk4 = 0;
+            actor->kind = kind;
+            actor->update = update;
+            actor->state = 0;
+            actor->wait = 0;
+            return;
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_800977C4);
+/* Send command 1 with an argument unless one is pending; 1 when sent. */
+s32 func_80097770(s32 index, s32 arg) {
+    WorldmapActor *actor;
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_800977E0);
+    actor = &D_8009BE24[index];
+    if (actor->unk4 == 0) {
+        actor->command = 1;
+        actor->unk4 = arg;
+        return 1;
+    }
+    return 0;
+}
+
+/* Send command 3. */
+void func_800977A8(s32 index) {
+    WorldmapActor *actor;
+
+    actor = &D_8009BE24[index];
+    actor->command = 3;
+}
+
+/* Send command 4. */
+void func_800977C4(s32 index) {
+    WorldmapActor *actor;
+
+    actor = &D_8009BE24[index];
+    actor->command = 4;
+}
+
+/* Send command 2 with an argument. */
+void func_800977E0(s32 index, s16 arg) {
+    WorldmapActor *actor;
+
+    actor = &D_8009BE24[index];
+    actor->command = 2;
+    actor->command_arg = arg;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80097800);
 
@@ -158,7 +228,16 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80097CB8);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80097D64);
+/* Free every loaded terrain block. */
+void func_80097D64(void) {
+    s32 i;
+
+    for (i = 0; i < 0x100; i++) {
+        if (D_8009C184[i] != NULL) {
+            func_800320E8(D_8009C184[i]);
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80097DC0);
 
