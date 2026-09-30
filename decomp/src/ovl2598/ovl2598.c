@@ -1422,7 +1422,55 @@ void func_801C9F80(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_h
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801CA24C);
+/* Build a status panel's HP / maximum HP (three digits) and EP / maximum EP
+ * (two digits) for character `id` in row `slot`. */
+void func_801CA24C(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_height) {
+    s32 i;
+    s32 n;
+
+    func_801C969C(D_8006D634.characters[id].hp);
+    panel->hp_count = 0;
+    for (i = 0; i < 3; i++) {
+        if (D_800625A0->digits[6 + i] != 0xFF) {
+            panel->hp_count +=
+                func_8002675C(D_800625A0->sprite_sheet, D_800625A0->digits[6 + i],
+                              &panel->hp[panel->hp_count * 2], D_800625A0->buffer_index,
+                              i * 8 + x[12], row_height * slot + y[12], 0x1000);
+        }
+    }
+    func_801C969C(D_8006D634.characters[id].hp_max);
+    panel->hp_max_count = 0;
+    for (i = 0, n = 0; i < 3; i++) {
+        if (D_800625A0->digits[6 + i] != 0xFF) {
+            panel->hp_max_count +=
+                func_8002675C(D_800625A0->sprite_sheet, D_800625A0->digits[6 + i],
+                              &panel->hp_max[panel->hp_max_count * 2], D_800625A0->buffer_index,
+                              n * 8 + x[13], row_height * slot + y[13], 0x1000);
+            n++;
+        }
+    }
+    func_801C969C(D_8006D634.characters[id].ep);
+    panel->ep_count = 0;
+    for (i = 0; i < 2; i++) {
+        if (D_800625A0->digits[7 + i] != 0xFF) {
+            panel->ep_count +=
+                func_8002675C(D_800625A0->sprite_sheet, D_800625A0->digits[7 + i],
+                              &panel->ep[panel->ep_count * 2], D_800625A0->buffer_index,
+                              i * 8 + x[14], row_height * slot + y[14], 0x1000);
+        }
+    }
+    func_801C969C(D_8006D634.characters[id].ep_max);
+    panel->ep_max_count = 0;
+    for (i = 0, n = 0; i < 2; i++) {
+        if (D_800625A0->digits[7 + i] != 0xFF) {
+            panel->ep_max_count +=
+                func_8002675C(D_800625A0->sprite_sheet, D_800625A0->digits[7 + i],
+                              &panel->ep_max[panel->ep_max_count * 2], D_800625A0->buffer_index,
+                              n * 8 + x[15], row_height * slot + y[15], 0x1000);
+            n++;
+        }
+    }
+}
 
 /* Build status panel `panel` for character `id` in row `slot` of a layout
  * (x/y tables, row height) and show it for this buffer. */

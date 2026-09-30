@@ -278,8 +278,13 @@ extern u16 D_8006F366;
 extern u8 D_8006F368[3]; /* current party (0xFF empty) */
 /* A character record (0xA4 bytes) of the game data. */
 typedef struct {
-    u8 pad_0[0x62];
-    u8 level; /* 0x62 */
+    u8 pad_0[0x4C];
+    u16 hp;     /* 0x4C */
+    u16 hp_max; /* 0x4E */
+    u16 ep;     /* 0x50 */
+    u16 ep_max; /* 0x52 */
+    u8 pad_54[0x62 - 0x54];
+    u8 level;   /* 0x62 */
     u8 b63;   /* 0x63 */
     u8 pad_64[0xA4 - 0x64];
 } CharacterRecord;
