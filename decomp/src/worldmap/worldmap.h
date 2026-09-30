@@ -854,6 +854,24 @@ typedef struct {
     MeshFace faces[1];
 } Mesh;
 
+/* Saved ferry route state: x, z (world units), next waypoint; and the
+ * number of runs started. */
+extern u16 D_8006EE78[3];
+extern u16 D_8006EE7E;
+extern u16 D_8009AF80[8], D_8009AF90[8]; /* ferry waypoints (x, z) */
+
+/* Ferry heading history (ring of 32). */
+typedef struct {
+    s16 dx;
+    s16 pad2;
+    s16 dz;
+    s16 pad6;
+} FerryHeading;
+
+extern FerryHeading D_8009CD68[32];
+s32 func_80094154(VECTOR *a, VECTOR *b); /* distance */
+s32 func_80087F60(void);
+
 MATRIX *ScaleMatrix(MATRIX *m, VECTOR *scale);
 void func_8004A6DC(SVECTOR *v, VECTOR *out, s32 *flag); /* RotTrans */
 void func_800935DC(VECTOR *point, VECTOR *origin, VECTOR *normal);
