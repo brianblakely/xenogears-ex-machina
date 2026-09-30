@@ -189,11 +189,11 @@ typedef struct {
     u16 elements; /* 0x08: element bits */
     u16 flagsA;   /* 0x0A */
     u8 padC[0x10 - 0xC];
-    u8 pad10;
+    u8 itemKinds; /* 0x10: 0x80 uses entry 0's item, 0x10 entry 3's */
     u8 power; /* 0x11 */
     u8 pad12[0x14 - 0x12];
     u8 accuracy; /* 0x14 */
-    u8 pad15;
+    s8 hitBonus; /* 0x15 */
     u8 formula; /* 0x16: index into the formula table */
     u8 pad17;
     u8 chanceSource; /* 0x18: 0 attacker +0x60, 1 field1C */

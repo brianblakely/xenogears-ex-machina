@@ -4,6 +4,7 @@
 #include "model.h"
 #include "scene.h"
 #include "gte.h"
+#include "resolver.h"
 
 /* Start the 801e5000 module: reserve its heap span and load it. */
 void func_80070E2C(void) {
@@ -5906,9 +5907,150 @@ void func_80096824(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800968C0);
+/* Counterattack: a target able to act (not down, turn timer free, an enemy
+ * or one holding status 0x2000, with the counter status 0x1000 of +0x88)
+ * answers a non-ether, non-gear attack with a 60% (character 0) or 50%
+ * chance: attacker and target swap and the target's command 20 runs with
+ * result 7 (message 0x34). */
+void func_800968C0(void) {
+    s32 chance;
+    u8 slot;
+    Combatant *record;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80096AB8);
+    if (D_800C3E34->pilot.status7C & 0xA000) {
+        return;
+    }
+    if (D_800C3E34->pilot.status80 & 0x1000) {
+        return;
+    }
+    if (D_800C3E04 < 3 && !(D_800C3E34->pilot.status80 & 0x2000)) {
+        return;
+    }
+    if (!(D_800C3E34->pilot.status88.half.active & 0x1000)) {
+        return;
+    }
+    if (D_800C3DFC->flagsA & 0x2000) {
+        return;
+    }
+    if (D_800C3DFC->flagsA & 0x100) {
+        return;
+    }
+    if (D_800C34B0->records[D_800C3E04].flags15A & 0x80) {
+        return;
+    }
+    chance = 50;
+    if (D_800C3E34->pilot.characterId == 0) {
+        chance = 60;
+    }
+    if (rand() % 100 <= chance && D_800C3DFC->formula != 2) {
+        slot = D_800C3E04;
+        D_800C3E04 = D_800C3E50;
+        record = D_800C3E00;
+        D_800C3E00 = D_800C3E34;
+        D_800C3E50 = slot;
+        D_800C3E34 = record;
+        D_800C3DFC = &D_800C34B0->partyCommands[D_800C3E04][20];
+        D_800C34B0->resultCode[D_800C3E04] = 7;
+        D_800C34B0->damage[D_800C3E04] = 0;
+        D_800C34B0->message = 0x34;
+    }
+}
+
+/* Hit outcome of the current command on the target: 1 hit, 2 half, 3 miss,
+ * 5 forced. Gear-only and weapon checks, sure-hit and never-hit statuses
+ * come first; then the attacker's +0x5e plus the command's +0x15 against
+ * the target's +0x5f sets a margin for the percent rolls. */
+s32 func_80096AB8(void) {
+    s16 bonus = 0;
+    s16 guard = 0;
+    u8 accuracy = D_800C3E00->pilot.field5E;
+    u8 evasion = D_800C3E34->pilot.field5F;
+    u16 flags;
+    u16 status;
+    s16 margin;
+    s16 roll;
+
+    if ((D_800C3DFC->flagsA & 0x40) && (D_800CCCE8.records[D_800C3E50].flags15A & 0x80)) {
+        return 3;
+    }
+    if (D_800C3E00->pilot.characterId == 4) {
+        if ((D_800C3DFC->itemKinds & 0x80) && D_8006F8BA[D_800C3E00->pilot.entryItems[0]] == 0) {
+            D_800C34AE = 1;
+            return 3;
+        }
+        if ((D_800C3DFC->itemKinds & 0x10) && D_8006F8BA[D_800C3E00->pilot.entryItems[3]] == 0) {
+            D_800C34AE = 1;
+            return 3;
+        }
+    }
+    if (D_800C3DFC->flagsA & 0x200) {
+        if (D_800C3E34->pilot.flags34 & 8) {
+            return 3;
+        }
+        if (D_800CCCE8.records[D_800C3E50].flags15A & 0x80) {
+            return 3;
+        }
+    }
+    flags = D_800C3DFC->flagsA;
+    if (flags & 0x1000) {
+        return 3;
+    }
+    status = D_800C3E34->pilot.status84.half.active | D_800C3E34->pilot.status84.half.permanent;
+    if (status & 0x100) {
+        return 3;
+    }
+    if (D_800C3E34->pilot.status7C & 0x2000) {
+        return 1;
+    }
+    if (D_800C3E34->pilot.status80 & 0x1000) {
+        return 1;
+    }
+    if (flags & 0x8000) {
+        return 1;
+    }
+    if (flags & 2) {
+        return 5;
+    }
+    if (D_800C3E00->pilot.status7C & 0x400) {
+        bonus -= 50;
+    }
+    if ((D_800C3E00->pilot.status84.half.active | D_800C3E00->pilot.status84.half.permanent) & 0x1000) {
+        bonus += 30;
+    }
+    if (status & 0x800) {
+        guard += 50;
+    }
+    margin = D_800C3DFC->hitBonus + accuracy - evasion;
+    if (D_800C34B0->records[D_800C3E50].flags15A & 1) {
+        if (rand() % 100 < 95) {
+            return 2;
+        }
+        return 1;
+    }
+    if (status & 0x20) {
+        roll = rand() % 100 - margin;
+        if (roll >= 50) {
+            return 3;
+        }
+        return 1;
+    }
+    if ((D_800C3E34->pilot.status84.half.active | D_800C3E34->pilot.status84.half.permanent) & 0x40) {
+        roll = rand() % 100 - margin;
+        if (roll >= 50) {
+            return 2;
+        }
+        return 1;
+    }
+    roll = rand() % 100 - margin;
+    if (roll >= (s16)(bonus - (s16)(guard - 90))) {
+        return 3;
+    }
+    roll = rand() % 100 - margin;
+    if (roll >= (s16)(bonus - (s16)(guard - 85))) {
+        return 2;
+    }
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80096FBC);
 
