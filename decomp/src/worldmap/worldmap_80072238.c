@@ -461,26 +461,21 @@ void func_80075104(void) {
 }
 
 /* Reset the movement state; vehicles move twice as fast as on foot. */
-#ifdef NON_MATCHING /* constant 1 is reused after the branch instead of reloaded */
 void func_80075228(void) {
     s32 i;
-    s32 speed;
 
     for (i = 15; i >= 0; i--) {
         D_8009C854[i] = 0;
     }
     D_8009D64C = 1;
-    speed = 0x300;
-    if (!(D_8006EE54.flags & 0x4000)) {
-        speed = 0x180;
+    if (D_8006EE54.flags & 0x4000) {
+        D_8009BE40 = 0x300;
+    } else {
+        D_8009BE40 = 0x180;
     }
-    D_8009BE40 = speed;
     D_8009BCC4 = 1;
     D_8009D80C = 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80075228);
-#endif
 
 /* Every D_8009BE40 frames give each of D_8009BCC4 timers a distinct random
  * delay (1..D_8009BE40); count down the timers and count those expiring. */
