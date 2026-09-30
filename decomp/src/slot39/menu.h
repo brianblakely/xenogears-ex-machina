@@ -10,10 +10,27 @@
  * the overlay does with them; unknown bytes stay padding.
  */
 
+/* PlayStation library types (libgpu/libgte layouts). */
 typedef struct RECT {
     s16 x, y;
     s16 w, h;
 } RECT;
+
+typedef struct SVECTOR {
+    s16 vx, vy, vz, pad;
+} SVECTOR;
+
+typedef struct POLY_G4 {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    u8 r1, g1, b1, pad1;
+    s16 x1, y1;
+    u8 r2, g2, b2, pad2;
+    s16 x2, y2;
+    u8 r3, g3, b3, pad3;
+    s16 x3, y3;
+} POLY_G4;
 
 /* structs: begin */
 /* Party block (*(state + 33c)): per-part redraw flags, the label set and the party ids. */
@@ -36,7 +53,9 @@ typedef struct MenuParty {
 
 /* Screen images (*(state + 350)). */
 typedef struct MenuImages {
-    u8 pad0[0x1192];
+    u8 pad0[0x1180];
+    RECT copy; /* 1180: the screen area copied into the other buffer each frame */
+    u8 pad1188[0xA];
     u8 captured; /* 1192 */
     u8 refresh; /* 1193 */
 } MenuImages;
@@ -68,23 +87,42 @@ typedef struct MenuCard {
     u8 pad4FCE[0x16];
     u8 present[2]; /* 4FE4: per port: card present */
     u8 mode; /* 4FE6 */
-    u8 pad4FE7[0x15];
+    u8 pad4FE7[0x5];
+    s32 events[4]; /* 4FEC: card event descriptors */
     u8 title[30]; /* 4FFC: save title line of the text file */
     u8 unk501A; /* 501A */
     u8 unk501B; /* 501B */
     u8 pad501C[0x18];
 } MenuCard;
 
+/* One of the two display buffers. */
+typedef struct MenuBuffer {
+    u8 draw[0x5c]; /* 0: DRAWENV */
+    u8 disp[0x14]; /* 5C: DISPENV */
+    u32 ot[16]; /* 70: reverse ordering table */
+    u8 padB0[0x4];
+} MenuBuffer;
+
+/* The menu's sound effect bank (resident). */
+typedef struct MenuSoundBank {
+    u8 pad0[0x14];
+    u16 id; /* 14 */
+} MenuSoundBank;
+
 /* The menu mode's state (*D_800625A0). */
 typedef struct MenuState {
-    u8 pad0[0x2D8];
+    u8 pad0[0x6C];
+    MenuBuffer buffers[2]; /* 6C */
+    MenuBuffer *current; /* 1D4: the buffer being built */
+    u8 pad1D8[0x100];
     s32 frameCounter; /* 2D8: frames since last cleared */
     void *sheet; /* 2DC: sprite sheet */
     void *labels; /* 2E0: label text */
-    void *effectBank; /* 2E4: menu sound effect bank */
+    MenuSoundBank *effectBank; /* 2E4: menu sound effect bank */
     u8 pad2E8[0x20];
     s32 bufferIndex; /* 308: 0/1: the buffer being built; the drawing callback clears it */
-    u8 pad30C[0x19];
+    u8 pad30C[0x10];
+    u8 digits[9]; /* 31C: decimal digits of a number, leading zeros ff */
     u8 input; /* 325: decoded input of this frame */
     u8 cardPollTimer; /* 326 */
     u8 drawing; /* 327: nonzero draws the screen each frame */
@@ -143,11 +181,18 @@ extern u8 D_8006F008;         /* game data: disc of the loaded file */
 extern u16 D_8006EF64;        /* game data: save title line of text file 1 */
 extern u8 D_800594D0;         /* load result: 0, 1 title timeout, 2 loaded */
 
+extern s32 D_80059488;         /* play time in frames */
+extern s32 *D_8005917C;       /* stack guard word, -1 while intact */
+
 /* Overlay statics. */
 extern u8 D_801E96A4;    /* the file screen saves (nonzero) or loads */
 extern u8 D_801E96A5;
 extern u8 D_801E977A;    /* inside a command */
 extern u8 D_801E9784;    /* nonzero checks the reset combination */
+extern u16 D_801E96A8[16]; /* single-bit masks */
+extern u16 D_801E96C8[16]; /* single-bit masks */
+extern u32 D_801E96E8[];   /* single-bit masks */
+extern s32 D_801E9768[];
 extern u8 D_801E9E64[];
 extern u8 D_801E9E84[];
 extern u8 D_801EA19C[];  /* field menu command cursor positions */
@@ -167,7 +212,22 @@ void func_80028470(s32 arg0, s32 arg1);
 s32 func_800288EC(s32 file);                                 /* file size */
 void func_800295D8(s32 file, void *dst, s32 arg2, s32 arg3); /* read file */
 void func_80028A60(s32 arg0);                                /* wait for the read */
+void func_80019CA0(void);
+void func_8001BD40(s32 arg0, s32 arg1);
 void func_80033698(s32 x, s32 y);
+void func_80039DB8(s32 id, s32 sound); /* play a sound effect */
+void func_800404C4(u32 event, s32 spec); /* UnDeliverEvent */
+void func_80040484(s32 event);           /* EnableEvent */
+void func_800404D4(void);                /* EnterCriticalSection */
+void func_800404E4(void);                /* ExitCriticalSection */
+void func_80043CC4(POLY_G4 *poly);       /* SetPolyG4 */
+void func_80044AD8(u32 *ot, s32 count);  /* ClearOTagR */
+void func_8004495C(RECT *rect, s32 x, s32 y); /* MoveImage */
+void func_80044BD0(u32 *ot);             /* DrawOTag */
+void func_80044C44(void *env);           /* PutDrawEnv */
+void func_80044E9C(void *env);           /* PutDispEnv */
+void func_8004B54C(s32 mode);            /* VSync */
+s32 func_8004E784(void);
 void func_800445D0(s32 mode);                /* DrawSync */
 void func_80044894(RECT *rect, void *pixels); /* LoadImage */
 void func_8003852C(void *bank);
@@ -180,16 +240,31 @@ u8 func_801C531C(u8 offset);
 void func_801C55A0(void);
 void func_801C57A4(void);
 void func_801C58EC(void);
+void func_801C6400(void);
+void func_801C6AA0(MenuState *state);
+void func_801C6D4C(void);
+void func_801C6D5C(void);
 void func_801C6D90(void);
+void func_801C6E0C(void);
+void func_801C6E68(void);
+void func_801C6F70(void);
 void func_801C7B0C(void);
 void func_801C7BF4(void);
-void func_801C8574(u8 sound);
+void func_801C7D78(void);
+void func_801C7F34(s32 frames);
+u8 func_801C881C(void);
+void func_801C8BEC(void);
+void func_801C8EE8(void);
+void func_801C8574(s32 sound);
 void func_801C8694(u8 arg0);
 s32 func_801CACF8(u8 arg0, u8 arg1, u8 arg2);
+void func_801D1CA0(void);
+void func_801D1D40(void);
 void func_801D1E80(void);
 void func_801D22C4(void);
 void func_801D22F4(u8 arg0);
 void func_801D2484(void);
+void func_801D2968(void);
 void func_801D2D38(void);
 u8 func_801D9808(void);
 u8 func_801D9F98(u8 mode, u8 save);

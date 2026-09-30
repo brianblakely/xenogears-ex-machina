@@ -557,49 +557,206 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C6F70);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C72BC);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C7B0C);
+/* Set up the screen: the copied screen area, the environments, labels,
+ * palettes and sheet records, then the card state and load state. */
+void func_801C7B0C(void) {
+    MenuState *state = D_800625A0;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C7BF4);
+    state->screenImages->copy.x = 0x2c0;
+    state->screenImages->copy.y = 0x100;
+    state->screenImages->copy.w = 0x140;
+    state->screenImages->copy.h = 0xe0;
+    state->primitives->shade = 0x40;
+    func_801C6AA0(state);
+    func_801C6D4C();
+    func_801C6E0C();
+    func_801C6F70();
+    func_801C6E68();
+    switch (D_80059460) {
+    case 2:
+        D_800625A0->primitives->shade = 0x4c;
+    case 0:
+    case 6:
+        func_801C6400();
+        func_801C6D5C();
+        break;
+    }
+}
+
+/* One menu frame: poll the pads, swap and clear the buffers, build the frame
+ * (updates, input, sounds), wait for the previous frame, show this one and copy
+ * the screen area into the other buffer. */
+void func_801C7BF4(void) {
+    MenuBuffer *buffer;
+    s32 other;
+
+    if (*D_8005917C != -1) {
+        /* ASPSX "break 1": code 1 in the upper code field (0x400 for maspsx) */
+        __asm__ volatile("break 0x400");
+    }
+    func_801C7D78();
+    if (D_801E9784 != 0) {
+        func_80019CA0();
+    }
+    buffer = &D_800625A0->buffers[0];
+    if (D_800625A0->current == buffer) {
+        buffer = &D_800625A0->buffers[1];
+    }
+    D_800625A0->current = buffer;
+    D_800625A0->bufferIndex = D_800625A0->bufferIndex == 0;
+    func_80044AD8(D_800625A0->current->ot, 16);
+    func_8001BD40(0, 0xff);
+    func_801D1D40();
+    D_800625A0->frameCounter++;
+    func_801C7F34(D_80059488);
+    func_801D2968();
+    func_801D1CA0();
+    other = D_800625A0->bufferIndex == 0;
+    func_800445D0(0);
+    func_8004B54C(0);
+    func_80044C44(D_800625A0->current->draw);
+    func_80044E9C(D_800625A0->current->disp);
+    func_8004495C(&D_800625A0->screenImages->copy, 0, other * 0xe0);
+    func_80044BD0(&D_800625A0->current->ot[15]);
+    func_801C8BEC();
+    func_801C8EE8();
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C7D78);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C7F34);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C80B8);
+/* Split `value` into nine decimal digits, blanking (ff) the leading zeros. */
+void func_801C80B8(u32 value) {
+    u32 unit;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C8164);
+    unit = 100000000;
+    for (i = 0; i < 9; i++) {
+        D_800625A0->digits[i] = value / unit;
+        value %= unit;
+        unit /= 10;
+    }
+    for (i = 1; i < 9; i++) {
+        if (D_800625A0->digits[i] != 0) {
+            if (D_800625A0->digits[i - 1] == 0) {
+                D_800625A0->digits[i - 1] = 0xff;
+            }
+            return;
+        }
+        D_800625A0->digits[i - 1] = 0xff;
+    }
+}
+
+/* Initialise a gradient quad: the top edge colour (r, g, b), the bottom black. */
+void func_801C8164(POLY_G4 *poly, u8 r, u8 g, u8 b) {
+    func_80043CC4(poly);
+    poly->r0 = r;
+    poly->g0 = g;
+    poly->b0 = b;
+    poly->r1 = r;
+    poly->g1 = g;
+    poly->b1 = b;
+    poly->r2 = 0;
+    poly->g2 = 0;
+    poly->b2 = 0;
+    poly->r3 = 0;
+    poly->g3 = 0;
+    poly->b3 = 0;
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C81E0);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C8324);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C851C);
+/* Set the four corners of a screen rectangle as vertices centred on (a0, 70). */
+void func_801C851C(SVECTOR *v, u16 x, u16 y, s32 w, s32 h) {
+    v[0].vx = x - 0xa0;
+    v[0].vy = y - 0x70;
+    v[0].vz = 0;
+    v[1].vx = x + w - 0xa0;
+    v[1].vy = y - 0x70;
+    v[1].vz = 0;
+    v[2].vx = x - 0xa0;
+    v[2].vz = 0;
+    v[3].vx = x + w - 0xa0;
+    v[3].vz = 0;
+    v[2].vy = y + h - 0x70;
+    v[3].vy = y + h - 0x70;
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C8574);
+/* Play menu sound effect `sound` from the menu's bank when sounds are on. */
+void func_801C8574(s32 sound) {
+    if (D_800625A0->sounds != 0) {
+        func_80039DB8((D_800625A0->effectBank->id << 16) | (u8)sound, sound);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C85C0);
+/* Bit `bit` of the D_801E96C8 masks. */
+u16 func_801C85C0(u8 bit) {
+    return D_801E96C8[bit];
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C85DC);
+/* Bit `bit` of the D_801E96A8 masks. */
+u16 func_801C85DC(u8 bit) {
+    return D_801E96A8[bit];
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C85F8);
+/* All bits but `bit` (D_801E96C8). */
+u16 func_801C85F8(u8 bit) {
+    return ~D_801E96C8[bit];
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C861C);
+/* All bits but `bit` (D_801E96A8). */
+u16 func_801C861C(u8 bit) {
+    return ~D_801E96A8[bit];
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C8640);
+/* Test bit `bit` (D_801E96C8) of `flags`. */
+u16 func_801C8640(u16 flags, u8 bit) {
+    return D_801E96C8[bit] & flags;
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C865C);
+/* Test bit `bit` (D_801E96A8) of `flags`. */
+u16 func_801C865C(u16 flags, u8 bit) {
+    return D_801E96A8[bit] & flags;
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C8678);
+/* Test bit `bit` (D_801E96E8) of `flags`. */
+u32 func_801C8678(u32 flags, u8 bit) {
+    return flags & D_801E96E8[bit];
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C8694);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C87C4);
+/* Discard pending memory-card events. */
+void func_801C87C4(void) {
+    func_800404C4(0xf4000001, 4);
+    func_800404C4(0xf4000001, 0x8000);
+    func_800404C4(0xf4000001, 0x100);
+    func_800404C4(0xf4000001, 0x2000);
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C881C);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C891C);
+/* The D_801E9768 entry for the result of 801c881c, or -1 when 8004e784 fails. */
+s32 func_801C891C(void) {
+    if (func_8004E784() == 0) {
+        return -1;
+    }
+    return D_801E9768[func_801C881C()];
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C8960);
+/* Finish a frame, then enable the four card events in a critical section. */
+void func_801C8960(void) {
+    func_801C7BF4();
+    func_800404D4();
+    func_80040484(D_800625A0->card->events[0]);
+    func_80040484(D_800625A0->card->events[1]);
+    func_80040484(D_800625A0->card->events[2]);
+    func_80040484(D_800625A0->card->events[3]);
+    func_800404E4();
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C8A10);
 
