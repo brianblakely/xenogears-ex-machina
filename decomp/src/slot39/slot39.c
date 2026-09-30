@@ -1930,7 +1930,153 @@ void func_801CB28C(s32 *save) {
     func_801CB184();
 }
 
+/* The load: refresh the cards (no card returns), find a slot with this
+ * game's file (none: message 62 and return 0), then run the cursor until
+ * cancel (return 0) or confirm: ask (message 65); on yes read the file in
+ * 100h chunks into a 2100h block and, when the payload's eight-bit sum matches
+ * its last byte, apply it; message 5c ends the load, a failure shows message
+ * 3e and continues. */
+#ifdef NON_MATCHING
+u8 func_801CB304(void) {
+    char path[64];
+    s32 first;
+    u8 result;
+    s32 again;
+    u8 port;
+    u8 retry;
+    s32 fd;
+    s32 file;
+    s32 done;
+    u8 *buffer;
+    u8 *p;
+    s32 sum;
+    s32 i;
+
+    result = 1;
+    again = 1;
+    first = 1;
+    func_801CADB0();
+    do {
+        if (func_801C93A8()) {
+            break;
+        }
+        if (first) {
+            if (D_800625A0->party->unk33) {
+                func_801D32B4();
+            }
+            first = 0;
+            D_800625A0->markers->visible[0] = 1;
+        }
+        if (!func_801C9BCC(1) && (D_800625A0->card->cursor = func_801C9D34(1)) == 0xff) {
+            D_800625A0->party->unk2F = 0;
+            D_800625A0->party->unkB = 0;
+            D_800625A0->loadState = 1;
+            result = 0;
+            D_800625A0->party->unkB = 0;
+            func_801CACF8(0x62, 0xff, 0);
+            break;
+        }
+        D_800625A0->party->unk2F = 1;
+        switch (func_801CA750(1)) {
+        case 1:
+            D_800625A0->markers->unk144[0] = 0;
+            D_800625A0->card->mode = 0;
+            port = 0;
+            if (D_800625A0->card->cursor < 15) {
+                __builtin_memcpy(path, D_801C50A8, 6);
+            } else {
+                __builtin_memcpy(path, D_801C50B0, 6);
+                port = 1;
+            }
+            strcat(path,
+                   D_800625A0->card->files[D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]]].name);
+            if (!func_801CACF8(0x65, 0xff, 1)) {
+                D_800625A0->card->unk4F80 = 0xff;
+            } else {
+                func_801D2F4C(0x3b);
+                retry = 5;
+                D_800625A0->sounds = 0;
+                do {
+                    fd = open(path, 1);
+                    if (fd == -1) {
+                        fd = 0;
+                        func_801C8CA4(port);
+                    }
+                    file = fd;
+                } while (fd == 0 && --retry != 0);
+                if (fd != 0) {
+                    done = 0;
+                    D_800625A0->party->unk2F = 0;
+                    buffer = func_80031BDC(0x2100, 1);
+                    p = buffer;
+                    D_800625A0->party->unkB = 0;
+                    func_801CAE08(1);
+                    do {
+                        func_801C7BF4();
+                        retry = 5;
+                        do {
+                            if (func_80040544(fd, p, 0x100) != 0x100) {
+                                fd = 0;
+                                func_801C8CA4(port);
+                            }
+                        } while (fd == 0 && --retry != 0);
+                        if (fd == 0) {
+                            func_80040564(file);
+                            goto release;
+                        }
+                        done += 0x100;
+                        p += 0x100;
+                    } while (done < D_800625A0->card->saveBlocks << 13);
+                    func_80040564(fd);
+                    p = buffer + 0x100;
+                    sum = 0;
+                    for (i = 0; i < 0x1eff; i++) {
+                        sum += *p++;
+                    }
+                    if ((u8)sum == *p) {
+                        func_801C72BC(1);
+                        func_801CB28C((s32 *)(buffer + 0x100));
+                        func_801C72BC(0x11);
+                    } else {
+                        fd = 0;
+                    }
+                release:
+                    func_800320E8(buffer);
+                }
+                func_801CAE08(2);
+                func_801D32B4();
+                if (fd != 0) {
+                    again = 0;
+                    D_800625A0->sounds = 1;
+                    func_801C8574(0x34);
+                    D_800625A0->sounds = 0;
+                    func_801CACF8(0x5c, 0xff, 0);
+                } else {
+                    func_801CACF8(0x3e, 0xff, 0);
+                    D_800625A0->card->mode = 2;
+                }
+                func_801CAE08(0);
+                D_800625A0->card->scanned[0] = 0;
+                D_800625A0->card->scanned[1] = 0;
+                D_800625A0->card->unk4F8C[0] = 0xff;
+                D_800625A0->card->unk4F8C[1] = 0xff;
+            }
+            D_800625A0->markers->unk144[0] = 1;
+            break;
+        case 2:
+            again = 0;
+            result = 0;
+            D_800625A0->sounds = 1;
+            break;
+        }
+    } while (again);
+    D_800625A0->card->mode = 1;
+    D_800625A0->cardsPresent = 1;
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CB304);
+#endif
 
 /* The unformatted-card question for `port`: show message 29h + 3 * port and
  * wait while no input comes and the cards stay as they were; a card change

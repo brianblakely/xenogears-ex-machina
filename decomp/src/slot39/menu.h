@@ -1083,6 +1083,14 @@ extern char D_801C50B8[];         /* "__tmp_file" */
 s32 func_800405B4(char *name);    /* erase */
 void func_801D9B08(void);
 void func_801C9EF4(s32 mode, s32 slot);
+void func_801CADB0(void);
+void func_801CB28C(s32 *save);
+void func_801C8CA4(u8 port);
+u8 func_801C93A8(void);
+s32 func_801C9BCC(s32 mode);
+s32 func_801C9D34(s32 mode);
+s32 func_801CA750(s32 mode);
+void func_801CAE08(u8 mode);
 void func_801CA1D4(s32 mode, s32 slot);
 void func_801CA480(s32 mode, s32 slot);
 void func_801CA5F0(s32 mode, s32 slot);
