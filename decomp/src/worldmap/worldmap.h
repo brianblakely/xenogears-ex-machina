@@ -1514,4 +1514,7 @@ void func_8008C040(VECTOR *position, s32 radius, s32 height, u8 *hit, u8 *actor)
 s32 func_80094238(VECTOR *position, s32 table);
 void func_8007528C(void);
 
+/* worldmap_80090A84 camera pitch choice */
+extern s32 D_8009B214[3]; /* camera distance per pitch */
+
 #endif

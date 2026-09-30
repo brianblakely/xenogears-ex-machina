@@ -204,7 +204,63 @@ s32 func_80091B54(s32 index) {
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80091C18);
 
+/* Pick the camera pitch (0-2) whose view stays above the terrain: for each
+ * candidate place the camera and find the lowest of the 6x6 cells around
+ * the viewed spot; keep the current one when it is within 0x40 of fitting. */
+#ifdef NON_MATCHING /* saved registers of the pitch index, lowest cell and row start differ */
+s32 func_80091FF8(s32 current, u16 *pitches, s16 *heights) {
+    ActorScratch *scratch;
+    s32 *distance;
+    s32 i;
+    s32 base;
+    s32 left;
+    s32 lowest;
+    s32 floor;
+    s32 row;
+    s32 column;
+    s32 height;
+
+    scratch = (ActorScratch *)0x1F800000;
+    distance = D_8009B214;
+    scratch->angle.vy = D_8009BD38.vy;
+    base = D_8009D55C.target.vy >> 12;
+    scratch->angle.vz = D_8009BD38.vz;
+    for (i = 0; i < 3; i++, pitches++, distance++, heights++) {
+        lowest = 0;
+        scratch->angle.vx = *pitches;
+        func_80096F18(D_8009BD40, &D_8009BE28, *distance - ((D_8009BCDC / 2) << 12), &scratch->angle);
+        left = (D_8009BE28.target.vx + ((VIEW.eye.vx - 0x180) << 12)) & 0xFFF80000;
+        scratch->work.vz = (D_8009BE28.target.vz - ((VIEW.eye.vz + 0x180) << 12)) & 0xFFF80000;
+        for (row = 0; row < 6; row++) {
+            scratch->work.vx = left;
+            for (column = 0; column < 6; column++) {
+                func_80093354(&scratch->work);
+                height = *(s8 *)func_80093660(scratch->work.vx, scratch->work.vz);
+                scratch->work.vy = height;
+                if (height < lowest) {
+                    lowest = height;
+                }
+                scratch->work.vx += 0x80000;
+            }
+            scratch->work.vz += 0x80000;
+        }
+        floor = lowest * 8;
+        if (*heights + base + 0x50 < floor) {
+            break;
+        }
+    }
+    if (i < current) {
+        floor -= 0x50;
+        height = ((s16 *)D_8009B234)[current] + base - floor;
+        if (ABS(height) < 0x41) {
+            i = current;
+        }
+    }
+    return i;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80091FF8);
+#endif
 
 /* Choose the actor's speed for the movement mode; vehicles also get state 1. */
 s32 func_80092234(s32 index) {
