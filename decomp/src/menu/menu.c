@@ -2883,9 +2883,54 @@ void func_8008FE80(Actor *actor) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008FF24);
+/* Opponent attack mode step: against a downed opponent maybe jump in;
+ * otherwise press random inputs and wait a level-dependent time. */
+void func_8008FF24(Actor *actor, Brain *brain) {
+    if (actor->opponent->unkC4 == 4) {
+        if (brain->unk2C_9 && !brain->unk2C_11) {
+            func_8008F900(actor);
+            brain->timer = 3;
+        }
+    } else {
+        func_8008FE80(actor);
+        brain->timer = (2 - brain->unkF) * 20 + 1 + func_8003FA38() % 20;
+    }
+    func_8008F7B8(brain);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008FFEC);
+/* Opponent special move: enter the inputs of a random usable learned
+ * move, then wait a level-dependent time. Returns 1 when it knows none. */
+s32 func_8008FFEC(Actor *actor, Brain *brain) {
+    s32 pick;
+    s32 i;
+
+    /* pick first counts the moves, then selects one of them */
+    pick = actor->move_count;
+    if (pick == 0) {
+        return 1;
+    }
+    pick = func_8003FA38() % pick;
+    for (i = 0; i < 14; i++) {
+        if (actor->moves->learned[i] && actor->move_slots[i].usable) {
+            if (pick == 0) {
+                if (D_800925A4[i][0]) {
+                    func_8007639C(actor, D_800925A4[i][0]);
+                }
+                if (D_800925A4[i][1]) {
+                    func_8007639C(actor, D_800925A4[i][1]);
+                }
+                if (D_800925A4[i][2]) {
+                    func_8007639C(actor, D_800925A4[i][2]);
+                }
+                break;
+            }
+            pick--;
+        }
+    }
+    brain->timer = (2 - brain->unkF) * 20 + 1 + func_8003FA38() % 20;
+    func_8008F7B8(brain);
+    return 0;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80090174);
 

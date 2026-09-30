@@ -32,6 +32,19 @@ typedef struct Brain {
     s16 unk30;
 } Brain;
 
+/* Which special moves an actor has learned and may use. */
+typedef struct MoveList {
+    u8 unk0[0xA];
+    u8 learned[14]; /* 0x0A */
+} MoveList;
+
+typedef struct MoveSlot {
+    u8 unk0[0x3];
+    u8 usable;
+} MoveSlot;
+
+extern u8 D_800925A4[14][3]; /* each special move's command inputs */
+
 extern s32 D_8009284C;
 extern u8 D_80099DA2; /* the opponent's current command */
 extern u8 D_80092848; /* the command the brain last started */

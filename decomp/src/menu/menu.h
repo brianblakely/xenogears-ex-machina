@@ -86,7 +86,8 @@ typedef struct Actor {
     u8 unk4C[0x8];
     s32 angle;           /* 0x54: facing, 4096 = full turn */
     s32 target_angle;    /* 0x58 */
-    u8 unk5C[0x28];
+    u8 unk5C[0x24];
+    struct MoveSlot *move_slots; /* 0x80 */
     s32 unk84;
     u8 unk88[0x10];
     s32 accel;           /* 0x98 */
@@ -119,12 +120,15 @@ typedef struct Actor {
     Shot *nearest_shot;  /* 0x8F8 */
     u8 unk8FC[0xD];
     u8 kind;             /* 0x909: model kind */
-    u8 unk90A[0x42];
+    u8 unk90A[0x7];
+    u8 move_count;       /* 0x911: special moves the opponent may pick */
+    u8 unk912[0x3A];
     Vector core;         /* 0x94C: where shots home in */
     u8 unk95C[0xC78];
     u8 unk15D4[0x28];
     struct Brain *brain; /* 0x15FC: the computer opponent's state */
-    u8 unk1600[0x54];
+    struct MoveList *moves; /* 0x1600 */
+    u8 unk1604[0x50];
     s32 unk1654;
     s32 unk1658;
     u8 unk165C[0x8];
