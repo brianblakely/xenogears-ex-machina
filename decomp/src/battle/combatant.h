@@ -31,8 +31,7 @@ typedef struct {
     u8 pad90[0xA4 - 0x90];
 } UnitStatus;
 
-/* Combatant record: 11 slots (0-2 party, 3-10 enemies) of 0x170 bytes in the
- * static array D_800CCCE8; D_800C34B0 points at it. */
+/* Combatant record: 11 slots (0-2 party, 3-10 enemies) of 0x170 bytes. */
 typedef struct {
     UnitStatus pilot;
     UnitStatus gear;
@@ -43,12 +42,39 @@ typedef struct {
     u8 pad16C[0x170 - 0x16C];
 } Combatant;
 
-extern Combatant D_800CCCE8[11];
-extern Combatant *D_800C34B0;
+/* Command descriptor (0x28 bytes); the party's command tables hold 38 per
+ * member. */
+typedef struct {
+    u8 pad0[0x14];
+    u8 accuracy;            /* 0x14 */
+    u8 pad15[0x20 - 0x15];
+    u8 attributes[4];       /* 0x20: copied to the battle's current command */
+    u8 pad24[0x28 - 0x24];
+} CommandDescriptor;
 
-extern u8 D_800C34AD;       /* formation mode */
-extern u8 D_800C3E04;       /* attacker slot */
-extern Combatant *D_800C3E34; /* target record */
+/* Battle work area D_800CCCE8; D_800C34B0 points at it. */
+typedef struct {
+    Combatant records[11];                  /* 0x0000 */
+    u8 padFD0[0x1058 - 0xFD0];
+    CommandDescriptor partyCommands[3][38]; /* 0x1058 */
+    u8 pad2228[0x5FAC - 0x2228];
+    u16 targetMask;                         /* 0x5FAC */
+    u16 targetMask2;                        /* 0x5FAE */
+    u8 pad5FB0[0x5FBC - 0x5FB0];
+    u8 commandAttributes[4];                /* 0x5FBC */
+    u8 commandIndexCopy;                    /* 0x5FC0 */
+    u8 attackerIndex;                       /* 0x5FC1 */
+    u8 commandIndex;                        /* 0x5FC2 */
+} BattleWork;
+
+extern BattleWork D_800CCCE8;
+extern BattleWork *D_800C34B0;
+
+extern u8 D_800C34AD;                   /* formation mode */
+extern CommandDescriptor *D_800C3DFC;   /* current command descriptor */
+extern Combatant *D_800C3E00;           /* attacker record */
+extern u8 D_800C3E04;                   /* attacker slot */
+extern Combatant *D_800C3E34;           /* target record */
 
 void func_80099CF0(UnitStatus *gear, Combatant *record, volatile u8 *timers);
 

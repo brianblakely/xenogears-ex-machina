@@ -902,10 +902,8 @@ s32 func_80099498(void) {
     switch (D_800C34AD) {
     case 2:
         count = 0;
-        for (i = 0; i < 3;) {
-            Combatant *member = &D_800C34B0[i];
-            i++;
-            if (member->pilot.status7C & 0xC002) {
+        for (i = 0; i < 3; i++) {
+            if (D_800C34B0->records[i].pilot.status7C & 0xC002) {
                 count++;
             }
         }
@@ -915,10 +913,8 @@ s32 func_80099498(void) {
         break;
     case 3:
         count = 0;
-        for (i = 0; i < 3;) {
-            Combatant *member = &D_800C34B0[i];
-            i++;
-            if (member->pilot.status7C & 0xC002) {
+        for (i = 0; i < 3; i++) {
+            if (D_800C34B0->records[i].pilot.status7C & 0xC002) {
                 count++;
             }
         }
@@ -941,10 +937,10 @@ void func_800995A0(u8 slot, u8 kind, u16 flag, u8 amount) {
     u8 index = 0xF;
     u16 state;
 
-    if (D_800CCCE8[D_800C3E04].pilot.status88.half.permanent & 0x2000) {
+    if (D_800CCCE8.records[D_800C3E04].pilot.status88.half.permanent & 0x2000) {
         amount *= 2;
     }
-    record = &D_800CCCE8[slot];
+    record = &D_800CCCE8.records[slot];
     if (kind == 0) {
         index = (flag == 0x1000) ? 1 : (flag == 0x2000) ? 0 : 0xF;
     }
@@ -1022,19 +1018,19 @@ void func_800995A0(u8 slot, u8 kind, u16 flag, u8 amount) {
             break;
         }
     }
-    D_800CCCE8[slot].statusTimers[index] = amount;
+    D_800CCCE8.records[slot].statusTimers[index] = amount;
 }
 
 /* Count down slot's timed statuses at the start of its turn, clearing each one
  * whose timer runs out; a slot in a gear counts down its gear's statuses
  * instead (80099CF0). Returns a mask of the statuses that ended. */
 u16 func_80099890(u8 slot) {
-    Combatant *record = &D_800CCCE8[slot];
-    UnitStatus *gear = &D_800CCCE8[slot].gear;
-    volatile u8 *timers = D_800CCCE8[slot].statusTimers;
+    Combatant *record = &D_800CCCE8.records[slot];
+    UnitStatus *gear = &D_800CCCE8.records[slot].gear;
+    volatile u8 *timers = D_800CCCE8.records[slot].statusTimers;
     u16 ended;
 
-    if (D_800CCCE8[slot].flags15A & 0x80) {
+    if (D_800CCCE8.records[slot].flags15A & 0x80) {
         func_80099CF0(gear, record, timers);
         return 0;
     }
