@@ -1289,7 +1289,26 @@ void func_801CE0CC(MenuPanel *panel, u8 a, u8 b, s32 c, s32 d, u8 e) {
     panel->buffer = D_800625A0->bufferIndex;
 }
 
+/* Project `count` quads: each takes the next four of `verts` into every
+ * other quad of `polys` from `index` and is added to the frame. */
+#ifdef NON_MATCHING
+void func_801CE198(s32 count, SVECTOR *verts, POLY_FT4 *polys, s32 index) {
+    s32 p;
+    s32 flag;
+    s32 i;
+    POLY_FT4 *poly;
+
+    for (i = 0; i < count; i++) {
+        poly = &polys[index];
+        func_8004A73C(&verts[i * 4], &verts[i * 4 + 1], &verts[i * 4 + 2], &verts[i * 4 + 3], (s32 *)&poly->x0,
+                      (s32 *)&poly->x1, (s32 *)&poly->x2, (s32 *)&poly->x3, &p, &flag);
+        index += 2;
+        func_80043B48(&D_800625A0->current->ot[4], poly);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CE198);
+#endif
 
 /* Add `count` quads of `polys` to the frame, every other one from `first`. */
 #ifdef NON_MATCHING
@@ -1352,7 +1371,7 @@ void func_801CEB5C(void) {
 
     if (D_800625A0->party->unk8 != 0) {
         block = D_800625A0->block35C;
-        func_801CE198(block->kind, block->sprites, (u8 *)block, block->buffer);
+        func_801CE198(block->kind, block->verts, block->polys, block->buffer);
         func_801CE860();
     }
 }
@@ -1364,8 +1383,8 @@ void func_801CEBB4(void) {
     if (D_800625A0->party->unk4B != 0) {
         for (i = 0; i < 5; i++) {
             if (D_800625A0->labels360->visible[i] != 0) {
-                func_801CE198(1, D_800625A0->labels360->labels[i].sprites,
-                              (u8 *)&D_800625A0->labels360->labels[i], D_800625A0->labels360->count);
+                func_801CE198(1, D_800625A0->labels360->labels[i].verts,
+                              D_800625A0->labels360->labels[i].polys, D_800625A0->labels360->count);
             }
         }
     }
@@ -1440,7 +1459,7 @@ void func_801D0E38(void) {
 
     for (i = 0; i < 6; i++) {
         if (D_800625A0->party->unk14[i] != 0 && D_800625A0->partyLabels[i].visible != 0) {
-            func_801CE198(1, D_800625A0->partyLabels[i].sprites, (u8 *)&D_800625A0->partyLabels[i],
+            func_801CE198(1, D_800625A0->partyLabels[i].verts, D_800625A0->partyLabels[i].polys,
                           D_800625A0->partyLabels[i].count);
         }
     }
@@ -1460,7 +1479,7 @@ void func_801D0ED4(void) {
 
     for (i = 0; i < 8; i++) {
         if (D_800625A0->party->unk38[i] != 0) {
-            func_801CE198(1, D_800625A0->labels10E0[i].sprites, (u8 *)&D_800625A0->labels10E0[i],
+            func_801CE198(1, D_800625A0->labels10E0[i].verts, D_800625A0->labels10E0[i].polys,
                           D_800625A0->labels10E0[i].count);
         }
     }
@@ -1472,7 +1491,7 @@ void func_801D0F54(void) {
 
     for (i = 0; i < 6; i++) {
         if (D_800625A0->party->unk40[i] != 0) {
-            func_801CE198(1, D_800625A0->labels14E0[i].sprites, (u8 *)&D_800625A0->labels14E0[i],
+            func_801CE198(1, D_800625A0->labels14E0[i].verts, D_800625A0->labels14E0[i].polys,
                           D_800625A0->labels14E0[i].count);
         }
     }
@@ -1496,7 +1515,7 @@ void func_801D1030(void) {
         for (i = 0; i < 3; i++) {
             label = D_800625A0->blocks1DE0[i];
             if (label->visible != 0) {
-                func_801CE198(1, label->sprites, (u8 *)label, label->count);
+                func_801CE198(1, label->verts, label->polys, label->count);
             } else {
                 func_80043B48(&D_800625A0->current->ot[4], &label->polys[label->count]);
             }
@@ -1510,7 +1529,7 @@ void func_801D10DC(void) {
 
     for (i = 0; i < 6; i++) {
         if (D_800625A0->party->unk54[i] != 0 && D_800625A0->labels18E0[i].visible != 0) {
-            func_801CE198(1, D_800625A0->labels18E0[i].sprites, (u8 *)&D_800625A0->labels18E0[i],
+            func_801CE198(1, D_800625A0->labels18E0[i].verts, D_800625A0->labels18E0[i].polys,
                           D_800625A0->labels18E0[i].count);
         }
     }
@@ -1563,21 +1582,21 @@ void func_801D13F8(void) {
 
 /* While party flag +49 is set, draw the sprites of the block at +43c. */
 void func_801D1464(void) {
-    u8 *block;
+    MenuBlock43C *block;
 
     if (D_800625A0->party->unk49 != 0) {
         block = D_800625A0->block43C;
-        func_801CE198(1, block + 0x50, block, block[0x70]);
+        func_801CE198(1, block->verts, block->polys, block->buffer);
     }
 }
 
 /* While party flag +53 is set, draw the sprites of the block at +440. */
 void func_801D14B0(void) {
-    u8 *block;
+    MenuBlock440 *block;
 
     if (D_800625A0->party->unk53 != 0) {
         block = D_800625A0->block440;
-        func_801CE198(4, block + 0x140, block, block[0x1c0]);
+        func_801CE198(4, block->verts, block->polys, block->buffer);
     }
 }
 
@@ -1597,7 +1616,7 @@ void func_801D1AAC(void) {
     for (i = 0; i < 2; i++) {
         if (D_800625A0->party->unk50[i] != 0) {
             block = D_800625A0->blocks444[i];
-            func_801CE198(1, block->sprites, (u8 *)block, block->count);
+            func_801CE198(1, block->verts, block->polys, block->count);
         }
     }
 }

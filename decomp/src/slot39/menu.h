@@ -266,7 +266,8 @@ typedef struct GearRecord {
 /* A laid-out label: its quads and sprite list. */
 typedef struct MenuLabelSlot {
     POLY_FT4 polys[2]; /* 0 */
-    u8 sprites[0x28]; /* 50 */
+    SVECTOR verts[4]; /* 50 */
+    u8 pad70[0x8];
     u8 *pixels; /* 78 */
     u8 pad7C[0x1];
     u8 count; /* 7D: sprites in the list; also the quad shown */
@@ -288,7 +289,7 @@ typedef struct MenuSpriteLists {
 /* An image block (*(state + 444)): quads and sprite list. */
 typedef struct MenuImageBlock {
     POLY_FT4 polys[2]; /* 0 */
-    u8 sprites[0x20]; /* 50 */
+    SVECTOR verts[4]; /* 50 */
     s32 unk70; /* 70 */
     u8 unk74; /* 74 */
     u8 count; /* 75 */
@@ -378,8 +379,10 @@ typedef struct MenuBlock358 {
 
 /* The equipment panel block (*(state + 35c)). */
 typedef struct MenuBlock35C {
-    u8 pad0[0x2420];
-    u8 sprites[0xed1]; /* 2420 */
+    POLY_FT4 polys[231]; /* 0 */
+    u8 pad2418[0x8];
+    SVECTOR verts[474]; /* 2420 */
+    u8 pad32F0[0x1];
     u8 buffer; /* 32F1 */
     u8 pad32F2[0x1];
     u8 kind; /* 32F3 */
@@ -391,6 +394,22 @@ typedef struct MenuPanel {
     u8 buffer; /* BE6 */
     u8 shown; /* BE7 */
 } MenuPanel;
+
+/* A one-quad sprite (*(state + 43c)). */
+typedef struct MenuBlock43C {
+    POLY_FT4 polys[2]; /* 0 */
+    SVECTOR verts[4]; /* 50 */
+    u8 buffer; /* 70 */
+    u8 pad71[0x3];
+} MenuBlock43C;
+
+/* A four-quad sprite (*(state + 440)). */
+typedef struct MenuBlock440 {
+    POLY_FT4 polys[8]; /* 0 */
+    SVECTOR verts[16]; /* 140 */
+    u8 buffer; /* 1C0 */
+    u8 pad1C1[0x3];
+} MenuBlock440;
 
 /* The menu mode's state (*D_800625A0). */
 typedef struct MenuState {
@@ -445,8 +464,8 @@ typedef struct MenuState {
     u8 pad430[0x4];
     u8 *block434; /* 434 */
     u8 *block438; /* 438 */
-    u8 *block43C; /* 43C */
-    u8 *block440; /* 440 */
+    MenuBlock43C *block43C; /* 43C */
+    MenuBlock440 *block440; /* 440 */
     MenuImageBlock *blocks444[10]; /* 444 */
     s32 sheetEntries[4][6]; /* 46C: sprite sheet records (80026338) */
     s32 unk4CC; /* 4CC */
@@ -624,7 +643,7 @@ void func_801CE660(void);
 void func_801CEB5C(void);
 void func_801CEBB4(void);
 void func_801CE464(void);
-void func_801CE198(u8 kind, u8 *sprites, u8 *block, u8 count);
+void func_801CE198(s32 count, SVECTOR *verts, POLY_FT4 *polys, s32 index);
 void func_801CE338(void);
 void func_801CE3C8(void);
 void func_801CE860(void);
