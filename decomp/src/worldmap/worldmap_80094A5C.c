@@ -241,7 +241,13 @@ void func_80097D64(void) {
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80097DC0);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80098044);
+/* Compute the four horizon plane normals. */
+void func_80098044(void) {
+    func_8004A4D8(&D_8009BB6C, &D_8009BB4C, &D_8009C828);
+    func_8004A4D8(&D_8009BB4C, &D_8009BB7C, &D_8009C844);
+    func_8004A4D8(&D_8009BB8C, &D_8009BB5C, &D_8009C874);
+    func_8004A4D8(&D_8009BB5C, &D_8009BB9C, &D_8009C7F0);
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_800980D4);
 

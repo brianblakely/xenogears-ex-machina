@@ -88,7 +88,35 @@ void func_800866C8(void) {
     func_800320E8(D_8009D7F8);
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80086700);
+/* Move the 80 drifting positions, wrapping them on the 0x2000-unit world. */
+void func_80086700(void) {
+    Drift *drift;
+    DriftVelocity *velocity;
+    s32 x;
+    s32 z;
+    s32 i;
+
+    for (i = 0; i < 0x50; i++) {
+        drift = &D_8009D150[i];
+        velocity = &D_8009CEB4[i];
+        x = drift->x + velocity->dx;
+        z = drift->z + velocity->dz;
+        if (x > 0x1FFFFFF) {
+            x -= 0x2000000;
+        }
+        if (x < 0) {
+            x += 0x2000000;
+        }
+        if (z > 0x1FFFFFF) {
+            z -= 0x2000000;
+        }
+        if (z < 0) {
+            z += 0x2000000;
+        }
+        drift->x = x;
+        drift->z = z;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80086798);
 
@@ -169,7 +197,17 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80088570);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008868C);
+/* Link the area's scene objects in the listed (parent, child) pairs. */
+s32 func_8008868C(void) {
+    s32 i;
+    s32 base;
+
+    base = D_8009B688[D_8009C610];
+    for (i = 0; D_8009AFA0[i] != -1; i += 2) {
+        func_800848B4(base + D_8009AFA0[i], base + D_8009AFA0[i + 1]);
+    }
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80088720);
 
@@ -272,7 +310,32 @@ s32 func_80088F5C(void) {
     return 3;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80088F64);
+/* Clear the area objects and allocate the effect slots. */
+void func_80088F64(void) {
+    AreaObject *object;
+    EffectSlot *slot;
+    s32 i;
+
+    object = D_8009BCC0;
+    for (i = 0x1FF; i != -1; i--) {
+        object->unk4 = 0;
+        object->unkA = 0;
+        object->unk12 = 0;
+        object->unk18 = 0;
+        object->unk16 = 0;
+        object->unk14 = 0;
+        object->unk20 = 0;
+        object->unk1E = 0;
+        object->unk1C = 0;
+        object++;
+    }
+    D_8009BDF4 = slot = func_80031BDC(0x4C00, 0);
+    for (i = 0xFF; i != -1; i--) {
+        slot->unk6 = 0;
+        slot->active = 0;
+        slot++;
+    }
+}
 
 /* Free the effect table. */
 void func_80088FF4(void) {
@@ -291,9 +354,35 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_800893E0);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_800894C8);
+/* Deactivate the eight area objects of group `group`. */
+void func_800894C8(s32 group) {
+    AreaObject *object;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80089514);
+    object = &D_8009BCC0[group * 8];
+    for (i = 7; i != -1; i--) {
+        object->flags &= 0x7F;
+        object++;
+    }
+}
+
+/* Stop the effects that belong to group `group`. */
+void func_80089514(s32 group) {
+    EffectSlot *slot;
+    s32 i;
+    s32 j;
+
+    slot = D_8009BDF4;
+    for (i = 0xFF; i != -1; i--) {
+        for (j = 0; j < 8; j++) {
+            if (slot->id == group * 8 + j && slot->unk6 != 0) {
+                slot->active = 0;
+                break;
+            }
+        }
+        slot++;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80089580);
 

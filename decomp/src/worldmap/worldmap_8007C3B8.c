@@ -10,11 +10,57 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007C3B8", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007C3B8", func_8007CD20);
 
+/* Link scene object 6 to 5, hide 5 and reset its rotation; place the actor. */
+#ifdef NON_MATCHING /* actor and constants swap registers */
+s32 func_8007CE84(s32 index) {
+    WorldmapActor *actor;
+
+    func_800848B4(5, 6);
+    D_8009C620[5].visible = 0;
+    D_8009C620[5].angle.vz = 0;
+    D_8009C620[5].angle.vy = 0;
+    D_8009C620[5].angle.vx = 0;
+    func_8004A92C(&D_8009C620[5].angle, &D_8009C620[5].matrix);
+    actor = &D_8009BE24[index];
+    actor->unk40 = -0x4000;
+    actor->position.vx = 0xB00000;
+    actor->state = 0;
+    actor->unk3C = 0;
+    actor->unk38 = 0;
+    actor->position.vy = 0;
+    actor->position.vz = 0x200000;
+    return 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007C3B8", func_8007CE84);
+#endif
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007C3B8", func_8007CF18);
 
+/* Link scene objects 7 and 8 to 9, hide 9 and reset its rotation; place the actor. */
+#ifdef NON_MATCHING /* actor and constants swap registers */
+s32 func_8007D078(s32 index) {
+    WorldmapActor *actor;
+
+    func_800848B4(9, 7);
+    func_800848B4(9, 8);
+    D_8009C620[9].visible = 0;
+    D_8009C620[9].angle.vz = 0;
+    D_8009C620[9].angle.vy = 0;
+    D_8009C620[9].angle.vx = 0;
+    func_8004A92C(&D_8009C620[9].angle, &D_8009C620[9].matrix);
+    actor = &D_8009BE24[index];
+    actor->unk40 = -0x4000;
+    actor->unk3C = 0;
+    actor->unk38 = 0;
+    actor->position.vx = 0xC00000;
+    actor->position.vy = 0;
+    actor->position.vz = 0;
+    return 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007C3B8", func_8007D078);
+#endif
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007C3B8", func_8007D110);
 
@@ -70,7 +116,29 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007C3B8", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007C3B8", func_8007D4A4);
 
+/* Link scene object 14 to 13, hide 13 and reset its rotation; place the actor. */
+#ifdef NON_MATCHING /* actor and constants swap registers */
+s32 func_8007D600(s32 index) {
+    WorldmapActor *actor;
+
+    func_800848B4(0xD, 0xE);
+    D_8009C620[13].visible = 0;
+    D_8009C620[13].angle.vz = 0;
+    D_8009C620[13].angle.vy = 0;
+    D_8009C620[13].angle.vx = 0;
+    func_8004A92C(&D_8009C620[13].angle, &D_8009C620[13].matrix);
+    actor = &D_8009BE24[index];
+    actor->unk40 = -0x4000;
+    actor->position.vx = 0xF80000;
+    actor->unk3C = 0;
+    actor->unk38 = 0;
+    actor->position.vy = 0;
+    actor->position.vz = 0x380000;
+    return 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007C3B8", func_8007D600);
+#endif
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007C3B8", func_8007D690);
 

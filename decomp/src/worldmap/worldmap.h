@@ -251,7 +251,6 @@ typedef struct {
 } SpotHeader;
 
 extern void *D_8009D308, *D_8009CD48, *D_8009BD30, *D_8009D784;
-extern void *D_8009BCC0;
 extern s32 *D_8009D7C8, *D_8009D77C; /* texture animation sections: count, offsets */
 extern void *D_8009D73C[16];
 extern s32 *D_8009BD00;
@@ -442,7 +441,7 @@ void func_80083108(SceneObject *object, PolyFT3 *prims, s32 count, s32 mode);
 
 void func_8003F968(void *dest, void *src, s32 size); /* copy memory */
 
-extern void *D_8009D7E8, *D_8009D7EC, *D_8009CEB4, *D_8009D150, *D_8009D7F8, *D_8009D7FC;
+extern void *D_8009D7E8, *D_8009D7EC, *D_8009D7F8, *D_8009D7FC;
 extern u16 D_8009B64C[][2]; /* per area: two scene objects */
 extern u16 D_8009B674[];    /* per area: scene object */
 
@@ -450,7 +449,7 @@ void func_80087904(SceneObject *object, void *prims, s32 count, s32 mode);
 
 extern s16 D_8009AFDC[]; /* scene objects to show; -1 ends */
 extern u16 D_8006EF64;
-extern void *D_8009BDF4, *D_8009BE1C, *D_8009BE20;
+extern void *D_8009BE1C, *D_8009BE20;
 
 void func_8008BFD4(s32 index, Vec3 *position, s32 x, s32 z);
 
@@ -556,6 +555,66 @@ void func_800245D8(s32 handle, s32 mode);
 void func_80022000(s32 handle, s32 scale);
 void func_80032F54(void *window, s32 x, s32 y, s32 w, s32 h, s32 a, s32 b);
 void func_80034614(void *window);
+
+/* Area object (0x54 bytes, 512 of them, eight per group). */
+typedef struct {
+    s32 unk0;
+    s32 unk4;
+    s16 unk8;
+    s16 unkA;
+    s32 unkC;
+    s16 unk10;
+    s16 unk12;
+    s16 unk14;
+    s16 unk16;
+    s16 unk18;
+    s16 unk1A;
+    s16 unk1C;
+    s16 unk1E;
+    s16 unk20;
+    u8 pad22[0x2D];
+    u8 flags;     /* 0x4F: 0x80 active */
+    u8 pad50[4];
+} AreaObject;
+
+/* Effect slot (0x4C bytes, 256 of them). */
+typedef struct {
+    s16 id;
+    s16 unk2;
+    s16 active;
+    s16 unk6;
+    u8 pad8[0x44];
+} EffectSlot;
+
+typedef struct {
+    s32 vx, vy, vz, pad;
+} VECTOR;
+
+/* Drifting position (0x10 bytes) and its velocity (8 bytes). */
+typedef struct {
+    s32 x;
+    s32 unk4;
+    s32 z;
+    s32 unkC;
+} Drift;
+
+typedef struct {
+    s16 dx;
+    s16 unk2;
+    s16 dz;
+    s16 unk6;
+} DriftVelocity;
+
+extern AreaObject *D_8009BCC0;
+extern EffectSlot *D_8009BDF4;
+extern Drift *D_8009D150;
+extern DriftVelocity *D_8009CEB4;
+extern VECTOR D_8009BB4C, D_8009BB5C, D_8009BB6C, D_8009BB7C, D_8009BB8C, D_8009BB9C;
+extern VECTOR D_8009C7F0, D_8009C828, D_8009C844, D_8009C874;
+extern s16 D_8009AFA0[]; /* object link pairs; -1 ends */
+extern u16 D_8009B688[];
+
+void func_8004A4D8(VECTOR *a, VECTOR *b, VECTOR *out); /* OuterProduct0 */
 
 /* Frame state. */
 typedef struct {
