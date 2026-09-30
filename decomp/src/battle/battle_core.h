@@ -591,7 +591,14 @@ u8 func_8007EF6C(u8 **pc, u8 enemy, u8 count);
 void func_80079934(u8 **pc);
 void func_800728B8(POLY_FT4 *prims, s32 count, s32 first);
 void func_80073380(s32 member);
-u8 func_80072F38(s32 member, u8 flag);
+u8 func_80072F38(s32 member, u8 inGear);
+extern s16 D_800D3330;     /* panel member maximum HP */
+extern s16 D_800D2FE0;     /* its digits' remainder */
+extern s16 D_800D2E58;     /* panel member HP */
+extern s16 D_800D2D38;     /* its digits' remainder */
+extern s32 D_800D333C;     /* panel gear HP */
+extern s32 D_800D3018;     /* its digits' remainder */
+extern s32 D_800D3668;     /* panel gear maximum HP */
 void func_80072DA8(s32 member, s32 mode);
 void func_80072A9C(s32 member, s32 mode);
 extern u8 D_800C3E08[3]; /* panel value digits */
