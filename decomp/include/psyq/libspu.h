@@ -39,5 +39,8 @@ typedef void (*SpuIRQCallbackProc)(void);
 SpuIRQCallbackProc SpuSetIRQCallback(SpuIRQCallbackProc func);
 long SpuSetReverbModeType(long mode);
 void SpuSetReverbModeDepth(short depth_left, short depth_right);
+void SpuSetReverbModeDelayTime(long delay);
+void SpuSetReverbModeFeedback(long feedback);
+void SpuGetReverbModeType(long *type);
 
 #endif

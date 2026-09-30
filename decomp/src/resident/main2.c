@@ -1916,15 +1916,17 @@ void func_8003890C(SoundBank *bank, s32 enable) {
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038934);
 
-extern s32 D_800595A4;
-extern s32 D_800595DC;
-extern s32 D_800595E0;
+extern s32 D_800595A4; /* the zeroed transfer buffer */
+extern s32 D_800595DC; /* next SPU address to clear */
+extern s32 D_800595E0; /* bytes left to clear */
+extern u8 D_80059409, D_8005940A, D_8005940B; /* reverb type, delay and feedback */
+extern SpuVolume D_8005940C;                   /* reverb depth */
 
-/* Start the reverb work area with parameters a/b, reserving its SPU memory
- * on first use. */
-void func_80038AD4(s32 a, s32 b) {
-    D_800595DC = a;
-    D_800595E0 = b;
+/* Clear `size` bytes of SPU memory at `address` (the reverb work area)
+ * from a zeroed buffer, allocated on first use, in chained transfers. */
+void func_80038AD4(s32 address, s32 size) {
+    D_800595DC = address;
+    D_800595E0 = size;
     if (D_800595A4 == 0) {
         D_800595A4 = (s32)func_80038F18(0x840);
         if (D_800595A4 == 0) {
@@ -1955,7 +1957,34 @@ typedef struct {
 
 extern SoundVolumes D_8005A3C0;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038B4C);
+/* Clear the next part (at most 0x840 bytes, else 0x800) of the reverb work
+ * area, chaining itself as the transfer callback; when done, release the
+ * buffer and restore the reverb settings. */
+void func_80038B4C(void) {
+    s32 size;
+    s32 address;
+
+    if (D_800595E0 == 0) {
+        func_80039144((void *)D_800595A4);
+        D_800595A4 = 0;
+        SpuSetReverbModeDepth(D_8005940C.left, D_8005940C.right);
+        SpuSetReverbModeDelayTime(D_8005940A);
+        SpuSetReverbModeFeedback(D_8005940B);
+        D_8005957C &= ~0x20;
+        return;
+    }
+    size = 0x800;
+    if (D_800595E0 <= 0x840) {
+        size = D_800595E0;
+    }
+    address = D_800595DC;
+    D_800595E0 -= size;
+    D_800595DC = address + size;
+    func_8003BC10(address, (u8 *)D_800595A4, size, func_80038B4C);
+    if (!(D_8005957C & 0x10)) {
+        func_8003BC10(address, (u8 *)D_800595A4, size, NULL);
+    }
+}
 
 /* Set the master volume at once, or fade to it over `frames`. */
 void func_80038C68(s32 volume, s32 frames) {
@@ -2004,8 +2033,6 @@ void func_80038DB4(s32 reverb, s32 mix) {
     D_8005A3C0.attr.mask |= 0x300;
     SpuSetCommonAttr(&D_8005A3C0.attr);
 }
-
-extern SpuVolume D_8005940C;
 
 /* Apply the master and CD volumes. */
 void func_80038DF4(void) {
