@@ -1,16 +1,118 @@
-#include "common.h"
+#include "menu.h"
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800707A8);
+/* Start the menu camera: mode 3 setup and its script block. */
+void func_800707A8(void) {
+    func_80083C0C(3);
+    func_800346D4(D_80092954);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800707D8);
+/* One easing step from current toward target: the remaining distance
+ * (rounded away from zero) divided by the number of steps. */
+s32 func_800707D8(s32 target, s32 current, s32 steps) {
+    s32 delta = target - current;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80070808);
+    if (delta < 0) {
+        delta++;
+        delta -= steps;
+    } else {
+        delta--;
+        delta += steps;
+    }
+    return delta / steps;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800708C4);
+/* Ease the camera eye toward target over the given number of steps; the
+ * eye height is compared including the current lift. */
+void func_80070808(Vector *target, s32 steps) {
+    D_8009867C.vx += func_800707D8(target->vx, D_8009867C.vx, steps);
+    D_8009867C.vz += func_800707D8(target->vz, D_8009867C.vz, steps);
+    D_8009867C.vy += func_800707D8(target->vy, D_8009867C.vy + D_800925F4, steps);
+}
+
+/* Ease the camera look-at point toward target, limited by the collision
+ * step check. */
+void func_800708C4(Vector *target, s32 steps) {
+    Vector step;
+
+    step.vx = func_800707D8(target->vx, D_8009871C.vx, steps);
+    step.vy = func_800707D8(target->vy, D_8009871C.vy, steps);
+    step.vz = func_800707D8(target->vz, D_8009871C.vz, steps);
+    func_800828F8(&D_8009871C, &step, 0x3D00);
+    D_8009871C.vx += step.vx;
+    D_8009871C.vy += step.vy;
+    D_8009871C.vz += step.vz;
+}
 
 INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu", D_8006FAF0);
 
+#ifdef NON_MATCHING
+/* Place the menu camera for one of the view modes. Does not match: GCC
+ * 8-aligns the jump table (original at 0x8006faf4), and cases 3/4 are
+ * cross-jumped after the look-at copy rather than before the lift store. */
+void func_8007099C(u32 mode) {
+    Vector target;
+
+    switch (mode) {
+    case 0:
+        func_80083738(&D_8009872C, &D_80097010);
+        break;
+    case 1:
+        target = D_8009872C;
+        D_800925F4 = 0;
+        target.vy -= 0xA0;
+        func_80070808(&target, 4);
+        break;
+    case 2:
+        target = D_80097010;
+        D_800925F4 = 0;
+        target.vy -= 0xA0;
+        func_80070808(&target, 4);
+        break;
+    case 3:
+        D_800925F4 = 0xA0;
+        target = D_80099078;
+        target.vy += D_800925F4;
+        func_80070808(&target, 0x10);
+        target.vx = D_8009872C.vx + ((func_8003F8B0(D_80098780 + 0xA80) * 0xD0) >> 12);
+        target.vy = D_8009872C.vy - 0x20 - D_800925F4;
+        target.vz = D_8009872C.vz + ((func_8003F8CC(D_80098780 + 0xA80) * 0xD0) >> 12);
+        func_800708C4(&target, 0x46);
+        {
+            s32 top = func_80082488(&D_8009871C, 0) - 0x40 - D_800925F4;
+            if (top < D_8009871C.vy) {
+                D_8009871C.vy = top;
+            }
+        }
+        break;
+    case 4:
+        D_800925F4 = 0x80;
+        target = D_80099078;
+        target.vy += D_800925F4;
+        func_80070808(&target, 0x10);
+        target.vx = D_8009872C.vx + ((func_8003F8B0(D_80098780 + 0xA80) * 0xD0) >> 12);
+        target.vy = D_8009872C.vy - 0x20 - D_800925F4;
+        target.vz = D_8009872C.vz + ((func_8003F8CC(D_80098780 + 0xA80) * 0xD0) >> 12);
+        func_800708C4(&target, 0x46);
+        {
+            s32 top = func_80082488(&D_8009871C, 0) - 0x40 - D_800925F4;
+            if (top < D_8009871C.vy) {
+                D_8009871C.vy = top;
+            }
+        }
+        break;
+    case 5:
+        D_8009867C.vx = D_80097010.vx;
+        D_8009867C.vy = D_80097010.vy - 0xC0;
+        D_8009867C.vz = D_80097010.vz;
+        D_8009871C.vx = D_8009867C.vx + ((func_8003F8B0(D_80097064 + 0x900) * 0xE0) >> 12);
+        D_8009871C.vy = D_80097010.vy - 0xD0;
+        D_8009871C.vz = D_8009867C.vz + ((func_8003F8CC(D_80097064 + 0x900) * 0xE0) >> 12);
+        break;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007099C);
+#endif
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80070C7C);
 
