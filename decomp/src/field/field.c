@@ -8606,7 +8606,48 @@ void func_8009B338(void) {
     } while (i < 32);
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009B398);
+/* Event 0x23: gather the party at (op1, op3), (op5, op7) and (op9, op11)
+ * facing op15/op17/op19, retrying until all three have arrived; op1 0x7fff
+ * instead marks every member's heading as turned and continues. */
+void func_8009B398(void) {
+    FieldActor *actor;
+    s32 i;
+    s32 near;
+
+    if (func_8009CF78(1, EVENT_OPERAND_BYTE(0xD)) == 0x7FFF) {
+        D_800B0078->pc += 0x14;
+        D_800B2078.preserve_nonplayer_motion = 1;
+        i = 0;
+        do {
+            if (D_8005A444[i] != 0xFF) {
+                actor = D_800AF880.components.descriptors[D_8005A444[i]].actor;
+                actor->heading_goal = actor->heading = actor->heading_goal | 0x8000;
+            }
+            i++;
+        } while (i < 3);
+        return;
+    }
+    near = func_8009AEE0(0, func_8009CF78(1, EVENT_OPERAND_BYTE(0xD)), func_8009CFBC(3, EVENT_OPERAND_BYTE(0xD)),
+                         func_800ACDEC(0xE)) == 0;
+    if (func_8009AEE0(1, func_8009D000(5, EVENT_OPERAND_BYTE(0xD)), func_8009D044(7, EVENT_OPERAND_BYTE(0xD)),
+                      func_800ACDEC(0x10)) == 0) {
+        near |= 2;
+    }
+    if (func_8009AEE0(2, func_8009D088(9, EVENT_OPERAND_BYTE(0xD)), func_8009D0CC(0xB, EVENT_OPERAND_BYTE(0xD)),
+                      func_800ACDEC(0x12)) == 0) {
+        near |= 4;
+    }
+    D_800B00C0 = 1;
+    if (near == 7) {
+        D_800B2078.unk2348 = 0;
+        D_800B0078->pc += 0x14;
+        D_800B2078.party_processing_mode = 0;
+    } else {
+        D_800B2078.party_processing_mode = 1;
+        D_800B0078->pc -= 1;
+    }
+    D_800B2078.preserve_nonplayer_motion = 1;
+}
 
 /* Store the camera projection in a variable. */
 void func_8009B664(void) {
