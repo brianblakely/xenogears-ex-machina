@@ -26,6 +26,17 @@
                      :                                                         \
                      : "r"(r0), "r"(r1))
 
+/* Load three short vectors into V0-V2. */
+#define gte_ldv3(r0, r1, r2)                                                   \
+    __asm__ volatile("lwc2 $0, 0(%0);"                                         \
+                     "lwc2 $1, 4(%0);"                                         \
+                     "lwc2 $2, 0(%1);"                                         \
+                     "lwc2 $3, 4(%1);"                                         \
+                     "lwc2 $4, 0(%2);"                                         \
+                     "lwc2 $5, 4(%2)"                                          \
+                     :                                                         \
+                     : "r"(r0), "r"(r1), "r"(r2))
+
 /* Perspective-transform V0-V2. */
 #define gte_rtpt() __asm__ volatile("nop;nop;.word 0x4A280030")
 

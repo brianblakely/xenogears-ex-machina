@@ -1045,7 +1045,7 @@ void func_80087E38(Vector *pos) {
     PathPoint *point;
 
     if (D_800928F8 < 0x1F) {
-        point = &D_8009A988[D_800928F8];
+        point = &D_8009A928[D_800928F8];
         point->x = pos->vx;
         point->y = pos->vy;
         D_800928F8++;
@@ -1056,7 +1056,59 @@ void func_80087E38(Vector *pos) {
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_80087E38);
 #endif
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_80087EA0);
+/* Draw the recorded path points as axis crosses (64 units long), then
+ * clear the list. */
+void func_80087EA0(u32 *ot) {
+    SVector ends[6];
+    PathPoint *point;
+    s32 i;
+    s32 j;
+
+    for (i = 0; i < D_800928F8; i++) {
+        point = &D_8009A928[i];
+        ends[0].vx = point->x - 0x20;
+        ends[0].vy = point->y;
+        ends[0].vz = point->z;
+        ends[1].vx = point->x + 0x20;
+        ends[1].vy = point->y;
+        ends[1].vz = point->z;
+        ends[2].vx = point->x;
+        ends[2].vy = point->y - 0x20;
+        ends[2].vz = point->z;
+        ends[3].vx = point->x;
+        ends[3].vy = point->y + 0x20;
+        ends[3].vz = point->z;
+        ends[4].vx = point->x;
+        ends[4].vy = point->y;
+        ends[4].vz = point->z - 0x20;
+        ends[5].vx = point->x;
+        ends[5].vy = point->y;
+        ends[5].vz = point->z + 0x20;
+        for (j = 0; j < 6; j++) {
+            ends[j].vx -= D_80096FA8.vx;
+            ends[j].vy -= D_80096FA8.vy;
+            ends[j].vz -= D_80096FA8.vz;
+        }
+        gte_ldv3(&ends[0], &ends[1], &ends[2]);
+        gte_rtpt();
+        gte_stsxy3(&point->axes[D_800928A0][0].x0, &point->axes[D_800928A0][0].x1,
+                   &point->axes[D_800928A0][1].x0);
+        gte_ldv3(&ends[3], &ends[4], &ends[5]);
+        gte_rtpt();
+        gte_stsxy3(&point->axes[D_800928A0][1].x1, &point->axes[D_800928A0][2].x0,
+                   &point->axes[D_800928A0][2].x1);
+        setlen(&point->axes[D_800928A0][0], 3);
+        *(u32 *)&point->axes[D_800928A0][0].r0 = 0x400000FF;
+        setlen(&point->axes[D_800928A0][1], 3);
+        *(u32 *)&point->axes[D_800928A0][1].r0 = 0x4000FF00;
+        setlen(&point->axes[D_800928A0][2], 3);
+        *(u32 *)&point->axes[D_800928A0][2].r0 = 0x40FF0000;
+        func_800316C0(ot, &point->axes[D_800928A0][0]);
+        func_800316C0(ot, &point->axes[D_800928A0][1]);
+        func_800316C0(ot, &point->axes[D_800928A0][2]);
+    }
+    D_800928F8 = 0;
+}
 
 /* Start a debug line between two points in one of eight colours (bit 0
  * blue, bit 1 red, bit 2 green). Returns the line, or NULL when all 100

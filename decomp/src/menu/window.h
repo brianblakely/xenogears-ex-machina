@@ -103,13 +103,15 @@ extern Vector D_80096FA8; /* view origin */
 
 s32 func_8002DC9C(s32 x, s32 y, s32 z);
 
-/* A recorded path position. */
+/* A recorded path position and its debug marker: three axis lines (red
+ * x, green y, blue z) per buffer. */
 typedef struct {
-    s16 x, y, z;
-    u8 unk6[0x62];
+    LineF2Tag axes[2][3]; /* 0x00 */
+    s16 x, y, z;          /* 0x60 */
+    u8 pad[2];
 } PathPoint;
 
-extern PathPoint D_8009A988[0x1F];
+extern PathPoint D_8009A928[0x1F];
 extern s32 D_800928F8; /* recorded path points */
 extern PolyFT3 *D_80092854[2]; /* triangle pools: template, working copy */
 extern u16 D_800927D4; /* backdrop texture page */
