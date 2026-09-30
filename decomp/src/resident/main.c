@@ -9,7 +9,7 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80019560);
 
 /* Boot: initialise the system libraries, the disc index and the heap, load and install the resident data files, then enter the first mode. */
 void func_80019578(void) {
-    Rect16 screen;
+    RECT screen;
     void *file2;
     void *file3;
     void *file4;
@@ -97,7 +97,7 @@ void func_80019578(void) {
     func_80019D48();
     func_8001B6BC();
     func_8001996C(6);
-    func_80019ACC(NULL);
+    func_80019ACC(0);
 }
 
 void func_80019964(void) {
@@ -147,16 +147,16 @@ INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/main", D_80018080);
 /* Where a mode's overlay block is decoded. */
 u8 *const D_80018084 = D_8006FAF0;
 
-/* Mode dispatcher: report a fatal message (with the caller) if given, reset graphics and the heap, clear the next mode's BSS, load its overlay, then run it and dispatch again. */
-void func_80019ACC(char *message) {
+/* Mode dispatcher: report a fatal error (with the caller) if given, reset graphics and the heap, clear the next mode's BSS, load its overlay, then run it and dispatch again. */
+void func_80019ACC(s32 error) {
     ModeEntry *mode;
     void *block;
     u32 unused[2]; /* an unused local the original frame reserves */
     u32 caller;
 
-    if (message != NULL) {
+    if (error != 0) {
         __asm__ volatile("move $15, %0\n\tsw $31, 0($15)" : : "r"(&caller) : "$15");
-        func_80019EF8(message, caller);
+        func_80019EF8(error, caller);
     }
     mode = &D_8001808C[D_80018088];
     func_80044110(1);
@@ -185,7 +185,7 @@ void func_80019ACC(char *message) {
     func_80035DB0();
     func_8001996C(0);
     mode->entry();
-    func_80019ACC(NULL);
+    func_80019ACC(0);
 }
 
 INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/main", D_80018088);
@@ -238,9 +238,138 @@ void func_80019CD0(void) {
     func_80019524();
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80019D48);
+/* Boot logo: upload the logo image and its palette, then fade the logo sprite in, hold it and fade it out. */
+void func_80019D48(void) {
+    DRAWENV draw;
+    DISPENV disp;
+    SPRT logo;
+    RECT rect;
+    u8 *image;
+    s32 level;
+    s32 frame;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80019EF8);
+    func_80031BA8(6);
+    image = func_80032E88(D_8004EABC, 1);
+    rect.x = 0;
+    rect.y = 0xF0;
+    rect.w = 0x10;
+    rect.h = 1;
+    func_80044894(&rect, image + 0x14);
+    rect.x = 0x280;
+    rect.y = 0;
+    rect.w = 0x40;
+    rect.h = 0x30;
+    func_80044894(&rect, image + 0x40);
+    setSprt(&logo);
+    logo.x0 = 0x20;
+    logo.y0 = 0x58;
+    logo.v0 = 0;
+    logo.u0 = 0;
+    logo.w = 0x100;
+    logo.h = 0x30;
+    logo.clut = func_80043A58(0, 0xF0);
+    func_80043928(&draw, 0, 0, 0x140, 0xE0);
+    func_800439E0(&disp, 0, 0, 0x140, 0xE0);
+    func_80044C44(&draw);
+    func_80044E9C(&disp);
+    func_800445D0(0);
+    for (level = 0; level < 0x80; level += 8) {
+        logo.r0 = level;
+        logo.g0 = level;
+        logo.b0 = level;
+        func_80044B70(&logo);
+        func_8004B54C(0);
+    }
+    for (frame = 0x6D; frame != -1; frame--) {
+        func_8004B54C(0);
+    }
+    for (level = 0x80; level >= 0; level -= 8) {
+        logo.r0 = level;
+        logo.g0 = level;
+        logo.b0 = level;
+        func_80044B70(&logo);
+        func_8004B54C(0);
+    }
+    func_800320E8(image);
+}
+
+/* Fatal error screen: dump the heap log to the PC (or, without one, clear the screen red and hang), then print the error, its caller and heap details every frame forever. */
+void func_80019EF8(s32 error, u32 caller) {
+    DRAWENV draw[2];
+    DISPENV disp[2];
+    RECT rect;
+    u32 unused[2]; /* an unused local the original frame reserves */
+    s32 frame;
+    s32 first;
+    s32 second;
+
+    frame = 0;
+    if (D_80010000 != 0 && D_80010000 != -1) {
+        func_80032E04("c:\\lserrmem.txt");
+    } else {
+        rect.x = 0;
+        rect.y = 0;
+        rect.w = 0x280;
+        rect.h = 0x1E0;
+        func_80044764(&rect, 0xFF, 0, 0);
+        for (;;) {
+        }
+    }
+    func_800322B4();
+    func_80043928(&draw[0], 0, 0, 0x180, 0xF0);
+    func_800439E0(&disp[0], 0, 0xF0, 0x180, 0xF0);
+    func_80043928(&draw[1], 0, 0xF0, 0x180, 0xF0);
+    func_800439E0(&disp[1], 0, 0, 0x180, 0xF0);
+    func_800444D8(0);
+    func_800363F0(0);
+    func_800374E8(0x10, 0x10, 0x120, 0xF0, 0x1F4, 0, 0x3C0, 0x100, 0x3C0, 0x1FF, 0);
+    D_8004F2BC++;
+    draw[1].isbg = 1;
+    draw[0].isbg = 1;
+    draw[0].r0 = 0;
+    draw[0].g0 = 0;
+    draw[0].b0 = 0;
+    draw[1].r0 = 0;
+    draw[1].g0 = 0;
+    draw[1].b0 = 0;
+    func_80044534(1);
+loop:
+    {
+        func_80044C44((frame & 1) ? &draw[0] : &draw[1]);
+        func_80044E9C((frame & 1) ? &disp[0] : &disp[1]);
+        func_80037324(0);
+        func_8003700C("System Error No %d\n", error);
+        func_8003700C("From  %08x\n", caller);
+        func_8003700C("Count %d\n", D_8004F2BC);
+        func_8003700C("Frame %d\n", frame);
+        func_8003700C("MCBlog -> c:\\lserrmem.txt\n");
+        func_8003700C("\n");
+        if (error & 0x80) {
+            func_8003700C("%s\n", D_8004F0C0[error]);
+            if (error == 0x82) {
+                func_80031BC4(&first, &second);
+                func_8003700C("Program From %08x\n", first);
+                func_8003700C("Failure Size %d (%xh) byte \n", second, second);
+            }
+            if (error == 0x85) {
+                func_80031BC4(&first, &second);
+                func_8003700C("Program From %08x\n", first);
+                func_8003700C("Failure Pointer %p\n", second);
+            }
+        }
+        func_8004B54C(0);
+        frame++;
+    }
+    goto loop;
+}
+
+/* Names listed by the table at 8004f2dc. */
+const char D_8001826C[] = "MASAKI";
+const char D_80018274[] = "HIGUCHI";
+const char D_8001827C[] = "SUGIMOTO";
+const char D_80018288[] = "KAZUMI";
+const char D_80018290[] = "HIGUCHI,MIYAGAWA,MASAKI";
+const char D_800182A8[] = "YOSHII";
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001A1E4);
 
