@@ -550,7 +550,131 @@ void func_801CE91C(u8 kind, u8 id) {
     func_800320E8(pixels);
 }
 
+/*
+ * Show stock entry `top + row`: its name label, the bars of the members who
+ * can equip it, the marks of those holding it and, for each member who can,
+ * the attack and defence change (tinted by whether it drops), then how many
+ * the party holds. Returns its price.
+ */
+#ifdef NON_MATCHING
+u32 func_801CEB3C(s32 top, s32 row) {
+    RECT rect;
+    s32 diffs[2];
+    u8 worse[2];
+    u32 price;
+    u16 holders;
+    u16 users;
+    u8 id;
+    u8 kind;
+    u8 *pixels;
+    s32 i;
+    s32 shown;
+    s32 k;
+    s32 x;
+
+    users = 0;
+    id = D_800625A0->shop_items[row + top];
+    kind = D_800625A0->shop_kinds[row + top];
+    pixels = func_80031BDC(0x618, 0);
+    bzero(pixels, 0x618);
+    switch (kind) {
+    case 0:
+        D_800625A0->details->label4430.width =
+            func_80034EAC(func_80033728(D_800625A0->details->resources[1], id), pixels, 0x39, 0);
+        price = D_800625A0->resources->equipment[id].price;
+        users = D_800625A0->resources->equipment[id].users;
+        break;
+    case 1:
+        D_800625A0->details->label4430.width =
+            func_80034EAC(func_80033728(D_800625A0->details->resources[2], id), pixels, 0x39, 0);
+        price = D_800625A0->resources->accessories[id].price;
+        users = D_800625A0->resources->accessories[id].users;
+        break;
+    case 2:
+        D_800625A0->details->label4430.width =
+            func_80034EAC(func_80033728(D_800625A0->details->resources[0], id), pixels, 0x39, 0);
+        price = D_800625A0->resources->items[id].price;
+        break;
+    }
+    holders = func_801CDBA0(id, kind);
+    rect.x = 0x140;
+    rect.y = 0x4E;
+    rect.w = 0x3C;
+    rect.h = 13;
+    LoadImage(&rect, pixels);
+    DrawSync(0);
+    func_801C5A7C(&D_800625A0->details->label4430, 0, 0, 0);
+    func_801C5040(&D_800625A0->details->label4430.poly[D_800625A0->buffer], 0x2C, 0x12, 0, 0x4E,
+                  D_800625A0->details->label4430.width, 13);
+    func_801C6E90(D_800625A0->details->label4430.quad, 0x2C, 0x12, D_800625A0->details->label4430.width, 13);
+    D_800625A0->details->label4430.buffer = D_800625A0->buffer;
+    func_800320E8(pixels);
+    if (id) {
+        D_800625A0->details->label4430_shown = 1;
+    } else {
+        D_800625A0->details->label4430_shown = 0;
+    }
+    i = 0;
+    shown = 0;
+    D_800625A0->details->group2D0_count = 0;
+    for (; i < 16; i++) {
+        if (D_800625A0->member_present[i] != 0) {
+            if (func_801C50B0(users, i)) {
+                D_800625A0->details->bar_shown[shown] = 1;
+            } else {
+                D_800625A0->details->bar_shown[shown] = 0;
+            }
+            if (func_801C50B0(holders, i)) {
+                D_800625A0->details->group2D0_count +=
+                    func_8002675C(D_800625A0->sprite_sheet, 0xE,
+                                  &D_800625A0->details->group2D0[D_800625A0->details->group2D0_count * 2],
+                                  D_800625A0->buffer, D_801D21CC[shown] + 0xE, 0xB4, 0x1000);
+            }
+            D_800625A0->details->cells_a_count[shown] = 0;
+            D_800625A0->details->cells_b_count[shown] = 0;
+            if (D_800625A0->details->bar_shown[shown] != 0) {
+                diffs[1] = 0;
+                diffs[0] = 0;
+                func_801CE480(diffs, worse, id, kind, i);
+                if (diffs[0] != 0) {
+                    func_801C50E8(diffs[0]);
+                    for (k = 0, x = shown * 26 + 0x49; k < 3; k++, x += 8) {
+                        if (D_800625A0->digits[k + 6] != 0xFF) {
+                            D_800625A0->details->cells_a_count[shown] += func_8002675C(
+                                D_800625A0->sprite_sheet, D_800625A0->digits[k + 6],
+                                &D_800625A0->details->cells_a[shown][D_800625A0->details->cells_a_count[shown] * 2],
+                                D_800625A0->buffer, x, 0xBE, 0x1000);
+                        }
+                    }
+                    func_801CD404(D_800625A0->details->cells_a_count[shown], D_800625A0->details->cells_a[shown],
+                                  worse[0]);
+                    D_800625A0->details->cells_a_buffer[shown] = D_800625A0->buffer;
+                }
+                if (diffs[1] != 0) {
+                    func_801C50E8(diffs[1]);
+                    for (k = 0, x = shown * 26 + 0x49; k < 3; k++, x += 8) {
+                        if (D_800625A0->digits[k + 6] != 0xFF) {
+                            D_800625A0->details->cells_b_count[shown] += func_8002675C(
+                                D_800625A0->sprite_sheet, D_800625A0->digits[k + 6],
+                                &D_800625A0->details->cells_b[shown][D_800625A0->details->cells_b_count[shown] * 2],
+                                D_800625A0->buffer, x, 0xC6, 0x1000);
+                        }
+                    }
+                    func_801CD404(D_800625A0->details->cells_b_count[shown], D_800625A0->details->cells_b[shown],
+                                  worse[1]);
+                    D_800625A0->details->cells_b_buffer[shown] = D_800625A0->buffer;
+                }
+            }
+            shown++;
+        }
+    }
+    D_800625A0->details->group2D0_buffer = D_800625A0->buffer;
+    func_801CE91C(kind, id);
+    return price;
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/shop", func_801CEB3C);
+#endif
 
 /*
  * Set the party's gold (capped at 9999999) and put the bought amounts into
