@@ -773,4 +773,13 @@ VECTOR *ApplyMatrix(MATRIX *m, SVECTOR *v, VECTOR *out);
 MATRIX *TransMatrix(MATRIX *m, VECTOR *t);
 VECTOR *ApplyMatrixLV(MATRIX *m, VECTOR *v, VECTOR *out);
 
+/* Actor slot entry points (kind: start, update: step); they return the
+ * next command. */
+typedef s32 (*ActorFunc)(s32 index);
+
+/* Terrain streaming origin (world units, wrapped to the map) and the block
+ * cell the camera is in. */
+#define TERRAIN_ORIGIN (*(VECTOR *)D_8009BBB4)
+extern SVECTOR D_8009C838; /* block cell */
+
 #endif

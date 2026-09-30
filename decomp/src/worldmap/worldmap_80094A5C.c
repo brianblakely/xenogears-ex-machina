@@ -582,7 +582,38 @@ void func_800977E0(s32 index, s16 arg) {
     actor->command_arg = arg;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80097800);
+/* Run every active actor's pending command: 0 start, 1 step, 2 wait, 3 idle,
+ * 4 release its handle. */
+void func_80097800(void) {
+    WorldmapActor *actor;
+    s32 i;
+
+    actor = D_8009BE24;
+    for (i = 0; i < 0x40; i++, actor++) {
+        if (actor->update != 0) {
+            switch (actor->command) {
+            case 3:
+                break;
+            case 0:
+                actor->command = ((ActorFunc)actor->kind)(i);
+                break;
+            case 1:
+                actor->command = ((ActorFunc)actor->update)(i);
+                break;
+            case 2:
+                if (--actor->command_arg <= 0) {
+                    actor->command = 1;
+                }
+                break;
+            case 4:
+                if (actor->handle != 0) {
+                    func_800230A8(actor->handle);
+                }
+                break;
+            }
+        }
+    }
+}
 
 /* Allocate both 2048-triangle terrain packet buffers and initialise them. */
 #ifdef NON_MATCHING /* loop counter increment scheduled late */
@@ -617,7 +648,25 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_800979C8);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80097BC0);
+/* Reset the terrain loader around a position. */
+void func_80097BC0(VECTOR *position) {
+    s32 i;
+
+    D_8009D534 = D_8009A180;
+    for (i = 0xFF; i >= 0; i--) {
+        D_8009C184[i] = NULL;
+    }
+    TERRAIN_ORIGIN.vx = position->vx & 0x7FFFFF;
+    TERRAIN_ORIGIN.vy = 0;
+    D_8009C5BC = 0;
+    D_8009C618 = 0x400;
+    TERRAIN_ORIGIN.vz = position->vz & 0x7FFFFF;
+    D_8009C838.vx = 2;
+    D_8009C838.vy = 0;
+    D_8009C838.vz = 2;
+    func_800981C8((Camera *)position);
+    func_80097DC0();
+}
 
 /* Reset the terrain loader around the camera. */
 void func_80097CB8(Camera *camera) {
@@ -654,7 +703,34 @@ void func_80098044(void) {
     OuterProduct0(&D_8009BB5C, &D_8009BB9C, &D_8009C7F0);
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_800980D4);
+/* Wrap a position into the map and note the crossed edges (8/4 in x,
+ * 2/1 in z); update the camera's block cell. */
+void func_800980D4(void *arg) {
+    VECTOR *position;
+    s32 x;
+    s32 z;
+
+    position = arg;
+    x = position->vx;
+    z = position->vz;
+    D_8009D558 = 0;
+    if (x < -0x800000) {
+        position->vx = x + 0x800000;
+        D_8009D558 = 4;
+    } else if (x > 0x800000) {
+        position->vx = x - 0x800000;
+        D_8009D558 = 8;
+    }
+    if (z < -0x800000) {
+        position->vz += 0x800000;
+        D_8009D558 |= 1;
+    } else if (z > 0x800000) {
+        position->vz -= 0x800000;
+        D_8009D558 |= 2;
+    }
+    D_8009C838.vx = (position->vx >> 23) + 2;
+    D_8009C838.vz = (position->vz >> 23) + 2;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_800981C8);
 
