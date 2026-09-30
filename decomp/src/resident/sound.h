@@ -370,13 +370,25 @@ void func_80038E6C(s32 volume, SpuVolume *out, u8 channel);
 void *func_80038F18(s32 size);
 s32 func_800393B8(s32 size, u16 mode);                 /* allocate SPU memory */
 s32 func_800395B8(s32 size, s32 address, u16 mode);    /* allocate SPU memory at */
-void func_800399D4(s32 sequence);  /* release a sequence */
+SoundSeq *func_800397FC(SoundSeqHeader *header, s32 fade, s32 frames); /* start a sequence */
+SoundSeq *func_80039850(SoundSeqHeader *header);
+SoundSeq *func_80039910(SoundSeqHeader *header, SoundSeq *seq);
+void func_800399D4(SoundSeq *seq);  /* release a sequence */
+void func_80039A80(SoundSeq *seq, s32 fade, s32 frames); /* play from the start */
 void func_80039C4C(SoundTrack *track); /* resume a track */
 void func_80039CC4(void);
 void func_80039FF8(void);
 u32 func_8003A65C(s32 id, s32 width);
 void func_8003A89C(SoundSeq *seq, s32 fade, s32 frames);
 void func_8003B060(SoundSeq *seq);
+void func_8003B0AC(SoundSeq *seq, SoundSeqHeader *header); /* take a snapshot */
+void func_8003B22C(SoundSeq *seq);
+void func_8003B424(SoundSeq *seq);
+void func_8003B930(SoundSeq *seq);
+void func_8003B9E4(SoundSeq *seq);
+s32 func_8003BA38(SoundSeq *seq);
+s32 func_8003BB40(s32 channels);   /* size of a sequence with `channels` */
+s16 func_8003F67C(SoundSeqHeader *header); /* error code of sequence data, 0 when valid */
 void func_8003B644(s16 id, s32 channel, s16 volume, s16 pan);
 void func_8003BCA0(u32 address, u8 *data, s32 size, void (*callback)(void), u16 type);
 s32 func_8003BDFC(s32 wait);

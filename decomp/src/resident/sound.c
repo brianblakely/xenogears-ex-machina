@@ -574,7 +574,6 @@ void func_8003AD20(SoundSeq *seq, s32 op) {
     }
 }
 
-extern void func_8003B930(SoundSeq *seq);
 
 /* Discard a sequence's snapshot. */
 void func_8003AD98(SoundSeq *seq) {
@@ -584,7 +583,6 @@ void func_8003AD98(SoundSeq *seq) {
     }
 }
 
-extern s32 func_8003BB40(s32 index);
 
 /* Save a copy of a sequence to restart from (reusing an earlier one). The
  * original leaves the copy pointer unset when one already exists. */
@@ -706,9 +704,7 @@ void func_8003B0AC(SoundSeq *seq, SoundSeqHeader *header) {
     } while (count != 0);
 }
 
-extern void func_8003F6B0(s32 error);
 extern void func_8003B32C(SoundSeq *seq);
-extern void func_8003B9E4(SoundSeq *seq);
 
 /* Create the sound effect channel set with `count` (made even) channels on
  * the top hardware voices. */
@@ -743,14 +739,12 @@ SoundSeq *func_8003B148(s32 count) {
     return effects;
 }
 
-extern s32 func_8003BA38(SoundSeq *seq);
 
 void func_8003B1FC(SoundSeq *seq) {
     func_8003BA38(seq);
     func_80039144(seq);
 }
 
-extern s16 func_8003F67C(SoundSeqHeader *header);
 extern void func_8003B370(SoundSeq *seq);
 
 /* Read a sequence's header: channel count, reverb settings (applied when

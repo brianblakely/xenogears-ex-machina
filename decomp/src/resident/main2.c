@@ -1921,15 +1921,120 @@ SpuMemBlock *func_800397C0(u32 address) {
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800397C0);
 #endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800397FC);
+/* Create a sequence for `header` and play it. Returns the sequence. */
+SoundSeq *func_800397FC(SoundSeqHeader *header, s32 fade, s32 frames) {
+    SoundSeq *seq = func_80039850(header);
 
+    func_80039A80(seq, fade, frames);
+    return seq;
+}
+
+/* Create a sequence for valid sequence data in driver memory (with room
+ * for a snapshot when the data has a table). Returns it, or NULL (the
+ * data's error, or 0x1E without memory).
+ * Nonmatching: the original moves the data pointer to another register and
+ * keeps a separate error call for a failed allocation. */
+#ifdef NON_MATCHING
+SoundSeq *func_80039850(SoundSeqHeader *header) {
+    s16 error = func_8003F67C(header);
+    s32 size;
+    SoundSeq *seq;
+
+    if (error == 0) {
+        size = func_8003BB40(header->channels);
+        if (header->entries != 0) {
+            size += 0x180;
+        }
+        seq = func_80038F18(size);
+        if (seq == NULL) {
+            func_8003F6B0(0x1E);
+            return NULL;
+        }
+        seq->header = header;
+        if (header->entries != 0) {
+            func_8003B0AC(seq, header);
+        }
+        func_8003B22C(seq);
+        func_8003B424(seq);
+        seq->muted = 0;
+        func_8003B9E4(seq);
+        return seq;
+    }
+    func_8003F6B0(error);
+    return NULL;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039850);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039910);
+/* Create a sequence for valid sequence data in memory the caller provides
+ * (flag 0x4000: not released with it). Returns it, or NULL. */
+SoundSeq *func_80039910(SoundSeqHeader *header, SoundSeq *seq) {
+    s16 error = func_8003F67C(header);
+    s32 size;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800399D4);
+    if (error != 0) {
+        func_8003F6B0(error);
+        return NULL;
+    }
+    size = func_8003BB40(header->channels);
+    if (header->entries != 0) {
+        size += 0x180;
+    }
+    func_800392EC((u32 *)seq, size);
+    seq->header = header;
+    if (header->entries != 0) {
+        func_8003B0AC(seq, header);
+    }
+    func_8003B22C(seq);
+    func_8003B424(seq);
+    seq->muted = 0;
+    func_8003B9E4(seq);
+    seq->flags |= 0x4000;
+    return seq;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039A80);
+/* Stop and release a sequence (its memory unless the caller provided it). */
+void func_800399D4(SoundSeq *seq) {
+    if ((s16)seq->flags & 0x8000) {
+        func_80039C4C((SoundTrack *)seq);
+    }
+    if (func_8003F67C(seq->header) != 0) {
+        func_8003F6B0(0xA);
+        return;
+    }
+    if (func_8003BA38(seq) != 0) {
+        func_8003F6B0(5);
+        return;
+    }
+    func_8003B930(seq);
+    if (!(seq->flags & 0x4000)) {
+        func_80039144(seq);
+    }
+}
+
+/* Play a sequence from its start, fading in over `frames`. */
+void func_80039A80(SoundSeq *seq, s32 fade, s32 frames) {
+    if (seq == NULL) {
+        func_8003F6B0(5);
+        return;
+    }
+    seq->flags &= 0x7FFF;
+    if (func_8003F67C(seq->header) != 0) {
+        func_8003F6B0(0xA);
+        return;
+    }
+    if ((s16)seq->flags & 0x8000) {
+        func_80039C4C((SoundTrack *)seq);
+    }
+    DisableEvent(D_800595BC);
+    func_8003B22C(seq);
+    func_8003B424(seq);
+    seq->fade.value = 0;
+    func_8003A89C(seq, fade, frames);
+    seq->flags |= 0x8000;
+    EnableEvent(D_800595BC);
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039B68);
 
