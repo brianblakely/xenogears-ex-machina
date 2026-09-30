@@ -47,7 +47,8 @@ typedef struct DamagePopup {
     Fixed16 x, y, z;              /* 0x48 */
     u8 pad54[0x58 - 0x54];
     VECTOR scale;                 /* 0x58 */
-    u8 pad68[0x7C - 0x68];
+    u8 pad68[0x78 - 0x68];
+    BattleSprite *sprite;         /* 0x78: the sprite it shows over */
     u8 right;                     /* 0x7C: drifts right, else left */
     u8 pad7D[0x80 - 0x7D];
     union {
@@ -114,5 +115,10 @@ s32 func_80026DCC(void *font, s32 character, PopupGlyph *out, s16 x, s32 y); /* 
 
 void func_800BD810(PopupGlyph *glyph, s32 colour);
 void func_800BE6E8(s32 value, u8 *text, s32 digits, u8 leading, s32 base);
+void func_800BD7A0(BattleTask *task);
+void func_800BDA1C(BattleTask *draw);
+void func_800BDB08(DamagePopup *popup);
+void func_800BDC78(DamagePopup *popup);
+void func_800BDE58(void);
 
 #endif
