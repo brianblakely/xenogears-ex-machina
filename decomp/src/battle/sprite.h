@@ -102,7 +102,8 @@ typedef struct BattleSprite {
     u8 pad44[0x48 - 0x44];
     s32 field48;           /* 0x48 */
     s32 field4C;           /* 0x4C */
-    u8 pad50[0x64 - 0x50];
+    void *sound;           /* 0x50: its command file's sound bank */
+    u8 pad54[0x64 - 0x54];
     s32 framesLeft;        /* 0x64 */
     u8 pad68[0x6C - 0x68];
     ActorTask *task;       /* 0x6C */
