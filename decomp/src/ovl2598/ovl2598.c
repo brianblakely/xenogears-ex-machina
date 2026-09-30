@@ -1240,8 +1240,8 @@ void func_801C95A0(s32 index, s32 slot) {
     u8 *image = func_80031BDC(0x3F6, 0);
 
     func_8003F8E8(image, 0x3F6);
-    func_80034EAC(D_8006D634[(u8)index / 2 * 2], image, 0x24, 0);
-    func_80034EAC(D_8006D634[(u8)index / 2 * 2 + 1], image, 0x24, 1);
+    func_80034EAC(D_8006D634.names[(u8)index / 2 * 2], image, 0x24, 0);
+    func_80034EAC(D_8006D634.names[(u8)index / 2 * 2 + 1], image, 0x24, 1);
     rect.x = D_801CB344[(u8)slot / 2] + 0x180;
     rect.y = D_801CB390[(u8)slot / 2];
     rect.w = 0x28;
@@ -1387,7 +1387,40 @@ void func_801C9A08(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_h
 INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C9A08);
 #endif
 
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C9F80);
+/* Build a status panel's level digits and the green digits of the record's
+ * next value (+0x63) for character `id` in row `slot`. */
+void func_801C9F80(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_height) {
+    s32 i;
+    s32 n;
+
+    func_801C969C(D_8006D634.characters[id].level);
+    panel->level_count = 0;
+    for (i = 0; i < 3; i++) {
+        if (D_800625A0->digits[6 + i] != 0xFF) {
+            panel->level_count +=
+                func_8002675C(D_800625A0->sprite_sheet, D_800625A0->digits[6 + i],
+                              &panel->level[panel->level_count * 2], D_800625A0->buffer_index,
+                              i * 8 + x[10], row_height * slot + y[10], 0x1000);
+        }
+    }
+    func_801C969C(D_8006D634.characters[id].b63);
+    panel->next_count = 0;
+    for (i = 0, n = 0; i < 3; i++) {
+        if (D_800625A0->digits[6 + i] != 0xFF) {
+            panel->next_count +=
+                func_8002675C(D_800625A0->sprite_sheet, D_800625A0->digits[6 + i],
+                              &panel->next[panel->next_count * 2], D_800625A0->buffer_index,
+                              n * 8 + x[11], row_height * slot + y[11], 0x1000);
+            n++;
+        }
+    }
+    for (i = 0; i < panel->next_count; i++) {
+        func_80043C24(&panel->next[i * 2 + D_800625A0->buffer_index], 0);
+        (panel->next + (i * 2 + D_800625A0->buffer_index))->r0 = 0;
+        (panel->next + (i * 2 + D_800625A0->buffer_index))->g0 = 0x80;
+        (panel->next + (i * 2 + D_800625A0->buffer_index))->b0 = 0;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801CA24C);
 

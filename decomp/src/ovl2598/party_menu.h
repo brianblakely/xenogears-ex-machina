@@ -224,13 +224,14 @@ typedef struct {
     POLY_FT4 extra[10];   /* 0x2D0 */
     POLY_FT4 face[2];     /* 0x460 */
     POLY_FT4 label[2];    /* 0x4B0 */
-    POLY_FT4 level[12];   /* 0x500 */
+    POLY_FT4 level[6];    /* 0x500 */
+    POLY_FT4 next[6];     /* 0x5F0 */
     POLY_FT4 hp[10];      /* 0x6E0 */
     POLY_FT4 hp_max[10];  /* 0x870 */
     POLY_FT4 ep[6];       /* 0xA00 */
     POLY_FT4 ep_max[6];   /* 0xAF0 */
     u8 level_count;       /* 0xBE0 */
-    u8 pad_BE1;
+    u8 next_count;        /* 0xBE1 */
     u8 hp_count;          /* 0xBE2 */
     u8 hp_max_count;      /* 0xBE3 */
     u8 ep_count;          /* 0xBE4 */
@@ -308,7 +309,21 @@ extern u16 D_800595D4;   /* normal text CLUT */
 extern u16 D_8006F364;   /* characters that may join */
 extern u16 D_8006F366;
 extern u8 D_8006F368[3]; /* current party (0xFF empty) */
-extern u8 D_8006D634[][0x14]; /* character names (text codes) */
+/* A character record (0xA4 bytes) of the game data. */
+typedef struct {
+    u8 pad_0[0x62];
+    u8 level; /* 0x62 */
+    u8 b63;   /* 0x63 */
+    u8 pad_64[0xA4 - 0x64];
+} CharacterRecord;
+
+/* The game data at 8006d634, as far as the menus use it. */
+typedef struct {
+    u8 names[31][0x14];            /* text codes */
+    CharacterRecord characters[31]; /* 0x26C */
+} GameData;
+
+extern GameData D_8006D634;
 extern u16 D_8006F94C;   /* characters locked in place */
 
 extern void *func_80031BDC(s32 size, s32 mode); /* allocate */

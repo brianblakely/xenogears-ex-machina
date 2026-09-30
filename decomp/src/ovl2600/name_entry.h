@@ -276,7 +276,21 @@ extern u16 D_800595D4;   /* normal text CLUT */
 extern u16 D_8006F364;   /* characters that may join */
 extern u16 D_8006F366;
 extern u8 D_8006F368[3]; /* current party (0xFF empty) */
-extern u8 D_8006D634[][0x14]; /* character names (text codes) */
+/* A character record (0xA4 bytes) of the game data. */
+typedef struct {
+    u8 pad_0[0x62];
+    u8 level; /* 0x62 */
+    u8 b63;   /* 0x63 */
+    u8 pad_64[0xA4 - 0x64];
+} CharacterRecord;
+
+/* The game data at 8006d634, as far as the menus use it. */
+typedef struct {
+    u8 names[31][0x14];            /* text codes */
+    CharacterRecord characters[31]; /* 0x26C */
+} GameData;
+
+extern GameData D_8006D634;
 
 extern void *func_80031BDC(s32 size, s32 mode); /* allocate */
 extern void func_800320E8(void *block);         /* release */
