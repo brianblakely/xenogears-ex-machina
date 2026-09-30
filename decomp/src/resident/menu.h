@@ -6,14 +6,6 @@
 /* Resident support for the menu mode (mode 5): its work block is reached
  * through *800625a0. Only the fields the resident uses are named. */
 
-typedef struct {
-    s16 vx, vy, vz, pad;
-} SVECTOR;
-
-typedef struct {
-    s32 vx, vy, vz, pad;
-} VECTOR;
-
 /* One display buffer: environments and a 16-entry reverse ordering table. */
 typedef struct {
     DRAWENV draw;

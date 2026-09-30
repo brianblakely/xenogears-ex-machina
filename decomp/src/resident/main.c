@@ -2,6 +2,7 @@
 #include "mode.h"
 #include "menu.h"
 #include "stream.h"
+#include "sprite.h"
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80019524);
 
@@ -1220,11 +1221,30 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001CB48);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001CC18);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001CD64);
+/* Set a task's update callback. */
+void func_8001CD64(Task *task, void (*update)(Task *)) {
+    task->update = update;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001CD6C);
+/* Set a task's update callback (second entry). */
+void func_8001CD6C(Task *task, void (*update)(Task *)) {
+    task->update = update;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001CD74);
+/* Set a task's destroy callback. */
+void func_8001CD74(Task *task, void (*destroy)(Task *)) {
+    task->destroy = destroy;
+}
+
+/* A task's update callback. */
+void *func_8001CD7C(Task *task) {
+    return task->update;
+}
+
+/* A task's destroy callback. */
+void *func_8001CD88(Task *task) {
+    return task->destroy;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001CD94);
 
@@ -1254,9 +1274,15 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001E3D8);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001E9BC);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001EE68);
+/* Whether a frame table entry takes its image from the sequencer (second byte bit 7). */
+u8 func_8001EE68(u8 *frame) {
+    return frame[1] >> 7;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001EE74);
+/* The part count of a frame header (bits 9-14). */
+u16 func_8001EE74(u16 *header) {
+    return (*header >> 9) & 0x3F;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001EE88);
 
@@ -1276,45 +1302,147 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001FAB4);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001FB30);
 
+/* The operand a script byte names: a frame table entry (bit 7 set) or a byte on the sprite's stack. */
+/* Nonmatching under GCC 2.7.2 and 2.6.3: register choice for the stack index and operand byte. */
+#ifdef NON_MATCHING
+u8 *func_8001FBA4(Sprite *sprite, u8 *code) {
+    u8 *operand;
+
+    if (*code & 0x80) {
+        operand = sprite->frames + (*code & 0x7F);
+    } else {
+        operand = &sprite->stack[(s8)*code + sprite->stack_top];
+    }
+    return operand;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001FBA4);
+#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001FBE4);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021AD8);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021B04);
+void func_80021B04(SVECTOR *vector, s16 x, s16 y, s16 z) {
+    vector->vx = x;
+    vector->vy = y;
+    vector->vz = z;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021B14);
+void func_80021B14(VECTOR *vector, s32 x, s32 y, s32 z) {
+    vector->vx = x;
+    vector->vy = y;
+    vector->vz = z;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021B24);
+void func_80021B24(SVECTOR *to, SVECTOR *from) {
+    to->vx = from->vx;
+    to->vy = from->vy;
+    to->vz = from->vz;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021B48);
+void func_80021B48(VECTOR *to, VECTOR *from) {
+    to->vx = from->vx;
+    to->vy = from->vy;
+    to->vz = from->vz;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021B6C);
+/* Drop a sprite's part colour. */
+void func_80021B6C(Sprite *sprite) {
+    sprite->colour_flags |= 1;
+    func_8001F6B0(sprite);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021B98);
+/* Colour a sprite's one-sided parts. */
+void func_80021B98(Sprite *sprite, u8 red, u8 green, u8 blue) {
+    sprite->red = red;
+    sprite->green = green;
+    sprite->blue = blue;
+    sprite->colour_flags &= ~1;
+    func_8001F6B0(sprite);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021BCC);
+/* Set a sprite's gravity divisor (flags2 bits 7-18). */
+void func_80021BCC(Sprite *sprite, s32 divisor) {
+    sprite->flags2 = (sprite->flags2 & 0xFFF8007F) | ((divisor & 0xFFF) << 7);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021BF0);
+void func_80021BF0(Sprite *sprite, s32 resource) {
+    sprite->resource = resource;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021BF8);
+/* Set a sprite's completion callback. */
+void func_80021BF8(Sprite *sprite, void *callback) {
+    sprite->callback = callback;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021C00);
+/* Set a sprite's facing group (flags bits 8-12). */
+void func_80021C00(Sprite *sprite, s32 group) {
+    sprite->flags = (sprite->flags & ~0x1F00) | ((group & 0x1F) << 8);
+}
 
+/* Pop a byte from a sprite's stack. */
+/* Nonmatching under GCC 2.7.2 and 2.6.3: the original reads the stack index twice (lb for the index, lbu for the update). */
+#ifdef NON_MATCHING
+u8 func_80021C20(Sprite *sprite) {
+    return sprite->stack[sprite->stack_top++];
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021C20);
+#endif
 
+/* Pop a halfword from a sprite's stack. */
+/* Nonmatching under GCC 2.7.2 and 2.6.3: the original reads the stack index twice (lb for the index, lbu for the update). */
+#ifdef NON_MATCHING
+s16 func_80021C3C(Sprite *sprite) {
+    s16 value = sprite->stack[sprite->stack_top] + (sprite->stack[sprite->stack_top + 1] << 8);
+
+    sprite->stack_top += 2;
+    return value;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021C3C);
+#endif
 
+/* Pop three bytes from a sprite's stack. */
+/* Nonmatching under GCC 2.7.2 and 2.6.3: the original reads the stack index twice (lb for the index, lbu for the update). */
+#ifdef NON_MATCHING
+s32 func_80021C6C(Sprite *sprite) {
+    s32 value = sprite->stack[sprite->stack_top] + (sprite->stack[sprite->stack_top + 1] << 8) +
+                (sprite->stack[sprite->stack_top + 2] << 16);
+
+    sprite->stack_top += 3;
+    return value;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021C6C);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021CA0);
+/* Push a byte onto a sprite's stack. */
+void func_80021CA0(Sprite *sprite, u8 value) {
+    sprite->stack[--sprite->stack_top] = value;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021CC4);
+/* Push a halfword onto a sprite's stack. */
+void func_80021CC4(Sprite *sprite, u16 value) {
+    sprite->stack_top -= 2;
+    sprite->stack[sprite->stack_top] = value;
+    sprite->stack[sprite->stack_top + 1] = value >> 8;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021CF8);
+/* Push three bytes onto a sprite's stack. */
+void func_80021CF8(Sprite *sprite, s32 value) {
+    sprite->stack_top -= 3;
+    sprite->stack[sprite->stack_top] = value;
+    sprite->stack[sprite->stack_top + 1] = value >> 8;
+    sprite->stack[sprite->stack_top + 2] = value >> 16;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021D3C);
+/* Set a position's x and z from whole units (16.16). */
+void func_80021D3C(VECTOR *position, s32 x, s32 z) {
+    position->vz = z << 16;
+    position->vx = x << 16;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021D50);
 

@@ -10,6 +10,14 @@ typedef struct {
 } RECT;
 
 typedef struct {
+    s16 vx, vy, vz, pad;
+} SVECTOR;
+
+typedef struct {
+    s32 vx, vy, vz, pad;
+} VECTOR;
+
+typedef struct {
     u32 tag;
     u32 code[15];
 } DR_ENV;
