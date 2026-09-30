@@ -428,7 +428,7 @@ void func_8008C3A8(void *vertices, u8 *work, s32 count);
 void func_8008C620(u8 *prims, s32 count);
 void func_8002C700(ModelFile *file, void *packets, u32 *ot, s32 mode);
 void func_80030B14(Matrix *m);
-void func_8003F738(SVector *angles, Matrix *m);
+Matrix *func_8003F738(SVector *angles, Matrix *m);
 void func_8004920C(Matrix *a, Matrix *b, Matrix *out);
 void func_80049D9C(Matrix *m, Vector *t);
 void func_800731F8(Matrix *m, s16 *scale);

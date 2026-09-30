@@ -131,14 +131,6 @@ typedef struct {
     s32 unk10;
 } SideHits;
 
-/* An actor's fighting stats. */
-typedef struct {
-    s16 base;
-    u8 unk2[0x7];
-    u8 levels[0xF];      /* 0x09: indexed by the combo number */
-    u8 unk18;
-} Stats;
-
 /* Header of an actor's move data (Actor 0x8FC). */
 typedef struct {
     u8 unk0[0x14];
@@ -170,16 +162,19 @@ typedef struct Actor {
     s32 target_angle;    /* 0x58 */
     Node *node;          /* 0x5C: model set node */
     u8 unk60[0x20];
-    u32 *combos;         /* 0x80: one entry per combo number */
+    struct MoveSlot *move_slots; /* 0x80: one per combo number */
     u8 *unk84;
-    u8 unk88[0x28];
+    u8 unk88[0x10];
+    s32 accel;           /* 0x98 */
+    s32 brake;           /* 0x9C */
+    u8 unkA0[0x10];
     s32 floor_y;         /* 0xB0 */
     s16 hp;              /* 0xB4 */
     s16 unkB6;           /* 0xB6: charge, 0x1000 = full */
     u8 unkB8[0x2];
     s16 unkBA;
     s16 max_hp;          /* 0xBC */
-    s16 unkBE;
+    s16 unkBE;           /* 0xBE: charge a special move needs */
     u8 unkC0[0x4];
     u8 unkC4;
     u8 unkC5;
@@ -207,10 +202,12 @@ typedef struct Actor {
     u8 unk900[0x4];
     u8 *visible;         /* 0x904: objects shown by the current move */
     u8 visible_count;
-    u8 unk909;
+    u8 kind;             /* 0x909: model kind */
     u8 unk90A;
     u8 unk90B;
-    u8 unk90C[0xA];
+    u8 unk90C[0x5];
+    u8 move_count;       /* 0x911: special moves the opponent may pick */
+    u8 unk912[0x4];
     s16 unk916;
     u8 unk918[0x24];
     Vector home;         /* 0x93C */
@@ -238,11 +235,15 @@ typedef struct Actor {
     u8 unk15F0[0x2];
     s16 unk15F2;
     s16 unk15F4;
-    u8 unk15F6[0xA];
-    Stats *stats;        /* 0x1600 */
+    u8 unk15F6[0x6];
+    struct Brain *brain; /* 0x15FC: the computer opponent's state */
+    struct MoveList *moves; /* 0x1600 */
     u8 unk1604[0x50];
     s32 unk1654;
     s32 unk1658;
+    u8 unk165C[0x8];
+    u8 *sounds;          /* 0x1664: command sound table */
+    s16 unk1668;
 } Actor;
 
 
@@ -255,21 +256,6 @@ typedef struct {
     s16 vertex_a;
     s16 vertex_b;
 } HitSpec;
-
-/* A sprite effect from the overlay's effect pool (func_8008D3F4). */
-typedef struct {
-    s16 kind;
-    u8 unk2[0x42];
-    s16 unk44;
-    u8 unk46[0x2];
-    s16 unk48;
-    s16 unk4A;
-    u8 unk4C[0x1C];
-    s16 unk68;
-    s16 unk6A;
-    u8 unk6C[0x8];
-    u8 r, g, b; /* 0x74 */
-} Effect;
 
 #define ACTOR_SIDE(actor) (((actor)->flags >> 27) & 1)
 
@@ -359,7 +345,6 @@ extern s32 D_8009290C;
 extern s32 D_8009294C;
 extern u8 D_80091144;
 extern u8 D_80091145;
-extern u8 D_80099D9E;
 extern Sprt16 D_8009A14C;
 extern Sprt16 D_8009A244;
 extern Actor *D_80092614;
@@ -385,7 +370,6 @@ extern s32 D_80092658;
 extern s32 D_80099D88;
 extern s32 D_80099D8C;
 extern u8 D_80050622; /* resident: result of the last menu battle */
-extern Effect *D_80092644;
 extern s32 D_80092650; /* trail segments added */
 
 /* PsyQ SDK (resident). */
@@ -437,7 +421,6 @@ void func_8008EBD0(Actor *actor, s32 sound, Shot *shot, s32 arg);
 void func_80073B7C(Actor *actor, s32 part, s32 vertex, Vector *out);
 void func_8007C100(Color *color);
 void func_80076424(Actor *actor);
-void func_8007639C(Actor *actor, u8 input);
 s32 func_80077584(Actor *actor, s32 angle, s32 shift, s32 lift);
 void func_8007E894(s32 x, s32 y);
 void func_80074678(Actor *actor, s32 arg1, s32 arg2);
@@ -461,7 +444,6 @@ s32 func_8008F4F4(Actor *actor, s32 mask);
 void func_8008EB4C(s32 id);
 void func_8007BB7C(void);
 void func_800831C8(void);
-void func_8008D580(Effect *effect);
 void func_8008DCA8(s32 arg);
 void func_800720C4(void);
 void func_800732CC(void);
@@ -477,7 +459,5 @@ Node *func_8008C2C0(Node *source);
 void func_80080D10(void);
 void func_8008976C(s32 a0, s32 a1);
 void func_8008BC04(void);
-Effect *func_8008D3F4(s32 kind, s32 arg);
-void func_8008D5C0(Effect *effect, s32 arg);
 
 #endif
