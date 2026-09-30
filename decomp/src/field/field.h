@@ -150,7 +150,8 @@ typedef struct FieldActor {
     u32 unk130 : 9;      /* 130: bits 0-8 */
     u32 unk130_9 : 10;   /* bits 9-18 */
     u32 unk130_19 : 9;   /* bits 19-27 */
-    u32 unk130_28 : 4;
+    u32 unk130_28 : 2;   /* bits 28-29 */
+    u32 unk130_30 : 2;
     u32 unk134;          /* 134 */
 } FieldActor;
 

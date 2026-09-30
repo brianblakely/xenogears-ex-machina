@@ -28,4 +28,9 @@ extern void func_800A1EC8(s32 limit);
 extern void func_80077268(void);
 extern void func_80080A74(s32 actor);
 
+/* A party member's sprite data (D_8005A414 per slot), copied whole. */
+typedef struct {
+    s32 data[0x14000 / 4];
+} PartySprite;
+
 #endif

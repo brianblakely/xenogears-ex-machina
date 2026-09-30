@@ -3821,7 +3821,44 @@ void func_8008BDD8(void) {
     D_800B0078->pc--;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008BF38);
+/* Close party slot `slot` up: the next slot's member, sprite data and ids
+ * move down (its actor's sprite is set up again for this slot) and the next
+ * slot is emptied. */
+void func_8008BF38(s32 slot) {
+    s32 member;
+    s32 kind;
+    s32 *sprites;
+
+    member = D_8005A444[slot + 1];
+    if (member == 0xFF) {
+        D_8006FABC[slot] = D_8006FABC[slot + 1];
+        D_80062590[slot] = D_80062590[slot + 1];
+        D_8005A444[slot] = D_8005A444[slot + 1];
+        D_80062590[slot + 1] = member;
+        D_8006FABC[slot + 1] = member;
+        D_8005A444[slot + 1] = member;
+        return;
+    }
+    *(PartySprite *)D_8005A414[slot] = *(PartySprite *)D_8005A414[slot + 1];
+    D_8006FABC[slot] = D_8006FABC[slot + 1];
+    D_80062590[slot] = D_80062590[slot + 1];
+    D_8005A444[slot] = D_8005A444[slot + 1];
+    kind = D_800AF880.components.descriptors[member].actor->unk126[0];
+    if (!(kind & 0x80)) {
+        func_80076AC0(member, slot, D_8005A414[slot], 1, 0, slot, 1);
+    } else {
+        sprites = D_800AF880.components.sprites;
+        func_80076AC0(member, D_800AF880.components.descriptors[member].actor->unk126[1],
+                      (u8 *)(sprites[(kind & 0x7F) + 1] + (s32)sprites),
+                      D_800AF880.components.descriptors[member].actor->unk130_28,
+                      D_800AF880.components.descriptors[member].actor->unk134 & 0xF,
+                      D_800AF880.components.descriptors[member].actor->unk126[0],
+                      (D_800AF880.components.descriptors[member].actor->unk134 >> 4) & 1);
+    }
+    D_80062590[slot + 1] = 0xFF;
+    D_8006FABC[slot + 1] = 0xFF;
+    D_8005A444[slot + 1] = 0xFF;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008C180);
 
