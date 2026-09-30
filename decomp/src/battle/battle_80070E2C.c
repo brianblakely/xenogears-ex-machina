@@ -1234,86 +1234,55 @@ void func_8007500C(void) {
 /* Size and colour each member's gauge shade in the current draw buffer:
  * panel state 1 shows the 800d32a0 value (green, two pixels per point),
  * state 2 the gear's fuel over 56 pixels (blue, yellow below a quarter,
- * pale red below an eighth).
- * Nonmatching: address operand order and register allocation. */
-#ifdef NON_MATCHING
+ * pale red below an eighth). */
 void func_80075168(void) {
     s32 i;
     u16 fuel;
     u16 maxFuel;
     s32 width;
-    u16 *panelX;
 
     for (i = 0; i < 3; i++) {
         switch (D_800C3EA4->panels[i].state) {
         case 1:
-            panelX = &D_800C3254[D_800D3280 * 3 + i];
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].x0 = i * 0x60 + (*panelX + 0x28);
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].y0 = 0x22;
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].x1 =
-                i * 0x60 + (*panelX + 0x28) + D_800D32A0[i].unk0 * 2;
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].y1 = 0x22;
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].x2 = i * 0x60 + (*panelX + 0x28);
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].y2 = 0x26;
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].x3 =
-                i * 0x60 + (*panelX + 0x28) + D_800D32A0[i].unk0 * 2;
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].y3 = 0x26;
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].r0 = 0;
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].g0 = 0xFF;
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].b0 = 0;
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].r1 = 0;
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].g1 = 0xFF;
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].b1 = 0;
+            setXY4(&D_800C3EA4->shade[i * 2 + D_800CCB04.buffer],
+                   i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x28), 0x22,
+                   i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x28) + D_800D32A0[i].unk0 * 2, 0x22,
+                   i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x28), 0x26,
+                   i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x28) + D_800D32A0[i].unk0 * 2, 0x26);
+            setRGB0(&D_800C3EA4->shade[i * 2 + D_800CCB04.buffer], 0, 0xFF, 0);
+            setRGB1(&D_800C3EA4->shade[i * 2 + D_800CCB04.buffer], 0, 0xFF, 0);
             break;
         case 2:
             fuel = D_800CCCE8.records[i].gear.fuel;
             maxFuel = D_800CCCE8.records[i].gear.maxFuel;
-            panelX = &D_800C3254[D_800D3280 * 3 + i];
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].x0 = i * 0x60 + (*panelX + 0x28);
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].y0 = 0x22;
             width = (u32)(fuel * 100) / maxFuel * 5600 / 10000;
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].x1 = i * 0x60 + 0x28 + *panelX + width;
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].y1 = 0x22;
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].x2 = i * 0x60 + (*panelX + 0x28);
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].y2 = 0x26;
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].x3 = i * 0x60 + 0x28 + *panelX + width;
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].y3 = 0x26;
+            setXY4(&D_800C3EA4->shade[i * 2 + D_800CCB04.buffer],
+                   i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x28), 0x22,
+                   i * 0x60 + 0x28 + D_800C3254[D_800D3280 * 3 + i] + width, 0x22,
+                   i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x28), 0x26,
+                   i * 0x60 + 0x28 + D_800C3254[D_800D3280 * 3 + i] + width, 0x26);
             if (fuel >= maxFuel >> 2) {
-                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].r0 = 0;
-                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].g0 = 0;
-                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].b0 = 0xFF;
-                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].r1 = 0;
-                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].g1 = 0;
-                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].b1 = 0xFF;
+                setRGB0(&D_800C3EA4->shade[i * 2 + D_800CCB04.buffer], 0, 0, 0xFF);
+                setRGB1(&D_800C3EA4->shade[i * 2 + D_800CCB04.buffer], 0, 0, 0xFF);
             } else if (fuel >= maxFuel >> 3) {
-                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].r0 = 0xFF;
-                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].g0 = 0xFF;
-                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].b0 = 0;
-                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].r1 = 0xFF;
-                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].g1 = 0xFF;
-                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].b1 = 0;
+                setRGB0(&D_800C3EA4->shade[i * 2 + D_800CCB04.buffer], 0xFF, 0xFF, 0);
+                setRGB1(&D_800C3EA4->shade[i * 2 + D_800CCB04.buffer], 0xFF, 0xFF, 0);
             } else {
-                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].r0 = 0xFF;
-                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].g0 = 0x7F;
-                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].b0 = 0x7F;
-                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].r1 = 0xFF;
-                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].g1 = 0x7F;
-                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].b1 = 0x7F;
+                setRGB0(&D_800C3EA4->shade[i * 2 + D_800CCB04.buffer], 0xFF, 0x7F, 0x7F);
+                setRGB1(&D_800C3EA4->shade[i * 2 + D_800CCB04.buffer], 0xFF, 0x7F, 0x7F);
             }
             break;
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80075168);
-#endif
 
 /* Update the gauge shades, then each present member's time bar in the
  * current draw buffer: filled by the turn counter over 56 pixels, coloured
  * for haste or slow. With the member's panel open (state != 0) the bar is
  * the upright party-wide one instead, showing the fuel of a member in a
  * gear.
- * Nonmatching: the original hoists more constants out of the loop. */
+ * Nonmatching: the original loads the bar width with lw in u1/u3 (only the
+ * page x byte is narrowed). */
 #ifdef NON_MATCHING
 void func_80075938(void) {
     s32 widths[3];
@@ -1329,28 +1298,16 @@ void func_80075938(void) {
             }
             if (D_800D2D28->unk90[i] == 0) {
                 widths[i] = (100 - D_800D2DCC.timers[1][i] * 100 / D_800D2DCC.timers[0][i]) * 5600 / 10000;
-                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].x0 =
-                    D_800C3254[D_800D3280 * 3 + i] + i * 0x60 + 0x2D;
-                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].y0 = 0x1A;
-                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].x1 =
-                    i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x2C) + ((u16)widths[i] + 1);
-                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].y1 = 0x1A;
-                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].x2 =
-                    D_800C3254[D_800D3280 * 3 + i] + i * 0x60 + 0x2D;
-                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].y2 = 0x1E;
-                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].x3 =
-                    i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x2C) + ((u16)widths[i] + 1);
-                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].y3 = 0x1E;
-                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].u0 = (D_800C3EA4->sprites[0].pageX & 0x3F) * 2;
-                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].v0 = D_800C3EA4->sprites[0].pageY;
-                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].u1 =
-                    (widths[i] + (D_800C3EA4->sprites[0].pageX & 0x3F)) * 2;
-                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].v1 = D_800C3EA4->sprites[0].pageY;
-                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].u2 = (D_800C3EA4->sprites[0].pageX & 0x3F) * 2;
-                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].v2 = D_800C3EA4->sprites[0].pageY + 4;
-                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].u3 =
-                    (widths[i] + (D_800C3EA4->sprites[0].pageX & 0x3F)) * 2;
-                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].v3 = D_800C3EA4->sprites[0].pageY + 4;
+                setXY4(&D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer],
+                       D_800C3254[D_800D3280 * 3 + i] + i * 0x60 + 0x2D, 0x1A,
+                       i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x2C) + ((u16)widths[i] + 1), 0x1A,
+                       D_800C3254[D_800D3280 * 3 + i] + i * 0x60 + 0x2D, 0x1E,
+                       i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x2C) + ((u16)widths[i] + 1), 0x1E);
+                setUV4(&D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer],
+                       (D_800C3EA4->sprites[0].pageX & 0x3F) << 1, D_800C3EA4->sprites[0].pageY,
+                       (widths[i] + (D_800C3EA4->sprites[0].pageX & 0x3F)) << 1, D_800C3EA4->sprites[0].pageY,
+                       (D_800C3EA4->sprites[0].pageX & 0x3F) << 1, D_800C3EA4->sprites[0].pageY + 4,
+                       (widths[i] + (D_800C3EA4->sprites[0].pageX & 0x3F)) << 1, D_800C3EA4->sprites[0].pageY + 4);
                 if ((D_800CCCE8.records[i].pilot.status84.half.active |
                      D_800CCCE8.records[i].pilot.status84.half.permanent) & 0x8000) {
                     clut = D_800C3EA4->barCluts[3];
@@ -1367,24 +1324,16 @@ void func_80075938(void) {
                     widths[i] = D_800CCCE8.records[i].gear.fuel * 100 / D_800CCCE8.records[i].gear.maxFuel * 5600 /
                                 10000;
                 }
-                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].x0 = 0xC;
-                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].y0 = 0xCE;
-                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].x1 = 0xC;
-                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].y1 = 0xCE - widths[i] * 2;
-                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].x2 = 0x14;
-                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].y2 = 0xCE;
-                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].x3 = 0x14;
-                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].y3 = 0xCE - widths[i] * 2;
-                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].u0 = (D_800C3EA4->sprites[0].pageX & 0x3F) * 2;
-                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].v0 = D_800C3EA4->sprites[0].pageY;
-                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].u1 =
-                    (widths[i] + (D_800C3EA4->sprites[0].pageX & 0x3F)) * 2;
-                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].v1 = D_800C3EA4->sprites[0].pageY;
-                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].u2 = (D_800C3EA4->sprites[0].pageX & 0x3F) * 2;
-                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].v2 = D_800C3EA4->sprites[0].pageY + 4;
-                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].u3 =
-                    (widths[i] + (D_800C3EA4->sprites[0].pageX & 0x3F)) * 2;
-                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].v3 = D_800C3EA4->sprites[0].pageY + 4;
+                setXY4(&D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer],
+                       0xC, 0xCE,
+                       0xC, 0xCE - widths[i] * 2,
+                       0x14, 0xCE,
+                       0x14, 0xCE - widths[i] * 2);
+                setUV4(&D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer],
+                       (D_800C3EA4->sprites[0].pageX & 0x3F) << 1, D_800C3EA4->sprites[0].pageY,
+                       (widths[i] + (D_800C3EA4->sprites[0].pageX & 0x3F)) << 1, D_800C3EA4->sprites[0].pageY,
+                       (D_800C3EA4->sprites[0].pageX & 0x3F) << 1, D_800C3EA4->sprites[0].pageY + 4,
+                       (widths[i] + (D_800C3EA4->sprites[0].pageX & 0x3F)) << 1, D_800C3EA4->sprites[0].pageY + 4);
                 D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].clut = D_800C3EA4->barCluts[1];
                 if (D_800D2D28->unkCB != 0) {
                     D_800D2D28->barShown[3] = 1;
