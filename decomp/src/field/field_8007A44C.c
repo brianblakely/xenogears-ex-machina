@@ -2614,13 +2614,11 @@ s32 func_80081F5C(FieldActor *actor) {
     return -((bits & (actor->unk014 >> 3)) != 0);
 }
 
-#ifdef NON_MATCHING
 /* Set a sprite's planar velocity from `heading` (0-fff; bit 15 stops it):
  * scaled by the actor's speed ratio (+76) and axis scales (+f4/+f8), taken
  * from its layer's gear object, or through the sprite's own heading for an
  * ordinary party actor; both components keep 1/16 unit precision. */
 void func_80081F80(FieldModel *sprite, s16 heading, FieldDescriptor *descriptor) {
-    LayerObject **entry;
     FieldActor *actor;
     s32 layer;
     s32 speed;
@@ -2655,9 +2653,8 @@ void func_80081F80(FieldModel *sprite, s16 heading, FieldDescriptor *descriptor)
             sprite->velocity[2] = (-(func_8003F8B0(angle) * speed) >> 12) * descriptor->actor->scale[2];
         } else {
             layer = actor->state.bits.layer;
-            entry = &D_801E8670[layer];
-            sprite->velocity[0] = -(*entry)->speed_x << 16;
-            sprite->velocity[2] = -(*entry)->speed_z << 16;
+            sprite->velocity[0] = -D_801E8670[layer]->speed_x << 16;
+            sprite->velocity[2] = -D_801E8670[layer]->speed_z << 16;
         }
     } else {
         sprite->velocity[0] = 0;
@@ -2666,9 +2663,6 @@ void func_80081F80(FieldModel *sprite, s16 heading, FieldDescriptor *descriptor)
     sprite->velocity[0] &= ~0xFFF;
     sprite->velocity[2] &= ~0xFFF;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_80081F80);
-#endif
 
 
 
