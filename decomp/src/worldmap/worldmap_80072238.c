@@ -726,7 +726,60 @@ void func_80075D4C(void) {
     }
 }
 
+/* Roll an encounter for the terrain at a position and a party level: pick a
+ * formation by the bracket's weights and copy the terrain's encounter set.
+ * Returns 0 when the bracket has no formations. */
+#ifdef NON_MATCHING /* formation search: original keeps a second copy of the weight pointer */
+s32 func_80075E7C(VECTOR *position, s32 level) {
+    u8 weights[16];
+    s32 kind;
+    s32 bracket;
+    s32 total;
+    s32 roll;
+    s32 formation;
+    s32 result;
+    s32 i;
+    u8 *weight;
+    u8 *row;
+
+    kind = (s16)func_80094028(position);
+    if (func_80093F18(position) == 4) {
+        kind = D_8009A3A0[kind];
+    }
+    bracket = 1;
+    while (level >= D_8009B578[bracket]) {
+        bracket++;
+    }
+    bracket--;
+    total = 0;
+    row = (u8 *)D_8009D73C[kind] + 0x200; /* weights: 16 per bracket */
+    row += bracket * 16;
+    for (i = 0; i < 16; i++) {
+        weights[i] = row[i];
+        total += row[i];
+    }
+    result = 0;
+    if (total > 0) {
+        roll = rand() % total + 1;
+        formation = 0;
+        weight = weights;
+        do {
+            roll--;
+            while (*weight == 0) {
+                weight++;
+                formation++;
+            }
+            (*weight)--;
+        } while (roll > 0);
+        D_800658DC = *(EncounterSet *)D_8009D73C[kind];
+        D_80059508 = formation;
+        result = 1;
+    }
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80075E7C);
+#endif
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80076098);
 

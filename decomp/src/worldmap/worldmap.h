@@ -768,7 +768,6 @@ extern void *D_8009C800, *D_8009C890; /* saved VRAM areas */
 extern s32 D_8009D14C, D_8009D804;
 extern u8 D_80059179;
 
-s16 func_80093F18(VECTOR *position);
 void func_80096694(void);
 void func_80071FEC(void);
 void func_80072BB0(void);
@@ -788,5 +787,18 @@ void func_8008901C(void);
 void func_80075D4C(void);
 
 #define GROUND_SCROLL ((s32 *)D_8009BBB4) /* ground scroll offset x, y, z */
+
+/* Encounter tables of a terrain kind: 0x200 bytes of formations, then per level
+ * bracket 16 formation weights. */
+typedef struct {
+    u8 data[0x200];
+} EncounterSet;
+
+extern EncounterSet D_800658DC; /* encounter set of the next battle */
+extern u8 D_80059508;           /* chosen formation */
+extern s16 D_8009A3A0[];        /* terrain kind substitutes */
+extern u16 D_8009B578[];        /* level bracket thresholds, from 1 */
+
+s32 func_80094028(VECTOR *position);
 
 #endif
