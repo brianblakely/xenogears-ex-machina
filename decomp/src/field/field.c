@@ -5062,7 +5062,6 @@ extern s32 D_8004F354;
 void func_80085EEC(void);
 void func_8001B66C(void);
 s32 func_8008A558(void);
-void func_80085B20(s32 track, s32 arg1);
 
 #ifdef NON_MATCHING
 /* Select the field music track (operand 1). Without D_800ADB1C the track is
@@ -5086,7 +5085,9 @@ void func_8008F7B8(void) {
             func_8001B66C();
             D_8004F324 = track;
             D_8004F308 = -1;
-            func_80085B20(track, 0);
+            /* The original also passes 0 as a second argument: this unit
+             * did not see 80085b20's one-parameter definition. */
+            func_80085B20(track);
         }
         D_800B0078->pc += 3;
     } else {
@@ -12300,7 +12301,8 @@ void func_800A5924(void) {
  * read-ahead block across the heap reset, then per kind fade or dissolve
  * out, reload the components (80070cc8), restart the music and fade in.
  * Unrecovered details: the original passes 800adb08 as a second argument
- * to 80071cb4, and uses a jump table. */
+ * to 80071cb4 and 0 as a second argument to 80085b20, and uses a jump
+ * table. */
 void func_800A5C40(void) {
     RECT rect;
     u8 *ahead;
@@ -12355,7 +12357,7 @@ void func_800A5C40(void) {
         D_800B0048 = kind;
         D_800AFD14 = frames;
         if (D_8004F308 == -1) {
-            func_80085B20(D_8004F324, 0);
+            func_80085B20(D_8004F324);
         }
         func_80071E58(D_800AFD14);
         break;
@@ -12389,7 +12391,7 @@ void func_800A5C40(void) {
         D_800B0048 = kind;
         D_800AFD14 = frames;
         if (D_8004F308 == -1) {
-            func_80085B20(D_8004F324, 0);
+            func_80085B20(D_8004F324);
         }
         func_800A56A8(D_800AFD14);
         break;
@@ -12419,7 +12421,7 @@ void func_800A5C40(void) {
         D_800B0048 = kind;
         D_800AFD14 = frames;
         if (D_8004F308 == -1) {
-            func_80085B20(D_8004F324, 0);
+            func_80085B20(D_8004F324);
         }
         level = 0x800000;
         func_80071E58(D_800AFD14);
@@ -12454,7 +12456,7 @@ void func_800A5C40(void) {
         D_800B0048 = kind;
         D_800AFD14 = frames;
         if (D_8004F308 == -1) {
-            func_80085B20(D_8004F324, 0);
+            func_80085B20(D_8004F324);
         }
         for (i = 0; i < 4; i++) {
             func_80077DAC();
@@ -12481,7 +12483,7 @@ void func_800A5C40(void) {
         D_800AFD14 = frames;
         MoveImage(&rect, 0x140, 0xFF);
         if (D_8004F308 == -1) {
-            func_80085B20(D_8004F324, 0);
+            func_80085B20(D_8004F324);
         }
         for (i = 0; i < 4; i++) {
             func_80077DAC();
