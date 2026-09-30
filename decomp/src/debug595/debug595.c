@@ -232,7 +232,190 @@ void func_80281B00(char *name) {
 
 INCLUDE_ASM(".local/decomp/debug595/asm/nonmatchings/debug595", func_80281B90);
 
-INCLUDE_ASM(".local/decomp/debug595/asm/nonmatchings/debug595", func_802835E0);
+/* Particle emitter editor screen: list the edited emitter's parameters
+ * (rows 0-21) or its eight angle offsets (rows 22+), with the cursor row and
+ * column marked; Up/Down move the row, Left/Right the column, and the
+ * editor steps the selected value. */
+void func_802835E0(void) {
+    s32 selected;
+    s32 row;
+    s32 cursor;
+    s32 column;
+    s32 i;
+
+    cursor = D_8028599C;
+    column = D_802859A0;
+    if (cursor < 22) {
+        row = func_8028439C(0, cursor, &selected);
+        func_800379C8("BANK    = %d\n", D_800B0044);
+        row = func_8028439C(row, cursor, &selected);
+        func_800379C8("MAX     = %d\n", D_800B02CC[D_800B0044].max);
+        row = func_8028439C(row, cursor, &selected);
+        func_800379C8("SWAIT   = %d\n", D_800B02CC[D_800B0044].start_wait);
+        row = func_8028439C(row, cursor, &selected);
+        func_800379C8("EWAIT   = %d\n", D_800B02CC[D_800B0044].end_wait);
+        row = func_8028439C(row, cursor, &selected);
+        func_800379C8("SPOS    =");
+        func_80284354(0, column, selected);
+        func_800379C8("%d", D_800B02CC[D_800B0044].start_pos.vx);
+        func_80284354(1, column, selected);
+        func_800379C8("%d", D_800B02CC[D_800B0044].start_pos.vy);
+        func_80284354(2, column, selected);
+        func_800379C8("%d\n", D_800B02CC[D_800B0044].start_pos.vz);
+        row = func_8028439C(row, cursor, &selected);
+        func_800379C8("EPOS    =");
+        func_80284354(0, column, selected);
+        func_800379C8("%d", D_800B02CC[D_800B0044].end_pos.vx);
+        func_80284354(1, column, selected);
+        func_800379C8("%d", D_800B02CC[D_800B0044].end_pos.vy);
+        func_80284354(2, column, selected);
+        func_800379C8("%d\n", D_800B02CC[D_800B0044].end_pos.vz);
+        row = func_8028439C(row, cursor, &selected);
+        func_800379C8("SPEED   = ");
+        func_80284354(0, column, selected);
+        func_800379C8("%d * ", D_800B02CC[D_800B0044].speed);
+        func_80284354(1, column, selected);
+        func_800379C8("%d\n", D_800B02CC[D_800B0044].speed_scale);
+        row = func_8028439C(row, cursor, &selected);
+        func_800379C8("GRAVITE =");
+        func_80284354(0, column, selected);
+        func_800379C8("%d", D_800B02CC[D_800B0044].gravity.vx);
+        func_80284354(1, column, selected);
+        func_800379C8("%d", D_800B02CC[D_800B0044].gravity.vy);
+        func_80284354(2, column, selected);
+        func_800379C8("%d\n", D_800B02CC[D_800B0044].gravity.vz);
+        row = func_8028439C(row, cursor, &selected);
+        func_800379C8("SRANGE  = %d\n", D_800B02CC[D_800B0044].start_range);
+        row = func_8028439C(row, cursor, &selected);
+        func_800379C8("ERANGE  = %d\n", D_800B02CC[D_800B0044].end_range);
+        row = func_8028439C(row, cursor, &selected);
+        func_800379C8("PSWAIT  = %d\n", D_800B02CC[D_800B0044].particle_start_wait);
+        row = func_8028439C(row, cursor, &selected);
+        func_800379C8("PEWAIT  = %d\n", D_800B02CC[D_800B0044].particle_end_wait);
+        row = func_8028439C(row, cursor, &selected);
+        func_800379C8("SHAPE   = %d\n", D_800B02CC[D_800B0044].shape);
+        row = func_8028439C(row, cursor, &selected);
+        func_800379C8("SCALE   =");
+        func_80284354(0, column, selected);
+        func_800379C8("%d", D_800B02CC[D_800B0044].scale.vx);
+        func_80284354(1, column, selected);
+        func_800379C8("%d\n", D_800B02CC[D_800B0044].scale.vy);
+        row = func_8028439C(row, cursor, &selected);
+        func_800379C8("SCALEOFS=");
+        func_80284354(0, column, selected);
+        func_800379C8("%d", D_800B02CC[D_800B0044].scale_offset.vx);
+        func_80284354(1, column, selected);
+        func_800379C8("%d\n", D_800B02CC[D_800B0044].scale_offset.vy);
+        row = func_8028439C(row, cursor, &selected);
+        func_800379C8("COLOR   =");
+        func_80284354(0, column, selected);
+        func_800379C8("%d", D_800B02CC[D_800B0044].color[0]);
+        func_80284354(1, column, selected);
+        func_800379C8("%d", D_800B02CC[D_800B0044].color[1]);
+        func_80284354(2, column, selected);
+        func_800379C8("%d\n", D_800B02CC[D_800B0044].color[2]);
+        row = func_8028439C(row, cursor, &selected);
+        func_800379C8("COLOROFS=");
+        func_80284354(0, column, selected);
+        func_800379C8("%d", D_800B02CC[D_800B0044].color_offset[0]);
+        func_80284354(1, column, selected);
+        func_800379C8("%d", D_800B02CC[D_800B0044].color_offset[1]);
+        func_80284354(2, column, selected);
+        func_800379C8("%d\n", D_800B02CC[D_800B0044].color_offset[2]);
+        row = func_8028439C(row, cursor, &selected);
+        if (!D_800B02CC[D_800B0044].flags.bits.randrot) {
+            func_800379C8("RANDROT = OFF\n");
+        } else {
+            func_800379C8("RANDROT = ON\n");
+        }
+        row = func_8028439C(row, cursor, &selected);
+        func_800379C8("SORT    = ");
+        switch (D_800B02CC[D_800B0044].flags.bits.sort) {
+        case 0:
+            func_800379C8("TOP\n");
+            break;
+        case 1:
+            func_800379C8("MID\n");
+            break;
+        case 2:
+            func_800379C8("NORMAL\n");
+            break;
+        case 3:
+            func_800379C8("BACK\n");
+            break;
+        }
+        row = func_8028439C(row, cursor, &selected);
+        func_800379C8("COLMODE = ");
+        switch (D_800B02CC[D_800B0044].flags.bits.colmode) {
+        case 0:
+            func_800379C8("1.0*Bk + 1.0*Fw\n");
+            break;
+        case 1:
+            func_800379C8("1.0*Bk - 1.0*Fw\n");
+            break;
+        case 2:
+            func_800379C8("1.0*Bk + 0.25*Fw\n");
+            break;
+        case 3:
+            func_800379C8("0.5*Bk + 0.5*Fw\n");
+            break;
+        }
+        row = func_8028439C(row, cursor, &selected);
+        func_800379C8("ROTANGLE= %d\n", D_800B02CC[D_800B0044].rot_angle);
+        func_8028439C(row, cursor, &selected);
+        func_800379C8("RANGEMOD= ");
+        switch (D_800B02CC[D_800B0044].flags.bits.rangemod) {
+        case 0:
+            func_800379C8("RANDUM (0)");
+            break;
+        case 2:
+            func_800379C8("CIRCLE (1)");
+            break;
+        case 1:
+            func_800379C8("LINE (2)");
+            break;
+        }
+        func_800379C8("ROTANGLE= %d\n", D_800B02CC[D_800B0044].rot_angle);
+    } else {
+        row = 22;
+        for (i = 0; i < 8; i++) {
+            row = func_8028439C(row, cursor, &selected);
+            func_800379C8("ANGOFFS%d=", i);
+            func_80284354(0, column, selected);
+            func_800379C8("%d", D_800B02CC[D_800B0044].angle_offsets[i][0]);
+            func_80284354(1, column, selected);
+            func_800379C8("%d\n", D_800B02CC[D_800B0044].angle_offsets[i][1]);
+        }
+    }
+    func_80036DC8(0xFF, 0xFF, 0xFF);
+    if (D_800C3908 & 0x4000) {
+        column = 0;
+        if (cursor < 29) {
+            cursor++;
+        }
+    }
+    if (D_800C3908 & 0x1000) {
+        column = 0;
+        if (cursor > 0) {
+            cursor--;
+        }
+    }
+    if (D_800C3908 & 0x2000) {
+        if (cursor == 13 || cursor == 14) {
+            if (column < 1) {
+                column++;
+            }
+        } else if (column < 2) {
+            column++;
+        }
+    }
+    if ((D_800C3908 & 0x8000) && column > 0) {
+        column--;
+    }
+    func_802846CC(column, cursor);
+    D_8028599C = cursor;
+    D_802859A0 = column;
+}
 
 /* Print the cursor mark for `row` when it is the selected row and `blink` is 1. */
 void func_80284354(s32 row, s32 cursor, s32 blink) {
@@ -387,14 +570,15 @@ void func_802846CC(s32 axis, u32 item) {
         D_800B0044 = func_80284424(D_800B0044, 0, 7);
         break;
     case 1:
-        D_800B02CC[D_800B0044].bank = func_80284424(D_800B02CC[D_800B0044].bank, 0, 0xFF);
+        D_800B02CC[D_800B0044].max = func_80284424(D_800B02CC[D_800B0044].max, 0, 0xFF);
         break;
     case 2:
-        D_800B02CC[D_800B0044].max = func_80284424(D_800B02CC[D_800B0044].max, 0, 0x7FFF);
+        D_800B02CC[D_800B0044].start_wait =
+            func_80284424(D_800B02CC[D_800B0044].start_wait, 0, 0x7FFF);
         break;
     case 3:
-        D_800B02CC[D_800B0044].start_wait =
-            func_80284424(D_800B02CC[D_800B0044].start_wait, 1, 0x7FFF);
+        D_800B02CC[D_800B0044].end_wait =
+            func_80284424(D_800B02CC[D_800B0044].end_wait, 1, 0x7FFF);
         break;
     case 4:
         func_802844BC(&D_800B02CC[D_800B0044].start_pos, axis,
@@ -459,18 +643,18 @@ void func_802846CC(s32 axis, u32 item) {
                                     0x7F));
         break;
     case 17:
-        flags = D_800B02CC[D_800B0044].flags;
-        D_800B02CC[D_800B0044].flags = (flags & 0xFFFE) | func_80284424(flags & 1, 0, 1);
+        flags = D_800B02CC[D_800B0044].flags.value;
+        D_800B02CC[D_800B0044].flags.value = (flags & 0xFFFE) | func_80284424(flags & 1, 0, 1);
         break;
     case 18:
-        flags = D_800B02CC[D_800B0044].flags;
-        D_800B02CC[D_800B0044].flags =
+        flags = D_800B02CC[D_800B0044].flags.value;
+        D_800B02CC[D_800B0044].flags.value =
             (flags & 0xFFF9) |
             (func_80284424((flags >> 1) & 3, 0, 3) << 1);
         break;
     case 19:
-        flags = D_800B02CC[D_800B0044].flags;
-        D_800B02CC[D_800B0044].flags =
+        flags = D_800B02CC[D_800B0044].flags.value;
+        D_800B02CC[D_800B0044].flags.value =
             (flags & 0xFCFF) |
             (func_80284424((flags >> 8) & 3, 0, 3) << 8);
         break;
@@ -479,8 +663,8 @@ void func_802846CC(s32 axis, u32 item) {
             func_80284424(D_800B02CC[D_800B0044].rot_angle, 0, 0xFFF);
         break;
     case 21:
-        flags = D_800B02CC[D_800B0044].flags;
-        D_800B02CC[D_800B0044].flags =
+        flags = D_800B02CC[D_800B0044].flags.value;
+        D_800B02CC[D_800B0044].flags.value =
             (flags & 0xFF3F) |
             (func_80284424((flags >> 6) & 3, 0, 2) << 6);
         break;

@@ -62,12 +62,25 @@ typedef struct {
     s16 x, y, w, h;
 } DebugRect;
 
+/* An emitter's drawing flags (the editor steps them as one halfword). */
+typedef union {
+    s16 value;
+    struct {
+        u16 randrot : 1;  /* RANDROT */
+        u16 sort : 2;     /* SORT: top, mid, normal, back */
+        u16 unk3 : 3;
+        u16 rangemod : 2; /* RANGEMOD: random, line, circle */
+        u16 colmode : 2;  /* COLMODE: semi-transparency rate */
+        u16 unk10 : 6;
+    } bits;
+} EmitterFlags;
+
 /* A field particle emitter (field overlay table, 8 entries). */
 typedef struct {
     s16 unk0;
-    u16 max;                  /* 0x02 MAX */
-    u16 start_wait;           /* 0x04 SWAIT */
-    s16 bank;                 /* 0x06 BANK */
+    u16 start_wait;           /* 0x02 SWAIT */
+    u16 end_wait;             /* 0x04 EWAIT */
+    s16 max;                  /* 0x06 MAX */
     s32 speed;                /* 0x08 SPEED */
     SVECTOR start_pos;        /* 0x0C SPOS */
     SVECTOR end_pos;          /* 0x14 EPOS */
@@ -75,7 +88,7 @@ typedef struct {
     s16 speed_scale;          /* 0x24 SPEED multiplier */
     u16 start_range;          /* 0x26 SRANGE */
     u16 end_range;            /* 0x28 ERANGE */
-    s16 flags;                /* 0x2A RANDROT, SORT, RANGEMOD, COLMODE bits */
+    EmitterFlags flags;       /* 0x2A */
     s16 unk2C[2];
     s16 angle_offsets[8][2];  /* 0x30 ANGOFFS */
     s16 unk50[2];
@@ -145,5 +158,12 @@ extern DebugLine D_80285B48[16];
 
 s32 func_80281B90(u32 *ot);
 void func_802814D4(u32 *ot, DebugLine *line, MATRIX *m, s32 buffer);
+
+/* Particle emitter editor. */
+extern s32 D_8028599C; /* editor row */
+extern s32 D_802859A0; /* editor column */
+void func_80284354(s32 row, s32 cursor, s32 blink);
+s32 func_8028439C(s32 row, s32 cursor, s32 *selected);
+void func_802846CC(s32 axis, u32 item);
 
 #endif
