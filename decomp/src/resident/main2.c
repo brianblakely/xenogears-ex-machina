@@ -444,9 +444,9 @@ void func_80034800(Window *window, u8 r, u8 g, u8 b) {
 
     for (i = 0; i < window->lines; i++) {
         line = &window->layout[i];
-        line->sprite[0].r0 = line->sprite[1].r0 = line->sprite[2].r0 = line->sprite[3].r0 = r;
-        line->sprite[0].g0 = line->sprite[1].g0 = line->sprite[2].g0 = line->sprite[3].g0 = g;
-        line->sprite[0].b0 = line->sprite[1].b0 = line->sprite[2].b0 = line->sprite[3].b0 = b;
+        line->sprite[0][0].r0 = line->sprite[0][1].r0 = line->sprite[1][0].r0 = line->sprite[1][1].r0 = r;
+        line->sprite[0][0].g0 = line->sprite[0][1].g0 = line->sprite[1][0].g0 = line->sprite[1][1].g0 = g;
+        line->sprite[0][0].b0 = line->sprite[0][1].b0 = line->sprite[1][0].b0 = line->sprite[1][1].b0 = b;
     }
 }
 
@@ -458,7 +458,118 @@ void func_8003487C(Window *window) {
     window->unk6E = 0xFF;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80034888);
+/* Draw a window into `ot` for draw buffer `buffer`: start its next queued
+ * message when the current one is done, link each line's two sprites
+ * (from the first shown line, the highlighted line lit), reveal the next
+ * glyphs when the wait is over and link its background. */
+void func_80034888(Window *window, u_long *ot, s32 buffer) {
+    WindowQueue *entry;
+    s32 i;
+    s32 line;
+
+    if (!(window->flags & 4)) {
+        if (window->queued == 0) {
+            return;
+        }
+        entry = window->queue;
+        window->text = (u8 *)entry->message;
+        window->queue = window->queue->next;
+        func_800320E8(entry);
+        window->queued--;
+        window->flags = (window->flags & 2) | 0x24;
+        if (window->unk6A != 0) {
+            window->unk68 = window->unk6A;
+            window->unk69 = window->unk6A;
+            window->unk6A = 0;
+        }
+        window->unk88 = 0;
+        window->unk86 = 0;
+        window->unk69 = window->unk68;
+    }
+    if (window->flags & 0x100) {
+        window->unk69 = window->unk68 * 3;
+    } else {
+        window->unk69 = window->unk68;
+    }
+    if (window->flags & 0x40) {
+        if (!(window->flags & 8)) {
+            window->flags = (window->flags & ~0x40) | 0x20;
+        }
+    }
+    if (window->flags & 0x20) {
+        window->unk16 = 0;
+        window->unk18 = 0;
+        window->y = 0;
+        window->x = 0;
+        window->layout[0].row = window->unkE;
+        window->layout[0].clut = D_800595D4;
+        window->layout[0].plane = 0;
+        window->layout[0].rect.y = window->unkE;
+        for (line = 0; line < window->lines; line++) {
+            window->layout[line].width = 0;
+        }
+        window->flags &= ~0x21;
+    }
+
+    line = window->unk16;
+    for (i = 0; i < window->lines; line++, i++) {
+        if (line >= window->lines) {
+            line = 0;
+        }
+        setShadeTex(&window->layout[line].sprite[buffer][1], window->unk6E != i);
+        if (window->layout[line].width > 0x40) {
+            window->layout[line].sprite[buffer][1].v0 = window->layout[line].row;
+            window->layout[line].sprite[buffer][1].clut = window->layout[line].clut;
+            window->layout[line].sprite[buffer][1].y0 = window->unk6 + window->unk14 * i;
+            window->layout[line].sprite[buffer][1].w = (window->layout[line].width - 0x40) * 4;
+            func_80031798(ot, &window->layout[line].sprite[buffer][1]);
+        }
+    }
+    AddPrim(ot, window->unk3C);
+    line = window->unk16;
+    for (i = 0; i < window->lines; line++, i++) {
+        if (line >= window->lines) {
+            line = 0;
+        }
+        setShadeTex(&window->layout[line].sprite[buffer][0], window->unk6E != i);
+        if (window->layout[line].width != 0) {
+            window->layout[line].sprite[buffer][0].v0 = window->layout[line].row;
+            window->layout[line].sprite[buffer][0].clut = window->layout[line].clut;
+            window->layout[line].sprite[buffer][0].y0 = window->unk6 + window->unk14 * i;
+            if (window->layout[line].width > 0x40) {
+                window->layout[line].sprite[buffer][0].w = 0x100;
+            } else {
+                window->layout[line].sprite[buffer][0].w = window->layout[line].width * 4;
+            }
+            func_80031798(ot, &window->layout[line].sprite[buffer][0]);
+        }
+    }
+
+    if (window->unk84 != 0) {
+        window->unk84--;
+    } else if (window->unk86 != 0) {
+        window->unk86--;
+    } else {
+        window->unk86 = window->unk88;
+        if (!(window->flags & 0x58)) {
+            func_80033DF0(window);
+            LoadImage(&window->layout[window->y].rect, window->image);
+        }
+    }
+    if (window->unk84 != 0) {
+        if (--window->unk84 == -1) {
+            window->flags &= ~0x10;
+        }
+    }
+    if (!(window->flags & 2)) {
+        *(u32 *)&window->tile[buffer].x0 = (window->unk4 - 7) | ((window->unk6 - 5) << 16);
+        *(u32 *)&window->tile[buffer].w = ((s16)(window->width | 1) * 4 + 0xD) |
+                                          ((window->lines * window->unk14 + 10) << 16);
+        addPrim(ot, &window->tile[buffer]);
+    }
+    window->flags &= ~0x100;
+    AddPrim(ot, window->unk30);
+}
 
 /* The one-line layout window (0x80059FD8) and its line (0x8005A068). */
 extern s16 D_80059FD8; /* x */
@@ -500,10 +611,10 @@ s32 func_80034EAC(u8 *text, void *image, s16 width, s32 flags) {
     D_80059FD8 = 0;
     D_8005A041 = 100;
     D_8005A000 = &D_8005A068;
-    D_8005A068.unk58 = 0;
-    D_8005A068.unk5A = flags & 1;
+    D_8005A068.width = 0;
+    D_8005A068.plane = flags & 1;
     func_80033DF0((Window *)&D_80059FD8);
-    return D_8005A000->unk58 * 4;
+    return D_8005A000->width * 4;
 }
 #else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80034EAC);
