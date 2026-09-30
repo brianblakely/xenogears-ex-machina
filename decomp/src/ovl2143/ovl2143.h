@@ -2,6 +2,7 @@
 #define OVL2143_OVL2143_H
 
 #include "common.h"
+#include "gte.h"
 
 /* libgte types. */
 typedef struct {
@@ -36,9 +37,9 @@ typedef struct {
     s16 x, y, w, h;
 } RECT;
 
-/* A 32-bit vector. */
+/* libgte 32-bit vector. */
 typedef struct {
-    s32 vx, vy, vz;
+    s32 vx, vy, vz, pad;
 } VECTOR;
 
 /* Scratchpad matrix used as a temporary. */
@@ -241,7 +242,8 @@ typedef struct Actor {
     u8 b62;                 /* +62 */
     u8 b63;                 /* +63 */
     u8 pad64[0xC];
-    s16 h70[15];            /* +70 */
+    s16 h70[12];            /* +70 */
+    s16 target[3];          /* +88 */
     s16 h8E;                /* +8e */
     s16 h90[4];             /* +90 */
     s16 anim_state;         /* +98: -1 none */
@@ -271,6 +273,48 @@ typedef struct Actor {
 void func_80032498(s32 tag, s32 mode);        /* select the allocation tag */
 void *func_80031BDC(s32 size, s32 mode);      /* allocate */
 void func_800320E8(void *block);              /* release */
+
+/* A resident sprite object (func_80023fd8); its link record lies `link`
+ * bytes past its start. */
+typedef struct {
+    s32 x, y, z;            /* 16.16 position */
+} SpriteBody;
+
+typedef struct {
+    u8 pad0[0x38];
+    SpriteBody body;        /* +38 */
+    u8 pad44[0x7A];
+    s16 link;               /* +be */
+} Sprite;
+
+/* This overlay's link of a sprite to an actor node. */
+typedef struct {
+    u8 pad0[4];
+    void (*update)(Sprite *sprite); /* +4: the sprite's own update */
+    Actor *actor;           /* +8 */
+    s16 node;               /* +c */
+    s16 follow;             /* +e: take the height from the actor */
+    SVECTOR offset;         /* +10 */
+} SpriteLink;
+
+/* A sprite attachment of an actor script. */
+typedef struct {
+    u8 pad0[5];
+    u8 node;                /* +5 */
+    u16 offset[3];          /* +6 */
+    u8 follow;              /* +c */
+    u8 padD[6];
+    u8 linked;              /* +13 */
+} SpriteSpec;
+
+/* Resident sprites. */
+Sprite *func_80023FD8(s32 a, s32 b, s32 c, s32 size);
+void func_80021FE0(SpriteBody *body, s32 value);
+void func_800223B0(SpriteBody *body, s32 value);
+void func_80022000(SpriteBody *body, s32 scale);
+void *func_8001CD7C(Sprite *sprite);          /* the sprite's update */
+void func_8001CD6C(Sprite *sprite, void (*update)(Sprite *sprite)); /* set it */
+void func_8004A480(void *a, void *b, VECTOR *out);
 
 /* Resident models. */
 u32 func_8002C3E8(void *group);               /* relocate a model group; returns model count */
@@ -310,17 +354,21 @@ typedef struct {
     s32 w4;
 } Pair;
 
+/* A point attached to an actor node (0x14 bytes): its world position is
+ * the node's matrix applied to `offset` (func_801E1880). */
 typedef struct {
-    s16 h0;
-    s16 h2;
-    u8 rest[0x10];
-} Record14;
+    s16 pos[3];
+    s16 active;             /* +6 */
+    SVECTOR offset;         /* +8 */
+    s16 actor;              /* +10: -1 none */
+    s16 node;               /* +12 */
+} Anchor;
 
 extern s32 D_801E85CC;
 extern Pair D_801E85F4[8];
 extern u16 D_801E863C;
 extern s32 D_801E8640;
-extern Record14 D_801E864C[2];
+extern Anchor D_801E8648[2];
 extern Actor *D_801E8670[10];
 extern s16 D_801E869C;
 extern ParticlePool D_801E86A0;
@@ -337,6 +385,12 @@ void func_801E35D0(Actor *actor, Actor *source, SlotPool *pool, s32 entry);
 void func_801E39F0(Actor *actor, SlotPool *pool, s32 arg2, s32 arg3, s32 arg4);
 s32 func_801E67F8(void);
 s32 func_801E08D4(s16 value, s16 divisor, s32 base);
+u32 func_801DC5C0(ModelPart *parts, s32 scale);
+u32 func_801DC848(ModelPart *parts, s32 scale);
+s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, u16 arg2, s16 scale);
+void func_801E5D44(Actor *actor, SlotPool *pool, s32 arg2);
+void func_801E7298(Actor *actor);
+void func_801E6F64(Sprite *sprite);
 void func_801E8030(s32 index);
 void func_801E011C(ParticlePool *pool);
 void func_801DF6A8(SlotPool *pool);

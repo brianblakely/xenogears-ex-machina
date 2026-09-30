@@ -142,6 +142,7 @@ decomp/src/menu/system.h
 decomp/src/menu/window.h
 decomp/src/movie/movie.c
 decomp/src/movie/movie_mode.h
+decomp/src/ovl2143/gte.h
 decomp/src/ovl2143/ovl2143.c
 decomp/src/ovl2143/ovl2143.h
 decomp/src/ovl2596/battle_results.h

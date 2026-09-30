@@ -731,7 +731,35 @@ void func_801E17B8(ImageAnim *anim, s16 level) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E1880);
+/* Place each active anchor: its offset through its actor node's matrix, or
+ * the offset itself without an actor. */
+void func_801E1880(Actor **actors) {
+    VECTOR world;
+    MATRIX *m;
+    Actor *actor;
+    s32 i;
+
+    m = SCRATCH_MATRIX;
+    for (i = 0; i < 2; i++) {
+        if (D_801E8648[i].active) {
+            if (D_801E8648[i].actor >= 0 && (actor = actors[D_801E8648[i].actor]) != NULL) {
+                CompMatrix(&actor->parts->local, &actor->parts[D_801E8648[i].node + 1].world, m);
+                SetRotMatrix(m);
+                SetTransMatrix(m);
+                gte_ldv0(&D_801E8648[i].offset);
+                gte_rtv0tr();
+                gte_stlvnl(&world);
+                D_801E8648[i].pos[0] = world.vx;
+                D_801E8648[i].pos[1] = world.vy;
+                D_801E8648[i].pos[2] = world.vz;
+            } else {
+                D_801E8648[i].pos[0] = D_801E8648[i].offset.vx;
+                D_801E8648[i].pos[1] = D_801E8648[i].offset.vy;
+                D_801E8648[i].pos[2] = D_801E8648[i].offset.vz;
+            }
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E1A14);
 
@@ -842,7 +870,30 @@ void func_801E35D0(Actor *actor, Actor *source, SlotPool *pool, s32 entry) {
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E35D0);
 #endif
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E36BC);
+/* Run `ticks` steps of an actor: its hierarchy matrices, node tweens and
+ * animation, then its script. Returns the tween changes. */
+s32 func_801E36BC(Actor *actor, SlotPool *pool, s32 ticks, s32 arg3, s32 arg4) {
+    s32 changed;
+    s32 i;
+
+    if (actor->models != NULL) {
+        changed = 0;
+        if (actor->active) {
+            func_801E7298(actor);
+            if (actor->scaled) {
+                func_801DC848(actor->parts, actor->scale);
+            } else {
+                func_801DC5C0(actor->parts, actor->scale);
+            }
+            for (i = 0; i < ticks; i++) {
+                changed |= func_801DDBF8(pool, actor->parts, actor->h3C, actor->scale);
+                func_801E5D44(actor, pool, arg3);
+            }
+        }
+        func_801E39F0(actor, pool, changed, ticks, arg4);
+    }
+    return changed;
+}
 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E37D0);
 
@@ -931,15 +982,58 @@ void func_801E5B50(SlotPool *pool, ModelPart *part, s32 type, s32 arg3, s32 arg4
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E5C74);
+/* Start an animation (looping to its loop frame when `loop`); none without
+ * frames. */
+void func_801E5C74(Actor *actor, Animation *anim, s32 loop) {
+    if (anim->frames != 0) {
+        actor->anim_state = 0;
+        if (loop) {
+            actor->anim_loop = anim->loop;
+        } else {
+            actor->anim_loop = -1;
+        }
+        actor->anim_frame = 0;
+        actor->anim_frames = anim->frames;
+        actor->anim_pos = actor->anim_start = (u8 *)anim + anim->data;
+        return;
+    }
+    actor->anim_state = -1;
+}
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E5CD8);
+/* The +14 value of view `which` (0: the resident one, 1/2: the actor's) in
+ * 16.16. */
+s32 func_801E5CD8(Actor *actor, s32 which) {
+    if (which == 0) {
+        return D_8005919C->h14 << 16;
+    } else if (which != 1) {
+        if (which == 2) {
+            return actor->ownerB4->view->h14 << 16;
+        }
+    } else {
+        return actor->ownerB0->view->h14 << 16;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E5D44);
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E632C);
+/* Stop an actor's animation. */
+void func_801E632C(Actor *actor) {
+    actor->anim_state = -1;
+}
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E6338);
+/* Distance from an actor's root to its target. */
+s32 func_801E6338(Actor *actor) {
+    ModelPart *root;
+    s32 dx;
+    s32 dy;
+    s32 dz;
+
+    root = actor->parts;
+    dx = actor->target[0] - root->pos[0];
+    dy = actor->target[1] - root->pos[1];
+    dz = actor->target[2] - root->pos[2];
+    return SquareRoot0(dx * dx + dy * dy + dz * dz);
+}
 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E63A8);
 
@@ -993,7 +1087,18 @@ void func_801E6668(ModelPart *parts, ModelPart *other) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E66BC);
+/* The cosine-like ratio of `dir` to the vector made from `a` and `b`, scaled
+ * by 16 * 256 and divided by `divisor`. */
+s16 func_801E66BC(VECTOR *dir, void *a, void *b, s32 divisor) {
+    VECTOR v;
+    s32 dot;
+    s32 length;
+
+    func_8004A480(a, b, &v);
+    dot = v.vx * dir->vx + v.vy * dir->vy + v.vz * dir->vz;
+    length = SquareRoot0(v.vx * v.vx + v.vy * v.vy + v.vz * v.vz) + 1;
+    return (((dot * 16) / length) << 8) / divisor;
+}
 
 /* The lowest set bit of D_801E863C's low byte (8 when none). */
 s32 func_801E67F8(void) {
@@ -1007,23 +1112,195 @@ s32 func_801E67F8(void) {
     return i;
 }
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E6830);
+/* The actor bit mask of reference `ref` (0xff: the mask's lowest actor,
+ * 0xfe: the current actor, 0xfd/0xf9: this actor, ...). The original
+ * masks the shift count to 8 bits at the join; this build drops it. */
+#ifdef NON_MATCHING
+void func_801E6830(Actor *actor, u8 ref, u16 *mask) {
+    u8 index;
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E6910);
+    if (ref == 0xFF) {
+        index = func_801E67F8();
+    } else if (ref == 0xFE) {
+        index = D_801E86B0;
+    } else if (ref == 0xFD || ref == 0xF9) {
+        index = actor->index;
+    } else if (ref == 0xFC) {
+        index = actor->b21;
+    } else if (ref == 0xFA) {
+        index = 10;
+    } else if (ref == 0xF8) {
+        index = actor->index * 2 + 8;
+    } else if (ref == 0xF7) {
+        index = actor->index * 2 + 9;
+    } else {
+        index = ref;
+    }
+    *mask = 1 << index;
+}
+#else
+INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E6830);
+#endif
+
+/* Script variable `ref` (0xfe/0xff: the actor's default reference, whose bit
+ * 7 is returned in `*flag`): a local below 0x40, else a global. */
+s32 func_801E6910(Actor *actor, u8 ref, s32 *flag) {
+    *flag = 0;
+    if (ref >= 0xFE) {
+        ref = actor->reference & 0x7F;
+        *flag = actor->reference & 0x80;
+    }
+    if (ref < 0x40) {
+        return actor->locals[ref + 1];
+    }
+    return actor->globals[ref - 0x3F];
+}
 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E6974);
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E6D94);
+/* Show or hide (flag bit 0) a node, and with bit 7 its descendants. */
+void func_801E6D94(Actor *actor, ModelPart *part, s32 flags) {
+    ModelPart *child;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E6E48);
+    part->visible = flags & 1;
+    if (flags & 0x80) {
+        child = actor->parts;
+        for (i = 1; i < actor->parts->count; i++) {
+            child++;
+            if (child->parent == part) {
+                func_801E6D94(actor, child, flags);
+            }
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E6F64);
+/* Create a resident sprite linked to an actor node. */
+void func_801E6E48(s32 a, s32 b, s32 c, s16 value, s16 scale, SpriteSpec *spec, Actor *actor) {
+    Sprite *sprite;
+    SpriteLink *link;
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E7094);
+    sprite = func_80023FD8(b, a, c, 0x18);
+    func_80021FE0(&sprite->body, value);
+    func_800223B0(&sprite->body, value);
+    func_80022000(&sprite->body, scale);
+    link = (SpriteLink *)((u8 *)sprite + sprite->link);
+    link->actor = actor;
+    link->node = spec->node;
+    if (spec->linked) {
+        link->update = func_8001CD7C(sprite);
+        func_8001CD6C(sprite, func_801E6F64);
+        link->offset.vx = spec->offset[0];
+        link->offset.vy = spec->offset[1];
+        link->offset.vz = spec->offset[2];
+        link->follow = spec->follow;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E7298);
+/* Sprite update: place the sprite at its offset through its actor node,
+ * then run its own update. */
+void func_801E6F64(Sprite *sprite) {
+    VECTOR world;
+    SpriteLink *link;
+    MATRIX *m;
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E72CC);
+    link = (SpriteLink *)((u8 *)sprite + sprite->link);
+    m = SCRATCH_MATRIX;
+    if (link->node != 0) {
+        CompMatrix(&link->actor->parts->local, &link->actor->parts[link->node].world, SCRATCH_MATRIX);
+    } else {
+        m = &link->actor->parts->local;
+    }
+    SetRotMatrix(m);
+    SetTransMatrix(m);
+    gte_ldv0(&link->offset);
+    gte_rtv0tr();
+    gte_stlvnl(&world);
+    if (link->follow) {
+        world.vy = link->actor->h60;
+    }
+    sprite->body.x = world.vx << 16;
+    sprite->body.y = world.vy << 16;
+    sprite->body.z = world.vz << 16;
+    link->update(sprite);
+}
+
+/* Set or (flag bit 5) add to a node's rotation (mode 0), position (1) or
+ * scale, and with bit 7 its descendants'. */
+void func_801E7094(Actor *actor, ModelPart *part, u8 flags, s16 x, s16 y, s16 z) {
+    ModelPart *child;
+    s32 i;
+
+    if ((flags & 7) == 0) {
+        if (flags & 0x20) {
+            part->rot.vx += x;
+            part->rot.vy += y;
+            part->rot.vz += z;
+        } else {
+            part->rot.vx = x;
+            part->rot.vy = y;
+            part->rot.vz = z;
+        }
+    } else if ((flags & 7) == 1) {
+        if (flags & 0x20) {
+            part->pos[0] += x;
+            part->pos[1] += y;
+            part->pos[2] += z;
+        } else {
+            part->pos[0] = x;
+            part->pos[1] = y;
+            part->pos[2] = z;
+        }
+    } else {
+        if (flags & 0x20) {
+            part->scale[0] += x;
+            part->scale[1] += y;
+            part->scale[2] += z;
+        } else {
+            part->scale[0] = x;
+            part->scale[1] = y;
+            part->scale[2] = z;
+        }
+    }
+    part->dirty = 1;
+    part->rotate = 1;
+    if (flags & 0x80) {
+        child = actor->parts;
+        for (i = 1; i < actor->parts->count; i++) {
+            child++;
+            if (child->parent == part) {
+                func_801E7094(actor, child, flags, x, y, z);
+            }
+        }
+    }
+}
+
+/* Put an actor's root at its height unless it is held. */
+void func_801E7298(Actor *actor) {
+    VECTOR unused;
+    SVECTOR pos;
+
+    pos.vy = actor->h60;
+    if (actor->b36 == 0) {
+        actor->parts->pos[1] = pos.vy;
+    }
+}
+
+/* The world matrix of node `node` of actor `index` (its root's local matrix
+ * for node 0). */
+void func_801E72CC(MATRIX *out, s32 unused, s32 index, s32 node) {
+    MATRIX m;
+    Actor *actor;
+
+    actor = D_801E8670[index];
+    if (actor != NULL) {
+        if (node != 0) {
+            CompMatrix(&actor->parts->local, &actor->parts[node].world, out);
+        } else {
+            *out = actor->parts->local;
+        }
+    }
+}
 
 /* Set flag D_801E85CC from bit 0. */
 void func_801E7378(s32 value) {
@@ -1047,9 +1324,9 @@ void func_801E738C(s32 slot_count) {
     for (j = 7; j >= 0; j--) {
         D_801E85F4[j].w0 = 0;
     }
-    /* Both 0x14-byte records' second halfword, by byte offset. */
-    for (offset = sizeof(Record14); offset >= 0; offset -= sizeof(Record14)) {
-        *(s16 *)((u8 *)&D_801E864C[0].h2 + offset) = 0;
+    /* Both anchors' active flags, by byte offset. */
+    for (offset = sizeof(Anchor); offset >= 0; offset -= sizeof(Anchor)) {
+        *(s16 *)((u8 *)&D_801E8648[0].active + offset) = 0;
     }
 }
 
