@@ -133,4 +133,201 @@ void func_801FC1A8(TaskNode *node) {
 INCLUDE_ASM(".local/decomp/ovl3384/asm/nonmatchings/ovl3384", func_801FC1A8);
 #endif
 
+/* Opcode entry: break `model` (placed by `matrix`) into one piece per
+ * primitive. Each piece keeps its corners about its centre and flies from the
+ * model's origin outward at `speed` plus a random part of `speed_range`,
+ * spinning by a random part of `spin_range`, falling under `gravity`, for
+ * `life` frames. `prims` holds the model's primitives, or 0 to build them
+ * (twice: one copy per display buffer). */
+#ifdef NON_MATCHING
+void func_801FC4C4(Model *model, u8 *prims, MATRIX *matrix, s32 gravity, s32 speed, s32 speed_range,
+                   s32 spin_range, s32 life) {
+    DebrisTask *debris;
+    Piece *piece;
+    PacketDesc *desc;
+    SVECTOR *vertices;
+    SVECTOR *v0, *v1, *v2, *v3;
+    SVECTOR centre;
+    SVECTOR angles;
+    VECTOR velocity;
+    MATRIX m;
+    s32 count, size, kind, i, r;
+    u16 *index;
+
+    debris = func_8001D1D8(sizeof(DebrisTask), NULL, func_801FC0CC, func_801FC1A8, func_801FC074);
+    debris->model = model;
+    count = model->count;
+    debris->count = count;
+    piece = func_80031BDC(count * sizeof(Piece), 0);
+    debris->pieces = piece;
+    debris->matrix = *matrix;
+    debris->life = life;
+    size = func_800B16A4(model);
+    if (prims == NULL) {
+        prims = func_80031BDC(size * 2, 0);
+        func_800B1720(model, prims, 0, 1);
+        memcpy(prims + size, prims, size);
+    }
+    debris->prims[0] = prims;
+    debris->prims[1] = prims + size;
+    desc = (PacketDesc *)((u8 *)model + model->packets);
+    vertices = (SVECTOR *)((u8 *)model + model->vertices);
+    for (i = 0; i != count; i++) {
+        index = (u16 *)desc;
+        /* The primitive's kind with bit 8 for a one-sided primitive; its
+         * vertex indices follow the kind's header and colours. */
+        kind = (desc->kind & 0x1C) | ((desc->unk2 ^ 1) & 1) << 8;
+        switch (kind) {
+        case 0x00:
+            v0 = &vertices[index[4]];
+            v1 = &vertices[index[5]];
+            v2 = &vertices[index[6]];
+            break;
+        case 0x10:
+            v0 = &vertices[index[8]];
+            v1 = &vertices[index[9]];
+            v2 = &vertices[index[10]];
+            break;
+        case 0x18:
+            v0 = &vertices[index[10]];
+            v1 = &vertices[index[11]];
+            v2 = &vertices[index[12]];
+            v3 = &vertices[index[13]];
+            break;
+        case 0x08:
+            v0 = &vertices[index[4]];
+            v1 = &vertices[index[5]];
+            v2 = &vertices[index[6]];
+            v3 = &vertices[index[7]];
+            break;
+        case 0x04:
+            v0 = &vertices[index[10]];
+            v1 = &vertices[index[11]];
+            v2 = &vertices[index[12]];
+            break;
+        case 0x14:
+            v0 = &vertices[index[14]];
+            v1 = &vertices[index[15]];
+            v2 = &vertices[index[16]];
+            break;
+        case 0x0C:
+            v0 = &vertices[index[12]];
+            v1 = &vertices[index[13]];
+            v2 = &vertices[index[14]];
+            v3 = &vertices[index[15]];
+            break;
+        case 0x1C:
+            v0 = &vertices[index[18]];
+            v1 = &vertices[index[19]];
+            v2 = &vertices[index[20]];
+            v3 = &vertices[index[21]];
+            break;
+        case 0x100:
+            v0 = &vertices[index[5]];
+            v1 = &vertices[index[6]];
+            v2 = &vertices[index[7]];
+            break;
+        case 0x110:
+            v0 = &vertices[index[8]];
+            v1 = &vertices[index[11]];
+            v2 = &vertices[index[13]];
+            break;
+        case 0x108:
+            v0 = &vertices[index[5]];
+            v1 = &vertices[index[6]];
+            v2 = &vertices[index[7]];
+            v3 = &vertices[index[8]];
+            break;
+        case 0x104:
+            v0 = &vertices[index[9]];
+            v1 = &vertices[index[10]];
+            v2 = &vertices[index[11]];
+            break;
+        case 0x114:
+            v0 = &vertices[index[9]];
+            v1 = &vertices[index[11]];
+            v2 = &vertices[index[13]];
+            break;
+        case 0x10C:
+            v0 = &vertices[index[11]];
+            v1 = &vertices[index[12]];
+            v2 = &vertices[index[13]];
+            v3 = &vertices[index[14]];
+            break;
+        case 0x118:
+        case 0x11C:
+            v0 = &vertices[index[11]];
+            v1 = &vertices[index[13]];
+            v2 = &vertices[index[15]];
+            v3 = &vertices[index[17]];
+            break;
+        }
+        if (kind & 8) {
+            centre = *v0;
+            centre.vx += v1->vx;
+            centre.vy += v1->vy;
+            centre.vz += v1->vz;
+            centre.vx += v2->vx;
+            centre.vy += v2->vy;
+            centre.vz += v2->vz;
+            centre.vx += v3->vx;
+            centre.vy += v3->vy;
+            centre.vz += v3->vz;
+            centre.vx /= 4;
+            centre.vy /= 4;
+            centre.vz /= 4;
+        } else {
+            centre = *v0;
+            centre.vx += v1->vx;
+            centre.vy += v1->vy;
+            centre.vz += v1->vz;
+            centre.vx += v2->vx;
+            centre.vy += v2->vy;
+            centre.vz += v2->vz;
+            centre.vx /= 3;
+            centre.vy /= 3;
+            centre.vz /= 3;
+            v3 = v2;
+        }
+        piece->vertex[0].vx = v0->vx - centre.vx;
+        piece->vertex[0].vy = v0->vy - centre.vy;
+        piece->vertex[0].vz = v0->vz - centre.vz;
+        piece->vertex[1].vx = v1->vx - centre.vx;
+        piece->vertex[1].vy = v1->vy - centre.vy;
+        piece->vertex[1].vz = v1->vz - centre.vz;
+        piece->vertex[2].vx = v2->vx - centre.vx;
+        piece->vertex[2].vy = v2->vy - centre.vy;
+        piece->vertex[2].vz = v2->vz - centre.vz;
+        piece->vertex[3].vx = v3->vx - centre.vx;
+        piece->vertex[3].vy = v3->vy - centre.vy;
+        piece->vertex[3].vz = v3->vz - centre.vz;
+        piece->position[0] = centre.vx << 16;
+        piece->position[1] = centre.vy << 16;
+        piece->position[2] = centre.vz << 16;
+        r = (rand() & 0xFF) * speed_range / 256;
+        velocity.vx = speed + r;
+        velocity.vy = 0;
+        velocity.vz = 0;
+        func_800C0828(&centre, &D_801FCE14, &angles);
+        func_8003F738(&angles, &m);
+        ApplyMatrixLV(&m, &velocity, &velocity);
+        piece->velocity[0] = velocity.vx;
+        piece->velocity[1] = velocity.vy;
+        piece->velocity[2] = velocity.vz;
+        piece->rotation.vx = 0;
+        piece->rotation.vy = 0;
+        piece->rotation.vz = 0;
+        r = (rand() & 0xFF) * spin_range / 256;
+        piece->spin.vx = r - r / 2;
+        r = (rand() & 0xFF) * spin_range / 256;
+        piece->spin.vy = r - r / 2;
+        r = (rand() & 0xFF) * spin_range / 256;
+        piece->spin.vz = r - r / 2;
+        piece->gravity = gravity;
+        piece++;
+        desc = (PacketDesc *)((u8 *)desc + (desc->words + 1) * 4);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl3384/asm/nonmatchings/ovl3384", func_801FC4C4);
+#endif
