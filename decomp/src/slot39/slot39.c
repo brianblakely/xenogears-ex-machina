@@ -4092,13 +4092,88 @@ void func_801E92CC(void) {
     }
 }
 
-/* Run 8004c398 on a handle opened by 8004c318(`arg0`, 0, 0), then close it. */
-void func_801E9340(s32 arg0, s32 arg1, s32 arg2) {
+/* Read `size` bytes of host file `name` into `buffer` (development PC link). */
+void func_801E9340(char *name, void *buffer, s32 size) {
     s32 handle;
 
-    handle = PCopen(arg0, 0, 0);
-    func_8004C398(handle, arg1, arg2);
+    handle = PCopen(name, 0, 0);
+    func_8004C398(handle, buffer, size);
     PCclose(handle);
 }
 
+/* Check that disc `disc` is in the drive and load its directory: from the
+ * host files on the development link, else after waiting for the lid to
+ * close and the drive to settle, from the disc label and files 18 and 28.
+ * Returns 0 when loaded, 2 when no disc label was read, 3 for the other
+ * disc. */
+#ifdef NON_MATCHING
+s32 func_801E93A0(s32 disc) {
+    DiscLabel label = { { 0 } };
+    u8 pos[4];
+    s32 result;
+    s32 ok;
+
+    func_80028A60(0);
+    if (func_8002C3D8() != 0) {
+        result = 0;
+        if (disc == 1) {
+            func_801E9340("c:\\work\\cdrom.mdg", D_8004FDF0, 0x8000);
+            func_801E9340("c:\\work\\cdrom.fid", D_8004FDF4, 0x7a);
+            func_801E9340("c:\\work\\cdrom.fnd", D_8004FE48, 0x40000);
+        } else {
+            func_801E9340("c:\\work\\cdrom2.mdg", D_8004FDF0, 0x8000);
+            func_801E9340("c:\\work\\cdrom2.fid", D_8004FDF4, 0x7a);
+            func_801E9340("c:\\work\\cdrom2.fnd", D_8004FE48, 0x40000);
+        }
+        return result;
+    }
+    CdIntToPos(0, pos);
+    do {
+        VSync(3);
+        CdControlB(1, 0, D_801EA8F4);
+    } while (!(D_801EA8F4[0] & 0x10));
+    do {
+        VSync(3);
+        CdControlB(1, 0, D_801EA8F4);
+    } while (D_801EA8F4[0] & 0x10);
+    do {
+        VSync(3);
+        ok = CdControlB(1, 0, D_801EA8F4);
+    } while (!(D_801EA8F4[0] & 2) || ok == 0);
+retry:
+    do {
+        VSync(3);
+    } while (CdControlB(0x13, 0, D_801EA8F4) == 0);
+    do {
+        VSync(3);
+    } while (CdControlB(2, pos, D_801EA8F4) == 0);
+    ok = CdControlB(0x15, 0, D_801EA8F4);
+    if ((D_801EA8F4[0] & 1) && (D_801EA8F4[1] & 0x40)) {
+        if (ok == 0) {
+            return 2;
+        }
+    } else if (ok == 0) {
+        goto retry;
+    }
+    func_8002A428(0xa0);
+    func_80028A60(0);
+    VSync(3);
+    VSync(3);
+    func_8002954C(0x17, &label, 0x10, 0, 0);
+    func_80028A60(0);
+    result = 2;
+    if (label.tag == 0x4e45585f) {
+        result = 3;
+        if (label.disc == disc + '0') {
+            func_8002954C(0x18, D_8004FDF0, 0x8000, 0, 0);
+            result = 0;
+            func_80028A60(0);
+            func_8002954C(0x28, D_8004FDF4, 0x7a, 0, 0);
+            func_80028A60(0);
+        }
+    }
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E93A0);
+#endif

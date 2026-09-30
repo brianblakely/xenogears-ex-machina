@@ -694,6 +694,14 @@ typedef struct MenuCommandImages {
     s32 label; /* 4 */
 } MenuCommandImages;
 
+/* The disc label read from sector 0 of the data track (file 17). */
+typedef struct DiscLabel {
+    u8 unk0[3];
+    u8 disc; /* 3: '1' or '2' */
+    s32 tag; /* 4: "_XEN" */
+    u8 unk8[8];
+} DiscLabel;
+
 /* The menu mode's state (*D_800625A0). */
 typedef struct MenuState {
     MenuMover movers[3]; /* 0 */
@@ -838,6 +846,11 @@ extern u8 D_801EA564[];  /* 801e1014 screen labels */
 extern u8 D_801EA568[];  /* title file screen command labels */
 extern u8 D_801EA548[];  /* save/load screen labels */
 extern u8 D_801EA8F4[];
+extern u8 *D_8004FDF0;         /* disc directory records */
+extern u8 *D_8004FDF4;
+extern u8 *D_8004FE48;
+void func_8002954C(s32 file, void *buffer, s32 size, s32 arg3, s32 arg4); /* read a disc file */
+void func_801E9340(char *name, void *buffer, s32 size);
 extern u8 D_801EA8FC;
 extern u8 D_801EA8C0;    /* the last printed character was two-byte */
 extern u16 D_801EA5D0[0x80]; /* ASCII to two-byte character codes */
@@ -933,12 +946,13 @@ void DrawOTag(u32 *ot);             /* DrawOTag */
 void PutDrawEnv(void *env);           /* PutDrawEnv */
 void PutDispEnv(void *env);           /* PutDispEnv */
 void VSync(s32 mode);            /* VSync */
-s32 CdControlB(s32 command, s32 arg1, u8 *result);
+s32 CdControlB(s32 command, u8 *param, u8 *result);
+void CdIntToPos(s32 sector, u8 *pos); /* CdIntToPos */
 void RotTransPers4(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *v3, s32 *sxy0, s32 *sxy1, s32 *sxy2,
                    s32 *sxy3, s32 *p, s32 *flag); /* RotTransPers4 */
-s32 PCopen(s32 arg0, s32 arg1, s32 arg2);
+s32 PCopen(char *name, s32 flags, s32 perms);
 void PCclose(s32 handle);
-void func_8004C398(s32 handle, s32 arg1, s32 arg2);
+void func_8004C398(s32 handle, void *buffer, s32 size); /* PCread */
 s32 func_8004E784(s32 channel); /* start a card check */
 void ClearImage(RECT *rect, s32 r, s32 g, s32 b); /* ClearImage */
 void DrawSync(s32 mode);                /* DrawSync */
