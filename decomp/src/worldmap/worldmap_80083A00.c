@@ -788,11 +788,11 @@ void func_80087B84(VECTOR *direction, VECTOR *up, MATRIX *m) {
 /* Start the area's ferry: before scene 0xCD it rests at a fixed dock;
  * otherwise it resumes its route (first time: at waypoint 0), advancing
  * when within 8 units of the waypoint, and heads for the next one. */
-#ifdef NON_MATCHING /* load/store scheduling around the waypoint reads and the history index */
+#ifdef NON_MATCHING /* prologue load and one post-call load scheduled early */
 s32 func_80087C6C(s32 index) {
     WorldmapActor *actor;
     SceneObject *object;
-    VECTOR *work;
+    FerryScratch *scratch;
     s32 id;
     s32 distance;
     s32 i;
@@ -800,7 +800,7 @@ s32 func_80087C6C(s32 index) {
 
     id = D_8009B674[D_8009C610];
     func_80087F60();
-    work = (VECTOR *)0x1F800000;
+    scratch = FERRY_SCRATCH;
     actor = &D_8009BE24[index];
     actor->unk4A = 0x4000;
     actor->state = 0;
@@ -823,29 +823,29 @@ s32 func_80087C6C(s32 index) {
         }
         actor->position.vz = z << 12;
         actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
-        work->vx = D_8009AF80[actor->u.step] << 12;
-        work->vz = D_8009AF90[actor->u.step] << 12;
-        distance = func_80094154(&actor->position, work);
+        scratch->work.vx = D_8009AF80[actor->u.step] << 12;
+        scratch->work.vz = D_8009AF90[actor->u.step] << 12;
+        distance = func_80094154(&actor->position, &scratch->work);
         if (distance < 0) {
             distance = -distance;
         }
         if (distance < 8) {
             actor->u.step = (actor->u.step + 1) & 7;
         }
-        work->vx = D_8009AF80[actor->u.step] - (actor->position.vx >> 12);
-        work->vy = 0;
-        work->vz = D_8009AF90[actor->u.step] - (actor->position.vz >> 12);
-        func_80093534(work);
-        func_80048D7C(work, work);
+        scratch->work.vx = D_8009AF80[actor->u.step] - (actor->position.vx >> 12);
+        scratch->work.vy = 0;
+        scratch->work.vz = D_8009AF90[actor->u.step] - (actor->position.vz >> 12);
+        func_80093534(&scratch->work);
+        func_80048D7C(&scratch->work, &scratch->work);
         for (i = 0; i < 0x20; i++) {
-            D_8009CD68[i].dx = work->vx;
-            D_8009CD68[i].dz = work->vz;
+            D_8009CD68[i].dx = scratch->work.vx;
+            D_8009CD68[i].dz = scratch->work.vz;
         }
         actor->unk58 = 1;
         actor->unk54 = 0;
-        actor->motion.vx = D_8009CD68[actor->unk58].dx;
-        actor->motion.vy = 0;
+        actor->motion.vx = D_8009CD68[1].dx;
         actor->motion.vz = D_8009CD68[actor->unk58].dz;
+        actor->motion.vy = 0;
     }
     return 1;
 }
