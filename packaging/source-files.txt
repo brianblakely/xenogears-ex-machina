@@ -137,6 +137,7 @@ decomp/src/debug595/debug595.h
 decomp/src/field/field.c
 decomp/src/field/field.h
 decomp/src/field/field_anim.h
+decomp/src/field/field_motion.h
 decomp/src/mdec/mdec.c
 decomp/src/mdec/movie.h
 decomp/src/menu/brain.h

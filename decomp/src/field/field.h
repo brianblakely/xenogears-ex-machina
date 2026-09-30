@@ -785,7 +785,8 @@ extern void func_800A3074(u16 reference, s32 value); /* write an event variable 
 extern s32 func_800ACDB8(s32 offset); /* raw halfword operand */
 extern s32 func_800ACDEC(s32 offset); /* operand: bit 15 immediate, else variable */
 extern void func_80086A1C(s32 emitter, s32 *position);
-extern void func_80081F80(void *owner, s32 heading);
+struct FieldSpriteMotion;
+extern void func_80081F80(struct FieldSpriteMotion *sprite, s16 heading, FieldDescriptor *descriptor);
 extern s32 func_800854D0(void);
 extern void func_800855C8(s32 id, s32 volume, s32 pan, s32 channel);
 extern s32 func_80099A4C(s32 dx, s32 dz);

@@ -1,6 +1,7 @@
 #include "common.h"
 #include "field.h"
 #include "field_anim.h"
+#include "field_motion.h"
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8006FDEC);
 
@@ -1724,7 +1725,66 @@ s32 func_80081F5C(FieldActor *actor) {
     return -((bits & (actor->unk014 >> 3)) != 0);
 }
 
+#ifdef NON_MATCHING
+/* Set a sprite's planar velocity from `heading` (0-fff; bit 15 stops it):
+ * scaled by the actor's speed ratio (+76) and axis scales (+f4/+f8), taken
+ * from its layer's gear object, or through the sprite's own heading for an
+ * ordinary party actor; both components keep 1/16 unit precision. */
+void func_80081F80(FieldSpriteMotion *sprite, s16 heading, FieldDescriptor *descriptor) {
+    LayerObject **entry;
+    FieldActor *actor;
+    s32 layer;
+    s32 speed;
+    s32 angle;
+
+    if (!(descriptor->flags & 0x40)) {
+        speed = ((0x40000 / (u16)descriptor->actor->unk76) >> 8) << 5;
+        angle = heading & 0xFFF;
+        if (!(heading & 0x8000)) {
+            sprite->velocity[0] = ((func_8003F8CC(angle) * speed) >> 12) * descriptor->actor->scale[0];
+            sprite->velocity[2] = (-(func_8003F8B0(angle) * speed) >> 12) * descriptor->actor->scale[2];
+        } else {
+            sprite->velocity[0] = 0;
+            sprite->velocity[2] = 0;
+        }
+    } else if (!(heading & 0x8000)) {
+        actor = descriptor->actor;
+        if (!(actor->layer_flags & 0x2000)) {
+            if (!(actor->layer_flags & 0x80000)) {
+                func_80021FE0(sprite, heading);
+            } else {
+                speed = ((0x40000 / (u16)actor->unk76) >> 8) << 5;
+                angle = heading & 0xFFF;
+                sprite->velocity[0] = ((func_8003F8CC(angle) * speed) >> 12) * descriptor->actor->scale[0];
+                sprite->velocity[2] = (-(func_8003F8B0(angle) * speed) >> 12) * descriptor->actor->scale[2];
+                sprite->unk18 = 0x4000000 / (u16)descriptor->actor->unk76;
+            }
+        } else if (!(actor->layer_flags & 0x20000)) {
+            speed = ((0x80000 / (u16)actor->unk76) >> 8) << 5;
+            angle = heading & 0xFFF;
+            sprite->velocity[0] = ((func_8003F8CC(angle) * speed) >> 12) * descriptor->actor->scale[0];
+            sprite->velocity[2] = (-(func_8003F8B0(angle) * speed) >> 12) * descriptor->actor->scale[2];
+        } else {
+            layer = actor->state.bits.layer;
+            entry = (LayerObject **)&D_801E8670[layer];
+            sprite->velocity[0] = -(*entry)->speed_x << 16;
+            sprite->velocity[2] = -(*entry)->speed_z << 16;
+        }
+    } else {
+        sprite->velocity[0] = 0;
+        sprite->velocity[2] = 0;
+    }
+    sprite->velocity[0] &= ~0xFFF;
+    sprite->velocity[2] &= ~0xFFF;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80081F80);
+#endif
+
+
+
+
+
 
 extern void func_800245D8(void *model, s32 animation);
 extern u8 D_800ADFB8[];
@@ -1866,7 +1926,7 @@ void func_800831D0(SVECTOR *out, VECTOR *in) {
 #ifdef NON_MATCHING
 /* While the actor moves, turn its heading a quarter (left with flag bit 0,
  * else right) once, apply it, and mark the heading as turned. */
-void func_800831F4(void *owner, FieldActor *actor, s32 unused, s32 flags) {
+void func_800831F4(void *owner, FieldActor *actor, FieldDescriptor *descriptor, s32 flags) {
     s32 heading;
 
     if (actor->unk030[0] != 0 || actor->unk030[2] != 0) {
@@ -1878,7 +1938,7 @@ void func_800831F4(void *owner, FieldActor *actor, s32 unused, s32 flags) {
                 heading -= 0x400;
             }
             actor->heading = actor->heading_goal = heading & 0xFFF;
-            func_80081F80(owner, actor->heading);
+            func_80081F80(owner, actor->heading, descriptor);
             actor->heading = actor->heading_goal = actor->heading_goal | 0x8000;
         }
     }
