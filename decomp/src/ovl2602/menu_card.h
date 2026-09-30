@@ -196,7 +196,9 @@ typedef struct {
     u8 cells_b_count[9];      /* 46c5 */
     u8 cells_a_buffer[9];     /* 46ce */
     u8 cells_b_buffer[9];     /* 46d7 */
-    u8 unk46E0[0x4785 - 0x46E0];
+    u16 stat_b0[16];          /* 46e0: per member, the gear summary's b0 value */
+    u16 stat_a4[16];          /* 4700: and its a4 value */
+    u8 unk4720[0x4785 - 0x4720];
     u8 label45B0_shown;       /* 4785 */
     u8 unk4786[2];
 } DetailBlock;
@@ -811,8 +813,9 @@ typedef struct {
 typedef struct {
     u8 unk0[6];
     u16 unk6;      /* 06 */
-    u8 unk8[5];
-    u8 unkD, unkE; /* 0d */
+    u16 unk8;      /* 08: part type (0 none) */
+    u8 unkA[3];
+    u8 unkD, unkE; /* 0d: unkD the part's rank */
     u8 unkF;
     u8 unk10[4];   /* 10 */
     u8 unk14;      /* 14 */

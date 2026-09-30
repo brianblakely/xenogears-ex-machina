@@ -3181,7 +3181,98 @@ void func_801D2950(u8 kind) {
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D2B74);
 
+/*
+ * Preview fitting part `part` of list `kind` (3 parts, 4 weapons) to member
+ * `member`'s gear: fit it (a part of the same type, else in place of the
+ * lowest-ranked part; a weapon of the same class), recompute the gear, and
+ * return the change of its two shown values against the stored ones as
+ * magnitudes and signs (1 a decrease); then restore the gear. Nonmatching:
+ * one register choice in the part-type loop.
+ */
+#ifdef NON_MATCHING
+void func_801D3558(s32 *change, u8 *decrease, u8 part, u8 kind, u8 member) {
+    s16 values[2][4];
+    u8 saved[8];
+    GearWeapon *weapon;
+    GearPart *fitted;
+    u8 gear;
+    u8 replace;
+    u8 lowest;
+    s32 slot;
+    s32 k;
+
+    gear = D_8006D8A0[member].unkA0;
+    saved[0] = D_8006DFAC[gear].unkC[0];
+    saved[1] = D_8006DFAC[gear].unk4[0];
+    saved[2] = D_8006DFAC[gear].unk4[1];
+    saved[3] = D_8006DFAC[gear].unk4[2];
+    saved[4] = D_8006DFAC[gear].unk4[3];
+    saved[5] = D_8006DFAC[gear].unk9[0];
+    saved[6] = D_8006DFAC[gear].unk9[1];
+    saved[7] = D_8006DFAC[gear].unk9[2];
+    switch (kind) {
+    case 4:
+        if (part < 0x32) {
+            D_8006DFAC[gear].unkC[0] = part;
+        } else {
+            weapon = &((GearTable *)D_800625A0->resources)->weapons[part];
+            for (k = 0; k < 4; k++) {
+            if (((GearTable *)D_800625A0->resources)->weapons[D_8006DFAC[gear].unk4[k]].unkF == weapon->unkF) {
+                D_8006DFAC[gear].unk4[k] = part;
+            }
+            }
+        }
+        break;
+    case 3:
+        replace = 1;
+        fitted = &((GearTable *)D_800625A0->resources)->parts[part];
+        for (k = 0; k < 3; k++) {
+            if (((GearTable *)D_800625A0->resources)->parts[saved[5 + k]].unk8 != 0 &&
+            ((GearTable *)D_800625A0->resources)->parts[saved[5 + k]].unk8 == fitted->unk8) {
+            replace = 0;
+            D_8006DFAC[gear].unk9[k] = part;
+            }
+        }
+        if (replace) {
+            lowest = 0xFF;
+            for (k = 0; k < 3; k++) {
+            if (lowest >= ((GearTable *)D_800625A0->resources)->parts[saved[5 + k]].unkD) {
+                lowest = ((GearTable *)D_800625A0->resources)->parts[saved[5 + k]].unkD;
+                slot = k;
+            }
+            }
+            D_8006DFAC[gear].unk9[slot] = part;
+        }
+        break;
+    }
+    func_801D6150((GearTable *)D_800625A0->resources, D_8006D8A0[member].unkA0);
+    func_801D5F94((GearTable *)D_800625A0->resources, D_8006D8A0[member].unkA0);
+    values[0][0] = ((GearTable *)D_800625A0->resources)->unkB0;
+    values[0][1] = ((GearTable *)D_800625A0->resources)->unkA4;
+    values[1][0] = D_800625A0->details->stat_b0[member];
+    values[1][1] = D_800625A0->details->stat_a4[member];
+    for (k = 0; k < 2; k++) {
+        if (values[0][k] >= values[1][k]) {
+        change[k] = values[0][k] - values[1][k];
+        decrease[k] = 0;
+        } else {
+        change[k] = values[1][k] - values[0][k];
+        decrease[k] = 1;
+        }
+    }
+    D_8006DFAC[gear].unkC[0] = saved[0];
+    D_8006DFAC[gear].unk4[0] = saved[1];
+    D_8006DFAC[gear].unk4[1] = saved[2];
+    D_8006DFAC[gear].unk4[2] = saved[3];
+    D_8006DFAC[gear].unk4[3] = saved[4];
+    D_8006DFAC[gear].unk9[0] = saved[5];
+    D_8006DFAC[gear].unk9[1] = saved[6];
+    D_8006DFAC[gear].unk9[2] = saved[7];
+    func_801D6150((GearTable *)D_800625A0->resources, D_8006D8A0[member].unkA0);
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D3558);
+#endif
 
 /* The count held of item `id` in an inventory of `n` ids and counts (0 if absent). */
 u16 func_801D3A3C(u8 *ids, u8 *counts, s32 n, u8 id) {
