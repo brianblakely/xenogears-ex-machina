@@ -3,7 +3,129 @@
 /* Declared here only: other units call it without a prototype. */
 void func_80093354(VECTOR *position);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80083A00);
+/* Scripted camera stages 1-6 around the player (commands set the angle, distance
+ * and position of each stage), with easing and a random vertical shake. */
+s32 func_80083A00(s32 index) {
+    WorldmapActor *actor;
+    ActorScratch *scratch;
+
+    actor = &D_8009BE24[index];
+    scratch = (ActorScratch *)0x1F800000;
+    switch (actor->unk4) {
+    case 1:
+        actor->state = 1;
+        actor->unk4 = 0;
+        actor->unk5C = 0x960000;
+        D_8009BD38.vx = -0x20;
+        D_8009BD38.vy = 0x400;
+        D_8009BD38.vz = 0;
+        actor->motion.vx = actor->u.step = -0x20 << 12;
+        actor->motion.vy = actor->unk54 = D_8009BD38.vy << 12;
+        D_8009D3F0 = 0x960000;
+        actor->motion.vz = actor->unk58 = D_8009BD38.vz << 12;
+        break;
+    case 2:
+        actor->state = 2;
+        actor->unk4 = 0;
+        actor->unk5C = 0x180000;
+        D_8009BD38.vx = 0x40;
+        D_8009BD38.vy = 0x1A0;
+        D_8009BD38.vz = 0;
+        actor->motion.vx = actor->u.step = 0x40 << 12;
+        actor->motion.vy = actor->unk54 = D_8009BD38.vy << 12;
+        D_8009D3F0 = 0x180000;
+        actor->motion.vz = actor->unk58 = D_8009BD38.vz << 12;
+        actor->position.vy = D_8009D55C.target.vy = D_8009BE28.target.vy = -0xA0000;
+        break;
+    case 3:
+        actor->state = 3;
+        actor->unk4 = 0;
+        actor->unk5C = 0x120000;
+        D_8009BD38.vx = -0x2A0;
+        D_8009BD38.vy = 0x6A0;
+        D_8009BD38.vz = 0;
+        actor->motion.vx = actor->u.step = -0x2A0 << 12;
+        D_8009D3F0 = 0x120000;
+        actor->motion.vy = actor->unk54 = D_8009BD38.vy << 12;
+        actor->motion.vz = actor->unk58 = D_8009BD38.vz << 12;
+        actor->position.vx = D_8009D55C.target.vx = D_8009BE28.target.vx = 0x1700000;
+        GROUND_SCROLL[0] += 0x1700000 - D_8009C5AC.vx;
+        break;
+    case 4:
+        actor->state = 4;
+        actor->unk4 = 0;
+        actor->unk5C = 0x180000;
+        D_8009BD38.vx = -0x10;
+        D_8009BD38.vy = 0xA50;
+        D_8009BD38.vz = 0;
+        actor->motion.vx = actor->u.step = -0x10 << 12;
+        actor->motion.vy = actor->unk54 = D_8009BD38.vy << 12;
+        D_8009D3F0 = 0x180000;
+        actor->motion.vz = actor->unk58 = D_8009BD38.vz << 12;
+        actor->position.vx = D_8009D55C.target.vx = D_8009BE28.target.vx = 0x1800000;
+        actor->position.vz = D_8009D55C.target.vz = D_8009BE28.target.vz = 0x1900000;
+        actor->position.vy = D_8009D55C.target.vy = D_8009BE28.target.vy = -0x80000;
+        GROUND_SCROLL[0] += 0x100;
+        GROUND_SCROLL[2] -= 0x100;
+        break;
+    case 5:
+        actor->state = 5;
+        actor->unk4 = 0;
+        actor->unk5C = 0x260000;
+        D_8009BD38.vx = -0x100;
+        D_8009BD38.vy = 0x670;
+        D_8009BD38.vz = 0;
+        actor->motion.vx = actor->u.step = -0x100 << 12;
+        actor->motion.vy = actor->unk54 = D_8009BD38.vy << 12;
+        actor->motion.vz = actor->unk58 = D_8009BD38.vz << 12;
+        actor->position.vy = D_8009D55C.target.vy = D_8009BE28.target.vy = -0x110000;
+        actor->position.vz = D_8009D55C.target.vz = D_8009BE28.target.vz = 0x1A80000;
+        D_8009D3F0 = 0x260000;
+        GROUND_SCROLL[2] += 0x180;
+        break;
+    case 6:
+        actor->state = 6;
+        actor->unk4 = 0;
+        actor->unk5C = 0x620000;
+        D_8009BD38.vx = -0x80;
+        D_8009BD38.vy = 0xA70;
+        D_8009BD38.vz = 0;
+        actor->motion.vx = actor->u.step = -0x80 << 12;
+        actor->motion.vy = actor->unk54 = D_8009BD38.vy << 12;
+        actor->motion.vz = actor->unk58 = D_8009BD38.vz << 12;
+        actor->position.vy = D_8009D55C.target.vy = D_8009BE28.target.vy = -0x120000;
+        actor->position.vz = D_8009D55C.target.vz = D_8009BE28.target.vz = 0x1980000;
+        D_8009D3F0 = 0x620000;
+        GROUND_SCROLL[2] -= 0x100;
+        break;
+    }
+    if (D_8009D144 == 0) {
+        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+    }
+    switch (actor->state) {
+    case 0:
+    case 2:
+    case 3:
+    case 4:
+    case 6:
+        break;
+    case 1:
+        actor->u.step = func_800771D8(actor->u.step, -0x400000, -0x8000);
+        actor->unk54 = func_800771D8(actor->unk54, 0, -0x8000);
+        actor->unk5C = func_800771D8(actor->unk5C, 0x380000, -0xD000);
+        break;
+    case 5:
+        actor->u.step = func_800771D8(actor->u.step, 0x200000, 0x2000);
+        break;
+    }
+    func_80076DA4(actor, scratch);
+    func_80076F54(actor, scratch);
+    func_80076FA8(actor, scratch);
+    scratch->position.vy = rand() % (actor->unk7C >> 12) - (actor->unk7C >> 13);
+    ((s16 *)D_8009BD40)[1] += scratch->position.vy; /* VIEW_VECTORS[0].vy */
+    VIEW_VECTORS[1].vy += scratch->position.vy;
+    return 1;
+}
 
 /* Place the actor and show scene objects 7 and 8 at its position. */
 s32 func_80083FE4(s32 index) {
