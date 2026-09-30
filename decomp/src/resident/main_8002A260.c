@@ -159,13 +159,420 @@ FileEntry *func_8002A57C(s32 first, FileEntry *table) {
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002A260", func_8002A57C);
 #endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002A260", func_8002A68C);
+/* CD command-complete callback: advance the seek/read state machine
+ * (D_8004FE1C). Status 2 is success; on failure the retry reason is kept in
+ * D_8004FE20 and the drive status is polled (state 10) until it can retry. */
+void func_8002A68C(u8 status, u8 *result) {
+    switch (D_8004FE1C) {
+    case 0:
+        break;
+    case 1:
+        if (status == 2) {
+            D_8005A48C++;
+            D_8004FE1C++;
+            CdControlF(6, NULL);
+        } else {
+            D_8005A490++;
+            D_80059F08 = CdReadyCallback(NULL);
+            D_8004FE20 = 3;
+            D_8004FE1C = 10;
+            CdControlF(1, NULL);
+        }
+        break;
+    case 2:
+        if (status == 2) {
+            D_8005A48C++;
+            CdSyncCallback(NULL);
+            D_8004FE1C = 0;
+        } else {
+            D_8005A490++;
+            D_80059F08 = CdReadyCallback(NULL);
+            D_8004FE20 = 3;
+            D_8004FE1C = 10;
+            CdControlF(1, NULL);
+        }
+        break;
+    case 3:
+        if (status == 2) {
+            D_8004FE1C++;
+            CdControlF(0x15, NULL);
+        } else {
+            D_8004FE20 = 1;
+            D_8004FE1C = 10;
+            CdControlF(1, NULL);
+        }
+        break;
+    case 4:
+        if (status == 2) {
+            CdSyncCallback(NULL);
+            D_8004FE1C = 0;
+        } else {
+            D_8004FE20 = 1;
+            D_8004FE1C = 10;
+            CdControlF(1, NULL);
+        }
+        break;
+    case 5:
+        if (status == 2) {
+            CdSyncCallback(NULL);
+            D_8004FE1C = 0;
+        } else {
+            D_8004FE20 = 2;
+            D_8004FE1C = 10;
+            CdControlF(1, NULL);
+        }
+        break;
+    case 6:
+        if (status == 2) {
+            D_8004FE1C = 1;
+            D_8005A488++;
+            D_8005A494++;
+            CdReadyCallback(D_80059F08);
+            CdControlF(2, (u8 *)&D_80059F10);
+        } else {
+            D_8004FE20 = 3;
+            D_8004FE1C = 10;
+            D_8005A498++;
+            CdControlF(1, NULL);
+        }
+        break;
+    case 7:
+        if (status == 2) {
+            D_8004FE1C = 6;
+            D_8005A4A8++;
+            CdControlF(9, NULL);
+        } else {
+            D_8004FE20 = 4;
+            D_8004FE1C = 10;
+            D_8005A4B4++;
+            CdControlF(1, NULL);
+        }
+        break;
+    case 12:
+        if (status == 2) {
+            D_8004FE1C = 8;
+            D_80059F14.file = 1;
+            D_80059F14.chan = *(u8 *)&D_8004FE38; /* the mode's channel byte */
+            CdControlF(0xD, (u8 *)&D_80059F14);
+        } else {
+            D_8004FE20 = 5;
+            D_8004FE1C = 10;
+            CdControlF(1, NULL);
+        }
+        break;
+    case 8:
+        if (status == 2) {
+            D_8004FE1C = 1;
+            D_8005A488++;
+            D_8005A494++;
+            CdReadyCallback(D_80059F08);
+            CdControlF(2, (u8 *)&D_80059F10);
+        } else {
+            D_8004FE20 = 5;
+            D_8004FE1C = 10;
+            D_8005A498++;
+            CdControlF(1, NULL);
+        }
+        break;
+    case 9:
+        if (status == 2) {
+            D_8004FE1C = 5;
+            CdControlF(9, NULL);
+        } else {
+            D_8004FE20 = 6;
+            D_8004FE1C = 10;
+            D_8005A4B4++;
+            CdControlF(1, NULL);
+        }
+        break;
+    case 10:
+        if (status == 2 && !(result[0] & 0x10)) {
+            D_8004FE1C = 11;
+            CdControlF(0x13, NULL);
+        } else {
+            D_8004FE1C = 10;
+            CdControlF(1, NULL);
+        }
+        break;
+    case 11:
+        if (status == 2) {
+            switch (D_8004FE20) {
+            case 1:
+                D_8004FE1C = 3;
+                CdControlF(2, (u8 *)&D_80059F10);
+                break;
+            case 2:
+                D_8004FE1C = 5;
+                CdControlF(9, NULL);
+                break;
+            case 3:
+                D_8004FE1C = 6;
+                CdControlF(9, NULL);
+                break;
+            case 4:
+                D_8004FE1C = 7;
+                CdControlF(8, NULL);
+                break;
+            case 5:
+                D_8004FE1C = 12;
+                CdControlF(0xE, D_80059F18);
+                break;
+            case 6:
+                D_8004FE1C = 9;
+                CdControlF(0xE, D_80059F18);
+                break;
+            }
+        } else {
+            D_8004FE1C = 10;
+            CdControlF(1, NULL);
+        }
+        break;
+    }
+}
 
+/* CD data callback of list reads: copy each sector of the current file of
+ * the list (D_8004FE0C) to its destination, move on to the next file (reading
+ * on through a short gap, or seeking), and retry through the command state
+ * machine when a sector fails or arrives out of order.
+ * Nonmatching: the original loads 0x200 into $a1 before the rounding branch
+ * of the tail sector count (and divides in $v0); this schedules it after. */
+#ifdef NON_MATCHING
+void func_8002AC24(u8 status, u8 *result) {
+    FileRequest *request;
+    u16 file;
+    u32 first;
+    s32 i;
+    s32 j;
+
+    if (status == 1) {
+        if (D_8004FE34 > 0) {
+            CdReadyCallback(NULL);
+            CdDataCallback(NULL);
+            D_8004FDF8 = 0;
+            func_8002A394(D_8004FE38);
+            D_8004FE00 = 0;
+            D_8004FDFC = 0;
+            return;
+        }
+        if (D_8004FDF8 >= 0x800) {
+            if (D_8004FE3C == 0) {
+                CdGetSector(D_80059EF8, 3);
+                CdGetSector(D_8004FE08, 0x200);
+            }
+        } else if (D_8004FDF8 > 0 && D_8004FE3C == 0) {
+            CdGetSector(D_80059EF8, 3);
+            CdGetSector(D_8004FE08, (D_8004FDF8 + 3) / 4);
+            CdGetSector(D_800596F8, 0x200 - (D_8004FDF8 + 3) / 4);
+        }
+        if (CdPosToInt((CdlLOC *)D_80059EF8) != D_8004FE04 && D_8004FE3C == 0) {
+            D_8004FDE8++;
+            goto failed;
+        }
+        D_8004FE08 = (u8 *)D_8004FE08 + 0x800;
+        D_8004FDF8 -= 0x800;
+        D_8004FE04++;
+        if (D_8004FDF8 > 0) {
+            return;
+        }
+        D_8004FE10++;
+        file = D_8004FE0C[D_8004FE10].file;
+        D_8004FE08 = D_8004FE0C[D_8004FE10].destination;
+        if (file != 0 && D_8004FE08 != NULL) {
+            first = func_80028A18(file);
+            D_8004FDF8 = func_80028808(file);
+            if (D_8004FE04 < first && D_8004FE04 + D_8004FDE0 >= first) {
+                /* Close ahead: read on, discarding the sectors between. */
+                D_8004FE3C = 1;
+                D_8004FDF8 = (D_8004FE04 - first) << 11;
+                D_8004FE10--;
+                return;
+            }
+            if (first == D_8004FE04) {
+                D_8004FE3C = 0;
+                D_8004FE00--;
+                return;
+            } else {
+                D_8004FE3C = 0;
+                D_8004FE04 = first;
+                D_80059F08 = CdReadyCallback(NULL);
+                CdIntToPos(D_8004FE04, &D_80059F10);
+                D_8004FE1C = 6;
+                CdSyncCallback(func_8002A68C);
+                CdControlF(9, NULL);
+            }
+            D_8004FE00--;
+            return;
+        }
+        D_8004FDF8 = 0;
+        CdReadyCallback(NULL);
+        func_8002A394(D_8004FE38);
+        D_8004FE00 = 0;
+        D_8004FDFC = 0;
+        return;
+    }
+failed:
+    D_8005A4DC++;
+    D_80059F08 = CdReadyCallback(NULL);
+    CdIntToPos(D_8004FE04, &D_80059F10);
+    if (D_8005A4DC < 3) {
+        D_8004FE20 = 3;
+    } else {
+        for (i = 9999; i >= 0; i--) {
+            for (j = 1999; j >= 0; j--) {
+            }
+        }
+        D_8005A4DC = 0;
+        D_8004FE20 = 4;
+        D_8005A4A4++;
+    }
+    D_8004FE1C = 10;
+    CdSyncCallback(func_8002A68C);
+    CdControlF(1, NULL);
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002A260", func_8002AC24);
+#endif
 
+/* CD data callback of single-file reads: copy each sector to the
+ * destination (the tail of a short last sector to D_800596F8), finish the
+ * read after the last one, and retry through the command state machine when
+ * a sector fails or arrives out of order.
+ * Nonmatching: as in 8002AC24, the original loads the 0x200 of the tail
+ * count into the rounding branch's delay slot. */
+#ifdef NON_MATCHING
+void func_8002B084(u8 status, u8 *result) {
+    s32 i;
+    s32 j;
+
+    if (status == 1) {
+        if (D_8004FE34 <= 0) {
+            if (D_8004FDF8 >= 0x800) {
+                CdGetSector(D_80059EF8, 3);
+                CdGetSector(D_8004FE08, 0x200);
+            } else if (D_8004FDF8 > 0) {
+                CdGetSector(D_80059EF8, 3);
+                CdGetSector(D_8004FE08, (D_8004FDF8 + 3) / 4);
+                CdGetSector(D_800596F8, 0x200 - (D_8004FDF8 + 3) / 4);
+            }
+            if (CdPosToInt((CdlLOC *)D_80059EF8) != D_8004FE04) {
+                D_8004FDE4++;
+                goto failed;
+            }
+            D_8004FE04++;
+            D_8004FE08 = (u8 *)D_8004FE08 + 0x800;
+            D_8004FDF8 -= 0x800;
+            if (D_8004FDF8 > 0) {
+                return;
+            }
+        }
+        CdReadyCallback(NULL);
+        D_8004FDF8 = 0;
+        func_8002A394(D_8004FE38);
+        D_8004FDFC = 0;
+        return;
+    }
+failed:
+    D_8005A4DC++;
+    D_80059F08 = CdReadyCallback(NULL);
+    CdIntToPos(D_8004FE04, &D_80059F10);
+    if (D_8005A4DC < 3) {
+        D_8004FE20 = 3;
+    } else {
+        for (i = 9999; i >= 0; i--) {
+            for (j = 1999; j >= 0; j--) {
+            }
+        }
+        D_8005A4DC = 0;
+        D_8004FE20 = 4;
+        D_8005A4A4++;
+    }
+    D_8004FE1C = 10;
+    CdSyncCallback(func_8002A68C);
+    CdControlF(1, NULL);
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002A260", func_8002B084);
+#endif
 
+/* CD data callback of stream reads: store each sector in the next free slot
+ * of the stream ring (numbering it with D_8004FE26), stop after the last one,
+ * and retry through the command state machine when a sector arrives out of
+ * order or no slot is free.
+ * Nonmatching: the original reloads D_8004FE26 for the increment and orders
+ * the slot and destination additions the other way round. */
+#ifdef NON_MATCHING
+void func_8002B2F0(u8 status, u8 *result) {
+    StreamSlot *slot;
+    s32 index;
+    s32 tried;
+    s32 i;
+    s32 j;
+
+    if (status == 1) {
+        if (D_8004FE34 > 0) {
+            CdReadyCallback(NULL);
+            CdDataCallback(NULL);
+            D_8004FDF8 = 0;
+            func_8002A394(D_8004FE38);
+            D_8004FDFC = 0;
+            return;
+        }
+        if (D_8004FDF8 > 0) {
+            for (tried = 0; tried < D_8004FE40; tried++) {
+                index = D_8004FE10++;
+                slot = &D_8004FE2C[index];
+                if (D_8004FE10 >= D_8004FE40) {
+                    D_8004FE10 = 0;
+                }
+                if (slot->state == 0) {
+                    break;
+                }
+            }
+            if (slot->state != 0) {
+                goto retry;
+            }
+            CdGetSector(D_80059EF8, 3);
+            if (CdPosToInt((CdlLOC *)D_80059EF8) != D_8004FE04) {
+                D_8004FDEC++;
+                CdGetSector(D_800596F8, 0x200);
+                goto failed;
+            }
+            slot->state = 1;
+            slot->sequence = D_8004FE26++;
+            CdGetSector((u8 *)D_8004FE08 + index * 0x800, 0x200);
+            D_8004FDF8 -= 0x800;
+            D_8004FE04++;
+            if (D_8004FDF8 > 0) {
+                return;
+            }
+        }
+        CdReadyCallback(NULL);
+        D_8004FDF8 = 0;
+        return;
+    }
+failed:
+    D_8005A4DC++;
+retry:
+    D_80059F08 = CdReadyCallback(NULL);
+    CdIntToPos(D_8004FE04, &D_80059F10);
+    if (D_8005A4DC < 3) {
+        D_8004FE20 = 3;
+    } else {
+        for (i = 9999; i >= 0; i--) {
+            for (j = 1999; j >= 0; j--) {
+            }
+        }
+        D_8005A4DC = 0;
+        D_8004FE20 = 4;
+        D_8005A4A4++;
+    }
+    D_8004FE1C = 10;
+    CdSyncCallback(func_8002A68C);
+    CdControlF(1, NULL);
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002A260", func_8002B2F0);
+#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002A260", func_8002B5D0);
 
