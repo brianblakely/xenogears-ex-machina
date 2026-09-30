@@ -192,7 +192,82 @@ void func_8008D328(void) {
     }
 }
 
+/* Build the command panel page `page` for the member into the two +0x641c
+ * glyph lists (800d2d28 +0xd0 counts): each of the page's glyph sets
+ * places its glyphs (ids from 0x4000 read the turn slot's bytes, 0xff
+ * skipped) and shades them (from 0x2000 by a slot item's availability:
+ * shaded semi-transparent, else full brightness). With `fade` fade the lists
+ * instead (8008d328) and return their buffer; otherwise return the draw
+ * buffer. Nonmatching: the loops' pointers and registers differ. */
+#ifdef NON_MATCHING
+u8 func_8008D598(u8 member, u8 page, u8 fade) {
+    u16 lists[2];
+    u8 sets[2];
+    GlyphEntry *entry;
+    s32 i;
+    s32 j;
+    s32 n;
+    s32 id;
+    u16 shade;
+    u32 value;
+
+    if (fade != 0) {
+        /* 8008d328 takes no arguments; the call passes the flag. */
+        ((void (*)())func_8008D328)(fade);
+        return D_800D2D28->unkA3;
+    }
+    for (i = 0; i < 2; i++) {
+        lists[i] = D_800C3000[page]->lists[i];
+        sets[i] = D_800C3000[page]->sets[i];
+        D_800D2D28->unkD0[i] = 0;
+    }
+    for (i = 0; i < 2; i++) {
+        if (lists[i] == 0xFF) {
+            break;
+        }
+        for (j = 0; (id = D_800C2F4C[sets[i]][j].id) != 0xFFFF; j++) {
+            if (id >= 0x4000) {
+                D_800C3EAC->unk2C0[id & 3] = D_800C3EAC->slots[member].unk0[id & 0xFF];
+                id = D_800C3EAC->slots[member].unk0[id & 0xFF];
+                if (id == 0xFF) {
+                    continue;
+                }
+            }
+            n = D_800D2D28->unkD0[lists[i]] * 2;
+            entry = &D_800C2F4C[sets[i]][j];
+            D_800D2D28->unkD0[lists[i]] +=
+                func_80076A10(id, &D_800C3EA4->unk641C[lists[i]][n], entry->x, entry->y);
+            shade = D_800C2F4C[sets[i]][j].shade;
+            value = (shade & 0xFF) >> 1;
+            if (shade >= 0x2000) {
+                value = 0x10;
+                if (D_800C3EAC->slots[member].items[shade & 0xF] == 0) {
+                    value = (shade & 0xF0) >> 1;
+                }
+            }
+            if (value != 0) {
+                for (; n < D_800D2D28->unkD0[lists[i]] * 2; n += 2) {
+                    SetSemiTrans(&D_800C3EA4->unk641C[lists[i]][n + D_800CCB04.buffer], 1);
+                    SetShadeTex(&D_800C3EA4->unk641C[lists[i]][n + D_800CCB04.buffer], 0);
+                    D_800C3EA4->unk641C[lists[i]][n + D_800CCB04.buffer].r0 = value;
+                    D_800C3EA4->unk641C[lists[i]][n + D_800CCB04.buffer].g0 = value;
+                    D_800C3EA4->unk641C[lists[i]][n + D_800CCB04.buffer].b0 = value;
+                    D_800C3EA4->unk641C[lists[i]][n + D_800CCB04.buffer].tpage |= 0x20;
+                }
+            } else {
+                for (; n < D_800D2D28->unkD0[lists[i]] * 2; n += 2) {
+                    D_800C3EA4->unk641C[lists[i]][n + D_800CCB04.buffer].r0 = 0x80;
+                    D_800C3EA4->unk641C[lists[i]][n + D_800CCB04.buffer].g0 = 0x80;
+                    D_800C3EA4->unk641C[lists[i]][n + D_800CCB04.buffer].b0 = 0x80;
+                }
+            }
+        }
+    }
+    return D_800CCB04.buffer;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8008CCCC", func_8008D598);
+#endif
 
 /* Place a window's four corner glyphs (the alternate set while the battle
  * is ending) at its corners in the current draw buffer. */
