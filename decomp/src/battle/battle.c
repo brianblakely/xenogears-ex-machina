@@ -665,7 +665,40 @@ void func_80072938(POLY_FT4 *prims, s32 first, s32 last, u8 mode) {
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80072938);
 #endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80072A9C);
+/* Build the member's panel HP glyphs: the current value's digits (800c3e08),
+ * a '/', and the maximum's digits (800d2d54 from index 4), and tint them by
+ * `mode`. */
+void func_80072A9C(member, mode)
+s32 member;
+u8 mode;
+{
+    s32 i;
+    s32 column;
+    s32 first;
+
+    first = D_800D2D28->unkE0[member];
+    for (i = 0; i < 3; i++) {
+        if (D_800C3E08[i] != 0xFF) {
+            D_800D2D28->unkE0[member] +=
+                func_80076A10(D_800C3E08[i] + 0x67, &D_800C3EA4->unk3A88[member][D_800D2D28->unkE0[member] * 2],
+                              D_800C3068[member * 24 + i] + D_800C3254[D_800D3280 * 3 + member], 0x10);
+        }
+    }
+    D_800D2D28->unkE0[member] +=
+        func_80076A10(0x71, &D_800C3EA4->unk3A88[member][D_800D2D28->unkE0[member] * 2],
+                      D_800C3068[member * 24 + 3] + D_800C3254[D_800D3280 * 3 + member], 0x10);
+    for (i = 4, column = 4; i < 7; i++) {
+        if (D_800D2D54[i] != 0xFF) {
+            D_800D2D28->unkE0[member] +=
+                func_80076A10(D_800D2D54[i] + 0x67, &D_800C3EA4->unk3A88[member][D_800D2D28->unkE0[member] * 2],
+                              D_800C3068[member * 24 + column] + D_800C3254[D_800D3280 * 3 + member], 0x10);
+            column++;
+        }
+    }
+    if (mode != 0) {
+        func_80072938(D_800C3EA4->unk3A88[member], first, D_800D2D28->unkE0[member], mode);
+    }
+}
 
 /* Build the member's panel name glyphs (800d2d88) and tint them by `mode`. */
 void func_80072DA8(member, mode)

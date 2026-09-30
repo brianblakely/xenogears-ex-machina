@@ -593,7 +593,9 @@ void func_800728B8(POLY_FT4 *prims, s32 count, s32 first);
 void func_80073380(s32 member);
 u8 func_80072F38(s32 member, u8 flag);
 void func_80072DA8(s32 member, s32 mode);
-void func_80072A9C(s32 member, u8 value);
+void func_80072A9C(s32 member, s32 mode);
+extern u8 D_800C3E08[3]; /* panel value digits */
+extern u8 D_800D2D54[7]; /* panel maximum digits */
 void func_80072938(POLY_FT4 *prims, s32 first, s32 last, u8 mode);
 void func_80076C78(POLY_FT4 *prim, s16 x, s16 y, u8 u, u8 v, u8 w);
 s32 func_80098AF8(s32 slot, s32 mode);
