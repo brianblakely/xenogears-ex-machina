@@ -11478,6 +11478,8 @@ void func_800AAE4C(s32 index, s32 x, s32 y, s32 anchor) {
     addPrim(&D_800C426C->overlay_ot[0], &D_800AFC68->modes[index][D_800ADB08]);
 }
 
+#include "field_picture.h"
+
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AAF80);
 
 /* 0 when item `item` is held in inventory list 0, else -1. */
@@ -11529,7 +11531,82 @@ s32 func_800AB748(u32 which) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AB808);
 
+#ifdef NON_MATCHING
+/* Show the current map's picture while its item is held: park the VRAM
+ * at (300, 100), load the picture, fade it in, hold until the button, fade
+ * it out and restore the VRAM. Differs in addressing the entry: the
+ * original keeps the table base and the entry offset apart. */
+void func_800ABA98(void) {
+    RECT rect;
+    Picture *table;
+    Picture *entry;
+    u8 *saved;
+    u32 *file;
+    s32 picture;
+    s32 i;
+
+    table = D_800AF47C;
+    i = 0;
+    entry = table;
+    for (;;) {
+        if (entry->map == 0xFFFF) {
+            return;
+        }
+        if ((D_8004F34C & 0x3FFF) == entry->map) {
+            break;
+        }
+        entry++;
+        i++;
+    }
+    if (func_800AB328(table[i].item) == -1) {
+        return;
+    }
+    picture = table[i].picture;
+    setRECT(&rect, 0x300, 0x100, 0xA0, 0x100);
+    D_800C3914 = table[i].unk04;
+    D_800C3A18 = table[i].unk08;
+    D_800AFE78 = table[i].x;
+    D_800AFE7C = table[i].y;
+    saved = func_80031BDC(0x14000, 0);
+    StoreImage(&rect, (u_long *)saved);
+    DrawSync(0);
+    func_80028A60(0);
+    func_80028470(4, 0);
+    file = func_80031BDC(func_800288EC(picture + 0x7FB), 0);
+    func_800295D8(picture + 0x7FB, file, 0, 0x80);
+    func_80028A60(0);
+    func_80070340(file, 0x300, 0x100, 0, 0xF6, 0, 0);
+    func_800320E8(file);
+    if (table[i].pieces == 1) {
+        func_800AB808();
+    }
+    func_800AAF80();
+    for (i = 0; i < 16; i++) {
+        func_80073FE0();
+        func_800AB378(i * 8);
+        func_800A6924();
+    }
+    do {
+        func_80073FE0();
+        func_800AB378(0x80);
+        func_800A6924();
+        func_80074700();
+    } while (!(D_800C3900 & 0x100));
+    for (i = 16; i > 0; i--) {
+        func_80073FE0();
+        func_800AB378(i * 8);
+        func_800A6924();
+    }
+    DrawSync(0);
+    func_800320E8(D_800C3A3C);
+    func_800320E8(D_800B1DF0);
+    LoadImage(&rect, (u_long *)saved);
+    DrawSync(0);
+    func_800320E8(saved);
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800ABA98);
+#endif
 
 typedef struct {
     DR_MODE modes[5][2];
