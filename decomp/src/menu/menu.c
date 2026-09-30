@@ -1384,7 +1384,51 @@ void func_80083CE8(void) {
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80083CE8);
 #endif
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80083DCC);
+/* Update an actor's glow light (fading it) at its position relative to its
+ * opponent, and the spot light at its position relative to the camera. */
+void func_80083DCC(LightSet *set, Actor *actor, s32 index) {
+    Vector unused[2]; /* the original frame has 0x20 unused bytes */
+    LightRef *ref = set->lights[index];
+    u8 glow = actor->glow;
+    s32 level = glow;
+
+    if (level != 0) {
+        actor->glow = glow - 0x18;
+        if (level < actor->glow) {
+            actor->glow = 0;
+        }
+    }
+    if (actor->unkD4 & 0x20) {
+        ref->data->r = actor->opponent->unk15D4[0] * level / 16;
+        ref->data->g = actor->opponent->unk15D4[1] * level / 16;
+        ref->data->b = actor->opponent->unk15D4[2] * level / 16;
+    } else {
+        ref->data->r = level << 4;
+        ref->data->g = level << 3;
+        ref->data->b = 0;
+    }
+    if (D_8009288C->dim) {
+        ref->data->r /= 2;
+        ref->data->g /= 2;
+        ref->data->b /= 2;
+    }
+    ref->data->x = actor->pos.vx;
+    ref->data->y = actor->pos.vy;
+    ref->data->z = actor->pos.vz;
+    ref->data->x -= actor->opponent->pos.vx;
+    ref->data->y -= actor->opponent->pos.vy;
+    ref->data->z -= actor->opponent->pos.vz;
+    func_80030A30(index, ref->data);
+    ref = set->lights[2];
+    ref->data->r = ref->data->g = ref->data->b = 0;
+    ref->data->x = actor->pos.vx;
+    ref->data->y = actor->pos.vy;
+    ref->data->z = actor->pos.vz;
+    ref->data->x -= D_8009871C.vx;
+    ref->data->y -= D_8009871C.vy;
+    ref->data->z -= D_8009871C.vz;
+    func_80030A30(2, ref->data);
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800840CC);
 

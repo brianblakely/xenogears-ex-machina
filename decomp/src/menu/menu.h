@@ -59,6 +59,24 @@ typedef struct {
     s32 t[3];
 } Matrix;
 
+/* A scene light (position, then colour). */
+typedef struct {
+    s32 x, y, z;
+    s16 r, g, b;
+} LightData;
+
+typedef struct {
+    u32 unk0;
+    LightData *data;
+} LightRef;
+
+typedef struct {
+    u8 unk0[8];
+    LightRef *lights[3];
+} LightSet;
+
+void func_80030A30(s32 index, LightData *light);
+
 /* A node of a loaded model hierarchy. */
 typedef struct ModelNode {
     u8 unk0[4];
@@ -89,7 +107,7 @@ typedef struct Actor {
     u8 unk84[0x4A];
     s16 unkCE;
     u32 flags;           /* 0xD0: bit 27 = side */
-    u8 unkD4[0x4];
+    u32 unkD4;           /* 0xD4: bit 5 = coloured glow */
     struct Actor *opponent; /* 0xD8 */
     u8 unkDC[0x16];
     s16 unkF2;
@@ -103,8 +121,10 @@ typedef struct Actor {
     u8 unk90B[6];
     u8 parts_a;          /* 0x911 */
     u8 parts_b;          /* 0x912 */
-    u8 unk913[0xCC1];
-    u8 unk15D4[3];
+    u8 unk913[5];
+    u8 glow;             /* 0x918: light level, fades by 0x18 a frame */
+    u8 unk919[0xCBB];
+    u8 unk15D4[3];       /* glow colour */
     u8 unk15D7[0x29];
     ModelRecord *record; /* 0x1600 */
     PolyFT4 backdrop[2]; /* 0x1604: one per buffer */

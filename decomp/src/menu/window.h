@@ -125,7 +125,8 @@ typedef struct {
     u8 bottom[3];      /* sky gradient bottom, far and fade colour */
     u8 unkB;
     u8 back[3];        /* back colour */
-    u8 unkF[2];
+    u8 unkF;
+    u8 dim;            /* 0x10: halve the actor glow */
 } Environment;
 
 extern Environment D_8009178C[];
