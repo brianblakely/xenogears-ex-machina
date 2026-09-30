@@ -431,7 +431,7 @@ typedef struct GameState {
     u16 unk2318;         /* 2318: bit per character */
     u16 unk231A;         /* 231A: saved map */
     u16 unk231C;         /* 231C */
-    u8 unk231E[2];
+    s16 unk231E;         /* 231E */
     s16 unk2320;         /* 2320 */
     u16 unk2322;         /* 2322 */
 } GameState;
@@ -512,7 +512,7 @@ typedef struct {
     s16 unk234A;               /* 234A */
     s16 battle_override;       /* 234C: battle-entry flag override, 0xff none */
     s16 followers_idle;        /* 234E */
-    u8 unk2350[0x2354 - 0x2350];
+    u32 unk2350;               /* 2350: saved player flags */
     u8 unk2354;                /* 2354 */
     u8 unk2355;                /* 2355 */
     u8 unk2356;                /* 2356 */
@@ -709,6 +709,9 @@ extern void func_800ACE24(void);
 extern void func_800A30B4(void);
 extern void func_80076AC0(s32 index, s32 a, void *sprite, s32 b, s32 c, s32 d, s32 e);
 extern void func_800A0C94(void);
+extern void func_800A0C4C(void);
+extern void func_800931F8(void);
+extern void func_800A31E8(void);
 extern void func_800A4CC4(s32, s32, s32, s32, s32, s32, s32);
 extern void func_80086BA8(void);
 extern void func_801E7D14(MATRIX *world, s16 (*table)[3], u32 *ot, s32 buffer, s32);

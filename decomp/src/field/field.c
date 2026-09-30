@@ -4747,13 +4747,35 @@ void func_80092808(void) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80092894);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80092C20);
+/* Walk the player to the selected x/z (800a0c4c/80092894) when the field
+ * is idle, restoring its flag 0x80 on arrival; otherwise retry. */
+void func_80092C20(void) {
+    s32 x;
+    s32 z;
+
+    if (D_800ADBDC == 0 || D_800ADBE4 == 0 || D_800ADB2C != 0 || D_8004F308 == -1 || D_800ADB90 != 0) {
+        D_800B00C0 = 1;
+        D_800B0078->pc--;
+        return;
+    }
+    x = func_8009CF78(1, EVENT_OPERAND_BYTE(5));
+    z = func_8009CFBC(3, EVENT_OPERAND_BYTE(5));
+    if (D_800B2078.unk2350 == 0) {
+        D_800B2078.unk2350 = D_800AF880.components.descriptors[D_800B2078.controlled].actor->flags;
+    }
+    func_800A0C4C();
+    if (func_80092894(0, 1, x, z) == 0) {
+        if (!(D_800B2078.unk2350 & 0x80)) {
+            D_800AF880.components.descriptors[D_800B2078.controlled].actor->flags &= ~0x80;
+        }
+        D_800B2078.unk2350 = 0;
+    }
+}
 
 extern s32 D_800ADBE4;
 extern s32 D_800ADB2C;
 extern s32 D_800ADB90;
-void func_800A0C4C(void);
-void func_80092894(s32 a, s32 b, s32 c, s32 d);
+s32 func_80092894(s32 a, s32 b, s32 c, s32 d);
 
 /* Start transition 80092894(0, ...) once field control allows it; yield
  * until then. */
@@ -4802,7 +4824,34 @@ void func_80092FB4(void) {
     D_800B0078->pc += 3;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80093014);
+extern u8 D_800B02C8;
+
+/* Request a map change (map, entry, heading or keep the camera's, and
+ * operand 7) when the field is idle. Yields. */
+void func_80093014(void) {
+    s32 heading;
+
+    if (D_800ADBDC == 0 || D_800ADBE4 == 0 || D_800ADB2C != 0 || D_8004F308 == -1 || D_800ADB90 != 0) {
+        D_800B00C0 = 1;
+        return;
+    }
+    func_800A31E8();
+    D_800B2078.encounter_inhibition = -1;
+    D_800ADBE4 = 0;
+    D_8005A39C->unk231A = func_8009CF78(1, EVENT_OPERAND_BYTE(9));
+    D_8005A39C->unk231E = func_8009CFBC(3, EVENT_OPERAND_BYTE(9));
+    heading = func_8009D000(5, EVENT_OPERAND_BYTE(9));
+    if (((heading & 0xFFFF) == 0xFFFF) | (heading == -1)) {
+        D_8005A39C->unk231C = (D_800AF880.heading_angles.vy + 0x800) & 0xFFF;
+    } else {
+        D_8005A39C->unk231C = (heading + 0x800) & 0xFFF;
+    }
+    D_8005A39C->unk2320 = func_8009D044(7, EVENT_OPERAND_BYTE(9));
+    func_800931F8();
+    D_800B02C8 = 1;
+    D_800B00C0 = 1;
+    D_800B0078->pc += 10;
+}
 
 void func_800931F8(void) {
 }
@@ -4810,7 +4859,6 @@ void func_800931F8(void) {
 extern s32 D_800B0048;
 extern s32 D_800AFD14;
 void func_800932D0(void);
-void func_800931F8(void);
 
 /* Once field control allows it, run func_800932D0 and store two operands. */
 void func_80093200(void) {
