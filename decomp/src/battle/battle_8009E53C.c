@@ -2133,7 +2133,74 @@ void func_800A6444(s32 index, s32 r, s32 g, s32 b, s32 field4, s32 field5) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A64E4);
+/* Restore the stage's colours as loaded (saved by 800A5EB4). */
+void func_800A64E4(void) {
+    CVector *color;
+    s32 i;
+
+    color = (CVector *)D_800C3AC4;
+    for (i = 0; i < 4; i++) {
+        if (D_800C3EA0 != NULL) {
+            ((StageGeometry *)D_800C3EA0)->quads[i].r0 = color->r;
+            ((StageGeometry *)D_800C3EA0)->quads[i].g0 = color->g;
+            ((StageGeometry *)D_800C3EA0)->quads[i].b0 = color->b;
+            color++;
+            ((StageGeometry *)D_800C3EA0)->quads[i].r1 = color->r;
+            ((StageGeometry *)D_800C3EA0)->quads[i].g1 = color->g;
+            ((StageGeometry *)D_800C3EA0)->quads[i].b1 = color->b;
+            color++;
+            ((StageGeometry *)D_800C3EA0)->quads[i].r2 = color->r;
+            ((StageGeometry *)D_800C3EA0)->quads[i].g2 = color->g;
+            ((StageGeometry *)D_800C3EA0)->quads[i].b2 = color->b;
+            color++;
+            ((StageGeometry *)D_800C3EA0)->quads[i].r3 = color->r;
+            ((StageGeometry *)D_800C3EA0)->quads[i].g3 = color->g;
+            ((StageGeometry *)D_800C3EA0)->quads[i].b3 = color->b;
+            color++;
+            ((StageGeometry *)D_800C3EA0)->flats[i].r0 = color->r;
+            ((StageGeometry *)D_800C3EA0)->flats[i].g0 = color->g;
+            ((StageGeometry *)D_800C3EA0)->flats[i].b0 = color->b;
+            color++;
+        } else {
+            color += 5;
+        }
+        if (D_800C3D50[0] != NULL) {
+            ((StageBackdrop *)D_800C3D50[0])->flats[i].r0 = color->r;
+            ((StageBackdrop *)D_800C3D50[0])->flats[i].g0 = color->g;
+            ((StageBackdrop *)D_800C3D50[0])->flats[i].b0 = color->b;
+        }
+        color++;
+    }
+    for (i = 0; i < 2; i++) {
+        if (D_800C3D50[0] != NULL) {
+            ((StageBackdrop *)D_800C3D50[0])->quads[i].r0 = color->r;
+            ((StageBackdrop *)D_800C3D50[0])->quads[i].g0 = color->g;
+            ((StageBackdrop *)D_800C3D50[0])->quads[i].b0 = color->b;
+            color++;
+            ((StageBackdrop *)D_800C3D50[0])->quads[i].r1 = color->r;
+            ((StageBackdrop *)D_800C3D50[0])->quads[i].g1 = color->g;
+            ((StageBackdrop *)D_800C3D50[0])->quads[i].b1 = color->b;
+            color++;
+            ((StageBackdrop *)D_800C3D50[0])->quads[i].r2 = color->r;
+            ((StageBackdrop *)D_800C3D50[0])->quads[i].g2 = color->g;
+            ((StageBackdrop *)D_800C3D50[0])->quads[i].b2 = color->b;
+            color++;
+            ((StageBackdrop *)D_800C3D50[0])->quads[i].r3 = color->r;
+            ((StageBackdrop *)D_800C3D50[0])->quads[i].g3 = color->g;
+            ((StageBackdrop *)D_800C3D50[0])->quads[i].b3 = color->b;
+            color++;
+        } else {
+            color += 4;
+        }
+    }
+    ((u8 *)D_800D2D40)[0] = color->r;
+    ((u8 *)D_800D2D40)[1] = color->g;
+    ((u8 *)D_800D2D40)[2] = color->b;
+    color++;
+    ((u8 *)D_800D2D48)[0] = color->r;
+    ((u8 *)D_800D2D48)[1] = color->g;
+    ((u8 *)D_800D2D48)[2] = color->b;
+}
 
 /* Light a colour with light slot index: when active, its mode (field r)
  * adds the colour (0), half (1) or a quarter (2) of it, its grey level (3),
