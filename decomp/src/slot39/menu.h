@@ -759,6 +759,11 @@ extern s16 D_801EA724;   /* item list scroll bar */
 extern s32 D_801EA728;
 extern s16 D_801EA72C;
 extern u8 D_801E9778;    /* a card message is pending */
+extern u8 D_801E9785;    /* the target panels are allocated */
+extern MenuAnchor D_801EA054[]; /* target panel layouts: x and y anchors */
+extern MenuAnchor D_801EA098[];
+extern MenuAnchor D_801EA0DC[];
+extern MenuAnchor D_801EA120[];
 extern s32 D_801EA718;   /* card event and handler ids */
 extern s32 D_801EA71C;
 extern s32 D_801EA720;
@@ -889,6 +894,7 @@ void func_801CE660(void);
 void func_801CEB5C(void);
 void func_801CEBB4(void);
 void func_801CE464(void);
+void func_801CE0CC(MenuPanel *panel, u8 a, u8 b, MenuAnchor *c, MenuAnchor *d, u8 e);
 void func_801CE198(s32 count, SVECTOR *verts, POLY_FT4 *polys, s32 first);
 void func_801CE338(void);
 void func_801CE3C8(void);

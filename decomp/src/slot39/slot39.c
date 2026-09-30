@@ -3151,7 +3151,66 @@ void func_801DB39C(s32 mode) {
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DB39C);
 #endif
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DB5E4);
+/* Build the target selection's party panels: allocate the three panel
+ * blocks once, clear them and build each occupied slot's panel (layout 1
+ * for `mode` 2, where only characters with a gear qualify; `mode` then
+ * becomes that layout flag); then place the three target cursor quads. */
+void func_801DB5E4(u8 mode) {
+    MenuAnchor *xs;
+    MenuAnchor *ys;
+    MenuPanel *panel;
+    void *block;
+    s32 i;
+    u8 ok;
+    u8 id;
+
+    if (D_801E9785 == 0) {
+        for (i = 0; i < 3; i++) {
+            block = func_80031BDC(0xbec, 0);
+            D_800625A0->panels[i] = block;
+            bzero(block, 0xbec);
+        }
+        D_801E9785 = 1;
+    }
+    for (i = 0; i < 3; i++) {
+        bzero(D_800625A0->panels[i], 0xbec);
+    }
+    if (mode != 2) {
+        xs = D_801EA054;
+        ys = D_801EA0DC;
+        mode = 0;
+    } else {
+        xs = D_801EA098;
+        ys = D_801EA120;
+        mode = 1;
+    }
+    for (i = 0; i < 3; i++) {
+        panel = D_800625A0->panels[i];
+        id = D_800625A0->party->ids[i];
+        ok = 1;
+        if (id != 0xff) {
+            if (mode) {
+                ok = D_8006D8A0[id].gear != 0xff;
+            }
+            if (ok) {
+                func_801CE0CC(panel, id, i, xs, ys, mode);
+            }
+        } else {
+            panel->shown = 0;
+        }
+    }
+    D_800625A0->party->unk46 = 1;
+    for (i = 0; i < 3; i++) {
+        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->current[i]))->x0 = 0x90;
+        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->current[i]))->y0 = i * 0x38 + 0x30;
+        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->current[i]))->x1 = 0xa0;
+        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->current[i]))->y1 = i * 0x38 + 0x30;
+        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->current[i]))->x2 = 0x90;
+        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->current[i]))->y2 = i * 0x38 + 0x40;
+        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->current[i]))->x3 = 0xa0;
+        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->current[i]))->y3 = i * 0x38 + 0x40;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DB920);
 
