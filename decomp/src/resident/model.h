@@ -86,6 +86,8 @@ typedef struct {
     MorphTable *morphs; /* optional */
     SVECTOR box_min;    /* bounding box */
     SVECTOR box_max;
+    s32 aux_size;       /* bytes of the auxiliary block (unk18) */
+    s32 packet_size;    /* bytes of one packet buffer */
 } SpriteModel;
 
 /* A morph channel: its update function steps `weight` toward `target`. */
@@ -156,18 +158,20 @@ typedef struct {
  * stride and the packet sizes. */
 typedef struct {
     void (*draw[6])(u8 *records, s32 count);
-    void (*unk18)(u8 *records, s32 count);
-    s32 stride;
-    s32 unk20;
-    s32 unk24;
+    s32 (*prepare)(u8 *aux, u8 *record, s16 kind); /* one record's packets */
+    s32 stride;         /* record */
+    s32 aux_stride;     /* auxiliary data per record */
+    s32 packet_size;
 } PrimitiveType;
 
 extern PrimitiveType D_8004FE50[];
 extern PrimitiveGroup *D_80059528; /* the primitive group being drawn */
 extern s32 D_800595C0;             /* primitives submitted */
 extern s32 D_80050104;             /* bounding box test mode (8003101C), 0 off */
+extern u8 *D_80059538;             /* auxiliary data of the record being prepared */
 
 s32 func_8002C700(SpriteModel *model, RenderPacket *packets, u32 *ot, s32 mode); /* draw */
+void func_8002C8CC(SpriteModel *model, RenderPacket *packets, s32 mode); /* build packets */
 /* Old-style definition: callers pass the mode as an int. */
 s32 func_8003101C(); /* (SpriteModel *model, u16 mode): bounding box off screen */
 

@@ -227,7 +227,80 @@ s32 func_8002C700(SpriteModel *model, RenderPacket *packets, u32 *ot, s32 mode) 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002C700);
 #endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002C8CC);
+/* Build a sprite model's packets in `packets`. A mode other than 0 keeps
+ * an auxiliary block and selects the variant the preparing routines
+ * build: 1 plain, 2 and 3 the lit variants once the auxiliary block
+ * exists (3 when the model was not yet built with them, 4 after). */
+void func_8002C8CC(SpriteModel *model, RenderPacket *packets, s32 mode) {
+    s32 groups;
+    s32 count;
+    PrimitiveGroup *group;
+    PrimitiveType *type;
+    s32 (*prepare)(u8 *aux, u8 *record, s16 kind);
+    s32 kind;
+    u16 flags;
+
+    D_80059424 = packets;
+    if (!(model->flags & 1) && model->aux_size != 0 && mode != 0) {
+        func_800324B8(0x26);
+        model->unk18 = func_80031BDC(model->aux_size, 0);
+        model->flags |= 1;
+    }
+    D_80059528 = (PrimitiveGroup *)model->unk10;
+    D_80059538 = model->unk14;
+    D_8005952C = model->normals;
+    D_8005953C = model->vertices;
+    D_80059498 = (s32 *)model->unk18;
+    flags = model->flags;
+    switch (mode) {
+    case 0:
+        kind = 0;
+        break;
+    case 1:
+        kind = 1;
+        break;
+    case 2:
+        if (flags & 2) {
+            if (flags & 1) {
+                kind = 4;
+            } else {
+                kind = 1;
+            }
+        } else if (flags & 1) {
+            kind = 3;
+            model->flags = flags | 2;
+        } else {
+            kind = 1;
+        }
+        break;
+    case 3:
+        if (flags & 1) {
+            kind = 3;
+            model->flags = flags | 2;
+        }
+        break;
+    }
+    groups = model->group_count;
+    D_800595C0 += model->primitive_count;
+    for (groups--; groups != -1; groups--) {
+        group = D_80059528;
+        count = group->count;
+        D_80059528 = group + 1;
+        type = &D_8004FE50[group->type];
+        prepare = type->prepare;
+        for (count--; count != -1; count--) {
+            if (prepare(D_80059538, (u8 *)D_80059528, kind)) {
+                D_80059528 = (PrimitiveGroup *)((u8 *)D_80059528 + type->stride);
+                D_80059424 = (RenderPacket *)((u8 *)D_80059424 + type->packet_size);
+                D_80059538 += type->aux_stride;
+            } else {
+                D_80059538 += 4;
+                count++;
+            }
+        }
+    }
+    func_8002CCAC();
+}
 
 /* Allocate a model buffer's two halves of `size` bytes each. */
 void func_8002CB54(ModelBuffer *buffer, u8 **first, u8 **second) {
