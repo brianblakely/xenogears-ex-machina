@@ -350,6 +350,14 @@ extern u8 D_800C3E18;
 extern u8 D_800D2D24[3];   /* party character ids */
 extern void *D_800D367C;   /* menu module block */
 extern void *D_800C3DE8;   /* file 3 block */
+extern u8 D_800C3CF4[9];   /* decimal digits */
+
+typedef struct {
+    u8 unk0[0x14];
+    u16 bank;
+} SoundSystem;
+
+extern SoundSystem *D_8005919C;
 
 /* Per-slot formation information (0x1c bytes from 800c3eb4). */
 typedef struct {
@@ -417,6 +425,11 @@ extern s16 D_8005A3A0[];
 extern s32 D_8006EF58;     /* party gold */
 
 /* Resident services. */
+void func_80039DB8(s32 effect);
+void func_80028470(s32 a, s32 b);
+void func_80032498(s32 owner, s32 b);
+s32 func_80031BDC(s32 size, s32 mode);
+s32 func_800286CC(void);
 u8 func_8001BD40(u8 low, u8 high);
 s32 func_8003FA38(void);
 void func_80043B48(u32 *ot, void *prim);

@@ -3155,23 +3155,72 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008A684);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008A9C0);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008AA40);
+/* Play menu sound effect `id` of the system effect bank. */
+void func_8008AA40(u8 id) {
+    func_80039DB8((D_8005919C->bank << 16) | id);
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008AA74);
+/* Play menu sound effect `id` while menu effects are enabled. */
+void func_8008AA74(u8 id) {
+    if (D_800D366C != 0) {
+        func_8008AA40(id);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008AAA0);
+/* Split `value` into nine decimal digits at 800c3cf4, leading zeros 0xff. */
+void func_8008AAA0(u32 value) {
+    u32 divisor = 100000000;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008AB4C);
+    for (i = 0; i < 9; i++) {
+        D_800C3CF4[i] = value / divisor;
+        value %= divisor;
+        divisor /= 10;
+    }
+    for (i = 1; i < 9; i++) {
+        if (D_800C3CF4[i] != 0) {
+            if (D_800C3CF4[i - 1] == 0) {
+                D_800C3CF4[i - 1] = 0xFF;
+            }
+            break;
+        }
+        D_800C3CF4[i - 1] = 0xFF;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008AB70);
+/* Heap mode 0x20/0. */
+void func_8008AB4C(void) {
+    func_80028470(0x20, 0);
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008AB94);
+/* Heap mode 0x20/2. */
+void func_8008AB70(void) {
+    func_80028470(0x20, 2);
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008ABB8);
+/* Heap mode 0x20/3. */
+void func_8008AB94(void) {
+    func_80028470(0x20, 3);
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008AC00);
+/* Allocate a battle heap block (owner tag 2). */
+s32 func_8008ABB8(s32 size, s32 mode) {
+    func_80032498(2, 0);
+    return func_80031BDC(size, mode);
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008AC50);
+/* Allocate a text image block for `count` characters. */
+s32 func_8008AC00(s32 count) {
+    func_80032498(2, 0);
+    return func_80031BDC((count + 3) * 26, 0);
+}
+
+/* Wait frames until the disc reads finish. */
+void func_8008AC50(void) {
+    while (func_800286CC() != 0) {
+        func_800716D8();
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008AC88);
 
