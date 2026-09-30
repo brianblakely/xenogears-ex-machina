@@ -2588,7 +2588,41 @@ void func_800B10EC(s32 index, s32 x, s32 z, s32 distance) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800B12D0);
+/* Whether slot's code in the current presentation event is not allowed by
+ * the kinds in mask (1: codes 0-1, 2: code 5, 4: code 4, 8: codes 2-3), or
+ * mask is empty. */
+s32 func_800B12D0(s32 slot, u8 mask) {
+    s32 result;
+    s32 allowed;
+
+    result = 0;
+    switch (D_800C3FE8[D_800C360C - 1].codes[slot]) {
+    case 0:
+    case 1:
+        allowed = mask & 1;
+        break;
+    case 5:
+        allowed = mask & 2;
+        break;
+    case 4:
+        allowed = mask & 4;
+        break;
+    case 2:
+    case 3:
+        allowed = mask & 8;
+        break;
+    default:
+        goto empty;
+    }
+    if (!allowed) {
+        result = 1;
+    }
+empty:
+    if (mask == 0) {
+        result = 1;
+    }
+    return result;
+}
 
 #ifdef NON_MATCHING
 /* Wait frames (800BE790) until no stage object is busy (field38) and 800BF6F8
