@@ -821,22 +821,14 @@ INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E3F28);
 
 /* Character 7's derived values from the current record's max HP and
  * attack. */
-#ifdef NON_MATCHING
 void func_801E3FB0(void) {
-    GameData *game;
-    Combatant *record;
+    GameData *game = D_801E44C4;
 
-    record = D_801E44EC;
-    game = D_801E44C4;
-    game->value_E58 = record->maxHp * 200;
-    game->value_E30 = record->attack / 5 + 1;
-    record = D_801E44EC;
-    game->value_E64 = record->maxHp * 10;
-    game->value_E66 = record->maxHp * 10;
+    game->value_E58 = D_801E44EC->maxHp * 200;
+    game->value_E30 = D_801E44EC->attack / 5 + 1;
+    game->value_E64 = D_801E44EC->maxHp * 10;
+    game->value_E66 = D_801E44EC->maxHp * 10;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E3FB0);
-#endif
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E403C);
 
