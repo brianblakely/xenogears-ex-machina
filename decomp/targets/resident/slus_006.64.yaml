@@ -60,6 +60,9 @@ segments:
       - [0x8E44, .rodata, sprite_80022090]
       - [0x90EC, .rodata, main_8002709C]
       - [0x90F4, .rodata, main_8002A260]
+      # Model unit (GCC 2.7.2): 8002C700's jump table at 0 mod 8 follows
+      # the CD/stream unit's tables at 4 mod 8.
+      - [0x9180, .rodata, main_8002C3E8]
       # Heap unit (80031894-80032E7C): its allocation-name strings open the
       # rodata (0x80018998 "DelayFree"), its $gp-relative accesses need -G8.
       - [0x9198, .rodata, heap]
@@ -92,11 +95,15 @@ segments:
       # CD read callback, stream and model buffer unit: GCC 2.6.3 (8002BB50
       # matches only so).
       - [0x1AA60, c, main_8002A260]
-      # GCC 2.7.2 by 8002CCC8 (it, 8002CD24 and 8002CD64 match only so); the
-      # C functions from 8002CB54 compile identically under both, and no rodata
-      # follows 8002C700's jump table. 8002CC10, the first of the texture
-      # override functions that 8002CCC8 applies, is chosen.
-      - [0x1D410, c, main_8002CC10]
+      # Model unit (GCC 2.7.2): 8002C700's jump table (0x80018980, 0 mod 8)
+      # follows 8002A68C's tables at 4 mod 8, so a unit starts after
+      # 8002C310, the last user of the CD/stream unit's rodata (its report
+      # strings end at 0x80018980). 8002C700 matches only under 2.7.2 (mflo
+      # into $t0), as do 8002CCC8, 8002CD24 and 8002CD64; 8002C3E8, 8002C4BC
+      # and 8002C59C add the relocation base second, as 2.7.2 does and 2.6.3
+      # does not. 8002C3E8, the first model relocation function, is chosen
+      # (8002C3D8 compiles identically under both).
+      - [0x1CBE8, c, main_8002C3E8]
       - [0x22094, c, heap]
       - [0x2367C, c, main2]
       # Sound driver unit (GCC 2.6.3) to 8003F738. Its start lies in

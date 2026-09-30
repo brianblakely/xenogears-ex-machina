@@ -144,7 +144,31 @@ void func_8002DB84(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *normal); /* f
 s32 func_8002DDE4(s32 *images, s16 mode, s32 x, s32 y, s16 mode2, u16 x2, u16 y2); /* upload an image list */
 u8 *func_8002DFE0(void); /* the shared unpack buffer */
 
-void func_8002C700(void *model, void *packets, s32 ot, s32 flags); /* draw primitive groups */
-s32 func_8003101C(SpriteModel *model, u16 mode); /* bounding box off screen */
+/* A primitive group: its type (an index into D_8004FE50) and count; the
+ * primitive records follow. */
+typedef struct {
+    u8 type;
+    u8 unk1;
+    s16 count;
+} PrimitiveGroup;
+
+/* The renderer of a primitive type: a routine per sort mode, the record
+ * stride and the packet sizes. */
+typedef struct {
+    void (*draw[6])(u8 *records, s32 count);
+    void (*unk18)(u8 *records, s32 count);
+    s32 stride;
+    s32 unk20;
+    s32 unk24;
+} PrimitiveType;
+
+extern PrimitiveType D_8004FE50[];
+extern PrimitiveGroup *D_80059528; /* the primitive group being drawn */
+extern s32 D_800595C0;             /* primitives submitted */
+extern s32 D_80050104;             /* bounding box test mode (8003101C), 0 off */
+
+s32 func_8002C700(SpriteModel *model, RenderPacket *packets, u32 *ot, s32 mode); /* draw */
+/* Old-style definition: callers pass the mode as an int. */
+s32 func_8003101C(); /* (SpriteModel *model, u16 mode): bounding box off screen */
 
 #endif

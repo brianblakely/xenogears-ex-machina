@@ -20,6 +20,233 @@
 #include "console.h"
 #include "sound.h"
 
+/* Relocate a model group's offsets to addresses (once). Returns the number
+ * of models.
+ * Nonmatching: the original walks the models through one pointer at their
+ * list fields. */
+#ifdef NON_MATCHING
+s32 func_8002C3E8(ModelGroup *group) {
+    s32 flags = group->flags;
+    s32 count = group->count;
+    Model *model;
+    ModelListEntry *entry;
+    s32 i;
+    s32 n;
+
+    if (!(flags & 1)) {
+        group->flags = flags | 1;
+        for (i = 0, model = group->models; i < count; i++, model++) {
+            model->table0 += (s32)group;
+            model->table8 += (s32)group;
+            model->table4 += (s32)group;
+            model->primitives += (s32)group;
+            if (model->list != NULL) {
+                model->list = (ModelList *)((u8 *)model->list + (s32)group);
+                n = model->list->last;
+                if (n != -1) {
+                    entry = &model->list->entries[n];
+                    do {
+                        n--;
+                        entry->first += (s32)group;
+                        entry->second += (s32)group;
+                        entry--;
+                    } while (n != -1);
+                }
+            }
+        }
+    }
+    return count;
+}
+#else
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002C3E8);
+#endif
+
+/* Undo 8002C3E8: turn a relocated model group's addresses back into
+ * offsets. Returns the number of models.
+ * Nonmatching: the original walks the models through one pointer at their
+ * list fields. */
+#ifdef NON_MATCHING
+s32 func_8002C4BC(ModelGroup *group) {
+    s32 flags = group->flags;
+    s32 count = group->count;
+    Model *model;
+    ModelListEntry *entry;
+    s32 i;
+    s32 n;
+
+    if (flags & 1) {
+        group->flags = flags & ~1;
+        for (i = 0, model = group->models; i < count; i++, model++) {
+            model->table0 -= (s32)group;
+            model->table8 -= (s32)group;
+            model->table4 -= (s32)group;
+            model->primitives -= (s32)group;
+            if (model->list != NULL) {
+                n = model->list->last;
+                if (n != -1) {
+                    entry = &model->list->entries[n];
+                    do {
+                        n--;
+                        entry->first -= (s32)group;
+                        entry->second -= (s32)group;
+                        entry--;
+                    } while (n != -1);
+                }
+                model->list = (ModelList *)((u8 *)model->list - (s32)group);
+            }
+        }
+    }
+    return count;
+}
+#else
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002C4BC);
+#endif
+
+/* Relocate a sprite model's offsets to addresses (once).
+ * Nonmatching: the target loop's pointer is biased differently. */
+#ifdef NON_MATCHING
+void func_8002C59C(SpriteModel *model) {
+    MorphTable *table;
+    MorphTarget *targets;
+    MorphTarget *target;
+    s32 n;
+
+    if (!(model->flags & 0x20)) {
+        model->flags |= 0x20;
+        model->vertices = (SVECTOR *)((u8 *)model->vertices + (s32)model);
+        model->normals = (SVECTOR *)((u8 *)model->normals + (s32)model);
+        model->unk10 += (s32)model;
+        model->unk14 += (s32)model;
+        if (model->morphs != NULL) {
+            table = (MorphTable *)((u8 *)model->morphs + (s32)model);
+            targets = table->targets;
+            model->morphs = table;
+            n = table->count;
+            if (n != -1) {
+                target = &targets[n];
+                do {
+                    n--;
+                    target->deltas = (u8 *)target->deltas + (s32)model;
+                    target->normals = (MorphDelta *)((u8 *)target->normals + (s32)model);
+                    target--;
+                } while (n != -1);
+            }
+        }
+    }
+}
+#else
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002C59C);
+#endif
+
+/* Trim a model group's heap block to its data (once). Returns 1 when it
+ * was already trimmed. */
+s32 func_8002C644(ModelGroup *group) {
+    if (group->flags & 2) {
+        return 1;
+    }
+    group->flags |= 2;
+    func_80031F70((u8 *)group, group->models[0].primitives - (u8 *)group);
+    return 0;
+}
+
+/* Trim a model buffer's heap block at its end (once). Returns 1 when it
+ * was already trimmed. */
+s32 func_8002C68C(ModelBuffer *buffer) {
+    if (buffer->flags & 0x40) {
+        return 1;
+    }
+    buffer->flags |= 0x40;
+    func_80031F70((u8 *)buffer, buffer->end - (u8 *)buffer);
+    buffer->end = NULL;
+    return 0;
+}
+
+extern u8 D_80059598;
+extern u8 D_80059599;
+extern u8 D_8005959A;
+
+void func_8002C6E0(u8 r, u8 g, u8 b) {
+    D_80059598 = r;
+    D_80059599 = g;
+    D_8005959A = b;
+}
+
+/* Draw a sprite model's primitive groups into `ot` with the routines of
+ * sort mode `mode`, building packets from `packets`. Returns 0 when its
+ * bounding box test finds it off screen, else 1.
+ * Nonmatching: the model fields loaded before the loop take other
+ * registers (the primitive count is loaded first). */
+#ifdef NON_MATCHING
+s32 func_8002C700(SpriteModel *model, RenderPacket *packets, u32 *ot, s32 mode) {
+    s32 count;
+    PrimitiveGroup *group;
+    PrimitiveType *type;
+    void (*draw)(u8 *records, s32 count);
+
+    if (D_80050104 != 0 && func_8003101C(model, D_80050104)) {
+        return 0;
+    }
+    count = model->group_count;
+    D_80059424 = packets;
+    D_80059568 = ot;
+    D_800595C0 += model->primitive_count;
+    D_80059528 = (PrimitiveGroup *)model->unk10;
+    D_80059498 = (s32 *)model->unk18;
+    D_8005952C = model->normals;
+    D_8005953C = model->vertices;
+    for (count--; count != -1; count--) {
+        group = D_80059528;
+        type = &D_8004FE50[group->type];
+        switch (mode) {
+        case 0:
+            draw = type->draw[0];
+            break;
+        case 1:
+            draw = type->draw[1];
+            break;
+        case 2:
+            draw = type->draw[2];
+            break;
+        case 3:
+            draw = type->draw[3];
+            break;
+        case 4:
+            draw = type->draw[4];
+            break;
+        case 5:
+            draw = type->draw[5];
+            break;
+        }
+        D_80059528++;
+        draw((u8 *)D_80059528, group->count);
+        D_80059528 = (PrimitiveGroup *)((u8 *)D_80059528 + group->count * type->stride);
+    }
+    return 1;
+}
+#else
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002C700);
+#endif
+
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002C8CC);
+
+/* Allocate a model buffer's two halves of `size` bytes each. */
+void func_8002CB54(ModelBuffer *buffer, u8 **first, u8 **second) {
+    u8 *block;
+
+    func_800324B8(0x25);
+    block = func_80031BDC(buffer->size * 2, 0);
+    *first = block;
+    *second = block + buffer->size;
+}
+
+/* Release a model buffer's owned block. */
+void func_8002CBBC(ModelBuffer *buffer) {
+    if (buffer->flags & 1) {
+        func_800320E8(buffer->buffer);
+        buffer->flags &= ~1;
+    }
+}
+
 extern s32 D_80050108; /* texture page override: 0 none, 1 page, 2 raw */
 extern s32 D_8005010C; /* CLUT override: 0 on */
 extern s32 D_80059310;
@@ -525,7 +752,7 @@ s32 func_8002DDE4(s32 *images, s16 mode, s32 x, s32 y, s16 mode2, u16 x2, u16 y2
     return 0;
 }
 #else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002DDE4);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002DDE4);
 #endif
 
 /* The shared unpack buffer. */
@@ -541,35 +768,35 @@ void func_8002DFF0(s32 a, s32 b) {
     D_800500F8 = a;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002E010);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002E010);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002E448);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002E448);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002E64C);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002E64C);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002E8B4);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002E8B4);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002EAB8);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002EAB8);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002ED20);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002ED20);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002EEF8);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002EEF8);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002F0E4);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002F0E4);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002F2E0);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002F2E0);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002F4B4);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002F4B4);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002F6B4);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002F6B4);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002F8D0);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002F8D0);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002FAE8);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002FAE8);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002FCFC);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002FCFC);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002FF0C);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002FF0C);
 
 /* Default morph channel update: step the weight toward the target by the
  * step, without overshooting. Returns the weight. */
@@ -724,9 +951,9 @@ void func_800306D0(MorphState *state) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_80030750);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_80030750);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_80030988);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_80030988);
 
 /* Set light `index` (0-2): its row of the light direction matrix is the
  * normalized reverse of the light's vector and its color a column of the
@@ -811,7 +1038,7 @@ void func_80030C98(QuadFace *faces, s32 count) {
     }
 }
 #else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_80030C98);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_80030C98);
 #endif
 
 /* Perspective-transform the three loaded vertices. Nonzero when one of
@@ -844,7 +1071,10 @@ s32 func_80030EE8(void) {
  * triangles tested reaches the screen (80030EE8). Mode bit 0 tests the box
  * diagonal and three faces' diagonals, bit 1 four triangles through the
  * edge midpoints. */
-s32 func_8003101C(SpriteModel *model, u16 mode) {
+s32 func_8003101C(model, mode)
+SpriteModel *model;
+u16 mode;
+{
     SVECTOR v;
 
     if (mode & 1) {
@@ -953,44 +1183,44 @@ s32 func_8003101C(SpriteModel *model, u16 mode) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_800315A0);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_800315A0);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_800315C4);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_800315C4);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_800315E8);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_800315E8);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8003160C);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8003160C);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_80031630);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_80031630);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_80031654);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_80031654);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_80031678);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_80031678);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8003169C);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8003169C);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_800316C0);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_800316C0);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_800316E4);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_800316E4);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_80031708);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_80031708);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8003172C);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8003172C);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_80031750);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_80031750);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_80031774);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_80031774);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_80031798);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_80031798);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_800317BC);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_800317BC);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_800317E0);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_800317E0);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_80031804);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_80031804);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_80031828);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_80031828);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8003184C);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8003184C);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_80031870);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_80031870);
