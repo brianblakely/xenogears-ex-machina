@@ -1320,7 +1320,18 @@ INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CB690);
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CBA2C);
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CBDA0);
+/* Load the model's matrices, then the view's. */
+void func_801CBDA0(void) {
+    func_801CBA2C();
+    func_8003F738(&D_800625A0->model_rotation, &D_800625A0->model_matrix);
+    func_80049D9C(&D_800625A0->model_matrix, &D_800625A0->model_translation);
+    func_80049EFC(&D_800625A0->model_matrix);
+    func_80049F8C(&D_800625A0->model_matrix);
+    func_8003F738(&D_800625A0->view_rotation, &D_800625A0->view_matrix);
+    func_80049D9C(&D_800625A0->view_matrix, &D_800625A0->view_translation);
+    func_80049EFC(&D_800625A0->view_matrix);
+    func_80049F8C(&D_800625A0->view_matrix);
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CBE60);
 
@@ -1651,7 +1662,7 @@ INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CE32C);
 /* Draw the separately loaded model when shown. */
 void func_801CE7E0(void) {
     if (D_800625A0->flags->model_shown != 0) {
-        func_801E7D14(D_800625A0->model_a, D_800625A0->model_b, D_800625A0->draw_env->unkB0, D_800625A0->buffer);
+        func_801E7D14(&D_800625A0->model_matrix, D_800625A0->model_b, D_800625A0->draw_env->unkB0, D_800625A0->buffer);
     }
 }
 
@@ -1663,9 +1674,30 @@ INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CEEA8);
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CF184);
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CF33C);
+/* Build the gear screen's packets when shown. */
+void func_801CF33C(void) {
+    if (D_800625A0->flags->gear_shown != 0) {
+        func_801CEA68();
+        func_801CEEA8();
+        func_801CF184();
+    }
+}
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CF38C);
+/* Render name `index` of the name table into VRAM at (180h, 48h). */
+void func_801CF38C(u8 index) {
+    RECT rect;
+
+    D_801D9088 = func_80031BDC(0x3F6, 0);
+    func_8003F8E8(D_801D9088, 0x3F6);
+    func_80034EAC(D_8006D634[index], D_801D9088, 0x24, 0);
+    rect.x = 0x180;
+    rect.y = 0x48;
+    rect.w = 0x28;
+    rect.h = 13;
+    func_80044894(&rect, D_801D9088);
+    func_800445D0(0);
+    func_800320E8(D_801D9088);
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CF448);
 
@@ -1929,13 +1961,39 @@ u8 func_801D573C(void) {
     return 2;
 }
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D57A8);
+/* Redraw the current gear list: parts (0-2) or the fourth list. */
+void func_801D57A8(void) {
+    switch (D_800625A0->list_cursor) {
+    case 0:
+    case 1:
+    case 2:
+        func_801D498C(0, 1);
+        func_801D6150((GearTable *)D_800625A0->resources, D_801D9084);
+        break;
+    case 3:
+        func_801D5398();
+        break;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D5828);
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D5D38);
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D5EB8);
+/* Close the gear model once the view has stopped moving, and release its two blocks. */
+void func_801D5EB8(void) {
+    while (D_800625A0->view_motion != 0) {
+        func_801CC1C4();
+    }
+    D_801D697C = 0;
+    D_800625A0->flags->model_shown = 0;
+    func_801CC1C4();
+    func_801E7FD4();
+    D_800625A0->model_parts_a->unk12 = 0;
+    D_800625A0->model_parts_b->unk12 = 0;
+    func_800320E8(D_800625A0->model_parts_a);
+    func_800320E8(D_800625A0->model_parts_b);
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D5F94);
 
@@ -1948,7 +2006,24 @@ void func_801D6150(GearTable *table, u8 id) {
     func_801D6738(table, id);
 }
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D61B8);
+/* Copy gear `id`'s values from its +2 entry of the table's 18h-byte records, capping +60. */
+void func_801D61B8(GearTable *table, u8 id) {
+    Gear *gear;
+    GearRecord18 *record;
+
+    gear = &D_8006DFAC[id];
+    record = table->records18;
+    record += gear->unk2;
+    gear->unk64 = record->unk4;
+    gear->unk68 = record->unk8;
+    gear->unk98 = record->unk14;
+    gear->unk9E = record->unk15;
+    gear->unk9D = record->unk16;
+    gear->unk9F = record->unk17;
+    if (gear->unk64 < gear->unk60) {
+        gear->unk60 = gear->unk64;
+    }
+}
 
 /* Copy gear `id`'s two words from its entry (+8) of the table's 14h-byte records. */
 void func_801D6250(GearTable *table, u8 id) {
@@ -1962,7 +2037,25 @@ void func_801D6250(GearTable *table, u8 id) {
     gear->unk72 = entry->unkA;
 }
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D62A4);
+/* Copy gear `id`'s values from its +3 entry of the table's 10h-byte records, capping +38. */
+void func_801D62A4(GearTable *table, u8 id) {
+    Gear *gear;
+    GearRecord10 *record;
+    u16 limit;
+
+    gear = &D_8006DFAC[id];
+    record = table->records10;
+    limit = gear->unk38;
+    record += gear->unk3;
+    gear->unk3A = record->unk6;
+    gear->unk3C = record->unkC;
+    gear->unk3D = record->unkD;
+    gear->unk3E = record->unkE;
+    gear->unk3F = record->unkE;
+    if (gear->unk3A < limit) {
+        gear->unk38 = gear->unk3A;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D6334);
 

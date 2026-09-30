@@ -176,6 +176,12 @@ typedef struct {
     u8 unk4786[2];
 } DetailBlock;
 
+/* A model part block (ovl2602, menu state + 458/45c). */
+typedef struct {
+    u8 unk0[0x12];
+    u8 unk12; /* 12 */
+} ModelParts;
+
 /* Projected markers (ovl2602, menu state + 440). */
 typedef struct {
     POLY_FT4 packets[8]; /* 000 */
@@ -312,7 +318,9 @@ typedef struct {
     u8 unk5B;
     u8 unk5C[0x63 - 0x5C];
     u8 model_shown;  /* 63: ovl2602 */
-    u8 unk64[0x6C - 0x64];
+    u8 unk64;
+    u8 gear_shown;   /* 65: ovl2602 */
+    u8 unk66[0x6C - 0x66];
 } ScreenFlags;
 
 /* A linked sound effect bank. */
@@ -372,8 +380,11 @@ typedef struct {
     SVECTOR view_rotation;    /* 1d8 */
     VECTOR view_translation;  /* 1e0 */
     MATRIX view_matrix;       /* 1f0 */
-    u8 unk210[0x230 - 0x210];
-    u8 model_a[0x68];         /* 230: ovl2602, drawn by 801e7d14 */
+    u8 unk210[8];
+    SVECTOR model_rotation;   /* 218: ovl2602 */
+    VECTOR model_translation; /* 220 */
+    MATRIX model_matrix;      /* 230 */
+    u8 unk250[0x298 - 0x250];
     u8 model_b[0x2DC - 0x298]; /* 298 */
     void *sprite_sheet;  /* 2dc */
     void *label_text;    /* 2e0 */
@@ -417,7 +428,9 @@ typedef struct {
     u8 unk44C[4];
     DetailBlock *details; /* 450 */
     u8 *unk454;          /* 454: ovl2602's 1f00h-byte block */
-    u8 unk458[0x46C - 0x458];
+    ModelParts *model_parts_a; /* 458: ovl2602 */
+    ModelParts *model_parts_b; /* 45c */
+    u8 unk460[0x46C - 0x460];
     SheetEntry sheet_entries[4]; /* 46c */
     u8 unk4CC[0x4E0 - 0x4CC];
     Label labels[4];     /* 4e0: command labels */

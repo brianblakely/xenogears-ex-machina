@@ -176,6 +176,12 @@ typedef struct {
     u8 unk4786[2];
 } DetailBlock;
 
+/* A model part block (ovl2602, menu state + 458/45c). */
+typedef struct {
+    u8 unk0[0x12];
+    u8 unk12; /* 12 */
+} ModelParts;
+
 /* Projected markers (ovl2602, menu state + 440). */
 typedef struct {
     POLY_FT4 packets[8]; /* 000 */
@@ -312,7 +318,9 @@ typedef struct {
     u8 unk5B;
     u8 unk5C[0x63 - 0x5C];
     u8 model_shown;  /* 63: ovl2602 */
-    u8 unk64[0x6C - 0x64];
+    u8 unk64;
+    u8 gear_shown;   /* 65: ovl2602 */
+    u8 unk66[0x6C - 0x66];
 } ScreenFlags;
 
 /* A linked sound effect bank. */
@@ -372,8 +380,11 @@ typedef struct {
     SVECTOR view_rotation;    /* 1d8 */
     VECTOR view_translation;  /* 1e0 */
     MATRIX view_matrix;       /* 1f0 */
-    u8 unk210[0x230 - 0x210];
-    u8 model_a[0x68];         /* 230: ovl2602, drawn by 801e7d14 */
+    u8 unk210[8];
+    SVECTOR model_rotation;   /* 218: ovl2602 */
+    VECTOR model_translation; /* 220 */
+    MATRIX model_matrix;      /* 230 */
+    u8 unk250[0x298 - 0x250];
     u8 model_b[0x2DC - 0x298]; /* 298 */
     void *sprite_sheet;  /* 2dc */
     void *label_text;    /* 2e0 */
@@ -417,7 +428,9 @@ typedef struct {
     u8 unk44C[4];
     DetailBlock *details; /* 450 */
     u8 *unk454;          /* 454: ovl2602's 1f00h-byte block */
-    u8 unk458[0x46C - 0x458];
+    ModelParts *model_parts_a; /* 458: ovl2602 */
+    ModelParts *model_parts_b; /* 45c */
+    u8 unk460[0x46C - 0x460];
     SheetEntry sheet_entries[4]; /* 46c */
     u8 unk4CC[0x4E0 - 0x4CC];
     Label labels[4];     /* 4e0: command labels */
@@ -618,17 +631,47 @@ u8 func_801CCA40(u8 wait, u8 movable);
 
 /* A gear record of the game data (a4h bytes, 8006dfac). */
 typedef struct {
-    u8 unk0[8];
-    u8 unk8;       /* 08: entry of the gear table */
-    u8 unk9[0x44 - 9];
+    u8 unk0[2];
+    u8 unk2;       /* 02: entry of the 18h-byte table */
+    u8 unk3;       /* 03: entry of the 10h-byte table */
+    u8 unk4[4];
+    u8 unk8;       /* 08: entry of the 14h-byte table */
+    u8 unk9[0x38 - 9];
+    u16 unk38;     /* 38 */
+    u16 unk3A;     /* 3a */
+    u8 unk3C, unk3D, unk3E, unk3F; /* 3c */
+    u8 unk40[4];
     u16 unk44;     /* 44 */
-    u8 unk46[0x70 - 0x46];
+    u8 unk46[0x60 - 0x46];
+    u32 unk60;     /* 60 */
+    u32 unk64;     /* 64 */
+    u16 unk68;     /* 68 */
+    u8 unk6A[0x70 - 0x6A];
     u16 unk70;     /* 70 */
     u16 unk72;     /* 72 */
     u8 unk74;
     u8 unk75;      /* 75 */
-    u8 unk76[0xA4 - 0x76];
+    u8 unk76[0x98 - 0x76];
+    u8 unk98;      /* 98 */
+    u8 unk99[4];
+    u8 unk9D, unk9E, unk9F; /* 9d */
+    u8 unkA0[4];
 } Gear;
+
+typedef struct {
+    u8 unk0[4];
+    u32 unk4;  /* 04 */
+    u16 unk8;  /* 08 */
+    u8 unkA[0x14 - 0xA];
+    u8 unk14, unk15, unk16, unk17; /* 14 */
+} GearRecord18;
+
+typedef struct {
+    u8 unk0[6];
+    u16 unk6;  /* 06 */
+    u8 unk8[4];
+    u8 unkC, unkD, unkE, unkF; /* 0c */
+} GearRecord10;
 
 typedef struct {
     u8 unk0[8];
@@ -638,8 +681,10 @@ typedef struct {
 } GearEntry;
 
 typedef struct {
-    u8 unk0[0x10];
-    GearEntry *entries; /* 10 */
+    u8 unk0[8];
+    GearRecord18 *records18; /* 08 */
+    GearRecord10 *records10; /* 0c */
+    GearEntry *entries;      /* 10 */
 } GearTable;
 
 extern Gear D_8006DFAC[];
@@ -656,5 +701,17 @@ void func_801D62A4(GearTable *table, u8 id);
 void func_801D6250(GearTable *table, u8 id);
 void func_801D6334(GearTable *table, u8 id);
 void func_801D6738(GearTable *table, u8 id);
+extern u8 D_801D9084;      /* gear being edited */
+extern u8 *D_801D9088;     /* name pixel buffer */
+extern u8 D_801D697C;
+extern u8 D_8006D634[][0x14]; /* names */
+void func_801D498C(u8 unk0, u8 unk1);
+void func_801D5398(void);
+void func_801D6150(GearTable *table, u8 id);
+void func_801CBA2C(void);
+void func_801CEA68(void);
+void func_801CEEA8(void);
+void func_801CF184(void);
+void func_801E7FD4(void);
 
 #endif
