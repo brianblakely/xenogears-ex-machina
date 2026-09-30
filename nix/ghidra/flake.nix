@@ -124,7 +124,7 @@
       psxBinutils =
         let
           cross = pkgs.pkgsCross.mipsel-linux-gnu;
-          tools = cross.buildPackages.binutils;
+          tools = cross.buildPackages.binutils-unwrapped;
           prefix = "${cross.stdenv.hostPlatform.config}-";
         in
         pkgs.runCommand "xem-psx-binutils" { } ''
@@ -151,13 +151,26 @@
     {
       packages.${system} = {
         default = ghidra;
-        inherit ghidra m2c spimdisasm psxBinutils;
+        inherit
+          ghidra
+          m2c
+          spimdisasm
+          psxBinutils
+          ;
         psx-loader = psxLoader;
       };
       devShells.${system} = {
         default = base;
         matching = pkgs.mkShell {
-          packages = [ m2c spimdisasm psxBinutils pkgs.gnumake pkgs.diffutils pkgs.git pkgs.python3 ];
+          packages = [
+            m2c
+            spimdisasm
+            psxBinutils
+            pkgs.gnumake
+            pkgs.diffutils
+            pkgs.git
+            pkgs.python3
+          ];
           shellHook = ''
             export PYTHONDONTWRITEBYTECODE=1
             export SOURCE_DATE_EPOCH=0

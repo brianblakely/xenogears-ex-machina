@@ -1,4 +1,5 @@
 """Small public integrity gate; source and tests, not generated requirement facets."""
+
 from __future__ import annotations
 
 import json
@@ -28,9 +29,11 @@ CATEGORIES = {
     "minigames",
 }
 
+
 def require(condition: bool, message: str) -> None:
     if not condition:
         raise ValueError(message)
+
 
 def digest(value: str, label: str) -> None:
     require(
@@ -38,15 +41,18 @@ def digest(value: str, label: str) -> None:
         f"Invalid SHA256: {label}",
     )
 
+
 def unique(rows: list[dict], label: str) -> dict:
     mapped = {row["id"]: row for row in rows}
     require(len(mapped) == len(rows), f"Duplicate IDs in {label}")
     return mapped
 
+
 def load(root: Path, name: str) -> dict:
     value = json.loads((root / name).read_text())
     require(value.get("schema_version") == 1, f"Unsupported schema: {name}")
     return value
+
 
 def validate_finding(finding: dict, profiles: set[str]) -> None:
     required = {
@@ -153,6 +159,7 @@ def validate_finding(finding: dict, profiles: set[str]) -> None:
             "Confirmed finding needs reproduced and reviewed evidence",
         )
 
+
 def validate_subsystem(row: dict, evidence: set[str], decisions: set[str]) -> None:
     require(row["stage"] in ["unidentified", *STAGES], "Invalid subsystem stage")
     require(set(row["stage_evidence"]) == set(STAGES), "Subsystem must track every maturity stage")
@@ -182,6 +189,7 @@ def validate_subsystem(row: dict, evidence: set[str], decisions: set[str]) -> No
             bool(row["unknowns"]) and row["stage"] != "behaviorally_validated",
             "Unknown behavior cannot be claimed validated",
         )
+
 
 def validate_inventory(data: dict, profiles: set[str]) -> None:
     require(set(data["categories"]) == CATEGORIES, "Original-content category omitted")
@@ -231,6 +239,7 @@ def validate_inventory(data: dict, profiles: set[str]) -> None:
             "A taxonomy/partial inventory cannot claim catalog completeness",
         )
 
+
 def validate_observed_entrypoints(
     data: dict, inventory: dict, profiles: set[str], findings: dict
 ) -> None:
@@ -276,7 +285,6 @@ def validate_observed_entrypoints(
             and row["observed_entrypoint_count"] == len(expected),
             "Inventory observed-entrypoint references or counts are inconsistent",
         )
-
 
 
 def validate_baseline_inventory(
@@ -387,12 +395,12 @@ def validate_baseline_inventory(
 def validate(root: Path = ROOT) -> None:
     files = source_files(root)
     for path in files:
-        if path.suffix == '.json':
+        if path.suffix == ".json":
             json.loads(path.read_text())
     # Actual historical evidence remains tested by the focused validator tests.
     # Do not reinterpret its old phase/facet labels as the current checklist.
     print(f"Source boundary and JSON integrity passed: {len(files)} authored files")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     validate()

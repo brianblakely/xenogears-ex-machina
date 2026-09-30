@@ -25,7 +25,6 @@
 #include <optional>
 #include <string>
 
-
 namespace xem::reconstruction {
 
 struct FieldActor {

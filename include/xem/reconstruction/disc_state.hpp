@@ -25,7 +25,6 @@
 #include <optional>
 #include <string>
 
-
 namespace xem::reconstruction {
 
 // Resident file reads (800295d8 and its setup 80029690). Globals whose

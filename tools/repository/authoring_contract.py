@@ -408,5 +408,3 @@ def validate_gates(contract: dict, acceptance: dict, matrix: dict) -> int:
             "phase exit omits authoring prerequisite: " + phase,
         )
     return len(gates)
-
-

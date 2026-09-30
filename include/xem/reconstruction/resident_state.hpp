@@ -18,16 +18,16 @@
 #include "xem/reconstruction/packed_field.hpp"
 #include "xem/reconstruction/sound_driver.hpp"
 
+#include "xem/reconstruction/disc_state.hpp"
+#include "xem/reconstruction/gpu_state.hpp"
+#include "xem/reconstruction/input_state.hpp"
+#include "xem/reconstruction/interrupt_state.hpp"
 #include <deque>
 #include <functional>
 #include <map>
 #include <memory>
 #include <optional>
 #include <string>
-#include "xem/reconstruction/disc_state.hpp"
-#include "xem/reconstruction/gpu_state.hpp"
-#include "xem/reconstruction/input_state.hpp"
-#include "xem/reconstruction/interrupt_state.hpp"
 
 namespace xem::reconstruction {
 

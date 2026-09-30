@@ -21,18 +21,6 @@ from tools.repository.validate import (
 
 
 class EvidenceWorkflowTests(unittest.TestCase):
-
-
-
-
-
-
-
-
-
-
-
-
     def test_finding_requires_coordinates_and_qualified_addresses(self) -> None:
         finding = {
             "id": "SYNTHETIC-RECORD",
@@ -78,11 +66,6 @@ class EvidenceWorkflowTests(unittest.TestCase):
         unqualified["locations"][0]["address"] = "0x80010000"
         with self.assertRaisesRegex(ValueError, "executable and address-space"):
             validate_finding(unqualified, {"fixture-profile"})
-
-
-
-
-
 
     def test_unknown_subsystem_cannot_skip_evidence_or_become_changed(self) -> None:
         original = {

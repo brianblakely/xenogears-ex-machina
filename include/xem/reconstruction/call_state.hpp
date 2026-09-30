@@ -25,7 +25,6 @@
 #include <optional>
 #include <string>
 
-
 namespace xem::reconstruction {
 
 // Original call ABI retained from the initial qualified connected entry.

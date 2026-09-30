@@ -29,7 +29,6 @@ class AuthoringContractTests(unittest.TestCase):
     def dependencies(self):
         return validate_dependencies(ROOT, self.review, self.manifest, self.lock)
 
-
     def test_untrusted_build_cannot_fall_back_to_plain_node_or_acquire_privilege(self):
         for key in (
             "plain_node_fallback",
@@ -107,10 +106,6 @@ class AuthoringContractTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "promoted to runtime"):
             self.dependencies()
 
-
-
-
-
     def test_dependency_qualification_rejects_stale_installed_manifests(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -139,9 +134,6 @@ class AuthoringContractTests(unittest.TestCase):
                     ValueError, "Required reviewed package is not installed"
                 ):
                     installed_identities()
-
-
-
 
 
 if __name__ == "__main__":

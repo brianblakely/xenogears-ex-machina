@@ -317,5 +317,3 @@ def validate_parity(root: Path, parity: dict, methods: set[str], gates: set[str]
             native["status"] == "unimplemented" and not native["evidence"],
             "Phase 0 parity is not native execution evidence",
         )
-
-

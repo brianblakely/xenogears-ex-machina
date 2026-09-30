@@ -26,9 +26,6 @@ class AgentSpecificationTests(unittest.TestCase):
         self.schemas.validate(value, "protocol.schema.json#/$defs/request")
         validate_semantics(value)
 
-
-
-
     def test_protocol_is_not_a_generic_json_object(self):
         for change in (
             {"version": "99.0"},
@@ -147,8 +144,6 @@ class AgentSpecificationTests(unittest.TestCase):
         )
         with self.assertRaisesRegex(ValueError, "backlog"):
             validate_parity(ROOT, bad, methods, gates)
-
-
 
 
 if __name__ == "__main__":
