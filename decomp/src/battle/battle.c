@@ -4706,7 +4706,72 @@ u8 func_800841E0(u8 member) {
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800841E0);
 #endif
 
+/* Collect the slots a party attack can target (80084108, `any` includes
+ * downed ones) as candidates with their mask: side 0 the enemies, 1 the
+ * party, 2 both (the party first unless `partyFirst` is clear). Returns the
+ * first candidate. */
+#ifdef NON_MATCHING
+u8 func_80084548(u8 side, u8 any, u8 partyFirst) {
+    s32 i;
+    s32 count;
+    s32 n1;
+    s32 n2 = 0;
+    u8 first1;
+    u8 first2;
+    s32 slot;
+
+    for (i = 11; i >= 0; i--) {
+        D_800C3E90[i] = 0xFF;
+    }
+    switch (side) {
+    case 0:
+        first1 = 3;
+        n1 = 8;
+        break;
+    case 1:
+        first1 = 0;
+        n1 = 3;
+        break;
+    case 2:
+        if (partyFirst == 0) {
+            first1 = 3;
+            n1 = 8;
+            first2 = 0;
+            n2 = 3;
+        } else {
+            first1 = 0;
+            n1 = 3;
+            first2 = 3;
+            n2 = 8;
+        }
+        break;
+    }
+    count = 0;
+    D_800D3274 = 0;
+    D_800C3D64 = 0;
+    i = first1;
+    while (--n1 >= 0) {
+        slot = i++;
+        if (func_80084108(slot, any)) {
+            D_800C3E90[count++] = slot;
+            D_800C3D64 |= func_80089C08(slot);
+            D_800D3274++;
+        }
+    }
+    i = first2;
+    while (--n2 >= 0) {
+        slot = i++;
+        if (func_80084108(slot, any)) {
+            D_800C3E90[count++] = slot;
+            D_800C3D64 |= func_80089C08(slot);
+            D_800D3274++;
+        }
+    }
+    return D_800C3E90[0];
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80084548);
+#endif
 
 /* Collect the enemy slots the member can target (80083ff4) as candidates
  * and their mask; returns the first candidate. */
