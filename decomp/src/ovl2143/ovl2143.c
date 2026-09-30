@@ -2741,7 +2741,762 @@ void func_801E37D0(Actor *actor) {
     }
 }
 
+/* Run an actor's script for `ticks` frames: integrate its spin (h70[0..5])
+ * and drift (h70[6..11]) that many times, take a pending jump (w4C after the
+ * distance to the target falls to h48, w54 on landing at the root height, w50
+ * after h46 frames), then execute opcodes (low byte; the high byte is the
+ * argument) until one waits or stops. `changed` holds the tween flags of the
+ * last step (-1: unknown), which the wait opcodes test. Opcodes that switch
+ * to another actor (0x1f) store the script position in that actor; those
+ * that release or hand over (0x14 with 0xfd, 0x16, 0x17, 0x5b) return without
+ * storing it, and 0x15 copies into an uninitialised block when all actor
+ * slots 8 and 9 are used, as in the original. */
+#ifdef NON_MATCHING
+void func_801E39F0(Actor *actor, SlotPool *pool, s32 changed, s32 ticks, s32 arg4) {
+    Actor *self = actor;
+    Actor *other;
+    Actor *copy;
+    ModelPart *part;
+    ModelPart *node;
+    MATRIX m;
+    SVECTOR v;
+    SVECTOR spin;
+    VECTOR moved;
+    VECTOR d, ex, ey, ez;
+    RECT rect;
+    u16 *pc;
+    u16 *start;
+    u16 *counter;
+    u16 word, word2, mask;
+    s32 op, arg;
+    s32 running, redraw;
+    s32 i, n, key;
+    s32 dx, dy, dz, dist, pitch, yaw;
+    s16 c0, c1, c2;
+    u8 depth;
+
+    if (ticks == 0 || actor->pc == 0) {
+        return;
+    }
+    func_80032498(4, 0);
+    redraw = 0;
+    for (i = 0; i < ticks; i++) {
+        actor->h70[0] += actor->h70[3];
+        actor->h70[1] += actor->h70[4];
+        actor->h70[2] += actor->h70[5];
+        actor->h70[6] += actor->h70[9];
+        actor->h70[7] += actor->h70[10];
+        actor->h70[8] += actor->h70[11];
+        actor->parts->rot.vx += actor->h70[0] >> 3;
+        actor->parts->rot.vy += actor->h70[1] >> 3;
+        actor->parts->rot.vz += actor->h70[2] >> 3;
+        spin.vx = actor->h70[6] * actor->parts->scale[0] >> 12;
+        spin.vy = actor->h70[7] * actor->parts->scale[1] >> 12;
+        spin.vz = actor->h70[8] * actor->parts->scale[2] >> 12;
+        ApplyMatrix(&actor->parts->world, &spin, &moved);
+        actor->parts->pos[0] += actor->scale * moved.vx >> 12;
+        actor->parts->pos[1] += actor->scale * moved.vy >> 12;
+        actor->parts->pos[2] += actor->scale * moved.vz >> 12;
+    }
+    running = 1;
+    pc = (u16 *)actor->pc;
+    if (actor->w4C != 0 && func_801E6338(actor) <= actor->h48) {
+        pc = (u16 *)actor->w4C;
+        actor->w4C = 0;
+    } else if (actor->w54 != 0 && actor->h60 < actor->parts->pos[1]) {
+        actor->parts->pos[1] = actor->h60;
+        pc = (u16 *)actor->w54;
+        actor->w54 = 0;
+    } else if (actor->w50 != 0) {
+        actor->h44 += ticks;
+        if (actor->h44 >= actor->h46) {
+            pc = (u16 *)actor->w50;
+            actor->w50 = 0;
+        }
+    }
+    if (actor->aim_actor != 0) {
+        func_801E63A8(actor);
+    }
+    while (running) {
+        start = pc;
+        word = *pc++;
+        op = word & 0xFF;
+        arg = word >> 8;
+        switch (op) {
+        case 0x00: /* wait */
+            pc = start;
+            running = 0;
+            break;
+        case 0x01: /* wait for a number of frames */
+            if (changed == -1) {
+                pc = start;
+                running = 0;
+                break;
+            }
+            word = *pc++;
+            actor->h40 += ticks;
+            if ((s16)actor->h40 < (s16)word) {
+                pc = start;
+                running = 0;
+                break;
+            }
+            actor->h40 = 0;
+            ticks = 0;
+            break;
+        case 0x02:
+        case 0x03: /* redraw */
+            redraw = 1;
+            break;
+        case 0x08: /* drop the node tweens and the animation */
+            func_801DFE8C(pool, actor->parts);
+            func_801E632C(actor);
+            break;
+        case 0x0A:
+            func_801DF52C(pool, actor->parts, arg, 7);
+            break;
+        case 0x0B: /* drop the tweens and reset every node below the root */
+            part = actor->parts;
+            func_801DFE8C(pool, part);
+            n = part->count - 1;
+            for (i = 0; i < n; i++) {
+                part++;
+                part->rot.vx = 0;
+                part->rot.vy = 0;
+                part->rot.vz = 0;
+                part->pos[0] = 0;
+                part->pos[1] = 0;
+                part->pos[2] = 0;
+                part->dirty = 1;
+                part->rotate = 1;
+            }
+            break;
+        case 0x0C: /* stop spinning and drifting */
+            for (i = 0; i < 12; i++) {
+                actor->h70[i] = 0;
+            }
+            break;
+        case 0x0D:
+            func_801DF52C(pool, actor->parts, arg, 1);
+            break;
+        case 0x0E:
+            func_801DF52C(pool, actor->parts, arg, 2);
+            break;
+        case 0x10: /* apply keyframe `arg` */
+            func_801DEF10(actor->parts, (s16 *)func_801E6910(actor, arg, &n));
+            break;
+        case 0x11: /* start animation `arg` */
+            key = func_801E6910(actor, arg, &n);
+            word = *pc++;
+            if (n == 0) {
+                func_801DF7F4(pool, actor->parts, (u16 *)key, word >> 8, word & 0xFF);
+                changed = -1;
+                c0 = (s16)((u16 *)key)[8] * (actor->scale * actor->parts->scale[2] >> 12) >> 12;
+                actor->h8E = c0 < 0 ? -c0 : c0;
+                func_801E5C74(actor, (Animation *)key, word >> 8);
+            }
+            break;
+        case 0x13: /* tween to keyframe */
+            word = *pc++;
+            word2 = *pc++;
+            key = func_801E6910(actor, word & 0xFF, &n);
+            if (D_801E85CC != 0) {
+                func_801DEF10(actor->parts, (s16 *)key);
+            } else {
+                func_801DF0B4(pool, actor->parts, (s16 *)key, (word2 >> 8) & 0xFF, arg, word2 & 0xFF,
+                              (word >> 8) & 0xFF);
+            }
+            changed = -1;
+            func_801E632C(actor);
+            break;
+        case 0x14: /* call an entry in the masked actors */
+            word = *pc++;
+            i = func_801E6830(actor, word & 0xFF, &mask);
+            func_801E6830(actor, arg, &mask);
+            depth = actor->depth;
+            if (arg == 0xFD) {
+                actor->depth = 0;
+            }
+            for (n = 0; n < 8; n++) {
+                if (((s16)mask >> n) & 1) {
+                    if ((word & 0xFF) == 0xFF) {
+                        func_801E35D0(D_801E8670[n], D_801E8670[n], pool, word >> 8);
+                    } else {
+                        func_801E35D0(D_801E8670[n], D_801E8670[i & 0xFF], pool, word >> 8);
+                    }
+                }
+            }
+            actor->depth = depth;
+            if (arg == 0xFD) {
+                return;
+            }
+            break;
+        case 0x15: /* clone this actor into a free slot 8 or 9 */
+            word = *pc++;
+            for (n = 8; n < 10; n++) {
+                if (D_801E8670[n] == NULL) {
+                    copy = func_80031BDC(sizeof(Actor), 1);
+                    break;
+                }
+            }
+            *copy = *actor;
+            D_801E8670[n] = copy;
+            copy->h3C = 0xFFFF;
+            copy->anim_state = -1;
+            copy->parent = 0xFF;
+            copy->h40 = 0;
+            copy->aim_actor = 0;
+            copy->h90 = -1;
+            copy->b62 = 0;
+            copy->group = NULL;
+            copy->blockAC = NULL;
+            copy->b39 = 0x6B;
+            copy->pc = 0;
+            copy->b21 = actor->index;
+            copy->count10D = 0;
+            copy->count10E = 0;
+            copy->index = n;
+            func_801E8510(copy);
+            copy->parts = func_80031BDC(actor->parts->count * sizeof(ModelPart), 1);
+            for (i = 0; i < actor->parts->count; i++) {
+                copy->parts[i] = actor->parts[i];
+                if (actor->parts[i].parent != NULL) {
+                    copy->parts[i].parent = copy->parts + (actor->parts[i].parent - actor->parts);
+                }
+                copy->parts[i].visible = 0;
+                copy->parts[i].attachments[0] = NULL;
+                copy->parts[i].attachments[1] = NULL;
+            }
+            func_801E6578(pool, (s16)word, actor->parts, copy->parts);
+            if (arg != 0xFF) {
+                func_801E35D0(copy, copy, pool, arg);
+            }
+            break;
+        case 0x16: /* merge back into the actor this one was cloned from */
+            func_801E6668(actor->parts, D_801E8670[actor->b21]->parts);
+            func_801E8030(actor->index);
+            if (arg != 0xFF) {
+                func_801E35D0(D_801E8670[actor->b21], D_801E8670[actor->b21], pool, arg);
+            }
+            return;
+        case 0x17: /* release this actor */
+            func_801E8030(actor->index);
+            return;
+        case 0x18: /* start animation `arg` looping from a frame */
+            key = func_801E6910(actor, arg, &n);
+            func_801E5C74(actor, (Animation *)key, (s16)*pc++);
+            break;
+        case 0x19: /* stop the animation */
+            func_801E632C(actor);
+            break;
+        case 0x1A: /* move a VRAM rectangle (arg bit 0: by the actor's image offset) */
+            rect.x = *pc++;
+            rect.y = *pc++;
+            dx = *pc++;
+            dy = *pc++;
+            rect.w = ((s16)*pc++ + 1) / 2 * 2;
+            rect.h = *pc++;
+            if (arg & 1) {
+                if (actor->h90 < 0) {
+                    break;
+                }
+                rect.x += actor->h90;
+                rect.y += actor->h92;
+                dx += actor->h90;
+                dy += actor->h92;
+            }
+            MoveImage(&rect, (s16)dx, (s16)dy);
+            break;
+        case 0x1D: /* tween node `arg` between two poses */
+            word = *pc++;
+            word2 = *pc++;
+            changed = -1;
+            c0 = pc[0];
+            c1 = pc[1];
+            c2 = pc[2];
+            func_801E6974(actor, pool, &actor->parts[arg], word & 0xFF, word >> 8, word2 & 0xFF,
+                          word2 >> 8, c0, c1, c2, pc[3], pc[4], pc[5], pc[6]);
+            pc += 7;
+            break;
+        case 0x1E: /* use the scaled hierarchy update */
+            actor->scaled = arg;
+            break;
+        case 0x1F: /* continue in another actor */
+            other = D_801E8670[func_801E6830(self, arg, &mask) & 0xFF];
+            if (other != NULL) {
+                actor = other;
+            }
+            break;
+        case 0x20: /* wait for the tweens to end */
+            if (changed == -1 || (changed & 0x100)) {
+                pc = start;
+                running = 0;
+            }
+            break;
+        case 0x21: /* wait for the tweens tagged `arg` */
+            actor->h3C = arg;
+            if (changed == -1 || (changed & 1)) {
+                pc = start;
+                running = 0;
+            }
+            break;
+        case 0x22: /* wait for a number of loops (of all, or those tagged `arg`) */
+            if (changed == -1) {
+                pc = start;
+                running = 0;
+                break;
+            }
+            word = *pc++;
+            if (arg == 0xFF) {
+                if (!(changed & 0x400)) {
+                    pc = start;
+                    running = 0;
+                    break;
+                }
+            } else {
+                actor->h3C = arg;
+                if (!(changed & 4)) {
+                    pc = start;
+                    running = 0;
+                    break;
+                }
+            }
+            if (++actor->h42 < (s16)word) {
+                pc = start;
+                running = 0;
+                break;
+            }
+            actor->h42 = 0;
+            break;
+        case 0x23:
+            func_801E6D94(actor, &actor->parts[(s16)*pc++], arg);
+            break;
+        case 0x24: /* show or hide */
+            if (actor != NULL) {
+                actor->active = arg & 1;
+            }
+            break;
+        case 0x25: /* attach the masked actors to node (high byte), keeping
+                    * their place (arg bit 0) or at an offset */
+            word = *pc++;
+            func_801E6830(actor, word & 0xFF, &mask);
+            c0 = *pc++;
+            c1 = *pc++;
+            c2 = *pc++;
+            for (n = 0; n < 8; n++) {
+                if (!(((s16)mask >> n) & 1) || D_801E8670[n] == NULL) {
+                    continue;
+                }
+                D_801E8670[n]->parent_node = word >> 8;
+                D_801E8670[n]->parent = actor->index;
+                D_801E8670[n]->inherit = arg & 2;
+                D_801E8670[n]->b36 = 1;
+                if (arg & 1) {
+                    node = &actor->parts[word >> 8];
+                    SetRotMatrix(&node->world);
+                    m.t[0] = 0;
+                    m.t[1] = 0;
+                    m.t[2] = 0;
+                    SetTransMatrix(&m);
+                    v.vx = 0x1000;
+                    v.vy = 0;
+                    v.vz = 0;
+                    gte_ldv0(&v);
+                    gte_rtv0tr();
+                    gte_stlvnl(&ex);
+                    v.vx = 0;
+                    v.vy = 0x1000;
+                    gte_ldv0(&v);
+                    gte_rtv0tr();
+                    gte_stlvnl(&ey);
+                    v.vy = 0;
+                    v.vz = 0x1000;
+                    gte_ldv0(&v);
+                    gte_rtv0tr();
+                    gte_stlvnl(&ez);
+                    d.vx = D_801E8670[n]->parts->pos[0] - node->world.t[0];
+                    d.vy = D_801E8670[n]->parts->pos[1] - node->world.t[1];
+                    d.vz = D_801E8670[n]->parts->pos[2] - node->world.t[2];
+                    D_801E8670[n]->offset[0] = func_801E66BC(&d, &ey, &ez, actor->scale);
+                    D_801E8670[n]->offset[1] = func_801E66BC(&d, &ez, &ex, actor->scale);
+                    D_801E8670[n]->offset[2] = func_801E66BC(&d, &ex, &ey, actor->scale);
+                } else {
+                    D_801E8670[n]->offset[0] = c0;
+                    D_801E8670[n]->offset[1] = c1;
+                    D_801E8670[n]->offset[2] = c2;
+                }
+            }
+            break;
+        case 0x26: /* detach the masked actors */
+            func_801E6830(actor, arg, &mask);
+            for (n = 0; n < 8; n++) {
+                if ((((s16)mask >> n) & 1) && D_801E8670[n] != NULL) {
+                    D_801E8670[n]->parent = 0xFF;
+                }
+            }
+            break;
+        case 0x27: /* recompose the hierarchy */
+            if (actor->scaled) {
+                func_801DC848(actor->parts, actor->scale);
+            } else {
+                func_801DC5C0(actor->parts, actor->scale);
+            }
+            break;
+        case 0x28:
+        case 0x29: /* wait until the distance (in h8e units) passes `arg` while
+                    * node (low byte) tweens with the given time */
+            dist = func_801E6338(actor);
+            if (actor->h8E == 0) {
+                actor->h8E = 1;
+            }
+            word = *pc++;
+            node = &actor->parts[word & 0xFF];
+            dist /= actor->h8E;
+            n = 0;
+            if (node->attachments[0] != NULL) {
+                n = (word >> 8) == node->attachments[0]->time;
+            } else if (node->attachments[1] != NULL &&
+                       node->attachments[1]->time == ((word >> 8) & 0xFF)) {
+                n = 1;
+            }
+            if (!n) {
+                pc = start;
+                running = 0;
+            } else if (op == 0x28) {
+                if (dist >= arg) {
+                    pc = start;
+                    running = 0;
+                }
+            } else if (dist < arg) {
+                pc = start;
+                running = 0;
+            }
+            break;
+        case 0x2A: /* wait while nearer than h8e */
+            if (func_801E6338(actor) >= actor->h8E) {
+                pc = start;
+                running = 0;
+            }
+            break;
+        case 0x2B: /* wait while farther than h8e */
+            if (actor->h8E >= func_801E6338(actor)) {
+                pc = start;
+                running = 0;
+            }
+            break;
+        case 0x2E: /* jump when near the target */
+            actor->h48 = actor->h8E;
+            word = *pc++;
+            actor->w4C = arg ? (s32)((u8 *)start + (s16)word) : 0;
+            break;
+        case 0x30: /* reset a loop counter */
+            *pc++ = 0;
+            break;
+        case 0x31: /* loop back to a counter until it reaches its limit */
+            word = *pc++;
+            counter = (u16 *)((u8 *)start + (s16)word);
+            n = counter[0] >> 8;
+            if ((s16)++counter[1] < n) {
+                pc = counter + 2;
+            }
+            break;
+        case 0x32: /* jump */
+            pc = (u16 *)((u8 *)start + (s16)*pc);
+            break;
+        case 0x33:
+        case 0x34:
+        case 0x3B:
+            pc++;
+            break;
+        case 0x35: /* jump at random (half the time) */
+            word = *pc++;
+            if (rand() >= 0x4000) {
+                pc = (u16 *)((u8 *)start + (s16)word);
+            }
+            break;
+        case 0x36: /* jump after a number of frames */
+            actor->h44 = 0;
+            actor->h46 = *pc++;
+            word = *pc++;
+            actor->w50 = arg ? (s32)((u8 *)start + (s16)word) : 0;
+            break;
+        case 0x37: /* jump on landing */
+            word = *pc++;
+            actor->w54 = arg ? (s32)((u8 *)start + (s16)word) : 0;
+            break;
+        case 0x38:
+        case 0x39: /* move node `arg` toward the target */
+            word = *pc++;
+            func_801E5B50(pool, actor->parts, op == 0x39, arg, word & 0xFF, word >> 8,
+                          actor->target[0], actor->target[1], actor->target[2]);
+            break;
+        case 0x3C: /* play a sound */
+            word = *pc++;
+            func_8003A3B8((word & 0xFF) + func_801E5CD8(actor, arg), 0, word >> 8);
+            break;
+        case 0x3D: /* run the queued calls once `arg` is among them */
+            n = actor->depth;
+            if (n < 2) {
+                break;
+            }
+            for (i = 1; i < n; i++) {
+                if (actor->queue_entry[i - 1] == arg) {
+                    goto dequeue;
+                }
+            }
+            break;
+        case 0x40: /* turn the root to a rotation */
+            c0 = *pc++;
+            c1 = *pc++;
+            c2 = *pc++;
+            changed = -1;
+            func_801E59D4(pool, actor->parts, arg, c0, c1, c2);
+            break;
+        case 0x41: /* turn the root by a rotation */
+            c0 = *pc++;
+            c1 = *pc++;
+            c2 = *pc++;
+            changed = -1;
+            func_801E59D4(pool, actor->parts, arg, (s16)(actor->parts->rot.vx + c0),
+                          (s16)(actor->parts->rot.vy + c1), (s16)(actor->parts->rot.vz + c2));
+            break;
+        case 0x42:
+        case 0x43: /* turn the root toward the target (0x43: heading only) */
+            dy = actor->target[1] - actor->parts->pos[1];
+            dx = actor->target[0] - actor->parts->pos[0];
+            dz = actor->target[2] - actor->parts->pos[2];
+            if (op == 0x43) {
+                pitch = 0;
+                dy = 0;
+            } else {
+                pitch = ratan2(dy, SquareRoot0(dx * dx + dz * dz));
+            }
+            yaw = ratan2(-dx, -dz);
+            if (dx == 0 && dy == 0 && dz == 0) {
+                break;
+            }
+            changed = -1;
+            func_801E59D4(pool, actor->parts, arg, (s16)pitch, (s16)yaw, 0);
+            break;
+        case 0x44:
+            actor->h70[0] = *pc++;
+            actor->h70[1] = *pc++;
+            actor->h70[2] = *pc++;
+            break;
+        case 0x45:
+            actor->h70[0] += *pc++;
+            actor->h70[1] += *pc++;
+            actor->h70[2] += *pc++;
+            break;
+        case 0x46:
+            actor->h70[3] = *pc++;
+            actor->h70[4] = *pc++;
+            actor->h70[5] = *pc++;
+            break;
+        case 0x47:
+            actor->h70[3] += *pc++;
+            actor->h70[4] += *pc++;
+            actor->h70[5] += *pc++;
+            break;
+        case 0x48:
+            actor->b36 = arg;
+            break;
+        case 0x49: /* place the root */
+            actor->parts->pos[0] = (s16)*pc++;
+            actor->parts->pos[1] = (s16)*pc++;
+            actor->parts->pos[2] = (s16)*pc++;
+            break;
+        case 0x4A: /* (arg 0xfb) put the root at distance h8e from the target */
+            if (arg != 0xFB) {
+                break;
+            }
+            dx = actor->parts->pos[0] - actor->target[0];
+            dy = actor->parts->pos[1] - actor->target[1];
+            dz = actor->parts->pos[2] - actor->target[2];
+            dist = SquareRoot0(dx * dx + dy * dy + dz * dz) + 1;
+            actor->parts->pos[0] = actor->target[0] + dx * actor->h8E / dist;
+            actor->parts->pos[1] = actor->target[1] + dy * actor->h8E / dist;
+            actor->parts->pos[2] = actor->target[2] + dz * actor->h8E / dist;
+            break;
+        case 0x4B:
+            actor->h70[6] = *pc++;
+            actor->h70[7] = *pc++;
+            actor->h70[8] = *pc++;
+            break;
+        case 0x4C:
+            actor->h70[6] += *pc++;
+            actor->h70[7] += *pc++;
+            actor->h70[8] += *pc++;
+            break;
+        case 0x4D:
+            actor->h70[9] = *pc++;
+            actor->h70[10] = *pc++;
+            actor->h70[11] = *pc++;
+            break;
+        case 0x4E:
+            actor->h70[9] += *pc++;
+            actor->h70[10] += *pc++;
+            actor->h70[11] += *pc++;
+            break;
+        case 0x4F: /* drift toward the target over `arg` frames */
+            dx = actor->target[0] - actor->parts->pos[0];
+            dy = actor->target[1] - actor->parts->pos[1];
+            dz = actor->target[2] - actor->parts->pos[2];
+            if (arg == 0) {
+                arg = 1;
+            }
+            dist = SquareRoot0(dx * dx + dy * dy + dz * dz) / arg;
+            actor->h70[8] = (dist << 12) / (actor->scale * actor->parts->scale[2] >> 12) / 2;
+            if (((ratan2(-dx, -dz) - (u16)actor->parts->rot.vy + 0x400) & 0xFFF) < 0x800) {
+                actor->h70[8] = -actor->h70[8];
+            }
+            break;
+        case 0x50: /* set the target */
+            actor->aim_actor = 0;
+            actor->target[0] = *pc++;
+            actor->target[1] = *pc++;
+            actor->target[2] = *pc++;
+            break;
+        case 0x54:
+            actor->h8E = (s16)*pc++ * (actor->scale * actor->parts->scale[2] >> 12) >> 12;
+            break;
+        case 0x55:
+            actor->h8E += (s16)*pc++ * (actor->scale * actor->parts->scale[2] >> 12) >> 12;
+            break;
+        case 0x56:
+            actor->h8E += *pc++;
+            break;
+        case 0x57:
+            n = func_801E6830(actor, arg, &mask) & 0xFF;
+            actor->h8E += func_801E8480(n);
+            break;
+        case 0x5B: /* set the call depth; 2 runs the queued calls */
+            n = actor->depth;
+            if (arg == 1 && n >= 2) {
+                break;
+            }
+            actor->depth = arg;
+            if (arg != 2) {
+                break;
+            }
+        dequeue:
+            actor->depth = 0;
+            if (n < 2) {
+                break;
+            }
+            for (i = 1; i < n; i++) {
+                func_801E35D0(actor, D_801E8670[actor->queue_source[i - 1]], pool,
+                              actor->queue_entry[i - 1]);
+            }
+            return;
+        case 0x5C: /* jump when at the target */
+            word = *pc++;
+            if (actor->target[0] == actor->parts->pos[0] && actor->target[1] == actor->parts->pos[1] &&
+                actor->target[2] == actor->parts->pos[2]) {
+                pc = (u16 *)((u8 *)start + (s16)word);
+            }
+            break;
+        case 0x5D:
+            actor->parts[(s16)*pc++].billboard = arg;
+            break;
+        case 0x5E:
+            actor->scale = *pc++;
+            break;
+        case 0x5F:
+            actor->flags = *pc++;
+            break;
+        case 0x62:
+            c0 = pc[0];
+            c1 = pc[1];
+            c2 = pc[2];
+            func_801E7094(actor, &actor->parts[c0], arg, c1, c2, pc[3]);
+            pc += 4;
+            break;
+        case 0x63: /* start an event animation and jump */
+            word = *pc++;
+            actor->anim_state = 0;
+            actor->anim_loop = -1;
+            actor->anim_frame = 0;
+            actor->anim_frames = arg;
+            actor->anim_pos = (u8 *)pc;
+            pc = (u16 *)((u8 *)start + (s16)word);
+            break;
+        case 0x64:
+            actor->h3E = *pc++;
+            break;
+        case 0x6B:
+            actor->parts[(s16)*pc++].yxz = arg;
+            break;
+        case 0x6C: /* wait while the resident is busy */
+            if (func_800286CC() != 0) {
+                pc = start;
+                running = 0;
+            }
+            break;
+        case 0x6D:
+            actor->b38 = arg & 1;
+            break;
+        case 0x6E: /* wait while an actor's b38 equals the word's bit 0 */
+            other = D_801E8670[func_801E6830(actor, arg, &mask) & 0xFF];
+            word = *pc++;
+            if (other != NULL && other->b38 == (word & 1)) {
+                pc = start;
+                running = 0;
+            }
+            break;
+        case 0x6F:
+            actor->h3A = arg ? D_801E863C : -1;
+            break;
+        case 0x70: /* jump and stop when h3a is the current value */
+            word = *pc++;
+            if (actor->h3A == D_801E863C) {
+                pc = (u16 *)((u8 *)start + (s16)word);
+                running = 0;
+            }
+            break;
+        case 0x04:
+        case 0x05:
+        case 0x06:
+        case 0x07:
+        case 0x09:
+        case 0x0F:
+        case 0x12:
+        case 0x1B:
+        case 0x1C:
+        case 0x2C:
+        case 0x2D:
+        case 0x2F:
+        case 0x3A:
+        case 0x3E:
+        case 0x3F:
+        case 0x51:
+        case 0x52:
+        case 0x53:
+        case 0x58:
+        case 0x59:
+        case 0x5A:
+        case 0x60:
+        case 0x61:
+        case 0x65:
+        case 0x66:
+        case 0x67:
+        case 0x68:
+        case 0x69:
+        case 0x6A:
+            break;
+        default: /* unknown: stop before it */
+            pc--;
+            running = 0;
+            break;
+        }
+    }
+    actor->pc = (s32)pc;
+    if (redraw) {
+        func_800796F4();
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E39F0);
+#endif
 
 /* Turn a node to (rx, ry, rz): at once when `duration` is below 2, else
  * through its first attachment (a kind-3 tween of the shortest angle
@@ -3166,11 +3921,11 @@ s32 func_801E67F8(void) {
     return i;
 }
 
-/* The actor bit mask of reference `ref` (0xff: the mask's lowest actor,
+/* The actor index (returned) and bit mask of reference `ref` (0xff: the mask's lowest actor,
  * 0xfe: the current actor, 0xfd/0xf9: this actor, ...). The original
  * masks the shift count to 8 bits at the join; this build drops it. */
 #ifdef NON_MATCHING
-void func_801E6830(Actor *actor, u8 ref, u16 *mask) {
+s32 func_801E6830(Actor *actor, u8 ref, u16 *mask) {
     u8 index;
 
     if (ref == 0xFF) {
@@ -3191,6 +3946,7 @@ void func_801E6830(Actor *actor, u8 ref, u16 *mask) {
         index = ref;
     }
     *mask = 1 << index;
+    return index;
 }
 #else
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E6830);

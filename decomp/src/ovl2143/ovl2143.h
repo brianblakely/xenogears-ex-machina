@@ -637,6 +637,35 @@ void func_801E22F8(Record24 *record, SVECTOR *light, MATRIX *m, u32 *ot, s32 buf
 void func_80048D7C(VECTOR *v0, VECTOR *v1);   /* VectorNormal */
 VECTOR *ApplyMatrix(MATRIX *m, SVECTOR *v0, VECTOR *v1);
 
+void MoveImage(RECT *rect, s32 x, s32 y);
+s32 rand(void);
+void func_8003A3B8(s32 sound, s32 arg1, s32 arg2); /* play a sound effect */
+s32 func_800286CC(void);
+void func_800796F4(void);
+
+/* This overlay (script services). */
+s32 func_801E6830(Actor *actor, u8 ref, u16 *mask);
+s32 func_801E6910(Actor *actor, u8 ref, s32 *flag);
+void func_801DF52C(SlotPool *pool, ModelPart *part, s32 index, s32 mask);
+s32 func_801DF7F4(SlotPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 tag);
+u16 func_801DF0B4(SlotPool *pool, ModelPart *parts, s16 *data, s32 duration, s32 mode, s32 smooth,
+                  s32 tag);
+void func_801E5C74(Actor *actor, Animation *anim, s32 loop);
+void func_801E632C(Actor *actor);
+void func_801E63A8(Actor *actor);
+void func_801E6578(SlotPool *pool, s32 index, ModelPart *parts, ModelPart *other);
+void func_801E6668(ModelPart *parts, ModelPart *other);
+void func_801E6974(Actor *actor, SlotPool *pool, ModelPart *part, u8 flags, u8 mode, u8 tag,
+                   u8 smooth, s16 x0, s16 y0, s16 z0, s16 x1, s16 y1, s16 z1, s16 duration);
+void func_801E6D94(Actor *actor, ModelPart *part, s32 flags);
+s16 func_801E66BC(VECTOR *dir, void *a, void *b, s32 divisor);
+s32 func_801E5CD8(Actor *actor, s32 which);
+s32 func_801E8480(s32 index);
+void func_801E7094(Actor *actor, ModelPart *part, u8 flags, s16 x, s16 y, s16 z);
+void func_801E5B50(SlotPool *pool, ModelPart *part, s32 type, s32 arg3, s32 arg4, s32 duration,
+                   s32 x, s32 y, s32 z);
+void func_801E59D4(SlotPool *pool, ModelPart *part, s32 duration, s32 rx, s32 ry, s32 rz);
+
 /* This overlay. */
 SlotPool *func_801DF5F4(SlotPool *pool, s32 capacity);
 PoolSlot *func_801DF6F0(SlotPool *pool);
