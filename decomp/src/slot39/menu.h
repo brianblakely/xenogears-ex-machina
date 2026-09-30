@@ -263,7 +263,11 @@ typedef struct CharRecord {
     u8 pad5C[0x6];
     u8 unk62; /* 62 */
     u8 unk63; /* 63 */
-    u8 pad64[0x3C];
+    u8 pad64[0x13];
+    u8 unk77; /* 77 */
+    u8 unk78; /* 78 */
+    u8 unk79; /* 79 */
+    u8 pad7A[0x26];
     u8 gear; /* A0: gear record (+11), ff none */
     u8 padA1[0x3];
 } CharRecord;
@@ -310,7 +314,8 @@ typedef struct GearRecord {
     u8 pad46[0x1A];
     u32 unk60; /* 60 */
     u32 unk64; /* 64 */
-    u8 pad68[0x8];
+    u16 unk68; /* 68 */
+    u8 pad6A[0x6];
     u16 unk70; /* 70 */
     u16 unk72; /* 72 */
     u8 pad74[0x1];
@@ -850,6 +855,8 @@ extern s32 D_801E9D20;   /* detail panel exp */
 extern s32 D_801E9D24;
 extern s32 D_801E9D28;   /* detail panel exp to next level */
 extern s32 D_801E9D2C;
+extern s32 D_801E9D30;   /* detail panel +77..79 value */
+extern s32 D_801E9D34;
 extern s32 D_801E9CF0;   /* hp */
 extern s32 D_801E9CF4;
 extern s32 D_801E9CF8;   /* hp max */

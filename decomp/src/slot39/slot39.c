@@ -3250,7 +3250,67 @@ void func_801D74EC(u8 slot, u8 gear) {
     }
 }
 
+/* Lay out the detail panel's value derived from record +77..+79 of party
+ * slot `slot` ((+78 + +77) * 10 + +79) * 22 shown in hundredths with one
+ * decimal) or, with `gear`, its gear's +68 (five digits). Only the register
+ * allocation differs (the gear and the tenth digit trade saved registers). */
+#ifdef NON_MATCHING
+void func_801D7884(u8 slot, u8 gear) {
+    s32 digits;
+    s32 first;
+    s32 x;
+    s32 i;
+    u8 digit;
+    u16 value;
+    u16 whole;
+    u16 tenth;
+
+    if (!gear) {
+        value = ((D_8006D8A0[D_800625A0->party->ids[slot]].unk78 + D_8006D8A0[D_800625A0->party->ids[slot]].unk77) *
+                     10 +
+                 D_8006D8A0[D_800625A0->party->ids[slot]].unk79) *
+                22;
+        whole = value / 100;
+        digits = 3;
+        first = 6;
+        tenth = (value - whole * 100) / 10;
+        func_801C80B8(whole);
+        x = D_801E9D30;
+    } else {
+        digits = 5;
+        func_801C80B8(D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk68);
+        first = 4;
+        x = D_801E9D30 + 8;
+    }
+    D_800625A0->block358->list1C70Count = 0;
+    for (i = 0; i < digits; i++) {
+        digit = D_800625A0->digits[first + i];
+        if (digit != 0xff) {
+            D_800625A0->block358->list1C70Count +=
+                func_8002675C(D_800625A0->sheet, digit,
+                              &D_800625A0->block358->list1C70[D_800625A0->block358->list1C70Count * 2],
+                              D_800625A0->bufferIndex, i * 8 + x - gear * 0x18, gear * 8 + D_801E9D34, 0x1000);
+        }
+    }
+    if (!gear) {
+        D_800625A0->block358->list1C70Count +=
+            func_8002675C(D_800625A0->sheet, tenth,
+                          &D_800625A0->block358->list1C70[D_800625A0->block358->list1C70Count * 2],
+                          D_800625A0->bufferIndex, D_801E9D30 + 0x20, D_801E9D34, 0x1000);
+    }
+    for (i = 0; i < D_800625A0->block358->list1C70Count; i++) {
+        func_801C851C(D_800625A0->block358->list1C70At[i],
+                      D_800625A0->block358->list1C70[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->list1C70[i * 2 + D_800625A0->bufferIndex].y0,
+                      D_800625A0->block358->list1C70[i * 2 + D_800625A0->bufferIndex].x1 -
+                          D_800625A0->block358->list1C70[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->list1C70[i * 2 + D_800625A0->bufferIndex].y3 -
+                          D_800625A0->block358->list1C70[i * 2 + D_800625A0->bufferIndex].y0);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D7884);
+#endif
 
 /* Build the status panels of party slot `slot` for `mode` and show them. */
 void func_801D7C3C(u8 slot, u8 mode) {
