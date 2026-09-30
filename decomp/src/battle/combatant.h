@@ -195,7 +195,9 @@ typedef struct {
     u8 accuracy; /* 0x14 */
     u8 pad15;
     u8 formula; /* 0x16: index into the formula table */
-    u8 pad17[0x1C - 0x17];
+    u8 pad17[0x1A - 0x17];
+    u8 field1A; /* 0x1A: 0-1 scale the damage by the power */
+    u8 pad1B;
     u8 field1C;
     u8 field1D; /* 0x1D: a timed status kind */
     u16 field1E; /* 0x1E: its flag bit */

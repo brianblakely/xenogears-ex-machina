@@ -6538,7 +6538,147 @@ void func_80094D24(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80094EE4);
+/* Formula type 0 (physical and ether damage): none against an immune target
+ * (flags34 0x8000, 0x4000 for ether); otherwise attack and defense adjusted
+ * by both sides' statuses and the command's attributes, scaled 4:3 (5:4 for
+ * ether), by the power / 20 for kinds 0-1, randomised, then shaped by the hit
+ * outcome and clamped to 0-9999. */
+void func_80094EE4(void) {
+    u16 attack;
+    u16 defense;
+    u8 hit;
+    u8 power;
+    s32 attackScale;
+    s32 defenseScale;
+    s32 amount;
+    s32 immune;
+    s32 kind;
+
+    power = D_800C3DFC->power;
+    if (D_800C3DFC->flagsA & 0x100) {
+        immune = D_800C3E34->pilot.flags34 & 0x4000;
+    } else {
+        immune = D_800C3E34->pilot.flags34 & 0x8000;
+    }
+    if (immune) {
+        D_800C34B0->resultCode[D_800C3E50] = 0;
+        return;
+    }
+    hit = func_80096AB8();
+    attack = func_80096FBC();
+    defense = func_80097610();
+    if ((D_800C3E00->pilot.status88.half.active | D_800C3E00->pilot.status88.half.permanent) & 8) {
+        attack += attack / 5;
+    }
+    if ((D_800C3E00->pilot.status88.half.active | D_800C3E00->pilot.status88.half.permanent) & 2) {
+        attack += attack / 10;
+    }
+    if ((D_800C3E00->pilot.status88.half.active | D_800C3E00->pilot.status88.half.permanent) & 4) {
+        attack -= attack / 5;
+    }
+    if ((D_800C3E00->pilot.status88.half.active | D_800C3E00->pilot.status88.half.permanent) & 1) {
+        attack -= attack / 10;
+    }
+    if ((D_800C3E34->pilot.status88.half.active | D_800C3E34->pilot.status88.half.permanent) & 4) {
+        defense += defense / 5;
+    }
+    if ((D_800C3E34->pilot.status88.half.active | D_800C3E34->pilot.status88.half.permanent) & 1) {
+        defense += defense / 10;
+    }
+    if ((D_800C3E34->pilot.status88.half.active | D_800C3E34->pilot.status88.half.permanent) & 8) {
+        defense -= defense / 5;
+    }
+    if ((D_800C3E34->pilot.status88.half.active | D_800C3E34->pilot.status88.half.permanent) & 2) {
+        defense -= defense / 10;
+    }
+    if (D_800C3DFC->attributes[2] & 0x10) {
+        if (!(D_800C3E34->pilot.status82 & 0x40)) {
+            D_800C3E34->pilot.status80 |= 0x40;
+        }
+        if ((D_800C3E00->pilot.status8C.half.active | D_800C3E00->pilot.status8C.half.permanent) & 0x4000) {
+            D_800D2C88[D_800C3E04] = 3;
+            D_800D2C54[D_800C3E04] = (u16)(D_800C3E00->pilot.maxEp / 10) * 2;
+        }
+        if ((D_800C3E00->pilot.status8C.half.active | D_800C3E00->pilot.status8C.half.permanent) & 0x1000) {
+            D_800D2C88[D_800C3E04] = 2;
+            D_800D2C54[D_800C3E04] = (u16)(D_800C3E00->pilot.maxHp / 10) * 2;
+        }
+    }
+    if ((D_800C3DFC->attributes[2] & 0x20) && !(D_800C3E34->pilot.status82 & 0x80)) {
+        D_800C3E34->pilot.status80 |= 0x80;
+    }
+    if (D_800C3E34->pilot.status80 & 0x40) {
+        defense -= defense >> 2;
+        D_800C3E34->pilot.status80 &= ~0x40;
+    }
+    if (D_800C3E00->pilot.status80 & 0x80) {
+        attack -= attack >> 2;
+        D_800C3E00->pilot.status80 &= ~0x80;
+    }
+    if (D_800C3DFC->flagsA & 0x400) {
+        power = 20;
+    }
+    func_80096494(&attack, &defense, &hit);
+    attackScale = 5;
+    if (D_800C3DFC->flagsA & 0x100) {
+        defenseScale = 4;
+    } else {
+        attackScale = 4;
+        defenseScale = 3;
+    }
+    if (defense != 0) {
+        amount = attackScale * attack - defenseScale * defense;
+    } else {
+        amount = attackScale * attack;
+    }
+    kind = D_800C3DFC->field1A;
+    if (kind >= 0) {
+        if (kind < 2) {
+            amount = power * amount / 20;
+        }
+    }
+    if (amount <= 0) {
+        amount = 0;
+    } else if (amount < 10) {
+        amount += rand() % 2;
+    } else {
+        amount += rand() % (amount / 10 + 2);
+    }
+    switch ((s8)hit) {
+    case 1:
+        if (amount > 0) {
+            D_800C34B0->resultCode[D_800C3E50] = 0;
+        } else {
+            amount = 1;
+            D_800C34B0->resultCode[D_800C3E50] = 0;
+        }
+        break;
+    case 2:
+        amount /= 2;
+        D_800C34B0->resultCode[D_800C3E50] = 5;
+        break;
+    case 3:
+        amount = 0;
+        D_800C34B0->resultCode[D_800C3E50] = 4;
+        break;
+    case 4:
+        D_800C34B0->resultCode[D_800C3E50] = 2;
+        break;
+    case 5:
+        D_800C34B0->resultCode[D_800C3E50] = 7;
+        break;
+    }
+    if (D_800D2DC4 != 0 && (D_800C3DFC->flagsA & 0x100) && amount != 0) {
+        amount /= 3;
+    }
+    if (amount >= 10000) {
+        amount = 9999;
+    }
+    if (amount < 0) {
+        amount = 0;
+    }
+    D_800C34B0->damage[D_800C3E50] = amount;
+}
 
 /* Formula: amount = attacker +0x5b times the descriptor's +0x11 (doubled
  * with attacker +0x8a bit 0x2000), scaled 0.7 / 1.3 by the target's
