@@ -1112,7 +1112,64 @@ void func_8003708C(s32 x, s32 y) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800370DC);
+/* Put a character on the console: a font sprite for printable characters
+ * (wrapping, or stopping, at the right edge) and newlines; nothing once the
+ * window or the sprite budget is full. */
+void func_800370DC(s32 c) {
+    Console *con = D_80059394;
+    s32 width;
+
+    if (con == NULL) {
+        return;
+    }
+    if (con->y + con->unk16 > con->top + con->height) {
+        return;
+    }
+    if (con->unk34 > con->capacity) {
+        return;
+    }
+    if (c < 0x20) {
+        if (c == '\n') {
+            con->x = con->unk36;
+            con->y += con->unk16;
+        }
+        return;
+    }
+    if ((con->flags2E & 4) && c >= 0x60) {
+        c -= 0x20;
+    }
+    c -= 0x20;
+    if (con->flags2E & 8) {
+        width = con->widths[c];
+    } else {
+        width = con->unk14;
+    }
+    if (con->x + width >= con->left + con->width) {
+        if (con->flags & 8) {
+            return;
+        }
+        con->x = con->unk36;
+        con->y += con->unk16;
+    }
+    if (c != 0) {
+        *(u32 *)&((SPRT_8 *)con->current)->r0 = *(u32 *)&con->r;
+        *(u32 *)&((SPRT_8 *)con->current)->x0 = con->x | (con->y << 16);
+        if (con->flags2E & 2) {
+            /* glyphs on a 16-pixel grid, 8 to a row */
+            ((SPRT_8 *)con->current)->clut = con->cluts[(c & 0x18) >> 3];
+            *(u16 *)&((SPRT_8 *)con->current)->u0 =
+                ((c & 7) << 4) | ((con->texture_v + ((c & 0x60) >> 1)) << 8);
+        } else {
+            /* glyphs on an 8-pixel grid, 16 to a row */
+            ((SPRT_8 *)con->current)->clut = con->cluts[(c & 0x30) >> 4];
+            *(u16 *)&((SPRT_8 *)con->current)->u0 =
+                ((c & 0xF) << 3) | ((con->texture_v + ((c & 0xC0) >> 3)) << 8);
+        }
+        con->current += sizeof(SPRT_8);
+        con->unk34++;
+    }
+    con->x += width;
+}
 
 /* Home the console cursor and select the active text buffer.
  * Nonmatching: the original loads every field before the stores. */

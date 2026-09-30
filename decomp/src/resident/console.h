@@ -16,27 +16,33 @@ typedef struct {
 /* Resident debug text console (the default heap/printf report output).
  * Unknown bytes keep their offsets. */
 typedef struct {
-    u16 flags;
+    u16 flags;       /* bit 3: stop at the right edge instead of wrapping */
     u8 unk2[2];
-    u8 *buffer[2];   /* text buffers, selected by flags2E bit 0 */
-    s16 left;        /* origin */
+    u8 *buffer[2];   /* sprite packet buffers, selected by flags2E bit 0 */
+    s16 left;        /* window */
     s16 top;
-    u8 unk10[4];
-    s16 unk14;
-    s16 unk16;
+    s16 width;
+    s16 height;
+    s16 unk14;       /* character width */
+    s16 unk16;       /* line height */
     u8 r, g, b;
     u8 mode;         /* bit 0: bright colour */
-    u8 unk1C[0x12];
-    u16 flags2E;
+    u8 unk1C[0x10];
+    s16 capacity;    /* sprites per frame */
+    u16 flags2E;     /* bit 1: 8-column font sheet; bit 2: upper case only;
+                      * bit 3: proportional widths */
     s16 x;           /* cursor */
     s16 y;
-    s16 unk34;
-    s16 unk36;
-    u8 *current;     /* active text buffer */
-    u8 unk3C[0x90];
+    s16 unk34;       /* sprites this frame */
+    s16 unk36;       /* line start */
+    u8 *current;     /* next sprite in the active buffer */
+    u16 cluts[4];    /* font CLUTs */
+    u8 unk44[0x20];
+    u8 widths[0x68]; /* proportional widths from character 0x20 */
     s16 saved_x;
     s16 saved_y;
     s16 saved_36;
+    u8 texture_v;    /* font sheet row in its texture page */
 } Console;
 
 extern Console *D_80059394;

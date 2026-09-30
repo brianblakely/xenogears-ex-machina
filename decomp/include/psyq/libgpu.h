@@ -68,6 +68,14 @@ typedef struct {
     u_long tag;
     u_char r0, g0, b0, code;
     short x0, y0;
+    u_char u0, v0;
+    u_short clut;
+} SPRT_8;
+
+typedef struct {
+    u_long tag;
+    u_char r0, g0, b0, code;
+    short x0, y0;
     short x1, y1;
     short x2, y2;
 } POLY_F3;
