@@ -1,4 +1,5 @@
 # ovl2143: decoded overlay image at 0x801dc000 (0xc6b4 bytes).
+CC_VERSION := 2.6.3
 SPLAT_CONFIG := decomp/targets/overlays/ovl2143.yaml
 ORIGINAL := .local/extract/overlays/ovl2143.bin
 ORIGINAL_SHA256 := 18d35e7640a0763cdea5feaf485b8865854d0831bbf28fb3d86d0d1996f1756f

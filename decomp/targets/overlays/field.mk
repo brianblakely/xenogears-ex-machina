@@ -1,4 +1,5 @@
 # field: decoded overlay image at 0x8006faf0 (0x3fafe bytes).
+CC_VERSION := 2.7.2
 SPLAT_CONFIG := decomp/targets/overlays/field.yaml
 ORIGINAL := .local/extract/overlays/field.bin
 ORIGINAL_SHA256 := 38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc

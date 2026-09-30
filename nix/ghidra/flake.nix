@@ -134,31 +134,36 @@
             ln -s "${tools}/bin/${prefix}$tool" "$out/bin/psx-$tool"
           done
         '';
-      # Qualified on resident 80028aac (docs/matching.md): only 2.7.2 reproduces
-      # its empty 8-byte frame and store schedule. Static i386 binaries built
-      # from unmodified GCC sources with the PSX target patch.
-      psxGcc = pkgs.stdenvNoCC.mkDerivation {
-        pname = "psx-gcc";
-        version = "2.7.2-psx-old-gcc-0.17";
-        src = pkgs.fetchurl {
-          url = "https://github.com/decompals/old-gcc/releases/download/0.17/gcc-2.7.2-psx.tar.gz";
-          hash = "sha256-UApFmzSF6IWo0wLKwjwqRjLzkA4DoJFT9hkGmf1yNXE=";
+      # decompals/old-gcc 0.17 static i386 cpp/cc1 builds (unmodified GCC sources
+      # with the PSX target patch). Both versions occur in the original program,
+      # per translation unit: 2.7.2 fills the epilogue's jr delay slot with the
+      # stack adjustment, 2.6.3 never does (docs/matching.md).
+      oldGcc =
+        version: hash:
+        pkgs.stdenvNoCC.mkDerivation {
+          pname = "psx-gcc";
+          version = "${version}-psx-old-gcc-0.17";
+          src = pkgs.fetchurl {
+            url = "https://github.com/decompals/old-gcc/releases/download/0.17/gcc-${version}-psx.tar.gz";
+            inherit hash;
+          };
+          sourceRoot = ".";
+          dontBuild = true;
+          installPhase = ''
+            mkdir -p "$out/lib/psx-gcc-${version}" "$out/bin"
+            install -m755 cpp cc1 "$out/lib/psx-gcc-${version}/"
+            ln -s "$out/lib/psx-gcc-${version}/cpp" "$out/bin/psx-cpp-${version}"
+            ln -s "$out/lib/psx-gcc-${version}/cc1" "$out/bin/psx-cc1-${version}"
+          '';
+          meta = {
+            description = "GCC ${version} cpp/cc1 for the PlayStation R3000 target";
+            homepage = "https://github.com/decompals/old-gcc";
+            license = pkgs.lib.licenses.gpl2Plus;
+            platforms = [ system ];
+          };
         };
-        sourceRoot = ".";
-        dontBuild = true;
-        installPhase = ''
-          mkdir -p "$out/lib/psx-gcc-2.7.2" "$out/bin"
-          install -m755 cpp cc1 "$out/lib/psx-gcc-2.7.2/"
-          ln -s "$out/lib/psx-gcc-2.7.2/cpp" "$out/bin/psx-cpp-2.7.2"
-          ln -s "$out/lib/psx-gcc-2.7.2/cc1" "$out/bin/psx-cc1-2.7.2"
-        '';
-        meta = {
-          description = "GCC 2.7.2 cpp/cc1 for the PlayStation R3000 target";
-          homepage = "https://github.com/decompals/old-gcc";
-          license = pkgs.lib.licenses.gpl2Plus;
-          platforms = [ system ];
-        };
-      };
+      psxGcc272 = oldGcc "2.7.2" "sha256-UApFmzSF6IWo0wLKwjwqRjLzkA4DoJFT9hkGmf1yNXE=";
+      psxGcc263 = oldGcc "2.6.3" "sha256-AeboxJM0FOo/jY47x2ah9fr9T8ARDgt10faRvXkZibE=";
       maspsx = pkgs.stdenvNoCC.mkDerivation {
         pname = "maspsx";
         version = "2026-7686f845";
@@ -297,7 +302,8 @@
             m2c
             spimdisasm
             psxBinutils
-            psxGcc
+            psxGcc272
+            psxGcc263
             maspsx
             splat
             pkgs.gnumake

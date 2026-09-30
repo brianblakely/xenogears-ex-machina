@@ -1,5 +1,6 @@
 # Disc 2 resident boot program. Identical to Disc 1 outside the embedded disc
 # index at 0x80010000-0x8001807c; it builds from the same decomp/src/resident.
+CC_VERSION := 2.6.3
 SPLAT_CONFIG := decomp/targets/resident/slus_006.69.yaml
 ORIGINAL := .local/extract/disc2/SLUS_006.69
 ORIGINAL_SHA256 := 3246e15f4040305b280adae06bc7bb908ee882794183bec9fc23e71d85c19c35

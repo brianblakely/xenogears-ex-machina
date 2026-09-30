@@ -4,6 +4,10 @@
 #include "common.h"
 
 /* Resident services used by the movie library. */
+void func_800284B4(s32 *directory, s32 *offset); /* current directory */
+void func_80028470(s32 directory, s32 offset);   /* select a directory */
+s32 func_800289D0(s32 file);                     /* a file's first sector */
+void func_800295D8(s32 file, void *ring, s32 arg2, s32 mode); /* host-file stream */
 void func_80038D18(s32 left, s32 right);  /* CD input volume */
 void func_8002A498(s32 offset);           /* end the resident read */
 void func_8002A428(s32 mode);             /* resident read mode */
@@ -23,5 +27,9 @@ extern void *movie_vlc_buffers[2];   /* the two run-level buffers */
 extern void *movie_slice_buffer0;    /* the two decoded-slice buffers */
 extern void *movie_slice_buffer1;
 extern void *movie_ring_buffer;    /* the stream ring */
+extern s32 movie_saved_directory[2]; /* directory of the movie files */
+extern s32 movie_fade_in_pending;
+extern s32 movie_fade_out_pending;
+extern s32 D_8004FE4C;             /* resident host-file handle */
 
 #endif

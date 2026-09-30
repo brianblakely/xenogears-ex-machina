@@ -1,6 +1,7 @@
 # Disc 1 resident boot program (PS-X EXE, text 0x80010000, entry 0x80019524).
 # Code and data after the embedded disc index are identical to Disc 2's
 # SLUS_006.69; only 0x80010000-0x8001807c differs.
+CC_VERSION := 2.6.3
 SPLAT_CONFIG := decomp/targets/resident/slus_006.64.yaml
 ORIGINAL := .local/extract/disc1/SLUS_006.64
 ORIGINAL_SHA256 := dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119

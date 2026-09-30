@@ -1,4 +1,5 @@
 # mdec: decoded overlay image at 0x801d3000 (0x15a1c bytes).
+CC_VERSION := 2.6.3
 SPLAT_CONFIG := decomp/targets/overlays/mdec.yaml
 ORIGINAL := .local/extract/overlays/mdec.bin
 ORIGINAL_SHA256 := 4606650a38c794ae4b27157d702eeea72d362b9e5c5871f67955c6284af1584b

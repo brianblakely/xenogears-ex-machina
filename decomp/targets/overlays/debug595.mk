@@ -1,4 +1,5 @@
 # debug595: decoded overlay image at 0x80280000 (0x61c8 bytes).
+CC_VERSION := 2.6.3
 SPLAT_CONFIG := decomp/targets/overlays/debug595.yaml
 ORIGINAL := .local/extract/overlays/debug595.bin
 ORIGINAL_SHA256 := c123c880e71cfa0448a6ea4d9961bb0f1c0e2ced0595d9fa5eefc4a913248048

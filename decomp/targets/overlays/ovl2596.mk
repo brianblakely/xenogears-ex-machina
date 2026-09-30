@@ -1,4 +1,5 @@
 # ovl2596: decoded overlay image at 0x801de000 (0x6500 bytes).
+CC_VERSION := 2.6.3
 SPLAT_CONFIG := decomp/targets/overlays/ovl2596.yaml
 ORIGINAL := .local/extract/overlays/ovl2596.bin
 ORIGINAL_SHA256 := f474fd482506b89eaff9601d5958a1c867d35a4ad11c1f58f0ecef630008a0c8

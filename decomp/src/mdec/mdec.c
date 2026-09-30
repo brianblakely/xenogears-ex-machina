@@ -1,5 +1,6 @@
 #include "common.h"
 #include "psyq/libcd.h"
+#include "psyq/libsn.h"
 #include "movie.h"
 
 INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", movie_slice_decoded);
@@ -14,7 +15,44 @@ INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", movie_decode);
 
 INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", movie_poll);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", movie_restart);
+/* Seek the stream to `sector` of `file` (or to `location` when given) and read
+ * from there in `mode` at double speed; the current directory is kept. The
+ * host-file stream instead reopens the file and seeks within it. */
+void movie_restart(s32 file, s32 sector, s32 arg2, s32 mode, CdlLOC *location) {
+    CdlLOC position;
+    CdlLOC *seek;
+    s32 kept_directory;
+    s32 kept_offset;
+
+    func_80038D18(0, 0);
+    func_8002A498(0);
+    func_80028A60(0);
+    func_800284B4(&kept_directory, &kept_offset);
+    func_80028470(movie_saved_directory[0], movie_saved_directory[1]);
+    movie_fade_in_pending = 1;
+    movie_fade_out_pending = 1;
+    if (movie_host_stream != 0) {
+        func_800295D8(file, movie_ring_buffer, arg2, mode);
+        if (mode & 8) {
+            PClseek(D_8004FE4C, sector * 0x920, 0);
+        } else {
+            PClseek(D_8004FE4C, sector << 11, 0);
+        }
+    } else {
+        mode |= 0x80;
+        CdIntToPos(func_800289D0(file) + sector, &position);
+        if (location != NULL) {
+            seek = location;
+        } else {
+            seek = &position;
+        }
+        while (CdControlB(CdlSetloc, (u8 *)seek, NULL) == 0) {
+        }
+        while (CdRead2(mode) == 0) {
+        }
+    }
+    func_80028470(kept_directory, kept_offset);
+}
 
 /* Stop the stream: silence the CD input, stop the MDEC, drop the ring's
  * callbacks, pause the drive and restore the resident read mode. */
@@ -50,84 +88,84 @@ void movie_close(void) {
     movie_ring_buffer = NULL;
 }
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D444C);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", DecDCTvlcBuild);
 
 INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", DecDCTReset);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D456C);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", DecDCTGetEnv);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D45F8);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", DecDCTPutEnv);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D4694);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", DecDCTBufSize);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D46A0);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", DecDCTin);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D471C);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", DecDCTout);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D473C);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", DecDCTinSync);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D4778);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", DecDCToutSync);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D47B4);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", DecDCTinCallback);
 
 INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", DecDCToutCallback);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D47FC);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", MDEC_reset);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D48F8);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", MDEC_in);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D498C);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", MDEC_out);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D4A1C);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", MDEC_in_sync);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D4AB4);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", MDEC_out_sync);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D4B4C);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", MDEC_status);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D4B64);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", timeout);
 
 INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D4C94);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D4C98);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", DecDCTvlcSize);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D4CC8);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", DecDCTvlc);
 
 INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D502C);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D5060);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", DecDCTvlc2);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D53C0);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", _EncSPU_encode);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D5544);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", _EncSPU);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D57DC);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", EncSPU);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D583C);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", StSetRing);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D586C);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", CdRead2);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D5900);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", StCdInterrupt2);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D5920);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", StClearRing);
 
 INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", StUnSetRing);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D5A04);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", data_ready_callback);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D5A94);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", StGetBackloc);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D5AF4);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", StSetStream);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D5B7C);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", StFreeRing);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D5C34);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", init_ring_status);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D5C70);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", StGetNext);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D5D34);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", StSetMask);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D5D54);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", StCdInterrupt);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D66C4);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", mem2mem);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D66F8);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", dma_execute);

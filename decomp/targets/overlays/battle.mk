@@ -1,4 +1,5 @@
 # battle: decoded overlay image at 0x8006faf0 (0x53f80 bytes).
+CC_VERSION := 2.6.3
 SPLAT_CONFIG := decomp/targets/overlays/battle.yaml
 ORIGINAL := .local/extract/overlays/battle.bin
 ORIGINAL_SHA256 := 1830b4ef1fe37129972fc310dfad534f8161d6c0b123e74254c3711334a3e291
