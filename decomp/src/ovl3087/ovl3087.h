@@ -280,6 +280,8 @@ u8 func_801E58EC(s16 a, s16 b, u8 op);
 s32 func_801E5DCC(s32 thread, u8 *insn);
 u8 func_801E6CE8(u16 message, u8 actor, u16 flags);
 void func_801E7A5C(s32 thread, u8 *insn);
+s32 func_801E84A4(s32 thread, u8 *insn);
+void func_800BCD98(s32 arg);
 void func_801E9958(s32 model, u16 animation);
 s32 func_801E9978(void *file, s32 *info);
 void func_801E9430(u8 actor, s16 animation);

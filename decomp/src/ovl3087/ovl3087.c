@@ -1074,7 +1074,269 @@ s32 func_801E8750(s32 thread, u8 *insn) {
     return 5;
 }
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E879C);
+/* Run one frame of the script: each thread in run order executes up to
+ * four instructions (fewer when one yields or ends); opcode 22 counts down
+ * frames in which the whole pass repeats. */
+void func_801E879C(void) {
+    s32 length;
+    u8 steps;
+    u32 i;
+    u8 thread;
+    u8 again;
+    u16 pc;
+
+    func_800BFBA0();
+    func_800BCD98(0);
+    again = 1;
+    if (D_800D3278->halted == 0) {
+        do {
+            for (i = 0; i < D_800D39D0->threadCount; i++) {
+                thread = D_800D3278->order[i];
+                steps = 4;
+                func_800716D8();
+                do {
+                    pc = func_801E5768(&D_800D3278->threads[thread]);
+                    switch (D_800D3278->code[pc]) {
+                    case 0x00:
+                        length = func_801E5C1C(thread);
+                        steps = 1;
+                        break;
+                    case 0x01:
+                        length = func_801E5CE4(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x02:
+                        length = func_801E5D24(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x03:
+                        length = func_801E5DCC(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x04:
+                        length = func_801E5EF8(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x05:
+                        length = func_801E5F8C(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x06:
+                        length = func_801E6084(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x07:
+                        length = func_801E60E8(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x08:
+                        length = func_801E6118(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x09:
+                        length = func_801E6144(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x0A:
+                        length = func_801E61B4(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x0B:
+                        length = func_801E6224(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x0C:
+                        length = func_801E6294(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x0D:
+                        length = func_801E6304(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x0E:
+                        length = func_801E633C(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x0F:
+                        length = func_801E6374(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x10:
+                        length = func_801E63E4(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x11:
+                        length = func_801E6454(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x12:
+                        length = func_801E64C4(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x13:
+                        length = func_801E6534(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x14:
+                        length = func_801E65A4(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x15:
+                        length = func_801E65FC(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x16:
+                        length = func_801E6660(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x17:
+                        length = func_801E66D8(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x18:
+                        length = func_801E71D4(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x19:
+                        length = func_801E7230(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x1A:
+                        length = func_801E7278(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x1B:
+                        length = func_801E7314(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x1C:
+                        length = func_801E7358(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x1D:
+                        length = func_801E736C(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x1E:
+                        length = func_801E7380(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x1F:
+                        length = func_801E73D4(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x20:
+                        length = func_801E746C(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x21:
+                        length = func_801E748C(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x22:
+                        length = func_801E74A0(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x23:
+                        length = func_801E74E0(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x24:
+                        length = func_801E7700(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x25:
+                        length = func_801E775C(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x26:
+                        length = func_801E7770(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x27:
+                        length = func_801E77E4(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x28:
+                        length = func_801E786C(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x29:
+                        length = func_801E78A8(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x2A:
+                        length = func_801E79E0(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x2B:
+                        length = func_801E7B58(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x2C:
+                        length = func_801E7C0C(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x2D:
+                        length = func_801E7E14(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x2E:
+                        length = func_801E7E5C(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x2F:
+                        length = func_801E7EA4(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x30:
+                        length = func_801E7F08(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x31:
+                        length = func_801E7F70(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x32:
+                        length = func_801E8074(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x33:
+                        length = func_801E807C(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x34:
+                        length = func_801E80E8(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x35:
+                        length = func_801E7914(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x36:
+                        length = func_801E7B08(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x37:
+                        length = func_801E74B8(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x38:
+                        length = func_801E75F0(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x39:
+                        length = func_801E80F0(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x3A:
+                        length = func_801E818C(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x3B:
+                        length = func_801E81EC(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x3C:
+                        length = func_801E823C(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x3D:
+                        length = func_801E828C(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x3E:
+                        length = func_801E82DC(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x3F:
+                        length = func_801E83C0(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x40:
+                        length = func_801E7B2C(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x41:
+                        length = func_801E7FF4(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x42:
+                        length = func_801E86D0(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x43:
+                        length = func_801E86F4(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x44:
+                        length = func_801E8718(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x45:
+                        length = func_801E84A4(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x46:
+                        length = func_801E8600(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x47:
+                        length = func_801E86AC(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x48:
+                        length = func_801E8750(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x49:
+                        length = func_801E7424(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x4A:
+                        length = func_801E7660(thread, D_800D3278->code + pc);
+                        break;
+                    case 0x4B:
+                        length = func_801E7684(thread, D_800D3278->code + pc);
+                        break;
+                    }
+                    D_800D3278->threads[thread].pc[D_800D3278->threads[thread].level] =
+                        length + D_800D3278->threads[thread].pc[D_800D3278->threads[thread].level];
+                } while (--steps != 0);
+            }
+            if (D_800D3278->unk801 != 0 && --D_800D3278->unk801 == 1) {
+                again = 0;
+            }
+        } while (again);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E93E8);
 
