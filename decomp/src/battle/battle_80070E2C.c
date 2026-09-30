@@ -1141,31 +1141,31 @@ void func_800745EC(void) {
  * 15 of every 21 frames. */
 void func_80074AB8(void) {
     if (D_800D2D28->unkC7 != 0) {
-        func_800728B8(LIST_PRIMS->list2, LIST_PRIMS->counts[2], LIST_PRIMS->buffers[2]);
-        func_800728B8(LIST_PRIMS->list7, LIST_PRIMS->counts[7], LIST_PRIMS->buffers[7]);
-        func_800728B8(LIST_PRIMS->list8, LIST_PRIMS->counts[8], LIST_PRIMS->buffers[8]);
-        func_800728B8(LIST_PRIMS->list10, LIST_PRIMS->counts[10], LIST_PRIMS->buffers[10]);
+        func_800728B8(D_800D2DB4->list2, D_800D2DB4->counts[2], D_800D2DB4->buffers[2]);
+        func_800728B8(D_800D2DB4->list7, D_800D2DB4->counts[7], D_800D2DB4->buffers[7]);
+        func_800728B8(D_800D2DB4->list8, D_800D2DB4->counts[8], D_800D2DB4->buffers[8]);
+        func_800728B8(D_800D2DB4->list10, D_800D2DB4->counts[10], D_800D2DB4->buffers[10]);
     }
     if (D_800D2D28->unkAD != 0) {
-        func_800728B8(LIST_PRIMS->unk46A0, 20, LIST_PRIMS->buffer46A0);
-        func_800728B8(LIST_PRIMS->extra0, LIST_PRIMS->extraCounts[0], LIST_PRIMS->extraBuffers[0]);
-        func_800728B8(LIST_PRIMS->extra4, LIST_PRIMS->extraCounts[4], LIST_PRIMS->extraBuffer4);
-        if (++LIST_PRIMS->blink < 15) {
-            func_800728B8(LIST_PRIMS->unk4CE0, LIST_PRIMS->count4CE0, LIST_PRIMS->buffer4CE0);
-        } else if (LIST_PRIMS->blink >= 21) {
-            LIST_PRIMS->blink = 0;
+        func_800728B8(D_800D2DB4->unk46A0, 20, D_800D2DB4->buffer46A0);
+        func_800728B8(D_800D2DB4->extra0, D_800D2DB4->extraCounts[0], D_800D2DB4->extraBuffers[0]);
+        func_800728B8(D_800D2DB4->extra4, D_800D2DB4->extraCounts[4], D_800D2DB4->extraBuffer4);
+        if (++D_800D2DB4->blink < 15) {
+            func_800728B8(D_800D2DB4->unk4CE0, D_800D2DB4->count4CE0, D_800D2DB4->buffer4CE0);
+        } else if (D_800D2DB4->blink >= 21) {
+            D_800D2DB4->blink = 0;
         }
-        func_800728B8(LIST_PRIMS->list0, LIST_PRIMS->counts[0], LIST_PRIMS->buffers[0]);
-        func_800728B8(LIST_PRIMS->list1, LIST_PRIMS->counts[1], LIST_PRIMS->buffers[1]);
-        func_800728B8(LIST_PRIMS->list3, LIST_PRIMS->counts[3], LIST_PRIMS->buffers[3]);
-        func_800728B8(LIST_PRIMS->list4, LIST_PRIMS->counts[4], LIST_PRIMS->buffers[4]);
-        func_800728B8(LIST_PRIMS->list5, LIST_PRIMS->counts[5], LIST_PRIMS->buffers[5]);
-        func_800728B8(LIST_PRIMS->list6, LIST_PRIMS->counts[6], LIST_PRIMS->buffers[6]);
-        func_800728B8(LIST_PRIMS->list9, LIST_PRIMS->counts[9], LIST_PRIMS->buffers[9]);
-        func_800728B8(LIST_PRIMS->unk32A0, LIST_PRIMS->count32A0, LIST_PRIMS->buffer32A0);
-        func_800728B8(LIST_PRIMS->extra1, LIST_PRIMS->extraCounts[1], LIST_PRIMS->extraBuffers[1]);
-        func_800728B8(LIST_PRIMS->extra2, LIST_PRIMS->extraCounts[2], LIST_PRIMS->extraBuffers[2]);
-        func_800728B8(LIST_PRIMS->extra3, LIST_PRIMS->extraCounts[3], LIST_PRIMS->extraBuffers[3]);
+        func_800728B8(D_800D2DB4->list0, D_800D2DB4->counts[0], D_800D2DB4->buffers[0]);
+        func_800728B8(D_800D2DB4->list1, D_800D2DB4->counts[1], D_800D2DB4->buffers[1]);
+        func_800728B8(D_800D2DB4->list3, D_800D2DB4->counts[3], D_800D2DB4->buffers[3]);
+        func_800728B8(D_800D2DB4->list4, D_800D2DB4->counts[4], D_800D2DB4->buffers[4]);
+        func_800728B8(D_800D2DB4->list5, D_800D2DB4->counts[5], D_800D2DB4->buffers[5]);
+        func_800728B8(D_800D2DB4->list6, D_800D2DB4->counts[6], D_800D2DB4->buffers[6]);
+        func_800728B8(D_800D2DB4->list9, D_800D2DB4->counts[9], D_800D2DB4->buffers[9]);
+        func_800728B8(D_800D2DB4->unk32A0, D_800D2DB4->count32A0, D_800D2DB4->buffer32A0);
+        func_800728B8(D_800D2DB4->extra1, D_800D2DB4->extraCounts[1], D_800D2DB4->extraBuffers[1]);
+        func_800728B8(D_800D2DB4->extra2, D_800D2DB4->extraCounts[2], D_800D2DB4->extraBuffers[2]);
+        func_800728B8(D_800D2DB4->extra3, D_800D2DB4->extraCounts[3], D_800D2DB4->extraBuffers[3]);
     }
 }
 
@@ -1203,9 +1203,9 @@ void func_80074D4C(void) {
 /* Draw the three primitive lists of *800d2db4 when UI +0xa8 is set. */
 void func_80074EEC(void) {
     if (D_800D2D28->unkA8 != 0) {
-        func_800728B8(D_800D2DB4->unk5550, D_800D2DB4->counts[11], D_800D2DB4->buffers[11]);
-        func_800728B8(D_800D2DB4->unk5640, D_800D2DB4->counts[12], D_800D2DB4->buffers[12]);
-        func_800728B8(D_800D2DB4->unk5C80, D_800D2DB4->counts[13], D_800D2DB4->buffers[13]);
+        func_800728B8(D_800D2DB4->list11, D_800D2DB4->counts[11], D_800D2DB4->buffers[11]);
+        func_800728B8(D_800D2DB4->list12, D_800D2DB4->counts[12], D_800D2DB4->buffers[12]);
+        func_800728B8(D_800D2DB4->list13, D_800D2DB4->counts[13], D_800D2DB4->buffers[13]);
     }
 }
 

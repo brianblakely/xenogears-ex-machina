@@ -311,35 +311,48 @@ typedef struct {
 
 extern BattleUnk3278 *D_800D3278;
 
+/* The HUD primitive lists (*800d2db4, a 0x5da4-byte heap block) with their
+ * counts and draw buffers. */
 typedef struct {
-    POLY_FT4 unk0[148];
-    POLY_FT4 unk1720[90];
-    POLY_FT4 unk2530[138];
-    POLY_FT4 unk3AC0[24];   /* list 0 */
-    POLY_FT4 unk3E80[34];   /* list 2 */
-    POLY_FT4 unk43D0[58];   /* list 10 */
-    POLY_FT4 unk4CE0[10];
-    POLY_FT4 unk4E70[8];    /* list 3 */
-    POLY_FT4 unk4FB0[6];    /* list 4 */
-    POLY_FT4 unk50A0[8];    /* list 5 */
-    POLY_FT4 unk51E0[4];    /* list 6 */
-    POLY_FT4 unk5280[8];    /* list 7 */
-    POLY_FT4 unk53C0[10];   /* list 8 */
-    POLY_FT4 unk5550[6];    /* list 11 */
-    POLY_FT4 unk5640[40];   /* list 12 */
-    POLY_FT4 unk5C80[6];    /* list 13 */
-    u8 unk5D70[5];
-    u8 counts[15];          /* +0x5D75 primitive count per list */
-    u8 buffers[15];         /* +0x5D84 draw buffer per list */
-    u8 unk5D93[0x5D9C - 0x5D93];
-    s16 unk5D9C;
+    POLY_FT4 extra0[24];      /* +0x0000 count extraCounts[0] */
+    POLY_FT4 extra1[60];      /* +0x03C0 count extraCounts[1] */
+    POLY_FT4 extra2[16];      /* +0x0D20 count extraCounts[2] */
+    POLY_FT4 extra3[48];      /* +0x0FA0 count extraCounts[3] */
+    POLY_FT4 extra4[90];      /* +0x1720 count extraCounts[4] */
+    POLY_FT4 list9[86];       /* +0x2530 */
+    POLY_FT4 unk32A0[52];     /* +0x32A0 count +0x5D96, buffer +0x5D97 */
+    POLY_FT4 list0[22];       /* +0x3AC0 */
+    POLY_FT4 list1[2];        /* +0x3E30 */
+    POLY_FT4 list2[34];       /* +0x3E80 */
+    POLY_FT4 list10[18];      /* +0x43D0 */
+    POLY_FT4 unk46A0[40];     /* +0x46A0 twenty drawn, buffer +0x5D98 */
+    POLY_FT4 unk4CE0[10];     /* +0x4CE0 count +0x5DA1, buffer +0x5DA0 */
+    POLY_FT4 list3[8];        /* +0x4E70 */
+    POLY_FT4 list4[6];        /* +0x4FB0 */
+    POLY_FT4 list5[8];        /* +0x50A0 */
+    POLY_FT4 list6[4];        /* +0x51E0 */
+    POLY_FT4 list7[8];        /* +0x5280 */
+    POLY_FT4 list8[10];       /* +0x53C0 */
+    POLY_FT4 list11[6];       /* +0x5550 */
+    POLY_FT4 list12[40];      /* +0x5640 */
+    POLY_FT4 list13[6];       /* +0x5C80 */
+    u8 extraCounts[5];        /* +0x5D70 */
+    u8 counts[14];            /* +0x5D75 per list */
+    u8 extraBuffer4;          /* +0x5D83 */
+    u8 buffers[14];           /* +0x5D84 per list */
+    u8 extraBuffers[4];       /* +0x5D92 extra0..extra3 */
+    u8 count32A0;             /* +0x5D96 */
+    u8 buffer32A0;            /* +0x5D97 */
+    u8 buffer46A0;            /* +0x5D98 */
+    u8 unk5D99[3];
+    s16 unk5D9C;              /* +0x5D9C the stepped line's point */
     s16 unk5D9E;
-    u8 unk5DA0;
-    u8 unk5DA1;
-    u16 unk5DA2;
-} BattleUnk2DB4;
+    u8 buffer4CE0;            /* +0x5DA0 */
+    u8 count4CE0;             /* +0x5DA1 */
+    s16 blink;                /* +0x5DA2 frame counter of the blinking list */
+} ListPrims;
 
-extern BattleUnk2DB4 *D_800D2DB4;
+extern ListPrims *D_800D2DB4;
 extern s32 D_800D2DAC;
 
 /* Enemy AI block (0x40 bytes per enemy slot 3..10, from 800d3400). */
@@ -454,6 +467,7 @@ extern s32 D_800C3A9C;
 extern s8 D_800C207C;
 extern s32 D_800C2080;
 extern s32 D_800C2084;
+extern s32 D_800C2054[2][5]; /* end points (x, then y) of the stepped line */
 
 
 /* Resolver globals. */

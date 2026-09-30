@@ -1918,7 +1918,7 @@ void func_8007FE3C(void) {
 
 /* Allocate and clear the 0x5da4-byte *800d2db4 block. */
 void func_8007FEC4(void) {
-    D_800D2DB4 = (BattleUnk2DB4 *)func_8008ABB8(0x5DA4, 0);
+    D_800D2DB4 = (ListPrims *)func_8008ABB8(0x5DA4, 0);
     bzero(D_800D2DB4, 0x5DA4);
     D_800D2DB4->unk5D9C = 0xA0;
     D_800D2DB4->unk5D9E = 0x64;

@@ -2203,14 +2203,14 @@ u8 offset;
 
     cell = index / 2;
     odd = index % 2;
-    func_80076D58(&D_800D2DB4->unk5550[index * 2], odd, 3);
+    func_80076D58(&D_800D2DB4->list11[index * 2], odd, 3);
     width = func_80034EAC(func_80033784(D_800D2D24[member], id), *pixels, 0x1B, odd);
     rect.x = cell * 30 + 0x3C0;
     rect.y = 0x1A;
     rect.w = 0x1E;
     rect.h = 13;
     LoadImage(&rect, *pixels);
-    func_80076C78(&D_800D2DB4->unk5550[index * 2 + D_800CCB04.buffer], (column + (offset + 1)) * 16 + 0x50 + index * 4,
+    func_80076C78(&D_800D2DB4->list11[index * 2 + D_800CCB04.buffer], (column + (offset + 1)) * 16 + 0x50 + index * 4,
                   0xC8 - index * 16, cell * 0x78, 0x1A, width);
     D_800D2DB4->counts[11]++;
     return index + 1;
@@ -2276,7 +2276,7 @@ void func_800861D0(u8 code, u8 member) {
             break;
         }
         D_800D2DB4->counts[12] +=
-                func_80076A10(id, &D_800D2DB4->unk5640[D_800D2DB4->counts[12] * 2], 0x50 + combo * 16, 0xD0 - index * 16);
+                func_80076A10(id, &D_800D2DB4->list12[D_800D2DB4->counts[12] * 2], 0x50 + combo * 16, 0xD0 - index * 16);
     }
     /* The deathblow index counts down from the last combo. */
     i = 0;
@@ -2310,7 +2310,7 @@ void func_800861D0(u8 code, u8 member) {
             D_800C3EAC->slots[member].items[2] == 0) {
             if (D_800C3EAC->unk2E1[3] == 0) {
                 D_800D2DB4->counts[12] +=
-                func_80076A10(7, &D_800D2DB4->unk5640[D_800D2DB4->counts[12] * 2], 0x50 + combo * 16, 0xD0 - index * 16);
+                func_80076A10(7, &D_800D2DB4->list12[D_800D2DB4->counts[12] * 2], 0x50 + combo * 16, 0xD0 - index * 16);
             } else {
                 combo--;
             }
@@ -2349,9 +2349,9 @@ void func_800861D0(u8 code, u8 member) {
         if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask0, D_800C31AC[D_800CCCE8.records[member].pilot.characterId][19 - i]) &&
             D_800C3EAC->slots[member].items[0] == 0 && D_800C3EAC->slots[member].items[2] == 0) {
             D_800D2DB4->counts[12] +=
-                func_80076A10(8, &D_800D2DB4->unk5640[D_800D2DB4->counts[12] * 2], 0x54 + combo * 16, 0xD0 - index * 16);
+                func_80076A10(8, &D_800D2DB4->list12[D_800D2DB4->counts[12] * 2], 0x54 + combo * 16, 0xD0 - index * 16);
             D_800D2DB4->counts[12] +=
-                func_80076A10(7, &D_800D2DB4->unk5640[D_800D2DB4->counts[12] * 2], 0x64 + combo * 16, 0xD0 - index * 16);
+                func_80076A10(7, &D_800D2DB4->list12[D_800D2DB4->counts[12] * 2], 0x64 + combo * 16, 0xD0 - index * 16);
             index = func_80086028(member, index, combo, D_800C31AC[D_800CCCE8.records[member].pilot.characterId][19 - i], &D_800C3A70[index / 2], 1);
         }
         break;
@@ -2370,9 +2370,9 @@ void func_800861D0(u8 code, u8 member) {
         if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask0, D_800C31AC[D_800CCCE8.records[member].pilot.characterId][22 - i]) &&
             D_800C3EAC->slots[member].items[1] == 0 && D_800C3EAC->slots[member].items[2] == 0) {
             D_800D2DB4->counts[12] +=
-                func_80076A10(9, &D_800D2DB4->unk5640[D_800D2DB4->counts[12] * 2], 0x58 + combo * 16, 0xD0 - index * 16);
+                func_80076A10(9, &D_800D2DB4->list12[D_800D2DB4->counts[12] * 2], 0x58 + combo * 16, 0xD0 - index * 16);
             D_800D2DB4->counts[12] +=
-                func_80076A10(7, &D_800D2DB4->unk5640[D_800D2DB4->counts[12] * 2], 0x68 + combo * 16, 0xD0 - index * 16);
+                func_80076A10(7, &D_800D2DB4->list12[D_800D2DB4->counts[12] * 2], 0x68 + combo * 16, 0xD0 - index * 16);
             func_80086028(member, index, combo, D_800C31AC[D_800CCCE8.records[member].pilot.characterId][22 - i], &D_800C3A70[index / 2], 1);
         }
         break;
@@ -2433,16 +2433,16 @@ s32 func_80086C88(u8 member, s32 index, s32 column, u8 step, u32 **pixels) {
     count = 0;
     cell = index / 2;
     odd = index % 2;
-    func_80076D58(&D_800D2DB4->unk5550[index * 2], odd, 3);
+    func_80076D58(&D_800D2DB4->list11[index * 2], odd, 3);
     width = func_80034EAC(func_800339C8(D_800CCCE8.records[member].pilot.gearId, D_800C34CC[step]), *pixels, 0x1B, odd);
     rect.x = cell * 30 + 0x3C0;
     rect.y = 0x1A;
     rect.w = 0x1E;
     rect.h = 0xD;
     LoadImage(&rect, *pixels);
-    func_80076C78(&D_800D2DB4->unk5550[index * 2 + D_800CCB04.buffer], index * 4 + (column + 1) * 16 + 0x86,
+    func_80076C78(&D_800D2DB4->list11[index * 2 + D_800CCB04.buffer], index * 4 + (column + 1) * 16 + 0x86,
                   0xC8 - index * 16, cell * 0x78, 0x1A, width);
-    func_80076D58(&D_800D2DB4->unk5C80[index * 2], 0, 3);
+    func_80076D58(&D_800D2DB4->list13[index * 2], 0, 3);
     func_8008AAA0(D_800CCCE8.gearHud.commands[step]);
     for (i = 0; i < 4; i++) {
         if (D_800C3CF4[i + 5] != 0xFF) {
@@ -2454,7 +2454,7 @@ s32 func_80086C88(u8 member, s32 index, s32 column, u8 step, u32 **pixels) {
             count++;
         }
     }
-    func_80076C78(&D_800D2DB4->unk5C80[index * 2 + D_800CCB04.buffer], index * 4 + (column + 1) * 16 + 0xEA,
+    func_80076C78(&D_800D2DB4->list13[index * 2 + D_800CCB04.buffer], index * 4 + (column + 1) * 16 + 0xEA,
                   0xC8 - index * 16, index * 32 + 0x78, 0, count * 8);
     D_800D2DB4->counts[11]++;
     D_800D2DB4->counts[13]++;
@@ -2518,7 +2518,7 @@ u8 func_80086F98(u8 step, u8 member) {
                     break;
                 }
                 D_800D2DB4->counts[12] +=
-                    func_80076A10(id, &D_800D2DB4->unk5640[D_800D2DB4->counts[12] * 2], 0x80 + i * 16, 0xD0 - index * 16);
+                    func_80076A10(id, &D_800D2DB4->list12[D_800D2DB4->counts[12] * 2], 0x80 + i * 16, 0xD0 - index * 16);
             }
         }
         if (D_800CCCE8.gearHud.level == 4) {
@@ -2532,7 +2532,7 @@ u8 func_80086F98(u8 step, u8 member) {
                 shown = 1;
                 if (D_800C3EAC->slots[member].items[0] == 0) {
                     D_800D2DB4->counts[12] +=
-                        func_80076A10(8, &D_800D2DB4->unk5640[D_800D2DB4->counts[12] * 2], 0x80 + i * 16, 0xD0 - index * 16);
+                        func_80076A10(8, &D_800D2DB4->list12[D_800D2DB4->counts[12] * 2], 0x80 + i * 16, 0xD0 - index * 16);
                     index = func_80086C88(member, index, i - 1, flag, &D_800C3A70[index / 2]);
                 }
             } else {
@@ -2565,7 +2565,7 @@ u8 func_80086F98(u8 step, u8 member) {
             D_800C3EAC->slots[member].items[1] == 0) {
             shown = 1;
             D_800D2DB4->counts[12] +=
-                func_80076A10(9, &D_800D2DB4->unk5640[D_800D2DB4->counts[12] * 2], 0x84 + i * 16, 0xD0 - index * 16);
+                func_80076A10(9, &D_800D2DB4->list12[D_800D2DB4->counts[12] * 2], 0x84 + i * 16, 0xD0 - index * 16);
             index = func_80086C88(member, index, i, next, &D_800C3A70[index / 2]);
         }
         if (D_800CCCE8.gearHud.level != 4) {
@@ -2577,7 +2577,7 @@ u8 func_80086F98(u8 step, u8 member) {
             D_800C3EAC->slots[member].items[2] == 0) {
             shown = 1;
             D_800D2DB4->counts[12] +=
-                func_80076A10(7, &D_800D2DB4->unk5640[D_800D2DB4->counts[12] * 2], 0x88 + i * 16, 0xD0 - index * 16);
+                func_80076A10(7, &D_800D2DB4->list12[D_800D2DB4->counts[12] * 2], 0x88 + i * 16, 0xD0 - index * 16);
             func_80086C88(member, index, i, next, &D_800C3A70[index / 2]);
         }
         D_800D2DB4->buffers[12] = D_800CCB04.buffer;
@@ -2841,25 +2841,25 @@ void func_8008860C(void) {
     s32 i;
 
     for (i = 0; i < 2; i++) {
-        D_800D2DB4->unk5D70[4] +=
-            func_80076A10(D_800C33B0[i], &D_800D2DB4->unk1720[D_800D2DB4->unk5D70[4] * 2], 0xA0, 0x64);
+        D_800D2DB4->extraCounts[4] +=
+            func_80076A10(D_800C33B0[i], &D_800D2DB4->extra4[D_800D2DB4->extraCounts[4] * 2], 0xA0, 0x64);
     }
-    D_800D2DB4->counts[14] = D_800CCB04.buffer;
-    D_800D2DB4->unk5D70[0] = func_80076A10(0xA8, &D_800D2DB4->unk0[D_800D2DB4->unk5D70[0] * 2], 0xA0, 0x64);
-    D_800D2DB4->buffers[14] = D_800CCB04.buffer;
-    for (i = 0; i < D_800D2DB4->unk5D70[4]; i++) {
-        func_80076B68(&D_800D2DB4->unk1720[i * 2 + D_800D2DB4->counts[14]]);
+    D_800D2DB4->extraBuffer4 = D_800CCB04.buffer;
+    D_800D2DB4->extraCounts[0] = func_80076A10(0xA8, &D_800D2DB4->extra0[D_800D2DB4->extraCounts[0] * 2], 0xA0, 0x64);
+    D_800D2DB4->extraBuffers[0] = D_800CCB04.buffer;
+    for (i = 0; i < D_800D2DB4->extraCounts[4]; i++) {
+        func_80076B68(&D_800D2DB4->extra4[i * 2 + D_800D2DB4->extraBuffer4]);
     }
-    for (i = 0; i < D_800D2DB4->unk5D70[0]; i++) {
-        func_80076B68(&D_800D2DB4->unk0[i * 2 + D_800D2DB4->buffers[14]]);
+    for (i = 0; i < D_800D2DB4->extraCounts[0]; i++) {
+        func_80076B68(&D_800D2DB4->extra0[i * 2 + D_800D2DB4->extraBuffers[0]]);
     }
     for (i = 2; i < 4; i++) {
         D_800D2DB4->counts[9] +=
-            func_80076A10(D_800C33B0[i], &D_800D2DB4->unk2530[D_800D2DB4->counts[9] * 2], 0xA0, 0x64);
+            func_80076A10(D_800C33B0[i], &D_800D2DB4->list9[D_800D2DB4->counts[9] * 2], 0xA0, 0x64);
     }
     D_800D2DB4->buffers[9] = D_800CCB04.buffer;
     for (i = 0; i < D_800D2DB4->counts[9]; i++) {
-        func_80076BF0(&D_800D2DB4->unk2530[i * 2 + D_800D2DB4->buffers[9]]);
+        func_80076BF0(&D_800D2DB4->list9[i * 2 + D_800D2DB4->buffers[9]]);
     }
 }
 
@@ -2946,15 +2946,15 @@ void func_80089038(void) {
 
     i = 0;
     y = 0x6E << 16;
-    D_800D2DB4->unk5DA1 = 0;
+    D_800D2DB4->count4CE0 = 0;
     for (; i < 5; i++) {
         if (func_80089C6C(D_800D2C30, i)) {
-            D_800D2DB4->unk5DA1 += func_80076A10(i + 0xC4, &D_800D2DB4->unk4CE0[D_800D2DB4->unk5DA1 * 2], 0xE0, y >> 16);
+            D_800D2DB4->count4CE0 += func_80076A10(i + 0xC4, &D_800D2DB4->unk4CE0[D_800D2DB4->count4CE0 * 2], 0xE0, y >> 16);
             y += 10 << 16;
         }
     }
-    D_800D2DB4->unk5DA0 = D_800CCB04.buffer;
-    D_800D2DB4->unk5DA2 = 0;
+    D_800D2DB4->buffer4CE0 = D_800CCB04.buffer;
+    D_800D2DB4->blink = 0;
 }
 
 /* Build glyph 0xa0 (0xa1 with 800d2c38) into the +0x3ac0 primitives and
@@ -2966,10 +2966,10 @@ void func_80089110(void) {
     if (D_800D2C38 != 0) {
         id = 0xA1;
     }
-    D_800D2DB4->counts[0] = func_80076A10(id, D_800D2DB4->unk3AC0, 0xA0, 0x64);
+    D_800D2DB4->counts[0] = func_80076A10(id, D_800D2DB4->list0, 0xA0, 0x64);
     D_800D2DB4->buffers[0] = D_800CCB04.buffer;
     for (i = 0; i < D_800D2DB4->counts[0]; i++) {
-        func_80076B68(&D_800D2DB4->unk3AC0[i * 2 + D_800D2DB4->buffers[0]]);
+        func_80076B68(&D_800D2DB4->list0[i * 2 + D_800D2DB4->buffers[0]]);
     }
 }
 
@@ -2980,15 +2980,15 @@ void func_800891E4(void) {
     s32 i;
     u8 second = D_800D2C34 - 0x25;
 
-    D_800D2DB4->counts[2] = func_80076A10((u8)(D_800D2C34 - 0x5D), D_800D2DB4->unk3E80, 0xA0, 0x64);
+    D_800D2DB4->counts[2] = func_80076A10((u8)(D_800D2C34 - 0x5D), D_800D2DB4->list2, 0xA0, 0x64);
     D_800D2DB4->buffers[2] = D_800CCB04.buffer;
-    D_800D2DB4->counts[10] = func_80076A10(second, D_800D2DB4->unk43D0, 0xA0, 0x64);
+    D_800D2DB4->counts[10] = func_80076A10(second, D_800D2DB4->list10, 0xA0, 0x64);
     D_800D2DB4->buffers[10] = D_800CCB04.buffer;
     for (i = 0; i < D_800D2DB4->counts[2]; i++) {
-        func_80076B68(&D_800D2DB4->unk3E80[i * 2 + D_800D2DB4->buffers[2]]);
+        func_80076B68(&D_800D2DB4->list2[i * 2 + D_800D2DB4->buffers[2]]);
     }
     for (i = 0; i < D_800D2DB4->counts[10]; i++) {
-        func_80076BF0(&D_800D2DB4->unk43D0[i * 2 + D_800D2DB4->buffers[10]]);
+        func_80076BF0(&D_800D2DB4->list10[i * 2 + D_800D2DB4->buffers[10]]);
     }
 }
 #else
@@ -3009,13 +3009,13 @@ void func_80089348(void) {
         digit = D_800C3CF4[i + 4];
         if (digit != 0xFF) {
             D_800D2DB4->counts[3] +=
-                func_80076A10(digit + 0x92, &D_800D2DB4->unk4E70[D_800D2DB4->counts[3] * 2], x >> 16, 0x46);
+                func_80076A10(digit + 0x92, &D_800D2DB4->list3[D_800D2DB4->counts[3] * 2], x >> 16, 0x46);
             x += 6 << 16;
         }
     }
     D_800D2DB4->buffers[3] = D_800CCB04.buffer;
     for (i = 0; i < D_800D2DB4->counts[3]; i++) {
-        func_80076B68(&D_800D2DB4->unk4E70[i * 2 + D_800D2DB4->buffers[3]]);
+        func_80076B68(&D_800D2DB4->list3[i * 2 + D_800D2DB4->buffers[3]]);
     }
 }
 
@@ -3036,19 +3036,19 @@ void func_8008946C(void) {
             digit = D_800C3CF4[i + 7];
             if (digit != 0xFF) {
                     D_800D2DB4->counts[4] +=
-                    func_80076A10(digit + 0x92, &D_800D2DB4->unk4FB0[D_800D2DB4->counts[4] * 2], x >> 16, 0x4E);
+                    func_80076A10(digit + 0x92, &D_800D2DB4->list4[D_800D2DB4->counts[4] * 2], x >> 16, 0x4E);
                 digits++;
                 x += 6 << 16;
             }
         }
         D_800D2DB4->counts[4] +=
-            func_80076A10(0x9D, &D_800D2DB4->unk4FB0[D_800D2DB4->counts[4] * 2], digits * 6 + 0x11A, 0x4E);
+            func_80076A10(0x9D, &D_800D2DB4->list4[D_800D2DB4->counts[4] * 2], digits * 6 + 0x11A, 0x4E);
     } else {
-        D_800D2DB4->counts[4] = func_80076A10(0xA2, D_800D2DB4->unk4FB0, 0x11A, 0x4E);
+        D_800D2DB4->counts[4] = func_80076A10(0xA2, D_800D2DB4->list4, 0x11A, 0x4E);
     }
     D_800D2DB4->buffers[4] = D_800CCB04.buffer;
     for (i = 0; i < D_800D2DB4->counts[4]; i++) {
-        func_80076B68(&D_800D2DB4->unk4FB0[i * 2 + D_800D2DB4->buffers[4]]);
+        func_80076B68(&D_800D2DB4->list4[i * 2 + D_800D2DB4->buffers[4]]);
     }
 }
 
@@ -3068,16 +3068,16 @@ void func_8008963C(void) {
         digit = D_800C3CF4[i + 6];
         if (digit != 0xFF) {
             D_800D2DB4->counts[5] +=
-                func_80076A10(digit + 0x92, &D_800D2DB4->unk50A0[D_800D2DB4->counts[5] * 2], x >> 16, 0x56);
+                func_80076A10(digit + 0x92, &D_800D2DB4->list5[D_800D2DB4->counts[5] * 2], x >> 16, 0x56);
             digits++;
             x += 6 << 16;
         }
     }
     D_800D2DB4->counts[5] +=
-        func_80076A10(0x9D, &D_800D2DB4->unk50A0[D_800D2DB4->counts[5] * 2], digits * 6 + 0x11A, 0x56);
+        func_80076A10(0x9D, &D_800D2DB4->list5[D_800D2DB4->counts[5] * 2], digits * 6 + 0x11A, 0x56);
     D_800D2DB4->buffers[5] = D_800CCB04.buffer;
     for (i = 0; i < D_800D2DB4->counts[5]; i++) {
-        func_80076B68(&D_800D2DB4->unk50A0[i * 2 + D_800D2DB4->buffers[5]]);
+        func_80076B68(&D_800D2DB4->list5[i * 2 + D_800D2DB4->buffers[5]]);
     }
 }
 
@@ -3095,13 +3095,13 @@ void func_800897CC(void) {
         digit = D_800C3CF4[i + 7];
         if (digit != 0xFF) {
             D_800D2DB4->counts[6] +=
-                func_80076A10(digit + 0x92, &D_800D2DB4->unk51E0[D_800D2DB4->counts[6] * 2], x >> 16, 0x5E);
+                func_80076A10(digit + 0x92, &D_800D2DB4->list6[D_800D2DB4->counts[6] * 2], x >> 16, 0x5E);
             x += 6 << 16;
         }
     }
     D_800D2DB4->buffers[6] = D_800CCB04.buffer;
     for (i = 0; i < D_800D2DB4->counts[6]; i++) {
-        func_80076B68(&D_800D2DB4->unk51E0[i * 2 + D_800D2DB4->buffers[6]]);
+        func_80076B68(&D_800D2DB4->list6[i * 2 + D_800D2DB4->buffers[6]]);
     }
 }
 
@@ -3122,7 +3122,7 @@ void func_800898F0(u8 member) {
         digit = D_800C3CF4[i + 5];
         if (digit != 0xFF) {
             D_800D2DB4->counts[7] +=
-                func_80076A10(digit + 0x92, &D_800D2DB4->unk5280[D_800D2DB4->counts[7] * 2], x >> 16, 0xCC);
+                func_80076A10(digit + 0x92, &D_800D2DB4->list7[D_800D2DB4->counts[7] * 2], x >> 16, 0xCC);
         }
         x += 8 << 16;
     }
@@ -3135,11 +3135,11 @@ void func_800898F0(u8 member) {
         digit = D_800C3CF4[i + 5];
         if (digit != 0xFF) {
             D_800D2DB4->counts[8] +=
-                func_80076A10(digit + 0x92, &D_800D2DB4->unk53C0[D_800D2DB4->counts[8] * 2], x >> 16, 0xCC);
+                func_80076A10(digit + 0x92, &D_800D2DB4->list8[D_800D2DB4->counts[8] * 2], x >> 16, 0xCC);
             x += 8 << 16;
         }
     }
-    D_800D2DB4->counts[8] += func_80076A10(0x9C, &D_800D2DB4->unk53C0[D_800D2DB4->counts[8] * 2], 0x41, 0xCC);
+    D_800D2DB4->counts[8] += func_80076A10(0x9C, &D_800D2DB4->list8[D_800D2DB4->counts[8] * 2], 0x41, 0xCC);
     D_800D2DB4->buffers[8] = D_800CCB04.buffer;
 }
 
