@@ -2,6 +2,7 @@
 #define SLOT39_MENU_H
 
 #include "common.h"
+#include "psyq/libapi.h"
 
 /*
  * Menu overlay (Disc 1 slot 39, loaded at 801c5000): the menu mode's state.
@@ -117,7 +118,7 @@ typedef struct MenuParty {
     u8 unk2E; /* 2E */
     u8 unk2F; /* 2F */
     u8 ids[3]; /* 30 */
-    u8 unk33; /* 33 */
+    u8 messageShown; /* 33: a card message is shown */
     u8 unk34[4]; /* 34 */
     u8 unk38[8]; /* 38: character ids of the party slots, ff empty */
     u8 unk40[6]; /* 40 */
@@ -139,7 +140,7 @@ typedef struct MenuParty {
     u8 ready[3]; /* 60 */
     u8 pad63[0x4];
     u8 unk67; /* 67 */
-    u8 unk68; /* 68: card headers shown */
+    u8 cardMode; /* 68: the file screen is in card mode */
     u8 pad69[0x3];
 } MenuParty;
 
@@ -212,7 +213,7 @@ typedef struct MenuCard {
     u8 pad4FDA[0xA];
     u8 present[2]; /* 4FE4: per port: card present */
     u8 mode; /* 4FE6 */
-    u8 pad4FE7[0x1];
+    u8 busy; /* 4FE7 */
     u8 presentShown[2]; /* 4FE8 */
     u8 pad4FEA[0x2];
     s32 events[4]; /* 4FEC: card event descriptors */
@@ -285,9 +286,14 @@ typedef struct GearPart {
 
 /* A per-character effect record of the data tables (+20). */
 typedef struct MenuEffect {
-    u8 pad0[0x11];
+    u16 target; /* 0: 4000 all, 1000 none, else one; low bits: target kind */
+    u8 pad2[0xF];
     u8 unk11; /* 11 */
-    u8 pad12[0x16];
+    u8 pad12[0x1];
+    u8 cost; /* 13: character ether cost */
+    u8 pad14[0x10];
+    u16 gearCost; /* 24: gear fuel cost */
+    u8 pad26[0x2];
 } MenuEffect;
 
 /* A character record of the game data (D_8006D8A0; gears follow from 11). */
@@ -306,14 +312,23 @@ typedef struct CharRecord {
     u8 pad5C[0x6];
     u8 unk62; /* 62 */
     u8 unk63; /* 63 */
-    u8 pad64[0x13];
-    u8 unk77; /* 77 */
-    u8 unk78; /* 78 */
+    u8 pad64[0x6];
+    u8 weapons[5]; /* 6A: [0] the weapon */
+    u8 specials[5]; /* 6F: special parts */
+    u8 accessories[5]; /* 74 */
     u8 unk79; /* 79 */
     u8 pad7A[0x26];
     u8 gear; /* A0: gear record (+11), ff none */
     u8 padA1[0x3];
 } CharRecord;
+
+/* An item record of the data tables (+1c). */
+typedef struct MenuItem {
+    u8 pad0[0x4];
+    u16 target; /* 4: 4000 all, 1000 none, else one; low bits: target kind */
+    u8 use; /* 6: 80 usable in the menu, 40 in battle, 20 field only */
+    u8 pad7[0x9];
+} MenuItem;
 
 /* The data table directory (*(state + 330)). */
 typedef struct MenuTables {
@@ -324,9 +339,8 @@ typedef struct MenuTables {
     GearFrame *frames; /* 10 */
     void *unk14; /* 14 */
     void *unk18; /* 18 */
-    u8 *items; /* 1C */
-    MenuEffect *effects[11]; /* 20: per character */
-    void *gears[22]; /* 4C: per gear */
+    MenuItem *items; /* 1C */
+    MenuEffect *effects[33]; /* 20: per character, then per gear from 11 */
     u16 unkA4; /* A4 */
     u16 unkA6; /* A6 */
     u8 padA8[0x8];
@@ -335,8 +349,8 @@ typedef struct MenuTables {
     u8 unkB3; /* B3 */
     u8 unkB4; /* B4 */
     u8 padB5[0x3];
-    u16 shown[6]; /* B8: stats shown on the equipment screen */
-    u8 padC4[0x8];
+    u16 shown[9]; /* B8: stats shown on the equipment screen */
+    u8 padCA[0x2];
 } MenuTables;
 
 /* A gear record of the game data (D_8006DFAC). */
@@ -344,9 +358,11 @@ typedef struct GearRecord {
     u8 pad0[0x2];
     u8 engine; /* 2: record of table +8 */
     u8 unk3; /* 3: record of table +c */
-    u8 pad4[0x4];
+    u8 unk4[0x4]; /* 4: part ids */
     u8 frame; /* 8 */
-    u8 pad9[0x2F];
+    u8 unk9[3]; /* 9: part ids (801df5d0 keeps four from here) */
+    u8 unkC[4]; /* C: part ids */
+    u8 pad10[0x28];
     u16 unk38; /* 38 */
     u16 unk3A; /* 3A */
     u8 unk3C; /* 3C */
@@ -400,8 +416,8 @@ typedef struct MenuSpriteLists {
 typedef struct MenuImageBlock {
     POLY_FT4 polys[2]; /* 0 */
     SVECTOR verts[4]; /* 50 */
-    s32 unk70; /* 70 */
-    u8 unk74; /* 74 */
+    s32 frame; /* 70: animation frame, counts down from 4 */
+    u8 timer; /* 74: frames shown of the current animation frame */
     u8 count; /* 75 */
     u8 pad76[0x2];
 } MenuImageBlock;
@@ -451,9 +467,12 @@ typedef struct MenuBlock34C {
 /* Five labels (*(state + 360)). */
 typedef struct MenuLabels360 {
     MenuLabelSlot labels[5]; /* 0 */
-    u8 pad280[0x14];
+    u16 stats[9]; /* 280: stats kept from the equipment screen */
+    u8 pad292[0x2];
     u8 visible[5]; /* 294 */
     u8 count; /* 299 */
+    u8 pad29A[0x2];
+    u8 parts[3][5]; /* 29C: equipment kept from the character or gear */
 } MenuLabels360;
 
 /* The marker block (*(state + 428)): two quads per marker. */
@@ -484,7 +503,7 @@ typedef struct MenuBlock430 {
     MenuLabelSlot headB; /* E80 */
     MenuLabelSlot extra[2]; /* F00 */
     MenuLabelSlot footer; /* 1000 */
-    void *unk1080; /* 1080 */
+    u8 *texts; /* 1080: description texts */
     u8 shown[14]; /* 1084 */
     u8 extraShown; /* 1092 */
     u8 pad1093[0x1];
@@ -694,7 +713,7 @@ typedef struct MenuBlock434 {
     MenuLabelSlot values[8]; /* 400 */
     MenuLabelSlot title; /* 800 */
     MenuLabelSlot extra[3]; /* 880 */
-    void *unkA00[4]; /* A00 */
+    u8 *texts[4]; /* A00: description texts: weapons, accessories, gear parts, gear accessories */
     u8 shown[8]; /* A10 */
     u8 extraShown; /* A18 */
     u8 padA19[0x3];
@@ -836,6 +855,12 @@ extern CharRecord D_8006D8A0[]; /* game data: character records, then gears from
 extern GearRecord D_8006DFAC[]; /* game data: gear records (D_8006D8A0 + 11) */
 extern u8 D_8006F5C4[150];    /* game data: inventory item counts */
 extern u8 D_8006F65A[150];    /* game data: inventory item ids */
+/* The inventory at D_8006F5C4 as one record: item counts, then item ids. */
+typedef struct Inventory {
+    u8 counts[150];
+    u8 ids[150];
+} Inventory;
+#define INVENTORY ((Inventory *)D_8006F5C4)
 extern u16 D_8006F958[16];    /* game data */
 extern u16 D_8005A3A0[16];
 extern u8 D_8006F8E5[];       /* game data */
@@ -853,6 +878,8 @@ extern u8 D_8006F368[3];      /* game data: character of each party slot, ff emp
 extern u16 D_8006F364;        /* game data: party member bits */
 extern u16 D_8006F366;
 extern u16 D_8006F008;        /* game data: disc of the saved file (0 based) */
+extern u8 D_8006F8BA[];       /* game data: special part durability per id */
+extern u8 D_8006F8EA[];       /* game data: gear special part durability per id */
 extern u16 D_8006EF64;
 extern s32 D_8006EF58;        /* game data: money */        /* game data: save title line of text file 1 */
 extern u8 D_800594D0;         /* load result: 0, 1 title timeout, 2 loaded */
@@ -884,9 +911,12 @@ extern s32 D_801E9E4C[3]; /* party label positions: x */
 extern s32 D_801E9E58[3]; /* y */
 extern u8 D_801EA53C[];  /* save file screen command labels */
 extern u8 D_801EA542[];  /* title file screen load command labels */
+extern u8 D_801EA550[];  /* item target labels */
 extern u8 D_801EA558[];
 extern u8 D_801EA568[];  /* title file screen command labels */
 extern u8 D_801EA548[];  /* save/load screen labels */
+extern u8 D_801EA574[];  /* sound mode labels */
+extern u8 D_801E9F88[];
 extern u8 D_801EA8F4[];
 extern u8 D_801EA8FC;    /* the last choice was cancelled */
 extern u8 D_801E9778;    /* a card changed during a choice */
@@ -972,6 +1002,16 @@ extern s32 D_801E9A68[4];
 extern s16 D_801EA724;   /* item list scroll bar */
 extern s32 D_801EA728;
 extern s16 D_801EA72C;
+extern u8 D_801E9778;    /* a card message is pending */
+extern s32 D_801E9788[3]; /* arts screen window sizes per kind */
+extern s32 D_801E9794[3];
+extern s32 D_801E97A0[3];
+extern u8 D_801E9785;    /* the target panels are allocated */
+extern MenuAnchor D_801EA054[]; /* target panel layouts: x and y anchors */
+extern MenuAnchor D_801EA098[];
+extern MenuAnchor D_801EA0DC[];
+extern MenuAnchor D_801EA120[];
+extern u8 D_801EA730[];  /* equipment list entry ids */
 extern s32 D_801EA718;   /* card event and handler ids */
 extern s32 D_801EA71C;
 extern s32 D_801EA720;
@@ -1037,9 +1077,9 @@ void func_800404C4(u32 event, s32 spec); /* UnDeliverEvent */
 void CloseEvent(s32 event);           /* EnableEvent */
 s32 func_80040494(s32 event);            /* TestEvent */
 void func_800405C4(s32 code);
-void CdSyncCallback(s32 event);  /* CloseEvent */
-void CdReadyCallback(s32 event);
-void CdReadCallback(s32 arg0);
+s32 CdSyncCallback(s32 callback);  /* previous callback */
+s32 CdReadyCallback(s32 callback);
+s32 CdReadCallback(s32 callback);
 s32 open(char *name, s32 mode);  /* open */
 s32 func_80040544(s32 fd, void *buf, s32 size); /* read */
 void func_80040564(s32 fd);               /* close */
@@ -1080,8 +1120,13 @@ void func_8003852C(void *bank);
 void func_8003A094(void *bank);
 
 s32 func_80028530(void);
-u8 *func_80033728(void *table, s32 index);                    /* entry of a text table */
-s32 func_80034EAC(u8 *text, void *pixels, s32 width, s32 line); /* render a text line, returns its width */
+u8 *func_80033728(u8 *table, s32 index); /* message of a table */
+u8 *func_80033818(u8 item);  /* item name text */
+u8 func_80034EAC(u8 *text, void *pixels, s32 width, s32 line); /* render a text line; its width */
+s32 OpenEvent(u32 cause, s32 type, s32 mode, void *handler);
+void InitCARD(s32 shared);
+void StartCARD(void);
+void _bu_init(void);
 
 /* Overlay functions. */
 u8 func_801C531C(u8 offset);
@@ -1212,6 +1257,7 @@ void func_801CE660(void);
 void func_801CEB5C(void);
 void func_801CEBB4(void);
 void func_801CE464(void);
+void func_801CE0CC(MenuPanel *panel, u8 a, u8 b, MenuAnchor *c, MenuAnchor *d, u8 e);
 void func_801CE198(s32 count, SVECTOR *verts, POLY_FT4 *polys, s32 first);
 void func_801CE338(void);
 void func_801CE3C8(void);
@@ -1303,7 +1349,24 @@ void func_801D5BA4(s32 x, s32 y);
 void func_801D5CF8(s32 x, s32 y);
 void func_801D32B4(void);
 u8 func_801D9808(void);
+s32 func_80038824(void);
+void func_800386C4(s32 mode);
+void func_801E86C8(u8 row);
+void func_801E8B4C(u8 row);
+u8 func_801C93A8(void);
+u16 func_801C865C(u16 flags, u8 bit);
+void func_801DA5BC(s32 row);
+void func_801DC3D8(u8 slot, u8 kind);
+void func_801DCE60(u8 slot, u8 row, u8 kind);
+void func_801DD790(u8 slot, s32 row, u8 kind);
+void func_801E35BC(MenuTables *tables, u8 user, u8 target, u8 effect, u8 gear);
+void func_801DA9A8(s32 entry, s32 row);
+void func_801DB39C(u8 mode);
+u8 func_801DB920(s32 row, s32 entry);
+void func_801DB5E4(u8 mode);
 void func_801D9E3C(void);
+void func_801E5ACC(void);
+void func_801E6450(void);
 u8 func_801D9F98(u8 mode, u8 save);
 void func_801D1EB0(void);
 void func_801D29A8(u8 arg0, u8 arg1);
@@ -1315,7 +1378,7 @@ u8 func_801DBE54(void);
 void func_801DC2CC(u8 kind);
 void func_801DE36C(void);
 void func_801DE400(void);
-void func_801DDF24(u8 slot, u8 arg1, s32 arg2);
+void func_801DDF24(u8 slot, u8 zoom, u8 kind);
 u8 func_801DE29C(u8 slot, u8 arg1);
 void func_801E05D0(u8 slot, u8 arg1, s32 arg2);
 u8 func_801E0F78(u8 slot, u8 arg1);
@@ -1324,6 +1387,7 @@ u8 func_801E23CC(void);
 void func_801E2B80(void);
 u8 func_801E2BE4(void);
 void func_801E3088(u8 command);
+s32 func_801E31C0(MenuTables *tables, u8 character, u8 item);
 void func_801E3C2C(MenuTables *tables, u8 gear);
 void func_801E3ECC(MenuTables *tables, u8 gear);
 void func_801E41C0(MenuTables *tables, u8 gear);
@@ -1351,12 +1415,16 @@ void func_801E64E0(void);
 void func_801E5924(s32 index);
 void func_801E5B88(void);
 void func_801E5E4C(void);
+void func_801E7C50(MenuLabelSlot *slot, s32 index, s32 x, s32 flags);
 void func_801E7E68(void *records, u8 *layout, s32 arg2, s32 count);
 void func_801E8018(u8 count, MenuLabelSlot *labels, u8 *table, u8 *flags);
 void func_801E8044(u8 count, u8 *flags);
 void func_801E8070(u8 count, MenuLabelSlot *labels, u8 *table, u8 *arg3, u8 *flags, u8 selected, u8 arg6,
                    s32 arg7);
 void func_801E8474(u8 count, u8 *positions);
+void func_801E8EAC(POLY_FT4 *poly, u8 mode);
+void func_801E8F60(s32 window, u8 mode);
+void func_801E920C(POLY_FT4 *poly, s32 x, s32 y, s32 u, s32 v, s32 w, s32 h);
 void func_801E92CC(void);
 s32 func_801E93A0(s32 disc);
 void func_801E6668(s32 index);
