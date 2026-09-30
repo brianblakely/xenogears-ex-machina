@@ -11,6 +11,9 @@ u8 func_8008CFB8(u8 member); /* the gear has a part list */
 u8 func_80084548(u8 side, u8 any, u8 partyFirst);
 u8 func_80084750(u8 member);
 u16 func_80084DE4(u16 selection, u16 fallback, u8 member, u8 mode, u8 own);
+void func_8009AB00(u8 member);
+void func_8009BAC4(u8 slot, u8 *choice, s16 *busy);
+void func_80087AF0(u8 member, u8 strength);
 
 extern u8 D_800C2050;       /* healing ignores the gear */
 extern u8 *D_800C3160[13]; /* combo input patterns (seven inputs each) */

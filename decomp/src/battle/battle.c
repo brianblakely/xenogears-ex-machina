@@ -3549,7 +3549,94 @@ void func_80080C6C(u8 index) {
     D_800D3278->entries[index].active = 1;
 }
 
+/* Take an automatic turn for party member `member` (8009bac4 chooses):
+ * an attack (1) at a random reachable target other than itself, a skill (2)
+ * when its EP cover the cost, or defend in the gear (4); anything else, or
+ * too little EP, passes the turn. Then wait for the menu or the events to
+ * finish. */
+#ifdef NON_MATCHING
+void func_80080C94(u8 member) {
+    u8 choice[2];
+    u8 targets[11];
+    s32 i;
+    u8 *next;
+    u8 pass = 1;
+    u8 cost;
+    u16 ep;
+
+    func_800716D8();
+    for (i = 0; i < 11; i++) {
+        targets[i] = 0xFF;
+    }
+    D_800C3EAC->unk2EA = 1;
+    D_800C3EAC->menuDone = 0;
+    func_8009AB00(member);
+    func_8009BAC4(member, choice, (s16 *)&D_800C3EAC->slots[member].items[7]);
+    if (choice[0] == 1 || choice[0] == 2) {
+        for (i = 0, next = targets; i < 11; i++) {
+            if (func_80083FF4(member, i)) {
+                *next++ = i;
+            }
+        }
+        while ((D_800C3E2C = targets[func_8001BD40(0, 10)]) == 0xFF || D_800C3E2C == member) {
+        }
+    }
+    func_800879A8(member, D_800C3E2C);
+    D_800C3EAC->slots[member].defaultTarget = D_800C3E2C;
+    func_800BC404(func_80089C08(member) | func_80089C08(D_800C3EAC->slots[member].defaultTarget));
+    func_800716D8();
+    D_800C204C = 1;
+    switch (choice[0]) {
+    case 1:
+        D_800C3E18 = 0;
+        if (D_800D2D24[member] != 4) {
+            D_800C3FE8[D_800C3EAC->eventCount].actor = member;
+            D_800C3FE8[D_800C3EAC->eventCount].type = 0xFD;
+            D_800C3FE8[D_800C3EAC->eventCount].parameter = 0;
+            D_800C3FE8[D_800C3EAC->eventCount].targetMask = func_80089C08(D_800C3EAC->slots[member].defaultTarget);
+            D_800C3EAC->eventCount++;
+        }
+        if (D_800D32A0[member].unk1 == 0) {
+            D_800C3EAC->unk2DC = 0;
+        } else {
+            D_800C3EAC->unk2DC = choice[1];
+        }
+        pass = 0;
+        func_800B89FC(func_800877E0(member, D_800C3EAC->slots[member].defaultTarget), member,
+                      D_800C3EAC->slots[member].defaultTarget, func_80080AE4(member));
+        func_80087AF0(member, choice[1] + 1);
+        func_80080B64(member);
+        break;
+    case 2:
+        /* The skill's EP cost (descriptor byte 0x13). */
+        cost = D_800CCCE8.partyCommands[member][choice[1] + 0x16].pad12[1];
+        ep = D_800CCCE8.records[member].pilot.ep;
+        if (ep >= cost) {
+            D_800CCCE8.records[member].pilot.ep = ep - cost;
+            D_800C3EAC->unk2DF[7] = choice[1];
+            pass = 0;
+            func_8008ADD0(member);
+        }
+        break;
+    case 4:
+        func_800826CC(member);
+        pass = 0;
+        D_800C3EAC->menuDone = 1;
+        break;
+    }
+    if (pass) {
+        func_8009AA44(member);
+        D_800C3EAC->unk2EA = 0;
+        D_800C3EAC->menuDone = 1;
+    }
+    while (D_800C3EAC->menuDone == 0 && D_800C48EA == 0 && D_800C3EAC->eventsDone == 0) {
+        func_800716D8();
+    }
+    D_800C204C = 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80080C94);
+#endif
 
 /* Confirm the selected entry of the member's on-foot window: entries 4, 6
  * and 7 open the attack page (5) when the member has a target; 1 and 0 open
