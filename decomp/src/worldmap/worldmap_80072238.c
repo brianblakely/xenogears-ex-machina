@@ -446,7 +446,38 @@ void func_80075228(void) {
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80075228);
 #endif
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_8007528C);
+/* Every D_8009BE40 frames give each of D_8009BCC4 timers a distinct random
+ * delay (1..D_8009BE40); count down the timers and count those expiring. */
+void func_8007528C(void) {
+    s32 i;
+    s32 j;
+    s32 value;
+
+    if (--D_8009D64C == 0) {
+        for (i = 0; i < D_8009BCC4; i++) {
+            if (i != 0) {
+                do {
+                    value = rand() % D_8009BE40 + 1;
+                    for (j = 0; j < i; j++) {
+                        if (D_8009C854[j] == value) {
+                            break;
+                        }
+                    }
+                } while (j < i);
+            } else {
+                value = rand() % D_8009BE40 + 1;
+            }
+            D_8009C854[i] = value;
+        }
+        D_8009D64C = D_8009BE40;
+    }
+    D_8009D80C = 0;
+    for (i = 0; i < D_8009BCC4; i++) {
+        if (--D_8009C854[i] == 0) {
+            D_8009D80C++;
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80075460);
 
@@ -694,7 +725,38 @@ s32 func_80076D8C(WorldmapActor *actor, s32 a, s32 b) {
     return 4;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80076DA4);
+/* Move the actor's current point an eighth of the way to its target (snapping
+ * when close) and aim the camera from it. */
+void func_80076DA4(WorldmapActor *actor, VECTOR *work) {
+    if ((actor->motion.vx != actor->u.step) | (actor->motion.vy != actor->unk54) |
+        (actor->motion.vz != actor->unk58)) {
+        work[0].vx = actor->u.step - actor->motion.vx;
+        work[0].vy = actor->unk54 - actor->motion.vy;
+        work[0].vz = actor->unk58 - actor->motion.vz;
+        func_80093484(&work[0]);
+        work[1].vx = work[0].vx >> 3;
+        work[1].vy = work[0].vy >> 3;
+        work[1].vz = work[0].vz >> 3;
+        if (ABS(work[1].vx) < 0x40) {
+            actor->motion.vx = actor->u.step;
+        } else {
+            actor->motion.vx += work[1].vx;
+        }
+        if (ABS(work[1].vy) < 0x40) {
+            actor->motion.vy = actor->unk54;
+        } else {
+            actor->motion.vy += work[1].vy;
+        }
+        if (ABS(work[1].vz) < 0x40) {
+            actor->motion.vz = actor->unk58;
+        } else {
+            actor->motion.vz += work[1].vz;
+        }
+    }
+    D_8009BD38.vx = actor->motion.vx >> 12;
+    D_8009BD38.vy = actor->motion.vy >> 12;
+    D_8009BD38.vz = actor->motion.vz >> 12;
+}
 
 /* Ease the camera distance towards the actor's, snapping when close. */
 void func_80076F54(WorldmapActor *actor) {

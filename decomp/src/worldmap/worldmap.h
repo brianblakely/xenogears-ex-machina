@@ -713,4 +713,7 @@ extern SVECTOR D_8009BD48; /* swapped with D_8009BD40 */
 
 void func_80096F18(u8 *view, Camera *camera, s32 distance, SVECTOR *angle);
 
+s32 rand(void);
+void func_80093484(VECTOR *offset);
+
 #endif
