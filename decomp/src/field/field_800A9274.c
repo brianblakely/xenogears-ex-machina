@@ -370,8 +370,8 @@ void func_800A9B54(Particle *particle, MATRIX *view, s16 angle, s32 depth_mode, 
 /* Step a particle: while delayed count down and at launch place it and
  * its velocity in the emitter's frame (0 owner-facing, 1 801e module, 2
  * owner's transform, 3 owner-facing and scaled); afterwards move it,
- * fade its colour, draw it and count its life down. Differs in keeping
- * &m in a saved register for the module and transform frames. */
+ * fade its colour, draw it and count its life down. Differs only in the
+ * scheduling of the unk38 update (the original loads unk38.vx first). */
 void func_800A9F18(Record78 *emitter, Particle *particle, MATRIX *view) {
     VECTOR v;
     SVECTOR sv;
@@ -412,10 +412,16 @@ void func_800A9F18(Record78 *emitter, Particle *particle, MATRIX *view) {
                 break;
             case 1:
                 func_801E72CC(&m, &camera, emitter->unk72, emitter->unk74);
-                goto place;
+                SetRotMatrix(&m);
+                SetTransMatrix(&m);
+                sv.vx = emitter->unk0C.vx;
+                sv.vy = emitter->unk0C.vy;
+                sv.vz = emitter->unk0C.vz;
+                func_8004A6DC(&sv, &origin.vx, &flag);
+                emitter->unk50 = 0x1000;
+                break;
             case 2:
                 m = D_800AF880.components.descriptors[emitter->unk52].transform;
-            place:
                 SetRotMatrix(&m);
                 SetTransMatrix(&m);
                 sv.vx = emitter->unk0C.vx;
@@ -459,8 +465,8 @@ void func_800A9F18(Record78 *emitter, Particle *particle, MATRIX *view) {
                 up.vy = v.vy;
                 func_8004998C(&up, &rotated);
                 v.vx += rotated.vx;
-                v.vy = rotated.vy;
                 v.vz += rotated.vz;
+                v.vy = rotated.vy;
                 particle->position.vx = (origin.vx + v.vx) * (0x1000000 / emitter->unk50);
                 particle->position.vy = (origin.vy + v.vy) * (0x1000000 / emitter->unk50);
                 particle->position.vz = (origin.vz + v.vz) * (0x1000000 / emitter->unk50);
@@ -712,10 +718,9 @@ void func_800AAE4C(s32 index, s32 x, s32 y, s32 anchor) {
 
 #include "field_picture.h"
 
-#ifdef NON_MATCHING
 /* Set up the picture: four marker sprites (the first 16x16, the rest
  * 8x8) and the three 128x224 picture pieces from the 8-bit pages at
- * (300, 100). Differs only in the scheduling of one constant load. */
+ * (300, 100). */
 void func_800AAF80(void) {
     RECT window;
     SPRT *sprite;
@@ -752,8 +757,8 @@ void func_800AAF80(void) {
         quad = &D_800C3A3C->quads[i][0];
         quad_copy = &D_800C3A3C->quads[i][1];
         SetPolyFT4(quad);
-        quad->y2 = 0xDF;
         quad->x0 = i << 7;
+        quad->y2 = 0xDF;
         quad->x2 = i << 7;
         quad->y0 = 0;
         quad->x1 = (i << 7) + 0x80;
@@ -781,9 +786,6 @@ void func_800AAF80(void) {
         *quad_copy = *quad;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800A9274", func_800AAF80);
-#endif
 
 /* 0 when item `item` is held in inventory list 0, else -1. */
 s32 func_800AB328(s32 item) {
@@ -1395,16 +1397,16 @@ void func_800ACE90(void) {
 
 #define DESCRIPTOR(index) (&D_800AF880.components.descriptors[index])
 
-#ifdef NON_MATCHING
 /* Return party slot `slot` to its member: swap the models back, hand the
- * stand-in's heading over, and restart both animations. Differs in when
- * the address of 8006f990 is formed. */
+ * stand-in's heading over, and restart both animations. */
 void func_800ACFD0(s32 slot) {
+    FieldModel *stand_in;
     FieldModel *model;
 
     D_8005A39C->unk22B1[slot] = 0;
+    stand_in = DESCRIPTOR(D_8006F990[slot])->model;
     model = DESCRIPTOR(D_8005A444[slot])->model;
-    DESCRIPTOR(D_8005A444[slot])->model = DESCRIPTOR(D_8006F990[slot])->model;
+    DESCRIPTOR(D_8005A444[slot])->model = stand_in;
     DESCRIPTOR(D_8006F990[slot])->model = model;
     DESCRIPTOR(D_8006F990[slot])->flags = (DESCRIPTOR(D_8006F990[slot])->flags & 0xF07F) | 0x200;
     DESCRIPTOR(D_8006F990[slot])->flags &= 0xFFDF;
@@ -1427,9 +1429,6 @@ void func_800ACFD0(s32 slot) {
     func_8009FEE4(slot);
     func_800A98E8(D_8006F990[slot], 0);
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800A9274", func_800ACFD0);
-#endif
 
 /* Put the current actor in for party slot `slot`: swap its model with the
  * member's, mark the slot taken, and restart both animations. */

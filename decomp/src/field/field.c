@@ -881,10 +881,8 @@ s32 func_80072398(s32 mask, s32 start) {
     return 0;
 }
 
-#ifdef NON_MATCHING
 /* The intersection of the lines through segments `a` and `b` (X/Z points);
- * `b`'s start when they are parallel. Differs only in the register of the
- * second product of each cross product (t0/v1 in the original). */
+ * `b`'s start when they are parallel. */
 void func_800723E4(DVECTOR *a, DVECTOR *b, DVECTOR *out) {
     VECTOR ua;
     VECTOR ub;
@@ -909,9 +907,6 @@ void func_800723E4(DVECTOR *a, DVECTOR *b, DVECTOR *out) {
     out->vx = b[0].vx + ((t * ub.vx) >> 12);
     out->vy = b[0].vy + ((t * ub.vz) >> 12);
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800723E4);
-#endif
 
 #ifdef NON_MATCHING
 /* The camera's initial state. */
@@ -2553,14 +2548,10 @@ extern s16 D_800C38FE;
 void func_8003342C(void *table);
 void func_80070340(u32 *tim, s16 x, s16 y, s16 clut_x, s16 clut_y, s16 clut_w, s16 clut_h);
 
-#ifdef NON_MATCHING
 /* Load the field's text images (file a7, read once while 8004f344 is clear):
  * relocate its offset table, load its eight TIMs where 800adc44 places them
  * (x, y, palette x, y, w, h), read the compass colours back from VRAM (0, fb)
- * and release the file.
- * Does not match: the original sets up the placement-table walk before
- * 800320b8 and loads the file table straight into its register; only
- * that set-up is scheduled differently. */
+ * and release the file. */
 void func_80077620(void) {
     u32 **tim;
     s32 i;
@@ -2578,12 +2569,11 @@ void func_80077620(void) {
     D_800C38FE = 0;
     D_800C38FC = 0;
     func_8003342C(D_8005A4A0);
-    tim = (u32 **)D_8005A4A0 + 1;
+    tim = (u32 **)D_8005A4A0;
     for (i = 0; i < 8; i++) {
-        func_80070340(*tim, D_800ADC44[i * 6], D_800ADC44[i * 6 + 1], D_800ADC44[i * 6 + 2],
+        func_80070340(*++tim, D_800ADC44[i * 6], D_800ADC44[i * 6 + 1], D_800ADC44[i * 6 + 2],
                       D_800ADC44[i * 6 + 3], D_800ADC44[i * 6 + 4], D_800ADC44[i * 6 + 5]);
         DrawSync(0);
-        tim++;
     }
     D_800B004C.x = 0;
     D_800B004C.y = 0xFB;
@@ -2593,9 +2583,6 @@ void func_80077620(void) {
     DrawSync(0);
     func_800320E8(D_8005A4A0);
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80077620);
-#endif
 
 /* Stop the stream, then read the map's data ahead until it is in. */
 void func_800777DC(void) {
@@ -2624,15 +2611,11 @@ void func_80077844(MATRIX *m, s32 m00, s32 m01, s32 m02, s32 m10, s32 m11, s32 m
 }
 
 
-#ifdef NON_MATCHING
 /* Load the 801e module and its per-layer resources when the layer is
  * enabled: allocate the module (file 6b9), two blocks per layer (files
- * 6bb and 6ba plus the layer's id), then read them all as one list.
- * Does not match: only the registers of the module size computation differ
- * (the original keeps 800adb30 in v1 and the size in a0). */
+ * 6bb and 6ba plus the layer's id), then read them all as one list. */
 void func_80077884(void) {
     u32 end;
-    s32 size;
     s32 i;
 
     if (D_800B2078.unk2264 != 0) {
@@ -2641,11 +2624,10 @@ void func_80077884(void) {
         func_800A90B4(0);
         end = D_800ADB30;
         if (D_8004F370 == 0) {
-            size = (end & 0xFFFFFF) - 0x1DC008;
+            D_800ADB20 = func_80031BDC((end & 0xFFFFFF) - 0x1DC008, 1);
         } else {
-            size = func_800288EC(0x6B9);
+            D_800ADB20 = func_80031BDC(func_800288EC(0x6B9), 1);
         }
-        D_800ADB20 = func_80031BDC(size, 1);
         func_800A90B4(1);
         for (i = 0; i < D_800B2078.unk2264; i++) {
             D_800B2394[i * 2 + 1].file = D_800B2078.unk21DC[i] + 0x6BB;
@@ -2665,9 +2647,6 @@ void func_80077884(void) {
         func_80029AFC(D_800B2394, 0, 0);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80077884);
-#endif
 
 
 /* Start the 801e module's layers when enabled: sync and flush the cache,
