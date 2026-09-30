@@ -254,7 +254,7 @@ typedef struct {
     u8 pad_2E8[0x308 - 0x2E8];
     s32 buffer_index;    /* 0x308: draw buffer being built (0/1) */
     u8 available[16];    /* 0x30C: character may join the party */
-    u8 pad_31C[0x325 - 0x31C];
+    u8 digits[9];        /* 0x31C: decimal digits (0xFF blank) */
     u8 input_code;       /* 0x325: decoded input of this frame */
     u8 card_poll_timer;  /* 0x326 */
     u8 active;           /* 0x327 */
@@ -286,7 +286,8 @@ typedef struct {
     u8 pad_DE0[0x1DF0 - 0xDE0];
     StatusPanel *member_panels[6]; /* 0x1DF0 */
     StatusPanel *party_panels[3];  /* 0x1E08 */
-    u8 pad_1E14[0x1E94 - 0x1E14];
+    u8 members[11];                /* 0x1E14: characters that may join (0xFF end) */
+    u8 pad_1E1F[0x1E94 - 0x1E1F];
     u8 b_1E94;                     /* 0x1E94: toggled by button 0x100 */
     u8 b_1E95;                     /* 0x1E95: counts button 1 */
 } MenuState;
@@ -307,6 +308,7 @@ extern u16 D_800595D4;   /* normal text CLUT */
 extern u16 D_8006F364;   /* characters that may join */
 extern u16 D_8006F366;
 extern u8 D_8006F368[3]; /* current party (0xFF empty) */
+extern u8 D_8006D634[][0x14]; /* character names (text codes) */
 
 extern void *func_80031BDC(s32 size, s32 mode); /* allocate */
 extern void func_800320E8(void *block);         /* release */
@@ -332,6 +334,8 @@ extern void func_8004495C(RECT *rect, s32 x, s32 y); /* MoveImage */
 extern void func_80044BD0(u32 *ot);            /* DrawOTag */
 extern void func_80019CA0(void);               /* reset combination check */
 extern void func_80039DB8(s32 sound);          /* play a sound */
+extern void func_8003A094(void *bank);
+extern void func_8003852C(void *bank);
 extern s32 func_80035734(s32 port);            /* pad present */
 extern void func_80037EE4(void);               /* pause sound */
 extern void func_80037E8C(void);               /* resume sound */

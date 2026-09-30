@@ -9,6 +9,8 @@
 
 extern u16 D_801CB57C[];
 extern u8 D_801CB400[];
+extern u16 D_801CB344[]; /* name slot x */
+extern u16 D_801CB390[]; /* name slot y */
 extern s32 D_801CB404[]; /* file cursor -> slot */
 extern s32 D_801CB47C[]; /* slot x */
 extern s32 D_801CB4FC[]; /* slot y */
@@ -1215,13 +1217,114 @@ void func_801C94A0(void) {
     func_80044BD0(&D_800625A0->draw_env->ot[15]);
 }
 
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C95A0);
+/* Render the names of characters index & ~1 and index | 1 (two halves of
+ * one texture) into VRAM at list slot `slot`. */
+void func_801C95A0(s32 index, s32 slot) {
+    RECT rect;
+    u8 *image = func_80031BDC(0x3F6, 0);
 
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C969C);
+    func_8003F8E8(image, 0x3F6);
+    func_80034EAC(D_8006D634[(u8)index / 2 * 2], image, 0x24, 0);
+    func_80034EAC(D_8006D634[(u8)index / 2 * 2 + 1], image, 0x24, 1);
+    rect.x = D_801CB344[(u8)slot / 2 * 2] + 0x180;
+    rect.y = D_801CB390[(u8)slot / 2 * 2];
+    rect.w = 0x28;
+    rect.h = 13;
+    func_80044894(&rect, image);
+    func_800445D0(0);
+    func_800320E8(image);
+}
 
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C9748);
+/* Split `value` into nine decimal digits, blanking (0xFF) leading zeros. */
+void func_801C969C(u32 value) {
+    u32 divisor = 100000000;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C9908);
+    for (i = 0; i < 9; i++) {
+        D_800625A0->digits[i] = value / divisor;
+        value %= divisor;
+        divisor /= 10;
+    }
+    for (i = 1; i < 9; i++) {
+        if (D_800625A0->digits[i] != 0) {
+            if (D_800625A0->digits[i - 1] == 0) {
+                D_800625A0->digits[i - 1] = 0xFF;
+            }
+            return;
+        }
+        D_800625A0->digits[i - 1] = 0xFF;
+    }
+}
+
+/* Leave the screen: store the chosen party (packed, 0xFF filled), run the
+ * closing frames until buffer 0 is shown, and release everything. */
+void func_801C9748(void) {
+    s32 i;
+    s32 count;
+
+    for (i = 0, count = 0; i < 3; i++) {
+        if (D_800625A0->flags->party[i] != 0xFF) {
+            D_8006F368[count] = D_800625A0->flags->party[i];
+            count++;
+        }
+    }
+    for (; count < 3; count++) {
+        D_8006F368[count] = 0xFF;
+    }
+    func_801C94A0();
+    func_801C94A0();
+    D_800625A0->active = 0;
+    func_801C94A0();
+    do {
+        func_801C94A0();
+    } while (D_800625A0->buffer_index != 0);
+    func_801C5034(0);
+    func_801C5098(0);
+    func_801C50FC(0);
+    func_801C5160(0);
+    func_801C51C4(0);
+    func_801C5228(0);
+    func_800320E8(D_800625A0->sprite_sheet);
+    func_800320E8(D_800625A0->label_text);
+    func_800320E8(D_800625A0->labels[0].image);
+    if (D_80059178) {
+        func_8003A094(D_800625A0->effect_bank);
+        func_8003852C(D_800625A0->effect_bank);
+        func_800320E8(D_800625A0->effect_bank);
+    }
+    func_801C528C(0);
+    func_800320E8(D_800625A0);
+}
+
+/* List the characters that may join and are not in the party (0xFF
+ * filled) and render their names. */
+void func_801C9908(void) {
+    s32 id;
+    s32 count;
+    s32 j;
+    u8 free;
+
+    for (id = 0, count = 0; id < 11; id++) {
+        free = 1;
+        if (D_800625A0->available[id]) {
+            for (j = 0; j < 3; j++) {
+                if (D_800625A0->flags->party[j] == id) {
+                    free = 0;
+                    break;
+                }
+            }
+            if (free) {
+                D_800625A0->members[count++] = id;
+            }
+        }
+    }
+    for (; count < 11; count++) {
+        D_800625A0->members[count] = 0xFF;
+    }
+    for (id = 0; id < 11; id += 2) {
+        func_801C95A0((u8)id, (u8)id);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C9A08);
 
