@@ -578,7 +578,12 @@ s32 func_8007D25C(s32 code) {
     return code < 0x20;
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007D274);
+/* Jitter a position by -32..31 on each axis. */
+void func_8007D274(Vector *from, Vector *to) {
+    to->vx = from->vx + func_8003FA38() % 64 - 32;
+    to->vy = from->vy + func_8003FA38() % 64 - 32;
+    to->vz = from->vz + func_8003FA38() % 64 - 32;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007D334);
 
@@ -597,7 +602,31 @@ void func_8007D65C(s32 arg0, s32 arg1, s32 code) {
     }
 }
 
+#ifdef NON_MATCHING
+/* Allocate the scene cell table and both buffers' point primitives.
+ * Does not match: the primitive pointer loads are hoisted over the
+ * stores (the original keeps every access in order). */
+void func_8007D6B8(void) {
+    SceneCell10 *cell;
+    s32 i;
+
+    D_800926BC = func_80031BDC(0x9F6, 0);
+    D_800926C0 = func_80031BDC(0xBF4, 0);
+    D_800926C4 = func_80031BDC(0xBF4, 0);
+    cell = D_800926BC;
+    for (i = 0; i < 0xFF; i++) {
+        D_800926C0[i].len = 2;
+        D_800926C0[i].rgbc = 0x6880B0F0;
+        D_800926C4[i].len = 2;
+        D_800926C4[i].rgbc = 0x6880B0F0;
+        cell->unk0 = cell->unk2 = cell->unk4 = 0;
+        cell->unk0 = cell->unk4 = cell->unk6 = 0;
+        cell++;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007D6B8);
+#endif
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007D7A8);
 
@@ -1106,9 +1135,53 @@ void func_80080AE8(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080B58);
+/* Keep a copy of the shown screen: allocate the image buffer once, copy
+ * the displayed buffer's area to (320,256) and read it back. */
+void func_80080B58(void) {
+    Rect area;
 
+    if (D_80092760 == NULL) {
+        func_80031BB4(1);
+        D_80092760 = func_80031BDC(0x22100, 0);
+        func_80031BB4(0);
+    }
+    func_800445D0(0);
+    area = D_8009A0D8[(D_800928A0 + 1) & 1].area;
+    func_8004495C(&area, 0x140, 0x100);
+    if (D_80092760 != NULL) {
+        func_800448F8(&area, D_80092760);
+    }
+    func_800445D0(0);
+}
+
+#ifdef NON_MATCHING
+/* Open the system menu: mode 1 at page 0, mode 2 at page 7, else close.
+ * Does not match: the shared tail is cross-jumped one instruction early. */
+void func_80080C48(s32 mode) {
+    func_80039FF8();
+    func_8008EB4C(0x1F);
+    if (mode == 1) {
+        D_80092734 = NULL;
+        func_80080964(0);
+        D_800915AC[0].cursor = 0;
+        D_800915AC[2].cursor = 1;
+    } else if (mode == 2) {
+        D_80092734 = NULL;
+        func_80080964(7);
+        D_800915AC[7].cursor = 1;
+    } else {
+        func_8007F8B4();
+        return;
+    }
+    func_80083C0C(0);
+    D_80092758 = 1;
+    D_800926FC = 0;
+    D_8009275C = 1;
+    func_80080B58();
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080C48);
+#endif
 
 void func_80080D10(void) {
     D_800926DC = 0;

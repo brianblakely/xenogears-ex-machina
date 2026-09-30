@@ -69,6 +69,28 @@ typedef struct {
 
 extern Vector D_80096FA8; /* camera position */
 extern SceneLine D_80094818[100];
+/* libgpu TILE_1 layout, colour and code written as one word. */
+typedef struct {
+    u8 addr[3];
+    u8 len;
+    u32 rgbc;
+    s16 x0, y0;
+} Tile1;
+
+/* Rectangle in VRAM (libgpu RECT). */
+typedef struct {
+    s16 x, y, w, h;
+} Rect;
+
+/* Per draw buffer block whose first member is the drawn area. */
+typedef struct {
+    Rect area;
+    u8 unk8[0xF0];
+} FrameArea;
+
+extern FrameArea D_8009A0D8[2];
+extern Tile1 *D_800926C0;
+extern Tile1 *D_800926C4;
 extern SceneCell12 *D_800926C8;
 extern SceneCell10 *D_800926BC;
 extern u8 D_80092708;
@@ -116,6 +138,14 @@ extern s32 D_800928D8;
 extern void *D_80092760; /* loaded image data */
 
 void func_80080964(s32 page);
+void func_80080B58(void);
+void func_8007F8B4(void);
+void func_80031BB4(s32 high); /* choose the heap end to allocate from */
+void func_8004495C(Rect *rect, s32 x, s32 y); /* copy a VRAM area */
+void func_800448F8(Rect *rect, void *pixels);  /* read a VRAM area */
+s32 func_8003FA38(void);                       /* random number */
+extern s8 D_800926FC;
+extern s8 D_8009275C;
 void func_80080AA0(s32 forget);
 void func_800719F0(void);
 void func_8008509C(s32 a, s32 b);
