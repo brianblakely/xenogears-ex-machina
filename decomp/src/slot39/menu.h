@@ -70,7 +70,9 @@ typedef struct MenuPrims {
 
 /* One file entry of a card listing. */
 typedef struct MenuCardFile {
-    u8 pad0[0x58];
+    u8 pad0[0x18];
+    char name[21]; /* 18: directory entry name */
+    u8 pad2D[0x2B];
     u8 state; /* 58 */
     u8 pad59[0x3];
 } MenuCardFile;
@@ -78,15 +80,19 @@ typedef struct MenuCardFile {
 /* Memory-card state (*(state + 32c)). */
 typedef struct MenuCard {
     MenuCardFile files[32]; /* 0 */
-    u8 padB80[0x43F4];
+    u8 padB80[0x14];
+    u8 headers[32][0x200]; /* B94: first block of each listed file */
+    u8 pad4B94[0x3E0];
     s32 result[2]; /* 4F74: per port: last card check result */
-    u8 pad4F7C[0xC];
+    u8 pad4F7C[0x8];
+    s32 fileCount; /* 4F84 */
     u8 scanned[2]; /* 4F88: per port */
     u8 unk4F8A[2]; /* 4F8A */
     u8 unk4F8C[2]; /* 4F8C */
-    u8 unk4F8E[32]; /* 4F8E */
+    u8 ours[32]; /* 4F8E: per listed file: carries this game's prefix */
     u8 fileSlots[32]; /* 4FAE */
-    u8 pad4FCE[0x16];
+    char prefix[12]; /* 4FCE: this game's file name prefix */
+    u8 pad4FDA[0xA];
     u8 present[2]; /* 4FE4: per port: card present */
     u8 mode; /* 4FE6 */
     u8 pad4FE7[0x1];
@@ -225,6 +231,8 @@ extern u8 D_801EA524[];  /* label image layout */
 extern u8 D_801EA530[];  /* title file screen command labels */
 extern u8 D_801EA8FC;
 extern s32 D_801EA900[2];
+extern u8 D_801EA6D0[32];  /* per port and save slot: a save of this game exists */
+extern u8 *D_801EA6F4;     /* the save information of the last matched file */
 extern u8 D_801E9779;    /* frames between card checks */
 
 /* Resident services. */

@@ -1013,7 +1013,7 @@ u8 func_801C8A10(u8 port) {
         D_801EA900[port] = 0;
         for (i = 0; i < 16; i++) {
             D_800625A0->card->fileSlots[port * 16 + i] = 0xff;
-            D_800625A0->card->unk4F8E[port * 16 + i] = 0;
+            D_800625A0->card->ours[port * 16 + i] = 0;
             D_800625A0->card->files[port * 16 + i].state = 0;
         }
     }
@@ -1123,7 +1123,41 @@ s32 func_801C9038(char *name, void *dst) {
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C90B0);
 
+/* Mark the files of `port` whose names carry this game's prefix and note the
+ * save slot each holds. */
+#ifdef NON_MATCHING
+void func_801C9270(s32 port) {
+    s32 i;
+    s32 j;
+    u8 match;
+    MenuCard *card;
+    MenuCardFile *file;
+    u8 *header;
+
+    for (i = 0; i < 16; i++) {
+        D_800625A0->card->ours[port * 16 + i] = 0;
+    }
+    for (i = port * 16; i < port * 16 + 15; i++) {
+        card = D_800625A0->card;
+        match = 1;
+        file = &card->files[card->fileSlots[i]];
+        for (j = 0; j < 12; j++) {
+            if (file->name[j] != card->prefix[j]) {
+                match = 0;
+                break;
+            }
+        }
+        if (match) {
+            D_800625A0->card->ours[i] = 1;
+            header = D_800625A0->card->headers[D_800625A0->card->fileSlots[i]];
+            D_801EA6F4 = header + 0x100;
+            D_801EA6D0[port * 16 + header[0x123]] = 1;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C9270);
+#endif
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C93A8);
 
