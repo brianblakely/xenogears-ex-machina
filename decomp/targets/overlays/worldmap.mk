@@ -7,3 +7,6 @@ IMAGE := .local/decomp/build/worldmap.bin
 LINKER_SCRIPT := .local/decomp/worldmap/worldmap.ld
 LINKER_EXTRA := .local/decomp/worldmap/undefined_syms_auto.txt .local/decomp/worldmap/undefined_funcs_auto.txt
 SOURCE_DIRS := decomp/src/worldmap
+# Assembled with ASPSX >= 2.50 behaviour: small constants load with addiu
+# (80071a50 `addiu $v0,$zero,1`); ori appears only for values >= 0x8000.
+ASPSX_VERSION := 2.79
