@@ -778,7 +778,54 @@ void func_800980D4(void *arg) {
     D_8009C838.vz = (position->vz >> 23) + 2;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_800981C8);
+/* Recompute the 9x9 grid of terrain blocks around the camera (keeping the
+ * previous grid), wrapping around the map edges. */
+void func_800981C8(Camera *camera) {
+    s32 width;
+    s32 height;
+    s32 x;
+    s32 z;
+    s32 left;
+    s32 base;
+    s32 i;
+    s32 j;
+    s16 *cell;
+
+    width = D_8009D160;
+    height = D_8009D2B4;
+    x = (camera->target.vx >> 12) / 8 - ((D_8009C838.vx + 2) << 8);
+    z = (camera->target.vz >> 12) / 8 - ((D_8009C838.vz + 2) << 8);
+    if (x < 0) {
+        x += width << 8;
+    } else if (x > width << 8) {
+        x -= width << 8;
+    }
+    if (z < 0) {
+        z += height << 8;
+    } else if (z > height << 8) {
+        z -= height << 8;
+    }
+    x >>= 8;
+    z >>= 8;
+    D_8009D318 = D_8009D570;
+    left = x;
+    cell = D_8009D570.cells;
+    for (j = 8; j != -1; j--) {
+        x = left;
+        if (z >= height) {
+            z = 0;
+        }
+        base = z * width;
+        for (i = 8; i != -1; i--) {
+            if (x >= width) {
+                x = 0;
+            }
+            *cell++ = base + x;
+            x++;
+        }
+        z++;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_800983A0);
 

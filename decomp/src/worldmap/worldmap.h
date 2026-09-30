@@ -791,4 +791,12 @@ void func_8002DD20(void *image); /* upload an image file */
 void StoreImage(RECT *rect, void *data);
 void func_800931D8(u16 *clut, u16 *out, s32 steps, u8 *colour);
 
+/* 9x9 terrain blocks around the camera: block numbers, row-major. */
+typedef struct {
+    s16 cells[81];
+} BlockGrid;
+
+extern BlockGrid D_8009D570; /* current */
+extern BlockGrid D_8009D318; /* previous */
+
 #endif
