@@ -643,7 +643,44 @@ void func_800239F4(Sprite *sprite) {
     sprite->renderer->next_pending = NULL;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80023A48);
+/* Create a sprite task under `owner` with `extra` bytes and its storage
+ * (mode 0: no renderer, 1: inline renderer and part list sized for the
+ * image's first frame (kinds 5 and 6 use the 8006be10 and 8005a474 images),
+ * 2: inline renderer); records the allocation, its size and the image. */
+SpriteTask *func_80023A48(s32 kind, s32 mode, SpriteSource *source, s32 extra, Task *owner) {
+    SpriteTask *task;
+    s32 size;
+    Sprite *sprite;
+
+    switch (mode) {
+    case 0:
+        size = 0;
+        task = func_800233A4(owner, extra);
+        func_80023950(&task->sprite);
+        break;
+    case 1:
+        if (kind == 5) {
+            source = (SpriteSource *)D_8006BE10;
+        }
+        if (kind == 6) {
+            source = (SpriteSource *)D_8005A474;
+        }
+        size = (func_8001EE74(source->frames) - 1) * 24 + 0x58;
+        task = func_800233A4(owner, size + extra);
+        func_800239F4(&task->sprite);
+        break;
+    case 2:
+        size = 0x54;
+        task = func_800233A4(owner, extra + 0x54);
+        func_80023958(&task->sprite);
+        break;
+    }
+    sprite = &task->sprite;
+    sprite->block = task;
+    sprite->size = size + 0xEC;
+    sprite->image = source;
+    return task;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80023B84);
 
@@ -713,7 +750,46 @@ Sprite *func_80024524(s32 *data, s16 x, s16 y, s16 width, s16 height, s16 unused
     return func_8002435C(sprite, data, x, y, width, height, unused);
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_800245D8);
+/* Select animation `animation` (negative: ~animation from the alternate
+ * resource): bind the resource (image size from the sequencer or 768 x 256
+ * with 800591ad set), store the animation number, apply the animation's
+ * header (80023538) and face the current angle again. */
+void func_800245D8(Sprite *sprite, s32 animation) {
+    u16 *directory;
+    u16 *table;
+
+    if (sprite->animations == NULL) {
+        sprite->script = NULL;
+        return;
+    }
+    if (sprite->resource_block == sprite->animations) {
+        sprite->b0.wordb0 &= ~0x400;
+    } else {
+        sprite->b0.wordb0 |= 0x400;
+    }
+    if (animation < 0) {
+        func_800222BC(sprite, (s32 *)sprite->resource);
+        if (D_800591AD != 0 && !func_8001EE68(((SpriteResource *)sprite->image)->section2)) {
+            ((SpriteImage *)sprite->image)->size.height = 0x100;
+            ((SpriteImage *)sprite->image)->size.width = 0x300;
+        }
+    } else {
+        func_800222BC(sprite, sprite->animations);
+        if (D_800591AD != 0) {
+            ((SpriteImage *)sprite->image)->size = ((SpriteSequencer *)sprite->sequencer)->size;
+        }
+    }
+    sprite->motion.bytes[3] = animation;
+    if (animation < 0) {
+        animation = ~animation;
+    }
+    directory = ((SpriteResource *)sprite->image)->section1;
+    table = (u16 *)(directory[animation + 1] + (s32)directory);
+    sprite->flags |= 0x100000;
+    sprite->animation = table;
+    func_80023538(sprite, table);
+    func_800223B0(sprite, sprite->word80);
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80024730);
 

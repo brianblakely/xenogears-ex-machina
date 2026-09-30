@@ -304,6 +304,7 @@ void func_80022224(SpriteResource *resource, s32 *data, SVECTOR origin, s32 mode
 void func_800222BC(Sprite *sprite, s32 *data);
 void func_800223B0(Sprite *sprite, s16 angle);
 void func_80022660(Sprite *sprite, u8 *target, s32 count);
+void func_80023538(Sprite *sprite, u16 *animation);
 void func_80022974(Sprite *sprite); /* velocity from speed and direction */
 void func_80023210(Sprite *sprite);
 void func_800245D8(Sprite *sprite, s32 value);
