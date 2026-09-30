@@ -1049,7 +1049,35 @@ void func_80076544(void) {
     }
 }
 
+/* Start the panel cursor window's opening over the member's panel (wider
+ * for a member with the 800d32a0 flag unless it is character 7). */
+#ifdef NON_MATCHING
+void func_800765C4(s32 member) {
+    u16 *panelX = &D_800C3254[D_800D3280 * 3 + member];
+
+    D_800D2D28->unk44 = 0x1C;
+    D_800D2D28->unk34 = member * 0x60 + (*panelX + 0x48);
+    if (D_800D32A0[member].unk1 != 0 && D_800D2D24[member] != 7) {
+        D_800D2D28->unk44 = 0x24;
+        D_800D2D28->unk34 = member * 0x60 + (*panelX + 0x44);
+    }
+    D_800D2D28->unk3C = 0x10;
+    D_800D2D28->unk4C = 0x98;
+    D_800D2D28->unk54 = D_800D2D28->unk34 - (D_800D2D28->unk3C + 5);
+    D_800D2D28->unk5C = D_800D2D28->unk4C - (D_800D2D28->unk44 + 5);
+    D_800D2D28->unk54 = (D_800D2D28->unk54 << 8) / D_800D2D28->unk5C;
+    D_800D2D28->unk104 = 0x800;
+    D_800D2D28->unkA9 = 6;
+    D_800D2D28->unk5C = 0x100;
+    D_800D2D28->unk64 = 0;
+    D_800D2D28->unk6C = 0;
+    D_800D2D28->unk106 = 0;
+    D_800D2D28->unkAB = 1;
+    D_800D2D28->unk90[member]--;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800765C4);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80076710);
 

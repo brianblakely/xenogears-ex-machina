@@ -44,12 +44,28 @@ extern TurnState *D_800C3EAC;
 typedef struct {
     u8 unk0[0x30];
     u32 unk30;         /* CLUT cycle position */
-    u8 unk34[0x7B - 0x34];
+    s32 unk34;         /* +0x34 panel cursor window: x */
+    s32 unk38;
+    s32 unk3C;         /* y */
+    s32 unk40;
+    s32 unk44;         /* width */
+    s32 unk48;
+    s32 unk4C;         /* height */
+    s32 unk50;
+    u32 unk54;         /* x step (8.8) */
+    s32 unk58;
+    u32 unk5C;         /* step count */
+    s32 unk60;
+    s32 unk64;
+    s32 unk68;
+    s32 unk6C;
+    u8 unk70[0x7B - 0x70];
     u8 unk7B;          /* AP text part count */
     u8 reaction[3];    /* +0x7C */
     u8 unk7F[0x8E - 0x7F];
     u8 unk8E;
-    u8 unk8F[0x93 - 0x8F];
+    u8 unk8F;
+    u8 unk90[3];       /* per party member */
     u8 unk93[3];
     u8 unk96;          /* file 3 block loaded */
     u8 unk97;          /* selected list row */
@@ -90,6 +106,9 @@ typedef struct {
     s32 unkF8;
     s32 unkFC;
     s32 unk100;
+    u16 unk104;
+    u16 unk106;
+    u8 unk108[4];
 } BattleUi;
 
 extern BattleUi *D_800D2D28;
@@ -388,7 +407,7 @@ extern s32 D_800D3288;
 extern u8 D_800D39D4;
 extern u16 D_800C3608;     /* slots that still count while down */
 extern u8 D_800D3280;      /* party panel layout */
-extern s16 D_800C3254[]; /* party panel x: [layout * 3 + member] */
+extern u16 D_800C3254[]; /* party panel x: [layout * 3 + member] */
 extern s16 D_800C3068[]; /* party panel glyph x: [member * 24 + glyph] */
 extern s16 D_800C3076[]; /* party panel name glyph x: [member * 24 + glyph] */
 extern u8 D_800D2D88[5];   /* name glyph codes */
