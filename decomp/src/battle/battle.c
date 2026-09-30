@@ -91,7 +91,7 @@ void func_8007171C(void) {
             if ((flags & 0x80) || (D_800CCCE8[slot].flags80 & 0x1000)) {
                 continue;
             }
-            timer = &D_800D2E06[slot];
+            timer = &D_800D2DF0[1][slot];
             if ((*timer -= step) <= 0) {
                 *ready = 1;
                 *timer = 0;
@@ -100,17 +100,91 @@ void func_8007171C(void) {
     }
 }
 
+/* Reload the acting slot's turn timer and clear its ready flag. */
+#ifdef NON_MATCHING
+void func_800718BC(void) {
+    u8 actor = D_800C3EAC->actor;
+
+    if (D_800D2DE4[actor] != 0xFF) {
+        D_800D2DE4[actor] = 0;
+    }
+    D_800D2DF0[1][D_800C3EAC->actor] = func_80098AF8(D_800C3EAC->actor, 0);
+    D_800D2DF0[0][D_800C3EAC->actor] = D_800D2DF0[1][D_800C3EAC->actor];
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800718BC);
+#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80071964);
+/* Render the pending battle message into its image, upload it and hold it
+ * for three frames. */
+void func_80071964(void) {
+    s32 frames;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80071A08);
+    if (D_800D2CAF != 0 && (D_800D2C94 & D_800C48E8) == 0) {
+        frames = 3;
+        D_800D39B8.width = func_80034EAC(func_80033728(D_800D39F0, D_800D2CAF),
+                                         D_800D39B8.pixels, 0x39, 1);
+        func_80044894(&D_800D39B8.rect, D_800D39B8.pixels);
+        do {
+            frames--;
+            func_800716D8();
+        } while (frames != 0);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80071A38);
+/* Clear the party's reaction flags. */
+void func_80071A08(void) {
+    s32 i;
 
+    for (i = 0; i < 3; i++) {
+        D_800C3EAC->reaction[i] = 0;
+    }
+}
+
+/* Publish the party's reaction flags to the UI, then wait a frame. */
+void func_80071A38(void) {
+    s32 i;
+
+    for (i = 0; i < 3; i++) {
+        D_800D2D28->reaction[i] = D_800C3EAC->reaction[i];
+    }
+    func_800716D8();
+}
+
+/* Reset the eight 0x60-byte entries at 800d3720 and two UI bytes, then wait a
+ * frame. */
+#ifdef NON_MATCHING
+void func_80071A8C(void) {
+    s32 i;
+
+    for (i = 7; i >= 0; i--) {
+        D_800D3720[i].unk5 = 0;
+    }
+    D_800D2D28->unkB5 = 0;
+    D_800D2D28->unkB4 = 0;
+    func_800716D8();
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80071A8C);
+#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80071AE0);
+/* Show the pending battle message (window 7) until a button is pressed or
+ * 59 frames pass. */
+void func_80071AE0(void) {
+    s32 frames;
+
+    if (D_800D2CAF != 0 && (D_800D2C94 & D_800C48E8) == 0) {
+        func_80079E18(7);
+        frames = 0x3B;
+        D_800C3EAC->eventsDone = 0;
+        do {
+            func_800716D8();
+        } while (D_800D3014 == 8 && --frames != 0);
+        D_800C3EAC->eventsDone = 1;
+        func_80079E4C(7);
+        func_800716D8();
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80071B94);
 

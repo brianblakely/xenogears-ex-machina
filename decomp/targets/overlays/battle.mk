@@ -7,8 +7,3 @@ IMAGE := .local/decomp/build/battle.bin
 LINKER_SCRIPT := .local/decomp/battle/battle.ld
 LINKER_EXTRA := .local/decomp/battle/undefined_syms_auto.txt .local/decomp/battle/undefined_funcs_auto.txt
 SOURCE_DIRS := decomp/src/battle
-# battle.c's code expands `li` to `ori $r, $zero, imm` (maspsx: ASPSX before
-# 2.50) and indexed symbol accesses to `lui/addu $at` without addiu (2.30 or
-# later). maspsx behaves identically for any version in [2.30, 2.50); 2.30
-# selects that behaviour and is not a claim about the exact original ASPSX.
-$(ROOT)/$(BUILD)/decomp/src/battle/battle.o: MASPSXFLAGS := --aspsx-version=2.30
