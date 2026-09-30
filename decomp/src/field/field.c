@@ -1,24 +1,72 @@
 #include "common.h"
+#include "field.h"
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8006FDEC);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007008C);
+/* Decode bundle component `index` into `destination`. */
+void func_8007008C(s32 unused, s32 index, void *destination) {
+    func_80032EB4(index, destination);
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800700B0);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80070340);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80070488);
+/* Start the map's own stream (file 0xb9 + 2 * map) into a four-sector ring,
+ * unless one already runs. */
+void func_80070488(void) {
+    void *ring;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80070508);
+    if (D_800ADB60 == 0) {
+        D_800ADB60 = 1;
+        D_800ADC14 = ring = func_8002A260(4, 1);
+        func_80029EB0((D_8004F34C & 0xFFF) * 2 + 0xB9, ring, 0, 0, 0, 0, 0, 0, 0, 0);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80070560);
+/* Stop the field stream and release its ring, then continue with 80078c5c. */
+void func_80070508(void) {
+    if (D_800ADB60 == 1) {
+        func_80028A60(0);
+        func_800445D0(0);
+        func_800320E8(D_800ADC14);
+        D_800ADB60 = 0;
+    }
+    func_80078C5C();
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80070594);
+/* Widen a short vector to 16.16 fixed point. */
+void func_80070560(VECTOR *out, SVECTOR *in) {
+    out->vx = in->vx << 16;
+    out->vy = in->vy << 16;
+    out->vz = in->vz << 16;
+}
+
+/* Identity rotation with a zero translation. */
+void func_80070594(MATRIX *m) {
+    SVECTOR angles;
+
+    angles.vx = 0;
+    angles.vy = 0;
+    angles.vz = 0;
+    func_8003F738(&angles, m);
+    m->t[2] = 0;
+    m->t[1] = 0;
+    m->t[0] = 0;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800705DC);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80070C84);
+/* Reset the three slots at 800b06a4 and clear 800adb0c. */
+void func_80070C84(void) {
+    s32 i;
+
+    for (i = 0; i < 3; i++) {
+        D_800B06A4[i].a = 0xFF;
+        D_800B06A4[i].b = 0xFF;
+    }
+    D_800ADB0C = 0;
+}
 
 INCLUDE_RODATA(".local/decomp/field/asm/nonmatchings/field", D_8006FAF0);
 

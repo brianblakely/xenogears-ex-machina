@@ -7,3 +7,6 @@ IMAGE := .local/decomp/build/field.bin
 LINKER_SCRIPT := .local/decomp/field/field.ld
 LINKER_EXTRA := .local/decomp/field/undefined_syms_auto.txt .local/decomp/field/undefined_funcs_auto.txt
 SOURCE_DIRS := decomp/src/field
+# The overlay's assembler expands `li` of a positive constant to `ori` (2905
+# such loads, none as `addiu`): maspsx's ASPSX-before-2.50 behaviour.
+override MASPSXFLAGS := --aspsx-version=2.34
