@@ -30,7 +30,7 @@ typedef struct {
     s16 field1E;          /* 0x1E */
     u8 slot;              /* 0x20 */
     u8 slot2;             /* 0x21 */
-    u8 pad22;
+    u8 field22; /* 0x22 */
     u8 field23;  /* 0x23 */
     s16 scale24; /* 0x24 */
     s16 scale26; /* 0x26 */

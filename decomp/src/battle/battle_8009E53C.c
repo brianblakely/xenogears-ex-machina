@@ -17,7 +17,7 @@
 #include "scene.h"
 #include "gte.h"
 #include "mesh.h"
-#include "sound.h"
+#include "files.h"
 
 /* Whether gear part 50 + index is one of the parts of character 4's gear. */
 s32 func_8009E53C(u8 index) {
@@ -1181,47 +1181,47 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A8B
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A8BF0);
 
-/* Load the sound banks of combatant slot's gear into a new zero-terminated
- * list D_800C3B78: its set's banks base + 1 and base + 2, and base + 2 +
- * the gear's sound variant when the set has that many. */
+/* Read the files of combatant slot's gear from directory 0x28 (D_800C3508)
+ * into new buffers, listed in D_800C3B78: base + 1, base + 2 and, when the
+ * gear's variant is within the gear's count, base + 2 + variant. */
 void func_800A9540(s32 slot) {
     s32 saved0;
     s32 saved1;
     u8 gearId;
     s32 variant;
-    SoundBank *end;
-    SoundBank *banks;
+    DiscFile *entry;
+    DiscFile *files;
     s32 base;
-    s32 bank;
+    s32 file;
 
     func_800284B4(&saved0, &saved1);
     func_80028470(0x28, 1);
     func_80032498(4, 0);
     gearId = D_800CCCE8.records[slot].pilot.gearId;
-    variant = D_800CCCE8.records[slot].gear.soundVariant;
+    variant = D_800CCCE8.records[slot].gear.fileVariant;
     if (D_800C3508[gearId * 2 + 1] < variant) {
         variant = 0;
     }
-    banks = func_80031BDC(sizeof(SoundBank) * 4, 1);
-    D_800C3B78 = (SoundBanks *)banks;
+    files = func_80031BDC(sizeof(DiscFile) * 4, 1);
+    D_800C3B78 = (SoundBanks *)files;
     base = D_800C3508[gearId * 2];
-    bank = base + 1;
-    end = banks;
-    end->id = bank;
-    end->data = func_80031BDC(func_800288EC(bank), 1);
-    end++;
-    bank = base + 2;
-    end->id = bank;
-    end->data = func_80031BDC(func_800288EC(bank), 0);
-    end++;
+    file = base + 1;
+    entry = files;
+    entry->file = file;
+    entry->data = func_80031BDC(func_800288EC(file), 1);
+    entry++;
+    file = base + 2;
+    entry->file = file;
+    entry->data = func_80031BDC(func_800288EC(file), 0);
+    entry++;
     if (variant != 0) {
-        bank += variant;
-        end->id = bank;
-        end->data = func_80031BDC(func_800288EC(bank), 1);
-        end++;
+        file += variant;
+        entry->file = file;
+        entry->data = func_80031BDC(func_800288EC(file), 1);
+        entry++;
     }
-    end->id = 0;
-    end->data = NULL;
+    entry->file = 0;
+    entry->data = NULL;
     func_80029AFC(D_800C3B78, 0, 0);
     func_80028470(saved0, saved1);
 }
@@ -1253,7 +1253,65 @@ void func_800A96B4(s32 set) {
     func_80028470(saved0, saved1);
 }
 
+#ifdef NON_MATCHING
+/* Create stage object index from the gear files read by 800A9540 (its model
+ * file and images) at x, y, z, facing angle; with a variant file, also its
+ * extra parts as objects 2 * index + 13 + k attached to parts of the gear,
+ * then free the files. Nonmatching: GCC hoists index * 2 + 13 out of the
+ * loop and spills angle instead of y and z. */
+void func_800A979C(s32 index, s16 x, s16 y, s16 z, s16 angle) {
+    GearPartFile *parts;
+    s16 *entry;
+    s32 count;
+    s32 size;
+    void *model;
+    s32 k;
+    s32 flags;
+    s32 slot;
+
+    func_800A8BF0(index, 0, D_800C3B78->data1, D_800C3B78->data0, x, y, z, angle, NULL);
+    D_800D3368[index]->field38 = 1;
+    D_800D3368[index]->field22 = 1;
+    parts = (GearPartFile *)D_800C3B78->field14;
+    if (parts != NULL) {
+        func_8003342C(parts);
+        entry = parts->table;
+        count = *entry;
+        entry += 2;
+        if (count != 0) {
+            size = parts->end - parts->model;
+            model = func_80031BDC(size, 0);
+            memcpy(model, parts->model, size);
+            for (k = 0; k < count; k++) {
+                flags = 7;
+                if (k == 0) {
+                    flags = 2;
+                }
+                if (k == count - 1) {
+                    flags -= 2;
+                }
+                slot = index * 2 + (k + 13);
+                func_800A8BF0(slot, flags, model, parts->end, x, y, z, angle, NULL);
+                D_800D3368[slot]->parentPart = *entry++;
+                D_800D3368[slot]->field5C = index;
+                D_800D3368[slot]->field5D = 2;
+                D_800D3368[slot]->field36 = 1;
+                D_800D3368[slot]->offset2[0] = *entry++;
+                D_800D3368[slot]->offset2[1] = *entry++;
+                D_800D3368[slot]->offset2[2] = *entry++;
+            }
+        } else {
+            func_8002DDE4(parts->model, 1, x, y, 1, z, angle);
+        }
+        func_800320E8(parts);
+    }
+    func_800320E8(D_800C3B78);
+    DrawSync(0);
+    func_800320E8(D_800C3B78->data0);
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A979C);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A9A50);
 
