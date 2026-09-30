@@ -397,6 +397,9 @@ extern s32 D_8009BBC4;
 typedef struct {
     u8 pad0[4];
     u16 count;
+    u16 pad6;
+    u8 pad8[0x2C];
+    s32 size; /* 0x34: primitive bytes */
 } SpriteDef;
 
 typedef struct SceneObject {
@@ -806,6 +809,29 @@ extern s16 D_8009D618[25]; /* 5x5 visible blocks; -1 empty */
 extern s16 D_8009BE04;     /* quads used this frame */
 MATRIX *RotMatrixZ(s32 angle, MATRIX *m);
 void func_80099BFC(u8 *data, s32 count, u32 *ot, PolyFT4 *quads);
+
+/* Scene object placement (16 bytes; the list follows a count halfword). */
+typedef struct {
+    u16 def;
+    u16 flags;
+    s16 x, y, z;
+    s16 ax, ay, az;
+} ScenePlacement;
+
+/* Sprite definitions after a 16-byte header. */
+typedef struct {
+    u8 header[0x10];
+    SpriteDef defs[1];
+} SpriteDefTable;
+
+extern s16 D_8009BD28; /* animation count */
+extern s32 D_8009C16C, D_8009C840;
+extern MATRIX D_8009A140, D_8009A160; /* colour and light matrices */
+s32 func_8002C3E8(void *defs);
+void func_8002CB54(SpriteDef *def, void **prims, void **prims2, SceneObject *object);
+void func_8002C8CC(SpriteDef *def, void *prims, s32 mode);
+void SetColorMatrix(MATRIX *m);
+void SetLightMatrix(MATRIX *m);
 
 #define gte_ldv0(r0) \
     __asm__ volatile("lwc2 $0, 0(%0);" \

@@ -63,7 +63,52 @@ void func_8008440C(void) {
     func_800320E8(source);
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80084580);
+/* Build the scene objects from the area's placement list: resolve the
+ * animation offsets, then place, orient and build each object's
+ * primitives (two buffers) from its sprite definition. */
+void func_80084580(void) {
+    ScenePlacement *placement;
+    s32 *base;
+    s32 *offsets;
+    s32 i;
+
+    i = 0;
+    D_8009BD28 = func_8002C3E8(D_8009CD48);
+    base = D_8009D308;
+    offsets = base + 1;
+    D_8009D308 = offsets;
+    for (; i < D_8009BD28; i++) {
+        offsets[i] = (s32)base + offsets[i];
+    }
+    D_8009D7E0 = *(s16 *)D_8009BD30;
+    D_8009C620 = func_80031BDC(D_8009D7E0 * sizeof(SceneObject), 0);
+    placement = (ScenePlacement *)((u8 *)D_8009BD30 + 2);
+    SetColorMatrix(&D_8009A140);
+    SetLightMatrix(&D_8009A160);
+    for (i = 0; i < D_8009D7E0; i++, placement++) {
+        D_8009C620[i].visible = 0;
+        D_8009C620[i].unk2 = placement->def;
+        D_8009C620[i].flags = placement->flags;
+        D_8009C620[i].position.vx = placement->x;
+        D_8009C620[i].position.vy = placement->y;
+        D_8009C620[i].position.vz = -placement->z;
+        D_8009C620[i].angle.vx = placement->ax;
+        D_8009C620[i].angle.vy = placement->ay;
+        D_8009C620[i].angle.vz = placement->az;
+        func_8004A92C(&D_8009C620[i].angle, &D_8009C620[i].matrix);
+        D_8009C620[i].def = &((SpriteDefTable *)D_8009CD48)->defs[D_8009C620[i].unk2];
+        func_8002CB54(D_8009C620[i].def, &D_8009C620[i].prims, &D_8009C620[i].prims2, &D_8009C620[i]);
+        func_8002C8CC(D_8009C620[i].def, D_8009C620[i].prims, 1);
+        memcpy(D_8009C620[i].prims2, D_8009C620[i].prims, D_8009C620[i].def->size);
+        D_8009C620[i].unk44 = ((s32 *)D_8009D308)[D_8009C620[i].unk2];
+        ((s32 *)D_8009C620[i].unk44)[1] = D_8009C620[i].unk44 + ((s32 *)D_8009C620[i].unk44)[1];
+        D_8009C620[i].parent = NULL;
+    }
+    D_80050100 = 2;
+    D_8009C16C = -1;
+    D_8009C840 = -1;
+    D_8009C620[4].visible = 1;
+}
 
 /* Free the scene objects' primitives and definitions, then the objects. */
 void func_80084818(void) {
