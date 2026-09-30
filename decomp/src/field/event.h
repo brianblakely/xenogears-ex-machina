@@ -114,6 +114,35 @@ typedef struct FieldSettings {
 
 extern FieldSettings D_800B2174;
 
+typedef union {
+    u32 word;
+    u8 bytes[4];
+} Attribute;
+
+/* Field scene block at 800afa64 (meanings from src/reconstruction/
+ * original_layout.cpp and src/analysis/field_memory.cpp). Addressed as one
+ * aggregate: the original derives member addresses from each other. */
+typedef struct FieldScene {
+    MATRIX scaled_world;            /* a64 */
+    MATRIX unkA84;                  /* a84 */
+    MATRIX world;                   /* aa4 */
+    s32 scale;                      /* ac4 */
+    u8 lights[0x3C];                /* ac8 */
+    s16 back_color[3];              /* b04 */
+    u8 unkB0A[0xB10 - 0xB0A];
+    FieldDescriptor *descriptors;   /* b10 */
+    s32 unkB14;                     /* b14 */
+    void *collision;                /* b18 */
+    s32 unkB1C;                     /* b1c */
+    Attribute *attributes;          /* b20 */
+    void *triangles[4];             /* b24 */
+    void *vertices[4];              /* b34 */
+    s32 triangle_counts[4];         /* b44 */
+    s16 layer_count;                /* b54 */
+} FieldScene;
+
+extern FieldScene D_800AFA64;
+
 /* Trigger zone (field component 8): four x, y, z corners. */
 typedef struct {
     s16 x;
@@ -130,7 +159,6 @@ extern s32 D_800B226C;              /* controlled actor index */
 s32 func_8004A70C(s32 a, s32 b, s32 point); /* side of edge a-b */
 
 extern u8 *D_800ADC00;              /* event bytecode */
-extern FieldDescriptor *D_800AFB10; /* descriptor table */
 extern s32 D_800AFD1C;              /* current actor index */
 extern FieldActor *D_800B0078;      /* current actor */
 extern s32 D_800B00C0;              /* yield: stop this actor's batch */

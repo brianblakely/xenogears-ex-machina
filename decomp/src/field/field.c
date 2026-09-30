@@ -786,7 +786,7 @@ void func_8008F0B4(void) {
 
     index = func_8009CDB4(2);
     if (index != 0xFF) {
-        actor = D_800AFB10[index].actor;
+        actor = D_800AFA64.descriptors[index].actor;
         if (EVENT_OPERAND_BYTE(1) & 1) {
             actor->color0[0] = func_800ACDEC(3);
             actor->color0[1] = func_800ACDEC(5);
@@ -822,7 +822,7 @@ void func_80023290(FieldModel *model, s32 value);
 void func_8008F2D8(void) {
     s32 value = func_800ACDEC(1);
 
-    func_80023290(D_800AFB10[D_800AFD1C].model, value);
+    func_80023290(D_800AFA64.descriptors[D_800AFD1C].model, value);
     D_800B0078->pc += 3;
 }
 
@@ -1152,7 +1152,7 @@ void func_8008FE2C(void) {
 void func_8008FF04(void) {
     FieldActor *actor;
 
-    actor = D_800AFB10[func_8009CD7C(1)].actor;
+    actor = D_800AFA64.descriptors[func_8009CD7C(1)].actor;
     D_800AF900.vx.value = actor->position[0].value;
     D_800AF900.vy.value = actor->position[1].value;
     D_800AF900.vz.value = actor->position[2].value;
@@ -1191,7 +1191,7 @@ void func_800900C4(void) {
 void func_8009019C(void) {
     FieldActor *actor;
 
-    actor = D_800AFB10[func_8009CD7C(1)].actor;
+    actor = D_800AFA64.descriptors[func_8009CD7C(1)].actor;
     D_800AF920.vx.value = actor->position[0].value;
     D_800AF920.vy.value = actor->position[1].value;
     D_800AF920.vz.value = actor->position[2].value;
@@ -1601,7 +1601,7 @@ void func_80091E98(void) {
     FieldActor *actor;
 
     if (func_8009CDB4(1) != 0xFF) {
-        actor = D_800AFB10[func_8009CDB4(1)].actor;
+        actor = D_800AFA64.descriptors[func_8009CDB4(1)].actor;
         actor->unk134 = (actor->unk134 & ~0x60) | ((func_8009CF78(2, EVENT_OPERAND_BYTE(6)) & 3) << 5);
         actor->unkEE = func_8009CFBC(4, EVENT_OPERAND_BYTE(6));
     }
@@ -1619,7 +1619,7 @@ void func_80091F84(void) {
     if (value >= 0x1000) {
         value = 0xFFF;
     }
-    if (D_800AFB10[D_800AFD1C].flags & 0x2000) {
+    if (D_800AFA64.descriptors[D_800AFD1C].flags & 0x2000) {
         D_800B0078->words[index] = value;
     }
     D_800B0078->pc += 5;
@@ -1725,23 +1725,18 @@ void func_80092404(void) {
     D_800B0078->pc += 1;
 }
 
-typedef union {
-    u32 word;
-    u8 bytes[4];
-} Attribute;
-extern Attribute *D_800AFB20;
 
 /* Return byte `which` of collision attribute `index`. */
 s32 func_80092424(s32 index, s32 which) {
     switch (which) {
     case 0:
-        return D_800AFB20[index].bytes[0];
+        return D_800AFA64.attributes[index].bytes[0];
     case 1:
-        return D_800AFB20[index].bytes[1];
+        return D_800AFA64.attributes[index].bytes[1];
     case 2:
-        return D_800AFB20[index].bytes[2];
+        return D_800AFA64.attributes[index].bytes[2];
     case 3:
-        return D_800AFB20[index].bytes[3];
+        return D_800AFA64.attributes[index].bytes[3];
     }
     return 0;
 }
@@ -1750,19 +1745,19 @@ s32 func_80092424(s32 index, s32 which) {
 void func_800924D4(s32 index, s32 which, s32 value) {
     switch (which) {
     case 0:
-        D_800AFB20[index].word = (D_800AFB20[index].word & ~0xFF) | value;
+        D_800AFA64.attributes[index].word = (D_800AFA64.attributes[index].word & ~0xFF) | value;
         break;
     case 1:
         value <<= 8;
-        D_800AFB20[index].word = (D_800AFB20[index].word & 0xFFFF00FF) | value;
+        D_800AFA64.attributes[index].word = (D_800AFA64.attributes[index].word & 0xFFFF00FF) | value;
         break;
     case 2:
         value <<= 16;
-        D_800AFB20[index].word = (D_800AFB20[index].word & 0xFF00FFFF) | value;
+        D_800AFA64.attributes[index].word = (D_800AFA64.attributes[index].word & 0xFF00FFFF) | value;
         break;
     case 3:
         value <<= 24;
-        D_800AFB20[index].word = (D_800AFB20[index].word & 0x00FFFFFF) | value;
+        D_800AFA64.attributes[index].word = (D_800AFA64.attributes[index].word & 0x00FFFFFF) | value;
         break;
     }
 }
@@ -2228,9 +2223,9 @@ void func_80093E30(void) {
             D_800B0078->unkE2++;
             if (D_800B0078->unkE2 < 31) {
                 if (EVENT_OPERAND_BYTE(1) == 0) {
-                    D_800AFB10[D_800AFD1C].rotation.vy += 0x20;
+                    D_800AFA64.descriptors[D_800AFD1C].rotation.vy += 0x20;
                 } else {
-                    D_800AFB10[D_800AFD1C].rotation.vy -= 0x20;
+                    D_800AFA64.descriptors[D_800AFD1C].rotation.vy -= 0x20;
                 }
             } else {
                 D_800B0078->unkE2 = 0;
@@ -2261,9 +2256,9 @@ void func_80093FC0(void) {
             D_800B0078->unkE2++;
             if (D_800B0078->unkE2 < 31) {
                 if (EVENT_OPERAND_BYTE(1) == 0) {
-                    D_800AFB10[D_800AFD1C].rotation.vy -= 0x20;
+                    D_800AFA64.descriptors[D_800AFD1C].rotation.vy -= 0x20;
                 } else {
-                    D_800AFB10[D_800AFD1C].rotation.vy += 0x20;
+                    D_800AFA64.descriptors[D_800AFD1C].rotation.vy += 0x20;
                 }
             } else {
                 D_800B0078->unkE2 = 0;
@@ -2339,7 +2334,7 @@ void func_800947B0(void) {
     FieldDescriptor *descriptor;
 
     if (func_8009CDB4(2) != 0xFF) {
-        descriptor = &D_800AFB10[func_8009CDB4(2)];
+        descriptor = &D_800AFA64.descriptors[func_8009CDB4(2)];
         switch (EVENT_OPERAND_BYTE(1)) {
         case 0:
             descriptor->rotation.vx += func_800ACDEC(3);
@@ -2369,13 +2364,13 @@ void func_800947B0(void) {
 void func_80094918(void) {
     switch (EVENT_OPERAND_BYTE(3)) {
     case 0:
-        D_800AFB10[D_800AFD1C].rotation.vx = func_800ACDEC(1);
+        D_800AFA64.descriptors[D_800AFD1C].rotation.vx = func_800ACDEC(1);
         break;
     case 1:
-        D_800AFB10[D_800AFD1C].rotation.vy = func_800ACDEC(1);
+        D_800AFA64.descriptors[D_800AFD1C].rotation.vy = func_800ACDEC(1);
         break;
     case 2:
-        D_800AFB10[D_800AFD1C].rotation.vz = func_800ACDEC(1);
+        D_800AFA64.descriptors[D_800AFD1C].rotation.vz = func_800ACDEC(1);
         break;
     }
     D_800B0078->pc += 4;
@@ -2387,7 +2382,7 @@ void func_80094A5C(void) {
     s32 delta;
 
     delta = func_800ACDEC(1);
-    D_800AFB10[D_800AFD1C].rotation.vx += delta;
+    D_800AFA64.descriptors[D_800AFD1C].rotation.vx += delta;
     D_800B0078->pc += 3;
     func_80072254(D_800AFD1C);
 }
@@ -2397,7 +2392,7 @@ void func_80094ACC(void) {
     s32 delta;
 
     delta = func_800ACDEC(1);
-    D_800AFB10[D_800AFD1C].rotation.vx -= delta;
+    D_800AFA64.descriptors[D_800AFD1C].rotation.vx -= delta;
     D_800B0078->pc += 3;
     func_80072254(D_800AFD1C);
 }
@@ -2407,7 +2402,7 @@ void func_80094B3C(void) {
     s32 delta;
 
     delta = func_800ACDEC(1);
-    D_800AFB10[D_800AFD1C].rotation.vy += delta;
+    D_800AFA64.descriptors[D_800AFD1C].rotation.vy += delta;
     D_800B0078->pc += 3;
     func_80072254(D_800AFD1C);
 }
@@ -2417,7 +2412,7 @@ void func_80094BAC(void) {
     s32 delta;
 
     delta = func_800ACDEC(1);
-    D_800AFB10[D_800AFD1C].rotation.vy -= delta;
+    D_800AFA64.descriptors[D_800AFD1C].rotation.vy -= delta;
     D_800B0078->pc += 3;
     func_80072254(D_800AFD1C);
 }
@@ -2427,7 +2422,7 @@ void func_80094C1C(void) {
     s32 delta;
 
     delta = func_800ACDEC(1);
-    D_800AFB10[D_800AFD1C].rotation.vz += delta;
+    D_800AFA64.descriptors[D_800AFD1C].rotation.vz += delta;
     D_800B0078->pc += 3;
     func_80072254(D_800AFD1C);
 }
@@ -2437,7 +2432,7 @@ void func_80094C8C(void) {
     s32 delta;
 
     delta = func_800ACDEC(1);
-    D_800AFB10[D_800AFD1C].rotation.vz -= delta;
+    D_800AFA64.descriptors[D_800AFD1C].rotation.vz -= delta;
     D_800B0078->pc += 3;
     func_80072254(D_800AFD1C);
 }
@@ -2644,7 +2639,7 @@ void func_80095284(void) {
     FieldModel *model;
     u16 state;
 
-    model = D_800AFB10[D_800AFD1C].model;
+    model = D_800AFA64.descriptors[D_800AFD1C].model;
     D_800B00C0 = 1;
     D_800B0078->unk30[0] = 0;
     D_800B0078->unk30[1] = 0;
@@ -2678,7 +2673,7 @@ void func_8009533C(void) {
     s32 c;
     s32 d;
 
-    player = D_800AFB10[D_800B226C].actor;
+    player = D_800AFA64.descriptors[D_800B226C].actor;
     point = (player->position[2].s.whole << 16) + player->position[0].s.whole;
     zone = &D_800ADBF4[EVENT_OPERAND_BYTE(1)];
     a = (zone->corner[0].z << 16) + zone->corner[0].x;
@@ -2712,7 +2707,7 @@ void func_80095520(void) {
     s32 c;
     s32 d;
 
-    player = D_800AFB10[D_800B226C].actor;
+    player = D_800AFA64.descriptors[D_800B226C].actor;
     zone = &D_800ADBF4[EVENT_OPERAND_BYTE(1)];
     if (zone->corner[0].y < player->position[1].s.whole &&
         player->position[1].s.whole - player->height < zone->corner[0].y) {
@@ -2749,7 +2744,7 @@ void func_80095734(void) {
     s32 c;
     s32 d;
 
-    player = D_800AFB10[D_800B226C].actor;
+    player = D_800AFA64.descriptors[D_800B226C].actor;
     point = (player->position[2].s.whole << 16) + player->position[0].s.whole;
     zone = &D_800ADBF4[EVENT_OPERAND_BYTE(1)];
     a = (zone->corner[0].z << 16) + zone->corner[0].x;
