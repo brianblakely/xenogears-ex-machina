@@ -328,7 +328,21 @@ void func_80039DB8(s32 code);
 void func_8008F8F4(s32 id, u16 x, u16 y, u16 width, u16 height, s32 style, s32 arg6); /* open a window */
 void func_8008FA60(s32 id);     /* close a window */
 void func_80076D58(POLY_FT4 *prims, s32 arg1, s32 arg2);
-void func_80076C78(POLY_FT4 *prim, s32 x, s32 y, u8 arg3, u8 arg4, u8 arg5);
+void func_80076C78(POLY_FT4 *prim, u16 x, u16 y, u8 u, u8 v, u8 width);
+
+typedef struct {
+    s16 x, y, w, h;
+} RECT;
+
+void *func_8008AC00(s32 kind);                  /* allocate a text image */
+s32 func_80034EAC(void *text, void *image, s32 mode, s32 flags); /* render text */
+void func_800769E8(RECT *rect, void *image);   /* load an image to VRAM */
+void func_800320E8(void *block);                /* heap release */
+void *func_80033848(u8 id);                     /* item names per list */
+void *func_800337E8(u8 id);
+void *func_80033818(u8 id);
+void *func_80033A5C(u8 id);
+void *func_80033A2C(u8 id);
 
 /* The spoils window: experience and gold digits, the item icons. */
 extern u8 D_800C3CDC[];       /* digit buffer view (see D_800C3CF1) */
