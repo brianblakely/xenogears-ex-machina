@@ -1248,7 +1248,82 @@ void func_8007500C(void) {
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007500C);
 #endif
 
+/* Size and colour each member's gauge shade in the current draw buffer:
+ * panel state 1 shows the 800d32a0 value (green, two pixels per point),
+ * state 2 the gear's fuel over 56 pixels (blue, yellow below a quarter,
+ * pale red below an eighth).
+ * Nonmatching: address operand order and register allocation. */
+#ifdef NON_MATCHING
+void func_80075168(void) {
+    s32 i;
+    u16 fuel;
+    u16 maxFuel;
+    s32 width;
+    u16 *panelX;
+
+    for (i = 0; i < 3; i++) {
+        switch (PANEL_GRAPHICS->panels[i].state) {
+        case 1:
+            panelX = &D_800C3254[D_800D3280 * 3 + i];
+            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].x0 = i * 0x60 + (*panelX + 0x28);
+            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].y0 = 0x22;
+            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].x1 =
+                i * 0x60 + (*panelX + 0x28) + D_800D32A0[i].unk0 * 2;
+            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].y1 = 0x22;
+            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].x2 = i * 0x60 + (*panelX + 0x28);
+            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].y2 = 0x26;
+            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].x3 =
+                i * 0x60 + (*panelX + 0x28) + D_800D32A0[i].unk0 * 2;
+            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].y3 = 0x26;
+            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].r0 = 0;
+            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].g0 = 0xFF;
+            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].b0 = 0;
+            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].r1 = 0;
+            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].g1 = 0xFF;
+            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].b1 = 0;
+            break;
+        case 2:
+            fuel = D_800CCCE8.records[i].gear.fuel;
+            maxFuel = D_800CCCE8.records[i].gear.maxFuel;
+            panelX = &D_800C3254[D_800D3280 * 3 + i];
+            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].x0 = i * 0x60 + (*panelX + 0x28);
+            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].y0 = 0x22;
+            width = (u32)(fuel * 100) / maxFuel * 5600 / 10000;
+            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].x1 = i * 0x60 + 0x28 + *panelX + width;
+            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].y1 = 0x22;
+            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].x2 = i * 0x60 + (*panelX + 0x28);
+            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].y2 = 0x26;
+            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].x3 = i * 0x60 + 0x28 + *panelX + width;
+            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].y3 = 0x26;
+            if (fuel >= maxFuel >> 2) {
+                PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].r0 = 0;
+                PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].g0 = 0;
+                PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].b0 = 0xFF;
+                PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].r1 = 0;
+                PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].g1 = 0;
+                PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].b1 = 0xFF;
+            } else if (fuel >= maxFuel >> 3) {
+                PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].r0 = 0xFF;
+                PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].g0 = 0xFF;
+                PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].b0 = 0;
+                PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].r1 = 0xFF;
+                PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].g1 = 0xFF;
+                PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].b1 = 0;
+            } else {
+                PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].r0 = 0xFF;
+                PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].g0 = 0x7F;
+                PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].b0 = 0x7F;
+                PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].r1 = 0xFF;
+                PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].g1 = 0x7F;
+                PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].b1 = 0x7F;
+            }
+            break;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80075168);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80075938);
 
