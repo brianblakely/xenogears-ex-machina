@@ -742,9 +742,63 @@ void func_801E1370(u8 id, u8 count, u8 *ids, u8 *counts, u8 size) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E1444);
+/* Add eight drops (ids, counts and inventory list categories) to the
+ * inventory. */
+void func_801E1444(u8 *ids, u8 *counts, u8 *categories) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E1590);
+    for (i = 0; i < 8; i++) {
+        if (ids[i] != 0) {
+            switch (categories[i]) {
+            case 0:
+                func_801E1370(ids[i], counts[i], D_8006F36C.ids0, D_8006F36C.counts0, 100);
+                break;
+            case 1:
+                func_801E1370(ids[i], counts[i], D_8006F36C.ids1, D_8006F36C.counts1, 200);
+                break;
+            case 2:
+                func_801E1370(ids[i], counts[i], D_8006F36C.ids2, D_8006F36C.counts2, 150);
+                break;
+            case 3:
+                func_801E1370(ids[i], counts[i], D_8006F36C.ids3, D_8006F36C.counts3, 100);
+                break;
+            case 4:
+                func_801E1370(ids[i], counts[i], D_8006F36C.ids4, D_8006F36C.counts4, 150);
+                break;
+            }
+        }
+    }
+}
+
+/* Collect the rolled drops into eight distinct (category, id) entries
+ * with their counts. */
+void func_801E1590(u8 *ids, u8 *counts, u8 *categories) {
+    s32 i;
+    s32 j;
+    s32 k;
+
+    for (i = 0; i < 8; i++) {
+        ids[i] = 0;
+        counts[i] = 0;
+    }
+    k = 0;
+    for (i = 0; i < 8; i++) {
+        if (D_800CDCF4.ids[i] != 0) {
+            for (j = 0; j < 8; j++) {
+                if (D_800CDCF4.categories[i] == categories[j] && D_800CDCF4.ids[i] == ids[j]) {
+                    counts[j]++;
+                    break;
+                }
+            }
+            if (j == 8) {
+                categories[k] = D_800CDCF4.categories[i];
+                ids[k] = D_800CDCF4.ids[i];
+                counts[k]++;
+                k++;
+            }
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E1690);
 

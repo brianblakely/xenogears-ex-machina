@@ -336,6 +336,29 @@ extern u32 D_8006EF58;        /* party gold */
 extern u8 D_800D2F90[8];      /* two icon records: arg5, -, arg3, arg4 */
 extern u8 D_800D2FE4[48];     /* battle item ids */
 extern u8 D_800D2CB0[48];     /* battle item counts */
+/* The inventory: five lists, each its counts then its ids. */
+typedef struct {
+    u8 counts0[100];
+    u8 ids0[100];
+    u8 counts1[200];
+    u8 ids1[200];
+    u8 counts2[150];
+    u8 ids2[150];
+    u8 counts3[100];
+    u8 ids3[100];
+    u8 counts4[150];
+    u8 ids4[150];
+} Inventory;
+extern Inventory D_8006F36C;
+
+/* The drops rolled for the defeated enemies (800ccce8 + 0x100c). */
+typedef struct {
+    u8 categories[8];
+    u8 ids[8];
+} Drops;
+extern Drops D_800CDCF4;
+
+void func_801E1370(u8 id, u8 count, u8 *ids, u8 *counts, u8 size);
 extern u8 D_8006F65A[150];    /* inventory list 2 ids */
 extern u8 D_8006F5C4[150];    /* inventory list 2 counts */
 void func_800716D8(void);       /* run one battle frame */
