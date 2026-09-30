@@ -1449,10 +1449,11 @@ void func_80076710(s32 member) {
     D_800D2D28->statusParts[3] = 0;
     D_800D2D28->statusParts[3] = func_80025FA8(D_800D2F5C, 0x52, D_800C3EA4->status[3][0], D_800CCB04.buffer, x, y,
                                        D_800D2D28->unk104, D_800D2D28->unk104, D_800D2D28->unk106);
-    part = D_800D2D28->statusParts[3];
-    D_800D2D28->statusParts[3] += func_80025FA8(D_800D2F5C, 0x53, D_800C3EA4->status[3][part], D_800CCB04.buffer, x, y,
-                                        D_800D2D28->unk104, D_800D2D28->unk104, D_800D2D28->unk106);
-    for (part = part * 2; part < D_800D2D28->statusParts[3] * 2; part += 2) {
+    part = D_800D2D28->statusParts[3] * 2;
+    D_800D2D28->statusParts[3] += func_80025FA8(D_800D2F5C, 0x53, D_800C3EA4->status[3][D_800D2D28->statusParts[3]],
+                                        D_800CCB04.buffer, x, y, D_800D2D28->unk104, D_800D2D28->unk104,
+                                        D_800D2D28->unk106);
+    for (; part < D_800D2D28->statusParts[3] * 2; part += 2) {
         SetSemiTrans(&D_800C3EA4->status[3][0][part + D_800CCB04.buffer], 1);
     }
     D_800D2D28->statusBuffer[3] = D_800CCB04.buffer;
