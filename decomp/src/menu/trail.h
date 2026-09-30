@@ -283,6 +283,18 @@ extern SVector *D_8009282C;   /* scratch vectors for GTE loads */
 extern SVector *D_80092830;   /* view origin subtracted before projection */
 extern Vector D_80096FA8;     /* camera position */
 
+typedef struct {
+    s16 x, y;
+    s16 w, h;
+} Rect;
+
+/* Glow field buffers: bytes, previous and current halfword fields. */
+extern u8 *D_80092844;
+extern u16 *D_8009283C;
+extern u16 *D_80092840;
+extern u16 D_80091CE0[]; /* glow palette (256 entries) */
+void func_80044894(Rect *rect, void *data); /* LoadImage */
+
 int abs(int x);
 s32 func_8003FA38(void); /* rand */
 void func_800324B8(s32 tag);                 /* heap allocation tag */

@@ -2008,13 +2008,69 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008DDFC);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008DE54);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008DF30);
+/* Forget the three glow buffers. */
+void func_8008DF30(void) {
+    D_80092844 = NULL;
+    D_8009283C = NULL;
+    D_80092840 = NULL;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008DF50);
+/* Allocate the glow buffers once, clear them, and upload the glow palette
+ * with every entry marked semi-transparent. */
+void func_8008DF50(void) {
+    Rect rect;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008E064);
+    if (D_80092844 == NULL) {
+        D_80092844 = func_80031BDC(0x1500, 1);
+        D_8009283C = func_80031BDC(0x2BC0, 1);
+        D_80092840 = func_80031BDC(0x2BC0, 1);
+    }
+    for (i = 0x1570; i != -1; i--) {
+        D_80092840[i] = 0;
+        D_8009283C[i] = 0;
+    }
+    for (i = 0; i < 0x1500; i++) {
+        D_80092844[i] = 0;
+    }
+    for (i = 0; i < 0x100; i++) {
+        D_80091CE0[i] |= 0x8000;
+    }
+    rect.y = 0x1FD;
+    rect.w = 0xFF;
+    rect.x = 0;
+    rect.h = 1;
+    func_80044894(&rect, D_80091CE0);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008E0C8);
+/* Release the glow buffers. */
+void func_8008E064(void) {
+    if (D_80092844 != NULL) {
+        func_80032C18(D_80092844, 2);
+        func_80032C18(D_8009283C, 2);
+        func_80032C18(D_80092840, 2);
+        D_80092844 = NULL;
+        D_8009283C = NULL;
+        D_80092840 = NULL;
+    }
+}
+
+/* Copy the new glow field over the old one and pack every word's low bytes
+ * of both halves into the byte field. */
+void func_8008E0C8(void) {
+    u8 *bytes = D_80092844;
+    u32 *old = (u32 *)D_8009283C;
+    u32 *new = (u32 *)D_80092840;
+    u32 value;
+    s32 i;
+
+    for (i = 0xA7F; i != -1; i--) {
+        value = *new++;
+        *old++ = value;
+        *bytes++ = value;
+        *bytes++ = value >> 16;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008E120);
 
