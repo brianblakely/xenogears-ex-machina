@@ -545,6 +545,7 @@ extern void func_800496AC(void);                               /* PopMatrix */
 extern void func_8004A6DC(SVECTOR *v, s32 *out, s32 *flag); /* RotTrans */
 
 /* Field overlay. */
+extern void func_80070594(MATRIX *m);
 extern void func_80086D8C(void);
 extern void func_80086078(s32 distance, u32 *out, s32 volume);
 extern void func_80086200(s32 index, s32 *x, s32 *y);

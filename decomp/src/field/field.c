@@ -336,7 +336,70 @@ s32 func_80072398(s32 mask, s32 start) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800723E4);
 
+#ifdef NON_MATCHING
+/* The camera's initial state. */
+void func_8007254C(void) {
+    D_800AF880.target_a = 8;
+    D_800AF880.target_b = 8;
+    D_800AF880.heading_velocity = 0x400000;
+    D_800AF880.heading_high = 0x08000000;
+    D_800AF880.heading_angles.vy = 0x800;
+    D_800AF880.shake_amplitude[2] = 0;
+    D_800AF880.shake_amplitude[1] = 0;
+    D_800AF880.shake_amplitude[0] = 0;
+    D_800AF880.shake_step[2] = 0;
+    D_800AF880.shake_step[1] = 0;
+    D_800AF880.shake_step[0] = 0;
+    D_800AF880.shake = 0;
+    D_800AF880.shake_stop = 0;
+    D_800AF880.flags = 0;
+    D_800AF880.view_angle = 0;
+    D_800AF880.angle = 0;
+    D_800AF880.heading_blocks[0] = 0;
+    D_800AF880.heading_blocks[1] = 0;
+    D_800AF880.heading_steps = 0;
+    D_800AF880.heading_angles.vx = 0;
+    D_800AF880.heading_angles.vz = 0;
+    D_800AF880.heading = 0x800;
+    D_800AF880.orbit_angles.vx = 0;
+    D_800AF880.orbit_angles.vy = 0;
+    D_800AF880.orbit_angles.vz = 0;
+    func_80070594(&D_800AF880.orbit);
+    D_800AF880.eye.vx = 0;
+    D_800AF880.eye.vy = 0;
+    D_800AF880.eye.vz = 0;
+    D_800AF880.up.vy = 0x10000000;
+    D_800AF880.unk050.vy = 0x10000000;
+    D_800AF880.elevation = 0x1E;
+    D_800AF880.projection = 0x200;
+    D_800AF880.target.vx = 0;
+    D_800AF880.target.vy = 0;
+    D_800AF880.target.vz = 0;
+    D_800AF880.up.vx = 0;
+    D_800AF880.up.vz = 0;
+    D_800AF880.shake_offset.vx = 0;
+    D_800AF880.shake_offset.vy = 0;
+    D_800AF880.shake_offset.vz = 0;
+    D_800AF880.eye_goal.vx = 0;
+    D_800AF880.eye_goal.vy = 0;
+    D_800AF880.eye_goal.vz = 0;
+    D_800AF880.target_goal.vx = 0;
+    D_800AF880.target_goal.vy = 0;
+    D_800AF880.target_goal.vz = 0;
+    D_800AF880.unk050.vx = 0;
+    D_800AF880.unk050.vz = 0;
+    D_800AF880.elevation_steps = 0;
+    D_800AF880.projection_steps = 0;
+    D_800AF880.steps = 0;
+    D_800AF880.distance = 0x1000;
+    D_800AF880.mode = 0;
+    D_800AF880.scripted = 0;
+    D_800AF880.target_steps = 0;
+    D_800AF880.eye_steps = 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007254C);
+#endif
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800726E8);
 
