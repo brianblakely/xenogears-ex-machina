@@ -2806,7 +2806,6 @@ void func_801E3088(u8 offset) {
 /* Use item `item` on character `id`: restore HP (x50) and/or EP (x10),
  * raise stats (capped at 200, HP max 999, EP max 99), change +78, or run a
  * debug fill. Returns nonzero when the restoring item had no effect. */
-#ifdef NON_MATCHING
 u8 func_801E31C0(MenuTables *tables, u8 id, u8 item) {
     CharRecord *chara;
     MenuItem *record;
@@ -2904,10 +2903,10 @@ u8 func_801E31C0(MenuTables *tables, u8 id, u8 item) {
     }
     if (record->flags & 0x8000) {
         if (record->flags & 0x4000) {
-            if (!hpFull) {
-                return 0;
+            if (hpFull && epFull) {
+                return epFull;
             }
-            return epFull;
+            return 0;
         }
         return hpFull;
     }
@@ -2916,9 +2915,6 @@ u8 func_801E31C0(MenuTables *tables, u8 id, u8 item) {
     }
     return 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DA4A8", func_801E31C0);
-#endif
 
 /* Apply `user`'s restoring effect: to `target`'s HP (its +5b times the
  * effect's +11, capped at the maximum), or with `gear` to the user's gear
