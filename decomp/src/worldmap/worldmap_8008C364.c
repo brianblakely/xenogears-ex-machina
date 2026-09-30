@@ -1,6 +1,61 @@
 #include "worldmap.h"
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8008C364", func_8008C364);
+/* Place a party member's vehicle actor: parked at its spot, with the
+ * player when riding, or hidden (3) when the member has no vehicle. */
+s32 func_8008C364(WorldmapActor *actor, s32 member) {
+    SVECTOR unused; /* unreferenced local: the original frame reserves it */
+    s32 result;
+    u32 state;
+
+    result = 1;
+    state = D_8006F368[member] != 0xFF;
+    if ((D_8006EF8E[member].flags & 0x3FFF) >= 0x400) {
+        state |= 2;
+    }
+    if ((&D_8006F8E5)[member] == 1) {
+        state |= 4;
+    }
+    switch (state) {
+    case 0:
+    case 2:
+    case 4:
+    case 6:
+    hidden:
+        result = 3;
+        actor->unk24 = 1;
+        actor->position.vy = 0;
+        actor->position.vz = 0;
+        actor->position.vx = 0;
+        break;
+    case 1:
+        if (D_8006D940[D_8006F368[member]].gear == 0xFF) {
+            goto hidden;
+        }
+        func_8008C28C(actor, member);
+        actor->unk24 = 1;
+        actor->position.vy = 0;
+        actor->position.vz = 0;
+        actor->position.vx = 0;
+        break;
+    case 3:
+        func_8008C28C(actor, member);
+        actor->unk24 = 0;
+        actor->position.vx = D_8006EF8E[member].x << 12;
+        actor->position.vz = D_8006EF8E[member].z << 12;
+        actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+        break;
+    case 5:
+    case 7:
+        func_8008C28C(actor, member);
+        actor->unk24 = 0;
+        actor->position.vx = D_8009C5AC.vx;
+        actor->position.vz = D_8009C5AC.vz;
+        actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+        D_8006EF8E[member].flags = 0x400;
+        break;
+    }
+    return result;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8008C364", func_8008C530);
 
@@ -35,8 +90,8 @@ s32 func_8008C75C(s32 index) {
     func_800245D8(actor->handle, 0);
     func_80022000(actor->handle, 0x2000);
     ((ModelInstance *)actor->handle)->flags &= ~4;
-    actor->position.vx = D_8006EF90[0].x << 12;
-    actor->position.vz = D_8006EF90[0].z << 12;
+    actor->position.vx = D_8006EF8E[0].x << 12;
+    actor->position.vz = D_8006EF8E[0].z << 12;
     actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
     actor->unk24 = 1;
     actor->motion.vz = 0;
@@ -82,8 +137,8 @@ s32 func_8008D590(s32 index) {
     func_800245D8(actor->handle, 0);
     func_80022000(actor->handle, 0x2000);
     ((ModelInstance *)actor->handle)->flags &= ~4;
-    actor->position.vx = D_8006EF90[1].x << 12;
-    actor->position.vz = D_8006EF90[1].z << 12;
+    actor->position.vx = D_8006EF8E[1].x << 12;
+    actor->position.vz = D_8006EF8E[1].z << 12;
     actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
     actor->unk24 = 1;
     actor->motion.vz = 0;
@@ -129,8 +184,8 @@ s32 func_8008DF0C(s32 index) {
     func_800245D8(actor->handle, 0);
     func_80022000(actor->handle, 0x2000);
     ((ModelInstance *)actor->handle)->flags &= ~4;
-    actor->position.vx = D_8006EF90[2].x << 12;
-    actor->position.vz = D_8006EF90[2].z << 12;
+    actor->position.vx = D_8006EF8E[2].x << 12;
+    actor->position.vz = D_8006EF8E[2].z << 12;
     actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
     actor->unk24 = 1;
     actor->motion.vz = 0;

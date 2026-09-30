@@ -824,14 +824,17 @@ typedef struct {
     s32 flags; /* 0x3C: 4 hidden */
 } ModelInstance;
 
-/* Parked vehicle positions (world units), per vehicle. */
+/* Parked vehicle state (world units), per party slot. */
 typedef struct {
+    u16 flags; /* 0x3FFF part >= 0x400: parked on the map */
     u16 x;
     u16 z;
-    u16 unk4;
 } VehicleSpot;
 
-extern VehicleSpot D_8006EF90[3];
+extern VehicleSpot D_8006EF8E[3];
+extern VECTOR D_8009C5AC;
+
+void func_8008C28C(WorldmapActor *actor, s32 member);
 /* Parked vehicle headings; scalars inside D_8006EE54 (unk5A-unk5E), which
  * the vehicle starts address as separate variables. */
 extern u16 D_8006EE5A, D_8006EE5C, D_8006EE5E;
