@@ -1657,17 +1657,80 @@ void func_8008CF30(SparkDot *spark, u32 *ot) {
     func_80031870(ot + (func_8004A64C(&spark->pos, (s32 *)&dot->x0, &depth, &depth) >> 2), dot);
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008CF9C);
+/* Place a spark at its source's origin. */
+void func_8008CF9C(SparkSource *source, SVector *pos) {
+    *pos = source->origin;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008CFC4);
+/* Place a spark at a random point of its source's box, rotated with the
+ * source. */
+void func_8008CFC4(SparkSource *source, SVector *pos) {
+    SVector v;
+    Vector r;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008D0A4);
+    v.vx = func_8003FA38() % source->range.vx - source->offset.vx;
+    v.vy = func_8003FA38() % source->range.vy - source->offset.vy;
+    v.vz = func_8003FA38() % source->range.vz - source->offset.vz;
+    func_800495DC(&v, &r);
+    pos->vx = source->origin.vx + r.vx;
+    pos->vy = source->origin.vy + r.vy;
+    pos->vz = source->origin.vz + r.vz;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008D14C);
+/* Place a spark at a random point of its source's box. */
+void func_8008D0A4(SparkSource *source, SVector *pos) {
+    pos->vx = source->origin.vx + func_8003FA38() % source->range.vx - source->offset.vx;
+    pos->vy = source->origin.vy + func_8003FA38() % source->range.vy - source->offset.vy;
+    pos->vz = source->origin.vz + func_8003FA38() % source->range.vz - source->offset.vz;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008D208);
+/* Place a spark at a random point of its source's horizontal rectangle,
+ * rotated with the source. */
+void func_8008D14C(SparkSource *source, SVector *pos) {
+    SVector v;
+    Vector r;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008D304);
+    v.vx = func_8003FA38() % source->range.vx - source->offset.vx;
+    v.vy = 0;
+    v.vz = func_8003FA38() % source->range.vz - source->offset.vz;
+    func_800495DC(&v, &r);
+    pos->vx = source->origin.vx + r.vx;
+    pos->vy = source->origin.vy + r.vy;
+    pos->vz = source->origin.vz + r.vz;
+}
+
+/* Place a spark at a random point of its source's horizontal ellipse,
+ * rotated with the source. */
+void func_8008D208(SparkSource *source, SVector *pos) {
+    SVector v;
+    Vector r;
+    s32 angle = func_8003FA38();
+    s32 radius = func_8003FA38();
+
+    v.vx = (func_8003F8B0(angle) * (radius % source->range.vx)) >> 13;
+    v.vy = 0;
+    v.vz = (func_8003F8CC(angle) * (radius % source->range.vz)) >> 13;
+    func_800495DC(&v, &r);
+    pos->vx = source->origin.vx + r.vx;
+    pos->vy = source->origin.vy + r.vy;
+    pos->vz = source->origin.vz + r.vz;
+}
+
+/* Place a spark on its source's ring at a random height, rotated with the
+ * source. The ring angle is never initialised in the original. */
+void func_8008D304(SparkSource *source, SVector *pos) {
+    SVector v;
+    Vector r;
+    s32 angle;
+
+    v.vx = (func_8003F8B0(angle) * source->range.vx) >> 12;
+    v.vy = func_8003FA38() % source->range.vy - source->range.vy / 2;
+    v.vz = (func_8003F8CC(angle) * source->range.vz) >> 12;
+    func_800495DC(&v, &r);
+    pos->vx = source->origin.vx + r.vx;
+    pos->vy = source->origin.vy + r.vy;
+    pos->vz = source->origin.vz + r.vz;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008D3F4);
 

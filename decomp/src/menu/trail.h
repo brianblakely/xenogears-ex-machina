@@ -108,7 +108,11 @@ typedef struct {
 
 /* The effect a spark belongs to; its colour tints every primitive. */
 typedef struct {
-    u8 unk0[0x74];
+    u8 unk0[0x1C];
+    SVector origin; /* 0x1C: where sparks are emitted */
+    SVector range;  /* 0x24: random spread per axis */
+    SVector offset; /* 0x2C: subtracted from the random spread */
+    u8 unk34[0x40];
     u8 r;
     u8 g;
     u8 b;
@@ -154,6 +158,7 @@ extern SVector *D_8009282C;   /* scratch vectors for GTE loads */
 extern SVector *D_80092830;   /* view origin subtracted before projection */
 
 s32 func_8003FA38(void); /* rand */
+void func_800495DC(SVector *v, Vector *out); /* rotate by the current GTE matrix */
 s32 func_8004A64C(SVector *v, s32 *sxy, s32 *p, s32 *flag);
 s32 func_8004A67C(SVector *v0, SVector *v1, s32 *v2, s32 *sxy0, s32 *sxy1, s32 *sxy2, s32 *p,
                   s32 *flag);
