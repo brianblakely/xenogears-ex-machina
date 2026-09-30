@@ -5,6 +5,7 @@
 #include "scene.h"
 #include "gte.h"
 #include "menu_pages.h"
+#include "action_resolve.h"
 
 /* Start the 801e5000 module: reserve its heap span and load it. */
 void func_80070E2C(void) {
@@ -6315,7 +6316,95 @@ void func_8009413C(u8 member, u8 release) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800941A4);
+/* Resolve the committed action: select the attacker and its command
+ * descriptor (a gear's goes to 8009c198), then for every target in the
+ * target mask run the descriptor's formula, the post-adjustment and the
+ * status step its flags ask for; finally publish the command, hold the
+ * attacker's commands and raise the used command's use count. Returns the
+ * resolve status, except on the two gear paths, which return without a
+ * value. */
+u8 func_800941A4(void) {
+    u16 bit;
+    u8 member;
+
+    func_80097D08();
+    D_800D2DB8 = 0;
+    D_800C34AE = 0;
+    D_800C3E04 = D_800C34B0->attackerIndex;
+    D_800C3E00 = &D_800C34B0->records[D_800C3E04];
+    D_800D2D6C = &D_800C34B0->records[D_800C3E04].gear;
+    if (D_800C34B0->records[D_800C34B0->attackerIndex].flags15A & 0x80) {
+        func_8009C198();
+        func_8009AB38(D_800C3E04);
+        return;
+    }
+    if (D_800C3E04 < 3) {
+        D_800C3DFC = &D_800C34B0->partyCommands[D_800C3E04][D_800C34B0->commandIndex];
+    } else {
+        D_800C3DFC = &D_800C34B0->enemyCommands[D_800C34B0->commandIndex];
+    }
+    func_8009AC48(D_800C3E04, 1);
+    if (D_800C3DFC->flagsA & 0x10) {
+        func_8009C198();
+        func_8009AB38(D_800C3E04);
+        func_80094C78();
+        return;
+    }
+    D_800D2DC4 = 0;
+    if ((D_800C3DFC->flagsA & 0x100) && D_800C3E00->pilot.characterId == 1) {
+        func_80096824();
+    }
+    if (D_800C3E00->pilot.characterId == 4 && (D_800C34B0->commandIndex == 4 || D_800C34B0->commandIndex == 5)) {
+        D_800C3DFC->attributes[2] = D_800C3E00->pilot.entries[D_800C34B0->commandIndex - 3].value4;
+    }
+    if ((D_800C3E00->pilot.status80 & 0x20) && (D_800D2C94.targets & 7) && D_800D2C94.targets < 7) {
+        for (member = 0; member < 3; member++) {
+            if (D_800CCCE8.records[member].pilot.characterId == 3) {
+                D_800D2C94.targets = 1 << member;
+            }
+        }
+    }
+    bit = 1;
+    for (D_800C3E50 = 0; D_800C3E50 < 11; D_800C3E50++, bit <<= 1) {
+        if (bit & D_800C34B0->targetMask) {
+            D_800C3E34 = &D_800C34B0->records[D_800C3E50];
+            D_800D2DC8 = &D_800C34B0->records[D_800C3E50].gear;
+            D_800C3D60 = &D_800C34B0->records[D_800C3E50].field148;
+            if (D_800C3E50 < 3) {
+                func_800968C0();
+            }
+            D_800C348C[D_800C3DFC->formula]();
+            func_800946F4();
+            if (D_800C34B0->resultCode[D_800C3E50] == 0) {
+                if (D_800C3DFC->flagsA & 0x800) {
+                    func_80095B44();
+                } else if (D_800C3DFC->flagsA & 0x4000) {
+                    func_80095A78();
+                } else if (D_800C3DFC->flagsA & 4) {
+                    func_800958D8();
+                }
+            }
+            if (D_800C3DFC->flagsA & 1) {
+                D_800C34B0->shownCommand = D_800C3DFC->name;
+            } else {
+                D_800C34B0->shownCommand = D_800C34B0->commandIndex;
+            }
+        }
+    }
+    func_80099FB0();
+    func_8009AB38(D_800C3E04);
+    if (D_800C3E00->pilot.characterId == 4 && D_800C34AE == 0) {
+        func_8009AFD8();
+    }
+    if (D_800C3E04 < 3 && D_800C34B0->commandIndex < 7) {
+        if (D_800C3E00->pilot.useCounts[D_800C34B0->commandIndex] <= 0xFDE7) {
+            D_800C3E00->pilot.useCounts[D_800C34B0->commandIndex] +=
+                D_800C3E00->pilot.pad55 + D_800C3E00->pilot.padA1[0];
+        }
+    }
+    func_80094C78();
+    return D_800D2DB8;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800946F4);
 

@@ -721,7 +721,7 @@ u16 func_80089C48(u8 slot);
 void func_80098C6C(u16 param);
 void func_80085454(u8 queue);
 void func_80085618(u8 queue);
-void func_800941A4(void);
+u8 func_800941A4(void);
 void func_8008860C(void);
 void func_80089038(void);
 void func_80089110(void);
