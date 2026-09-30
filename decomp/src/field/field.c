@@ -334,7 +334,37 @@ s32 func_80072398(s32 mask, s32 start) {
     return 0;
 }
 
+#ifdef NON_MATCHING
+/* The intersection of the lines through segments `a` and `b` (X/Z points);
+ * `b`'s start when they are parallel. Differs only in the register of the
+ * second product of each cross product (t0/v1 in the original). */
+void func_800723E4(DVECTOR *a, DVECTOR *b, DVECTOR *out) {
+    VECTOR ua;
+    VECTOR ub;
+    VECTOR d;
+    s32 cross;
+    s32 t;
+
+    d.vx = a[1].vx - a[0].vx;
+    d.vy = 0;
+    d.vz = a[1].vy - a[0].vy;
+    func_80048D7C(&d, &ua);
+    d.vx = b[1].vx - b[0].vx;
+    d.vy = 0;
+    d.vz = b[1].vy - b[0].vy;
+    func_80048D7C(&d, &ub);
+    cross = (ub.vx * ua.vz - ub.vz * ua.vx) >> 12;
+    if (cross == 0) {
+        t = 0;
+    } else {
+        t = ((b[0].vy - a[0].vy) * ua.vx - (b[0].vx - a[0].vx) * ua.vz) / cross;
+    }
+    out->vx = b[0].vx + ((t * ub.vx) >> 12);
+    out->vy = b[0].vy + ((t * ub.vz) >> 12);
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800723E4);
+#endif
 
 #ifdef NON_MATCHING
 /* The camera's initial state. */
@@ -585,7 +615,51 @@ void func_8007520C(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800752C8);
+extern u8 D_800ADB05; /* 1 while character drawing is off */
+extern u8 D_800AFA64[];
+void func_800250E0(s32 buffer);
+void func_80024FE4(u32 *ot);
+void func_80024FF4(void *p);
+void func_8001D468(void);
+void func_8001C9F8(void);
+void func_8001C964(void);
+void func_80023210(FieldModel *model);
+void func_80075B44(u32 *ot, s32 buffer);
+void func_800764B4(u32 *ot, s32 buffer);
+
+/* Draw the field characters: set up the model renderer for this buffer, then
+ * draw each actor's model (shown ones unless their layer is hidden or they
+ * are flagged off, others only with layer flag 0x1000000), then the debug
+ * "CHAR" timer. The descriptor flags are read as a whole word here. */
+void func_800752C8(void) {
+    s32 i;
+
+    if (D_800ADB05 == 1) {
+        return;
+    }
+    func_800250E0(D_800ADB08);
+    func_80024FE4(D_800C426C->ot);
+    func_80024FF4(D_800AFA64);
+    func_8001D468();
+    func_8001C9F8();
+    func_8001C964();
+    func_80075B44(D_800C426C->ot, D_800ADB08);
+    for (i = 0; i < D_800ADBFC; i++) {
+        if ((*(u32 *)&D_800AF880.components.descriptors[i].flags & 0x60) == 0x40) {
+            if ((D_800AF880.components.descriptors[i].actor->layer_flags & 0x600) != 0x200
+                && !(D_800AF880.components.descriptors[i].actor->layer_flags & 0x1000)
+                && !(D_800AF880.components.descriptors[i].actor->flags & 1)) {
+                func_80023210(D_800AF880.components.descriptors[i].model);
+            }
+        } else if (D_800AF880.components.descriptors[i].actor->layer_flags & 0x1000000) {
+            func_80023210(D_800AF880.components.descriptors[i].model);
+        }
+    }
+    func_800764B4(D_800C426C->ot, D_800ADB08);
+    if (D_800C268C == 0) {
+        func_80281B00("CHAR      ");
+    }
+}
 
 /* Link a table's primitives into `ot` (AddPrims). */
 void func_80075458(void *ot, u32 *table, s32 depth) {
