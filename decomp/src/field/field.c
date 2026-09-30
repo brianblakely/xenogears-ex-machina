@@ -72,25 +72,136 @@ INCLUDE_RODATA(".local/decomp/field/asm/nonmatchings/field", D_8006FAF0);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80070CC8);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80071A64);
+/* Initialise both fade channels' primitives. */
+void func_80071A64(void) {
+    func_8007D93C(0);
+    func_8007D93C(1);
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80071A8C);
+/* Advance one fade channel a step; a finished channel whose levels reached
+ * zero turns off unless a fade-out is still in progress. */
+void func_80071A8C(s32 channel) {
+    if (D_800B20C4[channel].active != 0) {
+        if (D_800B20C4[channel].steps <= 0) {
+            D_800B20C4[channel].steps = 0;
+            if (D_800ADC08 != 1 && D_800B20C4[channel].level[0] == 0 &&
+                D_800B20C4[channel].level[1] == 0 && D_800B20C4[channel].level[2] == 0) {
+                D_800B20C4[channel].active = 0;
+            }
+        } else {
+            D_800B20C4[channel].level[0] = D_800B20C4[channel].level[0] + D_800B20C4[channel].step[0];
+            if (D_800B20C4[channel].level[0] >> 8 >= 0x100) {
+                D_800B20C4[channel].level[0] = 0xFF00;
+            }
+            if (D_800B20C4[channel].level[0] < 0) {
+                D_800B20C4[channel].level[0] = 0;
+            }
+            D_800B20C4[channel].level[1] = D_800B20C4[channel].level[1] + D_800B20C4[channel].step[1];
+            if (D_800B20C4[channel].level[1] >> 8 >= 0x100) {
+                D_800B20C4[channel].level[1] = 0xFF00;
+            }
+            if (D_800B20C4[channel].level[1] < 0) {
+                D_800B20C4[channel].level[1] = 0;
+            }
+            D_800B20C4[channel].level[2] = D_800B20C4[channel].level[2] + D_800B20C4[channel].step[2];
+            if (D_800B20C4[channel].level[2] >> 8 >= 0x100) {
+                D_800B20C4[channel].level[2] = 0xFF00;
+            }
+            if (D_800B20C4[channel].level[2] < 0) {
+                D_800B20C4[channel].level[2] = 0;
+            }
+            D_800B20C4[channel].steps = D_800B20C4[channel].steps - 1;
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80071CB4);
+/* Step both fade channels while fading, then draw them into `ot`. */
+void func_80071CB4(void *ot) {
+    if (D_800ADC04 == 2) {
+        func_80071A8C(0);
+        func_80071A8C(1);
+    }
+    func_8007DA44(ot, D_800ADB08);
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80071D08);
+/* Start a fade on `channel` towards (red, green, blue) over `steps` frames. */
+void func_80071D08(s32 channel, s32 steps, s32 red, s32 green, s32 blue, s32 abr) {
+    s32 red_step = ((red << 8) - D_800B20C4[channel].level[0]) / steps;
+    s32 green_step = ((green << 8) - D_800B20C4[channel].level[1]) / steps;
+    s32 blue_step = ((blue << 8) - D_800B20C4[channel].level[2]) / steps;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80071DCC);
+    D_800B20C4[channel].steps = steps;
+    D_800B20C4[channel].active = 1;
+    D_800B20C4[channel].abr = abr;
+    D_800B20C4[channel].step[0] = red_step;
+    D_800B20C4[channel].step[1] = green_step;
+    D_800B20C4[channel].step[2] = blue_step;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80071E58);
+/* Fade channel 0 out to white over `steps` frames, once. */
+void func_80071DCC(s32 steps) {
+    s32 rate;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80071EE8);
+    if (D_800ADC08 != 1) {
+        D_800ADC08 = 1;
+        if (D_800ADC04 == 2) {
+            rate = 0xFF00 / steps;
+            D_800B20C4[0].level[0] = D_800B20C4[0].level[1] = D_800B20C4[0].level[2] = 0;
+            D_800B20C4[0].steps = steps;
+            D_800B20C4[0].active = 1;
+            D_800B20C4[0].abr = 2;
+            D_800B20C4[0].step[0] = D_800B20C4[0].step[1] = D_800B20C4[0].step[2] = rate;
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80071F64);
+/* Fade channel 0 back in from full over `steps` frames, once. */
+void func_80071E58(s32 steps) {
+    s32 rate;
+
+    if (D_800ADC08 != 0) {
+        D_800ADC08 = 0;
+        if (D_800ADC04 == 2) {
+            rate = -0x10000 / steps;
+            D_800B20C4[0].level[0] = D_800B20C4[0].level[1] = D_800B20C4[0].level[2] = 0xFF00;
+            D_800B20C4[0].active = 1;
+            D_800B20C4[0].steps = steps;
+            D_800B20C4[0].abr = 2;
+            D_800B20C4[0].step[0] = D_800B20C4[0].step[1] = D_800B20C4[0].step[2] = rate;
+        }
+    }
+}
+
+/* Pointer setup: pad buffers, divisors 3 and 4, bounds, both ports' starts. */
+void func_80071EE8(void) {
+    func_8007AD8C(D_800625FC[0], D_800625FC[1]);
+    func_8007AE14(3, 4);
+    func_8007ADA4(0, 0x140, 0, 0xE0);
+    func_8007AE2C(0, 0x50, 0x64);
+    func_8007AE2C(1, 0xFA, 0x64);
+    func_8007ADA4(0, 0x12C, 0xA, 0xDC);
+}
+
+/* Set both draw buffers' clip areas; the second sits 0x100 lines lower. */
+void func_80071F64(s32 x, s32 y, s32 w, s32 h) {
+    D_800B249C[0].draw.clip.x = x;
+    D_800B249C[0].draw.clip.y = y;
+    D_800B249C[0].draw.clip.w = w;
+    D_800B249C[0].draw.clip.h = h;
+    D_800B249C[1].draw.clip.x = x;
+    D_800B249C[1].draw.clip.y = y + 0x100;
+    D_800B249C[1].draw.clip.w = w;
+    D_800B249C[1].draw.clip.h = h;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80071FB0);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80072140);
+/* Clear a matrix's translation. */
+void func_80072140(MATRIX *m) {
+    m->t[2] = 0;
+    m->t[1] = 0;
+    m->t[0] = 0;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80072150);
 
