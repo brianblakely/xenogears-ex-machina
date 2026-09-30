@@ -122,14 +122,19 @@ decomp/src/mdec/movie.h
 decomp/src/menu/menu.c
 decomp/src/movie/movie.c
 decomp/src/ovl2143/ovl2143.c
+decomp/src/ovl2143/ovl2143.h
+decomp/src/ovl2596/battle_results.h
 decomp/src/ovl2596/ovl2596.c
 decomp/src/ovl2598/ovl2598.c
 decomp/src/ovl2600/ovl2600.c
 decomp/src/ovl2601/ovl2601.c
 decomp/src/ovl2602/ovl2602.c
 decomp/src/ovl2606/ovl2606.c
+decomp/src/ovl2606/scene_select.h
+decomp/src/ovl2615/battle_setup.h
 decomp/src/ovl2615/ovl2615.c
 decomp/src/ovl3087/ovl3087.c
+decomp/src/ovl3087/ovl3087.h
 decomp/src/ovl3381/ovl3381.c
 decomp/src/ovl3383/ovl3383.c
 decomp/src/ovl3384/ovl3384.c
@@ -165,6 +170,7 @@ decomp/targets/overlays/ovl2143.mk
 decomp/targets/overlays/ovl2143.symbols.txt
 decomp/targets/overlays/ovl2143.yaml
 decomp/targets/overlays/ovl2596.mk
+decomp/targets/overlays/ovl2596.resident.ld
 decomp/targets/overlays/ovl2596.symbols.txt
 decomp/targets/overlays/ovl2596.yaml
 decomp/targets/overlays/ovl2598.mk
@@ -180,6 +186,7 @@ decomp/targets/overlays/ovl2602.mk
 decomp/targets/overlays/ovl2602.symbols.txt
 decomp/targets/overlays/ovl2602.yaml
 decomp/targets/overlays/ovl2606.mk
+decomp/targets/overlays/ovl2606.resident.ld
 decomp/targets/overlays/ovl2606.symbols.txt
 decomp/targets/overlays/ovl2606.yaml
 decomp/targets/overlays/ovl2615.mk
