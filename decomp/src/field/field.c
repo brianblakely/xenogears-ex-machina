@@ -1,5 +1,6 @@
 #include "common.h"
 #include "field.h"
+#include "field_anim.h"
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8006FDEC);
 
@@ -1613,7 +1614,41 @@ s32 func_80080A18(void) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80080A74);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80080F44);
+/* Create event actor `index`: a cleared 0x138-byte record, the fetch hooks of
+ * an animated model's channels, its defaults (80080a74) and its ground
+ * marker (8007aa44). */
+void func_80080F44(s32 index) {
+    u8 unused[0x60];
+    FieldActor *actor;
+    FieldInstance *instance;
+    s32 *word;
+    s32 words = sizeof(FieldActor) / 4;
+    s32 i;
+
+    if (index < D_800ADBFC) {
+        D_800B2180[0]++;
+        D_800AF880.components.descriptors[index].actor = func_80031BDC(0x138, 0);
+        word = (s32 *)D_800AF880.components.descriptors[index].actor;
+        for (i = 0; i < words; i++) {
+            *word++ = 0;
+        }
+        actor = D_800AF880.components.descriptors[index].actor;
+        *(u16 *)D_800AF880.components.descriptors[index].unk5A = 0;
+        if (D_800AF880.components.descriptors[index].flags & 0x2000) {
+            instance = D_800AF880.components.descriptors[index].instance;
+            actor->list = func_80031BDC(0x80, 0);
+            if (instance->anims != NULL) {
+                for (i = 0; i < instance->anims->count; i++) {
+                    instance->anims->channels[i].fetch = func_80080A18;
+                    actor->list[i] = 0;
+                }
+            }
+        }
+        func_80080A74(index);
+        D_800AF880.components.descriptors[index].unk08 = func_80031BDC(0x70, 0);
+        func_8007AA44(D_800AF880.components.descriptors[index].unk08);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008110C);
 
@@ -1912,7 +1947,39 @@ void func_80085738(void) {
     }
 }
 
+#ifdef NON_MATCHING
+/* Load a movie's sound-effect bank (file 0x115 + bank) and seek the movie
+ * sound timeline past the bank's 0xffff-terminated runs. */
+void func_80085788(void) {
+    s32 bank;
+    s32 file;
+    s32 pos;
+    s32 i;
+
+    bank = D_800C3A38;
+    if (bank != 0xFF) {
+        func_80039FF8();
+        func_80028470(0x1C, 0);
+        file = bank + 0x115;
+        D_800B235C = func_80031BDC(func_800288EC(file), 1);
+        func_800295D8(file, D_800B235C, 0, 0x80);
+        func_80028A60(0);
+        func_80038428(D_800B235C);
+        func_8003BDFC(0x10);
+        func_80028470(4, 0);
+        pos = 0;
+        for (i = 0; i < bank + 1; i++) {
+            while (D_800AE060[pos][0] != 0xFFFF) {
+                pos++;
+            }
+            pos++;
+            D_800C3A64 = pos;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80085788);
+#endif
 
 /* Load the field's sound-effect bank (file 0xa8), from the disc or from the
  * copy at 8005a4bc, and open it. */

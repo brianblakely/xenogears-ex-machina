@@ -240,7 +240,7 @@ typedef struct {
     FieldMesh *mesh; /* 04 */
     u8 unk08[0x12 - 0x08];
     s16 mode;        /* 12 */
-    u8 unk14[4];
+    struct FieldAnimTable *anims; /* 14 */
     s16 center[3];   /* 18 */
     s16 unk1E;
     s16 radius;      /* 20 */
@@ -745,6 +745,8 @@ extern s32 func_8008DBF0(s32 member, s32 amount);
 extern s32 func_8009D044(s32 offset, s32 flags); /* operand, immediate with flag 0x10 */
 extern void func_800A94A4(s32 actor);
 extern void func_8007AF74(s32 port);
+extern void func_8007AA44(FieldMarker *marker);
+extern void func_80080A74(s32 index);
 extern void func_8008B978(s32);
 extern void func_80071D08(s32 channel, s32 steps, s32 red, s32 green, s32 blue, s32 abr);
 extern s32 func_8009D000(s32 offset, s32 flags); /* operand, immediate with flag 0x20 */
@@ -850,6 +852,7 @@ extern s32 D_800ADBE4;
 extern s32 D_800ADBE8;
 extern EventPackage *D_800ADBF8;
 extern s32 D_800ADBFC; /* event actor count */
+extern s32 D_800B2180[]; /* +0: event actors created */
 extern void *D_800ADBC0; /* pending party sprite buffer */
 extern s32 D_800ADBC8;
 extern s32 D_800ADBCC; /* pending party slot */
