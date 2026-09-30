@@ -685,12 +685,12 @@ void func_801C6F70(void) {
     window.w = 0x100;
     func_801D22C4();
     for (i = 0; i < 2; i++) {
-        func_801C8164(&D_800625A0->primitives->backdrop[i], 0x80, 0x80, 0);
-        SetSemiTrans(&D_800625A0->primitives->backdrop[i], 1);
-        SetLineF3(&D_800625A0->primitives->linesA[i]);
-        setRGB0(&D_800625A0->primitives->linesA[i], 0, 0x40, 0);
-        SetLineF3(&D_800625A0->primitives->linesB[i]);
-        setRGB0(&D_800625A0->primitives->linesB[i], 0, 0x40, 0);
+        func_801C8164(&D_800625A0->primitives->box[i], 0x80, 0x80, 0);
+        SetSemiTrans(&D_800625A0->primitives->box[i], 1);
+        SetLineF3(&D_800625A0->primitives->edgeA[i]);
+        setRGB0(&D_800625A0->primitives->edgeA[i], 0, 0x40, 0);
+        SetLineF3(&D_800625A0->primitives->edgeB[i]);
+        setRGB0(&D_800625A0->primitives->edgeB[i], 0, 0x40, 0);
         SetPolyF4(&D_800625A0->primitives->fills[i]);
         setXY4(&D_800625A0->primitives->fills[i], 0, 0, 0x140, 0, 0, 0xe0, 0x140, 0xe0);
         setRGB0(&D_800625A0->primitives->fills[i], 0x80, 0x80, 0x80);
@@ -2216,9 +2216,71 @@ void func_801D0954(SVECTOR *v, POLY_FT4 *polys, s32 index, s32 otz) {
     AddPrim(&D_800625A0->current->ot[otz], poly);
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D09F0);
+/* Draw portrait window `index`: its corners, the frame sprites when
+ * `framed`, the edges and the fill. */
+void func_801D09F0(s32 index, u8 framed) {
+    MenuPortrait *portrait;
+    s32 i;
+    s32 p;
+    s32 flag;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D0C78);
+    portrait = D_800625A0->portraits[index];
+    for (i = 0; i < 4; i++) {
+        func_801D0954(&portrait->cornerAt[i * 4], &portrait->corner[i * 2], portrait->buffer, portrait->depth);
+    }
+    if (framed) {
+        for (i = 0; i < 2; i++) {
+            func_801D0954(&portrait->endsAt[i * 4], &portrait->frameEnds[i * 2], portrait->buffer, portrait->depth);
+        }
+        func_801D0954(portrait->sideAt, portrait->frameSide, portrait->buffer, portrait->depth);
+    }
+    func_801D0954(portrait->edgeAt[0][0], &portrait->edge[0][0], portrait->buffer, portrait->depth);
+    func_801D0954(portrait->edgeAt[0][1], &portrait->edge[0][2], portrait->buffer, portrait->depth);
+    func_801D0954(portrait->edgeAt[1][0], &portrait->edge[1][0], portrait->buffer, portrait->depth);
+    func_801D0954(portrait->edgeAt[1][1], &portrait->edge[1][2], portrait->buffer, portrait->depth);
+    func_801D0954(portrait->edgeAt[2][0], &portrait->edge[2][0], portrait->buffer, portrait->depth);
+    func_801D0954(portrait->edgeAt[2][1], &portrait->edge[2][2], portrait->buffer, portrait->depth);
+    func_801D0954(portrait->edgeAt[3][0], &portrait->edge[3][0], portrait->buffer, portrait->depth);
+    func_801D0954(portrait->edgeAt[3][1], &portrait->edge[3][2], portrait->buffer, portrait->depth);
+    RotTransPers4(&portrait->fillAt[0], &portrait->fillAt[1], &portrait->fillAt[2], &portrait->fillAt[3],
+                  (s32 *)&portrait->fill[portrait->buffer].x0, (s32 *)&portrait->fill[portrait->buffer].x1,
+                  (s32 *)&portrait->fill[portrait->buffer].x2, (s32 *)&portrait->fill[portrait->buffer].x3, &p,
+                  &flag);
+    AddPrim(&D_800625A0->current->ot[portrait->depth], &portrait->fill[portrait->buffer]);
+    AddPrim(&D_800625A0->current->ot[portrait->depth], &portrait->fillMode[portrait->buffer]);
+}
+
+/* Draw the shown portrait windows; those of style 0 are drawn under an
+ * identity rotation at depth 0x200. */
+void func_801D0C78(void) {
+    s32 i;
+    SVECTOR angles;
+    VECTOR offset;
+    MATRIX m;
+    SVECTOR unused;
+
+    for (i = 0; i < 7; i++) {
+        if (D_800625A0->party->unk20[i] != 0) {
+            if (D_800625A0->portraits[i]->style == 0) {
+                PushMatrix();
+                angles.vz = 0;
+                angles.vy = 0;
+                angles.vx = 0;
+                offset.vy = 0;
+                offset.vx = 0;
+                offset.vz = 0x200;
+                func_8003F738(&angles, &m);
+                TransMatrix(&m, &offset);
+                SetRotMatrix(&m);
+                SetTransMatrix(&m);
+                func_801D09F0(i, D_800625A0->portraits[i]->framed);
+                PopMatrix();
+            } else {
+                func_801D09F0(i, D_800625A0->portraits[i]->framed);
+            }
+        }
+    }
+}
 
 /* Add the current quad of each top label whose party flag (+34) is set. */
 void func_801D0D90(void) {
@@ -2594,11 +2656,9 @@ void func_801D1CA0(void) {
 
 /* Step the view motion (3/4 start moving in/out, 1/2 move) and load the view
  * rotation and translation into the GTE. */
-#ifdef NON_MATCHING
 void func_801D1D40(void) {
     MenuState *state;
     u8 motion;
-    s32 z;
 
     state = D_800625A0;
     switch (state->viewMotion) {
@@ -2619,15 +2679,15 @@ void func_801D1D40(void) {
         break;
     case 2:
         state->viewAngles.vy -= 0x60;
-        state->viewOffset.vz = z = state->viewOffset.vz + 0x40;
-        if (z >= 0xe00) {
+        state->viewOffset.vz += 0x40;
+        if (state->viewOffset.vz >= 0xe00) {
             state->viewMotion = 0;
         }
         break;
     case 1:
         state->viewAngles.vx += 0x7c;
-        state->viewOffset.vz = z = state->viewOffset.vz - 0x30;
-        if (z < 0x200) {
+        state->viewOffset.vz -= 0x30;
+        if (state->viewOffset.vz < 0x200) {
             state->viewOffset.vz = 0x200;
             state->viewAngles.vz = 0;
             state->viewAngles.vx = 0;
@@ -2641,9 +2701,6 @@ void func_801D1D40(void) {
     SetRotMatrix(&D_800625A0->viewMatrix);
     SetTransMatrix(&D_800625A0->viewMatrix);
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D1D40);
-#endif
 
 /* Start the view moving in (3) with its sound. */
 void func_801D1E80(void) {
@@ -2657,7 +2714,36 @@ void func_801D1EB0(void) {
     func_801C8574(0x5c);
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D1EE0);
+/* Place the highlight sprite at position `index`; with `outline` also its
+ * background box and outline around the text, as wide as the block's +15b. */
+void func_801D1EE0(s32 index, u8 outline) {
+    func_8002675C(D_800625A0->sheet, 0x108, D_800625A0->primitives, D_800625A0->bufferIndex, D_801E9A00[index], D_801E9A2C[index], 0x1000);
+    D_800625A0->primitives->frame = D_800625A0->bufferIndex;
+    if (outline) {
+        (D_800625A0->primitives->box + D_800625A0->bufferIndex)->x0 = D_801E9A00[index] + 0x14;
+        (D_800625A0->primitives->box + D_800625A0->bufferIndex)->y0 = D_801E9A2C[index] - 0x24;
+        (D_800625A0->primitives->box + D_800625A0->bufferIndex)->x1 = D_801E9A00[index] + (D_800625A0->primitives->shade + 0x14);
+        (D_800625A0->primitives->box + D_800625A0->bufferIndex)->y1 = D_801E9A2C[index] - 0x24;
+        (D_800625A0->primitives->box + D_800625A0->bufferIndex)->x2 = D_801E9A00[index] + 0x14;
+        (D_800625A0->primitives->box + D_800625A0->bufferIndex)->y2 = D_801E9A2C[index] - 0x14;
+        (D_800625A0->primitives->box + D_800625A0->bufferIndex)->x3 = D_801E9A00[index] + (D_800625A0->primitives->shade + 0x14);
+        (D_800625A0->primitives->box + D_800625A0->bufferIndex)->y3 = D_801E9A2C[index] - 0x14;
+        (D_800625A0->primitives->edgeA + D_800625A0->bufferIndex)->x0 = D_801E9A00[index] + 0x14;
+        (D_800625A0->primitives->edgeA + D_800625A0->bufferIndex)->y0 = D_801E9A2C[index] - 0x24;
+        (D_800625A0->primitives->edgeA + D_800625A0->bufferIndex)->x1 = D_801E9A00[index] + (D_800625A0->primitives->shade + 0x14);
+        (D_800625A0->primitives->edgeA + D_800625A0->bufferIndex)->y1 = D_801E9A2C[index] - 0x24;
+        (D_800625A0->primitives->edgeA + D_800625A0->bufferIndex)->x2 = D_801E9A00[index] + (D_800625A0->primitives->shade + 0x14);
+        (D_800625A0->primitives->edgeA + D_800625A0->bufferIndex)->y2 = D_801E9A2C[index] - 0x14;
+        (D_800625A0->primitives->edgeB + D_800625A0->bufferIndex)->x0 = D_801E9A00[index] + 0x14;
+        (D_800625A0->primitives->edgeB + D_800625A0->bufferIndex)->y0 = D_801E9A2C[index] - 0x24;
+        (D_800625A0->primitives->edgeB + D_800625A0->bufferIndex)->x1 = D_801E9A00[index] + 0x14;
+        (D_800625A0->primitives->edgeB + D_800625A0->bufferIndex)->y1 = D_801E9A2C[index] - 0x14;
+        (D_800625A0->primitives->edgeB + D_800625A0->bufferIndex)->x2 = D_801E9A00[index] + (D_800625A0->primitives->shade + 0x14);
+        (D_800625A0->primitives->edgeB + D_800625A0->bufferIndex)->y2 = D_801E9A2C[index] - 0x14;
+        D_800625A0->primitives->mode = D_800625A0->bufferIndex;
+        D_800625A0->party->redraw3 = 1;
+    }
+}
 
 /* Hide the party panels (redraw flags 3 and 4). */
 void func_801D22C4(void) {
@@ -2698,14 +2784,13 @@ void func_801D2484(void) {
 
 /* Show (`show`) the six party labels, placing labels 3-5 as quads, or hide
  * the party name labels. */
-#ifdef NON_MATCHING
 void func_801D249C(u8 show) {
     s32 i;
 
     if (show) {
         func_801E7E68(D_800625A0->partyLabels, D_801EA534, 4, 6);
         for (i = 0; i < 3; i++) {
-            func_801C851C(D_800625A0->partyLabels[3 + i].verts, D_801E9E4C[i][0], D_801E9E58[i][0],
+            func_801C851C(D_800625A0->partyLabels[3 + i].verts, D_801E9E4C[i], D_801E9E58[i],
                           D_800625A0->partyLabels[3 + i].width, 0xd);
             D_800625A0->partyLabels[3 + i].count = D_800625A0->bufferIndex;
             D_800625A0->partyLabels[3 + i].visible = 1;
@@ -2717,9 +2802,6 @@ void func_801D249C(u8 show) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D249C);
-#endif
 
 /* Clear the party block's six bytes at +14. */
 void func_801D25E4(void) {
@@ -2730,7 +2812,31 @@ void func_801D25E4(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D261C);
+/* Hide the party names and place the name label of the current choice as a
+ * quad beside its highlight. */
+void func_801D261C(void) {
+    func_801D249C(0);
+    ((D_800625A0->partyLabels + D_800625A0->choice)->polys + D_800625A0->bufferIndex)->x0 =
+        D_801E9A1C[D_800625A0->choice] + 0x16 + D_801E9E94[D_800625A0->choice];
+    ((D_800625A0->partyLabels + D_800625A0->choice)->polys + D_800625A0->bufferIndex)->y0 =
+        D_801E9A48[D_800625A0->choice] - 0x22;
+    ((D_800625A0->partyLabels + D_800625A0->choice)->polys + D_800625A0->bufferIndex)->x1 =
+        D_801E9A1C[D_800625A0->choice] + 0x16 + D_801E9E94[D_800625A0->choice] +
+        D_800625A0->partyLabels[D_800625A0->choice].width;
+    ((D_800625A0->partyLabels + D_800625A0->choice)->polys + D_800625A0->bufferIndex)->y1 =
+        D_801E9A48[D_800625A0->choice] - 0x22;
+    ((D_800625A0->partyLabels + D_800625A0->choice)->polys + D_800625A0->bufferIndex)->x2 =
+        D_801E9A1C[D_800625A0->choice] + 0x16 + D_801E9E94[D_800625A0->choice];
+    ((D_800625A0->partyLabels + D_800625A0->choice)->polys + D_800625A0->bufferIndex)->y2 =
+        D_801E9A48[D_800625A0->choice] - 0x15;
+    ((D_800625A0->partyLabels + D_800625A0->choice)->polys + D_800625A0->bufferIndex)->x3 =
+        D_801E9A1C[D_800625A0->choice] + 0x16 + D_801E9E94[D_800625A0->choice] +
+        D_800625A0->partyLabels[D_800625A0->choice].width;
+    ((D_800625A0->partyLabels + D_800625A0->choice)->polys + D_800625A0->bufferIndex)->y3 =
+        D_801E9A48[D_800625A0->choice] - 0x15;
+    D_800625A0->partyLabels[D_800625A0->choice].count = D_800625A0->bufferIndex;
+    D_800625A0->party->unk14[D_800625A0->choice] = 1;
+}
 
 /* Draw the small window at (d4, b2) and its element at (d8, b6). */
 void func_801D28A8(void) {
@@ -2752,15 +2858,82 @@ void func_801D2968(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D29A8);
+/* Slide the three party panels in (`open`) or out along their movers,
+ * drawing each frame until one arrives; opening then pins them in place,
+ * plays the open sound and (unless `keep`) redraws the status. */
+void func_801D29A8(u8 open, u8 keep) {
+    MenuParty *party;
+    s32 i;
+
+    if (open) {
+        func_801E8018(8, D_800625A0->commandLabels, D_801EA528, D_800625A0->party->labels);
+        func_801C81E0(0x100, 0x86, 0x60, 6, 8, 0);
+        func_801C81E0(0x108, 0x3e, 0x68, 0x3e, 8, 1);
+        func_801C81E0(0x110, -10, 0x70, 0x76, 8, 2);
+    } else {
+        func_801E8044(8, D_800625A0->party->labels);
+        func_801C81E0(0x60, 6, 0x100, 0x86, 8, 0);
+        func_801C81E0(0x68, 0x3e, 0x108, 0x3e, 8, 1);
+        func_801C81E0(0x70, 0x76, 0x110, -10, 8, 2);
+    }
+    while (D_800625A0->movers[0].done == 0 && D_800625A0->movers[1].done == 0 &&
+           D_800625A0->movers[2].done == 0) {
+        for (i = 0; i < 3; i++) {
+            if (D_800625A0->party->ids[i] != 0xff) {
+                func_801D5A50(i, D_800625A0->party->ids[i]);
+            }
+        }
+        func_801C7BF4();
+        for (i = 0; i < 3; i++) {
+            if (D_800625A0->party->ids[i] != 0xff) {
+                func_801C8324(i);
+            }
+        }
+    }
+    if (open) {
+        D_800625A0->movers[0].x0 = 0x60;
+        D_800625A0->movers[0].y0 = 6;
+        D_800625A0->movers[1].x0 = 0x68;
+        D_800625A0->movers[1].y0 = 0x3e;
+        D_800625A0->movers[2].x0 = 0x70;
+        D_800625A0->movers[2].y0 = 0x76;
+        D_800625A0->movers[0].accY = 0;
+        D_800625A0->movers[0].accX = 0;
+        D_800625A0->movers[1].accY = 0;
+        D_800625A0->movers[1].accX = 0;
+        D_800625A0->movers[2].accY = 0;
+        D_800625A0->movers[2].accX = 0;
+        for (i = 0; i < 3; i++) {
+            if (D_800625A0->party->ids[i] != 0xff) {
+                func_801D5A50(i, D_800625A0->party->ids[i]);
+            }
+        }
+        func_801C8574(0x5d);
+        if (!keep) {
+            func_801D28A8();
+        }
+        D_800625A0->party->unk20[1] = 1;
+        D_800625A0->party->redraw6 = 1;
+    } else {
+        party = D_800625A0->party;
+        party->fieldShown[2] = 0;
+        party->fieldShown[1] = 0;
+        party->fieldShown[0] = 0;
+        if (!keep) {
+            D_800625A0->party->unk20[0] = 0;
+            D_800625A0->party->redraw5 = 0;
+        }
+    }
+    func_801C7BF4();
+}
 
 /* Open the field menu: the two top portraits, then each party member's and
  * gear's name image, the command cursor, panels and money window. */
-#ifdef NON_MATCHING
 void func_801D2D38(void) {
     s32 i;
     s32 row;
     void *block;
+    s32 gear;
 
     if (D_80059460 == 0) {
         for (row = 0; row < 2; row++) {
@@ -2774,22 +2947,21 @@ void func_801D2D38(void) {
         }
         func_801C8574(0x5e);
     }
-    for (i = 0, row = 6; i < 3; i++, row += 2) {
+    for (i = 0; i < 3; i++) {
         if (D_800625A0->party->ids[i] != 0xff) {
             func_801E8DA8(D_800625A0->party->ids[i], i * 2);
-            func_801E8DA8(D_8006D8A0[D_800625A0->party->ids[i]].gear != 0xff
-                              ? D_8006D8A0[D_800625A0->party->ids[i]].gear + 11
-                              : 0xff,
-                          row);
+            gear = D_8006D8A0[D_800625A0->party->ids[i]].gear;
+            if (gear != 0xff) {
+                func_801E8DA8(gear + 11, (i + 3) * 2);
+            } else {
+                func_801E8DA8(0xff, (i + 3) * 2);
+            }
         }
     }
     func_801E8474(8, D_801EA19C);
     func_801D29A8(1, 0);
     func_801D28FC();
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D2D38);
-#endif
 
 /* Refresh the item/status panels of `slot` for `mode` over two frames. */
 void func_801D2EC0(u8 slot, u8 mode) {
@@ -2801,7 +2973,55 @@ void func_801D2EC0(u8 slot, u8 mode) {
     func_801D8EA4(slot, 0, 0, mode);
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D2F4C);
+/* Open the notice window (portrait 2) and show three lines of label text
+ * from entry `message`: four line labels (pairs share one render buffer)
+ * rendered into VRAM and laid out as quads. */
+void func_801D2F4C(u8 message) {
+    s32 x;
+    MenuMark *mark;
+    MenuLabelSlot *line;
+    s32 i;
+
+    func_801D397C(2, 0x7a, 0x96, 0xbc, 0x40, 1, 1, 4, 0);
+    mark = D_800625A0->portraitMarks[2];
+    while (mark->done == 0) {
+        func_801C7BF4();
+    }
+    x = 0x84;
+    for (i = 0; i < 4; i++) {
+        void *block = func_80031BDC(0x80, 0);
+
+        D_800625A0->blocks1DE0[i] = block;
+        bzero(block, 0x80);
+        if (!(i & 1)) {
+            D_800625A0->blocks1DE0[i]->pixels = func_80031BDC(0x5ca, 0);
+            D_800625A0->blocks1DE0[i]->rect.x = 0x140;
+            D_800625A0->blocks1DE0[i]->rect.y = (i / 2) * 13 + 0x4e;
+            D_800625A0->blocks1DE0[i]->rect.w = 0x3a;
+            D_800625A0->blocks1DE0[i]->rect.h = 13;
+        } else {
+            D_800625A0->blocks1DE0[i]->pixels = D_800625A0->blocks1DE0[i - 1]->pixels;
+        }
+    }
+    for (i = 0; i < 3; i++) {
+        line = D_800625A0->blocks1DE0[i];
+        line->width = func_80034EAC(func_80033728(D_800625A0->labels, message + i), line->pixels, 0x36, i % 2);
+        func_801E7C50(line, i, 0, 0);
+        func_801E920C(&line->polys[D_800625A0->bufferIndex], (u16)x, (u16)(i * 16 + 0xa0), 0,
+                      (u8)((i / 2) * 13 + 0x4e), line->width, 13);
+        func_801C851C(line->verts, x, i * 16 + 0xa0, line->width, 13);
+        line->count = D_800625A0->bufferIndex;
+        line->visible = 1;
+    }
+    LoadImage(&D_800625A0->blocks1DE0[0]->rect, D_800625A0->blocks1DE0[0]->pixels);
+    LoadImage(&D_800625A0->blocks1DE0[2]->rect, D_800625A0->blocks1DE0[2]->pixels);
+    DrawSync(0);
+    D_800625A0->party->unk2E = 1;
+    func_800320E8(D_800625A0->blocks1DE0[0]->pixels);
+    func_800320E8(D_800625A0->blocks1DE0[2]->pixels);
+    func_801C7BF4();
+    func_801C7BF4();
+}
 
 /* Close the notice when open (party +22): free portrait 2 and its four
  * blocks (+1de0), then finish a frame. */
@@ -2839,7 +3059,43 @@ void func_801D3444(void) {
     func_800320E8(D_800625A0->block43C);
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D3488);
+/* Show the two party window sprites (sheet 164, 165) at `row` and lay out
+ * their quads, unless only one member is listed (+32b, or +33b when
+ * `fighters`). The block at +440 is allocated on first use. */
+void func_801D3488(u8 row, u8 fighters) {
+    s32 count;
+    s32 i;
+    void *block;
+
+    if (!fighters) {
+        count = D_800625A0->partyCount;
+    } else {
+        count = D_800625A0->fighters;
+    }
+    if (count != 1) {
+        if (D_800625A0->party->unk67 == 0) {
+            block = func_80031BDC(0x1c4, 0);
+            D_800625A0->block440 = block;
+            bzero(block, 0x1c4);
+            D_800625A0->party->unk67 = 1;
+        }
+        for (i = 0; i < 2; i++) {
+            func_8002675C(D_800625A0->sheet, 0x164 + i, &D_800625A0->block440->polys[i * 4], D_800625A0->bufferIndex,
+                          D_801EA164[i], D_801EA16C[row], 0x1000);
+        }
+        for (i = 0; i < 4; i++) {
+            func_801C851C(&D_800625A0->block440->verts[i * 4],
+                          D_800625A0->block440->polys[i * 2 + D_800625A0->bufferIndex].x0,
+                          D_800625A0->block440->polys[i * 2 + D_800625A0->bufferIndex].y0,
+                          D_800625A0->block440->polys[i * 2 + D_800625A0->bufferIndex].x1 -
+                              D_800625A0->block440->polys[i * 2 + D_800625A0->bufferIndex].x0,
+                          D_800625A0->block440->polys[i * 2 + D_800625A0->bufferIndex].y3 -
+                              D_800625A0->block440->polys[i * 2 + D_800625A0->bufferIndex].y0);
+        }
+        D_800625A0->block440->buffer = D_800625A0->bufferIndex;
+        D_800625A0->party->unk53 = 1;
+    }
+}
 
 /* Close the block at +440 when it is open (party +67), hiding its sprites. */
 void func_801D3674(void) {
@@ -2853,7 +3109,31 @@ void func_801D3674(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D36E0);
+/* Lay out `label` as the portrait of party slot `slot` (its character, or
+ * its gear when `gear`) at the panel position of `mode`. */
+void func_801D36E0(MenuLabelSlot *label, u8 slot, u8 gear, u8 mode) {
+    s32 x;
+    s32 w;
+
+    func_801E927C(&label->polys[D_800625A0->bufferIndex]);
+    label->polys[D_800625A0->bufferIndex].tpage = GetTPage(0, 0, 0x180, 0);
+    if (!gear) {
+        w = 0x48;
+        label->polys[D_800625A0->bufferIndex].clut = (D_800625A0->party->ids[slot] & 1) ? D_80059414 : D_800595D4;
+        x = D_801EA17C[mode] - 0x24;
+        func_801E920C(&label->polys[D_800625A0->bufferIndex], (u16)x, (u16)D_801EA18C[mode],
+                      (u8)(D_801EA578[slot] * 4), (u8)D_801EA5C4[slot], w, 13);
+    } else {
+        w = 0x60;
+        label->polys[D_800625A0->bufferIndex].clut =
+            ((D_8006D8A0[D_800625A0->party->ids[slot]].gear + 11) & 1) ? D_80059414 : D_800595D4;
+        x = D_801EA17C[mode] - 0x30;
+        func_801E920C(&label->polys[D_800625A0->bufferIndex], (u16)x, (u16)D_801EA18C[mode],
+                      (u8)(D_801EA584[slot] * 4), (u8)((s32 *)D_801EA5D0)[slot], w, 13);
+    }
+    func_801C851C(label->verts, x, D_801EA18C[mode], w, 13);
+    label->count = D_800625A0->bufferIndex;
+}
 
 /* Open portrait window `index` at (x, y) of w x h: grow it in (`grow`) or
  * lay it out at once. Windows from 2 get their own blocks. */
@@ -2927,42 +3207,182 @@ void func_801D3C4C(u8 slot, u16 x, u16 y, s32 unused, u16 h) {
     MenuPortrait *portrait;
 
     portrait = D_800625A0->portraits[slot];
-    func_8002675C(D_800625A0->sheet, 0x105, portrait->top, D_800625A0->bufferIndex, x, y, 0x1000);
-    func_800263E4(D_800625A0->sheet, 0x105, portrait->bottom, D_800625A0->bufferIndex, x, y + h - 8, 0x1000, 0, 1);
-    func_8002675C(D_800625A0->sheet, 0x106, portrait->side, D_800625A0->bufferIndex, x, y + 8, 0x1000);
-    func_801C851C(portrait->topVerts, x, y, 8, 8);
-    func_801C851C(portrait->bottomVerts, x, y + h, 8, -8);
-    func_801C851C(portrait->sideVerts, x, y + 8, 8, h - 8);
+    func_8002675C(D_800625A0->sheet, 0x105, portrait->frameEnds, D_800625A0->bufferIndex, x, y, 0x1000);
+    func_800263E4(D_800625A0->sheet, 0x105, &portrait->frameEnds[2], D_800625A0->bufferIndex, x, y + h - 8, 0x1000,
+                  0, 1);
+    func_8002675C(D_800625A0->sheet, 0x106, portrait->frameSide, D_800625A0->bufferIndex, x, y + 8, 0x1000);
+    func_801C851C(&portrait->endsAt[0], x, y, 8, 8);
+    func_801C851C(&portrait->endsAt[4], x, y + h, 8, -8);
+    func_801C851C(portrait->sideAt, x, y + 8, 8, h - 8);
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D3DB0);
+/* Build portrait window `index`'s four corner sprites (sheet fd, ff, 102,
+ * 104) for this buffer and place them around the w x h rectangle at (x, y),
+ * mirrored by negative extents; make them semi-transparent. */
+void func_801D3DB0(u8 index, u16 x, u16 y, u16 w, u16 h) {
+    MenuPortrait *portrait = D_800625A0->portraits[index];
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D3FF8);
+    portrait->cornerParts = 0;
+    portrait->cornerParts += func_8002675C(D_800625A0->sheet, 0xfd, portrait->corner, D_800625A0->bufferIndex, 0, 0,
+                                           0x1000);
+    portrait->cornerParts += func_8002675C(D_800625A0->sheet, 0xff, &portrait->corner[portrait->cornerParts * 2],
+                                           D_800625A0->bufferIndex, 0, 0, 0x1000);
+    portrait->cornerParts += func_8002675C(D_800625A0->sheet, 0x102, &portrait->corner[portrait->cornerParts * 2],
+                                           D_800625A0->bufferIndex, 0, 0, 0x1000);
+    portrait->cornerParts += func_8002675C(D_800625A0->sheet, 0x104, &portrait->corner[portrait->cornerParts * 2],
+                                           D_800625A0->bufferIndex, 0, 0, 0x1000);
+    func_801C851C(&portrait->cornerAt[0], x - 8, y + 8, 16, -16);
+    func_801C851C(&portrait->cornerAt[4], x + w + 8, y + 8, -16, -16);
+    func_801C851C(&portrait->cornerAt[8], x - 8, y + h - 8, 16, 16);
+    func_801C851C(&portrait->cornerAt[12], x + w + 8, y + h - 8, -16, 16);
+    for (i = 0; i < 4; i++) {
+        func_801E91C4(&portrait->corner[i * 2 + D_800625A0->bufferIndex]);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D433C);
+/* Map portrait window `index`'s top edge pieces for this buffer and place them in two
+ * halves along the top of (x, y, w). */
+void func_801D3FF8(u8 index, u16 x, u16 y, u16 w) {
+    MenuPortrait *portrait = D_800625A0->portraits[index];
+    s32 half;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D4688);
+    (portrait->edge[0] + D_800625A0->bufferIndex)->u0 = 0;
+    (portrait->edge[0] + D_800625A0->bufferIndex)->v0 = 0x84;
+    (portrait->edge[0] + D_800625A0->bufferIndex)->u1 = 7;
+    (portrait->edge[0] + D_800625A0->bufferIndex)->v1 = 0x84;
+    (portrait->edge[0] + D_800625A0->bufferIndex)->u2 = 0;
+    (portrait->edge[0] + D_800625A0->bufferIndex)->v2 = 0x94;
+    (portrait->edge[0] + D_800625A0->bufferIndex)->u3 = 7;
+    (portrait->edge[0] + D_800625A0->bufferIndex)->v3 = 0x94;
+    (portrait->edge[0] + D_800625A0->bufferIndex + 2)->u0 = 0;
+    (portrait->edge[0] + D_800625A0->bufferIndex + 2)->v0 = 0x84;
+    (portrait->edge[0] + D_800625A0->bufferIndex + 2)->u1 = 7;
+    (portrait->edge[0] + D_800625A0->bufferIndex + 2)->v1 = 0x84;
+    (portrait->edge[0] + D_800625A0->bufferIndex + 2)->u2 = 0;
+    (portrait->edge[0] + D_800625A0->bufferIndex + 2)->v2 = 0x94;
+    (portrait->edge[0] + D_800625A0->bufferIndex + 2)->u3 = 7;
+    (portrait->edge[0] + D_800625A0->bufferIndex + 2)->v3 = 0x94;
+    half = (w - 16) / 2;
+    func_801C851C(portrait->edgeAt[0][0], x + 8, y - 8, half, 16);
+    func_801C851C(portrait->edgeAt[0][1], x + (half + 8), y - 8, half, 16);
+    for (i = 0; i < 2; i++) {
+        func_801E91C4(&portrait->edge[0][i * 2 + D_800625A0->bufferIndex]);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D49D0);
+/* Map portrait window `index`'s bottom edge pieces for this buffer and place them in
+ * two halves along the bottom of (x, y, w, h). */
+void func_801D433C(u8 index, u16 x, u16 y, u16 w, u16 h) {
+    MenuPortrait *portrait = D_800625A0->portraits[index];
+    s32 half;
+    s32 i;
+
+    (portrait->edge[1] + D_800625A0->bufferIndex)->u0 = 8;
+    (portrait->edge[1] + D_800625A0->bufferIndex)->v0 = 0x84;
+    (portrait->edge[1] + D_800625A0->bufferIndex)->u1 = 0xF;
+    (portrait->edge[1] + D_800625A0->bufferIndex)->v1 = 0x84;
+    (portrait->edge[1] + D_800625A0->bufferIndex)->u2 = 8;
+    (portrait->edge[1] + D_800625A0->bufferIndex)->v2 = 0x94;
+    (portrait->edge[1] + D_800625A0->bufferIndex)->u3 = 0xF;
+    (portrait->edge[1] + D_800625A0->bufferIndex)->v3 = 0x94;
+    (portrait->edge[1] + D_800625A0->bufferIndex + 2)->u0 = 8;
+    (portrait->edge[1] + D_800625A0->bufferIndex + 2)->v0 = 0x84;
+    (portrait->edge[1] + D_800625A0->bufferIndex + 2)->u1 = 0xF;
+    (portrait->edge[1] + D_800625A0->bufferIndex + 2)->v1 = 0x84;
+    (portrait->edge[1] + D_800625A0->bufferIndex + 2)->u2 = 8;
+    (portrait->edge[1] + D_800625A0->bufferIndex + 2)->v2 = 0x94;
+    (portrait->edge[1] + D_800625A0->bufferIndex + 2)->u3 = 0xF;
+    (portrait->edge[1] + D_800625A0->bufferIndex + 2)->v3 = 0x94;
+    half = (w - 16) / 2;
+    func_801C851C(portrait->edgeAt[1][0], x + 8, y + h - 8, half, 16);
+    func_801C851C(portrait->edgeAt[1][1], x + (half + 8), y + h - 8, half, 16);
+    for (i = 0; i < 2; i++) {
+        func_801E91C4(&portrait->edge[1][i * 2 + D_800625A0->bufferIndex]);
+    }
+}
+
+/* Map portrait window `index`'s left edge pieces for this buffer and place them in two
+ * halves down the left of (x, y, h). */
+void func_801D4688(u8 index, u16 x, u16 y, u16 h) {
+    MenuPortrait *portrait = D_800625A0->portraits[index];
+    s32 half;
+    s32 i;
+
+    (portrait->edge[2] + D_800625A0->bufferIndex)->u0 = 0x10;
+    (portrait->edge[2] + D_800625A0->bufferIndex)->v0 = 0x84;
+    (portrait->edge[2] + D_800625A0->bufferIndex)->u1 = 0x20;
+    (portrait->edge[2] + D_800625A0->bufferIndex)->v1 = 0x84;
+    (portrait->edge[2] + D_800625A0->bufferIndex)->u2 = 0x10;
+    (portrait->edge[2] + D_800625A0->bufferIndex)->v2 = 0x8B;
+    (portrait->edge[2] + D_800625A0->bufferIndex)->u3 = 0x20;
+    (portrait->edge[2] + D_800625A0->bufferIndex)->v3 = 0x8B;
+    (portrait->edge[2] + D_800625A0->bufferIndex + 2)->u0 = 0x10;
+    (portrait->edge[2] + D_800625A0->bufferIndex + 2)->v0 = 0x84;
+    (portrait->edge[2] + D_800625A0->bufferIndex + 2)->u1 = 0x20;
+    (portrait->edge[2] + D_800625A0->bufferIndex + 2)->v1 = 0x84;
+    (portrait->edge[2] + D_800625A0->bufferIndex + 2)->u2 = 0x10;
+    (portrait->edge[2] + D_800625A0->bufferIndex + 2)->v2 = 0x8B;
+    (portrait->edge[2] + D_800625A0->bufferIndex + 2)->u3 = 0x20;
+    (portrait->edge[2] + D_800625A0->bufferIndex + 2)->v3 = 0x8B;
+    half = (h - 16) / 2;
+    func_801C851C(portrait->edgeAt[2][0], x - 8, y + 8, 16, half);
+    func_801C851C(portrait->edgeAt[2][1], x - 8, y + (half + 8), 16, half);
+    for (i = 0; i < 2; i++) {
+        func_801E91C4(&portrait->edge[2][i * 2 + D_800625A0->bufferIndex]);
+    }
+}
+
+/* Map portrait window `index`'s right edge pieces for this buffer and place them in two
+ * halves down the right of (x, y, w, h). */
+void func_801D49D0(u8 index, u16 x, u16 y, u16 w, u16 h) {
+    MenuPortrait *portrait = D_800625A0->portraits[index];
+    s32 half;
+    s32 i;
+
+    (portrait->edge[3] + D_800625A0->bufferIndex)->u0 = 0x10;
+    (portrait->edge[3] + D_800625A0->bufferIndex)->v0 = 0x8C;
+    (portrait->edge[3] + D_800625A0->bufferIndex)->u1 = 0x20;
+    (portrait->edge[3] + D_800625A0->bufferIndex)->v1 = 0x8C;
+    (portrait->edge[3] + D_800625A0->bufferIndex)->u2 = 0x10;
+    (portrait->edge[3] + D_800625A0->bufferIndex)->v2 = 0x93;
+    (portrait->edge[3] + D_800625A0->bufferIndex)->u3 = 0x20;
+    (portrait->edge[3] + D_800625A0->bufferIndex)->v3 = 0x93;
+    (portrait->edge[3] + D_800625A0->bufferIndex + 2)->u0 = 0x10;
+    (portrait->edge[3] + D_800625A0->bufferIndex + 2)->v0 = 0x8C;
+    (portrait->edge[3] + D_800625A0->bufferIndex + 2)->u1 = 0x20;
+    (portrait->edge[3] + D_800625A0->bufferIndex + 2)->v1 = 0x8C;
+    (portrait->edge[3] + D_800625A0->bufferIndex + 2)->u2 = 0x10;
+    (portrait->edge[3] + D_800625A0->bufferIndex + 2)->v2 = 0x93;
+    (portrait->edge[3] + D_800625A0->bufferIndex + 2)->u3 = 0x20;
+    (portrait->edge[3] + D_800625A0->bufferIndex + 2)->v3 = 0x93;
+    half = (h - 16) / 2;
+    func_801C851C(portrait->edgeAt[3][0], x + w - 8, y + 8, 16, half);
+    func_801C851C(portrait->edgeAt[3][1], x + w - 8, y + (half + 8), 16, half);
+    for (i = 0; i < 2; i++) {
+        func_801E91C4(&portrait->edge[3][i * 2 + D_800625A0->bufferIndex]);
+    }
+}
 
 /* Lay out portrait window `index` at (x, y) of w x h and show it. */
-void func_801D4D1C(u8 index, u16 x, u16 y, u16 w, u16 h, u8 arg5, s32 arg6, u8 frame) {
+void func_801D4D1C(u8 index, u16 x, u16 y, u16 w, u16 h, u8 style, s32 depth, u8 framed) {
     MenuPortrait *portrait;
 
     portrait = D_800625A0->portraits[index];
     D_800625A0->party->unk20[index] = 0;
-    func_801C851C(portrait->frameVerts, x, y, w, h);
+    func_801C851C(portrait->fillAt, x, y, w, h);
     func_801D3DB0(index, x, y, w, h);
     func_801D3FF8(index, x, y, w);
     func_801D433C(index, x, y, w, h);
     func_801D4688(index, x, y, h);
     func_801D49D0(index, x, y, w, h);
-    if (frame) {
+    if (framed) {
         func_801D3C4C(index, x, y, w, h);
     }
-    portrait->unk71D = frame;
-    portrait->unk714 = arg5;
-    portrait->unk718 = arg6;
+    portrait->framed = framed;
+    portrait->style = style;
+    portrait->depth = depth;
     portrait->buffer = D_800625A0->bufferIndex;
     D_800625A0->party->unk20[index] = 1;
 }
@@ -2975,7 +3395,18 @@ void func_801D4EA0(u8 slot) {
     func_800320E8(D_800625A0->portraitMarks[slot]);
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D4F2C);
+/* Build field block `index`'s frame (sheet 14b + index) at (x, y) and its
+ * character portrait quad. */
+void func_801D4F2C(u8 index, u8 mode, s32 x, s32 y) {
+    MenuFieldBlock *block = D_800625A0->fieldBlocks[index];
+
+    func_8002675C(D_800625A0->sheet, index + 0x14b, block->frameA, D_800625A0->bufferIndex, x, y, 0x1000);
+    func_801E927C(&block->frameB[D_800625A0->bufferIndex]);
+    block->frameB[D_800625A0->bufferIndex].tpage = GetTPage(0, 0, 0x180, 0);
+    block->frameB[D_800625A0->bufferIndex].clut = (D_800625A0->party->ids[index] & 1) ? D_80059414 : D_800595D4;
+    func_801E920C(&block->frameB[D_800625A0->bufferIndex], (u16)(D_801E9B58 + x), (u16)(D_801E9B5C + y),
+                  (u8)(D_801EA578[index] * 4), (u8)D_801EA5C4[index], 0x48, 13);
+}
 
 /* Lay out the parts of field block `index` at (x, y) from the D_801EA34C
  * sheet images (ffff none). */
@@ -2994,13 +3425,123 @@ void func_801D50EC(u8 index, s32 x, s32 y) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D51EC);
+/* Lay out character `ch`'s hp (by digit position) and hp maximum (packed)
+ * on field block `index` at (x, y). */
+void func_801D51EC(u8 index, u8 ch, s32 x, s32 y) {
+    MenuFieldBlock *block = D_800625A0->fieldBlocks[index];
+    s32 i;
+    s32 n;
+    u8 digit;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D53D0);
+    func_801C80B8(D_8006D8A0[ch].hp);
+    block->count1 = 0;
+    for (i = 0; i < 3; i++) {
+        digit = D_800625A0->digits[6 + i];
+        if (digit != 0xff) {
+            block->count1 += func_8002675C(D_800625A0->sheet, digit, &block->list1[block->count1 * 2],
+                                           D_800625A0->bufferIndex, x + D_801E9B28 + i * 8, y + D_801E9B2C, 0x1000);
+        }
+    }
+    func_801C80B8(D_8006D8A0[ch].hpMax);
+    block->count2 = 0;
+    for (i = 0, n = 0; i < 3; i++) {
+        digit = D_800625A0->digits[6 + i];
+        if (digit != 0xff) {
+            block->count2 += func_8002675C(D_800625A0->sheet, digit, &block->list2[block->count2 * 2],
+                                           D_800625A0->bufferIndex, x + D_801E9B30 + n * 8, y + D_801E9B34, 0x1000);
+            n++;
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D55B4);
+/* Lay out character `ch`'s ep (by digit position) and ep maximum (packed)
+ * on field block `index` at (x, y). */
+void func_801D53D0(u8 index, u8 ch, s32 x, s32 y) {
+    MenuFieldBlock *block = D_800625A0->fieldBlocks[index];
+    s32 i;
+    s32 n;
+    u8 digit;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D5794);
+    func_801C80B8(D_8006D8A0[ch].ep);
+    block->count3 = 0;
+    for (i = 0; i < 2; i++) {
+        digit = D_800625A0->digits[7 + i];
+        if (digit != 0xff) {
+            block->count3 += func_8002675C(D_800625A0->sheet, digit, &block->list3[block->count3 * 2],
+                                           D_800625A0->bufferIndex, x + D_801E9B38 + i * 8, y + D_801E9B3C, 0x1000);
+        }
+    }
+    func_801C80B8(D_8006D8A0[ch].epMax);
+    block->count4 = 0;
+    for (i = 0, n = 0; i < 2; i++) {
+        digit = D_800625A0->digits[7 + i];
+        if (digit != 0xff) {
+            block->count4 += func_8002675C(D_800625A0->sheet, digit, &block->list4[block->count4 * 2],
+                                           D_800625A0->bufferIndex, x + D_801E9B40 + n * 8, y + D_801E9B44, 0x1000);
+            n++;
+        }
+    }
+}
+
+/* Lay out character `ch`'s experience and experience to the next level
+ * (seven digits each, by digit position) on field block `index` at (x, y). */
+void func_801D55B4(u8 index, u8 ch, s32 x, s32 y) {
+    MenuFieldBlock *block = D_800625A0->fieldBlocks[index];
+    s32 i;
+    u8 digit;
+
+    func_801C80B8(D_8006D8A0[ch].exp);
+    block->count5 = 0;
+    for (i = 0; i < 7; i++) {
+        digit = D_800625A0->digits[2 + i];
+        if (digit != 0xff) {
+            block->count5 += func_8002675C(D_800625A0->sheet, digit, &block->list5[block->count5 * 2],
+                                           D_800625A0->bufferIndex, x + D_801E9B48 + i * 8, y + D_801E9B4C, 0x1000);
+        }
+    }
+    func_801C80B8(D_8006D8A0[ch].expNext);
+    block->count7 = 0;
+    for (i = 0; i < 7; i++) {
+        digit = D_800625A0->digits[2 + i];
+        if (digit != 0xff) {
+            block->count7 += func_8002675C(D_800625A0->sheet, digit, &block->list7[block->count7 * 2],
+                                           D_800625A0->bufferIndex, x + D_801E9B50 + i * 8, y + D_801E9B54, 0x1000);
+        }
+    }
+}
+
+/* Lay out character `ch`'s +62 and +63 values (three digits each, by digit
+ * position) on field block `index` at (x, y), the second tinted green. */
+void func_801D5794(u8 index, u8 ch, s32 x, s32 y) {
+    MenuFieldBlock *block = D_800625A0->fieldBlocks[index];
+    s32 i;
+    u8 digit;
+
+    func_801C80B8(D_8006D8A0[ch].unk62);
+    block->count6 = 0;
+    for (i = 0; i < 3; i++) {
+        digit = D_800625A0->digits[6 + i];
+        if (digit != 0xff) {
+            block->count6 += func_8002675C(D_800625A0->sheet, digit, &block->list6[block->count6 * 2],
+                                           D_800625A0->bufferIndex, x + D_801E9B18 + i * 8, y + D_801E9B1C, 0x1000);
+        }
+    }
+    func_801C80B8(D_8006D8A0[ch].unk63);
+    block->count8 = 0;
+    for (i = 0; i < 3; i++) {
+        digit = D_800625A0->digits[6 + i];
+        if (digit != 0xff) {
+            block->count8 += func_8002675C(D_800625A0->sheet, digit, &block->list8[block->count8 * 2],
+                                           D_800625A0->bufferIndex, x + D_801E9B20 + i * 8, y + D_801E9B24, 0x1000);
+        }
+    }
+    for (i = 0; i < block->count8; i++) {
+        SetShadeTex(&block->list8[i * 2 + D_800625A0->bufferIndex], 0);
+        (block->list8 + (i * 2 + D_800625A0->bufferIndex))->r0 = 0;
+        (block->list8 + (i * 2 + D_800625A0->bufferIndex))->g0 = 0x80;
+        (block->list8 + (i * 2 + D_800625A0->bufferIndex))->b0 = 0;
+    }
+}
 
 /* Lay out field block `index` (none for ff) at its mover's position in
  * `mode` and show it. */
@@ -3049,23 +3590,433 @@ void func_801D5BA4(s32 x, s32 y) {
     D_800625A0->fieldMenu->start = D_800625A0->bufferIndex;
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D5CF8);
+/* Lay out the play time digits (hours, minutes, seconds) at (x, y) with
+ * their two separators. */
+void func_801D5CF8(s32 x, s32 y) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D5ED4);
+    for (i = 0; i < 3; i++) {
+        func_8002675C(D_800625A0->sheet, D_800625A0->time[i], &D_800625A0->fieldMenu2->polys[i * 2],
+                      D_800625A0->bufferIndex, x + i * 8, y, 0x1000);
+    }
+    for (i = 3; i < 5; i++) {
+        func_8002675C(D_800625A0->sheet, D_800625A0->time[i], &D_800625A0->fieldMenu2->polys[i * 2],
+                      D_800625A0->bufferIndex, x + i * 8 + 8, y, 0x1000);
+    }
+    for (i = 5; i < 7; i++) {
+        func_8002675C(D_800625A0->sheet, D_800625A0->time[i], &D_800625A0->fieldMenu2->polys[i * 2],
+                      D_800625A0->bufferIndex, x + i * 8 + 0x10, y, 0x1000);
+    }
+    func_8002675C(D_800625A0->sheet, 0xee, &D_800625A0->fieldMenu2->polys2[0], D_800625A0->bufferIndex, x + 0x18, y,
+                  0x1000);
+    func_8002675C(D_800625A0->sheet, 0xee, &D_800625A0->fieldMenu2->polys2[4], D_800625A0->bufferIndex, x + 0x30, y,
+                  0x1000);
+    D_800625A0->fieldMenu2->start = D_800625A0->bufferIndex;
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D6194);
+/* Lay out the detail panel's frame (sheet 14b + slot) and the portrait of
+ * party slot `slot`: its character, or its gear (further left) when `gear`. */
+void func_801D5ED4(u8 slot, u8 gear) {
+    s32 shift;
+    s32 w;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D6338);
+    shift = gear ? 0x18 : 0;
+    func_8002675C(D_800625A0->sheet, slot + 0x14b, D_800625A0->block358->frame, D_800625A0->bufferIndex,
+                  0x18 - shift, 0xe, 0x1000);
+    func_801C851C(D_800625A0->block358->frameAt, D_800625A0->block358->frame[D_800625A0->bufferIndex].x0,
+                  D_800625A0->block358->frame[D_800625A0->bufferIndex].y0, 0x30, 0x30);
+    func_801E927C(&D_800625A0->block358->portrait[D_800625A0->bufferIndex]);
+    D_800625A0->block358->portrait[D_800625A0->bufferIndex].tpage = GetTPage(0, 0, 0x180, 0);
+    if (!gear) {
+        D_800625A0->block358->portrait[D_800625A0->bufferIndex].clut =
+            (D_800625A0->party->ids[slot] & 1) ? D_80059414 : D_800595D4;
+    } else {
+        D_800625A0->block358->portrait[D_800625A0->bufferIndex].clut =
+            ((D_8006D8A0[D_800625A0->party->ids[slot]].gear + 11) & 1) ? D_80059414 : D_800595D4;
+    }
+    w = gear * 0x18 + 0x48;
+    func_801E920C(&D_800625A0->block358->portrait[D_800625A0->bufferIndex], 0, 0,
+                  (u8)(D_801EA578[gear * 3 + slot] * 4), (u8)D_801EA5C4[gear * 3 + slot], (u16)w, 13);
+    func_801C851C(D_800625A0->block358->portraitAt, D_801E9D38 - shift, D_801E9D3C, w, 13);
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D680C);
+/* Build the detail panel's parts of `layout` from the sheet and place each
+ * part's quad where the sheet put it. */
+void func_801D6194(u8 layout) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D6CF4);
+    D_800625A0->block358->count = 0;
+    for (i = 0; i < 24; i++) {
+        if (D_801EA39C[layout * 24 + i] != 0xffff) {
+            D_800625A0->block358->count +=
+                func_8002675C(D_800625A0->sheet, D_801EA39C[layout * 24 + i],
+                              &D_800625A0->block358->parts[D_800625A0->block358->count * 2], D_800625A0->bufferIndex,
+                              D_801E9B60[layout * 24 + i], D_801E9C20[layout * 24 + i], 0x1000);
+        }
+    }
+    for (i = 0; i < D_800625A0->block358->count; i++) {
+        func_801C851C(D_800625A0->block358->partsAt[i],
+                      D_800625A0->block358->parts[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->parts[i * 2 + D_800625A0->bufferIndex].y0,
+                      D_800625A0->block358->parts[i * 2 + D_800625A0->bufferIndex].x1 -
+                          D_800625A0->block358->parts[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->parts[i * 2 + D_800625A0->bufferIndex].y3 -
+                          D_800625A0->block358->parts[i * 2 + D_800625A0->bufferIndex].y0);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D7154);
+/* Lay out the detail panel's hp (by digit position) and hp maximum (packed)
+ * of party slot `slot`: the character's (three digits) or, with `gear`, its
+ * gear's (five digits). */
+void func_801D6338(u8 slot, u8 gear) {
+    s32 digits;
+    s32 first;
+    s32 x;
+    s32 i;
+    u8 digit;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D74EC);
+    if (!gear) {
+        digits = 3;
+        first = 6;
+        x = D_801E9CF0;
+        func_801C80B8(D_8006D8A0[D_800625A0->party->ids[slot]].hp);
+    } else {
+        digits = 5;
+        first = 4;
+        x = D_801E9CF0 + 8;
+        func_801C80B8(D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk60);
+    }
+    D_800625A0->block358->hpCount = 0;
+    for (i = 0; i < digits; i++) {
+        digit = D_800625A0->digits[first + i];
+        if (digit != 0xff) {
+            D_800625A0->block358->hpCount +=
+                func_8002675C(D_800625A0->sheet, digit, &D_800625A0->block358->hp[D_800625A0->block358->hpCount * 2],
+                              D_800625A0->bufferIndex, x - gear * 0x18, D_801E9CF4, 0x1000);
+        }
+        x += 8;
+    }
+    for (i = 0; i < D_800625A0->block358->hpCount; i++) {
+        func_801C851C(D_800625A0->block358->hpAt[i], D_800625A0->block358->hp[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->hp[i * 2 + D_800625A0->bufferIndex].y0,
+                      D_800625A0->block358->hp[i * 2 + D_800625A0->bufferIndex].x1 -
+                          D_800625A0->block358->hp[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->hp[i * 2 + D_800625A0->bufferIndex].y3 -
+                          D_800625A0->block358->hp[i * 2 + D_800625A0->bufferIndex].y0);
+    }
+    if (!gear) {
+        func_801C80B8(D_8006D8A0[D_800625A0->party->ids[slot]].hpMax);
+        x = D_801E9CF8;
+    } else {
+        func_801C80B8(D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk64);
+        x = D_801E9CF8 - 0x20;
+    }
+    D_800625A0->block358->hpMaxCount = 0;
+    for (i = 0; i < digits; i++) {
+        digit = D_800625A0->digits[first + i];
+        if (digit != 0xff) {
+            D_800625A0->block358->hpMaxCount +=
+                func_8002675C(D_800625A0->sheet, digit,
+                              &D_800625A0->block358->hpMax[D_800625A0->block358->hpMaxCount * 2],
+                              D_800625A0->bufferIndex, x - gear * 0x18, gear * 8 + D_801E9CFC, 0x1000);
+            x += 8;
+        }
+    }
+    for (i = 0; i < D_800625A0->block358->hpMaxCount; i++) {
+        func_801C851C(D_800625A0->block358->hpMaxAt[i],
+                      D_800625A0->block358->hpMax[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->hpMax[i * 2 + D_800625A0->bufferIndex].y0,
+                      D_800625A0->block358->hpMax[i * 2 + D_800625A0->bufferIndex].x1 -
+                          D_800625A0->block358->hpMax[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->hpMax[i * 2 + D_800625A0->bufferIndex].y3 -
+                          D_800625A0->block358->hpMax[i * 2 + D_800625A0->bufferIndex].y0);
+    }
+}
 
+/* Lay out the detail panel's ep (by digit position) and ep maximum (packed)
+ * of party slot `slot`: the character's (two digits) or, with `gear`, its
+ * gear's +38 and +3a (four digits). */
+void func_801D680C(u8 slot, u8 gear) {
+    s32 digits;
+    s32 first;
+    s32 x;
+    s32 y;
+    s32 i;
+    u8 digit;
+
+    if (!gear) {
+        digits = 2;
+        first = 7;
+        x = D_801E9D00;
+        y = D_801E9D04;
+        func_801C80B8(D_8006D8A0[D_800625A0->party->ids[slot]].ep);
+    } else {
+        digits = 4;
+        first = 5;
+        x = D_801E9D00;
+        y = D_801E9D04 + 8;
+        func_801C80B8(D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk38);
+    }
+    D_800625A0->block358->epCount = 0;
+    for (i = 0; i < digits; i++) {
+        digit = D_800625A0->digits[first + i];
+        if (digit != 0xff) {
+            D_800625A0->block358->epCount +=
+                func_8002675C(D_800625A0->sheet, digit, &D_800625A0->block358->ep[D_800625A0->block358->epCount * 2],
+                              D_800625A0->bufferIndex, x - gear * 0x18, y, 0x1000);
+        }
+        x += 8;
+    }
+    for (i = 0; i < D_800625A0->block358->epCount; i++) {
+        func_801C851C(D_800625A0->block358->epAt[i], D_800625A0->block358->ep[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->ep[i * 2 + D_800625A0->bufferIndex].y0,
+                      D_800625A0->block358->ep[i * 2 + D_800625A0->bufferIndex].x1 -
+                          D_800625A0->block358->ep[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->ep[i * 2 + D_800625A0->bufferIndex].y3 -
+                          D_800625A0->block358->ep[i * 2 + D_800625A0->bufferIndex].y0);
+    }
+    if (!gear) {
+        func_801C80B8(D_8006D8A0[D_800625A0->party->ids[slot]].epMax);
+        x = D_801E9D08;
+        y = D_801E9D0C;
+    } else {
+        func_801C80B8(D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk3A);
+        x = D_801E9D08 - 0x20;
+        y = D_801E9D0C + 0x10;
+    }
+    D_800625A0->block358->epMaxCount = 0;
+    for (i = 0; i < digits; i++) {
+        digit = D_800625A0->digits[first + i];
+        if (digit != 0xff) {
+            D_800625A0->block358->epMaxCount +=
+                func_8002675C(D_800625A0->sheet, digit,
+                              &D_800625A0->block358->epMax[D_800625A0->block358->epMaxCount * 2],
+                              D_800625A0->bufferIndex, x - gear * 0x18, y, 0x1000);
+            x += 8;
+        }
+    }
+    for (i = 0; i < D_800625A0->block358->epMaxCount; i++) {
+        func_801C851C(D_800625A0->block358->epMaxAt[i],
+                      D_800625A0->block358->epMax[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->epMax[i * 2 + D_800625A0->bufferIndex].y0,
+                      D_800625A0->block358->epMax[i * 2 + D_800625A0->bufferIndex].x1 -
+                          D_800625A0->block358->epMax[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->epMax[i * 2 + D_800625A0->bufferIndex].y3 -
+                          D_800625A0->block358->epMax[i * 2 + D_800625A0->bufferIndex].y0);
+    }
+}
+
+/* Lay out the detail panel's level and +63 value (three digits each, by
+ * digit position) of party slot `slot`, the second tinted green; `gear`
+ * shifts them left. */
+void func_801D6CF4(u8 slot, u8 gear) {
+    s32 i;
+    u8 digit;
+
+    func_801C80B8(D_8006D8A0[D_800625A0->party->ids[slot]].unk62);
+    D_800625A0->block358->levelCount = 0;
+    for (i = 0; i < 3; i++) {
+        digit = D_800625A0->digits[6 + i];
+        if (digit != 0xff) {
+            D_800625A0->block358->levelCount +=
+                func_8002675C(D_800625A0->sheet, digit,
+                              &D_800625A0->block358->level[D_800625A0->block358->levelCount * 2],
+                              D_800625A0->bufferIndex, i * 8 + D_801E9CE0 - gear * 0x18, D_801E9CE4, 0x1000);
+        }
+    }
+    for (i = 0; i < D_800625A0->block358->levelCount; i++) {
+        func_801C851C(D_800625A0->block358->levelAt[i],
+                      D_800625A0->block358->level[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->level[i * 2 + D_800625A0->bufferIndex].y0,
+                      D_800625A0->block358->level[i * 2 + D_800625A0->bufferIndex].x1 -
+                          D_800625A0->block358->level[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->level[i * 2 + D_800625A0->bufferIndex].y3 -
+                          D_800625A0->block358->level[i * 2 + D_800625A0->bufferIndex].y0);
+    }
+    func_801C80B8(D_8006D8A0[D_800625A0->party->ids[slot]].unk63);
+    D_800625A0->block358->level2Count = 0;
+    for (i = 0; i < 3; i++) {
+        digit = D_800625A0->digits[6 + i];
+        if (digit != 0xff) {
+            D_800625A0->block358->level2Count +=
+                func_8002675C(D_800625A0->sheet, digit,
+                              &D_800625A0->block358->level2[D_800625A0->block358->level2Count * 2],
+                              D_800625A0->bufferIndex, i * 8 + D_801E9CE8 - gear * 0x18, D_801E9CEC, 0x1000);
+        }
+    }
+    for (i = 0; i < D_800625A0->block358->level2Count; i++) {
+        SetShadeTex(&D_800625A0->block358->level2[i * 2 + D_800625A0->bufferIndex], 0);
+        (D_800625A0->block358->level2 + (i * 2 + D_800625A0->bufferIndex))->r0 = 0;
+        (D_800625A0->block358->level2 + (i * 2 + D_800625A0->bufferIndex))->g0 = 0x80;
+        (D_800625A0->block358->level2 + (i * 2 + D_800625A0->bufferIndex))->b0 = 0;
+        func_801C851C(D_800625A0->block358->level2At[i],
+                      D_800625A0->block358->level2[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->level2[i * 2 + D_800625A0->bufferIndex].y0,
+                      D_800625A0->block358->level2[i * 2 + D_800625A0->bufferIndex].x1 -
+                          D_800625A0->block358->level2[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->level2[i * 2 + D_800625A0->bufferIndex].y3 -
+                          D_800625A0->block358->level2[i * 2 + D_800625A0->bufferIndex].y0);
+    }
+}
+
+/* Lay out the detail panel's +3c and +40 values (eight digits each, by
+ * digit position) of party slot `slot`; `gear` shifts them left. */
+void func_801D7154(u8 slot, u8 gear) {
+    s32 i;
+    u8 digit;
+
+    func_801C80B8(D_8006D8A0[D_800625A0->party->ids[slot]].unk3C);
+    D_800625A0->block358->value3CCount = 0;
+    for (i = 0; i < 8; i++) {
+        digit = D_800625A0->digits[1 + i];
+        if (digit != 0xff) {
+            D_800625A0->block358->value3CCount +=
+                func_8002675C(D_800625A0->sheet, digit,
+                              &D_800625A0->block358->value3C[D_800625A0->block358->value3CCount * 2],
+                              D_800625A0->bufferIndex, i * 8 + D_801E9D10 - gear * 0x18, D_801E9D14, 0x1000);
+        }
+    }
+    for (i = 0; i < D_800625A0->block358->value3CCount; i++) {
+        func_801C851C(D_800625A0->block358->value3CAt[i],
+                      D_800625A0->block358->value3C[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->value3C[i * 2 + D_800625A0->bufferIndex].y0,
+                      D_800625A0->block358->value3C[i * 2 + D_800625A0->bufferIndex].x1 -
+                          D_800625A0->block358->value3C[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->value3C[i * 2 + D_800625A0->bufferIndex].y3 -
+                          D_800625A0->block358->value3C[i * 2 + D_800625A0->bufferIndex].y0);
+    }
+    func_801C80B8(D_8006D8A0[D_800625A0->party->ids[slot]].unk40);
+    D_800625A0->block358->value40Count = 0;
+    for (i = 0; i < 8; i++) {
+        digit = D_800625A0->digits[1 + i];
+        if (digit != 0xff) {
+            D_800625A0->block358->value40Count +=
+                func_8002675C(D_800625A0->sheet, digit,
+                              &D_800625A0->block358->value40[D_800625A0->block358->value40Count * 2],
+                              D_800625A0->bufferIndex, i * 8 + D_801E9D18 - gear * 0x18, D_801E9D1C, 0x1000);
+        }
+    }
+    for (i = 0; i < D_800625A0->block358->value40Count; i++) {
+        func_801C851C(D_800625A0->block358->value40At[i],
+                      D_800625A0->block358->value40[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->value40[i * 2 + D_800625A0->bufferIndex].y0,
+                      D_800625A0->block358->value40[i * 2 + D_800625A0->bufferIndex].x1 -
+                          D_800625A0->block358->value40[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->value40[i * 2 + D_800625A0->bufferIndex].y3 -
+                          D_800625A0->block358->value40[i * 2 + D_800625A0->bufferIndex].y0);
+    }
+}
+
+/* Lay out the detail panel's experience and experience to the next level
+ * (seven digits each, by digit position) of party slot `slot`; `gear` shifts
+ * them left. */
+void func_801D74EC(u8 slot, u8 gear) {
+    s32 i;
+    u8 digit;
+
+    func_801C80B8(D_8006D8A0[D_800625A0->party->ids[slot]].exp);
+    D_800625A0->block358->expCount = 0;
+    for (i = 0; i < 7; i++) {
+        digit = D_800625A0->digits[2 + i];
+        if (digit != 0xff) {
+            D_800625A0->block358->expCount +=
+                func_8002675C(D_800625A0->sheet, digit,
+                              &D_800625A0->block358->exp[D_800625A0->block358->expCount * 2],
+                              D_800625A0->bufferIndex, i * 8 + D_801E9D20 - gear * 0x18, D_801E9D24, 0x1000);
+        }
+    }
+    for (i = 0; i < D_800625A0->block358->expCount; i++) {
+        func_801C851C(D_800625A0->block358->expAt[i],
+                      D_800625A0->block358->exp[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->exp[i * 2 + D_800625A0->bufferIndex].y0,
+                      D_800625A0->block358->exp[i * 2 + D_800625A0->bufferIndex].x1 -
+                          D_800625A0->block358->exp[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->exp[i * 2 + D_800625A0->bufferIndex].y3 -
+                          D_800625A0->block358->exp[i * 2 + D_800625A0->bufferIndex].y0);
+    }
+    func_801C80B8(D_8006D8A0[D_800625A0->party->ids[slot]].expNext);
+    D_800625A0->block358->expNextCount = 0;
+    for (i = 0; i < 7; i++) {
+        digit = D_800625A0->digits[2 + i];
+        if (digit != 0xff) {
+            D_800625A0->block358->expNextCount +=
+                func_8002675C(D_800625A0->sheet, digit,
+                              &D_800625A0->block358->expNext[D_800625A0->block358->expNextCount * 2],
+                              D_800625A0->bufferIndex, i * 8 + D_801E9D28 - gear * 0x18, D_801E9D2C, 0x1000);
+        }
+    }
+    for (i = 0; i < D_800625A0->block358->expNextCount; i++) {
+        func_801C851C(D_800625A0->block358->expNextAt[i],
+                      D_800625A0->block358->expNext[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->expNext[i * 2 + D_800625A0->bufferIndex].y0,
+                      D_800625A0->block358->expNext[i * 2 + D_800625A0->bufferIndex].x1 -
+                          D_800625A0->block358->expNext[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->expNext[i * 2 + D_800625A0->bufferIndex].y3 -
+                          D_800625A0->block358->expNext[i * 2 + D_800625A0->bufferIndex].y0);
+    }
+}
+
+/* Lay out the detail panel's value derived from record +77..+79 of party
+ * slot `slot` ((+78 + +77) * 10 + +79) * 22 shown in hundredths with one
+ * decimal) or, with `gear`, its gear's +68 (five digits). Only the register
+ * allocation differs (the gear and the tenth digit trade saved registers). */
+#ifdef NON_MATCHING
+void func_801D7884(u8 slot, u8 gear) {
+    s32 digits;
+    s32 first;
+    s32 x;
+    s32 i;
+    u8 digit;
+    u16 value;
+    u16 whole;
+    u16 tenth;
+
+    if (!gear) {
+        value = ((D_8006D8A0[D_800625A0->party->ids[slot]].unk78 + D_8006D8A0[D_800625A0->party->ids[slot]].unk77) *
+                     10 +
+                 D_8006D8A0[D_800625A0->party->ids[slot]].unk79) *
+                22;
+        whole = value / 100;
+        digits = 3;
+        first = 6;
+        tenth = (value - whole * 100) / 10;
+        func_801C80B8(whole);
+        x = D_801E9D30;
+    } else {
+        digits = 5;
+        func_801C80B8(D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk68);
+        first = 4;
+        x = D_801E9D30 + 8;
+    }
+    D_800625A0->block358->list1C70Count = 0;
+    for (i = 0; i < digits; i++) {
+        digit = D_800625A0->digits[first + i];
+        if (digit != 0xff) {
+            D_800625A0->block358->list1C70Count +=
+                func_8002675C(D_800625A0->sheet, digit,
+                              &D_800625A0->block358->list1C70[D_800625A0->block358->list1C70Count * 2],
+                              D_800625A0->bufferIndex, i * 8 + x - gear * 0x18, gear * 8 + D_801E9D34, 0x1000);
+        }
+    }
+    if (!gear) {
+        D_800625A0->block358->list1C70Count +=
+            func_8002675C(D_800625A0->sheet, tenth,
+                          &D_800625A0->block358->list1C70[D_800625A0->block358->list1C70Count * 2],
+                          D_800625A0->bufferIndex, D_801E9D30 + 0x20, D_801E9D34, 0x1000);
+    }
+    for (i = 0; i < D_800625A0->block358->list1C70Count; i++) {
+        func_801C851C(D_800625A0->block358->list1C70At[i],
+                      D_800625A0->block358->list1C70[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->list1C70[i * 2 + D_800625A0->bufferIndex].y0,
+                      D_800625A0->block358->list1C70[i * 2 + D_800625A0->bufferIndex].x1 -
+                          D_800625A0->block358->list1C70[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->list1C70[i * 2 + D_800625A0->bufferIndex].y3 -
+                          D_800625A0->block358->list1C70[i * 2 + D_800625A0->bufferIndex].y0);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D7884);
+#endif
 
 /* Build the status panels of party slot `slot` for `mode` and show them. */
 void func_801D7C3C(u8 slot, u8 mode) {
@@ -3081,9 +4032,76 @@ void func_801D7C3C(u8 slot, u8 mode) {
     D_800625A0->block358->buffer = D_800625A0->bufferIndex;
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D7CFC);
+/* Show the detail panel's two tabs (when `shown`), the one not selected by
+ * `second` dimmed and semi-transparent. */
+void func_801D7CFC(u8 slot, u8 shown, u8 second) {
+    s32 i;
+    s32 dim;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D7F50);
+    second = second == 0; /* now: the tab to dim */
+    D_800625A0->block358->tabCount = 0;
+    if (shown) {
+        for (i = 0; i < 2; i++) {
+            func_8002675C(D_800625A0->sheet, D_801E977C[i], &D_800625A0->block358->tabs[i * 2],
+                          D_800625A0->bufferIndex, i * 0x20 + 0x78, 0x5a, 0x1000);
+            func_801C851C(D_800625A0->block358->tabsAt[i],
+                          D_800625A0->block358->tabs[i * 2 + D_800625A0->bufferIndex].x0,
+                          D_800625A0->block358->tabs[i * 2 + D_800625A0->bufferIndex].y0,
+                          D_800625A0->block358->tabs[i * 2 + D_800625A0->bufferIndex].x1 -
+                              D_800625A0->block358->tabs[i * 2 + D_800625A0->bufferIndex].x0,
+                          D_800625A0->block358->tabs[i * 2 + D_800625A0->bufferIndex].y3 -
+                              D_800625A0->block358->tabs[i * 2 + D_800625A0->bufferIndex].y0);
+        }
+        dim = second * 2;
+        func_801E91C4(D_800625A0->block358->tabs + (dim + D_800625A0->bufferIndex));
+        D_800625A0->block358->tabs[dim + D_800625A0->bufferIndex].tpage |= 0x20;
+        (D_800625A0->block358->tabs + (dim + D_800625A0->bufferIndex))->r0 = 0x20;
+        (D_800625A0->block358->tabs + (dim + D_800625A0->bufferIndex))->g0 = 0x20;
+        (D_800625A0->block358->tabs + (dim + D_800625A0->bufferIndex))->b0 = 0x20;
+        D_800625A0->block358->tabBuffer = D_800625A0->bufferIndex;
+        D_800625A0->block358->tabCount = 2;
+    }
+}
+
+/* Lay out the stat names of rows `first`..6 at (x, y) into the block at
+ * +35c, dimming the odd rows, and place their quads. */
+void func_801D7F50(s32 x, s32 y, u8 first) {
+    s32 clutX;
+    s32 clutY;
+    s32 pageX;
+    s32 pageY;
+    s32 u;
+    s32 v;
+    s32 i;
+    s32 start;
+    s32 part;
+
+    func_80026338(D_800625A0->sheet, 0xe0, &clutX, &clutY, &pageX, &pageY, &u, &v);
+    D_800625A0->block35C->kind = 0;
+    for (i = 0; i < 7 - first; i++) {
+        start = D_800625A0->block35C->kind;
+        D_800625A0->block35C->kind += func_8002675C(D_800625A0->sheet, D_801EA45C[first * 7 + i],
+                                                    &D_800625A0->block35C->polys[start * 2], D_800625A0->bufferIndex,
+                                                    x + D_801E9D40[i], y + D_801E9D5C[i], 0x1000);
+        if (i & 1) {
+            for (part = start; part < D_800625A0->block35C->kind; part++) {
+                SetShadeTex(&D_800625A0->block35C->polys[part * 2 + D_800625A0->bufferIndex], 0);
+                (D_800625A0->block35C->polys + (part * 2 + D_800625A0->bufferIndex))->r0 = 0x40;
+                (D_800625A0->block35C->polys + (part * 2 + D_800625A0->bufferIndex))->g0 = 0x40;
+                (D_800625A0->block35C->polys + (part * 2 + D_800625A0->bufferIndex))->b0 = 0x40;
+            }
+        }
+    }
+    for (i = 0; i < D_800625A0->block35C->kind; i++) {
+        func_801C851C(&D_800625A0->block35C->verts[i * 4],
+                      D_800625A0->block35C->polys[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block35C->polys[i * 2 + D_800625A0->bufferIndex].y0,
+                      D_800625A0->block35C->polys[i * 2 + D_800625A0->bufferIndex].x1 -
+                          D_800625A0->block35C->polys[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block35C->polys[i * 2 + D_800625A0->bufferIndex].y3 -
+                          D_800625A0->block35C->polys[i * 2 + D_800625A0->bufferIndex].y0);
+    }
+}
 
 /* Initialise the two gradient quads of a gauge in colour `colour` (0 pink,
  * 1 green, 2 red, 3 blue), fading to black. */

@@ -65,6 +65,11 @@ typedef struct POLY_F4 {
     s16 x3, y3;
 } POLY_F4;
 
+typedef struct DR_MODE {
+    u32 tag;
+    u32 code[2];
+} DR_MODE;
+
 typedef struct LINE_F3 {
     u32 tag;
     u8 r0, g0, b0, code;
@@ -73,11 +78,6 @@ typedef struct LINE_F3 {
     s16 x2, y2;
     u32 pad;
 } LINE_F3;
-
-typedef struct DR_MODE {
-    u32 tag;
-    u32 code[2];
-} DR_MODE;
 
 typedef struct POLY_FT4 {
     u32 tag;
@@ -154,10 +154,10 @@ typedef struct MenuImages {
 /* Shared primitive block (*(state + 348)). */
 typedef struct MenuPrims {
     POLY_FT4 polys[2]; /* 0 */
-    POLY_G4 backdrop[2]; /* 50: per buffer: shaded backdrop */
+    POLY_G4 box[2]; /* 50: highlight background */
     POLY_F4 fills[2]; /* 98: per buffer: full-screen fade */
-    LINE_F3 linesA[2]; /* C8: per buffer: separator line */
-    LINE_F3 linesB[2]; /* F8 */
+    LINE_F3 edgeA[2]; /* C8: highlight outline, top and right */
+    LINE_F3 edgeB[2]; /* F8: highlight outline, left and bottom */
     DR_MODE modes0[2]; /* 128 */
     DR_MODE modes[2]; /* 140: per buffer */
     u8 frame; /* 158 */
@@ -280,15 +280,25 @@ typedef struct MenuEffect {
 
 /* A character record of the game data (D_8006D8A0; gears follow from 11). */
 typedef struct CharRecord {
-    u8 pad0[0x4C];
+    u8 pad0[0x3C];
+    u32 unk3C; /* 3C */
+    u32 unk40; /* 40 */
+    u32 exp; /* 44 */
+    u32 expNext; /* 48 */
     u16 hp; /* 4C */
     u16 hpMax; /* 4E */
-    u8 pad50[0xB];
+    u16 ep; /* 50 */
+    u16 epMax; /* 52 */
+    u8 pad54[0x7];
     u8 unk5B; /* 5B */
     u8 pad5C[0x6];
     u8 unk62; /* 62 */
     u8 unk63; /* 63 */
-    u8 pad64[0x3C];
+    u8 pad64[0x13];
+    u8 unk77; /* 77 */
+    u8 unk78; /* 78 */
+    u8 unk79; /* 79 */
+    u8 pad7A[0x26];
     u8 gear; /* A0: gear record (+11), ff none */
     u8 padA1[0x3];
 } CharRecord;
@@ -335,7 +345,8 @@ typedef struct GearRecord {
     u8 pad46[0x1A];
     u32 unk60; /* 60 */
     u32 unk64; /* 64 */
-    u8 pad68[0x8];
+    u16 unk68; /* 68 */
+    u8 pad6A[0x6];
     u16 unk70; /* 70 */
     u16 unk72; /* 72 */
     u8 pad74[0x1];
@@ -353,7 +364,7 @@ typedef struct GearRecord {
 typedef struct MenuLabelSlot {
     POLY_FT4 polys[2]; /* 0 */
     SVECTOR verts[4]; /* 50 */
-    u8 pad70[0x8];
+    RECT rect; /* 70: VRAM area of the rendered text */
     u8 *pixels; /* 78 */
     u8 pad7C[0x1];
     u8 count; /* 7D: the quad shown */
@@ -498,11 +509,56 @@ typedef struct MenuFieldMenu2 {
     u8 pad371[0x3];
 } MenuFieldMenu2;
 
-/* The status panel block (*(state + 358)). */
+/* The detail panel block (*(state + 358)): a frame, a portrait, the layout
+ * parts and the digit lists of the numbers shown, two quads per part (one per
+ * draw buffer) with a screen quad each. */
 typedef struct MenuBlock358 {
-    u8 pad0[0x2AE0];
-    u8 buffer; /* 2AE0 */
-    u8 pad2AE1[0xF];
+    POLY_FT4 frame[2];           /* 0 */
+    POLY_FT4 portrait[2];        /* 50 */
+    POLY_FT4 parts[66];          /* A0: layout parts (801d6194) */
+    POLY_FT4 level[6];           /* AF0: record +62 */
+    POLY_FT4 level2[6];          /* BE0: record +63 */
+    POLY_FT4 value3C[16];        /* CD0 */
+    POLY_FT4 value40[16];        /* F50 */
+    POLY_FT4 exp[14];            /* 11D0 */
+    POLY_FT4 expNext[14];        /* 1400 */
+    POLY_FT4 hp[10];             /* 1630 */
+    POLY_FT4 hpMax[10];          /* 17C0 */
+    POLY_FT4 ep[10];             /* 1950 */
+    POLY_FT4 epMax[10];          /* 1AE0 */
+    POLY_FT4 list1C70[10];       /* 1C70 */
+    POLY_FT4 tabs[4];            /* 1E00: two tabs */
+    SVECTOR frameAt[4];          /* 1EA0 */
+    SVECTOR portraitAt[4];       /* 1EC0 */
+    SVECTOR partsAt[33][4];      /* 1EE0 */
+    SVECTOR levelAt[3][4];       /* 2300 */
+    SVECTOR level2At[3][4];      /* 2360 */
+    SVECTOR value3CAt[8][4];     /* 23C0 */
+    SVECTOR value40At[8][4];     /* 24C0 */
+    SVECTOR expAt[7][4];         /* 25C0 */
+    SVECTOR expNextAt[7][4];     /* 26A0 */
+    SVECTOR hpAt[5][4];          /* 2780 */
+    SVECTOR hpMaxAt[5][4];       /* 2820 */
+    SVECTOR epAt[5][4];          /* 28C0 */
+    SVECTOR epMaxAt[5][4];       /* 2960 */
+    SVECTOR list1C70At[5][4];    /* 2A00 */
+    SVECTOR tabsAt[2][4];        /* 2AA0 */
+    u8 buffer;                   /* 2AE0 */
+    u8 levelCount;               /* 2AE1 */
+    u8 level2Count;              /* 2AE2 */
+    u8 value3CCount;             /* 2AE3 */
+    u8 value40Count;             /* 2AE4 */
+    u8 expCount;                 /* 2AE5 */
+    u8 expNextCount;             /* 2AE6 */
+    u8 hpCount;                  /* 2AE7 */
+    u8 hpMaxCount;               /* 2AE8 */
+    u8 epCount;                  /* 2AE9 */
+    u8 epMaxCount;               /* 2AEA */
+    u8 list1C70Count;            /* 2AEB */
+    u8 count;                    /* 2AEC: layout parts built */
+    u8 tabCount;                 /* 2AED */
+    u8 tabBuffer;                /* 2AEE */
+    u8 pad2AEF[0x1];
 } MenuBlock358;
 
 /* The equipment panel block (*(state + 35c)). */
@@ -513,7 +569,7 @@ typedef struct MenuBlock35C {
     u8 pad32F0[0x1];
     u8 buffer; /* 32F1 */
     u8 pad32F2[0x1];
-    u8 kind; /* 32F3 */
+    u8 kind; /* 32F3: parts built */
 } MenuBlock35C;
 
 /* A position record passed to the panel builders (+28 base). */
@@ -546,21 +602,23 @@ typedef struct MenuFieldBlock {
     POLY_FT4 frameA[2]; /* 0 */
     POLY_FT4 frameB[2]; /* 50 */
     POLY_FT4 list0[54]; /* A0 */
-    POLY_FT4 list6[12]; /* 910 */
+    POLY_FT4 list6[6]; /* 910 */
+    POLY_FT4 list8[6]; /* A00 */
     POLY_FT4 list1[6]; /* AF0 */
     POLY_FT4 list2[6]; /* BE0 */
     POLY_FT4 list3[4]; /* CD0 */
     POLY_FT4 list4[4]; /* D70 */
-    POLY_FT4 list5[28]; /* E10 */
+    POLY_FT4 list5[14]; /* E10 */
+    POLY_FT4 list7[14]; /* 1040 */
     u8 buffer; /* 1270 */
     u8 count6; /* 1271 */
-    u8 pad1272[0x1];
+    u8 count8; /* 1272 */
     u8 count1; /* 1273 */
     u8 count2; /* 1274 */
     u8 count3; /* 1275 */
     u8 count4; /* 1276 */
     u8 count5; /* 1277 */
-    u8 pad1278[0x1];
+    u8 count7; /* 1278 */
     u8 count0; /* 1279 */
     u8 pad127A[0x2];
 } MenuFieldBlock;
@@ -609,22 +667,26 @@ typedef struct MenuBlock434 {
     u8 padA19[0x3];
 } MenuBlock434;
 
-/* A portrait frame (*(state + 364)). */
+/* A portrait window (*(state + 364), 720 bytes): a 3D panel of corner, edge
+ * and frame sprites around a translucent fill, two quads per piece (one per
+ * draw buffer); the same layout as ovl2600's panels. */
 typedef struct MenuPortrait {
-    u8 pad0[0x3C0];
-    POLY_FT4 side[2]; /* 3C0 */
-    POLY_FT4 top[2]; /* 410 */
-    POLY_FT4 bottom[2]; /* 460 */
-    u8 pad4B0[0x1E0];
-    SVECTOR frameVerts[4]; /* 690 */
-    SVECTOR sideVerts[4]; /* 6B0 */
-    SVECTOR topVerts[4]; /* 6D0 */
-    SVECTOR bottomVerts[4]; /* 6F0 */
-    u8 pad710[0x4];
-    s32 unk714; /* 714 */
-    s32 unk718; /* 718 */
-    u8 buffer; /* 71C */
-    u8 unk71D; /* 71D */
+    POLY_FT4 corner[8];      /* 0: corner sprite parts */
+    POLY_FT4 edge[4][4];     /* 140: top, bottom, left and right edges, two pieces each */
+    POLY_FT4 frameSide[2];   /* 3C0: sprite 106 */
+    POLY_FT4 frameEnds[4];   /* 410: sprite 105 at the top, flipped at the bottom */
+    POLY_G4 fill[2];         /* 4B0 */
+    DR_MODE fillMode[2];     /* 4F8 */
+    SVECTOR cornerAt[16];    /* 510: four corner quads */
+    SVECTOR edgeAt[4][2][4]; /* 590: two quads per edge */
+    SVECTOR fillAt[4];       /* 690 */
+    SVECTOR sideAt[4];       /* 6B0 */
+    SVECTOR endsAt[8];       /* 6D0: top and bottom quads */
+    s32 cornerParts;         /* 710: corner parts built */
+    s32 style;               /* 714: 0 draws under an identity rotation */
+    s32 depth;               /* 718: ordering table depth */
+    u8 buffer;               /* 71C: buffer it was laid out for */
+    u8 framed;               /* 71D: frame sprites built */
 } MenuPortrait;
 
 /* The card access indicator (*(state + 44c), 7bc bytes). */
@@ -772,8 +834,8 @@ extern u8 D_801EA528[];  /* field menu command labels */
 extern u8 D_801EA524[];  /* label image layout */
 extern u8 D_801EA530[];
 extern u8 D_801EA534[];  /* party label layout */
-extern u16 D_801E9E4C[3][2]; /* party label positions */
-extern u16 D_801E9E58[3][2];
+extern s32 D_801E9E4C[3]; /* party label positions: x */
+extern s32 D_801E9E58[3]; /* y */
 extern u8 D_801EA53C[];  /* save file screen command labels */
 extern u8 D_801EA542[];  /* title file screen load command labels */
 extern u8 D_801EA558[];
@@ -783,7 +845,8 @@ extern u8 D_801EA8F4[];
 extern u8 D_801EA8FC;    /* the last choice was cancelled */
 extern u8 D_801E9778;    /* a card changed during a choice */
 extern u8 D_801EA8C0;    /* the last printed character was two-byte */
-extern u16 D_801EA5D0[0x80]; /* ASCII to two-byte character codes */
+extern u16 D_801EA5D0[0x80]; /* ASCII to two-byte character codes (used from 0x20); the first
+                              * 12 bytes also serve as the gear portrait v per slot (s32) */
 extern s32 D_801EA6FC;   /* gauge: from, to, difference and lengths */
 extern s32 D_801EA700;
 extern s32 D_801EA704;
@@ -793,6 +856,69 @@ extern u8 D_801EA710;
 extern u8 D_801EA714;
 extern s32 D_801EA34C[20]; /* field block part images, ffff none */
 extern s32 D_801E9A78[20];
+extern s32 D_801E9A00[]; /* highlight positions: x */
+extern s32 D_801E9A2C[]; /* y */
+extern s32 D_801E9A1C[]; /* choice highlight positions: x */
+extern s32 D_801E9A48[]; /* y */
+extern s32 D_801E9E94[]; /* choice label x offsets */
+extern s32 D_801EA164[2]; /* party window sprite x */
+extern s32 D_801EA16C[]; /* party window sprite y per row */
+extern s32 D_801EA17C[]; /* portrait panel x per mode */
+extern s32 D_801EA18C[]; /* portrait panel y per mode */
+extern s32 D_801EA578[]; /* character portrait u / 4 per slot */
+extern s32 D_801EA584[]; /* gear portrait u / 4 per slot */
+extern s32 D_801EA5C4[]; /* character portrait v per slot */
+extern u16 D_80059414;   /* portrait palette of odd images */
+extern u16 D_800595D4;   /* portrait palette of even images */
+extern s32 D_801E9B18;   /* field block number offsets (x, y): +62 */
+extern s32 D_801E9B1C;
+extern s32 D_801E9B20;   /* +63 */
+extern s32 D_801E9B24;
+extern s32 D_801E9B28;   /* field block number offsets (x, y): hp */
+extern s32 D_801E9B2C;
+extern s32 D_801E9B30;   /* hp max */
+extern s32 D_801E9B34;
+extern s32 D_801E9B38;   /* ep */
+extern s32 D_801E9B3C;
+extern s32 D_801E9B40;   /* ep max */
+extern s32 D_801E9B44;
+extern s32 D_801E9B48;   /* exp */
+extern s32 D_801E9B4C;
+extern s32 D_801E9B50;   /* exp to next level */
+extern s32 D_801E9B54;
+extern s32 D_801E9B60[48]; /* detail panel part positions, 24 per layout: x */
+extern s32 D_801E9C20[48]; /* y */
+extern s32 D_801EA39C[48]; /* detail panel part sprites, 24 per layout, ffff none */
+extern s32 D_801E9CE0;   /* detail panel number positions (x, y): level */
+extern s32 D_801E9CE4;
+extern s32 D_801E9CE8;   /* +63 */
+extern s32 D_801E9CEC;
+extern s32 D_801E9D10;   /* detail panel +3c */
+extern s32 D_801E9D14;
+extern s32 D_801E9D18;   /* detail panel +40 */
+extern s32 D_801E9D1C;
+extern s32 D_801E9D20;   /* detail panel exp */
+extern s32 D_801E9D24;
+extern s32 D_801E9D28;   /* detail panel exp to next level */
+extern s32 D_801E9D2C;
+extern s32 D_801E9D30;   /* detail panel +77..79 value */
+extern s32 D_801E9D34;
+extern s32 D_801E977C[2]; /* detail panel tab sprites */
+extern s32 D_801E9D40[7]; /* stat name positions per row: x */
+extern s32 D_801E9D5C[7]; /* y */
+extern s32 D_801EA45C[];  /* stat name sprites, seven per start row */
+extern s32 D_801E9CF0;   /* hp */
+extern s32 D_801E9CF4;
+extern s32 D_801E9CF8;   /* hp max */
+extern s32 D_801E9CFC;
+extern s32 D_801E9D00;   /* ep */
+extern s32 D_801E9D04;
+extern s32 D_801E9D08;   /* ep max */
+extern s32 D_801E9D0C;
+extern s32 D_801E9D38;   /* detail panel portrait position: x */
+extern s32 D_801E9D3C;   /* y */
+extern s32 D_801E9B58;   /* field block portrait offset: x */
+extern s32 D_801E9B5C;   /* y */
 extern s32 D_801E9AC8[20];
 extern s32 D_801E9A58[4]; /* marker positions */
 extern s32 D_801E9A68[4];
@@ -881,6 +1007,9 @@ void func_8003F738(SVECTOR *angles, MATRIX *m); /* RotMatrix */
 void TransMatrix(MATRIX *m, VECTOR *t);      /* TransMatrix */
 void SetRotMatrix(MATRIX *m);                 /* SetRotMatrix */
 void SetTransMatrix(MATRIX *m);                 /* SetTransMatrix */
+void PushMatrix(void);
+void PopMatrix(void);
+u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y);
 void ClearOTagR(u32 *ot, s32 count);  /* ClearOTagR */
 void MoveImage(RECT *rect, s32 x, s32 y); /* MoveImage */
 void DrawOTag(u32 *ot);             /* DrawOTag */
@@ -901,6 +1030,8 @@ void func_8003852C(void *bank);
 void func_8003A094(void *bank);
 
 s32 func_80028530(void);
+u8 *func_80033728(void *table, s32 index);                    /* entry of a text table */
+s32 func_80034EAC(u8 *text, void *pixels, s32 width, s32 line); /* render a text line, returns its width */
 
 /* Overlay functions. */
 u8 func_801C531C(u8 offset);
@@ -996,6 +1127,7 @@ void func_801CFF64(void);
 void func_801D01D0(void);
 void func_801D02D8(void);
 void func_801D0C78(void);
+void func_801D09F0(s32 index, u8 full);
 void func_801D11F0(void);
 void func_801D0D90(void);
 void func_801D0E20(void);
@@ -1052,6 +1184,7 @@ void func_801D51EC(u8 index, u8 mode, s32 x, s32 y);
 void func_801D53D0(u8 index, u8 mode, s32 x, s32 y);
 void func_801D55B4(u8 index, u8 mode, s32 x, s32 y);
 void func_801D5794(u8 index, u8 mode, s32 x, s32 y);
+void func_801D5A50(u8 index, u8 mode);
 void func_801D5ED4(u8 slot, u8 mode);
 void func_801D6194(u8 mode);
 void func_801D6338(u8 slot, u8 mode);
@@ -1075,7 +1208,7 @@ u8 func_801D9F98(u8 mode, u8 save);
 void func_801D1EB0(void);
 void func_801D29A8(u8 arg0, u8 arg1);
 void func_801D3444(void);
-void func_801D3488(s32 arg0, s32 arg1);
+void func_801D3488(u8 row, u8 fighters);
 void func_801D3674(void);
 void func_801DA518(void);
 u8 func_801DBE54(void);
@@ -1100,6 +1233,10 @@ void func_801E4D10(s32 *save, MenuTables *tables);
 void func_801E53CC(u8 index);
 void func_801E56E8(s32 index);
 void func_801E8DA8(u8 image, u8 row);
+void func_801E7C50(MenuLabelSlot *label, s32 row, s32 arg2, s32 arg3);
+void func_801E920C(POLY_FT4 *poly, s32 x, s32 y, s32 u, s32 v, s32 w, s32 h);
+void func_801E927C(POLY_FT4 *poly);
+void func_801E91C4(POLY_FT4 *poly);
 void func_801E5B3C(void);
 void func_801E61B0(void);
 void func_801E6AE8(u8 index, MenuViewSet *set);
