@@ -53,6 +53,12 @@ typedef struct {
     u8 *image;         /* 0x20: palette and emblem pixels */
 } ModelData;
 
+/* libgte matrix. */
+typedef struct {
+    s16 m[3][3];
+    s32 t[3];
+} Matrix;
+
 /* A node of a loaded model hierarchy. */
 typedef struct ModelNode {
     u8 unk0[4];
@@ -118,7 +124,14 @@ s32 func_8003F8CC(s32 angle); /* cosine, 4096 = 1.0 */
 void func_800346D4(void *arg);
 void func_80083C0C(s32 arg);
 void func_80083738(Actor *actor, Actor *other);
-void func_800828F8(Vector *position, Vector *step, s32 limit);
+void func_800828F8(Vector *position, Vector *step, s32 radius);
+void func_8004A414(Vector *v, Vector *out);          /* square each component */
+void func_80048D68(Vector *v, SVector *out);         /* normalise */
+void func_8004947C(Matrix *m, Vector *v, Vector *out); /* apply a matrix */
+void func_8004A8EC(Matrix *m, Matrix *out);          /* transpose */
+void func_80049EFC(Matrix *m);                       /* set the rotation */
+void func_8004998C(Vector *v, Vector *out);          /* apply the rotation */
+s32 func_80048C4C(s32 value); /* square root */
 s32 func_80082488(Vector *position, s32 arg);
 s32 func_8004B32C(s32 x, s32 z); /* angle of a direction, 4096 = full turn */
 void func_8007E24C(void);

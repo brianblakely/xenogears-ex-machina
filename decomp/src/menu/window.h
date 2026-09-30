@@ -95,7 +95,6 @@ extern Line3D D_80095938[100];
 
 s32 func_8002DC9C(s32 x, s32 y, s32 z);
 void func_80048D7C(Vector *vector, void *out);
-void func_80048D68(Vector *vector, void *out);
 
 /* A recorded path position. */
 typedef struct {
@@ -187,7 +186,6 @@ void func_8007F948(Menu *menu, s32 line);
 void func_8007EBE0(s32 text);
 void func_8007ED84(s32 text, s32 half_width);
 s32 func_80035734(s32 port); /* pad type */
-s32 func_80048C4C(s32 value); /* square root */
 void func_8008EB4C(s32 sound);
 void func_80080964(s32 menu);
 

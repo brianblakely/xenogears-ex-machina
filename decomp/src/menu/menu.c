@@ -989,7 +989,49 @@ s32 func_800828C4(Vector *pos) {
     return D_800928DC[z * 128 + x];
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800828F8);
+/* Keep a moving position inside the circular arena of the given radius
+ * around the scene centre: when the step would leave it, turn the step
+ * along the rim and shorten it until the end point is inside. */
+void func_800828F8(Vector *pos, Vector *step, s32 radius) {
+    Vector local;
+    Vector next;
+    Vector square;
+    Matrix rim;
+    Matrix back;
+    SVector dir;
+    s32 distance;
+
+    local.vx = pos->vx + step->vx - 0x3F80;
+    local.vz = pos->vz + step->vz - 0x3F80;
+    func_8004A414(&local, &square);
+    if (radius < func_80048C4C(square.vx + square.vz)) {
+        func_80048D68(&local, &dir);
+        rim.m[2][1] = 0;
+        rim.m[1][2] = 0;
+        rim.m[1][0] = 0;
+        rim.m[0][1] = 0;
+        rim.m[1][1] = 0x1000;
+        rim.m[2][2] = dir.vz;
+        rim.m[0][0] = dir.vz;
+        rim.m[0][2] = -dir.vx;
+        rim.m[2][0] = dir.vx;
+        func_8004947C(&rim, step, &local);
+        func_8004A8EC(&rim, &back);
+        func_80049EFC(&back);
+        local.vz = 0;
+        for (;;) {
+            func_8004998C(&local, step);
+            next.vx = pos->vx + step->vx - 0x3F80;
+            next.vz = pos->vz + step->vz - 0x3F80;
+            func_8004A414(&next, &square);
+            distance = func_80048C4C(square.vx + square.vz);
+            if (radius >= distance) {
+                break;
+            }
+            local.vz -= distance - radius - 8;
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80082A70);
 
