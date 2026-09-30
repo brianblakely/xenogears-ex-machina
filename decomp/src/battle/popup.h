@@ -15,7 +15,10 @@ typedef struct {
     s16 x, y;
     u8 u, v;
     u8 w, h; /* 0x06 */
-    u8 pad8[0x18 - 0x8];
+    u8 pad8[0xA - 0x8];
+    u16 tpage; /* 0x0A */
+    u16 clut;  /* 0x0C */
+    u8 padE[0x18 - 0xE];
 } PopupGlyph;
 
 /* A number popup (a 0x130-byte task). */
@@ -120,5 +123,6 @@ void func_800BDA1C(BattleTask *draw);
 void func_800BDB08(DamagePopup *popup);
 void func_800BDC78(DamagePopup *popup);
 void func_800BDE58(void);
+extern SVECTOR D_8004FB98[4]; /* resident: sprite quad corners */
 
 #endif

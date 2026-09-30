@@ -133,7 +133,59 @@ void func_800BD7A0(BattleTask *task) {
     func_8001D19C(task);
 }
 
+#ifdef NON_MATCHING
+/* Draw a popup glyph as a textured quad in colour (its word also sets the
+ * primitive code) through the current matrices, added to the ordering
+ * table's first entry, while the primitive buffer has room. Nonmatching:
+ * the corner sums are scheduled before the first corner stores and the
+ * registers differ; the texture half matches. */
+void func_800BD810(PopupGlyph *glyph, s32 colour) {
+    POLY_FT4 *poly = (POLY_FT4 *)D_80059580;
+    long p;
+    long flag;
+    u16 x, y;
+    u8 w, h;
+    u8 u, v;
+    u8 uw, vh;
+
+    if (D_80059580 + sizeof(POLY_FT4) < D_80059534) {
+        D_80059580 += sizeof(POLY_FT4);
+        setlen(poly, 9);
+        *(s32 *)&poly->r0 = colour;
+        poly->tpage = glyph->tpage;
+        poly->clut = glyph->clut;
+        w = glyph->w;
+        h = glyph->h;
+        x = glyph->x;
+        y = glyph->y;
+        D_8004FB98[0].vx = x;
+        D_8004FB98[0].vy = y;
+        D_8004FB98[1].vx = x + w;
+        D_8004FB98[1].vy = y;
+        D_8004FB98[2].vx = x + w;
+        D_8004FB98[2].vy = y + h;
+        D_8004FB98[3].vx = x;
+        D_8004FB98[3].vy = y + h;
+        RotTransPers4(&D_8004FB98[0], &D_8004FB98[1], &D_8004FB98[2], &D_8004FB98[3], (long *)&poly->x0,
+                      (long *)&poly->x1, (long *)&poly->x3, (long *)&poly->x2, &p, &flag);
+        u = glyph->u;
+        v = glyph->v;
+        uw = glyph->w;
+        vh = glyph->h;
+        poly->u0 = u;
+        poly->v0 = v;
+        poly->u1 = u + uw;
+        poly->v1 = v;
+        poly->u2 = u;
+        poly->v2 = v + vh;
+        poly->u3 = u + uw;
+        poly->v3 = v + vh;
+        addPrim(D_8005956C, poly);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800BD3AC", func_800BD810);
+#endif
 
 /* The camera-space offset of point's projection from the geometry offset
  * (doubled), at the screen distance. */
