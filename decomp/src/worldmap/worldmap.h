@@ -855,6 +855,8 @@ extern u16 D_8009D718[]; /* probe hits: object pairs */
 s16 func_80084D00(s32 probe, s16 *hit);
 s32 func_80085418(VECTOR *probe, s32 radius, u16 object, u16 other);
 void func_80093354(VECTOR *position);
+
+extern s16 D_8009BBAC[4]; /* grid corner cells */
 /* Parked vehicle headings and the flying vehicle's heading: scalars inside
  * D_8006EE54 (unk5A-unk5E, vehicle_heading) that some vehicle starts address
  * as separate variables. */

@@ -1049,7 +1049,141 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_800987AC);
 
+/* After the grid moved: free the blocks that left it and queue reads of the
+ * new edge blocks, rows from the row-major file and columns from the
+ * column-major file; corners from whichever edge changed. */
+#ifdef NON_MATCHING /* register allocation of the edge loops */
+void func_80098CC0(void) {
+    s32 first;
+    s32 second;
+    s32 i;
+    s32 j;
+    s32 k;
+    s32 start;
+    s16 *cell;
+    s32 block;
+    s32 sector;
+    s32 path;
+    s32 changed;
+    void *buffer;
+
+    for (i = 0; i < 81; i++) {
+        block = D_8009D318.cells[i];
+        if (D_8009C184[block] != NULL) {
+            for (j = 0; j < 81; j++) {
+                if (D_8009D570.cells[j] == block) {
+                    break;
+                }
+            }
+            if (j == 81) {
+                func_800320E8(D_8009C184[block]);
+                D_8009C184[block] = NULL;
+            }
+        }
+    }
+    changed = 0;
+    first = func_8002C3D8();
+    second = func_8002C3D8();
+    if ((first == 0) | (second == -1)) {
+        sector = func_800289D0(D_8009BCD8);
+        start = 1;
+        for (j = 1; j != -1; j--) {
+            cell = &D_8009D570.cells[start];
+            for (k = 6; k != -1; k--, cell++) {
+                block = *cell;
+                if (D_8009C184[block] == NULL) {
+                    buffer = func_80031BDC(0x710, 0);
+                    D_8009C184[block] = buffer;
+                    func_8009623C(sector + block, 0x710, (s32)buffer);
+                    changed |= 2;
+                }
+            }
+            start = 0x49;
+        }
+        sector = func_800289D0(D_8009BD08);
+        start = 9;
+        for (j = 1; j != -1; j--) {
+            cell = &D_8009D570.cells[start];
+            for (k = 6; k != -1; k--, cell += 9) {
+                block = *cell;
+                if (D_8009C184[block] == NULL) {
+                    buffer = func_80031BDC(0x710, 0);
+                    changed |= 1;
+                    D_8009C184[block] = buffer;
+                    func_8009623C(sector + (block % D_8009D160) * D_8009D2B4 + block / D_8009D160,
+                                  0x710, (s32)buffer);
+                }
+            }
+            start = 0x11;
+        }
+        for (i = 0; i < 4; i++) {
+            block = D_8009D570.cells[D_8009BBAC[i]];
+            if (D_8009C184[block] == NULL) {
+                D_8009C184[block] = func_80031BDC(0x710, 0);
+                if (changed & 2) {
+                    func_8009623C(func_800289D0(D_8009BCD8) + block, 0x710, (s32)D_8009C184[block]);
+                } else if (changed & 1) {
+                    func_8009623C(func_800289D0(D_8009BD08) + (block % D_8009D160) * D_8009D2B4 +
+                                      block / D_8009D160,
+                                  0x710, (s32)D_8009C184[block]);
+                }
+            }
+        }
+        func_8009623C(0, 0, 0);
+        func_80096328();
+    } else {
+        path = func_80028998(D_8009BCD8);
+        start = 1;
+        for (j = 1; j != -1; j--) {
+            cell = &D_8009D570.cells[start];
+            for (k = 6; k != -1; k--, cell++) {
+                block = *cell;
+                if (D_8009C184[block] == NULL) {
+                    buffer = func_80031BDC(0x710, 0);
+                    D_8009C184[block] = buffer;
+                    func_800962B0(path, block << 11, 0x710, (s32)buffer);
+                    changed |= 2;
+                }
+            }
+            start = 0x49;
+        }
+        path = func_80028998(D_8009BD08);
+        start = 9;
+        for (j = 1; j != -1; j--) {
+            cell = &D_8009D570.cells[start];
+            for (k = 6; k != -1; k--, cell += 9) {
+                block = *cell;
+                if (D_8009C184[block] == NULL) {
+                    buffer = func_80031BDC(0x710, 0);
+                    changed |= 1;
+                    D_8009C184[block] = buffer;
+                    func_800962B0(path,
+                                  ((block % D_8009D160) << 11) * D_8009D2B4 + ((block / D_8009D160) << 11),
+                                  0x710, (s32)buffer);
+                }
+            }
+            start = 0x11;
+        }
+        for (i = 0; i < 4; i++) {
+            block = D_8009D570.cells[D_8009BBAC[i]];
+            if (D_8009C184[block] == NULL) {
+                D_8009C184[block] = func_80031BDC(0x710, 0);
+                if (changed & 2) {
+                    func_800962B0(func_80028998(D_8009BCD8), block << 11, 0x710, (s32)D_8009C184[block]);
+                } else if (changed & 1) {
+                    func_800962B0(func_80028998(D_8009BD08),
+                                  ((block % D_8009D160) << 11) * D_8009D2B4 + ((block / D_8009D160) << 11),
+                                  0x710, (s32)D_8009C184[block]);
+                }
+            }
+        }
+        func_800962B0(0, 0, 0, 0);
+        func_800965A4();
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80098CC0);
+#endif
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_8009932C);
 
