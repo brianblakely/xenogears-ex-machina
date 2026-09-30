@@ -3933,7 +3933,144 @@ void func_801D3A80(u8 kind, u8 id) {
     func_800320E8(pixels);
 }
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D3C78);
+/*
+ * Show parts-shop entry `top + row` (`dims` unused): its name label, the bars
+ * of the members whose gear can fit it, the marks of those whose gear holds it
+ * and, for parts (kinds 3 and 4) each fitting member's attack and defence
+ * change (tinted by whether it drops), then how many the party holds.
+ * Returns its price.
+ */
+u32 func_801D3C78(s32 row, s32 top, u8 *dims) {
+    RECT rect;
+    s32 diffs[2];
+    u8 worse[2];
+    u32 price;
+    u32 holders;
+    u32 users;
+    u8 id;
+    u8 kind;
+    u8 *pixels;
+    u8 gear;
+    s32 i;
+    s32 shown;
+    s32 k;
+    s32 xa;
+    s32 xb;
+
+    id = D_800625A0->shop_items[top + row];
+    kind = D_800625A0->shop_kinds[top + row];
+    pixels = func_80031BDC(0x618, 0);
+    bzero(pixels, 0x618);
+    users = 0;
+    switch (kind) {
+    case 0:
+        D_800625A0->details->label4430.width =
+            func_80034EAC(func_80033728(D_800625A0->details->resources[3], id), pixels, 0x39, 0);
+        price = ((GearTable *)D_800625A0->resources)->entries[id].price;
+        users = ((GearTable *)D_800625A0->resources)->entries[id].users;
+        break;
+    case 1:
+        D_800625A0->details->label4430.width =
+            func_80034EAC(func_80033728(D_800625A0->details->resources[4], id), pixels, 0x39, 0);
+        price = ((GearTable *)D_800625A0->resources)->records18[id].price;
+        users = ((GearTable *)D_800625A0->resources)->records18[id].users;
+        break;
+    case 2:
+        D_800625A0->details->label4430.width =
+            func_80034EAC(func_80033728(D_800625A0->details->resources[5], id), pixels, 0x39, 0);
+        price = ((GearTable *)D_800625A0->resources)->records10[id].price;
+        users = ((GearTable *)D_800625A0->resources)->records10[id].users;
+        break;
+    case 4:
+        D_800625A0->details->label4430.width =
+            func_80034EAC(func_80033728(D_800625A0->details->resources[1], id), pixels, 0x39, 0);
+        price = ((GearTable *)D_800625A0->resources)->weapons[id].price;
+        users = ((GearTable *)D_800625A0->resources)->weapons[id].users;
+        break;
+    case 3:
+        D_800625A0->details->label4430.width =
+            func_80034EAC(func_80033728(D_800625A0->details->resources[2], id), pixels, 0x39, 0);
+        price = ((GearTable *)D_800625A0->resources)->parts[id].price;
+        users = ((GearTable *)D_800625A0->resources)->parts[id].users;
+        break;
+    }
+    holders = func_801D1078(id, kind);
+    rect.x = 0x140;
+    rect.y = 0x4E;
+    rect.w = 0x3C;
+    rect.h = 13;
+    LoadImage(&rect, pixels);
+    DrawSync(0);
+    func_801C5CA8(&D_800625A0->details->label4430, 0, 0, 0);
+    func_801C51B8(&D_800625A0->details->label4430.poly[D_800625A0->buffer], 0x2C, 0x12, 0, 0x4E,
+                  D_800625A0->details->label4430.width, 13);
+    func_801C7604(D_800625A0->details->label4430.quad, 0x2C, 0x12, D_800625A0->details->label4430.width, 13);
+    D_800625A0->details->label4430.buffer = D_800625A0->buffer;
+    func_800320E8(pixels);
+    if (id) {
+        D_800625A0->details->label4430_shown = 1;
+    } else {
+        D_800625A0->details->label4430_shown = 0;
+    }
+    i = 0;
+    shown = 0;
+    D_800625A0->details->group2D0_count = 0;
+    for (; i < 16; i++) {
+        if (D_800625A0->member_present[i] != 0) {
+            gear = D_8006D8A0[i].unkA0;
+            if (func_801C527C(users, gear)) {
+                D_800625A0->details->bar_shown[shown] = 1;
+            } else {
+                D_800625A0->details->bar_shown[shown] = 0;
+            }
+            if (func_801C527C(holders, gear)) {
+                D_800625A0->details->group2D0_count +=
+                    func_8002675C(D_800625A0->sprite_sheet, 0xE,
+                                  &D_800625A0->details->group2D0[D_800625A0->details->group2D0_count * 2],
+                                  D_800625A0->buffer, D_801D6C44[shown] + 0xE, 0xB4, 0x1000);
+            }
+            D_800625A0->details->cells_a_count[shown] = 0;
+            D_800625A0->details->cells_b_count[shown] = 0;
+            if ((kind == 3 || kind == 4) && D_800625A0->details->bar_shown[shown] != 0) {
+                diffs[1] = 0;
+                diffs[0] = 0;
+                func_801D3558(diffs, worse, id, kind, i);
+                if (diffs[0] != 0) {
+                    func_801C5298(diffs[0]);
+                    for (k = 0, xa = shown * 26 + 0x49; k < 3; k++) {
+                        if (D_800625A0->digits[k + 6] != 0xFF) {
+                            D_800625A0->details->cells_a_count[shown] += func_8002675C(
+                                D_800625A0->sprite_sheet, D_800625A0->digits[k + 6],
+                                &D_800625A0->details->cells_a[shown][D_800625A0->details->cells_a_count[shown] * 2],
+                                D_800625A0->buffer, xa + k * 8, 0xBE, 0x1000);
+                        }
+                    }
+                    func_801D0054(D_800625A0->details->cells_a_count[shown], D_800625A0->details->cells_a[shown],
+                                  worse[0]);
+                    D_800625A0->details->cells_a_buffer[shown] = D_800625A0->buffer;
+                }
+                if (diffs[1] != 0) {
+                    func_801C5298(diffs[1]);
+                    for (k = 0, xb = shown * 26 + 0x49; k < 3; k++) {
+                        if (D_800625A0->digits[k + 6] != 0xFF) {
+                            D_800625A0->details->cells_b_count[shown] += func_8002675C(
+                                D_800625A0->sprite_sheet, D_800625A0->digits[k + 6],
+                                &D_800625A0->details->cells_b[shown][D_800625A0->details->cells_b_count[shown] * 2],
+                                D_800625A0->buffer, xb + k * 8, 0xC6, 0x1000);
+                        }
+                    }
+                    func_801D0054(D_800625A0->details->cells_b_count[shown], D_800625A0->details->cells_b[shown],
+                                  worse[1]);
+                    D_800625A0->details->cells_b_buffer[shown] = D_800625A0->buffer;
+                }
+            }
+            shown++;
+        }
+    }
+    D_800625A0->details->group2D0_buffer = D_800625A0->buffer;
+    func_801D3A80(kind, id);
+    return price;
+}
 
 /*
  * Set the party's gold (capped at 9999999) and apply the purchases: kinds

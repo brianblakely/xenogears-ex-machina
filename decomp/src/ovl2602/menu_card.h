@@ -796,24 +796,29 @@ typedef struct {
 extern GameData D_8006D634;
 
 typedef struct {
-    u8 unk0[4];
+    u32 users; /* 00: party bits of the members who can use it */
     u32 unk4;  /* 04 */
     u16 unk8;  /* 08 */
-    u8 unkA[0x14 - 0xA];
+    u16 price; /* 0a */
+    u8 unkC[0x14 - 0xC];
     u8 unk14, unk15, unk16, unk17; /* 14 */
 } GearRecord18;
 
 typedef struct {
-    u8 unk0[6];
+    u32 users; /* 00: party bits of the members who can use it */
+    u8 unk4[2];
     u16 unk6;  /* 06 */
-    u8 unk8[4];
+    u8 unk8[2];
+    u16 price; /* 0a */
     u8 unkC, unkD, unkE, unkF; /* 0c */
 } GearRecord10;
 
 typedef struct {
-    u8 unk0[8];
-    u16 unk8; /* 08 */
-    u16 unkA; /* 0a */
+    u32 users; /* 00: party bits of the members who can use it */
+    u16 price; /* 04 */
+    u8 unk6[2];
+    u16 unk8;  /* 08 */
+    u16 unkA;  /* 0a */
     u8 unkC[0x14 - 0xC];
 } GearEntry;
 
@@ -874,6 +879,7 @@ void func_801E7D14(void *a, void *b, u32 *ot, s32 buffer);
 u32 func_801C527C(u32 mask, u8 id);
 u32 func_801C5260(u8 id);
 u32 func_801D1078(u8 id, u8 kind);
+void func_801D3558(s32 *change, u8 *decrease, u8 part, u8 kind, u8 member);
 void func_801D06D8(u32 first, u32 second, u32 third, u32 fourth, u8 lower);
 void func_801D18F8(s32 top, u8 *ids, u8 *kinds, u8 *chosen, u8 *held);
 void func_801CCEBC(u8 count, u8 *shown);
