@@ -365,7 +365,7 @@ void func_8003A838(SoundSeq *seq, s32 tempo, s32 frames) {
     }
     seq->tempo_target = tempo;
     if (frames == 0) {
-        seq->tick_step = seq->resolution * tempo;
+        seq->tick_step = seq->rate.part.whole * tempo;
         seq->tempo_frames = 0;
         seq->tempo = tempo << 16;
         return;
@@ -535,7 +535,7 @@ u16 *func_8003AC58(SoundSeq *seq) {
 
 extern SoundSeq *D_80059564;     /* playing sequences */
 
-/* The block at offset `data+0x1E` of a playing sequence (the first one when
+/* The block at header offset `unk1E` of a playing sequence (the first one when
  * `seq` is NULL); NULL when it is not playing. */
 u8 *func_8003ACC8(SoundSeq *seq) {
     SoundSeq *it = D_80059564;
@@ -551,7 +551,7 @@ u8 *func_8003ACC8(SoundSeq *seq) {
     if (it == NULL) {
         return NULL;
     }
-    return it->data + *(u16 *)(it->data + 0x1E);
+    return (u8 *)it->header + it->header->unk1E;
 }
 
 extern void func_8003AD98(SoundSeq *seq);
@@ -643,7 +643,7 @@ void func_8003AF24(SoundSeq *seq, u16 value) {
     seq->tempo_target = tempo;
     seq->tempo_frames = 0;
     seq->tempo = tempo << 16;
-    seq->tick_step = seq->resolution * tempo;
+    seq->tick_step = seq->rate.part.whole * tempo;
 }
 
 /* Request key-on for the unmuted channels that hold a sounding note. */
@@ -745,7 +745,7 @@ SoundSeq *func_8003B148(s32 count) {
     return effects;
 }
 
-extern void func_8003BA38(SoundSeq *seq);
+extern s32 func_8003BA38(SoundSeq *seq);
 extern void func_80039144(void *block);
 
 void func_8003B1FC(SoundSeq *seq) {
@@ -753,23 +753,147 @@ void func_8003B1FC(SoundSeq *seq) {
     func_80039144(seq);
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003B22C);
+extern s16 func_8003F67C(SoundSeqHeader *header);
+extern void func_8003B370(SoundSeq *seq);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003B32C);
+/* Read a sequence's header: channel count, reverb settings (applied when
+ * the driver owns the reverb), then reset its playback state. */
+void func_8003B22C(SoundSeq *seq) {
+    SoundSeqHeader *header = seq->header;
 
+    if (func_8003F67C(header) != 0) {
+        func_8003F6B0(0xA);
+        return;
+    }
+    seq->flags |= 1;
+    seq->unk12 = header->unk10;
+    seq->channels = header->channels;
+    seq->unk16 = header->unk16;
+    seq->unk18 = header->unk18;
+    seq->reverb_type = header->reverb_type;
+    seq->reverb_depth = header->reverb_depth << 8;
+    seq->reverb_delay = header->reverb_delay;
+    seq->reverb_feedback = header->reverb_feedback;
+    if (D_8005957C & 0x1000) {
+        func_80038934((s8)seq->reverb_type, seq->reverb_depth, seq->reverb_delay,
+                      seq->reverb_feedback);
+    }
+    func_8003B370(seq);
+}
+
+/* Initialise the sound effect channel set. */
+void func_8003B32C(SoundSeq *seq) {
+    seq->flags = 2;
+    seq->unk12 = 0x7FFF;
+    seq->unk16 = 0;
+    seq->unk18 = 0x7F;
+    seq->channels = D_80059478;
+    func_8003B370(seq);
+}
+
+/* Reset a sequence's playback state: 4/4 time, tempo 1, rate 0x66, full
+ * fade level, no snapshot.
+ * Nonmatching: the original keeps the constant 4 in its own register. */
+#ifdef NON_MATCHING
+void func_8003B370(SoundSeq *seq) {
+    func_8003B930(seq);
+    seq->unk32 = 1;
+    seq->unk36 = 1;
+    seq->unk3A = 0x30;
+    seq->tempo = 0x1000000;
+    seq->fade = 0x7F000000;
+    seq->rate.value = 0x660000;
+    seq->tick_step = 0x6600;
+    seq->unk1A = 0;
+    seq->unk1B = 0;
+    seq->unk30 = 0;
+    seq->unk34 = 0;
+    seq->unk38 = 4;
+    seq->unk3C = 4;
+    seq->unk3E = 4;
+    seq->ticks = 0;
+    seq->unk24 = 0;
+    seq->unk20 = 0;
+    seq->voices = 0;
+    seq->volume = 0;
+    seq->pan = 0;
+    seq->tempo_frames = 0;
+    seq->fade_frames = 0;
+    seq->volume_frames = 0;
+    seq->pan_frames = 0;
+    seq->rate_step = 0;
+    seq->rate_frames = 0;
+    seq->unk50 = 0x10000;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003B370);
+#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003B424);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003B644);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003B930);
+/* Free a sequence's snapshot chain. */
+void func_8003B930(SoundSeq *seq) {
+    SoundSeq *snapshot = seq->snapshot;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003B97C);
+    if (snapshot != NULL) {
+        seq->snapshot = NULL;
+        do {
+            seq = snapshot->snapshot;
+            func_80039144(snapshot);
+            snapshot = seq;
+        } while (seq != NULL);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003B9E4);
+/* Copy a snapshot over a sequence, keeping its list and snapshot links. */
+void func_8003B97C(SoundSeq *seq, SoundSeq *snapshot) {
+    SoundSeq *next = seq->next;
+    SoundSeq *saved = seq->snapshot;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003BA38);
+    func_80039248(seq, snapshot, func_8003BB40(seq->channels));
+    seq->next = next;
+    seq->snapshot = saved;
+}
+
+/* Link a sequence at the head of the playing list. */
+void func_8003B9E4(SoundSeq *seq) {
+    DisableEvent(D_800595BC);
+    seq->next = D_80059564;
+    D_80059564 = seq;
+    EnableEvent(D_800595BC);
+}
+
+/* Unlink a sequence from the playing list, stopping it first; -1 when it
+ * is not listed. */
+s32 func_8003BA38(SoundSeq *seq) {
+    SoundSeq *it = D_80059564;
+    SoundSeq *prev = NULL;
+
+    while (it != NULL && it != seq) {
+        prev = it;
+        it = it->next;
+    }
+    if (it == NULL) {
+        func_8003F6B0(0xF);
+        return -1;
+    }
+    if ((s16)seq->flags & 0x8000) {
+        if (seq == NULL) {
+            func_8003F6B0(5);
+        } else {
+            seq->flags &= 0x7FFF;
+            func_8003B060(seq);
+        }
+    }
+    if (prev != NULL) {
+        prev->next = seq->next;
+    } else {
+        D_80059564 = seq->next;
+    }
+    return 0;
+}
 
 /* Set `bits` in every active channel of a sequence. */
 void func_8003BB08(s32 bits, SoundSeq *seq) {

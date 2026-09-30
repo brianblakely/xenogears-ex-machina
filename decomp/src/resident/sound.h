@@ -95,22 +95,34 @@ typedef struct {
     s16 target;
 } SoundSlide;
 
+/* A 16.16 value whose whole part is also read on its own. */
+typedef union {
+    s32 value;
+    struct {
+        u16 fraction;
+        s16 whole;
+    } part;
+} SoundFixed;
+
 /* A sequence being played: header, then its channels. Sequences are
  * listed through `next` (D_80059564). */
 typedef struct SoundSeq {
     struct SoundSeq *next;
     struct SoundSeq *snapshot; /* saved copy of the sequence to restart from */
-    u8 *data;          /* sequence data */
+    struct SoundSeqHeader *header; /* sequence data */
     u32 *table;        /* per-sequence table after the channels */
-    u16 flags;         /* bit 15: playing, bit 8: stopped by a fade, bit 4: started */
-    u8 unk12[2];
+    u16 flags;         /* bit 15: playing, bit 8: stopped by a fade,
+                        * bit 4: has a snapshot, bit 0: header read */
+    u16 unk12;
     u8 channels;
-    u8 unk15[5];
+    u8 unk15;
+    u16 unk16;
+    u16 unk18;
     u8 unk1A;
     u8 unk1B;
     u8 unk1C[2];
     u16 unk1E;
-    u8 unk20[4];
+    s32 unk20;
     s32 unk24;
     u32 ticks;
     s32 unk2C;
@@ -130,11 +142,12 @@ typedef struct SoundSeq {
     u8 unk46[2];
     u32 voices;        /* mask of the channels holding a voice */
     u32 muted;         /* mask of the muted channels */
-    u8 unk50[4];
-    s32 tick_step;
-    u8 unk58[2];
-    s16 resolution;
-    u8 unk5C[8];
+    s32 unk50;
+    s32 tick_step;     /* rate * tempo */
+    SoundFixed rate;   /* 16.16 ticks per frame at tempo 1 */
+    s32 rate_step;
+    s16 rate_frames;
+    s16 rate_target;
     s32 tempo;         /* 16.16 */
     s32 tempo_step;
     s16 tempo_frames;
@@ -158,11 +171,18 @@ typedef struct SoundSeq {
 #define SEQ_CHANNEL_FLAGS32(channel) (*(u32 *)&(channel)->flags)
 
 /* The header of sequence data. */
-typedef struct {
-    u8 unk0[0x14];
+typedef struct SoundSeqHeader {
+    u8 unk0[0x10];
+    u16 unk10;
+    u8 unk12[2];
     u8 channels;
     u8 entries;        /* entries of the table at `table` */
-    u8 unk16[8];
+    u16 unk16;
+    u16 unk18;
+    u8 reverb_type;
+    u8 reverb_depth;   /* high byte of the depth */
+    u8 reverb_delay;
+    u8 reverb_feedback;
     u16 unk1E;
     u16 table;         /* offset of 5-byte (index, word) entries */
 } SoundSeqHeader;
