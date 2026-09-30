@@ -1746,7 +1746,7 @@ Emitter *func_8008D3F4(s32 shape, s32 placement) {
     emitter->range.vx = 0x1000;
     emitter->range.vy = 0x1000;
     emitter->range.vz = 0x1000;
-    emitter->unk44 = 1;
+    emitter->spread = 1;
     emitter->placement = placement;
     emitter->unk2 = 0;
     emitter->unk4 = 0;
@@ -1760,10 +1760,10 @@ Emitter *func_8008D3F4(s32 shape, s32 placement) {
     emitter->unk3C = 0;
     emitter->unk3E = 0;
     emitter->unk40 = 0;
-    emitter->unk0 = 0;
+    emitter->gravity = 0;
     emitter->unk46 = 0;
-    emitter->unk48 = 0x100;
-    emitter->unk4A = 0x100;
+    emitter->speed = 0x100;
+    emitter->speed_range = 0x100;
     emitter->offset.vx = emitter->range.vx / 2;
     emitter->offset.vy = emitter->range.vy / 2;
     emitter->offset.vz = emitter->range.vz / 2;
@@ -1772,7 +1772,7 @@ Emitter *func_8008D3F4(s32 shape, s32 placement) {
     emitter->sparks = NULL;
     emitter->shape = shape;
     emitter->unk64 = 0;
-    emitter->unk6A = 100;
+    emitter->life = 100;
     emitter->r = 0xFF;
     emitter->g = 0xFF;
     emitter->b = 0xFF;
@@ -1827,19 +1827,116 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008D5C0);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008D680);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008D980);
+/* Bounce a falling spark off the floor under it, losing half its speed.
+ * The floor query reads the spark position as a 32-bit vector. */
+void func_8008D980(Spark *spark) {
+    if (spark->vel.vy > 0 && spark->pos.vy > func_80082488((Vector *)spark, 0)) {
+        spark->vel.vy = -spark->vel.vy / 2;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008D9F0);
+/* Bounce a spark off the ground plane (y = 0), losing half its speed;
+ * a spark that has come to rest dies. */
+void func_8008D9F0(Spark *spark) {
+    if (spark->pos.vy > 0) {
+        spark->vel.vy = -spark->vel.vy / 2;
+        if (abs(spark->vel.vy) < 8) {
+            spark->pos.pad = 0;
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008DA48);
+/* Move and draw every live spark of an emitter: gravity, a bounce on the
+ * ground plane, projection relative to the camera through the scratchpad. */
+void func_8008DA48(Emitter *emitter, u32 *ot, Matrix *view) {
+    Matrix unused_matrix;
+    SVector unused_vector;
+    Spark *spark;
+    void (*draw)(void *, u32 *);
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008DBC0);
+    D_8009282C = (SVector *)0x1F800000;
+    D_80092830 = (SVector *)0x1F800030;
+    ((SVector *)0x1F800030)->vx = D_80096FA8.vx;
+    ((SVector *)0x1F800030)->vy = D_80096FA8.vy;
+    ((SVector *)0x1F800030)->vz = D_80096FA8.vz;
+    spark = (Spark *)emitter->sparks;
+    draw = emitter->draw;
+    for (i = 0; i < emitter->count; i++) {
+        if (spark->pos.pad != 0) {
+            spark->pos.pad--;
+            spark->vel.vy += emitter->gravity;
+            spark->pos.vx += spark->vel.vx;
+            spark->pos.vy += spark->vel.vy;
+            spark->pos.vz += spark->vel.vz;
+            if (spark->pos.vy > 0) {
+                spark->vel.vy = -spark->vel.vy * 2 / 3;
+                if (abs(spark->vel.vy) < 4) {
+                    spark->pos.pad = 0;
+                }
+            }
+            draw(spark, ot);
+        }
+        spark = (Spark *)((u8 *)spark + emitter->size);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008DC28);
+/* Copy one model part's local transform. */
+void func_8008DBC0(Model *model, s16 part, Matrix *out) {
+    Matrix unused;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008DCA8);
+    *out = model->list->parts[part]->matrix;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008DCB8);
+/* Create the menu's spark emitter: 256 orange three-point sparks. */
+void func_8008DC28(void) {
+    Emitter *emitter = func_8008D3F4(1, 0);
+
+    emitter->r = 0xFF;
+    emitter->g = 0xA0;
+    emitter->b = 0x70;
+    func_8008D5C0(emitter, 0x100);
+    emitter->gravity = 4;
+    emitter->spread = 0x60;
+    emitter->speed_range = 0x60;
+    emitter->speed = 4;
+    emitter->unk68 = 0;
+    emitter->life = 0x20;
+    D_80092834 = emitter;
+}
+
+/* Start a spark burst of the given strength. */
+void func_8008DCA8(s32 strength) {
+    D_80092838 = strength;
+}
+
+/* Emit a burst from a model part while the burst lasts, then move and draw
+ * the menu's sparks under the given view. */
+void func_8008DCB8(u32 *ot, Model *model, Matrix *view, Vector *pos) {
+    Emitter *emitter = D_80092834;
+    Matrix rotation;
+    Matrix part;
+
+    if (D_80092838 >= 0x10) {
+        func_8008DBC0(model, 0x27, &part);
+        func_80048E94(&part, &rotation);
+        rotation.t[0] = rotation.t[1] = rotation.t[2] = 0;
+        emitter->unk14 = pos->vx;
+        emitter->unk16 = pos->vy;
+        emitter->unk18 = pos->vz;
+        emitter->unk3C = 0;
+        emitter->unk3E = 0;
+        emitter->unk40 = 0;
+        emitter->unk34 = 0;
+        emitter->unk36 = 0;
+        emitter->unk38 = 0x800;
+        func_8008D680(emitter, &rotation, D_80092838 >> 4);
+        D_80092838 -= 4;
+    }
+    gte_SetTransMatrix(view);
+    gte_SetRotMatrix(view);
+    func_8008DA48(emitter, ot, view);
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008DDFC);
 
