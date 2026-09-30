@@ -409,13 +409,32 @@ typedef struct {
 extern EffectEntry D_800D2200[];
 extern u8 D_800D2DC4;
 
+/* Stepped line state (80088 87c). */
+extern s32 D_800C3A7C;
+extern s32 D_800C3A80;
+extern s32 D_800C3A84;
+extern s32 D_800C3A88;
+extern s32 D_800C3A8C;
+extern s32 D_800C3A90;
+extern s8 D_800C3A94;
+extern s8 D_800C3A98;
+extern s32 D_800C3A9C;
+extern s8 D_800C207C;
+extern s32 D_800C2080;
+extern s32 D_800C2084;
+
 extern BattleState *D_800C34B0;
 
 /* Resolver globals. */
 typedef struct {
-    u8 unk0[0x14];
+    u8 unk0[0xA];
+    u16 unkA;
+    u8 unkC[0x11 - 0xC];
+    u8 unk11;
+    u8 unk12[2];
     u8 unk14;
-    u8 unk15[0x1D - 0x15];
+    u8 unk15[0x1C - 0x15];
+    u8 unk1C;
     u8 unk1D;
     u16 unk1E;
 } CommandDescriptor;

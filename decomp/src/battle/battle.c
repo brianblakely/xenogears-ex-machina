@@ -2845,7 +2845,23 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80083748);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80083948);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80083FF4);
+/* Whether the member can attack `slot`: present and visible; an unflagged
+ * slot must be adjacent (formation distance 0) and not down, a flagged slot
+ * not down by +0x120. */
+u8 func_80083FF4(u8 member, u8 slot) {
+    u8 result = 0;
+
+    if (D_800D2DCC.present[slot] != 0 && D_800C3EB4[slot].hidden == 0) {
+        if (D_800D32A0[slot].unk1 == 0) {
+            if (D_800D3364->links[D_800C3EB4[member].group][D_800C3EB4[slot].group].distance == 0) {
+                result = (D_800CCCE8[slot].flags7C & 0xC001) == 0;
+            }
+        } else if (!(D_800CCCE8[slot].unk120 & 0xC001)) {
+            result = 1;
+        }
+    }
+    return result;
+}
 
 /* Whether `slot` can be targeted by a party attack: present and visible;
  * unflagged slots also not down (+0x7c 0xc001) unless `any`, flagged slots
@@ -3115,7 +3131,44 @@ u8 func_800885D0(u8 slot) {
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008860C);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008887C);
+/* Set up a stepped line from (x0, y0) to (x1, y1): directions, the 8.8 steps
+ * of the minor axis and a random speed 1..8. */
+void func_8008887C(s32 x0, s32 y0, s32 x1, s32 y1) {
+    s32 dx;
+    s32 dy;
+
+    D_800C3A7C = x0;
+    D_800C3A80 = y0;
+    D_800C3A84 = x1;
+    D_800C3A88 = y1;
+    if (x1 != x0 && y1 != y0) {
+        if (x1 < x0) {
+            D_800C3A94 = 1;
+            dx = x0 - x1;
+        } else {
+            dx = x1 - x0;
+            D_800C3A94 = 0;
+        }
+        if (y1 < y0) {
+            D_800C3A98 = 1;
+            dy = y0 - y1;
+        } else {
+            dy = y1 - y0;
+            D_800C3A98 = 0;
+        }
+        if (dx >= dy) {
+            D_800C3A8C = 0x100;
+            D_800C3A90 = (dy << 8) / dx;
+        } else {
+            D_800C3A90 = 0x100;
+            D_800C3A8C = (dx << 8) / dy;
+        }
+        D_800C2080 = 0;
+        D_800C2084 = 0;
+        D_800C3A9C = func_8001BD40(1, 8);
+        D_800C207C = 0;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80088990);
 
@@ -3502,7 +3555,20 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009080C);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009093C);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80090B90);
+/* Animate the five-frame cursor glyph at (x, y): advance `frame` every third
+ * tick. */
+void func_80090B90(s32 x, s32 y, s32 *frame, u8 *ticks) {
+    if (++*ticks >= 3) {
+        *frame -= 1;
+        if (*frame < 0) {
+            *frame = 4;
+        }
+        *ticks = 0;
+    }
+    D_800D2D28->unk100 = func_80076A10(*frame + 0xE0, D_800C3EA4->unk27C8, x, y);
+    D_800D2D28->unkA7 = D_800CCB04.buffer;
+    D_800D2D28->unk9E = 1;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80090C44);
 
@@ -3510,7 +3576,21 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80090E7C);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80091064);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80091604);
+/* Build eight glyph rows (0x66) from y + 0x38 into the +0xba8 primitives. */
+void func_80091604(s32 y) {
+    s32 i;
+    s32 offset;
+
+    i = 0;
+    offset = 0x38;
+    D_800D2D28->unkF8 = 0;
+    for (; i < 8; i++) {
+        D_800D2D28->unkF8 += func_80076A10(0x66, &D_800C3EA4->unkBA8[D_800D2D28->unkF8 * 2], 0x20, offset + y);
+        offset += 8;
+    }
+    D_800D2D28->unkA5 = D_800CCB04.buffer;
+    D_800D2D28->unk9C = 1;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800916D4);
 
@@ -3582,7 +3662,20 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800957D8);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800958D8);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80095A78);
+/* Status effect of the descriptor on the target (mode +0x11, or 5 with
+ * +0xa bit 0x4000); a refused status marks the target's result 6. */
+void func_80095A78(void) {
+    s8 accepted = func_80097964(D_800C3DFC->unk1C, D_800C3DFC->unk1D, D_800C3DFC->unk1E);
+
+    if (D_800C3DFC->unkA & 0x4000) {
+        func_800995A0(D_800C3E50, D_800C3DFC->unk1D, D_800C3DFC->unk1E, 5);
+    } else {
+        func_800995A0(D_800C3E50, D_800C3DFC->unk1D, D_800C3DFC->unk1E, D_800C3DFC->unk11);
+        if (accepted != 1) {
+            D_800C34B0->resultCodes[D_800C3E50] = 6;
+        }
+    }
+}
 
 /* When 80097964 accepts the attacker's +2/+3/+0 values, run 800995a0 on the
  * target with the descriptor's +0x1d/+0x1e and mode 5. */
