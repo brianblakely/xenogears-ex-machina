@@ -45,6 +45,39 @@ typedef struct {
     u32 offset_prim[3]; /* 0x74: last word is x | y << 16 */
 } MenuFrame;
 
+typedef struct {
+    s16 vx, vy, vz, pad;
+} SVector;
+
+/* A projectile fired by an actor. */
+typedef struct {
+    Vector pos;      /* 0x00 */
+    Vector prev;     /* 0x10 */
+    SVector velocity; /* 0x20 */
+    SVector dir;     /* 0x28: unit direction */
+    u8 active;       /* 0x30 */
+    u8 speed;
+    u8 unk32;
+    u8 unk33;
+    u8 unk34[0x4];
+    s32 unk38;
+    s16 unk3C;
+    s16 unk3E;
+    s16 unk40;
+    u8 unk42[0x2];
+} Shot;
+
+/* Projectile kinds (D_800910F4). */
+typedef struct {
+    u16 unk0;
+    u8 unk2;
+    u8 unk3;
+    u8 speed;
+    u8 unk5;
+    u8 sound;
+    u8 unk7;
+} ShotKind;
+
 /* A character moved in the menu scene. */
 typedef struct {
     Vector pos;          /* 0x00 */
@@ -65,11 +98,15 @@ typedef struct {
     u8 unkBE[0x10];
     s16 unkCE;
     u32 flags;           /* 0xD0: bit 27 = side */
-    u8 unkD4[0x14];
+    u8 unkD4[0x4];
+    Vector *target;      /* 0xD8 */
+    u8 unkDC[0xC];
     s32 unkE8;
     u8 unkEC[0x558];
     s32 unk644;
-    u8 unk648[0xF8C];
+    u8 unk648[0x4];
+    Shot shots[9];       /* 0x64C */
+    u8 unk8B0[0xD24];
     u8 unk15D4[0x80];
     s32 unk1654;
     s32 unk1658;
@@ -240,6 +277,7 @@ extern u16 D_80092632;
 extern s16 D_800928D0;
 extern Vector D_80096FA8; /* scene origin */
 extern Matrix D_80091C0C;
+extern ShotKind D_800910F4[];
 extern Effect *D_80092644;
 extern s32 D_80092650; /* trail segments added */
 
@@ -277,6 +315,9 @@ void func_8007099C(u32 mode);
 void func_80070F80(u8 *script);
 void func_8007107C(void);
 void func_80071724(u32 *ot);
+void func_80073064(SVector *dir, SVector *out, s32 scale);
+void func_8008859C(Vector *v, SVector *unit);
+void func_8008EBD0(Actor *actor, s32 sound, Shot *shot, s32 arg);
 void func_80073B7C(Actor *actor, s32 part, s32 vertex, Vector *out);
 void func_8007C100(u8 *arg);
 void func_8007C880(s32 side, Vector *at, s32 style, s32 type);

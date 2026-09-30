@@ -533,7 +533,54 @@ void func_800732CC(void) {
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007334C);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80073424);
+/* Fire a projectile of the given kind from a point toward the actor's
+ * target (or away from origin when given), in the first free slot. */
+void func_80073424(Vector *from, Vector *origin, Actor *actor, s32 kind, s32 arg4, s32 arg5) {
+    Vector toward;
+    Vector aim;
+    SVector unused; /* the original frame reserves 8 more bytes */
+    Vector *target;
+    ShotKind *info;
+    Shot *shot;
+    s32 i;
+
+    for (i = 0; i < 9; i++) {
+        if (actor->shots[i].active == 0) {
+            shot = &actor->shots[i];
+            break;
+        }
+    }
+    if (i == 8) {
+        return;
+    }
+    target = actor->target;
+    aim.vx = target->vx - from->vx;
+    aim.vy = target->vy - from->vy - 0x90;
+    aim.vz = target->vz - from->vz;
+    info = &D_800910F4[kind];
+    if (origin != NULL) {
+        toward.vx = from->vx - origin->vx;
+        toward.vy = from->vy - origin->vy;
+        toward.vz = from->vz - origin->vz;
+    } else {
+        toward = aim;
+    }
+    func_8008859C(&toward, &shot->dir);
+    shot->unk3E = info->unk0;
+    shot->speed = info->speed;
+    shot->unk40 = info->unk3;
+    shot->unk32 = info->unk2;
+    shot->unk33 = info->unk5;
+    shot->unk38 = arg5;
+    shot->unk3C = arg4;
+    if (info->sound != 0) {
+        func_8008EBD0(actor, info->sound, shot, 2);
+    }
+    func_80073064(&shot->dir, &shot->velocity, shot->speed);
+    shot->pos = *from;
+    shot->prev = shot->pos;
+    shot->active = 1;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80073644);
 
