@@ -62,6 +62,34 @@ typedef struct {
     s16 x, y, w, h;
 } DebugRect;
 
+/* A field particle emitter (field overlay table, 8 entries). */
+typedef struct {
+    s16 unk0;
+    u16 max;                  /* 0x02 MAX */
+    u16 start_wait;           /* 0x04 SWAIT */
+    s16 bank;                 /* 0x06 BANK */
+    s32 speed;                /* 0x08 SPEED */
+    SVECTOR start_pos;        /* 0x0C SPOS */
+    SVECTOR end_pos;          /* 0x14 EPOS */
+    SVECTOR gravity;          /* 0x1C GRAVITE */
+    s16 speed_scale;          /* 0x24 SPEED multiplier */
+    u16 start_range;          /* 0x26 SRANGE */
+    u16 end_range;            /* 0x28 ERANGE */
+    s16 flags;                /* 0x2A RANDROT, SORT, RANGEMOD, COLMODE bits */
+    s16 unk2C[2];
+    s16 angle_offsets[8][2];  /* 0x30 ANGOFFS */
+    s16 unk50[2];
+    s16 shape;                /* 0x54 SHAPE */
+    u16 particle_start_wait;  /* 0x56 PSWAIT */
+    u16 particle_end_wait;    /* 0x58 PEWAIT */
+    SVECTOR scale;            /* 0x5A SCALE */
+    SVECTOR scale_offset;     /* 0x62 SCALEOFS */
+    u8 color[4];              /* 0x6A COLOR */
+    s8 color_offset[4];       /* 0x6E COLOROFS */
+    s16 unk72[2];
+    s16 rot_angle;            /* 0x76 ROTANGLE */
+} ParticleEmitter;            /* 0x78 */
+
 /* libgte / libgpu (resident). */
 void LoadImage(DebugRect *rect, u32 *data);
 s32 VSync(s32 mode);
@@ -87,6 +115,8 @@ extern MATRIX D_800AFA64;
 extern u16 D_800AFEA0;   /* buttons held (shoulder bits) */
 extern u16 D_800C3908;   /* buttons pressed or repeating */
 extern u16 D_800AFE9C;   /* buttons held */
+extern s32 D_800B0044;   /* particle emitter being edited */
+extern ParticleEmitter D_800B02CC[8];
 extern s32 D_80065850;   /* camera control mode */
 extern s32 D_80065854;   /* analog steps */
 extern s32 D_80065858;

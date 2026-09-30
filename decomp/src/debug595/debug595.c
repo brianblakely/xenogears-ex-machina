@@ -289,7 +289,7 @@ s32 func_80284424(s32 value, s32 min, s32 max) {
 }
 
 /* Set component `axis` of a short vector. */
-void func_802844BC(SVECTOR *v, s32 axis, s16 value) {
+void func_802844BC(SVECTOR *v, s32 axis, s32 value) {
     switch (axis) {
     case 0:
         v->vx = value;
@@ -317,7 +317,7 @@ s32 func_80284510(SVECTOR *v, s32 axis) {
 }
 
 /* Set channel `channel` of an unsigned colour triple. */
-void func_8028456C(u8 *color, s32 channel, u8 value) {
+void func_8028456C(u8 *color, s32 channel, s32 value) {
     switch (channel) {
     case 0:
         color[0] = value;
@@ -345,7 +345,7 @@ s32 func_802845C0(u8 *color, s32 channel) {
 }
 
 /* Set component `axis` of a signed byte triple. */
-void func_8028461C(s8 *v, s32 axis, s8 value) {
+void func_8028461C(s8 *v, s32 axis, s32 value) {
     switch (axis) {
     case 0:
         v[0] = value;
@@ -374,7 +374,137 @@ s32 func_80284670(s8 *v, s32 axis) {
 
 
 
+#ifdef NON_MATCHING
+/* Edit field `item` (component `axis`) of the selected particle emitter.
+ * Differs only in the flag cases: the original masks the kept bits before
+ * the step call (in its delay slot) where GCC here expands the call first. */
+void func_802846CC(s32 axis, u32 item) {
+    s16 flags;
+    s32 kept;
+
+    switch (item) {
+    case 0:
+        D_800B0044 = func_80284424(D_800B0044, 0, 7);
+        break;
+    case 1:
+        D_800B02CC[D_800B0044].bank = func_80284424(D_800B02CC[D_800B0044].bank, 0, 0xFF);
+        break;
+    case 2:
+        D_800B02CC[D_800B0044].max = func_80284424(D_800B02CC[D_800B0044].max, 0, 0x7FFF);
+        break;
+    case 3:
+        D_800B02CC[D_800B0044].start_wait =
+            func_80284424(D_800B02CC[D_800B0044].start_wait, 1, 0x7FFF);
+        break;
+    case 4:
+        func_802844BC(&D_800B02CC[D_800B0044].start_pos, axis,
+                      func_80284424(func_80284510(&D_800B02CC[D_800B0044].start_pos, axis), -0x8000,
+                                    0x7FFF));
+        break;
+    case 5:
+        func_802844BC(&D_800B02CC[D_800B0044].end_pos, axis,
+                      func_80284424(func_80284510(&D_800B02CC[D_800B0044].end_pos, axis), -0x8000,
+                                    0x7FFF));
+        break;
+    case 6:
+        if (axis == 0) {
+            D_800B02CC[D_800B0044].speed =
+                func_80284424(D_800B02CC[D_800B0044].speed, -0x8000, 0x7FFF);
+        } else {
+            D_800B02CC[D_800B0044].speed_scale =
+                func_80284424(D_800B02CC[D_800B0044].speed_scale, 1, 0x7FFF);
+        }
+        break;
+    case 7:
+        func_802844BC(&D_800B02CC[D_800B0044].gravity, axis,
+                      func_80284424(func_80284510(&D_800B02CC[D_800B0044].gravity, axis), -0x8000,
+                                    0x7FFF));
+        break;
+    case 8:
+        D_800B02CC[D_800B0044].start_range =
+            func_80284424(D_800B02CC[D_800B0044].start_range, 0, 0xFFFF);
+        break;
+    case 9:
+        D_800B02CC[D_800B0044].end_range =
+            func_80284424(D_800B02CC[D_800B0044].end_range, 0, 0xFFFF);
+        break;
+    case 10:
+        D_800B02CC[D_800B0044].particle_start_wait =
+            func_80284424(D_800B02CC[D_800B0044].particle_start_wait, 1, 0x7FFF);
+        break;
+    case 11:
+        D_800B02CC[D_800B0044].particle_end_wait =
+            func_80284424(D_800B02CC[D_800B0044].particle_end_wait, 1, 0x7FFF);
+        break;
+    case 12:
+        D_800B02CC[D_800B0044].shape = func_80284424(D_800B02CC[D_800B0044].shape, 0, 0x7FFF);
+        break;
+    case 13:
+        func_802844BC(&D_800B02CC[D_800B0044].scale, axis,
+                      func_80284424(func_80284510(&D_800B02CC[D_800B0044].scale, axis), -0x8000,
+                                    0x7FFF));
+        break;
+    case 14:
+        func_802844BC(&D_800B02CC[D_800B0044].scale_offset, axis,
+                      func_80284424(func_80284510(&D_800B02CC[D_800B0044].scale_offset, axis),
+                                    -0x8000, 0x7FFF));
+        break;
+    case 15:
+        func_8028456C(D_800B02CC[D_800B0044].color, axis,
+                      func_80284424(func_802845C0(D_800B02CC[D_800B0044].color, axis), 0, 0xFF));
+        break;
+    case 16:
+        func_8028461C(D_800B02CC[D_800B0044].color_offset, axis,
+                      func_80284424(func_80284670(D_800B02CC[D_800B0044].color_offset, axis), -0x80,
+                                    0x7F));
+        break;
+    case 17:
+        flags = D_800B02CC[D_800B0044].flags;
+        D_800B02CC[D_800B0044].flags = (flags & 0xFFFE) | func_80284424(flags & 1, 0, 1);
+        break;
+    case 18:
+        flags = D_800B02CC[D_800B0044].flags;
+        D_800B02CC[D_800B0044].flags =
+            (flags & 0xFFF9) |
+            (func_80284424((flags >> 1) & 3, 0, 3) << 1);
+        break;
+    case 19:
+        flags = D_800B02CC[D_800B0044].flags;
+        D_800B02CC[D_800B0044].flags =
+            (flags & 0xFCFF) |
+            (func_80284424((flags >> 8) & 3, 0, 3) << 8);
+        break;
+    case 20:
+        D_800B02CC[D_800B0044].rot_angle =
+            func_80284424(D_800B02CC[D_800B0044].rot_angle, 0, 0xFFF);
+        break;
+    case 21:
+        flags = D_800B02CC[D_800B0044].flags;
+        D_800B02CC[D_800B0044].flags =
+            (flags & 0xFF3F) |
+            (func_80284424((flags >> 6) & 3, 0, 2) << 6);
+        break;
+    case 22:
+    case 23:
+    case 24:
+    case 25:
+    case 26:
+    case 27:
+    case 28:
+    case 29:
+        if (axis == 0) {
+            D_800B02CC[D_800B0044].angle_offsets[item - 22][0] =
+                func_80284424(D_800B02CC[D_800B0044].angle_offsets[item - 22][0], -0x8000, 0x7FFF);
+        } else {
+            D_800B02CC[D_800B0044].angle_offsets[item - 22][1] =
+                func_80284424(D_800B02CC[D_800B0044].angle_offsets[item - 22][1], -0x8000, 0x7FFF);
+        }
+        break;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/debug595/asm/nonmatchings/debug595", func_802846CC);
+#endif
 
 #ifdef NON_MATCHING
 /* With L2 and the debug button held, move the camera by the pad's analog
