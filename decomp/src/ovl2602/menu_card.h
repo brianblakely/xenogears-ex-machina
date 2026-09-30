@@ -561,6 +561,8 @@ void func_8003342C(void *list);          /* relocate an offset list */
 void func_80026338(void *sheet, s32 id, s32 *u, s32 *v, s32 *w, s32 *h, s32 *x, s32 *y);
 void func_80033698(s32 x, s32 y);        /* text palettes */
 u8 *func_80033728(void *table, s32 index); /* entry of a text table */
+u8 *func_80033A2C(s32 id);               /* kind 3 part name */
+u8 *func_80033A5C(s32 id);               /* kind 4 part name */
 s32 func_80034EAC(u8 *text, void *pixels, s32 width, s32 line); /* render a text line */
 s32 func_8002675C(void *sheet, s32 id, void *packets, s32 buffer, s32 x, s32 y, s32 scale); /* sprite */
 s32 func_800263E4(void *sheet, s32 id, void *packets, s32 buffer, s32 x, s32 y, s32 scale, s32 flip_x,
@@ -722,11 +724,27 @@ typedef struct {
     u8 unkC[0x14 - 0xC];
 } GearEntry;
 
+/* Gear parts for sale: frames (1ch bytes) and other parts (14h bytes). */
+typedef struct {
+    u32 users; /* 00: party bits of the members who can use it */
+    u16 price; /* 04 */
+    u8 unk6[0x1C - 6];
+} GearPart1C;
+
+typedef struct {
+    u8 unk0[4];
+    u32 users; /* 04 */
+    u16 price; /* 08 */
+    u8 unkA[0x14 - 0xA];
+} GearPart14;
+
 typedef struct {
     u8 unk0[8];
     GearRecord18 *records18; /* 08 */
     GearRecord10 *records10; /* 0c */
     GearEntry *entries;      /* 10 */
+    GearPart1C *parts1C;     /* 14: kind 3 */
+    GearPart14 *parts14;     /* 18: kind 4 */
 } GearTable;
 
 extern Gear D_8006DFAC[];
@@ -736,6 +754,7 @@ s32 rand(void);  /* rand */
 void func_801E7D14(void *a, void *b, u32 *ot, s32 buffer);
 u32 func_801C527C(u32 mask, u8 id);
 u32 func_801C5260(u8 id);
+u32 func_801D1078(u8 id, u8 kind);
 void func_801CCEBC(u8 count, u8 *shown);
 void func_801D0EC8(u8 close);
 void func_801D61B8(GearTable *table, u8 id);

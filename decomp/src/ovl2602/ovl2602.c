@@ -2440,7 +2440,114 @@ void func_801D0EC8(u8 close) {
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D1078);
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D1304);
+/*
+ * Show part `id` of kind `kind` (3 or 4): its name and sell price (half the
+ * table price) labels, the bars of the members who can use it and the marks
+ * of those holding it. Returns the sell price.
+ */
+u32 func_801D1304(u8 id, u8 kind) {
+    RECT rect;
+    u8 unused[16]; /* never referenced */
+    u8 codes[14];
+    u8 text[16];
+    s32 divisors[5];
+    u8 *pixels;
+    u32 users;
+    u32 price;
+    s32 value;
+    u32 holders;
+    s32 digit;
+    u8 started;
+    u8 gear;
+    s32 j;
+    s32 i;
+
+    users = 0;
+    divisors[0] = 1;
+    divisors[1] = 10;
+    divisors[2] = 100;
+    divisors[3] = 1000;
+    divisors[4] = 10000;
+    pixels = func_80031BDC(0x618, 0);
+    bzero(pixels, 0x618);
+    bzero(codes, 14);
+    switch (kind) {
+    case 4:
+        D_800625A0->details->label4430.width = func_80034EAC(func_80033A5C(id), pixels, 0x39, 0);
+        users = ((GearTable *)D_800625A0->resources)->parts14[id].users;
+        price = ((GearTable *)D_800625A0->resources)->parts14[id].price >> 1;
+        value = price;
+        break;
+    case 3:
+        D_800625A0->details->label4430.width = func_80034EAC(func_80033A2C(id), pixels, 0x39, 0);
+        users = ((GearTable *)D_800625A0->resources)->parts1C[id].users;
+        price = ((GearTable *)D_800625A0->resources)->parts1C[id].price >> 1;
+        value = price;
+        break;
+    }
+    holders = func_801D1078(id, kind);
+    started = 0;
+    for (i = 0, j = 4; j > 0; i++, j--) {
+        digit = value / divisors[j];
+        if (digit != 0 || started) {
+            codes[i * 2] = digit + 0x10;
+            started = 1;
+            value -= digit * divisors[j];
+        } else {
+            codes[i * 2] = 0xC3;
+        }
+    }
+    codes[8] = value % 10 + 0x10;
+    func_80033B34(codes, text, 5);
+    D_800625A0->details->label44B0.width = func_80034EAC(text, pixels, 0x39, 1);
+    rect.x = 0x140;
+    rect.y = 0x4E;
+    rect.w = 0x3C;
+    rect.h = 13;
+    LoadImage(&rect, pixels);
+    DrawSync(0);
+    func_801C5CA8(&D_800625A0->details->label4430, 0, 0, 0);
+    func_801C5CA8(&D_800625A0->details->label44B0, 0, 0, 0);
+    D_800625A0->details->label44B0.poly[D_800625A0->buffer].clut = D_80059414;
+    func_801C51B8(&D_800625A0->details->label4430.poly[D_800625A0->buffer], 0x2C, 0x12, 0, 0x4E,
+                  D_800625A0->details->label4430.width, 13);
+    func_801C51B8(&D_800625A0->details->label44B0.poly[D_800625A0->buffer], 0x98, 0x12, 0, 0x4E,
+                  D_800625A0->details->label44B0.width, 13);
+    func_801C7604(D_800625A0->details->label4430.quad, 0x2C, 0x12, D_800625A0->details->label4430.width, 13);
+    func_801C7604(D_800625A0->details->label44B0.quad, 0x98, 0x12, D_800625A0->details->label44B0.width, 13);
+    D_800625A0->details->label4430.buffer = D_800625A0->buffer;
+    D_800625A0->details->label44B0.buffer = D_800625A0->buffer;
+    func_800320E8(pixels);
+    if (id) {
+        D_800625A0->details->label4430_shown = 1;
+        D_800625A0->details->label44B0_shown = 1;
+    } else {
+        D_800625A0->details->label4430_shown = 0;
+        D_800625A0->details->label44B0_shown = 0;
+    }
+    i = 0;
+    j = 0;
+    D_800625A0->details->group2D0_count = 0;
+    for (; i < 16; i++) {
+        if (D_800625A0->member_present[i] != 0) {
+            gear = D_8006D8A0[i].unkA0;
+            if (func_801C527C(users, gear)) {
+                D_800625A0->details->bar_shown[j] = 1;
+            } else {
+                D_800625A0->details->bar_shown[j] = 0;
+            }
+            if (func_801C527C(holders, gear)) {
+                D_800625A0->details->group2D0_count +=
+                    func_8002675C(D_800625A0->sprite_sheet, 0xE,
+                                  &D_800625A0->details->group2D0[D_800625A0->details->group2D0_count * 2],
+                                  D_800625A0->buffer, D_801D6C44[j] + 0xE, 0xB4, 0x1000);
+            }
+            j++;
+        }
+    }
+    D_800625A0->details->group2D0_buffer = D_800625A0->buffer;
+    return price;
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D18F8);
 
