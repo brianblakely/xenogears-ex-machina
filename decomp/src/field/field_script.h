@@ -13,7 +13,6 @@ extern u32 *D_800B1F74; /* TIM image held by instruction 0x77 */
 extern s32 D_80062518[4];  /* loaded wave bank per slot */
 extern s32 D_80062524;     /* slot 3 of D_80062518, read on its own */
 extern s32 D_800595AC;     /* active slot-3 bank */
-extern s32 D_8004F370;     /* 1 selects the alternate bank file */
 extern void *D_800AFD08;   /* bank file being loaded */
 extern s32 D_800AFD0C;     /* bank file number */
 extern s32 D_800AFD18;     /* bank slot being loaded */
@@ -79,17 +78,11 @@ typedef struct {
     s16 clut_y;
 } PortraitPlace;
 
-typedef struct {
-    u16 file;
-    void *data;
-} PortraitRequest;
-
 extern PortraitPlace D_800AEAE4[3][2]; /* VRAM place per slot and image */
 extern u8 D_800AE1E0[][2];             /* portrait files per character, - 0x46 */
 extern void *D_800ADB10;               /* first portrait image */
 extern void *D_800ADB14;               /* second portrait image */
-extern PortraitRequest D_800B00C8[3];  /* file list read by 80029afc */
-extern s32 func_80029AFC(void *list, s32 mode, s32 a2);
+extern FieldFileRequest D_800B00C8[3];  /* file list read by 80029afc */
 extern s32 func_8009C538(s32 id);
 
 /* Dialogue window opening (8009c5a8). */
@@ -100,8 +93,6 @@ extern void *D_800ADBF0;   /* field message table */
 extern s32 func_8003373C(void *table, s32 message); /* message columns */
 extern s32 func_80033760(void *table, s32 message); /* message rows */
 extern void func_8007F814(s32 index, s32 *x, s32 *y, s32 height);
-extern void func_8007F8DC(s32 x, s32 y, s32 message, s32 window, s32 columns, s32 rows, s32 owner, s32 speaker,
-                          s32 mode, s32 flags, s32 style);
 extern s32 func_80080720(void);
 extern s32 func_80080760(void);
 extern s32 func_800807B4(void);

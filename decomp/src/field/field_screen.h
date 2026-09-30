@@ -31,7 +31,6 @@ extern GridMode D_800B1E24[2];
 extern s32 D_800C3A40; /* fade radius */
 
 extern s32 D_8005A4C0;   /* resident: map read-ahead size */
-extern void *D_8005A4E0; /* resident: map read-ahead block */
 extern s32 D_800AFD04;   /* reloading */
 
 void func_8001B044(void);
