@@ -738,7 +738,35 @@ void func_800764CC(Actor *actor) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007661C);
+/* Debug: print an actor side's pending move name (dimmed unless it is the
+ * current one), its strength and its frame range at the side's corner. */
+void func_8007661C(Actor *actor) {
+    char text[16];
+    s32 x;
+    s32 y = 0xA;
+
+    if (actor->flags & 0x8000000) {
+        x = 0xB4;
+    } else {
+        x = 0x14;
+    }
+    if (D_800928C8 != 4) {
+        y = 0xB2;
+    }
+    func_8007E894(x, y);
+    sprintf(text, "%s", D_80096FB8[ACTOR_SIDE(actor)].unk0);
+    func_8007E954(D_80096FB8[ACTOR_SIDE(actor)].unk0 == D_8009112C ? 0xE7 : 0x100);
+    func_8007EBE0(text);
+    func_8007E954(0x100);
+    func_8007E894(x + 0x34, y);
+    sprintf(text, "STR:%d", D_80096FB8[ACTOR_SIDE(actor)].unk4);
+    func_8007EBE0(text);
+    y += 0x14;
+    func_8007E894(x, y);
+    sprintf(text, "FRAME:%d-%d", D_80096FB8[ACTOR_SIDE(actor)].unkC >> 4,
+            D_80096FB8[ACTOR_SIDE(actor)].unk10 >> 4);
+    func_8007EBE0(text);
+}
 
 /* Queue input 5 for an actor when both actors are in the 0x40000 state
  * near the ground, unless it is blocked (bit 24, move 4, or the 0x20000000
