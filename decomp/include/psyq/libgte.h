@@ -23,6 +23,7 @@ typedef struct {
 
 void InitGeom(void);
 void SetGeomOffset(s32 x, s32 y);
+void SetGeomScreen(s32 h);
 void SetBackColor(s32 r, s32 g, s32 b);
 void PushMatrix(void);
 void PopMatrix(void);

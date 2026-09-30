@@ -7177,7 +7177,6 @@ void func_8009BA0C(void) {
     }
 }
 
-void SetGeomScreen(s32 projection);
 
 
 #ifdef NON_MATCHING
@@ -8568,27 +8567,123 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A3C8C);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A3F4C);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A4748);
+void func_800A476C(s32 x, s32 y);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A476C);
+/* Reset the screen effect view with the image moved to (2c0, 100). */
+void func_800A4748(void) {
+    func_800A476C(0x2C0, 0x100);
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A47D4);
+/* Restore the projection distance and move the 320x224 screen image to
+ * (x, y). */
+void func_800A476C(s32 x, s32 y) {
+    RECT rect;
+
+    rect.w = 0x140;
+    rect.y = 0;
+    rect.x = 0;
+    rect.h = 0xE0;
+    SetGeomScreen(0x200);
+    MoveImage(&rect, x, y);
+    func_800775F8();
+}
+
+extern s32 D_800ADB24; /* screen effect buffers allocated */
+
+/* Stop the screen effect and release its buffers. */
+void func_800A47D4(void) {
+    D_800B2078.unk2078 = 0;
+    if (D_800ADB24 != 0) {
+        func_800320E8(D_800B2078.effect_buffers[0]);
+        func_800320E8(D_800B2078.effect_buffers[1]);
+        func_800320E8(D_800B2078.effect_buffers[2]);
+        func_800320E8(D_800B2078.effect_buffers[3]);
+        D_800ADB24 = 0;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A484C);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A4CC4);
+/* Move the six screen effect values to the given whole targets over
+ * `steps` frames. */
+void func_800A4CC4(s32 a, s32 b, s32 c, s32 d, s32 e, s32 f, s32 steps) {
+    s32 step0;
+    s32 step1;
+    s32 step2;
+    s32 step3;
+    s32 step4;
+    s32 step5;
+
+    if (steps == 0) {
+        steps = 1;
+    }
+    step0 = ((a << 16) - D_800B2078.effect_value[0]) / steps;
+    step1 = ((b << 16) - D_800B2078.effect_value[1]) / steps;
+    step2 = ((c << 16) - D_800B2078.effect_value[2]) / steps;
+    step3 = ((d << 16) - D_800B2078.effect_value[3]) / steps;
+    step4 = ((e << 16) - D_800B2078.effect_value[4]) / steps;
+    step5 = ((f << 16) - D_800B2078.effect_value[5]) / steps;
+    D_800B2078.effect_steps = steps;
+    D_800B2078.effect_step[0] = step0;
+    D_800B2078.effect_step[1] = step1;
+    D_800B2078.effect_step[2] = step2;
+    D_800B2078.effect_step[3] = step3;
+    D_800B2078.effect_step[4] = step4;
+    D_800B2078.effect_step[5] = step5;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A4DAC);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A55B8);
+/* Store three words at +14 of `object`. */
+void func_800A55B8(s32 *object, s32 a, s32 b, s32 c) {
+    object[5] = a;
+    object[6] = b;
+    object[7] = c;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A55C8);
+extern void *D_800AFE80;
+extern void *D_800B069C;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A5600);
+/* Release the two blocks at 800afe80 and 800b069c. */
+void func_800A55C8(void) {
+    func_800320E8(D_800AFE80);
+    func_800320E8(D_800B069C);
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A56A8);
+extern POLY_FT4 D_800B1274[5][2]; /* screen pieces, per draw buffer */
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A5710);
+/* Set the five screen pieces of the next draw buffer to grey `shade`. */
+void func_800A5600(u8 shade) {
+    s32 i;
+
+    for (i = 0; i < 5; i++) {
+        (D_800B1274[i] + ((D_800ADB08 + 1) & 1))->r0 = shade;
+        (D_800B1274[i] + ((D_800ADB08 + 1) & 1))->g0 = shade;
+        (D_800B1274[i] + ((D_800ADB08 + 1) & 1))->b0 = shade;
+    }
+}
+
+/* Fade screen channel 0 in from white over `frames` frames. */
+void func_800A56A8(s32 frames) {
+    s32 step;
+
+    step = -0x10000 / frames;
+    D_800B2078.fades[0].level[0] = D_800B2078.fades[0].level[1] = D_800B2078.fades[0].level[2] = 0xFF00;
+    D_800B2078.fades[0].steps = frames + 1;
+    D_800B2078.fades[0].abr = D_800B2078.fades[0].active = 1;
+    D_800B2078.fades[0].step[0] = D_800B2078.fades[0].step[1] = D_800B2078.fades[0].step[2] = step;
+}
+
+/* Fade screen channel 0 up from black over `frames` frames. */
+void func_800A5710(s32 frames) {
+    s32 step;
+
+    step = 0x10000 / frames;
+    D_800B2078.fades[0].level[0] = D_800B2078.fades[0].level[1] = D_800B2078.fades[0].level[2] = 0;
+    D_800B2078.fades[0].steps = frames + 1;
+    D_800B2078.fades[0].abr = D_800B2078.fades[0].active = 1;
+    D_800B2078.fades[0].step[0] = D_800B2078.fades[0].step[1] = D_800B2078.fades[0].step[2] = step;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A5774);
 

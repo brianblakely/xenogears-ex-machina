@@ -409,9 +409,14 @@ typedef struct GameState {
  * not pass loads of other members, and code addresses members relative to
  * one another. */
 typedef struct {
-    s16 unk2078;               /* 2078 */
+    s16 unk2078;               /* 2078: screen effect running (800a484c) */
     s16 unk207A;               /* 207A */
-    u8 unk207C[0x20C4 - 0x207C];
+    s16 effect_steps;          /* 207C */
+    u8 unk207E[2];
+    s32 effect_value[6];       /* 2080: 16.16 */
+    s32 effect_step[6];        /* 2098 */
+    u8 unk20B0[4];
+    void *effect_buffers[4];   /* 20B4 */
     FadeChannel fades[2];      /* 20C4: screen fade channels */
     u16 open_windows;          /* 2174: bit per open dialogue window; talk
                                 * is inhibited while any is set */
