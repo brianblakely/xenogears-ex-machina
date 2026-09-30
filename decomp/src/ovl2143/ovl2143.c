@@ -893,16 +893,91 @@ INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E742C);
 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E7D14);
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E7FD4);
+/* Release every actor and both pools. */
+void func_801E7FD4(void) {
+    s32 i;
+
+    for (i = 0; i < 10; i++) {
+        func_801E8030(i);
+    }
+    func_801DF668(&D_801E86A8);
+    func_801E00DC(&D_801E86A0);
+}
 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E8030);
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E8330);
+/* Select actor `index` and bit mask `mask`, then run its script step
+ * (func_801E35D0) with itself as the source. */
+void func_801E8330(u16 index, u16 mask, s32 arg2) {
+    Actor *actor;
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E8394);
+    actor = D_801E8670[index];
+    D_801E86B0 = index;
+    D_801E863C = mask;
+    actor->b35 = 0;
+    if (D_801E8670[index] != NULL) {
+        func_801E35D0(D_801E8670[index], (s32)D_801E8670[index], &D_801E86A8, arg2);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E8430);
+/* Select actor `index` and bit mask `mask`, then run its script step with
+ * `source` unless it is the actor of the mask's lowest bit. */
+void func_801E8394(s32 source, u16 index, u16 mask, s32 arg3) {
+    Actor *actor;
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E8480);
+    actor = D_801E8670[index];
+    D_801E86B0 = index;
+    D_801E863C = mask;
+    actor->b35 = 0;
+    if (D_801E8670[index] != NULL && index != func_801E67F8()) {
+        func_801E35D0(D_801E8670[index], source, &D_801E86A8, arg3);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E8510);
+/* Actor `index`'s height: its size scaled by its scale and the root's y
+ * scale; 0 without an actor. */
+s32 func_801E8430(s32 index) {
+    Actor *actor;
+
+    actor = D_801E8670[index];
+    if (actor != NULL) {
+        return (actor->size[0] * ((actor->scale * actor->parts->scale[1]) >> 12)) >> 12;
+    }
+    return 0;
+}
+
+/* Actor `index`'s width: its x or (flag 8 clear) z size scaled like
+ * func_801E8430; 0 without an actor. */
+s32 func_801E8480(s32 index) {
+    Actor *actor;
+    s32 size;
+    s32 root_scale;
+
+    actor = D_801E8670[index];
+    if (actor != NULL) {
+        if (actor->flags & 8) {
+            size = actor->size[1];
+            root_scale = actor->parts->scale[0];
+        } else {
+            size = actor->size[2];
+            root_scale = actor->parts->scale[2];
+        }
+        return (size * ((D_801E8670[index]->scale * root_scale) >> 12)) >> 12;
+    }
+    return 0;
+}
+
+/* Allocate an actor's 0x70-byte channel records, each marked unused. */
+void func_801E8510(Actor *actor) {
+    Channel *channels;
+    s32 i;
+
+    if (actor->channel_count != 0) {
+        channels = func_80031BDC(actor->channel_count * sizeof(Channel), 0);
+        for (i = 0; i < actor->channel_count; i++) {
+            channels[i].id = -1;
+            channels[i].w8 = 0;
+        }
+        actor->channels = channels;
+    }
+}

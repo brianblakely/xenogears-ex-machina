@@ -113,6 +113,38 @@ typedef struct {
     s16 next;
 } ParticlePool;
 
+/* An actor's 0x70-byte channel record. */
+typedef struct {
+    s16 id;         /* -1: unused */
+    u8 pad2[6];
+    s32 w8;
+    u8 rest[0x64];
+} Channel;
+
+/* A scene actor: a model hierarchy with its script state. */
+typedef struct Actor {
+    ModelList *models;      /* +0 */
+    ModelPart *parts;       /* +4 */
+    u8 pad08[0x14];
+    s16 scale;              /* +1c */
+    u8 pad1E[6];
+    s16 size[3];            /* +24: height, x and z extents */
+    u8 pad2A[0xB];
+    u8 b35;                 /* +35 */
+    u8 pad36[0x14];
+    u16 flags;              /* +4a */
+    u8 pad4C[0xC0];
+    u8 channel_count;       /* +10c */
+    u8 count10D;            /* +10d: 0x24-byte records at +114 */
+    u8 count10E;            /* +10e: 0x30-byte records at +118 */
+    u8 pad10F;
+    Channel *channels;      /* +110 */
+    void *records24;        /* +114 */
+    void *records30;        /* +118 */
+    s32 previous[3];        /* +11c: root position before the step */
+    s32 moved[3];           /* +128: root movement of the step */
+} Actor;
+
 /* Resident heap. */
 void func_80032498(s32 tag, s32 mode);        /* select the allocation tag */
 void *func_80031BDC(s32 size, s32 mode);      /* allocate */
@@ -164,15 +196,20 @@ extern Pair D_801E85F4[8];
 extern u16 D_801E863C;
 extern s32 D_801E8640;
 extern Record14 D_801E864C[2];
-extern s32 D_801E8670[10];
+extern Actor *D_801E8670[10];
 extern s16 D_801E869C;
 extern ParticlePool D_801E86A0;
 extern SlotPool D_801E86A8;
+extern u16 D_801E86B0;
 
 /* This overlay. */
 SlotPool *func_801DF5F4(SlotPool *pool, s32 capacity);
 PoolSlot *func_801DF6F0(SlotPool *pool);
 ParticlePool *func_801E0064(ParticlePool *pool, s32 capacity);
+void func_801DF668(SlotPool *pool);
+void func_801E00DC(ParticlePool *pool);
+void func_801E35D0(Actor *actor, s32 source, SlotPool *pool, s32 arg3);
+void func_801E8030(s32 index);
 void func_801E011C(ParticlePool *pool);
 void func_801DF6A8(SlotPool *pool);
 s32 func_801DF7A8(SlotPool *pool, PoolSlot *slot);
