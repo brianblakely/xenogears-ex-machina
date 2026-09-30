@@ -200,7 +200,8 @@ typedef struct {
     u8 cells_b_buffer[9];     /* 46d7 */
     u16 stat_b0[16];          /* 46e0: per member, the gear summary's b0 value */
     u16 stat_a4[16];          /* 4700: and its a4 value */
-    u8 unk4720[0x4785 - 0x4720];
+    u8 stock[5][20];          /* 4720: the shop's five gear part lists */
+    u8 unk4784;
     u8 label45B0_shown;       /* 4785 */
     u8 unk4786[2];
 } DetailBlock;
@@ -535,6 +536,7 @@ extern s32 D_801D6AFC[]; /* marker x per list position */
 extern s32 D_801D6B7C[]; /* marker y per list position */
 extern s32 D_801D6BFC[]; /* cursor x per position */
 extern s32 D_801D6C44[]; /* member portrait x */
+extern s32 D_801D908C[5]; /* entries in each of the five gear part lists */
 extern u8 D_801D6D10[];  /* alternative heading sprite ids */
 extern s32 D_801D6D14[]; /* heading x */
 extern s32 D_801D6D34[]; /* alternative heading x */
