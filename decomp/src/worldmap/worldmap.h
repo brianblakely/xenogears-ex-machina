@@ -1729,4 +1729,30 @@ typedef struct {
 
 #define VEHICLE_SCRATCH ((VehicleScratch *)0x1F800000)
 
+/* worldmap.c entry (round 4) */
+typedef struct {
+    void (*enter)(void);
+    void (*start)(void);
+    void (*leave)(void);
+} WorldmapMode;
+
+extern WorldmapMode D_8009A058[]; /* per mode */
+extern u8 D_800591AE, D_800594F8;
+extern u16 D_8006F952;            /* area carried into the world map */
+extern u32 D_8006F160;            /* map flags */
+extern s16 D_8006EF68;
+extern s32 D_8009BD0C;
+extern u8 D_8003634C[];           /* resident VSync callback */
+
+void VSyncCallback(void *func);
+void InitGeom(void);
+void ClearImage(RECT *rect, s32 r, s32 g, s32 b);
+void func_800199CC(s32 mode);
+void func_8001996C(s32 mode);
+void func_80019ACC(s32 mode);
+void func_80095F78(void);
+void func_8007369C(void);
+void func_80073300(void);
+s32 func_80094364(VECTOR *position, s32 table, s32 kind);
+
 #endif

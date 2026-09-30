@@ -1,6 +1,144 @@
 #include "worldmap.h"
 
+/* Overlay entry: set up the display, start a new game's world state if none
+ * is set, enter the requested mode and run its main loop until the world
+ * map is left, then hand over to the next scene. */
+#ifdef NON_MATCHING /* irreducible mode loop; layout and allocation differ */
+void func_80070CFC(void) {
+    void (*step)(void);
+    void *data;
+    RECT rect;
+    s32 mode;
+    s32 i;
+
+    func_800762FC();
+    DrawSync(0);
+    VSync(0);
+    VSyncCallback(D_8003634C);
+    InitGeom();
+    D_800591AE = 1;
+    if (D_8006F954[0] == 0) {
+        D_8006F952 = 0xFFF;
+        D_8006F950 = 0xC00;
+        D_8006F94E = 0x400;
+        D_8006F954[0] = 1;
+        D_8006EE54.flags = 0x4003;
+        D_8006EE54.unk60 = 0x6680;
+        D_8006EE54.unk62 = 0xFF00;
+        D_8006EE54.unk64 = 0x2A00;
+        D_8006EE54.z = 0x2C00;
+        D_8006F368[1] = 0xA;
+        D_8006D940[0].gear = 0xF;
+        D_8006D940[1].gear = 2;
+        D_8006D940[3].gear = 4;
+        D_8006F368[2] = 5;
+        D_8006D940[4].gear = 5;
+        D_8006D940[5].gear = 6;
+        D_8006D940[7].gear = 7;
+        D_8006D940[8].gear = 8;
+        D_8006D940[2].gear = 3;
+        D_8006D940[9].gear = 3;
+        D_8006EE54.unk6A = 1;
+        D_8006EE66 = 0;
+        D_8006EE54.x = 0x7580;
+        D_8006EE54.heading = 0;
+        D_8006F368[0] = 0;
+        D_8006F8E5 = 0;
+        D_8006F8E6 = 0;
+        D_8006F8E7 = 0;
+        D_8006D940[6].gear = 9;
+        D_8006D940[10].gear = 9;
+        D_8006EF8E[0].flags = 0x400;
+        D_8006EF8E[0].x = 0x7500;
+        D_8006EF8E[0].z = 0x2E58;
+        D_8006EF8E[1].flags = 0x400;
+        D_8006EF8E[1].x = 0x7580;
+        D_8006EF8E[1].z = 0x2E58;
+        D_8006EF8E[2].flags = 0x400;
+        D_8006EF8E[2].x = 0x7600;
+        D_8006EF8E[2].z = 0x2E58;
+        D_8006EE78[2] = 1;
+        D_8006EE78[0] = D_8009AF80[D_8006EE78[1]];
+        D_8006F160 = 0x7FFFFFF;
+        D_8006EE78[1] = D_8009AF90[D_8006EE78[1]];
+    }
+    func_80032498(3, 0);
+    func_80028470(0x24, 0);
+    func_80095F78();
+    func_8007369C();
+    func_80073300();
+    if (D_8006F954[0] & 0x8000) {
+        D_8009C894 = 1;
+    } else {
+        D_8009C894 = 0;
+    }
+    D_8009BBC4 = 0;
+    mode = D_8006F954[0] & 0x7FFF;
+    D_8009BD0C = (D_8006F94E & 0x3FFF) - 0x400;
+    D_8009D3D4 = D_8006F952;
+    D_8009C584 = D_8006F950;
+    D_8009C5A8 = mode;
+    D_8006F954[0] = mode;
+    func_80071B9C(mode, D_8006EF64[0]);
+    step = D_8009A058[D_8009C5A8].enter;
+    if (step == NULL) {
+        goto check;
+    }
+    goto run;
+    do {
+        D_8009A058[D_8009C5A8].start();
+        func_80097800();
+        DrawSync(0);
+        VSync(0);
+        func_80035DB0();
+        D_8009C894 = D_8009D7CC;
+        func_800712D0();
+        step = D_8009A058[D_8009C5A8].leave;
+    run:
+        step();
+    check:;
+    } while (D_8009D7CC >= 2);
+    if (D_8009D7CC == 0) {
+        func_800199CC(1);
+        func_8001996C(1);
+        if (D_8009BBC4 == 0) {
+            if ((s16)D_8009D7D8->pad == 3) {
+                func_80094364(&D_8009D55C.target, 3, D_8006EF64[0]);
+            }
+            D_8006F950 = D_8009BD38.vy;
+            D_8006F94E = ((s16 *)D_8009D7D8->data)[4];
+            D_8006F954[0] = ((s16 *)D_8009D7D8->data)[5];
+        }
+        D_8006EF68 = D_8009BD0C + 0x400;
+    } else if (D_8009D7CC == 1) {
+        func_800199CC(2);
+        func_8001996C(2);
+        D_800594F8 = 0;
+        for (i = 0; i < 3; i++) {
+            (&D_8006EE54.unk70)[i] = (&D_8006F8E5)[i];
+        }
+        func_80039CC4();
+        data = D_8009C614;
+        memcpy(D_80062648, data, func_800288EC(D_8009BCC8));
+        D_8004F2FC = D_80062528;
+        D_80062528 = func_80039850(D_80062648);
+        func_80039A80(D_80062528, 0x7F, 0);
+    } else {
+        func_8001996C(0);
+        rect.x = 0;
+        rect.y = 0;
+        rect.w = 0x13F;
+        rect.h = 0x1AF;
+        ClearImage(&rect, 0, 0, 0x40);
+        DrawSync(0);
+    }
+    D_800591AE = 0;
+    func_800762FC();
+    func_80019ACC(0);
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap", func_80070CFC);
+#endif
 
 /* The world-map main loop: gather input, flip the display buffers, run the
  * frame, and handle pause, encounters and leaving for another scene until
