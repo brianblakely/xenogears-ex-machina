@@ -3128,7 +3128,26 @@ s32 func_800AA600(s32 index) {
     return size;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA650);
+/* The scaled size of stage object index along its hierarchy's first axis
+ * (flag 8) or its third; 0 when absent. */
+s32 func_800AA650(s32 index) {
+    BattleObject *object = D_800D3368[index];
+    s32 size = 0;
+    s32 scale;
+    s32 axis;
+
+    if (object != NULL) {
+        if (object->flags4A & 8) {
+            scale = object->scale26;
+            axis = object->hierarchy->scale[0];
+        } else {
+            scale = object->scale28;
+            axis = object->hierarchy->scale[2];
+        }
+        size = scale * (D_800D3368[index]->scale1C * axis >> 12) >> 12;
+    }
+    return size;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA6E0);
 
@@ -3172,9 +3191,60 @@ u8 func_800AA7DC(s32 index) {
     return type;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA820);
+/* The effect step handler for mode (1-3; any other the default). */
+void *func_800AA820(s32 mode) {
+    switch (mode) {
+    case 1:
+        return func_800A3514;
+    case 2:
+        return func_800A3578;
+    case 3:
+        return func_800A35C8;
+    default:
+        return func_800A3490;
+    }
+}
 
+#ifdef NON_MATCHING
+/* Reset a battle object's state. */
+void func_800AA898(BattleObject *object, s32 arg1, s32 field8, s32 field14) {
+    object->field3C = 0xFFFF;
+    object->field5C = 0xFF;
+    object->field39 = 0x6B;
+    object->field8 = field8;
+    object->packets = NULL;
+    object->field10 = 0;
+    object->field14 = field14;
+    object->field18 = 0;
+    object->field2B = 0;
+    object->animation = -1;
+    object->field58 = 0;
+    object->field35 = 0;
+    object->field37 = 0;
+    object->field38 = 0;
+    object->field3A = -1;
+    object->motion[0] = 0;
+    object->motion[1] = 0;
+    object->motion[2] = 0;
+    object->motion[3] = 0;
+    object->motion[4] = 0;
+    object->motion[5] = 0;
+    object->motion[6] = 0;
+    object->motion[7] = 0;
+    object->motion[8] = 0;
+    object->motion[9] = 0;
+    object->motion[10] = 0;
+    object->motion[11] = 0;
+    object->position[0] = 0;
+    object->position[1] = 0;
+    object->position[2] = 0;
+    object->field8E = 1;
+    object->field36 = 0;
+    object->field1E = -1;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA898);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA934);
 
