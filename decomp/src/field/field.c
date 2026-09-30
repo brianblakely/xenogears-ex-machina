@@ -8833,15 +8833,63 @@ void func_800A7218(void) {
     func_80032498(8, 0);
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A732C);
+extern void func_80019CA0(void);
+extern void func_801D3F7C(void);
+void func_80085678(void);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A7394);
+/* Run `frames` movie frames (with field sound) unless the movie stopped. */
+void func_800A732C(s32 frames) {
+    s32 i;
+
+    func_80019CA0();
+    if (D_800ADB6C == 0) {
+        for (i = 0; i < frames; i++) {
+            func_801D3F7C();
+            func_80085678();
+        }
+    }
+}
+
+/* Keep the field running until the stream is idle and draw buffer 0 is
+ * current, then wait for CD data. */
+void func_800A7394(void) {
+    do {
+        do {
+            func_80077DAC();
+            func_8007554C();
+        } while (func_800286CC() != 0);
+    } while (D_800ADB08 != 0);
+    CdDataSync(0);
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A73E8);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A74F8);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A7744);
+extern s32 D_800B14A8; /* nibble counter */
+extern u32 *D_800C3904; /* packed stream */
+extern u32 D_800C2688; /* current word */
+
+/* Next byte of the packed stream (four per word), scaled down by 8 but
+ * at least 1 when nonzero. */
+u32 func_800A7744(void) {
+    u32 value;
+
+    if ((D_800B14A8 & 3) == 0) {
+        D_800C2688 = *D_800C3904;
+        D_800C3904++;
+    }
+    D_800B14A8++;
+    value = D_800C2688 & 0xFF;
+    D_800C2688 >>= 8;
+    if (value != 0) {
+        value >>= 3;
+        if (value == 0) {
+            value = 1;
+        }
+    }
+    return value;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A77C4);
 
@@ -8849,9 +8897,35 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A7948);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A7C58);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A8314);
+void func_80070340(u32 *tim, s16 x, s16 y, s16 clut_x, s16 clut_y, s16 clut_w, s16 clut_h);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A83B4);
+/* Load file 0xaa and upload its image to (380, 0) with its CLUT at
+ * (0, e8). */
+void func_800A8314(void) {
+    u32 *data;
+
+    func_80032498(8, 0);
+    func_80028470(4, 0);
+    data = func_80031BDC(func_800288EC(0xAA), 1);
+    func_800295D8(0xAA, data, 0, 0x80);
+    func_80028A60(0);
+    func_80070340(data, 0x380, 0, 0, 0xE8, 0, 0);
+    DrawSync(0);
+    func_800320E8(data);
+}
+
+extern s32 D_800AF278;
+extern POLY_FT4 *D_800AFC60[2];
+
+/* Release the two primitive buffers once allocated. */
+void func_800A83B4(void) {
+    if (D_800AF278 != 0) {
+        D_800AF278 = 0;
+        DrawSync(0);
+        func_800320E8(D_800AFC60[0]);
+        func_800320E8(D_800AFC60[1]);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A8408);
 

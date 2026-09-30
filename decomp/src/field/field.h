@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "psyq/libgpu.h"
+#include "psyq/libcd.h"
 #include "psyq/libgte.h"
 
 /* A 16.16 fixed-point value; code also reads its whole part alone. */
