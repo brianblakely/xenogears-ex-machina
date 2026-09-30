@@ -850,7 +850,111 @@ s32 func_80072A38(VECTOR *position, s32 floor) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80072D74);
+/* Step the projection interpolation, move the eye and target a fraction of
+ * the way toward their goals (skipping axes already within the follow
+ * divisor), and draw a random camera shake offset. */
+void func_80072D74(void) {
+    s32 target_threshold;
+    s32 eye_threshold;
+    s32 difference;
+    s32 part;
+
+    if (D_800AF880.flags & 0x10) {
+        if (D_800AF880.projection_steps != 0) {
+            D_800AF880.projection_value += D_800AF880.projection_step;
+            D_800AF880.projection = D_800AF880.projection_value >> 16;
+        }
+        if (--D_800AF880.projection_steps < 0) {
+            D_800AF880.flags &= 0xFFEF;
+            D_800AF880.projection_steps = 0;
+        }
+    }
+    if (D_800B2078.camera_counter != 0) {
+        D_800AF880.target_a = 1;
+        D_800AF880.target_b = 1;
+        D_800B2078.camera_counter--;
+    }
+    target_threshold = D_800AF880.target_a * D_800AF880.target_a;
+    eye_threshold = D_800AF880.target_b * D_800AF880.target_b;
+
+    if ((D_800AF880.eye.vx >> 16) != (D_800AF880.eye_goal.vx >> 16)) {
+        difference = D_800AF880.eye_goal.vx - D_800AF880.eye.vx;
+        part = difference >> 16;
+        if (part * part >= eye_threshold) {
+            D_800AF880.eye.vx += difference / D_800AF880.target_b;
+        }
+    }
+    if ((D_800AF880.eye.vz >> 16) != (D_800AF880.eye_goal.vz >> 16)) {
+        difference = D_800AF880.eye_goal.vz - D_800AF880.eye.vz;
+        part = difference >> 16;
+        if (part * part >= eye_threshold) {
+            D_800AF880.eye.vz += difference / D_800AF880.target_b;
+        }
+    }
+    if ((D_800AF880.eye.vy >> 16) != (D_800AF880.eye_goal.vy >> 16)) {
+        difference = D_800AF880.eye_goal.vy - D_800AF880.eye.vy;
+        part = difference >> 16;
+        if (part * part >= eye_threshold) {
+            D_800AF880.eye.vy += difference / D_800AF880.target_b;
+        }
+    }
+    if ((D_800AF880.target.vx >> 16) != (D_800AF880.target_goal.vx >> 16)) {
+        difference = D_800AF880.target_goal.vx - D_800AF880.target.vx;
+        part = difference >> 16;
+        if (part * part >= target_threshold) {
+            D_800AF880.target.vx += difference / D_800AF880.target_a;
+        }
+    }
+    if ((D_800AF880.target.vz >> 16) != (D_800AF880.target_goal.vz >> 16)) {
+        difference = D_800AF880.target_goal.vz - D_800AF880.target.vz;
+        part = difference >> 16;
+        if (part * part >= target_threshold) {
+            D_800AF880.target.vz += difference / D_800AF880.target_a;
+        }
+    }
+    if ((D_800AF880.target.vy >> 16) != (D_800AF880.target_goal.vy >> 16)) {
+        difference = D_800AF880.target_goal.vy - D_800AF880.target.vy;
+        part = difference >> 16;
+        if (part * part >= target_threshold) {
+            D_800AF880.target.vy += difference / D_800AF880.target_a;
+        }
+    }
+
+    D_800AF880.shake_offset.vx = 0;
+    D_800AF880.shake_offset.vy = 0;
+    D_800AF880.shake_offset.vz = 0;
+    if (D_800AF880.shake != 0) {
+        if (D_800AF880.shake_time != 0) {
+            D_800AF880.shake_amplitude[0] += D_800AF880.shake_step[0];
+            D_800AF880.shake_amplitude[1] += D_800AF880.shake_step[1];
+            D_800AF880.shake_amplitude[2] += D_800AF880.shake_step[2];
+        } else if (D_800AF880.shake_stop != 0) {
+            D_800AF880.shake_amplitude[2] = 0;
+            D_800AF880.shake_amplitude[1] = 0;
+            D_800AF880.shake_amplitude[0] = 0;
+            D_800AF880.shake = 0;
+            D_800AF880.shake_stop = 0;
+        }
+        D_800AF880.shake_offset.vx = rand() * WHOLE(D_800AF880.shake_amplitude[0]);
+        D_800AF880.shake_offset.vy = rand() * WHOLE(D_800AF880.shake_amplitude[1]);
+        D_800AF880.shake_offset.vz = rand() * WHOLE(D_800AF880.shake_amplitude[2]);
+        if (D_800AF880.shake_offset.vx < 0) {
+            D_800AF880.shake_offset.vx = 0;
+            D_800AF880.shake_amplitude[0] = 0;
+        }
+        if (D_800AF880.shake_offset.vy < 0) {
+            D_800AF880.shake_offset.vy = 0;
+            D_800AF880.shake_amplitude[1] = 0;
+        }
+        if (D_800AF880.shake_offset.vz < 0) {
+            D_800AF880.shake_offset.vz = 0;
+            D_800AF880.shake_amplitude[2] = 0;
+        }
+        if (D_800AF880.shake_time > 0) {
+            D_800AF880.shake_time--;
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80073230);
 
