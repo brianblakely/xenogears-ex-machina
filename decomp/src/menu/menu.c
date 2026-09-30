@@ -207,13 +207,66 @@ s32 func_80070FD8(Actor *actor) {
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007107C);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80071724);
+/* Link the screen offset packet and this frame's texture page packet. */
+void func_80071724(u32 *ot) {
+    MenuFrame *frame = D_80092868;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80071794);
+    frame->offset_prim[2] = D_800925E0 | (D_800925E4 << 16);
+    func_80043B48(ot, frame->offset_prim);
+    func_80043B48(ot, &D_800929E4[D_800928A0]);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800718C0);
+/* Upload the menu's sprite sheet TIM (its first CLUT colour made
+ * transparent), build both texture page packets and the sprite template. */
+void func_80071794(u32 **resources) {
+    TimImage image;
+    Rect unused; /* the original frame reserves 8 more bytes */
+    s16 *clut;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007191C);
+    func_800471B4(resources[0x60 / 4]);
+    func_800471C4(&image);
+    clut = (s16 *)image.caddr;
+    clut[2] = -0x8000;
+    clut[0] = 0;
+    clut[3] = -1;
+    func_80044894(image.crect, image.caddr);
+    func_80044894(image.prect, image.paddr);
+    func_80043E20(&D_800929E4[0], 0, 0, func_80043A1C(0, 1, image.prect->x, image.prect->y));
+    D_800929E4[1] = D_800929E4[0];
+    D_8009A14C.u0 = (image.prect->x & 0x3F) * 4;
+    D_8009A14C.v0 = image.prect->y;
+    D_8009A14C.clut = func_80043A58(image.crect->x, image.crect->y);
+    D_8009A244 = D_8009A14C;
+}
+
+/* Open the menu message window. */
+void func_800718C0(void) {
+    D_800925D8 = -1;
+    D_800925D4 = 0;
+    func_80032F54(&D_8009868C, 0x140, 0x30, 0x1C, 0x9A, 0x40, 4);
+}
+
+/* Enter a menu scene: the first scene also starts sound 0x37 and uses a
+ * taller window; resets both actors and centres the screen offset. */
+void func_8007191C(s32 scene) {
+    D_80092608 = scene == 0;
+    if (scene == 0) {
+        func_8008EB4C(0x37);
+        D_8009868C.unkC = 2;
+        D_8009868C.unk6 = 0xB4;
+    } else {
+        D_8009868C.unkC = 4;
+        D_8009868C.unk6 = 0x9A;
+    }
+    func_80070F80(D_8009105C[scene]);
+    D_800925E8 = 0xA0;
+    D_800925E0 = 0xA0;
+    D_800925EC = 0x6D;
+    D_800925E4 = 0x6D;
+    D_80092600 = 0;
+    D_8009872C.unkB4 = D_8009872C.unkBC;
+    D_80097010.unkB4 = D_80097010.unkBC;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800719F0);
 
