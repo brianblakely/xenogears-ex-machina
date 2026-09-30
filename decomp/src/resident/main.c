@@ -1,4 +1,5 @@
 #include "common.h"
+#include "mode.h"
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80019524);
 
@@ -6,30 +7,236 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80019548);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80019560);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80019578);
+/* Boot: initialise the system libraries, the disc index and the heap, load and install the resident data files, then enter the first mode. */
+void func_80019578(void) {
+    Rect16 screen;
+    void *file2;
+    void *file3;
+    void *file4;
+    void *file5;
+    void *data;
+    s32 tag;
+
+    func_8004B740();
+    func_800443A8(0);
+    func_8004C2F0(0);
+    func_80044110(0);
+    screen.x = 0;
+    screen.y = 0;
+    screen.w = 0x180;
+    screen.h = 0x1E0;
+    func_80044764(&screen, 0, 0, 0);
+    func_800445D0(0);
+    func_80044534(1);
+    func_80048BC4();
+    func_80036288();
+    func_8004E794(1);
+    func_8004E7E8();
+    func_80040464();
+    func_8004B7D0(func_8003634C);
+    func_80031A68(func_8002DFE0(), (void *)0x801FC000);
+    func_8004C548();
+    func_80028230(D_80010004, D_80018004, D_80010000);
+    func_80037B88(0);
+    func_80028470(0, 1);
+
+    file2 = func_80031BDC(func_80028738(2), 0);
+    file3 = func_80031BDC(func_80028738(3), 0);
+    file4 = func_80031BDC(func_80028738(4), 0);
+    file5 = func_80031BDC(func_80028738(5), 0);
+    func_800295D8(2, file2, 0, 0);
+    func_800295D8(3, file3, 0, 0);
+    func_800295D8(4, file4, 0, 0);
+    func_800295D8(5, file5, 0, 0);
+    func_80028A60(0);
+    func_80037FD8(file2, 0);
+    D_80059560 = func_80037FD8(file3, 0);
+    func_80037FD8(file4, 0);
+    D_800595AC = func_80037FD8(file5, 0);
+
+    tag = func_80031B9C();
+    func_80031BA8(6);
+    data = func_80031BDC(func_80028738(6), 0);
+    func_800295D8(6, data, 0, 0);
+    func_80028A60(0);
+    func_800324B8(0x30);
+    func_80033558(func_80032E88(data, 1));
+    func_800320E8(data);
+    data = func_80031BDC(func_80028738(7), 0);
+    func_800295D8(7, data, 0, 0);
+    func_80028A60(0);
+    func_800324B8(0x31);
+    func_800335F4(func_80032E88(data, 1));
+    func_800320E8(data);
+    func_80031BA8(tag);
+
+    func_8003BDFC(0x10);
+    func_800320E8(file2);
+    func_800320E8(file3);
+    func_800320E8(file4);
+    func_800320E8(file5);
+    func_8001AADC();
+    func_8001BB50();
+    func_80024F20();
+    func_800379B4(0);
+    D_800592C0 = -1;
+    D_800592BC = NULL;
+    D_8004FE44 = 1;
+    D_8004FE46 = 1;
+    D_8004FE47 = 0;
+    if (func_80028530() == 1) {
+        D_8004FE45 = 0x10;
+    } else {
+        D_8004FE45 = 7;
+    }
+    if (func_80035734(0) != 0) {
+        while (D_80059570 == 0x90C) {
+            func_80035CDC();
+        }
+    }
+    func_80019D48();
+    func_8001B6BC();
+    func_8001996C(6);
+    func_80019ACC(NULL);
+}
 
 void func_80019964(void) {
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001996C);
+/* Select the next mode; a different mode releases the cached mode block. */
+void func_8001996C(s32 mode) {
+    D_80018088 = mode;
+    if (mode != D_800592C0) {
+        if (D_800592BC != NULL) {
+            func_800320E8(D_800592BC);
+            D_800592BC = NULL;
+        }
+        D_800592C0 = -1;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800199CC);
+/* Load the mode's overlay file into a heap block (tag 6, from the top, quietly) unless it is already cached; returns the block. */
+void *func_800199CC(s32 mode) {
+    s32 tag;
+    s32 quiet;
+    s32 base;
+    s32 index;
+
+    if (D_800592C0 != mode) {
+        D_800592C0 = mode;
+        tag = func_80031B9C();
+        func_800284B4(&base, &index);
+        func_80031BA8(6);
+        func_80028470(0, 1);
+        quiet = func_80031BB4(1);
+        D_800592BC = func_80031BDC(func_80028738(D_8004EAA0[mode]), 1);
+        if (D_800592BC != NULL) {
+            func_800295D8(D_8004EAA0[mode], D_800592BC, 0, 0);
+        } else {
+            D_800592C0 = -1;
+        }
+        func_80031BB4(quiet);
+        func_80028470(base, index);
+        func_80031BA8(tag);
+    }
+    return D_800592BC;
+}
 
 INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/main", D_80018080);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80019ACC);
+/* Where a mode's overlay block is decoded. */
+u8 *const D_80018084 = D_8006FAF0;
+
+/* Mode dispatcher: report a fatal message (with the caller) if given, reset graphics and the heap, clear the next mode's BSS, load its overlay, then run it and dispatch again. */
+void func_80019ACC(char *message) {
+    ModeEntry *mode;
+    void *block;
+    u32 unused[2]; /* an unused local the original frame reserves */
+    u32 caller;
+
+    if (message != NULL) {
+        __asm__ volatile("move $15, %0\n\tsw $31, 0($15)" : : "r"(&caller) : "$15");
+        func_80019EF8(message, caller);
+    }
+    mode = &D_8001808C[D_80018088];
+    func_80044110(1);
+    func_800444D8(0);
+    func_800363F0(0);
+    func_800445D0(0);
+    func_8004B54C(2);
+    func_80031B10(mode->bss_end + 0x800);
+    func_80019C7C();
+    if (mode->loaded) {
+        func_80019560(mode->bss_start, mode->bss_end);
+        block = func_800199CC(D_80018088);
+        func_80028A60(0);
+        func_80032EB4(block, D_80018084);
+        func_800445D0(0);
+        func_8004B54C(0);
+        func_800404D4();
+        func_800445D0(0);
+        func_8004B54C(0);
+        func_80040454();
+        func_800404E4();
+    }
+    func_80019548();
+    func_80031B10(mode->bss_end + 4);
+    func_80031A30();
+    func_80035DB0();
+    func_8001996C(0);
+    mode->entry();
+    func_80019ACC(NULL);
+}
 
 INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/main", D_80018088);
 
 INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/main", D_8001808C);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80019C2C);
+/* Write main RAM (2 MiB) to the development PC as c:\core. */
+void func_80019C2C(void) {
+    s32 fd;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80019C7C);
+    func_8004C38C();
+    fd = func_8004C36C("c:\\core", 0);
+    func_8004C470(fd, (void *)0x80000000, 0x200000);
+    func_8004C338(fd);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80019CA0);
+/* Heap diagnostics, listed by the message table 8004f2c0. */
+const char D_80018104[] = "LsFreeMem:This ptr isn't MCB";
+const char D_80018124[] = "LsGetMem:MCB Broken";
+const char D_80018138[] = "LsFreeMem:Can't Release NULL Pointer";
+const char D_80018160[] = "LsGetMem:Memory Not Enough";
+const char D_8001817C[] = "LsKernel:PC File Not Found";
+const char D_80018198[] = "LsKernel:Program Not Defined";
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80019CD0);
+/* Select heap owner tag 10 (clearing its word and the quiet flag). */
+void func_80019C7C(void) {
+    func_80032498(10, 0);
+}
+
+/* Soft reset while the reset button combination is held. */
+void func_80019CA0(void) {
+    if (D_80059570 == 0x90C) {
+        func_80019CD0();
+    }
+}
+
+/* Shut down the libraries and restart from the entry point. */
+void func_80019CD0(void) {
+    func_80040514();
+    func_80044110(0);
+    func_800283D4();
+    func_80037DC0();
+    func_8004D294();
+    func_800363F0(0);
+    func_800444D8(0);
+    func_8004B7D0(NULL);
+    func_80040ED4();
+    func_800408F4();
+    func_800404F4();
+    func_80019524();
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80019D48);
 

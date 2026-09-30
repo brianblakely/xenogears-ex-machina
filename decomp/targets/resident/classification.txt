@@ -4,3 +4,4 @@
 # identified with tools/psyq_signatures.py (PsyQ 3.x-4.x library signatures),
 # and the few unmatched members inside it were inspected by hand.
 8003f8e8 8004ea88 sdk PsyQ libc/libc2/libapi/libcd/libds/libgpu/libgte/libetc/libspu/libcard/libsn
+80019524 80019578 handwritten Entry point: clears BSS 800592b8-8006faec, sets $sp 0x80200000/$fp/$gp (80019548, also used by the mode dispatcher to reset the stack), and a word-clear loop (80019560) with the same pre-increment form
