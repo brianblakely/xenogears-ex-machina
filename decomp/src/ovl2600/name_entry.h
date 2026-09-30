@@ -100,25 +100,28 @@ typedef struct {
     s32 page_y;
 } SpriteInfo;
 
-/* Sprite part packets built by func_8002675C. */
+/* Sprite part packets built by func_8002675C: one quad per draw buffer. */
 typedef struct {
-    u8 data[0x50];
+    POLY_FT4 poly[2];
 } SpriteParts;
 
 /* A 3D menu panel: four edge strips (two pieces per draw buffer), the frame
  * sprites, the translucent fill and the corner vectors it is projected from. */
 typedef struct {
-    u8 pad_0[0x140];
+    POLY_FT4 corner[8];       /* 0x0: corner sprite parts, two per part */
     POLY_FT4 edge[4][4];      /* 0x140 */
     SpriteParts frame_side;   /* 0x3C0: sprite 0x106 */
     SpriteParts frame_top;    /* 0x410: sprite 0x105 */
     SpriteParts frame_bottom; /* 0x460: sprite 0x105, flipped */
     POLY_G4 fill[2];          /* 0x4B0 */
     DR_MODE fill_mode[2];     /* 0x4F8 */
-    u8 pad_510[0x6B0 - 0x510];
+    SVECTOR corner_at[4][4];  /* 0x510: corner quads */
+    SVECTOR edge_at[4][2][4]; /* 0x590: two quads per edge */
+    SVECTOR fill_at[4];       /* 0x690 */
     SVECTOR side[4];          /* 0x6B0 */
     SVECTOR top[4];           /* 0x6D0 */
     SVECTOR bottom[4];        /* 0x6F0 */
+    s32 corner_parts;         /* 0x710: corner parts built */
 } Panel;
 
 /* The menu flag block (0x6C bytes): per-window/panel state bytes and the
@@ -214,9 +217,9 @@ extern void func_80043BFC(void *p, s32 abe);   /* SetSemiTrans */
 extern void func_80043C24(void *p, s32 tge);   /* SetShadeTex */
 extern u16 func_80043A1C(s32 tp, s32 abr, s32 x, s32 y); /* GetTPage */
 extern u16 func_80043A58(s32 x, s32 y);                   /* GetClut */
-extern void func_8002675C(void *sheet, s32 id, SpriteParts *parts, s32 buffer, s32 x, s32 y,
-                          s32 scale);
-extern void func_800263E4(void *sheet, s32 id, SpriteParts *parts, s32 buffer, s32 x, s32 y,
+extern s32 func_8002675C(void *sheet, s32 id, void *parts, s32 buffer, s32 x, s32 y,
+                         s32 scale);
+extern s32 func_800263E4(void *sheet, s32 id, void *parts, s32 buffer, s32 x, s32 y,
                           s32 scale, s32 a, s32 b);
 extern void *func_80033728(void *table, s32 index);      /* message address */
 extern u8 func_80034EAC(void *text, u8 *image, s32 a, s32 b); /* render text */

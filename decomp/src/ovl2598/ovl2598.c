@@ -507,15 +507,156 @@ void func_801C64A8(u8 index, u16 x, u16 y, s32 unused, u16 h) {
     func_801C60EC(panel->side, x, y + 8, 8, h - 8);
 }
 
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C660C);
+/* Build panel `index`'s four corner sprites for this buffer and place them
+ * around the rectangle (x, y, w, h). */
+void func_801C660C(u8 index, u16 x, u16 y, u16 w, u16 h) {
+    Panel *panel = D_800625A0->panels[index];
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C6854);
+    panel->corner_parts = 0;
+    panel->corner_parts += func_8002675C(D_800625A0->sprite_sheet, 0xFD, panel->corner,
+                                         D_800625A0->buffer_index, 0, 0, 0x1000);
+    panel->corner_parts +=
+        func_8002675C(D_800625A0->sprite_sheet, 0xFF, &panel->corner[panel->corner_parts * 2],
+                      D_800625A0->buffer_index, 0, 0, 0x1000);
+    panel->corner_parts +=
+        func_8002675C(D_800625A0->sprite_sheet, 0x102, &panel->corner[panel->corner_parts * 2],
+                      D_800625A0->buffer_index, 0, 0, 0x1000);
+    panel->corner_parts +=
+        func_8002675C(D_800625A0->sprite_sheet, 0x104, &panel->corner[panel->corner_parts * 2],
+                      D_800625A0->buffer_index, 0, 0, 0x1000);
+    func_801C60EC(panel->corner_at[0], x - 8, y + 8, 16, -16);
+    func_801C60EC(panel->corner_at[1], x + w + 8, y + 8, -16, -16);
+    func_801C60EC(panel->corner_at[2], x - 8, y + h - 8, 16, 16);
+    func_801C60EC(panel->corner_at[3], x + w + 8, y + h - 8, -16, 16);
+    for (i = 0; i < 4; i++) {
+        func_801C6144(&panel->corner[i * 2 + D_800625A0->buffer_index]);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C6B98);
+/* Map panel `index`'s top edge pieces for this buffer and place them in two
+ * halves along the top of (x, y, w). */
+void func_801C6854(u8 index, u16 x, u16 y, u16 w) {
+    Panel *panel = D_800625A0->panels[index];
+    s32 half;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C6EE4);
+    (panel->edge[0] + D_800625A0->buffer_index)->u0 = 0;
+    (panel->edge[0] + D_800625A0->buffer_index)->v0 = 0x84;
+    (panel->edge[0] + D_800625A0->buffer_index)->u1 = 7;
+    (panel->edge[0] + D_800625A0->buffer_index)->v1 = 0x84;
+    (panel->edge[0] + D_800625A0->buffer_index)->u2 = 0;
+    (panel->edge[0] + D_800625A0->buffer_index)->v2 = 0x94;
+    (panel->edge[0] + D_800625A0->buffer_index)->u3 = 7;
+    (panel->edge[0] + D_800625A0->buffer_index)->v3 = 0x94;
+    (panel->edge[0] + D_800625A0->buffer_index + 2)->u0 = 0;
+    (panel->edge[0] + D_800625A0->buffer_index + 2)->v0 = 0x84;
+    (panel->edge[0] + D_800625A0->buffer_index + 2)->u1 = 7;
+    (panel->edge[0] + D_800625A0->buffer_index + 2)->v1 = 0x84;
+    (panel->edge[0] + D_800625A0->buffer_index + 2)->u2 = 0;
+    (panel->edge[0] + D_800625A0->buffer_index + 2)->v2 = 0x94;
+    (panel->edge[0] + D_800625A0->buffer_index + 2)->u3 = 7;
+    (panel->edge[0] + D_800625A0->buffer_index + 2)->v3 = 0x94;
+    half = (w - 16) / 2;
+    func_801C60EC(panel->edge_at[0][0], x + 8, y - 8, half, 16);
+    func_801C60EC(panel->edge_at[0][1], x + (half + 8), y - 8, half, 16);
+    for (i = 0; i < 2; i++) {
+        func_801C6144(&panel->edge[0][i * 2 + D_800625A0->buffer_index]);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C722C);
+/* Map panel `index`'s bottom edge pieces for this buffer and place them in
+ * two halves along the bottom of (x, y, w, h). */
+void func_801C6B98(u8 index, u16 x, u16 y, u16 w, u16 h) {
+    Panel *panel = D_800625A0->panels[index];
+    s32 half;
+    s32 i;
+
+    (panel->edge[1] + D_800625A0->buffer_index)->u0 = 8;
+    (panel->edge[1] + D_800625A0->buffer_index)->v0 = 0x84;
+    (panel->edge[1] + D_800625A0->buffer_index)->u1 = 0xF;
+    (panel->edge[1] + D_800625A0->buffer_index)->v1 = 0x84;
+    (panel->edge[1] + D_800625A0->buffer_index)->u2 = 8;
+    (panel->edge[1] + D_800625A0->buffer_index)->v2 = 0x94;
+    (panel->edge[1] + D_800625A0->buffer_index)->u3 = 0xF;
+    (panel->edge[1] + D_800625A0->buffer_index)->v3 = 0x94;
+    (panel->edge[1] + D_800625A0->buffer_index + 2)->u0 = 8;
+    (panel->edge[1] + D_800625A0->buffer_index + 2)->v0 = 0x84;
+    (panel->edge[1] + D_800625A0->buffer_index + 2)->u1 = 0xF;
+    (panel->edge[1] + D_800625A0->buffer_index + 2)->v1 = 0x84;
+    (panel->edge[1] + D_800625A0->buffer_index + 2)->u2 = 8;
+    (panel->edge[1] + D_800625A0->buffer_index + 2)->v2 = 0x94;
+    (panel->edge[1] + D_800625A0->buffer_index + 2)->u3 = 0xF;
+    (panel->edge[1] + D_800625A0->buffer_index + 2)->v3 = 0x94;
+    half = (w - 16) / 2;
+    func_801C60EC(panel->edge_at[1][0], x + 8, y + h - 8, half, 16);
+    func_801C60EC(panel->edge_at[1][1], x + (half + 8), y + h - 8, half, 16);
+    for (i = 0; i < 2; i++) {
+        func_801C6144(&panel->edge[1][i * 2 + D_800625A0->buffer_index]);
+    }
+}
+
+/* Map panel `index`'s left edge pieces for this buffer and place them in two
+ * halves down the left of (x, y, h). */
+void func_801C6EE4(u8 index, u16 x, u16 y, u16 h) {
+    Panel *panel = D_800625A0->panels[index];
+    s32 half;
+    s32 i;
+
+    (panel->edge[2] + D_800625A0->buffer_index)->u0 = 0x10;
+    (panel->edge[2] + D_800625A0->buffer_index)->v0 = 0x84;
+    (panel->edge[2] + D_800625A0->buffer_index)->u1 = 0x20;
+    (panel->edge[2] + D_800625A0->buffer_index)->v1 = 0x84;
+    (panel->edge[2] + D_800625A0->buffer_index)->u2 = 0x10;
+    (panel->edge[2] + D_800625A0->buffer_index)->v2 = 0x8B;
+    (panel->edge[2] + D_800625A0->buffer_index)->u3 = 0x20;
+    (panel->edge[2] + D_800625A0->buffer_index)->v3 = 0x8B;
+    (panel->edge[2] + D_800625A0->buffer_index + 2)->u0 = 0x10;
+    (panel->edge[2] + D_800625A0->buffer_index + 2)->v0 = 0x84;
+    (panel->edge[2] + D_800625A0->buffer_index + 2)->u1 = 0x20;
+    (panel->edge[2] + D_800625A0->buffer_index + 2)->v1 = 0x84;
+    (panel->edge[2] + D_800625A0->buffer_index + 2)->u2 = 0x10;
+    (panel->edge[2] + D_800625A0->buffer_index + 2)->v2 = 0x8B;
+    (panel->edge[2] + D_800625A0->buffer_index + 2)->u3 = 0x20;
+    (panel->edge[2] + D_800625A0->buffer_index + 2)->v3 = 0x8B;
+    half = (h - 16) / 2;
+    func_801C60EC(panel->edge_at[2][0], x - 8, y + 8, 16, half);
+    func_801C60EC(panel->edge_at[2][1], x - 8, y + (half + 8), 16, half);
+    for (i = 0; i < 2; i++) {
+        func_801C6144(&panel->edge[2][i * 2 + D_800625A0->buffer_index]);
+    }
+}
+
+/* Map panel `index`'s right edge pieces for this buffer and place them in two
+ * halves down the right of (x, y, w, h). */
+void func_801C722C(u8 index, u16 x, u16 y, u16 w, u16 h) {
+    Panel *panel = D_800625A0->panels[index];
+    s32 half;
+    s32 i;
+
+    (panel->edge[3] + D_800625A0->buffer_index)->u0 = 0x10;
+    (panel->edge[3] + D_800625A0->buffer_index)->v0 = 0x8C;
+    (panel->edge[3] + D_800625A0->buffer_index)->u1 = 0x20;
+    (panel->edge[3] + D_800625A0->buffer_index)->v1 = 0x8C;
+    (panel->edge[3] + D_800625A0->buffer_index)->u2 = 0x10;
+    (panel->edge[3] + D_800625A0->buffer_index)->v2 = 0x93;
+    (panel->edge[3] + D_800625A0->buffer_index)->u3 = 0x20;
+    (panel->edge[3] + D_800625A0->buffer_index)->v3 = 0x93;
+    (panel->edge[3] + D_800625A0->buffer_index + 2)->u0 = 0x10;
+    (panel->edge[3] + D_800625A0->buffer_index + 2)->v0 = 0x8C;
+    (panel->edge[3] + D_800625A0->buffer_index + 2)->u1 = 0x20;
+    (panel->edge[3] + D_800625A0->buffer_index + 2)->v1 = 0x8C;
+    (panel->edge[3] + D_800625A0->buffer_index + 2)->u2 = 0x10;
+    (panel->edge[3] + D_800625A0->buffer_index + 2)->v2 = 0x93;
+    (panel->edge[3] + D_800625A0->buffer_index + 2)->u3 = 0x20;
+    (panel->edge[3] + D_800625A0->buffer_index + 2)->v3 = 0x93;
+    half = (h - 16) / 2;
+    func_801C60EC(panel->edge_at[3][0], x + w - 8, y + 8, 16, half);
+    func_801C60EC(panel->edge_at[3][1], x + w - 8, y + (half + 8), 16, half);
+    for (i = 0; i < 2; i++) {
+        func_801C6144(&panel->edge[3][i * 2 + D_800625A0->buffer_index]);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C7578);
 
