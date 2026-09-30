@@ -1499,23 +1499,18 @@ void func_8007E7C0(u8 **pc) {
 
 /* AI action 6f: set (b2 != 0) or clear flag b1 + 7 in every party record's
  * +0x7a. */
-#ifdef NON_MATCHING
 void func_8007E7E4(u8 **pc, u8 enemy) {
-    Combatant *record = D_800CCCE8.records;
+    s32 i;
     u8 set = (*pc)[2] != 0;
 
-    do {
+    for (i = 0; i < 3; i++) {
         if (set) {
-            record->pilot.status7A |= func_80089BEC((*pc)[1] + 7);
+            D_800CCCE8.records[i].pilot.status7A |= func_80089BEC((*pc)[1] + 7);
         } else {
-            record->pilot.status7A &= ~func_80089BEC((*pc)[1] + 7);
+            D_800CCCE8.records[i].pilot.status7A &= ~func_80089BEC((*pc)[1] + 7);
         }
-        record++;
-    } while (record < &D_800CCCE8.records[3]);
+    }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80079ED8", func_8007E7E4);
-#endif
 
 /* AI action 70: formation group distance b1 -> b2 = b3. */
 void func_8007E8AC(u8 **pc) {

@@ -228,6 +228,9 @@ typedef struct {
 #define setUV4(p, _u0, _v0, _u1, _v1, _u2, _v2, _u3, _v3) \
     (p)->u0 = _u0, (p)->v0 = _v0, (p)->u1 = _u1, (p)->v1 = _v1, \
     (p)->u2 = _u2, (p)->v2 = _v2, (p)->u3 = _u3, (p)->v3 = _v3
+#define setXY3(p, _x0, _y0, _x1, _y1, _x2, _y2) \
+    (p)->x0 = _x0, (p)->y0 = _y0, (p)->x1 = _x1, (p)->y1 = _y1, \
+    (p)->x2 = _x2, (p)->y2 = _y2
 #define setXY4(p, _x0, _y0, _x1, _y1, _x2, _y2, _x3, _y3) \
     (p)->x0 = _x0, (p)->y0 = _y0, (p)->x1 = _x1, (p)->y1 = _y1, \
     (p)->x2 = _x2, (p)->y2 = _y2, (p)->x3 = _x3, (p)->y3 = _y3

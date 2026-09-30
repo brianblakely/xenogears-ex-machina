@@ -1465,12 +1465,15 @@ void func_80076544(void) {
 #ifdef NON_MATCHING
 void func_800765C4(s32 member) {
     u16 *panelX = &D_800C3254[D_800D3280 * 3 + member];
+    s32 x;
 
+    x = *panelX + 0x48;
+    D_800D2D28->unk34 = member * 0x60 + x;
     D_800D2D28->unk44 = 0x1C;
-    D_800D2D28->unk34 = member * 0x60 + (*panelX + 0x48);
     if (D_800D32A0[member].unk1 != 0 && D_800D2D24[member] != 7) {
+        x = *panelX + 0x44;
+        D_800D2D28->unk34 = member * 0x60 + x;
         D_800D2D28->unk44 = 0x24;
-        D_800D2D28->unk34 = member * 0x60 + (*panelX + 0x44);
     }
     D_800D2D28->unk3C = 0x10;
     D_800D2D28->unk4C = 0x98;
@@ -1808,10 +1811,7 @@ void func_8007765C(void) {
 }
 
 /* Set up the four direction arrows (down, left, up, right triangles, red
- * fading to dark) in both draw buffers and start their pulse. Nonmatching: the original
- * adds the primitive offsets before the block address and keeps one offset
- * register per arrow. */
-#ifdef NON_MATCHING
+ * fading to dark) in both draw buffers and start their pulse. */
 void func_80077698(void) {
     s32 dir;
     s32 buf;
@@ -1822,47 +1822,21 @@ void func_80077698(void) {
             SetPolyG3(&D_800C3E24->prims[dir * 2 + buf]);
             switch (dir) {
             case 0:
-                D_800C3E24->prims[buf].x0 = 0xC0;
-                D_800C3E24->prims[buf].y0 = 0x70;
-                D_800C3E24->prims[buf].y1 = 0x78;
-                D_800C3E24->prims[buf].x1 = 0xB0;
-                D_800C3E24->prims[buf].x2 = 0xB0;
-                D_800C3E24->prims[buf].y2 = 0x68;
+                setXY3(&D_800C3E24->prims[dir * 2 + buf], 0xC0, 0x70, 0xB0, 0x78, 0xB0, 0x68);
                 break;
             case 1:
-                D_800C3E24->prims[buf + 2].x0 = 0xA0;
-                D_800C3E24->prims[buf + 2].x1 = 0x98;
-                D_800C3E24->prims[buf + 2].y0 = 0x90;
-                D_800C3E24->prims[buf + 2].y1 = 0x80;
-                D_800C3E24->prims[buf + 2].x2 = 0xA8;
-                D_800C3E24->prims[buf + 2].y2 = 0x80;
+                setXY3(&D_800C3E24->prims[dir * 2 + buf], 0xA0, 0x90, 0x98, 0x80, 0xA8, 0x80);
                 break;
             case 2:
-                D_800C3E24->prims[buf + 4].y0 = 0x70;
-                D_800C3E24->prims[buf + 4].y1 = 0x68;
-                D_800C3E24->prims[buf + 4].x0 = 0x80;
-                D_800C3E24->prims[buf + 4].x1 = 0x90;
-                D_800C3E24->prims[buf + 4].x2 = 0x90;
-                D_800C3E24->prims[buf + 4].y2 = 0x78;
+                setXY3(&D_800C3E24->prims[dir * 2 + buf], 0x80, 0x70, 0x90, 0x68, 0x90, 0x78);
                 break;
             case 3:
-                D_800C3E24->prims[buf + 6].x0 = 0xA0;
-                D_800C3E24->prims[buf + 6].y0 = 0x50;
-                D_800C3E24->prims[buf + 6].x1 = 0x98;
-                D_800C3E24->prims[buf + 6].y1 = 0x60;
-                D_800C3E24->prims[buf + 6].x2 = 0xA8;
-                D_800C3E24->prims[buf + 6].y2 = 0x60;
+                setXY3(&D_800C3E24->prims[dir * 2 + buf], 0xA0, 0x50, 0x98, 0x60, 0xA8, 0x60);
                 break;
             }
-            D_800C3E24->prims[dir * 2 + buf].r0 = 0xFF;
-            D_800C3E24->prims[dir * 2 + buf].g0 = 0;
-            D_800C3E24->prims[dir * 2 + buf].b0 = 0;
-            D_800C3E24->prims[dir * 2 + buf].r1 = 0x40;
-            D_800C3E24->prims[dir * 2 + buf].g1 = 0;
-            D_800C3E24->prims[dir * 2 + buf].b1 = 0;
-            D_800C3E24->prims[dir * 2 + buf].r2 = 0x40;
-            D_800C3E24->prims[dir * 2 + buf].g2 = 0;
-            D_800C3E24->prims[dir * 2 + buf].b2 = 0;
+            setRGB0(&D_800C3E24->prims[dir * 2 + buf], 0xFF, 0, 0);
+            setRGB1(&D_800C3E24->prims[dir * 2 + buf], 0x40, 0, 0);
+            setRGB2(&D_800C3E24->prims[dir * 2 + buf], 0x40, 0, 0);
         }
     }
     D_800C3E24->shade = 0xFF;
@@ -1870,9 +1844,6 @@ void func_80077698(void) {
     D_800C3E24->buffer = D_800CCB04.buffer;
     D_800D2D28->unkC6 = 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80077698);
-#endif
 
 /* Clear UI byte +0xc6. */
 void func_80077980(void) {
@@ -1999,7 +1970,6 @@ void func_800780A8(BattleMessage *message, u32 row) {
 
 /* Set up windows 5 and 4 (closed) and the eight battle messages: each pair
  * shares a text image block and a VRAM rectangle row. */
-#ifdef NON_MATCHING
 void func_8007819C(void) {
     s32 i;
 
@@ -2010,18 +1980,12 @@ void func_8007819C(void) {
     for (i = 0; i < 8; i += 2) {
         D_800D36C8[i].pixels = (u32 *)func_8008AC00(0x39);
         D_800D36C8[i + 1].pixels = D_800D36C8[i].pixels;
-        D_800D36C8[i].rect.x = 0x3C0;
-        D_800D36C8[i].rect.y = (i / 2) * 13;
-        D_800D36C8[i].rect.w = 0x3C;
-        D_800D36C8[i].rect.h = 13;
+        setRECT(&D_800D36C8[i].rect, 0x3C0, (i / 2) * 13, 0x3C, 13);
         D_800D36C8[i + 1].rect = D_800D36C8[i].rect;
         func_800780A8(&D_800D36C8[i], i);
         func_800780A8(&D_800D36C8[i + 1], i + 1);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_8007819C);
-#endif
 
 /* Upload each present member's portrait TIM (0x460 bytes per character in
  * `portraits`; character 0xb for the second and third member when 800d3294
