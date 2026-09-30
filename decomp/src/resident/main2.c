@@ -1,84 +1,301 @@
 #include "common.h"
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80032E7C);
+/* Unpacked size of packed data (its first word). */
+s32 func_80032E7C(s32 *packed) {
+    return *packed;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80032E88);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80032EB4);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003342C);
+#include "text.h"
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80033474);
+extern u8 *func_80033728(u8 *resource, s32 index);
+extern s32 func_80033BAC(u8 first, u8 second);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800334B8);
+/* Turn a resource's offset table (count, then offsets) into pointers.
+ * Returns the count. */
+u32 func_8003342C(void *data) {
+    u32 *table = data;
+    u32 i;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800334C8);
+    for (i = 1; i <= table[0]; i++) {
+        table[i] += (u32)data;
+    }
+    return table[0];
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800334D8);
+void func_80033474(void *data) {
+    u32 *table = data;
+    u32 i;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80033518);
+    for (i = 1; i <= table[0]; i++) {
+        table[i] += (u32)data;
+    }
+}
 
+u16 *func_800334B8(void) {
+    return D_8005936C;
+}
+
+u8 *func_800334C8(void) {
+    return D_80059368;
+}
+
+/* Release the font. */
+void func_800334D8(void) {
+    func_800320B8(D_8005936C);
+    func_800320E8(D_8005936C);
+    D_8005936C = NULL;
+}
+
+/* Release the system data. */
+void func_80033518(void) {
+    func_800320B8(D_80059368);
+    func_800320E8(D_80059368);
+    D_80059368 = NULL;
+}
+
+/* Install a loaded font block (protected from release).
+ * Nonmatching: the font field loads are scheduled above the global stores. */
+#ifdef NON_MATCHING
+void func_80033558(u16 *font) {
+    if (font == NULL) {
+        func_800324B8(0x20);
+        return;
+    }
+    func_800320A4(font);
+    D_8005936C = font;
+    D_8005935C = (u8 *)font;
+    D_8005934C = *(font + 2);
+    D_80059350 = *(font + 3);
+    D_80059354 = *(font + 4);
+    D_80059358 = *(font + 5);
+    D_8005935C = (u8 *)font + *(font + 1);
+    D_80059364 = *(font + 6);
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80033558);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800335F4);
+/* Install a loaded system data block (protected from release). */
+void func_800335F4(u8 *data) {
+    if (data == NULL) {
+        func_800324B8(0x20);
+        return;
+    }
+    func_800320A4(data);
+    D_80059368 = data;
+    D_80059360 = (u8 **)data;
+    func_8003342C(data);
+    D_80059360++;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80033668);
+void func_80033668(u16 *font, u8 *data) {
+    func_80033558(font);
+    func_800335F4(data);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80033698);
+/* Upload the text palette to (x, y) and record its two CLUTs. */
+void func_80033698(s16 x, s16 y) {
+    RECT rect;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80033728);
+    rect.w = 32;
+    rect.x = x;
+    rect.y = y;
+    rect.h = 1;
+    func_80044894(&rect, D_80050190);
+    D_800595D4 = func_80043A58(x, y);
+    D_80059414 = func_80043A58(x + 16, y);
+}
 
+/* Entry `index` of a resource whose u16 offsets start at byte 4. */
+u8 *func_80033728(u8 *resource, s32 index) {
+    return resource + ((u16 *)resource)[index + 2];
+}
+
+/* First and second byte of entry `index` in a table after a header of
+ * (count + 3) halfwords.
+ * Nonmatching: the table and index additions are emitted in the other operand order. */
+#ifdef NON_MATCHING
+u8 func_8003373C(u16 *table, s32 index) {
+    u8 *entries = (u8 *)table + (*table * 2 + 6);
+
+    return entries[index * 2];
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003373C);
+#endif
 
+/* Nonmatching: the table and index additions are emitted in the other operand order. */
+#ifdef NON_MATCHING
+u8 func_80033760(u16 *table, s32 index) {
+    u8 *entries = (u8 *)table + (*table * 2 + 6);
+
+    return entries[index * 2 + 1];
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80033760);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80033784);
+u8 *func_80033784(s32 table, s32 index) {
+    return func_80033728(D_80059360[table], index);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800337B8);
+u8 *func_800337B8(s32 index) {
+    return func_80033728(D_80059360[16], index);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800337E8);
+u8 *func_800337E8(s32 index) {
+    return func_80033728(D_80059360[17], index);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80033818);
+u8 *func_80033818(s32 index) {
+    return func_80033728(D_80059360[22], index);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80033848);
+u8 *func_80033848(s32 index) {
+    return func_80033728(D_80059360[23], index);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80033878);
+u8 *func_80033878(s32 index) {
+    return func_80033728(D_80059360[24], index);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800338A8);
+u8 *func_800338A8(s32 index) {
+    return func_80033728(D_80059360[25], index);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800338D8);
+u8 *func_800338D8(s32 index) {
+    return func_80033728(D_80059360[18], index);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80033908);
+u8 *func_80033908(s32 index) {
+    return func_80033728(D_80059360[20], index);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80033938);
+u8 *func_80033938(s32 index) {
+    return func_80033728(D_80059360[19], index);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80033968);
+u8 *func_80033968(s32 index) {
+    return func_80033728(D_80059360[21], index);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80033998);
+u8 *func_80033998(s32 index) {
+    return func_80033728(D_80059360[27], index);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800339C8);
+u8 *func_800339C8(s32 table, s32 index) {
+    return func_80033728(D_80059360[table + 28], index);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800339FC);
+u8 *func_800339FC(s32 index) {
+    return func_80033728(D_80059360[48], index);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80033A2C);
+u8 *func_80033A2C(s32 index) {
+    return func_80033728(D_80059360[50], index);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80033A5C);
+u8 *func_80033A5C(s32 index) {
+    return func_80033728(D_80059360[51], index);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80033A8C);
+u8 *func_80033A8C(s32 index) {
+    return func_80033728(D_80059360[52], index);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80033ABC);
+/* Decode 0xFFFF-terminated character codes into text bytes (D_8005A0E4). */
+void func_80033ABC(u16 *codes) {
+    u8 *out = D_8005A0E4;
+    CharPair *pairs = (CharPair *)D_80059360[27];
+    CharPair *pair;
+    u16 code;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80033B34);
+    for (code = *codes; code != 0xFFFF; code = *codes) {
+        pair = (CharPair *)(code * 2 + (u32)pairs);
+        codes++;
+        if (pair->first != 0) {
+            *out++ = pair->first;
+            *out++ = pair->second;
+        } else {
+            *out++ = pair->second;
+        }
+    }
+    *out = 0;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80033BAC);
+/* Decode `count` character codes into text bytes at `out`. */
+void func_80033B34(u16 *codes, u8 *out, u32 count) {
+    CharPair *pairs = (CharPair *)D_80059360[27];
+    CharPair *pair;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80033C20);
+    while (count--) {
+        pair = (CharPair *)(*codes * 2 + (u32)pairs);
+        codes++;
+        if (pair->first != 0) {
+            *out++ = pair->first;
+            *out++ = pair->second;
+        } else {
+            *out++ = pair->second;
+        }
+    }
+    *out = 0;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80033CD0);
+/* Character code of a byte pair, or 0x8000 when there is none. */
+s32 func_80033BAC(u8 first, u8 second) {
+    CharPair *pairs = (CharPair *)D_80059360[27];
+    CharPair *pair;
+    s16 code;
+
+    for (code = 0; code < 0x144; code++) {
+        pair = (CharPair *)(code * 2 + (u32)pairs);
+        if (pair->first == first && pair->second == second) {
+            return code;
+        }
+    }
+    return 0x8000;
+}
+
+/* Encode text into character codes. Returns -1 for a byte pair with no
+ * code, else 0. */
+s32 func_80033C20(u8 *text, u16 *codes) {
+    u8 c;
+    u8 first;
+    u8 second;
+
+    while ((c = *text++) != 0) {
+        first = 0;
+        if (c < D_8005934C) {
+            second = c;
+        } else {
+            first = c;
+            second = *text++;
+        }
+        *codes = func_80033BAC(first, second);
+        if (*codes++ == 0x8000) {
+            return -1;
+        }
+    }
+    return 0;
+}
+
+u8 func_80033CD0(u8 *window) {
+    return (*(u16 *)(window + 0x10) & 8) ? window[0x6B] : 0;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80033CF0);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80033DD4);
+void func_80033DD4(u8 *window, s32 value) {
+    s32 previous = *(s32 *)(window + 0x1C);
+
+    *(s32 *)(window + 0x1C) = value;
+    *(s32 *)(window + 0x20) = previous;
+    *(u16 *)(window + 0x10) |= 0x80;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80033DF0);
 
