@@ -902,18 +902,81 @@ void func_80088D1C(void) {
     func_8008A128(-1, -1);
     D_80092898 = 2;
     D_8009289C = 1;
-    D_80092930 = 0;
+    D_80092930 = NULL;
     D_800928E8 = 0;
     D_800928A0 = 0;
     D_80092920 = 0;
-    D_80092930 = 0;
+    D_80092930 = NULL;
     D_800928D0 = 7;
     func_8008E620();
 }
 
 INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu", D_80070284);
 
+#ifdef NON_MATCHING
+/* Menu mode entry: start up, load the mode's data, then run the frame loop
+ * forever (build one buffer while the other is shown, debug meters).
+ * Does not match: the buffer flip stores are scheduled differently, and the
+ * original rate string is followed by two non-zero padding bytes (0x0894)
+ * that a C literal cannot reproduce. */
+void func_80088E90(void) {
+    DispEnv disp;
+    void *state;
+    s32 last;
+    s32 fps;
+    s32 load;
+
+    func_80088D1C();
+    state = func_8008BA2C(((void **)func_80088BFC)[D_80050618], 0, (void *)0x801FE000, 0x400);
+    D_80059488;
+frame:
+    D_800595C0 = 0;
+    D_80059578 = 0;
+    D_800928A0 = (D_800928E8 + 1) & 1;
+    D_80092870 = &D_8009A0D8[D_800928E8 & 1];
+    D_800928E8++;
+    D_80092868 = &D_8009A0D8[D_800928A0];
+    D_80092938 = D_80092868->unk70;
+    disp = D_80092868->disp;
+    func_80019CA0();
+    func_80043BE4(D_80092938);
+    if ((D_800928D0 & 0x10) && D_80092930 != NULL) {
+        D_80092930(D_80092938);
+    }
+    func_80037324(D_80092938);
+    func_8008BB3C(state);
+    func_8008EADC();
+    func_80032CB8();
+    if (D_80092920 & 1) {
+        func_80043B48(D_80092938, D_80092868->unkE8);
+    }
+    load = func_8004B54C(1);
+    fps = 60 / (u32)(D_80059488 - last);
+    last = D_80059488;
+    if (D_800928D0 & 8) {
+        func_80088C28();
+    }
+    if (D_800928D0 & 1) {
+        func_8003700C("POLYGON:%4d/%4d\n", D_80059578, D_800595C0);
+    }
+    if (D_800928D0 & 2) {
+        func_8003700C("CPU/GPU:%4d/%3d\n", load, D_800927F0);
+    }
+    if (D_800928D0 & 4) {
+        func_8003700C("RATE   : %3dfps\n", fps);
+    }
+    func_80036DC8(0xFF, 0xFF, 0xFF);
+    func_8008ACB8(D_80092898);
+    func_8004B54C(D_80092898);
+    func_8008AC8C();
+    func_800445D0(0);
+    func_80044E9C(&disp);
+    func_80044D48(D_80092938, D_80092868);
+    goto frame;
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80088E90);
+#endif
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800891C0);
 

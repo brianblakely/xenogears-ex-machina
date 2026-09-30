@@ -38,16 +38,33 @@ typedef struct {
 
 extern Settings D_80099D98;
 
-/* 0xF8-byte record of the table at 0x8009a0d8. */
 typedef struct {
-    u8 unk0[0x77];
+    s16 x, y, w, h;
+} Rect;
+
+/* libgpu DISPENV layout. */
+typedef struct {
+    Rect disp;
+    Rect screen;
+    u8 isinter;
+    u8 isrgb24;
+    u8 pad0;
+    u8 pad1;
+} DispEnv;
+
+/* One of the two display buffers (table at 0x8009a0d8, 0xF8 bytes each). */
+typedef struct {
+    u8 unk0[0x5C];
+    DispEnv disp;      /* 0x5C */
+    u8 unk70[7];       /* 0x70: the buffer's drawing block starts here */
     u8 unk77;
     u8 unk78[3];
     u8 unk7B;
     u8 unk7C[4];
     s16 unk80;
     s16 unk82;
-    u8 unk84[0x74];
+    u8 unk84[0x64];
+    u8 unkE8[0x10];    /* 0xE8 */
 } Window;
 
 extern Window D_8009A0D8[];
@@ -61,11 +78,17 @@ extern Window *D_80092868;
 extern Window *D_80092870;
 extern s16 D_80092898;
 extern s32 D_8009289C;
-extern s32 D_80092930;
 extern s32 D_800928E8;
 extern u8 D_800928A0;
 extern u8 D_80092920;
-extern s16 D_800928D0;
+extern u16 D_800928D0;   /* debug display switches */
+extern void *D_80092938; /* drawing block of the buffer being built */
+extern void (*D_80092930)(void *block);
+extern s32 D_800927F0;
+extern s32 D_80050618;
+extern volatile s32 D_80059488; /* vertical blanks counted */
+extern s32 D_80059578;   /* primitives drawn this frame */
+extern s32 D_800595C0;   /* primitive count this frame */
 
 void func_80088BFC(void);
 void func_800444D8(void *callback);
@@ -77,6 +100,23 @@ void func_80088CBC(s32 index);
 void func_8008A110(s32 a, s32 b);
 void func_8008A128(s32 a, s32 b);
 void func_8008E620(void);
+void *func_8008BA2C(void *file, s32 a, void *buffer, s32 size);
+void func_80019CA0(void);
+void func_80043BE4(void *block);
+void func_80037324(void *block);
+void func_8008BB3C(void *state);
+void func_8008EADC(void);
+void func_80032CB8(void);
+void func_80043B48(void *block, void *data);
+s32 func_8004B54C(s32 mode);
+void func_80088C28(void);
+void func_8003700C(char *format, ...);
+void func_80036DC8(s32 r, s32 g, s32 b);
+void func_8008ACB8(s32 a);
+void func_8008AC8C(void);
+void func_800445D0(s32 a);
+void func_80044E9C(DispEnv *env);
+void func_80044D48(void *block, Window *buffer);
 s32 func_800888E4(s32 flag);
 void func_800888B0(void);
 s32 func_800889C8(void);
