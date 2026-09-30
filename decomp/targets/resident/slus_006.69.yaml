@@ -62,8 +62,9 @@ segments:
       - [0x9D24, c, main]
       - [0x22094, c, heap]
       - [0x2367C, c, main2]
-      # Sound driver unit from 80039E18 (80039DB8 before it needs GCC
-      # 2.7.2, 8003A838 after it only matches under 2.6.3) to 8003F738.
+      # Sound driver unit (GCC 2.6.3) to 8003F738. Its start lies in
+      # 80039E18-8003A094: 80039DB8 needs 2.7.2, 8003A094 and later match
+      # only under 2.6.3, and the functions between compile identically.
       - [0x2A618, c, sound]
       - [0x2FF38, c, main3]
       - [0x3F288, data, data]

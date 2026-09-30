@@ -1,8 +1,10 @@
 #include "common.h"
+#include "psyq/libapi.h"
 #include "sound.h"
 
 extern void func_80039FF8(void);
 extern s32 D_80059404;
+extern s32 D_80059478;           /* voice count of the effect channels */
 extern void func_8003B644(s16 id, s32 channel, s16 volume, s16 pan);
 
 void func_80039E18(s32 channel) {
@@ -12,7 +14,7 @@ void func_80039E18(s32 channel) {
     }
 }
 
-extern s32 func_8003A65C(s32 channel, s32 b);
+extern u32 func_8003A65C(s32 id, s32 width);
 
 void func_80039E60(s32 channel) {
     if (D_8005957C & 0x800) {
@@ -30,7 +32,16 @@ void func_80039EC4(s32 channel, s32 sound) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_80039F18);
+/* Play the two-voice effect of `channel` on free effect voices, with a
+ * volume and pan. */
+void func_80039F18(s32 channel, s32 volume, s32 pan) {
+    if (D_8005957C & 0x800) {
+        s32 id = func_8003A65C(channel, 2);
+
+        D_80059404 = 2;
+        func_8003B644(id | 0x2000, channel, volume << 8, pan << 8);
+    }
+}
 
 void func_80039F9C(s32 channel, s32 sound, s32 volume, s32 pan) {
     if (D_8005957C & 0x800) {
@@ -39,13 +50,86 @@ void func_80039F9C(s32 channel, s32 sound, s32 volume, s32 pan) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_80039FF8);
+extern s32 D_800595BC;           /* driver event */
+extern SoundSeq *D_800595D8;     /* sound effect channels */
+extern void func_8003E83C(SoundChannel *state, u32 voice);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003A094);
+/* Stop every sound effect channel and release its voice. */
+void func_80039FF8(void) {
+    s32 count = D_80059478;
+    SoundSeq *effects = D_800595D8;
+    SoundSeqChannel *channel = effects->channel;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003A14C);
+    DisableEvent(D_800595BC);
+    do {
+        count--;
+        if (channel->flags & 1) {
+            channel->flags = 0;
+            func_8003E83C(&channel->state, channel->voice);
+        }
+        channel++;
+    } while (count != 0);
+    effects->voices = 0;
+    EnableEvent(D_800595BC);
+}
 
+/* Stop the effect channels playing effects of `bank`. */
+void func_8003A094(SoundBank *bank) {
+    s32 count = D_80059478;
+    SoundSeq *effects = D_800595D8;
+    s16 id = bank->id;
+    SoundSeqChannel *channel = effects->channel;
+
+    do {
+        count--;
+        if ((channel->flags & 1) && channel->id.part.bank == id) {
+            channel->flags = 0;
+            effects->voices &= ~(1 << channel->voice_bit);
+            func_8003E83C(&channel->state, channel->voice);
+        }
+        channel++;
+    } while (count != 0);
+}
+
+/* Stop the effect channels playing effect `id`. */
+void func_8003A14C(s32 id) {
+    SoundSeq *effects = D_800595D8;
+    s32 count = D_80059478;
+    SoundSeqChannel *channel = effects->channel;
+
+    do {
+        count--;
+        if ((channel->flags & 1) && channel->id.full == id) {
+            channel->flags = 0;
+            effects->voices &= ~(1 << channel->voice_bit);
+            func_8003E83C(&channel->state, channel->voice);
+        }
+        channel++;
+    } while (count != 0);
+}
+
+/* Stop the two effect channels of `sound`.
+ * Nonmatching: the original computes the channel index before the loop
+ * constants. */
+#ifdef NON_MATCHING
+void func_8003A20C(s32 sound) {
+    SoundSeq *effects = D_800595D8;
+    SoundSeqChannel *channel = &effects->channel[(sound & 0xFE) ^ 8];
+    s32 count = 2;
+
+    do {
+        count--;
+        if (channel->flags & 1) {
+            channel->flags = 0;
+            effects->voices &= ~(1 << channel->voice_bit);
+            func_8003E83C(&channel->state, channel->voice);
+        }
+        channel++;
+    } while (count != 0);
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003A20C);
+#endif
 
 void func_8003A2D4(void) {
 }
@@ -53,21 +137,219 @@ void func_8003A2D4(void) {
 void func_8003A2DC(void) {
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003A2E4);
+/* Set the volume of the effect channels playing effect `id`. */
+void func_8003A2E4(s32 id, s32 volume) {
+    s32 count = D_80059478;
+    SoundSeqChannel *channel = D_800595D8->channel;
 
+    do {
+        if ((channel->flags & 1) && channel->id.full == id) {
+            channel->volume = volume << 8;
+            channel->flags2 = 0x100;
+        }
+        channel++;
+        count--;
+    } while (count != 0);
+}
+
+/* Set the volume of the two effect channels of `sound`.
+ * Nonmatching: the original computes the channel index before the loop
+ * constants. */
+#ifdef NON_MATCHING
+void func_8003A344(s32 sound, s32 volume) {
+    SoundSeqChannel *channel = &D_800595D8->channel[(sound & 0xFE) ^ 8];
+    s32 count = 2;
+
+    do {
+        if (channel->flags & 1) {
+            channel->volume = volume << 8;
+            channel->flags2 = 0x100;
+        }
+        channel++;
+        count--;
+    } while (count != 0);
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003A344);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003A3B8);
+/* Slide the volume of the effect channels playing effect `id` over
+ * `frames` (at least one). */
+void func_8003A3B8(s32 id, s32 volume, s32 frames) {
+    s32 count = D_80059478;
+    SoundSeqChannel *channel = D_800595D8->channel;
+    s32 delta;
 
+    volume <<= 8;
+    do {
+        if ((channel->flags & 1) && channel->id.full == id) {
+            delta = volume - channel->volume;
+            if (delta != 0) {
+                if (frames == 0) {
+                    frames = 1;
+                }
+                channel->volume_target = volume;
+                channel->volume_frames = frames;
+                channel->volume_step = delta / frames;
+                channel->flags3 |= 0x20;
+            }
+        }
+        channel++;
+        count--;
+    } while (count != 0);
+}
+
+/* Slide the volume of the two effect channels of `sound`.
+ * Nonmatching: the original computes the channel index before the loop
+ * constants. */
+#ifdef NON_MATCHING
+void func_8003A450(s32 sound, s32 volume, s32 frames) {
+    SoundSeqChannel *channel = &D_800595D8->channel[(sound & 0xFE) ^ 8];
+    s32 count = 2;
+    s32 delta;
+
+    volume <<= 8;
+    do {
+        if (channel->flags & 1) {
+            delta = volume - channel->volume;
+            if (delta != 0) {
+                if (frames == 0) {
+                    frames = 1;
+                }
+                channel->volume_target = volume;
+                channel->volume_frames = frames;
+                channel->volume_step = delta / frames;
+                channel->flags3 |= 0x20;
+            }
+        }
+        channel++;
+        count--;
+    } while (count != 0);
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003A450);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003A4FC);
+/* Set the pan of the effect channels playing effect `id`. */
+void func_8003A4FC(s32 id, s32 pan) {
+    s32 count = D_80059478;
+    SoundSeqChannel *channel = D_800595D8->channel;
 
+    do {
+        if ((channel->flags & 1) && channel->id.full == id) {
+            channel->pan = pan << 8;
+            channel->flags2 = 0x100;
+        }
+        channel++;
+        count--;
+    } while (count != 0);
+}
+
+/* Set the pan of the two effect channels of `sound`.
+ * Nonmatching: the original computes the channel index before the loop
+ * constants. */
+#ifdef NON_MATCHING
+void func_8003A55C(s32 sound, s32 pan) {
+    SoundSeqChannel *channel = &D_800595D8->channel[(sound & 0xFE) ^ 8];
+    s32 count = 2;
+
+    do {
+        if (channel->flags & 1) {
+            channel->pan = pan << 8;
+            channel->flags2 = 0x100;
+        }
+        channel++;
+        count--;
+    } while (count != 0);
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003A55C);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003A5D0);
+/* Mask of the active effect channels (playing effect `id`, or any for -1). */
+s32 func_8003A5D0(s32 id) {
+    s32 bit = 1;
+    s32 count = D_80059478;
+    SoundSeqChannel *channel = D_800595D8->channel;
+    s32 mask = 0;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003A65C);
+    if (id == -1) {
+        do {
+            if (channel->flags & 1) {
+                mask |= bit;
+            }
+            channel++;
+            count--;
+            bit <<= 1;
+        } while (count != 0);
+    } else {
+        do {
+            count--;
+            if ((channel->flags & 1) && channel->id.full == id) {
+                mask |= bit;
+            }
+            channel++;
+            bit <<= 1;
+        } while (count != 0);
+    }
+    return mask;
+}
+
+extern s32 D_80059544;           /* voices kept for music */
+
+/* Stop the effect channels playing effect `id`, then choose `width`
+ * adjacent effect channels for it: the highest free group below the
+ * reserved top pair, else the oldest channel of low priority seen. */
+u32 func_8003A65C(s32 id, s32 width) {
+    SoundSeq *effects = D_800595D8;
+    s32 count = D_80059478;
+    u32 reserved = 0;
+    SoundSeqChannel *channel = effects->channel;
+    u32 limit;
+    u32 index;
+    u32 mask;
+    u32 used;
+    u32 group;
+    u32 oldest;
+    u32 found;
+    s32 span;
+
+    do {
+        count--;
+        if ((channel->flags & 1) && channel->id.full == id) {
+            channel->flags = 0;
+            effects->voices &= ~(1 << channel->voice_bit);
+            func_8003E83C(&channel->state, channel->voice);
+        }
+        channel++;
+    } while (count != 0);
+
+    span = width + 2;
+    limit = effects->channels - D_80059544;
+    index = D_80059478 - span;
+    effects = D_800595D8;
+    group = 0xFFFFFFFF >> (32 - width);
+    mask = group << index;
+    channel = &effects->channel[index];
+    used = ~reserved & effects->voices;
+    oldest = 0xFFFFFFFF;
+    if (used & mask) {
+        do {
+            if (channel->stamp < oldest && channel->unk7 < 0x21) {
+                oldest = channel->stamp;
+                found = index;
+            }
+            mask >>= width;
+            if (mask < group || index <= limit) {
+                index = found;
+                break;
+            }
+            channel -= width;
+            index -= width;
+        } while (used & mask);
+    }
+    return index;
+}
 
 /* Whether a sequence is paused (flag bit 15). */
 u32 func_8003A82C(SoundSeq *seq) {
