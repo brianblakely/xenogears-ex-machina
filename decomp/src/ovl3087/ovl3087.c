@@ -8,9 +8,114 @@
  * (8007xxxx-800cxxxx) and resident file/heap/sound helpers. */
 #include "ovl3087.h"
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E5160);
+/* Load the script set of 8006f9df (script archive file 2) and the model
+ * archive (file 3), set up the interpreter state and its threads, the
+ * portrait quads and the script's sound bank (file 4). */
+void func_801E5160(void) {
+    FileRequest files[3];
+    ScriptArchive *archive;
+    ScriptFile *script;
+    s32 i;
+    s32 level;
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E563C);
+    func_800716D8();
+    func_8008AB4C();
+    archive = func_8008ABB8(func_800288EC(2), 1);
+    files[0].file = 2;
+    files[0].dest = archive;
+    D_801E9C38 = func_8008ABB8(func_800288EC(3), 0);
+    files[1].file = 3;
+    files[1].dest = D_801E9C38;
+    files[2].file = 0;
+    files[2].dest = NULL;
+    func_80029AFC(files, 0, 0x80);
+    func_8008AC50();
+    func_8003342C(archive);
+    func_8003342C(D_801E9C38);
+    script = func_80032E88(((ScriptSet *)((u8 *)archive + D_8006F9DF.scriptSet * 8))->script, 0);
+    D_800D3340 = func_80032E88(((ScriptSet *)((u8 *)archive + D_8006F9DF.scriptSet * 8))->data, 0);
+    func_800320E8(archive);
+    D_800D3278 = func_8008ABB8(sizeof(ScriptState), 0);
+    func_8003F8E8(D_800D3278, sizeof(ScriptState));
+    D_800D2DAC = func_8008ABB8(0x98, 0);
+    func_8003F8E8(D_800D2DAC, 0x78);
+    D_800D39D0 = script;
+    D_800D3278->code = (u8 *)D_800D39D0 + D_800D39D0->threadCount * 16 + 0x44;
+    for (i = 0; i < 16; i++) {
+        D_800D3278->order[i] = 0xFF;
+    }
+    for (i = 0; i < D_800D39D0->threadCount; i++) {
+        for (level = 0; level < 8; level++) {
+            D_800D3278->threads[i].pc[level] = 0xFFFF;
+            D_800D3278->threads[i].priority[level] = 0xFF;
+            D_800D3278->threads[i].entry[level] = 0xFF;
+        }
+        D_800D3278->order[i] = i;
+        D_800D3278->threads[i].pc[0] = D_800D39D0->entries[i].entry[0];
+        D_800D3278->threads[i].priority[0] = 0;
+        D_800D3278->threads[i].order = 0xFF;
+        D_800D3278->threads[i].entry[0] = 0;
+        D_800D3278->threads[i].level = 0;
+        D_800D3278->threads[i].request = 0xFF;
+        D_800D3278->threads[i].speaker = 0xFF;
+    }
+    D_800D3278->unk7F5 = 4;
+    for (i = 0; i < 5; i++) {
+        D_800D3278->window[i] = D_801E9C10[i];
+    }
+    for (i = 0; i < 2; i++) {
+        func_80043CB0(&D_800D3278->quads[i]);
+        setRGB0(&D_800D3278->quads[i], 0x80, 0x80, 0x80);
+        func_80043BFC(&D_800D3278->quads[i], 0);
+        func_80043C24(&D_800D3278->quads[i], 1);
+        D_800D3278->quads[i].clut = func_80043A58(0, 0x1D0);
+        D_800D3278->quads[i].tpage = func_80043A1C(1, 0, 0x3C0, 0x100);
+    }
+    D_800D2D28->unkCA = 1;
+    D_800D2D28->unkCF = 0;
+    for (i = 0; i < 16; i++) {
+        D_800D3278->actionRunning[i] = 0;
+        D_801E9C20[i] = 0;
+    }
+    D_800D3278->musicPlaying = 0;
+    func_8008AB4C();
+    D_800D3278->soundBank = func_8008ABB8(func_800288EC(4), 0);
+    func_800295D8(4, D_800D3278->soundBank, 0, 0x80);
+    func_8008AC50();
+    func_80038428(D_800D3278->soundBank);
+    func_8003BDFC(0x10);
+    D_800D3278->soundBankLoaded = 1;
+    D_800C4924 = D_800D3278->soundBank;
+    func_800BFBA0();
+}
+
+/* Release the interpreter state, the script and model files, stop the
+ * music and release the sound bank. Returns whether music was playing. */
+s32 func_801E563C(void) {
+    s32 musicWasPlaying;
+
+    func_800320E8(D_800D3278);
+    musicWasPlaying = 0;
+    func_800320E8(D_800D2DAC);
+    func_800320E8(D_800D39D0);
+    func_800320E8(D_800D3340);
+    func_800320E8(D_801E9C38);
+    if (D_800D3278->musicPlaying != 0) {
+        musicWasPlaying = 1;
+        func_80039C4C(D_800C3E54);
+        func_800716D8();
+        func_800399D4(D_800C3E54);
+        func_800716D8();
+    }
+    if (D_800D3278->soundBankLoaded != 0) {
+        func_8003A094(D_800D3278->soundBank);
+        func_8003852C(D_800D3278->soundBank);
+        func_800716D8();
+        func_800320E8(D_800D3278->soundBank);
+        D_800D3278->soundBankLoaded = 0;
+    }
+    return musicWasPlaying;
+}
 
 /* Make the thread's highest occupied level current; return its pc. */
 u16 func_801E5768(ScriptThread *thread) {

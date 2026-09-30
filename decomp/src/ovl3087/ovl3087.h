@@ -49,6 +49,9 @@ typedef struct {
     u16 pad2;
 } PolyFT4;
 
+/* libgpu primitive colour macro. */
+#define setRGB0(p, r, g, b) ((p)->r0 = (r), (p)->g0 = (g), (p)->b0 = (b))
+
 /* The interpreter state (0x828 bytes, pointer 800d3278). */
 typedef struct {
     ScriptThread threads[16]; /* 0x000 */
@@ -168,6 +171,39 @@ typedef struct {
 } ActorFlags;
 extern ActorFlags D_800CCD1E[];
 
+/* Script file 2: per script set, the compressed script and its data. */
+typedef struct {
+    s32 count;
+    struct {
+        void *script;
+        void *data;
+    } sets[1];
+} ScriptArchive;
+
+/* Set n of the script archive as the original addresses it: from
+ * archive + n * 8, past the count. */
+typedef struct {
+    s32 count;
+    void *script;
+    void *data;
+} ScriptSet;
+
+/* A file list entry for the resident loader (80029afc); file 0 ends it. */
+typedef struct {
+    s16 file;
+    void *dest;
+} FileRequest;
+
+/* The script set of this battle is a field of the resident game data
+ * (base not yet named); the original addresses it as a structure field. */
+typedef struct {
+    u8 scriptSet;
+} GameDataScriptSet;
+extern GameDataScriptSet D_8006F9DF;
+extern void *D_800D2DAC;
+extern void *D_800D3340;
+extern SoundBank *D_800C4924;
+
 /* Script file 3: the model archive, entry offsets from +4. */
 typedef struct {
     s32 count;
@@ -210,6 +246,20 @@ void func_8008AC50(void);
 void func_800BAF48(s32 arg);
 void func_800320E8(void *block);
 void *func_80032E88(void *data, s32 mode);
+void func_80029AFC(FileRequest *files, s32 arg1, s32 arg2);
+void func_8003342C(void *block);
+void func_80038428(SoundBank *bank);
+void func_8003852C(SoundBank *bank);
+void func_8003A094(SoundBank *bank);
+void func_8003BDFC(s32 arg);
+void func_8003F8E8(void *dest, s32 size);
+u16 func_80043A1C(s32 mode, s32 rate, s32 x, s32 y);
+u16 func_80043A58(s32 x, s32 y);
+void func_80043BFC(PolyFT4 *quad, s32 on);
+void func_80043C24(PolyFT4 *quad, s32 on);
+void func_80043CB0(PolyFT4 *quad);
+void func_8008AB4C(void);
+void *func_8008ABB8(s32 size, s32 top);
 s32 func_80076A10(s32 id, PolyFT4 *quads, s16 x, s16 y);
 u16 func_80089C08(u8 id);
 void func_8009C0E0(s32 arg);
