@@ -75,14 +75,22 @@ typedef struct {
 /* A text label: its quad per draw buffer and the VRAM area of its pixels. */
 typedef struct {
     POLY_FT4 poly[2]; /* 00 */
-    u8 unk50[0x20];
+    SVECTOR quad[4];  /* 50: corners when projected */
     RECT rect;        /* 70: pixel area in VRAM */
     void *pixels;     /* 78: label pixel buffer (only labels[0] of the menu state) */
     u8 highlight;     /* 7c */
-    u8 unk7D;
+    u8 buffer;        /* 7d */
     u8 width;         /* 7e: text width in pixels */
-    u8 dirty;         /* 7f */
+    u8 projected;     /* 7f: drawn through the GTE */
 } Label;
+
+/* Cursor and yes/no markers (menu state + 428). */
+typedef struct {
+    POLY_FT4 packets[8]; /* 000: two per marker */
+    u8 shown[4];         /* 140 */
+    u8 at_cursor[4];     /* 144: follows the file cursor */
+    u8 buffer[4];        /* 148 */
+} MarkerBlock;
 
 /* Cursor block (menu state + 348, 15ch bytes), per draw buffer. */
 typedef struct {
@@ -180,12 +188,18 @@ typedef struct {
     u8 unk0[3];
     u8 cursor_shown; /* 03 */
     u8 unk4;         /* 04 */
-    u8 unk5[0x20 - 5];
+    u8 unk5[0xC - 5];
+    u8 list_label_shown[8]; /* 0c */
+    u8 info_label_shown[6]; /* 14 */
+    u8 unk1A[0x20 - 0x1A];
     u8 panel_shown[7];   /* 20 */
     u8 panel_growing[7]; /* 27 */
-    u8 unk2E[2];
+    u8 message_shown;    /* 2e */
+    u8 marks_shown;      /* 2f */
     u8 members[3];   /* 30: party member ids, ff none */
-    u8 unk33[0x49 - 0x33];
+    u8 unk33;
+    u8 label_shown[4];   /* 34 */
+    u8 unk38[0x49 - 0x38];
     u8 scroll_shown; /* 49 */
     u8 unk4A[0x50 - 0x4A];
     u8 marker_shown[2]; /* 50 */
@@ -239,7 +253,9 @@ typedef struct {
     u8 unk358[0x364 - 0x358];
     Panel *panels[7];    /* 364 */
     PanelGrowth *growth[7]; /* 380 */
-    u8 unk39C[0x43C - 0x39C];
+    u8 unk39C[0x428 - 0x39C];
+    MarkerBlock *marks;  /* 428 */
+    u8 unk42C[0x43C - 0x42C];
     ScrollBar *scroll;   /* 43c */
     u8 unk440[4];
     Marker *markers[2];  /* 444 */
@@ -248,8 +264,12 @@ typedef struct {
     u8 unk454[0x46C - 0x454];
     SheetEntry sheet_entries[4]; /* 46c */
     u8 unk4CC[0x4E0 - 0x4CC];
-    Label labels[4];     /* 4e0 */
-    u8 unk6E0[0x1E20 - 0x6E0];
+    Label labels[4];     /* 4e0: command labels */
+    Label list_labels[8]; /* 6e0 */
+    Label info_labels[6]; /* ae0 */
+    u8 unkDE0[0x1DE0 - 0xDE0];
+    Label *message_labels[3]; /* 1de0 */
+    u8 unk1DEC[0x1E20 - 0x1DEC];
     void *unk1E20;       /* 1e20: dech bytes */
     u8 unk1E24[0x1E2C - 0x1E24];
     void *unk1E2C;       /* 1e2c */
@@ -260,6 +280,9 @@ extern MenuState *D_800625A0;
 /* Overlay data. */
 extern u16 D_801D21F0[]; /* party bit of each member id */
 extern u8 D_801D2018[];  /* label text ids */
+extern s32 D_801D201C[]; /* file slot -> list position */
+extern s32 D_801D2094[]; /* marker x per list position */
+extern s32 D_801D2114[]; /* marker y per list position */
 extern s32 D_801D2194[]; /* cursor x per position */
 extern s32 D_801D21B0[]; /* cursor y per position */
 
@@ -334,6 +357,11 @@ void func_801C9434(s32 index);
 void func_801C9608(s32 index);
 void func_801C9744(s32 index);
 void func_801C9890(s32 index);
+void func_801C9F7C(void);
+void func_801CA00C(void);
+void func_801CA09C(void);
+void func_801CA214(void);
+void func_801CA22C(void);
 void func_801C8C3C(s32 count, SVECTOR *quads, POLY_FT4 *packets, s32 first);
 
 #endif

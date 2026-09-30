@@ -215,7 +215,7 @@ loop:
     if (i < 2) {
         goto loop;
     }
-    label->dirty = 0;
+    label->projected = 0;
 }
 #else
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801C5CA8);
@@ -1041,22 +1041,120 @@ void func_801CA28C(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CA404);
+/* Link the shown markers; markers that follow the file cursor move to its slot first. */
+void func_801CA404(void) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CA754);
+    if (D_800625A0->flags->marks_shown != 0) {
+        for (i = 0; i < 4; i++) {
+            if (D_800625A0->marks->shown[i] != 0) {
+                if (D_800625A0->marks->at_cursor[i] != 0) {
+                    (D_800625A0->marks->packets + (i * 2 + D_800625A0->marks->buffer[i]))->x0 =
+                        D_801D6AFC[D_801D6A84[D_800625A0->card->cursor_slot]] + 8;
+                    (D_800625A0->marks->packets + (i * 2 + D_800625A0->marks->buffer[i]))->y0 =
+                        D_801D6B7C[D_801D6A84[D_800625A0->card->cursor_slot]] - 6;
+                    (D_800625A0->marks->packets + (i * 2 + D_800625A0->marks->buffer[i]))->x1 =
+                        D_801D6AFC[D_801D6A84[D_800625A0->card->cursor_slot]] + 0x18;
+                    (D_800625A0->marks->packets + (i * 2 + D_800625A0->marks->buffer[i]))->y1 =
+                        D_801D6B7C[D_801D6A84[D_800625A0->card->cursor_slot]] - 6;
+                    (D_800625A0->marks->packets + (i * 2 + D_800625A0->marks->buffer[i]))->x2 =
+                        D_801D6AFC[D_801D6A84[D_800625A0->card->cursor_slot]] + 8;
+                    (D_800625A0->marks->packets + (i * 2 + D_800625A0->marks->buffer[i]))->y2 =
+                        D_801D6B7C[D_801D6A84[D_800625A0->card->cursor_slot]] + 0xA;
+                    (D_800625A0->marks->packets + (i * 2 + D_800625A0->marks->buffer[i]))->x3 =
+                        D_801D6AFC[D_801D6A84[D_800625A0->card->cursor_slot]] + 0x18;
+                    (D_800625A0->marks->packets + (i * 2 + D_800625A0->marks->buffer[i]))->y3 =
+                        D_801D6B7C[D_801D6A84[D_800625A0->card->cursor_slot]] + 0xA;
+                }
+                func_80043B48(&D_800625A0->draw_env->ot[4],
+                              D_800625A0->marks->packets + (i * 2 + D_800625A0->marks->buffer[i]));
+            }
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CA7E4);
+/* Link the shown command labels. */
+void func_801CA754(void) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CA874);
+    for (i = 0; i < 4; i++) {
+        if (D_800625A0->flags->label_shown[i] != 0) {
+            func_80043B48(&D_800625A0->draw_env->ot[4],
+                          &D_800625A0->labels[i].poly[D_800625A0->labels[i].buffer]);
+        }
+    }
+}
+
+/* Link the shown list labels. */
+void func_801CA7E4(void) {
+    s32 i;
+
+    for (i = 0; i < 8; i++) {
+        if (D_800625A0->flags->list_label_shown[i] != 0) {
+            func_80043B48(&D_800625A0->draw_env->ot[4],
+                          &D_800625A0->list_labels[i].poly[D_800625A0->list_labels[i].buffer]);
+        }
+    }
+}
+
+/* Link the shown info labels, projecting the 3D ones first. */
+void func_801CA874(void) {
+    s32 depth;
+    s32 flag;
+    s32 i;
+
+    for (i = 0; i < 6; i++) {
+        if (D_800625A0->flags->info_label_shown[i] != 0) {
+            if (D_800625A0->info_labels[i].projected) {
+                func_8004A73C(&D_800625A0->info_labels[i].quad[0], &D_800625A0->info_labels[i].quad[1], &D_800625A0->info_labels[i].quad[2], &D_800625A0->info_labels[i].quad[3],
+                              &D_800625A0->info_labels[i].poly[D_800625A0->info_labels[i].buffer].x0,
+                              &D_800625A0->info_labels[i].poly[D_800625A0->info_labels[i].buffer].x1,
+                              &D_800625A0->info_labels[i].poly[D_800625A0->info_labels[i].buffer].x2,
+                              &D_800625A0->info_labels[i].poly[D_800625A0->info_labels[i].buffer].x3, &depth, &flag);
+                func_80043B48(&D_800625A0->draw_env->ot[4], &D_800625A0->info_labels[i].poly[D_800625A0->info_labels[i].buffer]);
+            } else {
+                func_80043B48(&D_800625A0->draw_env->ot[4], &D_800625A0->info_labels[i].poly[D_800625A0->info_labels[i].buffer]);
+            }
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CA9EC);
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CAA7C);
+/* Link the message labels while the message is shown, projecting the 3D ones first. */
+void func_801CAA7C(void) {
+    s32 depth;
+    s32 flag;
+    Label *label;
+    s32 i;
+
+    if (D_800625A0->flags->message_shown != 0) {
+        for (i = 0; i < 3; i++) {
+            label = D_800625A0->message_labels[i];
+            if (label->projected) {
+                func_8004A73C(&label->quad[0], &label->quad[1], &label->quad[2], &label->quad[3],
+                              &label->poly[label->buffer].x0, &label->poly[label->buffer].x1,
+                              &label->poly[label->buffer].x2, &label->poly[label->buffer].x3, &depth,
+                              &flag);
+                func_80043B48(&D_800625A0->draw_env->ot[4], &label->poly[label->buffer]);
+            } else {
+                func_80043B48(&D_800625A0->draw_env->ot[4], &label->poly[label->buffer]);
+            }
+        }
+    }
+}
 
 void func_801CABD8(void) {
 }
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CABE0);
+/* Link every label group. */
+void func_801CABE0(void) {
+    func_801CA754();
+    func_801CA7E4();
+    func_801CA874();
+    func_801CA9EC();
+    func_801CAA7C();
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CAC20);
 
