@@ -5167,7 +5167,6 @@ s32 mode;
 
 /* Resolve an item/effect `param` on every slot in the +0x5fac mask, then
  * set its animation from the effect table. */
-#ifdef NON_MATCHING
 void func_80098C6C(u16 param) {
     s32 slot;
     s32 bit;
@@ -5185,9 +5184,6 @@ void func_80098C6C(u16 param) {
         D_800D2C94.animation = 0xC2;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80098C6C);
-#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80098D2C);
 
