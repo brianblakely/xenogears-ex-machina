@@ -435,14 +435,12 @@ void func_801C62A8(void) {
     func_801C5FE4();
 }
 
-/* Reset the card state and copy save title line D_8006EF64 of text file 1
- * into it. */
 #ifdef NON_MATCHING
 void func_801C6400(void) {
+    u8 *text;
     s32 i;
     s32 j;
     u16 line;
-    u8 *text;
     u8 *src;
     u8 c;
 
@@ -482,17 +480,136 @@ void func_801C6400(void) {
     for (j = 0; j < 30; j++) {
         D_800625A0->card->title[j] = *src++;
     }
-    D_800625A0->card->unk501B = 0;
-    D_800625A0->card->unk501A = 0;
+    D_800625A0->card->unk501A = D_800625A0->card->unk501B = 0;
     func_80028470(0x10, 0);
     func_800320E8(text);
 }
 #else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C6400);
 #endif
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C65F4);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C6AA0);
+/* Load the menu resources: the card file header template (name prefixes,
+ * "SC" header, icon palette and pixels), the TIM list, sprite sheet and
+ * label text, the party's portraits and, with sound, the effect bank. */
+#ifdef NON_MATCHING
+void func_801C65F4(void) {
+    TIM_IMAGE tim;
+    SheetEntry entries[3];
+    MenuResources *res;
+    void *icon;
+    void *list;
+    void *portraits;
+    s32 i;
+    u8 id;
+
+    res = D_8005945C;
+    func_8003342C(res);
+    icon = func_80032E88(res->files[0], 1);
+    OpenTIM(icon);
+    ReadTIM(&D_800625A0->card->icon);
+    strcpy(D_800625A0->card->prefix, "BASLUS-00664");
+    strcpy((char *)D_800625A0->card->otherPrefix, "BASLUS-01160");
+    D_800625A0->card->saveMagic[0] = 'S';
+    D_800625A0->card->saveMagic[1] = 'C';
+    D_800625A0->card->saveIconFlag = 0x11;
+    D_800625A0->card->saveBlocks = 1;
+    bzero(D_800625A0->card->saveTitle, sizeof(D_800625A0->card->saveTitle));
+    memmove(D_800625A0->card->savePalette, D_800625A0->card->icon.caddr, sizeof(D_800625A0->card->savePalette));
+    memmove(D_800625A0->card->saveIcon, D_800625A0->card->icon.paddr, sizeof(D_800625A0->card->saveIcon));
+    func_800320E8(icon);
+    list = func_80032E88(res->files[1], 1);
+    func_8002DD20(list);
+    func_800320E8(list);
+    D_800625A0->sheet = func_80032E88(res->files[2], 0);
+    D_800625A0->labels = func_80032E88(res->files[3], 0);
+    func_80026338(D_800625A0->sheet, 0xe0, &entries[0].unk0, &entries[0].mode, &entries[0].clutX,
+                  &entries[0].clutY, &entries[0].pageX, &entries[0].pageY);
+    func_80026338(D_800625A0->sheet, 0x14b, &entries[0].unk0, &entries[0].mode, &entries[0].clutX,
+                  &entries[0].clutY, &entries[0].pageX, &entries[0].pageY);
+    func_80026338(D_800625A0->sheet, 0x14c, &entries[1].unk0, &entries[1].mode, &entries[1].clutX,
+                  &entries[1].clutY, &entries[1].pageX, &entries[1].pageY);
+    func_80026338(D_800625A0->sheet, 0x14d, &entries[2].unk0, &entries[2].mode, &entries[2].clutX,
+                  &entries[2].clutY, &entries[2].pageX, &entries[2].pageY);
+    entries[1].pageX += 0xc;
+    portraits = func_80032E88(res->files[4], 1);
+    for (i = 0; i < 3; i++) {
+        id = D_800625A0->party->ids[i];
+        if (id != 0xff) {
+            OpenTIM((u8 *)portraits + id * 0xb20);
+            ReadTIM(&tim);
+            tim.crect->x = entries[i].clutX;
+            tim.crect->y = entries[i].clutY;
+            tim.prect->x = entries[i].pageX;
+            tim.prect->y = entries[i].pageY;
+            LoadImage(tim.crect, tim.caddr);
+            LoadImage(tim.prect, tim.paddr);
+        }
+    }
+    DrawSync(0);
+    func_800320E8(portraits);
+    if (D_80059178 != 0) {
+        func_80028470(0x10, 2);
+        D_8006259C = func_80031BDC(func_800288EC(5), 0);
+        func_800295D8(5, D_8006259C, 0, 0x80);
+        func_80028A60(0);
+        func_80028470(0x10, 0);
+        func_80038428(D_8006259C);
+    }
+    D_800625A0->effectBank = D_8006259C;
+    func_800320E8(res);
+}
+#else
+INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C65F4);
+#endif
+
+/* Set up the party: the starting top cursor, which characters are present,
+ * the party slots (and which have a gear), the first occupied slot; then
+ * load the resources. */
+void func_801C6AA0(MenuState *state) {
+    s32 i;
+    u16 members;
+    s32 id;
+
+    if (D_80059460 == 0 && D_80059171 == 0) {
+        D_800625A0->cursor = D_800594CC;
+    } else {
+        D_800625A0->cursor = 1;
+    }
+    D_800625A0->cursorShown = 0xff;
+    D_800625A0->cardPollTimer = 0x3c;
+    D_800625A0->cardsPresent = 0;
+    D_800625A0->unk335 = 0;
+    D_800625A0->partyCount = 0;
+    members = D_8006F364 & D_8006F366 & 0x7ff;
+    for (i = 0; i < 16; i++) {
+        if (func_801C865C(members, i)) {
+            D_800625A0->present[i] = 1;
+        } else {
+            D_800625A0->present[i] = 0;
+        }
+    }
+    for (i = 0; i < 3; i++) {
+        D_800625A0->party->ready[i] = 0;
+        id = D_8006F368[i];
+        if (id != 0xff && D_800625A0->present[id]) {
+            D_800625A0->party->ids[i] = id;
+            D_800625A0->partyCount++;
+            if (D_8006D8A0[D_800625A0->party->ids[i]].gear != 0xff) {
+                D_800625A0->party->ready[i] = 1;
+                D_800625A0->fighters++;
+            }
+        } else {
+            D_800625A0->party->ids[i] = 0xff;
+        }
+    }
+    for (i = 0; i < 3; i++) {
+        if (D_800625A0->party->ids[i] != 0xff) {
+            D_800625A0->firstMember = i;
+            break;
+        }
+    }
+    func_801C65F4();
+}
 
 /* Mark the buffer being built as sent (the draw callback). */
 void func_801C6D4C(void) {
@@ -553,9 +670,167 @@ void func_801C6E68(void) {
                   &D_800625A0->sheetEntries[3][4], &D_800625A0->sheetEntries[3][5]);
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C6F70);
+/* Set up the frame primitives of both buffers: the shaded backdrop, two dark
+ * green separator lines, the grey full-screen fade and two draw modes. */
+void func_801C6F70(void) {
+    RECT window;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C72BC);
+    window.y = 0;
+    window.x = 0;
+    window.h = 0x100;
+    window.w = 0x100;
+    func_801D22C4();
+    for (i = 0; i < 2; i++) {
+        func_801C8164(&D_800625A0->primitives->box[i], 0x80, 0x80, 0);
+        SetSemiTrans(&D_800625A0->primitives->box[i], 1);
+        SetLineF3(&D_800625A0->primitives->edgeA[i]);
+        setRGB0(&D_800625A0->primitives->edgeA[i], 0, 0x40, 0);
+        SetLineF3(&D_800625A0->primitives->edgeB[i]);
+        setRGB0(&D_800625A0->primitives->edgeB[i], 0, 0x40, 0);
+        SetPolyF4(&D_800625A0->primitives->fills[i]);
+        setXY4(&D_800625A0->primitives->fills[i], 0, 0, 0x140, 0, 0, 0xe0, 0x140, 0xe0);
+        setRGB0(&D_800625A0->primitives->fills[i], 0x80, 0x80, 0x80);
+        SetSemiTrans(&D_800625A0->primitives->fills[i], 1);
+        SetDrawMode(&D_800625A0->primitives->modes0[i], 0, 0, GetTPage(0, 0, 0x140, 0x80), &window);
+        SetDrawMode(&D_800625A0->primitives->modes[i], 0, 0, GetTPage(0, 2, 0x180, 0), &window);
+    }
+}
+
+/* Load (codes below 10h, read from file 2 of directory 10h) or release
+ * (10h + the same code) the menu data set `code` into the table directory and
+ * the screen blocks. */
+void func_801C72BC(u8 code) {
+    MenuDataArchive *archive;
+    s32 i;
+    u8 id;
+    u8 gear;
+
+    if (code < 0x10) {
+        func_80028470(0x10, 0);
+        archive = func_80031BDC(func_800288EC(2), 1);
+        func_800295D8(2, archive, 0, 0x80);
+        func_80028A60(0);
+        func_8003342C(archive);
+    }
+    switch (code) {
+    case 0:
+        D_800625A0->tables->items = func_80032E88(archive->items, 0);
+        D_800625A0->block42C->unk1180 = func_80032E88(archive->unk3C, 0);
+        break;
+    case 1:
+        D_800625A0->tables->engines = func_80032E88(archive->engines, 0);
+        D_800625A0->tables->frames = func_80032E88(archive->frames, 0);
+        D_800625A0->tables->parts = func_80032E88(archive->parts, 0);
+        D_800625A0->tables->unk14 = func_80032E88(archive->unk50, 0);
+        break;
+    case 2:
+        for (i = 0; i < 3; i++) {
+            id = D_800625A0->party->ids[i];
+            if (id != 0xff) {
+                D_800625A0->tables->effects[D_800625A0->party->ids[i]] = func_80032E88(archive->effects[id], 0);
+            }
+        }
+        D_800625A0->block430->texts = func_80032E88(archive->unk40, 0);
+        break;
+    case 3:
+        D_800625A0->tables->weapons = func_80032E88(archive->weapons, 0);
+        D_800625A0->tables->accessories = func_80032E88(archive->accessories, 0);
+        D_800625A0->tables->weapons18 = func_80032E88(archive->unkAC, 0);
+        D_800625A0->tables->unk14 = func_80032E88(archive->unk50, 0);
+        break;
+    case 4:
+        for (i = 0; i < 3; i++) {
+            id = D_800625A0->party->ids[i];
+            if (id != 0xff) {
+                D_800625A0->tables->effects[D_800625A0->party->ids[i]] = func_80032E88(archive->effects[id], 0);
+            }
+        }
+        D_800625A0->block438->unk2578 = func_80032E88(archive->unkB0, 0);
+        break;
+    case 5:
+    case 6:
+        for (i = 0; i < 3; i++) {
+            id = D_800625A0->party->ids[i];
+            if (id != 0xff) {
+                gear = D_8006D8A0[id].gear;
+                if (gear != 0xff) {
+                    (D_800625A0->tables->effects + 11)[D_8006D8A0[D_800625A0->party->ids[i]].gear] =
+                        func_80032E88(archive->gears[gear], 0);
+                    func_801E4998((MenuGearViews *)D_800625A0->tables, D_8006D8A0[D_800625A0->party->ids[i]].gear);
+                }
+            }
+        }
+        if (code == 5) {
+            D_800625A0->block430->texts = func_80032E88(archive->unk54, 0);
+        } else {
+            D_800625A0->block430->texts = func_80032E88(archive->unk58, 0);
+        }
+        break;
+    case 7:
+        D_800625A0->block434->texts[0] = func_80032E88(archive->unkD4[0], 0);
+        D_800625A0->block434->texts[1] = func_80032E88(archive->unkD4[1], 0);
+        D_800625A0->block434->texts[2] = func_80032E88(archive->unkD4[2], 0);
+        D_800625A0->block434->texts[3] = func_80032E88(archive->unkD4[3], 0);
+        break;
+    case 0x10:
+        func_800320E8(D_800625A0->tables->items);
+        func_800320E8(D_800625A0->block42C->unk1180);
+        break;
+    case 0x11:
+        func_800320E8(D_800625A0->tables->engines);
+        func_800320E8(D_800625A0->tables->frames);
+        func_800320E8(D_800625A0->tables->parts);
+        func_800320E8(D_800625A0->tables->unk14);
+        break;
+    case 0x12:
+        for (i = 0; i < 3; i++) {
+            id = D_800625A0->party->ids[i];
+            if (id != 0xff) {
+                func_800320E8(D_800625A0->tables->effects[id]);
+            }
+        }
+        func_800320E8(D_800625A0->block430->texts);
+        break;
+    case 0x13:
+        func_800320E8(D_800625A0->tables->weapons);
+        func_800320E8(D_800625A0->tables->accessories);
+        func_800320E8(D_800625A0->tables->weapons18);
+        func_800320E8(D_800625A0->tables->unk14);
+        break;
+    case 0x14:
+        for (i = 0; i < 3; i++) {
+            id = D_800625A0->party->ids[i];
+            if (id != 0xff) {
+                func_800320E8(D_800625A0->tables->effects[id]);
+            }
+        }
+        func_800320E8(D_800625A0->block438->unk2578);
+        break;
+    case 0x15:
+    case 0x16:
+        for (i = 0; i < 3; i++) {
+            id = D_800625A0->party->ids[i];
+            if (id != 0xff) {
+                gear = D_8006D8A0[id].gear;
+                if (gear != 0xff) {
+                    func_800320E8((D_800625A0->tables->effects + 11)[gear]);
+                }
+            }
+        }
+        func_800320E8(D_800625A0->block430->texts);
+        break;
+    case 0x17:
+        func_800320E8(D_800625A0->block434->texts[0]);
+        func_800320E8(D_800625A0->block434->texts[1]);
+        func_800320E8(D_800625A0->block434->texts[2]);
+        func_800320E8(D_800625A0->block434->texts[3]);
+        break;
+    }
+    if (code < 0x10) {
+        func_800320E8(archive);
+    }
+}
 
 /* Set up the screen: the copied screen area, the environments, labels,
  * palettes and sheet records, then the card state and load state. */
@@ -1065,7 +1340,40 @@ void func_801C8D1C(u8 port) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C8D78);
+/* List the directory of card port `port`: clear the port's slot entries and
+ * save marks, then copy each file name into the port's file entries.
+ * Stores and returns the file count. */
+u8 func_801C8D78(u8 port) {
+    struct DIRENTRY dir;
+    char device[8];
+    s32 i;
+    s32 retry;
+    u8 count;
+
+    D_801EA900[port] = 0;
+    retry = 5;
+    for (i = 0; i < 16; i++) {
+        D_800625A0->card->fileSlots[port * 16 + i] = 0xff;
+        D_801EA6D0[port][i] = 0;
+    }
+    if (port == 0) {
+        __builtin_memcpy(device, D_801C50A8, 6);
+    } else {
+        __builtin_memcpy(device, D_801C50B0, 6);
+    }
+    while (--retry != 0) {
+        count = 0;
+        if (func_80040584(device, &dir) == &dir) {
+            do {
+                strcpy(D_800625A0->card->files[port * 16 + count].name, dir.name);
+                count++;
+            } while (func_80040594(&dir) == &dir);
+        }
+        D_800625A0->card->unk4F8A[port] = count;
+        break;
+    }
+    return count;
+}
 
 /* List the files of each port not yet scanned; in mode 1 a port with files
  * marks the cards present. */
@@ -1115,7 +1423,33 @@ s32 func_801C9038(char *name, void *dst) {
     return 0;
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C90B0);
+/* Read the first block of file `file` on port `port` into its header buffer
+ * and list the file's blocks in the port's slot entries. */
+void func_801C90B0(u8 port, u8 file) {
+    char device[8];
+    char name[64];
+    s32 retry;
+    s32 i;
+
+    retry = 1;
+    if (port == 0) {
+        __builtin_memcpy(device, D_801C50A8, 6);
+    } else {
+        __builtin_memcpy(device, D_801C50B0, 6);
+    }
+    strcpy(name, device);
+    strcat(name, D_800625A0->card->files[port * 16 + file].name);
+    while (func_801C9038(name, D_800625A0->card->headers[port * 16 + file]) == -1) {
+        if (--retry == 0) {
+            break;
+        }
+        func_801C8CA4(port);
+    }
+    for (i = 0; i < D_800625A0->card->headers[port * 16 + file][3]; i++) {
+        D_800625A0->card->fileSlots[port * 16 + D_800625A0->card->fileCount] = file + port * 16;
+        D_800625A0->card->fileCount++;
+    }
+}
 
 /* Mark the files of `port` whose names carry this game's prefix and note the
  * save slot each holds. */
@@ -1143,23 +1477,351 @@ void func_801C9270(s32 port) {
             D_800625A0->card->ours[port * 16 + i] = 1;
             header = D_800625A0->card->headers[D_800625A0->card->fileSlots[port * 16 + i]];
             D_801EA6F4 = header + 0x100;
-            saves = &D_801EA6D0[port * 16];
+            saves = D_801EA6D0[port];
             saves[header[0x123]] = 1;
         }
     }
 }
 
+/* Refresh the cards before a save or load. With no card in either port: show
+ * message 23 and, still none, wait a second and return 1; otherwise reset
+ * the card events and listings. With cards: relist each port whose file
+ * count changed (erase the temporary file, read each file's header and icon)
+ * while the cards stay as they were, mark this game's files and place the
+ * cursor marker. */
+#ifdef NON_MATCHING
+u8 func_801C93A8(void) {
+    char path[64];
+    u8 present[2];
+    MenuState *state;
+    s32 port;
+    s32 i;
+    s32 wait;
+    u8 noCard;
+    u8 marked;
+    u8 stop;
+
+    D_801EA6F8 = 0;
+    D_800625A0->card->mode = 2;
+    func_801C7BF4();
+    noCard = marked = 0;
+    if (*(u16 *)D_800625A0->card->present == 0) {
+        func_801D32B4();
+        D_800625A0->party->messageShown = 0;
+        D_800625A0->party->unkB = 0;
+        func_801C7BF4();
+        func_801D2F4C(0x23);
+        D_800625A0->loadState = 1;
+        D_800625A0->party->unk2F = 0;
+        D_800625A0->card->unk4F80 = 0xff;
+        D_800625A0->card->cursor = 0;
+        if (*(u16 *)D_800625A0->card->present == 0) {
+            D_800625A0->card->unk4F8C[0] = D_800625A0->card->unk4F8C[1] = 0xff;
+            func_801C7BF4();
+            wait = 59;
+            do {
+                VSync(0);
+            } while (--wait != 0);
+            noCard = 1;
+        }
+        if (!noCard) {
+            func_801D9B08();
+            D_800625A0->card->presentShown[0] = D_800625A0->card->presentShown[1] = 0xff;
+            D_800625A0->card->scanned[0] = 0;
+            D_800625A0->card->scanned[1] = 0;
+            D_800625A0->cardPollTimer = 0x3c;
+            func_801C7BF4();
+            D_801EA6F8 = 1;
+        }
+        func_801D32B4();
+    }
+    D_801E9779 = 1;
+    present[0] = D_800625A0->card->present[0];
+    present[1] = D_800625A0->card->present[1];
+    if (!noCard) {
+        D_800625A0->sounds = 0;
+        for (port = 0; port < 2; port++) {
+            stop = 0;
+            if (D_800625A0->card->unk4F8A[port] != D_800625A0->card->unk4F8C[port] &&
+                D_800625A0->card->unk4F8A[port] != 0) {
+                func_801D9B08();
+                for (i = 0; i < 16; i++) {
+                    D_800625A0->card->fileSlots[port * 16 + i] = 0xff;
+                }
+                if (port == 0) {
+                    __builtin_memcpy(path, D_801C50A8, 6);
+                } else {
+                    __builtin_memcpy(path, D_801C50B0, 6);
+                }
+                strcat(path, D_801C50B8);
+                func_800405B4(path);
+                D_800625A0->card->fileCount = 0;
+                D_801EA900[port] = 0;
+                for (i = 0; i < D_800625A0->card->unk4F8A[port]; i++) {
+                    if (D_800625A0->card->present[port] != 0 && present[0] == D_800625A0->card->present[0] &&
+                        present[1] == D_800625A0->card->present[1]) {
+                        func_801C90B0(port, i);
+                        func_801E78C8(port * 16 + i);
+                        D_800625A0->card->files[port * 16 + i].state = 1;
+                        func_801C7BF4();
+                        if (D_800625A0->card->scanned[port] != 0) {
+                            continue;
+                        }
+                        stop = port + 1;
+                    } else {
+                        stop = 2;
+                    }
+                    port = 2;
+                    noCard = 0;
+                    break;
+                }
+                if (!stop) {
+                    for (; i < 16; i++) {
+                        D_800625A0->card->files[port * 16 + i].state = 0;
+                    }
+                    D_800625A0->card->unk4F8C[port] = D_800625A0->card->unk4F8A[port];
+                }
+            }
+            if (!stop && D_800625A0->card->unk4F8A[port] == 0) {
+                for (i = 0; i < 16; i++) {
+                    D_800625A0->card->files[port * 16 + i].state = 0;
+                }
+                D_800625A0->card->unk4F8C[port] = 0xff;
+            }
+        }
+        if (!stop) {
+            func_801C9270(0);
+            func_801C9270(1);
+        }
+    }
+    if (!stop) {
+        if (marked) {
+            D_800625A0->party->unkB = 1;
+        }
+        state = D_800625A0;
+        if (state->party->unk2F != 0 && state->markers->unk144[0] != 0) {
+            setXY4(&state->markers->polys[state->markers->current[0]],
+                   D_801E9894[D_801E981C[state->card->cursor]][0] + 8, D_801E9914[D_801E981C[state->card->cursor]][0] - 6,
+                   D_801E9894[D_801E981C[state->card->cursor]][0] + 0x18, D_801E9914[D_801E981C[state->card->cursor]][0] - 6,
+                   D_801E9894[D_801E981C[state->card->cursor]][0] + 8, D_801E9914[D_801E981C[state->card->cursor]][0] + 0xa,
+                   D_801E9894[D_801E981C[state->card->cursor]][0] + 0x18, D_801E9914[D_801E981C[state->card->cursor]][0] + 0xa);
+        }
+    }
+    D_800625A0->sounds = 1;
+    D_801E9779 = 0x1e;
+    return noCard;
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C93A8);
+#endif
 
+/* Whether the cursor slot suits `mode`: 0 a file is there, 1 this game's file
+ * is there (both need files listed), 2 its card is present; other modes always
+ * suit. A suitable slot sets the load state to 2. */
+#ifdef NON_MATCHING
+s32 func_801C9BCC(s32 mode) {
+    MenuCard *card;
+    s32 cursor;
+    s32 ok;
+
+    card = D_800625A0->card;
+    ok = 1;
+    cursor = card->cursor;
+    switch (mode) {
+    case 0:
+        if ((*(u32 *)card->scanned & 0xffff0000) && card->present[D_801E981C[cursor] / 16]) {
+            if (card->fileSlots[D_801E981C[cursor]] == 0xff) {
+                ok = 0;
+            }
+        } else {
+            ok = 0;
+        }
+        break;
+    case 1:
+        if ((*(u32 *)card->scanned & 0xffff0000) && card->present[D_801E981C[cursor] / 16] &&
+            card->fileSlots[D_801E981C[cursor]] != 0xff) {
+            if (!card->ours[D_801E981C[cursor]]) {
+                ok = 0;
+            }
+        } else {
+            ok = 0;
+        }
+        break;
+    case 2:
+        if (!card->present[D_801E981C[cursor] / 16]) {
+            ok = 0;
+        }
+        break;
+    }
+    if (ok) {
+        D_800625A0->loadState = 2;
+    }
+    return ok;
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C9BCC);
+#endif
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C9D34);
+/* The first cursor position of the present cards whose slot suits `mode`
+ * (as 801c9bcc), or ff; modes 0 and 1 stop at once when no files are listed.
+ * Sets the load state to 2. */
+s32 func_801C9D34(s32 mode) {
+    s32 found;
+    s32 searching;
+    s32 end;
+    s32 first;
+    s32 i;
 
+    found = 0xff;
+    searching = 1;
+    end = 30;
+    first = D_800625A0->card->present[0] == 0 ? 15 : 0;
+    if (D_800625A0->card->present[1] == 0) {
+        end = 15;
+    }
+    for (i = first; i < end && searching; i++) {
+        switch (mode) {
+        case 0:
+            if (*(u32 *)D_800625A0->card->scanned & 0xffff0000) {
+                if (D_800625A0->card->present[D_801E981C[i] / 16] &&
+                    D_800625A0->card->fileSlots[D_801E981C[i]] != 0xff) {
+                    found = i;
+                    searching = 0;
+                }
+            } else {
+                searching = 0;
+            }
+            break;
+        case 1:
+            if (*(u32 *)D_800625A0->card->scanned & 0xffff0000) {
+                if (D_800625A0->card->present[D_801E981C[i] / 16] &&
+                    D_800625A0->card->fileSlots[D_801E981C[i]] != 0xff && D_800625A0->card->ours[D_801E981C[i]]) {
+                    found = i;
+                    searching = 0;
+                }
+            } else {
+                searching = 0;
+            }
+            break;
+        case 2:
+            if (D_800625A0->card->present[D_801E981C[i] / 16]) {
+                found = i;
+                searching = 0;
+            }
+            break;
+        }
+    }
+    D_800625A0->loadState = 2;
+    return found;
+}
+
+/* Move the cursor from `slot` a row down for `mode`: 0 to the next slot
+ * below holding a file, else to the first file after the next row; 1 the
+ * same for this game's files; 2 a row down when that card is present. */
+#ifdef NON_MATCHING
+void func_801C9EF4(s32 mode, s32 slot) {
+    s32 cursor;
+    s32 next;
+    s32 i;
+
+    switch (mode) {
+    case 0:
+        for (; slot + 3 < 30; slot += 3) {
+            if (D_800625A0->card->fileSlots[D_801E981C[slot + 3]] != 0xff) {
+                D_800625A0->card->cursor = slot + 3;
+                break;
+            }
+        }
+        if (slot + 3 >= 30) {
+            cursor = D_800625A0->card->cursor;
+            i = cursor + 3;
+            if (i < 30) {
+                for (; i + 1 < 30; i++) {
+                    if (D_800625A0->card->fileSlots[D_801E981C[i + 1]] != 0xff) {
+                        D_800625A0->card->cursor = i + 1;
+                        break;
+                    }
+                }
+            }
+        }
+        break;
+    case 1:
+        for (next = slot + 3; next < 30; next += 3, slot += 3) {
+            if (D_800625A0->card->fileSlots[D_801E981C[next]] != 0xff &&
+                D_800625A0->card->ours[D_801E981C[next]]) {
+                D_800625A0->card->cursor = next;
+                break;
+            }
+        }
+        if (slot + 3 >= 30) {
+            cursor = D_800625A0->card->cursor;
+            if (cursor + 3 < 30) {
+                for (i = cursor + 4; i < 30; i++) {
+                    if (D_800625A0->card->fileSlots[D_801E981C[i]] != 0xff &&
+                        D_800625A0->card->ours[D_801E981C[i]]) {
+                        D_800625A0->card->cursor = i;
+                        break;
+                    }
+                }
+            }
+        }
+        break;
+    case 2:
+        next = slot + 3;
+        if (D_800625A0->card->present[next / 15]) {
+            if (next < 30) {
+                D_800625A0->card->cursor = next;
+            } else {
+                cursor = D_800625A0->card->cursor;
+                if (cursor + 3 < 30 && cursor + 4 < 30) {
+                    D_800625A0->card->cursor = cursor + 4;
+                }
+            }
+        }
+        break;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C9EF4);
+#endif
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CA1D4);
 
+/* Move the cursor from `slot` right for `mode`: 0 to the next slot holding
+ * a file, 1 to the next slot holding this game's file, 2 one slot on when
+ * that card is present. */
+#ifdef NON_MATCHING
+void func_801CA480(s32 mode, s32 slot) {
+    s32 next;
+
+    switch (mode) {
+    case 0:
+        for (; slot + 1 < 30; slot++) {
+            if (D_800625A0->card->fileSlots[D_801E981C[slot + 1]] != 0xff) {
+                D_800625A0->card->cursor = slot + 1;
+                break;
+            }
+        }
+        break;
+    case 1:
+        for (next = slot + 1; next < 30; next++) {
+            if (D_800625A0->card->fileSlots[D_801E981C[next]] != 0xff && D_800625A0->card->ours[D_801E981C[next]]) {
+                D_800625A0->card->cursor = next;
+                break;
+            }
+        }
+        break;
+    case 2:
+        slot++;
+        if (D_800625A0->card->present[slot / 15] && slot < 30) {
+            D_800625A0->card->cursor = slot;
+        }
+        break;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CA480);
+#endif
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CA5F0);
 
@@ -1173,11 +1835,123 @@ INCLUDE_RODATA(".local/decomp/slot39/asm/nonmatchings/slot39", D_801C50B4);
 
 INCLUDE_RODATA(".local/decomp/slot39/asm/nonmatchings/slot39", D_801C50B8);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CA750);
+/* The file screen's cursor input for `mode` (801c9bcc): move the cursor
+ * (down, right, up, left), confirm (1) or cancel (2); a new cursor slot shows
+ * its file's details. */
+s32 func_801CA750(s32 mode) {
+    s32 result;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CA8C0);
+    result = 0;
+    switch (D_800625A0->input) {
+    case 4:
+        result = 1;
+        break;
+    case 5:
+        result = 2;
+        break;
+    case 0:
+        func_801C9EF4(mode, D_800625A0->card->cursor);
+        break;
+    case 2:
+        func_801CA1D4(mode, D_800625A0->card->cursor);
+        break;
+    case 1:
+        func_801CA480(mode, D_800625A0->card->cursor);
+        break;
+    case 3:
+        func_801CA5F0(mode, D_800625A0->card->cursor);
+        break;
+    }
+    if (D_800625A0->card->cursor != D_800625A0->card->unk4F80) {
+        func_801E781C(D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]],
+                      D_800625A0->card->ours[D_801E981C[D_800625A0->card->cursor]]);
+        D_800625A0->card->unk4F80 = D_800625A0->card->cursor;
+    }
+    return result;
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CAA38);
+/* Build the save header's title: "XENOGEARS/No." (full width), file number
+ * `file` + 1 as two full-width digits, a full-width space and the save title
+ * line. */
+void func_801CA8C0(u8 file) {
+    strcpy(D_800625A0->card->saveTitle, "\x82\x77\x82\x64\x82\x6d\x82\x6e\x82\x66\x82\x64\x82\x60\x82\x71\x82\x72"
+                                         "\x81\x5e\x82\x6d\x82\x8f\x81\x44");
+    D_800625A0->card->saveTitle[26] = 0x82;
+    D_800625A0->card->saveTitle[27] = (file + 1) / 10 + 0x4f;
+    D_800625A0->card->saveTitle[28] = 0x82;
+    D_800625A0->card->saveTitle[29] = (file + 1) % 10 + 0x4f;
+    D_800625A0->card->saveTitle[30] = 0x81;
+    D_800625A0->card->saveTitle[31] = 0x40;
+    D_800625A0->card->saveTitle[32] = 0;
+    D_800625A0->card->saveTitle[33] = 0;
+    strcat(D_800625A0->card->saveTitle, D_800625A0->card->title);
+}
+
+/* The yes/no choice: wait for confirm or cancel while left/right move the
+ * highlight (2 yes, 0 no). Without `watch` it waits b4h frames at most while
+ * no input comes and returns on any other input; with `watch` a card change
+ * clears that port's listing and cancels. Returns 1 for yes. */
+u8 func_801CAA38(u8 watch) {
+    u8 present[2];
+    u8 yes;
+    u8 waiting;
+    u8 timer;
+
+    present[0] = D_800625A0->card->present[0];
+    present[1] = D_800625A0->card->present[1];
+    waiting = 1;
+    if (D_801E977A) {
+        D_800625A0->card->mode = 2;
+    }
+    D_801EA8FC = 0;
+    yes = 0;
+    timer = 0xb4;
+    do {
+        if (!watch) {
+            D_800625A0->markers->visible[2] = 0;
+            D_800625A0->markers->visible[3] = 0;
+            if (D_800625A0->input != 8 || --timer == 0) {
+                break;
+            }
+        }
+        func_801C7BF4();
+        if (watch && D_801E977A) {
+            if (present[0] != D_800625A0->card->present[0]) {
+                D_800625A0->card->scanned[0] = 0;
+                D_800625A0->input = 5;
+                D_801E9778 = 1;
+            }
+            if (present[1] != D_800625A0->card->present[1]) {
+                D_800625A0->card->scanned[1] = 0;
+                D_800625A0->input = 5;
+                D_801E9778 = 1;
+            }
+        }
+        switch (D_800625A0->input) {
+        case 4:
+            waiting = 0;
+            break;
+        case 5:
+            waiting = yes = 0;
+            D_801EA8FC = 1;
+            break;
+        case 2:
+            D_800625A0->markers->visible[2] = 1;
+            yes = 1;
+            D_800625A0->markers->visible[3] = 0;
+            break;
+        case 0:
+            D_800625A0->markers->visible[2] = 0;
+            yes = 0;
+            D_800625A0->markers->visible[3] = 1;
+            break;
+        }
+    } while (waiting);
+    D_800625A0->markers->visible[2] = 0;
+    D_800625A0->markers->visible[3] = 0;
+    D_800625A0->card->mode = 0;
+    return yes;
+}
 
 /* Show card message `message` and ask (801caa38 with `arg`); when answered
  * yes and a follow-up `confirm` is given (not ff), ask that too. Returns the
@@ -1207,9 +1981,71 @@ void func_801CADB0(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CAE08);
+/* The card access indicator: 0 removes it (after a frame its block is
+ * released), 1 builds it (a flat quad and sprites 160/161 at (a0, 64)) and
+ * starts its effects, 2 closes it. */
+void func_801CAE08(u8 mode) {
+    switch (mode) {
+    case 0:
+        if (D_800625A0->party->unk50[2]) {
+            D_800625A0->party->unk50[2] = 0;
+            func_801C7BF4();
+            func_800320E8(MENU_INDICATOR);
+        }
+        break;
+    case 1:
+        D_800625A0->blocks444[2] = func_80031BDC(sizeof(MenuIndicator), 0);
+        bzero(MENU_INDICATOR, sizeof(MenuIndicator));
+        SetPolyF4(&MENU_INDICATOR->fills[D_800625A0->bufferIndex]);
+        setRGB0(&MENU_INDICATOR->fills[D_800625A0->bufferIndex], 0xa0, 0xa0, 0);
+        func_8002675C(D_800625A0->sheet, 0x160, MENU_INDICATOR->spriteA, D_800625A0->bufferIndex, 0xa0, 0x64, 0x1000);
+        func_8002675C(D_800625A0->sheet, 0x161, MENU_INDICATOR->spriteB, D_800625A0->bufferIndex, 0xa0, 0x64, 0x1000);
+        MENU_INDICATOR->buffer = D_800625A0->bufferIndex;
+        D_800625A0->party->unk50[2] = 1;
+        MENU_INDICATOR->unk7B4 = 8;
+        func_80039E60((D_800625A0->effectBank->id << 16) | 0xe0);
+        func_80039E60((D_800625A0->effectBank->id << 16) | 0xe1);
+        func_80039E60((D_800625A0->effectBank->id << 16) | 0x8f);
+        break;
+    case 2:
+        if (D_800625A0->party->unk50[2]) {
+            MENU_INDICATOR->unk7B0 = 0x100;
+            setRGB0(&MENU_INDICATOR->fills[MENU_INDICATOR->buffer], 0, 0xa0, 0);
+            D_800625A0->party->unk50[2] = 2;
+        }
+        break;
+    }
+}
 
+/* Decode the 31 names of the game data in place: each name's code pairs up
+ * to the first zero pair go through 80033b34 into a 20-byte buffer that is
+ * copied back whole. */
+#ifdef NON_MATCHING
+void func_801CB184(void) {
+    u8 codes[24];
+    u8 decoded[20];
+    s32 n;
+    s32 i;
+    u8 *name;
+
+    name = GAME_NAMES;
+    for (n = 0; n < 31 * 20; n += 20, name += 20) {
+        for (i = 0; i < 20; i += 2) {
+            codes[i] = name[i];
+            codes[i + 1] = GAME_NAMES[n + i + 1];
+            if (name[i] == 0 && GAME_NAMES[n + i + 1] == 0) {
+                break;
+            }
+        }
+        func_80033B34(codes, decoded, i / 2);
+        for (i = 0; i < 20; i++) {
+            name[i] = decoded[i];
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CB184);
+#endif
 
 /* Apply a loaded save: its derived tables, play time and the 16 resident
  * words copied from the game data, then finish (801cb184). */
@@ -1224,43 +2060,343 @@ void func_801CB28C(s32 *save) {
     func_801CB184();
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CB304);
+/* The load: refresh the cards (no card returns), find a slot with this
+ * game's file (none: message 62 and return 0), then run the cursor until
+ * cancel (return 0) or confirm: ask (message 65); on yes read the file in
+ * 100h chunks into a 2100h block and, when the payload's eight-bit sum matches
+ * its last byte, apply it; message 5c ends the load, a failure shows message
+ * 3e and continues. */
+#ifdef NON_MATCHING
+u8 func_801CB304(void) {
+    char path[64];
+    s32 first;
+    u8 result;
+    s32 again;
+    u8 port;
+    u8 retry;
+    s32 fd;
+    s32 file;
+    s32 done;
+    u8 *buffer;
+    u8 *p;
+    s32 sum;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CB8AC);
+    result = 1;
+    again = 1;
+    first = 1;
+    func_801CADB0();
+    do {
+        if (func_801C93A8()) {
+            break;
+        }
+        if (first) {
+            if (D_800625A0->party->messageShown) {
+                func_801D32B4();
+            }
+            first = 0;
+            D_800625A0->markers->visible[0] = 1;
+        }
+        if (!func_801C9BCC(1) && (D_800625A0->card->cursor = func_801C9D34(1)) == 0xff) {
+            D_800625A0->party->unk2F = 0;
+            D_800625A0->party->unkB = 0;
+            D_800625A0->loadState = 1;
+            result = 0;
+            D_800625A0->party->unkB = 0;
+            func_801CACF8(0x62, 0xff, 0);
+            break;
+        }
+        D_800625A0->party->unk2F = 1;
+        switch (func_801CA750(1)) {
+        case 1:
+            D_800625A0->markers->unk144[0] = 0;
+            D_800625A0->card->mode = 0;
+            port = 0;
+            if (D_800625A0->card->cursor < 15) {
+                __builtin_memcpy(path, D_801C50A8, 6);
+            } else {
+                __builtin_memcpy(path, D_801C50B0, 6);
+                port = 1;
+            }
+            strcat(path,
+                   D_800625A0->card->files[D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]]].name);
+            if (!func_801CACF8(0x65, 0xff, 1)) {
+                D_800625A0->card->unk4F80 = 0xff;
+            } else {
+                func_801D2F4C(0x3b);
+                retry = 5;
+                D_800625A0->sounds = 0;
+                do {
+                    fd = open(path, 1);
+                    if (fd == -1) {
+                        fd = 0;
+                        func_801C8CA4(port);
+                    }
+                    file = fd;
+                } while (fd == 0 && --retry != 0);
+                if (fd != 0) {
+                    done = 0;
+                    D_800625A0->party->unk2F = 0;
+                    buffer = func_80031BDC(0x2100, 1);
+                    p = buffer;
+                    D_800625A0->party->unkB = 0;
+                    func_801CAE08(1);
+                    do {
+                        func_801C7BF4();
+                        retry = 5;
+                        do {
+                            if (func_80040544(fd, p, 0x100) != 0x100) {
+                                fd = 0;
+                                func_801C8CA4(port);
+                            }
+                        } while (fd == 0 && --retry != 0);
+                        if (fd == 0) {
+                            func_80040564(file);
+                            goto release;
+                        }
+                        done += 0x100;
+                        p += 0x100;
+                    } while (done < D_800625A0->card->saveBlocks << 13);
+                    func_80040564(fd);
+                    p = buffer + 0x100;
+                    sum = 0;
+                    for (i = 0; i < 0x1eff; i++) {
+                        sum += *p++;
+                    }
+                    if ((u8)sum == *p) {
+                        func_801C72BC(1);
+                        func_801CB28C((s32 *)(buffer + 0x100));
+                        func_801C72BC(0x11);
+                    } else {
+                        fd = 0;
+                    }
+                release:
+                    func_800320E8(buffer);
+                }
+                func_801CAE08(2);
+                func_801D32B4();
+                if (fd != 0) {
+                    again = 0;
+                    D_800625A0->sounds = 1;
+                    func_801C8574(0x34);
+                    D_800625A0->sounds = 0;
+                    func_801CACF8(0x5c, 0xff, 0);
+                } else {
+                    func_801CACF8(0x3e, 0xff, 0);
+                    D_800625A0->card->mode = 2;
+                }
+                func_801CAE08(0);
+                D_800625A0->card->scanned[0] = 0;
+                D_800625A0->card->scanned[1] = 0;
+                D_800625A0->card->unk4F8C[0] = 0xff;
+                D_800625A0->card->unk4F8C[1] = 0xff;
+            }
+            D_800625A0->markers->unk144[0] = 1;
+            break;
+        case 2:
+            again = 0;
+            result = 0;
+            D_800625A0->sounds = 1;
+            break;
+        }
+    } while (again);
+    D_800625A0->card->mode = 1;
+    D_800625A0->cardsPresent = 1;
+    return result;
+}
+#else
+INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CB304);
+#endif
+
+/* The unformatted-card question for `port`: show message 29h + 3 * port and
+ * wait while no input comes and the cards stay as they were; a card change
+ * returns 0, otherwise the answer to message 2f. */
+u8 func_801CB8AC(u8 port) {
+    u8 present[2];
+    u8 changed;
+    u8 answer;
+
+    present[0] = D_800625A0->card->present[0];
+    present[1] = D_800625A0->card->present[1];
+    func_801D2F4C(port * 3 + 0x29);
+    D_800625A0->input = 8;
+    answer = 0;
+    D_800625A0->card->mode = 2;
+    changed = 0;
+    while (D_800625A0->input == 8) {
+        func_801C7BF4();
+        if (present[0] != D_800625A0->card->present[0] || present[1] != D_800625A0->card->present[1]) {
+            changed = 1;
+            break;
+        }
+    }
+    func_801D32B4();
+    if (!changed) {
+        answer = func_801CACF8(0x2f, 0xff, 1);
+    }
+    return answer;
+}
 
 /* The save slot to use on `port`: `slot`, or for ff the first free one. */
-#ifdef NON_MATCHING
 u8 func_801CB9E8(u8 port, u8 slot) {
     s32 i;
-    s32 found;
-    u8 *used;
+    u8 found;
 
     found = 0;
     if (slot == 0xff) {
-        i = 0;
-        used = &D_801EA6D0[port * 16];
-        for (; i < 15; i++) {
-            if (*used == 0) {
+        for (i = 0; i < 15; i++) {
+            if (D_801EA6D0[port][i] == 0) {
                 found = i;
                 break;
             }
-            used++;
         }
         return found;
     }
     return slot;
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CB9E8);
-#endif
 
+/* Fill the zeroed save payload: the globals 8005a3a0 into the game data, the
+ * party summary (per slot: character id or ff, HP, maximum HP, EP, maximum EP
+ * and three more bytes), the play time and file digit `digit`, each name
+ * encoded in place, the disc, then the game data copy (801e4a28) and the names
+ * decoded back. */
+#ifdef NON_MATCHING
+void func_801CBA4C(MenuSavePayload *payload, u8 port, u8 digit) {
+    u8 codes[24];
+    u8 encoded[20];
+    s32 i;
+    s32 j;
+    u8 *name;
+
+    for (j = 0; j < 16; j++) {
+        D_8006F958[j] = D_8005A3A0[j];
+    }
+    for (i = 0; i < 3; i++) {
+        if (D_800625A0->party->ids[i] != 0xff) {
+            payload->ids[i] = D_800625A0->party->ids[i];
+            payload->hp[i] = D_8006D8A0[D_800625A0->party->ids[i]].hp;
+            payload->hpMax[i] = D_8006D8A0[D_800625A0->party->ids[i]].hpMax;
+            payload->ep[i] = D_8006D8A0[D_800625A0->party->ids[i]].ep;
+            payload->epMax[i] = D_8006D8A0[D_800625A0->party->ids[i]].epMax;
+            payload->unk16[i] = D_8006D8A0[D_800625A0->party->ids[i]].unk62;
+            payload->unk19[i] = D_8006D8A0[D_800625A0->party->ids[i]].unk63;
+        } else {
+            payload->ids[i] = 0xff;
+        }
+    }
+    payload->unk1F = 0;
+    payload->digit = digit;
+    payload->time = D_80059488;
+    name = GAME_NAMES;
+    for (i = 0; i < 31; i++) {
+        for (j = 0; j < 20; j++) {
+            codes[j] = name[j];
+            encoded[j] = 0;
+        }
+        func_80033C20(codes, encoded);
+        for (j = 0; j < 20; j++) {
+            name[j] = encoded[j];
+        }
+        name += 20;
+    }
+    if (!D_801E96A5) {
+        D_8006F008 = func_80028530() - 1;
+    } else {
+        D_8006F008 = 1;
+    }
+    func_801E4A28((SaveData *)payload);
+    func_801CB184();
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CBA4C);
+#endif
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CBD90);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CC6D8);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CD2AC);
+/* The file screen's delete command: pick a file with the cursor, confirm and
+ * erase it, then force the cards to be scanned again. Returns 1 when the
+ * card check ended the screen. */
+u8 func_801CD2AC(void) {
+    char path[64];
+    u8 first;
+    s32 again;
+    u8 ended;
+    s32 i;
+
+    first = 1;
+    again = 1;
+    ended = 0;
+    func_801CADB0();
+    do {
+        if (func_801C93A8()) {
+            ended = 1;
+            break;
+        }
+        if (first) {
+            first = 0;
+            if (D_800625A0->party->messageShown != 0) {
+                func_801D32B4();
+            }
+            D_800625A0->markers->visible[0] = 1;
+        }
+        if (func_801C9BCC(0) == 0 && (D_800625A0->card->cursor = func_801C9D34(0)) == 0xff) {
+            D_800625A0->markers->visible[0] = 0;
+            D_800625A0->party->unkB = 0;
+            func_801CACF8(0x62, 0xff, 0);
+            break;
+        }
+        D_800625A0->party->unk2F = 1;
+        switch (func_801CA750(0)) {
+        case 1:
+            D_800625A0->markers->unk144[0] = 0;
+            D_800625A0->card->mode = 0;
+            if ((u8)func_801CACF8(0x56, 0x59, 1)) {
+                func_801D2F4C(0x50);
+                D_800625A0->party->unk2F = 0;
+                D_800625A0->party->unkB = 0;
+                D_800625A0->card->unk4F80 = 0xff;
+                if (D_800625A0->card->cursor < 15) {
+                    __builtin_memcpy(path, D_801C50A8, 6);
+                } else {
+                    __builtin_memcpy(path, D_801C50B0, 6);
+                }
+                strcat(path, D_800625A0->card->files[D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]]]
+                                 .name);
+                func_800405B4(path);
+                func_801D32B4();
+                D_800625A0->sounds = 1;
+                func_801C8574(0x34);
+                D_800625A0->sounds = 0;
+                func_801CACF8(0x5c, 0xff, 0);
+                D_800625A0->card->mode = 2;
+                while (D_800625A0->cardPollTimer != 1) {
+                    func_801C7BF4();
+                }
+                for (i = 0; i < 32; i++) {
+                    D_800625A0->card->fileSlots[i] = 0xff;
+                    D_800625A0->card->ours[i] = 0;
+                    D_800625A0->card->files[i].state = 0;
+                }
+                D_800625A0->card->scanned[0] = 0;
+                D_800625A0->card->scanned[1] = 0;
+                D_800625A0->card->unk4F8C[0] = 0xff;
+                D_800625A0->card->unk4F8C[1] = 0xff;
+                D_801E9778 = 1;
+            }
+            D_800625A0->markers->unk144[0] = 1;
+            /* fallthrough */
+        case 2:
+            again = 0;
+            break;
+        }
+    } while (again);
+    D_800625A0->card->mode = 1;
+    D_800625A0->cardsPresent = 1;
+    D_800625A0->sounds = 1;
+    return ended;
+}
 
 /* Run the card command chosen on the file screen (0 copy?, 1 delete?, 2 the
  * save or load of the menu kind); returns 0 when the menu should close. */
@@ -1301,7 +2437,39 @@ u8 func_801CD710(u8 arg) {
     return stay;
 }
 
+/* Build status panel `panel`'s layout sprites (layout `layout`) for character
+ * `ch` on row `row` at the positions of `x` and `y`, its frame sprite (14b +
+ * row) and its name label (the character's or, in layout 1, its gear's).
+ * Register allocation and the order of the last call's argument arithmetic
+ * differ. */
+#ifdef NON_MATCHING
+void func_801CD81C(MenuPanel *panel, u8 ch, u8 row, MenuAnchor *x, MenuAnchor *y, u8 layout) {
+    s32 i;
+
+    panel->count0 = 0;
+    for (i = 0; i < 9; i++) {
+        if (D_801EA4DC[layout * 9 + i] != 0xffff) {
+            panel->count0 += func_8002675C(D_800625A0->sheet, D_801EA4DC[layout * 9 + i],
+                                           &panel->list0[panel->count0 * 2], D_800625A0->bufferIndex,
+                                           x->parts[i], row * 56 + y->parts[i], 0x1000);
+        }
+    }
+    func_8002675C(D_800625A0->sheet, row + 0x14b, panel->frameA, D_800625A0->bufferIndex, x->frame,
+                  row * 56 + y->frame, 0x1000);
+    func_801E927C(&panel->frameB[D_800625A0->bufferIndex]);
+    panel->frameB[D_800625A0->bufferIndex].tpage = GetTPage(0, 0, 0x180, 0);
+    if (layout == 0) {
+        panel->frameB[D_800625A0->bufferIndex].clut = (ch & 1) ? D_80059414 : D_800595D4;
+    } else {
+        panel->frameB[D_800625A0->bufferIndex].clut = (D_8006D8A0[ch].gear & 1) ? D_800595D4 : D_80059414;
+    }
+    func_801E920C(&panel->frameB[D_800625A0->bufferIndex], (u16)x->label, (u16)(y->label + row * 56),
+                  (u8)(D_801EA578[layout * 3 + row] * 4), (u8)D_801EA5C4[layout * 3 + row], (layout * 3) * 8 + 0x48,
+                  13);
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CD81C);
+#endif
 
 /* Lay out character `ch`'s level digits (the last three of +62) at row `row`
  * of `panel` and prepare the +63 digits. */
@@ -1323,7 +2491,71 @@ void func_801CDB1C(MenuPanel *panel, u8 ch, u8 row, MenuAnchor *x, MenuAnchor *y
     panel->counts[1] = 0;
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CDC6C);
+/* Lay out status panel `panel`'s numbers for character `ch` on row `row`:
+ * hp (by digit position) and hp maximum (packed) of the character (three
+ * digits) or, in layout 1, of its gear (five digits); in layout 0 also ep and
+ * ep maximum (two digits). */
+void func_801CDC6C(MenuPanel *panel, u8 ch, u8 row, MenuAnchor *x, MenuAnchor *y, u8 layout) {
+    s32 digits;
+    s32 first;
+    s32 i;
+    s32 n;
+    u8 digit;
+
+    if (layout == 0) {
+        func_801C80B8(D_8006D8A0[ch].hp);
+        digits = 3;
+        first = 6;
+    } else {
+        digits = 5;
+        func_801C80B8(D_8006DFAC[D_8006D8A0[ch].gear].unk60);
+        first = 4;
+    }
+    panel->counts[2] = 0;
+    for (i = 0; i < digits; i++) {
+        digit = D_800625A0->digits[first + i];
+        if (digit != 0xff) {
+            panel->counts[2] += func_8002675C(D_800625A0->sheet, digit, &panel->list3[panel->counts[2] * 2],
+                                              D_800625A0->bufferIndex, i * 8 + x->hp, row * 56 + y->hp, 0x1000);
+        }
+    }
+    if (layout == 0) {
+        func_801C80B8(D_8006D8A0[ch].hpMax);
+    } else {
+        func_801C80B8(D_8006DFAC[D_8006D8A0[ch].gear].unk64);
+    }
+    panel->counts[3] = 0;
+    for (i = 0, n = 0; i < digits; i++) {
+        digit = D_800625A0->digits[first + i];
+        if (digit != 0xff) {
+            panel->counts[3] += func_8002675C(D_800625A0->sheet, digit, &panel->list4[panel->counts[3] * 2],
+                                              D_800625A0->bufferIndex, n * 8 + x->hpMax, row * 56 + y->hpMax, 0x1000);
+            n++;
+        }
+    }
+    if (layout == 0) {
+        func_801C80B8(D_8006D8A0[ch].ep);
+        panel->counts[4] = 0;
+        for (i = 0; i < 2; i++) {
+            digit = D_800625A0->digits[7 + i];
+            if (digit != 0xff) {
+                panel->counts[4] += func_8002675C(D_800625A0->sheet, digit, &panel->list5[panel->counts[4] * 2],
+                                                  D_800625A0->bufferIndex, i * 8 + x->ep, row * 56 + y->ep, 0x1000);
+            }
+        }
+        func_801C80B8(D_8006D8A0[ch].epMax);
+        panel->counts[5] = 0;
+        for (i = 0, n = 0; i < 2; i++) {
+            digit = D_800625A0->digits[7 + i];
+            if (digit != 0xff) {
+                panel->counts[5] += func_8002675C(D_800625A0->sheet, digit, &panel->list6[panel->counts[5] * 2],
+                                                  D_800625A0->bufferIndex, n * 8 + x->epMax, row * 56 + y->epMax,
+                                                  0x1000);
+                n++;
+            }
+        }
+    }
+}
 
 /* Build the parts of `panel` (801cd81c, 801cdb1c, 801cdc6c) and show it. */
 void func_801CE0CC(MenuPanel *panel, u8 a, u8 b, MenuAnchor *c, MenuAnchor *d, u8 e) {
@@ -1360,7 +2592,7 @@ void func_801CE2B4(s32 count, POLY_FT4 *polys, s32 first) {
 
 /* Add the shared mode primitive and, while panel 4 shows, its quad. */
 void func_801CE338(void) {
-    AddPrim(&D_800625A0->current->ot[4], D_800625A0->primitives->modes0[D_800625A0->primitives->mode]);
+    AddPrim(&D_800625A0->current->ot[4], &D_800625A0->primitives->modes0[D_800625A0->primitives->mode]);
     if (D_800625A0->party->redraw4 != 0) {
         AddPrim(&D_800625A0->current->ot[4], &D_800625A0->primitives->polys[D_800625A0->primitives->frame]);
     }
@@ -1414,9 +2646,54 @@ void func_801CE540(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CE660);
+/* While party flag +7 is set, draw the detail panel: frame, portrait, tabs,
+ * layout parts and the number lists (level2, value40 and expNext are not
+ * drawn here). */
+void func_801CE660(void) {
+    if (D_800625A0->party->redraw7 != 0) {
+        func_801CE198(1, D_800625A0->block358->frameAt, D_800625A0->block358->frame, D_800625A0->block358->buffer);
+        func_801CE198(1, D_800625A0->block358->portraitAt, D_800625A0->block358->portrait, D_800625A0->block358->buffer);
+        func_801CE198(D_800625A0->block358->tabCount, D_800625A0->block358->tabsAt[0], D_800625A0->block358->tabs, D_800625A0->block358->tabBuffer);
+        func_801CE198(D_800625A0->block358->count, D_800625A0->block358->partsAt[0], D_800625A0->block358->parts, D_800625A0->block358->buffer);
+        func_801CE198(D_800625A0->block358->hpCount, D_800625A0->block358->hpAt[0], D_800625A0->block358->hp, D_800625A0->block358->buffer);
+        func_801CE198(D_800625A0->block358->hpMaxCount, D_800625A0->block358->hpMaxAt[0], D_800625A0->block358->hpMax, D_800625A0->block358->buffer);
+        func_801CE198(D_800625A0->block358->epCount, D_800625A0->block358->epAt[0], D_800625A0->block358->ep, D_800625A0->block358->buffer);
+        func_801CE198(D_800625A0->block358->epMaxCount, D_800625A0->block358->epMaxAt[0], D_800625A0->block358->epMax, D_800625A0->block358->buffer);
+        func_801CE198(D_800625A0->block358->levelCount, D_800625A0->block358->levelAt[0], D_800625A0->block358->level, D_800625A0->block358->buffer);
+        func_801CE198(D_800625A0->block358->value3CCount, D_800625A0->block358->value3CAt[0], D_800625A0->block358->value3C, D_800625A0->block358->buffer);
+        func_801CE198(D_800625A0->block358->expCount, D_800625A0->block358->expAt[0], D_800625A0->block358->exp, D_800625A0->block358->buffer);
+        func_801CE198(D_800625A0->block358->list1C70Count, D_800625A0->block358->list1C70At[0], D_800625A0->block358->list1C70, D_800625A0->block358->buffer);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CE860);
+/* Draw the shown rows of the block at +35c: while highlighted, each row's
+ * highlight quad and second part list; then its bar and first part list. */
+void func_801CE860(void) {
+    s32 i;
+    s32 p;
+    s32 flag;
+
+    for (i = 0; i < 7; i++) {
+        if (D_800625A0->block35C->rowShown[i] != 0) {
+            if (D_800625A0->block35C->highlighted != 0) {
+                RotTransPers4(&D_800625A0->block35C->highlightAt[i][0], &D_800625A0->block35C->highlightAt[i][1], &D_800625A0->block35C->highlightAt[i][2],
+                              &D_800625A0->block35C->highlightAt[i][3],
+                              (s32 *)&D_800625A0->block35C->highlights[i][D_800625A0->block35C->highlightBuffer[i]].x0,
+                              (s32 *)&D_800625A0->block35C->highlights[i][D_800625A0->block35C->highlightBuffer[i]].x1,
+                              (s32 *)&D_800625A0->block35C->highlights[i][D_800625A0->block35C->highlightBuffer[i]].x2,
+                              (s32 *)&D_800625A0->block35C->highlights[i][D_800625A0->block35C->highlightBuffer[i]].x3, &p, &flag);
+                AddPrim(&D_800625A0->current->ot[4], &D_800625A0->block35C->highlights[i][D_800625A0->block35C->highlightBuffer[i]]);
+                func_801CE198(D_800625A0->block35C->rowBCount[i], D_800625A0->block35C->rowBAt[i], D_800625A0->block35C->rowB[i], D_800625A0->block35C->rowBBuffer[i]);
+            }
+            RotTransPers4(&D_800625A0->block35C->barAt[i][0], &D_800625A0->block35C->barAt[i][1], &D_800625A0->block35C->barAt[i][2], &D_800625A0->block35C->barAt[i][3],
+                          (s32 *)&D_800625A0->block35C->bars[i][D_800625A0->block35C->barBuffer[i]].x0, (s32 *)&D_800625A0->block35C->bars[i][D_800625A0->block35C->barBuffer[i]].x1,
+                          (s32 *)&D_800625A0->block35C->bars[i][D_800625A0->block35C->barBuffer[i]].x2, (s32 *)&D_800625A0->block35C->bars[i][D_800625A0->block35C->barBuffer[i]].x3, &p,
+                          &flag);
+            AddPrim(&D_800625A0->current->ot[4], &D_800625A0->block35C->bars[i][D_800625A0->block35C->barBuffer[i]]);
+            func_801CE198(D_800625A0->block35C->rowACount[i], D_800625A0->block35C->rowAAt[i], D_800625A0->block35C->rowA[i], D_800625A0->block35C->rowABuffer[i]);
+        }
+    }
+}
 
 /* While party flag +8 is set, draw the sprites of the block at +35c. */
 void func_801CEB5C(void) {
@@ -1443,7 +2720,54 @@ void func_801CEBB4(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CEC40);
+/* While party flag +9 is set, draw both screen image lists, first applying
+ * a changed dimming (semi-transparent, 20h grey). */
+void func_801CEC40(void) {
+    s32 i;
+
+    if (D_800625A0->party->redraw9 != 0) {
+        if (D_800625A0->screenImages->captured != D_800625A0->screenImages->refresh) {
+            if (D_800625A0->screenImages->captured != 0) {
+                for (i = 0; i < D_800625A0->screenImages->count2; i++) {
+                    SetSemiTrans(D_800625A0->screenImages->packets2 + (i * 2 + D_800625A0->screenImages->buffer2), 1);
+                    SetShadeTex(D_800625A0->screenImages->packets2 + (i * 2 + D_800625A0->screenImages->buffer2), 0);
+                    D_800625A0->screenImages->packets2[i * 2 + D_800625A0->screenImages->buffer2].tpage |= 0x20;
+                    (D_800625A0->screenImages->packets2 + (i * 2 + D_800625A0->screenImages->buffer2))->r0 = 0x20;
+                    (D_800625A0->screenImages->packets2 + (i * 2 + D_800625A0->screenImages->buffer2))->g0 = 0x20;
+                    (D_800625A0->screenImages->packets2 + (i * 2 + D_800625A0->screenImages->buffer2))->b0 = 0x20;
+                }
+                for (i = 0; i < D_800625A0->screenImages->count; i++) {
+                    SetSemiTrans(D_800625A0->screenImages->packets + (i * 2 + D_800625A0->screenImages->buffer), 1);
+                    SetShadeTex(D_800625A0->screenImages->packets + (i * 2 + D_800625A0->screenImages->buffer), 0);
+                    D_800625A0->screenImages->packets[i * 2 + D_800625A0->screenImages->buffer].tpage |= 0x20;
+                    (D_800625A0->screenImages->packets + (i * 2 + D_800625A0->screenImages->buffer))->r0 = 0x20;
+                    (D_800625A0->screenImages->packets + (i * 2 + D_800625A0->screenImages->buffer))->g0 = 0x20;
+                    (D_800625A0->screenImages->packets + (i * 2 + D_800625A0->screenImages->buffer))->b0 = 0x20;
+                }
+            } else {
+                for (i = 0; i < D_800625A0->screenImages->count2; i++) {
+                    SetSemiTrans(D_800625A0->screenImages->packets2 + (i * 2 + D_800625A0->screenImages->buffer2), 0);
+                    SetShadeTex(D_800625A0->screenImages->packets2 + (i * 2 + D_800625A0->screenImages->buffer2), 0);
+                    D_800625A0->screenImages->packets2[i * 2 + D_800625A0->screenImages->buffer2].tpage |= 0x20;
+                    (D_800625A0->screenImages->packets2 + (i * 2 + D_800625A0->screenImages->buffer2))->r0 = 0x80;
+                    (D_800625A0->screenImages->packets2 + (i * 2 + D_800625A0->screenImages->buffer2))->g0 = 0x80;
+                    (D_800625A0->screenImages->packets2 + (i * 2 + D_800625A0->screenImages->buffer2))->b0 = 0x80;
+                }
+                for (i = 0; i < D_800625A0->screenImages->count; i++) {
+                    SetSemiTrans(D_800625A0->screenImages->packets + (i * 2 + D_800625A0->screenImages->buffer), 0);
+                    SetShadeTex(D_800625A0->screenImages->packets + (i * 2 + D_800625A0->screenImages->buffer), 0);
+                    D_800625A0->screenImages->packets[i * 2 + D_800625A0->screenImages->buffer].tpage |= 0x20;
+                    (D_800625A0->screenImages->packets + (i * 2 + D_800625A0->screenImages->buffer))->r0 = 0x80;
+                    (D_800625A0->screenImages->packets + (i * 2 + D_800625A0->screenImages->buffer))->g0 = 0x80;
+                    (D_800625A0->screenImages->packets + (i * 2 + D_800625A0->screenImages->buffer))->b0 = 0x80;
+                }
+            }
+            D_800625A0->screenImages->refresh = D_800625A0->screenImages->captured;
+        }
+        func_801CE2B4(D_800625A0->screenImages->count2, D_800625A0->screenImages->packets2, D_800625A0->screenImages->buffer2);
+        func_801CE2B4(D_800625A0->screenImages->count, D_800625A0->screenImages->packets, D_800625A0->screenImages->buffer);
+    }
+}
 
 /* While party flag +a is set, draw the two sprite lists of the block at +354. */
 void func_801CF308(void) {
@@ -1455,15 +2779,186 @@ void func_801CF308(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CF37C);
+/* In file selection (+4d8 == 2), draw the pulsing cursor box of every slot
+ * of the selected slot's file (only the selected slot when it is empty). */
+void func_801CF37C(void) {
+    MenuSlotImage *image;
+    s32 i;
+    s32 p;
+    s32 flag;
+    u8 file;
+    u8 match;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CF5E4);
+    if (D_800625A0->loadState == 2) {
+        file = D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]];
+        for (i = 0; i < 32; i++) {
+            match = 1;
+            if (file == D_800625A0->card->fileSlots[i]) {
+                if (file == 0xff) {
+                    match = i == D_801E981C[D_800625A0->card->cursor];
+                }
+                if (match) {
+                    image = D_800625A0->images[i];
+                    (image->box + D_800625A0->bufferIndex)->r0 = D_800625A0->unk4D4;
+                    (image->box + D_800625A0->bufferIndex)->g0 = D_800625A0->unk4D4;
+                    (image->box + D_800625A0->bufferIndex)->b0 = D_800625A0->unk4D4;
+                    RotTransPers4(&image->iconAt[0], &image->iconAt[1], &image->iconAt[2], &image->iconAt[3],
+                                  (s32 *)&image->box[D_800625A0->bufferIndex].x0,
+                                  (s32 *)&image->box[D_800625A0->bufferIndex].x1,
+                                  (s32 *)&image->box[D_800625A0->bufferIndex].x2,
+                                  (s32 *)&image->box[D_800625A0->bufferIndex].x3, &p, &flag);
+                    AddPrim(&D_800625A0->current->ot[4], &image->box[D_800625A0->bufferIndex]);
+                    AddPrim(&D_800625A0->current->ot[4], &image->boxMode[D_800625A0->bufferIndex]);
+                }
+            }
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CF8D8);
+/* Draw the file icons of card rows `first`..`end` - 1 that are in use into
+ * the file screen slots from `firstSlot` on: each icon's texture window (u by row,
+ * v by animation frame +4cc) and palette, projected and drawn. */
+void func_801CF5E4(s32 first, s32 firstSlot, s32 end) {
+    MenuSlotImage *image;
+    s32 row;
+    s32 slot;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CFB48);
+    row = first;
+    slot = firstSlot;
+    for (; row < end; row++) {
+        if (D_800625A0->card->files[row].state != 0) {
+            for (i = 0; i < D_800625A0->card->headers[row][3]; i++, slot++) {
+                image = D_800625A0->images[slot];
+                (image->icon + D_800625A0->bufferIndex)->u0 = row * 16;
+                (image->icon + D_800625A0->bufferIndex)->v0 = D_800625A0->card->files[row].frames[D_800625A0->unk4CC];
+                (image->icon + D_800625A0->bufferIndex)->u1 = row * 16 + 16;
+                (image->icon + D_800625A0->bufferIndex)->v1 = D_800625A0->card->files[row].frames[D_800625A0->unk4CC];
+                (image->icon + D_800625A0->bufferIndex)->u2 = row * 16;
+                (image->icon + D_800625A0->bufferIndex)->v2 = D_800625A0->card->files[row].frames[D_800625A0->unk4CC] + 16;
+                (image->icon + D_800625A0->bufferIndex)->u3 = row * 16 + 16;
+                (image->icon + D_800625A0->bufferIndex)->v3 = D_800625A0->card->files[row].frames[D_800625A0->unk4CC] + 16;
+                image->icon[D_800625A0->bufferIndex].clut = GetClut(row * 16, row / 16 + 0x1c1);
+                func_801CE198(1, image->iconAt, image->icon, D_800625A0->bufferIndex);
+            }
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CFF64);
+/* While the file screen is up, build (while party flag +68 is set) and draw
+ * the header of each present card: its label (122 on the cursor's card
+ * while +2f is set, else 115) and its name sprite. */
+void func_801CF8D8(void) {
+    u8 built[2];
+    s32 side;
+    s32 parts;
+    s32 i;
+    u8 normal;
+
+    built[1] = 0;
+    built[0] = 0;
+    if (D_800625A0->loadState != 0) {
+        for (side = 0; side < 2; side++) {
+            if (D_800625A0->card->present[side] != 0 && D_800625A0->party->cardMode != 0) {
+                normal = 1;
+                if (D_800625A0->party->unk2F != 0 && side == D_801E981C[D_800625A0->card->cursor] / 16) {
+                    normal = 0;
+                }
+                if (normal) {
+                    func_8002675C(D_800625A0->sheet, 0x115, D_800625A0->card->cardHeaders[side].label,
+                                  D_800625A0->bufferIndex, side * 0x90 + 0x1e, 0x36, 0x1000);
+                } else {
+                    func_8002675C(D_800625A0->sheet, 0x122, D_800625A0->card->cardHeaders[side].label,
+                                  D_800625A0->bufferIndex, side * 0x90 + 0x1e, 0x36, 0x1000);
+                }
+                parts = func_8002675C(D_800625A0->sheet, side + 0x162, D_800625A0->card->cardHeaders[side].name,
+                                      D_800625A0->bufferIndex, side * 0x90 + 0x1b, 0x36, 0x1000);
+                built[side] = 1;
+            }
+            if (built[side]) {
+                for (i = 0; i < parts; i++) {
+                    AddPrim(&D_800625A0->current->ot[4],
+                            &D_800625A0->card->cardHeaders[side].name[i * 2 + D_800625A0->bufferIndex]);
+                }
+                AddPrim(&D_800625A0->current->ot[4],
+                        &D_800625A0->card->cardHeaders[side].label[D_800625A0->bufferIndex]);
+            }
+        }
+    }
+}
+
+/* While the file screen is up, draw the connector lines of every slot but
+ * the last of each present card: red within the selected file during file
+ * selection, green otherwise. */
+void func_801CFB48(void) {
+    MenuSlotImage *image;
+    s32 i;
+    s32 p;
+    s32 flag;
+    u8 file;
+    u8 match;
+
+    if (D_800625A0->loadState != 0) {
+        file = D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]];
+        for (i = 0; i < 32; i++) {
+            image = D_800625A0->images[i];
+            if (D_800625A0->card->present[i / 16] && (i / 16) * 16 != i - 15) {
+                match = 0;
+                if (file == D_800625A0->card->fileSlots[i] && D_800625A0->loadState == 2) {
+                    match = 1;
+                    if (file == 0xff) {
+                        match = i == D_801E981C[D_800625A0->card->cursor];
+                    }
+                }
+                if (match) {
+                    (image->lineA + D_800625A0->bufferIndex)->r0 = 0xff;
+                    (image->lineA + D_800625A0->bufferIndex)->g0 = 0;
+                    (image->lineA + D_800625A0->bufferIndex)->b0 = 0;
+                    (image->lineB + D_800625A0->bufferIndex)->r0 = 0xff;
+                    (image->lineB + D_800625A0->bufferIndex)->g0 = 0;
+                    (image->lineB + D_800625A0->bufferIndex)->b0 = 0;
+                } else {
+                    (image->lineA + D_800625A0->bufferIndex)->r0 = 0;
+                    (image->lineA + D_800625A0->bufferIndex)->g0 = 0xff;
+                    (image->lineA + D_800625A0->bufferIndex)->b0 = 0;
+                    (image->lineB + D_800625A0->bufferIndex)->r0 = 0;
+                    (image->lineB + D_800625A0->bufferIndex)->g0 = 0xff;
+                    (image->lineB + D_800625A0->bufferIndex)->b0 = 0;
+                }
+                RotTransPers3(&image->lineAAt[0], &image->lineAAt[1], &image->lineAAt[3],
+                              (s32 *)&image->lineA[D_800625A0->bufferIndex].x0,
+                              (s32 *)&image->lineA[D_800625A0->bufferIndex].x1,
+                              (s32 *)&image->lineA[D_800625A0->bufferIndex].x2, &p, &flag);
+                AddPrim(&D_800625A0->current->ot[4], &image->lineA[D_800625A0->bufferIndex]);
+                RotTransPers3(&image->lineBAt[0], &image->lineBAt[2], &image->lineBAt[3],
+                              (s32 *)&image->lineB[D_800625A0->bufferIndex].x0,
+                              (s32 *)&image->lineB[D_800625A0->bufferIndex].x1,
+                              (s32 *)&image->lineB[D_800625A0->bufferIndex].x2, &p, &flag);
+                AddPrim(&D_800625A0->current->ot[4], &image->lineB[D_800625A0->bufferIndex]);
+            }
+        }
+    }
+}
+
+/* While the card access indicator is shown, draw its bar (as long as the
+ * progress +7b0), its sprite and the blinking arrows (steady while closing);
+ * while running, advance the progress and wrap it past 100. */
+void func_801CFF64(void) {
+    if (D_800625A0->party->unk50[2] != 0) {
+        setXY4(&MENU_INDICATOR->fills[MENU_INDICATOR->buffer], 0x20, 0x61, MENU_INDICATOR->unk7B0 + 0x20, 0x61,
+               0x20, 0x68, MENU_INDICATOR->unk7B0 + 0x20, 0x68);
+        if ((u32)D_800625A0->frameCounter % 6 >= 4 || D_800625A0->party->unk50[2] == 2) {
+            func_801CE2B4(2, MENU_INDICATOR->spriteB, MENU_INDICATOR->buffer);
+        }
+        func_801CE2B4(12, MENU_INDICATOR->spriteA, MENU_INDICATOR->buffer);
+        AddPrim(&D_800625A0->current->ot[4], &MENU_INDICATOR->fills[MENU_INDICATOR->buffer]);
+        if (D_800625A0->party->unk50[2] == 1) {
+            if ((MENU_INDICATOR->unk7B0 += MENU_INDICATOR->unk7B4) > 0x100) {
+                MENU_INDICATOR->unk7B0 = 0;
+            }
+        }
+    }
+}
 
 /* Animate the file screen: its layers, the 15-frame x 6 blink and the
  * 4-step pulse between 4 and 128. */
@@ -1510,9 +3005,71 @@ void func_801D0954(SVECTOR *v, POLY_FT4 *polys, s32 index, s32 otz) {
     AddPrim(&D_800625A0->current->ot[otz], poly);
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D09F0);
+/* Draw portrait window `index`: its corners, the frame sprites when
+ * `framed`, the edges and the fill. */
+void func_801D09F0(s32 index, u8 framed) {
+    MenuPortrait *portrait;
+    s32 i;
+    s32 p;
+    s32 flag;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D0C78);
+    portrait = D_800625A0->portraits[index];
+    for (i = 0; i < 4; i++) {
+        func_801D0954(&portrait->cornerAt[i * 4], &portrait->corner[i * 2], portrait->buffer, portrait->depth);
+    }
+    if (framed) {
+        for (i = 0; i < 2; i++) {
+            func_801D0954(&portrait->endsAt[i * 4], &portrait->frameEnds[i * 2], portrait->buffer, portrait->depth);
+        }
+        func_801D0954(portrait->sideAt, portrait->frameSide, portrait->buffer, portrait->depth);
+    }
+    func_801D0954(portrait->edgeAt[0][0], &portrait->edge[0][0], portrait->buffer, portrait->depth);
+    func_801D0954(portrait->edgeAt[0][1], &portrait->edge[0][2], portrait->buffer, portrait->depth);
+    func_801D0954(portrait->edgeAt[1][0], &portrait->edge[1][0], portrait->buffer, portrait->depth);
+    func_801D0954(portrait->edgeAt[1][1], &portrait->edge[1][2], portrait->buffer, portrait->depth);
+    func_801D0954(portrait->edgeAt[2][0], &portrait->edge[2][0], portrait->buffer, portrait->depth);
+    func_801D0954(portrait->edgeAt[2][1], &portrait->edge[2][2], portrait->buffer, portrait->depth);
+    func_801D0954(portrait->edgeAt[3][0], &portrait->edge[3][0], portrait->buffer, portrait->depth);
+    func_801D0954(portrait->edgeAt[3][1], &portrait->edge[3][2], portrait->buffer, portrait->depth);
+    RotTransPers4(&portrait->fillAt[0], &portrait->fillAt[1], &portrait->fillAt[2], &portrait->fillAt[3],
+                  (s32 *)&portrait->fill[portrait->buffer].x0, (s32 *)&portrait->fill[portrait->buffer].x1,
+                  (s32 *)&portrait->fill[portrait->buffer].x2, (s32 *)&portrait->fill[portrait->buffer].x3, &p,
+                  &flag);
+    AddPrim(&D_800625A0->current->ot[portrait->depth], &portrait->fill[portrait->buffer]);
+    AddPrim(&D_800625A0->current->ot[portrait->depth], &portrait->fillMode[portrait->buffer]);
+}
+
+/* Draw the shown portrait windows; those of style 0 are drawn under an
+ * identity rotation at depth 0x200. */
+void func_801D0C78(void) {
+    s32 i;
+    SVECTOR angles;
+    VECTOR offset;
+    MATRIX m;
+    SVECTOR unused;
+
+    for (i = 0; i < 7; i++) {
+        if (D_800625A0->party->unk20[i] != 0) {
+            if (D_800625A0->portraits[i]->style == 0) {
+                PushMatrix();
+                angles.vz = 0;
+                angles.vy = 0;
+                angles.vx = 0;
+                offset.vy = 0;
+                offset.vx = 0;
+                offset.vz = 0x200;
+                func_8003F738(&angles, &m);
+                TransMatrix(&m, &offset);
+                SetRotMatrix(&m);
+                SetTransMatrix(&m);
+                func_801D09F0(i, D_800625A0->portraits[i]->framed);
+                PopMatrix();
+            } else {
+                func_801D09F0(i, D_800625A0->portraits[i]->framed);
+            }
+        }
+    }
+}
 
 /* Add the current quad of each top label whose party flag (+34) is set. */
 void func_801D0D90(void) {
@@ -1644,8 +3201,8 @@ void func_801D11F0(void) {
 
 /* Add this buffer's fill and mode primitives to the frame. */
 void func_801D1258(void) {
-    AddPrim(&D_800625A0->current->ot[8], D_800625A0->primitives->fills[D_800625A0->bufferIndex]);
-    AddPrim(&D_800625A0->current->ot[8], D_800625A0->primitives->modes[D_800625A0->bufferIndex]);
+    AddPrim(&D_800625A0->current->ot[8], &D_800625A0->primitives->fills[D_800625A0->bufferIndex]);
+    AddPrim(&D_800625A0->current->ot[8], &D_800625A0->primitives->modes[D_800625A0->bufferIndex]);
 }
 
 /* Draw `panel` when shown: its frame quads and part lists (and the extra list
@@ -1888,11 +3445,9 @@ void func_801D1CA0(void) {
 
 /* Step the view motion (3/4 start moving in/out, 1/2 move) and load the view
  * rotation and translation into the GTE. */
-#ifdef NON_MATCHING
 void func_801D1D40(void) {
     MenuState *state;
     u8 motion;
-    s32 z;
 
     state = D_800625A0;
     switch (state->viewMotion) {
@@ -1913,15 +3468,15 @@ void func_801D1D40(void) {
         break;
     case 2:
         state->viewAngles.vy -= 0x60;
-        state->viewOffset.vz = z = state->viewOffset.vz + 0x40;
-        if (z >= 0xe00) {
+        state->viewOffset.vz += 0x40;
+        if (state->viewOffset.vz >= 0xe00) {
             state->viewMotion = 0;
         }
         break;
     case 1:
         state->viewAngles.vx += 0x7c;
-        state->viewOffset.vz = z = state->viewOffset.vz - 0x30;
-        if (z < 0x200) {
+        state->viewOffset.vz -= 0x30;
+        if (state->viewOffset.vz < 0x200) {
             state->viewOffset.vz = 0x200;
             state->viewAngles.vz = 0;
             state->viewAngles.vx = 0;
@@ -1935,9 +3490,6 @@ void func_801D1D40(void) {
     SetRotMatrix(&D_800625A0->viewMatrix);
     SetTransMatrix(&D_800625A0->viewMatrix);
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D1D40);
-#endif
 
 /* Start the view moving in (3) with its sound. */
 void func_801D1E80(void) {
@@ -1951,7 +3503,36 @@ void func_801D1EB0(void) {
     func_801C8574(0x5c);
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D1EE0);
+/* Place the highlight sprite at position `index`; with `outline` also its
+ * background box and outline around the text, as wide as the block's +15b. */
+void func_801D1EE0(s32 index, u8 outline) {
+    func_8002675C(D_800625A0->sheet, 0x108, D_800625A0->primitives, D_800625A0->bufferIndex, D_801E9A00[index], D_801E9A2C[index], 0x1000);
+    D_800625A0->primitives->frame = D_800625A0->bufferIndex;
+    if (outline) {
+        (D_800625A0->primitives->box + D_800625A0->bufferIndex)->x0 = D_801E9A00[index] + 0x14;
+        (D_800625A0->primitives->box + D_800625A0->bufferIndex)->y0 = D_801E9A2C[index] - 0x24;
+        (D_800625A0->primitives->box + D_800625A0->bufferIndex)->x1 = D_801E9A00[index] + (D_800625A0->primitives->shade + 0x14);
+        (D_800625A0->primitives->box + D_800625A0->bufferIndex)->y1 = D_801E9A2C[index] - 0x24;
+        (D_800625A0->primitives->box + D_800625A0->bufferIndex)->x2 = D_801E9A00[index] + 0x14;
+        (D_800625A0->primitives->box + D_800625A0->bufferIndex)->y2 = D_801E9A2C[index] - 0x14;
+        (D_800625A0->primitives->box + D_800625A0->bufferIndex)->x3 = D_801E9A00[index] + (D_800625A0->primitives->shade + 0x14);
+        (D_800625A0->primitives->box + D_800625A0->bufferIndex)->y3 = D_801E9A2C[index] - 0x14;
+        (D_800625A0->primitives->edgeA + D_800625A0->bufferIndex)->x0 = D_801E9A00[index] + 0x14;
+        (D_800625A0->primitives->edgeA + D_800625A0->bufferIndex)->y0 = D_801E9A2C[index] - 0x24;
+        (D_800625A0->primitives->edgeA + D_800625A0->bufferIndex)->x1 = D_801E9A00[index] + (D_800625A0->primitives->shade + 0x14);
+        (D_800625A0->primitives->edgeA + D_800625A0->bufferIndex)->y1 = D_801E9A2C[index] - 0x24;
+        (D_800625A0->primitives->edgeA + D_800625A0->bufferIndex)->x2 = D_801E9A00[index] + (D_800625A0->primitives->shade + 0x14);
+        (D_800625A0->primitives->edgeA + D_800625A0->bufferIndex)->y2 = D_801E9A2C[index] - 0x14;
+        (D_800625A0->primitives->edgeB + D_800625A0->bufferIndex)->x0 = D_801E9A00[index] + 0x14;
+        (D_800625A0->primitives->edgeB + D_800625A0->bufferIndex)->y0 = D_801E9A2C[index] - 0x24;
+        (D_800625A0->primitives->edgeB + D_800625A0->bufferIndex)->x1 = D_801E9A00[index] + 0x14;
+        (D_800625A0->primitives->edgeB + D_800625A0->bufferIndex)->y1 = D_801E9A2C[index] - 0x14;
+        (D_800625A0->primitives->edgeB + D_800625A0->bufferIndex)->x2 = D_801E9A00[index] + (D_800625A0->primitives->shade + 0x14);
+        (D_800625A0->primitives->edgeB + D_800625A0->bufferIndex)->y2 = D_801E9A2C[index] - 0x14;
+        D_800625A0->primitives->mode = D_800625A0->bufferIndex;
+        D_800625A0->party->redraw3 = 1;
+    }
+}
 
 /* Hide the party panels (redraw flags 3 and 4). */
 void func_801D22C4(void) {
@@ -1992,14 +3573,13 @@ void func_801D2484(void) {
 
 /* Show (`show`) the six party labels, placing labels 3-5 as quads, or hide
  * the party name labels. */
-#ifdef NON_MATCHING
 void func_801D249C(u8 show) {
     s32 i;
 
     if (show) {
         func_801E7E68(D_800625A0->partyLabels, D_801EA534, 4, 6);
         for (i = 0; i < 3; i++) {
-            func_801C851C(D_800625A0->partyLabels[3 + i].verts, D_801E9E4C[i][0], D_801E9E58[i][0],
+            func_801C851C(D_800625A0->partyLabels[3 + i].verts, D_801E9E4C[i], D_801E9E58[i],
                           D_800625A0->partyLabels[3 + i].width, 0xd);
             D_800625A0->partyLabels[3 + i].count = D_800625A0->bufferIndex;
             D_800625A0->partyLabels[3 + i].visible = 1;
@@ -2011,9 +3591,6 @@ void func_801D249C(u8 show) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D249C);
-#endif
 
 /* Clear the party block's six bytes at +14. */
 void func_801D25E4(void) {
@@ -2024,7 +3601,31 @@ void func_801D25E4(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D261C);
+/* Hide the party names and place the name label of the current choice as a
+ * quad beside its highlight. */
+void func_801D261C(void) {
+    func_801D249C(0);
+    ((D_800625A0->partyLabels + D_800625A0->choice)->polys + D_800625A0->bufferIndex)->x0 =
+        D_801E9A1C[D_800625A0->choice] + 0x16 + D_801E9E94[D_800625A0->choice];
+    ((D_800625A0->partyLabels + D_800625A0->choice)->polys + D_800625A0->bufferIndex)->y0 =
+        D_801E9A48[D_800625A0->choice] - 0x22;
+    ((D_800625A0->partyLabels + D_800625A0->choice)->polys + D_800625A0->bufferIndex)->x1 =
+        D_801E9A1C[D_800625A0->choice] + 0x16 + D_801E9E94[D_800625A0->choice] +
+        D_800625A0->partyLabels[D_800625A0->choice].width;
+    ((D_800625A0->partyLabels + D_800625A0->choice)->polys + D_800625A0->bufferIndex)->y1 =
+        D_801E9A48[D_800625A0->choice] - 0x22;
+    ((D_800625A0->partyLabels + D_800625A0->choice)->polys + D_800625A0->bufferIndex)->x2 =
+        D_801E9A1C[D_800625A0->choice] + 0x16 + D_801E9E94[D_800625A0->choice];
+    ((D_800625A0->partyLabels + D_800625A0->choice)->polys + D_800625A0->bufferIndex)->y2 =
+        D_801E9A48[D_800625A0->choice] - 0x15;
+    ((D_800625A0->partyLabels + D_800625A0->choice)->polys + D_800625A0->bufferIndex)->x3 =
+        D_801E9A1C[D_800625A0->choice] + 0x16 + D_801E9E94[D_800625A0->choice] +
+        D_800625A0->partyLabels[D_800625A0->choice].width;
+    ((D_800625A0->partyLabels + D_800625A0->choice)->polys + D_800625A0->bufferIndex)->y3 =
+        D_801E9A48[D_800625A0->choice] - 0x15;
+    D_800625A0->partyLabels[D_800625A0->choice].count = D_800625A0->bufferIndex;
+    D_800625A0->party->unk14[D_800625A0->choice] = 1;
+}
 
 /* Draw the small window at (d4, b2) and its element at (d8, b6). */
 void func_801D28A8(void) {
@@ -2046,15 +3647,82 @@ void func_801D2968(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D29A8);
+/* Slide the three party panels in (`open`) or out along their movers,
+ * drawing each frame until one arrives; opening then pins them in place,
+ * plays the open sound and (unless `keep`) redraws the status. */
+void func_801D29A8(u8 open, u8 keep) {
+    MenuParty *party;
+    s32 i;
+
+    if (open) {
+        func_801E8018(8, D_800625A0->commandLabels, D_801EA528, D_800625A0->party->labels);
+        func_801C81E0(0x100, 0x86, 0x60, 6, 8, 0);
+        func_801C81E0(0x108, 0x3e, 0x68, 0x3e, 8, 1);
+        func_801C81E0(0x110, -10, 0x70, 0x76, 8, 2);
+    } else {
+        func_801E8044(8, D_800625A0->party->labels);
+        func_801C81E0(0x60, 6, 0x100, 0x86, 8, 0);
+        func_801C81E0(0x68, 0x3e, 0x108, 0x3e, 8, 1);
+        func_801C81E0(0x70, 0x76, 0x110, -10, 8, 2);
+    }
+    while (D_800625A0->movers[0].done == 0 && D_800625A0->movers[1].done == 0 &&
+           D_800625A0->movers[2].done == 0) {
+        for (i = 0; i < 3; i++) {
+            if (D_800625A0->party->ids[i] != 0xff) {
+                func_801D5A50(i, D_800625A0->party->ids[i]);
+            }
+        }
+        func_801C7BF4();
+        for (i = 0; i < 3; i++) {
+            if (D_800625A0->party->ids[i] != 0xff) {
+                func_801C8324(i);
+            }
+        }
+    }
+    if (open) {
+        D_800625A0->movers[0].x0 = 0x60;
+        D_800625A0->movers[0].y0 = 6;
+        D_800625A0->movers[1].x0 = 0x68;
+        D_800625A0->movers[1].y0 = 0x3e;
+        D_800625A0->movers[2].x0 = 0x70;
+        D_800625A0->movers[2].y0 = 0x76;
+        D_800625A0->movers[0].accY = 0;
+        D_800625A0->movers[0].accX = 0;
+        D_800625A0->movers[1].accY = 0;
+        D_800625A0->movers[1].accX = 0;
+        D_800625A0->movers[2].accY = 0;
+        D_800625A0->movers[2].accX = 0;
+        for (i = 0; i < 3; i++) {
+            if (D_800625A0->party->ids[i] != 0xff) {
+                func_801D5A50(i, D_800625A0->party->ids[i]);
+            }
+        }
+        func_801C8574(0x5d);
+        if (!keep) {
+            func_801D28A8();
+        }
+        D_800625A0->party->unk20[1] = 1;
+        D_800625A0->party->redraw6 = 1;
+    } else {
+        party = D_800625A0->party;
+        party->fieldShown[2] = 0;
+        party->fieldShown[1] = 0;
+        party->fieldShown[0] = 0;
+        if (!keep) {
+            D_800625A0->party->unk20[0] = 0;
+            D_800625A0->party->redraw5 = 0;
+        }
+    }
+    func_801C7BF4();
+}
 
 /* Open the field menu: the two top portraits, then each party member's and
  * gear's name image, the command cursor, panels and money window. */
-#ifdef NON_MATCHING
 void func_801D2D38(void) {
     s32 i;
     s32 row;
     void *block;
+    s32 gear;
 
     if (D_80059460 == 0) {
         for (row = 0; row < 2; row++) {
@@ -2068,22 +3736,21 @@ void func_801D2D38(void) {
         }
         func_801C8574(0x5e);
     }
-    for (i = 0, row = 6; i < 3; i++, row += 2) {
+    for (i = 0; i < 3; i++) {
         if (D_800625A0->party->ids[i] != 0xff) {
             func_801E8DA8(D_800625A0->party->ids[i], i * 2);
-            func_801E8DA8(D_8006D8A0[D_800625A0->party->ids[i]].gear != 0xff
-                              ? D_8006D8A0[D_800625A0->party->ids[i]].gear + 11
-                              : 0xff,
-                          row);
+            gear = D_8006D8A0[D_800625A0->party->ids[i]].gear;
+            if (gear != 0xff) {
+                func_801E8DA8(gear + 11, (i + 3) * 2);
+            } else {
+                func_801E8DA8(0xff, (i + 3) * 2);
+            }
         }
     }
     func_801E8474(8, D_801EA19C);
     func_801D29A8(1, 0);
     func_801D28FC();
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D2D38);
-#endif
 
 /* Refresh the item/status panels of `slot` for `mode` over two frames. */
 void func_801D2EC0(u8 slot, u8 mode) {
@@ -2095,7 +3762,55 @@ void func_801D2EC0(u8 slot, u8 mode) {
     func_801D8EA4(slot, 0, 0, mode);
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D2F4C);
+/* Open the notice window (portrait 2) and show three lines of label text
+ * from entry `message`: four line labels (pairs share one render buffer)
+ * rendered into VRAM and laid out as quads. */
+void func_801D2F4C(u8 message) {
+    s32 x;
+    MenuMark *mark;
+    MenuLabelSlot *line;
+    s32 i;
+
+    func_801D397C(2, 0x7a, 0x96, 0xbc, 0x40, 1, 1, 4, 0);
+    mark = D_800625A0->portraitMarks[2];
+    while (mark->done == 0) {
+        func_801C7BF4();
+    }
+    x = 0x84;
+    for (i = 0; i < 4; i++) {
+        void *block = func_80031BDC(0x80, 0);
+
+        D_800625A0->blocks1DE0[i] = block;
+        bzero(block, 0x80);
+        if (!(i & 1)) {
+            D_800625A0->blocks1DE0[i]->pixels = func_80031BDC(0x5ca, 0);
+            D_800625A0->blocks1DE0[i]->rect.x = 0x140;
+            D_800625A0->blocks1DE0[i]->rect.y = (i / 2) * 13 + 0x4e;
+            D_800625A0->blocks1DE0[i]->rect.w = 0x3a;
+            D_800625A0->blocks1DE0[i]->rect.h = 13;
+        } else {
+            D_800625A0->blocks1DE0[i]->pixels = D_800625A0->blocks1DE0[i - 1]->pixels;
+        }
+    }
+    for (i = 0; i < 3; i++) {
+        line = D_800625A0->blocks1DE0[i];
+        line->width = func_80034EAC(func_80033728(D_800625A0->labels, message + i), line->pixels, 0x36, i % 2);
+        func_801E7C50(line, i, 0, 0);
+        func_801E920C(&line->polys[D_800625A0->bufferIndex], (u16)x, (u16)(i * 16 + 0xa0), 0,
+                      (u8)((i / 2) * 13 + 0x4e), line->width, 13);
+        func_801C851C(line->verts, x, i * 16 + 0xa0, line->width, 13);
+        line->count = D_800625A0->bufferIndex;
+        line->visible = 1;
+    }
+    LoadImage(&D_800625A0->blocks1DE0[0]->rect, D_800625A0->blocks1DE0[0]->pixels);
+    LoadImage(&D_800625A0->blocks1DE0[2]->rect, D_800625A0->blocks1DE0[2]->pixels);
+    DrawSync(0);
+    D_800625A0->party->unk2E = 1;
+    func_800320E8(D_800625A0->blocks1DE0[0]->pixels);
+    func_800320E8(D_800625A0->blocks1DE0[2]->pixels);
+    func_801C7BF4();
+    func_801C7BF4();
+}
 
 /* Close the notice when open (party +22): free portrait 2 and its four
  * blocks (+1de0), then finish a frame. */
@@ -2133,7 +3848,43 @@ void func_801D3444(void) {
     func_800320E8(D_800625A0->block43C);
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D3488);
+/* Show the two party window sprites (sheet 164, 165) at `row` and lay out
+ * their quads, unless only one member is listed (+32b, or +33b when
+ * `fighters`). The block at +440 is allocated on first use. */
+void func_801D3488(u8 row, u8 fighters) {
+    s32 count;
+    s32 i;
+    void *block;
+
+    if (!fighters) {
+        count = D_800625A0->partyCount;
+    } else {
+        count = D_800625A0->fighters;
+    }
+    if (count != 1) {
+        if (D_800625A0->party->unk67 == 0) {
+            block = func_80031BDC(0x1c4, 0);
+            D_800625A0->block440 = block;
+            bzero(block, 0x1c4);
+            D_800625A0->party->unk67 = 1;
+        }
+        for (i = 0; i < 2; i++) {
+            func_8002675C(D_800625A0->sheet, 0x164 + i, &D_800625A0->block440->polys[i * 4], D_800625A0->bufferIndex,
+                          D_801EA164[i], D_801EA16C[row], 0x1000);
+        }
+        for (i = 0; i < 4; i++) {
+            func_801C851C(&D_800625A0->block440->verts[i * 4],
+                          D_800625A0->block440->polys[i * 2 + D_800625A0->bufferIndex].x0,
+                          D_800625A0->block440->polys[i * 2 + D_800625A0->bufferIndex].y0,
+                          D_800625A0->block440->polys[i * 2 + D_800625A0->bufferIndex].x1 -
+                              D_800625A0->block440->polys[i * 2 + D_800625A0->bufferIndex].x0,
+                          D_800625A0->block440->polys[i * 2 + D_800625A0->bufferIndex].y3 -
+                              D_800625A0->block440->polys[i * 2 + D_800625A0->bufferIndex].y0);
+        }
+        D_800625A0->block440->buffer = D_800625A0->bufferIndex;
+        D_800625A0->party->unk53 = 1;
+    }
+}
 
 /* Close the block at +440 when it is open (party +67), hiding its sprites. */
 void func_801D3674(void) {
@@ -2147,7 +3898,31 @@ void func_801D3674(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D36E0);
+/* Lay out `label` as the portrait of party slot `slot` (its character, or
+ * its gear when `gear`) at the panel position of `mode`. */
+void func_801D36E0(MenuLabelSlot *label, u8 slot, u8 gear, u8 mode) {
+    s32 x;
+    s32 w;
+
+    func_801E927C(&label->polys[D_800625A0->bufferIndex]);
+    label->polys[D_800625A0->bufferIndex].tpage = GetTPage(0, 0, 0x180, 0);
+    if (!gear) {
+        w = 0x48;
+        label->polys[D_800625A0->bufferIndex].clut = (D_800625A0->party->ids[slot] & 1) ? D_80059414 : D_800595D4;
+        x = D_801EA17C[mode] - 0x24;
+        func_801E920C(&label->polys[D_800625A0->bufferIndex], (u16)x, (u16)D_801EA18C[mode],
+                      (u8)(D_801EA578[slot] * 4), (u8)D_801EA5C4[slot], w, 13);
+    } else {
+        w = 0x60;
+        label->polys[D_800625A0->bufferIndex].clut =
+            ((D_8006D8A0[D_800625A0->party->ids[slot]].gear + 11) & 1) ? D_80059414 : D_800595D4;
+        x = D_801EA17C[mode] - 0x30;
+        func_801E920C(&label->polys[D_800625A0->bufferIndex], (u16)x, (u16)D_801EA18C[mode],
+                      (u8)(D_801EA584[slot] * 4), (u8)((s32 *)D_801EA5D0)[slot], w, 13);
+    }
+    func_801C851C(label->verts, x, D_801EA18C[mode], w, 13);
+    label->count = D_800625A0->bufferIndex;
+}
 
 /* Open portrait window `index` at (x, y) of w x h: grow it in (`grow`) or
  * lay it out at once. Windows from 2 get their own blocks. */
@@ -2221,42 +3996,182 @@ void func_801D3C4C(u8 slot, u16 x, u16 y, s32 unused, u16 h) {
     MenuPortrait *portrait;
 
     portrait = D_800625A0->portraits[slot];
-    func_8002675C(D_800625A0->sheet, 0x105, portrait->top, D_800625A0->bufferIndex, x, y, 0x1000);
-    func_800263E4(D_800625A0->sheet, 0x105, portrait->bottom, D_800625A0->bufferIndex, x, y + h - 8, 0x1000, 0, 1);
-    func_8002675C(D_800625A0->sheet, 0x106, portrait->side, D_800625A0->bufferIndex, x, y + 8, 0x1000);
-    func_801C851C(portrait->topVerts, x, y, 8, 8);
-    func_801C851C(portrait->bottomVerts, x, y + h, 8, -8);
-    func_801C851C(portrait->sideVerts, x, y + 8, 8, h - 8);
+    func_8002675C(D_800625A0->sheet, 0x105, portrait->frameEnds, D_800625A0->bufferIndex, x, y, 0x1000);
+    func_800263E4(D_800625A0->sheet, 0x105, &portrait->frameEnds[2], D_800625A0->bufferIndex, x, y + h - 8, 0x1000,
+                  0, 1);
+    func_8002675C(D_800625A0->sheet, 0x106, portrait->frameSide, D_800625A0->bufferIndex, x, y + 8, 0x1000);
+    func_801C851C(&portrait->endsAt[0], x, y, 8, 8);
+    func_801C851C(&portrait->endsAt[4], x, y + h, 8, -8);
+    func_801C851C(portrait->sideAt, x, y + 8, 8, h - 8);
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D3DB0);
+/* Build portrait window `index`'s four corner sprites (sheet fd, ff, 102,
+ * 104) for this buffer and place them around the w x h rectangle at (x, y),
+ * mirrored by negative extents; make them semi-transparent. */
+void func_801D3DB0(u8 index, u16 x, u16 y, u16 w, u16 h) {
+    MenuPortrait *portrait = D_800625A0->portraits[index];
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D3FF8);
+    portrait->cornerParts = 0;
+    portrait->cornerParts += func_8002675C(D_800625A0->sheet, 0xfd, portrait->corner, D_800625A0->bufferIndex, 0, 0,
+                                           0x1000);
+    portrait->cornerParts += func_8002675C(D_800625A0->sheet, 0xff, &portrait->corner[portrait->cornerParts * 2],
+                                           D_800625A0->bufferIndex, 0, 0, 0x1000);
+    portrait->cornerParts += func_8002675C(D_800625A0->sheet, 0x102, &portrait->corner[portrait->cornerParts * 2],
+                                           D_800625A0->bufferIndex, 0, 0, 0x1000);
+    portrait->cornerParts += func_8002675C(D_800625A0->sheet, 0x104, &portrait->corner[portrait->cornerParts * 2],
+                                           D_800625A0->bufferIndex, 0, 0, 0x1000);
+    func_801C851C(&portrait->cornerAt[0], x - 8, y + 8, 16, -16);
+    func_801C851C(&portrait->cornerAt[4], x + w + 8, y + 8, -16, -16);
+    func_801C851C(&portrait->cornerAt[8], x - 8, y + h - 8, 16, 16);
+    func_801C851C(&portrait->cornerAt[12], x + w + 8, y + h - 8, -16, 16);
+    for (i = 0; i < 4; i++) {
+        func_801E91C4(&portrait->corner[i * 2 + D_800625A0->bufferIndex]);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D433C);
+/* Map portrait window `index`'s top edge pieces for this buffer and place them in two
+ * halves along the top of (x, y, w). */
+void func_801D3FF8(u8 index, u16 x, u16 y, u16 w) {
+    MenuPortrait *portrait = D_800625A0->portraits[index];
+    s32 half;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D4688);
+    (portrait->edge[0] + D_800625A0->bufferIndex)->u0 = 0;
+    (portrait->edge[0] + D_800625A0->bufferIndex)->v0 = 0x84;
+    (portrait->edge[0] + D_800625A0->bufferIndex)->u1 = 7;
+    (portrait->edge[0] + D_800625A0->bufferIndex)->v1 = 0x84;
+    (portrait->edge[0] + D_800625A0->bufferIndex)->u2 = 0;
+    (portrait->edge[0] + D_800625A0->bufferIndex)->v2 = 0x94;
+    (portrait->edge[0] + D_800625A0->bufferIndex)->u3 = 7;
+    (portrait->edge[0] + D_800625A0->bufferIndex)->v3 = 0x94;
+    (portrait->edge[0] + D_800625A0->bufferIndex + 2)->u0 = 0;
+    (portrait->edge[0] + D_800625A0->bufferIndex + 2)->v0 = 0x84;
+    (portrait->edge[0] + D_800625A0->bufferIndex + 2)->u1 = 7;
+    (portrait->edge[0] + D_800625A0->bufferIndex + 2)->v1 = 0x84;
+    (portrait->edge[0] + D_800625A0->bufferIndex + 2)->u2 = 0;
+    (portrait->edge[0] + D_800625A0->bufferIndex + 2)->v2 = 0x94;
+    (portrait->edge[0] + D_800625A0->bufferIndex + 2)->u3 = 7;
+    (portrait->edge[0] + D_800625A0->bufferIndex + 2)->v3 = 0x94;
+    half = (w - 16) / 2;
+    func_801C851C(portrait->edgeAt[0][0], x + 8, y - 8, half, 16);
+    func_801C851C(portrait->edgeAt[0][1], x + (half + 8), y - 8, half, 16);
+    for (i = 0; i < 2; i++) {
+        func_801E91C4(&portrait->edge[0][i * 2 + D_800625A0->bufferIndex]);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D49D0);
+/* Map portrait window `index`'s bottom edge pieces for this buffer and place them in
+ * two halves along the bottom of (x, y, w, h). */
+void func_801D433C(u8 index, u16 x, u16 y, u16 w, u16 h) {
+    MenuPortrait *portrait = D_800625A0->portraits[index];
+    s32 half;
+    s32 i;
+
+    (portrait->edge[1] + D_800625A0->bufferIndex)->u0 = 8;
+    (portrait->edge[1] + D_800625A0->bufferIndex)->v0 = 0x84;
+    (portrait->edge[1] + D_800625A0->bufferIndex)->u1 = 0xF;
+    (portrait->edge[1] + D_800625A0->bufferIndex)->v1 = 0x84;
+    (portrait->edge[1] + D_800625A0->bufferIndex)->u2 = 8;
+    (portrait->edge[1] + D_800625A0->bufferIndex)->v2 = 0x94;
+    (portrait->edge[1] + D_800625A0->bufferIndex)->u3 = 0xF;
+    (portrait->edge[1] + D_800625A0->bufferIndex)->v3 = 0x94;
+    (portrait->edge[1] + D_800625A0->bufferIndex + 2)->u0 = 8;
+    (portrait->edge[1] + D_800625A0->bufferIndex + 2)->v0 = 0x84;
+    (portrait->edge[1] + D_800625A0->bufferIndex + 2)->u1 = 0xF;
+    (portrait->edge[1] + D_800625A0->bufferIndex + 2)->v1 = 0x84;
+    (portrait->edge[1] + D_800625A0->bufferIndex + 2)->u2 = 8;
+    (portrait->edge[1] + D_800625A0->bufferIndex + 2)->v2 = 0x94;
+    (portrait->edge[1] + D_800625A0->bufferIndex + 2)->u3 = 0xF;
+    (portrait->edge[1] + D_800625A0->bufferIndex + 2)->v3 = 0x94;
+    half = (w - 16) / 2;
+    func_801C851C(portrait->edgeAt[1][0], x + 8, y + h - 8, half, 16);
+    func_801C851C(portrait->edgeAt[1][1], x + (half + 8), y + h - 8, half, 16);
+    for (i = 0; i < 2; i++) {
+        func_801E91C4(&portrait->edge[1][i * 2 + D_800625A0->bufferIndex]);
+    }
+}
+
+/* Map portrait window `index`'s left edge pieces for this buffer and place them in two
+ * halves down the left of (x, y, h). */
+void func_801D4688(u8 index, u16 x, u16 y, u16 h) {
+    MenuPortrait *portrait = D_800625A0->portraits[index];
+    s32 half;
+    s32 i;
+
+    (portrait->edge[2] + D_800625A0->bufferIndex)->u0 = 0x10;
+    (portrait->edge[2] + D_800625A0->bufferIndex)->v0 = 0x84;
+    (portrait->edge[2] + D_800625A0->bufferIndex)->u1 = 0x20;
+    (portrait->edge[2] + D_800625A0->bufferIndex)->v1 = 0x84;
+    (portrait->edge[2] + D_800625A0->bufferIndex)->u2 = 0x10;
+    (portrait->edge[2] + D_800625A0->bufferIndex)->v2 = 0x8B;
+    (portrait->edge[2] + D_800625A0->bufferIndex)->u3 = 0x20;
+    (portrait->edge[2] + D_800625A0->bufferIndex)->v3 = 0x8B;
+    (portrait->edge[2] + D_800625A0->bufferIndex + 2)->u0 = 0x10;
+    (portrait->edge[2] + D_800625A0->bufferIndex + 2)->v0 = 0x84;
+    (portrait->edge[2] + D_800625A0->bufferIndex + 2)->u1 = 0x20;
+    (portrait->edge[2] + D_800625A0->bufferIndex + 2)->v1 = 0x84;
+    (portrait->edge[2] + D_800625A0->bufferIndex + 2)->u2 = 0x10;
+    (portrait->edge[2] + D_800625A0->bufferIndex + 2)->v2 = 0x8B;
+    (portrait->edge[2] + D_800625A0->bufferIndex + 2)->u3 = 0x20;
+    (portrait->edge[2] + D_800625A0->bufferIndex + 2)->v3 = 0x8B;
+    half = (h - 16) / 2;
+    func_801C851C(portrait->edgeAt[2][0], x - 8, y + 8, 16, half);
+    func_801C851C(portrait->edgeAt[2][1], x - 8, y + (half + 8), 16, half);
+    for (i = 0; i < 2; i++) {
+        func_801E91C4(&portrait->edge[2][i * 2 + D_800625A0->bufferIndex]);
+    }
+}
+
+/* Map portrait window `index`'s right edge pieces for this buffer and place them in two
+ * halves down the right of (x, y, w, h). */
+void func_801D49D0(u8 index, u16 x, u16 y, u16 w, u16 h) {
+    MenuPortrait *portrait = D_800625A0->portraits[index];
+    s32 half;
+    s32 i;
+
+    (portrait->edge[3] + D_800625A0->bufferIndex)->u0 = 0x10;
+    (portrait->edge[3] + D_800625A0->bufferIndex)->v0 = 0x8C;
+    (portrait->edge[3] + D_800625A0->bufferIndex)->u1 = 0x20;
+    (portrait->edge[3] + D_800625A0->bufferIndex)->v1 = 0x8C;
+    (portrait->edge[3] + D_800625A0->bufferIndex)->u2 = 0x10;
+    (portrait->edge[3] + D_800625A0->bufferIndex)->v2 = 0x93;
+    (portrait->edge[3] + D_800625A0->bufferIndex)->u3 = 0x20;
+    (portrait->edge[3] + D_800625A0->bufferIndex)->v3 = 0x93;
+    (portrait->edge[3] + D_800625A0->bufferIndex + 2)->u0 = 0x10;
+    (portrait->edge[3] + D_800625A0->bufferIndex + 2)->v0 = 0x8C;
+    (portrait->edge[3] + D_800625A0->bufferIndex + 2)->u1 = 0x20;
+    (portrait->edge[3] + D_800625A0->bufferIndex + 2)->v1 = 0x8C;
+    (portrait->edge[3] + D_800625A0->bufferIndex + 2)->u2 = 0x10;
+    (portrait->edge[3] + D_800625A0->bufferIndex + 2)->v2 = 0x93;
+    (portrait->edge[3] + D_800625A0->bufferIndex + 2)->u3 = 0x20;
+    (portrait->edge[3] + D_800625A0->bufferIndex + 2)->v3 = 0x93;
+    half = (h - 16) / 2;
+    func_801C851C(portrait->edgeAt[3][0], x + w - 8, y + 8, 16, half);
+    func_801C851C(portrait->edgeAt[3][1], x + w - 8, y + (half + 8), 16, half);
+    for (i = 0; i < 2; i++) {
+        func_801E91C4(&portrait->edge[3][i * 2 + D_800625A0->bufferIndex]);
+    }
+}
 
 /* Lay out portrait window `index` at (x, y) of w x h and show it. */
-void func_801D4D1C(u8 index, u16 x, u16 y, u16 w, u16 h, u8 arg5, s32 arg6, u8 frame) {
+void func_801D4D1C(u8 index, u16 x, u16 y, u16 w, u16 h, u8 style, s32 depth, u8 framed) {
     MenuPortrait *portrait;
 
     portrait = D_800625A0->portraits[index];
     D_800625A0->party->unk20[index] = 0;
-    func_801C851C(portrait->frameVerts, x, y, w, h);
+    func_801C851C(portrait->fillAt, x, y, w, h);
     func_801D3DB0(index, x, y, w, h);
     func_801D3FF8(index, x, y, w);
     func_801D433C(index, x, y, w, h);
     func_801D4688(index, x, y, h);
     func_801D49D0(index, x, y, w, h);
-    if (frame) {
+    if (framed) {
         func_801D3C4C(index, x, y, w, h);
     }
-    portrait->unk71D = frame;
-    portrait->unk714 = arg5;
-    portrait->unk718 = arg6;
+    portrait->framed = framed;
+    portrait->style = style;
+    portrait->depth = depth;
     portrait->buffer = D_800625A0->bufferIndex;
     D_800625A0->party->unk20[index] = 1;
 }
@@ -2269,7 +4184,18 @@ void func_801D4EA0(u8 slot) {
     func_800320E8(D_800625A0->portraitMarks[slot]);
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D4F2C);
+/* Build field block `index`'s frame (sheet 14b + index) at (x, y) and its
+ * character portrait quad. */
+void func_801D4F2C(u8 index, u8 mode, s32 x, s32 y) {
+    MenuFieldBlock *block = D_800625A0->fieldBlocks[index];
+
+    func_8002675C(D_800625A0->sheet, index + 0x14b, block->frameA, D_800625A0->bufferIndex, x, y, 0x1000);
+    func_801E927C(&block->frameB[D_800625A0->bufferIndex]);
+    block->frameB[D_800625A0->bufferIndex].tpage = GetTPage(0, 0, 0x180, 0);
+    block->frameB[D_800625A0->bufferIndex].clut = (D_800625A0->party->ids[index] & 1) ? D_80059414 : D_800595D4;
+    func_801E920C(&block->frameB[D_800625A0->bufferIndex], (u16)(D_801E9B58 + x), (u16)(D_801E9B5C + y),
+                  (u8)(D_801EA578[index] * 4), (u8)D_801EA5C4[index], 0x48, 13);
+}
 
 /* Lay out the parts of field block `index` at (x, y) from the D_801EA34C
  * sheet images (ffff none). */
@@ -2288,13 +4214,123 @@ void func_801D50EC(u8 index, s32 x, s32 y) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D51EC);
+/* Lay out character `ch`'s hp (by digit position) and hp maximum (packed)
+ * on field block `index` at (x, y). */
+void func_801D51EC(u8 index, u8 ch, s32 x, s32 y) {
+    MenuFieldBlock *block = D_800625A0->fieldBlocks[index];
+    s32 i;
+    s32 n;
+    u8 digit;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D53D0);
+    func_801C80B8(D_8006D8A0[ch].hp);
+    block->count1 = 0;
+    for (i = 0; i < 3; i++) {
+        digit = D_800625A0->digits[6 + i];
+        if (digit != 0xff) {
+            block->count1 += func_8002675C(D_800625A0->sheet, digit, &block->list1[block->count1 * 2],
+                                           D_800625A0->bufferIndex, x + D_801E9B28 + i * 8, y + D_801E9B2C, 0x1000);
+        }
+    }
+    func_801C80B8(D_8006D8A0[ch].hpMax);
+    block->count2 = 0;
+    for (i = 0, n = 0; i < 3; i++) {
+        digit = D_800625A0->digits[6 + i];
+        if (digit != 0xff) {
+            block->count2 += func_8002675C(D_800625A0->sheet, digit, &block->list2[block->count2 * 2],
+                                           D_800625A0->bufferIndex, x + D_801E9B30 + n * 8, y + D_801E9B34, 0x1000);
+            n++;
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D55B4);
+/* Lay out character `ch`'s ep (by digit position) and ep maximum (packed)
+ * on field block `index` at (x, y). */
+void func_801D53D0(u8 index, u8 ch, s32 x, s32 y) {
+    MenuFieldBlock *block = D_800625A0->fieldBlocks[index];
+    s32 i;
+    s32 n;
+    u8 digit;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D5794);
+    func_801C80B8(D_8006D8A0[ch].ep);
+    block->count3 = 0;
+    for (i = 0; i < 2; i++) {
+        digit = D_800625A0->digits[7 + i];
+        if (digit != 0xff) {
+            block->count3 += func_8002675C(D_800625A0->sheet, digit, &block->list3[block->count3 * 2],
+                                           D_800625A0->bufferIndex, x + D_801E9B38 + i * 8, y + D_801E9B3C, 0x1000);
+        }
+    }
+    func_801C80B8(D_8006D8A0[ch].epMax);
+    block->count4 = 0;
+    for (i = 0, n = 0; i < 2; i++) {
+        digit = D_800625A0->digits[7 + i];
+        if (digit != 0xff) {
+            block->count4 += func_8002675C(D_800625A0->sheet, digit, &block->list4[block->count4 * 2],
+                                           D_800625A0->bufferIndex, x + D_801E9B40 + n * 8, y + D_801E9B44, 0x1000);
+            n++;
+        }
+    }
+}
+
+/* Lay out character `ch`'s experience and experience to the next level
+ * (seven digits each, by digit position) on field block `index` at (x, y). */
+void func_801D55B4(u8 index, u8 ch, s32 x, s32 y) {
+    MenuFieldBlock *block = D_800625A0->fieldBlocks[index];
+    s32 i;
+    u8 digit;
+
+    func_801C80B8(D_8006D8A0[ch].exp);
+    block->count5 = 0;
+    for (i = 0; i < 7; i++) {
+        digit = D_800625A0->digits[2 + i];
+        if (digit != 0xff) {
+            block->count5 += func_8002675C(D_800625A0->sheet, digit, &block->list5[block->count5 * 2],
+                                           D_800625A0->bufferIndex, x + D_801E9B48 + i * 8, y + D_801E9B4C, 0x1000);
+        }
+    }
+    func_801C80B8(D_8006D8A0[ch].expNext);
+    block->count7 = 0;
+    for (i = 0; i < 7; i++) {
+        digit = D_800625A0->digits[2 + i];
+        if (digit != 0xff) {
+            block->count7 += func_8002675C(D_800625A0->sheet, digit, &block->list7[block->count7 * 2],
+                                           D_800625A0->bufferIndex, x + D_801E9B50 + i * 8, y + D_801E9B54, 0x1000);
+        }
+    }
+}
+
+/* Lay out character `ch`'s +62 and +63 values (three digits each, by digit
+ * position) on field block `index` at (x, y), the second tinted green. */
+void func_801D5794(u8 index, u8 ch, s32 x, s32 y) {
+    MenuFieldBlock *block = D_800625A0->fieldBlocks[index];
+    s32 i;
+    u8 digit;
+
+    func_801C80B8(D_8006D8A0[ch].unk62);
+    block->count6 = 0;
+    for (i = 0; i < 3; i++) {
+        digit = D_800625A0->digits[6 + i];
+        if (digit != 0xff) {
+            block->count6 += func_8002675C(D_800625A0->sheet, digit, &block->list6[block->count6 * 2],
+                                           D_800625A0->bufferIndex, x + D_801E9B18 + i * 8, y + D_801E9B1C, 0x1000);
+        }
+    }
+    func_801C80B8(D_8006D8A0[ch].unk63);
+    block->count8 = 0;
+    for (i = 0; i < 3; i++) {
+        digit = D_800625A0->digits[6 + i];
+        if (digit != 0xff) {
+            block->count8 += func_8002675C(D_800625A0->sheet, digit, &block->list8[block->count8 * 2],
+                                           D_800625A0->bufferIndex, x + D_801E9B20 + i * 8, y + D_801E9B24, 0x1000);
+        }
+    }
+    for (i = 0; i < block->count8; i++) {
+        SetShadeTex(&block->list8[i * 2 + D_800625A0->bufferIndex], 0);
+        (block->list8 + (i * 2 + D_800625A0->bufferIndex))->r0 = 0;
+        (block->list8 + (i * 2 + D_800625A0->bufferIndex))->g0 = 0x80;
+        (block->list8 + (i * 2 + D_800625A0->bufferIndex))->b0 = 0;
+    }
+}
 
 /* Lay out field block `index` (none for ff) at its mover's position in
  * `mode` and show it. */
@@ -2343,23 +4379,433 @@ void func_801D5BA4(s32 x, s32 y) {
     D_800625A0->fieldMenu->start = D_800625A0->bufferIndex;
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D5CF8);
+/* Lay out the play time digits (hours, minutes, seconds) at (x, y) with
+ * their two separators. */
+void func_801D5CF8(s32 x, s32 y) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D5ED4);
+    for (i = 0; i < 3; i++) {
+        func_8002675C(D_800625A0->sheet, D_800625A0->time[i], &D_800625A0->fieldMenu2->polys[i * 2],
+                      D_800625A0->bufferIndex, x + i * 8, y, 0x1000);
+    }
+    for (i = 3; i < 5; i++) {
+        func_8002675C(D_800625A0->sheet, D_800625A0->time[i], &D_800625A0->fieldMenu2->polys[i * 2],
+                      D_800625A0->bufferIndex, x + i * 8 + 8, y, 0x1000);
+    }
+    for (i = 5; i < 7; i++) {
+        func_8002675C(D_800625A0->sheet, D_800625A0->time[i], &D_800625A0->fieldMenu2->polys[i * 2],
+                      D_800625A0->bufferIndex, x + i * 8 + 0x10, y, 0x1000);
+    }
+    func_8002675C(D_800625A0->sheet, 0xee, &D_800625A0->fieldMenu2->polys2[0], D_800625A0->bufferIndex, x + 0x18, y,
+                  0x1000);
+    func_8002675C(D_800625A0->sheet, 0xee, &D_800625A0->fieldMenu2->polys2[4], D_800625A0->bufferIndex, x + 0x30, y,
+                  0x1000);
+    D_800625A0->fieldMenu2->start = D_800625A0->bufferIndex;
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D6194);
+/* Lay out the detail panel's frame (sheet 14b + slot) and the portrait of
+ * party slot `slot`: its character, or its gear (further left) when `gear`. */
+void func_801D5ED4(u8 slot, u8 gear) {
+    s32 shift;
+    s32 w;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D6338);
+    shift = gear ? 0x18 : 0;
+    func_8002675C(D_800625A0->sheet, slot + 0x14b, D_800625A0->block358->frame, D_800625A0->bufferIndex,
+                  0x18 - shift, 0xe, 0x1000);
+    func_801C851C(D_800625A0->block358->frameAt, D_800625A0->block358->frame[D_800625A0->bufferIndex].x0,
+                  D_800625A0->block358->frame[D_800625A0->bufferIndex].y0, 0x30, 0x30);
+    func_801E927C(&D_800625A0->block358->portrait[D_800625A0->bufferIndex]);
+    D_800625A0->block358->portrait[D_800625A0->bufferIndex].tpage = GetTPage(0, 0, 0x180, 0);
+    if (!gear) {
+        D_800625A0->block358->portrait[D_800625A0->bufferIndex].clut =
+            (D_800625A0->party->ids[slot] & 1) ? D_80059414 : D_800595D4;
+    } else {
+        D_800625A0->block358->portrait[D_800625A0->bufferIndex].clut =
+            ((D_8006D8A0[D_800625A0->party->ids[slot]].gear + 11) & 1) ? D_80059414 : D_800595D4;
+    }
+    w = gear * 0x18 + 0x48;
+    func_801E920C(&D_800625A0->block358->portrait[D_800625A0->bufferIndex], 0, 0,
+                  (u8)(D_801EA578[gear * 3 + slot] * 4), (u8)D_801EA5C4[gear * 3 + slot], (u16)w, 13);
+    func_801C851C(D_800625A0->block358->portraitAt, D_801E9D38 - shift, D_801E9D3C, w, 13);
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D680C);
+/* Build the detail panel's parts of `layout` from the sheet and place each
+ * part's quad where the sheet put it. */
+void func_801D6194(u8 layout) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D6CF4);
+    D_800625A0->block358->count = 0;
+    for (i = 0; i < 24; i++) {
+        if (D_801EA39C[layout * 24 + i] != 0xffff) {
+            D_800625A0->block358->count +=
+                func_8002675C(D_800625A0->sheet, D_801EA39C[layout * 24 + i],
+                              &D_800625A0->block358->parts[D_800625A0->block358->count * 2], D_800625A0->bufferIndex,
+                              D_801E9B60[layout * 24 + i], D_801E9C20[layout * 24 + i], 0x1000);
+        }
+    }
+    for (i = 0; i < D_800625A0->block358->count; i++) {
+        func_801C851C(D_800625A0->block358->partsAt[i],
+                      D_800625A0->block358->parts[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->parts[i * 2 + D_800625A0->bufferIndex].y0,
+                      D_800625A0->block358->parts[i * 2 + D_800625A0->bufferIndex].x1 -
+                          D_800625A0->block358->parts[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->parts[i * 2 + D_800625A0->bufferIndex].y3 -
+                          D_800625A0->block358->parts[i * 2 + D_800625A0->bufferIndex].y0);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D7154);
+/* Lay out the detail panel's hp (by digit position) and hp maximum (packed)
+ * of party slot `slot`: the character's (three digits) or, with `gear`, its
+ * gear's (five digits). */
+void func_801D6338(u8 slot, u8 gear) {
+    s32 digits;
+    s32 first;
+    s32 x;
+    s32 i;
+    u8 digit;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D74EC);
+    if (!gear) {
+        digits = 3;
+        first = 6;
+        x = D_801E9CF0;
+        func_801C80B8(D_8006D8A0[D_800625A0->party->ids[slot]].hp);
+    } else {
+        digits = 5;
+        first = 4;
+        x = D_801E9CF0 + 8;
+        func_801C80B8(D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk60);
+    }
+    D_800625A0->block358->hpCount = 0;
+    for (i = 0; i < digits; i++) {
+        digit = D_800625A0->digits[first + i];
+        if (digit != 0xff) {
+            D_800625A0->block358->hpCount +=
+                func_8002675C(D_800625A0->sheet, digit, &D_800625A0->block358->hp[D_800625A0->block358->hpCount * 2],
+                              D_800625A0->bufferIndex, x - gear * 0x18, D_801E9CF4, 0x1000);
+        }
+        x += 8;
+    }
+    for (i = 0; i < D_800625A0->block358->hpCount; i++) {
+        func_801C851C(D_800625A0->block358->hpAt[i], D_800625A0->block358->hp[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->hp[i * 2 + D_800625A0->bufferIndex].y0,
+                      D_800625A0->block358->hp[i * 2 + D_800625A0->bufferIndex].x1 -
+                          D_800625A0->block358->hp[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->hp[i * 2 + D_800625A0->bufferIndex].y3 -
+                          D_800625A0->block358->hp[i * 2 + D_800625A0->bufferIndex].y0);
+    }
+    if (!gear) {
+        func_801C80B8(D_8006D8A0[D_800625A0->party->ids[slot]].hpMax);
+        x = D_801E9CF8;
+    } else {
+        func_801C80B8(D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk64);
+        x = D_801E9CF8 - 0x20;
+    }
+    D_800625A0->block358->hpMaxCount = 0;
+    for (i = 0; i < digits; i++) {
+        digit = D_800625A0->digits[first + i];
+        if (digit != 0xff) {
+            D_800625A0->block358->hpMaxCount +=
+                func_8002675C(D_800625A0->sheet, digit,
+                              &D_800625A0->block358->hpMax[D_800625A0->block358->hpMaxCount * 2],
+                              D_800625A0->bufferIndex, x - gear * 0x18, gear * 8 + D_801E9CFC, 0x1000);
+            x += 8;
+        }
+    }
+    for (i = 0; i < D_800625A0->block358->hpMaxCount; i++) {
+        func_801C851C(D_800625A0->block358->hpMaxAt[i],
+                      D_800625A0->block358->hpMax[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->hpMax[i * 2 + D_800625A0->bufferIndex].y0,
+                      D_800625A0->block358->hpMax[i * 2 + D_800625A0->bufferIndex].x1 -
+                          D_800625A0->block358->hpMax[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->hpMax[i * 2 + D_800625A0->bufferIndex].y3 -
+                          D_800625A0->block358->hpMax[i * 2 + D_800625A0->bufferIndex].y0);
+    }
+}
 
+/* Lay out the detail panel's ep (by digit position) and ep maximum (packed)
+ * of party slot `slot`: the character's (two digits) or, with `gear`, its
+ * gear's +38 and +3a (four digits). */
+void func_801D680C(u8 slot, u8 gear) {
+    s32 digits;
+    s32 first;
+    s32 x;
+    s32 y;
+    s32 i;
+    u8 digit;
+
+    if (!gear) {
+        digits = 2;
+        first = 7;
+        x = D_801E9D00;
+        y = D_801E9D04;
+        func_801C80B8(D_8006D8A0[D_800625A0->party->ids[slot]].ep);
+    } else {
+        digits = 4;
+        first = 5;
+        x = D_801E9D00;
+        y = D_801E9D04 + 8;
+        func_801C80B8(D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk38);
+    }
+    D_800625A0->block358->epCount = 0;
+    for (i = 0; i < digits; i++) {
+        digit = D_800625A0->digits[first + i];
+        if (digit != 0xff) {
+            D_800625A0->block358->epCount +=
+                func_8002675C(D_800625A0->sheet, digit, &D_800625A0->block358->ep[D_800625A0->block358->epCount * 2],
+                              D_800625A0->bufferIndex, x - gear * 0x18, y, 0x1000);
+        }
+        x += 8;
+    }
+    for (i = 0; i < D_800625A0->block358->epCount; i++) {
+        func_801C851C(D_800625A0->block358->epAt[i], D_800625A0->block358->ep[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->ep[i * 2 + D_800625A0->bufferIndex].y0,
+                      D_800625A0->block358->ep[i * 2 + D_800625A0->bufferIndex].x1 -
+                          D_800625A0->block358->ep[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->ep[i * 2 + D_800625A0->bufferIndex].y3 -
+                          D_800625A0->block358->ep[i * 2 + D_800625A0->bufferIndex].y0);
+    }
+    if (!gear) {
+        func_801C80B8(D_8006D8A0[D_800625A0->party->ids[slot]].epMax);
+        x = D_801E9D08;
+        y = D_801E9D0C;
+    } else {
+        func_801C80B8(D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk3A);
+        x = D_801E9D08 - 0x20;
+        y = D_801E9D0C + 0x10;
+    }
+    D_800625A0->block358->epMaxCount = 0;
+    for (i = 0; i < digits; i++) {
+        digit = D_800625A0->digits[first + i];
+        if (digit != 0xff) {
+            D_800625A0->block358->epMaxCount +=
+                func_8002675C(D_800625A0->sheet, digit,
+                              &D_800625A0->block358->epMax[D_800625A0->block358->epMaxCount * 2],
+                              D_800625A0->bufferIndex, x - gear * 0x18, y, 0x1000);
+            x += 8;
+        }
+    }
+    for (i = 0; i < D_800625A0->block358->epMaxCount; i++) {
+        func_801C851C(D_800625A0->block358->epMaxAt[i],
+                      D_800625A0->block358->epMax[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->epMax[i * 2 + D_800625A0->bufferIndex].y0,
+                      D_800625A0->block358->epMax[i * 2 + D_800625A0->bufferIndex].x1 -
+                          D_800625A0->block358->epMax[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->epMax[i * 2 + D_800625A0->bufferIndex].y3 -
+                          D_800625A0->block358->epMax[i * 2 + D_800625A0->bufferIndex].y0);
+    }
+}
+
+/* Lay out the detail panel's level and +63 value (three digits each, by
+ * digit position) of party slot `slot`, the second tinted green; `gear`
+ * shifts them left. */
+void func_801D6CF4(u8 slot, u8 gear) {
+    s32 i;
+    u8 digit;
+
+    func_801C80B8(D_8006D8A0[D_800625A0->party->ids[slot]].unk62);
+    D_800625A0->block358->levelCount = 0;
+    for (i = 0; i < 3; i++) {
+        digit = D_800625A0->digits[6 + i];
+        if (digit != 0xff) {
+            D_800625A0->block358->levelCount +=
+                func_8002675C(D_800625A0->sheet, digit,
+                              &D_800625A0->block358->level[D_800625A0->block358->levelCount * 2],
+                              D_800625A0->bufferIndex, i * 8 + D_801E9CE0 - gear * 0x18, D_801E9CE4, 0x1000);
+        }
+    }
+    for (i = 0; i < D_800625A0->block358->levelCount; i++) {
+        func_801C851C(D_800625A0->block358->levelAt[i],
+                      D_800625A0->block358->level[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->level[i * 2 + D_800625A0->bufferIndex].y0,
+                      D_800625A0->block358->level[i * 2 + D_800625A0->bufferIndex].x1 -
+                          D_800625A0->block358->level[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->level[i * 2 + D_800625A0->bufferIndex].y3 -
+                          D_800625A0->block358->level[i * 2 + D_800625A0->bufferIndex].y0);
+    }
+    func_801C80B8(D_8006D8A0[D_800625A0->party->ids[slot]].unk63);
+    D_800625A0->block358->level2Count = 0;
+    for (i = 0; i < 3; i++) {
+        digit = D_800625A0->digits[6 + i];
+        if (digit != 0xff) {
+            D_800625A0->block358->level2Count +=
+                func_8002675C(D_800625A0->sheet, digit,
+                              &D_800625A0->block358->level2[D_800625A0->block358->level2Count * 2],
+                              D_800625A0->bufferIndex, i * 8 + D_801E9CE8 - gear * 0x18, D_801E9CEC, 0x1000);
+        }
+    }
+    for (i = 0; i < D_800625A0->block358->level2Count; i++) {
+        SetShadeTex(&D_800625A0->block358->level2[i * 2 + D_800625A0->bufferIndex], 0);
+        (D_800625A0->block358->level2 + (i * 2 + D_800625A0->bufferIndex))->r0 = 0;
+        (D_800625A0->block358->level2 + (i * 2 + D_800625A0->bufferIndex))->g0 = 0x80;
+        (D_800625A0->block358->level2 + (i * 2 + D_800625A0->bufferIndex))->b0 = 0;
+        func_801C851C(D_800625A0->block358->level2At[i],
+                      D_800625A0->block358->level2[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->level2[i * 2 + D_800625A0->bufferIndex].y0,
+                      D_800625A0->block358->level2[i * 2 + D_800625A0->bufferIndex].x1 -
+                          D_800625A0->block358->level2[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->level2[i * 2 + D_800625A0->bufferIndex].y3 -
+                          D_800625A0->block358->level2[i * 2 + D_800625A0->bufferIndex].y0);
+    }
+}
+
+/* Lay out the detail panel's +3c and +40 values (eight digits each, by
+ * digit position) of party slot `slot`; `gear` shifts them left. */
+void func_801D7154(u8 slot, u8 gear) {
+    s32 i;
+    u8 digit;
+
+    func_801C80B8(D_8006D8A0[D_800625A0->party->ids[slot]].unk3C);
+    D_800625A0->block358->value3CCount = 0;
+    for (i = 0; i < 8; i++) {
+        digit = D_800625A0->digits[1 + i];
+        if (digit != 0xff) {
+            D_800625A0->block358->value3CCount +=
+                func_8002675C(D_800625A0->sheet, digit,
+                              &D_800625A0->block358->value3C[D_800625A0->block358->value3CCount * 2],
+                              D_800625A0->bufferIndex, i * 8 + D_801E9D10 - gear * 0x18, D_801E9D14, 0x1000);
+        }
+    }
+    for (i = 0; i < D_800625A0->block358->value3CCount; i++) {
+        func_801C851C(D_800625A0->block358->value3CAt[i],
+                      D_800625A0->block358->value3C[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->value3C[i * 2 + D_800625A0->bufferIndex].y0,
+                      D_800625A0->block358->value3C[i * 2 + D_800625A0->bufferIndex].x1 -
+                          D_800625A0->block358->value3C[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->value3C[i * 2 + D_800625A0->bufferIndex].y3 -
+                          D_800625A0->block358->value3C[i * 2 + D_800625A0->bufferIndex].y0);
+    }
+    func_801C80B8(D_8006D8A0[D_800625A0->party->ids[slot]].unk40);
+    D_800625A0->block358->value40Count = 0;
+    for (i = 0; i < 8; i++) {
+        digit = D_800625A0->digits[1 + i];
+        if (digit != 0xff) {
+            D_800625A0->block358->value40Count +=
+                func_8002675C(D_800625A0->sheet, digit,
+                              &D_800625A0->block358->value40[D_800625A0->block358->value40Count * 2],
+                              D_800625A0->bufferIndex, i * 8 + D_801E9D18 - gear * 0x18, D_801E9D1C, 0x1000);
+        }
+    }
+    for (i = 0; i < D_800625A0->block358->value40Count; i++) {
+        func_801C851C(D_800625A0->block358->value40At[i],
+                      D_800625A0->block358->value40[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->value40[i * 2 + D_800625A0->bufferIndex].y0,
+                      D_800625A0->block358->value40[i * 2 + D_800625A0->bufferIndex].x1 -
+                          D_800625A0->block358->value40[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->value40[i * 2 + D_800625A0->bufferIndex].y3 -
+                          D_800625A0->block358->value40[i * 2 + D_800625A0->bufferIndex].y0);
+    }
+}
+
+/* Lay out the detail panel's experience and experience to the next level
+ * (seven digits each, by digit position) of party slot `slot`; `gear` shifts
+ * them left. */
+void func_801D74EC(u8 slot, u8 gear) {
+    s32 i;
+    u8 digit;
+
+    func_801C80B8(D_8006D8A0[D_800625A0->party->ids[slot]].exp);
+    D_800625A0->block358->expCount = 0;
+    for (i = 0; i < 7; i++) {
+        digit = D_800625A0->digits[2 + i];
+        if (digit != 0xff) {
+            D_800625A0->block358->expCount +=
+                func_8002675C(D_800625A0->sheet, digit,
+                              &D_800625A0->block358->exp[D_800625A0->block358->expCount * 2],
+                              D_800625A0->bufferIndex, i * 8 + D_801E9D20 - gear * 0x18, D_801E9D24, 0x1000);
+        }
+    }
+    for (i = 0; i < D_800625A0->block358->expCount; i++) {
+        func_801C851C(D_800625A0->block358->expAt[i],
+                      D_800625A0->block358->exp[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->exp[i * 2 + D_800625A0->bufferIndex].y0,
+                      D_800625A0->block358->exp[i * 2 + D_800625A0->bufferIndex].x1 -
+                          D_800625A0->block358->exp[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->exp[i * 2 + D_800625A0->bufferIndex].y3 -
+                          D_800625A0->block358->exp[i * 2 + D_800625A0->bufferIndex].y0);
+    }
+    func_801C80B8(D_8006D8A0[D_800625A0->party->ids[slot]].expNext);
+    D_800625A0->block358->expNextCount = 0;
+    for (i = 0; i < 7; i++) {
+        digit = D_800625A0->digits[2 + i];
+        if (digit != 0xff) {
+            D_800625A0->block358->expNextCount +=
+                func_8002675C(D_800625A0->sheet, digit,
+                              &D_800625A0->block358->expNext[D_800625A0->block358->expNextCount * 2],
+                              D_800625A0->bufferIndex, i * 8 + D_801E9D28 - gear * 0x18, D_801E9D2C, 0x1000);
+        }
+    }
+    for (i = 0; i < D_800625A0->block358->expNextCount; i++) {
+        func_801C851C(D_800625A0->block358->expNextAt[i],
+                      D_800625A0->block358->expNext[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->expNext[i * 2 + D_800625A0->bufferIndex].y0,
+                      D_800625A0->block358->expNext[i * 2 + D_800625A0->bufferIndex].x1 -
+                          D_800625A0->block358->expNext[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->expNext[i * 2 + D_800625A0->bufferIndex].y3 -
+                          D_800625A0->block358->expNext[i * 2 + D_800625A0->bufferIndex].y0);
+    }
+}
+
+/* Lay out the detail panel's value derived from record +77..+79 of party
+ * slot `slot` ((+78 + +77) * 10 + +79) * 22 shown in hundredths with one
+ * decimal) or, with `gear`, its gear's +68 (five digits). Only the register
+ * allocation differs (the gear and the tenth digit trade saved registers). */
+#ifdef NON_MATCHING
+void func_801D7884(u8 slot, u8 gear) {
+    s32 digits;
+    s32 first;
+    s32 x;
+    s32 i;
+    u8 digit;
+    u16 value;
+    u16 whole;
+    u16 tenth;
+
+    if (!gear) {
+        value = ((D_8006D8A0[D_800625A0->party->ids[slot]].accessories[4] + D_8006D8A0[D_800625A0->party->ids[slot]].accessories[3]) *
+                     10 +
+                 D_8006D8A0[D_800625A0->party->ids[slot]].unk79) *
+                22;
+        whole = value / 100;
+        digits = 3;
+        first = 6;
+        tenth = (value - whole * 100) / 10;
+        func_801C80B8(whole);
+        x = D_801E9D30;
+    } else {
+        digits = 5;
+        func_801C80B8(D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk68);
+        first = 4;
+        x = D_801E9D30 + 8;
+    }
+    D_800625A0->block358->list1C70Count = 0;
+    for (i = 0; i < digits; i++) {
+        digit = D_800625A0->digits[first + i];
+        if (digit != 0xff) {
+            D_800625A0->block358->list1C70Count +=
+                func_8002675C(D_800625A0->sheet, digit,
+                              &D_800625A0->block358->list1C70[D_800625A0->block358->list1C70Count * 2],
+                              D_800625A0->bufferIndex, i * 8 + x - gear * 0x18, gear * 8 + D_801E9D34, 0x1000);
+        }
+    }
+    if (!gear) {
+        D_800625A0->block358->list1C70Count +=
+            func_8002675C(D_800625A0->sheet, tenth,
+                          &D_800625A0->block358->list1C70[D_800625A0->block358->list1C70Count * 2],
+                          D_800625A0->bufferIndex, D_801E9D30 + 0x20, D_801E9D34, 0x1000);
+    }
+    for (i = 0; i < D_800625A0->block358->list1C70Count; i++) {
+        func_801C851C(D_800625A0->block358->list1C70At[i],
+                      D_800625A0->block358->list1C70[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->list1C70[i * 2 + D_800625A0->bufferIndex].y0,
+                      D_800625A0->block358->list1C70[i * 2 + D_800625A0->bufferIndex].x1 -
+                          D_800625A0->block358->list1C70[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->list1C70[i * 2 + D_800625A0->bufferIndex].y3 -
+                          D_800625A0->block358->list1C70[i * 2 + D_800625A0->bufferIndex].y0);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D7884);
+#endif
 
 /* Build the status panels of party slot `slot` for `mode` and show them. */
 void func_801D7C3C(u8 slot, u8 mode) {
@@ -2375,9 +4821,76 @@ void func_801D7C3C(u8 slot, u8 mode) {
     D_800625A0->block358->buffer = D_800625A0->bufferIndex;
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D7CFC);
+/* Show the detail panel's two tabs (when `shown`), the one not selected by
+ * `second` dimmed and semi-transparent. */
+void func_801D7CFC(u8 slot, u8 shown, u8 second) {
+    s32 i;
+    s32 dim;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D7F50);
+    second = second == 0; /* now: the tab to dim */
+    D_800625A0->block358->tabCount = 0;
+    if (shown) {
+        for (i = 0; i < 2; i++) {
+            func_8002675C(D_800625A0->sheet, D_801E977C[i], &D_800625A0->block358->tabs[i * 2],
+                          D_800625A0->bufferIndex, i * 0x20 + 0x78, 0x5a, 0x1000);
+            func_801C851C(D_800625A0->block358->tabsAt[i],
+                          D_800625A0->block358->tabs[i * 2 + D_800625A0->bufferIndex].x0,
+                          D_800625A0->block358->tabs[i * 2 + D_800625A0->bufferIndex].y0,
+                          D_800625A0->block358->tabs[i * 2 + D_800625A0->bufferIndex].x1 -
+                              D_800625A0->block358->tabs[i * 2 + D_800625A0->bufferIndex].x0,
+                          D_800625A0->block358->tabs[i * 2 + D_800625A0->bufferIndex].y3 -
+                              D_800625A0->block358->tabs[i * 2 + D_800625A0->bufferIndex].y0);
+        }
+        dim = second * 2;
+        func_801E91C4(D_800625A0->block358->tabs + (dim + D_800625A0->bufferIndex));
+        D_800625A0->block358->tabs[dim + D_800625A0->bufferIndex].tpage |= 0x20;
+        (D_800625A0->block358->tabs + (dim + D_800625A0->bufferIndex))->r0 = 0x20;
+        (D_800625A0->block358->tabs + (dim + D_800625A0->bufferIndex))->g0 = 0x20;
+        (D_800625A0->block358->tabs + (dim + D_800625A0->bufferIndex))->b0 = 0x20;
+        D_800625A0->block358->tabBuffer = D_800625A0->bufferIndex;
+        D_800625A0->block358->tabCount = 2;
+    }
+}
+
+/* Lay out the stat names of rows `first`..6 at (x, y) into the block at
+ * +35c, dimming the odd rows, and place their quads. */
+void func_801D7F50(s32 x, s32 y, u8 first) {
+    s32 clutX;
+    s32 clutY;
+    s32 pageX;
+    s32 pageY;
+    s32 u;
+    s32 v;
+    s32 i;
+    s32 start;
+    s32 part;
+
+    func_80026338(D_800625A0->sheet, 0xe0, &clutX, &clutY, &pageX, &pageY, &u, &v);
+    D_800625A0->block35C->kind = 0;
+    for (i = 0; i < 7 - first; i++) {
+        start = D_800625A0->block35C->kind;
+        D_800625A0->block35C->kind += func_8002675C(D_800625A0->sheet, D_801EA45C[first * 7 + i],
+                                                    &D_800625A0->block35C->polys[start * 2], D_800625A0->bufferIndex,
+                                                    x + D_801E9D40[i], y + D_801E9D5C[i], 0x1000);
+        if (i & 1) {
+            for (part = start; part < D_800625A0->block35C->kind; part++) {
+                SetShadeTex(&D_800625A0->block35C->polys[part * 2 + D_800625A0->bufferIndex], 0);
+                (D_800625A0->block35C->polys + (part * 2 + D_800625A0->bufferIndex))->r0 = 0x40;
+                (D_800625A0->block35C->polys + (part * 2 + D_800625A0->bufferIndex))->g0 = 0x40;
+                (D_800625A0->block35C->polys + (part * 2 + D_800625A0->bufferIndex))->b0 = 0x40;
+            }
+        }
+    }
+    for (i = 0; i < D_800625A0->block35C->kind; i++) {
+        func_801C851C(&D_800625A0->block35C->verts[i * 4],
+                      D_800625A0->block35C->polys[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block35C->polys[i * 2 + D_800625A0->bufferIndex].y0,
+                      D_800625A0->block35C->polys[i * 2 + D_800625A0->bufferIndex].x1 -
+                          D_800625A0->block35C->polys[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block35C->polys[i * 2 + D_800625A0->bufferIndex].y3 -
+                          D_800625A0->block35C->polys[i * 2 + D_800625A0->bufferIndex].y0);
+    }
+}
 
 /* Initialise the two gradient quads of a gauge in colour `colour` (0 pink,
  * 1 green, 2 red, 3 blue), fading to black. */
@@ -2519,13 +5032,185 @@ void func_801D8DE4(u8 slot, u8 lower, u8 arg2, u8 mode) {
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D8EA4);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D9704);
+/* Step party slot `slot` forward (`dir` 0) or back (1) to the next occupied
+ * slot, or with `readyOnly` to the next ready one; wraps around the three. */
+s32 func_801D9704(s32 slot, u8 dir, u8 readyOnly) {
+    switch (dir) {
+    case 0:
+        for (;;) {
+            slot++;
+            if (slot >= 3) {
+                slot = 0;
+            }
+            if (!readyOnly) {
+                if (D_800625A0->party->ids[slot] != 0xff) {
+                    break;
+                }
+            } else if (D_800625A0->party->ready[slot] != 0) {
+                break;
+            }
+        }
+        break;
+    case 1:
+        for (;;) {
+            slot--;
+            if (slot < 0) {
+                slot = 2;
+            }
+            if (!readyOnly) {
+                if (D_800625A0->party->ids[slot] != 0xff) {
+                    break;
+                }
+            } else if (D_800625A0->party->ready[slot] != 0) {
+                break;
+            }
+        }
+        break;
+    }
+    return slot;
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D9808);
+/* The sound mode screen: choose one of the sound driver's output
+ * modes (choice 0 is mode 0, 1 mode 2, 2 mode 1); confirm applies it, cancel
+ * leaves. Always continues the menu. */
+u8 func_801D9808(void) {
+    s32 mode;
+    u8 first;
+    u8 stay;
+    u8 apply;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D9B08);
+    stay = 1;
+    first = 1;
+    apply = 0;
+    do {
+        func_801C7BF4();
+        if (first) {
+            func_801E8018(4, D_800625A0->soundLabels, D_801EA574, D_800625A0->party->unk5C);
+            func_801E86C8(0);
+            D_800625A0->choiceShown = 0xff;
+            switch (func_80038824()) {
+            case 0:
+                mode = 0;
+                break;
+            case 1:
+                mode = 2;
+                break;
+            case 2:
+                mode = 1;
+                break;
+            }
+            first = 0;
+            D_800625A0->choice = mode;
+        }
+        if (D_800625A0->choice != D_800625A0->choiceShown) {
+            func_801E8070(6, D_800625A0->soundLabels, (u8 *)D_801EA578, D_801E9F88, D_800625A0->party->unk5C,
+                          D_800625A0->choice, 7, 0);
+            func_801E8B4C(0);
+            D_800625A0->choiceShown = D_800625A0->choice;
+        }
+        switch (D_800625A0->input) {
+        case 4:
+            apply = 1;
+        case 5:
+            stay = 0;
+            break;
+        case 1:
+            if (D_800625A0->choice != 0) {
+                D_800625A0->choice--;
+            } else {
+                D_800625A0->choice = D_800625A0->choiceCount - 1;
+            }
+            break;
+        case 3:
+            if (++D_800625A0->choice >= D_800625A0->choiceCount) {
+                D_800625A0->choice = 0;
+            }
+            break;
+        }
+    } while (stay);
+    if (apply) {
+        switch (D_800625A0->choice) {
+        case 0:
+            mode = 0;
+            break;
+        case 1:
+            mode = 2;
+            break;
+        case 2:
+            mode = 1;
+            break;
+        }
+        func_800386C4(mode);
+    }
+    func_801E8044(4, D_800625A0->party->unk5C);
+    D_800625A0->party->redraw4 = 0;
+    D_800625A0->party->redraw3 = 0;
+    return 1;
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D9C84);
+/* Restart memory-card access: close the card events, reinitialise the card
+ * library and open and enable its four events (ioe, error, timeout, new card). */
+void func_801D9B08(void) {
+    func_801C8960();
+    VSync(0);
+    InitCARD(1);
+    StartCARD();
+    _bu_init();
+    DrawSync(0);
+    VSync(0);
+    EnterCriticalSection();
+    D_800625A0->card->events[0] = OpenEvent(0xf4000001, 4, 0x2000, 0);
+    D_800625A0->card->events[1] = OpenEvent(0xf4000001, 0x8000, 0x2000, 0);
+    D_800625A0->card->events[2] = OpenEvent(0xf4000001, 0x100, 0x2000, 0);
+    D_800625A0->card->events[3] = OpenEvent(0xf4000001, 0x2000, 0x2000, 0);
+    EnableEvent(D_800625A0->card->events[0]);
+    EnableEvent(D_800625A0->card->events[1]);
+    EnableEvent(D_800625A0->card->events[2]);
+    EnableEvent(D_800625A0->card->events[3]);
+    ExitCriticalSection();
+}
+
+/* Enter the file screen's card mode: show message 20, wait for the view to
+ * stop, restart card access with the CD callbacks saved and cleared, forget
+ * the card presence and listings and check the cards now. Returns nonzero
+ * when the check fails (the message stays up); otherwise closes the message. */
+u8 func_801D9C84(void) {
+    MenuCard *card;
+    u8 failed;
+
+    failed = 1;
+    func_801D2F4C(0x20);
+    D_800625A0->party->messageShown = 1;
+    while (D_800625A0->viewMotion != 0) {
+        func_801C7BF4();
+    }
+    D_800625A0->card->busy = 1;
+    func_801C7BF4();
+    func_801D9B08();
+    DrawSync(0);
+    VSync(0);
+    EnterCriticalSection();
+    D_801EA718 = CdSyncCallback(0);
+    D_801EA71C = CdReadyCallback(0);
+    D_801EA720 = CdReadCallback(0);
+    ExitCriticalSection();
+    card = D_800625A0->card;
+    card->presentShown[0] = card->presentShown[1] = 0xff;
+    D_800625A0->card->scanned[0] = 0;
+    D_800625A0->card->scanned[1] = 0;
+    D_800625A0->card->mode = 2;
+    D_800625A0->cardPollTimer = 0x3c;
+    func_801C7BF4();
+    func_801C7BF4();
+    if (func_801C93A8() == 0) {
+        if (D_800625A0->party->messageShown != 0) {
+            func_801D32B4();
+            D_800625A0->party->messageShown = 0;
+        }
+        failed = 0;
+    }
+    return failed;
+}
 
 /* Leave the save/load screen: clear its images and listing, and close the
  * card events and handlers. */
@@ -2561,7 +5246,128 @@ void func_801D9F34(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D9F98);
+/* The file screen (save or load by `save`): on the first pass build the card
+ * panels, zoom in, show the header and enter card mode; then each frame
+ * check the cards, show the choice labels and handle the input: confirm runs
+ * the file command (and ends the screen outside the title), cancel ends it.
+ * Returns 0 when a `loading` screen was left by the player, the cards failed
+ * outside the field menu or there is no card outside the field menu. */
+u8 func_801D9F98(u8 loading, u8 save) {
+    u8 running;
+    u8 first;
+    u8 result;
+    u8 header;
+
+    running = 1;
+    first = 1;
+    result = 1;
+    D_801E9784 = 0;
+    D_800625A0->choice = 2;
+    header = 0;
+    if (D_80059460 == 0 && D_80059171 == 0) {
+        D_800625A0->choice = 1;
+    }
+    D_800625A0->choiceShown = 0xff;
+    func_801D9F34();
+    func_801C7BF4();
+    while (running) {
+        D_800625A0->party->unkB = 0;
+        D_800625A0->loadState = 1;
+        if (first) {
+            func_801E6450();
+            func_801E5ACC();
+            D_800625A0->card->present[0] = 1;
+            D_800625A0->card->present[1] = 1;
+            func_801D1E80();
+            switch (D_80059460) {
+            case 0:
+                func_801D29A8(0, 0);
+                if (D_80059171 == 0) {
+                    header = 9;
+                }
+                break;
+            case 2:
+                header = 7;
+                break;
+            case 6:
+                break;
+            }
+            func_801E86C8(header);
+            D_800625A0->party->redraw6 = 0;
+            first = 0;
+            D_800625A0->party->unk20[1] = 0;
+            if (func_801D9C84()) {
+                if (D_80059460 != 0) {
+                    result = 0;
+                }
+                break;
+            }
+            D_800625A0->party->cardMode = 1;
+        }
+        if (D_801E9778 != 0) {
+            func_801D2F4C(0x20);
+        }
+        if (func_801C93A8()) {
+            running = 0;
+        }
+        if (D_801E9778 != 0) {
+            func_801D32B4();
+            D_801E9778 = 0;
+        }
+        if (!running) {
+            break;
+        }
+        if (D_800625A0->choice != D_800625A0->choiceShown) {
+            func_801E8070(6, D_800625A0->fileLabels, D_801EA542, D_801E9EA0, D_800625A0->party->unk1A,
+                          D_800625A0->choice, 7, 0);
+            if (D_80059460 != 2) {
+                func_801E8B4C(0);
+            } else {
+                func_801E8B4C(7);
+            }
+            D_800625A0->choiceShown = D_800625A0->choice;
+        }
+        switch (D_800625A0->input) {
+        case 4:
+            func_801D22C4();
+            func_801E8044(6, D_800625A0->party->unk1A);
+            running = func_801CD710(save);
+            D_800625A0->choiceShown = 0xff;
+            func_801D9F34();
+            if (D_80059460 == 2) {
+                break;
+            }
+        case 5:
+            running = 0;
+            if (loading) {
+                result = 0;
+            }
+            break;
+        case 1:
+            if (D_800625A0->choice != 0) {
+                D_800625A0->choice--;
+            } else {
+                D_800625A0->choice = D_800625A0->choiceCount - 1;
+            }
+            break;
+        case 3:
+            if (++D_800625A0->choice >= D_800625A0->choiceCount) {
+                D_800625A0->choice = 0;
+            }
+            break;
+        }
+    }
+    if (*(u16 *)D_800625A0->card->present == 0 && D_80059460 != 0) {
+        result = 0;
+    }
+    D_800625A0->party->cardMode = 0;
+    D_800625A0->party->unkB = 0;
+    D_800625A0->party->redraw4 = 0;
+    D_800625A0->party->redraw3 = 0;
+    func_801E8044(6, D_800625A0->party->unk1A);
+    func_801C8960();
+    return result;
+}
 
 /* Open the save/load screen: its labels, its 1198-byte block and view 0. */
 void func_801DA4A8(void) {
@@ -2588,9 +5394,171 @@ void func_801DA518(void) {
     func_800320E8(D_800625A0->tables->items);
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DA5BC);
+/* Build the 16 visible entries of the item list from scroll row `row`: an
+ * entry without an id or count is emptied; otherwise the count is capped at
+ * 99 and the item name and two-digit count are rendered into the image area
+ * and laid out, greyed when the item cannot be used here. */
+#ifdef NON_MATCHING
+/* Differs in register allocation: this keeps 0xcccccccd in a saved register
+ * and spills `row`; the original materialises the constant at each use. */
+void func_801DA5BC(s32 row) {
+    u8 codes[4];
+    u8 text[8];
+    RECT rect;
+    s32 i;
+    s32 tens;
+    s32 x;
+    s32 left;
+    u16 y;
+    u8 kind;
+    u8 grey;
+    u8 *image;
+    u8 *ids;
+    u8 *counts;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DA9A8);
+    image = func_80031BDC(0x3f6, 0);
+    codes[1] = 0;
+    codes[3] = 0;
+    ids = D_8006F65A;
+    counts = ids - 150;
+    for (i = 0; i < 16; i++) {
+        if (ids[row * 2 + i] != 0) {
+            if (counts[row * 2 + i] != 0) {
+                if (counts[row * 2 + i] >= 100) {
+                    counts[row * 2 + i] = 99;
+                }
+                D_800625A0->block42C->names[i].width = func_80034EAC(func_80033818(ids[row * 2 + i]), image, 0x24, 0);
+                tens = counts[row * 2 + i] / 10;
+                codes[0] = tens + 0x10;
+                if (tens == 0) {
+                    codes[0] = 0xc3;
+                }
+                codes[2] = counts[row * 2 + i] % 10 + 0x10;
+                func_80033B34(codes, text, 2);
+                D_800625A0->block42C->values[i].width = func_80034EAC(text, image, 0x24, 1);
+                rect.x = (i & 1) * 0x18 + 0x180;
+                rect.y = (i / 2) * 0xd + 0x80;
+                rect.w = 0x28;
+                rect.h = 0xd;
+                LoadImage(&rect, image);
+                DrawSync(0);
+                kind = D_800625A0->tables->items[ids[row * 2 + i]].use;
+                if (kind & 0x20) {
+                    grey = kind & 0x80;
+                    if (D_80059171 == 0) {
+                        grey = 0;
+                    }
+                } else {
+                    grey = kind & 0x80;
+                }
+                func_801E7C50(&D_800625A0->block42C->names[i], i, 0x80, grey | 1);
+                func_801E7C50(&D_800625A0->block42C->values[i], i, 0x80, grey | 2);
+                x = (i % 2) * 0x88;
+                y = (i / 2) * 0x10 | 0xe;
+                left = (x + 0x28) & 0xfff8;
+                func_801C851C(D_800625A0->block42C->names[i].verts, left, y, D_800625A0->block42C->names[i].width,
+                              0xd);
+                left = (x + 0x90) & 0xfff8;
+                func_801C851C(D_800625A0->block42C->values[i].verts, left, y, D_800625A0->block42C->values[i].width,
+                              0xd);
+                D_800625A0->block42C->names[i].count = D_800625A0->bufferIndex;
+                D_800625A0->block42C->values[i].count = D_800625A0->bufferIndex;
+                D_800625A0->block42C->shown[i] = 1;
+            } else {
+                ids[row * 2 + i] = 0;
+                D_800625A0->block42C->shown[i] = 0;
+            }
+        } else {
+            counts[row * 2 + i] = 0;
+            D_800625A0->block42C->shown[i] = 0;
+        }
+    }
+    func_800320E8(image);
+    D_800625A0->party->unk48 = 1;
+}
+#else
+INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DA5BC);
+#endif
+
+/* Show the description of item list entry `entry` at scroll row `row`: the
+ * item's message line, a copy of its name and count texts and, for items
+ * used from the menu, its target labels. An empty entry hides it. */
+void func_801DA9A8(s32 entry, s32 row) {
+    RECT rect;
+    u8 *ids;
+    u8 *id;
+    u8 *image;
+    s32 pad;
+    u8 all;
+    u8 kind;
+    u16 target;
+    MenuItem *item;
+
+    ids = D_8006F65A;
+    id = &ids[row * 2 + entry];
+    if (*id != 0) {
+        image = func_80031BDC(0x618, 0);
+        bzero(image, 0x618);
+        D_800625A0->block42C->extra[2].width =
+            func_80034EAC(func_80033728(D_800625A0->block42C->unk1180, *id), image, 0x39, 0);
+        rect.x = 0x140;
+        rect.y = 0x4e;
+        rect.w = 0x3c;
+        rect.h = 0xd;
+        LoadImage(&rect, image);
+        DrawSync(0);
+        func_801E7C50(&D_800625A0->block42C->extra[2], 0, 0, 0);
+        func_801E920C(&D_800625A0->block42C->extra[2].polys[D_800625A0->bufferIndex], 0x1c, 0xa1, 0, 0x4e,
+                      D_800625A0->block42C->extra[2].width, 0xd);
+        func_801C851C(D_800625A0->block42C->extra[2].verts, 0x1c, 0xa1, D_800625A0->block42C->extra[2].width, 0xd);
+        func_800320E8(image);
+        pad = D_800625A0->block42C->values[entry].width == 0x10 ? 4 : 0;
+        memmove(&D_800625A0->block42C->extra[0], &D_800625A0->block42C->names[entry], sizeof(MenuLabelSlot));
+        memmove(&D_800625A0->block42C->extra[1], &D_800625A0->block42C->values[entry], sizeof(MenuLabelSlot));
+        func_801C851C(D_800625A0->block42C->extra[0].verts, 0x10, 0x93, D_800625A0->block42C->names[entry].width,
+                      0xd);
+        func_801C851C(D_800625A0->block42C->extra[1].verts, pad | 0x78, 0x93,
+                      D_800625A0->block42C->values[entry].width, 0xd);
+        (D_800625A0->block42C->extra[0].polys + D_800625A0->bufferIndex)->r0 = 0x80;
+        (D_800625A0->block42C->extra[0].polys + D_800625A0->bufferIndex)->g0 = 0x80;
+        (D_800625A0->block42C->extra[0].polys + D_800625A0->bufferIndex)->b0 = 0x80;
+        SetSemiTrans(&D_800625A0->block42C->extra[0].polys[D_800625A0->bufferIndex], 0);
+        (D_800625A0->block42C->extra[1].polys + D_800625A0->bufferIndex)->r0 = 0x80;
+        (D_800625A0->block42C->extra[1].polys + D_800625A0->bufferIndex)->g0 = 0x80;
+        (D_800625A0->block42C->extra[1].polys + D_800625A0->bufferIndex)->b0 = 0x80;
+        SetSemiTrans(&D_800625A0->block42C->extra[1].polys[D_800625A0->bufferIndex], 0);
+        func_801E8044(8, D_800625A0->party->unk38);
+        item = &D_800625A0->tables->items[*id];
+        if (item->use & 0xc0) {
+            target = item->target;
+            if (target & 0x4000) {
+                all = 2;
+            } else if (target & 0x1000) {
+                all = 0;
+            } else {
+                all = 1;
+            }
+            func_801E8070(8, D_800625A0->labels10E0, D_801EA550, D_801E9EA0, D_800625A0->party->unk38, all, 0, 1);
+            kind = (item->target & 3) + 3;
+            func_801E8070(8, D_800625A0->labels10E0, D_801EA550, D_801E9EA0, D_800625A0->party->unk38, kind, 0, 1);
+            (D_800625A0->labels10E0[all].polys + D_800625A0->bufferIndex)->r0 = 0x80;
+            (D_800625A0->labels10E0[all].polys + D_800625A0->bufferIndex)->g0 = 0x80;
+            (D_800625A0->labels10E0[all].polys + D_800625A0->bufferIndex)->b0 = 0x80;
+            SetSemiTrans(&D_800625A0->labels10E0[all].polys[D_800625A0->bufferIndex], 0);
+            (D_800625A0->labels10E0[kind].polys + D_800625A0->bufferIndex)->r0 = 0x80;
+            (D_800625A0->labels10E0[kind].polys + D_800625A0->bufferIndex)->g0 = 0x80;
+            (D_800625A0->labels10E0[kind].polys + D_800625A0->bufferIndex)->b0 = 0x80;
+            SetSemiTrans(&D_800625A0->labels10E0[kind].polys[D_800625A0->bufferIndex], 0);
+        }
+        D_800625A0->block42C->extra[0].count = D_800625A0->bufferIndex;
+        D_800625A0->block42C->extra[1].count = D_800625A0->bufferIndex;
+        D_800625A0->block42C->extra[2].count = D_800625A0->bufferIndex;
+        D_800625A0->block42C->extraShown = 1;
+    } else {
+        func_801E8044(8, D_800625A0->party->unk38);
+        D_800625A0->block42C->extraShown = 0;
+    }
+}
 
 /* Allocate image block `index` (+444). */
 void func_801DB02C(u8 index) {
@@ -2599,11 +5567,62 @@ void func_801DB02C(u8 index) {
     block = func_80031BDC(0x78, 0);
     D_800625A0->blocks444[index] = block;
     bzero(block, 0x78);
-    D_800625A0->blocks444[index]->unk70 = 4;
-    D_800625A0->blocks444[index]->unk74 = 0;
+    D_800625A0->blocks444[index]->frame = 4;
+    D_800625A0->blocks444[index]->timer = 0;
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DB0A8);
+/* Animate list cursor `index` (image block +444) and place it at entry
+ * `entry` of the list kind `kind` (0 item list, 1 scrolled item list at
+ * scroll row `row`, hidden when off the page, 2 two-column list, 3 one
+ * column). */
+void func_801DB0A8(s32 entry, s32 row, u8 kind, u8 index) {
+    MenuImageBlock *cursor;
+    POLY_FT4 *poly;
+    s32 x;
+    s32 y;
+    s32 shown;
+
+    cursor = D_800625A0->blocks444[index];
+    shown = 1;
+    if (++cursor->timer >= 6) {
+        if (--cursor->frame < 0) {
+            cursor->frame = 4;
+        }
+        cursor->timer = 0;
+    }
+    switch (kind) {
+    case 0:
+        x = (entry % 2) * 0x88 + 0x1c;
+        y = (entry / 2) * 0x10 + 0x11;
+        break;
+    case 1:
+        if (entry >= row * 2 && entry < row * 2 + 0x10) {
+            x = (entry % 2) * 0x88 + 0x18;
+            y = (entry - row * 2) / 2 * 0x10 + 0x11;
+        } else {
+            shown = 0;
+        }
+        break;
+    case 2:
+        x = (entry % 2) * 0x88 + 0x18;
+        y = entry / 2 * 0x10 + 0x14;
+        break;
+    case 3:
+        x = 0xa0;
+        y = entry * 0xd + 0x14;
+        shown = 2;
+        break;
+    }
+    if (shown) {
+        func_8002675C(D_800625A0->sheet, cursor->frame + 0x15b, cursor, D_800625A0->bufferIndex, 0, 0, 0x1000);
+        poly = &cursor->polys[D_800625A0->bufferIndex];
+        func_801C851C(cursor->verts, poly->x0 + x, poly->y0 + y, poly->x1 - poly->x0, poly->y3 - poly->y0);
+        cursor->count = D_800625A0->bufferIndex;
+        D_800625A0->party->unk50[index] = 1;
+    } else {
+        D_800625A0->party->unk50[index] = 0;
+    }
+}
 
 /* Free image block `index` (+444) and clear its party flag (+50). */
 void func_801DB340(u8 index) {
@@ -2611,11 +5630,204 @@ void func_801DB340(u8 index) {
     D_800625A0->party->unk50[index] = 0;
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DB39C);
+/* Shade the item screen's texts by `mode` (801e8eac): windows 3 and 4, the
+ * window quad, each built entry name and count, the two cursors, the
+ * selected entry, the description and the eight help labels. */
+void func_801DB39C(u8 mode) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DB5E4);
+    func_801E8F60(3, mode);
+    func_801E8F60(4, mode);
+    func_801E8EAC(&D_800625A0->block43C->polys[D_800625A0->block43C->buffer], mode);
+    i = 0;
+    do {
+        if (D_800625A0->block42C->names[i].polys[D_800625A0->block42C->names[i].count].r0 != 0x20) {
+            func_801E8EAC(&D_800625A0->block42C->names[i].polys[D_800625A0->block42C->names[i].count], mode);
+            func_801E8EAC(&D_800625A0->block42C->values[i].polys[D_800625A0->block42C->values[i].count], mode);
+        }
+        i++;
+    } while (i < 16);
+    for (i = 0; i < 2; i++) {
+        func_801E8EAC(&D_800625A0->blocks444[i]->polys[D_800625A0->blocks444[i]->count], mode);
+    }
+    func_801E8EAC(&D_800625A0->block42C->extra[0].polys[D_800625A0->block42C->extra[0].count], mode);
+    func_801E8EAC(&D_800625A0->block42C->extra[1].polys[D_800625A0->block42C->extra[1].count], mode);
+    func_801E8EAC(&D_800625A0->block42C->extra[2].polys[D_800625A0->block42C->extra[2].count], mode);
+    for (i = 0; i < 8; i++) {
+        func_801E8EAC(&D_800625A0->labels10E0[i].polys[D_800625A0->labels10E0[i].count], mode);
+    }
+}
 
+/* Build the target selection's party panels: allocate the three panel
+ * blocks once, clear them and build each occupied slot's panel (layout 1
+ * for `mode` 2, where only characters with a gear qualify; `mode` then
+ * becomes that layout flag); then place the three target cursor quads. */
+void func_801DB5E4(u8 mode) {
+    MenuAnchor *xs;
+    MenuAnchor *ys;
+    MenuPanel *panel;
+    void *block;
+    s32 i;
+    u8 ok;
+    u8 id;
+
+    if (D_801E9785 == 0) {
+        for (i = 0; i < 3; i++) {
+            block = func_80031BDC(0xbec, 0);
+            D_800625A0->panels[i] = block;
+            bzero(block, 0xbec);
+        }
+        D_801E9785 = 1;
+    }
+    for (i = 0; i < 3; i++) {
+        bzero(D_800625A0->panels[i], 0xbec);
+    }
+    if (mode != 2) {
+        xs = D_801EA054;
+        ys = D_801EA0DC;
+        mode = 0;
+    } else {
+        xs = D_801EA098;
+        ys = D_801EA120;
+        mode = 1;
+    }
+    for (i = 0; i < 3; i++) {
+        panel = D_800625A0->panels[i];
+        id = D_800625A0->party->ids[i];
+        ok = 1;
+        if (id != 0xff) {
+            if (mode) {
+                ok = D_8006D8A0[id].gear != 0xff;
+            }
+            if (ok) {
+                func_801CE0CC(panel, id, i, xs, ys, mode);
+            }
+        } else {
+            panel->shown = 0;
+        }
+    }
+    D_800625A0->party->unk46 = 1;
+    for (i = 0; i < 3; i++) {
+        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->current[i]))->x0 = 0x90;
+        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->current[i]))->y0 = i * 0x38 + 0x30;
+        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->current[i]))->x1 = 0xa0;
+        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->current[i]))->y1 = i * 0x38 + 0x30;
+        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->current[i]))->x2 = 0x90;
+        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->current[i]))->y2 = i * 0x38 + 0x40;
+        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->current[i]))->x3 = 0xa0;
+        (D_800625A0->markers->polys + (i * 2 + D_800625A0->markers->current[i]))->y3 = i * 0x38 + 0x40;
+    }
+}
+
+/* Use the item at visible entry `entry` of scroll row `row`: for an item
+ * usable here, select targets (the whole party for all-target items, else
+ * the cursor's slot; left/right move it) and use the item on them on
+ * confirm until it runs out or the player cancels. Returns the targets
+ * marked last (0 when cancelled or unusable). */
+#ifdef NON_MATCHING
+/* Register allocation differs: the original spills `row` and keeps the
+ * inventory index in a saved register. */
+u8 func_801DB920(s32 row, s32 entry) {
+    u16 marks;
+    u8 running;
+    u8 redraw;
+    s32 slot;
+    u8 used;
+    s32 all;
+    s32 i;
+    MenuItem *item;
+
+    marks = 0;
+    running = 1;
+    slot = D_800625A0->firstMember;
+    D_801E9785 = 0;
+    item = &D_800625A0->tables->items[D_8006F65A[row * 2 + entry]];
+    redraw = 1;
+    if (item->use & 0x80) {
+        marks = 1;
+        if (item->use & 0x20) {
+            marks = D_80059171 != 0;
+        }
+    }
+    all = item->target & 1;
+    if (marks) {
+        func_801D397C(2, 0x10, 0xe, 0x90, 0xb0, 0, 0, 4, 0);
+        while (running) {
+            func_801C7BF4();
+            marks = 0;
+            if (redraw) {
+                redraw = 0;
+                func_801DA5BC(row);
+                func_801DA9A8(entry, row);
+                func_801DB39C(1);
+                func_801DB5E4(0);
+            }
+            D_800625A0->markers->visible[0] = D_800625A0->markers->visible[1] = D_800625A0->markers->visible[2] = 0;
+            if (all) {
+                for (i = 0; i < 3; i++) {
+                    if (D_800625A0->party->ids[i] != 0xff) {
+                        marks |= 1 << i;
+                        D_800625A0->markers->visible[i] = 1;
+                    }
+                }
+            } else {
+                marks = 1 << slot;
+                D_800625A0->markers->visible[slot] = 1;
+            }
+            D_800625A0->party->unk2F = 1;
+            if (INVENTORY->counts[row * 2 + entry] == 0) {
+                running = 0;
+            }
+            if (!running) {
+                break;
+            }
+            switch (D_800625A0->input) {
+            case 4:
+                used = 0;
+                for (i = 0; i < 3; i++) {
+                    if (func_801C865C(marks, i) &&
+                        func_801E31C0(D_800625A0->tables, D_800625A0->party->ids[i], D_8006F65A[row * 2 + entry]) == 0) {
+                        used |= 1;
+                    }
+                }
+                if (used) {
+                    func_801C8574(0x37);
+                    redraw = 1;
+                    if (--INVENTORY->counts[row * 2 + entry] == 0) {
+                        INVENTORY->ids[row * 2 + entry] = 0;
+                    }
+                } else {
+                    func_801C8574(4);
+                    redraw = 1;
+                }
+                break;
+            case 5:
+                running = 0;
+                marks = 0;
+                break;
+            case 1:
+                slot = func_801D9704(slot, 0, 0);
+                break;
+            case 3:
+                slot = func_801D9704(slot, 1, 0);
+                break;
+            }
+        }
+        D_800625A0->markers->visible[0] = D_800625A0->markers->visible[1] = D_800625A0->markers->visible[2] = 0;
+        func_801DB39C(0);
+        D_800625A0->party->unk46 = 0;
+        func_801C7BF4();
+        for (i = 0; i < 3; i++) {
+            func_800320E8(D_800625A0->panels[i]);
+        }
+        D_801E9785 = 0;
+        func_801D4EA0(2);
+    }
+    return marks;
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DB920);
+#endif
 
 /* Swap inventory entries `a` and `b` (item id and count). */
 void func_801DBD4C(s32 a, s32 b) {
@@ -2652,7 +5864,152 @@ void func_801DBDB4(void) {
     }
 }
 
+/* The item screen: a two-column list of eight rows scrolled over the
+ * inventory with a cursor, the selected entry's description and its
+ * windows. Confirm selects an entry, uses it when selected again or swaps
+ * it with the selected one; cancel clears the selection or leaves. */
+#ifdef NON_MATCHING
+/* Cannot match as C in this unit yet: GCC 8-aligns the input jump table
+ * (the original's is at 801c50fc, only 4-aligned); the case-4 tails also
+ * cross-jump differently. */
+u8 func_801DBE54(void) {
+    u8 running;
+    u8 windows;
+    s32 scroll;
+    s32 scrollShown;
+    s32 cursor;
+    s32 cursorShown;
+    s32 selected;
+    s32 next;
+
+    running = 1;
+    windows = 1;
+    scroll = 0;
+    scrollShown = 0xff;
+    cursor = 0;
+    cursorShown = 0xff;
+    selected = 0xff;
+    func_801DA4A8();
+    func_801DBDB4();
+    func_801DB02C(0);
+    func_801DB02C(1);
+    do {
+        func_801C7BF4();
+        if (scroll != scrollShown) {
+            func_801DA5BC(scroll);
+            scrollShown = scroll;
+            func_801D3344(0xc, (u16)D_801EA72C * scroll / 100 + 0x12, (u16)D_801EA724);
+        }
+        func_801DB0A8(cursor, scroll, 0, 0);
+        if (cursor != cursorShown) {
+            func_801DA9A8(cursor, scroll);
+            cursorShown = cursor;
+        }
+        if (windows) {
+            func_801D397C(3, 0xc, 0xa, 0x124, 0x84, 0, 1, 4, 1);
+            func_801D397C(4, 8, 0x8f, 0x130, 0x22, 0, 1, 4, 0);
+            windows = 0;
+            func_801D1E80();
+            func_801D29A8(0, 0);
+        }
+        func_801DB0A8(selected, scroll, 1, 1);
+        switch (D_800625A0->input) {
+        case 4:
+            if (selected == 0xff) {
+                selected = scroll * 2 + cursor;
+            } else if (scroll * 2 + cursor == selected) {
+                if (func_801DB920(scroll, cursor)) {
+                    scrollShown = 0xff;
+                    cursorShown = 0xff;
+                }
+                selected = 0xff;
+            } else {
+                func_801DBD4C(scroll * 2 + cursor, selected);
+                scrollShown = 0xff;
+                cursorShown = 0xff;
+                selected = 0xff;
+            }
+            break;
+        case 5:
+            if (selected == 0xff) {
+                running = 0;
+            } else {
+                selected = 0xff;
+            }
+            break;
+        case 1:
+            next = cursor + 2;
+            if (next >= 16) {
+                if (D_801EA728 < ++scroll) {
+                    scroll--;
+                }
+            } else {
+                cursor = next;
+            }
+            cursorShown = 0xff;
+            break;
+        case 3:
+            next = cursor - 2;
+            if (next < 0) {
+                if (--scroll < 0) {
+                    scroll++;
+                }
+            } else {
+                cursor = next;
+            }
+            cursorShown = 0xff;
+            break;
+        case 0:
+            next = cursor + 1;
+            if (next >= 16) {
+                if (D_801EA728 < ++scroll) {
+                    scroll--;
+                } else {
+                    cursor = 14;
+                }
+            } else {
+                cursor = next;
+            }
+            cursorShown = 0xff;
+            break;
+        case 2:
+            next = cursor - 1;
+            if (next < 0) {
+                if (--scroll < 0) {
+                    scroll++;
+                } else {
+                    cursor = 1;
+                }
+            } else {
+                cursor = next;
+            }
+            cursorShown = 0xff;
+            break;
+        case 9:
+            scroll += 8;
+            if (D_801EA728 < scroll) {
+                scroll = D_801EA728;
+            }
+            cursorShown = 0xff;
+            break;
+        case 10:
+            scroll -= 8;
+            if (scroll < 0) {
+                scroll = 0;
+            }
+            cursorShown = 0xff;
+            break;
+        }
+    } while (running);
+    func_801D2484();
+    func_801DB340(0);
+    func_801DB340(1);
+    func_801E8044(8, D_800625A0->party->unk38);
+    return 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DBE54);
+#endif
 
 /* Open the file list screen of `kind` (0 load, 1 save, 2 the other labels). */
 void func_801DC1D4(u8 kind) {
@@ -2713,13 +6070,360 @@ void func_801DC2CC(u8 kind) {
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DC3D8);
 
+/* Show the description of file list row `row` for party slot `slot` (`kind`
+ * 0 the character's, 1 the gear's, 2 the gear's paired rows): the entry's
+ * two text lines, a copy of its name and its target labels; an unused row
+ * hides them. */
+#ifdef NON_MATCHING
+/* Differs in the first switch's tail merging and register allocation. */
+void func_801DCE60(u8 slot, u8 row, u8 kind) {
+    RECT rect;
+    MenuEffect *effect;
+    u8 *image;
+    u16 text;
+    u16 target;
+    u8 all;
+    s32 i;
+
+    switch (kind) {
+    case 0:
+        text = (D_800625A0->party->ids[slot] << 5) + row * 2;
+        break;
+    case 1:
+        text = (D_8006D8A0[D_800625A0->party->ids[slot]].gear << 5) + row * 2;
+        break;
+    case 2:
+        text = D_8006D8A0[D_800625A0->party->ids[slot]].gear * 8 + (row & 0xfe);
+        break;
+    }
+    if (D_800625A0->block430->shown[row] != 0) {
+        image = func_80031BDC(0x618, 0);
+        bzero(image, 0x618);
+        D_800625A0->block430->extra[0].width =
+            func_80034EAC(func_80033728(D_800625A0->block430->texts, text), image, 0x39, 0);
+        D_800625A0->block430->extra[1].width =
+            func_80034EAC(func_80033728(D_800625A0->block430->texts, text + 1), image, 0x39, 1);
+        rect.x = 0x140;
+        rect.y = 0x4e;
+        rect.w = 0x3c;
+        rect.h = 0xd;
+        LoadImage(&rect, image);
+        DrawSync(0);
+        func_801E7C50(&D_800625A0->block430->extra[0], 0, 0, 0);
+        func_801E920C(&D_800625A0->block430->extra[0].polys[D_800625A0->bufferIndex], 0x1c, 0x9e, 0, 0x4e,
+                      D_800625A0->block430->extra[0].width, 0xd);
+        func_801C851C(D_800625A0->block430->extra[0].verts, 0x1c, 0x9e, D_800625A0->block430->extra[0].width, 0xd);
+        func_801E7C50(&D_800625A0->block430->extra[1], 1, 0, 0);
+        func_801E920C(&D_800625A0->block430->extra[1].polys[D_800625A0->bufferIndex], 0x1c, 0xae, 0, 0x4e,
+                      D_800625A0->block430->extra[1].width, 0xd);
+        func_801C851C(D_800625A0->block430->extra[1].verts, 0x1c, 0xae, D_800625A0->block430->extra[1].width, 0xd);
+        func_800320E8(image);
+        memmove(&D_800625A0->block430->headA, &D_800625A0->block430->names[row], sizeof(MenuLabelSlot));
+        func_801C851C(D_800625A0->block430->headA.verts, 0x12, 0x8e, D_800625A0->block430->names[row].width, 0xd);
+        (D_800625A0->block430->headA.polys + D_800625A0->bufferIndex)->r0 = 0x80;
+        (D_800625A0->block430->headA.polys + D_800625A0->bufferIndex)->g0 = 0x80;
+        (D_800625A0->block430->headA.polys + D_800625A0->bufferIndex)->b0 = 0x80;
+        SetSemiTrans(&D_800625A0->block430->headA.polys[D_800625A0->bufferIndex], 0);
+        func_801E8044(8, D_800625A0->party->unk38);
+        switch (kind) {
+        case 0:
+            effect = D_800625A0->tables->effects[D_800625A0->party->ids[slot]] + row;
+            effect += 22;
+            break;
+        case 1:
+            effect = D_800625A0->tables->effects[11 + D_8006D8A0[D_800625A0->party->ids[slot]].gear] + row;
+            effect += 21;
+            break;
+        case 2:
+            effect = D_800625A0->tables->effects[11 + D_8006D8A0[D_800625A0->party->ids[slot]].gear] + (row >> 1);
+            effect += 37;
+            break;
+        }
+        target = effect->target;
+        if (target & 0x4000) {
+            all = 2;
+        } else if (target & 0x1000) {
+            all = 0;
+        } else {
+            all = 1;
+        }
+        func_801E8070(8, D_800625A0->labels10E0, D_801EA550, D_801E9EA0, D_800625A0->party->unk38, all, 0, 2);
+        func_801E8070(8, D_800625A0->labels10E0, D_801EA550, D_801E9EA0, D_800625A0->party->unk38,
+                      (effect->target & 3) + 3, 0, 2);
+        D_800625A0->block430->headA.count = D_800625A0->bufferIndex;
+        D_800625A0->block430->headB.count = D_800625A0->bufferIndex;
+        D_800625A0->block430->extra[0].count = D_800625A0->bufferIndex;
+        D_800625A0->block430->extra[1].count = D_800625A0->bufferIndex;
+        D_800625A0->block430->extraShown = 1;
+        D_800625A0->party->unk38[6] = 1;
+        D_800625A0->party->unk38[7] = 1;
+    } else {
+        D_800625A0->block430->extraShown = 0;
+        for (i = 0; i < 6; i++) {
+            D_800625A0->party->unk38[i] = 0;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DCE60);
+#endif
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DD5E8);
+/* Shade the file list screen's texts by `mode` (801e8eac): windows 5 and 6,
+ * each built name and value of the first twelve rows, the cursor, the
+ * heading and the two extra labels. */
+void func_801DD5E8(u8 mode) {
+    s32 i;
 
+    func_801E8F60(5, mode);
+    func_801E8F60(6, mode);
+    for (i = 0; i < 12; i++) {
+        if (D_800625A0->block430->names[i].polys[D_800625A0->block430->names[i].count].r0 != 0x20) {
+            func_801E8EAC(&D_800625A0->block430->names[i].polys[D_800625A0->block430->names[i].count], mode);
+            func_801E8EAC(&D_800625A0->block430->values[i].polys[D_800625A0->block430->values[i].count], mode);
+        }
+    }
+    func_801E8EAC(&D_800625A0->blocks444[0]->polys[D_800625A0->blocks444[0]->count], mode);
+    func_801E8EAC(&D_800625A0->block430->headA.polys[D_800625A0->block430->headA.count], mode);
+    for (i = 0; i < 2; i++) {
+        func_801E8EAC(&D_800625A0->block430->extra[i].polys[D_800625A0->block430->extra[i].count], mode);
+    }
+}
+
+/* Use art `row` of party slot `slot` (`kind` 0 the character's, 1 its
+ * gear's, 2 the gear's other list) from the menu: select the targets (the
+ * whole party for all-target arts, else the cursor's slot) and use it on
+ * confirm while its cost can be paid, until cancelled. */
+#ifdef NON_MATCHING
+/* Same shape as the original; register allocation and a few schedules differ. */
+void func_801DD790(u8 slot, s32 row, u8 kind) {
+    MenuEffect *effect;
+    s32 x;
+    s32 all;
+    s32 i;
+    s32 sound;
+    u16 now;
+    u16 max;
+    u8 redraw;
+    u8 cursor;
+    u8 targets;
+    u8 used;
+
+    redraw = 1;
+    x = 0;
+    cursor = D_800625A0->firstMember;
+    switch (kind) {
+    case 0:
+        effect = D_800625A0->tables->effects[D_800625A0->party->ids[slot]] + row;
+        effect += 22;
+        break;
+    case 1:
+        effect = D_800625A0->tables->effects[11 + D_8006D8A0[D_800625A0->party->ids[slot]].gear] + row;
+        effect += 21;
+        break;
+    case 2:
+        x = 0x18;
+        cursor = slot;
+        effect = D_800625A0->tables->effects[11 + D_8006D8A0[D_800625A0->party->ids[slot]].gear] + row;
+        effect += 37;
+        break;
+    }
+    func_801D397C(2, 0x10, 0xe, x + 0x90, 0xb0, 0, 0, 4, 0);
+    all = effect->target & 1;
+    targets = 1;
+    while (targets) {
+        func_801C7BF4();
+        targets = 0;
+        if (redraw) {
+            func_801DC3D8(slot, kind);
+            func_801DCE60(slot, row, kind);
+            func_801DD5E8(1);
+            func_801DB5E4(kind);
+            redraw = 0;
+        }
+        D_800625A0->markers->visible[0] = D_800625A0->markers->visible[1] = D_800625A0->markers->visible[2] = 0;
+        if (all) {
+            for (i = 0; i < 3; i++) {
+                if (D_800625A0->party->ids[i] != 0xff) {
+                    targets |= 1 << i;
+                    D_800625A0->markers->visible[i] = 1;
+                }
+            }
+        } else {
+            targets = 1 << cursor;
+            D_800625A0->markers->visible[cursor] = 1;
+        }
+        D_800625A0->party->unk2F = 1;
+        if (kind != 2) {
+            i = D_8006D8A0[D_800625A0->party->ids[slot]].ep - effect->cost;
+        } else {
+            i = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk38 - effect->gearCost;
+        }
+        if (i < 0) {
+            targets = 0;
+        }
+        if (!targets) {
+            break;
+        }
+        switch (D_800625A0->input) {
+        case 4:
+            used = 0;
+            for (i = 0; i < 3; i++) {
+                if (func_801C865C(targets, i)) {
+                    if (kind != 2) {
+                        now = D_8006D8A0[D_800625A0->party->ids[i]].hp;
+                        max = D_8006D8A0[D_800625A0->party->ids[i]].hpMax;
+                    } else {
+                        /* the maximum is read from party slot `row` */
+                        now = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[i]].gear].unk60;
+                        max = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[row]].gear].unk64;
+                    }
+                    if (now != max) {
+                        used = 1;
+                        func_801E35BC(D_800625A0->tables, D_800625A0->party->ids[slot], D_800625A0->party->ids[i],
+                                      row, kind);
+                    }
+                }
+            }
+            if (used) {
+                if (kind != 2) {
+                    D_8006D8A0[D_800625A0->party->ids[slot]].ep -= effect->cost;
+                } else {
+                    D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk38 -= effect->gearCost;
+                }
+                sound = 0x37;
+            } else {
+                sound = 4;
+            }
+            redraw = 1;
+            func_801C8574(sound);
+            break;
+        case 5:
+            targets = 0;
+            break;
+        case 1:
+            if (kind == 0) {
+                cursor = func_801D9704(cursor, 0, 0);
+            }
+            break;
+        case 3:
+            if (kind == 0) {
+                cursor = func_801D9704(cursor, 1, 0);
+            }
+            break;
+        }
+    }
+    D_800625A0->markers->visible[0] = D_800625A0->markers->visible[1] = D_800625A0->markers->visible[2] = 0;
+    func_801DD5E8(0);
+    D_800625A0->party->unk46 = 0;
+    func_801C7BF4();
+    if (D_801E9785 != 0) {
+        for (i = 0; i < 3; i++) {
+            func_800320E8(D_800625A0->panels[i]);
+        }
+        D_801E9785 = 0;
+    }
+    func_801D4EA0(2);
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DD790);
+#endif
 
+#ifdef NON_MATCHING
+/* Cannot match as C in this unit yet: GCC 8-aligns the input jump table (the
+ * original's is at 801c512c, only 4-aligned). */
+/* The arts screen of party slot `slot` (`kind` 0 the character's, 1 its
+ * gear's, 2 the gear's other list): a cursor over twelve rows (two columns,
+ * one for kind 2), the selected art's description; confirm uses a usable
+ * art, 9/10 switch party members, cancel leaves. `zoom` first zooms in. */
+void func_801DDF24(u8 slot, u8 zoom, u8 kind) {
+    s32 cursor;
+    s32 cursorShown;
+    u8 slotShown;
+    u8 windows;
+    u8 running;
+
+    windows = 1;
+    cursor = 0;
+    cursorShown = 0xff;
+    slotShown = 0xff;
+    running = 1;
+    func_801DC1D4(kind);
+    func_801DB02C(0);
+    do {
+        func_801C7BF4();
+        if (slot != slotShown) {
+            func_801DC3D8(slot, kind);
+            slotShown = slot;
+            cursorShown = 0xff;
+        }
+        func_801DB0A8(cursor, 0, 2, 0);
+        if (cursor != cursorShown) {
+            func_801DCE60(slot, cursor, kind);
+            cursorShown = cursor;
+        }
+        if (windows) {
+            func_801D397C(6, 0x10, 0xa, D_801E9788[kind], 0x70, 0, 1, 4, 0);
+            func_801D397C(5, 0xc, 0x86, 0xac, 0x38, 0, 1, 4, 0);
+            func_801D397C(4, D_801E9794[kind], 0xa6, D_801E97A0[kind], 0x18, 0, 1, 4, 0);
+            func_801D397C(3, 0xc8, 0x86, 0x50, 0x18, 0, 1, 4, 0);
+            windows = 0;
+            if (zoom) {
+                func_801D1E80();
+                func_801D29A8(0, 0);
+                func_801C7BF4();
+            }
+            D_800625A0->party->redraw6 = 0;
+            D_800625A0->party->unk20[1] = 0;
+        }
+        switch (D_800625A0->input) {
+        case 4:
+            if (D_800625A0->block430->shown[cursor] & 0x80) {
+                func_801DD790(slot, cursor, kind);
+                slotShown = 0xff;
+                cursorShown = 0xff;
+            }
+            break;
+        case 5:
+            running = 0;
+            break;
+        case 0:
+            if (kind != 2) {
+                if (++cursor >= 12) {
+                    cursor = 11;
+                }
+            }
+            break;
+        case 2:
+            if (kind != 2) {
+                if (--cursor < 0) {
+                    cursor = 0;
+                }
+            }
+            break;
+        case 1:
+            if (cursor + 2 < 12) {
+                cursor += 2;
+            }
+            break;
+        case 3:
+            if (cursor - 2 >= 0) {
+                cursor -= 2;
+            }
+            break;
+        case 9:
+            slot = func_801D9704(slot, 0, kind);
+            break;
+        case 10:
+            slot = func_801D9704(slot, 1, kind);
+            break;
+        }
+    } while (running);
+    func_801E8044(8, D_800625A0->party->unk38);
+    func_801DB340(0);
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DDF24);
+#endif
 
 /* Run the 801ddf24 screen for party slot `slot`; always continues the menu. */
 u8 func_801DE29C(u8 slot, u8 arg1) {
@@ -2796,13 +6500,225 @@ void func_801DE474(u8 wide, u8 page) {
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DE5CC);
 
+/* Commit the equipment change of part `part` of party slot `slot` (with
+ * `special` a special part, with `gear` the gear's): the newly equipped part
+ * leaves its inventory list and the replaced one kept by 801df5d0 joins it
+ * (worn special parts are dropped). Without a new part the kept one goes
+ * back. Returns 1 when character 4 changed weapon. */
+#ifdef NON_MATCHING
+/* Differs: the original's frame is 0x28 (this builds 0x18) and it converts
+ * `gear` at each use; the inventory update code otherwise has the same shape. */
+s32 func_801DF0D4(u8 slot, u8 part, u8 special, u8 gear) {
+    u8 *ids;
+    u8 *counts;
+    u8 *at;
+    s32 length;
+    s32 i;
+    s32 result;
+    u8 swap;
+    u8 add;
+    u8 selected;
+    u8 kept;
+    u8 id;
+
+    add = 1;
+    swap = 1;
+    ids = D_8006F754;
+    result = 0;
+    if (!gear) {
+        ids = D_8006F3D0;
+    }
+    counts = ids - 100;
+    length = 100;
+    if (special) {
+        if (!gear) {
+            at = &D_8006D8A0[D_800625A0->party->ids[slot]].specials[part];
+            selected = *at;
+            kept = D_800625A0->labels360->parts[1][part];
+            if (selected == 0) {
+                *at = kept;
+                swap = 0;
+            } else {
+                if (D_8006F8BA[*at] < 100) {
+                    kept = 0;
+                }
+                D_8006F8BA[*at] = 100;
+            }
+        } else {
+            at = &D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk4[part];
+            selected = *at;
+            kept = D_800625A0->labels360->parts[1][part];
+            if (selected == 0) {
+                *at = kept;
+                swap = 0;
+            } else {
+                if (GEAR_PART_DURABILITY[*at] < 100) {
+                    kept = 0;
+                }
+                GEAR_PART_DURABILITY[*at] = 100;
+            }
+        }
+    } else if (!gear) {
+        if (part == 0) {
+            id = D_800625A0->party->ids[slot];
+            selected = D_8006D8A0[id].weapons[0];
+            kept = D_800625A0->labels360->parts[0][0];
+            if (selected == 0) {
+                D_8006D8A0[id].weapons[0] = kept;
+                swap = 0;
+            } else if (id == 4) {
+                result = 1;
+            }
+        } else {
+            ids = D_8006F4FC;
+            counts = D_8006F434;
+            kept = D_800625A0->labels360->parts[2][part - 1];
+            selected = D_8006D8A0[D_800625A0->party->ids[slot]].accessories[part - 1];
+            length = 200;
+        }
+    } else {
+        if (part == 0) {
+            id = D_800625A0->party->ids[slot];
+            selected = D_8006DFAC[D_8006D8A0[id].gear].unkC[0];
+            kept = D_800625A0->labels360->parts[0][0];
+            if (selected == 0) {
+                D_8006DFAC[D_8006D8A0[id].gear].unkC[0] = kept;
+                swap = 0;
+            } else if (id == 4) {
+                result = 1;
+            }
+        } else {
+            ids = D_8006F84E;
+            counts = D_8006F7B8;
+            length = 150;
+            kept = D_800625A0->labels360->parts[2][part - 1];
+            selected = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk9[part - 1];
+        }
+    }
+    if (swap) {
+        if (selected != 0) {
+            for (i = 0; i < length; i++) {
+                if (ids[i] == selected) {
+                    counts[i]--;
+                    break;
+                }
+            }
+        }
+        if (kept != 0) {
+            for (i = 0; i < length; i++) {
+                if (ids[i] == kept) {
+                    add = 0;
+                    counts[i]++;
+                    break;
+                }
+            }
+            if (add) {
+                for (i = 0; i < length; i++) {
+                    if (ids[i] == 0) {
+                        ids[i] = kept;
+                        counts[i] = 1;
+                        break;
+                    }
+                }
+            }
+        }
+        for (i = 0; i < length; i++) {
+            if (counts[i] == 0) {
+                ids[i] = 0;
+            } else if (counts[i] >= 100) {
+                counts[i] = 99;
+            }
+        }
+    }
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DF0D4);
+#endif
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DF5D0);
+/* Keep the shown stats and the equipment of party slot `slot` (its gear's
+ * parts when `gear`) in the equipment screen's block. */
+void func_801DF5D0(u8 slot, u8 gear) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DF890);
+    for (i = 0; i < 9; i++) {
+        D_800625A0->labels360->stats[i] = D_800625A0->tables->shown[i];
+    }
+    if (!gear) {
+        for (i = 0; i < 5; i++) {
+            D_800625A0->labels360->parts[0][i] = D_8006D8A0[D_800625A0->party->ids[slot]].weapons[i];
+            D_800625A0->labels360->parts[1][i] = D_8006D8A0[D_800625A0->party->ids[slot]].specials[i];
+            D_800625A0->labels360->parts[2][i] = D_8006D8A0[D_800625A0->party->ids[slot]].accessories[i];
+        }
+    } else {
+        for (i = 0; i < 4; i++) {
+            D_800625A0->labels360->parts[0][i] = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unkC[i];
+            D_800625A0->labels360->parts[1][i] = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk4[i];
+            D_800625A0->labels360->parts[2][i] = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk9[i];
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DFB68);
+/* Put back the equipment of party slot `slot` (its gear's parts when `gear`)
+ * kept by 801df5d0; the equipment screen was cancelled. */
+void func_801DF890(u8 slot, u8 gear) {
+    s32 i;
+
+    if (!gear) {
+        for (i = 0; i < 5; i++) {
+            D_8006D8A0[D_800625A0->party->ids[slot]].weapons[i] = D_800625A0->labels360->parts[0][i];
+            D_8006D8A0[D_800625A0->party->ids[slot]].specials[i] = D_800625A0->labels360->parts[1][i];
+        }
+        for (i = 0; i < 3; i++) {
+            D_8006D8A0[D_800625A0->party->ids[slot]].accessories[i] = D_800625A0->labels360->parts[2][i];
+        }
+    } else {
+        for (i = 0; i < 4; i++) {
+            D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unkC[i] = D_800625A0->labels360->parts[0][i];
+            D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk4[i] = D_800625A0->labels360->parts[1][i];
+        }
+        for (i = 0; i < 3; i++) {
+            D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk9[i] = D_800625A0->labels360->parts[2][i];
+        }
+    }
+}
+
+/* Try list entry `top` + `row` on part `part` of party slot `slot`: the
+ * weapon (0) or an accessory (1-3), with `special` a special part; with
+ * `gear` the gear's parts. */
+void func_801DFB68(u8 slot, s32 part, s32 row, s32 top, u8 special, u8 gear) {
+    if (!gear) {
+        if (!special) {
+            switch (part) {
+            case 0:
+                D_8006D8A0[D_800625A0->party->ids[slot]].weapons[0] = D_801EA730[top + row];
+                break;
+            case 1:
+            case 2:
+            case 3:
+                D_8006D8A0[D_800625A0->party->ids[slot]].accessories[part - 1] = D_801EA730[top + row];
+                break;
+            }
+        } else {
+            D_8006D8A0[D_800625A0->party->ids[slot]].specials[part] = D_801EA730[top + row];
+        }
+    } else {
+        if (!special) {
+            switch (part) {
+            case 0:
+                D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unkC[0] = D_801EA730[top + row];
+                break;
+            case 1:
+            case 2:
+            case 3:
+                D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk9[part - 1] = D_801EA730[top + row];
+                break;
+            }
+        } else {
+            D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk4[part] = D_801EA730[top + row];
+        }
+    }
+}
 
 /* Compute party slot `slot`'s gear stats and copy them to the shown values. */
 void func_801DFE2C(u8 slot) {
@@ -2816,9 +6732,134 @@ void func_801DFE2C(u8 slot) {
     D_800625A0->tables->shown[5] = D_800625A0->tables->unkB4;
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DFF5C);
+/* Show the three-line description of equipment list entry `top` + `row` (or,
+ * with `current`, of the part equipped) for part `part` of party slot
+ * `slot` (`special` a special part, `gear` the gear's parts). */
+#ifdef NON_MATCHING
+/* Differs: GCC strength-reduces the line's y position into a saved register
+ * (the original recomputes it) and combines the kind with an `or`. */
+void func_801DFF5C(s32 part, s32 row, s32 top, u8 special, u8 gear, u8 current, u8 slot) {
+    RECT rect;
+    u8 *table;
+    u8 *image;
+    s32 line;
+    s32 kind;
+    u16 id;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E0434);
+    id = D_801EA730[top + row];
+    kind = 0;
+    if (current) {
+        id = 0xff;
+    }
+    if (id != 0) {
+        if (!special && part != 0) {
+            kind = 1;
+        }
+        switch ((u8)(kind + gear * 2)) {
+        case 0:
+            table = D_800625A0->block434->texts[0];
+            if (current) {
+                if (!special) {
+                    id = D_8006D8A0[D_800625A0->party->ids[slot]].weapons[0];
+                } else {
+                    id = D_8006D8A0[D_800625A0->party->ids[slot]].specials[part];
+                }
+            }
+            break;
+        case 1:
+            table = D_800625A0->block434->texts[1];
+            if (current) {
+                id = D_8006D8A0[D_800625A0->party->ids[slot]].accessories[part - 1];
+            }
+            break;
+        case 2:
+            table = D_800625A0->block434->texts[2];
+            if (current) {
+                if (!special) {
+                    id = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unkC[0];
+                } else {
+                    id = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk4[part];
+                }
+            }
+            break;
+        case 3:
+            table = D_800625A0->block434->texts[3];
+            if (current) {
+                id = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk9[part - 1];
+            }
+            break;
+        }
+        if (id != 0) {
+            image = func_80031BDC(0x3f6, 0);
+            bzero(image, 0x3f6);
+            for (line = 0; line < 3; line++) {
+                D_800625A0->block434->extra[line].width =
+                    func_80034EAC(func_80033728(table, id * 3 + line), image, 0x24, 0);
+                rect.x = ((line + 8) & 1) * 0x18 + 0x180;
+                rect.y = (line + 8) / 2 * 0xd + 0x80;
+                rect.w = 0x28;
+                rect.h = 0xd;
+                LoadImage(&rect, image);
+                DrawSync(0);
+                func_801E7C50(&D_800625A0->block434->extra[line], line + 8, 0x80, 0x81);
+                func_801C851C(D_800625A0->block434->extra[line].verts, 0x10, (line * 0x10 + 0x96) & ~1,
+                              D_800625A0->block434->extra[line].width, 0xd);
+                D_800625A0->block434->extra[line].count = D_800625A0->bufferIndex;
+            }
+            D_800625A0->block434->extraShown = 1;
+            func_800320E8(image);
+            return;
+        }
+    }
+    D_800625A0->block434->extraShown = 0;
+}
+#else
+INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DFF5C);
+#endif
+
+/* Return party slot `slot`'s accessory (or with `gear` its gear's part) to
+ * its inventory list: add one to the entry holding it (at most 99), or put
+ * it into the first free entry. */
+void func_801E0434(u8 slot, u8 gear) {
+    u8 *ids;
+    u8 *counts;
+    u8 item;
+    u8 size;
+    u8 fresh;
+    s32 i;
+
+    fresh = 1;
+    if (!gear) {
+        ids = D_8006F3D0;
+        counts = ids - 100;
+        item = D_8006D8A0[D_800625A0->party->ids[slot]].specials[0];
+        D_8006D8A0[D_800625A0->party->ids[slot]].specials[0] = 0;
+        size = 100;
+    } else {
+        ids = D_8006F754;
+        counts = ids - 100;
+        item = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk4[0];
+        size = 100;
+        D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk4[0] = 0;
+    }
+    for (i = 0; i < size; i++) {
+        if (ids[i] == item) {
+            if (++counts[i] >= 100) {
+                counts[i] = 99;
+            }
+            fresh = 0;
+        }
+    }
+    if (fresh) {
+        for (i = 0; i < size; i++) {
+            if (ids[i] == 0) {
+                ids[i] = item;
+                counts[i] = 1;
+                return;
+            }
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E05D0);
 
@@ -2838,7 +6879,56 @@ u8 func_801E0F78(u8 slot, u8 arg1) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E1014);
+/* Open the 801e1544 screen: its block (+438), labels and window, the party
+ * panel when two or more members can take part, and the green gauges. */
+void func_801E1014(void) {
+    MenuBlock438 *block;
+    s32 i;
+    s32 j;
+
+    block = func_80031BDC(0x25c0, 0);
+    D_800625A0->block438 = block;
+    bzero(block, 0x25c0);
+    func_801C72BC(4);
+    func_801E8018(2, D_800625A0->labels17E0, D_801EA564, &D_800625A0->party->unk4E);
+    func_801E8070(2, D_800625A0->labels17E0, D_801EA564, D_801E9EA0, &D_800625A0->party->unk4E, 0, 0, 4);
+    func_801D397C(2, 0x44, 0xa, 0xe4, 0xc4, 0, 1, 4, 0);
+    D_800625A0->party->redraw6 = 0;
+    i = 0;
+    j = 0; /* members that can take part */
+    D_800625A0->party->unk20[1] = 0;
+    for (; i < 3; i++) {
+        if (D_800625A0->party->ids[i] != 0xff) {
+            if (D_800625A0->party->ids[i] != 7 && D_800625A0->party->ids[i] != 8) {
+                j++;
+            }
+        }
+    }
+    if (j >= 2) {
+        func_801D3488(3, 0);
+    } else {
+        D_800625A0->party->unk53 = 0;
+    }
+    for (i = 0; i < 13; i++) {
+        j = 0;
+        do {
+            SetPolyG4(&D_800625A0->block438->gauges[i][j]);
+            (D_800625A0->block438->gauges[i] + j)->r0 = 0;
+            (D_800625A0->block438->gauges[i] + j)->g0 = 0xff;
+            (D_800625A0->block438->gauges[i] + j)->b0 = 0;
+            (D_800625A0->block438->gauges[i] + j)->r1 = 0;
+            (D_800625A0->block438->gauges[i] + j)->g1 = 0xff;
+            (D_800625A0->block438->gauges[i] + j)->b1 = 0;
+            (D_800625A0->block438->gauges[i] + j)->r2 = 0;
+            (D_800625A0->block438->gauges[i] + j)->g2 = 0;
+            (D_800625A0->block438->gauges[i] + j)->b2 = 0;
+            (D_800625A0->block438->gauges[i] + j)->r3 = 0;
+            (D_800625A0->block438->gauges[i] + j)->g3 = 0;
+            (D_800625A0->block438->gauges[i] + j)->b3 = 0;
+            j++;
+        } while (j < 2);
+    }
+}
 
 /* Close the 801e1544 screen: its sprites, labels and block (+438); view 14. */
 void func_801E1398(void) {
@@ -2851,13 +6941,256 @@ void func_801E1398(void) {
     func_800320E8(D_800625A0->block438);
 }
 
+/* Return party slot `slot`'s average completion (percent, each capped at
+ * 100) of the seven targets of row `row` of its table (+438 +2578), counting
+ * entries where either side is set; rows from 7 need game flag 4000. */
+#ifdef NON_MATCHING
+u32 func_801E1418(u8 slot, u8 row) {
+    u32 sum;
+    s32 i;
+    u32 count;
+    s32 id;
+    u16 *values;
+    u8 *table;
+    u16 value;
+    u16 target;
+    u32 percent;
+
+    sum = 0;
+    if (row < 7 || (D_8006F8EA & 0x4000)) {
+        count = 0;
+        id = D_800625A0->party->ids[slot];
+        table = D_800625A0->block438->unk2578;
+        values = D_8006D8A0[id].unk90;
+        for (i = 0; i < 7; i++, values++) {
+            value = *values;
+            target = *(u16 *)(table + id * 0x110 + row * 14 + i * 2);
+            if (value != 0) {
+                if (target != 0) {
+                    if (target != 0xffff) {
+                        percent = value * 100 / target;
+                        if (percent >= 100) {
+                            sum += 100;
+                        } else {
+                            sum += percent;
+                        }
+                    }
+                    count++;
+                }
+            } else if (target != 0) {
+                count++;
+            }
+        }
+        if (count != 0) {
+            return sum / count;
+        }
+    }
+    return 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E1418);
+#endif
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E1544);
+/* Lay out row `row` of the 801e1544 screen: mode 1 its five sheet images
+ * (D_801E97AC); mode 2 its completion `percent` as three digits into
+ * `pixels` (uploaded to the row's label image) and its green gauge
+ * (54 pixels at 100%). */
+void func_801E1544(u8 row, u8 mode, u8 *pixels, u32 percent) {
+    u8 text[6];
+    u8 glyphs[8];
+    RECT rect;
+    s32 i;
+    u32 tens;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E1AC8);
+    text[5] = 0;
+    text[3] = 0;
+    text[1] = 0;
+    switch (mode) {
+    case 1:
+        for (i = 0; i < 5; i++) {
+            if (D_801E97AC[row * 5 + i] != 0xff) {
+                D_800625A0->block438->counts[row] +=
+                    func_8002675C(D_800625A0->sheet, D_801E97AC[row * 5 + i],
+                                  &D_800625A0->block438->lists[row][D_800625A0->block438->counts[row] * 2],
+                                  D_800625A0->bufferIndex, 0xd4 + i * 16, row * 13 + 0x1f, 0x1000);
+            }
+        }
+        D_800625A0->block438->starts[row] = D_800625A0->bufferIndex;
+        break;
+    case 2:
+        if (percent / 100) {
+            text[0] = 0x11;
+            percent -= 100;
+        } else {
+            text[0] = 0xc3;
+        }
+        tens = percent / 10;
+        if (tens != 0 || text[0] != 0) {
+            text[2] = tens + 0x10;
+            text[4] = percent - tens * 10 + 0x10;
+        } else {
+            text[2] = 0xc3;
+            text[4] = 0xc3;
+        }
+        func_80033B34(text, glyphs, 3);
+        D_800625A0->block438->values[row].width = func_80034EAC(glyphs, pixels, 0x24, 1);
+        rect.x = (row & 1) * 24 + 0x180;
+        rect.y = (row >> 1) * 13 + 0x80;
+        rect.w = 0x28;
+        rect.h = 0xd;
+        LoadImage(&rect, pixels);
+        DrawSync(0);
+        (D_800625A0->block438->values[row].polys + D_800625A0->bufferIndex)->x0 = 0x10a;
+        (D_800625A0->block438->values[row].polys + D_800625A0->bufferIndex)->y0 = row * 13 + 0x1f;
+        (D_800625A0->block438->values[row].polys + D_800625A0->bufferIndex)->x1 =
+            D_800625A0->block438->values[row].width + 0x10a;
+        (D_800625A0->block438->values[row].polys + D_800625A0->bufferIndex)->y1 = row * 13 + 0x1f;
+        (D_800625A0->block438->values[row].polys + D_800625A0->bufferIndex)->x2 = 0x10a;
+        (D_800625A0->block438->values[row].polys + D_800625A0->bufferIndex)->y2 = row * 13 + 0x2c;
+        (D_800625A0->block438->values[row].polys + D_800625A0->bufferIndex)->x3 =
+            D_800625A0->block438->values[row].width + 0x10a;
+        (D_800625A0->block438->values[row].polys + D_800625A0->bufferIndex)->y3 = row * 13 + 0x2c;
+        percent = percent * 5400 / 10000;
+        func_801E7C50(&D_800625A0->block438->values[row], row, 0x80, 0x82);
+        (D_800625A0->block438->gauges[row] + D_800625A0->bufferIndex)->x0 = 0xd4;
+        (D_800625A0->block438->gauges[row] + D_800625A0->bufferIndex)->y0 = row * 13 + 0x23;
+        (D_800625A0->block438->gauges[row] + D_800625A0->bufferIndex)->x1 = percent + 0xd4;
+        (D_800625A0->block438->gauges[row] + D_800625A0->bufferIndex)->y1 = row * 13 + 0x23;
+        (D_800625A0->block438->gauges[row] + D_800625A0->bufferIndex)->x2 = 0xd4;
+        (D_800625A0->block438->gauges[row] + D_800625A0->bufferIndex)->y2 = row * 13 + 0x2b;
+        (D_800625A0->block438->gauges[row] + D_800625A0->bufferIndex)->x3 = percent + 0xd4;
+        (D_800625A0->block438->gauges[row] + D_800625A0->bufferIndex)->y3 = row * 13 + 0x2b;
+        D_800625A0->block438->gaugeBuffer[row] = D_800625A0->bufferIndex;
+        D_800625A0->block438->gaugeShown[row] = 1;
+        break;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E20C8);
+/* Lay out the 801e1544 screen's thirteen rows for party slot `slot`: rows
+ * the character has (bit of its D_8006ECF4 record) show their name and
+ * level digit (rows 0-6); others show only at 50% progress or more, with
+ * the progress gauge; then the title. Owned rows pass `percent` unset, as
+ * the original does. */
+void func_801E1AC8(u8 slot) {
+    u8 *pixels;
+    RECT rect;
+    u8 text[2];
+    u8 glyphs[8];
+    s32 i;
+    u8 kind;
+    u8 learned;
+    u8 show;
+    u32 percent;
+
+    text[1] = 0;
+    pixels = func_80031BDC(0x3f6, 0);
+    for (i = 0; i < 13; i++) {
+        D_800625A0->block438->gaugeShown[i] = 0;
+        if (func_801C8640(D_8006ECF4[D_800625A0->party->ids[slot]].values[0], i)) {
+            show = 1;
+            kind = 1;
+            learned = 1;
+        } else {
+            percent = func_801E1418(slot, i);
+            if (percent >= 50) {
+                show = 1;
+                kind = 2;
+            } else {
+                show = 0;
+                kind = 0;
+            }
+            learned = 0;
+        }
+        if (show) {
+            D_800625A0->block438->names[i].width =
+                func_80034EAC(func_80033784(D_800625A0->party->ids[slot], i), pixels, 0x24, 0);
+            if (i < 7 && learned) {
+                text[0] = D_800625A0->tables->effects[D_800625A0->party->ids[slot]][i + 7].unk17 + 0x10;
+            } else {
+                text[0] = 0xf;
+            }
+            func_80033B34(text, glyphs, 1);
+            D_800625A0->block438->values[i].width = func_80034EAC(glyphs, pixels, 0x24, 1);
+            rect.x = (i & 1) * 24 + 0x180;
+            rect.y = i / 2 * 13 + 0x80;
+            rect.w = 0x28;
+            rect.h = 0xd;
+            LoadImage(&rect, pixels);
+            DrawSync(0);
+            func_801E7C50(&D_800625A0->block438->names[i], i, 0x80, 0x81);
+            func_801E7C50(&D_800625A0->block438->values[i], i, 0x80, 0x82);
+            (D_800625A0->block438->names[i].polys + D_800625A0->bufferIndex)->x0 = 0x5c;
+            (D_800625A0->block438->names[i].polys + D_800625A0->bufferIndex)->y0 = i * 13 + 0x1f;
+            (D_800625A0->block438->names[i].polys + D_800625A0->bufferIndex)->x1 =
+                D_800625A0->block438->names[i].width + 0x5c;
+            (D_800625A0->block438->names[i].polys + D_800625A0->bufferIndex)->y1 = i * 13 + 0x1f;
+            (D_800625A0->block438->names[i].polys + D_800625A0->bufferIndex)->x2 = 0x5c;
+            (D_800625A0->block438->names[i].polys + D_800625A0->bufferIndex)->y2 = i * 13 + 0x2c;
+            (D_800625A0->block438->names[i].polys + D_800625A0->bufferIndex)->x3 =
+                D_800625A0->block438->names[i].width + 0x5c;
+            (D_800625A0->block438->names[i].polys + D_800625A0->bufferIndex)->y3 = i * 13 + 0x2c;
+            (D_800625A0->block438->values[i].polys + D_800625A0->bufferIndex)->x0 = 0xc8;
+            (D_800625A0->block438->values[i].polys + D_800625A0->bufferIndex)->y0 = i * 13 + 0x1f;
+            (D_800625A0->block438->values[i].polys + D_800625A0->bufferIndex)->x1 =
+                D_800625A0->block438->values[i].width + 0xc8;
+            (D_800625A0->block438->values[i].polys + D_800625A0->bufferIndex)->y1 = i * 13 + 0x1f;
+            (D_800625A0->block438->values[i].polys + D_800625A0->bufferIndex)->x2 = 0xc8;
+            (D_800625A0->block438->values[i].polys + D_800625A0->bufferIndex)->y2 = i * 13 + 0x2c;
+            (D_800625A0->block438->values[i].polys + D_800625A0->bufferIndex)->x3 =
+                D_800625A0->block438->values[i].width + 0xc8;
+            (D_800625A0->block438->values[i].polys + D_800625A0->bufferIndex)->y3 = i * 13 + 0x2c;
+            D_800625A0->block438->names[i].count = D_800625A0->bufferIndex;
+            D_800625A0->block438->shown[i] = 1;
+        } else {
+            D_800625A0->block438->shown[i] = 0;
+        }
+        D_800625A0->block438->counts[i] = 0;
+        func_801E1544(i, kind, pixels, percent);
+    }
+    func_800320E8(pixels);
+    func_801D36E0(&D_800625A0->block438->title, slot, 0, 2);
+    D_800625A0->party->unk4D = 1;
+}
+
+/* The 801e1544 screen for party slot `slot`: members 7 and 8 are refused
+ * (sound 4); otherwise show the slot's page, switching members (9 previous,
+ * 10 next, skipping 7 and 8) until cancelled. */
+u8 func_801E20C8(u8 slot) {
+    u8 stay;
+    u8 shown;
+
+    stay = 1;
+    shown = 0xff;
+    if ((u32)(D_800625A0->party->ids[slot] - 7) < 2) {
+        func_801C8574(4);
+        return 1;
+    }
+    func_801E1014();
+    do {
+        func_801C7BF4();
+        if (slot != shown) {
+            shown = slot;
+            func_801E1AC8(slot);
+        }
+        switch (D_800625A0->input) {
+        case 5:
+            stay = 0;
+            break;
+        case 9:
+            do {
+                slot = func_801D9704(slot, 0, 0);
+            } while ((u32)(D_800625A0->party->ids[slot] - 7) < 2);
+            break;
+        case 10:
+            do {
+                slot = func_801D9704(slot, 1, 0);
+            } while ((u32)(D_800625A0->party->ids[slot] - 7) < 2);
+            break;
+        }
+    } while (stay);
+    func_801E1398();
+    return 1;
+}
 
 /* Open the 801d3488 screen on the first ready party slot, which it returns. */
 u8 func_801E2250(void) {
@@ -2898,7 +7231,163 @@ void func_801E2368(void) {
     func_801C72BC(0x13);
 }
 
+/* The status command: show party slot `slot`'s status page (6 later
+ * labels when its +f8e5 flag is set) and choose among four choices (0 the
+ * 801e05d0 screen, 1 and 2 the 801ddf24 screen modes, 3 toggles the flag
+ * when the member has a gear; member 7 and the flag D_80059179 refuse),
+ * switching members with 9/10, until cancelled. The code matches except
+ * the jump table address (see 801e3ecc). The first 801d9704 call passes
+ * the slot before it is set, as the original does. */
+#ifdef NON_MATCHING
+u8 func_801E23CC(void) {
+    u8 slot;
+    u8 shown;
+    u8 stay;
+    u8 first;
+    u8 page;
+
+    stay = 1;
+    func_801D9704(slot, 0, 1);
+    shown = 0xf3;
+    first = 1;
+    D_800625A0->choice = 0;
+    D_800625A0->choiceShown = 0xff;
+    slot = func_801E2250();
+    while (stay) {
+        func_801C7BF4();
+        if (slot != shown) {
+            shown = slot;
+            func_801DFE2C(shown);
+            func_801D2EC0(shown, 1);
+            page = D_8006F8E5[slot] ? 6 : 0;
+            func_801E2324(page);
+            func_801E8070(6, D_800625A0->labels18E0, D_801EA56E, D_801E9F48, D_800625A0->party->unk54, 4, 7, 6);
+            func_801E8070(6, D_800625A0->labels18E0, D_801EA56E, D_801E9F48, D_800625A0->party->unk54, 5, 7, 6);
+            D_800625A0->labels18E0[4].visible = 1;
+            D_800625A0->labels18E0[5].visible = 1;
+            if (first) {
+                first = 0;
+                func_801D1E80();
+                func_801D29A8(0, 0);
+                func_801E86C8(0);
+            }
+        }
+        if (D_800625A0->choice != D_800625A0->choiceShown) {
+            func_801E8070(4, D_800625A0->labels18E0, D_801EA56E, &D_801E9F48[page], D_800625A0->party->unk54,
+                          D_800625A0->choice, 7, 0);
+            func_801E8B4C(0);
+            D_800625A0->choiceShown = D_800625A0->choice;
+        }
+        switch (D_800625A0->input) {
+        case 4:
+            func_801D22C4();
+            func_801E8044(4, D_800625A0->party->unk54);
+            D_800625A0->party->redraw7 = 0;
+            D_800625A0->party->unk8 = 0;
+            D_800625A0->party->unk4B = 0;
+            D_800625A0->party->unk54[4] = 0;
+            D_800625A0->party->unk54[5] = 0;
+            switch (D_800625A0->choice) {
+            case 0:
+                if (D_800625A0->party->ids[slot] != 7) {
+                    D_800625A0->party->redrawA = 0;
+                    func_801E05D0(slot, 0, 1);
+                    shown = 0xff;
+                    func_801DE36C();
+                    func_801D8DE4(slot, 0, 0, 1);
+                    func_801D8EA4(slot, 0, 0, 1);
+                    D_800625A0->party->redrawA = 1;
+                } else {
+                    func_801C8574(4);
+                    shown = 0xff;
+                }
+                break;
+            case 1:
+                if (D_800625A0->party->ids[slot] != 7) {
+                    func_801DDF24(slot, 0, 1);
+                    func_801DC2CC(1);
+                    shown = 0xff;
+                } else {
+                    func_801C8574(4);
+                    shown = 0xff;
+                }
+                break;
+            case 2:
+                if (D_800625A0->party->ids[slot] != 7) {
+                    func_801DDF24(slot, 0, 2);
+                    func_801DC2CC(2);
+                    shown = 0xff;
+                } else {
+                    func_801C8574(4);
+                    shown = 0xff;
+                }
+                break;
+            case 3:
+                if (D_80059179 == 0) {
+                    if (D_8006F8E5[slot] != 0) {
+                        D_8006F8E5[slot] = 0;
+                        page = 0;
+                    } else if (D_8006D8A0[D_800625A0->party->ids[slot]].gear != 0xff) {
+                        page = 6;
+                        D_8006F8E5[slot] = 1;
+                    }
+                    func_801D7CFC(slot, 1, D_8006F8E5[slot]);
+                    shown = 0xff;
+                } else {
+                    func_801C8574(4);
+                    shown = 0xff;
+                }
+                break;
+            }
+            D_800625A0->party->unk54[4] = 1;
+            D_800625A0->party->unk54[5] = 1;
+            func_801E8018(6, D_800625A0->labels18E0, &D_801EA568[page], D_800625A0->party->unk54);
+            D_800625A0->party->redraw7 = 1;
+            D_800625A0->party->unk8 = 1;
+            D_800625A0->party->unk4B = 1;
+            func_801D1EE0(D_800625A0->choice + 7, 1);
+            D_800625A0->party->redraw4 = 1;
+            D_800625A0->choiceShown = 0xff;
+            func_801D3488(0, 1);
+            break;
+        case 5:
+            stay = 0;
+            break;
+        case 2:
+        case 6:
+        case 7:
+        case 8:
+            break;
+        case 1:
+            if (D_800625A0->choice != 0) {
+                D_800625A0->choice--;
+            } else {
+                D_800625A0->choice = D_800625A0->choiceCount - 1;
+            }
+            break;
+        case 3:
+            if (++D_800625A0->choice >= D_800625A0->choiceCount) {
+                D_800625A0->choice = 0;
+            }
+            break;
+        case 9:
+            slot = func_801D9704(slot, 0, 1);
+            D_800625A0->choiceShown = 0xff;
+            break;
+        case 10:
+            slot = func_801D9704(slot, 1, 1);
+            D_800625A0->choiceShown = 0xff;
+            break;
+        }
+    }
+    func_801E8044(6, D_800625A0->party->unk54);
+    D_800625A0->party->redraw4 = 0;
+    D_800625A0->party->redraw3 = 0;
+    return 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E23CC);
+#endif
 
 /* Open the 801d3488 screen: its three blocks and view 3. */
 void func_801E2AE0(void) {
@@ -2926,7 +7415,121 @@ void func_801E2B80(void) {
     func_801C72BC(0x13);
 }
 
+/* The equipment command: on the first party member's page, choose among
+ * three choices (0 the 801e05d0 screen, 1 the 801ddf24 screen, 2 the
+ * 801e1544 screen), switching members with 9/10, until cancelled. The code
+ * matches except the jump table address (see 801e3ecc). */
+#ifdef NON_MATCHING
+u8 func_801E2BE4(void) {
+    u8 slot;
+    u8 shown;
+    u8 stay;
+    u8 first;
+    u8 i;
+
+    stay = 1;
+    shown = 0xf3;
+    first = 1;
+    slot = D_800625A0->firstMember;
+    D_800625A0->choice = 2;
+    D_800625A0->choiceShown = 0xff;
+    func_801E2AE0();
+    for (i = 0; i < 3; i++) {
+        if (D_800625A0->party->ids[i] != 0xff) {
+            slot = i;
+            break;
+        }
+    }
+    while (stay) {
+        func_801C7BF4();
+        if (slot != shown) {
+            func_801E36D4(D_800625A0->tables, D_800625A0->party->ids[slot]);
+            shown = slot;
+            func_801E3A80(D_800625A0->tables, D_800625A0->party->ids[slot]);
+            func_801D2EC0(shown, 0);
+            if (first) {
+                first = 0;
+                func_801D1E80();
+                func_801D29A8(0, 0);
+                func_801E86C8(0);
+            }
+        }
+        if (D_800625A0->choice != D_800625A0->choiceShown) {
+            func_801D261C();
+            func_801E8B4C(0);
+            D_800625A0->choiceShown = D_800625A0->choice;
+        }
+        switch (D_800625A0->input) {
+        case 4:
+            func_801D22C4();
+            func_801D25E4();
+            D_800625A0->party->redraw7 = 0;
+            D_800625A0->party->unk8 = 0;
+            D_800625A0->party->unk4B = 0;
+            switch (D_800625A0->choice) {
+            case 0:
+                D_800625A0->party->redrawA = 0;
+                func_801E05D0(slot, 0, 0);
+                func_801DE36C();
+                func_801D8DE4(slot, 0, 0, 0);
+                func_801D8EA4(slot, 0, 0, 0);
+                shown = 0xff;
+                D_800625A0->party->redrawA = 1;
+                break;
+            case 1:
+                func_801DDF24(slot, 0, 0);
+                func_801DC2CC(0);
+                shown = 0xff;
+                break;
+            case 2:
+                func_801E20C8(slot);
+                break;
+            }
+            func_801D249C(1);
+            D_800625A0->party->redraw7 = 1;
+            D_800625A0->party->unk8 = 1;
+            D_800625A0->party->unk4B = 1;
+            func_801D1EE0(D_800625A0->choice + 7, 1);
+            D_800625A0->party->redraw4 = 1;
+            D_800625A0->choiceShown = 0xff;
+            func_801D3488(0, 0);
+            break;
+        case 5:
+            stay = 0;
+            break;
+        case 2:
+        case 6:
+        case 7:
+        case 8:
+            break;
+        case 1:
+            if (D_800625A0->choice != 0) {
+                D_800625A0->choice--;
+            } else {
+                D_800625A0->choice = D_800625A0->choiceCount - 1;
+            }
+            break;
+        case 3:
+            if (++D_800625A0->choice >= D_800625A0->choiceCount) {
+                D_800625A0->choice = 0;
+            }
+            break;
+        case 9:
+            slot = func_801D9704(slot, 0, 0);
+            break;
+        case 10:
+            slot = func_801D9704(slot, 1, 0);
+            break;
+        }
+    }
+    func_801D249C(0);
+    D_800625A0->party->redraw4 = 0;
+    D_800625A0->party->redraw3 = 0;
+    return 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E2BE4);
+#endif
 
 /* Close the screen of the command at `offset` past the top cursor. */
 #ifdef NON_MATCHING
@@ -2969,7 +7572,122 @@ void func_801E3088(u8 offset) {
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E3088);
 #endif
 
+/* Use item `item` on character `id`: restore HP (x50) and/or EP (x10),
+ * raise stats (capped at 200, HP max 999, EP max 99), change +78, or run a
+ * debug fill. Returns nonzero when the restoring item had no effect. */
+#ifdef NON_MATCHING
+u8 func_801E31C0(MenuTables *tables, u8 id, u8 item) {
+    CharRecord *chara;
+    MenuItem *record;
+    u8 hpFull;
+    u8 epFull;
+    s32 hpRate;
+    s32 epRate;
+
+    hpFull = 0;
+    epFull = 0;
+    record = tables->items;
+    record += item;
+    chara = D_8006D8A0 + id;
+    epRate = 10;
+    if (record->flags & 0x8000) {
+        if (chara->hp == chara->hpMax) {
+            hpFull = 1;
+        } else {
+            hpRate = 50;
+            chara->hp += record->amount * hpRate;
+        }
+    }
+    if (record->flags & 0x4000) {
+        if (chara->ep == chara->epMax) {
+            epFull = 1;
+        } else {
+            chara->ep += epRate * record->amount;
+        }
+    }
+    if (chara->hp > chara->hpMax) {
+        chara->hp = chara->hpMax;
+    }
+    if (chara->ep > chara->epMax) {
+        chara->ep = chara->epMax;
+    }
+    if (record->flags & 4) {
+        if (record->stats & 0x8000) {
+            chara->unk58 += record->amount;
+        }
+        if (record->stats & 0x4000) {
+            chara->unk59 += record->amount;
+        }
+        if (record->stats & 0x2000) {
+            chara->unk5B += record->amount;
+        }
+        if (record->stats & 0x1000) {
+            chara->unk5C += record->amount;
+        }
+        if (record->stats & 0x800) {
+            chara->hpMax += record->amount;
+        }
+        if (record->stats & 0x400) {
+            chara->epMax += record->amount;
+        }
+        if (chara->unk58 > 200) {
+            chara->unk58 = 200;
+        }
+        if (chara->unk59 > 200) {
+            chara->unk59 = 200;
+        }
+        if (chara->unk5B > 200) {
+            chara->unk5B = 200;
+        }
+        if (chara->unk5C > 200) {
+            chara->unk5C = 200;
+        }
+        if (chara->hpMax >= 1000) {
+            chara->hpMax = 999;
+        }
+        if (chara->epMax >= 100) {
+            chara->epMax = 99;
+        }
+    }
+    if (record->flags & 2) {
+        if (record->stats & 0x8000) {
+            chara->accessories[4] += record->stats;
+            if (chara->accessories[4] > 200) {
+                chara->accessories[4] = 200;
+            }
+        } else if (chara->accessories[4] < (record->stats & 0xff)) {
+            chara->accessories[4] = 0;
+        } else {
+            chara->accessories[4] -= record->stats;
+        }
+    }
+    if (record->flags & 1) {
+        switch (record->amount) {
+        case 1:
+            func_801E5058();
+            break;
+        case 2:
+            func_801E5178();
+            break;
+        }
+    }
+    if (record->flags & 0x8000) {
+        if (record->flags & 0x4000) {
+            if (!hpFull) {
+                return 0;
+            }
+            return epFull;
+        }
+        return hpFull;
+    }
+    if (record->flags & 0x4000) {
+        return epFull;
+    }
+    return 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E31C0);
+#endif
 
 /* Apply `user`'s restoring effect: to `target`'s HP (its +5b times the
  * effect's +11, capped at the maximum), or with `gear` to the user's gear
@@ -2998,13 +7716,272 @@ void func_801E35BC(MenuTables *tables, u8 user, u8 target, u8 effect, u8 gear) {
     }
 }
 
+/* Recompute character `id`'s equipment values: sum its three accessories
+ * (amount, kind bits and stat bonuses) and take its weapon's values (kind 4
+ * characters: both weapons). The code matches except the jump table
+ * address, which marks a separate unit (see 801e3ecc). */
+#ifdef NON_MATCHING
+void func_801E36D4(MenuTables *tables, u8 id) {
+    CharRecord *chara;
+    MenuAccessory *accessory;
+    MenuWeapon *weapon;
+    u8 i;
+    u8 amount;
+
+    chara = &D_8006D8A0[id];
+    chara->bonus[5] = 0;
+    chara->unk32 = 0;
+    chara->bonus[0] = 0;
+    chara->bonus[1] = 0;
+    chara->bonus[2] = 0;
+    chara->bonus[3] = 0;
+    chara->bonus[4] = 0;
+    chara->bonus[6] = 0;
+    chara->bonus[7] = 0;
+    chara->unk30 = 0;
+    chara->unk31 = 0;
+    chara->unk7E = 0;
+    chara->unk82 = 0;
+    chara->unk86 = 0;
+    chara->unk8A = 0;
+    chara->unk8E = 0;
+    chara->unkA1 = 0;
+    for (i = 0; i < 3; i++) {
+        accessory = &tables->accessories[chara->accessories[i]];
+        chara->bonus[5] += accessory->amount;
+        switch (accessory->kind) {
+        case 1:
+            chara->unk7E |= accessory->value;
+            break;
+        case 2:
+            chara->unk82 |= accessory->value;
+            break;
+        case 3:
+            chara->unk86 |= accessory->value;
+            break;
+        case 4:
+            chara->unk8A |= accessory->value;
+            break;
+        case 7:
+            chara->unk8E |= accessory->value;
+            break;
+        case 5:
+            chara->unk32 |= accessory->value;
+            break;
+        case 8:
+        case 9:
+            chara->unk30 += accessory->value;
+            break;
+        case 10:
+            chara->unkA1 += accessory->value;
+            break;
+        }
+        amount = accessory->stats;
+        if (accessory->stats & 0x8000) {
+            chara->bonus[0] += amount;
+        }
+        if (accessory->stats & 0x4000) {
+            chara->bonus[1] += amount;
+        }
+        if (accessory->stats & 0x2000) {
+            chara->bonus[2] += amount;
+        }
+        if (accessory->stats & 0x1000) {
+            chara->bonus[3] += amount;
+        }
+        if (accessory->stats & 0x800) {
+            chara->bonus[4] += amount;
+        }
+        if (accessory->stats & 0x400) {
+            chara->bonus[6] += amount;
+        }
+        if (accessory->stats & 0x200) {
+            chara->bonus[7] += amount;
+        }
+        if (accessory->stats & 0x100) {
+            chara->bonus[5] += amount;
+        }
+    }
+    weapon = &tables->weapons[chara->weapons[0]];
+    chara->level = weapon->level;
+    chara->weaponValue = weapon->value;
+    chara->weaponA = weapon->a;
+    chara->weaponB = weapon->b;
+    if (chara->unk56 == 4) {
+        weapon = &tables->weapons[chara->specials[0]];
+        chara->level = weapon->level;
+        chara->weaponValue = weapon->value;
+        chara->weaponA = weapon->a;
+        chara->weaponB = weapon->b;
+        weapon = &tables->weapons[chara->specials[3]];
+        chara->unk1C = weapon->level;
+        chara->weapon2Value = weapon->value;
+        chara->weapon2A = weapon->a;
+        chara->weapon2B = weapon->b;
+    }
+    if (chara->weaponB == 100) {
+        chara->unk8E |= chara->weaponValue;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E36D4);
+#endif
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E3A80);
+/* Compute character `id`'s shown stats: base values plus equipment bonuses
+ * (the first from the level, scaled 6/10 with +1c for kind 4), capped at
+ * 250, 99 or 16. */
+void func_801E3A80(MenuTables *tables, u8 id) {
+    CharRecord *chara;
 
+    chara = &D_8006D8A0[id];
+    if (chara->unk56 == 4) {
+        tables->shown[0] = (chara->level + chara->unk1C) * 6 / 10;
+    } else {
+        tables->shown[0] = chara->level + (chara->unk58 + chara->bonus[0]);
+    }
+    tables->shown[1] = chara->unk5E + chara->bonus[6];
+    tables->shown[2] = chara->bonus[5] + (chara->unk59 + chara->bonus[1]);
+    tables->shown[3] = chara->unk5F + chara->bonus[7];
+    tables->shown[4] = chara->unk5B + chara->bonus[3];
+    tables->shown[5] = chara->unk5C + chara->bonus[4];
+    tables->shown[6] = chara->unk5A + chara->bonus[2];
+    if (tables->shown[0] >= 251) {
+        tables->shown[0] = 250;
+    }
+    if (tables->shown[1] >= 100) {
+        tables->shown[1] = 99;
+    }
+    if (tables->shown[2] >= 251) {
+        tables->shown[2] = 250;
+    }
+    if (tables->shown[3] >= 100) {
+        tables->shown[3] = 99;
+    }
+    if (tables->shown[4] >= 251) {
+        tables->shown[4] = 250;
+    }
+    if (tables->shown[5] >= 251) {
+        tables->shown[5] = 250;
+    }
+    if (tables->shown[6] >= 21) {
+        tables->shown[6] = 16;
+    }
+}
+
+/* Compute gear `gear`'s shown stats from its record and its pilot (flag 1000
+ * makes gear 9's pilot character 10); gear 7 first takes its values from
+ * character 7 (HP x50, stats plus bonuses). */
+#ifdef NON_MATCHING
+void func_801E3C2C(MenuTables *tables, u8 gear) {
+    GearRecord *record;
+    CharRecord *pilot;
+    s16 value;
+    s32 bonus;
+
+    if (D_8006D634.flags & 0x1000) {
+        D_801E9808[9] = 10;
+    }
+    if (gear == 7) {
+        D_8006D634.gears[7].unk60 = D_8006D634.chars[7].hp * 50;
+        D_8006D634.gears[7].unk64 = D_8006D634.chars[7].hpMax * 50;
+        D_8006D634.gears[7].unk3C = D_8006D634.chars[7].unk58 + D_8006D634.chars[7].bonus[0];
+        D_8006D634.gears[7].unk70 = (D_8006D634.chars[7].unk59 + D_8006D634.chars[7].bonus[1]) * 12;
+        D_8006D634.gears[7].unk72 = (D_8006D634.chars[7].unk5C + D_8006D634.chars[7].bonus[4]) * 6;
+        D_8006D634.gears[7].unk98 = D_8006D634.chars[7].unk5A + D_8006D634.chars[7].bonus[2];
+    }
+    record = &D_8006D634.gears[gear];
+    pilot = &D_8006D634.chars[D_801E9808[gear]];
+    tables->unk9C = record->unk60;
+    tables->unkA0 = record->unk64;
+    tables->unkA4 = record->unk70 + record->unk40;
+    tables->unkA6 = pilot->unk5C + pilot->bonus[4] + record->unk42 + record->unk72;
+    tables->unkA8 = record->unk68 + record->unk44;
+    tables->unkAA = record->unk6A;
+    tables->unkAC = record->unk38;
+    tables->unkAE = record->unk3A;
+    bonus = record->unk3C * (record->unk74 + record->unk56);
+    if (gear == 5 || gear == 13) {
+        value = (record->slots[0].unk2 + record->slots[2].unk2) * 6 / 10;
+    } else {
+        value = record->slots[0].unk2;
+    }
+    tables->unkB0 = value + bonus;
+    tables->unkB2 = record->unk9F + record->unk4D;
+    tables->unkB3 = record->unk98 - record->unk4A;
+    tables->unkB4 = record->unk9E + record->unk54;
+    tables->unkB5 = record->unk9D;
+    tables->unkB6 = record->unk9C;
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E3C2C);
+#endif
 
+/* Compute gear `gear`'s part and weapon values, then mirror its +9 values
+ * (and for gears 4, 5 its weapons) into its other form (gears 1, 15, 10-14)
+ * and compute that too. Matches except the jump table address: its original
+ * table sits 4 mod 8 (jtbl_801C522C), so this code belongs to a separate
+ * unit whose rodata starts 4 mod 8. */
+#ifdef NON_MATCHING
+void func_801E3ECC(MenuTables *tables, u8 gear) {
+    u8 i;
+
+    func_801E433C(tables, gear);
+    func_801E4754(tables, gear);
+    switch (gear) {
+    case 0:
+        for (i = 0; i < 3; i++) {
+            D_8006DFAC[1].unk9[i] = D_8006DFAC[0].unk9[i];
+        }
+        func_801E433C(tables, 1);
+        break;
+    case 1:
+        for (i = 0; i < 3; i++) {
+            D_8006DFAC[15].unk9[i] = D_8006DFAC[1].unk9[i];
+        }
+        func_801E433C(tables, 15);
+        break;
+    case 2:
+        for (i = 0; i < 3; i++) {
+            D_8006DFAC[10].unk9[i] = D_8006DFAC[2].unk9[i];
+        }
+        func_801E433C(tables, 10);
+        break;
+    case 3:
+        for (i = 0; i < 3; i++) {
+            D_8006DFAC[11].unk9[i] = D_8006DFAC[3].unk9[i];
+        }
+        func_801E433C(tables, 11);
+        break;
+    case 4:
+        for (i = 0; i < 3; i++) {
+            D_8006DFAC[12].unk9[i] = D_8006DFAC[4].unk9[i];
+        }
+        func_801E433C(tables, 12);
+        D_8006DFAC[12].unkC[0] = D_8006DFAC[4].unkC[0];
+        func_801E4754(tables, 12);
+        break;
+    case 5:
+        for (i = 0; i < 3; i++) {
+            D_8006DFAC[13].unk9[i] = D_8006DFAC[5].unk9[i];
+        }
+        func_801E433C(tables, 13);
+        D_8006DFAC[13].unkC[0] = D_8006DFAC[5].unkC[0];
+        D_8006DFAC[13].unkC[3] = D_8006DFAC[5].unkC[3];
+        D_8006DFAC[13].unk4[0] = D_8006DFAC[5].unk4[0];
+        D_8006DFAC[13].unk4[3] = D_8006DFAC[5].unk4[3];
+        func_801E4754(tables, 13);
+        break;
+    case 6:
+        for (i = 0; i < 3; i++) {
+            D_8006DFAC[14].unk9[i] = D_8006DFAC[6].unk9[i];
+        }
+        func_801E433C(tables, 14);
+        break;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E3ECC);
+#endif
 
 /* Recompute gear `gear`'s derived values from the data tables. */
 void func_801E4170(MenuTables *tables, u8 gear) {
@@ -3065,7 +8042,51 @@ void func_801E42AC(MenuTables *tables, u8 gear) {
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E433C);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E4754);
+/* Take gear `gear`'s weapon values (table +18) into its first slot and
+ * attributes; gears 5 and 13 instead take their three slot weapons. */
+void func_801E4754(MenuTables *tables, u8 gear) {
+    GearRecord *record;
+    GearWeapon *weapon;
+
+    record = &D_8006DFAC[gear];
+    weapon = tables->weapons18;
+    weapon += record->unkC[0];
+    record->slots[0].unk2 = weapon->unkE;
+    record->slots[0].value = weapon->unk12;
+    record->slots[0].unk3 = weapon->unk10;
+    record->slots[0].unk4 = weapon->unk11;
+    record->attrs[0] = weapon->attrs[0];
+    record->attrs[1] = weapon->attrs[1];
+    record->attrs[2] = weapon->attrs[2];
+    record->attrs[3] = weapon->attrs[3];
+    if (record->slots[0].unk4 == 100) {
+        record->unk86 &= 0xfff;
+        record->unk86 |= record->slots[0].value;
+    }
+    if (gear == 5 || gear == 13) {
+        weapon = tables->weapons18;
+        weapon += record->unk4[0];
+        record->slots[0].unk2 = weapon->unkE;
+        record->slots[0].value = weapon->unk12;
+        record->slots[0].unk3 = weapon->unk10;
+        record->slots[0].unk4 = weapon->unk11;
+        record->attrs[1] = weapon->attrs[1];
+        weapon = tables->weapons18;
+        weapon += record->unk4[1];
+        record->slots[1].unk2 = weapon->unkE;
+        record->slots[1].value = weapon->unk12;
+        record->slots[1].unk3 = weapon->unk10;
+        record->slots[1].unk4 = weapon->unk11;
+        record->attrs[2] = weapon->attrs[2];
+        weapon = tables->weapons18;
+        weapon += record->unk4[3];
+        record->slots[2].unk2 = weapon->unkE;
+        record->slots[2].value = weapon->unk12;
+        record->slots[2].unk3 = weapon->unk10;
+        record->slots[2].unk4 = weapon->unk11;
+        record->attrs[3] = weapon->attrs[3];
+    }
+}
 
 /* Gear `gear`'s value: (its +44 / 120 - its +75) / 2, at least 0. */
 u8 func_801E4928(u8 gear) {
@@ -3093,9 +8114,76 @@ void func_801E4998(MenuGearViews *views, u8 gear) {
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E4998);
 #endif
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E4A28);
+/* Copy the game data into save buffer `save`: characters, gears (their
+ * kept fields), names and the other blocks. */
+void func_801E4A28(SaveData *save) {
+    SaveWordsA4 *chara;
+    SaveGear *dst;
+    GearRecord *src;
+    u8 i;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E4D10);
+    for (i = 0; i < 11; i++) {
+        chara = &save->chars[i];
+        *chara = *(SaveWordsA4 *)&D_8006D8A0[i];
+    }
+    for (i = 0; i < 20; i++) {
+        dst = &save->gears[i];
+        src = &D_8006DFAC[i];
+        dst->head = *(SaveWords10 *)src;
+        dst->slots = *(SaveWords18 *)src->slots;
+        dst->attrs = *(s32 *)src->attrs;
+        dst->unk38 = src->unk38;
+        dst->unk60 = src->unk60;
+        dst->unk99 = src->unk99;
+        dst->unk74 = src->unk74;
+        dst->unk75 = src->unk75;
+    }
+    save->names = *(SaveWordsDC *)&D_8006D634.names;
+    save->unk100 = *(SaveWords190 *)D_8006D634.unkDC;
+    save->unkE4C = *(SaveWords78 *)D_8006D634.unk1648;
+    save->records = *(SaveWords160 *)D_8006D634.records;
+    save->unk1024 = *(SaveWords100 *)D_8006D634.unk1820;
+    memcpy(save->unk1124, D_8006D634.unk1920, 0xa38);
+}
+
+/* Load the game data from save buffer `save`: characters, records, gears
+ * (recomputing their table values before restoring the kept fields), names
+ * and the other blocks. */
+void func_801E4D10(SaveData *save, MenuTables *tables) {
+    SaveWordsA4 *chara;
+    SaveWordsA4 *saved;
+    GearRecord *dst;
+    SaveGear *src;
+    u8 i;
+
+    for (i = 0; i < 11; i++) {
+        chara = (SaveWordsA4 *)&D_8006D634.chars[i];
+        saved = &save->chars[i];
+        *chara = *saved;
+    }
+    *(SaveWords160 *)D_8006D634.records = save->records;
+    for (i = 0; i < 20; i++) {
+        dst = &D_8006D634.gears[i];
+        src = &save->gears[i];
+        *(SaveWords10 *)dst = src->head;
+        *(SaveWords18 *)dst->slots = src->slots;
+        *(s32 *)dst->attrs = src->attrs;
+        func_801E41C0(tables, i);
+        func_801E4258(tables, i);
+        func_801E42AC(tables, i);
+        func_801E433C(tables, i);
+        dst->unk38 = src->unk38;
+        dst->unk60 = src->unk60;
+        dst->unk99 = src->unk99;
+        dst->unk74 = src->unk74;
+        dst->unk75 = src->unk75;
+    }
+    *(SaveWordsDC *)D_8006D634.names = save->names;
+    *(SaveWords190 *)D_8006D634.unkDC = save->unk100;
+    *(SaveWords78 *)D_8006D634.unk1648 = save->unkE4C;
+    *(SaveWords100 *)D_8006D634.unk1820 = save->unk1024;
+    memcpy(D_8006D634.unk1920, save->unk1124, 0xa38);
+}
 
 /* Debug: put ten of every entry into the five inventory lists. */
 void func_801E5058(void) {
@@ -3123,13 +8211,229 @@ void func_801E5058(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E5178);
+/* Debug: reset D_8006F364 and the eleven D_8006ECF4 records (four values,
+ * flag 7 and the +1a value) to their defaults. */
+void func_801E5178(void) {
+    D_8006F364 = 0x7ff;
+    D_8006ECF4[0].values[0] = 0xfff8;
+    D_8006ECF4[0].values[1] = 0xff00;
+    D_8006ECF4[0].values[2] = 0xfff0;
+    D_8006ECF4[0].values[3] = 0xfe00;
+    D_8006ECF4[0].unk1A = 0xe000;
+    D_8006ECF4[0].flag = 7;
+    D_8006ECF4[1].values[0] = 0xffe0;
+    D_8006ECF4[1].values[1] = 0xfff0;
+    D_8006ECF4[1].values[2] = 0xfff0;
+    D_8006ECF4[1].values[3] = 0xfff0;
+    D_8006ECF4[1].unk1A = 0xc000;
+    D_8006ECF4[1].flag = 7;
+    D_8006ECF4[2].values[0] = 0xffe0;
+    D_8006ECF4[2].values[1] = 0xffe0;
+    D_8006ECF4[2].values[2] = 0xfff0;
+    D_8006ECF4[2].values[3] = 0xff00;
+    D_8006ECF4[2].unk1A = 0x8000;
+    D_8006ECF4[2].flag = 7;
+    D_8006ECF4[3].values[0] = 0xffe0;
+    D_8006ECF4[3].values[1] = 0xffc0;
+    D_8006ECF4[3].values[2] = 0xfff0;
+    D_8006ECF4[3].values[3] = 0xff00;
+    D_8006ECF4[3].unk1A = 0xf000;
+    D_8006ECF4[3].flag = 7;
+    D_8006ECF4[4].values[0] = 0xffc0;
+    D_8006ECF4[4].values[1] = 0xffc0;
+    D_8006ECF4[4].values[2] = 0xfff0;
+    D_8006ECF4[4].values[3] = 0xffc0;
+    D_8006ECF4[4].unk1A = 0xe000;
+    D_8006ECF4[4].flag = 7;
+    D_8006ECF4[5].values[0] = 0xffc0;
+    D_8006ECF4[5].values[1] = 0xf000;
+    D_8006ECF4[5].values[2] = 0xfff0;
+    D_8006ECF4[5].values[3] = 0xf000;
+    D_8006ECF4[5].unk1A = 0x8000;
+    D_8006ECF4[5].flag = 7;
+    D_8006ECF4[6].values[0] = 0xffc0;
+    D_8006ECF4[6].values[1] = 0xff00;
+    D_8006ECF4[6].values[2] = 0xfff0;
+    D_8006ECF4[6].values[3] = 0xff00;
+    D_8006ECF4[6].unk1A = 0x8000;
+    D_8006ECF4[6].flag = 7;
+    D_8006ECF4[7].values[0] = 0;
+    D_8006ECF4[7].values[1] = 0xff00;
+    D_8006ECF4[7].values[2] = 0;
+    D_8006ECF4[7].values[3] = 0xff00;
+    D_8006ECF4[7].unk1A = 0;
+    D_8006ECF4[7].flag = 7;
+    D_8006ECF4[8].values[0] = 0;
+    D_8006ECF4[8].values[1] = 0xf800;
+    D_8006ECF4[8].values[2] = 0xfff0;
+    D_8006ECF4[8].values[3] = 0;
+    D_8006ECF4[8].unk1A = 0xe000;
+    D_8006ECF4[8].flag = 7;
+    D_8006ECF4[9].values[0] = 0xffe0;
+    D_8006ECF4[9].values[1] = 0xffe0;
+    D_8006ECF4[9].values[2] = 0xfff0;
+    D_8006ECF4[9].values[3] = 0xffe0;
+    D_8006ECF4[9].unk1A = 0x8000;
+    D_8006ECF4[9].flag = 7;
+    D_8006ECF4[10].values[0] = 0xffc0;
+    D_8006ECF4[10].values[1] = 0xff00;
+    D_8006ECF4[10].values[2] = 0xfff0;
+    D_8006ECF4[10].values[3] = 0xff00;
+    D_8006ECF4[10].unk1A = 0x8000;
+    D_8006ECF4[10].flag = 7;
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E53CC);
+/* Set up portrait `index`: hide it and its mark, set the grey covers and
+ * their draw modes, and the four edge lists' quads (sheet records 0-3). */
+void func_801E53CC(u8 index) {
+    MenuPortrait *portrait;
+    RECT window;
+    u8 i;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E56E8);
+    portrait = D_800625A0->portraits[index];
+    window.y = 0;
+    window.x = 0;
+    window.h = 0x100;
+    window.w = 0x100;
+    D_800625A0->party->unk20[index] = 0;
+    D_800625A0->party->unk27[index] = 0;
+    for (i = 0; i < 2; i++) {
+        SetPolyG4(&portrait->fill[i]);
+        (portrait->fill + i)->r0 = 0x68;
+        (portrait->fill + i)->g0 = 0x68;
+        (portrait->fill + i)->b0 = 0x68;
+        (portrait->fill + i)->r1 = 0x68;
+        (portrait->fill + i)->g1 = 0x68;
+        (portrait->fill + i)->b1 = 0x68;
+        (portrait->fill + i)->r2 = 0x68;
+        (portrait->fill + i)->g2 = 0x68;
+        (portrait->fill + i)->b2 = 0x68;
+        (portrait->fill + i)->r3 = 0x68;
+        (portrait->fill + i)->g3 = 0x68;
+        (portrait->fill + i)->b3 = 0x68;
+        SetSemiTrans(&portrait->fill[i], 1);
+        SetDrawMode(&portrait->fillMode[i], 0, 0,
+                    GetTPage(0, 0, D_800625A0->sheetEntries[0][4], D_800625A0->sheetEntries[0][5]), &window);
+    }
+    for (i = 0; i < 4; i++) {
+        SetPolyFT4(&portrait->edge[0][i]);
+        SetShadeTex(&portrait->edge[0][i], 1);
+        (portrait->edge[0] + i)->r0 = 0xff;
+        (portrait->edge[0] + i)->g0 = 0xff;
+        (portrait->edge[0] + i)->b0 = 0xff;
+        portrait->edge[0][i].tpage = GetTPage(D_800625A0->sheetEntries[0][1], 0, D_800625A0->sheetEntries[0][4],
+                                            D_800625A0->sheetEntries[0][5]);
+        portrait->edge[0][i].clut = GetClut(D_800625A0->sheetEntries[0][2], D_800625A0->sheetEntries[0][3]);
+        SetPolyFT4(&portrait->edge[1][i]);
+        SetShadeTex(&portrait->edge[1][i], 1);
+        (portrait->edge[1] + i)->r0 = 0xff;
+        (portrait->edge[1] + i)->g0 = 0xff;
+        (portrait->edge[1] + i)->b0 = 0xff;
+        portrait->edge[1][i].tpage = GetTPage(D_800625A0->sheetEntries[1][1], 0, D_800625A0->sheetEntries[1][4],
+                                            D_800625A0->sheetEntries[1][5]);
+        portrait->edge[1][i].clut = GetClut(D_800625A0->sheetEntries[1][2], D_800625A0->sheetEntries[1][3]);
+        SetPolyFT4(&portrait->edge[2][i]);
+        SetShadeTex(&portrait->edge[2][i], 1);
+        (portrait->edge[2] + i)->r0 = 0xff;
+        (portrait->edge[2] + i)->g0 = 0xff;
+        (portrait->edge[2] + i)->b0 = 0xff;
+        portrait->edge[2][i].tpage = GetTPage(D_800625A0->sheetEntries[2][1], 0, D_800625A0->sheetEntries[2][4],
+                                            D_800625A0->sheetEntries[2][5]);
+        portrait->edge[2][i].clut = GetClut(D_800625A0->sheetEntries[2][2], D_800625A0->sheetEntries[2][3]);
+        SetPolyFT4(&portrait->edge[3][i]);
+        SetShadeTex(&portrait->edge[3][i], 1);
+        (portrait->edge[3] + i)->r0 = 0xff;
+        (portrait->edge[3] + i)->g0 = 0xff;
+        (portrait->edge[3] + i)->b0 = 0xff;
+        portrait->edge[3][i].tpage = GetTPage(D_800625A0->sheetEntries[3][1], 0, D_800625A0->sheetEntries[3][4],
+                                            D_800625A0->sheetEntries[3][5]);
+        portrait->edge[3][i].clut = GetClut(D_800625A0->sheetEntries[3][2], D_800625A0->sheetEntries[3][3]);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E5924);
+/* Set up image block `index`'s 16x16 sprite and semi-transparent cover at
+ * its position for both buffers, and the two draw modes (blend mode 2). */
+void func_801E56E8(s32 index) {
+    MenuImage *image;
+    u16 *x;
+    u16 *y;
+    s32 i;
+    RECT window;
+
+    i = 0;
+    x = D_801E9894[index];
+    y = D_801E9914[index];
+    image = D_800625A0->images[index];
+    for (; i < 2; i++) {
+        func_801E927C(&image->polys[i]);
+        image->polys[i].x0 = *x;
+        image->polys[i].y0 = *y;
+        image->polys[i].x1 = *x + 0x10;
+        image->polys[i].y1 = *y;
+        image->polys[i].x2 = *x;
+        image->polys[i].y2 = *y + 0x10;
+        image->polys[i].x3 = *x + 0x10;
+        image->polys[i].y3 = *y + 0x10;
+        image->polys[i].tpage = GetTPage(0, 0, 0x140, 0x80);
+        SetPolyF4(&image->shade[i]);
+        image->shade[i].r0 = 0x80;
+        image->shade[i].g0 = 0x80;
+        image->shade[i].b0 = 0x80;
+        SetSemiTrans(&image->shade[i], 1);
+        image->shade[i].x0 = *x;
+        image->shade[i].y0 = *y;
+        image->shade[i].x1 = *x + 0x10;
+        image->shade[i].y1 = *y;
+        image->shade[i].x2 = *x;
+        image->shade[i].y2 = *y + 0x10;
+        image->shade[i].x3 = *x + 0x10;
+        image->shade[i].y3 = *y + 0x10;
+        func_801C851C(image->shadeVerts, *x, *y, 0x10, 0x10);
+    }
+    window.y = 0;
+    window.x = 0;
+    window.h = 0x100;
+    window.w = 0x100;
+    SetDrawMode(&image->modes[0], 0, 0, GetTPage(0, 2, 0x140, 0x80), &window);
+    SetDrawMode(&image->modes[1], 0, 0, GetTPage(0, 2, 0x140, 0x80), &window);
+}
+
+/* Set up image block `index`'s green 16x16 frame at its position: the
+ * top/right and left/bottom lines and their vertices, for both buffers. */
+void func_801E5924(s32 index) {
+    MenuImage *image;
+    u16 *x;
+    u16 *y;
+    s32 i;
+
+    x = D_801E9894[index];
+    y = D_801E9914[index];
+    image = D_800625A0->images[index];
+    for (i = 0; i < 2; i++) {
+        SetLineF3(&image->top[i]);
+        image->top[i].r0 = 0;
+        image->top[i].g0 = 0xff;
+        image->top[i].b0 = 0;
+        image->top[i].x0 = *x;
+        image->top[i].y0 = *y;
+        image->top[i].x1 = *x + 0x10;
+        image->top[i].y1 = *y;
+        image->top[i].x2 = *x + 0x10;
+        image->top[i].y2 = *y + 0x10;
+        func_801C851C(image->topVerts, *x, *y, 0x10, 0x10);
+        SetLineF3(&image->bottom[i]);
+        image->bottom[i].r0 = 0;
+        image->bottom[i].g0 = 0xff;
+        image->bottom[i].b0 = 0;
+        image->bottom[i].x0 = *x;
+        image->bottom[i].y0 = *y;
+        image->bottom[i].x1 = *x;
+        image->bottom[i].y1 = *y + 0x10;
+        image->bottom[i].x2 = *x + 0x10;
+        image->bottom[i].y2 = *y + 0x10;
+        func_801C851C(image->bottomVerts, *x, *y, 0x10, 0x10);
+    }
+}
 
 /* Allocate and set up the 32 image blocks (+3a8). */
 void func_801E5ACC(void) {
@@ -3154,11 +8458,111 @@ void func_801E5B3C(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E5B88);
+/* Set up the 32 text character quads (both buffers): 21 per line, 12x16
+ * glyphs of the 140 page from v e0, 16 per glyph row. */
+void func_801E5B88(void) {
+    s32 i;
+    s32 buffer;
 
+    for (i = 0; i < 32; i++) {
+        for (buffer = 0; buffer < 2; buffer++) {
+            func_801E927C(&D_800625A0->block34C->chars[i * 2 + buffer]);
+            (D_800625A0->block34C->chars + (i * 2 + buffer))->x0 = D_801E9994[i % 21] + i / 21 * 8;
+            (D_800625A0->block34C->chars + (i * 2 + buffer))->y0 = D_801E99E8[i / 21];
+            (D_800625A0->block34C->chars + (i * 2 + buffer))->x1 = D_801E9994[i % 21] + i / 21 * 8 + 12;
+            (D_800625A0->block34C->chars + (i * 2 + buffer))->y1 = D_801E99E8[i / 21];
+            (D_800625A0->block34C->chars + (i * 2 + buffer))->x2 = D_801E9994[i % 21] + i / 21 * 8;
+            (D_800625A0->block34C->chars + (i * 2 + buffer))->y2 = D_801E99E8[i / 21] + 16;
+            (D_800625A0->block34C->chars + (i * 2 + buffer))->x3 = D_801E9994[i % 21] + i / 21 * 8 + 12;
+            (D_800625A0->block34C->chars + (i * 2 + buffer))->y3 = D_801E99E8[i / 21] + 16;
+            (D_800625A0->block34C->chars + (i * 2 + buffer))->u0 = i % 16 * 16;
+            (D_800625A0->block34C->chars + (i * 2 + buffer))->v0 = i / 16 * 16 - 0x20;
+            (D_800625A0->block34C->chars + (i * 2 + buffer))->u1 = i % 16 * 16 + 12;
+            (D_800625A0->block34C->chars + (i * 2 + buffer))->v1 = i / 16 * 16 - 0x20;
+            (D_800625A0->block34C->chars + (i * 2 + buffer))->u2 = i % 16 * 16;
+            (D_800625A0->block34C->chars + (i * 2 + buffer))->v2 = i / 16 * 16 - 0x11;
+            (D_800625A0->block34C->chars + (i * 2 + buffer))->u3 = i % 16 * 16 + 12;
+            (D_800625A0->block34C->chars + (i * 2 + buffer))->v3 = i / 16 * 16 - 0x11;
+            D_800625A0->block34C->chars[i * 2 + buffer].tpage = GetTPage(0, 0, 0x140, 0x80);
+            D_800625A0->block34C->chars[i * 2 + buffer].clut = GetClut(0, 0x1c0);
+        }
+    }
+}
+
+/* Set up the 32x32 cursor sprite and the purple-to-black shaded band
+ * (0,4a)-(140,8a) for both buffers. */
+#ifdef NON_MATCHING
+void func_801E5E4C(void) {
+    s32 *x;
+    s32 *y;
+    s32 i;
+
+    i = 0;
+    x = &D_801E99F0;
+    y = &D_801E99F8;
+    for (; i < 2; i++) {
+        func_801E927C(&D_800625A0->block34C->cursor[i]);
+        (D_800625A0->block34C->cursor + i)->x0 = *x;
+        (D_800625A0->block34C->cursor + i)->y0 = *y;
+        (D_800625A0->block34C->cursor + i)->x1 = *x + 0x20;
+        (D_800625A0->block34C->cursor + i)->y1 = *y;
+        (D_800625A0->block34C->cursor + i)->x2 = *x;
+        (D_800625A0->block34C->cursor + i)->y2 = *y + 0x20;
+        (D_800625A0->block34C->cursor + i)->x3 = *x + 0x20;
+        (D_800625A0->block34C->cursor + i)->y3 = *y + 0x20;
+        D_800625A0->block34C->cursor[i].tpage = GetTPage(0, 0, 0x140, 0x80);
+        SetPolyG4(&D_800625A0->block34C->band[i]);
+        (D_800625A0->block34C->band + i)->r0 = 0x80;
+        (D_800625A0->block34C->band + i)->g0 = 0;
+        (D_800625A0->block34C->band + i)->b0 = 0x80;
+        (D_800625A0->block34C->band + i)->r1 = 0;
+        (D_800625A0->block34C->band + i)->g1 = 0;
+        (D_800625A0->block34C->band + i)->b1 = 0x80;
+        (D_800625A0->block34C->band + i)->r2 = 0x10;
+        (D_800625A0->block34C->band + i)->g2 = 0;
+        (D_800625A0->block34C->band + i)->b2 = 0x10;
+        (D_800625A0->block34C->band + i)->r3 = 0;
+        (D_800625A0->block34C->band + i)->g3 = 0;
+        (D_800625A0->block34C->band + i)->b3 = 0x10;
+        (D_800625A0->block34C->band + i)->x0 = 0;
+        (D_800625A0->block34C->band + i)->y0 = 0x4a;
+        (D_800625A0->block34C->band + i)->x1 = 0x140;
+        (D_800625A0->block34C->band + i)->y1 = 0x4a;
+        (D_800625A0->block34C->band + i)->x2 = 0;
+        (D_800625A0->block34C->band + i)->y2 = 0x8a;
+        (D_800625A0->block34C->band + i)->x3 = 0x140;
+        (D_800625A0->block34C->band + i)->y3 = 0x8a;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E5E4C);
+#endif
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E61B0);
+/* Lay out the three save views' frames (nine images each, 50 apart) and
+ * their 72x13 name quads (label rows 6 + view). */
+void func_801E61B0(void) {
+    s32 view;
+    s32 i;
+
+    for (view = 0; view < 3; view++) {
+        D_800625A0->block34C->views[view].frameCount = 0;
+        for (i = 0; i < 9; i++) {
+            if (D_801EA494[i] != 0xffff) {
+                D_800625A0->block34C->views[view].frameCount +=
+                    func_8002675C(D_800625A0->sheet, D_801EA494[i],
+                                  D_800625A0->block34C->views[view].frame[D_800625A0->block34C->views[view].frameCount],
+                                  D_800625A0->bufferIndex, view * 0x50 + D_801E9F98[i], D_801E9FBC[i], 0x1000);
+            }
+        }
+        D_800625A0->block34C->views[view].frameBuffer = D_800625A0->bufferIndex;
+        func_801E927C(&D_800625A0->block34C->views[view].name[D_800625A0->bufferIndex]);
+        D_800625A0->block34C->views[view].name[D_800625A0->bufferIndex].tpage = GetTPage(0, 0, 0x180, 0);
+        D_800625A0->block34C->views[view].name[D_800625A0->bufferIndex].clut = D_800595D4;
+        func_801E920C(&D_800625A0->block34C->views[view].name[D_800625A0->bufferIndex], D_801E9F98[0] + view * 0x50,
+                      D_801E9FBC[0] + 7, D_801EA590[view] * 4, D_801EA5DC[view], 0x48, 0xd);
+        D_800625A0->block34C->views[view].nameBuffer = D_800625A0->bufferIndex;
+    }
+}
 
 /* Allocate and clear the 2dc0-byte block at +34c, then set it up. */
 void func_801E6450(void) {
@@ -3211,9 +8615,10 @@ void func_801E6544(u8 rows[16][16]) {
     }
 }
 
-/* Print the character at `s`: ASCII is converted to its two-byte code
- * (control characters to a space), two-byte codes pass through. */
-void func_801E65E4(u8 *s) {
+/* Return the 16x16 font glyph of the character at `s`: ASCII is converted
+ * to its two-byte code (control characters to a space), two-byte codes pass
+ * through. */
+u16 *func_801E65E4(u8 *s) {
     u8 hi;
     u8 lo;
 
@@ -3231,12 +8636,96 @@ void func_801E65E4(u8 *s) {
             D_801EA8C0 = 0;
         }
     }
-    func_800405C4(lo | (hi << 8));
+    return func_800405C4(lo | (hi << 8));
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E6668);
+/* Render listed file `index`'s save title (up to 32 characters, 64 bytes)
+ * as 12-pixel glyphs into the 4-bit 256x32 image at (140, e0). */
+void func_801E6668(s32 index) {
+    u8 *pixels;
+    u16 *image;
+    u8 *text;
+    u16 *glyph;
+    u8 *pixel;
+    s32 bytes;
+    s32 chars;
+    s32 row;
+    s32 col;
+    RECT rect;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E68AC);
+    pixels = func_80031BDC(0x100, 1);
+    image = func_80031BDC(0x1000, 1);
+    bzero(image, 0x1000);
+    bytes = 0;
+    chars = 0;
+    text = (u8 *)D_800625A0->card + (index << 9) + 0xb98;
+    while (1) {
+        if (*text == 0) {
+            break;
+        }
+        pixel = pixels;
+        glyph = func_801E65E4(text);
+        if (glyph != (u16 *)-1) {
+            for (row = 0; row < 16; row++, glyph++) {
+                for (col = 7; col >= 0; col--) {
+                    *pixel++ = (*glyph >> col) & 1;
+                }
+                for (col = 15; col >= 8; col--) {
+                    *pixel++ = (*glyph >> col) & 1;
+                }
+            }
+            func_801E6544((u8(*)[16])pixels);
+            for (row = 0; row < 16; row++) {
+                for (col = 0; col < 12; col++) {
+                    image[col / 4 + row * 64 + chars % 16 * 4 + chars / 16 * 1024] |= pixels[row * 16 + col]
+                                                                                    << (col % 4 * 4);
+                }
+            }
+        }
+        text++;
+        bytes++;
+        if (D_801EA8C0) {
+            text++;
+            bytes++;
+        }
+        if (bytes >= 0x40) {
+            break;
+        }
+        if (++chars >= 0x20) {
+            break;
+        }
+    }
+    rect.x = 0x140;
+    rect.y = 0xe0;
+    rect.w = 0x40;
+    rect.h = 0x20;
+    LoadImage(&rect, image);
+    DrawSync(0);
+    func_800320E8(pixels);
+    func_800320E8(image);
+}
+
+/* Lay out the save's play time (two separators and seven digits at y 7a)
+ * and its two-digit number (+23, plus one) with its label at (8, 66). */
+void func_801E68AC(MenuViewSet *set) {
+    s32 i;
+
+    func_8002675C(D_800625A0->sheet, 0xee, D_800625A0->block34C->colon0, D_800625A0->bufferIndex, D_801E9FE0[0], 0x7a,
+                  0x1000);
+    func_8002675C(D_800625A0->sheet, 0xee, D_800625A0->block34C->colon1, D_800625A0->bufferIndex, D_801E9FE0[1], 0x7a,
+                  0x1000);
+    func_801C7F34(set->time);
+    for (i = 0; i < 7; i++) {
+        func_8002675C(D_800625A0->sheet, D_800625A0->time[i], D_800625A0->block34C->timeDigits[i],
+                      D_800625A0->bufferIndex, D_801E9FE0[i + 2], 0x7a, 0x1000);
+    }
+    func_8002675C(D_800625A0->sheet, 0x17, D_800625A0->block34C->discLabel, D_800625A0->bufferIndex, 8, 0x66, 0x1000);
+    func_8002675C(D_800625A0->sheet, 0x32, D_800625A0->block34C->discMark, D_800625A0->bufferIndex, 0x10, 0x66, 0x1000);
+    func_8002675C(D_800625A0->sheet, (set->unk23 + 1) / 10, D_800625A0->block34C->discDigits[0],
+                  D_800625A0->bufferIndex, 0x10, 0x6e, 0x1000);
+    func_8002675C(D_800625A0->sheet, (set->unk23 + 1) % 10, D_800625A0->block34C->discDigits[1],
+                  D_800625A0->bufferIndex, 0x18, 0x6e, 0x1000);
+}
 
 /* Set up view `index` of the block at +34c from its sheet image (14e + set). */
 void func_801E6AE8(u8 index, MenuViewSet *set) {
@@ -3244,15 +8733,156 @@ void func_801E6AE8(u8 index, MenuViewSet *set) {
                   D_800625A0->bufferIndex, D_801EA004[index], D_801EA010[index], 0x1000);
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E6B70);
+/* Lay out view `index`'s number (the set's +16 value) as up to three digit
+ * sprites, and reset its second digit row for the +19 value. */
+void func_801E6B70(u8 index, MenuViewSet *set) {
+    s32 i;
+    u8 digit;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E6CFC);
+    func_801C80B8(set->levels[index]);
+    D_800625A0->block34C->views[index].levelCount = 0;
+    for (i = 0; i < 3; i++) {
+        digit = D_800625A0->digits[i + 6];
+        if (digit != 0xff) {
+            D_800625A0->block34C->views[index].levelCount +=
+                func_8002675C(D_800625A0->sheet, digit,
+                              &D_800625A0->block34C->views[index].levelDigits[D_800625A0->block34C->views[index].levelCount],
+                              D_800625A0->bufferIndex, D_801EA01C + index * 0x50 + i * 8, D_801EA020, 0x1000);
+        }
+    }
+    func_801C80B8(set->unk19[index]);
+    D_800625A0->block34C->views[index].unk871 = 0;
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E6F5C);
+/* Lay out view `index`'s values A (+4) and B (+a) as up to three digit
+ * sprites each (B packed without leading blanks). */
+void func_801E6CFC(u8 index, MenuViewSet *set) {
+    s32 i;
+    s32 drawn;
+    u8 digit;
 
+    func_801C80B8(set->valueA[index]);
+    D_800625A0->block34C->views[index].aCount = 0;
+    for (i = 0; i < 3; i++) {
+        digit = D_800625A0->digits[i + 6];
+        if (digit != 0xff) {
+            D_800625A0->block34C->views[index].aCount +=
+                func_8002675C(D_800625A0->sheet, digit,
+                              D_800625A0->block34C->views[index].aDigits[D_800625A0->block34C->views[index].aCount],
+                              D_800625A0->bufferIndex, D_801EA02C + index * 0x50 + i * 8, D_801EA030, 0x1000);
+        }
+    }
+    drawn = 0;
+    func_801C80B8(set->valueB[index]);
+    D_800625A0->block34C->views[index].bCount = 0;
+    for (i = 0; i < 3; i++) {
+        digit = D_800625A0->digits[i + 6];
+        if (digit != 0xff) {
+            D_800625A0->block34C->views[index].bCount +=
+                func_8002675C(D_800625A0->sheet, digit,
+                              D_800625A0->block34C->views[index].bDigits[D_800625A0->block34C->views[index].bCount],
+                              D_800625A0->bufferIndex, D_801EA034 + index * 0x50 + drawn * 8, D_801EA038, 0x1000);
+            drawn++;
+        }
+    }
+}
+
+/* Lay out view `index`'s values C (+10) and D (+13) as up to two digit
+ * sprites each (D packed without leading blanks). */
+void func_801E6F5C(u8 index, MenuViewSet *set) {
+    s32 i;
+    s32 drawn;
+    u8 digit;
+
+    func_801C80B8(set->valueC[index]);
+    D_800625A0->block34C->views[index].cCount = 0;
+    for (i = 0; i < 2; i++) {
+        digit = D_800625A0->digits[i + 7];
+        if (digit != 0xff) {
+            D_800625A0->block34C->views[index].cCount +=
+                func_8002675C(D_800625A0->sheet, digit,
+                              D_800625A0->block34C->views[index].cDigits[D_800625A0->block34C->views[index].cCount],
+                              D_800625A0->bufferIndex, D_801EA03C + index * 0x50 + i * 8, D_801EA040, 0x1000);
+        }
+    }
+    drawn = 0;
+    func_801C80B8(set->valueD[index]);
+    D_800625A0->block34C->views[index].dCount = 0;
+    for (i = 0; i < 2; i++) {
+        digit = D_800625A0->digits[i + 7];
+        if (digit != 0xff) {
+            D_800625A0->block34C->views[index].dCount +=
+                func_8002675C(D_800625A0->sheet, digit,
+                              D_800625A0->block34C->views[index].dDigits[D_800625A0->block34C->views[index].dCount],
+                              D_800625A0->bufferIndex, D_801EA044 + index * 0x50 + drawn * 8, D_801EA048, 0x1000);
+            drawn++;
+        }
+    }
+}
+
+/* Render the name of view `index`'s sheet entry from listed file `file`'s
+ * header (up to ten two-byte characters) and upload it to label row
+ * `index` of the view rows. */
+#ifdef NON_MATCHING
+void func_801E71B4(u8 index, MenuViewSet *set, s32 file) {
+    RECT rect;
+    u8 name[24];
+    u8 text[24];
+    u8 *pixels;
+    MenuSaveInfo *info;
+    s32 i;
+
+    info = (MenuSaveInfo *)(D_800625A0->card->headers[file] + 0x100);
+    for (i = 0; i < 20; i += 2) {
+        name[i] = info->names[set->images[index]][i];
+        name[i + 1] = info->names[set->images[index]][i + 1];
+        if (name[i] == 0 && name[i + 1] == 0) {
+            break;
+        }
+    }
+    func_80033B34(name, text, i / 2);
+    pixels = func_80031BDC(0x3f6, 0);
+    bzero(pixels, 0x3f6);
+    func_80034EAC(text, pixels, 0x24, 0);
+    rect.x = D_801EA590[index] + 0x180;
+    rect.y = D_801EA5DC[index];
+    rect.w = 0x28;
+    rect.h = 0xd;
+    LoadImage(&rect, pixels);
+    DrawSync(0);
+    func_800320E8(pixels);
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E71B4);
+#endif
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E733C);
+/* Lay out the 16 character quads of the save title image (row f0 of the
+ * 140 page, 12-pixel glyphs 16 apart) in the current buffer. */
+void func_801E733C(void) {
+    s32 i;
+
+    for (i = 0; i < 16; i++) {
+        func_801E927C(&D_800625A0->block34C->title[i * 2 + D_800625A0->bufferIndex]);
+        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->x0 = D_801EA04C + i * 12;
+        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->y0 = D_801EA050;
+        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->x1 = D_801EA04C + i * 12 + 12;
+        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->y1 = D_801EA050;
+        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->x2 = D_801EA04C + i * 12;
+        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->y2 = D_801EA050 + 16;
+        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->x3 = D_801EA04C + i * 12 + 12;
+        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->y3 = D_801EA050 + 16;
+        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->u0 = i * 16;
+        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->v0 = 0xf0;
+        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->u1 = i * 16 + 12;
+        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->v1 = 0xf0;
+        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->u2 = i * 16;
+        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->v2 = 0xff;
+        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->u3 = i * 16 + 12;
+        (D_800625A0->block34C->title + (i * 2 + D_800625A0->bufferIndex))->v3 = 0xff;
+        D_800625A0->block34C->title[i * 2 + D_800625A0->bufferIndex].tpage = GetTPage(0, 0, 0x140, 0x80);
+        D_800625A0->block34C->title[i * 2 + D_800625A0->bufferIndex].clut = GetClut(0, 0x1c0);
+    }
+}
 
 /* Build the three views of card file `index`'s save information. */
 void func_801E76EC(s32 index) {
@@ -3294,11 +8924,160 @@ void func_801E781C(s32 index, u8 rebuild) {
     }
 }
 
+/* Upload listed file `file`'s save icon (palette and three 16x16 frames)
+ * to its slot of the icon pages, set its animation steps from the header's
+ * frame count (11-13), and add its block count to its port's total; a file
+ * without animation is marked still (state 0). */
+#ifdef NON_MATCHING
+void func_801E78C8(s32 file) {
+    s32 i;
+    u8 still;
+
+    still = 1;
+    D_801EA8E4.x = file % 16 * 4 + 0x140;
+    D_801EA8E4.w = 4;
+    D_801EA8E4.h = 0x10;
+    D_801EA8EC.x = file * 16;
+    D_801EA8EC.y = file / 16 + 0x1c1;
+    D_801EA8EC.w = 0x10;
+    D_801EA8EC.h = 1;
+    memmove(D_801EA8C4, &D_800625A0->card->headers[file][0x60], 0x20);
+    LoadImage(&D_801EA8EC, D_801EA8C4);
+    DrawSync(0);
+    for (i = 0; i < 3; i++) {
+        D_801EA8E4.y = file / 16 * 16 + 0x80 + i * 32;
+        LoadImage(&D_801EA8E4, &D_800625A0->card->headers[file][0x80 + i * 0x80]);
+        DrawSync(0);
+    }
+    switch (D_800625A0->card->headers[file][2]) {
+    case 0x11:
+        D_800625A0->card->files[file].frames[0] = file / 16 * 16 + 0x80;
+        D_800625A0->card->files[file].frames[1] = file / 16 * 16 + 0x80;
+        D_800625A0->card->files[file].frames[2] = file / 16 * 16 + 0x80;
+        D_800625A0->card->files[file].frames[3] = file / 16 * 16 + 0x80;
+        D_800625A0->card->files[file].frames[4] = file / 16 * 16 + 0x80;
+        D_800625A0->card->files[file].frames[5] = file / 16 * 16 + 0x80;
+        still = 0;
+        break;
+    case 0x12:
+        D_800625A0->card->files[file].frames[0] = file / 16 * 16 + 0x80;
+        D_800625A0->card->files[file].frames[1] = file / 16 * 16 + 0xa0;
+        D_800625A0->card->files[file].frames[2] = file / 16 * 16 + 0x80;
+        D_800625A0->card->files[file].frames[3] = file / 16 * 16 + 0xa0;
+        D_800625A0->card->files[file].frames[4] = file / 16 * 16 + 0x80;
+        D_800625A0->card->files[file].frames[5] = file / 16 * 16 + 0xa0;
+        still = 0;
+        break;
+    case 0x13:
+        D_800625A0->card->files[file].frames[0] = file / 16 * 16 + 0x80;
+        D_800625A0->card->files[file].frames[1] = file / 16 * 16 + 0xa0;
+        D_800625A0->card->files[file].frames[2] = file / 16 * 16 + 0xc0;
+        D_800625A0->card->files[file].frames[3] = file / 16 * 16 + 0x80;
+        D_800625A0->card->files[file].frames[4] = file / 16 * 16 + 0xa0;
+        D_800625A0->card->files[file].frames[5] = file / 16 * 16 + 0xc0;
+        still = 0;
+        break;
+    }
+    D_801EA900[file / 16] += D_800625A0->card->headers[file][3];
+    if (still) {
+        D_800625A0->card->files[file].state = 0;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E78C8);
+#endif
 
+/* Set up `label`'s two quads for label image `index`: mode 0 takes the
+ * image from the 140 column pages (rows from `first`); otherwise from the
+ * 180 page (+80 keeps it opaque, else dimmed), with palette choice
+ * `mode & 7f` - 1. Hides the label. */
+#ifdef NON_MATCHING
+void func_801E7C50(MenuLabelSlot *label, s32 index, s32 first, u8 mode) {
+    POLY_FT4 *poly;
+    s32 i;
+    s32 semi;
+    s32 row;
+    u8 half;
+    u8 column;
+    u8 u;
+    u8 v;
+
+    half = index & 1;
+    row = index / 2;
+    column = (row & 1) << 7;
+    for (i = 0; i < 2; i++) {
+        poly = &label->polys[i];
+        semi = 0;
+        func_801E927C(poly);
+        if (mode == 0) {
+            label->palette = half;
+            poly->tpage = GetTPage(0, 0, 0x140, 0);
+            v = (index + first) / 4 * 0xd;
+            poly->u0 = column;
+            poly->v0 = v;
+            poly->u1 = column + label->width;
+            poly->v1 = v;
+            poly->u2 = column;
+            poly->v2 = v + 0xd;
+            poly->u3 = column + label->width;
+            poly->v3 = v + 0xd;
+        } else {
+            if (!(mode & 0x80)) {
+                semi = 0x20;
+                SetSemiTrans(poly, 1);
+                poly->r0 = 0x20;
+                poly->g0 = 0x20;
+                poly->b0 = 0x20;
+            }
+            label->palette = (mode & 0x7f) - 1;
+            u = half * 0x60;
+            poly->tpage = semi | GetTPage(0, 0, 0x180, 0x80);
+            v = row * 0xd + first;
+            poly->u0 = u;
+            poly->v0 = v;
+            poly->u1 = u + label->width;
+            poly->v1 = v;
+            poly->u2 = u;
+            poly->v2 = v + 0xd;
+            poly->u3 = u + label->width;
+            poly->v3 = v + 0xd;
+        }
+        if (label->palette != 0) {
+            poly->clut = D_80059414;
+        } else {
+            poly->clut = D_800595D4;
+        }
+    }
+    label->visible = 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E7C50);
+#endif
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E7E68);
+/* Render `count` labels (text ids in `layout`) in pairs into one 28x13
+ * image each (two columns of 32 from x 140, rows of 13 from label `first`),
+ * lay them out and upload the images. */
+void func_801E7E68(MenuLabelSlot *labels, u8 *layout, s32 first, s32 count) {
+    s32 i;
+    RECT *image;
+
+    for (i = 0; i < count; i += 2) {
+        labels[i].width = func_80034EAC(func_80033728(D_800625A0->labels, layout[i]), D_800625A0->topLabels[0].pixels,
+                                        0x18, 0);
+        image = &labels[i].rect;
+        labels[i + 1].width = func_80034EAC(func_80033728(D_800625A0->labels, layout[i + 1]), D_800625A0->topLabels[0].pixels,
+                                        0x18, 1);
+        labels[i].rect.x = (i / 2 & 1) * 0x20 + 0x140;
+        labels[i].rect.y = (i + first) / 4 * 0xd;
+        labels[i].rect.w = 0x1c;
+        labels[i].rect.h = 0xd;
+        labels[i + 1].rect = labels[i].rect;
+        func_801E7C50(&labels[i], i, first, 0);
+        func_801E7C50(&labels[i + 1], i + 1, first, 0);
+        LoadImage(image, D_800625A0->topLabels[0].pixels);
+        DrawSync(0);
+    }
+}
 
 /* Lay out `count` labels from `table` into `labels` (the placement is unused). */
 void func_801E8018(u8 count, MenuLabelSlot *labels, u8 *table, u8 *flags) {
@@ -3314,17 +9093,233 @@ void func_801E8044(u8 count, u8 *flags) {
     }
 }
 
+/* Place label `selected` for layout `mode` (0: window row `row`, clearing the
+ * other flags first; 1-3, 5, 6: 3D label vertices from the mode's tables;
+ * 4: fixed at (4c, 12)) and mark it shown in `flags`. */
+#ifdef NON_MATCHING
+void func_801E8070(u8 count, MenuLabelSlot *labels, u8 *table, s32 *offsets, u8 *flags, u8 selected, u8 row,
+                   u8 mode) {
+    MenuLabelSlot *label;
+    s32 first;
+
+    first = 0;
+    switch (mode) {
+    case 0:
+        func_801E8044(count, flags);
+        label = &labels[selected];
+        (label->polys + D_800625A0->bufferIndex)->x0 = D_801E9A00[row + selected] + (offsets[selected] + 0x16);
+        (label->polys + D_800625A0->bufferIndex)->y0 = D_801E9A2C[row + selected] - 0x22;
+        (label->polys + D_800625A0->bufferIndex)->x1 =
+            D_801E9A00[row + selected] + 0x16 + offsets[selected] + label->width;
+        (label->polys + D_800625A0->bufferIndex)->y1 = D_801E9A2C[row + selected] - 0x22;
+        (label->polys + D_800625A0->bufferIndex)->x2 = D_801E9A00[row + selected] + (offsets[selected] + 0x16);
+        (label->polys + D_800625A0->bufferIndex)->y2 = D_801E9A2C[row + selected] - 0x15;
+        (label->polys + D_800625A0->bufferIndex)->x3 =
+            D_801E9A00[row + selected] + 0x16 + offsets[selected] + label->width;
+        (label->polys + D_800625A0->bufferIndex)->y3 = D_801E9A2C[row + selected] - 0x15;
+        break;
+    case 1:
+        func_801C851C(labels[selected].verts, D_801E9EC4[selected], D_801E9EE4, labels[selected].width, 0xd);
+        break;
+    case 5:
+        first = 8;
+    case 2:
+        func_801C851C(labels[selected].verts, D_801E9EE8[first + selected], D_801E9F28[row], labels[selected].width,
+                      0xd);
+        break;
+    case 3:
+        func_801C851C(labels[selected].verts, 0x18, D_801E9F30[row], labels[selected].width, 0xd);
+        break;
+    case 4:
+        (labels[selected].polys + D_800625A0->bufferIndex)->x0 = 0x4c;
+        (labels[selected].polys + D_800625A0->bufferIndex)->y0 = 0x12;
+        (labels[selected].polys + D_800625A0->bufferIndex)->x1 = labels->width + 0x4c;
+        (labels[selected].polys + D_800625A0->bufferIndex)->y1 = 0x12;
+        (labels[selected].polys + D_800625A0->bufferIndex)->x2 = 0x4c;
+        (labels[selected].polys + D_800625A0->bufferIndex)->y2 = 0x1f;
+        (labels[selected].polys + D_800625A0->bufferIndex)->x3 = labels->width + 0x4c;
+        (labels[selected].polys + D_800625A0->bufferIndex)->y3 = 0x1f;
+        break;
+    case 6:
+        func_801C851C(labels[selected].verts, D_801E9F68[selected], D_801E9F70[selected], labels[selected].width, 0xd);
+        break;
+    }
+    labels[selected].count = D_800625A0->bufferIndex;
+    flags[selected] = 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E8070);
+#endif
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E8474);
+/* Open the command window: grow the cursor column one command per two
+ * frames (the label column one behind), up to `count` commands. */
+void func_801E8474(s32 count, MenuCommandImages *images) {
+    s32 n;
+    s32 i;
 
+    D_800625A0->screenImages->captured = 0;
+    D_800625A0->screenImages->refresh = 0;
+    D_800625A0->party->redraw9 = 1;
+    for (n = 1; n <= count; n++) {
+        if (n != count) {
+            D_800625A0->screenImages->count = 0;
+            for (i = 0; i < n; i++) {
+                D_800625A0->screenImages->count +=
+                    func_8002675C(D_800625A0->sheet, images[i].cursor,
+                                  &D_800625A0->screenImages->packets[D_800625A0->screenImages->count * 2],
+                                  D_800625A0->bufferIndex, 0xa0, 0x96, 0x1000);
+            }
+            D_800625A0->screenImages->buffer = D_800625A0->bufferIndex;
+        }
+        D_800625A0->screenImages->count2 = 0;
+        if (n != 1) {
+            for (i = 0; i < n - 1; i++) {
+                D_800625A0->screenImages->count2 +=
+                    func_8002675C(D_800625A0->sheet, images[i].label,
+                                  &D_800625A0->screenImages->packets2[D_800625A0->screenImages->count2 * 2],
+                                  D_800625A0->bufferIndex, 0xa0, 0x96, 0x1000);
+            }
+            D_800625A0->screenImages->buffer2 = D_800625A0->bufferIndex;
+        }
+        for (i = 0; i < 2; i++) {
+            func_801C7BF4();
+        }
+    }
+}
+
+/* Open the choice window of the command at `offset` past the top cursor:
+ * grow its cursor and label columns one choice per two frames (until an
+ * empty choice, ffff), counting the choices. */
+#ifdef NON_MATCHING
+void func_801E86C8(u8 offset) {
+    s32 n;
+    s32 i;
+    u8 growing;
+
+    D_800625A0->spriteLists->firstCount = 0;
+    D_800625A0->spriteLists->secondCount = 0;
+    D_800625A0->party->redrawA = 1;
+    growing = 1;
+    for (n = 1; n < 5; n++) {
+        D_800625A0->spriteLists->firstCount = 0;
+        D_800625A0->choiceCount = 0;
+        for (i = 0; i < n; i++) {
+            if (D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2] != 0xffff) {
+                D_800625A0->spriteLists->firstCount +=
+                    func_8002675C(D_800625A0->sheet, D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2],
+                                  &D_800625A0->spriteLists->first[D_800625A0->spriteLists->firstCount * 2],
+                                  D_800625A0->bufferIndex, 0xa0, 0x96, 0x1000);
+                D_800625A0->choiceCount++;
+            } else {
+                growing = 0;
+            }
+        }
+        D_800625A0->spriteLists->firstStart = D_800625A0->bufferIndex;
+        if (growing) {
+            for (i = 0; i < 2; i++) {
+                func_801C7BF4();
+            }
+        }
+        D_800625A0->spriteLists->secondCount = 0;
+        for (i = 0; i < n; i++) {
+            if (D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2] != 0xffff) {
+                D_800625A0->spriteLists->secondCount +=
+                    func_8002675C(D_800625A0->sheet, D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2 + 1],
+                                  &D_800625A0->spriteLists->second[D_800625A0->spriteLists->secondCount * 2],
+                                  D_800625A0->bufferIndex, 0xa0, 0x96, 0x1000);
+            }
+        }
+        D_800625A0->spriteLists->secondStart = D_800625A0->bufferIndex;
+        if (growing) {
+            for (i = 0; i < 2; i++) {
+                func_801C7BF4();
+            }
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E86C8);
+#endif
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E8978);
+/* Lay out the command cursor sprites for `count` commands (images of the
+ * `images`, the chosen one `cursor` taking its lit image,
+ * +d), then mark the command window for redraw. */
+void func_801E8978(u8 count, u8 cursor, MenuCommandImages *images) {
+    s32 i;
+    s32 image;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E8B4C);
+    D_800625A0->screenImages->count = 0;
+    D_800625A0->screenImages->count2 = 0;
+    for (i = 0; i < count; i++) {
+        if (i == cursor) {
+            image = images[i].cursor + 0xd;
+        } else {
+            image = images[i].cursor;
+        }
+        D_800625A0->screenImages->count +=
+            func_8002675C(D_800625A0->sheet, image,
+                          &D_800625A0->screenImages->packets[D_800625A0->screenImages->count * 2],
+                          D_800625A0->bufferIndex, 0xa0, 0x96, 0x1000);
+        D_800625A0->screenImages->count2 +=
+            func_8002675C(D_800625A0->sheet, images[i].label,
+                          &D_800625A0->screenImages->packets2[D_800625A0->screenImages->count2 * 2],
+                          D_800625A0->bufferIndex, 0xa0, 0x96, 0x1000);
+    }
+    D_800625A0->screenImages->buffer = D_800625A0->bufferIndex;
+    D_800625A0->screenImages->buffer2 = D_800625A0->bufferIndex;
+    func_801D1EE0(cursor, 1);
+    D_800625A0->party->redraw4 = 1;
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E8DA8);
+/* Lay out the choice cursor sprites of the command at `offset` past the top
+ * cursor (the chosen one lit), then mark the window for redraw. */
+void func_801E8B4C(u8 offset) {
+    s32 i;
+    s32 image;
+
+    D_800625A0->spriteLists->firstCount = 0;
+    D_800625A0->spriteLists->secondCount = 0;
+    for (i = 0; i < D_800625A0->choiceCount; i++) {
+        if (i == D_800625A0->choice) {
+            image = D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2] + 0xd;
+        } else {
+            image = D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2];
+        }
+        D_800625A0->spriteLists->firstCount +=
+            func_8002675C(D_800625A0->sheet, image,
+                          &D_800625A0->spriteLists->first[D_800625A0->spriteLists->firstCount * 2],
+                          D_800625A0->bufferIndex, 0xa0, 0x96, 0x1000);
+        D_800625A0->spriteLists->secondCount +=
+            func_8002675C(D_800625A0->sheet, D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2 + 1],
+                          &D_800625A0->spriteLists->second[D_800625A0->spriteLists->secondCount * 2],
+                          D_800625A0->bufferIndex, 0xa0, 0x96, 0x1000);
+    }
+    D_800625A0->spriteLists->firstStart = D_800625A0->bufferIndex;
+    D_800625A0->spriteLists->secondStart = D_800625A0->bufferIndex;
+    func_801D1EE0(D_800625A0->choice + 7, 1);
+    D_800625A0->party->redraw4 = 1;
+}
+
+/* Render the two name lines of name pair `image` (ff: blank) and upload them
+ * to the label area of row `row` (rows pair up on one 40x13 image). */
+void func_801E8DA8(u8 image, u8 row) {
+    RECT rect;
+    u8 *pixels;
+
+    pixels = func_80031BDC(0x3f6, 0);
+    bzero(pixels, 0x3f6);
+    if (image != 0xff) {
+        func_80034EAC(D_8006D634.names[image >> 1][0], pixels, 0x24, 0);
+        func_80034EAC(D_8006D634.names[image >> 1][1], pixels, 0x24, 1);
+    }
+    rect.x = D_801EA578[row >> 1] + 0x180;
+    rect.y = D_801EA5C4[row >> 1];
+    rect.w = 0x28;
+    rect.h = 0xd;
+    LoadImage(&rect, pixels);
+    DrawSync(0);
+    func_800320E8(pixels);
+}
 
 /* Set `poly`'s blending for `mode`: 0 opaque, 1 additive-dim, 2 plain,
  * 3 dim. */
@@ -3358,7 +9353,41 @@ void func_801E8EAC(POLY_FT4 *poly, u8 mode) {
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E8EAC);
 #endif
 
+/* Set the blending of portrait `index`'s quads of the current buffer: plain
+ * (2), or dim (3) when `dim`. Every edge list is walked four pairs deep, so
+ * each pass also covers the list after it, as the original does. */
+#ifdef NON_MATCHING
+void func_801E8F60(u8 index, u8 dim) {
+    u8 mode;
+    s32 i;
+
+    mode = 2;
+    if (dim) {
+        mode = 3;
+    }
+    for (i = 0; i < 4; i++) {
+        func_801E8EAC(&D_800625A0->portraits[index]->corner[i * 2 + D_800625A0->portraits[index]->buffer], mode);
+    }
+    for (i = 0; i < 4; i++) {
+        func_801E8EAC(&D_800625A0->portraits[index]->edge[0][i * 2 + D_800625A0->portraits[index]->buffer], mode);
+    }
+    for (i = 0; i < 4; i++) {
+        func_801E8EAC(&D_800625A0->portraits[index]->edge[1][i * 2 + D_800625A0->portraits[index]->buffer], mode);
+    }
+    for (i = 0; i < 4; i++) {
+        func_801E8EAC(&D_800625A0->portraits[index]->edge[2][i * 2 + D_800625A0->portraits[index]->buffer], mode);
+    }
+    for (i = 0; i < 4; i++) {
+        func_801E8EAC(&D_800625A0->portraits[index]->edge[3][i * 2 + D_800625A0->portraits[index]->buffer], mode);
+    }
+    for (i = 0; i < 2; i++) {
+        func_801E8EAC(&D_800625A0->portraits[index]->frameEnds[i * 2 + D_800625A0->portraits[index]->buffer], mode);
+    }
+    func_801E8EAC(&D_800625A0->portraits[index]->frameSide[D_800625A0->portraits[index]->buffer], mode);
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E8F60);
+#endif
 
 /* Make `poly` semi-transparent, textured without shading, at neutral colour. */
 void func_801E91C4(POLY_FT4 *poly) {
@@ -3370,20 +9399,24 @@ void func_801E91C4(POLY_FT4 *poly) {
 }
 
 /* Place `poly` at (x, y) with size (w, h) and texture origin (u, v). */
-#ifdef NON_MATCHING
-void func_801E920C(POLY_FT4 *poly, s32 x, s32 y, s32 u, s32 v, s32 w, s32 h) {
-    poly->x2 = poly->x0 = x;
-    poly->y1 = poly->y0 = y;
-    poly->x3 = poly->x1 = x + w;
-    poly->y3 = poly->y2 = y + h;
-    poly->u2 = poly->u0 = u;
-    poly->v1 = poly->v0 = v;
-    poly->u3 = poly->u1 = u + w;
-    poly->v3 = poly->v2 = v + h;
+void func_801E920C(POLY_FT4 *poly, u16 x, u16 y, u8 u, u8 v, u16 w, u16 h) {
+    poly->x0 = x;
+    poly->y0 = y;
+    poly->x1 = x + w;
+    poly->y1 = y;
+    poly->x2 = x;
+    poly->y2 = y + h;
+    poly->x3 = x + w;
+    poly->y3 = y + h;
+    poly->u0 = u;
+    poly->v0 = v;
+    poly->u1 = u + w;
+    poly->v1 = v;
+    poly->u2 = u;
+    poly->v2 = v + h;
+    poly->u3 = u + w;
+    poly->v3 = v + h;
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E920C);
-#endif
 
 /* Initialise `poly` as an opaque textured quad at neutral colour. */
 void func_801E927C(POLY_FT4 *poly) {
@@ -3410,13 +9443,88 @@ void func_801E92CC(void) {
     }
 }
 
-/* Run 8004c398 on a handle opened by 8004c318(`arg0`, 0, 0), then close it. */
-void func_801E9340(s32 arg0, s32 arg1, s32 arg2) {
+/* Read `size` bytes of host file `name` into `buffer` (development PC link). */
+void func_801E9340(char *name, void *buffer, s32 size) {
     s32 handle;
 
-    handle = PCopen(arg0, 0, 0);
-    func_8004C398(handle, arg1, arg2);
+    handle = PCopen(name, 0, 0);
+    func_8004C398(handle, buffer, size);
     PCclose(handle);
 }
 
+/* Check that disc `disc` is in the drive and load its directory: from the
+ * host files on the development link, else after waiting for the lid to
+ * close and the drive to settle, from the disc label and files 18 and 28.
+ * Returns 0 when loaded, 2 when no disc label was read, 3 for the other
+ * disc. */
+#ifdef NON_MATCHING
+s32 func_801E93A0(s32 disc) {
+    DiscLabel label = { { 0 } };
+    u8 pos[4];
+    s32 result;
+    s32 ok;
+
+    func_80028A60(0);
+    if (func_8002C3D8() != 0) {
+        result = 0;
+        if (disc == 1) {
+            func_801E9340("c:\\work\\cdrom.mdg", D_8004FDF0, 0x8000);
+            func_801E9340("c:\\work\\cdrom.fid", D_8004FDF4, 0x7a);
+            func_801E9340("c:\\work\\cdrom.fnd", D_8004FE48, 0x40000);
+        } else {
+            func_801E9340("c:\\work\\cdrom2.mdg", D_8004FDF0, 0x8000);
+            func_801E9340("c:\\work\\cdrom2.fid", D_8004FDF4, 0x7a);
+            func_801E9340("c:\\work\\cdrom2.fnd", D_8004FE48, 0x40000);
+        }
+        return result;
+    }
+    CdIntToPos(0, pos);
+    do {
+        VSync(3);
+        CdControlB(1, 0, D_801EA8F4);
+    } while (!(D_801EA8F4[0] & 0x10));
+    do {
+        VSync(3);
+        CdControlB(1, 0, D_801EA8F4);
+    } while (D_801EA8F4[0] & 0x10);
+    do {
+        VSync(3);
+        ok = CdControlB(1, 0, D_801EA8F4);
+    } while (!(D_801EA8F4[0] & 2) || ok == 0);
+retry:
+    do {
+        VSync(3);
+    } while (CdControlB(0x13, 0, D_801EA8F4) == 0);
+    do {
+        VSync(3);
+    } while (CdControlB(2, pos, D_801EA8F4) == 0);
+    ok = CdControlB(0x15, 0, D_801EA8F4);
+    if ((D_801EA8F4[0] & 1) && (D_801EA8F4[1] & 0x40)) {
+        if (ok == 0) {
+            return 2;
+        }
+    } else if (ok == 0) {
+        goto retry;
+    }
+    func_8002A428(0xa0);
+    func_80028A60(0);
+    VSync(3);
+    VSync(3);
+    func_8002954C(0x17, &label, 0x10, 0, 0);
+    func_80028A60(0);
+    result = 2;
+    if (label.tag == 0x4e45585f) {
+        result = 3;
+        if (label.disc == disc + '0') {
+            func_8002954C(0x18, D_8004FDF0, 0x8000, 0, 0);
+            result = 0;
+            func_80028A60(0);
+            func_8002954C(0x28, D_8004FDF4, 0x7a, 0, 0);
+            func_80028A60(0);
+        }
+    }
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E93A0);
+#endif
