@@ -5547,7 +5547,19 @@ void func_80090C44(u8 member) {
                   (u16)(D_800CCCE8.records[member].pilot.maxEp % 10) * 8 + 0x78, 0, 8);
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80090E7C);
+/* Show the member's EP panel: the two EP icons (cells 6 and 5), the EP
+ * digits and the EP label glyphs. */
+void func_80090E7C(u8 member) {
+    func_80076C78(&D_800C3EA4->unkA230->unk3C0[D_800CCB04.buffer], 0xA8, 0xA6, D_800D2F68[6].u, D_800D2F68[6].v,
+                  D_800D2F68[6].w);
+    D_800C3EA4->unkA230->unk3C0[D_800CCB04.buffer].clut = D_800D2F68[6].alternate ? D_80059414 : D_800595D4;
+    func_80076C78(&D_800C3EA4->unkA230->unk410[D_800CCB04.buffer], 0xEC, 0xC6, D_800D2F68[5].u, D_800D2F68[5].v,
+                  D_800D2F68[5].w);
+    D_800C3EA4->unkA230->unk410[D_800CCB04.buffer].clut = D_800D2F68[5].alternate ? D_80059414 : D_800595D4;
+    func_80090C44(member);
+    func_80076A10(0x71, D_800C3EA4->unkA230->unk5A0, 0x118, 0xD1);
+    D_800C3EA4->unkA230->unk66C = D_800CCB04.buffer;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80091064);
 
