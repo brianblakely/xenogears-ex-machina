@@ -951,7 +951,6 @@ void func_80092DD0(void) {
 }
 
 /* Open the destination-name window and build its marker quad (both display copies). */
-#ifdef NON_MATCHING /* struct-copy end address CSE'd into a register too early */
 s32 func_80092DF8(void) {
     D_8009CE68 = -1;
     func_80032F54(&D_8009BD64, 0x3C0, 0x18D, 0xA0, 0x78, 0x20, 4);
@@ -960,14 +959,7 @@ s32 func_80092DF8(void) {
     func_80034614(&D_8009BD64);
     setlen(&D_8009D2B8[0], 9);
     D_8009D2B8[0].code = 0x2C;
-    D_8009D2B8[0].y0 = 0x70;
-    D_8009D2B8[0].y1 = 0x70;
-    D_8009D2B8[0].x1 = 0x128;
-    D_8009D2B8[0].x3 = 0x128;
-    D_8009D2B8[0].x0 = 0x98;
-    D_8009D2B8[0].x2 = 0x98;
-    D_8009D2B8[0].y2 = 0xB4;
-    D_8009D2B8[0].y3 = 0xB4;
+    setXY4(&D_8009D2B8[0], 0x98, 0x70, 0x128, 0x70, 0x98, 0xB4, 0x128, 0xB4);
     D_8009D2B8[0].u0 = 0x80;
     D_8009D2B8[0].v0 = 0;
     D_8009D2B8[0].u1 = 0xFF;
@@ -983,9 +975,6 @@ s32 func_80092DF8(void) {
     D_8009D2B8[1] = D_8009D2B8[0];
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80092DF8);
-#endif
 
 /* Show the destination name while it changes and draw its marker. */
 s32 func_80092FD8(s32 index) {
