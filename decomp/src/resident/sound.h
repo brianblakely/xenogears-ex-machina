@@ -366,7 +366,7 @@ void func_80039144(void *data);                        /* release driver memory 
 void func_80039248(void *dst, void *src, s32 size);    /* copy */
 void func_80038310(SoundSequence *bank); /* release a wave bank */
 void func_80038B4C(void);
-void func_80038E6C(s32 volume, SpuVolume *out, u8 channel);
+void func_80038E6C(s16 volume, SpuVolume *out, u8 channel);
 void *func_80038F18(s32 size);
 s32 func_800393B8(s32 size, u16 mode);                 /* allocate SPU memory */
 s32 func_800395B8(s32 size, s32 address, u16 mode);    /* allocate SPU memory at */
@@ -389,6 +389,8 @@ void func_8003B9E4(SoundSeq *seq);
 s32 func_8003BA38(SoundSeq *seq);
 s32 func_8003BB40(s32 channels);   /* size of a sequence with `channels` */
 s16 func_8003F67C(SoundSeqHeader *header); /* error code of sequence data, 0 when valid */
+s32 func_8003F614(u32 *data, u32 magic, s32 id); /* check a sound file */
+void func_8003A094(SoundBank *bank);
 void func_8003B644(s16 id, s32 channel, s16 volume, s16 pan);
 void func_8003BCA0(u32 address, u8 *data, s32 size, void (*callback)(void), u16 type);
 s32 func_8003BDFC(s32 wait);

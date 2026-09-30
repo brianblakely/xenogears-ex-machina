@@ -1532,9 +1532,81 @@ SoundSequence *func_800383EC(s32 key) {
     return sequence;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038428);
+/* Add a sound effect bank to the loaded banks: error 0x15 when a bank
+ * with its id is loaded (unless the driver is in its error state), or the
+ * bank data's error.
+ * Nonmatching: instruction scheduling around the duplicate id walk. */
+#ifdef NON_MATCHING
+void func_80038428(SoundBank *bank) {
+    SoundBank *entry;
+    SoundBank **link;
+    s16 error;
 
+    if (!(D_8005957C & 0x80)) {
+        for (entry = D_80059440; entry != NULL; entry = entry->next) {
+            if (bank->id == entry->id) {
+                func_8003F6B0(0x15);
+                return;
+            }
+        }
+    }
+    error = func_8003F614((u32 *)bank, 0x73646573, 0x101);
+    if (error != 0) {
+        func_8003F6B0(error);
+        return;
+    }
+    DisableEvent(D_800595BC);
+    link = &D_80059440;
+    if (D_80059440 != NULL) {
+        do {
+            link = &(*link)->next;
+        } while (*link != NULL);
+    }
+    *link = bank;
+    bank->next = NULL;
+    EnableEvent(D_800595BC);
+}
+#else
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038428);
+#endif
+
+/* Remove a sound effect bank from the loaded banks (error 0x10 when it is
+ * not loaded, 0xB when its data is no longer valid).
+ * Nonmatching: the original walks with a second copy of the bank pointer. */
+#ifdef NON_MATCHING
+void func_8003852C(SoundBank *bank) {
+    SoundBank *entry;
+    SoundBank *prev = NULL;
+    s16 error;
+
+    for (entry = D_80059440; entry != NULL; entry = entry->next) {
+        if (entry == bank) {
+            break;
+        }
+        prev = entry;
+    }
+    if (entry == NULL) {
+        func_8003F6B0(0x10);
+        return;
+    }
+    func_8003A094(bank);
+    DisableEvent(D_800595BC);
+    if (prev != NULL) {
+        prev->next = bank->next;
+    } else {
+        D_80059440 = bank->next;
+    }
+    bank->next = NULL;
+    error = func_8003F614((u32 *)bank, 0x73646573, 0x101);
+    if (error != 0) {
+        func_8003F6B0(0xB);
+        return;
+    }
+    EnableEvent(D_800595BC);
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003852C);
+#endif
 
 void func_80038624(void) {
     func_80039FF8();
@@ -1642,22 +1714,67 @@ void func_80038AD4(s32 a, s32 b) {
     func_80038B4C();
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038B4C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038C68);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038D18);
-
-/* The driver's SPU common attributes and the volumes they are built from. */
+/* The driver's SPU common attributes, the volumes they are built from and
+ * the master and CD volume fades (16.16 levels stepping toward targets). */
 typedef struct {
     SpuCommonAttr attr;
     s16 master;
     s16 cd;
     s16 unk2C;
     s16 cd_request;
+    s32 master_level;
+    s32 master_step;
+    s16 master_frames;
+    s16 master_target;
+    s32 cd_level;
+    s32 cd_step;
+    s16 cd_frames;
+    s16 cd_target;
 } SoundVolumes;
 
 extern SoundVolumes D_8005A3C0;
+
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038B4C);
+
+/* Set the master volume at once, or fade to it over `frames`. */
+void func_80038C68(s32 volume, s32 frames) {
+    s32 delta;
+
+    D_8005A3C0.master_target = volume;
+    if (frames == 0) {
+        D_8005A3C0.master_level = volume << 16;
+        D_8005A3C0.master_frames = 0;
+        D_8005A3C0.master = volume;
+        func_80038E6C(volume, &D_8005A3C0.attr.mvol, 0);
+        D_8005A3C0.attr.mask |= 3;
+        return;
+    }
+    delta = (volume << 8) - (D_8005A3C0.master_level >> 8);
+    if (delta != 0) {
+        D_8005A3C0.master_frames = frames;
+        D_8005A3C0.master_step = (delta / frames) << 8;
+    }
+}
+
+/* Set the CD volume at once, or fade to it over `frames`. */
+void func_80038D18(s32 volume, s32 frames) {
+    s32 delta;
+
+    D_8005A3C0.cd_target = volume;
+    if (frames == 0) {
+        D_8005A3C0.cd_level = volume << 16;
+        D_8005A3C0.cd_frames = 0;
+        D_8005A3C0.attr.cd.volume.left = D_8005A3C0.attr.cd.volume.right = D_8005A3C0.cd = volume;
+        D_8005A3C0.attr.mask |= 0xC0;
+        return;
+    }
+    delta = (volume << 8) - (D_8005A3C0.cd_level >> 8);
+    if (delta != 0) {
+        D_8005A3C0.cd_frames = frames;
+        D_8005A3C0.cd_step = (delta / frames) << 8;
+    }
+}
+
 
 /* Set the CD audio reverb and mix switches. */
 void func_80038DB4(s32 reverb, s32 mix) {
@@ -1680,7 +1797,7 @@ void func_80038DF4(void) {
 /* Set a stereo volume pair, inverting one side for the surround modes.
  * Nonmatching: register allocation and branch layout differ. */
 #ifdef NON_MATCHING
-void func_80038E6C(s32 volume, SpuVolume *out, u8 channel) {
+void func_80038E6C(s16 volume, SpuVolume *out, u8 channel) {
     out->right = volume;
     out->left = volume;
     if (D_8005957C & 0x600) {
