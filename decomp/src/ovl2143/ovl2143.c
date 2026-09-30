@@ -70,9 +70,9 @@ ModelPart *func_801DC2D0(ModelList *group, HierarchyLink *links, s32 mode, s32 c
     parts->pos[0] = 0;
     parts->pos[1] = 0;
     parts->pos[2] = 0;
-    parts->w70 = 0;
-    parts->w74 = 0;
-    parts->w78 = 0;
+    parts->attachments[0] = NULL;
+    parts->attachments[1] = NULL;
+    parts->attachments[2] = NULL;
     while (model < group->count || model == 0xFFFF) {
         if (parent == 0xFFFF) {
             part->parent = NULL;
@@ -112,9 +112,9 @@ ModelPart *func_801DC2D0(ModelList *group, HierarchyLink *links, s32 mode, s32 c
         part->pos[0] = 0;
         part->pos[1] = 0;
         part->pos[2] = 0;
-        part->w70 = 0;
-        part->w74 = 0;
-        part->w78 = 0;
+        part->attachments[0] = NULL;
+        part->attachments[1] = NULL;
+        part->attachments[2] = NULL;
         part++;
         link++;
         model = link->model;
@@ -374,17 +374,105 @@ INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DEF10);
 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DF0B4);
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DF52C);
+/* Release the attachments of node `index` selected by `mask` (bit 0: w70,
+ * bit 1: w74, bit 2: w78) back to `pool`. */
+void func_801DF52C(SlotPool *pool, ModelPart *part, s32 index, s32 mask) {
+    if (index < part->count) {
+        part += index;
+        if (part->attachments[0] != NULL && (mask & 1)) {
+            func_801DF7A8(pool, part->attachments[0]);
+            part->attachments[0] = NULL;
+        }
+        if (part->attachments[1] != NULL && (mask & 2)) {
+            func_801DF7A8(pool, part->attachments[1]);
+            part->attachments[1] = NULL;
+        }
+        if (part->attachments[2] != NULL && (mask & 4)) {
+            func_801DF7A8(pool, part->attachments[2]);
+            part->attachments[2] = NULL;
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DF5F4);
+/* Allocate `capacity` 0x14-byte slots for a pool, all free. */
+SlotPool *func_801DF5F4(SlotPool *pool, s32 capacity) {
+    if (capacity <= 0 ||
+        (pool->capacity = capacity, func_80032498(4, 0),
+         (pool->slots = func_80031BDC(capacity * sizeof(PoolSlot), 0)) == NULL)) {
+        return NULL;
+    }
+    func_801DF6A8(pool);
+    return pool;
+}
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DF668);
+/* Release a pool's slots. */
+void func_801DF668(SlotPool *pool) {
+    pool->next = 0;
+    if (pool->slots != NULL) {
+        func_800320E8(pool->slots);
+    }
+    pool->slots = NULL;
+}
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DF6A8);
+/* Mark every slot of a pool free. */
+void func_801DF6A8(SlotPool *pool) {
+    PoolSlot *slot;
+    s32 i;
 
+    if (pool->slots != NULL) {
+        slot = pool->slots;
+        pool->next = 0;
+        for (i = 0; i < pool->capacity; i++) {
+            slot->used = 0;
+            slot++;
+        }
+    }
+}
+
+/* Take the first free slot (the caller marks it used) and advance the search
+ * position past used slots; NULL when the pool is full. Differs only in the
+ * allocation of two argument registers. */
+#ifdef NON_MATCHING
+PoolSlot *func_801DF6F0(SlotPool *pool) {
+    PoolSlot *slot;
+    u32 capacity;
+
+    if (pool->next < pool->capacity) {
+        slot = &pool->slots[pool->next];
+        if (slot->used != 0) {
+            return NULL;
+        }
+        pool->next++;
+        capacity = pool->capacity;
+        while (pool->next < capacity) {
+            if (pool->slots[pool->next].used == 0) {
+                return slot;
+            }
+            pool->next++;
+        }
+        return slot;
+    }
+    return NULL;
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DF6F0);
+#endif
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DF7A8);
+/* Free a slot, moving the search position back to it; returns its index or
+ * -1 without a slot. */
+s32 func_801DF7A8(SlotPool *pool, PoolSlot *slot) {
+    s32 index;
+
+    if (slot == NULL) {
+        return -1;
+    }
+    index = ((u32)slot - (u32)pool->slots) / sizeof(PoolSlot);
+    if (index < pool->next) {
+        pool->next = index;
+    }
+    slot->used = 0;
+    return index;
+}
 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DF7F4);
 

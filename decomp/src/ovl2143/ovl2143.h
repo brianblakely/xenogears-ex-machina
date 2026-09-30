@@ -52,10 +52,21 @@ typedef struct ModelPart {
     SVECTOR rot;    /* +54 */
     s32 pos[3];     /* +5c */
     void *packets[2]; /* +68: the model's packets for both buffers */
-    s32 w70;
-    s32 w74;
-    s32 w78;
+    struct PoolSlot *attachments[3]; /* +70: pool slots attached to the node */
 } ModelPart;
+
+/* A pool slot (0x14 bytes); +0 marks it used. */
+typedef struct PoolSlot {
+    u8 used;
+    u8 pad[0x13];
+} PoolSlot;
+
+/* A pool of slots with the position where the search for a free one starts. */
+typedef struct {
+    PoolSlot *slots;
+    u16 next;
+    u16 capacity;
+} SlotPool;
 
 /* Resident heap. */
 void func_80032498(s32 tag, s32 mode);        /* select the allocation tag */
@@ -82,6 +93,8 @@ void func_80049F2C(MATRIX *m);                /* SetLightMatrix */
 void func_80049F8C(MATRIX *m);                /* SetTransMatrix */
 
 /* This overlay. */
+void func_801DF6A8(SlotPool *pool);
+s32 func_801DF7A8(SlotPool *pool, PoolSlot *slot);
 void func_801DCD8C(ModelPart *parts);
 
 #endif
