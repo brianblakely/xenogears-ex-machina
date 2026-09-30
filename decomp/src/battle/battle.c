@@ -4,6 +4,7 @@
 #include "model.h"
 #include "scene.h"
 #include "gte.h"
+#include "window_draw.h"
 
 /* Start the 801e5000 module: reserve its heap span and load it. */
 void func_80070E2C(void) {
@@ -5149,17 +5150,128 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008D328);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008D598);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008DC34);
+/* Place a window's four corner glyphs (the alternate set while the battle
+ * is ending) at its corners in the current draw buffer. */
+void func_8008DC34(u8 window, u16 x, u16 y, u16 w, u16 h) {
+    u8 glyphs[4];
+    WindowBlock *block = D_800D2E38[window];
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008DE04);
+    if (D_800C3E4C != 0) {
+        glyphs[0] = 0x4A;
+        glyphs[1] = 0x4C;
+        glyphs[2] = 0x4F;
+        glyphs[3] = 0x51;
+    } else {
+        glyphs[0] = 0xF0;
+        glyphs[1] = 0xF2;
+        glyphs[2] = 0xF5;
+        glyphs[3] = 0xF7;
+    }
+    block->cornerCount = 0;
+    block->cornerCount += func_80076A10(glyphs[0], &block->corners[block->cornerCount * 2], x, y);
+    block->cornerCount += func_80076A10(glyphs[1], &block->corners[block->cornerCount * 2], x + w - 8, y);
+    block->cornerCount += func_80076A10(glyphs[2], &block->corners[block->cornerCount * 2], x, y + h - 8);
+    block->cornerCount += func_80076A10(glyphs[3], &block->corners[block->cornerCount * 2], x + w - 8, y + h - 8);
+    for (i = 0; i < 4; i++) {
+        func_80076B00(&block->corners[i * 2 + D_800CCB04.buffer]);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008E430);
+/* Place a window's top edge: two pieces of texture 1 across the top,
+ * each half the inner width, in the current draw buffer. */
+void func_8008DE04(u8 window, u16 x, u16 y, u16 w) {
+    WindowBlock *block = D_800D2E38[window];
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008EA70);
+    setXY4(block->frame[0] + D_800CCB04.buffer, x + 8, y - 8, x + 8 + (w - 16) / 2, y - 8, x + 8, y + 8,
+           x + 8 + (w - 16) / 2, y + 8);
+    setXY4(block->frame[0] + D_800CCB04.buffer + 2, x + 8 + (w - 16) / 2, y - 8,
+           x + 8 + (w - 16) / 2 + (w - 16) / 2, y - 8, x + 8 + (w - 16) / 2, y + 8,
+           x + 8 + (w - 16) / 2 + (w - 16) / 2, y + 8);
+    setUV4(block->frame[0] + D_800CCB04.buffer, WINDOW_TEX_U(1), WINDOW_TEX_V(1), WINDOW_TEX_U(1) + 7,
+           WINDOW_TEX_V(1), WINDOW_TEX_U(1), WINDOW_TEX_V(1) + 16, WINDOW_TEX_U(1) + 7, WINDOW_TEX_V(1) + 16);
+    setUV4(block->frame[0] + D_800CCB04.buffer + 2, WINDOW_TEX_U(1), WINDOW_TEX_V(1), WINDOW_TEX_U(1) + 7,
+           WINDOW_TEX_V(1), WINDOW_TEX_U(1), WINDOW_TEX_V(1) + 16, WINDOW_TEX_U(1) + 7, WINDOW_TEX_V(1) + 16);
+    for (i = 0; i < 2; i++) {
+        func_80076B00(&block->frame[0][i * 2 + D_800CCB04.buffer]);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008F0A8);
+/* Place a window's bottom edge: two pieces of texture 2 across the bottom,
+ * each half the inner width, in the current draw buffer. */
+void func_8008E430(u8 window, u16 x, u16 y, u16 w, u16 h) {
+    WindowBlock *block = D_800D2E38[window];
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008F6E4);
+    setXY4(block->frame[1] + D_800CCB04.buffer, x + 8, y + h - 8, x + 8 + (w - 16) / 2, y + h - 8, x + 8,
+           y + h + 8, x + 8 + (w - 16) / 2, y + h + 8);
+    setXY4(block->frame[1] + D_800CCB04.buffer + 2, x + 8 + (w - 16) / 2, y + h - 8,
+           x + 8 + (w - 16) / 2 + (w - 16) / 2, y + h - 8, x + 8 + (w - 16) / 2, y + h + 8,
+           x + 8 + (w - 16) / 2 + (w - 16) / 2, y + h + 8);
+    setUV4(block->frame[1] + D_800CCB04.buffer, WINDOW_TEX_U(2) - 8, WINDOW_TEX_V(2), WINDOW_TEX_U(2) - 1,
+           WINDOW_TEX_V(2), WINDOW_TEX_U(2) - 8, WINDOW_TEX_V(2) + 16, WINDOW_TEX_U(2) - 1, WINDOW_TEX_V(2) + 16);
+    setUV4(block->frame[1] + D_800CCB04.buffer + 2, WINDOW_TEX_U(2) - 8, WINDOW_TEX_V(2), WINDOW_TEX_U(2) - 1,
+           WINDOW_TEX_V(2), WINDOW_TEX_U(2) - 8, WINDOW_TEX_V(2) + 16, WINDOW_TEX_U(2) - 1, WINDOW_TEX_V(2) + 16);
+    for (i = 0; i < 2; i++) {
+        func_80076B00(&block->frame[1][i * 2 + D_800CCB04.buffer]);
+    }
+}
+
+/* Place a window's left edge: two pieces of texture 3 down the left side,
+ * each half the inner height, in the current draw buffer. */
+void func_8008EA70(u8 window, u16 x, u16 y, u16 h) {
+    WindowBlock *block = D_800D2E38[window];
+    s32 i;
+
+    setXY4(block->frame[2] + D_800CCB04.buffer, x - 8, y + 8, x + 8, y + 8, x - 8, y + 8 + (h - 16) / 2, x + 8,
+           y + 8 + (h - 16) / 2);
+    setXY4(block->frame[2] + D_800CCB04.buffer + 2, x - 8, y + 8 + (h - 16) / 2, x + 8, y + 8 + (h - 16) / 2,
+           x - 8, y + 8 + (h - 16) / 2 + (h - 16) / 2, x + 8, y + 8 + (h - 16) / 2 + (h - 16) / 2);
+    setUV4(block->frame[2] + D_800CCB04.buffer, WINDOW_TEX_U(3) + 14, WINDOW_TEX_V(3), WINDOW_TEX_U(3) + 30,
+           WINDOW_TEX_V(3), WINDOW_TEX_U(3) + 14, WINDOW_TEX_V(3) + 7, WINDOW_TEX_U(3) + 30, WINDOW_TEX_V(3) + 7);
+    setUV4(block->frame[2] + D_800CCB04.buffer + 2, WINDOW_TEX_U(3) + 14, WINDOW_TEX_V(3), WINDOW_TEX_U(3) + 30,
+           WINDOW_TEX_V(3), WINDOW_TEX_U(3) + 14, WINDOW_TEX_V(3) + 7, WINDOW_TEX_U(3) + 30, WINDOW_TEX_V(3) + 7);
+    for (i = 0; i < 2; i++) {
+        func_80076B00(&block->frame[2][i * 2 + D_800CCB04.buffer]);
+    }
+}
+
+/* Place a window's right edge: two pieces of texture 4 down the right side,
+ * each half the inner height, in the current draw buffer. */
+void func_8008F0A8(u8 window, u16 x, u16 y, u16 w, u16 h) {
+    WindowBlock *block = D_800D2E38[window];
+    s32 i;
+
+    setXY4(block->frame[3] + D_800CCB04.buffer, x + w - 8, y + 8, x + w + 8, y + 8, x + w - 8,
+           y + 8 + (h - 16) / 2, x + w + 8, y + 8 + (h - 16) / 2);
+    setXY4(block->frame[3] + D_800CCB04.buffer + 2, x + w - 8, y + 8 + (h - 16) / 2, x + w + 8,
+           y + 8 + (h - 16) / 2, x + w - 8, y + 8 + (h - 16) / 2 + (h - 16) / 2, x + w + 8,
+           y + 8 + (h - 16) / 2 + (h - 16) / 2);
+    setUV4(block->frame[3] + D_800CCB04.buffer, WINDOW_TEX_U(4) + 14, WINDOW_TEX_V(4), WINDOW_TEX_U(4) + 30,
+           WINDOW_TEX_V(4), WINDOW_TEX_U(4) + 14, WINDOW_TEX_V(4) + 7, WINDOW_TEX_U(4) + 30, WINDOW_TEX_V(4) + 7);
+    setUV4(block->frame[3] + D_800CCB04.buffer + 2, WINDOW_TEX_U(4) + 14, WINDOW_TEX_V(4), WINDOW_TEX_U(4) + 30,
+           WINDOW_TEX_V(4), WINDOW_TEX_U(4) + 14, WINDOW_TEX_V(4) + 7, WINDOW_TEX_U(4) + 30, WINDOW_TEX_V(4) + 7);
+    for (i = 0; i < 2; i++) {
+        func_80076B00(&block->frame[3][i * 2 + D_800CCB04.buffer]);
+    }
+}
+
+/* Place a window at (x, y, w, h) in the current draw buffer: its
+ * background, corners and edges. The window is hidden while it changes. */
+void func_8008F6E4(u8 window, u16 x, u16 y, u16 w, u16 h) {
+    WindowBlock *block = D_800D2E38[window];
+
+    D_800D2D28->windows[window] = 0;
+    setXY4(block->shade + D_800CCB04.buffer, x, y, x + w, y, x, y + h, x + w, y + h);
+    func_8008DC34(window, x, y, w, h);
+    func_8008DE04(window, x, y, w);
+    func_8008E430(window, x, y, w, h);
+    func_8008EA70(window, x, y, h);
+    func_8008F0A8(window, x, y, w, h);
+    block->buffer = D_800CCB04.buffer;
+    D_800D2D28->windows[window] = 1;
+}
 
 /* Open window `window` at (x, y) of w x h: allocate its blocks when it is not
  * shown; `animate` grows it open, otherwise it is drawn at once (and a frame

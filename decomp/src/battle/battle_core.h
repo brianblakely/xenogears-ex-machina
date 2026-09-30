@@ -370,11 +370,14 @@ typedef struct {
 
 /* A window's primitives (0x5a8-byte heap block). */
 typedef struct {
-    u8 unk0[0x140];
+    POLY_FT4 corners[8]; /* corner glyphs: [corner * 2 + draw buffer] */
     POLY_FT4 frame[4][4]; /* +0x140 edge pieces, textures 1-4 */
     POLY_G4 shade[2];     /* +0x3C0 background, one per draw buffer */
     DR_MODE mode[2];      /* +0x408 */
-    u8 unk420[0x5A8 - 0x420];
+    u8 unk420[0x5A0 - 0x420];
+    s32 cornerCount;      /* +0x5A0 corner primitives built */
+    u8 buffer;            /* +0x5A4 draw buffer of the last placement */
+    u8 unk5A5[3];
 } WindowBlock;
 
 extern WindowBlock *D_800D2E38[7];
