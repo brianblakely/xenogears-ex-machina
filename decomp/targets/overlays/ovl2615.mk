@@ -8,3 +8,5 @@ IMAGE := .local/decomp/build/ovl2615.bin
 LINKER_SCRIPT := .local/decomp/ovl2615/ovl2615.ld
 LINKER_EXTRA := .local/decomp/ovl2615/undefined_syms_auto.txt .local/decomp/ovl2615/undefined_funcs_auto.txt
 SOURCE_DIRS := decomp/src/ovl2615
+# Division checks are expanded inline (break 7 / break 6) in this image.
+MASPSX_FLAGS := --aspsx-version=2.34 --expand-div

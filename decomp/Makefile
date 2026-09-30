@@ -40,13 +40,16 @@ CPPFLAGS := -undef -D__GNUC__=2 -Dmips -D__mips__ -D__mips -Dpsx -D__psx__ -D__p
 CC1FLAGS := -quiet -mcpu=3000 -fgnu-linker -mgas -msoft-float -O2
 ASFLAGS := -EL -march=r3000 -mtune=r3000 -msoft-float -no-pad-sections -G0 \
 	-I$(ROOT)/decomp/include -I$(ROOT)
-MASPSXFLAGS := --aspsx-version=2.34
 
 # The small-data threshold and the GCC version (2.6.3 or 2.7.2) are properties
 # of each original translation unit: GP_<file> / CC_<file> override the target's
 # GP default of 0 and its CC_VERSION.
 gp_of = $(or $(GP_$(basename $(notdir $(1)))),0)
 cc_of = $(or $(CC_$(basename $(notdir $(1)))),$(CC_VERSION))
+# ASPSX behaviour (maspsx flags): 2.34 by default; MASPSX_FLAGS per target and
+# MASPSX_<file> per unit (e.g. --expand-div where division checks are inline).
+MASPSX_FLAGS ?= --aspsx-version=2.34
+maspsx_of = $(or $(MASPSX_$(basename $(notdir $(1)))),$(MASPSX_FLAGS))
 
 # Objects come from the splat-generated linker script (regenerate with `split`).
 LP := (
@@ -69,7 +72,7 @@ $(ROOT)/$(BUILD)/%.o: $(ROOT)/%.s $(ROOT)/$(LINKER_SCRIPT)
 $(ROOT)/$(BUILD)/%.o: $(ROOT)/%.c $(ROOT)/$(LINKER_SCRIPT) $(wildcard $(ROOT)/decomp/include/*.h $(ROOT)/decomp/include/*/*.h $(dir $(ROOT)/%)*.h)
 	@mkdir -p $(dir $@)
 	cd $(ROOT) && psx-cpp-$(call cc_of,$<) $(CPPFLAGS) $< | psx-cc1-$(call cc_of,$<) $(CC1FLAGS) -G$(call gp_of,$<) -o $@.cc1.s
-	cd $(ROOT) && $(MASPSX) $(MASPSXFLAGS) -G$(call gp_of,$<) < $@.cc1.s > $@.s
+	cd $(ROOT) && $(MASPSX) $(call maspsx_of,$<) -G$(call gp_of,$<) < $@.cc1.s > $@.s
 	cd $(ROOT) && $(AS) $(ASFLAGS) -G$(call gp_of,$<) -o $@ $@.s
 
 $(ROOT)/$(IMAGE): $(OBJECTS) $(ROOT)/$(LINKER_SCRIPT) $(CONFIG)
