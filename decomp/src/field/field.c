@@ -234,11 +234,11 @@ void func_80072150(void) {
 void func_80072254(s32 index) {
     VECTOR scale;
 
-    scale.vx = D_800AFB0C.descriptors[index].actor->scale[0];
-    scale.vy = D_800AFB0C.descriptors[index].actor->scale[1];
-    scale.vz = D_800AFB0C.descriptors[index].actor->scale[2];
-    func_8003F738(&D_800AFB0C.descriptors[index].rotation, &D_800AFB0C.descriptors[index].matrix);
-    func_80049DCC(&D_800AFB0C.descriptors[index].matrix, &scale);
+    scale.vx = D_800AF880.components.descriptors[index].actor->scale[0];
+    scale.vy = D_800AF880.components.descriptors[index].actor->scale[1];
+    scale.vz = D_800AF880.components.descriptors[index].actor->scale[2];
+    func_8003F738(&D_800AF880.components.descriptors[index].rotation, &D_800AF880.components.descriptors[index].matrix);
+    func_80049DCC(&D_800AF880.components.descriptors[index].matrix, &scale);
 }
 
 /* Compose the view and reload the scaled world matrix; 802815b0 runs unless
@@ -405,8 +405,8 @@ s32 func_8007469C(void) {
     s32 i;
     u16 flags;
 
-    for (i = 0; i < D_800AFB0C.descriptor_count; i++) {
-        flags = D_800AFB0C.descriptors[i].flags;
+    for (i = 0; i < D_800AF880.components.descriptor_count; i++) {
+        flags = D_800AF880.components.descriptors[i].flags;
         if (!(flags & 0x40)) {
             if (flags & 0x8000) {
                 return 1;
@@ -469,7 +469,7 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800764B4);
 
 /* Sprite completion callback: flag the sprite's actor (layer bit 16). */
 void func_80076A74(FieldSprite *sprite) {
-    D_800AFB0C.descriptors[sprite->sequencer->actor].actor->layer_flags |= 0x10000;
+    D_800AF880.components.descriptors[sprite->sequencer->actor].actor->layer_flags |= 0x10000;
 }
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80076AC0);
@@ -591,7 +591,7 @@ s32 func_80077E10(void) {
     s32 result = 0;
 
     if (D_800ADBD0 == 1 && D_800B218C.unk2344 == 0) {
-        result = -((D_800AFB0C.descriptors[D_800B218C.controlled].actor->flags & 0x800) != 0);
+        result = -((D_800AF880.components.descriptors[D_800B218C.controlled].actor->flags & 0x800) != 0);
     }
     return result;
 }
@@ -687,7 +687,7 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80079784);
 /* Set the battle-entry flag (80059179): clear only while the controlled
  * actor has neither bit 0x40 nor 0x80 of +14; 800b234c overrides it. */
 void func_800798BC(void) {
-    if (D_800B218C.unk2268 != 0 && !(D_800AFB0C.descriptors[D_800B218C.controlled].actor->unk014 & 0xC0)) {
+    if (D_800B218C.unk2268 != 0 && !(D_800AF880.components.descriptors[D_800B218C.controlled].actor->unk014 & 0xC0)) {
         D_80059179 = 0;
     } else {
         D_80059179 = 1;
@@ -922,7 +922,7 @@ void func_8007F814(s32 index, s32 *x, s32 *y, s32 height) {
     s32 depth;
     s32 flag;
 
-    func_8004931C(&D_800AF880.scaled_world, &D_800AFB0C.descriptors[index].matrix, &m);
+    func_8004931C(&D_800AF880.scaled_world, &D_800AF880.components.descriptors[index].matrix, &m);
     func_80049EFC(&m);
     func_80049F8C(&m);
     point.vx = 0;
@@ -948,7 +948,25 @@ void func_8007FFE8(void) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008004C);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800805F4);
+/* Close each idle dialogue window whose timer ran out (unless flag 4 keeps
+ * it) or that was cleared, and count the timers down. */
+void func_800805F4(void) {
+    s32 window;
+
+    for (window = 0; window < 4; window++) {
+        if (D_800C2698[window].busy == 0) {
+            if (D_800C2698[window].timer == 0 && !(D_800C2698[window].flags & 4)) {
+                func_8007F6F8(window);
+            }
+            if (D_800C2698[window].cleared == 0) {
+                func_8007F6F8(window);
+            }
+            if (D_800C2698[window].timer != 0) {
+                D_800C2698[window].timer--;
+            }
+        }
+    }
+}
 
 /* The first dialogue window whose age is zero, or 0xffff. */
 s32 func_800806E4(void) {
@@ -1018,7 +1036,7 @@ u32 func_80080968(FieldActor *actor) {
     if ((actor->layer_flags >> (layer + 3)) & 1) {
         return 0;
     }
-    return D_800AFB0C.collision_attributes[D_800AFB0C.collision_triangles[layer][actor->triangle[layer]].attribute];
+    return D_800AF880.components.collision_attributes[D_800AF880.components.collision_triangles[layer][actor->triangle[layer]].attribute];
 }
 
 /* Frames (in 800b14ac, two per step) and height of a jump under the actor's
@@ -1038,7 +1056,7 @@ s32 func_800809D0(FieldActor *actor) {
 
 /* The next word of the current descriptor's actor list. */
 s32 func_80080A18(void) {
-    return D_800AFB0C.descriptors[D_800ADB58].actor->list[D_800ADB5C++];
+    return D_800AF880.components.descriptors[D_800ADB58].actor->list[D_800ADB5C++];
 }
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80080A74);
@@ -1068,10 +1086,10 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80082494);
 
 /* Planar distance between two descriptors' actors (integer positions). */
 s32 func_800825AC(s32 from, s32 to) {
-    s32 to_x = D_800AFB0C.descriptors[to].actor->position[0] >> 16;
-    s32 to_z = D_800AFB0C.descriptors[to].actor->position[2] >> 16;
-    s32 from_x = D_800AFB0C.descriptors[from].actor->position[0] >> 16;
-    s32 from_z = D_800AFB0C.descriptors[from].actor->position[2] >> 16;
+    s32 to_x = D_800AF880.components.descriptors[to].actor->position[0] >> 16;
+    s32 to_z = D_800AF880.components.descriptors[to].actor->position[2] >> 16;
+    s32 from_x = D_800AF880.components.descriptors[from].actor->position[0] >> 16;
+    s32 from_z = D_800AF880.components.descriptors[from].actor->position[2] >> 16;
 
     return func_80099A4C(to_x - from_x, to_z - from_z);
 }
@@ -1305,7 +1323,29 @@ void func_80086078(s32 distance, u32 *out, s32 volume) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800860F0);
 
+#ifdef NON_MATCHING
+/* The screen position of descriptor `index`. */
+void func_80086200(s32 index, s32 *x, s32 *y) {
+    SVECTOR point;
+    MATRIX m;
+    s32 screen;
+    s32 depth;
+    s32 flag;
+
+    func_8009CDB4(1);
+    func_8004931C(&D_800AF880.scaled_world, &D_800AF880.components.descriptors[index].matrix, &m);
+    point.vx = 0;
+    point.vy = 0;
+    point.vz = 0;
+    func_80049EFC(&m);
+    func_80049F8C(&m);
+    func_8004A64C(&point, &screen, &depth, &flag);
+    *y = screen >> 16;
+    *x = (s16)screen;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80086200);
+#endif
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800862CC);
 
@@ -1366,7 +1406,21 @@ void func_800864F0(void) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80086590);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80086908);
+/* Point the listener (80086590) at the controlled actor, the camera eye or
+ * the camera target, as 800b22e0 selects. */
+void func_80086908(void) {
+    switch (D_800B218C.unk22E0) {
+    case 0:
+        func_80086590((VECTOR *)D_800AF880.components.descriptors[D_800B218C.controlled].actor->position);
+        break;
+    case 1:
+        func_80086590(&D_800AF880.eye);
+        break;
+    case 2:
+        func_80086590(&D_800AF880.target);
+        break;
+    }
+}
 
 /* Event opcode fe: run the extended instruction named by the next byte. */
 void func_800869B8(void) {
@@ -1381,7 +1435,7 @@ void func_80086BA8(void) {
 
     for (i = 0; i < 3; i++) {
         if (D_800B218C.emitter_descriptor[i] != -1) {
-            func_80086A1C(i, D_800AFB0C.descriptors[D_800B218C.emitter_descriptor[i]].actor->position);
+            func_80086A1C(i, D_800AF880.components.descriptors[D_800B218C.emitter_descriptor[i]].actor->position);
         }
     }
 }
@@ -1457,7 +1511,13 @@ void func_8008754C(void) {
     D_800B0078->pc++;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80087580);
+/* Event: copy character op1 over character op3. */
+void func_80087580(void) {
+    s32 from = func_800ACDEC(1);
+
+    D_8005A39C->characters[func_800ACDEC(3)] = D_8005A39C->characters[from];
+    D_800B0078->pc += 5;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008764C);
 
@@ -1495,9 +1555,25 @@ void func_80087A7C(void) {
     D_800B0078->pc += 2;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80087AB8);
+/* Event: set the game's +184e and +1852 from operands 1 and 3 (immediate by
+ * flags 0x80/0x40 of byte 9) and reset +1850/+1854, setting +1856. */
+void func_80087AB8(void) {
+    D_8005A39C->unk184E = func_8009CF78(1, D_800ADC00[D_800B0078->pc + 9]);
+    D_8005A39C->unk1852 = func_8009CFBC(3, D_800ADC00[D_800B0078->pc + 9]);
+    D_8005A39C->unk1854 = 0;
+    D_8005A39C->unk1850 = 0;
+    D_8005A39C->unk1856 = 1;
+    D_800B0078->pc += 6;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80087B5C);
+/* Event: store the game's four halfwords at +182c in variables op1..op7. */
+void func_80087B5C(void) {
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, D_8005A39C->unk182C[0]);
+    func_800A3074(func_800ACDB8(3) & 0xFFFF, D_8005A39C->unk182C[1]);
+    func_800A3074(func_800ACDB8(5) & 0xFFFF, D_8005A39C->unk182C[2]);
+    func_800A3074(func_800ACDB8(7) & 0xFFFF, D_8005A39C->unk182C[3]);
+    D_800B0078->pc += 9;
+}
 
 /* Event: set 8004f300. */
 void func_80087C0C(void) {
@@ -2026,7 +2102,7 @@ void func_8008D078(void) {
 void func_8008D0F4(void) {
     s32 scale = func_800ACDEC(1);
 
-    D_800AFB0C.descriptors[D_800AFD1C].model->unk2C = (u32)(scale * 3) >> 2;
+    D_800AF880.components.descriptors[D_800AFD1C].model->unk2C = (u32)(scale * 3) >> 2;
     D_800B0078->scale[0] = scale;
     D_800B0078->scale[1] = scale;
     D_800B0078->scale[2] = scale;
@@ -2044,7 +2120,7 @@ void func_8008D230(void) {
 
 /* Event: set the current model's +82 to twice operand 1. */
 void func_8008D26C(void) {
-    D_800AFB0C.descriptors[D_800AFD1C].model->unk82 = func_800ACDEC(1) * 2;
+    D_800AF880.components.descriptors[D_800AFD1C].model->unk82 = func_800ACDEC(1) * 2;
     D_800B0078->pc += 3;
 }
 
@@ -2059,8 +2135,8 @@ void func_8008D2E0(s32 value, s32 offset) {
 
 /* -1 when two descriptors are at least 16 apart in X/Z, else 0. */
 s32 func_8008D30C(s32 a, s32 b) {
-    return -(func_80099A4C(D_800AFB0C.descriptors[a].matrix.t[0] - D_800AFB0C.descriptors[b].matrix.t[0],
-                           D_800AFB0C.descriptors[a].matrix.t[2] - D_800AFB0C.descriptors[b].matrix.t[2]) >= 0x10);
+    return -(func_80099A4C(D_800AF880.components.descriptors[a].matrix.t[0] - D_800AF880.components.descriptors[b].matrix.t[0],
+                           D_800AF880.components.descriptors[a].matrix.t[2] - D_800AF880.components.descriptors[b].matrix.t[2]) >= 0x10);
 }
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008D380);
@@ -2192,7 +2268,7 @@ void func_8008DEBC(void) {
     FieldActor *actor;
 
     if (index != 0xFF) {
-        actor = D_800AFB0C.descriptors[index].actor;
+        actor = D_800AF880.components.descriptors[index].actor;
         func_800A3074(func_800ACDB8(1) & 0xFFFF, actor->flags);
     }
     D_800B0078->pc += 3;
@@ -2204,7 +2280,7 @@ void func_8008DF44(void) {
     FieldActor *actor;
 
     if (index != 0xFF) {
-        actor = D_800AFB0C.descriptors[index].actor;
+        actor = D_800AF880.components.descriptors[index].actor;
         func_800A3074(func_800ACDB8(1) & 0xFFFF, ACTOR_FLAG_HALF(actor, 1));
     }
     D_800B0078->pc += 3;
@@ -2216,7 +2292,7 @@ void func_8008DFCC(void) {
     FieldActor *actor;
 
     if (index != 0xFF) {
-        actor = D_800AFB0C.descriptors[index].actor;
+        actor = D_800AF880.components.descriptors[index].actor;
         func_800A3074(func_800ACDB8(1) & 0xFFFF, actor->layer_flags);
     }
     D_800B0078->pc += 3;
@@ -2228,7 +2304,7 @@ void func_8008E054(void) {
     FieldActor *actor;
 
     if (index != 0xFF) {
-        actor = D_800AFB0C.descriptors[index].actor;
+        actor = D_800AF880.components.descriptors[index].actor;
         func_800A3074(func_800ACDB8(1) & 0xFFFF, ACTOR_FLAG_HALF(actor, 3));
     }
     D_800B0078->pc += 3;
@@ -2258,22 +2334,22 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008E1B4);
 
 /* Event: test the selected actor's flag halfword 0 (8008e0dc). */
 void func_8008E298(void) {
-    func_8008E0DC(ACTOR_FLAG_HALF(D_800AFB0C.descriptors[func_8009CDB4(3)].actor, 0));
+    func_8008E0DC(ACTOR_FLAG_HALF(D_800AF880.components.descriptors[func_8009CDB4(3)].actor, 0));
 }
 
 /* Event: test the selected actor's flag halfword 1 (8008e0dc). */
 void func_8008E2EC(void) {
-    func_8008E0DC(ACTOR_FLAG_HALF(D_800AFB0C.descriptors[func_8009CDB4(3)].actor, 1));
+    func_8008E0DC(ACTOR_FLAG_HALF(D_800AF880.components.descriptors[func_8009CDB4(3)].actor, 1));
 }
 
 /* Event: test the selected actor's flag halfword 2 (8008e0dc). */
 void func_8008E340(void) {
-    func_8008E0DC(ACTOR_FLAG_HALF(D_800AFB0C.descriptors[func_8009CDB4(3)].actor, 2));
+    func_8008E0DC(ACTOR_FLAG_HALF(D_800AF880.components.descriptors[func_8009CDB4(3)].actor, 2));
 }
 
 /* Event: test the selected actor's flag halfword 3 (8008e0dc). */
 void func_8008E394(void) {
-    func_8008E0DC(ACTOR_FLAG_HALF(D_800AFB0C.descriptors[func_8009CDB4(3)].actor, 3));
+    func_8008E0DC(ACTOR_FLAG_HALF(D_800AF880.components.descriptors[func_8009CDB4(3)].actor, 3));
 }
 
 /* Event: test the current actor's flag halfword 0 (8008e148). */

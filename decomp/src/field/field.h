@@ -67,7 +67,143 @@ typedef struct {
     u16 pad;
 } FadeChannel;
 
-/* The field view and camera state (800af880..800afacc), one object: code
+
+/* One 0x138-byte event actor record. */
+typedef struct FieldActor {
+    u32 flags;       /* 000 */
+    u32 layer_flags; /* 004: bits 3+ switch collision layers off */
+    s16 triangle[4]; /* 008: current collision triangle per layer */
+    s16 layer;       /* 010 */
+    u8 unk012[2];
+    u32 unk014;      /* 014 */
+    u8 unk018[4];
+    s32 gravity;     /* 01C */
+    s32 position[3]; /* 020: 16.16 */
+    u8 unk02C[4];
+    s32 unk030;      /* 030 */
+    u8 unk034[4];
+    s32 unk038;      /* 038 */
+    u8 unk03C[0x75 - 0x3C];
+    u8 unk075;       /* 075 */
+    u8 unk076[0x80 - 0x76];
+    s8 character;    /* 080 */
+    u8 unk081[0xCC - 0x81];
+    u16 pc;          /* 0CC: event working PC */
+    u8 slot;         /* 0CE */
+    u8 unk0CF[0xEA - 0xCF];
+    s16 unk0EA;      /* 0EA */
+    u8 unk0EC[0xF4 - 0xEC];
+    s16 scale[3];    /* 0F4 */
+    u8 unk0FA[0x104 - 0xFA];
+    s16 heading;     /* 104 */
+    s16 heading_goal; /* 106: bit 15 once turned */
+    u8 unk108[2];
+    u16 sound;       /* 10A */
+    u8 sound_volume; /* 10C */
+    u8 sound_mode;   /* 10D: 0xff off */
+    u8 unk10E[0x114 - 0x10E];
+    void *unk114;    /* 114 */
+    s32 *list;       /* 118 */
+    u8 unk11C[2];
+    s16 unk11E;      /* 11E */
+    void *unk120;    /* 120 */
+    s16 unk124;      /* 124: -1 when +120 is free */
+    u8 unk126[2];
+    s16 unk128;      /* 128 */
+    u8 unk12A[2];
+    u32 unk12C;      /* 12C */
+    u8 unk130[0x138 - 0x130];
+} FieldActor;
+
+/* The actor's two flag words as four halfwords; events test and store them
+ * sixteen bits at a time. */
+#define ACTOR_FLAG_HALF(actor, n) (((u16 *)(actor))[n])
+
+/* A 14-byte collision triangle; +0c indexes the attribute table. */
+typedef struct {
+    s16 unk00[6];
+    u8 attribute;
+    u8 unk0D;
+} CollisionTriangle;
+
+/* One of the four 0x498-byte dialogue windows at 800c2698. */
+typedef struct {
+    u8 unk000[0x28];
+    u16 flags;       /* 028: bit 2 keeps the window open */
+    u8 unk02A[0xAC - 0x2A];
+    RECT rect;       /* 0AC */
+    u8 unk0B4[0x408 - 0xB4];
+    s16 timer;       /* 408 */
+    u8 unk40A[0x40E - 0x40A];
+    s16 busy;        /* 40E */
+    u16 age;         /* 410: 0xffff when free */
+    u8 unk412[2];
+    s16 cleared;     /* 414 */
+    u8 unk416[0x498 - 0x416];
+} DialogueWindow;
+
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    u8 u0, v0;
+    u16 clut;
+    s16 x1, y1;
+    u8 u1, v1;
+    u16 tpage;
+    s16 x2, y2;
+    u8 u2, v2;
+    u16 pad1;
+    s16 x3, y3;
+    u8 u3, v3;
+    u16 pad2;
+} POLY_FT4;
+
+/* One 0x5C-byte descriptor; one per event actor. */
+typedef struct {
+    u8 unk00[0x2C];
+    s16 unk2C;
+    u8 unk2E[0x82 - 0x2E];
+    s16 unk82;
+} FieldModel;
+
+typedef struct FieldDescriptor {
+    u8 unk00[4];
+    FieldModel *model; /* 04 */
+    u8 unk08[4];
+    MATRIX matrix;     /* 0C */
+    u8 unk2C[0x4C - 0x2C];
+    FieldActor *actor; /* 4C */
+    SVECTOR rotation;  /* 50 */
+    u16 flags;         /* 58 */
+    u8 unk5A[0x5C - 0x5A];
+} FieldDescriptor;
+
+/* A sprite's sequencer; +14 names the descriptor it belongs to. */
+typedef struct {
+    u8 unk00[0x14];
+    s16 actor;
+} SpriteSequencer;
+
+typedef struct {
+    u8 unk00[0x7C];
+    SpriteSequencer *sequencer;
+} FieldSprite;
+
+/* The loaded field components (80070cc8), one object: stores to structure
+ * members do not pass loads of these pointers. */
+typedef struct {
+    s32 descriptor_count;                      /* 800afb0c */
+    FieldDescriptor *descriptors;              /* 800afb10 */
+    void *geometry;                            /* 800afb14 */
+    void *unk08;                               /* 800afb18 */
+    void *unk0C;                               /* 800afb1c */
+    u32 *collision_attributes;                 /* 800afb20 */
+    CollisionTriangle *collision_triangles[4]; /* 800afb24 */
+    void *collision_vertices[4];               /* 800afb34 */
+} FieldComponents;
+
+/* The field view and camera state (800af880..800afb44), one object: code
  * addresses its members relative to one another. */
 typedef struct {
     VECTOR eye;              /* 000 */
@@ -135,137 +271,9 @@ typedef struct {
     MATRIX world_matrix;     /* 224 */
     s32 scale;               /* 244 */
     s32 unk248;              /* 248 */
+    u8 unk24C[0x28C - 0x24C];
+    FieldComponents components; /* 28C: 800afb0c */
 } FieldView;
-
-
-/* One 0x138-byte event actor record. */
-typedef struct FieldActor {
-    u32 flags;       /* 000 */
-    u32 layer_flags; /* 004: bits 3+ switch collision layers off */
-    s16 triangle[4]; /* 008: current collision triangle per layer */
-    s16 layer;       /* 010 */
-    u8 unk012[2];
-    u32 unk014;      /* 014 */
-    u8 unk018[4];
-    s32 gravity;     /* 01C */
-    s32 position[3]; /* 020: 16.16 */
-    u8 unk02C[4];
-    s32 unk030;      /* 030 */
-    u8 unk034[4];
-    s32 unk038;      /* 038 */
-    u8 unk03C[0x75 - 0x3C];
-    u8 unk075;       /* 075 */
-    u8 unk076[0x80 - 0x76];
-    s8 character;    /* 080 */
-    u8 unk081[0xCC - 0x81];
-    u16 pc;          /* 0CC: event working PC */
-    u8 slot;         /* 0CE */
-    u8 unk0CF[0xEA - 0xCF];
-    s16 unk0EA;      /* 0EA */
-    u8 unk0EC[0xF4 - 0xEC];
-    s16 scale[3];    /* 0F4 */
-    u8 unk0FA[0x104 - 0xFA];
-    s16 heading;     /* 104 */
-    s16 heading_goal; /* 106: bit 15 once turned */
-    u8 unk108[2];
-    u16 sound;       /* 10A */
-    u8 sound_volume; /* 10C */
-    u8 sound_mode;   /* 10D: 0xff off */
-    u8 unk10E[0x114 - 0x10E];
-    void *unk114;    /* 114 */
-    s32 *list;       /* 118 */
-    u8 unk11C[2];
-    s16 unk11E;      /* 11E */
-    void *unk120;    /* 120 */
-    s16 unk124;      /* 124: -1 when +120 is free */
-    u8 unk126[2];
-    s16 unk128;      /* 128 */
-    u8 unk12A[2];
-    u32 unk12C;      /* 12C */
-    u8 unk130[0x138 - 0x130];
-} FieldActor;
-
-/* The actor's two flag words as four halfwords; events test and store them
- * sixteen bits at a time. */
-#define ACTOR_FLAG_HALF(actor, n) (((u16 *)(actor))[n])
-
-/* A 14-byte collision triangle; +0c indexes the attribute table. */
-typedef struct {
-    s16 unk00[6];
-    u8 attribute;
-    u8 unk0D;
-} CollisionTriangle;
-
-/* One of the four 0x498-byte dialogue windows at 800c2698. */
-typedef struct {
-    u8 unk000[0xAC];
-    RECT rect;       /* 0AC */
-    u8 unk0B4[0x40E - 0xB4];
-    s16 busy;        /* 40E */
-    u16 age;         /* 410: 0xffff when free */
-    u8 unk412[0x498 - 0x412];
-} DialogueWindow;
-
-typedef struct {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    u8 u0, v0;
-    u16 clut;
-    s16 x1, y1;
-    u8 u1, v1;
-    u16 tpage;
-    s16 x2, y2;
-    u8 u2, v2;
-    u16 pad1;
-    s16 x3, y3;
-    u8 u3, v3;
-    u16 pad2;
-} POLY_FT4;
-
-/* One 0x5C-byte descriptor; one per event actor. */
-typedef struct {
-    u8 unk00[0x2C];
-    s16 unk2C;
-    u8 unk2E[0x82 - 0x2E];
-    s16 unk82;
-} FieldModel;
-
-typedef struct FieldDescriptor {
-    u8 unk00[4];
-    FieldModel *model; /* 04 */
-    u8 unk08[4];
-    MATRIX matrix;     /* 0C */
-    u8 unk2C[0x4C - 0x2C];
-    FieldActor *actor; /* 4C */
-    SVECTOR rotation;  /* 50 */
-    u16 flags;         /* 58 */
-    u8 unk5A[0x5C - 0x5A];
-} FieldDescriptor;
-
-/* A sprite's sequencer; +14 names the descriptor it belongs to. */
-typedef struct {
-    u8 unk00[0x14];
-    s16 actor;
-} SpriteSequencer;
-
-typedef struct {
-    u8 unk00[0x7C];
-    SpriteSequencer *sequencer;
-} FieldSprite;
-
-/* The loaded field components (80070cc8), one object: stores to structure
- * members do not pass loads of these pointers. */
-typedef struct {
-    s32 descriptor_count;                      /* 800afb0c */
-    FieldDescriptor *descriptors;              /* 800afb10 */
-    void *geometry;                            /* 800afb14 */
-    void *unk08;                               /* 800afb18 */
-    void *unk0C;                               /* 800afb1c */
-    u32 *collision_attributes;                 /* 800afb20 */
-    CollisionTriangle *collision_triangles[4]; /* 800afb24 */
-    void *collision_vertices[4];               /* 800afb34 */
-} FieldComponents;
 
 /* A 32-byte record of the game state (+16c0). */
 typedef struct {
@@ -281,34 +289,38 @@ typedef struct {
     u8 unk05[0xA4 - 5];
 } GameSlot;
 
-/* A 0xa4-byte character of the game state (+9b0). */
+/* A 0xa4-byte character of the game state (+978). */
 typedef struct {
-    u16 gauge;       /* 00 */
-    u16 gauge_max;   /* 02 */
-    u8 unk04[0x28 - 4];
-    u32 points;      /* 28 */
-    u32 points_max;  /* 2C */
-    u8 unk30[0xA4 - 0x30];
+    u8 unk00[0x38];
+    u16 gauge;       /* 38 */
+    u16 gauge_max;   /* 3A */
+    u8 unk3C[0x60 - 0x3C];
+    u32 points;      /* 60 */
+    u32 points_max;  /* 64 */
+    u8 unk68[0xA4 - 0x68];
 } GameCharacter;
 
 /* Resident persistent game state (*8005a39c). */
 typedef struct GameState {
     u8 unk0000[0x308];
     GameSlot party[10];          /* 0308 */
-    u8 unk0970[0x9B0 - 0x970];
-    GameCharacter characters[20]; /* 09B0 */
-    u8 unk1680[0x16C0 - 0x1680];
+    u8 unk0970[0x978 - 0x970];
+    GameCharacter characters[20]; /* 0978 */
+    u8 unk1648[0x16C0 - 0x1648];
     GameRecord records[11]; /* 16C0 */
-    u8 unk1820[0x1834 - 0x1820];
+    u8 unk1820[0x182C - 0x1820];
+    u16 unk182C[4];      /* 182C */
     u16 unk1834;         /* 1834 */
     u8 unk1836[0x1844 - 0x1836];
     u16 unk1844;         /* 1844 */
     u16 unk1846;         /* 1846 */
     u8 unk1848[0x184E - 0x1848];
     u16 unk184E;         /* 184E */
-    u8 unk1850[2];
+    u16 unk1850;         /* 1850 */
     u16 unk1852;         /* 1852 */
-    u8 unk1854[0x1D32 - 0x1854];
+    u16 unk1854;         /* 1854 */
+    u16 unk1856;         /* 1856 */
+    u8 unk1858[0x1D32 - 0x1858];
     u16 unk1D32;         /* 1D32: bit per character */
     u8 unk1D34[0x22B6 - 0x1D34];
     u16 unk22B6;         /* 22B6 */
@@ -368,6 +380,12 @@ typedef struct {
     s32 unk2384;               /* 2384 */
 } FieldWork;
 
+/* A loaded sound-effect bank; +14 is its id. */
+typedef struct {
+    u8 unk00[0x14];
+    u16 id;
+} FieldSoundBank;
+
 /* One of the three positional sound-emitter slots (800afe88). */
 typedef struct {
     u16 id;
@@ -383,6 +401,7 @@ typedef struct {
 } FieldSlot6;
 
 /* Resident services. */
+extern void func_80039EC4(s32 sound, s32 voice);
 extern void func_800273C4(void *object, SVECTOR *eye, SVECTOR *target, MATRIX *world, u32 *ot, s32 buffer);
 extern void func_800320A4(void *block); /* keep a block */
 extern void func_80044BD0(u32 *ot); /* DrawOTag */
@@ -448,6 +467,8 @@ extern void func_800496AC(void);                               /* PopMatrix */
 extern void func_8004A6DC(SVECTOR *v, s32 *out, s32 *flag); /* RotTrans */
 
 /* Field overlay. */
+extern void func_80086590(VECTOR *target);
+extern s32 func_8009CFBC(s32 offset, s32 flags); /* operand, immediate with flag 0x40 */
 extern void func_80074700(void);
 extern void func_8008004C(u32 *ot, s32 buffer);
 extern void func_800805F4(void);
@@ -525,6 +546,9 @@ extern s32 D_8004F34C; /* current map */
 extern u8 D_800625FC[2][0x22]; /* pad buffers */
 
 /* Field state. */
+extern u16 D_800AE060[][2]; /* movie sound timeline: time, sound */
+extern u16 D_800C3A2C; /* movie sound time origin */
+extern s32 D_800C3A64; /* movie sound timeline position */
 extern s32 D_800ADB50;
 extern s32 D_800ADB78;
 extern void *D_800B007C;
@@ -540,7 +564,7 @@ extern s32 D_800AFD1C; /* current actor index */
 extern s32 D_800AFE84;
 extern s32 D_800B06A0;
 extern FieldWork D_800B218C;
-extern void *D_800B235C; /* movie sound-effect bank */
+extern FieldSoundBank *D_800B235C; /* movie sound-effect bank */
 extern u8 *D_800ADC00; /* event bytecode */
 extern void (*D_800AE6A0[])(void); /* extended event instructions */
 extern EmitterSlot D_800AFE88[3];
@@ -578,7 +602,6 @@ extern s32 D_800ADC04; /* fade mode; fades start only in mode 2 */
 extern s16 D_800ADC08; /* fade started */
 extern FieldView D_800AF880;
 extern s32 D_800ADB4C;
-extern FieldComponents D_800AFB0C;
 extern FieldDrawBlock *D_800C426C; /* current draw block */
 
 extern s32 D_800C268C;
