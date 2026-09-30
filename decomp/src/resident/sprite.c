@@ -779,34 +779,190 @@ void func_8001E148(Sprite *sprite) {
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001E148);
 #endif
 
-/* Build frame `frame` with 8001e3d8 (and 8001e9bc for render flag 2). */
-void func_8001E298(Sprite *sprite, s32 frame) {
+/* Draw a sprite's parts at `ot` with 8001e3d8 (and 8001e9bc for render flag 2). */
+void func_8001E298(Sprite *sprite, u_long *ot) {
     func_8001E148(sprite);
-    func_8001E3D8(sprite, frame);
+    func_8001E3D8(sprite, ot);
     if ((sprite->render.word >> 2) & 1) {
-        func_8001E9BC(sprite, frame);
+        func_8001E9BC(sprite, ot);
     }
 }
 
-/* Build frame `frame` from `image` with 8001ee88 (and 8001e9bc for render flag 2). */
-void func_8001E2F8(Sprite *sprite, s32 frame, void *image) {
+/* Draw a sprite's parts at `ot` with 8001ee88 (and 8001e9bc for render flag 2). */
+void func_8001E2F8(Sprite *sprite, u_long *ot, s32 height) {
     func_8001E148(sprite);
-    func_8001EE88(sprite, frame, image);
+    func_8001EE88(sprite, ot, height);
     if ((sprite->render.word >> 2) & 1) {
-        func_8001E9BC(sprite, frame);
+        func_8001E9BC(sprite, ot);
     }
 }
 
-/* Build frame `frame` from `image` with 8001f1d4 (and 8001e9bc for render flag 2). */
-void func_8001E368(Sprite *sprite, s32 frame, void *image) {
+/* Draw a sprite's parts at `ot` with 8001f1d4 (and 8001e9bc for render flag 2). */
+void func_8001E368(Sprite *sprite, u_long *ot, s32 height) {
     func_8001E148(sprite);
-    func_8001F1D4(sprite, frame, image);
+    func_8001F1D4(sprite, ot, height);
     if ((sprite->render.word >> 2) & 1) {
-        func_8001E9BC(sprite, frame);
+        func_8001E9BC(sprite, ot);
     }
 }
 
+/* Draw a sprite's parts as textured quads (POLY_FT4 from the queue block)
+ * linked at `ot` (or, with render bit 27, at `ot` minus the part's group).
+ * Parts of one group share a matrix: the renderer's, or its product with the
+ * group entry's rotation and offset; groups masked by render byte 1
+ * (8004faf8) are skipped. */
+/* Nonmatching: the original frame has 12 more bytes of locals between the angles and the RotTransPers4 outputs (an 8-byte aggregate and an addressable word no code uses), and it keeps the part width in $t0 and the column span in $a3 (swapped here). */
+#ifdef NON_MATCHING
+void func_8001E3D8(Sprite *sprite, u_long *ot) {
+    SpriteRenderer *renderer;
+    u32 flags;
+    s32 mirror;
+    s32 shift;
+    s32 origin_y;
+    s32 origin_x;
+    SpritePart *parts;
+    s32 count;
+    s32 group;
+    s32 i;
+    u8 visible;
+    s32 offset_x;
+    s32 offset_y;
+    MATRIX m;
+    SVECTOR angles;
+    long depth;
+    long flag;
+    POLY_FT4 *poly;
+    s16 w, h, x, y;
+    s32 width, height, left, top;
+    u8 u;
+    s32 v, du, dv;
+
+    renderer = sprite->renderer;
+    flags = sprite->flags;
+    mirror = (sprite->motion.word >> 2) & 1;
+    shift = (flags >> 8) & 0x1F;
+    origin_y = renderer->offset_y;
+    origin_x = renderer->offset_x;
+    parts = renderer->parts[1];
+    origin_y <<= shift;
+    origin_x <<= shift;
+    if (mirror) {
+        origin_x = -origin_x;
+    }
+    count = (flags >> 2) & 0x3F;
+    group = -1;
+    if ((u8 *)D_80059580 + count * sizeof(POLY_FT4) < D_80059534) {
+        for (i = 0; i != (sprite->flags >> 2 & 0x3F); i++) {
+            if (group != (parts[i].flags & 7)) {
+                group = parts[i].flags & 7;
+                visible = (D_8004FAF8[group] & ((u8 *)&sprite->render)[1]) == 0;
+                if (sprite->renderer->pointer34 != NULL &&
+                    (*(u16 *)&sprite->renderer->pointer34[group] != 0 ||
+                     sprite->renderer->pointer34[group].half6 != 0)) {
+                    offset_y = sprite->renderer->pointer34[group].byte1;
+                    offset_x = sprite->renderer->pointer34[group].byte0;
+                    offset_y <<= (sprite->flags >> 8) & 0x1F;
+                    offset_x <<= (sprite->flags >> 8) & 0x1F;
+                    if ((sprite->render.word >> 3) & 1) {
+                        offset_x = -offset_x;
+                    }
+                    offset_y = offset_y * sprite->scale / 4096;
+                    offset_x = offset_x * sprite->scale / 4096;
+                    angles.vx = sprite->renderer->pointer34[group].half2;
+                    angles.vy = sprite->renderer->pointer34[group].half4;
+                    angles.vz = sprite->renderer->pointer34[group].half6;
+                    if ((sprite->render.word >> 3) & 1) {
+                        angles.vz = -angles.vz;
+                    }
+                    func_8003F738(&angles, &m);
+                    m.t[0] = sprite->renderer->matrix.t[0] + offset_x;
+                    m.t[1] = sprite->renderer->matrix.t[1] + offset_y;
+                    m.t[2] = sprite->renderer->matrix.t[2];
+                    SetMulMatrix(&sprite->renderer->matrix, &m);
+                    SetTransMatrix(&m);
+                } else {
+                    SetRotMatrix(&sprite->renderer->matrix);
+                    SetTransMatrix(&sprite->renderer->matrix);
+                }
+            }
+            if (visible) {
+                poly = (POLY_FT4 *)D_80059580;
+                D_80059580 = (SpriteQueueEntry *)(poly + 1);
+                setlen(poly, 9);
+                *(u32 *)&poly->r0 = parts[i].colour;
+                poly->tpage = parts[i].tpage;
+                poly->clut = parts[i].clut;
+                w = parts[i].w + (s8)parts[i].byte8;
+                h = parts[i].h + (s8)parts[i].byte9;
+                w <<= ((sprite->flags >> 8) & 0x1F);
+                h <<= ((sprite->flags >> 8) & 0x1F);
+                x = parts[i].x << ((sprite->flags >> 8) & 0x1F);
+                y = parts[i].y << ((sprite->flags >> 8) & 0x1F);
+                if ((sprite->render.word >> 3) & 1) {
+                    w = -w;
+                    x = -x;
+                }
+                if ((sprite->render.word >> 4) & 1) {
+                    h = -h;
+                    y = -y;
+                }
+                if (!((parts[i].flags >> 4) & 1)) {
+                    D_8004FB98[0].vx = x;
+                    D_8004FB98[1].vx = x + w;
+                    D_8004FB98[2].vx = x + w;
+                    D_8004FB98[3].vx = x;
+                } else {
+                    D_8004FB98[0].vx = x + w;
+                    D_8004FB98[1].vx = x;
+                    D_8004FB98[2].vx = x;
+                    D_8004FB98[3].vx = x + w;
+                }
+                if (!((parts[i].flags >> 5) & 1)) {
+                    D_8004FB98[0].vy = y;
+                    D_8004FB98[1].vy = y;
+                    D_8004FB98[2].vy = y + h;
+                    D_8004FB98[3].vy = y + h;
+                } else {
+                    D_8004FB98[0].vy = y + h;
+                    D_8004FB98[1].vy = y + h;
+                    D_8004FB98[2].vy = y;
+                    D_8004FB98[3].vy = y;
+                }
+                D_8004FB98[0].vy -= origin_y;
+                D_8004FB98[1].vy -= origin_y;
+                D_8004FB98[2].vy -= origin_y;
+                D_8004FB98[3].vy -= origin_y;
+                D_8004FB98[0].vx -= origin_x;
+                D_8004FB98[1].vx -= origin_x;
+                D_8004FB98[2].vx -= origin_x;
+                D_8004FB98[3].vx -= origin_x;
+                RotTransPers4(&D_8004FB98[0], &D_8004FB98[1], &D_8004FB98[2], &D_8004FB98[3], (long *)&poly->x0,
+                              (long *)&poly->x1, (long *)&poly->x3, (long *)&poly->x2, &depth, &flag);
+                u = parts[i].u;
+                v = parts[i].v;
+                du = parts[i].w - 1;
+                dv = parts[i].h - 1;
+                if (poly->x3 < poly->x0) {
+                    if (u - 1 >= 0) {
+                        u--;
+                    } else {
+                        u = 0;
+                        du = parts[i].w - 2;
+                    }
+                }
+                setUV4(poly, u, v, u + du, v, u, v + dv, u + du, v + dv);
+                if ((sprite->render.word >> 27) & 1) {
+                    addPrim(ot - group, poly);
+                } else {
+                    addPrim(ot, poly);
+                }
+            }
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001E3D8);
+#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001E9BC);
 

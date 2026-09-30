@@ -58,8 +58,8 @@ typedef struct {
 
 /* One of the eight 8-byte entries of a renderer's 0x40-byte block. */
 typedef struct {
-    u8 byte0;
-    u8 byte1;
+    s8 byte0;              /* x offset of the group */
+    s8 byte1;              /* y offset */
     s16 half2;
     s16 half4;
     s16 half6;
@@ -343,10 +343,10 @@ void func_8001DAE8(Sprite *sprite, s32 frame, SpriteSource *source);
 DVECTOR func_8001F530(s32 width);
 void func_8001E148(Sprite *sprite);
 void func_80022038(Sprite *sprite);
-void func_8001E3D8(Sprite *sprite, s32 frame);
-void func_8001E9BC(Sprite *sprite, s32 frame);
-void func_8001EE88(Sprite *sprite, s32 frame, void *image);
-void func_8001F1D4(Sprite *sprite, s32 frame, void *image);
+void func_8001E3D8(Sprite *sprite, u_long *ot);
+void func_8001E9BC(Sprite *sprite, u_long *ot);
+void func_8001EE88(Sprite *sprite, u_long *ot, s32 height);
+void func_8001F1D4(Sprite *sprite, u_long *ot, s32 height);
 void func_800BA8F4(Sprite *sprite); /* battle overlay: rest a sprite on the stage floor */
 void func_8001F750(Sprite *sprite, s32 frame, SpriteSource *source);
 void func_8001F8E8(Sprite *sprite, s32 frame, SpriteSource *source);
@@ -368,6 +368,11 @@ typedef struct {
 } SpriteCell;
 
 void func_800251C8(u_long *pixels, s16 x, s16 y, s16 w, s16 h); /* queue an image upload */
+
+extern SpriteQueueEntry *D_80059580; /* the next free queue entry */
+extern u8 *D_80059534;                /* its end */
+extern u16 D_8004FAF8[8];  /* group masks tested against render byte 1 */
+extern SVECTOR D_8004FB98[4]; /* the corners of the quad being drawn */
 
 /* Texture positions of the resident cell pages (two-byte cell kinds). */
 typedef struct {
