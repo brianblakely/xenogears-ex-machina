@@ -9627,7 +9627,27 @@ void func_800ACE24(void) {
     func_800AD978(0);
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800ACE90);
+/* Flag the party slots whose members are present for 800ad978 (mode 1),
+ * by the first slot's state. */
+void func_800ACE90(void) {
+    s32 i;
+
+    D_8006BE2C[0] = D_8006BE2C[1] = D_8006BE2C[2] = 0;
+    if (D_8005A39C->unk22B1[0] == 0) {
+        for (i = 0; i < 3; i++) {
+            if (D_8005A39C->unk22B1[i] == 0 && func_8001ACF0(D_80062590[i]) != 0xFF) {
+                D_8006BE2C[i] = 1;
+            }
+        }
+    } else {
+        for (i = 0; i < 3; i++) {
+            if (D_8005A39C->unk22B1[i] == 1 && func_8001ACF0(D_80062590[i]) != 0xFF) {
+                D_8006BE2C[i] = 1;
+            }
+        }
+    }
+    func_800AD978(1);
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800ACFD0);
 
