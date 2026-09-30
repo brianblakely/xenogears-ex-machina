@@ -2122,7 +2122,122 @@ u8 *func_800AF518(BattleObject *object, u8 index, s32 *flag) {
     return object->moreAnimations[index - 0x3F];
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800AF678);
+/* Start effect channel flags & 7 (0 rotation, 1 translation, 2 scale) on
+ * part: from start to end over duration, each relative to the part's current
+ * values with flag 0x20 (start) or 0x40 (end); mode 0 keeps the end as a
+ * difference and modes 0 and 1 put the part at the start at once. With flag
+ * 0x80 the part's children get the same effect. */
+void func_800AF678(BattleObject *object, EffectPool *pool, ModelPart *part, u8 flags, u8 mode, u8 kind, u8 field1,
+                   s16 startX, s16 startY, s16 startZ, s16 endX, s16 endY, s16 endZ, s16 duration) {
+    EffectEntry *entry;
+    u8 channel = flags & 7;
+    u16 baseX;
+    u16 baseY;
+    u16 baseZ;
+    u16 offsetX;
+    u16 offsetY;
+    u16 offsetZ;
+    ModelPart *child;
+    s32 i;
+
+    if (channel == 0) {
+        entry = part->effects[0];
+    } else if (channel == 1) {
+        entry = part->effects[1];
+    } else {
+        entry = part->effects[2];
+    }
+    if (entry != NULL || (entry = func_800A2330(pool)) != NULL) {
+        entry->used = 1;
+        entry->field1 = field1;
+        entry->field2 = mode + 3;
+        entry->kind = kind;
+        if (flags & 0x20) {
+            if (channel == 0) {
+                baseX = part->rotation.vx;
+                baseY = part->rotation.vy;
+                baseZ = part->rotation.vz;
+            } else if (channel == 1) {
+                baseX = part->translation[0];
+                baseY = part->translation[1];
+                baseZ = part->translation[2];
+            } else {
+                baseX = part->scale[0];
+                baseY = part->scale[1];
+                baseZ = part->scale[2];
+            }
+        } else {
+            baseX = 0;
+            baseY = 0;
+            baseZ = 0;
+        }
+        if (flags & 0x40) {
+            if (channel == 0) {
+                offsetX = part->rotation.vx;
+                offsetY = part->rotation.vy;
+                offsetZ = part->rotation.vz;
+            } else if (channel == 1) {
+                offsetX = part->translation[0];
+                offsetY = part->translation[1];
+                offsetZ = part->translation[2];
+            } else {
+                offsetX = part->scale[0];
+                offsetY = part->scale[1];
+                offsetZ = part->scale[2];
+            }
+        } else {
+            offsetX = 0;
+            offsetY = 0;
+            offsetZ = 0;
+        }
+        entry->params[0] = startX + baseX;
+        entry->params[1] = startY + baseY;
+        entry->params[2] = startZ + baseZ;
+        if (mode == 0) {
+            entry->params[3] = endX + offsetX - entry->params[0];
+            entry->params[4] = endY + offsetY - entry->params[1];
+            entry->params[5] = endZ + offsetZ - entry->params[2];
+        } else {
+            entry->params[3] = endX + offsetX;
+            entry->params[4] = endY + offsetY;
+            entry->params[5] = endZ + offsetZ;
+        }
+        entry->field10 = 0;
+        entry->field12 = duration;
+        if (channel == 0) {
+            if (mode < 2) {
+                part->rotation.vx = entry->params[0];
+                part->rotation.vy = entry->params[1];
+                part->rotation.vz = entry->params[2];
+            }
+            part->effects[0] = entry;
+        } else if (channel == 1) {
+            if (mode < 2) {
+                part->translation[0] = (s16)entry->params[0];
+                part->translation[1] = (s16)entry->params[1];
+                part->translation[2] = (s16)entry->params[2];
+            }
+            part->effects[1] = entry;
+        } else {
+            if (mode < 2) {
+                part->scale[0] = entry->params[0];
+                part->scale[1] = entry->params[1];
+                part->scale[2] = entry->params[2];
+            }
+            part->effects[2] = entry;
+        }
+    }
+    if (flags & 0x80) {
+        child = object->hierarchy;
+        for (i = 1; i < object->hierarchy->index; i++) {
+            child++;
+            if (child->parent == part) {
+                func_800AF678(object, pool, child, flags, mode, kind, field1, startX, startY, startZ, endX, endY, endZ,
+                              duration);
+            }
+        }
+    }
+}
 
 /* Mark (flags bit 0) or unmark part of a battle object's hierarchy, and with
  * flags bit 0x80 its descendants. */
