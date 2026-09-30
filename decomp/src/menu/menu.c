@@ -3,7 +3,7 @@
 /* Start the menu camera: mode 3 setup and its script block. */
 void func_800707A8(void) {
     func_80083C0C(3);
-    func_800346D4(D_80092954);
+    func_800346D4(&D_80092954);
 }
 
 /* One easing step from current toward target: the remaining distance
@@ -178,9 +178,10 @@ void func_80070C7C(s32 layout) {
     func_8007E24C();
 }
 
-/* Reset both actors' states and clear their 0x8000 flag. */
-void func_80070F80(s32 arg) {
-    D_800925F8 = arg;
+/* Start a scene script; reset both actors' states and clear their 0x8000
+ * flag. */
+void func_80070F80(u8 *script) {
+    D_800925F8 = script;
     D_8009872C.state = 0;
     D_80097010.state = 0;
     D_800925FC = 0;
@@ -247,7 +248,8 @@ void func_800718C0(void) {
 }
 
 /* Enter a menu scene: the first scene also starts sound 0x37 and uses a
- * taller window; resets both actors and centres the screen offset. */
+ * taller window; restarts both actors at full HP and centres the screen
+ * offset. */
 void func_8007191C(s32 scene) {
     D_80092608 = scene == 0;
     if (scene == 0) {
@@ -264,21 +266,86 @@ void func_8007191C(s32 scene) {
     D_800925EC = 0x6D;
     D_800925E4 = 0x6D;
     D_80092600 = 0;
-    D_8009872C.unkB4 = D_8009872C.unkBC;
-    D_80097010.unkB4 = D_80097010.unkBC;
+    D_8009872C.hp = D_8009872C.max_hp;
+    D_80097010.hp = D_80097010.max_hp;
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800719F0);
+/* Start the menu's opening: text window with message 0x42, the intro
+ * script, then scene 9. */
+void func_800719F0(void) {
+    D_80099D9D = 0;
+    D_80099D9E = 0;
+    func_80083C0C(7);
+    D_800928C8 = 5;
+    D_80092884 = 0;
+    func_80032F54(&D_80092954, 0x140, 0x70, 0xA2, 0x2A, 0x1C, 8);
+    func_80034714(&D_80092954, func_80033728(D_80092880, 0x42));
+    D_800929BC = 0x1E;
+    D_800925DC = 0;
+    func_80070F80(D_80090F38);
+    D_80092604 = 0;
+    D_80092904 = 0;
+    D_80092900 = 0;
+    func_8007191C(9);
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80071AD0);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80071DA4);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80071F8C);
+/* Scene script callback: 0 plays the stored sound, 1/2 act on one actor
+ * (1 also picks the message for whichever actor has more HP left), 3 sets
+ * the look-at height, capped at -0x600. */
+s32 func_80071F8C(s32 command) {
+    switch (command) {
+    case 0:
+        func_80039C4C(D_80092948);
+        func_80039FF8();
+        break;
+    case 1:
+        func_80071DA4(&D_8009872C);
+        if ((D_8009872C.hp << 8) / D_8009872C.max_hp > (D_80097010.hp << 8) / D_80097010.max_hp) {
+            D_800925D4 = 0x43;
+        } else {
+            D_800925D4 = 0x44;
+        }
+        break;
+    case 2:
+        func_80071DA4(&D_80097010);
+        break;
+    case 3:
+        D_8009871C.vy = -D_8009284C;
+        if (D_8009871C.vy < -0x600) {
+            D_8009871C.vy = -0x600;
+        }
+        break;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800720C4);
+/* Allow the next menu scene setup. */
+void func_800720C4(void) {
+    D_8009293C = 0;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800720D4);
+/* One-time scene setup: start the scene script and clear the actors'
+ * counters and the message state. */
+void func_800720D4(void) {
+    if (D_8009293C == 0) {
+        func_80070F80(D_800910C4);
+        D_8009293C = 1;
+        D_800928D4 = 0;
+        D_80099D9D = 0;
+        D_80099D9E = 0;
+        D_80092900 = 0;
+        D_800925D4 = 0;
+        D_800925D8 = 0;
+        D_80092A00 = 1;
+        D_80092A10 = 1;
+        D_80092A20 = 1;
+        D_80097010.unkE8 = 0;
+        D_8009872C.unkE8 = 0;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80072170);
 

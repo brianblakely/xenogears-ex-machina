@@ -54,59 +54,15 @@ typedef struct {
     s32 angle;           /* 0x54: facing, 4096 = full turn */
     s32 target_angle;    /* 0x58 */
     u8 unk5C[0x58];
-    u16 unkB4;
+    s16 hp;              /* 0xB4 */
     u8 unkB6[0x6];
-    u16 unkBC;
+    s16 max_hp;          /* 0xBC */
     u8 unkBE[0x10];
     s16 unkCE;
     s32 flags;           /* 0xD0 */
+    u8 unkD4[0x14];
+    s32 unkE8;
 } Actor;
-
-/* Menu camera: eye position (D_8009867C) and look-at point (D_8009871C). */
-extern Vector D_8009867C;
-extern Vector D_8009871C;
-extern s32 D_800925F4; /* vertical camera lift of the current view */
-extern Actor D_80097010;
-extern Actor D_8009872C;
-extern Vector D_80099078;
-extern u8 D_80092954[];
-
-/* PsyQ SDK (resident). */
-void func_80043B48(void *ot, void *prim);                   /* AddPrim */
-u16 func_80043A1C(s32 tp, s32 abr, s32 x, s32 y);           /* GetTPage */
-u16 func_80043A58(s32 x, s32 y);                            /* GetClut */
-void func_80043E20(DrTpage *p, s32 dfe, s32 dtd, s32 tpage); /* SetDrawTPage */
-void func_80044894(Rect *rect, u32 *data);                  /* LoadImage */
-void func_800471B4(u32 *tim);                               /* OpenTIM */
-TimImage *func_800471C4(TimImage *image);                   /* ReadTIM */
-
-s32 func_8003F8B0(s32 angle); /* sine, 4096 = 1.0 */
-s32 func_8003F8CC(s32 angle); /* cosine, 4096 = 1.0 */
-void func_800346D4(void *arg);
-void func_80083C0C(s32 arg);
-void func_80083738(Actor *actor, Actor *other);
-void func_800828F8(Vector *position, Vector *step, s32 limit);
-s32 func_80082488(Vector *position, s32 arg);
-s32 func_8004B32C(s32 x, s32 z); /* angle of a direction, 4096 = full turn */
-void func_8007E24C(void);
-
-extern s32 D_800925F8;
-extern s32 D_800925FC;
-extern s32 D_80092934;
-extern s32 D_800925D4;
-extern s32 D_800925D8;
-extern s32 D_800925E0; /* screen offset x, y */
-extern s32 D_800925E4;
-extern s32 D_800925E8;
-extern s32 D_800925EC;
-extern s16 D_80092600;
-extern u8 D_80092608;
-extern MenuFrame *D_80092868; /* frame being built */
-extern u8 D_800928A0;         /* index of the frame being built */
-extern DrTpage D_800929E4[2];
-extern s32 D_8009105C[];
-extern Sprt16 D_8009A14C;
-extern Sprt16 D_8009A244;
 
 /* Menu window (resident window code at 80032f54). */
 typedef struct {
@@ -116,10 +72,85 @@ typedef struct {
     s16 unkC;
 } MenuWindow;
 
-extern MenuWindow D_8009868C;
+/* Scene actors and camera: eye position (D_8009867C) and look-at point
+ * (D_8009871C). */
+extern Actor D_80097010;
+extern Actor D_8009872C;
+extern Vector D_8009867C;
+extern Vector D_8009871C;
+extern Vector D_80099078;
+extern s32 D_800925F4; /* vertical camera lift of the current view */
 
+extern MenuWindow D_8009868C; /* message window */
+extern MenuWindow D_80092954;
+
+extern u8 *D_800925F8;   /* running scene script */
+extern u8 *D_8009105C[]; /* scene scripts */
+extern u8 D_80090F38[];
+extern u8 D_800910C4[];
+
+extern s32 D_800925D4;
+extern s32 D_800925D8;
+extern s32 D_800925DC;
+extern s32 D_800925E0; /* screen offset x, y */
+extern s32 D_800925E4;
+extern s32 D_800925E8;
+extern s32 D_800925EC;
+extern s32 D_800925FC;
+extern s16 D_80092600;
+extern u8 D_80092604;
+extern u8 D_80092608;
+extern s32 D_8009284C;
+extern MenuFrame *D_80092868; /* frame being built */
+extern s32 D_80092880;
+extern u8 D_80092884;
+extern u8 D_800928A0; /* index of the frame being built */
+extern s32 D_800928C8;
+extern u8 D_800928D4;
+extern s32 D_80092900;
+extern s32 D_80092904;
+extern s32 D_80092934;
+extern u8 D_8009293C;
+extern s32 D_80092948;
+extern u8 D_800929BC;
+extern DrTpage D_800929E4[2];
+extern s32 D_80092A00;
+extern s32 D_80092A10;
+extern s32 D_80092A20;
+extern u8 D_80099D9D;
+extern u8 D_80099D9E;
+extern Sprt16 D_8009A14C;
+extern Sprt16 D_8009A244;
+
+/* PsyQ SDK (resident). */
+void func_80043B48(void *ot, void *prim);                   /* AddPrim */
+u16 func_80043A1C(s32 tp, s32 abr, s32 x, s32 y);           /* GetTPage */
+u16 func_80043A58(s32 x, s32 y);                            /* GetClut */
+void func_80043E20(DrTpage *p, s32 dfe, s32 dtd, s32 tpage); /* SetDrawTPage */
+void func_80044894(Rect *rect, u32 *data);                  /* LoadImage */
+void func_800471B4(u32 *tim);                               /* OpenTIM */
+TimImage *func_800471C4(TimImage *image);                   /* ReadTIM */
+s32 func_8004B32C(s32 x, s32 z);                            /* ratan2 */
+
+/* Resident game code. */
 void func_80032F54(MenuWindow *window, s32 x, s32 y, s32 w, s32 h, s32 a5, s32 a6);
+s32 func_80033728(s32 table, s32 index);
+void func_800346D4(MenuWindow *window);
+void func_80034714(MenuWindow *window, s32 text);
+void func_80039C4C(s32 arg);
+void func_80039FF8(void);
+s32 func_8003F8B0(s32 angle); /* sine, 4096 = 1.0 */
+s32 func_8003F8CC(s32 angle); /* cosine, 4096 = 1.0 */
+
+/* This overlay. */
+void func_80070F80(u8 *script);
+void func_8007191C(s32 scene);
+void func_80071DA4(Actor *actor);
+void func_8007E24C(void);
+s32 func_80082488(Vector *position, s32 arg);
+void func_800828F8(Vector *position, Vector *step, s32 limit);
+void func_80083738(Actor *actor, Actor *other);
+void func_80083C0C(s32 arg);
 void func_8008EB4C(s32 id);
-void func_80070F80(s32 arg);
 
 #endif
