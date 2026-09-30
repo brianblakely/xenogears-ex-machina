@@ -4720,7 +4720,7 @@ u8 func_80084548(u8 side, u8 any, u8 partyFirst) {
     u8 first2;
     s32 slot;
 
-    for (i = 11; i >= 0; i--) {
+    for (i = 0; i < 12; i++) {
         D_800C3E90[i] = 0xFF;
     }
     switch (side) {
@@ -4783,7 +4783,7 @@ u8 func_80084750(u8 member) {
     s32 slot;
 
     n = 8;
-    for (i = 11; i >= 0; i--) {
+    for (i = 0; i < 12; i++) {
         D_800C3E90[i] = 0xFF;
     }
     count = 0;
