@@ -2440,7 +2440,183 @@ void func_80078C5C(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80078D44);
+extern s32 D_8004F310;
+extern s32 D_8004F2F8;  /* 1 once the field screen has been set up */
+extern s32 D_8004F304;  /* music sequence to release on entry */
+extern u8 D_8005942C;   /* 1 when entering from battle */
+extern u8 D_800594D0;   /* 1 when entering from a movie */
+extern s32 D_800C2684;  /* piece scale, 0x1000 = 1 */
+void func_80031FF8(void);
+void func_80070CC8(void);
+void func_800A24C4(void);
+void func_801E7378(s32 on);
+void func_800A5600(u8 shade);
+/* Declared without prototypes: this caller passes arguments they ignore.
+ * 800a5600 is called through an (s32) type below because the original
+ * passes its shade unnarrowed (it was called without the u8 prototype). */
+void func_800A5884();
+void func_800A77C4();
+
+/* The field entry: load the text palette and screen, set up both draw
+ * buffers, load the map (80070cc8, 80070488), finish the stream read ahead
+ * while fading or growing the screen pieces, release the previous music,
+ * start the map's music, then run the first frames (8 after a movie, 32
+ * with the fade-in otherwise). */
+void func_80078D44(void) {
+    RECT rect;
+    s32 grow;
+    s32 shade;
+    s32 i;
+
+    func_80077544();
+    func_800A915C();
+    func_80028470(4, 0);
+    func_800777DC();
+    func_800775F8();
+    if (D_8004F2F8 == 0) {
+        func_800A77C4(0);
+    }
+    func_80071FB0();
+    if (D_8004F2F8 == 0) {
+        rect.y = 0x100;
+        rect.w = 0x140;
+        rect.x = 0;
+        rect.h = 0xE0;
+        MoveImage(&rect, 0, 0);
+    }
+    D_800ADB08 = 1;
+    func_800A4748();
+    func_800A476C(0, 0x100);
+    DrawSync(0);
+    func_80073FE0();
+    func_800775F8();
+    if (D_800594D0 == 1 || D_8005942C == 1) {
+        func_800A5884(0, 0);
+    } else {
+        func_800A5884(1, 1);
+    }
+    D_8004F2F8 = 1;
+    func_80028A60(0);
+    func_80028470(4, 0);
+    func_80070CC8();
+    func_80070488();
+    D_800AFD04 = 1;
+    if (D_800B2078.unk2264 != 0) {
+        func_801E7378(1);
+    }
+    if (D_800594D0 == 1 || D_8005942C == 1) {
+        grow = 0;
+    } else {
+        grow = 0x20;
+    }
+    shade = 0x800000;
+    if (D_800ADB60 == 1) {
+    stream:
+            func_80073FE0();
+            func_800A6408();
+            func_800A6924();
+            if (D_8005942C != 1) {
+                if (D_800C2684 < 0x22C0) {
+                    D_800C2684 += grow;
+                }
+            } else {
+                ((void (*)(s32))func_800A5600)(shade >> 16);
+                shade -= 0x40000;
+                if (shade < 0) {
+                    shade = 0;
+                }
+            }
+        if (func_800286CC() != 0) {
+            goto stream;
+        }
+        DrawSync(0);
+        func_800320E8(D_800ADC14);
+        D_800ADB60 = 0;
+        func_80078C5C();
+    }
+    if (D_8005942C == 1) {
+        do {
+            func_80073FE0();
+            func_800A6408();
+            func_800A6924();
+            ((void (*)(s32))func_800A5600)(shade >> 16);
+            shade -= 0x40000;
+        } while (shade >= 0);
+    }
+    if (D_800594D0 == 1) {
+        rect.w = 0x140;
+        rect.y = 0;
+        rect.x = 0;
+        rect.h = 0xE0;
+        MoveImage(&rect, 0x200, 0);
+    }
+    if (D_8004F304 != 0) {
+        func_80039C4C(D_80062528);
+        func_800399D4(D_80062528);
+        func_80038310(D_8006258C);
+        D_8004F304 = 0;
+    }
+    func_800A24C4();
+    D_8004F310 = 0;
+    D_8004F30C = 0;
+    func_800775F8();
+    func_80035DB0();
+    D_8004F308 = 0;
+    if (D_800594D0 == 1) {
+        D_8004F324 = 0xE;
+        func_80085EEC();
+    }
+    if (D_8004F338 != D_8004F324) {
+        func_8001B66C();
+        D_8004F308 = -1;
+        if (D_8004F2FC != 0) {
+            D_8004F348 = 1;
+        }
+        func_80085B20(D_8004F324, 1);
+    } else {
+        func_80085EEC();
+    }
+    func_800A31E8();
+    if (D_800594D0 != 1) {
+        if (D_8005942C != 1) {
+            func_80071E58(0x20);
+            shade = 0x800000;
+            for (i = 0; i < 0x20; i++) {
+                func_80077DAC();
+                func_800A6408();
+                func_8007554C();
+                func_80078B5C();
+                if (D_800594D0 != 1) {
+                    ((void (*)(s32))func_800A5600)(shade >> 16);
+                    shade -= 0x40000;
+                    if (shade < 0) {
+                        shade = 0;
+                    }
+                    if (D_800C2684 < 0x22C0) {
+                        D_800C2684 += grow;
+                    }
+                }
+            }
+        } else {
+            func_80071E58(0x20);
+        }
+    } else {
+        for (i = 0; i < 8; i++) {
+            func_80077DAC();
+            func_800A6408();
+            func_8007554C();
+            func_80078B5C();
+        }
+    }
+    if (D_800B2078.unk2264 != 0) {
+        func_801E7378(0);
+    }
+    func_800A91F0();
+    func_80031FF8();
+    func_8003748C();
+    func_80077544();
+    D_800AFD04 = 0;
+}
 
 extern u8 D_800ADB04;       /* random encounters enabled */
 extern s32 D_800ADBEC;
@@ -2524,7 +2700,6 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80079288);
 extern s32 D_8004F30C;
 extern s32 D_8004F310;
 extern s32 D_8004F324;
-extern s8 D_8005942C;
 extern s32 D_800AFC78;
 extern s32 D_800B0064;
 void func_8001996C(s32 mode);
@@ -12244,7 +12419,7 @@ typedef struct {
     SVECTOR corners[5][4]; /* 258 */
 } ScreenPieces;
 extern ScreenPieces D_800B11AC;
-extern s32 D_800C2684;     /* piece scale, 0x1000 = 1 */
+/* D_800C2684 (piece scale) is declared before 80078d44. */
 extern SVECTOR D_800B00B8; /* piece rotation */
 
 /* Set the five screen pieces of the next draw buffer to grey `shade`. */
