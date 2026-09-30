@@ -5238,20 +5238,17 @@ void func_8008FAD8(void) {
 
 /* Build a message frame from glyphs into the +0x1e68 list: `rows` side
  * glyphs down from `top`, the corner at (x, y) and a stretched edge of
- * width `w`. */
+ * width `w`. Nonmatching: prologue scheduling (the original reads `rows`
+ * after clearing the count). */
 #ifdef NON_MATCHING
 void func_8008FC1C(s16 x, s16 y, s16 w, s16 top, u8 rows) {
     s32 i;
     s32 row;
 
-    i = 0;
     D_800D2D28->unkFC = 0;
-    if (rows != 0) {
-        row = top;
-        for (; i < rows; i++) {
-            D_800D2D28->unkFC += func_80076A10(0x65, &D_800C3EA4->unk1E68[D_800D2D28->unkFC * 2], x, row);
-            row += 8;
-        }
+    for (i = 0, row = top; i < rows; i++) {
+        D_800D2D28->unkFC += func_80076A10(0x65, &D_800C3EA4->unk1E68[D_800D2D28->unkFC * 2], x, row);
+        row += 8;
     }
     D_800D2D28->unkFC = func_80076A10(0x64, &D_800C3EA4->unk1E68[D_800D2D28->unkFC * 2], x, y) + D_800D2D28->unkFC;
     D_800D2D28->unkFC += func_800263E4(D_800D2F5C, 0x64, &D_800C3EA4->unk1E68[D_800D2D28->unkFC * 2],
@@ -6706,13 +6703,19 @@ void func_80095690(void) {
 
 /* The target defends: a +0x56 state 2 target first leaves it (8009ac48),
  * its status words clear, result code 2 and a tenth of its +0x4e times the
- * descriptor's +0x11 as the amount; its timer is held. */
+ * descriptor's +0x11 as the amount; its timer is held. Nonmatching: the
+ * original addresses the held mask (800d2c9e) with its own %hi/%lo on the
+ * load and the store instead of one address register. */
 #ifdef NON_MATCHING
 void func_800957D8(void) {
     if (D_800CCCE8.records[D_800C3E50].pilot.characterId == 2) {
         func_8009AC48(D_800C3E50, 1);
     }
-    D_800C3E34->pilot.status8C.half.active = D_800C3E34->pilot.status88.half.active = D_800C3E34->pilot.status84.half.active = D_800C3E34->pilot.status80 = D_800C3E34->pilot.status7C = 0;
+    D_800C3E34->pilot.status7C = 0;
+    D_800C3E34->pilot.status80 = 0;
+    D_800C3E34->pilot.status84.half.active = 0;
+    D_800C3E34->pilot.status88.half.active = 0;
+    D_800C3E34->pilot.status8C.half.active = 0;
     D_800D2C88[D_800C3E50] = 2;
     D_800D2C54[D_800C3E50] = (D_800C3E34->pilot.maxHp * D_800C3DFC->power) / 10;
     D_800D2C94.held |= 1 << D_800C3E50;
