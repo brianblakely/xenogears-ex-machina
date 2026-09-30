@@ -9,7 +9,8 @@
 
 /* Per-slot block of the turn state (0x40 bytes). */
 typedef struct {
-    u8 unk0[0x1C];
+    u8 unk0[8];
+    u8 digits[5][4];   /* +0x08 five four-glyph number strings */
     u16 items[16];     /* menu item availability, 0 = available */
     u8 defaultTarget;  /* +0x3C */
     u8 unk3D[3];
@@ -47,7 +48,7 @@ extern TurnState *D_800C3EAC;
 
 /* Battle UI state: the heap block at *800d2d28. */
 typedef struct {
-    u8 unk0[0x30];
+    RECT textureWindows[6]; /* +0x00 */
     u32 unk30;         /* CLUT cycle position */
     s32 unk34;         /* +0x34 panel cursor window: x */
     s32 unk38;
@@ -64,10 +65,15 @@ typedef struct {
     s32 unk64;
     s32 unk68;
     s32 unk6C;
-    u8 unk70[0x7B - 0x70];
+    u8 unk70[4];
+    u8 statusParts[4]; /* +0x74 status glyph parts, [3] party-wide */
+    u8 gaugeParts[3];  /* +0x78 */
     u8 unk7B;          /* AP text part count */
     u8 reaction[3];    /* +0x7C */
-    u8 unk7F[0x8E - 0x7F];
+    u8 barShown[4];    /* +0x7F time bar shown, [3] party-wide */
+    u8 portraitBuffer; /* +0x83 */
+    u8 statusBuffer[4]; /* +0x84 draw buffer of the status glyphs, [3] party-wide */
+    u8 unk88[0x8E - 0x88];
     u8 unk8E;
     u8 unk8F;
     u8 unk90[3];       /* per party member */
@@ -81,7 +87,8 @@ typedef struct {
     u8 unk9E;
     u8 unk9F;
     u8 unkA0;          /* the result screen counts */
-    u8 unkA1[0xA3 - 0xA1];
+    u8 unkA1;
+    u8 gaugeBuffer;    /* +0xA2 */
     u8 unkA3;
     u8 unkA4;
     u8 unkA5;
@@ -151,32 +158,40 @@ typedef struct {
     u8 unk66F;
 } GraphicsBlock;
 
-/* Party status panel state of the graphics block (0x1e4 bytes). */
+/* A party member's status panel of the graphics state (0x1E4 bytes). */
 typedef struct {
-    u8 unk0[0x1E1];
-    u8 unk1E1;         /* 1: show the 800d32a0 value */
-    u8 unk1E2[2];
-} PartyPanel;
+    POLY_FT4 value[2][2];     /* +0x000 state 1: the value glyphs */
+    POLY_FT4 alone[2][2];     /* +0x0A0 state 2: the glyphs placed alone */
+    POLY_FT4 unk140[2][2];
+    u8 buffer;                /* +0x1E0 */
+    u8 state;                 /* +0x1E1 0 absent, 1 shown (the 800d32a0 value), 2 placed alone */
+    u8 parts[2];              /* +0x1E2 glyph parts of value and alone */
+} MemberPanel;
 
-/* A texture location of the graphics state (0x18 bytes). */
+/* The six outputs of func_80026338 for one sprite (0x18 bytes). */
 typedef struct {
-    s32 mode;
+    s32 unk0;
+    s32 tpageMode;
     s32 clutX;
     s32 clutY;
-    s32 x;
-    s32 y;
-    s32 unk14;
-} GraphicsTexture;
+    s32 pageX;
+    s32 pageY;
+} SpriteInfo;
 
 /* Battle graphics state (*800c3ea4). */
 typedef struct {
-    u8 unk0[0x908];
+    POLY_FT4 gauge[3][6][2];  /* +0x0000 per member gauge glyphs */
+    POLY_GT4 gaugeBars[8];    /* +0x05A0 two per panel slot, one per draw buffer */
+    POLY_G4 shade[6];         /* +0x0740 two per member, one per draw buffer */
+    POLY_FT4 portrait[3][2];  /* +0x0818 */
     LINE_F2 unk908[12];
     POLY_FT4 unk9C8[6][2];
     POLY_FT4 unkBA8[120];
     POLY_FT4 unk1E68[60];
     POLY_FT4 unk27C8[1];
-    u8 unk27F0[0x3A88 - 0x27F0];
+    u8 unk27F0[0x2E08 - 0x27F0];
+    POLY_FT4 status[4][10][2]; /* +0x2E08 per member status glyphs; the
+                                * fourth is the party-wide label */
     POLY_FT4 unk3A88[3][80]; /* party panel name glyphs */
     POLY_FT4 unk6008[3][8];  /* party panel value digits */
     POLY_F4 unk63C8[2];
@@ -187,13 +202,15 @@ typedef struct {
     u8 unk6416;        /* fading down */
     u8 unk6417[5];
     POLY_FT4 unk641C[2][100];
-    PartyPanel panels[3];    /* +0x835C */
-    u8 unk8908[0x8950 - 0x8908];
-    RECT unk8950[4];
+    MemberPanel panels[3];   /* +0x835C */
+    DR_MODE unk8908[2];      /* +0x8908 per draw buffer */
+    DR_MODE unk8920[2];      /* +0x8920 per draw buffer */
+    u8 unk8938[0x8950 - 0x8938];
+    RECT unk8950[4];         /* the CLUT rows */
     u32 unk8970[4][0x630 / 4]; /* four CLUT strips, cycled */
     GraphicsBlock *unkA230;
-    u8 unkA234[4];
-    GraphicsTexture textures[5]; /* +0xA238 */
+    SpriteInfo sprites[5];   /* +0xA234 */
+    u16 barCluts[4];         /* +0xA2AC time bar: normal, party-wide, slow, haste */
 } BattleGraphics;
 
 extern BattleGraphics *D_800C3EA4;

@@ -828,7 +828,7 @@ void func_80073380(s32 member) {
     s32 i;
     u8 digit;
 
-    if (D_800C3EA4->panels[member].unk1E1 == 1) {
+    if (D_800C3EA4->panels[member].state == 1) {
         value = D_800D32A0[member].unk0;
     } else {
         value = D_800CCCE8.records[member].gear.fuel;
@@ -854,55 +854,55 @@ void func_80073538(void) {
     s32 first;
     s32 part;
 
-    UI_STATUS_PARTS(3) = 0;
+    D_800D2D28->statusParts[3] = 0;
     for (member = 0; member < 3; member++) {
         if (D_800C3EB4[member].field2 == 0x7F) {
             continue;
         }
         switch (D_800D2D28->unk90[member]) {
         case 0:
-            UI_STATUS_PARTS(member) = 0;
-            UI_STATUS_PARTS(member) += func_80076A10(
-                0x8F, PANEL_GRAPHICS->status[member][UI_STATUS_PARTS(member)],
+            D_800D2D28->statusParts[member] = 0;
+            D_800D2D28->statusParts[member] += func_80076A10(
+                0x8F, D_800C3EA4->status[member][D_800D2D28->statusParts[member]],
                 member * 0x60 + (D_800C3254[D_800D3280 * 3 + member] + 0x44), 0x1F);
-            UI_STATUS_PARTS(member) += func_80076A6C(
-                0x52, PANEL_GRAPHICS->status[member][UI_STATUS_PARTS(member)],
+            D_800D2D28->statusParts[member] += func_80076A6C(
+                0x52, D_800C3EA4->status[member][D_800D2D28->statusParts[member]],
                 member * 0x60 + (D_800C3254[D_800D3280 * 3 + member] + 0x48), 0x1C);
-            first = UI_STATUS_PARTS(member);
+            first = D_800D2D28->statusParts[member];
             part = first * 2;
-            UI_STATUS_PARTS(member) += func_80076A6C(
-                0x53, PANEL_GRAPHICS->status[member][first],
+            D_800D2D28->statusParts[member] += func_80076A6C(
+                0x53, D_800C3EA4->status[member][first],
                 member * 0x60 + (D_800C3254[D_800D3280 * 3 + member] + 0x48), 0x1C);
-            for (; part < UI_STATUS_PARTS(member) * 2; part += 2) {
-                func_80076C34(&PANEL_GRAPHICS->status[member][0][part + D_800CCB04.buffer]);
+            for (; part < D_800D2D28->statusParts[member] * 2; part += 2) {
+                func_80076C34(&D_800C3EA4->status[member][0][part + D_800CCB04.buffer]);
             }
-            UI_STATUS_BUFFER(member) = D_800CCB04.buffer;
+            D_800D2D28->statusBuffer[member] = D_800CCB04.buffer;
             D_800D2D28->unkCC[member] = 1;
             break;
         case 1:
-            UI_STATUS_PARTS(3) = func_80025FA8(D_800D2F5C, 0x52, PANEL_GRAPHICS->status[3][0], D_800CCB04.buffer,
+            D_800D2D28->statusParts[3] = func_80025FA8(D_800D2F5C, 0x52, D_800C3EA4->status[3][0], D_800CCB04.buffer,
                                             0x10, 0x98, 0x1000, 0x1000, 0xC00);
-            first = UI_STATUS_PARTS(3);
+            first = D_800D2D28->statusParts[3];
             part = first * 2;
-            UI_STATUS_PARTS(3) += func_80025FA8(D_800D2F5C, 0x53, PANEL_GRAPHICS->status[3][first],
+            D_800D2D28->statusParts[3] += func_80025FA8(D_800D2F5C, 0x53, D_800C3EA4->status[3][first],
                                              D_800CCB04.buffer, 0x10, 0x98, 0x1000, 0x1000, 0xC00);
-            for (; part < UI_STATUS_PARTS(3) * 2; part += 2) {
-                func_80076C34(&PANEL_GRAPHICS->status[3][0][part + D_800CCB04.buffer]);
+            for (; part < D_800D2D28->statusParts[3] * 2; part += 2) {
+                func_80076C34(&D_800C3EA4->status[3][0][part + D_800CCB04.buffer]);
             }
-            UI_STATUS_BUFFER(3) = D_800CCB04.buffer;
+            D_800D2D28->statusBuffer[3] = D_800CCB04.buffer;
             break;
         case 3:
             if (D_800D32A0[member].unk1 != 0 && D_800D2D24[member] != 7) {
                 D_800D2D28->unkCC[member] = 0;
             } else {
-                UI_STATUS_PARTS(member) = 0;
+                D_800D2D28->statusParts[member] = 0;
             }
             func_800765C4(member);
             /* fallthrough */
         case 2:
             func_80076710(member);
             if (D_800D32A0[member].unk1 == 0 || D_800D2D24[member] == 7) {
-                D_800D2D28->unk7F[member] = 0;
+                D_800D2D28->barShown[member] = 0;
             }
             break;
         }
@@ -938,18 +938,18 @@ void func_80073B64(void) {
         AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unk908[D_800D2D28->unk98 + i * 2]);
     }
     for (i = 0; i < 4; i++) {
-        func_800728B8(PANEL_GRAPHICS->status[i][0], UI_STATUS_PARTS(i), UI_STATUS_BUFFER(i));
+        func_800728B8(D_800C3EA4->status[i][0], D_800D2D28->statusParts[i], D_800D2D28->statusBuffer[i]);
     }
     for (i = 0; i < 3; i++) {
         if (D_800D2D28->unkCC[i] != 0) {
-            switch (PANEL_GRAPHICS->panels[i].state) {
+            switch (D_800C3EA4->panels[i].state) {
             case 1:
-                func_800728B8(PANEL_GRAPHICS->panels[i].value[0], PANEL_GRAPHICS->panels[i].parts[0],
-                              PANEL_GRAPHICS->panels[i].buffer);
+                func_800728B8(D_800C3EA4->panels[i].value[0], D_800C3EA4->panels[i].parts[0],
+                              D_800C3EA4->panels[i].buffer);
                 break;
             case 2:
-                func_800728B8(PANEL_GRAPHICS->panels[i].alone[0], PANEL_GRAPHICS->panels[i].parts[1],
-                              PANEL_GRAPHICS->panels[i].buffer);
+                func_800728B8(D_800C3EA4->panels[i].alone[0], D_800C3EA4->panels[i].parts[1],
+                              D_800C3EA4->panels[i].buffer);
                 break;
             }
             func_800728B8(D_800C3EA4->unk6008[i], D_800D2D28->unkEC[i], D_800D2D28->unk99[i]);
@@ -963,10 +963,10 @@ void func_80073B64(void) {
     }
     for (i = 0; i < 3; i++) {
         if (D_800C3EB4[i].field2 != 0x7F) {
-            func_800728B8(PANEL_GRAPHICS->portrait[i], 1, UI_PORTRAIT_BUFFER);
+            func_800728B8(D_800C3EA4->portrait[i], 1, D_800D2D28->portraitBuffer);
             if (D_800D2D28->unkCC[i] != 0) {
-                func_800728B8(PANEL_GRAPHICS->gauge[i][0], UI_GAUGE_PARTS(i), UI_GAUGE_BUFFER);
-                AddPrim(D_800CCB04.ot + 1, &PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer]);
+                func_800728B8(D_800C3EA4->gauge[i][0], D_800D2D28->gaugeParts[i], D_800D2D28->gaugeBuffer);
+                AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->shade[i * 2 + D_800CCB04.buffer]);
             }
         }
     }
@@ -1000,27 +1000,27 @@ void func_80073F08(void) {
  * and every shown window's fill, frame, background and draw mode. */
 void func_80073FB8(void) {
     s32 i;
-    WindowPrims *window;
+    WindowBlock *window;
 
-    AddPrim(D_800CCB04.ot + 1, &PANEL_GRAPHICS->unk8920[D_800CCB04.buffer]);
+    AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unk8920[D_800CCB04.buffer]);
     for (i = 0; i < 4; i++) {
-        if (UI_BAR_SHOWN(i) != 0 && D_800C3E4C == 1) {
-            AddPrim(D_800CCB04.ot + 1, &PANEL_GRAPHICS->gaugeBars[i * 2 + UI_STATUS_BUFFER(i)]);
+        if (D_800D2D28->barShown[i] != 0 && D_800C3E4C == 1) {
+            AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->gaugeBars[i * 2 + D_800D2D28->statusBuffer[i]]);
         }
     }
-    AddPrim(D_800CCB04.ot + 1, &PANEL_GRAPHICS->unk8908[D_800CCB04.buffer]);
+    AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unk8908[D_800CCB04.buffer]);
     for (i = 0; i < 7; i++) {
         if (D_800D2D28->windows[i] != 0) {
-            window = (WindowPrims *)D_800D2E38[i];
-            func_800728B8(window->fill, window->fillCount, window->buffer);
-            AddPrim(D_800CCB04.ot + 1, &window->frame[4][window->buffer]);
-            AddPrim(D_800CCB04.ot + 1, &window->frame[5][window->buffer]);
-            AddPrim(D_800CCB04.ot + 1, &window->frame[6][window->buffer]);
-            AddPrim(D_800CCB04.ot + 1, &window->frame[7][window->buffer]);
-            AddPrim(D_800CCB04.ot + 1, &window->frame[0][window->buffer]);
-            AddPrim(D_800CCB04.ot + 1, &window->frame[1][window->buffer]);
+            window = (WindowBlock *)D_800D2E38[i];
+            func_800728B8(window->corners, window->cornerCount, window->buffer);
             AddPrim(D_800CCB04.ot + 1, &window->frame[2][window->buffer]);
+            AddPrim(D_800CCB04.ot + 1, &window->frame[2][2 + window->buffer]);
             AddPrim(D_800CCB04.ot + 1, &window->frame[3][window->buffer]);
+            AddPrim(D_800CCB04.ot + 1, &window->frame[3][2 + window->buffer]);
+            AddPrim(D_800CCB04.ot + 1, &window->frame[0][window->buffer]);
+            AddPrim(D_800CCB04.ot + 1, &window->frame[0][2 + window->buffer]);
+            AddPrim(D_800CCB04.ot + 1, &window->frame[1][window->buffer]);
+            AddPrim(D_800CCB04.ot + 1, &window->frame[1][2 + window->buffer]);
             AddPrim(D_800CCB04.ot + 1, &window->shade[window->buffer]);
             AddPrim(D_800CCB04.ot + 1, &window->mode[window->buffer]);
         }
@@ -1258,60 +1258,60 @@ void func_80075168(void) {
     u16 *panelX;
 
     for (i = 0; i < 3; i++) {
-        switch (PANEL_GRAPHICS->panels[i].state) {
+        switch (D_800C3EA4->panels[i].state) {
         case 1:
             panelX = &D_800C3254[D_800D3280 * 3 + i];
-            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].x0 = i * 0x60 + (*panelX + 0x28);
-            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].y0 = 0x22;
-            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].x1 =
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].x0 = i * 0x60 + (*panelX + 0x28);
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].y0 = 0x22;
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].x1 =
                 i * 0x60 + (*panelX + 0x28) + D_800D32A0[i].unk0 * 2;
-            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].y1 = 0x22;
-            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].x2 = i * 0x60 + (*panelX + 0x28);
-            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].y2 = 0x26;
-            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].x3 =
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].y1 = 0x22;
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].x2 = i * 0x60 + (*panelX + 0x28);
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].y2 = 0x26;
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].x3 =
                 i * 0x60 + (*panelX + 0x28) + D_800D32A0[i].unk0 * 2;
-            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].y3 = 0x26;
-            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].r0 = 0;
-            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].g0 = 0xFF;
-            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].b0 = 0;
-            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].r1 = 0;
-            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].g1 = 0xFF;
-            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].b1 = 0;
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].y3 = 0x26;
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].r0 = 0;
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].g0 = 0xFF;
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].b0 = 0;
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].r1 = 0;
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].g1 = 0xFF;
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].b1 = 0;
             break;
         case 2:
             fuel = D_800CCCE8.records[i].gear.fuel;
             maxFuel = D_800CCCE8.records[i].gear.maxFuel;
             panelX = &D_800C3254[D_800D3280 * 3 + i];
-            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].x0 = i * 0x60 + (*panelX + 0x28);
-            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].y0 = 0x22;
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].x0 = i * 0x60 + (*panelX + 0x28);
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].y0 = 0x22;
             width = (u32)(fuel * 100) / maxFuel * 5600 / 10000;
-            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].x1 = i * 0x60 + 0x28 + *panelX + width;
-            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].y1 = 0x22;
-            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].x2 = i * 0x60 + (*panelX + 0x28);
-            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].y2 = 0x26;
-            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].x3 = i * 0x60 + 0x28 + *panelX + width;
-            PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].y3 = 0x26;
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].x1 = i * 0x60 + 0x28 + *panelX + width;
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].y1 = 0x22;
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].x2 = i * 0x60 + (*panelX + 0x28);
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].y2 = 0x26;
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].x3 = i * 0x60 + 0x28 + *panelX + width;
+            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].y3 = 0x26;
             if (fuel >= maxFuel >> 2) {
-                PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].r0 = 0;
-                PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].g0 = 0;
-                PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].b0 = 0xFF;
-                PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].r1 = 0;
-                PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].g1 = 0;
-                PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].b1 = 0xFF;
+                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].r0 = 0;
+                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].g0 = 0;
+                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].b0 = 0xFF;
+                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].r1 = 0;
+                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].g1 = 0;
+                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].b1 = 0xFF;
             } else if (fuel >= maxFuel >> 3) {
-                PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].r0 = 0xFF;
-                PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].g0 = 0xFF;
-                PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].b0 = 0;
-                PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].r1 = 0xFF;
-                PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].g1 = 0xFF;
-                PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].b1 = 0;
+                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].r0 = 0xFF;
+                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].g0 = 0xFF;
+                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].b0 = 0;
+                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].r1 = 0xFF;
+                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].g1 = 0xFF;
+                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].b1 = 0;
             } else {
-                PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].r0 = 0xFF;
-                PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].g0 = 0x7F;
-                PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].b0 = 0x7F;
-                PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].r1 = 0xFF;
-                PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].g1 = 0x7F;
-                PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer].b1 = 0x7F;
+                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].r0 = 0xFF;
+                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].g0 = 0x7F;
+                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].b0 = 0x7F;
+                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].r1 = 0xFF;
+                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].g1 = 0x7F;
+                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].b1 = 0x7F;
             }
             break;
         }
@@ -1334,7 +1334,7 @@ void func_80075938(void) {
     u16 clut;
 
     func_80075168();
-    UI_BAR_SHOWN(3) = 0;
+    D_800D2D28->barShown[3] = 0;
     for (i = 0; i < 3; i++) {
         if (D_800C3EB4[i].field2 != 0x7F) {
             if (widths[i] < 0) {
@@ -1342,69 +1342,69 @@ void func_80075938(void) {
             }
             if (D_800D2D28->unk90[i] == 0) {
                 widths[i] = (100 - D_800D2DCC.timers[1][i] * 100 / D_800D2DCC.timers[0][i]) * 5600 / 10000;
-                PANEL_GRAPHICS->gaugeBars[i * 2 + D_800CCB34].x0 =
+                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].x0 =
                     D_800C3254[D_800D3280 * 3 + i] + i * 0x60 + 0x2D;
-                PANEL_GRAPHICS->gaugeBars[i * 2 + D_800CCB34].y0 = 0x1A;
-                PANEL_GRAPHICS->gaugeBars[i * 2 + D_800CCB34].x1 =
+                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].y0 = 0x1A;
+                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].x1 =
                     i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x2C) + ((u16)widths[i] + 1);
-                PANEL_GRAPHICS->gaugeBars[i * 2 + D_800CCB34].y1 = 0x1A;
-                PANEL_GRAPHICS->gaugeBars[i * 2 + D_800CCB34].x2 =
+                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].y1 = 0x1A;
+                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].x2 =
                     D_800C3254[D_800D3280 * 3 + i] + i * 0x60 + 0x2D;
-                PANEL_GRAPHICS->gaugeBars[i * 2 + D_800CCB34].y2 = 0x1E;
-                PANEL_GRAPHICS->gaugeBars[i * 2 + D_800CCB34].x3 =
+                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].y2 = 0x1E;
+                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].x3 =
                     i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x2C) + ((u16)widths[i] + 1);
-                PANEL_GRAPHICS->gaugeBars[i * 2 + D_800CCB34].y3 = 0x1E;
-                PANEL_GRAPHICS->gaugeBars[i * 2 + D_800CCB34].u0 = (PANEL_GRAPHICS->sprites[0].pageX & 0x3F) * 2;
-                PANEL_GRAPHICS->gaugeBars[i * 2 + D_800CCB34].v0 = PANEL_GRAPHICS->sprites[0].pageY;
-                PANEL_GRAPHICS->gaugeBars[i * 2 + D_800CCB34].u1 =
-                    (widths[i] + (PANEL_GRAPHICS->sprites[0].pageX & 0x3F)) * 2;
-                PANEL_GRAPHICS->gaugeBars[i * 2 + D_800CCB34].v1 = PANEL_GRAPHICS->sprites[0].pageY;
-                PANEL_GRAPHICS->gaugeBars[i * 2 + D_800CCB34].u2 = (PANEL_GRAPHICS->sprites[0].pageX & 0x3F) * 2;
-                PANEL_GRAPHICS->gaugeBars[i * 2 + D_800CCB34].v2 = PANEL_GRAPHICS->sprites[0].pageY + 4;
-                PANEL_GRAPHICS->gaugeBars[i * 2 + D_800CCB34].u3 =
-                    (widths[i] + (PANEL_GRAPHICS->sprites[0].pageX & 0x3F)) * 2;
-                PANEL_GRAPHICS->gaugeBars[i * 2 + D_800CCB34].v3 = PANEL_GRAPHICS->sprites[0].pageY + 4;
+                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].y3 = 0x1E;
+                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].u0 = (D_800C3EA4->sprites[0].pageX & 0x3F) * 2;
+                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].v0 = D_800C3EA4->sprites[0].pageY;
+                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].u1 =
+                    (widths[i] + (D_800C3EA4->sprites[0].pageX & 0x3F)) * 2;
+                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].v1 = D_800C3EA4->sprites[0].pageY;
+                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].u2 = (D_800C3EA4->sprites[0].pageX & 0x3F) * 2;
+                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].v2 = D_800C3EA4->sprites[0].pageY + 4;
+                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].u3 =
+                    (widths[i] + (D_800C3EA4->sprites[0].pageX & 0x3F)) * 2;
+                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].v3 = D_800C3EA4->sprites[0].pageY + 4;
                 if ((D_800CCCE8.records[i].pilot.status84.half.active |
                      D_800CCCE8.records[i].pilot.status84.half.permanent) & 0x8000) {
-                    clut = PANEL_GRAPHICS->barCluts[3];
+                    clut = D_800C3EA4->barCluts[3];
                 } else if (D_800CCCE8.records[i].pilot.status7C & 0x1000) {
-                    clut = PANEL_GRAPHICS->barCluts[2];
+                    clut = D_800C3EA4->barCluts[2];
                 } else {
-                    clut = PANEL_GRAPHICS->barCluts[0];
+                    clut = D_800C3EA4->barCluts[0];
                 }
-                PANEL_GRAPHICS->gaugeBars[i * 2 + D_800CCB34].clut = clut;
-                UI_BAR_SHOWN(i) = 1;
+                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].clut = clut;
+                D_800D2D28->barShown[i] = 1;
             } else {
                 widths[i] = (100 - D_800D2DCC.timers[1][i]) * 5600 / 10000;
                 if (D_800D32A0[i].unk1 != 0 && D_800D2D24[i] != 7) {
                     widths[i] = D_800CCCE8.records[i].gear.fuel * 100 / D_800CCCE8.records[i].gear.maxFuel * 5600 /
                                 10000;
                 }
-                PANEL_GRAPHICS->gaugeBars[6 + D_800CCB34].x0 = 0xC;
-                PANEL_GRAPHICS->gaugeBars[6 + D_800CCB34].y0 = 0xCE;
-                PANEL_GRAPHICS->gaugeBars[6 + D_800CCB34].x1 = 0xC;
-                PANEL_GRAPHICS->gaugeBars[6 + D_800CCB34].y1 = 0xCE - widths[i] * 2;
-                PANEL_GRAPHICS->gaugeBars[6 + D_800CCB34].x2 = 0x14;
-                PANEL_GRAPHICS->gaugeBars[6 + D_800CCB34].y2 = 0xCE;
-                PANEL_GRAPHICS->gaugeBars[6 + D_800CCB34].x3 = 0x14;
-                PANEL_GRAPHICS->gaugeBars[6 + D_800CCB34].y3 = 0xCE - widths[i] * 2;
-                PANEL_GRAPHICS->gaugeBars[6 + D_800CCB34].u0 = (PANEL_GRAPHICS->sprites[0].pageX & 0x3F) * 2;
-                PANEL_GRAPHICS->gaugeBars[6 + D_800CCB34].v0 = PANEL_GRAPHICS->sprites[0].pageY;
-                PANEL_GRAPHICS->gaugeBars[6 + D_800CCB34].u1 =
-                    (widths[i] + (PANEL_GRAPHICS->sprites[0].pageX & 0x3F)) * 2;
-                PANEL_GRAPHICS->gaugeBars[6 + D_800CCB34].v1 = PANEL_GRAPHICS->sprites[0].pageY;
-                PANEL_GRAPHICS->gaugeBars[6 + D_800CCB34].u2 = (PANEL_GRAPHICS->sprites[0].pageX & 0x3F) * 2;
-                PANEL_GRAPHICS->gaugeBars[6 + D_800CCB34].v2 = PANEL_GRAPHICS->sprites[0].pageY + 4;
-                PANEL_GRAPHICS->gaugeBars[6 + D_800CCB34].u3 =
-                    (widths[i] + (PANEL_GRAPHICS->sprites[0].pageX & 0x3F)) * 2;
-                PANEL_GRAPHICS->gaugeBars[6 + D_800CCB34].v3 = PANEL_GRAPHICS->sprites[0].pageY + 4;
-                PANEL_GRAPHICS->gaugeBars[6 + D_800CCB34].clut = PANEL_GRAPHICS->barCluts[1];
+                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].x0 = 0xC;
+                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].y0 = 0xCE;
+                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].x1 = 0xC;
+                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].y1 = 0xCE - widths[i] * 2;
+                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].x2 = 0x14;
+                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].y2 = 0xCE;
+                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].x3 = 0x14;
+                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].y3 = 0xCE - widths[i] * 2;
+                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].u0 = (D_800C3EA4->sprites[0].pageX & 0x3F) * 2;
+                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].v0 = D_800C3EA4->sprites[0].pageY;
+                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].u1 =
+                    (widths[i] + (D_800C3EA4->sprites[0].pageX & 0x3F)) * 2;
+                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].v1 = D_800C3EA4->sprites[0].pageY;
+                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].u2 = (D_800C3EA4->sprites[0].pageX & 0x3F) * 2;
+                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].v2 = D_800C3EA4->sprites[0].pageY + 4;
+                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].u3 =
+                    (widths[i] + (D_800C3EA4->sprites[0].pageX & 0x3F)) * 2;
+                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].v3 = D_800C3EA4->sprites[0].pageY + 4;
+                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].clut = D_800C3EA4->barCluts[1];
                 if (D_800D2D28->unkCB != 0) {
-                    UI_BAR_SHOWN(3) = 1;
+                    D_800D2D28->barShown[3] = 1;
                 }
             }
         } else {
-            UI_BAR_SHOWN(i) = 0;
+            D_800D2D28->barShown[i] = 0;
         }
     }
 }
@@ -1518,16 +1518,16 @@ void func_80076710(s32 member) {
         y = ((u32)D_800D2D28->unk6C >> 8) + D_800D2D28->unk44;
     }
     D_800D2D28->unkA9 = 0;
-    UI_STATUS_PARTS(3) = 0;
-    UI_STATUS_PARTS(3) = func_80025FA8(D_800D2F5C, 0x52, PANEL_GRAPHICS->status[3][0], D_800CCB04.buffer, x, y,
+    D_800D2D28->statusParts[3] = 0;
+    D_800D2D28->statusParts[3] = func_80025FA8(D_800D2F5C, 0x52, D_800C3EA4->status[3][0], D_800CCB04.buffer, x, y,
                                        D_800D2D28->unk104, D_800D2D28->unk104, D_800D2D28->unk106);
-    part = UI_STATUS_PARTS(3);
-    UI_STATUS_PARTS(3) += func_80025FA8(D_800D2F5C, 0x53, PANEL_GRAPHICS->status[3][part], D_800CCB04.buffer, x, y,
+    part = D_800D2D28->statusParts[3];
+    D_800D2D28->statusParts[3] += func_80025FA8(D_800D2F5C, 0x53, D_800C3EA4->status[3][part], D_800CCB04.buffer, x, y,
                                         D_800D2D28->unk104, D_800D2D28->unk104, D_800D2D28->unk106);
-    for (part = part * 2; part < UI_STATUS_PARTS(3) * 2; part += 2) {
-        SetSemiTrans(&PANEL_GRAPHICS->status[3][0][part + D_800CCB04.buffer], 1);
+    for (part = part * 2; part < D_800D2D28->statusParts[3] * 2; part += 2) {
+        SetSemiTrans(&D_800C3EA4->status[3][0][part + D_800CCB04.buffer], 1);
     }
-    UI_STATUS_BUFFER(3) = D_800CCB04.buffer;
+    D_800D2D28->statusBuffer[3] = D_800CCB04.buffer;
     for (i = 0; i < D_800D2D28->unkAB; i++) {
         D_800D2D28->unk104 += 0x66;
         D_800D2D28->unk106 += 0x80;
@@ -1743,12 +1743,12 @@ void func_80077074(void) {
     func_80076D58(D_800C3EA4->unkA230->unk2D0, 1, 3);
     func_80076D58(D_800C3EA4->unkA230->unk320, 0, 2);
     func_80076D58(D_800C3EA4->unkA230->unk370, 1, 2);
-    func_80076D58(COMMAND_BLOCK->unk3C0, 0, 2);
-    func_80076D58(COMMAND_BLOCK->unk410[0], 0, 2);
-    func_80076D58(COMMAND_BLOCK->unk410[1], 0, 2);
-    func_80076D58(COMMAND_BLOCK->unk410[2], 0, 2);
-    func_80076D58(COMMAND_BLOCK->unk410[3], 0, 2);
-    func_80076D58(COMMAND_BLOCK->unk410[4], 0, 2);
+    func_80076D58(D_800C3EA4->unkA230->unk3C0, 0, 2);
+    func_80076D58(D_800C3EA4->unkA230->unk410, 0, 2);
+    func_80076D58(D_800C3EA4->unkA230->unk460, 0, 2);
+    func_80076D58(D_800C3EA4->unkA230->unk4B0, 0, 2);
+    func_80076D58(D_800C3EA4->unkA230->unk500, 0, 2);
+    func_80076D58(D_800C3EA4->unkA230->unk550, 0, 2);
 }
 
 /* Initialise four quads, white and semi-transparent, with the texture page
@@ -1762,9 +1762,9 @@ void func_80077364(POLY_FT4 *prims, u8 index) {
         prims[i].r0 = 0xFF;
         prims[i].g0 = 0xFF;
         prims[i].b0 = 0xFF;
-        prims[i].tpage = GetTPage(D_800C3EA4->textures[index].mode, 0, D_800C3EA4->textures[index].x,
-                                       D_800C3EA4->textures[index].y);
-        prims[i].clut = GetClut(D_800C3EA4->textures[index].clutX, D_800C3EA4->textures[index].clutY);
+        prims[i].tpage = GetTPage(D_800C3EA4->sprites[index].tpageMode, 0, D_800C3EA4->sprites[index].pageX,
+                                       D_800C3EA4->sprites[index].pageY);
+        prims[i].clut = GetClut(D_800C3EA4->sprites[index].clutX, D_800C3EA4->sprites[index].clutY);
     }
 }
 
@@ -1793,7 +1793,7 @@ void func_80077454(u8 window) {
         (block->shade + i)->b3 = D_800594D4[2];
         SetSemiTrans(&block->shade[i], 1);
         SetDrawMode(&block->mode[i], 0, 0,
-                    GetTPage(0, D_800595A0, D_800C3EA4->textures[1].x, D_800C3EA4->textures[1].y),
+                    GetTPage(0, D_800595A0, D_800C3EA4->sprites[1].pageX, D_800C3EA4->sprites[1].pageY),
                     (RECT *)D_800D2D28);
     }
     func_80077364(block->frame[0], 1);
@@ -1899,19 +1899,19 @@ void func_80077990(void) {
     u32 *strip3 = D_800C3EA4->unk8970[3];
 
     D_800C3EA4->unk8950[0].x = 1;
-    D_800C3EA4->unk8950[0].y = PANEL_GRAPHICS->sprites[0].clutY - 1;
+    D_800C3EA4->unk8950[0].y = D_800C3EA4->sprites[0].clutY - 1;
     D_800C3EA4->unk8950[0].w = 0xC6;
     D_800C3EA4->unk8950[0].h = 1;
     D_800C3EA4->unk8950[1].x = 1;
-    D_800C3EA4->unk8950[1].y = PANEL_GRAPHICS->sprites[0].clutY;
+    D_800C3EA4->unk8950[1].y = D_800C3EA4->sprites[0].clutY;
     D_800C3EA4->unk8950[1].w = 0xC6;
     D_800C3EA4->unk8950[1].h = 1;
     D_800C3EA4->unk8950[2].x = 1;
-    D_800C3EA4->unk8950[2].y = PANEL_GRAPHICS->sprites[0].clutY - 2;
+    D_800C3EA4->unk8950[2].y = D_800C3EA4->sprites[0].clutY - 2;
     D_800C3EA4->unk8950[2].w = 0xC6;
     D_800C3EA4->unk8950[2].h = 1;
     D_800C3EA4->unk8950[3].x = 1;
-    D_800C3EA4->unk8950[3].y = PANEL_GRAPHICS->sprites[0].clutY - 3;
+    D_800C3EA4->unk8950[3].y = D_800C3EA4->sprites[0].clutY - 3;
     D_800C3EA4->unk8950[3].w = 0xC6;
     D_800C3EA4->unk8950[3].h = 1;
     StoreImage(&D_800C3EA4->unk8950[0], strip0);
@@ -1930,62 +1930,62 @@ void func_80077990(void) {
     StoreImage(&D_800C3EA4->unk8950[1], strip1 + 0x63 * 3);
     StoreImage(&D_800C3EA4->unk8950[2], strip2 + 0x63 * 3);
     StoreImage(&D_800C3EA4->unk8950[3], strip3 + 0x63 * 3);
-    func_80026338(D_800D2F5C, 0x4B, &PANEL_GRAPHICS->sprites[1].unk0, &PANEL_GRAPHICS->sprites[1].tpageMode,
-                  &PANEL_GRAPHICS->sprites[1].clutX, &PANEL_GRAPHICS->sprites[1].clutY,
-                  &PANEL_GRAPHICS->sprites[1].pageX, &PANEL_GRAPHICS->sprites[1].pageY);
-    func_80026338(D_800D2F5C, 0x50, &PANEL_GRAPHICS->sprites[2].unk0, &PANEL_GRAPHICS->sprites[2].tpageMode,
-                  &PANEL_GRAPHICS->sprites[2].clutX, &PANEL_GRAPHICS->sprites[2].clutY,
-                  &PANEL_GRAPHICS->sprites[2].pageX, &PANEL_GRAPHICS->sprites[2].pageY);
-    func_80026338(D_800D2F5C, 0x4D, &PANEL_GRAPHICS->sprites[3].unk0, &PANEL_GRAPHICS->sprites[3].tpageMode,
-                  &PANEL_GRAPHICS->sprites[3].clutX, &PANEL_GRAPHICS->sprites[3].clutY,
-                  &PANEL_GRAPHICS->sprites[3].pageX, &PANEL_GRAPHICS->sprites[3].pageY);
-    func_80026338(D_800D2F5C, 0x4E, &PANEL_GRAPHICS->sprites[4].unk0, &PANEL_GRAPHICS->sprites[4].tpageMode,
-                  &PANEL_GRAPHICS->sprites[4].clutX, &PANEL_GRAPHICS->sprites[4].clutY,
-                  &PANEL_GRAPHICS->sprites[4].pageX, &PANEL_GRAPHICS->sprites[4].pageY);
-    UI_TEXTURE_WINDOWS[0].y = 0;
-    UI_TEXTURE_WINDOWS[0].x = 0;
-    UI_TEXTURE_WINDOWS[0].h = 0x100;
-    UI_TEXTURE_WINDOWS[0].w = 0x100;
-    PANEL_GRAPHICS->sprites[1].pageX = 0x3C0;
-    PANEL_GRAPHICS->sprites[2].pageX = 0x3C8;
-    PANEL_GRAPHICS->sprites[1].pageY = 0x34;
-    PANEL_GRAPHICS->sprites[2].pageY = 0x34;
-    UI_TEXTURE_WINDOWS[1].x = ((u16)PANEL_GRAPHICS->sprites[0].pageX & 0x3F) * 2;
-    UI_TEXTURE_WINDOWS[1].y = PANEL_GRAPHICS->sprites[0].pageY;
-    UI_TEXTURE_WINDOWS[1].w = 0x100;
-    UI_TEXTURE_WINDOWS[1].h = 0x100;
-    UI_TEXTURE_WINDOWS[2].x = ((u16)PANEL_GRAPHICS->sprites[1].pageX & 0x3F) * 2;
-    UI_TEXTURE_WINDOWS[2].y = PANEL_GRAPHICS->sprites[1].pageY;
-    UI_TEXTURE_WINDOWS[2].w = 8;
-    UI_TEXTURE_WINDOWS[2].h = 0x10;
-    UI_TEXTURE_WINDOWS[3].x = ((u16)PANEL_GRAPHICS->sprites[2].pageX & 0x3F) * 2;
-    UI_TEXTURE_WINDOWS[3].y = PANEL_GRAPHICS->sprites[2].pageY;
-    UI_TEXTURE_WINDOWS[3].w = 8;
-    UI_TEXTURE_WINDOWS[3].h = 0x10;
-    UI_TEXTURE_WINDOWS[4].x = ((u16)PANEL_GRAPHICS->sprites[3].pageX & 0x3F) * 2 + 0xE;
-    UI_TEXTURE_WINDOWS[4].y = PANEL_GRAPHICS->sprites[3].pageY;
-    UI_TEXTURE_WINDOWS[4].w = 0x10;
-    UI_TEXTURE_WINDOWS[4].h = 8;
-    UI_TEXTURE_WINDOWS[5].x = ((u16)PANEL_GRAPHICS->sprites[4].pageX & 0x3F) * 2 + 0xE;
-    UI_TEXTURE_WINDOWS[5].y = PANEL_GRAPHICS->sprites[4].pageY;
-    UI_TEXTURE_WINDOWS[5].w = 0x10;
-    UI_TEXTURE_WINDOWS[5].h = 8;
-    SetDrawMode(&PANEL_GRAPHICS->unk8908[0], 0, 0,
-                GetTPage(PANEL_GRAPHICS->sprites[0].tpageMode, 0, PANEL_GRAPHICS->sprites[0].pageX,
-                         PANEL_GRAPHICS->sprites[0].pageY),
-                &UI_TEXTURE_WINDOWS[1]);
-    SetDrawMode(&PANEL_GRAPHICS->unk8908[1], 0, 0,
-                GetTPage(PANEL_GRAPHICS->sprites[0].tpageMode, 0, PANEL_GRAPHICS->sprites[0].pageX,
-                         PANEL_GRAPHICS->sprites[0].pageY),
-                &UI_TEXTURE_WINDOWS[1]);
-    SetDrawMode(&PANEL_GRAPHICS->unk8920[0], 0, 0,
-                GetTPage(PANEL_GRAPHICS->sprites[0].tpageMode, 0, PANEL_GRAPHICS->sprites[0].pageX,
-                         PANEL_GRAPHICS->sprites[0].pageY),
-                &UI_TEXTURE_WINDOWS[0]);
-    SetDrawMode(&PANEL_GRAPHICS->unk8920[1], 0, 0,
-                GetTPage(PANEL_GRAPHICS->sprites[0].tpageMode, 0, PANEL_GRAPHICS->sprites[0].pageX,
-                         PANEL_GRAPHICS->sprites[0].pageY),
-                &UI_TEXTURE_WINDOWS[0]);
+    func_80026338(D_800D2F5C, 0x4B, &D_800C3EA4->sprites[1].unk0, &D_800C3EA4->sprites[1].tpageMode,
+                  &D_800C3EA4->sprites[1].clutX, &D_800C3EA4->sprites[1].clutY,
+                  &D_800C3EA4->sprites[1].pageX, &D_800C3EA4->sprites[1].pageY);
+    func_80026338(D_800D2F5C, 0x50, &D_800C3EA4->sprites[2].unk0, &D_800C3EA4->sprites[2].tpageMode,
+                  &D_800C3EA4->sprites[2].clutX, &D_800C3EA4->sprites[2].clutY,
+                  &D_800C3EA4->sprites[2].pageX, &D_800C3EA4->sprites[2].pageY);
+    func_80026338(D_800D2F5C, 0x4D, &D_800C3EA4->sprites[3].unk0, &D_800C3EA4->sprites[3].tpageMode,
+                  &D_800C3EA4->sprites[3].clutX, &D_800C3EA4->sprites[3].clutY,
+                  &D_800C3EA4->sprites[3].pageX, &D_800C3EA4->sprites[3].pageY);
+    func_80026338(D_800D2F5C, 0x4E, &D_800C3EA4->sprites[4].unk0, &D_800C3EA4->sprites[4].tpageMode,
+                  &D_800C3EA4->sprites[4].clutX, &D_800C3EA4->sprites[4].clutY,
+                  &D_800C3EA4->sprites[4].pageX, &D_800C3EA4->sprites[4].pageY);
+    D_800D2D28->textureWindows[0].y = 0;
+    D_800D2D28->textureWindows[0].x = 0;
+    D_800D2D28->textureWindows[0].h = 0x100;
+    D_800D2D28->textureWindows[0].w = 0x100;
+    D_800C3EA4->sprites[1].pageX = 0x3C0;
+    D_800C3EA4->sprites[2].pageX = 0x3C8;
+    D_800C3EA4->sprites[1].pageY = 0x34;
+    D_800C3EA4->sprites[2].pageY = 0x34;
+    D_800D2D28->textureWindows[1].x = ((u16)D_800C3EA4->sprites[0].pageX & 0x3F) * 2;
+    D_800D2D28->textureWindows[1].y = D_800C3EA4->sprites[0].pageY;
+    D_800D2D28->textureWindows[1].w = 0x100;
+    D_800D2D28->textureWindows[1].h = 0x100;
+    D_800D2D28->textureWindows[2].x = ((u16)D_800C3EA4->sprites[1].pageX & 0x3F) * 2;
+    D_800D2D28->textureWindows[2].y = D_800C3EA4->sprites[1].pageY;
+    D_800D2D28->textureWindows[2].w = 8;
+    D_800D2D28->textureWindows[2].h = 0x10;
+    D_800D2D28->textureWindows[3].x = ((u16)D_800C3EA4->sprites[2].pageX & 0x3F) * 2;
+    D_800D2D28->textureWindows[3].y = D_800C3EA4->sprites[2].pageY;
+    D_800D2D28->textureWindows[3].w = 8;
+    D_800D2D28->textureWindows[3].h = 0x10;
+    D_800D2D28->textureWindows[4].x = ((u16)D_800C3EA4->sprites[3].pageX & 0x3F) * 2 + 0xE;
+    D_800D2D28->textureWindows[4].y = D_800C3EA4->sprites[3].pageY;
+    D_800D2D28->textureWindows[4].w = 0x10;
+    D_800D2D28->textureWindows[4].h = 8;
+    D_800D2D28->textureWindows[5].x = ((u16)D_800C3EA4->sprites[4].pageX & 0x3F) * 2 + 0xE;
+    D_800D2D28->textureWindows[5].y = D_800C3EA4->sprites[4].pageY;
+    D_800D2D28->textureWindows[5].w = 0x10;
+    D_800D2D28->textureWindows[5].h = 8;
+    SetDrawMode(&D_800C3EA4->unk8908[0], 0, 0,
+                GetTPage(D_800C3EA4->sprites[0].tpageMode, 0, D_800C3EA4->sprites[0].pageX,
+                         D_800C3EA4->sprites[0].pageY),
+                &D_800D2D28->textureWindows[1]);
+    SetDrawMode(&D_800C3EA4->unk8908[1], 0, 0,
+                GetTPage(D_800C3EA4->sprites[0].tpageMode, 0, D_800C3EA4->sprites[0].pageX,
+                         D_800C3EA4->sprites[0].pageY),
+                &D_800D2D28->textureWindows[1]);
+    SetDrawMode(&D_800C3EA4->unk8920[0], 0, 0,
+                GetTPage(D_800C3EA4->sprites[0].tpageMode, 0, D_800C3EA4->sprites[0].pageX,
+                         D_800C3EA4->sprites[0].pageY),
+                &D_800D2D28->textureWindows[0]);
+    SetDrawMode(&D_800C3EA4->unk8920[1], 0, 0,
+                GetTPage(D_800C3EA4->sprites[0].tpageMode, 0, D_800C3EA4->sprites[0].pageX,
+                         D_800C3EA4->sprites[0].pageY),
+                &D_800D2D28->textureWindows[0]);
 }
 
 /* Initialise a battle message's quad pair for texture row `row` (13 pixels

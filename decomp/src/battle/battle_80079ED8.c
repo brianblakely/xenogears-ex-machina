@@ -1938,22 +1938,22 @@ void func_8007FF14(u8 member) {
     func_8009A2D4(member);
     for (k = 2; k < 5; k++) {
         value = D_800D2C0C[k - 2][0];
-        SLOT_DIGITS(member, k)[0] = 0xFF;
-        SLOT_DIGITS(member, k)[1] = 0xFF;
-        SLOT_DIGITS(member, k)[2] = 0xFF;
+        D_800C3EAC->slots[member].digits[k][0] = 0xFF;
+        D_800C3EAC->slots[member].digits[k][1] = 0xFF;
+        D_800C3EAC->slots[member].digits[k][2] = 0xFF;
         n = 0;
         digit = value / 100;
         if (digit != 0) {
             value -= digit * 100;
             n = 1;
-            SLOT_DIGITS(member, k)[0] = digit + 0x83;
+            D_800C3EAC->slots[member].digits[k][0] = digit + 0x83;
         }
         digit = value / 10;
         if (digit != 0 || n != 0) {
             value -= digit * 10;
-            SLOT_DIGITS(member, k)[n++] = digit + 0x83;
+            D_800C3EAC->slots[member].digits[k][n++] = digit + 0x83;
         }
-        SLOT_DIGITS(member, k)[n] = value + 0x83;
+        D_800C3EAC->slots[member].digits[k][n] = value + 0x83;
     }
     func_8007FEC4();
     if (D_800D2D24[member] != 7) {

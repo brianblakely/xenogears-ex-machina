@@ -633,7 +633,7 @@ void func_800826CC(u8 member) {
     func_800883AC(member);
     D_800D32A0[member].unk1 = 2;
     if (D_800D2D24[member] != 7) {
-        D_800C3EA4->panels[member].unk1E1 = 2;
+        D_800C3EA4->panels[member].state = 2;
     }
     D_800C3EB4[member].gear = 1;
     D_800C3EAC->reaction[member] = 1;

@@ -5,7 +5,7 @@
 
 /* Texture page coordinates of window texture `t` (8-bit mode: two texels
  * per VRAM halfword). */
-#define WINDOW_TEX_U(t) (((u8)D_800C3EA4->textures[t].x & 0x3F) * 2)
-#define WINDOW_TEX_V(t) (D_800C3EA4->textures[t].y)
+#define WINDOW_TEX_U(t) (((u8)D_800C3EA4->sprites[t].pageX & 0x3F) * 2)
+#define WINDOW_TEX_V(t) (D_800C3EA4->sprites[t].pageY)
 
 #endif
