@@ -64,6 +64,15 @@ typedef struct {
     s16 vx, vy, vz, pad;
 } SVECTOR;
 
+typedef struct {
+    s32 vx, vy, vz, pad;
+} VECTOR;
+
+typedef struct {
+    s16 m[3][3];
+    s32 t[3];
+} MATRIX;
+
 /* The screen backdrop primitives (0x15C bytes), one of each per buffer. */
 typedef struct {
     u8 pad_0[0x50];
@@ -141,17 +150,15 @@ typedef struct {
 typedef struct {
     POLY_FT4 corner[8];       /* 0x0: corner sprite parts, two per part */
     POLY_FT4 edge[4][4];      /* 0x140 */
-    SpriteParts frame_side;   /* 0x3C0: sprite 0x106 */
-    SpriteParts frame_top;    /* 0x410: sprite 0x105 */
-    SpriteParts frame_bottom; /* 0x460: sprite 0x105, flipped */
+    POLY_FT4 frame_side[2];   /* 0x3C0: sprite 0x106 */
+    POLY_FT4 frame_ends[4];   /* 0x410: sprite 0x105 at the top, flipped at the bottom */
     POLY_G4 fill[2];          /* 0x4B0 */
     DR_MODE fill_mode[2];     /* 0x4F8 */
-    SVECTOR corner_at[4][4];  /* 0x510: corner quads */
+    SVECTOR corner_at[16];    /* 0x510: four corner quads */
     SVECTOR edge_at[4][2][4]; /* 0x590: two quads per edge */
     SVECTOR fill_at[4];       /* 0x690 */
-    SVECTOR side[4];          /* 0x6B0 */
-    SVECTOR top[4];           /* 0x6D0 */
-    SVECTOR bottom[4];        /* 0x6F0 */
+    SVECTOR side_at[4];       /* 0x6B0 */
+    SVECTOR ends_at[8];       /* 0x6D0: top and bottom quads */
     s32 corner_parts;         /* 0x710: corner parts built */
     s32 style;                /* 0x714 */
     s32 param;                /* 0x718 */
@@ -280,6 +287,12 @@ extern void func_80043DA0(LINE_F3 *p);         /* SetLineF3 */
 extern void func_800454DC(DR_MODE *p, s32 dfe, s32 dtd, s32 tpage, RECT *tw); /* SetDrawMode */
 extern void func_80043BFC(void *p, s32 abe);   /* SetSemiTrans */
 extern void func_80043C24(void *p, s32 tge);   /* SetShadeTex */
+extern void func_8004960C(void);                /* PushMatrix */
+extern void func_800496AC(void);                /* PopMatrix */
+extern MATRIX *func_8003F738(SVECTOR *r, MATRIX *m); /* RotMatrix */
+extern MATRIX *func_80049D9C(MATRIX *m, VECTOR *v);  /* TransMatrix */
+extern void func_80049EFC(MATRIX *m);           /* SetRotMatrix */
+extern void func_80049F8C(MATRIX *m);           /* SetTransMatrix */
 extern u16 func_80043A1C(s32 tp, s32 abr, s32 x, s32 y); /* GetTPage */
 extern u16 func_80043A58(s32 x, s32 y);                   /* GetClut */
 extern s32 func_8002675C(void *sheet, s32 id, void *parts, s32 buffer, s32 x, s32 y,

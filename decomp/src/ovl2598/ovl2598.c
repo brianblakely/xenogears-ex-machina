@@ -499,15 +499,15 @@ void func_801C618C(u8 index) {
 void func_801C64A8(u8 index, u16 x, u16 y, s32 unused, u16 h) {
     Panel *panel = D_800625A0->panels[index];
 
-    func_8002675C(D_800625A0->sprite_sheet, 0x105, &panel->frame_top, D_800625A0->buffer_index,
+    func_8002675C(D_800625A0->sprite_sheet, 0x105, panel->frame_ends, D_800625A0->buffer_index,
                   x, y, 0x1000);
-    func_800263E4(D_800625A0->sprite_sheet, 0x105, &panel->frame_bottom,
+    func_800263E4(D_800625A0->sprite_sheet, 0x105, &panel->frame_ends[2],
                   D_800625A0->buffer_index, x, y + h - 8, 0x1000, 0, 1);
-    func_8002675C(D_800625A0->sprite_sheet, 0x106, &panel->frame_side, D_800625A0->buffer_index,
+    func_8002675C(D_800625A0->sprite_sheet, 0x106, panel->frame_side, D_800625A0->buffer_index,
                   x, y + 8, 0x1000);
-    func_801C60EC(panel->top, x, y, 8, 8);
-    func_801C60EC(panel->bottom, x, y + h, 8, -8);
-    func_801C60EC(panel->side, x, y + 8, 8, h - 8);
+    func_801C60EC(&panel->ends_at[0], x, y, 8, 8);
+    func_801C60EC(&panel->ends_at[4], x, y + h, 8, -8);
+    func_801C60EC(panel->side_at, x, y + 8, 8, h - 8);
 }
 
 /* Build panel `index`'s four corner sprites for this buffer and place them
@@ -528,10 +528,10 @@ void func_801C660C(u8 index, u16 x, u16 y, u16 w, u16 h) {
     panel->corner_parts +=
         func_8002675C(D_800625A0->sprite_sheet, 0x104, &panel->corner[panel->corner_parts * 2],
                       D_800625A0->buffer_index, 0, 0, 0x1000);
-    func_801C60EC(panel->corner_at[0], x - 8, y + 8, 16, -16);
-    func_801C60EC(panel->corner_at[1], x + w + 8, y + 8, -16, -16);
-    func_801C60EC(panel->corner_at[2], x - 8, y + h - 8, 16, 16);
-    func_801C60EC(panel->corner_at[3], x + w + 8, y + h - 8, -16, 16);
+    func_801C60EC(&panel->corner_at[0], x - 8, y + 8, 16, -16);
+    func_801C60EC(&panel->corner_at[4], x + w + 8, y + 8, -16, -16);
+    func_801C60EC(&panel->corner_at[8], x - 8, y + h - 8, 16, 16);
+    func_801C60EC(&panel->corner_at[12], x + w + 8, y + h - 8, -16, 16);
     for (i = 0; i < 4; i++) {
         func_801C6144(&panel->corner[i * 2 + D_800625A0->buffer_index]);
     }
@@ -991,13 +991,110 @@ void func_801C8BEC(s32 index) {
     func_80043B48(D_800625A0->draw_env->ot + panel->param, &panel->fill_mode[panel->buffer]);
 }
 
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C8D28);
+/* Project panel `index`'s four corner sprites through the GTE and draw them. */
+void func_801C8D28(s32 index) {
+    Panel *panel = D_800625A0->panels[index];
+    s32 depth;
+    s32 flag;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C8E74);
+    for (i = 0; i < 4; i++) {
+        func_8004A73C(&panel->corner_at[i * 4], &panel->corner_at[i * 4 + 1], &panel->corner_at[i * 4 + 2],
+                      &panel->corner_at[i * 4 + 3], &panel->corner[i * 2 + panel->buffer].x0,
+                      &panel->corner[i * 2 + panel->buffer].x1,
+                      &panel->corner[i * 2 + panel->buffer].x2,
+                      &panel->corner[i * 2 + panel->buffer].x3, &depth, &flag);
+        func_80043B48(D_800625A0->draw_env->ot + panel->param,
+                      &panel->corner[i * 2 + panel->buffer]);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C9098);
+/* Project panel `index`'s frame sprites (top, bottom, side) and draw them. */
+void func_801C8E74(s32 index) {
+    Panel *panel = D_800625A0->panels[index];
+    s32 depth;
+    s32 flag;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C9210);
+    for (i = 0; i < 2; i++) {
+        func_8004A73C(&panel->ends_at[i * 4], &panel->ends_at[i * 4 + 1], &panel->ends_at[i * 4 + 2],
+                      &panel->ends_at[i * 4 + 3], &(panel->frame_ends + (i * 2 + panel->buffer))->x0,
+                      &(panel->frame_ends + (i * 2 + panel->buffer))->x1,
+                      &(panel->frame_ends + (i * 2 + panel->buffer))->x2,
+                      &(panel->frame_ends + (i * 2 + panel->buffer))->x3, &depth, &flag);
+        func_80043B48(D_800625A0->draw_env->ot + panel->param,
+                      &panel->frame_ends[i * 2 + panel->buffer]);
+    }
+    func_8004A73C(&panel->side_at[0], &panel->side_at[1], &panel->side_at[2], &panel->side_at[3],
+                  &(panel->frame_side + panel->buffer)->x0,
+                  &(panel->frame_side + panel->buffer)->x1,
+                  &(panel->frame_side + panel->buffer)->x2,
+                  &(panel->frame_side + panel->buffer)->x3, &depth, &flag);
+    func_80043B48(D_800625A0->draw_env->ot + panel->param, &panel->frame_side[panel->buffer]);
+}
+
+/* Draw every shown panel; style-0 panels are projected with an identity
+ * rotation at depth 0x200. */
+void func_801C9098(void) {
+    SVECTOR rotation;
+    VECTOR translation;
+    MATRIX matrix;
+    u8 unused[8];
+    Panel *panel;
+    s32 i;
+
+    for (i = 0; i < 7; i++) {
+        if (D_800625A0->flags->panel_20[i]) {
+            panel = D_800625A0->panels[i];
+            if (panel->style == 0) {
+                func_8004960C();
+                rotation.vz = 0;
+                rotation.vy = 0;
+                rotation.vx = 0;
+                translation.vy = 0;
+                translation.vx = 0;
+                translation.vz = 0x200;
+                func_8003F738(&rotation, &matrix);
+                func_80049D9C(&matrix, &translation);
+                func_80049EFC(&matrix);
+                func_80049F8C(&matrix);
+                func_801C8D28(i);
+                if (panel->framed) {
+                    func_801C8E74(i);
+                }
+                func_801C849C(i);
+                func_801C8670(i);
+                func_801C8844(i);
+                func_801C8A18(i);
+                func_801C8BEC(i);
+                func_800496AC();
+            } else {
+                func_801C8D28(i);
+                if (panel->framed) {
+                    func_801C8E74(i);
+                }
+                func_801C849C(i);
+                func_801C8670(i);
+                func_801C8844(i);
+                func_801C8A18(i);
+                func_801C8BEC(i);
+            }
+        }
+    }
+}
+
+/* Per-frame screen drawing: panels, markers, labels and status panels while
+ * active, then the fade. */
+void func_801C9210(void) {
+    if (D_800625A0->active) {
+        func_801C790C();
+        func_801C7A58();
+        func_801C846C();
+        func_801C83D0();
+        func_801C9098();
+    }
+    func_801C8040();
+}
 
 INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C9270);
 

@@ -379,15 +379,15 @@ void func_801C64A8(u8 index) {
 void func_801C67C4(u8 index, u16 x, u16 y, s32 unused, u16 h) {
     Panel *panel = D_800625A0->panels[index];
 
-    func_8002675C(D_800625A0->sprite_sheet, 0x105, &panel->frame_top, D_800625A0->buffer_index,
+    func_8002675C(D_800625A0->sprite_sheet, 0x105, panel->frame_ends, D_800625A0->buffer_index,
                   x, y, 0x1000);
-    func_800263E4(D_800625A0->sprite_sheet, 0x105, &panel->frame_bottom,
+    func_800263E4(D_800625A0->sprite_sheet, 0x105, &panel->frame_ends[2],
                   D_800625A0->buffer_index, x, y + h - 8, 0x1000, 0, 1);
-    func_8002675C(D_800625A0->sprite_sheet, 0x106, &panel->frame_side, D_800625A0->buffer_index,
+    func_8002675C(D_800625A0->sprite_sheet, 0x106, panel->frame_side, D_800625A0->buffer_index,
                   x, y + 8, 0x1000);
-    func_801C6408(panel->top, x, y, 8, 8);
-    func_801C6408(panel->bottom, x, y + h, 8, -8);
-    func_801C6408(panel->side, x, y + 8, 8, h - 8);
+    func_801C6408(&panel->ends_at[0], x, y, 8, 8);
+    func_801C6408(&panel->ends_at[4], x, y + h, 8, -8);
+    func_801C6408(panel->side_at, x, y + 8, 8, h - 8);
 }
 
 /* Build panel `index`'s four corner sprites for this buffer and place them
@@ -408,10 +408,10 @@ void func_801C6928(u8 index, u16 x, u16 y, u16 w, u16 h) {
     panel->corner_parts +=
         func_8002675C(D_800625A0->sprite_sheet, 0x104, &panel->corner[panel->corner_parts * 2],
                       D_800625A0->buffer_index, 0, 0, 0x1000);
-    func_801C6408(panel->corner_at[0], x - 8, y + 8, 16, -16);
-    func_801C6408(panel->corner_at[1], x + w + 8, y + 8, -16, -16);
-    func_801C6408(panel->corner_at[2], x - 8, y + h - 8, 16, 16);
-    func_801C6408(panel->corner_at[3], x + w + 8, y + h - 8, -16, 16);
+    func_801C6408(&panel->corner_at[0], x - 8, y + 8, 16, -16);
+    func_801C6408(&panel->corner_at[4], x + w + 8, y + 8, -16, -16);
+    func_801C6408(&panel->corner_at[8], x - 8, y + h - 8, 16, 16);
+    func_801C6408(&panel->corner_at[12], x + w + 8, y + h - 8, -16, 16);
     for (i = 0; i < 4; i++) {
         func_801C6460(&panel->corner[i * 2 + D_800625A0->buffer_index]);
     }
