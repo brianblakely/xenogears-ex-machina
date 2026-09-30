@@ -127,6 +127,7 @@ typedef struct {
 /* Battle scene and effect state. */
 extern SVector *D_800D3344;             /* scene points */
 extern SceneTriangle *D_800D39CC;       /* scene triangles */
+extern s32 D_800D3348;                  /* scene triangle count */
 extern LightSlot D_800C3AAC[4];
 extern s16 D_800D2FC8;                  /* point count of D_800D2FD0 */
 extern u16 *D_800D2FD0;                 /* (x, z, y) points */
@@ -157,7 +158,8 @@ s32 func_800AF400(void);
 void func_800AFA98(BattleObject *object, ModelPart *part, s32 flags);
 void func_800A5BE8(SVector *a, SVector *b, SVector *c, SVector *point, void *out);
 s32 func_800A5870(SVector *point, s32 index, void *out);
-s16 func_800A579C(SVector *point);
+s32 func_800A579C(SVector *point);
+s32 func_800A5A48(SVector *a, SVector *b, SVector *c, SVector *point);
 s16 func_800A5914(SVector *point, s32 triangle, s32 arg2);
 s32 func_800AA650(s32 index);
 void func_800B10EC(s32 index, s16 x, s16 z, s32 y);

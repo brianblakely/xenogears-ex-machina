@@ -51,7 +51,9 @@ typedef struct {
 /* An effect entry (0x14 bytes) of an effect pool. */
 typedef struct {
     u8 used;
-    u8 pad1[0x14 - 1];
+    u8 pad1[2];
+    u8 kind;                /* +3: 0xFF persistent */
+    u8 pad4[0x14 - 4];
 } EffectEntry;
 
 /* A pool of effect entries; next is the first entry that may be free. */

@@ -2898,9 +2898,47 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A2434);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A2704);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A2ACC);
+/* Release every part's attached effects that are not persistent. */
+void func_800A2ACC(EffectPool *pool, ModelPart *part) {
+    u16 count = part->index;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A2BB8);
+    for (i = 0; i < count; i++, part++) {
+        if (part->effects[0] != NULL && part->effects[0]->kind != 0xFF) {
+            func_800A23E8(pool, part->effects[0]);
+            part->effects[0] = NULL;
+        }
+        if (part->effects[1] != NULL && part->effects[1]->kind != 0xFF) {
+            func_800A23E8(pool, part->effects[1]);
+            part->effects[1] = NULL;
+        }
+        if (part->effects[2] != NULL && part->effects[2]->kind != 0xFF) {
+            func_800A23E8(pool, part->effects[2]);
+            part->effects[2] = NULL;
+        }
+    }
+}
+
+/* Release every part's attached effects of kind. */
+void func_800A2BB8(EffectPool *pool, ModelPart *part, u8 kind) {
+    u16 count = part->index;
+    s32 i;
+
+    for (i = 0; i < count; i++, part++) {
+        if (part->effects[0] != NULL && part->effects[0]->kind == kind) {
+            func_800A23E8(pool, part->effects[0]);
+            part->effects[0] = NULL;
+        }
+        if (part->effects[1] != NULL && part->effects[1]->kind == kind) {
+            func_800A23E8(pool, part->effects[1]);
+            part->effects[1] = NULL;
+        }
+        if (part->effects[2] != NULL && part->effects[2]->kind == kind) {
+            func_800A23E8(pool, part->effects[2]);
+            part->effects[2] = NULL;
+        }
+    }
+}
 
 /* Create a pool of count sprite records (and a spare). */
 SpritePool *func_800A2CA4(SpritePool *pool, s32 count) {
@@ -3052,7 +3090,22 @@ SceneTriangle *func_800A578C(void) {
     return D_800D39CC;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A579C);
+/* The first scene triangle containing point (800A5A48 gives -1), -1 for
+ * none. */
+s32 func_800A579C(SVector *point) {
+    s32 i;
+
+    if (D_800D3344 != NULL && D_800D39CC != NULL) {
+        for (i = 0; i < D_800D3348; i++) {
+            if (func_800A5A48(&D_800D3344[D_800D39CC[i].vertices[0]], &D_800D3344[D_800D39CC[i].vertices[1]],
+                              &D_800D3344[D_800D39CC[i].vertices[2]], point)
+                == -1) {
+                return i;
+            }
+        }
+    }
+    return -1;
+}
 
 /* Relate point to scene triangle index (800A5BE8, into out); the triangle's
  * id, or -1 without scene geometry. */
