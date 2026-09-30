@@ -2549,7 +2549,106 @@ u32 func_801D1304(u8 id, u8 kind) {
     return price;
 }
 
+/*
+ * Draw the eight visible rows of a list from entry `top`: each part's name,
+ * the count held and, when some are chosen, "x" and the chosen count.
+ */
+#ifdef NON_MATCHING
+void func_801D18F8(s32 top, u8 *ids, u8 *kinds, u8 *chosen, u8 *held) {
+    RECT rect;
+    u8 codes[14];
+    u8 text[16];
+    s32 divisors[5];
+    u8 *pixels;
+    s32 value;
+    s32 digit;
+    u8 started;
+    u8 tens;
+    s32 row;
+    s32 i;
+    s32 j;
+
+    divisors[0] = 1;
+    divisors[1] = 10;
+    divisors[2] = 100;
+    divisors[3] = 1000;
+    divisors[4] = 10000;
+    pixels = func_80031BDC(0x3F6, 0);
+    for (row = 0; row < 8; row++) {
+        bzero(codes, 14);
+        D_800625A0->details->row_count[row] = 0;
+        if (ids[top + row] != 0) {
+            value = held[top + row];
+            switch (kinds[top + row]) {
+            case 4:
+                D_800625A0->details->names_a[row].width =
+                    func_80034EAC(func_80033A5C(ids[top + row]), pixels, 0x24, 0);
+                break;
+            case 3:
+                D_800625A0->details->names_a[row].width =
+                    func_80034EAC(func_80033A2C(ids[top + row]), pixels, 0x24, 0);
+                break;
+            }
+            started = 0;
+            for (i = 0, j = 4; j > 0; i++, j--) {
+                digit = value / divisors[j];
+                if (digit != 0 || started) {
+                    codes[i * 2] = digit + 0x10;
+                    started = 1;
+                    value -= digit * divisors[j];
+                } else {
+                    codes[i * 2] = 0xC3;
+                }
+            }
+            codes[8] = value % 10 + 0x10;
+            func_80033B34(codes, text, 5);
+            D_800625A0->details->names_b[row].width = func_80034EAC(text, pixels, 0x24, 1);
+            rect.x = (row & 1) * 0x18 + 0x180;
+            rect.y = (row / 2) * 13 + 0x80;
+            rect.w = 0x28;
+            rect.h = 13;
+            LoadImage(&rect, pixels);
+            func_801C5CA8(&D_800625A0->details->names_a[row], row, 0x80, 0x81);
+            func_801C7604(D_800625A0->details->names_a[row].quad, 0x24, row * 13 + 0x32,
+                          D_800625A0->details->names_a[row].width, 13);
+            rect.x = (row & 1) * 0x18 + 0x180;
+            rect.y = (row / 2) * 13 + 0x80;
+            rect.w = 0x28;
+            rect.h = 13;
+            LoadImage(&rect, pixels);
+            DrawSync(0);
+            func_801C5CA8(&D_800625A0->details->names_b[row], row, 0x80, 0x82);
+            func_801C7604(D_800625A0->details->names_b[row].quad, 0x8C, row * 13 + 0x32,
+                          D_800625A0->details->names_b[row].width, 13);
+            D_800625A0->details->names_a[row].buffer = D_800625A0->buffer;
+            D_800625A0->details->names_a[row].buffer = D_800625A0->buffer;
+            D_800625A0->details->name_shown[row] = 1;
+            if (chosen[top + row] != 0) {
+                D_800625A0->details->row_count[row] +=
+                    func_8002675C(D_800625A0->sprite_sheet, 0xE5, D_800625A0->details->rows[row],
+                                  D_800625A0->buffer, 0xB4, row * 13 + 0x36, 0x1000);
+                tens = chosen[top + row] / 10;
+                if (tens != 0) {
+                    D_800625A0->details->row_count[row] +=
+                        func_8002675C(D_800625A0->sprite_sheet, tens,
+                                      &D_800625A0->details->rows[row][D_800625A0->details->row_count[row] * 2],
+                                      D_800625A0->buffer, 0xBC, row * 13 + 0x36, 0x1000);
+                }
+                D_800625A0->details->row_count[row] +=
+                    func_8002675C(D_800625A0->sprite_sheet, (u8)(chosen[top + row] % 10),
+                                  &D_800625A0->details->rows[row][D_800625A0->details->row_count[row] * 2],
+                                  D_800625A0->buffer, 0xC4, row * 13 + 0x36, 0x1000);
+                D_800625A0->details->row_buffer[row] = D_800625A0->buffer;
+            }
+        } else {
+            D_800625A0->details->name_shown[row] = 0;
+        }
+    }
+    func_800320E8(pixels);
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D18F8);
+#endif
 
 /* Set the party's gold (capped at 9999999) and, with `remove`, take the chosen amounts out of the inventory. */
 void func_801D1F20(u32 gold, u8 *ids, u8 *amounts, s32 n, u8 *inv_ids, u8 *inv_counts, u8 *unused,
