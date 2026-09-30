@@ -1278,15 +1278,84 @@ void func_8007C9D4(u8 **pc, u8 enemy) {
     }
 }
 
+/* AI action 4b: variable b1 = the bit of a random enemy slot passing the
+ * targeting test b2 and flagged at 800d32a1; 0 when none does. */
+#ifdef NON_MATCHING
+void func_8007CB20(u8 **pc, u8 enemy) {
+    u8 candidates[8];
+    u8 *next;
+    s32 count;
+    s32 slot;
+
+    next = candidates;
+    slot = 3;
+    count = 0;
+    D_800D3400[enemy].vars[(*pc)[1]] = 0;
+    for (; slot < 11; slot++) {
+        if (func_8007A628(slot, (*pc)[2]) && D_800D32A0[slot].unk1 != 0) {
+            *next++ = slot;
+            count++;
+        }
+    }
+    if (count != 0) {
+        D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(candidates[func_8001BD40(0, count - 1)]);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007CB20);
+#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007CC50);
+/* AI action 4c: byte variable b1 = the number of targetable party slots in
+ * formation group b2. */
+void func_8007CC50(u8 **pc, u8 enemy) {
+    s32 slot;
+    u8 count = 0;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007CD10);
+    for (slot = 0; slot < 3; slot++) {
+        if (func_8007A628(slot, 0) && D_800C3EB4[slot].group == (*pc)[2]) {
+            count++;
+        }
+    }
+    D_800D3400[enemy].bytes[(*pc)[1]] = count;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007CDD0);
+/* AI action 4d: byte variable b1 = the number of targetable enemy slots in
+ * formation group b2. */
+void func_8007CD10(u8 **pc, u8 enemy) {
+    s32 slot;
+    u8 count = 0;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007CEA4);
+    for (slot = 3; slot < 11; slot++) {
+        if (func_8007A628(slot, 0) && D_800C3EB4[slot].group == (*pc)[2]) {
+            count++;
+        }
+    }
+    D_800D3400[enemy].bytes[(*pc)[1]] = count;
+}
+
+/* AI action 4e: byte variable b1 = the formation's group distance from the
+ * enemy's group to the group of the first slot in var b2. */
+void func_8007CDD0(u8 **pc, u8 enemy) {
+    u8 slot = func_80079E7C(D_800D3400[enemy].vars[(*pc)[2]]);
+
+    D_800D3400[enemy].bytes[(*pc)[1]] =
+        D_800D3364->links[D_800C3EB4[enemy + 3].group][D_800C3EB4[slot].group].distance;
+}
+
+/* AI action 4f: byte variable b1 = the number of targetable party slots in
+ * the group of the first slot in var b2. */
+void func_8007CEA4(u8 **pc, u8 enemy) {
+    s32 slot;
+    u8 count = 0;
+
+    for (slot = 0; slot < 3; slot++) {
+        if (func_8007A628(slot, 0) &&
+            D_800C3EB4[slot].group == D_800C3EB4[func_80079E7C(D_800D3400[enemy].vars[(*pc)[2]])].group) {
+            count++;
+        }
+    }
+    D_800D3400[enemy].bytes[(*pc)[1]] = count;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007CFB8);
 

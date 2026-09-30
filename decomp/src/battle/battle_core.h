@@ -115,6 +115,18 @@ typedef struct {
 
 extern BattleUnk3720 D_800D3720[8];
 extern u8 D_800D3014;
+/* Formation data (*800d3364). */
+typedef struct {
+    u8 distance;
+    u8 unk1[7];
+} GroupLink;
+
+typedef struct {
+    u8 unk0[0x140];
+    GroupLink links[8][8]; /* +0x140 per formation-group pair */
+} Formation;
+
+extern Formation *D_800D3364;
 
 /* Presentation event queue entry (0x48 bytes, 32 from 800c3fe8). */
 typedef struct {
