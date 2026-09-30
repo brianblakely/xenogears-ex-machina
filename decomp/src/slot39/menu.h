@@ -20,6 +20,15 @@ typedef struct SVECTOR {
     s16 vx, vy, vz, pad;
 } SVECTOR;
 
+typedef struct VECTOR {
+    s32 vx, vy, vz, pad;
+} VECTOR;
+
+typedef struct MATRIX {
+    s16 m[3][3];
+    s32 t[3];
+} MATRIX;
+
 typedef struct POLY_G4 {
     u32 tag;
     u8 r0, g0, b0, code;
@@ -484,7 +493,10 @@ typedef struct MenuState {
     MenuMover movers[3]; /* 0 */
     MenuBuffer buffers[2]; /* 6C */
     MenuBuffer *current; /* 1D4: the buffer being built */
-    u8 pad1D8[0x100];
+    SVECTOR viewAngles; /* 1D8: 3D view rotation */
+    VECTOR viewOffset; /* 1E0: 3D view translation */
+    MATRIX viewMatrix; /* 1F0 */
+    u8 pad210[0xC8];
     s32 frameCounter; /* 2D8: frames since last cleared */
     void *sheet; /* 2DC: sprite sheet */
     void *labels; /* 2E0: label text */
@@ -679,6 +691,10 @@ void func_80043BFC(void *prim, s32 on);  /* SetSemiTrans */
 void func_80043C24(void *prim, s32 on);  /* SetShadeTex */
 void func_80043CB0(POLY_FT4 *poly);      /* SetPolyFT4 */
 void func_80043CC4(POLY_G4 *poly);       /* SetPolyG4 */
+void func_8003F738(SVECTOR *angles, MATRIX *m); /* RotMatrix */
+void func_80049D9C(MATRIX *m, VECTOR *t);      /* TransMatrix */
+void func_80049EFC(MATRIX *m);                 /* SetRotMatrix */
+void func_80049F8C(MATRIX *m);                 /* SetTransMatrix */
 void func_80044AD8(u32 *ot, s32 count);  /* ClearOTagR */
 void func_8004495C(RECT *rect, s32 x, s32 y); /* MoveImage */
 void func_80044BD0(u32 *ot);             /* DrawOTag */

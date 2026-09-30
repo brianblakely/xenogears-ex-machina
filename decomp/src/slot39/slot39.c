@@ -1780,7 +1780,58 @@ void func_801D1CA0(void) {
     func_801D1258();
 }
 
+/* Step the view motion (3/4 start moving in/out, 1/2 move) and load the view
+ * rotation and translation into the GTE. */
+#ifdef NON_MATCHING
+void func_801D1D40(void) {
+    MenuState *state;
+    u8 motion;
+    s32 z;
+
+    state = D_800625A0;
+    switch (state->viewMotion) {
+    case 4:
+        state->viewOffset.vz = 0x200;
+        motion = 2;
+        goto start;
+    case 3:
+        state->viewOffset.vz = 0x800;
+        motion = 1;
+    start:
+        state->viewAngles.vz = 0;
+        state->viewAngles.vy = 0;
+        state->viewAngles.vx = 0;
+        state->viewOffset.vy = 0;
+        state->viewOffset.vx = 0;
+        state->viewMotion = motion;
+        break;
+    case 2:
+        state->viewAngles.vy -= 0x60;
+        state->viewOffset.vz = z = state->viewOffset.vz + 0x40;
+        if (z >= 0xe00) {
+            state->viewMotion = 0;
+        }
+        break;
+    case 1:
+        state->viewAngles.vx += 0x7c;
+        state->viewOffset.vz = z = state->viewOffset.vz - 0x30;
+        if (z < 0x200) {
+            state->viewOffset.vz = 0x200;
+            state->viewAngles.vz = 0;
+            state->viewAngles.vx = 0;
+            state->viewAngles.vy = 0;
+            state->viewMotion = 0;
+        }
+        break;
+    }
+    func_8003F738(&D_800625A0->viewAngles, &D_800625A0->viewMatrix);
+    func_80049D9C(&D_800625A0->viewMatrix, &D_800625A0->viewOffset);
+    func_80049EFC(&D_800625A0->viewMatrix);
+    func_80049F8C(&D_800625A0->viewMatrix);
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D1D40);
+#endif
 
 /* Start the view moving in (3) with its sound. */
 void func_801D1E80(void) {
