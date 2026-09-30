@@ -941,7 +941,7 @@ void func_800995A0(u8 slot, u8 kind, u16 flag, u8 amount) {
     u8 index = 0xF;
     u16 state;
 
-    if (D_800CCCE8[D_800C3E04].pilot.status8A & 0x2000) {
+    if (D_800CCCE8[D_800C3E04].pilot.status88.half.permanent & 0x2000) {
         amount *= 2;
     }
     record = &D_800CCCE8[slot];
@@ -1004,7 +1004,7 @@ void func_800995A0(u8 slot, u8 kind, u16 flag, u8 amount) {
     case 5:
     case 7:
     case 9:
-        state = D_800C3E34->pilot.status88 | D_800C3E34->pilot.status8A;
+        state = D_800C3E34->pilot.status88.half.active | D_800C3E34->pilot.status88.half.permanent;
         if (state & 5) {
             amount *= 2;
         }
@@ -1025,9 +1025,180 @@ void func_800995A0(u8 slot, u8 kind, u16 flag, u8 amount) {
     D_800CCCE8[slot].statusTimers[index] = amount;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80099890);
+/* Count down slot's timed statuses at the start of its turn, clearing each one
+ * whose timer runs out; a slot in a gear counts down its gear's statuses
+ * instead (80099CF0). Returns a mask of the statuses that ended. */
+u16 func_80099890(u8 slot) {
+    Combatant *record = &D_800CCCE8[slot];
+    UnitStatus *gear = &D_800CCCE8[slot].gear;
+    volatile u8 *timers = D_800CCCE8[slot].statusTimers;
+    u16 ended;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80099CF0);
+    if (D_800CCCE8[slot].flags15A & 0x80) {
+        func_80099CF0(gear, record, timers);
+        return 0;
+    }
+    ended = 0;
+    if (record->pilot.status7C & 0x1000) {
+        timers[1] += -1;
+        if (timers[1] == 0) {
+            ended = 0x4000;
+            record->pilot.status7C &= ~0x1000;
+        }
+    }
+    if (record->pilot.status80 & 0x1000) {
+        timers[2] += -1;
+        if (timers[2] == 0) {
+            ended |= 0x2000;
+            record->pilot.status80 &= ~0x1000;
+        }
+    }
+    if (record->pilot.status80 & 0x800) {
+        timers[3] += -1;
+        if (timers[3] == 0) {
+            ended |= 0x1000;
+            record->pilot.status80 &= ~0x800;
+            record->pilot.status7A &= ~0x20;
+        }
+    }
+    if ((record->pilot.status84.word & 0x80008000) == 0x8000) {
+        timers[4] += -1;
+        if (timers[4] == 0) {
+            ended |= 0x800;
+            record->pilot.status84.half.active &= ~0x8000;
+        }
+    }
+    if ((record->pilot.status84.word & 0x40004000) == 0x4000) {
+        timers[5] += -1;
+        if (timers[5] == 0) {
+            ended |= 0x400;
+            record->pilot.status84.half.active &= ~0x4000;
+        }
+    }
+    if ((record->pilot.status84.word & 0x20002000) == 0x2000) {
+        timers[6] += -1;
+        if (timers[6] == 0) {
+            ended |= 0x200;
+            record->pilot.status84.half.active &= ~0x2000;
+        }
+    }
+    if ((record->pilot.status84.word & 0x10001000) == 0x1000) {
+        timers[7] += -1;
+        if (timers[7] == 0) {
+            ended |= 0x100;
+            record->pilot.status84.half.active &= ~0x1000;
+        }
+    }
+    if ((record->pilot.status84.word & 0x08000800) == 0x800) {
+        timers[8] += -1;
+        if (timers[8] == 0) {
+            ended |= 0x80;
+            record->pilot.status84.half.active &= ~0x800;
+        }
+    }
+    if ((record->pilot.status88.word & 0x80008000) == 0x8000) {
+        timers[9] += -1;
+        if (timers[9] == 0) {
+            ended |= 0x40;
+            record->pilot.status88.half.active &= ~0x8000;
+        }
+    }
+    if ((record->pilot.status88.word & 0x40004000) == 0x4000) {
+        timers[10] += -1;
+        if (timers[10] == 0) {
+            ended |= 0x20;
+            record->pilot.status88.half.active &= ~0x4000;
+        }
+    }
+    if ((record->pilot.status88.word & 0x10001000) == 0x1000) {
+        timers[11] += -1;
+        if (timers[11] == 0) {
+            ended |= 0x10;
+            record->pilot.status88.half.active &= ~0x1000;
+        }
+    }
+    if ((record->pilot.status8C.half.active & 0xF000) && !(record->pilot.status8C.half.permanent & 0xF000)) {
+        timers[12] += -1;
+        if (timers[12] == 0) {
+            ended |= 8;
+            record->pilot.status8C.half.active &= ~0xF000;
+        }
+    }
+    if ((record->pilot.status8C.half.active & 0xF00) && !(record->pilot.status8C.half.permanent & 0xF00)) {
+        timers[13] += -1;
+        if (timers[13] == 0) {
+            ended |= 4;
+            record->pilot.status8C.half.active &= ~0xF00;
+        }
+    }
+    return ended;
+}
+
+/* Count down the timed statuses of a gear, clearing each one whose timer runs
+ * out; the end of gear status 0x20 also ends the pilot's status 0x1000. */
+void func_80099CF0(UnitStatus *gear, Combatant *record, volatile u8 *timers) {
+    if (gear->status7C & 0x200) {
+        timers[1] += -1;
+        if (timers[1] == 0) {
+            gear->status7C &= ~0x200;
+        }
+    }
+    if (gear->status7C & 0x100) {
+        timers[2] += -1;
+        if (timers[2] == 0) {
+            gear->status7C &= ~0x100;
+        }
+    }
+    if (gear->status7C & 0x80) {
+        timers[3] += -1;
+        if (timers[3] == 0) {
+            gear->status7C &= ~0x80;
+        }
+    }
+    if (gear->status7C & 0x20) {
+        timers[4] += -1;
+        if (timers[4] == 0) {
+            gear->status7C &= ~0x20;
+            record->pilot.status7C &= ~0x1000;
+        }
+    }
+    if (gear->status7C & 0x10) {
+        timers[5] += -1;
+        if (timers[5] == 0) {
+            gear->status7C &= ~0x10;
+        }
+    }
+    if (gear->status7C & 0xF000) {
+        timers[7] += -1;
+        if (timers[7] == 0) {
+            gear->status7C &= ~0xF000;
+        }
+    }
+    if (gear->status7C & 0xF00) {
+        timers[8] += -1;
+        if (timers[8] == 0) {
+            gear->status7C &= ~0xF00;
+        }
+    }
+    if (gear->status80 & 0x1000) {
+        timers[10] += -1;
+        if (timers[10] == 0) {
+            gear->status80 &= ~0x1000;
+        }
+    }
+    if (gear->status80 & 0x40) {
+        timers[11] += -1;
+        if (timers[11] == 0) {
+            gear->status80 &= ~0x40;
+        }
+    }
+    if (gear->status80 & 0x20) {
+        timers[12] += -1;
+        if (timers[12] == 0) {
+            gear->status80 &= ~0x20;
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80099FB0);
 
