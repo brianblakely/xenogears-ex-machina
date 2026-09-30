@@ -10164,7 +10164,49 @@ void func_800A31E8(void) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A3474);
 
+#ifdef NON_MATCHING
+void func_800A3C8C(void) {
+    s32 changed;
+    s32 i;
+    u8 *record;
+    FieldDescriptor *descriptor;
+
+    D_800AFC50 = D_8005A4E4;
+    D_800AF880.components.descriptor_count = *D_800AFC50;
+    D_800AFC50 += 0x3C;
+    *(ViewSnapshot *)&D_800AF880.world_angles = *(ViewSnapshot *)D_800AFC50;
+    D_800AFC50 += 0x920;
+    changed = 0;
+    for (i = 0; i < 3; i++) {
+        if (D_8005A408[i] != D_8005A39C->unk22B1[i]) {
+            changed++;
+        }
+    }
+    for (i = 0; i < D_800ADBFC; i++) {
+        record = D_800AFC50;
+        D_800AFC50 += 0xC;
+        if (D_800AF880.components.descriptors[i].actor->unk124 != -1 && D_800AF880.components.descriptors[i].actor->unk0EA != 0xFF) {
+            *(s16 *)(record + 0x20) = D_800AF880.components.descriptors[i].actor->unk0EA;
+        }
+        descriptor = &D_800AF880.components.descriptors[i];
+        if (!(descriptor->actor->layer_flags & 0x1000000)
+            && (D_800B2078.unk2268 == 0 || !(descriptor->actor->flags & 0x600) || changed == 0)) {
+            func_80021D50(descriptor->model, D_800AFC50);
+        }
+        record = D_800AFC50;
+        descriptor = &D_800AF880.components.descriptors[i];
+        D_800AFC50 = record + 0x168;
+        if (descriptor->actor->unk134 & 0x80) {
+            D_800AFC50 = record + 0x174;
+        }
+        if (descriptor->actor->state.word & 0x1000) {
+            D_800AFC50 += 0x10;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A3C8C);
+#endif
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A3F4C);
 

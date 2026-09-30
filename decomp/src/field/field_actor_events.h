@@ -57,6 +57,16 @@ s32 func_8009FEE4(s32 slot);
 /* Floor triangle of `layer` under (x, z), with its point and normal. */
 s16 func_8007B1C4(s32 x, s32 z, s32 layer, SVECTOR *point, VECTOR *normal);
 
+/* The field snapshot (8005a4e4) and its read cursor. */
+extern u8 D_8005A4E4[];
+extern u8 *D_800AFC50;
+extern s32 D_8005A408[3];      /* party modes when saved */
+void func_80021D50(FieldModel *model, u8 *checkpoint);
+/* The view's world block (800afa54, 0x74 bytes) as copied byte-wise. */
+typedef struct {
+    u8 bytes[0x74];
+} ViewSnapshot;
+
 s32 func_8009EB48(FieldActor *actor, s32 tag); /* -1 when a slot has `tag` */
 s32 func_800A3090(s32 actor, s32 event);       /* entry PC of an actor's event */
 
