@@ -279,9 +279,9 @@ void func_800718BC(void) {
 void func_80071964(void) {
     s32 frames;
 
-    if (D_800D2CA4.message != 0 && (D_800D2C94 & D_800C48E8) == 0) {
+    if (D_800D2C94.message != 0 && (D_800D2C94.targets & D_800C48E8) == 0) {
         frames = 3;
-        D_800D39B8.width = func_80034EAC(func_80033728(D_800D39F0, D_800D2CA4.message),
+        D_800D39B8.width = func_80034EAC(func_80033728(D_800D39F0, D_800D2C94.message),
                                          D_800D39B8.pixels, 0x39, 1);
         LoadImage(&D_800D39B8.rect, D_800D39B8.pixels);
         do {
@@ -331,7 +331,7 @@ void func_80071A8C(void) {
 void func_80071AE0(void) {
     s32 frames;
 
-    if (D_800D2CA4.message != 0 && (D_800D2C94 & D_800C48E8) == 0) {
+    if (D_800D2C94.message != 0 && (D_800D2C94.targets & D_800C48E8) == 0) {
         func_80079E18(7);
         frames = 0x3B;
         D_800C3EAC->eventsDone = 0;
@@ -359,7 +359,7 @@ void func_80071B94(u8 mode) {
     u8 *bytes;
 
     D_800C3E8C = 1;
-    message = &D_800D2CA4.message;
+    message = &D_800D2C94.message;
     *message = 0;
     if (D_800C3EAC->actor == 0) {
         return;
@@ -374,7 +374,7 @@ void func_80071B94(u8 mode) {
     for (i = 4, bytes = message - 7; i >= 0; i--) {
         *bytes-- = 0;
     }
-    D_800D2C94 = 0;
+    D_800D2C94.targets = 0;
     func_80099890(D_800C3EAC->actor);
     if (D_800C3EAC->actor >= 3) {
         if (mode == 0) {
@@ -436,7 +436,7 @@ void func_80071B94(u8 mode) {
         func_80071A8C();
         func_80070EB0(0);
         for (i = 0; i < 8; i++) {
-            if (func_80089C9C(D_800D2C94, i + 3)) {
+            if (func_80089C9C(D_800D2C94.targets, i + 3)) {
                 D_800C3D18[i].unk1[1] = 1;
             }
         }
@@ -470,16 +470,16 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80071B94);
 void func_80072270(void) {
     s32 member;
 
-    if (D_800D2C9E & 7) {
+    if (D_800D2C94.held & 7) {
         for (member = 0; member < 3; member++) {
-            if (func_80089C9C(D_800D2C9E, member)) {
+            if (func_80089C9C(D_800D2C94.held, member)) {
                 D_800D2DCC.ready[member] = 0;
                 D_800D2DCC.timers[1][member] = D_800D2DCC.timers[0][member];
                 D_800D2D28->reaction[member] = 1;
             }
         }
     }
-    D_800D2C9E = 0;
+    D_800D2C94.held = 0;
 }
 
 /* Give every enemy in the act-together mask its turn: clear the event types,
@@ -1398,7 +1398,28 @@ void func_8007893C(u8 index, u8 actor) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80078998);
+/* Execute the actor's action `index`: commit it, queue its animation event
+ * with the committed targets and, when those differ from the action's own,
+ * retarget the queued move event (0xfd). */
+void func_80078998(u8 actor, u8 index) {
+    s32 i;
+
+    func_8007893C(index, actor);
+    D_800C3EAC->unk2DC = D_800D2E5C[index].arg1 + 1;
+    func_80085CCC(actor, D_800D2E5C[index].targets, D_800D2E5C[index].animation);
+    func_80085C88(D_800C3EAC->eventCount);
+    D_800C3FE8[D_800C3EAC->eventCount].type = D_800D2E5C[index].animation;
+    D_800C3FE8[D_800C3EAC->eventCount].targetMask = D_800D2C94.targets;
+    func_800785D4(actor, index);
+    if (D_800D2E5C[index].targets != D_800D2C94.targets) {
+        for (i = 0; i < D_800C3EAC->eventCount; i++) {
+            if (D_800C3FE8[i].type == 0xFD) {
+                D_800C3FE8[i].targetMask = D_800D2C94.targets;
+                return;
+            }
+        }
+    }
+}
 
 /* Queue a move event (0xfd) for the actor's action `index` toward target:
  * compute the move, then (unless the action's parameter is 1) choose the
@@ -1569,7 +1590,7 @@ void func_80079840(u8 actor, u8 target) {
         enemy = target - 3;
         D_800D3400[enemy].vars[7] = func_80089C08(actor);
         for (i = 0; i < 5; i++) {
-            D_800D3400[enemy].bytes[9 + i] = D_800D2CA4.enemyBytes[i];
+            D_800D3400[enemy].bytes[9 + i] = D_800D2C94.enemyBytes[i];
         }
         if ((u16)D_800C48E8 & func_80089C08(D_800C3EAC->slots[actor].defaultTarget)) {
             D_800D3400[enemy].bytes[14] = 1;
@@ -3863,8 +3884,8 @@ void func_80085B58(u8 slot) {
 /* Commit the targets for an item/effect and run 80098c6c with `param`. */
 void func_80085C48(u8 actor, s16 targets, u16 param) {
     D_800C48E8 = 0;
-    D_800D2C94 = targets;
-    D_800D2C96 = D_800D39DC;
+    D_800D2C94.targets = targets;
+    D_800D2C94.alive = D_800D39DC;
     func_80098C6C(param);
 }
 
@@ -3876,16 +3897,16 @@ void func_80085C88(u8 queue) {
 }
 
 /* Commit an action (attacker, target mask, animation) and resolve it. */
-void func_80085CCC(u8 actor, s16 targets, s16 animation) {
+void func_80085CCC(u8 actor, u16 targets, s16 animation) {
     u8 action; /* 1-based */
 
     D_800C48E8 = 0;
-    D_800D2CA4.actor = actor;
+    D_800D2C94.actor = actor;
     action = D_800C3EAC->unk2DC;
-    D_800D2C94 = targets;
-    D_800D2C98 = animation;
-    D_800D2C96 = D_800D39DC;
-    D_800D2CA4.action = action - 1;
+    D_800D2C94.targets = targets;
+    D_800D2C94.animation = animation;
+    D_800D2C94.alive = D_800D39DC;
+    D_800D2C94.action = action - 1;
     func_800941A4();
 }
 
@@ -5026,7 +5047,7 @@ void func_800957D8(void) {
     D_800C3E34->pilot.status8C.half.active = D_800C3E34->pilot.status88.half.active = D_800C3E34->pilot.status84.half.active = D_800C3E34->pilot.status80 = D_800C3E34->pilot.status7C = 0;
     D_800D2C88[D_800C3E50] = 2;
     D_800D2C54[D_800C3E50] = (D_800C3E34->pilot.maxHp * D_800C3DFC->power) / 10;
-    D_800D2C9E |= 1 << D_800C3E50;
+    D_800D2C94.held |= 1 << D_800C3E50;
 }
 #else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800957D8);
@@ -5160,8 +5181,8 @@ void func_80098C6C(u16 param) {
         bit <<= 1;
     }
     D_800C34B0->shownCommand = D_800D2200[param & 0xFF].animation;
-    if (D_800D2C9E & 0x8000) {
-        D_800D2C98 = 0xC2;
+    if (D_800D2C94.held & 0x8000) {
+        D_800D2C94.animation = 0xC2;
     }
 }
 #else

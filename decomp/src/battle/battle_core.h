@@ -205,11 +205,7 @@ typedef struct {
 
 extern MessageImage D_800D39B8;
 extern void *D_800D39F0;   /* battle message table */
-extern s16 D_800D2C94;     /* committed target mask */
-extern u16 D_800D2C96;     /* alive mask at commit */
-extern s16 D_800D2C98;     /* committed animation */
-extern s16 D_800C48E8;
-extern u16 D_800D2C9E;     /* party members whose timers are held */
+extern u16 D_800C48E8;
 
 /* Eight 0x60-byte message entries from 800d36c8. */
 typedef struct {
@@ -332,16 +328,22 @@ typedef struct {
 extern EnemyReaction D_800C3D18[8];
 extern u8 D_800C3E8C;      /* pending battle message + 1 */
 extern u8 D_800D366C;      /* menu effects enabled */
-/* The committed action (800d2ca4). */
+/* The committed action (800d2c94). */
 typedef struct {
-    u8 enemyBytes[5]; /* copied to an enemy's AI bytes 9-13 */
-    u8 actor;         /* +0x5 committing actor */
-    u8 action;        /* +0x6 committed action index */
-    u8 pad7[0xB - 0x7];
-    u8 message;       /* +0xB pending battle message id */
+    u16 targets;      /* +0x00 target mask */
+    u16 alive;        /* +0x02 alive mask at commit */
+    s16 animation;    /* +0x04 */
+    u8 pad6[0xA - 0x6];
+    u16 held;         /* +0x0A party members whose timers are held */
+    u8 padC[0x10 - 0xC];
+    u8 enemyBytes[5]; /* +0x10 copied to an enemy's AI bytes 9-13 */
+    u8 actor;         /* +0x15 committing actor */
+    u8 action;        /* +0x16 committed action index */
+    u8 pad17[0x1B - 0x17];
+    u8 message;       /* +0x1B pending battle message id */
 } ActionCommit;
 
-extern ActionCommit D_800D2CA4;
+extern ActionCommit D_800D2C94;
 extern u8 D_800C204C;
 extern u8 D_800C3E18;
 extern u8 D_800C3D70[0x30];
@@ -633,6 +635,8 @@ void func_80078658(u8 index, u8 actor);
 void func_800787E0(u8 value, u8 actor);
 void func_8007887C(u8 actor);
 void func_8007893C(u8 index, u8 actor);
+void func_80085C88(u8 queue);
+void func_80085CCC(u8 actor, u16 targets, s16 animation);
 void func_80085350(void);
 void func_80085388(void);
 void func_800B89FC(s32 mode, u8 actor, s32 arg2, s32 arg3);
