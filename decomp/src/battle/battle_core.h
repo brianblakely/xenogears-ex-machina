@@ -116,7 +116,8 @@ typedef struct {
     u8 menuDone;       /* +0x2DE */
     u8 unk2DF[0x2E8 - 0x2DF];
     u8 unk2E8;         /* attack page target */
-    u8 unk2E9[0x2EB - 0x2E9];
+    u8 unk2E9;
+    u8 unk2EA;
     u8 reaction[3];    /* +0x2EB per party member */
     u8 unk2EE[0x2F6 - 0x2EE];
     u8 repeatArmed;    /* +0x2F6 */
@@ -476,6 +477,25 @@ extern u8 D_800C3E2C;
 extern u16 D_800D2C30;
 extern u8 D_800D2C38;
 extern u8 D_800C3200[][6]; /* list separator rows by row count */
+extern u8 D_800D2C34;
+extern u8 D_800C34CC[];    /* combo step flags */
+
+/* Direction arrow block (*800c3e24, 0xec bytes). */
+typedef struct {
+    u8 unk0[0xE6];
+    u8 arrows[4];      /* +0xE6 a target lies that way */
+    u8 unkEA[2];
+} DirectionArrows;
+
+extern DirectionArrows *D_800C3E24;
+
+/* Persistent character records (resident, 0x20 bytes from 8006ecf8). */
+typedef struct {
+    u16 combos;
+    u8 unk2[0x1E];
+} CharacterCombos;
+
+extern CharacterCombos D_8006ECF8[];
 
 /* Per-slot formation information (0x1c bytes from 800c3eb4). */
 typedef struct {
@@ -659,6 +679,8 @@ void func_80077980(void);
 u8 func_80083FF4(u8 member, u8 slot);
 void func_80098D2C(u8 slot, u8 param);
 void func_8009AC48(u8 slot, s32 mode);
+u8 func_80084854(u8 origin, u8 direction);
+void func_80093B08(u8 member);
 s32 func_8008AC00(s32 count);
 void func_800769E8(RECT *rect, u32 *pixels);
 void func_80097D08(void);

@@ -2833,7 +2833,26 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80081504);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800816F8);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008189C);
+/* Frame the camera and target cursor on the attack page target, mark the
+ * four directions that lead to another target and show its name. */
+void func_8008189C(u8 member) {
+    s32 direction;
+
+    if (D_800C3EAC->unk2E9 == 0) {
+        func_800BC404(func_80089C08(D_800C3EAC->unk2E8));
+        func_800BCD98(func_80089C08(D_800C3EAC->unk2E8));
+        for (direction = 0; direction < 4; direction++) {
+            if (func_80084854(D_800C3EAC->unk2E8, direction) != D_800C3EAC->unk2E8) {
+                D_800C3E24->arrows[direction] = 1;
+            } else {
+                D_800C3E24->arrows[direction] = 0;
+            }
+        }
+        if (D_800D2C34 != 4) {
+            func_80093B08(member);
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800819A4);
 
@@ -3093,7 +3112,29 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80086028);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800861D0);
 
+/* Whether the member can use combo step `step` now: without a combo chain
+ * (+0x2d6) always; otherwise its character must know the combo flag
+ * (800c34cc) and the chain must allow another step. */
+#ifdef NON_MATCHING
+s32 func_80086B88(s32 step, u8 member) {
+    u8 index = step + (D_800C3EAC->unk2CC[0] + 1) * 3;
+    s32 result = 1;
+
+    if (D_800C3EAC->unk2D6 != 0) {
+        if (D_800D2C34 == 4) {
+            index = step + 12;
+        }
+        if (!func_80089C6C(D_8006ECF8[D_800D2D24[member]].combos, D_800C34CC[index])) {
+            result = 0;
+        } else if (D_800C3EAC->unk2CC[0] != 0xFF && D_800D2C34 != 4 && D_800D2C34 < D_800C3EAC->unk2CC[0] + 1) {
+            result = 0;
+        }
+    }
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80086B88);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80086C88);
 
