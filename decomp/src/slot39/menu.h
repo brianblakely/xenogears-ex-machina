@@ -712,8 +712,8 @@ extern u8 D_801EA528[];  /* field menu command labels */
 extern u8 D_801EA524[];  /* label image layout */
 extern u8 D_801EA530[];
 extern u8 D_801EA534[];  /* party label layout */
-extern u16 D_801E9E4C[3][2]; /* party label positions */
-extern u16 D_801E9E58[3][2];
+extern s32 D_801E9E4C[3]; /* party label positions: x */
+extern s32 D_801E9E58[3]; /* y */
 extern u8 D_801EA53C[];  /* save file screen command labels */
 extern u8 D_801EA542[];  /* title file screen load command labels */
 extern u8 D_801EA558[];

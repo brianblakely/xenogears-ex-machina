@@ -1950,11 +1950,9 @@ void func_801D1CA0(void) {
 
 /* Step the view motion (3/4 start moving in/out, 1/2 move) and load the view
  * rotation and translation into the GTE. */
-#ifdef NON_MATCHING
 void func_801D1D40(void) {
     MenuState *state;
     u8 motion;
-    s32 z;
 
     state = D_800625A0;
     switch (state->viewMotion) {
@@ -1975,15 +1973,15 @@ void func_801D1D40(void) {
         break;
     case 2:
         state->viewAngles.vy -= 0x60;
-        state->viewOffset.vz = z = state->viewOffset.vz + 0x40;
-        if (z >= 0xe00) {
+        state->viewOffset.vz += 0x40;
+        if (state->viewOffset.vz >= 0xe00) {
             state->viewMotion = 0;
         }
         break;
     case 1:
         state->viewAngles.vx += 0x7c;
-        state->viewOffset.vz = z = state->viewOffset.vz - 0x30;
-        if (z < 0x200) {
+        state->viewOffset.vz -= 0x30;
+        if (state->viewOffset.vz < 0x200) {
             state->viewOffset.vz = 0x200;
             state->viewAngles.vz = 0;
             state->viewAngles.vx = 0;
@@ -1997,9 +1995,6 @@ void func_801D1D40(void) {
     SetRotMatrix(&D_800625A0->viewMatrix);
     SetTransMatrix(&D_800625A0->viewMatrix);
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D1D40);
-#endif
 
 /* Start the view moving in (3) with its sound. */
 void func_801D1E80(void) {
@@ -2054,14 +2049,13 @@ void func_801D2484(void) {
 
 /* Show (`show`) the six party labels, placing labels 3-5 as quads, or hide
  * the party name labels. */
-#ifdef NON_MATCHING
 void func_801D249C(u8 show) {
     s32 i;
 
     if (show) {
         func_801E7E68(D_800625A0->partyLabels, D_801EA534, 4, 6);
         for (i = 0; i < 3; i++) {
-            func_801C851C(D_800625A0->partyLabels[3 + i].verts, D_801E9E4C[i][0], D_801E9E58[i][0],
+            func_801C851C(D_800625A0->partyLabels[3 + i].verts, D_801E9E4C[i], D_801E9E58[i],
                           D_800625A0->partyLabels[3 + i].width, 0xd);
             D_800625A0->partyLabels[3 + i].count = D_800625A0->bufferIndex;
             D_800625A0->partyLabels[3 + i].visible = 1;
@@ -2073,9 +2067,6 @@ void func_801D249C(u8 show) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D249C);
-#endif
 
 /* Clear the party block's six bytes at +14. */
 void func_801D25E4(void) {
@@ -2112,11 +2103,11 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D29A8);
 
 /* Open the field menu: the two top portraits, then each party member's and
  * gear's name image, the command cursor, panels and money window. */
-#ifdef NON_MATCHING
 void func_801D2D38(void) {
     s32 i;
     s32 row;
     void *block;
+    s32 gear;
 
     if (D_80059460 == 0) {
         for (row = 0; row < 2; row++) {
@@ -2130,22 +2121,21 @@ void func_801D2D38(void) {
         }
         func_801C8574(0x5e);
     }
-    for (i = 0, row = 6; i < 3; i++, row += 2) {
+    for (i = 0; i < 3; i++) {
         if (D_800625A0->party->ids[i] != 0xff) {
             func_801E8DA8(D_800625A0->party->ids[i], i * 2);
-            func_801E8DA8(D_8006D8A0[D_800625A0->party->ids[i]].gear != 0xff
-                              ? D_8006D8A0[D_800625A0->party->ids[i]].gear + 11
-                              : 0xff,
-                          row);
+            gear = D_8006D8A0[D_800625A0->party->ids[i]].gear;
+            if (gear != 0xff) {
+                func_801E8DA8(gear + 11, (i + 3) * 2);
+            } else {
+                func_801E8DA8(0xff, (i + 3) * 2);
+            }
         }
     }
     func_801E8474(8, D_801EA19C);
     func_801D29A8(1, 0);
     func_801D28FC();
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D2D38);
-#endif
 
 /* Refresh the item/status panels of `slot` for `mode` over two frames. */
 void func_801D2EC0(u8 slot, u8 mode) {
