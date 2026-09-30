@@ -513,7 +513,9 @@ typedef struct {
     s32 unk2264;               /* 2264: 801e layer enabled */
     s32 unk2268;               /* 2268 */
     s32 controlled;            /* 226C: controlled actor/descriptor index */
-    u8 unk2270[0x2294 - 0x2270];
+    u16 encounter_music[16];   /* 2270: per encounter kind */
+    u16 battle_music;          /* 2290: the chosen encounter's */
+    u8 unk2292[2];
     s32 unk2294;               /* 2294 */
     s32 unk2298;               /* 2298 */
     s32 unk229C;               /* 229C: at most 32 */

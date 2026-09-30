@@ -1160,7 +1160,84 @@ void func_80078C5C(void) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80078D44);
 
+extern u8 D_800ADB04;       /* random encounters enabled */
+extern s32 D_800ADBEC;
+extern u8 D_800594F8;
+extern u8 D_80059508;       /* the battle's encounter kind */
+extern u8 D_80065ADC[16];   /* encounter kind weights */
+void func_800199CC(s32 mode);
+void func_80281204(s32 kind);
+
+#ifdef NON_MATCHING
+/* Count down the random-encounter steps while encounters are possible; on a
+ * step whose drawn number (800b22a0) reaches zero, pick an encounter kind by
+ * the weights at 80065adc and request battle with its music.
+ * Does not match: the original reloads the step count on every pass of
+ * the zero search, and schedules one early constant differently. */
+void func_80079288(void) {
+    s32 start[16];
+    u8 *weights;
+    s32 total;
+    s32 sum;
+    s32 roll;
+    s32 found;
+    s32 i;
+
+    if (D_800ADBDC == 0 || D_800ADBE4 == 0 || D_800ADBEC == 0 || D_8004F308 == -1 || D_800B2078.unk2298 == 0
+        || D_800B2078.encounter_inhibition == -1 || D_800ADB2C == 1 || D_800ADB04 == 0) {
+        return;
+    }
+    if (--D_800B2078.unk2294 == 0) {
+        func_8008E718();
+    }
+    for (i = 0; i < D_800B2078.unk229C; i++) {
+        if (D_800B2078.unk22A0[i] != 0xFFFF) {
+            D_800B2078.unk22A0[i]--;
+        }
+    }
+    for (i = 0; i < D_800B2078.unk229C; i++) {
+        if (D_800B2078.unk22A0[i] == 0) {
+            goto draw;
+        }
+    }
+    return;
+draw:
+    D_800B2078.unk22A0[i] = 0xFFFF;
+    weights = D_80065ADC;
+    total = 0;
+    for (i = 0; i < 16; i++) {
+        total += weights[i];
+    }
+    sum = 0;
+    for (i = 0; i < 16; i++) {
+        start[i] = sum;
+        sum += weights[i];
+    }
+    roll = (rand() * (total + 1)) >> 15;
+    found = 0;
+    for (i = 15; i >= 0; i--) {
+        if (weights[i] != 0 && start[i] < roll) {
+            found++;
+            break;
+        }
+    }
+    if (found != 0) {
+        D_80059508 = i;
+        D_800594F8 = 0;
+        D_800B2078.battle_music = D_800B2078.encounter_music[i];
+        if (D_8004F370 == 0) {
+            func_800199CC(2);
+        }
+        D_800ADBDC = 0;
+        D_800ADBD0 = 1;
+        if (D_800C268C == 0) {
+            func_80281204(i);
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80079288);
+#endif
 
 extern s32 D_8004F30C;
 extern s32 D_8004F310;
