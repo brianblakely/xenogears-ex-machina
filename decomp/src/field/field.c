@@ -11404,14 +11404,12 @@ void func_800AABD8(void) {
     DrawSync(0);
 }
 
-#ifdef NON_MATCHING
 /* Allocate the 33 sprites (the first 16x16, the rest 8x8), each with a
- * draw mode per buffer. Differs only in the i/copy register choice. */
+ * draw mode per buffer. */
 void func_800AAC08(void) {
     RECT window;
     SPRT *sprite;
     SPRT *copy;
-    s32 size;
     s32 i;
 
     D_800AFC68 = func_80031BDC(0x840, 0);
@@ -11429,25 +11427,20 @@ void func_800AAC08(void) {
         sprite->g0 = 0x80;
         sprite->b0 = 0x80;
         if (i == 0) {
-            size = 0x10;
             sprite->u0 = 0xE0;
             sprite->v0 = 0x70;
+            sprite->h = sprite->w = 0x10;
         } else {
             sprite->v0 = 0x60;
-            size = 8;
             sprite->u0 = 0xE0;
+            sprite->h = sprite->w = 8;
         }
-        sprite->w = size;
-        sprite->h = size;
         sprite->x0 = 0xA0;
         sprite->y0 = 0x70;
         sprite->clut = GetClut(0x100, 0xF7);
         *copy = *sprite;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AAC08);
-#endif
 
 /* Set sprite `index`'s colour in both buffers. */
 void func_800AADC8(s32 index, s32 r, s32 g, s32 b) {
@@ -11480,7 +11473,78 @@ void func_800AAE4C(s32 index, s32 x, s32 y, s32 anchor) {
 
 #include "field_picture.h"
 
+#ifdef NON_MATCHING
+/* Set up the picture: four marker sprites (the first 16x16, the rest
+ * 8x8) and the three 128x224 picture pieces from the 8-bit pages at
+ * (300, 100). Differs only in the scheduling of one constant load. */
+void func_800AAF80(void) {
+    RECT window;
+    SPRT *sprite;
+    SPRT *copy;
+    POLY_FT4 *quad;
+    POLY_FT4 *quad_copy;
+    s32 i;
+
+    D_800C3A3C = func_80031BDC(sizeof(ScreenPieces), 0);
+    D_800B1DF0 = func_80031BDC(sizeof(PictureMarks), 0);
+    setRECT(&window, 0, 0, 0xFF, 0xFF);
+    for (i = 0; i < 4; i++) {
+        SetDrawMode(&D_800B1DF0->modes[i][0], 0, 0, GetTPage(0, 0, 0x3C0, 0x140), &window);
+        SetDrawMode(&D_800B1DF0->modes[i][1], 0, 0, GetTPage(0, 0, 0x3C0, 0x140), &window);
+        sprite = &D_800B1DF0->sprites[i][0];
+        SetSprt(sprite);
+        copy = sprite + 1;
+        setRGB0(sprite, 0x80, 0x80, 0x80);
+        sprite->x0 = 0xA0;
+        sprite->y0 = 0x70;
+        if (i == 0) {
+            sprite->u0 = 0xE0;
+            sprite->v0 = 0x70;
+            sprite->h = sprite->w = 0x10;
+        } else {
+            sprite->v0 = 0x60;
+            sprite->u0 = 0xE0;
+            sprite->h = sprite->w = 8;
+        }
+        sprite->clut = GetClut(0x100, 0xF7);
+        *copy = *sprite;
+    }
+    for (i = 0; i < 3; i++) {
+        quad = &D_800C3A3C->quads[i][0];
+        quad_copy = &D_800C3A3C->quads[i][1];
+        SetPolyFT4(quad);
+        quad->y2 = 0xDF;
+        quad->x0 = i << 7;
+        quad->x2 = i << 7;
+        quad->y0 = 0;
+        quad->x1 = (i << 7) + 0x80;
+        quad->y1 = 0;
+        quad->x3 = (i << 7) + 0x80;
+        quad->y3 = 0xDF;
+        setRECT(&D_800C3A3C->windows[i][0], 0, 0, 0xFF, 0xFF);
+        setRECT(&D_800C3A3C->windows[i][1], 0, 0, 0xFF, 0xFF);
+        SetDrawMode(&D_800C3A3C->modes[i][0], 0, 0, GetTPage(1, 0, 0x300 + i * 0x40, 0x100),
+                    &D_800C3A3C->windows[i][0]);
+        SetDrawMode(&D_800C3A3C->modes[i][1], 0, 0, GetTPage(1, 0, 0x300 + i * 0x40, 0x100),
+                    &D_800C3A3C->windows[i][1]);
+        setRGB0(quad, 0x80, 0x80, 0x80);
+        SetSemiTrans(quad, 1);
+        quad->v2 = 0xDF;
+        quad->u0 = 0;
+        quad->v0 = 0;
+        quad->u1 = 0x80;
+        quad->v1 = 0;
+        quad->u2 = 0;
+        quad->u3 = 0x80;
+        quad->v3 = 0xDF;
+        quad->tpage = GetTPage(1, 0, 0x300 + i * 0x40, 0x100);
+        quad->clut = GetClut(0, 0xF6);
+        *quad_copy = *quad;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AAF80);
+#endif
 
 /* 0 when item `item` is held in inventory list 0, else -1. */
 s32 func_800AB328(s32 item) {
