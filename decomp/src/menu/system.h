@@ -120,10 +120,11 @@ typedef struct {
     Tile tile[2];      /* 0x48 */
 } Layer;
 
-/* View transform state. */
-typedef struct {
-    s32 unk0;
-    s32 unk4;
+/* Scene node (0x9C bytes): a typed payload with its own transform, linked
+ * into a tree of children. */
+typedef struct Node {
+    s32 type;          /* 1 model, 2 model set, 3, 4, 5, 6 */
+    void *data;        /* type-specific payload */
     s32 unk8;
     Matrix view;       /* 0x0C */
     SVector rotation;  /* 0x2C */
@@ -131,15 +132,61 @@ typedef struct {
     SVector unk44;
     Matrix unk4C;
     Matrix unk6C;
-    s32 unk8C;
-    s32 unk90;
-    s32 unk94;
-} View;
+    struct Node *parent; /* 0x8C */
+    struct Node *next;   /* 0x90: next sibling */
+    struct Node *child;  /* 0x94: first child */
+    s32 unk98;
+} Node;
 
 typedef struct {
     s32 unk0;
-    View *view;
-} ViewOwner;
+    Node *node;
+} NodeOwner;
+
+/* Model payload (0x20 bytes). */
+typedef struct {
+    u32 flags;
+    s32 unk4;
+    void *resource;    /* 0x08 */
+    s32 unkC;
+    s32 unk10;
+    void *unk14;
+    u8 r, g, b;        /* 0x18 */
+    u8 unk1B;
+    s32 unk1C;
+} Model;
+
+/* Record of a model set (0x14 bytes). */
+typedef struct {
+    s32 loaded;
+    void *data;
+    u8 unk8[0xC];
+} ModelEntry;
+
+/* Model set payload. */
+typedef struct {
+    s16 unk0;
+    s16 count;         /* 0x02 */
+    void *unk4;
+    ModelEntry *entries; /* 0x08 */
+} ModelSet;
+
+/* Scale payload (0x1C bytes). */
+typedef struct {
+    s32 unk0;
+    s32 unk4;
+    s32 unk8;
+    s32 unkC;
+    s16 scale[3];      /* 0x10: 4096 = 1.0 */
+    s16 unk16;
+    s32 unk18;
+} Scale;
+
+extern s32 D_80091C2C;   /* nonzero: model set entries are not owned */
+extern s16 D_80092800;
+extern s16 D_80092804;
+extern s16 D_80092808;
+extern s16 D_8009280C;
 
 extern Matrix D_80091C0C; /* identity */
 extern Vector D_8009A0C8; /* look-at work: forward */
@@ -197,6 +244,17 @@ void func_8004A480(Vector *a, Vector *b, Vector *out);
 void func_80049CEC(Matrix *m, SVector *in, Vector *out);
 void func_80049BDC(Matrix *a, Matrix *b);
 void func_800898BC(Matrix *m, SVector *eye, SVector *at, SVector *up);
+void func_800324B8(s32 kind);
+void func_800320E8(void *p);
+void func_80032C18(void *p, s32 mode);
+void func_8002CBBC(void *p);
+void func_8002DDE4(void *target, s32 on, s32 a, s32 b, s32 c, s32 d, s32 e);
+Node *func_80089B44(Node *node);
+void func_80089D5C(Node *node);
+void func_80089EB4(ModelSet *set);
+void func_80089FF8(Model *model);
+void func_8008C120(void *data);
+Model *func_80089F8C(Model *model);
 void func_8004A12C(s32 x, s32 y);
 void func_8004A14C(s32 h);
 void func_8002DFF0(s32 w, s32 h);

@@ -1144,7 +1144,7 @@ void func_800898BC(Matrix *m, SVector *eye, SVector *at, SVector *up) {
 
 /* Point the owner's view from eye toward target (eye kept as the last eye
  * position). */
-void func_80089A98(ViewOwner *owner, Vector *target, Vector *eye) {
+void func_80089A98(NodeOwner *owner, Vector *target, Vector *eye) {
     SVector up;
     SVector from;
     SVector origin;
@@ -1159,63 +1159,217 @@ void func_80089A98(ViewOwner *owner, Vector *target, Vector *eye) {
     origin.vz = 0;
     origin.vx = 0;
     origin.vy = 0;
-    func_800898BC(&owner->view->view, &from, &origin, &up);
+    func_800898BC(&owner->node->view, &from, &origin, &up);
 }
 
-/* Reset a view: zero position and angles, identity matrices. */
-View *func_80089B44(View *view) {
-    view->unk0 = 0;
-    view->unk8C = 0;
-    view->unk94 = 0;
-    view->unk90 = 0;
-    view->unk8 = 0;
-    view->unk4 = 0;
-    view->position.vz = 0;
-    view->position.vy = 0;
-    view->position.vx = 0;
-    view->unk44.vz = 0;
-    view->unk44.vy = 0;
-    view->unk44.vx = 0;
-    view->rotation.vz = 0;
-    view->rotation.vy = 0;
-    view->rotation.vx = 0;
-    view->unk6C = D_80091C0C;
-    view->unk4C = view->unk6C;
-    view->view = view->unk4C;
-    return view;
+/* Reset a node: unlinked, no payload, zero position and angles, identity
+ * matrices. */
+Node *func_80089B44(Node *node) {
+    node->type = 0;
+    node->parent = NULL;
+    node->child = NULL;
+    node->next = NULL;
+    node->unk8 = 0;
+    node->data = NULL;
+    node->position.vz = 0;
+    node->position.vy = 0;
+    node->position.vx = 0;
+    node->unk44.vz = 0;
+    node->unk44.vy = 0;
+    node->unk44.vx = 0;
+    node->rotation.vz = 0;
+    node->rotation.vy = 0;
+    node->rotation.vx = 0;
+    node->unk6C = D_80091C0C;
+    node->unk4C = node->unk6C;
+    node->view = node->unk4C;
+    return node;
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80089C54);
+/* Allocate a reset scene node. */
+Node *func_80089C54(void) {
+    func_800324B8(8);
+    return func_80089B44(func_80031BDC(sizeof(Node), 0));
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80089C88);
+/* Append child as the last child of parent. */
+void func_80089C88(Node *parent, Node *child) {
+    Node *last;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80089CD8);
+    child->parent = parent;
+    if (parent->child == NULL) {
+        parent->child = child;
+    } else {
+        last = parent->child;
+        while (last->next != NULL) {
+            last = last->next;
+        }
+        last->next = child;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80089D5C);
+/* Unlink a node from its parent's child list. */
+void func_80089CD8(Node *node) {
+    Node *parent;
+    Node *first;
+    Node *prev;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80089E2C);
+    if (node == NULL) {
+        return;
+    }
+    parent = node->parent;
+    if (parent == NULL) {
+        return;
+    }
+    node->parent = NULL;
+    first = parent->child;
+    if (first == NULL) {
+        return;
+    }
+    if (first == node) {
+        parent->child = node->next;
+    } else {
+        prev = first;
+        while (prev->next != node) {
+            prev = prev->next;
+        }
+        prev->next = node->next;
+    }
+    node->next = NULL;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80089E3C);
+/* Free a node, its children and following siblings, and its payload. */
+void func_80089D5C(Node *node) {
+    if (node == NULL) {
+        return;
+    }
+    func_80089D5C(node->child);
+    func_80089D5C(node->next);
+    switch (node->type) {
+    case 1:
+        func_80089FF8(node->data);
+        break;
+    case 2:
+        func_80089EB4(node->data);
+        break;
+    case 5:
+        func_8008C120(node->data);
+        break;
+    }
+    if (node->data != NULL) {
+        func_800320E8(node->data);
+    }
+    func_800320E8(node);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80089E48);
+/* Make a node a model node. */
+void func_80089E2C(Node *node, Model *model) {
+    node->data = model;
+    node->type = 1;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80089E54);
+/* Make a node a type 3 node. */
+void func_80089E3C(Node *node) {
+    node->type = 3;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80089E64);
+/* Make a node a type 4 node. */
+void func_80089E48(Node *node) {
+    node->type = 4;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80089E74);
+/* Make a node a model set node. */
+void func_80089E54(Node *node, ModelSet *set) {
+    node->data = set;
+    node->type = 2;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80089EB4);
+/* Make a node a type 6 node. */
+void func_80089E64(Node *node, void *data) {
+    node->data = data;
+    node->type = 6;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80089F8C);
+/* Allocate a unit scale payload. */
+Scale *func_80089E74(void) {
+    Scale *scale;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80089FC4);
+    func_800324B8(4);
+    scale = func_80031BDC(sizeof(Scale), 0);
+    scale->scale[2] = 0x1000;
+    scale->scale[1] = 0x1000;
+    scale->scale[0] = 0x1000;
+    scale->unk4 = 0;
+    scale->unk8 = 0;
+    return scale;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80089FF8);
+/* Free a model set's data and, when owned, its entries' data. */
+void func_80089EB4(ModelSet *set) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008A040);
+    if (set->unk4 != NULL) {
+        func_800320E8(set->unk4);
+    }
+    if (set->entries != NULL) {
+        if (!D_80091C2C) {
+            i = set->count;
+            while (--i != -1) {
+                if (set->entries[i].loaded) {
+                    func_800320E8(set->entries[i].data);
+                }
+            }
+        }
+        func_800320E8(set->entries);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008A0B4);
+/* Reset a model payload: grey, nothing loaded. */
+Model *func_80089F8C(Model *model) {
+    model->unk4 = 1;
+    model->flags = 0;
+    model->resource = NULL;
+    model->unkC = 0;
+    model->unk10 = 0;
+    model->unk14 = NULL;
+    model->unk1C = 0;
+    model->b = 0x40;
+    model->g = 0x40;
+    model->r = 0x40;
+    return model;
+}
+
+/* Allocate a reset model payload. */
+Model *func_80089FC4(void) {
+    func_800324B8(1);
+    return func_80089F8C(func_80031BDC(sizeof(Model), 0));
+}
+
+/* Release a model payload's resources. */
+void func_80089FF8(Model *model) {
+    if (model->resource != NULL) {
+        func_80032C18(model->resource, 2);
+    }
+    func_8002CBBC(model->unk14);
+}
+
+/* Apply the depth cue settings to target, or switch it off when the first
+ * is not positive. */
+void func_8008A040(void *target) {
+    if (D_80092800 > 0) {
+        func_8002DDE4(target, 1, D_80092800, D_80092804, 1, D_80092808, D_8009280C);
+    } else {
+        func_8002DDE4(target, 0, 0, 0, 0, 0, 0);
+    }
+}
+
+/* Set a model node's colour. */
+void func_8008A0B4(Node *node, u8 r, u8 g, u8 b) {
+    ((Model *)node->data)->r = r;
+    ((Model *)node->data)->g = g;
+    ((Model *)node->data)->b = b;
+    ((Model *)node->data)->flags |= 0x10;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008A0F4);
 
