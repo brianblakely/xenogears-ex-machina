@@ -26,7 +26,26 @@ s32 func_8008C6EC(s32 index) {
     return result;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8008C364", func_8008C75C);
+/* Start the parked vehicle 0: its model at the saved spot and heading. */
+s32 func_8008C75C(s32 index) {
+    WorldmapActor *actor;
+
+    actor = &D_8009BE24[index];
+    actor->handle = func_80024524(D_8009BDF8[0], 0x100, 0x1FD, 0x140, 0x140, 0x40);
+    func_800245D8(actor->handle, 0);
+    func_80022000(actor->handle, 0x2000);
+    ((ModelInstance *)actor->handle)->flags &= ~4;
+    actor->position.vx = D_8006EF90[0].x << 12;
+    actor->position.vz = D_8006EF90[0].z << 12;
+    actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+    actor->unk24 = 1;
+    actor->motion.vz = 0;
+    actor->motion.vy = 0;
+    actor->motion.vx = 0;
+    ACTOR_TURN(actor) = 0xC;
+    ACTOR_HEADING(actor) = D_8006EE5A;
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8008C364", func_8008C844);
 
@@ -54,7 +73,26 @@ s32 func_8008D520(s32 index) {
     return result;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8008C364", func_8008D590);
+/* Start the parked vehicle 1: its model at the saved spot and heading. */
+s32 func_8008D590(s32 index) {
+    WorldmapActor *actor;
+
+    actor = &D_8009BE24[index];
+    actor->handle = func_80024524(D_8009BDF8[1], 0x100, 0x1FC, 0x160, 0x140, 0x40);
+    func_800245D8(actor->handle, 0);
+    func_80022000(actor->handle, 0x2000);
+    ((ModelInstance *)actor->handle)->flags &= ~4;
+    actor->position.vx = D_8006EF90[1].x << 12;
+    actor->position.vz = D_8006EF90[1].z << 12;
+    actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+    actor->unk24 = 1;
+    actor->motion.vz = 0;
+    actor->motion.vy = 0;
+    actor->motion.vx = 0;
+    ACTOR_TURN(actor) = 0xC;
+    ACTOR_HEADING(actor) = D_8006EE5C;
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8008C364", func_8008D678);
 
@@ -82,7 +120,26 @@ s32 func_8008DE9C(s32 index) {
     return result;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8008C364", func_8008DF0C);
+/* Start the parked vehicle 2: its model at the saved spot and heading. */
+s32 func_8008DF0C(s32 index) {
+    WorldmapActor *actor;
+
+    actor = &D_8009BE24[index];
+    actor->handle = func_80024524(D_8009BDF8[2], 0x100, 0x1FB, 0x280, 0x100, 0x40);
+    func_800245D8(actor->handle, 0);
+    func_80022000(actor->handle, 0x2000);
+    ((ModelInstance *)actor->handle)->flags &= ~4;
+    actor->position.vx = D_8006EF90[2].x << 12;
+    actor->position.vz = D_8006EF90[2].z << 12;
+    actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+    actor->unk24 = 1;
+    actor->motion.vz = 0;
+    actor->motion.vy = 0;
+    actor->motion.vx = 0;
+    ACTOR_TURN(actor) = 0xC;
+    ACTOR_HEADING(actor) = D_8006EE5E;
+    return 1;
+}
 
 /* Restore the saved vehicle position (world units to 20.12). */
 void func_8008DFF4(VECTOR *position) {

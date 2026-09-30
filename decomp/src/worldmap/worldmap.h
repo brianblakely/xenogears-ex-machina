@@ -814,4 +814,28 @@ s32 func_800965A4(void);
 extern s16 D_800523F0[0x1000][2]; /* PsyQ rcossin_tbl: sine, cosine */
 void func_8009980C(u32 *heights, u32 *ot, s32 depth); /* terrain block draw (assembly) */
 
+/* Actor heading and turn step, the two halves of WorldmapActor.unk48. */
+#define ACTOR_HEADING(actor) (((s16 *)&(actor)->unk48)[0])
+#define ACTOR_TURN(actor) (((s16 *)&(actor)->unk48)[1])
+
+/* Model instance returned by func_80024524 (actor handle). */
+typedef struct {
+    u8 pad0[0x3C];
+    s32 flags; /* 0x3C: 4 hidden */
+} ModelInstance;
+
+/* Parked vehicle positions (world units), per vehicle. */
+typedef struct {
+    u16 x;
+    u16 z;
+    u16 unk4;
+} VehicleSpot;
+
+extern VehicleSpot D_8006EF90[3];
+/* Parked vehicle headings; scalars inside D_8006EE54 (unk5A-unk5E), which
+ * the vehicle starts address as separate variables. */
+extern u16 D_8006EE5A, D_8006EE5C, D_8006EE5E;
+
+s32 func_80093978(s32 x, s32 z); /* ground height at a position */
+
 #endif
