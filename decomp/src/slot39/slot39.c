@@ -1217,7 +1217,6 @@ u8 func_801C8D78(u8 port) {
     struct DIRENTRY dir;
     char device[8];
     s32 i;
-    u8 *saves;
     s32 retry;
     u8 count;
 
@@ -1294,7 +1293,33 @@ s32 func_801C9038(char *name, void *dst) {
     return 0;
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C90B0);
+/* Read the first block of file `file` on port `port` into its header buffer
+ * and list the file's blocks in the port's slot entries. */
+void func_801C90B0(u8 port, u8 file) {
+    char device[8];
+    char name[64];
+    s32 retry;
+    s32 i;
+
+    retry = 1;
+    if (port == 0) {
+        __builtin_memcpy(device, D_801C50A8, 6);
+    } else {
+        __builtin_memcpy(device, D_801C50B0, 6);
+    }
+    strcpy(name, device);
+    strcat(name, D_800625A0->card->files[port * 16 + file].name);
+    while (func_801C9038(name, D_800625A0->card->headers[port * 16 + file]) == -1) {
+        if (--retry == 0) {
+            break;
+        }
+        func_801C8CA4(port);
+    }
+    for (i = 0; i < D_800625A0->card->headers[port * 16 + file][3]; i++) {
+        D_800625A0->card->fileSlots[port * 16 + D_800625A0->card->fileCount] = file + port * 16;
+        D_800625A0->card->fileCount++;
+    }
+}
 
 /* Mark the files of `port` whose names carry this game's prefix and note the
  * save slot each holds. */

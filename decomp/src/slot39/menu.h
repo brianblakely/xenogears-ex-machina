@@ -828,6 +828,7 @@ void OpenTIM(void *tim);                          /* OpenTIM */
 TIM_IMAGE *ReadTIM(TIM_IMAGE *image);             /* ReadTIM */
 void *memmove(void *dst, void *src, s32 size);    /* memmove */
 char *strcpy(char *dst, const char *src);         /* inlined for constant strings */
+char *strcat(char *dst, const char *src);
 void func_80028470(s32 arg0, s32 arg1);
 s32 func_800288EC(s32 file);                                 /* file size */
 void func_800295D8(s32 file, void *dst, s32 arg2, s32 arg3); /* read file */
