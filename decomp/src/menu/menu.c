@@ -930,7 +930,8 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007EEE8);
 #endif
 
 #ifdef NON_MATCHING
-/* Allocate and lay out the 7x7 grid of 64x32 cells with descending ids.
+/* Allocate and lay out the 49 portrait slots: palette rows 511 down and
+ * a 7x7 grid of image areas.
  * Does not match: the x shift is scheduled after the first stores. */
 void func_8007EFB4(void) {
     u8 unused[0x30]; /* never used; the original frame keeps its slot */
@@ -945,14 +946,14 @@ void func_8007EFB4(void) {
     for (row = 0; row < 7; row++) {
         top = row * 0x20 + 0x1A0;
         for (col = 0; col < 7; col++) {
-            cell->unk0 = 0x200;
-            cell->id = id--;
-            cell->unk4 = 0x80;
-            cell->unk6 = 1;
-            cell->y = top;
-            cell->x = col << 6;
-            cell->w = 0x1E;
-            cell->h = 0x40;
+            cell->clut_x = 0x200;
+            cell->clut_y = id--;
+            cell->clut_w = 0x80;
+            cell->clut_h = 1;
+            cell->image_x = top;
+            cell->image_y = col << 6;
+            cell->image_w = 0x1E;
+            cell->image_h = 0x40;
             cell++;
         }
     }
@@ -1237,13 +1238,81 @@ void func_80080268(void) {
     D_80099D98[10] = func_8007FF70(D_80099D98[10], 13, 3);
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800802A4);
+/* First side's selection: cancel, move (skipping the other side's pick
+ * unless shared picks are allowed or both already coincide) and confirm. */
+void func_800802A4(void) {
+    s32 same;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008040C);
+    if (D_80091364 == 0 && (D_8005948C & 0x40)) {
+        D_80092710 &= ~1;
+        func_80085134(0);
+        func_8008EB4C(0x22);
+    }
+    if (!(D_80092710 & 1)) {
+        same = D_80092700 == D_80092704;
+        do {
+            D_80092700 = func_8007FF70(D_80092700, D_80092888 - 1, 3);
+        } while (D_80092700 == D_80092704 && !(D_80092748 & 1) && !same);
+        if (D_80091364 == 0 && (D_8005948C & 0x20)) {
+            D_80092710 |= 1;
+            func_8008EB4C(0x21);
+            func_8008509C(0, D_800928EC[D_80092700]->id);
+        }
+    }
+}
+
+/* Second side's selection; cancelling outside mode 2 leaves the screen. */
+void func_8008040C(void) {
+    s32 same;
+
+    if (D_80092750 & 0x40) {
+        if (D_800928C8 != 2) {
+            D_80092710 = 0;
+            func_80085134(1);
+            func_8008EB4C(0x22);
+            return;
+        }
+        D_80092710 &= ~2;
+    }
+    if (!(D_80092710 & 2)) {
+        same = D_80092700 == D_80092704;
+        do {
+            D_80092704 = func_8007FF70(D_80092704, D_80092888 - 1, 3);
+        } while (D_80092700 == D_80092704 && !(D_80092748 & 1) && !same);
+        if (D_80092750 & 0x20) {
+            D_80092710 |= 2;
+            func_8008EB4C(0x21);
+            func_8008509C(1, D_800928EC[D_80092704]->id);
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080570);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080644);
+/* Load both picks' portraits (palette and image) into their VRAM slots and
+ * mark both sides confirmed. */
+void func_80080644(s32 first, s32 second) {
+    u8 *data = func_80031BDC(0x2000, 0);
+    u8 *other;
+    GridCell *cell;
+
+    func_8002954C((u16 *)func_800289D0(6) + first, data, 0x1000, 0, 0);
+    other = data + 0x1000;
+    func_8002954C((u16 *)func_800289D0(6) + second, other, 0x1000, 0, 0);
+    D_80092700 = first;
+    D_80092704 = second;
+    D_80092714 = first;
+    D_80092720 = second;
+    D_80092710 = 3;
+    func_80028A60(0);
+    cell = &D_8009270C[first];
+    func_80044894(&cell->clut_x, data);
+    func_80044894(&cell->image_x, data + 0x100);
+    cell = &D_8009270C[second];
+    func_80044894(&cell->clut_x, other);
+    func_80044894(&cell->image_x, data + 0x1100);
+    func_80032C18(data, 2);
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080780);
 

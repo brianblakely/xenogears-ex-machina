@@ -234,19 +234,21 @@ typedef struct {
 } ListSource;
 
 typedef struct {
-    u8 unk0[0xC];
+    s32 id;
+    u8 unk4[8];
 } ListEntry;
 
-/* A cell of the 7x7 grid block at D_8009270C (20 bytes). */
+/* VRAM areas of one of the 49 portrait slots (20 bytes; D_8009270C):
+ * its palette row and its 30x64 image. */
 typedef struct {
-    s16 unk0;
-    s16 id;
-    s16 unk4;
-    s16 unk6;
-    s16 y;
-    s16 x;
-    s16 w;
-    s16 h;
+    s16 clut_x;
+    s16 clut_y;
+    s16 clut_w;
+    s16 clut_h;
+    s16 image_x;
+    s16 image_y;
+    s16 image_w;
+    s16 image_h;
     u8 unk10[4];
 } GridCell;
 
@@ -256,6 +258,19 @@ extern ListSource *D_80092874;
 extern ListEntry **D_800928EC;
 extern s32 D_80092888;
 extern GridCell *D_8009270C;
+
+/* Two-player selection: each side's pick and confirmation. */
+extern s32 D_80092700;   /* first side's pick */
+extern s32 D_80092704;   /* second side's pick */
+extern s32 D_80092714;
+extern s32 D_80092720;
+extern s32 D_80092748;   /* bit 0: both sides may pick the same entry */
+extern s32 D_80091364;
+extern u16 D_8005948C;   /* first controller's newly pressed buttons */
+void func_80085134(s32 side);
+void *func_800289D0(s32 index);
+void func_8002954C(void *entry, void *dst, s32 size, s32 a3, s32 a4);
+void func_80032C18(void *block, s32 arg);
 
 void *func_80031BDC(s32 size, s32 flag); /* allocate from the heap */
 void func_8008895C(void);
