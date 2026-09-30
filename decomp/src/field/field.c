@@ -3309,12 +3309,12 @@ s32 func_8008A790(s32 id, s32 *slot) {
     return -1;
 }
 
-#ifdef NON_MATCHING
 /* Start reading party member `member`'s sprite file for slot `slot` (a
  * character substitute while 8004f34c has 0xc000). */
 void func_8008A7DC(s32 member, s32 slot) {
     s32 file;
-    void *buffer;
+    s32 size;
+    s32 sprite;
 
     D_800ADBCC = slot;
     D_800ADBC8 = member;
@@ -3324,28 +3324,26 @@ void func_8008A7DC(s32 member, s32 slot) {
     }
     if (!(D_8004F34C & 0xC000)) {
         file = member + 5;
-        buffer = (void *)func_800288EC(file);
+        size = func_800288EC(file);
         D_8006FABC[D_800ADBCC] = member;
-        D_800ADBC0 = buffer = func_80031BDC((s32)buffer, 0);
+        D_800ADBC0 = func_80031BDC(size, 0);
+        func_800295D8(file, D_800ADBC0, 0, 0x80);
     } else {
-        member = func_8001ACF0(member);
-        if (member == 0xFF) {
-            member = 0;
+        sprite = func_8001ACF0(member);
+        if (sprite == 0xFF) {
+            sprite = 0;
         }
-        member += 0x10;
-        file = member + 5;
-        D_800ADBC0 = buffer = func_80031BDC(func_800288EC(file), 0);
-        D_8006FABC[D_800ADBCC] = member;
+        sprite += 0x10;
+        file = sprite + 5;
+        D_800ADBC0 = func_80031BDC(func_800288EC(file), 0);
+        D_8006FABC[D_800ADBCC] = sprite;
+        func_800295D8(file, D_800ADBC0, 0, 0x80);
     }
-    func_800295D8(file, buffer, 0, 0x80);
     if (D_800ADB1C == 0) {
         func_80028A60(0);
     }
     D_800ADBC4 = 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008A7DC);
-#endif
 
 /* Event: set actor field EA to the complement of operand byte 1. */
 void func_8008A93C(void) {
@@ -3385,7 +3383,52 @@ void func_8008AA60(void) {
     D_800B0078->pc++;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008AACC);
+/* Event 0xb0: load wave-bank file op4 into slot op2 (releasing the old bank)
+ * or, with mode byte 1, register the loaded bank; waits while the display
+ * is busy. */
+void func_8008AACC(void) {
+    s32 file;
+    s32 slot;
+    void *data;
+
+    if (func_8008A558() == 0) {
+        if (EVENT_OPERAND_BYTE(1) == 1) {
+            D_80062518[D_800AFD18] = func_80037FD8(D_800AFD08, 0);
+            func_8003BDFC(0x10);
+            func_800320E8(D_800AFD08);
+            if (D_800AFD18 == 3) {
+                D_800595AC = D_80062524;
+            }
+            D_800B00C0 = 1;
+            D_800B0078->pc += 2;
+        } else {
+            slot = func_800ACDEC(2);
+            D_800AFD18 = slot;
+            func_80038310(D_80062518[slot]);
+            file = func_800ACDEC(4);
+            D_800AFD0C = file;
+            if (!(file & 0x80)) {
+            standard:
+                func_80028470(0x1C, 0);
+                D_800AFD0C += 2;
+            } else if (D_8004F370 == 1) {
+                D_800AFD0C = 4;
+                goto standard;
+            } else {
+                D_800AFD0C = (file & 0x7F) + 0x1F;
+                func_80028470(0x2C, 1);
+            }
+            data = func_80031BDC(func_800288EC(D_800AFD0C), 0);
+            D_800AFD08 = data;
+            func_800295D8(D_800AFD0C, data, 0, 0x80);
+            func_80028470(4, 0);
+            D_800B0078->pc += 6;
+        }
+    } else {
+        D_800B00C0 = 1;
+        D_800B0078->pc -= 1;
+    }
+}
 
 #ifdef NON_MATCHING
 /* Event: load file op1 + 0x77a as the actor's block (+120), once the
