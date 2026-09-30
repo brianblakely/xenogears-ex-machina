@@ -227,6 +227,7 @@ typedef struct {
 } BattleDraw;
 
 extern BattleDraw D_800CCB04;
+extern u8 D_800CCB34;   /* D_800CCB04.buffer's low byte, read on its own */
 extern void *D_800D2F5C; /* glyph table */
 extern u8 D_800C3E4C;   /* battle end state */
 

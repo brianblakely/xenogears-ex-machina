@@ -3028,7 +3028,6 @@ void func_80089110(void) {
 
 /* Build the two glyphs of the escape/limit page (800d2c34 - 0x5d and
  * - 0x25) into lists 2 and 10 and initialise their quads. */
-#ifdef NON_MATCHING
 void func_800891E4(void) {
     s32 i;
     u8 first;
@@ -3037,9 +3036,9 @@ void func_800891E4(void) {
     first = D_800D2C34 - 0x5D;
     second = D_800D2C34 - 0x25;
     D_800D2DB4->counts[2] = func_80076A10(first, D_800D2DB4->list2, 0xA0, 0x64);
-    D_800D2DB4->buffers[2] = D_800CCB04.buffer;
+    D_800D2DB4->buffers[2] = D_800CCB34;
     D_800D2DB4->counts[10] = func_80076A10(second, D_800D2DB4->list10, 0xA0, 0x64);
-    D_800D2DB4->buffers[10] = D_800CCB04.buffer;
+    D_800D2DB4->buffers[10] = D_800CCB34;
     for (i = 0; i < D_800D2DB4->counts[2]; i++) {
         func_80076B68(&D_800D2DB4->list2[i * 2 + D_800D2DB4->buffers[2]]);
     }
@@ -3047,9 +3046,6 @@ void func_800891E4(void) {
         func_80076BF0(&D_800D2DB4->list10[i * 2 + D_800D2DB4->buffers[10]]);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800891E4);
-#endif
 
 /* Build the five-digit value 800d2c2a as glyphs into list 3 at (0x11a, 0x46)
  * and initialise its quads. */
