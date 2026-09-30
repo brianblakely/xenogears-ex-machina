@@ -134,6 +134,17 @@ typedef struct {
     u8 unk18;
 } Stats;
 
+/* Header of an actor's move data (Actor 0x8FC). */
+typedef struct {
+    u8 unk0[0x14];
+    s16 unk14;
+    s16 unk16;
+    s16 unk18;
+    s16 unk1A;
+    s16 unk1C;
+    u16 unk1E;
+} SceneHeader;
+
 /* A character moved in the menu scene. */
 typedef struct Actor {
     Vector pos;          /* 0x00 */
@@ -146,7 +157,10 @@ typedef struct Actor {
     u8 anim;             /* 0x4C */
     u8 unk4D;
     u8 unk4E;
-    u8 unk4F[0x5];
+    u8 unk4F;
+    u8 unk50[0x2];
+    u8 unk52;
+    u8 unk53;
     s32 angle;           /* 0x54: facing, 4096 = full turn */
     s32 target_angle;    /* 0x58 */
     Node *node;          /* 0x5C: model set node */
@@ -166,7 +180,7 @@ typedef struct Actor {
     u8 unkC5;
     u8 unkC6[0x4];
     s16 unkCA;
-    u8 unkCC[0x2];
+    s16 unkCC;
     s16 unkCE;
     u32 flags;           /* 0xD0: bit 27 = side */
     u32 unkD4;
@@ -184,7 +198,8 @@ typedef struct Actor {
     u8 unk8B0[0x44];
     s32 nearest_dist;    /* 0x8F4: distance of the closest shot */
     Shot *nearest_shot;  /* 0x8F8 */
-    u8 unk8FC[0x8];
+    SceneHeader *unk8FC; /* 0x8FC */
+    u8 unk900[0x4];
     u8 *visible;         /* 0x904: objects shown by the current move */
     u8 visible_count;
     u8 unk909;
@@ -218,25 +233,6 @@ typedef struct Actor {
     s32 unk1654;
     s32 unk1658;
 } Actor;
-
-/* Header of the loaded scene data. */
-typedef struct {
-    u8 unk0[0x14];
-    s16 unk14;
-    s16 unk16;
-    s16 unk18;
-    s16 unk1A;
-    s16 unk1C;
-    u16 unk1E;
-} SceneHeader;
-
-/* Loaded scene data block. */
-typedef struct {
-    u8 unk0[0x5C];
-    s32 unk5C;
-    u8 unk60[0x89C];
-    SceneHeader *header; /* 0x8FC */
-} SceneData;
 
 
 /* Where a hit effect goes: model part and vertex of one or two points. */
@@ -339,10 +335,23 @@ extern s32 D_80092918;
 extern s32 D_80092944;
 extern s32 D_80092950;
 extern s32 D_80092640;
+extern s32 D_800928AC;
+extern s32 D_80092638;
+extern s32 D_8009263C;
+extern s32 D_80092648;
+extern u8 D_80092664;
+extern s32 D_80092890;
+extern u8 D_800928B4;
+extern u8 D_800928F0;
+extern u8 D_800928F4;
+extern s32 D_8009290C;
+extern s32 D_8009294C;
+extern u8 D_80091144;
+extern u8 D_80091145;
 extern u8 D_80099D9E;
 extern Sprt16 D_8009A14C;
 extern Sprt16 D_8009A244;
-extern SceneData *D_80092614;
+extern Actor *D_80092614;
 extern LightRig *D_800910F0; /* the scene's lights */
 extern Node *D_80092610;     /* the scene's root node */
 extern Vector D_80096FA8;    /* scene origin (last eye position) */extern s8 D_80092618;
@@ -439,12 +448,21 @@ void func_80083C0C(s32 arg);
 s32 func_80083CD8(void);
 s32 func_8008F4F4(Actor *actor, s32 mask);
 void func_8008EB4C(s32 id);
+void func_8007BB7C(void);
+void func_800831C8(void);
+void func_8008D580(Effect *effect);
+void func_8008DCA8(s32 arg);
+void func_800720C4(void);
 void func_800732CC(void);
 void func_8008DC28(void);
 void func_80088AF8(void);
 void func_8007E954(s32 arg);
 void func_8007F834(void);
-void func_80078F00(SceneData *scene);
+void func_80078F00(Actor *actor);
+OtPair *func_8008A2B8(u16 length);
+LightRig *func_8008A3E0(Holder *holder);
+void func_8008A5BC(LightRig *rig);
+Node *func_8008C2C0(Node *source);
 void func_80080D10(void);
 void func_8008976C(s32 a0, s32 a1);
 void func_8008BC04(void);

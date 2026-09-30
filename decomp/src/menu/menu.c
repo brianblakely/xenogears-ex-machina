@@ -443,14 +443,14 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80072170);
 void func_800725A8(void) {
 }
 
-/* Set up a loaded scene: graphics state, its resources, the scene origin
- * and the values from its header. */
-void func_800725B0(SceneData *scene) {
+/* Set up the scene around an actor: graphics state, lights, its model
+ * copy, the scene origin and the values from its move header. */
+void func_800725B0(Actor *scene) {
     SceneHeader *header;
 
     func_80030988(5, 4, 0x40, 0x40);
     D_800910F0 = func_8008A3E0((Holder *)func_8008A2B8(0x10));
-    D_80092610 = func_8008C2C0(scene->unk5C);
+    D_80092610 = func_8008C2C0(scene->node);
     func_8008976C(0x280, 0xDA);
     func_8004A14C(0x400);
     D_800928D0 = 0;
@@ -459,7 +459,7 @@ void func_800725B0(SceneData *scene) {
     D_80096FA8.vz = 0;
     D_80096FA8.vy = 0;
     D_80096FA8.vx = 0;
-    header = scene->header;
+    header = scene->unk8FC;
     D_80092618 = 1;
     D_8009261C = header->unk14;
     D_80092620 = header->unk16;
@@ -1364,7 +1364,53 @@ void func_80079B0C(void) {
     D_800928FC = 0;
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80079B44);
+/* Start a round: face both actors in, reset effects, counters and the
+ * message window; every fifth round from the third picks a special stage
+ * when enabled. */
+s32 func_80079B44(void) {
+    D_8009872C.unkCC = 0x400;
+    D_80097010.unkCC = -0x400;
+    func_80078F00(&D_8009872C);
+    func_80078F00(&D_80097010);
+    func_8008D580(D_80092644);
+    func_8007E24C();
+    func_8007BB7C();
+    func_800831C8();
+    D_800928F4 = 1;
+    D_8009290C = -1;
+    func_8008DCA8(0);
+    D_80092638 = 0;
+    D_80092640 = 0;
+    D_80092890 = 0;
+    D_8009263C = 0x5A;
+    D_8009294C = 0;
+    D_80092648 = 0;
+    func_8007F834();
+    D_80050622 = 0;
+    func_8008E620();
+    func_800720C4();
+    D_800928D4 = 0;
+    D_800928F0 = 0;
+    D_80091144 = 0;
+    D_80091145 = 0;
+    D_80092664 = 0;
+    D_80092950++;
+    func_800346A4(&D_8009868C);
+    D_80099D9A = 0;
+    if (D_8005061C != 0) {
+        switch ((D_80092950 - 1) % 5) {
+        case 3:
+            D_800928B4 = 1;
+            break;
+        case 4:
+            D_800928B4 = 2;
+            break;
+        default:
+            D_800928B4 = 0;
+            break;
+        }
+    }
+}
 
 /* Mirror actor flags 2, 15 and 19 into its pose. */
 void func_80079D08(Actor *actor) {
@@ -1396,9 +1442,31 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007A21C);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007A344);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007A6D0);
+/* Put an actor into its round-end pose: a win pose when the round took
+ * under two seconds. */
+void func_8007A6D0(Actor *actor) {
+    D_8009292C = 0x100;
+    if (D_800928AC < 0x78) {
+        actor->unk4F = 0x10;
+        actor->unk52 = 0;
+        actor->anim = 0x10;
+        actor->flags |= 0x400;
+    } else {
+        actor->unk4F = 0x10;
+        actor->unk52 = 0;
+        actor->anim = 0;
+        actor->flags |= 0x400;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007A730);
+/* Put an actor into its knocked-down pose. */
+void func_8007A730(Actor *actor) {
+    D_8009292C = 0x100;
+    actor->unk4F = 0x10;
+    actor->unk52 = 0;
+    actor->anim = 9;
+    actor->flags |= 0x2000400;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007A768);
 
