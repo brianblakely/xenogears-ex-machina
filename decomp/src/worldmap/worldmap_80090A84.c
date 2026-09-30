@@ -142,7 +142,168 @@ s32 func_80090E14(WorldmapActor *actor) {
     return 0;
 }
 
+/* Free flight input: bank and turn with the d-pad and shoulder buttons,
+ * pitch with triangle/cross and climb with R1 (R2 descends); returns 1 when
+ * landing at a path, 4 on take-off when level, else 0. */
+#ifdef NON_MATCHING /* register allocation of the bank target and the step magnitudes */
+s32 func_80090FB4(WorldmapActor *actor) {
+    s32 turn;
+    s32 bank_step;
+    s32 turn_step;
+    s32 delta;
+    s32 amount;
+    s32 bank;
+    s32 yaw;
+
+    switch (actor->unk64) {
+    case 0:
+        actor->unk64 = 1;
+        actor->unk5C = 0;
+        actor->unk58 = actor->heading << 12;
+        break;
+    case 1:
+        turn = 0;
+        bank = 0;
+        bank_step = 8;
+        turn_step = 0x1200;
+        if (D_8009CD4C & 0x8000) {
+            bank = -0x60;
+            turn = -0x10000;
+        }
+        if (D_8009CD4C & 0x2000) {
+            bank += 0x60;
+            turn += 0x10000;
+        }
+        if (D_8009CD4C & 4) {
+            bank -= 0x60;
+            turn -= 0x10000;
+        }
+        if (D_8009CD4C & 8) {
+            bank += 0x60;
+            turn += 0x10000;
+        }
+        if (D_8009CD4C & 0xA00C) {
+            turn_step = 0x1000;
+            delta = D_8009BD38.vz - bank;
+            if (delta < 0) {
+                delta = -delta;
+            }
+            bank_step = delta >> 4;
+        }
+        if (D_8009BD38.vz != bank) {
+            delta = D_8009BD38.vz - bank;
+            amount = ABS(delta);
+            if (amount < bank_step) {
+                bank_step = amount;
+            }
+            if (D_8009BD38.vz < bank) {
+                D_8009BD38.vz += bank_step;
+            } else {
+                D_8009BD38.vz -= bank_step;
+            }
+        }
+        if (actor->unk5C != turn) {
+            delta = actor->unk5C - turn;
+            amount = ABS(delta);
+            if (amount < turn_step) {
+                turn_step = amount;
+            }
+            if (actor->unk5C < turn) {
+                actor->unk5C += turn_step;
+            } else {
+                actor->unk5C -= turn_step;
+            }
+        }
+        break;
+    }
+    actor->unk58 += actor->unk5C;
+    yaw = (actor->unk58 >> 12) & 0xFFF;
+    actor->heading = yaw;
+    D_8009BD38.vy = yaw;
+    switch (actor->unk6C) {
+    case 0:
+        actor->unk6C = 1;
+        actor->unk70 = 0;
+        break;
+    case 1:
+        if (actor->unk70 != 0) {
+            if (actor->unk70 < 0) {
+                actor->unk70 += 0x2000;
+            } else {
+                actor->unk70 -= 0x2000;
+            }
+        }
+        if (D_8009CD4C & 0x4000) {
+            actor->unk6C = 2;
+        }
+        if (D_8009CD4C & 0x1000) {
+            actor->unk6C = 3;
+        }
+        break;
+    case 2:
+        if (D_8009CD4C & 0x4000) {
+            actor->unk70 -= 0x4000;
+            if (actor->unk70 < -0x80000) {
+                actor->unk70 = -0x80000;
+            }
+        } else {
+            actor->unk6C = 1;
+        }
+        break;
+    case 3:
+        if (D_8009CD4C & 0x1000) {
+            actor->unk70 += 0x4000;
+            if (actor->unk70 > 0x80000) {
+                actor->unk70 = 0x80000;
+            }
+        } else {
+            actor->unk6C = 1;
+        }
+        break;
+    }
+    if (D_8009CD4C & 0x80) {
+        if (D_8009CD4C & 2) {
+            actor->unk60 -= 0x1000;
+        } else {
+            actor->unk60 += 0x1000;
+        }
+    }
+    if (D_8009CD4C & 0x80) {
+        if (actor->unk60 < -actor->turn << 12) {
+            actor->unk60 = -actor->turn << 12;
+        }
+        if (actor->unk60 > actor->turn << 12) {
+            actor->unk60 = actor->turn << 12;
+        }
+    } else if (actor->unk60 != 0) {
+        if (actor->unk60 < 0) {
+            actor->unk60 += 0x1000;
+        } else {
+            actor->unk60 -= 0x1000;
+        }
+    }
+    actor->motion.vx = func_8003F8B0(D_8009BD38.vy);
+    actor->motion.vy = func_8003F8B0(actor->unk70 >> 12);
+    actor->motion.vz = -func_8003F8CC(D_8009BD38.vy);
+    func_80048D7C(&actor->motion, &actor->motion);
+    if (D_8009BD10 & 0x20) {
+        if (D_8009BD24 != -1) {
+            return 1;
+        }
+    }
+    if (D_8009BD10 & 0x40) {
+        if ((actor->unk60 == 0) & (D_8009BD38.vz == 0)) {
+            return 4;
+        }
+    }
+    if ((D_8009BD10 & 0x10) && D_8009CE68 == -1 && D_8009BD24 == D_8009CE68) {
+        D_8009D804 = 1;
+    }
+    return 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80090FB4);
+#endif
 
 /* Restore the actor from the saved camera state; vehicles get state 3. */
 #ifdef NON_MATCHING /* saved-camera and yaw addresses not kept in registers */
