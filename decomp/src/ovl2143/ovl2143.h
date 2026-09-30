@@ -108,7 +108,7 @@ typedef struct ModelPart {
     MATRIX local;   /* +c */
     MATRIX world;   /* +2c */
     s16 scale[3];   /* +4c */
-    s16 pad52;
+    s16 billboard;  /* +52: 1 upright, 2 fully facing the view */
     SVECTOR rot;    /* +54 */
     s32 pos[3];     /* +5c */
     void *packets[2]; /* +68: the model's packets for both buffers */
@@ -141,7 +141,7 @@ typedef struct {
 
 /* A particle (0x7c bytes): a quad of four vertices, a colour fading each
  * tick, and its quad for both buffers. */
-typedef struct {
+typedef struct Particle {
     s16 x0, y0, z0, pad06;
     s16 x1, y1, z1;
     s16 projected;  /* +e: vertices are 3D, projected with the GTE */
@@ -155,18 +155,33 @@ typedef struct {
 } Particle;
 
 /* A pool of particles with a spare one past the end. */
-typedef struct {
+typedef struct ParticlePool {
     Particle *items;
     s16 capacity;
     s16 next;
 } ParticlePool;
 
-/* An actor's 0x70-byte channel record. */
+/* An actor's 0x70-byte channel: a ribbon traced by two points of a node,
+ * emitted as particles (on screen, or in 3D when `solid`). */
 typedef struct {
-    s16 id;         /* -1: unused */
-    u8 pad2[6];
-    s32 w8;
-    u8 rest[0x64];
+    s16 id;         /* +0: the node, -1: unused */
+    u8 solid;       /* +2 */
+    u8 semi_trans;  /* +3 */
+    struct ParticlePool *pool; /* +4 */
+    struct Particle *particle; /* +8: the one being extended */
+    SVECTOR ends[2];           /* +c: the points in the node's space */
+    union {
+        struct {
+            s16 x, y;
+        } sxy[2][8];           /* on screen, a ring of 8 frames */
+        VECTOR pos[2][2];      /* in 3D, the last two frames */
+    } trail;                   /* +1c */
+    s16 frame;      /* +5c */
+    s16 count;      /* +5e: frames of the current particle */
+    s16 max;        /* +60 */
+    s16 lifetime;   /* +62 */
+    u16 color[3];   /* +64 */
+    s16 fade[3];    /* +6a */
 } Channel;
 
 /* A curve mapping time to a frame: func_801E0850/08d4/0938/0988 (called
@@ -609,6 +624,14 @@ void func_801E1A14(Record24 *record, u16 *table, s16 angle_base, s32 scale, s16 
 void func_801E3534(Actor *actor, SlotPool *pool, s32 *entries, s32 *locals);
 void func_801E8510(Actor *actor);
 
+s16 ratan2(s32 y, s32 x);
+s32 func_8003F8B0(s16 angle);                 /* sine (4096 = 1.0) */
+MATRIX *func_80049ACC(MATRIX *m, MATRIX *scale); /* scale a matrix's columns */
+struct Particle *func_801E0248(struct ParticlePool *pool, s16 semi_trans);
+s16 func_801E1258(ImageAnim *anim, s32 ticks);
+void func_801E22F8(Record24 *record, SVECTOR *light, MATRIX *m, u32 *ot, s32 buffer, s32 scale,
+                   s32 floor);
+
 /* This overlay. */
 SlotPool *func_801DF5F4(SlotPool *pool, s32 capacity);
 PoolSlot *func_801DF6F0(SlotPool *pool);
@@ -629,7 +652,7 @@ s32 DrawSync(s32 mode);
 FrameCurve func_801E34BC(s32 type);
 void func_801E8330(u16 index, u16 mask, s32 arg2);
 void func_801E8394(Actor *source, u16 index, u16 mask, s32 arg3);
-void func_801DCEC8(Actor *actor, MATRIX *m, s32 arg2, s32 arg3, s32 arg4, u32 *ot, s32 buffer);
+void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, u32 *ot, s32 buffer);
 void func_801E0398(ParticlePool *pool, MATRIX *m, s32 steps, u32 *ot, s32 buffer);
 void func_801E1880(Actor **actors);
 void func_801E37D0(Actor *actor);

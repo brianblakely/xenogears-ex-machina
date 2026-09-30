@@ -99,7 +99,7 @@ ModelPart *func_801DC2D0(ModelList *group, HierarchyLink *links, s32 mode, s32 c
         part->scale[1] = 0x1000;
         part->scale[2] = 0x1000;
         part->yxz = 0;
-        part->pad52 = 0;
+        part->billboard = 0;
         part->model = model;
         if (model != 0xFFFF) {
             func_8002CB54(group->models[model], &part->packets[0], &part->packets[1]);
@@ -378,7 +378,279 @@ void func_801DCE18(ModelList *list, s32 release_models) {
     }
 }
 
+/* Draw an active actor under the camera `m`: its shadow quad at the root's
+ * floor height (unless flags bit 0; the depth also sets b39), every visible
+ * model node (lit by `light`; billboard nodes face the view), its records24
+ * surfaces, its image animations (advanced by `ticks`) and its channels'
+ * ribbons. A channel whose frame count wraps to 0 leaves the channel pointer
+ * where it is, so the next channel index redraws it (as the original). */
+#ifdef NON_MATCHING
+void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, u32 *ot, s32 buffer) {
+    MATRIX *view = (MATRIX *)0x1F800040;
+    MATRIX *placed = (MATRIX *)0x1F800020;
+    SVECTOR v;
+    VECTOR front, back;
+    s32 depth, depth2;
+    VECTOR out;
+    SVECTOR sun;
+    ModelPart *parts;
+    ModelPart *part;
+    ModelList *models;
+    u16 scale;
+    u32 count;
+    u32 i;
+    s32 k, side;
+    s16 shade;
+    POLY_FT4 *prim;
+    Record24 *record;
+    Record24Entry *entry;
+    ImageAnim *anim;
+    Channel *ch;
+    Particle *particle;
+
+    if (!actor->active) {
+        return;
+    }
+    parts = actor->parts;
+    models = actor->models;
+    scale = actor->scale;
+    count = parts->count;
+    CompMatrix(m, &parts->local, view);
+    if (!(actor->flags & 1)) {
+        CompMatrix(&parts->local, &actor->parts[1].world, SCRATCH_MATRIX);
+        SetRotMatrix(SCRATCH_MATRIX);
+        SetTransMatrix(SCRATCH_MATRIX);
+        v.vx = 0;
+        v.vy = 0;
+        v.vz = 0x1000;
+        gte_ldv0(&v);
+        gte_rtv0tr();
+        gte_stlvnl(&front);
+        v.vx = 0;
+        v.vy = 0;
+        v.vz = 0;
+        gte_ldv0(&v);
+        gte_rtv0tr();
+        gte_stlvnl(&back);
+        v.vy = -ratan2(front.vz - back.vz, front.vx - back.vx);
+        v.vx = 0;
+        v.vz = 0;
+        func_8003F738(&v, placed);
+        placed->t[0] = back.vx;
+        placed->t[2] = back.vz;
+        placed->t[1] = actor->h60;
+        CompMatrix(m, placed, placed);
+        shade = actor->scale - (actor->h60 - actor->parts->pos[1]) / 4;
+        if (shade < 0) {
+            shade = 0;
+        }
+        SCRATCH_MATRIX->m[0][0] = shade;
+        SCRATCH_MATRIX->m[0][1] = 0;
+        SCRATCH_MATRIX->m[0][2] = 0;
+        SCRATCH_MATRIX->m[1][0] = 0;
+        SCRATCH_MATRIX->m[1][1] = shade;
+        SCRATCH_MATRIX->m[1][2] = 0;
+        SCRATCH_MATRIX->m[2][0] = 0;
+        SCRATCH_MATRIX->m[2][1] = 0;
+        SCRATCH_MATRIX->m[2][2] = shade;
+        func_80049ACC(placed, SCRATCH_MATRIX);
+        SetRotMatrix(placed);
+        SetTransMatrix(placed);
+        prim = &actor->prims[buffer];
+        v.vx = actor->size[1];
+        v.vy = 0;
+        v.vz = actor->size[2];
+        gte_ldv0(&v);
+        gte_rtps();
+        gte_stsxy(&prim->x0);
+        gte_stszotz(&depth);
+        v.vx = -actor->size[1];
+        gte_ldv0(&v);
+        gte_rtps();
+        gte_stsxy(&prim->x1);
+        gte_stszotz(&depth2);
+        if (depth2 < depth) {
+            depth = depth2;
+        }
+        v.vx = actor->size[1];
+        v.vz = -actor->size[2];
+        gte_ldv0(&v);
+        gte_rtps();
+        gte_stsxy(&prim->x2);
+        gte_stszotz(&depth2);
+        if (depth2 < depth) {
+            depth = depth2;
+        }
+        v.vx = -actor->size[1];
+        gte_ldv0(&v);
+        gte_rtps();
+        gte_stsxy(&prim->x3);
+        gte_stszotz(&depth2);
+        if (depth2 < depth) {
+            depth = depth2;
+        }
+        depth >>= D_80050100;
+        addPrim(ot + depth, &actor->prims[buffer]);
+        if (depth > 0x2D8) {
+            depth = 0x2D8;
+        }
+        actor->b39 = 0x6B - depth / 8;
+    }
+    MulMatrix0(light, &parts->world, placed);
+    for (i = 1, part = parts + 1; i < count; i++, part++) {
+        if (part->model == 0xFFFF || !part->visible) {
+            continue;
+        }
+        MulMatrix0(placed, &part->world, SCRATCH_MATRIX);
+        SetLightMatrix(SCRATCH_MATRIX);
+        CompMatrix(view, &part->world, SCRATCH_MATRIX);
+        if (part->billboard > 0) {
+            SCRATCH_MATRIX->m[0][2] = 0;
+            SCRATCH_MATRIX->m[1][0] = 0;
+            SCRATCH_MATRIX->m[1][2] = 0;
+            SCRATCH_MATRIX->m[2][0] = 0;
+            SCRATCH_MATRIX->m[0][0] = actor->scale;
+            SCRATCH_MATRIX->m[2][2] = actor->scale;
+            if (part->billboard == 1) {
+                SCRATCH_MATRIX->m[0][1] = view->m[0][1];
+                SCRATCH_MATRIX->m[1][1] = view->m[1][1];
+                SCRATCH_MATRIX->m[2][1] = view->m[2][1];
+            } else {
+                SCRATCH_MATRIX->m[0][1] = 0;
+                SCRATCH_MATRIX->m[2][1] = 0;
+                SCRATCH_MATRIX->m[1][1] = actor->scale;
+            }
+        }
+        SetRotMatrix(SCRATCH_MATRIX);
+        SetTransMatrix(SCRATCH_MATRIX);
+        func_8002C700(models->models[part->model], part->packets[buffer], (s32)ot, mode);
+    }
+    record = actor->records24;
+    for (k = 0; k < actor->count10D; k++, record++) {
+        if ((s16)record->h0 < 0) {
+            continue;
+        }
+        sun.vx = -D_801E8698 * func_8003F8CC(parts->rot.vy + 0x400) / 4096;
+        sun.vz = D_801E8698 * func_8003F8B0(parts->rot.vy + 0x400) / 4096;
+        sun.vy = actor->h3E;
+        CompMatrix(&parts->local, &parts[(s16)record->h0].world, SCRATCH_MATRIX);
+        SetRotMatrix(SCRATCH_MATRIX);
+        SetTransMatrix(SCRATCH_MATRIX);
+        for (i = 0; (s32)i < record->rings; i++) {
+            gte_ldv0(&record->centres[i]);
+            gte_rtv0tr();
+            gte_stlvnl(&out);
+            record->block1C[i]->centre[0] = out.vx;
+            record->block1C[i]->centre[1] = out.vy;
+            record->block1C[i]->centre[2] = out.vz;
+        }
+        entry = record->block18;
+        for (i = 0; (s32)i < record->entry_count; i++, entry++) {
+            CompMatrix(&parts->local, &parts[entry->h6].world, SCRATCH_MATRIX);
+            SetRotMatrix(SCRATCH_MATRIX);
+            SetTransMatrix(SCRATCH_MATRIX);
+            gte_ldv0(entry);
+            gte_rtv0tr();
+            gte_stlvnl(&out);
+            entry->h8 = out.vx;
+            entry->hA = out.vy;
+            entry->hC = out.vz;
+        }
+        func_801E22F8(record, &sun, m, ot, buffer, scale, actor->h60);
+    }
+    anim = actor->records30;
+    for (k = 0; k < actor->count10E; k++, anim++) {
+        func_801E1258(anim, ticks);
+    }
+    ch = actor->channels;
+    for (k = 0; k < actor->channel_count; k++) {
+        if (ch->id < 0) {
+            ch++;
+            continue;
+        }
+        ch->frame = (ch->frame - 1) & 7;
+        if (!ch->solid) {
+            CompMatrix(view, &parts[ch->id].world, SCRATCH_MATRIX);
+            SetRotMatrix(SCRATCH_MATRIX);
+            SetTransMatrix(SCRATCH_MATRIX);
+            gte_ldv0(&ch->ends[0]);
+            gte_rtps();
+            gte_stsxy(&ch->trail.sxy[0][ch->frame]);
+            gte_ldv0(&ch->ends[1]);
+            gte_rtps();
+            gte_stsxy(&ch->trail.sxy[1][ch->frame]);
+            if (++ch->count == 0) {
+                continue;
+            }
+            if (ch->max < ch->count || ch->particle == NULL) {
+                ch->count = 1;
+                ch->particle = func_801E0248(ch->pool, ch->semi_trans);
+                ch->particle->projected = 0;
+                ch->particle->age = 0;
+                ch->particle->lifetime = ch->lifetime;
+                ch->particle->color[0] = ch->color[0];
+                ch->particle->color[1] = ch->color[1];
+                ch->particle->color[2] = ch->color[2];
+                ch->particle->fade[0] = ch->fade[0];
+                ch->particle->fade[1] = ch->fade[1];
+                ch->particle->fade[2] = ch->fade[2];
+                side = (ch->frame + ch->count) & 7;
+                ch->particle->x0 = ch->trail.sxy[0][side].x;
+                ch->particle->y0 = ch->trail.sxy[0][side].y;
+                ch->particle->x2 = ch->trail.sxy[1][side].x;
+                ch->particle->y2 = ch->trail.sxy[1][side].y;
+            }
+            ch->particle->x1 = ch->trail.sxy[0][ch->frame].x;
+            ch->particle->y1 = ch->trail.sxy[0][ch->frame].y;
+            ch->particle->x3 = ch->trail.sxy[1][ch->frame].x;
+            ch->particle->y3 = ch->trail.sxy[1][ch->frame].y;
+        } else {
+            CompMatrix(&parts->local, &parts[ch->id].world, SCRATCH_MATRIX);
+            SetRotMatrix(SCRATCH_MATRIX);
+            SetTransMatrix(SCRATCH_MATRIX);
+            side = ch->frame & 1;
+            gte_ldv0(&ch->ends[0]);
+            gte_rtv0tr();
+            gte_stlvnl(&ch->trail.pos[0][side]);
+            gte_ldv0(&ch->ends[1]);
+            gte_rtv0tr();
+            gte_stlvnl(&ch->trail.pos[1][side]);
+            if (++ch->count == 0) {
+                continue;
+            }
+            if (ch->max < ch->count || ch->particle == NULL) {
+                ch->count = 1;
+                particle = func_801E0248(ch->pool, ch->semi_trans);
+                ch->particle = particle;
+                particle->projected = 1;
+                ch->particle->age = 0;
+                ch->particle->lifetime = ch->lifetime;
+                ch->particle->color[0] = ch->color[0];
+                ch->particle->color[1] = ch->color[1];
+                ch->particle->color[2] = ch->color[2];
+                ch->particle->fade[0] = ch->fade[0];
+                ch->particle->fade[1] = ch->fade[1];
+                ch->particle->fade[2] = ch->fade[2];
+                ch->particle->x0 = ch->trail.pos[0][1 - side].vx;
+                ch->particle->y0 = ch->trail.pos[0][1 - side].vy;
+                ch->particle->z0 = ch->trail.pos[0][1 - side].vz;
+                ch->particle->x2 = ch->trail.pos[1][1 - side].vx;
+                ch->particle->y2 = ch->trail.pos[1][1 - side].vy;
+                ch->particle->z2 = ch->trail.pos[1][1 - side].vz;
+            }
+            ch->particle->x1 = ch->trail.pos[0][side].vx;
+            ch->particle->y1 = ch->trail.pos[0][side].vy;
+            ch->particle->z1 = ch->trail.pos[0][side].vz;
+            ch->particle->x3 = ch->trail.pos[1][side].vx;
+            ch->particle->y3 = ch->trail.pos[1][side].vy;
+            ch->particle->z3 = ch->trail.pos[1][side].vz;
+        }
+        ch++;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DCEC8);
+#endif
 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DDBF8);
 
@@ -2801,7 +3073,7 @@ INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E742C);
 
 /* Advance the scene by the elapsed half-frames: step every actor, carry the
  * carried ones, place the anchors, then draw the actors and particles. */
-void func_801E7D14(MATRIX *m, s32 arg1, u32 *ot, s32 buffer, s32 elapsed) {
+void func_801E7D14(MATRIX *m, MATRIX *light, u32 *ot, s32 buffer, s32 elapsed) {
     SVECTOR unused;
     Actor *actor;
     s32 steps;
@@ -2839,7 +3111,7 @@ void func_801E7D14(MATRIX *m, s32 arg1, u32 *ot, s32 buffer, s32 elapsed) {
             D_801E8670[i]->moved[0] = D_801E8670[i]->previous[0] - D_801E8670[i]->parts->pos[0];
             D_801E8670[i]->moved[1] = D_801E8670[i]->previous[1] - D_801E8670[i]->parts->pos[1];
             D_801E8670[i]->moved[2] = D_801E8670[i]->previous[2] - D_801E8670[i]->parts->pos[2];
-            func_801DCEC8(D_801E8670[i], m, arg1, 1, 1, ot, buffer);
+            func_801DCEC8(D_801E8670[i], m, light, 1, 1, ot, buffer);
         }
     }
     func_801E0398(&D_801E86A0, m, steps, ot, buffer);
@@ -2975,7 +3247,7 @@ void func_801E8510(Actor *actor) {
         channels = func_80031BDC(actor->channel_count * sizeof(Channel), 0);
         for (i = 0; i < actor->channel_count; i++) {
             channels[i].id = -1;
-            channels[i].w8 = 0;
+            channels[i].particle = NULL;
         }
         actor->channels = channels;
     }
