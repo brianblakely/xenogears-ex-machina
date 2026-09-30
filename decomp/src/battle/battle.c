@@ -6181,7 +6181,68 @@ s16 func_80096FBC(void) {
     return value;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80097610);
+/* Defense value of the target against the current command: body defense
+ * plus armor (1.5x with status 0x100), the ether defense (1.5x with status
+ * 0x4000 of +0x88) or the body alone, by the command's +0x1b. A character
+ * target's +0x32 bits then scale it by the party members down. */
+s16 func_80097610(void) {
+    u16 armor;
+    u16 body;
+    u16 ether;
+    u16 value;
+    u8 downed;
+    u8 i;
+
+    if (D_800C34B0->records[D_800C3E50].flags15A & 0x80) {
+        body = D_800D2DC8->bodyDefense;
+    } else {
+        armor = D_800C3E34->pilot.defense;
+        body = D_800C3E34->pilot.bodyDefense;
+    }
+    ether = D_800C3E34->pilot.etherDefense;
+    if (D_800C3DFC->flagsA & 0x100) {
+        if ((D_800C3E34->pilot.status88.half.active | D_800C3E34->pilot.status88.half.permanent) & 0x4000) {
+            ether = ether * 3 / 2;
+        }
+    } else if (!(D_800C34B0->records[D_800C3E50].flags15A & 0x80)) {
+        if ((D_800C3E34->pilot.status84.half.active | D_800C3E34->pilot.status84.half.permanent) & 0x100) {
+            armor = armor * 3 / 2;
+        }
+    }
+    if (D_800C34B0->records[D_800C3E50].flags15A & 0x80) {
+        armor = 0;
+    }
+    switch (D_800C3DFC->defenseKind) {
+    case 0:
+        value = body + armor;
+        break;
+    case 1:
+        value = ether;
+        break;
+    case 2:
+        value = body;
+        break;
+    }
+    if (D_800C34B0->records[D_800C3E50].flags15A & 0x80) {
+        return value;
+    }
+    downed = 0;
+    for (i = 0; i < 3; i++) {
+        if (D_800C34B0->records[i].pilot.status7C & 0x8000) {
+            downed++;
+        }
+    }
+    if ((D_800C3E34->pilot.flags32 & 4) && downed != 0 && !(D_800C3DFC->flagsA & 0x100)) {
+        value = value * (4 - downed) / 4;
+    }
+    if ((D_800C3E34->pilot.flags32 & 2) && downed != 0 && !(D_800C3DFC->flagsA & 0x100)) {
+        value = value * (downed + 2) / 2;
+    }
+    if ((D_800C3E34->pilot.flags32 & 1) && downed != 0) {
+        value = value * (downed + 2) / 2;
+    }
+    return value;
+}
 
 void func_8009795C(void) {
 }

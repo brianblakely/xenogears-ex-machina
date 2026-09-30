@@ -29,7 +29,9 @@ typedef struct {
  * bytes stay padding. */
 typedef struct {
     CharacterEntry entries[4]; /* 0x00 */
-    u8 pad20[0x32 - 0x20];
+    u8 pad20[0x2D - 0x20];
+    u8 bodyDefense; /* 0x2D */
+    u8 pad2E[0x32 - 0x2E];
     u16 flags32; /* 0x32: bit 0x40 doubles status durations */
     u16 flags34; /* 0x34: bit 0x800 reacts while down */
     u16 flags36; /* 0x36 */
@@ -48,7 +50,8 @@ typedef struct {
     u8 defense; /* 0x59 */
     u8 speed;    /* 0x5A */
     u8 accuracy; /* 0x5B: added to a command's accuracy */
-    u8 pad5C[0x5E - 0x5C];
+    u8 etherDefense; /* 0x5C */
+    u8 pad5D;
     u8 field5E;
     u8 field5F;
     u8 field60; /* 0x60: chance in percent */
@@ -103,8 +106,9 @@ typedef struct {
     u8 pad58[0x60 - 0x58];
     u32 hp;    /* 0x60 */
     u32 maxHp; /* 0x64 */
-    u8 pad68[0x72 - 0x68];
-    u16 armor; /* 0x72 */
+    u8 pad68[0x70 - 0x68];
+    u16 bodyDefense; /* 0x70 */
+    u16 armor;       /* 0x72 */
     u8 pad74[0x7C - 0x74];
     u16 status7C;
     u16 field7E; /* 0x7E: bit 0x80 blocks fuel drain */
@@ -200,8 +204,8 @@ typedef struct {
     u8 pad17;
     u8 chanceSource; /* 0x18: 0 attacker +0x60, 1 field1C */
     u8 pad19;
-    u8 amountKind; /* 0x1A: what 80096018 writes as the amount */
-    u8 pad1B;
+    u8 amountKind;  /* 0x1A: what 80096018 writes as the amount */
+    u8 defenseKind; /* 0x1B: which defense value 80097610 uses */
     u8 field1C;
     u8 field1D; /* 0x1D: a timed status kind */
     u16 field1E; /* 0x1E: its flag bit */
