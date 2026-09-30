@@ -2921,17 +2921,15 @@ u8 func_801E4928(u8 gear) {
 }
 
 /* Set view `gear`'s value to 2/90 of the gear's +64, in steps of ten. */
-#ifdef NON_MATCHING
 void func_801E4998(MenuGearViews *views, u8 gear) {
     MenuGearValue *value;
 
-    value = &views->views[gear]->value;
+    /* One pointer walks from the view to its value record. */
+    value = (MenuGearValue *)views->views[gear];
+    value = &((MenuGearView *)value)->value;
     value->unk24 = D_8006DFAC[gear].unk64 / 10 * 2 / 9;
     value->unk24 = value->unk24 / 10 * 10;
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801E4998);
-#endif
 
 /* Copy the game data into save buffer `save`: characters, gears (their
  * kept fields), names and the other blocks. */
