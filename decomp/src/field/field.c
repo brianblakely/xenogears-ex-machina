@@ -843,7 +843,71 @@ void func_800775F8(void) {
     VSync(0);
 }
 
+/* Where each of the eight text-image TIMs goes in VRAM. */
+typedef struct {
+    s16 x;
+    s16 y;
+    s16 clut_x;
+    s16 clut_y;
+    s16 clut_w;
+    s16 clut_h;
+} TextImagePlace;
+
+extern s32 D_8004F344;       /* 1 while the text-image file is already loaded */
+extern s32 *D_8005A4A0;      /* the text-image file (a7) */
+extern TextImagePlace D_800ADC44[8];
+extern RECT D_800B004C;      /* compass colour strip */
+extern u16 D_800AFC08[16];   /* compass colours read back from VRAM */
+extern s16 D_800C2690;
+extern s16 D_800C2692;
+extern s16 D_800C38FC;
+extern s16 D_800C38FE;
+void func_8003342C(void *table);
+void func_80070340(u32 *tim, s16 x, s16 y, s16 clut_x, s16 clut_y, s16 clut_w, s16 clut_h);
+
+#ifdef NON_MATCHING
+/* Load the field's text images (file a7, read once while 8004f344 is clear):
+ * relocate its offset table, load its eight TIMs where 800adc44 places them,
+ * read the compass colours back from VRAM (0, fb) and release the file.
+ * Does not match: the original walks the placement table with two
+ * pointers and an offset (s2..s5); this loop reduces to one pointer. */
+void func_80077620(void) {
+    TextImagePlace *place;
+    u32 **tim;
+    s32 i;
+
+    if (D_8004F344 == 0) {
+        D_8005A4A0 = func_80031BDC(func_800288EC(0xA7), 1);
+        func_800320A4(D_8005A4A0);
+        func_800295D8(0xA7, D_8005A4A0, 0, 0x80);
+        func_80028A60(0);
+    }
+    place = D_800ADC44;
+    func_800320B8(D_8005A4A0);
+    D_8004F344 = 0;
+    D_800C2692 = 0;
+    D_800C2690 = 0;
+    D_800C38FE = 0;
+    D_800C38FC = 0;
+    func_8003342C(D_8005A4A0);
+    tim = (u32 **)D_8005A4A0 + 1;
+    for (i = 0; i < 8; i++) {
+        func_80070340(*tim, place[i].x, place[i].y, place[i].clut_x, place[i].clut_y, place[i].clut_w,
+                      place[i].clut_h);
+        DrawSync(0);
+        tim++;
+    }
+    D_800B004C.x = 0;
+    D_800B004C.y = 0xFB;
+    D_800B004C.w = 0x10;
+    D_800B004C.h = 1;
+    StoreImage(&D_800B004C, (u32 *)D_800AFC08);
+    DrawSync(0);
+    func_800320E8(D_8005A4A0);
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80077620);
+#endif
 
 /* Stop the stream, then read the map's data ahead until it is in. */
 void func_800777DC(void) {
@@ -871,9 +935,100 @@ void func_80077844(MATRIX *m, s32 m00, s32 m01, s32 m02, s32 m10, s32 m11, s32 m
     m->m[2][2] = m22;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80077884);
+/* One entry of a resident file-read list (80029afc); a zero file ends it. */
+typedef struct {
+    u16 file;
+    void *destination;
+} FieldFileRequest;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80077AB4);
+extern s32 D_8004F370;         /* 1 when the module file comes from the disc */
+extern void *D_8005A420[4];    /* per 801e layer: second resource */
+extern void *D_8005A450[4];    /* per 801e layer: first resource */
+extern void *D_800ADB20;       /* the 801e module (file 6b9) */
+extern u32 D_800ADB30;
+extern FieldFileRequest D_800B2394[];
+s32 func_80029AFC(FieldFileRequest *list, s32 mode, s32 a2);
+
+#ifdef NON_MATCHING
+/* Load the 801e module and its per-layer resources when the layer is
+ * enabled: allocate the module (file 6b9), two blocks per layer (files
+ * 6bb and 6ba plus the layer's id), then read them all as one list.
+ * Does not match: only the registers of the module size computation differ
+ * (the original keeps 800adb30 in v1 and the size in a0). */
+void func_80077884(void) {
+    u32 end;
+    s32 size;
+    s32 i;
+
+    if (D_800B2078.unk2264 != 0) {
+        func_8008A520();
+        func_80028470(4, 0);
+        func_800A90B4(0);
+        end = D_800ADB30;
+        if (D_8004F370 == 0) {
+            size = (end & 0xFFFFFF) - 0x1DC008;
+        } else {
+            size = func_800288EC(0x6B9);
+        }
+        D_800ADB20 = func_80031BDC(size, 1);
+        func_800A90B4(1);
+        for (i = 0; i < D_800B2078.unk2264; i++) {
+            D_800B2394[i * 2 + 1].file = D_800B2078.unk21DC[i] + 0x6BB;
+            D_8005A450[i] = func_80031BDC(func_800288EC(D_800B2078.unk21DC[i] + 0x6BB), 1);
+            D_800B2394[i * 2 + 1].destination = D_8005A450[i];
+        }
+        for (i = 0; i < D_800B2078.unk2264; i++) {
+            D_800B2394[i * 2].file = D_800B2078.unk21DC[i] + 0x6BA;
+            D_8005A420[i] = func_80031BDC(func_800288EC(D_800B2078.unk21DC[i] + 0x6BA), 0);
+            D_800B2394[i * 2].destination = D_8005A420[i];
+        }
+        D_800B2394[i * 2].file = 0x6B9;
+        D_800B2394[i * 2].destination = D_800ADB20;
+        D_800B2394[i * 2 + 1].file = 0;
+        D_800B2394[i * 2 + 1].destination = 0;
+        func_8008A520();
+        func_80029AFC(D_800B2394, 0, 0);
+    }
+}
+#else
+INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80077884);
+#endif
+
+extern void *D_801E8644;
+extern u8 *D_801E8670[]; /* 801e module layers */
+void func_801E738C(s32 a0);
+void func_801E742C(s32 layer, s32 a1, void *resource_a, void *resource_b, s32 y, s32 a5, s32 a6, s32 a7,
+                   SVECTOR *angles);
+
+/* Start the 801e module's layers when enabled: sync and flush the cache,
+ * initialise the module, set the back colour, then create each layer from
+ * its two resources (releasing the first) and keep its depth. */
+void func_80077AB4(void) {
+    SVECTOR *angles;
+    s32 row;
+    s32 i;
+
+    if (D_800B2078.unk2264 != 0) {
+        func_8008A520();
+        func_8007999C();
+        func_801E738C(D_800B2078.unk234A);
+        D_801E8644 = D_800B2078.unk223C;
+        SetBackColor(D_800B2078.unk225C[0], D_800B2078.unk225C[1], D_800B2078.unk225C[2]);
+        for (i = 0; i < D_800B2078.unk2264; i++) {
+            angles = &D_800B2078.layer_angles[i];
+            angles->vx = 0;
+            angles->vy = 0;
+            angles->vz = 0;
+            row = D_800B2078.unk225F[i];
+            func_801E742C(i, 0, D_8005A420[i], D_8005A450[i],
+                          (s16)(0x240 - ((i + row) << 6)), 0x100, 0, (s16)(i + 0xFC),
+                          angles);
+            func_800320E8(D_8005A450[i]);
+            D_800B2078.layer_depths[i] = *(s16 *)(D_801E8670[i] + 0x1C);
+        }
+        func_80032498(8, 0);
+    }
+}
 
 /* Run 80077884 then 80077ab4. */
 void func_80077C60(void) {
