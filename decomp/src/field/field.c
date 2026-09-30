@@ -2548,14 +2548,10 @@ extern s16 D_800C38FE;
 void func_8003342C(void *table);
 void func_80070340(u32 *tim, s16 x, s16 y, s16 clut_x, s16 clut_y, s16 clut_w, s16 clut_h);
 
-#ifdef NON_MATCHING
 /* Load the field's text images (file a7, read once while 8004f344 is clear):
  * relocate its offset table, load its eight TIMs where 800adc44 places them
  * (x, y, palette x, y, w, h), read the compass colours back from VRAM (0, fb)
- * and release the file.
- * Does not match: the original sets up the placement-table walk before
- * 800320b8 and loads the file table straight into its register; only
- * that set-up is scheduled differently. */
+ * and release the file. */
 void func_80077620(void) {
     u32 **tim;
     s32 i;
@@ -2573,12 +2569,11 @@ void func_80077620(void) {
     D_800C38FE = 0;
     D_800C38FC = 0;
     func_8003342C(D_8005A4A0);
-    tim = (u32 **)D_8005A4A0 + 1;
+    tim = (u32 **)D_8005A4A0;
     for (i = 0; i < 8; i++) {
-        func_80070340(*tim, D_800ADC44[i * 6], D_800ADC44[i * 6 + 1], D_800ADC44[i * 6 + 2],
+        func_80070340(*++tim, D_800ADC44[i * 6], D_800ADC44[i * 6 + 1], D_800ADC44[i * 6 + 2],
                       D_800ADC44[i * 6 + 3], D_800ADC44[i * 6 + 4], D_800ADC44[i * 6 + 5]);
         DrawSync(0);
-        tim++;
     }
     D_800B004C.x = 0;
     D_800B004C.y = 0xFB;
@@ -2588,9 +2583,6 @@ void func_80077620(void) {
     DrawSync(0);
     func_800320E8(D_8005A4A0);
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80077620);
-#endif
 
 /* Stop the stream, then read the map's data ahead until it is in. */
 void func_800777DC(void) {

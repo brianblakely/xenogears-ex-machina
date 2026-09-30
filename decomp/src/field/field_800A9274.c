@@ -712,10 +712,9 @@ void func_800AAE4C(s32 index, s32 x, s32 y, s32 anchor) {
 
 #include "field_picture.h"
 
-#ifdef NON_MATCHING
 /* Set up the picture: four marker sprites (the first 16x16, the rest
  * 8x8) and the three 128x224 picture pieces from the 8-bit pages at
- * (300, 100). Differs only in the scheduling of one constant load. */
+ * (300, 100). */
 void func_800AAF80(void) {
     RECT window;
     SPRT *sprite;
@@ -752,8 +751,8 @@ void func_800AAF80(void) {
         quad = &D_800C3A3C->quads[i][0];
         quad_copy = &D_800C3A3C->quads[i][1];
         SetPolyFT4(quad);
-        quad->y2 = 0xDF;
         quad->x0 = i << 7;
+        quad->y2 = 0xDF;
         quad->x2 = i << 7;
         quad->y0 = 0;
         quad->x1 = (i << 7) + 0x80;
@@ -781,9 +780,6 @@ void func_800AAF80(void) {
         *quad_copy = *quad;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800A9274", func_800AAF80);
-#endif
 
 /* 0 when item `item` is held in inventory list 0, else -1. */
 s32 func_800AB328(s32 item) {
