@@ -11,6 +11,7 @@ extern u16 D_801CC114[];
 extern u8 D_801CBF98[];
 extern s32 D_801CBEA0[]; /* marker home x */
 extern s32 D_801CBEB0[]; /* marker home y */
+extern u8 D_801CBEC0[]; /* name entry grid: six text codes per entry */
 extern s32 D_801CBF9C[]; /* file cursor -> slot */
 extern s32 D_801CC014[]; /* slot x */
 extern s32 D_801CC094[]; /* slot y */
@@ -1428,7 +1429,90 @@ void func_801CA400(void) {
     func_800320E8(D_800625A0);
 }
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801CA558);
+/* Build the name entry grid: set up the 72 character quads and the name
+ * quad, render the 36 grid entries (five codes each from D_801CBEC0) into
+ * VRAM and place them in 4 columns of 9, map and place the name quad, and
+ * set up the green grid lines and the caret. */
+void func_801CA558(void) {
+    u16 codes[8];
+    u8 text[16];
+    RECT rect;
+    u8 *image = func_80031BDC(0x2BE, 0);
+    s32 i;
+    s32 k;
+    s32 column;
+    s32 row;
+
+    for (i = 0; i < 74; i++) {
+        func_80043CB0(&D_800625A0->entry->chars[i]);
+        (D_800625A0->entry->chars + i)->r0 = 0x80;
+        (D_800625A0->entry->chars + i)->g0 = 0x80;
+        (D_800625A0->entry->chars + i)->b0 = 0x80;
+        func_80043BFC(&D_800625A0->entry->chars[i], 0);
+        func_80043C24(&D_800625A0->entry->chars[i], 1);
+        D_800625A0->entry->chars[i].clut = D_800595D4;
+        D_800625A0->entry->chars[i].tpage = func_80043A1C(0, 0, 0x180, 0);
+    }
+    for (i = 0; i < 36; i++) {
+        for (k = 0; k < 5; k++) {
+            codes[k] = D_801CBEC0[i * 6 + k];
+        }
+        func_80033B34(codes, text, 5);
+        func_8003F8E8(image, 0x2BE);
+        func_80034EAC(text, image, 0x18, 0);
+        rect.x = (i % 2) * 32 + 0x180;
+        rect.y = (i / 2) * 13;
+        rect.w = 0x1C;
+        rect.h = 13;
+        func_80044894(&rect, image);
+        (D_800625A0->entry->chars + (i * 2 + D_800625A0->buffer_index))->u0 = (i % 2) << 7;
+        (D_800625A0->entry->chars + (i * 2 + D_800625A0->buffer_index))->v0 = (i / 2) * 13;
+        (D_800625A0->entry->chars + (i * 2 + D_800625A0->buffer_index))->u1 = ((i % 2) << 7) + 0x3C;
+        (D_800625A0->entry->chars + (i * 2 + D_800625A0->buffer_index))->v1 = (i / 2) * 13;
+        (D_800625A0->entry->chars + (i * 2 + D_800625A0->buffer_index))->u2 = (i % 2) << 7;
+        (D_800625A0->entry->chars + (i * 2 + D_800625A0->buffer_index))->v2 = (i / 2) * 13 + 13;
+        (D_800625A0->entry->chars + (i * 2 + D_800625A0->buffer_index))->u3 = ((i % 2) << 7) + 0x3C;
+        (D_800625A0->entry->chars + (i * 2 + D_800625A0->buffer_index))->v3 = (i / 2) * 13 + 13;
+        (D_800625A0->entry->chars + (i * 2 + D_800625A0->buffer_index))->x0 = (i / 9) * 0x30 + 0x44;
+        (D_800625A0->entry->chars + (i * 2 + D_800625A0->buffer_index))->y0 = (i % 9) * 16 + 0x2E;
+        (D_800625A0->entry->chars + (i * 2 + D_800625A0->buffer_index))->x1 = (i / 9) * 0x30 + 0x80;
+        (D_800625A0->entry->chars + (i * 2 + D_800625A0->buffer_index))->y1 = (i % 9) * 16 + 0x2E;
+        (D_800625A0->entry->chars + (i * 2 + D_800625A0->buffer_index))->x2 = (i / 9) * 0x30 + 0x44;
+        (D_800625A0->entry->chars + (i * 2 + D_800625A0->buffer_index))->y2 = (i % 9) * 16 + 0x3B;
+        (D_800625A0->entry->chars + (i * 2 + D_800625A0->buffer_index))->x3 = (i / 9) * 0x30 + 0x80;
+        (D_800625A0->entry->chars + (i * 2 + D_800625A0->buffer_index))->y3 = (i % 9) * 16 + 0x3B;
+        func_800445D0(0);
+    }
+    func_800320E8(image);
+    D_800625A0->entry->chars_buffer = D_800625A0->buffer_index;
+    (D_800625A0->entry->name + D_800625A0->buffer_index)->u0 = 0;
+    (D_800625A0->entry->name + D_800625A0->buffer_index)->v0 = 0xEA;
+    (D_800625A0->entry->name + D_800625A0->buffer_index)->u1 = D_800625A0->entry->max_length * 8;
+    (D_800625A0->entry->name + D_800625A0->buffer_index)->v1 = 0xEA;
+    (D_800625A0->entry->name + D_800625A0->buffer_index)->u2 = 0;
+    (D_800625A0->entry->name + D_800625A0->buffer_index)->v2 = 0xF7;
+    (D_800625A0->entry->name + D_800625A0->buffer_index)->u3 = D_800625A0->entry->max_length * 8;
+    (D_800625A0->entry->name + D_800625A0->buffer_index)->v3 = 0xF7;
+    func_801C6408(D_800625A0->entry->name_at,
+                  D_800625A0->entry->name[D_800625A0->buffer_index].x0 + 0x50,
+                  D_800625A0->entry->name[D_800625A0->buffer_index].y0 + 0xB6,
+                  D_800625A0->entry->max_length * 8, 13);
+    D_800625A0->entry->name_buffer = D_800625A0->buffer_index;
+    for (i = 0; i < 2; i++) {
+        func_80043DA0(&D_800625A0->entry->line_a[i]);
+        (D_800625A0->entry->line_a + i)->r0 = 0;
+        (D_800625A0->entry->line_a + i)->g0 = 0xFF;
+        (D_800625A0->entry->line_a + i)->b0 = 0;
+        func_80043DA0(&D_800625A0->entry->line_b[i]);
+        (D_800625A0->entry->line_b + i)->r0 = 0;
+        (D_800625A0->entry->line_b + i)->g0 = 0xFF;
+        (D_800625A0->entry->line_b + i)->b0 = 0;
+        func_80043D78(&D_800625A0->entry->caret[i]);
+        (D_800625A0->entry->caret + i)->r0 = 0;
+        (D_800625A0->entry->caret + i)->g0 = 0x80;
+        (D_800625A0->entry->caret + i)->b0 = 0;
+    }
+}
 
 /* Open the name entry: its panel and message, the cursor sprite and its
  * quad, the confirm/back/grid sprites, the two command labels, the
