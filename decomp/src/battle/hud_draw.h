@@ -106,6 +106,14 @@ typedef struct {
 
 #define LIST_PRIMS ((ListPrims *)D_800D2DB4)
 
+/* A turn slot's five four-glyph number strings (+0x08 of TurnSlot, kept as
+ * padding there). */
+#define SLOT_DIGITS(slot, k) (&D_800C3EAC->slots[slot].unk0[8 + (k) * 4])
+extern u8 D_800D2C0C[3][2]; /* values shown in number strings 2-4 */
+void func_8009A2D4(u8 member);
+void func_80089AF8(u8 member);
+void func_800898F0(u8 member);
+
 extern u32 *D_800C3E5C[];   /* text images of battle messages 0-9 */
 void *func_800338D8(s32 id); /* a battle message text */
 

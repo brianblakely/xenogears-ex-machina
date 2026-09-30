@@ -4082,7 +4082,50 @@ void func_8007FEC4(void) {
     D_800D2DB4->unk5D9E = 0x64;
 }
 
+/* Build the member's number strings 2-4 (glyphs 0x83 + digit, no leading
+ * zeros) from 800d2c0c, set up the list block and, unless the member is
+ * character 7, the menu lists; then show them.
+ * Nonmatching: the original walks the values with a pointer and keeps k. */
+#ifdef NON_MATCHING
+void func_8007FF14(u8 member) {
+    s32 k;
+    s32 n;
+    u8 value;
+    u8 digit;
+
+    func_8009A2D4(member);
+    for (k = 2; k < 5; k++) {
+        value = D_800D2C0C[k - 2][0];
+        SLOT_DIGITS(member, k)[0] = 0xFF;
+        SLOT_DIGITS(member, k)[1] = 0xFF;
+        SLOT_DIGITS(member, k)[2] = 0xFF;
+        n = 0;
+        digit = value / 100;
+        if (digit != 0) {
+            value -= digit * 100;
+            n = 1;
+            SLOT_DIGITS(member, k)[0] = digit + 0x83;
+        }
+        digit = value / 10;
+        if (digit != 0 || n != 0) {
+            value -= digit * 10;
+            SLOT_DIGITS(member, k)[n++] = digit + 0x83;
+        }
+        SLOT_DIGITS(member, k)[n] = value + 0x83;
+    }
+    func_8007FEC4();
+    if (D_800D2D24[member] != 7) {
+        func_80089AF8(member);
+        func_800716D8();
+        func_800898F0(member);
+        func_800716D8();
+        D_800D2D28->unkAD = 1;
+        D_800D2D28->unkC7 = 1;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007FF14);
+#endif
 
 /* Leave a member's menu: clear UI +0xad, +0xc7, +0xa8, turn a 2 at 800d32a1
  * into 1 and release *800d2db4. */
@@ -5334,8 +5377,8 @@ void func_800897CC(void) {
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800898F0);
 
-/* Run the eight 8008860c..800897cc steps. */
-void func_80089AF8(void) {
+/* Run the eight 8008860c..800897cc steps (the member is unused). */
+void func_80089AF8(u8 member) {
     func_8008860C();
     func_80089038();
     func_80089110();
