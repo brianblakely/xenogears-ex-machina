@@ -17,6 +17,20 @@ typedef struct {
     u8 type;                 /* 0x47: 0xF7 continues, 0xFF ends */
 } BattleEvent;
 
+/* An image animation of a battle object (0x30 bytes): the VRAM area it
+ * changes is restored when freed (800A429C). */
+typedef struct ImageAnim {
+    u8 pad0[4];
+    void *pixels; /* 0x04: the saved area */
+    void *field8; /* 0x08 */
+    void *fieldC; /* 0x0C */
+    u8 field10;   /* 0x10: restored below 4 */
+    u8 pad11[0x1A - 0x11];
+    s16 active;   /* 0x1A */
+    u8 pad1C[0x28 - 0x1C];
+    RECT rect;    /* 0x28 */
+} ImageAnim;
+
 /* A channel of a battle object's animation script effects (0x70 bytes). */
 typedef struct {
     s16 id; /* -1 idle */
@@ -83,18 +97,19 @@ typedef struct {
     s16 motion[12];  /* 0x70 */
     s16 position[3]; /* 0x88 */
     s16 field8E;     /* 0x8E */
-    u8 pad90[0x98 - 0x90];
+    s16 placement[4]; /* 0x90: where its images went (x, y, z, w), x -1 none */
     s16 animation;       /* 0x98: -1 none */
     s16 animationLoop;   /* 0x9A: -1 none */
     u16 animationFrame;  /* 0x9C */
     u16 animationLength; /* 0x9E */
     u8 *animationStart;  /* 0xA0 */
     u8 *animationCursor; /* 0xA4 */
-    void *imageFile; /* 0xA8: its images, NULL none */
-    void *modelFile; /* 0xAC: its model file, NULL shared */
+    u8 *modelBlock;  /* 0xA8: its own copy of its models, NULL none */
+    void *scriptFile; /* 0xAC: its script file, NULL shared */
     struct ObjectData *model;     /* 0xB0: the model data */
     struct ObjectData *extraData; /* 0xB4: the extra file's data */
-    u8 padB8[0x10A - 0xB8];
+    POLY_FT4 shadow[2]; /* 0xB8: one per frame buffer */
+    u8 pad108[2];
     u16 slotMask; /* 0x10A */
     u8 channelCount;  /* 0x10C */
     u8 meshCount;     /* 0x10D */
@@ -102,8 +117,11 @@ typedef struct {
     u8 pad10F;
     ObjectChannel *channels; /* 0x110 */
     StageMesh *meshes; /* 0x114 */
-    u8 *imageAnims;    /* 0x118: 0x30 bytes each, VRAM images restored on free */
+    struct ImageAnim *imageAnims; /* 0x118 */
 } BattleObject;
+
+/* Layout check (a negative array size fails the build). */
+typedef char BattleObjectLayoutCheck[sizeof(BattleObject) == 0x11C ? 1 : -1];
 
 /* An animation header (fields as far as recovered). */
 typedef struct {
@@ -116,7 +134,9 @@ typedef struct {
 
 /* The battle scene data (fields as far as recovered). */
 typedef struct {
-    u8 pad0[0x348];
+    u8 pad0[0x344];
+    s16 objectScale; /* 0x344: 4.12 */
+    u8 pad346[2];
     s16 effectCount; /* 0x348 */
     s16 spriteCount; /* 0x34A */
     s16 maxX;        /* 0x34C */

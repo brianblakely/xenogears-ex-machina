@@ -1180,7 +1180,197 @@ void func_800A8B0C(void) {
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A8B0C);
 #endif
 
+#ifdef NON_MATCHING
+/* Create stage object index (unless it exists) from its script and model
+ * files with its images placed at x, y, z, w (flag 1: the model file is
+ * already set up, no images; 4: no script file; 0x40: a plain object with no
+ * scripts; 0x80: the script file is shared; 2: its models stay in the loaded
+ * group), its root at position when given. Nonmatching: the register
+ * allocator keeps header in $fp and spills flags, the original the reverse. */
+void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *scriptFile, ObjectModelFile *modelFile, s16 x, s16 y,
+                   s16 z, s16 w, SVector *position) {
+    BattleObject *object;
+    ObjectScripts *scripts;
+    struct ObjectData *data;
+    ObjectHeader *header;
+    ObjectDesc *desc;
+    void *images;
+    u8 *models;
+    u16 *hierarchy;
+    s32 size;
+    s16 on;
+    s32 i;
+    s32 j;
+    StageMesh *mesh;
+    s16 *stream;
+    s16 keyCount;
+    u8 *copy;
+
+    func_80032498(4, 0);
+    if (index < 32 && D_800D3368[index] == NULL) {
+        object = func_80031BDC(sizeof(BattleObject), 0);
+        if (!(flags & 1)) {
+            func_8003342C(modelFile);
+            func_8003342C(modelFile->header);
+        }
+        object->ownSounds = 0;
+        object->extraSounds = 0;
+        if (!(flags & 4)) {
+            func_8003342C(scriptFile);
+            func_8003342C(scriptFile->data);
+            scripts = scriptFile->scripts;
+            func_8003342C(scripts);
+            func_8003342C(scripts->animations);
+            data = scriptFile->data;
+            if (data->soundsEnd != data->sounds && func_8003864C(data->sounds, 0) == 0) {
+                func_80038428(data->sounds);
+                object->ownSounds = 1;
+            }
+        }
+        header = modelFile->header;
+        desc = header->desc;
+        images = modelFile->images;
+        models = modelFile->models;
+        hierarchy = modelFile->hierarchy;
+        D_800D3368[index] = object;
+        object->scale24 = desc->scale24;
+        object->scale26 = desc->scale26;
+        object->scale28 = desc->scale28;
+        object->field2A = desc->field2A;
+        object->flags4A = desc->flags;
+        size = (u8 *)hierarchy - models;
+        if (object->flags4A & 0x200) {
+            func_80030988(2, 2, 0x40, 0x40);
+        }
+        if (!(flags & 1)) {
+            on = 0;
+            if (!(flags & 0x40)) {
+                on = !(object->flags4A & 4);
+            }
+            func_8002DDE4(images, on, x, y, on, z, w);
+            D_800C3B70 = func_80031BDC(size, 1);
+            memcpy(D_800C3B70, models, size);
+            for (D_800C3B6C = 0; D_800C3B6C < 20; D_800C3B6C++) {
+                if (D_800C3ACC[D_800C3B6C].value == 0) {
+                    break;
+                }
+            }
+            func_8009EBA8(D_800C3B70, (ModelList *)&D_800C3ACC[D_800C3B6C]);
+        }
+        object->field0 = (ModelList *)&D_800C3ACC[D_800C3B6C];
+        if (flags & 0x40) {
+            object->hierarchy = func_8009EC4C(object->field0, hierarchy, 0, 0, 0, 0, 0, 0);
+        } else if (object->flags4A & 4) {
+            object->hierarchy = func_8009EC4C(object->field0, hierarchy, 2, 0, 0, 0, 0, 0);
+        } else {
+            object->hierarchy = func_8009EC4C(object->field0, hierarchy, 2, 1, x, y, z, w);
+        }
+        if (position != NULL) {
+            object->hierarchy->translation[0] = position->vx;
+            object->hierarchy->translation[1] = position->vy;
+            object->hierarchy->translation[2] = position->vz;
+        }
+        if (!(flags & 1)) {
+            object->placement[0] = x;
+            object->placement[1] = y;
+            object->placement[2] = z;
+            object->placement[3] = w;
+        } else {
+            object->placement[0] = -1;
+        }
+        if (!(flags & 4) && !(flags & 0x80)) {
+            object->scriptFile = scriptFile;
+        } else {
+            object->scriptFile = NULL;
+        }
+        for (i = 0; i < 2; i++) {
+            SetPolyFT4(&object->shadow[i]);
+            SetSemiTrans(&object->shadow[i], 1);
+            object->shadow[i].r0 = D_800658C8->shadow[0];
+            object->shadow[i].g0 = D_800658C8->shadow[1];
+            object->shadow[i].b0 = D_800658C8->shadow[2];
+            object->shadow[i].clut = GetClut(0x30, 0x1CC);
+            object->shadow[i].tpage = GetTPage(0, 2, 0x380, 0);
+            object->shadow[i].u0 = 0xC0;
+            object->shadow[i].v0 = 0xC0;
+            object->shadow[i].u1 = 0xFE;
+            object->shadow[i].v1 = 0xC0;
+            object->shadow[i].u2 = 0xC0;
+            object->shadow[i].v2 = 0xFE;
+            object->shadow[i].u3 = 0xFE;
+            object->shadow[i].v3 = 0xFE;
+        }
+        if (!(flags & 0x40)) {
+            object->scale1C = desc->scale * D_800658C8->objectScale >> 12;
+        } else {
+            object->scale1C = desc->scale;
+        }
+        object->channelCount = desc->channelCount;
+        func_800AA6E0(object);
+        object->imageAnimCount = desc->imageAnimCount;
+        if (object->imageAnimCount != 0) {
+            object->imageAnims = func_80031BDC(object->imageAnimCount * sizeof(ImageAnim), 0);
+            for (i = 0; i < object->imageAnimCount; i++) {
+                object->imageAnims[i].active = 0;
+                object->imageAnims[i].pixels = NULL;
+                object->imageAnims[i].field8 = NULL;
+                object->imageAnims[i].fieldC = NULL;
+            }
+        }
+        object->meshCount = desc->meshCount;
+        if (object->meshCount != 0) {
+            stream = desc->meshes;
+            mesh = func_80031BDC(object->meshCount * sizeof(StageMesh), 0);
+            object->meshes = mesh;
+            for (i = 0; i < object->meshCount; i++) {
+                keyCount = stream[17];
+                mesh->field0 = *stream++;
+                func_800A7064(mesh, header->meshData[i], stream[0], stream[1], stream[2], stream[3], stream[4], keyCount,
+                              x + stream[5], y + stream[6], stream[7], stream[8], z + stream[9], w, stream[10],
+                              stream[11], stream[12], stream[13], stream[14], stream[15]);
+                stream += 17;
+                for (j = 0; j < keyCount; j++) {
+                    mesh->keys[j].field6 = *stream++;
+                    mesh->keys[j].fieldE = *stream++;
+                    mesh->keys[j].field0 = *stream++;
+                    mesh->keys[j].field2 = *stream++;
+                    mesh->keys[j].field4 = *stream++;
+                }
+                mesh++;
+            }
+        }
+        object->field22 = 0;
+        object->slot = index;
+        if (D_800C3EB4[index].hidden && index < 11) {
+            object->active = 0;
+        } else {
+            object->active = 1;
+        }
+        if (!(flags & 0x40)) {
+            scripts = scriptFile->scripts;
+            object->model = scriptFile->data;
+            func_800AA898(object, &D_800C3D0C, scripts->scripts, scripts->animations);
+            func_800AA934(object, object, &D_800C3D0C, 0);
+            func_800AFF9C(object);
+        }
+        if (!(flags & 2)) {
+            func_8002C644(D_800C3B70);
+            func_8002C4BC(D_800C3B70);
+            size = func_80031894(D_800C3B70);
+            copy = func_80031BDC(size, 0);
+            memcpy(copy, D_800C3B70, size);
+            func_800320E8(D_800C3B70);
+            func_8009F794(object->field0, 0);
+            func_8009EBA8(copy, object->field0);
+            object->modelBlock = copy;
+        } else {
+            object->modelBlock = NULL;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A8BF0);
+#endif
 
 /* Read the files of combatant slot's gear from directory 0x28 (D_800C3508)
  * into new buffers, listed in D_800C3B78: base + 1, base + 2 and, when the
@@ -1426,15 +1616,15 @@ void func_800A9FF0(s32 index) {
     s32 i;
 
     if (*slot != NULL) {
-        if ((*slot)->imageFile != NULL) {
-            func_800320E8((*slot)->imageFile);
+        if ((*slot)->modelBlock != NULL) {
+            func_800320E8((*slot)->modelBlock);
             func_8009F794((*slot)->field0, 1);
         }
         if ((*slot)->ownSounds) {
             func_8003852C((*slot)->model->sounds);
         }
-        if ((*slot)->modelFile != NULL) {
-            func_800320E8((*slot)->modelFile);
+        if ((*slot)->scriptFile != NULL) {
+            func_800320E8((*slot)->scriptFile);
         }
         if ((u32)(index - 19) >= 12) {
             if ((*slot)->hierarchy != NULL) {
@@ -1455,7 +1645,7 @@ void func_800A9FF0(s32 index) {
         }
         if (D_800D3368[index]->imageAnimCount != 0) {
             for (i = 0; i < D_800D3368[index]->imageAnimCount; i++) {
-                func_800A429C(D_800D3368[index]->imageAnims + i * 0x30);
+                func_800A429C(&D_800D3368[index]->imageAnims[i]);
             }
             func_800320E8(D_800D3368[index]->imageAnims);
         }

@@ -29,7 +29,5 @@ typedef struct {
 void func_8003342C(void *archive); /* relocate an archive's offsets */
 void func_8002DDE4(void *images, s32 on, s32 a, s32 b, s32 c, s32 d, s32 e); /* upload images */
 
-void func_800A8BF0(s32 index, u16 flags, void *model, void *data, s16 x, s16 y, s16 z, s16 angle,
-                   SVector *position);
 
 #endif

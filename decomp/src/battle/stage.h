@@ -10,7 +10,74 @@
 struct ObjectData {
     u8 pad0[8];
     SoundSystem *sounds; /* 0x08: its sound bank */
+    void *soundsEnd;     /* 0x0C: the same as sounds when there are none */
 };
+
+/* A stage object's scripts: its animations and effect scripts. */
+typedef struct {
+    u8 pad0[4];
+    u8 **animations; /* 0x04 */
+    u8 *scripts[1];  /* 0x08 */
+} ObjectScripts;
+
+/* A stage object's script file (relocated by 8003342C). */
+typedef struct {
+    u8 pad0[4];
+    ObjectScripts *scripts;  /* 0x04 */
+    struct ObjectData *data; /* 0x08 */
+} ObjectScriptFile;
+
+/* A stage object's description: its scales and flags, then its mesh
+ * descriptions (MeshDesc and its keys). */
+typedef struct {
+    u8 pad0[2];
+    s16 scale24;       /* 0x02 */
+    s16 scale26;       /* 0x04 */
+    s16 scale28;       /* 0x06 */
+    s16 scale;         /* 0x08 */
+    u8 field2A;        /* 0x0A */
+    u8 padB;
+    u16 flags;         /* 0x0C: the object's flags4A */
+    u8 channelCount;   /* 0x0E */
+    u8 padF;
+    u8 imageAnimCount; /* 0x10 */
+    u8 pad11;
+    u8 meshCount;      /* 0x12 */
+    u8 pad13;
+    s16 meshes[1];     /* 0x14 */
+} ObjectDesc;
+
+/* The header of a stage object's model file. */
+typedef struct {
+    u8 pad0[4];
+    ObjectDesc *desc;  /* 0x04 */
+    void *meshData[1]; /* 0x08: per mesh */
+} ObjectHeader;
+
+/* A stage object's model file (relocated by 8003342C). */
+typedef struct {
+    u8 pad0[4];
+    void *images;         /* 0x04 */
+    u8 *models;           /* 0x08: the model group */
+    u16 *hierarchy;       /* 0x0C: after the models */
+    ObjectHeader *header; /* 0x10 */
+} ObjectModelFile;
+
+extern s32 D_800C3B6C; /* the model list slot being filled */
+extern u8 *D_800C3B70; /* the model group being loaded */
+
+/* Resident services. */
+void func_80030988(s32 a, s32 b, s32 c, s32 d);
+s32 func_8003864C(SoundSystem *bank, s32 mode); /* whether a sound bank is loaded */
+void func_80038428(SoundSystem *bank);          /* load a sound bank */
+void func_8002C644(u8 *group);
+void func_8002C4BC(u8 *group);
+s32 func_80031894(void *block); /* a block's size */
+
+void func_800AA6E0(BattleObject *object);
+void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *scriptFile, ObjectModelFile *modelFile, s16 x, s16 y,
+                   s16 z, s16 w, SVector *position);
+void func_800AA898(BattleObject *object, EffectPool *pool, u8 **scripts, u8 **animations);
 
 /* Per-frame update and drawing of the stage objects. */
 extern s32 D_800CCC5C;     /* frames skipped by the last frame */
@@ -35,7 +102,7 @@ void func_8004A480(Vector *a, Vector *b, Vector *out); /* OuterProduct12 */
 
 void func_8009F844(BattleObject *object, s32 arg1, s32 arg2, s32 arg3, s32 skipped, s32 arg5, s32 arg6);
 void func_800A2FD8(SpritePool *pool, s32 arg1, s32 steps, s32 arg3, s32 arg4);
-void func_800A429C(u8 *anim);
+void func_800A429C(ImageAnim *anim);
 void func_800A44C0(BattleObject **objects);
 void func_800A4CF8(s32 index);
 s32 func_800AAA20(BattleObject *object, EffectPool *pool, s32 steps, s32 arg3, s32 arg4);
