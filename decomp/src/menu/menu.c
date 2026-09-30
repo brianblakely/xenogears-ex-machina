@@ -2705,11 +2705,48 @@ void func_8008F7B8(Brain *brain) {
     brain->unk30 = brain->owner->unk1668;
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008F900);
+/* Opponent jump attack: unless the other actor is airborne (then only one
+ * time in four), act or jump and attack. */
+void func_8008F900(Actor *actor) {
+    if ((actor->opponent->flags & 0x60000000) != 0x20000000 || (func_8003FA38() & 3) == 0) {
+        if (D_80092884) {
+            func_800767C8(actor);
+            func_8007639C(actor, 4);
+        } else if ((actor->flags & 0x60000000) == 0x20000000) {
+            func_8007639C(actor, 4);
+        }
+        func_8007639C(actor, 3);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008F9B0);
+/* Whether an actor stands in the far quadrant of the scene or on a floor
+ * of kind 1. */
+s32 func_8008F9B0(Actor *actor) {
+    Vector pos = actor->pos;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008FA2C);
+    pos.vx -= 0x3F80;
+    pos.vz -= 0x3F80;
+    if (pos.vx > 0 && pos.vz > 0) {
+        return 1;
+    }
+    return (func_800828C4(actor) & 0x3000000) == 0x1000000;
+}
+
+/* Steer the opponent toward one of two headings depending on which side
+ * of the scene centre it stands, at full speed. */
+s32 func_8008FA2C(Actor *actor, Brain *brain) {
+    Vector pos = actor->pos;
+
+    pos.vx -= 0x3F80;
+    pos.vz -= 0x3F80;
+    if ((func_8004B32C(pos.vx, pos.vz) & 0xFFF) > 0x200) {
+        brain->unkA = 0x800 - D_80092934;
+    } else {
+        brain->unkA = 0xC00 - D_80092934;
+    }
+    brain->unkC = 0xFF;
+    return 0;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008FACC);
 
