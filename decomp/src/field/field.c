@@ -3797,18 +3797,19 @@ void func_8008BC80(void) {
     D_800B0078->pc--;
 }
 
-#ifdef NON_MATCHING
 /* Event: once idle, add the character in its byte operand to the party (a
  * free slot starts its sprite load) or mark it waiting; yields while busy. */
 void func_8008BDD8(void) {
     s32 slot;
+    s32 member;
 
     if (D_800ADBC4 == 0xFF && D_800ADB2C == 0 && func_8008A558() == 0) {
         func_80028A60(0);
         if (func_8008A790(D_800ADC00[D_800B0078->pc + 1], &slot) == 0) {
             D_8005A39C->unk22B1[slot] = 0;
-            D_80062590[slot] = D_800ADC00[D_800B0078->pc + 1];
-            func_8008A7DC(D_800ADC00[D_800B0078->pc + 1], slot);
+            member = D_800ADC00[D_800B0078->pc + 1];
+            D_80062590[slot] = member;
+            func_8008A7DC(member, slot);
             D_800B0078->pc += 2;
             return;
         }
@@ -3819,9 +3820,6 @@ void func_8008BDD8(void) {
     D_800B00C0 = 1;
     D_800B0078->pc--;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008BDD8);
-#endif
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008BF38);
 
