@@ -134,7 +134,8 @@ typedef struct {
 
 /* Header of an actor's loaded model file (Actor 0x8FC). */
 typedef struct {
-    u8 unk0[0xE];
+    u8 unk0[0xC];
+    u16 unkC;
     u8 unkE;
     u8 unkF;
     u8 unk10[3];
@@ -145,7 +146,8 @@ typedef struct {
     s16 unk1A;
     s16 unk1C;
     u16 unk1E;
-    u8 unk20[0x4];
+    u16 unk20;       /* model scale */
+    u8 unk22[0x2];
     s16 unk24;       /* camera values for the victory view */
     s16 unk26;
     s16 unk28;
@@ -235,11 +237,13 @@ typedef struct Actor {
     u8 unk88[0x10];
     s32 accel;           /* 0x98 */
     s32 brake;           /* 0x9C */
-    u8 unkA0[0x10];
+    u8 unkA0[0x8];
+    s32 unkA8;
+    u8 unkAC[0x4];
     s32 floor_y;         /* 0xB0 */
     s16 hp;              /* 0xB4 */
     s16 charge;          /* 0xB6: 0x1000 = full */
-    u8 unkB8[0x2];
+    s16 unkB8;
     s16 unkBA;
     s16 max_hp;          /* 0xBC */
     s16 unkBE;           /* 0xBE: charge a special move needs */
@@ -249,7 +253,8 @@ typedef struct Actor {
     u8 unkC3;
     u8 unkC4;
     u8 unkC5;
-    u8 unkC6[0x4];
+    u8 unkC6[0x2];
+    s16 unkC8;
     s16 unkCA;
     s16 unkCC;
     s16 unkCE;
@@ -261,7 +266,8 @@ typedef struct Actor {
     u8 unkEC[0x4];
     s16 unkF0;           /* 0xF0: frames since the last hit reaction */
     s16 unkF2;
-    u8 unkF4[0xC];
+    s32 unkF4;
+    u8 unkF8[0x8];
     s32 unk100;
     Trail trails[16];    /* 0x104 */
     s32 unk644;
@@ -277,10 +283,12 @@ typedef struct Actor {
     u8 model_id;         /* 0x909 */
     u8 kind;             /* 0x90A: bits 0-2 */
     u8 unk90B;
-    u8 unk90C[0x5];
+    u8 unk90C[0x4];
+    u8 unk910;
     u8 move_count;       /* 0x911: special moves the opponent may pick */
     u8 parts_b;          /* 0x912 */
-    u8 unk913[0x3];
+    u8 unk913;
+    s16 unk914;
     s16 unk916;
     u8 glow;             /* 0x918: light level, fades by 0x18 a frame */
     u8 unk919[0x13];
@@ -288,7 +296,8 @@ typedef struct Actor {
     Vector home;         /* 0x93C */
     Vector core;         /* 0x94C: where shots home in */
     Vector start_home;   /* 0x95C: home at the round start */
-    u8 unk96C[0x8];
+    u8 unk96C[0x4];
+    s32 unk970;
     Vector hit_from;     /* 0x974: where the last hit came from */
     u8 unk984[0x14];
     s16 unk998;
@@ -310,16 +319,19 @@ typedef struct Actor {
     s16 unk15EA;
     s16 unk15EC;
     s16 unk15EE;
-    u8 unk15F0[0x2];
+    s16 unk15F0;
     s16 unk15F2;
     s16 unk15F4;
-    u8 unk15F6[0x6];
+    s16 unk15F6;
+    s16 unk15F8;
+    u8 unk15FA[0x2];
     struct Brain *brain; /* 0x15FC: the computer opponent's state */
     struct MoveList *moves; /* 0x1600 */
     PolyFT4 backdrop[2]; /* 0x1604: one per buffer */
     s32 unk1654;
     s32 unk1658;
-    u8 unk165C[0x8];
+    s32 unk165C;
+    s32 unk1660;
     u8 *sounds;          /* 0x1664: command sound table */
     s16 unk1668;
 } Actor;
@@ -522,6 +534,11 @@ void func_8008EBD0(Actor *owner, s32 index, Vector *pos, s32 mode);
 void func_80073B7C(Actor *actor, s32 part, s32 vertex, Vector *out);
 void func_8007C100(Color *color);
 void func_80076424(Actor *actor);
+void func_80090CC0(Actor *actor);
+void func_80087AB0(Actor *actor);
+void func_80078ED4(s16 *params);
+extern u8 D_8009264C[4]; /* default combo state */
+extern char D_8006FC74[]; /* "" */
 s32 func_80077584(Actor *actor, s32 angle, s32 shift, s32 lift);
 void func_8007E894(s32 x, s32 y);
 void func_80074678(Actor *actor, s16 frame, s16 count);

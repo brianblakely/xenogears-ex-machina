@@ -1143,7 +1143,88 @@ void func_80078ED4(s16 *params) {
     params[6] = 0x30;
 }
 
+#ifdef NON_MATCHING
+/* Reset an actor for a new round: position and motion, model scale,
+ * movement and health values, shots, trails, pose and flags, its side's hit
+ * record and the combo, brain and effect state.
+ * Does not match: the original keeps flag word 0xd4 in a register across the pose flag updates but reloads the flag word 0xd0 after each group, and schedules the header copies earlier. */
+void func_80078F00(Actor *actor) {
+    SceneHeader *header = actor->header;
+    s32 i;
+
+    actor->pos.vx = actor->pos.vy = actor->pos.vz = 0;
+    actor->velocity.vx = actor->velocity.vy = actor->velocity.vz = 0;
+    actor->push.vx = actor->push.vy = actor->push.vz = 0;
+    ((ModelSet *)actor->node->data)->scale[0] = ((ModelSet *)actor->node->data)->scale[1] =
+        ((ModelSet *)actor->node->data)->scale[2] = header->unk20;
+    actor->brake = actor->accel = 0x10;
+    actor->unkA8 = 0x60;
+    actor->max_hp = actor->unkB8 = actor->hp = 0x12C;
+    actor->unkBE = 0x480;
+    actor->level = 0xF0;
+    actor->angle = 0;
+    actor->unkC4 = 0;
+    actor->unkC5 = 0;
+    actor->charge = 0;
+    actor->unkBA = 0;
+    actor->unk910 = 0;
+    actor->unkC0 = 0x7F;
+    actor->unkC1 = 0x7F;
+    actor->unk970 = 0;
+    actor->unk9C3 = 0;
+    actor->unkE8 = 0;
+    actor->unk916 = 0;
+    actor->unkC8 = 0;
+    actor->unkCA = 0;
+    for (i = 0; i < 8; i++) {
+        actor->shots[i].active = 0;
+        actor->shots[i].life = 0;
+    }
+    for (i = 0; i < 16; i++) {
+        actor->trails[i].state = 0;
+    }
+    actor->unkF4 = 1;
+    func_80076424(actor);
+    actor->unk4E = 0xFF;
+    actor->anim = 0;
+    actor->unkC3 = 0;
+    actor->unkD4 &= ~0xC;
+    actor->unkD4 &= ~3;
+    actor->flags &= ~0x1000;
+    actor->flags |= 0x2000000;
+    actor->flags |= 0x20000;
+    actor->unkCE = actor->unkCC + 0x800;
+    actor->flags &= ~0x800000;
+    actor->unk15F0 = header->unkF;
+    actor->unk15F6 = 0x100;
+    actor->unk15F8 = 0;
+    actor->unk1654 = 0;
+    actor->unk1658 = 0;
+    actor->unk165C = 0;
+    actor->unk1660 = 0;
+    actor->unk90B = 0;
+    actor->flags &= ~4;
+    actor->flags &= ~2;
+    actor->flags &= ~0x38;
+    actor->unk15F2 = actor->unk15F4 = header->unkC;
+    actor->unkD4 &= ~0x10;
+    actor->unk84 = D_8009264C;
+    D_8009264C[2] = 1;
+    D_80096FB8[ACTOR_SIDE(actor)].unk0 = (s32)D_8006FC74;
+    D_80096FB8[ACTOR_SIDE(actor)].unk8 = 0;
+    D_80096FB8[ACTOR_SIDE(actor)].unk4 = 0;
+    D_80096FB8[ACTOR_SIDE(actor)].unkC = 0;
+    D_80096FB8[ACTOR_SIDE(actor)].unk10 = 0;
+    func_80090CC0(actor);
+    func_80078ED4((s16 *)actor->unk15D8);
+    func_80087AB0(actor);
+    actor->unk914 = 0;
+    actor->unk1668 = 0;
+    actor->unkD4 &= ~0x40;
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80078F00);
+#endif
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007920C);
 
