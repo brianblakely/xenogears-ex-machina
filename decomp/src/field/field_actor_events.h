@@ -33,6 +33,8 @@ void func_8009E574(s32 x, s32 z);
 void func_800A0158(s32 slot, s32 *a, s32 *b, s32 *c);
 void func_800A0D3C(void);
 
+extern u8 D_800AE294[];        /* sprite of each character */
+
 s32 func_8009EB48(FieldActor *actor, s32 tag); /* -1 when a slot has `tag` */
 s32 func_800A3090(s32 actor, s32 event);       /* entry PC of an actor's event */
 

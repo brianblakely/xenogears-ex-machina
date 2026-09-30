@@ -9310,7 +9310,62 @@ void func_800A06E8(void) {
     D_800B0078->pc += 3;
 }
 
+#ifdef NON_MATCHING
+/* Event 16: the current actor becomes party character operand 1 (ff, fe, fd: party slots 2, 1, 0). A party member takes its slot (slot 0 becomes the controlled actor), its sprite (or sprite 800ae294[character] of the alternate set 800b2268) and map entry variable 2; others hide and end their script. The sprite-table address keeps 800b2268 in a different register order (a1*4+4 first). */
+void func_800A08B8(void) {
+    FieldDescriptor *descriptor;
+    s32 character;
+    s32 slot;
+    FieldModel *model;
+    s32 *sprites;
+
+    descriptor = &D_800AF880.components.descriptors[D_800AFD1C];
+    character = func_8008CF3C(func_800ACDEC(1));
+    slot = func_8009FA00(character);
+    D_800B0078->unkE4 = character;
+    descriptor->flags = (descriptor->flags & 0xF07F) | 0x200;
+    if (slot != -1) {
+        if (slot == 0) {
+            D_800B2078.controlled = D_800AFD1C;
+            D_800B2078.unk233E = D_800AFD1C;
+            D_800B0078->flags = (D_800B0078->flags | 0x4400) & ~0x80;
+        }
+        D_8005A444[slot] = D_800AFD1C;
+        if (D_800B2078.unk2268 != 0) {
+            sprites = D_800AF880.components.sprites;
+            func_80076AC0(D_800AFD1C, D_800AE294[character] + D_800B2078.unk2268,
+                          (u8 *)(sprites[D_800AE294[character] + D_800B2078.unk2268 + 1] + (s32)sprites),
+                          0, 0, (D_800AE294[character] + D_800B2078.unk2268) | 0x80, 1);
+            D_800B0078->flags = (D_800B0078->flags | 0x400) & ~0x300;
+            if (D_8005A39C->unk22B1[slot] != 0) {
+                model = D_800AF880.components.descriptors[D_800AFD1C].model;
+                D_800AF880.components.descriptors[D_800AFD1C].model = D_800AF880.components.descriptors[D_8006F990[slot]].model;
+                D_800AF880.components.descriptors[D_8006F990[slot]].model = model;
+                D_800B0078->flags = (D_800B0078->flags | 0x200) & ~0x500;
+            }
+        } else {
+            func_80076AC0(D_800AFD1C, slot, D_8005A414[slot], 1, 0, slot, 1);
+            D_800B0078->flags = (D_800B0078->flags | 0x400) & ~0x300;
+        }
+        D_800AFD20 = -0xC0;
+        D_800AF880.components.descriptors[D_800AFD1C].flags &= 0xFFDF;
+        func_8009FA54(func_800A3018(2));
+        func_800A0C94();
+        D_800B0078->layer_flags &= ~0x800;
+    } else {
+        func_80076AC0(D_800AFD1C, 0, D_8005A414[0], 1, 0, 0, 1);
+        D_800B0078->flags |= 1;
+        D_800AFFEC = 1;
+        D_800B00C0 = 1;
+        D_800B0078->layer_flags |= 0x100000;
+    }
+    D_800B0078->flags |= 0x20000;
+    D_800B0078->layer_flags |= 0x400;
+    D_800B0078->pc += 3;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A08B8);
+#endif
 
 /* Set flag 0x80 on the controlled actor. */
 void func_800A0C4C(void) {
