@@ -1534,10 +1534,9 @@ SoundSequence *func_800383EC(s32 key) {
 
 /* Add a sound effect bank to the loaded banks: error 0x15 when a bank
  * with its id is loaded (unless the driver is in its error state), or the
- * bank data's error.
- * Nonmatching: instruction scheduling around the duplicate id walk. */
-#ifdef NON_MATCHING
+ * bank data's error. */
 void func_80038428(SoundBank *bank) {
+    SoundBank *added = bank;
     SoundBank *entry;
     SoundBank **link;
     s16 error;
@@ -1562,13 +1561,10 @@ void func_80038428(SoundBank *bank) {
             link = &(*link)->next;
         } while (*link != NULL);
     }
-    *link = bank;
-    bank->next = NULL;
+    *link = added;
+    added->next = NULL;
     EnableEvent(D_800595BC);
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038428);
-#endif
 
 /* Remove a sound effect bank from the loaded banks (error 0x10 when it is
  * not loaded, 0xB when its data is no longer valid). */
