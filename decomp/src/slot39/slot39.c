@@ -2149,7 +2149,54 @@ void func_801CEBB4(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CEC40);
+/* While party flag +9 is set, draw both screen image lists, first applying
+ * a changed dimming (semi-transparent, 20h grey). */
+void func_801CEC40(void) {
+    s32 i;
+
+    if (D_800625A0->party->redraw9 != 0) {
+        if (D_800625A0->screenImages->captured != D_800625A0->screenImages->refresh) {
+            if (D_800625A0->screenImages->captured != 0) {
+                for (i = 0; i < D_800625A0->screenImages->count2; i++) {
+                    SetSemiTrans(D_800625A0->screenImages->packets2 + (i * 2 + D_800625A0->screenImages->buffer2), 1);
+                    SetShadeTex(D_800625A0->screenImages->packets2 + (i * 2 + D_800625A0->screenImages->buffer2), 0);
+                    D_800625A0->screenImages->packets2[i * 2 + D_800625A0->screenImages->buffer2].tpage |= 0x20;
+                    (D_800625A0->screenImages->packets2 + (i * 2 + D_800625A0->screenImages->buffer2))->r0 = 0x20;
+                    (D_800625A0->screenImages->packets2 + (i * 2 + D_800625A0->screenImages->buffer2))->g0 = 0x20;
+                    (D_800625A0->screenImages->packets2 + (i * 2 + D_800625A0->screenImages->buffer2))->b0 = 0x20;
+                }
+                for (i = 0; i < D_800625A0->screenImages->count; i++) {
+                    SetSemiTrans(D_800625A0->screenImages->packets + (i * 2 + D_800625A0->screenImages->buffer), 1);
+                    SetShadeTex(D_800625A0->screenImages->packets + (i * 2 + D_800625A0->screenImages->buffer), 0);
+                    D_800625A0->screenImages->packets[i * 2 + D_800625A0->screenImages->buffer].tpage |= 0x20;
+                    (D_800625A0->screenImages->packets + (i * 2 + D_800625A0->screenImages->buffer))->r0 = 0x20;
+                    (D_800625A0->screenImages->packets + (i * 2 + D_800625A0->screenImages->buffer))->g0 = 0x20;
+                    (D_800625A0->screenImages->packets + (i * 2 + D_800625A0->screenImages->buffer))->b0 = 0x20;
+                }
+            } else {
+                for (i = 0; i < D_800625A0->screenImages->count2; i++) {
+                    SetSemiTrans(D_800625A0->screenImages->packets2 + (i * 2 + D_800625A0->screenImages->buffer2), 0);
+                    SetShadeTex(D_800625A0->screenImages->packets2 + (i * 2 + D_800625A0->screenImages->buffer2), 0);
+                    D_800625A0->screenImages->packets2[i * 2 + D_800625A0->screenImages->buffer2].tpage |= 0x20;
+                    (D_800625A0->screenImages->packets2 + (i * 2 + D_800625A0->screenImages->buffer2))->r0 = 0x80;
+                    (D_800625A0->screenImages->packets2 + (i * 2 + D_800625A0->screenImages->buffer2))->g0 = 0x80;
+                    (D_800625A0->screenImages->packets2 + (i * 2 + D_800625A0->screenImages->buffer2))->b0 = 0x80;
+                }
+                for (i = 0; i < D_800625A0->screenImages->count; i++) {
+                    SetSemiTrans(D_800625A0->screenImages->packets + (i * 2 + D_800625A0->screenImages->buffer), 0);
+                    SetShadeTex(D_800625A0->screenImages->packets + (i * 2 + D_800625A0->screenImages->buffer), 0);
+                    D_800625A0->screenImages->packets[i * 2 + D_800625A0->screenImages->buffer].tpage |= 0x20;
+                    (D_800625A0->screenImages->packets + (i * 2 + D_800625A0->screenImages->buffer))->r0 = 0x80;
+                    (D_800625A0->screenImages->packets + (i * 2 + D_800625A0->screenImages->buffer))->g0 = 0x80;
+                    (D_800625A0->screenImages->packets + (i * 2 + D_800625A0->screenImages->buffer))->b0 = 0x80;
+                }
+            }
+            D_800625A0->screenImages->refresh = D_800625A0->screenImages->captured;
+        }
+        func_801CE2B4(D_800625A0->screenImages->count2, D_800625A0->screenImages->packets2, D_800625A0->screenImages->buffer2);
+        func_801CE2B4(D_800625A0->screenImages->count, D_800625A0->screenImages->packets, D_800625A0->screenImages->buffer);
+    }
+}
 
 /* While party flag +a is set, draw the two sprite lists of the block at +354. */
 void func_801CF308(void) {

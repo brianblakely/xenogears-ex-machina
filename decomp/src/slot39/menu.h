@@ -144,11 +144,15 @@ typedef struct MenuParty {
 
 /* Screen images (*(state + 350)). */
 typedef struct MenuImages {
-    u8 pad0[0x1180];
+    POLY_FT4 packets[56]; /* 0 */
+    POLY_FT4 packets2[56]; /* 8C0 */
     RECT copy; /* 1180: the screen area copied into the other buffer each frame */
-    u8 pad1188[0xA];
-    u8 captured; /* 1192 */
-    u8 refresh; /* 1193 */
+    s32 count; /* 1188 */
+    s32 count2; /* 118C */
+    u8 buffer; /* 1190 */
+    u8 buffer2; /* 1191 */
+    u8 captured; /* 1192: images dimmed (inside a command) */
+    u8 refresh; /* 1193: dimming last applied */
 } MenuImages;
 
 /* Shared primitive block (*(state + 348)). */
