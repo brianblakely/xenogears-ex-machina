@@ -525,6 +525,7 @@ void func_80087A38(u8 member);
 void func_80084A7C(u8 member);
 void func_80077698(void);
 void func_800826CC(u8 member);
+s32 func_8009A9D0(void); /* the escape succeeds */
 extern u16 D_800D2C32; /* fuel gained by charging */
 
 /* Gear boarding (800826cc). */

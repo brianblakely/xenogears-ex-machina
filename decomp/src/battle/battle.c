@@ -3610,7 +3610,76 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800820A4);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800822C4);
 
+/* Confirm the selected entry of the escape command window: entries 4, 6 and
+ * 7 try to flee (outcome 0x40 on success) and end the menu; 0 opens page 7
+ * when available, else on a repeat press (800c3e29 = 0) page 1; 3 opens page
+ * 0xa, else on a repeat press (800c3e29 = 3) page 4; 1 opens page 8 unless
+ * unavailable (buzzer 0x4f); 2 opens page 3. */
+#ifdef NON_MATCHING
+void func_80082504(member)
+u8 member;
+{
+    TurnSlot *slot;
+
+    switch (D_800D3014) {
+    case 4:
+    case 6:
+    case 7:
+        /* 8009a9d0 takes no arguments; the call passes the actor. */
+        if (((s32 (*)())func_8009A9D0)(D_800C3EAC->actor)) {
+            D_800C48EA = 0x40;
+        }
+        D_800C3EAC->menuDone = 1;
+        break;
+    case 0:
+        slot = &D_800C3EAC->slots[member];
+        if (slot->items[5] != 0) {
+            if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 0) {
+                if (slot->items[9] != 0) {
+                    func_8008AA74(0x4F);
+                } else {
+                    D_800C3EAC->page = 1;
+                }
+                D_800C3EAC->repeatArmed = 0;
+            } else {
+                D_800C3EAC->repeatArmed = 1;
+                func_8008AA74(0x4F);
+            }
+        } else {
+            D_800C3EAC->page = 7;
+        }
+        break;
+    case 1:
+        if (D_800C3EAC->slots[member].items[11] != 0) {
+            func_8008AA74(0x4F);
+        } else {
+            D_800C3EAC->page = 8;
+        }
+        break;
+    case 3:
+        slot = &D_800C3EAC->slots[member];
+        if (slot->items[7] == 0) {
+            D_800C3EAC->page = 0xA;
+        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 3) {
+            if (slot->items[10] != 0) {
+                func_8008AA74(0x4F);
+            } else {
+                D_800C3EAC->page = 4;
+            }
+            D_800C3EAC->repeatArmed = 0;
+        } else {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 2:
+        D_800C3EAC->page = 3;
+        break;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80082504);
+#endif
 
 /* The member boards its gear: it takes a formation group of its own, its
  * records and panel switch to the gear, and the game data notes that the
