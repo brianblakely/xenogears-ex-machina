@@ -22,7 +22,14 @@ typedef struct {
     u8 padE[0x1C - 0xE];
 } SlotInfo;
 
-extern SlotInfo D_800C3EB4[SLOT_COUNT];
+/* Battle combatant block (0x800C3EB4): slot placements and more. */
+typedef struct {
+    SlotInfo slot[SLOT_COUNT]; /* 0x000 */
+    u8 pad134[0xA34 - 0x134];
+    u16 w48E8;                 /* 0xA34 (0x800C48E8) */
+} BattleSlots;
+
+extern BattleSlots D_800C3EB4;
 
 extern u8 D_800D2D24[3];  /* party character ids (0x7F none) */
 extern u8 D_80059468[3];  /* battle party ids published to resident code */
@@ -203,5 +210,36 @@ extern SlotState D_800D32A1[SLOT_COUNT];
 
 void func_80097D5C(void); /* derive the party's battle stats */
 void func_8009B098(void); /* demo battle members */
+
+/* Per-slot AI flags (0x800C3D0C, 4 bytes per slot; used by enemies). */
+typedef struct {
+    u8 script_armed;
+    u8 reaction_armed;
+    u8 pad2;
+    u8 b3;
+} EnemyAiFlags;
+
+extern EnemyAiFlags D_800C3D0C[SLOT_COUNT];
+
+/* Per-enemy AI state (0x800D3400, 0x40 bytes per enemy). */
+typedef struct {
+    u8 *main;       /* script entry points in the enemy data file */
+    u8 *sub;
+    u8 *script;
+    u8 *reaction;
+    s32 vars[4];    /* 0x10 */
+    s16 hvars[8];   /* 0x20 */
+    u8 bvars[16];   /* 0x30 */
+} EnemyAi;
+
+extern EnemyAi D_800D3400[8];
+
+/* Enemy data file: u16 script offsets per enemy id, the offset at +0x30,
+ * then 0x170-byte combatant records from +0x32. */
+extern u8 *D_800C3DD0;
+extern u8 *D_800C3DDC;
+extern s16 D_800D39E0;
+
+void func_8003F99C(void *dest, void *src, s32 size); /* memmove */
 
 #endif
