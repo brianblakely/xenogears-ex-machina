@@ -93,7 +93,9 @@ typedef struct {
     u8 unk2DC;         /* action index + 1 */
     u8 page;           /* +0x2DD command page */
     u8 menuDone;       /* +0x2DE */
-    u8 unk2DF[0x2EB - 0x2DF];
+    u8 unk2DF[0x2E8 - 0x2DF];
+    u8 unk2E8;         /* attack page target */
+    u8 unk2E9[0x2EB - 0x2E9];
     u8 reaction[3];    /* +0x2EB per party member */
     u8 unk2EE[0x2F6 - 0x2EE];
     u8 repeatArmed;    /* +0x2F6 */
@@ -308,18 +310,26 @@ typedef struct {
 extern BattleUnk3278 *D_800D3278;
 
 typedef struct {
-    u8 unk0[0x5550];
+    u8 unk0[0x3AC0];
+    POLY_FT4 unk3AC0[116];
+    POLY_FT4 unk4CE0[27][2];
     POLY_FT4 unk5550[6];
     POLY_FT4 unk5640[40];
     POLY_FT4 unk5C80[6];
-    u8 unk5D70[0x10];
+    u8 unk5D70[5];
+    u8 unk5D75;
+    u8 unk5D76[0x5D80 - 0x5D76];
     u8 unk5D80[3];
-    u8 unk5D83[0xC];
+    u8 unk5D83;
+    u8 unk5D84;
+    u8 unk5D85[0x5D8F - 0x5D85];
     u8 unk5D8F[3];
     u8 unk5D92[0x5D9C - 0x5D92];
     s16 unk5D9C;
     s16 unk5D9E;
-    u8 unk5DA0[4];
+    u8 unk5DA0;
+    u8 unk5DA1;
+    u16 unk5DA2;
 } BattleUnk2DB4;
 
 extern BattleUnk2DB4 *D_800D2DB4;
@@ -392,6 +402,12 @@ typedef struct {
 extern ResolverAttacker *D_800C3E00;
 extern CommandDescriptor *D_800C3DFC;
 extern u8 D_800C3E50;      /* target slot */
+extern u8 D_800C3E90[12];  /* default-target candidates */
+extern u8 D_800D3274;      /* candidate count */
+extern u16 D_800C3D64;
+extern u8 D_800C3E2C;
+extern u16 D_800D2C30;
+extern u8 D_800D2C38;
 
 /* Per-slot formation information (0x1c bytes from 800c3eb4). */
 typedef struct {
@@ -572,6 +588,9 @@ void func_8008A3EC(u8 member);
 void func_800BC404(u16 mask);
 void func_800BCD98(u16 mask);
 void func_80077980(void);
+u8 func_800841E0(u8 member);
+u16 func_80089C6C(u16 mask, u8 bit);
+void func_80076B68(POLY_FT4 *prim);
 void func_8008FC1C(s32 x, s32 y, s32 w, s32 h, s32 style);
 s8 func_80097964(u8 a, u8 b, u16 c);
 void func_800995A0(u8 slot, u8 a, u16 b, s32 mode);

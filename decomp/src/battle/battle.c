@@ -2857,11 +2857,39 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80084750);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80084854);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80084A7C);
+/* Keep the member's default target as the attack page target when it is
+ * still a candidate, else take the first candidate. */
+void func_80084A7C(u8 member) {
+    s32 found = 0;
+    s32 i;
+
+    D_800C3EAC->unk2E8 = D_800C3EAC->slots[member].defaultTarget;
+    func_800841E0(member);
+    for (i = 0; i < D_800D3274; i++) {
+        if (D_800C3E90[i] == D_800C3EAC->slots[member].defaultTarget) {
+            found++;
+            break;
+        }
+    }
+    if (found == 0) {
+        D_800C3EAC->unk2E8 = D_800C3E90[0];
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80084B40);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80084D28);
+/* The mask of slots in 800c3d64 in the formation group of slot 800c3e2c. */
+u16 func_80084D28(void) {
+    u16 mask = 0;
+    s32 slot;
+
+    for (slot = 0; slot < 11; slot++) {
+        if (func_80089C9C(D_800C3D64, slot) && D_800C3EB4[D_800C3E2C].group == D_800C3EB4[slot].group) {
+            mask |= func_80089C08(slot);
+        }
+    }
+    return mask;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80084DE4);
 
@@ -3047,9 +3075,40 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80088990);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80088B80);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80089038);
+/* Build the glyphs of the flags set in 800d2c30 (up to five, 10 pixels
+ * apart from y 0x6e) into the +0x4ce0 primitives. */
+void func_80089038(void) {
+    s32 i;
+    s32 y; /* 16.16 */
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80089110);
+    i = 0;
+    y = 0x6E << 16;
+    D_800D2DB4->unk5DA1 = 0;
+    for (; i < 5; i++) {
+        if (func_80089C6C(D_800D2C30, i)) {
+            D_800D2DB4->unk5DA1 += func_80076A10(i + 0xC4, D_800D2DB4->unk4CE0[D_800D2DB4->unk5DA1], 0xE0, y >> 16);
+            y += 10 << 16;
+        }
+    }
+    D_800D2DB4->unk5DA0 = D_800CCB04.buffer;
+    D_800D2DB4->unk5DA2 = 0;
+}
+
+/* Build glyph 0xa0 (0xa1 with 800d2c38) into the +0x3ac0 primitives and
+ * initialise the current buffer's quads. */
+void func_80089110(void) {
+    s32 id = 0xA0;
+    s32 i;
+
+    if (D_800D2C38 != 0) {
+        id = 0xA1;
+    }
+    D_800D2DB4->unk5D75 = func_80076A10(id, D_800D2DB4->unk3AC0, 0xA0, 0x64);
+    D_800D2DB4->unk5D84 = D_800CCB04.buffer;
+    for (i = 0; i < D_800D2DB4->unk5D75; i++) {
+        func_80076B68(&D_800D2DB4->unk3AC0[i * 2 + D_800D2DB4->unk5D84]);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800891E4);
 
