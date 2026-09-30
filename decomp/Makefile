@@ -42,7 +42,7 @@ CPPFLAGS := -undef -D__GNUC__=2 -Dmips -D__mips__ -D__mips -Dpsx -D__psx__ -D__p
 CC1FLAGS := -quiet -mcpu=3000 -fgnu-linker -mgas -msoft-float -O2
 ASFLAGS := -EL -march=r3000 -mtune=r3000 -msoft-float -no-pad-sections -G0 \
 	-I$(ROOT)/decomp/include -I$(ROOT)
-MASPSXFLAGS := --aspsx-version=2.79
+MASPSXFLAGS := --aspsx-version=2.34
 
 # The small-data threshold is a property of each original translation unit.
 gp_of = $(or $(GP_$(basename $(notdir $(1)))),0)

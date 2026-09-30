@@ -1,4 +1,5 @@
 #include "common.h"
+#include "combatant.h"
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80070E2C);
 
@@ -891,9 +892,138 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80098C6C);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80098D2C);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80099498);
+/* Party gate on the formation mode: 1 when mode 2 has no member with status
+ * bits 0xC002, or mode 3 does not have exactly two; otherwise 0. */
+s32 func_80099498(void) {
+    s32 result = 0;
+    u8 i;
+    u8 count;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800995A0);
+    switch (D_800C34AD) {
+    case 2:
+        count = 0;
+        for (i = 0; i < 3;) {
+            Combatant *member = &D_800C34B0[i];
+            i++;
+            if (member->pilot.status7C & 0xC002) {
+                count++;
+            }
+        }
+        if (count == 0) {
+            result = 1;
+        }
+        break;
+    case 3:
+        count = 0;
+        for (i = 0; i < 3;) {
+            Combatant *member = &D_800C34B0[i];
+            i++;
+            if (member->pilot.status7C & 0xC002) {
+                count++;
+            }
+        }
+        if (count != 2) {
+            result = 1;
+        }
+        break;
+    case 1:
+        break;
+    }
+    return result;
+}
+
+/* Store a timed status's duration in slot's timer table. The status is named by
+ * its kind and flag bit; the attacker's flag 0x2000 doubles the amount, and for
+ * kinds 5, 7 and 9 the target's status bits 0x5 double and 0xA halve it, while
+ * the slot's flag 0x40 doubles it again. Unknown statuses are ignored. */
+void func_800995A0(u8 slot, u8 kind, u16 flag, u8 amount) {
+    Combatant *record;
+    u8 index = 0xF;
+    u16 state;
+
+    if (D_800CCCE8[D_800C3E04].pilot.status8A & 0x2000) {
+        amount *= 2;
+    }
+    record = &D_800CCCE8[slot];
+    if (kind == 0) {
+        index = (flag == 0x1000) ? 1 : (flag == 0x2000) ? 0 : 0xF;
+    }
+    if (kind == 2) {
+        switch (flag) {
+        case 0x1000:
+            index = 2;
+            break;
+        case 0x800:
+            index = 3;
+            break;
+        }
+    }
+    if (kind == 5) {
+        switch (flag) {
+        case 0x8000:
+            index = 4;
+            break;
+        case 0x4000:
+            index = 5;
+            break;
+        }
+    }
+    if (kind == 7) {
+        switch (flag) {
+        case 0x8000:
+            index = 9;
+            break;
+        case 0x4000:
+            index = 0xA;
+            break;
+        case 0x1000:
+            index = 0xB;
+            break;
+        }
+    }
+    if (kind == 9) {
+        switch (flag) {
+        case 0x1000:
+        case 0x2000:
+        case 0x4000:
+        case 0x8000:
+            index = 0xC;
+            break;
+        case 0x100:
+        case 0x200:
+        case 0x400:
+        case 0x800:
+            index = 0xD;
+            break;
+        }
+    }
+    if (index == 0xF) {
+        return;
+    }
+    switch (kind) {
+    case 5:
+    case 7:
+    case 9:
+        state = D_800C3E34->pilot.status88 | D_800C3E34->pilot.status8A;
+        if (state & 5) {
+            amount *= 2;
+        }
+        if (state & 0xA) {
+            amount /= 2;
+        }
+        break;
+    }
+    if (record->pilot.flags32 & 0x40) {
+        switch (kind) {
+        case 5:
+        case 7:
+        case 9:
+            amount *= 2;
+            break;
+        }
+    }
+    D_800CCCE8[slot].statusTimers[index] = amount;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80099890);
 
