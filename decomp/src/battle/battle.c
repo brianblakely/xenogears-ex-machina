@@ -6052,7 +6052,134 @@ s32 func_80096AB8(void) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80096FBC);
+/* Attack value of the current command: the item/part values its +0x10 bits
+ * select plus the attack base (gear attack times scale, or the character's
+ * +0x58, both scaled by statuses), or the ether value; kind 2 scales either
+ * by the power over 20. Party attackers then get their character bonuses
+ * and the target's weakness bonuses. */
+s16 func_80096FBC(void) {
+    u8 parts[5];
+    u16 value;
+    u8 i;
+    u16 base;
+    u16 sum;
+    u16 ether;
+    u8 kinds;
+    u8 scale;
+    u16 status;
+    u16 flags;
+
+    if (D_800C34B0->records[D_800C3E04].flags15A & 0x80) {
+        for (i = 0; i < 3; i++) {
+            parts[i] = D_800D2D6C->entries[i].valueE;
+        }
+        base = D_800D2D6C->attack * D_800D2D6C->attackScale;
+        if ((D_800D2D6C->status80 | D_800D2D6C->status82) & 0x1000) {
+            base += D_800D2D6C->attack * 2;
+        }
+    } else {
+        for (i = 0; i < 4; i++) {
+            parts[i] = D_800C3E00->pilot.entries[i].value4;
+        }
+        base = D_800C3E00->pilot.attack;
+    }
+    kinds = D_800C3DFC->itemKinds;
+    ether = D_800C3E00->pilot.accuracy;
+    sum = 0;
+    if (kinds & 0x80) {
+        sum = parts[0];
+    }
+    if (kinds & 0x40) {
+        sum += parts[1];
+    }
+    if (kinds & 0x20) {
+        sum += parts[2];
+    }
+    if (kinds & 0x10) {
+        sum += parts[3];
+    }
+    if (kinds & 0x08) {
+        sum += parts[4];
+    }
+    if ((D_800C3E00->pilot.status8C.half.active | D_800C3E00->pilot.status8C.half.permanent) & 1) {
+        sum += sum >> 1;
+    }
+    if (D_800C3DFC->flagsA & 0x100) {
+        scale = 4;
+        if ((D_800C3E00->pilot.status88.half.active | D_800C3E00->pilot.status88.half.permanent) & 0x8000) {
+            scale = 5;
+        }
+        if (D_800C3E00->pilot.status80 & 0x400) {
+            scale--;
+        }
+        ether = ether * scale / 4;
+        if ((D_800C3E00->pilot.status88.half.active | D_800C3E00->pilot.status88.half.permanent) & 0x2000) {
+            ether *= 2;
+        }
+    } else if (!(D_800C34B0->records[D_800C3E04].flags15A & 0x80)) {
+        status = D_800C3E00->pilot.status84.half.active | D_800C3E00->pilot.status84.half.permanent;
+        scale = 4;
+        if (status & 0x2000) {
+            scale = 5;
+        }
+        if (D_800C3E00->pilot.status7C & 0x200) {
+            scale--;
+        }
+        if (status & 0x400) {
+            scale += 10 - D_800C3E00->pilot.hp / (u16)(D_800C3E00->pilot.maxHp / 10);
+        }
+        base = base * scale / 4;
+    }
+    flags = D_800C3DFC->flagsA;
+    if (flags & 0x20) {
+        base = 0;
+    }
+    switch (D_800C3DFC->amountKind) {
+    case 0:
+        value = sum + base;
+        break;
+    case 1:
+        value = ether;
+        break;
+    case 2:
+        if (D_800C3E00->pilot.characterId == 4) {
+            sum = sum * 6 / 10;
+        }
+        if (flags & 0x100) {
+            value = ether * D_800C3DFC->power / 20;
+        } else {
+            value = (sum + base) * D_800C3DFC->power / 20;
+        }
+        break;
+    }
+    if (D_800C3E04 < 3) {
+        if (D_800C3E00->pilot.characterId == 7) {
+            func_8009B46C(&value);
+        }
+        if (D_800C3E00->pilot.characterId == 4 || (D_800C3DFC->attributes[2] & 0x20)) {
+            if (D_800C3E34->pilot.weakness & 0x20) {
+                value += value >> 2;
+            }
+            if ((*(u32 *)&D_800C3E34->pilot.weakness & 0x60) == 0x60) {
+                value += value >> 2;
+            }
+        }
+        if (D_800C3E00->pilot.characterId == 8 && !(D_800CCCE8.records[D_800C3E04].flags15A & 0x80) &&
+            (D_800C3DFC->flagsA & 0x100)) {
+            value = value * D_800CCCE8.records[D_800C3E04].gear.frameFactor / 4;
+        }
+        if (D_800C3E00->pilot.characterId == 10) {
+            value += value / 5;
+        }
+        if ((D_800C3DFC->attributes[2] & 0x10) && (D_800C3E34->pilot.weakness & 0x10)) {
+            value += value >> 2;
+            if (D_800C3E34->pilot.weakness & 0x10) {
+                value += value >> 2;
+            }
+        }
+    }
+    return value;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80097610);
 

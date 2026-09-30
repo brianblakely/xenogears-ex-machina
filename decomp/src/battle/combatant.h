@@ -43,7 +43,9 @@ typedef struct {
     u8 field54; /* 0x54 */
     u8 pad55;
     u8 characterId; /* 0x56 */
-    u8 pad57[0x5A - 0x57];
+    u8 pad57;
+    u8 attack;  /* 0x58 */
+    u8 defense; /* 0x59 */
     u8 speed;    /* 0x5A */
     u8 accuracy; /* 0x5B: added to a command's accuracy */
     u8 pad5C[0x5E - 0x5C];
@@ -321,7 +323,7 @@ void func_8009CA90(void);
 void func_8009CB68(u8 slot);
 void func_8009E788(void);
 s8 func_8009DBFC(s32 arg0);
-u16 func_80096FBC(void);
-u16 func_80097610(void);
+s16 func_80096FBC(void);
+s16 func_80097610(void);
 
 #endif
