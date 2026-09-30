@@ -850,7 +850,7 @@ void func_800740E4(Actor *actor, HitSpec *hit, s32 lands) {
     }
     if (hit->type == 0x20) {
         if ((func_80073E2C(actor, actor->unkBE, 1) && func_80083CD8() != 4)
-            || (func_80083CD8() == 4 && (actor->unk15D0->flags & 0x8000))) {
+            || (func_80083CD8() == 4 && (actor->move->flags & 0x8000))) {
             if (!single) {
                 a.vx = (a.vx + b.vx) / 2;
                 a.vy = (a.vy + b.vy) / 2;
@@ -858,11 +858,11 @@ void func_800740E4(Actor *actor, HitSpec *hit, s32 lands) {
             }
             func_80073424(&a, NULL, actor, 0, actor->unk1600[0x18], style);
             func_80076424(actor);
-            actor->unk15CC->flags |= 0x8000;
+            actor->pose->flags |= 0x8000;
         } else {
             func_8007D190(&a, 9);
             func_80076424(actor);
-            actor->unk15CC->flags &= 0x7FFF;
+            actor->pose->flags &= 0x7FFF;
         }
         D_80096FB8[ACTOR_SIDE(actor)].unkC = D_80096FB8[ACTOR_SIDE(actor)].unk10 = actor->unk99E;
         D_80096FB8[ACTOR_SIDE(actor)].unk0 = D_80096FB8[ACTOR_SIDE(actor)].unk8 = D_8009112C;
@@ -919,9 +919,52 @@ INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu", D_8006FC10);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80074678);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80074998);
+#ifdef NON_MATCHING
+/* Show the model objects of the current move: unhide every kind-1 object,
+ * then hide the listed ones (and object 13 in mode 0xD). Does not match:
+ * the original leaf keeps an empty 16-byte frame (likely from a call that
+ * was optimised away). */
+void func_80074998(Actor *actor) {
+    ModelObject **objects = actor->model->data->objects;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80074AB4);
+    for (i = 0; i < actor->model->data->count; i++) {
+        if (objects[i]->kind == 1) {
+            *objects[i]->flags &= ~1;
+        }
+    }
+    for (i = 0; i < actor->visible_count; i++) {
+        *objects[actor->visible[i]]->flags |= 1;
+    }
+    if (actor->unk909 == 0xD) {
+        *objects[13]->flags |= 1;
+    }
+}
+#else
+INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80074998);
+#endif
+
+/* Apply an actor's pose and start its move's animation. */
+void func_80074AB4(Actor *actor) {
+    Pose *pose = actor->pose;
+    Move *move = actor->move;
+    ModelAnim *anim;
+
+    actor->pos.vx = pose->x;
+    actor->pos.vy = pose->y;
+    actor->pos.vz = pose->z;
+    actor->anim = move->anim;
+    actor->angle = (pose->flags << 20) >> 20;
+    anim = &actor->model->data->anims[move->anim];
+    if (move->flags & 0x1000) {
+        func_80074998(actor);
+        func_8008B0D8(anim);
+    }
+    func_80074678(actor, anim->unk12, actor->move->unk9);
+    if (move->unkA != 0) {
+        func_8008B730(anim, move->unk9, move->unkA);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80074BA4);
 

@@ -98,11 +98,44 @@ typedef struct {
     u8 *unk50;
 } Trail;
 
-/* A part of an actor's model; bit 15 of flags marks a charged part. */
+/* An actor's current pose: position and, in the low 12 bits of flags,
+ * its facing; bit 15 marks a charged pose. */
+typedef struct {
+    s16 x, y, z;
+    u16 flags;
+} Pose;
+
+/* An actor's current move. */
 typedef struct {
     u8 unk0[0x6];
-    u16 flags;
-} ModelPart;
+    u16 flags;       /* 0x1000: resets the visible parts */
+    u8 anim;
+    u8 unk9;
+    u8 unkA;
+} Move;
+
+/* One object of a model; bit 0 of *flags hides it. */
+typedef struct {
+    s32 kind;
+    u32 *flags;
+} ModelObject;
+
+/* A model animation (0x14 bytes). */
+typedef struct {
+    u8 unk0[0x12];
+    s16 unk12;
+} ModelAnim;
+
+typedef struct {
+    s16 count;
+    ModelObject **objects;
+    ModelAnim *anims;
+} ModelData;
+
+typedef struct {
+    u8 unk0[0x4];
+    ModelData *data;
+} Model;
 
 /* Per-side hit bookkeeping (D_80096FB8, one record per side). */
 typedef struct {
@@ -118,10 +151,12 @@ typedef struct Actor {
     Vector pos;          /* 0x00 */
     u8 unk10[0x38];
     s32 state;           /* 0x48 */
-    u8 unk4C[0x8];
+    u8 anim;             /* 0x4C */
+    u8 unk4D[0x7];
     s32 angle;           /* 0x54: facing, 4096 = full turn */
     s32 target_angle;    /* 0x58 */
-    u8 unk5C[0x28];
+    Model *model;        /* 0x5C */
+    u8 unk60[0x24];
     u8 *unk84;
     u8 unk88[0x28];
     s32 floor_y;         /* 0xB0 */
@@ -146,13 +181,17 @@ typedef struct Actor {
     u8 unk8B0[0x44];
     s32 nearest_dist;    /* 0x8F4: distance of the closest shot */
     Shot *nearest_shot;  /* 0x8F8 */
-    u8 unk8FC[0x50];
+    u8 unk8FC[0x8];
+    u8 *visible;         /* 0x904: objects shown by the current move */
+    u8 visible_count;
+    u8 unk909;
+    u8 unk90A[0x42];
     Vector core;         /* 0x94C: where shots home in */
     u8 unk95C[0x42];
     s16 unk99E;
     u8 unk9A0[0xC2C];
-    ModelPart *unk15CC;
-    ModelPart *unk15D0;
+    Pose *pose;          /* 0x15CC */
+    Move *move;          /* 0x15D0 */
     u8 unk15D4[0x2C];
     u8 *unk1600;
     u8 unk1604[0x50];
@@ -355,6 +394,9 @@ void func_8008EBD0(Actor *actor, s32 sound, Shot *shot, s32 arg);
 void func_80073B7C(Actor *actor, s32 part, s32 vertex, Vector *out);
 void func_8007C100(u8 *arg);
 void func_80076424(Actor *actor);
+void func_80074678(Actor *actor, s32 arg1, s32 arg2);
+void func_8008B0D8(ModelAnim *anim);
+void func_8008B730(ModelAnim *anim, s32 arg1, s32 arg2);
 void func_8007C880(s32 side, Vector *at, s32 style, s32 type);
 s32 func_8007CD14(s32 side, s32 part, s32 vertex, s32 arg);
 void func_8007CD44(s32 side, Vector *a, Vector *b, s32 style);
