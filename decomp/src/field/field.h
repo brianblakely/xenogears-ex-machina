@@ -533,7 +533,7 @@ typedef struct {
     s32 unk2268;               /* 2268 */
     s32 controlled;            /* 226C: controlled actor/descriptor index */
     u16 encounter_music[16];   /* 2270: per encounter kind */
-    u16 battle_music;          /* 2290: the chosen encounter's */
+    u8 unk2290[2];             /* 2290: D_800B2290 */
     u8 unk2292[2];
     s32 unk2294;               /* 2294 */
     s32 unk2298;               /* 2298 */
@@ -990,6 +990,9 @@ extern s32 D_800AFD1C; /* current actor index */
 extern s32 D_800AFE84;
 extern s32 D_800B06A0;
 extern FieldWork D_800B2078;
+/* The chosen encounter's battle music, inside FieldWork's span but loaded
+ * through its own symbol (80077e88 would share a base with +2355). */
+extern s16 D_800B2290;
 extern FieldSoundBank *D_800B235C; /* movie sound-effect bank */
 extern u8 *D_800ADC00; /* event bytecode */
 extern void (*D_800AE6A0[])(void); /* extended event instructions */
