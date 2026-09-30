@@ -19,34 +19,36 @@ void func_801E62E0(u8 *data) {
  * slot of their type, and of later model entries sharing their data. */
 #ifdef NON_MATCHING
 void func_801E6314(u8 *data) {
-    s16 columns[8];
-    s32 types[SLOT_COUNT];
+    s32 count;
+    s32 k;
+    s32 images;
+    s32 slot;
+    u8 *base;
+    s16 columns[16];
+    s32 types[13]; /* SLOT_COUNT used; the size reproduces the original frame */
     EnemyEntry *entry;
     EnemyEntry *other;
-    SpriteRow *row;
-    u8 *base;
-    s32 count, table, size;
-    s32 images, slot, k, j, s;
+    s32 table;
+    s32 j, s, i;
     s32 column;
     u32 index;
-    s32 type, same, placed, many, mode;
-    s16 y;
+    s32 type, same, placed, mode;
+    s32 enemy;
 
-    for (s = 0; s != SLOT_COUNT; s++) {
-        types[s] = D_800C3EB0.slots[s].id;
-    }
     images = 0;
     slot = 3;
+    /* The original counts this loop with the column variable. */
+    for (column = 0; column != SLOT_COUNT; column++) {
+        types[column] = D_800C3EB0.slots[column].id;
+    }
     count = data[0];
     column = data[1] * 0x40 + 0x140;
     table = count * sizeof(EnemyEntry) + 8;
-    size = *(s32 *)(data + 4) - table;
-    D_800D39C8 = func_80031BDC(size, 0);
+    D_800D39C8 = func_80031BDC(*(s32 *)(data + 4) - table, 0);
     memcpy(D_800D39C8, data + table, *(s32 *)(data + 4) - table);
     entry = (EnemyEntry *)(data + 8);
     base = (u8 *)D_800D39C8 - table;
     for (k = 0; k != count; k++) {
-        row = &D_800C3EB0.rows[slot];
         if (entry->model != 0) {
             placed = 0;
             if (entry->images < 8) {
@@ -57,56 +59,54 @@ void func_801E6314(u8 *data) {
             column += 0x40;
             same = 0;
             type = slot - 3;
-            row->data = NULL;
-            for (s = 3; s != SLOT_COUNT; s++) {
-                if (types[s] == type) {
+            D_800C3EB0.rows[slot].data = NULL;
+            for (i = 3; i != SLOT_COUNT; i++) {
+                if (type == types[i]) {
                     same++;
                 }
             }
             other = entry + 1;
             for (j = k + 1; j != count; j++, other++) {
                 if (other->model != 0 && other->images == k) {
-                    for (s = 3; s != SLOT_COUNT; s++) {
-                        if (types[s] == j) {
-                            types[s] = type;
+                    for (i = 3; i != SLOT_COUNT; i++) {
+                        if (j == types[i]) {
+                            types[i] = type;
                             same++;
                         }
                     }
                 }
             }
-            many = -(same >= 2);
-            y = column - 0x40;
             for (s = 3; s != SLOT_COUNT; s++) {
                 if (types[s] < 8 && types[s] == type && s != 0) {
-                    mode = many & 2;
+                    enemy = s;
+                    mode = (same >= 2) ? 2 : 0;
                     if (placed != 0) {
                         mode = 7;
                         if (same == placed + 1) {
                             mode = 5;
                         }
                     }
-                    func_800A8BF0(s, (mode | 0x80) & 0xFFFF, base + entry->offset,
-                                  data + entry->images, y, 0x100, 0,
-                                  (s16)(s - (placed - 0x1C0)), 0);
-                    placed++;
-                    func_800BB350(s);
+                    func_800A8BF0(enemy, (u16)(mode | 0x80), (u8 *)(entry->offset + (s32)base),
+                                  (u8 *)(entry->images + (s32)data), (s16)(column - 0x40), 0x100, 0,
+                                  (s16)(enemy - (s16)(placed++ - 0x1C0)), 0);
+                    func_800BB350(enemy);
                 }
             }
         } else {
             index = entry->images;
             if (index >= 8) {
-                func_80022A70(data + index, column, 0x100);
+                func_80022A70((u8 *)(index + (s32)data), column, 0x100);
                 index = images;
                 columns[images++] = column;
-                column += func_80022A00(data + entry->images) << 6;
+                column += func_80022A00((u8 *)(entry->images + (s32)data)) << 6;
                 if (column >= 0x2C1) {
                     column = 0;
                 }
             }
-            row->y = 0x100;
-            row->data = base + entry->offset;
-            row->x = columns[index];
-            row->variant = entry->variant;
+            D_800C3EB0.rows[slot].y = 0x100;
+            D_800C3EB0.rows[slot].data = (u8 *)(entry->offset + (s32)base);
+            D_800C3EB0.rows[slot].x = columns[index];
+            D_800C3EB0.rows[slot].variant = entry->variant;
         }
         entry++;
         slot++;
