@@ -7,3 +7,6 @@ IMAGE := .local/decomp/build/ovl2606.bin
 LINKER_SCRIPT := .local/decomp/ovl2606/ovl2606.ld
 LINKER_EXTRA := .local/decomp/ovl2606/undefined_syms_auto.txt .local/decomp/ovl2606/undefined_funcs_auto.txt
 SOURCE_DIRS := decomp/src/ovl2606
+# Its code expands `li` to `ori` (positive) / `addiu` (negative): ASPSX
+# behaviour before 2.50 in maspsx's model, not the resident's 2.79.
+override MASPSXFLAGS := --aspsx-version=2.34
