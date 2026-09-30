@@ -128,8 +128,8 @@ decomp/src/battle/combatant.h
 decomp/src/battle/formation_route.h
 decomp/src/battle/gear_menu.h
 decomp/src/battle/glyph_lists.h
-decomp/src/battle/item_command.h
 decomp/src/battle/gte.h
+decomp/src/battle/item_command.h
 decomp/src/battle/model.h
 decomp/src/battle/psyq.h
 decomp/src/battle/scene.h
