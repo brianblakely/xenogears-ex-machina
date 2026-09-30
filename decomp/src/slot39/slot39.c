@@ -1821,7 +1821,39 @@ void func_801CA480(s32 mode, s32 slot) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CA5F0);
+/* Move the cursor from `slot` left for `mode`: 0 to the previous slot
+ * holding a file, 1 to the previous slot holding this game's file, 2 one slot
+ * back when that card is present. */
+void func_801CA5F0(s32 mode, s32 slot) {
+    s32 next;
+
+    switch (mode) {
+    case 0:
+        for (; slot - 1 >= 0; slot--) {
+            if (D_800625A0->card->fileSlots[D_801E981C[slot - 1]] != 0xff) {
+                D_800625A0->card->cursor = slot - 1;
+                break;
+            }
+        }
+        break;
+    case 1:
+        while (slot - 1 >= 0) {
+            if (D_800625A0->card->fileSlots[D_801E981C[slot - 1]] == 0xff || !D_800625A0->card->ours[D_801E981C[slot - 1]]) {
+                slot--;
+            } else {
+                D_800625A0->card->cursor = slot - 1;
+                break;
+            }
+        }
+        break;
+    case 2:
+        next = slot - 1;
+        if (D_800625A0->card->present[next / 15] && next >= 0) {
+            D_800625A0->card->cursor = next;
+        }
+        break;
+    }
+}
 
 INCLUDE_RODATA(".local/decomp/slot39/asm/nonmatchings/slot39", D_801C50A8);
 
