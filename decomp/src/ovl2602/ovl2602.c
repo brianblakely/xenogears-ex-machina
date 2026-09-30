@@ -11,30 +11,24 @@
 #include "menu_card.h"
 
 /* A random value in [min, max] (ffff stays ffff, a zero max gives 0). */
-#ifdef NON_MATCHING
 u16 func_801C511C(u16 min, u16 max) {
     s32 range;
-    u16 result;
 
     if (min == 0xFFFF) {
-        result = 0xFFFF;
-    } else if (max == 0) {
-        result = 0;
-    } else {
-        range = max - min;
-        if (min == max) {
-            result = min;
-        } else if (range <= 0xFFFE) {
-            result = min + (u16)rand() % (range + 1);
-        } else {
-            result = rand();
-        }
+        return 0xFFFF;
     }
-    return result;
+    if (max == 0) {
+        return 0;
+    }
+    if (min == max) {
+        return min;
+    }
+    range = max - min;
+    if (range >= 0xFFFF) {
+        return rand();
+    }
+    return min + (u16)rand() % (range + 1);
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801C511C);
-#endif
 
 /* Place a textured quad at (x, y) of size w x h showing texels (u, v)..(u + w, v + h). */
 void func_801C51B8(POLY_FT4 *poly, s16 x, s16 y, u8 u, u8 v, s32 w, s32 h) {
