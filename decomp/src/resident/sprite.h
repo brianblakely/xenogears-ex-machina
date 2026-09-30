@@ -131,7 +131,11 @@ s32 func_8003F8B0(s32 angle); /* rcos */
 s32 func_8003F8CC(s32 angle); /* rsin */
 s32 func_8004B32C(s32 y, s32 x); /* ratan2 */
 void func_800248D4(Sprite *sprite); /* run the next script command */
-extern s32 D_80059198; /* extra frames per update (frame skip) */
+/* Frame timing; only the first word is known here. */
+extern struct {
+    s32 skip; /* extra frames per update */
+    s32 unknown[2];
+} D_80059198;
 void func_80022B2C(Sprite *sprite);
 s32 func_80022CAC(Sprite *sprite, s32 value);
 void func_80022CDC(Sprite *sprite);

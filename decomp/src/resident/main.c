@@ -1382,10 +1382,13 @@ void func_80021C00(Sprite *sprite, s32 group) {
 }
 
 /* Pop a byte from a sprite's stack. */
-/* Nonmatching under GCC 2.7.2 and 2.6.3: the original reads the stack index twice (lb for the index, lbu for the update). */
+/* Sprite-unit code (GCC 2.7.2-cdk, -G8, ASPSX 2.5+): this C matches under that configuration (object compare with relocations masked), not in this build. */
 #ifdef NON_MATCHING
 u8 func_80021C20(Sprite *sprite) {
-    return sprite->stack[sprite->stack_top++];
+    u8 value = sprite->stack[sprite->stack_top];
+
+    sprite->stack_top += 1;
+    return value;
 }
 #else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021C20);
@@ -1512,11 +1515,14 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80022B2C);
 
 /* Scale a value by the sprite's speed factor (1024 = 1) when it has one. */
 s32 func_80022CAC(Sprite *sprite, s32 value) {
-    if (sprite->rate != 0) {
-        value *= sprite->rate;
-        value /= 1024;
+    s32 result = value;
+    u16 rate = sprite->rate;
+
+    if (rate != 0) {
+        result *= rate;
+        result /= 1024;
     }
-    return value;
+    return result;
 }
 
 /* Move a sprite horizontally by its speed (scaled by its speed factor), then 80022b2c. */
@@ -1621,7 +1627,7 @@ s32 func_800231F8(s32 *block) {
 void func_80023210(Sprite *sprite) {
     s32 i;
 
-    for (i = 0; i != D_80059198 + 1; i++) {
+    for (i = 0; i != D_80059198.skip + 1; i++) {
         if (sprite->countdown != 0) {
             if (--sprite->countdown == 0) {
                 func_800248D4(sprite);
