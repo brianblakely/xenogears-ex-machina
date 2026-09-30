@@ -57,13 +57,13 @@ void func_8007099C(u32 mode) {
         func_80083738(&D_8009872C, &D_80097010);
         break;
     case 1:
-        target = D_8009872C;
+        target = D_8009872C.pos;
         D_800925F4 = 0;
         target.vy -= 0xA0;
         func_80070808(&target, 4);
         break;
     case 2:
-        target = D_80097010;
+        target = D_80097010.pos;
         D_800925F4 = 0;
         target.vy -= 0xA0;
         func_80070808(&target, 4);
@@ -73,9 +73,9 @@ void func_8007099C(u32 mode) {
         target = D_80099078;
         target.vy += D_800925F4;
         func_80070808(&target, 0x10);
-        target.vx = D_8009872C.vx + ((func_8003F8B0(D_80098780 + 0xA80) * 0xD0) >> 12);
-        target.vy = D_8009872C.vy - 0x20 - D_800925F4;
-        target.vz = D_8009872C.vz + ((func_8003F8CC(D_80098780 + 0xA80) * 0xD0) >> 12);
+        target.vx = D_8009872C.pos.vx + ((func_8003F8B0(D_8009872C.angle + 0xA80) * 0xD0) >> 12);
+        target.vy = D_8009872C.pos.vy - 0x20 - D_800925F4;
+        target.vz = D_8009872C.pos.vz + ((func_8003F8CC(D_8009872C.angle + 0xA80) * 0xD0) >> 12);
         func_800708C4(&target, 0x46);
         {
             s32 top = func_80082488(&D_8009871C, 0) - 0x40 - D_800925F4;
@@ -89,9 +89,9 @@ void func_8007099C(u32 mode) {
         target = D_80099078;
         target.vy += D_800925F4;
         func_80070808(&target, 0x10);
-        target.vx = D_8009872C.vx + ((func_8003F8B0(D_80098780 + 0xA80) * 0xD0) >> 12);
-        target.vy = D_8009872C.vy - 0x20 - D_800925F4;
-        target.vz = D_8009872C.vz + ((func_8003F8CC(D_80098780 + 0xA80) * 0xD0) >> 12);
+        target.vx = D_8009872C.pos.vx + ((func_8003F8B0(D_8009872C.angle + 0xA80) * 0xD0) >> 12);
+        target.vy = D_8009872C.pos.vy - 0x20 - D_800925F4;
+        target.vz = D_8009872C.pos.vz + ((func_8003F8CC(D_8009872C.angle + 0xA80) * 0xD0) >> 12);
         func_800708C4(&target, 0x46);
         {
             s32 top = func_80082488(&D_8009871C, 0) - 0x40 - D_800925F4;
@@ -101,12 +101,12 @@ void func_8007099C(u32 mode) {
         }
         break;
     case 5:
-        D_8009867C.vx = D_80097010.vx;
-        D_8009867C.vy = D_80097010.vy - 0xC0;
-        D_8009867C.vz = D_80097010.vz;
-        D_8009871C.vx = D_8009867C.vx + ((func_8003F8B0(D_80097064 + 0x900) * 0xE0) >> 12);
-        D_8009871C.vy = D_80097010.vy - 0xD0;
-        D_8009871C.vz = D_8009867C.vz + ((func_8003F8CC(D_80097064 + 0x900) * 0xE0) >> 12);
+        D_8009867C.vx = D_80097010.pos.vx;
+        D_8009867C.vy = D_80097010.pos.vy - 0xC0;
+        D_8009867C.vz = D_80097010.pos.vz;
+        D_8009871C.vx = D_8009867C.vx + ((func_8003F8B0(D_80097010.angle + 0x900) * 0xE0) >> 12);
+        D_8009871C.vy = D_80097010.pos.vy - 0xD0;
+        D_8009871C.vz = D_8009867C.vz + ((func_8003F8CC(D_80097010.angle + 0x900) * 0xE0) >> 12);
         break;
     }
 }
@@ -114,11 +114,96 @@ void func_8007099C(u32 mode) {
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007099C);
 #endif
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80070C7C);
+/* Re-centre the two actors and the look-at point on a fixed scene spot:
+ * the midpoint of the actors moves to the layout's anchor, actors on the
+ * floor and the look-at point at a fixed height. */
+void func_80070C7C(s32 layout) {
+    Vector first = D_8009872C.pos;
+    Vector second = D_80097010.pos;
+    Vector look = D_8009871C;
+    Vector centre = first;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80070F80);
+    centre.vx += second.vx;
+    centre.vy += second.vy;
+    centre.vz += second.vz;
+    centre.vx /= 2;
+    centre.vy /= 2;
+    centre.vz /= 2;
+    first.vx -= centre.vx;
+    first.vy -= centre.vy;
+    first.vz -= centre.vz;
+    second.vx -= centre.vx;
+    second.vy -= centre.vy;
+    second.vz -= centre.vz;
+    look.vx -= centre.vx;
+    look.vy -= centre.vy;
+    look.vz -= centre.vz;
+    switch (layout) {
+    case 0:
+        centre.vx = 0x4000;
+        centre.vy = 0;
+        centre.vz = 0x4000;
+        break;
+    case 1:
+        centre.vx = 0x6000;
+        centre.vy = 0;
+        centre.vz = 0x6000;
+        break;
+    case 2:
+        centre.vx = 0x2000;
+        centre.vy = 0;
+        centre.vz = 0x2000;
+        break;
+    case 3:
+        centre.vx = 0x4000;
+        centre.vy = 0;
+        centre.vz = 0x2400;
+        break;
+    }
+    first.vx += centre.vx;
+    first.vy += centre.vy;
+    first.vz += centre.vz;
+    second.vx += centre.vx;
+    second.vy += centre.vy;
+    second.vz += centre.vz;
+    look.vx += centre.vx;
+    look.vy += centre.vy;
+    look.vz += centre.vz;
+    first.vy = 0;
+    second.vy = 0;
+    look.vy = -0x300;
+    D_8009872C.pos = first;
+    D_80097010.pos = second;
+    D_8009871C = look;
+    func_8007E24C();
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80070FD8);
+/* Reset both actors' states and clear their 0x8000 flag. */
+void func_80070F80(s32 arg) {
+    D_800925F8 = arg;
+    D_8009872C.state = 0;
+    D_80097010.state = 0;
+    D_800925FC = 0;
+    D_8009872C.flags &= ~0x8000;
+    D_80097010.flags &= ~0x8000;
+}
+
+/* Turn an actor toward one of two headings depending on which side of the
+ * scene centre it stands, and reset its state. */
+s32 func_80070FD8(Actor *actor) {
+    Vector pos = actor->pos;
+
+    pos.vx -= 0x3F80;
+    pos.vz -= 0x3F80;
+    if ((func_8004B32C(pos.vx, pos.vz) & 0xFFF) > 0x200) {
+        actor->target_angle = 0x800 - D_80092934;
+    } else {
+        actor->target_angle = 0xC00 - D_80092934;
+    }
+    actor->state = 0xFF;
+    actor->unkCE = 0;
+    return 0;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007107C);
 
