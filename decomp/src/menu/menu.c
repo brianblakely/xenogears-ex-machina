@@ -676,19 +676,99 @@ void func_8007E954(s32 value) {
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007E964);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007EB6C);
+/* Width of a text string in pixels at the current text scale. */
+s32 func_8007EB6C(u8 *text) {
+    s32 width = 0;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007EBE0);
+    while (*text != 0) {
+        width += ((func_8007E8AC(*text++)->width * D_800912DC) >> 8) + 2;
+    }
+    return width;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007EC54);
+/* Draw a line of text at the cursor and move the cursor to the next line. */
+void func_8007EBE0(u8 *text) {
+    s32 x = D_800926E8;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007ECF0);
+    while (*text != 0) {
+        func_8007E964(*text++);
+    }
+    D_800926E8 = x;
+    D_800926EC += 0x14;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007ED84);
+/* Draw a line of text centred on the cursor, then move to the next line. */
+void func_8007EC54(u8 *text) {
+    s32 x = D_800926E8;
 
+    D_800926E8 -= func_8007EB6C(text) / 2;
+    while (*text != 0) {
+        func_8007E964(*text++);
+    }
+    D_800926E8 = x;
+    D_800926EC += 0x14;
+}
+
+/* Draw a line of text ending at the cursor, then move to the next line. */
+void func_8007ECF0(u8 *text) {
+    s32 x = D_800926E8;
+
+    D_800926E8 -= func_8007EB6C(text);
+    while (*text != 0) {
+        func_8007E964(*text++);
+    }
+    D_800926E8 = x;
+    D_800926EC += 0x14;
+}
+
+/* Draw a line of text shifted left by an offset, then move to the next line. */
+void func_8007ED84(u8 *text, s32 offset) {
+    s32 unused[2]; /* never used; the original frame keeps its slot */
+    s32 x = D_800926E8;
+
+    D_800926E8 = x - offset;
+    while (*text != 0) {
+        func_8007E964(*text++);
+    }
+    D_800926E8 = x;
+    D_800926EC += 0x14;
+}
+
+#ifdef NON_MATCHING
+/* Set the text colour: highlighted (fading red) or plain white.
+ * Does not match: the original reloads 0xff in the highlight branch. */
+void func_8007EE08(s32 highlight) {
+    if (highlight) {
+        D_800926F0 = D_80059488 * 20;
+        D_800926F4 = 0xFF;
+        D_800926F8 = 0;
+    } else {
+        D_800926F0 = 0xFF;
+        D_800926F4 = 0xFF;
+        D_800926F8 = 0xFF;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007EE08);
+#endif
 
+#ifdef NON_MATCHING
+/* Set the text colour: highlighted (fading toward blue) or plain white.
+ * Does not match: the original reloads 0xff in the highlight branch. */
+void func_8007EE68(s32 highlight) {
+    if (highlight) {
+        D_800926F8 = 0xFF;
+        D_800926F0 = 0xFF - D_80059488 * 20;
+        D_800926F4 = 0xFF - D_80059488 * 20;
+        return;
+    }
+    D_800926F0 = 0xFF;
+    D_800926F4 = 0xFF;
+    D_800926F8 = 0xFF;
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007EE68);
+#endif
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007EEE8);
 
@@ -698,17 +778,60 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007F05C);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007F258);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007F834);
+void func_8007F834(void) {
+    D_80092740 = 0;
+    D_8009273C = 0;
+    D_80092744 = 0;
+}
 
+#ifdef NON_MATCHING
+/* Leave the settings screen: camera mode 1 and flags 0xc on both actors.
+ * Does not match: the original addresses both flag words through two
+ * address registers in the opposite register order. */
+void func_8007F854(void) {
+    s32 unused[2]; /* never used; the original frame keeps its slot */
+
+    D_800912F0 = 1;
+    func_80083C0C(1);
+    D_80092734 = 0;
+    func_8007F834();
+    D_8009872C.unkD4 |= 0xC;
+    D_80097010.unkD4 |= 0xC;
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007F854);
+#endif
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007F8B4);
+void func_8007F8B4(void) {
+    s32 unused[2]; /* never used; the original frame keeps its slot */
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007F8E4);
+    func_80083C0C(1);
+    D_80092734 = 0;
+    func_8007F834();
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007F948);
+void func_8007F8E4(void) {
+    func_80080C48(0);
+    if (D_80099D98[7] != 0 || D_80092950 == 1) {
+        func_80083C0C(3);
+    } else {
+        D_80092950--;
+        func_80083C0C(6);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007F97C);
+/* Highlight the text when an entry's index (+0x12) is the cursor. */
+void func_8007F948(s16 *entry, s32 cursor) {
+    if (entry[9] == cursor) {
+        func_8007EE08(1);
+    } else {
+        func_8007EE08(0);
+    }
+}
+
+s32 func_8007F97C(void) {
+    return D_800912F4[D_80099D98[0]];
+}
 
 INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu", D_8006FF5C);
 
@@ -724,27 +847,94 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007FBEC);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007FE48);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007FF70);
+/* Step a settings value with left/right: flag 4 reverses the direction,
+ * flag 2 uses the repeating buttons, flag 1 wraps around (else clamps
+ * silently). Plays the cursor sound when moved. */
+s32 func_8007FF70(s32 value, s32 max, s32 flags) {
+    s32 step = 1;
+    u32 buttons;
+    s32 moved;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080054);
+    if (flags & 4) {
+        step = -1;
+    }
+    moved = 0;
+    if (flags & 2) {
+        buttons = D_8009274C;
+    } else {
+        buttons = D_80092750;
+    }
+    if (buttons & 0x2000) {
+        value += step;
+    }
+    if (buttons & 0x8000) {
+        value -= step;
+    }
+    if (buttons & 0xA000) {
+        moved = 1;
+    }
+    if (flags & 1) {
+        if (value == -1) {
+            value = max;
+        }
+        if (value > max) {
+            value = 0;
+        }
+    } else {
+        if (value == -1) {
+            moved = 0;
+            value = 0;
+        }
+        if (value > max) {
+            moved = 0;
+            value = max;
+        }
+    }
+    if (moved) {
+        func_8008EB4C(0x20);
+    }
+    return value;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080090);
+void func_80080054(void) {
+    D_80099D98[0] = func_8007FF70(D_80099D98[0], 2, 0);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800800CC);
+void func_80080090(void) {
+    D_80099D98[9] = func_8007FF70(D_80099D98[9], 7, 2);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080108);
+void func_800800CC(void) {
+    D_80099D98[2] = func_8007FF70(D_80099D98[2], 4, 2);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080144);
+void func_80080108(void) {
+    D_80099D98[3] = func_8007FF70(D_80099D98[3], 1, 1);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080180);
+void func_80080144(void) {
+    D_80099D98[4] = func_8007FF70(D_80099D98[4], 1, 1);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800801BC);
+void func_80080180(void) {
+    D_80099D98[5] = func_8007FF70(D_80099D98[5], 1, 1);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800801F8);
+void func_800801BC(void) {
+    D_80099D98[6] = func_8007FF70(D_80099D98[6], 1, 1);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080234);
+void func_800801F8(void) {
+    D_80099D98[7] = func_8007FF70(D_80099D98[7], 3, 2);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080268);
+void func_80080234(void) {
+    D_80092884 = func_8007FF70(D_80092884, 1, 1);
+}
+
+void func_80080268(void) {
+    D_80099D98[10] = func_8007FF70(D_80099D98[10], 13, 3);
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800802A4);
 

@@ -22,7 +22,8 @@ typedef struct {
     u8 unk5C[0x72];
     s16 unkCE;
     s32 flags;           /* 0xD0 */
-    u8 unkD4[0x837];
+    s32 unkD4;
+    u8 unkD8[0x833];
     u8 unk90B;
 } Actor;
 
