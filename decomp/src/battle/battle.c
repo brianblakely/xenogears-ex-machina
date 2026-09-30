@@ -3023,7 +3023,22 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A48EC);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A4B3C);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A4CF8);
+/* Place a copy of stage object index (800B10EC) at every listed point, its
+ * height raised by the object's size. */
+void func_800A4CF8(s32 index) {
+    u16 *point = D_800D2FD0;
+    s32 i;
+    s16 x;
+    s16 z;
+    s16 y;
+
+    for (i = 0; i < D_800D2FC8; i++) {
+        x = *point++;
+        z = *point++;
+        y = *point++;
+        func_800B10EC(index, x, z, func_800AA650(index) + y);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A4DB8);
 
@@ -3039,9 +3054,9 @@ SceneTriangle *func_800A578C(void) {
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A579C);
 
-/* Process scene triangle index with 800A5BE8; its id, or -1 without scene
- * geometry. */
-s32 func_800A5870(s32 arg0, s32 index, s32 arg2) {
+/* Relate point to scene triangle index (800A5BE8, into out); the triangle's
+ * id, or -1 without scene geometry. */
+s32 func_800A5870(SVector *point, s32 index, void *out) {
     SceneTriangle *triangle;
 
     if (D_800D3344 == NULL || D_800D39CC == NULL || index < 0) {
@@ -3049,7 +3064,7 @@ s32 func_800A5870(s32 arg0, s32 index, s32 arg2) {
     }
     triangle = &D_800D39CC[index];
     func_800A5BE8(&D_800D3344[triangle->vertices[0]], &D_800D3344[triangle->vertices[1]],
-                  &D_800D3344[triangle->vertices[2]], arg0, arg2);
+                  &D_800D3344[triangle->vertices[2]], point, out);
     return D_800D39CC[index].id;
 }
 
@@ -3131,7 +3146,22 @@ void func_800AA320(u16 index, s16 mask, s32 arg2) {
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA384);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA454);
+/* Select stage object index with slot mask and start its effect (800AA934)
+ * unless it is the first selected slot's object; the selection is restored. */
+void func_800AA454(u16 index, u16 mask, s32 arg2) {
+    u16 savedIndex = D_800C3D40;
+    u16 savedMask = D_800C3E30;
+    BattleObject *object = D_800D3368[index];
+
+    D_800C3D40 = index;
+    D_800C3E30 = mask;
+    object->field35 = 0;
+    if (D_800D3368[index] != NULL && index != func_800AF400()) {
+        func_800AA934(D_800D3368[index], D_800D3368[index], &D_800C3D0C, arg2);
+    }
+    D_800C3D40 = savedIndex;
+    D_800C3E30 = savedMask;
+}
 
 /* c plus a * b / 256, capped at 255. */
 u8 func_800AA514(s16 a, s16 b, s32 c) {
@@ -3367,7 +3397,23 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AF518);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AF678);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AFA98);
+/* Mark (flags bit 0) or unmark part of a battle object's hierarchy, and with
+ * flags bit 0x80 its descendants. */
+void func_800AFA98(BattleObject *object, ModelPart *part, s32 flags) {
+    ModelPart *child;
+    s32 i;
+
+    part->flag7 = flags & 1;
+    if (flags & 0x80) {
+        child = object->hierarchy;
+        for (i = 1; i < object->hierarchy->index; i++) {
+            child++;
+            if (child->parent == part) {
+                func_800AFA98(object, child, flags);
+            }
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AFB4C);
 
@@ -3375,7 +3421,26 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AFC68);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AFD98);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AFF9C);
+/* Put a battle object on the ground: find the scene triangle under its
+ * hierarchy's translation and take its height (into the translation unless
+ * field36 is set). */
+void func_800AFF9C(BattleObject *object) {
+    u8 out[16];
+    SVector point;
+
+    point.vx = object->hierarchy->translation[0];
+    point.vy = object->hierarchy->translation[1];
+    point.vz = object->hierarchy->translation[2];
+    object->field1E = func_800A5914(&point, object->field1E, 4);
+    if (object->field1E < 0) {
+        object->field1E = func_800A579C(&point);
+    }
+    func_800A5870(&point, object->field1E, out);
+    object->groundY = point.vy;
+    if (object->field36 == 0) {
+        object->hierarchy->translation[1] = point.vy;
+    }
+}
 
 /* Free a battle object's packets (and its texture when it has one). */
 void func_800B0060(BattleObject *object) {

@@ -49,7 +49,9 @@ typedef struct {
     s16 field58;            /* 0x58 */
     u8 pad5A[0x5C - 0x5A];
     u8 field5C;             /* 0x5C */
-    u8 pad5D[0x63 - 0x5D];
+    u8 pad5D[0x60 - 0x5D];
+    s16 groundY;            /* 0x60 */
+    u8 pad62;
     u8 hasTexture;          /* 0x63 */
     u8 pad64[0x70 - 0x64];
     s16 motion[12];         /* 0x70 */
@@ -126,6 +128,8 @@ typedef struct {
 extern SVector *D_800D3344;             /* scene points */
 extern SceneTriangle *D_800D39CC;       /* scene triangles */
 extern LightSlot D_800C3AAC[4];
+extern s16 D_800D2FC8;                  /* point count of D_800D2FD0 */
+extern u16 *D_800D2FD0;                 /* (x, z, y) points */
 extern u8 D_800D3611;                   /* a light slot changed */
 extern u8 D_800C3B74;
 extern u8 D_800C3D6C;
@@ -145,7 +149,14 @@ s32 func_80048C4C(s32 value);           /* square root */
 void func_8003852C(u8 *texture);
 void func_800AA934(BattleObject *object, BattleObject *target, EffectPool *pool, s32 arg3);
 void func_800B00D0(void);
-void func_800A5BE8(SVector *a, SVector *b, SVector *c, s32 arg3, s32 arg4);
+s32 func_800AF400(void);
+void func_800AFA98(BattleObject *object, ModelPart *part, s32 flags);
+void func_800A5BE8(SVector *a, SVector *b, SVector *c, SVector *point, void *out);
+s32 func_800A5870(SVector *point, s32 index, void *out);
+s16 func_800A579C(SVector *point);
+s16 func_800A5914(SVector *point, s32 triangle, s32 arg2);
+s32 func_800AA650(s32 index);
+void func_800B10EC(s32 index, s16 x, s16 z, s32 y);
 void func_800A2D5C(SpritePool *pool);
 void func_800A3490(void);
 void func_800A3514(void);
