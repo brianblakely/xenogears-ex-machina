@@ -143,6 +143,28 @@ extern u8 D_800918B4[]; /* per map row: rightmost allowed column */
 void func_80085EC8(OverlayBuffer *buffer);
 s32 func_8008F530(s32 entry, s32 which);
 
+/* Flat line packet (libgpu LINE_F2). */
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    s16 x1, y1;
+} LineF2;
+
+/* A 3D debug line with its packets (one per buffer). */
+typedef struct {
+    LineF2 packets[2]; /* 0x00 */
+    SVector from;      /* 0x20 */
+    SVector to;        /* 0x28 */
+    s16 timer;         /* 0x30: frames left, 0 = free */
+    s16 pad;
+} Line3D;
+
+extern Line3D D_80095938[100];
+
+s32 func_8002DC9C(s32 x, s32 y, s32 z);
+void func_80048D7C(Vector *vector, void *out);
+
 /* A map view; only its backdrop quads are known. */
 typedef struct {
     u8 unk0[0x1604];

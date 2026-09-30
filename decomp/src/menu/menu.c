@@ -1441,15 +1441,72 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80087E38);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80087EA0);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008820C);
+/* Start a debug line between two points in one of eight colours (bit 0
+ * blue, bit 1 red, bit 2 green). Returns the line, or NULL when all 100
+ * are in use. */
+Line3D *func_8008820C(Vector *from, Vector *to, s32 colour) {
+    Line3D *line;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800882D4);
+    for (i = 0; i < 100; i++) {
+        line = &D_80095938[i];
+        if (line->timer == 0) {
+            line->timer = 1;
+            line->from.vx = from->vx;
+            line->from.vy = from->vy;
+            line->from.vz = from->vz;
+            line->to.vx = to->vx;
+            line->to.vy = to->vy;
+            line->to.vz = to->vz;
+            line->packets[0].r0 = (colour & 2) * 0x7F;
+            line->packets[0].g0 = (colour & 4) * 0x3F;
+            line->packets[0].b0 = (colour & 1) * 0xFF;
+            line->packets[1].r0 = (colour & 2) * 0x7F;
+            line->packets[1].g0 = (colour & 4) * 0x3F;
+            line->packets[1].b0 = (colour & 1) * 0xFF;
+            return line;
+        }
+    }
+    return NULL;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80088308);
+/* Start a debug line that stays for the given number of frames. */
+void func_800882D4(Vector *from, Vector *to, s32 colour, s32 frames) {
+    Line3D *line = func_8008820C(from, to, colour);
+
+    if (line != NULL) {
+        line->timer = frames;
+    }
+}
+
+/* Stop every debug line. */
+void func_80088308(void) {
+    s32 i;
+
+    for (i = 0; i < 100; i++) {
+        D_80095938[i].timer = 0;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008832C);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800884E0);
+/* Scale a vector down by the square root of its (absolute) length measure
+ * and pass it on. */
+void func_800884E0(Vector *vector, void *out) {
+    Vector scaled = *vector;
+    s32 square;
+    s32 length;
+
+    square = func_8002DC9C(scaled.vx, scaled.vy, scaled.vz);
+    if (square < 0) {
+        square = -square;
+    }
+    length = func_80048C4C(square);
+    scaled.vx /= length;
+    scaled.vy /= length;
+    scaled.vz /= length;
+    func_80048D7C(&scaled, out);
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008859C);
 
