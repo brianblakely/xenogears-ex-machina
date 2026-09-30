@@ -8580,6 +8580,8 @@ void func_8009E10C(void) {
     D_800B0078->pc += 3;
 }
 
+#include "field_actor_events.h"
+
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009E1A0);
 
 /* Enter mode 0x400000 (clearing 0x40000) from the current height. */
@@ -8697,11 +8699,141 @@ s32 func_8009EB48(FieldActor *actor, s32 tag) {
     return 0;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009EB78);
+/* Event: request event (tag low five bits of operand 2, priority its high
+ * three) on a selected actor, in its first free slot; retried while none is
+ * free. An actor in a request handshake (+04 bit 20) instead releases both
+ * linked slots. */
+void func_8009EB78(void) {
+    s32 index;
+    FieldActor *other;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009ED68);
+    if (func_8009CDB4(1) != 0xFF) {
+        index = func_8009CDB4(1);
+        other = D_800AF880.components.descriptors[index].actor;
+        if (other->layer_flags & 0x100000) {
+            D_800B0078->slots[D_800B0078->slot].unk16 = 0;
+            other->slots[D_800B0078->unk0CF].unk22 = 0;
+        } else if (func_8009EB48(other, EVENT_OPERAND_BYTE(2) & 0x1F) != -1) {
+            for (i = 0; i < 8; i++) {
+                if (other->slots[i].priority == 0xF && other->slots[i].unk22 == 0) {
+                    other->slots[i].resume_pc = func_800A3090(index, EVENT_OPERAND_BYTE(2) & 0x1F);
+                    other->slots[i].priority = EVENT_OPERAND_BYTE(2) >> 5;
+                    other->slots[i].tag = EVENT_OPERAND_BYTE(2) & 0x1F;
+                    goto done;
+                }
+            }
+            return;
+        }
+    }
+done:
+    D_800B0078->pc += 3;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009F0A0);
+/* Event: request event operand 2 on a selected actor and wait until it has
+ * started: phase 0 (the current slot's bits 16-17) requests it, linking the
+ * two slots through +cf, and phase 1 waits for the target to run it. */
+void func_8009ED68(void) {
+    s32 index;
+    FieldActor *other;
+    s32 i;
+
+    if (func_8009CDB4(1) != 0xFF) {
+        index = func_8009CDB4(1);
+        other = D_800AF880.components.descriptors[index].actor;
+        if (other->layer_flags & 0x100000) {
+            D_800B0078->slots[D_800B0078->slot].unk16 = 0;
+            other->slots[D_800B0078->unk0CF].unk22 = 0;
+        } else {
+            switch (D_800B0078->slots[D_800B0078->slot].unk16) {
+            case 0:
+                if (func_8009EB48(other, EVENT_OPERAND_BYTE(2) & 0x1F) == -1) {
+                    break;
+                }
+                for (i = 0; i < 8; i++) {
+                    if (other->slots[i].priority == 0xF && other->slots[i].unk22 == 0) {
+                        other->slots[i].resume_pc = func_800A3090(index, EVENT_OPERAND_BYTE(2) & 0x1F);
+                        other->slots[i].priority = EVENT_OPERAND_BYTE(2) >> 5;
+                        other->slots[D_800B0078->unk0CF].unk22 = 1;
+                        other->slots[i].tag = EVENT_OPERAND_BYTE(2) & 0x1F;
+                        D_800B0078->unk0CF = i;
+                        D_800B0078->slots[D_800B0078->slot].unk16 = 1;
+                        return;
+                    }
+                }
+                return;
+            case 1:
+                if (other->slot == D_800B0078->unk0CF || other->slots[D_800B0078->unk0CF].priority == 0xF) {
+                    D_800B0078->pc += 3;
+                    D_800B0078->slots[D_800B0078->slot].unk16 = 0;
+                    other->slots[D_800B0078->unk0CF].unk22 = 0;
+                    return;
+                }
+                D_800B00C0 = 1;
+                return;
+            default:
+                return;
+            }
+        }
+    }
+    D_800B0078->pc += 3;
+}
+
+/* Event: request event operand 2 on a selected actor and wait until it has
+ * started (phase 1 of the current slot's bits 16-17) and then finished
+ * (phase 2, its slot free again). */
+void func_8009F0A0(void) {
+    s32 index;
+    FieldActor *other;
+    s32 i;
+
+    if (func_8009CDB4(1) != 0xFF) {
+        index = func_8009CDB4(1);
+        other = D_800AF880.components.descriptors[index].actor;
+        if (other->layer_flags & 0x100000) {
+            D_800B0078->slots[D_800B0078->slot].unk16 = 0;
+            other->slots[D_800B0078->unk0CF].unk22 = 0;
+        } else {
+            switch (D_800B0078->slots[D_800B0078->slot].unk16) {
+            case 0:
+                if (func_8009EB48(other, EVENT_OPERAND_BYTE(2) & 0x1F) == -1) {
+                    break;
+                }
+                for (i = 0; i < 8; i++) {
+                    if (other->slots[i].priority == 0xF && other->slots[i].unk22 == 0) {
+                        other->slots[i].resume_pc = func_800A3090(index, EVENT_OPERAND_BYTE(2) & 0x1F);
+                        other->slots[i].priority = EVENT_OPERAND_BYTE(2) >> 5;
+                        other->slots[D_800B0078->unk0CF].unk22 = 1;
+                        D_800B0078->unk0CF = i;
+                        D_800B0078->slots[D_800B0078->slot].unk16 = 1;
+                        other->slots[i].tag = EVENT_OPERAND_BYTE(2) & 0x1F;
+                        return;
+                    }
+                }
+                return;
+            case 1:
+                if (other->slot == D_800B0078->unk0CF || other->slots[D_800B0078->unk0CF].priority == 0xF) {
+                    D_800B0078->slots[D_800B0078->slot].unk16 = 2;
+                    return;
+                }
+                D_800B00C0 = 1;
+                return;
+            case 2:
+                if (other->slots[D_800B0078->unk0CF].priority == 0xF) {
+                    D_800B0078->slots[D_800B0078->slot].unk16 = 0;
+                    other->slots[D_800B0078->unk0CF].unk22 = 0;
+                    D_800B0078->pc += 3;
+                    return;
+                }
+                D_800B00C0 = 1;
+                return;
+            default:
+                return;
+            }
+        }
+    }
+    D_800B0078->pc += 3;
+}
 
 /* Wander: every 16 frames turn the facing target by +/- an octant. */
 void func_8009F424(void) {
