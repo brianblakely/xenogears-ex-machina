@@ -162,7 +162,7 @@ typedef struct {
     s16 entryCount;         /* 0x0A */
     u8 b[6];                /* 0x0C */
     u8 pad12[2];
-    SVector *centres;       /* 0x14: a centre per ring */
+    SVECTOR *centres;       /* 0x14: a centre per ring */
     SurfaceEntry *entries;  /* 0x18 */
     SurfacePoint **strands; /* 0x1C: each ring's first point */
     SurfacePoly *polyList;  /* 0x20 */

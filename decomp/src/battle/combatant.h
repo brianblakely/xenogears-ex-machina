@@ -270,8 +270,9 @@ typedef struct {
 /* Battle work area D_800CCCE8; D_800C34B0 points at it. */
 typedef struct {
     Combatant records[11]; /* 0x0000 */
-    u32 savedWords[3][2]; /* 0x0FD0: each member's experience totals */
-    u8 padFE8[0x1000 - 0xFE8];
+    u32 expTotals[3][2];   /* 0x0FD0: each member's experience totals, saved at
+                            * battle start and counted up on the result screen */
+    s32 toCount[3][2];     /* 0x0FE8: result values still to count */
     u16 savedMax[3][2]; /* 0x1000: each member's maximum HP and EP */
     u8 pad100C[0x1028 - 0x100C];
     u8 savedStats[3][8]; /* 0x1028: each member's base stats */

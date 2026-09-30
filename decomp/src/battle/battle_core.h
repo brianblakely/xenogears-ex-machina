@@ -30,7 +30,11 @@ typedef struct {
     u8 unk2DC;         /* action index + 1 */
     u8 page;           /* +0x2DD command page */
     u8 menuDone;       /* +0x2DE */
-    u8 unk2DF[0x2E8 - 0x2DF];
+    u8 unk2DF;
+    u8 unk2E0;         /* shade step of the fading list quads (x16) */
+    u8 unk2E1[0x2E6 - 0x2E1];
+    u8 unk2E6;         /* chosen gear command + 0x10 */
+    u8 unk2E7;
     u8 unk2E8;         /* attack page target */
     u8 unk2E9;
     u8 unk2EA;
@@ -75,7 +79,9 @@ typedef struct {
     u8 unk9C;
     u8 unk9D;
     u8 unk9E;
-    u8 unk9F[0xA3 - 0x9F];
+    u8 unk9F;
+    u8 unkA0;          /* the result screen counts */
+    u8 unkA1[0xA3 - 0xA1];
     u8 unkA3;
     u8 unkA4;
     u8 unkA5;
@@ -232,18 +238,33 @@ extern u8 D_800D3014;
 /* Formation data (*800d3364). */
 typedef struct {
     u8 distance;
-    u8 unk1[7];
+    u8 points[7];      /* route points to the other group (formation area
+                        * index in bits 0-2, bit 0x80 a flag), 0xFF ends */
 } GroupLink;
 
 /* A formation group's position (8 bytes). */
 typedef struct {
     s16 x;
     s16 z;
-    u8 pad4[4];
+    s16 enemyX; /* +0x04 the position for enemies */
+    s16 enemyZ;
 } GroupPosition;
 
+/* A formation point. */
 typedef struct {
-    u8 unk0[0x100];
+    s16 x;
+    s16 z;
+} FormationPoint;
+
+/* A formation area (0x20 bytes): its centre and its member places. */
+typedef struct {
+    FormationPoint centre;
+    FormationPoint party[3];   /* +0x04 */
+    FormationPoint enemies[4]; /* +0x10 */
+} FormationArea;
+
+typedef struct {
+    FormationArea areas[8];
     GroupPosition positions[8]; /* +0x100 */
     GroupLink links[8][8];      /* +0x140 per formation-group pair */
 } Formation;
@@ -270,7 +291,10 @@ extern u8 D_800D2C8B[8];
 extern s32 D_800D2C60[8];
 
 typedef struct {
-    u8 unk0[0x34];
+    u8 unk0[0x26];
+    s16 unk26;         /* +0x26 timer, counted down while unk28 */
+    u8 unk28;
+    u8 unk29[0x34 - 0x29];
     u8 active;         /* +0x34 */
     u8 unk35[3];
 } BattleUnk3278Entry;
@@ -288,7 +312,9 @@ typedef struct {
 extern BattleUnk3278 *D_800D3278;
 
 typedef struct {
-    u8 unk0[0x3AC0];
+    POLY_FT4 unk0[148];
+    POLY_FT4 unk1720[90];
+    POLY_FT4 unk2530[138];
     POLY_FT4 unk3AC0[24];   /* list 0 */
     POLY_FT4 unk3E80[34];   /* list 2 */
     POLY_FT4 unk43D0[58];   /* list 10 */
@@ -296,7 +322,9 @@ typedef struct {
     POLY_FT4 unk4E70[8];    /* list 3 */
     POLY_FT4 unk4FB0[6];    /* list 4 */
     POLY_FT4 unk50A0[8];    /* list 5 */
-    POLY_FT4 unk51E0[22];   /* list 6 */
+    POLY_FT4 unk51E0[4];    /* list 6 */
+    POLY_FT4 unk5280[8];    /* list 7 */
+    POLY_FT4 unk53C0[10];   /* list 8 */
     POLY_FT4 unk5550[6];    /* list 11 */
     POLY_FT4 unk5640[40];   /* list 12 */
     POLY_FT4 unk5C80[6];    /* list 13 */
@@ -350,6 +378,8 @@ typedef struct {
     u8 action;        /* +0x16 committed action index */
     u8 pad17[0x1B - 0x17];
     u8 message;       /* +0x1B pending battle message id */
+    u8 itemCounts[0x30]; /* +0x1C the item list (also D_800D2CB0) */
+    u8 itemIds[0x30];    /* +0x4C (also D_800D2CE0) */
 } ActionCommit;
 
 extern ActionCommit D_800D2C94;
@@ -379,11 +409,14 @@ typedef struct {
 
 /* A window's primitives (0x5a8-byte heap block). */
 typedef struct {
-    u8 unk0[0x140];
+    POLY_FT4 corners[8]; /* corner glyphs: [corner * 2 + draw buffer] */
     POLY_FT4 frame[4][4]; /* +0x140 edge pieces, textures 1-4 */
     POLY_G4 shade[2];     /* +0x3C0 background, one per draw buffer */
     DR_MODE mode[2];      /* +0x408 */
-    u8 unk420[0x5A8 - 0x420];
+    u8 unk420[0x5A0 - 0x420];
+    s32 cornerCount;      /* +0x5A0 corner primitives built */
+    u8 buffer;            /* +0x5A4 draw buffer of the last placement */
+    u8 unk5A5[3];
 } WindowBlock;
 
 extern WindowBlock *D_800D2E38[7];
@@ -415,8 +448,8 @@ extern s32 D_800C3A84;
 extern s32 D_800C3A88;
 extern s32 D_800C3A8C;
 extern s32 D_800C3A90;
-extern s8 D_800C3A94;
-extern s8 D_800C3A98;
+extern u8 D_800C3A94;
+extern u8 D_800C3A98;
 extern s32 D_800C3A9C;
 extern s8 D_800C207C;
 extern s32 D_800C2080;
@@ -534,6 +567,8 @@ u8 func_8008B478(u8 member); /* the member has a gear list */
 u8 func_8008BED8(u8 member);
 void func_8008B908(u8 member);
 void func_8009AA44(u8 member);
+void func_8009AB38(u8 member); /* enable the member's deathblow commands */
+void func_80090B90(s32 x, s32 y, s32 *frame, u8 *ticks); /* animate a cursor glyph */
 void func_80087A38(u8 member);
 void func_80084A7C(u8 member);
 void func_80077698(void);
@@ -629,7 +664,6 @@ void func_8003700C(char *format, ...); /* debug print */
 void func_80028A60(s32 a);
 s32 func_800397FC(u8 *a, s32 b, s32 c);
 void func_8003A094(u8 *texture);
-void *memmove(void *to, const void *from, u32 size);
 void func_80039DB8(s32 effect);
 u8 func_8001BD40(u8 low, u8 high);
 void func_80034888(s32 arg0, u32 *ot, s32 buffer);
@@ -671,7 +705,7 @@ void func_800787E0(u8 value, u8 actor);
 void func_8007887C(u8 actor);
 void func_8007893C(u8 index, u8 actor);
 void func_80085C88(u8 queue);
-void func_80085CCC(u8 actor, u16 targets, s16 animation);
+void func_80085CCC(u8 actor, u16 targets, u16 animation);
 void func_80085350(void);
 void func_80085388(void);
 void func_800B89FC(s32 mode, u8 actor, s32 arg2, s32 arg3);
@@ -794,6 +828,9 @@ u16 func_8007A280(u8 slot, u8 attribute, u16 value, u8 write);
 u16 func_80089C9C(u16 mask, u8 slot);
 void func_80085AC4(u8 slot);
 void func_80071B94(u8 mode);
+
+/* Action list handlers (800793f0). */
+void func_80078E24(u8 slot, u8 index, u8 target);
 
 /* The 801e5000 module and the 80280000 module. */
 void func_801E5160(void);

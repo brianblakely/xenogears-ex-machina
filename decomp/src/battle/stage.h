@@ -37,7 +37,7 @@ typedef struct {
     u8 pad1A[0x24 - 0x1A];
     DR_MODE modes[2];    /* 0x24: after the sky, per frame buffer */
     DR_MODE modes2[2];   /* 0x3C: before it */
-    SVector grid[9][9];  /* 0x54 */
+    SVECTOR grid[9][9];  /* 0x54 */
     POLY_FT4 tiles[128]; /* 0x2DC: 64 per frame buffer */
     POLY_F4 flats[4];    /* 0x16DC */
     POLY_G4 quads[4];    /* 0x173C */
@@ -56,12 +56,12 @@ typedef struct {
  * backdrop quads' corners and the two colours of D_800D2D40/D_800D2D48. */
 typedef struct {
     struct {
-        CVector quad[4];
-        CVector flat;
-        CVector backdropFlat;
+        CVECTOR quad[4];
+        CVECTOR flat;
+        CVECTOR backdropFlat;
     } sides[4];
-    CVector backdropQuads[2][4];
-    CVector extra[2];
+    CVECTOR backdropQuads[2][4];
+    CVECTOR extra[2];
 } StageColors;
 
 extern ModelList *D_800C3E48; /* the stage's models (hierarchy D_800C3E38) */
@@ -77,11 +77,11 @@ extern s16 D_800C3EA8;          /* stage image height */
 /* Resident services. */
 void func_80027EAC(ResidentRecord18 *record);
 void func_80025D4C(s32 size, u16 *out, u16 *a, u16 *b, s32 r, s32 g, s32 bl, s32 mode, s32 level);
-void func_800273C4(void *handle, SVector *eye, SVector *target, Matrix *view, u32 *ot, s32 buffer);
+void func_800273C4(void *handle, SVECTOR *eye, SVECTOR *target, MATRIX *view, u32 *ot, s32 buffer);
 
-void func_800A48EC(ModelList *models, ModelPart *root, Matrix *view, s32 arg3, s32 arg4, u32 *ot, s32 buffer,
+void func_800A48EC(ModelList *models, ModelPart *root, MATRIX *view, s32 arg3, s32 arg4, u32 *ot, s32 buffer,
                    s32 depth);
-void func_800A4DB8(StageGeometry *sky, SVector *eye, SVector *target, Matrix *view, u32 *ot, s32 buffer);
+void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *view, u32 *ot, s32 buffer);
 void func_800A64E4(void);
 void func_800A6884(u8 *out, s32 index, u8 *color);
 void func_800A6AE8(void);
