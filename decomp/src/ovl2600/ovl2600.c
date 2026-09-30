@@ -930,13 +930,48 @@ void func_801C983C(void) {
     func_801C92BC();
 }
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C989C);
+/* Play menu sound `sound` from the loaded effect bank when sounds are on. */
+void func_801C989C(u8 sound) {
+    if (D_800625A0->sounds) {
+        func_80039DB8((D_800625A0->effect_bank->id << 16) | sound);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C98E8);
 
 INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C9AF4);
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C9C34);
+/* Run one menu frame: check the stack guard, read input, check the reset
+ * combination, swap to the other draw buffer, draw the screen and present
+ * it. */
+void func_801C9C34(void) {
+    MenuState *state;
+    DrawEnv *env;
+    s32 shown;
+
+    if (*D_8005917C != -1) {
+        __asm__ volatile("break 1024");
+    }
+    func_801C98E8();
+    func_80019CA0();
+    state = D_800625A0;
+    env = &state->envs[0];
+    if (state->draw_env == env) {
+        env = &state->envs[1];
+    }
+    state->draw_env = env;
+    state->buffer_index = state->buffer_index == 0;
+    func_80044AD8(state->draw_env->ot, 16);
+    func_801C9AF4();
+    func_801C983C();
+    shown = D_800625A0->buffer_index == 0;
+    func_800445D0(0);
+    func_8004B54C(0);
+    func_80044C44(&D_800625A0->draw_env->draw);
+    func_80044E9C(&D_800625A0->draw_env->disp);
+    func_8004495C(&D_800625A0->block_350->screen, 0, shown * 0xE0);
+    func_80044BD0(&D_800625A0->draw_env->ot[15]);
+}
 
 /* Allocate the markers and set them up for `mode`: 0 and 2 build all four
  * at their home positions (0 also turns them on following the cursor), 3
@@ -977,13 +1012,30 @@ void func_801C9F1C(void) {
     func_800320E8(D_800625A0->markers);
 }
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C9F60);
+/* Start view motion 3 with its sound. */
+void func_801C9F60(void) {
+    D_800625A0->view_motion = 3;
+    func_801C989C(0x5B);
+}
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C9F90);
+/* Start view motion 4 with its sound. */
+void func_801C9F90(void) {
+    D_800625A0->view_motion = 4;
+    func_801C989C(0x5C);
+}
 
 INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C9FC0);
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801CA39C);
+/* Turn the message lines off, release their four blocks and run a frame. */
+void func_801CA39C(void) {
+    s32 i;
+
+    D_800625A0->flags->b_2E = 0;
+    for (i = 0; i < 4; i++) {
+        func_800320E8(D_800625A0->message_lines[i]);
+    }
+    func_801C9C34();
+}
 
 INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801CA400);
 
@@ -991,11 +1043,48 @@ INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801CA558);
 
 INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801CADC8);
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801CB1C4);
+/* Render the name being entered (text codes `codes`) into VRAM at (0x180, 0xEA). */
+void func_801CB1C4(u8 *codes) {
+    RECT rect;
+    u8 *image = func_80031BDC(0x3F6, 0);
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801CB25C);
+    func_8003F8E8(image, 0x3F6);
+    func_80034EAC(codes, image, 0x24, 0);
+    rect.x = 0x180;
+    rect.y = 0xEA;
+    rect.w = 0x28;
+    rect.h = 13;
+    func_80044894(&rect, image);
+    func_800445D0(0);
+    func_800320E8(image);
+}
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801CB2F0);
+/* Start a name entry: fill the entry buffer `codes` with blanks (code 0x1C)
+ * ending in the terminator, and copy the character's current name. */
+void func_801CB25C(u8 *codes, u8 *name) {
+    s32 i;
+
+    for (i = 0; i < 20; i += 2) {
+        codes[i] = 0x1C;
+        codes[i + 1] = 0;
+        name[i] = D_8006D634.names[D_80059171][i];
+        name[i + 1] = (D_8006D634.names[D_80059171] + 1)[i];
+    }
+    codes[18] = 0x1F;
+    codes[19] = 0;
+}
+
+/* Number of two-byte text codes before the terminator (0x1F 0x00). */
+u8 func_801CB2F0(u8 *codes) {
+    s32 i;
+
+    for (i = 0; i < 20; i += 2) {
+        if (codes[i] == 0x1F && codes[i + 1] == 0) {
+            break;
+        }
+    }
+    return i / 2;
+}
 
 INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801CB33C);
 

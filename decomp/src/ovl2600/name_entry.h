@@ -207,7 +207,7 @@ typedef struct {
     u8 pad_1A[0x20 - 0x1A];
     u8 panel_20[7]; /* 0x20: per panel */
     u8 panel_27[7]; /* 0x27: per panel */
-    u8 pad_2E;
+    u8 b_2E;        /* 0x2E: message lines shown */
     u8 markers_on;  /* 0x2F */
     u8 party[3]; /* 0x30: party members, 0xFF empty */
     u8 pad_33;
@@ -231,7 +231,10 @@ typedef struct {
     u8 input_code;       /* 0x325: decoded input of this frame */
     u8 card_poll_timer;  /* 0x326 */
     u8 active;           /* 0x327 */
-    u8 pad_328[0x32C - 0x328];
+    u8 pad_328;
+    u8 view_motion;      /* 0x329: nonzero while the view moves */
+    u8 sounds;           /* 0x32A: nonzero plays menu sounds */
+    u8 pad_32B;
     MenuWork *work;      /* 0x32C */
     u8 *block_330;       /* 0x330: 0xCC bytes */
     u8 b_334;            /* 0x334 */
@@ -256,7 +259,9 @@ typedef struct {
     MenuLabel labels[4];   /* 0x4E0: the screen's command labels */
     MenuLabel list_labels[8]; /* 0x6E0 */
     MenuLabel row_labels[6];  /* 0xAE0 */
-    u8 pad_DE0[0x1E20 - 0xDE0];
+    u8 pad_DE0[0x1DE0 - 0xDE0];
+    void *message_lines[4]; /* 0x1DE0 */
+    u8 pad_1DF0[0x1E20 - 0x1DF0];
     u8 *entry;             /* 0x1E20: name entry block (0xDEC bytes) */
 } MenuState;
 
@@ -276,6 +281,7 @@ extern u16 D_800595D4;   /* normal text CLUT */
 extern u16 D_8006F364;   /* characters that may join */
 extern u16 D_8006F366;
 extern u8 D_8006F368[3]; /* current party (0xFF empty) */
+extern u8 D_80059171;    /* character being named */
 /* A character record (0xA4 bytes) of the game data. */
 typedef struct {
     u8 pad_0[0x4C];
@@ -330,6 +336,7 @@ extern s32 func_80036410(void);                /* input queue overflowed */
 extern void func_80035DB0(void);               /* reset the input queue */
 extern s32 func_80035CDC(void);                /* dequeue an input entry */
 extern s32 D_80059488;                         /* vsync count */
+extern s32 *D_8005917C;                        /* stack guard word (-1 intact) */
 extern u16 D_800594A4;                         /* dequeued buttons */
 extern u16 D_8005948C;                         /* dequeued buttons (pressed) */
 extern void func_80043B48(u32 *ot, void *prim); /* AddPrim */
