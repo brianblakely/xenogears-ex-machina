@@ -7984,7 +7984,115 @@ void func_800979F0(void) {
 
 #include "field_motion.h"
 
+#ifdef NON_MATCHING
+s32 func_80097A50(s32 speed) {
+    VECTOR unused; /* the original frame holds 0x10 unused bytes */
+    VECTOR delta;
+    VECTOR direction;
+    VECTOR step;
+    FieldModel *model;
+    s32 reach;
+    s32 extra;
+    s32 turning;
+    s32 x;
+    s32 y;
+    s32 z;
+    s32 from_x;
+    s32 from_y;
+    s32 from_z;
+    s32 angle;
+    s32 distance;
+    s32 scale;
+
+    turning = -1;
+    y = 0;
+    z = 0;
+    model = D_800AF880.components.descriptors[D_800AFD1C].model;
+    x = 0;
+    if (D_800AF880.components.descriptors[D_800AFD1C].actor->layer_flags & 0x2000) {
+        model->unk18 = 0x8000000 / (u16)D_800B0078->unk76;
+    } else {
+        model->unk18 = 0x4000000 / (u16)D_800B0078->unk76;
+    }
+    reach = func_80099A8C(model->unk18 >> 15) + 1;
+    extra = 0;
+    switch (D_800B0078->slots[D_800B0078->slot].move_mode) {
+    case 0:
+        x = func_8009CF78(1, EVENT_OPERAND_BYTE(5));
+        z = func_8009CFBC(3, EVENT_OPERAND_BYTE(5));
+        y = func_8009D000(6, EVENT_OPERAND_BYTE(5));
+        break;
+    case 1:
+        x = func_8009CF78(1, EVENT_OPERAND_BYTE(5)) + D_800B0078->target[0];
+        z = func_8009CFBC(3, EVENT_OPERAND_BYTE(5)) + D_800B0078->target[2];
+        y = D_800B0078->target[1] + func_8009D000(6, EVENT_OPERAND_BYTE(5));
+        break;
+    case 2:
+        if (func_8009CDB4(1) == 0xFF) {
+            return 0;
+        }
+        extra = func_80099A8C((u16)D_800AF880.components.descriptors[func_8009CDB4(1)].actor->gravity.s.whole +
+                              (u16)D_800B0078->gravity.s.whole);
+        x = D_800B0078->target[0];
+        z = D_800B0078->target[2];
+        y = func_8009CF78(2, EVENT_OPERAND_BYTE(4));
+        break;
+    case 3:
+        angle = func_800ACDEC(1) & 0xFFF;
+        x = (D_800B0078->target[0] + (func_8003F8CC(angle) << 5)) >> 12;
+        z = D_800B0078->target[2] + (-(func_8003F8B0(angle) << 5) >> 12);
+        y = D_800B0078->target[1] + func_8009CF78(3, EVENT_OPERAND_BYTE(7));
+        break;
+    }
+    from_x = WHOLE(D_800B0078->position[0]);
+    from_z = WHOLE(D_800B0078->position[2]);
+    from_y = WHOLE(D_800B0078->position[1]);
+    delta.vx = from_x - x;
+    delta.vy = from_y - y;
+    delta.vz = from_z - z;
+    func_80048D7C(&delta, &direction);
+    scale = model->unk18 >> 8;
+    step.vx = -((direction.vx * scale) >> 4);
+    step.vy = -((direction.vy * scale) >> 4);
+    step.vz = -((direction.vz * scale) >> 4);
+    D_800B0078->unk40[0] = step.vx;
+    D_800B0078->unk40[1] = step.vy;
+    D_800B0078->unk40[1] = 0;
+    D_800B0078->unk40[2] = step.vz;
+    distance = func_80099A04(x - from_x, y - from_y, z - from_z);
+    if (WHOLE(D_800B0078->unk40[0]) == 0 && WHOLE(D_800B0078->unk40[2]) == 0) {
+        turning = 0;
+    }
+    D_800B0078->flags |= 0x400000;
+    if (D_800B0078->slots[D_800B0078->slot].value == 0 || reach + extra >= distance) {
+        if (turning == -1) {
+            if (speed != 0) {
+                if (!(D_800B0078->flags & 0x8000)) {
+                    D_800B0078->heading_goal = D_800B0078->heading = (u16)D_800B0078->heading_goal | 0x8000;
+                } else {
+                    D_800B0078->heading_goal = D_800B0078->heading = D_800B0078->unk11C | 0x8000;
+                }
+            } else {
+                D_800B0078->heading_goal = D_800B0078->heading = func_8007B694(&step) | 0x8000;
+            }
+        }
+        D_800B0078->unkEC = (D_800B0078->position[1] + step.vy) >> 16;
+        D_800B0078->slots[D_800B0078->slot].move_mode = 0;
+        D_800B0078->slots[D_800B0078->slot].value = 0xFFFF;
+        return 0;
+    }
+    if (turning == -1) {
+        D_800B0078->heading_goal = D_800B0078->heading = func_8007B694(&step) | 0x8000;
+    }
+    D_800B0078->unkEC = (D_800B0078->position[1] + step.vy) >> 16;
+    D_800B0078->flags |= 0x40000;
+    D_800B00C0 = 1;
+    D_800B0078->slots[D_800B0078->slot].value--;
+    return -1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80097A50);
+#endif
 
 s32 func_80099AC0(s32 speed);
 
