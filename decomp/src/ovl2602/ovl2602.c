@@ -1344,7 +1344,75 @@ void func_801CB498(u8 sound) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CB4E4);
+/* Wait for a controller (sound paused meanwhile), then decode the frame's input into +325. */
+void func_801CB4E4(void) {
+    u8 code;
+    s32 saved;
+    u8 waiting;
+    u8 paused;
+
+    code = 8;
+    waiting = 1;
+    paused = 0;
+    do {
+        if (func_80035734(0) == 0) {
+            if (!paused) {
+                paused++;
+                func_80037EE4();
+                saved = D_80059488;
+            }
+        } else {
+            waiting--;
+            if (paused) {
+                func_80037E8C();
+                D_80059488 = saved;
+            }
+        }
+    } while (waiting);
+    if (func_80036410() != 0) {
+        func_80035DB0();
+    } else {
+        while (func_80035CDC() != 0) {
+            if (D_800594A4 & 0x2000) {
+                code = 0;
+                func_801CB498(1);
+                break;
+            } else if (D_800594A4 & 0x4000) {
+                code = 1;
+                func_801CB498(1);
+                break;
+            } else if (D_800594A4 & 0x8000) {
+                code = 2;
+                func_801CB498(1);
+                break;
+            } else if (D_800594A4 & 0x1000) {
+                code = 3;
+                func_801CB498(1);
+                break;
+            } else if (D_8005948C & 0x20) {
+                code = 4;
+                break;
+            } else if (D_8005948C & 0x40) {
+                code = 5;
+                func_801CB498(3);
+                break;
+            } else if (D_8005948C & 0x80) {
+                code = 6;
+                break;
+            } else if (D_8005948C & 0x10) {
+                code = 7;
+                break;
+            } else if (D_800594A4 & 4) {
+                code = 0xA;
+                break;
+            } else if (D_800594A4 & 8) {
+                code = 9;
+                break;
+            }
+        }
+    }
+    D_800625A0->input = code;
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CB690);
 
