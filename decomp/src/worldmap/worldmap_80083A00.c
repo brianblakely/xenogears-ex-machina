@@ -207,7 +207,66 @@ void func_80085158(VECTOR *position, VECTOR *offset, VECTOR *normal, u16 index, 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80085158);
 #endif
 
+/* Does the vertical segment from `position` down by `height` cross the plane
+ * of face `face` of scene object `index`? Returns -1 if so, else 0. */
+#ifdef NON_MATCHING /* register allocation and load scheduling differ */
+s32 func_80085418(VECTOR *position, s32 height, u16 index, u16 face) {
+    s32 flag;
+    SceneObject *object;
+    MeshFace *corners;
+    SVECTOR *vertices;
+    VECTOR *origin;
+    VECTOR *edge1;
+    VECTOR *edge2;
+    s32 x;
+    s32 y;
+    s32 z;
+
+    object = &D_8009C620[index];
+    FACE_SCRATCH->m = object->matrix;
+    FACE_SCRATCH->m.t[2] = 0;
+    FACE_SCRATCH->m.t[0] = 0;
+    FACE_SCRATCH->p[1].vz = 0x800;
+    FACE_SCRATCH->p[1].vy = 0x800;
+    FACE_SCRATCH->p[1].vx = 0x800;
+    FACE_SCRATCH->m.t[1] = object->position.vy;
+    ScaleMatrix(&FACE_SCRATCH->m, &FACE_SCRATCH->p[1]);
+    SetRotMatrix(&FACE_SCRATCH->m);
+    SetTransMatrix(&FACE_SCRATCH->m);
+    edge1 = &FACE_SCRATCH->p[1];
+    edge2 = &FACE_SCRATCH->p[2];
+    vertices = ((Mesh *)object->unk44)->vertices;
+    corners = ((Mesh *)object->unk44)->faces + face;
+    func_8004A6DC(&vertices[corners->corner[0]], &FACE_SCRATCH->p[0], &flag);
+    func_8004A6DC(&vertices[corners->corner[1]], &FACE_SCRATCH->p[1], &flag);
+    func_8004A6DC(&vertices[corners->corner[2]], &FACE_SCRATCH->p[2], &flag);
+    origin = &FACE_SCRATCH->p[0];
+    x = origin->vx;
+    y = origin->vy;
+    z = origin->vz;
+    edge1->vx -= x;
+    edge1->vy -= y;
+    edge1->vz -= z;
+    edge2->vx -= x;
+    edge2->vy -= y;
+    edge2->vz -= z;
+    OuterProduct0(&FACE_SCRATCH->p[2], &FACE_SCRATCH->p[1], &FACE_SCRATCH->p[2]);
+    edge2->vx >>= 2;
+    edge2->vy >>= 2;
+    edge2->vz >>= 2;
+    func_80048D7C(&FACE_SCRATCH->p[2], &FACE_SCRATCH->normal);
+    FACE_SCRATCH->probe.m[1][0] = FACE_SCRATCH->probe.m[0][0] =
+        (position->vx >> 12) - object->position.vx - origin->vx;
+    FACE_SCRATCH->probe.m[0][1] = (position->vy >> 12) - origin->vy;
+    FACE_SCRATCH->probe.m[1][1] = FACE_SCRATCH->probe.m[0][1] - height;
+    FACE_SCRATCH->probe.m[1][2] = FACE_SCRATCH->probe.m[0][2] =
+        object->position.vz - (position->vz >> 12) - origin->vz;
+    ApplyMatrixLV(&FACE_SCRATCH->probe, &FACE_SCRATCH->normal, &FACE_SCRATCH->side);
+    return (FACE_SCRATCH->side.vx ^ FACE_SCRATCH->side.vy) >> 31;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80085418);
+#endif
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80085760);
 

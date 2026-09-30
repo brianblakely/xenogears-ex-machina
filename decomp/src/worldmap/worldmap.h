@@ -836,9 +836,14 @@ void SetLightMatrix(MATRIX *m);
 /* Scratchpad work area of the face probe. */
 typedef struct {
     VECTOR p[3];      /* face corners; p[1] first holds the scale */
-    u8 pad30[0xC0];
+    VECTOR normal;    /* 0x30 */
+    VECTOR side;      /* 0x40: probe ends against the plane */
+    u8 pad50[0xA0];
     MATRIX m;         /* 0xF0 */
+    MATRIX probe;     /* 0x110: rows are the probe segment ends */
 } FaceScratch;
+
+VECTOR *ApplyMatrixLV(MATRIX *m, VECTOR *v, VECTOR *out);
 
 #define FACE_SCRATCH ((FaceScratch *)0x1F800000)
 
