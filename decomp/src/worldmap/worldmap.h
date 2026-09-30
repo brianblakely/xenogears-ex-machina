@@ -407,7 +407,8 @@ typedef struct {
 typedef struct SceneObject {
     s16 visible;
     s16 unk2;
-    s32 unk4;
+    u16 flags;                  /* 0x04: 1 solid */
+    s16 unk6;
     Vec3 position;              /* 0x08 */
     s32 unk14;
     SVECTOR angle;              /* 0x18 */
@@ -650,6 +651,13 @@ s32 func_80093A5C(s32 x, s32 z);  /* terrain height */
 s16 func_80093F18(Vec3 *position);
 void func_8003F738(SVECTOR *angle, MATRIX *m);
 void func_80097DC0(void);
+
+extern u16 D_8009A68C[];
+extern void *D_8009D788[16]; /* submitted frame lists */
+
+s16 func_80084DB8(s32 probe, s16 object);
+void func_8007EBBC(SceneObject *object, PolyFT4 *quads, s32 count, s32 abr);
+void func_800963E4(s32 *list);
 
 /* Frame state. */
 typedef struct {

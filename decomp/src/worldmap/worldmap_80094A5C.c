@@ -83,7 +83,22 @@ s32 func_800962B0(s32 a, s32 b, s32 c, s32 d) {
     return -1;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80096328);
+/* Submit the current effect command list; -1 when there is nothing to
+ * send or its ring slot is still busy. */
+s32 func_80096328(void) {
+    s32 *list;
+
+    list = (s32 *)((u8 *)D_8009BE08 + D_8009BE44 * 0x420);
+    if (*list != 0 && D_8009D788[D_8009BE44] == NULL) {
+        func_800963E4(list);
+        D_8009D808 = 0;
+        D_8009D788[D_8009BE44] = list;
+        D_8009BE44 = (D_8009BE44 + 1) & 0xF;
+        return 0;
+    }
+    D_8009D808 = 0;
+    return -1;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_800963E4);
 

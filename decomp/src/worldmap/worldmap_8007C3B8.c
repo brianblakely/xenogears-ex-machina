@@ -2,11 +2,54 @@
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007C3B8", func_8007C3B8);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007C3B8", func_8007C724);
+/* Start a scripted camera close behind the player. */
+s32 func_8007C724(s32 index) {
+    WorldmapActor *actor;
+
+    D_8009BE0C = 0x78;
+    D_8009D3F0 = 0x400000;
+    D_8009D144 = 1;
+    actor = &D_8009BE24[index];
+    actor->unk7C = 0x1000;
+    D_8009BD38.vx = -0x40;
+    D_8009BD38.vy = 0;
+    D_8009BD38.vz = 0;
+    D_8009D55C.target.vx = D_8009BE28.target.vx = D_8009C5AC.vx;
+    D_8009D55C.target.vy = D_8009BE28.target.vy = D_8009C5AC.vy;
+    D_8009D55C.target.vz = D_8009BE28.target.vz = D_8009C5AC.vz;
+    actor->unk58 = 0x40;
+    actor->u.step = 0;
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007C3B8", func_8007C7D8);
 
+/* Link scene objects 0-3 to 4, hide 4 and reset its rotation; place the actor. */
+#ifdef NON_MATCHING /* actor and constants swap registers */
+s32 func_8007CC6C(s32 index) {
+    WorldmapActor *actor;
+
+    func_800848B4(4, 0);
+    func_800848B4(4, 2);
+    func_800848B4(4, 1);
+    func_800848B4(4, 3);
+    D_8009C620[4].visible = 0;
+    D_8009C620[4].angle.vz = 0;
+    D_8009C620[4].angle.vy = 0;
+    D_8009C620[4].angle.vx = 0;
+    func_8004A92C(&D_8009C620[4].angle, &D_8009C620[4].matrix);
+    actor = &D_8009BE24[index];
+    actor->unk40 = -0x4000;
+    actor->position.vx = 0xD00000;
+    actor->unk3C = 0;
+    actor->unk38 = 0;
+    actor->position.vy = 0;
+    actor->position.vz = 0x400000;
+    return 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007C3B8", func_8007CC6C);
+#endif
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007C3B8", func_8007CD20);
 

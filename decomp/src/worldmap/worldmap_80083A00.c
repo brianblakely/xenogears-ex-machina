@@ -43,7 +43,27 @@ void func_800848B4(s32 parent, s32 child) {
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_800848F4);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80084D00);
+/* Probe the solid scene objects; the first hit's result, with its index. */
+s16 func_80084D00(s32 probe, s16 *hit) {
+    SceneObject *object;
+    s16 i;
+    s16 result;
+
+    object = D_8009C620;
+    i = 0;
+    while (i < D_8009D7E0) {
+        if (object->flags & 1) {
+            result = func_80084DB8(probe, i);
+            if (result != 0) {
+                *hit = i;
+                return result;
+            }
+        }
+        i++;
+        object++;
+    }
+    return 0;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80084DB8);
 
@@ -449,7 +469,23 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008B2BC);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008B498);
+/* Create the second party member's model sprite, if present. */
+s32 func_8008B498(s32 index) {
+    WorldmapActor *actor;
+    s32 result;
+
+    actor = &D_8009BE24[index];
+    result = 1;
+    if (D_8006F368[1] != 0xFF) {
+        actor->handle = func_80024524(D_8009CD34[1], 0x110, 0x1E0, 0x150, 0x100, 0x40);
+        func_800245D8(actor->handle, 0);
+        func_80022000(actor->handle, 0x1800);
+        ((s32 *)actor->handle)[15] &= ~4;
+    } else {
+        result = 3;
+    }
+    return result;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008B54C);
 
@@ -457,7 +493,23 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008BB40);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008BD1C);
+/* Create the third party member's model sprite, if present. */
+s32 func_8008BD1C(s32 index) {
+    WorldmapActor *actor;
+    s32 result;
+
+    actor = &D_8009BE24[index];
+    result = 1;
+    if (D_8006F368[2] != 0xFF) {
+        actor->handle = func_80024524(D_8009CD34[2], 0x120, 0x1E0, 0x160, 0x100, 0x40);
+        func_800245D8(actor->handle, 0);
+        func_80022000(actor->handle, 0x1800);
+        ((s32 *)actor->handle)[15] &= ~4;
+    } else {
+        result = 3;
+    }
+    return result;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008BDD0);
 

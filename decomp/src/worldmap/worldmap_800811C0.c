@@ -20,7 +20,18 @@ s32 func_800813E8(s32 index) {
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_80081470);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_800816DC);
+/* Build `count` semi-transparent textured quads on page 0x180,0. */
+void func_800816DC(SceneObject *object, PolyFT4 *quads, s32 count, s32 abr) {
+    s32 i;
+
+    for (i = 0; i < count; i++) {
+        setPolyFT4(quads);
+        quads->tpage = func_80043A1C(0, abr, 0x180, 0);
+        setSemiTrans(quads, 1);
+        quads++;
+    }
+    func_8003F968(object->prims2, object->prims, count * sizeof(PolyFT4));
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_800817A0);
 

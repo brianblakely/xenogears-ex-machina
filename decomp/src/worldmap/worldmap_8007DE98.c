@@ -28,7 +28,29 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007DE98", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007DE98", func_8007EE34);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007DE98", func_8007F8AC);
+/* Build scene object `index` and start its fall. */
+s32 func_8007F8AC(s32 index) {
+    WorldmapActor *actor;
+    SceneObject *object;
+    s32 slot;
+    s32 abr;
+
+    slot = index - 4;
+    actor = &D_8009BE24[index];
+    object = &D_8009C620[slot + 4];
+    abr = 3;
+    if (slot == 4) {
+        abr = 1;
+    }
+    func_8007EBBC(object, object->prims, object->def->count, abr);
+    actor->unk38 = -0x85A;
+    actor->unk40 = 0xDA6;
+    actor->state = 0;
+    actor->unk3C = 0;
+    actor->unk5C = D_8009A68C[slot];
+    actor->wait = 0x3C;
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007DE98", func_8007F968);
 
