@@ -754,11 +754,9 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_800248D4", func_8002
  * of `prims`, from `index`) through the GTE with the geometry offset at
  * (x, y), mirrored by its flip bytes; unturned parts drawn mirrored lose a
  * texel at the edge. Returns the number of parts. */
-/* Nonmatching: the original spills the `prims` argument to its home slot and walks the list in a separate register; this build keeps `prims` in a callee-saved register throughout. */
-#ifdef NON_MATCHING
 s32 func_80025FA8(u16 *sheet, s32 id, POLY_FT4 *prims, s32 index, s16 x, s16 y, s16 scale_x, s16 scale_y,
                   s16 angle) {
-    MATRIX matrix = {{{0x1000, 0, 0}, {0, 0x1000, 0}, {0, 0, 0x1000}}, {0, 0, 0}};
+    MATRIX matrix = D_800188CC;
     VECTOR scale;
     long offset_x;
     long offset_y;
@@ -790,7 +788,7 @@ s32 func_80025FA8(u16 *sheet, s32 id, POLY_FT4 *prims, s32 index, s16 x, s16 y, 
     SetTransMatrix(&matrix);
     entry = (s16 *)(sheet[id + 2] + (s32)sheet);
     for (i = 0; i != entry[0]; i++) {
-        poly = &prims[index];
+        poly = prims + i * 2 + index;
         part = &((SheetPart *)(entry + 2))[i];
         SetPolyFT4(poly);
         SetSemiTrans(poly, 0);
@@ -854,16 +852,12 @@ s32 func_80025FA8(u16 *sheet, s32 id, POLY_FT4 *prims, s32 index, s16 x, s16 y, 
         poly->v2 = v + h;
         poly->u3 = u + w;
         poly->v3 = v + h;
-        prims += 2;
     }
     SetGeomOffset(offset_x, offset_y);
     SetGeomScreen(screen);
     PopMatrix();
     return entry[0];
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_800248D4", func_80025FA8);
-#endif
 
 /* The texture of sheet entry `id`: its first word, mode, CLUT position and
  * the VRAM position of its pixels (page plus column and row). */
@@ -887,7 +881,114 @@ void func_80026338(u16 *sheet, s32 id, s32 *first, s32 *mode, s32 *clut_x, s32 *
     *y = (s16)(part->page_y & 0xFF00) + part->v;
 }
 
+/* Draw entry `id` of a sprite sheet at screen (x, y) without the GTE:
+ * each part becomes a textured quad (every second one of `prims`, from
+ * `index`) placed and sized by `scale` / 4096, mirrored by the flip
+ * arguments and by its own flip bytes; mirrored parts lose a texel at the
+ * edge. Returns the number of parts. */
+/* Nonmatching: the spilled scale and part offset take each other's stack slots (0x38/0x3c). */
+#ifdef NON_MATCHING
+s32 func_800263E4(u16 *sheet, s32 id, POLY_FT4 *prims, s32 index, s16 x, s16 y, u16 scale, u8 flip_x, u8 flip_y) {
+    s16 *entry;
+    SheetPart *part;
+    POLY_FT4 *poly;
+    s32 i;
+    s32 left;
+    s32 top;
+    s32 width;
+    s32 height;
+    s16 dx;
+    s16 dy;
+    s16 dw;
+    s16 dh;
+    s16 u;
+    s16 v;
+    s16 w;
+    s16 h;
+    s16 a;
+    s16 b;
+
+    entry = (s16 *)(sheet[id + 2] + (s32)sheet);
+    for (i = 0; i != entry[0]; i++) {
+        poly = prims + i * 2 + index;
+        part = &((SheetPart *)(entry + 2))[i];
+        dx = left = (s16)part->x * scale / 4096;
+        dy = top = (s16)part->y * scale / 4096;
+        dw = width = (s16)part->w * scale / 4096;
+        dh = height = (s16)part->h * scale / 4096;
+        SetPolyFT4(poly);
+        SetSemiTrans(poly, 0);
+        SetShadeTex(poly, 1);
+        poly->tpage = GetTPage(part->mode, 0, (s16)part->page_x, (s16)part->page_y);
+        poly->clut = GetClut(part->clut_x, part->clut_y);
+        if (flip_x) {
+            dw = -width;
+            dx = -left;
+        }
+        if (flip_y) {
+            dy = -top;
+            dh = -height;
+        }
+        u = part->u;
+        v = part->v;
+        w = part->w;
+        h = part->h;
+        if (!part->flip_x) {
+            a = x + dx;
+            b = dw + a;
+            poly->x0 = a;
+            poly->x1 = b;
+            poly->x2 = a;
+            poly->x3 = b;
+        } else {
+            a = x + dx;
+            b = dw + a;
+            poly->x0 = b;
+            poly->x1 = a;
+            poly->x2 = b;
+            poly->x3 = a;
+        }
+        if (!part->flip_y) {
+            a = y + dy;
+            b = dh + a;
+            poly->y0 = a;
+            poly->y1 = a;
+            poly->y2 = b;
+            poly->y3 = b;
+        } else {
+            a = y + dy;
+            b = dh + a;
+            poly->y0 = b;
+            poly->y1 = b;
+            poly->y2 = a;
+            poly->y3 = a;
+        }
+        if (poly->x3 < poly->x0) {
+            if (--u < 0) {
+                u = 0;
+                w--;
+            }
+        }
+        if (poly->y3 < poly->y0) {
+            if (--v < 0) {
+                v = 0;
+                h--;
+            }
+        }
+        poly->u0 = u;
+        poly->v0 = v;
+        poly->u1 = u + w;
+        poly->v1 = v;
+        poly->u2 = u;
+        poly->v2 = v + h;
+        poly->u3 = u + w;
+        poly->v3 = v + h;
+    }
+    return entry[0];
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_800248D4", func_800263E4);
+#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_800248D4", func_8002675C);
 

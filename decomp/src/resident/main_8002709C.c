@@ -19,6 +19,11 @@
 #include "console.h"
 #include "sound.h"
 
+/* The identity matrix the sprite sheet draw 80025fa8 starts from. It opens
+ * this unit's rodata: the sprite unit before it emits its constants ahead
+ * of its jump tables, and this follows its last table (0x800188cc). */
+const MATRIX D_800188CC = {{{0x1000, 0, 0}, {0, 0x1000, 0}, {0, 0, 0x1000}}, {0, 0, 0}};
+
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002709C", func_8002709C);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002709C", func_800273C4);

@@ -61,7 +61,11 @@ segments:
       # Third sprite unit: its interpreter's jump table (800186E0) follows
       # the second unit's 15-entry table (800186A4) with no `.align 3` pad.
       - [0x8EE0, .rodata, sprite_800248D4]
-      - [0x90EC, .rodata, main_8002709C]
+      # Texture-scroll and disc unit: its rodata opens with the identity
+      # matrix 800188CC that the sprite sheet draw 80025FA8 copies; the
+      # sprite unit emits its constants ahead of its jump tables, so the
+      # matrix after the last table is this unit's.
+      - [0x90CC, .rodata, main_8002709C]
       - [0x90F4, .rodata, main_8002A260]
       # Heap unit (80031894-80032E7C): its allocation-name strings open the
       # rodata (0x80018998 "DelayFree"), its $gp-relative accesses need -G8.

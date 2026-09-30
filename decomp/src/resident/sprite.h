@@ -404,6 +404,7 @@ typedef struct {
     VECTOR out;     /* +0x14 */
 } ColourScratch;
 #define COLOUR_SCRATCH ((ColourScratch *)0x1F800000)
+extern const MATRIX D_800188CC; /* identity */
 extern SVECTOR D_8004FDC0[4]; /* corners of a sheet part being drawn */
 extern MATRIX D_8004FD80; /* light colour matrix of lit sprite models */
 extern MATRIX D_8004FDA0; /* light direction matrix of lit sprite models */
