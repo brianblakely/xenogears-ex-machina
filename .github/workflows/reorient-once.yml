@@ -1,0 +1,55 @@
+name: Apply matching-first refactor
+on:
+  push:
+    branches: [refactor/matching-first-decomp]
+    paths: [.github/reorient.py]
+permissions:
+  contents: write
+concurrency:
+  group: matching-first-refactor
+  cancel-in-progress: false
+jobs:
+  refactor:
+    if: github.ref == 'refs/heads/refactor/matching-first-decomp'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+      - name: Apply mechanical and authored changes
+        run: python3 .github/reorient.py
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - name: Check public source and tests
+        id: checks
+        continue-on-error: true
+        run: |
+          nix develop path:./nix -c python3 tools/repository/check.py --preset debug
+      - name: Check matching tools
+        id: matching
+        continue-on-error: true
+        run: |
+          nix develop path:./nix#matching -c python3 -m unittest tests.test_matching
+      - name: Publish refactor on this branch only
+        env:
+          CHECKS: ${{ steps.checks.outcome }}
+          MATCHING: ${{ steps.matching.outcome }}
+        run: |
+          rm .github/reorient.py .github/workflows/reorient-once.yml
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('packaging/source-files.txt')
+          names = [n for n in p.read_text().splitlines() if n and not n.startswith('#') and Path(n).is_file()]
+          p.write_text('\n'.join(sorted(set(names))) + '\n')
+          PY
+          git config user.name 'XEM refactor automation'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Reorient Phase 1 to matching decomp; trim process and partition reference state' -m "Public checks: $CHECKS. Matching checks: $MATCHING. See the workflow log for exact results."
+          git push origin HEAD:refs/heads/refactor/matching-first-decomp
+          printf 'public=%s matching=%s\n' "$CHECKS" "$MATCHING"
+          test "$CHECKS" = success && test "$MATCHING" = success
