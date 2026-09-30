@@ -8359,7 +8359,92 @@ s32 func_80099A8C(s32 x) {
     return SquareRoot0(squares.vx);
 }
 
+#ifdef NON_MATCHING
+s32 func_80099AC0(s32 speed) {
+    VECTOR delta;
+    FieldModel *model;
+    s32 reach;
+    s32 extra;
+    s32 from_x;
+    s32 from_z;
+    s32 x;
+    s32 z;
+    s32 angle;
+    s32 distance;
+    FieldActor *other;
+    u16 count;
+    s32 facing;
+
+    extra = 0;
+    z = 0;
+    model = D_800AF880.components.descriptors[D_800AFD1C].model;
+    x = 0;
+    if (D_800AF880.components.descriptors[D_800AFD1C].actor->layer_flags & 0x2000) {
+        model->unk18 = 0x8000000 / (u16)D_800B0078->unk76;
+    } else if (model->unk18 == 0) {
+        model->unk18 = 0x4000000 / (u16)D_800B0078->unk76;
+    }
+    reach = func_80099A8C(model->unk18 >> 15) + 1;
+    from_x = WHOLE(D_800B0078->position[0]);
+    from_z = WHOLE(D_800B0078->position[2]);
+    switch (D_800B0078->slots[D_800B0078->slot].move_mode) {
+    case 1:
+        x = func_8009CF78(1, EVENT_OPERAND_BYTE(5)) + D_800B0078->target[0];
+        z = func_8009CFBC(3, EVENT_OPERAND_BYTE(5)) + D_800B0078->target[2];
+        break;
+    case 2:
+        if (func_8009CDB4(1) == 0xFF) {
+            return 0;
+        }
+        other = D_800AF880.components.descriptors[func_8009CDB4(1)].actor;
+        extra = func_80099A8C((u16)other->gravity.s.whole + (u16)D_800B0078->gravity.s.whole);
+        x = WHOLE(other->position[0]);
+        z = WHOLE(other->position[2]);
+        if (EVENT_OPERAND_BYTE(1) == D_800B2078.controlled) {
+            D_800B0078->flags |= 0x200000;
+        }
+        break;
+    case 3:
+        angle = func_800ACDEC(1) & 0xFFF;
+        x = D_800B0078->target[0] + ((func_8003F8CC(angle) << 12) >> 12);
+        z = D_800B0078->target[2] + (-(func_8003F8B0(angle) << 12) >> 12);
+        break;
+    case 0:
+    case 4:
+        x = func_8009CF78(1, EVENT_OPERAND_BYTE(5));
+        z = func_8009CFBC(3, EVENT_OPERAND_BYTE(5));
+        break;
+    }
+    delta.vx = x - from_x;
+    delta.vy = 0;
+    delta.vz = z - from_z;
+    distance = func_80099A4C(delta.vx, delta.vz);
+    D_800B0078->flags |= 0x400000;
+    count = D_800B0078->slots[D_800B0078->slot].value;
+    if (count == 0 || reach + extra >= distance) {
+        if (speed != 0) {
+            if (!(D_800B0078->flags & 0x8000)) {
+                D_800B0078->heading_goal = D_800B0078->heading = (u16)D_800B0078->heading_goal | 0x8000;
+            } else {
+                D_800B0078->heading_goal = D_800B0078->heading = D_800B0078->unk11C | 0x8000;
+            }
+        } else {
+            D_800B0078->heading_goal = D_800B0078->heading = func_8007B694(&delta);
+        }
+        D_800B0078->slots[D_800B0078->slot].value = 0xFFFF;
+        D_800B0078->slots[D_800B0078->slot].move_mode = 0;
+        D_800B0078->flags &= 0xFDDFF7FF;
+        return 0;
+    }
+    D_800B0078->slots[D_800B0078->slot].value = count - 1;
+    facing = func_8007B694(&delta);
+    D_800B00C0 = 1;
+    D_800B0078->heading_goal = D_800B0078->heading = facing;
+    return -1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80099AC0);
+#endif
 
 /* Store the current actor's unkE4 in a variable. */
 void func_80099EF8(void) {
