@@ -8855,7 +8855,6 @@ void func_8009B708(s32 octant, s32 steps) {
     D_800AF880.heading_velocity = velocity;
 }
 
-#ifdef NON_MATCHING
 /* Turn the camera one octant (direction 0: positive) over `steps` frames. */
 void func_8009B7A8(s32 direction, s32 steps) {
     s32 velocity;
@@ -8866,19 +8865,14 @@ void func_8009B7A8(s32 direction, s32 steps) {
         D_800B2078.camera_counter += 2;
     }
     if (direction == 0) {
-        velocity = 0x2000000 / steps;
-        heading = D_800AF880.heading + 0x200;
+        D_800AF880.heading_velocity = 0x2000000 / steps;
+        D_800AF880.heading += 0x200;
     } else {
-        velocity = (s32)0xFE000000 / steps;
-        heading = D_800AF880.heading - 0x200;
+        D_800AF880.heading_velocity = (s32)0xFE000000 / steps;
+        D_800AF880.heading -= 0x200;
     }
-    D_800AF880.heading = heading;
-    D_800AF880.heading_velocity = velocity;
     D_800AF880.heading_steps = steps;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009B7A8);
-#endif
 
 /* Once the camera is idle, turn one octant over operand-1 frames. */
 void func_8009B824(void) {
