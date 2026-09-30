@@ -32,6 +32,8 @@ s16 D_80059194; /* texture area row (0-2) of the next image */
 s16 D_80059196; /* texture area column of the next image */
 s32 D_800591B8;
 s32 D_800592EC;
+RECT *D_800592F0;             /* LoadImage area for 80022a0c */
+u_long *D_800592F4;           /* LoadImage pixels for 80022a0c */
 s32 D_800592F8;               /* the queue being filled (0 or 1) */
 s32 D_800592FC;               /* bytes of the queue entry block / 2 */
 SpriteQueueEntry *D_80059300[2]; /* the two queues */
@@ -61,19 +63,16 @@ void func_8001C944(void) {
     D_80059594 = NULL;
     D_80059188 = 0;
     D_8005918C = 0;
-    D_80059428[0] = 0;
+    D_80059428 = 0;
 }
 
 /* Run the main task list, unless it is paused (count the pause down). */
-/* Nonmatching: the original addresses the pause count absolutely each time; as a
- * sizeless extern (needed to keep it off $gp here) GCC keeps its address in a register. */
-#ifdef NON_MATCHING
 void func_8001C964(void) {
     Task *task;
 
-    if (D_80059428[0] != 0) {
-        if (--D_80059428[0] == 0) {
-            D_80059494[0] = 0;
+    if (D_80059428 != 0) {
+        if (--D_80059428 == 0) {
+            D_80059494 = 0;
         }
         return;
     }
@@ -87,9 +86,6 @@ void func_8001C964(void) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001C964);
-#endif
 
 /* Run the second task list. */
 void func_8001C9F8(void) {
@@ -128,7 +124,7 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001CA58);
 
 /* Allocate a task with `size` bytes after its node on the second list. */
 Task *func_8001CAF0(Task *owner, s32 size) {
-    Task *node = func_80031BDC(size + sizeof(Task), D_800591AF[0]);
+    Task *node = func_80031BDC(size + sizeof(Task), D_800591AF);
 
     func_8001CA58(owner, node);
     node->destroy = func_8001CBE8;
@@ -181,8 +177,8 @@ void func_8001CC18(Task *owner, Task *node) {
     node->link.bits.flag29 = 0;
     node->link.bits.flag30 = 0;
     node->link.bits.active = 0;
-    if (D_800591AC[0] != 0) {
-        D_80059464[0]++;
+    if (D_800591AC != 0) {
+        D_80059464++;
         node->link.bits.active = 1;
     } else {
         node->link.bits.active = 0;
@@ -195,7 +191,7 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001CC18);
 
 /* Allocate a task with `size` bytes after its node on the main list. */
 Task *func_8001CD08(Task *owner, s32 size) {
-    Task *node = func_80031BDC(size + sizeof(Task), D_800591AF[0]);
+    Task *node = func_80031BDC(size + sizeof(Task), D_800591AF);
 
     func_8001CC18(owner, node);
     node->destroy = func_8001CE44;
@@ -229,8 +225,6 @@ void *func_8001CD88(Task *task) {
 }
 
 /* Unlink a task from the main list. */
-/* Nonmatching: the active count, addressed absolutely, is kept in a register here. */
-#ifdef NON_MATCHING
 void func_8001CD94(Task *task) {
     Task *prev = NULL;
     Task *current;
@@ -250,13 +244,10 @@ void func_8001CD94(Task *task) {
         prev = current;
     }
     if (task->link.bits.active) {
-        D_80059464[0]--;
+        D_80059464--;
     }
     D_80059188--;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001CD94);
-#endif
 
 /* Destroy callback of an allocated main-list task: unlink and free it. */
 void func_8001CE44(Task *task) {
@@ -265,8 +256,6 @@ void func_8001CE44(Task *task) {
 }
 
 /* Destroy every task `owner` created (both lists). */
-/* Nonmatching: the original keeps the owner in $s3 and the serial mask in $s2; GCC swaps them. */
-#ifdef NON_MATCHING
 void func_8001CE74(Task *owner) {
     Task *prev;
     Task *task;
@@ -308,9 +297,6 @@ void func_8001CE74(Task *owner) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001CE74);
-#endif
 
 /* Clear word 0x70 of the sprite of every flag-29 task `owner` created. */
 void func_8001D034(Task *owner) {
@@ -371,7 +357,7 @@ void func_8001D19C(Task *task) {
  * `update2`; both nodes' data is the task itself. */
 Task *func_8001D1D8(s32 size, Task *owner, void (*update)(Task *), void (*update2)(Task *),
                     void (*destroy)(Task *)) {
-    Task *node = func_80031BDC(size, D_800591AF[0]);
+    Task *node = func_80031BDC(size, D_800591AF);
 
     func_8001CC18(owner, node);
     func_8001CA58(node, node + 1);
@@ -453,12 +439,14 @@ void func_8001D3F4(Sprite *sprite) {
 /* Draw the pending frame of every pending sprite and empty the list. */
 void func_8001D468(void) {
     Sprite *sprite;
+    s32 frame;
 
     for (sprite = D_80059190; sprite != NULL; sprite = sprite->renderer->next_pending) {
-        if (sprite->frame == 0) {
+        frame = sprite->frame;
+        if (frame == 0) {
             sprite->flags &= ~0xFC;
         } else {
-            func_8001DAE8(sprite, sprite->frame, sprite->image);
+            func_8001DAE8(sprite, frame, sprite->image);
         }
     }
     D_80059190 = NULL;
@@ -488,7 +476,7 @@ void func_8001E148(Sprite *sprite) {
     s32 offset_x;
     MATRIX *matrix;
 
-    if (D_800591AD[0] != 0 || D_800591AE[0] != 0) {
+    if (D_800591AD != 0 || D_800591AE != 0) {
         func_80022038(sprite);
     }
     shift = (sprite->flags >> 8) & 0x1F;
@@ -561,8 +549,6 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001F1D4);
 
 /* Reserve `width` columns of the sprite texture area (three 64-line rows from
  * (0x300, 0x140), 0x40 columns each) and return their position. */
-/* Nonmatching: the original copies the width argument to $a3 and stores the column after the result copy. */
-#ifdef NON_MATCHING
 DVECTOR func_8001F530(s32 width) {
     DVECTOR position;
 
@@ -577,9 +563,6 @@ DVECTOR func_8001F530(s32 width) {
     D_80059196 += width;
     return position;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001F530);
-#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001F5BC);
 
@@ -618,8 +601,6 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001F750);
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001F8E8);
 
 /* Unpack and upload the image at 8004fbd8 to (x, y). */
-/* Nonmatching: the original keeps x in $s1 and the image in $s0; GCC swaps them. */
-#ifdef NON_MATCHING
 void func_8001FAB4(s32 x, s32 y) {
     void *image = func_80032E88(D_8004FBD8, 0);
 
@@ -627,9 +608,6 @@ void func_8001FAB4(s32 x, s32 y) {
     DrawSync(0);
     func_800320E8(image);
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001FAB4);
-#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001FB30);
 
@@ -719,34 +697,22 @@ void func_80021C00(Sprite *sprite, s32 group) {
 }
 
 /* Pop a byte from a sprite's stack. */
-/* Sprite-unit code (GCC 2.7.2-cdk, -G8, ASPSX 2.5+): this C matches under that configuration (object compare with relocations masked), not in this build. */
-#ifdef NON_MATCHING
 u8 func_80021C20(Sprite *sprite) {
     u8 value = sprite->stack[sprite->stack_top];
 
     sprite->stack_top += 1;
     return value;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80021C20);
-#endif
 
 /* Pop a halfword from a sprite's stack. */
-/* Sprite-unit code (GCC 2.7.2-cdk, -G8, ASPSX 2.5+): this C matches under that configuration (object compare with relocations masked), not in this build. */
-#ifdef NON_MATCHING
 s16 func_80021C3C(Sprite *sprite) {
     s16 value = sprite->stack[sprite->stack_top] + (sprite->stack[sprite->stack_top + 1] << 8);
 
     sprite->stack_top += 2;
     return value;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80021C3C);
-#endif
 
 /* Pop three bytes from a sprite's stack. */
-/* Sprite-unit code (GCC 2.7.2-cdk, -G8, ASPSX 2.5+): this C matches under that configuration (object compare with relocations masked), not in this build. */
-#ifdef NON_MATCHING
 s32 func_80021C6C(Sprite *sprite) {
     s32 value = sprite->stack[sprite->stack_top] + (sprite->stack[sprite->stack_top + 1] << 8) +
                 (sprite->stack[sprite->stack_top + 2] << 16);
@@ -754,9 +720,6 @@ s32 func_80021C6C(Sprite *sprite) {
     sprite->stack_top += 3;
     return value;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80021C6C);
-#endif
 
 /* Push a byte onto a sprite's stack. */
 void func_80021CA0(Sprite *sprite, u8 value) {
@@ -886,12 +849,12 @@ void func_80022224(SpriteResource *resource, u8 *data, SVECTOR origin) {
     resource->origin = origin;
     resource->section3 = data + ((s32 *)data)[3];
     resource->section2 = data + ((s32 *)data)[2];
-    D_800591B0[0] = 0;
+    D_800591B0 = 0;
     resource->section1 = (u16 *)(data + ((s32 *)data)[1]);
-    if (D_800591AD[0] != 0) {
+    if (D_800591AD != 0) {
         value = (*resource->section1 >> 6) & 0x3F;
         if (value != 0) {
-            D_800591B3[0] = value;
+            D_800591B3 = value;
         }
     }
 }
@@ -917,9 +880,42 @@ s32 func_80022A00(s32 *word) {
     return *word;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80022A0C);
+/* Upload the image at D_800592F4 to D_800592F0, running LoadImage on an 8 KB
+ * heap block as its stack. */
+void func_80022A0C(void) {
+    u8 *stack = func_80031BDC(0x2000, 1);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80022A70);
+    STACK_ENTER(stack + 0x1F00);
+    LoadImage(D_800592F0, D_800592F4);
+    STACK_LEAVE();
+    func_800320E8(stack);
+}
+
+/* Upload a list of images side by side from (x, y), 64 columns apart: the
+ * list is a count followed by offsets (from the list) of images that start
+ * with their width and height. */
+void func_80022A70(s32 *list, s32 x, s16 y) {
+    RECT rect;
+    s32 *offsets;
+    s32 count;
+    s32 column;
+    u16 *image;
+
+    offsets = list;
+    count = *offsets++;
+    column = 0;
+    rect.y = y;
+    while (count-- > 0) {
+        image = (u16 *)(*offsets++ + (s32)list);
+        rect.w = *image++;
+        rect.h = *image++;
+        rect.x = x + column;
+        column += 0x40;
+        D_800592F0 = &rect;
+        D_800592F4 = (u_long *)image;
+        func_80022A0C();
+    }
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80022B2C);
 
@@ -1033,8 +1029,6 @@ void func_8002303C(Sprite *sprite, s32 count, s32 mode) {
 
 /* Destroy a sprite: release its sequencer buffer (frame bit 0), leave the
  * pending list and release its part list and itself. */
-/* Nonmatching: the original compares the bit with 1 (li/bne); GCC tests it against zero. */
-#ifdef NON_MATCHING
 void func_800230A8(Sprite *sprite) {
     if (sprite->frame_bits.sequencer_owned == 1 && ((SpriteSequencer *)sprite->sequencer)->buffer != NULL) {
         func_800320E8(((SpriteSequencer *)sprite->sequencer)->buffer);
@@ -1043,9 +1037,6 @@ void func_800230A8(Sprite *sprite) {
     func_800320E8(sprite->renderer->parts);
     func_800320E8(sprite);
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_800230A8);
-#endif
 
 /* The direction (0-0xfff) from one ground point to another. */
 s32 func_80023124(DVECTOR from, DVECTOR to) {
@@ -1129,10 +1120,8 @@ void func_80023340(Sprite *sprite, s32 count) {
 }
 
 /* Create a sprite task (with `extra` bytes after the sprite) under `owner`: its auxiliary node, default sprite and update/destroy callbacks. */
-/* Nonmatching: the original keeps the auxiliary node pointer in its own register (s2); GCC folds its offset. */
-#ifdef NON_MATCHING
 SpriteTask *func_800233A4(Task *owner, s32 extra) {
-    SpriteTask *node = func_80031BDC(extra + sizeof(SpriteTask), D_800591AF[0]);
+    SpriteTask *node = func_80031BDC(extra + sizeof(SpriteTask), D_800591AF);
     Task *auxiliary;
     Sprite *sprite;
 
@@ -1147,9 +1136,6 @@ SpriteTask *func_800233A4(Task *owner, s32 extra) {
     func_8001CD74(&node->task, func_80022EB8);
     return node;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_800233A4);
-#endif
 
 /* A frame entry's image index: bits 8-10, plus 8 when bit 14 is set. */
 s32 func_80023440(u16 *entry) {
@@ -1283,9 +1269,9 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_800248D4);
 /* Reset the sprite engine: flags, the value at 800591a8, the task lists and
  * the pending-frame list. */
 void func_80024F20(void) {
-    D_800591AD[0] = 0;
-    D_800591AE[0] = 0;
-    D_800591A8[0] = 0x2000;
+    D_800591AD = 0;
+    D_800591AE = 0;
+    D_800591A8 = 0x2000;
     func_8001C944();
     func_8001D298();
 }
@@ -1294,7 +1280,7 @@ void func_80024F20(void) {
 void func_80024F64(s32 size, s32 mode) {
     D_800592FC = size;
     D_800594B4 = func_80031BDC(size * 2, mode);
-    D_800594B8[0] = D_800594B4 + size;
+    D_800594B8 = D_800594B4 + size;
     D_80059300[1] = NULL;
     D_80059300[0] = NULL;
     D_800594C4 = 0;
@@ -1308,18 +1294,13 @@ void func_80024FB8(void) {
 }
 
 void func_80024FE4(s32 value) {
-    D_8005956C[0] = value;
+    D_8005956C = value;
 }
 
 /* Copy the current light settings. */
-/* Sprite-unit code (GCC 2.7.2-cdk, -G8, ASPSX 2.5+): this C matches under that configuration (object compare with relocations masked), not in this build. */
-#ifdef NON_MATCHING
 void func_80024FF4(MATRIX *view) {
     D_8004FBB8 = *view;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80024FF4);
-#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80025044);
 
@@ -1345,14 +1326,9 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80025180);
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_800251C8);
 
 /* Set a task's update callback from the table at 8004fd40. */
-/* Sprite-unit code (GCC 2.7.2-cdk, -G8, ASPSX 2.5+): this C matches under that configuration (object compare with relocations masked), not in this build. */
-#ifdef NON_MATCHING
 void func_80025224(Task *task, s32 kind) {
     func_8001CD64(task, D_8004FD40[kind]);
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80025224);
-#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80025258);
 

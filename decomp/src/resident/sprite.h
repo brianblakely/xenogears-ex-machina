@@ -209,21 +209,28 @@ typedef struct {
     Sprite sprite;
 } SpriteTask;
 
-/* The unit addresses these small globals absolutely, not through $gp: its
- * declarations carry no size (incomplete arrays), so they are not small data
- * under -G8. */
-extern u8 D_800591AF[]; /* [0]: allocation mode for sprite tasks */
-extern s32 D_80059428[];  /* [0]: frames the main task list stays paused */
-extern s16 D_80059494[];
-extern u8 D_800591AC[];   /* [0]: new main-list tasks count as active */
-extern s32 D_80059464[];  /* [0]: active main-list tasks */
-extern s32 D_800591A8[];
-extern u8 D_800591AD[];
-extern u8 D_800591AE[];
-extern u8 D_800591B0[];
-extern u8 D_800591B3[];
+/* Run the code between the two on the stack whose top is `top`. */
+#define STACK_ENTER(top)                                                                           \
+    __asm__ volatile("move $8, %0\n\tsw $29, 0($8)\n\taddiu $8, $8, -4\n\tmove $29, $8"            \
+                     :                                                                             \
+                     : "r"(top)                                                                    \
+                     : "$8", "memory")
+#define STACK_LEAVE() __asm__ volatile("addiu $29, $29, 4\n\tlw $29, 0($29)" : : : "memory")
+
+/* Small globals of other units: this unit addresses them absolutely (its
+ * assembler ignored the `.extern` sizes GCC gives them). */
+extern u8 D_800591AF;  /* allocation mode for sprite tasks */
+extern s32 D_80059428; /* frames the main task list stays paused */
+extern s16 D_80059494;
+extern u8 D_800591AC;  /* new main-list tasks count as active */
+extern s32 D_80059464; /* active main-list tasks */
+extern s32 D_800591A8;
+extern u8 D_800591AD;
+extern u8 D_800591AE;
+extern u8 D_800591B0;
+extern u8 D_800591B3;
 extern u8 D_8005A474[];
-extern u8 *D_800594B8[];  /* [0]: end of the queue entry block */
+extern u8 *D_800594B8; /* end of the queue entry block */
 extern s32 D_800591B8;    /* extra argument of 80024524/8002435c for one call */
 
 /* An entry of the two sprite queues (bump-allocated from 800594b4). */
@@ -232,7 +239,7 @@ typedef struct SpriteQueueEntry {
     struct SpriteQueueEntry *next;
 } SpriteQueueEntry;
 extern u8 D_8006BE10[];
-extern s32 D_8005956C[];
+extern s32 D_8005956C;
 
 /* The view matrix sprites are placed with (80024ff4 sets it). */
 extern MATRIX D_8004FBB8;

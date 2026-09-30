@@ -50,6 +50,10 @@ cc_of = $(or $(CC_$(basename $(notdir $(1)))),$(CC_VERSION))
 # MASPSX_<file> per unit (e.g. --expand-div where division checks are inline).
 MASPSX_FLAGS ?= --aspsx-version=2.34
 maspsx_of = $(or $(MASPSX_$(basename $(notdir $(1)))),$(MASPSX_FLAGS))
+# GNU as addresses an undefined symbol through $gp when GCC's `.extern name, size`
+# declares it small; the sprite unit's assembler ignored those sizes and addressed
+# other units' small data absolutely. EXTERN_<file> := absolute drops the directives.
+extern_of = $(if $(filter absolute,$(EXTERN_$(basename $(notdir $(1))))),| grep -v '^\.extern')
 
 # Objects come from the splat-generated linker script (regenerate with `split`).
 LP := (
@@ -72,7 +76,7 @@ $(ROOT)/$(BUILD)/%.o: $(ROOT)/%.s $(ROOT)/$(LINKER_SCRIPT)
 $(ROOT)/$(BUILD)/%.o: $(ROOT)/%.c $(ROOT)/$(LINKER_SCRIPT) $(wildcard $(ROOT)/decomp/include/*.h $(ROOT)/decomp/include/*/*.h $(ROOT)/decomp/src/*/*.h)
 	@mkdir -p $(dir $@)
 	cd $(ROOT) && psx-cpp-$(call cc_of,$<) $(CPPFLAGS) $< | psx-cc1-$(call cc_of,$<) $(CC1FLAGS) -G$(call gp_of,$<) -o $@.cc1.s
-	cd $(ROOT) && $(MASPSX) $(call maspsx_of,$<) -G$(call gp_of,$<) < $@.cc1.s > $@.s
+	cd $(ROOT) && $(MASPSX) $(call maspsx_of,$<) -G$(call gp_of,$<) < $@.cc1.s $(call extern_of,$<) > $@.s
 	cd $(ROOT) && $(AS) $(ASFLAGS) -G$(call gp_of,$<) -o $@ $@.s
 
 $(ROOT)/$(IMAGE): $(OBJECTS) $(ROOT)/$(LINKER_SCRIPT) $(CONFIG)
