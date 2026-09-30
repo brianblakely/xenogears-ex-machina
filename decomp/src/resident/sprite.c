@@ -30,6 +30,13 @@ s32 D_8005918C;
 Sprite *D_80059190;
 s16 D_80059194; /* texture area row (0-2) of the next image */
 s16 D_80059196; /* texture area column of the next image */
+s32 D_800592EC;
+s32 D_800592F8;               /* the queue being filled (0 or 1) */
+s32 D_800592FC;               /* bytes of the queue entry block / 2 */
+SpriteQueueEntry *D_80059300[2]; /* the two queues */
+u8 *D_800594B4;               /* the queue entry block */
+s32 D_800594C4;
+SpriteQueueEntry *D_80059580; /* the next free queue entry */
 Task *D_800594C0;
 Task *D_8005958C;
 Task *D_80059590;
@@ -872,7 +879,11 @@ void func_80022DF4(Task *task) {
     task->destroy(task);
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80022E8C);
+/* Count a sprite task update, then run it. */
+void func_80022E8C(Task *task) {
+    D_800592EC++;
+    func_80022DF4(task);
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80022EB8);
 
@@ -1002,7 +1013,38 @@ s32 func_80023440(u16 *entry) {
     return index;
 }
 
+/* A property (0, 1 or 2) of kind `kind`; `fallback` for kind 3 and the rest. */
+/* Nonmatching: the original loads the jump table address with la and adds the index; GCC 2.7.2 indexes the symbol through $at (as in 80025224). */
+#ifdef NON_MATCHING
+s32 func_80023468(s32 kind, s32 fallback) {
+    switch (kind) {
+    case 0:
+    case 5:
+    case 6:
+    case 10:
+    case 11:
+    case 12:
+    case 13:
+    case 14:
+        fallback = 1;
+        break;
+    case 1:
+    case 4:
+    case 8:
+    case 9:
+        fallback = 0;
+        break;
+    case 2:
+    case 7:
+    case 15:
+        fallback = 2;
+        break;
+    }
+    return fallback;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80023468);
+#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_800234AC);
 
@@ -1069,11 +1111,32 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80024730);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_800248D4);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80024F20);
+/* Reset the sprite engine: flags, the value at 800591a8, the task lists and
+ * the pending-frame list. */
+void func_80024F20(void) {
+    D_800591AD[0] = 0;
+    D_800591AE[0] = 0;
+    D_800591A8[0] = 0x2000;
+    func_8001C944();
+    func_8001D298();
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80024F64);
+/* Allocate the queue entry block (`size` * 2 bytes) and empty both queues. */
+void func_80024F64(s32 size, s32 mode) {
+    D_800592FC = size;
+    D_800594B4 = func_80031BDC(size * 2, mode);
+    D_800594B8[0] = D_800594B4 + size;
+    D_80059300[1] = NULL;
+    D_80059300[0] = NULL;
+    D_800594C4 = 0;
+    func_8001D298();
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80024FB8);
+/* Release the queue entry block. */
+void func_80024FB8(void) {
+    func_800320E8(D_800594B4);
+    func_8001D2A4();
+}
 
 void func_80024FE4(s32 value) {
     D_8005956C[0] = value;
@@ -1093,7 +1156,22 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80025044);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_800250E0);
 
+/* Queue `value` on the queue being filled. */
+/* Nonmatching: the original takes the queue array's address with lui/addiu; GNU as makes that la $gp-relative (maspsx leaves la of small data to the assembler). */
+#ifdef NON_MATCHING
+void func_80025180(u32 value) {
+    SpriteQueueEntry *entry = D_80059580;
+
+    D_80059580 = entry + 1;
+    if (entry != NULL) {
+        entry->value = value;
+        entry->next = D_80059300[D_800592F8];
+        D_80059300[D_800592F8] = entry;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80025180);
+#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_800251C8);
 

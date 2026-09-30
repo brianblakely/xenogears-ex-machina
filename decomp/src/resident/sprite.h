@@ -140,9 +140,17 @@ extern s32 D_80059428[];  /* [0]: frames the main task list stays paused */
 extern s16 D_80059494[];
 extern u8 D_800591AC[];   /* [0]: new main-list tasks count as active */
 extern s32 D_80059464[];  /* [0]: active main-list tasks */
+extern s32 D_800591A8[];
 extern u8 D_800591AD[];
 extern u8 D_800591AE[];
 extern u8 D_8005A474[];
+extern u8 *D_800594B8[];  /* [0]: end of the queue entry block */
+
+/* An entry of the two sprite queues (bump-allocated from 800594b4). */
+typedef struct SpriteQueueEntry {
+    u32 value;
+    struct SpriteQueueEntry *next;
+} SpriteQueueEntry;
 extern u8 D_8006BE10[];
 extern s32 D_8005956C[];
 
