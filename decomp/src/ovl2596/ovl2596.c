@@ -40,8 +40,8 @@ void func_801DE1C4(void) {
         func_800728B8(D_800D334C->text, D_800D334C->runs[1].count, D_800D334C->runs[1].buffer);
         func_800728B8(D_800D334C->glyphs1630, D_800D334C->runs[2].count, D_800D334C->runs[2].buffer);
         func_800728B8(D_800D334C->glyphs1720, D_800D334C->runs[4].count, D_800D334C->runs[4].buffer);
-        func_800728B8(D_800D334C->glyphs17C0[0], D_800D334C->runs[3].count, D_800D334C->runs[3].buffer);
-        func_800728B8(D_800D334C->glyphs1900[0], D_800D334C->runs[5].count, D_800D334C->runs[5].buffer);
+        func_800728B8(D_800D334C->glyphs17C0, D_800D334C->runs[3].count, D_800D334C->runs[3].buffer);
+        func_800728B8(D_800D334C->glyphs1900, D_800D334C->runs[5].count, D_800D334C->runs[5].buffer);
         for (i = 0; i < 7; i++) {
             func_80043B48(D_800CCB00.ot + 1, &D_800D334C->barB[i][D_800D334C->barBuffer[i]]);
             func_80043B48(D_800CCB00.ot + 1, &D_800D334C->barA[i][D_800D334C->barBuffer[i]]);
@@ -191,7 +191,7 @@ void func_801DEDC0(u8 fromGameData) {
             if (fromGameData == 0) {
                 func_8008AAA0(D_800D32A5[i].level);
             } else {
-                func_8008AAA0(D_8006D902[D_800D2D24[i]].level);
+                func_8008AAA0(D_8006D8EE[D_800D2D24[i]].level);
             }
             for (j = 0; j < 3; j++) {
                 n = j + 18;
@@ -205,7 +205,7 @@ void func_801DEDC0(u8 fromGameData) {
                 if (fromGameData == 0) {
                     func_8008AAA0(D_800D32A5[i].level2);
                 } else {
-                    func_8008AAA0(D_8006D902[D_800D2D24[i]].level2);
+                    func_8008AAA0(D_8006D8EE[D_800D2D24[i]].level2);
                 }
                 for (j = 0; j < 3; j++) {
                     n = j + 18;
@@ -472,9 +472,90 @@ void func_801DFE6C(u8 member) {
     D_800D334C->runs[4].buffer = D_800CCB34;
 }
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801DFF50);
+/* Build the summary's change of the member's first stat since the battle
+ * began: an up or down arrow and the difference, shaded red. */
+#ifdef NON_MATCHING
+void func_801DFF50(u8 member) {
+    s32 before;
+    s32 after;
+    s32 difference;
+    s32 arrow;
+    s32 j;
+    s16 x;
+    s32 digit;
+    s32 k;
 
+    before = D_800CDCE8[member].valueA;
+    after = D_8006D8EE[D_800D2D24[member]].statA;
+    difference = after - before;
+    arrow = 0xE3;
+    if (difference < 0) {
+        arrow = 0xE5;
+        difference = before - after;
+    }
+    if (difference != 0) {
+        D_800D334C->runs[3].count = func_80076A10(arrow, D_800D334C->glyphs17C0, 0xD8, 0x80);
+        func_8008AAA0(difference);
+        x = 0xE0;
+        for (j = 0; j < 3; j++) {
+            digit = D_800C3CFA[j];
+            if (digit != 0xFF) {
+                D_800D334C->runs[3].count += func_80076A10(digit, &D_800D334C->glyphs17C0[D_800D334C->runs[3].count * 2], x, 0x80);
+                x += 8;
+            }
+        }
+        for (k = 0; k < D_800D334C->runs[3].count; k++) {
+            func_80043C24(&D_800D334C->glyphs17C0[k * 2 + D_800CCB34], 0);
+            setRGB0(&D_800D334C->glyphs17C0[k * 2 + D_800CCB34], 0x80, 0x40, 0x40);
+        }
+        D_800D334C->runs[3].buffer = D_800CCB34;
+    }
+}
+#else
+INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801DFF50);
+#endif
+
+/* Build the summary's change of the member's second stat, like 801dff50. */
+#ifdef NON_MATCHING
+void func_801E0184(u8 member) {
+    s32 before;
+    s32 after;
+    s32 difference;
+    s32 arrow;
+    s32 j;
+    s16 x;
+    s32 digit;
+    s32 k;
+
+    before = D_800CDCE8[member].valueB;
+    after = D_8006D8EE[D_800D2D24[member]].statB;
+    difference = after - before;
+    arrow = 0xE3;
+    if (difference < 0) {
+        arrow = 0xE5;
+        difference = before - after;
+    }
+    if (difference != 0) {
+        D_800D334C->runs[5].count = func_80076A10(arrow, D_800D334C->glyphs1900, 0xD8, 0x88);
+        func_8008AAA0(difference);
+        x = 0xE0;
+        for (j = 0; j < 2; j++) {
+            digit = D_800C3CFB[j];
+            if (digit != 0xFF) {
+                D_800D334C->runs[5].count += func_80076A10(digit, &D_800D334C->glyphs1900[D_800D334C->runs[5].count * 2], x, 0x88);
+                x += 8;
+            }
+        }
+        for (k = 0; k < D_800D334C->runs[5].count; k++) {
+            func_80043C24(&D_800D334C->glyphs1900[k * 2 + D_800CCB34], 0);
+            setRGB0(&D_800D334C->glyphs1900[k * 2 + D_800CCB34], 0x80, 0x40, 0x40);
+        }
+        D_800D334C->runs[5].buffer = D_800CCB34;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E0184);
+#endif
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E03B8);
 

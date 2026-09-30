@@ -71,8 +71,8 @@ typedef struct {
     POLY_FT4 text[134];       /* 0x0140, runs[1]; two per glyph part */
     POLY_FT4 glyphs1630[6];   /* 0x1630, runs[2] */
     POLY_FT4 glyphs1720[4];   /* 0x1720, runs[4] */
-    Glyph glyphs17C0[4];      /* 0x17C0, runs[3] */
-    Glyph glyphs1900[3];      /* 0x1900, runs[5] */
+    POLY_FT4 glyphs17C0[8];   /* 0x17C0, runs[3] */
+    POLY_FT4 glyphs1900[6];   /* 0x1900, runs[5] */
     Glyph rowA[7][3];         /* 0x19F0 */
     Glyph rowB[7][4];         /* 0x2080 */
     POLY_G4 barA[7][2];       /* 0x2940 */
@@ -152,14 +152,19 @@ typedef struct {
 
 extern SlotLevels D_800D32A5[3];
 
-/* The game data's per character levels (0xa4 per character). */
+/* The game data's character records (0xa4 per character; the symbol names
+ * the first field these functions read). */
 typedef struct {
-    u8 level;
-    u8 level2;
-    u8 pad[0xA2];
-} CharacterLevels;
+    u16 statA;            /* 0x00 */
+    u16 pad02;
+    u16 statB;            /* 0x04 */
+    u8 pad06[0xE];
+    u8 level;             /* 0x14 */
+    u8 level2;            /* 0x15 */
+    u8 pad16[0xA4 - 0x16];
+} CharacterRecord;
 
-extern CharacterLevels D_8006D902[];
+extern CharacterRecord D_8006D8EE[];
 extern u8 D_800D2D24[3];    /* battle party character ids */
 
 /* Per member combatant values (0x170 per member; the symbol names +0x4c). */
@@ -181,6 +186,8 @@ typedef struct {
 extern MemberWide D_800CDCB8[3];
 extern MemberWide D_800CDCD0[3];
 extern u8 D_800C3CE3[];
+extern u8 D_800C3CFA[];
+extern u8 D_800C3CFB[];
 extern u8 D_800C3CDF[];     /* digit buffer views, see D_800C3CF1 */
 extern u8 D_800C3CD7[];
 
