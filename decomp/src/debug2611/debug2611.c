@@ -103,7 +103,9 @@ void func_80280960(s32 buttons) {
  * (0x800), the performance counters (0x20) and the camera tool (0x100, which
  * also switches the battle's display mode). The camera tool shows the
  * palette pages, prints the camera, marks the look-at point, emits a marker
- * effect there every 8 frames and moves the camera or look-at point. */
+ * effect there every 8 frames and moves the camera or look-at point.
+ * The instructions match; the original's strings hold an unreferenced
+ * "bitmap: %x\n" between "frameRate %d\n" and "lenge:  %d\n". */
 #ifdef NON_MATCHING
 void func_80280A9C(void) {
     SVECTOR angle;
@@ -112,6 +114,7 @@ void func_80280A9C(void) {
     POLY_FT4 *page;
     POLY_FT4 *page2;
     TILE_1 *mark;
+    SVECTOR *target;
     s32 yaw, pitch;
 
     func_80281980();
@@ -196,6 +199,7 @@ void func_80280A9C(void) {
         SetRotMatrix(&D_800D309C.matrix);
         SetTransMatrix(&D_800D309C.matrix);
         watch.vx = D_800D335C.vx;
+        target = &watch;
         watch.vy = D_800D335C.vy;
         watch.vz = D_800D335C.vz;
         mark = (TILE_1 *)D_80059580;
@@ -205,12 +209,12 @@ void func_80280A9C(void) {
         mark->r0 = 0xFF;
         mark->g0 = 0xFF;
         mark->b0 = 0;
-        RotTransPers(&watch, (s32 *)&mark->x0, &z, &z);
+        RotTransPers(target, (s32 *)&mark->x0, &z, &z);
         mark->x0 -= 4;
         mark->y0 -= 4;
         AddPrim(D_8005956C, mark);
         if ((D_802820EC & 7) == 0) {
-            func_80023FD8(2, D_8006BE10, &watch, 0);
+            func_80023FD8(2, D_8006BE10, target, 0);
         }
         if (D_800C3EB0.pressed & 0x80) {
             if (++D_80282044 & 1) {

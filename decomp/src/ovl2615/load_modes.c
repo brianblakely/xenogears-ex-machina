@@ -335,7 +335,6 @@ INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/load_modes", func_801E8964);
 /* Burst drawing: each corner rises by the sine (variant 1: of the angle
  * plus its distance; otherwise the cosine of its distance) scaled by the
  * twist and lights up with it; projected with a 512 screen distance. */
-#ifdef NON_MATCHING
 void func_801E8A64(TaskNode *node) {
     BurstTask *burst = node->object;
     BurstCell *cell;
@@ -396,7 +395,8 @@ void func_801E8A64(TaskNode *node) {
                     }
                 }
                 otz = RotTransPers3(&corner[0], &corner[1], &corner[2], (s32 *)&prim->x0,
-                                    (s32 *)&prim->x1, (s32 *)&prim->x2, &p, &flag) >> 6;
+                                    (s32 *)&prim->x1, (s32 *)&prim->x2, &p, &flag);
+                otz >>= 6;
                 if (!(flag & 0x8000)) {
                     AddPrim(D_801E96BC + otz, prim);
                 }
@@ -406,9 +406,6 @@ void func_801E8A64(TaskNode *node) {
     SetGeomOffset(ofx, ofy);
     SetGeomScreen(screen);
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/load_modes", func_801E8A64);
-#endif
 
 /* Release the burst task after the drawing finishes. */
 void func_801E8D48(void *block) {
