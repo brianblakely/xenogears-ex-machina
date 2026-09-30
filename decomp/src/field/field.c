@@ -1934,7 +1934,110 @@ void func_80076A74(FieldSprite *sprite) {
     D_800AF880.components.descriptors[sprite->sequencer->actor].actor->layer_flags |= 0x10000;
 }
 
+/* Create an event actor's sprite: record its slot and arguments on the
+ * actor, release any sprite the descriptor had, build the new one (a
+ * character sheet in the slot's VRAM area, a banked sheet, or one of the two
+ * small effect kinds), place it at the actor and register the completion
+ * callback. */
+#ifdef NON_MATCHING
+void func_80076AC0(s32 index, s32 slot, void *data, s32 kind, s32 bank, s32 unk, s32 flag) {
+    s32 width;
+    s32 height;
+    s32 depth;
+    FieldModel *sprite;
+    u16 y;
+    u16 x;
+
+    func_80032498(8, 0);
+    D_800AF880.components.descriptors[index].actor->unk127 = slot;
+    D_800AF880.components.descriptors[index].actor->unk126 = unk;
+    D_800AF880.components.descriptors[index].actor->unk134 =
+        (D_800AF880.components.descriptors[index].actor->unk134 & ~0xF) | (bank & 0xF);
+    D_800AF880.components.descriptors[index].actor->sprite_kind = kind;
+    D_800AF880.components.descriptors[index].actor->unk134 =
+        (D_800AF880.components.descriptors[index].actor->unk134 & ~0x10) | ((flag & 1) << 4);
+    if (kind == 0) {
+        y = D_800B1F78[slot][1];
+        x = D_800B1F78[slot][0];
+        if (bank == 0) {
+            if (D_800AF880.components.descriptors[index].unk5A & 1) {
+                func_800230A8(D_800AF880.components.descriptors[index].model);
+            }
+            sprite = func_80024524(data, 0x100, slot + 0x1E0, x, y, 0x40);
+        } else {
+            if (D_800AF880.components.descriptors[index].unk5A & 1) {
+                func_800230A8(D_800AF880.components.descriptors[index].model);
+            }
+            sprite = func_80024294(data, bank * 16 + 0x100, slot + 0x1E0, x, y, 0x40, bank);
+        }
+        D_800AF880.components.descriptors[index].model = sprite;
+    } else {
+        if (D_800AF880.components.descriptors[index].unk5A & 1) {
+            func_800230A8(D_800AF880.components.descriptors[index].model);
+        }
+        if (kind == 1) {
+            sprite = func_80024524(data, 0x100, slot + 0xE0, 0x280, (slot << 6) + 0x100, 8);
+        } else {
+            sprite = func_80024524(data, 0x100, slot + 0xE3, 0x2A0, (slot << 6) + 0x100, 8);
+        }
+        D_800AF880.components.descriptors[index].model = sprite;
+        func_80023340(sprite, 0x20);
+    }
+    D_800AF880.components.descriptors[index].unk5A |= 1;
+    func_8001F5BC(sprite, 0, &width, &height, &depth);
+    func_80021C00(sprite, 3);
+    sprite->unk2C = 0xC00;
+    sprite->unk82 = 0x2000;
+    if (D_8004F30C == 0) {
+        sprite->position[0] = D_800AF880.components.descriptors[index].actor->position[0];
+        sprite->position[1] = D_800AF880.components.descriptors[index].actor->position[1];
+        sprite->position[2] = D_800AF880.components.descriptors[index].actor->position[2];
+        sprite->unk10 = 0;
+        sprite->unk0C = 0;
+        sprite->unk10 = 0;
+        sprite->unk14 = 0;
+        sprite->unk1C = 0x10000;
+        sprite->unk84 = D_800AF880.components.descriptors[index].matrix.t[1];
+        if (kind == 0) {
+            D_800AF880.components.descriptors[index].actor->height = height * 2;
+        } else {
+            D_800AF880.components.descriptors[index].actor->height = 0x40;
+        }
+    }
+    if (D_800B2078.sprite_gate != 0) {
+        sprite->unk40 |= 0x40000;
+    }
+    func_800245D8(sprite, 0);
+    func_80021FE0(sprite, 0);
+    func_80032498(8, 0);
+    sprite->animation->actor = index;
+    func_80021BF8(sprite, func_80076A74);
+    if (flag == 0) {
+        func_80023210(sprite);
+        func_8001C964();
+        if (sprite->animation->unk0C == 0xFF) {
+            D_800AF880.components.descriptors[index].actor->unk0EA = 0xFF;
+            D_800AF880.components.descriptors[index].actor->layer_flags |= 0x01000000;
+            sprite->position[0] = D_800AF880.components.descriptors[index].actor->position[0];
+            sprite->position[1] = D_800AF880.components.descriptors[index].actor->position[1];
+            sprite->position[2] = D_800AF880.components.descriptors[index].actor->position[2];
+        }
+    }
+    D_800AF880.components.descriptors[index].transform.t[0] = D_800AF880.components.descriptors[index].matrix.t[0] =
+        WHOLE(D_800AF880.components.descriptors[index].actor->position[0]);
+    D_800AF880.components.descriptors[index].transform.t[1] = D_800AF880.components.descriptors[index].matrix.t[1] =
+        WHOLE(D_800AF880.components.descriptors[index].actor->position[1]);
+    D_800AF880.components.descriptors[index].transform.t[2] = D_800AF880.components.descriptors[index].matrix.t[2] =
+        WHOLE(D_800AF880.components.descriptors[index].actor->position[2]);
+    sprite->unk84 = D_800AF880.components.descriptors[index].matrix.t[1];
+    sprite->position[0] = D_800AF880.components.descriptors[index].actor->position[0];
+    sprite->position[1] = D_800AF880.components.descriptors[index].actor->position[1];
+    sprite->position[2] = D_800AF880.components.descriptors[index].actor->position[2];
+    D_800AFC74++;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80076AC0);
+#endif
 
 /* Set the semi-transparency bit of each of `count` 16-bit pixels. */
 void func_800771B0(u32 *pixels, s32 count) {

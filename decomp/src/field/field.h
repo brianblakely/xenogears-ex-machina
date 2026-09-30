@@ -140,7 +140,8 @@ typedef struct FieldActor {
     s16 unk11E;          /* 11E */
     void *unk120;        /* 120 */
     s16 unk124;          /* 124: -1 when +120 is free */
-    u8 unk126[2];
+    u8 unk126;           /* 126 */
+    u8 unk127;           /* 127: sprite slot */
     s16 unk128;          /* 128 */
     u8 unk12A[2];
     union {
@@ -150,7 +151,8 @@ typedef struct FieldActor {
     u32 unk130 : 9;      /* 130: bits 0-8 */
     u32 unk130_9 : 10;   /* bits 9-18 */
     u32 unk130_19 : 9;   /* bits 19-27 */
-    u32 unk130_28 : 4;
+    u32 sprite_kind : 2; /* bits 28-29 */
+    u32 unk130_30 : 2;
     u32 unk134;          /* 134 */
 } FieldActor;
 
@@ -206,7 +208,9 @@ typedef struct {
 typedef struct {
     u8 unk00[0xC];
     u16 unk0C;       /* 0C */
-    u8 unk0E[0x18 - 0x0E];
+    u8 unk0E[0x14 - 0x0E];
+    s16 actor;       /* 14: the descriptor it belongs to */
+    u8 unk16[0x18 - 0x16];
     s16 *unk18;      /* 18 */
 } FieldAnimation;
 
@@ -217,9 +221,12 @@ typedef struct {
     s32 unk10;       /* 10 */
     s32 unk14;       /* 14 */
     s32 unk18;       /* 18 */
-    u8 unk1C[0x2C - 0x1C];
+    s32 unk1C;       /* 1C */
+    u8 unk20[0x2C - 0x20];
     s16 unk2C;       /* 2C */
-    u8 unk2E[0x7C - 0x2E];
+    u8 unk2E[0x40 - 0x2E];
+    u32 unk40;       /* 40 */
+    u8 unk44[0x7C - 0x44];
     FieldAnimation *animation; /* 7C */
     u8 unk80[2];
     s16 unk82;       /* 82 */
@@ -257,7 +264,7 @@ typedef struct FieldDescriptor {
     FieldActor *actor;       /* 4C */
     SVECTOR rotation;        /* 50 */
     u16 flags;               /* 58 */
-    u8 unk5A[0x5C - 0x5A];
+    u16 unk5A;               /* 5A: bit 0 while it owns a sprite */
 } FieldDescriptor;
 
 /* The shadow pass reads the flags halfword with its padding as one word. */
@@ -771,6 +778,15 @@ extern s32 func_8009D000(s32 offset, s32 flags); /* operand, immediate with flag
 extern void func_80086590(VECTOR *target);
 extern s32 func_8009CFBC(s32 offset, s32 flags); /* operand, immediate with flag 0x40 */
 extern void func_80074700(void);
+/* The field sprite factory (80076ac0). */
+extern u16 D_800B1F78[][4];  /* per sprite slot: VRAM x, y */
+extern s32 D_800AFC74;       /* sprites created */
+extern FieldModel *func_80024524(void *data, s16 a, s16 b, s16 x, s16 y, s32 c);
+extern FieldModel *func_80024294(void *data, s16 a, s16 b, s16 x, s16 y, s32 c, s32 bank);
+extern void func_80023340(FieldModel *sprite, s32);
+extern void func_8001F5BC(FieldModel *sprite, s32, s32 *width, s32 *height, s32 *depth);
+extern void func_80021C00(FieldModel *sprite, s32);
+extern void func_80021BF8(FieldModel *sprite, void (*callback)());
 extern s32 D_8004F37C; /* shadows off */
 /* The model pass (800748e8). */
 extern s32 D_80059578; /* models drawn */
