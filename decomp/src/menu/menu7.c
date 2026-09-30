@@ -1621,9 +1621,7 @@ void func_8008D580(Emitter *emitter) {
     }
 }
 
-#ifdef NON_MATCHING
-/* (Re)allocate an emitter's pool for count sparks and set each one up.
- * Does not match: the emitter and loop counter swap $s1/$s2. */
+/* (Re)allocate an emitter's pool for count sparks and set each one up. */
 void func_8008D5C0(Emitter *emitter, s32 count) {
     u8 *spark;
     void (*setup)(void *, Emitter *);
@@ -1634,8 +1632,8 @@ void func_8008D5C0(Emitter *emitter, s32 count) {
     }
     emitter->count = count;
     func_800324B8(0x14);
-    spark = func_80031BDC(emitter->size * emitter->count, 0);
-    emitter->sparks = spark;
+    emitter->sparks = func_80031BDC(emitter->size * emitter->count, 0);
+    spark = emitter->sparks;
     setup = emitter->setup;
     for (i = 0; i < emitter->count; i++) {
         setup(spark, emitter);
@@ -1643,9 +1641,6 @@ void func_8008D5C0(Emitter *emitter, s32 count) {
         spark += emitter->size;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008D5C0);
-#endif
 
 /* Launch up to count idle sparks: each gets a random direction inside the
  * emitter's spread cone and a random speed, both rotated into place, then a
