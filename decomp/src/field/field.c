@@ -9843,9 +9843,78 @@ void func_800A7394(void) {
     CdDataSync(0);
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A73E8);
+#include "field_movie.h"
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A74F8);
+/* After a movie: reload the VRAM kept in party sprite blocks 1 and 2
+ * (unless movie mode 2), then release both blocks. */
+void func_800A73E8(void) {
+    RECT rect;
+
+    if (D_800ADB74 == 2) {
+        func_800320B8(D_8005A414[1]);
+        func_800320B8(D_8005A41C);
+        func_800320E8(D_8005A414[1]);
+        func_800320E8(D_8005A41C);
+    } else {
+        setRECT(&rect, 0x200, 0, 0x140, 0x80);
+        LoadImage(&rect, D_8005A414[1]);
+        DrawSync(0);
+        setRECT(&rect, 0x200, 0x80, 0x140, 0x80);
+        LoadImage(&rect, D_8005A41C);
+        DrawSync(0);
+        func_800320B8(D_8005A414[1]);
+        func_800320B8(D_8005A41C);
+        func_800320E8(D_8005A414[1]);
+        func_800320E8(D_8005A41C);
+    }
+}
+
+/* Before a movie: allocate party sprite blocks 1 and 2 and save the VRAM
+ * at (200, 0) in them; in movie mode 2 instead reload the sprites of party
+ * slots 1 and 2 from their character files. */
+void func_800A74F8(void) {
+    RECT rect;
+    MovieFileRequest requests[4];
+    s32 count;
+    s32 i;
+
+    if (D_800ADB74 == 2) {
+        D_8005A414[1] = func_80031BDC(0x14000, 0);
+        D_8005A414[2] = func_80031BDC(0x14000, 0);
+        func_800320A4(D_8005A414[1]);
+        func_800320A4(D_8005A414[2]);
+        func_80028470(4, 0);
+        count = 0;
+        for (i = 1; i < 3; i++) {
+            if (D_8006FABC[i] != 0xFF) {
+                requests[count].file = D_8006FABC[i] + 5;
+                requests[count].destination = D_80065AFC[i] = func_80031BDC(func_800288EC(D_8006FABC[i] + 5), 1);
+                count++;
+            }
+        }
+        requests[count].destination = NULL;
+        requests[count].file = 0;
+        func_80029AFC(requests, 0, 0);
+        func_80028A60(0);
+        for (i = 1; i < 3; i++) {
+            if (D_80062590[i] != 0xFF) {
+                func_80032EB4(D_80065AFC[i], D_8005A414[i]);
+                func_800320E8(D_80065AFC[i]);
+            }
+        }
+        return;
+    }
+    D_8005A414[1] = func_80031BDC(0x14000, 0);
+    D_8005A414[2] = func_80031BDC(0x14000, 0);
+    func_800320A4(D_8005A414[1]);
+    func_800320A4(D_8005A414[2]);
+    setRECT(&rect, 0x200, 0, 0x140, 0x80);
+    StoreImage(&rect, D_8005A414[1]);
+    DrawSync(0);
+    setRECT(&rect, 0x200, 0x80, 0x140, 0x80);
+    StoreImage(&rect, D_8005A414[2]);
+    DrawSync(0);
+}
 
 extern s32 D_800B14A8; /* nibble counter */
 extern u32 *D_800C3904; /* packed stream */
@@ -10080,12 +10149,13 @@ void func_800A9374(s32 slot) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Stop the emitters of effect slot `slot` and release their particles. */
 void func_800A93CC(s32 slot) {
     Record78 *emitter;
     s32 i;
     s32 j;
+    Particle *particle;
+    s32 unused[1]; /* the original frame reserves an unused local */
 
     if (D_800B14B0[slot] == 1) {
         emitter = D_800C3918[slot];
@@ -10093,16 +10163,14 @@ void func_800A93CC(s32 slot) {
             if (emitter->count != 0) {
                 emitter->unk04 = 0;
                 for (j = 0; j < emitter->count; j++) {
-                    emitter->particles[j].unk04 = 1;
+                    particle = &emitter->particles[j];
+                    particle->unk04 = 1;
                 }
             }
             emitter++;
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A93CC);
-#endif
 
 /* Release all effect slots. */
 void func_800A9460(void) {

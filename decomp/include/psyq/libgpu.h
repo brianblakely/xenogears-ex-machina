@@ -144,6 +144,7 @@ typedef struct {
 #define setcode(p, _code) (((P_TAG *)(p))->code = (u_char)(_code))
 #define getaddr(p) (u_long)(((P_TAG *)(p))->addr)
 #define getcode(p) (u_char)(((P_TAG *)(p))->code)
+#define setRECT(r, _x, _y, _w, _h) ((r)->x = (_x), (r)->y = (_y), (r)->w = (_w), (r)->h = (_h))
 #define setRGB0(p, _r0, _g0, _b0) ((p)->r0 = _r0, (p)->g0 = _g0, (p)->b0 = _b0)
 #define setXY4(p, _x0, _y0, _x1, _y1, _x2, _y2, _x3, _y3) \
     (p)->x0 = _x0, (p)->y0 = _y0, (p)->x1 = _x1, (p)->y1 = _y1, \
