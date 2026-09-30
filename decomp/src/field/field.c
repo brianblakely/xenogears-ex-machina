@@ -3586,21 +3586,112 @@ void func_800984EC(void) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800985BC);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009861C);
+/* Store the planar length of (x2 - x1, z2 - z1) from selected operands in
+ * a variable. */
+void func_8009861C(void) {
+    s32 x1;
+    s32 z1;
+    s32 x2;
+    s32 z2;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80098738);
+    x1 = func_8009CFBC(3, EVENT_OPERAND_BYTE(11));
+    z1 = func_8009D000(5, EVENT_OPERAND_BYTE(11));
+    x2 = func_8009D044(7, EVENT_OPERAND_BYTE(11));
+    z2 = func_8009D088(9, EVENT_OPERAND_BYTE(11));
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, func_80099A4C(x2 - x1, z2 - z1));
+    D_800B0078->pc += 12;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800988B8);
+/* Store the distance between two points from selected operands in a
+ * variable. */
+void func_80098738(void) {
+    s32 x1;
+    s32 y1;
+    s32 z1;
+    s32 x2;
+    s32 y2;
+    s32 z2;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009899C);
+    x1 = func_8009CFBC(3, EVENT_OPERAND_BYTE(15));
+    y1 = func_8009D000(5, EVENT_OPERAND_BYTE(15));
+    z1 = func_8009D000(7, EVENT_OPERAND_BYTE(15));
+    x2 = func_8009D044(9, EVENT_OPERAND_BYTE(15));
+    y2 = func_8009D088(11, EVENT_OPERAND_BYTE(15));
+    z2 = func_8009D088(13, EVENT_OPERAND_BYTE(15));
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, func_80099A04(x2 - x1, z2 - z1, y2 - y1));
+    D_800B0078->pc += 16;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800989F0);
+s32 func_80073930(s32 a, s32 b, s32 c);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80098A7C);
+/* Store field 80073930(three selected operands) in a variable. */
+void func_800988B8(void) {
+    s32 a;
+    s32 b;
+    s32 value;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80098C00);
+    a = func_8009CFBC(3, EVENT_OPERAND_BYTE(9));
+    b = func_8009D000(5, EVENT_OPERAND_BYTE(9));
+    value = func_80073930(a, b, func_8009D044(7, EVENT_OPERAND_BYTE(9)));
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, value);
+    D_800B0078->pc += 10;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80098C3C);
+/* Store the current actor's facing (12 bits) in a variable. */
+void func_8009899C(void) {
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, D_800B0078->unk106 & 0xFFF);
+    D_800B0078->pc += 3;
+}
+
+/* Store a selected actor's facing (12 bits) in a variable. */
+void func_800989F0(void) {
+    s32 index;
+    FieldActor *actor;
+
+    index = func_8009CDB4(1);
+    if (index != 0xFF) {
+        actor = D_800AFA64.descriptors[index].actor;
+        func_800A3074(func_800ACDB8(2) & 0xFFFF, actor->unk106 & 0xFFF);
+    }
+    D_800B0078->pc += 4;
+}
+
+/* Place the current actor at a selected position (whole units), marking
+ * flags 0x10000 / layer 0x200000, and mirror it to its descriptor and
+ * model. */
+void func_80098A7C(void) {
+    FieldModel *model;
+
+    model = D_800AFA64.descriptors[D_800AFD1C].model;
+    D_800B0078->flags |= 0x10000;
+    D_800B0078->layer_flags |= 0x200000;
+    D_800B0078->position[0].value = func_8009CF78(1, EVENT_OPERAND_BYTE(7)) << 16;
+    D_800B0078->position[2].value = func_8009CFBC(3, EVENT_OPERAND_BYTE(7)) << 16;
+    D_800B0078->position[1].value = func_8009D000(5, EVENT_OPERAND_BYTE(7)) << 16;
+    D_800AFA64.descriptors[D_800AFD1C].position[0] = D_800B0078->position[0].s.whole;
+    D_800AFA64.descriptors[D_800AFD1C].position[1] = D_800B0078->position[1].s.whole;
+    D_800AFA64.descriptors[D_800AFD1C].position[2] = D_800B0078->position[2].s.whole;
+    model->position[0] = D_800B0078->position[0].value;
+    model->position[1] = D_800B0078->position[1].value;
+    model->position[2] = D_800B0078->position[2].value;
+    D_800B0078->pc += 8;
+}
+
+void func_80098CAC(s32 mode);
+
+/* Walk mode 0 at the default speed. */
+void func_80098C00(void) {
+    D_800B0078->slots[D_800B0078->slot].value = 0xFFFF;
+    func_80098CAC(0);
+}
+
+/* Walk mode 1 with speed operand 11 latched in the slot. */
+void func_80098C3C(void) {
+    if (D_800B0078->slots[D_800B0078->slot].value == 0xFFFF) {
+        D_800B0078->slots[D_800B0078->slot].value = func_800ACDEC(11);
+    }
+    func_80098CAC(1);
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80098CAC);
 

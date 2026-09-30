@@ -68,7 +68,7 @@ typedef struct FieldActor {
 
 /* The object at descriptor offset 04. */
 typedef struct FieldModel {
-    u8 unk00[0x0C];
+    s32 position[3];    /* 00 */
     s32 unk0C;          /* 0C */
     u8 unk10[0x14 - 0x10];
     s32 unk14;          /* 14 */
@@ -79,7 +79,8 @@ typedef struct FieldModel {
 typedef struct FieldDescriptor {
     u8 unk00[0x04];
     FieldModel *model;  /* 04 */
-    u8 unk08[0x2C - 0x08];
+    u8 unk08[0x20 - 0x08];
+    s32 position[3];     /* 20 */
     MATRIX transform;    /* 2C */
     FieldActor *actor;  /* 4C */
     SVECTOR rotation;   /* 50 */
