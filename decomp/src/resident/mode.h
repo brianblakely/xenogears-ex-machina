@@ -146,7 +146,8 @@ void func_80024F20(void);
 /* Disc file access. */
 extern u8 *D_8004FDF0;      /* file index: 7 bytes per file */
 extern u16 *D_8004FDF4;     /* directory table: first file of each directory, 1-based */
-extern s32 D_8004FDF8;
+extern s32 D_8004FDF8;      /* bytes of the current read */
+extern s32 D_8004FE04;      /* sector of the current read */
 extern s32 D_8004FDFC;
 extern s32 D_8004FE14;      /* selected directory (first file - 1) */
 extern s32 D_8004FE1C;
@@ -164,7 +165,10 @@ s32 func_80028470(s32 group, s32 index);
 s32 func_800284B4(s32 *group, s32 *index);
 s32 func_80028548(s32 group, s32 index);
 char *func_80028998(s32 file);
-void func_8002954C(s32 sector, void *destination, s32 size, s32 a3, s32 a4);
+s32 func_800289D0(s32 file);
+s32 func_80029690(s32 file, void *destination, s32 a2, s32 a3);
+void func_80028ECC(s32 index);
+s32 func_8002954C(s32 sector, void *destination, s32 size, s32 a3, s32 a4);
 void func_8002A428(s32 mode);
 void func_8002A498(s32 offset);
 s32 func_80028530(void);

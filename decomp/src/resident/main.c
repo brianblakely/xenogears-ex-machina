@@ -1978,13 +1978,87 @@ void func_80028ECC(s32 index) {
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028F30);
 
+/* Release a ring chunk: clear its slot's state and return the old state (0xffff without a ring, 0 for no chunk). */
+/* Nonmatching under GCC 2.7.2 and 2.6.3: register choice for the ring (a1) and the payload arithmetic do not reproduce together. */
+#ifdef NON_MATCHING
+u16 func_8002945C(u8 *chunk) {
+    StreamRing *ring = D_8004FE30;
+    StreamSlot *slots;
+    s32 index;
+    u16 state;
+    u8 *payload;
+
+    if (ring == NULL) {
+        return 0xFFFF;
+    }
+    slots = ring->slots;
+    if (chunk == NULL) {
+        return 0;
+    }
+    payload = (u8 *)ring + ring->count * 8 + 0x24;
+    index = (u32)(chunk - payload) >> 11;
+    state = slots[index].state;
+    slots[index].state = 0;
+    return state;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002945C);
+#endif
 
+/* Release a run of ring chunks (the chunk header's halfword 3 counts them), merge the freed run and return the first slot's old state. */
+/* Nonmatching under GCC 2.7.2 and 2.6.3: the ring stays in a1 in the original. */
+#ifdef NON_MATCHING
+u16 func_800294B4(u8 *chunk) {
+    StreamRing *ring = D_8004FE30;
+    StreamSlot *slots;
+    s32 index;
+    s32 i;
+    u16 state;
+    u8 *payload;
+
+    if (ring == NULL) {
+        return 0xFFFF;
+    }
+    slots = ring->slots;
+    if (chunk == NULL) {
+        return 0;
+    }
+    i = ((u16 *)chunk)[3];
+    payload = (u8 *)ring + ring->count * 8 + 0x24;
+    index = (u32)(chunk - payload) >> 11;
+    state = slots[index].state;
+    for (; i > 0; i--) {
+        slots[index + i - 1].state = 0;
+    }
+    func_80028ECC(index);
+    return state;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800294B4);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002954C);
+/* Read `size` bytes from a raw disc sector (CD only); -1 with the PC file server. */
+s32 func_8002954C(s32 sector, void *destination, s32 size, s32 a3, s32 a4) {
+    if (D_8004FE48 != NULL) {
+        return -1;
+    }
+    func_80028A60(0);
+    D_8004FE04 = sector;
+    D_8004FDF8 = size;
+    return func_80029690(0, destination, a3, a4);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800295D8);
+/* Read a file of the selected directory; -3 for an invalid file, an empty file or no destination. */
+s32 func_800295D8(s32 file, void *destination, s32 a2, s32 a3) {
+    if (file <= 0 || func_80028738(file) <= 0 || destination == NULL) {
+        return -3;
+    }
+    func_80028A60(0);
+    D_8004FE18 = D_8004FE14;
+    D_8004FE04 = func_800289D0(file);
+    D_8004FDF8 = func_800288EC(file);
+    return func_80029690(file, destination, a2, a3);
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80029690);
 
