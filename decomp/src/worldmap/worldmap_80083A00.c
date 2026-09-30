@@ -1004,10 +1004,9 @@ s32 func_8008868C(void) {
 
 /* Fly the airship: spin its rotors, stop over the saved landing point when
  * low enough, move, place its shadow object and save the position. */
-#ifdef NON_MATCHING /* scheduling of the rotor angle stores and block-move registers */
 s32 func_80088720(s32 index) {
     WorldmapActor *actor;
-    VECTOR *work;
+    FlightScratch *scratch;
     s32 base;
 
     actor = &D_8009BE24[index];
@@ -1015,20 +1014,20 @@ s32 func_80088720(s32 index) {
     actor->u.step = (actor->u.step + actor->unk54) & 0xFFF;
     actor->unk58 = (actor->unk58 + actor->unk5C) & 0xFFF;
     FLIGHT_SCRATCH->rotor.vx = FLIGHT_SCRATCH->rotor.vz = 0;
-    FLIGHT_SCRATCH->tail.vx = FLIGHT_SCRATCH->tail.vz = 0;
     FLIGHT_SCRATCH->rotor.vy = actor->u.step;
+    FLIGHT_SCRATCH->tail.vx = FLIGHT_SCRATCH->tail.vz = 0;
     FLIGHT_SCRATCH->tail.vy = actor->unk58;
     func_8004A92C(&FLIGHT_SCRATCH->rotor, &FLIGHT_SCRATCH->rotor_matrix);
     func_8004A92C(&FLIGHT_SCRATCH->tail, &FLIGHT_SCRATCH->tail_matrix);
     D_8009C620[base + 5].matrix = FLIGHT_SCRATCH->rotor_matrix;
-    work = &FLIGHT_SCRATCH->work;
+    scratch = FLIGHT_SCRATCH;
     D_8009C620[base].matrix = D_8009C620[base + 1].matrix = D_8009C620[base + 2].matrix =
         D_8009C620[base + 3].matrix = FLIGHT_SCRATCH->tail_matrix;
-    work->vx = (u16)D_8006EE54.unk60 - (actor->position.vx >> 12);
-    work->vy = D_8006EE54.unk62;
-    work->vz = (u16)D_8006EE54.unk64 - (actor->position.vz >> 12);
-    func_80093534(work);
-    if (SquareRoot0(work->vx * work->vx + work->vz * work->vz) < 0x300 && work->vy < -0x240) {
+    scratch->work.vx = (u16)D_8006EE54.unk60 - (actor->position.vx >> 12);
+    scratch->work.vz = (u16)D_8006EE54.unk64 - (actor->position.vz >> 12);
+    scratch->work.vy = D_8006EE54.unk62;
+    func_80093534(&scratch->work);
+    if (SquareRoot0(scratch->work.vx * scratch->work.vx + scratch->work.vz * scratch->work.vz) < 0x300 && scratch->work.vy < -0x240) {
         actor->unk4A = 0;
     } else {
         actor->unk4A = 1;
@@ -1036,10 +1035,10 @@ s32 func_80088720(s32 index) {
     actor->position.vx += actor->motion.vx * actor->unk4A;
     actor->position.vz += actor->motion.vz * actor->unk4A;
     func_80093354(&actor->position);
-    work->vx = actor->position.vx >> 12;
-    work->vy = actor->position.vy >> 12;
-    work->vz = actor->position.vz >> 12;
-    D_8009C620[base + 12].position = *work;
+    scratch->work.vx = actor->position.vx >> 12;
+    scratch->work.vy = actor->position.vy >> 12;
+    scratch->work.vz = actor->position.vz >> 12;
+    D_8009C620[base + 12].position = scratch->work;
     func_8008BFD4(index, &actor->position, 0x180, 0xC0);
     D_8006EE80.x_frac = actor->position.vx;
     D_8006EE80.x = actor->position.vx >> 12;
@@ -1047,9 +1046,6 @@ s32 func_80088720(s32 index) {
     D_8006EE80.z = actor->position.vz >> 12;
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80088720);
-#endif
 
 /* Link the listed scene objects to object 69 and place it at the actor;
  * outside scene 0x99 also show them. */
