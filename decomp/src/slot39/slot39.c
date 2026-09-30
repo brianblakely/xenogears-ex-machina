@@ -435,14 +435,12 @@ void func_801C62A8(void) {
     func_801C5FE4();
 }
 
-/* Reset the card state and copy save title line D_8006EF64 of text file 1
- * into it. */
 #ifdef NON_MATCHING
 void func_801C6400(void) {
+    u8 *text;
     s32 i;
     s32 j;
     u16 line;
-    u8 *text;
     u8 *src;
     u8 c;
 
@@ -482,8 +480,7 @@ void func_801C6400(void) {
     for (j = 0; j < 30; j++) {
         D_800625A0->card->title[j] = *src++;
     }
-    D_800625A0->card->unk501B = 0;
-    D_800625A0->card->unk501A = 0;
+    D_800625A0->card->unk501A = D_800625A0->card->unk501B = 0;
     func_80028470(0x10, 0);
     func_800320E8(text);
 }
