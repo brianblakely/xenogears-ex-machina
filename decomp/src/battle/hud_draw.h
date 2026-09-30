@@ -63,6 +63,49 @@ typedef struct {
 #define UI_STATUS_BUFFER(i) (D_800D2D28->unk7F[5 + (i)]) /* +0x84, [3] party-wide */
 #define UI_GAUGE_BUFFER     (D_800D2D28->unk9F[3])       /* +0xA2 */
 
+/* The primitive lists of *800d2db4 with their counts and draw buffers; the
+ * shared BattleUnk2DB4 layout keeps most of them as padding. */
+typedef struct {
+    POLY_FT4 extra0[24];      /* +0x0000 count extraCounts[0] */
+    POLY_FT4 extra1[60];      /* +0x03C0 count extraCounts[1] */
+    POLY_FT4 extra2[16];      /* +0x0D20 count extraCounts[2] */
+    POLY_FT4 extra3[48];      /* +0x0FA0 count extraCounts[3] */
+    POLY_FT4 extra4[90];      /* +0x1720 count extraCounts[4] */
+    POLY_FT4 list9[86];       /* +0x2530 */
+    POLY_FT4 unk32A0[52];     /* +0x32A0 count +0x5D96, buffer +0x5D97 */
+    POLY_FT4 list0[22];       /* +0x3AC0 */
+    POLY_FT4 list1[2];        /* +0x3E30 */
+    POLY_FT4 list2[34];       /* +0x3E80 */
+    POLY_FT4 list10[18];      /* +0x43D0 */
+    POLY_FT4 unk46A0[40];     /* +0x46A0 twenty drawn, buffer +0x5D98 */
+    POLY_FT4 unk4CE0[10];     /* +0x4CE0 count +0x5DA1, buffer +0x5DA0 */
+    POLY_FT4 list3[8];        /* +0x4E70 */
+    POLY_FT4 list4[6];        /* +0x4FB0 */
+    POLY_FT4 list5[8];        /* +0x50A0 */
+    POLY_FT4 list6[4];        /* +0x51E0 */
+    POLY_FT4 list7[8];        /* +0x5280 */
+    POLY_FT4 list8[10];       /* +0x53C0 */
+    POLY_FT4 list11[6];       /* +0x5550 */
+    POLY_FT4 list12[40];      /* +0x5640 */
+    POLY_FT4 list13[6];       /* +0x5C80 */
+    u8 extraCounts[5];        /* +0x5D70 */
+    u8 counts[14];            /* +0x5D75 per list */
+    u8 extraBuffer4;          /* +0x5D83 */
+    u8 buffers[14];           /* +0x5D84 per list */
+    u8 extraBuffers[4];       /* +0x5D92 extra0..extra3 */
+    u8 count32A0;             /* +0x5D96 */
+    u8 buffer32A0;            /* +0x5D97 */
+    u8 buffer46A0;            /* +0x5D98 */
+    u8 unk5D99[3];
+    s16 unk5D9C;
+    s16 unk5D9E;
+    u8 buffer4CE0;            /* +0x5DA0 */
+    u8 count4CE0;             /* +0x5DA1 */
+    s16 blink;                /* +0x5DA2 frame counter of the blinking list */
+} ListPrims;
+
+#define LIST_PRIMS ((ListPrims *)D_800D2DB4)
+
 s32 func_80025FA8(void *table, s32 id, POLY_FT4 *prims, s32 buffer, s32 x, s32 y,
                   s32 scaleX, s32 scaleY, s32 scale);
 s32 func_80076A6C(s32 id, POLY_FT4 *prims, s16 x, s16 y);
