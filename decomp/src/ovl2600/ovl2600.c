@@ -1190,7 +1190,55 @@ void func_801C9F90(void) {
     func_801C989C(0x5C);
 }
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C9FC0);
+/* Open the message: allocate four line labels (pairs share one render
+ * buffer), render texts `first`..`first + 2` into VRAM, set up their 3D
+ * quads and show them. */
+void func_801C9FC0(u8 first) {
+    u16 x = 0x48;
+    s32 i;
+    MenuLabel *line;
+
+    for (i = 0; i < 4; i++) {
+        void *block = func_80031BDC(0x80, 0);
+
+        D_800625A0->message_lines[i] = block;
+        func_8003F8E8(block, 0x80);
+        if (!(i & 1)) {
+            D_800625A0->message_lines[i]->image = func_80031BDC(0x5CA, 0);
+            D_800625A0->message_lines[i]->rect.x = 0x140;
+            D_800625A0->message_lines[i]->rect.y = (i / 2) * 13 + 0x4E;
+            D_800625A0->message_lines[i]->rect.w = 0x3A;
+            D_800625A0->message_lines[i]->rect.h = 13;
+        } else {
+            D_800625A0->message_lines[i]->image = D_800625A0->message_lines[i - 1]->image;
+        }
+    }
+    for (i = 0; i < 3; i++) {
+        line = D_800625A0->message_lines[i];
+        line->width = func_80034EAC(func_80033728(D_800625A0->label_text, first + i), line->image,
+                                    0x36, i % 2);
+        func_801C5ABC(line, i, 0, 0);
+        func_801C6408(line->corners, x, i * 16 + 0xA0, line->width, 13);
+        (line->poly + D_800625A0->buffer_index)->u0 = 0;
+        (line->poly + D_800625A0->buffer_index)->v0 = (i / 2) * 13 + 0x4E;
+        (line->poly + D_800625A0->buffer_index)->u1 = line->width;
+        (line->poly + D_800625A0->buffer_index)->v1 = (i / 2) * 13 + 0x4E;
+        (line->poly + D_800625A0->buffer_index)->u2 = 0;
+        (line->poly + D_800625A0->buffer_index)->v2 = (i / 2) * 13 + 0x5B;
+        (line->poly + D_800625A0->buffer_index)->u3 = line->width;
+        (line->poly + D_800625A0->buffer_index)->v3 = (i / 2) * 13 + 0x5B;
+        line->buffer = D_800625A0->buffer_index;
+        line->projected = 1;
+    }
+    func_80044894(&D_800625A0->message_lines[0]->rect, D_800625A0->message_lines[0]->image);
+    func_80044894(&D_800625A0->message_lines[2]->rect, D_800625A0->message_lines[2]->image);
+    func_800445D0(0);
+    D_800625A0->flags->b_2E = 1;
+    func_800320E8(D_800625A0->message_lines[0]->image);
+    func_800320E8(D_800625A0->message_lines[2]->image);
+    func_801C9C34();
+    func_801C9C34();
+}
 
 /* Turn the message lines off, release their four blocks and run a frame. */
 void func_801CA39C(void) {
