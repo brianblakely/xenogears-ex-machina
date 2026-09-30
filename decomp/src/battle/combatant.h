@@ -130,7 +130,8 @@ typedef struct {
     u8 guard; /* 0x9C: tenths a half hit loses (at most 9) */
     u8 pad9D;
     u8 frameFactor; /* 0x9E: attack scale in quarters */
-    u8 pad9F[0xA4 - 0x9F];
+    s8 hitBonus;    /* 0x9F: accuracy with broken weapons, half as evasion */
+    u8 padA0[0xA4 - 0xA0];
 } GearRecord;
 
 /* The game data's unit records. */

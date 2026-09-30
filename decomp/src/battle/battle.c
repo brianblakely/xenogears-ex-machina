@@ -8216,7 +8216,120 @@ void func_8009D354(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009D3A0);
+/* Gear hit outcome of the current command on the target: 1 hit, 2 half,
+ * 3 miss. Like 80096ab8 with gear accuracy (+0x9f with a broken weapon,
+ * 1.5x with status 0x800), the target's evasion (half its gear's +0x9f,
+ * 1.5x with status 0x400) and the gears' blind/evade status 0x10. */
+s8 func_8009D3A0(void) {
+    s16 penalty = 0;
+    s16 bonus = 0;
+    s16 evasion;
+    s16 accuracy;
+    u8 durability;
+    s16 margin;
+    s16 roll;
+    u16 status;
+
+    if ((D_800C3DFC->flagsA & 0x200) && (D_800C3E34->pilot.flags34 & 8)) {
+        return 3;
+    }
+    if (D_800C3DFC->flagsA & 0x1000) {
+        return 3;
+    }
+    if ((D_800C3E34->pilot.status84.half.active | D_800C3E34->pilot.status84.half.permanent) & 0x100) {
+        return 3;
+    }
+    if (D_800C3E34->pilot.status7C & 0x2000) {
+        return 1;
+    }
+    if (D_800C3E34->pilot.status80 & 0x1000) {
+        return 1;
+    }
+    if (D_800C3DFC->flagsA & 0x8000) {
+        return 1;
+    }
+    evasion = D_800C3E34->pilot.field5F;
+    durability = D_8006F8EA[D_800D2D6C->partItems[0]];
+    accuracy = D_800C3E00->pilot.field5E;
+    if (durability == 0) {
+        accuracy += D_800D2D6C->hitBonus;
+    }
+    if (D_800D2DC8->hitBonus != 0) {
+        evasion += D_800D2DC8->hitBonus / 2;
+    }
+    if (D_800C3E00->pilot.characterId == 4) {
+        if ((D_800C3DFC->itemKinds & 0x80) && durability == 0) {
+            return 3;
+        }
+        if ((D_800C3DFC->itemKinds & 0x20) && D_8006F8EA[D_800D2D6C->partItems[3]] == 0) {
+            return 3;
+        }
+    }
+    if ((D_800D2D6C->status80 | D_800D2D6C->status82) & 0x800) {
+        accuracy += accuracy / 2;
+    }
+    if (D_800D2D6C->status7C & 0x10) {
+        penalty = 60;
+    }
+    if (D_800C3DFC->flagsA & 0x1000) {
+        return 3;
+    }
+    if (D_800C34B0->records[D_800C3E50].flags15A & 0x80) {
+        if ((D_800D2DC8->status80 | D_800D2DC8->status82) & 0x400) {
+            evasion += evasion / 2;
+        }
+        if (D_800D2DC8->status7C & 0x10) {
+            bonus = 30;
+        }
+        if (D_800D2DC8->status7C & 0xC00) {
+            return 1;
+        }
+    } else {
+        accuracy /= 2;
+        if (D_800C3E34->pilot.status7C & 0x2000) {
+            return 1;
+        }
+        if (D_800C3E34->pilot.status80 & 0x1000) {
+            return 1;
+        }
+        if ((D_800C3E34->pilot.status84.half.active | D_800C3E34->pilot.status84.half.permanent) & 0x800) {
+            evasion += evasion / 2;
+        }
+    }
+    if (D_800C34B0->records[D_800C3E50].flags15A & 1) {
+        if (rand() % 100 < 95) {
+            return 2;
+        }
+        return 1;
+    }
+    margin = accuracy + D_800C3DFC->hitBonus - evasion;
+    status = D_800C3E34->pilot.status84.half.active | D_800C3E34->pilot.status84.half.permanent;
+    if (status & 0x20) {
+        roll = rand() % 100 - margin;
+        if (roll >= 50) {
+            return 3;
+        }
+        return 1;
+    }
+    if (status & 0x40) {
+        roll = rand() % 100 - margin;
+        if (roll >= 50) {
+            return 2;
+        }
+        return 1;
+    }
+    roll = rand() % 100 - margin;
+    bonus += 85;
+    bonus -= penalty;
+    if (roll >= bonus) {
+        return 3;
+    }
+    roll = rand() % 100 - margin;
+    if (roll >= bonus) {
+        return 2;
+    }
+    return 1;
+}
 
 /* Damage of a gear attack (80096FBC); a command with flag 0x100 scales it by
  * the gear's frame factor in quarters (4 when unset or with status 0x100), and
