@@ -76,8 +76,8 @@ typedef struct {
     u8 field5D;     /* 0x5D: turn with the parent */
     s16 parentPart; /* 0x5E */
     s16 groundY;    /* 0x60 */
-    u8 field62;      /* 0x62: its model has its own texture */
-    u8 hasTexture;   /* 0x63 */
+    u8 ownSounds;    /* 0x62: the model data's sound bank is loaded */
+    u8 extraSounds;  /* 0x63: the extra data's sound bank is loaded */
     s16 offset[3];   /* 0x64: position relative to the target */
     s16 offset2[3];  /* 0x6A */
     s16 motion[12];  /* 0x70 */
@@ -92,8 +92,8 @@ typedef struct {
     u8 *animationCursor; /* 0xA4 */
     void *imageFile; /* 0xA8: its images, NULL none */
     void *modelFile; /* 0xAC: its model file, NULL shared */
-    void **model;    /* 0xB0: the model block; [2] its texture */
-    u8 *textureInfo; /* 0xB4 */
+    struct ObjectData *model;     /* 0xB0: the model data */
+    struct ObjectData *extraData; /* 0xB4: the extra file's data */
     u8 padB8[0x10A - 0xB8];
     u16 slotMask; /* 0x10A */
     u8 channelCount;  /* 0x10C */
@@ -270,7 +270,7 @@ void func_80028998(s32 bank);
 s32 func_800288EC(s32 bank);
 void func_80029AFC(SoundBanks *banks, s32 a, s32 b);
 
-void func_8003852C(u8 *texture);
+void func_8003852C(void *bank); /* free a sound bank */
 void func_800AA934(BattleObject *object, BattleObject *target, EffectPool *pool, s32 arg3);
 void func_800B00D0(void);
 void func_800AFF9C(BattleObject *object);

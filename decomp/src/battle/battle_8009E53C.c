@@ -1430,8 +1430,8 @@ void func_800A9FF0(s32 index) {
             func_800320E8((*slot)->imageFile);
             func_8009F794((*slot)->field0, 1);
         }
-        if ((*slot)->field62) {
-            func_8003852C((*slot)->model[2]);
+        if ((*slot)->ownSounds) {
+            func_8003852C((*slot)->model->sounds);
         }
         if ((*slot)->modelFile != NULL) {
             func_800320E8((*slot)->modelFile);
@@ -1895,7 +1895,22 @@ void func_800AE1BC(BattleObject *object, Animation *animation, s32 loop) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800AE220);
+/* The sound bank id (in the high half) of source: 0 the system bank, 1 the
+ * object's model data, 2 its extra data, 3 the bank D_800C4924. */
+s32 func_800AE220(BattleObject *object, s32 source) {
+    if (source == 0) {
+        return D_8005919C->bank << 16;
+    }
+    if (source == 1) {
+        return object->model->sounds->bank << 16;
+    }
+    if (source == 2) {
+        return object->extraData->sounds->bank << 16;
+    }
+    if (source == 3) {
+        return D_800C4924->bank << 16;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800AE2A4);
 
@@ -2190,12 +2205,12 @@ void func_800AFF9C(BattleObject *object) {
     }
 }
 
-/* Free a battle object's extra file (and its texture when it has one). */
+/* Free a battle object's extra file (and its sound bank when loaded). */
 void func_800B0060(BattleObject *object) {
     if (object->extra != NULL) {
-        if (object->hasTexture) {
-            func_8003852C(*(u8 **)(object->textureInfo + 8));
-            object->hasTexture = 0;
+        if (object->extraSounds) {
+            func_8003852C(object->extraData->sounds);
+            object->extraSounds = 0;
         }
         func_800320E8(object->extra);
         object->extra = NULL;

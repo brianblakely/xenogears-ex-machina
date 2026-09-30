@@ -4,6 +4,13 @@
 #include "common.h"
 #include "psyq.h"
 #include "scene.h"
+#include "battle_core.h"
+
+/* An object's model or extra data (fields as far as recovered). */
+struct ObjectData {
+    u8 pad0[8];
+    SoundSystem *sounds; /* 0x08: its sound bank */
+};
 
 /* Per-frame update and drawing of the stage objects. */
 extern s32 D_800CCC5C;     /* frames skipped by the last frame */
@@ -13,6 +20,7 @@ extern u16 D_800C3D14;     /* highlighted slots */
 extern u8 D_800C3DF8;      /* effects run */
 extern Matrix *D_800D2FC0; /* the stage colour matrix */
 extern s32 D_80050104;     /* resident: drawing with lighting */
+extern SoundSystem *D_800C4924;
 
 /* Resident services. */
 s32 func_8003F8CC(s32 angle); /* cosine (4096 = 1.0) */
