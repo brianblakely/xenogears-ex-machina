@@ -314,6 +314,8 @@ typedef struct {
 
 extern EnemyReaction D_800C3D18[8];
 extern u8 D_800C3E8C;      /* pending battle message + 1 */
+extern u8 D_800D366C;      /* menu effects enabled */
+extern u8 D_800D2CA4[5];
 
 /* Per-slot formation information (0x1c bytes from 800c3eb4). */
 typedef struct {
@@ -414,6 +416,15 @@ void func_80078658(u8 index, u8 actor);
 void func_800787E0(u8 value, u8 actor);
 void func_8007887C(u8 actor);
 void func_8007893C(u8 index, u8 actor);
+void func_80085350(void);
+void func_80085388(void);
+void func_800B89FC(s32 mode, u8 actor, s32 arg2, s32 arg3);
+s32 func_80080AE4(u8 actor);
+void func_800793F0(u8 actor);
+void func_80079674(u8 actor);
+void func_80079948(u8 **pc);
+u8 func_8007F8C0(u8 **pc, u8 enemy);
+u8 func_8007EF6C(u8 **pc, u8 enemy, u8 count);
 void func_80079934(u8 **pc);
 void func_800728B8(POLY_FT4 *prims, s32 count, s32 first);
 void func_80073380(s32 member);

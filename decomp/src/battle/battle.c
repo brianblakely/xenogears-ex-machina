@@ -866,11 +866,55 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800792F8);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800793F0);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80079674);
+/* Close the actor's event queue: event 0x1b for a flagged actor, then the
+ * closing event 0xfe; menu effects off. */
+void func_80079674(u8 actor) {
+    if (D_800D32A0[actor].unk1 != 0) {
+        D_800C3FE8[D_800C3EAC->eventCount].actor = actor;
+        D_800C3FE8[D_800C3EAC->eventCount].type = 0x1B;
+        D_800C3EAC->eventCount++;
+    }
+    D_800C3FE8[D_800C3EAC->eventCount].actor = actor;
+    D_800C3FE8[D_800C3EAC->eventCount].type = 0xFE;
+    D_800D366C = 0;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80079778);
+/* Execute the actor's action list with its attack model and wait until the
+ * queued events are done. */
+void func_80079778(u8 actor) {
+    D_800C3EAC->eventCount = 0;
+    func_80085350();
+    func_80085388();
+    D_800C3FE8[D_800C3EAC->eventCount].actor = actor;
+    func_800716D8();
+    func_800B89FC(1, actor, 0, func_80080AE4(actor));
+    func_800793F0(actor);
+    func_80079674(actor);
+    while (D_800C3EAC->eventsDone == 0) {
+        func_800716D8();
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80079840);
+/* Tell enemy `target` who acts on it: var 7 = the actor's bit, bytes 9..13
+ * from 800d2ca4 and byte 14 whether the actor's default target is in the
+ * 800c48e8 mask. */
+void func_80079840(u8 actor, u8 target) {
+    s32 i;
+    u8 enemy;
+
+    if (target >= 3) {
+        enemy = target - 3;
+        D_800D3400[enemy].vars[7] = func_80089C08(actor);
+        for (i = 0; i < 5; i++) {
+            D_800D3400[enemy].bytes[9 + i] = D_800D2CA4[i];
+        }
+        if ((u16)D_800C48E8 & func_80089C08(D_800C3EAC->slots[actor].defaultTarget)) {
+            D_800D3400[enemy].bytes[14] = 1;
+        } else {
+            D_800D3400[enemy].bytes[14] = 0;
+        }
+    }
+}
 
 /* Advance the AI script by one four-byte instruction. */
 void func_80079934(u8 **pc) {
@@ -888,7 +932,38 @@ void func_80079948(u8 **pc) {
     }
 }
 
+/* Run enemy `slot`'s AI script: clear the action list and event types, then
+ * evaluate conditions and actions until 0xfd or 0xff. */
+#ifdef NON_MATCHING
+void func_800799C8(u8 slot) {
+    u8 *pc;
+    u8 count;
+    u8 enemy;
+    u8 *p;
+    s32 i;
+
+    count = 0;
+    enemy = slot - 3;
+    pc = D_800D3400[enemy].script;
+    for (p = (u8 *)D_800D2E5C; p < (u8 *)D_800D2E5C + 0x100; p++) {
+        *p = 0;
+    }
+    for (i = 31; i >= 0; i--) {
+        D_800C3FE8[i].type = 0xFF;
+    }
+    while (*pc != 0xFD && *pc != 0xFF) {
+        if (*pc >= 0x80) {
+            if (!func_8007F8C0(&pc, enemy)) {
+                func_80079948(&pc);
+            }
+        } else {
+            count = func_8007EF6C(&pc, enemy, count);
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800799C8);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80079AB0);
 
