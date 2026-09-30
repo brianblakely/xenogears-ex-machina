@@ -500,7 +500,7 @@ void func_800725B0(Actor *scene) {
     D_80092624 = header->unk18;
     D_80092628 = header->unk1A;
     D_8009262C = header->unk1C;
-    D_80092632 = header->unk1E;
+    D_80092630.vy = header->unk1E;
 }
 
 /* Tear down the scene set up by func_800725B0. */
@@ -533,7 +533,100 @@ void func_8007273C(Node *model, Matrix *matrix, Matrix *out) {
     out->t[2] = local.t[2];
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu2", func_80072858);
+/* One frame of the winner screen: turn the winner's model with the
+ * shoulder buttons, toggle its record text with the first button, leave
+ * with 0x20; draw the record (name, level, matches, time) and the model
+ * turning in front of the scene's lights. */
+void func_80072858(LightRig *rig) {
+    Matrix unused1; /* the original frame has 32 unused bytes on */
+    Matrix m;
+    Matrix unused2; /* either side of the matrix */
+    char text[64];
+    Actor *winner = D_80092614;
+    u8 y;
+    ModelSet *set;
+
+    func_80036420();
+    if (winner->model_id != 7) {
+        if (D_80059570 & 0x2000) {
+            D_80092620--;
+        }
+        if (D_80059570 & 0x8000) {
+            D_80092620++;
+        }
+    }
+    if (D_80092620 < -0x80) {
+        D_80092620 = -0x80;
+    }
+    if (D_80092620 > 0x80) {
+        D_80092620 = 0x80;
+    }
+    if (D_800928FC == 1) {
+        if (D_80059490 & 0x20) {
+            func_800726B4();
+            return;
+        }
+        if (D_80059490 & 1) {
+            D_80092618++;
+        }
+    } else {
+        if (D_8005948C & 0x20) {
+            func_800726B4();
+            return;
+        }
+        if (D_8005948C & 1) {
+            D_80092618++;
+        }
+    }
+    if (D_80092618 & 1) {
+        y = 0x86;
+        if (D_800928C8 == 2 || D_800928C8 == 3) {
+            y = 0x9A;
+        }
+        func_8007E954(0x1C0);
+        func_8007E894(0x18, y);
+        func_8007EBE0("WINNER");
+        if (D_800928C8 != 2 && D_800928C8 != 3) {
+            func_8007EBE0("LEVEL");
+        }
+        func_8007EBE0("MATCHES");
+        func_8007EBE0("TIME");
+        func_8007E894(0xA8, y);
+        func_8007EBE0(D_8009196C[winner->model_id].name);
+        if (D_800928C8 != 2 && D_800928C8 != 3) {
+            sprintf(text, "%s", func_8007F97C());
+            func_8007EBE0(text);
+        }
+        sprintf(text, "%d/%d VS %s", winner->unkF2, D_80092950, D_8009196C[winner->opponent->model_id].name);
+        func_8007EBE0(text);
+        func_80083CE8();
+    }
+    func_80080D20(D_80092938);
+    D_80092630.vx = D_8009261C;
+    D_80092630.vy += D_80092620;
+    D_80092630.vz = 0;
+    func_8003F738(&D_80092630, &m);
+    func_80049BDC(&D_80096FE0, &m);
+    m.t[0] = 0;
+    m.t[1] = D_80092624;
+    m.t[2] = D_80092628;
+    func_8008AC0C(rig->layer);
+    func_8007B210(winner, 0);
+    winner->node->position.vx = winner->node->position.vy = winner->node->position.vz = 0;
+    winner->node->unk44.vy = 0;
+    set = winner->node->data;
+    set->scale[0] = set->scale[1] = set->scale[2] = D_8009262C;
+    ((Node *)winner->object)->view = m;
+    func_8008A7E0(winner->node);
+    func_8008AE1C(rig->layer);
+    func_8008AC0C(D_800910F0->layer);
+    func_8007273C(winner->node, &m, &D_80092610->view);
+    func_8008A7E0(D_80092610);
+    gte_SetRotMatrix(&D_80092610->view);
+    gte_SetTransMatrix(&D_80092610->view);
+    func_8008C2E8(D_80092610);
+    func_8008AE1C(D_800910F0->layer);
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu2", func_80072D18);
 

@@ -418,13 +418,14 @@ extern Sprt16 D_8009A244;
 extern Actor *D_80092614;
 extern LightRig *D_800910F0; /* the scene's lights */
 extern Node *D_80092610;     /* the scene's root node */
-extern Vector D_80096FA8;    /* scene origin (last eye position) */extern s8 D_80092618;
+extern Vector D_80096FA8;    /* scene origin (last eye position) */
+extern s8 D_80092618;       /* odd: show the record text */
 extern s32 D_8009261C;
 extern s32 D_80092620;
 extern s32 D_80092624;
 extern s32 D_80092628;
 extern s32 D_8009262C;
-extern u16 D_80092632;
+extern SVector D_80092630;  /* model view angles */
 extern ShotKind D_800910F4[];
 extern SideHits D_80096FB8[2];
 extern s32 D_8009112C;
