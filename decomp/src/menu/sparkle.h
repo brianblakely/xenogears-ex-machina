@@ -58,7 +58,7 @@ extern Sparkle D_80092AD8[SPARKLE_COUNT];
 extern SparkleKind D_80092A74[];
 extern Color D_800926B8; /* colour of kind-2 sparkles */
 extern s32 D_800926A4;   /* frame counter */
-extern s32 D_800926B0;
+extern s32 D_800926B0; /* scene lines added this frame */
 extern s32 D_800926B4;
 
 

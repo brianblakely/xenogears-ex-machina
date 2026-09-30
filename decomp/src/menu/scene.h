@@ -19,10 +19,42 @@ typedef struct {
     s16 x1, y1;
 } LineF2;
 
+/* libgte SVECTOR layout. */
+typedef struct {
+    s16 vx, vy, vz, pad;
+} SVector;
+
+/* A 3D line segment of the scene, projected into its LINE_F2 each frame. */
 typedef struct {
     LineF2 line;
-    u8 unk10[0x10];
+    SVector from; /* 0x10 */
+    SVector to;   /* 0x18 */
 } SceneLine;
+
+/* libgpu DR_TPAGE and SPRT layouts. */
+typedef struct {
+    u32 tag;
+    u32 code[1];
+} DrTpage;
+
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    u8 u0, v0;
+    u16 clut;
+    s16 w, h;
+} Sprt;
+
+/* A sprite with its texture page, one per draw buffer. */
+typedef struct {
+    DrTpage tpage;
+    Sprt sprite;
+} SceneSprite;
+
+extern SceneSprite D_800954D8[2];
+extern u8 D_800928A0;   /* draw buffer being built */
+extern s32 D_800928E8;
 
 typedef struct {
     s16 unk0, unk2, unk4, unk6;
@@ -69,7 +101,41 @@ extern s32 D_800912F0;
 extern s32 D_80092734;
 extern s32 D_80092950;
 
+/* 32-byte records of the list at D_80092874; +4 is the required level. */
+typedef struct {
+    u8 unk0[4];
+    s16 level;
+    u8 unk6[0x1A];
+} ListSource;
+
+typedef struct {
+    u8 unk0[0xC];
+} ListEntry;
+
+/* A cell of the 7x7 grid block at D_8009270C (20 bytes). */
+typedef struct {
+    s16 unk0;
+    s16 id;
+    s16 unk4;
+    s16 unk6;
+    s16 y;
+    s16 x;
+    s16 w;
+    s16 h;
+    u8 unk10[4];
+} GridCell;
+
+extern u16 D_8006EF64;
+extern ListEntry D_80091964[49];
+extern ListSource *D_80092874;
+extern ListEntry **D_800928EC;
+extern s32 D_80092888;
+extern GridCell *D_8009270C;
+
+void *func_80031BDC(s32 size, s32 flag); /* allocate from the heap */
+void func_8008895C(void);
 void func_8007E3CC(void *arg);
+void func_80043B48(void *ot, void *prim); /* link a primitive into an OT entry */
 Glyph *func_8007E8AC(s32 ch);
 void func_8007E964(s32 ch);
 s32 func_8007EB6C(u8 *text);

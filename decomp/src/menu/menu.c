@@ -643,7 +643,24 @@ void func_8007E2D8(void) {
     D_800926B4 = 0;
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007E31C);
+/* Queue a coloured 3D line segment for this frame (at most 100). */
+void func_8007E31C(Vector *from, Vector *to, Color *color) {
+    SceneLine *line;
+
+    if (D_800926B0 < 100) {
+        line = &D_80094818[D_800926B0];
+        line->from.vx = from->vx;
+        line->from.vy = from->vy;
+        line->from.vz = from->vz;
+        line->to.vx = to->vx;
+        line->to.vy = to->vy;
+        line->to.vz = to->vz;
+        line->line.r0 = color->r;
+        line->line.g0 = color->g;
+        line->line.b0 = color->b;
+        D_800926B0++;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007E3CC);
 
@@ -655,7 +672,16 @@ void func_8007E528(s32 state) {
     D_80092708 = state;
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007E574);
+/* While the scene state counts down, draw its sprite (when flag 2 is set). */
+void func_8007E574(void *ot) {
+    if (D_80092708 != 0) {
+        if (D_800928E8 & 2) {
+            func_80043B48(ot, &D_800954D8[D_800928A0].sprite);
+            func_80043B48(ot, &D_800954D8[D_800928A0].tpage);
+        }
+        D_80092708--;
+    }
+}
 
 s32 func_8007E624(void) {
     return D_800926DC;
@@ -770,9 +796,63 @@ void func_8007EE68(s32 highlight) {
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007EE68);
 #endif
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007EEE8);
+#ifdef NON_MATCHING
+/* Build the list of the 49 entries (or, when filtering, of those whose
+ * required level the current level reaches) and order it when filtering.
+ * Does not match: the source and entry pointers get swapped registers. */
+void func_8007EEE8(s32 filter) {
+    s32 level = D_8006EF64;
+    ListEntry **list = func_80031BDC(0xC4, 1);
+    ListSource *source;
+    s32 i;
 
+    source = D_80092874;
+    D_800928EC = list;
+    D_80092888 = 0;
+    for (i = 0; i < 49; i++, source++) {
+        if (!filter || source->level <= level) {
+            list[D_80092888++] = &D_80091964[i];
+        }
+    }
+    if (filter) {
+        func_8008895C();
+    }
+}
+#else
+INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007EEE8);
+#endif
+
+#ifdef NON_MATCHING
+/* Allocate and lay out the 7x7 grid of 64x32 cells with descending ids.
+ * Does not match: the x shift is scheduled after the first stores. */
+void func_8007EFB4(void) {
+    u8 unused[0x30]; /* never used; the original frame keeps its slot */
+    GridCell *cell;
+    s32 id;
+    s32 row;
+    s32 col;
+    s16 top;
+
+    cell = D_8009270C = func_80031BDC(0x3D4, 0);
+    id = 0x1FF;
+    for (row = 0; row < 7; row++) {
+        top = row * 0x20 + 0x1A0;
+        for (col = 0; col < 7; col++) {
+            cell->unk0 = 0x200;
+            cell->id = id--;
+            cell->unk4 = 0x80;
+            cell->unk6 = 1;
+            cell->y = top;
+            cell->x = col << 6;
+            cell->w = 0x1E;
+            cell->h = 0x40;
+            cell++;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007EFB4);
+#endif
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007F05C);
 
