@@ -341,7 +341,58 @@ void func_80025224(Task *task, s32 kind) {
     func_8001CD64(task, D_8004FD40[kind]);
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_800248D4", func_80025258);
+/* Sprite task draw: its depth from its position under the view matrix
+ * plus its depth bias (0 when the projection overflows); unless it is a
+ * passive child while 800c3664 is set, draw it into the ordering table
+ * (8001e298), or with render bit 24 in its own placement (8001e3d8) at
+ * the bias or, with bit 25, at the back; render bit 29 takes the creator's
+ * depth. Only depths 1-0xfff are drawn. */
+void func_80025258(Task *task) {
+    SVECTOR position;
+    VECTOR translation;
+    s32 xy;
+    s32 flag;
+    Sprite *sprite = task->data;
+    s32 depth;
+
+    if (sprite->b0.bits.passive_children && D_800C3664 != 0) {
+        return;
+    }
+    position.vx = sprite->x >> 16;
+    position.vy = sprite->y >> 16;
+    position.vz = sprite->z >> 16;
+    SetRotMatrix(&D_8004FBB8);
+    SetTransMatrix(&D_8004FBB8);
+    depth = (RotTransPers(&position, &xy, &xy, &flag) >> D_80050100) + sprite->half30;
+    if (flag & 0x8000) {
+        depth = 0;
+    }
+    sprite->depth = depth;
+    if ((sprite->render.word >> 24) & 1) {
+        func_80022038(sprite);
+        translation.vx = sprite->x >> 16;
+        translation.vy = sprite->y >> 16;
+        translation.vz = sprite->z >> 16;
+        TransMatrix(&sprite->renderer->matrix, &translation);
+        SetRotMatrix(&sprite->renderer->matrix);
+        SetTransMatrix(&sprite->renderer->matrix);
+        if ((sprite->render.word >> 25) & 1) {
+            depth = 0xFFF;
+        } else {
+            depth = sprite->half30;
+        }
+        if (depth > 0 && depth < 0x1000) {
+            func_8001E3D8(sprite, D_8005956C + depth * 4);
+        }
+    } else {
+        if ((sprite->render.word >> 29) & 1) {
+            depth = ((Sprite *)sprite->word70)->depth;
+        }
+        if (depth > 0 && depth < 0x1000) {
+            func_8001E298(sprite, D_8005956C + depth * 4);
+        }
+    }
+}
 
 /* Sprite task draw for a sprite without a frame: a point primitive at its
  * screen position (its colour word) and a draw-mode primitive with its
@@ -385,7 +436,67 @@ void func_8002541C(Task *task) {
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_800248D4", func_8002541C);
 #endif
 
+/* Sprite task draw for a sprite without a frame drawn as a square: a tile
+ * primitive (its colour word) centred on its screen position, as wide as
+ * the projection of its size (halfword 0x36) at its distance, and a
+ * draw-mode primitive with its blend bits, both from the queue entry
+ * block, at its depth. */
+/* Nonmatching: the original leaves the delay slot of the absolute-value branch empty and stores the colour word right after the length; this build fills the slot with the tile pointer copy and stores the colour in the AddPrim delay slot. */
+#ifdef NON_MATCHING
+void func_80025544(Task *task) {
+    SVECTOR centre;
+    SVECTOR edge;
+    s32 edge_xy[2];
+    s32 unused_xy;
+    s32 flag;
+    Sprite *sprite = task->data;
+    s32 size;
+    TilePrim *tile;
+    ModePrim *mode;
+    s32 depth;
+
+    if (sprite->frame != 0) {
+        return;
+    }
+    size = *(u16 *)sprite->unknown36;
+    tile = (TilePrim *)D_80059580;
+    if ((u8 *)(tile + 1) < D_80059534) {
+        centre.vx = sprite->x >> 16;
+        centre.vy = sprite->y >> 16;
+        centre.vz = sprite->z >> 16;
+        D_80059580 = (SpriteQueueEntry *)(tile + 1);
+        SetRotMatrix(&D_8004FBB8);
+        SetTransMatrix(&D_8004FBB8);
+        edge = centre;
+        edge.vx += size;
+        depth = RotTransPers3(&centre, &edge, &centre, (long *)&tile->x, edge_xy, &unused_xy, &flag, &flag) >> D_80050100;
+        sprite->depth = depth;
+        size = (s16)edge_xy[0] - tile->x;
+        if (size == 0) {
+            size = 1;
+        }
+        if (size < 0) {
+            size = -size;
+        }
+        tile->x -= size / 2;
+        tile->y -= size / 2;
+        tile->colour = *(u32 *)&sprite->red;
+        tile->len = 3;
+        tile->h = size;
+        tile->w = size;
+        AddPrim((u32 *)D_8005956C + depth, tile);
+        mode = (ModePrim *)D_80059580;
+        if ((u8 *)(mode + 1) < D_80059534) {
+            D_80059580 = (SpriteQueueEntry *)(mode + 1);
+            mode->len = 1;
+            mode->code = (sprite->render.word & 0x60) | 0xE1000000;
+            AddPrim((u32 *)D_8005956C + depth, mode);
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_800248D4", func_80025544);
+#endif
 
 void func_80025710(void) {
 }

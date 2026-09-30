@@ -388,6 +388,16 @@ void func_8001FBE4(Sprite *sprite, s32 op, u8 *args); /* run a script command */
 u8 *func_8001FBA4(Sprite *sprite, u8 *code);
 u8 func_80021C20(Sprite *sprite);
 s32 func_80021C6C(Sprite *sprite);
-void func_80021CA0(Sprite *sprite, u8 value); /* battle overlay: the current actor's sprite */
+void func_80021CA0(Sprite *sprite, u8 value);
+void func_8001E298(Sprite *sprite, s32 ot); /* draw into the ordering table entry at `ot` */
+extern u8 D_800C3664;
+/* The tile primitive 80025544 takes from the queue block. */
+typedef struct {
+    u8 addr[3];
+    u8 len;
+    u32 colour;
+    s16 x, y;
+    s16 w, h;
+} TilePrim; /* battle overlay: passive children are not drawn */ /* battle overlay: the current actor's sprite */
 
 #endif
