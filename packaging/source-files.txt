@@ -113,6 +113,7 @@ decomp/include/include_asm.h
 decomp/include/macro.inc
 decomp/src/battle/battle.c
 decomp/src/battle/combatant.h
+decomp/src/battle/model.h
 decomp/src/debug2611/debug2611.c
 decomp/src/debug595/debug595.c
 decomp/src/field/field.c

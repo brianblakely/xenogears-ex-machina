@@ -1,5 +1,6 @@
 #include "common.h"
 #include "combatant.h"
+#include "model.h"
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80070E2C);
 
@@ -2352,9 +2353,112 @@ void func_8009E788(void) {
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009E788);
 #endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009E868);
+/* Show the message for a gear status that was applied, named by its kind and
+ * flag bit (the gear counterpart of 8009B684). */
+void func_8009E868(u8 kind, u16 flag) {
+    switch (kind) {
+    case 0:
+        switch (flag) {
+        case 0x400:
+            D_800C34B0->message = 0x24;
+            break;
+        case 0x200:
+            D_800C34B0->message = 0x25;
+            break;
+        case 0x100:
+            D_800C34B0->message = 0x26;
+            break;
+        case 0x80:
+            D_800C34B0->message = 0x27;
+            break;
+        case 0x40:
+            D_800C34B0->message = 0x28;
+            break;
+        case 0x20:
+            D_800C34B0->message = 0x29;
+            break;
+        case 0x10:
+            D_800C34B0->message = 0x2A;
+            break;
+        case 0x4:
+            D_800C34B0->message = 0x2B;
+            break;
+        }
+        break;
+    case 1:
+        switch (flag) {
+        case 0x1000:
+            D_800C34B0->message = 0x2D;
+            break;
+        case 0x800:
+            D_800C34B0->message = 0x2E;
+            break;
+        case 0x400:
+            D_800C34B0->message = 0x2F;
+            break;
+        case 0x40:
+            D_800C34B0->message = 0x15;
+            break;
+        case 0x20:
+            D_800C34B0->message = 0x16;
+            break;
+        case 0x2:
+        case 0x8:
+            D_800C34B0->message = 0x19;
+            break;
+        case 0x1:
+        case 0x4:
+            D_800C34B0->message = 0x1A;
+            break;
+        }
+        break;
+    case 3:
+        switch (flag) {
+        case 0x8000:
+            D_800C34B0->message = 0x1B;
+            break;
+        case 0x4000:
+            D_800C34B0->message = 0x1C;
+            break;
+        case 0x2000:
+            D_800C34B0->message = 0x1D;
+            break;
+        case 0x1000:
+            D_800C34B0->message = 0x1E;
+            break;
+        case 0x400:
+            D_800C34B0->message = 0x1F;
+            break;
+        case 0x800:
+            D_800C34B0->message = 0x20;
+            break;
+        case 0x100:
+            D_800C34B0->message = 0x21;
+            break;
+        case 0x200:
+            D_800C34B0->message = 0x22;
+            break;
+        }
+        break;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009EBA8);
+/* Relocate a model group and list its models in a new table. */
+ModelList *func_8009EBA8(u8 *group, ModelList *list) {
+    u32 count;
+    u32 i;
+
+    func_80032498(4, 0);
+    count = func_8002C3E8(group);
+    list->models = func_80031BDC(count * 4, 0);
+    list->count = count;
+    if (list->models != NULL) {
+        for (i = 0; i < count; i++) {
+            list->models[i] = group + 0x10 + i * 0x38;
+        }
+    }
+    return list;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009EC4C);
 
