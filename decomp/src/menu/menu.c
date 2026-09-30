@@ -856,7 +856,7 @@ void func_800740E4(Actor *actor, HitSpec *hit, s32 lands) {
                 a.vy = (a.vy + b.vy) / 2;
                 a.vz = (a.vz + b.vz) / 2;
             }
-            func_80073424(&a, NULL, actor, 0, actor->unk1600[0x18], style);
+            func_80073424(&a, NULL, actor, 0, actor->stats->unk18, style);
             func_80076424(actor);
             actor->pose->flags |= 0x8000;
         } else {
@@ -866,7 +866,7 @@ void func_800740E4(Actor *actor, HitSpec *hit, s32 lands) {
         }
         D_80096FB8[ACTOR_SIDE(actor)].unkC = D_80096FB8[ACTOR_SIDE(actor)].unk10 = actor->unk99E;
         D_80096FB8[ACTOR_SIDE(actor)].unk0 = D_80096FB8[ACTOR_SIDE(actor)].unk8 = D_8009112C;
-        D_80096FB8[ACTOR_SIDE(actor)].unk4 = actor->unk1600[0x18];
+        D_80096FB8[ACTOR_SIDE(actor)].unk4 = actor->stats->unk18;
         return;
     }
     if (D_80096FB8[ACTOR_SIDE(actor)].unk8 != D_80096FB8[ACTOR_SIDE(actor)].unk0) {
@@ -1182,7 +1182,28 @@ INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu", D_8006FCB4);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80076438);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800764CC);
+/* Start an actor's turn: clear its per-turn state and flags, set its
+ * gauge, place its gauge at its side and record the pending combo. */
+void func_800764CC(Actor *actor) {
+    s32 value;
+    u32 flags;
+
+    actor->unk40 = 0;
+    actor->unk100 = 0;
+    if (func_80083CD8() != 7) {
+        actor->flags &= ~0x8000;
+        actor->flags &= ~2;
+    }
+    value = actor->unk15F4 * D_8009292C;
+    flags = actor->flags & ~0x80000;
+    actor->flags = flags;
+    actor->unk15F2 = value >> 8;
+    func_8007E894(!(flags & 0x8000000) ? 0x28 : 0xF0, 0x28);
+    if (actor->unk9C3 != 0) {
+        D_80096FB8[ACTOR_SIDE(actor)].unk0 = D_80091198[actor->unk9C3];
+        D_80096FB8[ACTOR_SIDE(actor)].unk4 = actor->stats->levels[actor->unk9C3] * actor->stats->base / 100;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007661C);
 

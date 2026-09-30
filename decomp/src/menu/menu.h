@@ -146,10 +146,20 @@ typedef struct {
     s32 unk10;
 } SideHits;
 
+/* An actor's fighting stats. */
+typedef struct {
+    s16 base;
+    u8 unk2[0x7];
+    u8 levels[0xF];      /* 0x09: indexed by the combo number */
+    u8 unk18;
+} Stats;
+
 /* A character moved in the menu scene. */
 typedef struct Actor {
     Vector pos;          /* 0x00 */
-    u8 unk10[0x38];
+    u8 unk10[0x30];
+    s32 unk40;
+    u8 unk44[0x4];
     s32 state;           /* 0x48 */
     u8 anim;             /* 0x4C */
     u8 unk4D[0x7];
@@ -173,7 +183,8 @@ typedef struct Actor {
     struct Actor *opponent; /* 0xD8 */
     u8 unkDC[0xC];
     s32 unkE8;
-    u8 unkEC[0x18];
+    u8 unkEC[0x14];
+    s32 unk100;
     Trail trails[16];    /* 0x104 */
     s32 unk644;
     u8 unk648[0x4];
@@ -202,8 +213,11 @@ typedef struct Actor {
     s16 unk15EA;
     s16 unk15EC;
     s16 unk15EE;
-    u8 unk15F0[0x10];
-    u8 *unk1600;
+    u8 unk15F0[0x2];
+    s16 unk15F2;
+    s16 unk15F4;
+    u8 unk15F6[0xA];
+    Stats *stats;        /* 0x1600 */
     u8 unk1604[0x50];
     s32 unk1654;
     s32 unk1658;
@@ -356,6 +370,8 @@ extern Matrix D_80091C0C;
 extern ShotKind D_800910F4[];
 extern SideHits D_80096FB8[2];
 extern s32 D_8009112C;
+extern s32 D_80091198[];
+extern s32 D_8009292C;
 extern s32 D_80092654; /* last crossing point x, z */
 extern s32 D_80092658;
 extern s32 D_80099D88;
@@ -411,6 +427,7 @@ void func_8008EBD0(Actor *actor, s32 sound, Shot *shot, s32 arg);
 void func_80073B7C(Actor *actor, s32 part, s32 vertex, Vector *out);
 void func_8007C100(u8 *arg);
 void func_80076424(Actor *actor);
+void func_8007E894(s32 x, s32 y);
 void func_80074678(Actor *actor, s32 arg1, s32 arg2);
 void func_8008B0D8(ModelAnim *anim);
 void func_8008B730(ModelAnim *anim, s32 arg1, s32 arg2);
