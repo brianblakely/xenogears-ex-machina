@@ -2609,7 +2609,7 @@ void func_8007A44C(POLY_FT4 *poly, s16 u0, s16 v0, s16 u1, s16 v1, s16 u2, s16 v
     poly->v3 = v3;
 }
 
-extern CompassRecord D_800B0FEC[4]; /* the four compass letters */
+extern FieldMarker D_800B0FEC[4]; /* the four compass letters */
 extern s16 D_800ADE30[32];        /* letter corners: x, z per corner */
 extern u8 D_800ADE70[32];         /* letter texture coordinates */
 
@@ -2620,26 +2620,26 @@ extern u8 D_800ADE70[32];         /* letter texture coordinates */
  * Does not match: the original copies the quad's destination address
  * through one more register before the block copy. */
 void func_8007A5C4(void) {
-    CompassRecord *record;
+    FieldMarker *record;
     POLY_FT4 *quad;
     s32 i;
 
     for (i = 0; i < 4; i++) {
         record = &D_800B0FEC[i];
-        quad = &D_800B0FEC[i].quads[0];
+        quad = &D_800B0FEC[i].poly[0];
         SetPolyFT4(quad);
-        record->corners[0].vx = D_800ADE30[i * 8];
-        record->corners[0].vy = 0;
-        record->corners[0].vz = D_800ADE30[i * 8 + 1];
-        record->corners[1].vx = D_800ADE30[i * 8 + 2];
-        record->corners[1].vy = 0;
-        record->corners[1].vz = D_800ADE30[i * 8 + 3];
-        record->corners[2].vx = D_800ADE30[i * 8 + 4];
-        record->corners[2].vy = 0;
-        record->corners[2].vz = D_800ADE30[i * 8 + 5];
-        record->corners[3].vx = D_800ADE30[i * 8 + 6];
-        record->corners[3].vy = 0;
-        record->corners[3].vz = D_800ADE30[i * 8 + 7];
+        record->v[0].vx = D_800ADE30[i * 8];
+        record->v[0].vy = 0;
+        record->v[0].vz = D_800ADE30[i * 8 + 1];
+        record->v[1].vx = D_800ADE30[i * 8 + 2];
+        record->v[1].vy = 0;
+        record->v[1].vz = D_800ADE30[i * 8 + 3];
+        record->v[2].vx = D_800ADE30[i * 8 + 4];
+        record->v[2].vy = 0;
+        record->v[2].vz = D_800ADE30[i * 8 + 5];
+        record->v[3].vx = D_800ADE30[i * 8 + 6];
+        record->v[3].vy = 0;
+        record->v[3].vz = D_800ADE30[i * 8 + 7];
         quad->r0 = 0x80;
         quad->g0 = 0x80;
         quad->b0 = 0x80;
@@ -2667,24 +2667,24 @@ extern s16 D_800ADE00[][6]; /* texture page (tp, abr, x, y) and palette (x, y) b
  * copy the quad to the second buffer.
  * Does not match: as in 8007a5c4, the original copies the quad's
  * destination address through one more register before the block copy. */
-void func_8007A7F4(CompassRecord *record, s32 column, s32 row, s32 style) {
+void func_8007A7F4(FieldMarker *record, s32 column, s32 row, s32 style) {
     u8 unused[0x88]; /* never used; the original frame reserves it */
     POLY_FT4 *quad;
 
-    quad = &record->quads[0];
+    quad = &record->poly[0];
     SetPolyFT4(quad);
-    record->corners[0].vx = D_800ADCE0[column][0];
-    record->corners[0].vy = 0;
-    record->corners[0].vz = D_800ADD28[row][0];
-    record->corners[1].vx = D_800ADCE0[column][1];
-    record->corners[1].vy = 0;
-    record->corners[1].vz = D_800ADD28[row][1];
-    record->corners[2].vx = D_800ADCE0[column][2];
-    record->corners[2].vy = 0;
-    record->corners[2].vz = D_800ADD28[row][2];
-    record->corners[3].vx = D_800ADCE0[column][3];
-    record->corners[3].vy = 0;
-    record->corners[3].vz = D_800ADD28[row][3];
+    record->v[0].vx = D_800ADCE0[column][0];
+    record->v[0].vy = 0;
+    record->v[0].vz = D_800ADD28[row][0];
+    record->v[1].vx = D_800ADCE0[column][1];
+    record->v[1].vy = 0;
+    record->v[1].vz = D_800ADD28[row][1];
+    record->v[2].vx = D_800ADCE0[column][2];
+    record->v[2].vy = 0;
+    record->v[2].vz = D_800ADD28[row][2];
+    record->v[3].vx = D_800ADCE0[column][3];
+    record->v[3].vy = 0;
+    record->v[3].vz = D_800ADD28[row][3];
     quad->r0 = 0x80;
     quad->g0 = 0x80;
     quad->b0 = 0x80;
@@ -2692,7 +2692,7 @@ void func_8007A7F4(CompassRecord *record, s32 column, s32 row, s32 style) {
     quad->clut = GetClut(D_800ADE00[style][4], D_800ADE00[style][5]);
     func_8007A44C(quad, D_800ADD70[column][0], D_800ADDB8[row][0], D_800ADD70[column][1], D_800ADDB8[row][1],
                   D_800ADD70[column][2], D_800ADDB8[row][2], D_800ADD70[column][3], D_800ADDB8[row][3]);
-    record->quads[1] = record->quads[0];
+    record->poly[1] = record->poly[0];
 }
 #else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007A7F4);
