@@ -512,7 +512,6 @@ void func_801C6828(u8 mode) {
 }
 
 /* Collect the shop's items (id and kind), unpack the item tables and set up the bars and frame lines. */
-#ifdef NON_MATCHING
 void func_801C6A6C(void) {
     u8 *entry;
     s32 j;
@@ -558,20 +557,17 @@ void func_801C6A6C(void) {
         }
         D_800625A0->details->bar_shown[i] = 0;
     }
-    for (i = 0; i < 2; i++) {
-        SetLineF2(&D_800625A0->details->frame[i]);
-        (D_800625A0->details->frame + i)->r0 = 0xFF;
-        (D_800625A0->details->frame + i)->g0 = 0xFF;
-        (D_800625A0->details->frame + i)->b0 = 0xFF;
-        (D_800625A0->details->frame + i)->x0 = D_801D2250 - 8;
-        (D_800625A0->details->frame + i)->y0 = D_801D2254 + 9;
-        (D_800625A0->details->frame + i)->x1 = D_801D2250 + 0x4E;
-        (D_800625A0->details->frame + i)->y1 = D_801D2254 + 9;
+    for (j = 0; j < 2; j++) {
+        SetLineF2(&D_800625A0->details->frame[j]);
+        (D_800625A0->details->frame + j)->r0 = 0xFF;
+        (D_800625A0->details->frame + j)->g0 = 0xFF;
+        (D_800625A0->details->frame + j)->b0 = 0xFF;
+        (D_800625A0->details->frame + j)->x0 = D_801D2250 - 8;
+        (D_800625A0->details->frame + j)->y0 = D_801D2254 + 9;
+        (D_800625A0->details->frame + j)->x1 = D_801D2250 + 0x4E;
+        (D_800625A0->details->frame + j)->y1 = D_801D2254 + 9;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801C6A6C);
-#endif
 
 /* Set a quad's four corners for the rectangle (x, y, w, h), centred on the screen. */
 void func_801C6E90(SVECTOR *quad, u16 x, u16 y, u16 w, u16 h) {
