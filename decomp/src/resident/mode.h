@@ -60,16 +60,33 @@ extern s32 D_80062524;
 extern s32 D_80062590[3];
 extern s32 D_8006F990[3];
 extern s32 D_8006FABC[3];
-/* The block at *8005a39c holds 0xa4-byte records from +0x30c. */
+/* A 0xa4-byte character record of the game data. */
 typedef struct {
     u8 first;
     u8 rest[0xA3];
-} Record164;
+} CharacterRecord;
+
+/* Game data 8006d634 (saved with the game). The record count is not
+ * established; the party list follows at +0x1d34. */
 typedef struct {
-    u8 header[0x30C];
-    Record164 records[1];
-} RecordBlock;
-extern RecordBlock *D_8005A39C;
+    u8 unknown0[0x30C];
+    CharacterRecord characters[11];
+    u8 unknown1[0x1D34 - 0x30C - 11 * 0xA4];
+    u8 party[3]; /* character per slot, 0xff empty */
+} GameData;
+
+/* A file-list entry for 80029afc: file index and destination. */
+typedef struct {
+    s16 file;
+    void *destination;
+} FileRequest;
+
+extern GameData D_8006D634;
+extern GameData *D_8005A39C;
+extern FileRequest D_800625A4[4]; /* party file list, zero-terminated */
+extern void *D_80065AFC[3];       /* party character file blocks */
+extern void *D_8005A4A0;          /* file 0xa7 block */
+extern void *D_8005A4BC;          /* file 0xa8 block */
 
 extern u8 *const D_80018084; /* overlay decode destination */
 extern u8 D_8006FAF0[];
@@ -106,7 +123,12 @@ void func_80019D48(void);
 void func_80019EF8(s32 error, u32 caller);
 void func_8001AADC(void);
 void func_8001B6BC(void);
-void func_8001B158(s32 file);
+void func_8001B158(s32 extra);
+void func_8001B3A8(void);
+void func_8001AD4C(void);
+void func_8001AEB8(void);
+void func_8001AD1C(void);
+s32 func_8001ACF0(s32 index);
 void func_8001BB50(void);
 void func_80024F20(void);
 
@@ -120,6 +142,8 @@ s32 func_800286CC(void); /* disc busy */
 s32 func_80028738(s32 file);
 void func_80028A60(s32 mode);
 s32 func_800295D8(s32 file, void *destination, s32 a2, s32 a3);
+s32 func_800288EC(s32 file); /* file size rounded up to words */
+s32 func_80029AFC(FileRequest *list, s32 a1, s32 a2);
 
 /* Resident heap. */
 void func_80031A30(void);
@@ -130,6 +154,8 @@ void func_80031BA8(s32 tag);
 s32 func_80031BB4(s32 quiet);
 void *func_80031BDC(s32 size, s32 from_top);
 void func_800320E8(void *block);
+void func_800320A4(void *block); /* keep the block across heap restarts */
+void func_800320B8(void *block); /* stop keeping the block */
 void func_80031BC4(s32 *first, s32 *second);
 void func_800322B4(void);
 void func_80032E04(char *name);

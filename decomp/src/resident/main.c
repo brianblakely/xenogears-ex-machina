@@ -629,9 +629,9 @@ void func_8001ACA4(void) {
     func_8001B158(1);
 }
 
-/* The first byte of record `index` in the block at *8005a39c. */
-u8 func_8001ACF0(s32 index) {
-    return D_8005A39C->records[index].first;
+/* The first byte of character record `index` in the game data. */
+s32 func_8001ACF0(s32 index) {
+    return D_8005A39C->characters[index].first;
 }
 
 /* Wait until the disc is idle, then for the pending read (80028a60). */
@@ -641,13 +641,154 @@ void func_8001AD1C(void) {
     func_80028A60(0);
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001AD4C);
+/* Take the party from the game data and load each member's field character file (member + 5) into a kept block. */
+void func_8001AD4C(void) {
+    s32 i;
+    s32 count;
+    u8 member;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001AEB8);
+    D_8005A39C = &D_8006D634;
+    for (i = 0, count = 0; i < 3; i++) {
+        D_80062590[i] = 0xFF;
+        member = D_8005A39C->party[i];
+        if (member != 0xFF) {
+            D_80062590[count++] = member;
+        }
+    }
+    for (i = 0, count = 0; i < 3; i++) {
+        if (D_80062590[i] != 0xFF) {
+            D_800625A4[count].file = D_80062590[i] + 5;
+            D_8006FABC[i] = D_80062590[i];
+            D_80065AFC[count] = func_80031BDC(func_800288EC(D_80062590[i] + 5), 0);
+            D_800625A4[count].destination = D_80065AFC[count];
+            func_800320A4(D_80065AFC[count]);
+            count++;
+        }
+    }
+    D_800625A4[count].destination = NULL;
+    D_800625A4[count].file = 0;
+    func_80029AFC(D_800625A4, 0, 0);
+    D_8004F31C = 1;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001B044);
+/* As 8001ad4c, but load each member's gear file instead (16 + the gear of the character record, 0xff meaning none). */
+void func_8001AEB8(void) {
+    s32 i;
+    s32 count;
+    s32 file;
+    u8 member;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001B158);
+    D_8005A39C = &D_8006D634;
+    for (i = 0, count = 0; i < 3; i++) {
+        D_80062590[i] = 0xFF;
+        member = D_8005A39C->party[i];
+        if (member != 0xFF) {
+            D_80062590[count++] = member;
+        }
+    }
+    for (i = 0, count = 0; i < 3; i++) {
+        if (D_80062590[i] != 0xFF) {
+            file = func_8001ACF0(D_80062590[i]);
+            if (file == 0xFF) {
+                file = 0;
+            }
+            file += 0x10;
+            D_800625A4[count].file = file + 5;
+            D_8006FABC[i] = file;
+            D_80065AFC[count] = func_80031BDC(func_800288EC(file + 5), 0);
+            D_800625A4[count].destination = D_80065AFC[count];
+            func_800320A4(D_80065AFC[count]);
+            count++;
+        }
+    }
+    D_800625A4[count].destination = NULL;
+    D_800625A4[count].file = 0;
+    func_80029AFC(D_800625A4, 0, 0);
+    D_8004F31C = 2;
+}
+
+/* Make sure the party files match the current state: characters on foot, gears when 8004f34c has 0xc000 set. */
+void func_8001B044(void) {
+    func_8001AD1C();
+    if (D_8004F374 != 1) {
+        if (D_8004F30C != 0) {
+            func_8001B158(0);
+            return;
+        }
+    } else {
+        func_8001B3A8();
+        if (D_8004F30C != 0) {
+            return;
+        }
+    }
+    if ((D_8004F34C & 0xC000) == 0) {
+        D_8004F320 = 0;
+    } else {
+        D_8004F320 = 1;
+    }
+    D_8004F374 = 0;
+    if (D_8004F320 == 0) {
+        if (D_8004F31C != 1) {
+            func_8001AD4C();
+            D_8004F374 = 1;
+        }
+    } else {
+        if (D_8004F31C != 2) {
+            func_8001AEB8();
+            D_8004F374 = 1;
+        }
+    }
+}
+
+/* Reload the party files listed in 8006fabc (quietly, from the heap top), plus files 0xa7/0xa8 when asked; on a failed allocation release what was loaded. */
+void func_8001B158(s32 extra) {
+    s32 i;
+    s32 count;
+
+    func_80031BB4(1);
+    if (D_8004F374 == 1) {
+        func_8001B3A8();
+    }
+    func_8001AD1C();
+    for (i = 0, count = 0; i < 3; i++) {
+        if (D_8006FABC[i] != 0xFF) {
+            D_800625A4[count].file = D_8006FABC[i] + 5;
+            D_80065AFC[count] = func_80031BDC(func_800288EC(D_8006FABC[i] + 5), 1);
+            D_800625A4[count].destination = D_80065AFC[count];
+            if (D_800625A4[count].destination == NULL) {
+                for (i = 0; i < count; i++) {
+                    func_800320B8(D_80065AFC[i]);
+                    func_800320E8(D_80065AFC[i]);
+                }
+                func_80031BB4(0);
+                return;
+            }
+            func_800320A4(D_80065AFC[count]);
+            count++;
+        }
+    }
+    if (extra) {
+        D_8005A4A0 = func_80031BDC(func_800288EC(0xA7), 1);
+        D_800625A4[count].destination = D_8005A4A0;
+        if (D_8005A4A0 != NULL) {
+            func_800320A4(D_8005A4A0);
+            D_800625A4[count++].file = 0xA7;
+            D_8004F344 = 1;
+        }
+        D_8005A4BC = func_80031BDC(func_800288EC(0xA8), 1);
+        D_800625A4[count].destination = D_8005A4BC;
+        if (D_8005A4BC != NULL) {
+            func_800320A4(D_8005A4BC);
+            D_800625A4[count++].file = 0xA8;
+            D_8004F32C = 0;
+        }
+    }
+    D_800625A4[count].destination = NULL;
+    D_800625A4[count].file = 0;
+    func_80029AFC(D_800625A4, 0, 0);
+    D_8004F374 = 1;
+    func_80031BB4(0);
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001B3A8);
 
