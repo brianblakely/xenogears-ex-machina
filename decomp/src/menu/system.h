@@ -119,10 +119,6 @@ typedef struct Node {
     s32 unk98;
 } Node;
 
-typedef struct {
-    s32 unk0;
-    Node *node;
-} NodeOwner;
 
 /* Loaded model file header. */
 typedef struct {

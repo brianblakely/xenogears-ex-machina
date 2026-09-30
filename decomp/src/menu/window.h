@@ -55,10 +55,14 @@ typedef struct {
     PanelPacket *buffers[2];
 } Panel;
 
+/* A 3D view: its camera node, lights and panel. */
 typedef struct {
-    u8 unk0[0x284];
-    Panel *panel;      /* 0x284 */
-} PanelOwner;
+    s32 unk0;
+    Node *camera;        /* 0x04 */
+    LightRef *lights[3]; /* 0x08: two actor glows and the camera spot */
+    u8 unk14[0x270];
+    Panel *panel;        /* 0x284 */
+} View3D;
 
 /* libgpu DR_TPAGE. */
 typedef struct {

@@ -27,7 +27,7 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_80083CE8);
 
 /* Update an actor's glow light (fading it) at its position relative to its
  * opponent, and the spot light at its position relative to the camera. */
-void func_80083DCC(LightSet *set, Actor *actor, s32 index) {
+void func_80083DCC(View3D *set, Actor *actor, s32 index) {
     Vector unused[2]; /* the original frame has 0x20 unused bytes */
     LightRef *ref = set->lights[index];
     u8 glow = actor->glow;
@@ -73,10 +73,45 @@ void func_80083DCC(LightSet *set, Actor *actor, s32 index) {
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_800840CC);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_800846A0);
+/* Draw the 3D scene: aim the camera, give both actors the camera matrix,
+ * light and draw them, then the panel and the backdrop sprites. */
+s32 func_800846A0(View3D *view) {
+    Matrix unused; /* the original frame has 32 unused bytes below the */
+    Matrix camera;
+    Vector unused2; /* camera copy and 16 above it */
+    Panel *panel = view->panel;
+    LightData *light;
+
+    func_8008AC0C(panel);
+    func_80089A98(view, &D_8009871C, &D_8009867C);
+    func_80080D10();
+    camera = view->camera->view;
+    ((Node *)D_8009872C.object)->view = ((Node *)D_80097010.object)->view = camera;
+    func_8008A62C();
+    light = view->lights[0]->data;
+    light->r = light->g = light->b = 0x800;
+    func_80030A30(0, view->lights[0]->data);
+    gte_SetBackColor(D_8009291C, D_80092910, D_80092908);
+    func_80083DCC(view, &D_8009872C, 1);
+    func_8008A7E0(D_8009872C.node);
+    func_80083DCC(view, &D_80097010, 1);
+    func_8008A7E0(D_80097010.node);
+    gte_SetRotMatrix(&camera);
+    gte_SetTransMatrix(&camera);
+    func_8007334C(panel->buffers[D_800928A0], &view->camera->view);
+    func_8007D068(panel->buffers[D_800928A0]);
+    func_8008AE1C(panel);
+    func_80086E24();
+    AddPrim(D_80092938, &D_800955F8[4 + D_800928A0]);
+    AddPrim(D_80092938, &D_800955C8[2 + D_800928A0]);
+    AddPrim(D_80092938, &D_800955F8[2 + D_800928A0]);
+    AddPrim(D_80092938, &D_800955F8[D_800928A0]);
+    AddPrim(D_80092938, &D_800955C8[D_800928A0]);
+    return 0;
+}
 
 /* Draw a 3D panel: update it, link this buffer's packets, finish. */
-s32 func_800849E0(PanelOwner *owner) {
+s32 func_800849E0(View3D *owner) {
     Panel *panel = owner->panel;
 
     func_8008AC0C(panel);
@@ -87,12 +122,12 @@ s32 func_800849E0(PanelOwner *owner) {
 }
 
 /* Update a 3D panel without drawing it. */
-void func_80084A40(PanelOwner *owner) {
+void func_80084A40(View3D *owner) {
     func_8008AC0C(owner->panel);
 }
 
 /* Draw a 3D panel with its shading packet at brightness 0xC0. */
-s32 func_80084A64(PanelOwner *owner) {
+s32 func_80084A64(View3D *owner) {
     Panel *panel = owner->panel;
 
     func_8008E3CC(&panel->buffers[D_800928A0]->unk8, 0xC0, 0);

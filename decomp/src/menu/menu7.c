@@ -173,7 +173,7 @@ void func_800898BC(Matrix *m, SVector *eye, SVector *at, SVector *up) {
 
 /* Point the owner's view from eye toward target (eye kept as the last eye
  * position). */
-void func_80089A98(NodeOwner *owner, Vector *target, Vector *eye) {
+void func_80089A98(View3D *owner, Vector *target, Vector *eye) {
     SVector up;
     SVector from;
     SVector origin;
@@ -188,7 +188,7 @@ void func_80089A98(NodeOwner *owner, Vector *target, Vector *eye) {
     origin.vz = 0;
     origin.vx = 0;
     origin.vy = 0;
-    func_800898BC(&owner->node->view, &from, &origin, &up);
+    func_800898BC(&owner->camera->view, &from, &origin, &up);
 }
 
 /* Reset a node: unlinked, no payload, zero position and angles, identity

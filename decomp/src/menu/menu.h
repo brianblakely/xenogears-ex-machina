@@ -185,10 +185,6 @@ typedef struct {
     LightData *data;
 } LightRef;
 
-typedef struct {
-    u8 unk0[8];
-    LightRef *lights[3];
-} LightSet;
 
 
 /* A node of a loaded model hierarchy. */
