@@ -262,7 +262,9 @@ typedef struct GearPart {
 typedef struct MenuEffect {
     u8 pad0[0x11];
     u8 unk11; /* 11 */
-    u8 pad12[0x16];
+    u8 pad12[0x5];
+    u8 unk17; /* 17: level digit (records 7-13, 801e1ac8) */
+    u8 pad18[0x10];
 } MenuEffect;
 
 /* A character record of the game data (D_8006D8A0; gears follow from 11). */
@@ -1066,6 +1068,7 @@ void SetPolyF4(POLY_F4 *poly);       /* SetPolyF4 */
 u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y); /* GetTPage */
 u16 GetClut(s32 x, s32 y);          /* GetClut */
 void SetDrawMode(DR_MODE *p, s32 dfe, s32 dtd, s32 tpage, RECT *tw); /* SetDrawMode */
+u32 func_801E1418(u8 slot, u8 row);
 void func_801E433C(MenuTables *tables, u8 gear);
 void func_801E5058(void);
 void func_801E5178(void);

@@ -3070,7 +3070,91 @@ void func_801E1544(u8 row, u8 mode, u8 *pixels, u32 percent) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E1AC8);
+/* Lay out the 801e1544 screen's thirteen rows for party slot `slot`: rows
+ * the character has (bit of its D_8006ECF4 record) show their name and
+ * level digit (rows 0-6); others show only at 50% progress or more, with
+ * the progress gauge; then the title. Owned rows pass `percent` unset, as
+ * the original does. */
+void func_801E1AC8(u8 slot) {
+    u8 *pixels;
+    RECT rect;
+    u8 text[2];
+    u8 glyphs[8];
+    s32 i;
+    u8 kind;
+    u8 learned;
+    u8 show;
+    u32 percent;
+
+    text[1] = 0;
+    pixels = func_80031BDC(0x3f6, 0);
+    for (i = 0; i < 13; i++) {
+        D_800625A0->block438->gaugeShown[i] = 0;
+        if (func_801C8640(D_8006ECF4[D_800625A0->party->ids[slot]].values[0], i)) {
+            show = 1;
+            kind = 1;
+            learned = 1;
+        } else {
+            percent = func_801E1418(slot, i);
+            if (percent >= 50) {
+                show = 1;
+                kind = 2;
+            } else {
+                show = 0;
+                kind = 0;
+            }
+            learned = 0;
+        }
+        if (show) {
+            D_800625A0->block438->names[i].width =
+                func_80034EAC(func_80033784(D_800625A0->party->ids[slot], i), pixels, 0x24, 0);
+            if (i < 7 && learned) {
+                text[0] = D_800625A0->tables->effects[D_800625A0->party->ids[slot]][i + 7].unk17 + 0x10;
+            } else {
+                text[0] = 0xf;
+            }
+            func_80033B34(text, glyphs, 1);
+            D_800625A0->block438->values[i].width = func_80034EAC(glyphs, pixels, 0x24, 1);
+            rect.x = (i & 1) * 24 + 0x180;
+            rect.y = i / 2 * 13 + 0x80;
+            rect.w = 0x28;
+            rect.h = 0xd;
+            LoadImage(&rect, pixels);
+            DrawSync(0);
+            func_801E7C50(&D_800625A0->block438->names[i], i, 0x80, 0x81);
+            func_801E7C50(&D_800625A0->block438->values[i], i, 0x80, 0x82);
+            (D_800625A0->block438->names[i].polys + D_800625A0->bufferIndex)->x0 = 0x5c;
+            (D_800625A0->block438->names[i].polys + D_800625A0->bufferIndex)->y0 = i * 13 + 0x1f;
+            (D_800625A0->block438->names[i].polys + D_800625A0->bufferIndex)->x1 =
+                D_800625A0->block438->names[i].width + 0x5c;
+            (D_800625A0->block438->names[i].polys + D_800625A0->bufferIndex)->y1 = i * 13 + 0x1f;
+            (D_800625A0->block438->names[i].polys + D_800625A0->bufferIndex)->x2 = 0x5c;
+            (D_800625A0->block438->names[i].polys + D_800625A0->bufferIndex)->y2 = i * 13 + 0x2c;
+            (D_800625A0->block438->names[i].polys + D_800625A0->bufferIndex)->x3 =
+                D_800625A0->block438->names[i].width + 0x5c;
+            (D_800625A0->block438->names[i].polys + D_800625A0->bufferIndex)->y3 = i * 13 + 0x2c;
+            (D_800625A0->block438->values[i].polys + D_800625A0->bufferIndex)->x0 = 0xc8;
+            (D_800625A0->block438->values[i].polys + D_800625A0->bufferIndex)->y0 = i * 13 + 0x1f;
+            (D_800625A0->block438->values[i].polys + D_800625A0->bufferIndex)->x1 =
+                D_800625A0->block438->values[i].width + 0xc8;
+            (D_800625A0->block438->values[i].polys + D_800625A0->bufferIndex)->y1 = i * 13 + 0x1f;
+            (D_800625A0->block438->values[i].polys + D_800625A0->bufferIndex)->x2 = 0xc8;
+            (D_800625A0->block438->values[i].polys + D_800625A0->bufferIndex)->y2 = i * 13 + 0x2c;
+            (D_800625A0->block438->values[i].polys + D_800625A0->bufferIndex)->x3 =
+                D_800625A0->block438->values[i].width + 0xc8;
+            (D_800625A0->block438->values[i].polys + D_800625A0->bufferIndex)->y3 = i * 13 + 0x2c;
+            D_800625A0->block438->names[i].count = D_800625A0->bufferIndex;
+            D_800625A0->block438->shown[i] = 1;
+        } else {
+            D_800625A0->block438->shown[i] = 0;
+        }
+        D_800625A0->block438->counts[i] = 0;
+        func_801E1544(i, kind, pixels, percent);
+    }
+    func_800320E8(pixels);
+    func_801D36E0(&D_800625A0->block438->title, slot, 0, 2);
+    D_800625A0->party->unk4D = 1;
+}
 
 /* The 801e1544 screen for party slot `slot`: members 7 and 8 are refused
  * (sound 4); otherwise show the slot's page, switching members (9 previous,
