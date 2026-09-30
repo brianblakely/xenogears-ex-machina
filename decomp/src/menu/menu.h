@@ -2,6 +2,7 @@
 #define MENU_H
 
 #include "common.h"
+#include "gpu.h"
 
 /* libgte-layout vector: three 32-bit components and padding. */
 typedef struct {
@@ -25,21 +26,68 @@ typedef struct {
     s16 pad;
 } SVector;
 
-/* A character moved in the menu scene. */
+/* Per-model table entry (D_80092874, 32 bytes). */
 typedef struct {
+    u8 unk0[0xA];
+    u8 parts[14];      /* 0x0A: nonzero = part present */
+    u8 unk18[8];
+} ModelRecord;
+
+/* Header of a loaded model file. */
+typedef struct {
+    u8 unk0[0xE];
+    u8 unkE;
+    u8 unkF;
+    u8 unk10[3];
+    u8 unk13[0x1D];
+    s32 unk30;         /* offset of a table from the header */
+} ModelHeader;
+
+/* A loaded model file. */
+typedef struct {
+    u8 unk0[0x10];
+    ModelHeader *header; /* 0x10 */
+    s32 unk14;
+    u8 (*parts)[4];    /* 0x18: byte 3 set = part kind A */
+    u8 unk1C[4];
+    u8 *image;         /* 0x20: palette and emblem pixels */
+} ModelData;
+
+/* A character moved in the menu scene. */
+typedef struct Actor {
     Vector pos;          /* 0x00 */
     u8 unk10[0x38];
     s32 state;           /* 0x48 */
     u8 unk4C[0x8];
     s32 angle;           /* 0x54: facing, 4096 = full turn */
     s32 target_angle;    /* 0x58 */
-    u8 unk5C[0x72];
+    void *model;         /* 0x5C */
+    void *object;        /* 0x60 */
+    u8 unk64[0x18];
+    s32 unk7C;
+    u8 (*parts)[4];      /* 0x80 */
+    u8 unk84[0x4A];
     s16 unkCE;
-    s32 flags;           /* 0xD0 */
-    u8 unkD4[0x1E];
+    u32 flags;           /* 0xD0: bit 27 = side */
+    u8 unkD4[0x4];
+    struct Actor *opponent; /* 0xD8 */
+    u8 unkDC[0x16];
     s16 unkF2;
-    u8 unkF4[0x815];
+    u8 unkF4[0x808];
+    ModelHeader *header; /* 0x8FC */
+    u8 *unk900;
+    u8 *unk904;
+    u8 unk908;
     u8 model_id;         /* 0x909 */
+    u8 kind;             /* 0x90A: bits 0-2 */
+    u8 unk90B[6];
+    u8 parts_a;          /* 0x911 */
+    u8 parts_b;          /* 0x912 */
+    u8 unk913[0xCC1];
+    u8 unk15D4[3];
+    u8 unk15D7[0x29];
+    ModelRecord *record; /* 0x1600 */
+    PolyFT4 backdrop[2]; /* 0x1604: one per buffer */
 } Actor;
 
 /* Menu camera: eye position (D_8009867C) and look-at point (D_8009871C). */
@@ -124,5 +172,17 @@ extern u8 D_800927EC;
 extern s32 D_80092888;
 extern void **D_800928EC;
 extern u8 D_80091A6C[];
+
+/* Actor setup. */
+extern ModelRecord *D_80092874;
+void func_8008A140(s32 x, s32 y, s32 arg2, s32 arg3);
+void func_8008AF6C(ModelData *data);
+void *func_8008B38C(ModelData *data);
+void *func_80089C54(void);
+void func_80089C88(void *object, void *model);
+void func_8008A168(void);
+void func_80084BEC(Actor *actor);
+void func_8008E6F8(Actor *actor);
+void func_80032C18(void *block, s32 arg);
 
 #endif

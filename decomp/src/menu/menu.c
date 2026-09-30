@@ -635,7 +635,7 @@ void func_80081100(s32 text, s32 lower) {
     rect.y = 0x30;
     rect.w = 0x42;
     rect.h = 0xD;
-    func_80044894(&rect, D_80095510.image);
+    func_80044894(&rect, (void *)D_80095510.image);
 }
 
 /* Link the shown captions into the ordering table. */
@@ -1170,7 +1170,109 @@ void func_80084B48(void) {
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80084BEC);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80084C88);
+/* Set up an actor from its loaded model file on one side of the scene:
+ * opponent link, model object, kind flags from the model id, part counts,
+ * and the palette/emblem images in VRAM (mirrored for side 0). */
+void func_80084C88(Actor *actor, ModelData *data, s32 side) {
+    Rect rect;
+    void *block; /* the model object, later the mirrored emblem */
+    ModelHeader *header;
+    u8 *source;
+    s32 i;
+    s32 j;
+    u8 *out;
+    s32 row;
+
+    actor->flags = (actor->flags & ~0x08000000) | ((side & 1) << 27);
+    if (side) {
+        func_8008A140(0x380, 0, 0, 0x1FE);
+        actor->opponent = &D_8009872C;
+    } else {
+        func_8008A140(0x3C0, 0, 0, 0x1FF);
+        actor->opponent = &D_80097010;
+    }
+    func_8008AF6C(data);
+    block = func_8008B38C(data);
+    actor->object = func_80089C54();
+    func_80089C88(actor->object, block);
+    actor->model = block;
+    actor->record = &D_80092874[actor->model_id];
+    actor->kind = 0;
+    switch (actor->model_id) {
+    case 36:
+    case 37:
+        actor->kind |= 1;
+    case 38:
+        actor->kind |= 2;
+        break;
+    case 3:
+    case 14:
+    case 27:
+    case 34:
+    case 35:
+    case 39:
+    case 41:
+    case 42:
+        actor->kind |= 4;
+        break;
+    case 13:
+        func_8008A168();
+        func_80084BEC(actor);
+        break;
+    }
+    func_8008E6F8(actor);
+    header = data->header;
+    actor->header = header;
+    actor->unk7C = data->unk14;
+    actor->parts = data->parts;
+    actor->unk900 = (u8 *)header + 0x34;
+    actor->unk904 = (u8 *)(header->unk30 + (s32)header);
+    actor->unk908 = header->unkE;
+    actor->unk15D4[0] = header->unk10[0];
+    actor->unk15D4[1] = header->unk10[1];
+    actor->unk15D4[2] = header->unk10[2];
+    actor->parts_a = 0;
+    actor->parts_b = 0;
+    for (i = 0; i < 14; i++) {
+        if (actor->record->parts[i]) {
+            if (actor->parts[i][3]) {
+                actor->parts_a++;
+            } else {
+                actor->parts_b++;
+            }
+        }
+    }
+    row = 0x100;
+    rect.x = 0;
+    rect.y = side + 0x1F6;
+    rect.w = row;
+    rect.h = 1;
+    func_80044894(&rect, data->image);
+    rect.x = side * 16 + 0x380;
+    rect.y = row;
+    rect.w = 0xB;
+    rect.h = 0x16;
+    if (side) {
+        func_80044894(&rect, data->image + 0x200);
+    } else {
+        source = data->image + 0x200;
+        block = func_80031BDC(0x1E4, 0);
+        out = block;
+        for (i = 0; i < 0x16; i++) {
+            for (j = 0; j < 0x16; j++) {
+                *out++ = source[0x15 - j];
+            }
+            source += 0x16;
+        }
+        func_80044894(&rect, block);
+        func_80032C18(block, 1);
+    }
+    rect.x = 0x3A0;
+    rect.y = side * 8 + 0x100;
+    rect.w = 0x10;
+    rect.h = 8;
+    func_80044894(&rect, data->image + 0x3E4);
+}
 
 /* While the overlay fade runs, redraw it when button bit 0 is down. */
 void func_80084FD0(void) {
@@ -1412,9 +1514,9 @@ void func_80087830(void) {
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800878DC);
 
-/* Build a view's textured backdrop quad (64x64 texels) for both buffers. */
-void func_80087AB0(View *view) {
-    PolyFT4 *quad = &view->backdrop[0];
+/* Build an actor's textured backdrop quad (64x64 texels) for both buffers. */
+void func_80087AB0(Actor *actor) {
+    PolyFT4 *quad = &actor->backdrop[0];
 
     *(u32 *)&quad->r0 = 0x2C101010;
     ((PacketTag *)quad)->len = 9;
@@ -1425,7 +1527,7 @@ void func_80087AB0(View *view) {
     quad->uv1 = (D_800927DC + 0x3F) | (D_800927E0 << 8);
     quad->uv2 = D_800927DC | ((D_800927E0 + 0x3F) << 8);
     quad->uv3 = (D_800927DC + 0x3F) | ((D_800927E0 + 0x3F) << 8);
-    view->backdrop[1] = view->backdrop[0];
+    actor->backdrop[1] = actor->backdrop[0];
 }
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80087B74);
