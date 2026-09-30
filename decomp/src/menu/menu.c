@@ -1309,8 +1309,8 @@ Scale *func_80089E74(void) {
 void func_80089EB4(ModelSet *set) {
     s32 i;
 
-    if (set->unk4 != NULL) {
-        func_800320E8(set->unk4);
+    if (set->nodes != NULL) {
+        func_800320E8(set->nodes);
     }
     if (set->entries != NULL) {
         if (!D_80091C2C) {
@@ -1695,18 +1695,106 @@ void func_8008B0D8(Player *player) {
     s32 i;
 
     player->unk10 = 0;
-    player->unk12 = 0;
+    player->frame = 0;
     channel = player->channels;
     for (i = 0; i < player->header->channels; i++) {
-        channel->unkC = 0;
-        channel->unkE = 0;
+        channel->hold = 0;
+        channel->value = 0;
         channel->current = channel->start;
-        channel->unk10 = 0;
+        channel->delta = 0;
         channel++;
     }
 }
 
+#ifdef NON_MATCHING
+/* Bind an animation to a model set node: its constant keys and streamed
+ * channels drive node angle (short way round) or 0x2C components.
+ * Does not match: the data pointer's register copies (t1/s0/s1) differ. */
+void func_8008B13C(u8 *data, Player *player, Node *root) {
+    Node **nodes = ((ModelSet *)root->data)->nodes;
+    AnimHeader *anim = (AnimHeader *)data;
+    AnimRecord *record;
+    Key *key;
+    Channel *channel;
+    Node *node;
+    u32 i;
+
+    player->header = anim;
+    func_800324B8(0x10);
+    key = func_80031BDC(anim->keys * sizeof(Key) + anim->channels * sizeof(Channel), 0);
+    player->keys = key;
+    record = anim->records;
+    channel = player->channels = (Channel *)(key + anim->keys);
+    for (i = 0; i < anim->keys; i++) {
+        node = nodes[record->node];
+        key->value = record->value;
+        switch (record->kind & 0x7F) {
+        case 3:
+            key->target = &node->unk44.vx;
+            key->angular = 1;
+            break;
+        case 4:
+            key->target = &node->unk44.vy;
+            key->angular = 1;
+            break;
+        case 5:
+            key->target = &node->unk44.vz;
+            key->angular = 1;
+            break;
+        case 6:
+            key->target = &node->rotation.vx;
+            key->angular = 0;
+            break;
+        case 7:
+            key->target = &node->rotation.vy;
+            key->angular = 0;
+            break;
+        case 8:
+            key->target = &node->rotation.vz;
+            key->angular = 0;
+            break;
+        }
+        key++;
+        record++;
+    }
+    for (i = 0; i < anim->channels; i++) {
+        node = nodes[record->node];
+        channel->current = data + record->value;
+        channel->start = data + record->value;
+        switch (record->kind & 0x7F) {
+        case 3:
+            channel->target = &node->unk44.vx;
+            channel->angular = 1;
+            break;
+        case 4:
+            channel->target = &node->unk44.vy;
+            channel->angular = 1;
+            break;
+        case 5:
+            channel->target = &node->unk44.vz;
+            channel->angular = 1;
+            break;
+        case 6:
+            channel->target = &node->rotation.vx;
+            channel->angular = 0;
+            break;
+        case 7:
+            channel->target = &node->rotation.vy;
+            channel->angular = 0;
+            break;
+        case 8:
+            channel->target = &node->rotation.vz;
+            channel->angular = 0;
+            break;
+        }
+        channel++;
+        record++;
+    }
+    func_8008B0D8(player);
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008B13C);
+#endif
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008B38C);
 

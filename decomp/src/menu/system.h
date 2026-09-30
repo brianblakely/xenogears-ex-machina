@@ -190,7 +190,7 @@ typedef struct {
 typedef struct {
     s16 unk0;
     s16 count;         /* 0x02 */
-    void *unk4;
+    struct Node **nodes; /* 0x04 */
     ModelEntry *entries; /* 0x08 */
 } ModelSet;
 
@@ -249,30 +249,47 @@ typedef struct {
     u8 *unk24;
 } SceneFile;
 
-/* Animation channel of a player (0x14 bytes). */
+/* Animation record: what it drives and its value or stream offset. */
 typedef struct {
-    s32 start;
-    s32 current;       /* 0x04 */
-    s32 unk8;
-    s16 unkC;
-    s16 unkE;
-    s16 unk10;
-    s16 unk12;
-} Channel;
+    u8 kind;           /* & 0x7F: 3-5 node angle x/y/z, 6-8 node 0x2C x/y/z */
+    u8 node;           /* index into the model set's nodes */
+    u16 value;         /* key value, or channel stream offset */
+} AnimRecord;
 
 typedef struct {
-    u8 unk0[6];
+    s16 frames;
+    s16 unk2;
+    s16 keys;          /* 0x04 */
     s16 channels;      /* 0x06 */
+    AnimRecord records[1]; /* 0x08: keys, then channels */
 } AnimHeader;
+
+/* Constant key of a player (8 bytes). */
+typedef struct {
+    s16 *target;
+    s16 value;         /* 0x04 */
+    s16 angular;       /* 0x06: eased the short way round */
+} Key;
+
+/* Animation channel of a player (0x14 bytes). */
+typedef struct {
+    u8 *start;
+    u8 *current;       /* 0x04: position in the stream */
+    s16 *target;       /* 0x08 */
+    s16 hold;          /* 0x0C: frames left at the current delta */
+    s16 value;         /* 0x0E */
+    s16 delta;         /* 0x10 */
+    s16 angular;       /* 0x12 */
+} Channel;
 
 /* Animation player. */
 typedef struct {
     AnimHeader *header;
-    s32 unk4;
+    Key *keys;         /* 0x04 */
     Channel *channels; /* 0x08 */
     s32 unkC;
     s16 unk10;
-    s16 unk12;
+    s16 frame;         /* 0x12 */
 } Player;
 
 /* Model resource holder freed with its resource. */
@@ -399,6 +416,7 @@ void func_80089D5C(Node *node);
 void func_80089EB4(ModelSet *set);
 void func_80089FF8(Model *model);
 void func_8008C120(Instance *instance);
+void func_8008B0D8(Player *player);
 void func_8008BE4C(ModelPrims *prims, Mesh *mesh);
 void func_8008BD70(Mesh *mesh, ModelPrim *prims, u32 *ot, u8 *work);
 Node *func_8008C188(Node *source, Node *parent);
