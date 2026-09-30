@@ -2533,7 +2533,14 @@ void func_80089F54(void) {
     D_800B0078->pc += 3;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80089F94);
+/* Event: store operand byte 1 in 800afe84. */
+void func_80089F94(void) {
+    FieldActor *actor;
+
+    actor = D_800B0078;
+    D_800AFE84 = D_800ADC00[actor->pc + 1];
+    actor->pc += 2;
+}
 
 /* Event: set the eight halfwords at 800b0080 from raw operands (+88
  * cleared; +84 at least 1). */
@@ -2744,7 +2751,14 @@ void func_8008A7DC(s32 member, s32 slot) {
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008A7DC);
 #endif
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008A93C);
+/* Event: set actor field EA to the complement of operand byte 1. */
+void func_8008A93C(void) {
+    FieldActor *actor;
+
+    actor = D_800B0078;
+    actor->unk0EA = ~D_800ADC00[actor->pc + 1];
+    actor->pc += 2;
+}
 
 /* Event: as 8008a93c, and clear the actor's layer bit 16. */
 void func_8008A974(void) {
