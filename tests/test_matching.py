@@ -79,7 +79,7 @@ class MatchingTests(unittest.TestCase):
             check=False,
         )
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("qualifying the original toolchain", result.stderr)
+        self.assertIn("Set CONFIG=targets/", result.stderr)
 
     def test_cli_exit_codes(self):
         args = [str(self.original), str(self.rebuilt), "--sha256", self.digest]
