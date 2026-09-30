@@ -1,4 +1,13 @@
-#include "common.h"
+/*
+ * Menu overlay (mode 5; Disc 1 slot 39 / unpacked 2597, Disc 2 slot 34 /
+ * unpacked 2592; loaded at 801c5000). The resident mode table enters it
+ * through 8001c634 with no overlay preloaded. By the menu kind in
+ * D_80059460 it runs the field main menu (items, equipment and the other
+ * commands; kind 0), the title screen's file (memory-card load) screen
+ * (kind 2) or kind 6. It keeps its state behind D_800625A0 and reads and
+ * writes "bu00:"/"bu10:" memory-card files (BASLUS-00664...).
+ */
+#include "menu.h"
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C531C);
 
@@ -8,25 +17,138 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C57A4);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C58EC);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C5B54);
+/* Allocate and clear (nonzero) or free (zero) the memory-card state block. */
+void func_801C5B54(u8 allocate) {
+    if (allocate) {
+        u8 *block = func_80031BDC(0x5034, 0);
+        D_800625A0->card = block;
+        func_8003F8E8(block, 0x5034);
+    } else {
+        func_800320E8(D_800625A0->card);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C5BB8);
+/* Allocate and clear (nonzero) or free (zero) the party block. */
+void func_801C5BB8(u8 allocate) {
+    if (allocate) {
+        u8 *block = func_80031BDC(0x6c, 0);
+        D_800625A0->party = block;
+        func_8003F8E8(block, 0x6c);
+    } else {
+        func_800320E8(D_800625A0->party);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C5C1C);
+/* Allocate and clear (nonzero) or free (zero) the screen image block. */
+void func_801C5C1C(u8 allocate) {
+    if (allocate) {
+        u8 *block = func_80031BDC(0x1194, 0);
+        D_800625A0->screenImages = block;
+        func_8003F8E8(block, 0x1194);
+    } else {
+        func_800320E8(D_800625A0->screenImages);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C5C80);
+/* Allocate and clear (nonzero) or free (zero) the 140c-byte block at +354. */
+void func_801C5C80(u8 allocate) {
+    if (allocate) {
+        u8 *block = func_80031BDC(0x140c, 0);
+        D_800625A0->block354 = block;
+        func_8003F8E8(block, 0x140c);
+    } else {
+        func_800320E8(D_800625A0->block354);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C5CE4);
+/* Allocate and clear (nonzero) or free (zero) the data table directory. */
+void func_801C5CE4(u8 allocate) {
+    if (allocate) {
+        u8 *block = func_80031BDC(0xcc, 0);
+        D_800625A0->tables = block;
+        func_8003F8E8(block, 0xcc);
+    } else {
+        func_800320E8(D_800625A0->tables);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C5D48);
+/* Allocate and clear (nonzero) or free (zero) the first field-menu block. */
+void func_801C5D48(u8 allocate) {
+    if (allocate) {
+        u8 *block = func_80031BDC(0x328, 0);
+        D_800625A0->fieldMenu = block;
+        func_8003F8E8(block, 0x328);
+    } else {
+        func_800320E8(D_800625A0->fieldMenu);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C5DAC);
+/* Allocate and clear (nonzero) or free (zero) the second field-menu block. */
+void func_801C5DAC(u8 allocate) {
+    if (allocate) {
+        u8 *block = func_80031BDC(0x374, 0);
+        D_800625A0->fieldMenu2 = block;
+        func_8003F8E8(block, 0x374);
+    } else {
+        func_800320E8(D_800625A0->fieldMenu2);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C5E10);
+/* Allocate and clear (nonzero) or free (zero) the shared primitive block. */
+void func_801C5E10(u8 allocate) {
+    if (allocate) {
+        u8 *block = func_80031BDC(0x15c, 0);
+        D_800625A0->primitives = block;
+        func_8003F8E8(block, 0x15c);
+    } else {
+        func_800320E8(D_800625A0->primitives);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C5E74);
+/* Allocate and clear (nonzero) or free (zero) the three field blocks. */
+void func_801C5E74(u8 allocate) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C5F10);
+    if (allocate) {
+        for (i = 0; i < 3; i++) {
+            u8 *block = func_80031BDC(0x127c, 0);
+            D_800625A0->fieldBlocks[i] = block;
+            func_8003F8E8(block, 0x127c);
+        }
+    } else {
+        for (i = 0; i < 3; i++) {
+            func_800320E8(D_800625A0->fieldBlocks[i]);
+        }
+    }
+}
+
+/* Allocate the blocks of the menu kind in D_80059460 (the card state for the
+ * title file screen and kind 6; the card state and field blocks for the field
+ * menu). */
+void func_801C5F10(void) {
+    u8 *block;
+
+    func_801C5BB8(1);
+    func_801C5C1C(1);
+    func_801C5C80(1);
+    func_801C5CE4(1);
+    func_801C5E10(1);
+    block = func_80031BDC(0x14c, 0);
+    D_800625A0->markers = block;
+    func_8003F8E8(block, 0x14c);
+    switch (D_80059460) {
+    case 0:
+        func_801C5B54(1);
+        func_801C5D48(1);
+        func_801C5DAC(1);
+        func_801C5E74(1);
+        break;
+    case 2:
+    case 6:
+        func_801C5B54(1);
+        break;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C5FE4);
 
