@@ -241,6 +241,12 @@ void func_8007EE08(s32 highlight);
 s32 func_8007FF70(s32 value, s32 max, s32 flags);
 void func_80080C48(s32 arg);
 void func_8007D334(Vector *from, Vector *to, s32 kind);
+void func_8004A8EC(Matrix *m, Matrix *out);
+void func_8007BBA0(Matrix *view, Matrix *local, u32 *ot);
+void func_8007C280(Matrix *view, Matrix *local, u32 *ot);
+void func_8007CAA4(Matrix *view, Matrix *local, u32 *ot);
+void func_8007D918(u32 *ot);
+void func_8007E020(u32 *ot);
 
 /* Menu overlay drawing. */
 extern DrTpage D_800954C8[2];

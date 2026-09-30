@@ -1316,7 +1316,22 @@ void func_8007CD44(s32 column, Vector *from, Vector *to, s32 key) {
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007CD44);
 #endif
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007CF78);
+/* Draw the scene effects: the passes that need the view and its derived
+ * matrix, then the screen-space passes under the view matrix. */
+void func_8007CF78(Matrix *view, u32 *ot) {
+    Matrix local;
+
+    SCENE_SCRATCH->camera = D_80096FA8;
+    func_8004A8EC(view, &local);
+    func_8007BBA0(view, &local, ot);
+    func_8007C280(view, &local, ot);
+    func_8007CAA4(view, NULL, ot);
+    gte_SetRotMatrix(view);
+    gte_SetTransMatrix(view);
+    func_8007D918(ot);
+    func_8007E020(ot);
+    func_8007E3CC(ot);
+}
 
 /* Copy the camera position to the scratchpad and run the scene pass. */
 void func_8007D068(void *arg) {
