@@ -144,8 +144,14 @@ typedef struct {
 extern BattleGraphics *D_800C3EA4;
 extern u8 D_800C492A;
 
-extern u32 *D_800CCB04; /* current ordering table */
-extern s32 D_800CCB34;  /* draw buffer index */
+/* Battle drawing state (800ccb04). */
+typedef struct {
+    u32 *ot;           /* current ordering table */
+    u8 unk4[0x2C];
+    s32 buffer;        /* +0x30 draw buffer index */
+} BattleDraw;
+
+extern BattleDraw D_800CCB04;
 extern void *D_800D2F5C; /* glyph table */
 extern u8 D_800C3E4C;   /* battle end state */
 

@@ -279,7 +279,7 @@ void func_800728B8(POLY_FT4 *prims, s32 count, s32 first) {
     s32 i;
 
     for (i = 0; i < count; i++) {
-        func_80043B48(D_800CCB04 + 1, &prims[first + i * 2]);
+        func_80043B48(D_800CCB04.ot + 1, &prims[first + i * 2]);
     }
 }
 
@@ -290,15 +290,15 @@ void func_80072938(POLY_FT4 *prims, s32 first, s32 last, u8 mode) {
     s32 i;
 
     for (i = first; i < last; i++) {
-        func_80043C24(&prims[i * 2 + D_800CCB34], 0);
+        func_80043C24(&prims[i * 2 + D_800CCB04.buffer], 0);
         if (mode != 1) {
-            prims[i * 2 + D_800CCB34].r0 = 0x80;
-            prims[i * 2 + D_800CCB34].g0 = 0;
+            prims[i * 2 + D_800CCB04.buffer].r0 = 0x80;
+            prims[i * 2 + D_800CCB04.buffer].g0 = 0;
         } else {
-            prims[i * 2 + D_800CCB34].r0 = 0x80;
-            prims[i * 2 + D_800CCB34].g0 = 0x80;
+            prims[i * 2 + D_800CCB04.buffer].r0 = 0x80;
+            prims[i * 2 + D_800CCB04.buffer].g0 = 0x80;
         }
-        prims[i * 2 + D_800CCB34].b0 = 0;
+        prims[i * 2 + D_800CCB04.buffer].b0 = 0;
     }
 }
 #else
@@ -351,25 +351,17 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800743A4);
 
 /* Add the graphics block's current +0x320 and +0x370 quads to the ordering
  * table. */
-#ifdef NON_MATCHING
 void func_800744BC(void) {
-    func_80043B48(D_800CCB04 + 1, &D_800C3EA4->unkA230->unk320[D_800C3EA4->unkA230->buffer]);
-    func_80043B48(D_800CCB04 + 1, &D_800C3EA4->unkA230->unk370[D_800C3EA4->unkA230->buffer]);
+    func_80043B48(D_800CCB04.ot + 1, &D_800C3EA4->unkA230->unk320[D_800C3EA4->unkA230->buffer]);
+    func_80043B48(D_800CCB04.ot + 1, &D_800C3EA4->unkA230->unk370[D_800C3EA4->unkA230->buffer]);
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800744BC);
-#endif
 
 /* Add the graphics block's current +0x280 and +0x2d0 quads to the ordering
  * table. */
-#ifdef NON_MATCHING
 void func_80074554(void) {
-    func_80043B48(D_800CCB04 + 1, &D_800C3EA4->unkA230->unk280[D_800C3EA4->unkA230->buffer]);
-    func_80043B48(D_800CCB04 + 1, &D_800C3EA4->unkA230->unk2D0[D_800C3EA4->unkA230->buffer]);
+    func_80043B48(D_800CCB04.ot + 1, &D_800C3EA4->unkA230->unk280[D_800C3EA4->unkA230->buffer]);
+    func_80043B48(D_800CCB04.ot + 1, &D_800C3EA4->unkA230->unk2D0[D_800C3EA4->unkA230->buffer]);
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80074554);
-#endif
 
 INCLUDE_RODATA(".local/decomp/battle/asm/nonmatchings/battle", D_8006FAF0);
 
@@ -392,10 +384,10 @@ void func_80074EEC(void) {
  * (UI +0xc9). */
 void func_80074F70(void) {
     if (D_800D2D28->unkC8 != 0) {
-        func_80043B48(D_800CCB04 + 1, &D_800D3278->unk7A4[D_800D3278->unk7F4]);
+        func_80043B48(D_800CCB04.ot + 1, &D_800D3278->unk7A4[D_800D3278->unk7F4]);
     }
     if (D_800D2D28->unkC9 != 0) {
-        func_80034888(D_800D2DAC, D_800CCB04 + 1, D_800CCB34);
+        func_80034888(D_800D2DAC, D_800CCB04.ot + 1, D_800CCB04.buffer);
     }
 }
 
@@ -475,12 +467,12 @@ void func_800769E8(RECT *rect, u32 *pixels) {
 
 /* Build glyph `id` as primitives at `prims`, full scale. */
 s32 func_80076A10(s32 id, POLY_FT4 *prims, s16 x, s16 y) {
-    return func_8002675C(D_800D2F5C, id, prims, D_800CCB34, x, y, 0x1000);
+    return func_8002675C(D_800D2F5C, id, prims, D_800CCB04.buffer, x, y, 0x1000);
 }
 
 /* Build glyph `id` as primitives at `prims`, half scale. */
 s32 func_80076A6C(s32 id, POLY_FT4 *prims, s16 x, s16 y) {
-    return func_8002675C(D_800D2F5C, id, prims, D_800CCB34, x, y, 0x800);
+    return func_8002675C(D_800D2F5C, id, prims, D_800CCB04.buffer, x, y, 0x800);
 }
 
 /* Initialise a textured quad: raw texture, opaque. */
