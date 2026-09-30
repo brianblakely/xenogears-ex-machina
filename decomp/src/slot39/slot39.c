@@ -60,7 +60,7 @@ u8 func_801C531C(u8 offset) {
         if (D_80059460 == 0) {
             func_801D29A8(1, 0);
         } else if (D_80059460 == 2) {
-            func_801E8018(8, D_800625A0->labelSlots[0], D_801EA530, D_800625A0->party->labels);
+            func_801E8018(8, D_800625A0->labelSlots, D_801EA530, D_800625A0->party->labels);
             D_800625A0->primitives->shade = 0x4c;
         }
     }
@@ -117,7 +117,7 @@ void func_801C55A0(void) {
         }
         if (D_800625A0->cursor != D_800625A0->cursorShown) {
             func_801E8978(7, D_800625A0->cursor, D_801EA19C);
-            func_801E8070(8, D_800625A0->labelSlots[0], D_801EA528, D_801E9E64, D_800625A0->party->labels,
+            func_801E8070(8, D_800625A0->labelSlots, D_801EA528, D_801E9E64, D_800625A0->party->labels,
                           D_800625A0->cursor, 0, 0);
             D_800625A0->cursorShown = D_800625A0->cursor;
         }
@@ -162,7 +162,7 @@ void func_801C58EC(void) {
 
     stay = 1;
     func_801E8474(4, D_801EA1D4);
-    func_801E8018(8, D_800625A0->labelSlots[0], D_801EA530, D_800625A0->party->labels);
+    func_801E8018(8, D_800625A0->labelSlots, D_801EA530, D_800625A0->party->labels);
     D_800625A0->frameCounter = 0;
     do {
         func_801C7BF4();
@@ -193,7 +193,7 @@ void func_801C58EC(void) {
         }
         if (D_800625A0->cursor != D_800625A0->cursorShown) {
             func_801E8978(3, D_800625A0->cursor, D_801EA1D4);
-            func_801E8070(8, D_800625A0->labelSlots[0], D_801EA530, D_801E9E84, D_800625A0->party->labels,
+            func_801E8070(8, D_800625A0->labelSlots, D_801EA530, D_801E9E84, D_800625A0->party->labels,
                           D_800625A0->cursor, 0, 0);
             D_800625A0->cursorShown = D_800625A0->cursor;
         }
@@ -1191,7 +1191,14 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CAA38);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CACF8);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CADB0);
+/* Reset the file cursor: the first port with a card (port 2's slots start at 15). */
+void func_801CADB0(void) {
+    D_800625A0->card->unk4F80 = 0xff;
+    D_800625A0->card->cursor = 0;
+    if (D_800625A0->card->present[0] == 0 && D_800625A0->card->present[1] != 0) {
+        D_800625A0->card->cursor = 15;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CAE08);
 
@@ -1203,7 +1210,31 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CB304);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CB8AC);
 
+/* The save slot to use on `port`: `slot`, or for ff the first free one. */
+#ifdef NON_MATCHING
+u8 func_801CB9E8(u8 port, u8 slot) {
+    s32 i;
+    s32 found;
+    u8 *used;
+
+    found = 0;
+    if (slot == 0xff) {
+        i = 0;
+        used = &D_801EA6D0[port * 16];
+        for (; i < 15; i++) {
+            if (*used == 0) {
+                found = i;
+                break;
+            }
+            used++;
+        }
+        return found;
+    }
+    return slot;
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CB9E8);
+#endif
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CBA4C);
 
@@ -1239,7 +1270,16 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CE660);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CE860);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CEB5C);
+/* While party flag +8 is set, draw the sprites of the block at +35c. */
+void func_801CEB5C(void) {
+    u8 *block;
+
+    if (D_800625A0->party->unk8 != 0) {
+        block = D_800625A0->block35C;
+        func_801CE198(block[0x32f3], block + 0x2420, block, block[0x32f1]);
+        func_801CE860();
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CEBB4);
 
@@ -1291,7 +1331,13 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D0ED4);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D0F54);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D0FD4);
+/* While party flag +4e is set, add label slot 17's current quad to the frame. */
+void func_801D0FD4(void) {
+    if (D_800625A0->party->unk4E != 0) {
+        func_80043B48(&D_800625A0->current->ot[4],
+                      &D_800625A0->labelSlots[0x11].polys[D_800625A0->labelSlots[0x11].current]);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D1030);
 
@@ -1339,9 +1385,30 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D1AAC);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D1B20);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D1BE8);
+/* Draw one layer set of the field menu screen. */
+void func_801D1BE8(void) {
+    func_801D3B00();
+    func_801D11F0();
+    func_801CE3C8();
+    func_801CE338();
+    func_801D02D8();
+    func_801D01D0();
+    func_801CEC40();
+    func_801CF308();
+    func_801D0C78();
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D1C48);
+/* Draw the other layer set of the field menu screen. */
+void func_801D1C48(void) {
+    func_801D3B00();
+    func_801CE3C8();
+    func_801D11F0();
+    func_801CE338();
+    func_801D02D8();
+    func_801D01D0();
+    func_801D0C78();
+    func_801CF308();
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D1CA0);
 
@@ -1510,7 +1577,14 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D9C84);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D9E3C);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D9F34);
+/* Lay out the six file screen command labels (save or title variant). */
+void func_801D9F34(void) {
+    if (D_80059460 != 2) {
+        func_801E8018(6, &D_800625A0->labelSlots[7], D_801EA53C, D_800625A0->party->unk1A);
+    } else {
+        func_801E8018(6, &D_800625A0->labelSlots[7], D_801EA542, D_800625A0->party->unk1A);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D9F98);
 
@@ -1526,7 +1600,11 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DB02C);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DB0A8);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DB340);
+/* Free image block `index` (+444) and clear its party flag (+50). */
+void func_801DB340(u8 index) {
+    func_800320E8(D_800625A0->blocks444[index]);
+    D_800625A0->party->unk50[index] = 0;
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DB39C);
 
@@ -1604,7 +1682,7 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E2250);
 
 /* Lay out the six labels of page `page` (D_801EA568) in label slot 18. */
 void func_801E2324(u8 page) {
-    func_801E8018(6, D_800625A0->labelSlots[0x12], D_801EA568 + page, &D_800625A0->party->unk54);
+    func_801E8018(6, &D_800625A0->labelSlots[0x12], D_801EA568 + page, &D_800625A0->party->unk54);
 }
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E2368);
@@ -1748,7 +1826,7 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E7C50);
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E7E68);
 
 /* Lay out `count` labels from `table` into `labels` (the placement is unused). */
-void func_801E8018(u8 count, u8 *labels, u8 *table, u8 *placement) {
+void func_801E8018(u8 count, MenuLabelSlot *labels, u8 *table, u8 *flags) {
     func_801E7E68(labels, table, 4, count);
 }
 
@@ -1800,6 +1878,13 @@ void func_801E927C(POLY_FT4 *poly) {
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E92CC);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E9340);
+/* Run 8004c398 on a handle opened by 8004c318(`arg0`, 0, 0), then close it. */
+void func_801E9340(s32 arg0, s32 arg1, s32 arg2) {
+    s32 handle;
+
+    handle = func_8004C318(arg0, 0, 0);
+    func_8004C398(handle, arg1, arg2);
+    func_8004C338(handle);
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E93A0);

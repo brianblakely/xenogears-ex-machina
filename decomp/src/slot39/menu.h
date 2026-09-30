@@ -57,18 +57,23 @@ typedef struct MenuParty {
     u8 redraw4; /* 4 */
     u8 redraw5; /* 5 */
     u8 redraw6; /* 6 */
-    u8 pad7[0x2];
+    u8 pad7[0x1];
+    u8 unk8; /* 8 */
     u8 redraw9; /* 9 */
     u8 redrawA; /* A */
     u8 unkB; /* B */
     u8 labels[8]; /* C: shown flags of the command labels */
     u8 unk14[6]; /* 14 */
-    u8 pad1A[0x15];
+    u8 unk1A[6]; /* 1A */
+    u8 pad20[0xF];
     u8 unk2F; /* 2F */
     u8 ids[3]; /* 30: character ids of the party slots, ff empty */
     u8 pad33[0x16];
     u8 unk49; /* 49 */
-    u8 pad4A[0x9];
+    u8 pad4A[0x4];
+    u8 unk4E; /* 4E */
+    u8 pad4F[0x1];
+    u8 unk50[3]; /* 50 */
     u8 unk53; /* 53 */
     u8 unk54; /* 54 */
     u8 pad55[0xB];
@@ -109,7 +114,8 @@ typedef struct MenuCard {
     u8 headers[32][0x200]; /* B94: first block of each listed file */
     u8 pad4B94[0x3E0];
     s32 result[2]; /* 4F74: per port: last card check result */
-    u8 pad4F7C[0x8];
+    s32 cursor; /* 4F7C: file cursor over both ports (port 2 from 15) */
+    s32 unk4F80; /* 4F80 */
     s32 fileCount; /* 4F84 */
     u8 scanned[2]; /* 4F88: per port */
     u8 unk4F8A[2]; /* 4F8A */
@@ -189,6 +195,14 @@ typedef struct GearRecord {
     u8 pad74[0x30];
 } GearRecord;
 
+/* A laid-out label. */
+typedef struct MenuLabelSlot {
+    POLY_FT4 polys[2]; /* 0 */
+    u8 pad50[0x2D];
+    u8 current; /* 7D */
+    u8 pad7E[0x82];
+} MenuLabelSlot;
+
 /* The menu mode's state (*D_800625A0). */
 typedef struct MenuState {
     MenuMover movers[3]; /* 0 */
@@ -228,7 +242,9 @@ typedef struct MenuState {
     u8 *block34C; /* 34C: 2dc0 bytes */
     MenuImages *screenImages; /* 350: screen images (1194 bytes) */
     u8 *block354; /* 354: 140c bytes */
-    u8 pad358[0xC];
+    u8 pad358[0x4];
+    u8 *block35C; /* 35C */
+    u8 pad360[0x4];
     u8 *portraits[2]; /* 364: two 720-byte blocks */
     u8 pad36C[0x14];
     u8 *portraitMarks[2]; /* 380 */
@@ -239,7 +255,7 @@ typedef struct MenuState {
     u8 pad42C[0x10];
     u8 *block43C; /* 43C */
     u8 *block440; /* 440 */
-    u8 pad444[0x28];
+    u8 *blocks444[10]; /* 444 */
     s32 sheetEntries[4][6]; /* 46C: sprite sheet records (80026338) */
     s32 unk4CC; /* 4CC */
     s32 unk4D0; /* 4D0 */
@@ -252,7 +268,7 @@ typedef struct MenuState {
     u8 labelImages[0x78]; /* 4E0: label image records (801e7e68) */
     u8 *labelPixels; /* 558: 38e-byte label pixel block */
     u8 pad55C[0x184];
-    u8 labelSlots[24][0x100]; /* 6E0: laid-out label rows (801e7e68) */
+    MenuLabelSlot labelSlots[24]; /* 6E0: laid-out labels (801e7e68) */
 } MenuState;
 /* structs: end */
 
@@ -287,6 +303,8 @@ extern u8 D_801EA1D4[];  /* title file screen cursor positions */
 extern u8 D_801EA528[];  /* field menu command labels */
 extern u8 D_801EA524[];  /* label image layout */
 extern u8 D_801EA530[];
+extern u8 D_801EA53C[];  /* save file screen command labels */
+extern u8 D_801EA542[];  /* title file screen load command labels */
 extern u8 D_801EA568[];  /* title file screen command labels */
 extern u8 D_801EA8FC;
 extern s32 D_801EA900[2];
@@ -322,6 +340,7 @@ s32 func_80040544(s32 fd, void *buf, s32 size); /* read */
 void func_80040564(s32 fd);               /* close */
 void func_800404D4(void);                /* EnterCriticalSection */
 void func_800404E4(void);                /* ExitCriticalSection */
+void func_80043B48(u32 *ot, void *prim);  /* AddPrim */
 void func_80043BFC(void *prim, s32 on);  /* SetSemiTrans */
 void func_80043C24(void *prim, s32 on);  /* SetShadeTex */
 void func_80043CB0(POLY_FT4 *poly);      /* SetPolyFT4 */
@@ -332,6 +351,9 @@ void func_80044BD0(u32 *ot);             /* DrawOTag */
 void func_80044C44(void *env);           /* PutDrawEnv */
 void func_80044E9C(void *env);           /* PutDispEnv */
 void func_8004B54C(s32 mode);            /* VSync */
+s32 func_8004C318(s32 arg0, s32 arg1, s32 arg2);
+void func_8004C338(s32 handle);
+void func_8004C398(s32 handle, s32 arg1, s32 arg2);
 s32 func_8004E784(s32 channel); /* start a card check */
 void func_800445D0(s32 mode);                /* DrawSync */
 void func_80044894(RECT *rect, void *pixels); /* LoadImage */
@@ -367,6 +389,15 @@ void func_801C8574(s32 sound);
 void func_801C8694(u8 arg0);
 s32 func_801CACF8(u8 arg0, u8 arg1, u8 arg2);
 void func_801CE198(u8 kind, u8 *sprites, u8 *block, u8 count);
+void func_801CE338(void);
+void func_801CE3C8(void);
+void func_801CE860(void);
+void func_801CEC40(void);
+void func_801CF308(void);
+void func_801D01D0(void);
+void func_801D02D8(void);
+void func_801D0C78(void);
+void func_801D11F0(void);
 void func_801D1CA0(void);
 void func_801D1D40(void);
 void func_801D1E80(void);
@@ -376,6 +407,7 @@ void func_801D2484(void);
 void func_801D2968(void);
 void func_801D2D38(void);
 void func_801D2F4C(u8 message);
+void func_801D3B00(void);
 void func_801D397C(s32 arg0, s32 x, s32 y, s32 w, s32 h, s32 arg5, s32 arg6, s32 arg7, s32 arg8);
 void func_801D5BA4(s32 x, s32 y);
 void func_801D5CF8(s32 x, s32 y);
@@ -397,10 +429,10 @@ void func_801E42AC(MenuTables *tables, u8 gear);
 void func_801E4258(MenuTables *tables, u8 gear);
 void func_801E5B88(void);
 void func_801E5E4C(void);
-void func_801E7E68(u8 *records, u8 *layout, s32 arg2, s32 count);
-void func_801E8018(u8 count, u8 *labels, u8 *table, u8 *placement);
+void func_801E7E68(void *records, u8 *layout, s32 arg2, s32 count);
+void func_801E8018(u8 count, MenuLabelSlot *labels, u8 *table, u8 *flags);
 void func_801E8044(u8 count, u8 *flags);
-void func_801E8070(u8 count, u8 *labels, u8 *table, u8 *arg3, u8 *placement, u8 selected, s32 arg6,
+void func_801E8070(u8 count, MenuLabelSlot *labels, u8 *table, u8 *arg3, u8 *placement, u8 selected, s32 arg6,
                    s32 arg7);
 void func_801E8474(u8 count, u8 *positions);
 void func_801E92CC(void);
