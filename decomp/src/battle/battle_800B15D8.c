@@ -307,9 +307,81 @@ void func_800BA59C(BattleSprite *sprite, s16 direction) {
     sprite->speedZ = -((func_8003F8B0(sprite->direction) >> 1) * speed) >> 8;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BA614);
+/* Aim sprite's jump at its target: turn it towards the target and set the
+ * rising speed that lands it on the ground there (or the target's height
+ * when that is higher). */
+void func_800BA614(BattleSprite *sprite) {
+    Vector delta;
+    SVector point;
+    Vector out;
+    s32 triangle;
+    s32 height;
+    s16 angle;
+    s32 distance;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BA768);
+    func_80021B04(&point, sprite->target[0], sprite->target[1], sprite->target[2]);
+    triangle = func_800A5914(&point, sprite->triangle, 4);
+    if (triangle < 0) {
+        triangle = func_800A579C(&point);
+    }
+    func_800A5870(&point, triangle, &out);
+    if (point.vy > sprite->target[1]) {
+        point.vy = sprite->target[1];
+    }
+    height = ((point.vy << 16) - sprite->y) >> 16;
+    delta.vx = sprite->target[0] - (sprite->x >> 16);
+    delta.vz = sprite->target[2] - (sprite->z >> 16);
+    angle = -ratan2(delta.vz, delta.vx);
+    func_8004A414(&delta, &delta);
+    distance = SquareRoot0(delta.vx + delta.vz);
+    sprite->speedY = -sprite->gravity * distance * 16 / (sprite->speed >> 11) + sprite->speed * height / distance;
+    func_800BA59C(sprite, angle);
+}
+
+/* Aim sprite's jump at its target keeping its rising speed: snap it to
+ * whole units, turn it towards the target and set the speed that covers the
+ * distance (and the height difference) in the jump's frames. */
+void func_800BA768(BattleSprite *sprite) {
+    Vector delta;
+    SVector point;
+    Vector out;
+    s32 frames;
+    s32 triangle;
+    s32 angle;
+    s32 distance;
+    s32 height;
+
+    frames = -(sprite->speedY * 2 / sprite->gravity);
+    sprite->x &= 0xFFFF0000;
+    sprite->y &= 0xFFFF0000;
+    sprite->z &= 0xFFFF0000;
+    delta.vx = sprite->target[0] - (sprite->x >> 16);
+    delta.vz = sprite->target[2] - (sprite->z >> 16);
+    delta.vy = 0;
+    angle = -ratan2(delta.vz, delta.vx);
+    func_8004A414(&delta, &delta);
+    distance = SquareRoot0(delta.vx + delta.vz) << 16;
+    if (frames != 0) {
+        sprite->speed = distance / frames;
+    } else {
+        sprite->speed = 0;
+    }
+    func_80021B04(&point, sprite->target[0], sprite->target[1], sprite->target[2]);
+    triangle = func_800A5914(&point, sprite->triangle, 4);
+    if (triangle < 0) {
+        triangle = func_800A579C(&point);
+    }
+    func_800A5870(&point, triangle, &out);
+    if (point.vy > sprite->target[1]) {
+        point.vy = sprite->target[1];
+    }
+    height = (point.vy << 16) - sprite->y;
+    if (frames != 0) {
+        sprite->speedY += height / frames;
+    }
+    func_800BA59C(sprite, angle);
+    func_80022B2C(sprite);
+}
 
 /* Put sprite on the scene's ground: its triangle and ground height. */
 void func_800BA8F4(BattleSprite *sprite) {
@@ -329,9 +401,58 @@ void func_800BA8F4(BattleSprite *sprite) {
     sprite->triangle = triangle;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BA984);
+/* Create a sprite task (updated by 800BAC50, drawn by 800BAB0C) at x, y, z
+ * facing direction, running animation. */
+ActorTask *func_800BA984(s32 resource, s16 a, s16 b, s16 c, s16 d, s16 e, s16 x, s16 y, s16 z, s16 animation,
+                         s16 direction, s32 unused11, s32 unused12, s32 g) {
+    ActorTask *task;
+    BattleSprite *sprite;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BAB0C);
+    task = func_8001D1D8(0x19C, NULL, func_800BAC50, func_800BAB0C, func_800BABDC);
+    sprite = (BattleSprite *)(task + 1);
+    task->data = sprite;
+    task->field20 = sprite;
+    task->field1C = 0;
+    func_800242F4(sprite, resource, a, b, c, d, e, g);
+    sprite->task = task;
+    sprite->x = x << 16;
+    sprite->y = y << 16;
+    sprite->z = z << 16;
+    sprite->fieldB0 = animation;
+    sprite->render |= 4;
+    sprite->direction = direction;
+    func_80022000(&sprite->x, 0x2000);
+    sprite->field82 = 0x2000;
+    sprite->triangle = 0;
+    func_800245D8(sprite, animation);
+    return task;
+}
+
+/* Draw a sprite task: its depth in the view, and its parts when visible. */
+void func_800BAB0C(ActorTask *task) {
+    SVector point;
+    s32 result[2]; /* screen position, then the GTE flags */
+    Vector unused;
+    BattleSprite *sprite;
+    s32 depth;
+
+    if (D_800C3664 == 0) {
+        sprite = task->data;
+        point.vx = sprite->x >> 16;
+        point.vy = sprite->y >> 16;
+        point.vz = sprite->z >> 16;
+        SetRotMatrix(&D_800D30BC);
+        SetTransMatrix(&D_800D30BC);
+        depth = (RotTransPers(&point, &result[0], &result[0], &result[1]) >> D_80050100) + sprite->depthBias;
+        if (result[1] & 0x8000) {
+            depth = 0;
+        }
+        sprite->depth = depth;
+        if ((u32)(depth - 1) < 0xFFF) {
+            func_8001E298(sprite, D_8005956C + depth);
+        }
+    }
+}
 
 #ifdef NON_MATCHING
 /* Destroy a sprite task: its part block, children, sprite and node.
@@ -368,7 +489,27 @@ void func_800BAC50(ActorTask *task) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BACBC);
+/* Party slot's sprite on screen: its position, depth and a box around it. */
+void func_800BACBC(s32 slot, s16 *x, s16 *y, s16 *depth, s16 *left, s16 *width, s16 *centre) {
+    SVector point;
+    s16 sxy[2];
+    s32 p;
+    BattleSprite *sprite = BATTLE_AREA.sprites[slot];
+
+    point.vx = sprite->x >> 16;
+    point.vy = sprite->y >> 16;
+    point.vz = sprite->z >> 16;
+    PushMatrix();
+    SetRotMatrix(&D_800D30BC);
+    SetTransMatrix(&D_800D30BC);
+    *depth = RotTransPers(&point, (s32 *)sxy, &p, &p) >> 4;
+    *x = sxy[0];
+    *y = sxy[1];
+    *left = sxy[0] - 0x30;
+    *width = 0x30;
+    *centre = sxy[0] - 0x18;
+    PopMatrix();
+}
 
 /* Remove party slot's sprite task: stop its effects (800BFC80), free its
  * sprite source, destroy the task and clear the slot's sprite. */
@@ -427,7 +568,34 @@ void func_800BB080(s32 keep) {
     func_800B14CC(keep);
 }
 
+#ifdef NON_MATCHING
+/* Update of a sprite following its slot's stage object: step its animation
+ * while it runs, then put it at the object's position. */
+void func_800BB13C(ActorTask *task) {
+    SVector unused; /* the original's frame has this unused local */
+    BattleSprite *sprite = task->data;
+    BattleObject *object = D_800D3368[sprite->frame.bits.slotLow | sprite->motion.bits.slotHigh << 2];
+
+    if (object != NULL) {
+        if (sprite->countdown == 0) {
+            sprite->framesLeft = 0;
+        }
+        if (sprite->framesLeft != 0) {
+            func_80023210(sprite);
+            func_80022CDC(sprite);
+            if (sprite->motion.bits.doubleStep) {
+                func_80023210(sprite);
+                func_80022CDC(sprite);
+            }
+        }
+        sprite->x = object->hierarchy->translation[0] << 16;
+        sprite->y = object->hierarchy->translation[1] << 16;
+        sprite->z = object->hierarchy->translation[2] << 16;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BB13C);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BB248);
 

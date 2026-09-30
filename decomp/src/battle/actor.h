@@ -187,7 +187,12 @@ extern SVector D_800D30A0[2];    /* saved eye and look-at points */
 extern u16 D_80059454;
 extern u16 D_800C3CDC;
 
+extern Matrix D_800D30BC; /* the battle view matrix */
+
 /* This unit. */
+void func_800BAB0C(ActorTask *task);
+void func_800BABDC(ActorTask *task);
+void func_800BAC50(ActorTask *task);
 void func_800BFC80(ActorTask *task, s32 arg1, s32 arg2);
 void func_800BB350(u32 slot);
 void func_800BA59C(BattleSprite *sprite, s16 direction);
