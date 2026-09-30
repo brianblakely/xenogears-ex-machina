@@ -1600,40 +1600,49 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800A4748", func_800A8BA4
 /* A particle sprite (800af27c): half size, centre, and the four texture
  * corners (u, v) within the sprite page. */
 typedef struct {
-    s16 half_w;
-    s16 half_h;
-    s16 x;
-    s16 y;
-    s16 uv[4][2];
+    u16 half_w;
+    u16 half_h;
+    u16 x;
+    u16 y;
+    u16 uv[4][2];
 } ParticleSprite;
 extern ParticleSprite D_800AF27C[];
 
 #ifdef NON_MATCHING
 /* Set up a particle's quad in both buffers from sprite `sprite` with
- * semi-transparency rate `abr`. The original passes the coordinates to
- * 8007a44c unconverted (no s16 prototype in scope: a separate unit). */
+ * semi-transparency rate `abr`. The original scales each term by 16
+ * before subtracting (GCC folds x * 16 - w * 16 into (x - w) * 16) and
+ * computes w * 16 twice. */
 void func_800A8EAC(Particle *particle, s32 sprite, s32 abr) {
     POLY_FT4 *quad;
-    ParticleSprite *entry;
+    s32 half_w;
+    s32 half_h;
+    s32 x;
+    s32 y;
 
     quad = &particle->quads[0];
     SetPolyFT4(quad);
-    entry = &D_800AF27C[sprite];
+    half_w = D_800AF27C[sprite].half_w;
+    half_h = D_800AF27C[sprite].half_h;
+    x = D_800AF27C[sprite].x;
+    y = D_800AF27C[sprite].y;
     particle->corners[0].vz = 0;
     particle->corners[1].vz = 0;
     particle->corners[2].vz = 0;
     particle->corners[3].vz = 0;
     setRGB0(quad, 0x80, 0x80, 0x80);
-    particle->corners[0].vx = entry->x * 16 - entry->half_w * 16;
-    particle->corners[0].vy = entry->y * 16 - entry->half_h * 16;
-    particle->corners[1].vx = entry->half_w * 16 + entry->x * 16;
-    particle->corners[1].vy = particle->corners[0].vy;
-    particle->corners[2].vx = particle->corners[0].vx;
-    particle->corners[2].vy = entry->half_h * 16 + entry->y * 16;
-    particle->corners[3].vx = particle->corners[1].vx;
-    particle->corners[3].vy = particle->corners[2].vy;
-    func_8007A44C(quad, entry->uv[0][0], entry->uv[0][1] + 0x40, entry->uv[1][0] - 1, entry->uv[1][1] + 0x40,
-                  entry->uv[2][0], entry->uv[2][1] + 0x3F, entry->uv[3][0] - 1, entry->uv[3][1] + 0x3F);
+    particle->corners[0].vx = x * 16 - half_w * 16;
+    particle->corners[0].vy = y * 16 - half_h * 16;
+    particle->corners[1].vx = half_w * 16 + x * 16;
+    particle->corners[1].vy = y * 16 - half_h * 16;
+    particle->corners[2].vx = x * 16 - half_w * 16;
+    particle->corners[2].vy = half_h * 16 + y * 16;
+    particle->corners[3].vx = half_w * 16 + x * 16;
+    particle->corners[3].vy = half_h * 16 + y * 16;
+    func_8007A44C(quad, D_800AF27C[sprite].uv[0][0], D_800AF27C[sprite].uv[0][1] + 0x40,
+                  D_800AF27C[sprite].uv[1][0] - 1, D_800AF27C[sprite].uv[1][1] + 0x40,
+                  D_800AF27C[sprite].uv[2][0], D_800AF27C[sprite].uv[2][1] + 0x3F,
+                  D_800AF27C[sprite].uv[3][0] - 1, D_800AF27C[sprite].uv[3][1] + 0x3F);
     SetSemiTrans(quad, 1);
     quad->tpage = GetTPage(0, abr, 0x3C0, 0x140);
     quad->clut = GetClut(0x100, 0xF7);

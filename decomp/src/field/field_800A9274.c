@@ -1391,16 +1391,16 @@ void func_800ACE90(void) {
 
 #define DESCRIPTOR(index) (&D_800AF880.components.descriptors[index])
 
-#ifdef NON_MATCHING
 /* Return party slot `slot` to its member: swap the models back, hand the
- * stand-in's heading over, and restart both animations. Differs in when
- * the address of 8006f990 is formed. */
+ * stand-in's heading over, and restart both animations. */
 void func_800ACFD0(s32 slot) {
+    FieldModel *stand_in;
     FieldModel *model;
 
     D_8005A39C->unk22B1[slot] = 0;
+    stand_in = DESCRIPTOR(D_8006F990[slot])->model;
     model = DESCRIPTOR(D_8005A444[slot])->model;
-    DESCRIPTOR(D_8005A444[slot])->model = DESCRIPTOR(D_8006F990[slot])->model;
+    DESCRIPTOR(D_8005A444[slot])->model = stand_in;
     DESCRIPTOR(D_8006F990[slot])->model = model;
     DESCRIPTOR(D_8006F990[slot])->flags = (DESCRIPTOR(D_8006F990[slot])->flags & 0xF07F) | 0x200;
     DESCRIPTOR(D_8006F990[slot])->flags &= 0xFFDF;
@@ -1423,9 +1423,6 @@ void func_800ACFD0(s32 slot) {
     func_8009FEE4(slot);
     func_800A98E8(D_8006F990[slot], 0);
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800A9274", func_800ACFD0);
-#endif
 
 /* Put the current actor in for party slot `slot`: swap its model with the
  * member's, mark the slot taken, and restart both animations. */
