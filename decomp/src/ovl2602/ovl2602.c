@@ -3391,7 +3391,177 @@ void func_801D1F20(u32 gold, u8 *ids, u8 *amounts, s32 n, u8 *inv_ids, u8 *inv_c
     }
 }
 
+/*
+ * The sell list (twin of the item shop's): choose how many of each of `n`
+ * held parts to sell, eight rows at a time, with the running total and the
+ * gold after the sale; confirming settles the sale.
+ */
+#ifdef NON_MATCHING
+void func_801D2054(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds, u8 member) {
+    u8 running = 1;
+    u8 first = 1;
+    u8 redraw = 1;
+    s32 row = 0;
+    s32 last_row = 0xFF;
+    s32 top = 0;
+    s32 last_top = 0xFF;
+    u8 sell_ids[n];
+    u8 sell_kinds[n];
+    u8 chosen[n];
+    u8 selectable[n];
+    u8 held[n];
+    u32 total;
+    u32 new_gold;
+    u32 price;
+    s32 count;
+    s32 i;
+    s32 index;
+    u32 gold;
+
+    gold = D_8006EF58;
+    new_gold = gold;
+    total = 0;
+
+    for (i = 0; i < n; i++) {
+        held[i] = 0;
+        selectable[i] = 0;
+        chosen[i] = 0;
+        sell_ids[i] = 0;
+        if (same_kind) {
+            sell_kinds[i] = kind;
+        } else {
+            sell_kinds[i] = kinds[i];
+        }
+    }
+    count = 0;
+    for (i = 0; i < n; i++) {
+        if (ids[i] != 0 && counts[i] != 0) {
+            sell_ids[count] = ids[i];
+            held[count] = counts[i];
+            selectable[count] = 1;
+            count++;
+        }
+    }
+    func_801C7870(0);
+    while (running) {
+        func_801CC1C4();
+        if (top != last_top || redraw) {
+            func_801D18F8(top, sell_ids, sell_kinds, chosen, held);
+            func_801C76A4(0xC, 0x32, 0x3C, count, top);
+        }
+        if (row != last_row || top != last_top) {
+            last_row = row;
+            price = func_801D1304(sell_ids[top + row], sell_kinds[top + row]);
+            last_top = top;
+            D_800625A0->flags->unk5A = 1;
+        }
+        func_801C78EC(row, top, 0, 0);
+        if (first) {
+            func_801C90E0(2, 0xC, 0x2A, 0xC4, 0x74, 0, 1, 4, 1);
+            func_801C90E0(3, 0x20, 0xE, 0xFC, 0x14, 0, 1, 4, 0);
+            func_801D0220();
+            func_801D05EC();
+            first = 0;
+        }
+        if (redraw) {
+            func_801D06D8(gold, total, new_gold, 0, 0);
+            redraw = 0;
+        }
+        switch (D_800625A0->input) {
+        case 4:
+            if (total != 0) {
+                func_801CB498(2);
+                D_800625A0->flags->unk5A = 0;
+                D_800625A0->flags->panel_shown[2] = 0;
+                D_800625A0->flags->panel_shown[3] = 0;
+                D_800625A0->flags->scroll_shown = 0;
+                running = 0;
+                D_800625A0->flags->marker_shown[0] = 0;
+                func_801CC31C(0);
+                func_801D0C20(total, 0);
+                if (func_801CCC18(0x95, 0xFF, 1)) {
+                    func_801D1F20(new_gold, sell_ids, chosen, n, ids, counts, sell_kinds, same_kind);
+                } else {
+                    running = 1;
+                    D_800625A0->flags->panel_shown[2] = 1;
+                    D_800625A0->flags->panel_shown[3] = 1;
+                    D_800625A0->flags->scroll_shown = 1;
+                    last_top = 0xFF;
+                    last_row = 0xFF;
+                    D_800625A0->flags->marker_shown[0] = running;
+                }
+                func_801CC4DC();
+            } else {
+                func_801CB498(4);
+            }
+            break;
+        case 5:
+            running = 0;
+            if (total != 0) {
+                D_800625A0->flags->unk5A = 0;
+                D_800625A0->flags->panel_shown[2] = 0;
+                D_800625A0->flags->panel_shown[3] = 0;
+                D_800625A0->flags->scroll_shown = 0;
+                D_800625A0->flags->marker_shown[0] = 0;
+                func_801CC31C(0);
+                if (!func_801CCC18(0x92, 0xFF, 1)) {
+                    running = 1;
+                    D_800625A0->flags->panel_shown[2] = 1;
+                    D_800625A0->flags->panel_shown[3] = 1;
+                    D_800625A0->flags->scroll_shown = 1;
+                    last_top = 0xFF;
+                    last_row = 0xFF;
+                    D_800625A0->flags->marker_shown[0] = running;
+                }
+                func_801CC4DC();
+            }
+            break;
+        case 1:
+            row++;
+            if (row >= 8) {
+                top++;
+                row = 7;
+                if (count - 8 < top) {
+                    top--;
+                }
+            }
+            break;
+        case 3:
+            row--;
+            if (row < 0) {
+                top--;
+                row = 0;
+                if (top < 0) {
+                    top = 0;
+                }
+            }
+            break;
+        case 0:
+            index = top + row;
+            if (selectable[index] && held[index] - 1 >= 0) {
+                redraw = 1;
+                total += price;
+                chosen[index]++;
+                new_gold += price;
+                held[index]--;
+            }
+            break;
+        case 2:
+            index = top + row;
+            if (selectable[index] && chosen[index] - 1 >= 0) {
+                redraw = 1;
+                total -= price;
+                held[index]++;
+                new_gold -= price;
+                chosen[index]--;
+            }
+            break;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D2054);
+#endif
 
 /* Run the sell list for inventory 3 (150 entries). */
 void func_801D2784(void) {
