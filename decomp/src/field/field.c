@@ -879,8 +879,6 @@ void func_8008F4A0(void) {
     D_800B0078->pc += 5;
 }
 
-void func_80085634(s32 a, s32 b);
-
 /* Field 80085634(op1, op3). */
 void func_8008F4FC(void) {
     s32 a;
@@ -2216,9 +2214,72 @@ void func_80093D48(void) {
     D_800B0078->pc += 8;
 }
 
+#ifdef NON_MATCHING
+/* Door-style swing: while layer flag 0x100000 is clear, turn the current
+ * descriptor by 0x20 per frame (direction operand 1) for 31 frames, then set
+ * the flag and advance. */
+void func_80093E30(void) {
+    if (!(D_800B0078->flags & 0x100000)) {
+        if (!(D_800B0078->unk12C & 0x20)) {
+            D_800B0078->unk12C |= 0x20;
+            D_800B0078->unkE2 = 0;
+            func_80085634(8, 3);
+        } else {
+            D_800B0078->unkE2++;
+            if (D_800B0078->unkE2 < 31) {
+                if (EVENT_OPERAND_BYTE(1) == 0) {
+                    D_800AFB10[D_800AFD1C].rotation.vy += 0x20;
+                } else {
+                    D_800AFB10[D_800AFD1C].rotation.vy -= 0x20;
+                }
+            } else {
+                D_800B0078->unkE2 = 0;
+                D_800B0078->flags |= 0x100000;
+                D_800B0078->unk12C &= ~0x20;
+                D_800B0078->pc += 2;
+            }
+        }
+    } else {
+        D_800B0078->pc += 2;
+    }
+    func_80072254(D_800AFD1C);
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80093E30);
+#endif
 
+#ifdef NON_MATCHING
+/* The reverse swing: while flag 0x100000 is set, turn back over 31 frames,
+ * then clear it and advance. */
+void func_80093FC0(void) {
+    if (D_800B0078->flags & 0x100000) {
+        if (!(D_800B0078->unk12C & 0x20)) {
+            D_800B0078->unk12C |= 0x20;
+            D_800B0078->unkE2 = 0;
+            func_80085634(8, 3);
+        } else {
+            D_800B0078->unkE2++;
+            if (D_800B0078->unkE2 < 31) {
+                if (EVENT_OPERAND_BYTE(1) == 0) {
+                    D_800AFB10[D_800AFD1C].rotation.vy -= 0x20;
+                } else {
+                    D_800AFB10[D_800AFD1C].rotation.vy += 0x20;
+                }
+            } else {
+                D_800B0078->unkE2 = 0;
+                D_800B0078->flags &= ~0x100000;
+                D_800B0078->unk12C &= ~0x20;
+                D_800B0078->pc += 2;
+            }
+        }
+    } else {
+        D_800B0078->pc += 2;
+    }
+    func_80072254(D_800AFD1C);
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80093FC0);
+#endif
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80094158);
 
@@ -2272,11 +2333,54 @@ void func_80094764(void) {
     D_800B0078->pc += 3;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800947B0);
+/* Turn a selected actor's descriptor: operand 1 picks axis and sign
+ * (0/1: x+/-, 2/3: y+/-, 4/5: z+/-). */
+void func_800947B0(void) {
+    FieldDescriptor *descriptor;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80094918);
+    if (func_8009CDB4(2) != 0xFF) {
+        descriptor = &D_800AFB10[func_8009CDB4(2)];
+        switch (EVENT_OPERAND_BYTE(1)) {
+        case 0:
+            descriptor->rotation.vx += func_800ACDEC(3);
+            break;
+        case 1:
+            descriptor->rotation.vx -= func_800ACDEC(3);
+            break;
+        case 2:
+            descriptor->rotation.vy += func_800ACDEC(3);
+            break;
+        case 3:
+            descriptor->rotation.vy -= func_800ACDEC(3);
+            break;
+        case 4:
+            descriptor->rotation.vz += func_800ACDEC(3);
+            break;
+        case 5:
+            descriptor->rotation.vz -= func_800ACDEC(3);
+            break;
+        }
+        func_80072254(func_8009CDB4(2));
+    }
+    D_800B0078->pc += 5;
+}
 
-void func_80072254(s32 index);
+/* Set one rotation axis (operand 3) of the current descriptor. */
+void func_80094918(void) {
+    switch (EVENT_OPERAND_BYTE(3)) {
+    case 0:
+        D_800AFB10[D_800AFD1C].rotation.vx = func_800ACDEC(1);
+        break;
+    case 1:
+        D_800AFB10[D_800AFD1C].rotation.vy = func_800ACDEC(1);
+        break;
+    case 2:
+        D_800AFB10[D_800AFD1C].rotation.vz = func_800ACDEC(1);
+        break;
+    }
+    D_800B0078->pc += 4;
+    func_80072254(D_800AFD1C);
+}
 
 /* Turn the current descriptor about x by an operand and reapply it. */
 void func_80094A5C(void) {
