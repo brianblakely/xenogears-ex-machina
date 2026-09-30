@@ -183,7 +183,212 @@ s32 func_8007E450(s32 index) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007DE98", func_8007E4E4);
+/* Scene camera director: commands set up camera shots; the states fly the
+ * camera target across the map, zoom and shake the view by unk7C. */
+s32 func_8007E4E4(s32 index) {
+    WorldmapActor *actor;
+    CameraScratch *scratch;
+    s32 shake;
+
+    actor = &D_8009BE24[index];
+    scratch = (CameraScratch *)0x1F800000;
+    switch (actor->unk4) {
+    case 1:
+        D_8009D3F0 = 0x500000;
+        actor->unk4 = 0;
+        D_8009BD38.vx = 0x150;
+        D_8009BD38.vy = 0xF50;
+        D_8009BD38.vz = 0;
+        break;
+    case 2:
+        D_8009D3F0 = 0x4D0000;
+        actor->unk4 = 0;
+        D_8009BD38.vx = 0xC60;
+        D_8009BD38.vy = 0x380;
+        D_8009BD38.vz = 0;
+        break;
+    case 3:
+        D_8009D3F0 = 0x400000;
+        actor->unk4 = 0;
+        D_8009BD38.vx = 0x30;
+        D_8009BD38.vy = 0x160;
+        D_8009BD38.vz = 0;
+        break;
+    case 4:
+        D_8009D3F0 = 0x400000;
+        actor->unk4 = 0;
+        D_8009BD38.vx = 0x30;
+        D_8009BD38.vy = 0x960;
+        D_8009BD38.vz = 0;
+        break;
+    case 5:
+        actor->state = 1;
+        actor->unk4 = 0;
+        actor->unk5C = -0x8000;
+        break;
+    case 6:
+        actor->state = 3;
+        actor->unk7C = 0x1000;
+        D_8009D3F0 = 0x200000;
+        actor->unk4 = 0;
+        D_8009BD38.vx = -0x58;
+        D_8009BD38.vy = 0xE58;
+        D_8009BD38.vz = 0;
+        break;
+    case 7:
+        actor->state = 5;
+        actor->unk4 = 0;
+        actor->unk7C = 0x40000;
+        break;
+    case 16:
+        actor->state = 0x10;
+        actor->unk4 = 0;
+        actor->unk5C = -0x8000;
+        break;
+    case 17:
+        actor->state = 0x10;
+        actor->unk7C = 0x1000;
+        D_8009D3F0 = 0x400000;
+        actor->unk4 = 0;
+        D_8009BD38.vx = 0xE0;
+        D_8009BD38.vy = 0x798;
+        D_8009BD38.vz = 0;
+        break;
+    case 24:
+        actor->state = 0x18;
+        actor->unk4 = 0;
+        actor->unk5C = -0x8000;
+        break;
+    }
+    if (D_8009D144 == 0) {
+        func_80093354(&actor->position);
+        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+    }
+    switch (actor->state) {
+    case 0:
+        break;
+    case 1:
+        D_8009BE28.target.vx -= 0x42D00;
+        D_8009BE28.target.vz += 0x6D300;
+        if (D_8009BE28.target.vx < 0x1F9E000 && D_8009BE28.target.vz > 0x5998000) {
+            D_8009BE28.target.vx = 0x1F9E000;
+            D_8009BE28.target.vz = 0x5998000;
+            actor->state = 2;
+            actor->unk7C = 0x10000;
+        } else {
+            GROUND_SCROLL[0] -= 0x42D00;
+            GROUND_SCROLL[2] += 0x6D300;
+        }
+        func_80093354(&actor->position);
+        D_8009BD38.vy -= 8;
+        D_8009BD38.vx += actor->unk5C >> 12;
+        actor->unk5C += 0x300;
+        D_8009D3F0 += 0x8000;
+        if (D_8009BD38.vx > 0x80) {
+            D_8009BD38.vx = 0x80;
+        }
+        break;
+    case 2:
+        actor->unk7C -= 0x80;
+        if (actor->unk7C < 0x1000) {
+            actor->unk7C = 0x1000;
+        }
+        break;
+    case 3:
+        D_8009BE28.target.vx -= 0x4C400;
+        D_8009BE28.target.vy += 0xFF80;
+        D_8009BE28.target.vz -= 0x65580;
+        if (D_8009BE28.target.vx < 0x1498000 && D_8009BE28.target.vz < 0x4AF2000) {
+            D_8009BE28.target.vx = 0x1498000;
+            D_8009BE28.target.vz = 0x4AF2000;
+            actor->state = 4;
+            actor->unk5C = 0x20000;
+        } else {
+            GROUND_SCROLL[0] -= 0x4C400;
+            GROUND_SCROLL[2] -= 0x65580;
+        }
+        func_80093354(&actor->position);
+        D_8009D3F0 += 0x20000;
+        D_8009BD38.vy += 0x20;
+        D_8009BD38.vx -= 4;
+        break;
+    case 4:
+        D_8009BD38.vy += actor->unk5C >> 12;
+        actor->unk5C -= 0x800;
+        if (actor->unk5C < 0) {
+            actor->unk5C = 0;
+            actor->state = 0;
+        }
+        break;
+    case 5:
+        actor->unk7C -= 0x2000;
+        if (actor->unk7C < 0x1000) {
+            actor->unk7C = 0x1000;
+            actor->state = 0;
+        }
+        break;
+    case 16:
+        D_8009BE28.target.vx -= 0x42D00;
+        D_8009BE28.target.vz += 0x6D300;
+        if (D_8009BE28.target.vx < 0x1F9E000 && D_8009BE28.target.vz > 0x5998000) {
+            D_8009BE28.target.vx = 0x1F9E000;
+            D_8009BE28.target.vz = 0x5998000;
+            actor->state = 0x11;
+            actor->unk7C = 0x8000;
+        } else {
+            GROUND_SCROLL[0] -= 0x42D00;
+            GROUND_SCROLL[2] += 0x6D300;
+        }
+        func_80093354(&actor->position);
+        D_8009BD38.vy -= 8;
+        D_8009BD38.vx += actor->unk5C >> 12;
+        actor->unk5C += 0x300;
+        D_8009D3F0 += 0x8000;
+        if (D_8009BD38.vx > 0x80) {
+            D_8009BD38.vx = 0x80;
+        }
+        break;
+    case 17:
+        actor->unk7C -= 0x200;
+        if (actor->unk7C < 0x1000) {
+            actor->unk7C = 0x1000;
+        }
+        break;
+    case 24:
+        D_8009BE28.target.vx -= 0x42D00;
+        D_8009BE28.target.vz += 0x6D300;
+        if (D_8009BE28.target.vx < 0x2152000 && D_8009BE28.target.vz > 0x5AA3000) {
+            D_8009BE28.target.vx = 0x2152000;
+            D_8009BE28.target.vz = 0x5AA3000;
+            actor->state = 0x19;
+            actor->unk60 = 0x10000;
+        } else {
+            GROUND_SCROLL[0] -= 0x42D00;
+            GROUND_SCROLL[2] += 0x6D300;
+        }
+        func_80093354(&actor->position);
+        D_8009BD38.vy -= 8;
+        D_8009BD38.vx += actor->unk5C >> 12;
+        actor->unk5C += 0x300;
+        D_8009D3F0 += 0x8000;
+        if (D_8009BD38.vx > 0x80) {
+            D_8009BD38.vx = 0x80;
+        }
+        break;
+    case 25:
+        D_8009BD38.vy -= actor->unk60 >> 12;
+        actor->unk60 -= 0x200;
+        if (actor->unk60 < 0) {
+            actor->unk60 = 0;
+        }
+        break;
+    }
+    shake = rand() % (actor->unk7C >> 12) - (actor->unk7C >> 13);
+    scratch->view.vy = shake;
+    ((s16 *)D_8009BD40)[1] += shake; /* VIEW_VECTORS[0].vy */
+    VIEW_VECTORS[1].vy += scratch->view.vy;
+    return 1;
+}
 
 /* Set up `count` translucent blue textured quads of a scene object and copy them to its second buffer. */
 #ifdef NON_MATCHING /* loop pointer biased to b0 instead of the code byte */
