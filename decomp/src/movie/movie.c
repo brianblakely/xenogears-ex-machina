@@ -263,7 +263,188 @@ INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_8006FCB4);
 
 INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_8006FCD8);
 
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_800712C4);
+/* Fill `size` bytes of `words` with `value`, counting in `n`. */
+#define FILL_WORDS(words, size, n, value)  \
+    for (n = 0; n < (size) / 4; n++) {    \
+        (words)[n] = (value);              \
+    }
+
+/* Record a verify mismatch at byte `offset` of a `size`-byte read: the
+ * first one keeps its place and the resident's stream counters. */
+#define VERIFY_ERROR(offset, size)         \
+    {                                      \
+        if (D_80076E4C == 0) {             \
+            D_80076E68 = (offset);         \
+            D_80076E6C = (size);           \
+            D_80076E70 = D_8004FDE4;       \
+            D_80076E74 = D_8004FDE8;       \
+            D_80076E78 = D_8004FDEC;       \
+        }                                  \
+        D_80076E4C++;                      \
+    }
+
+/* Monitor read check, run every frame: once the command's read (phase 1)
+ * ends, read the same data again into a second buffer or file list filled
+ * with -1 (phase 2); once that ends, compare both copies word by word,
+ * record the first mismatch and release the copies. */
+void func_800712C4(void) {
+    s32 i;
+    s32 *dest;
+    s32 index;
+    s32 file;
+    s32 *buffer;
+    s32 *copy;
+
+    if (D_80076E64 == 0) {
+        return;
+    }
+    if (func_800286CC() == 0 && D_80076E64 == 1) {
+        D_80076E64 = 2;
+        switch (D_80076E48) {
+        case 1:
+            D_80076E90 = 0x2000;
+            D_80076E8C = buffer = func_80031BDC(0x2000, 0);
+            FILL_WORDS(buffer, D_80076E90, i, -1);
+            func_8002954C(0x40, D_80076E8C, D_80076E90, 0, 0);
+            break;
+        case 2:
+            D_80076E90 = func_800288EC(7);
+            D_80076E8C = buffer = func_80031BDC(D_80076E90, 0);
+            FILL_WORDS(buffer, D_80076E90, i, -1);
+            func_800295D8(7, D_80076E8C, 0, 0);
+            break;
+        case 3:
+        case 12:
+            D_80076E80 = func_8002A57C(2, 0);
+            if (D_80076E80 == NULL) {
+                D_80076E64 = 0;
+                D_80076E48 = 0;
+                break;
+            }
+            for (index = 0; (file = D_80076E80[index].file) > 0; index++) {
+                copy = D_80076E80[index].dest;
+                D_80076E90 = func_800288EC(file);
+                FILL_WORDS(copy, D_80076E90, i, -1);
+            }
+            func_80029AFC(D_80076E80, 0, 0);
+            break;
+        case 4:
+            D_80076E90 = 0x2000;
+            D_80076E8C = buffer = func_80031BDC(0x2000, 0);
+            FILL_WORDS(buffer, D_80076E90, i, -1);
+            func_8002954C(0x40, D_80076E8C, D_80076E90, 0, 0);
+            break;
+        case 5:
+            D_80076E90 = func_800288EC(7);
+            D_80076E8C = buffer = func_80031BDC(D_80076E90, 0);
+            FILL_WORDS(buffer, D_80076E90, i, -1);
+            func_800295D8(7, D_80076E8C, 1, 0);
+            break;
+        case 6:
+            D_80076E80 = func_8002A57C(2, 0);
+            if (D_80076E80 == NULL) {
+                D_80076E64 = 0;
+                D_80076E48 = 0;
+                break;
+            }
+            for (index = 0; (file = D_80076E80[index].file) > 0; index++) {
+                copy = D_80076E80[index].dest;
+                D_80076E90 = func_800288EC(file);
+                FILL_WORDS(copy, D_80076E90, i, -1);
+            }
+            func_80029AFC(D_80076E80, 1, 0);
+            break;
+        case 7:
+        case 8:
+            D_80076E64 = 0;
+            D_80076E48 = 0;
+            break;
+        case 11:
+            D_80076E90 = func_800288EC(6);
+            D_80076E8C = buffer = func_80031BDC(D_80076E90, 0);
+            FILL_WORDS(buffer, D_80076E90, i, -1);
+            func_800295D8(6, D_80076E8C, 0, 0);
+            break;
+        }
+    }
+    if (func_800286CC() == 0 && D_80076E64 == 2) {
+        D_80076E64 = 0;
+        switch (D_80076E48) {
+        case 1:
+        case 4:
+            for (i = 0; i < 0x800; i++) {
+                if (D_80076E88[i] != D_80076E8C[i]) {
+                    VERIFY_ERROR(i * 4, 0x2000);
+                    break;
+                }
+            }
+            func_800320E8(D_80076E88);
+            func_800320E8(D_80076E8C);
+            D_80076E64 = 0;
+            break;
+        case 2:
+        case 5:
+            D_80076E90 = func_800288EC(7);
+            for (i = 0; i < D_80076E90 / 4; i++) {
+                if (D_80076E88[i] != D_80076E8C[i]) {
+                    VERIFY_ERROR(i * 4, func_800288EC(7));
+                    break;
+                }
+            }
+            func_800320E8(D_80076E88);
+            func_800320E8(D_80076E8C);
+            D_80076E64 = 0;
+            break;
+        case 3:
+        case 6:
+        case 12:
+            index = 0;
+            file = D_80076E7C[0].file;
+            if (file > 0) {
+                do {
+                    copy = D_80076E80[index].dest;
+                    dest = D_80076E7C[index].dest;
+                    D_80076E90 = func_800288EC(file);
+                    for (i = 0; i < D_80076E90 / 4; i++) {
+                        if (dest[i] != copy[i]) {
+                            VERIFY_ERROR(i * 4, func_800288EC(file));
+                            break;
+                        }
+                    }
+                } while ((file = D_80076E7C[++index].file) > 0);
+            }
+            func_8002A524(D_80076E7C);
+            func_8002A524(D_80076E80);
+            func_800320E8(D_80076E7C);
+            func_800320E8(D_80076E80);
+            D_80076E64 = 0;
+            break;
+        case 7:
+        case 8:
+        case 9:
+        case 10:
+            D_80076E64 = 0;
+            break;
+        case 11:
+            if (D_80076E94 > 0) {
+                D_80076E64 = 2;
+            } else {
+                D_80076E90 = func_800288EC(6);
+                for (i = 0; i < D_80076E90 / 4; i++) {
+                    if (D_80076E88[i] != D_80076E8C[i]) {
+                        VERIFY_ERROR(i * 4, func_800288EC(6));
+                        break;
+                    }
+                }
+                func_800320E8(D_80076E88);
+                func_800320E8(D_80076E8C);
+            }
+            D_80076E64 = 0;
+            break;
+        }
+        D_80076E48 = 0;
+    }
+}
 
 /* FAT check step: read file 40h into the check buffer (allocated once) and
  * count the read; a pass without errors keeps its tally. */
@@ -285,7 +466,7 @@ void func_80071BA0(void) {
 }
 
 /* Clear `size` bytes of words at `dest`, counting in `n`. */
-#define CLEAR_WORDS(dest, size, n)         \
+#define ZERO_WORDS(dest, size, n)          \
     {                                      \
         s32 *word;                         \
         n = 0;                             \
@@ -317,14 +498,14 @@ void func_80071C34(s32 command) {
         D_80076E90 = 0x2000;
         D_80076F3C[1]++;
         D_80076E88 = func_80031BDC(0x2000, 0);
-        CLEAR_WORDS(D_80076E88, D_80076E90, i);
+        ZERO_WORDS(D_80076E88, D_80076E90, i);
         func_8002954C(0x40, D_80076E88, D_80076E90, 0, 0);
         break;
     case 2:
         D_80076F3C[2]++;
         D_80076E90 = func_800288EC(7);
         D_80076E88 = func_80031BDC(D_80076E90, 0);
-        CLEAR_WORDS(D_80076E88, D_80076E90, i);
+        ZERO_WORDS(D_80076E88, D_80076E90, i);
         func_800295D8(7, D_80076E88, 0, 0);
         break;
     case 3:
@@ -338,7 +519,7 @@ void func_80071C34(s32 command) {
         for (index = 0; (file = D_80076E7C[index].file) > 0; index++) {
             dest = D_80076E7C[index].dest;
             D_80076E90 = func_800288EC(file);
-            CLEAR_WORDS(dest, D_80076E90, i);
+            ZERO_WORDS(dest, D_80076E90, i);
         }
         func_80029AFC(D_80076E7C, 0, 0);
         break;
@@ -346,14 +527,14 @@ void func_80071C34(s32 command) {
         D_80076E90 = 0x2000;
         D_80076F3C[4]++;
         D_80076E88 = func_80031BDC(0x2000, 0);
-        CLEAR_WORDS(D_80076E88, D_80076E90, i);
+        ZERO_WORDS(D_80076E88, D_80076E90, i);
         func_8002954C(0x40, D_80076E88, D_80076E90, 0, 0);
         break;
     case 5:
         D_80076F3C[5]++;
         D_80076E90 = func_800288EC(7);
         D_80076E88 = func_80031BDC(D_80076E90, 0);
-        CLEAR_WORDS(D_80076E88, D_80076E90, i);
+        ZERO_WORDS(D_80076E88, D_80076E90, i);
         func_800295D8(7, D_80076E88, 1, 0);
         break;
     case 6:
@@ -367,7 +548,7 @@ void func_80071C34(s32 command) {
         for (index = 0; (file = D_80076E7C[index].file) > 0; index++) {
             dest = D_80076E7C[index].dest;
             D_80076E90 = func_800288EC(file);
-            CLEAR_WORDS(dest, D_80076E90, i);
+            ZERO_WORDS(dest, D_80076E90, i);
         }
         func_80029AFC(D_80076E7C, 1, 0);
         break;
@@ -395,7 +576,7 @@ void func_80071C34(s32 command) {
         }
         D_80076E94 = D_80076E90 = func_800288EC(6);
         D_80076E84 = D_80076E88 = func_80031BDC(D_80076E90, 0);
-        CLEAR_WORDS(D_80076E88, D_80076E90, i);
+        ZERO_WORDS(D_80076E88, D_80076E90, i);
         func_800295D8(6, D_80076E98, 1, 0x100);
         break;
     case 12:
@@ -419,7 +600,7 @@ void func_80071C34(s32 command) {
         for (index = 0; file > 0; file = D_80076E7C[++index].file) {
             dest = D_80076E7C[index].dest;
             D_80076E90 = func_800288EC(file);
-            CLEAR_WORDS(dest, D_80076E90, i);
+            ZERO_WORDS(dest, D_80076E90, i);
         }
         func_80028A94(D_80076E98);
         func_80029AFC(D_80076E7C, 1, 0x100);

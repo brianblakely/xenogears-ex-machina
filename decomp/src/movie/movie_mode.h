@@ -288,7 +288,9 @@ s32 func_80039850(void *sequence); /* load a music sequence */
 /* CD-ROM monitor screen. */
 extern s32 D_80076E64;          /* read phase: waiting, reading, verifying */
 extern s32 D_80076E68, D_80076E6C, D_80076E70, D_80076E74, D_80076E78; /* last error */
-extern s32 D_80076E80, D_80076E8C;
+extern StreamEntry *D_80076E80; /* verify copy of the stream list */
+extern s32 *D_80076E8C;         /* verify copy of the read */
+void func_8002A524(StreamEntry *list); /* release a file list's buffers */
 extern s32 *D_80076E98;         /* stream buffer */
 extern s32 D_80076EA8;          /* reads in total */
 extern s32 D_8005A4DC;          /* resident read error count */
