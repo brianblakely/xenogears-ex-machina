@@ -486,39 +486,128 @@ void func_800771F8(u32 *tim) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80077268);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80077544);
+/* Load the text palette, with the debug font first when enabled. */
+void func_80077544(void) {
+    if (D_800C268C == 0) {
+        func_8003747C(0x80270000);
+        func_800374E8(0x10, 0x10, 0x130, 0xE0, 0x400, 4, 0x3C0, 0x100, 0x100, 0x1FF, 0);
+    }
+    func_80033698(0x100, 0xF0);
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800775C0);
+/* Select the field's heap tag and directory, then set up the pointer. */
+void func_800775C0(void) {
+    func_80032498(8, 0);
+    func_80028470(4, 0);
+    func_80071EE8();
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800775F8);
+/* Wait for drawing to finish (DrawSync), then VSync. */
+void func_800775F8(void) {
+    func_800445D0(0);
+    func_8004B54C(0);
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80077620);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800777DC);
+/* Stop the stream, then read the map's data ahead until it is in. */
+void func_800777DC(void) {
+    func_80028A60(0);
+    while (func_8001B484((D_8004F34C & 0xFFF) * 2, 0) != 0) {
+    }
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007781C);
+/* Record the VSync counter. */
+void func_8007781C(void) {
+    D_800ADBA4 = func_8004B54C(1);
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80077844);
+/* Set a matrix's nine rotation elements. */
+void func_80077844(MATRIX *m, s32 m00, s32 m01, s32 m02, s32 m10, s32 m11, s32 m12, s32 m20,
+                   s32 m21, s32 m22) {
+    m->m[0][0] = m00;
+    m->m[0][1] = m01;
+    m->m[0][2] = m02;
+    m->m[1][0] = m10;
+    m->m[1][1] = m11;
+    m->m[1][2] = m12;
+    m->m[2][0] = m20;
+    m->m[2][1] = m21;
+    m->m[2][2] = m22;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80077884);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80077AB4);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80077C60);
+/* Run 80077884 then 80077ab4. */
+void func_80077C60(void) {
+    func_80077884();
+    func_80077AB4();
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80077C88);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80077D2C);
+/* Unlink, then release, the three blocks at 8005a414..8005a41c. */
+void func_80077D2C(void) {
+    func_800320B8(D_8005A414[0]);
+    func_800320B8(D_8005A414[1]);
+    func_800320B8(D_8005A414[2]);
+    func_800320E8(D_8005A414[0]);
+    func_800320E8(D_8005A414[1]);
+    func_800320E8(D_8005A414[2]);
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80077DAC);
 
+#ifdef NON_MATCHING
+/* -1 when the field may leave (800adbd0 is 1, 800b2344 clear, and the
+ * controlled actor has flag 0x800), else 0. */
+s32 func_80077E10(void) {
+    s32 result = 0;
+
+    if (D_800ADBD0 == 1 && D_800B2344 == 0) {
+        result = -((D_800AFB10[D_800B226C].actor->flags & 0x800) != 0);
+    }
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80077E10);
+#endif
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80077E88);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80078B5C);
+/* Field post-frame work: 8003fa38, resolve a pending sound, count down the
+ * instant-turn frames. Declared int but returns nothing (the return register
+ * stays live, so the final branch keeps an empty delay slot). */
+s32 func_80078B5C(void) {
+    func_8003FA38();
+    if (D_8004F308 == -1) {
+        D_8004F308 = func_80085C90(D_8004F324);
+    }
+    if (D_800ADC18 != 0) {
+        D_800ADC18--;
+    }
+}
 
+#ifdef NON_MATCHING
+/* -1 while a battle menu, the disc, the music, a battle request or a pending
+ * transition is busy; otherwise -1 only when 800adbc4 is not 0xff. */
+s32 func_80078BC8(void) {
+    s32 result;
+
+    if (D_800ADB2C != 0) {
+        return -1;
+    }
+    result = -1;
+    if (func_800286CC() == 0 && D_8004F308 == 0 && D_800ADB90 == 0 && D_800ADB34 == 0) {
+        result = -(D_800ADBC4 != 0xFF);
+    }
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80078BC8);
+#endif
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80078C5C);
 

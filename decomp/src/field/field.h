@@ -176,6 +176,16 @@ typedef struct {
 } FieldSlot6;
 
 /* Resident services. */
+extern s32 func_8001B484(s32 file, s32);
+extern void func_80028470(s32 directory, s32);
+extern s32 func_800286CC(void);
+extern void func_800320B8(void *block);
+extern void func_80032498(s32 tag, s32);
+extern void func_80033698(s32, s32);
+extern void func_8003747C(s32);
+extern void func_800374E8(s32, s32, s32, s32, s32, s32, s32, s32, s32, s32, s32);
+extern void func_8003FA38(void);
+extern s32 func_8004B54C(s32); /* VSync */
 extern void func_80021B98(void *, s32 r, s32 g, s32 b);
 extern void func_80043B84(void *ot, void *first, void *last); /* AddPrims */
 extern void func_80044894(RECT *rect, u32 *pixels);           /* LoadImage */
@@ -200,6 +210,10 @@ extern void func_800496AC(void);                               /* PopMatrix */
 extern void func_8004A6DC(SVECTOR *v, s32 *out, s32 *flag); /* RotTrans */
 
 /* Field overlay. */
+extern void func_80071EE8(void);
+extern void func_80077884(void);
+extern void func_80077AB4(void);
+extern s32 func_80085C90(s32);
 extern void func_8007D93C(s32 channel);
 extern void func_8007AD8C(void *pad0, void *pad1);
 extern void func_8007ADA4(s32 left, s32 right, s32 top, s32 bottom);
@@ -215,11 +229,22 @@ extern void func_80078C5C(void);
 extern void func_802815B0(void);
 
 /* Resident state. */
+extern s32 D_8004F308; /* pending sound; -1 until resolved */
+extern s32 D_8004F324;
+extern void *D_8005A414[3];
 extern s32 D_8004F34C; /* current map */
 
 extern u8 D_800625FC[2][0x22]; /* pad buffers */
 
 /* Field state. */
+extern s32 D_800ADB2C;
+extern s32 D_800ADB34;
+extern s32 D_800ADB90;
+extern s32 D_800ADBA4;
+extern s32 D_800ADBC4;
+extern s32 D_800ADBD0;
+extern s32 D_800B226C; /* controlled descriptor */
+extern s16 D_800B2344;
 extern s32 D_800ADB08;
 extern s32 D_800ADC04; /* fade mode; fades start only in mode 2 */
 extern s16 D_800ADC08; /* fade started */
