@@ -188,12 +188,12 @@ void func_801C5A7C(Label *label, s32 index, s32 row, s32 mode) {
     s32 u;
     s32 v;
 
-    i = 0;
     column = index & 1;
     line = index / 2;
     u = (line & 1) << 7;
     poly = label->poly;
-    for (i = 0; i < 2; i++, poly++) {
+    i = 0;
+loop:
         semi = 0;
         func_80043CB0(poly);
         func_80043BFC(poly, 0);
@@ -238,6 +238,10 @@ void func_801C5A7C(Label *label, s32 index, s32 row, s32 mode) {
         } else {
             poly->clut = D_800595D4;
         }
+        i++;
+        poly++;
+    if (i < 2) {
+        goto loop;
     }
     label->dirty = 0;
 }
@@ -874,38 +878,27 @@ void func_801C8AF0(void) {
 }
 
 /* Project `count` quads and link their packets (every other one from `first`) into OT entry 4. */
-#ifdef NON_MATCHING
 void func_801C8C3C(s32 count, SVECTOR *quads, POLY_FT4 *packets, s32 first) {
     s32 depth;
     s32 flag;
-    POLY_FT4 *poly;
     s32 i;
 
     for (i = 0; i < count; i++) {
-        poly = &packets[first];
         func_8004A73C(&quads[i * 4], &quads[i * 4 + 1], &quads[i * 4 + 2], &quads[i * 4 + 3],
-                      &poly->x0, &poly->x1, &poly->x2, &poly->x3, &depth, &flag);
-        first += 2;
-        func_80043B48(&D_800625A0->draw_env->ot[4], poly);
+                      &packets[first + i * 2].x0, &packets[first + i * 2].x1,
+                      &packets[first + i * 2].x2, &packets[first + i * 2].x3, &depth, &flag);
+        func_80043B48(&D_800625A0->draw_env->ot[4], &packets[first + i * 2]);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801C8C3C);
-#endif
 
 /* Link `count` packets (every other one from `first`) into OT entry 4. */
-#ifdef NON_MATCHING
 void func_801C8D58(s32 count, POLY_FT4 *packets, s32 first) {
     s32 i;
 
     for (i = 0; i < count; i++) {
-        func_80043B48(&D_800625A0->draw_env->ot[4], packets + first);
-        first += 2;
+        func_80043B48(&D_800625A0->draw_env->ot[4], &packets[first + i * 2]);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801C8D58);
-#endif
 
 /* Draw the scroll bar when shown. */
 void func_801C8DDC(void) {
