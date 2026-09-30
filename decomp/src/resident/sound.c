@@ -902,9 +902,9 @@ void func_8003B424(SoundSeq *seq) {
             channel->unkD4 = 0;
             channel->unk3C = 0;
             channel->unk3E = 0;
-            channel->unkCE = 0;
+            channel->modulators = 0;
             for (i = 3; i >= 0; i--) {
-                channel->modulator[i].unk1E = 0;
+                channel->modulator[i].flags = 0;
             }
             channel->unk25 = seq->unk16;
             channel->instruments = instruments;
@@ -1002,11 +1002,11 @@ void func_8003B644(s16 code, s32 id, s16 volume, s16 pan) {
             channel->unkD4 = 0;
             channel->unk3C = 0;
             channel->unk3E = 0;
-            channel->unkCE = 0;
+            channel->modulators = 0;
             channel->pan = pan;
             channel->position = channel->start = (u8 *)bank + *offset;
             for (i = 3; i >= 0; i--) {
-                channel->modulator[i].unk1E = 0;
+                channel->modulator[i].flags = 0;
             }
             channel->instruments = instruments;
             channel->unk25 = bank->unk16;
@@ -1900,7 +1900,8 @@ u8 *func_8003D884(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-extern s32 func_8003E290(s32 depth, s16 rate, s32 shape);
+/* Declared without a prototype: callers pass the rate as an int. */
+extern s32 func_8003E290();
 extern void func_8003E3E0(SoundModulator *modulator);
 extern void func_8003F2A0(void *modulator);
 
@@ -1922,12 +1923,12 @@ u8 *func_8003D8B8(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
         modulator->step = func_8003E290(depth << 14, rate, 3);
         modulator->rate = rate;
         modulator->delay = data[2] * 4;
-        modulator->unk1A = 0x400;
+        modulator->period = 0x400;
         modulator->wave = func_8003F2A0;
         modulator->shape = 3;
         modulator->flags = 3;
-        modulator->unk1C = 0;
-        channel->unkCE |= 1;
+        modulator->target = 0;
+        channel->modulators |= 1;
         func_8003E3E0(modulator);
     }
     return data + 3;
@@ -1959,14 +1960,14 @@ u8 *func_8003D9A4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
         shape = mode & 0xF;
         modulator = &channel->modulator[0];
         modulator->step = func_8003E290(depth << 14, rate, shape);
-        modulator->unk1A = 0x400;
+        modulator->period = 0x400;
         modulator->rate = rate;
         modulator->delay = 0;
         modulator->shape = shape;
-        modulator->unk1C = 0;
+        modulator->target = 0;
         modulator->flags = flags + 1;
         modulator->wave = D_800508A4[shape];
-        channel->unkCE |= 1;
+        channel->modulators |= 1;
         func_8003E3E0(modulator);
     }
     return data + 3;
@@ -1980,20 +1981,20 @@ u8 *func_8003DAB0(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 period = *data++ + 1;
 
     if (period != 0) {
-        channel->modulator[0].unk18 = channel->modulator[0].unk1A = 0x400 / (period * 4);
+        channel->modulator[0].period_count = channel->modulator[0].period = 0x400 / (period * 4);
     }
     return data;
 }
 
 /* Pitch modulator on and off. */
 u8 *func_8003DAEC(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
-    channel->unkCE |= 1;
+    channel->modulators |= 1;
     channel->modulator[0].flags |= 1;
     return data;
 }
 
 u8 *func_8003DB0C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
-    channel->unkCE &= ~1;
+    channel->modulators &= ~1;
     channel->modulator[0].flags &= ~1;
     return data;
 }
@@ -2059,12 +2060,12 @@ u8 *func_8003DC50(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
         modulator->step = func_8003E290(depth << 24, rate, 2);
         modulator->rate = rate;
         modulator->delay = data[2] * 4;
-        modulator->unk1A = 0x400;
+        modulator->period = 0x400;
         modulator->wave = func_8003F240;
         modulator->shape = 2;
-        modulator->unk1C = 1;
+        modulator->target = 1;
         modulator->flags = 3;
-        channel->unkCE |= 2;
+        channel->modulators |= 2;
         func_8003E3E0(modulator);
     }
     return data + 3;
@@ -2087,14 +2088,14 @@ u8 *func_8003DD24(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
         mode &= 0xF;
         modulator = &channel->modulator[1];
         modulator->step = func_8003E290(depth << 24, rate, mode);
-        modulator->unk1A = 0x400;
+        modulator->period = 0x400;
         modulator->rate = rate;
         modulator->delay = 0;
-        modulator->unk1C = 1;
+        modulator->target = 1;
         modulator->shape = mode;
         modulator->flags = flags + 1;
         modulator->wave = D_800508A4[mode];
-        channel->unkCE |= 2;
+        channel->modulators |= 2;
         func_8003E3E0(modulator);
     }
     return data + 3;
@@ -2108,20 +2109,20 @@ u8 *func_8003DE18(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 period = *data++ + 1;
 
     if (period != 0) {
-        channel->modulator[1].unk18 = channel->modulator[1].unk1A = 0x400 / (period * 4);
+        channel->modulator[1].period_count = channel->modulator[1].period = 0x400 / (period * 4);
     }
     return data;
 }
 
 /* Volume modulator on and off. */
 u8 *func_8003DE54(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
-    channel->unkCE |= 2;
+    channel->modulators |= 2;
     channel->modulator[1].flags |= 1;
     return data;
 }
 
 u8 *func_8003DE74(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
-    channel->unkCE &= ~2;
+    channel->modulators &= ~2;
     channel->modulator[1].flags &= ~1;
     return data;
 }
@@ -2166,34 +2167,183 @@ u8 *func_8003DF3C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 period = *data++ + 1;
 
     if (period != 0) {
-        channel->modulator[2].unk18 = channel->modulator[2].unk1A = 0x400 / (period * 4);
+        channel->modulator[2].period_count = channel->modulator[2].period = 0x400 / (period * 4);
     }
     return data;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003DF78);
+/* Auto-pan: start the pan modulator with a signed depth, a rate (with a
+ * quadratic boost), a delay and the triangle shape. */
+u8 *func_8003DF78(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    s32 depth = ((s8 *)data)[1];
+    s16 rate = data[0];
+    SoundModulator *modulator;
 
+    if (depth != 0 && rate != 0) {
+        rate += rate * rate / 64;
+        modulator = &channel->modulator[2];
+        modulator->step = func_8003E290(depth << 24, rate, 3);
+        modulator->rate = rate;
+        modulator->delay = data[2] * 4;
+        modulator->period = 0x400;
+        modulator->wave = func_8003F2A0;
+        modulator->shape = 3;
+        modulator->target = 2;
+        modulator->flags = 3;
+        channel->modulators |= 4;
+        func_8003E3E0(modulator);
+    }
+    return data + 3;
+}
+
+/* Auto-pan with an explicit shape (low nibble of the third operand; bit 4
+ * selects a one-sided wave).
+ * Nonmatching: register allocation of rate/mode differs. */
+#ifdef NON_MATCHING
+u8 *func_8003E04C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    s16 rate = data[0];
+    s32 depth = ((s8 *)data)[1];
+    s32 mode = data[2];
+    SoundModulator *modulator;
+    s32 flags;
+
+    if (depth != 0 && rate != 0) {
+        rate += rate * rate / 64;
+        flags = ((mode & 0x10) == 0) * 2;
+        mode &= 0xF;
+        modulator = &channel->modulator[2];
+        modulator->step = func_8003E290(depth << 24, rate, mode);
+        modulator->period = 0x400;
+        modulator->rate = rate;
+        modulator->delay = 0;
+        modulator->target = 2;
+        modulator->shape = mode;
+        modulator->flags = flags + 1;
+        modulator->wave = D_800508A4[mode];
+        channel->modulators |= 4;
+        func_8003E3E0(modulator);
+    }
+    return data + 3;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003E04C);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003E140);
+/* Pan modulator on and off. */
+u8 *func_8003E140(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    channel->modulators |= 4;
+    channel->modulator[2].flags |= 1;
+    return data;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003E160);
+u8 *func_8003E160(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    channel->modulators &= ~4;
+    channel->modulator[2].flags &= ~1;
+    return data;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003E180);
+/* Select a modulator and set its shape (bit 4: one-sided) and target. */
+u8 *func_8003E180(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    SoundModulator *modulator;
+    u8 mode;
+    u8 target;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003E1F8);
+    channel->modulator_index = data[0];
+    mode = data[1];
+    modulator = &channel->modulator[channel->modulator_index];
+    modulator->shape = mode & 0xF;
+    modulator->wave = D_800508A4[modulator->shape];
+    if (!(mode & 0x10)) {
+        modulator->flags = 2;
+    } else {
+        modulator->flags = 0;
+    }
+    target = data[2];
+    modulator->period = 0x400;
+    modulator->delay = 0;
+    modulator->target = target;
+    return data + 3;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003E290);
+/* Set the selected modulator's rate and 16-bit depth. */
+u8 *func_8003E1F8(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    s32 square = data[0] * data[0];
+    SoundModulator *modulator = &channel->modulator[channel->modulator_index];
+    s16 rate = square / 64 + data[0];
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003E308);
+    modulator->step = func_8003E290((((s8 *)data)[1] << 24) | (data[2] << 16), rate,
+                                    modulator->shape);
+    modulator->rate = rate;
+    return data + 3;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003E358);
+/* A modulator's step for a depth: shapes 2-3 cover the depth once per
+ * rate, shape 4 once per rate - 1; others use the depth itself. */
+s32 func_8003E290(depth, rate, shape)
+    s32 depth;
+    s16 rate;
+    s16 shape;
+{
+    if (depth != 0 && rate != 0) {
+        switch (shape) {
+        case 2:
+        case 3:
+            depth /= rate;
+            break;
+        case 4:
+            if (rate != 1) {
+                depth /= rate - 1;
+            }
+            break;
+        }
+    }
+    return depth;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003E360);
+/* Set the selected modulator's delay and period. */
+u8 *func_8003E308(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    SoundModulator *modulator = &channel->modulator[channel->modulator_index];
+    u8 period = data[1] + 1;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003E3E0);
+    if (period != 0) {
+        modulator->delay = data[0] * 4;
+        modulator->period_count = modulator->period = 0x400 / (period * 4);
+    }
+    return data + 2;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003E40C);
+u8 *func_8003E358(u8 *data) {
+    return data;
+}
+
+/* Restart modulator `index` and switch it on. */
+u8 *func_8003E360(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    s32 index = *data++;
+    SoundModulator *modulator = &channel->modulator[index];
+
+    func_8003E3E0(modulator);
+    modulator->flags |= 1;
+    channel->modulators |= 1 << index;
+    return data;
+}
+
+/* Restart a modulator: counters reloaded, phase 0. */
+void func_8003E3E0(SoundModulator *modulator) {
+    modulator->unk10 = 1;
+    modulator->phase = 0;
+    modulator->flags &= ~0xC;
+    modulator->delay_count = modulator->delay;
+    modulator->period_count = modulator->period;
+}
+
+/* Switch modulator `index` off. */
+u8 *func_8003E40C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    u8 index = *data;
+
+    channel->modulator[index].flags &= ~1;
+    channel->modulators &= ~(1 << index);
+    return data + 1;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003E44C);
 

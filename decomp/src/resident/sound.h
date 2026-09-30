@@ -69,17 +69,18 @@ typedef union {
  * modulates the pitch). */
 typedef struct {
     void (*wave)(void *modulator);
-    u8 unk4[8];
+    s32 phase;
+    u8 unk8[4];
     s32 step;
-    u8 unk10[2];
+    u16 unk10;
     s16 rate;
-    u8 unk14[2];
+    s16 delay_count;
     s16 delay;
-    s16 unk18;
-    s16 unk1A;
-    u8 unk1C;
+    s16 period_count;
+    s16 period;
+    u8 target;         /* 0 pitch, 1 volume, 2 pan */
     u8 shape;
-    u16 flags;
+    u16 flags;         /* bit 0: on */
 } SoundModulator;
 
 /* A repeat of a channel's sequence data. */
@@ -151,8 +152,8 @@ typedef struct {
     s16 pan_frames;
     s16 volume_frames;
     SoundLoop loops[4];
-    u8 unkCC[2];
-    u16 unkCE;
+    u16 modulator_index; /* modulator the generic opcodes address */
+    u16 modulators;    /* mask of the running modulators */
     u16 unkD0;
     s16 unkD2;
     s16 unkD4;
