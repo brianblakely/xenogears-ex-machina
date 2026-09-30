@@ -442,7 +442,234 @@ s32 func_8007ECA4(s32 index) {
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007DE98", func_8007ECA4);
 #endif
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007DE98", func_8007EE34);
+/* Flying vehicle (scene object 1): commands place it on its approach track;
+ * it flies along its motion vector, stops at the landing point, trails
+ * effect 0x22 and faces its direction. */
+s32 func_8007EE34(s32 index) {
+    s32 result;
+    WorldmapActor *actor;
+    SceneObject *object;
+    TrackScratch *scratch;
+
+    result = 1;
+    actor = &D_8009BE24[index];
+    object = &D_8009C620[1];
+    scratch = (TrackScratch *)0x1F800000;
+    if (actor->unk4 != 0) {
+        actor->motion.vx = -0x85A;
+        actor->motion.vy = 0;
+        actor->motion.vz = 0xDA6;
+        actor->u.step = D_8009A674[D_8009D3D4].vx << 12;
+        actor->unk54 = D_8009A674[D_8009D3D4].vz << 12;
+    }
+    switch (actor->unk4) {
+    case 1:
+        actor->unk4 = 0;
+        actor->state = 0;
+        actor->position.vx = D_8009C5AC.vx - actor->motion.vx * 0x3680;
+        actor->position.vy = D_8009C5AC.vy;
+        actor->position.vz = D_8009C5AC.vz - actor->motion.vz * 0x3680;
+        break;
+    case 2:
+        actor->unk4 = 0;
+        actor->state = 0;
+        actor->position.vx = D_8009C5AC.vx - actor->motion.vx * 0x3680 + actor->motion.vx * 0x2D00;
+        actor->position.vz = D_8009C5AC.vz - actor->motion.vz * 0x3680 + actor->motion.vz * 0x2D00;
+        break;
+    case 3:
+        actor->unk4 = 0;
+        actor->state = 0;
+        actor->position.vx = D_8009C5AC.vx - actor->motion.vx * 0x3680 + actor->motion.vx * 0x1E00;
+        actor->position.vz = D_8009C5AC.vz - actor->motion.vz * 0x3680 + actor->motion.vz * 0x1E00;
+        break;
+    case 4:
+        actor->unk4 = 0;
+        actor->state = 1;
+        actor->position.vx = D_8009C5AC.vx - actor->motion.vx * 0x3680 + actor->motion.vx * 0x3300;
+        actor->position.vz = D_8009C5AC.vz - actor->motion.vz * 0x3680 + actor->motion.vz * 0x3300;
+        break;
+    case 5:
+        actor->state = 2;
+        actor->motion.vx = -0x988;
+        actor->motion.vy = 0x227;
+        actor->unk4 = 0;
+        actor->motion.vz = -0xCAB;
+        actor->position.vx = 0x1F9E000;
+        actor->position.vz = 0x5998000;
+        break;
+    case 16:
+        actor->unk4 = 0;
+        actor->state = 0x10;
+        actor->position.vx = actor->motion.vx * 0x3300 + 0x56F2000;
+        actor->position.vz = actor->motion.vz * 0x3300 + 0x7F2C000;
+        break;
+    case 24:
+        actor->unk4 = 0;
+        actor->state = 0x18;
+        actor->position.vx = D_8009C5AC.vx - actor->motion.vx * 0x3680 + actor->motion.vx * 0x3300;
+        actor->position.vz = D_8009C5AC.vz - actor->motion.vz * 0x3680 + actor->motion.vz * 0x3300;
+        break;
+    }
+    actor->position.vx += actor->motion.vx << 7;
+    actor->position.vy += actor->motion.vy << 7;
+    actor->position.vz += actor->motion.vz << 7;
+    switch (actor->state) {
+    case 0:
+        if (actor->position.vx < actor->u.step && actor->position.vz > actor->unk54) {
+            actor->position.vx = actor->u.step;
+            actor->position.vz = actor->unk54;
+            func_80097770(4, 2);
+            func_80097770(5, 2);
+            func_80097770(6, 2);
+            func_80097770(7, 2);
+            func_80097770(8, 2);
+        }
+        break;
+    case 1:
+        if (actor->position.vx < 0x1F9E000 && actor->position.vz > 0x5998000) {
+            actor->position.vx = 0x1F9E000;
+            actor->position.vz = 0x5998000;
+            actor->state = 0x40;
+            scratch->position.vx = actor->position.vx >> 12;
+            scratch->position.vy = actor->position.vy >> 12;
+            scratch->position.vz = actor->position.vz >> 12;
+            func_80089160(0x20, &scratch->position, NULL);
+        }
+        break;
+    case 2:
+        if (actor->position.vy > -0x80000) {
+            scratch->position.vx = 0x1498;
+            scratch->position.vz = 0x4AF2;
+            scratch->position.vy = func_80093978(0x1498000, 0x4AF2000) >> 12;
+            func_80089160(0x25, &scratch->position, NULL);
+            func_80089160(0x26, &scratch->position, NULL);
+            func_80089160(0x27, &scratch->position, NULL);
+            actor->state = 3;
+        }
+        break;
+    case 3:
+        if (actor->position.vy > 0x100000) {
+            actor->position.vx -= actor->motion.vx << 7;
+            actor->position.vy -= actor->motion.vy << 7;
+            actor->position.vz -= actor->motion.vz << 7;
+            object[0].visible = object[1].visible = object[2].visible = 1;
+            actor->state = 0x41;
+        }
+        break;
+    case 16:
+        if (actor->position.vx < 0x1F9E000 && actor->position.vz > 0x5998000) {
+            actor->state = 0x11;
+            scratch->position.vx = 0x1F9E;
+            scratch->position.vz = 0x5998;
+            scratch->position.vy = actor->position.vy >> 12;
+            func_80089160(0x20, &scratch->position, NULL);
+            func_80089160(0x21, &scratch->position, NULL);
+        }
+        break;
+    case 17:
+        if (actor->position.vx < 0x199D000 && actor->position.vz > 0x6367000) {
+            actor->position.vx = 0x199D000;
+            actor->position.vz = 0x6367000;
+            object[0].visible = object[1].visible = object[2].visible = 1;
+            func_80097770(4, 5);
+            func_80097770(5, 5);
+            func_80097770(6, 5);
+            func_80097770(7, 5);
+            func_80097770(8, 5);
+            result = 3;
+        }
+        break;
+    case 24:
+        if (actor->position.vx < 0x1EB5000 && actor->position.vz > 0x5EE6000) {
+            object[0].visible = object[1].visible = object[2].visible = 1;
+            func_80097770(4, 2);
+            func_80097770(5, 2);
+            func_80097770(6, 2);
+            func_80097770(7, 2);
+            func_80097770(8, 2);
+            actor->state = 0x41;
+        }
+        break;
+    case 0x40:
+        actor->position.vx = 0x1F9E000;
+        actor->position.vz = 0x5998000;
+        break;
+    case 0x41:
+        result = 3;
+        break;
+    }
+    func_80093354(&actor->position);
+    object->position.vx = actor->position.vx >> 12;
+    object->position.vy = actor->position.vy >> 12;
+    object->position.vz = actor->position.vz >> 12;
+    switch (actor->state) {
+    case 0:
+    case 1:
+    case 16:
+    case 24:
+        scratch->base.m[0][0] = 0xDA6;
+        scratch->base.m[0][1] = 0;
+        scratch->base.m[0][2] = 0x85A;
+        scratch->base.m[1][0] = 0;
+        scratch->base.m[1][1] = -0x1000;
+        scratch->base.m[1][2] = 0;
+        scratch->base.m[2][0] = -0x85A;
+        scratch->base.m[2][1] = 0;
+        scratch->base.m[2][2] = 0xDA6;
+        object->angle.vz = (object->angle.vz + 0x100) & 0xFFF;
+        func_8004A92C(&object->angle, &scratch->rotation);
+        MulMatrix0(&scratch->base, &scratch->rotation, &object->matrix);
+        scratch->axis[0].vx = scratch->axis[0].vy = 0x800;
+        scratch->axis[0].vz = 0x1800;
+        ScaleMatrix(&object->matrix, &scratch->axis[0]);
+        scratch->position.vx = actor->position.vx >> 12;
+        scratch->position.vy = actor->position.vy >> 12;
+        scratch->position.vz = actor->position.vz >> 12;
+        scratch->angle.vx = scratch->angle.vz = 0;
+        scratch->angle.vy = ratan2(0x85A, 0xDA6) & 0xFFF;
+        func_80089160(0x22, &scratch->position, &scratch->angle);
+        break;
+    case 4:
+    case 17:
+    case 0x41:
+        func_800894C8(0x22);
+        break;
+    case 2:
+    case 3:
+        scratch->axis[0].vx = 0x988;
+        scratch->axis[0].vy = -0x227;
+        scratch->axis[0].vz = -0xCAB;
+        scratch->axis[1].vx = scratch->axis[1].vz = 0;
+        scratch->axis[1].vy = 0x1000;
+        func_8004A480(&scratch->axis[1], &scratch->axis[0], &scratch->axis[2]);
+        func_80048D7C(&scratch->axis[2], &scratch->axis[2]);
+        func_8004A480(&scratch->axis[0], &scratch->axis[2], &scratch->axis[1]);
+        func_80048D7C(&scratch->axis[1], &scratch->axis[1]);
+        scratch->frame.m[0][0] = scratch->axis[2].vx;
+        scratch->frame.m[0][1] = scratch->axis[2].vy;
+        scratch->frame.m[0][2] = scratch->axis[2].vz;
+        scratch->frame.m[1][0] = scratch->axis[1].vx;
+        scratch->frame.m[1][1] = scratch->axis[1].vy;
+        scratch->frame.m[1][2] = scratch->axis[1].vz;
+        scratch->frame.m[2][0] = scratch->axis[0].vx;
+        scratch->frame.m[2][1] = scratch->axis[0].vy;
+        scratch->frame.m[2][2] = scratch->axis[0].vz;
+        func_80097070(&scratch->frame, &scratch->angle);
+        func_8004A8EC(&scratch->frame, &scratch->base);
+        object->angle.vz = (object->angle.vz + 0x100) & 0xFFF;
+        func_8004A92C(&object->angle, &scratch->rotation);
+        MulMatrix0(&scratch->base, &scratch->rotation, &object->matrix);
+        scratch->axis[0].vx = scratch->axis[0].vy = 0x800;
+        scratch->axis[0].vz = 0x1800;
+        ScaleMatrix(&object->matrix, &scratch->axis[0]);
+        scratch->position.vx = actor->position.vx >> 12;
+        scratch->position.vy = actor->position.vy >> 12;
+        scratch->position.vz = actor->position.vz >> 12;
+        func_80089160(0x22, &scratch->position, &scratch->angle);
+        break;
+    }
+    return result;
+}
 
 /* Build scene object `index` and start its fall. */
 s32 func_8007F8AC(s32 index) {

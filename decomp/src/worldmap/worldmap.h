@@ -1416,4 +1416,17 @@ extern u16 D_8009A684[]; /* flame sizes per actor */
 
 extern u16 D_8009A5A0[][3]; /* per area: three ambient sounds */
 
+/* Scratchpad work area of the flight-track actor. */
+typedef struct {
+    VECTOR axis[3];    /* 0x00: forward (or scale), up, side */
+    u8 pad30[0x70];
+    SVECTOR position;  /* 0xA0 */
+    SVECTOR angle;     /* 0xA8 */
+    u8 padB0[0x40];
+    MATRIX base;       /* 0xF0 */
+    MATRIX rotation;   /* 0x110 */
+    u8 pad130[0x20];
+    MATRIX frame;      /* 0x150 */
+} TrackScratch;
+
 #endif
