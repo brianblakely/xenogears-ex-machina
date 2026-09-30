@@ -37,6 +37,11 @@ extern u8 D_800AE294[];        /* sprite of each character */
 
 s32 func_800A2FE0(s32 reference);  /* -1 when a variable is unsigned */
 extern s32 D_800C4268;
+/* The pieces' accumulated drift (x, y, z) at 800b21bc. */
+#define PIECE_DRIFT_TOTAL ((s32 *)D_800B2078.unk21BC)
+void func_800AD898(void);
+extern s32 D_8004F30C;          /* returning to the field */
+
 s32 func_8009EB48(FieldActor *actor, s32 tag); /* -1 when a slot has `tag` */
 s32 func_800A3090(s32 actor, s32 event);       /* entry PC of an actor's event */
 

@@ -9904,7 +9904,43 @@ void func_800A2488(void) {
     D_800ADB8C = 0;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A24C4);
+/* After a return to the field: run actor 0's event 2, show reassigned
+ * party members, restart each 801e layer's animation, lift the controlled
+ * actor 8 units unless its +74 is 0xff, and move the pieces by their
+ * accumulated drift (mode 0: non-event pieces, mode 1: all but moving
+ * event actors). `i` also holds the +74 byte, as in the original. */
+void func_800A24C4(void) {
+    u8 unused[0x10]; /* the original frame holds 0x10 unused bytes */
+    s32 i;
+
+    if (D_8004F30C != 0) {
+        func_800A22AC(2);
+        func_800AD898();
+        for (i = 0; i < D_800B2078.unk2264; i++) {
+            func_801E8330((u16)i, 0, D_800B2078.unk21E4[i]);
+        }
+        i = D_800AF880.components.descriptors[D_800B2078.controlled].actor->unk074;
+        if (i != 0xFF) {
+            D_800AF880.components.descriptors[D_800B2078.controlled].actor->position[1] -= 8;
+        }
+        for (i = 0; i < D_800AF880.components.descriptor_count; i++) {
+            if (i < D_800ADBFC) {
+                if (D_800AF880.components.descriptors[i].actor->state.word & 3) {
+                    continue;
+                }
+            } else if ((D_800B2078.piece_drift_mode & 0x7F) == 0) {
+                D_800AF880.components.descriptors[i].matrix.t[0] += PIECE_DRIFT_TOTAL[0];
+                D_800AF880.components.descriptors[i].matrix.t[1] += PIECE_DRIFT_TOTAL[1];
+                D_800AF880.components.descriptors[i].matrix.t[2] += PIECE_DRIFT_TOTAL[2];
+            }
+            if ((D_800B2078.piece_drift_mode & 0x7F) == 1) {
+                D_800AF880.components.descriptors[i].matrix.t[0] += PIECE_DRIFT_TOTAL[0];
+                D_800AF880.components.descriptors[i].matrix.t[1] += PIECE_DRIFT_TOTAL[1];
+                D_800AF880.components.descriptors[i].matrix.t[2] += PIECE_DRIFT_TOTAL[2];
+            }
+        }
+    }
+}
 
 extern s32 D_8004F30C;
 void func_800A3C8C(void);
