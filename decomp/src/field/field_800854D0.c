@@ -2699,7 +2699,7 @@ void func_8008D684(void) {
     u32 variable = reference >> 4;
     s32 bit = 1 << (func_800ACDB8(1) & 0xF);
 
-    func_800A3074(variable, func_800A3018(variable) | bit);
+    func_800A3074(variable & 0xFFFF, func_800A3018(variable) | bit);
     D_800B0078->pc += 3;
 }
 
@@ -2709,7 +2709,7 @@ void func_8008D700(void) {
     u32 variable = reference >> 4;
     s32 bit = 1 << (func_800ACDB8(1) & 0xF);
 
-    func_800A3074(variable, func_800A3018(variable) & ~bit);
+    func_800A3074(variable & 0xFFFF, func_800A3018(variable) & ~bit);
     D_800B0078->pc += 3;
 }
 
@@ -3820,36 +3820,36 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_800903BC
 
 /* Store the camera target's whole x, z, y in three variables. */
 void func_80090A10(void) {
-    func_800A3074(func_800ACDB8(1), WHOLE(D_800AF880.target.vx));
-    func_800A3074(func_800ACDB8(3), WHOLE(D_800AF880.target.vz));
-    func_800A3074(func_800ACDB8(5), WHOLE(D_800AF880.target.vy));
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, WHOLE(D_800AF880.target.vx));
+    func_800A3074(func_800ACDB8(3) & 0xFFFF, WHOLE(D_800AF880.target.vz));
+    func_800A3074(func_800ACDB8(5) & 0xFFFF, WHOLE(D_800AF880.target.vy));
     D_800AFC7C += 1;
     D_800B0078->pc += 7;
 }
 
 /* Store the camera eye's whole x, z, y in three variables. */
 void func_80090A94(void) {
-    func_800A3074(func_800ACDB8(1), WHOLE(D_800AF880.eye.vx));
-    func_800A3074(func_800ACDB8(3), WHOLE(D_800AF880.eye.vz));
-    func_800A3074(func_800ACDB8(5), WHOLE(D_800AF880.eye.vy));
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, WHOLE(D_800AF880.eye.vx));
+    func_800A3074(func_800ACDB8(3) & 0xFFFF, WHOLE(D_800AF880.eye.vz));
+    func_800A3074(func_800ACDB8(5) & 0xFFFF, WHOLE(D_800AF880.eye.vy));
     D_800AFC7C += 1;
     D_800B0078->pc += 7;
 }
 
 /* Store the target goal's whole x, z, y in three variables. */
 void func_80090B18(void) {
-    func_800A3074(func_800ACDB8(1), WHOLE(D_800AF880.target_goal.vx));
-    func_800A3074(func_800ACDB8(3), WHOLE(D_800AF880.target_goal.vz));
-    func_800A3074(func_800ACDB8(5), WHOLE(D_800AF880.target_goal.vy));
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, WHOLE(D_800AF880.target_goal.vx));
+    func_800A3074(func_800ACDB8(3) & 0xFFFF, WHOLE(D_800AF880.target_goal.vz));
+    func_800A3074(func_800ACDB8(5) & 0xFFFF, WHOLE(D_800AF880.target_goal.vy));
     D_800AFC7C += 1;
     D_800B0078->pc += 7;
 }
 
 /* Store the eye goal's whole x, z, y in three variables. */
 void func_80090B9C(void) {
-    func_800A3074(func_800ACDB8(1), WHOLE(D_800AF880.eye_goal.vx));
-    func_800A3074(func_800ACDB8(3), WHOLE(D_800AF880.eye_goal.vz));
-    func_800A3074(func_800ACDB8(5), WHOLE(D_800AF880.eye_goal.vy));
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, WHOLE(D_800AF880.eye_goal.vx));
+    func_800A3074(func_800ACDB8(3) & 0xFFFF, WHOLE(D_800AF880.eye_goal.vz));
+    func_800A3074(func_800ACDB8(5) & 0xFFFF, WHOLE(D_800AF880.eye_goal.vy));
     D_800AFC7C += 1;
     D_800B0078->pc += 7;
 }
@@ -3858,7 +3858,7 @@ void func_80090B9C(void) {
  * the raw operand. */
 void func_80090C20(void) {
     if (EVENT_OPERAND_BYTE(3) == 0) {
-        func_800A3074(func_800ACDB8(1), D_800AF880.scripted_heading);
+        func_800A3074(func_800ACDB8(1) & 0xFFFF, D_800AF880.scripted_heading);
     } else {
         D_800AF880.scripted_heading = func_800ACDB8(1);
     }
@@ -3870,7 +3870,7 @@ void func_80090C20(void) {
  * the raw operand. */
 void func_80090CB8(void) {
     if (EVENT_OPERAND_BYTE(3) == 0) {
-        func_800A3074(func_800ACDB8(1), D_800AF880.scripted_elevation);
+        func_800A3074(func_800ACDB8(1) & 0xFFFF, D_800AF880.scripted_elevation);
     } else {
         D_800AF880.scripted_elevation = func_800ACDB8(1);
     }
@@ -3882,7 +3882,7 @@ void func_80090CB8(void) {
  * raw operand. */
 void func_80090D50(void) {
     if (EVENT_OPERAND_BYTE(3) == 0) {
-        func_800A3074(func_800ACDB8(1), D_800AF880.scripted_zoom);
+        func_800A3074(func_800ACDB8(1) & 0xFFFF, D_800AF880.scripted_zoom);
     } else {
         D_800AF880.scripted_zoom = (u16)func_800ACDB8(1);
     }
@@ -3892,9 +3892,9 @@ void func_80090D50(void) {
 
 /* Store the scripted heading, elevation and zoom in three variables. */
 void func_80090DEC(void) {
-    func_800A3074(func_800ACDB8(1), D_800AF880.scripted_heading);
-    func_800A3074(func_800ACDB8(3), D_800AF880.scripted_elevation);
-    func_800A3074(func_800ACDB8(5), D_800AF880.scripted_zoom);
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, D_800AF880.scripted_heading);
+    func_800A3074(func_800ACDB8(3) & 0xFFFF, D_800AF880.scripted_elevation);
+    func_800A3074(func_800ACDB8(5) & 0xFFFF, D_800AF880.scripted_zoom);
     D_800AFC7C += 1;
     D_800B0078->pc += 7;
 }
@@ -3921,9 +3921,9 @@ void func_80090E70(void) {
     heading = ((-ratan2(a.vz - b.vz, a.vx - b.vx) & 0xFFFF) - 0x400) & 0xFFF;
     pitch = ((-ratan2(func_80099A4C((b.vx - a.vx) >> 16, (b.vz - a.vz) >> 16),
                              (a.vy - b.vy) >> 16) * 360) >> 12) + 91;
-    func_800A3074(func_800ACDB8(1), heading);
-    func_800A3074(func_800ACDB8(3), pitch);
-    func_800A3074(func_800ACDB8(5), zoom);
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, heading);
+    func_800A3074(func_800ACDB8(3) & 0xFFFF, pitch);
+    func_800A3074(func_800ACDB8(5) & 0xFFFF, zoom);
     D_800AFC7C += 1;
     D_800B0078->pc += 7;
 }
@@ -3973,9 +3973,9 @@ void func_800910C0(void) {
     point.vz = (((func_8003F8B0(angle) * distance) << 5) >> 16) * D_800AF880.scripted_scale * 16 + center.vz;
     point.vx = center.vx;
     func_80091008(&point, &center, heading);
-    func_800A3074(func_800ACDB8(14), WHOLE(point.vx));
-    func_800A3074(func_800ACDB8(16), WHOLE(point.vz));
-    func_800A3074(func_800ACDB8(18), WHOLE(point.vy));
+    func_800A3074(func_800ACDB8(14) & 0xFFFF, WHOLE(point.vx));
+    func_800A3074(func_800ACDB8(16) & 0xFFFF, WHOLE(point.vz));
+    func_800A3074(func_800ACDB8(18) & 0xFFFF, WHOLE(point.vy));
     D_800AFC7C += 1;
     D_800B0078->pc += 20;
 }
@@ -4020,9 +4020,9 @@ void func_80091318(void) {
     point.vz = (((func_8003F8B0(angle) * distance) << 5) >> 16) * D_800AF880.scripted_scale * 16 + center.vz;
     point.vx = center.vx;
     func_80091008(&point, &center, heading);
-    func_800A3074(func_800ACDB8(9), WHOLE(point.vx));
-    func_800A3074(func_800ACDB8(11), WHOLE(point.vz));
-    func_800A3074(func_800ACDB8(13), WHOLE(point.vy));
+    func_800A3074(func_800ACDB8(9) & 0xFFFF, WHOLE(point.vx));
+    func_800A3074(func_800ACDB8(11) & 0xFFFF, WHOLE(point.vz));
+    func_800A3074(func_800ACDB8(13) & 0xFFFF, WHOLE(point.vy));
     D_800AFC7C += 1;
     D_800B0078->pc += 15;
 }
@@ -4053,9 +4053,9 @@ void func_800915C4(void) {
         point.vz = D_800AF880.point_actor_b.vz;
         break;
     }
-    func_800A3074(func_800ACDB8(2), WHOLE(point.vx));
-    func_800A3074(func_800ACDB8(4), WHOLE(point.vz));
-    func_800A3074(func_800ACDB8(6), WHOLE(point.vy));
+    func_800A3074(func_800ACDB8(2) & 0xFFFF, WHOLE(point.vx));
+    func_800A3074(func_800ACDB8(4) & 0xFFFF, WHOLE(point.vz));
+    func_800A3074(func_800ACDB8(6) & 0xFFFF, WHOLE(point.vy));
     D_800AFC7C += 1;
     D_800B0078->pc += 8;
 }
@@ -4239,8 +4239,8 @@ void func_80092044(void) {
 
     first = func_800A3018(func_800ACDB8(1) & 0xFFFF);
     second = func_800A3018(func_800ACDB8(3) & 0xFFFF);
-    func_800A3074(func_800ACDB8(3), first);
-    func_800A3074(func_800ACDB8(1), second);
+    func_800A3074(func_800ACDB8(3) & 0xFFFF, first);
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, second);
     D_800B0078->pc += 5;
 }
 
@@ -4731,7 +4731,7 @@ void func_80093664(void) {
     s32 value;
 
     value = func_80092424(EVENT_OPERAND_BYTE(1), EVENT_OPERAND_BYTE(2));
-    func_800A3074(func_800ACDB8(3), value);
+    func_800A3074(func_800ACDB8(3) & 0xFFFF, value);
     D_800B0078->pc += 5;
 }
 
@@ -4920,7 +4920,7 @@ void func_80093CD0(void) {
 
     offset = func_800ACDB8(1);
     offset += func_800ACDEC(5);
-    func_800A3074(func_800ACDB8(3), D_800ADC00[offset]);
+    func_800A3074(func_800ACDB8(3) & 0xFFFF, D_800ADC00[offset]);
     D_800B0078->pc += 7;
 }
 
@@ -4932,9 +4932,9 @@ void func_80093D48(void) {
     offset = func_800ACDB8(1);
     offset += func_800ACDEC(5);
     if (EVENT_OPERAND_BYTE(7) == 0) {
-        func_800A3074(func_800ACDB8(3), D_800ADC00[offset] | (D_800ADC00[offset + 1] << 8));
+        func_800A3074(func_800ACDB8(3) & 0xFFFF, D_800ADC00[offset] | (D_800ADC00[offset + 1] << 8));
     } else {
-        func_800A3074(func_800ACDB8(3), (s16)(D_800ADC00[offset] + (D_800ADC00[offset + 1] << 8)));
+        func_800A3074(func_800ACDB8(3) & 0xFFFF, (s16)(D_800ADC00[offset] + (D_800ADC00[offset + 1] << 8)));
     }
     D_800B0078->pc += 8;
 }
@@ -5854,9 +5854,9 @@ void func_80096214(void) {
     counts = func_800950A0(item);
     func_8009501C(item);
     if (slot != -1) {
-        func_800A3074(func_800ACDB8(3), counts[slot]);
+        func_800A3074(func_800ACDB8(3) & 0xFFFF, counts[slot]);
     } else {
-        func_800A3074(func_800ACDB8(3), 0);
+        func_800A3074(func_800ACDB8(3) & 0xFFFF, 0);
     }
     D_800B0078->pc += 5;
 }
@@ -6013,7 +6013,7 @@ void func_800967E8(void) {
     s32 reference;
 
     reference = func_800ACDB8(1) & 0xFFFF;
-    func_800A3074(reference, func_800A3018(0));
+    func_800A3074(reference & 0xFFFF, func_800A3018(0));
     D_800B0078->pc += 3;
 }
 
@@ -6089,7 +6089,7 @@ void func_80096AF4(void) {
 /* Store the HP of party slot operand 3 in a variable. */
 void func_80096B58(void) {
     if (D_80062590[EVENT_OPERAND_BYTE(3)] != 0xFF) {
-        func_800A3074(func_800ACDB8(1), D_8005A39C->characters[D_80062590[EVENT_OPERAND_BYTE(3)]].hp);
+        func_800A3074(func_800ACDB8(1) & 0xFFFF, D_8005A39C->characters[D_80062590[EVENT_OPERAND_BYTE(3)]].hp);
     }
     D_800B0078->pc += 4;
 }
@@ -6097,7 +6097,7 @@ void func_80096B58(void) {
 /* Store the EP of party slot operand 3 in a variable. */
 void func_80096C40(void) {
     if (D_80062590[EVENT_OPERAND_BYTE(3)] != 0xFF) {
-        func_800A3074(func_800ACDB8(1), D_8005A39C->characters[D_80062590[EVENT_OPERAND_BYTE(3)]].ep);
+        func_800A3074(func_800ACDB8(1) & 0xFFFF, D_8005A39C->characters[D_80062590[EVENT_OPERAND_BYTE(3)]].ep);
     }
     D_800B0078->pc += 4;
 }
@@ -7166,7 +7166,7 @@ void func_8009A534(void) {
     s32 reference;
 
     reference = func_800ACDB8(1) & 0xFFFF;
-    func_800A3074(reference, func_8009A514() & 0xFFFF);
+    func_800A3074(reference & 0xFFFF, func_8009A514() & 0xFFFF);
     D_800B0078->pc += 3;
 }
 
@@ -7209,7 +7209,7 @@ void func_8009A6AC(void) {
     reference = func_800ACDB8(1) & 0xFFFF;
     angle = func_8009CFBC(3, EVENT_OPERAND_BYTE(7));
     length = func_8009D000(5, EVENT_OPERAND_BYTE(7));
-    func_800A3074(reference, (func_8003F8B0(angle) * length) >> 12);
+    func_800A3074(reference & 0xFFFF, (func_8003F8B0(angle) * length) >> 12);
     D_800B0078->pc += 8;
 }
 
@@ -7222,7 +7222,7 @@ void func_8009A768(void) {
     reference = func_800ACDB8(1) & 0xFFFF;
     angle = func_8009CFBC(3, EVENT_OPERAND_BYTE(7));
     length = func_8009D000(5, EVENT_OPERAND_BYTE(7));
-    func_800A3074(reference, (func_8003F8CC(angle) * length) >> 12);
+    func_800A3074(reference & 0xFFFF, (func_8003F8CC(angle) * length) >> 12);
     D_800B0078->pc += 8;
 }
 
@@ -7233,7 +7233,7 @@ void func_8009A824(void) {
 
     reference = func_800ACDB8(1) & 0xFFFF;
     y = func_8009CFBC(3, EVENT_OPERAND_BYTE(7));
-    func_800A3074(reference, (s16)ratan2(y, func_8009D000(5, EVENT_OPERAND_BYTE(7))));
+    func_800A3074(reference & 0xFFFF, (s16)ratan2(y, func_8009D000(5, EVENT_OPERAND_BYTE(7))));
     D_800B0078->pc += 8;
 }
 
@@ -8339,7 +8339,7 @@ void func_8009D198(void) {
     s32 reference;
 
     reference = func_800ACDB8(1) & 0xFFFF;
-    func_800A3074(reference, rand());
+    func_800A3074(reference & 0xFFFF, rand());
     D_800B0078->pc += 3;
 }
 
@@ -8348,7 +8348,7 @@ void func_8009D1F0(void) {
     s32 value;
 
     value = (rand() * (func_800ACDEC(3) + 1)) >> 15;
-    func_800A3074(func_800ACDB8(1), value);
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, value);
     D_800B0078->pc += 5;
 }
 
@@ -8358,7 +8358,7 @@ void func_8009D260(void) {
 
     value = func_800A3018(func_800ACDB8(1) & 0xFFFF);
     value = value >> func_800ACDEC(3);
-    func_800A3074(func_800ACDB8(1), value);
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, value);
     D_800B0078->pc += 5;
 }
 
@@ -8368,7 +8368,7 @@ void func_8009D2D0(void) {
 
     value = func_800A3018(func_800ACDB8(1) & 0xFFFF);
     value = value << func_800ACDEC(3);
-    func_800A3074(func_800ACDB8(1), value);
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, value);
     D_800B0078->pc += 5;
 }
 
@@ -8377,7 +8377,7 @@ void func_8009D340(void) {
     s32 value;
 
     value = func_800A3018(func_800ACDB8(1) & 0xFFFF) + 1;
-    func_800A3074(func_800ACDB8(1), value);
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, value);
     D_800B0078->pc += 3;
 }
 
@@ -8386,7 +8386,7 @@ void func_8009D3A4(void) {
     s32 value;
 
     value = func_800A3018(func_800ACDB8(1) & 0xFFFF) - 1;
-    func_800A3074(func_800ACDB8(1), value);
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, value);
     D_800B0078->pc += 3;
 }
 
@@ -8396,7 +8396,7 @@ void func_8009D408(void) {
 
     value = func_800A3018(func_800ACDB8(1) & 0xFFFF);
     value &= ~(1 << func_8009CFBC(3, EVENT_OPERAND_BYTE(5)));
-    func_800A3074(func_800ACDB8(1), value);
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, value);
     D_800B0078->pc += 6;
 }
 
@@ -8406,7 +8406,7 @@ void func_8009D4A0(void) {
 
     value = func_800A3018(func_800ACDB8(1) & 0xFFFF);
     value ^= func_8009CFBC(3, EVENT_OPERAND_BYTE(5));
-    func_800A3074(func_800ACDB8(1), value);
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, value);
     D_800B0078->pc += 6;
 }
 
@@ -8416,7 +8416,7 @@ void func_8009D52C(void) {
 
     value = func_800A3018(func_800ACDB8(1) & 0xFFFF);
     value |= func_8009CFBC(3, EVENT_OPERAND_BYTE(5));
-    func_800A3074(func_800ACDB8(1), value);
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, value);
     D_800B0078->pc += 6;
 }
 
@@ -8426,7 +8426,7 @@ void func_8009D5B8(void) {
 
     value = func_800A3018(func_800ACDB8(1) & 0xFFFF);
     value &= func_8009CFBC(3, EVENT_OPERAND_BYTE(5));
-    func_800A3074(func_800ACDB8(1), value);
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, value);
     D_800B0078->pc += 6;
 }
 
@@ -8436,7 +8436,7 @@ void func_8009D644(void) {
 
     value = func_800A3018(func_800ACDB8(1) & 0xFFFF);
     value |= 1 << func_8009CFBC(3, EVENT_OPERAND_BYTE(5));
-    func_800A3074(func_800ACDB8(1), value);
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, value);
     D_800B0078->pc += 6;
 }
 
@@ -8446,7 +8446,7 @@ void func_8009D6D8(void) {
 
     value = func_800A3018(func_800ACDB8(1) & 0xFFFF);
     value *= func_8009CFBC(3, EVENT_OPERAND_BYTE(5));
-    func_800A3074(func_800ACDB8(1), value);
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, value);
     D_800B0078->pc += 6;
 }
 
@@ -8461,7 +8461,7 @@ void func_8009D768(void) {
         divisor = 1;
     }
     value /= divisor;
-    func_800A3074(func_800ACDB8(1), value);
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, value);
     D_800B0078->pc += 6;
 }
 
@@ -8471,7 +8471,7 @@ void func_8009D804(void) {
 
     value = func_800A3018(func_800ACDB8(1) & 0xFFFF);
     value -= func_8009CFBC(3, EVENT_OPERAND_BYTE(5));
-    func_800A3074(func_800ACDB8(1), value);
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, value);
     D_800B0078->pc += 6;
 }
 
@@ -8481,19 +8481,19 @@ void func_8009D890(void) {
 
     value = func_800A3018(func_800ACDB8(1) & 0xFFFF);
     value += func_8009CFBC(3, EVENT_OPERAND_BYTE(5));
-    func_800A3074(func_800ACDB8(1), value);
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, value);
     D_800B0078->pc += 6;
 }
 
 /* Clear a variable. */
 void func_8009D91C(void) {
-    func_800A3074(func_800ACDB8(1), 0);
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, 0);
     D_800B0078->pc += 3;
 }
 
 /* Set a variable to one. */
 void func_8009D960(void) {
-    func_800A3074(func_800ACDB8(1), 1);
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, 1);
     D_800B0078->pc += 3;
 }
 
@@ -8502,7 +8502,7 @@ void func_8009D9A4(void) {
     s32 reference;
 
     reference = func_800ACDB8(1) & 0xFFFF;
-    func_800A3074(reference, func_8009CFBC(3, EVENT_OPERAND_BYTE(5)));
+    func_800A3074(reference & 0xFFFF, func_8009CFBC(3, EVENT_OPERAND_BYTE(5)));
     D_800B0078->pc += 6;
 }
 
@@ -9613,7 +9613,7 @@ void func_800A0DFC(void) {
     s32 reference;
 
     reference = func_800ACDB8(1) & 0xFFFF;
-    func_800A3074(reference, func_80028530());
+    func_800A3074(reference & 0xFFFF, func_80028530());
     D_800B0078->pc += 3;
 }
 
@@ -10336,15 +10336,14 @@ s32 func_800A3018(s32 reference) {
     return value;
 }
 
-#ifdef NON_MATCHING
-/* Write event variable `reference`. The original keeps a temporary
- * (sra a2 / sll v0) that this form does not. */
-void func_800A3074(u16 reference, s32 value) {
-    D_800C3A68[reference >> 1] = value;
+/* Write event variable `reference` (both bank cases store the same halfword). */
+void func_800A3074(s32 reference, s32 value) {
+    if (D_800ADBF8->unsigned_bits[reference >> 6] & (1 << ((reference >> 1) & 0x1F))) {
+        D_800C3A68[reference >> 1] = (u16)value;
+    } else {
+        D_800C3A68[reference >> 1] = value;
+    }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_800A3074);
-#endif
 
 /* Entry PC of event `event` of actor `actor`. */
 s32 func_800A3090(s32 actor, s32 event) {

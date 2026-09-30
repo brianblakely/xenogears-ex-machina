@@ -974,7 +974,7 @@ extern void func_800A8BA4(void);
 extern void func_800A915C(void);
 extern void func_800A91F0(void);
 extern s32 func_8009CF78(s32 offset, s32 flags); /* operand, immediate with flag 0x80 */
-extern void func_800A3074(u16 reference, s32 value); /* write an event variable */
+extern void func_800A3074(s32 reference, s32 value); /* write an event variable */
 extern s32 func_800ACDB8(s32 offset); /* raw halfword operand */
 extern s32 func_800ACDEC(s32 offset); /* operand: bit 15 immediate, else variable */
 extern void func_80086A1C(s32 emitter, s32 *position);
