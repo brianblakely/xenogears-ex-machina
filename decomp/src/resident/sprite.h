@@ -363,6 +363,13 @@ s32 func_80022CAC(Sprite *sprite, s32 value);
 void func_80022CDC(Sprite *sprite);
 
 /* Second sprite unit (80022090-8002709c). */
+/* The bits of a sprite's flags word (+0x40) that the original writes as fields. */
+typedef struct {
+    unsigned unknown0 : 8;
+    unsigned group : 5;      /* facing group */
+    unsigned type : 4;       /* sprite kind (80023440) */
+    unsigned unknown17 : 15;
+} SpriteFlagBits;
 extern u8 D_8004FC40[]; /* frame command lengths */
 void func_80021CF8(Sprite *sprite, s32 value); /* push three bytes */
 void func_80022D44(Sprite *sprite);
@@ -370,5 +377,6 @@ s32 func_80023440(u16 *entry);
 s32 func_80023468(s32 kind, s32 fallback);
 SpriteTask *func_80023A48(s32 kind, s32 mode, SpriteSource *source, s32 extra, Task *owner);
 void func_80024730(SpriteTask *task);
+extern Sprite *D_800C3E1C; /* battle overlay: the current actor's sprite */
 
 #endif

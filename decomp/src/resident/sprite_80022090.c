@@ -918,7 +918,71 @@ Sprite *func_80023B84(Sprite *parent, u16 *header, SpriteSource *source) {
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80023B84);
 #endif
 
+/* Create an effect sprite task running animation `index` of `source` at
+ * `position` (whole units), with `extra` bytes after the sprite: its kind
+ * and storage mode come from the animation's frame entry; in battle (flag
+ * 800591ad) it takes the facing, blending, speed, scale and resources of
+ * the battle's current actor (800c3e1c) before its own resources are
+ * cleared. */
+/* Nonmatching: the 4-bit value copied across the 0xa8/0xac words ends up in the other of its two temporaries (v0/v1 swapped for 8 instructions). */
+#ifdef NON_MATCHING
+SpriteTask *func_80023FD8(s32 index, SpriteSource *source, SVECTOR *position, s32 extra) {
+    u16 *table = source->animations;
+    u16 *header = (u16 *)(table[index + 1] + (s32)table);
+    s32 kind;
+    s32 mode;
+    SpriteTask *task;
+    Sprite *child;
+    Sprite *actor;
+    u32 split;
+
+    kind = func_80023440(header);
+    mode = ((s32 (*)())func_80023468)(kind); /* the fallback argument is not passed */
+    task = func_80023A48(kind, mode, source, extra, NULL);
+    task->task.link.bits.flag29 = 1;
+    child = &task->sprite;
+    source = child->image; /* kept across the actor copy */
+    child->word70 = 0;
+    child->word74 = 0;
+    if (D_800591AD != 0 && (actor = D_800C3E1C) != NULL) {
+        child->resource_block = actor->resource_block;
+        child->animations = actor->animations;
+        child->word74 = actor->word74;
+        child->speed = actor->speed;
+        child->direction = actor->direction;
+        child->flags = (child->flags & ~0x1F00) | (actor->flags & 0x1F00);
+        child->render.word = (child->render.word & ~8) | (actor->render.word & 8);
+        child->render.word = (child->render.word & ~0x10) | (actor->render.word & 0x10);
+        child->render.bits.unknown8 = actor->render.bits.unknown8;
+        child->scale = actor->scale;
+        child->render.word = (child->render.word | 0x4000000) & ~4;
+        child->motion.bits.mirror = actor->motion.bits.mirror;
+        child->motion.bits.divisor = actor->motion.bits.divisor;
+        child->sequencer = actor->sequencer;
+        child->sequencer = actor->sequencer;
+        split = actor->frame_bits.unknown30 | (actor->motion.bits.unknown0 << 2);
+        child->frame_bits.unknown30 = split;
+        child->motion.bits.unknown0 = split >> 2;
+        child->word50 = actor->word50;
+        child->unknown8d = actor->motion.bytes[3];
+    }
+    child->resource_block = NULL;
+    child->animations = NULL;
+    child->frame = 0;
+    child->image = source;
+    ((SpriteFlagBits *)&child->flags)->type = kind;
+    child->render.bits.sides = mode;
+    child->word82 = D_800591A8;
+    child->x = position->vx << 16;
+    child->y = position->vy << 16;
+    child->z = position->vz << 16;
+    func_80023538(child, header);
+    func_80024730(task);
+    return task;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80023FD8);
+#endif
 
 /* 80024524 with `extra` in 800591b8 for the call. */
 void func_80024294(void *a0, s16 a1, s16 a2, s16 a3, s16 a4, s16 a5, s32 extra) {
