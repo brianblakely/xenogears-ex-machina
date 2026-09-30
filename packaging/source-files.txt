@@ -138,6 +138,7 @@ decomp/src/battle/objects.h
 decomp/src/battle/psyq.h
 decomp/src/battle/resolver.h
 decomp/src/battle/scene.h
+decomp/src/battle/screen.h
 decomp/src/battle/stage.h
 decomp/src/debug2611/battle_debug.h
 decomp/src/debug2611/debug2611.c

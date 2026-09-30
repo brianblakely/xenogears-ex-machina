@@ -13,6 +13,7 @@
 #include "gte.h"
 #include "effect.h"
 #include "objects.h"
+#include "screen.h"
 
 /* Select script index of an effect script file: copy its entry into
  * D_800C3BD0 (relocating its offsets to addresses unless the file is already
@@ -76,31 +77,220 @@ void func_800B3348(void) {
 void func_800B3350(void) {
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B3358);
+/* Quake update: ease the amplitude from its start to its target over the
+ * frames left, and shake the view offset by it with the sign flipping every
+ * two frames; end once it is zero and done. */
+void func_800B3358(Quake *quake) {
+    Vector delta;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B3588);
+    if (quake->left == 0) {
+        quake->amplitude.vx = quake->to.vx;
+        quake->amplitude.vy = quake->to.vy;
+        quake->amplitude.vz = quake->to.vz;
+    } else {
+        quake->left--;
+        delta.vx = quake->to.vx - quake->from.vx;
+        delta.vy = quake->to.vy - quake->from.vy;
+        delta.vz = quake->to.vz - quake->from.vz;
+        gte_lddp(quake->left >> 1);
+        gte_ldlvl(&delta);
+        gte_gpf0();
+        gte_stlvl(&delta);
+        delta.vx /= quake->total >> 1;
+        delta.vy /= quake->total >> 1;
+        delta.vz /= quake->total >> 1;
+        quake->amplitude.vx = quake->to.vx - delta.vx;
+        quake->amplitude.vy = quake->to.vy - delta.vy;
+        quake->amplitude.vz = quake->to.vz - delta.vz;
+    }
+    quake->tick++;
+    if (quake->tick & 2) {
+        D_800C354C = -quake->amplitude.vx;
+    } else {
+        D_800C354C = quake->amplitude.vx;
+    }
+    if (quake->tick & 2) {
+        D_800C354E = -quake->amplitude.vy;
+    } else {
+        D_800C354E = quake->amplitude.vy;
+    }
+    if (quake->tick & 2) {
+        D_800C3550 = -quake->amplitude.vz;
+    } else {
+        D_800C3550 = quake->amplitude.vz;
+    }
+    /* x and y tested as one word */
+    if (*(s32 *)&quake->amplitude == 0 && quake->amplitude.vz == 0 && quake->left == 0) {
+        quake->task.destroy(&quake->task);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B35C0);
+/* End the quake task. */
+void func_800B3588(Quake *quake) {
+    func_8001CD94(quake);
+    func_800320E8(quake);
+    D_800C3548 = NULL;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B3658);
+/* The quake task, created at rest or restarted from its current amplitude. */
+Quake *func_800B35C0(void) {
+    Quake *quake;
 
+    if (D_800C3548 == NULL) {
+        quake = func_8001CD08(0, sizeof(Quake) - sizeof(BattleTask));
+        func_8001CD6C(quake, func_800B3358);
+        func_8001CD74(quake, func_800B3588);
+        quake->from.vx = 0;
+        quake->from.vy = 0;
+        quake->from.vz = 0;
+        D_800C3548 = quake;
+    } else {
+        quake = D_800C3548;
+        quake->from.vx = quake->amplitude.vx;
+        quake->from.vy = quake->amplitude.vy;
+        quake->from.vz = quake->amplitude.vz;
+    }
+    return quake;
+}
+
+/* Quake the view towards amplitude over frames * 2 frames. */
+void func_800B3658(SVector *amplitude, s32 frames) {
+    Quake *quake = func_800B35C0();
+
+    quake->to.vx = amplitude->vx;
+    quake->to.vy = amplitude->vy;
+    quake->to.vz = amplitude->vz;
+    quake->left = frames * 2;
+    quake->total = frames * 2;
+    func_800B3358(quake);
+}
+
+#ifdef NON_MATCHING
+/* Screen fade update: ease the colour to the target over the frames left;
+ * end once it is black. */
+void func_800B36BC(ScreenFade *fade) {
+    Vector delta;
+
+    if (fade->left == 0) {
+        fade->colour[0] = fade->to[0];
+        fade->colour[1] = fade->to[1];
+        fade->colour[2] = fade->to[2];
+        if ((fade->colour[0] | fade->colour[1] | fade->colour[2]) == 0) {
+            D_800C3558->task.destroy(&D_800C3558->task);
+        }
+    } else {
+        fade->left--;
+        delta.vx = fade->to[0] - fade->from[0];
+        delta.vy = fade->to[1] - fade->from[1];
+        delta.vz = fade->to[2] - fade->from[2];
+        gte_lddp(fade->left >> 1);
+        gte_ldlvl(&delta);
+        gte_gpf0();
+        gte_stlvl(&delta);
+        delta.vx /= fade->total >> 1;
+        delta.vy /= fade->total >> 1;
+        delta.vz /= fade->total >> 1;
+        fade->colour[0] = fade->to[0] - delta.vx;
+        fade->colour[1] = fade->to[1] - delta.vy;
+        fade->colour[2] = fade->to[2] - delta.vz;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B36BC);
+#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B383C);
+/* End the screen fade tasks. */
+void func_800B383C(ScreenFade *fade) {
+    func_8001CB48(&fade->draw);
+    func_8001CD94(fade);
+    D_800C3558 = NULL;
+}
 
+#ifdef NON_MATCHING
+/* Draw the screen fade: a blended rectangle over the whole screen. */
+void func_800B3878(BattleTask *draw) {
+    POLY_F4 *poly = (POLY_F4 *)D_80059580;
+    ScreenFade *fade = draw->data;
+    DR_MODE *mode;
+
+    if (D_80059580 + 0x50 < D_80059534) {
+        D_80059580 += sizeof(POLY_F4) + sizeof(DR_MODE);
+        SetPolyF4(poly);
+        SetSemiTrans(poly, 1);
+        poly->r0 = fade->colour[0];
+        poly->g0 = fade->colour[1];
+        poly->b0 = fade->colour[2];
+        poly->x0 = -32;
+        poly->y0 = -32;
+        poly->x1 = 320;
+        poly->y1 = -32;
+        poly->x2 = -32;
+        poly->y2 = 240;
+        poly->x3 = 320;
+        poly->y3 = 240;
+        mode = (DR_MODE *)(poly + 1);
+        SetDrawMode(mode, 0, 0, GetTPage(0, fade->blend, 0, 0), NULL);
+        AddPrim(D_8005956C + 2, poly);
+        AddPrim(D_8005956C + 2, mode);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B3878);
+#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B397C);
+/* Fade the second screen fade (800B39C0). */
+void func_800B397C(s32 frames, s32 blend, u8 r, u8 g, u8 b) {
+    D_800C355C = 1;
+    func_800B39C0(frames, blend, r, g, b);
+    D_800C355C = 0;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B39C0);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B3B6C);
+/* The screen fade's blend mode (1 when none runs). */
+u8 func_800B3B6C(void) {
+    if (D_800C3558 != NULL) {
+        return D_800C3558->blend;
+    }
+    return 1;
+}
 
+#ifdef NON_MATCHING
+/* Light fade update: ease the level from its start to its target over the
+ * frames left; end once it is zero. */
+void func_800B3B94(LightFade *fade) {
+    s32 left;
+
+    if (fade->left != 0) {
+        left = fade->left - 1;
+        fade->left = left;
+        fade->level = fade->to - (fade->to - fade->from) * ((left << 5) / fade->total) / 32;
+    } else if (fade->level == 0) {
+        fade->task.destroy(&fade->task);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B3B94);
+#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B3C2C);
+/* End the light fade tasks and restore the stage lights (800A6F98). */
+void func_800B3C2C(LightFade *fade) {
+    func_8001CB48(&fade->draw);
+    func_8001CD94(fade);
+    func_800320E8(fade);
+    D_800C3560 = NULL;
+    func_800A6F98();
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B3C74);
+/* Apply the light fade's level to light slot 0 when it changed. */
+void func_800B3C74(BattleTask *draw) {
+    LightFade *fade = draw->data;
+
+    if (fade->applied != fade->level) {
+        fade->applied = fade->level;
+        func_800A6444(0, fade->red, 32 - fade->level, fade->blue, fade->field4C, fade->field4E);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B3CD4);
 

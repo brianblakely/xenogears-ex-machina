@@ -303,8 +303,8 @@ EffectSprite *func_80023FD8(s32 kind, void *resource, SVector *position, s32 siz
 void func_80021FE0(s32 *body, s32 direction);
 void func_800223B0(s32 *body, s32 direction);
 void func_80022000(s32 *body, s32 scale);
-void *func_8001CD7C(EffectSprite *sprite); /* the task's update */
-void func_8001CD6C(EffectSprite *sprite, void (*update)(EffectSprite *sprite)); /* set it */
+void *func_8001CD7C(void *task); /* a task's update */
+void func_8001CD6C(void *task, void (*update)()); /* set it */
 
 void func_800AFC68(EffectSprite *sprite);
 
