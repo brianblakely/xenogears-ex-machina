@@ -51,9 +51,12 @@ typedef struct {
 /* An effect entry (0x14 bytes) of an effect pool. */
 typedef struct {
     u8 used;
-    u8 pad1[2];
+    u8 field1;
+    u8 field2;
     u8 kind;                /* +3: 0xFF persistent */
-    u8 pad4[0x14 - 4];
+    u16 params[6];          /* +4 */
+    u16 field10;
+    u16 field12;
 } EffectEntry;
 
 /* A pool of effect entries; next is the first entry that may be free. */
@@ -98,6 +101,7 @@ void func_8002CBBC(Model *model);                          /* release a model */
 void func_8009F708(ModelPart *root);
 void func_800A22E8(EffectPool *pool);
 s32 func_800A23E8(EffectPool *pool, EffectEntry *entry);
+EffectEntry *func_800A2330(EffectPool *pool);
 
 /* Graphics library. */
 void func_80043CB0(PolyFT4 *p);                              /* SetPolyFT4 */

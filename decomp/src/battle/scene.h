@@ -112,9 +112,9 @@ typedef struct {
 /* A triangle of the scene's light geometry (0xE bytes). */
 typedef struct {
     s16 vertices[3];        /* indices into the scene's points */
-    u8 pad6[0xC - 0x6];
+    s16 neighbours[3];      /* 0x06: adjacent triangles, -1 none */
     u8 id;                  /* 0x0C */
-    u8 padD;
+    u8 visited;             /* 0x0D: visit stamp */
 } SceneTriangle;
 
 /* A light slot (6 bytes). */
@@ -143,6 +143,8 @@ typedef struct {
 extern SVector *D_800D3344;             /* scene points */
 extern SceneTriangle *D_800D39CC;       /* scene triangles */
 extern s32 D_800D3348;                  /* scene triangle count */
+extern u8 D_800D2F64;                   /* triangle visit stamp */
+extern u8 D_800C37C8;                   /* effects disabled */
 extern LightSlot D_800C3AAC[4];
 extern s16 D_800D2FC8;                  /* point count of D_800D2FD0 */
 extern u16 *D_800D2FD0;                 /* (x, z, y) points */
@@ -184,7 +186,8 @@ void func_800A5BE8(SVector *a, SVector *b, SVector *c, SVector *point, void *out
 s32 func_800A5870(SVector *point, s32 index, void *out);
 s32 func_800A579C(SVector *point);
 s32 func_800A5A48(SVector *a, SVector *b, SVector *c, SVector *point);
-s16 func_800A5914(SVector *point, s32 triangle, s32 arg2);
+s32 func_800A5914(SVector *point, s32 triangle, s32 depth);
+s32 func_800A5D54(SVector *point, s32 triangle, s32 depth);
 s32 func_800AA650(s32 index);
 void func_800B10EC(s32 index, s16 x, s16 z, s32 y);
 void func_800A2D5C(SpritePool *pool);

@@ -3232,13 +3232,78 @@ s32 func_800A5870(SVector *point, s32 index, void *out) {
     return D_800D39CC[index].id;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A5914);
+/* The scene triangle containing point, searched from triangle through its
+ * neighbours (800A5D54, depth levels, up to depth tries); -1 for none. Each
+ * search uses a new visit stamp; when the stamp wraps the marks are cleared. */
+s32 func_800A5914(SVector *point, s32 triangle, s32 depth) {
+    s32 found;
+    s32 i;
+
+    if (D_800D3344 == NULL) {
+        return -1;
+    }
+    if (D_800D39CC == NULL) {
+        return -1;
+    }
+    if (triangle >= D_800D3348) {
+        return -1;
+    }
+    for (i = 0; i < depth; i++) {
+        found = func_800A5D54(point, triangle, depth);
+        if (found >= 0) {
+            break;
+        }
+    }
+    D_800D2F64++;
+    if (D_800D2F64 == 0) {
+        D_800D2F64 = 1;
+        for (i = 0; i < D_800D3348; i++) {
+            D_800D39CC[i].visited = 0;
+        }
+    }
+    return found;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A5A48);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A5BE8);
 
+#ifdef NON_MATCHING
+/* Search triangle and, up to depth levels, its unvisited neighbours for the one
+ * containing point (800A5A48 gives -1); -1 for none. */
+s32 func_800A5D54(SVector *point, s32 triangle, s32 depth) {
+    s32 found;
+
+    if (triangle >= 0) {
+        if (D_800D39CC[triangle].visited != D_800D2F64) {
+            D_800D39CC[triangle].visited = D_800D2F64;
+            if (func_800A5A48(&D_800D3344[D_800D39CC[triangle].vertices[0]],
+                              &D_800D3344[D_800D39CC[triangle].vertices[1]],
+                              &D_800D3344[D_800D39CC[triangle].vertices[2]], point)
+                == -1) {
+                return triangle;
+            }
+            if (depth > 0) {
+                found = func_800A5D54(point, D_800D39CC[triangle].neighbours[0], depth - 1);
+                if (found >= 0) {
+                    return found;
+                }
+                found = func_800A5D54(point, D_800D39CC[triangle].neighbours[1], depth - 1);
+                if (found >= 0) {
+                    return found;
+                }
+                found = func_800A5D54(point, D_800D39CC[triangle].neighbours[2], depth - 1);
+                if (found >= 0) {
+                    return found;
+                }
+            }
+        }
+    }
+    return -1;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A5D54);
+#endif
 
 /* Set the two words D_800D2D40 and D_800D2D48. */
 void func_800A5E9C(s32 first, s32 second) {
@@ -3742,7 +3807,37 @@ void func_800B00F4(EffectPool *pool) {
     func_800B00D0();
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B0164);
+/* Start effect index (D_800C3BAC, taken from pool when unset) with its kind
+ * and parameters, unless effects are disabled (D_800C37C8). */
+void func_800B0164(EffectPool *pool, s32 index, u8 field2, u8 kind, u16 p0, u16 p1, u16 p2, u16 p3, u16 p4,
+                   u16 p5, u16 field12) {
+    EffectEntry **slots;
+    EffectEntry **slot;
+    EffectEntry *entry;
+
+    if (D_800C37C8 == 0) {
+        slots = D_800C3BAC;
+        slot = &slots[index];
+        if (*slot == NULL) {
+            *slot = func_800A2330(pool);
+        }
+        entry = *slot;
+        if (entry != NULL) {
+            entry->used = 1;
+            entry->field1 = 0;
+            entry->field2 = field2;
+            entry->kind = kind;
+            entry->params[0] = p0;
+            entry->params[1] = p1;
+            entry->params[2] = p2;
+            entry->params[3] = p3;
+            entry->params[4] = p4;
+            entry->params[5] = p5;
+            entry->field10 = 0;
+            entry->field12 = field12;
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B026C);
 
