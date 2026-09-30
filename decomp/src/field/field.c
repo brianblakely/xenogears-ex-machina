@@ -1510,7 +1510,22 @@ void func_800873C4(void) {
     D_800B0078->pc += 5;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80087420);
+/* Event: variables op13 and op15 receive op1 * op9 / op5 and
+ * op3 * op11 / op7 (16.16 intermediate). */
+void func_80087420(void) {
+    s32 a = func_800ACDEC(1);
+    s32 b = func_800ACDEC(3);
+    s32 c = func_800ACDEC(5);
+    s32 d = func_800ACDEC(7);
+    s32 e = func_800ACDEC(9);
+    s32 f = func_800ACDEC(11);
+    s32 first = (((e << 16) / c) * a) >> 16;
+    s32 second = (((f << 16) / d) * b) >> 16;
+
+    func_800A3074(func_800ACDB8(13) & 0xFFFF, first);
+    func_800A3074(func_800ACDB8(15) & 0xFFFF, second);
+    D_800B0078->pc += 17;
+}
 
 /* Event: skip a two-byte operand. */
 void func_8008752C(void) {
@@ -1539,7 +1554,25 @@ void func_80087800(void) {
     D_800B0078->pc += 3;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80087848);
+/* Event: once sound is idle, stop it and set the six sound bytes at
+ * 8005061c from operands; wait otherwise. */
+void func_80087848(void) {
+    if (D_800ADBDC == 0 || D_800ADBE4 == 0 || D_800ADB2C != 0 || D_8004F308 == -1) {
+        D_800B00C0 = 1;
+        D_800B0078->pc--;
+        return;
+    }
+    func_800379B4(0);
+    D_8005061C[0] = func_800ACDEC(1);
+    D_8005061C[1] = func_800ACDEC(3);
+    D_8005061C[2] = func_800ACDEC(5);
+    D_8005061C[3] = func_800ACDEC(7);
+    D_8005061C[4] = func_800ACDEC(9);
+    D_8005061C[5] = func_800ACDEC(11);
+    D_800ADB88 = 1;
+    D_800ADBE8 = 0;
+    D_800B0078->pc += 13;
+}
 
 /* Event: store the game's +1844 and +1846 in variables op1 and op3. */
 void func_80087960(void) {
@@ -1593,7 +1626,15 @@ void func_80087C0C(void) {
     D_800B0078->pc++;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80087C34);
+/* Event: set the game's four halfwords at +182c from operands 1..7
+ * (immediate by flags 0x80/0x40/0x20/0x10 of byte 9). */
+void func_80087C34(void) {
+    D_8005A39C->unk182C[0] = func_8009CF78(1, D_800ADC00[D_800B0078->pc + 9]);
+    D_8005A39C->unk182C[1] = func_8009CFBC(3, D_800ADC00[D_800B0078->pc + 9]);
+    D_8005A39C->unk182C[2] = func_8009D000(5, D_800ADC00[D_800B0078->pc + 9]);
+    D_8005A39C->unk182C[3] = func_8009D044(7, D_800ADC00[D_800B0078->pc + 9]);
+    D_800B0078->pc += 10;
+}
 
 /* Event: store the game's +1834 in variable op1. */
 void func_80087D30(void) {
@@ -1626,7 +1667,27 @@ void func_80087E5C(void) {
     D_800B0078->pc += 3;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80087E98);
+/* Event: make the selected actor the controlled one (clearing every actor's
+ * control flags first). */
+void func_80087E98(void) {
+    s32 index = func_8009CDB4(1);
+    s32 i;
+
+    if (index != 0xFF) {
+        if (index == D_8005A444[0]) {
+            D_800B2184.unk234E = 0;
+        } else {
+            D_800B2184.unk234E = 1;
+        }
+        D_800B2184.controlled = index;
+        D_800B2184.unk233E = index;
+        for (i = 0; i < D_800ADBFC; i++) {
+            D_800AF880.components.descriptors[i].actor->flags &= ~0x01004000;
+        }
+        D_800AF880.components.descriptors[index].actor->flags |= 0x4000;
+    }
+    D_800B0078->pc += 2;
+}
 
 /* Event: count 800b2348 up. */
 void func_80087FA4(void) {
@@ -1733,7 +1794,36 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008861C);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80088674);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80088790);
+/* Event: start effect op2 (0..3 map to 0, 0x10, 0x20, 0x30) with op4 and op6
+ * on the selected actor, using four batch steps. */
+void func_80088790(void) {
+    s32 actor = func_8009CDB4(1);
+
+    if (actor == 0xFF) {
+        actor = 0;
+    }
+    D_800B2184.unk2374 = actor;
+    D_800B2184.unk2378 = func_800ACDEC(2);
+    D_800B2184.unk237C = func_800ACDEC(4);
+    D_800B2184.unk2380 = func_800ACDEC(6);
+    D_800B0078->pc += 8;
+    func_800A94A4(actor);
+    switch (D_800B2184.unk2378) {
+    case 0:
+        D_800B2184.unk2378 = 0;
+        break;
+    case 1:
+        D_800B2184.unk2378 = 0x10;
+        break;
+    case 2:
+        D_800B2184.unk2378 = 0x20;
+        break;
+    case 3:
+        D_800B2184.unk2378 = 0x30;
+        break;
+    }
+    D_800AFC7C += 4;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800888A4);
 

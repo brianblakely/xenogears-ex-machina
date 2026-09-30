@@ -374,7 +374,8 @@ typedef struct {
     u16 unk2348;               /* 2348 */
     u8 unk234A[2];
     s16 battle_override;       /* 234C: battle-entry flag override, 0xff none */
-    u8 unk234E[0x2354 - 0x234E];
+    s16 unk234E;               /* 234E */
+    u8 unk2350[0x2354 - 0x2350];
     u8 unk2354;                /* 2354 */
     u8 unk2355;                /* 2355 */
     u8 unk2356;                /* 2356 */
@@ -382,7 +383,11 @@ typedef struct {
     u8 unk2358;                /* 2358 */
     u8 unk2359[0x236C - 0x2359];
     s16 unk236C;               /* 236C */
-    u8 unk236E[0x2384 - 0x236E];
+    u8 unk236E[0x2374 - 0x236E];
+    s32 unk2374;               /* 2374 */
+    s32 unk2378;               /* 2378 */
+    s32 unk237C;               /* 237C */
+    s32 unk2380;               /* 2380 */
     s32 unk2384;               /* 2384 */
 } FieldWork;
 
@@ -425,6 +430,7 @@ typedef struct {
 } FieldSlot6;
 
 /* Resident services. */
+extern void func_800379B4(s32);
 extern void func_8003A838(s32 sequence, s32, s32);
 extern void func_8003A89C(s32 sequence, s32, s32);
 extern void func_8003AAC4(s32 sequence, s32);
@@ -495,6 +501,8 @@ extern void func_800496AC(void);                               /* PopMatrix */
 extern void func_8004A6DC(SVECTOR *v, s32 *out, s32 *flag); /* RotTrans */
 
 /* Field overlay. */
+extern s32 func_8009D044(s32 offset, s32 flags); /* operand, immediate with flag 0x10 */
+extern void func_800A94A4(s32 actor);
 extern void func_8007AF74(void);
 extern void func_8008B978(s32);
 extern void func_80071D08(s32 channel, s32 steps, s32 red, s32 green, s32 blue, s32 abr);
@@ -556,6 +564,7 @@ extern void func_80078C5C(void);
 extern void func_802815B0(void);
 
 /* Resident state. */
+extern u8 D_8005061C[6];
 extern s32 D_8004F36C; /* sequence playing */
 extern s32 D_80062528; /* current sequence */
 extern s32 D_80062590[3];
@@ -580,6 +589,10 @@ extern s32 D_8004F34C; /* current map */
 extern u8 D_800625FC[2][0x22]; /* pad buffers */
 
 /* Field state. */
+extern s32 D_800ADBDC;
+extern s32 D_800ADBE4;
+extern s32 D_800ADBE8;
+extern s32 D_800ADBFC; /* event actor count */
 extern void *D_800ADBC0; /* pending party sprite buffer */
 extern s32 D_800ADBC8;
 extern s32 D_800ADBCC; /* pending party slot */
