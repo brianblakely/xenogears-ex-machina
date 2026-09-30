@@ -123,7 +123,9 @@ s32 func_8003F8B0(s32 angle); /* sine, 4096 = 1.0 */
 s32 func_8003F8CC(s32 angle); /* cosine, 4096 = 1.0 */
 void func_800346D4(void *arg);
 void func_80083C0C(s32 arg);
-void func_80083738(Actor *actor, Actor *other);
+void func_80083738(Actor *first, Actor *second);
+s32 func_800887A4(Vector *from, Vector *to);
+s32 func_80088754(Vector *vector);
 void func_800828F8(Vector *position, Vector *step, s32 radius);
 void func_8004A414(Vector *v, Vector *out);          /* square each component */
 void func_80048D68(Vector *v, SVector *out);         /* normalise */
@@ -147,6 +149,8 @@ extern u8 D_8009287C;
 extern s32 D_8009290C;
 extern s32 D_800927AC; /* orbit angle */
 extern s32 D_80092890; /* which actor the idle camera follows */
+extern u8 D_800928F4;  /* framing side */
+extern s32 D_8009277C; /* framing heading */
 extern s32 D_800928AC; /* idle camera frame */
 extern s32 D_800927B0; /* orbit speed */
 extern s32 D_80092794; /* scene mode */

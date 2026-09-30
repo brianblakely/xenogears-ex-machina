@@ -1255,7 +1255,66 @@ void func_8008369C(void) {
     func_80083310(0);
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80083738);
+/* Frame two actors: put the eye between them, pick the side of the pair
+ * the look-at point is nearer to, and move the look-at point toward a spot
+ * beside the pair (further back when they are far apart), kept inside the
+ * arena and above the ground. */
+void func_80083738(Actor *first, Actor *second) {
+    Vector side;
+    Vector other_side;
+    Vector unused[2]; /* the original frame has 0x20 unused bytes */
+    s32 heading;
+    s32 distance;
+    s32 angle;
+    s32 value; /* the second angle, then a side's distance, then the ground */
+
+    heading = func_8004B32C(first->pos.vx - second->pos.vx, first->pos.vz - second->pos.vz);
+    distance = func_800887A4(&first->pos, &second->pos);
+    angle = heading - 0x400;
+    D_80092770 = distance * 2 / 3 + 0xC0;
+    D_8009867C.vx = (first->pos.vx + second->pos.vx) / 2;
+    D_8009867C.vy = (first->pos.vy + second->pos.vy) / 2 - 0xA0;
+    D_8009867C.vz = (first->pos.vz + second->pos.vz) / 2;
+    side.vx = D_8009867C.vx + ((func_8003F8B0(angle) * D_80092770) >> 12);
+    side.vz = D_8009867C.vz + ((func_8003F8CC(angle) * D_80092770) >> 12);
+    value = heading + 0x400;
+    other_side.vx = D_8009867C.vx + ((func_8003F8B0(value) * D_80092770) >> 12);
+    other_side.vz = D_8009867C.vz + ((func_8003F8CC(value) * D_80092770) >> 12);
+    side.vx -= D_8009871C.vx;
+    side.vy -= D_8009871C.vy;
+    side.vz -= D_8009871C.vz;
+    other_side.vx -= D_8009871C.vx;
+    other_side.vy -= D_8009871C.vy;
+    other_side.vz -= D_8009871C.vz;
+    value = func_80088754(&side);
+    if (func_80088754(&other_side) < value) {
+        D_8009290C = 0x400;
+        D_800928F4 = 0;
+    } else {
+        D_8009290C = -0x400;
+        D_800928F4 = 1;
+    }
+    distance /= 4;
+    if (distance > 0x300) {
+        distance = 0x300;
+    }
+    side.vy = D_8009867C.vy - D_80092774 - distance;
+    side.vx = D_8009867C.vx + ((func_8003F8B0(heading + D_8009290C) * D_80092770) >> 12);
+    side.vz = D_8009867C.vz + ((func_8003F8CC(heading + D_8009290C) * D_80092770) >> 12);
+    value = func_80082488(&side, 0) - 0x100;
+    if (value < side.vy) {
+        side.vy = value;
+    }
+    side.vx = (side.vx - D_8009871C.vx) / D_8009287C;
+    side.vy = (side.vy - D_8009871C.vy) / D_8009287C;
+    side.vz = (side.vz - D_8009871C.vz) / D_8009287C;
+    D_8009277C = heading;
+    func_800828F8(&D_8009871C, &side, 0x3D00);
+    D_8009287C = 100;
+    D_8009871C.vx += side.vx;
+    D_8009871C.vy += side.vy;
+    D_8009871C.vz += side.vz;
+}
 
 /* Read the camera's look-at point and eye. */
 void func_80083B54(Vector *look, Vector *eye) {
