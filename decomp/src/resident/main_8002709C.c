@@ -317,8 +317,6 @@ s32 func_800286CC(void) {
 }
 
 /* A file's byte size: from the PC file server when it knows the file, else from the file index. */
-/* Nonmatching: the original keeps the index sum as addu and holds file, fd and size in s2/s0/s1 (closest under GCC 2.6.3). */
-#ifdef NON_MATCHING
 s32 func_80028738(s32 file) {
     s32 fd;
     s32 size;
@@ -329,16 +327,14 @@ s32 func_80028738(s32 file) {
         size = PClseek(fd, 0, 2);
         PCclose(fd);
         if (size > 0) {
-            return size;
+            goto done;
         }
     }
     entry = &D_8004FDF0[(file + D_8004FE14 - 1) * 7];
     size = (entry[6] << 24) + (entry[5] << 16) + (entry[4] << 8) + entry[3];
+done:
     return size;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002709C", func_80028738);
-#endif
 
 /* As 80028738 in the second directory selection (8004fe18), rounded up to words. */
 s32 func_80028808(s32 file) {
