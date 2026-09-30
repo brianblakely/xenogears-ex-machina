@@ -44,7 +44,23 @@ typedef struct {
     LINE_G2 line[2]; /* 0x40: one per draw buffer */
 } DebugLine;         /* 0x68 */
 
+/* The part of a field actor the monitor reads. */
+typedef struct {
+    u8 unk0[0x18];
+    SVECTOR size; /* 0x18: collision half extents */
+    VECTOR pos;   /* 0x20: 16.16 fixed point */
+} DebugActor;
+
+/* One CPU-time mark: scanlines spent before it. */
+typedef struct {
+    s32 time;
+    char *name;
+    s32 unk8;
+} CpuMark;
+
 /* libgte / libgpu (resident). */
+s32 VSync(s32 mode);
+void func_800379C8(const char *format, ...); /* debug text print */
 void PushMatrix(void);
 void PopMatrix(void);
 void SetRotMatrix(MATRIX *m);
@@ -71,7 +87,9 @@ extern s32 D_8028598C;
 extern s32 D_80285990;
 extern s32 D_80285994;
 extern s32 D_80285998;
-extern s16 D_802859A4;
+extern s16 D_802859A4;   /* CPU-time marks this frame */
+extern CpuMark D_802859AC[];
+extern s32 D_800ADB9C;   /* scanline count at the last mark */
 extern u16 D_80285B28[16];
 extern DebugLine D_80285B48[16];
 

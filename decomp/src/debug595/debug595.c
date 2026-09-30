@@ -131,17 +131,104 @@ void func_802815B0(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/debug595/asm/nonmatchings/debug595", func_80281678);
+/* Place the first twelve debug lines on `actor` and shape eight of them into
+ * the outline of its collision box (bottom and top rectangles). */
+void func_80281678(DebugActor *actor) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/debug595/asm/nonmatchings/debug595", func_80281994);
+    if (D_800C268C == 0) {
+        for (i = 0; i < 12; i++) {
+            D_80285B48[i].trans.vx = actor->pos.vx >> 16;
+            D_80285B48[i].trans.vy = actor->pos.vy >> 16;
+            D_80285B48[i].trans.vz = actor->pos.vz >> 16;
+            D_80285B48[i].start.vy = 0;
+            D_80285B48[i].end.vy = 0;
+        }
+        D_80285B48[0].start.vx = -actor->size.vx;
+        D_80285B48[0].start.vz = -actor->size.vz;
+        D_80285B48[0].end.vx = actor->size.vx;
+        D_80285B48[0].end.vz = -actor->size.vz;
+        D_80285B48[1].start.vx = actor->size.vx;
+        D_80285B48[1].start.vz = -actor->size.vz;
+        D_80285B48[1].end.vx = actor->size.vx;
+        D_80285B48[1].end.vz = actor->size.vz;
+        D_80285B48[2].start.vx = actor->size.vx;
+        D_80285B48[2].start.vz = actor->size.vz;
+        D_80285B48[2].end.vx = -actor->size.vx;
+        D_80285B48[2].end.vz = actor->size.vz;
+        D_80285B48[3].start.vx = -actor->size.vx;
+        D_80285B48[3].start.vz = actor->size.vz;
+        D_80285B48[3].end.vx = -actor->size.vx;
+        D_80285B48[3].end.vz = -actor->size.vz;
+        D_80285B48[4].start.vx = -actor->size.vx;
+        D_80285B48[4].start.vz = -actor->size.vz;
+        D_80285B48[4].end.vx = actor->size.vx;
+        D_80285B48[4].end.vz = -actor->size.vz;
+        D_80285B48[4].start.vy = -actor->size.vy;
+        D_80285B48[4].end.vy = -actor->size.vy;
+        D_80285B48[5].start.vx = actor->size.vx;
+        D_80285B48[5].start.vz = -actor->size.vz;
+        D_80285B48[5].end.vx = actor->size.vx;
+        D_80285B48[5].end.vz = actor->size.vz;
+        D_80285B48[5].start.vy = -actor->size.vy;
+        D_80285B48[5].end.vy = -actor->size.vy;
+        D_80285B48[6].start.vx = actor->size.vx;
+        D_80285B48[6].start.vz = actor->size.vz;
+        D_80285B48[6].end.vx = -actor->size.vx;
+        D_80285B48[6].end.vz = actor->size.vz;
+        D_80285B48[6].start.vy = -actor->size.vy;
+        D_80285B48[6].end.vy = -actor->size.vy;
+        D_80285B48[7].start.vx = -actor->size.vx;
+        D_80285B48[7].start.vz = actor->size.vz;
+        D_80285B48[7].end.vx = -actor->size.vx;
+        D_80285B48[7].end.vz = -actor->size.vz;
+        D_80285B48[7].start.vy = -actor->size.vy;
+        D_80285B48[7].end.vy = -actor->size.vy;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/debug595/asm/nonmatchings/debug595", func_802819DC);
+/* Print a four-component record. */
+void func_80281994(s16 *v) {
+    if (D_800C268C != 1) {
+        func_800379C8("REC %07d %07d %07d %07d\n", v[0], v[1], v[2], v[3]);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/debug595/asm/nonmatchings/debug595", func_80281A78);
+/* Print a matrix row by row with its translation. */
+void func_802819DC(MATRIX *m) {
+    if (D_800C268C != 1) {
+        func_800379C8("MTX %06d %06d %06d %06d\n", m->m[0][0], m->m[0][1], m->m[0][2], m->t[0]);
+        func_800379C8("    %06d %06d %06d %06d\n", m->m[1][0], m->m[1][1], m->m[1][2], m->t[1]);
+        func_800379C8("    %06d %06d %06d %06d\n", m->m[2][0], m->m[2][1], m->m[2][2], m->t[2]);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/debug595/asm/nonmatchings/debug595", func_80281ABC);
+/* Print a long vector. */
+void func_80281A78(VECTOR *v) {
+    if (D_800C268C != 1) {
+        func_800379C8("VEC  %d %d %d\n", v->vx, v->vy, v->vz);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/debug595/asm/nonmatchings/debug595", func_80281B00);
+/* Print a short vector. */
+void func_80281ABC(SVECTOR *v) {
+    if (D_800C268C != 1) {
+        func_800379C8("SVEC %d %d %d\n", v->vx, v->vy, v->vz);
+    }
+}
+
+/* Record the scanlines spent since the last mark under `name` for the CPU-time screen. */
+void func_80281B00(char *name) {
+    s32 now;
+
+    if (D_800C268C == 0) {
+        now = VSync(1);
+        D_802859AC[D_802859A4].time = now - D_800ADB9C;
+        D_802859AC[D_802859A4].name = name;
+        D_802859A4++;
+        D_800ADB9C = VSync(1);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/debug595/asm/nonmatchings/debug595", func_80281B90);
 
