@@ -5,7 +5,8 @@
 #include "heap.h"
 
 extern void func_8003747C(s32 arg);
-extern void func_800324B8(s32 kind);
+extern void func_800324B8(s16 kind);
+extern void func_800320B8(void *data);
 extern void func_80031A30(void);
 extern void func_80031FF8(void);
 extern void func_8003223C(void);
@@ -191,16 +192,16 @@ void func_80031FF8(void) {
 }
 
 /* Protect a block from release. */
-void func_800320A4(u8 *data) {
+void func_800320A4(void *data) {
     HEAP_HEADER(data)->keep = 1;
 }
 
 /* Allow a block's release again. */
-void func_800320B8(u8 *data) {
+void func_800320B8(void *data) {
     HEAP_HEADER(data)->keep = 0;
 }
 
-void func_800320D0(u8 *data) {
+void func_800320D0(void *data) {
     HEAP_HEADER(data)->keep = 0;
 }
 
@@ -229,23 +230,129 @@ s32 func_800320E8(void *data) {
     return 0;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_8003218C);
+/* Release every block with owner tag `tag`. */
+void func_8003218C(u8 tag) {
+    HeapHeader *header;
+    HeapHeader *current;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_8003223C);
+    for (header = HEAP_HEADER(D_80059320); header->tag != 1;) {
+        if (header->tag == tag) {
+            current = header;
+            header = HEAP_HEADER(header->next);
+            func_800320E8(current + 1);
+        } else {
+            header = HEAP_HEADER(header->next);
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_800322B4);
+/* Release every block. */
+void func_8003223C(void) {
+    HeapHeader *header;
+    HeapHeader *current;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_80032340);
+    for (header = HEAP_HEADER(D_80059320); header->tag != 1;) {
+        current = header;
+        header = HEAP_HEADER(current->next);
+        func_800320E8(current + 1);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_800323B4);
+/* Release every block, protected ones included. */
+void func_800322B4(void) {
+    HeapHeader *header;
+    HeapHeader *current;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_80032404);
+    for (header = HEAP_HEADER(D_80059320); header->tag != 1;) {
+        current = header;
+        header = HEAP_HEADER(current->next);
+        func_800320B8(current + 1);
+        func_800320E8(current + 1);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_80032498);
+/* Total usable bytes in free blocks. */
+s32 func_80032340(void) {
+    HeapHeader *header;
+    s32 total = 0;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_800324B8);
+    for (header = HEAP_HEADER(D_80059320); header->tag != 1; header = HEAP_HEADER(header->next)) {
+        if (header->tag == 0) {
+            total += header->next - (u8 *)header - 0x10;
+        }
+    }
+    return total;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_800324C4);
+/* Walk the block list (its report output is compiled out). */
+s32 func_800323B4(void) {
+    HeapHeader *header;
+
+    for (header = HEAP_HEADER(D_80059320); header->tag != 1; header = HEAP_HEADER(header->next)) {
+    }
+    return 0;
+}
+
+/* Usable bytes of the largest free block, less a header. */
+u32 func_80032404(void) {
+    HeapHeader *header;
+    u32 largest = 0;
+    u32 size;
+
+    for (header = HEAP_HEADER(D_80059320); header->tag != 1; header = HEAP_HEADER(header->next)) {
+        if (header->tag == 0) {
+            size = header->next - (u8 *)header - 0x10;
+            if (largest < size) {
+                largest = size;
+            }
+        }
+    }
+    if (largest < 8) {
+        largest = 8;
+    }
+    return largest - 8;
+}
+
+/* Select owner tag `tag` for the next blocks and record `value` for it. */
+void func_80032498(s32 tag, s32 value) {
+    D_8005931C = tag;
+    D_80059FA4[tag] = value;
+    D_80059330 = 0;
+}
+
+/* Allocation class of the next block. */
+void func_800324B8(s16 kind) {
+    D_80059318 = kind;
+}
+
+/* Copy into `out` the name of the last symbol below `address` from the
+ * loaded symbol data (entries: little-endian address, length, name). */
+void func_800324C4(u32 address, char *out) {
+    u8 *p = D_80059334 + 4;
+    u8 *entry;
+    u32 value;
+    u32 length;
+
+    if (p != NULL) {
+        while (p < D_80059338) {
+            value = *p++;
+            value |= *p++ << 8;
+            value |= *p++ << 16;
+            value |= *p++ << 24;
+            if (value >= address) {
+                break;
+            }
+            entry = p;
+            length = *p++;
+            p += length;
+        }
+        length = *entry++;
+        while (length-- != 0) {
+            *out++ = *entry++;
+        }
+    }
+    *out = 0;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_80032584);
 
