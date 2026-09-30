@@ -1,16 +1,135 @@
+/* ovl3087 (Disc 1 slot 3087 / Disc 2 slot 3082), loaded at 801e5000: the
+ * battle event script interpreter. The battle overlay loads it (80070e2c,
+ * file list entry 1 through 800295d8) only when the formation sets
+ * 800c3d48 (formation flag 0x20), then calls 801e5160 once to load the
+ * script files and set up the threads, 801e879c every frame to run the
+ * script threads, and 801e563c at the end to release everything. Opcode
+ * handlers use the battle overlay's actor, camera and message services
+ * (8007xxxx-800cxxxx) and resident file/heap/sound helpers. */
 #include "ovl3087.h"
 
 INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E5160);
 
 INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E563C);
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E5768);
+/* Make the thread's highest occupied level current; return its pc. */
+u16 func_801E5768(ScriptThread *thread) {
+    s32 i;
+    s32 level;
+    u32 free;
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E57C4);
+    i = 0;
+    free = 0xFF;
+    for (; i < 8; i++) {
+        if (thread->priority[i] < free) {
+            level = i;
+        }
+    }
+    thread->level = level;
+    thread->levelCaller = thread->caller[level];
+    return thread->pc[level];
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E57F8);
+/* First free level above the base level (8 when none is free). */
+u16 func_801E57C4(ScriptThread *thread) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E58EC);
+    for (i = 1; i < 8; i++) {
+        if (thread->priority[i] == 0xFF) {
+            break;
+        }
+    }
+    return i;
+}
+
+/* Decode count 16-bit operands following the opcode into the operand
+ * slots. Each is an immediate when its bit (from 0x80 down) is set in
+ * immediateMask, otherwise a variable offset. In the signed form bit 15
+ * marks an immediate instead. */
+void func_801E57F8(u8 *insn, u8 count, u8 immediateMask, u8 signedForm) {
+    s32 i;
+    s16 raw;
+
+    for (i = 0; i < count; i++) {
+        if (signedForm) {
+            raw = insn[i * 2 + 1] + (insn[i * 2 + 2] << 8);
+            if (raw & 0x8000) {
+                D_800D3278->operands[i] = raw & 0x7FFF;
+            } else {
+                D_800D3278->operands[i] = D_800D3278->vars[(s16)(raw / 2)];
+            }
+        } else if ((immediateMask << i) & 0x80) {
+            D_800D3278->operands[i] = insn[i * 2 + 1] + (insn[i * 2 + 2] << 8);
+        } else {
+            D_800D3278->operands[i] =
+                SCRIPT_VAR(D_800D3278, (insn[i * 2 + 2] << 8) | insn[i * 2 + 1]);
+        }
+    }
+}
+
+/* Compare two script values with condition op (low four bits). */
+u8 func_801E58EC(s16 a, s16 b, u8 op) {
+    s32 result = 0;
+
+    switch (op & 0xF) {
+    case 0:
+        if (a == b) {
+            result = 1;
+        }
+        break;
+    case 1:
+        if (a != b) {
+            result = 1;
+        }
+        break;
+    case 2:
+        if (a > b) {
+            result = 1;
+        }
+        break;
+    case 3:
+        if (a < b) {
+            result = 1;
+        }
+        break;
+    case 4:
+        if (a >= b) {
+            result = 1;
+        }
+        break;
+    case 5:
+        if (a <= b) {
+            result = 1;
+        }
+        break;
+    case 6:
+        if (a & b) {
+            result = 1;
+        }
+        break;
+    case 7:
+        if (a != b) {
+            result = 1;
+        }
+        break;
+    case 8:
+        if (a | b) {
+            result = 1;
+        }
+        break;
+    case 9:
+        if (func_80089C9C((u16)a, (u8)b)) {
+            result = 1;
+        }
+        break;
+    case 10:
+        if (!func_80089C9C((u16)a, (u8)b)) {
+            result = 1;
+        }
+        break;
+    }
+    return result;
+}
 
 INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E5A98);
 
