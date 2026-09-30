@@ -2906,7 +2906,69 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009F844);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A0838);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A1B50);
+/* Apply an animation frame to a hierarchy's parts: the listed rotations (unless
+ * flag 1) and translations (unless flag 2), marking each changed part; parts
+ * with a persistent effect attached keep theirs. The frame holds halfwords:
+ * [2] flags, [3] base flag, [6] rotation count, [7] translation count, then
+ * from [12] (x, y, z) triples, after the base rotations when [3] is 0.
+ * Returns the part count less the root. */
+u16 func_800A1B50(ModelPart *root, s16 *data) {
+    u16 rotations;
+    u16 translations;
+    u16 rotationCount;
+    u16 translationCount;
+    u16 flags;
+    ModelPart *part;
+    u16 count;
+    s32 i;
+    s32 x;
+    s32 y;
+    s32 z;
+
+    rotations = 0;
+    translations = 0;
+    i = data[3]; /* the base flag */
+    rotationCount = data[6];
+    translationCount = data[7];
+    flags = data[2];
+    data += 12;
+    if (i == 0) {
+        data += (rotationCount + 1) * 3;
+    }
+    count = root->index - 1;
+    part = root;
+    for (i = 0; i < count; i++) {
+        part++;
+        if (!(flags & 1) && rotations < rotationCount) {
+            x = *data++;
+            y = *data++;
+            z = *data++;
+            rotations++;
+            if ((part->rotation.vx != x || part->rotation.vy != y || part->rotation.vz != z)
+                && (part->effects[0] == NULL || part->effects[0]->kind != 0xFF)) {
+                part->rotation.vx = x;
+                part->rotation.vy = y;
+                part->rotation.vz = z;
+                part->flag4 = 1;
+                part->flag5 = 1;
+            }
+        }
+        if (!(flags & 2) && translations < translationCount) {
+            x = *data++;
+            y = *data++;
+            z = *data++;
+            translations++;
+            if ((part->translation[0] != x || part->translation[1] != y || part->translation[2] != z)
+                && (part->effects[1] == NULL || part->effects[1]->kind != 0xFF)) {
+                part->translation[0] = x;
+                part->translation[1] = y;
+                part->translation[2] = z;
+                part->flag4 = 1;
+            }
+        }
+    }
+    return count;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A1CF4);
 
