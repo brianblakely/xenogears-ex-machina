@@ -77,11 +77,42 @@ typedef struct {
 /* A variable addressed by its byte offset in the variable area. */
 #define SCRIPT_VAR(state, offset) \
     (*(u16 *)((u8 *)(state)->vars + ((offset) & 0xFFFE)))
+/* The variable named by the instruction's first operand. */
+#define INSN_VAR(insn) SCRIPT_VAR(D_800D3278, ((insn)[2] << 8) | (insn)[1])
 
 extern ScriptState *D_800D3278;
 extern ScriptFile *D_800D39D0;
 
+/* Battle graphics state (pointer 800c3ea4): one portrait quad per draw
+ * buffer at 0x27c8. */
+typedef struct {
+    u8 pad0[0x27C8];
+    PolyFT4 portrait[2];
+} BattleGraphics;
+
+/* Battle UI state (pointer 800d2d28), only the fields this module uses. */
+typedef struct {
+    u8 pad0[0x9E];
+    u8 portraitShown; /* 0x9e */
+    u8 pad9F[8];
+    u8 portraitBuffer; /* 0xa7 */
+    u8 padA8[0x22];
+    u8 unkCA;
+    u8 padCB[4];
+    u8 unkCF;
+    u8 padD0[0x30];
+    s32 portraitHandle; /* 0x100 */
+} BattleUi;
+
+extern BattleGraphics *D_800C3EA4;
+extern BattleUi *D_800D2D28;
+extern s32 D_800CCB34; /* current draw buffer */
+extern u8 D_800D2D24[3]; /* battle party character ids (0xff none) */
+extern s32 D_801E9C1C;
+
 /* Resident / battle services. */
+s32 func_80076A10(s32 id, PolyFT4 *quads, s16 x, s16 y);
+u16 func_80089B50(u16 low, u16 high);
 u16 func_80089C9C(u16 flag, u8 bit);
 
 /* This module. */

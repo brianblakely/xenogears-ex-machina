@@ -131,13 +131,72 @@ u8 func_801E58EC(s16 a, s16 b, u8 op) {
     return result;
 }
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E5A98);
+/* Battle slot of a script actor id: party characters (ids below 16) by
+ * their position in the party, enemies as id - 13. */
+u8 func_801E5A98(s32 id) {
+    s32 slot = 0;
+    s32 i;
 
+    if ((u8)id < 16) {
+        for (i = 0; i < 3; i++) {
+            if (D_800D2D24[i] != 0xFF && D_800D2D24[i] == (u8)id) {
+                slot = i;
+                break;
+            }
+        }
+    } else {
+        slot = id - 13;
+    }
+    return slot;
+}
+
+#ifdef NON_MATCHING
+/* Show the next of five portraits at (x, y) and mirror the current
+ * buffer's quad horizontally by swapping its second and third vertices.
+ * (The original reloads the buffer index after every store.) */
+void func_801E5B00(s16 x, s16 y) {
+    BattleGraphics *graphics;
+    s16 x1;
+    s16 y1;
+
+    if (--D_801E9C1C < 0) {
+        D_801E9C1C = 4;
+    }
+    D_800D2D28->portraitHandle =
+        func_80076A10(D_801E9C1C + 0xE0, D_800C3EA4->portrait, x, y);
+    graphics = D_800C3EA4;
+    x1 = graphics->portrait[D_800CCB34].x1;
+    graphics->portrait[D_800CCB34].x1 = graphics->portrait[D_800CCB34].x2;
+    y1 = graphics->portrait[D_800CCB34].y1;
+    graphics->portrait[D_800CCB34].y1 = graphics->portrait[D_800CCB34].y2;
+    graphics->portrait[D_800CCB34].x2 = x1;
+    graphics->portrait[D_800CCB34].y2 = y1;
+    D_800D2D28->portraitBuffer = D_800CCB34;
+    D_800D2D28->portraitShown = 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E5B00);
+#endif
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E5C1C);
+/* Opcode 00 (end): drop the running level and restart the thread's base
+ * level at its idle entry. Yields. */
+s32 func_801E5C1C(s32 thread) {
+    D_800D3278->threads[thread].caller[D_800D3278->threads[thread].level] = 0xFF;
+    D_800D3278->threads[thread].priority[D_800D3278->threads[thread].level] = 0xFF;
+    D_800D3278->threads[thread].pc[D_800D3278->threads[thread].level] = 0xFFFF;
+    D_800D3278->threads[thread].caller[0] = 1;
+    D_800D3278->threads[thread].level = 0;
+    D_800D3278->threads[thread].priority[0] = 7;
+    D_800D3278->threads[thread].pc[0] = D_800D39D0->entries[thread].entry[1];
+    D_800D3278->threads[thread].waitThread = 0xFF;
+    return 0;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E5CE4);
+/* Opcode 01 (jump): continue the running level at the operand. */
+s32 func_801E5CE4(s32 thread, u8 *insn) {
+    D_800D3278->threads[thread].pc[D_800D3278->threads[thread].level] = insn[1] + (insn[2] << 8);
+    return 0;
+}
 
 INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E5D24);
 
@@ -147,41 +206,129 @@ INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E5EF8);
 
 INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E5F8C);
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E6084);
+/* Opcode 06: var = value. */
+s32 func_801E6084(s32 thread, u8 *insn) {
+    func_801E57F8(insn, 2, insn[5], 0);
+    INSN_VAR(insn) = D_800D3278->operands[1];
+    return 6;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E60E8);
+/* Opcode 07: var = 1. */
+s32 func_801E60E8(s32 thread, u8 *insn) {
+    INSN_VAR(insn) = 1;
+    return 3;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E6118);
+/* Opcode 08: var = 0. */
+s32 func_801E6118(s32 thread, u8 *insn) {
+    INSN_VAR(insn) = 0;
+    return 3;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E6144);
+/* Opcode 09: var += value. */
+s32 func_801E6144(s32 thread, u8 *insn) {
+    func_801E57F8(insn, 2, insn[5], 0);
+    INSN_VAR(insn) += D_800D3278->operands[1];
+    return 6;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E61B4);
+/* Opcode 0a: var -= value. */
+s32 func_801E61B4(s32 thread, u8 *insn) {
+    func_801E57F8(insn, 2, insn[5], 0);
+    INSN_VAR(insn) -= D_800D3278->operands[1];
+    return 6;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E6224);
+/* Opcode 0b: var |= value. */
+s32 func_801E6224(s32 thread, u8 *insn) {
+    func_801E57F8(insn, 2, insn[5], 0);
+    INSN_VAR(insn) |= D_800D3278->operands[1];
+    return 6;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E6294);
+/* Opcode 0c: var &= ~value. */
+s32 func_801E6294(s32 thread, u8 *insn) {
+    func_801E57F8(insn, 2, insn[5], 0);
+    INSN_VAR(insn) &= ~D_800D3278->operands[1];
+    return 6;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E6304);
+/* Opcode 0d: var++. */
+s32 func_801E6304(s32 thread, u8 *insn) {
+    INSN_VAR(insn)++;
+    return 3;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E633C);
+/* Opcode 0e: var--. */
+s32 func_801E633C(s32 thread, u8 *insn) {
+    INSN_VAR(insn)--;
+    return 3;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E6374);
+/* Opcode 0f: var &= value. */
+s32 func_801E6374(s32 thread, u8 *insn) {
+    func_801E57F8(insn, 2, insn[5], 0);
+    INSN_VAR(insn) &= D_800D3278->operands[1];
+    return 6;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E63E4);
+/* Opcode 10: var |= value. */
+s32 func_801E63E4(s32 thread, u8 *insn) {
+    func_801E57F8(insn, 2, insn[5], 0);
+    INSN_VAR(insn) |= D_800D3278->operands[1];
+    return 6;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E6454);
+/* Opcode 11: var ^= value. */
+s32 func_801E6454(s32 thread, u8 *insn) {
+    func_801E57F8(insn, 2, insn[5], 0);
+    INSN_VAR(insn) ^= D_800D3278->operands[1];
+    return 6;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E64C4);
+/* Opcode 12: var <<= count. */
+s32 func_801E64C4(s32 thread, u8 *insn) {
+    s32 index = ((insn[2] << 8) | insn[1]) >> 1;
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E6534);
+    func_801E57F8(insn, 2, 0, 0);
+    D_800D3278->vars[index] <<= D_800D3278->operands[1];
+    return 5;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E65A4);
+/* Opcode 13: var >>= count. */
+s32 func_801E6534(s32 thread, u8 *insn) {
+    s32 index = ((insn[2] << 8) | insn[1]) >> 1;
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E65FC);
+    func_801E57F8(insn, 2, 0, 0);
+    D_800D3278->vars[index] >>= D_800D3278->operands[1];
+    return 5;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E6660);
+/* Opcode 14: var = random 0..7fff. */
+s32 func_801E65A4(s32 thread, u8 *insn) {
+    INSN_VAR(insn) = func_80089B50(0, 0x7FFF);
+    return 3;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E66D8);
+/* Opcode 15: var (second operand) = random 0..limit. */
+s32 func_801E65FC(s32 thread, u8 *insn) {
+    SCRIPT_VAR(D_800D3278, (insn[4] << 8) | insn[3]) = func_80089B50(0, insn[1] | (insn[2] << 8));
+    return 5;
+}
+
+/* Opcode 16: var = a * b. */
+s32 func_801E6660(s32 thread, u8 *insn) {
+    func_801E57F8(insn, 2, insn[5], 0);
+    INSN_VAR(insn) = D_800D3278->operands[0] * D_800D3278->operands[1];
+    return 6;
+}
+
+/* Opcode 17: var = a / b (signed). */
+s32 func_801E66D8(s32 thread, u8 *insn) {
+    func_801E57F8(insn, 2, insn[5], 0);
+    INSN_VAR(insn) = (s32)D_800D3278->operands[0] / (s32)D_800D3278->operands[1];
+    return 6;
+}
 
 INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E6750);
 
