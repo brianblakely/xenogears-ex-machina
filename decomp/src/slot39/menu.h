@@ -374,12 +374,13 @@ typedef struct GearSlot {
     u8 pad5[0x3];
 } GearSlot;
 
-/* A gear weapon record of the data tables (+18). */
+/* A gear weapon (or special part) record of the data tables (+18). */
 typedef struct GearWeapon {
     u8 attrs[4]; /* 0 */
-    u8 pad4[0xA];
+    u32 users; /* 4: gears that can equip it */
+    u8 pad8[0x6];
     u8 unkE; /* E */
-    u8 padF[0x1];
+    u8 kind; /* F */
     u8 unk10; /* 10 */
     u8 unk11; /* 11 */
     u16 unk12; /* 12 */
@@ -398,9 +399,12 @@ typedef struct MenuItem {
     u8 padE[0x2];
 } MenuItem;
 
-/* A weapon record of the data tables (+0). */
+/* A weapon (or special part) record of the data tables (+0). */
 typedef struct MenuWeapon {
-    u8 pad0[0x8];
+    u16 users; /* 0: characters that can equip it (bit per character) */
+    u8 pad2[0x4];
+    u8 kind; /* 6: weapon class; special parts share their weapon's */
+    u8 pad7[0x1];
     u16 value; /* 8 */
     u8 a; /* A */
     u8 b; /* B */
@@ -410,13 +414,22 @@ typedef struct MenuWeapon {
 
 /* An accessory record of the data tables (+4). */
 typedef struct MenuAccessory {
-    u8 pad0[0x8];
+    u16 users; /* 0 */
+    u8 pad2[0x6];
     u8 amount; /* 8: added to +2d */
     u8 kind; /* 9 */
     s16 value; /* A */
     s16 stats; /* C: bonuses raised by the amount */
-    u8 padE[0x2];
+    u16 groups; /* E: exclusive groups */
 } MenuAccessory;
+
+/* A gear accessory record of the data tables (+14). */
+typedef struct MenuGearAccessory {
+    u32 users; /* 0 */
+    u8 pad4[0x4];
+    u16 groups; /* 8 */
+    u8 padA[0x12];
+} MenuGearAccessory;
 
 /* The data table directory (*(state + 330)). */
 typedef struct MenuTables {
@@ -425,8 +438,8 @@ typedef struct MenuTables {
     GearEngine *engines; /* 8 */
     GearPart *parts; /* C */
     GearFrame *frames; /* 10 */
-    void *unk14; /* 14 */
-    GearWeapon *weapons18; /* 18: gear weapons */
+    MenuGearAccessory *gearAccessories; /* 14 */
+    GearWeapon *gearWeapons; /* 18 */
     MenuItem *items; /* 1C */
     MenuEffect *effects[31]; /* 20: per character, then per gear from 11 */
     u32 unk9C; /* 9C: gear stats (801e3c2c) */
@@ -1196,6 +1209,18 @@ extern s32 D_801EA16C[]; /* party window sprite y per row */
 extern s32 D_801EA17C[]; /* portrait panel x per mode */
 extern s32 D_801EA18C[]; /* portrait panel y per mode */
 extern s32 D_801EA578[]; /* character portrait u / 4 per slot */
+extern s32 D_801E9D78;    /* stat bar x offset */
+extern s32 D_801E9D7C;    /* stat bar y offset */
+extern s32 D_801E9D80;    /* stat digit x offset */
+extern s32 D_801E9D84;    /* stat digit y offset */
+extern s32 D_801E9D88[];
+extern s32 D_801E9DDC[];  /* arts list cost x positions */
+extern s32 D_801E9E14[];  /* arts list cost y positions */
+extern u16 D_801E97F0[];
+extern u8 D_801EA7F8[];  /* equipment list entry counts */  /* per character: arts usable from the menu */
+extern u16 D_8006ECF6[];  /* game data: per character (32 bytes): arts known */
+extern u16 D_8006ECFA[];
+extern u16 D_8006ED0E[];  /* part panel row y positions */
 extern s32 D_801EA584[]; /* gear portrait u / 4 per slot */
 extern s32 D_801EA5C4[]; /* character portrait v per slot */
 extern u16 D_80059414;   /* portrait palette of odd images */
@@ -1427,6 +1452,13 @@ void func_8003852C(void *bank);
 void func_8003A094(void *bank);
 
 s32 func_80028530(void);
+u8 *func_800337E8(u8 id);
+u8 *func_80033908(s32 index); /* art name */
+u8 *func_800339FC(s32 index); /* gear art name */
+u8 *func_80033A8C(s32 index); /* gear special art name */  /* accessory name */
+u8 *func_80033848(u8 id);  /* weapon name */
+u8 *func_80033A2C(u8 id);  /* gear accessory name */
+u8 *func_80033A5C(u8 id);  /* gear part name */
 u8 *func_80033728(u8 *table, s32 index); /* message of a table */
 u8 *func_80033818(u8 item);  /* item name text */
 u8 func_80034EAC(u8 *text, void *pixels, s32 width, s32 line); /* render a text line; its width */
@@ -1441,6 +1473,7 @@ void func_801C6400(void);
 void func_801C65F4(void);
 void func_801C6AA0(MenuState *state);
 u16 func_801C865C(u16 flags, u8 bit);
+u32 func_801C8678(u32 flags, u8 bit);
 void func_801C6D4C(void);
 void func_801C6D5C(void);
 void func_801C6D90(void);
@@ -1644,9 +1677,9 @@ void func_801D7884(u8 slot, u8 mode);
 void func_801D7C3C(u8 slot, u8 mode);
 void func_801D7CFC(u8 slot, u8 mode, u8 arg2);
 void func_801D7F50(s32 x, s32 y, u8 mode);
-void func_801D8644(u8 slot, s32 x, s32 y, u8 arg3, u8 mode);
+void func_801D8644(s32 scale, s32 x, s32 y, u8 compare, u8 first);
 void func_801D8DE4(u8 slot, u8 lower, u8 arg2, u8 mode);
-void func_801D8EA4(u8 slot, u8 lower, u8 arg2, u8 mode);
+void func_801D8EA4(u8 slot, u8 mode, u8 kept, u8 gear);
 void func_801D5BA4(s32 x, s32 y);
 void func_801D5CF8(s32 x, s32 y);
 void func_801D32B4(void);
