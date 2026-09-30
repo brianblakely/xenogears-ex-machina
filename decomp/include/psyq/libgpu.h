@@ -148,6 +148,7 @@ typedef struct {
 #define setRGB1(p, _r1, _g1, _b1) ((p)->r1 = _r1, (p)->g1 = _g1, (p)->b1 = _b1)
 #define setRGB2(p, _r2, _g2, _b2) ((p)->r2 = _r2, (p)->g2 = _g2, (p)->b2 = _b2)
 #define setRGB3(p, _r3, _g3, _b3) ((p)->r3 = _r3, (p)->g3 = _g3, (p)->b3 = _b3)
+#define setWH(p, _w, _h) (p)->w = _w, (p)->h = _h
 #define setUV4(p, _u0, _v0, _u1, _v1, _u2, _v2, _u3, _v3) \
     (p)->u0 = _u0, (p)->v0 = _v0, (p)->u1 = _u1, (p)->v1 = _v1, \
     (p)->u2 = _u2, (p)->v2 = _v2, (p)->u3 = _u3, (p)->v3 = _v3
@@ -159,7 +160,9 @@ typedef struct {
 #define setShadeTex(p, tge) \
     ((tge) ? setcode(p, getcode(p) | 0x01) : setcode(p, getcode(p) & ~0x01))
 #define setPolyFT4(p) setlen(p, 9), setcode(p, 0x2c)
+#define setPolyG3(p) setlen(p, 6), setcode(p, 0x30)
 #define setPolyG4(p) setlen(p, 8), setcode(p, 0x38)
+#define setTile(p) setlen(p, 3), setcode(p, 0x60)
 #define setSprt(p) setlen(p, 4), setcode(p, 0x64)
 #define addPrim(ot, p) setaddr(p, getaddr(ot)), setaddr(ot, p)
 
