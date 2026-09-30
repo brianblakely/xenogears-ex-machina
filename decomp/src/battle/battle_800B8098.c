@@ -715,7 +715,85 @@ void func_800B9C00(sprite, other)
     func_800B9B54(sprite, other);
 }
 
+#ifdef NON_MATCHING
+/* Step the current event of a gear's turn (after any delay): control events
+ * (800B9284), 0xF4 sets the command sound and step, 0xFB swaps stage
+ * objects, 0xFC sets a stage object's byte, 0xFD/0xF9 and commands run
+ * 800AA320 on the event's targets, 0xFE turns the turn's slot to them and
+ * ends (state 10), 0xFF ends (state 9). Nonmatching: the original keeps
+ * slot in s2 and type in s3; here they are swapped. */
+void func_800B9C78(void) {
+    s32 slot;
+    BattleSprite *sprite;
+    s32 type;
+    s32 parameter;
+    s32 event;
+
+    if (D_800C3614 != 0) {
+        D_800C3614--;
+        return;
+    }
+    func_800BF9EC();
+    func_800BEFF4(BATTLE_AREA.events[D_800C360C].actor);
+    func_800BF3E8(D_800C3610->sprite);
+    slot = D_800C3610->slot;
+    sprite = BATTLE_AREA.sprites[slot];
+    type = BATTLE_AREA.events[D_800C360C].type;
+    func_800BF0B4(8);
+    if (D_800C3610->field4A) {
+        AREA_BYTE_A73 = 0;
+    }
+    D_800C3610->field4A = 0;
+    switch (type) {
+    case 0xFF:
+        func_800BF0B4(9);
+        return;
+    case 0xFE:
+        func_800B8354();
+        func_800BEE2C(D_800C3610->turnSlot, BATTLE_AREA.events[D_800C360C].targetMask, 4);
+        func_800BF0B4(10);
+        return;
+    case 0xFC:
+        func_800AA760(slot, BATTLE_AREA.events[D_800C360C].parameter);
+        func_800BF0B4(9);
+        D_800C360C++;
+        return;
+    case 0xFD:
+        func_800BEE2C(slot, BATTLE_AREA.events[D_800C360C++].targetMask, 2);
+        return;
+    case 0xF3:
+    case 0xF5:
+    case 0xF6:
+    case 0xF7:
+    case 0xF8:
+    case 0xFA:
+        func_800B9284(sprite, type);
+        func_800BF0B4(9);
+        D_800C360C++;
+        return;
+    case 0xFB:
+        func_800BF0B4(9);
+        func_800AA79C(SPRITE_SLOT(sprite), BATTLE_AREA.events[D_800C360C].parameter);
+        D_800C360C++;
+        return;
+    case 0xF4:
+        func_800BF0B4(9);
+        event = D_800C360C;
+        D_800C360C = event + 1;
+        parameter = BATTLE_AREA.events[event].parameter;
+        D_800C3DF0 = (parameter >> 9) & 0x3F;
+        D_800D39E4 = parameter & 0x1FF;
+        return;
+    default:
+        D_800C3610->field4A = 1;
+        func_800B8048(sprite);
+        func_800BEE2C(slot, BATTLE_AREA.events[D_800C360C++].targetMask, type);
+        return;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800B9C78);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800B9F78);
 
