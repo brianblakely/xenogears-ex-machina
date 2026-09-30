@@ -26,7 +26,8 @@ CC_sound := 2.6.3
 # (ASPSX 2.50+; the rest of the game code uses `ori`, the default 2.34) and
 # addresses the small globals it defines through $gp (as small commons, so
 # maspsx knows them). Other units' small globals it addresses absolutely
-# although GCC declares them small (`.extern name, size`).
+# although GCC declares them small (`.extern name, size`), and it takes
+# addresses (`la`) absolutely.
 CC_sprite := 2.7.2-cdk
 GP_sprite := 8
 MASPSX_sprite := --aspsx-version=2.79 --use-comm-section

@@ -31,8 +31,8 @@ u_long *D_800592F4;           /* LoadImage pixels for 80022a0c */
 s32 D_800592F8;               /* the queue being filled (0 or 1) */
 s32 D_800592FC;               /* bytes of the queue entry block / 2 */
 SpriteQueueEntry *D_80059300[2]; /* the two queues */
-u8 *D_800594B4;               /* the queue entry block */
-s32 D_800594C4;
+u8 *D_800594B4;               /* the first queue's entry block (the second's follows) */
+ImageUpload *D_800594C4;      /* the upload list of the first queue (the second follows) */
 SpriteQueueEntry *D_80059580; /* the next free queue entry */
 u8 *D_80059524;                /* the queue block being filled */
 u8 *D_80059534;                /* its end */
@@ -874,7 +874,7 @@ void func_80024F64(s32 size, s32 mode) {
     D_800594B8 = D_800594B4 + size;
     D_80059300[1] = NULL;
     D_80059300[0] = NULL;
-    D_800594C4 = 0;
+    D_800594C4 = NULL;
     func_8001D298();
 }
 
@@ -893,13 +893,40 @@ void func_80024FF4(MATRIX *view) {
     D_8004FBB8 = *view;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80025044);
+/* Run the uploads queued on the queue being filled and empty its list. */
+void func_80025044(void) {
+    ImageUpload *upload;
 
+    for (upload = (&D_800594C4)[D_800592F8]; upload != NULL; upload = upload->next) {
+        if (upload->pixels != NULL) {
+            LoadImage(&upload->rect, upload->pixels);
+        } else {
+            ClearImage(&upload->rect, 0, 0, 0);
+        }
+    }
+    (&D_800594C4)[D_800592F8] = NULL;
+}
+
+/* Start filling queue `queue`: its entry block becomes the free space, and
+ * the blocks its entries hold are released. */
+/* Nonmatching: the original computes the index before the entry array's address. */
+#ifdef NON_MATCHING
+void func_800250E0(s32 queue) {
+    SpriteQueueEntry *entry = D_80059300[queue];
+
+    D_800592F8 = queue;
+    D_80059580 = (SpriteQueueEntry *)(D_80059524 = (&D_800594B4)[queue]);
+    D_80059534 = D_80059524 + D_800592FC;
+    for (; entry != NULL; entry = entry->next) {
+        func_800320E8((void *)entry->value);
+    }
+    D_80059300[queue] = NULL;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_800250E0);
+#endif
 
 /* Queue `value` on the queue being filled. */
-/* Nonmatching: the original takes the queue array's address with lui/addiu; GNU as makes that la $gp-relative (maspsx leaves la of small data to the assembler). */
-#ifdef NON_MATCHING
 void func_80025180(u32 value) {
     SpriteQueueEntry *entry = D_80059580;
 
@@ -910,11 +937,23 @@ void func_80025180(u32 value) {
         D_80059300[D_800592F8] = entry;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80025180);
-#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_800251C8);
+/* Queue an upload of `pixels` to (x, y, w, h) on the queue being filled
+ * (dropped when its block is full). */
+void func_800251C8(u_long *pixels, s16 x, s16 y, s16 w, s16 h) {
+    ImageUpload *upload = (ImageUpload *)D_80059580;
+
+    if ((u8 *)(upload + 1) < D_80059534) {
+        upload->rect.h = h;
+        upload->rect.x = x;
+        upload->rect.y = y;
+        upload->rect.w = w;
+        upload->pixels = pixels;
+        D_80059580 = (SpriteQueueEntry *)(upload + 1);
+        upload->next = (&D_800594C4)[D_800592F8];
+        (&D_800594C4)[D_800592F8] = upload;
+    }
+}
 
 /* Set a task's update callback from the table at 8004fd40. */
 void func_80025224(Task *task, s32 kind) {

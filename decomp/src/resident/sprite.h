@@ -268,6 +268,14 @@ extern u8 D_8005A474[];
 extern u8 *D_800594B8; /* end of the queue entry block */
 extern s32 D_800591B8;    /* extra argument of 80024524/8002435c for one call */
 
+/* A queued VRAM upload (LoadImage, or ClearImage without pixels), from the
+ * queue block; 80025044 runs the list of the queue being filled. */
+typedef struct ImageUpload {
+    RECT rect;
+    u_long *pixels;
+    struct ImageUpload *next;
+} ImageUpload;
+
 /* The point and draw-mode primitives 8002541c takes from the queue block. */
 typedef struct {
     u8 addr[3];
