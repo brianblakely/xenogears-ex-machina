@@ -76,7 +76,7 @@ typedef struct BattleSprite {
     s32 gravity;           /* 0x1C */
     SpriteView *view;      /* 0x20 */
     u8 *base;              /* 0x24: its resource block */
-    u8 pad28[0x2B - 0x28];
+    u8 colour[3];          /* 0x28 */
     u8 colourFlags;        /* 0x2B */
     s16 scale;             /* 0x2C */
     s16 depth;             /* 0x2E: ordering-table depth, 0 hidden */
@@ -222,6 +222,7 @@ typedef struct {
 s16 func_80023124(GroundPoint to, GroundPoint from); /* the direction between points */
 void func_80025A88();                      /* the resident sprite drawer */
 void func_800245D8(BattleSprite *sprite, s32 value);
+void func_8001F6B0(BattleSprite *sprite);
 
 
 /* Sprite script commands (800B3F04). */

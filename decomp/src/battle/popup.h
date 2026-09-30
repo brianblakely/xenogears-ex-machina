@@ -41,7 +41,7 @@ typedef struct {
     NumberPopup *popup; /* 0x04 */
 } PopupTask;
 
-extern s32 D_800D2D68;
+extern struct ActorTask *D_800D2D68; /* the running effect task */
 extern s32 D_800C374C;
 extern Matrix D_800C3760; /* the popups' view */
 extern s32 D_800C377C;    /* the projection distance when drawn */

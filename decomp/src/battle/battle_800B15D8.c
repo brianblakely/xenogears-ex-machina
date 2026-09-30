@@ -1190,17 +1190,32 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B74
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B7870);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B7C28);
+/* Clear D_800D2FDC. */
+void func_800B7C28(void) {
+    D_800D2FDC = 0;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B7C34);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B7E94);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B8048);
+/* Set the acting sprite of a single action. */
+void func_800B8048(BattleSprite *sprite) {
+    D_800C3E1C = sprite;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B8054);
+/* Request sound (run by the frame loop, 800B8068). */
+void func_800B8054(s32 sound) {
+    D_800591B4 = sound;
+    D_800591B1 = 0;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B8068);
+/* Run a requested sound command (800B7C34, 800B7E94) and mark it done. */
+void func_800B8068(s32 sound) {
+    func_800B7C34(sound);
+    func_800B7E94();
+    D_800591B1 = 1;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B8098);
 
@@ -1208,7 +1223,12 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B81
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B8284);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B8354);
+/* Run frames while the disc is busy. */
+void func_800B8354(void) {
+    while (func_800286CC() != 0) {
+        func_800BE790();
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B838C);
 
@@ -1216,7 +1236,22 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B85
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B8774);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B8840);
+/* Reset the battle's frame state, sprites, camera and effects. */
+void func_800B8840(void) {
+    D_800591AD = 1;
+    D_80059464 = 0;
+    D_800591AC = 0;
+    D_800591A8 = 0x2000;
+    func_800BED30();
+    func_800BE108();
+    func_8001C944();
+    func_800BB7F8();
+    func_80024F64(0x5000, 0);
+    func_800BCD8C();
+    func_800B7C28();
+    func_800B89F4();
+    D_80050104 = 0;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B88C4);
 
@@ -1225,25 +1260,56 @@ void func_800B89F4(void) {
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B89FC);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B8D04);
+/* Finish the battle's loads: wait for the disc (800B8354), start the
+ * requested loads (800BF9EC), run frames until D_80059464 is reached,
+ * then free the command file. */
+void func_800B8D04(void) {
+    func_800B8354();
+    func_800BF9EC();
+    while (D_80059464 != func_800BF720()) {
+        func_800BE790();
+    }
+    func_800BF3A4();
+    if (D_800C3618 != NULL) {
+        func_800320E8(D_800C3618);
+        D_800C3618 = NULL;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B8D7C);
+/* Stop 8002A498 and finish the loads (800B8D04). */
+void func_800B8D7C(void) {
+    func_8002A498(0);
+    func_800B8D04();
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B8DA4);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B8EBC);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B9020);
+/* Return the sprite to its idle motion. */
+void func_800B9020(BattleSprite *sprite) {
+    func_800245D8(sprite, sprite->idle.mode);
+    func_80021BF8(sprite, NULL);
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B905C);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B9258);
+/* Count a step of the battle menu (field34), when there is one. */
+void func_800B9258(void) {
+    if (D_800C3610 != NULL) {
+        D_800C3610->field34++;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B9284);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B9508);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B9B30);
+/* Mark the battle menu (field48) with its state. */
+void func_800B9B30(void) {
+    D_800C3610->field48 = 1;
+    D_800C3610->field49 = D_800C3610->state;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B9B54);
 
@@ -2256,11 +2322,35 @@ void func_800BC460(u32 mask) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BCAA4);
+/* Camera mode 4 (800BC2F0), unless effects are disabled. */
+void func_800BCAA4(void) {
+    if (D_800C37C8 == 0) {
+        func_800BC2F0(4);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BCAD0);
+/* Camera mode 1 (800BC2F0), unless effects are disabled. */
+void func_800BCAD0(void) {
+    if (D_800C37C8 == 0) {
+        func_800BC2F0(1);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BCAFC);
+/* Shade the sprite by the cosine of angle (0x80 plus half, at most 0xFF)
+ * and update it (8001F6B0). */
+void func_800BCAFC(BattleSprite *sprite, s32 angle) {
+    s32 level = func_8003F8B0(angle << 6) + 0x1000;
+
+    level >>= 6;
+    level += 0x80;
+    if (level >= 0x100) {
+        level = 0xFF;
+    }
+    sprite->colour[0] = level;
+    sprite->colour[1] = level;
+    sprite->colour[2] = level;
+    func_8001F6B0(sprite);
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BCB54);
 
@@ -2268,7 +2358,10 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BCB
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BCC60);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BCD8C);
+/* Clear the highlighted slots. */
+void func_800BCD8C(void) {
+    D_800C3D14 = 0;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BCD98);
 
@@ -2302,7 +2395,12 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BDC
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BDC78);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BDCF8);
+/* End the effect task D_800D2D68 (task): its draw task and itself. */
+void func_800BDCF8(ActorTask *task) {
+    D_800D2D68 = NULL;
+    func_8001CB48(&task->draw);
+    func_8001CD94(task);
+}
 
 void func_800BDD34(void) {
 }
@@ -2313,7 +2411,12 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BDE
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BDF1C);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BE0DC);
+/* End the effect task D_800D2D68 (800BDCF8), if any. */
+void func_800BE0DC(void) {
+    if (D_800D2D68 != NULL) {
+        func_800BDCF8(D_800D2D68);
+    }
+}
 
 /* Clear D_800D2D68 and D_800C374C. */
 void func_800BE108(void) {
