@@ -2201,15 +2201,100 @@ INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CDD14);
 
 INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CE480);
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CE8D8);
+/* The count held of item `id` in an inventory of `n` ids and counts (0 if absent). */
+u16 func_801CE8D8(u8 *ids, u8 *counts, s32 n, u8 id) {
+    u8 count;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CE91C);
+    count = 0;
+    for (i = 0; i < n; i++) {
+        if (ids[i] == id) {
+            count = counts[i];
+            break;
+        }
+    }
+    return count;
+}
+
+/* Show how many of item `id` the party holds in inventory `kind` (label beside the list). */
+void func_801CE91C(u8 kind, u8 id) {
+    RECT rect;
+    u8 codes[4];
+    u8 text[8];
+    u8 *ids;
+    u8 *counts;
+    s32 n;
+    u8 *pixels;
+    u16 count;
+
+    switch (kind) {
+    case 0:
+        ids = D_8006F3D0;
+        counts = ids - 100;
+        n = 100;
+        break;
+    case 1:
+        ids = D_8006F4FC;
+        counts = ids - 200;
+        n = 200;
+        break;
+    case 2:
+        ids = D_8006F65A;
+        counts = ids - 150;
+        n = 150;
+        break;
+    }
+    count = func_801CE8D8(ids, counts, n, id);
+    D_801D2260 = count;
+    pixels = func_80031BDC(0x3F6, 0);
+    codes[1] = 0;
+    codes[3] = 0;
+    if (count / 10) {
+        codes[0] = count / 10 + 0x10;
+    } else {
+        codes[0] = 0xC3;
+    }
+    codes[2] = count % 10 + 0x10;
+    func_80033B34(codes, text, 2);
+    D_800625A0->details->label45B0.width = func_80034EAC(text, pixels, 0x24, 1);
+    rect.x = 0x198;
+    rect.y = 0xB4;
+    rect.w = 0x28;
+    rect.h = 13;
+    func_80044894(&rect, pixels);
+    func_800445D0(0);
+    func_801C5A7C(&D_800625A0->details->label45B0, 9, 0x80, 0x82);
+    func_801C6E90(D_800625A0->details->label45B0.quad, 0xF8, 0x8E, D_800625A0->details->label45B0.width,
+                  13);
+    D_800625A0->details->label45B0.buffer = D_800625A0->buffer;
+    D_800625A0->details->label45B0_shown = 1;
+    func_800320E8(pixels);
+}
 
 INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CEB3C);
 
 INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CF2A0);
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CF678);
+/* Draw a nine-digit number (the party's gold) at (6bh, 54h). */
+void func_801CF678(u32 value) {
+    s32 i;
+    s32 x;
+
+    func_801C50E8(value);
+    i = 0;
+    x = 0x6B;
+    D_800625A0->details->group1220_count = 0;
+    for (; i < 9; i++, x += 8) {
+        if (D_800625A0->digits[i] != 0xFF) {
+            D_800625A0->details->group1220_count +=
+                func_8002675C(D_800625A0->sprite_sheet, D_800625A0->digits[i],
+                              D_800625A0->details->group1220 + D_800625A0->details->group1220_count * 2,
+                              D_800625A0->buffer, x, 0x54, 0x1000);
+        }
+    }
+    D_800625A0->details->group1220_buffer = D_800625A0->buffer;
+    D_800625A0->flags->unk5B = 2;
+}
 
 INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CF780);
 
@@ -2223,11 +2308,20 @@ INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801D0E68);
 
 INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801D1658);
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801D18A8);
+/* Run the transfer list for inventory 1 (200 entries). */
+void func_801D18A8(void) {
+    func_801D0E68(200, D_8006F4FC, D_8006F4FC - 200, 1, 1, D_8006F4FC - 200, 0);
+}
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801D18E8);
+/* Run the transfer list for inventory 0 (100 entries). */
+void func_801D18E8(void) {
+    func_801D0E68(100, D_8006F3D0, D_8006F3D0 - 100, 0, 1, D_8006F3D0 - 100, 0);
+}
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801D1928);
+/* Run the transfer list for inventory 2 (150 entries). */
+void func_801D1928(void) {
+    func_801D0E68(150, D_8006F65A, D_8006F65A - 150, 2, 1, D_8006F65A - 150, 0);
+}
 
 INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801D1968);
 
@@ -2235,4 +2329,13 @@ INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801D1B18);
 
 INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801D1CA4);
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801D1F10);
+/* Follow-up after a command returns: command 2 redraws its screen. */
+void func_801D1F10(void) {
+    switch (D_800625A0->top_cursor) {
+    case 1:
+        break;
+    case 2:
+        func_801D1968(1, 1);
+        break;
+    }
+}

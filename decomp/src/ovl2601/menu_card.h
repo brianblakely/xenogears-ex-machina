@@ -439,6 +439,7 @@ extern s32 D_801D2218[]; /* heading x */
 extern s32 D_801D2228[]; /* alternative heading x */
 extern s32 D_801D2230[]; /* heading y */
 extern s32 D_801D2240[]; /* alternative heading y */
+extern u16 D_801D2260;   /* count of the item last looked up */
 extern s32 D_801D2248;   /* first number x */
 extern s32 D_801D224C;   /* first number y */
 extern s32 D_801D2250;   /* second number x */
@@ -448,6 +449,9 @@ extern s32 D_801D225C;   /* third number y */
 extern s32 D_801D21B0[]; /* cursor y per position */
 
 /* Game state. */
+extern u8 D_8006F3D0[];  /* inventory 0 ids (100), counts just before */
+extern u8 D_8006F4FC[];  /* inventory 1 ids (200), counts just before */
+extern u8 D_8006F65A[];  /* inventory 2 ids (150), counts just before */
 extern Character D_8006D8A0[];
 extern u16 D_8006F364;   /* party members joined */
 extern u16 D_8006F366;   /* party members available */
@@ -562,6 +566,9 @@ void func_801CB7F4(void);
 u8 func_801CB894(u8 wait);
 void func_801CBC88(u8 render, u8 count, Label *labels, u8 *text_ids, u8 *shown);
 void func_801CB014(void);
+void func_80033B34(u8 *codes, u8 *text, s32 count); /* codes to text */
+void func_801D0E68(s32 n, u8 *ids, u8 *counts, u8 kind, u8 unk4, u8 *counts2, u8 unk6);
+void func_801D1968(u8 unk0, u8 unk1);
 void func_801C50E8(u32 value);
 u16 func_801C50CC(u8 id);
 void func_801CB370(void);

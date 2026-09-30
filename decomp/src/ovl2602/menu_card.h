@@ -443,6 +443,9 @@ extern s32 D_801D6D74;   /* third number x */
 extern s32 D_801D6C20[]; /* cursor y per position */
 
 /* Game state. */
+extern u8 D_8006F3D0[];  /* inventory 0 ids (100), counts just before */
+extern u8 D_8006F4FC[];  /* inventory 1 ids (200), counts just before */
+extern u8 D_8006F65A[];  /* inventory 2 ids (150), counts just before */
 extern Character D_8006D8A0[];
 extern u16 D_8006F364;   /* party members joined */
 extern u16 D_8006F366;   /* party members available */
@@ -553,6 +556,7 @@ void func_801C9054(u8 index);
 void func_801C5EE8(Label *labels, u8 *text_ids, s32 row, s32 count);
 void func_801CC9A0(void);
 void func_801CC1C4(void);
+void func_80033B34(u8 *codes, u8 *text, s32 count); /* codes to text */
 void func_801C5298(u32 value);
 u16 func_801C5244(u8 id);
 void func_801C5C98(void);

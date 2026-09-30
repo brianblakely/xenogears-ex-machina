@@ -1565,7 +1565,20 @@ INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D2B74);
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D3558);
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D3A3C);
+/* The count held of item `id` in an inventory of `n` ids and counts (0 if absent). */
+u16 func_801D3A3C(u8 *ids, u8 *counts, s32 n, u8 id) {
+    u8 count;
+    s32 i;
+
+    count = 0;
+    for (i = 0; i < n; i++) {
+        if (ids[i] == id) {
+            count = counts[i];
+            break;
+        }
+    }
+    return count;
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D3A80);
 
