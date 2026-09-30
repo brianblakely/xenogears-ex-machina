@@ -8305,9 +8305,63 @@ void func_800A0158(s32 slot, s32 *a, s32 *b, s32 *c) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A0228);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A0524);
+/* Copy actor `from`'s collision state, height, +50 words, position and
+ * matrix to actor `to` and move `to`'s model to it. */
+void func_800A0524(s32 to, s32 from) {
+    FieldActor *target;
+    FieldActor *source;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A06E8);
+    target = D_800AF880.components.descriptors[to].actor;
+    source = D_800AF880.components.descriptors[from].actor;
+    for (i = 0; i < 4; i++) {
+        target->triangle[i] = source->triangle[i];
+    }
+    target->layer = source->layer;
+    target->unkEC = source->unkEC;
+    target->unk72 = source->unk72;
+    target->unk50[0] = source->unk50[0];
+    target->unk50[1] = source->unk50[1];
+    target->unk50[2] = source->unk50[2];
+    target->position[0] = source->position[0];
+    target->position[1] = source->position[1];
+    target->position[2] = source->position[2];
+    func_8007409C(&D_800AF880.components.descriptors[to].matrix, &D_800AF880.components.descriptors[from].matrix);
+    func_80074078(&D_800AF880.components.descriptors[to].matrix, &D_800AF880.components.descriptors[from].matrix);
+    D_800AF880.components.descriptors[to].model->position[0] = D_800AF880.components.descriptors[from].actor->position[0];
+    D_800AF880.components.descriptors[to].model->position[1] = D_800AF880.components.descriptors[from].actor->position[1];
+    D_800AF880.components.descriptors[to].model->position[2] = D_800AF880.components.descriptors[from].actor->position[2];
+}
+
+extern s32 D_800AFFEC;
+s32 func_8009FA00(s32 character);
+extern s16 D_800AFD20;
+
+/* Give the current actor the sprite of party member operand 1, or hide it
+ * (flag 1, layer flag 0x100000) and end its script when absent. */
+void func_800A06E8(void) {
+    FieldDescriptor *descriptor;
+    s32 slot;
+
+    descriptor = &D_800AF880.components.descriptors[D_800AFD1C];
+    slot = func_8009FA00(func_8008CF3C(func_800ACDEC(1)));
+    descriptor->flags = (descriptor->flags & 0xF07F) | 0x200;
+    if (slot != -1) {
+        func_80076AC0(D_800AFD1C, slot, D_8005A414[slot], 2, 0, slot, 1);
+        D_800AFD20 = -0xC0;
+        D_800AF880.components.descriptors[D_800AFD1C].flags &= 0xFFDF;
+        func_800A0C94();
+        D_800B0078->flags = (D_800B0078->flags | 0x100) & ~0x80;
+        D_800AF880.components.descriptors[D_800AFD1C].flags &= 0xFFDF;
+    } else {
+        func_80076AC0(D_800AFD1C, 0, D_8005A414[0], 1, 0, 0, 1);
+        D_800B0078->flags |= 1;
+        D_800AFFEC = 1;
+        D_800B00C0 = 1;
+        D_800B0078->layer_flags |= 0x100000;
+    }
+    D_800B0078->pc += 3;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A08B8);
 
@@ -8337,8 +8391,6 @@ void func_800A0C94(void) {
     D_800B0078->unk72 = model->unk84 = WHOLE(D_800B0078->position[1]);
 }
 
-void func_80076AC0(s32 index, s32 a, void *sprite, s32 b, s32 c, s32 d, s32 e);
-void func_800A0C94(void);
 
 /* Give the current actor the field's first sprite and show it. */
 void func_800A0D3C(void) {

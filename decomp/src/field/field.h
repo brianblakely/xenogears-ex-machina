@@ -81,7 +81,9 @@ typedef struct FieldActor {
     s32 unk030[3];       /* 030 */
     u8 unk03C[4];
     s32 unk40[3];        /* 040 */
-    u8 unk04C[0x60 - 0x4C];
+    u8 unk04C[4];
+    s32 unk50[3];        /* 050 */
+    u8 unk05C[4];
     s16 unk60;           /* 060 */
     u8 unk062[2];
     s16 unk64;           /* 064 */
@@ -693,6 +695,8 @@ extern void func_80086024(void);
 extern void func_800A47D4(void);
 extern void func_800ACE24(void);
 extern void func_800A30B4(void);
+extern void func_80076AC0(s32 index, s32 a, void *sprite, s32 b, s32 c, s32 d, s32 e);
+extern void func_800A0C94(void);
 extern void func_800A4CC4(s32, s32, s32, s32, s32, s32, s32);
 extern void func_80086BA8(void);
 extern void func_801E7D14(MATRIX *world, s16 (*table)[3], u32 *ot, s32 buffer, s32);
