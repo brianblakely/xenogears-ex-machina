@@ -87,7 +87,6 @@ s32 func_800813E8(s32 index) {
 }
 
 /* Scripted zoom-in camera with a random vertical shake (command 1 starts the zoom). */
-#ifdef NON_MATCHING /* the original keeps an empty case 2 test in the command switch */
 s32 func_80081470(s32 index) {
     WorldmapActor *actor;
     ActorScratch *scratch;
@@ -97,6 +96,8 @@ s32 func_80081470(s32 index) {
     actor = &D_8009BE24[index];
     switch (actor->unk4) {
     case 2:
+        break;
+    case 3:
         break;
     case 1:
         actor->state = 1;
@@ -143,9 +144,6 @@ s32 func_80081470(s32 index) {
     VIEW_VECTORS[1].vy += scratch->position.vy;
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_80081470);
-#endif
 
 /* Build `count` semi-transparent textured quads on page 0x180,0. */
 void func_800816DC(SceneObject *object, PolyFT4 *quads, s32 count, s32 abr) {
