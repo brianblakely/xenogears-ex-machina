@@ -41,9 +41,15 @@ typedef struct SlotSprite {
     s16 targetY;                /* 0xA2 */
     s16 targetZ;                /* 0xA4 */
     u8 padA6[0xA8 - 0xA6];
-    u32 frameBits;              /* 0xA8: bits 30-31 the slot's low bits */
+    struct {
+        u32 pad : 30;
+        u32 slotLow : 2;        /* the slot's low bits */
+    } frameBits;                /* 0xA8 */
     union {
-        u32 word;               /* bits 0-1 the slot's high bits */
+        struct {
+            u32 slotHigh : 2;   /* the slot's high bits */
+            u32 pad : 30;
+        } bits;
         struct {
             u8 pad[3];
             s8 mode;            /* 10 while running commands, 0x15 ... */
@@ -53,7 +59,7 @@ typedef struct SlotSprite {
 } SlotSprite;
 
 /* The battle slot of a slot's sprite. */
-#define SPRITE_SLOT(sprite) (((sprite)->motion.word & 3) << 2 | (sprite)->frameBits >> 30)
+#define SPRITE_SLOT(sprite) ({ s32 low_ = (sprite)->frameBits.slotLow; (sprite)->motion.bits.slotHigh << 2 | low_; })
 
 /* A point of the battle menu's walk (6 bytes); x and z 0xFFFF end it. */
 typedef struct {
@@ -201,5 +207,24 @@ void func_800BE0DC(void);
 void func_800BEB04(void);
 void func_800BEBC4(void);
 void func_800BEC18(void);
+
+/* The acting slot's walk and command file (800BEFF4-800BF4F0). */
+extern void *D_800C3618;             /* the loaded command file */
+extern s32 D_800C361C;               /* its slot */
+extern u8 D_800D3350;                /* the command file is started */
+extern u16 D_800D3634;               /* the current event's targets */
+extern SlotSprite *D_800D363C[];     /* their sprites, NULL ended */
+extern s16 D_800D3678;               /* their count */
+
+void func_800B9C00(SlotSprite *sprite);
+s32 func_800BEEB4(u32 mask, SlotSprite **list, SlotSprite *target);
+s16 func_800BEF24(SlotSprite *from, SlotSprite *to);
+s16 func_800BEF8C(SlotSprite *sprite);
+void func_800BF0C4(SlotSprite *sprite);
+void func_800BF1EC(SlotSprite *sprite, s32 mode);
+void func_800BF4F0(SlotSprite *sprite, SlotSprite *target);
+s32 func_800C07CC(GroundPoint from, GroundPoint to);
+s32 func_800C0FAC(void *file);
+void func_800C1140(void *file);
 
 #endif

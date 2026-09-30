@@ -857,23 +857,131 @@ s16 func_800BEF8C(SlotSprite *sprite) {
     return func_80023124(b, a);
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BEFF4);
+/* Make slot the acting slot, returning the previous acting sprite to idle. */
+void func_800BEFF4(s32 slot) {
+    SlotSprite *sprite = D_800C3610->sprite;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BF0B4);
+    if (sprite != NULL && D_800C3610->slot != slot && !BATTLE_FRAME.slots[SPRITE_SLOT(sprite)].hidden) {
+        func_800245D8(sprite, sprite->idleMode);
+    }
+    D_800C3610->slot = slot;
+    D_800C3610->sprite = BATTLE_FRAME.slotSprites[slot];
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BF0C4);
+/* Set the battle menu's state. */
+void func_800BF0B4(s32 state) {
+    D_800C3610->state = state;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BF1EC);
+/* Walk sprite to the next point of the path, or at its end, to its target. */
+void func_800BF0C4(SlotSprite *sprite) {
+    if (BATTLE_FRAME.path[D_800C3610->field2C].x == 0xFFFF && BATTLE_FRAME.path[D_800C3610->field2C].z == 0xFFFF) {
+        sprite->targetY = 0;
+        sprite->targetX = sprite->x >> 16;
+        sprite->targetZ = sprite->z >> 16;
+        func_800BF4F0(sprite, sprite->target);
+        return;
+    }
+    sprite->targetX = BATTLE_FRAME.path[D_800C3610->field2C].x;
+    sprite->targetZ = BATTLE_FRAME.path[D_800C3610->field2C].z;
+    sprite->targetY = 0;
+    func_800BF1EC(sprite, BATTLE_FRAME.path[D_800C3610->field2C].run ? 3 : 2);
+    D_800C3610->field2C++;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BF2B8);
+/* Start sprite moving to its target point with motion mode. */
+void func_800BF1EC(SlotSprite *sprite, s32 mode) {
+    GroundPoint from;
+    GroundPoint to;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BF354);
+    from.x = sprite->x >> 16;
+    from.z = sprite->z >> 16;
+    to.x = sprite->targetX;
+    to.z = sprite->targetZ;
+    D_800C3610->field44 = func_800C07CC(from, to);
+    func_80021FE0((s32 *)sprite, func_800BEF8C(sprite));
+    func_800223B0((s32 *)sprite, func_800BEF8C(sprite));
+    func_800245D8(sprite, mode);
+    func_800BF0B4(6);
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BF3A4);
+/* Load the file of sprite's resource for its slot's command. */
+void func_800BF2B8(SlotSprite *sprite) {
+    s32 file;
+    void *block;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BF3E8);
+    func_800B8D7C();
+    func_80028470(0x2C, 1);
+    file = *sprite->resource;
+    block = func_80031BDC(func_800288EC(file), 1);
+    func_800295D8(file, (s32)block, 0, 0x80);
+    D_800C3618 = block;
+    D_800C361C = SPRITE_SLOT(sprite);
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BF4F0);
+/* Start the loaded command file once. */
+s32 func_800BF354(void) {
+    s32 result;
+
+    if (D_800D3350 == 0) {
+        result = func_800C0FAC(D_800C3618);
+        D_800D3350 = 1;
+    }
+    return result;
+}
+
+/* Stop the started command file. */
+void func_800BF3A4(void) {
+    if (D_800D3350 != 0) {
+        func_800C1140(D_800C3618);
+        D_800D3350 = 0;
+    }
+}
+
+/* Face sprite and the first target of the current event at each other. */
+void func_800BF3E8(SlotSprite *sprite) {
+    SlotSprite *first;
+    s32 slot;
+    SlotSprite *target;
+
+    D_800D3634 = BATTLE_FRAME.events[D_800C360C].targetMask;
+    if ((D_800D3678 = func_800BEEB4(BATTLE_FRAME.events[D_800C360C].targetMask, D_800D363C, sprite)) == 0) {
+        D_800D363C[0] = sprite;
+    }
+    target = D_800D363C[0];
+    sprite->target = target;
+    target->target = sprite;
+    first = D_800D363C[0];
+    slot = SPRITE_SLOT(target);
+    D_800C3610->target = first;
+    D_800C3610->targetSlot = slot;
+    func_800223B0((s32 *)sprite, func_800BEF24(sprite, sprite->target));
+    if (target->motion.b.mode != 0x15) {
+        func_800223B0((s32 *)target, func_800BEF24(sprite->target, sprite));
+    }
+}
+
+/* At the path's end, step sprite beside target; else walk the path on. */
+void func_800BF4F0(SlotSprite *sprite, SlotSprite *target) {
+    s16 x;
+
+    if (BATTLE_FRAME.path[D_800C3610->field2C].x == 0xFFFF && BATTLE_FRAME.path[D_800C3610->field2C].z == 0xFFFF) {
+        sprite->x = sprite->targetX << 16;
+        sprite->z = sprite->targetZ << 16;
+        x = target->x >> 16;
+        sprite->targetX = (s16)(sprite->x >> 16) >= x ? x + 0x50 : x - 0x50;
+        sprite->targetZ = target->z >> 16;
+        sprite->targetY = 0;
+        if (sprite->targetX == (s16)(sprite->x >> 16) && sprite->targetZ == (s16)(sprite->z >> 16)) {
+            func_800B9C00(sprite);
+            return;
+        }
+        func_800BF1EC(sprite, 3);
+        func_800BF0B4(2);
+        return;
+    }
+    func_800BF0C4(sprite);
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BF5E8);
 
