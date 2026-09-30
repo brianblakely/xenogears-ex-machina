@@ -6,9 +6,9 @@
 #include "battle_setup.h"
 
 /* Shatter update: fade every cell and (variant 0) push it away. */
-#ifdef NON_MATCHING
 void func_801E7F4C(TaskNode *node) {
     ShatterTask *task = node->object;
+    SVECTOR unused; /* an unused 8-byte local: the original's frame */
     ShatterCell *cell;
     POLY_FT3 *prim;
     s32 half, row, col;
@@ -29,9 +29,6 @@ void func_801E7F4C(TaskNode *node) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/load_modes", func_801E7F4C);
-#endif
 
 /* Shatter drawing callback: into the current ordering table. */
 void func_801E8088(TaskNode *node) {
@@ -293,24 +290,26 @@ void func_801E893C(void) {
 #ifdef NON_MATCHING
 void func_801E8964(TaskNode *node) {
     BurstTask *burst = node->object;
+    SVECTOR unused; /* an unused 8-byte local: the original's frame */
+    s32 frame;
     s32 i, j, k;
 
     if (D_801E9680 != 0) {
         burst->speed++;
-        burst->frame++;
+        frame = ++burst->frame;
         burst->angle += 0xA0;
         burst->trans.vz -= 0x3C;
-        if (burst->frame >= 0x43) {
+        if (frame >= 0x43) {
             burst->brightness -= 0x18;
         } else {
             burst->twist += 0x80;
         }
     } else {
         burst->speed += 10;
-        burst->frame++;
+        frame = ++burst->frame;
         burst->twist += 0x600;
         burst->trans.vz -= burst->speed;
-        if (burst->frame >= 0x19) {
+        if (frame >= 0x19) {
             burst->brightness -= 0x14;
         }
     }

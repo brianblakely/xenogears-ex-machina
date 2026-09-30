@@ -132,36 +132,30 @@ void func_801E6710(u8 *data) {
 
 /* Create `slot`'s sprite task from sprite row `row` showing `animation`,
  * placed and facing as its placement record says. */
-#ifdef NON_MATCHING
 void func_801E67A4(s32 slot, s32 row, s32 animation) {
-    SpriteRow *source = &D_800C3EB0.rows[row];
-    SlotInfo *info;
     BattleSprite **task;
     BattleSprite *sprite;
     s32 angle;
 
-    task = func_800BA984(source->data, 0, slot + 0x1C0, source->x, source->y, 0x20, 0, 0, 0,
-                         animation, 0, 0, 0, source->variant);
+    task = func_800BA984(D_800C3EB0.rows[row].data, 0, slot + 0x1C0, D_800C3EB0.rows[row].x,
+                         D_800C3EB0.rows[row].y, 0x20, 0, 0, 0, animation, 0, 0, 0,
+                         D_800C3EB0.rows[row].variant);
     sprite = task[1];
-    sprite->binding[3] = source->y;
-    sprite->binding[2] = source->x;
-    info = &D_800C3EB0.slots[slot];
-    *(u32 *)((u8 *)sprite->sequence + 0xE) = *(u32 *)&sprite->binding[2];
+    sprite->binding[3] = D_800C3EB0.rows[row].y;
+    sprite->binding[2] = D_800C3EB0.rows[row].x;
+    *(Point *)((u8 *)sprite->sequence + 0xE) = *(Point *)&sprite->binding[2];
     D_800C3EB0.sprites[slot] = task[1];
     D_800C3EB0.tasks[slot] = (TaskNode *)task;
-    sprite->flagsA8 = (sprite->flagsA8 & 0x3FFFFFFF) | (slot << 30);
-    sprite->flagsAC = (sprite->flagsAC & ~3) | ((slot >> 2) & 3);
-    func_80021D3C(sprite, info->x, info->z);
-    angle = (info->flag6 != 0) << 11;
+    sprite->slotLow = slot;
+    sprite->slotHigh = (u32)slot >> 2;
+    func_80021D3C(sprite, D_800C3EB0.slots[slot].x, D_800C3EB0.slots[slot].z);
+    angle = (D_800C3EB0.slots[slot].flag6 != 0) << 11;
     func_800223B0(sprite, angle);
     func_80021FE0(sprite, angle);
-    if (info->flag3 != 0) {
+    if (D_800C3EB0.slots[slot].flag3 != 0) {
         sprite->v9E = 0;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/battle_loader", func_801E67A4);
-#endif
 
 /* Read the party members' sprite files (directory 2c, file by type) into new
  * blocks, recording them in the members' rows, by the file list `list`. */
@@ -209,6 +203,7 @@ void func_801E6A4C(void) {
 void func_801E6AC4(void) {
     BattleSprite *sprite;
     s32 member;
+    s32 x, y, z;
     s32 type;
 
     for (member = 0; member != 3; member++) {
@@ -229,10 +224,13 @@ void func_801E6AC4(void) {
             sprite = D_800C3EB0.sprites[member];
             if (sprite != NULL) {
                 func_800BA8F4(sprite);
-                sprite->home[0] = sprite->x;
-                sprite->home[1] = sprite->y;
-                sprite->home[2] = sprite->z;
-                func_800245D8(sprite, 0x17, sprite->z);
+                x = sprite->x;
+                y = sprite->y;
+                z = sprite->z;
+                sprite->home[0] = x;
+                sprite->home[1] = y;
+                sprite->home[2] = z;
+                func_800245D8(sprite, 0x17, z);
             }
         }
     }

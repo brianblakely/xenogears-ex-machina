@@ -750,8 +750,10 @@ typedef struct {
     s16 v9E;           /* +9e */
     s16 home[3];       /* +a0 */
     u8 padA6[2];
-    u32 flagsA8;       /* +a8: bits 30-31 the slot's low bits */
-    u32 flagsAC;       /* +ac: bits 0-1 the slot's high bits */
+    u32 flagsA8 : 30;  /* +a8 */
+    u32 slotLow : 2;   /* +a8 bits 30-31: the slot's low bits */
+    u32 slotHigh : 2;  /* +ac bits 0-1: the slot's high bits */
+    u32 flagsAC : 30;
 } BattleSprite;
 
 /* Battle overlay work area (800c3eb0) at battle setup. */
