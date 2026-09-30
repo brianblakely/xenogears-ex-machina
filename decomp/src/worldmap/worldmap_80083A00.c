@@ -1188,12 +1188,12 @@ void func_80088F64(void) {
         object->unk4 = 0;
         object->unkA = 0;
         object->unk12 = 0;
-        object->unk18 = 0;
-        object->unk16 = 0;
-        object->unk14 = 0;
-        object->unk20 = 0;
-        object->unk1E = 0;
-        object->unk1C = 0;
+        object->position.vz = 0;
+        object->position.vy = 0;
+        object->position.vx = 0;
+        object->angle.vz = 0;
+        object->angle.vy = 0;
+        object->angle.vx = 0;
         object++;
     }
     D_8009BDF4 = slot = func_80031BDC(0x4C00, 0);
@@ -1234,7 +1234,76 @@ void func_80089128(void) {
     func_800320E8(D_8009BE1C[1]);
 }
 
+/* Place the eight emitters of group `group` at `position` facing `angle`
+ * (either may be NULL for zero); start them unless one is already live. */
+#ifdef NON_MATCHING /* emitter start: two field loads scheduled above the flag store */
+void func_80089160(s32 group, SVECTOR *position, SVECTOR *angle) {
+    AreaObject *object;
+    s32 live;
+    s32 i;
+
+    live = 0;
+    object = &D_8009BCC0[group * 8];
+    for (i = 7; i != -1; i--) {
+        if (object->flags & 0x80) {
+            live++;
+            break;
+        }
+    }
+    object = &D_8009BCC0[group * 8];
+    if ((position == NULL) & (angle == NULL)) {
+        for (i = 7; i != -1; i--, object++) {
+            if (live == 0) {
+                object->flags |= 0x80;
+                object->unkA = 0;
+                object->unk12 = object->unk10;
+                object->unk4 = object->unk0;
+            }
+            *(s32 *)&object->position.vx = *(s32 *)&object->angle.vx = 0;
+            object->position.vz = object->angle.vz = 0;
+        }
+    } else if ((position != NULL) & (angle == NULL)) {
+        for (i = 7; i != -1; i--, object++) {
+            if (live == 0) {
+                object->flags |= 0x80;
+                object->unkA = 0;
+                object->unk12 = object->unk10;
+                object->unk4 = object->unk0;
+            }
+            object->position = *position;
+            SVECTOR_ZERO(&object->angle);
+        }
+    } else if ((position == NULL) & (angle != NULL)) {
+        for (i = 7; i != -1; i--, object++) {
+            if (live == 0) {
+                object->flags |= 0x80;
+                object->unkA = 0;
+                object->unk12 = object->unk10;
+                object->unk4 = object->unk0;
+            }
+            SVECTOR_ZERO(&object->position);
+            object->angle.vx = -angle->vx;
+            object->angle.vy = -angle->vy;
+            object->angle.vz = -angle->vz;
+        }
+    } else {
+        for (i = 7; i != -1; i--, object++) {
+            if (live == 0) {
+                object->flags |= 0x80;
+                object->unkA = 0;
+                object->unk12 = object->unk10;
+                object->unk4 = object->unk0;
+            }
+            object->position = *position;
+            object->angle.vx = -angle->vx;
+            object->angle.vy = -angle->vy;
+            object->angle.vz = -angle->vz;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80089160);
+#endif
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_800893E0);
 

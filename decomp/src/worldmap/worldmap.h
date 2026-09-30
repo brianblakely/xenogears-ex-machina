@@ -562,26 +562,29 @@ void func_80022000(s32 handle, s32 scale);
 void func_80032F54(void *window, s32 x, s32 y, s32 w, s32 h, s32 a, s32 b);
 void func_80034614(void *window);
 
-/* Area object (0x54 bytes, 512 of them, eight per group). */
+/* Area object (0x54 bytes, 512 of them, eight per group): a particle
+ * emitter. */
 typedef struct {
-    s32 unk0;
-    s32 unk4;
+    s32 unk0;         /* emit timer reload */
+    s32 unk4;         /* packed emit timer: low delay, high repeats */
     s16 unk8;
-    s16 unkA;
-    s32 unkC;
+    s16 unkA;         /* live particles */
+    s16 unkC;
+    s16 unkE;
     s16 unk10;
     s16 unk12;
-    s16 unk14;
-    s16 unk16;
-    s16 unk18;
-    s16 unk1A;
-    s16 unk1C;
-    s16 unk1E;
-    s16 unk20;
-    u8 pad22[0x2D];
-    u8 flags;     /* 0x4F: 0x80 active */
+    SVECTOR position; /* 0x14 */
+    SVECTOR angle;    /* 0x1C */
+    SVECTOR unk24;
+    SVECTOR direction; /* 0x2C */
+    u8 pad34[0x1B];
+    u8 flags;         /* 0x4F: 0x80 active */
     u8 pad50[4];
 } AreaObject;
+
+/* Short vectors handled as a word (vx, vy) plus vz. */
+#define SVECTOR_ZERO(v) (*(s32 *)&(v)->vx = 0, (v)->vz = 0)
+#define SVECTOR_COPY(d, s) (*(s32 *)&(d)->vx = *(s32 *)&(s)->vx, (d)->vz = (s)->vz)
 
 typedef struct {
     u8 r, g, b, cd;
