@@ -3611,7 +3611,7 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007DA44);
 
 /* Move a displayed window's choice (+382 over +380 lines) with the pad and
  * light its line; a window with +410 set lights none. */
-void func_8007DCF8(s32 window) {
+void func_8007DCF8(s32 window, u32 *ot, s32 buffer) {
     if (D_800C2698[window].status == 0 && D_800C2698[window].timer == 0) {
         if (D_800C2698[window].age == 0) {
             if (D_800C3900 & 0x4000) {
@@ -3785,7 +3785,98 @@ void func_8007FFE8(void) {
     }
 }
 
+#ifdef NON_MATCHING
+/* Draw the dialogue windows: advance the cursor animation, draw the
+ * selected window (+412) first and the others by rank (+410), renumber the
+ * ranks, then link the frame's text draw mode into `ot`. */
+void func_8008004C(u32 *ot, s32 buffer) {
+    s32 order[4];
+    s32 next;
+    s32 selected;
+    s32 rank;
+    s32 i;
+    TextBox *text;
+
+    if (!(++D_800ADE98 & 3)) {
+        D_800ADE94++;
+    }
+    if (D_800ADE94 >= 5) {
+        D_800ADE94 = 0;
+    }
+    selected = 0xFF;
+    for (i = 0; i < 4; i++) {
+        if (D_800C2698[i].unk412 != 0) {
+            selected = i;
+        }
+    }
+    next = 0;
+    for (i = 3; i >= 0; i--) {
+        order[i] = 0xFFFF;
+    }
+    for (i = 0; i < 4; i++) {
+        if (D_800C2698[i].busy == 0 && D_800C2698[i].unk412 != 0) {
+            text = &D_800C2698[i].text;
+            D_800C2698[i].unk3C4 = -1;
+            if (D_800C2698[i].timer == 0) {
+                if (func_80033CD0(text) != 0 && D_800C2698[i].status != 0) {
+                    D_800C2698[i].unk3C4 = 0;
+                }
+                if (D_800C2694 & 0x20) {
+                    D_800C2698[i].status = -1;
+                    D_800AF880.components.descriptors[D_800C2698[i].owner].actor->unk081 =
+                        D_800C2698[i].unk382 + D_800C2698[i].unk37E;
+                    func_800345E0(text);
+                }
+                if (text->unk82 == 0) {
+                    func_80034714(text, text->unk90);
+                }
+                func_80034888(text, ot, buffer);
+            }
+            addPrim(ot, &D_800C2698[i].modes[buffer]);
+            func_8007E1C0(ot, buffer, i);
+            func_8007DCF8(i, ot, buffer);
+        }
+    }
+    for (rank = 0; rank < 4; rank++) {
+        for (i = 0; i < 4; i++) {
+            if (D_800C2698[i].age == rank) {
+                order[i] = next++;
+                if (D_800C2698[i].busy == 0 && i != selected) {
+                    D_800C2698[i].unk3C4 = -1;
+                    text = &D_800C2698[i].text;
+                    if (D_800C2698[i].timer == 0) {
+                        if ((D_800C2694 & 0x20) && D_800C2698[i].age == 0) {
+                            D_800C2698[i].status = -1;
+                            D_800AF880.components.descriptors[D_800C2698[i].owner].actor->unk081 =
+                                D_800C2698[i].unk382 + D_800C2698[i].unk37E;
+                            func_800345E0(text);
+                        }
+                        if (text->unk82 == 0) {
+                            func_80034714(text, text->unk90);
+                        }
+                        func_80034888(text, ot, buffer);
+                        if (func_80033CD0(text) != 0 && D_800C2698[i].status != 0) {
+                            D_800C2698[i].unk3C4 = 0;
+                        }
+                    }
+                    addPrim(ot, &D_800C2698[i].modes[buffer]);
+                    func_8007E1C0(ot, buffer, i);
+                    func_8007DCF8(i, ot, buffer);
+                }
+                if (D_800C2698[i].age == 0xFFFF) {
+                    order[i] = 0xFFFF;
+                }
+            }
+        }
+    }
+    for (i = 0; i < 4; i++) {
+        D_800C2698[i].age = order[i];
+    }
+    addPrim(ot, &D_800B1DF4[D_800ADB08][0]);
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008004C);
+#endif
 
 /* Close each idle dialogue window whose timer ran out (unless flag 4 keeps
  * it) or that was cleared, and count the timers down. */

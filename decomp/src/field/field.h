@@ -175,9 +175,11 @@ typedef struct {
     u16 flags;       /* 10: bit 2 keeps the window open */
     u8 unk12[0x6C - 0x12];
     u8 unk6C;        /* 6C */
-    u8 unk6D[0x84 - 0x6D];
+    u8 unk6D[0x82 - 0x6D];
+    s16 unk82;       /* 82 */
     s16 unk84;       /* 84 */
-    u8 unk86[0x94 - 0x86];
+    u8 unk86[0x90 - 0x86];
+    s32 unk90;       /* 90 */
     RECT rect;       /* 94 */
 } TextBox;
 
@@ -687,6 +689,12 @@ extern void func_8003A948(s32 sequence, s32, s32);
 extern void func_8003A9BC(s32 sequence, s32, s32);
 extern void func_800230A8(FieldModel *model);
 extern void func_800345E0(void *text);
+extern s32 func_80033CD0(TextBox *text);
+extern void func_80034714(TextBox *text, s32);
+extern void func_80034888(TextBox *text, u32 *ot, s32 buffer);
+extern void func_8007E1C0(u32 *ot, s32 buffer, s32 window);
+extern s32 D_800ADE94; /* dialogue cursor frame */
+extern s32 D_800ADE98; /* dialogue ticks */
 extern void func_80034614(void *text);
 extern void func_800346D4(void *text);
 extern void func_8002DFF0(s32 w, s32 h);
