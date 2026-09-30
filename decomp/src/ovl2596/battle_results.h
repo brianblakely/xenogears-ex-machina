@@ -277,6 +277,19 @@ typedef struct {
     s32 experience[99];       /* 0xBB0: experience to the next level, per level - 1 */
 } GrowthFile;
 
+/* A gear record (0xa4 bytes), in the game data and in each combatant. */
+typedef struct {
+    u8 pad0[0x38];
+    u16 fuel;                 /* 0x38 */
+    u16 maxFuel;              /* 0x3A */
+    u8 pad3C[0x24];
+    u32 hp;                   /* 0x60 */
+    u32 maxHp;                /* 0x64 */
+    u8 pad68[0x14];
+    u16 flags;                /* 0x7C: 0x8000 destroyed */
+    u8 pad7E[0xA4 - 0x7E];
+} Gear;
+
 /* Per character skill state in the game data (0x20 each, at +0x16c0). */
 typedef struct {
     u16 counterSkills;        /* 0x00 */
@@ -292,14 +305,19 @@ typedef struct {
 typedef struct {
     u8 pad0[0x26C];
     Character characters[11]; /* 0x26C */
-    u8 pad978[0xE30 - 0x978];
-    u8 value_E30;             /* 0xE30 */
-    u8 padE31[0x27];
-    s32 value_E58;            /* 0xE58 */
-    u8 padE5C[8];
-    s16 value_E64;            /* 0xE64 */
-    s16 value_E66;            /* 0xE66 */
-    u8 padE68[0x16C0 - 0xE68];
+    union {
+        Gear gears[17];       /* 0x978: per gear id; 7 is not a gear */
+        struct {
+            u8 pad[0xE30 - 0x978];
+            u8 value_E30;     /* 0xE30 */
+            u8 padE31[0x27];
+            s32 value_E58;    /* 0xE58 */
+            u8 padE5C[8];
+            s16 value_E64;    /* 0xE64 */
+            s16 value_E66;    /* 0xE66 */
+        } id7;                /* character 7's derived values */
+    } u978;
+    u8 pad145C[0x16C0 - 0x145C];
     CharacterSkills skills[11]; /* 0x16C0 */
     u8 pad1820[0x22B6 - 0x1820];
     u16 options;              /* 0x22B6: 8006f8ea */
@@ -309,14 +327,15 @@ typedef struct {
 typedef struct {
     u8 pad0[0x32];
     u16 flags32;              /* 0x32: 0x2000 and 0x1000 raise the experience gained */
-    u8 pad34[8];
+    u8 pad34[6];
+    u16 value_3A;             /* 0x3A */
     s32 totalA;               /* 0x3C: experience totals (levels A and B) */
     s32 totalB;               /* 0x40 */
     s32 nextA;                /* 0x44: experience to the next level */
     s32 nextB;                /* 0x48 */
-    u8 pad4C[2];
+    u16 hp;                   /* 0x4C */
     u16 maxHp;                /* 0x4E */
-    u16 pad50;
+    u16 ep;                   /* 0x50 */
     u16 maxEp;                /* 0x52 */
     u8 pad54[2];
     u8 id;                    /* 0x56 */
@@ -336,10 +355,15 @@ typedef struct {
     u16 flags7C;              /* 0x7C: 0x8000 knocked out */
     u8 pad7E[0x90 - 0x7E];
     u16 counters[7];          /* 0x90 */
-    u8 pad9E[0x158 - 0x9E];
+    u8 pad9E[2];
+    u8 gearId;                /* 0xA0 */
+    u8 padA1[3];
+    Gear gear;                /* 0xA4 */
+    u8 pad148[0x10];
     u8 weightA;               /* 0x158: experience share weights of levels A and B */
     u8 weightB;               /* 0x159 */
-    u8 pad15A[0x170 - 0x15A];
+    u8 flags15A;              /* 0x15A: 0x80 (character 7) HP from the gear HP */
+    u8 pad15B[0x170 - 0x15B];
 } Combatant;
 
 extern GameData D_8006D634;

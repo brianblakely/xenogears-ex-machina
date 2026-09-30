@@ -1121,7 +1121,65 @@ void func_801E2794(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E2888);
+/* Write each party member's HP, EP, counters and gear HP and fuel back to
+ * the game data, clamped to their maximums (HP 1 when knocked out, gear HP a
+ * tenth of the maximum when destroyed). */
+void func_801E2888(void) {
+    u8 unused[8]; /* the original frame reserves 8 unused bytes */
+    u8 slot;
+    u8 k;
+    Combatant *record;
+    Character *character;
+    Gear *gear;
+    Gear *block;
+
+    for (slot = 0; slot < 3; slot++) {
+        if (D_800D2D24[slot] == 0xFF) {
+            continue;
+        }
+        record = &D_801E44C8->records[slot];
+        character = &D_801E44C4->characters[record->id];
+        gear = &D_801E44C4->u978.gears[record->gearId];
+        block = &record->gear;
+        if (record->id == 7 && (D_800CCCE8[slot].flags15A & 0x80)) {
+            record->hp = (block->hp + 1) / 50;
+            if (record->hp == 0) {
+                record->hp = 1;
+            }
+        }
+        character->hp = record->hp;
+        character->ep = record->ep;
+        if (character->hp > character->maxHp) {
+            character->hp = character->maxHp;
+        }
+        if (character->ep > character->maxEp) {
+            character->ep = character->maxEp;
+        }
+        for (k = 0; k < 7; k++) {
+            character->counters[k] = record->counters[k];
+        }
+        character->value_3A = record->value_3A;
+        if (record->flags7C & 0xC000) {
+            character->hp = 1;
+        }
+        switch (record->gearId) {
+        case 0 ... 6:
+        case 8 ... 16:
+            gear->hp = block->hp;
+            gear->fuel = block->fuel;
+            if (gear->hp > gear->maxHp) {
+                gear->hp = gear->maxHp;
+            }
+            if (gear->fuel > gear->maxFuel) {
+                gear->fuel = gear->maxFuel;
+            }
+            if (block->flags & 0x8000) {
+                gear->hp = gear->maxHp / 10;
+            }
+            break;
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E2ACC);
 
@@ -1529,10 +1587,10 @@ void func_801E3F28(u8 id) {
 void func_801E3FB0(void) {
     GameData *game = D_801E44C4;
 
-    game->value_E58 = D_801E44EC->maxHp * 200;
-    game->value_E30 = D_801E44EC->attack / 5 + 1;
-    game->value_E64 = D_801E44EC->maxHp * 10;
-    game->value_E66 = D_801E44EC->maxHp * 10;
+    game->u978.id7.value_E58 = D_801E44EC->maxHp * 200;
+    game->u978.id7.value_E30 = D_801E44EC->attack / 5 + 1;
+    game->u978.id7.value_E64 = D_801E44EC->maxHp * 10;
+    game->u978.id7.value_E66 = D_801E44EC->maxHp * 10;
 }
 
 /* Advance each character's tier: 3, 4 and 5 at the growth data's tier
