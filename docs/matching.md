@@ -21,30 +21,45 @@ The stable psx-* commands wrap the pinned little-endian MIPS binutils. The smoke
 check assembles an authored MIPS-I function and checks its exact linked bytes.
 It establishes tooling, not Xenogears compiler identity or game-source progress.
 
-## Establish the actual target
+## Qualified configuration and targets
 
-Qualify the compiler/assembler/linker on a representative resident/overlay sample.
-Reuse existing Ghidra types and reviewed algorithms. Record exact flags, GP/small
--data settings, source identity, addresses and layout in each target's build file.
-Do not select a PsyQ version from an unsupported loader default. Add maspsx or a
-historical compiler through a pinned Nix recipe when that trial establishes the
-need; do not install another large speculative toolchain upfront.
+GCC 2.7.2 (`psx-cc1-2.7.2`, decompals/old-gcc 0.17 PSX build) with
+`-O2 -mcpu=3000 -msoft-float -fgnu-linker -mgas`, ASPSX 2.79 behaviour through
+maspsx, and GNU as/ld reproduce original code exactly. Qualification: resident
+`80028aac` (ring reset) matches only under 2.7.2 — 2.8.1 omits its empty
+8-byte frame and reschedules the stores. The small-data threshold is a
+property of each translation unit: most code is `-G0`, while units that address
+`.sdata`/`.sbss` (around `_gp = 0x80059170`) through `$gp` need `-G8`; set
+`GP_<file> := 8` in the target fragment. SDK library code (PsyQ 3.x-4.x) is
+located with `tools/psyq_signatures.py` and classified, not decompiled.
 
-`decomp/Makefile` provides the small assemble/link/verify loop. A target supplies
-`ORIGINAL`, `ORIGINAL_SHA256`, `IMAGE`, `OBJECTS`, `LINKER_SCRIPT` and its source
-compilation rules in a make fragment. There is deliberately no invented game
-configuration or default host C compiler. Until qualified targets exist, ordinary
-`make -C decomp verify` fails with an actionable error rather than passing empty work.
+Targets (`decomp/targets/`): both resident executables (SLUS_006.64/69 share all
+source; only the embedded disc index differs) and 24 decoded overlay images,
+byte-identical on both discs. `tools/extraction/disc_files.py` and
+`tools/extraction/overlays.py` write the local inputs; splat writes the local
+assembly. Distinct overlays at the same address keep separate targets and
+symbol files.
 
 ```sh
-make -C decomp CONFIG=targets/<target>/target.mk verify
-python3 tools/matching.py ORIGINAL REBUILT --sha256 EXPECTED_ORIGINAL_SHA256
+nix --extra-experimental-features 'nix-command flakes' develop path:./nix/ghidra#matching
+python3 tools/extraction/disc_files.py .local/discs/disc1.bin .local/extract/disc1  # and disc2
+python3 tools/extraction/overlays.py
+make -C decomp all-split all-verify all-coverage
+make -C decomp CONFIG=targets/overlays/field.mk verify
+python3 tools/matching_diff.py decomp/targets/overlays/field.mk [-f func_8007xxxx]
 ```
 
-Original files and build output belong under ignored `.local/`; source/build
-recipes belong under `decomp/`. Use the existing extraction/source profiles rather
-than a new disc importer. Keep each overlay's identity with its addresses. Distinct
-images sharing a load address must never collapse into one symbol space.
+## Converting a function
+
+Replace one `INCLUDE_ASM(...)` in the target's C file with C. Start from m2c
+(`m2c --target mipsel-gcc-c <asm file>`), existing findings and the host
+reconstruction (search `src/reconstruction` for the address), then compile,
+`make verify`, and read `matching_diff.py -f` for the first difference. Keep
+functions in original order; the function's jump tables and strings move with
+it (splat migrated them into the function's assembly). Shared structures go in
+small headers beside the source. A function that is understood but does not yet
+match stays linked as assembly inside `#ifdef NON_MATCHING ... #else
+INCLUDE_ASM(...) #endif`; the coverage report counts it separately.
 
 ## Recover incrementally
 

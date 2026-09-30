@@ -62,7 +62,7 @@ $(ROOT)/$(BUILD)/%.o: $(ROOT)/%.c $(wildcard $(ROOT)/decomp/include/*.h)
 	@mkdir -p $(dir $@)
 	cd $(ROOT) && $(CPP) $(CPPFLAGS) $< | $(CC1) $(CC1FLAGS) -G$(call gp_of,$<) -o $@.cc1.s
 	cd $(ROOT) && $(MASPSX) $(MASPSXFLAGS) -G$(call gp_of,$<) < $@.cc1.s > $@.s
-	cd $(ROOT) && $(AS) $(ASFLAGS) -o $@ $@.s
+	cd $(ROOT) && $(AS) $(ASFLAGS) -G$(call gp_of,$<) -o $@ $@.s
 
 $(ROOT)/$(IMAGE): $(OBJECTS) $(ROOT)/$(LINKER_SCRIPT) $(CONFIG)
 	@test -n "$(OBJECTS)" || { echo "No objects: run make CONFIG=$(CONFIG) split" >&2; exit 2; }

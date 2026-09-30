@@ -436,9 +436,51 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028A18);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028A60);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028A94);
+/* Disc stream ring (EVID: analysis/formats/disc-stream-source.md). The ring
+ * header holds the slot count, then eight bytes per slot. */
+typedef struct {
+    u16 state;
+    u16 sequence;
+    u16 w4;
+    u16 w6;
+} StreamSlot;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028AAC);
+typedef struct {
+    s32 count;
+    StreamSlot slots[1];
+} StreamRing;
+
+extern StreamRing *D_8004FE30;
+
+/* Replace the shared ring and return the previous one. */
+StreamRing *func_80028A94(StreamRing *ring) {
+    StreamRing *previous = D_8004FE30;
+    D_8004FE30 = ring;
+    return previous;
+}
+
+/* Clear every slot; the first slot's third halfword (ring offset 8) keeps
+ * the low count. Returns the count, or -1 without a ring. */
+s32 func_80028AAC(void) {
+    StreamRing *ring = D_8004FE30;
+    StreamSlot *slots;
+    s32 i;
+    s32 count;
+
+    if (ring == NULL) {
+        return -1;
+    }
+    count = ring->count;
+    slots = ring->slots;
+    for (i = 0; i < count; i++) {
+        slots[i].state = 0;
+        slots[i].sequence = 0;
+        slots[i].w4 = 0;
+        slots[i].w6 = 0;
+    }
+    slots->w4 = count;
+    return count;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028B14);
 

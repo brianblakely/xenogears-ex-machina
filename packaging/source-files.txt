@@ -584,6 +584,7 @@ tools/extraction/disc_files.py
 tools/extraction/overlays.py
 tools/matching.py
 tools/matching_coverage.py
+tools/matching_diff.py
 tools/psyq_signatures.py
 tools/reference/README.md
 tools/reference/capture.py
