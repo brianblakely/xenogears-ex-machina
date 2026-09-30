@@ -140,6 +140,7 @@ decomp/src/resident/heap.h
 decomp/src/resident/main.c
 decomp/src/resident/main2.c
 decomp/src/resident/pad.h
+decomp/src/resident/sound.h
 decomp/src/resident/text.h
 decomp/src/resident/window.h
 decomp/src/slot39/slot39.c

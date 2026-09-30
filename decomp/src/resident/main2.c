@@ -877,47 +877,205 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80037B88);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80037DC0);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80037E8C);
+#include "sound.h"
 
+/* Mark every voice's channel for a full register update and clear the
+ * voices-silenced state. */
+void func_80037E8C(void) {
+    SoundChannel **channel = D_8006252C;
+    SoundChannel *current;
+    s32 i = 0;
+
+    do {
+        current = *channel;
+        i++;
+        if (current != NULL) {
+            current->flags |= 0x1F5;
+        }
+        channel++;
+    } while (i < 24);
+    D_8005957C &= ~0x40;
+}
+
+/* Silence every SPU voice.
+ * Nonmatching: the voice fields are addressed from a different base. */
+#ifdef NON_MATCHING
+void func_80037EE4(void) {
+    SpuVoice *voice = D_800508E4;
+    s32 i;
+
+    D_8005957C |= 0x40;
+    for (i = 0; i < 24; i++) {
+        voice->volume_left = 0;
+        voice->volume_right = 0;
+        voice->pitch = 0;
+        voice->adsr2 = 0x1FDF;
+        voice->adsr1 = (voice->adsr1 & 0xFF) + 0x7F00;
+        voice++;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80037EE4);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80037F44);
+extern s32 D_800595BC;
+extern void func_800404A4(s32 event);
+extern void func_800404B4(s32 event);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80037F88);
+/* Enable the driver's tick event once. */
+void func_80037F44(void) {
+    if (!(D_8005957C & 1)) {
+        D_8005957C |= 1;
+        func_800404A4(D_800595BC);
+    }
+}
+
+void func_80037F88(void) {
+    if (D_8005957C & 1) {
+        func_800404B4(D_800595BC);
+        D_8005957C &= ~1;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80037FD8);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800380D0);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800381F4);
+extern void func_800393B8(s32 voice, u16 volume);
+extern void func_800395B8(s32 voice, s32 fade, u16 volume);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038264);
+/* Stop a sequence's voice at once or with a fade (0: its own fade, -1:
+ * none). */
+void func_800381F4(SoundSequence *sequence, s32 fade) {
+    if (fade == 0) {
+        fade = sequence->fade;
+    } else if (fade == -1) {
+        fade = 0;
+    }
+    if (fade == 0) {
+        func_800393B8(sequence->voice, sequence->volume);
+        return;
+    }
+    func_800395B8(sequence->voice, sequence->fade, sequence->volume);
+}
+
+extern s32 D_80059584;
+extern s32 D_80059588;
+
+void func_80038264(s32 a, s32 b) {
+    D_80059584 = a;
+    D_80059588 = b;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003827C);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038310);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800383EC);
+/* The playing sequence with `key`, or NULL. */
+SoundSequence *func_800383EC(s32 key) {
+    SoundSequence *sequence;
+
+    for (sequence = D_80059558; sequence != NULL; sequence = sequence->next) {
+        if (sequence->key == key) {
+            break;
+        }
+    }
+    return sequence;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038428);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003852C);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038624);
+extern void func_80039FF8(void);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003864C);
+void func_80038624(void) {
+    func_80039FF8();
+    D_80059440 = NULL;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003869C);
+/* The loaded bank with the id of `bank` (or `id` when NULL). */
+SoundBank *func_8003864C(SoundBank *bank, s16 id) {
+    SoundBank *entry;
+
+    if (bank != NULL) {
+        id = bank->id;
+    }
+    for (entry = D_80059440; entry != NULL; entry = entry->next) {
+        if (id == entry->id) {
+            break;
+        }
+    }
+    return entry;
+}
+
+extern void func_80039CC4(void);
+
+void func_8003869C(void) {
+    func_80039CC4();
+    func_80039FF8();
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800386C4);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038824);
+/* 0 without reverb, 1 or 2 by reverb mode. */
+s32 func_80038824(void) {
+    s32 mode;
 
+    if (D_8005957C & 0x700) {
+        mode = 1;
+        if (D_8005957C & 0x600) {
+            mode = 2;
+        }
+    } else {
+        mode = 0;
+    }
+    return mode;
+}
+
+extern s16 D_8005A3EE;
+extern u8 D_80059530[4];
+extern void func_8004138C(u8 *attributes);
+
+/* Set the CD audio volume (halved into the right channels without
+ * reverb).
+ * Nonmatching: the attribute stores are addressed and scheduled differently. */
+#ifdef NON_MATCHING
+void func_8003885C(s32 volume) {
+    s32 cross;
+
+    D_8005A3EE = volume;
+    if (D_8005957C & 0x700) {
+        cross = 0;
+    } else {
+        cross = volume >> 1;
+        volume = cross;
+    }
+    D_80059530[2] = volume;
+    D_80059530[0] = volume;
+    D_80059530[3] = cross;
+    D_80059530[1] = cross;
+    func_8004138C(D_80059530);
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003885C);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800388D4);
+void func_800388D4(s32 enable) {
+    if (enable != 0) {
+        D_8005957C |= 0x1000;
+    } else {
+        D_8005957C &= ~0x1000;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003890C);
+void func_8003890C(SoundBank *bank, s32 enable) {
+    if (enable != 0) {
+        bank->flags &= ~1;
+    } else {
+        bank->flags |= 1;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038934);
 
