@@ -156,6 +156,7 @@ extern s32 D_8004FE4C;
 extern s32 D_8005A488, D_8005A48C, D_8005A490, D_8005A494, D_8005A498, D_8005A49C;
 extern s32 D_8005A4A4, D_8005A4A8, D_8005A4B4;
 extern u8 D_80059F1C[];     /* CD command result */
+extern s32 D_80059F0C;      /* the file being read */
 
 void func_80028230(u8 *files, u16 *directories, u32 mode);
 void func_800283D4(void);
@@ -169,7 +170,7 @@ void func_8002A498(s32 offset);
 s32 func_80028530(void);
 s32 func_800286CC(void); /* disc busy */
 s32 func_80028738(s32 file);
-void func_80028A60(s32 mode);
+s32 func_80028A60(s32 mode);
 s32 func_800295D8(s32 file, void *destination, s32 a2, s32 a3);
 s32 func_800288EC(s32 file); /* file size rounded up to words */
 s32 func_80029AFC(FileRequest *list, s32 a1, s32 a2);

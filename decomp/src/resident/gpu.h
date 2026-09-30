@@ -80,7 +80,7 @@ void func_80043C4C(POLY_F3 *p);                               /* SetPolyF3 */
 s32 func_80043928(DRAWENV *env, s32 x, s32 y, s32 w, s32 h); /* SetDefDrawEnv */
 s32 func_800439E0(DISPENV *env, s32 x, s32 y, s32 w, s32 h); /* SetDefDispEnv */
 u16 func_80043A58(s32 x, s32 y);                              /* GetClut */
-void func_80044764(RECT *rect, s32 r, s32 g, s32 b);          /* ClearImage */
+void func_80044764(RECT *rect, u8 r, u8 g, u8 b);             /* ClearImage */
 void func_80044894(RECT *rect, void *data);                   /* LoadImage */
 void func_8004495C(RECT *rect, s32 x, s32 y);                /* MoveImage */
 void func_80044B70(void *primitive);                          /* DrawPrim */

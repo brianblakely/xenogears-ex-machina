@@ -137,6 +137,7 @@ decomp/src/resident/gpu.h
 decomp/src/resident/main.c
 decomp/src/resident/menu.h
 decomp/src/resident/mode.h
+decomp/src/resident/stream.h
 decomp/src/slot39/slot39.c
 decomp/src/worldmap/worldmap.c
 decomp/targets/overlays/battle.mk

@@ -1,6 +1,7 @@
 #include "common.h"
 #include "mode.h"
 #include "menu.h"
+#include "stream.h"
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80019524);
 
@@ -1569,7 +1570,54 @@ void func_8002800C(TextureScroll *scroll) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002804C);
+/* Disc error indicator: draw a coloured bar for retry `level`; from the fourth, switch to a text screen showing the failing file forever. */
+void func_8002804C(s32 level, s32 r, s32 g, s32 b) {
+    RECT rect;
+    struct {
+        DRAWENV draw;
+        DISPENV disp;
+        u32 ot[16];
+    } screen;
+
+    rect.x = level * 10 + 10;
+    rect.w = 8;
+    rect.y = 0;
+    rect.h = 0x1C0;
+    if (level + 1 >= 4) {
+        r = 0xFF;
+        g = 0xFF;
+        b = 0xFF;
+    }
+    func_80044764(&rect, r, g, b);
+    func_800445D0(0);
+    if (level + 1 >= 4) {
+        func_80044110(0);
+        func_80048BC4();
+        func_80043928(&screen.draw, 0, 0, 0x140, 0x100);
+        func_800439E0(&screen.disp, 0, 0, 0x140, 0xF0);
+        screen.draw.dtd = 0;
+        screen.draw.isbg = 0;
+        screen.draw.dfe = 1;
+        screen.disp.isinter = 0;
+        func_80044C44(&screen.draw);
+        func_80044E9C(&screen.disp);
+        func_800374E8(0x10, 0x10, 0x280, 0xF0, 0x400, 0, 0x280, 0, 0x280, 0x100, 0);
+        func_80044534(1);
+        rect.x = 0;
+        rect.y = 0;
+        rect.w = 0x280;
+        rect.h = 0x30;
+        func_80044764(&rect, 0, 0, 0);
+        for (;;) {
+            func_80044AD8(screen.ot, 8);
+            func_8003700C("\n%d", D_8004FE14 + D_80059F0C - 1);
+            func_8003700C("\n%s", func_80028998(D_80059F0C));
+            func_80037324(screen.ot);
+            func_80044BD0(&screen.ot[7]);
+            func_800445D0(0);
+        }
+    }
+}
 
 /* Initialise disc access: the CD library (or the PC file server for other modes), the file index and directory table, reading both from sectors 24 and 40 when booting from CD. */
 void func_80028230(u8 *files, u16 *directories, u32 mode) {
@@ -1862,23 +1910,14 @@ s32 func_80028A18(s32 file) {
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028A18);
 #endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028A60);
-
-/* Disc stream ring (EVID: analysis/formats/disc-stream-source.md). The ring
- * header holds the slot count, then eight bytes per slot. */
-typedef struct {
-    u16 state;
-    u16 sequence;
-    u16 w4;
-    u16 w6;
-} StreamSlot;
-
-typedef struct {
-    s32 count;
-    StreamSlot slots[1];
-} StreamRing;
-
-extern StreamRing *D_8004FE30;
+/* Wait for the disc (mode 0: until idle); returns the disc status. */
+s32 func_80028A60(s32 mode) {
+    if (mode == 0) {
+        while (func_800286CC() > 0) {
+        }
+    }
+    return func_800286CC();
+}
 
 /* Replace the shared ring and return the previous one. */
 StreamRing *func_80028A94(StreamRing *ring) {
@@ -1903,18 +1942,39 @@ s32 func_80028AAC(void) {
     for (i = 0; i < count; i++) {
         slots[i].state = 0;
         slots[i].sequence = 0;
-        slots[i].w4 = 0;
+        slots[i].length = 0;
         slots[i].w6 = 0;
     }
-    slots->w4 = count;
+    slots->length = count;
     return count;
 }
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028B14);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028E60);
+/* Whether any of `count` ring slots from `index` differs from `state` or runs past the last slot. */
+s32 func_80028E60(s32 index, s32 count, s32 state) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028ECC);
+    for (i = 0; i < count; i++) {
+        if (D_8004FE2C[index].state != state) {
+            return 1;
+        }
+        if (++index > D_8004FE40) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/* Merge the free run that follows slot `index` into its length. */
+void func_80028ECC(s32 index) {
+    s16 length = D_8004FE2C[index].length;
+    s32 next = index + length;
+
+    if (next < D_8004FE40 && D_8004FE2C[next].state == 0) {
+        D_8004FE2C[index].length = length + D_8004FE2C[next].length;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028F30);
 
