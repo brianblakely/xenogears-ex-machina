@@ -2506,7 +2506,50 @@ s16 func_800B0B14(s32 key) {
     return point.vy;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800B0D70);
+/* The party or enemy object (1 + slot, 0 none) whose footprint (its size
+ * plus 0x80, centred at its position less a sixth of motion) point is inside
+ * and above the foot of, the largest such; point is pushed out to its
+ * edge. */
+s32 func_800B0D70(SVector *motion, SVector *point) {
+    s16 best = -1;
+    s32 i;
+    s16 radius;
+    s16 bestRadius;
+    s16 pushX;
+    s16 pushZ;
+    s16 centreX;
+    s16 centreZ;
+    s16 dx;
+    s16 dz;
+    s32 length;
+    ModelPart *root;
+
+    for (i = 0; i < 11; i++) {
+        radius = func_800AA650(i) + 0x80;
+        if (D_800D3368[i] != NULL && D_800D3368[i]->active) {
+            if (point->vy > (root = D_800D3368[i]->hierarchy)->translation[1] - func_800AA600(i) &&
+                (best < 0 || radius > bestRadius)) {
+                centreX = root->translation[0] - motion->vx / 6;
+                dx = point->vx - centreX;
+                centreZ = root->translation[2] - motion->vz / 6;
+                dz = point->vz - centreZ;
+                length = SquareRoot0(dx * dx + dz * dz) + 1;
+                if (length < radius) {
+                    best = i;
+                    bestRadius = radius;
+                    pushX = centreX + dx * radius / length;
+                    pushZ = centreZ + dz * radius / length;
+                }
+            }
+        }
+    }
+    if (best >= 0) {
+        point->vx = pushX;
+        point->vz = pushZ;
+        return best + 1;
+    }
+    return 0;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800B0FF4);
 
