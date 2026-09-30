@@ -833,6 +833,31 @@ void func_8002C8CC(SpriteDef *def, void *prims, s32 mode);
 void SetColorMatrix(MATRIX *m);
 void SetLightMatrix(MATRIX *m);
 
+/* Scratchpad work area of the face probe. */
+typedef struct {
+    VECTOR p[3];      /* face corners; p[1] first holds the scale */
+    u8 pad30[0xC0];
+    MATRIX m;         /* 0xF0 */
+} FaceScratch;
+
+#define FACE_SCRATCH ((FaceScratch *)0x1F800000)
+
+/* Collision mesh of a scene object (behind SceneObject.unk44). */
+typedef struct {
+    s16 corner[3];
+    s16 unk6[4];
+} MeshFace;
+
+typedef struct {
+    s32 unk0;
+    SVECTOR *vertices;
+    MeshFace faces[1];
+} Mesh;
+
+MATRIX *ScaleMatrix(MATRIX *m, VECTOR *scale);
+void func_8004A6DC(SVECTOR *v, VECTOR *out, s32 *flag); /* RotTrans */
+void func_800935DC(VECTOR *point, VECTOR *origin, VECTOR *normal);
+
 #define gte_ldv0(r0) \
     __asm__ volatile("lwc2 $0, 0(%0);" \
                      "lwc2 $1, 4(%0)" \

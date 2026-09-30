@@ -152,7 +152,60 @@ s16 func_80084D00(s32 probe, s16 *hit) {
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80084DB8);
 
+/* Project `position` onto face `face` of scene object `index`: `offset` gets
+ * the object-relative x/z, `normal` the face normal and offset->vy the
+ * height of the face plane there. */
+#ifdef NON_MATCHING /* one more callee-saved register: face and vertices do not share */
+void func_80085158(VECTOR *position, VECTOR *offset, VECTOR *normal, u16 index, u16 face) {
+    s32 flag;
+    VECTOR *edge1;
+    VECTOR *edge2;
+    SceneObject *object;
+    MeshFace *corners;
+    SVECTOR *vertices;
+    s32 x;
+    s32 y;
+    s32 z;
+
+    object = &D_8009C620[index];
+    offset->vx = (position->vx >> 12) - object->position.vx;
+    offset->vz = object->position.vz - (position->vz >> 12);
+    FACE_SCRATCH->m = object->matrix;
+    FACE_SCRATCH->m.t[2] = 0;
+    FACE_SCRATCH->m.t[0] = 0;
+    FACE_SCRATCH->p[1].vz = 0x800;
+    FACE_SCRATCH->p[1].vy = 0x800;
+    FACE_SCRATCH->p[1].vx = 0x800;
+    FACE_SCRATCH->m.t[1] = object->position.vy;
+    ScaleMatrix(&FACE_SCRATCH->m, &FACE_SCRATCH->p[1]);
+    SetRotMatrix(&FACE_SCRATCH->m);
+    SetTransMatrix(&FACE_SCRATCH->m);
+    edge1 = &FACE_SCRATCH->p[1];
+    edge2 = &FACE_SCRATCH->p[2];
+    vertices = ((Mesh *)object->unk44)->vertices;
+    corners = ((Mesh *)object->unk44)->faces + face;
+    func_8004A6DC(&vertices[corners->corner[0]], &FACE_SCRATCH->p[0], &flag);
+    func_8004A6DC(&vertices[corners->corner[1]], &FACE_SCRATCH->p[1], &flag);
+    func_8004A6DC(&vertices[corners->corner[2]], &FACE_SCRATCH->p[2], &flag);
+    x = FACE_SCRATCH->p[0].vx;
+    y = FACE_SCRATCH->p[0].vy;
+    z = FACE_SCRATCH->p[0].vz;
+    edge1->vx -= x;
+    edge1->vy -= y;
+    edge1->vz -= z;
+    edge2->vx -= x;
+    edge2->vy -= y;
+    edge2->vz -= z;
+    OuterProduct0(&FACE_SCRATCH->p[2], &FACE_SCRATCH->p[1], &FACE_SCRATCH->p[2]);
+    edge2->vx >>= 2;
+    edge2->vy >>= 2;
+    edge2->vz >>= 2;
+    func_80048D7C(&FACE_SCRATCH->p[2], normal);
+    func_800935DC(offset, &FACE_SCRATCH->p[0], normal);
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80085158);
+#endif
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80085418);
 
