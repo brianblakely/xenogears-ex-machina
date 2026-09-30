@@ -961,7 +961,6 @@ void func_8008F76C(void) {
     func_8008F7B8();
 }
 
-#ifdef NON_MATCHING
 extern s32 D_800ADB1C;
 extern s32 D_8004F308;
 extern s32 D_8004F324;
@@ -971,6 +970,7 @@ void func_8001B66C(void);
 s32 func_8008A558(void);
 void func_80085B20(s32 track, s32 arg1);
 
+#ifdef NON_MATCHING
 /* Select the field music track (operand 1). Without D_800ADB1C the track is
  * only recorded; otherwise yield until the music system can take a change. */
 void func_8008F7B8(void) {
@@ -1833,9 +1833,9 @@ void func_80092768(void) {
     D_800B0078->pc += 5;
 }
 
-#ifdef NON_MATCHING
 extern FieldDescriptor *D_800B06B8;
 
+#ifdef NON_MATCHING
 /* Give the current actor a step along the published descriptor's facing
  * and set its layer flag 0x800. */
 void func_80092808(void) {
@@ -1852,22 +1852,111 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80092894);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80092C20);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80092DFC);
+extern s32 D_800ADBE4;
+extern s32 D_800ADB2C;
+extern s32 D_800ADB90;
+void func_800A0C4C(void);
+void func_80092894(s32 a, s32 b, s32 c, s32 d);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80092EA0);
+/* Start transition 80092894(0, ...) once field control allows it; yield
+ * until then. */
+void func_80092DFC(void) {
+    if (D_800ADBDC == 0 || D_800ADBE4 == 0 || D_800ADB2C != 0 || D_8004F308 == -1 || D_800ADB90 != 0) {
+        D_800B00C0 = 1;
+    } else {
+        func_800A0C4C();
+        func_80092894(0, 0, 0, 0);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80092F44);
+/* As func_80092DFC with first argument 0x3E0. */
+void func_80092EA0(void) {
+    if (D_800ADBDC == 0 || D_800ADBE4 == 0 || D_800ADB2C != 0 || D_8004F308 == -1 || D_800ADB90 != 0) {
+        D_800B00C0 = 1;
+    } else {
+        func_800A0C4C();
+        func_80092894(0x3E0, 0, 0, 0);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80092FB4);
+extern s32 D_8004F34C;
+s32 func_8009744C(void);
+s32 func_8009A514(void);
+
+/* Publish the current field id and two values in variables 4, 6 and 8 and
+ * count variable 0x12 up. */
+void func_80092F44(void) {
+    func_800A3074(4, D_8004F34C & 0x3FFF);
+    func_800A3074(6, func_8009744C() & 0xFFFF);
+    func_800A3074(8, func_8009A514() & 0xFFFF);
+    func_800A3074(0x12, (s16)(func_800A3018(0x12) + 1));
+}
+
+extern s32 D_800ADBD8;
+extern s32 D_800B0064;
+extern s16 D_800B2176;
+
+/* When D_800ADBD8 is set, consume it and store an operand in D_800B0064. */
+void func_80092FB4(void) {
+    if (D_800ADBD8 != 0) {
+        D_800B2176 = -1;
+        D_800ADBD8 = 0;
+        D_800B0064 = func_800ACDEC(1);
+    }
+    D_800B0078->pc += 3;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80093014);
 
 void func_800931F8(void) {
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80093200);
+extern s32 D_800B0048;
+extern s32 D_800AFD14;
+void func_800932D0(void);
+void func_800931F8(void);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800932D0);
+/* Once field control allows it, run func_800932D0 and store two operands. */
+void func_80093200(void) {
+    if (D_800ADBDC == 0 || D_800ADBE4 == 0 || D_800ADB2C != 0 || D_8004F308 == -1 || D_800ADB90 != 0) {
+        D_800B00C0 = 1;
+    } else {
+        func_800932D0();
+        func_800931F8();
+        D_800B0048 = func_800ACDEC(0);
+        D_800AFD14 = func_800ACDEC(2);
+        D_800B0078->pc += 4;
+    }
+}
+
+extern s32 D_800ADB70;
+extern s32 D_800ADBEC;
+void func_80092F44(void);
+
+/* Request a field change (operands: field id, entry) once field control
+ * allows it, then yield. */
+void func_800932D0(void) {
+    s32 entry;
+    s32 field;
+
+    if (D_800ADBDC == 0 || D_800ADBE4 == 0 || D_800ADB2C != 0 || D_8004F308 == -1 || D_800ADB90 != 0 ||
+        D_800ADB70 != 0) {
+        D_800B00C0 = 1;
+    } else {
+        D_800B2176 = -1;
+        if (D_800ADBEC != 0) {
+            entry = func_800ACDEC(3);
+            field = func_800ACDEC(1);
+            func_80092F44();
+            D_800ADBEC = 0;
+            func_800A3074(2, entry);
+            D_8004F34C = field;
+            func_800931F8();
+        }
+        D_800B00C0 = 1;
+        D_800B0078->pc += 5;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800933F8);
 
