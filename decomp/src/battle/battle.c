@@ -152,8 +152,8 @@ void func_80071A8C(void) {
     for (i = 7; i >= 0; i--) {
         D_800D36C8[i].shown = 0;
     }
-    D_800D2D28->unkB5 = 0;
-    D_800D2D28->unkB4 = 0;
+    D_800D2D28->windows[5] = 0;
+    D_800D2D28->windows[4] = 0;
     func_800716D8();
 }
 #else
@@ -1022,13 +1022,13 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80079C24);
 
 /* Show battle message window `index`. */
 void func_80079E18(u8 index) {
-    D_800D2D28->unkB4 = 1;
+    D_800D2D28->windows[4] = 1;
     D_800D36C8[index].shown = 1;
 }
 
 /* Hide battle message window `index`. */
 void func_80079E4C(u8 index) {
-    D_800D2D28->unkB4 = 0;
+    D_800D2D28->windows[4] = 0;
     D_800D36C8[index].shown = 0;
 }
 
@@ -3549,7 +3549,37 @@ void func_8008FA60(u8 window) {
     func_800320E8(D_800D2D90[window]);
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008FAD8);
+/* Grow every opening window by 32 pixels per frame up to its size, centred,
+ * and mark it open when both sides are complete. */
+void func_8008FAD8(void) {
+    s32 i;
+    WindowRect *rect;
+    u8 done;
+
+    for (i = 0; i < 7; i++) {
+        rect = D_800D2D90[i];
+        if (D_800D2D28->unkB8[i] != 0 && D_800D2D28->unkBF[i] == 0) {
+            done = 0;
+            if (rect->curW + 32 >= rect->w) {
+                rect->curW = rect->w;
+                done = 1;
+            } else {
+                rect->curW += 32;
+            }
+            if (rect->curH + 32 >= rect->h) {
+                rect->curH = rect->h;
+                done++;
+            } else {
+                rect->curH += 32;
+            }
+            if (done == 2) {
+                D_800D2D28->unkBF[i] = 1;
+            }
+            func_8008F6E4(rect->style, rect->x + (rect->w >> 1) - (rect->curW >> 1),
+                          rect->y + (rect->h >> 1) - (rect->curH >> 1), rect->curW, rect->curH);
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008FC1C);
 
@@ -3704,7 +3734,29 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80094D24);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80094EE4);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80095690);
+/* Formula: amount = attacker +0x5b times the descriptor's +0x11 (doubled
+ * with attacker +0x8a bit 0x2000), scaled 0.7 / 1.3 by the target's
+ * +0x8c|+0x8e bits 0x100 / 0x200, none for a +0x15a 0x80 target; code 2. */
+void func_80095690(void) {
+    s16 amount = D_800C3E00->unk5B * D_800C3DFC->unk11;
+    u16 status;
+
+    if (D_800C3E00->unk8A & 0x2000) {
+        amount *= 2;
+    }
+    status = D_800C3E34->unk8C | D_800C3E34->unk8E;
+    if (status & 0x100) {
+        amount = amount * 7 / 10;
+    }
+    if (status & 0x200) {
+        amount = amount * 13 / 10;
+    }
+    if (D_800CCCE8[D_800C3E50].unk15A & 0x80) {
+        amount = 0;
+    }
+    D_800C34B0->resultCodes[D_800C3E50] = 2;
+    D_800C34B0->damage[D_800C3E50] = amount;
+}
 
 /* The target defends: a +0x56 state 2 target first leaves it (8009ac48),
  * its status words clear, result code 2 and a tenth of its +0x4e times the

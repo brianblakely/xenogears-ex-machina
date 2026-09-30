@@ -66,7 +66,8 @@ typedef struct {
     u16 unk88;
     u16 unk8A;
     u16 unk8C;
-    u8 unk8E[0x104 - 0x8E];
+    u16 unk8E;
+    u8 unk90[0x104 - 0x90];
     u32 unk104;
     s32 unk108;
     u8 unk10C[0x120 - 0x10C];
@@ -141,13 +142,10 @@ typedef struct {
     u8 unkAD;
     u8 unkAE;          /* menu module block loaded */
     u8 unkAF;
-    u8 windows[4];     /* +0xB0 window shown */
-    u8 unkB4;
-    u8 unkB5;
-    u8 unkB6;
+    u8 windows[7];     /* +0xB0 window shown */
     u8 unkB7;          /* command window page */
-    u8 unkB8[4];
-    u8 unkBC[0xC6 - 0xBC];
+    u8 unkB8[7];       /* window opening */
+    u8 unkBF[7];       /* window fully open */
     u8 unkC6;
     u8 unkC7;
     u8 unkC8;
@@ -385,8 +383,19 @@ typedef struct {
 } SoundSystem;
 
 extern SoundSystem *D_8005919C;
-extern void *D_800D2E38[4]; /* window blocks */
-extern void *D_800D2D90[4];
+/* Window rectangle (*800d2d90[window]). */
+typedef struct {
+    u16 x;
+    u16 y;
+    u16 w;
+    u16 h;
+    u16 curW;          /* +0x8 opening size */
+    u16 curH;
+    u8 style;          /* +0xC */
+} WindowRect;
+
+extern void *D_800D2E38[7]; /* window blocks */
+extern WindowRect *D_800D2D90[7];
 
 /* Battle state (800ccce8): the records and per-action arrays. */
 typedef struct {
@@ -646,6 +655,7 @@ u8 func_800841E0(u8 member);
 u16 func_80089C6C(u16 mask, u8 bit);
 void func_80076B68(POLY_FT4 *prim);
 void func_8008FC1C(s32 x, s32 y, s32 w, s32 h, s32 style);
+void func_8008F6E4(u8 style, u16 x, u16 y, u16 w, u16 h);
 s8 func_80097964(u8 a, u8 b, u16 c);
 void func_800995A0(u8 slot, u8 a, u16 b, s32 mode);
 void func_80078508(u8 *order);
