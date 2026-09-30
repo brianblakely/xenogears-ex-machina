@@ -968,7 +968,97 @@ void func_801C989C(u8 sound) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C98E8);
+/* Read this frame's input into the input code (8: none). Without a pad the
+ * sound is paused (keeping the vsync count) until one is connected; an
+ * overflowed queue is reset; otherwise entries are dequeued until one holds
+ * a button the screen uses (directions and cancel play their sounds). */
+void func_801C98E8(void) {
+    u8 code = 8;
+    u8 waiting = 1;
+    u8 paused = 0;
+    s32 vsyncs;
+
+    do {
+        if (func_80035734(0) == 0) {
+            if (paused == 0) {
+                paused++;
+                func_80037EE4();
+                vsyncs = D_80059488;
+            }
+        } else {
+            waiting--;
+            if (paused) {
+                func_80037E8C();
+                D_80059488 = vsyncs;
+            }
+        }
+    } while (waiting);
+    if (func_80036410()) {
+        func_80035DB0();
+    } else {
+        while (func_80035CDC()) {
+            if (D_800594A4 & 0x2000) {
+                code = 0;
+                func_801C989C(1);
+                break;
+            }
+            if (D_800594A4 & 0x4000) {
+                code = 1;
+                func_801C989C(1);
+                break;
+            }
+            if (D_800594A4 & 0x8000) {
+                code = 2;
+                func_801C989C(1);
+                break;
+            }
+            if (D_800594A4 & 0x1000) {
+                code = 3;
+                func_801C989C(1);
+                break;
+            }
+            if (D_8005948C & 0x20) {
+                code = 4;
+                break;
+            }
+            if (D_8005948C & 0x40) {
+                code = 5;
+                func_801C989C(3);
+                break;
+            }
+            if (D_8005948C & 0x80) {
+                code = 6;
+                break;
+            }
+            if (D_8005948C & 0x10) {
+                code = 7;
+                break;
+            }
+            if (D_8005948C & 4) {
+                code = 10;
+                break;
+            }
+            if (D_8005948C & 8) {
+                code = 9;
+                break;
+            }
+            if (D_8005948C & 0x800) {
+                code = 11;
+                break;
+            }
+            if (D_8005948C & 0x100) {
+                code = 12;
+                D_800625A0->b_1E94 = D_800625A0->b_1E94 == 0;
+                break;
+            }
+            if (D_8005948C & 1) {
+                D_800625A0->b_1E95++;
+                break;
+            }
+        }
+    }
+    D_800625A0->input_code = code;
+}
 
 /* Advance the view motion (4/3 start zooming in/out, 2/1 run them) and load
  * the view rotation and translation into the GTE. */

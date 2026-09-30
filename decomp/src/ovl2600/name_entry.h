@@ -267,6 +267,11 @@ typedef struct {
     MenuLabel *message_lines[4]; /* 0x1DE0 */
     u8 pad_1DF0[0x1E20 - 0x1DF0];
     u8 *entry;             /* 0x1E20: name entry block (0xDEC bytes) */
+    u8 *portrait_table;    /* 0x1E24 */
+    u8 portraits[3];       /* 0x1E28 */
+    u8 pad_1E2B[0x1E94 - 0x1E2B];
+    u8 b_1E94;             /* 0x1E94: toggled by button 0x100 */
+    u8 b_1E95;             /* 0x1E95: counts button 1 */
 } MenuState;
 
 extern MenuState *D_800625A0;
