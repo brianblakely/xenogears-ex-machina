@@ -10,6 +10,10 @@ extern void func_800320B8(void *data);
 extern void func_80031A30(void);
 extern void func_80031FF8(void);
 extern void func_8003223C(void);
+extern void func_8003278C(s32 a, s32 b, s32 c, s32 d);
+extern void func_800379C8(char *line);
+extern void func_80032DCC(char *line);
+extern void func_800320A4(void *data);
 
 /* Usable size of a block: the distance to the next block's header. */
 s32 func_80031894(u8 *data) {
@@ -101,7 +105,7 @@ void func_80031A68(HeapHeader *first, u8 *end) {
     HEAP_HEADER(end)->next = end;
     HEAP_HEADER(end)->tag = 1;
     HEAP_HEADER(end)->kind = 0x20;
-    D_80059FA4[10] = 0;
+    D_80059FCC[0] = NULL;
     func_80031A30();
 }
 #else
@@ -122,7 +126,7 @@ void func_80031B10(HeapHeader *first) {
     first->kind = 0x21;
     first->next = HEAP_HEADER(D_80059320)->next;
     D_80059320 = (u8 *)(first + 1);
-    D_80059FA4[10] = 0;
+    D_80059FCC[0] = NULL;
 }
 #else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_80031B10);
@@ -360,20 +364,122 @@ INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/heap", D_80018998);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_8003278C);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_80032B0C);
+/* Allocate a protected block owned by tag 7 (class 0x2F), from the top. */
+void *func_80032B0C(s32 size) {
+    u16 tag = D_8005931C;
+    void *block;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_80032B64);
+    D_8005931C = 7;
+    D_80059318 = 0x2F;
+    block = func_80031BDC(size, 1);
+    func_800320A4(block);
+    D_8005931C = tag;
+    return block;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_80032BAC);
+/* Allocate `count * size` bytes owned by tag 7 (class 0x23). */
+void *func_80032B64(s32 count, s32 size) {
+    u16 tag = D_8005931C;
+    void *block;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_80032BDC);
+    D_8005931C = 7;
+    D_80059318 = 0x23;
+    block = func_80031BDC(size * count, 0);
+    D_8005931C = tag;
+    return block;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_80032C18);
+/* Release a block even when it is protected. */
+void func_80032BAC(void *data) {
+    func_800320B8(data);
+    func_800320E8(data);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_80032CB8);
+/* Format a heap report line and pass it to the report output. */
+void func_80032BDC(char *format, void *args) {
+    char line[1024];
 
+    func_8003FBF8(line, format, args);
+    D_800592B8(line);
+}
+
+/* Release a block after `frames` more frames (immediately for 0). */
+void func_80032C18(void *data, s32 frames) {
+    u32 caller;
+    DelayedFree *node;
+
+    if (data == NULL) {
+        GET_RA(&caller);
+        D_8005933C = 0;
+        D_80059340 = caller - 8;
+        func_80019ACC(0x83);
+    }
+    if (frames == 0) {
+        func_800320E8(data);
+        return;
+    }
+    func_800324B8(0x33);
+    node = func_80031BDC(sizeof(DelayedFree), 1);
+    node->next = D_80059FCC[0];
+    node->data = data;
+    node->frames = frames;
+    D_80059FCC[0] = node;
+}
+
+/* Count down the delayed releases and release the expired ones. */
+void func_80032CB8(void) {
+    DelayedFree **link = &D_80059FCC[0];
+    DelayedFree *node;
+
+    while ((node = *link) != NULL) {
+        if (--node->frames == -1) {
+            func_800320E8(node->data);
+            *link = node->next;
+            func_800320E8(node);
+            if (*link == NULL) {
+                break;
+            }
+        } else {
+            link = &(*link)->next;
+        }
+    }
+}
+
+/* Release every delayed block now.
+ * Nonmatching: the list head is kept in a callee-saved register. */
+#ifdef NON_MATCHING
+void func_80032D60(void) {
+    DelayedFree *node = D_80059FCC[0];
+
+    if (node != NULL) {
+        do {
+            func_800320E8(node->data);
+            D_80059FCC[0] = node->next;
+            func_800320E8(node);
+            node = D_80059FCC[0];
+        } while (node != NULL);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_80032D60);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_80032DCC);
+/* Report output to the host file. */
+void func_80032DCC(char *line) {
+    func_8004C470(D_80059348, line, func_8003FBC8(line));
+}
 
+/* Write the full heap report to the host file `name`.
+ * Nonmatching: the original stores the output hook with lui/sw, not $gp. */
+#ifdef NON_MATCHING
+void func_80032E04(char *name) {
+    func_8004C38C();
+    D_80059348 = func_8004C36C(name, 0);
+    D_800592B8 = func_80032DCC;
+    func_8003278C(1, 0, 0, -1);
+    D_800592B8 = func_800379C8;
+    func_8004C338(D_80059348);
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_80032E04);
+#endif

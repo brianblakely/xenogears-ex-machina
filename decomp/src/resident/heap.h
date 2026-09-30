@@ -22,6 +22,13 @@ typedef struct {
 /* Resident fatal error handler; does not return. */
 extern void func_80019ACC() __attribute__((noreturn));
 
+/* A release deferred by `frames` frames ("DelayFree" blocks). */
+typedef struct DelayedFree {
+    struct DelayedFree *next;
+    void *data;
+    s32 frames;
+} DelayedFree;
+
 /* Heap state ($gp-relative in the heap unit). */
 extern s16 D_80059318;     /* allocation class of the next block */
 extern u16 D_8005931C;     /* owner tag of the next block */
@@ -33,6 +40,9 @@ extern u8 *D_80059338;
 extern s32 D_8005933C;     /* size of the last request */
 extern s32 D_80059340;     /* caller of the last request */
 extern s32 D_80059FA4[];   /* per-tag words */
+extern DelayedFree *D_80059FCC[]; /* one list head; not small data */
+extern s32 D_80059348;     /* host file of the heap report */
+extern void (*D_800592B8)(char *line); /* heap report output */
 
 /* PsyQ libsn host file access (SDK region): PCinit, PCopen, PClseek, PCread,
  * PCclose. */
@@ -41,6 +51,12 @@ extern s32 func_8004C318(char *name, s32 flags, s32 perms);
 extern s32 func_8004C348(s32 fd, s32 offset, s32 mode);
 extern s32 func_8004C398(s32 fd, void *buffer, s32 size);
 extern s32 func_8004C338(s32 fd);
+extern s32 func_8004C36C(char *name, s32 perms);
+extern s32 func_8004C470(s32 fd, void *buffer, s32 size);
+
+/* PsyQ libc (SDK region): strlen, vsprintf. */
+extern s32 func_8003FBC8(char *s);
+extern s32 func_8003FBF8(char *out, char *format, void *args);
 
 /* Allocate `size` bytes with an allocation mode, free a block. */
 extern void *func_80031BDC(s32 size, s32 mode);
