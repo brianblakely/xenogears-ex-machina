@@ -789,7 +789,7 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80021D50);
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80021EBC);
 
 void func_80021FB8(Sprite *sprite, u8 value) {
-    sprite->byteb0 = value;
+    sprite->b0.byteb0 = value;
 }
 
 /* Set a sprite's walking speed (its velocity follows). */
@@ -936,7 +936,33 @@ void func_80022E8C(Task *task) {
     func_80022DF4(task);
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80022EB8);
+/* Sprite task destroy callback: queue the part list, release the renderer
+ * block of a one-sided sprite, destroy the tasks it created (motion bit 5)
+ * and clear its flag-29 children's word (bit 11 at 0xb0), leave the pending
+ * list, unlink both nodes and free the task. */
+void func_80022EB8(Task *task) {
+    Sprite *sprite = task->data;
+    SpriteTask *node = (SpriteTask *)task;
+
+    if (sprite->renderer != NULL && sprite->renderer->parts != NULL) {
+        func_80025180((u32)sprite->renderer->parts);
+    }
+    if ((sprite->render.word & 3) == 1 && sprite->renderer->pointer34 != NULL) {
+        func_800320E8(sprite->renderer->pointer34);
+    }
+    if ((sprite->motion.word >> 5) & 1) {
+        func_8001CE74(&node->task);
+    }
+    if ((sprite->b0.wordb0 >> 11) & 1) {
+        func_8001D034(&node->task);
+    }
+    if ((sprite->render.word & 3) == 1) {
+        func_8001D3F4(sprite);
+    }
+    func_8001CD94(&node->task);
+    func_8001CB48(&node->auxiliary);
+    func_800320E8(task);
+}
 
 /* Replace a sprite renderer's part list with room for `count` parts. */
 void func_80022FC4(Sprite *sprite, s32 count, s32 from_top) {

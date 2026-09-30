@@ -144,8 +144,10 @@ typedef struct Sprite {
         unsigned unknown19 : 13;
         } bits;
     } motion;                /* +0xac */
-    u8 byteb0;               /* +0xb0 */
-    u8 unknownb1[3];
+    union {
+        u32 wordb0;          /* bit 11: destroy flag-29 child tasks with the sprite */
+        u8 byteb0;
+    } b0;                    /* +0xb0 */
 } Sprite; /* 0xb4 bytes; an inline renderer may follow */
 
 /* A sprite's animation sequencer (0x1c bytes; inline at sprite + 0xf4). */
@@ -222,6 +224,10 @@ void func_8001CD6C(Task *task, void (*update)(Task *));
 void func_8001CD74(Task *task, void (*destroy)(Task *));
 void func_80022DF4(Task *task);
 void func_80022EB8(Task *task);
+void func_80025180(u32 value);
+void func_8001CE74(Task *owner);
+void func_8001D034(Task *owner);
+void func_8001D3F4(Sprite *sprite);
 void func_80023804(Sprite *sprite);
 void func_8002393C(SpriteRenderer *renderer);
 
