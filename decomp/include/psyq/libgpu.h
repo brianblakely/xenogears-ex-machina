@@ -219,6 +219,10 @@ typedef struct {
 #define setcode(p, _code) (((P_TAG *)(p))->code = (u_char)(_code))
 #define getaddr(p) (u_long)(((P_TAG *)(p))->addr)
 #define getcode(p) (u_char)(((P_TAG *)(p))->code)
+#define getTPage(tp, abr, x, y)                                                                    \
+    ((((tp) & 0x3) << 7) | (((abr) & 0x3) << 5) | (((y) & 0x100) >> 4) | (((x) & 0x3ff) >> 6) |   \
+     (((y) & 0x200) << 2))
+#define getClut(x, y) (((y) << 6) | (((x) >> 4) & 0x3f))
 #define setRECT(r, _x, _y, _w, _h) ((r)->x = (_x), (r)->y = (_y), (r)->w = (_w), (r)->h = (_h))
 #define setRGB0(p, _r0, _g0, _b0) ((p)->r0 = _r0, (p)->g0 = _g0, (p)->b0 = _b0)
 #define setRGB1(p, _r1, _g1, _b1) ((p)->r1 = _r1, (p)->g1 = _g1, (p)->b1 = _b1)

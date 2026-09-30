@@ -173,6 +173,9 @@ extern u8 *D_80059538;             /* auxiliary data of the record being prepare
 s32 func_8002C700(SpriteModel *model, RenderPacket *packets, u32 *ot, s32 mode); /* draw */
 void func_8002C8CC(SpriteModel *model, RenderPacket *packets, s32 mode); /* build packets */
 void func_8002CCAC(void);
+s32 func_8002C3E8(ModelGroup *group);
+void func_8002C59C(SpriteModel *model);
+void func_8002CB54(ModelBuffer *buffer, u8 **first, u8 **second);
 /* Old-style definition: callers pass the mode as an int. */
 s32 func_8003101C(); /* (SpriteModel *model, u16 mode): bounding box off screen */
 
