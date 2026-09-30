@@ -146,33 +146,95 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80088B40);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80088C90);
+/* Show scene object 69 and the listed objects. */
+s32 func_80088C90(void) {
+    SceneObject *objects;
+    s32 i;
 
+    objects = D_8009C620;
+    objects[69].visible = 1;
+    for (i = 0; D_8009AFDC[i] != -1; i++) {
+        objects[D_8009AFDC[i]].visible = 1;
+    }
+    return 3;
+}
+
+/* In scene 0x99, move scene object 69 to the actor (world units). */
+#ifdef NON_MATCHING /* object pointer folded into the field offsets */
+s32 func_80088D00(s32 index) {
+    WorldmapActor *actor;
+    SceneObject *object;
+
+    object = &D_8009C620[69];
+    actor = &D_8009BE24[index];
+    if (D_8006EF64 == 0x99) {
+        object->position.vx = actor->position.vx >> 12;
+        object->position.vy = actor->position.vy >> 12;
+        object->position.vz = actor->position.vz >> 12;
+    }
+    return 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80088D00);
+#endif
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80088D64);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80088DE4);
+/* Place the actor at (0x68, 0x60). */
+s32 func_80088DE4(s32 index) {
+    func_8008BFD4(index, &D_8009BE24[index].position, 0x68, 0x60);
+    return 1;
+}
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80088E1C);
+/* Place the actor at scene object 75. */
+s32 func_80088E1C(s32 index) {
+    WorldmapActor *actor;
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80088E68);
+    actor = &D_8009BE24[index];
+    actor->position.vx = D_8009C620[75].position.vx << 12;
+    actor->position.vy = D_8009C620[75].position.vy << 12;
+    actor->position.vz = D_8009C620[75].position.vz << 12;
+    return 1;
+}
+
+/* Place the actor at (0x10C, 0x1A6). */
+s32 func_80088E68(s32 index) {
+    func_8008BFD4(index, &D_8009BE24[index].position, 0x10C, 0x1A6);
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80088EA0);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80088F1C);
+/* Place the actor at (0xC9, 0x392). */
+s32 func_80088F1C(s32 index) {
+    func_8008BFD4(index, &D_8009BE24[index].position, 0xC9, 0x392);
+    return 1;
+}
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80088F54);
+/* Scene step with nothing to do. */
+s32 func_80088F54(void) {
+    return 3;
+}
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80088F5C);
+/* Scene step with nothing to do. */
+s32 func_80088F5C(void) {
+    return 3;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80088F64);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80088FF4);
+/* Free the effect table. */
+void func_80088FF4(void) {
+    func_800320E8(D_8009BDF4);
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008901C);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80089128);
+/* Free two effect buffers. */
+void func_80089128(void) {
+    func_800320E8(D_8009BE1C);
+    func_800320E8(D_8009BE20);
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80089160);
 

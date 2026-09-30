@@ -11,9 +11,9 @@ s32 func_80080900(s32 index) {
     WorldmapActor *actor;
 
     actor = &D_8009BE24[index];
-    actor->unk28 = D_8009C5AC.vx;
-    actor->unk2C = D_8009C5AC.vy;
-    actor->unk30 = D_8009C5AC.vz;
+    actor->position.vx = D_8009C5AC.vx;
+    actor->position.vy = D_8009C5AC.vy;
+    actor->position.vz = D_8009C5AC.vz;
     return 1;
 }
 

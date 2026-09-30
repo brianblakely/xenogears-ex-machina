@@ -174,9 +174,7 @@ typedef struct {
     s16 state;    /* 0x20 */
     s16 wait;     /* 0x22: script wait counter */
     s32 unk24;
-    s32 unk28;
-    s32 unk2C;
-    s32 unk30;
+    Vec3 position; /* 0x28 */
     s32 unk34;
     s32 unk38;
     s32 unk3C;
@@ -397,7 +395,8 @@ typedef struct {
 } SpriteDef;
 
 typedef struct SceneObject {
-    s32 unk0;
+    s16 visible;
+    s16 unk2;
     s32 unk4;
     Vec3 position;              /* 0x08 */
     s32 unk14;
@@ -445,6 +444,12 @@ extern u16 D_8009B64C[][2]; /* per area: two scene objects */
 extern u16 D_8009B674[];    /* per area: scene object */
 
 void func_80087904(SceneObject *object, void *prims, s32 count, s32 mode);
+
+extern s16 D_8009AFDC[]; /* scene objects to show; -1 ends */
+extern u16 D_8006EF64;
+extern void *D_8009BDF4, *D_8009BE1C, *D_8009BE20;
+
+void func_8008BFD4(s32 index, Vec3 *position, s32 x, s32 z);
 
 /* Frame state. */
 typedef struct {

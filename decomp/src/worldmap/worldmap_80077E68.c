@@ -44,8 +44,8 @@ s32 func_800794D8(s32 index) {
     WorldmapActor *actor;
 
     actor = &D_8009BE24[index];
-    actor->unk28 = 0x2000000;
-    actor->unk30 = 0x1500000;
+    actor->position.vx = 0x2000000;
+    actor->position.vz = 0x1500000;
     actor->state = 0;
     D_8009C620[16].angle.vx = 0;
     D_8009C620[16].angle.vy = 0x780;
