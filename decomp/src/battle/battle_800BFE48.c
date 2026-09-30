@@ -18,12 +18,120 @@
 #include "popup.h"
 #include "frame.h"
 #include "stage.h"
+#include "settle.h"
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800BFE48", func_800BFE48);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800BFE48", func_800C0314);
+/* Knock down the slots of the area's down mask not yet down: each slot
+ * sprite (unless its slot still counts while down) plays motion 0x15 (gears
+ * through their stage object), then frames run until their countdowns end;
+ * the number knocked down. */
+s32 func_800C0314(void) {
+    BattleArea *area = &BATTLE_AREA;
+    BattleSprite *list[12];
+    BattleSprite *sprite;
+    s32 i;
+    s32 slot;
+    s32 downed;
+    u8 gear;
+    u8 busy;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800BFE48", func_800C0564);
+    downed = 0;
+    gear = downed;
+    i = func_800BEEB4(AREA_DOWN_MASK(area) & (AREA_DOWN_MASK(area) ^ (u16)D_800D2E54), list, D_800C3E1C);
+    if (i != 0) {
+        for (i--; i >= 0; i--) {
+            sprite = list[i];
+            if ((D_800C3608 >> SPRITE_SLOT(sprite)) & 1) {
+                list[i] = NULL;
+                continue;
+            }
+            sprite->countdown = 0;
+            slot = SPRITE_SLOT(sprite);
+            if (BATTLE_AREA.slots[slot].gear) {
+                gear = 1;
+                D_800D3368[slot]->field38 = gear;
+                func_800BEE2C(SPRITE_SLOT(sprite), SPRITE_SLOT(sprite), 0x15);
+            } else if (sprite->motion.bytes[3] != 0x15) {
+                func_800245D8(sprite, 0x15);
+            }
+            downed++;
+            D_800D2E54 |= 1 << SPRITE_SLOT(sprite);
+        }
+    }
+    do {
+        busy = 0;
+        for (i = 0; i != downed; i++) {
+            if (list[i] != NULL && list[i]->field48 != 0 && list[i]->countdown != 0) {
+                busy = 1;
+            }
+        }
+        if (busy && downed != 0) {
+            func_800BF9EC();
+        }
+        if (busy && downed != 0) {
+            func_800BE790();
+        }
+    } while (busy);
+    if (gear) {
+        func_800B136C();
+    }
+    return downed;
+}
+
+/* Run frames until every slot's sprite has settled: gear slots until their
+ * sprite's frames run out, others (unless hidden or out of action) until
+ * they are back in their condition's idle motion or their idle mode. */
+void func_800C0564(void) {
+    BattleSprite *sprite;
+    s32 slot;
+    s8 motion;
+    u8 busy;
+
+    while (1) {
+        busy = 0;
+        for (slot = 0; slot != 11; slot++) {
+            sprite = BATTLE_AREA.sprites[slot];
+            if (sprite == NULL) {
+                continue;
+            }
+            if (BATTLE_AREA.slots[slot].gear) {
+                if (sprite->framesLeft != 0) {
+                    busy = 1;
+                }
+                continue;
+            }
+            if (func_8009A0DC(slot) == 8) {
+                continue;
+            }
+            switch (sprite->motion.bytes[3]) {
+            case 0:
+            case 1:
+            case 5:
+            case 7:
+            case 14:
+            case 15:
+            case 20:
+            case 21:
+            case 22:
+            case 24:
+                break;
+            default:
+                if (!BATTLE_AREA.slots[slot].hidden) {
+                    motion = sprite->motion.bytes[3];
+                    if (motion != D_800C37D4[func_8009A0DC(slot)] && sprite->motion.bytes[3] != sprite->idle.mode) {
+                        busy = 1;
+                    }
+                }
+                break;
+            }
+        }
+        if (!busy) {
+            break;
+        }
+        func_800BE790();
+    }
+}
 
 /* The distance between two points. */
 s32 func_800C06E4(VECTOR *a, VECTOR *b) {
