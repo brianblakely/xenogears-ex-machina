@@ -129,9 +129,13 @@ typedef struct MenuParty {
 
 /* Screen images (*(state + 350)). */
 typedef struct MenuImages {
-    u8 pad0[0x1180];
+    POLY_FT4 cursor[28][2]; /* 0: cursor sprite list, per buffer */
+    POLY_FT4 cursor2[28][2]; /* 8C0: second cursor sprite list */
     RECT copy; /* 1180: the screen area copied into the other buffer each frame */
-    u8 pad1188[0xA];
+    s32 cursorCount; /* 1188 */
+    s32 cursor2Count; /* 118C */
+    u8 cursorBuffer; /* 1190 */
+    u8 cursor2Buffer; /* 1191 */
     u8 captured; /* 1192 */
     u8 refresh; /* 1193 */
 } MenuImages;
@@ -680,6 +684,12 @@ typedef struct MenuImage {
     DR_MODE modes[2]; /* 140 */
 } MenuImage;
 
+/* The sheet images of one command of a command window. */
+typedef struct MenuCommandImages {
+    s32 cursor; /* 0: cursor image (+d lit) */
+    s32 label; /* 4 */
+} MenuCommandImages;
+
 /* The menu mode's state (*D_800625A0). */
 typedef struct MenuState {
     MenuMover movers[3]; /* 0 */
@@ -808,8 +818,8 @@ extern s32 D_801E9768[];
 extern u8 D_801E9E64[];
 extern u8 D_801E9E84[];
 extern u8 D_801E9EA0[];
-extern u8 D_801EA19C[];  /* field menu command cursor positions */
-extern u8 D_801EA1D4[];  /* title file screen cursor positions */
+extern MenuCommandImages D_801EA19C[]; /* field menu command cursor images */
+extern MenuCommandImages D_801EA1D4[]; /* title file screen cursor images */
 extern u8 D_801EA528[];  /* field menu command labels */
 extern u8 D_801EA524[];  /* label image layout */
 extern u8 D_801EA530[];
@@ -1108,11 +1118,11 @@ void func_801E8018(u8 count, MenuLabelSlot *labels, u8 *table, u8 *flags);
 void func_801E8044(u8 count, u8 *flags);
 void func_801E8070(u8 count, MenuLabelSlot *labels, u8 *table, u8 *arg3, u8 *flags, u8 selected, u8 arg6,
                    s32 arg7);
-void func_801E8474(u8 count, u8 *positions);
+void func_801E8474(u8 count, MenuCommandImages *images);
 void func_801E92CC(void);
 s32 func_801E93A0(s32 disc);
 void func_801E6668(s32 index);
 void func_801E76EC(s32 index);
-void func_801E8978(u8 count, u8 cursor, u8 *positions);
+void func_801E8978(u8 count, u8 cursor, MenuCommandImages *images);
 
 #endif

@@ -3804,7 +3804,35 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E8474);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E86C8);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E8978);
+/* Lay out the command cursor sprites for `count` commands (images of the
+ * `images`, the chosen one `cursor` taking its lit image,
+ * +d), then mark the command window for redraw. */
+void func_801E8978(u8 count, u8 cursor, MenuCommandImages *images) {
+    s32 i;
+    s32 image;
+
+    D_800625A0->screenImages->cursorCount = 0;
+    D_800625A0->screenImages->cursor2Count = 0;
+    for (i = 0; i < count; i++) {
+        if (i == cursor) {
+            image = images[i].cursor + 0xd;
+        } else {
+            image = images[i].cursor;
+        }
+        D_800625A0->screenImages->cursorCount +=
+            func_8002675C(D_800625A0->sheet, image,
+                          D_800625A0->screenImages->cursor[D_800625A0->screenImages->cursorCount],
+                          D_800625A0->bufferIndex, 0xa0, 0x96, 0x1000);
+        D_800625A0->screenImages->cursor2Count +=
+            func_8002675C(D_800625A0->sheet, images[i].label,
+                          D_800625A0->screenImages->cursor2[D_800625A0->screenImages->cursor2Count],
+                          D_800625A0->bufferIndex, 0xa0, 0x96, 0x1000);
+    }
+    D_800625A0->screenImages->cursorBuffer = D_800625A0->bufferIndex;
+    D_800625A0->screenImages->cursor2Buffer = D_800625A0->bufferIndex;
+    func_801D1EE0(cursor, 1);
+    D_800625A0->party->redraw4 = 1;
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E8B4C);
 
