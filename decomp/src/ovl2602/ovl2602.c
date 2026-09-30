@@ -1424,7 +1424,67 @@ void func_801CC520(void) {
 void func_801CC528(void) {
 }
 
+/* Open the message panel and show three lines of label text from entry `first`. */
+#ifdef NON_MATCHING
+void func_801CC530(u8 first) {
+    PanelGrowth *growth;
+    Label *label;
+    s32 i;
+    s32 x;
+
+    x = 0x50;
+    func_801C90E0(4, 0x42, 0x46, 0xC0, 0x40, 1, 1, 4, 0);
+    growth = D_800625A0->growth[4];
+    while (growth->done == 0) {
+        func_801CC1C4();
+    }
+    for (i = 0; i < 4; i++) {
+        D_800625A0->message_labels[i] = func_80031BDC(sizeof(Label), 0);
+        func_8003F8E8(D_800625A0->message_labels[i], sizeof(Label));
+        if (!(i & 1)) {
+            D_800625A0->message_labels[i]->pixels = func_80031BDC(0x5CA, 0);
+            D_800625A0->message_labels[i]->rect.x = 0x140;
+            D_800625A0->message_labels[i]->rect.y = (i / 2) * 13 + 0x4E;
+            D_800625A0->message_labels[i]->rect.w = 0x3A;
+            D_800625A0->message_labels[i]->rect.h = 13;
+        } else {
+            D_800625A0->message_labels[i]->pixels = D_800625A0->message_labels[i - 1]->pixels;
+        }
+    }
+    i = 0;
+    do {
+        label = D_800625A0->message_labels[i];
+        label->width = func_80034EAC(func_80033728(D_800625A0->label_text, first + i), label->pixels,
+                                     0x36, i % 2);
+        func_801C5CA8(label, i, 0, 0);
+        func_801C7604(label->quad, x, i * 16 + 0x50, label->width, 13);
+        (label->poly + D_800625A0->buffer)->u0 = 0;
+        (label->poly + D_800625A0->buffer)->v0 = (i / 2) * 13 + 0x4E;
+        (label->poly + D_800625A0->buffer)->u1 = label->width;
+        (label->poly + D_800625A0->buffer)->v1 = (i / 2) * 13 + 0x4E;
+        (label->poly + D_800625A0->buffer)->u2 = 0;
+        (label->poly + D_800625A0->buffer)->v2 = (i / 2) * 13 + 0x5B;
+        (label->poly + D_800625A0->buffer)->u3 = label->width;
+        (label->poly + D_800625A0->buffer)->v3 = (i / 2) * 13 + 0x5B;
+        i++;
+        label->projected = 1;
+        label->buffer = D_800625A0->buffer;
+    } while (i < 3);
+    func_80044894(&D_800625A0->message_labels[0]->rect, D_800625A0->message_labels[0]->pixels);
+    func_80044894(&D_800625A0->message_labels[2]->rect, D_800625A0->message_labels[2]->pixels);
+    func_800445D0(0);
+    D_800625A0->flags->message_shown = 1;
+    func_800320E8(D_800625A0->message_labels[0]->pixels);
+    func_800320E8(D_800625A0->message_labels[2]->pixels);
+    if (D_800625A0->flags->unk5B == 2) {
+        D_800625A0->flags->unk5B = 1;
+    }
+    func_801CC1C4();
+    func_801CC1C4();
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CC530);
+#endif
 
 /* Close the message panel and release its labels, then let a frame pass. */
 void func_801CC9A0(void) {
@@ -1737,7 +1797,53 @@ u8 func_801CDC68(void) {
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CDD74);
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CE024);
+/* Overlay entry: build the gear screen, run it, and tear it down. */
+void func_801CE024(void) {
+    func_801C5344(1);
+    func_801C53A8(1);
+    func_801C540C(1);
+    func_801C5470(1);
+    func_801C54D4(1);
+    func_801C5538(1);
+    func_801C559C(1);
+    func_801C5600(1);
+    func_801C5664(1);
+    D_800625A0->images->screen.x = 0x2C0;
+    D_800625A0->images->screen.y = 0x100;
+    D_800625A0->images->screen.w = 0x140;
+    D_800625A0->images->screen.h = 0xE0;
+    D_800625A0->cursor->width = 0x40;
+    D_800625A0->view_translation.vz = 0x200;
+    D_800625A0->view_rotation.vz = 0;
+    D_800625A0->view_rotation.vx = 0;
+    D_800625A0->view_rotation.vy = 0;
+    D_800625A0->model_translation.vz = 0x400;
+    D_800625A0->model_rotation.vz = 0;
+    D_800625A0->model_rotation.vx = 0;
+    D_800625A0->model_rotation.vy = 0x400;
+    D_800625A0->view_motion = 0;
+    D_801D9058 = -0x400;
+    D_801D9064 = -0x400;
+    D_801D9050 = 0x400;
+    D_801D9054 = 0;
+    D_801D905C = 0x400;
+    D_801D9060 = 0;
+    D_801D9083 = 0x10;
+    func_801C5B08();
+    func_801C5C98();
+    func_801C6114();
+    func_801C6708();
+    func_801C6170();
+    func_801C6E74();
+    func_801D5D38();
+    D_800625A0->marks_b = func_80031BDC(sizeof(MarkerQuads), 0);
+    func_8003F8E8(D_800625A0->marks_b, sizeof(MarkerQuads));
+    func_801CE1D0();
+    D_800625A0->drawing = 1;
+    D_800625A0->sounds = 1;
+    func_801CDD74();
+    func_801CCD20();
+}
 
 /* Draw the two second-marker sprites and set their four quads. */
 #ifdef NON_MATCHING
@@ -2002,7 +2108,30 @@ void func_801D0C20(u32 value, u8 lower) {
     D_800625A0->flags->unk5B = 2;
 }
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D0D4C);
+/* Draw a nine-digit price and its unit sprite at (aah, aeh). */
+void func_801D0D4C(u32 value) {
+    s32 i;
+    s32 x;
+
+    func_801C5298(value);
+    i = 0;
+    x = 0xAA;
+    D_800625A0->details->price_count = 0;
+    for (; i < 9; i++, x += 8) {
+        if (D_800625A0->digits[i] != 0xFF) {
+            D_800625A0->details->price_count +=
+                func_8002675C(D_800625A0->sprite_sheet, D_800625A0->digits[i],
+                              D_800625A0->details->price + D_800625A0->details->price_count * 2,
+                              D_800625A0->buffer, x, 0xAE, 0x1000);
+        }
+    }
+    D_800625A0->details->price_count +=
+        func_8002675C(D_800625A0->sprite_sheet, 0x10,
+                      D_800625A0->details->price + D_800625A0->details->price_count * 2, D_800625A0->buffer,
+                      0xF2, 0xAE, 0x1000);
+    D_800625A0->details->price_buffer = D_800625A0->buffer;
+    D_800625A0->flags->price_shown = 1;
+}
 
 /* Hide the transfer screen's packets; with `close` also close its panels, scroll bar and marker. */
 void func_801D0EC8(u8 close) {

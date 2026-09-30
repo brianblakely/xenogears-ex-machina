@@ -126,7 +126,8 @@ typedef struct {
     POLY_FT4 heading[44];     /* 05a0: count 46ab, buffer 46aa */
     POLY_FT4 digits1[18];     /* 0c80: count 46ad, buffer 46ac */
     POLY_FT4 digits2[18];     /* 0f50: count 46af, buffer 46ae */
-    POLY_FT4 group1220[56];   /* 1220: count 46b4, buffer 46b3 */
+    POLY_FT4 group1220[36];   /* 1220: count 46b4, buffer 46b3 */
+    POLY_FT4 price[20];       /* 17c0: ovl2602, count 46bb, buffer 46ba */
     POLY_FT4 digits3[18];     /* 1ae0: count 46b1, buffer 46b0 */
     POLY_FT4 rows[8][8];      /* 1db0: counts 468c, buffers 4694 */
     POLY_FT4 cells_a[9][6];   /* 27b0: counts 46bc, buffers 46ce */
@@ -166,7 +167,9 @@ typedef struct {
     u8 group1220_count;       /* 46b4 */
     u8 label44B0_shown;       /* 46b5 */
     u8 unk46B6;
-    u8 unk46B7[5];
+    u8 unk46B7[3];
+    u8 price_buffer;          /* 46ba */
+    u8 price_count;           /* 46bb */
     u8 cells_a_count[9];      /* 46bc */
     u8 cells_b_count[9];      /* 46c5 */
     u8 cells_a_buffer[9];     /* 46ce */
@@ -331,7 +334,7 @@ typedef struct {
     u8 unk5B;
     u8 unk5C[0x63 - 0x5C];
     u8 model_shown;  /* 63: ovl2602 */
-    u8 unk64;
+    u8 price_shown;  /* 64: ovl2602 */
     u8 gear_shown;   /* 65: ovl2602 */
     u8 unk66[0x6C - 0x66];
 } ScreenFlags;
@@ -755,5 +758,16 @@ void func_801CE82C(void);
 void func_801CF33C(void);
 void func_801CE7E0(void);
 void func_801C962C(void);
+extern u8 D_801D9083;
+void func_801C5C98(void);
+void func_801C6114(void);
+void func_801C6708(void);
+void func_801C6170(void);
+void func_801C6E74(void);
+void func_801D5D38(void);
+void func_801CE1D0(void);
+void func_801CDD74(void);
+void func_801CCD20(void);
+void func_801C5B08(void);
 
 #endif
