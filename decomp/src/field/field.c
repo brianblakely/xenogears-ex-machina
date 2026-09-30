@@ -1677,7 +1677,45 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007B07C);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007B1C4);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007B478);
+/* -1 when `p` lies outside triangle a, b, c on the X/Z plane (to the
+ * negative side of an edge), else 0. */
+s32 func_8007B478(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *p) {
+    VECTOR edge;
+    VECTOR to_p;
+    VECTOR cross;
+
+    edge.vx = b->vx - a->vx;
+    edge.vy = 0;
+    edge.vz = b->vz - a->vz;
+    to_p.vx = p->vx - a->vx;
+    to_p.vy = 0;
+    to_p.vz = p->vz - a->vz;
+    OuterProduct0(&edge, &to_p, &cross);
+    if (cross.vy < 0) {
+        return -1;
+    }
+    edge.vx = c->vx - b->vx;
+    edge.vy = 0;
+    edge.vz = c->vz - b->vz;
+    to_p.vx = p->vx - b->vx;
+    to_p.vy = 0;
+    to_p.vz = p->vz - b->vz;
+    OuterProduct0(&edge, &to_p, &cross);
+    if (cross.vy < 0) {
+        return -1;
+    }
+    edge.vx = a->vx - c->vx;
+    edge.vy = 0;
+    edge.vz = a->vz - c->vz;
+    to_p.vx = p->vx - c->vx;
+    to_p.vy = 0;
+    to_p.vz = p->vz - c->vz;
+    OuterProduct0(&edge, &to_p, &cross);
+    if (cross.vy < 0) {
+        return -1;
+    }
+    return 0;
+}
 
 /* The X/Z offset `distance` away at `angle`, scaled by 800b218c. */
 void func_8007B614(VECTOR *out, s32 distance, s32 angle) {
