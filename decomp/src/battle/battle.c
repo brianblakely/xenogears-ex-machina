@@ -1965,7 +1965,37 @@ void func_80078D6C(u8 actor, u8 index) {
     D_800CCCE8.records[actor].pilot.status7C &= 0x8000;
 }
 
+/* Make enemy `slot` a copy of the first slot action `index` targets: its
+ * name, AI scripts, reaction state and combatant record, and queue the
+ * split event (0xfb) for it.
+ * Nonmatching: register allocation of the slot indexes. */
+#ifdef NON_MATCHING
+void func_80078E24(u8 slot, u8 index) {
+    s32 i;
+    u8 source;
+
+    for (i = 0; i < 11; i++) {
+        if (func_80089C9C(D_800D2E5C[index].targets, i)) {
+            source = i;
+            break;
+        }
+    }
+    D_800C3E3D[slot] = D_800C3E3D[source];
+    D_800D3400[slot - 3].script = D_800D3400[source - 3].script;
+    D_800D3400[slot - 3].unk4 = D_800D3400[source - 3].unk4;
+    D_800D3400[slot - 3].reaction = D_800D3400[source - 3].reaction;
+    *(s32 *)D_800D3400[slot - 3].unkC = *(s32 *)D_800D3400[source - 3].unkC;
+    D_800C3D18[slot - 3].armed = D_800C3D18[source - 3].armed;
+    D_800C3D18[slot - 3].unk1[0] = D_800C3D18[source - 3].unk1[0];
+    memmove(&D_800CCCE8.records[slot], &D_800CCCE8.records[source], sizeof(Combatant));
+    D_800C3FE8[D_800C3EAC->eventCount].parameter = source;
+    D_800C3FE8[D_800C3EAC->eventCount].type = 0xFB;
+    D_800C3FE8[D_800C3EAC->eventCount].actor = slot;
+    D_800C3EAC->eventCount++;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80078E24);
+#endif
 
 /* Set the actor's attribute arg1 to the entry's parameter byte. */
 void func_80079054(u8 actor, u8 index) {
