@@ -2571,7 +2571,7 @@ void func_801CF38C(u8 index) {
 
     D_801D9088 = func_80031BDC(0x3F6, 0);
     bzero(D_801D9088, 0x3F6);
-    func_80034EAC(D_8006D634[index], D_801D9088, 0x24, 0);
+    func_80034EAC(D_8006D634.names[index], D_801D9088, 0x24, 0);
     rect.x = 0x180;
     rect.y = 0x48;
     rect.w = 0x28;
@@ -3238,9 +3238,151 @@ void func_801D62A4(GearTable *table, u8 id) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D6334);
+/* Sum gear `id`'s three parts into its derived values and effect bits, and update its pilot's ability bits. */
+void func_801D6334(GearTable *table, u8 id) {
+    Gear *gear;
+    GearPart *part;
+    u16 *abilities;
+    u16 *status;
+    u8 i;
+    u8 k;
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D6738);
+    gear = &D_8006D634.gears[id];
+    abilities = &D_8006D634.pilots[D_801D70F4[id]].flags;
+    status = &D_8006D634.pilots[D_801D70F4[id]].unk16;
+    gear->unk40 = 0;
+    gear->unk42 = 0;
+    gear->unk44 = 0;
+    gear->unk48 = 0;
+    gear->unk4C = 0;
+    gear->unk4D = 0;
+    gear->unk4E = 0;
+    gear->unk4F = 0;
+    gear->unk6E = 0;
+    for (i = 0; i < 16; i++) {
+        gear->unk88[i] = 0;
+    }
+    for (i = 0; i < 4; i++) {
+        gear->unk50[i] = 0;
+    }
+    for (i = 0; i < 3; i++) {
+        gear->unk55[i] = 0;
+    }
+    gear->unk54 = 0;
+    gear->unk7E = 0;
+    gear->unk82 = 0;
+    gear->unk86 &= 0xF000;
+    *abilities &= 0xDB7F;
+    for (k = 0; k < 3; k++) {
+        part = table->parts;
+        part += gear->unk9[k];
+        gear->unk40 += part->unkD;
+        gear->unk42 += part->unkE;
+        gear->unk44 += part->unk6;
+        gear->unk4C += part->unk18;
+        gear->unk4D += part->unk14;
+        for (i = 0; i < 4; i++) {
+            gear->unk50[i] += part->unk10[i];
+        }
+        switch (part->unk15) {
+        case 1:
+            gear->unk7E |= part->unk16;
+            break;
+        case 2:
+            gear->unk82 |= part->unk16;
+            break;
+        case 3:
+            gear->unk86 |= part->unk16;
+            break;
+        case 4:
+            for (i = 0; i < 16; i++) {
+                gear->unk6E |= part->unk16;
+                if (part->unk16 & (0x8000 >> i)) {
+                    gear->unk88[i] += part->unk1A;
+                }
+            }
+            break;
+        case 5:
+            gear->unk4F += part->unk16;
+            break;
+        case 6:
+            if ((*abilities & 0x1000) && (*abilities & 0x800)) {
+                *abilities |= 0x400;
+            }
+            break;
+        case 7:
+            if ((*abilities & 0x200) && (*abilities & 0x100)) {
+                *abilities |= 0x80;
+            }
+            break;
+        case 8:
+            if ((*abilities & 0x40) && (*abilities & 0x20)) {
+                *abilities |= 0x10;
+            }
+            break;
+        case 9:
+            gear->unk48 |= part->unk16;
+            /* fallthrough */
+        case 10:
+            gear->unk55[1] += part->unk16;
+            break;
+        case 11:
+            gear->unk55[2] += part->unk16;
+            break;
+        }
+    }
+    gear->unk4A = func_801D690C(id);
+    if (gear->unk4F != 0) {
+        *status |= 0x8000;
+    } else if (id == D_8006D634.characters[D_801D70F4[id]].unkA0) {
+        *status &= 0x7FFF;
+    }
+}
+
+/* Copy gear `id`'s weapon values from the weapon table; gear 5 and 13 carry three weapons. */
+void func_801D6738(GearTable *table, u8 id) {
+    Gear *gear;
+    GearWeapon *weapon;
+
+    gear = &D_8006D634.gears[id];
+    weapon = table->weapons;
+    weapon += gear->unkC;
+    gear->unk12 = weapon->unkE;
+    gear->unk10 = weapon->unk12;
+    gear->unk13 = weapon->unk10;
+    gear->unk14 = weapon->unk11;
+    gear->unk5C = weapon->unk0;
+    gear->unk5D = weapon->unk1;
+    gear->unk5E = weapon->unk2;
+    gear->unk5F = weapon->unk3;
+    if (gear->unk14 == 100) {
+        gear->unk86 &= 0xFFF;
+        gear->unk86 |= gear->unk10;
+    }
+    if (id == 5 || id == 13) {
+        weapon = table->weapons;
+        weapon += gear->unk4;
+        gear->unk12 = weapon->unkE;
+        gear->unk10 = weapon->unk12;
+        gear->unk13 = weapon->unk10;
+        gear->unk14 = weapon->unk11;
+        gear->unk5D = weapon->unk1;
+        weapon = table->weapons;
+        weapon += gear->unk5;
+        gear->unk1A = weapon->unkE;
+        gear->unk18 = weapon->unk12;
+        gear->unk1B = weapon->unk10;
+        gear->unk1C = weapon->unk11;
+        gear->unk5E = weapon->unk2;
+        weapon = table->weapons;
+        weapon += gear->unk7;
+        gear->unk22 = weapon->unkE;
+        gear->unk20 = weapon->unk12;
+        gear->unk23 = weapon->unk10;
+        gear->unk24 = weapon->unk11;
+        gear->unk5F = weapon->unk3;
+    }
+}
 
 /* Half of (gear `id`'s +44 / 120 less its +75), not below zero. */
 u8 func_801D690C(u8 id) {

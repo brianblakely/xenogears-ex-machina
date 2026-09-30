@@ -698,29 +698,78 @@ typedef struct {
     u8 unk0[2];
     u8 unk2;       /* 02: entry of the 18h-byte table */
     u8 unk3;       /* 03: entry of the 10h-byte table */
-    u8 unk4[4];
+    u8 unk4, unk5, unk6, unk7; /* 04: entries of the 14h-byte weapon table */
     u8 unk8;       /* 08: entry of the 14h-byte table */
-    u8 unk9[0x38 - 9];
+    u8 unk9[3];    /* 09: entries of the 1ch-byte part table */
+    u8 unkC;       /* 0c: entry of the 14h-byte weapon table */
+    u8 unkD[3];
+    u16 unk10;     /* 10: weapon slots of 8 bytes */
+    u8 unk12, unk13, unk14;
+    u8 unk15[3];
+    u16 unk18;     /* 18 */
+    u8 unk1A, unk1B, unk1C;
+    u8 unk1D[3];
+    u16 unk20;     /* 20 */
+    u8 unk22, unk23, unk24;
+    u8 unk25[0x38 - 0x25];
     u16 unk38;     /* 38 */
     u16 unk3A;     /* 3a */
     u8 unk3C, unk3D, unk3E, unk3F; /* 3c */
-    u8 unk40[4];
+    u16 unk40;     /* 40 */
+    u16 unk42;     /* 42 */
     u16 unk44;     /* 44 */
-    u8 unk46[0x60 - 0x46];
+    u8 unk46[2];
+    u16 unk48;     /* 48 */
+    u8 unk4A;      /* 4a */
+    u8 unk4B;
+    u8 unk4C, unk4D, unk4E, unk4F; /* 4c */
+    u8 unk50[4];   /* 50 */
+    u8 unk54;      /* 54 */
+    u8 unk55[3];   /* 55 */
+    u8 unk58[0x5C - 0x58];
+    u8 unk5C, unk5D, unk5E, unk5F; /* 5c */
     u32 unk60;     /* 60 */
     u32 unk64;     /* 64 */
     u16 unk68;     /* 68 */
-    u8 unk6A[0x70 - 0x6A];
+    u16 unk6A;     /* 6a */
+    u8 unk6C[2];
+    u16 unk6E;     /* 6e */
     u16 unk70;     /* 70 */
     u16 unk72;     /* 72 */
     u8 unk74;
     u8 unk75;      /* 75 */
-    u8 unk76[0x98 - 0x76];
+    u8 unk76[0x7E - 0x76];
+    u16 unk7E;     /* 7e */
+    u8 unk80[2];
+    u16 unk82;     /* 82 */
+    u8 unk84[2];
+    u16 unk86;     /* 86 */
+    u8 unk88[16];  /* 88 */
     u8 unk98;      /* 98 */
-    u8 unk99[4];
-    u8 unk9D, unk9E, unk9F; /* 9d */
+    u8 unk99[3];
+    u8 unk9C, unk9D, unk9E, unk9F; /* 9c */
     u8 unkA0[4];
 } Gear;
+
+/* A pilot's record of the game data (20h bytes, 8006ecf8). */
+typedef struct {
+    u16 flags;     /* 00: pilot ability bits */
+    u8 unk2[0x16 - 2];
+    u16 unk16;     /* 16 */
+    u8 unk18[8];
+} PilotRecord;
+
+/* The game data (8006d634): names, character and gear records, pilots. */
+typedef struct {
+    u8 names[31][0x14];        /* 0000 */
+    Character characters[11];  /* 026c: 8006d8a0 */
+    Gear gears[20];            /* 0978: 8006dfac */
+    u8 unk1648[0x16C4 - 0x1648];
+    PilotRecord pilots[11];    /* 16c4: 8006ecf8 */
+    u8 unk1824[0x22B6 - 0x1824];
+    u16 unk22B6;               /* 22b6: 8006f8ea */
+} GameData;
+extern GameData D_8006D634;
 
 typedef struct {
     u8 unk0[4];
@@ -744,15 +793,45 @@ typedef struct {
     u8 unkC[0x14 - 0xC];
 } GearEntry;
 
+/* A part record (1ch bytes). */
+typedef struct {
+    u8 unk0[6];
+    u16 unk6;      /* 06 */
+    u8 unk8[5];
+    u8 unkD, unkE; /* 0d */
+    u8 unkF;
+    u8 unk10[4];   /* 10 */
+    u8 unk14;      /* 14 */
+    u8 unk15;      /* 15: effect kind 1-11 */
+    u16 unk16;     /* 16: effect value */
+    u8 unk18;      /* 18 */
+    u8 unk19;
+    u8 unk1A;      /* 1a */
+    u8 unk1B;
+} GearPart;
+
+/* A weapon record (14h bytes). */
+typedef struct {
+    u8 unk0, unk1, unk2, unk3; /* 00 */
+    u8 unk4[0xE - 4];
+    u8 unkE;       /* 0e */
+    u8 unkF;
+    u8 unk10, unk11; /* 10 */
+    u16 unk12;     /* 12 */
+} GearWeapon;
+
 typedef struct {
     u8 unk0[8];
     GearRecord18 *records18; /* 08 */
     GearRecord10 *records10; /* 0c */
     GearEntry *entries;      /* 10 */
+    GearPart *parts;         /* 14 */
+    GearWeapon *weapons;     /* 18 */
 } GearTable;
 
 extern Gear D_8006DFAC[];
 extern u32 D_801D6C88[];  /* party bit of each member id */
+extern u8 D_801D70F4[];   /* pilot of each gear */
 extern s32 D_801D6FD8;    /* available members 1-10 */
 s32 rand(void);  /* rand */
 void func_801E7D14(void *a, void *b, u32 *ot, s32 buffer);
@@ -768,7 +847,6 @@ void func_801D6738(GearTable *table, u8 id);
 extern u8 D_801D9084;      /* gear being edited */
 extern u8 *D_801D9088;     /* name pixel buffer */
 extern u8 D_801D697C;
-extern u8 D_8006D634[][0x14]; /* names */
 void func_801D498C(u8 unk0, u8 unk1);
 void func_801D5398(void);
 void func_801D6150(GearTable *table, u8 id);
