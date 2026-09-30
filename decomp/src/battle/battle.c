@@ -1382,7 +1382,6 @@ u8 func_80084108(u8 slot, u8 any) {
 /* Order the member's attack candidates: the reachable opposing slots, those
  * in its own formation group first, and the lowest-HP one (within the group
  * when there is one) moved to the front. Returns the default target. */
-#ifdef NON_MATCHING
 u8 func_800841E0(u8 member) {
     u8 slots[12];
     u8 grouped[12];
@@ -1427,12 +1426,13 @@ u8 func_800841E0(u8 member) {
     }
     for (i = 0; i < count; i++) {
         if (slots[i] != 0xFF) {
-            D_800C3E90[n++] = slots[i];
+            D_800C3E90[n] = slots[i];
+            n++;
         }
     }
     if (grouped[0] != 0) {
         for (i = 1; i < count; i++) {
-            if (grouped[i] != 0 && D_800CCCE8.records[D_800C3E90[i]].pilot.hp < D_800CCCE8.records[D_800C3E90[0]].pilot.hp) {
+            if (grouped[i] != 0 && D_800CCCE8.records[D_800C3E90[0]].pilot.hp > D_800CCCE8.records[D_800C3E90[i]].pilot.hp) {
                 swap = D_800C3E90[0];
                 D_800C3E90[0] = D_800C3E90[i];
                 D_800C3E90[i] = swap;
@@ -1440,7 +1440,7 @@ u8 func_800841E0(u8 member) {
         }
     } else {
         for (i = 1; i < count; i++) {
-            if (D_800CCCE8.records[D_800C3E90[i]].pilot.hp < D_800CCCE8.records[D_800C3E90[0]].pilot.hp) {
+            if (D_800CCCE8.records[D_800C3E90[0]].pilot.hp > D_800CCCE8.records[D_800C3E90[i]].pilot.hp) {
                 swap = D_800C3E90[0];
                 D_800C3E90[0] = D_800C3E90[i];
                 D_800C3E90[i] = swap;
@@ -1449,9 +1449,6 @@ u8 func_800841E0(u8 member) {
     }
     return D_800C3E90[0];
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800841E0);
-#endif
 
 /* Collect the slots a party attack can target (80084108, `any` includes
  * downed ones) as candidates with their mask: side 0 the enemies, 1 the
