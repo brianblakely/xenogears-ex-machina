@@ -143,6 +143,12 @@ typedef struct {
     Node *node;
 } NodeOwner;
 
+/* Loaded model file header. */
+typedef struct {
+    u8 unk0[0x34];
+    s32 unk34;
+} ModelFile;
+
 /* Model payload (0x20 bytes). */
 typedef struct {
     u32 flags;
@@ -150,7 +156,7 @@ typedef struct {
     void *resource;    /* 0x08 */
     s32 unkC;
     s32 unk10;
-    void *unk14;
+    ModelFile *file;   /* 0x14 */
     u8 r, g, b;        /* 0x18 */
     u8 unk1B;
     s32 unk1C;
@@ -182,11 +188,20 @@ typedef struct {
     s32 unk18;
 } Scale;
 
+/* Payload of three words and an angle triple (0x14 bytes). */
+typedef struct {
+    s32 unk0;
+    s32 unk4;
+    s32 unk8;
+    s16 angle[3];      /* 0x0C */
+    s16 unk12;
+} Triple;
+
 extern s32 D_80091C2C;   /* nonzero: model set entries are not owned */
-extern s16 D_80092800;
-extern s16 D_80092804;
-extern s16 D_80092808;
-extern s16 D_8009280C;
+extern s16 D_80092800;   /* model texture page x (-1: none) */
+extern s16 D_80092804;   /* model texture page y */
+extern s16 D_80092808;   /* model CLUT x (-1: none) */
+extern s16 D_8009280C;   /* model CLUT y */
 
 extern Matrix D_80091C0C; /* identity */
 extern Vector D_8009A0C8; /* look-at work: forward */
@@ -227,8 +242,8 @@ void func_80032498(s32 kind, void *data);
 void func_80028470(s32 a, s32 b);
 void func_800374E8(s32 a, s32 b, s32 c, s32 d, s32 e, s32 f, s32 g, s32 h, s32 i, s32 j, s32 k);
 void func_80088CBC(s32 index);
-void func_8008A110(s32 a, s32 b);
-void func_8008A128(s32 a, s32 b);
+void func_8008A110(s16 x, s16 y);
+void func_8008A128(s16 x, s16 y);
 void func_8008E620(void);
 s32 func_80028738(s32 file);
 void *func_80031BDC(s32 size, s32 mode);
@@ -247,7 +262,13 @@ void func_800898BC(Matrix *m, SVector *eye, SVector *at, SVector *up);
 void func_800324B8(s32 kind);
 void func_800320E8(void *p);
 void func_80032C18(void *p, s32 mode);
-void func_8002CBBC(void *p);
+void func_8002CBBC(ModelFile *file);
+s32 func_800303C8(ModelFile *file, s32 mode);
+void func_8002CB54(ModelFile *file, void **resource, s32 *unkC);
+void func_8002CC54(u16 tpage);
+void func_8002CC74(s32 x, s32 y);
+void func_8002C8CC(ModelFile *file, void *resource, s32 mode);
+void func_800732AC(s32 a, void *resource, s32 b);
 void func_8002DDE4(void *target, s32 on, s32 a, s32 b, s32 c, s32 d, s32 e);
 Node *func_80089B44(Node *node);
 void func_80089D5C(Node *node);

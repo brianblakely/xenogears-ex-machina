@@ -1331,7 +1331,7 @@ Model *func_80089F8C(Model *model) {
     model->resource = NULL;
     model->unkC = 0;
     model->unk10 = 0;
-    model->unk14 = NULL;
+    model->file = NULL;
     model->unk1C = 0;
     model->b = 0x40;
     model->g = 0x40;
@@ -1350,11 +1350,11 @@ void func_80089FF8(Model *model) {
     if (model->resource != NULL) {
         func_80032C18(model->resource, 2);
     }
-    func_8002CBBC(model->unk14);
+    func_8002CBBC(model->file);
 }
 
-/* Apply the depth cue settings to target, or switch it off when the first
- * is not positive. */
+/* Pass the model texture page and CLUT positions to target, or zeros when
+ * no texture page is set. */
 void func_8008A040(void *target) {
     if (D_80092800 > 0) {
         func_8002DDE4(target, 1, D_80092800, D_80092804, 1, D_80092808, D_8009280C);
@@ -1371,21 +1371,68 @@ void func_8008A0B4(Node *node, u8 r, u8 g, u8 b) {
     ((Model *)node->data)->flags |= 0x10;
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008A0F4);
+/* Clear a model node's colour override. */
+void func_8008A0F4(Node *node) {
+    ((Model *)node->data)->flags &= ~0x10;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008A110);
+/* Set the texture page position used for loaded models (-1 = none). */
+void func_8008A110(s16 x, s16 y) {
+    D_80092800 = x;
+    D_80092804 = y;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008A128);
+/* Set the CLUT position used for loaded models (-1 = none). */
+void func_8008A128(s16 x, s16 y) {
+    D_80092808 = x;
+    D_8009280C = y;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008A140);
+/* Set the texture page and CLUT positions used for loaded models. */
+void func_8008A140(s16 tx, s16 ty, s16 cx, s16 cy) {
+    D_80092800 = tx;
+    D_80092804 = ty;
+    D_80092808 = cx;
+    D_8009280C = cy;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008A168);
+/* Use no texture page or CLUT override for loaded models. */
+void func_8008A168(void) {
+    D_80092800 = D_80092808 = -1;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008A184);
+/* Load a model file into a model payload, applying the texture page and
+ * CLUT overrides. */
+void func_8008A184(Model *model, ModelFile *file) {
+    model->file = file;
+    model->unk10 = func_800303C8(file, 1);
+    func_8002CB54(model->file, &model->resource, &model->unkC);
+    if (D_80092800 >= 0) {
+        func_8002CC54(func_80043A1C(0, 1, D_80092800, D_80092804));
+    }
+    if (D_80092808 >= 0) {
+        func_8002CC74(D_80092808, D_8009280C);
+    }
+    func_8002C8CC(model->file, model->resource, 2);
+    func_800732AC(model->unkC, model->resource, model->file->unk34);
+    model->flags |= 2;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008A254);
+/* Allocate a payload of three 16s and a zero angle triple. */
+Triple *func_8008A254(void) {
+    Triple *triple;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008A298);
+    func_800324B8(0xB);
+    triple = func_80031BDC(sizeof(Triple), 0);
+    triple->unk0 = triple->unk4 = triple->unk8 = 0x10;
+    triple->angle[0] = triple->angle[1] = triple->angle[2] = 0;
+    return triple;
+}
+
+/* Free a payload. */
+void func_8008A298(void *p) {
+    func_800320E8(p);
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008A2B8);
 
