@@ -7067,7 +7067,37 @@ void func_8009B184(void) {
     D_800B0078->pc += 1;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009B210);
+s32 func_8009AEE0(s32 member, s32 x, s32 z, s32 range);
+
+/* Yield until all three party members are near the leader, then release
+ * party processing and continue. */
+void func_8009B210(void) {
+    FieldActor *leader;
+    s32 x;
+    s32 z;
+    s32 near;
+
+    leader = D_800AF880.components.descriptors[D_8005A444[0]].actor;
+    x = WHOLE(leader->position[0]);
+    z = WHOLE(leader->position[2]);
+    near = func_8009AEE0(0, x, z, 0xFF) == 0;
+    if (func_8009AEE0(1, x, z, 0xFF) == 0) {
+        near |= 2;
+    }
+    if (func_8009AEE0(2, x, z, 0xFF) == 0) {
+        near |= 4;
+    }
+    D_800B00C0 = 1;
+    if (near == 7) {
+        D_800B0078->pc++;
+        D_800B2078.party_processing_mode = 0;
+        D_800B2078.unk2348 = 0;
+        func_8009B338();
+    } else {
+        D_800B2078.party_processing_mode = 1;
+        D_800B0078->pc--;
+    }
+}
 
 /* Release the party motion overrides and resettle the controlled actor. */
 void func_8009B338(void) {
@@ -9397,7 +9427,24 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800ABA98);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800ABD18);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800ABEC8);
+typedef struct {
+    DR_MODE modes[5][2];
+    SPRT sprites[5][2];
+} OverlaySprites;
+extern OverlaySprites D_800B0188; /* per sprite and draw buffer */
+
+/* Link the five overlay sprites and their draw modes of the current
+ * buffer into the overlay ordering table. */
+void func_800ABEC8(void) {
+    s32 i;
+
+    if (D_800ADB54 != 0) {
+        for (i = 0; i < 5; i++) {
+            addPrim(&D_800C426C->overlay_ot[0], &D_800B0188.sprites[i][D_800ADB08]);
+            addPrim(&D_800C426C->overlay_ot[0], &D_800B0188.modes[i][D_800ADB08]);
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800ABFDC);
 

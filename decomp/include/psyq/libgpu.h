@@ -69,6 +69,16 @@ typedef struct {
     s16 w, h;
 } SPRT;
 
+/* A primitive's ordering-table tag. */
+typedef struct {
+    u32 addr : 24;
+    u32 len : 8;
+} P_TAG;
+
+#define setaddr(p, _addr) (((P_TAG *)(p))->addr = (u32)(_addr))
+#define getaddr(p) (u32)(((P_TAG *)(p))->addr)
+#define addPrim(ot, p) setaddr(p, getaddr(ot)), setaddr(ot, p)
+
 DRAWENV *SetDefDrawEnv(DRAWENV *env, s32 x, s32 y, s32 w, s32 h);
 DISPENV *SetDefDispEnv(DISPENV *env, s32 x, s32 y, s32 w, s32 h);
 u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y);
