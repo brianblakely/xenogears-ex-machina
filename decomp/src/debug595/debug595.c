@@ -36,47 +36,23 @@ void func_8028125C(void) {
     }
 }
 
-#ifdef NON_MATCHING
-/* Reset the debug lines to grey-to-white segments at the origin; line 1 is red.
- * Loop strength reduction differs: the original steps &rot and &line[1] and
- * indexes &trans and &line[0] from a base register. */
+/* Reset the debug lines to grey-to-white segments at the origin; line 1 is red. */
 void func_802812A4(void) {
     s32 i;
-    DebugLine *line;
 
     for (i = 0; i < 16; i++) {
-        line = &D_80285B48[i];
-        line->rot.vx = 0;
-        line->rot.vy = 0;
-        line->rot.vz = 0;
-        line->trans.vx = 0;
-        line->trans.vy = 0;
-        line->trans.vz = 0;
-        SetLineG2(&line->line[0]);
-        line->line[0].r0 = 0x80;
-        line->line[0].g0 = 0x80;
-        line->line[0].b0 = 0x80;
-        line->line[0].r1 = 0xFF;
-        line->line[0].g1 = 0xFF;
-        line->line[0].b1 = 0xFF;
-        line->line[1] = line->line[0];
+        setVector(&D_80285B48[i].rot, 0, 0, 0);
+        setVector(&D_80285B48[i].trans, 0, 0, 0);
+        SetLineG2(&D_80285B48[i].line[0]);
+        setRGB0(&D_80285B48[i].line[0], 0x80, 0x80, 0x80);
+        setRGB1(&D_80285B48[i].line[0], 0xFF, 0xFF, 0xFF);
+        D_80285B48[i].line[1] = D_80285B48[i].line[0];
     }
-    D_80285B48[1].line[0].r0 = 0x80;
-    D_80285B48[1].line[0].g0 = 0;
-    D_80285B48[1].line[0].b0 = 0;
-    D_80285B48[1].line[0].r1 = 0xFF;
-    D_80285B48[1].line[0].g1 = 0;
-    D_80285B48[1].line[0].b1 = 0;
-    D_80285B48[1].line[1].r0 = 0x80;
-    D_80285B48[1].line[1].g0 = 0;
-    D_80285B48[1].line[1].b0 = 0;
-    D_80285B48[1].line[1].r1 = 0xFF;
-    D_80285B48[1].line[1].g1 = 0;
-    D_80285B48[1].line[1].b1 = 0;
+    setRGB0(&D_80285B48[1].line[0], 0x80, 0, 0);
+    setRGB1(&D_80285B48[1].line[0], 0xFF, 0, 0);
+    setRGB0(&D_80285B48[1].line[1], 0x80, 0, 0);
+    setRGB1(&D_80285B48[1].line[1], 0xFF, 0, 0);
 }
-#else
-INCLUDE_ASM(".local/decomp/debug595/asm/nonmatchings/debug595", func_802812A4);
-#endif
 
 /* Hide the debug lines; when the monitor drew anything, draw its ordering table. */
 void func_80281400(void) {
@@ -102,15 +78,15 @@ void func_80281450(void) {
 void func_802814D4(u32 *ot, DebugLine *line, MATRIX *m, s32 buffer) {
     LINE_G2 *prim;
     SVECTOR unused;
-    s32 sxy2;
-    s32 flag;
-    s32 p;
+    long sxy2;
+    long flag;
+    long p;
 
     prim = &line->line[buffer];
     PushMatrix();
     SetRotMatrix(m);
     SetTransMatrix(m);
-    RotTransPers3(&line->start, &line->end, &unused, (s32 *)&prim->x0, (s32 *)&prim->x1, &sxy2, &p, &flag);
+    RotTransPers3(&line->start, &line->end, &unused, (long *)&prim->x0, (long *)&prim->x1, &sxy2, &p, &flag);
     addPrim(ot + 1, prim);
     PopMatrix();
 }
@@ -1229,7 +1205,7 @@ s32 func_80284FB4(u32 *archive, s16 mode0, s16 x0, s16 y0, s16 mode1, u16 x1, u1
     s32 i;
     u16 *p;
     u32 kind;
-    DebugRect rect;
+    RECT rect;
 
     count = archive[0];
     p = (u16 *)(archive + (count + 1));
