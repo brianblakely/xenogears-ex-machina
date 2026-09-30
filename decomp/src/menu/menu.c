@@ -1,4 +1,5 @@
 #include "menu.h"
+#include "system.h"
 
 /* Start the menu camera: mode 3 setup and its script block. */
 void func_800707A8(void) {
@@ -782,11 +783,58 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80088940);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008895C);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800889C8);
+/* Once every progress flag 0..48 except 22 is set, mark the options
+ * complete and apply the unlock. */
+s32 func_800889C8(void) {
+    s32 flag;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80088A40);
+    for (flag = 0; flag < 49; flag++) {
+        if (flag != 22 && !func_800888E4(flag)) {
+            return 0;
+        }
+    }
+    D_8006F978.options.complete = 1;
+    func_8008895C();
+    return 0;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80088AF8);
+/* Store the current option settings in the saved options word. */
+void func_80088A40(void) {
+    if (D_8005061C) {
+        D_8006F978.options.version = 1;
+        D_8006F978.options.option4 = D_80099D98.option4;
+        D_8006F978.options.option5 = D_80099D98.option5;
+        D_8006F978.options.option6 = D_80099D98.option6;
+        D_8006F978.options.option13 = D_80099D98.option13;
+    }
+}
+
+/* Load the option settings from the saved options word, or write the
+ * defaults when it was never written; a completed word clears the flags. */
+void func_80088AF8(void) {
+    s32 i;
+
+    if (D_8005061C) {
+        D_800927EC = 0;
+        if (D_8006F978.options.version == 1) {
+            D_80099D98.option4 = D_8006F978.options.option4;
+            D_80099D98.option5 = D_8006F978.options.option5;
+            D_80099D98.option6 = D_8006F978.options.option6;
+            D_80099D98.option13 = D_8006F978.options.option13;
+            if (D_8006F978.options.complete) {
+                for (i = 0; i < 8; i++) {
+                    D_8006F978.flags[i] = 0;
+                }
+            }
+        } else {
+            D_80099D98.option4 = 0;
+            D_80099D98.option5 = 0;
+            D_80099D98.option6 = 2;
+            D_80099D98.option13 = 0;
+            func_80088A40();
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80088BD4);
 
