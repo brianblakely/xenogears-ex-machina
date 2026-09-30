@@ -32,4 +32,10 @@ typedef struct {
     s32 data[0x14000 / 4];
 } PartySprite;
 
+/* Movie playback parameters (800c3a20 block; see field.h) set by 0xa0. */
+extern u16 D_800C3A30;
+extern u16 D_800C3A32;
+extern u16 D_800C3A34;
+extern s32 D_800ADB70; /* movie requested */
+
 #endif

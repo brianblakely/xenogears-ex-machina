@@ -4331,7 +4331,24 @@ void func_8008D780(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008D808);
+/* Write a 0x57 (arc move, mode 0x81) instruction with operands `a`, `b`,
+ * `c` and 0x0c at the pc, followed by ff 57 8f 26 01 80 57 0f. */
+void func_8008D808(s32 a, s32 b, s32 c) {
+    EVENT_OPERAND_BYTE(0) = 0x57;
+    EVENT_OPERAND_BYTE(1) = 0x81;
+    func_8008D2E0(a, D_800B0078->pc + 2);
+    func_8008D2E0(b, D_800B0078->pc + 4);
+    func_8008D2E0(c, D_800B0078->pc + 6);
+    func_8008D2E0(0xC, D_800B0078->pc + 8);
+    EVENT_OPERAND_BYTE(0xA) = 0xFF;
+    EVENT_OPERAND_BYTE(0xB) = 0x57;
+    EVENT_OPERAND_BYTE(0xC) = 0x8F;
+    EVENT_OPERAND_BYTE(0xD) = 0x26;
+    EVENT_OPERAND_BYTE(0xE) = 1;
+    EVENT_OPERAND_BYTE(0xF) = 0x80;
+    EVENT_OPERAND_BYTE(0x10) = 0x57;
+    EVENT_OPERAND_BYTE(0x11) = 0xF;
+}
 
 /* Write a 0x4b instruction with operands `a` and `b` into the event code at
  * pc+0xc (followed by ff ff 80) and advance the pc by 0xc. */
@@ -4697,7 +4714,39 @@ void func_8008E9F8(void) {
     D_800B00C0 = 1;
 }
 
+#ifdef NON_MATCHING
+/* Event 0xa0: once sound is available, request a movie: file op1, the
+ * parameters at 800c3a2a/2c/2e from op3/op5/op7 and its sound bank op9
+ * (selected operands, flags byte 11), with the default window and fade. */
+void func_8008EA58(void) {
+    if (D_800ADBDC == 0) {
+        D_800B00C0 = 1;
+        D_800B0078->pc -= 1;
+        return;
+    }
+    D_800C3A20 = func_8009CF78(1, EVENT_OPERAND_BYTE(0xB));
+    D_800C3A2A = func_8009CFBC(3, EVENT_OPERAND_BYTE(0xB));
+    D_800C3A2C = func_8009D000(5, EVENT_OPERAND_BYTE(0xB));
+    D_800C3A2E = func_8009D044(7, EVENT_OPERAND_BYTE(0xB));
+    D_800C3A38 = func_8009D088(9, EVENT_OPERAND_BYTE(0xB));
+    D_800C3A32 = 0x140;
+    D_800ADB80 = 0x40;
+    D_800C3A36 = 1;
+    D_800C3A34 = 0x100;
+    D_800C3A26 = 0;
+    D_800C3A24 = 0;
+    D_800C3A22 = 0;
+    D_800C3A28 = 0x100;
+    D_800C3A3A = 0;
+    D_800C3A30 &= 0xF;
+    D_800ADB74 = 0;
+    D_800ADB70 = 1;
+    D_800B00C0 = 1;
+    D_800B0078->pc += 0xC;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008EA58);
+#endif
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008EC30);
 
