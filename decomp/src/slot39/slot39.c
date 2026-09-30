@@ -1860,7 +1860,30 @@ void func_801D2484(void) {
     D_800625A0->party->unk2F = 0;
 }
 
+/* Show (`show`) the six party labels, placing labels 3-5 as quads, or hide
+ * the party name labels. */
+#ifdef NON_MATCHING
+void func_801D249C(u8 show) {
+    s32 i;
+
+    if (show) {
+        func_801E7E68(D_800625A0->partyLabels, D_801EA534, 4, 6);
+        for (i = 0; i < 3; i++) {
+            func_801C851C(D_800625A0->partyLabels[3 + i].verts, D_801E9E4C[i][0], D_801E9E58[i][0],
+                          D_800625A0->partyLabels[3 + i].width, 0xd);
+            D_800625A0->partyLabels[3 + i].count = D_800625A0->bufferIndex;
+            D_800625A0->partyLabels[3 + i].visible = 1;
+            D_800625A0->party->unk14[3 + i] = 1;
+        }
+    } else {
+        for (i = 0; i < 3; i++) {
+            D_800625A0->party->unk14[i] = 0;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D249C);
+#endif
 
 /* Clear the party block's six bytes at +14. */
 void func_801D25E4(void) {

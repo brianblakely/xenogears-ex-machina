@@ -303,8 +303,8 @@ typedef struct MenuLabelSlot {
     u8 pad70[0x8];
     u8 *pixels; /* 78 */
     u8 pad7C[0x1];
-    u8 count; /* 7D: sprites in the list; also the quad shown */
-    u8 pad7E[0x1];
+    u8 count; /* 7D: the quad shown */
+    u8 width; /* 7E */
     u8 visible; /* 7F */
 } MenuLabelSlot;
 
@@ -618,6 +618,9 @@ extern u8 D_801EA1D4[];  /* title file screen cursor positions */
 extern u8 D_801EA528[];  /* field menu command labels */
 extern u8 D_801EA524[];  /* label image layout */
 extern u8 D_801EA530[];
+extern u8 D_801EA534[];  /* party label layout */
+extern u16 D_801E9E4C[3][2]; /* party label positions */
+extern u16 D_801E9E58[3][2];
 extern u8 D_801EA53C[];  /* save file screen command labels */
 extern u8 D_801EA542[];  /* title file screen load command labels */
 extern u8 D_801EA558[];
@@ -804,7 +807,7 @@ void func_801D22C4(void);
 void func_801D22F4(u8 arg0);
 void func_801D2484(void);
 void func_801D2968(void);
-void func_801D249C(s32 arg0);
+void func_801D249C(u8 show);
 void func_801D25E4(void);
 void func_801D2D38(void);
 void func_801D2F4C(u8 message);
