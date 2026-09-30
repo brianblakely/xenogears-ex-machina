@@ -1,0 +1,50 @@
+# Overlay image from Disc 1 slot 35 / Disc 2 slot 30 (packed; the discs are
+# byte-identical). Load address from its internal calls and pointers; the
+# rodata/text/data boundaries are initial and are refined during recovery.
+name: menu
+sha1: 9cfebaf201a0dfd352c11007a63ad7a955533b17
+options:
+  basename: menu
+  base_path: ../../..
+  target_path: .local/extract/overlays/menu.bin
+  platform: psx
+  compiler: PSYQ
+  asm_path: .local/decomp/menu/asm
+  asset_path: .local/decomp/menu/assets
+  src_path: decomp/src/menu
+  build_path: .local/decomp/build/menu
+  ld_script_path: .local/decomp/menu/menu.ld
+  cache_path: .local/decomp/menu/.splat_cache
+  symbol_addrs_path:
+    - decomp/targets/overlays/menu.symbols.txt
+    - decomp/targets/resident/symbol_addrs.txt
+  undefined_funcs_auto_path: .local/decomp/menu/undefined_funcs_auto.txt
+  undefined_syms_auto_path: .local/decomp/menu/undefined_syms_auto.txt
+  find_file_boundaries: False
+  gp_value: 0x80059170
+  ld_gp_expression: "0x80059170"
+  o_as_suffix: True
+  generate_asm_macros_files: False
+  ld_bss_is_noload: True
+  ld_align_segment_vram_end: False
+  ld_align_section_vram_end: False
+  use_legacy_include_asm: False
+  section_order: [".rodata", ".text", ".data", ".bss"]
+  subalign: 4
+  string_encoding: ASCII
+  data_string_encoding: ASCII
+  rodata_string_guesser_level: 2
+  data_string_guesser_level: 2
+  include_asm_macro_style: maspsx_hack
+segments:
+  - name: menu
+    type: code
+    start: 0x0
+    vram: 0x8006faf0
+    subsegments:
+      - [0x0, .rodata, menu]
+      - [0xcb8, c, menu]
+      - [0x21448, data, menu_data]
+      # The decoded length is not word-aligned; its final bytes are zero.
+      - [0x22e68, databin, menu_tail]
+  - [0x22e69]

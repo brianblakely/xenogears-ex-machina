@@ -12,7 +12,15 @@ MASPSX := maspsx
 .SUFFIXES:
 .SECONDARY:
 MAKEFLAGS += --no-builtin-rules
-.PHONY: verify smoke split coverage clean
+.PHONY: verify smoke split coverage clean all-split all-verify all-coverage
+TARGET_CONFIGS := $(sort $(wildcard targets/resident/*.mk targets/overlays/*.mk))
+
+# Every supported executable image: split, exact comparison, source coverage.
+all-split all-verify all-coverage:
+	@for config in $(TARGET_CONFIGS); do \
+		echo "== $$config"; \
+		$(MAKE) --no-print-directory CONFIG=$$config $(@:all-%=%) || exit 1; \
+	done
 
 smoke:
 	@command -v psx-as >/dev/null && command -v psx-ld >/dev/null && command -v psx-objcopy >/dev/null || { echo "Enter the matching Nix shell first." >&2; exit 2; }

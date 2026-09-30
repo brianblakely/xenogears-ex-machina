@@ -1,0 +1,48 @@
+# Overlay image from Disc 1 slot 2611 / Disc 2 slot 2606 (unpacked; the discs are
+# byte-identical). Load address from its internal calls and pointers; the
+# rodata/text/data boundaries are initial and are refined during recovery.
+name: debug2611
+sha1: 747c852032275c234299fc77a010323946884efb
+options:
+  basename: debug2611
+  base_path: ../../..
+  target_path: .local/extract/overlays/debug2611.bin
+  platform: psx
+  compiler: PSYQ
+  asm_path: .local/decomp/debug2611/asm
+  asset_path: .local/decomp/debug2611/assets
+  src_path: decomp/src/debug2611
+  build_path: .local/decomp/build/debug2611
+  ld_script_path: .local/decomp/debug2611/debug2611.ld
+  cache_path: .local/decomp/debug2611/.splat_cache
+  symbol_addrs_path:
+    - decomp/targets/overlays/debug2611.symbols.txt
+    - decomp/targets/resident/symbol_addrs.txt
+  undefined_funcs_auto_path: .local/decomp/debug2611/undefined_funcs_auto.txt
+  undefined_syms_auto_path: .local/decomp/debug2611/undefined_syms_auto.txt
+  find_file_boundaries: False
+  gp_value: 0x80059170
+  ld_gp_expression: "0x80059170"
+  o_as_suffix: True
+  generate_asm_macros_files: False
+  ld_bss_is_noload: True
+  ld_align_segment_vram_end: False
+  ld_align_section_vram_end: False
+  use_legacy_include_asm: False
+  section_order: [".rodata", ".text", ".data", ".bss"]
+  subalign: 4
+  string_encoding: ASCII
+  data_string_encoding: ASCII
+  rodata_string_guesser_level: 2
+  data_string_guesser_level: 2
+  include_asm_macro_style: maspsx_hack
+segments:
+  - name: debug2611
+    type: code
+    start: 0x0
+    vram: 0x80280000
+    subsegments:
+      - [0x0, .rodata, debug2611]
+      - [0x22c, c, debug2611]
+      - [0x2034, data, debug2611_data]
+  - [0x20f0]
