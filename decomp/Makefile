@@ -35,14 +35,14 @@ include $(CONFIG)
 $(foreach var,ORIGINAL ORIGINAL_SHA256 IMAGE LINKER_SCRIPT SPLAT_CONFIG BUILD,$(if $($(var)),,$(error $(var) must be set by $(CONFIG))))
 
 # Qualified original-compatible compilation (docs/matching.md): GCC 2.7.2 cc1
-# for the R3000, ASPSX 2.79 behaviour through maspsx, GNU as for the object.
+# for the R3000, ASPSX 2.34 behaviour through maspsx, GNU as for the object.
 CPPFLAGS := -undef -D__GNUC__=2 -Dmips -D__mips__ -D__mips -Dpsx -D__psx__ -D__psx \
 	-D_PSYQ -D__EXTENSIONS__ -D_MIPSEL -D__CHAR_UNSIGNED__ -D_LANGUAGE_C -DLANGUAGE_C \
 	-lang-c -nostdinc -I$(ROOT)/decomp/include $(TARGET_CPPFLAGS)
 CC1FLAGS := -quiet -mcpu=3000 -fgnu-linker -mgas -msoft-float -O2
 ASFLAGS := -EL -march=r3000 -mtune=r3000 -msoft-float -no-pad-sections -G0 \
 	-I$(ROOT)/decomp/include -I$(ROOT)
-MASPSXFLAGS := --aspsx-version=2.79
+MASPSXFLAGS := --aspsx-version=2.34
 
 # The small-data threshold is a property of each original translation unit.
 gp_of = $(or $(GP_$(basename $(notdir $(1)))),0)
@@ -51,14 +51,17 @@ gp_of = $(or $(GP_$(basename $(notdir $(1)))),0)
 LP := (
 OBJECTS = $(addprefix $(ROOT)/,$(shell sed -n 's/^ *\([^ ]*\.o\)[$(LP)].*/\1/p' $(ROOT)/$(LINKER_SCRIPT) 2>/dev/null | sort -u))
 
+# A fresh split: splat's cache would otherwise keep assembly with stale symbol names.
 split:
+	rm -rf $(ROOT)/$(dir $(LINKER_SCRIPT))
 	cd $(ROOT) && splat split $(SPLAT_CONFIG)
 
-$(ROOT)/$(BUILD)/%.o: $(ROOT)/%.s
+# Objects are rebuilt after every split (they include the generated assembly).
+$(ROOT)/$(BUILD)/%.o: $(ROOT)/%.s $(ROOT)/$(LINKER_SCRIPT)
 	@mkdir -p $(dir $@)
 	cd $(ROOT) && $(AS) $(ASFLAGS) -o $@ $<
 
-$(ROOT)/$(BUILD)/%.o: $(ROOT)/%.c $(wildcard $(ROOT)/decomp/include/*.h)
+$(ROOT)/$(BUILD)/%.o: $(ROOT)/%.c $(ROOT)/$(LINKER_SCRIPT) $(wildcard $(ROOT)/decomp/include/*.h $(ROOT)/decomp/include/*/*.h $(dir $(ROOT)/%)*.h)
 	@mkdir -p $(dir $@)
 	cd $(ROOT) && $(CPP) $(CPPFLAGS) $< | $(CC1) $(CC1FLAGS) -G$(call gp_of,$<) -o $@.cc1.s
 	cd $(ROOT) && $(MASPSX) $(MASPSXFLAGS) -G$(call gp_of,$<) < $@.cc1.s > $@.s

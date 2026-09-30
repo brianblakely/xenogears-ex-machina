@@ -111,11 +111,13 @@ decomp/README.md
 decomp/include/common.h
 decomp/include/include_asm.h
 decomp/include/macro.inc
+decomp/include/psyq/libcd.h
 decomp/src/battle/battle.c
 decomp/src/debug2611/debug2611.c
 decomp/src/debug595/debug595.c
 decomp/src/field/field.c
 decomp/src/mdec/mdec.c
+decomp/src/mdec/movie.h
 decomp/src/menu/menu.c
 decomp/src/movie/movie.c
 decomp/src/ovl2143/ovl2143.c
@@ -148,6 +150,7 @@ decomp/targets/overlays/debug595.yaml
 decomp/targets/overlays/field.mk
 decomp/targets/overlays/field.symbols.txt
 decomp/targets/overlays/field.yaml
+decomp/targets/overlays/mdec.classification.txt
 decomp/targets/overlays/mdec.mk
 decomp/targets/overlays/mdec.symbols.txt
 decomp/targets/overlays/mdec.yaml

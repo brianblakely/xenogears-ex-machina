@@ -7,3 +7,4 @@ IMAGE := .local/decomp/build/mdec.bin
 LINKER_SCRIPT := .local/decomp/mdec/mdec.ld
 LINKER_EXTRA := .local/decomp/mdec/undefined_syms_auto.txt .local/decomp/mdec/undefined_funcs_auto.txt
 SOURCE_DIRS := decomp/src/mdec
+CLASSIFICATION := decomp/targets/overlays/mdec.classification.txt

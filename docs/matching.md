@@ -24,8 +24,9 @@ It establishes tooling, not Xenogears compiler identity or game-source progress.
 ## Qualified configuration and targets
 
 GCC 2.7.2 (`psx-cc1-2.7.2`, decompals/old-gcc 0.17 PSX build) with
-`-O2 -mcpu=3000 -msoft-float -fgnu-linker -mgas`, ASPSX 2.79 behaviour through
-maspsx, and GNU as/ld reproduce original code exactly. Qualification: resident
+`-O2 -mcpu=3000 -msoft-float -fgnu-linker -mgas`, ASPSX 2.34 behaviour through
+maspsx, and GNU as/ld reproduce original code exactly. ASPSX below 2.50 expands
+positive `li` to `ori` as the original does (resident, movie library). Qualification: resident
 `80028aac` (ring reset) matches only under 2.7.2 — 2.8.1 omits its empty
 8-byte frame and reschedules the stores. The small-data threshold is a
 property of each translation unit: most code is `-G0`, while units that address

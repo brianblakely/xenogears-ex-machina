@@ -1,26 +1,58 @@
 #include "common.h"
+#include "psyq/libcd.h"
+#include "movie.h"
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D30C4);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", movie_slice_decoded);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D3538);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", movie_open);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D37CC);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", movie_start);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D3B00);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", movie_next_bitstream);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D3D54);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", movie_decode);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D3F7C);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", movie_poll);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D41AC);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", movie_restart);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D4318);
+/* Stop the stream: silence the CD input, stop the MDEC, drop the ring's
+ * callbacks, pause the drive and restore the resident read mode. */
+void movie_stop(void) {
+    func_80038D18(0, 0);
+    func_8002A498(0);
+    DecDCToutCallback(NULL);
+    DecDCTReset(0);
+    movie_player_state = -1;
+    if (movie_host_stream != 0) {
+        func_80028AAC();
+    } else {
+        StUnSetRing();
+        while (CdControlB(CdlPause, NULL, NULL) == 0) {
+        }
+        func_8002A428(0xA0);
+    }
+    func_80028A60(0);
+}
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D43B0);
+/* Stop, then release the run-level and slice buffers and the ring. */
+void movie_close(void) {
+    movie_stop();
+    func_800320E8(movie_vlc_buffers[0]);
+    func_800320E8(movie_vlc_buffers[1]);
+    func_800320E8(movie_slice_buffer0);
+    func_800320E8(movie_slice_buffer1);
+    func_800320E8(movie_ring_buffer);
+    movie_vlc_buffers[0] = NULL;
+    movie_vlc_buffers[1] = NULL;
+    movie_slice_buffer0 = NULL;
+    movie_slice_buffer1 = NULL;
+    movie_ring_buffer = NULL;
+}
 
 INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D444C);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D4534);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", DecDCTReset);
 
 INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D456C);
 
@@ -38,7 +70,7 @@ INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D4778);
 
 INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D47B4);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D47D8);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", DecDCToutCallback);
 
 INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D47FC);
 
@@ -78,7 +110,7 @@ INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D5900);
 
 INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D5920);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D5980);
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", StUnSetRing);
 
 INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D5A04);
 
@@ -99,7 +131,3 @@ INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D5D54);
 INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D66C4);
 
 INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D66F8);
-
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D670C);
-
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", func_801D68D0);

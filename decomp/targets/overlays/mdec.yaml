@@ -1,6 +1,7 @@
 # Overlay image from Disc 1 slot 19 / Disc 2 slot 14 (unpacked; the discs are
 # byte-identical). Load address from its internal calls and pointers; the
-# rodata/text/data boundaries are initial and are refined during recovery.
+# text ends after the last library function at 0x801d68b4 (placement at 0x801d3000
+# is also what src/reconstruction/field_movie_player.cpp relocates it to).
 name: mdec
 sha1: 138835efbceb6bbd2010f0d63c740a6cfdebd261
 options:
@@ -44,5 +45,5 @@ segments:
     subsegments:
       - [0x0, .rodata, mdec]
       - [0xc4, c, mdec]
-      - [0x151c0, data, mdec_data]
+      - [0x38b4, data, mdec_data]
   - [0x15a1c]
