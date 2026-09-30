@@ -1854,7 +1854,80 @@ void func_8003869C(void) {
     func_80039FF8();
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800386C4);
+/* A voice whose volume pair follows the output mode (D_80059518). */
+typedef struct {
+    u16 flags;         /* bit 0: in use */
+    u8 unk2[0x10];
+    u16 volume;
+    u8 unk14[0x22];
+    s16 unk36;
+    s16 left;
+    s16 right;
+    u8 unk3C[0x26];
+    s16 unk62;
+    s16 unk64;
+    s16 unk66;
+} SoundModeVoice;
+
+extern SoundModeVoice *D_80059518;
+extern u8 D_80059409, D_8005940A, D_8005940B; /* reverb type, delay and feedback */
+extern SpuVolume D_8005940C;                   /* reverb depth */
+extern SoundTrack *D_80059564;
+extern s16 D_8005A3EE;
+s32 func_80038824(void);
+void func_8003885C(s32 volume);
+void func_80038DF4(void);
+
+/* Select the output mode (1, 2 or 3; otherwise the plain one) and reapply
+ * the volumes: master and CD, reverb depth, every sequence, the CD mix and
+ * the mode voice. */
+void func_800386C4(s32 mode) {
+    SoundTrack *track;
+    SoundModeVoice *voice;
+    s16 volume;
+
+    D_8005957C &= 0xF8FF;
+    switch (mode) {
+    case 0:
+        break;
+    case 1:
+        D_8005957C |= 0x100;
+        break;
+    case 2:
+        D_8005957C |= 0x300;
+        break;
+    case 3:
+        D_8005957C |= 0x500;
+        break;
+    }
+    func_80038DF4();
+    SpuSetReverbModeDepth(D_8005940C.left, D_8005940C.right);
+    for (track = D_80059564; track != NULL; track = track->next) {
+        func_8003E680(0x100, (SoundSeq *)track);
+    }
+    if (D_8005957C & 0x4000) {
+        func_8003885C(D_8005A3EE);
+    }
+    voice = D_80059518;
+    if (voice != NULL && (voice->flags & 1)) {
+        volume = voice->volume;
+        if (func_80038824() != 0) {
+            volume <<= 7;
+            voice->left = volume;
+            voice->right = 0;
+            voice->unk64 = 0;
+            voice->unk66 = volume;
+        } else {
+            volume <<= 6;
+            voice->left = volume;
+            voice->right = volume;
+            voice->unk64 = volume;
+            voice->unk66 = volume;
+        }
+        voice->unk36 = 1;
+        voice->unk62 = 1;
+    }
+}
 
 /* 0 without reverb, 1 or 2 by reverb mode. */
 s32 func_80038824(void) {
@@ -1871,7 +1944,6 @@ s32 func_80038824(void) {
     return mode;
 }
 
-extern s16 D_8005A3EE;
 extern CdlATV D_80059530;
 
 /* Set the CD audio volume (halved into the right channels without
@@ -1919,8 +1991,6 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038934);
 extern s32 D_800595A4; /* the zeroed transfer buffer */
 extern s32 D_800595DC; /* next SPU address to clear */
 extern s32 D_800595E0; /* bytes left to clear */
-extern u8 D_80059409, D_8005940A, D_8005940B; /* reverb type, delay and feedback */
-extern SpuVolume D_8005940C;                   /* reverb depth */
 
 /* Clear `size` bytes of SPU memory at `address` (the reverb work area)
  * from a zeroed buffer, allocated on first use, in chained transfers. */
@@ -2476,7 +2546,6 @@ void func_80039C8C(s32 a, s32 c) {
     func_8003A89C((SoundSeq *)a, 0, c);
 }
 
-extern SoundTrack *D_80059564;
 
 /* Resume every paused track (flag 1). */
 void func_80039CC4(void) {
