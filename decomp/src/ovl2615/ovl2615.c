@@ -41,7 +41,50 @@ INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E4160);
 
 INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E4870);
 
+/* Derive the party's stats, then each slot's placed-alone flags and the
+ * party members' panel states. */
+#ifdef NON_MATCHING
+void func_801E4AC0(void) {
+    s32 i;
+
+    func_80097D5C();
+    if (D_800D3294 != 0) {
+        func_8009B098();
+    }
+    for (i = 0; i < 3; i++) {
+        if (D_800C3EB4[i].id != NO_COMBATANT) {
+            D_800C3EA4->member_panel[i].state = 1;
+            if (D_800C3EB4[i].alone != 0) {
+                D_800D32A1[i].alone = 1;
+                D_800CCCE8[i].state |= 0x80;
+                if (D_800C3EB4[i].id != 7) {
+                    D_800C3EA4->member_panel[i].state = 2;
+                }
+            } else {
+                D_800D32A1[i].alone = 0;
+                D_800CCCE8[i].state &= 0x7F;
+            }
+        } else {
+            D_800D32A1[i].alone = 0;
+            D_800CCCE8[i].state &= 0x7F;
+            D_800C3EA4->member_panel[i].state = 0;
+        }
+    }
+    for (i = 3; i < SLOT_COUNT; i++) {
+        if (D_800C3EB4[i].id != NO_COMBATANT && D_800C3EB4[i].alone != 0) {
+            D_800D32A1[i].alone = 1;
+        } else {
+            D_800D32A1[i].alone = 0;
+        }
+    }
+    for (i = 0; i < 3; i++) {
+        D_800D32A1[i].stat62 = D_800CCCE8[i].stat62;
+        D_800D32A1[i].stat63 = D_800CCCE8[i].stat63;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E4AC0);
+#endif
 
 /* Build the battle item lists from the inventory (counts capped at 99, empty
  * slots cleared) and the special item list from ids 50..72. */
@@ -249,7 +292,59 @@ INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E6FEC);
 
 INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E7098);
 
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E70E8);
+/* Relocate the stage image list and take the bounds of its pixel sections
+ * (kind 0x1101: position, offset, size); returns the bounds' area. */
+s32 func_801E70E8(s32 *images) {
+    s32 left;
+    s32 top;
+    s32 right;
+    s32 bottom;
+    s32 count;
+    s32 i;
+    u16 *p;
+    s32 x;
+    s32 y;
+    s16 width;
+    s16 height;
+
+    func_8003342C(images);
+    left = 0x800;
+    top = 0x800;
+    right = -0x800;
+    bottom = -0x800;
+    count = images[0];
+    for (i = 0; i < count; i++) {
+        p = (u16 *)images[i + 1];
+        if (*p == 0x1101) {
+            p += 2;
+            x = *p++;
+            y = *p++;
+            x += *p++;
+            y += *p++;
+            if (x < left) {
+                left = x;
+            }
+            if (y < top) {
+                top = y;
+            }
+            x += p[0];
+            y += p[1];
+            if (right < x) {
+                right = x;
+            }
+            if (bottom < y) {
+                bottom = y;
+            }
+        }
+    }
+    width = right - left;
+    height = bottom - top;
+    D_800D2D30 = left;
+    D_800D2D34 = top;
+    D_800D2D2C = width;
+    D_800C3EA8 = height;
+    return width * height;
+}
 
 INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E7210);
 

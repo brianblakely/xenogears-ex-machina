@@ -105,8 +105,13 @@ extern TurnState *D_800C3EAC;
 /* Combatant record (0x800CCCE8, 0x170 bytes per slot). */
 typedef struct {
     u8 pad0[0x34];
-    u16 flags; /* 0x34: 0x200 acts first */
-    u8 pad36[0x170 - 0x36];
+    u16 flags;  /* 0x34: 0x200 acts first */
+    u8 pad36[0x62 - 0x36];
+    u8 stat62;  /* 0x62 */
+    u8 stat63;  /* 0x63 */
+    u8 pad64[0x15A - 0x64];
+    u8 state;   /* 0x15A: 0x80 placed alone */
+    u8 pad15B[0x170 - 0x15B];
 } CombatantRecord;
 
 extern CombatantRecord D_800CCCE8[SLOT_COUNT];
@@ -154,6 +159,12 @@ void func_80043BFC(void *prim, s32 semi);           /* SetSemiTrans */
 u16 func_80043A1C(s32 tp, s32 abr, s32 x, s32 y);   /* GetTPage */
 void func_800454DC(DR_MODE *mode, s32 dfe, s32 dtd, s32 tpage, RECT *tw); /* SetDrawMode */
 
+/* A party member's status panel (0x1E4 bytes). */
+typedef struct {
+    u8 state; /* 0 absent, 1 shown, 2 placed alone */
+    u8 pad[0x1E3];
+} MemberPanel;
+
 /* Battle graphics state (pointer 0x800C3EA4). */
 typedef struct {
     u8 pad0[0x63C8];
@@ -163,11 +174,34 @@ typedef struct {
     u8 pad6414;
     u8 panel6415;
     u8 panel6416;
-    u8 pad6417[0xA244 - 0x6417];
+    u8 pad6417[0x853D - 0x6417];
+    MemberPanel member_panel[3]; /* 0x853D */
+    u8 pad8AE9[0xA244 - 0x853D - 3 * 0x1E4];
     s32 tpage_x;            /* 0xA244 */
     s32 tpage_y;            /* 0xA248 */
 } GraphicsState;
 
 extern GraphicsState *D_800C3EA4;
+
+extern s16 D_800D2D30; /* stage texture bounds: left */
+extern s16 D_800D2D34; /* top */
+extern s16 D_800D2D2C; /* width */
+extern s16 D_800C3EA8; /* height */
+
+void func_8003342C(s32 *table); /* relocate an offset table in place */
+
+/* Per-slot battle state (0x800D32A1, 8 bytes per slot). */
+typedef struct {
+    u8 alone;   /* placed alone */
+    u8 pad1[3];
+    u8 stat62;  /* copied from the record */
+    u8 stat63;
+    u8 pad6[2];
+} SlotState;
+
+extern SlotState D_800D32A1[SLOT_COUNT];
+
+void func_80097D5C(void); /* derive the party's battle stats */
+void func_8009B098(void); /* demo battle members */
 
 #endif
