@@ -30,14 +30,46 @@ extern KernelBuffer *D_800592CC; /* kernel menu current buffer */
 extern s32 D_800592D0;           /* kernel menu running */
 extern u8 *D_800592D4;
 extern u8 *D_800592D8;
-extern void *D_800592DC;
-extern void *D_800592E0;
+/* An 8x8 tile of the debug Game of Life screen (a TILE_8 primitive). */
+typedef struct {
+    u32 tag;
+    u32 rgbc;
+    u32 xy;
+} LifeTile;
+
+extern LifeTile *D_800592DC[2]; /* tile buffers per display buffer */
 extern s32 D_8004F2D8;           /* kernel menu cursor */
 extern u16 D_800594A4;           /* pad buttons repeated */
 extern u16 D_8005948C;           /* pad buttons pressed */
 extern u8 D_80059484;            /* play time hours */
 extern u8 D_80059420;            /* play time minutes */
 extern u8 D_80059418;            /* play time seconds */
+
+/* Game state reset by 8001aadc. */
+extern s32 D_8004F2F4, D_8004F2F8, D_8004F2FC, D_8004F300, D_8004F304, D_8004F308;
+extern s32 D_8004F30C, D_8004F310, D_8004F314, D_8004F318, D_8004F31C, D_8004F320;
+extern s32 D_8004F324, D_8004F328, D_8004F32C, D_8004F330, D_8004F334, D_8004F338;
+extern s32 D_8004F33C, D_8004F340, D_8004F344, D_8004F348, D_8004F34C, D_8004F350;
+extern s32 D_8004F354, D_8004F358, D_8004F35C, D_8004F360, D_8004F364, D_8004F368;
+extern s32 D_8004F36C, D_8004F370, D_8004F374, D_8004F378, D_8004F37C, D_8004F380;
+extern s16 D_8004F384;
+extern u8 D_8005942C;
+extern u8 D_800594D0;
+extern s32 D_8005A444[3];
+extern s32 D_80062524;
+extern s32 D_80062590[3];
+extern s32 D_8006F990[3];
+extern s32 D_8006FABC[3];
+/* The block at *8005a39c holds 0xa4-byte records from +0x30c. */
+typedef struct {
+    u8 first;
+    u8 rest[0xA3];
+} Record164;
+typedef struct {
+    u8 header[0x30C];
+    Record164 records[1];
+} RecordBlock;
+extern RecordBlock *D_8005A39C;
 
 extern u8 *const D_80018084; /* overlay decode destination */
 extern u8 D_8006FAF0[];
@@ -74,6 +106,7 @@ void func_80019D48(void);
 void func_80019EF8(s32 error, u32 caller);
 void func_8001AADC(void);
 void func_8001B6BC(void);
+void func_8001B158(s32 file);
 void func_8001BB50(void);
 void func_80024F20(void);
 
@@ -83,6 +116,7 @@ s32 func_800283D4(void);
 void func_80028470(s32 base, s32 index);
 void func_800284B4(s32 *base, s32 *index);
 s32 func_80028530(void);
+s32 func_800286CC(void); /* disc busy */
 s32 func_80028738(s32 file);
 void func_80028A60(s32 mode);
 s32 func_800295D8(s32 file, void *destination, s32 a2, s32 a3);
@@ -122,6 +156,7 @@ void func_800374E8(s32 a0, s32 a1, s32 a2, s32 a3, s32 a4, s32 a5, s32 a6, s32 a
 void func_80037DC0(void);
 s32 func_80037FD8(void *a0, s32 a1);
 void func_8003BDFC(s32 a0);
+s32 func_8003FA38(void); /* rand */
 
 /* PsyQ library. */
 void func_80040454(void);

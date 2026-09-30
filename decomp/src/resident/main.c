@@ -461,8 +461,8 @@ void func_8001A5CC(void) {
     s32 row;
     s32 column;
 
-    D_800592DC = func_80031BDC(0x3480, 1);
-    D_800592E0 = func_80031BDC(0x3480, 1);
+    D_800592DC[0] = func_80031BDC(0x3480, 1);
+    D_800592DC[1] = func_80031BDC(0x3480, 1);
     D_800592D4 = func_80031BDC(0x460, 1);
     D_800592D8 = func_80031BDC(0x460, 1);
     for (row = 0; row < 28; row++) {
@@ -490,17 +490,156 @@ void func_8001A684(s32 row, s32 column) {
     D_800592D8[row * 40 + column]++;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001A6E8);
+/* Debug screen, one Game of Life generation on the 40x28 grid: draw each live cell as an 8x8 tile, count its neighbours, apply the rules and reseed a random walk of 20 cells when fewer than 20 live, plus one random neighbourhood. */
+void func_8001A6E8(u32 *ot) {
+    LifeTile *tile;
+    s32 live;
+    s32 row; /* also the cell index of the update pass */
+    s32 column;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001AADC);
+    live = 0;
+    tile = D_800592DC[D_800592C8];
+    for (row = 0; row < 28; row++) {
+        for (column = 0; column < 40; column++) {
+            if (D_800592D4[row * 40 + column] != 0) {
+                setlen(tile, 2);
+                tile->rgbc = 0x70280000;
+                tile->xy = (column << 3) | (row << 19);
+                func_80043B48(ot, tile);
+                tile++;
+                live++;
+                func_8001A684(row - 1, column - 1);
+                func_8001A684(row - 1, column);
+                func_8001A684(row - 1, column + 1);
+                func_8001A684(row, column - 1);
+                func_8001A684(row, column + 1);
+                func_8001A684(row + 1, column - 1);
+                func_8001A684(row + 1, column);
+                func_8001A684(row + 1, column + 1);
+            }
+        }
+    }
+    for (row = 0; row < 28 * 40; row++) {
+        if (D_800592D8[row] != 2) {
+            D_800592D4[row] = D_800592D8[row] == 3;
+        }
+        D_800592D8[row] = 0;
+    }
+    if (live < 20) {
+        live = 0;
+        row = func_8003FA38() % 28;
+        column = func_8003FA38() % 40;
+        do {
+            row += func_8003FA38() % 3 - 1;
+            column += func_8003FA38() % 3 - 1;
+            if (row < 0) {
+                row = 28;
+            }
+            if (row > 28) {
+                row = 0;
+            }
+            if (column < 0) {
+                column = 40;
+            }
+            if (column > 40) {
+                column = 0;
+            }
+            live++;
+            D_800592D4[row * 40 + column] = 1;
+        } while (live < 20);
+    }
+    row = func_8003FA38() % 28;
+    column = func_8003FA38() % 40;
+    func_8001A684(row - 1, column - 1);
+    func_8001A684(row - 1, column);
+    func_8001A684(row - 1, column + 1);
+    func_8001A684(row, column - 1);
+    func_8001A684(row, column + 1);
+    func_8001A684(row + 1, column - 1);
+    func_8001A684(row + 1, column);
+    func_8001A684(row + 1, column + 1);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001AC94);
+/* Reset the game-wide state words and flags. */
+void func_8001AADC(void) {
+    s32 i;
+    s32 *last;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001ACA4);
+    D_8004F364 = 1;
+    D_8004F328 = 0xFF;
+    D_8004F324 = 0xFF;
+    D_8004F2FC = 0;
+    D_8004F36C = 0;
+    D_8004F2F8 = 0;
+    D_8004F31C = 0;
+    D_8004F320 = 0;
+    D_8004F314 = 0;
+    D_8004F310 = 0;
+    D_8004F30C = 0;
+    D_8004F370 = 0;
+    D_8004F35C = 0;
+    D_8004F360 = 0;
+    D_8004F374 = 0;
+    D_8004F358 = 0;
+    D_8004F354 = 0;
+    D_8004F350 = 0;
+    D_8004F2F4 = 0;
+    D_8004F344 = 0;
+    D_8004F348 = 0;
+    D_8004F304 = 0;
+    D_8004F368 = 0;
+    D_8004F300 = 0;
+    D_8004F380 = 0;
+    D_8004F37C = 0;
+    D_8004F378 = 0;
+    D_8005942C = 0;
+    D_800594D0 = 0;
+    D_8004F384 = 0;
+    D_8004F318 = 0;
+    D_8004F334 = -1;
+    D_8004F34C = -1;
+    D_8004F33C = -1;
+    D_8004F338 = -1;
+    D_8004F330 = -1;
+    D_8004F32C = -1;
+    D_8004F340 = -1;
+    D_8004F308 = -1;
+    for (i = 0; i < 3; i++) {
+        D_8006FABC[i] = 0;
+        D_8006F990[i] = 0;
+        D_8005A444[i] = 0;
+        D_80062590[i] = 0;
+    }
+    for (i = 3, last = &D_80062524; i >= 0; i--) {
+        *last-- = 0;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001ACF0);
+/* Clear the state word 8004f30c (also cleared by a battle defeat). */
+void func_8001AC94(void) {
+    D_8004F30C = 0;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001AD1C);
+/* Select heap tag 8 and directory 4, then load file 1 of it. */
+void func_8001ACA4(void) {
+    D_8004F334 = -1;
+    D_8004F330 = -1;
+    func_80032498(8, 0);
+    func_80028470(4, 0);
+    func_8001B158(1);
+}
+
+/* The first byte of record `index` in the block at *8005a39c. */
+u8 func_8001ACF0(s32 index) {
+    return D_8005A39C->records[index].first;
+}
+
+/* Wait until the disc is idle, then for the pending read (80028a60). */
+void func_8001AD1C(void) {
+    while (func_800286CC() != 0) {
+    }
+    func_80028A60(0);
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001AD4C);
 
