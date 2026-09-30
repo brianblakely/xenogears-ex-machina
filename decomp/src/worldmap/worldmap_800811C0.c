@@ -590,7 +590,174 @@ s32 func_800827EC(s32 index) {
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_800827EC);
 #endif
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_800828DC);
+/* Pulsing-effect scene camera: commands pick camera shots and moves; each state eases distance, pitch and yaw; adds a vertical shake. */
+s32 func_800828DC(s32 index) {
+    WorldmapActor *actor;
+    ActorScratch *scratch;
+
+    actor = &D_8009BE24[index];
+    scratch = (ActorScratch *)0x1F800000;
+    switch (actor->unk4) {
+    case 1:
+        actor->unk4 = 0;
+        actor->state = 1;
+        actor->u.step = actor->motion.vx;
+        actor->unk54 = actor->motion.vy;
+        actor->unk58 = actor->motion.vz;
+        break;
+    case 2:
+        actor->unk4 = 0;
+        actor->state = 0;
+        actor->unk5C = 0x3E0000;
+        D_8009BD38.vx = -0x20;
+        D_8009BD38.vy = 0xD70;
+        D_8009BD38.vz = 0;
+        actor->motion.vx = actor->u.step = -0x20 << 12;
+        actor->motion.vy = actor->unk54 = D_8009BD38.vy << 12;
+        D_8009D3F0 = 0x3E0000;
+        actor->motion.vz = actor->unk58 = D_8009BD38.vz << 12;
+        break;
+    case 3:
+        actor->unk4 = 0;
+        actor->state = 2;
+        break;
+    case 4:
+        actor->unk4 = 0;
+        actor->state = 3;
+        D_8009D55C.target.vx = 0x7499000;
+        D_8009D55C.target.vy = -0x18C000;
+        D_8009D55C.target.vz = 0x408A000;
+        break;
+    case 5:
+        actor->unk4 = 0;
+        actor->state = 4;
+        break;
+    case 6:
+        actor->state = 5;
+        actor->unk7C = 0x1000;
+        actor->unk4 = 0;
+        actor->unk5C = 0x320000;
+        D_8009BD38.vx = 0x40;
+        D_8009BD38.vy = 0xD40;
+        D_8009BD38.vz = 0;
+        actor->motion.vx = actor->u.step = 0x40 << 12;
+        actor->motion.vy = actor->unk54 = D_8009BD38.vy << 12;
+        D_8009D3F0 = 0x320000;
+        actor->motion.vz = actor->unk58 = D_8009BD38.vz << 12;
+        actor->position.vx = D_8009D55C.target.vx = 0x1379000;
+        actor->position.vy = D_8009D55C.target.vy = -0x120000;
+        actor->position.vz = D_8009D55C.target.vz = 0x4B2A000;
+        break;
+    case 7:
+        actor->unk4 = 0;
+        actor->state = 6;
+        break;
+    case 8:
+        actor->state = 7;
+        actor->unk4 = 0;
+        actor->unk5C = 0x100000;
+        D_8009BD38.vx = -0x90;
+        D_8009BD38.vy = -0x510;
+        D_8009BD38.vz = 0;
+        actor->motion.vx = actor->u.step = -0x90 << 12;
+        actor->motion.vy = actor->unk54 = D_8009BD38.vy << 12;
+        D_8009D3F0 = 0x100000;
+        actor->motion.vz = actor->unk58 = D_8009BD38.vz << 12;
+        actor->position.vx = D_8009D55C.target.vx = 0x7529000;
+        actor->position.vy = D_8009D55C.target.vy = -0x18C000;
+        actor->position.vz = D_8009D55C.target.vz = 0x2A3A000;
+        break;
+    case 9:
+        actor->unk4 = 0;
+        actor->state = 8;
+        break;
+    case 10:
+        actor->state = 9;
+        actor->unk4 = 0;
+        actor->unk5C = 0x320000;
+        D_8009BD38.vx = -0x160;
+        D_8009BD38.vy = 0xDE0;
+        D_8009BD38.vz = 0;
+        actor->motion.vx = actor->u.step = -0x160 << 12;
+        actor->motion.vy = actor->unk54 = D_8009BD38.vy << 12;
+        D_8009D3F0 = 0x320000;
+        actor->motion.vz = actor->unk58 = D_8009BD38.vz << 12;
+        actor->position.vx = D_8009D55C.target.vx = 0x2659000;
+        actor->position.vy = D_8009D55C.target.vy = -0x110000;
+        actor->position.vz = D_8009D55C.target.vz = 0x6D8A000;
+        break;
+    case 11:
+        actor->state = 10;
+        actor->unk4 = 0;
+        actor->unk5C = 0x290000;
+        D_8009BD38.vx = -0x1A0;
+        D_8009BD38.vy = 0x160;
+        D_8009BD38.vz = 0;
+        actor->motion.vx = actor->u.step = -0x1A0 << 12;
+        actor->motion.vy = actor->unk54 = D_8009BD38.vy << 12;
+        D_8009D3F0 = 0x290000;
+        actor->motion.vz = actor->unk58 = D_8009BD38.vz << 12;
+        actor->position.vx = D_8009D55C.target.vx = 0x4BA9000;
+        actor->position.vy = D_8009D55C.target.vy = -0x288000;
+        actor->position.vz = D_8009D55C.target.vz = 0x1DDA000;
+        break;
+    case 12:
+        actor->unk4 = 0;
+        actor->state = 11;
+        break;
+    }
+    if (D_8009D144 == 0) {
+        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+    }
+    switch (actor->state) {
+    case 0:
+        break;
+    case 1:
+        actor->u.step = func_800771D8(actor->u.step, -0x20000, 0x5D17);
+        actor->unk54 = func_800771D8(actor->unk54, 0x580000, 0x10000);
+        break;
+    case 2:
+        actor->u.step = func_800771D8(actor->u.step, -0x1F0000, -0x10000);
+        actor->unk54 = func_800771D8(actor->unk54, 0x1290000, 0x10000);
+        actor->unk5C = func_800771D8(actor->unk5C, 0x490000, 0x10000);
+        break;
+    case 3:
+        actor->u.step = func_800771D8(actor->u.step, -0x10000, 0x10000);
+        actor->unk54 = func_800771D8(actor->unk54, 0x1290000, 0x10000);
+        actor->unk5C = func_800771D8(actor->unk5C, 0x2B0000, -0x10000);
+        break;
+    case 4:
+        actor->unk7C += 0x200;
+        if (actor->unk7C > 0x8000) {
+            actor->unk7C = 0x8000;
+            actor->state = 0;
+        }
+        break;
+    case 6:
+        actor->unk54 = func_800771D8(actor->unk54, 0xF40000, 0x4000);
+        break;
+    case 8:
+        actor->u.step = func_800771D8(actor->u.step, 0x50000, 0x2000);
+        actor->unk54 = func_800771D8(actor->unk54, 0x10000, 0x8000);
+        break;
+    case 11:
+        actor->u.step = func_800771D8(actor->u.step, -0x80000, 0x2400);
+        actor->unk54 = func_800771D8(actor->unk54, 0x2C0000, 0x2C00);
+        actor->unk5C = func_800771D8(actor->unk5C, 0x100000, -0x3200);
+        D_8009D55C.target.vx = func_800771D8(D_8009D55C.target.vx, 0x4CD9000, 0x2600);
+        D_8009D55C.target.vy = func_800771D8(D_8009D55C.target.vy, -0x15C000, 0x2580);
+        D_8009D55C.target.vz = func_800771D8(D_8009D55C.target.vz, 0x1C8A000, -0x2A00);
+        func_80093354(&D_8009D55C.target);
+        break;
+    }
+    func_80076DA4(actor, scratch);
+    func_80076F54(actor, scratch);
+    func_80076FA8(actor, scratch);
+    scratch->position.vy = rand() % (actor->unk7C >> 12) - (actor->unk7C >> 13);
+    ((s16 *)D_8009BD40)[1] += scratch->position.vy; /* VIEW_VECTORS[0].vy */
+    VIEW_VECTORS[1].vy += scratch->position.vy;
+    return 1;
+}
 
 /* Pulse a scene object: spin it, stretch its x scale and bounce its tint between limits. */
 void func_80082F64(WorldmapActor *actor, SceneObject *object, ScaleScratch *scratch) {
