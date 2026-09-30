@@ -351,6 +351,8 @@ extern Matrix D_80091C0C;
 extern ShotKind D_800910F4[];
 extern SideHits D_80096FB8[2];
 extern s32 D_8009112C;
+extern s32 D_80092654; /* last crossing point x, z */
+extern s32 D_80092658;
 extern s32 D_80099D88;
 extern s32 D_80099D8C;
 extern u8 D_80050622; /* resident: result of the last menu battle */

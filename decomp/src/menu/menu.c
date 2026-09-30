@@ -1058,9 +1058,71 @@ s32 func_80075750(s32 x0, s32 z0, s32 x1, s32 z1, s32 px, s32 pz, s32 radius) {
     return along <= len + radius ? hit : 0;
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80075888);
+#ifdef NON_MATCHING
+/* Like func_80075750, and on a hit store where the segment enters the
+ * circle around the point in D_80092654/D_80092658. Does not match: the
+ * segment length and the products are allocated to other registers. */
+s32 func_80075888(s32 x0, s32 z0, s32 x1, s32 z1, s32 px, s32 pz, s32 radius) {
+    Vector d;
+    Vector sq;
+    s32 rx;
+    s32 rz;
+    s32 len;
+    s32 ux;
+    s32 uz;
+    s32 along;
+    s32 across;
+    s32 diff;
+    s32 hit;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80075A4C);
+    d.vx = x1 - x0;
+    d.vy = z1 - z0;
+    rx = px - x0;
+    rz = pz - z0;
+    d.vz = radius;
+    func_8004A414(&d, &sq);
+    len = func_80048C4C(sq.vx + sq.vy);
+    if (len == 0) {
+        return 0;
+    }
+    ux = (d.vx << 12) / len;
+    uz = (d.vy << 12) / len;
+    along = (rx * ux + rz * uz) / 4096;
+    across = (-(rx * uz) + rz * ux) / 4096;
+    diff = across * across - sq.vz;
+    hit = (u32)diff >> 31;
+    if (along < 0) {
+        hit = 0;
+    }
+    if (along > len + radius) {
+        hit = 0;
+    }
+    if (hit) {
+        if (diff < 0) {
+            diff = -diff;
+        }
+        along -= func_80048C4C(diff);
+        D_80092654 = along * ux / 4096 + x0;
+        D_80092658 = along * uz / 4096 + z0;
+    }
+    return hit;
+}
+#else
+INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80075888);
+#endif
+
+/* Whether a point comes within radius of any edge of a quad given as four
+ * corner vectors; clears the crossing point to the point first. */
+s32 func_80075A4C(Vector *quad, s32 px, s32 pz, s32 radius) {
+    D_80092654 = px;
+    D_80092658 = pz;
+    if (func_80075750(quad[1].vx, quad[1].vz, quad[0].vx, quad[0].vz, px, pz, radius)
+        || func_80075750(quad[3].vx, quad[3].vz, quad[2].vx, quad[2].vz, px, pz, radius)
+        || func_80075750(quad[0].vx, quad[0].vz, quad[2].vx, quad[2].vz, px, pz, radius)) {
+        return 1;
+    }
+    return func_80075750(quad[1].vx, quad[1].vz, quad[3].vx, quad[3].vz, px, pz, radius) != 0;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80075B50);
 
