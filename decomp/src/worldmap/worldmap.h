@@ -84,9 +84,9 @@ typedef struct {
     u16 unk5A;
     u16 unk5C;
     u16 unk5E;
-    u16 unk60;
-    u16 unk62;
-    u16 unk64;
+    s16 unk60;   /* saved vehicle position */
+    s16 unk62;
+    s16 unk64;
     u16 vehicle_heading; /* 8006ee66 */
     u16 flags;   /* 8006ee68: 0x4000 vehicle, 0x2000 restore, low bits kind */
     s16 unk6A;
@@ -119,6 +119,7 @@ extern s32 D_8009C584;  /* player heading */
 extern WorldmapSpot *D_8009D3F4;
 
 void func_8008DFF4(Vec3 *position);
+void func_800848B4(s32 parent, s32 child);
 
 /* PsyQ libgpu environments. */
 typedef struct {
@@ -173,7 +174,8 @@ typedef struct {
     s32 unk1C;
     s16 state;    /* 0x20 */
     s16 wait;     /* 0x22: script wait counter */
-    s32 unk24;
+    s16 unk24;
+    s16 unk26;
     Vec3 position; /* 0x28 */
     s32 unk34;
     s32 unk38;
@@ -450,6 +452,32 @@ extern u16 D_8006EF64;
 extern void *D_8009BDF4, *D_8009BE1C, *D_8009BE20;
 
 void func_8008BFD4(s32 index, Vec3 *position, s32 x, s32 z);
+
+/* Queued actor placement (0x18 bytes, ring of 32). */
+typedef struct {
+    s16 actor;
+    s16 pad2;
+    Vec3 position;
+    s32 z;
+    s16 x;
+    s16 pad16;
+} PlaceRequest;
+
+extern PlaceRequest D_8009BE6C[32];
+extern s16 D_8009BD04;
+
+s32 func_8008C364(WorldmapActor *actor, s32 kind);
+
+typedef struct {
+    u8 data[0xC];
+    u16 count;
+    u16 pad;
+} PathTable;
+
+extern PathTable D_8009B6C4[2];
+extern PathTable *D_8009D7D8;
+extern u16 D_8009BD24;
+extern u8 D_8009D738, D_8009BD60;
 
 /* Frame state. */
 typedef struct {
