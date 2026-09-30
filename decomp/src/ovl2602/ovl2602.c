@@ -2353,7 +2353,45 @@ void func_801CE7E0(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CE82C);
+/* Draw the gear screen's animated sprites, then its backdrop, frame and part pictures when shown. */
+void func_801CE82C(void) {
+    s32 i;
+
+    if (D_800625A0->flags->gear_shown != 0) {
+        if (D_800625A0->unk454->flicker_shown != 0) {
+            func_801C94CC(D_800625A0->unk454->flicker_count, D_800625A0->unk454->flicker[0],
+                          D_800625A0->unk454->flicker_buffer);
+            func_801C94CC(D_800625A0->unk454->flicker_count, D_800625A0->unk454->flicker[1],
+                          D_800625A0->unk454->flicker_buffer);
+            func_801C94CC(D_800625A0->unk454->flicker_count, D_800625A0->unk454->flicker[2],
+                          D_800625A0->unk454->flicker_buffer);
+        }
+        for (i = 0; i < 2; i++) {
+            if (D_800625A0->unk454->lamp_state[i] != 0) {
+                func_801C94CC(D_800625A0->unk454->lamp_count[i], D_800625A0->unk454->lamps[i],
+                              D_800625A0->unk454->lamp_buffer[i]);
+            }
+        }
+        if (D_800625A0->unk454->lamp_state[2] != 0) {
+            func_801C94CC(D_800625A0->unk454->lamp_count[2], D_800625A0->unk454->indicator,
+                          D_800625A0->unk454->lamp_buffer[2]);
+        }
+    }
+    if (D_800625A0->flags->gear_parts_shown != 0) {
+        func_801C94CC(1, D_800625A0->unk454->backdrop, D_800625A0->buffer);
+        func_801C94CC(0xE, D_800625A0->unk454->frame, D_800625A0->unk454->parts_buffer);
+        func_801C94CC(D_800625A0->unk454->part_count[0], D_800625A0->unk454->parts[0],
+                      D_800625A0->unk454->parts_buffer);
+        func_801C94CC(D_800625A0->unk454->part_count[1], D_800625A0->unk454->parts[1],
+                      D_800625A0->unk454->parts_buffer);
+        func_801C94CC(D_800625A0->unk454->part_count[2], D_800625A0->unk454->parts[2],
+                      D_800625A0->unk454->parts_buffer);
+        func_801C94CC(D_800625A0->unk454->part_count[3], D_800625A0->unk454->parts[3],
+                      D_800625A0->unk454->parts_buffer);
+        func_801C94CC(D_800625A0->unk454->part_count[4], D_800625A0->unk454->parts[4],
+                      D_800625A0->unk454->parts_buffer);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CEA68);
 
@@ -2404,19 +2442,15 @@ INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CFAB8);
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CFC60);
 
-/* Show the gear screen: reset its selections, swing the camera and start its motion (7). */
+/* Show the gear screen: close its lamps and indicator, swing the camera and start its motion (7). */
 void func_801CFF18(void) {
-    s32 x;
-    s32 y;
-    s32 z;
-
-    D_800625A0->unk454->unk1ED9[0] = 3;
-    D_800625A0->unk454->unk1ED9[1] = 3;
-    D_800625A0->unk454->unk1ED9[2] = 3;
-    D_800625A0->unk454->unk1ED9[3] = 0;
-    D_800625A0->unk454->unk1ED9[4] = 0;
-    D_800625A0->unk454->unk1ED9[5] = 0;
-    D_800625A0->unk454->unk1ED9[6] = 0;
+    D_800625A0->unk454->lamp_state[0] = 3;
+    D_800625A0->unk454->lamp_state[1] = 3;
+    D_800625A0->unk454->lamp_state[2] = 3;
+    D_800625A0->unk454->flicker_timer = 0;
+    D_800625A0->unk454->lamp_timer[0] = 0;
+    D_800625A0->unk454->lamp_timer[1] = 0;
+    D_800625A0->unk454->lamp_timer[2] = 0;
     D_800625A0->flags->gear_shown = 1;
     D_801D9050.from[0] = D_801D9050.to[0];
     D_801D9050.from[1] = D_801D9050.to[1];

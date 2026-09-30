@@ -198,15 +198,40 @@ typedef struct {
     u8 unk4786[2];
 } DetailBlock;
 
-/* The gear screen block (ovl2602, menu state + 454, 1f00h bytes). */
+/*
+ * The gear screen block (ovl2602, menu state + 454, 1f00h bytes): its
+ * backdrop and part pictures, and three animated sprite groups: a flicker of
+ * three sprites, two lamps that open, idle and close, and a third indicator.
+ * States: 0 off, 1 opening, 2 idle, 3 closing (the indicator has 4 steps).
+ */
 typedef struct {
-    u8 unk0[0x80];
-    POLY_FT4 packets[2]; /* 80 */
-    u8 unkD0[0x1ED9 - 0xD0];
-    u8 unk1ED9[7];       /* 1ed9 */
-    u8 unk1EE0;
-    u8 buffer;           /* 1ee1 */
-    u8 unk1EE2[0x1F00 - 0x1EE2];
+    POLY_FT4 backdrop[2];      /* 0000: drawn with the menu's buffer */
+    u8 unk50[0x30];
+    POLY_FT4 packets[2];       /* 0080 */
+    POLY_FT4 flicker[3][4];    /* 00d0 */
+    POLY_FT4 lamps[3][22];     /* 02b0: lamps 0 and 1 */
+    POLY_FT4 indicator[36];    /* 0d00 */
+    POLY_FT4 frame[28];        /* 12a0 */
+    POLY_FT4 parts[5][10];     /* 1700 */
+    u8 flicker_count;          /* 1ed0 */
+    u8 lamp_count[3];          /* 1ed1: [2] the indicator's */
+    u8 flicker_buffer;         /* 1ed4 */
+    u8 lamp_buffer[3];         /* 1ed5 */
+    u8 flicker_shown;          /* 1ed8 */
+    u8 lamp_state[3];          /* 1ed9: [2] the indicator's */
+    u8 flicker_timer;          /* 1edc */
+    u8 lamp_timer[3];          /* 1edd */
+    u8 flicker_frame;          /* 1ee0 */
+    u8 buffer;                 /* 1ee1 */
+    s16 indicator_frame;       /* 1ee2 */
+    s16 lamp_frame[2];         /* 1ee4 */
+    u8 part_count[5];          /* 1ee8 */
+    u8 parts_buffer;           /* 1eed */
+    u8 unk1EEE[2];
+    s16 flicker_x, flicker_y;  /* 1ef0 */
+    s16 lamp_x[2];             /* 1ef4 */
+    s16 lamp_y[2];             /* 1ef8 */
+    s16 indicator_x, indicator_y; /* 1efc */
 } GearScreen;
 
 /* A model part block (ovl2602, menu state + 458/45c). */
@@ -351,7 +376,8 @@ typedef struct {
     u8 model_shown;  /* 63: ovl2602 */
     u8 price_shown;  /* 64: ovl2602 */
     u8 gear_shown;   /* 65: ovl2602 */
-    u8 unk66[0x6C - 0x66];
+    u8 gear_parts_shown; /* 66: ovl2602 */
+    u8 unk67[0x6C - 0x67];
 } ScreenFlags;
 
 /* A linked sound effect bank. */
@@ -791,6 +817,15 @@ typedef struct {
 extern ModelState *D_801E8674;
 extern POLY_FT4 D_801D7108[]; /* camera debug display packets, two per sprite */
 extern s32 D_801D9048;        /* their sprite count */
+u8 func_8001BD40(u8 low, u8 high); /* random number in [low, high] */
+extern u16 D_801D6FE0[2][5][4]; /* lamp sprite ids per frame (ffff none) */
+extern u8 D_801D7030[];         /* lamp and indicator position per command and list cursor */
+extern u16 D_801D7040[2];       /* lamp x */
+extern u16 D_801D7044[2][6];    /* lamp y choices */
+extern u16 D_801D705C[6];       /* indicator x choices */
+extern u16 D_801D7068[6];       /* indicator y choices */
+extern u16 D_801D7074[6];       /* flicker x choices */
+extern u16 D_801D7080[6];       /* flicker y choices */
 extern u32 D_8006EF58;     /* party gold */
 void ClearImage(void *env, s32 unk1, s32 unk2, s32 unk3);
 void AddPrims(u32 *ot, u32 *first, u32 *last); /* link an OT range into another OT */
