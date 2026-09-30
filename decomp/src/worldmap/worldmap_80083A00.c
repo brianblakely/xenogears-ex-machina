@@ -953,24 +953,22 @@ void func_80087904(SceneObject *object, PolyFT4 *quads, s32 count, s32 abr) {
     memcpy(object->prims2, object->prims, count * sizeof(PolyFT4));
 }
 
+s32 func_800879E0(s32 index);
+
 /* Reset an actor to step 0 with parameter 0x10 and rebuild the area's two
  * scene objects. */
-#ifdef NON_MATCHING /* actor index scaled into a separate register */
 s32 func_800879A8(s32 index) {
     WorldmapActor *actor;
 
     actor = &D_8009BE24[index];
     actor->u.step = 0;
     actor->unk54 = 0x10;
-    func_800879E0();
+    func_800879E0(index);
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_800879A8);
-#endif
 
 /* Rebuild the primitives of the current area's two scene objects. */
-s32 func_800879E0(void) {
+s32 func_800879E0(s32 index) {
     s32 unused[2]; /* unreferenced; the original frame reserves it */
     SceneObject *first;
     SceneObject *second;
