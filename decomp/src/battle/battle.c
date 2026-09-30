@@ -1899,7 +1899,7 @@ void func_8007893C(u8 index, u8 actor) {
 /* Execute the actor's action `index`: commit it, queue its animation event
  * with the committed targets and, when those differ from the action's own,
  * retarget the queued move event (0xfd). */
-void func_80078998(u8 actor, u8 index) {
+void func_80078998(u8 actor, u8 index, u8 target) {
     s32 i;
 
     func_8007893C(index, actor);
@@ -1939,25 +1939,25 @@ void func_80078B34(u8 actor, u8 index, u8 target) {
 }
 
 /* Queue event type 0xfc for the actor. */
-void func_80078C9C(u8 actor, u8 index) {
+void func_80078C9C(u8 actor, u8 index, u8 target) {
     D_800C3FE8[D_800C3EAC->eventCount].type = 0xFC;
     func_800785D4(actor, index);
 }
 
 /* Queue the action entry's parameter as the event type for the actor. */
-void func_80078CEC(u8 actor, u8 index) {
+void func_80078CEC(u8 actor, u8 index, u8 target) {
     D_800C3FE8[D_800C3EAC->eventCount].type = D_800D2E5C[index].param;
     func_800785D4(actor, index);
 }
 
 /* The action entry's targets act together. */
-void func_80078D48(u8 actor, u8 index) {
+void func_80078D48(u8 actor, u8 index, u8 target) {
     D_800D39E0 = D_800D2E5C[index].targets;
 }
 
 /* Action entry type: the actor leaves the battle (event 0xf9); its reaction
  * reaction byte +3 is set and only its 0x8000 flag is kept. */
-void func_80078D6C(u8 actor, u8 index) {
+void func_80078D6C(u8 actor, u8 index, u8 target) {
     D_800C3FE8[D_800C3EAC->eventCount].type = 0xF9;
     func_800785D4(actor, index);
     D_800D2DCC.ready[actor] = 0xFF;
@@ -1970,7 +1970,7 @@ void func_80078D6C(u8 actor, u8 index) {
  * split event (0xfb) for it.
  * Nonmatching: register allocation of the slot indexes. */
 #ifdef NON_MATCHING
-void func_80078E24(u8 slot, u8 index) {
+void func_80078E24(u8 slot, u8 index, u8 target) {
     s32 i;
     u8 source;
 
@@ -1998,23 +1998,23 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80078E24);
 #endif
 
 /* Set the actor's attribute arg1 to the entry's parameter byte. */
-void func_80079054(u8 actor, u8 index) {
+void func_80079054(u8 actor, u8 index, u8 target) {
     func_80079ED8(actor, D_800D2E5C[index].arg1, D_800D2E5C[index].param, 0);
 }
 
 /* Add the entry's parameter byte to the actor's attribute arg1. */
-void func_80079098(u8 actor, u8 index) {
+void func_80079098(u8 actor, u8 index, u8 target) {
     func_80079ED8(actor, D_800D2E5C[index].arg1,
                   D_800D2E5C[index].param + func_80079ED8(actor, D_800D2E5C[index].arg1, 0, 1), 0);
 }
 
 /* Set the actor's 16-bit attribute arg1 to the entry's parameter halfword. */
-void func_80079114(u8 actor, u8 index) {
+void func_80079114(u8 actor, u8 index, u8 target) {
     func_8007A280(actor, D_800D2E5C[index].arg1, D_800D2E5C[index].param | (D_800D2E5C[index].unk5 << 8), 0);
 }
 
 /* Add the entry's parameter halfword to the actor's 16-bit attribute arg1. */
-void func_8007916C(u8 actor, u8 index) {
+void func_8007916C(u8 actor, u8 index, u8 target) {
     func_8007A280(actor, D_800D2E5C[index].arg1,
                   D_800D2E5C[index].param +
                       (func_8007A280(actor, D_800D2E5C[index].arg1, 0, 1) + (D_800D2E5C[index].unk5 << 8)),
@@ -2022,14 +2022,14 @@ void func_8007916C(u8 actor, u8 index) {
 }
 
 /* Named-action text, then event 0xf4 for the actor. */
-void func_800791FC(u8 actor, u8 index) {
+void func_800791FC(u8 actor, u8 index, u8 target) {
     func_8007893C(index, actor);
     D_800C3FE8[D_800C3EAC->eventCount].type = 0xF4;
     func_800785D4(actor, index);
 }
 
 /* Event 0xf6 for the actor with the entry's targets. */
-void func_80079270(u8 actor, u8 index) {
+void func_80079270(u8 actor, u8 index, u8 target) {
     D_800C3FE8[D_800C3EAC->eventCount].type = 0xF6;
     D_800C3FE8[D_800C3EAC->eventCount].targetMask = D_800D2E5C[index].targets;
     func_800785D4(actor, index);
@@ -2076,7 +2076,86 @@ u8 number;
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800792F8);
 #endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800793F0);
+/* Execute the actor's action list: each entry's handler by type, with the
+ * first slot it targets; type 0 ends the list (entries after it run only
+ * while fewer than 32 have), an unknown type shows the script error. */
+void func_800793F0(u8 actor) {
+    s32 i;
+    s32 slot;
+    u8 target;
+    u8 running;
+
+    i = 0;
+    running = 1;
+    do {
+        slot = 0;
+        target = 0;
+        for (; slot < 11; slot++) {
+            if (func_80089C9C(D_800D2E5C[i].targets, slot)) {
+                target = slot;
+                break;
+            }
+        }
+        func_80085388();
+        switch (D_800D2E5C[i].type) {
+        case 0:
+            running = 0;
+            break;
+        case 1:
+            func_80078998(actor, i, target);
+            break;
+        case 2:
+            func_80078B34(actor, i, target);
+            break;
+        case 3:
+            func_80078C9C(actor, i, target);
+            break;
+        case 4:
+            func_80078CEC(actor, i, target);
+            break;
+        case 5:
+            func_80078D48(actor, i, target);
+            break;
+        case 6:
+            func_80078D6C(actor, i, target);
+            break;
+        case 7:
+            func_80078E24(actor, i, target);
+            break;
+        case 8:
+            func_80079054(actor, i, target);
+            break;
+        case 9:
+            func_80079098(actor, i, target);
+            break;
+        case 10:
+            func_80079114(actor, i, target);
+            break;
+        case 11:
+            func_8007916C(actor, i, target);
+            break;
+        case 12:
+            func_80078658(i, actor);
+            break;
+        case 13:
+            func_800791FC(actor, i, target);
+            break;
+        case 14:
+            func_800787E0(D_800D2E5C[i].param, actor);
+            break;
+        case 15:
+            func_80079270(actor, i, target);
+            break;
+        case 16:
+            func_8007887C(actor);
+            break;
+        default:
+            func_800792F8(actor, (u8)i);
+            break;
+        }
+        i++;
+    } while (i < 32 || running);
+}
 
 /* Close the actor's event queue: event 0x1b for a flagged actor, then the
  * closing event 0xfe; menu effects off. */

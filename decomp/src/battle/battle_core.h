@@ -782,6 +782,9 @@ u16 func_80089C9C(u16 mask, u8 slot);
 void func_80085AC4(u8 slot);
 void func_80071B94(u8 mode);
 
+/* Action list handlers (800793f0). */
+void func_80078E24(u8 slot, u8 index, u8 target);
+
 /* The 801e5000 module and the 80280000 module. */
 void func_801E5160(void);
 void func_801DE594(void);
