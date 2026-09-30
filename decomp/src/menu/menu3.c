@@ -412,11 +412,8 @@ INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu3", D_8006FC10);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80074678);
 
-#ifdef NON_MATCHING
 /* Show the model objects of the current move: unhide every kind-1 object,
- * then hide the listed ones (and object 13 in mode 0xD). Does not match:
- * the original leaf keeps an empty 16-byte frame (likely from a call that
- * was optimised away). */
+ * then hide the listed ones (and object 13 in mode 0xD). */
 void func_80074998(Actor *actor) {
     Node **nodes = ((ModelSet *)actor->node->data)->nodes;
     s32 i;
@@ -433,9 +430,6 @@ void func_80074998(Actor *actor) {
         ((Model *)nodes[13]->data)->flags |= 1;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80074998);
-#endif
 
 /* Apply an actor's pose and start its move's animation. */
 void func_80074AB4(Actor *actor) {

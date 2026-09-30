@@ -166,9 +166,7 @@ void func_8007ED84(u8 *text, s32 offset) {
     D_800926EC += 0x14;
 }
 
-#ifdef NON_MATCHING
-/* Set the text colour: highlighted (fading red) or plain white.
- * Does not match: the original reloads 0xff in the highlight branch. */
+/* Set the text colour: highlighted (fading red) or plain white. */
 void func_8007EE08(s32 highlight) {
     if (highlight) {
         D_800926F0 = D_80059488 * 20;
@@ -180,9 +178,6 @@ void func_8007EE08(s32 highlight) {
         D_800926F8 = 0xFF;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_8007EE08);
-#endif
 
 #ifdef NON_MATCHING
 /* Set the text colour: highlighted (fading toward blue) or plain white.
