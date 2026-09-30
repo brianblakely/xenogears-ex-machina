@@ -132,7 +132,12 @@ decomp/src/battle/battle_8008B478.c
 decomp/src/battle/battle_8008CCCC.c
 decomp/src/battle/battle_8009E53C.c
 decomp/src/battle/battle_800B15D8.c
+decomp/src/battle/battle_800B3F04.c
+decomp/src/battle/battle_800B7870.c
 decomp/src/battle/battle_800B8098.c
+decomp/src/battle/battle_800BD3AC.c
+decomp/src/battle/battle_800BFE48.c
+decomp/src/battle/battle_800C11CC.c
 decomp/src/battle/battle_command.h
 decomp/src/battle/battle_core.h
 decomp/src/battle/combatant.h
