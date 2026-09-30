@@ -244,7 +244,9 @@ typedef struct CharRecord {
     u8 unk63; /* 63 */
     u8 pad64[0xB];
     u8 accessory; /* 6F: inventory list 1 entry (801e0434) */
-    u8 pad70[0x30];
+    u8 pad70[0x20];
+    u16 unk90[7]; /* 90: progress values (801e1418) */
+    u8 pad9E[0x2];
     u8 gear; /* A0: gear record (+11), ff none */
     u8 padA1[0x3];
 } CharRecord;
@@ -676,7 +678,8 @@ extern u8 D_8006F5C4[150];    /* game data: inventory item counts */
 extern u8 D_8006F65A[150];    /* game data: inventory item ids */
 extern u16 D_8006F958[16];    /* game data */
 extern u16 D_8005A3A0[16];
-extern u8 D_8006F8E5[];       /* game data */
+extern u8 D_8006F8E5[];
+extern u16 D_8006F8EA;        /* game data: flags */       /* game data */
 extern u8 D_8006F36C[];       /* game data inventory lists (counts, ids) */
 extern u8 D_8006F3D0[];
 extern u8 D_8006F434[];

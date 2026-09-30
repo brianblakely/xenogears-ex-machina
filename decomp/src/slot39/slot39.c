@@ -2945,7 +2945,55 @@ void func_801E1398(void) {
     func_800320E8(D_800625A0->block438);
 }
 
+/* Return party slot `slot`'s average completion (percent, each capped at
+ * 100) of the seven targets of row `row` of its table (+438 +2578), counting
+ * entries where either side is set; rows from 7 need game flag 4000. */
+#ifdef NON_MATCHING
+u32 func_801E1418(u8 slot, u8 row) {
+    u32 sum;
+    s32 i;
+    u32 count;
+    s32 id;
+    u16 *values;
+    u8 *table;
+    u16 value;
+    u16 target;
+    u32 percent;
+
+    sum = 0;
+    if (row < 7 || (D_8006F8EA & 0x4000)) {
+        count = 0;
+        id = D_800625A0->party->ids[slot];
+        table = D_800625A0->block438->unk2578;
+        values = D_8006D8A0[id].unk90;
+        for (i = 0; i < 7; i++, values++) {
+            value = *values;
+            target = *(u16 *)(table + id * 0x110 + row * 14 + i * 2);
+            if (value != 0) {
+                if (target != 0) {
+                    if (target != 0xffff) {
+                        percent = value * 100 / target;
+                        if (percent >= 100) {
+                            sum += 100;
+                        } else {
+                            sum += percent;
+                        }
+                    }
+                    count++;
+                }
+            } else if (target != 0) {
+                count++;
+            }
+        }
+        if (count != 0) {
+            return sum / count;
+        }
+    }
+    return 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E1418);
+#endif
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E1544);
 
