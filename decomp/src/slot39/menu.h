@@ -229,7 +229,8 @@ typedef struct GearPart {
 
 /* A per-character effect record of the data tables (+20). */
 typedef struct MenuEffect {
-    u8 pad0[0x11];
+    u16 target; /* 0: 4000 all, 1000 none, else one; low bits: target kind */
+    u8 pad2[0xF];
     u8 unk11; /* 11 */
     u8 pad12[0x16];
 } MenuEffect;
@@ -270,8 +271,7 @@ typedef struct MenuTables {
     GearFrame *frames; /* 10 */
     u8 pad14[0x8];
     MenuItem *items; /* 1C */
-    MenuEffect *effects[11]; /* 20: per character */
-    u8 pad4C[0x58];
+    MenuEffect *effects[33]; /* 20: per character, then per gear from 11 */
     u16 unkA4; /* A4 */
     u16 unkA6; /* A6 */
     u8 padA8[0x8];
@@ -433,7 +433,7 @@ typedef struct MenuBlock430 {
     MenuLabelSlot headB; /* E80 */
     MenuLabelSlot extra[2]; /* F00 */
     MenuLabelSlot footer; /* 1000 */
-    u8 pad1080[0x4];
+    u8 *texts; /* 1080: description texts */
     u8 shown[14]; /* 1084 */
     u8 extraShown; /* 1092 */
     u8 pad1093[0x1];
@@ -852,7 +852,7 @@ void func_8003852C(void *bank);
 void func_8003A094(void *bank);
 
 s32 func_80028530(void);
-u8 *func_80033728(u8 *table, u8 index); /* message of a table */
+u8 *func_80033728(u8 *table, s32 index); /* message of a table */
 void memmove(void *dst, void *src, s32 size);
 u8 *func_80033818(u8 item);  /* item name text */
 void func_80033B34(u8 *codes, u8 *text, s32 count); /* codes to text */

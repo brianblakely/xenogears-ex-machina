@@ -3557,7 +3557,103 @@ void func_801DC2CC(u8 kind) {
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DC3D8);
 
+/* Show the description of file list row `row` for party slot `slot` (`kind`
+ * 0 the character's, 1 the gear's, 2 the gear's paired rows): the entry's
+ * two text lines, a copy of its name and its target labels; an unused row
+ * hides them. */
+#ifdef NON_MATCHING
+/* Differs in the first switch's tail merging and register allocation. */
+void func_801DCE60(u8 slot, u8 row, u8 kind) {
+    RECT rect;
+    MenuEffect *effect;
+    u8 *image;
+    u16 text;
+    u16 target;
+    u8 all;
+    s32 i;
+
+    switch (kind) {
+    case 0:
+        text = (D_800625A0->party->ids[slot] << 5) + row * 2;
+        break;
+    case 1:
+        text = (D_8006D8A0[D_800625A0->party->ids[slot]].gear << 5) + row * 2;
+        break;
+    case 2:
+        text = D_8006D8A0[D_800625A0->party->ids[slot]].gear * 8 + (row & 0xfe);
+        break;
+    }
+    if (D_800625A0->block430->shown[row] != 0) {
+        image = func_80031BDC(0x618, 0);
+        bzero(image, 0x618);
+        D_800625A0->block430->extra[0].width =
+            func_80034EAC(func_80033728(D_800625A0->block430->texts, text), image, 0x39, 0);
+        D_800625A0->block430->extra[1].width =
+            func_80034EAC(func_80033728(D_800625A0->block430->texts, text + 1), image, 0x39, 1);
+        rect.x = 0x140;
+        rect.y = 0x4e;
+        rect.w = 0x3c;
+        rect.h = 0xd;
+        LoadImage(&rect, image);
+        DrawSync(0);
+        func_801E7C50(&D_800625A0->block430->extra[0], 0, 0, 0);
+        func_801E920C(&D_800625A0->block430->extra[0].polys[D_800625A0->bufferIndex], 0x1c, 0x9e, 0, 0x4e,
+                      D_800625A0->block430->extra[0].width, 0xd);
+        func_801C851C(D_800625A0->block430->extra[0].verts, 0x1c, 0x9e, D_800625A0->block430->extra[0].width, 0xd);
+        func_801E7C50(&D_800625A0->block430->extra[1], 1, 0, 0);
+        func_801E920C(&D_800625A0->block430->extra[1].polys[D_800625A0->bufferIndex], 0x1c, 0xae, 0, 0x4e,
+                      D_800625A0->block430->extra[1].width, 0xd);
+        func_801C851C(D_800625A0->block430->extra[1].verts, 0x1c, 0xae, D_800625A0->block430->extra[1].width, 0xd);
+        func_800320E8(image);
+        memmove(&D_800625A0->block430->headA, &D_800625A0->block430->names[row], sizeof(MenuLabelSlot));
+        func_801C851C(D_800625A0->block430->headA.verts, 0x12, 0x8e, D_800625A0->block430->names[row].width, 0xd);
+        (D_800625A0->block430->headA.polys + D_800625A0->bufferIndex)->r0 = 0x80;
+        (D_800625A0->block430->headA.polys + D_800625A0->bufferIndex)->g0 = 0x80;
+        (D_800625A0->block430->headA.polys + D_800625A0->bufferIndex)->b0 = 0x80;
+        SetSemiTrans(&D_800625A0->block430->headA.polys[D_800625A0->bufferIndex], 0);
+        func_801E8044(8, D_800625A0->party->unk38);
+        switch (kind) {
+        case 0:
+            effect = D_800625A0->tables->effects[D_800625A0->party->ids[slot]] + row;
+            effect += 22;
+            break;
+        case 1:
+            effect = D_800625A0->tables->effects[11 + D_8006D8A0[D_800625A0->party->ids[slot]].gear] + row;
+            effect += 21;
+            break;
+        case 2:
+            effect = D_800625A0->tables->effects[11 + D_8006D8A0[D_800625A0->party->ids[slot]].gear] + (row >> 1);
+            effect += 37;
+            break;
+        }
+        target = effect->target;
+        if (target & 0x4000) {
+            all = 2;
+        } else if (target & 0x1000) {
+            all = 0;
+        } else {
+            all = 1;
+        }
+        func_801E8070(8, D_800625A0->labels10E0, D_801EA550, D_801E9EA0, D_800625A0->party->unk38, all, 0, 2);
+        func_801E8070(8, D_800625A0->labels10E0, D_801EA550, D_801E9EA0, D_800625A0->party->unk38,
+                      (effect->target & 3) + 3, 0, 2);
+        D_800625A0->block430->headA.count = D_800625A0->bufferIndex;
+        D_800625A0->block430->headB.count = D_800625A0->bufferIndex;
+        D_800625A0->block430->extra[0].count = D_800625A0->bufferIndex;
+        D_800625A0->block430->extra[1].count = D_800625A0->bufferIndex;
+        D_800625A0->block430->extraShown = 1;
+        D_800625A0->party->unk38[6] = 1;
+        D_800625A0->party->unk38[7] = 1;
+    } else {
+        D_800625A0->block430->extraShown = 0;
+        for (i = 0; i < 6; i++) {
+            D_800625A0->party->unk38[i] = 0;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DCE60);
+#endif
 
 /* Shade the file list screen's texts by `mode` (801e8eac): windows 5 and 6,
  * each built name and value of the first twelve rows, the cursor, the
