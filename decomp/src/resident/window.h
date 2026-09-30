@@ -24,7 +24,10 @@ typedef struct {
 
 typedef struct {
     Sprite sprite[4];
-    u8 unk50[0x10];
+    u8 unk50[8];
+    s16 unk58;
+    u8 unk5A;
+    u8 unk5B[5];
 } WindowLine;
 
 typedef struct {

@@ -412,23 +412,165 @@ void func_8003487C(Window *window) {
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80034888);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80034EAC);
+/* The one-line layout window (0x80059FD8) and its line (0x8005A068). */
+extern s16 D_80059FD8; /* x */
+extern s16 D_80059FDA; /* y */
+extern s16 D_80059FE0; /* unk8 */
+extern s16 D_80059FE2; /* width */
+extern s16 D_80059FE4; /* lines */
+extern u16 D_80059FE8; /* flags */
+extern s16 D_80059FEA; /* stride */
+extern u8 *D_80059FF4; /* text */
+extern WindowLine *D_8005A000; /* layout */
+extern void *D_8005A004; /* image */
+extern u8 D_8005A040;
+extern u8 D_8005A041;
+extern u8 D_8005A042;
+extern u8 D_8005A044;
+extern s16 D_8005A05C;
+extern WindowLine D_8005A068;
+extern void func_80033DF0(Window *window);
 
+/* Lay out one line of `text` into `image` in the layout window, `width`
+ * made odd. Returns the laid-out width in pixels.
+ * Nonmatching: the original stores in a different order and sign-extends the width. */
+#ifdef NON_MATCHING
+s32 func_80034EAC(u8 *text, void *image, s16 width, s32 flags) {
+    D_80059FE2 = width;
+    width |= 1;
+    D_80059FE4 = 1;
+    D_80059FE2 = width;
+    D_80059FE0 = width << 2;
+    D_80059FF4 = text;
+    D_8005A040 = 1;
+    D_80059FEA = width + 3;
+    D_8005A05C = 0;
+    D_8005A044 = 0;
+    D_8005A042 = 0;
+    D_8005A004 = image;
+    D_80059FE8 = 0;
+    D_80059FDA = 0;
+    D_80059FD8 = 0;
+    D_8005A041 = 100;
+    D_8005A000 = &D_8005A068;
+    D_8005A068.unk58 = 0;
+    D_8005A068.unk5A = flags & 1;
+    func_80033DF0((Window *)&D_80059FD8);
+    return D_8005A000->unk58 * 4;
+}
+#else
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80034EAC);
+#endif
+
+#include "text.h"
+
+/* Draw class of a character: 2 for a narrow glyph, else 3.
+ * Nonmatching: register allocation of the loaded limits. */
+#ifdef NON_MATCHING
+s32 func_80034F98(u16 first, u16 second) {
+    s32 result = 3;
+
+    if (first == 0) {
+        if (second - D_80059364 < D_80059354) {
+            result = 2;
+        }
+    } else if (first == D_8005934C) {
+        if (second < D_80059358) {
+            result = 2;
+        }
+    }
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80034F98);
+#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80034FFC);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003569C);
+#include "pad.h"
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80035734);
+/* Buttons held on controller `port` (active high), or 0 without a digital
+ * or analog pad. */
+s32 func_8003569C(s32 port) {
+    PadBuffer *pad = &D_800625FC[port];
 
+    D_80059388 = 0;
+    if (pad->status != 0) {
+        return 0;
+    }
+    D_80059388 = pad->type & 0xF0;
+    if (D_80059388 == 0x40 || D_80059388 == 0x50 || D_80059388 == 0x70) {
+        return (u8)~pad->buttons[1] | ((pad->buttons[0] << 8) ^ 0xFF00);
+    }
+    return 0;
+}
+
+/* Kind of controller on `port`: 0 none, 1 digital, 2 mouse, 3 analog stick,
+ * 4 analog pad, -1 other. */
+s32 func_80035734(s32 port) {
+    if (D_800625FC[port].status == 0xFF) {
+        return 0;
+    }
+    switch (D_800625FC[port].type & 0xF0) {
+    case 0x40:
+        return 1;
+    case 0x10:
+        return 2;
+    case 0x50:
+        return 3;
+    case 0x70:
+        return 4;
+    }
+    return -1;
+}
+
+/* Remap the low button byte through the configured assignment.
+ * Nonmatching: the argument and result registers are swapped. */
+#ifdef NON_MATCHING
+s16 func_800357C0(s32 buttons) {
+    s32 result = buttons & 0xFF00;
+    s32 i;
+
+    for (i = 0; i < 8; i++) {
+        if (buttons & D_800501E8[i]) {
+            result |= D_800501E8[D_80050238[i]];
+        }
+    }
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800357C0);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003582C);
+/* Swap the shoulder and face button bits between the two layouts. */
+s16 func_8003582C(s32 buttons) {
+    s16 result = buttons & ~0x9E;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80035884);
+    if (buttons & 8) {
+        result |= 0x10;
+    }
+    if (buttons & 2) {
+        result |= 4;
+    }
+    if (buttons & 0x10) {
+        result |= 8;
+    }
+    if (buttons & 0x80) {
+        result |= 2;
+    }
+    if (buttons & 4) {
+        result |= 0x80;
+    }
+    return result;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800358A0);
+u8 func_80035884(s32 buttons) {
+    return D_8005020C[(buttons >> 12) & 0xF];
+}
+
+u8 func_800358A0(s32 buttons) {
+    return D_8005021C[(buttons >> 12) & 0xF];
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800358BC);
 
