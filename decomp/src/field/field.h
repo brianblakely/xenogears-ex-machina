@@ -765,6 +765,13 @@ extern s32 func_8009D000(s32 offset, s32 flags); /* operand, immediate with flag
 extern void func_80086590(VECTOR *target);
 extern s32 func_8009CFBC(s32 offset, s32 flags); /* operand, immediate with flag 0x40 */
 extern void func_80074700(void);
+extern void func_8008110C(void);
+extern void func_800722F4(void);
+extern s32 func_80073988(s32 angle, s32 goal, s32 step);
+extern void func_800223B0(FieldModel *model, s16 angle);
+extern void func_80021FE0(FieldModel *model, s16 angle);
+extern MATRIX D_800AFC30; /* sprite view rotation matrix */
+extern s32 D_800B00B4;     /* camera pitch */
 extern s32 func_8007B1C4(s32 x, s32 z, s32 layer, SVECTOR *point, VECTOR *normal);
 extern s32 D_800ADBAC; /* camera frames settling */
 extern s32 D_800ADBB0; /* camera frames releasing */

@@ -1138,7 +1138,91 @@ s32 func_80073988(s32 angle, s32 goal, s32 step) {
     return result;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800739C0);
+/* The move phase: update the field, point the model light and view angles
+ * at the camera, update the camera (on a scratchpad stack), build the view
+ * matrix from the shaken eye and target, then turn every drawn actor
+ * toward its heading goal and set its model's facing. */
+void func_800739C0(void) {
+    VECTOR eye;
+    VECTOR target;
+    FieldActor *actor;
+    s32 i;
+    s32 step;
+
+    func_8008110C();
+    func_8003F738(&D_800B2078.sprite_angles, &D_800AFC30);
+    D_800AFC30.t[2] = 0;
+    D_800AFC30.t[1] = 0;
+    D_800AFC30.t[0] = 0;
+    D_800AF880.view_angle = ratan2(D_800AF880.target.vz - D_800AF880.eye.vz, D_800AF880.target.vx - D_800AF880.eye.vx) - 0x400;
+    D_800AF880.angle = ratan2(D_800AF880.target_goal.vz - D_800AF880.eye_goal.vz,
+                              D_800AF880.target_goal.vx - D_800AF880.eye_goal.vx) - 0x400;
+    D_800B00B4 = ratan2(func_80099A4C((D_800AF880.target.vx - D_800AF880.eye.vx) >> 16,
+                                      (D_800AF880.target.vz - D_800AF880.eye.vz) >> 16),
+                        (D_800AF880.target.vy - D_800AF880.eye.vy) >> 16);
+    __asm__ volatile("move $8, %0\n\tsw $29, 0($8)\n\taddiu $8, $8, -4\n\tmove $29, $8"
+                     :
+                     : "r"(0x1F8003FC)
+                     : "$8", "memory");
+    func_80073230();
+    __asm__ volatile("addiu $29, $29, 4\n\tlw $29, 0($29)" : : : "memory");
+    eye.vx = D_800AF880.eye.vx;
+    eye.vy = D_800AF880.eye.vy;
+    eye.vz = D_800AF880.eye.vz;
+    eye.vx += D_800AF880.shake_offset.vx;
+    eye.vy += D_800AF880.shake_offset.vy;
+    eye.vz += D_800AF880.shake_offset.vz;
+    target.vx = D_800AF880.target.vx;
+    target.vy = D_800AF880.target.vy;
+    target.vz = D_800AF880.target.vz;
+    target.vx += D_800AF880.shake_offset.vx;
+    target.vy += D_800AF880.shake_offset.vy;
+    target.vz += D_800AF880.shake_offset.vz;
+    if (D_800ADC18 != 0) {
+        func_80073750(&D_800AF880.previous_view, &eye, &target, &D_800AF880.up);
+        D_800AF85C = D_800AF880.previous_view;
+    } else {
+        D_800AF880.previous_view = D_800AF85C;
+        func_80073750(&D_800AF85C, &eye, &target, &D_800AF880.up);
+    }
+    __asm__ volatile("move $8, %0\n\tsw $29, 0($8)\n\taddiu $8, $8, -4\n\tmove $29, $8"
+                     :
+                     : "r"(0x1F8003FC)
+                     : "$8", "memory");
+    func_800722F4();
+    __asm__ volatile("addiu $29, $29, 4\n\tlw $29, 0($29)" : : : "memory");
+    for (i = 0; i < D_800ADBFC; i++) {
+        if ((D_800AF880.components.descriptors[i].flags & 0xF40) && !(D_800AF880.components.descriptors[i].flags & 0x20)) {
+            actor = D_800AF880.components.descriptors[i].actor;
+            if (!(actor->layer_flags & 0x100000) && (actor->layer_flags & 0x600) != 0x200) {
+                if (!(actor->flags & 0x8000)) {
+                    if (!(actor->unk014 & 0x200000) || (actor->flags & 0x1800)) {
+                        if (!(actor->layer_flags & 0x2000)) {
+                            step = actor->unk11E;
+                        } else {
+                            step = D_800B2078.unk21B4;
+                        }
+                        actor->unk108 = func_80073988(actor->unk108, actor->heading_goal, step);
+                    } else {
+                        actor->unk108 = func_80073988(actor->unk108, (((actor->unk014 >> 11) - 2) & 7) << 9, 0x200);
+                    }
+                }
+                if (D_800ADB05 == 0) {
+                    if (!(actor->layer_flags & 0x01000000)) {
+                        func_800223B0(D_800AF880.components.descriptors[i].model,
+                                      D_800AF880.view_angle + D_800AF880.components.descriptors[i].actor->unk108);
+                    } else {
+                        func_80021FE0(D_800AF880.components.descriptors[i].model,
+                                      D_800AF880.components.descriptors[i].actor->unk108);
+                    }
+                }
+            }
+        }
+    }
+    if (D_800C268C == 0) {
+        func_80281B00("MATRIX    ");
+    }
+}
 
 /* Refresh each shown model instance's bounds (800aa9dc) and choose its
  * drawing mode from its descriptor flags. */
