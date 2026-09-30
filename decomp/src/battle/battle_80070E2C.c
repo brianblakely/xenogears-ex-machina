@@ -654,25 +654,18 @@ void func_800728B8(POLY_FT4 *prims, s32 count, s32 first) {
 
 /* Tint the current buffer's primitives from `first` to `last`: yellow for
  * mode 1, red otherwise. */
-#ifdef NON_MATCHING
 void func_80072938(POLY_FT4 *prims, s32 first, s32 last, u8 mode) {
     s32 i;
 
     for (i = first; i < last; i++) {
         SetShadeTex(&prims[i * 2 + D_800CCB04.buffer], 0);
         if (mode != 1) {
-            prims[i * 2 + D_800CCB04.buffer].r0 = 0x80;
-            prims[i * 2 + D_800CCB04.buffer].g0 = 0;
+            setRGB0(&prims[i * 2 + D_800CCB04.buffer], 0x80, 0, 0);
         } else {
-            prims[i * 2 + D_800CCB04.buffer].r0 = 0x80;
-            prims[i * 2 + D_800CCB04.buffer].g0 = 0x80;
+            setRGB0(&prims[i * 2 + D_800CCB04.buffer], 0x80, 0x80, 0);
         }
-        prims[i * 2 + D_800CCB04.buffer].b0 = 0;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80072938);
-#endif
 
 /* Build the member's panel HP glyphs: the current value's digits (800c3e08),
  * a '/', and the maximum's digits (800d2d54 from index 4), and tint them by

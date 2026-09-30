@@ -2336,12 +2336,9 @@ void func_800800E8(u8 member) {
  * an event runs, redraw a changed page (8008d598) and run the page's
  * handler (pages 0x64/0x65 redraw 5/0x19). Finally close the panel, return
  * unspent AP when +0x2e3 is set (up to 28), tidy the windows when done and
- * reload the member's turn timer. Nonmatching: the original keeps one
- * zero-extended copy of the member through the character 4 checks. */
-#ifdef NON_MATCHING
+ * reload the member's turn timer. */
 void func_80080160(u8 member) {
     s32 i;
-    u8 usable;
     u8 target;
 
     D_800C3EAC->unk2EA = 1;
@@ -2376,15 +2373,16 @@ void func_80080160(u8 member) {
             if (D_8006F8BA[D_8006D634.characters[4].entryItems[0]] == 0) {
                 D_800C3EAC->slots[member].items[0] = D_800C3234[0];
             }
-            usable = D_8006F8BA[D_8006D634.characters[4].entryItems[3]];
+            if (D_8006F8BA[D_8006D634.characters[4].entryItems[3]] == 0) {
+                D_800C3EAC->slots[member].items[2] = D_800C3234[2];
+            }
         } else {
             if (D_8006F8EA[D_8006D634.gears[D_8006D634.characters[4].gearId].partItems[0]] == 0) {
                 D_800C3EAC->slots[member].items[0] = D_800C3234[0];
             }
-            usable = D_8006F8EA[D_8006D634.gears[D_8006D634.characters[D_800D2D24[member]].gearId].partItems[3]];
-        }
-        if (usable == 0) {
-            D_800C3EAC->slots[member].items[2] = D_800C3234[2];
+            if (D_8006F8EA[D_8006D634.gears[D_8006D634.characters[D_800D2D24[member]].gearId].partItems[3]] == 0) {
+                D_800C3EAC->slots[member].items[2] = D_800C3234[2];
+            }
         }
     }
     if (D_800D32A0[member].unk1 == 0) {
@@ -2522,9 +2520,6 @@ void func_80080160(u8 member) {
     D_800D2D28->reaction[member] = 1;
     D_800C4928 = 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80079ED8", func_80080160);
-#endif
 
 /* The next slot in turn order, other than `actor`, with the lowest turn
  * timer (undefined when there is none). */
