@@ -1357,19 +1357,106 @@ void func_8007CEA4(u8 **pc, u8 enemy) {
     D_800D3400[enemy].bytes[(*pc)[1]] = count;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007CFB8);
+/* AI action 50: byte variable b1 = the number of targetable enemy slots in
+ * the group of the first slot in var b2. */
+void func_8007CFB8(u8 **pc, u8 enemy) {
+    s32 slot;
+    u8 count = 0;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007D0CC);
+    for (slot = 3; slot < 11; slot++) {
+        if (func_8007A628(slot, 0) &&
+            D_800C3EB4[slot].group == D_800C3EB4[func_80079E7C(D_800D3400[enemy].vars[(*pc)[2]])].group) {
+            count++;
+        }
+    }
+    D_800D3400[enemy].bytes[(*pc)[1]] = count;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007D148);
+/* AI action 51: byte variable b1 = the count held for item b2 (0 when the
+ * item is not held). */
+void func_8007D0CC(u8 **pc, u8 enemy) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007D1A8);
+    D_800D3400[enemy].bytes[(*pc)[1]] = 0;
+    for (i = 0; i < 0x30; i++) {
+        if (D_800D2CE0[i] == (*pc)[2]) {
+            D_800D3400[enemy].bytes[(*pc)[1]] = D_800D2CB0[i];
+            return;
+        }
+    }
+}
 
+/* AI action 52: list entry halfword at b1 = variable b2 (two byte stores). */
+void func_8007D148(u8 **pc, u8 *list, u8 enemy, u8 count) {
+    u16 value = D_800D3400[enemy].vars[(*pc)[2]];
+
+    list[count * 8 + (*pc)[1]] = value;
+    (&list[count * 8 + (*pc)[1]])[1] = value >> 8;
+}
+
+/* AI action 53: long b1 = the party's gold. */
+void func_8007D1A8(u8 **pc, u8 enemy) {
+    D_800D3400[enemy].longs[(*pc)[1]] = D_8006EF58;
+}
+
+/* AI action 54: variable b1 = the bit of a random slot passing 8007a744
+ * whose record byte +0x56 is b2; 0 when none does. */
+#ifdef NON_MATCHING
+void func_8007D1DC(u8 **pc, u8 enemy) {
+    u8 candidates[11];
+    u8 *next;
+    s32 count;
+    s32 slot;
+
+    next = candidates;
+    slot = 0;
+    count = 0;
+    D_800D3400[enemy].vars[(*pc)[1]] = 0;
+    for (; slot < 11; slot++) {
+        if (func_8007A744(slot) && D_800CCCE8[slot].unk56 == (*pc)[2]) {
+            *next++ = slot;
+            count++;
+        }
+    }
+    if (count != 0) {
+        D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(candidates[func_8001BD40(0, count - 1)]);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007D1DC);
+#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007D30C);
+/* AI action 55: long b1 = the enemy's byte at 800d2c8b. */
+void func_8007D30C(u8 **pc, u8 enemy) {
+    D_800D3400[enemy].longs[(*pc)[1]] = D_800D2C8B[enemy];
+}
 
+/* AI action 56: variable b1 = the bit of a random enemy slot passing
+ * 8007a6c8(b2) with slot info +3 bit 0x80; 0 when none does. */
+#ifdef NON_MATCHING
+void func_8007D344(u8 **pc, u8 enemy) {
+    u8 candidates[8];
+    u8 *next;
+    s32 count;
+    s32 slot;
+
+    next = candidates;
+    slot = 3;
+    count = 0;
+    D_800D3400[enemy].vars[(*pc)[1]] = 0;
+    for (; slot < 11; slot++) {
+        if (func_8007A6C8(slot, (*pc)[2]) && (D_800C3EB4[slot].hidden & 0x80)) {
+            *next++ = slot;
+            count++;
+        }
+    }
+    if (count != 0) {
+        D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(candidates[func_8001BD40(0, count - 1)]);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007D344);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007D478);
 

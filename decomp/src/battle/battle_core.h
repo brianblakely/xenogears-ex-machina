@@ -8,7 +8,9 @@
 typedef struct {
     u8 unk0[0x4C];
     u16 hp;           /* +0x4C */
-    u8 unk4E[0x7C - 0x4E];
+    u8 unk4E[0x56 - 0x4E];
+    u8 unk56;
+    u8 unk57[0x7C - 0x57];
     u16 flags7C;  /* 0x80 inactive, 0x1000 slow (ticks every other frame),
                    * 0x2000 delay counter +0x15C active */
     u16 unk7E;
@@ -155,6 +157,9 @@ typedef struct {
 
 extern BattleAction D_800D2E5C[32];
 extern u16 D_800D39E0;     /* mask of slots that act together */
+extern u8 D_800D2CE0[0x30]; /* item ids */
+extern u8 D_800D2CB0[0x30]; /* item counts */
+extern u8 D_800D2C8B[8];
 
 /* Enemy AI block (0x40 bytes per enemy slot 3..10, from 800d3400). */
 typedef struct {
@@ -226,6 +231,8 @@ void func_80079E4C(s32);
 s32 func_800716D8(void);
 u8 func_80079E7C(u16 mask);
 u8 func_8007A628(u8 slot, u8 any);
+u8 func_8007A6C8(u8 slot, u8 arg1);
+u8 func_8007A744(u8 slot);
 u16 func_80089C08(u8 slot);
 u16 func_80089B50(u16 low, u16 high);
 u8 func_80079ED8(u8 slot, u8 attribute, u8 value, u8 write);
