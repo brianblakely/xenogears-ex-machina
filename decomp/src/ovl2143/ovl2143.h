@@ -90,7 +90,13 @@ typedef struct PoolSlot {
     u8 flag;
     u8 kind;        /* 3: rotation, 7 + n: movement */
     u8 tag;         /* 0xff: kept by func_801DFE8C */
-    s16 value[6];   /* +4: start values and deltas / targets */
+    union {
+        s16 value[6];   /* +4: start values and deltas / targets */
+        struct {
+            u8 *start;  /* +4: keyframe track data */
+            u8 *pos;    /* +8 */
+        } track;
+    } u;
     s16 time;       /* +10 */
     s16 duration;   /* +12 */
 } PoolSlot;
@@ -181,17 +187,26 @@ typedef struct {
     void *block20;          /* +20 */
 } Record24;
 
+/* A node's tracks of a keyframe: byte offsets of its rotation and position
+ * tracks (0xffff none) and their kinds. */
+typedef struct {
+    u16 rot_offset;
+    u16 pos_offset;
+    u8 rot_kind;
+    u8 pos_kind;
+} TrackEntry;
+
 /* A keyframe: rotations then positions of the nodes after the root. */
 typedef struct {
-    u8 pad0[4];
+    u8 pad0[2];
+    u16 duration;           /* +2 */
     u16 flags;              /* +4: bit 0 no rotations, bit 1 no positions */
-    s16 packed;             /* +6: 0: rotations follow a skipped block */
+    u16 packed;             /* +6: 0: rotations follow a skipped block */
     u8 pad8[4];
     u16 rot_count;          /* +c */
     u16 pos_count;          /* +e */
     u8 pad10[8];
-    s16 data[1];            /* +18 */
-} Keyframe;
+} Keyframe; /* followed by the track entries or packed values */
 
 /* A colour fade record. */
 typedef struct {
@@ -289,8 +304,8 @@ typedef struct Actor {
     s16 anim_frames;        /* +9e */
     u8 *anim_start;         /* +a0 */
     u8 *anim_pos;           /* +a4 */
-    s32 wA8;                /* +a8 */
-    s32 wAC;                /* +ac */
+    void *group;            /* +a8: the model group block */
+    void *blockAC;          /* +ac */
     ViewOwner *ownerB0;     /* +b0 */
     ViewOwner *ownerB4;     /* +b4 */
     u8 padB8[0x52];
@@ -300,8 +315,8 @@ typedef struct Actor {
     u8 count10E;            /* +10e: 0x30-byte records at +118 */
     u8 pad10F;
     Channel *channels;      /* +110 */
-    void *records24;        /* +114 */
-    void *records30;        /* +118 */
+    Record24 *records24;    /* +114 */
+    ImageAnim *records30;   /* +118 */
     s32 previous[3];        /* +11c: root position before the step */
     s32 moved[3];           /* +128: root movement of the step */
 } Actor;
@@ -408,6 +423,8 @@ extern s32 D_801E8640;
 extern Anchor D_801E8648[2];
 extern Actor *D_801E8670[10];
 extern s16 D_801E869C;
+extern MATRIX *D_801E8644;
+extern s16 D_801E8698;
 extern ParticlePool D_801E86A0;
 extern SlotPool D_801E86A8;
 extern u16 D_801E86B0;
@@ -422,6 +439,19 @@ void func_801E35D0(Actor *actor, Actor *source, SlotPool *pool, s32 entry);
 void func_801E39F0(Actor *actor, SlotPool *pool, s32 arg2, s32 arg3, s32 arg4);
 s32 func_801E67F8(void);
 s32 func_801E08D4(s16 value, s16 divisor, s32 base);
+void func_801DCEC8(Actor *actor, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5, s32 arg6);
+void func_801E0398(ParticlePool *pool, s32 arg1, s32 steps, s32 arg3, s32 arg4);
+void func_801E1880(Actor **actors);
+void func_801E37D0(Actor *actor);
+s32 func_801E36BC(Actor *actor, SlotPool *pool, s32 ticks, s32 arg3, s32 arg4);
+void func_801DFE8C(SlotPool *pool, ModelPart *parts);
+void func_801DFF78(SlotPool *pool, ModelPart *parts, u8 tag);
+void func_801DCE18(ModelList *list, s32 release_models);
+void func_801E165C(ImageAnim *anim);
+void func_801E3438(Record24 *record);
+u16 func_801DEF10(ModelPart *parts, Keyframe *key);
+void SetColorMatrix(MATRIX *m);              /* SetColorMatrix */
+void func_8003852C(void *bank);              /* release a sound effect bank */
 void func_80049BDC(MATRIX *m, MATRIX *out);  /* out = m * out (rotation) */
 u32 func_801DC5C0(ModelPart *parts, s32 scale);
 u32 func_801DC848(ModelPart *parts, s32 scale);

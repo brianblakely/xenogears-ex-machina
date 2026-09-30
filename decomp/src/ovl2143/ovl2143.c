@@ -407,7 +407,8 @@ u16 func_801DEF10(ModelPart *parts, Keyframe *key) {
     rot_count = key->rot_count;
     pos_count = key->pos_count;
     flags = key->flags;
-    data = key->data;
+    key++;
+    data = (s16 *)key;
     if (packed == 0) {
         data += (rot_count + 1) * 3;
     }
@@ -550,7 +551,104 @@ s32 func_801DF7A8(SlotPool *pool, PoolSlot *slot) {
     return index;
 }
 
+/* Start a keyframe on a hierarchy through track tweens (a packed keyframe
+ * is applied at once): each node with a track gets a tween (unless it holds
+ * a kept one), a node without one loses its tween. Differs in register
+ * allocation (the original advances the keyframe pointer to the entries). */
+#ifdef NON_MATCHING
+s32 func_801DF7F4(SlotPool *pool, ModelPart *parts, Keyframe *key, s32 mode, s32 tag) {
+    TrackEntry *entry;
+    PoolSlot *tween;
+    u8 *values;
+    u16 count;
+    u16 rot_count;
+    u16 pos_count;
+    u16 duration;
+    u16 flags;
+    s32 i;
+
+    if (key->packed != 0) {
+        func_801DFE8C(pool, parts);
+        func_801DEF10(parts, key);
+        return 1;
+    }
+    rot_count = key->rot_count;
+    count = parts->count;
+    pos_count = key->pos_count;
+    if (rot_count + 1 < count) {
+        count = rot_count + 1;
+    }
+    mode &= 1;
+    duration = key->duration;
+    if (!mode) {
+        duration--;
+    }
+    flags = key->flags;
+    entry = (TrackEntry *)(key + 1);
+    values = (u8 *)entry + (rot_count + 1) * sizeof(TrackEntry);
+    if (!(flags & 1)) {
+        values += rot_count * 6;
+    }
+    if (!(flags & 2)) {
+        values += pos_count * 6;
+    }
+    for (i = 0; i < count; i++) {
+        if (entry->rot_offset != 0xFFFF) {
+            tween = parts->attachments[0];
+            if (tween == NULL || tween->tag != 0xFF) {
+                if (tween == NULL) {
+                    tween = func_801DF6F0(pool);
+                }
+                if (tween != NULL) {
+                    tween->used = 1;
+                    tween->flag = mode;
+                    tween->tag = tag;
+                    tween->kind = entry->rot_kind;
+                    tween->time = 0;
+                    tween->duration = duration;
+                    tween->u.track.pos = tween->u.track.start = values + entry->rot_offset;
+                    parts->attachments[0] = tween;
+                }
+            }
+        } else {
+            tween = parts->attachments[0];
+            if (tween != NULL && i != 0 && tween->tag != 0xFF) {
+                func_801DF7A8(pool, tween);
+                parts->attachments[0] = NULL;
+            }
+        }
+        if (entry->pos_offset != 0xFFFF) {
+            tween = parts->attachments[1];
+            if (tween == NULL || tween->tag != 0xFF) {
+                if (tween == NULL) {
+                    tween = func_801DF6F0(pool);
+                }
+                if (tween != NULL) {
+                    tween->used = 1;
+                    tween->flag = mode;
+                    tween->tag = tag;
+                    tween->kind = entry->pos_kind;
+                    tween->time = 0;
+                    tween->duration = duration;
+                    tween->u.track.pos = tween->u.track.start = values + entry->pos_offset;
+                    parts->attachments[1] = tween;
+                }
+            }
+        } else {
+            tween = parts->attachments[1];
+            if (tween != NULL && i != 0 && tween->tag != 0xFF) {
+                func_801DF7A8(pool, tween);
+                parts->attachments[1] = NULL;
+            }
+        }
+        entry++;
+        parts++;
+    }
+    return 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DF7F4);
+#endif
 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DFAC4);
 
@@ -1062,24 +1160,24 @@ void func_801E59D4(SlotPool *pool, ModelPart *part, s32 duration, s32 rx, s32 ry
             tween->kind = 3;
             tween->flag = 0;
             tween->tag = 0xFE;
-            tween->value[0] = part->rot.vx;
-            tween->value[1] = part->rot.vy;
-            tween->value[2] = part->rot.vz;
+            tween->u.value[0] = part->rot.vx;
+            tween->u.value[1] = part->rot.vy;
+            tween->u.value[2] = part->rot.vz;
             rx = (rx - part->rot.vx) & 0xFFF;
             if (rx >= 0x800) {
                 rx -= 0x1000;
             }
-            tween->value[3] = rx;
+            tween->u.value[3] = rx;
             ry = (ry - part->rot.vy) & 0xFFF;
             if (ry >= 0x800) {
                 ry -= 0x1000;
             }
-            tween->value[4] = ry;
+            tween->u.value[4] = ry;
             rz = (rz - part->rot.vz) & 0xFFF;
             if (rz >= 0x800) {
                 rz -= 0x1000;
             }
-            tween->value[5] = rz;
+            tween->u.value[5] = rz;
             tween->time = 0;
             tween->duration = duration;
             part->attachments[0] = tween;
@@ -1109,12 +1207,12 @@ void func_801E5B50(SlotPool *pool, ModelPart *part, s32 type, s32 arg3, s32 arg4
         dx = x - part->pos[0];
         dy = y - part->pos[1];
         dz = z - part->pos[2];
-        tween->value[0] = SquareRoot0(dx * dx + dy * dy + dz * dz) + 1;
-        tween->value[1] = arg3;
-        tween->value[2] = arg4;
-        tween->value[3] = x;
-        tween->value[4] = y;
-        tween->value[5] = z;
+        tween->u.value[0] = SquareRoot0(dx * dx + dy * dy + dz * dz) + 1;
+        tween->u.value[1] = arg3;
+        tween->u.value[2] = arg4;
+        tween->u.value[3] = x;
+        tween->u.value[4] = y;
+        tween->u.value[5] = z;
         tween->time = 0;
         tween->duration = duration;
         part->attachments[0] = tween;
@@ -1225,9 +1323,9 @@ void func_801E63A8(Actor *actor) {
         actor->target[2] = world.vz;
         tween = actor->parts->attachments[0];
         if (tween != NULL && (u32)(tween->kind - 7) < 2) {
-            tween->value[3] = world.vx;
-            tween->value[4] = world.vy;
-            tween->value[5] = world.vz;
+            tween->u.value[3] = world.vx;
+            tween->u.value[4] = world.vy;
+            tween->u.value[5] = world.vz;
         }
     }
 }
@@ -1527,7 +1625,51 @@ void func_801E738C(s32 slot_count) {
 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E742C);
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E7D14);
+/* Advance the scene by the elapsed half-frames: step every actor, carry the
+ * carried ones, place the anchors, then draw the actors and particles. */
+void func_801E7D14(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 elapsed) {
+    SVECTOR unused;
+    Actor *actor;
+    s32 steps;
+    s32 i;
+
+    steps = 0;
+    D_801E8640 += elapsed + 1;
+    if (D_801E8640 >= 7) {
+        D_801E8640 = 6;
+    }
+    while (D_801E8640 >= 2) {
+        D_801E8640 -= 2;
+        steps++;
+    }
+    D_801E869C += steps * 56;
+    D_801E8698 = (func_8003F8CC(D_801E869C) + 0x1000) / 800 + 4;
+    for (i = 0; i < 10; i++) {
+        if (D_801E8670[i] != NULL) {
+            D_801E8670[i]->previous[0] = D_801E8670[i]->parts->pos[0];
+            D_801E8670[i]->previous[1] = D_801E8670[i]->parts->pos[1];
+            D_801E8670[i]->previous[2] = D_801E8670[i]->parts->pos[2];
+            func_801E36BC(D_801E8670[i], &D_801E86A8, steps, arg3, 1);
+        }
+    }
+    for (i = 0; i < 10; i++) {
+        actor = D_801E8670[i];
+        if (actor != NULL && actor->parent < 0xFF) {
+            func_801E37D0(actor);
+        }
+    }
+    func_801E1880(D_801E8670);
+    SetColorMatrix(D_801E8644);
+    for (i = 0; i < 10; i++) {
+        if (D_801E8670[i] != NULL) {
+            D_801E8670[i]->moved[0] = D_801E8670[i]->previous[0] - D_801E8670[i]->parts->pos[0];
+            D_801E8670[i]->moved[1] = D_801E8670[i]->previous[1] - D_801E8670[i]->parts->pos[1];
+            D_801E8670[i]->moved[2] = D_801E8670[i]->previous[2] - D_801E8670[i]->parts->pos[2];
+            func_801DCEC8(D_801E8670[i], arg0, arg1, 1, 1, arg2, arg3);
+        }
+    }
+    func_801E0398(&D_801E86A0, arg0, steps, arg2, arg3);
+}
 
 /* Release every actor and both pools. */
 void func_801E7FD4(void) {
@@ -1540,7 +1682,54 @@ void func_801E7FD4(void) {
     func_801E00DC(&D_801E86A0);
 }
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E8030);
+/* Release actor `index`: its model group, sound bank, hierarchy (actors 8
+ * and 9 share their models), channels and records. */
+void func_801E8030(s32 index) {
+    s32 i;
+
+    if (D_801E8670[index] != NULL) {
+        if (D_801E8670[index]->group != NULL) {
+            func_800320E8(D_801E8670[index]->group);
+            func_801DCE18(D_801E8670[index]->models, 1);
+        }
+        if (D_801E8670[index]->b62) {
+            func_8003852C(D_801E8670[index]->ownerB0->view);
+        }
+        if (D_801E8670[index]->blockAC != NULL) {
+            func_800320E8(D_801E8670[index]->blockAC);
+        }
+        if (index != 8 && index != 9) {
+            if (D_801E8670[index]->parts != NULL) {
+                func_801DFE8C(&D_801E86A8, D_801E8670[index]->parts);
+                func_801DFF78(&D_801E86A8, D_801E8670[index]->parts, 0xFF);
+                func_801DCD8C(D_801E8670[index]->parts);
+                D_801E8670[index]->models = NULL;
+                D_801E8670[index]->parts = NULL;
+            }
+        } else if (D_801E8670[index]->parts != NULL) {
+            func_801DFE8C(&D_801E86A8, D_801E8670[index]->parts);
+            func_801DFF78(&D_801E86A8, D_801E8670[index]->parts, 0xFF);
+            func_800320E8(D_801E8670[index]->parts);
+        }
+        if (D_801E8670[index]->channel_count != 0) {
+            func_800320E8(D_801E8670[index]->channels);
+        }
+        if (D_801E8670[index]->count10E != 0) {
+            for (i = 0; i < D_801E8670[index]->count10E; i++) {
+                func_801E165C(&D_801E8670[index]->records30[i]);
+            }
+            func_800320E8(D_801E8670[index]->records30);
+        }
+        if (D_801E8670[index]->count10D != 0) {
+            for (i = 0; i < D_801E8670[index]->count10D; i++) {
+                func_801E3438(&D_801E8670[index]->records24[i]);
+            }
+            func_800320E8(D_801E8670[index]->records24);
+        }
+        func_800320E8(D_801E8670[index]);
+        D_801E8670[index] = NULL;
+    }
+}
 
 /* Select actor `index` and bit mask `mask`, then run its script step
  * (func_801E35D0) with itself as the source. */
