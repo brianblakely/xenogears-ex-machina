@@ -946,7 +946,13 @@ extern s32 D_801E9D78;    /* stat bar x offset */
 extern s32 D_801E9D7C;    /* stat bar y offset */
 extern s32 D_801E9D80;    /* stat digit x offset */
 extern s32 D_801E9D84;    /* stat digit y offset */
-extern s32 D_801E9D88[];  /* part panel row y positions */
+extern s32 D_801E9D88[];
+extern s32 D_801E9DDC[];  /* arts list cost x positions */
+extern s32 D_801E9E14[];  /* arts list cost y positions */
+extern u16 D_801E97F0[];  /* per character: arts usable from the menu */
+extern u16 D_8006ECF6[];  /* game data: per character (32 bytes): arts known */
+extern u16 D_8006ECFA[];
+extern u16 D_8006ED0E[];  /* part panel row y positions */
 extern s32 D_801EA584[]; /* gear portrait u / 4 per slot */
 extern s32 D_801EA5C4[]; /* character portrait v per slot */
 extern u16 D_80059414;   /* portrait palette of odd images */
@@ -1125,7 +1131,10 @@ void func_8003852C(void *bank);
 void func_8003A094(void *bank);
 
 s32 func_80028530(void);
-u8 *func_800337E8(u8 id);  /* accessory name */
+u8 *func_800337E8(u8 id);
+u8 *func_80033908(s32 index); /* art name */
+u8 *func_800339FC(s32 index); /* gear art name */
+u8 *func_80033A8C(s32 index); /* gear special art name */  /* accessory name */
 u8 *func_80033848(u8 id);  /* weapon name */
 u8 *func_80033A2C(u8 id);  /* gear accessory name */
 u8 *func_80033A5C(u8 id);  /* gear part name */
