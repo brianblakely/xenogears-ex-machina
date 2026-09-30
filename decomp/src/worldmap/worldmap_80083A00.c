@@ -1305,7 +1305,41 @@ void func_80089160(s32 group, SVECTOR *position, SVECTOR *angle) {
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80089160);
 #endif
 
+/* Place the eight emitters of group `group` at the origin, aimed along
+ * `direction` and turned by `angle`; start them unless one is already live. */
+#ifdef NON_MATCHING /* load/store scheduling in the emitter loop */
+void func_800893E0(s32 group, SVECTOR *direction, SVECTOR *angle) {
+    AreaObject *object;
+    s32 live;
+    s32 i;
+
+    live = 0;
+    object = &D_8009BCC0[group * 8];
+    for (i = 7; i != -1; i--) {
+        if (object->flags & 0x80) {
+            live++;
+            break;
+        }
+    }
+    object = &D_8009BCC0[group * 8];
+    for (i = 7; i != -1; i--, object++) {
+        if (live == 0) {
+            object->flags |= 0x80;
+            object->unkA = 0;
+            object->unk12 = object->unk10;
+            object->unk4 = object->unk0;
+        }
+        *(s32 *)&object->position.vx = 0;
+        *(s32 *)&object->direction.vx = *(s32 *)&direction->vx;
+        *(s32 *)&object->angle.vx = *(s32 *)&angle->vx;
+        object->position.vz = 0;
+        object->direction.vz = direction->vz;
+        object->angle.vz = angle->vz;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_800893E0);
+#endif
 
 /* Deactivate the eight area objects of group `group`. */
 void func_800894C8(s32 group) {
