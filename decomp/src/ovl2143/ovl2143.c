@@ -1114,9 +1114,9 @@ void func_801E3534(Actor *actor, SlotPool *pool, s32 *entries, s32 *locals) {
     actor->h70[9] = 0;
     actor->h70[10] = 0;
     actor->h70[11] = 0;
-    actor->h70[12] = 0;
-    actor->h70[13] = 0;
-    actor->h70[14] = 0;
+    actor->target[0] = 0;
+    actor->target[1] = 0;
+    actor->target[2] = 0;
     actor->h8E = 1;
     actor->b36 = 0;
     actor->h1E = none;
@@ -1126,9 +1126,7 @@ INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E3534);
 #endif
 
 /* Call script entry `entry` of `source` in `actor`: queued while the actor is
- * already in a call, else run at once from the entry. Differs only in the
- * scheduling of the +23 byte store. */
-#ifdef NON_MATCHING
+ * already in a call, else run at once from the entry. */
 void func_801E35D0(Actor *actor, Actor *source, SlotPool *pool, s32 entry) {
     if (actor != NULL && source != NULL) {
         if (actor->depth != 0) {
@@ -1149,14 +1147,11 @@ void func_801E35D0(Actor *actor, Actor *source, SlotPool *pool, s32 entry) {
         actor->w50 = 0;
         actor->w54 = 0;
         actor->w4C = 0;
-        actor->b23 = 0;
         actor->mask = D_801E863C;
+        actor->b23 = 0;
         func_801E39F0(actor, pool, -1, 1, 0);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E35D0);
-#endif
 
 /* Run `ticks` steps of an actor: its hierarchy matrices, node tweens and
  * animation, then its script. Returns the tween changes. */
