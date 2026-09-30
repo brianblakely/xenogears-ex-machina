@@ -5165,7 +5165,119 @@ void func_8007F814(s32 index, s32 *x, s32 *y, s32 height) {
     *x = (s16)screen;
 }
 
+extern s32 D_800ADE90;         /* next message slot to try */
+extern u16 D_800ADF54[4][2];   /* text VRAM position per window */
+void func_80032F54(TextBox *text, s32 vram_x, s32 vram_y, s32 x, s32 y, s32 columns, s32 rows);
+s32 func_80033728(void *messages, void *message);
+
+#ifdef NON_MATCHING
+/* Open dialogue window `w` for `message` at (x, y) with `columns` x `rows`
+ * characters for actor `owner`, spoken by `speaker`: take a message slot,
+ * keep event variables 16-1c, find where the window flies in from (mode 2:
+ * the screen top, 3: its own centre, else above the speaker), show the
+ * owner's portrait unless disabled, set up the text and the opening slide.
+ * Returns -1 (clearing the window's +414) when the speaker has layer flag
+ * 0x200 and the style lacks bit 1, else 0.
+ * Does not match yet: the statements and spill slots follow the original,
+ * but it assigns the saved registers differently (owner in s4, rows in s2,
+ * mode in s6, w in s1) and reserves one more 8-byte slot (0x70 frame). */
+s32 func_8007F8DC(s16 x, s16 y, void *message, s32 w, s32 columns, s32 rows, s32 owner, s32 speaker,
+                  s32 mode, s32 turned, s32 flags) {
+    s32 target_x;
+    s32 target_y;
+    u32 progress;
+    u16 style;
+    s32 slot;
+    s32 extra;
+    s32 i;
+
+    y -= 8;
+    progress = D_800AF880.components.descriptors[owner].actor->unk84;
+    if (progress >> 16) {
+        style = progress >> 16;
+    } else {
+        style = progress;
+    }
+    style |= turned;
+    for (i = 0; i < 4; i++) {
+        slot = D_800ADE90 & 3;
+        D_800ADE90++;
+        if (D_800B068C[slot] == -1) {
+            D_800B068C[slot] = 0;
+            break;
+        }
+    }
+    slot = w;
+    D_800C2698[w].text.vars[0] = func_800A3018(0x16);
+    D_800C2698[w].text.vars[1] = func_800A3018(0x18);
+    D_800C2698[w].text.vars[2] = func_800A3018(0x1A);
+    D_800C2698[w].text.vars[3] = func_800A3018(0x1C);
+    D_800C2698[w].text.unk80 = D_800C2698[w].text.vars[3];
+    if (mode == 2) {
+        target_x = 0xA0;
+        target_y = y + 0x20;
+    } else if (mode == 3) {
+        target_x = x + 8 + columns * 2;
+        target_y = y + 8 + rows * 7;
+    } else {
+        func_8007F814(speaker, &target_x, &target_y, -0x40);
+    }
+    if (D_800AF880.components.descriptors[owner].actor->character != -1 && !(style & 2)) {
+        if (!(style & 0x402)) {
+            func_8007F5AC(w, ((D_800AF880.components.descriptors[owner].actor->state.word >> 1) & 0xE) | 1);
+        } else {
+            func_8007F5AC(w, (D_800AF880.components.descriptors[owner].actor->state.word >> 1) & 0xE);
+        }
+        D_800C2698[w].unk494 = 1;
+        D_800C2698[w].unk495 = D_800AF880.components.descriptors[owner].actor->character;
+    } else {
+        D_800C2698[w].unk495 = 0x80;
+        D_800C2698[w].unk494 = 0;
+    }
+    D_800C2698[w].status = -1;
+    func_8007E114(w, x, y, columns * 4 + 0x10, rows * 14 + 0x10);
+    extra = 0;
+    if (D_800AF880.components.descriptors[owner].actor->character != -1) {
+        extra = (style & 0x402) == 0 ? 0x44 : 0;
+    }
+    func_80032F54(&D_800C2698[w].text, D_800ADF54[slot][0], D_800ADF54[slot][1], x + extra + 8, y + 8, columns,
+                  rows);
+    if (style & 0x400) {
+        D_800C2698[w].style |= 0x20;
+    }
+    D_800C2698[w].text.speed = D_800B2078.text_speed == 8 ? 1 : 2;
+    D_800C2698[w].text.unk90 = func_80033728(D_800ADBF0, message);
+    D_800C2698[w].busy = 0;
+    D_800C2698[w].text.flags |= 2;
+    D_800C2698[w].owner = owner;
+    D_800C2698[w].unk418 = speaker;
+    D_800C2698[w].timer = D_800B2078.text_speed;
+    if (!(flags & 0x800)) {
+        D_800C2698[w].unk412 = 0;
+    } else {
+        D_800C2698[w].unk412 = 1;
+    }
+    columns = columns * 2 + 8;
+    rows = rows * 7 + 8;
+    D_800C2698[w].slide[0].value = (target_x - columns - x) << 16;
+    D_800C2698[w].slide[1].value = (target_y - rows - y) << 16;
+    if (!(style & 0x100)) {
+        D_800C2698[w].slide_step[0] = -(D_800C2698[w].slide[0].value / D_800B2078.text_speed);
+        D_800C2698[w].slide_step[1] = -(D_800C2698[w].slide[1].value / D_800B2078.text_speed);
+    } else {
+        D_800C2698[w].timer = 1;
+        D_800C2698[w].slide_step[0] = -D_800C2698[w].slide[0].value;
+        D_800C2698[w].slide_step[1] = -D_800C2698[w].slide[1].value;
+    }
+    if ((D_800AF880.components.descriptors[speaker].actor->layer_flags & 0x200) && !(style & 1)) {
+        D_800C2698[w].cleared = 0;
+        return -1;
+    }
+    return 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007F8DC);
+#endif
 
 /* Close every dialogue window that is not busy. */
 void func_8007FFE8(void) {
