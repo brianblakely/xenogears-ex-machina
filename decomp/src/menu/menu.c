@@ -539,11 +539,50 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80073644);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80073B7C);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80073CA4);
+/* Age the trail segments: new ones start fading, fading ones are freed. */
+void func_80073CA4(TrailPool *pool) {
+    s32 i;
+    Trail *trail;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80073CEC);
+    for (i = 0; i < 16; i++) {
+        trail = &pool->trails[i];
+        if (trail->state == 2) {
+            trail->state = 1;
+        } else {
+            trail->state = 0;
+        }
+    }
+}
 
+/* Record a new trail segment between two points. */
+void func_80073CEC(Vector *a, Vector *b, s32 flip, u8 *style, Trail *trail, s32 arg5, Actor *owner) {
+    trail->a_prev = trail->a;
+    trail->b_prev = trail->b;
+    trail->a = *a;
+    trail->b = *b;
+    trail->unk43 = arg5;
+    trail->flip = flip & 1;
+    trail->state = 2;
+    trail->unk47 = owner->unk644;
+    trail->unk50 = owner->unk84;
+    trail->unk46 = style[1];
+    D_80092650++;
+}
+
+#ifdef NON_MATCHING
+/* Whether an actor can take amount more: always below 0x1000 total,
+ * otherwise only while the excess / 20 is below its HP. Does not match:
+ * the loaded field lands in v0 instead of v1. */
+s32 func_80073DE4(Actor *actor, s32 amount) {
+    amount += actor->unkB6;
+    if (amount > 0x1000) {
+        return (amount - 0xFF1) / 20 < actor->hp;
+    }
+    return 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80073DE4);
+#endif
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80073E2C);
 

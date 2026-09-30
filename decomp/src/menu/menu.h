@@ -53,16 +53,21 @@ typedef struct {
     u8 unk4C[0x8];
     s32 angle;           /* 0x54: facing, 4096 = full turn */
     s32 target_angle;    /* 0x58 */
-    u8 unk5C[0x54];
+    u8 unk5C[0x28];
+    s32 unk84;
+    u8 unk88[0x28];
     s32 floor_y;         /* 0xB0 */
     s16 hp;              /* 0xB4 */
-    u8 unkB6[0x6];
+    s16 unkB6;
+    u8 unkB8[0x4];
     s16 max_hp;          /* 0xBC */
     u8 unkBE[0x10];
     s16 unkCE;
     s32 flags;           /* 0xD0 */
     u8 unkD4[0x14];
     s32 unkE8;
+    u8 unkEC[0x558];
+    s32 unk644;
 } Actor;
 
 /* libgte matrix. */
@@ -97,6 +102,29 @@ typedef struct {
     s32 y;
     s32 z;
 } SceneModel;
+
+/* A trail segment: two end points with their previous positions. */
+typedef struct {
+    Vector a;          /* 0x00 */
+    Vector a_prev;     /* 0x10 */
+    Vector b;          /* 0x20 */
+    Vector b_prev;     /* 0x30 */
+    u8 unk40[3];
+    u8 unk43;
+    u32 unk44_0 : 1;
+    u32 flip : 1;
+    u32 unk44_2 : 6;
+    u32 state : 8;     /* 0x45: 0 free, 1 fading, 2 new */
+    u32 unk46 : 8;
+    u32 unk47 : 8;
+    u8 unk48[0x8];
+    s32 unk50;
+} Trail;
+
+typedef struct {
+    u8 unk0[0x104];
+    Trail trails[16];
+} TrailPool;
 
 /* A sprite effect from the overlay's effect pool (func_8008D3F4). */
 typedef struct {
@@ -198,6 +226,7 @@ extern s16 D_800928D0;
 extern Vector D_80096FA8; /* scene origin */
 extern Matrix D_80091C0C;
 extern Effect *D_80092644;
+extern s32 D_80092650; /* trail segments added */
 
 /* PsyQ SDK (resident). */
 void func_80043B48(void *ot, void *prim);                   /* AddPrim */
