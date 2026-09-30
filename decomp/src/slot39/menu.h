@@ -957,6 +957,8 @@ void func_801CA480(s32 mode, s32 slot);
 void func_801CA5F0(s32 mode, s32 slot);
 void func_801E781C(s32 index, u8 rebuild);
 void func_80039E60(s32 sound);
+extern u8 D_8006D634[31 * 20]; /* game data: names (encoded in the save) */
+s32 func_80033B34(u8 *codes, u8 *text, s32 count); /* decode a name */
 /* Block 2 of state + 444 holds the card access indicator. */
 #define MENU_INDICATOR ((MenuIndicator *)D_800625A0->blocks444[2])
 void func_801E78C8(s32 file);

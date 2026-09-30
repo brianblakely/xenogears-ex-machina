@@ -1887,7 +1887,35 @@ void func_801CAE08(u8 mode) {
     }
 }
 
+/* Decode the 31 names of the game data in place: each name's code pairs up
+ * to the first zero pair go through 80033b34 into a 20-byte buffer that is
+ * copied back whole. */
+#ifdef NON_MATCHING
+void func_801CB184(void) {
+    u8 codes[24];
+    u8 decoded[20];
+    s32 n;
+    s32 i;
+    u8 *name;
+
+    name = D_8006D634;
+    for (n = 0; n < 31 * 20; n += 20, name += 20) {
+        for (i = 0; i < 20; i += 2) {
+            codes[i] = name[i];
+            codes[i + 1] = D_8006D634[n + i + 1];
+            if (name[i] == 0 && D_8006D634[n + i + 1] == 0) {
+                break;
+            }
+        }
+        func_80033B34(codes, decoded, i / 2);
+        for (i = 0; i < 20; i++) {
+            name[i] = decoded[i];
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CB184);
+#endif
 
 /* Apply a loaded save: its derived tables, play time and the 16 resident
  * words copied from the game data, then finish (801cb184). */
