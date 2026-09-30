@@ -287,15 +287,100 @@ s32 func_8002D530(u16 *command, s16 *vertices, s32 flags) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002D6AC);
+/* Build a Gouraud triangle whose corner colors are `color` lit by the
+ * vertex normals; with flag 2 the color is also recorded in the lit-color
+ * cache. */
+s32 func_8002D6AC(CVECTOR *color, s16 *vertices, s32 flags) {
+    POLY_G3 *poly = (POLY_G3 *)D_80059424;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002D77C);
+    setlen(poly, 6);
+    if (flags & 2) {
+        *D_80059498 = *(s32 *)color;
+        D_80059498++;
+    }
+    NormalColorCol3(&D_8005952C[vertices[0]], &D_8005952C[vertices[1]], &D_8005952C[vertices[2]],
+                    color, (CVECTOR *)&poly->r0, (CVECTOR *)&poly->r1, (CVECTOR *)&poly->r2);
+    poly->code = color->cd;
+    return 1;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002D814);
+/* The same Gouraud triangle builder without the cache. */
+s32 func_8002D77C(CVECTOR *color, s16 *vertices) {
+    POLY_G3 *poly = (POLY_G3 *)D_80059424;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002D984);
+    setlen(poly, 6);
+    NormalColorCol3(&D_8005952C[vertices[0]], &D_8005952C[vertices[1]], &D_8005952C[vertices[2]],
+                    color, (CVECTOR *)&poly->r0, (CVECTOR *)&poly->r1, (CVECTOR *)&poly->r2);
+    poly->code = color->cd;
+    return 1;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002DA14);
+/* Build a flat textured triangle lit by the face normal of `vertices`
+ * (flag 1; with flag 2 the normal goes to the lit-color cache) or by the
+ * cached normal (flag 4); the cache advances either way. */
+s32 func_8002D814(u16 *command, s16 *vertices, s32 flags) {
+    POLY_FT3 *poly;
+    SVECTOR normal;
+
+    if (func_8002CD64((u8 *)command) == 0) {
+        return 0;
+    }
+    poly = (POLY_FT3 *)D_80059424;
+    setlen(poly, 7);
+    *(s32 *)&poly->u0 = command[2] | (D_8005930C << 16);
+    *(s32 *)&poly->u1 = command[3] | (D_80059308 << 16);
+    *(u16 *)&poly->u2 = command[0];
+    if (flags & 1) {
+        if (flags & 2) {
+            func_8002DB84(&D_8005953C[vertices[0]], &D_8005953C[vertices[1]],
+                          &D_8005953C[vertices[2]], (SVECTOR *)D_80059498);
+            NormalColor((SVECTOR *)D_80059498, (CVECTOR *)&poly->r0);
+        } else {
+            func_8002DB84(&D_8005953C[vertices[0]], &D_8005953C[vertices[1]],
+                          &D_8005953C[vertices[2]], &normal);
+            NormalColor(&normal, (CVECTOR *)&poly->r0);
+        }
+    } else if (flags & 4) {
+        NormalColor((SVECTOR *)D_80059498, (CVECTOR *)&poly->r0);
+    }
+    D_80059498 += 2;
+    poly->code = ((u8 *)command)[3];
+    return 1;
+}
+
+/* Build an unlit flat textured triangle. */
+s32 func_8002D984(u16 *command) {
+    POLY_FT3 *poly;
+
+    if (func_8002CD64((u8 *)command) == 0) {
+        return 0;
+    }
+    poly = (POLY_FT3 *)D_80059424;
+    setlen(poly, 7);
+    *(s32 *)&poly->u0 = command[2] | (D_8005930C << 16);
+    *(s32 *)&poly->u1 = command[3] | (D_80059308 << 16);
+    *(u16 *)&poly->u2 = command[0];
+    poly->code = ((u8 *)command)[3];
+    return 1;
+}
+
+/* Build a Gouraud-shaded textured triangle lit by its vertex normals. */
+s32 func_8002DA14(u16 *command, s16 *vertices) {
+    POLY_GT3 *poly;
+
+    if (func_8002CD64((u8 *)command) == 0) {
+        return 0;
+    }
+    poly = (POLY_GT3 *)D_80059424;
+    setlen(poly, 9);
+    NormalColor3(&D_8005952C[vertices[0]], &D_8005952C[vertices[1]], &D_8005952C[vertices[2]],
+                 (CVECTOR *)&poly->r0, (CVECTOR *)&poly->r1, (CVECTOR *)&poly->r2);
+    *(s32 *)&poly->u0 = command[2] | (D_8005930C << 16);
+    *(s32 *)&poly->u1 = command[3] | (D_80059308 << 16);
+    *(u16 *)&poly->u2 = command[0];
+    poly->code = ((u8 *)command)[3];
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002DAFC);
 
