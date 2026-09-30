@@ -4154,29 +4154,174 @@ void func_8009B184(void) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009B210);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009B338);
+/* Release the party motion overrides and resettle the controlled actor. */
+void func_8009B338(void) {
+    s32 i;
+
+    i = 0;
+    D_800B233C.unk368 = 0;
+    D_800B233C.unk364 = 0;
+    D_800B233C.unk360 = 0;
+    D_800B2174.preserve_nonplayer_motion = 0;
+    do {
+        i++;
+        func_80081C54(D_800B226C);
+    } while (i < 32);
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009B398);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009B664);
+/* Store the camera projection in a variable. */
+void func_8009B664(void) {
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, D_800AF930.projection);
+    D_800B0078->pc += 3;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009B6AC);
+void func_8009AE3C(s32 target, s32 steps);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009B708);
+/* Blend the camera projection (operands: target, frames). */
+void func_8009B6AC(void) {
+    s32 target;
 
+    target = func_800ACDEC(1);
+    func_8009AE3C(target, func_800ACDEC(3));
+    D_800B0078->pc += 5;
+}
+
+extern s16 D_800AEA64[64]; /* octant turn table [from * 8 + to] */
+
+/* Turn the camera to octant `octant` over `steps` frames. */
+void func_8009B708(s32 octant, s32 steps) {
+    s32 current;
+    s32 velocity;
+
+    current = func_8009A514() & 0xFFFF;
+    if (steps == 0) {
+        steps = 1;
+        D_800B2174.camera_counter += 2;
+    }
+    velocity = (D_800AEA64[current * 8 + octant] << 25) / steps;
+    D_800AF930.heading_steps = steps;
+    D_800AF930.heading = ((octant + 4) & 7) << 9;
+    D_800AF930.heading_velocity = velocity;
+}
+
+#ifdef NON_MATCHING
+/* Turn the camera one octant (direction 0: positive) over `steps` frames. */
+void func_8009B7A8(s32 direction, s32 steps) {
+    s32 velocity;
+    s32 heading;
+
+    if (steps == 0) {
+        steps = 1;
+        D_800B2174.camera_counter += 2;
+    }
+    if (direction == 0) {
+        velocity = 0x2000000 / steps;
+        heading = D_800AF930.heading + 0x200;
+    } else {
+        velocity = (s32)0xFE000000 / steps;
+        heading = D_800AF930.heading - 0x200;
+    }
+    D_800AF930.heading = heading;
+    D_800AF930.heading_velocity = velocity;
+    D_800AF930.heading_steps = steps;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009B7A8);
+#endif
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009B824);
+/* Once the camera is idle, turn one octant over operand-1 frames. */
+void func_8009B824(void) {
+    if (D_800AF930.heading_steps == 0) {
+        func_8009B7A8(0, func_800ACDEC(1));
+        D_800B0078->pc += 3;
+    }
+    D_800B00C0 = 1;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009B884);
+/* As func_8009B824 (the original also passes direction 0). */
+void func_8009B884(void) {
+    if (D_800AF930.heading_steps == 0) {
+        func_8009B7A8(0, func_800ACDEC(1));
+        D_800B0078->pc += 3;
+    }
+    D_800B00C0 = 1;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009B8E4);
+void func_8009B708(s32 octant, s32 steps);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009B9A0);
+/* Turn the camera to octant operand 1 over operand-3 frames (at once
+ * outside D_800ADB1C). */
+void func_8009B8E4(void) {
+    s32 octant;
+    s32 steps;
+    s16 heading;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009BA0C);
+    octant = func_800ACDEC(1);
+    steps = func_800ACDEC(3);
+    if (D_800ADB1C == 0) {
+        heading = (octant + 4) & 7;
+        D_800AF930.heading_half = heading << 9;
+        D_800AF930.heading = heading << 9;
+        D_800B0078->pc += 5;
+    } else if (D_800AF930.heading_steps == 0) {
+        func_8009B708(octant, steps);
+        D_800B0078->pc += 5;
+    }
+    D_800B00C0 = 1;
+}
 
+/* Camera view saved by func_8009B9A0. */
+typedef struct {
+    s16 octant;
+    s32 projection;
+    s16 elevation;
+} SavedView;
+extern SavedView D_800AFA48;
+
+/* Once the camera is idle, save its octant, projection and elevation. */
+void func_8009B9A0(void) {
+    if (D_800AF930.heading_steps == 0) {
+        D_800AFA48.octant = func_8009A514();
+        D_800AFA48.projection = D_800AF930.projection;
+        D_800AFA48.elevation = D_800AF930.elevation;
+        D_800B0078->pc += 1;
+    }
+}
+
+/* Once the camera is idle, blend back to the saved view over 32 frames. */
+void func_8009BA0C(void) {
+    if (D_800AF930.heading_steps == 0) {
+        func_8009B708(D_800AFA48.octant, 32);
+        func_8009AE3C(D_800AFA48.projection, 32);
+        func_8009A420(D_800AFA48.elevation, 32);
+        D_800B0078->pc += 1;
+    }
+}
+
+void func_8004A14C(s32 projection);
+
+
+#ifdef NON_MATCHING
+/* Set the camera elevation, octant and projection at once. */
+void func_8009BA7C(void) {
+    s16 heading;
+    s32 angle;
+
+    D_800AF930.elevation = func_800ACDEC(3);
+    heading = (func_800ACDEC(1) + 4) & 7;
+    angle = heading << 9;
+    D_800AF930.heading = angle;
+    D_800AF930.heading_half = heading << 9;
+    D_800AF930.heading_high = angle << 16;
+    D_800AF930.projection = func_800ACDEC(5);
+    func_8004A14C(D_800AF930.projection);
+    D_800B0078->pc += 7;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009BA7C);
+#endif
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009BB0C);
 
