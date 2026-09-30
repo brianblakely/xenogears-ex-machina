@@ -215,7 +215,7 @@ typedef struct {
     s32 unk0;
     u32 *ot[2];        /* 0x04: per display buffer */
     u32 *last[2];      /* 0x0C: last entry of each */
-    u16 length;        /* 0x14 */
+    s16 length;        /* 0x14 */
     u8 unk16;
     u8 shift;          /* 0x17: 14 - log2(length) */
     u8 unk18[0x50];
@@ -242,6 +242,13 @@ typedef struct {
     u8 r, g, b, cd;
 } CVector;
 
+/* Word count of a primitive, from its tag (libgpu P_TAG len). */
+#define TAG_LEN(tag) (((u8 *)(tag))[3])
+
+extern OtPair *D_80091C30;    /* table to compact at the end of the frame */
+extern s32 D_80092820;        /* root counter at the frame start */
+extern u32 *D_800928E4;       /* ordering table primitives are added to */
+extern s32 D_80050100;        /* its depth shift */
 extern s32 D_80092810;
 extern CVector D_80092818[2]; /* current colour per display buffer */
 extern s32 D_80092914;        /* colour changed this frame */
@@ -324,6 +331,8 @@ void func_80089D5C(Node *node);
 void func_80089EB4(ModelSet *set);
 void func_80089FF8(Model *model);
 void func_8008C120(void *data);
+void func_80044AD8(u32 *ot, s32 length);
+s32 func_80040690(s32 counter);
 Light *func_8008A254(void);
 void func_80089E64(Node *node, void *data);
 void func_8008A3A8(Holder *holder);

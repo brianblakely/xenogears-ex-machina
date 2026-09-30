@@ -1560,15 +1560,75 @@ void func_8008A78C(Node *node) {
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008A7E0);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008ABAC);
+/* Load the three rig lights into the light slots. */
+void func_8008ABAC(Node **lights) {
+    func_80030A30(0, lights[0]->data);
+    func_80030A30(1, lights[1]->data);
+    func_80030A30(2, lights[2]->data);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008AC0C);
+/* Clear the current buffer's ordering table of a pair and make it the one
+ * primitives are added to. */
+void func_8008AC0C(OtPair *pair) {
+    func_80044AD8(pair->ot[D_800928A0], pair->length);
+    D_800928E4 = pair->ot[D_800928A0];
+    D_80050100 = pair->shift;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008AC7C);
+/* Choose the ordering table pair to compact at the end of the frame. */
+void func_8008AC7C(OtPair *pair) {
+    D_80091C30 = pair;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008AC8C);
+/* Note the frame's start time. */
+void func_8008AC8C(void) {
+    D_80092820 = func_80040690(0xF2000001);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008ACB8);
+/* While time remains in the frame budget (frames x 240 ticks, default
+ * 192), link the tags the chosen table's entries point at past runs of
+ * empty primitives, from the deepest entry down to entry 4. */
+void func_8008ACB8(s32 frames) {
+    OtPair *pair = D_80091C30;
+    s32 start;
+    s32 limit;
+    s32 elapsed;
+    s32 i;
+    u32 *entry;
+    u32 *tag;
+
+    if (pair == NULL) {
+        return;
+    }
+    start = D_80092820;
+    D_80091C30 = NULL;
+    if (frames != 0) {
+        limit = frames * 240;
+    } else {
+        limit = 0xC0;
+    }
+    for (i = pair->length - 1; i >= 4; i--) {
+        elapsed = func_80040690(0xF2000001) - start;
+        if (elapsed < 0) {
+            elapsed += 0x10000;
+        }
+        if (elapsed > limit) {
+            return;
+        }
+        entry = (u32 *)pair->ot[D_800928A0][i];
+        tag = (u32 *)((*entry & 0xFFFFFF) - 0x80000000);
+        if (TAG_LEN(tag) == 0) {
+            while (i >= 5) {
+                tag = (u32 *)((*tag & 0xFFFFFF) - 0x80000000);
+                i--;
+                if (TAG_LEN(tag) != 0) {
+                    break;
+                }
+            }
+            *entry = (*entry & 0xFF000000) | ((u32)tag & 0xFFFFFF);
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008AE1C);
 
