@@ -2180,17 +2180,12 @@ void func_8008EADC(void) {
     func_8008E67C();
 }
 
-#ifdef NON_MATCHING
-/* Play a menu sound effect (unpositioned).
- * Does not match: the tag load is scheduled after the sound id. */
+/* Play a menu sound effect (unpositioned). */
 void func_8008EB4C(s32 id) {
     if (id != 0) {
         func_8008E78C(0x60000 + id, 0, NULL, D_80059488);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008EB4C);
-#endif
 
 /* Play a character's sound effect, tagged with its id and side. */
 void func_8008EB88(Actor *owner, s32 id, Vector *pos, s32 mode) {

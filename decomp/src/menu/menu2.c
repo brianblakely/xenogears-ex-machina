@@ -8,11 +8,13 @@
 #include "gte.h"
 
 #ifdef NON_MATCHING
-/* Place the menu camera for one of the view modes. Does not match: GCC
- * 8-aligns the jump table (original at 0x8006faf4), and cases 3/4 are
- * cross-jumped after the look-at copy rather than before the lift store. */
+/* Place the menu camera for one of the view modes. Nearly matches (the jump
+ * table lands at 0x8006faf4 since the unit split): GCC keeps the address of
+ * D_8009872C.angle in a callee-saved register in cases 3/4, where the
+ * original reloads it with lui/lw for each call. */
 void func_8007099C(u32 mode) {
     Vector target;
+    s32 top;
 
     switch (mode) {
     case 0:
@@ -32,34 +34,20 @@ void func_8007099C(u32 mode) {
         break;
     case 3:
         D_800925F4 = 0xA0;
-        target = D_80099078;
-        target.vy += D_800925F4;
-        func_80070808(&target, 0x10);
-        target.vx = D_8009872C.pos.vx + ((func_8003F8B0(D_8009872C.angle + 0xA80) * 0xD0) >> 12);
-        target.vy = D_8009872C.pos.vy - 0x20 - D_800925F4;
-        target.vz = D_8009872C.pos.vz + ((func_8003F8CC(D_8009872C.angle + 0xA80) * 0xD0) >> 12);
-        func_800708C4(&target, 0x46);
-        {
-            s32 top = func_80082488(&D_8009871C, 0) - 0x40 - D_800925F4;
-            if (top < D_8009871C.vy) {
-                D_8009871C.vy = top;
-            }
-        }
-        break;
+        goto lifted;
     case 4:
         D_800925F4 = 0x80;
+    lifted:
         target = D_80099078;
         target.vy += D_800925F4;
         func_80070808(&target, 0x10);
         target.vx = D_8009872C.pos.vx + ((func_8003F8B0(D_8009872C.angle + 0xA80) * 0xD0) >> 12);
-        target.vy = D_8009872C.pos.vy - 0x20 - D_800925F4;
+        target.vy = D_8009872C.pos.vy - (D_800925F4 + 0x20);
         target.vz = D_8009872C.pos.vz + ((func_8003F8CC(D_8009872C.angle + 0xA80) * 0xD0) >> 12);
         func_800708C4(&target, 0x46);
-        {
-            s32 top = func_80082488(&D_8009871C, 0) - 0x40 - D_800925F4;
-            if (top < D_8009871C.vy) {
-                D_8009871C.vy = top;
-            }
+        top = func_80082488(&D_8009871C, 0) - (D_800925F4 + 0x40);
+        if (top < D_8009871C.vy) {
+            D_8009871C.vy = top;
         }
         break;
     case 5:
