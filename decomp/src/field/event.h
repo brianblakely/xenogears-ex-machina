@@ -44,6 +44,18 @@ typedef struct FieldDescriptor {
     u8 unk5A[0x5C - 0x5A];
 } FieldDescriptor;
 
+/* Resident persistent game state (*8005a39c). */
+typedef struct GameState {
+    u8 unk0000[0x1932];
+    s16 unk1932;         /* 1932 */
+    u8 unk1934[0x2320 - 0x1934];
+    s16 unk2320;         /* 2320 */
+    u8 unk2322[0x2324 - 0x2322];
+} GameState;
+
+extern GameState *D_8005A39C;
+extern s16 D_800C3A68[];            /* event variable bank */
+
 extern u8 *D_800ADC00;              /* event bytecode */
 extern FieldDescriptor *D_800AFB10; /* descriptor table */
 extern s32 D_800AFD1C;              /* current actor index */

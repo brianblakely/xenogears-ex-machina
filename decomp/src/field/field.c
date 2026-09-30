@@ -1958,29 +1958,171 @@ void func_800932D0(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800933F8);
+extern u8 D_8005954C;
+extern u8 D_80059508;
+extern u8 D_800594F8;
+extern u8 D_800B2356;
+extern s32 D_800ADBE0;
+extern s32 D_800ADB88;
+extern s32 D_800ADB18;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80093568);
+/* Leave the field for another module (operand 1), optionally requesting a
+ * field change (operands 5, 7; 0x7FFF: none). Re-runs until allowed. */
+void func_800933F8(void) {
+    s32 field;
+    s32 entry;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80093664);
+    if (D_800ADBDC == 0 || D_800ADBE4 == 0 || D_800ADBEC == 0 || D_800ADB2C != 0 || D_8004F308 == -1 ||
+        D_800ADB90 != 0) {
+        D_800B00C0 = 1;
+        D_800B0078->pc -= 1;
+        return;
+    }
+    D_8005954C = D_800B2356;
+    D_80059508 = func_800ACDEC(1);
+    D_800594F8 = 0;
+    D_800ADBDC = 0;
+    D_800ADBE0 = 0;
+    D_800ADB88 = 1;
+    field = func_800ACDEC(5);
+    if (field != 0x7FFF) {
+        entry = func_800ACDEC(7);
+        func_80092F44();
+        func_800A3074(2, entry);
+        D_8004F34C = field;
+        D_800ADB18 = 1;
+    }
+    D_800B00C0 = 1;
+    D_800B0078->pc += 9;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800936E4);
+/* Leave the field for another module (operand 1) once allowed. */
+void func_80093568(void) {
+    if (D_800ADBDC == 0 || D_800ADBE4 == 0 || D_800ADBEC == 0 || D_800ADB2C != 0 || D_8004F308 == -1 ||
+        D_800ADB90 != 0) {
+        D_800B00C0 = 1;
+    } else {
+        D_8005954C = D_800B2356;
+        D_80059508 = func_800ACDEC(1);
+        D_800594F8 = 0;
+        D_800ADBDC = 0;
+        D_800ADBE0 = 0;
+        D_800ADB88 = 1;
+        D_800B00C0 = 1;
+        D_800B0078->pc += 3;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80093740);
+/* Store a collision attribute byte in a variable. */
+void func_80093664(void) {
+    s32 value;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80093790);
+    value = func_80092424(EVENT_OPERAND_BYTE(1), EVENT_OPERAND_BYTE(2));
+    func_800A3074(func_800ACDB8(3), value);
+    D_800B0078->pc += 5;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800937E0);
+extern s32 D_8004F350;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80093824);
+/* Yield; advance only once D_8004F350 is zero. */
+void func_800936E4(void) {
+    if (D_8004F350 == 0) {
+        D_800B0078->pc += 1;
+    } else {
+        D_800B0078->pc -= 1;
+    }
+    D_800B00C0 = 1;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80093888);
+extern u8 D_80059171;
+extern s32 D_800ADB64;
+extern u16 D_800B236C;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80093930);
+/* Request field action 0 with parameter D_800B236C. */
+void func_80093740(void) {
+    D_800B00C0 = 1;
+    D_800ADB64 = 0;
+    D_80059171 = D_800B236C;
+    D_8004F350 += 1;
+    D_800B0078->pc += 1;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800939A0);
+/* Request field action 6 with parameter 1. */
+void func_80093790(void) {
+    D_80059171 = 1;
+    D_800ADB64 = 6;
+    D_800B00C0 = 1;
+    D_8004F350 += 1;
+    D_800B0078->pc += 1;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80093A04);
+/* Request field action 2. */
+void func_800937E0(void) {
+    D_800ADB64 = 2;
+    D_800B00C0 = 1;
+    D_8004F350 += 1;
+    D_800B0078->pc += 1;
+}
+
+/* Request field action 3 with an operand parameter. */
+void func_80093824(void) {
+    D_80059171 = func_800ACDEC(1);
+    D_800ADB64 = 3;
+    D_800B00C0 = 1;
+    D_8004F350 += 1;
+    D_800B0078->pc += 3;
+}
+
+/* Request a field change (operands: field id, entry) as field action 1. */
+void func_80093888(void) {
+    s32 entry;
+    s32 field;
+
+    D_800B2176 = -1;
+    entry = func_800ACDEC(3);
+    field = func_800ACDEC(1);
+    func_80092F44();
+    func_800A3074(2, entry);
+    D_8004F34C = field;
+    func_800931F8();
+    D_800ADB64 = 1;
+    D_800B00C0 = 1;
+    D_8004F350 += 1;
+    D_800B0078->pc += 5;
+}
+
+/* Field action 1 with an entry operand also stored in game state and
+ * variable 2. */
+void func_80093930(void) {
+    s16 entry;
+
+    entry = func_800ACDEC(1);
+    D_800ADB64 = 1;
+    D_800B00C0 = 1;
+    D_8005A39C->unk1932 = entry;
+    D_8005A39C->unk2320 = entry;
+    D_800C3A68[1] = entry;
+    D_8004F350 += 1;
+    D_800B0078->pc += 3;
+}
+
+/* Request field action 4 with an operand parameter. */
+void func_800939A0(void) {
+    D_80059171 = func_800ACDEC(1);
+    D_800ADB64 = 4;
+    D_800B00C0 = 1;
+    D_8004F350 += 1;
+    D_800B0078->pc += 3;
+}
+
+/* Request field action 5 with an operand parameter. */
+void func_80093A04(void) {
+    D_80059171 = func_800ACDEC(1);
+    D_800ADB64 = 5;
+    D_800B00C0 = 1;
+    D_8004F350 += 1;
+    D_800B0078->pc += 3;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80093A68);
 
