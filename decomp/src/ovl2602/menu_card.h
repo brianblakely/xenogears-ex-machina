@@ -78,6 +78,8 @@ typedef struct {
     char name[13];
 } CardPrefix;
 
+extern const CardPrefix D_801C5000; /* "BISLPS-00800" */
+
 /* The menu resources block (*8005945c): packed files by index. */
 typedef struct {
     s32 count;
@@ -146,7 +148,8 @@ typedef struct {
     POLY_FT4 heading[44];     /* 05a0: count 46ab, buffer 46aa */
     POLY_FT4 digits1[18];     /* 0c80: count 46ad, buffer 46ac */
     POLY_FT4 digits2[18];     /* 0f50: count 46af, buffer 46ae */
-    POLY_FT4 group1220[36];   /* 1220: count 46b4, buffer 46b3 */
+    POLY_FT4 group1220[18];   /* 1220: count 46b4, buffer 46b3 */
+    POLY_FT4 group14F0[18];   /* 14f0: ovl2602, count 46b8, buffer 46b7 */
     POLY_FT4 price[20];       /* 17c0: ovl2602, count 46bb, buffer 46ba */
     POLY_FT4 digits3[18];     /* 1ae0: count 46b1, buffer 46b0 */
     POLY_FT4 rows[8][8];      /* 1db0: counts 468c, buffers 4694 */
@@ -186,8 +189,10 @@ typedef struct {
     u8 group1220_buffer;      /* 46b3 */
     u8 group1220_count;       /* 46b4 */
     u8 label44B0_shown;       /* 46b5 */
-    u8 unk46B6;
-    u8 unk46B7[3];
+    u8 unk46B6;               /* 46b6: label4530 shown */
+    u8 group14F0_buffer;      /* 46b7 */
+    u8 group14F0_count;       /* 46b8 */
+    u8 group14F0_shown;       /* 46b9 */
     u8 price_buffer;          /* 46ba */
     u8 price_count;           /* 46bb */
     u8 cells_a_count[9];      /* 46bc */
@@ -558,6 +563,8 @@ void func_8003342C(void *list);          /* relocate an offset list */
 void func_80026338(void *sheet, s32 id, s32 *u, s32 *v, s32 *w, s32 *h, s32 *x, s32 *y);
 void func_80033698(s32 x, s32 y);        /* text palettes */
 u8 *func_80033728(void *table, s32 index); /* entry of a text table */
+u8 *func_80033A2C(s32 id);               /* kind 3 part name */
+u8 *func_80033A5C(s32 id);               /* kind 4 part name */
 s32 func_80034EAC(u8 *text, void *pixels, s32 width, s32 line); /* render a text line */
 s32 func_8002675C(void *sheet, s32 id, void *packets, s32 buffer, s32 x, s32 y, s32 scale); /* sprite */
 s32 func_800263E4(void *sheet, s32 id, void *packets, s32 buffer, s32 x, s32 y, s32 scale, s32 flip_x,
@@ -662,6 +669,8 @@ void func_801C94CC(s32 count, POLY_FT4 *packets, s32 first);
 void func_801C93B0(s32 count, SVECTOR *quads, POLY_FT4 *packets, s32 first);
 
 /* ovl2602 only. */
+extern u8 D_8006F6F0[];  /* inventory 4 counts (100) */
+extern u8 D_8006F7B8[];  /* inventory 3 counts (150) */
 extern u8 D_8006F754[];  /* inventory 4 ids (100), counts just before */
 extern u8 D_8006F84E[];  /* inventory 3 ids (150), counts just before */
 void func_801C5600(u8 allocate);
@@ -673,9 +682,11 @@ typedef struct {
     u8 unk0[2];
     u8 unk2;       /* 02: entry of the 18h-byte table */
     u8 unk3;       /* 03: entry of the 10h-byte table */
-    u8 unk4[4];
+    u8 unk4[4];    /* 04: fitted parts (items of 32h and above) */
     u8 unk8;       /* 08: entry of the 14h-byte table */
-    u8 unk9[0x38 - 9];
+    u8 unk9[3];    /* 09: kind 3 parts */
+    u8 unkC[4];    /* 0c: fitted parts (items below 32h) */
+    u8 unk10[0x38 - 0x10];
     u16 unk38;     /* 38 */
     u16 unk3A;     /* 3a */
     u8 unk3C, unk3D, unk3E, unk3F; /* 3c */
@@ -719,11 +730,27 @@ typedef struct {
     u8 unkC[0x14 - 0xC];
 } GearEntry;
 
+/* Gear parts for sale: frames (1ch bytes) and other parts (14h bytes). */
+typedef struct {
+    u32 users; /* 00: party bits of the members who can use it */
+    u16 price; /* 04 */
+    u8 unk6[0x1C - 6];
+} GearPart1C;
+
+typedef struct {
+    u8 unk0[4];
+    u32 users; /* 04 */
+    u16 price; /* 08 */
+    u8 unkA[0x14 - 0xA];
+} GearPart14;
+
 typedef struct {
     u8 unk0[8];
     GearRecord18 *records18; /* 08 */
     GearRecord10 *records10; /* 0c */
     GearEntry *entries;      /* 10 */
+    GearPart1C *parts1C;     /* 14: kind 3 */
+    GearPart14 *parts14;     /* 18: kind 4 */
 } GearTable;
 
 extern Gear D_8006DFAC[];
@@ -733,6 +760,7 @@ s32 rand(void);  /* rand */
 void func_801E7D14(void *a, void *b, u32 *ot, s32 buffer);
 u32 func_801C527C(u32 mask, u8 id);
 u32 func_801C5260(u8 id);
+u32 func_801D1078(u8 id, u8 kind);
 void func_801CCEBC(u8 count, u8 *shown);
 void func_801D0EC8(u8 close);
 void func_801D61B8(GearTable *table, u8 id);
