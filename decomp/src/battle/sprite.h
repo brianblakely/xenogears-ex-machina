@@ -75,7 +75,7 @@ typedef struct BattleSprite {
     s32 speed;             /* 0x18: bits 7-22 its speed setting */
     s32 gravity;           /* 0x1C */
     SpriteView *view;      /* 0x20 */
-    void *resource;        /* 0x24 */
+    u8 *base;              /* 0x24: its resource block */
     u8 pad28[0x2B - 0x28];
     u8 colourFlags;        /* 0x2B */
     s16 scale;             /* 0x2C */
@@ -110,10 +110,11 @@ typedef struct BattleSprite {
     struct BattleSprite *partner; /* 0x74 */
     s32 triangle;          /* 0x78: scene triangle under it */
     struct {
-        u8 pad0[8];
+        s32 file;          /* its file first */
+        u8 pad4[4];
         s32 field8;
         s16 fieldC;
-    } *sequencer;          /* 0x7C */
+    } *resource;           /* 0x7C */
     u16 field80;
     u16 field82;           /* 0x82 */
     s16 ground;            /* 0x84 */
@@ -141,7 +142,10 @@ typedef struct BattleSprite {
         } bits;
         s8 bytes[4];               /* [3]: the running animation */
     } motion;              /* 0xAC */
-    s8 fieldB0;            /* 0xB0 */
+    union {
+        u32 word;          /* 0x100 an effect sprite */
+        s8 mode;           /* the idle motion mode */
+    } idle;                /* 0xB0 */
 } BattleSprite;
 
 /* A little-endian s16 at index i of a sprite script, and the script data
@@ -209,15 +213,20 @@ void func_800B5DF4();
 void func_800B5854(SpriteApproach *approach);
 void func_800B5588(BattleTask *task);
 
-s16 func_80023124(Point2 to, Point2 from); /* direction from from to to */
+/* A point on the ground passed by value. */
+typedef struct {
+    s16 x;
+    s16 z;
+} GroundPoint;
+
+s16 func_80023124(GroundPoint to, GroundPoint from); /* the direction between points */
 void func_80025A88();                      /* the resident sprite drawer */
 void func_800245D8(BattleSprite *sprite, s32 value);
 
 
 /* Sprite script commands (800B3F04). */
 extern BattleSprite *D_800C3E1C;
-extern u16 D_800D3634;
-extern s16 D_800D36BC;
+extern u16 D_800D36BC;
 void func_800A96B4(s32 set);
 void func_800A979C(s32 index, s16 x, s16 y, s16 z, s16 angle);
 void func_800B3CD4(); /* unprototyped (to, frames, red, blue, field4C, field4E) */

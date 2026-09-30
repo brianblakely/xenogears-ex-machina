@@ -193,5 +193,6 @@ s32 RotTransPers(SVector *v0, s32 *sxy, s32 *p, s32 *flag);
 void func_8004A414(Vector *in, Vector *out);              /* Square0 */
 Matrix *func_8004ABBC(SVector *angles, Matrix *m);        /* RotMatrix */
 void *memset(void *dst, s32 c, u32 n);
+Matrix *ScaleMatrix(Matrix *m, Vector *v);
 
 #endif

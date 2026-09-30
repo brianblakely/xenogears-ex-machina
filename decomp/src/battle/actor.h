@@ -9,33 +9,8 @@
 #include "scene.h"
 #include "screen.h"
 #include "sprite.h"
+#include "frame.h"
 
-/* A slot's sprite source (0xC bytes). */
-typedef struct {
-    void *data;
-    s16 x;
-    s16 y;
-    s32 variant;
-} SpriteSource;
-
-/* The battle overlay's work area at 0x800C3EB0 (fields as far as used).
- * battle_core.h declares its first member, the formation pointer, as
- * D_800C3EB0; BATTLE_AREA views the whole. */
-typedef struct {
-    void *formation;             /* 0x0000 */
-    BattleSlot slots[11];        /* 0x0004 (D_800C3EB4) */
-    u8 pad138[0x8C54 - 0x138];
-    u32 *ot;                     /* 0x8C54 */
-    u8 pad8C58[0x8C84 - 0x8C58];
-    s32 buffer;                  /* 0x8C84 */
-    u8 pad8C88[4];
-    BattleSprite *sprites[11];   /* 0x8C8C */
-    ActorTask *tasks[11];        /* 0x8CB8 */
-    u8 pad8CE4[0x8D24 - 0x8CE4];
-    SpriteSource sources[11];    /* 0x8D24 */
-} BattleArea;
-
-#define BATTLE_AREA (*(BattleArea *)&D_800C3EB0)
 
 /* Resident sprite engine. */
 void func_8001CE74(ActorTask *task);
@@ -95,6 +70,9 @@ typedef struct {
     SVector rot;    /* +14 */
     s32 range;      /* +1C */
     Matrix matrix;  /* +20 */
+    s32 drawn;      /* +40: vertical blank after drawing */
+    s32 synced;     /* +44: after the GPU finished */
+    s32 start;      /* +48: at the frame's start */
 } BattleCamera;
 extern BattleCamera D_800D309C;
 extern u8 D_800C372C;      /* stage drawing off */
@@ -110,7 +88,6 @@ void func_800BB760(s32 slot);
 void func_800BAB0C(ActorTask *task);
 void func_800BABDC(ActorTask *task);
 void func_800BAC50(ActorTask *task);
-void func_800BFC80(ActorTask *task, s32 arg1, s32 arg2);
 void func_800BB350(u32 slot);
 void func_800BA59C(BattleSprite *sprite, s16 direction);
 void func_800BF2B8(BattleSprite *sprite);

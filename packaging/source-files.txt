@@ -132,10 +132,12 @@ decomp/src/battle/battle_core.h
 decomp/src/battle/combatant.h
 decomp/src/battle/effect.h
 decomp/src/battle/files.h
+decomp/src/battle/frame.h
 decomp/src/battle/gte.h
 decomp/src/battle/menu_pages.h
 decomp/src/battle/model.h
 decomp/src/battle/objects.h
+decomp/src/battle/popup.h
 decomp/src/battle/psyq.h
 decomp/src/battle/resolver.h
 decomp/src/battle/scene.h

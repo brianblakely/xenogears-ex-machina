@@ -82,7 +82,6 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *scriptFile, ObjectMod
 void func_800AA898(BattleObject *object, EffectPool *pool, u8 **scripts, u8 **animations);
 
 /* Per-frame update and drawing of the stage objects. */
-extern s32 D_800CCC5C;     /* frames skipped by the last frame */
 extern s16 D_800C3B80;     /* pulse level of the highlight colour */
 extern s16 D_800D39E8;     /* a slow wave (4..9) */
 extern u16 D_800C3D14;     /* highlighted slots */
