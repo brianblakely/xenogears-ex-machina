@@ -2600,11 +2600,9 @@ void func_801E3A80(MenuTables *tables, u8 id) {
 /* Compute gear `gear`'s shown stats from its record and its pilot (flag 1000
  * makes gear 9's pilot character 10); gear 7 first takes its values from
  * character 7 (HP x50, stats plus bonuses). */
-#ifdef NON_MATCHING
 void func_801E3C2C(MenuTables *tables, u8 gear) {
     GearRecord *record;
     CharRecord *pilot;
-    s16 value;
     s32 bonus;
 
     if (D_8006D634.flags & 0x1000) {
@@ -2630,20 +2628,16 @@ void func_801E3C2C(MenuTables *tables, u8 gear) {
     tables->unkAE = record->unk3A;
     bonus = record->unk3C * (record->unk74 + record->unk55[1]);
     if (gear == 5 || gear == 13) {
-        value = (record->slots[0].unk2 + record->slots[2].unk2) * 6 / 10;
+        tables->unkB0 = (record->slots[0].unk2 + record->slots[2].unk2) * 6 / 10 + bonus;
     } else {
-        value = record->slots[0].unk2;
+        tables->unkB0 = record->slots[0].unk2 + bonus;
     }
-    tables->unkB0 = value + bonus;
     tables->unkB2 = record->unk9F + record->unk4D;
     tables->unkB3 = record->unk98 - record->unk4A;
     tables->unkB4 = record->unk9E + record->unk54;
     tables->unkB5 = record->unk9D;
     tables->unkB6 = record->unk9C;
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801E3C2C);
-#endif
 
 /* Compute gear `gear`'s part and weapon values, then mirror its +9 values
  * (and for gears 4, 5 its weapons) into its other form (gears 1, 15, 10-14)
