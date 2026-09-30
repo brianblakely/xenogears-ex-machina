@@ -189,14 +189,10 @@ void func_80093534(VECTOR *offset) {
 
 /* Set the point's height to lie on the plane through `origin` with normal
  * `normal`. */
-#ifdef NON_MATCHING /* matches once maspsx expands div (--expand-div) */
 void func_800935DC(VECTOR *point, VECTOR *origin, VECTOR *normal) {
     point->vy = (-(normal->vx * (point->vx - origin->vx)) - normal->vz * (point->vz - origin->vz)) / normal->vy;
     point->vy += origin->vy;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_800935DC);
-#endif
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80093660);
 
