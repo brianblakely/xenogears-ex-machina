@@ -5678,27 +5678,26 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800861D0);
 
 /* Whether the member can use combo step `step` now: without a combo chain
  * (+0x2d6) always; otherwise its character must know the combo flag
- * (800c34cc) and the chain must allow another step. */
-#ifdef NON_MATCHING
+ * (800c34cc) and the chain must allow another step. 800d2c34 is the gear
+ * HUD's level byte of the battle work area (the original addresses it through
+ * 800ccce8). */
 s32 func_80086B88(s32 step, u8 member) {
     u8 index = step + (D_800C3EAC->unk2CC[0] + 1) * 3;
     s32 result = 1;
 
     if (D_800C3EAC->unk2D6 != 0) {
-        if (D_800D2C34 == 4) {
+        if (D_800CCCE8.gearHud.level == 4) {
             index = step + 12;
         }
         if (!func_80089C6C(D_8006ECF8[D_800D2D24[member]].combos, D_800C34CC[index])) {
             result = 0;
-        } else if (D_800C3EAC->unk2CC[0] != 0xFF && D_800D2C34 != 4 && D_800D2C34 < D_800C3EAC->unk2CC[0] + 1) {
+        } else if (D_800C3EAC->unk2CC[0] != 0xFF && D_800CCCE8.gearHud.level != 4 &&
+                   D_800CCCE8.gearHud.level < D_800C3EAC->unk2CC[0] + 1) {
             result = 0;
         }
     }
     return result;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80086B88);
-#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80086C88);
 
