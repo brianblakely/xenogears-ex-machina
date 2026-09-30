@@ -707,4 +707,10 @@ void func_800983A0(Camera *);
 void func_80098CC0(void);
 void func_8009932C(u32 *ot, s32, Camera *);
 
+/* worldmap_80083A00 */
+void func_8004A480(VECTOR *a, VECTOR *b, VECTOR *out); /* outer product */
+void func_80048D7C(VECTOR *in, VECTOR *out);           /* normalize */
+void func_8004A8EC(MATRIX *in, MATRIX *out);
+extern u16 D_8009B624[][2]; /* per area: two spinning scene objects */
+
 #endif

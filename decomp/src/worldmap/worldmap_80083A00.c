@@ -191,7 +191,32 @@ s32 func_800877E0(s32 index) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80087804);
+/* Spin the current area's two scene objects about their own axis. */
+s32 func_80087804(s32 index) {
+    s32 unused[2]; /* unreferenced; the original frame reserves it */
+    WorldmapActor *actor;
+    SceneObject *objects;
+    SceneObject *first;
+    SceneObject *second;
+    s32 first_id;
+    s32 second_id;
+
+    actor = &D_8009BE24[index];
+    objects = D_8009C620;
+    first_id = D_8009B624[D_8009C610][0];
+    second_id = D_8009B624[D_8009C610][1];
+    actor->u.step = (actor->u.step + actor->unk54) & 0xFFF;
+    SCRIPT_VECTOR[1].vx = 0;
+    SCRIPT_VECTOR[0].vx = 0;
+    first = &objects[first_id];
+    SCRIPT_VECTOR[0].vy = first->angle.vy;
+    second = &objects[second_id];
+    SCRIPT_VECTOR[1].vy = second->angle.vy;
+    SCRIPT_VECTOR[0].vz = SCRIPT_VECTOR[1].vz = actor->u.step;
+    func_8003F738(&SCRIPT_VECTOR[0], &first->matrix);
+    func_8003F738(&SCRIPT_VECTOR[1], &second->matrix);
+    return 1;
+}
 
 /* Give `count` quads the semi-transparent 0x1A0,0xA0 texture page. */
 void func_80087904(SceneObject *object, PolyFT4 *quads, s32 count, s32 abr) {
@@ -234,9 +259,54 @@ s32 func_800879E0(void) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80087A8C);
+/* Roll the current area's two scene objects together. */
+s32 func_80087A8C(s32 index) {
+    s32 unused[2]; /* unreferenced; the original frame reserves it */
+    WorldmapActor *actor;
+    SceneObject *objects;
+    SceneObject *first;
+    SceneObject *second;
+    s32 first_id;
+    s32 second_id;
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80087B84);
+    actor = &D_8009BE24[index];
+    objects = D_8009C620;
+    first_id = D_8009B64C[D_8009C610][0];
+    second_id = D_8009B64C[D_8009C610][1];
+    actor->u.step = (actor->u.step + actor->unk54) & 0xFFF;
+    first = &objects[first_id];
+    SCRIPT_VECTOR[1].vz = 0;
+    SCRIPT_VECTOR[0].vz = 0;
+    SCRIPT_VECTOR[1].vx = 0;
+    SCRIPT_VECTOR[0].vx = 0;
+    SCRIPT_VECTOR[0].vy = SCRIPT_VECTOR[1].vy = actor->u.step;
+    second = &objects[second_id];
+    func_8003F738(&SCRIPT_VECTOR[0], &first->matrix);
+    func_8003F738(&SCRIPT_VECTOR[1], &second->matrix);
+    return 1;
+}
+
+/* Build a rotation matrix whose third row faces `direction`, using `up`
+ * as scratch for the first two rows. */
+void func_80087B84(VECTOR *direction, VECTOR *up, MATRIX *m) {
+    up->vz = 0;
+    up->vx = 0;
+    up->vy = 0x1000;
+    func_8004A480(up, direction, up);
+    func_80048D7C(up, up);
+    m->m[0][0] = up->vx;
+    m->m[0][1] = up->vy;
+    m->m[0][2] = up->vz;
+    func_8004A480(direction, up, up);
+    func_80048D7C(up, up);
+    m->m[1][0] = up->vx;
+    m->m[1][1] = up->vy;
+    m->m[1][2] = up->vz;
+    m->m[2][0] = direction->vx;
+    m->m[2][1] = direction->vy;
+    m->m[2][2] = direction->vz;
+    func_8004A8EC(m, m);
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80087C6C);
 
