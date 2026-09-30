@@ -954,7 +954,7 @@ typedef struct {
 } QuadBuffer;
 
 extern QuadBuffer *D_8009D158[2]; /* per display buffer */
-extern s16 *D_8009D148; /* per-quad free flags */
+extern u16 *D_8009D148; /* per-row wobble spread */
 void func_80034714(void *window, s32 text);   /* set the window text */
 s32 func_80033728(void *table, s32 id);         /* text by id */
 void func_80034888(void *window, u32 *ot, s32 buffer); /* draw the window */
@@ -1513,5 +1513,18 @@ s32 func_80090C68(WorldmapActor *actor);
 void func_8008C040(VECTOR *position, s32 radius, s32 height, u8 *hit, u8 *actor);
 s32 func_80094238(VECTOR *position, s32 table);
 void func_8007528C(void);
+
+/* lead: heat-haze rows (800811C0) */
+typedef struct {
+    u32 tag;
+    u32 code[5];
+} DR_MOVE;
+
+void SetDrawMove(DR_MOVE *p, RECT *rect, s32 x, s32 y);
+extern DR_MOVE D_8009D164[2]; /* haze copy-back, per display buffer */
+
+/* libgpu addPrim through the P_TAG view (struct stores). */
+#define addPrimTag(ot, p) \
+    (((P_TAG *)(p))->addr = ((P_TAG *)(ot))->addr, ((P_TAG *)(ot))->addr = (u32)(p))
 
 #endif
