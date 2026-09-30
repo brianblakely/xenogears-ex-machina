@@ -720,6 +720,7 @@ extern u16 D_801E9E58[3][2];
 extern u8 D_801EA53C[];  /* save file screen command labels */
 extern u8 D_801EA542[];  /* title file screen load command labels */
 extern u8 D_801EA558[];
+extern u8 D_801EA564[];  /* 801e1014 screen labels */
 extern u8 D_801EA568[];  /* title file screen command labels */
 extern u8 D_801EA548[];  /* save/load screen labels */
 extern u8 D_801EA8F4[];
