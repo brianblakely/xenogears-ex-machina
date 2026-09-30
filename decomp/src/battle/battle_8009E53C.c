@@ -16,6 +16,7 @@
 #include "model.h"
 #include "scene.h"
 #include "gte.h"
+#include "effect.h"
 
 /* Whether gear part 50 + index is one of the parts of character 4's gear. */
 s32 func_8009E53C(u8 index) {
@@ -848,9 +849,230 @@ s32 func_800A23E8(EffectPool *pool, EffectEntry *entry) {
     return index;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A2434);
+/* Start an animation frame on a hierarchy through track entries (a packed
+ * frame is applied at once, 800A1B50): each part with a track gets an entry
+ * (unless it holds a persistent one), a part after the root without one loses
+ * its entry. Returns 1 for a packed frame. */
+s32 func_800A2434(EffectPool *pool, ModelPart *part, u16 *data, s32 mode, s32 tag) {
+    AnimationFrame *frame;
+    u8 *types;
+    EffectTrack *entry;
+    u8 *tracks;
+    u16 count;
+    u16 rotationCount;
+    u16 translationCount;
+    u16 duration;
+    u16 flags;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A2704);
+    frame = (AnimationFrame *)data;
+    if (frame->packed != 0) {
+        func_800A2ACC(pool, part);
+        func_800A1B50(part, (s16 *)frame);
+        return 1;
+    }
+    rotationCount = frame->rotationCount;
+    count = part->index;
+    translationCount = frame->translationCount;
+    if (rotationCount + 1 < count) {
+        count = rotationCount + 1;
+    }
+    mode &= 1;
+    duration = frame->duration;
+    if (!mode) {
+        duration--;
+    }
+    flags = frame->flags;
+    data = (u16 *)(frame + 1);
+    tracks = (u8 *)data + (rotationCount + 1) * sizeof(TrackEntry);
+    if (!(flags & 1)) {
+        tracks += rotationCount * 6;
+    }
+    if (!(flags & 2)) {
+        tracks += translationCount * 6;
+    }
+    for (i = 0; i < count; i++) {
+        types = (u8 *)(data + 2);
+        if (*data != 0xFFFF) {
+            if (part->effects[0] != NULL) {
+                entry = (EffectTrack *)part->effects[0];
+                if (entry->kind == 0xFF) {
+                    goto translation;
+                }
+            } else {
+                entry = (EffectTrack *)func_800A2330(pool);
+            }
+            if (entry != NULL) {
+                entry->used = 1;
+                entry->field1 = mode;
+                entry->field2 = types[0];
+                entry->kind = tag;
+                entry->cursor = entry->start = tracks + *data;
+                entry->field10 = 0;
+                entry->field12 = duration;
+                part->effects[0] = (EffectEntry *)entry;
+            }
+        } else {
+            if (part->effects[0] != NULL && i != 0 && part->effects[0]->kind != 0xFF) {
+                func_800A23E8(pool, part->effects[0]);
+                part->effects[0] = NULL;
+            }
+        }
+    translation:
+        data++;
+        if (*data != 0xFFFF) {
+            if (part->effects[1] != NULL) {
+                entry = (EffectTrack *)part->effects[1];
+                if (entry->kind == 0xFF) {
+                    goto next;
+                }
+            } else {
+                entry = (EffectTrack *)func_800A2330(pool);
+            }
+            if (entry != NULL) {
+                entry->used = 1;
+                entry->field1 = mode;
+                entry->field2 = types[1];
+                entry->kind = tag;
+                entry->cursor = entry->start = tracks + *data;
+                entry->field10 = 0;
+                entry->field12 = duration;
+                part->effects[1] = (EffectEntry *)entry;
+            }
+        } else {
+            if (part->effects[1] != NULL && i != 0 && part->effects[1]->kind != 0xFF) {
+                func_800A23E8(pool, part->effects[1]);
+                part->effects[1] = NULL;
+            }
+        }
+    next:
+        data += 2;
+        part++;
+    }
+    return 0;
+}
+
+/* As 800A2434, but each part after the root first takes the frame's start
+ * values of the tracks that are started. */
+s32 func_800A2704(EffectPool *pool, ModelPart *part, u16 *data, s32 mode, s32 tag) {
+    AnimationFrame *frame;
+    u8 *types;
+    EffectTrack *entry;
+    s16 *values;
+    u8 *tracks;
+    u16 rotationCount;
+    u16 translationCount;
+    u16 count;
+    u16 duration;
+    u16 rotations;
+    u16 translations;
+    u16 flags;
+    s32 i;
+
+    frame = (AnimationFrame *)data;
+    if (frame->packed != 0) {
+        func_800A2ACC(pool, part);
+        func_800A1B50(part, (s16 *)frame);
+        return 1;
+    }
+    mode &= 1;
+    rotations = 0;
+    rotationCount = frame->rotationCount;
+    count = part->index;
+    translations = 0;
+    translationCount = frame->translationCount;
+    if (rotationCount + 1 < count) {
+        count = rotationCount + 1;
+    }
+    duration = frame->duration;
+    if (!mode) {
+        duration--;
+    }
+    flags = frame->flags;
+    data = (u16 *)(frame + 1);
+    values = (s16 *)(data + (rotationCount + 1) * 3);
+    tracks = (u8 *)values;
+    if (!(flags & 1)) {
+        tracks += rotationCount * 6;
+    }
+    if (!(flags & 2)) {
+        tracks += translationCount * 6;
+    }
+    for (i = 0; i < count; i++) {
+        types = (u8 *)(data + 2);
+        if (*data != 0xFFFF) {
+            if (part->effects[0] != NULL) {
+                entry = (EffectTrack *)part->effects[0];
+                if (entry->kind == 0xFF) {
+                    goto skipRotation;
+                }
+            } else {
+                entry = (EffectTrack *)func_800A2330(pool);
+            }
+            if (!(flags & 1) && i != 0 && rotations < rotationCount) {
+                part->rotation.vx = *values++;
+                part->rotation.vy = *values++;
+                part->rotation.vz = *values++;
+                rotations++;
+                part->flag4 = 1;
+                part->flag5 = 1;
+            }
+            if (entry != NULL) {
+                entry->used = 1;
+                entry->field1 = mode;
+                entry->field2 = types[0];
+                entry->kind = tag;
+                entry->cursor = entry->start = tracks + *data;
+                entry->field10 = 0;
+                entry->field12 = duration;
+                part->effects[0] = (EffectEntry *)entry;
+            }
+        } else {
+        skipRotation:
+            if (!(flags & 1) && i != 0 && rotations < rotationCount) {
+                values += 3;
+                rotations++;
+            }
+        }
+        data++;
+        if (*data != 0xFFFF) {
+            if (part->effects[1] != NULL) {
+                entry = (EffectTrack *)part->effects[1];
+                if (entry->kind == 0xFF) {
+                    goto skipTranslation;
+                }
+            } else {
+                entry = (EffectTrack *)func_800A2330(pool);
+            }
+            if (!(flags & 2) && i != 0 && translations < translationCount) {
+                part->translation[0] = *values++;
+                part->translation[1] = *values++;
+                part->translation[2] = *values++;
+                translations++;
+                part->flag4 = 1;
+            }
+            if (entry != NULL) {
+                entry->used = 1;
+                entry->field1 = mode;
+                entry->field2 = types[1];
+                entry->kind = tag;
+                entry->cursor = entry->start = tracks + *data;
+                entry->field10 = 0;
+                entry->field12 = duration;
+                part->effects[1] = (EffectEntry *)entry;
+            }
+        } else {
+        skipTranslation:
+            if (!(flags & 2) && i != 0 && translations < translationCount) {
+                values += 3;
+                translations++;
+            }
+        }
+        data += 2;
+        part++;
+    }
+    return 0;
+}
 
 /* Release every part's attached effects that are not persistent. */
 void func_800A2ACC(EffectPool *pool, ModelPart *part) {
