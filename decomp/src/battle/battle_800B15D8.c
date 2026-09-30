@@ -983,29 +983,134 @@ void func_800BF4F0(SlotSprite *sprite, SlotSprite *target) {
     func_800BF0C4(sprite);
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BF5E8);
+/* Count a finished sprite motion. */
+void func_800BF5E8(void) {
+    D_800C3CE8++;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BF600);
+/* Run command with sprite playing its motion, then wait for the motion's end. */
+void func_800BF600(s32 command, SlotSprite *sprite) {
+    if (sprite->field48 == 0) {
+        func_800B7C34(command);
+        return;
+    }
+    D_800C3CE8 = 0;
+    if (sprite->motion.b.mode != 0) {
+        func_80021BF8(sprite, func_800BF5E8);
+        func_800245D8(sprite, sprite->motion.b.mode);
+    }
+    func_800B7C34(command);
+    if (sprite->motion.b.mode != 0) {
+        while (D_800C3CE8 == 0) {
+            func_800BE790();
+        }
+        func_80021BF8(sprite, NULL);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BF6CC);
+/* Update the battle menu when it is open. */
+void func_800BF6CC(void) {
+    if (D_800C3610 != NULL) {
+        func_800BD2E4();
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BF6F8);
+/* D_80059464 less one while a number popup shows. */
+s32 func_800BF6F8(void) {
+    return D_80059464 - func_800BF720();
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BF720);
+/* Whether a number popup shows. */
+s32 func_800BF720(void) {
+    return D_800D2D68 != 0;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BF730);
+/* Set D_800C3628. */
+void func_800BF730(s32 value) {
+    D_800C3628 = value;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BF73C);
+/* Watch a sprite's value; on a rise or a fall under the threshold call back
+ * and end. */
+void func_800BF73C(EffectSprite *task) {
+    SlotWatch *watch = (SlotWatch *)task;
+    s32 last = watch->value;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BF7C8);
+    watch->value = func_800B57E4(watch->sprite);
+    if (last < watch->value || watch->value < watch->threshold) {
+        watch->callback(watch->sprite);
+        watch->destroy(watch);
+    }
+}
 
+/* Start watching sprite's value against threshold with callback. */
+void func_800BF7C8(SlotSprite *sprite, s32 threshold, void (*callback)(SlotSprite *sprite)) {
+    SlotWatch *watch = func_8001CD08(sprite->task, sizeof(SlotWatch) - 0x1C);
+
+    func_8001CD6C((EffectSprite *)watch, func_800BF73C);
+    watch->callback = callback;
+    watch->sprite = sprite;
+    watch->mode = sprite->motion.b.mode;
+    watch->value = func_800B57E4(sprite);
+    watch->threshold = threshold;
+    sprite->motion.word |= 0x20;
+}
+
+#ifdef NON_MATCHING
+/* Make slot's sprite act on the sprite of slot target alone. Nonmatching:
+ * the original keeps the store of D_800D3634 before the sprite's, and
+ * allocates the registers otherwise. */
+void func_800BF85C(s32 slot, s32 target) {
+    SlotSprite *sprite = BATTLE_FRAME.slotSprites[slot];
+
+    if (sprite != NULL) {
+        D_800C3E1C = sprite;
+        D_800D3634 = 1 << target;
+        sprite->target = BATTLE_FRAME.slotSprites[target];
+        D_800D363C[1] = NULL;
+        D_800D363C[0] = BATTLE_FRAME.slotSprites[target];
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BF85C);
+#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BF8CC);
+/* Move sprite's target to the next of the event's targets. */
+void func_800BF8CC(SlotSprite *sprite) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BF954);
+    for (i = 0; i != D_800D3678; i++) {
+        if (D_800D363C[i] == sprite->target) {
+            break;
+        }
+    }
+    if (i >= D_800D3678) {
+        sprite->target = D_800D363C[0];
+    } else {
+        sprite->target = D_800D363C[i + 1];
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BF998);
+/* The index of sprite among the event's targets. */
+s32 func_800BF954(SlotSprite *sprite) {
+    s32 i;
+
+    for (i = 0; i != D_800D3678; i++) {
+        if (D_800D363C[i] == sprite) {
+            break;
+        }
+    }
+    return i;
+}
+
+/* Count an effect hit; at the second, signal event 11. */
+void func_800BF998(void) {
+    D_800D2D4C++;
+    D_800D36BC++;
+    if (D_800D2D4C == 2) {
+        func_800A9FF0(0xB);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BF9EC);
 

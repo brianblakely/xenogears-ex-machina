@@ -32,7 +32,9 @@ typedef struct SlotSprite {
     s32 x, y, z;                /* 16.16 */
     u8 padC[0x48 - 0xC];
     s32 field48;                /* 0x48 */
-    u8 pad4C[0x74 - 0x4C];
+    u8 pad4C[0x6C - 0x4C];
+    void *task;                 /* 0x6C: its resident task */
+    u8 pad70[0x74 - 0x70];
     struct SlotSprite *target;  /* 0x74 */
     u8 pad78[0x7C - 0x78];
     s32 *resource;              /* 0x7C: its file first */
@@ -46,6 +48,7 @@ typedef struct SlotSprite {
         u32 slotLow : 2;        /* the slot's low bits */
     } frameBits;                /* 0xA8 */
     union {
+        u32 word;               /* 0x20 while a value is watched */
         struct {
             u32 slotHigh : 2;   /* the slot's high bits */
             u32 pad : 30;
@@ -226,5 +229,30 @@ void func_800BF4F0(SlotSprite *sprite, SlotSprite *target);
 s32 func_800C07CC(GroundPoint from, GroundPoint to);
 s32 func_800C0FAC(void *file);
 void func_800C1140(void *file);
+
+/* Command motions, value watches and targets (800BF5E8-800BF998). */
+typedef struct SlotWatch {
+    u8 pad0[0xC];
+    void (*destroy)(struct SlotWatch *watch);  /* 0x0C */
+    u8 pad10[0x1C - 0x10];
+    SlotSprite *sprite;                        /* 0x1C */
+    s32 mode;                                  /* 0x20: the sprite's mode at the start */
+    s32 value;                                 /* 0x24: its last value */
+    s32 threshold;                             /* 0x28 */
+    void (*callback)(SlotSprite *sprite);      /* 0x2C */
+} SlotWatch;
+
+extern s32 D_800C3CE8;           /* finished sprite motions */
+extern s32 D_800C3628;
+extern SlotSprite *D_800C3E1C;   /* the acting sprite of a single action */
+extern s16 D_800D2D4C;           /* effect hits */
+extern u16 D_800D36BC;
+
+void *func_8001CD08(void *owner, s32 size); /* create a task */
+void func_80021BF8(SlotSprite *sprite, void (*callback)(void)); /* at the motion's end */
+s32 func_800B57E4(SlotSprite *sprite);
+void func_800B7C34(s32 command);
+void func_800BD2E4(void);
+s32 func_800BF720(void);
 
 #endif
