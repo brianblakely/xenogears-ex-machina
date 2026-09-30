@@ -63,6 +63,26 @@ typedef struct {
     s16 x, y, w, h;
 } RECT;
 
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    u8 u0, v0;
+    u16 clut;
+    s16 x1, y1;
+    u8 u1, v1;
+    u16 tpage;
+    s16 x2, y2;
+    u8 u2, v2;
+    u16 pad1;
+    s16 x3, y3;
+    u8 u3, v3;
+    u16 pad2;
+} POLY_FT4;
+
+extern u32 *D_800CCB04; /* current ordering table */
+extern s32 D_800CCB34;  /* draw buffer index */
+
 /* The battle message image (800d39b8): upload rectangle and pixels. */
 typedef struct {
     RECT rect;
@@ -76,6 +96,7 @@ extern void *D_800D39F0;   /* battle message table */
 extern u8 D_800D2CAF;      /* pending battle message id */
 extern s16 D_800D2C94;     /* committed target mask */
 extern s16 D_800C48E8;
+extern u16 D_800D2C9E;     /* party members whose timers are held */
 
 typedef struct {
     u8 unk0[5];
@@ -84,7 +105,38 @@ typedef struct {
 } BattleUnk3720;
 
 extern BattleUnk3720 D_800D3720[8];
-extern u8 D_800D3014;      /* decoded menu input code; 8 = none */
+extern u8 D_800D3014;
+
+/* Presentation event queue entry (0x48 bytes, 32 from 800c3fe8). */
+typedef struct {
+    u16 amounts[11];
+    u16 targets;       /* +0x16 */
+    u8 codes[11];      /* +0x18 */
+    u8 actor;          /* +0x23 */
+    u16 totals[11];    /* +0x24 */
+    u16 param;         /* +0x3A */
+    u8 totalCodes[11]; /* +0x3C */
+    u8 type;           /* +0x47 */
+} BattleEvent;
+
+extern BattleEvent D_800C3FE8[32];
+
+/* Action list entry (8 bytes, 32 from 800d2e5c). */
+typedef struct {
+    u8 type;
+    u8 arg1;
+    u8 animation;
+    u8 named;
+    u8 param;
+    u8 unk5;
+    u16 targets;
+} BattleAction;
+
+extern BattleAction D_800D2E5C[32];
+extern u16 D_800D39E0;     /* mask of slots that act together */
+extern u8 D_800D2DC0;      /* forced next turn: slot + 1 */
+extern u8 D_800D2DD7;      /* turn order cursor */
+extern u8 D_800D2DD8[11];  /* turn order */      /* decoded menu input code; 8 = none */
 
 extern u8 D_800C3D48;      /* the 801e5000 module is loaded */
 extern u8 D_800C48EA;      /* battle outcome */
@@ -99,6 +151,8 @@ extern u16 D_800D2E1C[11]; /* slow-status alternation */
 extern s32 *D_8005917C;
 
 /* Resident services. */
+void func_80043B48(u32 *ot, void *prim);
+void func_80043C24(void *prim, s32 abe);
 void *func_80033728(void *table, s32 index);
 s32 func_80034EAC(void *text, u32 *pixels, s32 width, s32 mode);
 void func_80044894(RECT *rect, u32 *pixels);
@@ -113,6 +167,9 @@ s32 func_80098AF8(s32 slot, s32 mode);
 void func_80079E18(s32);
 void func_80079E4C(s32);
 s32 func_800716D8(void);
+u16 func_80089C9C(u16 mask, u8 slot);
+void func_80085AC4(u8 slot);
+void func_80071B94(s32 mode);
 void func_800BE790(void);
 
 /* The 801e5000 module and the 80280000 module. */

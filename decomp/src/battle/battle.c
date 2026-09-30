@@ -40,7 +40,6 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80070F40);
 
 /* One battle frame: the 80280000 module's hook when present, then the task
  * runner. */
-#ifdef NON_MATCHING
 s32 func_800716D8(void) {
     if (*D_8005917C != -1) {
         func_8028022C();
@@ -48,9 +47,6 @@ s32 func_800716D8(void) {
     func_800BE790();
     return 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800716D8);
-#endif
 
 /* One ATB tick for every present slot that is not yet ready. */
 void func_8007171C(void) {
@@ -101,7 +97,6 @@ void func_8007171C(void) {
 }
 
 /* Reload the acting slot's turn timer and clear its ready flag. */
-#ifdef NON_MATCHING
 void func_800718BC(void) {
     u8 actor = D_800C3EAC->actor;
 
@@ -111,9 +106,6 @@ void func_800718BC(void) {
     D_800D2DF0[1][D_800C3EAC->actor] = func_80098AF8(D_800C3EAC->actor, 0);
     D_800D2DF0[0][D_800C3EAC->actor] = D_800D2DF0[1][D_800C3EAC->actor];
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800718BC);
-#endif
 
 /* Render the pending battle message into its image, upload it and hold it
  * for three frames. */
@@ -188,17 +180,130 @@ void func_80071AE0(void) {
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80071B94);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80072270);
+/* Party members held by the mask 800d2c9e lose their ready flag, restart
+ * their turn timer from its reload value and show the held marker. */
+void func_80072270(void) {
+    s32 member;
 
+    if (D_800D2C9E & 7) {
+        for (member = 0; member < 3; member++) {
+            if (func_80089C9C(D_800D2C9E, member)) {
+                D_800D2DE4[member] = 0;
+                D_800D2DF0[1][member] = D_800D2DF0[0][member];
+                D_800D2D28->reaction[member] = 1;
+            }
+        }
+    }
+    D_800D2C9E = 0;
+}
+
+/* Give every enemy in the act-together mask its turn: clear the event types,
+ * queue action 0x17 and run the turn procedure. The cleared 0x100-byte action
+ * buffer pointer is never initialised in the original. */
+#ifdef NON_MATCHING
+void func_80072324(void) {
+    s32 slot;
+    s32 i;
+    u8 *p;
+    u8 *actions;
+
+    for (slot = 3; slot < 11; slot++) {
+        if (func_80089C9C(D_800D39E0, slot)) {
+            p = actions;
+            do {
+                *p++ = 0;
+            } while (p < actions + 0x100);
+            for (i = 31; i >= 0; i--) {
+                D_800C3FE8[i].type = 0xFF;
+            }
+            D_800D2E5C[0].type = 4;
+            D_800D2E5C[0].param = 0x17;
+            func_80085AC4(slot);
+            func_80071B94(1);
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80072324);
+#endif
 
+/* Select the next slot to act: the forced slot, else the next ready slot in
+ * the turn order from the cursor; then run the turn procedure. With slots
+ * acting together, run their pass instead. */
+#ifdef NON_MATCHING
+void func_800723E0(void) {
+    s32 position;
+    u8 *cursor;
+    s32 slot;
+    u8 next;
+
+    if (D_800D39E0 == 0) {
+        if (D_800D2DC0 != 0) {
+            D_800C3EAC->actor = D_800D2DC0;
+            D_800D2DE4[D_800D2DC0 - 1] = 1;
+            slot = D_800D2DC0;
+            D_800D2DC0 = 0;
+            D_800D2DF0[1][slot - 1] = 0;
+        } else {
+            D_800C3EAC->actor = 0;
+            cursor = &D_800D2DD7;
+            position = *cursor;
+            do {
+                slot = D_800D2DD8[position];
+                if (D_800D2DE4[slot] == 1) {
+                    D_800C3EAC->actor = slot + 1;
+                    *cursor = next = position + 1;
+                    if (next == 11) {
+                        *cursor = 0;
+                    }
+                }
+                position++;
+                if (position == 11) {
+                    position = 0;
+                }
+            } while (position != *cursor);
+        }
+        func_80071B94(0);
+    } else {
+        func_80072324();
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800723E0);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007252C);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800728B8);
+/* Add every other primitive from `first` to the ordering table. */
+void func_800728B8(POLY_FT4 *prims, s32 count, s32 first) {
+    s32 i;
 
+    for (i = 0; i < count; i++) {
+        func_80043B48(D_800CCB04 + 1, &prims[first + i * 2]);
+    }
+}
+
+/* Tint the current buffer's primitives from `first` to `last`: yellow for
+ * mode 1, red otherwise. */
+#ifdef NON_MATCHING
+void func_80072938(POLY_FT4 *prims, s32 first, s32 last, u8 mode) {
+    s32 i;
+
+    for (i = first; i < last; i++) {
+        func_80043C24(&prims[i * 2 + D_800CCB34], 0);
+        if (mode != 1) {
+            prims[i * 2 + D_800CCB34].r0 = 0x80;
+            prims[i * 2 + D_800CCB34].g0 = 0;
+        } else {
+            prims[i * 2 + D_800CCB34].r0 = 0x80;
+            prims[i * 2 + D_800CCB34].g0 = 0x80;
+        }
+        prims[i * 2 + D_800CCB34].b0 = 0;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80072938);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80072A9C);
 
