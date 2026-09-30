@@ -61,6 +61,7 @@ typedef struct {
 /* libgte / libgpu (resident). */
 s32 VSync(s32 mode);
 void func_800379C8(const char *format, ...); /* debug text print */
+void func_80036DC8(s32 r, s32 g, s32 b);     /* debug text colour */
 void PushMatrix(void);
 void PopMatrix(void);
 void SetRotMatrix(MATRIX *m);
@@ -78,6 +79,8 @@ extern s32 D_800C268C;
 extern u32 *D_800C426C;  /* field ordering tables */
 extern s32 D_800ADB08;   /* current draw buffer */
 extern MATRIX D_800AFA64;
+extern u16 D_800AFEA0;   /* buttons held (shoulder bits) */
+extern u16 D_800C3908;   /* buttons pressed or repeating */
 
 /* Tool statics. */
 extern s32 D_8028597C;

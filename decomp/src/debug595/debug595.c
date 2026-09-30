@@ -234,27 +234,145 @@ INCLUDE_ASM(".local/decomp/debug595/asm/nonmatchings/debug595", func_80281B90);
 
 INCLUDE_ASM(".local/decomp/debug595/asm/nonmatchings/debug595", func_802835E0);
 
-INCLUDE_ASM(".local/decomp/debug595/asm/nonmatchings/debug595", func_80284354);
+/* Print the cursor mark for `row` when it is the selected row and `blink` is 1. */
+void func_80284354(s32 row, s32 cursor, s32 blink) {
+    if (cursor == row && blink == 1) {
+        func_800379C8(">");
+    } else {
+        func_800379C8(" ");
+    }
+}
 
-INCLUDE_ASM(".local/decomp/debug595/asm/nonmatchings/debug595", func_8028439C);
+/* Start menu row `row`: highlight it and mark it with the cursor when selected;
+ * returns the next row. */
+s32 func_8028439C(s32 row, s32 cursor, s32 *selected) {
+    if (cursor == row) {
+        func_80036DC8(0, 0xFF, 0xFF);
+        func_800379C8(">");
+        *selected = 1;
+    } else {
+        func_80036DC8(0x40, 0x40, 0x40);
+        func_800379C8(" ");
+        *selected = 0;
+    }
+    return ++row;
+}
 
-INCLUDE_ASM(".local/decomp/debug595/asm/nonmatchings/debug595", func_80284424);
+/* Step `value` down (Left) or up (Right) within [min, max]; the shoulder
+ * buttons pick steps of 10, 100 or 1000. */
+s32 func_80284424(s32 value, s32 min, s32 max) {
+    s32 step;
 
-INCLUDE_ASM(".local/decomp/debug595/asm/nonmatchings/debug595", func_802844BC);
+    step = 1;
+    if (D_800AFEA0 & 4) {
+        step = 10;
+    }
+    if (D_800AFEA0 & 1) {
+        step = 100;
+    }
+    if (D_800AFEA0 & 2) {
+        step = 1000;
+    }
+    if (D_800C3908 & 0x80) {
+        value -= step;
+        if (value < min) {
+            value = min;
+        }
+    }
+    if (D_800C3908 & 0x20) {
+        value += step;
+        if (max < value) {
+            value = max;
+        }
+    }
+    return value;
+}
 
-INCLUDE_ASM(".local/decomp/debug595/asm/nonmatchings/debug595", func_80284510);
+/* Set component `axis` of a short vector. */
+void func_802844BC(SVECTOR *v, s32 axis, s16 value) {
+    switch (axis) {
+    case 0:
+        v->vx = value;
+        break;
+    case 1:
+        v->vy = value;
+        break;
+    case 2:
+        v->vz = value;
+        break;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/debug595/asm/nonmatchings/debug595", func_8028456C);
+/* Component `axis` of a short vector, 0 for another axis. */
+s32 func_80284510(SVECTOR *v, s32 axis) {
+    switch (axis) {
+    case 0:
+        return v->vx;
+    case 1:
+        return v->vy;
+    case 2:
+        return v->vz;
+    }
+    return 0;
+}
 
-INCLUDE_ASM(".local/decomp/debug595/asm/nonmatchings/debug595", func_802845C0);
+/* Set channel `channel` of an unsigned colour triple. */
+void func_8028456C(u8 *color, s32 channel, u8 value) {
+    switch (channel) {
+    case 0:
+        color[0] = value;
+        break;
+    case 1:
+        color[1] = value;
+        break;
+    case 2:
+        color[2] = value;
+        break;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/debug595/asm/nonmatchings/debug595", func_8028461C);
+/* Channel `channel` of an unsigned colour triple, 0 for another channel. */
+s32 func_802845C0(u8 *color, s32 channel) {
+    switch (channel) {
+    case 0:
+        return color[0];
+    case 1:
+        return color[1];
+    case 2:
+        return color[2];
+    }
+    return 0;
+}
 
-INCLUDE_ASM(".local/decomp/debug595/asm/nonmatchings/debug595", func_80284670);
+/* Set component `axis` of a signed byte triple. */
+void func_8028461C(s8 *v, s32 axis, s8 value) {
+    switch (axis) {
+    case 0:
+        v[0] = value;
+        break;
+    case 1:
+        v[1] = value;
+        break;
+    case 2:
+        v[2] = value;
+        break;
+    }
+}
 
-INCLUDE_RODATA(".local/decomp/debug595/asm/nonmatchings/debug595", D_80280948);
+/* Component `axis` of a signed byte triple, 0 for another axis. */
+s32 func_80284670(s8 *v, s32 axis) {
+    switch (axis) {
+    case 0:
+        return v[0];
+    case 1:
+        return v[1];
+    case 2:
+        return v[2];
+    }
+    return 0;
+}
 
-INCLUDE_RODATA(".local/decomp/debug595/asm/nonmatchings/debug595", D_8028094C);
+
 
 INCLUDE_ASM(".local/decomp/debug595/asm/nonmatchings/debug595", func_802846CC);
 
