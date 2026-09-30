@@ -106,17 +106,68 @@ typedef struct {
                      : "r"(r0) \
                      : "$12", "memory")
 
-/* The effect a spark belongs to; its colour tints every primitive. */
+/* A spark emitter: a pool of sparks of one shape, their placement rule and
+ * colour. Spark records start with their position; pos.pad is cleared when
+ * a spark is (re)started. */
+typedef struct Emitter Emitter;
+
 typedef struct {
-    u8 unk0[0x1C];
-    SVector origin; /* 0x1C: where sparks are emitted */
-    SVector range;  /* 0x24: random spread per axis */
-    SVector offset; /* 0x2C: subtracted from the random spread */
-    u8 unk34[0x40];
-    u8 r;
+    void (*setup)(void *spark, Emitter *emitter);
+    void (*reset)(void *spark);
+    void (*draw)(void *spark, u32 *ot);
+    s32 size;
+} SparkShape;
+
+struct Emitter {
+    s16 unk0;
+    s16 unk2;
+    s16 unk4;
+    s16 unk6;
+    s16 unk8;
+    s16 count;              /* 0x0A: sparks in the pool */
+    s16 size;               /* 0x0C: bytes per spark */
+    s16 unkE;
+    u8 *sparks;             /* 0x10 */
+    s16 unk14;
+    s16 unk16;
+    s16 unk18;
+    s16 unk1A;
+    SVector origin;         /* 0x1C: where sparks are emitted */
+    SVector range;          /* 0x24: random spread per axis */
+    SVector offset;         /* 0x2C: subtracted from the random spread */
+    s16 unk34;
+    s16 unk36;
+    s16 unk38;
+    s16 unk3A;
+    s16 unk3C;
+    s16 unk3E;
+    s16 unk40;
+    s16 unk42;
+    s16 unk44;
+    s16 unk46;
+    s16 unk48;
+    s16 unk4A;
+    s16 unk4C;
+    s16 placement;          /* 0x4E: index into the placement rules */
+    void (*reset)(void *spark);          /* 0x50 */
+    void (*draw)(void *spark, u32 *ot);  /* 0x54 */
+    void (*setup)(void *spark, Emitter *emitter); /* 0x58 */
+    void (*place)(Emitter *emitter, SVector *pos); /* 0x5C */
+    void (*update)(Emitter *emitter);    /* 0x60 */
+    s16 unk64;
+    s16 shape;              /* 0x66: index into the spark shapes */
+    s16 unk68;
+    s16 unk6A;
+    u8 unk6C[0x8];
+    u8 r;                   /* 0x74 */
     u8 g;
     u8 b;
-} SparkSource;
+    u8 unk77[0x5];
+};
+
+extern SparkShape D_80091C74[];
+extern void (*D_80091CC4[])(Emitter *emitter, SVector *pos);
+extern void (*D_80091CDC)(Emitter *emitter);
 
 /* Sparks drawn as a line through their last positions, with one primitive
  * per draw buffer. */
@@ -158,6 +209,9 @@ extern SVector *D_8009282C;   /* scratch vectors for GTE loads */
 extern SVector *D_80092830;   /* view origin subtracted before projection */
 
 s32 func_8003FA38(void); /* rand */
+void func_800324B8(s32 tag);                 /* heap allocation tag */
+void *func_80031BDC(s32 size, s32 arg);      /* heap allocation */
+void func_80032C18(void *block, s32 arg);    /* heap release */
 void func_800495DC(SVector *v, Vector *out); /* rotate by the current GTE matrix */
 s32 func_8004A64C(SVector *v, s32 *sxy, s32 *p, s32 *flag);
 s32 func_8004A67C(SVector *v0, SVector *v1, s32 *v2, s32 *sxy0, s32 *sxy1, s32 *sxy2, s32 *p,

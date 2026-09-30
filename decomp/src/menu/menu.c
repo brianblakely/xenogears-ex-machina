@@ -1510,7 +1510,7 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008C7C0);
 
 /* Set up a four-point spark line: semi-transparent, in the source colour,
  * the same in both draw buffers. */
-void func_8008C828(SparkLine4 *spark, SparkSource *source) {
+void func_8008C828(SparkLine4 *spark, Emitter *source) {
     LineF4 *line = &spark->line[0];
 
     setlen(line, 6), setcode(line, 0x4C), line->pad = 0x55555555;
@@ -1542,7 +1542,7 @@ void func_8008C9B8(SparkLine3 *spark) {
 }
 
 /* Set up a three-point spark line. */
-void func_8008CA00(SparkLine3 *spark, SparkSource *source) {
+void func_8008CA00(SparkLine3 *spark, Emitter *source) {
     LineF3 *line = &spark->line[0];
 
     setlen(line, 5), setcode(line, 0x48), line->pad = 0x55555555;
@@ -1584,7 +1584,7 @@ void func_8008CC2C(SparkLine2 *spark) {
 }
 
 /* Set up a two-point spark line. */
-void func_8008CC54(SparkLine2 *spark, SparkSource *source) {
+void func_8008CC54(SparkLine2 *spark, Emitter *source) {
     LineF2 *line = &spark->line[0];
 
     setlen(line, 3), setcode(line, 0x40);
@@ -1609,7 +1609,7 @@ void func_8008CD54(void) {
 }
 
 /* Set up a spark drawn as a small semi-transparent tile of random size. */
-void func_8008CD5C(SparkTile *spark, SparkSource *source) {
+void func_8008CD5C(SparkTile *spark, Emitter *source) {
     Tile *tile = &spark->tile[0];
 
     setlen(tile, 3), setcode(tile, 0x62);
@@ -1641,7 +1641,7 @@ void func_8008CED4(void) {
 }
 
 /* Set up a spark drawn as a single semi-transparent dot. */
-void func_8008CEDC(SparkDot *spark, SparkSource *source) {
+void func_8008CEDC(SparkDot *spark, Emitter *source) {
     Tile1 *dot = &spark->dot[0];
 
     setlen(dot, 2), setcode(dot, 0x6A);
@@ -1658,13 +1658,13 @@ void func_8008CF30(SparkDot *spark, u32 *ot) {
 }
 
 /* Place a spark at its source's origin. */
-void func_8008CF9C(SparkSource *source, SVector *pos) {
+void func_8008CF9C(Emitter *source, SVector *pos) {
     *pos = source->origin;
 }
 
 /* Place a spark at a random point of its source's box, rotated with the
  * source. */
-void func_8008CFC4(SparkSource *source, SVector *pos) {
+void func_8008CFC4(Emitter *source, SVector *pos) {
     SVector v;
     Vector r;
 
@@ -1678,7 +1678,7 @@ void func_8008CFC4(SparkSource *source, SVector *pos) {
 }
 
 /* Place a spark at a random point of its source's box. */
-void func_8008D0A4(SparkSource *source, SVector *pos) {
+void func_8008D0A4(Emitter *source, SVector *pos) {
     pos->vx = source->origin.vx + func_8003FA38() % source->range.vx - source->offset.vx;
     pos->vy = source->origin.vy + func_8003FA38() % source->range.vy - source->offset.vy;
     pos->vz = source->origin.vz + func_8003FA38() % source->range.vz - source->offset.vz;
@@ -1686,7 +1686,7 @@ void func_8008D0A4(SparkSource *source, SVector *pos) {
 
 /* Place a spark at a random point of its source's horizontal rectangle,
  * rotated with the source. */
-void func_8008D14C(SparkSource *source, SVector *pos) {
+void func_8008D14C(Emitter *source, SVector *pos) {
     SVector v;
     Vector r;
 
@@ -1701,7 +1701,7 @@ void func_8008D14C(SparkSource *source, SVector *pos) {
 
 /* Place a spark at a random point of its source's horizontal ellipse,
  * rotated with the source. */
-void func_8008D208(SparkSource *source, SVector *pos) {
+void func_8008D208(Emitter *source, SVector *pos) {
     SVector v;
     Vector r;
     s32 angle = func_8003FA38();
@@ -1718,7 +1718,7 @@ void func_8008D208(SparkSource *source, SVector *pos) {
 
 /* Place a spark on its source's ring at a random height, rotated with the
  * source. The ring angle is never initialised in the original. */
-void func_8008D304(SparkSource *source, SVector *pos) {
+void func_8008D304(Emitter *source, SVector *pos) {
     SVector v;
     Vector r;
     s32 angle;
@@ -1732,11 +1732,98 @@ void func_8008D304(SparkSource *source, SVector *pos) {
     pos->vz = source->origin.vz + r.vz;
 }
 
+#ifdef NON_MATCHING
+/* Create an emitter of the given spark shape and placement rule: unit
+ * spread centred on the origin, white, no sparks yet.
+ * Does not match: the placement-rule store is scheduled after the
+ * update-rule load. */
+Emitter *func_8008D3F4(s32 shape, s32 placement) {
+    Emitter *emitter;
+    SparkShape *kind;
+
+    func_800324B8(0x15);
+    emitter = func_80031BDC(0x7C, 0);
+    emitter->range.vx = 0x1000;
+    emitter->range.vy = 0x1000;
+    emitter->range.vz = 0x1000;
+    emitter->unk44 = 1;
+    emitter->placement = placement;
+    emitter->unk2 = 0;
+    emitter->unk4 = 0;
+    emitter->unk6 = 0;
+    emitter->unk14 = 0;
+    emitter->unk16 = 0;
+    emitter->unk18 = 0;
+    emitter->unk34 = 0;
+    emitter->unk36 = 0;
+    emitter->unk38 = 0;
+    emitter->unk3C = 0;
+    emitter->unk3E = 0;
+    emitter->unk40 = 0;
+    emitter->unk0 = 0;
+    emitter->unk46 = 0;
+    emitter->unk48 = 0x100;
+    emitter->unk4A = 0x100;
+    emitter->offset.vx = emitter->range.vx / 2;
+    emitter->offset.vy = emitter->range.vy / 2;
+    emitter->offset.vz = emitter->range.vz / 2;
+    emitter->place = D_80091CC4[(s16)placement];
+    emitter->update = D_80091CDC;
+    emitter->sparks = NULL;
+    emitter->shape = shape;
+    emitter->unk64 = 0;
+    emitter->unk6A = 100;
+    emitter->r = 0xFF;
+    emitter->g = 0xFF;
+    emitter->b = 0xFF;
+    emitter->unk68 = 0;
+    kind = &D_80091C74[emitter->shape];
+    emitter->size = kind->size;
+    emitter->reset = kind->reset;
+    emitter->draw = kind->draw;
+    emitter->setup = kind->setup;
+    return emitter;
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008D3F4);
+#endif
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008D580);
+/* Mark every spark of an emitter for restart. */
+void func_8008D580(Emitter *emitter) {
+    u8 *spark = emitter->sparks;
+    s32 i;
 
+    for (i = 0; i < emitter->count; i++) {
+        ((SVector *)spark)->pad = 0;
+        spark += emitter->size;
+    }
+}
+
+#ifdef NON_MATCHING
+/* (Re)allocate an emitter's pool for count sparks and set each one up.
+ * Does not match: the emitter and loop counter swap $s1/$s2. */
+void func_8008D5C0(Emitter *emitter, s32 count) {
+    u8 *spark;
+    void (*setup)(void *, Emitter *);
+    s32 i;
+
+    if (emitter->sparks != NULL) {
+        func_80032C18(emitter->sparks, 3);
+    }
+    emitter->count = count;
+    func_800324B8(0x14);
+    spark = func_80031BDC(emitter->size * emitter->count, 0);
+    emitter->sparks = spark;
+    setup = emitter->setup;
+    for (i = 0; i < emitter->count; i++) {
+        setup(spark, emitter);
+        ((SVector *)spark)->pad = 0;
+        spark += emitter->size;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008D5C0);
+#endif
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008D680);
 
