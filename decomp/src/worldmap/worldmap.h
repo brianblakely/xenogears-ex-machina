@@ -628,12 +628,8 @@ typedef struct {
     SVECTOR angle;    /* 0xA8 */
 } ActorScratch;
 
-typedef struct {
-    s32 words[8];
-} LoaderState;
-
-extern LoaderState D_8009A180; /* initial terrain loader state */
-extern LoaderState D_8009D534;
+extern MATRIX D_8009A180; /* identity matrix */
+extern MATRIX D_8009D534;
 extern s32 D_8009C618;
 
 s32 func_80093A5C(s32 x, s32 z);  /* terrain height */
@@ -762,12 +758,23 @@ s32 func_8007E450(), func_8007E4E4(), func_8007ECA4(), func_8007EE34();
 s32 func_8007F8AC(), func_8007F968(), func_8007FC8C(), func_8007FD30();
 s32 func_80078948(), func_80078950();
 
-extern LoaderState D_8009BE4C; /* terrain loader state */
+extern MATRIX D_8009BE4C;
 extern void (*D_8009CD40)(void);
 extern u16 D_8005957C; /* debug switches */
 extern void *D_8006258C;
 extern s32 D_8009D804;
 extern SVECTOR D_8009A5B4[]; /* start position per entry */
 extern SVECTOR D_8009A488; /* exhaust effect angle */
+
+/* Scratchpad work area of the scaled scene objects. */
+typedef struct {
+    VECTOR scale[2];
+    u8 pad20[0xD0];
+    MATRIX matrix[2]; /* 0xF0 */
+} ScaleScratch;
+
+#define SCALE_SCRATCH ((ScaleScratch *)0x1F800000)
+
+MATRIX *ScaleMatrix(MATRIX *m, VECTOR *v);
 
 #endif

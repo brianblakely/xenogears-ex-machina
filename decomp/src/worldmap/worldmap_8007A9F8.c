@@ -22,11 +22,101 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007A9F8", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007A9F8", func_8007ADD4);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007A9F8", func_8007B200);
+/* Rebuild scene objects 4-5 and show objects 6-7 at zero scale. */
+s32 func_8007B200(s32 index) {
+    WorldmapActor *actor;
+    SceneObject *object;
+    ScaleScratch *scratch;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007A9F8", func_8007B394);
+    scratch = SCALE_SCRATCH;
+    i = 0;
+    actor = &D_8009BE24[index];
+    object = &D_8009C620[4];
+    do {
+        func_8007A06C(object, object->prims, object->def->count);
+        object++;
+        i++;
+    } while (i < 2);
+    actor->unk54 = 0;
+    actor->u.step = 0;
+    scratch->matrix[0] = D_8009A180;
+    scratch->scale[0].vx = scratch->scale[0].vz = actor->u.step;
+    scratch->scale[0].vy = 0x1000;
+    ScaleMatrix(&scratch->matrix[0], &scratch->scale[0]);
+    object[0].matrix = scratch->matrix[0];
+    object[1].matrix = scratch->matrix[0];
+    object[1].visible = 1;
+    object[0].visible = 1;
+    return 3;
+}
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007A9F8", func_8007B604);
+/* Grow scene objects 4 and 5 at the player: widen their scale each frame up to 0x7F00. */
+s32 func_8007B394(s32 index) {
+    WorldmapActor *actor;
+    SceneObject *objects;
+    s32 x;
+
+    actor = &D_8009BE24[index];
+    objects = D_8009C620;
+    if (actor->unk4 != 0) {
+        actor->unk4 = 0;
+        objects[5].visible = 0;
+        objects[4].visible = 0;
+    }
+    x = D_8009C5AC.vx >> 12;
+    objects[4].position.vy = objects[5].position.vy = -0x40;
+    objects[4].position.vx = objects[5].position.vx = x;
+    objects[4].position.vz = objects[5].position.vz = D_8009C5AC.vz >> 12;
+    if ((actor->u.step += 0x180) > 0x800) {
+        actor->unk54 += 0x180;
+    }
+    if (actor->u.step > 0x7F00) {
+        actor->u.step = 0x7F00;
+    }
+    if (actor->unk54 > 0x7F00) {
+        actor->unk54 = 0x7F00;
+    }
+    SCALE_SCRATCH->matrix[0] = D_8009A180;
+    SCALE_SCRATCH->matrix[1] = SCALE_SCRATCH->matrix[0];
+    SCALE_SCRATCH->scale[0].vx = SCALE_SCRATCH->scale[0].vz = actor->u.step;
+    SCALE_SCRATCH->scale[1].vx = SCALE_SCRATCH->scale[1].vz = actor->unk54;
+    SCALE_SCRATCH->scale[0].vy = SCALE_SCRATCH->scale[1].vy = 0x1000;
+    ScaleMatrix(&SCALE_SCRATCH->matrix[0], &SCALE_SCRATCH->scale[0]);
+    ScaleMatrix(&SCALE_SCRATCH->matrix[1], &SCALE_SCRATCH->scale[1]);
+    objects[4].matrix = SCALE_SCRATCH->matrix[0];
+    objects[5].matrix = SCALE_SCRATCH->matrix[1];
+    return 1;
+}
+
+/* Rebuild scene objects 6-7 and show objects 8-9 at zero scale. */
+s32 func_8007B604(s32 index) {
+    WorldmapActor *actor;
+    SceneObject *object;
+    ScaleScratch *scratch;
+    s32 i;
+
+    scratch = SCALE_SCRATCH;
+    i = 0;
+    actor = &D_8009BE24[index];
+    object = &D_8009C620[6];
+    do {
+        func_8007A06C(object, object->prims, object->def->count);
+        object++;
+        i++;
+    } while (i < 2);
+    actor->unk54 = 0;
+    actor->u.step = 0;
+    scratch->matrix[0] = D_8009A180;
+    scratch->scale[0].vx = scratch->scale[0].vz = actor->u.step;
+    scratch->scale[0].vy = 0x1000;
+    ScaleMatrix(&scratch->matrix[0], &scratch->scale[0]);
+    object[0].matrix = scratch->matrix[0];
+    object[1].matrix = scratch->matrix[0];
+    object[1].visible = 1;
+    object[0].visible = 1;
+    return 3;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007A9F8", func_8007B798);
 
