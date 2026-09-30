@@ -91,7 +91,8 @@ typedef struct {
     Vector a_prev;     /* 0x10 */
     Vector b;          /* 0x20 */
     Vector b_prev;     /* 0x30 */
-    u8 unk40[3];
+    s16 effect;        /* 0x40: hit effect */
+    u8 unk42;
     u8 unk43;
     u32 unk44_0 : 1;
     u32 flip : 1;
@@ -282,7 +283,7 @@ typedef struct Actor {
     u8 kind;             /* 0x90A: bits 0-2 */
     u8 unk90B;
     s16 unk90C;          /* 0x90C: heading held during a move */
-    u8 unk90E;
+    u8 hold_anim;        /* 0x90E: move held by a kind-2 animation */
     u8 unk90F;
     u8 unk910;
     u8 move_count;       /* 0x911: special moves the opponent may pick */
@@ -291,7 +292,8 @@ typedef struct Actor {
     s16 unk914;
     s16 unk916;
     u8 glow;             /* 0x918: light level, fades by 0x18 a frame */
-    u8 unk919[0x13];
+    u8 unk919[0x3];
+    Vector hit_point;    /* 0x91C: where the last hit landed */
     Vector unk92C;       /* 0x92C: a second anchor point; with home, spans the actor */
     Vector home;         /* 0x93C */
     Vector core;         /* 0x94C: where shots home in */
@@ -303,7 +305,7 @@ typedef struct Actor {
     u8 unk984[0x14];
     s16 unk998;
     s16 unk99A;
-    u8 unk99C[0x2];
+    s16 anim_speed;      /* 0x99C: frames per animation step */
     s16 unk99E;
     u8 inputs[32];       /* 0x9A0: queued pad inputs (ring) */
     u8 input_head;
@@ -541,6 +543,19 @@ void func_80087AB0(Actor *actor);
 void func_80078ED4(s16 *params);
 extern u8 D_8009264C[4]; /* default combo state */
 extern char D_8006FC74[]; /* "" */
+/* Bout captions (shared with other functions, so kept as their own rodata). */
+extern char D_8006FC3C[]; /* "DRAW GAME" */
+extern char D_8006FC48[]; /* "KNOCK OUT!!" */
+extern char D_8006FC54[]; /* "00" */
+extern char D_8006FC58[]; /* "11" */
+extern char D_8006FC5C[]; /* " ctrl\n" */
+extern char D_8006FC64[]; /* "FIGHT!!" */
+extern char D_8006FC6C[]; /* "START" */
+extern char D_8006FC78[]; /* "RUBBER BAND MODE" */
+extern char D_8006FC8C[]; /* "READY" */
+extern char D_8006FC94[]; /* "RUBBER BAND BATTLE" */
+extern char D_8006FCA8[]; /* "PRACTICE" */
+extern char D_8006FCB4[]; /* "ROUND %d" */
 s32 func_80077584(Actor *actor, s32 angle, s32 shift, s32 lift);
 void func_8007E894(s32 x, s32 y);
 void func_80074678(Actor *actor, s16 frame, s16 count);
@@ -558,6 +573,12 @@ void func_8007191C(s32 scene);
 void func_80071DA4(Actor *actor);
 void func_8007E24C(void);
 s32 func_80082488(Vector *position, s32 arg);
+/* Per animation: how it ends (0 stop, 1 chain, 2 hold, 3 loop) and the next one. */
+typedef struct {
+    u8 kind;
+    s8 next;
+} AnimRule;
+extern AnimRule D_80091130[];
 void func_80082458(SVector *out);
 void func_8002DB84(SVector *a, SVector *b, SVector *c, SVector *normal); /* plane normal of a triangle */
 void func_800828F8(Vector *position, Vector *step, s32 limit);

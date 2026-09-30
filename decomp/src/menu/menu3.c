@@ -573,7 +573,127 @@ void func_80074AB4(Actor *actor) {
     }
 }
 
+/* Step an actor's animation player by the elapsed animation steps and
+ * record the frame; stepped/done go to the pose record. */
+#define ANIM_ADVANCE(actor, player, steps)                                     \
+    stepped = (steps);                                                         \
+    actor->flags = (actor->flags & ~0x800) |                                   \
+                   ((func_8008B730(player, steps, actor->anim_speed) & 1) << 11); \
+    speed = actor->anim_speed
+
+#ifdef NON_MATCHING
+/* Record an actor's pose for this frame and run its animation: a new move
+ * (or a forced restart) resets the player, speed and parts; then advance
+ * by the accumulated speed and apply the move's end rule (stop, chain to
+ * the next move, hold, or loop).
+ * Does not match: the original keeps the step count in a saved register ($s1, one more saved register and a larger frame), which shifts the register choice throughout. */
+void func_80074BA4(Actor *actor) {
+    s32 steps;
+    Pose *pose = actor->pose;
+    AnimRule *rule;
+    Player *player;
+    s32 speed = 0;
+    s32 stepped = 0;
+    s32 i;
+
+    pose->flags = (pose->flags & 0xF000) | (actor->angle & 0xFFF);
+    pose->x = actor->pos.vx;
+    pose->y = actor->pos.vy;
+    pose->z = actor->pos.vz;
+    ((Move *)pose)->anim = actor->anim;
+    rule = &D_80091130[actor->anim];
+    player = &((ModelSet *)actor->node->data)->players[actor->anim];
+    pose->flags &= ~0x1000;
+    if (actor->anim != actor->unk4E || (actor->flags & 0x10000000)) {
+        rule = &D_80091130[actor->anim];
+        actor->unk4E = actor->anim;
+        actor->flags = (actor->flags | 0x1000) & ~0x800;
+        if (!(actor->flags & 0x10000000)) {
+            actor->anim_speed = ((u8 *)actor->unk7C)[actor->anim * 2];
+        }
+        if (actor->flags & 0x2000000) {
+            actor->anim_speed = 1;
+            actor->flags &= ~0x2000000;
+        }
+        actor->unk4F = ((u8 *)actor->unk7C)[actor->anim * 2 + 1] * actor->unk15F2 / 256;
+        func_80074998(actor);
+        player = &((ModelSet *)actor->node->data)->players[actor->anim];
+        func_8008B0D8(player);
+        actor->unk99E = 0;
+        actor->event_frame = -1;
+        actor->flags &= ~0x10000000;
+        pose->flags |= 0x1000;
+        if (rule->kind == 2) {
+            actor->hold_anim = actor->anim;
+        } else {
+            actor->hold_anim = 0;
+        }
+    }
+    {
+        s16 before = actor->unk99E;
+
+        actor->unk99E += actor->unk4F + actor->unk52;
+        steps = (actor->unk99E >> 4) - (before >> 4);
+    }
+    actor->unk99A = steps;
+    actor->unk998 = player->frame;
+    for (i = 0; i < steps; i++) {
+        if (actor->anim_speed != 1) {
+            if (--actor->anim_speed <= 0) {
+                actor->anim_speed = 1;
+            }
+        }
+    }
+    switch (rule->kind) {
+    case 0:
+        if (!(actor->flags & 0x800)) {
+            ANIM_ADVANCE(actor, player, steps);
+            if (actor->flags & 0x800) {
+                if (rule->next == -1) {
+                    actor->flags &= ~0x1000;
+                } else {
+                    actor->anim = rule->next;
+                }
+            }
+        }
+        break;
+    case 1:
+        stepped = steps;
+        actor->flags &= ~0x1000;
+        ANIM_ADVANCE(actor, player, steps);
+        if (actor->flags & 0x800) {
+            actor->flags |= 0x10000000;
+            if (rule->next != -1) {
+                actor->anim = rule->next;
+            }
+        }
+        break;
+    case 2:
+        actor->flags &= ~0x1000;
+        if (!(actor->flags & 0x800)) {
+            ANIM_ADVANCE(actor, player, steps);
+        }
+        if (actor->flags & 0x400) {
+            if (rule->next == -1) {
+                actor->flags &= ~0x1000;
+            } else {
+                actor->anim = rule->next;
+            }
+            actor->flags &= ~0x400;
+        }
+        break;
+    case 3:
+        if (!(actor->flags & 0x800)) {
+            ANIM_ADVANCE(actor, player, steps);
+        }
+        break;
+    }
+    ((Move *)pose)->unk9 = stepped;
+    ((Move *)pose)->unkA = speed;
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80074BA4);
+#endif
 
 /* Record the outcome of a bout from the player's side: how it was lost,
  * or which limit the win stayed within and how the opponent ended. */
@@ -614,7 +734,113 @@ void func_80075060(s32 lost) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_800751C8);
+/* Referee of the bout: ring-out and knock-out checks, the end of the bout
+ * (draw or winner, with the debug controller dump), the start captions
+ * while the start countdown runs, and the distance and angle between the
+ * two actors. */
+void func_800751C8(Actor *first, Actor *second) {
+    char text[16];
+
+    D_8009294C++;
+    func_8007E894(0xA0, 0x64);
+    if (!func_8008F4F4(first, 0x60) || !func_8008F4F4(second, 0x60)) {
+        if (D_800928C4 != 0 && !func_8008F9B0(first) && !func_8008F9B0(second)) {
+            D_80091144 = 1;
+            D_80091145 = 0xA;
+            func_800720D4();
+        }
+    }
+    if (D_80092638 != 0) {
+        if (D_80092640++ >= 0x3D) {
+            func_80083C0C(D_80092890 == 2 ? 2 : 4);
+            func_80019964("gm");
+            func_80031BDC(1, 0);
+            func_80019964(" fin\n");
+        }
+        if (D_80092890 == 2) {
+            func_8007EC54(D_8006FC3C);
+        } else {
+            func_8007EC54(D_8006FC48);
+        }
+    } else if (first->flags & 0x800000) {
+        if (second->flags & 0x800000) {
+            D_80092638 = 1;
+            D_800928D4 = 0;
+            D_80092890 = 2;
+            D_80092918++;
+        } else {
+            D_80097010.unkF2++;
+            D_800928D4 = 0;
+            D_80092638 = 1;
+            D_80092890 = 1;
+            if (second->flags & 0x40) {
+                D_800928FC = 0;
+            } else {
+                D_800928FC = 1;
+            }
+            func_80075060(0);
+        }
+    } else if (second->flags & 0x800000) {
+        D_8009872C.unkF2++;
+        D_80092638 = 1;
+        D_800928D4 = 0;
+        D_80092890 = 0;
+        D_800928FC = 0;
+        func_80075060(1);
+        if ((second->flags & 0x40) && D_800928C8 != 3) {
+            func_80019964(D_8006FC54);
+            func_80031BDC(1, 2);
+            func_80019964(" fin\n");
+            func_80088BD4(second->model_id);
+            func_80019964(D_8006FC58);
+            func_80031BDC(1, 2);
+            func_80019964(D_8006FC5C);
+        }
+    }
+    if (D_8009263C != 0) {
+        if (D_8009263C < 0x1E) {
+            if (func_80083CD8() != 7 && D_800928C8 != 4) {
+                func_8007EC54(D_8006FC64);
+            }
+            D_800928D4 = 1;
+        } else if (D_8009263C < 0x3C) {
+            if (func_80083CD8() != 7) {
+                if (D_800928C8 == 4) {
+                    func_8007EC54(D_8006FC6C);
+                    if (D_80092884 != 0) {
+                        func_8007EC54(D_8006FC74);
+                        func_8007EC54(D_8006FC78);
+                    }
+                } else {
+                    func_8007EC54(D_8006FC8C);
+                    if (D_80092884 != 0) {
+                        func_8007EC54(D_8006FC74);
+                        func_8007EC54(D_8006FC94);
+                    }
+                }
+            }
+        } else if (func_80083CD8() != 7) {
+            if (D_800928C8 == 4) {
+                func_8007EC54(D_8006FCA8);
+                if (D_80092884 != 0) {
+                    func_8007EC54(D_8006FC74);
+                    func_8007EC54(D_8006FC78);
+                }
+            } else {
+                sprintf(text, D_8006FCB4, D_80092950);
+                func_8007EC54(text);
+                if (D_80092884 != 0) {
+                    func_8007EC54(D_8006FC74);
+                    func_8007EC54(D_8006FC94);
+                }
+            }
+        }
+        D_8009263C--;
+    }
+    D_80092850 = func_800887A4(&first->pos, &second->pos);
+    D_8009284C = func_80088838(&first->pos, &second->pos);
+    D_80092934 = ratan2(first->pos.vx - second->pos.vx, first->pos.vz - second->pos.vz);
+}
 
 /* The other actor's value 15EC scaled by amount / 32, less this actor's
  * value 15EE. */
@@ -731,7 +957,162 @@ s32 func_80075A4C(Vector *quad, s32 px, s32 pz, s32 radius) {
     return func_80075750(quad[1].vx, quad[1].vz, quad[3].vx, quad[3].vz, px, pz, radius) != 0;
 }
 
+/* Point of the body axis (home to upper anchor) at a height between them. */
+#define AXIS_POINT(out, home, top, y)                                           \
+    frac = (((y) - (home).vy) << 12) / ((top).vy - (home).vy);                  \
+    (out).vx = ((frac * ((top).vx - (home).vx)) >> 12) + (home).vx;             \
+    (out).vy = ((frac * ((top).vy - (home).vy)) >> 12) + (home).vy;             \
+    (out).vz = ((frac * ((top).vz - (home).vz)) >> 12) + (home).vz
+
+#ifdef NON_MATCHING
+/* Test the opponent's shots and trails against an actor's body axis; the
+ * first shot or trail that hits sets the hit point, effect, glow, damage and
+ * reaction. Returns 0.
+ * Does not match: draft; the register allocation differs (the original keeps the hit kind in $fp and the 1/3 constant in $s7) and it is 20 bytes shorter. */
+s32 func_80075B50(Actor *actor) {
+    Vector home;
+    Vector top;
+    Vector point;
+    Vector from;
+    Shot *shot;
+    Trail *trail;
+    s32 hits = 0;
+    s32 best = 0;
+    s32 kind = 0;
+    s32 damage;
+    s32 frac;
+    s32 hit;
+    s32 dt;
+    s32 dh;
+    s32 dm;
+    s32 i;
+
+    home = actor->home;
+    top = actor->unk92C;
+    for (i = 0; i < 8; i++) {
+        shot = &actor->opponent->shots[i];
+        if (!shot->active) {
+            continue;
+        }
+        hit = 0;
+        if (top.vy < shot->pos.vy && shot->pos.vy < home.vy) {
+            AXIS_POINT(point, home, top, shot->pos.vy);
+            hit = func_80075888(shot->prev.vx, shot->prev.vz, shot->pos.vx, shot->pos.vz, point.vx, point.vz,
+                                actor->header->unk13);
+        } else if (shot->dist < actor->header->unk13) {
+            dt = abs(top.vy - shot->prev.vy);
+            dh = abs(home.vy - shot->prev.vy);
+            dm = abs(shot->pos.vy - shot->prev.vy);
+            if (dt < dh) {
+                if (dt < dm) {
+                    point = top;
+                    hit = 1;
+                }
+            } else if (dh < dm) {
+                hit = 1;
+                point = home;
+            }
+        }
+        if (!hit) {
+            continue;
+        }
+        actor->glow = 0xFF;
+        actor->unkD4 |= 0x20;
+        damage = shot->unk3C;
+        if ((u32)(((ratan2(shot->velocity.vx, shot->velocity.vz) - actor->angle) & 0xFFF) - 0x601) < 0x3FF) {
+            damage *= 2;
+            kind = 3;
+            func_8008EBD0(actor, 0xC, &point, 1);
+        } else if (actor->flags & 4) {
+            func_8008EBD0(actor, 0xF, &point, 1);
+            damage /= 2;
+            actor->glow = 0x80;
+        } else {
+            func_8008EBD0(actor, 0xC, &point, 1);
+        }
+        actor->unkE8 += damage * 2 / 3;
+        actor->unk916 += damage * 2 / 3;
+        actor->hit_point = point;
+        if (damage != 0) {
+            hits++;
+        }
+        D_80092A24 = point;
+        best = damage;
+        D_80092648 = 0x10;
+        actor->unkC8 = damage / 3 + 0xC;
+        from = point;
+        shot->active = 0;
+        break;
+    }
+    for (i = 0; i < 16; i++) {
+        trail = &actor->opponent->trails[i];
+        if (trail->state != 1 || trail->unk44_0) {
+            continue;
+        }
+        hit = 0;
+        if (trail->flip) {
+            if (top.vy < trail->a.vy && trail->a.vy < home.vy) {
+                AXIS_POINT(point, home, top, trail->a.vy);
+                hit = func_80075888(trail->a_prev.vx, trail->a_prev.vz, trail->a.vx, trail->a.vz, point.vx,
+                                    point.vz, actor->header->unk13);
+            }
+        } else {
+            damage = (trail->a.vy + trail->a_prev.vy + trail->b.vy + trail->b_prev.vy) / 4;
+            if (top.vy < damage && damage < home.vy) {
+                AXIS_POINT(point, home, top, damage);
+                hit = func_80075A4C((Vector *)trail, point.vx, point.vz, actor->header->unk13);
+            }
+        }
+        if (!hit) {
+            continue;
+        }
+        actor->opponent->flags &= ~0x4000000;
+        point.vx = D_80092654;
+        point.vz = D_80092658;
+        if (actor->flags & 4) {
+            func_8008EBD0(actor, 0xF, &point, 1);
+            D_80092A24 = point;
+            D_80092648 = 4;
+            actor->glow = 0xC0;
+            damage = trail->unk47 >> 1;
+            actor->unkD4 |= 0x20;
+        } else {
+            func_8008EBD0(actor, trail->effect, &point, 1);
+            func_8007D190(&point, 0);
+            D_80092A24 = point;
+            D_80092648 = 0x10;
+            actor->glow = 0xFF;
+            actor->unkD4 &= ~0x20;
+            damage = trail->unk47;
+        }
+        actor->unkC8 = damage;
+        actor->unk916 += damage * 6 / 10;
+        actor->unkE8 += damage * 6 / 10;
+        actor->hit_point = point;
+        if (damage != 0) {
+            hits++;
+        }
+        if (best < damage) {
+            best = damage;
+            from = trail->a;
+            kind = trail->unk46;
+        }
+        func_80073CA4(actor->opponent);
+        break;
+    }
+    if (hits != 0) {
+        actor->unk100 = kind + 1;
+        actor->unk970 = best;
+        actor->hit_from = from;
+        actor->unk1668++;
+    } else {
+        actor->unk100 = 0;
+    }
+    return 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80075B50);
+#endif
 
 /* Queue a pad input for an actor (dropped when 32 are pending). */
 void func_8007639C(Actor *actor, u8 input) {
@@ -960,7 +1341,7 @@ void func_80077038(Actor *actor) {
         }
     }
     if (actor->flags & 0x800) {
-        switch (actor->unk90E) {
+        switch (actor->hold_anim) {
         case 9:
             if (actor->unkCA == 0) {
                 actor->flags |= 0x400;
