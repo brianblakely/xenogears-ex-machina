@@ -2991,71 +2991,49 @@ void func_8007ABA0(u8 **pc, u8 enemy) {
 }
 
 /* AI action 10: variable b1 += b2 | b3 << 8, saturating at 0xffff. */
-#ifdef NON_MATCHING
 void func_8007ABD8(u8 **pc, u8 enemy) {
-    u16 *value = &D_800D3400[enemy].vars[(*pc)[1]];
-    s32 sum = *value + ((*pc)[2] + ((*pc)[3] << 8));
+    u8 *op = *pc;
+    s32 value = D_800D3400[enemy].vars[op[1]] + ((op[3] << 8) + op[2]);
 
-    if (sum > 0xFFFF) {
-        sum = 0xFFFF;
+    if (value > 0xFFFF) {
+        value = 0xFFFF;
     }
-    *value = sum;
+    D_800D3400[enemy].vars[op[1]] = value;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007ABD8);
-#endif
 
 /* AI action 11: variable b1 -= b2 | b3 << 8, saturating at 0. */
-#ifdef NON_MATCHING
 void func_8007AC30(u8 **pc, u8 enemy) {
-    u16 *value = &D_800D3400[enemy].vars[(*pc)[1]];
-    s32 difference = *value - (((*pc)[3] << 8) + (*pc)[2]);
+    u8 *op = *pc;
+    s32 value = D_800D3400[enemy].vars[op[1]] - ((op[3] << 8) + op[2]);
 
-    if (difference < 0) {
-        difference = 0;
+    if (value < 0) {
+        value = 0;
     }
-    *value = difference;
+    D_800D3400[enemy].vars[op[1]] = value;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007AC30);
-#endif
 
 /* AI action 12: variable b1 *= b2 | b3 << 8, saturating at 0xffff. */
-#ifdef NON_MATCHING
 void func_8007AC80(u8 **pc, u8 enemy) {
-    u16 *value = &D_800D3400[enemy].vars[(*pc)[1]];
-    s32 product = *value * (((*pc)[3] << 8) + (*pc)[2]);
+    u8 *op = *pc;
+    s32 value = D_800D3400[enemy].vars[op[1]] * ((op[3] << 8) + op[2]);
 
-    if (product > 0xFFFF) {
-        product = 0xFFFF;
+    if (value > 0xFFFF) {
+        value = 0xFFFF;
     }
-    *value = product;
+    D_800D3400[enemy].vars[op[1]] = value;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007AC80);
-#endif
 
 /* AI action 13: variable b1 /= b2 | b3 << 8. */
-#ifdef NON_MATCHING
 void func_8007ACDC(u8 **pc, u8 enemy) {
-    u16 *value = &D_800D3400[enemy].vars[(*pc)[1]];
-
-    *value = *value / (((*pc)[3] << 8) + (*pc)[2]);
+    u8 *op = *pc;
+    D_800D3400[enemy].vars[op[1]] = D_800D3400[enemy].vars[op[1]] / ((op[3] << 8) + op[2]);
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007ACDC);
-#endif
 
 /* AI action 14: variable b1 %= b2 | b3 << 8. */
-#ifdef NON_MATCHING
 void func_8007AD24(u8 **pc, u8 enemy) {
-    u16 *value = &D_800D3400[enemy].vars[(*pc)[1]];
-
-    *value = *value % (((*pc)[3] << 8) + (*pc)[2]);
+    u8 *op = *pc;
+    D_800D3400[enemy].vars[op[1]] = D_800D3400[enemy].vars[op[1]] % ((op[3] << 8) + op[2]);
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007AD24);
-#endif
 
 /* AI action 15: variable b1 &= b2 | b3 << 8. */
 void func_8007AD6C(u8 **pc, u8 enemy) {
@@ -3198,40 +3176,25 @@ void func_8007B264(u8 **pc, u8 enemy) {
 }
 
 /* AI action 25: variable b3 = var b1 & var b2. */
-#ifdef NON_MATCHING
 void func_8007B2C0(u8 **pc, u8 enemy) {
     u8 *op = *pc;
-    u16 *vars = D_800D3400[enemy].vars;
 
-    vars[op[3]] = vars[op[1]] & vars[op[2]];
+    D_800D3400[enemy].vars[op[3]] = D_800D3400[enemy].vars[op[1]] & D_800D3400[enemy].vars[op[2]];
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007B2C0);
-#endif
 
 /* AI action 26: variable b3 = var b1 | var b2. */
-#ifdef NON_MATCHING
 void func_8007B310(u8 **pc, u8 enemy) {
     u8 *op = *pc;
-    u16 *vars = D_800D3400[enemy].vars;
 
-    vars[op[3]] = vars[op[1]] | vars[op[2]];
+    D_800D3400[enemy].vars[op[3]] = D_800D3400[enemy].vars[op[1]] | D_800D3400[enemy].vars[op[2]];
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007B310);
-#endif
 
 /* AI action 27: variable b3 = var b1 ^ var b2. */
-#ifdef NON_MATCHING
 void func_8007B360(u8 **pc, u8 enemy) {
     u8 *op = *pc;
-    u16 *vars = D_800D3400[enemy].vars;
 
-    vars[op[3]] = vars[op[1]] ^ vars[op[2]];
+    D_800D3400[enemy].vars[op[3]] = D_800D3400[enemy].vars[op[1]] ^ D_800D3400[enemy].vars[op[2]];
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007B360);
-#endif
 
 /* AI action 28: 80079ed8 for the enemy's slot with b1, b2. */
 void func_8007B3B0(u8 **pc, u8 enemy) {
@@ -4156,28 +4119,18 @@ void func_8007E674(u8 enemy) {
 }
 
 /* AI action 6a: long b3 = long b1 + long b2. */
-#ifdef NON_MATCHING
 void func_8007E6A0(u8 **pc, u8 enemy) {
     u8 *op = *pc;
-    s32 *longs = D_800D3400[enemy].longs;
 
-    longs[op[3]] = longs[op[1]] + longs[op[2]];
+    D_800D3400[enemy].longs[op[3]] = D_800D3400[enemy].longs[op[1]] + D_800D3400[enemy].longs[op[2]];
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007E6A0);
-#endif
 
 /* AI action 6b: long b3 = long b1 - long b2. */
-#ifdef NON_MATCHING
 void func_8007E6F0(u8 **pc, u8 enemy) {
     u8 *op = *pc;
-    s32 *longs = D_800D3400[enemy].longs;
 
-    longs[op[3]] = longs[op[1]] - longs[op[2]];
+    D_800D3400[enemy].longs[op[3]] = D_800D3400[enemy].longs[op[1]] - D_800D3400[enemy].longs[op[2]];
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007E6F0);
-#endif
 
 /* AI action 6c: long b1 *= b2. */
 void func_8007E740(u8 **pc, u8 enemy) {
