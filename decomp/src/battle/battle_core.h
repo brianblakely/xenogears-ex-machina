@@ -49,7 +49,8 @@ typedef struct {
     u16 unk34;         /* 0x800 reacts while down */
     u8 unk36[0x4C - 0x36];
     u16 hp;           /* +0x4C */
-    u8 unk4E[0x56 - 0x4E];
+    u16 unk4E;
+    u8 unk50[0x56 - 0x50];
     u8 unk56;
     u8 unk57[0x5B - 0x57];
     u8 unk5B;
@@ -62,7 +63,10 @@ typedef struct {
     u16 unk82;
     u16 status84; /* 0x8000 (with +0x86) haste */
     u16 status86;
-    u8 unk88[0x104 - 0x88];
+    u16 unk88;
+    u16 unk8A;
+    u16 unk8C;
+    u8 unk8E[0x104 - 0x8E];
     u32 unk104;
     s32 unk108;
     u8 unk10C[0x120 - 0x10C];
@@ -408,6 +412,10 @@ typedef struct {
 
 extern EffectEntry D_800D2200[];
 extern u8 D_800D2DC4;
+extern BattleRecord *D_800C3E34; /* target record */
+extern s32 D_800D2C54[12]; /* per-slot damage */
+extern u8 D_800D2C88[12];  /* per-slot result code */
+extern void *D_800D329C;   /* item name table */
 
 /* Stepped line state (80088 87c). */
 extern s32 D_800C3A7C;
@@ -630,6 +638,9 @@ void func_800BCD98(u16 mask);
 void func_80077980(void);
 u8 func_80083FF4(u8 member, u8 slot);
 void func_80098D2C(u8 slot, u8 param);
+void func_8009AC48(u8 slot, s32 mode);
+s32 func_8008AC00(s32 count);
+void func_800769E8(RECT *rect, u32 *pixels);
 void func_80097D08(void);
 u8 func_800841E0(u8 member);
 u16 func_80089C6C(u16 mask, u8 bit);

@@ -3393,7 +3393,24 @@ void func_8008AC50(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008AC88);
+/* Queue event 0xf3 for `actor` with the enemies of `mask` whose +0x34 bit
+ * 0x800 is set (low three bits dropped). */
+void func_8008AC88(u16 mask, u8 actor) {
+    u16 targets = mask & 0xFFF8;
+    s32 i;
+
+    for (i = 0; i < 8; i++) {
+        if (func_80089C9C(targets, i + 3) && !(D_800CCCE8[i + 3].unk34 & 0x800)) {
+            targets &= func_80089C48(i + 3);
+        }
+    }
+    if (targets) {
+        D_800C3FE8[D_800C3EAC->eventCount].actor = actor;
+        D_800C3FE8[D_800C3EAC->eventCount].type = 0xF3;
+        D_800C3FE8[D_800C3EAC->eventCount].param = targets;
+        D_800C3EAC->eventCount++;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008ADD0);
 
@@ -3543,13 +3560,44 @@ void func_8008FDE4(void) {
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008FE18);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009023C);
+/* Build nine glyph rows (0x66) from y + 0x64 into the +0xba8 primitives. */
+void func_8009023C(s32 y) {
+    s32 i;
+    s32 offset;
+
+    i = 0;
+    offset = 0x68;
+    D_800D2D28->unkF8 = 0;
+    for (; i < 9; i++) {
+        D_800D2D28->unkF8 += func_80076A10(0x66, &D_800C3EA4->unkBA8[D_800D2D28->unkF8 * 2], 0x20, (offset - 4) + y);
+        offset += 8;
+    }
+    D_800D2D28->unkA5 = D_800CCB04.buffer;
+    D_800D2D28->unk9C = 1;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80090310);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800904A0);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009070C);
+/* Render the name of the item in the list cell (column, row) into a text
+ * image and place it on the graphics block's +0x280 quad. */
+void func_8009070C(u8 column, u8 row) {
+    RECT rect;
+    u8 item = D_800D2CE0[row * 2 + column];
+    u32 *pixels = (u32 *)func_8008AC00(0x39);
+    s32 width;
+
+    func_8003F8E8(pixels, 0x618);
+    width = func_80034EAC(func_80033728(D_800D329C, item), pixels, 0x39, 0);
+    rect.x = 0x3C0;
+    rect.w = 0x3C;
+    rect.y = 0;
+    rect.h = 0xD;
+    func_800769E8(&rect, pixels);
+    func_80076C78(&D_800C3EA4->unkA230->unk280[D_800CCB04.buffer], 0x30, 0x42, 0, 0, width);
+    func_800320E8(pixels);
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009080C);
 
@@ -3658,7 +3706,22 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80094EE4);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80095690);
 
+/* The target defends: a +0x56 state 2 target first leaves it (8009ac48),
+ * its status words clear, result code 2 and a tenth of its +0x4e times the
+ * descriptor's +0x11 as the amount; its timer is held. */
+#ifdef NON_MATCHING
+void func_800957D8(void) {
+    if (D_800CCCE8[D_800C3E50].unk56 == 2) {
+        func_8009AC48(D_800C3E50, 1);
+    }
+    D_800C3E34->unk8C = D_800C3E34->unk88 = D_800C3E34->status84 = D_800C3E34->flags80 = D_800C3E34->flags7C = 0;
+    D_800D2C88[D_800C3E50] = 2;
+    D_800D2C54[D_800C3E50] = (D_800C3E34->unk4E * D_800C3DFC->unk11) / 10;
+    D_800D2C9E |= 1 << D_800C3E50;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800957D8);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800958D8);
 
