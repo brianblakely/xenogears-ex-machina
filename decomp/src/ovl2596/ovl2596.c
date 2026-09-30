@@ -1131,9 +1131,48 @@ INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E308C);
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E335C);
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E3500);
+/* Level B growth of the current record: max EP, then stats 5b and 5c
+ * toward the growth data's targets for its level range. */
+void func_801E3500(void) {
+    u8 high;
+    u8 cap;
+    u8 level;
 
+    high = 0;
+    cap = 100;
+    if (D_801E44EC->level2 >= 100) {
+        high = 1;
+        cap = 200;
+    }
+    level = D_801E44EC->level2;
+    D_801E44EC->maxEp = func_801E38CC(D_801E44EC->maxEp, D_801E44EC->level2);
+    D_801E44EC->stat5B = func_801E3610(D_801E44EC->stat5B,
+        D_801E44E8->characters[D_801E44EC->id].statTargets[4][high], cap, level);
+    D_801E44EC->stat5C = func_801E3610(D_801E44EC->stat5C,
+        D_801E44E8->characters[D_801E44EC->id].statTargets[5][high], cap, level);
+}
+
+/* Grow a stat by 0 or 1: the chance is the share of the distance to the
+ * target left over the levels to the cap. Capped at 200. */
+#ifdef NON_MATCHING
+/* The original keeps a second copy of stat for the subtraction (s4 = s3
+ * at entry) and adds the unmasked parameter; this C shares one register. */
+u8 func_801E3610(u8 stat, u8 target, u8 cap, u8 level) {
+    s32 random;
+    s32 share;
+    u8 result;
+
+    random = rand();
+    share = (target - stat) * 100 / (cap - level) - 50;
+    result = stat + ((s16)(share + random % 100) > 49);
+    if (result > 200) {
+        result = 200;
+    }
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E3610);
+#endif
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E3700);
 

@@ -258,7 +258,11 @@ s32 func_80076A10(s32 id, POLY_FT4 *prims, s16 x, s16 y);   /* glyph sprite */
 /* Per character growth data (0x110 each; the block 801e44e8 points to). */
 typedef struct {
     u16 requirements[13][7];  /* 0x00: counter thresholds per counter skill */
-    u8 padB6[0x16];
+    u8 padB6[2];
+    u16 maxHpTargets[2];      /* 0xB8: below level 100, from 100 */
+    u8 statTargets[6][2];     /* 0xBC: stats 58 59 5e 5f 5b 5c, per level range */
+    u8 maxEpTargets[2];       /* 0xC8 */
+    u8 padCA[2];
     u8 tierLevels[3];         /* 0xCC: levels for tiers 4, 5 and 6 */
     u8 padCF;
     u8 unlocksA[16];          /* 0xD0: 0xff ends */
@@ -302,11 +306,23 @@ typedef struct {
 typedef struct {
     u8 pad0[0x4E];
     u16 maxHp;                /* 0x4E */
-    u8 pad50[6];
+    u16 pad50;
+    u16 maxEp;                /* 0x52 */
+    u8 pad54[2];
     u8 id;                    /* 0x56 */
     u8 pad57;
-    u8 attack;                /* 0x58 */
-    u8 pad59[0x7C - 0x59];
+    u8 attack;                /* 0x58: grown stats 58, 59, 5e, 5f (level A) */
+    u8 stat59;                /* 0x59 */
+    u8 pad5A;
+    u8 stat5B;                /* 0x5B: grown stats 5b, 5c (level B) */
+    u8 stat5C;                /* 0x5C */
+    u8 pad5D;
+    u8 stat5E;                /* 0x5E */
+    u8 stat5F;                /* 0x5F */
+    u8 pad60[2];
+    u8 level;                 /* 0x62 */
+    u8 level2;                /* 0x63 */
+    u8 pad64[0x7C - 0x64];
     u16 flags7C;              /* 0x7C: 0x8000 knocked out */
     u8 pad7E[0x90 - 0x7E];
     u16 counters[7];          /* 0x90 */
@@ -442,6 +458,10 @@ void func_801E41B4(void);
 void *func_8008ABB8(s32 size, s32 top);        /* heap allocate */
 void bzero(void *dest, s32 size);
 void func_80039FF8(void);
+s32 rand(void);                                 /* libc */
+u8 func_801E3610(u8 stat, u8 target, u8 cap, u8 level);
+u16 func_801E3700(u16 maxHp, u8 level);
+u8 func_801E38CC(u8 maxEp, u8 level);
 void func_801E0ACC(u8 member);
 
 #endif
