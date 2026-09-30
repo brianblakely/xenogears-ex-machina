@@ -64,9 +64,12 @@ typedef struct {
     s16 vx, vy, vz, pad;
 } SVECTOR;
 
-/* Sprite sheet entry (80026338's six outputs). */
+/* Texture of a sprite sheet entry (80026338's six outputs). */
 typedef struct {
-    s32 u, v, w, h, x, y;
+    s32 unk0;
+    s32 mode;           /* texture mode for GetTPage */
+    s32 clut_x, clut_y; /* GetClut */
+    s32 page_x, page_y; /* GetTPage */
 } SheetEntry;
 
 /* A text label: its quad per draw buffer and the VRAM area of its pixels. */
@@ -115,6 +118,38 @@ typedef struct {
 } Marker;
 
 /*
+ * A framed 3D panel (menu state + 364 + n * 4, 720h bytes). Its sprite parts
+ * come in buffer pairs: corners 0-7, top edge 8-11, bottom 12-15, left
+ * 16-19, right 20-23, then the scroll bar 24-29; each part has a quad of
+ * corner vectors (quads[]) that is projected when drawn.
+ */
+typedef struct {
+    POLY_FT4 parts[30];  /* 000 */
+    POLY_G4 back[2];     /* 4b0: background */
+    DR_MODE mode[2];     /* 4f8 */
+    SVECTOR quads[16][4]; /* 510: corners 0-3, top 4-5, bottom 6-7, left 8-9,
+                            right 10-11, background 12, bar 13-15 */
+    s32 part_count;      /* 710: corner parts the sprite sheet produced */
+    s32 style;           /* 714 */
+    s32 unk718;
+    u8 buffer;           /* 71c */
+    u8 has_bar;          /* 71d */
+    u8 unk71E[2];
+} Panel;
+
+/* A panel opening from its centre (menu state + 380 + n * 4, 18h bytes). */
+typedef struct {
+    u16 x, y, w, h;      /* 00: final rectangle */
+    u16 cur_w, cur_h;    /* 08: current size */
+    s32 unk0C;           /* 0c */
+    u8 index;            /* 10 */
+    u8 done;             /* 11 */
+    u8 style;            /* 12 */
+    u8 has_bar;          /* 13 */
+    u8 unk14[4];
+} PanelGrowth;
+
+/*
  * Card state block (menu state + 32c, 5034h bytes): the directory scan, the
  * file heads and this game's save header.
  */
@@ -139,23 +174,28 @@ typedef struct {
     u8 unk4FDB[0x5034 - 0x4FDB];
 } CardState;
 
-/* Party block (menu state + 33c, 6ch bytes). */
+/* Screen flag block (menu state + 33c, 6ch bytes): what is shown, and the party. */
 typedef struct {
     u8 unk0[3];
     u8 cursor_shown; /* 03 */
     u8 unk4;         /* 04 */
-    u8 unk5[0x30 - 5];
+    u8 unk5[0x20 - 5];
+    u8 panel_shown[7];   /* 20 */
+    u8 panel_growing[7]; /* 27 */
+    u8 unk2E[2];
     u8 members[3];   /* 30: party member ids, ff none */
     u8 unk33[0x49 - 0x33];
     u8 scroll_shown; /* 49 */
     u8 unk4A[0x50 - 0x4A];
     u8 marker_shown[2]; /* 50 */
     u8 unk52[0x6C - 0x52];
-} PartyBlock;
+} ScreenFlags;
 
 /* Menu state (*800625a0); only the fields this overlay touches are named. */
 typedef struct {
-    u8 unk0[0x2DC];
+    u8 unk0[0x1D4];
+    u8 *draw_env;        /* 1d4: current buffer's draw environment (OT at +70) */
+    u8 unk1D8[0x2DC - 0x1D8];
     void *sprite_sheet;  /* 2dc */
     void *label_text;    /* 2e0 */
     void *effect_bank;   /* 2e4 */
@@ -173,13 +213,16 @@ typedef struct {
     u8 top_cursor;       /* 336 */
     u8 unk337;
     u8 unk338[0x33C - 0x338];
-    PartyBlock *party;   /* 33c */
+    ScreenFlags *flags;  /* 33c */
     u8 unk340[0x348 - 0x340];
     CursorBlock *cursor; /* 348 */
     u8 unk34C[0x350 - 0x34C];
     void *unk350;        /* 350: 1194h bytes */
     void *unk354;        /* 354: 140ch bytes */
-    u8 unk358[0x43C - 0x358];
+    u8 unk358[0x364 - 0x358];
+    Panel *panels[7];    /* 364 */
+    PanelGrowth *growth[7]; /* 380 */
+    u8 unk39C[0x43C - 0x39C];
     ScrollBar *scroll;   /* 43c */
     u8 unk440[4];
     Marker *markers[2];  /* 444 */
@@ -221,7 +264,9 @@ void func_80026338(void *sheet, s32 id, s32 *u, s32 *v, s32 *w, s32 *h, s32 *x, 
 void func_80033698(s32 x, s32 y);        /* text palettes */
 u8 *func_80033728(void *table, s32 index); /* entry of a text table */
 s32 func_80034EAC(u8 *text, void *pixels, s32 width, s32 line); /* render a text line */
-void func_8002675C(void *sheet, s32 id, void *packets, s32 buffer, s32 x, s32 y, s32 scale); /* sprite */
+s32 func_8002675C(void *sheet, s32 id, void *packets, s32 buffer, s32 x, s32 y, s32 scale); /* sprite */
+s32 func_800263E4(void *sheet, s32 id, void *packets, s32 buffer, s32 x, s32 y, s32 scale, s32 flip_x,
+                  s32 flip_y); /* mirrored sprite */
 s32 func_800288EC(s32 file);             /* file size in words */
 void func_800295D8(s32 file, void *dst, s32 offset, s32 mode); /* disc read */
 s32 func_80028A60(s32 mode);             /* disc wait */
@@ -235,6 +280,10 @@ void func_80043CC4(POLY_G4 *prim);                 /* SetPolyG4 */
 void func_80043C9C(POLY_F4 *prim);                 /* SetPolyF4 */
 void func_80043DA0(LINE_F3 *prim);                 /* SetLineF3 */
 void func_800454DC(DR_MODE *p, s32 dfe, s32 dtd, s32 tpage, RECT *tw); /* SetDrawMode */
+u16 func_80043A58(s32 x, s32 y);                   /* GetClut */
+void func_80043B48(void *ot, void *prim);          /* AddPrim */
+s32 func_8004A73C(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *v3, s16 *xy0, s16 *xy1, s16 *xy2,
+                  s16 *xy3, s32 *p, s32 *flag); /* RotTransPers4 */
 void func_80044894(RECT *rect, void *data);        /* LoadImage */
 s32 func_800445D0(s32 mode);                       /* DrawSync */
 
@@ -246,5 +295,15 @@ void func_801C6098(void);
 void func_801C665C(void);
 void func_801C668C(POLY_G4 *poly, u8 r, u8 g, u8 b);
 void func_801C7604(SVECTOR *quad, u16 x, u16 y, u16 w, u16 h);
+void func_801C765C(POLY_FT4 *poly);
+void func_801C7AE4(u8 index);
+void func_801C7E00(u8 index, u16 x, u16 y, u16 w, u16 h);
+void func_801C7F64(u8 index, u16 x, u16 y, u16 w, u16 h);
+void func_801C81AC(u8 index, u16 x, u16 y, u16 w);
+void func_801C84F0(u8 index, u16 x, u16 y, u16 w, u16 h);
+void func_801C883C(u8 index, u16 x, u16 y, u16 h);
+void func_801C8B84(u8 index, u16 x, u16 y, u16 w, u16 h);
+void func_801C8ED0(u8 index, u16 x, u16 y, u16 w, u16 h, u8 style, s32 unk718, u8 has_bar);
+void func_801C93B0(s32 count, SVECTOR *quads, POLY_FT4 *packets, s32 first);
 
 #endif
