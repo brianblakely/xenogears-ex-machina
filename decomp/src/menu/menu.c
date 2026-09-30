@@ -1709,11 +1709,52 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008B13C);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008B38C);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008B5DC);
+/* Advance a player by some frames, snapping to the keys. */
+s32 func_8008B5DC(Player *player, s32 frames) {
+    return func_8008B730(player, frames, 1);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008B5FC);
+/* Ease an angle toward target by a fraction (1/steps) of the shorter way
+ * round (angles are 12-bit). */
+s16 func_8008B5FC(s32 angle, s32 target, s32 steps) {
+    s32 diff;
+    s16 result;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008B650);
+    angle &= 0xFFF;
+    diff = (angle - target) & 0xFFF;
+    result = angle;
+    if (diff != 0) {
+        if (diff < 0x800) {
+            result = angle - diff / steps;
+        } else {
+            result = angle + (0x1000 - diff) / steps;
+        }
+    }
+    return result;
+}
+
+/* Turn an angle toward target by a fixed step the shorter way round
+ * (a random way when opposite), stopping on the target. */
+s16 func_8008B650(s32 from, s32 to, s32 step) {
+    s16 angle = from;
+    s16 target = to;
+    s32 diff = (from - to) & 0xFFF;
+
+    if (diff != 0) {
+        if (diff == 0x800 ? (func_8003FA38() & 1) : diff < 0x800) {
+            angle -= step;
+            if (((angle - target) & 0xFFF) > 0x800) {
+                angle = target;
+            }
+        } else {
+            angle += step;
+            if (((angle - target) & 0xFFF) < 0x800) {
+                angle = target;
+            }
+        }
+    }
+    return angle;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008B730);
 

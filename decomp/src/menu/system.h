@@ -364,6 +364,8 @@ void func_80089D5C(Node *node);
 void func_80089EB4(ModelSet *set);
 void func_80089FF8(Model *model);
 void func_8008C120(void *data);
+s32 func_8003FA38(void); /* rand */
+s32 func_8008B730(Player *player, s32 frames, s32 steps);
 void func_80044AD8(u32 *ot, s32 length);
 void func_80043B84(u32 *ot, u32 *last, u32 *first);
 void func_8008AC7C(OtPair *pair);
