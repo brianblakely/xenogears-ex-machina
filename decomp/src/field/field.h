@@ -153,7 +153,10 @@ typedef struct FieldActor {
     s32 unk030;      /* 030 */
     u8 unk034[4];
     s32 unk038;      /* 038 */
-    u8 unk03C[0xF4 - 0x3C];
+    u8 unk03C[0xCC - 0x3C];
+    u16 pc;          /* 0CC: event working PC */
+    u8 slot;         /* 0CE */
+    u8 unk0CF[0xF4 - 0xCF];
     s16 scale[3];    /* 0F4 */
     u8 unk0FA[0x104 - 0xFA];
     s16 heading;     /* 104 */
@@ -219,6 +222,13 @@ typedef struct {
     SpriteSequencer *sequencer;
 } FieldSprite;
 
+/* One of the three positional sound-emitter slots (800afe88). */
+typedef struct {
+    u16 id;
+    u16 owner;
+    u16 unk4;
+} EmitterSlot;
+
 /* One of the three field light/lookup slots at 800b06a4. */
 typedef struct {
     s16 a;
@@ -227,6 +237,14 @@ typedef struct {
 } FieldSlot6;
 
 /* Resident services. */
+extern void func_80019CD0(void);
+extern s32 func_800288EC(s32 file);
+extern void *func_80031BDC(s32 size, s32);
+extern s32 func_80037FD8(void *data, s32);
+extern void func_80038310(s32 bank);
+extern void func_800399D4(s32 sequence);
+extern void func_80039C4C(s32 sequence);
+extern void func_8003BDFC(s32);
 extern s32 func_80028B14(void);
 extern void func_800295D8(s32 file, void *ring, s32, s32);
 extern void func_8003852C(void *bank);
@@ -277,6 +295,7 @@ extern void func_800496AC(void);                               /* PopMatrix */
 extern void func_8004A6DC(SVECTOR *v, s32 *out, s32 *flag); /* RotTrans */
 
 /* Field overlay. */
+extern void func_80086A1C(s32 emitter, s32 *position);
 extern void func_80081F80(void *owner, s32 heading);
 extern s32 func_800854D0(void);
 extern void func_800855C8(s32 id, s32 volume, s32 pan, s32 channel);
@@ -303,6 +322,12 @@ extern void func_80078C5C(void);
 extern void func_802815B0(void);
 
 /* Resident state. */
+extern s32 D_8004F2FC; /* cached sequence */
+extern s32 D_8004F364;
+extern s32 D_8004F368; /* shared wave bank released */
+extern s16 D_8004F384;
+extern s32 D_80059560;
+extern s32 D_8006251C; /* shared wave bank */
 extern s32 D_8004F32C;
 extern void *D_8006259C; /* field sound-effect bank */
 extern u8 D_80059179; /* battle-entry flag */
@@ -314,6 +339,16 @@ extern s32 D_8004F34C; /* current map */
 extern u8 D_800625FC[2][0x22]; /* pad buffers */
 
 /* Field state. */
+extern u8 *D_800ADC00; /* event bytecode */
+extern void (*D_800AE6A0[])(void); /* extended event instructions */
+extern EmitterSlot D_800AFE88[3];
+extern FieldActor *D_800B0078; /* current event actor */
+extern s32 D_800B00C0; /* yield */
+extern void *D_800B00E0; /* shared wave bank buffer */
+extern s16 D_800B21AC; /* emitter range */
+extern s16 D_800B22E2[3]; /* descriptor each emitter follows, or -1 */
+extern u16 D_800B233C;
+extern u8 D_800B2358[]; /* first byte of a larger block (stores do not pass member loads) */
 extern void *D_800ADBB8; /* music-wave stream ring */
 extern s32 D_800ADBBC;   /* stream arrivals */
 extern void (*D_800AFEA4)(s32); /* stream chunk callback */

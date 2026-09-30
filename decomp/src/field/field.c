@@ -1171,15 +1171,66 @@ s32 func_80085C3C(void) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80085C90);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80085EEC);
+/* Stop and release the cached sequence. */
+void func_80085EEC(void) {
+    if (D_8004F2FC != 0) {
+        func_80039C4C(D_8004F2FC);
+        func_800399D4(D_8004F2FC);
+        D_8004F2FC = 0;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80085F30);
+/* Once the disc is idle, open the shared wave bank from its buffer and
+ * release the buffer; -1 while still reading. */
+s32 func_80085F30(void) {
+    s32 bank;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80085FB8);
+    if (func_800286CC() != 0) {
+        return -1;
+    }
+    bank = func_80037FD8(D_800B00E0, 0);
+    D_8006251C = bank;
+    D_80059560 = bank;
+    func_8003BDFC(0x10);
+    func_800320E8(D_800B00E0);
+    D_8004F364 = 1;
+    D_8004F384 = 0;
+    D_8004F368 = 0;
+    return 0;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80086024);
+/* Start reading the shared wave bank (file 3 of directory 0x1c). */
+void func_80085FB8(void) {
+    void *buffer;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80086078);
+    func_80028470(0x1C, 0);
+    D_800B00E0 = buffer = func_80031BDC(func_800288EC(3), 1);
+    func_800295D8(3, buffer, 0, 0x80);
+    func_80028470(4, 0);
+    D_8004F364 = 0x80;
+}
+
+/* Release the shared wave bank once and mark it unloaded. */
+void func_80086024(void) {
+    if (D_8004F368 == 0) {
+        D_8004F384 = 1;
+        func_80038310(D_8006251C);
+        D_8004F368 = 1;
+    }
+    D_8004F364 = 0;
+}
+
+/* A positional emitter's volume at `distance`: full at the source, falling
+ * linearly to half at the range 800b21ac. */
+void func_80086078(s32 distance, u32 *out, s32 volume) {
+    s32 level;
+
+    if (distance > D_800B21AC) {
+        distance = D_800B21AC;
+    }
+    level = 0x80 - (((0x7F0000 / D_800B21AC) * distance) >> 16);
+    *out = ((u32)(level << 16) / 127 * volume) >> 16;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800860F0);
 
@@ -1187,31 +1238,110 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80086200);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800862CC);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800863E8);
+/* Stop the emitter playing sound `id`, freeing its slot. */
+void func_800863E8(s32 id) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80086470);
+    for (i = 0; i < 3; i++) {
+        if (D_800AFE88[i].id == id) {
+            func_8003A20C(i * 2);
+            D_800AFE88[i].owner = 0xFFFF;
+            D_800AFE88[i].id = 0xFFFF;
+            return;
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800864B4);
+/* The emitter slot already playing `id`, or -1. */
+s32 func_80086470(s32 owner, s32 id) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800864F0);
+    if (owner == -1) {
+        return -1;
+    }
+    for (i = 0; i < 3; i++) {
+        if (D_800AFE88[i].id == id) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/* Clear the emitter slots. */
+void func_800864B4(void) {
+    s32 i;
+
+    for (i = 0; i < 3; i++) {
+        D_800AFE88[i].id = 0xFFFF;
+        D_800AFE88[i].owner = 0xFFFF;
+    }
+}
+
+/* Clear the emitter slots and stop the voices of the emitters in use. */
+void func_800864F0(void) {
+    s32 i;
+    u16 *playing;
+
+    for (i = 0; i < 3; i++) {
+        D_800AFE88[i].owner = 0xFFFF;
+        D_800AFE88[i].id = 0xFFFF;
+    }
+    for (i = 0, playing = &D_800B233C; i < 4; i++) {
+        if (!(*playing & 1)) {
+            func_8003A20C(i * 2);
+        }
+        *playing >>= 1;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80086590);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80086908);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800869B8);
+/* Event opcode fe: run the extended instruction named by the next byte. */
+void func_800869B8(void) {
+    D_800AE6A0[D_800ADC00[++D_800B0078->pc]]();
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80086A1C);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80086BA8);
+/* Update the three positional emitters from their actors' positions. */
+void func_80086BA8(void) {
+    s32 i;
+
+    for (i = 0; i < 3; i++) {
+        if (D_800B22E2[i] != -1) {
+            func_80086A1C(i, D_800AFB10[D_800B22E2[i]].actor->position);
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80086C34);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80086D4C);
+/* Event opcode e2: call resident 80019cd0, yield and step over the opcode. */
+void func_80086D4C(void) {
+    func_80019CD0();
+    D_800B00C0 = 1;
+    D_800B0078->pc++;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80086D8C);
+/* Set both draw blocks' display screen rectangles (0, 10, 256, 216). */
+void func_80086D8C(void) {
+    D_800B249C[0].disp.screen.x = 0;
+    D_800B249C[0].disp.screen.y = 10;
+    D_800B249C[0].disp.screen.w = 0x100;
+    D_800B249C[0].disp.screen.h = 0xD8;
+    D_800B249C[1].disp.screen.x = 0;
+    D_800B249C[1].disp.screen.y = 10;
+    D_800B249C[1].disp.screen.w = 0x100;
+    D_800B249C[1].disp.screen.h = 0xD8;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80086DE0);
+/* Event opcode e0: set 800b2358 from its byte operand. */
+void func_80086DE0(void) {
+    D_800B2358[0] = D_800ADC00[D_800B0078->pc + 1];
+    D_800B0078->pc += 2;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80086E1C);
 
