@@ -863,7 +863,100 @@ s16 func_801E0988(s16 value, s16 divisor, s16 minimum) {
 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E0A00);
 
+/* Advance an image animation by `ticks` + 1: when its curve selects another
+ * frame, rebuild the image (resident decoders or fades) and copy the
+ * overlap into its target image. Returns the frame, or a negative value
+ * once the animation ended. Differs only in the unchanged-frame branch,
+ * which the original sends straight to the epilogue. */
+#ifdef NON_MATCHING
+s16 func_801E1258(ImageAnim *anim, s32 ticks) {
+    RECT src;
+    RECT dst;
+    ImageAnim *target;
+    u16 *pixels;
+    u16 *work;
+    s16 frame;
+    s32 x;
+    s32 y;
+
+    if (!anim->active) {
+        return -1;
+    }
+    anim->time += anim->speed * (ticks + 1);
+    frame = anim->curve(anim->time, anim->divisor, anim->base);
+    if (frame < 0) {
+        func_801E165C(anim);
+        return frame;
+    }
+    if (frame != anim->frame) {
+        anim->frame = frame;
+        switch (anim->mode) {
+        case 0:
+            func_80026F44(anim->h12, frame, anim->work, anim->pixels);
+            if (anim->target == NULL) {
+                LoadImage(&anim->rect, anim->work);
+            }
+            break;
+        case 1:
+            func_80026FE8(anim->h12, frame, anim->work, anim->pixels2, anim->pixels);
+            if (anim->target == NULL) {
+                LoadImage(&anim->rect, anim->work);
+            }
+            break;
+        case 4:
+            func_801E1708(anim, frame);
+            break;
+        case 5:
+            func_801E17B8(anim, frame);
+            break;
+        }
+        target = anim->target;
+        if (target != NULL && target->active) {
+            if (target->rect.x < anim->rect.x) {
+                dst.x = anim->rect.x - target->rect.x;
+                src.x = 0;
+                dst.w = target->rect.x + target->rect.w - anim->rect.x;
+            } else {
+                dst.x = 0;
+                src.x = target->rect.x - anim->rect.x;
+                dst.w = anim->rect.x + anim->rect.w - target->rect.x;
+            }
+            if (target->rect.y < anim->rect.y) {
+                dst.y = anim->rect.y - target->rect.y;
+                src.y = 0;
+                dst.h = target->rect.y + target->rect.h - anim->rect.y;
+            } else {
+                dst.y = 0;
+                src.y = target->rect.y - anim->rect.y;
+                dst.h = anim->rect.y + anim->rect.h - target->rect.y;
+            }
+            if (dst.w > 0 && dst.h > 0) {
+                target->dirty = 1;
+                pixels = target->pixels;
+                if (target->mode < 4) {
+                    work = anim->work;
+                    for (y = 0; y < dst.h; y++) {
+                        for (x = 0; x < dst.w; x++) {
+                            *(pixels + dst.x + x + (dst.y + y) * target->rect.w) =
+                                *(work + src.x + x + (src.y + y) * anim->rect.w);
+                        }
+                    }
+                } else {
+                    for (y = 0; y < dst.h; y++) {
+                        for (x = 0; x < dst.w; x++) {
+                            *(pixels + dst.x + x + (dst.y + y) * target->rect.w) =
+                                anim->colors[src.y + y].c[src.x + x];
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return frame;
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E1258);
+#endif
 
 /* Stop an image animation: restore its original pixels to VRAM (resident
  * decoder modes) and release its blocks. */

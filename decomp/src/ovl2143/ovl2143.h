@@ -138,8 +138,9 @@ typedef struct {
     u8 rest[0x64];
 } Channel;
 
-/* A curve mapping time to a frame: func_801E0850/08d4/0938/0988. */
-typedef s16 (*FrameCurve)(s16 time, s16 divisor, s32 base);
+/* A curve mapping time to a frame: func_801E0850/08d4/0938/0988 (called
+ * without a prototype: time, divisor, base). */
+typedef s16 (*FrameCurve)();
 
 /* A row of three colours. */
 typedef struct {
@@ -157,7 +158,7 @@ typedef struct ImageAnim {
     u8 dirty;               /* +11 */
     s16 h12;                /* +12 */
     u16 time;               /* +14 */
-    s16 speed;              /* +16 */
+    u16 speed;              /* +16 */
     u16 frame;              /* +18 */
     u16 active;             /* +1a */
     ColorRow *colors;       /* +1c */
@@ -367,6 +368,12 @@ void func_80022000(SpriteBody *body, s32 scale);
 void *func_8001CD7C(Sprite *sprite);          /* the sprite's update */
 void func_8001CD6C(Sprite *sprite, void (*update)(Sprite *sprite)); /* set it */
 void func_8004A480(void *a, void *b, VECTOR *out);
+
+/* Resident image decoders (frame `frame` of a packed image into `out`). */
+void func_80026F44(s32 arg0, s32 frame, u16 *out, u16 *pixels);
+void func_80026FE8(s32 arg0, s32 frame, u16 *out, u16 *pixels2, u16 *pixels);
+void func_801E1708(ImageAnim *anim, s16 level);
+void func_801E17B8(ImageAnim *anim, s16 level);
 
 /* Resident models. */
 u32 func_8002C3E8(void *group);               /* relocate a model group; returns model count */
