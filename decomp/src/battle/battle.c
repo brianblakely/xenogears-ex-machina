@@ -3169,7 +3169,36 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A7948);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A8A88);
 
+#ifdef NON_MATCHING
+/* Reset the battle scene: its flags, the effect and sprite pools sized by the
+ * scene data, and the object and slot tables. */
+void func_800A8B0C(void) {
+    s32 i;
+    s32 j;
+    s32 k;
+
+    D_800C3E88 = 0;
+    D_800C3CF0 = 0;
+    D_800C3D6C = 0;
+    D_800C3D68 = 0;
+    D_800C3B7C = 0;
+    D_800C3B74 = 1;
+    func_800A2234(&D_800C3D0C, D_800658C8->effectCount);
+    func_800A2CA4(&D_800C3D04, D_800658C8->spriteCount);
+    func_800B00D0();
+    for (i = 31; i >= 0; i--) {
+        D_800D3368[i] = NULL;
+    }
+    for (j = 19; j >= 0; j--) {
+        D_800C3ACC[j].value = 0;
+    }
+    for (k = 1; k >= 0; k--) {
+        D_800D330A[k].value = 0;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A8B0C);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A8BF0);
 
@@ -3432,7 +3461,34 @@ s32 func_800AEEF8(BattleObject *object) {
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AEF68);
 
+#ifdef NON_MATCHING
+/* Detach part index of a hierarchy and its descendants: move their marks to
+ * the same parts of another hierarchy and release their effects. */
+void func_800AF180(EffectPool *pool, s32 index, ModelPart *from, ModelPart *to) {
+    ModelPart *part = from + index;
+    u16 count = from->index;
+    ModelPart *child;
+    s32 i;
+
+    part->flag7 = 0;
+    to[index].flag7 = 1;
+    func_800A23E8(pool, part->effects[0]);
+    part->effects[0] = NULL;
+    func_800A23E8(pool, part->effects[1]);
+    part->effects[1] = NULL;
+    func_800A23E8(pool, part->effects[2]);
+    part->effects[2] = NULL;
+    child = from;
+    for (i = 1; i < count; i++) {
+        child++;
+        if (child->parent == part) {
+            func_800AF180(pool, child->index, from, to);
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AF180);
+#endif
 
 /* Move the parts' marks (flag7) of a hierarchy to another of the same
  * shape. */
@@ -3464,7 +3520,33 @@ s32 func_800AF400(void) {
     return slot;
 }
 
+#ifdef NON_MATCHING
+/* The slot mask of a target code: 0xFF the first selected slot, 0xFE the
+ * selected object, 0xFD/0xF9 and 0xFC the object's slots, 0xFA slot 31, 0xF8
+ * and 0xF7 slots derived from the object's slot; any other code is a slot. */
+void func_800AF438(BattleObject *object, s32 code, u16 *mask) {
+    u8 slot = code;
+
+    if (slot == 0xFF) {
+        slot = func_800AF400();
+    } else if (slot == 0xFE) {
+        slot = D_800C3D40;
+    } else if (slot == 0xFD || slot == 0xF9) {
+        slot = object->slot;
+    } else if (slot == 0xFC) {
+        slot = object->slot2;
+    } else if (slot == 0xFA) {
+        slot = 31;
+    } else if (slot == 0xF8) {
+        slot = object->slot * 2 + 13;
+    } else if (slot == 0xF7) {
+        slot = object->slot * 2 + 14;
+    }
+    *mask = 1 << slot;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AF438);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AF518);
 

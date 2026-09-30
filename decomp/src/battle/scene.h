@@ -28,7 +28,10 @@ typedef struct {
     s32 field18;            /* 0x18 */
     s16 scale1C;            /* 0x1C */
     s16 field1E;            /* 0x1E */
-    u8 pad20[0x24 - 0x20];
+    u8 slot;                /* 0x20 */
+    u8 slot2;               /* 0x21 */
+    u8 pad22;
+    u8 field23;             /* 0x23 */
     s16 scale24;            /* 0x24 */
     s16 scale26;            /* 0x26 */
     s16 scale28;            /* 0x28 */
@@ -124,6 +127,18 @@ typedef struct {
     u8 field5;
 } LightSlot;
 
+/* An 8-byte entry of D_800C3ACC. */
+typedef struct {
+    s32 value;
+    s32 field4;
+} SceneEntry8;
+
+/* A 0x14-byte entry of D_800D330A. */
+typedef struct {
+    s16 value;
+    u8 pad2[0x14 - 2];
+} SceneEntry14;
+
 /* Battle scene and effect state. */
 extern SVector *D_800D3344;             /* scene points */
 extern SceneTriangle *D_800D39CC;       /* scene triangles */
@@ -134,6 +149,12 @@ extern u16 *D_800D2FD0;                 /* (x, z, y) points */
 extern u8 D_800D3611;                   /* a light slot changed */
 extern u8 D_800C3B74;
 extern u8 D_800C3D6C;
+extern u8 D_800C3D68;
+extern s32 D_800C3E88;
+extern s16 D_800C3CF0;
+extern s16 D_800C3B7C;
+extern SceneEntry8 D_800C3ACC[20];
+extern SceneEntry14 D_800D330A[2];
 extern s32 D_800D2D40;
 extern s32 D_800D2D48;
 extern EffectEntry *D_800C3BAC[9];
@@ -151,6 +172,9 @@ s32 func_80048C4C(s32 value);           /* square root */
 void func_8003852C(u8 *texture);
 void func_800AA934(BattleObject *object, BattleObject *target, EffectPool *pool, s32 arg3);
 void func_800B00D0(void);
+void func_800AF180(EffectPool *pool, s32 index, ModelPart *from, ModelPart *to);
+EffectPool *func_800A2234(EffectPool *pool, s32 count);
+SpritePool *func_800A2CA4(SpritePool *pool, s32 count);
 void func_800A9FF0(s32 index);
 void func_800A22A8(EffectPool *pool);
 void func_800A2D1C(SpritePool *pool);
