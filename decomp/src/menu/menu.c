@@ -934,7 +934,54 @@ s32 func_8007E624(void) {
     return D_800926DC;
 }
 
+#ifdef NON_MATCHING
+/* Allocate the text quads, load the font (with its palette's colours 0, 2
+ * and 3 replaced) and the banner image, and build the banner sprite.
+ * Does not match: the banner sprite address is taken from its length byte. */
+void func_8007E634(MenuFiles *files) {
+    TimImage image;
+    s32 unused[2]; /* never used; the original frame keeps its slot */
+    s16 *palette;
+    s32 i;
+
+    D_800926D4[0] = func_80031BDC(0xFA0, 0);
+    D_800926D4[1] = func_80031BDC(0xFA0, 0);
+    for (i = 0; i < 100; i++) {
+        ((u8 *)&D_800926D4[0][i].tag)[3] = 0;
+        ((u8 *)&D_800926D4[1][i].tag)[3] = 0;
+    }
+    func_800471B4(files->font);
+    func_800471C4(&image);
+    palette = image.caddr;
+    palette[2] = -0x6F9D;
+    palette[0] = 0;
+    palette[3] = -1;
+    func_80044894(&image.crect->x, image.caddr);
+    func_80044894(&image.prect->x, image.paddr);
+    D_800926E4 = func_80043A58(image.crect->x, image.crect->y);
+    D_800926E0 = func_80043A1C(0, 1, image.prect->x, image.prect->y);
+    D_800926DC = 0;
+    func_800471B4(files->banner);
+    func_800471C4(&image);
+    palette = image.caddr;
+    palette[0] = 0;
+    func_80044894(&image.crect->x, image.caddr);
+    func_80044894(&image.prect->x, image.paddr);
+    D_800954D8[0].sprite.len = 4;
+    D_800954D8[0].sprite.code = 0x65;
+    func_80043E20(&D_800954D8[0].tpage, 0, 0, func_80043A1C(0, 1, image.prect->x, image.prect->y));
+    D_800954D8[0].sprite.clut = func_80043A58(image.crect->x, image.crect->y);
+    D_800954D8[0].sprite.x0 = 0x40;
+    D_800954D8[0].sprite.y0 = 0xBE;
+    D_800954D8[0].sprite.w = 0xC4;
+    D_800954D8[0].sprite.h = 0xD;
+    D_800954D8[0].sprite.u0 = image.prect->x * 4;
+    D_800954D8[0].sprite.v0 = image.prect->y;
+    D_800954D8[1] = D_800954D8[0];
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007E634);
+#endif
 
 void func_8007E894(s32 x, s32 y) {
     D_800926E8 = x;

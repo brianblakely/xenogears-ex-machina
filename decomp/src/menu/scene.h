@@ -38,7 +38,8 @@ typedef struct {
 } DrTpage;
 
 typedef struct {
-    u32 tag;
+    u8 addr[3];
+    u8 len;
     u8 r0, g0, b0, code;
     s16 x0, y0;
     u8 u0, v0;
@@ -323,7 +324,7 @@ void func_8008EB4C(s32 sound);
 /* Menu overlay drawing. */
 extern DrTpage D_800954C8[2];
 extern DrMove D_80095498[2];
-extern void *D_800926D4[2]; /* text quads, per draw buffer */
+extern PolyFT4 *D_800926D4[2]; /* text quads, per draw buffer */
 u16 func_80043A1C(s32 tp, s32 abr, s32 x, s32 y);           /* texture page id */
 void func_80043E20(DrTpage *p, s32 dfe, s32 dtd, s32 tpage); /* set a DR_TPAGE */
 void func_80043E4C(DrMove *p, Rect *rect, s32 x, s32 y);     /* set a DR_MOVE */
@@ -381,5 +382,25 @@ u16 func_80043A58(s32 x, s32 y); /* CLUT id */
 s32 func_800886FC(Vector *v);
 void func_8007D274(Vector *from, Vector *to);
 void func_8007E31C(Vector *from, Vector *to, Color *color);
+
+/* libgpu TIM_IMAGE. */
+typedef struct {
+    u32 mode;
+    Rect *crect;
+    s16 *caddr;
+    Rect *prect;
+    u32 *paddr;
+} TimImage;
+
+/* Image data of the menu (+0x3C: the font TIM, +0x64: the banner TIM). */
+typedef struct {
+    u8 unk0[0x3C];
+    u32 *font;
+    u8 unk40[0x24];
+    u32 *banner;
+} MenuFiles;
+
+void func_800471B4(u32 *tim);           /* open a TIM */
+s32 func_800471C4(TimImage *image);     /* read the next TIM image */
 
 #endif

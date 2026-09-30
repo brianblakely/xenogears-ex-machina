@@ -5,7 +5,7 @@
 
 /* libgpu POLY_FT4 layout (0x28 bytes). */
 typedef struct {
-    u32 tag;
+    u32 tag; /* next-packet address and length (top byte) */
     u8 r0, g0, b0, code;
     s16 x0, y0;
     u8 u0, v0;
