@@ -12,7 +12,158 @@ s32 func_80080AC4();
 s32 func_80076A14();
 s32 func_80076A1C();
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007DE98", func_8007DE98);
+/* Scene director: state 1 steps a timed state sequence (states at unk54,
+ * durations at unk58); the other states start sounds and actor commands and
+ * return to 1. */
+s32 func_8007DE98(s32 index) {
+    WorldmapActor *actor;
+    s32 unused[4]; /* unreferenced; the original frame reserves it */
+
+    actor = &D_8009BE24[index];
+    switch (actor->state) {
+    case 0:
+        break;
+    case 1:
+        if (--actor->wait < 0) {
+            actor->state = ((u16 *)actor->unk54)[actor->u.step];
+            actor->wait = ((u16 *)actor->unk58)[actor->u.step];
+            actor->u.step++;
+        }
+        break;
+    case 2:
+        func_80039E60((D_8006259C->id << 16) | 0x1C);
+        func_80039E60((D_8006259C->id << 16) | 0x1D);
+        func_80039E60((D_8006259C->id << 16) | 0x1E);
+        func_80097770(2, 2);
+        func_80097770(3, 2);
+        func_80097770(4, 3);
+        func_80097770(5, 3);
+        func_80097770(6, 3);
+        func_80097770(7, 3);
+        func_80097770(8, 3);
+        actor->state = 1;
+        break;
+    case 3:
+        func_80089514(0x22);
+        func_80089514(0x23);
+        func_80089514(0x24);
+        func_80097770(2, 3);
+        func_80097770(3, 3);
+        func_80097770(4, 3);
+        func_80097770(5, 3);
+        func_80097770(6, 3);
+        func_80097770(7, 3);
+        func_80097770(8, 3);
+        actor->state = 1;
+        break;
+    case 4:
+        func_80097770(2, 4);
+        func_80097770(3, 4);
+        func_80097770(4, 3);
+        func_80097770(5, 3);
+        func_80097770(6, 3);
+        func_80097770(7, 3);
+        func_80097770(8, 3);
+        actor->state = 1;
+        break;
+    case 5:
+        func_80097770(2, 5);
+        actor->state = 1;
+        break;
+    case 6:
+        func_80097770(0, 0xD);
+        D_8009CCA4 = 1;
+        D_8009D3CC = 0x40;
+        actor->state = 1;
+        break;
+    case 7:
+        func_80097770(3, 5);
+        func_80097770(4, 4);
+        func_80097770(5, 4);
+        func_80097770(6, 4);
+        func_80097770(7, 4);
+        func_80097770(8, 4);
+        func_80097770(0, 0xC);
+        D_8009CCA4 = 1;
+        D_8009D3CC = 0x40;
+        actor->state = 1;
+        break;
+    case 8:
+        func_80097770(2, 6);
+        actor->state = 1;
+        break;
+    case 9:
+        func_80097770(0, 0xD);
+        D_8009CCA4 = 1;
+        D_8009D3CC = 0x80;
+        actor->state = 1;
+        break;
+    case 10:
+        func_80097770(0, 0xC);
+        D_8009CCA4 = 1;
+        D_8009D3CC = 0x80;
+        func_80097770(9, 1);
+        func_80097770(2, 7);
+        actor->state = 1;
+        break;
+    case 16:
+        func_80097770(2, 4);
+        func_80097770(3, 0x10);
+        func_80097770(4, 3);
+        func_80097770(5, 3);
+        func_80097770(6, 3);
+        func_80097770(7, 3);
+        func_80097770(8, 3);
+        actor->state = 1;
+        break;
+    case 17:
+        func_80097770(2, 0x10);
+        actor->state = 1;
+        break;
+    case 18:
+        func_80097770(2, 0x11);
+        actor->state = 1;
+        break;
+    case 24:
+        func_80097770(2, 4);
+        func_80097770(3, 0x18);
+        func_80097770(4, 3);
+        func_80097770(5, 3);
+        func_80097770(6, 3);
+        func_80097770(7, 3);
+        func_80097770(8, 3);
+        actor->state = 1;
+        break;
+    case 25:
+        func_80097770(2, 0x18);
+        actor->state = 1;
+        break;
+    case 61:
+        func_80039E60((D_8006259C->id << 16) | D_8009A5A0[D_8009D3D4][0]);
+        func_80039E60((D_8006259C->id << 16) | D_8009A5A0[D_8009D3D4][1]);
+        func_80039E60((D_8006259C->id << 16) | D_8009A5A0[D_8009D3D4][2]);
+        actor->state = 1;
+        break;
+    case 62:
+        func_80039E60((D_8006259C->id << 16) | 0x19);
+        func_80039E60((D_8006259C->id << 16) | 0x1A);
+        func_80039E60((D_8006259C->id << 16) | 0x1B);
+        actor->state = 1;
+        break;
+    case 63:
+        func_80097770(0, 0xD);
+        D_8009CCA4 = 2;
+        D_8009D3CC = 4;
+        actor->state = 1;
+        break;
+    case 64:
+        D_8009D554 = 0;
+        D_8009D7CC = 0;
+        actor->state = 0;
+        break;
+    }
+    return 1;
+}
 
 /* Start a scripted camera at the player position (step 0, speed 0x40). */
 s32 func_8007E450(s32 index) {

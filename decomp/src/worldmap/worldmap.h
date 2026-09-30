@@ -1414,4 +1414,6 @@ typedef struct {
 
 extern u16 D_8009A684[]; /* flame sizes per actor */
 
+extern u16 D_8009A5A0[][3]; /* per area: three ambient sounds */
+
 #endif
