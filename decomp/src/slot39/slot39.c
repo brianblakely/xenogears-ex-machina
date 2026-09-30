@@ -1618,7 +1618,6 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C93A8);
 /* Whether the cursor slot suits `mode`: 0 a file is there, 1 this game's file
  * is there (both need files listed), 2 its card is present; other modes always
  * suit. A suitable slot sets the load state to 2. */
-#ifdef NON_MATCHING
 s32 func_801C9BCC(s32 mode) {
     MenuCard *card;
     s32 cursor;
@@ -1629,8 +1628,12 @@ s32 func_801C9BCC(s32 mode) {
     cursor = card->cursor;
     switch (mode) {
     case 0:
-        if ((*(u32 *)card->scanned & 0xffff0000) && card->present[D_801E981C[cursor] / 16]) {
-            if (card->fileSlots[D_801E981C[cursor]] == 0xff) {
+        if (*(u32 *)card->scanned & 0xffff0000) {
+            if (card->present[D_801E981C[cursor] / 16]) {
+                if (card->fileSlots[D_801E981C[cursor]] == 0xff) {
+                    ok = 0;
+                }
+            } else {
                 ok = 0;
             }
         } else {
@@ -1638,9 +1641,12 @@ s32 func_801C9BCC(s32 mode) {
         }
         break;
     case 1:
-        if ((*(u32 *)card->scanned & 0xffff0000) && card->present[D_801E981C[cursor] / 16] &&
-            card->fileSlots[D_801E981C[cursor]] != 0xff) {
-            if (!card->ours[D_801E981C[cursor]]) {
+        if (*(u32 *)card->scanned & 0xffff0000) {
+            if (card->present[D_801E981C[cursor] / 16] && card->fileSlots[D_801E981C[cursor]] != 0xff) {
+                if (!card->ours[D_801E981C[cursor]]) {
+                    ok = 0;
+                }
+            } else {
                 ok = 0;
             }
         } else {
@@ -1658,9 +1664,6 @@ s32 func_801C9BCC(s32 mode) {
     }
     return ok;
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C9BCC);
-#endif
 
 /* The first cursor position of the present cards whose slot suits `mode`
  * (as 801c9bcc), or ff; modes 0 and 1 stop at once when no files are listed.
