@@ -957,7 +957,162 @@ s32 func_80075A4C(Vector *quad, s32 px, s32 pz, s32 radius) {
     return func_80075750(quad[1].vx, quad[1].vz, quad[3].vx, quad[3].vz, px, pz, radius) != 0;
 }
 
+/* Point of the body axis (home to upper anchor) at a height between them. */
+#define AXIS_POINT(out, home, top, y)                                           \
+    frac = (((y) - (home).vy) << 12) / ((top).vy - (home).vy);                  \
+    (out).vx = ((frac * ((top).vx - (home).vx)) >> 12) + (home).vx;             \
+    (out).vy = ((frac * ((top).vy - (home).vy)) >> 12) + (home).vy;             \
+    (out).vz = ((frac * ((top).vz - (home).vz)) >> 12) + (home).vz
+
+#ifdef NON_MATCHING
+/* Test the opponent's shots and trails against an actor's body axis; the
+ * first shot or trail that hits sets the hit point, effect, glow, damage and
+ * reaction. Returns 0.
+ * Does not match: draft; the register allocation differs (the original keeps the hit kind in $fp and the 1/3 constant in $s7) and it is 20 bytes shorter. */
+s32 func_80075B50(Actor *actor) {
+    Vector home;
+    Vector top;
+    Vector point;
+    Vector from;
+    Shot *shot;
+    Trail *trail;
+    s32 hits = 0;
+    s32 best = 0;
+    s32 kind = 0;
+    s32 damage;
+    s32 frac;
+    s32 hit;
+    s32 dt;
+    s32 dh;
+    s32 dm;
+    s32 i;
+
+    home = actor->home;
+    top = actor->unk92C;
+    for (i = 0; i < 8; i++) {
+        shot = &actor->opponent->shots[i];
+        if (!shot->active) {
+            continue;
+        }
+        hit = 0;
+        if (top.vy < shot->pos.vy && shot->pos.vy < home.vy) {
+            AXIS_POINT(point, home, top, shot->pos.vy);
+            hit = func_80075888(shot->prev.vx, shot->prev.vz, shot->pos.vx, shot->pos.vz, point.vx, point.vz,
+                                actor->header->unk13);
+        } else if (shot->dist < actor->header->unk13) {
+            dt = abs(top.vy - shot->prev.vy);
+            dh = abs(home.vy - shot->prev.vy);
+            dm = abs(shot->pos.vy - shot->prev.vy);
+            if (dt < dh) {
+                if (dt < dm) {
+                    point = top;
+                    hit = 1;
+                }
+            } else if (dh < dm) {
+                hit = 1;
+                point = home;
+            }
+        }
+        if (!hit) {
+            continue;
+        }
+        actor->glow = 0xFF;
+        actor->unkD4 |= 0x20;
+        damage = shot->unk3C;
+        if ((u32)(((ratan2(shot->velocity.vx, shot->velocity.vz) - actor->angle) & 0xFFF) - 0x601) < 0x3FF) {
+            damage *= 2;
+            kind = 3;
+            func_8008EBD0(actor, 0xC, &point, 1);
+        } else if (actor->flags & 4) {
+            func_8008EBD0(actor, 0xF, &point, 1);
+            damage /= 2;
+            actor->glow = 0x80;
+        } else {
+            func_8008EBD0(actor, 0xC, &point, 1);
+        }
+        actor->unkE8 += damage * 2 / 3;
+        actor->unk916 += damage * 2 / 3;
+        actor->hit_point = point;
+        if (damage != 0) {
+            hits++;
+        }
+        D_80092A24 = point;
+        best = damage;
+        D_80092648 = 0x10;
+        actor->unkC8 = damage / 3 + 0xC;
+        from = point;
+        shot->active = 0;
+        break;
+    }
+    for (i = 0; i < 16; i++) {
+        trail = &actor->opponent->trails[i];
+        if (trail->state != 1 || trail->unk44_0) {
+            continue;
+        }
+        hit = 0;
+        if (trail->flip) {
+            if (top.vy < trail->a.vy && trail->a.vy < home.vy) {
+                AXIS_POINT(point, home, top, trail->a.vy);
+                hit = func_80075888(trail->a_prev.vx, trail->a_prev.vz, trail->a.vx, trail->a.vz, point.vx,
+                                    point.vz, actor->header->unk13);
+            }
+        } else {
+            damage = (trail->a.vy + trail->a_prev.vy + trail->b.vy + trail->b_prev.vy) / 4;
+            if (top.vy < damage && damage < home.vy) {
+                AXIS_POINT(point, home, top, damage);
+                hit = func_80075A4C((Vector *)trail, point.vx, point.vz, actor->header->unk13);
+            }
+        }
+        if (!hit) {
+            continue;
+        }
+        actor->opponent->flags &= ~0x4000000;
+        point.vx = D_80092654;
+        point.vz = D_80092658;
+        if (actor->flags & 4) {
+            func_8008EBD0(actor, 0xF, &point, 1);
+            D_80092A24 = point;
+            D_80092648 = 4;
+            actor->glow = 0xC0;
+            damage = trail->unk47 >> 1;
+            actor->unkD4 |= 0x20;
+        } else {
+            func_8008EBD0(actor, trail->effect, &point, 1);
+            func_8007D190(&point, 0);
+            D_80092A24 = point;
+            D_80092648 = 0x10;
+            actor->glow = 0xFF;
+            actor->unkD4 &= ~0x20;
+            damage = trail->unk47;
+        }
+        actor->unkC8 = damage;
+        actor->unk916 += damage * 6 / 10;
+        actor->unkE8 += damage * 6 / 10;
+        actor->hit_point = point;
+        if (damage != 0) {
+            hits++;
+        }
+        if (best < damage) {
+            best = damage;
+            from = trail->a;
+            kind = trail->unk46;
+        }
+        func_80073CA4(actor->opponent);
+        break;
+    }
+    if (hits != 0) {
+        actor->unk100 = kind + 1;
+        actor->unk970 = best;
+        actor->hit_from = from;
+        actor->unk1668++;
+    } else {
+        actor->unk100 = 0;
+    }
+    return 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80075B50);
+#endif
 
 /* Queue a pad input for an actor (dropped when 32 are pending). */
 void func_8007639C(Actor *actor, u8 input) {

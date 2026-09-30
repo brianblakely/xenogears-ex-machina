@@ -91,7 +91,8 @@ typedef struct {
     Vector a_prev;     /* 0x10 */
     Vector b;          /* 0x20 */
     Vector b_prev;     /* 0x30 */
-    u8 unk40[3];
+    s16 effect;        /* 0x40: hit effect */
+    u8 unk42;
     u8 unk43;
     u32 unk44_0 : 1;
     u32 flip : 1;
@@ -287,7 +288,8 @@ typedef struct Actor {
     s16 unk914;
     s16 unk916;
     u8 glow;             /* 0x918: light level, fades by 0x18 a frame */
-    u8 unk919[0x13];
+    u8 unk919[0x3];
+    Vector hit_point;    /* 0x91C: where the last hit landed */
     Vector unk92C;       /* 0x92C: a second anchor point; with home, spans the actor */
     Vector home;         /* 0x93C */
     Vector core;         /* 0x94C: where shots home in */
