@@ -3,6 +3,17 @@
 
 #include "gpu.h"
 
+/* A task's link word: its owner's serial and its state flags. */
+typedef union {
+    u32 word;
+    struct {
+        unsigned owner_serial : 29;  /* the owner's creation number */
+        unsigned flag29 : 1;
+        unsigned flag30 : 1;
+        unsigned active : 1;
+    } bits;
+} TaskLink;
+
 /* A task node of the sprite engine's lists. */
 typedef struct Task {
     struct Task *owner;
@@ -16,15 +27,7 @@ typedef struct Task {
             unsigned flags : 3;
         } bits;
     } id;                                /* +0x10 */
-    union {
-        u32 word;
-        struct {
-            unsigned owner_serial : 29;  /* the owner's creation number */
-            unsigned flag29 : 1;
-            unsigned flag30 : 1;
-            unsigned active : 1;
-        } bits;
-    } link;                              /* +0x14: flag tests read the word */
+    TaskLink link;                       /* +0x14: flag tests read the word */
     struct Task *next;                   /* +0x18 */
 } Task;
 

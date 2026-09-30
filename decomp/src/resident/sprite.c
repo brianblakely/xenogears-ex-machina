@@ -96,17 +96,22 @@ void func_8001C9F8(void) {
 }
 
 /* Link `node` at the head of the second task list under `owner`. */
-/* Nonmatching: the original loads the serial counter and list head first and builds the id words in another order. */
+/* Nonmatching: the original loads the serial counter and list head before the link word. */
 #ifdef NON_MATCHING
 void func_8001CA58(Task *owner, Task *node) {
+    TaskLink link;
+    Task *head = D_80059594;
+
     node->owner = owner;
-    node->next = D_80059594;
+    node->next = head;
     D_80059594 = node;
-    node->link.bits.owner_serial = owner->id.bits.serial;
+    link = node->link;
+    link.bits.owner_serial = owner->id.bits.serial;
     node->id.bits.serial = D_80059184++;
-    node->link.bits.flag29 = 0;
-    node->link.bits.flag30 = 0;
-    node->link.bits.active = 0;
+    link.bits.flag29 = 0;
+    link.bits.flag30 = 0;
+    link.bits.active = 0;
+    node->link = link;
     node->update = NULL;
     node->destroy = func_8001CB48;
     D_8005918C++;
