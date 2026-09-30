@@ -2464,9 +2464,97 @@ void func_801CEA68(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CEEA8);
+/* Animate the indicator: its position (from the cursor while opening, now and then at random while idle), its sprite, and its open-idle-close frame steps. */
+void func_801CEEA8(void) {
+    u8 moved;
+    u16 x;
+    u16 y;
+    s32 index;
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CF184);
+    if (D_800625A0->unk454->lamp_state[2] != 0) {
+        if (D_800625A0->unk454->lamp_timer[2] != 0) {
+            D_800625A0->unk454->lamp_timer[2]--;
+            return;
+        }
+        moved = 0;
+        switch (D_800625A0->unk454->lamp_state[2]) {
+        case 1:
+            index = D_801D7030[D_800625A0->top_cursor * 4 + D_800625A0->list_cursor];
+            x = D_801D705C[index];
+            moved = 1;
+            y = D_801D7068[index];
+            break;
+        case 2:
+            if (func_8001BD40(0, 0xFF) < 4) {
+                x = D_801D705C[func_8001BD40(0, 5)];
+                y = D_801D7068[func_8001BD40(0, 5)];
+                moved = 1;
+            }
+            break;
+        }
+        if (moved) {
+            D_800625A0->unk454->indicator_x = x;
+            D_800625A0->unk454->indicator_y = y;
+        }
+        D_800625A0->unk454->lamp_count[2] =
+            func_8002675C(D_800625A0->sprite_sheet, D_800625A0->unk454->indicator_frame + 0x172,
+                          D_800625A0->unk454->indicator, D_800625A0->buffer, D_800625A0->unk454->indicator_x,
+                          D_800625A0->unk454->indicator_y, 0x1000);
+        D_800625A0->unk454->lamp_buffer[2] = D_800625A0->buffer;
+        D_800625A0->unk454->lamp_timer[2] = 1;
+        switch (D_800625A0->unk454->lamp_state[2]) {
+        case 1:
+            if (++D_800625A0->unk454->indicator_frame >= 3) {
+                D_800625A0->unk454->lamp_state[2] = 2;
+            }
+            break;
+        case 2:
+            if (++D_800625A0->unk454->indicator_frame >= 11) {
+                D_800625A0->unk454->indicator_frame = 3;
+            }
+            break;
+        case 3:
+            D_800625A0->unk454->indicator_frame = 2;
+            D_800625A0->unk454->lamp_state[2] = 4;
+            break;
+        case 4:
+            if (--D_800625A0->unk454->indicator_frame < 0) {
+                D_800625A0->unk454->lamp_state[2] = 0;
+            }
+            break;
+        }
+    }
+}
+
+/* Animate the flicker every fifth frame: now and then move it to a random place, draw its three sprites (a diagonal row) and toggle their frame. */
+void func_801CF184(void) {
+    u16 x;
+    u16 y;
+    s32 i;
+
+    if (D_800625A0->unk454->flicker_shown != 0) {
+        if (D_800625A0->unk454->flicker_timer != 0) {
+            D_800625A0->unk454->flicker_timer--;
+            return;
+        }
+        if (func_8001BD40(0, 0xFF) < 8) {
+            x = D_801D7074[func_8001BD40(0, 5)];
+            y = D_801D7080[func_8001BD40(0, 5)];
+            D_800625A0->unk454->flicker_x = x;
+            D_800625A0->unk454->flicker_y = y;
+        }
+        for (i = 0; i < 3; i++) {
+            D_800625A0->unk454->flicker_count =
+                func_8002675C(D_800625A0->sprite_sheet, D_800625A0->unk454->flicker_frame + 0x167,
+                              D_800625A0->unk454->flicker[i], D_800625A0->buffer,
+                              D_800625A0->unk454->flicker_x + i * 8, D_800625A0->unk454->flicker_y + i * 10,
+                              0x1000);
+        }
+        D_800625A0->unk454->flicker_frame ^= 1;
+        D_800625A0->unk454->flicker_buffer = D_800625A0->buffer;
+        D_800625A0->unk454->flicker_timer = 4;
+    }
+}
 
 /* Build the gear screen's packets when shown. */
 void func_801CF33C(void) {
