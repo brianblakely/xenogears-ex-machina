@@ -125,10 +125,16 @@ typedef struct {
     u8 unkA9[0xAD - 0xA9];
     u8 unkAD;
     u8 unkAE;          /* menu module block loaded */
-    u8 unkAF[0xB4 - 0xAF];
+    u8 unkAF;
+    u8 unkB0;
+    u8 unkB1;
+    u8 unkB2;
+    u8 unkB3;
     u8 unkB4;
     u8 unkB5;
-    u8 unkB6[0xC6 - 0xB6];
+    u8 unkB6;
+    u8 unkB7;          /* command window page */
+    u8 unkB8[0xC6 - 0xB8];
     u8 unkC6;
     u8 unkC7;
     u8 unkC8;
@@ -532,6 +538,12 @@ void func_800879A8(u8 actor, u8 target);
 void func_8008FA60(s32 window);
 void func_8007765C(void);
 void func_8008AB94(void);
+void func_8008A684(u8 member);
+void func_8008A274(u8 member);
+void func_8008A3EC(u8 member);
+void func_800BC404(u16 mask);
+void func_800BCD98(u16 mask);
+void func_80077980(void);
 void func_80078508(u8 *order);
 void func_80087EDC(u8 actor, u8 target);
 void func_800883AC(u8 slot);

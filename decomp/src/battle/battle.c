@@ -3153,7 +3153,20 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008A3EC);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008A684);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008A9C0);
+/* Result-screen step by the battle end state 800c3e4c. */
+void func_8008A9C0(u8 member) {
+    switch (D_800C3E4C) {
+    case 0:
+        func_8008A684(member);
+        break;
+    case 1:
+        func_8008A274(member);
+        break;
+    case 2:
+        func_8008A3EC(member);
+        break;
+    }
+}
 
 /* Play menu sound effect `id` of the system effect bank. */
 void func_8008AA40(u8 id) {
@@ -3226,9 +3239,26 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008AC88);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008ADD0);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008B108);
+/* Hide the command windows (four panels); without `keep` show the
+ * +0x641c lists. */
+void func_8008B108(u8 keep) {
+    D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->unk9E = 0;
+    D_800D2D28->unkB0 = D_800D2D28->unkB1 = D_800D2D28->unkB2 = D_800D2D28->unkB3 = 0;
+    D_800D2D28->unkB7 = 0;
+    if (keep == 0) {
+        D_800D2D28->unkCB = 1;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008B168);
+/* Show the command windows (four panels, page 1) and frame the camera on
+ * the member and its default target. */
+void func_8008B168(u8 member) {
+    D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->unk9E = 1;
+    D_800D2D28->unkB0 = D_800D2D28->unkB1 = D_800D2D28->unkB2 = D_800D2D28->unkB3 = 1;
+    D_800D2D28->unkB7 = 1;
+    func_800BC404(func_80089C08(member) | func_80089C08(D_800C3EAC->slots[member].defaultTarget));
+    func_800BCD98(func_80089C08(D_800C3EAC->slots[member].defaultTarget));
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008B224);
 
@@ -3236,23 +3266,72 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008B478);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008B908);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008BC40);
+/* Hide the command windows (two panels); without `keep` show the +0x641c
+ * lists. */
+void func_8008BC40(u8 keep) {
+    D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->unk9E = 0;
+    D_800D2D28->unkB0 = D_800D2D28->unkB1 = 0;
+    D_800D2D28->unkB7 = 0;
+    if (keep == 0) {
+        D_800D2D28->unkCB = 1;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008BC98);
+/* Show the command windows (two panels, page 2) and frame the camera on the
+ * member and its default target. */
+void func_8008BC98(u8 member) {
+    D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->unk9E = 1;
+    D_800D2D28->unkB0 = D_800D2D28->unkB1 = 1;
+    D_800D2D28->unkB7 = 2;
+    func_800BC404(func_80089C08(member) | func_80089C08(D_800C3EAC->slots[member].defaultTarget));
+    func_800BCD98(func_80089C08(D_800C3EAC->slots[member].defaultTarget));
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008BD50);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008BED8);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008C360);
+/* Hide the command windows; with `close` also close windows 0 and 1 and
+ * release the graphics block. */
+void func_8008C360(u8 close) {
+    D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->unk9E = 0;
+    D_800D2D28->unkB7 = 0;
+    if (close != 0) {
+        D_800D2D28->unkC6 = 0;
+        func_8008FA60(0);
+        func_8008FA60(1);
+        func_800716D8();
+        func_8007765C();
+        func_80077980();
+    } else {
+        D_800D2D28->unkB0 = D_800D2D28->unkB1 = 0;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008C3F0);
+/* Show the command windows (two panels, page 3) and frame the camera on the
+ * member and its default target. */
+void func_8008C3F0(u8 member) {
+    D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->unk9E = 1;
+    D_800D2D28->unkB7 = 3;
+    D_800D2D28->unkB0 = D_800D2D28->unkB1 = 1;
+    func_800BC404(func_80089C08(member) | func_80089C08(D_800C3EAC->slots[member].defaultTarget));
+    func_800BCD98(func_80089C08(D_800C3EAC->slots[member].defaultTarget));
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008C4A8);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008C81C);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008CCCC);
+/* Hide the command windows (three panels); without `keep` show the +0x641c
+ * lists. */
+void func_8008CCCC(u8 keep) {
+    D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->unk9E = 0;
+    D_800D2D28->unkB0 = D_800D2D28->unkB1 = D_800D2D28->unkB2 = 0;
+    D_800D2D28->unkB7 = 0;
+    if (keep == 0) {
+        D_800D2D28->unkCB = 1;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008CD28);
 
