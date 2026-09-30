@@ -623,6 +623,7 @@ void func_801C6170(void);
 void func_801CCD20(void);
 void func_801CD310(s32 count, s32 *ids);
 void func_801CD838(u8 count, u8 selected, s32 *ids);
+void func_801CCEE8(u8 count, Label *labels, u8 *text_ids, s32 *offsets, u8 *shown, u8 index, u8 row, u8 mode);
 void func_801C6278(s32 position, u8 frame);
 void func_801C90E0(u8 index, s16 x, s16 y, s16 w, u16 h, u8 grow, u8 flat, s32 ot_entry, u8 has_bar);
 void func_801CA28C(void);
@@ -769,5 +770,11 @@ void func_801CE1D0(void);
 void func_801CDD74(void);
 void func_801CCD20(void);
 void func_801C5B08(void);
+extern s32 D_801D6980[];   /* command picture pairs */
+extern s32 D_801D6A30[];   /* command label x offsets */
+void func_801CCEE8(u8 count, Label *labels, u8 *text_ids, s32 *offsets, u8 *shown, u8 index, u8 row, u8 mode);
+void func_801D0398(u8 back);
+u8 func_801CDC68(void);
+void func_801CE2E8(void);
 
 #endif

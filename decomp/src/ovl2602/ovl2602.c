@@ -1873,7 +1873,64 @@ u8 func_801CDC68(void) {
     return running;
 }
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CDD74);
+/* The command screen: leave, sell, buy or the two gear commands, switching members with L1/R1, until leaving. */
+void func_801CDD74(void) {
+    u8 running;
+
+    running = 1;
+    func_801CFAB8(1, D_801D9084);
+    D_800625A0->flags->model_shown = running;
+    D_800625A0->top_cursor = 2;
+    func_801CD310(5, D_801D6980);
+    func_801CCE90(4, D_800625A0->list_labels, D_801D6A20, D_800625A0->flags->list_label_shown);
+    if (D_801D6FD8 >= 2) {
+        D_800625A0->flags->marks_b_shown = running;
+    }
+    do {
+        func_801CC1C4();
+        switch (D_800625A0->input) {
+        case 4:
+            func_801CB498(2);
+            D_800625A0->images->dim = 1;
+            func_801C665C();
+            func_801CCEBC(4, D_800625A0->flags->list_label_shown);
+            D_800625A0->cursor->width = 0x4C;
+            running = func_801CDC68();
+            D_800625A0->cursor->width = 0x40;
+            break;
+        case 5:
+            running = 0;
+            break;
+        case 1:
+            if (D_800625A0->top_cursor != 0) {
+                D_800625A0->top_cursor--;
+            } else {
+                D_800625A0->top_cursor = 3;
+            }
+            break;
+        case 3:
+            if (++D_800625A0->top_cursor >= 4) {
+                D_800625A0->top_cursor = 0;
+            }
+            break;
+        case 9:
+            func_801D0398(0);
+            break;
+        case 10:
+            func_801D0398(1);
+            break;
+        }
+        if (D_800625A0->top_cursor != D_800625A0->unk337) {
+            func_801CD838(4, D_800625A0->top_cursor, D_801D6980);
+            func_801CCEE8(4, D_800625A0->list_labels, D_801D6A20, D_801D6A30,
+                          D_800625A0->flags->list_label_shown, D_800625A0->top_cursor, 0, 0);
+            D_800625A0->unk337 = D_800625A0->top_cursor;
+        }
+    } while (running);
+    D_801D697C = 0;
+    func_801D5EB8();
+    func_801CE2E8();
+}
 
 /* Overlay entry: build the gear screen, run it, and tear it down. */
 void func_801CE024(void) {
