@@ -3,9 +3,9 @@
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8006FDEC);
 
-/* Decode bundle component `index` into `destination`. */
-void func_8007008C(s32 unused, s32 index, void *destination) {
-    func_80032EB4(index, destination);
+/* Decode compressed `source` data into `destination`. */
+void func_8007008C(s32 unused, void *source, void *destination) {
+    func_80032EB4(source, destination);
 }
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800700B0);
@@ -733,8 +733,8 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007AC58);
 
 /* Set the pointer's two pad buffers. */
 void func_8007AD8C(void *pad0, void *pad1) {
-    D_800B0054 = pad0;
-    D_800B0058 = pad1;
+    D_800B0054[0] = pad0;
+    D_800B0054[1] = pad1;
 }
 
 /* Set the pointer bounds, scaled by the divisors. */
@@ -757,7 +757,19 @@ void func_8007AE2C(s32 port, s32 x, s32 y) {
     D_800B0070[port] = y * D_800B0060;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007AE78);
+/* Read a port's pointer into out[0..4]: x and y (unscaled), buttons (mouse
+ * pads only, else -0x100), x and y motion. Declared int but returns nothing. */
+s32 func_8007AE78(s32 port, s32 *out) {
+    func_8007AF74();
+    out[0] = D_800B0068[port] / D_800B005C;
+    out[1] = D_800B0070[port] / D_800B0060;
+    out[2] = -0x100;
+    out[3] = D_800B0054[port][4];
+    out[4] = D_800B0054[port][5];
+    if (D_800B0054[port][0] == 0 && D_800B0054[port][1] == 0x12) {
+        out[2] = ~D_800B0054[port][3] & 0xC;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007AF74);
 
@@ -2108,7 +2120,22 @@ void func_8008B518(void) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008B5D4);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008B894);
+/* Event: once the disc is idle, stop the stream, decode the pending party
+ * sprite into its block, release the buffer and apply it; wait otherwise. */
+void func_8008B894(void) {
+    if (D_800ADBC4 != 0xFF && func_800286CC() == 0) {
+        func_80028A60(0);
+        func_80032EB4(D_800ADBC0, D_8005A414[D_800ADBCC]);
+        func_800320E8(D_800ADBC0);
+        func_8008B978(D_800ADBC8);
+        D_800ADBC4 = 0xFF;
+        D_800B00C0 = 1;
+        D_800B0078->pc++;
+        return;
+    }
+    D_800B00C0 = 1;
+    D_800B0078->pc--;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008B978);
 
@@ -2132,15 +2159,61 @@ void func_8008C7D8(void) {
     D_800B0078->pc++;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008C84C);
+/* Event: with the sequence playing, pass op1/op3 to 8003a89c; wait while a
+ * sound is still loading into the 801e module. */
+void func_8008C84C(void) {
+    s32 a;
+
+    if (D_8004F36C != 0) {
+        a = func_800ACDEC(1);
+        func_8003A89C(D_80062528, a, func_800ACDEC(3));
+        D_800B0078->pc += 5;
+    } else if (D_8004F324 == 0xFF) {
+        D_800B0078->pc += 5;
+    } else if (D_800ADB1C == 0) {
+        D_800B0078->pc += 5;
+    } else {
+        D_800B0078->pc--;
+    }
+    D_800B00C0 = 1;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008C938);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008CA60);
+/* Event: as 8008c84c through 8003a838. */
+void func_8008CA60(void) {
+    s32 a;
+
+    if (D_8004F36C != 0) {
+        a = func_800ACDEC(1);
+        func_8003A838(D_80062528, a, func_800ACDEC(3));
+        D_800B0078->pc += 5;
+    } else if (D_8004F324 == 0xFF) {
+        D_800B0078->pc += 5;
+    } else if (D_800ADB1C == 0) {
+        D_800B0078->pc += 5;
+    } else {
+        D_800B0078->pc--;
+    }
+    D_800B00C0 = 1;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008CB4C);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008CC74);
+/* Event: as 8008c84c through 8003aac4 with one operand. */
+void func_8008CC74(void) {
+    if (D_8004F36C != 0) {
+        func_8003AAC4(D_80062528, func_800ACDEC(1));
+        D_800B0078->pc += 3;
+    } else if (D_8004F324 == 0xFF) {
+        D_800B0078->pc += 3;
+    } else if (D_800ADB1C == 0) {
+        D_800B0078->pc += 3;
+    } else {
+        D_800B0078->pc--;
+    }
+    D_800B00C0 = 1;
+}
 
 /* Event: set the actor's sound (op1, op3) with mode 0, stopping its current
  * one; a zero sound turns the mode off. */

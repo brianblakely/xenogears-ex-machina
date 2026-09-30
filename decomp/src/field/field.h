@@ -425,6 +425,9 @@ typedef struct {
 } FieldSlot6;
 
 /* Resident services. */
+extern void func_8003A838(s32 sequence, s32, s32);
+extern void func_8003A89C(s32 sequence, s32, s32);
+extern void func_8003AAC4(s32 sequence, s32);
 extern void func_80021BF0(FieldModel *model, void *block);
 extern void func_80039EC4(s32 sound, s32 voice);
 extern void func_800273C4(void *object, SVECTOR *eye, SVECTOR *target, MATRIX *world, u32 *ot, s32 buffer);
@@ -478,7 +481,7 @@ extern void func_80028A60(s32);
 extern void func_80029EB0(s32 file, void *ring, s32, s32, s32, s32, s32, s32, s32, s32);
 extern void *func_8002A260(s32 sectors, s32);
 extern void func_800320E8(void *);
-extern void func_80032EB4(s32 index, void *destination);
+extern void func_80032EB4(void *source, void *destination);
 extern void func_8003F738(SVECTOR *angles, MATRIX *m); /* RotMatrix */
 extern void func_800445D0(s32);
 extern void func_8004931C(MATRIX *a, MATRIX *b, MATRIX *out); /* CompMatrix */
@@ -492,6 +495,8 @@ extern void func_800496AC(void);                               /* PopMatrix */
 extern void func_8004A6DC(SVECTOR *v, s32 *out, s32 *flag); /* RotTrans */
 
 /* Field overlay. */
+extern void func_8007AF74(void);
+extern void func_8008B978(s32);
 extern void func_80071D08(s32 channel, s32 steps, s32 red, s32 green, s32 blue, s32 abr);
 extern s32 func_8009D000(s32 offset, s32 flags); /* operand, immediate with flag 0x20 */
 extern void func_80086590(VECTOR *target);
@@ -551,6 +556,8 @@ extern void func_80078C5C(void);
 extern void func_802815B0(void);
 
 /* Resident state. */
+extern s32 D_8004F36C; /* sequence playing */
+extern s32 D_80062528; /* current sequence */
 extern s32 D_80062590[3];
 extern s32 D_8005A444[3]; /* party members */
 extern s32 D_8004F300;
@@ -573,6 +580,9 @@ extern s32 D_8004F34C; /* current map */
 extern u8 D_800625FC[2][0x22]; /* pad buffers */
 
 /* Field state. */
+extern void *D_800ADBC0; /* pending party sprite buffer */
+extern s32 D_800ADBC8;
+extern s32 D_800ADBCC; /* pending party slot */
 extern FieldEventParams D_800B0080;
 extern Record78 D_800B02CC[];
 extern u16 D_800AE060[][2]; /* movie sound timeline: time, sound */
@@ -610,8 +620,7 @@ extern s32 D_800ADB5C; /* list position */
 extern u16 D_800B14AC;
 extern DialogueWindow D_800C2698[4];
 extern s32 D_800ADC10; /* scratchpad words in use */
-extern void *D_800B0054; /* pointer pad buffers */
-extern void *D_800B0058;
+extern s8 *D_800B0054[2]; /* pointer pad buffers */
 extern u16 D_800B005C; /* pointer X divisor */
 extern u16 D_800B0060; /* pointer Y divisor */
 extern s32 D_800B0068[2]; /* pointer X per port */
