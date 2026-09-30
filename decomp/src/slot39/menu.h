@@ -689,7 +689,9 @@ typedef struct MenuPortrait {
     POLY_FT4 side[2]; /* 3C0 */
     POLY_FT4 top[2]; /* 410 */
     POLY_FT4 bottom[2]; /* 460 */
-    u8 pad4B0[0x1E0];
+    POLY_G4 shade[2]; /* 4B0: grey semi-transparent cover */
+    DR_MODE modes[2]; /* 4F8 */
+    u8 pad510[0x180];
     SVECTOR frameVerts[4]; /* 690 */
     SVECTOR sideVerts[4]; /* 6B0 */
     SVECTOR topVerts[4]; /* 6D0 */

@@ -3458,7 +3458,73 @@ void func_801E5178(void) {
     D_8006ECF4[10].flag = 7;
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E53CC);
+/* Set up portrait `index`: hide it and its mark, set the grey covers and
+ * their draw modes, and the four edge lists' quads (sheet records 0-3). */
+void func_801E53CC(u8 index) {
+    MenuPortrait *portrait;
+    RECT window;
+    u8 i;
+
+    portrait = D_800625A0->portraits[index];
+    window.y = 0;
+    window.x = 0;
+    window.h = 0x100;
+    window.w = 0x100;
+    D_800625A0->party->unk20[index] = 0;
+    D_800625A0->party->unk27[index] = 0;
+    for (i = 0; i < 2; i++) {
+        SetPolyG4(&portrait->shade[i]);
+        (portrait->shade + i)->r0 = 0x68;
+        (portrait->shade + i)->g0 = 0x68;
+        (portrait->shade + i)->b0 = 0x68;
+        (portrait->shade + i)->r1 = 0x68;
+        (portrait->shade + i)->g1 = 0x68;
+        (portrait->shade + i)->b1 = 0x68;
+        (portrait->shade + i)->r2 = 0x68;
+        (portrait->shade + i)->g2 = 0x68;
+        (portrait->shade + i)->b2 = 0x68;
+        (portrait->shade + i)->r3 = 0x68;
+        (portrait->shade + i)->g3 = 0x68;
+        (portrait->shade + i)->b3 = 0x68;
+        SetSemiTrans(&portrait->shade[i], 1);
+        SetDrawMode(&portrait->modes[i], 0, 0,
+                    GetTPage(0, 0, D_800625A0->sheetEntries[0][4], D_800625A0->sheetEntries[0][5]), &window);
+    }
+    for (i = 0; i < 4; i++) {
+        SetPolyFT4(&portrait->edgeA[i]);
+        SetShadeTex(&portrait->edgeA[i], 1);
+        (portrait->edgeA + i)->r0 = 0xff;
+        (portrait->edgeA + i)->g0 = 0xff;
+        (portrait->edgeA + i)->b0 = 0xff;
+        portrait->edgeA[i].tpage = GetTPage(D_800625A0->sheetEntries[0][1], 0, D_800625A0->sheetEntries[0][4],
+                                            D_800625A0->sheetEntries[0][5]);
+        portrait->edgeA[i].clut = GetClut(D_800625A0->sheetEntries[0][2], D_800625A0->sheetEntries[0][3]);
+        SetPolyFT4(&portrait->edgeB[i]);
+        SetShadeTex(&portrait->edgeB[i], 1);
+        (portrait->edgeB + i)->r0 = 0xff;
+        (portrait->edgeB + i)->g0 = 0xff;
+        (portrait->edgeB + i)->b0 = 0xff;
+        portrait->edgeB[i].tpage = GetTPage(D_800625A0->sheetEntries[1][1], 0, D_800625A0->sheetEntries[1][4],
+                                            D_800625A0->sheetEntries[1][5]);
+        portrait->edgeB[i].clut = GetClut(D_800625A0->sheetEntries[1][2], D_800625A0->sheetEntries[1][3]);
+        SetPolyFT4(&portrait->edgeC[i]);
+        SetShadeTex(&portrait->edgeC[i], 1);
+        (portrait->edgeC + i)->r0 = 0xff;
+        (portrait->edgeC + i)->g0 = 0xff;
+        (portrait->edgeC + i)->b0 = 0xff;
+        portrait->edgeC[i].tpage = GetTPage(D_800625A0->sheetEntries[2][1], 0, D_800625A0->sheetEntries[2][4],
+                                            D_800625A0->sheetEntries[2][5]);
+        portrait->edgeC[i].clut = GetClut(D_800625A0->sheetEntries[2][2], D_800625A0->sheetEntries[2][3]);
+        SetPolyFT4(&portrait->edgeD[i]);
+        SetShadeTex(&portrait->edgeD[i], 1);
+        (portrait->edgeD + i)->r0 = 0xff;
+        (portrait->edgeD + i)->g0 = 0xff;
+        (portrait->edgeD + i)->b0 = 0xff;
+        portrait->edgeD[i].tpage = GetTPage(D_800625A0->sheetEntries[3][1], 0, D_800625A0->sheetEntries[3][4],
+                                            D_800625A0->sheetEntries[3][5]);
+        portrait->edgeD[i].clut = GetClut(D_800625A0->sheetEntries[3][2], D_800625A0->sheetEntries[3][3]);
+    }
+}
 
 /* Set up image block `index`'s 16x16 sprite and semi-transparent cover at
  * its position for both buffers, and the two draw modes (blend mode 2). */
