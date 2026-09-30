@@ -2934,7 +2934,30 @@ void func_801D5ED4(u8 slot, u8 gear) {
     func_801C851C(D_800625A0->block358->portraitAt, D_801E9D38 - shift, D_801E9D3C, w, 13);
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D6194);
+/* Build the detail panel's parts of `layout` from the sheet and place each
+ * part's quad where the sheet put it. */
+void func_801D6194(u8 layout) {
+    s32 i;
+
+    D_800625A0->block358->count = 0;
+    for (i = 0; i < 24; i++) {
+        if (D_801EA39C[layout * 24 + i] != 0xffff) {
+            D_800625A0->block358->count +=
+                func_8002675C(D_800625A0->sheet, D_801EA39C[layout * 24 + i],
+                              &D_800625A0->block358->parts[D_800625A0->block358->count * 2], D_800625A0->bufferIndex,
+                              D_801E9B60[layout * 24 + i], D_801E9C20[layout * 24 + i], 0x1000);
+        }
+    }
+    for (i = 0; i < D_800625A0->block358->count; i++) {
+        func_801C851C(D_800625A0->block358->partsAt[i],
+                      D_800625A0->block358->parts[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->parts[i * 2 + D_800625A0->bufferIndex].y0,
+                      D_800625A0->block358->parts[i * 2 + D_800625A0->bufferIndex].x1 -
+                          D_800625A0->block358->parts[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->parts[i * 2 + D_800625A0->bufferIndex].y3 -
+                          D_800625A0->block358->parts[i * 2 + D_800625A0->bufferIndex].y0);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D6338);
 

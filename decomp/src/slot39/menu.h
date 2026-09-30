@@ -796,9 +796,9 @@ extern s32 D_801E9B48;   /* exp */
 extern s32 D_801E9B4C;
 extern s32 D_801E9B50;   /* exp to next level */
 extern s32 D_801E9B54;
-extern s32 D_801E9B60[2][24]; /* detail panel part positions per layout: x */
-extern s32 D_801E9C20[2][24]; /* y */
-extern s32 D_801EA39C[2][24]; /* detail panel part sprites, ffff none */
+extern s32 D_801E9B60[48]; /* detail panel part positions, 24 per layout: x */
+extern s32 D_801E9C20[48]; /* y */
+extern s32 D_801EA39C[48]; /* detail panel part sprites, 24 per layout, ffff none */
 extern s32 D_801E9D38;   /* detail panel portrait position: x */
 extern s32 D_801E9D3C;   /* y */
 extern s32 D_801E9B58;   /* field block portrait offset: x */
