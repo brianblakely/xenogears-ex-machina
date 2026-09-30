@@ -5561,7 +5561,121 @@ void func_80090E7C(u8 member) {
     D_800C3EA4->unkA230->unk66C = D_800CCB04.buffer;
 }
 
+/* Build the member's art list page: set up the graphics block and the
+ * message frame, then render the name and two-digit EP cost of every art its
+ * character (or its gear) knows into VRAM text images, then the EP panel.
+ * Nonmatching: the image slot address is formed index-first from the frame
+ * base (sp+0x18 plus 0x30) instead of from sp+0x48. */
+#ifdef NON_MATCHING
+void func_80091064(u8 member) {
+    RECT nameRect;
+    RECT tensRect;
+    RECT onesRect;
+    RECT rowRect;
+    RECT rightRect;
+    RECT rect;
+    u32 *images[16];
+    u8 known[16];
+    u8 costs[16];
+    s32 i;
+    u8 tens;
+    u32 *digit;
+
+    func_80077610();
+    func_80076EA4();
+    func_8008FC1C(0x20, 0x30, 0x98, 0x38, 0xC);
+    D_800D2DB0 = (u32 *)func_8008AC00(0x39);
+    bzero(D_800D2DB0, 0x618);
+    rect.x = 0x3C0;
+    rect.w = 0x3C;
+    rect.y = 0;
+    rect.h = 0xD;
+    func_800769E8(&rect, D_800D2DB0);
+    if (D_800D32A0[member].unk1 == 0) {
+        for (i = 0; i < 16; i++) {
+            if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask2, i)) {
+                known[i] = 1;
+                costs[i] = D_800CCCE8.partyCommands[member][i + 22].cost;
+            } else {
+                known[i] = 0;
+                costs[i] = 0;
+            }
+        }
+    } else {
+        for (i = 0; i < 16; i++) {
+            if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask6, i)) {
+                known[i] = 1;
+                costs[i] = D_800CCCE8.gearCommands[member][i + 21].cost;
+            } else {
+                known[i] = 0;
+                costs[i] = 0;
+            }
+        }
+    }
+    for (i = 0; i < 16; i++) {
+        images[i] = (u32 *)func_8008AC00(0x1B);
+        bzero(images[i], 0x30C);
+        rowRect.x = (i % 2) * 30 + 0x380;
+        rowRect.y = (i / 2) * 16 + 0x100;
+        rowRect.w = 0x1B;
+        rowRect.h = 16;
+        func_800769E8(&rowRect, D_800D2DB0);
+        if (known[i] != 0) {
+            if (D_800D32A0[member].unk1 == 0) {
+                func_80034EAC(func_80033908(D_800CCCE8.records[member].pilot.characterId * 16 + i), images[i], 0x1B,
+                              0);
+            } else {
+                func_80034EAC(func_800339FC(D_800CCCE8.records[member].pilot.gearId * 16 + i), images[i], 0x1B, 0);
+            }
+            nameRect.x = (i % 2) * 30 + 0x380;
+            nameRect.y = (i / 2) * 16 + 0x102;
+            nameRect.w = 30;
+            nameRect.h = 13;
+            func_800769E8(&nameRect, images[i]);
+        }
+        if (!(i & 1)) {
+            rightRect.x = 0x3C0;
+            rightRect.y = (i / 2) * 16 + 0x100;
+            rightRect.w = 0x1B;
+            rightRect.h = 16;
+            func_800769E8(&rightRect, D_800D2DB0);
+        }
+        tensRect.x = (i % 2) * 16 + 0x3C0;
+        tensRect.y = (i / 2) * 16 + 0x102;
+        tensRect.w = 6;
+        tensRect.h = 13;
+        tens = costs[i] / 10;
+        if (tens != 0) {
+            digit = D_800C3E5C[tens];
+        } else {
+            digit = D_800D2DB0;
+        }
+        func_800769E8(&tensRect, digit);
+        onesRect.x = (i % 2) * 16 + 0x3C2;
+        onesRect.y = (i / 2) * 16 + 0x102;
+        onesRect.w = 6;
+        onesRect.h = 13;
+        if (known[i] != 0) {
+            digit = D_800C3E5C[(u8)(costs[i] % 10)];
+        } else {
+            digit = D_800D2DB0;
+        }
+        func_800769E8(&onesRect, digit);
+    }
+    func_80090E7C(member);
+    for (i = 0; i < 16; i++) {
+        func_800320E8(images[i]);
+    }
+    func_800320E8(D_800D2DB0);
+    func_800716D8();
+    D_800C3EA4->unkA230->unk140[0].clut = D_800595D4;
+    D_800C3EA4->unkA230->unk140[1].clut = D_800595D4;
+    D_800C3EA4->unkA230->unk669 = 1;
+    D_800D2D28->unkB7 = 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80091064);
+#endif
 
 /* Build eight glyph rows (0x66) from y + 0x38 into the +0xba8 primitives. */
 void func_80091604(s32 y) {
