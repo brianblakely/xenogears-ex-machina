@@ -10949,7 +10949,73 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A9B54);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A9F18);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AA6B4);
+extern u8 D_800AF474[8]; /* spawn offset per view octant */
+
+/* Spawn `particle` of `emitter`: its delay after the previous spawn, a
+ * random start within the spawn radius around the emitter (offset by the
+ * owner's view octant) and a velocity toward a random point of the
+ * target spread. */
+void func_800AA6B4(Record78 *emitter, Particle *particle, s32 *spawned) {
+    VECTOR unused; /* the original frame reserves an unused 16-byte local */
+    VECTOR start;
+    VECTOR end;
+    s32 radius;
+    s32 angle;
+    u32 facing;
+    s32 k;
+
+    particle->unk00 = 1;
+    particle->unk02 = emitter->unk56 + *spawned;
+    *spawned += emitter->unk56;
+    particle->unk04 = emitter->unk58;
+    if (emitter->flags & 1) {
+        particle->angle = rand() & 0xFFF;
+    } else {
+        particle->angle = emitter->unk76;
+    }
+    if (!(emitter->flags & 0x80)) {
+        radius = func_800A987C(emitter->unk26);
+    } else {
+        radius = emitter->unk26;
+    }
+    angle = func_800A987C(0xFFF);
+    start.vx = func_8003F8CC(angle) * radius >> 12;
+    if (!(emitter->flags & 0x40)) {
+        start.vz = func_8003F8B0(angle) * radius >> 12;
+    } else {
+        start.vz = 0;
+    }
+    facing = (D_800AF880.view_angle + D_800AF880.components.descriptors[emitter->unk52].actor->unk108) & 0xFFF;
+    k = D_800AF474[facing >> 9];
+    start.vx += emitter->unk0C.vx + emitter->unk30[k][0];
+    start.vz += emitter->unk0C.vz + emitter->unk30[k][1];
+    start.vy = emitter->unk0C.vy;
+    particle->position.vx = start.vx;
+    particle->position.vz = start.vz;
+    particle->position.vy = start.vy;
+    radius = func_800A987C(emitter->unk28);
+    end.vx = emitter->unk14.vx + (func_8003F8CC(angle) * radius >> 12);
+    end.vz = emitter->unk14.vz + (func_8003F8B0(angle) * radius >> 12);
+    end.vy = emitter->unk14.vy;
+    particle->velocity.vx = end.vx - start.vx;
+    particle->velocity.vy = end.vy - start.vy;
+    particle->velocity.vz = end.vz - start.vz;
+    particle->unk28.vx = emitter->unk1C.vx;
+    particle->unk28.vy = emitter->unk1C.vy;
+    particle->unk28.vz = emitter->unk1C.vz;
+    particle->unk38.vx = emitter->unk5A.vx;
+    particle->unk38.vy = emitter->unk5A.vy;
+    particle->unk38.vz = emitter->unk5A.vz;
+    particle->unk40.vx = emitter->unk62.vx;
+    particle->unk40.vy = emitter->unk62.vy;
+    particle->unk40.vz = emitter->unk62.vz;
+    particle->unk48[0] = emitter->unk6A;
+    particle->unk48[1] = emitter->unk6B;
+    particle->unk48[2] = emitter->unk6C;
+    particle->unk4C[0] = emitter->unk6E;
+    particle->unk4C[1] = emitter->unk6F;
+    particle->unk4C[2] = emitter->unk70;
+}
 
 /* Set an instance's bounding centre and radius from its mesh bounds. */
 void func_800AA9DC(FieldInstance *instance) {
