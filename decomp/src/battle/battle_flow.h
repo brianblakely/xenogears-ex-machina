@@ -47,6 +47,7 @@ extern s16 D_800C3DF0;
 #define AREA_BYTE_A73 (((u8 *)&BATTLE_AREA)[0xA73])
 
 extern s16 D_800D39E4;
+extern s32 D_800C3660; /* the battle menu update is running */
 extern u8 D_800C35D4; /* a sound to fade at the turn's end */
 extern s16 D_800C3614; /* frames before the next event */
 extern u8 D_800C3623;
@@ -64,6 +65,7 @@ void func_800BF730(s32 value);
 void func_80021BF0(BattleSprite *sprite, void *file);
 void func_80021FB8(BattleSprite *sprite, s32 mode); /* set the idle mode */
 s32 func_800BF354(void);
+void func_800BAEB8(s32 slot);
 void func_800AA760(s32 index, s32 value); /* set stage object index's byte 0x2A */
 void func_800AA79C(s32 a, s32 b);         /* swap two stage objects */
 s32 func_800C0314(void);

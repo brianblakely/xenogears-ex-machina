@@ -795,7 +795,138 @@ void func_800B9C78(void) {
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800B9C78);
 #endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800B9F78);
+/* The battle menu's update (not reentered): finish a requested sound
+ * command, step a gear's events, run the menu's pending action (field49:
+ * 2 put the sprite at its target, 4 a party target's hit pose 0x1B,
+ * 5 return to idle and end the slot's turn, 6 walk to the partner), then
+ * run its state: 2/6 walk towards the target until the distance grows,
+ * 4 start the event, 7/8/10 wait for the popups, 9 step a gear's event. */
+void func_800B9F78(BattleMenu *menu) {
+    BattleSprite *sprite;
+    BattleSprite *target;
+    BattleSprite *first;
+    GroundPoint from;
+    GroundPoint to;
+    GroundPoint toPartner;
+    s32 distance;
+
+    if (D_800C3660 != 0) {
+        return;
+    }
+    D_800C3660 = 1;
+    D_800C3610 = menu;
+    sprite = menu->sprite;
+    target = menu->target;
+    if (D_800C3628 != 0) {
+        D_800C3628 = 0;
+        if (func_800B7E94()) {
+            func_80021BF8(sprite, func_800B9B30);
+        } else {
+            if (SPRITE_SLOT(sprite) < 3) {
+                if (D_800C3623) {
+                    func_800245D8(sprite, 0x13);
+                } else {
+                    func_800245D8(sprite, 0x12);
+                }
+                D_800C3623 = 0;
+            }
+            if (sprite->field48 != 0) {
+                func_800BF0B4(7);
+            }
+        }
+    }
+    if (D_800C3610->field34 != 0) {
+        func_800B9C78();
+        D_800C3610->field34--;
+    }
+    if (D_800C3610->field49 != 0) {
+        switch (D_800C3610->field49) {
+        case 4:
+            first = D_800D363C[0];
+            if (SPRITE_SLOT(first) < 3 && !BATTLE_AREA.slots[SPRITE_SLOT(first)].gear
+                && BATTLE_AREA.events[D_800C360C - 1].codes[SPRITE_SLOT(first)] == 7) {
+                func_800B8048(first);
+                func_800245D8(first, 0x1B);
+                while (first->motion.bytes[3] == 0x1B) {
+                    func_800BE790();
+                }
+            }
+            break;
+        case 6:
+            func_800BF4F0(sprite, sprite->partner);
+            break;
+        case 2:
+            func_800B9C00(sprite, sprite->partner);
+            break;
+        case 5:
+            if (!BATTLE_AREA.slots[SPRITE_SLOT(sprite)].hidden) {
+                func_800245D8(sprite, sprite->idle.mode);
+            }
+            func_800BAEB8(D_800C3610->slot);
+            func_800BF0B4(10);
+            break;
+        }
+        D_800C3610->field49 = 0;
+    }
+    switch (D_800C3610->state) {
+    case 7:
+        if (D_80059464 == func_800BF720()) {
+            func_800BF0B4(4);
+            D_800C3610->field48 = 1;
+            func_800BF9EC();
+        }
+        break;
+    case 10:
+        if (D_80059464 == func_800BF720()) {
+            func_800B8EBC();
+        }
+        break;
+    case 9:
+        func_800B9C78();
+        break;
+    case 8:
+        if (D_800C362C && D_80059464 == func_800BF720()) {
+            if (!D_800C3624) {
+                break;
+            }
+            if (D_800C362C == 1) {
+                D_800C3610->field34++;
+            }
+            func_800BFA9C();
+        }
+        break;
+    case 2:
+        from.x = sprite->x.fixed >> 16;
+        from.z = sprite->z.fixed >> 16;
+        to.x = sprite->target[0];
+        to.z = sprite->target[2];
+        distance = func_800C07CC(from, to);
+        if (D_800C3610->field44 < distance) {
+            func_800B9C00(sprite, target);
+        } else {
+            D_800C3610->field44 = distance;
+        }
+        break;
+    case 6:
+        from.x = sprite->x.fixed >> 16;
+        from.z = sprite->z.fixed >> 16;
+        toPartner.x = sprite->target[0];
+        toPartner.z = sprite->target[2];
+        distance = func_800C07CC(from, toPartner);
+        if (D_800C3610->field44 < distance) {
+            func_800BF4F0(sprite, target);
+        } else {
+            D_800C3610->field44 = distance;
+        }
+        break;
+    case 4:
+        if (D_800C3610->field48) {
+            func_800B905C();
+        }
+        break;
+    }
+    D_800C3660 = 0;
+}
 
 /* End slot's turn presentation: wait for the stage objects (800B136C), then
  * restore the view (800B8D7C) and, for a gear, 800BFBA0; for a party member

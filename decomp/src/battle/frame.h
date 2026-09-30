@@ -151,7 +151,7 @@ void func_80037324(u32 *ot);
 void func_80280A9C(void); /* the debugger's frame hook */
 s32 func_8003569C(s32 pad);
 void func_800B8354(void);
-void func_800B7E94(void);
+u8 func_800B7E94(void); /* run the requested sound command; whether it ran */
 void func_800B89F4(void);
 void func_800BED30(void);
 void func_800BE108(void);
