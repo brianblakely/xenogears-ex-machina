@@ -24,7 +24,21 @@ void func_800732CC(void) {
     D_80092644 = emitter;
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007334C);
+/* Place the glow emitter, launch this frame's sparks and draw them in view. */
+void func_8007334C(u32 *ot, Matrix *view) {
+    Emitter *emitter = D_80092644;
+
+    emitter->base.vx = D_80092A24.vx;
+    emitter->base.vy = D_80092A24.vy;
+    emitter->base.vz = D_80092A24.vz;
+    emitter->angles.vx = 0;
+    emitter->angles.vy = 0;
+    emitter->angles.vz = 0;
+    func_8008D680(emitter, &D_80091C0C, D_80092648);
+    gte_SetTransMatrix(view);
+    gte_SetRotMatrix(view);
+    func_8008DA48(emitter, ot, view);
+}
 
 /* Fire a projectile of the given kind from a point toward the actor's
  * target (or away from origin when given), in the first free slot. */

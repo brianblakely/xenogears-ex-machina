@@ -216,6 +216,7 @@ extern void (*D_80091CC4[])(Emitter *emitter, SVector *pos);
 extern void (*D_80091CDC[1])(Spark *spark);
 extern Emitter *D_80092834; /* the menu's spark emitter */
 extern Emitter *D_80092644; /* the menu's glow emitter */
+extern Vector D_80092A24; /* glow emitter position */
 extern s32 D_80092838;      /* spark burst strength, fading by 4 per frame */
 
 /* Sparks drawn as a line through their last positions, with one primitive
@@ -298,5 +299,6 @@ Emitter *func_8008D3F4(s32 shape, s32 placement);
 void func_8008D580(Emitter *emitter);
 void func_8008D5C0(Emitter *emitter, s32 count);
 void func_8008D680(Emitter *emitter, Matrix *rotation, s32 count);
+void func_8008DA48(Emitter *emitter, u32 *ot, Matrix *view);
 
 #endif
