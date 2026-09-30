@@ -728,6 +728,16 @@ typedef struct DiscLabel {
     u8 unk8[8];
 } DiscLabel;
 
+/* A 20-byte game data record at D_8006ECF4 (801e5178 resets eleven). */
+typedef struct GameRecordECF4 {
+    u16 values[4]; /* 0 */
+    u8 pad8[0xF];
+    u8 flag; /* 17 */
+    u8 pad18[0x2];
+    u16 unk1A; /* 1A */
+    u8 pad1C[0x4];
+} GameRecordECF4;
+
 /* The menu mode's state (*D_800625A0). */
 typedef struct MenuState {
     MenuMover movers[3]; /* 0 */
@@ -821,6 +831,8 @@ extern u8 D_8006F65A[150];    /* game data: inventory item ids */
 extern u16 D_8006F958[16];    /* game data */
 extern u16 D_8005A3A0[16];
 extern u8 D_8006F8E5[];       /* game data */
+extern GameRecordECF4 D_8006ECF4[11];
+extern u16 D_8006F364;
 extern u16 D_8006F8EA;        /* game data: flags */
 extern u8 D_8006F36C[];       /* game data inventory lists (counts, ids) */
 extern u8 D_8006F3D0[];

@@ -3386,7 +3386,77 @@ void func_801E5058(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E5178);
+/* Debug: reset D_8006F364 and the eleven D_8006ECF4 records (four values,
+ * flag 7 and the +1a value) to their defaults. */
+void func_801E5178(void) {
+    D_8006F364 = 0x7ff;
+    D_8006ECF4[0].values[0] = 0xfff8;
+    D_8006ECF4[0].values[1] = 0xff00;
+    D_8006ECF4[0].values[2] = 0xfff0;
+    D_8006ECF4[0].values[3] = 0xfe00;
+    D_8006ECF4[0].unk1A = 0xe000;
+    D_8006ECF4[0].flag = 7;
+    D_8006ECF4[1].values[0] = 0xffe0;
+    D_8006ECF4[1].values[1] = 0xfff0;
+    D_8006ECF4[1].values[2] = 0xfff0;
+    D_8006ECF4[1].values[3] = 0xfff0;
+    D_8006ECF4[1].unk1A = 0xc000;
+    D_8006ECF4[1].flag = 7;
+    D_8006ECF4[2].values[0] = 0xffe0;
+    D_8006ECF4[2].values[1] = 0xffe0;
+    D_8006ECF4[2].values[2] = 0xfff0;
+    D_8006ECF4[2].values[3] = 0xff00;
+    D_8006ECF4[2].unk1A = 0x8000;
+    D_8006ECF4[2].flag = 7;
+    D_8006ECF4[3].values[0] = 0xffe0;
+    D_8006ECF4[3].values[1] = 0xffc0;
+    D_8006ECF4[3].values[2] = 0xfff0;
+    D_8006ECF4[3].values[3] = 0xff00;
+    D_8006ECF4[3].unk1A = 0xf000;
+    D_8006ECF4[3].flag = 7;
+    D_8006ECF4[4].values[0] = 0xffc0;
+    D_8006ECF4[4].values[1] = 0xffc0;
+    D_8006ECF4[4].values[2] = 0xfff0;
+    D_8006ECF4[4].values[3] = 0xffc0;
+    D_8006ECF4[4].unk1A = 0xe000;
+    D_8006ECF4[4].flag = 7;
+    D_8006ECF4[5].values[0] = 0xffc0;
+    D_8006ECF4[5].values[1] = 0xf000;
+    D_8006ECF4[5].values[2] = 0xfff0;
+    D_8006ECF4[5].values[3] = 0xf000;
+    D_8006ECF4[5].unk1A = 0x8000;
+    D_8006ECF4[5].flag = 7;
+    D_8006ECF4[6].values[0] = 0xffc0;
+    D_8006ECF4[6].values[1] = 0xff00;
+    D_8006ECF4[6].values[2] = 0xfff0;
+    D_8006ECF4[6].values[3] = 0xff00;
+    D_8006ECF4[6].unk1A = 0x8000;
+    D_8006ECF4[6].flag = 7;
+    D_8006ECF4[7].values[0] = 0;
+    D_8006ECF4[7].values[1] = 0xff00;
+    D_8006ECF4[7].values[2] = 0;
+    D_8006ECF4[7].values[3] = 0xff00;
+    D_8006ECF4[7].unk1A = 0;
+    D_8006ECF4[7].flag = 7;
+    D_8006ECF4[8].values[0] = 0;
+    D_8006ECF4[8].values[1] = 0xf800;
+    D_8006ECF4[8].values[2] = 0xfff0;
+    D_8006ECF4[8].values[3] = 0;
+    D_8006ECF4[8].unk1A = 0xe000;
+    D_8006ECF4[8].flag = 7;
+    D_8006ECF4[9].values[0] = 0xffe0;
+    D_8006ECF4[9].values[1] = 0xffe0;
+    D_8006ECF4[9].values[2] = 0xfff0;
+    D_8006ECF4[9].values[3] = 0xffe0;
+    D_8006ECF4[9].unk1A = 0x8000;
+    D_8006ECF4[9].flag = 7;
+    D_8006ECF4[10].values[0] = 0xffc0;
+    D_8006ECF4[10].values[1] = 0xff00;
+    D_8006ECF4[10].values[2] = 0xfff0;
+    D_8006ECF4[10].values[3] = 0xff00;
+    D_8006ECF4[10].unk1A = 0x8000;
+    D_8006ECF4[10].flag = 7;
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E53CC);
 
