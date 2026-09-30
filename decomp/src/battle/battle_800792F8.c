@@ -11,22 +11,30 @@
 #include "menu_pages.h"
 #include "resolver.h"
 #include "action_resolve.h"
+#include "hud_draw.h"
+#include "battle_command.h"
+#include "window_draw.h"
+#include "formation_route.h"
+#include "gear_menu.h"
+#include "glyph_lists.h"
+#include "item_command.h"
+#include "result_input.h"
 
 /* Script error screen: clear the event types and, on a debug build (the
  * 8005917c flag), print "Language Error" with the actor and script number
  * forever, the text shifted one column every three frames. */
-#ifdef NON_MATCHING
 void func_800792F8(actor, number)
 u8 actor;
 u8 number;
 {
     s32 offset;
+    u8 end = 0xFF;
     s32 i;
     s32 column;
     s32 frames;
 
     for (offset = 31 * sizeof(BattleEvent); offset >= 0; offset -= sizeof(BattleEvent)) {
-        ((BattleEvent *)((u8 *)D_800C3FE8 + offset))->type = 0xFF;
+        ((BattleEvent *)((u8 *)D_800C3FE8 + offset))->type = end;
     }
     frames = 0;
     column = 0;
@@ -49,11 +57,87 @@ u8 number;
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800792F8", func_800792F8);
-#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800792F8", func_800793F0);
+/* Execute the actor's action list: each entry's handler by type, with the
+ * first slot it targets; type 0 ends the list (entries after it run only
+ * while fewer than 32 have), an unknown type shows the script error. */
+void func_800793F0(u8 actor) {
+    s32 i;
+    s32 slot;
+    u8 target;
+    u8 running;
+
+    i = 0;
+    running = 1;
+    do {
+        slot = 0;
+        target = 0;
+        for (; slot < 11; slot++) {
+            if (func_80089C9C(D_800D2E5C[i].targets, slot)) {
+                target = slot;
+                break;
+            }
+        }
+        func_80085388();
+        switch (D_800D2E5C[i].type) {
+        case 0:
+            running = 0;
+            break;
+        case 1:
+            func_80078998(actor, i, target);
+            break;
+        case 2:
+            func_80078B34(actor, i, target);
+            break;
+        case 3:
+            func_80078C9C(actor, i, target);
+            break;
+        case 4:
+            func_80078CEC(actor, i, target);
+            break;
+        case 5:
+            func_80078D48(actor, i, target);
+            break;
+        case 6:
+            func_80078D6C(actor, i, target);
+            break;
+        case 7:
+            func_80078E24(actor, i, target);
+            break;
+        case 8:
+            func_80079054(actor, i, target);
+            break;
+        case 9:
+            func_80079098(actor, i, target);
+            break;
+        case 10:
+            func_80079114(actor, i, target);
+            break;
+        case 11:
+            func_8007916C(actor, i, target);
+            break;
+        case 12:
+            func_80078658(i, actor);
+            break;
+        case 13:
+            func_800791FC(actor, i, target);
+            break;
+        case 14:
+            func_800787E0(D_800D2E5C[i].param, actor);
+            break;
+        case 15:
+            func_80079270(actor, i, target);
+            break;
+        case 16:
+            func_8007887C(actor);
+            break;
+        default:
+            func_800792F8(actor, (u8)i);
+            break;
+        }
+        i++;
+    } while (i < 32 || running);
+}
 
 /* Close the actor's event queue: event 0x1b for a flagged actor, then the
  * closing event 0xfe; menu effects off. */
@@ -189,7 +273,56 @@ s32 func_80079AB0(u8 slot) {
     return ranAction62;
 }
 
+/* Run each armed enemy's AI script at +0xc (reaction bytes 1 and 2 set, the
+ * enemy not down unless +0x34 bit 0x800 lets it act) as the acting slot,
+ * then execute its action list; restore the acting slot.
+ * Nonmatching: the original keeps one offset register per table. */
+#ifdef NON_MATCHING
+void func_80079C24(void) {
+    u8 *pc;
+    u8 count;
+    s32 enemy;
+    u8 slot;
+    u8 actor;
+    u8 *p;
+    s32 offset;
+
+    count = 0;
+    slot = 3;
+    actor = D_800C3EAC->actor;
+    for (enemy = 0; enemy < 8; enemy++, slot++) {
+        if (D_800C3D18[enemy].unk1[1] != 0 && D_800C3D18[enemy].unk1[0] != 0) {
+            D_800C3EAC->actor = slot;
+            pc = *(u8 **)D_800D3400[enemy].unkC;
+            p = (u8 *)D_800D2E5C;
+            if (!(D_800CCCE8.records[enemy + 3].pilot.status7C & 0x8000) ||
+                (D_800CCCE8.records[enemy + 3].pilot.flags34 & 0x800)) {
+                for (offset = 31 * sizeof(BattleEvent); offset >= 0; offset -= sizeof(BattleEvent)) {
+                    ((BattleEvent *)((u8 *)D_800C3FE8 + offset))->type = 0xFF;
+                }
+                do {
+                    *p++ = 0;
+                } while (p < (u8 *)D_800D2E5C + 0x100);
+                while (*pc != 0xFD && *pc != 0xFF) {
+                    if (*pc >= 0x80) {
+                        if (!func_8007F8C0(&pc, enemy)) {
+                            func_80079948(&pc);
+                        }
+                    } else {
+                        count = func_8007EF6C(&pc, enemy, count);
+                    }
+                }
+                D_800C3EAC->eventsDone = 0;
+                func_80079778(slot);
+                func_80070EB0(0);
+            }
+        }
+    }
+    D_800C3EAC->actor = actor;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800792F8", func_80079C24);
+#endif
 
 /* Show battle message window `index`. */
 void func_80079E18(u8 index) {

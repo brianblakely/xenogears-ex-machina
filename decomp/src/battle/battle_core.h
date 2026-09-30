@@ -9,7 +9,8 @@
 
 /* Per-slot block of the turn state (0x40 bytes). */
 typedef struct {
-    u8 unk0[0x1C];
+    u8 unk0[8];
+    u8 digits[5][4];   /* +0x08 five four-glyph number strings */
     u16 items[16];     /* menu item availability, 0 = available */
     u8 defaultTarget;  /* +0x3C */
     u8 unk3D[3];
@@ -30,7 +31,11 @@ typedef struct {
     u8 unk2DC;         /* action index + 1 */
     u8 page;           /* +0x2DD command page */
     u8 menuDone;       /* +0x2DE */
-    u8 unk2DF[0x2E8 - 0x2DF];
+    u8 unk2DF;
+    u8 unk2E0;         /* shade step of the fading list quads (x16) */
+    u8 unk2E1[0x2E6 - 0x2E1];
+    u8 unk2E6;         /* chosen gear command + 0x10 */
+    u8 unk2E7;
     u8 unk2E8;         /* attack page target */
     u8 unk2E9;
     u8 unk2EA;
@@ -43,7 +48,7 @@ extern TurnState *D_800C3EAC;
 
 /* Battle UI state: the heap block at *800d2d28. */
 typedef struct {
-    u8 unk0[0x30];
+    RECT textureWindows[6]; /* +0x00 */
     u32 unk30;         /* CLUT cycle position */
     s32 unk34;         /* +0x34 panel cursor window: x */
     s32 unk38;
@@ -60,10 +65,15 @@ typedef struct {
     s32 unk64;
     s32 unk68;
     s32 unk6C;
-    u8 unk70[0x7B - 0x70];
+    u8 unk70[4];
+    u8 statusParts[4]; /* +0x74 status glyph parts, [3] party-wide */
+    u8 gaugeParts[3];  /* +0x78 */
     u8 unk7B;          /* AP text part count */
     u8 reaction[3];    /* +0x7C */
-    u8 unk7F[0x8E - 0x7F];
+    u8 barShown[4];    /* +0x7F time bar shown, [3] party-wide */
+    u8 portraitBuffer; /* +0x83 */
+    u8 statusBuffer[4]; /* +0x84 draw buffer of the status glyphs, [3] party-wide */
+    u8 unk88[0x8E - 0x88];
     u8 unk8E;
     u8 unk8F;
     u8 unk90[3];       /* per party member */
@@ -75,7 +85,10 @@ typedef struct {
     u8 unk9C;
     u8 unk9D;
     u8 unk9E;
-    u8 unk9F[0xA3 - 0x9F];
+    u8 unk9F;
+    u8 unkA0;          /* the result screen counts */
+    u8 unkA1;
+    u8 gaugeBuffer;    /* +0xA2 */
     u8 unkA3;
     u8 unkA4;
     u8 unkA5;
@@ -145,32 +158,40 @@ typedef struct {
     u8 unk66F;
 } GraphicsBlock;
 
-/* Party status panel state of the graphics block (0x1e4 bytes). */
+/* A party member's status panel of the graphics state (0x1E4 bytes). */
 typedef struct {
-    u8 unk0[0x1E1];
-    u8 unk1E1;         /* 1: show the 800d32a0 value */
-    u8 unk1E2[2];
-} PartyPanel;
+    POLY_FT4 value[2][2];     /* +0x000 state 1: the value glyphs */
+    POLY_FT4 alone[2][2];     /* +0x0A0 state 2: the glyphs placed alone */
+    POLY_FT4 unk140[2][2];
+    u8 buffer;                /* +0x1E0 */
+    u8 state;                 /* +0x1E1 0 absent, 1 shown (the 800d32a0 value), 2 placed alone */
+    u8 parts[2];              /* +0x1E2 glyph parts of value and alone */
+} MemberPanel;
 
-/* A texture location of the graphics state (0x18 bytes). */
+/* The six outputs of func_80026338 for one sprite (0x18 bytes). */
 typedef struct {
-    s32 mode;
+    s32 unk0;
+    s32 tpageMode;
     s32 clutX;
     s32 clutY;
-    s32 x;
-    s32 y;
-    s32 unk14;
-} GraphicsTexture;
+    s32 pageX;
+    s32 pageY;
+} SpriteInfo;
 
 /* Battle graphics state (*800c3ea4). */
 typedef struct {
-    u8 unk0[0x908];
+    POLY_FT4 gauge[3][6][2];  /* +0x0000 per member gauge glyphs */
+    POLY_GT4 gaugeBars[8];    /* +0x05A0 two per panel slot, one per draw buffer */
+    POLY_G4 shade[6];         /* +0x0740 two per member, one per draw buffer */
+    POLY_FT4 portrait[3][2];  /* +0x0818 */
     LINE_F2 unk908[12];
     POLY_FT4 unk9C8[6][2];
     POLY_FT4 unkBA8[120];
     POLY_FT4 unk1E68[60];
     POLY_FT4 unk27C8[1];
-    u8 unk27F0[0x3A88 - 0x27F0];
+    u8 unk27F0[0x2E08 - 0x27F0];
+    POLY_FT4 status[4][10][2]; /* +0x2E08 per member status glyphs; the
+                                * fourth is the party-wide label */
     POLY_FT4 unk3A88[3][80]; /* party panel name glyphs */
     POLY_FT4 unk6008[3][8];  /* party panel value digits */
     POLY_F4 unk63C8[2];
@@ -181,13 +202,15 @@ typedef struct {
     u8 unk6416;        /* fading down */
     u8 unk6417[5];
     POLY_FT4 unk641C[2][100];
-    PartyPanel panels[3];    /* +0x835C */
-    u8 unk8908[0x8950 - 0x8908];
-    RECT unk8950[4];
+    MemberPanel panels[3];   /* +0x835C */
+    DR_MODE unk8908[2];      /* +0x8908 per draw buffer */
+    DR_MODE unk8920[2];      /* +0x8920 per draw buffer */
+    u8 unk8938[0x8950 - 0x8938];
+    RECT unk8950[4];         /* the CLUT rows */
     u32 unk8970[4][0x630 / 4]; /* four CLUT strips, cycled */
     GraphicsBlock *unkA230;
-    u8 unkA234[4];
-    GraphicsTexture textures[5]; /* +0xA238 */
+    SpriteInfo sprites[5];   /* +0xA234 */
+    u16 barCluts[4];         /* +0xA2AC time bar: normal, party-wide, slow, haste */
 } BattleGraphics;
 
 extern BattleGraphics *D_800C3EA4;
@@ -232,18 +255,33 @@ extern u8 D_800D3014;
 /* Formation data (*800d3364). */
 typedef struct {
     u8 distance;
-    u8 unk1[7];
+    u8 points[7];      /* route points to the other group (formation area
+                        * index in bits 0-2, bit 0x80 a flag), 0xFF ends */
 } GroupLink;
 
 /* A formation group's position (8 bytes). */
 typedef struct {
     s16 x;
     s16 z;
-    u8 pad4[4];
+    s16 enemyX; /* +0x04 the position for enemies */
+    s16 enemyZ;
 } GroupPosition;
 
+/* A formation point. */
 typedef struct {
-    u8 unk0[0x100];
+    s16 x;
+    s16 z;
+} FormationPoint;
+
+/* A formation area (0x20 bytes): its centre and its member places. */
+typedef struct {
+    FormationPoint centre;
+    FormationPoint party[3];   /* +0x04 */
+    FormationPoint enemies[4]; /* +0x10 */
+} FormationArea;
+
+typedef struct {
+    FormationArea areas[8];
     GroupPosition positions[8]; /* +0x100 */
     GroupLink links[8][8];      /* +0x140 per formation-group pair */
 } Formation;
@@ -270,7 +308,10 @@ extern u8 D_800D2C8B[8];
 extern s32 D_800D2C60[8];
 
 typedef struct {
-    u8 unk0[0x34];
+    u8 unk0[0x26];
+    s16 unk26;         /* +0x26 timer, counted down while unk28 */
+    u8 unk28;
+    u8 unk29[0x34 - 0x29];
     u8 active;         /* +0x34 */
     u8 unk35[3];
 } BattleUnk3278Entry;
@@ -287,31 +328,48 @@ typedef struct {
 
 extern BattleUnk3278 *D_800D3278;
 
+/* The HUD primitive lists (*800d2db4, a 0x5da4-byte heap block) with their
+ * counts and draw buffers. */
 typedef struct {
-    u8 unk0[0x3AC0];
-    POLY_FT4 unk3AC0[24];   /* list 0 */
-    POLY_FT4 unk3E80[34];   /* list 2 */
-    POLY_FT4 unk43D0[58];   /* list 10 */
-    POLY_FT4 unk4CE0[10];
-    POLY_FT4 unk4E70[8];    /* list 3 */
-    POLY_FT4 unk4FB0[6];    /* list 4 */
-    POLY_FT4 unk50A0[8];    /* list 5 */
-    POLY_FT4 unk51E0[22];   /* list 6 */
-    POLY_FT4 unk5550[6];    /* list 11 */
-    POLY_FT4 unk5640[40];   /* list 12 */
-    POLY_FT4 unk5C80[6];    /* list 13 */
-    u8 unk5D70[5];
-    u8 counts[15];          /* +0x5D75 primitive count per list */
-    u8 buffers[15];         /* +0x5D84 draw buffer per list */
-    u8 unk5D93[0x5D9C - 0x5D93];
-    s16 unk5D9C;
-    s16 unk5D9E;
-    u8 unk5DA0;
-    u8 unk5DA1;
-    u16 unk5DA2;
-} BattleUnk2DB4;
+    POLY_FT4 extra0[24];      /* +0x0000 count extraCounts[0] */
+    POLY_FT4 extra1[60];      /* +0x03C0 count extraCounts[1] */
+    POLY_FT4 extra2[16];      /* +0x0D20 count extraCounts[2] */
+    POLY_FT4 extra3[48];      /* +0x0FA0 count extraCounts[3] */
+    POLY_FT4 extra4[90];      /* +0x1720 count extraCounts[4] */
+    POLY_FT4 list9[86];       /* +0x2530 */
+    POLY_FT4 unk32A0[52];     /* +0x32A0 count +0x5D96, buffer +0x5D97 */
+    POLY_FT4 list0[22];       /* +0x3AC0 */
+    POLY_FT4 list1[2];        /* +0x3E30 */
+    POLY_FT4 list2[34];       /* +0x3E80 */
+    POLY_FT4 list10[18];      /* +0x43D0 */
+    POLY_FT4 unk46A0[40];     /* +0x46A0 twenty drawn, buffer +0x5D98 */
+    POLY_FT4 unk4CE0[10];     /* +0x4CE0 count +0x5DA1, buffer +0x5DA0 */
+    POLY_FT4 list3[8];        /* +0x4E70 */
+    POLY_FT4 list4[6];        /* +0x4FB0 */
+    POLY_FT4 list5[8];        /* +0x50A0 */
+    POLY_FT4 list6[4];        /* +0x51E0 */
+    POLY_FT4 list7[8];        /* +0x5280 */
+    POLY_FT4 list8[10];       /* +0x53C0 */
+    POLY_FT4 list11[6];       /* +0x5550 */
+    POLY_FT4 list12[40];      /* +0x5640 */
+    POLY_FT4 list13[6];       /* +0x5C80 */
+    u8 extraCounts[5];        /* +0x5D70 */
+    u8 counts[14];            /* +0x5D75 per list */
+    u8 extraBuffer4;          /* +0x5D83 */
+    u8 buffers[14];           /* +0x5D84 per list */
+    u8 extraBuffers[4];       /* +0x5D92 extra0..extra3 */
+    u8 count32A0;             /* +0x5D96 */
+    u8 buffer32A0;            /* +0x5D97 */
+    u8 buffer46A0;            /* +0x5D98 */
+    u8 unk5D99[3];
+    u16 lineX;                /* +0x5D9C the stepped line's current point */
+    u16 lineY;
+    u8 buffer4CE0;            /* +0x5DA0 */
+    u8 count4CE0;             /* +0x5DA1 */
+    s16 blink;                /* +0x5DA2 frame counter of the blinking list */
+} ListPrims;
 
-extern BattleUnk2DB4 *D_800D2DB4;
+extern ListPrims *D_800D2DB4;
 extern s32 D_800D2DAC;
 
 /* Enemy AI block (0x40 bytes per enemy slot 3..10, from 800d3400). */
@@ -350,6 +408,8 @@ typedef struct {
     u8 action;        /* +0x16 committed action index */
     u8 pad17[0x1B - 0x17];
     u8 message;       /* +0x1B pending battle message id */
+    u8 itemCounts[0x30]; /* +0x1C the item list (also D_800D2CB0) */
+    u8 itemIds[0x30];    /* +0x4C (also D_800D2CE0) */
 } ActionCommit;
 
 extern ActionCommit D_800D2C94;
@@ -379,11 +439,14 @@ typedef struct {
 
 /* A window's primitives (0x5a8-byte heap block). */
 typedef struct {
-    u8 unk0[0x140];
+    POLY_FT4 corners[8]; /* corner glyphs: [corner * 2 + draw buffer] */
     POLY_FT4 frame[4][4]; /* +0x140 edge pieces, textures 1-4 */
     POLY_G4 shade[2];     /* +0x3C0 background, one per draw buffer */
     DR_MODE mode[2];      /* +0x408 */
-    u8 unk420[0x5A8 - 0x420];
+    u8 unk420[0x5A0 - 0x420];
+    s32 cornerCount;      /* +0x5A0 corner primitives built */
+    u8 buffer;            /* +0x5A4 draw buffer of the last placement */
+    u8 unk5A5[3];
 } WindowBlock;
 
 extern WindowBlock *D_800D2E38[7];
@@ -415,12 +478,13 @@ extern s32 D_800C3A84;
 extern s32 D_800C3A88;
 extern s32 D_800C3A8C;
 extern s32 D_800C3A90;
-extern s8 D_800C3A94;
-extern s8 D_800C3A98;
+extern u8 D_800C3A94;
+extern u8 D_800C3A98;
 extern s32 D_800C3A9C;
-extern s8 D_800C207C;
+extern u8 D_800C207C; /* the stepped line reached its end */
 extern s32 D_800C2080;
 extern s32 D_800C2084;
+extern s32 D_800C2054[2][5]; /* end points (x, then y) of the stepped line */
 
 
 /* Resolver globals. */
@@ -534,6 +598,8 @@ u8 func_8008B478(u8 member); /* the member has a gear list */
 u8 func_8008BED8(u8 member);
 void func_8008B908(u8 member);
 void func_8009AA44(u8 member);
+void func_8009AB38(u8 member); /* enable the member's deathblow commands */
+void func_80090B90(s32 x, s32 y, s32 *frame, u8 *ticks); /* animate a cursor glyph */
 void func_80087A38(u8 member);
 void func_80084A7C(u8 member);
 void func_80077698(void);
@@ -590,8 +656,7 @@ extern u8 D_8006F9DC[0x20];   /* the current scene settings */
 extern u8 D_800C3D44;
 extern u8 D_800C3D5C;
 extern s32 D_800C3DEC;
-extern u8 D_800C3E28;
-extern u8 D_800C3E29;
+extern u8 D_800C3E28[2]; /* direction input: [0] the previous, [1] the current */
 extern Formation *D_800C3EB0;
 extern s32 D_800D2D3C;     /* 801de000 module blocks */
 extern s32 D_800D2F60;
@@ -629,7 +694,6 @@ void func_8003700C(char *format, ...); /* debug print */
 void func_80028A60(s32 a);
 s32 func_800397FC(u8 *a, s32 b, s32 c);
 void func_8003A094(u8 *texture);
-void *memmove(void *to, const void *from, u32 size);
 void func_80039DB8(s32 effect);
 u8 func_8001BD40(u8 low, u8 high);
 void func_80034888(s32 arg0, u32 *ot, s32 buffer);
@@ -672,7 +736,7 @@ void func_800787E0(u8 value, u8 actor);
 void func_8007887C(u8 actor);
 void func_8007893C(u8 index, u8 actor);
 void func_80085C88(u8 queue);
-void func_80085CCC(u8 actor, u16 targets, s16 animation);
+void func_80085CCC(u8 actor, u16 targets, u16 animation);
 void func_80085350(void);
 void func_80085388(void);
 void func_800B89FC(s32 mode, u8 actor, s32 arg2, s32 arg3);
@@ -795,6 +859,25 @@ u16 func_8007A280(u8 slot, u8 attribute, u16 value, u8 read);
 u16 func_80089C9C(u16 mask, u8 slot);
 void func_80085AC4(u8 slot);
 void func_80071B94(u8 mode);
+
+/* Action list handlers (800793f0). */
+void func_80078998(u8 actor, u8 index, u8 target);
+void func_80078B34(u8 actor, u8 index, u8 target);
+void func_80078C9C(u8 actor, u8 index, u8 target);
+void func_80078CEC(u8 actor, u8 index, u8 target);
+void func_80078D48(u8 actor, u8 index, u8 target);
+void func_80078D6C(u8 actor, u8 index, u8 target);
+void func_80078E24(u8 actor, u8 index, u8 target);
+void func_80079054(u8 actor, u8 index, u8 target);
+void func_80079098(u8 actor, u8 index, u8 target);
+void func_80079114(u8 actor, u8 index, u8 target);
+void func_8007916C(u8 actor, u8 index, u8 target);
+void func_800791FC(u8 actor, u8 index, u8 target);
+void func_80079270(u8 actor, u8 index, u8 target);
+
+void func_80076B00(POLY_FT4 *prim);
+void func_8007FE3C(void);
+s32 func_80079AB0(u8 slot); /* run the enemy reaction script; it ran action 0x62 */
 
 /* The 801e5000 module and the 80280000 module. */
 void func_801E5160(void);

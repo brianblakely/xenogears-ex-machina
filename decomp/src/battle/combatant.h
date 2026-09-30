@@ -241,7 +241,7 @@ typedef struct {
     u8 accuracy; /* 0x14 */
     s8 hitBonus; /* 0x15 */
     u8 formula; /* 0x16: index into the formula table */
-    u8 pad17;
+    u8 apCost; /* 0x17: AP a combo step costs */
     u8 chanceSource; /* 0x18: 0 attacker +0x60, 1 field1C */
     u8 pad19;
     u8 amountKind;  /* 0x1A: what 80096018 writes as the amount */
@@ -274,8 +274,9 @@ typedef struct {
 /* Battle work area D_800CCCE8; D_800C34B0 points at it. */
 typedef struct {
     Combatant records[11]; /* 0x0000 */
-    u32 savedWords[3][2]; /* 0x0FD0: each member's experience totals */
-    u8 padFE8[0x1000 - 0xFE8];
+    u32 expTotals[3][2];   /* 0x0FD0: each member's experience totals, saved at
+                            * battle start and counted up on the result screen */
+    s32 toCount[3][2];     /* 0x0FE8: result values still to count */
     u16 savedMax[3][2]; /* 0x1000: each member's maximum HP and EP */
     u8 pad100C[0x1028 - 0x100C];
     u8 savedStats[3][8]; /* 0x1028: each member's base stats */
