@@ -52,6 +52,10 @@ s32 func_8009CF78(s32 offset, s32 flags); /* bit 0x80 */
 s32 func_8009CFBC(s32 offset, s32 flags); /* bit 0x40 */
 s32 func_8009D000(s32 offset, s32 flags); /* bit 0x20 */
 s32 func_8009D044(s32 offset, s32 flags); /* bit 0x10 */
+s32 func_8009D088(s32 offset, s32 flags); /* bit 0x08 */
+s32 func_8009D0CC(s32 offset, s32 flags); /* bit 0x04 */
+s32 func_8009D110(s32 offset, s32 flags); /* bit 0x02 */
+s32 func_8009D154(s32 offset, s32 flags); /* bit 0x01 */
 
 extern s32 D_800AFC7C;              /* batch limit */
 

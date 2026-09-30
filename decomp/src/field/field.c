@@ -1342,10 +1342,10 @@ void func_80090E70(void) {
 
 /* Rotate `point` about `center` in the XZ plane by `angle` (result mirrored
  * through the center, as the original subtracts center - point). */
-void func_80091008(LVECTOR *point, LVECTOR *center, s16 angle) {
+void func_80091008(VECTOR *point, VECTOR *center, s32 angle) {
     MATRIX m;
-    LVECTOR offset;
-    LVECTOR rotated;
+    VECTOR offset;
+    VECTOR rotated;
     SVECTOR angles;
 
     angles.vx = 0;
@@ -1353,22 +1353,176 @@ void func_80091008(LVECTOR *point, LVECTOR *center, s16 angle) {
     angles.vz = 0;
     func_8004960C();
     func_8003F738(&angles, &m);
-    offset.vx = center->vx - point->vx;
-    offset.vy = center->vy - point->vy;
-    offset.vz = center->vz - point->vz;
+    offset.vx.value = center->vx.value - point->vx.value;
+    offset.vy.value = center->vy.value - point->vy.value;
+    offset.vz.value = center->vz.value - point->vz.value;
     func_8004947C(&m, &offset, &rotated);
-    point->vx = rotated.vx + center->vx;
-    point->vz = rotated.vz + center->vz;
+    point->vx.value = rotated.vx.value + center->vx.value;
+    point->vz.value = rotated.vz.value + center->vz.value;
     func_800496AC();
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800910C0);
+void func_80091008(VECTOR *point, VECTOR *center, s32 angle);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80091318);
+/* Place a point at a heading/elevation/distance from a centre given by
+ * selected operands and store its whole x, z, y in three variables. */
+void func_800910C0(void) {
+    VECTOR center;
+    VECTOR point;
+    s32 heading;
+    s32 elevation;
+    s32 angle;
+    s32 distance;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800915C4);
+    center.vx.value = func_8009CF78(1, EVENT_OPERAND_BYTE(13)) << 16;
+    center.vz.value = func_8009CFBC(3, EVENT_OPERAND_BYTE(13)) << 16;
+    center.vy.value = func_8009D000(5, EVENT_OPERAND_BYTE(13)) << 16;
+    heading = func_8009D044(7, EVENT_OPERAND_BYTE(13));
+    elevation = func_8009D088(9, EVENT_OPERAND_BYTE(13));
+    distance = func_8009D0CC(11, EVENT_OPERAND_BYTE(13));
+    angle = ((elevation * 0xB60) >> 8) + 0xC00;
+    point.vy.value = ((-((func_8003F8CC(angle) * distance) << 5)) >> 16) * D_800AF930.scripted_scale * 16 + center.vy.value;
+    point.vz.value = (((func_8003F8B0(angle) * distance) << 5) >> 16) * D_800AF930.scripted_scale * 16 + center.vz.value;
+    point.vx.value = center.vx.value;
+    func_80091008(&point, &center, heading);
+    func_800A3074(func_800ACDB8(14), point.vx.s.whole);
+    func_800A3074(func_800ACDB8(16), point.vz.s.whole);
+    func_800A3074(func_800ACDB8(18), point.vy.s.whole);
+    D_800AFC7C += 1;
+    D_800B0078->pc += 20;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80091720);
+/* As func_800910C0, around camera point operand 1 (saved target, point A,
+ * saved eye, point B). */
+void func_80091318(void) {
+    VECTOR center;
+    VECTOR point;
+    s32 heading;
+    s32 elevation;
+    s32 angle;
+    s32 distance;
+
+    switch (EVENT_OPERAND_BYTE(1)) {
+    case 0:
+        center.vx.value = D_800AF8F0.vx.value;
+        center.vy.value = D_800AF8F0.vy.value;
+        center.vz.value = D_800AF8F0.vz.value;
+        break;
+    case 1:
+        center.vx.value = D_800AF900.vx.value;
+        center.vy.value = D_800AF900.vy.value;
+        center.vz.value = D_800AF900.vz.value;
+        break;
+    case 2:
+        center.vx.value = D_800AF910.vx.value;
+        center.vy.value = D_800AF910.vy.value;
+        center.vz.value = D_800AF910.vz.value;
+        break;
+    case 3:
+        center.vx.value = D_800AF920.vx.value;
+        center.vy.value = D_800AF920.vy.value;
+        center.vz.value = D_800AF920.vz.value;
+        break;
+    }
+    heading = func_8009CF78(2, EVENT_OPERAND_BYTE(8));
+    elevation = func_8009CFBC(4, EVENT_OPERAND_BYTE(8));
+    distance = func_8009D000(6, EVENT_OPERAND_BYTE(8));
+    angle = ((elevation * 0xB60) >> 8) + 0xC00;
+    point.vy.value = ((-((func_8003F8CC(angle) * distance) << 5)) >> 16) * D_800AF930.scripted_scale * 16 + center.vy.value;
+    point.vz.value = (((func_8003F8B0(angle) * distance) << 5) >> 16) * D_800AF930.scripted_scale * 16 + center.vz.value;
+    point.vx.value = center.vx.value;
+    func_80091008(&point, &center, heading);
+    func_800A3074(func_800ACDB8(9), point.vx.s.whole);
+    func_800A3074(func_800ACDB8(11), point.vz.s.whole);
+    func_800A3074(func_800ACDB8(13), point.vy.s.whole);
+    D_800AFC7C += 1;
+    D_800B0078->pc += 15;
+}
+
+/* Store camera point operand 1's whole x, z, y in three variables. */
+void func_800915C4(void) {
+    VECTOR point;
+
+    switch (EVENT_OPERAND_BYTE(1)) {
+    case 0:
+        point.vx.value = D_800AF8F0.vx.value;
+        point.vy.value = D_800AF8F0.vy.value;
+        point.vz.value = D_800AF8F0.vz.value;
+        break;
+    case 1:
+        point.vx.value = D_800AF900.vx.value;
+        point.vy.value = D_800AF900.vy.value;
+        point.vz.value = D_800AF900.vz.value;
+        break;
+    case 2:
+        point.vx.value = D_800AF910.vx.value;
+        point.vy.value = D_800AF910.vy.value;
+        point.vz.value = D_800AF910.vz.value;
+        break;
+    case 3:
+        point.vx.value = D_800AF920.vx.value;
+        point.vy.value = D_800AF920.vy.value;
+        point.vz.value = D_800AF920.vz.value;
+        break;
+    }
+    func_800A3074(func_800ACDB8(2), point.vx.s.whole);
+    func_800A3074(func_800ACDB8(4), point.vz.s.whole);
+    func_800A3074(func_800ACDB8(6), point.vy.s.whole);
+    D_800AFC7C += 1;
+    D_800B0078->pc += 8;
+}
+
+/* Copy camera point operand 1 into camera point operand 2. */
+void func_80091720(void) {
+    VECTOR point;
+
+    switch (EVENT_OPERAND_BYTE(1)) {
+    case 0:
+        point.vx.value = D_800AF8F0.vx.value;
+        point.vy.value = D_800AF8F0.vy.value;
+        point.vz.value = D_800AF8F0.vz.value;
+        break;
+    case 1:
+        point.vx.value = D_800AF900.vx.value;
+        point.vy.value = D_800AF900.vy.value;
+        point.vz.value = D_800AF900.vz.value;
+        break;
+    case 2:
+        point.vx.value = D_800AF910.vx.value;
+        point.vy.value = D_800AF910.vy.value;
+        point.vz.value = D_800AF910.vz.value;
+        break;
+    case 3:
+        point.vx.value = D_800AF920.vx.value;
+        point.vy.value = D_800AF920.vy.value;
+        point.vz.value = D_800AF920.vz.value;
+        break;
+    }
+    switch (EVENT_OPERAND_BYTE(2)) {
+    case 0:
+        D_800AF8F0.vx.value = point.vx.value;
+        D_800AF8F0.vy.value = point.vy.value;
+        D_800AF8F0.vz.value = point.vz.value;
+        break;
+    case 1:
+        D_800AF900.vx.value = point.vx.value;
+        D_800AF900.vy.value = point.vy.value;
+        D_800AF900.vz.value = point.vz.value;
+        break;
+    case 2:
+        D_800AF910.vx.value = point.vx.value;
+        D_800AF910.vy.value = point.vy.value;
+        D_800AF910.vz.value = point.vz.value;
+        break;
+    case 3:
+        D_800AF920.vx.value = point.vx.value;
+        D_800AF920.vy.value = point.vy.value;
+        D_800AF920.vz.value = point.vz.value;
+        break;
+    }
+    D_800AFC7C += 1;
+    D_800B0078->pc += 3;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80091944);
 
