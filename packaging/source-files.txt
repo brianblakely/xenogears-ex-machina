@@ -122,7 +122,7 @@ decomp/include/psyq/libspu.h
 decomp/include/psyq/types.h
 decomp/src/battle/battle.c
 decomp/src/battle/battle_8009E53C.c
-decomp/src/battle/battle_800B1720.c
+decomp/src/battle/battle_800B15D8.c
 decomp/src/battle/battle_core.h
 decomp/src/battle/combatant.h
 decomp/src/battle/files.h

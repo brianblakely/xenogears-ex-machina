@@ -9,7 +9,7 @@
  * --expand-div for this unit). The text boundary lies after 8009DBFC and at
  * or before 8009E788; 8009E53C is where the gear formula functions end and
  * the part bookkeeping (8009E53C-8009E788) starts. The unit ends before
- * 800B1720, where the code generation changes (see battle_800B1720.c). */
+ * 800B15D8, where the code generation changes (see battle_800B15D8.c). */
 #include "common.h"
 #include "battle_core.h"
 #include "combatant.h"
@@ -2705,15 +2705,3 @@ void func_800B14CC(s32 keep) {
         }
     }
 }
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800B15D8);
-
-/* Address of entry index (0x1C bytes each) of a table with a 0xC-byte
- * header. */
-u8 *func_800B168C(u8 *table, s32 index) {
-    return table + (index * 0x1C + 0xC);
-}
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800B16A4);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800B16F0);

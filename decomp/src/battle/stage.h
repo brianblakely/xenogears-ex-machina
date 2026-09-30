@@ -76,6 +76,28 @@ typedef struct {
     u8 follow;    /* 0x13 */
 } SpriteCommand;
 
+/* An entry of an effect script file (0x1C bytes); the offsets are from the
+ * entry until relocated. */
+typedef struct {
+    u8 *data0;    /* 0x00 */
+    s32 field4;   /* 0x04 */
+    u8 *data8;    /* 0x08 */
+    s32 fieldC;   /* 0x0C */
+    u8 *commands; /* 0x10: 4-byte aligned commands; byte 1 is the length in words less one */
+    s32 count;    /* 0x14: commands */
+    s32 field18;  /* 0x18 */
+} ScriptEntry;
+
+/* An effect script file. */
+typedef struct {
+    u8 pad0[4];
+    u32 flags; /* 0x04: bit 0 relocated */
+    u8 pad8[4];
+    ScriptEntry entries[1]; /* 0x0C */
+} ScriptFile;
+
+extern ScriptEntry D_800C3BD0; /* the selected script */
+
 /* Resident sprites. */
 EffectSprite *func_80023FD8(s32 kind, void *resource, SVector *position, s32 size);
 void func_80021FE0(s32 *body, s32 direction);
