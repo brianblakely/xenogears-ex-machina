@@ -2658,7 +2658,35 @@ void func_801CF9BC(u8 model, u8 slot) {
     func_80028470(0x10, 0);
 }
 
+/*
+ * Load gear `gear`'s model into slot `slot` (with the model code outside this
+ * overlay), move the camera back, and show the parts panel. Nonmatching: the
+ * original zero-extends `slot` twice (a second saved register).
+ */
+#ifdef NON_MATCHING
+void func_801CFAB8(u8 slot, u8 gear) {
+    u8 variant;
+
+    func_801E742C(slot, 0, D_800625A0->model_parts[slot]->data0, D_800625A0->model_parts[slot]->data1,
+                  (slot << 6) + 0x200, 0, 0, slot + 0x1C0, D_800625A0->model_parts[slot]->unk8);
+    D_801E8670[slot]->unk60 = D_801D6DB4[gear];
+    D_801E8670[slot]->unk1C = D_801D6DD8[gear];
+    D_801E8674->view->distance -= 0x400;
+    D_80050100 = 0;
+    D_801E8674->view->unk54 -= 0x20;
+    variant = 0;
+    if (gear != 0xFF) {
+        variant = D_801D6DA0[gear];
+    }
+    func_801E8330(slot, 0, variant);
+    func_800320E8(D_800625A0->model_parts[slot]->data1);
+    D_800625A0->model_parts[slot]->unk12 = 1;
+    func_801CF448();
+    D_800625A0->flags->gear_parts_shown = 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CFAB8);
+#endif
 
 /*
  * Swing the camera to the edited gear's view for the current command, open

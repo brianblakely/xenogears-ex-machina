@@ -803,7 +803,8 @@ extern CameraMove D_801D9050;
 
 /* The Gear model code's state (801e8674, outside this overlay). */
 typedef struct {
-    u8 unk0[0x56];
+    u8 unk0[0x54];
+    s16 unk54;    /* 54 */
     s16 distance; /* 56: camera distance */
 } ModelView;
 typedef struct {
@@ -815,6 +816,13 @@ typedef struct {
     s16 unk60;       /* 60 */
 } ModelState;
 extern ModelState *D_801E8674;
+extern ModelState *D_801E8670[2]; /* per model slot */
+extern s32 D_80050100;            /* ordering-table depth shift */
+extern u8 D_801D6DA0[];           /* model variant per gear */
+extern u16 D_801D6DB4[];          /* model value 60h per gear */
+extern u16 D_801D6DD8[];          /* model value 1ch per gear */
+void func_801E742C(u8 slot, s32 unk1, void *data0, void *data1, s32 unk4, s32 unk5, s32 unk6, s32 unk7, void *unk8);
+void func_801E8330(u8 slot, s32 unk1, u8 variant);
 extern POLY_FT4 D_801D7108[]; /* camera debug display packets, two per sprite */
 extern s32 D_801D9048;        /* their sprite count */
 u8 func_8001BD40(u8 low, u8 high); /* random number in [low, high] */
