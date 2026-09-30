@@ -429,6 +429,15 @@ typedef struct {
     u16 stats[9]; /* b8 */
 } MemberView;
 
+/* The Gear model's light (menu state + 298, handed to the model code). */
+typedef struct {
+    SVECTOR direction;  /* 00 */
+    s16 unk8[5];        /* 08 */
+    u8 unk12[0x20 - 0x12];
+    MATRIX color;       /* 20: light colour matrix */
+    u8 unk40[4];
+} ModelLight;
+
 /* Menu state (*800625a0); only the fields this overlay touches are named. */
 typedef struct {
     u8 unk0[0x6C];
@@ -442,7 +451,7 @@ typedef struct {
     VECTOR model_translation; /* 220 */
     MATRIX model_matrix;      /* 230 */
     u8 unk250[0x298 - 0x250];
-    u8 model_b[0x2DC - 0x298]; /* 298 */
+    ModelLight model_light;   /* 298: ovl2602 */
     void *sprite_sheet;  /* 2dc */
     void *label_text;    /* 2e0 */
     EffectBank *effect_bank; /* 2e4 */
@@ -902,6 +911,10 @@ typedef struct {
     s16 unk60;       /* 60 */
 } ModelState;
 extern ModelState *D_801E8674;
+extern MATRIX *D_801E8644;        /* the model code's light colour matrix */
+extern u32 *D_8005A4AC[2];        /* the large ordering tables of the two draw buffers */
+void func_801E738C(s32 unk0);     /* model code setup */
+void SetBackColor(s32 r, s32 g, s32 b); /* SetBackColor */
 extern ModelState *D_801E8670[2]; /* per model slot */
 extern s32 D_80050100;            /* ordering-table depth shift */
 extern u8 D_801D6DA0[];           /* model variant per gear */

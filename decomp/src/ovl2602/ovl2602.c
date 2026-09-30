@@ -2349,7 +2349,7 @@ INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CE32C);
 /* Draw the separately loaded model when shown. */
 void func_801CE7E0(void) {
     if (D_800625A0->flags->model_shown != 0) {
-        func_801E7D14(&D_800625A0->model_matrix, D_800625A0->model_b, D_800625A0->draw_env->ot_big, D_800625A0->buffer);
+        func_801E7D14(&D_800625A0->model_matrix, &D_800625A0->model_light, D_800625A0->draw_env->ot_big, D_800625A0->buffer);
     }
 }
 
@@ -3190,7 +3190,45 @@ void func_801D57A8(void) {
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D5828);
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D5D38);
+/* Set up the Gear model: the model code, its light, both large ordering tables and the two model blocks, then show the first present member's gear. */
+void func_801D5D38(void) {
+    s32 i;
+
+    i = 0;
+    func_801E738C(0x40);
+    D_800625A0->model_light.direction.vx = 0x546;
+    D_800625A0->model_light.direction.vy = -0xE39;
+    D_800625A0->model_light.direction.vz = 0x546;
+    D_800625A0->model_light.direction.pad = 0;
+    D_800625A0->model_light.unk8[0] = 0;
+    D_800625A0->model_light.unk8[1] = 0;
+    D_800625A0->model_light.unk8[2] = 0;
+    D_800625A0->model_light.unk8[3] = 0;
+    D_800625A0->model_light.unk8[4] = 0;
+    D_800625A0->model_light.color.m[0][0] = 0x600;
+    D_800625A0->model_light.color.m[0][1] = 0;
+    D_800625A0->model_light.color.m[0][2] = 0;
+    D_800625A0->model_light.color.m[1][0] = 0x600;
+    D_800625A0->model_light.color.m[1][1] = 0;
+    D_800625A0->model_light.color.m[1][2] = 0;
+    D_800625A0->model_light.color.m[2][0] = 0x600;
+    D_800625A0->model_light.color.m[2][1] = 0;
+    D_800625A0->model_light.color.m[2][2] = 0;
+    D_801E8644 = &D_800625A0->model_light.color;
+    SetBackColor(0x3C, 0x3C, 0x3C);
+    D_800625A0->envs[0].ot_big = D_8005A4AC[0];
+    D_800625A0->envs[1].ot_big = D_8005A4AC[1];
+    D_800625A0->model_parts[0] = func_80031BDC(sizeof(ModelParts), 0);
+    bzero(D_800625A0->model_parts[0], sizeof(ModelParts));
+    D_800625A0->model_parts[1] = func_80031BDC(sizeof(ModelParts), 0);
+    bzero(D_800625A0->model_parts[1], sizeof(ModelParts));
+    while (D_800625A0->member_present[i] == 0) {
+        i++;
+    }
+    D_801D9084 = D_8006D634.characters[i].unkA0;
+    func_801CF9BC(D_801D9084, 1);
+    func_801D0348();
+}
 
 /* Close the gear model once the view has stopped moving, and release its two blocks. */
 void func_801D5EB8(void) {
