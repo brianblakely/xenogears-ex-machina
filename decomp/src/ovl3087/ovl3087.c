@@ -401,31 +401,104 @@ INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E6750);
 
 INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E6CE8);
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E71D4);
+/* Opcode 18: show a message from the thread's speaker; repeats until the
+ * message is done. */
+s32 func_801E71D4(s32 thread, u8 *insn) {
+    return (func_801E6CE8(insn[1] | (insn[2] << 8), D_800D3278->threads[thread].speaker, insn[3]) != 0) * 4;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E7230);
+/* Opcode 19: show a message from the given actor; repeats until done. */
+s32 func_801E7230(s32 thread, u8 *insn) {
+    return func_801E6CE8(insn[2] | (insn[3] << 8), insn[1], insn[4]) ? 5 : 0;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E7278);
+/* Opcode 1a: set the message window layout; zero operands take the
+ * defaults. */
+s32 func_801E7278(s32 thread, u8 *insn) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E7314);
+    func_801E57F8(insn, 5, 0, 1);
+    for (i = 0; i < 4; i++) {
+        if (D_800D3278->operands[i] != 0) {
+            D_800D3278->window[i] = D_800D3278->operands[i];
+        } else {
+            D_800D3278->window[i] = D_801E9C10[i];
+        }
+    }
+    D_800D3278->window[4] = D_800D3278->operands[4];
+    return 11;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E7358);
+/* Opcode 1b: set the thread's speaker (f3-f5 name the party members). */
+s32 func_801E7314(s32 thread, u8 *insn) {
+    u8 actor = insn[1];
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E736C);
+    if (actor >= 0xF3) {
+        actor = D_800D2D24[actor - 0xF3];
+    }
+    D_800D3278->threads[thread].speaker = actor;
+    return 2;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E7380);
+/* Opcode 1c. */
+s32 func_801E7358(s32 thread, u8 *insn) {
+    D_800C3E4C = 2;
+    return 1;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E73D4);
+/* Opcode 1d. */
+s32 func_801E736C(s32 thread, u8 *insn) {
+    D_800C3E4C = 1;
+    return 1;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E7424);
+/* Opcode 1e: flash the actor white. */
+s32 func_801E7380(s32 thread, u8 *insn) {
+    func_801E57F8(insn, 1, 0, 1);
+    func_800B39C0(D_800D3278->operands[0], 2, 0xFF, 0xFF, 0xFF);
+    return 3;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E746C);
+/* Opcode 1f: flash the actor black. */
+s32 func_801E73D4(s32 thread, u8 *insn) {
+    func_801E57F8(insn, 1, 0, 1);
+    func_800B39C0(D_800D3278->operands[0], 2, 0, 0, 0);
+    return 3;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E748C);
+/* Opcode 49: set 8005942c. */
+s32 func_801E7424(s32 thread, u8 *insn) {
+    func_801E57F8(insn, 1, 0, 1);
+    D_8005942C = D_800D3278->operands[0];
+    return 3;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E74A0);
+/* Opcode 20: end the battle (800c3d44) and halt the script. */
+s32 func_801E746C(s32 thread, u8 *insn) {
+    D_800C3D44 = 1;
+    D_800D3278->halted = 1;
+    return 1;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E74B8);
+/* Opcode 21: set 800d2d50. */
+s32 func_801E748C(s32 thread, u8 *insn) {
+    D_800D2D50 = 1;
+    return 1;
+}
+
+/* Opcode 22. */
+s32 func_801E74A0(s32 thread, u8 *insn) {
+    D_800D3278->unk801 = 2;
+    return 1;
+}
+
+/* Opcode 37: end the battle through 800d2fc4 and 800c48ea and halt the script. */
+s32 func_801E74B8(s32 thread, u8 *insn) {
+    D_800D2FC4 = 1;
+    D_800D3278->halted = 1;
+    D_800C48EA = 1;
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E74E0);
 

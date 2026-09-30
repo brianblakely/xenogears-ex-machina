@@ -19,7 +19,7 @@ typedef struct {
     u8 runningEntry; /* 0x21 entry index of the running level */
     u8 unk22;
     u8 request; /* 0x23 entry this thread requested of another (0xff none) */
-    u8 unk24;
+    u8 speaker; /* 0x24 actor whose messages this thread shows */
     u8 pad25[0x38 - 0x25];
 } ScriptThread;
 
@@ -44,16 +44,18 @@ typedef struct {
 /* The interpreter state (0x828 bytes, pointer 800d3278). */
 typedef struct {
     ScriptThread threads[16]; /* 0x000 */
-    u16 operands[4];          /* 0x380 decoded operands */
-    u8 pad388[8];
+    u16 operands[8];          /* 0x380 decoded operands */
     u8 *code;       /* 0x390 script bytecode */
     u16 vars[0x200]; /* 0x394 script variables */
     u8 order[16];   /* 0x794 thread run order */
     PolyFT4 quads[2]; /* 0x7a4 */
     u8 unk7F4;
     u8 unk7F5;
-    u16 unk7F6[5];
-    u8 pad800[4];
+    u16 window[5]; /* 0x7f6 message window layout (opcode 1a) */
+    u8 halted;     /* 0x800 the script ended the battle */
+    u8 unk801;
+    u8 unk802;
+    u8 pad803;
     u8 unk804[16];
     u8 pad814[4];
     void *soundBank; /* 0x818 */
@@ -110,9 +112,17 @@ extern BattleUi *D_800D2D28;
 extern s32 D_800CCB34; /* current draw buffer */
 extern u8 D_800D2D24[3]; /* battle party character ids (0xff none) */
 extern s32 D_801E9C1C;
+extern u16 D_801E9C10[5]; /* default message window layout */
+extern u8 D_8005942C;
+extern u8 D_800C3D44; /* battle ends */
+extern u8 D_800C3E4C;
+extern u8 D_800C48EA;
+extern u8 D_800D2D50;
+extern u8 D_800D2FC4;
 
 /* Resident / battle services. */
 s32 func_80076A10(s32 id, PolyFT4 *quads, s16 x, s16 y);
+void func_800B39C0(u16 actor, s32 mode, s32 r, s32 g, s32 b);
 u16 func_80089B50(u16 low, u16 high);
 u16 func_80089C9C(u16 flag, u8 bit);
 
@@ -122,5 +132,6 @@ u16 func_801E57C4(ScriptThread *thread);
 void func_801E57F8(u8 *insn, u8 count, u8 immediateMask, u8 signedForm);
 u8 func_801E58EC(s16 a, s16 b, u8 op);
 s32 func_801E5DCC(s32 thread, u8 *insn);
+u8 func_801E6CE8(u16 message, u8 actor, u16 flags);
 
 #endif
