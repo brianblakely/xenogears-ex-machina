@@ -17,6 +17,17 @@ typedef struct {
     u8 pixels[16][18]; /* GLYPH_CELL_BYTES */
 } GlyphCell;
 
+/* The text roll: 16 lines of four 128x16 8-bit sprites per draw buffer
+ * showing the glyph rows at (300, 16 * line), scrolled up a pixel a frame
+ * between a top and a bottom fade. */
+typedef struct {
+    DR_MODE modes[2][4]; /* 00 */
+    SPRT sprites[2][4];  /* 60 */
+} TextRollLine;
+
+extern TextRollLine *D_800AF770;  /* 16 lines */
+extern POLY_GT4 D_800AF788[2][2]; /* top and bottom fade per buffer */
+
 u16 *func_800405C4(s32 code); /* resident: 16x15 ROM font glyph of a code */
 
 #endif

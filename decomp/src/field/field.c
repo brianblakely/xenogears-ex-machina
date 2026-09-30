@@ -11320,7 +11320,27 @@ void func_800AC308(void) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AC3AC);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AC99C);
+/* Draw the text roll: its two fades, then each line scrolled up a pixel
+ * from the other buffer's position. */
+void func_800AC99C(void) {
+    s32 y;
+    s32 i;
+    s32 k;
+
+    addPrim(&D_800C426C->overlay_ot[0], &D_800AF788[1][D_800ADB08]);
+    addPrim(&D_800C426C->overlay_ot[0], &D_800AF788[0][D_800ADB08]);
+    for (i = 0; i < 16; i++) {
+        y = (D_800AF770[i].sprites[(D_800ADB08 + 1) & 1][0].y0 - 1) & 0xFF;
+        D_800AF770[i].sprites[D_800ADB08][0].y0 = y;
+        D_800AF770[i].sprites[D_800ADB08][1].y0 = y;
+        D_800AF770[i].sprites[D_800ADB08][2].y0 = y;
+        D_800AF770[i].sprites[D_800ADB08][3].y0 = y;
+        for (k = 0; k < 4; k++) {
+            addPrim(&D_800C426C->overlay_ot[0], &D_800AF770[i].sprites[D_800ADB08][k]);
+            addPrim(&D_800C426C->overlay_ot[0], &D_800AF770[i].modes[D_800ADB08][k]);
+        }
+    }
+}
 
 void func_80070340(u32 *tim, s16 x, s16 y, s16 clut_x, s16 clut_y, s16 clut_w, s16 clut_h);
 
@@ -11365,7 +11385,6 @@ void func_800ACC58(void) {
     }
 }
 
-extern void *D_800AF770;
 
 /* Release the sequence buffers when enabled. */
 void func_800ACCB0(void) {
