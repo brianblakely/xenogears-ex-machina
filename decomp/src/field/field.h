@@ -156,16 +156,25 @@ typedef struct FieldActor {
     u8 unk03C[0xCC - 0x3C];
     u16 pc;          /* 0CC: event working PC */
     u8 slot;         /* 0CE */
-    u8 unk0CF[0xF4 - 0xCF];
+    u8 unk0CF[0xEA - 0xCF];
+    s16 unk0EA;      /* 0EA */
+    u8 unk0EC[0xF4 - 0xEC];
     s16 scale[3];    /* 0F4 */
     u8 unk0FA[0x104 - 0xFA];
     s16 heading;     /* 104 */
     s16 heading_goal; /* 106: bit 15 once turned */
-    u8 unk108[0x118 - 0x108];
+    u8 unk108[0x114 - 0x108];
+    void *unk114;    /* 114 */
     s32 *list;       /* 118 */
-    u8 unk11C[0x128 - 0x11C];
+    u8 unk11C[2];
+    s16 unk11E;      /* 11E */
+    void *unk120;    /* 120 */
+    s16 unk124;      /* 124: -1 when +120 is free */
+    u8 unk126[2];
     s16 unk128;      /* 128 */
-    u8 unk12A[0x138 - 0x12A];
+    u8 unk12A[2];
+    u32 unk12C;      /* 12C */
+    u8 unk130[0x138 - 0x130];
 } FieldActor;
 
 /* A 14-byte collision triangle; +0c indexes the attribute table. */
@@ -286,13 +295,18 @@ typedef struct GameState {
  * not pass loads of other members. */
 typedef struct {
     s16 emitter_range;         /* 21AC */
-    u8 unk21AE[0x21B8 - 0x21AE];
+
+    u8 unk21AE[0x21B4 - 0x21AE];
+    s16 unk21B4;               /* 21B4 */
+    u8 unk21B6[2];
     s32 last_sound_effect;     /* 21B8 */
     u8 unk21BC[0x21D2 - 0x21BC];
     s8 unk21D2;                /* 21D2 */
     u8 unk21D3;
     s16 unk21D4;               /* 21D4 */
-    u8 unk21D6[0x225F - 0x21D6];
+    u8 unk21D6[0x21E4 - 0x21D6];
+    s16 unk21E4[(0x225C - 0x21E4) / 2]; /* 21E4 */
+    u8 unk225C[3];             /* 225C */
     u8 unk225F[0x2268 - 0x225F]; /* 225F: event byte table */
     s32 unk2268;               /* 2268 */
     s32 controlled;            /* 226C: controlled descriptor */
@@ -393,6 +407,9 @@ extern void func_800496AC(void);                               /* PopMatrix */
 extern void func_8004A6DC(SVECTOR *v, s32 *out, s32 *flag); /* RotTrans */
 
 /* Field overlay. */
+extern void func_8008A93C(void);
+extern void func_800A484C(s32);
+extern void func_801E8330(s32, s32, s32);
 extern s32 func_8008A558(void);
 extern void func_800A98E8(s32 actor, s32 value);
 extern void func_800A99A8(s32 actor);
@@ -431,6 +448,7 @@ extern void func_80078C5C(void);
 extern void func_802815B0(void);
 
 /* Resident state. */
+extern s32 D_80062590[3];
 extern s32 D_8005A444[3]; /* party members */
 extern s32 D_8004F300;
 extern u8 D_80050622;
@@ -452,6 +470,7 @@ extern s32 D_8004F34C; /* current map */
 extern u8 D_800625FC[2][0x22]; /* pad buffers */
 
 /* Field state. */
+extern s32 D_800ADB1C; /* 801e module loaded */
 extern s32 D_800ADB88;
 extern s32 D_800ADB8C;
 extern s32 D_800AFC7C; /* batch limit */
