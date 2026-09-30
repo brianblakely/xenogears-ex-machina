@@ -371,17 +371,124 @@ const char D_80018288[] = "KAZUMI";
 const char D_80018290[] = "HIGUCHI,MIYAGAWA,MASAKI";
 const char D_800182A8[] = "YOSHII";
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001A1E4);
+/* Kernel menu buffer: clear to dark blue and set up the white cursor triangle. */
+void func_8001A1E4(s32 index) {
+    KernelBuffer *buffer = &D_800595E8[index];
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001A250);
+    buffer->draw.isbg = 1;
+    buffer->draw.dtd = 1;
+    buffer->draw.r0 = 0;
+    buffer->draw.g0 = 0;
+    buffer->draw.b0 = 0x20;
+    func_80043C4C(&buffer->cursor);
+    buffer->cursor.r0 = 0xFF;
+    buffer->cursor.g0 = 0xFF;
+    buffer->cursor.b0 = 0xFF;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001A344);
+/* Kernel menu set-up: debug text window and the two display buffers. */
+void func_8001A250(void) {
+    u32 unused[2]; /* an unused local the original frame reserves */
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001A4B4);
+    func_80032498(6, 0);
+    func_800374E8(8, 0x10, 0x170, 0x1E0, 0x3E8, 1, 0x3C0, 0x100, 0x3C0, 0x1FF, 0);
+    func_80043928(&D_800595E8[0].draw, 0, 0, 0x140, 0xE0);
+    func_80043928(&D_800595E8[1].draw, 0, 0xF0, 0x140, 0xE0);
+    func_800439E0(&D_800595E8[0].disp, 0, 0xF0, 0x140, 0xE0);
+    func_800439E0(&D_800595E8[1].disp, 0, 0, 0x140, 0xE0);
+    func_8001A1E4(0);
+    func_8001A1E4(1);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001A5CC);
+/* Kernel menu frame: move the cursor over the six modes, start the chosen one, print the menu with the play time and place the cursor. */
+void func_8001A344(void) {
+    char clock[24];
+    s32 y;
+    KernelBuffer *buffer;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001A684);
+    if (D_800594A4 & 0x1000) {
+        if (--D_8004F2D8 < 0) {
+            D_8004F2D8 = 5;
+        }
+    }
+    if (D_800594A4 & 0x4000) {
+        if (++D_8004F2D8 >= 6) {
+            D_8004F2D8 = 0;
+        }
+    }
+    if (D_8005948C & 0x20) {
+        func_8001996C(D_8004F2D8 + 1);
+        D_800592D0 = 0;
+    }
+    func_8003FBF8(clock, "%02d:%02d:%02d", D_80059484, D_80059420, D_80059418);
+    func_8003700C(" XENOGEARS Kernel MENU\n  %s %s MODE\n\n", clock, D_80010000 ? "PC HDD" : "CD EMU");
+    func_8003700C("    Field\n    Battle\n    Worldmap\n    Battling\n    Menu\n    Movie\n\n");
+    y = D_8004F2D8 * 8;
+    buffer = D_800592CC;
+    *(u32 *)&buffer->cursor.x0 = ((y + 0x28) << 16) | 0x20;
+    *(u32 *)&buffer->cursor.x1 = ((y + 0x2C) << 16) | 0x27;
+    *(u32 *)&buffer->cursor.x2 = ((y + 0x30) << 16) | 0x20;
+}
+
+/* Mode 0, the kernel menu: run its frame loop until a mode is chosen, then dispatch. */
+void func_8001A4B4(void) {
+    u32 *ot;
+
+    func_8001A250();
+    D_800592D0 = 1;
+    D_800592C8 = 0;
+    do {
+        D_800592C4++;
+        D_800592C8 = D_800592C4 & 1;
+        D_800592CC = &D_800595E8[D_800592C8];
+        ot = D_800592CC->ot;
+        func_80043BE4(ot);
+        func_80037324(ot);
+        func_8001A344();
+        func_80043B48(ot, &D_800592CC->cursor);
+        func_800445D0(0);
+        func_8004B54C(0);
+        func_80044C44(&D_800592CC->draw);
+        func_80044E9C(&D_800592CC->disp);
+        func_80044BD0(ot);
+    } while (D_800592D0 != 0 || D_800592C8 == 0);
+    func_800445D0(0);
+    func_80019ACC(0);
+}
+
+/* Allocate the debug screen buffers and clear the two 40x28 cell grids. */
+void func_8001A5CC(void) {
+    s32 row;
+    s32 column;
+
+    D_800592DC = func_80031BDC(0x3480, 1);
+    D_800592E0 = func_80031BDC(0x3480, 1);
+    D_800592D4 = func_80031BDC(0x460, 1);
+    D_800592D8 = func_80031BDC(0x460, 1);
+    for (row = 0; row < 28; row++) {
+        for (column = 0; column < 40; column++) {
+            D_800592D4[row * 40 + column] = 0;
+            D_800592D8[row * 40 + column] = 0;
+        }
+    }
+}
+
+/* Count a hit in a cell of the second grid; out-of-range coordinates wrap to the other edge. */
+void func_8001A684(s32 row, s32 column) {
+    if (row < 0) {
+        row = 28;
+    }
+    if (row > 28) {
+        row = 0;
+    }
+    if (column < 0) {
+        column = 40;
+    }
+    if (column > 40) {
+        column = 0;
+    }
+    D_800592D8[row * 40 + column]++;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001A6E8);
 

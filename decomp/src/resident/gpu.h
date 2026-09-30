@@ -49,16 +49,28 @@ typedef struct {
     s16 w, h;
 } SPRT;
 
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    s16 x1, y1;
+    s16 x2, y2;
+} POLY_F3;
+
 #define setlen(p, _len) (((P_TAG *)(p))->len = (u8)(_len))
 #define setcode(p, _code) (((P_TAG *)(p))->code = (u8)(_code))
 #define setSprt(p) setlen(p, 4), setcode(p, 0x64)
 
+void func_80043B48(u32 *ot, void *primitive);                 /* AddPrim */
+void func_80043BE4(u32 *ot);                                  /* TermPrim */
+void func_80043C4C(POLY_F3 *p);                               /* SetPolyF3 */
 s32 func_80043928(DRAWENV *env, s32 x, s32 y, s32 w, s32 h); /* SetDefDrawEnv */
 s32 func_800439E0(DISPENV *env, s32 x, s32 y, s32 w, s32 h); /* SetDefDispEnv */
 u16 func_80043A58(s32 x, s32 y);                              /* GetClut */
 void func_80044764(RECT *rect, s32 r, s32 g, s32 b);          /* ClearImage */
 void func_80044894(RECT *rect, void *data);                   /* LoadImage */
 void func_80044B70(void *primitive);                          /* DrawPrim */
+void func_80044BD0(u32 *ot);                                  /* DrawOTag */
 void func_80044C44(DRAWENV *env);                             /* PutDrawEnv */
 void func_80044E9C(DISPENV *env);                             /* PutDispEnv */
 

@@ -15,6 +15,30 @@ typedef struct {
     s32 loaded;
 } ModeEntry;
 
+/* Kernel menu (mode 0) double buffer, 8005 95e8. */
+typedef struct {
+    DRAWENV draw;
+    DISPENV disp;
+    u32 ot[1];
+    POLY_F3 cursor;
+} KernelBuffer;
+
+extern KernelBuffer D_800595E8[2];
+extern s32 D_800592C4;           /* kernel menu frame count */
+extern s32 D_800592C8;           /* kernel menu buffer index */
+extern KernelBuffer *D_800592CC; /* kernel menu current buffer */
+extern s32 D_800592D0;           /* kernel menu running */
+extern u8 *D_800592D4;
+extern u8 *D_800592D8;
+extern void *D_800592DC;
+extern void *D_800592E0;
+extern s32 D_8004F2D8;           /* kernel menu cursor */
+extern u16 D_800594A4;           /* pad buttons repeated */
+extern u16 D_8005948C;           /* pad buttons pressed */
+extern u8 D_80059484;            /* play time hours */
+extern u8 D_80059420;            /* play time minutes */
+extern u8 D_80059418;            /* play time seconds */
+
 extern u8 *const D_80018084; /* overlay decode destination */
 extern u8 D_8006FAF0[];
 extern s32 D_80018088;       /* next mode */
@@ -92,7 +116,8 @@ void func_800363F0(s32 a0);
 void func_800379B4(s32 a0);
 void func_80037B88(s32 a0);
 void func_8003700C(char *format, ...);
-void func_80037324(s32 a0);
+s32 func_8003FBF8(char *buffer, char *format, ...);
+void func_80037324(u32 *ot); /* flush the debug text into ot */
 void func_800374E8(s32 a0, s32 a1, s32 a2, s32 a3, s32 a4, s32 a5, s32 a6, s32 a7, s32 a8, s32 a9, s32 a10);
 void func_80037DC0(void);
 s32 func_80037FD8(void *a0, s32 a1);
