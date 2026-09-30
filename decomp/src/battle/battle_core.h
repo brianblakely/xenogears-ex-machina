@@ -42,7 +42,9 @@ typedef struct {
 /* Combatant record: 11 slots (0-2 party, 3-10 enemies) of 0x170 bytes,
  * addressed absolutely from 800ccce8. */
 typedef struct {
-    u8 unk0[0x4C];
+    u8 unk0[0x34];
+    u16 unk34;         /* 0x800 reacts while down */
+    u8 unk36[0x4C - 0x36];
     u16 hp;           /* +0x4C */
     u8 unk4E[0x56 - 0x4E];
     u8 unk56;
@@ -308,8 +310,9 @@ extern EnemyAi D_800D3400[8];
 
 /* Enemy reaction state (4 bytes per enemy from 800c3d18). */
 typedef struct {
-    u8 unk0[3];
-    u8 armed;
+    u8 armed;          /* the reaction script runs */
+    u8 unk1[2];
+    u8 unk3;
 } EnemyReaction;
 
 extern EnemyReaction D_800C3D18[8];
@@ -357,8 +360,8 @@ extern s32 D_800D328C;
 extern u8 D_800D3298;      /* ATB enabled */
 extern u8 D_800D2DCC[11];  /* slot present */
 extern u8 D_800D2DE4[11];  /* slot ready to act */
-extern s16 D_800D2DF0[2][11]; /* turn timers: [0] reload values, [1] counters */
-extern u16 D_800D2E1C[11]; /* slow-status alternation */
+extern s16 D_800D2DF0[3][11]; /* turn timers: [0] reload values, [1] counters,
+                                * [2] slow-status alternation */
 extern s32 *D_8005917C;
 extern u8 D_8005959C;
 extern s32 D_800595A0;

@@ -55,7 +55,7 @@ void func_8007171C(void) {
     u8 *ready;
     u16 flags;
     u8 delay;
-    u16 *toggle;
+    s16 *toggle;
     s16 *timer;
 
     if (D_800D3298 != 0) {
@@ -70,7 +70,7 @@ void func_8007171C(void) {
                 step = 2;
             }
             if (D_800CCCE8[slot].flags7C & 0x1000) {
-                toggle = &D_800D2E1C[slot];
+                toggle = &D_800D2DF0[2][slot];
                 if ((*toggle ^= 1) != 0) {
                     continue;
                 }
@@ -747,7 +747,22 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007819C);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80078310);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80078508);
+/* Reset every slot's turn timers from its speed (unused slots 0xff), its
+ * ready flag and slow alternation, and clear the order buffer. */
+void func_80078508(u8 *order) {
+    s32 slot;
+
+    for (slot = 0; slot < 11; slot++) {
+        if (D_800D2DCC[slot] != 0) {
+            D_800D2DF0[0][slot] = D_800D2DF0[1][slot] = func_80098AF8(slot, 0);
+        } else {
+            D_800D2DF0[0][slot] = D_800D2DF0[1][slot] = 0xFF;
+        }
+        D_800D2DE4[slot] = 0;
+        D_800D2DF0[2][slot] = 0;
+        order[slot] = 0;
+    }
+}
 
 /* Close the current event for `actor` with the action entry's parameter and
  * advance the event count. */
@@ -813,12 +828,12 @@ void func_80078D48(u8 actor, u8 index) {
 }
 
 /* Action entry type: the actor leaves the battle (event 0xf9); its reaction
- * script is armed and only its 0x8000 flag is kept. */
+ * reaction byte +3 is set and only its 0x8000 flag is kept. */
 void func_80078D6C(u8 actor, u8 index) {
     D_800C3FE8[D_800C3EAC->eventCount].type = 0xF9;
     func_800785D4(actor, index);
     D_800D2DE4[actor] = 0xFF;
-    D_800C3D18[actor - 3].armed = 1;
+    D_800C3D18[actor - 3].unk3 = 1;
     D_800CCCE8[actor].flags7C &= 0x8000;
 }
 
@@ -965,7 +980,43 @@ void func_800799C8(u8 slot) {
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800799C8);
 #endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80079AB0);
+/* Run enemy `slot`'s reaction script when armed (and the enemy is not down,
+ * unless +0x34 bit 0x800 lets it react), then execute its action list.
+ * Returns whether the script ran action 0x62. */
+s32 func_80079AB0(u8 slot) {
+    u8 *pc;
+    s32 ranAction62 = 0;
+    u8 enemy = slot - 3;
+    u8 count = 0;
+    u8 *p;
+
+    if (!(D_800CCCE8[enemy + 3].flags7C & 0x8000) || (D_800CCCE8[enemy + 3].unk34 & 0x800)) {
+        D_800D2E5C[0].type = 0;
+        if (D_800C3D18[enemy].armed != 0) {
+            pc = D_800D3400[enemy].reaction;
+            p = (u8 *)D_800D2E5C;
+            do {
+                *p++ = 0;
+            } while (p < (u8 *)D_800D2E5C + 0x100);
+            while (*pc != 0xFD && *pc != 0xFF) {
+                if (*pc >= 0x80) {
+                    if (!func_8007F8C0(&pc, enemy)) {
+                        func_80079948(&pc);
+                    }
+                } else {
+                    if (*pc == 0x62) {
+                        ranAction62 = 1;
+                    }
+                    count = func_8007EF6C(&pc, enemy, count);
+                }
+            }
+        }
+        if (D_800D2E5C[0].type != 0) {
+            func_800793F0(enemy + 3);
+        }
+    }
+    return ranAction62;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80079C24);
 
@@ -973,7 +1024,17 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80079E18);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80079E4C);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80079E7C);
+/* The first slot in `mask`; 11 when none. */
+u8 func_80079E7C(u16 mask) {
+    s32 slot;
+
+    for (slot = 0; slot < 11; slot++) {
+        if (func_80089C9C(mask, slot)) {
+            break;
+        }
+    }
+    return slot;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80079ED8);
 
