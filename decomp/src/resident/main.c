@@ -1452,13 +1452,15 @@ void func_80021FB8(Sprite *sprite, u8 value) {
     sprite->byteb0 = value;
 }
 
-void func_80021FC0(Sprite *sprite, s32 value) {
-    sprite->word18 = value;
+/* Set a sprite's walking speed (its velocity follows). */
+void func_80021FC0(Sprite *sprite, s32 speed) {
+    sprite->speed = speed;
     func_80022974(sprite);
 }
 
-void func_80021FE0(Sprite *sprite, u16 value) {
-    sprite->half32 = value;
+/* Turn a sprite (its speed follows the direction). */
+void func_80021FE0(Sprite *sprite, s16 direction) {
+    sprite->direction = direction;
     func_80022974(sprite);
 }
 
@@ -1490,7 +1492,13 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800223B0);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80022660);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80022974);
+/* Derive a sprite's horizontal velocity from its walking speed, gravity divisor and direction. */
+void func_80022974(Sprite *sprite) {
+    s32 speed = ((sprite->speed >> 4) << 8) / (s32)((sprite->flags2 >> 7) & 0xFFF);
+
+    sprite->speed_x = ((func_8003F8CC(sprite->direction) >> 2) * speed) >> 6;
+    sprite->speed_z = -((func_8003F8B0(sprite->direction) >> 2) * speed) >> 6;
+}
 
 s32 func_80022A00(s32 *word) {
     return *word;
@@ -1518,15 +1526,56 @@ void func_80022CDC(Sprite *sprite) {
     func_80022B2C(sprite);
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80022D44);
+/* Show the frame the frame index selects: its flip bit sets flags2 bit 3, the render flip is the xor of flags2 bits 3 and 2. */
+void func_80022D44(Sprite *sprite) {
+    s32 index = sprite->frame_bits.frame;
+    u16 entry;
+    s32 frame;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80022DF4);
+    if (index < 0) {
+        index = 0;
+    }
+    entry = sprite->frame_table[index];
+    frame = entry & 0x1FF;
+    if (entry & 0x200) {
+        sprite->flags2 |= 8;
+    } else {
+        sprite->flags2 &= ~8;
+    }
+    sprite->render_flags = (sprite->render_flags & ~8) | ((((sprite->flags2 >> 3) & 1) ^ ((sprite->flags2 >> 2) & 1)) << 3);
+    func_8001D2B0(sprite, frame);
+}
+
+/* Sprite task update: advance the animation and move; a second step when flags2 bit 6 is set; destroy the task when the frames run out. */
+void func_80022DF4(Task *task) {
+    Sprite *sprite = task->data;
+
+    func_80023210(sprite);
+    func_80022CDC(sprite);
+    if (sprite->frames_left != 0) {
+        if (!((sprite->flags2 >> 6) & 1)) {
+            return;
+        }
+        func_80023210(sprite);
+        func_80022CDC(sprite);
+        if (sprite->frames_left != 0) {
+            return;
+        }
+    }
+    task->destroy(task);
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80022E8C);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80022EB8);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80022FC4);
+/* Replace a sprite renderer's part list with room for `count` parts. */
+void func_80022FC4(Sprite *sprite, s32 count, s32 from_top) {
+    if (sprite->renderer->parts != NULL) {
+        func_800320E8(sprite->renderer->parts);
+    }
+    sprite->renderer->part_cursor = sprite->renderer->parts = func_80031BDC(count * 24, from_top);
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002303C);
 
