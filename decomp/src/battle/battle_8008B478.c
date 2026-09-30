@@ -24,9 +24,7 @@
 /* Run the member's technique menu: four windows, a two-column list of
  * twelve visible cells scrolled by rows (800d3288 in pixels, 800d39d4 the
  * scroll request), until a technique is committed (1, its index in the
- * turn state +0x2e6) or the menu is cancelled (0). (Nonmatching: GCC aligns
- * the jump table to 8 where the original's is at 0x80070314, and the cursor
- * x multiply is synthesised differently.) */
+ * turn state +0x2e6) or the menu is cancelled (0). */
 u8 func_8008B478(u8 member) {
     s32 frame;
     u8 ticks;
@@ -293,7 +291,146 @@ u8 inGear;
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8008B478", func_8008BD50);
 #endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8008B478", func_8008BED8);
+/* Run the member's item menu: two windows, a two-column list of sixteen
+ * visible cells (48 entries) scrolled a 13-pixel row at a time (800d3288,
+ * requests in 800d39d4), the character list or (after 8008bd50 returns 2)
+ * the gear parts list. Returns 1 when an item was started (its id in the
+ * turn state +0x2e6, its cell in 800d3670/800c3d00), 0 when cancelled. */
+u8 func_8008BED8(u8 member) {
+    s32 frame;
+    u8 ticks;
+    u8 shownCell;
+    u8 shownTop;
+    u8 open;
+    u8 cell;
+    u8 top;
+    u8 result;
+    u8 pending;
+    u8 list;
+    s32 shownScroll;
+
+    cell = 0;
+    top = 0;
+    shownCell = 0xFF;
+    shownTop = 0xFF;
+    shownScroll = 0xFFFF;
+    result = 2;
+    pending = 1;
+    list = 0;
+    frame = 4;
+    open = 1;
+    ticks = 0;
+    D_800D3288 = 0;
+    D_800D39D4 = 0;
+    D_800D2D28->unkCB = 0;
+    func_8008F8F4(0, 0x20, 0x58, 0x118, 0x78, 0, 1);
+    func_8008F8F4(1, 0x10, 0x2C, 0x128, 0x28, 0, 1);
+    func_80077698();
+    do {
+        if (pending != 0) {
+            func_8008FE18(member, pending - 1, open);
+            list = pending - 1;
+            pending = 0;
+            open = 0;
+        }
+        if (cell != shownCell || top != shownTop) {
+            func_8009080C(cell, top, list);
+            shownCell = cell;
+            shownTop = top;
+        }
+        if (D_800D3288 != shownScroll) {
+            func_8009023C(D_800D3288 / 13 * 2);
+            func_8009093C(D_800D3288);
+            shownScroll = D_800D3288;
+        }
+        func_80090B90((cell % 2) * 0x80 + 0x2A + (cell % 2) * 2, (cell / 2) * 13 + 0x63, &frame, &ticks);
+        func_800716D8();
+        switch (D_800D3014) {
+        case 5:
+            result = 0;
+            break;
+        case 4:
+            switch (func_8008BD50(member, cell, top, list)) {
+            case 1:
+                D_800C3EAC->unk2E6 = D_800D2CE0[top * 2 + cell];
+                D_800D3670 = cell;
+                D_800C3D00 = top;
+                result = 1;
+                break;
+            case 2:
+                pending = 2;
+                break;
+            }
+            break;
+        case 0:
+            if (top * 2 + cell != 47) {
+                if (cell + 1 == 16) {
+                    D_800D39D4 = 1;
+                } else {
+                    cell++;
+                }
+            }
+            break;
+        case 2:
+            if (top * 2 + cell > 0) {
+                if (cell == 0 && top != 0) {
+                    D_800D39D4 = 2;
+                } else {
+                    cell--;
+                }
+            }
+            break;
+        case 1:
+            if (top * 2 + cell < 46) {
+                if (cell + 2 >= 16) {
+                    D_800D39D4 = 3;
+                } else {
+                    cell += 2;
+                }
+            }
+            break;
+        case 3:
+            if (top * 2 + cell >= 2) {
+                if (cell < 2 && top != 0) {
+                    D_800D39D4 = 4;
+                } else {
+                    cell -= 2;
+                }
+            }
+            break;
+        }
+        switch (D_800D39D4) {
+        case 1:
+            D_800D3288 = (top + 1) * 13;
+            top++;
+            cell--;
+            D_800D39D4 = 0;
+            break;
+        case 2:
+            D_800D3288 = (top - 1) * 13;
+            top--;
+            cell++;
+            D_800D39D4 = 0;
+            break;
+        case 3:
+            D_800D3288 = (top + 1) * 13;
+            top++;
+            D_800D39D4 = 0;
+            break;
+        case 4:
+            D_800D3288 = (top - 1) * 13;
+            top--;
+            D_800D39D4 = 0;
+            break;
+        }
+    } while (result == 2);
+    func_8008BC40(result);
+    func_8007765C();
+    func_80077980();
+    func_8008FA60(0);
+    func_8008FA60(1);
+    return result;
+}
 
 /* Hide the command windows; with `close` also close windows 0 and 1 and
  * release the graphics block. */
