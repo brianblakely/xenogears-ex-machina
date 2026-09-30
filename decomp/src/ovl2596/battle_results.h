@@ -307,7 +307,9 @@ typedef struct {
 
 /* A battle combatant record (0x170 each from 800ccce8). */
 typedef struct {
-    u8 pad0[0x3C];
+    u8 pad0[0x32];
+    u16 flags32;              /* 0x32: 0x2000 and 0x1000 raise the experience gained */
+    u8 pad34[8];
     s32 totalA;               /* 0x3C: experience totals (levels A and B) */
     s32 totalB;               /* 0x40 */
     s32 nextA;                /* 0x44: experience to the next level */
@@ -334,7 +336,10 @@ typedef struct {
     u16 flags7C;              /* 0x7C: 0x8000 knocked out */
     u8 pad7E[0x90 - 0x7E];
     u16 counters[7];          /* 0x90 */
-    u8 pad9E[0x170 - 0x9E];
+    u8 pad9E[0x158 - 0x9E];
+    u8 weightA;               /* 0x158: experience share weights of levels A and B */
+    u8 weightB;               /* 0x159 */
+    u8 pad15A[0x170 - 0x15A];
 } Combatant;
 
 extern GameData D_8006D634;
@@ -344,7 +349,9 @@ extern GameData *D_801E44C4;    /* 8006d634 */
  * results state. */
 typedef struct {
     Combatant records[11];    /* 0x0000 */
-    u8 padFD0[0x5F20 - 0xFD0];
+    u8 padFD0[0xFE8 - 0xFD0];
+    MemberWide gained[3];     /* 0xFE8: experience pools per slot (800cdcd0) */
+    u8 pad1000[0x5F20 - 0x1000];
     GrowthFile *growth;       /* 0x5F20 */
 } BattleWork;
 
@@ -352,8 +359,8 @@ extern BattleWork *D_801E44C8;  /* 800ccce8 */
 extern GrowthFile *D_801E44E8;  /* the growth data file */
 extern Combatant *D_801E44EC;   /* the record being processed */
 extern u16 D_8006F8EA;          /* option flags */
-extern s32 D_801E44F0;          /* experience pool for level A */
-extern s32 D_801E44F4;          /* experience pool for level B */
+extern u32 D_801E44F0;          /* experience pool for level A */
+extern u32 D_801E44F4;          /* experience pool for level B */
 void func_801E335C(void);
 void func_801E3500(void);
 

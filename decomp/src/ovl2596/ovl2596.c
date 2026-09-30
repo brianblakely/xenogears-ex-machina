@@ -1125,7 +1125,49 @@ INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E2888);
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E2ACC);
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E2EB0);
+/* Split a slot's experience into the level A and B pools by the record's
+ * weights (three quarters each for a reserve member, all of it with option
+ * 0x8000), at least 1, raised by half by flags 0x2000/0x1000; kept per slot. */
+void func_801E2EB0(u32 experience, s16 slot, s16 reserve) {
+    s16 weightA;
+    s16 weightB;
+
+    if (reserve == 1) {
+        experience = experience * 3 / 4;
+        D_801E44F0 = experience;
+        D_801E44F4 = experience;
+        return;
+    }
+    weightA = D_801E44C8->records[slot].weightA;
+    weightB = D_801E44C8->records[slot].weightB;
+    if (weightA < 2) {
+        weightA = 1;
+    }
+    if (weightB < 2) {
+        weightB = 1;
+    }
+    D_801E44F0 = experience * weightA / (weightA + weightB);
+    D_801E44F4 = experience * weightB / (weightA + weightB);
+    if (D_801E44C4->options & 0x8000) {
+        D_801E44F0 = experience;
+        D_801E44F4 = experience;
+    }
+    if (D_801E44F0 == 0) {
+        D_801E44F0 = 1;
+    }
+    if (D_801E44F4 == 0) {
+        D_801E44F4 = 1;
+    }
+    if (D_801E44EC->flags32 & 0x2000) {
+        D_801E44F0 += D_801E44F0 >> 1;
+        D_801E44F4 += D_801E44F4 >> 1;
+    }
+    if (D_801E44EC->flags32 & 0x1000) {
+        D_801E44F4 += D_801E44F4 >> 1;
+    }
+    D_801E44C8->gained[slot].value = D_801E44F0;
+    D_801E44C8->gained[slot].value2 = D_801E44F4;
+}
 
 /* Add the experience pools to the current record's totals and gain levels
  * A and B while the pools reach the next level (none past 99 with option
