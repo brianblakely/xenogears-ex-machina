@@ -3260,7 +3260,121 @@ void func_801E2B80(void) {
     func_801C72BC(0x13);
 }
 
+/* The equipment command: on the first party member's page, choose among
+ * three choices (0 the 801e05d0 screen, 1 the 801ddf24 screen, 2 the
+ * 801e1544 screen), switching members with 9/10, until cancelled. The code
+ * matches except the jump table address (see 801e3ecc). */
+#ifdef NON_MATCHING
+u8 func_801E2BE4(void) {
+    u8 slot;
+    u8 shown;
+    u8 stay;
+    u8 first;
+    u8 i;
+
+    stay = 1;
+    shown = 0xf3;
+    first = 1;
+    slot = D_800625A0->firstMember;
+    D_800625A0->choice = 2;
+    D_800625A0->choiceShown = 0xff;
+    func_801E2AE0();
+    for (i = 0; i < 3; i++) {
+        if (D_800625A0->party->ids[i] != 0xff) {
+            slot = i;
+            break;
+        }
+    }
+    while (stay) {
+        func_801C7BF4();
+        if (slot != shown) {
+            func_801E36D4(D_800625A0->tables, D_800625A0->party->ids[slot]);
+            shown = slot;
+            func_801E3A80(D_800625A0->tables, D_800625A0->party->ids[slot]);
+            func_801D2EC0(shown, 0);
+            if (first) {
+                first = 0;
+                func_801D1E80();
+                func_801D29A8(0, 0);
+                func_801E86C8(0);
+            }
+        }
+        if (D_800625A0->choice != D_800625A0->choiceShown) {
+            func_801D261C();
+            func_801E8B4C(0);
+            D_800625A0->choiceShown = D_800625A0->choice;
+        }
+        switch (D_800625A0->input) {
+        case 4:
+            func_801D22C4();
+            func_801D25E4();
+            D_800625A0->party->redraw7 = 0;
+            D_800625A0->party->unk8 = 0;
+            D_800625A0->party->unk4B = 0;
+            switch (D_800625A0->choice) {
+            case 0:
+                D_800625A0->party->redrawA = 0;
+                func_801E05D0(slot, 0, 0);
+                func_801DE36C();
+                func_801D8DE4(slot, 0, 0, 0);
+                func_801D8EA4(slot, 0, 0, 0);
+                shown = 0xff;
+                D_800625A0->party->redrawA = 1;
+                break;
+            case 1:
+                func_801DDF24(slot, 0, 0);
+                func_801DC2CC(0);
+                shown = 0xff;
+                break;
+            case 2:
+                func_801E20C8(slot);
+                break;
+            }
+            func_801D249C(1);
+            D_800625A0->party->redraw7 = 1;
+            D_800625A0->party->unk8 = 1;
+            D_800625A0->party->unk4B = 1;
+            func_801D1EE0(D_800625A0->choice + 7, 1);
+            D_800625A0->party->redraw4 = 1;
+            D_800625A0->choiceShown = 0xff;
+            func_801D3488(0, 0);
+            break;
+        case 5:
+            stay = 0;
+            break;
+        case 2:
+        case 6:
+        case 7:
+        case 8:
+            break;
+        case 1:
+            if (D_800625A0->choice != 0) {
+                D_800625A0->choice--;
+            } else {
+                D_800625A0->choice = D_800625A0->choiceCount - 1;
+            }
+            break;
+        case 3:
+            if (++D_800625A0->choice >= D_800625A0->choiceCount) {
+                D_800625A0->choice = 0;
+            }
+            break;
+        case 9:
+            slot = func_801D9704(slot, 0, 0);
+            break;
+        case 10:
+            slot = func_801D9704(slot, 1, 0);
+            break;
+        }
+    }
+    func_801D249C(0);
+    D_800625A0->party->redraw4 = 0;
+    D_800625A0->party->redraw3 = 0;
+    return 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E2BE4);
+#endif
 
 /* Close the screen of the command at `offset` past the top cursor. */
 #ifdef NON_MATCHING

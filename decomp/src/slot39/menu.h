@@ -1069,7 +1069,10 @@ u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y); /* GetTPage */
 u16 GetClut(s32 x, s32 y);          /* GetClut */
 void SetDrawMode(DR_MODE *p, s32 dfe, s32 dtd, s32 tpage, RECT *tw); /* SetDrawMode */
 u32 func_801E1418(u8 slot, u8 row);
+void func_801E3A80(MenuTables *tables, u8 id);
 void func_801E433C(MenuTables *tables, u8 gear);
+void func_801E8B4C(u8 offset);
+void func_801E86C8(u8 offset);
 void func_801E5058(void);
 void func_801E5178(void);
 void func_801E4754(MenuTables *tables, u8 gear);
