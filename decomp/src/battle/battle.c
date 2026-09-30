@@ -2212,7 +2212,56 @@ s32 func_80079AB0(u8 slot) {
     return ranAction62;
 }
 
+/* Run each armed enemy's AI script at +0xc (reaction bytes 1 and 2 set, the
+ * enemy not down unless +0x34 bit 0x800 lets it act) as the acting slot,
+ * then execute its action list; restore the acting slot.
+ * Nonmatching: the original keeps one offset register per table. */
+#ifdef NON_MATCHING
+void func_80079C24(void) {
+    u8 *pc;
+    u8 count;
+    s32 enemy;
+    u8 slot;
+    u8 actor;
+    u8 *p;
+    s32 offset;
+
+    count = 0;
+    slot = 3;
+    actor = D_800C3EAC->actor;
+    for (enemy = 0; enemy < 8; enemy++, slot++) {
+        if (D_800C3D18[enemy].unk1[1] != 0 && D_800C3D18[enemy].unk1[0] != 0) {
+            D_800C3EAC->actor = slot;
+            pc = *(u8 **)D_800D3400[enemy].unkC;
+            p = (u8 *)D_800D2E5C;
+            if (!(D_800CCCE8.records[enemy + 3].pilot.status7C & 0x8000) ||
+                (D_800CCCE8.records[enemy + 3].pilot.flags34 & 0x800)) {
+                for (offset = 31 * sizeof(BattleEvent); offset >= 0; offset -= sizeof(BattleEvent)) {
+                    ((BattleEvent *)((u8 *)D_800C3FE8 + offset))->type = 0xFF;
+                }
+                do {
+                    *p++ = 0;
+                } while (p < (u8 *)D_800D2E5C + 0x100);
+                while (*pc != 0xFD && *pc != 0xFF) {
+                    if (*pc >= 0x80) {
+                        if (!func_8007F8C0(&pc, enemy)) {
+                            func_80079948(&pc);
+                        }
+                    } else {
+                        count = func_8007EF6C(&pc, enemy, count);
+                    }
+                }
+                D_800C3EAC->eventsDone = 0;
+                func_80079778(slot);
+                func_80070EB0(0);
+            }
+        }
+    }
+    D_800C3EAC->actor = actor;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80079C24);
+#endif
 
 /* Show battle message window `index`. */
 void func_80079E18(u8 index) {
