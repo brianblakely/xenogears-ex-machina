@@ -64,7 +64,9 @@ typedef struct {
     u32 stamp;
     u8 unk10[8];
     u8 *loop;          /* sequence data position to return to */
-    u8 unk1C[7];
+    u8 unk1C[4];
+    u16 unk20;
+    u8 unk22;
     u8 unk23;
     u8 unk24[3];
     u8 voice;          /* hardware voice */
@@ -93,10 +95,14 @@ typedef struct {
     s16 target;
 } SoundSlide;
 
-/* A sequence being played: header, then its channels. */
-typedef struct {
-    u8 unk0[0x10];
-    u16 flags;         /* bit 15: paused */
+/* A sequence being played: header, then its channels. Sequences are
+ * listed through `next` (D_80059564). */
+typedef struct SoundSeq {
+    struct SoundSeq *next;
+    u32 *work;         /* channel work block, allocated on start */
+    u8 *data;          /* sequence data */
+    u8 unkC[4];
+    u16 flags;         /* bit 15: playing, bit 8: stopped by a fade, bit 4: started */
     u8 unk12[2];
     u8 channels;
     u8 unk15[5];
@@ -105,7 +111,7 @@ typedef struct {
     u8 unk1C[8];
     s32 unk24;
     u32 ticks;
-    u8 unk2C[4];
+    s32 unk2C;
     u16 unk30;
     s16 unk32;
     s16 unk34;
@@ -114,9 +120,15 @@ typedef struct {
     u16 unk3A;
     s16 unk3C;
     s16 unk3E;
-    u8 unk40[8];
+    u8 unk40;
+    u8 reverb_type;
+    u8 reverb_delay;
+    u8 reverb_feedback;
+    s16 reverb_depth;
+    u8 unk46[2];
     u32 voices;        /* mask of the channels holding a voice */
-    u8 unk4C[8];
+    u32 muted;         /* mask of the muted channels */
+    u8 unk50[4];
     s32 tick_step;
     u8 unk58[2];
     s16 resolution;
@@ -125,7 +137,10 @@ typedef struct {
     s32 tempo_step;
     s16 tempo_frames;
     s16 tempo_target;
-    u8 unk70[0xC];
+    s32 fade;          /* 8.24 */
+    s32 fade_step;
+    s16 fade_frames;
+    s16 fade_target;
     s32 volume;        /* 8.24 */
     s32 volume_step;
     s16 volume_frames;

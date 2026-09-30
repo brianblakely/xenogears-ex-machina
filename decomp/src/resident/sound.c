@@ -351,7 +351,7 @@ u32 func_8003A65C(s32 id, s32 width) {
     return index;
 }
 
-/* Whether a sequence is paused (flag bit 15). */
+/* Whether a sequence is playing (flag bit 15). */
 u32 func_8003A82C(SoundSeq *seq) {
     return seq->flags >> 15;
 }
@@ -377,9 +377,31 @@ void func_8003A838(SoundSeq *seq, s32 tempo, s32 frames) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003A89C);
-
 extern void func_8003E680(s32 bits, SoundSeq *seq);
+extern void func_8003AA30(SoundSeq *seq);
+
+/* Set a sequence's fade level, at once or over `frames`; raising the level
+ * of a sequence a fade stopped resumes it. */
+void func_8003A89C(SoundSeq *seq, s32 fade, s32 frames) {
+    s32 delta;
+
+    seq->fade_target = fade << 8;
+    if (frames == 0) {
+        seq->fade = fade << 24;
+        seq->fade_frames = 0;
+        func_8003E680(0x100, seq);
+    } else {
+        delta = (fade << 16) - (seq->fade >> 8);
+        if (delta == 0) {
+            return;
+        }
+        seq->fade_frames = frames;
+        seq->fade_step = (delta / frames) << 8;
+    }
+    if ((seq->flags & 0x100) && fade != 0) {
+        func_8003AA30(seq);
+    }
+}
 
 /* Set a sequence's volume, at once or over `frames`. */
 void func_8003A948(SoundSeq *seq, s32 volume, s32 frames) {
@@ -417,9 +439,62 @@ void func_8003A9BC(SoundSeq *seq, s32 pan, s32 frames) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003AA30);
+extern void func_80038934(s32 type, s32 depth, s32 delay, s32 feedback);
+extern void func_8003E6C0(SoundSeq *seq, s32 voices);
+extern void func_8003AFA0(SoundSeq *seq);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003AAC4);
+/* Resume a sequence: apply its reverb (when the driver owns the reverb),
+ * refresh all its voices and mark it playing. */
+void func_8003AA30(SoundSeq *seq) {
+    DisableEvent(D_800595BC);
+    if (D_8005957C & 0x1000) {
+        func_80038934(seq->reverb_type, seq->reverb_depth, seq->reverb_delay,
+                      seq->reverb_feedback);
+    }
+    func_8003E6C0(seq, 0xFFFF);
+    func_8003AFA0(seq);
+    seq->flags = (seq->flags & ~0x100) | 0x8000;
+    EnableEvent(D_800595BC);
+}
+
+extern void func_8003EFA0(SoundChannel *state, u32 voice);
+extern void func_8003EF04(SoundChannel *state, u32 voice);
+
+/* Mute the channels of a sequence whose bit is set in `mask` (keying their
+ * voices off while it plays) and unmute the others (keying on the ones
+ * still sounding). The unmute test reads the flag word as 32 bits. */
+void func_8003AAC4(SoundSeq *seq, u32 mask) {
+    SoundSeqChannel *channel;
+    s32 count;
+
+    if (seq == NULL) {
+        return;
+    }
+    channel = seq->channel;
+    count = seq->channels;
+    seq->muted = mask;
+    do {
+        if (channel->flags != 0) {
+            if (mask & 1) {
+                if (!(channel->flags & 0x20)) {
+                    channel->flags |= 0x20;
+                    if ((s16)seq->flags & 0x8000) {
+                        func_8003EFA0(&channel->state, channel->voice);
+                    }
+                }
+            } else if (channel->flags & 0x20) {
+                channel->flags &= ~0x20;
+                if ((*(u32 *)&channel->flags & 0x110) == 0x100 &&
+                    ((s16)seq->flags & 0x8000)) {
+                    func_8003EF04(&channel->state, channel->voice);
+                }
+            }
+        }
+        channel++;
+        count--;
+        mask >>= 1;
+    } while (count != 0);
+}
 
 void func_8003ABE8(SoundSeq *seq, u8 value) {
     seq->unk1B = value;
@@ -437,9 +512,47 @@ void func_8003ABF0(SoundSeq *seq, SoundTime *time) {
     time->minutes = seconds / 60;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003AC58);
+/* Store (and return a pointer to) the lowest `unk20` of the active channels
+ * of a sequence, 0 when none is active. */
+u16 *func_8003AC58(SoundSeq *seq) {
+    SoundSeqChannel *channel = seq->channel;
+    u16 count = seq->channels;
+    u16 *out = &seq->unk30;
+    u16 lowest = 0xFFFF;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003ACC8);
+    do {
+        if (channel->flags != 0 && channel->unk20 < lowest) {
+            lowest = channel->unk20;
+        }
+        channel++;
+    } while (--count != 0);
+    if (lowest == 0xFFFF) {
+        lowest = 0;
+    }
+    *out = lowest;
+    return out;
+}
+
+extern SoundSeq *D_80059564;     /* playing sequences */
+
+/* The block at offset `data+0x1E` of a playing sequence (the first one when
+ * `seq` is NULL); NULL when it is not playing. */
+u8 *func_8003ACC8(SoundSeq *seq) {
+    SoundSeq *it = D_80059564;
+
+    if (seq != NULL) {
+        while (it != NULL) {
+            if (it == seq) {
+                break;
+            }
+            it = it->next;
+        }
+    }
+    if (it == NULL) {
+        return NULL;
+    }
+    return it->data + *(u16 *)(it->data + 0x1E);
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003AD20);
 
@@ -585,28 +698,21 @@ u8 *func_8003CD00(u8 *data) {
     return data;
 }
 
-/* Nonmatching: the flag updates are scheduled in a different order. */
-#ifdef NON_MATCHING
+/* Set `unk5C` from the operand and flag it for update. */
 u8 *func_8003CD08(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
-    channel->unk5C = *data;
-    channel->flags2 |= 2;
+    channel->unk5C = *data++;
     channel->flags |= 0x400;
-    return data + 1;
+    channel->flags2 |= 2;
+    return data;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003CD08);
-#endif
 
-/* Nonmatching: the flag update is scheduled in a different order. */
-#ifdef NON_MATCHING
 u8 *func_8003CD30(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    u8 value = *data++;
+
     channel->flags |= 0x100;
-    channel->unk5C = *data;
-    return data + 1;
+    channel->unk5C = value;
+    return data;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003CD30);
-#endif
 
 u8 *func_8003CD4C(u8 *data) {
     return data;
@@ -657,12 +763,10 @@ u8 *func_8003CE50(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* Set the time signature.
- * Nonmatching: the stores are scheduled in a different order. */
-#ifdef NON_MATCHING
+/* Set the time signature. */
 u8 *func_8003CE68(u8 *data, SoundSeq *seq) {
-    u8 unit = data[1];
-    u8 beats = data[0];
+    s16 beats = data[0];
+    s16 unit = data[1];
 
     seq->unk3A = 0xC0 / unit;
     seq->unk3C = unit;
@@ -671,21 +775,16 @@ u8 *func_8003CE68(u8 *data, SoundSeq *seq) {
     seq->unk36 = seq->unk3A;
     return data + 2;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003CE68);
-#endif
 
-/* Nonmatching: the stores are scheduled in a different order. */
-#ifdef NON_MATCHING
 u8 *func_8003CE9C(u8 *data, SoundSeq *seq) {
+    u16 length;
+
     seq->unk32 = data[0];
-    seq->unk36 = seq->unk3A;
+    length = seq->unk3A;
     seq->unk34 = data[1];
+    seq->unk36 = length;
     return data + 2;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003CE9C);
-#endif
 
 u8 *func_8003CEC0(u8 *data, SoundSeq *seq) {
     seq->unk1A = *data;
