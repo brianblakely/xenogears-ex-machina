@@ -153,6 +153,20 @@ extern s8 D_80092740;
 extern s32 D_80092744;
 extern s32 D_800912F0;
 /* A page of the settings/system menu (0x3C bytes; table at D_800915AC). */
+/* libgpu TILE layout. */
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    s16 w, h;
+} Tile;
+
+/* libgpu DR_MOVE layout. */
+typedef struct {
+    u32 tag;
+    u32 code[5];
+} DrMove;
+
 /* An entry block of a page; +0x14 bit 2 hides it. */
 typedef struct {
     u8 unk0[0x14];
@@ -166,12 +180,9 @@ typedef struct {
     s16 count;  /* 0x0A */
     u8 unkC[6];
     s16 cursor; /* 0x12 */
-    s16 y;      /* 0x14 */
-    u8 unk16[0xE];
-    s16 x;      /* 0x24 */
-    u8 unk26[2];
-    s16 width;  /* 0x28 */
-    u8 unk2A[0x12];
+    s16 y;      /* 0x14: first text line */
+    u8 unk16[6];
+    Tile frame[2]; /* 0x1C: the page's box, per draw buffer */
 } MenuPage;
 
 /* Formats shared by the settings pages ("%d", "%dFPS"). */
@@ -202,7 +213,7 @@ extern MenuPage *D_80092734; /* shown page */
 extern MenuPage *D_80092738; /* page to return to */
 extern s32 D_80092924;
 extern s32 D_800928C8;
-extern s8 D_80092758;
+extern u8 D_80092758;
 extern s32 D_80092940;
 extern u8 *D_800928D8; /* the 49 portraits, 0x1000 bytes each */
 extern void *D_80092760; /* loaded image data */
@@ -293,5 +304,14 @@ s32 func_8007FF70(s32 value, s32 max, s32 flags);
 void func_80080C48(s32 arg);
 void func_8007D334(s32 arg0, s32 arg1, s32 kind);
 void func_8008EB4C(s32 sound);
+
+/* Menu overlay drawing. */
+extern DrTpage D_800954C8[2];
+extern DrMove D_80095498[2];
+extern void *D_800926D4[2]; /* text quads, per draw buffer */
+u16 func_80043A1C(s32 tp, s32 abr, s32 x, s32 y);           /* texture page id */
+void func_80043E20(DrTpage *p, s32 dfe, s32 dtd, s32 tpage); /* set a DR_TPAGE */
+void func_80043E4C(DrMove *p, Rect *rect, s32 x, s32 y);     /* set a DR_MOVE */
+void func_800811AC(void *ot);
 
 #endif

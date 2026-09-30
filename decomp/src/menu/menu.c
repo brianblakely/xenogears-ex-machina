@@ -1031,7 +1031,7 @@ INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu", D_8006FF60);
 void func_8007F9A0(MenuPage *page) {
     char text[8];
 
-    func_8007E894(page->x + page->width - 10, page->y);
+    func_8007E894(page->frame[0].x0 + page->frame[0].w - 10, page->y);
     func_8007EE08(0);
     func_8007F948(page, 0);
     func_8007ECF0(func_8007F97C());
@@ -1054,7 +1054,7 @@ void func_8007F9A0(MenuPage *page) {
 void func_8007FB0C(MenuPage *page) {
     char text[8];
 
-    func_8007E894(page->x + page->width - 10, page->y);
+    func_8007E894(page->frame[0].x0 + page->frame[0].w - 10, page->y);
     func_8007EE08(0);
     func_8007ECF0(D_8006FF7C);
     func_8007F948(page, 1);
@@ -1129,7 +1129,7 @@ void func_8007FE48(MenuPage *page) {
     char *value;
 
     func_8007EE08(0);
-    func_8007E894(page->x + page->width - 10, page->y);
+    func_8007E894(page->frame[0].x0 + page->frame[0].w - 10, page->y);
     func_8007ECF0(D_8006FF7C);
     func_8007ECF0(D_8006FF7C);
     func_8007ECF0(D_8006FF7C);
@@ -1493,7 +1493,35 @@ void func_80080D10(void) {
     D_800926DC = 0;
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080D20);
+/* Link this frame's text quads and the menu overlay: the shown page's box
+ * with its texture page and, while a page or the copy request is active, a
+ * move of the kept screen copy into the draw buffer. */
+void func_80080D20(void *ot) {
+    PolyFT4 *quad = D_800926D4[D_800928A0];
+    Rect area;
+    s32 i;
+
+    for (i = 0; i < D_800926DC; i++, quad++) {
+        func_80043B48(ot, quad);
+    }
+    D_800926DC = 0;
+    func_800811AC(ot);
+    if ((D_80092734 != NULL && D_80092758 != 0) || D_800912F0 != 0) {
+        if (D_80092734 != NULL) {
+            func_80043B48(ot, &D_80092734->frame[D_800928A0]);
+            func_80043E20(&D_800954C8[D_800928A0], 0, 0, func_80043A1C(0, 2, 0, 0));
+            func_80043B48(ot, &D_800954C8[D_800928A0]);
+        }
+        area.x = 0x140;
+        area.y = 0x100;
+        area.w = 0x140;
+        area.h = 0xDA;
+        func_80043E4C(&D_80095498[D_800928A0], &area, D_8009A0D8[D_800928A0].area.x,
+                      D_8009A0D8[D_800928A0].area.y);
+        func_80043B48(ot, &D_80095498[D_800928A0]);
+    }
+    D_800912F0 = 0;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080F04);
 
