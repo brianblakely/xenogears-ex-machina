@@ -260,6 +260,7 @@ void func_8001F6B0(Sprite *sprite); /* recolour the parts */
 void func_80022090(Sprite *sprite); /* rebuild the orientation */
 void func_80022974(Sprite *sprite); /* velocity from speed and direction */
 void func_80023210(Sprite *sprite);
+void func_800245D8(Sprite *sprite, s32 value);
 void func_8001D2B0(Sprite *sprite, s32 frame);
 void func_8001DAE8(Sprite *sprite, s32 frame, void *image);
 void func_8001E148(Sprite *sprite);

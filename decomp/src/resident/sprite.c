@@ -784,7 +784,41 @@ void func_80021D3C(VECTOR *position, s32 x, s32 z) {
     position->vx = x << 16;
 }
 
+/* Restore a sprite from a snapshot: its state, then advance its animation
+ * (moving it) until the saved step, then its saved position; frame skipping
+ * is off meanwhile. */
+/* Nonmatching: the original addresses the frame-skip word absolutely for the load and the store (GCC keeps its address in a register) and reads the two saved bytes with lbu. */
+#ifdef NON_MATCHING
+void func_80021D50(Sprite *sprite, SpriteState *state) {
+    s32 skip = D_80059198.skip;
+
+    D_80059198.skip = 0;
+    sprite->word80 = state->word80;
+    sprite->motion.bytes[3] = state->byteaf;
+    sprite->b0.byteb0 = state->byteb0;
+    sprite->renderer->scale_x = state->scale_x;
+    sprite->renderer->scale_y = state->scale_y;
+    sprite->renderer->scale_z = state->scale_z;
+    sprite->word82 = state->word82;
+    sprite->scale = state->scale;
+    func_800245D8(sprite, (s8)sprite->motion.bytes[3]);
+    while (sprite->frame_bits.field22 != state->field22) {
+        func_80023210(sprite);
+        sprite->x += sprite->speed_x;
+        sprite->z += sprite->speed_z;
+        sprite->y += sprite->speed_y;
+        sprite->speed_y += sprite->word1c;
+    }
+    sprite->x = state->x;
+    sprite->y = state->y;
+    sprite->z = state->z;
+    ((SpriteSequencer *)sprite->sequencer)->word0 = state->sequencer0;
+    ((SpriteSequencer *)sprite->sequencer)->word4 = state->sequencer4;
+    D_80059198.skip = skip;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80021D50);
+#endif
 
 /* Save a sprite's position and animation state. */
 void func_80021EBC(Sprite *sprite, SpriteState *state) {
