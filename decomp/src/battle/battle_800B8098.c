@@ -284,7 +284,76 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800B88
 void func_800B89F4(void) {
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800B89FC);
+/* Open the battle menu for slot's turn: make it the acting slot facing its
+ * event's first target. On foot, load wave bank 7 once for a gear frame or
+ * return the sprite to its state; a gear turns to targets (800AA320 0x1A).
+ * Mode 0 then walks the sprite (a gear turns to the event's targets),
+ * otherwise the menu goes to state 4 (9 for a gear). */
+void func_800B89FC(s32 mode, s32 slot, s32 targets, s32 arg3) {
+    BattleMenu *menu;
+    BattleSprite *sprite;
+    void *waves;
+
+    func_800BC3F8(0);
+    if (D_800C3610 != NULL) {
+        for (;;) {
+            __asm__ volatile(".word 0x0001000D"); /* break 1 */
+        }
+    }
+    func_800BE790();
+    func_800BE790();
+    D_800C3624 = 0;
+    D_800C3608 &= ~(1 << slot);
+    menu = func_800BED4C();
+    D_800C3610 = menu;
+    menu->field40 = arg3;
+    menu->turnSlot = slot;
+    func_800BF3E8(func_800BEFF4(slot));
+    D_800C3DF0 = 0;
+    sprite = D_800C3610->sprite;
+    if (!BATTLE_AREA.slots[slot].gear) {
+        func_800C0F70();
+        D_800C3620 = 0;
+        func_800BC454(0xC0);
+        if (!func_8001EE68(*(u8 **)sprite->base)) {
+            D_800C3622 = 0;
+            if (D_800C3618 == NULL || SPRITE_SLOT(sprite) != D_800C361C) {
+                func_800BF2B8(sprite);
+            }
+        } else {
+            if (!D_800C3622) {
+                func_800B8354();
+                func_80028470(0x2C, 0);
+                waves = func_80031BDC(func_800288EC(7), 0);
+                func_800295D8(7, (s32)waves, 0, 0x80);
+                func_800B8354();
+                func_800C0F70();
+                D_800C3A6C = func_80037FD8(waves, 0);
+                while (func_8003BDFC(0) != 0) {
+                    func_800BE790();
+                }
+                func_800320E8(waves);
+            }
+            D_800C3622 = 1;
+        }
+    } else {
+        func_800B8D04();
+        func_800BFBA0();
+        func_800BF0B4(8);
+        func_800BEE2C(slot, targets, 0x1A);
+        func_800BC454(0xC0);
+    }
+    if (mode == 0) {
+        if (BATTLE_AREA.slots[slot].gear) {
+            func_800BEE2C(slot, BATTLE_AREA.events[D_800C360C].targetMask, 2);
+        } else {
+            func_80021BF8(sprite, func_800B9B30);
+            func_800BF0C4(sprite);
+        }
+    } else {
+        func_800BF0B4(BATTLE_AREA.slots[slot].gear ? 9 : 4);
+    }
+}
 
 /* Finish the battle's loads: wait for the disc (800B8354), start the
  * requested loads (800BF9EC), run frames until D_80059464 is reached,

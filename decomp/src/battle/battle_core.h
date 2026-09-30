@@ -739,7 +739,7 @@ void func_80085C88(u8 queue);
 void func_80085CCC(u8 actor, u16 targets, u16 animation);
 void func_80085350(void);
 void func_80085388(void);
-void func_800B89FC(s32 mode, u8 actor, s32 arg2, s32 arg3);
+void func_800B89FC(s32 mode, s32 slot, s32 targets, s32 arg3);
 s32 func_80080AE4(u8 actor);
 void func_800793F0(u8 actor);
 void func_80079674(u8 actor);

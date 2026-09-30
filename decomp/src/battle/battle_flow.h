@@ -33,5 +33,18 @@ typedef struct {
 extern void *D_800D39C8; /* the enemy set data copy */
 
 s32 func_8003A5D0(s32 sound); /* voices still playing the sound */
+s32 func_8001EE68(u8 *frame); /* whether a sprite frame is a gear's (this unit takes it as a word) */
+
+/* The acting slot's turn (800B89FC-800B9F78). */
+extern u8 D_800C3624;
+extern s16 D_800C3DF0;
+
+void func_800B9B30(void);
+void func_800BC3F8(s32 value);
+BattleMenu *func_800BED4C(void);
+/* Defined without a return value: 800B89FC takes what it leaves in v0, the
+ * new acting sprite. */
+BattleSprite *func_800BEFF4(s32 slot);
+void func_800BF3E8(BattleSprite *sprite);
 
 #endif
