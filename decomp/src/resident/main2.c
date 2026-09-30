@@ -615,16 +615,110 @@ u8 func_800358A0(s32 buttons) {
     return D_8005021C[(buttons >> 12) & 0xF];
 }
 
+extern u16 D_80059574;       /* held pad buttons, second port */
+extern u16 D_80059490;       /* pad buttons pressed, second port */
+extern u16 D_800594A8;       /* pad buttons repeated, second port */
+extern s32 D_80059488;       /* vertical blank count */
+extern u32 D_80059374;       /* held pad buttons of the last frame */
+extern u32 D_80059378;
+extern s32 D_8005022C;       /* frames the held buttons have not changed */
+extern s32 D_80050230;
+extern u8 D_80059444, D_8005944C, D_80059430, D_80059438; /* sticks, first port */
+extern u8 D_80059448, D_80059450, D_80059434, D_8005943C; /* sticks, second port */
+
+/* Read both controllers: held buttons (remapped; an analog stick's layout
+ * swapped), the stick positions (the directional buttons' on a digital
+ * pad), newly pressed buttons and the auto-repeating buttons (the newly
+ * pressed ones; once the held buttons have not changed for 32 frames, all
+ * held buttons every fourth frame).
+ * Nonmatching: the operands of the two `and`s are swapped. */
+#ifdef NON_MATCHING
+void func_800358BC(void) {
+    D_80059570 = func_8003569C(0);
+    D_80059570 = func_800357C0((s16)D_80059570);
+    if (D_80059388 != 0) {
+        if (D_80059388 == 0x50) {
+            D_80059570 = func_8003582C((s16)D_80059570);
+            goto analog0;
+        }
+        if (D_80059388 == 0x70) {
+        analog0:
+            D_80059444 = D_800625FC[0].data[0];
+            D_8005944C = D_800625FC[0].data[1];
+            D_80059430 = D_800625FC[0].data[2];
+            D_80059438 = D_800625FC[0].data[3];
+        } else {
+            D_8005944C = 0;
+            D_80059444 = 0;
+            D_80059430 = D_8005020C[D_80059570 >> 12];
+            D_80059438 = D_8005021C[D_80059570 >> 12];
+        }
+    } else {
+        D_8005944C = 0;
+        D_80059444 = 0;
+        D_80059438 = 0;
+        D_80059430 = 0;
+    }
+    D_8005948C = (D_80059570 ^ D_80059374) & D_80059570;
+    D_80059374 = D_80059570;
+    if (D_8005948C) {
+        D_8005022C = 0;
+    }
+    D_800594A4 = D_80059570;
+    if (D_8005022C < 0x20) {
+        D_8005022C++;
+        D_800594A4 = D_8005948C;
+    } else if (D_80059488 & 3) {
+        D_800594A4 = D_8005948C;
+    }
+
+    D_80059574 = func_8003569C(1);
+    D_80059574 = func_800357C0((s16)D_80059574);
+    if (D_80059388 != 0) {
+        if (D_80059388 == 0x50) {
+            D_80059574 = func_8003582C((s16)D_80059574);
+            goto analog1;
+        }
+        if (D_80059388 == 0x70) {
+        analog1:
+            D_80059448 = D_800625FC[1].data[0];
+            D_80059450 = D_800625FC[1].data[1];
+            D_80059434 = D_800625FC[1].data[2];
+            D_8005943C = D_800625FC[1].data[3];
+        } else {
+            D_80059450 = 0;
+            D_80059448 = 0;
+            D_80059434 = D_8005020C[D_80059574 >> 12];
+            D_8005943C = D_8005021C[D_80059574 >> 12];
+        }
+    } else {
+        D_80059450 = 0;
+        D_80059448 = 0;
+        D_8005943C = 0;
+        D_80059434 = 0;
+    }
+    D_80059490 = (D_80059574 ^ D_80059378) & D_80059574;
+    D_80059378 = D_80059574;
+    if (D_80059490) {
+        D_80050230 = 0;
+    }
+    D_800594A8 = D_80059574;
+    if (D_80050230 < 0x20) {
+        D_80050230++;
+        D_800594A8 = D_80059490;
+    } else if (D_80059488 & 3) {
+        D_800594A8 = D_80059490;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800358BC);
+#endif
 
 /* Queued controller states (16 entries of the six state words). */
 extern u32 D_8005937C; /* queued count */
 extern u32 D_80059380; /* write index */
 extern u32 D_80059384; /* read index */
 extern s32 D_80050208; /* queue overflowed */
-extern u16 D_80059574;
-extern u16 D_80059490;
-extern u16 D_800594A8;
 extern u16 D_8005A0FC[16];
 extern u16 D_8005A11C[16];
 extern u16 D_8005A13C[16];
@@ -859,7 +953,6 @@ void func_8003633C(u8 value) {
     D_8005938C = value;
 }
 
-extern s32 D_80059488;
 extern void (*D_800501FC)(void);
 
 /* Vertical-blank callback: counts frames, polls the controllers, input queue
@@ -925,7 +1018,6 @@ void func_80036420(void) {
     D_800594A8 = s5;
 }
 
-extern u8 D_80059430, D_80059434, D_80059438, D_8005943C; /* actuator values */
 
 /* Print a controller receive buffer in hex, and a digital pad's buttons.
  * Kept as assembly: its C matches, but the string literals then end the
