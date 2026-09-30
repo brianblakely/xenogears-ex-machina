@@ -185,6 +185,10 @@ typedef struct FieldActor {
     u8 unk130[0x138 - 0x130];
 } FieldActor;
 
+/* The actor's two flag words as four halfwords; events test and store them
+ * sixteen bits at a time. */
+#define ACTOR_FLAG_HALF(actor, n) (((u16 *)(actor))[n])
+
 /* A 14-byte collision triangle; +0c indexes the attribute table. */
 typedef struct {
     s16 unk00[6];
@@ -337,7 +341,10 @@ typedef struct {
     u8 unk225F[0x2268 - 0x225F]; /* 225F: event byte table */
     s32 unk2268;               /* 2268 */
     s32 controlled;            /* 226C: controlled descriptor */
-    u8 unk2270[0x22E0 - 0x2270];
+    u8 unk2270[0x2298 - 0x2270];
+    s32 unk2298;               /* 2298 */
+    s32 unk229C;               /* 229C: at most 32 */
+    u8 unk22A0[0x22E0 - 0x22A0];
     s16 unk22E0;               /* 22E0 */
     s16 emitter_descriptor[3]; /* 22E2: descriptor each emitter follows, or -1 */
     u8 unk22E8[0x233C - 0x22E8];
@@ -436,6 +443,11 @@ extern void func_800496AC(void);                               /* PopMatrix */
 extern void func_8004A6DC(SVECTOR *v, s32 *out, s32 *flag); /* RotTrans */
 
 /* Field overlay. */
+extern void func_80071F64(s32 x, s32 y, s32 w, s32 h);
+extern void func_8008E0DC(s32 flags);
+extern void func_8008E148(s32 flags);
+extern void func_8008E498(s32 value);
+extern void func_8008E718(void);
 extern s32 func_8009CDB4(s32 offset); /* actor selector; 0xff when none */
 extern s32 func_800A3018(u32 reference); /* read an event variable */
 extern void func_80072254(s32 index);
@@ -504,6 +516,9 @@ extern s32 D_8004F34C; /* current map */
 extern u8 D_800625FC[2][0x22]; /* pad buffers */
 
 /* Field state. */
+extern s32 D_800ADB38; /* requested transition */
+extern s32 D_800ADB3C; /* transition operand */
+extern s32 D_800ADB7C;
 extern s32 D_800ADB1C; /* 801e module loaded */
 extern s32 D_800ADB88;
 extern s32 D_800ADB8C;

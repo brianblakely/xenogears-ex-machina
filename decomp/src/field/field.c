@@ -2123,53 +2123,158 @@ void func_8008DEBC(void) {
     D_800B0078->pc += 3;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008DF44);
+/* Event: store the selected actor's flag halfword 1 in variable op1. */
+void func_8008DF44(void) {
+    s32 index = func_8009CDB4(1);
+    FieldActor *actor;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008DFCC);
+    if (index != 0xFF) {
+        actor = D_800AFB0C.descriptors[index].actor;
+        func_800A3074(func_800ACDB8(1) & 0xFFFF, ACTOR_FLAG_HALF(actor, 1));
+    }
+    D_800B0078->pc += 3;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008E054);
+/* Event: store the selected actor's layer flags in variable op1. */
+void func_8008DFCC(void) {
+    s32 index = func_8009CDB4(1);
+    FieldActor *actor;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008E0DC);
+    if (index != 0xFF) {
+        actor = D_800AFB0C.descriptors[index].actor;
+        func_800A3074(func_800ACDB8(1) & 0xFFFF, actor->layer_flags);
+    }
+    D_800B0078->pc += 3;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008E148);
+/* Event: store the selected actor's flag halfword 3 in variable op1. */
+void func_8008E054(void) {
+    s32 index = func_8009CDB4(1);
+    FieldActor *actor;
+
+    if (index != 0xFF) {
+        actor = D_800AFB0C.descriptors[index].actor;
+        func_800A3074(func_800ACDB8(1) & 0xFFFF, ACTOR_FLAG_HALF(actor, 3));
+    }
+    D_800B0078->pc += 3;
+}
+
+/* Continue past a 5-byte instruction when `flags` has any bit of op1, else
+ * jump to op4. */
+void func_8008E0DC(s32 flags) {
+    if (func_800ACDB8(1) & flags & 0xFFFF) {
+        D_800B0078->pc += 6;
+    } else {
+        D_800B0078->pc = func_800ACDB8(4);
+    }
+}
+
+/* Continue past a 4-byte instruction when `flags` has any bit of op1, else
+ * jump to op3. */
+void func_8008E148(s32 flags) {
+    if (func_800ACDB8(1) & flags & 0xFFFF) {
+        D_800B0078->pc += 5;
+    } else {
+        D_800B0078->pc = func_800ACDB8(3);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008E1B4);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008E298);
+/* Event: test the selected actor's flag halfword 0 (8008e0dc). */
+void func_8008E298(void) {
+    func_8008E0DC(ACTOR_FLAG_HALF(D_800AFB0C.descriptors[func_8009CDB4(3)].actor, 0));
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008E2EC);
+/* Event: test the selected actor's flag halfword 1 (8008e0dc). */
+void func_8008E2EC(void) {
+    func_8008E0DC(ACTOR_FLAG_HALF(D_800AFB0C.descriptors[func_8009CDB4(3)].actor, 1));
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008E340);
+/* Event: test the selected actor's flag halfword 2 (8008e0dc). */
+void func_8008E340(void) {
+    func_8008E0DC(ACTOR_FLAG_HALF(D_800AFB0C.descriptors[func_8009CDB4(3)].actor, 2));
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008E394);
+/* Event: test the selected actor's flag halfword 3 (8008e0dc). */
+void func_8008E394(void) {
+    func_8008E0DC(ACTOR_FLAG_HALF(D_800AFB0C.descriptors[func_8009CDB4(3)].actor, 3));
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008E3E8);
+/* Event: test the current actor's flag halfword 0 (8008e148). */
+void func_8008E3E8(void) {
+    func_8008E148(ACTOR_FLAG_HALF(D_800B0078, 0));
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008E414);
+/* Event: test the current actor's flag halfword 1 (8008e148). */
+void func_8008E414(void) {
+    func_8008E148(ACTOR_FLAG_HALF(D_800B0078, 1));
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008E440);
+/* Event: test the current actor's flag halfword 2 (8008e148). */
+void func_8008E440(void) {
+    func_8008E148(ACTOR_FLAG_HALF(D_800B0078, 2));
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008E46C);
+/* Event: test the current actor's flag halfword 3 (8008e148). */
+void func_8008E46C(void) {
+    func_8008E148(ACTOR_FLAG_HALF(D_800B0078, 3));
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008E498);
+/* Store `value` in variable op1. */
+void func_8008E498(s32 value) {
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, value & 0xFFFF);
+    D_800B0078->pc += 3;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008E4EC);
+/* Event: store the current actor's flag halfword 0 in variable op1. */
+void func_8008E4EC(void) {
+    func_8008E498(ACTOR_FLAG_HALF(D_800B0078, 0));
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008E518);
+/* Event: store the current actor's flag halfword 1 in variable op1. */
+void func_8008E518(void) {
+    func_8008E498(ACTOR_FLAG_HALF(D_800B0078, 1));
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008E544);
+/* Event: store the current actor's flag halfword 2 in variable op1. */
+void func_8008E544(void) {
+    func_8008E498(ACTOR_FLAG_HALF(D_800B0078, 2));
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008E570);
+/* Event: store the current actor's flag halfword 3 in variable op1. */
+void func_8008E570(void) {
+    func_8008E498(ACTOR_FLAG_HALF(D_800B0078, 3));
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008E59C);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008E718);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008E85C);
+/* Event: set 800b2298 and the 800b229c count (at most 32) from operands 1
+ * and 3, then apply them (8008e718). */
+void func_8008E85C(void) {
+    D_800B218C.unk2298 = func_800ACDEC(1);
+    D_800B218C.unk229C = func_800ACDEC(3);
+    if (D_800B218C.unk229C > 0x20) {
+        D_800B218C.unk229C = 0x20;
+    }
+    func_8008E718();
+    D_800B0078->pc += 5;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008E8C8);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008E9F8);
+/* Event: wait for 800adb7c, clearing it once seen; yield each time. */
+void func_8008E9F8(void) {
+    if (D_800ADB7C == 0) {
+        D_800B0078->pc--;
+    } else {
+        D_800ADB7C = 0;
+        D_800B0078->pc++;
+    }
+    D_800B00C0 = 1;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008EA58);
 
@@ -2177,11 +2282,29 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008EC30);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008EE14);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008EF5C);
+/* Event: request transition 1 with operand 1 (800adb38/800adb3c). */
+void func_8008EF5C(void) {
+    D_800ADB3C = func_800ACDEC(1);
+    D_800ADB38 = 1;
+    D_800B0078->pc += 3;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008EFA0);
+/* Event: request transition 2 with operand 1 (800adb38/800adb3c). */
+void func_8008EFA0(void) {
+    D_800ADB3C = func_800ACDEC(1);
+    D_800ADB38 = 2;
+    D_800B0078->pc += 3;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008EFE4);
+/* Event: set both draw buffers' clip areas from four operands. */
+void func_8008EFE4(void) {
+    s32 x = func_800ACDEC(1);
+    s32 y = func_800ACDEC(3);
+    s32 w = func_800ACDEC(5);
+
+    func_80071F64(x, y, w, func_800ACDEC(7));
+    D_800B0078->pc += 9;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008F070);
 
