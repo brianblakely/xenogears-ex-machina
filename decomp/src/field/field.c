@@ -3704,7 +3704,69 @@ void func_8008B894(void) {
     D_800B0078->pc--;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008B978);
+/* Run the join event of party member `member`: the first event actor whose
+ * event 0 starts with instruction 0x16 for that member is initialised and
+ * run (with the member's own actor while 8004f34c has 0xc000); the running
+ * actor's context is restored afterwards. */
+void func_8008B978(s32 member) {
+    FieldDescriptor *descriptor;
+    FieldActor *actor;
+    s32 yield;
+    s32 current;
+    s32 steps;
+    s32 pc;
+    s32 i;
+    s32 entry;
+    u8 *code;
+    s32 pc_new;
+
+    D_8005A39C->unk1D30 |= 1 << D_800ADBC8;
+    descriptor = D_800B06B8;
+    actor = D_800B0078;
+    if (D_800ADB1C != 0) {
+        pc = actor->pc;
+        yield = D_800B00C0;
+        steps = D_800AFC7C;
+        current = D_800AFD1C;
+        for (i = 0; i < D_800ADBFC; i++) {
+            entry = func_800A3090(i, 0);
+            code = &D_800ADC00[entry];
+            if (code[0] == 0x16 && code[1] == member) {
+                D_800B06B8 = &D_800AF880.components.descriptors[i];
+                D_800B0078 = D_800B06B8->actor;
+                func_80080A74(i);
+                D_800AFD1C = i;
+                D_800AF880.components.descriptors[i].actor->pc = entry;
+                pc_new = func_800A3090(i, 0);
+                D_800AFFEC = 0;
+                D_800B0078->pc = pc_new;
+                entry = func_800A3090(i, 0);
+                func_8008D380(i, D_800B226C);
+                func_800A1EC8(0xFFFF);
+                func_80077268();
+                D_8005A39C->unk1D30 |= 1 << D_800ADBC8;
+                if (D_8004F34C & 0xC000) {
+                    D_800B06B8 = &D_800AF880.components.descriptors[D_8006F990[D_800ADBCC]];
+                    D_800B0078 = D_800B06B8->actor;
+                    func_80080A74(D_8006F990[D_800ADBCC]);
+                    D_800AF880.components.descriptors[i].actor->pc = entry;
+                    D_800AFD1C = D_8006F990[D_800ADBCC];
+                    pc_new = func_800A3090(D_8006F990[D_800ADBCC], 0);
+                    D_800AFFEC = 0;
+                    D_800B0078->pc = pc_new;
+                    func_800A1EC8(0xFFFF);
+                }
+                break;
+            }
+        }
+        D_800B06B8 = descriptor;
+        D_800B0078 = actor;
+        D_800B00C0 = yield;
+        D_800AFD1C = current;
+        D_800AFC7C = steps;
+        actor->pc = pc;
+    }
+}
 
 /* Event: once idle, add character op1 to the party (a free slot starts its
  * sprite load) or mark it waiting (+1d30); yields while busy. */
