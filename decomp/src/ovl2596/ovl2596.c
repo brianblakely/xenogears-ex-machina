@@ -1181,7 +1181,70 @@ void func_801E2888(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E2ACC);
+/* Distribute the experience won: party members that stand share it (less
+ * the penalty), every other character gets a reserve share of a third;
+ * then record each slot's level gains and result stats. */
+void func_801E2ACC(void) {
+    s16 slots[11];
+    u16 i;
+    u16 absent;
+    u32 experience;
+
+    for (i = 0; i < 11; i++) {
+        slots[i] = 100;
+    }
+    absent = 0;
+    for (i = 0; i < 3; i++) {
+        if (D_800D2D24[i] == 0xFF) {
+            absent++;
+            continue;
+        }
+        D_801E44EC = &D_801E44C8->records[i];
+        if (D_801E44EC->flags7C & 0xC000) {
+            absent++;
+            slots[D_801E44EC->id] = 0xFF;
+        } else {
+            slots[D_801E44EC->id] = i;
+        }
+        D_801E44F8[i][0] = D_801E44EC->level;
+        D_801E44F8[i][1] = D_801E44EC->level2;
+    }
+    experience = D_801E44C8->experience;
+    if (D_801E44C8->penalty != 0) {
+        experience -= (experience / 4) * D_801E44C8->penalty;
+    }
+    for (i = 0; i < 11; i++) {
+        if (slots[i] == 0xFF) {
+            continue;
+        }
+        D_801E44EC = (Combatant *)&D_801E44C4->characters[i];
+        if (slots[i] < 3) {
+            func_801E2EB0(experience / (3 - absent), slots[i], 0);
+        } else {
+            func_801E2EB0(experience / 3, 0xFF, 1);
+        }
+        func_801E308C();
+    }
+    for (i = 0; i < 3; i++) {
+        if (D_800D2D24[i] == 0xFF) {
+            continue;
+        }
+        D_801E44EC = (Combatant *)&D_801E44C4->characters[D_800D2D24[i]];
+        D_801E44C8->levelGains[i][0] = D_801E44EC->level - D_801E44F8[i][0];
+        D_801E44C8->levelGains[i][1] = D_801E44EC->level2 - D_801E44F8[i][1];
+        if (D_801E44EC->id == 4) {
+            D_801E44C8->stats[i][0] = D_801E44EC->value04 + D_801E44EC->value1C;
+        } else {
+            D_801E44C8->stats[i][0] = D_801E44EC->attack + D_801E44EC->value04;
+        }
+        D_801E44C8->stats[i][1] = D_801E44EC->stat5E;
+        D_801E44C8->stats[i][2] = D_801E44EC->stat59 + D_801E44EC->value2D;
+        D_801E44C8->stats[i][3] = D_801E44EC->stat5F;
+        D_801E44C8->stats[i][4] = D_801E44EC->stat5B;
+        D_801E44C8->stats[i][5] = D_801E44EC->stat5C;
+        D_801E44C8->stats[i][6] = D_801E44EC->stat5A;
+    }
+}
 
 /* Split a slot's experience into the level A and B pools by the record's
  * weights (three quarters each for a reserve member, all of it with option

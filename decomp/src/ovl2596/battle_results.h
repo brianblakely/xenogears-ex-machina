@@ -323,9 +323,17 @@ typedef struct {
     u16 options;              /* 0x22B6: 8006f8ea */
 } GameData;
 
-/* A battle combatant record (0x170 each from 800ccce8). */
+/* A battle combatant record (0x170 each from 800ccce8). It begins with the
+ * character record's layout, and D_801E44EC also points at game data
+ * character records (func_801E2ACC). */
 typedef struct {
-    u8 pad0[0x32];
+    u8 pad0[4];
+    u8 value04;               /* 0x04 */
+    u8 pad5[0x17];
+    u8 value1C;               /* 0x1C */
+    u8 pad1D[0x10];
+    u8 value2D;               /* 0x2D */
+    u8 pad2E[4];
     u16 flags32;              /* 0x32: 0x2000 and 0x1000 raise the experience gained */
     u8 pad34[6];
     u16 value_3A;             /* 0x3A */
@@ -342,7 +350,7 @@ typedef struct {
     u8 pad57;
     u8 attack;                /* 0x58: grown stats 58, 59, 5e, 5f (level A) */
     u8 stat59;                /* 0x59 */
-    u8 pad5A;
+    u8 stat5A;                /* 0x5A */
     u8 stat5B;                /* 0x5B: grown stats 5b, 5c (level B) */
     u8 stat5C;                /* 0x5C */
     u8 pad5D;
@@ -389,10 +397,17 @@ typedef struct {
     Drops drops;              /* 0x100C: 800cdcf4 */
     u8 learntCounter[3];      /* 0x101C: counter skill learnt per slot */
     u8 learntLevel[3];        /* 0x101F: level skill learnt per slot */
-    u8 pad1022[0x5F20 - 0x1022];
+    u8 levelGains[3][2];      /* 0x1022: levels A and B gained per slot */
+    u8 pad1028[0x1040 - 0x1028];
+    u8 stats[3][8];           /* 0x1040: the result stats per slot */
+    u8 pad1058[0x5F20 - 0x1058];
     GrowthFile *growth;       /* 0x5F20 */
-    u8 pad5F24[0x5FB4 - 0x5F24];
+    u8 pad5F24[0x5F9C - 0x5F24];
+    u32 experience;           /* 0x5F9C: experience won */
+    u8 pad5FA0[0x5FB4 - 0x5FA0];
     u16 defeated;             /* 0x5FB4: enemies defeated, bit per enemy */
+    u8 pad5FB6[0x5FC4 - 0x5FB6];
+    s8 penalty;               /* 0x5FC4: experience lost in quarters */
 } BattleWork;
 
 extern BattleWork *D_801E44C8;  /* 800ccce8 */
@@ -400,7 +415,10 @@ extern GrowthFile *D_801E44E8;  /* the growth data file */
 extern Combatant *D_801E44EC;   /* the record being processed */
 extern u16 D_8006F8EA;          /* option flags */
 extern u32 D_801E44F0;          /* experience pool for level A */
-extern u32 D_801E44F4;          /* experience pool for level B */
+extern u32 D_801E44F4;
+extern u8 D_801E44F8[3][2];     /* levels A and B per slot before the battle */
+void func_801E2EB0(u32 experience, s16 slot, s16 reserve);
+void func_801E308C(void);          /* experience pool for level B */
 void func_801E335C(void);
 u8 func_801E3BE0(u8 id);
 u8 func_801E3D54(u8 id);
