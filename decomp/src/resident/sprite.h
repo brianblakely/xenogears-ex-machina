@@ -28,9 +28,6 @@ typedef struct Task {
     struct Task *next;                   /* +0x18 */
 } Task;
 
-/* The whole part of a 16.16 coordinate, read as its high halfword. */
-#define WHOLE(v) (((s16 *)&(v))[1])
-
 /* Task lists: the main list runs first each frame, then the second list. */
 extern Task *D_8005958C;   /* main task list */
 extern Task *D_80059594;   /* second task list */

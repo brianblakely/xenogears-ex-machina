@@ -255,7 +255,7 @@ void func_80022B2C(Sprite *sprite) {
     if (!((sprite->render.word >> 26) & 1)) {
         func_800BA8F4(sprite);
         if (sprite->speed_y > 0 && sprite->word1c > 0) {
-            if (WHOLE(sprite->y) == sprite->ground) {
+            if ((sprite->y >> 16) == sprite->ground) {
                 return;
             }
             sprite->y += func_80022CAC(sprite, sprite->speed_y >> 4) << 4;
@@ -991,9 +991,9 @@ void func_80025718(Task *task) {
 
     func_80022038(sprite);
     if (sprite->renderer->pointer34 != NULL) {
-        position.vx = WHOLE(sprite->x);
-        position.vy = WHOLE(sprite->y);
-        position.vz = WHOLE(sprite->z);
+        position.vx = sprite->x >> 16;
+        position.vy = sprite->y >> 16;
+        position.vz = sprite->z >> 16;
         TransMatrix(&sprite->renderer->matrix, &position);
         if (!sprite->render.bits.no_view) {
             CompMatrix(&D_8004FBB8, &sprite->renderer->matrix, &matrix);
