@@ -31,7 +31,11 @@ void movie_stop(void);
 void movie_decode(void);
 void movie_restart(s32 file, s32 sector, s32 channel, s32 mode, CdlLOC *location);
 
-/* Player statics (movie library image). */
+/* Player statics (movie library image). Layout evidence for later recovery:
+ * movie_decode (801d3d54) keeps &movie_decode_display in $s0 and reaches
+ * movie_vlc_buffers[i] as s0 - 0x14 + 4i and movie_slice_buffers as s0 - 8,
+ * which GCC only does for members of one aggregate; the u8 flags at
+ * 801e8958..801e8968 sit four bytes apart, so they are separate variables. */
 extern s32 movie_split_display;    /* frames span both display buffers */
 extern u16 movie_image_width;      /* 16-bit VRAM units */
 extern u16 movie_image_height;
