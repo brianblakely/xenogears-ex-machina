@@ -357,7 +357,7 @@ typedef struct GearRecord {
 typedef struct MenuLabelSlot {
     POLY_FT4 polys[2]; /* 0 */
     SVECTOR verts[4]; /* 50 */
-    u8 pad70[0x8];
+    RECT image; /* 70: the label's image area */
     u8 *pixels; /* 78 */
     u8 pad7C[0x1];
     u8 count; /* 7D: the quad shown */
@@ -1071,7 +1071,7 @@ void func_801E64E0(void);
 void func_801E5924(s32 index);
 void func_801E5B88(void);
 void func_801E5E4C(void);
-void func_801E7E68(void *records, u8 *layout, s32 arg2, s32 count);
+void func_801E7E68(MenuLabelSlot *labels, u8 *layout, s32 first, s32 count);
 void func_801E8018(u8 count, MenuLabelSlot *labels, u8 *table, u8 *flags);
 void func_801E8044(u8 count, u8 *flags);
 void func_801E8070(u8 count, MenuLabelSlot *labels, u8 *table, u8 *arg3, u8 *flags, u8 selected, u8 arg6,

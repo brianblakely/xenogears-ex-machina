@@ -3650,7 +3650,30 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E78C8);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E7C50);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E7E68);
+/* Render `count` labels (text ids in `layout`) in pairs into one 28x13
+ * image each (two columns of 32 from x 140, rows of 13 from label `first`),
+ * lay them out and upload the images. */
+void func_801E7E68(MenuLabelSlot *labels, u8 *layout, s32 first, s32 count) {
+    s32 i;
+    RECT *image;
+
+    for (i = 0; i < count; i += 2) {
+        labels[i].width = func_80034EAC(func_80033728(D_800625A0->labels, layout[i]), D_800625A0->topLabels[0].pixels,
+                                        0x18, 0);
+        image = &labels[i].image;
+        labels[i + 1].width = func_80034EAC(func_80033728(D_800625A0->labels, layout[i + 1]), D_800625A0->topLabels[0].pixels,
+                                        0x18, 1);
+        labels[i].image.x = (i / 2 & 1) * 0x20 + 0x140;
+        labels[i].image.y = (i + first) / 4 * 0xd;
+        labels[i].image.w = 0x1c;
+        labels[i].image.h = 0xd;
+        labels[i + 1].image = labels[i].image;
+        func_801E7C50(&labels[i], i, first, 0);
+        func_801E7C50(&labels[i + 1], i + 1, first, 0);
+        LoadImage(image, D_800625A0->topLabels[0].pixels);
+        DrawSync(0);
+    }
+}
 
 /* Lay out `count` labels from `table` into `labels` (the placement is unused). */
 void func_801E8018(u8 count, MenuLabelSlot *labels, u8 *table, u8 *flags) {
