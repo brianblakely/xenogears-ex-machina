@@ -2106,7 +2106,31 @@ void func_801D25E4(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D261C);
+/* Hide the party names and place the name label of the current choice as a
+ * quad beside its highlight. */
+void func_801D261C(void) {
+    func_801D249C(0);
+    ((D_800625A0->partyLabels + D_800625A0->choice)->polys + D_800625A0->bufferIndex)->x0 =
+        D_801E9A1C[D_800625A0->choice] + 0x16 + D_801E9E94[D_800625A0->choice];
+    ((D_800625A0->partyLabels + D_800625A0->choice)->polys + D_800625A0->bufferIndex)->y0 =
+        D_801E9A48[D_800625A0->choice] - 0x22;
+    ((D_800625A0->partyLabels + D_800625A0->choice)->polys + D_800625A0->bufferIndex)->x1 =
+        D_801E9A1C[D_800625A0->choice] + 0x16 + D_801E9E94[D_800625A0->choice] +
+        D_800625A0->partyLabels[D_800625A0->choice].width;
+    ((D_800625A0->partyLabels + D_800625A0->choice)->polys + D_800625A0->bufferIndex)->y1 =
+        D_801E9A48[D_800625A0->choice] - 0x22;
+    ((D_800625A0->partyLabels + D_800625A0->choice)->polys + D_800625A0->bufferIndex)->x2 =
+        D_801E9A1C[D_800625A0->choice] + 0x16 + D_801E9E94[D_800625A0->choice];
+    ((D_800625A0->partyLabels + D_800625A0->choice)->polys + D_800625A0->bufferIndex)->y2 =
+        D_801E9A48[D_800625A0->choice] - 0x15;
+    ((D_800625A0->partyLabels + D_800625A0->choice)->polys + D_800625A0->bufferIndex)->x3 =
+        D_801E9A1C[D_800625A0->choice] + 0x16 + D_801E9E94[D_800625A0->choice] +
+        D_800625A0->partyLabels[D_800625A0->choice].width;
+    ((D_800625A0->partyLabels + D_800625A0->choice)->polys + D_800625A0->bufferIndex)->y3 =
+        D_801E9A48[D_800625A0->choice] - 0x15;
+    D_800625A0->partyLabels[D_800625A0->choice].count = D_800625A0->bufferIndex;
+    D_800625A0->party->unk14[D_800625A0->choice] = 1;
+}
 
 /* Draw the small window at (d4, b2) and its element at (d8, b6). */
 void func_801D28A8(void) {
