@@ -328,6 +328,22 @@ typedef struct SoundBlock {
     struct SoundBlock *next;
 } SoundBlock;
 
+/* An entry of the SPU memory map (12 entries, chained by index from the
+ * first). */
+typedef struct {
+    u8 flags;          /* 0: unused */
+    u8 unk1;
+    s16 next;          /* index of the next entry, 0 at the end */
+    u32 address;       /* SPU address */
+    u32 size;
+    u32 unkC;
+} SpuMemBlock;
+
+extern SpuMemBlock D_8006F9FC[12];
+
+u32 func_800396E0(u32 address);                        /* release SPU memory */
+SpuMemBlock *func_800397C0(u32 address);
+
 extern SoundBlock *D_80059410;        /* the pool head */
 extern u32 D_800595E4;                /* end of the pool */
 

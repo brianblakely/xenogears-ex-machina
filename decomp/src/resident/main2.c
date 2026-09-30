@@ -1357,7 +1357,6 @@ void func_80037F88(void) {
     }
 }
 
-s32 func_800396E0(u32 address); /* release SPU memory */
 SoundSequence *func_800383EC(s32 key);
 void func_80038264(s32 address, s32 size);
 s32 func_8003827C(u8 *data, s32 size);
@@ -1831,7 +1830,20 @@ void func_800392EC(u32 *p, s32 size) {
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800392EC);
 #endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039360);
+/* Reset the SPU memory map to one reserved entry for the first 0x1010
+ * bytes. */
+void func_80039360(void) {
+    s32 i;
+
+    for (i = 11; i >= 0; i--) {
+        D_8006F9FC[i].flags = 0;
+    }
+    D_8006F9FC[0].flags = 0x81;
+    D_8006F9FC[0].unk1 = 5;
+    D_8006F9FC[0].address = 0;
+    D_8006F9FC[0].size = 0x1010;
+    D_8006F9FC[0].next = 0;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800393B8);
 
@@ -1839,17 +1851,75 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800394B8);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800395B8);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800396E0);
+/* Release the SPU memory map entry at `address`, unlinking it. Returns the
+ * address, 0 when no entry has it. */
+u32 func_800396E0(u32 address) {
+    SpuMemBlock *entry = D_8006F9FC;
+    SpuMemBlock *prev = NULL;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039748);
+    for (;;) {
+        if (entry->address == address) {
+            prev->next = entry->next;
+            entry->flags = 0;
+            entry->unk1 = 0;
+            entry->address = 0;
+            entry->next = 0;
+            return address;
+        }
+        prev = entry;
+        if (entry->next == 0) {
+            return 0;
+        }
+        entry = &D_8006F9FC[entry->next];
+    }
+}
+
+/* Set the second byte of the SPU memory map entry at `address`. */
+void func_80039748(u32 address, u8 value) {
+    SpuMemBlock *entry = func_800397C0(address);
+
+    if (entry != NULL) {
+        entry->unk1 = value;
+    }
+}
 
 s32 func_8003977C(void) {
     return 0;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039784);
+/* The index of an unused SPU memory map entry, 0 when all are in use. */
+s32 func_80039784(void) {
+    s32 i;
 
+    for (i = 0; i < 12; i++) {
+        if (D_8006F9FC[i].flags == 0) {
+            return i;
+        }
+    }
+    return 0;
+}
+
+/* The SPU memory map entry at `address`, or NULL. Only the first entry is
+ * examined: the walk returns as soon as that entry has a successor.
+ * Nonmatching: GCC sees that the walk never leaves the first entry and
+ * drops the entry pointer, which the original keeps. */
+#ifdef NON_MATCHING
+SpuMemBlock *func_800397C0(u32 address) {
+    SpuMemBlock *entry = D_8006F9FC;
+    s32 i;
+
+    while (entry->address != address) {
+        i = entry->next;
+        if (i != 0) {
+            return NULL;
+        }
+        entry = &D_8006F9FC[i];
+    }
+    return entry;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800397C0);
+#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800397FC);
 

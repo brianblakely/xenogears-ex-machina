@@ -3081,7 +3081,6 @@ s32 func_8003F684(u32 *data) {
 extern u8 D_80050940[];          /* error sound bank data */
 extern u8 D_80050910[];          /* error effect bank */
 extern u16 D_80050924;           /* its bank id */
-extern void func_800396E0(s32 address, s32 error);
 extern void func_80038428(void *bank);
 
 /* Report a driver error once (until cleared): remember the code, load the
@@ -3092,7 +3091,7 @@ void func_8003F6B0(s32 error) {
     }
     D_8005957C |= 8;
     D_80059500 = error;
-    func_800396E0(0x10000, error);
+    func_800396E0(0x10000);
     func_80037FD8((SoundSequence *)D_80050940, 0);
     func_80038428(D_80050910);
     func_8003BDFC(0x10);
