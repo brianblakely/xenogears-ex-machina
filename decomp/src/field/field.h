@@ -1280,6 +1280,9 @@ extern void func_80085634(s32 a, s32 b);
 
 #define EVENT_OPERAND_BYTE(offset) (D_800ADC00[D_800B0078->pc + (offset)])
 
+extern u8 D_800AFA64[];
+extern s32 D_800C2684; /* piece scale, 0x1000 = 1 */
+
 /* Resident file reads (80029afc): one entry of a file list, whose zero file
  * ends it. */
 typedef struct {
