@@ -404,13 +404,13 @@ void func_80071B94(u8 mode) {
             ((EnemyReaction *)((u8 *)D_800C3D18 + offset))->unk1[1] = 0;
         }
         layout = D_800D3280 * 3;
-        D_800C3EA4->unk63C8[D_800CCB04.buffer].x0 = D_800C3254[0][layout + D_800C3EAC->actor] + 0x10 + D_800C3EAC->actor * 0x60;
+        D_800C3EA4->unk63C8[D_800CCB04.buffer].x0 = D_800C3254[layout + D_800C3EAC->actor] + 0x10 + D_800C3EAC->actor * 0x60;
         D_800C3EA4->unk63C8[D_800CCB04.buffer].y0 = 8;
-        D_800C3EA4->unk63C8[D_800CCB04.buffer].x1 = D_800C3254[0][layout + D_800C3EAC->actor] + D_800C3EAC->actor * 0x60 + 0x28;
+        D_800C3EA4->unk63C8[D_800CCB04.buffer].x1 = D_800C3254[layout + D_800C3EAC->actor] + D_800C3EAC->actor * 0x60 + 0x28;
         D_800C3EA4->unk63C8[D_800CCB04.buffer].y1 = 8;
-        D_800C3EA4->unk63C8[D_800CCB04.buffer].x2 = D_800C3254[0][layout + D_800C3EAC->actor] + 0x10 + D_800C3EAC->actor * 0x60;
+        D_800C3EA4->unk63C8[D_800CCB04.buffer].x2 = D_800C3254[layout + D_800C3EAC->actor] + 0x10 + D_800C3EAC->actor * 0x60;
         D_800C3EA4->unk63C8[D_800CCB04.buffer].y2 = 0x20;
-        D_800C3EA4->unk63C8[D_800CCB04.buffer].x3 = D_800C3254[0][layout + D_800C3EAC->actor] + D_800C3EAC->actor * 0x60 + 0x28;
+        D_800C3EA4->unk63C8[D_800CCB04.buffer].x3 = D_800C3254[layout + D_800C3EAC->actor] + D_800C3EAC->actor * 0x60 + 0x28;
         D_800C3EA4->unk63C8[D_800CCB04.buffer].y3 = 0x20;
         D_800C3EA4->unk6414 = D_800CCB04.buffer;
         D_800C3EA4->unk6415 = 1;
@@ -668,7 +668,6 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80072938);
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80072A9C);
 
 /* Build the member's panel name glyphs (800d2d88) and tint them by `mode`. */
-#ifdef NON_MATCHING
 void func_80072DA8(member, mode)
 s32 member;
 u8 mode;
@@ -682,16 +681,13 @@ u8 mode;
         if (D_800D2D88[i] != 0xFF) {
             D_800D2D28->unkE0[member] +=
                 func_80076A10(D_800D2D88[i] + 0x67, &D_800C3EA4->unk3A88[member][D_800D2D28->unkE0[member] * 2],
-                              D_800C3076[member][i] + D_800C3254[D_800D3280][member], 0x10);
+                              D_800C3076[member * 24 + i] + D_800C3254[D_800D3280 * 3 + member], 0x10);
         }
     }
     if (mode != 0) {
         func_80072938(D_800C3EA4->unk3A88[member], first, D_800D2D28->unkE0[member], mode);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80072DA8);
-#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80072F38);
 
@@ -717,7 +713,7 @@ void func_80073380(s32 member) {
         if (digit != 0xFF) {
             D_800D2D28->unkEC[member] +=
                 func_80076A10(digit + 0x83, &D_800C3EA4->unk6008[member][D_800D2D28->unkEC[member] * 2],
-                              member * 0x60 + (D_800C3254[D_800D3280][member] + 0x4A) + x, 0x25);
+                              member * 0x60 + (D_800C3254[D_800D3280 * 3 + member] + 0x4A) + x, 0x25);
         }
         x += 6;
     }

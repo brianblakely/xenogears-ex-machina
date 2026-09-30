@@ -380,8 +380,9 @@ extern s32 D_800D3288;
 extern u8 D_800D39D4;
 extern u16 D_800C3608;     /* slots that still count while down */
 extern u8 D_800D3280;      /* party panel layout */
-extern s16 D_800C3254[][3]; /* party panel x per layout */
-extern s16 D_800C3076[3][24]; /* party panel name glyph x */
+extern s16 D_800C3254[]; /* party panel x: [layout * 3 + member] */
+extern s16 D_800C3068[]; /* party panel glyph x: [member * 24 + glyph] */
+extern s16 D_800C3076[]; /* party panel name glyph x: [member * 24 + glyph] */
 extern u8 D_800D2D88[5];   /* name glyph codes */
 extern u16 D_800D2C2A;
 extern u8 D_800D2C35;
