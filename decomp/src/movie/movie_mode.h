@@ -152,7 +152,26 @@ extern s32 D_80077438;          /* split display */
 extern s32 D_80077448;          /* movie kind */
 extern s32 D_801D68B4;          /* movie library: split display */
 
-void func_80076488(void);
+extern s32 D_800773B8[32];      /* VSync(1) before and after each decode step */
+extern s32 D_80077454;          /* library output mode (bit 0: 24-bit) */
+extern u8 D_8004FE46;           /* request: the next mode */
+extern const RECT D_800704E0;   /* the screen area */
+
+/* Movie library (disc file 19 at 0x801d3000, see decomp/src/mdec). */
+s32 func_801D3538(u16 width, u16 height, u16 scale, u16 slice, u16 sectors, u16 limit, u16 mode);
+void func_801D37CC(s32 file, s32 sector, u16 first_frame, u16 last_frame, u16 channel, s32 select,
+                   u16 hold, u16 x0, u16 y0, u16 x1, u16 y1, s16 rows,
+                   void (*callback)(u16 frame, u16 x, u16 y));
+void func_801D3F7C(void); /* poll */
+void func_801D4318(void); /* stop */
+void func_801D43B0(void); /* close */
+
+s32 func_80028738(s32 file);  /* a file's size */
+void func_80019CA0(void);     /* soft reset check */
+
+s32 func_80076488(void);
+void func_800768D8(u16 frame, u16 x, u16 y);
+void func_800769A4(void);
 void func_80076CA4(void);
 
 #endif

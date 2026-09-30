@@ -181,7 +181,109 @@ s32 func_800763BC(u8 keep) {
     func_80076488();
 }
 
+#ifdef NON_MATCHING
+/* Clear the screen, reopen the movie library and stream the movie, running
+ * three decode steps per frame (their VSync counters are kept for the
+ * monitor) until the frame callback or a button ends it; a movie that ended
+ * on the second buffer is copied to the first. The two unused arrays
+ * reproduce the original's frame. Same instructions except one delay slot:
+ * the original leaves the short-file exit's jump to the final return 0 unfilled. */
+s32 func_80076488(void) {
+    u8 unused0[0x90];
+    RECT screen;
+    u8 unused1[0x200];
+    RECT copy;
+    s32 file;
+    s32 select;
+    s32 budget;
+    s32 i;
+    s32 before;
+    s32 after;
+
+    screen = D_800704E0;
+    D_80077014 = 0;
+    D_80077020 = 0;
+    if (D_80077448 == 0) {
+        select = 0;
+        file = D_8007711C + 3;
+    } else {
+        select = 1;
+        file = D_8007711C + 2;
+    }
+    if (func_80028738(file) == 0x18) {
+        SetDispMask(1);
+        D_8004FE46 = 0;
+    } else {
+        VSync(0);
+        ClearImage(&screen, 0, 0, 0);
+        DrawSync(0);
+        VSync(0);
+        D_80077018 = 0;
+        D_8007701C = 0;
+        func_801D43B0();
+        if (D_800773A0 > 0) {
+            D_80077024 = (240 - D_800773A0) / 2;
+        } else {
+            D_80077024 = 0;
+        }
+        func_801D3538(320, 240, 0x80, 16, 32, 0x800, D_80077454);
+        D_801D68B4 = 0;
+        if (D_80077438 != 0) {
+            func_801D37CC(file, D_800773A8, D_800773A4, D_8007739C, D_80077398, select, 1, 0,
+                          D_80077024, 0, D_80077024 + 240, D_800773A0, func_800768D8);
+        } else {
+            func_801D37CC(file, D_800773A8, D_800773A4, D_8007739C, D_80077398, select, 0, 0,
+                          D_80077024, 0, D_80077024 + 240, D_800773A0, func_800768D8);
+        }
+        budget = 30;
+        PutDrawEnv(&D_80077124[D_80077018].draw);
+        PutDispEnv(&D_80077124[D_80077018].disp);
+        SetDispMask(1);
+        while (1) {
+            if (D_80077020 == 0) {
+                for (i = 0; i < budget / 10; i++) {
+                    before = VSync(1);
+                    func_801D3F7C();
+                    after = VSync(1);
+                    if (i * 2 + 1 < 32) {
+                        D_800773B8[i * 2] = before;
+                        D_800773B8[i * 2 + 1] = after;
+                    }
+                }
+                budget %= 10;
+            }
+            budget += 30;
+            func_800769A4();
+            func_80019CA0();
+            VSync(0);
+            PutDispEnv(&D_80077124[D_8007701C].disp);
+            D_8007701C = D_80077018;
+            if (D_80077014 == 1) {
+                break;
+            }
+            if (D_80077014 >= 2) {
+                D_80077014--;
+            }
+        }
+        func_801D4318();
+        if (D_8007701C == 0) {
+            DrawSync(0);
+            VSync(0);
+            copy.x = 0;
+            copy.y = 240;
+            copy.w = 480;
+            copy.h = 240;
+            MoveImage(&copy, 0, 0);
+            DrawSync(0);
+            VSync(0);
+            PutDispEnv(&D_80077124[1].disp);
+        }
+    }
+    return 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80076488);
+#endif
 
 /* The movie library's frame callback: the buffer the frame went to; the
  * last frame ends the movie. */
