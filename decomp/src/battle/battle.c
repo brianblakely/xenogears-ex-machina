@@ -2810,23 +2810,20 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007A280);
 
 /* Whether `slot` can be targeted: present, visible and not down (+0x7c
  * 0xc002); without `any` also not flagged 0x20 at +0x84. */
-#ifdef NON_MATCHING
 u8 func_8007A628(u8 slot, u8 any) {
     u8 result = 0;
     u16 status;
 
     if (D_800D2DCC.present[slot] != 0 && D_800C3EB4[slot].hidden == 0 && !(D_800CCCE8.records[slot].pilot.status7C & 0xC002)) {
-        result = 1;
-        if (any == 0) {
+        if (any != 0) {
+            result = 1;
+        } else {
             status = D_800CCCE8.records[slot].pilot.status84.half.active & 0x20;
             result = status == 0;
         }
     }
     return result;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007A628);
-#endif
 
 /* As 8007a628 without the visibility test. */
 u8 func_8007A6C8(u8 slot, u8 any) {
