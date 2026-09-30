@@ -1183,7 +1183,7 @@ void func_80076C34(POLY_FT4 *prim) {
 }
 
 /* Place a quad of width `w` and height 13 at (x, y) with texture (u, v). */
-void func_80076C78(POLY_FT4 *prim, s16 x, s16 y, u8 u, u8 v, u8 w) {
+void func_80076C78(POLY_FT4 *prim, u16 x, u16 y, u8 u, u8 v, u8 w) {
     prim->x0 = x;
     prim->y0 = y;
     prim->y1 = y;
@@ -4968,7 +4968,37 @@ void func_80091604(s32 y) {
     D_800D2D28->unk9C = 1;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800916D4);
+/* Point the page title quad at entry (column, row) of the technique image
+ * and, for character 1 (Fei), show the entry's cost (8009a258) as up to three
+ * digit glyphs. */
+void func_800916D4(u8 column, u8 row, u8 member) {
+    u32 index;
+    u32 cellX;
+    u32 cellY;
+    s32 i;
+    s32 x;
+    u8 digit;
+
+    index = row * 2 + column;
+    cellY = index / 2;
+    cellX = index - cellY * 2;
+    func_80076CE8(&D_800C3EA4->unkA230->unk140[D_800CCB04.buffer], 0x20, 0xA4, cellX * 0x78, cellY * 16, 0x60, 0x10);
+    D_800C3EA4->unkA230->unk66E = 0;
+    if (D_800D2D24[member] == 1) {
+        /* 8009a258 is called unprototyped: the command is passed and its
+         * result returned unnarrowed. */
+        func_8008AAA0(((s32 (*)())func_8009A258)(member, index + 0x16));
+        for (i = 0, x = 0x8C; i < 3; i++) {
+            digit = D_800C3CF4[i + 6];
+            if (digit != 0xFF) {
+                func_80076C78(&D_800C3EA4->unkA230->unk190[D_800C3EA4->unkA230->unk66E * 2 + D_800CCB04.buffer], x,
+                              0xA6, digit * 8 + 0x78, 0, 8);
+                D_800C3EA4->unkA230->unk66E++;
+            }
+            x += 8;
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009187C);
 

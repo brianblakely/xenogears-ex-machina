@@ -120,8 +120,7 @@ typedef struct {
     POLY_FT4 unkA0[2];
     POLY_FT4 unkF0[2];
     POLY_FT4 unk140[2]; /* page title quads */
-    POLY_FT4 unk190[2];
-    u8 unk1E0[0x280 - 0x1E0];
+    POLY_FT4 unk190[6]; /* second title quad, or up to three cost digits */
     POLY_FT4 unk280[2];
     POLY_FT4 unk2D0[2];
     POLY_FT4 unk320[2];
@@ -133,7 +132,8 @@ typedef struct {
     u8 unk66B;
     u8 unk66C;
     u8 unk66D;
-    u8 unk66E[2];
+    u8 unk66E;         /* cost digits shown */
+    u8 unk66F;
 } GraphicsBlock;
 
 /* Party status panel state of the graphics block (0x1e4 bytes). */
@@ -665,7 +665,7 @@ void func_80072A9C(s32 member, s32 mode);
 extern u8 D_800C3E08[3]; /* panel value digits */
 extern u8 D_800D2D54[7]; /* panel maximum digits */
 void func_80072938(POLY_FT4 *prims, s32 first, s32 last, u8 mode);
-void func_80076C78(POLY_FT4 *prim, s16 x, s16 y, u8 u, u8 v, u8 w);
+void func_80076C78(POLY_FT4 *prim, u16 x, u16 y, u8 u, u8 v, u8 w);
 void func_80076CE8(POLY_FT4 *prim, s16 x, s16 y, u8 u, u8 v, s32 w, s32 h);
 void func_80076D58(POLY_FT4 *prims, u8 alternate, u8 page);
 void *func_80033784(u8 character, u8 id); /* a character text */
@@ -738,6 +738,7 @@ void func_8009187C(u8 member, u8 column, u8 row);
 void func_80091B38(u8 member, u8 column, u8 row);
 extern u16 D_800C3234[16]; /* single-bit masks: 0x80 down to 1, then 0x8000 down to 0x100 */
 void func_8008AAA0(u32 value);
+u8 func_8009A258(u8 member, u8 command);
 void func_80076BF0(POLY_FT4 *prim);
 void func_80089CCC(s32 mode);
 void func_8008A144(void);
