@@ -6,7 +6,9 @@
 /* Combatant record: 11 slots (0-2 party, 3-10 enemies) of 0x170 bytes,
  * addressed absolutely from 800ccce8. */
 typedef struct {
-    u8 unk0[0x7C];
+    u8 unk0[0x4C];
+    u16 hp;           /* +0x4C */
+    u8 unk4E[0x7C - 0x4E];
     u16 flags7C;  /* 0x80 inactive, 0x1000 slow (ticks every other frame),
                    * 0x2000 delay counter +0x15C active */
     u16 unk7E;
@@ -154,6 +156,26 @@ typedef struct {
 } EnemyAi;
 
 extern EnemyAi D_800D3400[8];
+
+/* Per-slot formation information (0x1c bytes from 800c3eb4). */
+typedef struct {
+    u8 group;          /* +0x0 formation group */
+    u8 member;         /* +0x1 */
+    u8 unk2;
+    u8 hidden;         /* +0x3 */
+    u8 unk4[0x1C - 4];
+} SlotInfo;
+
+extern SlotInfo D_800C3EB4[11];
+
+/* Per-slot flags (8 bytes from 800d32a0). */
+typedef struct {
+    u8 unk0;
+    u8 unk1;
+    u8 unk2[6];
+} SlotFlags;
+
+extern SlotFlags D_800D32A0[11];
 extern u8 D_800D2DC0;      /* forced next turn: slot + 1 */
 extern u8 D_800D2DD7;      /* turn order cursor */
 extern u8 D_800D2DD8[11];  /* turn order */      /* decoded menu input code; 8 = none */
@@ -191,6 +213,8 @@ void func_80079E18(s32);
 void func_80079E4C(s32);
 s32 func_800716D8(void);
 u8 func_80079E7C(u16 mask);
+u8 func_8007A628(u8 slot, u8 any);
+u16 func_80089C08(u8 slot);
 u16 func_80089B50(u16 low, u16 high);
 u8 func_80079ED8(u8 slot, u8 attribute, u8 value, u8 write);
 u16 func_8007A280(u8 slot, u8 attribute, u16 value, u8 write);

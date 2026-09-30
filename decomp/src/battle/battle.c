@@ -1058,27 +1058,225 @@ void func_8007BCE8(u8 **pc, u8 enemy) {
     D_800D3400[enemy].vars[(*pc)[1]] = func_80089B50(0, op[2] | (op[3] << 8));
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007BD5C);
+/* AI action 40: variable b1 = the bit of a random party slot passing the
+ * targeting test b2 and not flagged at 800d32a1; 0 when none does. */
+void func_8007BD5C(u8 **pc, u8 enemy) {
+    u8 tried[3];
+    u8 slot;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007BEA8);
+    tried[2] = 0;
+    tried[1] = 0;
+    tried[0] = 0;
+    D_800D3400[enemy].vars[(*pc)[1]] = 0;
+    while (!(tried[2] & (tried[0] & tried[1]))) {
+        slot = func_8001BD40(0, 2);
+        if (tried[slot] == 0) {
+            if (func_8007A628(slot, (*pc)[2]) && D_800D32A0[slot].unk1 == 0) {
+                D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(slot);
+                return;
+            }
+            tried[slot] = 1;
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007C040);
+/* AI action 41: as action 40, limited to party slots in the enemy's
+ * formation group. */
+void func_8007BEA8(u8 **pc, u8 enemy) {
+    u8 tried[3];
+    u8 slot;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007C1A4);
+    tried[2] = 0;
+    tried[1] = 0;
+    tried[0] = 0;
+    D_800D3400[enemy].vars[(*pc)[1]] = 0;
+    while (!(tried[2] & (tried[0] & tried[1]))) {
+        slot = func_8001BD40(0, 2);
+        if (tried[slot] == 0) {
+            if (func_8007A628(slot, (*pc)[2]) && D_800C3EB4[enemy + 3].group == D_800C3EB4[slot].group &&
+                D_800D32A0[slot].unk1 == 0) {
+                D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(slot);
+                return;
+            }
+            tried[slot] = 1;
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007C33C);
+/* AI action 42: variable b1 = the bit of a random enemy slot passing the
+ * targeting test b2 in the enemy's formation group and not flagged at
+ * 800d32a1; 0 when none does. */
+void func_8007C040(u8 **pc, u8 enemy) {
+    u8 candidates[8];
+    s32 count;
+    s32 slot;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007C4A0);
+    slot = 3;
+    count = 0;
+    D_800D3400[enemy].vars[(*pc)[1]] = 0;
+    for (; slot < 11; slot++) {
+        if (func_8007A628(slot, (*pc)[2]) && D_800C3EB4[enemy + 3].group == D_800C3EB4[slot].group &&
+            D_800D32A0[slot].unk1 == 0) {
+            candidates[count++] = slot;
+        }
+    }
+    if (count != 0) {
+        D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(candidates[func_8001BD40(0, count - 1)]);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007C580);
+/* AI action 43: as action 40, limited to party slots outside the enemy's
+ * formation group. */
+void func_8007C1A4(u8 **pc, u8 enemy) {
+    u8 tried[3];
+    u8 slot;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007C678);
+    tried[2] = 0;
+    tried[1] = 0;
+    tried[0] = 0;
+    D_800D3400[enemy].vars[(*pc)[1]] = 0;
+    while (!(tried[2] & (tried[0] & tried[1]))) {
+        slot = func_8001BD40(0, 2);
+        if (tried[slot] == 0) {
+            if (func_8007A628(slot, (*pc)[2]) && D_800C3EB4[enemy + 3].group != D_800C3EB4[slot].group &&
+                D_800D32A0[slot].unk1 == 0) {
+                D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(slot);
+                return;
+            }
+            tried[slot] = 1;
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007C75C);
+/* AI action 44: as action 42, limited to enemy slots outside the enemy's
+ * formation group. */
+void func_8007C33C(u8 **pc, u8 enemy) {
+    u8 candidates[8];
+    s32 count;
+    s32 slot;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007C840);
+    slot = 3;
+    count = 0;
+    D_800D3400[enemy].vars[(*pc)[1]] = 0;
+    for (; slot < 11; slot++) {
+        if (func_8007A628(slot, (*pc)[2]) && D_800C3EB4[enemy + 3].group != D_800C3EB4[slot].group &&
+            D_800D32A0[slot].unk1 == 0) {
+            candidates[count++] = slot;
+        }
+    }
+    if (count != 0) {
+        D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(candidates[func_8001BD40(0, count - 1)]);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007C9D4);
+/* AI action 45: variable b1 = the bit of the targetable party slot with the
+ * lowest turn timer. */
+void func_8007C4A0(u8 **pc, u8 enemy) {
+    s32 slot;
+    u8 lowest = 0xFF;
+    s32 target = 0;
+
+    for (slot = 0; slot < 3; slot++) {
+        if (func_8007A628(slot, (*pc)[2]) && lowest >= D_800D2DF0[1][slot]) {
+            lowest = D_800D2DF0[1][slot];
+            target = slot;
+        }
+    }
+    D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(target);
+}
+
+/* AI action 46: variable b1 = the bit of the targetable other enemy slot
+ * with the lowest turn timer. */
+void func_8007C580(u8 **pc, u8 enemy) {
+    s32 slot;
+    u8 lowest = 0xFF;
+    s32 target = 0;
+
+    for (slot = 3; slot < 11; slot++) {
+        if (func_8007A628(slot, (*pc)[2]) && lowest >= D_800D2DF0[1][slot] && slot != enemy + 3) {
+            lowest = D_800D2DF0[1][slot];
+            target = slot;
+        }
+    }
+    D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(target);
+}
+
+/* AI action 47: variable b1 = the bit of the targetable party slot with the
+ * lowest HP. */
+void func_8007C678(u8 **pc, u8 enemy) {
+    s32 slot;
+    u16 lowest = 0xFFFF;
+    s32 target = 0;
+
+    for (slot = 0; slot < 3; slot++) {
+        if (func_8007A628(slot, (*pc)[2]) && lowest >= D_800CCCE8[slot].hp) {
+            lowest = D_800CCCE8[slot].hp;
+            target = slot;
+        }
+    }
+    D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(target);
+}
+
+/* AI action 48: variable b1 = the bit of the targetable enemy slot with the
+ * lowest HP. */
+void func_8007C75C(u8 **pc, u8 enemy) {
+    s32 slot;
+    u16 lowest = 0xFFFF;
+    s32 target = 0;
+
+    for (slot = 3; slot < 11; slot++) {
+        if (func_8007A628(slot, (*pc)[2]) && lowest >= D_800CCCE8[slot].hp) {
+            lowest = D_800CCCE8[slot].hp;
+            target = slot;
+        }
+    }
+    D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(target);
+}
+
+/* AI action 49: variable b1 = the bit of a random party slot passing the
+ * targeting test b2, flagged at 800d32a1 and in the enemy's formation group. */
+void func_8007C840(u8 **pc, u8 enemy) {
+    u8 tried[3];
+    u8 slot;
+
+    tried[2] = 0;
+    tried[1] = 0;
+    tried[0] = 0;
+    D_800D3400[enemy].vars[(*pc)[1]] = 0;
+    while (!(tried[2] & (tried[0] & tried[1]))) {
+        slot = func_8001BD40(0, 2);
+        if (tried[slot] == 0) {
+            if (func_8007A628(slot, (*pc)[2]) && D_800D32A0[slot].unk1 != 0 &&
+                D_800C3EB4[enemy + 3].group == D_800C3EB4[slot].group) {
+                D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(slot);
+                return;
+            }
+            tried[slot] = 1;
+        }
+    }
+}
+
+/* AI action 4a: variable b1 = the bit of a random party slot passing the
+ * targeting test b2 and flagged at 800d32a1. */
+void func_8007C9D4(u8 **pc, u8 enemy) {
+    u8 tried[3];
+    u8 slot;
+
+    tried[2] = 0;
+    tried[1] = 0;
+    tried[0] = 0;
+    D_800D3400[enemy].vars[(*pc)[1]] = 0;
+    while (!(tried[2] & (tried[0] & tried[1]))) {
+        slot = func_8001BD40(0, 2);
+        if (tried[slot] == 0) {
+            if (func_8007A628(slot, (*pc)[2]) && D_800D32A0[slot].unk1 != 0) {
+                D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(slot);
+                return;
+            }
+            tried[slot] = 1;
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007CB20);
 
