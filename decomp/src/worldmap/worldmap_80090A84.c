@@ -306,19 +306,19 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80
 #endif
 
 /* Restore the actor from the saved camera state; vehicles get state 3. */
-#ifdef NON_MATCHING /* saved-camera and yaw addresses not kept in registers */
 s32 func_80091430(s32 index) {
     WorldmapActor *actor;
     Camera *saved;
+    s16 *yaw;
 
     actor = &D_8009BE24[index];
     saved = &D_8009D55C;
     actor->position = saved->target;
-    actor->position.pad = saved->target.pad;
+    yaw = &D_8009BD38.vy;
     D_8009BD38.vz = 0;
     D_8009BD38.vy = D_8009D52C;
     actor->u.step = (s16)D_8009D52C;
-    actor->unk58 = D_8009BD38.vy << 12;
+    actor->unk58 = *yaw << 12;
     switch (D_8009BE10) {
     case 6:
     case 7:
@@ -327,9 +327,6 @@ s32 func_80091430(s32 index) {
     }
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80091430);
-#endif
 
 /* Camera yaw and target follower: turn by the shoulder buttons in 0x200
  * steps, ease towards requested yaws (commands 9, 10, 15-17), and move the
