@@ -216,11 +216,161 @@ u8 *func_80093660(s32 x, s32 z) {
     return (u8 *)D_8009C184[block] + quadrant * 0x144 + cell * 4;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80093740);
+/* Unit normal of the terrain triangle under a position (cells split along one diagonal). */
+void func_80093740(VECTOR *normal, s32 x, s32 z) {
+    u8 *cell;
+    TerrainScratch *scratch;
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80093978);
+    scratch = TERRAIN_SCRATCH;
+    cell = func_80093660(x, z);
+    x = (u16)(x / 8);
+    z = (u16)(z / 8);
+    if (cell[1] & 0x80) {
+        if (x * D_8009B244[1].vx + -z * D_8009B244[1].vz < 0) {
+            scratch->edge0.vx = 0x10;
+            scratch->edge0.vz = -0x10;
+            scratch->edge1.vx = 0;
+            scratch->edge1.vz = -0x10;
+            scratch->edge0.vy = (s8)cell[0x28] - (s8)cell[0];
+            scratch->edge1.vy = (s8)cell[0x24] - (s8)cell[0];
+        } else {
+            scratch->edge0.vx = 0x10;
+            scratch->edge1.vx = 0x10;
+            scratch->edge0.vz = 0;
+            scratch->edge1.vz = -0x10;
+            scratch->edge0.vy = (s8)cell[4] - (s8)cell[0];
+            scratch->edge1.vy = (s8)cell[0x28] - (s8)cell[0];
+        }
+    } else {
+        if ((x - 0x10000) * D_8009B244[0].vx + -z * D_8009B244[0].vz < 0) {
+            scratch->edge0.vx = -0x10;
+            scratch->edge0.vz = -0x10;
+            scratch->edge1.vx = -0x10;
+            scratch->edge1.vz = 0;
+            scratch->edge0.vy = (s8)cell[0x24] - (s8)cell[4];
+            scratch->edge1.vy = (s8)cell[0] - (s8)cell[4];
+        } else {
+            scratch->edge0.vx = 0;
+            scratch->edge0.vz = -0x10;
+            scratch->edge1.vx = -0x10;
+            scratch->edge1.vz = -0x10;
+            scratch->edge0.vy = (s8)cell[0x28] - (s8)cell[4];
+            scratch->edge1.vy = (s8)cell[0x24] - (s8)cell[4];
+        }
+    }
+    OuterProduct0(&scratch->edge1, &scratch->edge0, &scratch->normal);
+    func_80048D7C(&scratch->normal, normal);
+}
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80093A5C);
+/* Terrain surface height at a position (world units): the cell triangle's plane. */
+s32 func_80093978(s32 x, s32 z) {
+    VECTOR point;
+    VECTOR origin;
+    VECTOR normal;
+    u8 *cell;
+
+    cell = func_80093660(x, z);
+    point.vx = (u16)(x / 8);
+    point.vz = -(u16)(z / 8);
+    if (cell[1] & 0x80) {
+        origin.vx = 0;
+        origin.vz = 0;
+        origin.vy = (s8)cell[0] << 12;
+    } else {
+        origin.vx = 0x10000;
+        origin.vz = 0;
+        origin.vy = (s8)cell[4] << 12;
+    }
+    func_80093740(&normal, x, z);
+    func_800935DC(&point, &origin, &normal);
+    return point.vy * 8;
+}
+
+/* Wave-displaced terrain height at a position (20.12): corners bob with two phase-scrolled sines. */
+s32 func_80093A5C(s32 x, s32 z) {
+    u8 *cell;
+    TerrainScratch *scratch;
+    s32 ix, iz;
+    s32 x0, x1, z0, z1;
+    s32 amplitude;
+    s32 phase_x, phase_z;
+    s32 cx, cz;
+
+    scratch = TERRAIN_SCRATCH;
+    cell = func_80093660(x, z);
+    ix = ((u32)x >> 19) & 7;
+    x0 = ix << 9;
+    iz = ((u32)z >> 19) & 7;
+    z0 = iz << 9;
+    phase_x = D_8009C5BC + x0;
+    phase_z = D_8009C618 + z0;
+    amplitude = (func_8003F8B0(phase_z) << 4) >> 3;
+    scratch->corners[0].vy = (func_8003F8B0(phase_x) * amplitude >> 20) + ((s8 *)cell)[0] * 8;
+    x1 = (ix + 1) << 9;
+    phase_x = D_8009C5BC + x1;
+    phase_z = D_8009C618 + z0;
+    amplitude = (func_8003F8B0(phase_z) << 4) >> 3;
+    scratch->corners[1].vy = (func_8003F8B0(phase_x) * amplitude >> 20) + ((s8 *)cell)[4] * 8;
+    z1 = (iz + 1) << 9;
+    phase_x = D_8009C5BC + x0;
+    phase_z = D_8009C618 + z1;
+    amplitude = (func_8003F8B0(phase_z) << 4) >> 3;
+    scratch->corners[2].vy = (func_8003F8B0(phase_x) * amplitude >> 20) + ((s8 *)cell)[0x24] * 8;
+    phase_x = D_8009C5BC + x1;
+    phase_z = D_8009C618 + z1;
+    amplitude = (func_8003F8B0(phase_z) << 4) >> 3;
+    scratch->corners[3].vy = (func_8003F8B0(phase_x) * amplitude >> 20) + ((s8 *)cell)[0x28] * 8;
+    cx = (u16)(x / 8);
+    cz = (u16)(z / 8);
+    if (cell[1] & 0x80) {
+        if (cx * D_8009B244[1].vx + -cz * D_8009B244[1].vz < 0) {
+            scratch->edge0.vx = 0x80;
+            scratch->edge0.vz = -0x80;
+            scratch->edge1.vz = -0x80;
+            scratch->edge1.vx = 0;
+            scratch->edge0.vy = scratch->corners[3].vy - scratch->corners[0].vy;
+            scratch->edge1.vy = scratch->corners[2].vy - scratch->corners[0].vy;
+        } else {
+            scratch->edge0.vx = 0x80;
+            scratch->edge1.vx = 0x80;
+            scratch->edge0.vz = 0;
+            scratch->edge1.vz = -0x80;
+            scratch->edge0.vy = scratch->corners[1].vy - scratch->corners[0].vy;
+            scratch->edge1.vy = scratch->corners[3].vy - scratch->corners[0].vy;
+        }
+    } else {
+        if ((cx - 0x10000) * D_8009B244[0].vx + -cz * D_8009B244[0].vz < 0) {
+            scratch->edge0.vx = -0x80;
+            scratch->edge0.vz = -0x80;
+            scratch->edge1.vx = -0x80;
+            scratch->edge1.vz = 0;
+            scratch->edge0.vy = scratch->corners[2].vy - scratch->corners[1].vy;
+            scratch->edge1.vy = scratch->corners[0].vy - scratch->corners[1].vy;
+        } else {
+            scratch->edge0.vx = 0;
+            scratch->edge0.vz = -0x80;
+            scratch->edge1.vx = -0x80;
+            scratch->edge1.vz = -0x80;
+            scratch->edge0.vy = scratch->corners[3].vy - scratch->corners[1].vy;
+            scratch->edge1.vy = scratch->corners[2].vy - scratch->corners[1].vy;
+        }
+    }
+    OuterProduct0(&scratch->edge1, &scratch->edge0, &scratch->normal);
+    func_80048D7C(&scratch->normal, &scratch->edge0);
+    scratch->edge1.vx = (x >> 12) & 0x7F;
+    scratch->edge1.vz = -((z >> 12) & 0x7F);
+    if (cell[1] & 0x80) {
+        scratch->normal.vx = 0;
+        scratch->normal.vz = 0;
+        scratch->normal.vy = scratch->corners[0].vy;
+    } else {
+        scratch->normal.vx = 0x80;
+        scratch->normal.vz = 0;
+        scratch->normal.vy = scratch->corners[1].vy;
+    }
+    func_800935DC(&scratch->edge1, &scratch->normal, &scratch->edge0);
+    return scratch->edge1.vy << 12;
+}
 
 /* Terrain attribute of the cell under a position. */
 s32 func_80093E8C(VECTOR *position) {

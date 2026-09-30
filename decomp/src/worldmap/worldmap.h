@@ -710,5 +710,19 @@ void func_8009932C(u32 *ot, s32, Camera *);
 /* lead: worldmap_8007A9F8, 8007C3B8, 8007DE98, 80080370, 800811C0, 80090A84 */
 extern VECTOR D_8009B364[16]; /* terrain split-plane normal per type */
 extern VECTOR D_8009B464[16]; /* terrain split-plane point per type */
+extern VECTOR D_8009B244[2];  /* cell diagonal normals, per diagonal direction */
+
+/* Scratchpad work area of the terrain normal and height. */
+typedef struct {
+    VECTOR edge0;
+    VECTOR edge1;
+    VECTOR normal;
+    u8 pad30[0x70];
+    SVECTOR corners[4]; /* 0xA0: wave-displaced cell corners */
+} TerrainScratch;
+
+#define TERRAIN_SCRATCH ((TerrainScratch *)0x1F800000)
+
+s32 func_80048D7C(VECTOR *v, VECTOR *out); /* VectorNormal */
 
 #endif
