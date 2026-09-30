@@ -173,9 +173,13 @@ typedef struct {
 typedef struct {
     u8 unk00[0x10];
     u16 flags;       /* 10: bit 2 keeps the window open */
-    u8 unk12[0x6C - 0x12];
+    u8 unk12[0x68 - 0x12];
+    u8 speed;        /* 68: 1 at text speed 8, else 2 */
+    u8 unk69[3];
     u8 unk6C;        /* 6C */
-    u8 unk6D[0x82 - 0x6D];
+    u8 unk6D[3];
+    s32 vars[4];     /* 70: event variables 16-1c when opened */
+    s16 unk80;       /* 80: variable 1c again */
     s16 unk82;       /* 82 */
     s16 unk84;       /* 84 */
     u8 unk86[0x90 - 0x86];
