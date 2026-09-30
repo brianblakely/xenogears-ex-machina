@@ -88,7 +88,10 @@ typedef struct Actor {
     s32 target_angle;    /* 0x58 */
     u8 unk5C[0x28];
     s32 unk84;
-    u8 unk88[0x28];
+    u8 unk88[0x10];
+    s32 accel;           /* 0x98 */
+    s32 brake;           /* 0x9C */
+    u8 unkA0[0x10];
     s32 floor_y;         /* 0xB0 */
     s16 hp;              /* 0xB4 */
     s16 unkB6;           /* 0xB6: charge, 0x1000 = full */

@@ -1,6 +1,7 @@
 #include "menu.h"
 #include "spark.h"
 #include "sound.h"
+#include "brain.h"
 
 /* Start the menu camera: mode 3 setup and its script block. */
 void func_800707A8(void) {
@@ -2416,21 +2417,94 @@ void func_8008ECEC(u8 tag) {
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008ED6C);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008EE1C);
+/* Accelerate an actor toward the speed limit (or brake to a stop, harder
+ * when not guarding) for two ticks, and turn it toward a heading. */
+void func_8008EE1C(Actor *actor, s16 heading, s16 limit) {
+    Vector unused;
+    s32 brake = actor->brake;
+    s32 accel = actor->accel;
+    s32 moving;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008EF00);
+    if (actor->flags & 0x100) {
+        brake = brake * 2 / 3;
+        moving = 0;
+    } else {
+        moving = 1;
+    }
+    for (i = 0; i < 2; i++) {
+        if (limit != 0 && moving) {
+            actor->state += accel;
+            if (limit < actor->state) {
+                actor->state = limit;
+            }
+        } else {
+            actor->state -= brake;
+            if (actor->state < 0) {
+                actor->state = 0;
+            }
+        }
+    }
+    actor->target_angle = func_8008B650(actor->target_angle, heading, 0x40);
+    actor->unkCE = 0;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008EF30);
+/* Opponent command: act, then wait a second. */
+void func_8008EF00(Actor *actor, Brain *brain) {
+    func_800767C8(actor);
+    brain->timer = 0x3C;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008EF74);
+/* Opponent command: act, then wait longer when told to. */
+void func_8008EF30(Actor *actor, Brain *brain, s32 long_wait) {
+    func_8008FE80(actor);
+    brain->timer = long_wait ? 0x1E : 0xA;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008EFA8);
+/* Opponent command: input 3, then wait a second. */
+void func_8008EF74(Actor *actor, Brain *brain) {
+    func_8007639C(actor, 3);
+    brain->timer = 0x3C;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008F014);
+/* Opponent command: toggle guarding. */
+void func_8008EFA8(Actor *actor, Brain *brain) {
+    brain->defending ^= 1;
+    if (brain->defending) {
+        actor->flags |= 2;
+        brain->timer = 0x3C;
+    } else {
+        actor->flags &= ~2;
+        actor->flags &= ~0x38;
+        brain->timer = 0x1E;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008F060);
+/* Opponent command: inputs 4 and 3, then wait a second. */
+void func_8008F014(Actor *actor, Brain *brain) {
+    func_8007639C(actor, 4);
+    func_8007639C(actor, 3);
+    brain->timer = 0x3C;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008F094);
+/* Opponent command: input 4, then wait a second. */
+void func_8008F060(Actor *actor, Brain *brain) {
+    func_8007639C(actor, 4);
+    brain->timer = 0x3C;
+}
+
+/* Opponent roaming: while far away keep deciding every frame; otherwise
+ * pick a new random heading and duration when the timer runs out. */
+void func_8008F094(Actor *actor, Brain *brain) {
+    if (D_8009284C > 0x800) {
+        brain->timer = 1;
+        brain->unkC = 0;
+    } else if (--brain->timer == -1) {
+        brain->unkA = func_8003FA38() % 0x600 + 0x500;
+        brain->timer = func_8003FA38() % 50 + 10;
+        brain->unkC = 0xFF;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008F17C);
 
