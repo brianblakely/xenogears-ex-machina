@@ -149,12 +149,27 @@ typedef struct {
     s32 unk34;
 } ModelFile;
 
+/* Primitive record of a model's packet buffers (0x14 bytes). */
+typedef struct {
+    u32 tag;
+    u32 colour;        /* 0x04 */
+    u8 unk8[0xC];
+} ModelPrim;
+
+/* Packet buffers built for a model. */
+typedef struct {
+    s16 unk0;
+    s16 count;         /* 0x02 */
+    u8 unk4[0xC];
+    ModelPrim *prims[2]; /* 0x10: per display buffer */
+} ModelPrims;
+
 /* Model payload (0x20 bytes). */
 typedef struct {
     u32 flags;
     s32 unk4;
     void *resource;    /* 0x08 */
-    s32 unkC;
+    ModelPrims *prims; /* 0x0C */
     s32 unk10;
     ModelFile *file;   /* 0x14 */
     u8 r, g, b;        /* 0x18 */
@@ -188,14 +203,48 @@ typedef struct {
     s32 unk18;
 } Scale;
 
-/* Payload of three words and an angle triple (0x14 bytes). */
+/* Light payload (0x14 bytes). */
+typedef struct {
+    s32 colour[3];
+    s16 direction[3];  /* 0x0C */
+    s16 unk12;
+} Light;
+
+/* Ordering table pair (0x68 bytes). */
 typedef struct {
     s32 unk0;
-    s32 unk4;
-    s32 unk8;
-    s16 angle[3];      /* 0x0C */
-    s16 unk12;
-} Triple;
+    u32 *ot[2];        /* 0x04: per display buffer */
+    u32 *last[2];      /* 0x0C: last entry of each */
+    u16 length;        /* 0x14 */
+    u8 unk16;
+    u8 shift;          /* 0x17: 14 - log2(length) */
+    u8 unk18[0x50];
+} OtPair;
+
+/* Model resource holder freed with its resource. */
+typedef struct {
+    s32 unk0;
+    void *resource;
+} Holder;
+
+/* Three-light rig with an ambient colour (0x28C bytes). */
+typedef struct {
+    s32 unk0;
+    Node *nodes[4];    /* 0x04: root, then the three lights */
+    Node storage[4];   /* 0x14 */
+    Holder *holder;    /* 0x284 */
+    u8 r, g, b;        /* 0x288 */
+    u8 unk28B;
+} LightRig;
+
+/* libgpu CVECTOR layout. */
+typedef struct {
+    u8 r, g, b, cd;
+} CVector;
+
+extern s32 D_80092810;
+extern CVector D_80092818[2]; /* current colour per display buffer */
+extern s32 D_80092914;        /* colour changed this frame */
 
 extern s32 D_80091C2C;   /* nonzero: model set entries are not owned */
 extern s16 D_80092800;   /* model texture page x (-1: none) */
@@ -264,17 +313,22 @@ void func_800320E8(void *p);
 void func_80032C18(void *p, s32 mode);
 void func_8002CBBC(ModelFile *file);
 s32 func_800303C8(ModelFile *file, s32 mode);
-void func_8002CB54(ModelFile *file, void **resource, s32 *unkC);
+void func_8002CB54(ModelFile *file, void **resource, ModelPrims **prims);
 void func_8002CC54(u16 tpage);
 void func_8002CC74(s32 x, s32 y);
 void func_8002C8CC(ModelFile *file, void *resource, s32 mode);
-void func_800732AC(s32 a, void *resource, s32 b);
+void func_800732AC(ModelPrims *prims, void *resource, s32 b);
 void func_8002DDE4(void *target, s32 on, s32 a, s32 b, s32 c, s32 d, s32 e);
 Node *func_80089B44(Node *node);
 void func_80089D5C(Node *node);
 void func_80089EB4(ModelSet *set);
 void func_80089FF8(Model *model);
 void func_8008C120(void *data);
+Light *func_8008A254(void);
+void func_80089E64(Node *node, void *data);
+void func_8008A3A8(Holder *holder);
+void func_8008ABAC(Node **lights);
+void func_80030A30(s32 index, Light *light);
 Model *func_80089F8C(Model *model);
 void func_8004A12C(s32 x, s32 y);
 void func_8004A14C(s32 h);

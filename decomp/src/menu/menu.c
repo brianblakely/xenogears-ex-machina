@@ -1329,7 +1329,7 @@ Model *func_80089F8C(Model *model) {
     model->unk4 = 1;
     model->flags = 0;
     model->resource = NULL;
-    model->unkC = 0;
+    model->prims = NULL;
     model->unk10 = 0;
     model->file = NULL;
     model->unk1C = 0;
@@ -1406,7 +1406,7 @@ void func_8008A168(void) {
 void func_8008A184(Model *model, ModelFile *file) {
     model->file = file;
     model->unk10 = func_800303C8(file, 1);
-    func_8002CB54(model->file, &model->resource, &model->unkC);
+    func_8002CB54(model->file, &model->resource, &model->prims);
     if (D_80092800 >= 0) {
         func_8002CC54(func_80043A1C(0, 1, D_80092800, D_80092804));
     }
@@ -1414,19 +1414,19 @@ void func_8008A184(Model *model, ModelFile *file) {
         func_8002CC74(D_80092808, D_8009280C);
     }
     func_8002C8CC(model->file, model->resource, 2);
-    func_800732AC(model->unkC, model->resource, model->file->unk34);
+    func_800732AC(model->prims, model->resource, model->file->unk34);
     model->flags |= 2;
 }
 
-/* Allocate a payload of three 16s and a zero angle triple. */
-Triple *func_8008A254(void) {
-    Triple *triple;
+/* Allocate a dim light pointing along zero angles. */
+Light *func_8008A254(void) {
+    Light *light;
 
     func_800324B8(0xB);
-    triple = func_80031BDC(sizeof(Triple), 0);
-    triple->unk0 = triple->unk4 = triple->unk8 = 0x10;
-    triple->angle[0] = triple->angle[1] = triple->angle[2] = 0;
-    return triple;
+    light = func_80031BDC(sizeof(Light), 0);
+    light->colour[0] = light->colour[1] = light->colour[2] = 0x10;
+    light->direction[0] = light->direction[1] = light->direction[2] = 0;
+    return light;
 }
 
 /* Free a payload. */
@@ -1434,26 +1434,129 @@ void func_8008A298(void *p) {
     func_800320E8(p);
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008A2B8);
+/* Allocate an ordering table pair of the given length and its depth
+ * shift (the length should be a power of two up to 0x4000). */
+OtPair *func_8008A2B8(u16 length) {
+    OtPair *pair;
+    u32 *ot;
+    s32 bit;
+
+    func_800324B8(0xC);
+    pair = func_80031BDC(sizeof(OtPair), 0);
+    func_800324B8(0xC);
+    ot = func_80031BDC(length * 8, 0);
+    pair->ot[0] = ot;
+    pair->ot[1] = ot + length;
+    pair->unk16 = 1;
+    pair->shift = 14;
+    pair->unk0 = 0;
+    pair->length = length;
+    pair->last[0] = &pair->ot[0][length - 1];
+    pair->last[1] = &pair->ot[1][length - 1];
+    for (bit = 1; bit != length;) {
+        bit <<= 1;
+        if (bit > 0x4000) {
+            pair->shift = 14;
+            break;
+        }
+        pair->shift--;
+    }
+    return pair;
+}
 
 void func_8008A3A0(void) {
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008A3A8);
+/* Free a holder and its resource. */
+void func_8008A3A8(Holder *holder) {
+    func_80032C18(holder->resource, 3);
+    func_800320E8(holder);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008A3E0);
+/* Allocate a light rig: a root and three light nodes (key light turned
+ * round, fill lights level), grey ambient, owning holder. */
+LightRig *func_8008A3E0(Holder *holder) {
+    LightRig *rig;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008A5BC);
+    func_800324B8(9);
+    rig = func_80031BDC(sizeof(LightRig), 0);
+    rig->unk0 = 0;
+    rig->nodes[0] = &rig->storage[0];
+    rig->nodes[1] = &rig->storage[1];
+    rig->nodes[2] = &rig->storage[2];
+    rig->nodes[3] = &rig->storage[3];
+    func_80089B44(&rig->storage[0]);
+    func_80089B44(&rig->storage[1]);
+    func_80089B44(&rig->storage[2]);
+    func_80089B44(&rig->storage[3]);
+    func_80089E64(rig->nodes[1], func_8008A254());
+    func_80089E64(rig->nodes[2], func_8008A254());
+    func_80089E64(rig->nodes[3], func_8008A254());
+    rig->nodes[1]->position.vy = rig->nodes[2]->position.vy = rig->nodes[3]->position.vy = -2;
+    rig->nodes[1]->position.vx = 0;
+    rig->nodes[1]->position.vz = 1;
+    rig->nodes[2]->position.vx = -1;
+    rig->nodes[2]->position.vz = -1;
+    rig->nodes[3]->position.vx = 1;
+    rig->nodes[3]->position.vz = -1;
+    ((Light *)rig->nodes[1]->data)->direction[0] = ((Light *)rig->nodes[1]->data)->direction[1] =
+        ((Light *)rig->nodes[1]->data)->direction[2] = 0x800;
+    ((Light *)rig->nodes[2]->data)->direction[0] = ((Light *)rig->nodes[2]->data)->direction[1] =
+        ((Light *)rig->nodes[2]->data)->direction[2] = 0;
+    *(Light *)rig->nodes[3]->data = *(Light *)rig->nodes[2]->data;
+    rig->holder = holder;
+    rig->r = rig->g = rig->b = 0;
+    rig->r = rig->g = rig->b = 0x10;
+    func_8008ABAC(&rig->nodes[1]);
+    return rig;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008A618);
+/* Free a light rig, its lights and its holder. */
+void func_8008A5BC(LightRig *rig) {
+    func_800320E8(rig->storage[1].data);
+    func_800320E8(rig->storage[2].data);
+    func_800320E8(rig->storage[3].data);
+    func_8008A3A8(rig->holder);
+    func_800320E8(rig);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008A62C);
+/* Enable model colour overrides. */
+void func_8008A618(void) {
+    D_80092810 = 1;
+}
+
+/* Disable model colour overrides. */
+void func_8008A62C(void) {
+    D_80092810 = 0;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008A63C);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008A6F8);
+/* Set the current buffer's colour, noting whether it changed. */
+void func_8008A6F8(CVector *colour) {
+    CVector *current = &D_80092818[D_800928A0];
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008A78C);
+    if (colour->r == current->r && colour->g == current->g && colour->b == current->b) {
+        D_80092914 = 0;
+    } else {
+        D_80092914 = 1;
+        *current = *colour;
+        current->cd = 0x20;
+    }
+}
+
+/* Write the current buffer's colour into every primitive of a model. */
+void func_8008A78C(Node *node) {
+    ModelPrims *prims = ((Model *)node->data)->prims;
+    s32 i = prims->count;
+    ModelPrim *prim = prims->prims[D_800928A0];
+    u32 colour = *(u32 *)&D_80092818[D_800928A0];
+
+    while (--i != -1) {
+        prim->colour = colour;
+        prim++;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008A7E0);
 
