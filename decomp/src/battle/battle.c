@@ -5780,7 +5780,120 @@ void func_80096018(void) {
     }
 }
 
+#ifdef NON_MATCHING
+/* Element adjustment of an attack/defense pair: the command's element (or
+ * the attacker's own element status) against the target's weakness, its
+ * resistance statuses (which may also force hit result 4) and its single
+ * element guards, then a 20% boost for either side's +0x32 bit 0x10. */
+void func_80096494(u16 *attack, u16 *defense, u8 *hit) {
+    s32 ether = 0;
+    u8 flag = 0;
+    u8 element;
+    u8 bits;
+    u8 targetGear;
+    u16 status;
+    s8 scale;
+    s32 defenseScale;
+
+    targetGear = D_800C34B0->records[D_800C3E50].flags15A >> 7;
+    element = D_800C3DFC->attributes[2] & 0x3F;
+    bits = D_800C3E34->pilot.weakness & 0x3F;
+    if (!(D_800C34B0->records[D_800C3E04].flags15A >> 7)) {
+        status = D_800C3E00->pilot.status8C.half.active | D_800C3E00->pilot.status8C.half.permanent;
+    } else {
+        status = D_800D2D6C->status84.half.active | D_800D2D6C->status84.half.permanent;
+    }
+    status >>= 12;
+    if (D_800C3DFC->flagsA & 0x100) {
+        ether = 1;
+    }
+    if (element == 0 && status != 0) {
+        element = status;
+    }
+    if (element & status) {
+        flag = 1;
+    }
+    scale = 10;
+    defenseScale = 10;
+    if (element & bits) {
+        scale = 15;
+        if (D_800C3E34->pilot.weakness & 0x40) {
+            scale = 18;
+        }
+        if (flag) {
+            scale += 2;
+        }
+    }
+    flag = 0;
+    if (!targetGear) {
+        status = D_800C3E34->pilot.status8C.half.active | D_800C3E34->pilot.status8C.half.permanent;
+        bits = (status & 0xF00) >> 8;
+        flag = (status >> 1) & 1;
+    } else {
+        status = D_800D2DC8->status84.half.active | D_800D2DC8->status84.half.permanent;
+        bits = (status & 0xF00) >> 8;
+        if (status & 2) {
+            flag = 1;
+        }
+    }
+    if ((element & bits) && ether) {
+        scale -= 3;
+        if (status & 4) {
+            scale -= 3;
+        }
+        if (status & 8) {
+            *hit = 4;
+        }
+    }
+    if ((element & bits) && flag) {
+        scale -= 3;
+        if (status & 4) {
+            scale -= 3;
+        }
+        if (status & 8) {
+            *hit = 4;
+        }
+    }
+    switch (element) {
+    case 1:
+        if ((bits << 8) & 0x200) {
+            scale += 3;
+        }
+        break;
+    case 2:
+        if ((bits << 8) & 0x100) {
+            scale += 3;
+        }
+        break;
+    case 4:
+        if ((bits << 8) & 0x800) {
+            scale += 3;
+        }
+        break;
+    case 8:
+        if ((bits << 8) & 0x400) {
+            scale += 3;
+        }
+        break;
+    }
+    if (scale <= 0) {
+        scale = 1;
+    }
+    if (defenseScale == 0) {
+        defenseScale = 1;
+    }
+    *attack = *attack * scale / 10;
+    *defense = defenseScale * *defense / 10;
+    if (D_800C3E00->pilot.flags32 & 0x10) {
+        *attack += *attack / 5U;
+    }
+    if (D_800C3E34->pilot.flags32 & 0x10) {
+        *defense += *defense / 5U;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80096494);
+#endif
 
 /* Ether check: unless rand % 100 falls below the attacker's +0x5b plus the
  * descriptor's +0x14, the action fails (code 0x38 at +0x5fc7). */

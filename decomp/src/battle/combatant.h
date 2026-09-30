@@ -33,7 +33,7 @@ typedef struct {
     u16 flags32; /* 0x32: bit 0x40 doubles status durations */
     u16 flags34; /* 0x34: bit 0x800 reacts while down */
     u16 flags36; /* 0x36 */
-    u8 pad38[0x3A - 0x38];
+    u16 weakness; /* 0x38: weak element bits 0x3f, 0x40 very weak */
     u16 field3A; /* 0x3A */
     u8 pad3C[0x4C - 0x3C];
     u16 hp;     /* 0x4C */
