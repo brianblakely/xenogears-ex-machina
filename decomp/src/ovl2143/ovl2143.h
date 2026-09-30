@@ -230,13 +230,15 @@ typedef struct {
     s16 h0, h2, h4, h6, h8, hA, hC, hE;
 } Record24Entry;
 
-/* A point of a records24 ring (0x18 bytes): its radius and angle index
- * about the ring's centre; a ring ends with a zero radius. */
+/* A point of a records24 strand (0x18 bytes): the length of its segment to
+ * the next point (0 ends the strand), a sag added to that segment, its
+ * position and the normal accumulated from its triangles. */
 typedef struct {
-    s16 radius;
-    s16 angle;
-    s16 centre[3];
-    u8 padA[0xE];
+    s16 length;
+    s16 sag;
+    s16 pos[3];
+    u16 normal_count;       /* +a */
+    s32 normal[3];          /* +c */
 } RingPoint;
 
 /* Two triangles' textured primitives (one per buffer) and their vertex
@@ -631,6 +633,8 @@ struct Particle *func_801E0248(struct ParticlePool *pool, s16 semi_trans);
 s16 func_801E1258(ImageAnim *anim, s32 ticks);
 void func_801E22F8(Record24 *record, SVECTOR *light, MATRIX *m, u32 *ot, s32 buffer, s32 scale,
                    s32 floor);
+
+void func_80048D7C(VECTOR *v0, VECTOR *v1);   /* VectorNormal */
 
 /* This overlay. */
 SlotPool *func_801DF5F4(SlotPool *pool, s32 capacity);

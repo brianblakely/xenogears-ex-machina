@@ -540,9 +540,9 @@ void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, 
             gte_ldv0(&record->centres[i]);
             gte_rtv0tr();
             gte_stlvnl(&out);
-            record->block1C[i]->centre[0] = out.vx;
-            record->block1C[i]->centre[1] = out.vy;
-            record->block1C[i]->centre[2] = out.vz;
+            record->block1C[i]->pos[0] = out.vx;
+            record->block1C[i]->pos[1] = out.vy;
+            record->block1C[i]->pos[2] = out.vz;
         }
         entry = record->block18;
         for (i = 0; (s32)i < record->entry_count; i++, entry++) {
@@ -1785,7 +1785,7 @@ void func_801E1880(Actor **actors) {
 }
 
 /* Build a record's surface from `table`: a scaled centre per ring (offset by
- * ox/oy/oz), each ring's points (radius and angle index), and two textured
+ * ox/oy/oz), each strand's points (segment length and sag), and two textured
  * triangles per point pair between neighbouring rings, their texture
  * spanning u_span x v_span from (tx, ty) with the CLUT at (clut_x, clut_y);
  * then `count` zeroed entries. On an allocation failure the record is left
@@ -1852,17 +1852,17 @@ void func_801E1A14(Record24 *record, u16 *table, s16 angle_base, s32 scale, s16 
     for (i = 0; i < record->rings; i++, counts++, centre++) {
         *rings++ = point;
         for (k = 0; k < *counts; k++, point++) {
-            point->radius = *radii++ * scale / 4096;
-            point->angle = *angles++ + angle_base;
-            point->centre[0] = centre->vx;
-            point->centre[1] = centre->vy;
-            point->centre[2] = centre->vz;
+            point->length = *radii++ * scale / 4096;
+            point->sag = *angles++ + angle_base;
+            point->pos[0] = centre->vx;
+            point->pos[1] = centre->vy;
+            point->pos[2] = centre->vz;
         }
-        point->radius = 0;
-        point->angle = 0;
-        point->centre[0] = centre->vx;
-        point->centre[1] = centre->vy;
-        point->centre[2] = centre->vz;
+        point->length = 0;
+        point->sag = 0;
+        point->pos[0] = centre->vx;
+        point->pos[1] = centre->vy;
+        point->pos[2] = centre->vz;
         point++;
     }
     counts = table;
@@ -1955,7 +1955,196 @@ void func_801E1A14(Record24 *record, u16 *table, s16 angle_base, s32 scale, s16 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E1A14);
 #endif
 
+/* Simulate and draw a records24 surface (hair or cloth): each strand's
+ * segments hang from their start pulled by `wind` (plus each point's sag),
+ * keep their length, stay above `floor` and are pushed out of the record's
+ * collision spheres; then the points' normals are averaged from their
+ * triangles, and the visible triangles are lit (front and back colours) and
+ * queued. As in the original, a triangle the GTE flags as off screen does
+ * not advance the triangle pointer. */
+#ifdef NON_MATCHING
+void func_801E22F8(Record24 *record, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buffer, s32 scale,
+                   s32 floor) {
+    VECTOR d;
+    VECTOR e1, e2, n;
+    SVECTOR normal;
+    u8 rgb[4];
+    s32 flag, opz, otz;
+    RingPoint *p, *q;
+    RingPoint *points;
+    RingPoly *poly;
+    POLY_GT3 *prim;
+    Record24Entry *entry;
+    s32 len, radius;
+    s32 i, k;
+
+    if (record->centres == NULL) {
+        return;
+    }
+    rgb[3] = record->block20->prim[0].code;
+    for (i = 0; i < record->rings; i++) {
+        p = record->block1C[i];
+        if (p->length == 0) {
+            continue;
+        }
+        do {
+            q = p + 1;
+            d.vx = q->pos[0] - p->pos[0] + wind->vx;
+            d.vy = q->pos[1] - p->pos[1] + wind->vy + p->sag;
+            d.vz = q->pos[2] - p->pos[2] + wind->vz;
+            len = SquareRoot0(d.vx * d.vx + d.vy * d.vy + d.vz * d.vz);
+            if (len != 0) {
+                d.vx = (d.vx << 8) / len;
+                d.vy = (d.vy << 8) / len;
+                d.vz = (d.vz << 8) / len;
+            } else {
+                d.vx = 0;
+                d.vy = 0;
+                d.vz = 0;
+            }
+            q->pos[0] = p->pos[0] + p->length * d.vx * scale / 0x100000;
+            q->pos[1] = p->pos[1] + p->length * d.vy * scale / 0x100000;
+            q->pos[2] = p->pos[2] + p->length * d.vz * scale / 0x100000;
+            if ((s16)floor < q->pos[1]) {
+                q->pos[1] = floor;
+            }
+            entry = record->block18;
+            for (k = 0; k < record->entry_count; k++, entry++) {
+                d.vx = q->pos[0] - entry->h8;
+                d.vy = q->pos[1] - entry->hA;
+                d.vz = q->pos[2] - entry->hC;
+                len = SquareRoot0(d.vx * d.vx + d.vy * d.vy + d.vz * d.vz);
+                radius = (s16)(entry->h2 * scale / 4096);
+                if (len >= radius) {
+                    continue;
+                }
+                if (len != 0) {
+                    d.vx = entry->h8 + radius * d.vx / len;
+                    d.vy = entry->hA + radius * d.vy / len;
+                    d.vz = entry->hC + radius * d.vz / len;
+                } else {
+                    d.vx = entry->h8;
+                    d.vy = entry->hA;
+                    d.vz = entry->hC;
+                }
+                d.vx -= p->pos[0];
+                d.vy -= p->pos[1];
+                d.vz -= p->pos[2];
+                len = SquareRoot0(d.vx * d.vx + d.vy * d.vy + d.vz * d.vz);
+                if (len != 0) {
+                    d.vx = (d.vx << 8) / len;
+                    d.vy = (d.vy << 8) / len;
+                    d.vz = (d.vz << 8) / len;
+                } else {
+                    d.vx = 0;
+                    d.vy = 0;
+                    d.vz = 0;
+                }
+                q->pos[0] = p->pos[0] + p->length * d.vx * scale / 0x100000;
+                q->pos[1] = p->pos[1] + p->length * d.vy * scale / 0x100000;
+                q->pos[2] = p->pos[2] + p->length * d.vz * scale / 0x100000;
+            }
+            p++;
+        } while (p->length != 0);
+    }
+    points = *record->block1C;
+    for (i = 0; i < record->points; i++) {
+        points[i].normal_count = 0;
+        points[i].normal[0] = 0;
+        points[i].normal[1] = 0;
+        points[i].normal[2] = 0;
+    }
+    poly = record->block20;
+    for (i = 0; i < record->polys; i++, poly++) {
+        e1.vx = points[poly->index[0]].pos[0] - points[poly->index[1]].pos[0];
+        e1.vy = points[poly->index[0]].pos[1] - points[poly->index[1]].pos[1];
+        e1.vz = points[poly->index[0]].pos[2] - points[poly->index[1]].pos[2];
+        e2.vx = points[poly->index[0]].pos[0] - points[poly->index[2]].pos[0];
+        e2.vy = points[poly->index[0]].pos[1] - points[poly->index[2]].pos[1];
+        e2.vz = points[poly->index[0]].pos[2] - points[poly->index[2]].pos[2];
+        gte_ldopv1(&e1);
+        gte_ldopv2(&e2);
+        gte_op0();
+        gte_stlvnl(&n);
+        n.vx /= 8;
+        n.vy /= 8;
+        n.vz /= 8;
+        func_80048D7C(&n, &e1);
+        for (k = 0; k < 3; k++) {
+            points[poly->index[k]].normal[0] += e1.vx;
+            points[poly->index[k]].normal[1] += e1.vy;
+            points[poly->index[k]].normal[2] += e1.vz;
+            points[poly->index[k]].normal_count++;
+        }
+    }
+    for (i = 0; i < record->points; i++) {
+        points[i].normal[0] /= (s16)points[i].normal_count;
+        points[i].normal[1] /= (s16)points[i].normal_count;
+        points[i].normal[2] /= (s16)points[i].normal_count;
+    }
+    SetRotMatrix(m);
+    SetTransMatrix(m);
+    poly = record->block20;
+    points = *record->block1C;
+    for (i = 0; i < record->polys; i++) {
+        prim = &poly->prim[buffer];
+        gte_ldv3(points[poly->index[0]].pos, points[poly->index[1]].pos, points[poly->index[2]].pos);
+        gte_rtpt();
+        flag = 0;
+        gte_stflg(&flag);
+        if (flag & 0x40000) {
+            continue;
+        }
+        gte_nclip();
+        gte_stopz(&opz);
+        gte_stsxy3(&prim->x0, &prim->x1, &prim->x2);
+        gte_avsz3();
+        gte_stotz(&otz);
+        otz >>= D_80050100;
+        for (k = 0; k < 3; k++) {
+            if (opz < 0) {
+                if (k == 0) {
+                    rgb[0] = record->b[0];
+                    rgb[1] = record->b[1];
+                    rgb[2] = record->b[2];
+                }
+                normal.vx = points[poly->index[k]].normal[0];
+                normal.vy = points[poly->index[k]].normal[1];
+                normal.vz = points[poly->index[k]].normal[2];
+            } else {
+                if (k == 0) {
+                    rgb[0] = record->b[3];
+                    rgb[1] = record->b[4];
+                    rgb[2] = record->b[5];
+                }
+                normal.vx = -points[poly->index[k]].normal[0];
+                normal.vy = -points[poly->index[k]].normal[1];
+                normal.vz = -points[poly->index[k]].normal[2];
+            }
+            gte_ldv0(&normal);
+            if (k == 0) {
+                gte_ldrgb(rgb);
+            }
+            gte_nccs();
+            switch (k) {
+            case 0:
+                gte_strgb(&prim->r0);
+                break;
+            case 1:
+                gte_strgb(&prim->r1);
+                break;
+            case 2:
+                gte_strgb(&prim->r2);
+                break;
+            }
+        }
+        addPrim(ot + otz, prim);
+        poly++;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E22F8);
+#endif
 
 /* Release a record's heap blocks. */
 void func_801E3438(Record24 *record) {
