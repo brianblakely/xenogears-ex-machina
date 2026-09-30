@@ -667,8 +667,9 @@ void func_800964B0(s32 *list);
 typedef struct {
     s16 x, z, w, h;
     s16 id;
-    s16 pad[2];
-    s16 kind;
+    s16 padA;
+    s16 link; /* 0x0C: path or destination id */
+    s16 kind; /* 0x0E: 4 destination */
 } PathRegion;
 
 extern s16 D_8009B18C[4], D_8009B194[4], D_8009B19C[4], D_8009B1A4[4];
@@ -724,5 +725,6 @@ typedef struct {
 #define TERRAIN_SCRATCH ((TerrainScratch *)0x1F800000)
 
 s32 func_80048D7C(VECTOR *v, VECTOR *out); /* VectorNormal */
+extern s16 D_8009CE68; /* destination id, -1 none */
 
 #endif

@@ -477,7 +477,41 @@ void func_800941C4(VECTOR *from, VECTOR *to, VECTOR *direction, s16 *heading) {
     direction->vz = -func_8003F8CC(*heading);
 }
 
+/* Find the region of path table `table` containing the position: a path becomes current, a destination (kind 4) is recorded. */
+#ifdef NON_MATCHING /* the destination and failure tails are cross-jumped */
+s32 func_80094238(VECTOR *position, s32 table) {
+    PathRegion *region;
+    u16 x;
+    u16 z;
+
+    x = (u32)position->vx >> 12;
+    region = ((PathRegion *)D_8009BD00[table]);
+    z = (u32)position->vz >> 12;
+    if (region->id != -1) {
+        do {
+            if ((x >= region->x) & (region->x + region->w >= x) & (z >= region->z) & (region->z + region->h >= z)) {
+                if (region->kind == 4) {
+                    D_8009D7D8 = (PathTable *)-1;
+                    D_8009BD24 = -1;
+                    D_8009CE68 = region->link;
+                    return 1;
+                }
+                D_8009D7D8 = (PathTable *)region;
+                D_8009CE68 = -1;
+                D_8009BD24 = region->link;
+                return 1;
+            }
+            region++;
+        } while (region->id != -1);
+    }
+    D_8009D7D8 = (PathTable *)-1;
+    D_8009BD24 = -1;
+    D_8009CE68 = -1;
+    return 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80094238);
+#endif
 
 /* Find the region of path table `table` of kind `kind` containing the
  * position; it becomes the current path. */
@@ -513,10 +547,86 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80
 void func_80094434(void) {
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_8009443C);
+/* Step along the direction to the next cell boundary in +x: 1 when the far side is walkable (step[0] moves there), 3 when only the near side is, else 0. */
+s32 func_8009443C(VECTOR *origin, VECTOR *direction, VECTOR *step, s16 row) {
+    s32 slope;
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_800945C8);
+    slope = (direction->vz << 12) / direction->vx;
+    step[0].vx = (step[1].vx & 0xFFF80000) - origin->vx;
+    step[2].vx = step[0].vx - 1;
+    step[3].vx = step[0].vx;
+    step[2].vz = (slope * step[2].vx >> 12) + origin->vz;
+    step[3].vz = (slope * step[3].vx >> 12) + origin->vz;
+    step[2].vx += origin->vx;
+    step[3].vx += origin->vx;
+    func_80093354(&step[2]);
+    if (func_80094060(row, func_80093F18(&step[2])) == 0) {
+        step[0] = step[2];
+        return 1;
+    }
+    func_80093354(&step[3]);
+    return func_80094060(row, func_80093F18(&step[3])) == 0 ? 3 : 0;
+}
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80094750);
+/* Step to the cell boundary in -x (see func_8009443C). */
+s32 func_800945C8(VECTOR *origin, VECTOR *direction, VECTOR *step, s16 row) {
+    s32 slope;
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_800948D8);
+    slope = (direction->vz << 12) / direction->vx;
+    step[0].vx = (origin->vx & 0xFFF80000) - origin->vx;
+    step[2].vx = step[0].vx;
+    step[3].vx = step[0].vx - 1;
+    step[2].vz = (slope * step[2].vx >> 12) + origin->vz;
+    step[3].vz = (slope * step[3].vx >> 12) + origin->vz;
+    step[2].vx += origin->vx;
+    step[3].vx += origin->vx;
+    func_80093354(&step[2]);
+    if (func_80094060(row, func_80093F18(&step[2])) == 0) {
+        step[0] = step[2];
+        return 1;
+    }
+    func_80093354(&step[3]);
+    return func_80094060(row, func_80093F18(&step[3])) == 0 ? 3 : 0;
+}
+
+/* Step to the cell boundary in +z: 1 far side walkable, 2 near side only, else 0. */
+s32 func_80094750(VECTOR *origin, VECTOR *direction, VECTOR *step, s16 row) {
+    s32 slope;
+
+    slope = (direction->vx << 12) / direction->vz;
+    step[0].vz = (step[1].vz & 0xFFF80000) - origin->vz;
+    step[2].vz = step[0].vz - 1;
+    step[3].vz = step[0].vz;
+    step[2].vx = (slope * step[2].vz >> 12) + origin->vx;
+    step[3].vx = (slope * step[3].vz >> 12) + origin->vx;
+    step[2].vz += origin->vz;
+    step[3].vz += origin->vz;
+    func_80093354(&step[2]);
+    if (func_80094060(row, func_80093F18(&step[2])) == 0) {
+        step[0] = step[2];
+        return 1;
+    }
+    func_80093354(&step[3]);
+    return (func_80094060(row, func_80093F18(&step[3])) == 0) * 2;
+}
+
+/* Step to the cell boundary in -z (see func_80094750). */
+s32 func_800948D8(VECTOR *origin, VECTOR *direction, VECTOR *step, s16 row) {
+    s32 slope;
+
+    slope = (direction->vx << 12) / direction->vz;
+    step[0].vz = (origin->vz & 0xFFF80000) - origin->vz;
+    step[2].vz = step[0].vz;
+    step[3].vz = step[0].vz - 1;
+    step[2].vx = (slope * step[2].vz >> 12) + origin->vx;
+    step[3].vx = (slope * step[3].vz >> 12) + origin->vx;
+    step[2].vz += origin->vz;
+    step[3].vz += origin->vz;
+    func_80093354(&step[2]);
+    if (func_80094060(row, func_80093F18(&step[2])) == 0) {
+        step[0] = step[2];
+        return 1;
+    }
+    func_80093354(&step[3]);
+    return (func_80094060(row, func_80093F18(&step[3])) == 0) * 2;
+}
