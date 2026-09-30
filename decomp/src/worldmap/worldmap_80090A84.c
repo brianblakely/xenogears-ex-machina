@@ -317,13 +317,87 @@ void func_80092DD0(void) {
     func_800346D4(&D_8009D498);
 }
 
+/* Open the destination-name window and build its marker quad (both display copies). */
+#ifdef NON_MATCHING /* struct-copy end address CSE'd into a register too early */
+s32 func_80092DF8(void) {
+    D_8009CE68 = -1;
+    func_80032F54(&D_8009BD64, 0x3C0, 0x18D, 0xA0, 0x78, 0x20, 4);
+    D_8009BD64.unk68 = 8;
+    D_8009D498.flags |= 2;
+    func_80034614(&D_8009BD64);
+    setPrimLen(&D_8009D2B8[0], 9);
+    D_8009D2B8[0].code = 0x2C;
+    D_8009D2B8[0].y0 = 0x70;
+    D_8009D2B8[0].y1 = 0x70;
+    D_8009D2B8[0].x1 = 0x128;
+    D_8009D2B8[0].x3 = 0x128;
+    D_8009D2B8[0].x0 = 0x98;
+    D_8009D2B8[0].x2 = 0x98;
+    D_8009D2B8[0].y2 = 0xB4;
+    D_8009D2B8[0].y3 = 0xB4;
+    D_8009D2B8[0].u0 = 0x80;
+    D_8009D2B8[0].v0 = 0;
+    D_8009D2B8[0].u1 = 0xFF;
+    D_8009D2B8[0].v1 = 0;
+    D_8009D2B8[0].u2 = 0x80;
+    D_8009D2B8[0].v2 = 0x3F;
+    D_8009D2B8[0].u3 = 0xFF;
+    D_8009D2B8[0].v3 = 0x3F;
+    setRGB0(&D_8009D2B8[0], 0x80, 0x80, 0x80);
+    D_8009D2B8[0].tpage = GetTPage(0, 0, 0x380, 0x100);
+    D_8009D2B8[0].clut = GetClut(0x130, 0x1E4);
+    SetSemiTrans(&D_8009D2B8[0], 1);
+    D_8009D2B8[1] = D_8009D2B8[0];
+    return 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80092DF8);
+#endif
 
+/* Show the destination name while it changes and draw its marker. */
+#ifdef NON_MATCHING /* marker base address loaded later than the original */
+s32 func_80092FD8(s32 index) {
+    WorldmapActor *actor;
+    PolyFT4 *marker;
+    WorldmapView *view;
+
+    actor = &D_8009BE24[index];
+    switch (actor->state) {
+    case 0:
+        if (D_8009CE68 != -1) {
+            func_80034614(&D_8009BD64);
+            func_80034714(&D_8009BD64, func_80033728(D_8009D784, D_8009CE68));
+            actor->state = 1;
+            actor->u.step = D_8009CE68;
+        }
+        break;
+    case 1:
+        if (D_8009CE68 == -1) {
+            func_80034614(&D_8009BD64);
+            actor->state = 0;
+        } else if (D_8009CE68 != actor->u.step) {
+            func_80034614(&D_8009BD64);
+            func_80034714(&D_8009BD64, func_80033728(D_8009D784, D_8009CE68));
+            actor->u.step = D_8009CE68;
+        }
+        break;
+    }
+    func_80034888(&D_8009BD64, D_8009BE3C->ot, D_8009D7F0);
+    if (actor->state == 1) {
+        view = D_8009BE3C;
+        marker = &D_8009D2B8[D_8009D7F0];
+        ((P_TAG *)marker)->addr = ((P_TAG *)view->ot)->addr;
+        ((P_TAG *)view->ot)->addr = (u32)marker;
+    }
+    return 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80092FD8);
+#endif
 
 /* Release a resident object. */
 void func_800931B0(void) {
-    func_800346D4(D_8009BD64);
+    func_800346D4(&D_8009BD64);
 }
 
 /* Build `steps` fades of 256 CLUT entries towards `colour` (entry 0 stays transparent). */

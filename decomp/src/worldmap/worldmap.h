@@ -487,7 +487,6 @@ extern u8 D_8009D738, D_8009BD60;
 
 extern u16 D_8009CD4C; /* pad buttons held */
 extern s32 D_8009CEC0, D_8009C7E8, D_8009BD34;
-extern u8 D_8009BD64[];
 extern s16 D_8009BAC8[]; /* 8 columns per row */
 
 void func_800346D4(void *object);
@@ -555,6 +554,7 @@ typedef struct {
 } TextWindow;
 
 extern TextWindow D_8009D498;
+extern TextWindow D_8009BD64; /* destination name window */
 
 s32 func_80024524(void *model, s32 a, s32 b, s32 c, s32 d, s32 e);
 void func_800245D8(s32 handle, s32 mode);
@@ -953,6 +953,8 @@ extern s16 *D_8009D148; /* per-quad free flags */
 void func_80034714(void *window, s32 text);   /* set the window text */
 s32 func_80033728(void *table, s32 id);         /* text by id */
 void func_80034888(void *window, u32 *ot, s32 buffer); /* draw the window */
+
+extern PolyFT4 D_8009D2B8[2]; /* destination marker, per display buffer */
 
 /* worldmap_80072238, 80077E68, worldmap */
 
