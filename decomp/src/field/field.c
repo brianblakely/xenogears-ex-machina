@@ -353,9 +353,28 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800739C0);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80073E38);
 
+#ifdef NON_MATCHING
+/* Switch to the other draw block and clear its overlay ordering table. */
+void func_80073F50(void) {
+    if (D_800C268C == 0) {
+        __asm__("break 1");
+    }
+    D_800ADB08 = (D_800ADB08 + 1) % 2;
+    D_800C426C = &D_800B249C[D_800ADB08];
+    func_80044AD8(D_800C426C->overlay_ot, 8);
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80073F50);
+#endif
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80073FE0);
+/* Swap the draw buffer and clear its ordering tables. */
+void func_80073FE0(void) {
+    func_80073F50();
+    func_80044AD8(D_800C426C->ot, 0x1000);
+    if (D_800ADB4C != 0) {
+        func_80044AD8(D_800C426C->ot2, 0x1000);
+    }
+}
 
 /* Copy a matrix's rotation and translation. */
 void func_80074038(MATRIX *to, MATRIX *from) {
@@ -370,11 +389,36 @@ void func_80074078(MATRIX *to, MATRIX *from) {
     to->t[2] = from->t[2];
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007409C);
+/* Copy a matrix's rotation. */
+void func_8007409C(MATRIX *to, MATRIX *from) {
+    to->m[0][0] = from->m[0][0];
+    to->m[0][1] = from->m[0][1];
+    to->m[0][2] = from->m[0][2];
+    to->m[1][0] = from->m[1][0];
+    to->m[1][1] = from->m[1][1];
+    to->m[1][2] = from->m[1][2];
+    to->m[2][0] = from->m[2][0];
+    to->m[2][1] = from->m[2][1];
+    to->m[2][2] = from->m[2][2];
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80074108);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007469C);
+/* Whether any shown descriptor (flag 0x40 clear) has flag 0x8000. */
+s32 func_8007469C(void) {
+    s32 i;
+    u16 flags;
+
+    for (i = 0; i < D_800AFB0C; i++) {
+        flags = D_800AFB10[i].flags;
+        if (!(flags & 0x40)) {
+            if (flags & 0x8000) {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80074700);
 
@@ -384,7 +428,10 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007520C);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800752C8);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80075458);
+/* Link a table's primitives into `ot` (AddPrims). */
+void func_80075458(void *ot, u32 *table, s32 depth) {
+    func_80043B84(ot, table + depth, table);
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80075484);
 
@@ -394,19 +441,48 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80075910);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800759E4);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80075B08);
+/* Pass a colour on to resident 80021b98 unless 800b218e is set. */
+void func_80075B08(void *target, u8 *color) {
+    if (D_800B218E == 0) {
+        func_80021B98(target, color[0], color[1], color[2]);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80075B44);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800764B4);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80076A74);
+/* Sprite completion callback: flag the sprite's actor (layer bit 16). */
+void func_80076A74(FieldSprite *sprite) {
+    D_800AFB10[sprite->sequencer->actor].actor->layer_flags |= 0x10000;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80076AC0);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800771B0);
+/* Set the semi-transparency bit of each of `count` 16-bit pixels. */
+void func_800771B0(u32 *pixels, s32 count) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800771F8);
+    i = count / 2;
+    while (--i != -1) {
+        *pixels++ |= 0x80008000;
+    }
+}
+
+/* Load every image (and CLUT) of a TIM list into VRAM where it lies. */
+void func_800771F8(u32 *tim) {
+    TIM_IMAGE image;
+
+    func_800471B4(tim);
+    while (func_800471C4(&image) != NULL) {
+        if (image.caddr != NULL) {
+            func_80044894(image.crect, image.caddr);
+        }
+        if (image.paddr != NULL) {
+            func_80044894(image.prect, image.paddr);
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80077268);
 

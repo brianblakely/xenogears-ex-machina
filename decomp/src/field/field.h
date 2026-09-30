@@ -42,8 +42,18 @@ typedef struct {
     DRAWENV draw;
     DRAWENV draw2;
     DISPENV disp;
-    u8 rest[0x80F4 - 0xCC];
+    u32 ot[0x1001];      /* 0CC */
+    u32 ot2[0x1001];     /* 40D0: cleared only while 800adb4c is set */
+    u32 overlay_ot[8];   /* 80D4 */
 } FieldDrawBlock;
+
+typedef struct {
+    u32 mode;
+    RECT *crect;
+    u32 *caddr;
+    RECT *prect;
+    u32 *paddr;
+} TIM_IMAGE;
 
 /* One screen fade channel (800b20c4 + 0x58 * channel). Levels are 8.8. */
 typedef struct {
@@ -129,7 +139,9 @@ typedef struct {
 
 /* One 0x138-byte event actor record. */
 typedef struct FieldActor {
-    u8 unk000[0xF4];
+    u32 flags;       /* 000 */
+    u32 layer_flags; /* 004 */
+    u8 unk008[0xF4 - 0x8];
     s16 scale[3]; /* 0F4 */
     u8 unk0FA[0x138 - 0xFA];
 } FieldActor;
@@ -141,8 +153,20 @@ typedef struct FieldDescriptor {
     u8 unk2C[0x4C - 0x2C];
     FieldActor *actor; /* 4C */
     SVECTOR rotation;  /* 50 */
-    u8 unk58[0x5C - 0x58];
+    u16 flags;         /* 58 */
+    u8 unk5A[0x5C - 0x5A];
 } FieldDescriptor;
+
+/* A sprite's sequencer; +14 names the descriptor it belongs to. */
+typedef struct {
+    u8 unk00[0x14];
+    s16 actor;
+} SpriteSequencer;
+
+typedef struct {
+    u8 unk00[0x7C];
+    SpriteSequencer *sequencer;
+} FieldSprite;
 
 /* One of the three field light/lookup slots at 800b06a4. */
 typedef struct {
@@ -152,6 +176,12 @@ typedef struct {
 } FieldSlot6;
 
 /* Resident services. */
+extern void func_80021B98(void *, s32 r, s32 g, s32 b);
+extern void func_80043B84(void *ot, void *first, void *last); /* AddPrims */
+extern void func_80044894(RECT *rect, u32 *pixels);           /* LoadImage */
+extern void func_80044AD8(u32 *ot, s32 count);                 /* ClearOTagR */
+extern void func_800471B4(u32 *tim);                           /* OpenTIM */
+extern TIM_IMAGE *func_800471C4(TIM_IMAGE *image);             /* ReadTIM */
 extern void func_80028A60(s32);
 extern void func_80029EB0(s32 file, void *ring, s32, s32, s32, s32, s32, s32, s32, s32);
 extern void *func_8002A260(s32 sectors, s32);
@@ -194,6 +224,10 @@ extern s32 D_800ADB08;
 extern s32 D_800ADC04; /* fade mode; fades start only in mode 2 */
 extern s16 D_800ADC08; /* fade started */
 extern FieldView D_800AF880;
+extern s32 D_800ADB4C;
+extern s32 D_800AFB0C; /* descriptor count */
+extern s16 D_800B218E;
+extern FieldDrawBlock *D_800C426C; /* current draw block */
 extern FieldDescriptor *D_800AFB10; /* descriptor table */
 extern s32 D_800C268C;
 extern s32 D_800ADC18;
