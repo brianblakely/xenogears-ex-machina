@@ -190,6 +190,21 @@ extern u16 D_800C3CDC;
 
 extern Matrix D_800D30BC; /* the battle view matrix */
 
+/* The battle camera (800d309c); its view matrix is also named D_800D30BC and
+ * its eye and look-at points D_800D30A0. */
+typedef struct {
+    s32 field0;
+    SVector eye;    /* +04 */
+    SVector target; /* +0C */
+    SVector rot;    /* +14 */
+    s32 range;      /* +1C */
+    Matrix matrix;  /* +20 */
+} BattleCamera;
+extern BattleCamera D_800D309C;
+extern SVector D_800C354C; /* view shake offset */
+extern u8 D_800C372C;      /* stage drawing off */
+extern SVector D_800C3730; /* the camera's up vector */
+
 /* This unit. */
 void func_800BB13C(ActorTask *task);
 void func_800BB760(s32 slot);
@@ -210,5 +225,7 @@ void func_800B136C(void);
 void func_800B14CC(s32 keep);
 void func_800A9540(s32 slot);
 void func_800A979C(s32 index, s16 x, s16 y, s16 z, s16 angle);
+void func_800A4654(Matrix *view, Matrix *light, s32 arg2, u32 *ot, s32 buffer, SVector *eye, SVector *target,
+                   s32 depth);
 
 #endif

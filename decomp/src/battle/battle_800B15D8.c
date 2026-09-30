@@ -782,9 +782,51 @@ void func_800BB7F8(void) {
     func_800BC2F0(0);
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BB844);
+/* Build view matrix m looking from eye at target with up vector up. */
+void func_800BB844(Matrix *m, SVector *eye, SVector *target, SVector *up) {
+    Vector v;
+    Vector forward;
+    Vector right;
+    Vector upward;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BB9D4);
+    func_80021B14(&v, target->vx - eye->vx, target->vy - eye->vy, target->vz - eye->vz);
+    upward.vx = up->vx;
+    upward.vy = up->vy;
+    upward.vz = up->vz;
+    func_80048D7C(&v, &forward);
+    func_8004A480(&upward, &forward, &v);
+    func_80048D7C(&v, &right);
+    func_8004A480(&forward, &right, &v);
+    func_80048D7C(&v, &upward);
+    m->m[0][0] = right.vx;
+    m->m[0][1] = right.vy;
+    m->m[0][2] = right.vz;
+    m->m[1][0] = upward.vx;
+    m->m[1][1] = upward.vy;
+    m->m[1][2] = upward.vz;
+    m->m[2][0] = forward.vx;
+    m->m[2][1] = forward.vy;
+    m->m[2][2] = forward.vz;
+    PushMatrix();
+    ApplyMatrix(m, eye, &v);
+    m->t[0] = -v.vx;
+    m->t[1] = -v.vy;
+    m->t[2] = -v.vz;
+    PopMatrix();
+}
+
+/* Set the battle view from the camera points, shaken by 800c354c, and draw
+ * the stage unless that is off. */
+void func_800BB9D4(void) {
+    func_800BB844(&D_800D309C.matrix, &D_800D3354, &D_800D335C, &D_800C3730);
+    D_800D309C.matrix.t[0] += D_800C354C.vx;
+    D_800D309C.matrix.t[1] += D_800C354C.vy;
+    D_800D309C.matrix.t[2] += D_800C354C.vz;
+    if (D_800C372C == 0) {
+        func_800A4654(&D_800D309C.matrix, NULL, 0, BATTLE_AREA.ot, BATTLE_AREA.buffer, &D_800D3354, &D_800D335C,
+                      0x1000);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BBAB8);
 
