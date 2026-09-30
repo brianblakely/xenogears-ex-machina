@@ -903,9 +903,48 @@ void func_80036420(void) {
     D_800594A8 = s5;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036528);
+extern u8 D_80059430, D_80059434, D_80059438, D_8005943C; /* actuator values */
 
+/* Print a controller receive buffer in hex, and a digital pad's buttons.
+ * Kept as assembly: its C matches, but the string literals then end the
+ * rodata where 80036718's table, still assembly, needs the alignment its C
+ * literal would carry. */
+#ifdef NON_MATCHING
+void func_80036528(PadBuffer *pad) {
+    s32 count = (pad->type & 0xF) * 2 + 2;
+    s32 i;
+
+    for (i = 0; i < count; i++) {
+        func_8003700C("%02x ", ((u8 *)pad)[i]);
+    }
+    func_8003700C("\n");
+    if (pad->status == 0 && (pad->type & 0xF0) == 0x40) {
+        func_8003700C("%04x\n", (~pad->buttons[1] & 0xFF) | ((pad->buttons[0] << 8) ^ 0xFF00));
+    }
+}
+#else
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036528);
+#endif
+
+/* Print both controller buffers, the actuator values, the held buttons and
+ * every queued pad entry.
+ * Kept as assembly: its C matches, but the string literals then end the
+ * rodata where 80036718's table, still assembly, needs the alignment its C
+ * literal would carry. */
+#ifdef NON_MATCHING
+void func_800365FC(void) {
+    func_80036528(&D_800625FC[0]);
+    func_80036528(&D_800625FC[1]);
+    func_8003700C("vect0 %02x %02x\n", D_80059430, D_80059438);
+    func_8003700C("vect1 %02x %02x\n", D_80059434, D_8005943C);
+    func_8003700C("PADD %04x %04x\n", D_80059570, D_80059574);
+    while (func_80035CDC() != 0) {
+        func_8003700C("%04x %04x %04x %04x\n", func_8003569C(0), D_80059570, D_8005948C, D_800594A4);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800365FC);
+#endif
 
 extern void (*D_80050594)(void);
 
