@@ -255,14 +255,13 @@ u8 func_801E5A98(s32 id) {
     return slot;
 }
 
-#ifdef NON_MATCHING
 /* Show the next of five portraits at (x, y) and mirror the current
  * buffer's quad horizontally by swapping its second and third vertices.
- * (The original reloads the buffer index after every store.) */
+ */
 void func_801E5B00(s16 x, s16 y) {
     BattleGraphics *graphics;
-    s16 x1;
-    s16 y1;
+    s32 x1;
+    s32 y1;
 
     if (--D_801E9C1C < 0) {
         D_801E9C1C = 4;
@@ -270,18 +269,15 @@ void func_801E5B00(s16 x, s16 y) {
     D_800D2D28->portraitHandle =
         func_80076A10(D_801E9C1C + 0xE0, D_800C3EA4->portrait, x, y);
     graphics = D_800C3EA4;
-    x1 = graphics->portrait[D_800CCB34].x1;
-    graphics->portrait[D_800CCB34].x1 = graphics->portrait[D_800CCB34].x2;
-    y1 = graphics->portrait[D_800CCB34].y1;
-    graphics->portrait[D_800CCB34].y1 = graphics->portrait[D_800CCB34].y2;
-    graphics->portrait[D_800CCB34].x2 = x1;
-    graphics->portrait[D_800CCB34].y2 = y1;
-    D_800D2D28->portraitBuffer = D_800CCB34;
+    x1 = graphics->portrait[D_800CCB34.index].x1;
+    y1 = graphics->portrait[D_800CCB34.index].y1;
+    graphics->portrait[D_800CCB34.index].x1 = graphics->portrait[D_800CCB34.index].x2;
+    graphics->portrait[D_800CCB34.index].y1 = graphics->portrait[D_800CCB34.index].y2;
+    graphics->portrait[D_800CCB34.index].x2 = x1;
+    graphics->portrait[D_800CCB34.index].y2 = y1;
+    D_800D2D28->portraitBuffer = D_800CCB34.index;
     D_800D2D28->portraitShown = 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E5B00);
-#endif
 
 /* Opcode 00 (end): drop the running level and restart the thread's base
  * level at its idle entry. Yields. */

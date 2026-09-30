@@ -146,7 +146,12 @@ typedef struct {
 
 extern BattleGraphics *D_800C3EA4;
 extern BattleUi *D_800D2D28;
-extern s32 D_800CCB34; /* current draw buffer */
+/* The current draw buffer is field 0x34 of the battle draw state at
+ * 800ccb00; the original accesses it as a structure field. */
+typedef struct {
+    s32 index;
+} DrawBufferIndex;
+extern DrawBufferIndex D_800CCB34;
 extern u8 D_800D2D24[3]; /* battle party character ids (0xff none) */
 extern s32 D_801E9C1C;
 extern u16 D_801E9C10[5]; /* default message window layout */
