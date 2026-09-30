@@ -11624,7 +11624,49 @@ s32 func_800AB748(u32 which) {
     return -1;
 }
 
+extern RECT D_800AF5C0[5]; /* pieces of file 0x802's 320-wide image */
+
+#ifdef NON_MATCHING
+/* Upload the pieces of file 0x802's image whose game flag (800ab748) is
+ * clear to the 8-bit page area at (300, 100). The original keeps one
+ * pointer per piece field and spills most of its variables. */
+void func_800AB808(void) {
+    TIM_IMAGE tim;
+    u_long *file;
+    u8 *pixels;
+    u8 *row_pixels;
+    s32 i;
+    s32 row;
+
+    file = func_80031BDC(func_800288EC(0x802), 0);
+    func_800295D8(0x802, file, 0, 0x80);
+    func_80028A60(0);
+    pixels = func_80031BDC(0xF20, 0);
+    OpenTIM(file);
+    if (ReadTIM(&tim) != NULL) {
+        for (i = 0; i < 5; i++) {
+            if (func_800AB748(i) == -1 && tim.paddr != NULL) {
+                row_pixels = pixels;
+                for (row = 0; row < D_800AF5C0[i].h; row++) {
+                    memcpy(row_pixels, tim.paddr + (D_800AF5C0[i].y + row) * 0x50 + D_800AF5C0[i].x / 4,
+                           D_800AF5C0[i].w);
+                    row_pixels += D_800AF5C0[i].w / 4 * 4;
+                }
+                tim.prect->x = D_800AF5C0[i].x / 2 + 0x300;
+                tim.prect->y = D_800AF5C0[i].y + 0x100;
+                tim.prect->w = D_800AF5C0[i].w / 2;
+                tim.prect->h = D_800AF5C0[i].h;
+                LoadImage(tim.prect, (u_long *)pixels);
+                DrawSync(0);
+            }
+        }
+    }
+    func_800320E8(file);
+    func_800320E8(pixels);
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AB808);
+#endif
 
 #ifdef NON_MATCHING
 /* Show the current map's picture while its item is held: park the VRAM
