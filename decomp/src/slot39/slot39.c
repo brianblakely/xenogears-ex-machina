@@ -2266,7 +2266,58 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CF5E4);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CF8D8);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CFB48);
+/* While the file screen is up, draw the connector lines of every slot but
+ * the last of each present card: red within the selected file during file
+ * selection, green otherwise. */
+void func_801CFB48(void) {
+    MenuSlotImage *image;
+    s32 i;
+    s32 p;
+    s32 flag;
+    u8 file;
+    u8 match;
+
+    if (D_800625A0->loadState != 0) {
+        file = D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]];
+        for (i = 0; i < 32; i++) {
+            image = D_800625A0->images[i];
+            if (D_800625A0->card->present[i / 16] && (i / 16) * 16 != i - 15) {
+                match = 0;
+                if (file == D_800625A0->card->fileSlots[i] && D_800625A0->loadState == 2) {
+                    match = 1;
+                    if (file == 0xff) {
+                        match = i == D_801E981C[D_800625A0->card->cursor];
+                    }
+                }
+                if (match) {
+                    (image->lineA + D_800625A0->bufferIndex)->r0 = 0xff;
+                    (image->lineA + D_800625A0->bufferIndex)->g0 = 0;
+                    (image->lineA + D_800625A0->bufferIndex)->b0 = 0;
+                    (image->lineB + D_800625A0->bufferIndex)->r0 = 0xff;
+                    (image->lineB + D_800625A0->bufferIndex)->g0 = 0;
+                    (image->lineB + D_800625A0->bufferIndex)->b0 = 0;
+                } else {
+                    (image->lineA + D_800625A0->bufferIndex)->r0 = 0;
+                    (image->lineA + D_800625A0->bufferIndex)->g0 = 0xff;
+                    (image->lineA + D_800625A0->bufferIndex)->b0 = 0;
+                    (image->lineB + D_800625A0->bufferIndex)->r0 = 0;
+                    (image->lineB + D_800625A0->bufferIndex)->g0 = 0xff;
+                    (image->lineB + D_800625A0->bufferIndex)->b0 = 0;
+                }
+                RotTransPers3(&image->lineAAt[0], &image->lineAAt[1], &image->lineAAt[3],
+                              (s32 *)&image->lineA[D_800625A0->bufferIndex].x0,
+                              (s32 *)&image->lineA[D_800625A0->bufferIndex].x1,
+                              (s32 *)&image->lineA[D_800625A0->bufferIndex].x2, &p, &flag);
+                AddPrim(&D_800625A0->current->ot[4], &image->lineA[D_800625A0->bufferIndex]);
+                RotTransPers3(&image->lineBAt[0], &image->lineBAt[2], &image->lineBAt[3],
+                              (s32 *)&image->lineB[D_800625A0->bufferIndex].x0,
+                              (s32 *)&image->lineB[D_800625A0->bufferIndex].x1,
+                              (s32 *)&image->lineB[D_800625A0->bufferIndex].x2, &p, &flag);
+                AddPrim(&D_800625A0->current->ot[4], &image->lineB[D_800625A0->bufferIndex]);
+            }
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CFF64);
 

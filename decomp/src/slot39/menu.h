@@ -1024,6 +1024,8 @@ void func_8003F738(SVECTOR *angles, MATRIX *m); /* RotMatrix */
 void TransMatrix(MATRIX *m, VECTOR *t);      /* TransMatrix */
 void SetRotMatrix(MATRIX *m);                 /* SetRotMatrix */
 void SetTransMatrix(MATRIX *m);                 /* SetTransMatrix */
+void RotTransPers3(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, s32 *sxy0, s32 *sxy1, s32 *sxy2, s32 *p,
+                   s32 *flag); /* RotTransPers3 */
 void PushMatrix(void);
 void PopMatrix(void);
 u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y);
