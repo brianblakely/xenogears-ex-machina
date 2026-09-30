@@ -3133,10 +3133,10 @@ void func_8007FBE0(u8 count, u8 selected) {
         selected--;
     }
     for (i = 0; i < count - 1; i++) {
-        D_800C3EA4->unk908[D_800CCB04.buffer + i * 2].x0 = 0xC;
-        D_800C3EA4->unk908[D_800CCB04.buffer + i * 2].y0 = D_800C3200[count][i + 2] + 0x5E;
-        D_800C3EA4->unk908[D_800CCB04.buffer + i * 2].x1 = 0x12;
-        D_800C3EA4->unk908[D_800CCB04.buffer + i * 2].y1 = D_800C3200[count][i + 2] + 0x5E;
+        D_800C3EA4->unk908[i * 2 + D_800CCB04.buffer].x0 = 0xC;
+        D_800C3EA4->unk908[i * 2 + D_800CCB04.buffer].y0 = D_800C3200[count * 6 + i + 2] + 0x5E;
+        D_800C3EA4->unk908[i * 2 + D_800CCB04.buffer].x1 = 0x12;
+        D_800C3EA4->unk908[i * 2 + D_800CCB04.buffer].y1 = D_800C3200[count * 6 + i + 2] + 0x5E;
     }
     D_800D2D28->unk97 = selected;
     D_800D2D28->unk98 = D_800CCB04.buffer;

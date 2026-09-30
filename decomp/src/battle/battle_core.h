@@ -388,7 +388,7 @@ extern u16 D_800D2C2A;
 extern u8 D_800D2C35;
 extern u8 D_800D2C36;
 extern u16 D_800D2C3A;
-extern u8 D_800C3200[][6]; /* list separator rows by row count */
+extern u8 D_800C3200[]; /* list separator rows: [count * 6 + row] */
 extern u8 D_800C34CC[];    /* combo step flags */
 
 /* Direction arrow block (*800c3e24, 0xec bytes). */
