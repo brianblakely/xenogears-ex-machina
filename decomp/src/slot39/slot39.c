@@ -3769,7 +3769,90 @@ void func_801DFE2C(u8 slot) {
     D_800625A0->tables->shown[5] = D_800625A0->tables->unkB4;
 }
 
+/* Show the three-line description of equipment list entry `top` + `row` (or,
+ * with `current`, of the part equipped) for part `part` of party slot
+ * `slot` (`special` a special part, `gear` the gear's parts). */
+#ifdef NON_MATCHING
+/* Differs: GCC strength-reduces the line's y position into a saved register
+ * (the original recomputes it) and combines the kind with an `or`. */
+void func_801DFF5C(s32 part, s32 row, s32 top, u8 special, u8 gear, u8 current, u8 slot) {
+    RECT rect;
+    u8 *table;
+    u8 *image;
+    s32 line;
+    s32 kind;
+    u16 id;
+
+    id = D_801EA730[top + row];
+    kind = 0;
+    if (current) {
+        id = 0xff;
+    }
+    if (id != 0) {
+        if (!special && part != 0) {
+            kind = 1;
+        }
+        switch ((u8)(kind + gear * 2)) {
+        case 0:
+            table = D_800625A0->block434->texts[0];
+            if (current) {
+                if (!special) {
+                    id = D_8006D8A0[D_800625A0->party->ids[slot]].equip[0][0];
+                } else {
+                    id = D_8006D8A0[D_800625A0->party->ids[slot]].equip[1][part];
+                }
+            }
+            break;
+        case 1:
+            table = D_800625A0->block434->texts[1];
+            if (current) {
+                id = D_8006D8A0[D_800625A0->party->ids[slot]].equip[2][part - 1];
+            }
+            break;
+        case 2:
+            table = D_800625A0->block434->texts[2];
+            if (current) {
+                if (!special) {
+                    id = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unkC[0];
+                } else {
+                    id = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk4[part];
+                }
+            }
+            break;
+        case 3:
+            table = D_800625A0->block434->texts[3];
+            if (current) {
+                id = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk9[part - 1];
+            }
+            break;
+        }
+        if (id != 0) {
+            image = func_80031BDC(0x3f6, 0);
+            bzero(image, 0x3f6);
+            for (line = 0; line < 3; line++) {
+                D_800625A0->block434->extra[line].width =
+                    func_80034EAC(func_80033728(table, id * 3 + line), image, 0x24, 0);
+                rect.x = ((line + 8) & 1) * 0x18 + 0x180;
+                rect.y = (line + 8) / 2 * 0xd + 0x80;
+                rect.w = 0x28;
+                rect.h = 0xd;
+                LoadImage(&rect, image);
+                DrawSync(0);
+                func_801E7C50(&D_800625A0->block434->extra[line], line + 8, 0x80, 0x81);
+                func_801C851C(D_800625A0->block434->extra[line].verts, 0x10, (line * 0x10 + 0x96) & ~1,
+                              D_800625A0->block434->extra[line].width, 0xd);
+                D_800625A0->block434->extra[line].count = D_800625A0->bufferIndex;
+            }
+            D_800625A0->block434->extraShown = 1;
+            func_800320E8(image);
+            return;
+        }
+    }
+    D_800625A0->block434->extraShown = 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DFF5C);
+#endif
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E0434);
 

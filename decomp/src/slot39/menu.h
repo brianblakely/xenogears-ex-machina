@@ -574,7 +574,7 @@ typedef struct MenuBlock434 {
     MenuLabelSlot values[8]; /* 400 */
     MenuLabelSlot title; /* 800 */
     MenuLabelSlot extra[3]; /* 880 */
-    u8 padA00[0x10];
+    u8 *texts[4]; /* A00: description texts: weapons, accessories, gear parts, gear accessories */
     u8 shown[8]; /* A10 */
     u8 extraShown; /* A18 */
     u8 padA19[0x3];
