@@ -76,6 +76,35 @@ typedef struct {
     u8 follow;    /* 0x13 */
 } SpriteCommand;
 
+/* A camera channel: an effect entry of D_800C3BAC seen as signed values. */
+typedef struct {
+    u8 used;
+    u8 field1;
+    u8 mode;         /* 0x02: bit 0 ease, low nibble < 2 follows objects */
+    u8 kind;         /* 0x03 */
+    s16 current[3];  /* 0x04 */
+    s16 slot;        /* 0x0A: the followed object (or the target x) */
+    s16 height;      /* 0x0C: subtracted from its height (or the target y) */
+    s16 slot2;       /* 0x0E: a second object, -1 none (or the target z) */
+    u16 progress;    /* 0x10 */
+    s16 duration;    /* 0x12 */
+} CameraChannel;
+
+/* The camera. */
+extern u8 D_800C3B84;  /* the channel kind reported in D_800C3B88 */
+extern u8 D_800C3B88;  /* bit 0: that channel runs, bit 1: it finished */
+extern u8 D_800C3B8C;  /* snap: channels 7 and 8 start at their targets */
+extern s16 D_800C3B90; /* orbit yaw */
+extern s16 D_800C3B94; /* orbit pitch */
+extern s16 D_800C3B98; /* orbit distance */
+extern s16 D_800C3B9C; /* orbit height */
+extern s16 D_800C3BA0; /* look-at yaw */
+extern s16 D_800C3BA4; /* look-at distance */
+extern s16 D_800C3BA8; /* look-at height */
+
+s32 func_800B0FF4(SVector *from, SVector *point);
+s16 func_800B0B14(s32 key);
+
 /* An entry of an effect script file (0x1C bytes); the offsets are from the
  * entry until relocated. */
 typedef struct {

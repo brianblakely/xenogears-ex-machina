@@ -2443,7 +2443,181 @@ void func_800B0164(EffectPool *pool, s32 index, u8 field2, u8 kind, u16 p0, u16 
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800B026C);
+/* Run the camera channels (D_800C3BAC) for steps frames. Each channel moves
+ * a value towards its target (a stage object's or slot's position, halfway
+ * to a second one when set, or given values), linearly over its duration
+ * (mode bit 0 clear) or by a fraction of the rest each frame; channels 0-6
+ * are the orbit and look-at parameters, 7 the look-at point (from the target
+ * at the look-at distance, angle and height) and 8 the camera position (at
+ * the orbit distance and angles, kept off the objects and above the
+ * ground). Finished channels 0-6 are released; D_800C3B88 tells whether the
+ * channel of kind D_800C3B84 is running (1) or has finished (2). */
+void func_800B026C(EffectPool *pool, s32 steps, s32 arg2, s32 key) {
+    s32 step;
+    s32 i;
+    EffectEntry *entry;
+    CameraChannel *channel;
+    s16 x;
+    s16 y;
+    s16 z;
+    s16 valueX;
+    s16 valueY;
+    s16 valueZ;
+    u8 mode;
+    s16 t;
+    s16 dx;
+    s16 dy;
+    s16 dz;
+    s32 slot;
+    ModelPart *root;
+    s32 vertical;
+    s32 horizontal;
+    SVector point;
+    s16 ground;
+
+    D_800C3B88 = 0;
+    for (step = 0; step < steps; step++) {
+        for (i = 0; i < 9; i++) {
+            if (D_800C3BAC[i] == NULL) {
+                continue;
+            }
+            entry = D_800C3BAC[i];
+            channel = (CameraChannel *)entry;
+            mode = entry->field2;
+            if ((mode & 0xF) < 2) {
+                slot = (s16)entry->params[3];
+                if (D_800D3368[slot] != NULL) {
+                    x = D_800D3368[slot]->hierarchy->translation[0];
+                    y = D_800D3368[slot]->hierarchy->translation[1] - entry->params[4];
+                    z = D_800D3368[slot]->hierarchy->translation[2];
+                } else {
+                    x = D_800C3EB4[slot].x;
+                    y = D_800C3EB4[slot].y - entry->params[4];
+                    z = D_800C3EB4[slot].z;
+                }
+                slot = channel->slot2;
+                if (slot >= 0) {
+                    if (D_800D3368[slot] != NULL) {
+                        root = D_800D3368[slot]->hierarchy;
+                        x = (x + root->translation[0]) / 2;
+                        y = (y + root->translation[1] - channel->height) / 2;
+                        z = (z + root->translation[2]) / 2;
+                    } else {
+                        x = (x + (u16)D_800C3EB4[slot].x) / 2;
+                        y = (y + (u16)D_800C3EB4[slot].y - channel->height) / 2;
+                        z = (z + (u16)D_800C3EB4[slot].z) / 2;
+                    }
+                }
+            } else {
+                x = entry->params[3];
+                y = entry->params[4];
+                z = entry->params[5];
+            }
+            if (i == 7) {
+                y -= D_800C3BA8;
+                x += -D_800C3BA4 * func_8003F8B0(D_800C3BA0) / 4096;
+                z += -D_800C3BA4 * func_8003F8CC(D_800C3BA0) / 4096;
+            }
+            if (i == 8) {
+                vertical = D_800C3B98 * func_8003F8B0(D_800C3B94) / 4096;
+                horizontal = D_800C3B98 * func_8003F8CC(D_800C3B94) / 4096;
+                x += -horizontal * func_8003F8B0(D_800C3B90) / 4096;
+                y += -vertical - D_800C3B9C;
+                z += -horizontal * func_8003F8CC(D_800C3B90) / 4096;
+                point.vx = x;
+                point.vy = y;
+                point.vz = z;
+                if (func_800B0FF4(&D_800D335C, &point)) {
+                    x = point.vx;
+                    z = point.vz;
+                }
+                ground = func_800B0B14(key);
+                if (y > ground) {
+                    y = ground;
+                }
+            }
+            if (D_800C3B8C != 0 && i >= 7) {
+                channel->current[0] = x;
+                channel->current[1] = y;
+                channel->current[2] = z;
+            }
+            switch (mode & 1) {
+            case 0:
+                t = entry->field10 + 1;
+                valueX = channel->current[0] + (x - channel->current[0]) * t / (s16)entry->field12;
+                valueY = channel->current[1] + (y - channel->current[1]) * t / (s16)entry->field12;
+                valueZ = channel->current[2] + (z - channel->current[2]) * t / (s16)entry->field12;
+                break;
+            case 1:
+                dx = (x - channel->current[0]) / (s16)entry->field12;
+                dy = (y - channel->current[1]) / (s16)entry->field12;
+                dz = (z - channel->current[2]) / (s16)entry->field12;
+                valueX = channel->current[0];
+                valueY = channel->current[1];
+                valueZ = channel->current[2];
+                if (dx == 0 && dy == 0 && dz == 0) {
+                    entry->field10 = (s16)entry->field12;
+                } else {
+                    valueX += dx;
+                    valueY += dy;
+                    valueZ += dz;
+                    entry->field10 = 0;
+                }
+                channel->current[0] = valueX;
+                channel->current[1] = valueY;
+                channel->current[2] = valueZ;
+                break;
+            }
+            if ((s16)++entry->field10 >= (s16)entry->field12) {
+                if (i >= 7) {
+                    entry->field10 = (s16)entry->field12 - 1;
+                } else {
+                    if (entry->kind == D_800C3B84) {
+                        D_800C3B88 |= 2;
+                    }
+                    func_800A23E8(pool, entry);
+                    D_800C3BAC[i] = NULL;
+                }
+            } else if (entry->kind == D_800C3B84) {
+                D_800C3B88 |= 1;
+            }
+            switch (i) {
+            case 0:
+                D_800C3B90 = valueX;
+                break;
+            case 1:
+                D_800C3BA0 = valueX;
+                break;
+            case 2:
+                D_800C3B94 = valueX;
+                break;
+            case 3:
+                D_800C3B98 = valueX;
+                break;
+            case 4:
+                D_800C3BA4 = valueX;
+                break;
+            case 5:
+                D_800C3BA8 = valueX;
+                break;
+            case 6:
+                D_800C3B9C = valueX;
+                break;
+            case 7:
+                D_800D335C.vx = valueX;
+                D_800D335C.vy = valueY;
+                D_800D335C.vz = valueZ;
+                break;
+            case 8:
+                D_800D3354.vx = valueX;
+                D_800D3354.vy = valueY;
+                D_800D3354.vz = valueZ;
+                break;
+            }
+        }
+    }
+    D_800C3B8C = 0;
+}
 
 /* Whether a point (x at [0], z at [2]) lies strictly inside the scene's
  * bounds. */
@@ -2551,9 +2725,9 @@ s32 func_800B0D70(SVector *motion, SVector *point) {
     return 0;
 }
 
-/* Push point out of the objects' footprints (800B0D70) moving from from:
- * the motion is the direction from from, 512 long. */
-void func_800B0FF4(SVector *from, SVector *point) {
+/* Push point out of the objects' footprints (800B0D70) moving from from
+ * (the motion is the direction from from, 512 long); the object hit. */
+s32 func_800B0FF4(SVector *from, SVector *point) {
     SVector motion;
     s32 length;
 
@@ -2562,7 +2736,7 @@ void func_800B0FF4(SVector *from, SVector *point) {
     length = SquareRoot0(motion.vx * motion.vx + motion.vz * motion.vz) + 1;
     motion.vx = (motion.vx << 9) / length;
     motion.vz = (motion.vz << 9) / length;
-    func_800B0D70(&motion, point);
+    return func_800B0D70(&motion, point);
 }
 
 /* Keep stage object index at least distance from point (x, z): when closer,
