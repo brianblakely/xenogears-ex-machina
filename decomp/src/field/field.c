@@ -7260,7 +7260,40 @@ void func_8009BA7C(void) {
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009BA7C);
 #endif
 
+#ifdef NON_MATCHING
+/* Wait on the actor's dialogue window: with none, store the actor's +81
+ * byte in variable 14 and continue; otherwise once its speaker has layer
+ * flag 0x200 and the actor's low wait bit is clear, end the waiting script
+ * slot and release the window. Yields. */
+void func_8009BB0C(void) {
+    s32 window;
+    u32 value;
+    u16 bits;
+
+    if (func_8009CD18(&window) == -1) {
+        D_800AFC7C += 8;
+        func_800A3074(0x14, D_800B0078->unk081);
+        D_800B0078->pc++;
+        return;
+    }
+    if (D_800AF880.components.descriptors[D_800C2698[window].unk418].actor->layer_flags & 0x200) {
+        value = D_800B0078->unk84;
+        bits = value >> 16;
+        if (bits == 0) {
+            bits = value;
+        }
+        if (!(bits & 1)) {
+            if (D_800B0078->slots[D_800B0078->slot].priority != 7) {
+                func_800A1B70();
+            }
+            D_800C2698[window].cleared = 0;
+        }
+    }
+    D_800B00C0 = 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009BB0C);
+#endif
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009BC98);
 
