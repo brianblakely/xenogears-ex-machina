@@ -2155,15 +2155,15 @@ void func_801E2B80(void) {
 /* The equipment command: on the first party member's page, choose among
  * three choices (0 the 801e05d0 screen, 1 the 801ddf24 screen, 2 the
  * 801e1544 screen), switching members with 9/10, until cancelled.
- * Nonmatching: GCC allocates one more saved register (frame 0x30, the
- * original's 0x28). */
+ * Nonmatching: the original copies the slot to the shown slot through v0
+ * in 801e3a80's delay slot; this build does it in 801e36d4's. */
 #ifdef NON_MATCHING
 u8 func_801E2BE4(void) {
-    u8 slot;
+    s32 slot;
     u8 shown;
     u8 stay;
     u8 first;
-    u8 i;
+    s32 i;
 
     stay = 1;
     shown = 0xf3;
