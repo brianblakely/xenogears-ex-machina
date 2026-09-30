@@ -109,6 +109,19 @@ typedef struct {
 extern u32 *D_800C3E5C[];   /* text images of battle messages 0-9 */
 void *func_800338D8(s32 id); /* a battle message text */
 
+/* The six outputs of func_80026338 for one sprite. */
+typedef struct {
+    s32 unk0;
+    s32 tpageMode;
+    s32 clutX;
+    s32 clutY;
+    s32 pageX;
+    s32 pageY;
+} SpriteInfo;
+
+void func_80026338(void *sheet, s32 id, s32 *a, s32 *tpageMode, s32 *clutX, s32 *clutY,
+                   s32 *pageX, s32 *pageY);
+extern u8 D_800D3294;
 s32 func_80025FA8(void *table, s32 id, POLY_FT4 *prims, s32 buffer, s32 x, s32 y,
                   s32 scaleX, s32 scaleY, s32 scale);
 s32 func_80076A6C(s32 id, POLY_FT4 *prims, s16 x, s16 y);

@@ -91,6 +91,14 @@ typedef struct {
     s16 x1, y1;
 } LINE_F2;
 
+typedef struct {
+    u32 mode;
+    RECT *crect;
+    u32 *caddr;
+    RECT *prect;
+    u32 *paddr;
+} TIM_IMAGE;
+
 /* GTE rotation/translation matrix (PsyQ MATRIX). */
 typedef struct {
     s16 m[3][3];
@@ -129,6 +137,8 @@ u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y);
 u16 GetClut(s32 x, s32 y);
 void DrawSync(s32 mode);
 void LoadImage(RECT *rect, u32 *pixels);
+s32 OpenTIM(u32 *addr);
+TIM_IMAGE *ReadTIM(TIM_IMAGE *timimg);
 
 /* libgte. */
 void func_8003F738(SVector *angles, Matrix *m);          /* RotMatrix */

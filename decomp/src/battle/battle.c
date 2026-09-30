@@ -1788,7 +1788,41 @@ void func_8007819C(void) {
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007819C);
 #endif
 
+/* Upload each present member's portrait TIM (0x460 bytes per character in
+ * `portraits`; character 0xb for the second and third member when 800d3294
+ * is set) to the texture and CLUT places of sprite `glyph + member`, the
+ * image moved 6 per member.
+ * Nonmatching: the original keeps one address register per sprite field. */
+#ifdef NON_MATCHING
+void func_80078310(u8 *portraits, u8 glyph) {
+    TIM_IMAGE tim;
+    SpriteInfo sprites[3];
+    s32 i;
+    u8 character;
+
+    for (i = 0; i < 3; i++) {
+        character = D_800D2D24[i];
+        if (character != 0x7F) {
+            if (D_800D3294 != 0 && (i == 1 || i == 2)) {
+                character = 0xB;
+            }
+            OpenTIM((u32 *)(portraits + character * 0x460));
+            ReadTIM(&tim);
+            func_80026338(D_800D2F5C, glyph + i, &sprites[i].unk0, &sprites[i].tpageMode, &sprites[i].clutX,
+                          &sprites[i].clutY, &sprites[i].pageX, &sprites[i].pageY);
+            tim.crect->x = sprites[i].clutX;
+            tim.crect->y = sprites[i].clutY;
+            tim.prect->x = sprites[i].pageX + i * 6;
+            tim.prect->y = sprites[i].pageY;
+            LoadImage(tim.crect, tim.caddr);
+            LoadImage(tim.prect, tim.paddr);
+            DrawSync(0);
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80078310);
+#endif
 
 /* Reset every slot's turn timers from its speed (unused slots 0xff), its
  * ready flag and slow alternation, and clear the order buffer. */
