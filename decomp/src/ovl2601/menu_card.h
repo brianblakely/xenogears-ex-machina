@@ -194,7 +194,9 @@ typedef struct {
     u8 cells_b_count[9];      /* 46c5 */
     u8 cells_a_buffer[9];     /* 46ce */
     u8 cells_b_buffer[9];     /* 46d7 */
-    u8 unk46E0[0x4785 - 0x46E0];
+    u16 attack[16];           /* 46e0: each member's attack before buying */
+    u16 defence[16];          /* 4700 */
+    u8 unk4720[0x4785 - 0x4720];
     u8 label45B0_shown;       /* 4785 */
     u8 unk4786[2];
 } DetailBlock;
@@ -410,12 +412,6 @@ typedef struct {
 
 extern GameData D_8006D634;
 
-/* A party member's detail view; its nine stat words at +b8. */
-typedef struct {
-    u8 unk0[0xB8];
-    u16 stats[9]; /* b8 */
-} MemberView;
-
 /* Entries of the equipment (weapons below 32h, armour from 32h), accessory and item tables (10h bytes each). */
 typedef struct {
     u16 users; /* 00: party bits of the members who can equip it */
@@ -450,7 +446,9 @@ typedef struct {
     AccessoryInfo *accessories; /* 04 */
     void *unk8[5];
     ItemInfo *items;     /* 1c */
-    u8 unk20[0xCC - 0x20];
+    u8 unk20[0xB8 - 0x20];
+    u16 stats[9];        /* b8: a member's stats, filled by 801cce1c */
+    u8 unkCA[2];
 } ResourceSet;
 
 /* Menu state (*800625a0); only the fields this overlay touches are named. */
@@ -540,6 +538,7 @@ extern u8 D_801D1FCC[];  /* command label text ids */
 extern s32 D_801D1FD8[]; /* command label x offsets */
 extern u8 D_801D1FD0[];  /* sell list label text ids */
 extern s32 D_801D1FE8[]; /* sell list label x offsets */
+extern u8 D_801D1FD4[];  /* buy list label text ids */
 extern s32 D_801D1F6C[]; /* list picture pairs (sprite, second layer), eight words per command */
 extern s32 D_801D1FF8[]; /* marker x */
 extern s32 D_801D2008[]; /* marker y */
