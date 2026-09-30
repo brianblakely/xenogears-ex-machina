@@ -5940,7 +5940,136 @@ void func_800831F4(void *owner, FieldActor *actor, FieldDescriptor *descriptor, 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800831F4);
 #endif
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80083288);
+/* POLYCHECK: the lowest floor height of descriptor `index`'s collision model
+ * under x/z (0, with the height and the last hit's normal), or -1. */
+s32 func_80083288(s32 index, PolyModel *model, s32 x, s32 z, s32 *height, VECTOR *normal) {
+    PolyCheck *work;
+    FieldActor *actor;
+    u32 *prim;
+    u32 header;
+    s32 count;
+    s32 groups;
+    s32 i;
+
+    work = (PolyCheck *)func_8007CD3C(sizeof(PolyCheck));
+    prim = model->prims;
+    work->vertices = model->vertices;
+    work->point = (x << 16) + z;
+    work->lowest = 0x7FFFFFFF;
+    actor = D_800AF880.components.descriptors[index].actor;
+    switch (actor->state.bits.mode) {
+    case 1:
+        work->angles.vx = actor->unk70;
+        work->angles.vy = 0;
+        work->angles.vz = 0;
+        goto local;
+    case 2:
+        work->angles.vx = 0;
+        work->angles.vy = D_800AF880.components.descriptors[index].actor->unk70;
+        work->angles.vz = 0;
+        goto local;
+    case 3:
+        work->angles.vx = 0;
+        work->angles.vy = 0;
+        work->angles.vz = D_800AF880.components.descriptors[index].actor->unk70;
+    local:
+        func_8003F738(&work->angles, &work->local);
+        func_80049BDC(&D_800AF880.components.descriptors[index].matrix, &work->local);
+        work->local.t[0] = D_800AF880.components.descriptors[index].matrix.t[0];
+        work->local.t[1] = D_800AF880.components.descriptors[index].matrix.t[1];
+        work->local.t[2] = D_800AF880.components.descriptors[index].matrix.t[2];
+        CompMatrix(&D_800AF880.world_matrix, &work->local, &work->transform);
+        break;
+    default:
+        work->transform.t[2] = 0;
+        work->transform.t[1] = 0;
+        work->transform.t[0] = 0;
+        work->view.t[2] = 0;
+        work->view.t[1] = 0;
+        work->view.t[0] = 0;
+        if (D_800AF880.components.descriptors[index].actor->unk075 != 0xFF) {
+            CompMatrix(&D_800AF880.world_matrix, &D_800AFC30, &work->view);
+            CompMatrix(&work->view, &D_800AF880.components.descriptors[D_800AF880.components.descriptors[index].actor->unk075].transform,
+                       &work->local);
+            CompMatrix(&work->local, &D_800AF880.components.descriptors[index].matrix, &work->transform);
+        } else {
+            CompMatrix(&D_800AF880.world_matrix, &D_800AFC30, &work->view);
+            CompMatrix(&work->view, &D_800AF880.components.descriptors[index].matrix, &work->transform);
+        }
+        break;
+    }
+    SetRotMatrix(&work->transform);
+    SetTransMatrix(&work->transform);
+    for (groups = model->groups; groups > 0; groups--) {
+        header = *prim;
+        count = header >> 16;
+        work->type = header & 0xFF;
+        if (work->type == 0xC4 || work->type == 0xC8) {
+            prim++;
+            continue;
+        }
+        prim++;
+        if (!(header & 8)) {
+            for (i = 0; i < count; i++) {
+                RotTransSV(&work->vertices[((u16 *)prim)[0]], &work->v[0], &work->flag);
+                RotTransSV(&work->vertices[((u16 *)prim)[1]], &work->v[1], &work->flag);
+                prim++;
+                RotTransSV(&work->vertices[((u16 *)prim)[0]], &work->v[2], &work->flag);
+                prim++;
+                work->packed[0] = (work->v[0].vx << 16) + work->v[0].vz;
+                work->packed[1] = (work->v[1].vx << 16) + work->v[1].vz;
+                work->packed[2] = (work->v[2].vx << 16) + work->v[2].vz;
+                if (func_8004A70C(work->packed[0], work->packed[1], work->point) >= 0
+                    && func_8004A70C(work->packed[1], work->packed[2], work->point) >= 0
+                    && func_8004A70C(work->packed[2], work->packed[0], work->point) >= 0
+                    && func_8004A70C(work->packed[0], work->packed[1], work->packed[2]) >= 0) {
+                    work->p.vx = x;
+                    work->p.vz = z;
+                    func_8007B07C(&work->v[0], &work->v[1], &work->v[2], &work->p, normal);
+                    if (work->p.vy < work->lowest) {
+                        work->lowest = work->p.vy;
+                    }
+                }
+            }
+        } else {
+            for (i = 0; i < count; i++) {
+                RotTransSV(&work->vertices[((u16 *)prim)[0]], &work->v[0], &work->flag);
+                RotTransSV(&work->vertices[((u16 *)prim)[1]], &work->v[1], &work->flag);
+                prim++;
+                RotTransSV(&work->vertices[((u16 *)prim)[0]], &work->v[2], &work->flag);
+                RotTransSV(&work->vertices[((u16 *)prim)[1]], &work->v[3], &work->flag);
+                prim++;
+                work->packed[0] = (work->v[0].vx << 16) + work->v[0].vz;
+                work->packed[1] = (work->v[1].vx << 16) + work->v[1].vz;
+                work->packed[2] = (work->v[2].vx << 16) + work->v[2].vz;
+                work->packed[3] = (work->v[3].vx << 16) + work->v[3].vz;
+                if (func_8004A70C(work->packed[0], work->packed[1], work->point) >= 0
+                    && func_8004A70C(work->packed[1], work->packed[3], work->point) >= 0
+                    && func_8004A70C(work->packed[3], work->packed[2], work->point) >= 0
+                    && func_8004A70C(work->packed[2], work->packed[0], work->point) >= 0
+                    && func_8004A70C(work->packed[0], work->packed[1], work->packed[2]) >= 0) {
+                    work->p.vx = x;
+                    work->p.vz = z;
+                    if (func_8004A70C(work->packed[1], work->packed[2], work->point) >= 0) {
+                        func_8007B07C(&work->v[0], &work->v[1], &work->v[2], &work->p, normal);
+                    } else {
+                        func_8007B07C(&work->v[1], &work->v[3], &work->v[2], &work->p, normal);
+                    }
+                    if (work->p.vy < work->lowest) {
+                        work->lowest = work->p.vy;
+                    }
+                }
+            }
+        }
+    }
+    if (work->lowest == 0x7FFFFFFF) {
+        func_8007CD60(sizeof(PolyCheck));
+        return -1;
+    }
+    *height = work->lowest;
+    func_8007CD60(sizeof(PolyCheck));
+    return 0;
+}
 
 void func_80083994(void) {
 }
