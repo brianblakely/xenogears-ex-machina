@@ -52,9 +52,13 @@ LP := (
 OBJECTS = $(addprefix $(ROOT)/,$(shell sed -n 's/^ *\([^ ]*\.o\)[$(LP)].*/\1/p' $(ROOT)/$(LINKER_SCRIPT) 2>/dev/null | sort -u))
 
 # A fresh split: splat's cache would otherwise keep assembly with stale symbol names.
+# SPLIT_ALSO names configurations sharing this target's assembly directory.
 split:
 	rm -rf $(ROOT)/$(dir $(LINKER_SCRIPT))
 	cd $(ROOT) && splat split $(SPLAT_CONFIG)
+	cd $(ROOT) && for also in $(SPLIT_ALSO); do \
+		rm -rf "$$(dirname "$$(sed -n 's/^ *ld_script_path: *//p' $$also)")" && splat split $$also || exit 1; \
+	done
 
 # Objects are rebuilt after every split (they include the generated assembly).
 $(ROOT)/$(BUILD)/%.o: $(ROOT)/%.s $(ROOT)/$(LINKER_SCRIPT)
