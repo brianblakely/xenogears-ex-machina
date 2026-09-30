@@ -156,7 +156,7 @@ typedef struct MenuPrims {
 
 /* One file entry of a card listing. */
 typedef struct MenuCardFile {
-    u8 pad0[0x18];
+    s32 frames[6]; /* 0: icon animation: image y of each step */
     char name[21]; /* 18: directory entry name */
     u8 pad2D[0x2B];
     u8 state; /* 58 */
@@ -951,6 +951,10 @@ extern s32 D_801EA040;
 extern s32 D_801EA044;         /* value D digits x, y */
 extern s32 D_801EA048;
 extern s32 D_801EA900[2];
+extern u8 D_801EA8C4[0x20];    /* icon palette buffer */
+extern RECT D_801EA8E4;        /* icon image area */
+extern RECT D_801EA8EC;        /* icon palette area */
+void *memmove(void *dst, void *src, s32 size); /* memmove */
 extern u8 D_801EA6D0[32];  /* per port and save slot: a save of this game exists */
 extern u8 *D_801EA6F4;     /* the save information of the last matched file */
 extern u8 D_801E9779;    /* frames between card checks */

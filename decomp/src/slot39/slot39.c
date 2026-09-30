@@ -4099,7 +4099,68 @@ void func_801E781C(s32 index, u8 rebuild) {
     }
 }
 
+/* Upload listed file `file`'s save icon (palette and three 16x16 frames)
+ * to its slot of the icon pages, set its animation steps from the header's
+ * frame count (11-13), and add its block count to its port's total; a file
+ * without animation is marked still (state 0). */
+#ifdef NON_MATCHING
+void func_801E78C8(s32 file) {
+    s32 i;
+    u8 still;
+
+    still = 1;
+    D_801EA8E4.x = file % 16 * 4 + 0x140;
+    D_801EA8E4.w = 4;
+    D_801EA8E4.h = 0x10;
+    D_801EA8EC.x = file * 16;
+    D_801EA8EC.y = file / 16 + 0x1c1;
+    D_801EA8EC.w = 0x10;
+    D_801EA8EC.h = 1;
+    memmove(D_801EA8C4, &D_800625A0->card->headers[file][0x60], 0x20);
+    LoadImage(&D_801EA8EC, D_801EA8C4);
+    DrawSync(0);
+    for (i = 0; i < 3; i++) {
+        D_801EA8E4.y = file / 16 * 16 + 0x80 + i * 32;
+        LoadImage(&D_801EA8E4, &D_800625A0->card->headers[file][0x80 + i * 0x80]);
+        DrawSync(0);
+    }
+    switch (D_800625A0->card->headers[file][2]) {
+    case 0x11:
+        D_800625A0->card->files[file].frames[0] = file / 16 * 16 + 0x80;
+        D_800625A0->card->files[file].frames[1] = file / 16 * 16 + 0x80;
+        D_800625A0->card->files[file].frames[2] = file / 16 * 16 + 0x80;
+        D_800625A0->card->files[file].frames[3] = file / 16 * 16 + 0x80;
+        D_800625A0->card->files[file].frames[4] = file / 16 * 16 + 0x80;
+        D_800625A0->card->files[file].frames[5] = file / 16 * 16 + 0x80;
+        still = 0;
+        break;
+    case 0x12:
+        D_800625A0->card->files[file].frames[0] = file / 16 * 16 + 0x80;
+        D_800625A0->card->files[file].frames[1] = file / 16 * 16 + 0xa0;
+        D_800625A0->card->files[file].frames[2] = file / 16 * 16 + 0x80;
+        D_800625A0->card->files[file].frames[3] = file / 16 * 16 + 0xa0;
+        D_800625A0->card->files[file].frames[4] = file / 16 * 16 + 0x80;
+        D_800625A0->card->files[file].frames[5] = file / 16 * 16 + 0xa0;
+        still = 0;
+        break;
+    case 0x13:
+        D_800625A0->card->files[file].frames[0] = file / 16 * 16 + 0x80;
+        D_800625A0->card->files[file].frames[1] = file / 16 * 16 + 0xa0;
+        D_800625A0->card->files[file].frames[2] = file / 16 * 16 + 0xc0;
+        D_800625A0->card->files[file].frames[3] = file / 16 * 16 + 0x80;
+        D_800625A0->card->files[file].frames[4] = file / 16 * 16 + 0xa0;
+        D_800625A0->card->files[file].frames[5] = file / 16 * 16 + 0xc0;
+        still = 0;
+        break;
+    }
+    D_801EA900[file / 16] += D_800625A0->card->headers[file][3];
+    if (still) {
+        D_800625A0->card->files[file].state = 0;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E78C8);
+#endif
 
 /* Set up `label`'s two quads for label image `index`: mode 0 takes the
  * image from the 140 column pages (rows from `first`); otherwise from the
