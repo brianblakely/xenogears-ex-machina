@@ -41,6 +41,11 @@ typedef struct POLY_G4 {
     s16 x3, y3;
 } POLY_G4;
 
+typedef struct DR_MODE {
+    u32 tag;
+    u32 code[2];
+} DR_MODE;
+
 typedef struct POLY_FT4 {
     u32 tag;
     u8 r0, g0, b0, code;
@@ -565,20 +570,15 @@ typedef struct MenuBlock434 {
 
 /* A portrait frame (*(state + 364)). */
 typedef struct MenuPortrait {
-    u8 pad0[0x3C0];
-    POLY_FT4 side[2]; /* 3C0 */
-    POLY_FT4 top[2]; /* 410 */
-    POLY_FT4 bottom[2]; /* 460 */
-    u8 pad4B0[0x1E0];
-    SVECTOR frameVerts[4]; /* 690 */
-    SVECTOR sideVerts[4]; /* 6B0 */
-    SVECTOR topVerts[4]; /* 6D0 */
-    SVECTOR bottomVerts[4]; /* 6F0 */
+    POLY_FT4 pieces[15][2]; /* 0: twelve border pieces, then the frame's side, top and bottom */
+    POLY_G4 fill[2]; /* 4B0: window background */
+    DR_MODE fillMode[2]; /* 4F8 */
+    SVECTOR verts[16][4]; /* 510: per piece; 12 the whole window, 13 side, 14 top, 15 bottom */
     u8 pad710[0x4];
-    s32 unk714; /* 714 */
-    s32 unk718; /* 718 */
+    s32 unk714; /* 714: drawn in the current view (else under an identity rotation) */
+    s32 unk718; /* 718: ordering table depth */
     u8 buffer; /* 71C */
-    u8 unk71D; /* 71D */
+    u8 unk71D; /* 71D: has the frame pieces */
 } MenuPortrait;
 
 /* The menu mode's state (*D_800625A0). */
@@ -794,6 +794,8 @@ void func_8003F738(SVECTOR *angles, MATRIX *m); /* RotMatrix */
 void TransMatrix(MATRIX *m, VECTOR *t);      /* TransMatrix */
 void SetRotMatrix(MATRIX *m);                 /* SetRotMatrix */
 void SetTransMatrix(MATRIX *m);                 /* SetTransMatrix */
+void PushMatrix(void);
+void PopMatrix(void);
 void ClearOTagR(u32 *ot, s32 count);  /* ClearOTagR */
 void MoveImage(RECT *rect, s32 x, s32 y); /* MoveImage */
 void DrawOTag(u32 *ot);             /* DrawOTag */
@@ -873,6 +875,7 @@ void func_801CFF64(void);
 void func_801D01D0(void);
 void func_801D02D8(void);
 void func_801D0C78(void);
+void func_801D09F0(s32 index, u8 full);
 void func_801D11F0(void);
 void func_801D0D90(void);
 void func_801D0E20(void);

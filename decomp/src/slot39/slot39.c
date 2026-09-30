@@ -1510,9 +1510,71 @@ void func_801D0954(SVECTOR *v, POLY_FT4 *polys, s32 index, s32 otz) {
     AddPrim(&D_800625A0->current->ot[otz], poly);
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D09F0);
+/* Draw portrait window `index`: its border pieces, the frame pieces when
+ * `frame` is set, and the background fill. */
+void func_801D09F0(s32 index, u8 frame) {
+    MenuPortrait *portrait;
+    s32 i;
+    s32 p;
+    s32 flag;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D0C78);
+    portrait = D_800625A0->portraits[index];
+    for (i = 0; i < 4; i++) {
+        func_801D0954(portrait->verts[i], portrait->pieces[i], portrait->buffer, portrait->unk718);
+    }
+    if (frame) {
+        for (i = 0; i < 2; i++) {
+            func_801D0954(portrait->verts[14 + i], portrait->pieces[13 + i], portrait->buffer, portrait->unk718);
+        }
+        func_801D0954(portrait->verts[13], portrait->pieces[12], portrait->buffer, portrait->unk718);
+    }
+    func_801D0954(portrait->verts[4], portrait->pieces[4], portrait->buffer, portrait->unk718);
+    func_801D0954(portrait->verts[5], portrait->pieces[5], portrait->buffer, portrait->unk718);
+    func_801D0954(portrait->verts[6], portrait->pieces[6], portrait->buffer, portrait->unk718);
+    func_801D0954(portrait->verts[7], portrait->pieces[7], portrait->buffer, portrait->unk718);
+    func_801D0954(portrait->verts[8], portrait->pieces[8], portrait->buffer, portrait->unk718);
+    func_801D0954(portrait->verts[9], portrait->pieces[9], portrait->buffer, portrait->unk718);
+    func_801D0954(portrait->verts[10], portrait->pieces[10], portrait->buffer, portrait->unk718);
+    func_801D0954(portrait->verts[11], portrait->pieces[11], portrait->buffer, portrait->unk718);
+    RotTransPers4(&portrait->verts[12][0], &portrait->verts[12][1], &portrait->verts[12][2],
+                  &portrait->verts[12][3], (s32 *)&portrait->fill[portrait->buffer].x0,
+                  (s32 *)&portrait->fill[portrait->buffer].x1, (s32 *)&portrait->fill[portrait->buffer].x2,
+                  (s32 *)&portrait->fill[portrait->buffer].x3, &p, &flag);
+    AddPrim(&D_800625A0->current->ot[portrait->unk718], &portrait->fill[portrait->buffer]);
+    AddPrim(&D_800625A0->current->ot[portrait->unk718], &portrait->fillMode[portrait->buffer]);
+}
+
+/* Draw the shown portrait frames; frames not placed in the view (+714 clear)
+ * are drawn under an identity rotation at depth 0x200. */
+void func_801D0C78(void) {
+    s32 i;
+    SVECTOR angles;
+    VECTOR offset;
+    MATRIX m;
+    SVECTOR unused;
+
+    for (i = 0; i < 7; i++) {
+        if (D_800625A0->party->unk20[i] != 0) {
+            if (D_800625A0->portraits[i]->unk714 == 0) {
+                PushMatrix();
+                angles.vz = 0;
+                angles.vy = 0;
+                angles.vx = 0;
+                offset.vy = 0;
+                offset.vx = 0;
+                offset.vz = 0x200;
+                func_8003F738(&angles, &m);
+                TransMatrix(&m, &offset);
+                SetRotMatrix(&m);
+                SetTransMatrix(&m);
+                func_801D09F0(i, D_800625A0->portraits[i]->unk71D);
+                PopMatrix();
+            } else {
+                func_801D09F0(i, D_800625A0->portraits[i]->unk71D);
+            }
+        }
+    }
+}
 
 /* Add the current quad of each top label whose party flag (+34) is set. */
 void func_801D0D90(void) {
@@ -2221,12 +2283,13 @@ void func_801D3C4C(u8 slot, u16 x, u16 y, s32 unused, u16 h) {
     MenuPortrait *portrait;
 
     portrait = D_800625A0->portraits[slot];
-    func_8002675C(D_800625A0->sheet, 0x105, portrait->top, D_800625A0->bufferIndex, x, y, 0x1000);
-    func_800263E4(D_800625A0->sheet, 0x105, portrait->bottom, D_800625A0->bufferIndex, x, y + h - 8, 0x1000, 0, 1);
-    func_8002675C(D_800625A0->sheet, 0x106, portrait->side, D_800625A0->bufferIndex, x, y + 8, 0x1000);
-    func_801C851C(portrait->topVerts, x, y, 8, 8);
-    func_801C851C(portrait->bottomVerts, x, y + h, 8, -8);
-    func_801C851C(portrait->sideVerts, x, y + 8, 8, h - 8);
+    func_8002675C(D_800625A0->sheet, 0x105, portrait->pieces[13], D_800625A0->bufferIndex, x, y, 0x1000);
+    func_800263E4(D_800625A0->sheet, 0x105, portrait->pieces[14], D_800625A0->bufferIndex, x, y + h - 8, 0x1000, 0,
+                  1);
+    func_8002675C(D_800625A0->sheet, 0x106, portrait->pieces[12], D_800625A0->bufferIndex, x, y + 8, 0x1000);
+    func_801C851C(portrait->verts[14], x, y, 8, 8);
+    func_801C851C(portrait->verts[15], x, y + h, 8, -8);
+    func_801C851C(portrait->verts[13], x, y + 8, 8, h - 8);
 }
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D3DB0);
@@ -2245,7 +2308,7 @@ void func_801D4D1C(u8 index, u16 x, u16 y, u16 w, u16 h, u8 arg5, s32 arg6, u8 f
 
     portrait = D_800625A0->portraits[index];
     D_800625A0->party->unk20[index] = 0;
-    func_801C851C(portrait->frameVerts, x, y, w, h);
+    func_801C851C(portrait->verts[12], x, y, w, h);
     func_801D3DB0(index, x, y, w, h);
     func_801D3FF8(index, x, y, w);
     func_801D433C(index, x, y, w, h);
