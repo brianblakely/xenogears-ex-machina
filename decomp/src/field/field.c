@@ -6906,7 +6906,39 @@ void func_80095734(void) {
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80095734);
 #endif
 
+#ifdef NON_MATCHING
+/* Continue when the controlled actor is inside trigger zone operand 1 and
+ * the zone's height lies within the actor's body, else jump to operand 2. */
+void func_800958C0(void) {
+    FieldActor *player;
+    Zone *zone;
+    s32 point;
+    s32 a;
+    s32 b;
+    s32 c;
+    s32 d;
+
+    player = D_800AF880.components.descriptors[D_800B2078.controlled].actor;
+    zone = &D_800ADBF4[EVENT_OPERAND_BYTE(1)];
+    if (zone->corner[0].y < WHOLE(player->position[1]) &&
+        WHOLE(player->position[1]) - player->height < zone->corner[0].y) {
+        a = (zone->corner[0].z << 16) + zone->corner[0].x;
+        b = (zone->corner[1].z << 16) + zone->corner[1].x;
+        point = (WHOLE(player->position[2]) << 16) + WHOLE(player->position[0]);
+        c = (zone->corner[2].z << 16) + zone->corner[2].x;
+        d = (zone->corner[3].z << 16) + zone->corner[3].x;
+        if (func_8004A70C(a, b, point) >= 0 && func_8004A70C(b, c, point) >= 0 &&
+            func_8004A70C(c, d, point) >= 0 && func_8004A70C(d, a, point) >= 0) {
+            D_800B0078->pc += 4;
+            return;
+        }
+    }
+    D_800B0078->pc = func_800ACDB8(2);
+    D_800AFC7C += 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800958C0);
+#endif
 
 /* Project a selected actor's origin to the screen. */
 void func_80095A7C(s32 *x, s32 *y) {
