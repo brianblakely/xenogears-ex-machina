@@ -9343,27 +9343,137 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AC03C);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AC0F0);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AC308);
+extern s32 func_80028738(s32 file);
+extern s32 D_800AF780;  /* file 0xab size */
+extern void *D_800AF76C; /* file 0xab */
+extern void *D_800AF784; /* file 0xac */
+
+/* Load files 0xab and 0xac. */
+void func_800AC308(void) {
+    func_80028470(4, 0);
+    D_800AF780 = func_80028738(0xAB);
+    D_800AF76C = func_80031BDC(func_800288EC(0xAB), 1);
+    func_800295D8(0xAB, D_800AF76C, 0, 0x80);
+    func_80028A60(0);
+    D_800AF784 = func_80031BDC(func_800288EC(0xAC), 1);
+    func_800295D8(0xAC, D_800AF784, 0, 0x80);
+    func_80028A60(0);
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AC3AC);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AC99C);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800ACB90);
+void func_80070340(u32 *tim, s16 x, s16 y, s16 clut_x, s16 clut_y, s16 clut_w, s16 clut_h);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800ACC58);
+/* Upload file 0xac's image to (380, 100) with its CLUT at (0, 1ff), then
+ * fill the 64x4 VRAM block at (3c0, 100) with ones. */
+void func_800ACB90(void) {
+    RECT rect;
+    u32 *pixels;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800ACCB0);
+    func_80070340(D_800AF784, 0x380, 0x100, 0, 0x1FF, 0, 0);
+    DrawSync(0);
+    func_800320E8(D_800AF784);
+    pixels = func_80031BDC(0x200, 1);
+    for (i = 0; i < 0x80; i++) {
+        pixels[i] = -1;
+    }
+    rect.x = 0x3C0;
+    rect.y = 0x100;
+    rect.w = 0x40;
+    rect.h = 4;
+    LoadImage(&rect, pixels);
+    DrawSync(0);
+    func_800320E8(pixels);
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800ACCF4);
+extern s32 D_800AF774;
+extern s32 D_800AF778;
+extern s32 D_800AF77C;
+void func_800AC3AC(void);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800ACD7C);
+/* Start the sequence from file 0xab when enabled. */
+void func_800ACC58(void) {
+    RECT unused; /* the original frame reserves an unused 8-byte local */
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800ACDB8);
+    if (D_8004F300 != 0) {
+        func_800AC308();
+        func_800AC3AC();
+        D_800AF77C = 0;
+        D_800AF778 = 15;
+        D_800AF774 = (s32)D_800AF76C;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800ACDEC);
+extern void *D_800AF770;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800ACE24);
+/* Release the sequence buffers when enabled. */
+void func_800ACCB0(void) {
+    if (D_8004F300 != 0) {
+        func_800320E8(D_800AF76C);
+        func_800320E8(D_800AF770);
+    }
+}
+
+s32 func_800AC0F0(s32 position, s32 size, s32 frame);
+
+/* Advance the sequence one frame; every 16th frame decode the next step. */
+void func_800ACCF4(void) {
+    if (D_8004F300 != 0) {
+        if ((D_800AF77C & 0xF) == 0) {
+            D_800AF774 = func_800AC0F0(D_800AF774, 0x300, D_800AF778 & 0xF);
+            D_800AF778++;
+        }
+        D_800AF77C++;
+    }
+}
+
+/* The signed halfword operand at byte `offset` from the working PC. */
+s32 func_800ACD7C(s32 offset) {
+    u8 *code;
+
+    code = &D_800ADC00[D_800B0078->pc + offset];
+    return (s16)(code[0] + (code[1] << 8));
+}
+
+/* The raw halfword operand at byte `offset` from the working PC. */
+s32 func_800ACDB8(s32 offset) {
+    u8 *code;
+
+    code = &D_800ADC00[D_800B0078->pc + offset];
+    return code[0] | (code[1] << 8);
+}
+
+/* The operand at `offset`: bit 15 marks a 15-bit immediate, else it names
+ * an event variable. */
+s32 func_800ACDEC(s32 offset) {
+    s32 operand;
+
+    operand = func_800ACDB8(offset);
+    if (operand & 0x8000) {
+        return operand & 0x7FFF;
+    }
+    return func_800A3018(operand & 0xFFFF);
+}
+
+extern s16 D_8006BE2C[3];
+void func_800AD978(s32 mode);
+
+/* Mark which party slots changed character, then refresh the party. */
+void func_800ACE24(void) {
+    s32 i;
+
+    for (i = 0; i < 3; i++) {
+        if (D_8006BE2C[i] == D_8005A39C->unk22B1[i]) {
+            D_8006BE2C[i] = 0;
+        } else {
+            D_8006BE2C[i] = 1;
+        }
+    }
+    func_800AD978(0);
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800ACE90);
 
