@@ -66,7 +66,7 @@ extern SVECTOR *D_8005953C;      /* vertices of the model being drawn */
 
 void func_8002DB84(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *normal); /* face normal */
 
-void func_8002DDE4(void *image, s32 mode, s32 x, s32 y, s32 a4, s32 a5, s32 a6); /* upload an image */
+s32 func_8002DDE4(s32 *images, s16 mode, s32 x, s32 y, s16 mode2, u16 x2, u16 y2); /* upload an image list */
 u8 *func_8002DFE0(void); /* the shared unpack buffer */
 
 #endif
