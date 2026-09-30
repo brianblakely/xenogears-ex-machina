@@ -675,7 +675,7 @@ void func_800812BC(Menu *menu) {
     ((PacketTag *)panel)->len = 3;
     panel->w = widest * 2 + 0x14;
     panel->x0 = 0x96 - widest;
-    menu->unk12 = 0;
+    menu->cursor = 0;
     *(u32 *)&panel->r0 = 0x60102020;
     menu->y = 0x6D - menu->count * 10;
     panel->code |= 2;
@@ -738,7 +738,94 @@ void func_8008151C(Menu *menu) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008162C);
+/* One frame of menu input from a pad port: caption, stick sound, confirm,
+ * cancel and cursor movement (skipping disabled lines, wrapping). Declared
+ * with a value it never returns, as the unfilled final delay slot shows. */
+s32 func_8008162C(Menu *menu, s32 port) {
+    MenuItem *item;
+    void (*handler)(s32);
+    s32 type;
+    s32 x;
+    s32 y;
+
+    item = &menu->items[menu->cursor];
+    if (port == 0 || menu == &D_800915AC[7]) {
+        func_80081100(D_80092744, 0);
+        D_80092744 = menu->items[menu->cursor].caption;
+    }
+    D_80091364 = port;
+    type = 0;
+    if (port == 1) {
+        D_80092748 = D_80059574;
+        D_8009274C = D_800594A8;
+        D_80092750 = D_80059490;
+        type = func_80035734(1);
+        x = D_8005943C - 0x80;
+        y = D_80059434 - 0x80;
+    } else if (port == 0) {
+        D_80092748 = D_80059570;
+        D_8009274C = D_800594A4;
+        D_80092750 = D_8005948C;
+        type = func_80035734(0);
+        x = D_80059438 - 0x80;
+        y = D_80059430 - 0x80;
+    }
+    if (type == 3 || type == 4) {
+        if (func_80048C4C(x * x + y * y) > 0x40) {
+            if (D_80092764 == 0) {
+                func_8008EB4C(0x24);
+                D_80092764 = 1;
+            }
+            goto stick_done;
+        }
+    }
+    D_80092764 = 0;
+stick_done:
+    handler = item->handler;
+    if (handler != NULL) {
+        if (item->flags & 1) {
+            handler(item->arg);
+        } else if (D_80092750 & 0x20) {
+            func_8008EB4C(0x21);
+            handler(item->arg);
+        }
+    }
+    if (D_80092734 != NULL) {
+        if ((D_80092750 & 0x40) && !(port == 1 && menu == &D_800915AC[6])) {
+            if (D_80092734 == &D_800915AC[menu->parent] && menu->parent != 5 && menu->parent != 6) {
+                func_8008EB4C(0x24);
+            } else {
+                func_80080964(menu->parent);
+                func_8008EB4C(0x22);
+            }
+        }
+        if (D_8009274C & 0x1000) {
+            func_8008EB4C(0x1E);
+            if (--menu->cursor < 0) {
+                menu->cursor = menu->count - 1;
+            }
+            if (menu->items[menu->cursor].flags & 4) {
+                menu->cursor--;
+            }
+        }
+        if (D_8009274C & 0x4000) {
+            func_8008EB4C(0x1E);
+            menu->cursor++;
+            if (menu->items[menu->cursor].flags & 4) {
+                menu->cursor++;
+            }
+        }
+        if (menu->cursor < 0) {
+            menu->cursor = menu->count - 1;
+        }
+        if (menu->cursor >= menu->count) {
+            menu->cursor = 0;
+        }
+        if (menu->items[menu->cursor].flags & 4) {
+            menu->cursor--;
+        }
+    }
+}
 
 INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu", D_8007008C);
 
