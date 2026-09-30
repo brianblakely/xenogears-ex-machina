@@ -1275,7 +1275,32 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800379D8);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80037B88);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80037DC0);
+/* Shut the sound driver down: remove its SPU interrupt, transfer callback,
+ * timer and event, release every voice and clear the reverb (error 0x29
+ * when it is not running). */
+void func_80037DC0(void) {
+    s32 i;
+
+    if (D_8005957C == 0) {
+        func_8003F6B0(0x29);
+        return;
+    }
+    EnterCriticalSection();
+    D_8005957C = 0;
+    SpuSetIRQ(0);
+    SpuSetTransferCallback(NULL);
+    SpuSetIRQCallback(NULL);
+    StopRCnt(0xF2000002);
+    CloseEvent(D_800595BC);
+    ExitCriticalSection();
+    for (i = 0; i < 24; i++) {
+        func_8003F5BC(i, 6, 3);
+    }
+    func_8003F484(0xFFFFFF);
+    SpuSetReverbModeDepth(0, 0);
+    SpuSetReverbModeType(0);
+    D_80059500 = 0;
+}
 
 /* Mark every voice's channel for a full register update and clear the
  * voices-silenced state. */

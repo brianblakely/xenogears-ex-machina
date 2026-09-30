@@ -3080,7 +3080,6 @@ s32 func_8003F684(u32 *data) {
     return sum;
 }
 
-extern s16 D_80059500;           /* last driver error */
 extern u8 D_80050940[];          /* error sound bank data */
 extern u8 D_80050910[];          /* error effect bank */
 extern u16 D_80050924;           /* its bank id */

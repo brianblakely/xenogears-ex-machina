@@ -34,5 +34,10 @@ typedef void (*SpuTransferCallbackProc)(void);
 SpuTransferCallbackProc SpuSetTransferCallback(SpuTransferCallbackProc func);
 void SpuGetVoiceEnvelopeAttr(int voice, long *status, short *level);
 void SpuSetNoiseClock(long clock);
+long SpuSetIRQ(long on_off);
+typedef void (*SpuIRQCallbackProc)(void);
+SpuIRQCallbackProc SpuSetIRQCallback(SpuIRQCallbackProc func);
+long SpuSetReverbModeType(long mode);
+void SpuSetReverbModeDepth(short depth_left, short depth_right);
 
 #endif

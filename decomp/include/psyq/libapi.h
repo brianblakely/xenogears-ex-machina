@@ -11,6 +11,7 @@ void ExitCriticalSection(void);
 void SwEnterCriticalSection(void);
 void SwExitCriticalSection(void);
 void FlushCache(void);
+long StopRCnt(unsigned long spec);
 long TestEvent(long event);
 void UnDeliverEvent(unsigned long event, unsigned long spec);
 long open(char *devname, unsigned long flag);

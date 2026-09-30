@@ -325,11 +325,12 @@ typedef struct {
 } SpuBlock;
 
 extern SpuRegs *D_800508E4;           /* SPU registers */
-extern u16 D_8005957C;                /* driver state flags */
+extern s16 D_8005957C;                /* driver state flags */
 extern s32 D_80059404;
 extern s32 D_80059478;                /* voice count of the effect channels */
 extern s32 D_80059544;                /* voices kept for music */
 extern s32 D_800595BC;                /* driver event */
+extern s16 D_80059500;                /* last driver error */
 extern SoundChannel *D_8006252C[24];  /* channel of each voice */
 extern SoundBank *D_80059440;         /* loaded banks */
 extern SoundSequence *D_80059558;     /* playing sequences */
@@ -354,6 +355,8 @@ void func_8003BCA0(u32 address, u8 *data, s32 size, void (*callback)(void), u16 
 s32 func_8003BDFC(s32 wait);
 void func_8003E680(s32 bits, SoundSeq *seq);
 void func_8003E83C(SoundChannel *state, u32 voice);
+void func_8003F484(u32 voices);   /* key off */
+void func_8003F5BC(s32 voice, s32 rate, s32 mode); /* set a voice's release */
 void func_8003F6B0(s32 error);
 
 #endif
