@@ -248,8 +248,6 @@ s32 func_80028548(s32 group, s32 index) {
 }
 
 /* Load a whole PC file into a new heap block (four tries per file-server call); returns the block, or NULL. */
-/* A GCC 2.6.3 function (its first loop reproduces only there); the tail of the close loop still differs. */
-#ifdef NON_MATCHING
 void *func_80028570(char *name, s32 *size) {
     s32 fd;
     s32 length;
@@ -287,7 +285,7 @@ void *func_80028570(char *name, s32 *size) {
         }
         for (i = 0; i < 4; i++) {
             if (PCclose(fd) == 0) {
-                return block;
+                goto done;
             }
         }
         if (block != NULL) {
@@ -295,11 +293,9 @@ void *func_80028570(char *name, s32 *size) {
         }
     }
     block = NULL;
+done:
     return block;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002709C", func_80028570);
-#endif
 
 s32 func_800286BC(void) {
     return D_8004FDF8;
@@ -371,20 +367,15 @@ s32 func_800288EC(s32 file) {
 }
 
 /* For an index entry with a negative size (a directory), its file count; 0 for a file. */
-/* Nonmatching: GCC turns the final addu of the index sum into or. */
-#ifdef NON_MATCHING
 s16 func_80028928(s32 file) {
     u8 *entry = &D_8004FDF0[(file + D_8004FE14 - 1) * 7];
     s32 size = (entry[6] << 24) + (entry[5] << 16) + (entry[4] << 8) + entry[3];
 
-    if (size >= 0) {
-        return 0;
+    if (size < 0) {
+        return -size;
     }
-    return -size;
+    return 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002709C", func_80028928);
-#endif
 
 /* The PC file server name of a file (64 bytes per file), or NULL without the server. */
 char *func_80028998(s32 file) {
@@ -479,7 +470,7 @@ void func_80028ECC(s32 index) {
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002709C", func_80028F30);
 
 /* Release a ring chunk: clear its slot's state and return the old state (0xffff without a ring, 0 for no chunk). */
-/* Nonmatching under GCC 2.7.2 and 2.6.3: register choice for the ring (a1) and the payload arithmetic do not reproduce together. */
+/* Nonmatching: the original keeps the ring in $a1 (so the 0xffff return fills the branch delay slot); GCC puts it in $v0. */
 #ifdef NON_MATCHING
 u16 func_8002945C(u8 *chunk) {
     StreamRing *ring = D_8004FE30;
