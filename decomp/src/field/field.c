@@ -731,7 +731,58 @@ void func_8007254C(void) {
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007254C);
 #endif
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800726E8);
+/* Turn the camera heading by an octant when the current one is blocked or
+ * a shoulder button asks for it, then step the heading toward its goal. */
+void func_800726E8(void) {
+    s32 up;
+
+    if (D_800AF880.heading_blocks[0] != 0xFF && D_800AF880.heading_blocks[1] != 0xFF) {
+        if (D_800AF880.heading_steps == 0) {
+            if (D_800AF880.heading_blocks[0] & D_800ADC1C[(D_800AF880.heading_angles.vy & 0xFFF) >> 9]) {
+                if (D_800AF880.heading_velocity != -0x400000 && D_800AF880.heading_velocity != 0x400000) {
+                    D_800AF880.heading_velocity = 0x400000;
+                    D_800AF880.heading += 0x200;
+                }
+                D_800AF880.heading_steps = 8;
+            }
+            if (D_800AF880.heading_blocks[1] & D_800ADC1C[(D_800AF880.heading_angles.vy & 0xFFF) >> 9]) {
+                up = func_8007234C(D_800AF880.heading_blocks[1], (D_800AF880.heading_angles.vy & 0xFFF) >> 9);
+                if (func_80072398(D_800AF880.heading_blocks[1], (D_800AF880.heading_angles.vy & 0xFFF) >> 9) < up) {
+                    D_800AF880.heading_velocity = -0x400000;
+                    D_800AF880.heading -= 0x200;
+                } else {
+                    D_800AF880.heading_velocity = 0x400000;
+                    D_800AF880.heading += 0x200;
+                }
+                D_800AF880.heading_steps = 8;
+            }
+        }
+        if ((D_800AFE9C & 4) && !(D_800AF880.flags & 0x8000) && D_800AF880.heading_steps == 0 &&
+            !(D_800AF880.heading_blocks[1] & D_800ADC1C[((D_800AF880.heading_angles.vy - 0x200) & 0xFFF) >> 9])) {
+            D_800AF880.heading_velocity = -0x400000;
+            D_800AF880.heading_steps = 8;
+            D_800AF880.heading -= 0x200;
+        }
+        if ((D_800AFE9C & 8) && !(D_800AF880.flags & 0x8000) && D_800AF880.heading_steps == 0 &&
+            !(D_800AF880.heading_blocks[1] & D_800ADC1C[((D_800AF880.heading_angles.vy + 0x200) & 0xFFF) >> 9])) {
+            D_800AF880.heading_velocity = 0x400000;
+            D_800AF880.heading_steps = 8;
+            D_800AF880.heading += 0x200;
+        }
+    }
+    if (D_800AF880.heading_steps != 0) {
+        D_800AF880.heading_high += D_800AF880.heading_velocity;
+        D_800AF880.heading_angles.vy = D_800AF880.heading_high >> 16;
+        if (--D_800AF880.heading_steps == 0) {
+            D_800AF880.heading_angles.vy = D_800AF880.heading;
+        }
+    } else {
+        D_800AF880.heading_angles.vy = D_800AF880.heading;
+    }
+    if (D_800C268C == 0) {
+        func_80284EA4();
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80072A38);
 

@@ -345,7 +345,7 @@ typedef struct {
     s16 bounds[4];           /* 15C */
     SVECTOR heading_angles;  /* 164 */
     s32 heading_velocity;    /* 16C */
-    u32 heading_high;        /* 170 */
+    s32 heading_high;        /* 170 */
     u8 heading_blocks[2];    /* 174 */
     s16 heading_steps;       /* 176 */
     s32 projection;          /* 178 */
@@ -744,6 +744,7 @@ extern void func_800A4CC4(s32, s32, s32, s32, s32, s32, s32);
 extern void func_80086BA8(void);
 extern void func_801E7D14(MATRIX *world, s16 (*table)[3], u32 *ot, s32 buffer, s32);
 extern void func_80281B00(char *name);
+extern void func_80284EA4(void);
 extern void func_800AABD8(void);
 extern void func_800AAC08(void);
 extern void func_800AADC8(s32, s32, s32, s32);
