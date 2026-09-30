@@ -1129,7 +1129,61 @@ void func_801E24B0(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E252C);
+/* Leave the battle: reload the resources, pick the next mode, write the
+ * items back, grant the rewards (unless the battle was escaped or they are
+ * skipped), release the battle's blocks and windows and reset the sound. */
+void func_801E252C(void) {
+    s32 i;
+    u8 *outcome;
+
+    func_801E211C();
+    if (D_800C3D48 != 0) {
+        func_800320E8(D_800D3284);
+        func_800320E8(D_800D328C);
+    }
+    if (D_800594F8 == 0) {
+        if (D_800D3338 != 0) {
+            func_800199CC(6);
+        } else if (D_8005947C != 0) {
+            func_800199CC(2);
+        } else if ((D_8006F94E & 0x7FF) >= 0x400) {
+            func_800199CC(3);
+        } else {
+            func_8001ACA4();
+            func_8008AC50();
+            func_800199CC(1);
+        }
+    }
+    func_8008AC50();
+    func_801E24B0();
+    outcome = &D_800C48EA;
+    if (!(*outcome & 0xC0) && *outcome != 0x21 && D_800D2FC4 == 0 && D_800594D0 != 3) {
+        func_800BFBA0();
+        func_801E2280();
+    }
+    for (i = 0; i < 8; i += 2) {
+        func_800320E8(D_800D3720[i].data);
+    }
+    for (i = 0; i < 10; i++) {
+        func_800320E8(D_800C3E5C[i].data);
+    }
+    func_800320E8(D_800D329C);
+    func_800320E8(D_800C3E24);
+    func_8008FA60(5);
+    func_8008FA60(4);
+    func_800320E8(D_800D39F0);
+    func_800320E8(D_800C3EA4);
+    func_800320E8(D_800D2D28);
+    func_800320E8(D_800C3EAC);
+    func_800320E8(D_800D2C08[0]);
+    func_800320E8(D_800D2F5C);
+    func_8003218C(2);
+    if (D_800594F8 != 0) {
+        func_80039C4C(D_800C3E54);
+        func_800399D4(D_800C3E54);
+    }
+    func_800B8774();
+}
 
 /* Grant the battle rewards unless the whole party is knocked out. */
 void func_801E2794(void) {

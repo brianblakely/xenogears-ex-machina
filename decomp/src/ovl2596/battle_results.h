@@ -436,7 +436,40 @@ extern u8 D_8006F9DD;
 u16 func_80089C08(u8 enemy);
 void func_800BCD98(s32 arg);
 void func_801E1FB8(u32 experience);
-void func_801E2794(void);     /* levels A and B per slot before the battle */
+void func_801E2794(void);
+void func_801E211C(void);
+void func_801E24B0(void);
+
+/* Battle exit (func_801E252C). */
+typedef struct {
+    void *data;
+    u8 pad[0x5C];
+} BattleBlock;
+extern BattleBlock D_800D3720[8]; /* every other one is released */
+typedef struct {
+    void *data;
+} BattleHandle;
+extern BattleHandle D_800C3E5C[10];
+extern u8 D_800C3D48;
+extern void *D_800D3284;
+extern void *D_800D328C;
+extern void *D_800D329C;
+extern void *D_800C3E24;
+extern void *D_800D39F0;
+extern void *D_800C3EA4;
+extern u8 D_800594F8;
+extern u8 D_800D3338;
+extern u8 D_8005947C;
+extern u16 D_8006F94E;
+extern u8 D_800594D0;
+extern s32 D_800C3E54;
+void func_8001ACA4(void);
+void func_800199CC(s32 mode);
+void func_800BFBA0(void);
+void func_8003218C(s32 arg);
+void func_80039C4C(s32 arg);
+void func_800399D4(s32 arg);
+void func_800B8774(void);     /* levels A and B per slot before the battle */
 void func_801E2EB0(u32 experience, s16 slot, s16 reserve);
 void func_801E308C(void);          /* experience pool for level B */
 void func_801E335C(void);
