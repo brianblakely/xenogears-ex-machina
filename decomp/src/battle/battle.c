@@ -1340,7 +1340,49 @@ void func_800765C4(s32 member) {
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800765C4);
 #endif
 
+/* Step the panel cursor window's opening: move the party-wide status label
+ * by the pending steps, rebuild it semi-transparent at its growing scale,
+ * and mark the member's panel open once the label reaches the window.
+ * The original keeps x and y in 8-byte stack slots. */
+#ifdef NON_MATCHING
+void func_80076710(s32 member) {
+    u16 x;
+    u16 y;
+    s32 i;
+    s32 part;
+
+    for (i = 0; i < D_800D2D28->unkA9; i++) {
+        D_800D2D28->unk64 -= D_800D2D28->unk54;
+        D_800D2D28->unk6C += D_800D2D28->unk5C;
+        x = ((u32)D_800D2D28->unk64 >> 8) + D_800D2D28->unk34;
+        y = ((u32)D_800D2D28->unk6C >> 8) + D_800D2D28->unk44;
+    }
+    D_800D2D28->unkA9 = 0;
+    UI_STATUS_PARTS(3) = 0;
+    UI_STATUS_PARTS(3) = func_80025FA8(D_800D2F5C, 0x52, PANEL_GRAPHICS->status[3][0], D_800CCB04.buffer, x, y,
+                                       D_800D2D28->unk104, D_800D2D28->unk104, D_800D2D28->unk106);
+    part = UI_STATUS_PARTS(3);
+    UI_STATUS_PARTS(3) += func_80025FA8(D_800D2F5C, 0x53, PANEL_GRAPHICS->status[3][part], D_800CCB04.buffer, x, y,
+                                        D_800D2D28->unk104, D_800D2D28->unk104, D_800D2D28->unk106);
+    for (part = part * 2; part < UI_STATUS_PARTS(3) * 2; part += 2) {
+        SetSemiTrans(&PANEL_GRAPHICS->status[3][0][part + D_800CCB04.buffer], 1);
+    }
+    UI_STATUS_BUFFER(3) = D_800CCB04.buffer;
+    for (i = 0; i < D_800D2D28->unkAB; i++) {
+        D_800D2D28->unk104 += 0x66;
+        D_800D2D28->unk106 += 0x80;
+    }
+    D_800D2D28->unkAB = 0;
+    if (D_800D2D28->unk3C >= x) {
+        D_800D2D28->unk90[member] = 1;
+    }
+    if (y >= D_800D2D28->unk4C) {
+        D_800D2D28->unk90[member] = 1;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80076710);
+#endif
 
 /* Upload an image and wait for the transfer. */
 void func_800769E8(RECT *rect, u32 *pixels) {
