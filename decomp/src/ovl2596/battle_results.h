@@ -90,7 +90,7 @@ typedef struct {
     u8 rowBCount[7];          /* 0x3A6A */
     u8 rowBBuffer[7];         /* 0x3A71 */
     u8 barBuffer[7];          /* 0x3A78 */
-    u8 pad3A7F;               /* 0x3A7F */
+    u8 count2D30;             /* 0x3A7F */
     u8 buffer2D30;            /* 0x3A80 */
     GlyphRun run2F60;         /* 0x3A81 */
     GlyphRun run3140;         /* 0x3A83 */
@@ -229,6 +229,11 @@ extern SummaryGlyph D_800C32C4[27];
 extern s16 D_800C3318[27];
 extern s16 D_800C3350[27];
 
+/* The seven glyphs of the summary's 2d30 label: ids and positions. */
+extern u8 D_800C3388[8];
+extern s16 D_800C3390[8];
+extern s16 D_800C33A0[8];
+
 /* The member card's label glyphs: ids and positions. */
 extern u8 D_800C3268[18];
 extern s16 D_800C327C[18];
@@ -252,6 +257,11 @@ typedef struct {
     u8 counterLevels[16];     /* 0x100 */
 } Growth;
 
+/* The growth data file: one block per character. */
+typedef struct {
+    Growth characters[11];
+} GrowthFile;
+
 /* Per character skill state in the game data (0x20 each, at +0x16c0). */
 typedef struct {
     u16 counterSkills;        /* 0x00 */
@@ -265,7 +275,9 @@ typedef struct {
 
 /* The persistent game data (8006d634). */
 typedef struct {
-    u8 pad0[0xE30];
+    u8 pad0[0x26C];
+    Character characters[11]; /* 0x26C */
+    u8 pad978[0xE30 - 0x978];
     u8 value_E30;             /* 0xE30 */
     u8 padE31[0x27];
     s32 value_E58;            /* 0xE58 */
@@ -293,7 +305,7 @@ extern GameData D_8006D634;
 extern Combatant D_800CCCE8[];
 extern GameData *D_801E44C4;    /* 8006d634 */
 extern Combatant *D_801E44C8;   /* 800ccce8 */
-extern Growth *D_801E44E8;      /* the growth data file */
+extern GrowthFile *D_801E44E8;  /* the growth data file */
 extern Combatant *D_801E44EC;   /* the record being processed */
 extern u16 D_8006F8EA;          /* option flags */
 

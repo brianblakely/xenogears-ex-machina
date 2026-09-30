@@ -666,7 +666,15 @@ void func_801E0A4C(void) {
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E0ACC);
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E1044);
+/* Lay out the summary's seven-glyph label (2d30). */
+void func_801E1044(void) {
+    s32 i;
+
+    for (i = 0; i < 7; i++) {
+        D_800D334C->count2D30 += func_80076A10(D_800C3388[i], D_800D334C->glyphs2D30[D_800D334C->count2D30], D_800C3390[i], D_800C33A0[i]);
+    }
+    D_800D334C->buffer2D30 = D_800CCB34;
+}
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E10F8);
 
@@ -749,16 +757,15 @@ INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E3BE0);
 
 /* Learn the first of the character's twelve level skills whose level is
  * reached and which is not yet known. Returns its number (1-12), or 0. */
-#ifdef NON_MATCHING
 u8 func_801E3D54(u8 id) {
     u32 bit;
     u8 k;
     u8 level;
-    u16 known;
+    u32 known;
 
     bit = 0x8000;
     for (k = 0; k < 12; k++, bit >>= 1) {
-        level = D_801E44E8[id].levelSkills[k];
+        level = D_801E44E8->characters[id].levelSkills[k];
         if (level == 0xFF) {
             return 0;
         }
@@ -772,19 +779,15 @@ u8 func_801E3D54(u8 id) {
     }
     return 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E3D54);
-#endif
 
 /* For each of the character's nine unlock entries whose counter skill is
  * known, set the matching unlock bit (from bit 3). */
-#ifdef NON_MATCHING
 void func_801E3E14(u8 id) {
     u8 k;
     u8 entry;
 
     for (k = 0; k < 9; k++) {
-        entry = D_801E44E8[id].unlocksA[k];
+        entry = D_801E44E8->characters[id].unlocksA[k];
         if (entry == 0xFF) {
             return;
         }
@@ -793,20 +796,16 @@ void func_801E3E14(u8 id) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E3E14);
-#endif
 
 /* Character 8's nine level entries: learn each one its level reaches. */
-#ifdef NON_MATCHING
 void func_801E3EA4(void) {
     u8 k;
     u8 level;
-    u16 known;
+    u32 known;
     s32 bit;
 
     for (k = 0; k < 9; k++) {
-        level = D_801E44E8[8].unlocksA[k];
+        level = D_801E44E8->characters[8].unlocksA[k];
         if (level == 0xFF) {
             return;
         }
@@ -814,24 +813,20 @@ void func_801E3EA4(void) {
             known = D_801E44C4->skills[8].unlocksA;
             bit = 0x1000 >> k;
             if (!(known & bit)) {
-                D_801E44C4->skills[8].unlocksA = known | bit;
+                D_801E44C4->skills[8].unlocksA = bit | known;
             }
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E3EA4);
-#endif
 
 /* For each of the character's thirteen second unlock entries whose level
  * skill is known, set the matching unlock bit. */
-#ifdef NON_MATCHING
 void func_801E3F28(u8 id) {
     u8 k;
     u8 entry;
 
     for (k = 0; k < 13; k++) {
-        entry = D_801E44E8[id].unlocksB[k];
+        entry = D_801E44E8->characters[id].unlocksB[k];
         if (entry == 0) {
             return;
         }
@@ -840,9 +835,6 @@ void func_801E3F28(u8 id) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E3F28);
-#endif
 
 /* Character 7's derived values from the current record's max HP and
  * attack. */
@@ -855,7 +847,43 @@ void func_801E3FB0(void) {
     game->value_E66 = D_801E44EC->maxHp * 10;
 }
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E403C);
+/* Advance each character's tier: 3, 4 and 5 at the growth data's tier
+ * levels, 6 to 7 at level 50 with option 0x4000. */
+void func_801E403C(void) {
+    u8 id;
+    Character *character;
+    CharacterSkills *skills;
+
+    for (id = 0; id < 11; id++) {
+        character = &D_801E44C4->characters[id];
+        skills = &D_801E44C4->skills[id];
+        if (skills->tier == 7) {
+            continue;
+        }
+        switch (skills->tier) {
+        case 3:
+            if (character->level >= D_801E44E8->characters[id].tierLevels[0]) {
+                skills->tier = 4;
+            }
+            break;
+        case 4:
+            if (character->level >= D_801E44E8->characters[id].tierLevels[1]) {
+                skills->tier = 5;
+            }
+            break;
+        case 5:
+            if (character->level >= D_801E44E8->characters[id].tierLevels[2]) {
+                skills->tier = 6;
+            }
+            break;
+        case 6:
+            if (character->level >= 50 && (D_8006F8EA & 0x4000)) {
+                skills->tier = 7;
+            }
+            break;
+        }
+    }
+}
 
 /* Levels 50, 60 and 70 set unlock bits 8, 4 and 2 of each party member. */
 void func_801E41B4(void) {
