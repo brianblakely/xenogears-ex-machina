@@ -1551,7 +1551,32 @@ void func_8008CA00(SparkLine3 *spark, SparkSource *source) {
     spark->line[1] = spark->line[0];
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008CA84);
+/* Project a three-point spark line relative to the view origin with the
+ * GTE, age its trail and add it. */
+void func_8008CA84(SparkLine3 *spark, u32 *ot) {
+    SVector *origin = D_80092830;
+    SVector *work = D_8009282C;
+    LineF3 *line;
+    s32 otz;
+
+    work[0].vx = spark->pos.vx - origin->vx;
+    work[0].vy = spark->pos.vy - origin->vy;
+    work[0].vz = spark->pos.vz - origin->vz;
+    work[1].vx = spark->trail[0].vx - origin->vx;
+    work[1].vy = spark->trail[0].vy - origin->vy;
+    work[1].vz = spark->trail[0].vz - origin->vz;
+    work[2].vx = spark->trail[1].vx - origin->vx;
+    work[2].vy = spark->trail[1].vy - origin->vy;
+    work[2].vz = spark->trail[1].vz - origin->vz;
+    gte_ldv3c(D_8009282C);
+    gte_rtpt();
+    line = &spark->line[D_800928A0];
+    spark->trail[1] = spark->trail[0];
+    spark->trail[0] = spark->pos;
+    gte_stsxy3(&line->x0, &line->x1, &line->x2);
+    gte_stszotz(&otz);
+    func_80031708(ot + (otz >> 2), line);
+}
 
 /* Collapse a two-point spark line's trail onto its position. */
 void func_8008CC2C(SparkLine2 *spark) {
@@ -1594,7 +1619,23 @@ void func_8008CD5C(SparkTile *spark, SparkSource *source) {
     spark->tile[1] = spark->tile[0];
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008CE0C);
+/* Project a tile spark relative to the view origin and add it. */
+void func_8008CE0C(SparkTile *spark, u32 *ot) {
+    SVector *origin = D_80092830;
+    SVector v;
+    Tile *tile;
+    s32 otz;
+
+    v.vx = spark->pos.vx - origin->vx;
+    v.vy = spark->pos.vy - origin->vy;
+    v.vz = spark->pos.vz - origin->vz;
+    gte_ldv0(&v);
+    gte_rtps();
+    tile = &spark->tile[D_800928A0];
+    gte_stsxy(&tile->x0);
+    gte_stszotz(&otz);
+    func_80031804(ot + (otz >> 2), tile);
+}
 
 void func_8008CED4(void) {
 }

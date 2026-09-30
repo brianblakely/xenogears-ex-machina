@@ -66,6 +66,46 @@ typedef struct {
     ((abe) ? setcode(p, getcode(p) | 0x02) : setcode(p, getcode(p) & ~0x02))
 #define setRGB0(p, _r0, _g0, _b0) ((p)->r0 = _r0, (p)->g0 = _g0, (p)->b0 = _b0)
 
+/* PsyQ inline_c.h GTE macros. */
+#define gte_ldv0(r0) \
+    __asm__ volatile("lwc2 $0, 0(%0);" \
+                     "lwc2 $1, 4(%0)" \
+                     : \
+                     : "r"(r0))
+#define gte_ldv3c(r0) \
+    __asm__ volatile("lwc2 $0, 0(%0);" \
+                     "lwc2 $1, 4(%0);" \
+                     "lwc2 $2, 8(%0);" \
+                     "lwc2 $3, 12(%0);" \
+                     "lwc2 $4, 16(%0);" \
+                     "lwc2 $5, 20(%0)" \
+                     : \
+                     : "r"(r0))
+#define gte_rtps() \
+    __asm__ volatile("nop;" \
+                     "nop;" \
+                     ".word 0x4A180001")
+#define gte_rtpt() \
+    __asm__ volatile("nop;" \
+                     "nop;" \
+                     ".word 0x4A280030")
+#define gte_stsxy(r0) __asm__ volatile("swc2 $14, 0(%0)" : : "r"(r0) : "memory")
+#define gte_stsxy3(r0, r1, r2) \
+    __asm__ volatile("swc2 $12, 0(%0);" \
+                     "swc2 $13, 0(%1);" \
+                     "swc2 $14, 0(%2)" \
+                     : \
+                     : "r"(r0), "r"(r1), "r"(r2) \
+                     : "memory")
+#define gte_stszotz(r0) \
+    __asm__ volatile("mfc2 $12, $19;" \
+                     "nop;" \
+                     "sra $12, $12, 2;" \
+                     "sw $12, 0(%0)" \
+                     : \
+                     : "r"(r0) \
+                     : "$12", "memory")
+
 /* The effect a spark belongs to; its colour tints every primitive. */
 typedef struct {
     u8 unk0[0x74];
@@ -109,7 +149,9 @@ typedef struct {
     Tile1 dot[2];
 } SparkDot;
 
-extern u8 D_800928A0; /* draw buffer being built (0/1) */
+extern u8 D_800928A0;         /* draw buffer being built (0/1) */
+extern SVector *D_8009282C;   /* scratch vectors for GTE loads */
+extern SVector *D_80092830;   /* view origin subtracted before projection */
 
 s32 func_8003FA38(void); /* rand */
 s32 func_8004A64C(SVector *v, s32 *sxy, s32 *p, s32 *flag);
