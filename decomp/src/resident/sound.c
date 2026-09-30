@@ -388,11 +388,11 @@ void func_8003A89C(SoundSeq *seq, s32 fade, s32 frames) {
 
     seq->fade_target = fade << 8;
     if (frames == 0) {
-        seq->fade = fade << 24;
+        seq->fade.value = fade << 24;
         seq->fade_frames = 0;
         func_8003E680(0x100, seq);
     } else {
-        delta = (fade << 16) - (seq->fade >> 8);
+        delta = (fade << 16) - (seq->fade.value >> 8);
         if (delta == 0) {
             return;
         }
@@ -404,21 +404,21 @@ void func_8003A89C(SoundSeq *seq, s32 fade, s32 frames) {
     }
 }
 
-/* Set a sequence's volume, at once or over `frames`. */
-void func_8003A948(SoundSeq *seq, s32 volume, s32 frames) {
+/* Set a sequence's pitch shift (semitones), at once or over `frames`. */
+void func_8003A948(SoundSeq *seq, s32 pitch, s32 frames) {
     s32 delta;
 
-    seq->volume_target = volume << 8;
+    seq->pitch_target = pitch << 8;
     if (frames == 0) {
-        seq->volume = volume << 24;
-        seq->volume_frames = 0;
+        seq->pitch.value = pitch << 24;
+        seq->pitch_frames = 0;
         func_8003E680(0x200, seq);
         return;
     }
-    delta = (volume << 16) - (seq->volume >> 8);
+    delta = (pitch << 16) - (seq->pitch.value >> 8);
     if (delta != 0) {
-        seq->volume_frames = frames;
-        seq->volume_step = (delta / frames) << 8;
+        seq->pitch_frames = frames;
+        seq->pitch_step = (delta / frames) << 8;
     }
 }
 
@@ -428,12 +428,12 @@ void func_8003A9BC(SoundSeq *seq, s32 pan, s32 frames) {
 
     seq->pan_target = pan << 8;
     if (frames == 0) {
-        seq->pan = pan << 24;
+        seq->pan.value = pan << 24;
         seq->pan_frames = 0;
         func_8003E680(0x100, seq);
         return;
     }
-    delta = (pan << 16) - (seq->pan >> 8);
+    delta = (pan << 16) - (seq->pan.value >> 8);
     if (delta != 0) {
         seq->pan_frames = frames;
         seq->pan_step = (delta / frames) << 8;
@@ -802,7 +802,7 @@ void func_8003B370(SoundSeq *seq) {
     seq->unk36 = 1;
     seq->unk3A = 0x30;
     seq->tempo.value = 0x1000000;
-    seq->fade = 0x7F000000;
+    seq->fade.value = 0x7F000000;
     seq->rate.value = 0x660000;
     seq->tick_step = 0x6600;
     seq->unk1A = 0;
@@ -816,11 +816,11 @@ void func_8003B370(SoundSeq *seq) {
     seq->unk24 = 0;
     seq->unk20 = 0;
     seq->voices = 0;
-    seq->volume = 0;
-    seq->pan = 0;
+    seq->pitch.value = 0;
+    seq->pan.value = 0;
     seq->tempo_frames = 0;
     seq->fade_frames = 0;
-    seq->volume_frames = 0;
+    seq->pitch_frames = 0;
     seq->pan_frames = 0;
     seq->rate_step = 0;
     seq->rate_frames = 0;
@@ -897,9 +897,9 @@ void func_8003B424(SoundSeq *seq) {
             channel->unk64 = 0;
             channel->pan = 0x4000;
             channel->unk70 = 0;
-            channel->unkD0 = 0;
-            channel->unkD2 = 0;
-            channel->unkD4 = 0;
+            channel->pitch_mod = 0;
+            channel->level_mod = 0;
+            channel->pan_mod = 0;
             channel->unk3C = 0;
             channel->unk3E = 0;
             channel->modulators = 0;
@@ -997,9 +997,9 @@ void func_8003B644(s16 code, s32 id, s16 volume, s16 pan) {
             channel->volume = level;
             channel->level.value = 0x7F000000;
             channel->unk70 = 0;
-            channel->unkD0 = 0;
-            channel->unkD2 = 0;
-            channel->unkD4 = 0;
+            channel->pitch_mod = 0;
+            channel->level_mod = 0;
+            channel->pan_mod = 0;
             channel->unk3C = 0;
             channel->unk3E = 0;
             channel->modulators = 0;
@@ -1312,7 +1312,7 @@ void func_8003CC84(SoundSeq *seq, SoundSeqChannel *channel, s32 index) {
     u8 pan;
 
     func_8003E5BC(entry[0], channel);
-    channel->note = ((entry[1] << 8) + channel->detune + channel->unk6C) << 16;
+    channel->note.value = ((entry[1] << 8) + channel->detune + channel->unk6C) << 16;
     pan = entry[3];
     channel->flags2 |= 0x100;
     channel->pan = pan << 8;
@@ -1552,7 +1552,7 @@ u8 *func_8003D13C(u8 *data, SoundSeq *seq) {
 
 /* Set the fade level. */
 u8 *func_8003D17C(u8 *data, SoundSeq *seq) {
-    seq->fade = *data++ << 24;
+    seq->fade.value = *data++ << 24;
     func_8003E680(0x100, seq);
     return data;
 }
@@ -1561,7 +1561,7 @@ u8 *func_8003D17C(u8 *data, SoundSeq *seq) {
 u8 *func_8003D1BC(u8 *data, SoundSeq *seq) {
     s16 frames = data[0] << 5;
     u8 target = data[1];
-    s32 delta = (target << 24) - seq->fade;
+    s32 delta = (target << 24) - seq->fade.value;
 
     if (frames != 0 && delta != 0) {
         seq->fade_frames = frames;
@@ -2535,15 +2535,170 @@ void func_8003E8A4(SoundChannel *state, u32 voice) {
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003E900);
 
+extern u32 D_80059550;           /* voices to key off */
+
+/* Key off the requested voices; voices whose registers changed are first
+ * switched to a fast linear release (release rate 6).
+ * Nonmatching: register allocation differs (the original keeps the change
+ * mask in v1 and a pointer to the ADSR word). */
+#ifdef NON_MATCHING
+void func_8003EB5C(void) {
+    SpuRegs *regs = D_800508E4;
+    u32 off;
+    s32 voice;
+
+    if (D_80059554 != 0) {
+        voice = 0;
+        do {
+            if (D_80059554 & (1 << voice)) {
+                regs->voice[voice].adsr2 = (regs->voice[voice].adsr2 & 0xFFC0) | 6;
+            }
+            voice++;
+        } while (voice < 24);
+    }
+    off = D_80059550 | D_80059554;
+    if (off != 0) {
+        regs->key_off[0] = off;
+        regs->key_off[1] = off >> 16;
+        D_80059554 = 0;
+        D_80059550 = 0;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003EB5C);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003EBF0);
+extern s16 func_8003EEA0(s16 note);
+extern void func_8003EF04(SoundChannel *state, u32 voice);
+extern void func_8003EFA0(SoundChannel *state, u32 voice);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003EEA0);
+/* Stage the voice registers of `count` channels from their pending
+ * changes (flags2): volume/pan (0x100), pitch (0x200), key on (1) and key
+ * off (2). This is where the sound mode acts on every voice:
+ *   Stereo and Wide (driver flag 0x100): the pan law gives each side two
+ *     linear ramps, 0x7F00/0 at the edges and 0x5A00 on both sides at the
+ *     centre (pan 0x4000);
+ *   Mono (flag 0x100 clear): both sides get the centre gain 0x5A00 whatever
+ *     the pan.
+ * Wide differs from Stereo only in the master and reverb volume signs
+ * (80038e6c), not here. */
+void func_8003EBF0(SoundSeq *seq, SoundSeqChannel *channels, s16 count) {
+    SoundSeqChannel *channel;
+    u16 changes;
+    s32 pan;
+    s32 volume;
+    s32 left;
+    s32 right;
+    s16 level;
+    s32 note;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003EF04);
+    if (seq->flags & 0x20) {
+        return;
+    }
+    channel = channels;
+    do {
+        if (channel->flags != 0) {
+            changes = channel->flags2;
+            if (changes & 0x100) {
+                level = channel->level.part.whole;
+                volume = level - ((level * channel->level_mod) >> 15);
+                if (volume > 0x7FFF) {
+                    volume = 0x7FFF;
+                }
+                if (volume < 0) {
+                    volume = 0;
+                }
+                volume = (channel->volume * volume) >> 15;
+                pan = channel->pan + channel->pan_mod + seq->pan.part.whole;
+                volume = (seq->fade.part.whole * volume) >> 16;
+                if (pan > 0x7F00) {
+                    pan = 0x7F00;
+                }
+                if (pan < 0) {
+                    pan = 0;
+                }
+                if (D_8005957C & 0x100) {
+                    /* Stereo/Wide pan law. */
+                    if (pan < 0x4000) {
+                        right = (pan * 0x5A00) >> 14;
+                        left = 0x7F00 - ((pan * 0x2500) >> 14);
+                    } else {
+                        pan = 0x8000 - pan;
+                        left = (pan * 0x5A00) >> 14;
+                        right = 0x7F00 - ((pan * 0x2500) >> 14);
+                    }
+                    left = (left * volume) >> 15;
+                    right = (right * volume) >> 15;
+                } else {
+                    /* Mono: the centre gain on both sides. */
+                    right = left = (volume * 0x5A00) >> 15;
+                }
+                channel->volume_left = left;
+                channel->volume_right = right;
+                channel->state.flags |= 1;
+            }
+            if (changes & 0x200) {
+                note = channel->note.part.whole + channel->pitch_mod + seq->pitch.part.whole;
+                channel->pitch = func_8003EEA0(note) & 0x3FFF;
+                channel->state.flags |= 4;
+            }
+            if ((changes & 1) && !(channel->flags & 0x20)) {
+                func_8003EF04(&channel->state, channel->voice);
+            }
+            if (changes & 2) {
+                func_8003EFA0(&channel->state, channel->voice);
+            }
+            channel->flags2 = 0;
+        }
+        channel++;
+    } while (--count != 0);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003EFA0);
+extern u8 D_80050B78[];          /* octave and table row per semitone */
+extern s16 D_80050BF0[];         /* pitch per 1/256 semitone */
+
+/* SPU pitch of an 8.8 note: a table lookup scaled by octave. */
+s16 func_8003EEA0(s16 note) {
+    s32 entry = D_80050B78[(note & 0x7FFF) >> 8];
+    s32 shift = 6 - (entry >> 4);
+    s32 pitch = D_80050BF0[(note & 0xFF) + ((entry & 0xF) << 8)];
+
+    if (shift < 0) {
+        pitch <<= -shift;
+    } else {
+        pitch >>= shift;
+    }
+    return pitch;
+}
+
+/* Claim hardware voice `voice` (unless a holder has a higher priority)
+ * and key it on. */
+void func_8003EF04(SoundChannel *state, u32 voice) {
+    SoundChannel **owner = &D_8006252C[voice];
+    SoundChannel *holder;
+
+    if (voice >= 24) {
+        return;
+    }
+    holder = *owner;
+    if (holder != state) {
+        if (holder != NULL && holder->priority > state->priority) {
+            return;
+        }
+        state->flags = 0xFFFF;
+        state->voice = voice;
+        D_8006252C[voice] = state;
+        D_80059554 |= 1 << voice;
+    }
+    D_800594FC |= 1 << voice;
+}
+
+/* Request a key off of hardware voice `voice` if the channel holds it. */
+void func_8003EFA0(SoundChannel *state, u32 voice) {
+    if (voice < 24 && D_8006252C[voice] == state) {
+        D_80059550 |= 1 << voice;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003EFE4);
 

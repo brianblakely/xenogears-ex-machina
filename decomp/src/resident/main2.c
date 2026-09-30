@@ -1055,7 +1055,7 @@ void func_80037E8C(void) {
  * Nonmatching: the voice fields are addressed from a different base. */
 #ifdef NON_MATCHING
 void func_80037EE4(void) {
-    SpuVoice *voice = D_800508E4;
+    SpuVoice *voice = D_800508E4->voice;
     s32 i;
 
     D_8005957C |= 0x40;

@@ -6,7 +6,7 @@
 /* Resident sound driver: SPU voices, channels and loaded sound banks. Field
  * names follow their observed use; unknown bytes keep their offsets. */
 
-/* One SPU voice's registers (the driver's D_800508E4 base). */
+/* One SPU voice's registers. */
 typedef struct {
     s16 volume_left;
     s16 volume_right;
@@ -17,6 +17,15 @@ typedef struct {
     u16 adsr_volume;
     u16 repeat;
 } SpuVoice;
+
+/* The SPU registers (the driver's D_800508E4 base, 0x1F801C00). */
+typedef struct {
+    SpuVoice voice[24];
+    s16 main_volume[2];
+    s16 reverb_volume[2];
+    u16 key_on[2];
+    u16 key_off[2];
+} SpuRegs;
 
 /* A voice's claim on a hardware SPU voice (D_8006252C holds the owner of
  * each hardware voice). */
@@ -129,10 +138,13 @@ typedef struct {
     u8 unk29[3];
     struct SoundSequence *instruments;
     SoundChannel state;
-    u8 unk38[4];
+    s16 volume_left;   /* staged SPU voice volumes */
+    s16 volume_right;
     u16 unk3C;
     u16 unk3E;
-    u8 unk40[0xC];
+    u8 unk40[4];
+    u16 pitch;         /* staged SPU voice pitch */
+    u8 unk46[6];
     u32 sample_start;  /* SPU address */
     u32 sample_loop;
     SoundEnvelope envelope; /* state.flags 0x10-0x100 update it */
@@ -144,7 +156,7 @@ typedef struct {
     u8 unk64;
     u8 unk65;
     s16 transpose;     /* in semitones */
-    s32 note;          /* 16.16 */
+    SoundFixed note;   /* 8.8 semitones in the high half */
     s16 unk6C;
     s16 detune;
     u16 unk70;
@@ -168,9 +180,9 @@ typedef struct {
     SoundLoop loops[4];
     u16 modulator_index; /* modulator the generic opcodes address */
     u16 modulators;    /* mask of the running modulators */
-    u16 unkD0;
-    s16 unkD2;
-    s16 unkD4;
+    s16 pitch_mod;     /* modulator outputs */
+    s16 level_mod;
+    s16 pan_mod;
     u8 unkD6[2];
     SoundModulator modulator[4];
 } SoundSeqChannel;
@@ -231,15 +243,15 @@ typedef struct SoundSeq {
     s32 tempo_step;
     s16 tempo_frames;
     s16 tempo_target;
-    s32 fade;          /* 8.24 */
+    SoundFixed fade;   /* 8.24 level scaling every voice */
     s32 fade_step;
     s16 fade_frames;
     s16 fade_target;
-    s32 volume;        /* 8.24 */
-    s32 volume_step;
-    s16 volume_frames;
-    s16 volume_target;
-    s32 pan;
+    SoundFixed pitch;  /* 8.24 semitones added to every voice */
+    s32 pitch_step;
+    s16 pitch_frames;
+    s16 pitch_target;
+    SoundFixed pan;    /* 8.24 added to every voice's pan */
     s32 pan_step;
     s16 pan_frames;
     s16 pan_target;
@@ -327,7 +339,7 @@ typedef struct {
     u32 unkC;
 } SpuBlock;
 
-extern SpuVoice *D_800508E4;          /* SPU voice registers */
+extern SpuRegs *D_800508E4;           /* SPU registers */
 extern u16 D_8005957C;                /* driver state flags */
 extern SoundChannel *D_8006252C[24];  /* channel of each voice */
 extern SoundBank *D_80059440;         /* loaded banks */
