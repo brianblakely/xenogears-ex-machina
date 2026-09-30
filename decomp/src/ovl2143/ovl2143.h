@@ -501,9 +501,11 @@ s32 func_801E67F8(void);
 s16 func_801E08D4(s16 value, s16 divisor, s16 base);
 s32 func_801E0354(ParticlePool *pool, Particle *particle);
 void func_801E0844(s16 *id, s32 unused);
-void func_801E0A00(ImageAnim *anim, ImageAnim *target, s32 mode, u16 flags, MATRIX *m, s16 x, s16 y,
-                   s32 zero, s16 x2, s16 y2, s16 h10, s16 x3, s16 y3, s32 b13, s32 b14, s32 h16,
-                   s32 h18, s32 h1A, FrameCurve curve);
+ImageAnim *func_801E0A00(ImageAnim *anim, ImageAnim *target, u16 mode, u16 flags, ColorRow *colors,
+                         s16 x, s16 y, s16 z, s16 x2, s16 y2, s16 z2, s16 x3, s16 y3, s16 w, s16 h,
+                         u16 speed, s16 divisor, s16 base, FrameCurve curve);
+void StoreImage(RECT *rect, u16 *pixels);
+s32 DrawSync(s32 mode);
 FrameCurve func_801E34BC(s32 type);
 void func_801E8330(u16 index, u16 mask, s32 arg2);
 void func_801E8394(Actor *source, u16 index, u16 mask, s32 arg3);

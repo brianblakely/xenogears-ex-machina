@@ -1158,7 +1158,173 @@ s16 func_801E0988(s16 value, s16 divisor, s16 minimum) {
     return result;
 }
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E0A00);
+/* Start an image animation (once): its target, curve and timing, the w x h
+ * VRAM rectangle at (x3, y3) (256 by default; modes 0/1 use an even width),
+ * the work and frame buffers `flags` bits 8-10 ask for, and each frame
+ * buffer's first contents (flags nibbles 0 and 1): 1 the VRAM rectangle at
+ * (x, y) / (x2, y2) (modes 4/5: rows of `colors` from there), 2 one colour
+ * (modes 4/5: the three values cycling by row). */
+ImageAnim *func_801E0A00(ImageAnim *anim, ImageAnim *target, u16 mode, u16 flags, ColorRow *colors,
+                         s16 x, s16 y, s16 z, s16 x2, s16 y2, s16 z2, s16 x3, s16 y3, s16 w, s16 h,
+                         u16 speed, s16 divisor, s16 base, FrameCurve curve) {
+    RECT rect;
+    s32 half;
+    s32 i, col;
+    u16 color, fill;
+
+    if (anim->active != 0) {
+        return NULL;
+    }
+    func_80032498(4, 0);
+    anim->active = 1;
+    anim->mode = mode;
+    anim->dirty = 0;
+    anim->target = target;
+    anim->time = 0;
+    anim->frame = 0xFFFF;
+    anim->speed = speed;
+    anim->divisor = divisor;
+    anim->base = base;
+    anim->curve = curve;
+    anim->colors = colors;
+    if (!(mode & 1)) {
+        flags &= 0xFD0F;
+    }
+    if (mode & 4) {
+        flags &= 0xFEFF;
+    }
+    if (w == 0) {
+        w = 0x100;
+    }
+    if (h == 0) {
+        h = 0x100;
+    }
+    switch (mode) {
+    case 0:
+    case 1:
+        half = (w + 1) / 2;
+        w = half * 2;
+        anim->rect.x = x3;
+        anim->rect.y = y3;
+        anim->rect.w = w;
+        anim->rect.h = h;
+        anim->h12 = w * h;
+        if (flags & 0x100) {
+            anim->work = func_80031BDC((s16)(half * 2) * h * 2, 0);
+        }
+        if (flags & 0x200) {
+            anim->pixels2 = func_80031BDC((s16)(half * 2) * h * 2, 0);
+        }
+        if (flags & 0x400) {
+            anim->pixels = func_80031BDC((s16)(half * 2) * h * 2, 0);
+        }
+        switch (flags & 0xF) {
+        case 1:
+            rect.x = x;
+            rect.y = y;
+            rect.w = w;
+            rect.h = h;
+            StoreImage(&rect, anim->pixels);
+            DrawSync(0);
+            break;
+        case 2:
+            fill = ((z & 0x3F) << 10) + ((y & 0x1F) << 5) | (x & 0x1F);
+            for (i = 0; i < (s16)(half * 2) * h; i++) {
+                anim->pixels[i] = fill;
+            }
+            break;
+        }
+        switch ((flags >> 4) & 0xF) {
+        case 1:
+            rect.x = x2;
+            rect.y = y2;
+            rect.w = w;
+            rect.h = h;
+            StoreImage(&rect, anim->pixels2);
+            DrawSync(0);
+            break;
+        case 2:
+            fill = ((z2 & 0x3F) << 10) + ((y2 & 0x1F) << 5) | (x2 & 0x1F);
+            for (i = 0; i < w * h; i++) {
+                anim->pixels2[i] = fill;
+            }
+            break;
+        }
+        break;
+    case 4:
+    case 5:
+        anim->rect.x = x3;
+        anim->rect.y = y3;
+        anim->rect.w = w;
+        anim->rect.h = h;
+        anim->h12 = w * h;
+        if (flags & 0x100) {
+            anim->work = func_80031BDC(w * h * 2, 0);
+        }
+        if (flags & 0x200) {
+            anim->pixels2 = func_80031BDC(w * h * 2, 0);
+        }
+        if (flags & 0x400) {
+            anim->pixels = func_80031BDC(w * h * 2, 0);
+        }
+        switch (flags & 0xF) {
+        case 1:
+            for (i = 0; i < h; i++) {
+                for (col = 0; col < w; col++) {
+                    anim->pixels[i * w + col] = colors[y + i].c[x + col];
+                }
+            }
+            break;
+        case 2:
+            for (i = 0; i < h; i++) {
+                for (col = 0; col < w; col++) {
+                    switch ((y3 + i) % 3) {
+                    case 0:
+                        color = x;
+                        break;
+                    case 1:
+                        color = y;
+                        break;
+                    case 2:
+                        color = z;
+                        break;
+                    }
+                    anim->pixels[i * w + col] = color;
+                }
+            }
+            break;
+        }
+        switch ((flags >> 4) & 0xF) {
+        case 1:
+            for (i = 0; i < h; i++) {
+                for (col = 0; col < w; col++) {
+                    anim->pixels2[i * w + col] = colors[y2 + i].c[x2 + col];
+                }
+            }
+            break;
+        case 2:
+            for (i = 0; i < h; i++) {
+                for (col = 0; col < w; col++) {
+                    switch ((y3 + i) % 3) {
+                    case 0:
+                        color = x2;
+                        break;
+                    case 1:
+                        color = y2;
+                        break;
+                    case 2:
+                        color = z2;
+                        break;
+                    }
+                    anim->pixels2[i * w + col] = color;
+                }
+            }
+            break;
+        }
+        break;
+    }
+    return anim;
+}
 
 /* Advance an image animation by `ticks` + 1: when its curve selects another
  * frame, rebuild the image (resident decoders or fades) and copy the
@@ -1768,7 +1934,7 @@ void func_801E5D44(Actor *actor, SlotPool *pool, s32 arg2) {
                         }
                     }
                     func_801E0A00(&actor->records30[event->index], target, event->u.image.mode & 0x7F,
-                                  event->u.image.b12 | 0x700, m, x, y, 0, x2, y2, event->u.image.h10,
+                                  event->u.image.b12 | 0x700, (ColorRow *)m, x, y, 0, x2, y2, event->u.image.h10,
                                   x, y, event->u.image.b13, event->u.image.b14, event->u.image.h16,
                                   event->u.image.h18, event->u.image.h1A, curve);
                 }
