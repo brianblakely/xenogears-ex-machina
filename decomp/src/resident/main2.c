@@ -1012,7 +1012,42 @@ void func_80036DC8(s32 r, s32 g, s32 b) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036E4C);
+extern u16 D_80050598[64]; /* console font CLUTs */
+extern RECT D_80059398;    /* their VRAM rectangle */
+
+/* Build and upload the console font CLUTs: four 16-color rows of
+ * foreground/background stripes 1, 2, 4 and 8 entries wide. */
+void func_80036E4C(u16 foreground, u16 background) {
+    u16 *p = D_80050598;
+    s32 i;
+    s32 j;
+
+    for (i = 0; i < 8; i++) {
+        *p++ = background;
+        *p++ = foreground;
+    }
+    for (; i < 12; i++) {
+        *p++ = background;
+        *p++ = background;
+        *p++ = foreground;
+        *p++ = foreground;
+    }
+    for (; i < 14; i++) {
+        for (j = 0; j < 4; j++) {
+            *p++ = background;
+        }
+        for (j = 0; j < 4; j++) {
+            *p++ = foreground;
+        }
+    }
+    for (j = 0; j < 8; j++) {
+        *p++ = background;
+    }
+    for (; j < 16; j++) {
+        *p++ = foreground;
+    }
+    LoadImage(&D_80059398, (u_long *)D_80050598);
+}
 
 s16 func_80036F44(void) {
     return D_80059394->unk14;
