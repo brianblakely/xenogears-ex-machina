@@ -8554,7 +8554,43 @@ void func_800A1E9C(void) {
     D_800B0078->pc++;
 }
 
+extern void (*D_800AE2A0[])(void); /* event instructions */
+extern s32 D_800ADBE0;
+extern s32 D_800ADBEC;
+extern s32 D_800AFFEC;
+
+#ifdef NON_MATCHING
+/* Run the current actor's event instructions until one yields, its script
+ * slot ends, the field starts a transition or `limit` (raised by some
+ * instructions) runs out; 1024 is an error. Differs only in the loop
+ * branch delay slot (filled here, a nop in the original). */
+void func_800A1EC8(s32 limit) {
+    s32 count;
+
+    D_800B00C0 = 0;
+    D_800AFC7C = limit;
+    for (count = 0; count < D_800AFC7C; count++) {
+        if (count > 0x400) {
+            if (D_800C268C == 0) {
+                func_800379C8("EVENTLOOP ERROR ACT=%d\n", D_800AFD1C);
+            }
+            return;
+        }
+        D_800AE2A0[D_800ADC00[D_800B0078->pc]]();
+        if (D_800AFFEC == 0) {
+            D_800AFC7C = 0xFFFF;
+        }
+        if (D_800ADB1C != 0 && (D_800ADBE0 == 0 || D_800ADBE4 == 0 || D_800ADBEC == 0)) {
+            return;
+        }
+        if (D_800B00C0 == 1 && D_800AFFEC == D_800B00C0) {
+            return;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A1EC8);
+#endif
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A2030);
 
