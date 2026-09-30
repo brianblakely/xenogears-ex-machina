@@ -9668,7 +9668,7 @@ void func_800A5774(s32 x, s32 y, s32 h) {
     func_800320E8(pixels);
 }
 
-void func_800A663C(void);
+void func_800A663C(); /* called here without its two arguments */
 void func_800A6408(void);
 void func_800A6924(void);
 
@@ -9731,7 +9731,64 @@ void func_800A6408(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A663C);
+/* Set up the five 64x224 screen pieces (textured from the screen copy at
+ * (2c0, 100)) at full scale with no rotation, with semi-transparency
+ * `semitrans` and rate `abr`. */
+void func_800A663C(s32 semitrans, s32 abr) {
+    POLY_FT4 *quad;
+    POLY_FT4 *copy;
+    SVECTOR *corners;
+    s32 i;
+
+    D_800C2684 = 0x1000;
+    D_800B00B8.vx = 0;
+    D_800B00B8.vy = 0;
+    D_800B00B8.vz = 0;
+    for (i = 0; i < 5; i++) {
+        quad = &D_800B11AC.quads[i][0];
+        copy = &D_800B11AC.quads[i][1];
+        corners = D_800B11AC.corners[i];
+        SetPolyFT4(quad);
+        corners[0].vx = i * 0x20 - 0x50;
+        corners[0].vy = -0x38;
+        corners[0].vz = 0;
+        corners[1].vx = i * 0x20 - 0x30;
+        corners[1].vy = -0x38;
+        corners[1].vz = 0;
+        corners[2].vx = i * 0x20 - 0x50;
+        corners[2].vy = 0x38;
+        corners[2].vz = 0;
+        corners[3].vx = i * 0x20 - 0x30;
+        corners[3].vy = 0x38;
+        corners[3].vz = 0;
+        quad->x0 = i << 6;
+        quad->y0 = 0;
+        quad->x1 = (i << 6) + 0x40;
+        quad->y1 = 0;
+        quad->x2 = i << 6;
+        quad->y2 = 0xDF;
+        quad->x3 = (i << 6) + 0x40;
+        quad->y3 = 0xDF;
+        setRECT(&D_800B11AC.windows[i][0], 0, 0, 0xFF, 0xFF);
+        setRECT(&D_800B11AC.windows[i][1], 0, 0, 0xFF, 0xFF);
+        SetDrawMode(&D_800B11AC.modes[i][0], 0, 0, GetTPage(2, abr, 0x2C0 + i * 0x40, 0x100),
+                    &D_800B11AC.windows[i][0]);
+        SetDrawMode(&D_800B11AC.modes[i][1], 0, 0, GetTPage(2, abr, 0x2C0 + i * 0x40, 0x100),
+                    &D_800B11AC.windows[i][1]);
+        setRGB0(quad, 0x80, 0x80, 0x80);
+        SetSemiTrans(quad, semitrans);
+        quad->u0 = 0;
+        quad->v0 = 0;
+        quad->u1 = 0x40;
+        quad->v1 = 0;
+        quad->u2 = 0;
+        quad->v2 = 0xDF;
+        quad->u3 = 0x40;
+        quad->v3 = 0xDF;
+        quad->tpage = GetTPage(2, abr, 0x2C0 + i * 0x40, 0x100);
+        *copy = *quad;
+    }
+}
 
 /* Present the current draw block: clear, set environments and draw its
  * overlay ordering table. */
