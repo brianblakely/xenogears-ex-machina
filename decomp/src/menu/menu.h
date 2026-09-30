@@ -53,7 +53,8 @@ typedef struct {
     u8 unk4C[0x8];
     s32 angle;           /* 0x54: facing, 4096 = full turn */
     s32 target_angle;    /* 0x58 */
-    u8 unk5C[0x58];
+    u8 unk5C[0x54];
+    s32 floor_y;         /* 0xB0 */
     s16 hp;              /* 0xB4 */
     u8 unkB6[0x6];
     s16 max_hp;          /* 0xBC */
@@ -70,7 +71,15 @@ typedef struct {
     s16 unk6;
     s16 unk8[2];
     s16 unkC;
+    u8 unkE[0x5A];
+    u8 unk68;
 } MenuWindow;
+
+/* A step in one of eight directions on the floor plane. */
+typedef struct {
+    s32 x;
+    s32 z;
+} FloorStep;
 
 /* Scene actors and camera: eye position (D_8009867C) and look-at point
  * (D_8009871C). */
@@ -98,7 +107,7 @@ extern s32 D_800925E8;
 extern s32 D_800925EC;
 extern s32 D_800925FC;
 extern s16 D_80092600;
-extern u8 D_80092604;
+extern s8 D_80092604; /* scene choice cursor */
 extern u8 D_80092608;
 extern s32 D_8009284C;
 extern MenuFrame *D_80092868; /* frame being built */
@@ -113,6 +122,12 @@ extern s32 D_80092934;
 extern u8 D_8009293C;
 extern s32 D_80092948;
 extern u8 D_800929BC;
+extern u8 D_800925F0;
+extern s32 D_800928E8; /* frame counter */
+extern u32 *D_80092938; /* ordering table being built */
+extern FloorStep D_80091084[8];
+extern u16 D_8005948C; /* pad buttons newly pressed */
+extern u16 D_800594A4; /* pad buttons repeating */
 extern DrTpage D_800929E4[2];
 extern s32 D_80092A00;
 extern s32 D_80092A10;
@@ -139,11 +154,22 @@ void func_800346D4(MenuWindow *window);
 void func_80034714(MenuWindow *window, s32 text);
 void func_80039C4C(s32 arg);
 void func_80039FF8(void);
+void func_800346A4(MenuWindow *window);
+void func_80034800(MenuWindow *window, s32 colour, s32 a2, s32 a3);
+void func_80034874(MenuWindow *window, s32 cursor);
+void func_80034888(MenuWindow *window, u32 *ot, s32 frame);
+void func_80036420(void);
 s32 func_8003F8B0(s32 angle); /* sine, 4096 = 1.0 */
 s32 func_8003F8CC(s32 angle); /* cosine, 4096 = 1.0 */
 
 /* This overlay. */
+s32 func_800707D8(s32 target, s32 current, s32 steps);
+void func_8007099C(u32 mode);
 void func_80070F80(u8 *script);
+void func_8007107C(void);
+void func_80071724(u32 *ot);
+void func_80079DF0(Actor *actor, Actor *other);
+u32 func_800828C4(Actor *actor);
 void func_8007191C(s32 scene);
 void func_80071DA4(Actor *actor);
 void func_8007E24C(void);

@@ -289,9 +289,100 @@ void func_800719F0(void) {
     func_8007191C(9);
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80071AD0);
+/* Per-frame menu scene update: scene choice input, the scene script, the
+ * screen offset easing, the message window and the camera. */
+void func_80071AD0(void) {
+    MenuWindow *message;
 
+    if (D_800925F0 != 0 && (D_800928E8 & 4)) {
+        func_80071724(D_80092938);
+    }
+    func_80036420();
+    message = &D_8009868C;
+    if (D_80092608 != 0) {
+        if (D_800594A4 & 0x1000) {
+            func_8008EB4C(0x1E);
+            D_80092604--;
+        }
+        if (D_800594A4 & 0x4000) {
+            func_8008EB4C(0x1E);
+            D_80092604++;
+        }
+        if (D_80092604 >= 8) {
+            D_80092604 = 0;
+        }
+        if (D_80092604 < 0) {
+            D_80092604 = 7;
+        }
+        func_80034800(&D_80092954, (D_800928E8 * 7) & 0x3F, 0xC0, 0x10);
+        func_80034874(&D_80092954, D_80092604);
+        if (D_8005948C & 0x20) {
+            func_8008EB4C(0x21);
+            func_8007191C(D_80092604 + 1);
+            func_800346A4(message);
+        }
+    }
+    if (*D_800925F8 == 0) {
+        func_8007191C(0);
+    }
+    func_8007107C();
+    D_800925E0 += func_800707D8(D_800925E8, D_800925E0, 4);
+    D_800925E4 += func_800707D8(D_800925EC, D_800925E4, 4);
+    if (D_80092608 != 0) {
+        func_80034888(&D_80092954, D_80092938, D_800928A0);
+    }
+    if (D_800925D4 != D_800925D8) {
+        message->unk68 = 3;
+        func_800346A4(message);
+        func_80034714(message, func_80033728(D_80092880, D_800925D4));
+        D_800925D8 = D_800925D4;
+    }
+    func_80079DF0(&D_8009872C, &D_80097010);
+    func_8007099C(D_80092904);
+}
+
+#ifdef NON_MATCHING
+/* Settle an actor on the floor: while a probe 0xC0 away in one of eight
+ * directions finds the floor more than 0x40 higher, step away from it (at
+ * most 20 times); then record the floor height and its attribute bits.
+ * Does not match: the original strength-reduces the step table walk into
+ * two pointers (x from a register base, z from the symbol + 4). */
+void func_80071DA4(Actor *actor) {
+    Vector *pos = &actor->pos;
+    s32 tries = 0;
+    s32 best;
+    s32 highest;
+    s32 dir;
+    s32 floor;
+    Vector probe;
+
+    do {
+        pos->vy = highest = func_80082488(pos, 1);
+        for (dir = 0; dir < 8; dir++) {
+            probe = *pos;
+            probe.vx += D_80091084[dir].x * 0xC0;
+            probe.vz += D_80091084[dir].z * 0xC0;
+            floor = func_80082488(&probe, 1);
+            if (floor < highest - 0x40) {
+                best = dir;
+                highest = floor;
+            }
+        }
+        if (highest >= pos->vy - 0x40) {
+            pos->vy = func_80082488(pos, 1);
+            break;
+        }
+        pos->vx -= D_80091084[best].x * 0xC0;
+        pos->vz -= D_80091084[best].z * 0xC0;
+        tries++;
+    } while (tries < 20);
+    actor->floor_y = func_80082488(&actor->pos, 1);
+    actor->flags = (actor->flags & 0x9FFFFFFF) | (((func_800828C4(actor) >> 24) & 3) << 29);
+}
+
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80071DA4);
+#endif
 
 /* Scene script callback: 0 plays the stored sound, 1/2 act on one actor
  * (1 also picks the message for whichever actor has more HP left), 3 sets
@@ -346,7 +437,6 @@ void func_800720D4(void) {
         D_8009872C.unkE8 = 0;
     }
 }
-
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80072170);
 
 void func_800725A8(void) {
