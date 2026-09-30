@@ -51,9 +51,10 @@ typedef struct {
     u8 pad4C[0x58 - 0x4C];
     s16 field58;    /* 0x58: target code (0xFA-0xFF special, 1-127 a slot + 1) */
     s16 targetPart; /* 0x5A: part of the target's hierarchy, 0 its root */
-    u8 field5C;     /* 0x5C */
-    u8 pad5D[0x60 - 0x5D];
-    s16 groundY; /* 0x60 */
+    u8 field5C;     /* 0x5C: parent object, 0xFF none */
+    u8 field5D;     /* 0x5D: turn with the parent */
+    s16 parentPart; /* 0x5E */
+    s16 groundY;    /* 0x60 */
     u8 pad62;
     u8 hasTexture;   /* 0x63 */
     s16 offset[3];   /* 0x64: position relative to the target */

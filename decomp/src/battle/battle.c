@@ -3779,7 +3779,49 @@ s32 func_800AAA20(BattleObject *object, ModelList *models, s32 steps, s32 arg3, 
     return flags;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AAB34);
+/* Carry a battle object along with its parent object (index field5C; it
+ * becomes 0xFF once the parent is gone): take its active state unless flag
+ * 0x10, turn it with the parent (or a part of the parent) when field5D is set,
+ * and place its hierarchy's root at its offset from there. */
+void func_800AAB34(BattleObject *object) {
+    Matrix *m = (Matrix *)0x1F800000;
+    SVector offset;
+
+    if (D_800D3368[object->field5C] != NULL) {
+        if (!(object->flags4A & 0x10)) {
+            object->active = D_800D3368[object->field5C]->active;
+        }
+        if (object->active) {
+            if (object->field5D) {
+                if (object->parentPart != 0) {
+                    func_8004920C(&D_800D3368[object->field5C]->hierarchy->world,
+                                  &D_800D3368[object->field5C]->hierarchy[object->parentPart].world, m);
+                } else {
+                    m = &D_800D3368[object->field5C]->hierarchy->world;
+                }
+                func_80049BDC(m, &object->hierarchy->transform);
+                func_80049BDC(m, &object->hierarchy->world);
+            }
+            if (object->parentPart != 0) {
+                func_8004931C(&D_800D3368[object->field5C]->hierarchy->transform,
+                              &D_800D3368[object->field5C]->hierarchy[object->parentPart].world, m);
+            } else {
+                m = &D_800D3368[object->field5C]->hierarchy->transform;
+            }
+            func_80049EFC(m);
+            func_80049F8C(m);
+            offset.vx = object->offset2[0];
+            offset.vy = object->offset2[1];
+            offset.vz = object->offset2[2];
+            gte_ldv0(&offset);
+            gte_rtv0tr();
+            gte_stlvnl(object->hierarchy->transform.t);
+            gte_stlvnl(object->hierarchy->translation);
+        }
+    } else {
+        object->field5C = 0xFF;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AAD54);
 
