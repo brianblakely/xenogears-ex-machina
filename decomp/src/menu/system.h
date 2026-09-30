@@ -170,8 +170,7 @@ typedef struct {
 typedef struct {
     u32 flags;
     s32 unk4;
-    void *resource;    /* 0x08 */
-    ModelPrims *prims; /* 0x0C */
+    void *packets[2];  /* 0x08: per display buffer (one block) */
     s32 unk10;
     ModelFile *file;   /* 0x14 */
     u8 r, g, b;        /* 0x18 */
@@ -408,7 +407,7 @@ void func_800320E8(void *p);
 void func_80032C18(void *p, s32 mode);
 void func_8002CBBC(ModelFile *file);
 s32 func_800303C8(ModelFile *file, s32 mode);
-void func_8002CB54(ModelFile *file, void **resource, ModelPrims **prims);
+void func_8002CB54(ModelFile *file, void **first, void **second);
 void func_8002CC54(u16 tpage);
 void func_8002CC74(s32 x, s32 y);
 void func_8002C8CC(ModelFile *file, void *resource, s32 mode);
@@ -438,6 +437,46 @@ u32 func_800405E4(void);
 void func_8008BB3C(Task *task);
 void func_8008C3A8(void *vertices, s32 arg, s32 count);
 void func_8008C620(u8 *prims, s32 count);
+void func_8002C700(ModelFile *file, void *packets, u32 *ot, s32 mode);
+void func_80030B14(Matrix *m);
+
+extern s32 D_80050104;
+
+/* libgte inline_c.h register macros. */
+#define gte_SetRotMatrix(r0)                                                   \
+    __asm__ volatile("lw $12, 0(%0);"                                          \
+                     "lw $13, 4(%0);"                                          \
+                     "ctc2 $12, $0;"                                           \
+                     "ctc2 $13, $1;"                                           \
+                     "lw $12, 8(%0);"                                          \
+                     "lw $13, 12(%0);"                                         \
+                     "lw $14, 16(%0);"                                         \
+                     "ctc2 $12, $2;"                                           \
+                     "ctc2 $13, $3;"                                           \
+                     "ctc2 $14, $4"                                            \
+                     :                                                         \
+                     : "r"(r0)                                                 \
+                     : "$12", "$13", "$14")
+#define gte_SetTransMatrix(r0)                                                 \
+    __asm__ volatile("lw $12, 20(%0);"                                         \
+                     "lw $13, 24(%0);"                                         \
+                     "ctc2 $12, $5;"                                           \
+                     "lw $14, 28(%0);"                                         \
+                     "ctc2 $13, $6;"                                           \
+                     "ctc2 $14, $7"                                            \
+                     :                                                         \
+                     : "r"(r0)                                                 \
+                     : "$12", "$13", "$14")
+#define gte_SetBackColor(r0, r1, r2)                                           \
+    __asm__ volatile("sll $12, %0, 4;"                                         \
+                     "sll $13, %1, 4;"                                         \
+                     "sll $14, %2, 4;"                                         \
+                     "ctc2 $12, $13;"                                          \
+                     "ctc2 $13, $14;"                                          \
+                     "ctc2 $14, $15"                                           \
+                     :                                                         \
+                     : "r"(r0), "r"(r1), "r"(r2)                               \
+                     : "$12", "$13", "$14")
 void func_8008C4B0(u8 *prims, s32 count);
 s32 func_8008B730(Player *player, s32 frames, s32 steps);
 void func_80044AD8(u32 *ot, s32 length);

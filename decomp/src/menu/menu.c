@@ -1330,8 +1330,8 @@ void func_80089EB4(ModelSet *set) {
 Model *func_80089F8C(Model *model) {
     model->unk4 = 1;
     model->flags = 0;
-    model->resource = NULL;
-    model->prims = NULL;
+    model->packets[0] = NULL;
+    model->packets[1] = NULL;
     model->unk10 = 0;
     model->file = NULL;
     model->unk1C = 0;
@@ -1349,8 +1349,8 @@ Model *func_80089FC4(void) {
 
 /* Release a model payload's resources. */
 void func_80089FF8(Model *model) {
-    if (model->resource != NULL) {
-        func_80032C18(model->resource, 2);
+    if (model->packets[0] != NULL) {
+        func_80032C18(model->packets[0], 2);
     }
     func_8002CBBC(model->file);
 }
@@ -1408,15 +1408,15 @@ void func_8008A168(void) {
 void func_8008A184(Model *model, ModelFile *file) {
     model->file = file;
     model->unk10 = func_800303C8(file, 1);
-    func_8002CB54(model->file, &model->resource, &model->prims);
+    func_8002CB54(model->file, &model->packets[0], &model->packets[1]);
     if (D_80092800 >= 0) {
         func_8002CC54(func_80043A1C(0, 1, D_80092800, D_80092804));
     }
     if (D_80092808 >= 0) {
         func_8002CC74(D_80092808, D_8009280C);
     }
-    func_8002C8CC(model->file, model->resource, 2);
-    func_800732AC(model->prims, model->resource, model->file->unk34);
+    func_8002C8CC(model->file, model->packets[0], 2);
+    func_800732AC(model->packets[1], model->packets[0], model->file->unk34);
     model->flags |= 2;
 }
 
@@ -1532,7 +1532,19 @@ void func_8008A62C(void) {
     D_80092810 = 0;
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008A63C);
+/* Draw a model into the current ordering table, with its colour override
+ * (or grey) as the GTE back colour when overrides are enabled. */
+void func_8008A63C(Model *model) {
+    D_80050104 = 0;
+    if (D_80092810) {
+        if (model->flags & 0x10) {
+            gte_SetBackColor(model->r, model->g, model->b);
+        } else {
+            gte_SetBackColor(0x40, 0x40, 0x40);
+        }
+    }
+    func_8002C700(model->file, model->packets[D_800928A0], D_800928E4, model->unk4);
+}
 
 /* Set the current buffer's colour, noting whether it changed. */
 void func_8008A6F8(CVector *colour) {
@@ -1547,9 +1559,9 @@ void func_8008A6F8(CVector *colour) {
     }
 }
 
-/* Write the current buffer's colour into every primitive of a model. */
+/* Write the current buffer's colour into every primitive of an instance. */
 void func_8008A78C(Node *node) {
-    ModelPrims *prims = ((Model *)node->data)->prims;
+    ModelPrims *prims = ((Instance *)node->data)->prims;
     s32 i = prims->count;
     ModelPrim *prim = prims->prims[D_800928A0];
     u32 colour = *(u32 *)&D_80092818[D_800928A0];
