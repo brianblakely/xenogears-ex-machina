@@ -8,3 +8,5 @@ IMAGE := .local/decomp/build/ovl3387.bin
 LINKER_SCRIPT := .local/decomp/ovl3387/ovl3387.ld
 LINKER_EXTRA := .local/decomp/ovl3387/undefined_syms_auto.txt .local/decomp/ovl3387/undefined_funcs_auto.txt
 SOURCE_DIRS := decomp/src/ovl3387
+# Positive li assembles as addiu in this module (ASPSX 2.50 or later).
+MASPSX_FLAGS := --aspsx-version=2.56
