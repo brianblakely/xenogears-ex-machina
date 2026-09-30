@@ -2353,7 +2353,43 @@ void func_801D3444(void) {
     func_800320E8(D_800625A0->block43C);
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D3488);
+/* Show the two party window sprites (sheet 164, 165) at `row` and lay out
+ * their quads, unless only one member is listed (+32b, or +33b when
+ * `fighters`). The block at +440 is allocated on first use. */
+void func_801D3488(u8 row, u8 fighters) {
+    s32 count;
+    s32 i;
+    void *block;
+
+    if (!fighters) {
+        count = D_800625A0->partyCount;
+    } else {
+        count = D_800625A0->fighters;
+    }
+    if (count != 1) {
+        if (D_800625A0->party->unk67 == 0) {
+            block = func_80031BDC(0x1c4, 0);
+            D_800625A0->block440 = block;
+            bzero(block, 0x1c4);
+            D_800625A0->party->unk67 = 1;
+        }
+        for (i = 0; i < 2; i++) {
+            func_8002675C(D_800625A0->sheet, 0x164 + i, &D_800625A0->block440->polys[i * 4], D_800625A0->bufferIndex,
+                          D_801EA164[i], D_801EA16C[row], 0x1000);
+        }
+        for (i = 0; i < 4; i++) {
+            func_801C851C(&D_800625A0->block440->verts[i * 4],
+                          D_800625A0->block440->polys[i * 2 + D_800625A0->bufferIndex].x0,
+                          D_800625A0->block440->polys[i * 2 + D_800625A0->bufferIndex].y0,
+                          D_800625A0->block440->polys[i * 2 + D_800625A0->bufferIndex].x1 -
+                              D_800625A0->block440->polys[i * 2 + D_800625A0->bufferIndex].x0,
+                          D_800625A0->block440->polys[i * 2 + D_800625A0->bufferIndex].y3 -
+                              D_800625A0->block440->polys[i * 2 + D_800625A0->bufferIndex].y0);
+        }
+        D_800625A0->block440->buffer = D_800625A0->bufferIndex;
+        D_800625A0->party->unk53 = 1;
+    }
+}
 
 /* Close the block at +440 when it is open (party +67), hiding its sprites. */
 void func_801D3674(void) {

@@ -747,6 +747,8 @@ extern s32 D_801E9A2C[]; /* y */
 extern s32 D_801E9A1C[]; /* choice highlight positions: x */
 extern s32 D_801E9A48[]; /* y */
 extern s32 D_801E9E94[]; /* choice label x offsets */
+extern s32 D_801EA164[2]; /* party window sprite x */
+extern s32 D_801EA16C[]; /* party window sprite y per row */
 extern s32 D_801E9AC8[20];
 extern s32 D_801E9A58[4]; /* marker positions */
 extern s32 D_801E9A68[4];
@@ -968,7 +970,7 @@ u8 func_801D9F98(u8 mode, u8 save);
 void func_801D1EB0(void);
 void func_801D29A8(u8 arg0, u8 arg1);
 void func_801D3444(void);
-void func_801D3488(s32 arg0, s32 arg1);
+void func_801D3488(u8 row, u8 fighters);
 void func_801D3674(void);
 void func_801DA518(void);
 u8 func_801DBE54(void);
