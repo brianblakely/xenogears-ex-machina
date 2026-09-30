@@ -107,12 +107,27 @@ typedef struct {
     u8 buffer[4]; /* 0x148 */
 } Markers;
 
-/* A draw buffer's environment block; entry 4 of its ordering table holds
- * windows and panels. */
+/* A draw buffer's environment block (0xB4 bytes): its DRAWENV and DISPENV
+ * and a 16-entry ordering table (entry 4: windows and panels). */
 typedef struct {
-    u8 pad_0[0x70];
-    u32 ot[16]; /* 0x70 */
+    u8 draw[0x5C]; /* DRAWENV */
+    u8 disp[0x14]; /* 0x5C: DISPENV */
+    u32 ot[16];    /* 0x70 */
+    u8 pad_B0[4];
 } DrawEnv;
+
+/* The loaded effect bank object. */
+typedef struct {
+    u8 pad_0[0x14];
+    u16 id; /* 0x14 */
+} EffectBank;
+
+/* The 0x1194-byte block at state + 0x350. */
+typedef struct {
+    u8 pad_0[0x1180];
+    RECT screen;     /* 0x1180: VRAM area copied to the display buffer */
+    u8 pad_1188[0xC];
+} ListBlock;
 
 /* The 0x5034-byte menu work block. */
 typedef struct {
@@ -229,12 +244,13 @@ typedef struct {
 
 /* The shared menu state (*D_800625A0), as far as this overlay uses it. */
 typedef struct {
-    u8 pad_0[0x1D4];
+    u8 pad_0[0x6C];
+    DrawEnv envs[2];    /* 0x6C */
     DrawEnv *draw_env;  /* 0x1D4: the buffer being built */
     u8 pad_1D8[0x2DC - 0x1D8];
     void *sprite_sheet; /* 0x2DC: sprite table for func_8002675C */
     void *label_text;   /* 0x2E0: label text offset table */
-    void *effect_bank;  /* 0x2E4 */
+    EffectBank *effect_bank; /* 0x2E4 */
     u8 pad_2E8[0x308 - 0x2E8];
     s32 buffer_index;    /* 0x308: draw buffer being built (0/1) */
     u8 available[16];    /* 0x30C: character may join the party */
@@ -254,7 +270,7 @@ typedef struct {
     u8 pad_340[0x348 - 0x340];
     Backdrop *backdrop;  /* 0x348 */
     u8 pad_34C[0x350 - 0x34C];
-    u8 *block_350;       /* 0x350: 0x1194 bytes */
+    ListBlock *block_350; /* 0x350 */
     u8 *block_354;       /* 0x354: 0x140C bytes */
     u8 pad_358[0x364 - 0x358];
     Panel *panels[7];      /* 0x364 */
@@ -270,6 +286,9 @@ typedef struct {
     u8 pad_DE0[0x1DF0 - 0xDE0];
     StatusPanel *member_panels[6]; /* 0x1DF0 */
     StatusPanel *party_panels[3];  /* 0x1E08 */
+    u8 pad_1E14[0x1E94 - 0x1E14];
+    u8 b_1E94;                     /* 0x1E94: toggled by button 0x100 */
+    u8 b_1E95;                     /* 0x1E95: counts button 1 */
 } MenuState;
 
 extern MenuState *D_800625A0;
@@ -305,6 +324,23 @@ extern void func_800471B4(void *tim);          /* OpenTIM */
 extern void func_800471C4(void *image);        /* ReadTIM */
 extern void func_80044894(RECT *rect, void *data); /* LoadImage */
 extern void func_800445D0(s32 mode);           /* DrawSync */
+extern void func_8004B54C(s32 mode);           /* VSync */
+extern void func_80044AD8(u32 *ot, s32 count); /* ClearOTag */
+extern void func_80044C44(void *env);          /* PutDrawEnv */
+extern void func_80044E9C(void *env);          /* PutDispEnv */
+extern void func_8004495C(RECT *rect, s32 x, s32 y); /* MoveImage */
+extern void func_80044BD0(u32 *ot);            /* DrawOTag */
+extern void func_80019CA0(void);               /* reset combination check */
+extern void func_80039DB8(s32 sound);          /* play a sound */
+extern s32 func_80035734(s32 port);            /* pad present */
+extern void func_80037EE4(void);               /* pause sound */
+extern void func_80037E8C(void);               /* resume sound */
+extern s32 func_80036410(void);                /* input queue overflowed */
+extern void func_80035DB0(void);               /* reset the input queue */
+extern s32 func_80035CDC(void);                /* dequeue an input entry */
+extern s32 D_80059488;                         /* vsync count */
+extern u16 D_800594A4;                         /* dequeued buttons */
+extern u16 D_8005948C;                         /* dequeued buttons (pressed) */
 extern void func_80043B48(u32 *ot, void *prim); /* AddPrim */
 extern s32 func_8004A73C(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *v3, s16 *sxy0,
                          s16 *sxy1, s16 *sxy2, s16 *sxy3, s32 *p, s32 *flag); /* RotTransPers4 */

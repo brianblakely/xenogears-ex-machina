@@ -1096,11 +1096,124 @@ void func_801C9210(void) {
     func_801C8040();
 }
 
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C9270);
+/* Play menu sound `sound` from the loaded effect bank. */
+void func_801C9270(u8 sound) {
+    func_80039DB8((D_800625A0->effect_bank->id << 16) | sound);
+}
 
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C92AC);
+/* Read this frame's input into the input code (8: none). Without a pad the
+ * sound is paused (keeping the vsync count) until one is connected; an
+ * overflowed queue is reset; otherwise entries are dequeued until one holds
+ * a button the screen uses. */
+void func_801C92AC(void) {
+    u8 code = 8;
+    u8 waiting = 1;
+    u8 paused = 0;
+    s32 vsyncs;
 
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C94A0);
+    do {
+        if (func_80035734(0) == 0) {
+            if (paused == 0) {
+                paused++;
+                func_80037EE4();
+                vsyncs = D_80059488;
+            }
+        } else {
+            waiting--;
+            if (paused) {
+                func_80037E8C();
+                D_80059488 = vsyncs;
+            }
+        }
+    } while (waiting);
+    if (func_80036410()) {
+        func_80035DB0();
+    } else {
+        while (func_80035CDC()) {
+            if (D_800594A4 & 0x2000) {
+                code = 0;
+                break;
+            }
+            if (D_800594A4 & 0x4000) {
+                code = 1;
+                break;
+            }
+            if (D_800594A4 & 0x8000) {
+                code = 2;
+                break;
+            }
+            if (D_800594A4 & 0x1000) {
+                code = 3;
+                break;
+            }
+            if (D_8005948C & 0x20) {
+                code = 4;
+                break;
+            }
+            if (D_8005948C & 0x40) {
+                code = 5;
+                break;
+            }
+            if (D_8005948C & 0x80) {
+                code = 6;
+                break;
+            }
+            if (D_8005948C & 0x10) {
+                code = 7;
+                break;
+            }
+            if (D_8005948C & 4) {
+                code = 10;
+                break;
+            }
+            if (D_8005948C & 8) {
+                code = 9;
+                break;
+            }
+            if (D_8005948C & 0x800) {
+                code = 11;
+                break;
+            }
+            if (D_8005948C & 0x100) {
+                code = 12;
+                D_800625A0->b_1E94 = D_800625A0->b_1E94 == 0;
+                break;
+            }
+            if (D_8005948C & 1) {
+                D_800625A0->b_1E95++;
+                break;
+            }
+        }
+    }
+    D_800625A0->input_code = code;
+}
+
+/* Run one menu frame: read input, check the reset combination, swap to the
+ * other draw buffer, draw the screen and present it. */
+void func_801C94A0(void) {
+    MenuState *state;
+    DrawEnv *env;
+    s32 shown;
+
+    func_801C92AC();
+    func_80019CA0();
+    state = D_800625A0;
+    env = &state->envs[0];
+    if (state->draw_env == env) {
+        env = &state->envs[1];
+    }
+    state->draw_env = env;
+    state->buffer_index = state->buffer_index == 0;
+    func_80044AD8(state->draw_env->ot, 16);
+    func_801C9210();
+    shown = D_800625A0->buffer_index == 0;
+    func_800445D0(0);
+    func_8004B54C(0);
+    func_80044C44(&D_800625A0->draw_env->draw);
+    func_80044E9C(&D_800625A0->draw_env->disp);
+    func_8004495C(&D_800625A0->block_350->screen, 0, shown * 0xE0);
+    func_80044BD0(&D_800625A0->draw_env->ot[15]);
+}
 
 INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C95A0);
 
