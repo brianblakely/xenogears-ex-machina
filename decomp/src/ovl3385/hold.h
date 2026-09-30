@@ -46,6 +46,10 @@ typedef struct {
     s32 vx, vy, vz, pad;
 } VECTOR;
 
+typedef struct {
+    s16 vx, vy;
+} DVECTOR;
+
 /* A primitive's tag: the next primitive's address and this one's length. */
 typedef struct {
     u32 addr : 24;

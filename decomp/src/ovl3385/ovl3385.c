@@ -153,15 +153,15 @@ INCLUDE_ASM(".local/decomp/ovl3385/asm/nonmatchings/ovl3385", func_801FC168);
 /* Draw the held actor's sprite repeated side by side across the screen: from
  * the place it would have moved to rightward until off screen (x 320), then
  * leftward until off screen. */
-#ifdef NON_MATCHING
 void func_801FC508(TaskNode *node) {
     HoldTask *hold = node->object;
     Actor *actor = hold->actor;
     Actor *owner; /* never set before its use below (a bug in the original) */
     SVECTOR pos;
     VECTOR trans;
+    DVECTOR screen;
     Bounds bounds;
-    s32 sxy, p, flag;
+    s32 p, flag;
     s32 width, height;
     s32 depth, count;
     s32 x, y;
@@ -172,7 +172,7 @@ void func_801FC508(TaskNode *node) {
     pos.vz = actor->position[2] >> 16;
     SetRotMatrix(&D_8004FBB8);
     SetTransMatrix(&D_8004FBB8);
-    depth = (RotTransPers(&pos, &sxy, &sxy, &flag) >> D_80050100) + actor->depth_bias;
+    depth = (RotTransPers(&pos, &p, &p, &flag) >> D_80050100) + actor->depth_bias;
     if (flag & 0x8000) {
         depth = 0;
     }
@@ -189,9 +189,9 @@ void func_801FC508(TaskNode *node) {
             depth = 0xFFF;
         } else {
             depth = actor->depth_bias;
-            if ((u32)(depth - 1) >= 0xFFF) {
-                return;
-            }
+        }
+        if ((u32)(depth - 1) >= 0xFFF) {
+            return;
         }
     } else {
         if ((actor->draw_flags >> 29) & 1) {
@@ -210,8 +210,8 @@ void func_801FC508(TaskNode *node) {
     y = hold->moved[1] >> 16;
     for (x = hold->moved[0] >> 16;; x += width) {
         pos.vx = bounds.x0 + x;
-        RotTransPers(&pos, &sxy, &p, &p);
-        if ((s16)sxy > 320) {
+        RotTransPers(&pos, (s32 *)&screen, &p, &p);
+        if (screen.vx > 320) {
             break;
         }
         func_801FC168(cells, count, x, y, depth, actor);
@@ -220,16 +220,13 @@ void func_801FC508(TaskNode *node) {
     y = hold->moved[1] >> 16;
     for (x = hold->moved[0] >> 16;; x -= width) {
         pos.vx = bounds.x1 + x;
-        RotTransPers(&pos, &sxy, &p, &p);
-        if ((s16)sxy < 0) {
+        RotTransPers(&pos, (s32 *)&screen, &p, &p);
+        if (screen.vx < 0) {
             break;
         }
         func_801FC168(cells, count, x, y, depth, actor);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3385/asm/nonmatchings/ovl3385", func_801FC508);
-#endif
 
 /* Opcode entry: hold `actor` in place under the effect. */
 void func_801FC7B0(Actor *actor) {
