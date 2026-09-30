@@ -1605,4 +1605,49 @@ typedef struct {
     SVECTOR spot;     /* 0xA0 */
 } ShotScratch;
 
+/* worldmap_80072238 GTE users (round 4) */
+#define gte_stflg(r0) \
+    __asm__ volatile("cfc2 $12, $31;" \
+                     "nop;" \
+                     "sw $12, 0(%0)" \
+                     : \
+                     : "r"(r0) \
+                     : "$12", "memory")
+
+/* Model and object of the scene overlay at 0x801E0000. */
+typedef struct {
+    u8 pad0[0x54];
+    SVECTOR angle;    /* 0x54 */
+    s32 x, y, z;      /* 0x5C */
+} OverlayModel;
+
+typedef struct {
+    u8 pad0[4];
+    OverlayModel *model; /* 0x04 */
+    u8 pad8[0x14];
+    s16 unk1C;
+    u8 pad1E[0x3E];
+    s16 unk5C;
+} OverlayObject;
+
+extern OverlayObject *D_801E8670[]; /* scene overlay objects; [0] is the landmark */
+extern MATRIX *D_801E8644;
+void func_801E7D14(MATRIX *view, MATRIX *light, u32 *ot, s32 buffer, s32 mode);
+
+/* Scratchpad work area of the distant landmark. */
+typedef struct {
+    VECTOR position;  /* 0x00 */
+    u8 pad10[0x10];
+    s32 flag;         /* 0x20 */
+    u8 pad24[4];
+    s32 depth;        /* 0x28 */
+    u8 pad2C[0x74];
+    SVECTOR origin;   /* 0xA0 */
+    u8 padA8[0x48];
+    MATRIX local;     /* 0xF0 */
+    MATRIX view;      /* 0x110 */
+} LandmarkScratch;
+
+#define LANDMARK_SCRATCH ((LandmarkScratch *)0x1F800000)
+
 #endif

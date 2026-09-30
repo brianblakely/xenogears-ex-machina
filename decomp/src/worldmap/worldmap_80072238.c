@@ -1235,7 +1235,44 @@ s32 func_80075E7C(VECTOR *position, s32 level) {
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80075E7C);
 #endif
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80076098);
+/* Place the distant landmark model (drawn by the scene overlay) relative to
+ * the camera and draw it when it is in front and nearer than depth 0xD00. */
+void func_80076098(void) {
+    s32 *flag;
+    s32 *depth;
+
+    LANDMARK_SCRATCH->position.vy = 0xA0;
+    LANDMARK_SCRATCH->position.vx = 0x4E0E - (D_8009BE28.target.vx >> 12);
+    LANDMARK_SCRATCH->position.vz = 0x1B68 - (D_8009BE28.target.vz >> 12);
+    func_80093534(&LANDMARK_SCRATCH->position);
+    D_801E8670[0]->model->x = LANDMARK_SCRATCH->position.vx;
+    D_801E8670[0]->model->y = 0;
+    D_801E8670[0]->model->z = -LANDMARK_SCRATCH->position.vz;
+    D_801E8670[0]->model->angle.vx = D_801E8670[0]->model->angle.vy = D_801E8670[0]->model->angle.vz = 0;
+    D_801E8670[0]->unk5C = -0x100;
+    D_801E8670[0]->unk1C = 0x40;
+    LANDMARK_SCRATCH->local = D_8009A180;
+    LANDMARK_SCRATCH->local.t[0] = LANDMARK_SCRATCH->position.vx;
+    LANDMARK_SCRATCH->local.t[1] = LANDMARK_SCRATCH->position.vy;
+    LANDMARK_SCRATCH->local.t[2] = -LANDMARK_SCRATCH->position.vz;
+    CompMatrix(&D_8009C808, &LANDMARK_SCRATCH->local, &LANDMARK_SCRATCH->view);
+    SetRotMatrix(&LANDMARK_SCRATCH->view);
+    SetTransMatrix(&LANDMARK_SCRATCH->view);
+    LANDMARK_SCRATCH->origin.vx = LANDMARK_SCRATCH->origin.vy = LANDMARK_SCRATCH->origin.vz = 0;
+    gte_ldv0(&LANDMARK_SCRATCH->origin);
+    gte_rtps();
+    flag = &LANDMARK_SCRATCH->flag;
+    gte_stflg(flag);
+    if (*flag >= 0) {
+        depth = &LANDMARK_SCRATCH->depth;
+        gte_stsz(depth);
+        if (*depth < 0xD00) {
+            D_801E8644 = &D_8009A140;
+            SetBackColor(0x40, 0x40, 0x40);
+            func_801E7D14(&D_8009C808, &D_8009A160, D_8009BE3C->ot, D_8009D7F0, 1);
+        }
+    }
+}
 
 /* Reset the GPU and sound state before leaving. */
 void func_800762FC(void) {
