@@ -2204,11 +2204,12 @@ void func_80093D48(void) {
     D_800B0078->pc += 8;
 }
 
-#ifdef NON_MATCHING
-/* Door-style swing: while layer flag 0x100000 is clear, turn the current
+/* Door-style swing: while flag 0x100000 is clear, turn the current
  * descriptor by 0x20 per frame (direction operand 1) for 31 frames, then set
  * the flag and advance. */
 void func_80093E30(void) {
+    FieldActor *actor;
+
     if (!(D_800B0078->flags & 0x100000)) {
         if (!(D_800B0078->unk12C & 0x20)) {
             D_800B0078->unk12C |= 0x20;
@@ -2216,16 +2217,17 @@ void func_80093E30(void) {
             func_80085634(8, 3);
         } else {
             D_800B0078->unkE2++;
-            if (D_800B0078->unkE2 < 31) {
-                if (EVENT_OPERAND_BYTE(1) == 0) {
+            actor = D_800B0078;
+            if (actor->unkE2 < 31) {
+                if (D_800ADC00[actor->pc + 1] == 0) {
                     D_800AFA64.descriptors[D_800AFD1C].rotation.vy += 0x20;
                 } else {
                     D_800AFA64.descriptors[D_800AFD1C].rotation.vy -= 0x20;
                 }
             } else {
-                D_800B0078->unkE2 = 0;
-                D_800B0078->flags |= 0x100000;
-                D_800B0078->unk12C &= ~0x20;
+                actor->unkE2 = 0;
+                actor->flags |= 0x100000;
+                actor->unk12C &= ~0x20;
                 D_800B0078->pc += 2;
             }
         }
@@ -2234,14 +2236,12 @@ void func_80093E30(void) {
     }
     func_80072254(D_800AFD1C);
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80093E30);
-#endif
 
-#ifdef NON_MATCHING
 /* The reverse swing: while flag 0x100000 is set, turn back over 31 frames,
  * then clear it and advance. */
 void func_80093FC0(void) {
+    FieldActor *actor;
+
     if (D_800B0078->flags & 0x100000) {
         if (!(D_800B0078->unk12C & 0x20)) {
             D_800B0078->unk12C |= 0x20;
@@ -2249,16 +2249,17 @@ void func_80093FC0(void) {
             func_80085634(8, 3);
         } else {
             D_800B0078->unkE2++;
-            if (D_800B0078->unkE2 < 31) {
-                if (EVENT_OPERAND_BYTE(1) == 0) {
+            actor = D_800B0078;
+            if (actor->unkE2 < 31) {
+                if (D_800ADC00[actor->pc + 1] == 0) {
                     D_800AFA64.descriptors[D_800AFD1C].rotation.vy -= 0x20;
                 } else {
                     D_800AFA64.descriptors[D_800AFD1C].rotation.vy += 0x20;
                 }
             } else {
-                D_800B0078->unkE2 = 0;
-                D_800B0078->flags &= ~0x100000;
-                D_800B0078->unk12C &= ~0x20;
+                actor->unkE2 = 0;
+                actor->flags &= ~0x100000;
+                actor->unk12C &= ~0x20;
                 D_800B0078->pc += 2;
             }
         }
@@ -2267,9 +2268,6 @@ void func_80093FC0(void) {
     }
     func_80072254(D_800AFD1C);
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80093FC0);
-#endif
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80094158);
 
