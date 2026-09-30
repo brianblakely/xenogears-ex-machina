@@ -5493,7 +5493,9 @@ void func_80095300(void) {
 
 #ifdef NON_MATCHING
 /* Call (operand 2) when the controlled actor stands inside trigger zone
- * operand 1 and the call stack has room; otherwise skip. */
+ * operand 1 and the call stack has room; otherwise skip.
+ * NON_MATCHING: the original loads the zone number after computing the
+ * actor's point (instruction scheduling). */
 void func_8009533C(void) {
     FieldActor *player;
     Zone *zone;
@@ -5527,7 +5529,9 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_8009533C
 
 #ifdef NON_MATCHING
 /* As func_8009533C, also requiring the zone's height within the
- * controlled actor's vertical extent. */
+ * controlled actor's vertical extent.
+ * NON_MATCHING: the original loads the zone number after the actor lookup
+ * (instruction scheduling), as in 8009533c. */
 void func_80095520(void) {
     FieldActor *player;
     Zone *zone;
@@ -5537,10 +5541,10 @@ void func_80095520(void) {
     s32 c;
     s32 d;
 
-    player = D_800AF880.components.descriptors[D_800B2078.controlled].actor;
     zone = &D_800ADBF4[EVENT_OPERAND_BYTE(1)];
+    player = D_800AF880.components.descriptors[D_800B2078.controlled].actor;
     if (zone->corner[0].y < WHOLE(player->position[1]) &&
-        WHOLE(player->position[1]) - player->height < zone->corner[0].y) {
+        WHOLE(player->position[1]) - (u16)player->height < zone->corner[0].y) {
         a = (zone->corner[0].z << 16) + zone->corner[0].x;
         b = (zone->corner[1].z << 16) + zone->corner[1].x;
         point = (WHOLE(player->position[2]) << 16) + WHOLE(player->position[0]);
@@ -5564,9 +5568,10 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_80095520
 
 #ifdef NON_MATCHING
 /* Continue when the controlled actor is inside trigger zone operand 1,
- * else jump to operand 2. */
+ * else jump to operand 2.
+ * NON_MATCHING: the original loads the zone number after computing the
+ * actor's point (instruction scheduling), as in 8009533c. */
 void func_80095734(void) {
-    u8 *operand;
     FieldActor *player;
     Zone *zone;
     s32 point;
@@ -5575,10 +5580,9 @@ void func_80095734(void) {
     s32 c;
     s32 d;
 
+    zone = &D_800ADBF4[D_800ADC00[D_800B0078->pc + 1]];
     player = D_800AF880.components.descriptors[D_800B2078.controlled].actor;
-    operand = &D_800ADC00[D_800B0078->pc];
     point = (WHOLE(player->position[2]) << 16) + WHOLE(player->position[0]);
-    zone = &D_800ADBF4[operand[1]];
     a = (zone->corner[0].z << 16) + zone->corner[0].x;
     b = (zone->corner[1].z << 16) + zone->corner[1].x;
     c = (zone->corner[2].z << 16) + zone->corner[2].x;
@@ -5597,7 +5601,9 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_80095734
 
 #ifdef NON_MATCHING
 /* Continue when the controlled actor is inside trigger zone operand 1 and
- * the zone's height lies within the actor's body, else jump to operand 2. */
+ * the zone's height lies within the actor's body, else jump to operand 2.
+ * NON_MATCHING: the original loads the zone number after the actor lookup
+ * (instruction scheduling), as in 8009533c. */
 void func_800958C0(void) {
     FieldActor *player;
     Zone *zone;
@@ -5607,10 +5613,10 @@ void func_800958C0(void) {
     s32 c;
     s32 d;
 
-    player = D_800AF880.components.descriptors[D_800B2078.controlled].actor;
     zone = &D_800ADBF4[EVENT_OPERAND_BYTE(1)];
+    player = D_800AF880.components.descriptors[D_800B2078.controlled].actor;
     if (zone->corner[0].y < WHOLE(player->position[1]) &&
-        WHOLE(player->position[1]) - player->height < zone->corner[0].y) {
+        WHOLE(player->position[1]) - (u16)player->height < zone->corner[0].y) {
         a = (zone->corner[0].z << 16) + zone->corner[0].x;
         b = (zone->corner[1].z << 16) + zone->corner[1].x;
         point = (WHOLE(player->position[2]) << 16) + WHOLE(player->position[0]);
