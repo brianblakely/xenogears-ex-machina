@@ -117,7 +117,7 @@ extern u8 D_8004EABC[];      /* compressed boot logo image */
 extern char *D_8004F0C0[];   /* error messages by number */
 extern s32 D_8004F2BC;       /* fatal error count */
 extern u8 D_80010004[];
-extern u8 D_80018004[];
+extern u16 D_80018004[];
 
 /* Original hand-written startup code. */
 void func_80019524(void);
@@ -144,10 +144,26 @@ void func_8001BB50(void);
 void func_80024F20(void);
 
 /* Disc file access. */
-void func_80028230(u8 *index, u8 *directories, s32 count);
-s32 func_800283D4(void);
-void func_80028470(s32 base, s32 index);
-void func_800284B4(s32 *base, s32 *index);
+extern u8 *D_8004FDF0;      /* file index: 7 bytes per file */
+extern u16 *D_8004FDF4;     /* directory table: first file of each directory, 1-based */
+extern s32 D_8004FDF8;
+extern s32 D_8004FDFC;
+extern s32 D_8004FE14;      /* selected directory (first file - 1) */
+extern s32 D_8004FE1C;
+extern s32 D_8004FE48;      /* nonzero: files come from the PC file server */
+extern s32 D_8004FE4C;
+extern s32 D_8005A488, D_8005A48C, D_8005A490, D_8005A494, D_8005A498, D_8005A49C;
+extern s32 D_8005A4A4, D_8005A4A8, D_8005A4B4;
+extern u8 D_80059F1C[];     /* CD command result */
+
+void func_80028230(u8 *files, u16 *directories, u32 mode);
+void func_800283D4(void);
+s32 func_80028470(s32 group, s32 index);
+s32 func_800284B4(s32 *group, s32 *index);
+s32 func_80028548(s32 group, s32 index);
+void func_8002954C(s32 sector, void *destination, s32 size, s32 a3, s32 a4);
+void func_8002A428(s32 mode);
+void func_8002A498(s32 offset);
 s32 func_80028530(void);
 s32 func_800286CC(void); /* disc busy */
 s32 func_80028738(s32 file);
@@ -202,6 +218,13 @@ void func_800399D4(s32 sequence); /* release a sequence */
 void func_80039C4C(s32 sequence); /* stop a sequence */
 
 /* PsyQ library. */
+s32 func_80040D08(void);                           /* CdInit */
+void func_80040EF4(s32 a0);
+void func_800413EC(s32 a0);
+void func_80040FB4(void *callback);                /* CdReadyCallback */
+void func_80040FCC(void *callback);                /* CdSyncCallback */
+s32 func_80040FE4(s32 command, u8 *parameter, u8 *result); /* CdControlF */
+s32 func_80041248(s32 command, u8 *parameter, u8 *result); /* CdControlB */
 void func_80040454(void);
 void func_80040464(void);
 void func_800404D4(void);

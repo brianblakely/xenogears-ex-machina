@@ -1498,17 +1498,108 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002800C);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002804C);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028230);
+/* Initialise disc access: the CD library (or the PC file server for other modes), the file index and directory table, reading both from sectors 24 and 40 when booting from CD. */
+void func_80028230(u8 *files, u16 *directories, u32 mode) {
+    D_8005A488 = 0;
+    D_8005A48C = 0;
+    D_8005A490 = 0;
+    D_8005A494 = 0;
+    D_8005A498 = 0;
+    D_8005A49C = 0;
+    D_8005A4A4 = 0;
+    D_8005A4A8 = 0;
+    D_8005A4B4 = 0;
+    if (mode == 0 || mode == -1) {
+        while (func_80040D08() == 0) {
+        }
+        func_80040EF4(0);
+        func_800413EC(0);
+        func_80040FB4(0);
+        func_80040FCC(0);
+        func_80040FE4(7, 0, D_80059F1C);
+        func_8002A428(0xA0);
+        func_80028A60(0);
+        func_8004B54C(3);
+    } else {
+        func_8004C38C();
+    }
+    if (mode != -1) {
+        D_8004FE48 = mode;
+    } else {
+        D_8004FE48 = 0;
+    }
+    D_8004FDF0 = files;
+    D_8004FDF4 = directories;
+    D_8004FE14 = 0;
+    D_8004FDFC = 0;
+    D_8004FDF8 = 0;
+    D_8004FE1C = 0;
+    D_8004FE4C = -1;
+    if (mode == 0) {
+        func_8002954C(0x18, files, 0x8000, 0, 0);
+        func_80028A60(0);
+        func_8002954C(0x28, D_8004FDF4, 0x7A, 0, 0);
+        func_80028A60(0);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800283D4);
+/* End disc access: stop the read, pause the drive (on CD) and clear the CD callbacks. */
+void func_800283D4(void) {
+    func_8002A498(0);
+    func_80028A60(0);
+    if (D_8004FE48 == 0) {
+        while (func_80041248(9, 0, D_80059F1C) == 0) {
+        }
+        func_8002A428(0xA0);
+        func_80028A60(0);
+        func_8004B54C(3);
+    }
+    func_800413EC(0);
+    func_80040FB4(0);
+    func_80040FCC(0);
+    D_8004FDFC = 0;
+    D_8004FDF8 = 0;
+    D_8004FE1C = 0;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028470);
+/* Select a directory by group and index in the directory table; returns it, or -1 (selecting 0) when that entry is empty. */
+s32 func_80028470(s32 group, s32 index) {
+    D_8004FE14 = D_8004FDF4[group + index] - 1;
+    if (D_8004FE14 < 0) {
+        D_8004FE14 = 0;
+        return -1;
+    }
+    return D_8004FE14;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800284B4);
+/* The directory group (a multiple of four) and index of the selected directory, both zero when none matches; returns the selection. */
+s32 func_800284B4(s32 *group, s32 *index) {
+    u16 *entry = D_8004FDF4;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028530);
+    for (i = 0; i < 0x40; i++, entry++) {
+        if (*entry == D_8004FE14 + 1) {
+            *group = i / 4 * 4;
+            *index = i - i / 4 * 4;
+            break;
+        }
+    }
+    if (i == 0x40) {
+        *group = 0;
+        *index = 0;
+    }
+    return D_8004FE14;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028548);
+/* The disc number (directory table word 0x3c). */
+s32 func_80028530(void) {
+    return D_8004FDF4[0x3C];
+}
+
+/* The directory at group + index relative to the selected one. */
+s32 func_80028548(s32 group, s32 index) {
+    return D_8004FDF4[group + index] - D_8004FE14;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80028570);
 
