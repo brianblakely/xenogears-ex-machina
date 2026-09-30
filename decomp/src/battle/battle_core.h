@@ -39,6 +39,13 @@ typedef struct {
     u32 code[2];
 } DR_MODE;
 
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    s16 x1, y1;
+} LINE_F2;
+
 /* Combatant record: 11 slots (0-2 party, 3-10 enemies) of 0x170 bytes,
  * addressed absolutely from 800ccce8. */
 typedef struct {
@@ -127,7 +134,9 @@ typedef struct {
     u8 unk8F[0x93 - 0x8F];
     u8 unk93[3];
     u8 unk96;          /* file 3 block loaded */
-    u8 unk97[0x9C - 0x97];
+    u8 unk97;          /* selected list row */
+    u8 unk98;
+    u8 unk99[0x9C - 0x99];
     u8 unk9C;
     u8 unk9D;
     u8 unk9E;
@@ -194,7 +203,8 @@ typedef struct {
 
 /* Battle graphics state (*800c3ea4). */
 typedef struct {
-    u8 unk0[0x9C8];
+    u8 unk0[0x908];
+    LINE_F2 unk908[12];
     POLY_FT4 unk9C8[6][2];
     POLY_FT4 unkBA8[120];
     POLY_FT4 unk1E68[60];
@@ -465,6 +475,7 @@ extern u16 D_800C3D64;
 extern u8 D_800C3E2C;
 extern u16 D_800D2C30;
 extern u8 D_800D2C38;
+extern u8 D_800C3200[][6]; /* list separator rows by row count */
 
 /* Per-slot formation information (0x1c bytes from 800c3eb4). */
 typedef struct {

@@ -2683,7 +2683,29 @@ void func_8007FB70(u8 member) {
     }
 }
 
+/* Place the separator lines of a `count`-row list (rows from the 800c3200
+ * table) and remember the selected row (clamped below `count`). */
+#ifdef NON_MATCHING
+void func_8007FBE0(u8 count, u8 selected) {
+    BattleGraphics *gfx;
+    s32 i;
+
+    if (count == selected) {
+        selected--;
+    }
+    for (i = 0; i < count - 1; i++) {
+        gfx = D_800C3EA4;
+        gfx->unk908[i * 2 + D_800CCB04.buffer].x0 = 0xC;
+        gfx->unk908[i * 2 + D_800CCB04.buffer].y0 = D_800C3200[count][i + 2] + 0x5E;
+        gfx->unk908[i * 2 + D_800CCB04.buffer].x1 = 0x12;
+        gfx->unk908[i * 2 + D_800CCB04.buffer].y1 = D_800C3200[count][i + 2] + 0x5E;
+    }
+    D_800D2D28->unk97 = selected;
+    D_800D2D28->unk98 = D_800CCB04.buffer;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007FBE0);
+#endif
 
 /* Release the loaded menu module block (UI +0xae). */
 void func_8007FCE8(void) {
