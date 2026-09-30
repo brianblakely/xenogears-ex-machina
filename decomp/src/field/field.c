@@ -3800,8 +3800,6 @@ void func_8009A1AC(void) {
     }
 }
 
-extern s32 D_8005A444[];
-
 /* Face the actor of party slot operand 1. */
 void func_8009A1E4(void) {
     s32 index;
@@ -4327,35 +4325,152 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009BB0C);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009BC98);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009BE58);
+/* Whether the current actor's octant (unk12C bits 9-11) is within four
+ * octants past the camera's. */
+s32 func_8009BE58(void) {
+    return ((((s32)(D_800B0078->unk12C >> 9) & 7) - (func_8009A514() & 0xFFFF)) & 7) < 5;
+}
 
+s32 func_8009CD18(s32 *window);
+
+
+#ifdef NON_MATCHING
+/* Close this actor's dialogue window (operand 1 zero) or reset its
+ * speech state; yields. */
+void func_8009BE9C(void) {
+    s32 window;
+
+    if (EVENT_OPERAND_BYTE(1) == 0) {
+        if (func_8009CD18(&window) == 0) {
+            D_800C26B0[window].cleared = 0;
+            D_800B0078->pc += 2;
+        } else {
+            D_800B0078->pc += 2;
+        }
+    } else {
+        D_800B0078->unk82 = 0;
+        D_800B0078->unk88 = 0;
+        D_800B0078->unk8A = 0;
+        D_800B0078->unk83 = 0;
+        D_800B0078->unk84 = 0;
+        D_800B0078->pc += 2;
+    }
+    D_800B00C0 = 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009BE9C);
+#endif
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009BF8C);
+void func_8009C01C(void);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009C01C);
+/* Copy a selected actor's unk80 and open its message (func_8009C01C). */
+void func_8009BF8C(void) {
+    if (func_8009CDB4(1) != 0xFF) {
+        D_800B0078->unk80 = D_800AFA64.descriptors[func_8009CDB4(1)].actor->unk80;
+        func_8009C01C();
+        return;
+    }
+    D_800B0078->pc += 6;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009C0B4);
+s32 func_8009C5A8(s32 index, s32 mode);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009C0DC);
+/* Show a message for a selected actor; re-runs until a window is free. */
+void func_8009C01C(void) {
+    if (func_8009CDB4(1) != 0xFF) {
+        s32 index = func_8009CDB4(1);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009C104);
+        D_800B0078->pc += 1;
+        if (func_8009C5A8(index, 0) == -1) {
+            D_800B0078->pc -= 1;
+        }
+    } else {
+        D_800B0078->pc += 6;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009C12C);
+/* Show a message for the current actor (mode 0). */
+void func_8009C0B4(void) {
+    func_8009C5A8(D_800AFD1C, 0);
+}
+
+/* Show a message for the current actor (mode 1). */
+void func_8009C0DC(void) {
+    func_8009C5A8(D_800AFD1C, 1);
+}
+
+/* Show a message for the current actor (mode 2). */
+void func_8009C104(void) {
+    func_8009C5A8(D_800AFD1C, 2);
+}
+
+/* Show a message for the current actor (mode 3). */
+void func_8009C12C(void) {
+    func_8009C5A8(D_800AFD1C, 3);
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009C154);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009C538);
+/* -1 when an idle window shows message kind 1 for `id`, else 0. */
+s32 func_8009C538(s32 id) {
+    s32 i;
+
+    for (i = 0; i < 4; i++) {
+        if (D_800C26B0[i].busy == 0 && D_800C26B0[i].unk47C == 1 && D_800C26B0[i].unk47D == id) {
+            return -1;
+        }
+    }
+    return 0;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009C5A8);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009CCF8);
+/* Set talk-inhibit bit `bit`. */
+void func_8009CCF8(s32 bit) {
+    D_800B2174.talk_inhibited |= 1 << bit;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009CD18);
+/* Find the idle window owned by the current actor. */
+s32 func_8009CD18(s32 *window) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009CD7C);
+    for (i = 0; i < 4; i++) {
+        if (D_800C26B0[i].owner == D_800AFD1C && D_800C26B0[i].busy == 0) {
+            *window = i;
+            return 0;
+        }
+    }
+    return -1;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009CDB4);
+/* Actor selector at `offset`, defaulting to the party leader. */
+s32 func_8009CD7C(s32 offset) {
+    s32 index;
+
+    index = func_8009CDB4(offset);
+    if (index == 0xFF) {
+        return D_8005A444[0];
+    }
+    return index;
+}
+
+/* Actor selector at `offset`: 0xFF/0xFE/0xFD pick party slots, 0xFB the
+ * current actor. */
+s32 func_8009CDB4(s32 offset) {
+    s32 index;
+
+    index = D_800ADC00[D_800B0078->pc + offset];
+    if (index == 0xFF) {
+        index = D_8005A444[0];
+    } else if (index == 0xFE) {
+        index = D_8005A444[1];
+    } else if (index == 0xFD) {
+        index = D_8005A444[2];
+    } else if (index == 0xFB) {
+        index = D_800AFD1C;
+    }
+    return index;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009CE48);
 

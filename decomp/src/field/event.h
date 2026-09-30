@@ -42,7 +42,13 @@ typedef struct FieldActor {
     s16 unk70;           /* 070 */
     u8 unk072[0x078 - 0x072];
     u16 call_stack[4];   /* 078: return PCs */
-    u8 unk080[0x08C - 0x080];
+    u8 unk80;            /* 080 */
+    u8 unk081[0x082 - 0x081];
+    u8 unk82;            /* 082 */
+    u8 unk83;            /* 083 */
+    s32 unk84;           /* 084 */
+    s16 unk88;           /* 088 */
+    s16 unk8A;           /* 08A */
     ScriptSlot slots[8]; /* 08C */
     u16 pc;             /* 0CC: working PC, relative to the bytecode */
     u8 slot;            /* 0CE: selected script slot */
@@ -132,6 +138,7 @@ typedef struct GameState {
 
 extern GameState *D_8005A39C;
 extern s32 D_80062590[3];           /* party character ids (0xFF: empty) */
+extern s32 D_8005A444[3];           /* party actor indices */
 extern s16 D_800C3A68[];            /* event variable bank */
 
 /* Field settings block at 800b2174 (meanings from src/reconstruction/
@@ -219,6 +226,23 @@ typedef struct FieldScene {
 } FieldScene;
 
 extern FieldScene D_800AFA64;
+
+/* One 0x498-byte dialogue window (src/reconstruction/field_script.hpp). */
+typedef struct DialogueWindow {
+    u8 unk000[0x364];
+    s16 status;                     /* 364: zero while displayed */
+    u8 unk366[0x3F6 - 0x366];
+    s16 busy;                       /* 3f6 */
+    u8 unk3F8[0x3FC - 0x3F8];
+    s16 cleared;                    /* 3fc: cleared when its owner hides */
+    s16 owner;                      /* 3fe: owning event actor index */
+    u8 unk400[0x47C - 0x400];
+    u8 unk47C;                      /* 47c */
+    u8 unk47D;                      /* 47d */
+    u8 unk47E[0x498 - 0x47E];
+} DialogueWindow;
+
+extern DialogueWindow D_800C26B0[4];
 
 /* Trigger zone (field component 8): four x, y, z corners. */
 typedef struct {
