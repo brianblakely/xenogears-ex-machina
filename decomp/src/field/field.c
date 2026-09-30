@@ -8650,7 +8650,37 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A1EC8);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A2030);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A22AC);
+void func_800A1EC8(s32 limit);
+extern s32 D_800AFFEC;
+
+/* Run event `event` of actor 0 immediately with fresh script slots, then
+ * restore the actor's record. */
+void func_800A22AC(s32 event) {
+    FieldActor *saved;
+    s32 i;
+
+    D_800B0078 = (D_800B06B8 = D_800AF880.components.descriptors)->actor;
+    saved = func_80031BDC(sizeof(FieldActor), 1);
+    *saved = *D_800B06B8->actor;
+    for (i = 0; i < 8; i++) {
+        D_800B0078->slots[i].countdown = 0;
+        D_800B0078->slots[i].unk16 = 0;
+        D_800B0078->slots[i].priority = 15;
+        D_800B0078->slots[i].resume_pc = 0xFFFF;
+        D_800B0078->slots[i].unk22 = 0;
+        D_800B0078->slots[i].tag = 0xFF;
+        D_800B0078->slots[i].value = 0xFFFF;
+        D_800B0078->slots[i].move_mode = 0;
+    }
+    D_800AFD1C = 0;
+    D_800ADB1C = 0;
+    D_800AFFEC = 0;
+    D_800B0078->pc = func_800A3090(0, event);
+    func_800A1EC8(0xFFFF);
+    D_800ADB1C = 1;
+    *D_800B06B8->actor = *saved;
+    func_800320E8(saved);
+}
 
 void func_800A22AC(s32 mode);
 
@@ -8664,7 +8694,43 @@ void func_800A2488(void) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A24C4);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A2714);
+extern s32 D_8004F30C;
+void func_800A3C8C(void);
+
+/* Reload the actors' extra blocks (file +124 into +120) and hand them to
+ * their models, then refresh the field state. */
+void func_800A2714(void) {
+    FieldActor *actor;
+    s32 i;
+
+    if (D_8004F30C != 0) {
+        for (i = 0; i < D_800ADBFC; i++) {
+            func_80028470(4, 0);
+            actor = D_800AF880.components.descriptors[i].actor;
+            if (actor->unk124 != -1) {
+                D_800B0078 = actor;
+                D_800B0078->unk120 = func_80031BDC(func_800288EC(actor->unk124) + 8, 0);
+                func_800295D8(D_800B0078->unk124, D_800B0078->unk120, 0, 0x80);
+                func_80028A60(0);
+            }
+        }
+        for (i = 0; i < D_800ADBFC; i++) {
+            if (D_800AF880.components.descriptors[i].actor->unk124 != -1) {
+                func_80021BF0(D_800AF880.components.descriptors[i].model,
+                              D_800AF880.components.descriptors[i].actor->unk120);
+            }
+        }
+        func_800A3C8C();
+        if (D_800B2078.unk2078 != 0) {
+            func_800A484C(1);
+        }
+        func_800A3074(0x10, 0);
+        func_800A30B4();
+        for (i = 0; i < D_800ADBFC; i++) {
+            func_80072254(i);
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A28D4);
 
