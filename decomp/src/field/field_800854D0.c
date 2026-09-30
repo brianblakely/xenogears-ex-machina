@@ -6969,7 +6969,7 @@ s32 func_80099AC0(s32 speed) {
             return 0;
         }
         other = D_800AF880.components.descriptors[func_8009CDB4(1)].actor;
-        extra = func_80099A8C((u16)other->gravity.s.whole + (u16)D_800B0078->gravity.s.whole);
+        extra = func_80099A8C((u16)D_800B0078->gravity.s.whole + (u16)other->gravity.s.whole);
         x = WHOLE(other->position[0]);
         z = WHOLE(other->position[2]);
         if (EVENT_OPERAND_BYTE(1) == D_800B2078.controlled) {
@@ -10033,7 +10033,13 @@ s32 func_800A1EC8(s32 limit) {
 }
 
 #ifdef NON_MATCHING
-void func_800A2030(void) {
+/* Run every active actor's event script for this frame (only the first while
+ * D_800ADB74 is 1): pick its highest-priority slot (or start event 1), run it
+ * and keep its resume PC; stop once the field starts a transition. Declared
+ * int without a value like func_800A1EC8.
+ * NON_MATCHING: the original reloads the actor pointer after the transition
+ * test instead of keeping the one loaded for the layer check. */
+s32 func_800A2030(void) {
     FieldDescriptor *descriptor;
     FieldActor *actor;
     s32 count;
@@ -10049,13 +10055,14 @@ void func_800A2030(void) {
     D_800ADB68 = 0;
     D_800C4268 = 0;
     for (index = 0; index < count; index++) {
-        descriptor = &D_800AF880.components.descriptors[index];
-        if (!(descriptor->flags & 0xF00) || (descriptor->actor->layer_flags & 0x100000)) {
+        if (!(D_800AF880.components.descriptors[index].flags & 0xF00)
+            || (D_800AF880.components.descriptors[index].actor->layer_flags & 0x100000)) {
             continue;
         }
         if (D_800ADB1C != 0 && (D_800ADBE0 == 0 || D_800ADBE4 == 0 || D_800ADBEC == 0)) {
-            continue;
+            return;
         }
+        descriptor = &D_800AF880.components.descriptors[index];
         actor = descriptor->actor;
         actor->flags &= ~0x1000000;
         D_800B06B8 = descriptor;

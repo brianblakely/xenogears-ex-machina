@@ -952,7 +952,7 @@ extern void func_80073684(VECTOR *point, VECTOR *center);
 extern void func_80073750(MATRIX *view, VECTOR *eye, VECTOR *target, VECTOR *up);
 extern void func_8008004C(u32 *ot, s32 buffer);
 extern void func_800805F4(void);
-extern void func_800A2030(void);
+extern s32 func_800A2030(void);
 extern void func_80071F64(s32 x, s32 y, s32 w, s32 h);
 extern void func_8008E0DC(s32 flags);
 extern void func_8008E148(s32 flags);
