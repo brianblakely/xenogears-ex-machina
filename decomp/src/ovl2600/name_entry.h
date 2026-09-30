@@ -81,14 +81,45 @@ typedef struct {
  * line rendered into VRAM at `rect`. */
 typedef struct {
     POLY_FT4 poly[2];
-    u8 pad_50[0x20];
-    RECT rect;     /* 0x70: VRAM area of the rendered text */
-    u8 *image;     /* 0x78: text render buffer */
-    u8 highlight;  /* 0x7C: selects the highlighted CLUT */
-    u8 pad_7D;
-    u8 width;      /* 0x7E: rendered text width */
-    u8 shown;      /* 0x7F */
+    SVECTOR corners[4]; /* 0x50: 3D corners when projected */
+    RECT rect;          /* 0x70: VRAM area of the rendered text */
+    u8 *image;          /* 0x78: text render buffer */
+    u8 highlight;       /* 0x7C: selects the highlighted CLUT */
+    u8 buffer;          /* 0x7D: the quad of the buffer it was built for */
+    u8 width;           /* 0x7E: rendered text width */
+    u8 projected;       /* 0x7F: drawn through the GTE */
 } MenuLabel;
+
+/* The cursor/confirmation markers: two quads per marker. */
+typedef struct {
+    POLY_FT4 poly[8];
+    u8 shown[4];  /* 0x140 */
+    u8 follow[4]; /* 0x144: placed at the file cursor */
+    u8 buffer[4]; /* 0x148 */
+} Markers;
+
+/* A draw buffer's environment block; entry 4 of its ordering table holds
+ * windows and panels. */
+typedef struct {
+    u8 pad_0[0x70];
+    u32 ot[16]; /* 0x70 */
+} DrawEnv;
+
+/* The 0x5034-byte menu work block. */
+typedef struct {
+    u8 pad_0[0xB80];
+    u32 *tim[5];      /* 0xB80: TIM_IMAGE of the card icon (mode, crect, caddr, prect, paddr) */
+    u8 pad_B94[0x4B94 - 0xB94];
+    u8 magic[2];      /* 0x4B94: save header "SC" */
+    u8 icon_type;     /* 0x4B96 */
+    u8 blocks;        /* 0x4B97 */
+    u8 title[0x5C];   /* 0x4B98 */
+    u8 clut[0x20];    /* 0x4BF4 */
+    u8 icon[0x80];    /* 0x4C14 */
+    u8 pad_4C94[0x4F7C - 0x4C94];
+    s32 cursor;       /* 0x4F7C: file screen cursor */
+    u8 pad_4F80[0x5034 - 0x4F80];
+} MenuWork;
 
 /* The six outputs of func_80026338 for one sprite. */
 typedef struct {
@@ -148,17 +179,25 @@ typedef struct {
     u8 pad_0[3];
     u8 flag_3; /* 0x3 */
     u8 flag_4; /* 0x4 */
-    u8 pad_5[0x20 - 0x5];
+    u8 pad_5[0xC - 0x5];
+    u8 list_label_shown[8]; /* 0xC */
+    u8 row_label_shown[6];  /* 0x14 */
+    u8 pad_1A[0x20 - 0x1A];
     u8 panel_20[7]; /* 0x20: per panel */
     u8 panel_27[7]; /* 0x27: per panel */
-    u8 pad_2E[0x30 - 0x2E];
+    u8 pad_2E;
+    u8 markers_on;  /* 0x2F */
     u8 party[3]; /* 0x30: party members, 0xFF empty */
-    u8 pad_33[0x6C - 0x33];
+    u8 pad_33;
+    u8 label_shown[4]; /* 0x34 */
+    u8 pad_38[0x6C - 0x38];
 } MenuFlags;
 
 /* The shared menu state (*D_800625A0), as far as this overlay uses it. */
 typedef struct {
-    u8 pad_0[0x2DC];
+    u8 pad_0[0x1D4];
+    DrawEnv *draw_env;  /* 0x1D4: the buffer being built */
+    u8 pad_1D8[0x2DC - 0x1D8];
     void *sprite_sheet; /* 0x2DC: sprite table for func_8002675C */
     void *label_text;   /* 0x2E0: label text offset table */
     void *effect_bank;  /* 0x2E4 */
@@ -170,7 +209,7 @@ typedef struct {
     u8 card_poll_timer;  /* 0x326 */
     u8 active;           /* 0x327 */
     u8 pad_328[0x32C - 0x328];
-    u8 *work;            /* 0x32C: 0x5034-byte work block */
+    MenuWork *work;      /* 0x32C */
     u8 *block_330;       /* 0x330: 0xCC bytes */
     u8 b_334;            /* 0x334 */
     u8 b_335;            /* 0x335 */
@@ -186,11 +225,15 @@ typedef struct {
     u8 pad_358[0x364 - 0x358];
     Panel *panels[7];      /* 0x364 */
     PanelGrowth *growth[7]; /* 0x380 */
-    u8 pad_39C[0x46C - 0x39C];
+    u8 pad_39C[0x428 - 0x39C];
+    Markers *markers;      /* 0x428 */
+    u8 pad_42C[0x46C - 0x42C];
     SpriteInfo sprites[4]; /* 0x46C: sprites 0xFE, 0x103, 0x100, 0x101 */
     u8 pad_4CC[0x4E0 - 0x4CC];
     MenuLabel labels[4];   /* 0x4E0: the screen's command labels */
-    u8 pad_6E0[0x1E20 - 0x6E0];
+    MenuLabel list_labels[8]; /* 0x6E0 */
+    MenuLabel row_labels[6];  /* 0xAE0 */
+    u8 pad_DE0[0x1E20 - 0xDE0];
     u8 *entry;             /* 0x1E20: name entry block (0xDEC bytes) */
 } MenuState;
 
@@ -227,6 +270,9 @@ extern void func_800471B4(void *tim);          /* OpenTIM */
 extern void func_800471C4(void *image);        /* ReadTIM */
 extern void func_80044894(RECT *rect, void *data); /* LoadImage */
 extern void func_800445D0(s32 mode);           /* DrawSync */
+extern void func_80043B48(u32 *ot, void *prim); /* AddPrim */
+extern s32 func_8004A73C(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *v3, s16 *sxy0,
+                         s16 *sxy1, s16 *sxy2, s16 *sxy3, s32 *p, s32 *flag); /* RotTransPers4 */
 extern void func_80043CB0(POLY_FT4 *p);        /* SetPolyFT4 */
 extern void func_80043CC4(POLY_G4 *p);         /* SetPolyG4 */
 extern void func_80043C9C(POLY_F4 *p);         /* SetPolyF4 */
