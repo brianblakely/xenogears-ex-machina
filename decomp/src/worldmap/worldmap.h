@@ -1575,4 +1575,16 @@ typedef struct {
 
 #define EMIT_SCRATCH ((EmitScratch *)0x1F800000)
 
+/* Scratchpad work area of the party leader. */
+typedef struct {
+    VECTOR target;  /* 0x00 */
+    u8 pad10[0x20];
+    VECTOR start;   /* 0x30 */
+    u8 pad40[0x50];
+    VECTOR probe;   /* 0x90: move probe result */
+    u16 heading;    /* 0xA0 */
+} LeaderScratch;
+
+s32 func_80090A84(WorldmapActor *actor);
+
 #endif
