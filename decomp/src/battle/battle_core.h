@@ -377,7 +377,7 @@ typedef struct {
     u8 *script;        /* +0x00 */
     u8 *unk4;
     u8 *reaction;      /* +0x08 reaction script */
-    u8 unkC[4];
+    u8 *turnScript;    /* +0x0C script run each turn */
     s32 longs[4];      /* +0x10 */
     u16 vars[8];       /* +0x20 */
     u8 bytes[16];      /* +0x30 */
