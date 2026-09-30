@@ -2535,13 +2535,129 @@ void func_801D3DB0(u8 index, u16 x, u16 y, u16 w, u16 h) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D3FF8);
+/* Map portrait window `index`'s top edge pieces for this buffer and place them in two
+ * halves along the top of (x, y, w). */
+void func_801D3FF8(u8 index, u16 x, u16 y, u16 w) {
+    MenuPortrait *portrait = D_800625A0->portraits[index];
+    s32 half;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D433C);
+    (portrait->edge[0] + D_800625A0->bufferIndex)->u0 = 0;
+    (portrait->edge[0] + D_800625A0->bufferIndex)->v0 = 0x84;
+    (portrait->edge[0] + D_800625A0->bufferIndex)->u1 = 7;
+    (portrait->edge[0] + D_800625A0->bufferIndex)->v1 = 0x84;
+    (portrait->edge[0] + D_800625A0->bufferIndex)->u2 = 0;
+    (portrait->edge[0] + D_800625A0->bufferIndex)->v2 = 0x94;
+    (portrait->edge[0] + D_800625A0->bufferIndex)->u3 = 7;
+    (portrait->edge[0] + D_800625A0->bufferIndex)->v3 = 0x94;
+    (portrait->edge[0] + D_800625A0->bufferIndex + 2)->u0 = 0;
+    (portrait->edge[0] + D_800625A0->bufferIndex + 2)->v0 = 0x84;
+    (portrait->edge[0] + D_800625A0->bufferIndex + 2)->u1 = 7;
+    (portrait->edge[0] + D_800625A0->bufferIndex + 2)->v1 = 0x84;
+    (portrait->edge[0] + D_800625A0->bufferIndex + 2)->u2 = 0;
+    (portrait->edge[0] + D_800625A0->bufferIndex + 2)->v2 = 0x94;
+    (portrait->edge[0] + D_800625A0->bufferIndex + 2)->u3 = 7;
+    (portrait->edge[0] + D_800625A0->bufferIndex + 2)->v3 = 0x94;
+    half = (w - 16) / 2;
+    func_801C851C(portrait->edgeAt[0][0], x + 8, y - 8, half, 16);
+    func_801C851C(portrait->edgeAt[0][1], x + (half + 8), y - 8, half, 16);
+    for (i = 0; i < 2; i++) {
+        func_801E91C4(&portrait->edge[0][i * 2 + D_800625A0->bufferIndex]);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D4688);
+/* Map portrait window `index`'s bottom edge pieces for this buffer and place them in
+ * two halves along the bottom of (x, y, w, h). */
+void func_801D433C(u8 index, u16 x, u16 y, u16 w, u16 h) {
+    MenuPortrait *portrait = D_800625A0->portraits[index];
+    s32 half;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D49D0);
+    (portrait->edge[1] + D_800625A0->bufferIndex)->u0 = 8;
+    (portrait->edge[1] + D_800625A0->bufferIndex)->v0 = 0x84;
+    (portrait->edge[1] + D_800625A0->bufferIndex)->u1 = 0xF;
+    (portrait->edge[1] + D_800625A0->bufferIndex)->v1 = 0x84;
+    (portrait->edge[1] + D_800625A0->bufferIndex)->u2 = 8;
+    (portrait->edge[1] + D_800625A0->bufferIndex)->v2 = 0x94;
+    (portrait->edge[1] + D_800625A0->bufferIndex)->u3 = 0xF;
+    (portrait->edge[1] + D_800625A0->bufferIndex)->v3 = 0x94;
+    (portrait->edge[1] + D_800625A0->bufferIndex + 2)->u0 = 8;
+    (portrait->edge[1] + D_800625A0->bufferIndex + 2)->v0 = 0x84;
+    (portrait->edge[1] + D_800625A0->bufferIndex + 2)->u1 = 0xF;
+    (portrait->edge[1] + D_800625A0->bufferIndex + 2)->v1 = 0x84;
+    (portrait->edge[1] + D_800625A0->bufferIndex + 2)->u2 = 8;
+    (portrait->edge[1] + D_800625A0->bufferIndex + 2)->v2 = 0x94;
+    (portrait->edge[1] + D_800625A0->bufferIndex + 2)->u3 = 0xF;
+    (portrait->edge[1] + D_800625A0->bufferIndex + 2)->v3 = 0x94;
+    half = (w - 16) / 2;
+    func_801C851C(portrait->edgeAt[1][0], x + 8, y + h - 8, half, 16);
+    func_801C851C(portrait->edgeAt[1][1], x + (half + 8), y + h - 8, half, 16);
+    for (i = 0; i < 2; i++) {
+        func_801E91C4(&portrait->edge[1][i * 2 + D_800625A0->bufferIndex]);
+    }
+}
+
+/* Map portrait window `index`'s left edge pieces for this buffer and place them in two
+ * halves down the left of (x, y, h). */
+void func_801D4688(u8 index, u16 x, u16 y, u16 h) {
+    MenuPortrait *portrait = D_800625A0->portraits[index];
+    s32 half;
+    s32 i;
+
+    (portrait->edge[2] + D_800625A0->bufferIndex)->u0 = 0x10;
+    (portrait->edge[2] + D_800625A0->bufferIndex)->v0 = 0x84;
+    (portrait->edge[2] + D_800625A0->bufferIndex)->u1 = 0x20;
+    (portrait->edge[2] + D_800625A0->bufferIndex)->v1 = 0x84;
+    (portrait->edge[2] + D_800625A0->bufferIndex)->u2 = 0x10;
+    (portrait->edge[2] + D_800625A0->bufferIndex)->v2 = 0x8B;
+    (portrait->edge[2] + D_800625A0->bufferIndex)->u3 = 0x20;
+    (portrait->edge[2] + D_800625A0->bufferIndex)->v3 = 0x8B;
+    (portrait->edge[2] + D_800625A0->bufferIndex + 2)->u0 = 0x10;
+    (portrait->edge[2] + D_800625A0->bufferIndex + 2)->v0 = 0x84;
+    (portrait->edge[2] + D_800625A0->bufferIndex + 2)->u1 = 0x20;
+    (portrait->edge[2] + D_800625A0->bufferIndex + 2)->v1 = 0x84;
+    (portrait->edge[2] + D_800625A0->bufferIndex + 2)->u2 = 0x10;
+    (portrait->edge[2] + D_800625A0->bufferIndex + 2)->v2 = 0x8B;
+    (portrait->edge[2] + D_800625A0->bufferIndex + 2)->u3 = 0x20;
+    (portrait->edge[2] + D_800625A0->bufferIndex + 2)->v3 = 0x8B;
+    half = (h - 16) / 2;
+    func_801C851C(portrait->edgeAt[2][0], x - 8, y + 8, 16, half);
+    func_801C851C(portrait->edgeAt[2][1], x - 8, y + (half + 8), 16, half);
+    for (i = 0; i < 2; i++) {
+        func_801E91C4(&portrait->edge[2][i * 2 + D_800625A0->bufferIndex]);
+    }
+}
+
+/* Map portrait window `index`'s right edge pieces for this buffer and place them in two
+ * halves down the right of (x, y, w, h). */
+void func_801D49D0(u8 index, u16 x, u16 y, u16 w, u16 h) {
+    MenuPortrait *portrait = D_800625A0->portraits[index];
+    s32 half;
+    s32 i;
+
+    (portrait->edge[3] + D_800625A0->bufferIndex)->u0 = 0x10;
+    (portrait->edge[3] + D_800625A0->bufferIndex)->v0 = 0x8C;
+    (portrait->edge[3] + D_800625A0->bufferIndex)->u1 = 0x20;
+    (portrait->edge[3] + D_800625A0->bufferIndex)->v1 = 0x8C;
+    (portrait->edge[3] + D_800625A0->bufferIndex)->u2 = 0x10;
+    (portrait->edge[3] + D_800625A0->bufferIndex)->v2 = 0x93;
+    (portrait->edge[3] + D_800625A0->bufferIndex)->u3 = 0x20;
+    (portrait->edge[3] + D_800625A0->bufferIndex)->v3 = 0x93;
+    (portrait->edge[3] + D_800625A0->bufferIndex + 2)->u0 = 0x10;
+    (portrait->edge[3] + D_800625A0->bufferIndex + 2)->v0 = 0x8C;
+    (portrait->edge[3] + D_800625A0->bufferIndex + 2)->u1 = 0x20;
+    (portrait->edge[3] + D_800625A0->bufferIndex + 2)->v1 = 0x8C;
+    (portrait->edge[3] + D_800625A0->bufferIndex + 2)->u2 = 0x10;
+    (portrait->edge[3] + D_800625A0->bufferIndex + 2)->v2 = 0x93;
+    (portrait->edge[3] + D_800625A0->bufferIndex + 2)->u3 = 0x20;
+    (portrait->edge[3] + D_800625A0->bufferIndex + 2)->v3 = 0x93;
+    half = (h - 16) / 2;
+    func_801C851C(portrait->edgeAt[3][0], x + w - 8, y + 8, 16, half);
+    func_801C851C(portrait->edgeAt[3][1], x + w - 8, y + (half + 8), 16, half);
+    for (i = 0; i < 2; i++) {
+        func_801E91C4(&portrait->edge[3][i * 2 + D_800625A0->bufferIndex]);
+    }
+}
 
 /* Lay out portrait window `index` at (x, y) of w x h and show it. */
 void func_801D4D1C(u8 index, u16 x, u16 y, u16 w, u16 h, u8 style, s32 depth, u8 framed) {
