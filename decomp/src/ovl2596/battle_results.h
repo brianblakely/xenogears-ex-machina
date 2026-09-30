@@ -46,7 +46,7 @@ typedef struct {
 /* Per party member result card (pointers 800d32f8, one per slot). */
 typedef struct {
     Glyph portrait[4];    /* 0x0000 */
-    Glyph labels[20];     /* 0x0140 */
+    POLY_FT4 labels[40];  /* 0x0140, two per glyph (one per buffer) */
     Glyph field780[3];    /* 0x0780 */
     Glyph field870[3];    /* 0x0870 */
     Glyph field960[3];    /* 0x0960 */
@@ -125,12 +125,19 @@ typedef struct {
     void *frame;          /* 0x00: the frame being built */
     u32 *ot;              /* 0x04: its ordering table */
     u8 pad8[0x2C];
-    u8 buffer;            /* 0x34: current draw buffer */
+    s32 buffer;           /* 0x34: current draw buffer */
 } DrawState;
 
 extern DrawState D_800CCB00;
+extern s32 D_800CCB34;      /* D_800CCB00.buffer, also addressed directly */
+
+/* The member card's label glyphs: ids and positions. */
+extern u8 D_800C3268[18];
+extern s16 D_800C327C[18];
+extern s16 D_800C32A0[18];
 
 void func_80043B48(void *ot, void *prim);                   /* AddPrim */
+void func_80043C24(void *prim, s32 textured);               /* SetShadeTex */
 void func_800728B8(POLY_FT4 *prims, s32 count, s32 buffer);
 s32 func_80076A10(s32 id, POLY_FT4 *prims, s16 x, s16 y);   /* glyph sprite */
 

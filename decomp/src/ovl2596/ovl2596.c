@@ -7,7 +7,7 @@ void func_801DE048(void) {
     if (D_800D2D28->showCards != 0) {
         for (i = 0; i < 3; i++) {
             func_800728B8(D_800D32F8[i]->portrait[0], D_800D32F8[i]->runs[0].count, D_800D32F8[i]->runs[0].buffer);
-            func_800728B8(D_800D32F8[i]->labels[0], D_800D32F8[i]->runs[1].count, D_800D32F8[i]->runs[1].buffer);
+            func_800728B8(D_800D32F8[i]->labels, D_800D32F8[i]->runs[1].count, D_800D32F8[i]->runs[1].buffer);
             func_800728B8(D_800D32F8[i]->field960[0], D_800D32F8[i]->runs[4].count, D_800D32F8[i]->runs[4].buffer);
             func_800728B8(D_800D32F8[i]->fieldB40[0], D_800D32F8[i]->runs[6].count, D_800D32F8[i]->runs[6].buffer);
             func_800728B8(D_800D32F8[i]->fieldA50[0], D_800D32F8[i]->runs[5].count, D_800D32F8[i]->runs[5].buffer);
@@ -87,7 +87,34 @@ void func_801DE5C4(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801DE69C);
+/* Build each present member's card labels; with the first card's flag, add
+ * the two marker glyphs, shaded red and green. */
+void func_801DE69C(void) {
+    s32 i;
+    s32 j;
+
+    for (i = 0; i < 3; i++) {
+        D_800D32F8[i]->runs[1].count = 0;
+        if (D_800C3EB6[i].id != 0x7F) {
+            for (j = 0; j < 18; j++) {
+                D_800D32F8[i]->runs[1].count += func_80076A10(D_800C3268[j], &D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2], D_800C327C[j], D_800C32A0[j] + i * 0x20);
+            }
+            if (D_800D32F8[0]->flag15F8 != 0) {
+                D_800D32F8[i]->runs[1].count += func_80076A10(0xE8, &D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2], 0x88, i * 0x20 + 0x20);
+                D_800D32F8[i]->runs[1].count += func_80076A10(0xE9, &D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2], 0x88, i * 0x20 + 0x28);
+                func_80043C24(&D_800D32F8[i]->labels[(D_800D32F8[i]->runs[1].count - 2) * 2 + D_800CCB00.buffer], 0);
+                (&D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2 + D_800CCB34] - 4)->r0 = 0x80;
+                (&D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2 + D_800CCB34] - 4)->g0 = 0x40;
+                (&D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2 + D_800CCB34] - 4)->b0 = 0x40;
+                func_80043C24(&D_800D32F8[i]->labels[(D_800D32F8[i]->runs[1].count - 1) * 2 + D_800CCB00.buffer], 0);
+                (&D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2 + D_800CCB34] - 2)->r0 = 0x40;
+                (&D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2 + D_800CCB34] - 2)->g0 = 0x80;
+                (&D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2 + D_800CCB34] - 2)->b0 = 0x40;
+            }
+        }
+        D_800D32F8[i]->runs[1].buffer = D_800CCB00.buffer;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801DEA18);
 
