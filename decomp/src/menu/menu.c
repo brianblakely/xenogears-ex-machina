@@ -760,7 +760,7 @@ s32 func_8007E624(void) {
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007E634);
 
-void func_8007E894(s16 x, s16 y) {
+void func_8007E894(s32 x, s32 y) {
     D_800926E8 = x;
     D_800926EC = y;
 }
@@ -980,7 +980,8 @@ void func_8007F948(MenuPage *page, s32 entry) {
     }
 }
 
-s32 func_8007F97C(void) {
+/* Name of the chosen first setting. */
+char *func_8007F97C(void) {
     return D_800912F4[D_80099D98[0]];
 }
 
@@ -988,7 +989,28 @@ INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu", D_8006FF5C);
 
 INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu", D_8006FF60);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007F9A0);
+/* Draw the values column of the settings page, right-aligned, applying the
+ * chosen speed as it is shown. */
+void func_8007F9A0(MenuPage *page) {
+    char text[8];
+
+    func_8007E894(page->x + page->width - 10, page->y);
+    func_8007EE08(0);
+    func_8007F948(page, 0);
+    func_8007ECF0(func_8007F97C());
+    func_8007F948(page, 1);
+    func_8003FBF8(text, D_8006FF5C, D_80099D98[9] + 1);
+    D_80099DA4 = D_8009292C = D_8009130C[D_80099D98[9]];
+    func_8007ECF0(text);
+    func_8007F948(page, 2);
+    func_8003FBF8(text, D_8006FF60, D_80091300[D_80099D98[2]]);
+    func_8007ECF0(text);
+    func_8007F948(page, 3);
+    func_8007ECF0(D_80099D98[5] ? "COM" : "USER1");
+    func_8007F948(page, 4);
+    func_8007ECF0(D_80099D98[6] ? "COM" : "USER2");
+    func_8007EE08(0);
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007FB0C);
 

@@ -144,7 +144,7 @@ extern s32 D_80059488;
 /* Options of the menu's settings screen, one byte each. */
 extern u8 D_80099D98[];
 extern u8 D_80092884;
-extern s32 D_800912F4[];
+extern char *D_800912F4[];
 extern u32 D_8009274C; /* pad buttons repeating this frame */
 extern u32 D_80092750; /* pad buttons pressed this frame */
 
@@ -156,8 +156,25 @@ extern s32 D_800912F0;
 typedef struct {
     u8 unk0[0x12];
     s16 cursor; /* 0x12 */
-    u8 unk14[0x28];
+    s16 y;      /* 0x14 */
+    u8 unk16[0xE];
+    s16 x;      /* 0x24 */
+    u8 unk26[2];
+    s16 width;  /* 0x28 */
+    u8 unk2A[0x12];
 } MenuPage;
+
+/* Formats shared by the settings pages ("%d", "%dFPS"). */
+extern char D_8006FF5C[];
+extern char D_8006FF60[];
+extern s32 D_8009130C[]; /* value of each speed setting */
+extern u8 D_80091300[];  /* frame rate of each rate setting */
+extern s16 D_80099DA4;
+char *func_8007F97C(void);
+void func_8007ECF0(u8 *text);
+void func_8007E894(s32 x, s32 y);
+void func_8007F948(MenuPage *page, s32 entry);
+s32 func_8003FBF8(char *out, char *format, ...); /* sprintf */
 
 extern MenuPage D_800915AC[];
 extern MenuPage *D_80092734; /* shown page */
