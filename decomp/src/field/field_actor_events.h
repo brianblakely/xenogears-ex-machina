@@ -122,6 +122,14 @@ extern s32 D_800AFC74;         /* set when an initialization made a sprite */
 void func_8002303C(FieldModel *model, s32, s32);
 void func_800A3474(void);
 
+/* The distortion's two wave phases (x, y) at 800b20b0. */
+#define EFFECT_PHASE ((s16 *)D_800B2078.unk20B0)
+/* The distortion's per-buffer mode packets (800b1e18, 0xc0 bytes each). */
+typedef struct {
+    u8 bytes[0xC0];
+} DistortionPacket;
+extern DistortionPacket D_800B1E18[2];
+
 s32 func_8009EB48(FieldActor *actor, s32 tag); /* -1 when a slot has `tag` */
 s32 func_800A3090(s32 actor, s32 event);       /* entry PC of an actor's event */
 
