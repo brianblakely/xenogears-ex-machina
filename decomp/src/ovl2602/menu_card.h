@@ -904,6 +904,7 @@ void func_801CC528(void);
 u8 func_801D5828(void);
 void func_801CCE90(u8 count, Label *labels, u8 *text_ids, u8 *shown);
 extern u8 D_801D6A24[];    /* sell list label text ids */
+extern s32 D_801D6A40[];   /* gear list label x offsets */
 extern s32 D_801D6FDC;     /* index of the gear screen's member among the available ones */
 /* The camera's move between two points (801d9050). */
 typedef struct {

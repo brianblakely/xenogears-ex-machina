@@ -2038,7 +2038,47 @@ void func_801CCEBC(u8 count, u8 *shown) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CCEE8);
+/* Show label `index`: in list row `row` (mode 0, offset by its column) or at the info position (mode 1; labels past the first further left). */
+void func_801CCEE8(u8 count, Label *labels, u8 *text_ids, s32 *offsets, u8 *shown, u8 index, u8 row, u8 mode) {
+    switch (mode) {
+    case 0:
+        func_801CCEBC(count, shown);
+        (labels[index].poly + D_800625A0->buffer)->x0 = D_801D6BFC[row + index] + 0x16 + offsets[index];
+        (labels[index].poly + D_800625A0->buffer)->y0 = D_801D6C20[row + index] - 0x22;
+        (labels[index].poly + D_800625A0->buffer)->x1 =
+            labels[index].width + (D_801D6BFC[row + index] + 0x16 + offsets[index]);
+        (labels[index].poly + D_800625A0->buffer)->y1 = D_801D6C20[row + index] - 0x22;
+        (labels[index].poly + D_800625A0->buffer)->x2 = D_801D6BFC[row + index] + 0x16 + offsets[index];
+        (labels[index].poly + D_800625A0->buffer)->y2 = D_801D6C20[row + index] - 0x15;
+        (labels[index].poly + D_800625A0->buffer)->x3 =
+            labels[index].width + (D_801D6BFC[row + index] + 0x16 + offsets[index]);
+        (labels[index].poly + D_800625A0->buffer)->y3 = D_801D6C20[row + index] - 0x15;
+        break;
+    case 1:
+        if (index != 0) {
+            (labels[index].poly + D_800625A0->buffer)->x0 = 0xCE;
+            (labels[index].poly + D_800625A0->buffer)->y0 = 0x7E;
+            (labels[index].poly + D_800625A0->buffer)->x1 = labels->width + 0xCE;
+            (labels[index].poly + D_800625A0->buffer)->y1 = 0x7E;
+            (labels[index].poly + D_800625A0->buffer)->x2 = 0xCE;
+            (labels[index].poly + D_800625A0->buffer)->y2 = 0x8B;
+            (labels[index].poly + D_800625A0->buffer)->x3 = labels->width + 0xCE;
+            (labels[index].poly + D_800625A0->buffer)->y3 = 0x8B;
+        } else {
+            (labels->poly + D_800625A0->buffer)->x0 = 0xEC;
+            (labels->poly + D_800625A0->buffer)->y0 = 0x7E;
+            (labels->poly + D_800625A0->buffer)->x1 = labels->width + 0xEC;
+            (labels->poly + D_800625A0->buffer)->y1 = 0x7E;
+            (labels->poly + D_800625A0->buffer)->x2 = 0xEC;
+            (labels->poly + D_800625A0->buffer)->y2 = 0x8B;
+            (labels->poly + D_800625A0->buffer)->x3 = labels->width + 0xEC;
+            (labels->poly + D_800625A0->buffer)->y3 = 0x8B;
+        }
+        break;
+    }
+    labels[index].buffer = D_800625A0->buffer;
+    shown[index] = 1;
+}
 
 /* Reveal `count` image pairs one step at a time (two frames each), the second of each pair one step behind. */
 void func_801CD310(s32 count, s32 *ids) {
@@ -4004,7 +4044,112 @@ void func_801D57A8(void) {
     }
 }
 
+/*
+ * The gear parts list of the current command (the fourth command starts at
+ * its fourth entry, when func_801D573C allows it): move the cursor, open the
+ * gear view for the chosen list (4), page the members (9, 10), leave (5).
+ * Nonmatching: the original tests `running` on loop entry and does not keep
+ * the constant 3 in a register.
+ */
+#ifdef NON_MATCHING
+u8 func_801D5828(void) {
+    u8 running;
+    u8 first;
+    u8 base;
+
+    running = 1;
+    first = 1;
+    base = 0;
+    if (D_800625A0->top_cursor != 3 || func_801D573C()) {
+        D_800625A0->list_cursor = 0;
+        D_800625A0->unk339 = 0xFF;
+        if (D_800625A0->top_cursor == 3) {
+            D_800625A0->list_cursor = 3;
+            base = 4;
+        }
+        while (running) {
+            func_801CC1C4();
+            if (D_800625A0->view_motion == 0 && D_801D6FD8 >= 2) {
+                D_800625A0->flags->marks_b_shown = 1;
+            }
+            if (first) {
+                first = 0;
+                func_801CCE90(4, D_800625A0->list_labels, &D_801D6A24[base], D_800625A0->flags->list_label_shown);
+                func_801CD564(0);
+            }
+            if (D_800625A0->list_cursor != D_800625A0->unk339) {
+                func_801CCEE8(4, D_800625A0->list_labels, &D_801D6A24[base], &D_801D6A40[base],
+                              D_800625A0->flags->list_label_shown, D_800625A0->list_cursor, 4, 0);
+                func_801CDA0C(0);
+                D_800625A0->unk339 = D_800625A0->list_cursor;
+            }
+            if (D_800625A0->unk454->lamp_state[0] == 0) {
+                D_800625A0->flags->gear_parts_shown = 1;
+                D_800625A0->flags->gear_shown = 0;
+            }
+            switch (D_800625A0->input) {
+            case 4:
+                D_800625A0->flags->unk4 = 0;
+                D_800625A0->flags->cursor_shown = 0;
+                D_800625A0->flags->lists_shown = 0;
+                D_800625A0->flags->gear_parts_shown = 0;
+                func_801CCEBC(4, D_800625A0->flags->list_label_shown);
+                func_801CB498(2);
+                func_801CFC60();
+                D_800625A0->flags->marks_b_shown = 0;
+                switch (D_800625A0->top_cursor) {
+                case 1:
+                    func_801D2804(1);
+                    break;
+                case 2:
+                    func_801D498C(1, 0);
+                    break;
+                case 3:
+                    func_801D57A8();
+                    break;
+                }
+                func_801CFF18();
+                func_801CC1C4();
+                func_801CF448();
+                func_801CC1C4();
+                D_800625A0->flags->unk4 = 1;
+                D_800625A0->flags->cursor_shown = 1;
+                D_800625A0->flags->lists_shown = 1;
+                func_801CCE90(4, D_800625A0->list_labels, &D_801D6A24[base], D_800625A0->flags->list_label_shown);
+                D_800625A0->unk339 = 0xFF;
+                break;
+            case 5:
+                running = 0;
+                break;
+            case 1:
+                if (D_800625A0->list_cursor != 0) {
+                    D_800625A0->list_cursor--;
+                } else {
+                    D_800625A0->list_cursor = D_800625A0->list_count - 1;
+                }
+                break;
+            case 3:
+                if (++D_800625A0->list_cursor >= D_800625A0->list_count) {
+                    D_800625A0->list_cursor = 0;
+                }
+                break;
+            case 9:
+                func_801D0398(0);
+                break;
+            case 10:
+                func_801D0398(1);
+                break;
+            }
+        }
+        D_800625A0->flags->unk4 = 0;
+        D_800625A0->flags->cursor_shown = 0;
+        func_801CCEBC(4, D_800625A0->flags->list_label_shown);
+    }
+    return 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D5828);
+#endif
 
 /* Set up the Gear model: the model code, its light, both large ordering tables and the two model blocks, then show the first present member's gear. */
 void func_801D5D38(void) {
