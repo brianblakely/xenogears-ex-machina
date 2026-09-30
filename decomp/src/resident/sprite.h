@@ -39,7 +39,19 @@ typedef struct {
     s16 direction;           /* +0x32 */
     u8 unknown34[6];
     u16 rate;                /* +0x3a: speed factor, 1024 = 1 */
-    u32 render_flags;        /* +0x3c: bit 28 orientation dirty */
+    union {
+        u32 word;
+        struct {
+        unsigned sides : 2;      /* 1: one-sided */
+        unsigned unknown2 : 1;
+        unsigned flip : 1;       /* mirrored frame */
+        unsigned flip_y : 1;
+        unsigned blend : 3;      /* blend rate + 1 */
+        unsigned unknown8 : 20;
+        unsigned dirty : 1;      /* orientation needs rebuilding */
+        unsigned unknown29 : 3;
+        } bits;
+    } render;                /* +0x3c: tests read the word, as the original does */
     u32 flags;               /* +0x40: bits 8-12 facing group */
     u8 unknown44[8];
     s32 resource;            /* +0x4c */
@@ -55,10 +67,23 @@ typedef struct {
     u8 stack[0x1A];          /* +0x8e */
     struct {
         unsigned unknown0 : 11;
-        unsigned frame : 6;  /* frame table index */
-        unsigned unknown17 : 15;
+        unsigned frame : 6;      /* frame table index */
+        unsigned step : 3;
+        unsigned phase : 2;
+        unsigned unknown22 : 10;
     } frame_bits;            /* +0xa8 */
-    u32 flags2;              /* +0xac: bits 2-3 flip, 6 repeat, 7-18 gravity divisor */
+    union {
+        u32 word;
+        struct {
+        unsigned unknown0 : 2;
+        unsigned mirror : 1;     /* mirror every frame */
+        unsigned frame_flip : 1; /* the current frame is mirrored */
+        unsigned unknown4 : 2;
+        unsigned double_step : 1;
+        unsigned divisor : 12;   /* gravity divisor */
+        unsigned unknown19 : 13;
+        } bits;
+    } motion;                /* +0xac */
     u8 byteb0;               /* +0xb0 */
 } Sprite;
 

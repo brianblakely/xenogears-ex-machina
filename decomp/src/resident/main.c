@@ -1362,9 +1362,9 @@ void func_80021B98(Sprite *sprite, u8 red, u8 green, u8 blue) {
     func_8001F6B0(sprite);
 }
 
-/* Set a sprite's gravity divisor (flags2 bits 7-18). */
+/* Set a sprite's gravity divisor. */
 void func_80021BCC(Sprite *sprite, s32 divisor) {
-    sprite->flags2 = (sprite->flags2 & 0xFFF8007F) | ((divisor & 0xFFF) << 7);
+    sprite->motion.bits.divisor = divisor;
 }
 
 void func_80021BF0(Sprite *sprite, s32 resource) {
@@ -1470,15 +1470,15 @@ void func_80022000(Sprite *sprite, s16 scale) {
 
     if (renderer != NULL) {
         renderer->scale_x = renderer->scale_y = renderer->scale_z = sprite->scale = scale;
-        sprite->render_flags |= 0x10000000;
+        sprite->render.bits.dirty = 1;
     }
 }
 
 /* Rebuild a sprite's orientation if it is marked dirty. */
 void func_80022038(Sprite *sprite) {
-    if ((sprite->render_flags >> 28) & 1) {
+    if ((sprite->render.word >> 28) & 1) {
         func_80022090(sprite);
-        sprite->render_flags &= ~0x10000000;
+        sprite->render.bits.dirty = 0;
     }
 }
 
@@ -1494,7 +1494,7 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80022660);
 
 /* Derive a sprite's horizontal velocity from its walking speed, gravity divisor and direction. */
 void func_80022974(Sprite *sprite) {
-    s32 speed = ((sprite->speed >> 4) << 8) / (s32)((sprite->flags2 >> 7) & 0xFFF);
+    s32 speed = ((sprite->speed >> 4) << 8) / sprite->motion.bits.divisor;
 
     sprite->speed_x = ((func_8003F8CC(sprite->direction) >> 2) * speed) >> 6;
     sprite->speed_z = -((func_8003F8B0(sprite->direction) >> 2) * speed) >> 6;
@@ -1526,7 +1526,7 @@ void func_80022CDC(Sprite *sprite) {
     func_80022B2C(sprite);
 }
 
-/* Show the frame the frame index selects: its flip bit sets flags2 bit 3, the render flip is the xor of flags2 bits 3 and 2. */
+/* Show the frame the frame index selects, mirrored when its flip bit and the sprite's mirror flag differ. */
 void func_80022D44(Sprite *sprite) {
     s32 index = sprite->frame_bits.frame;
     u16 entry;
@@ -1538,22 +1538,22 @@ void func_80022D44(Sprite *sprite) {
     entry = sprite->frame_table[index];
     frame = entry & 0x1FF;
     if (entry & 0x200) {
-        sprite->flags2 |= 8;
+        sprite->motion.bits.frame_flip = 1;
     } else {
-        sprite->flags2 &= ~8;
+        sprite->motion.bits.frame_flip = 0;
     }
-    sprite->render_flags = (sprite->render_flags & ~8) | ((((sprite->flags2 >> 3) & 1) ^ ((sprite->flags2 >> 2) & 1)) << 3);
+    sprite->render.bits.flip = sprite->motion.bits.frame_flip ^ sprite->motion.bits.mirror;
     func_8001D2B0(sprite, frame);
 }
 
-/* Sprite task update: advance the animation and move; a second step when flags2 bit 6 is set; destroy the task when the frames run out. */
+/* Sprite task update: advance the animation and move (twice with double_step); destroy the task when the frames run out. */
 void func_80022DF4(Task *task) {
     Sprite *sprite = task->data;
 
     func_80023210(sprite);
     func_80022CDC(sprite);
     if (sprite->frames_left != 0) {
-        if (!((sprite->flags2 >> 6) & 1)) {
+        if (!((sprite->motion.word >> 6) & 1)) {
             return;
         }
         func_80023210(sprite);
