@@ -1347,7 +1347,76 @@ void func_8007A21C(s32 frames) {
     D_80092A34[0].vy = D_80092A34[1].vy = D_80092A34[2].vy = D_80092A34[3].vy = 0x100;
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007A344);
+/* One frame of a replay: step both actors to the next recorded pose (the
+ * first frame after a reset shows every part), show "REPLAY", then run
+ * the actors' frame as in play and count down the replay. */
+void func_8007A344(Actor *first, Actor *second) {
+    u8 frame = D_800928C0++;
+
+    first->pose = (Pose *)first->unk9CC + frame;
+    second->pose = (Pose *)second->unk9CC + frame;
+    first->move = (Move *)((Pose *)first->unk9CC + D_800928C0);
+    second->move = (Move *)((Pose *)second->unk9CC + D_800928C0);
+    if (D_800928AC == 0xFF) {
+        first->move->flags |= 0x1000;
+        second->move->flags |= 0x1000;
+        first->move->unkA = 1;
+        second->move->unkA = 1;
+        first->move->unk9 = 1;
+        second->move->unk9 = 1;
+    }
+    if (D_800928E8 & 8) {
+        func_8007E894(0x10, 0x10);
+        func_8007EBE0("REPLAY");
+    }
+    func_80073644(first);
+    func_80073644(second);
+    func_800764CC(first);
+    func_800764CC(second);
+    first->start_home = first->home;
+    second->start_home = second->home;
+    first->start = first->pos;
+    second->start = second->pos;
+    D_80092648 = 0;
+    if (D_8009287C >= 2) {
+        D_8009287C = 1;
+    }
+    func_80036420();
+    if (D_800928FC == 1) {
+        if (D_80059490 & 0x20) {
+            func_80083C0C(8);
+        }
+        func_800832C0(D_80059574);
+    } else {
+        if (D_8005948C & 0x20) {
+            func_80083C0C(8);
+        }
+        func_800832C0(D_80059570);
+    }
+    func_80074AB4(first);
+    func_80074AB4(second);
+    func_80078E94(first);
+    func_80078E94(second);
+    first->flags = (first->flags & ~0x60000000) | ((func_800828C4(&first->pos) & 0x3000000) << 5);
+    second->flags = (second->flags & ~0x60000000) | ((func_800828C4(&second->pos) & 0x3000000) << 5);
+    func_80079D6C(first);
+    func_80079D6C(second);
+    func_8007920C(first);
+    func_8007920C(second);
+    func_80075B50(first);
+    func_80075B50(second);
+    func_8007BACC();
+    if (D_80092884 != 0) {
+        func_8007D65C(&first->core, &second->core, 0x13);
+    }
+    if (D_800928AC == 0xFF) {
+        func_8008369C();
+    }
+    if (D_800928AC == 0) {
+        func_80083C0C(8);
+    }
+    D_800928AC--;
+}
 
 /* Put an actor into its round-end pose: a win pose when the round took
  * under two seconds. */
