@@ -370,7 +370,9 @@ extern WindowRect *D_800D2D90[7];
 
 /* Item effect table (0x10 bytes from 800d2200). */
 typedef struct {
-    u8 unk0[0xE];
+    u8 unk0[4];
+    u16 target;    /* +0x4 target selection */
+    u8 unk6[0xE - 0x6];
     u16 animation; /* +0xE */
 } ItemEffect;
 
@@ -489,6 +491,12 @@ extern s16 D_8005A3A0[];
 extern s32 D_8006EF58;     /* party gold */
 
 /* Command menu. */
+void func_8008BC40(u8 keep);
+void func_8008BC98(u8 member);
+u8 func_80085084(u16 target, u8 member, s32 mode);
+s32 func_8009A7E4(u8 index);
+void func_8009A854(u8 index, u8 k);
+extern u8 D_800D3688[0x30]; /* gear part counts */
 void func_8007FD38(u8 member);
 void func_8008AA74(u8 id);   /* play a menu sound */
 void func_8008ADD0(u8 member);

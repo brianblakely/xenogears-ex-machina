@@ -4528,7 +4528,61 @@ void func_8008BC98(u8 member) {
     func_800BCD98(func_80089C08(D_800C3EAC->slots[member].defaultTarget));
 }
 
+/* Use the list item at (column, row) for `member`: an item (from the
+ * character list) starts its effect with target selection, 1 when started;
+ * a gear part (from the gear list, inGear) is applied and its count taken,
+ * 2 when applied. An empty entry buzzes (0x4f). */
+#ifdef NON_MATCHING
+u8 func_8008BD50(member, column, row, inGear)
+u8 member;
+u8 column;
+u8 row;
+u8 inGear;
+{
+    u8 *id;
+    s32 index;
+    u16 effect;
+    u8 item;
+    u8 result;
+
+    id = D_800D2CE0;
+    index = row * 2 + column;
+    id += index;
+    effect = D_800D2200[*id].target;
+    result = 0;
+    if (!inGear) {
+        item = *id;
+    } else {
+        item = D_800C3D70[index];
+    }
+    if (item != 0) {
+        if (!inGear) {
+            func_8008BC40(1);
+            D_800D2D28->unkC6 = 1;
+            if (func_80085084(effect, member, 0)) {
+                result = 1;
+            } else {
+                D_800D2D28->unkC6 = 0;
+                func_8008BC98(member);
+            }
+        } else if (((s32 (*)())func_8009A7E4)(item - 50)) {
+            /* Both calls are unprototyped in the original: the part index
+             * is passed unnarrowed and 8009a854's entry argument is left
+             * undefined (it then uses whatever the register holds). */
+            ((void (*)())func_8009A854)(item);
+            if (--D_800D3688[row * 2 + column] == 0) {
+                D_800C3D70[row * 2 + column] = 0;
+            }
+            result = 2;
+        }
+    } else {
+        func_8008AA74(0x4F);
+    }
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008BD50);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008BED8);
 
