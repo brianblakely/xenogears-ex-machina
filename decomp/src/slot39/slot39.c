@@ -3326,7 +3326,36 @@ void func_801D7C3C(u8 slot, u8 mode) {
     D_800625A0->block358->buffer = D_800625A0->bufferIndex;
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D7CFC);
+/* Show the detail panel's two tabs (when `shown`), the one not selected by
+ * `second` dimmed and semi-transparent. */
+void func_801D7CFC(u8 slot, u8 shown, u8 second) {
+    s32 i;
+    s32 dim;
+
+    second = second == 0; /* now: the tab to dim */
+    D_800625A0->block358->tabCount = 0;
+    if (shown) {
+        for (i = 0; i < 2; i++) {
+            func_8002675C(D_800625A0->sheet, D_801E977C[i], &D_800625A0->block358->tabs[i * 2],
+                          D_800625A0->bufferIndex, i * 0x20 + 0x78, 0x5a, 0x1000);
+            func_801C851C(D_800625A0->block358->tabsAt[i],
+                          D_800625A0->block358->tabs[i * 2 + D_800625A0->bufferIndex].x0,
+                          D_800625A0->block358->tabs[i * 2 + D_800625A0->bufferIndex].y0,
+                          D_800625A0->block358->tabs[i * 2 + D_800625A0->bufferIndex].x1 -
+                              D_800625A0->block358->tabs[i * 2 + D_800625A0->bufferIndex].x0,
+                          D_800625A0->block358->tabs[i * 2 + D_800625A0->bufferIndex].y3 -
+                              D_800625A0->block358->tabs[i * 2 + D_800625A0->bufferIndex].y0);
+        }
+        dim = second * 2;
+        func_801E91C4(D_800625A0->block358->tabs + (dim + D_800625A0->bufferIndex));
+        D_800625A0->block358->tabs[dim + D_800625A0->bufferIndex].tpage |= 0x20;
+        (D_800625A0->block358->tabs + (dim + D_800625A0->bufferIndex))->r0 = 0x20;
+        (D_800625A0->block358->tabs + (dim + D_800625A0->bufferIndex))->g0 = 0x20;
+        (D_800625A0->block358->tabs + (dim + D_800625A0->bufferIndex))->b0 = 0x20;
+        D_800625A0->block358->tabBuffer = D_800625A0->bufferIndex;
+        D_800625A0->block358->tabCount = 2;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D7F50);
 

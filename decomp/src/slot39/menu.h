@@ -496,7 +496,7 @@ typedef struct MenuBlock358 {
     POLY_FT4 ep[10];             /* 1950 */
     POLY_FT4 epMax[10];          /* 1AE0 */
     POLY_FT4 list1C70[10];       /* 1C70 */
-    POLY_FT4 list1E00[4];        /* 1E00 */
+    POLY_FT4 tabs[4];            /* 1E00: two tabs */
     SVECTOR frameAt[4];          /* 1EA0 */
     SVECTOR portraitAt[4];       /* 1EC0 */
     SVECTOR partsAt[33][4];      /* 1EE0 */
@@ -511,7 +511,7 @@ typedef struct MenuBlock358 {
     SVECTOR epAt[5][4];          /* 28C0 */
     SVECTOR epMaxAt[5][4];       /* 2960 */
     SVECTOR list1C70At[5][4];    /* 2A00 */
-    SVECTOR list1E00At[2][4];    /* 2AA0 */
+    SVECTOR tabsAt[2][4];        /* 2AA0 */
     u8 buffer;                   /* 2AE0 */
     u8 levelCount;               /* 2AE1 */
     u8 level2Count;              /* 2AE2 */
@@ -525,8 +525,8 @@ typedef struct MenuBlock358 {
     u8 epMaxCount;               /* 2AEA */
     u8 list1C70Count;            /* 2AEB */
     u8 count;                    /* 2AEC: layout parts built */
-    u8 unk2AED;                  /* 2AED */
-    u8 unk2AEE;                  /* 2AEE */
+    u8 tabCount;                 /* 2AED */
+    u8 tabBuffer;                /* 2AEE */
     u8 pad2AEF[0x1];
 } MenuBlock358;
 
@@ -857,6 +857,7 @@ extern s32 D_801E9D28;   /* detail panel exp to next level */
 extern s32 D_801E9D2C;
 extern s32 D_801E9D30;   /* detail panel +77..79 value */
 extern s32 D_801E9D34;
+extern s32 D_801E977C[2]; /* detail panel tab sprites */
 extern s32 D_801E9CF0;   /* hp */
 extern s32 D_801E9CF4;
 extern s32 D_801E9CF8;   /* hp max */
