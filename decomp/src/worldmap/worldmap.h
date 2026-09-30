@@ -759,4 +759,32 @@ typedef struct {
 
 extern WorldmapSave D_8005A4E4;
 
+void StoreImage(RECT *rect, void *pixels);
+void MoveImage(RECT *rect, s32 x, s32 y);
+void ClearOTagR(u32 *ot, s32 count);
+
+extern void *D_8009C7E4; /* free memory block kept while away */
+extern void *D_8009C800, *D_8009C890; /* saved VRAM areas */
+extern s32 D_8009D14C, D_8009D804;
+extern u8 D_80059179;
+
+s16 func_80093F18(VECTOR *position);
+void func_80096694(void);
+void func_80071FEC(void);
+void func_80072BB0(void);
+void func_80072DB4(s32 a, s32 b, s32 c, s32 d);
+s32 func_800286CC(void);
+void func_80032EB4(void *a, void *b);
+void func_80028A60(s32 mode);
+void func_80028470(s32 a, s32 b);
+void func_80032498(s32 a, s32 b);
+void func_80033698(s32 a, s32 b);
+void func_80035DB0(void);
+void func_800978FC(void);
+void func_8008440C(void);
+void func_80085FE0(void);
+void func_800865A0(void);
+void func_8008901C(void);
+void func_80075D4C(void);
+
 #endif

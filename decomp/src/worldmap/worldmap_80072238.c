@@ -568,9 +568,119 @@ void func_8007565C(void) {
     D_8009BE28.target = save->camera_target;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_800758C0);
+/* Suspend the world map for another scene: record the return state, release
+ * the area and save the VRAM areas the other scene overwrites. */
+void func_800758C0(void) {
+    RECT rect;
+    void *block;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80075B58);
+    D_8006EE54.unk6A = 1;
+    D_8006F950 = (D_8009BD38.vy + 0x2000) & 0x3FFF;
+    for (i = 0; i < 3; i++) {
+        (&D_8006EE54.unk70)[i] = (&D_8006F8E5)[i];
+    }
+    D_8009D14C = D_80059179;
+    if (func_80093F18(&D_8009D55C.target) == 4) {
+        D_80059179 = 1;
+    }
+    func_80096694();
+    func_80086124();
+    func_800866C8();
+    func_80089128();
+    func_800320E8(D_8009BC38[1]);
+    func_800320E8(D_8009BCB0[1]);
+    block = func_80031BDC(4, 1);
+    func_800320E8(block);
+    block = (void *)((u32)block & 0xFFFFFF);
+    D_8009C7E4 = func_80031BDC((u32)block - 0x1C4FFC, 1);
+    func_80071FEC();
+    D_8009C800 = func_80031BDC(0x10000, 0);
+    D_8009C890 = func_80031BDC(0xC800, 0);
+    rect.x = 0x180;
+    rect.y = 0x100;
+    rect.w = 0x80;
+    rect.h = 0x100;
+    StoreImage(&rect, D_8009C800);
+    rect.x = 0;
+    rect.y = 0x1B0;
+    rect.w = 0x140;
+    rect.h = 0x50;
+    StoreImage(&rect, D_8009C890);
+    if (D_8009D7F0 == 0) {
+        rect.x = 0;
+        rect.y = 0xD8;
+        rect.w = 0x140;
+        rect.h = 0xD8;
+        MoveImage(&rect, 0, 0);
+    }
+    rect.x = 0;
+    rect.y = 0;
+    rect.w = 0x140;
+    rect.h = 0xD8;
+    MoveImage(&rect, 0x2C0, 0x100);
+    DrawSync(0);
+    func_80072DB4(0x10, 0, 8, 2);
+    while (func_800286CC() >= 2) {
+    }
+    func_80032EB4(D_8009D528, D_8009C7E4);
+    func_800320E8(D_8009D528);
+    rect.x = 0;
+    rect.y = 0;
+    rect.w = 0x140;
+    rect.h = 0xD8;
+    MoveImage(&rect, 0, 0xE0);
+    DrawSync(0);
+    func_80028A60(0);
+}
+
+/* Resume the world map after another scene: reload the area, restore the saved
+ * VRAM areas and bring the systems back up. */
+void func_80075B58(void) {
+    RECT rect;
+
+    func_80032498(3, 0);
+    func_80028470(0x24, 0);
+    func_800320E8(D_8005945C);
+    func_800320E8(D_8009C7E4);
+    func_80072BB0();
+    D_8009BD20 = func_80031BDC(func_800288EC(D_8009C174), 1);
+    func_800295D8(D_8009C174, D_8009BD20, 0, 0);
+    func_80072DB4(0x10, 0x80, -8, 2);
+    rect.x = 0x2C0;
+    rect.y = 0x100;
+    rect.w = 0x140;
+    rect.h = 0xD8;
+    MoveImage(&rect, 0, 0);
+    MoveImage(&rect, 0, 0xD8);
+    ClearOTagR(D_8009BE3C->ot, 0x400);
+    func_80028A60(0);
+    func_8008440C();
+    rect.x = 0x180;
+    rect.y = 0x100;
+    rect.w = 0x80;
+    rect.h = 0x100;
+    LoadImage(&rect, D_8009C800);
+    rect.x = 0;
+    rect.y = 0x1B0;
+    rect.w = 0x140;
+    rect.h = 0x50;
+    LoadImage(&rect, D_8009C890);
+    DrawSync(0);
+    func_800320E8(D_8009C800);
+    func_800320E8(D_8009C890);
+    func_800978FC();
+    func_8008901C();
+    func_800865A0();
+    func_80085FE0();
+    func_80033698(0x130, 0x1E0);
+    VSync(0);
+    func_80035DB0();
+    D_8009D804 = 0;
+    D_8006EE54.unk6A = 0;
+    D_80059179 = D_8009D14C;
+    func_80075D4C();
+}
 
 /* Apply party slots that joined or left since the last update, then pick the
  * movement mode from the members present. */
