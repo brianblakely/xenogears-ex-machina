@@ -2,40 +2,21 @@
 #define FIELD_FIELD_H
 
 #include "common.h"
+#include "psyq/libgpu.h"
+#include "psyq/libcd.h"
+#include "psyq/libgte.h"
+#include "psyq/libetc.h"
 
-/* GTE vector/matrix layouts (PsyQ libgte). */
-typedef struct {
-    s16 vx, vy, vz, pad;
-} SVECTOR;
+/* A 16.16 fixed-point value; code also reads its whole part alone. */
+typedef union {
+    s32 value;
+    struct {
+        u16 fraction;
+        s16 whole;
+    } s;
+} Fixed;
 
-typedef struct {
-    s32 vx, vy, vz, pad;
-} VECTOR;
-
-typedef struct {
-    s16 m[3][3];
-    s32 t[3];
-} MATRIX;
-
-/* libgpu environments. */
-typedef struct {
-    s16 x, y, w, h;
-} RECT;
-
-typedef struct {
-    RECT clip;
-    s16 ofs[2];
-    RECT tw;
-    u16 tpage;
-    u8 dtd, dfe, isbg, r0, g0, b0;
-    u32 dr_env[16];
-} DRAWENV;
-
-typedef struct {
-    RECT disp;
-    RECT screen;
-    u8 isinter, isrgb24, pad0, pad1;
-} DISPENV;
+#define WHOLE(value) (((Fixed *)&(value))->s.whole)
 
 /* One of the two draw-buffer blocks (800b249c, 800ba590). */
 typedef struct {
@@ -46,21 +27,6 @@ typedef struct {
     u32 ot2[0x1001];     /* 40D0: cleared only while 800adb4c is set */
     u32 overlay_ot[8];   /* 80D4 */
 } FieldDrawBlock;
-
-typedef struct {
-    u32 mode;
-    RECT *crect;
-    u32 *caddr;
-    RECT *prect;
-    u32 *paddr;
-} TIM_IMAGE;
-
-typedef struct {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    s16 w, h;
-} TILE;
 
 /* One screen fade channel (800b20c4 + 0x58 * channel). Levels are 8.8. */
 typedef struct {
@@ -75,54 +41,110 @@ typedef struct {
 } FadeChannel;
 
 
+/* One of an actor's eight script slots (analysis/formats/field-lifecycle.md). */
+typedef struct ScriptSlot {
+    u16 resume_pc;      /* 0 */
+    u8 countdown;       /* 2 */
+    u8 tag;             /* 3 */
+    u32 value : 16;     /* 4: per-slot argument (e.g. move speed) */
+    u32 unk16 : 2;
+    u32 priority : 4;   /* bits 18-21 */
+    u32 unk22 : 1;
+    u32 move_mode : 2;  /* bits 23-24 */
+    u32 unk25 : 7;
+} ScriptSlot;
+
+/* An actor's packed state word (+12c). */
+typedef struct {
+    u32 mode : 2;   /* 0-1 */
+    u32 unk2 : 3;   /* 2-4 */
+    u32 unk5 : 1;   /* 5 */
+    u32 depth : 3;  /* 6-8: script call depth */
+    u32 octant : 3; /* 9-11 */
+    u32 unk12 : 1;  /* 12 */
+    u32 layer : 3;  /* 13-15: 801e layer */
+    u32 unk16 : 16;
+} ActorState;
+
 /* One 0x138-byte event actor record. */
 typedef struct FieldActor {
-    u32 flags;       /* 000 */
-    u32 layer_flags; /* 004: bits 3+ switch collision layers off */
-    s16 triangle[4]; /* 008: current collision triangle per layer */
-    s16 layer;       /* 010 */
+    u32 flags;           /* 000 */
+    u32 layer_flags;     /* 004: bits 3+ switch collision layers off */
+    s16 triangle[4];     /* 008: current collision triangle per layer */
+    s16 layer;           /* 010 */
     u8 unk012[2];
-    u32 unk014;      /* 014 */
-    u8 unk018[4];
-    s32 gravity;     /* 01C */
-    s32 position[3]; /* 020: 16.16 */
+    u32 unk014;          /* 014 */
+    s16 unk18;           /* 018 */
+    s16 height;          /* 01A */
+    Fixed gravity;       /* 01C: 16.16 */
+    s32 position[3];     /* 020: 16.16 x, y, z */
     u8 unk02C[4];
-    s32 unk030;      /* 030 */
-    s32 unk034;      /* 034 */
-    s32 unk038;      /* 038 */
-    u8 unk03C[0x74 - 0x3C];
-    u8 unk074;       /* 074 */
-    u8 unk075;       /* 075 */
-    u8 unk076[0x80 - 0x76];
-    s8 character;    /* 080 */
-    u8 unk081[0xCC - 0x81];
-    u16 pc;          /* 0CC: event working PC */
-    u8 slot;         /* 0CE */
-    u8 unk0CF[0xEA - 0xCF];
-    s16 unk0EA;      /* 0EA */
-    u8 unk0EC[0xF4 - 0xEC];
-    s16 scale[3];    /* 0F4 */
-    u8 unk0FA[0x104 - 0xFA];
-    s16 heading;     /* 104 */
-    s16 heading_goal; /* 106: bit 15 once turned */
-    u8 unk108[2];
-    u16 sound;       /* 10A */
-    u8 sound_volume; /* 10C */
-    u8 sound_mode;   /* 10D: 0xff off */
+    s32 unk030[3];       /* 030 */
+    u8 unk03C[4];
+    s32 unk40[3];        /* 040 */
+    u8 unk04C[4];
+    s32 unk50[3];        /* 050 */
+    u8 unk05C[4];
+    s16 unk60;           /* 060 */
+    u8 unk062[2];
+    s16 unk64;           /* 064 */
+    u8 unk066[0x70 - 0x66];
+    s16 unk70;           /* 070 */
+    s16 unk72;           /* 072 */
+    u8 unk074;           /* 074 */
+    u8 unk075;           /* 075 */
+    s16 unk76;           /* 076 */
+    u16 call_stack[4];   /* 078: return PCs */
+    s8 character;        /* 080 */
+    u8 unk081;
+    u8 unk82;            /* 082 */
+    u8 unk83;            /* 083 */
+    s32 unk84;           /* 084 */
+    s16 unk88;           /* 088 */
+    s16 unk8A;           /* 08A */
+    ScriptSlot slots[8]; /* 08C */
+    u16 pc;              /* 0CC: event working PC, relative to the bytecode */
+    u8 slot;             /* 0CE: selected script slot */
+    u8 unk0CF;
+    s32 target[3];       /* 0D0: move target x, y, z */
+    u8 unk0DC[0xE2 - 0xDC];
+    u8 unkE2;            /* 0E2 */
+    u8 unk0E3;
+    s16 unkE4;           /* 0E4 */
+    s16 unkE6;           /* 0E6 */
+    s16 unkE8;           /* 0E8 */
+    s16 unk0EA;          /* 0EA */
+    s16 unkEC;           /* 0EC */
+    s16 unkEE;           /* 0EE */
+    u8 unk0F0[4];
+    s16 scale[3];        /* 0F4 */
+    u8 unk0FA[2];
+    u8 color0[3];        /* 0FC */
+    u8 color1[3];        /* 0FF */
+    u16 unk102;          /* 102 */
+    s16 heading;         /* 104 */
+    s16 heading_goal;    /* 106: bit 15 once turned */
+    s16 unk108;          /* 108 */
+    u16 sound;           /* 10A */
+    u8 sound_volume;     /* 10C */
+    u8 sound_mode;       /* 10D: 0xff off */
     u8 unk10E[0x110 - 0x10E];
-    void *unk110;    /* 110 */
-    void *unk114;    /* 114 */
-    s32 *list;       /* 118 */
-    u16 unk11C;      /* 11C */
-    s16 unk11E;      /* 11E */
-    void *unk120;    /* 120 */
-    s16 unk124;      /* 124: -1 when +120 is free */
+    void *unk110;        /* 110 */
+    void *unk114;        /* 114 */
+    s32 *list;           /* 118 */
+    u16 unk11C;          /* 11C */
+    s16 unk11E;          /* 11E */
+    void *unk120;        /* 120 */
+    s16 unk124;          /* 124: -1 when +120 is free */
     u8 unk126[2];
-    s16 unk128;      /* 128 */
+    s16 unk128;          /* 128 */
     u8 unk12A[2];
-    u32 unk12C;      /* 12C */
+    union {
+        u32 word;
+        ActorState bits;
+    } state;             /* 12C */
     u8 unk130[4];
-    u32 unk134;      /* 134 */
+    u32 unk134;          /* 134 */
 } FieldActor;
 
 /* The actor's two flag words as four halfwords; events test and store them
@@ -136,71 +158,86 @@ typedef struct {
     u8 unk0D;
 } CollisionTriangle;
 
+/* A resident text box (80034614/800345e0/800346d4/80033cd0/80034800). */
+typedef struct {
+    u8 unk00[0x10];
+    u16 flags;       /* 10: bit 2 keeps the window open */
+    u8 unk12[0x6C - 0x12];
+    u8 unk6C;        /* 6C */
+    u8 unk6D[0x84 - 0x6D];
+    s16 unk84;       /* 84 */
+    u8 unk86[0x94 - 0x86];
+    RECT rect;       /* 94 */
+} TextBox;
+
 /* One of the four 0x498-byte dialogue windows at 800c2698. */
 typedef struct {
     u8 unk000[0x18];
-    u8 text[0x10];   /* 018: text state (80034614/800345e0/800346d4) */
-    u16 flags;       /* 028: bit 2 keeps the window open */
-    u8 unk02A[0xAC - 0x2A];
-    RECT rect;       /* 0AC */
+    TextBox text;    /* 018 */
     u8 unk0B4[0x37C - 0xB4];
     s16 status;      /* 37C: zero while displayed */
-    u8 unk37E[0x408 - 0x37E];
+    s16 unk37E;      /* 37E: first line */
+    s16 unk380;      /* 380: line count */
+    s16 unk382;      /* 382 */
+    u8 unk384[0x408 - 0x384];
     s16 timer;       /* 408 */
     u8 unk40A[0x40E - 0x40A];
     s16 busy;        /* 40E */
     u16 age;         /* 410: 0xffff when free */
     s16 unk412;      /* 412 */
-    s16 cleared;     /* 414 */
+    s16 cleared;     /* 414: cleared when its owner hides */
     s16 owner;       /* 416: owning event actor */
-    u8 unk418[0x498 - 0x418];
+    s16 unk418;      /* 418: descriptor index */
+    u8 unk41A[0x494 - 0x41A];
+    u8 unk494;       /* 494 */
+    u8 unk495;       /* 495 */
+    u8 unk496[0x498 - 0x496];
 } DialogueWindow;
 
+/* The model object at descriptor offset 04. */
 typedef struct {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    u8 u0, v0;
-    u16 clut;
-    s16 x1, y1;
-    u8 u1, v1;
-    u16 tpage;
-    s16 x2, y2;
-    u8 u2, v2;
-    u16 pad1;
-    s16 x3, y3;
-    u8 u3, v3;
-    u16 pad2;
-} POLY_FT4;
-
-/* One 0x5C-byte descriptor; one per event actor. */
-typedef struct {
-    u8 unk00[0x0C];
-    s32 unk0C;      /* 0C */
-    u8 unk10[4];
-    s32 unk14;      /* 14 */
-    s32 unk18;      /* 18 */
+    s32 position[3]; /* 00 */
+    s32 unk0C;       /* 0C */
+    s32 unk10;       /* 10 */
+    s32 unk14;       /* 14 */
+    s32 unk18;       /* 18 */
     u8 unk1C[0x2C - 0x1C];
-    s16 unk2C;
+    s16 unk2C;       /* 2C */
     u8 unk2E[0x82 - 0x2E];
-    s16 unk82;
+    s16 unk82;       /* 82 */
+    u16 unk84;       /* 84 */
 } FieldModel;
+
+/* A model's mesh header; +20/+28 bound it. */
+typedef struct {
+    u8 unk00[0x20];
+    s16 min[3];      /* 20 */
+    s16 unk26;
+    s16 max[3];      /* 28 */
+} FieldMesh;
 
 /* A model instance; +12 is its drawing mode. */
 typedef struct {
-    u8 unk00[0x12];
-    s16 mode;
+    u8 unk00[4];
+    FieldMesh *mesh; /* 04 */
+    u8 unk08[0x12 - 0x08];
+    s16 mode;        /* 12 */
+    u8 unk14[4];
+    s16 center[3];   /* 18 */
+    s16 unk1E;
+    s16 radius;      /* 20 */
 } FieldInstance;
 
+/* One 0x5C-byte descriptor; one per event actor. */
 typedef struct FieldDescriptor {
     FieldInstance *instance; /* 00 */
-    FieldModel *model; /* 04 */
-    void *unk08;       /* 08 */
-    MATRIX matrix;     /* 0C */
-    u8 unk2C[0x4C - 0x2C];
-    FieldActor *actor; /* 4C */
-    SVECTOR rotation;  /* 50 */
-    u16 flags;         /* 58 */
+    FieldModel *model;       /* 04 */
+    void *unk08;             /* 08 */
+    MATRIX matrix;           /* 0C: its translation is the position */
+    MATRIX transform;        /* 2C */
+    FieldActor *actor;       /* 4C */
+    SVECTOR rotation;        /* 50 */
+    u16 flags;               /* 58 */
     u8 unk5A[0x5C - 0x5A];
 } FieldDescriptor;
 
@@ -215,20 +252,35 @@ typedef struct {
     SpriteSequencer *sequencer;
 } FieldSprite;
 
+/* A collision attribute word, also read by byte. */
+typedef union {
+    u32 word;
+    u8 bytes[4];
+} Attribute;
+
+/* The camera view saved by 8009b9a0. */
+typedef struct {
+    s16 octant;
+    s32 projection;
+    s16 elevation;
+} SavedView;
+
 /* The loaded field components (80070cc8), one object: stores to structure
  * members do not pass loads of these pointers. */
 typedef struct {
     s32 descriptor_count;                      /* 800afb0c */
     FieldDescriptor *descriptors;              /* 800afb10 */
     void *geometry;                            /* 800afb14 */
-    void *unk08;                               /* 800afb18 */
-    void *unk0C;                               /* 800afb1c */
-    u32 *collision_attributes;                 /* 800afb20 */
+    void *collision;                           /* 800afb18 */
+    s32 *sprites;                              /* 800afb1c: sprite resource (offset table) */
+    Attribute *collision_attributes;           /* 800afb20 */
     CollisionTriangle *collision_triangles[4]; /* 800afb24 */
     void *collision_vertices[4];               /* 800afb34 */
+    s32 triangle_counts[4];                    /* 800afb44 */
+    s16 layer_count;                           /* 800afb54 */
 } FieldComponents;
 
-/* The field view and camera state (800af880..800afb44), one object: code
+/* The field view and camera state (800af880..800afb56), one object: code
  * addresses its members relative to one another. */
 typedef struct {
     VECTOR eye;              /* 000 */
@@ -280,7 +332,7 @@ typedef struct {
     s16 projection_steps;    /* 190 */
     s32 projection_value;    /* 194 */
     s32 projection_step;     /* 198 */
-    u16 steps;               /* 19C */
+    s16 steps;               /* 19C */
     s32 start;               /* 1A0 */
     s32 step;                /* 1A4 */
     s16 shake;               /* 1A8 */
@@ -288,15 +340,16 @@ typedef struct {
     s16 shake_stop;          /* 1AC */
     s32 shake_amplitude[3];  /* 1B0 */
     s32 shake_step[3];       /* 1BC */
-    s32 unk1C8[3];           /* 1C8 */
+    SavedView saved_view;    /* 1C8: saved by 8009b9a0 */
     SVECTOR world_angles;    /* 1D4 */
     SVECTOR anchor;          /* 1DC */
     MATRIX scaled_world;     /* 1E4 */
     MATRIX unk204;           /* 204 */
     MATRIX world_matrix;     /* 224 */
     s32 scale;               /* 244 */
-    s32 unk248;              /* 248 */
-    u8 unk24C[0x28C - 0x24C];
+    u8 lights[0x3C];         /* 248 */
+    s16 back_color[3];       /* 284 */
+    u8 unk28A[2];
     FieldComponents components; /* 28C: 800afb0c */
 } FieldView;
 
@@ -307,18 +360,24 @@ typedef struct {
     u8 unk1C[4];
 } GameRecord;
 
-/* A 0xa4-byte character slot of the game state (+26c). */
+/* One of the game state's 31 0xa4-byte records (+26c): characters 0-10,
+ * then gears. Records are copied whole, word by word. */
 typedef struct {
-    u32 unk00[0x74 / 4];
+    u32 unk00[0x4C / 4];
+    u16 hp;          /* 4C */
+    u16 max_hp;      /* 4E */
+    u16 ep;          /* 50 */
+    u16 max_ep;      /* 52 */
+    u8 unk54[0x74 - 0x54];
     u8 unk74[3];
-    u8 unk77;
-    u8 unk78;
+    u8 unk77;        /* 77 */
+    u8 unk78;        /* 78 */
     u8 unk79[0xA0 - 0x79];
-    u8 unkA0;
+    u8 unkA0;        /* A0: gear */
     u8 unkA1[0xA4 - 0xA1];
-} GameSlot;
+} Character;
 
-/* A 0xa4-byte character of the game state (+978). */
+/* A gear record of the game state (+978, records 11-30). */
 typedef struct {
     u8 unk00[0x38];
     u16 gauge;       /* 38 */
@@ -327,14 +386,13 @@ typedef struct {
     u32 points;      /* 60 */
     u32 points_max;  /* 64 */
     u8 unk68[0xA4 - 0x68];
-} GameCharacter;
+} Gear;
 
 /* Resident persistent game state (*8005a39c). */
 typedef struct GameState {
     u8 unk0000[0x26C];
-    GameSlot slots[10];          /* 026C */
-    u8 unk08D4[0x978 - 0x8D4];
-    GameCharacter characters[20]; /* 0978 */
+    Character characters[11]; /* 026C */
+    Gear gears[20];           /* 0978 */
     u8 unk1648[0x16C0 - 0x1648];
     GameRecord records[11]; /* 16C0 */
     u8 unk1820[0x182C - 0x1820];
@@ -349,47 +407,82 @@ typedef struct GameState {
     u16 unk1852;         /* 1852 */
     u16 unk1854;         /* 1854 */
     u16 unk1856;         /* 1856 */
-    u8 unk1858[0x1D30 - 0x1858];
+    u8 unk1858[0x1924 - 0x1858];
+    s32 gold;            /* 1924 */
+    u8 unk1928[0x1930 - 0x1928];
+    u16 vars[0x200];     /* 1930: saved event variables (800c3a68) */
     u16 unk1D30;         /* 1D30: characters waiting to join */
     u16 unk1D32;         /* 1D32: bit per character */
-    u8 unk1D34[0x22B1 - 0x1D34];
+    u8 unk1D34[0x1D38 - 0x1D34];
+    u8 count1[100];      /* 1D38: inventory list 1 */
+    u8 id1[100];         /* 1D9C */
+    u8 count2[200];      /* 1E00: inventory list 2 */
+    u8 id2[200];         /* 1EC8 */
+    u8 count0[150];      /* 1F90: inventory list 0 */
+    u8 id0[150];         /* 2026 */
+    u8 count3[100];      /* 20BC: inventory list 3 */
+    u8 id3[100];         /* 2120 */
+    u8 count4[150];      /* 2184: inventory list 4 */
+    u8 id4[150];         /* 221A */
+    u8 unk22B0;
     u8 unk22B1[3];       /* 22B1: per party slot */
     u8 unk22B4[2];
     u16 unk22B6;         /* 22B6 */
     u8 unk22B8[0x2318 - 0x22B8];
     u16 unk2318;         /* 2318: bit per character */
+    u16 unk231A;         /* 231A: saved map */
+    u16 unk231C;         /* 231C */
+    s16 unk231E;         /* 231E */
+    s16 unk2320;         /* 2320 */
+    u16 unk2322;         /* 2322 */
 } GameState;
 
 /* Field work state 800b2078..800b2388, one object: stores to its members do
  * not pass loads of other members, and code addresses members relative to
  * one another. */
 typedef struct {
-    s16 unk2078;               /* 2078 */
+    s16 unk2078;               /* 2078: screen effect running (800a484c) */
     s16 unk207A;               /* 207A */
-    u8 unk207C[0x20C4 - 0x207C];
+    s16 effect_steps;          /* 207C */
+    u8 unk207E[2];
+    s32 effect_value[6];       /* 2080: 16.16 */
+    s32 effect_step[6];        /* 2098 */
+    u8 unk20B0[4];
+    void *effect_buffers[4];   /* 20B4 */
     FadeChannel fades[2];      /* 20C4: screen fade channels */
-    u16 open_windows;          /* 2174: bit per open dialogue window */
-    u8 unk2176[0x2184 - 0x2176];
+    u16 open_windows;          /* 2174: bit per open dialogue window; talk
+                                * is inhibited while any is set */
+    s16 encounter_inhibition;  /* 2176 */
+    s16 terrain_angle;         /* 2178 */
+    s16 input_mask;            /* 217A */
+    s32 unk217C;               /* 217C */
+    u8 unk2180[4];
     SVECTOR sprite_angles;     /* 2184: sprite view rotation */
     s16 scale;                 /* 218C: offset scale (8007b614) */
-    s16 unk218E;               /* 218E: colour pass-through gate (80075b08) */
-
-    u8 unk2190[0x219F - 0x2190];
+    s16 sprite_gate;           /* 218E: colour pass-through gate (80075b08) */
+    u8 fog_color[4];           /* 2190 */
+    u8 far_color[4];           /* 2194 */
+    s16 fog_range[2];          /* 2198 */
+    u8 clear_color[3];         /* 219C */
     u8 party_bits;             /* 219F */
     s16 unk21A0[6];            /* 21A0: set by event 8008cfec */
     s16 emitter_range;         /* 21AC */
-
-    u8 unk21AE[0x21B4 - 0x21AE];
+    s16 piece_drift[3];        /* 21AE */
     s16 unk21B4;               /* 21B4 */
     u8 unk21B6[2];
     s32 last_sound_effect;     /* 21B8 */
-    u8 unk21BC[0x21CD - 0x21BC];
-    u8 unk21CD;                /* 21CD */
-    u8 unk21CE[0x21D2 - 0x21CE];
-    s8 unk21D2;                /* 21D2 */
+    u8 unk21BC[0x21CC - 0x21BC];
+    u8 party_processing_mode;  /* 21CC */
+    u8 camera_floor_fixed;     /* 21CD */
+    u8 preserve_nonplayer_motion; /* 21CE */
+    u8 forced_position;        /* 21CF */
+    u8 script_control[2];      /* 21D0 */
+    u8 piece_drift_mode;       /* 21D2 */
     u8 unk21D3;
     s16 unk21D4;               /* 21D4 */
-    u8 unk21D6[0x21E4 - 0x21D6];
+    s16 text_speed;            /* 21D6 */
+    s32 camera_counter;        /* 21D8 */
+    s16 unk21DC[4];            /* 21DC: per 801e layer */
     s16 unk21E4[(0x221C - 0x21E4) / 2]; /* 21E4 */
     s16 unk221C[5][3];         /* 221C */
     u8 unk223A[2];
@@ -399,7 +492,7 @@ typedef struct {
     u8 unk225F[0x2264 - 0x225F]; /* 225F: event byte table */
     s32 unk2264;               /* 2264: 801e layer enabled */
     s32 unk2268;               /* 2268 */
-    s32 controlled;            /* 226C: controlled descriptor */
+    s32 controlled;            /* 226C: controlled actor/descriptor index */
     u8 unk2270[0x2298 - 0x2270];
     s32 unk2298;               /* 2298 */
     s32 unk229C;               /* 229C: at most 32 */
@@ -412,21 +505,25 @@ typedef struct {
     s16 emitter_position[3][4]; /* 2324 */
     u16 effects_kept;          /* 233C: bit per effect pair still playing */
     s16 unk233E;               /* 233E */
-    u8 unk2340[0x2344 - 0x2340];
-    s16 unk2344;               /* 2344 */
-    u8 unk2346[2];
-    u16 unk2348;               /* 2348 */
-    u8 unk234A[2];
+    s16 repeat_delay;          /* 2340 */
+    s16 repeat_remaining;      /* 2342 */
+    s16 jump_mode;             /* 2344 */
+    s16 animation_mode;        /* 2346 */
+    u16 unk2348;               /* 2348: gather override */
+    s16 unk234A;               /* 234A */
     s16 battle_override;       /* 234C: battle-entry flag override, 0xff none */
-    s16 unk234E;               /* 234E */
-    u8 unk2350[0x2354 - 0x2350];
+    s16 followers_idle;        /* 234E */
+    u32 unk2350;               /* 2350: saved player flags */
     u8 unk2354;                /* 2354 */
     u8 unk2355;                /* 2355 */
     u8 unk2356;                /* 2356 */
     u8 unk2357;                /* 2357 */
     u8 unk2358;                /* 2358 */
-    u8 unk2359[0x236C - 0x2359];
-    s16 unk236C;               /* 236C */
+    u8 unk2359[0x2360 - 0x2359];
+    s32 unk2360;               /* 2360 */
+    s32 unk2364;               /* 2364 */
+    s32 unk2368;               /* 2368 */
+    u16 unk236C;               /* 236C */
     u8 unk236E[2];
     s32 wave_chunks;           /* 2370: music-wave chunks gathered */
     s32 unk2374;               /* 2374 */
@@ -461,17 +558,45 @@ typedef struct {
     s16 enabled;  /* 800b00b2 */
 } FieldEventParams;
 
-/* One 0x78-byte record of the table at 800b02cc. */
+/* One 0x78-byte particle emitter: the eight at 800b02cc, and copies of
+ * them per effect slot (*800c3918). */
 typedef struct {
-    u8 unk00[0x24];
+    s16 unk00;       /* 00 */
+    u8 unk02[2];
+    s16 unk04;       /* 04: set to 1 to release */
+    u8 unk06[0xC0 - 6];
+} Particle;
+
+typedef struct {
+    s16 unk00;       /* 00 */
+    s16 unk02;       /* 02 */
+    s16 unk04;       /* 04 */
+    s16 count;       /* 06: particles */
+    s32 unk08;       /* 08 */
+    SVECTOR unk0C;   /* 0C */
+    SVECTOR unk14;   /* 14 */
+    SVECTOR unk1C;   /* 1C */
     s16 unk24;       /* 24 */
-    u8 unk26[4];
+    s16 unk26;       /* 26 */
+    s16 unk28;       /* 28 */
     u16 flags;       /* 2A */
-    u8 unk2C[0x54 - 0x2C];
+    Particle *particles; /* 2C */
+    s16 unk30[8][2]; /* 30 */
+    s16 unk50;       /* 50 */
+    s16 unk52;       /* 52 */
     s16 unk54;       /* 54 */
     s16 unk56;       /* 56 */
     s16 unk58;       /* 58 */
-    u8 unk5A[0x72 - 0x5A];
+    SVECTOR unk5A;   /* 5A */
+    SVECTOR unk62;   /* 62 */
+    u8 unk6A;        /* 6A */
+    u8 unk6B;        /* 6B */
+    u8 unk6C;        /* 6C */
+    u8 unk6D;
+    s8 unk6E;        /* 6E */
+    s8 unk6F;        /* 6F */
+    u8 unk70;        /* 70 */
+    u8 unk71;
     s16 unk72;       /* 72 */
     s16 unk74;       /* 74 */
     s16 unk76;       /* 76 */
@@ -502,6 +627,13 @@ typedef struct {
     s16 c;
 } FieldSlot6;
 
+/* The event package (field component 5, *800adbf8). */
+typedef struct {
+    u32 unsigned_bits[32]; /* 00: bit per variable read unsigned */
+    s32 count;             /* 80: actors */
+    u16 entries[32];       /* 84: 32 event entry PCs per actor */
+} EventPackage;
+
 /* Resident services. */
 extern void func_8001B66C(void);
 extern void func_8002945C(WaveChunk *chunk);
@@ -509,26 +641,15 @@ extern void func_8003827C(void *bank, s32 size);
 extern s32 func_800380D0(void *data, s32 size, s32);
 extern void func_8003A948(s32 sequence, s32, s32);
 extern void func_8003A9BC(s32 sequence, s32, s32);
-extern void SetBackColor(s32 r, s32 g, s32 b); /* SetBackColor */
 extern void func_800230A8(FieldModel *model);
 extern void func_800345E0(void *text);
 extern void func_80034614(void *text);
 extern void func_800346D4(void *text);
-extern void ClearImage(RECT *rect, s32 r, s32 g, s32 b); /* ClearImage */
-extern void SetPolyFT4(POLY_FT4 *poly); /* setPolyFT4 */
-extern u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y); /* GetTPage */
-extern u16 GetClut(s32 x, s32 y); /* GetClut */
 extern void func_8002DFF0(s32 w, s32 h);
-extern DRAWENV *SetDefDrawEnv(DRAWENV *env, s32 x, s32 y, s32 w, s32 h); /* SetDefDrawEnv */
-extern DISPENV *SetDefDispEnv(DISPENV *env, s32 x, s32 y, s32 w, s32 h); /* SetDefDispEnv */
-extern void InitGeom(void); /* InitGeom */
-extern void SetGeomOffset(s32 x, s32 y); /* SetGeomOffset */
 extern void func_80038428(void *bank);
 extern void func_8003A344(s32 voice, s32 volume);
 extern void func_8003A55C(s32 voice, s32 pan);
 extern void memcpy(void *to, void *from, s32 size);
-extern void SetSemiTrans(void *prim, s32 on); /* SetSemiTrans */
-extern void SetTile(TILE *tile);         /* setTile */
 extern void func_800379B4(s32);
 extern void func_8003A838(s32 sequence, s32, s32);
 extern void func_8003A89C(s32 sequence, s32, s32);
@@ -537,9 +658,6 @@ extern void func_80021BF0(FieldModel *model, void *block);
 extern void func_80039EC4(s32 sound, s32 voice);
 extern void func_800273C4(void *object, SVECTOR *eye, SVECTOR *target, MATRIX *world, u32 *ot, s32 buffer);
 extern void func_800320A4(void *block); /* keep a block */
-extern void DrawOTag(u32 *ot); /* DrawOTag */
-extern void StoreImage(RECT *rect, u32 *pixels); /* StoreImage */
-extern s32 RotTransPers(SVECTOR *v, s32 *sxy, s32 *p, s32 *flag); /* RotTransPers */
 extern s32 func_8001ACF0(s32 member);
 extern void func_8003633C(s32);
 extern void func_80019CD0(void);
@@ -562,10 +680,6 @@ extern s32 func_8003F8CC(s32 angle); /* rsin */
 extern void FlushCache(void);
 extern void EnterCriticalSection(void);
 extern void ExitCriticalSection(void);
-extern void PutDrawEnv(DRAWENV *env);  /* PutDrawEnv */
-extern void PutDispEnv(DISPENV *env);  /* PutDispEnv */
-extern void MoveImage(RECT *rect, s32 x, s32 y); /* MoveImage */
-extern s32 ratan2(s32 y, s32 x); /* ratan2 */
 extern s32 func_8001B484(s32 file, s32);
 extern void func_80028470(s32 directory, s32);
 extern s32 func_800286CC(void);
@@ -574,29 +688,15 @@ extern void func_80032498(s32 tag, s32);
 extern void func_80033698(s32, s32);
 extern void func_8003747C(s32);
 extern void func_800374E8(s32, s32, s32, s32, s32, s32, s32, s32, s32, s32, s32);
-extern void rand(void);
-extern s32 VSync(s32); /* VSync */
+extern s32 rand(void);
 extern void func_80021B98(void *, s32 r, s32 g, s32 b);
-extern void AddPrims(void *ot, void *first, void *last); /* AddPrims */
-extern void LoadImage(RECT *rect, u32 *pixels);           /* LoadImage */
-extern void ClearOTagR(u32 *ot, s32 count);                 /* ClearOTagR */
-extern void OpenTIM(u32 *tim);                           /* OpenTIM */
-extern TIM_IMAGE *ReadTIM(TIM_IMAGE *image);             /* ReadTIM */
 extern void func_80028A60(s32);
 extern void func_80029EB0(s32 file, void *ring, s32, s32, s32, s32, s32, s32, s32, s32);
 extern void *func_8002A260(s32 sectors, s32);
 extern void func_800320E8(void *);
 extern void func_80032EB4(void *source, void *destination);
-extern void func_8003F738(SVECTOR *angles, MATRIX *m); /* RotMatrix */
-extern void DrawSync(s32);
-extern void CompMatrix(MATRIX *a, MATRIX *b, MATRIX *out); /* CompMatrix */
+extern MATRIX *func_8003F738(SVECTOR *angles, MATRIX *m); /* RotMatrix */
 extern void func_80049BDC(MATRIX *a, MATRIX *b);            /* MulRotMatrix */
-extern void ScaleMatrix(MATRIX *m, VECTOR *scale);        /* ScaleMatrix */
-extern void SetRotMatrix(MATRIX *m);                       /* SetRotMatrix */
-extern void SetTransMatrix(MATRIX *m);                       /* SetTransMatrix */
-extern void ApplyMatrixLV(MATRIX *m, VECTOR *in, VECTOR *out); /* ApplyMatrixLV */
-extern void PushMatrix(void);                               /* PushMatrix */
-extern void PopMatrix(void);                               /* PopMatrix */
 extern void func_8004A6DC(SVECTOR *v, s32 *out, s32 *flag); /* RotTrans */
 
 /* Field overlay. */
@@ -606,6 +706,13 @@ extern void func_80085560(s32 file, s32 unused, void (*callback)(s32));
 extern void func_800859DC(WaveChunk *chunk);
 extern void func_80086024(void);
 extern void func_800A47D4(void);
+extern void func_800ACE24(void);
+extern void func_800A30B4(void);
+extern void func_80076AC0(s32 index, s32 a, void *sprite, s32 b, s32 c, s32 d, s32 e);
+extern void func_800A0C94(void);
+extern void func_800A0C4C(void);
+extern void func_800931F8(void);
+extern void func_800A31E8(void);
 extern void func_800A4CC4(s32, s32, s32, s32, s32, s32, s32);
 extern void func_80086BA8(void);
 extern void func_801E7D14(MATRIX *world, s16 (*table)[3], u32 *ot, s32 buffer, s32);
@@ -639,7 +746,7 @@ extern void func_8008E148(s32 flags);
 extern void func_8008E498(s32 value);
 extern void func_8008E718(void);
 extern s32 func_8009CDB4(s32 offset); /* actor selector; 0xff when none */
-extern s32 func_800A3018(u32 reference); /* read an event variable */
+extern s32 func_800A3018(s32 reference); /* read an event variable */
 extern void func_80072254(s32 index);
 extern void func_800863E8(s32 id);
 extern s32 func_8008CF3C(s32 id);
@@ -648,7 +755,7 @@ extern void func_800A484C(s32);
 extern void func_801E8330(s32, s32, s32);
 extern s32 func_8008A558(void);
 extern void func_800A98E8(s32 actor, s32 value);
-extern void func_800A99A8(s32 actor);
+extern s32 func_800A99A8(s32 owner);
 extern void func_80088D38(s32);
 extern void func_800A8BA4(void);
 extern void func_800A915C(void);
@@ -727,6 +834,7 @@ extern s16 D_800AEA2C[4]; /* party masks */
 extern s32 D_800ADBDC;
 extern s32 D_800ADBE4;
 extern s32 D_800ADBE8;
+extern EventPackage *D_800ADBF8;
 extern s32 D_800ADBFC; /* event actor count */
 extern void *D_800ADBC0; /* pending party sprite buffer */
 extern s32 D_800ADBC8;
@@ -734,7 +842,22 @@ extern s32 D_800ADBCC; /* pending party slot */
 extern FieldEventParams D_800B0080;
 extern Record78 D_800B02CC[];
 extern u16 D_800AE060[][2]; /* movie sound timeline: time, sound */
+/* Field movie parameters (800c3a20..800c3a3a), set by the movie events. */
+extern s16 D_800C3A20; /* movie file */
+extern u16 D_800C3A22;
+extern u16 D_800C3A24;
+extern u16 D_800C3A26;
+extern u16 D_800C3A28;
+extern u16 D_800C3A2A;
 extern u16 D_800C3A2C; /* movie sound time origin */
+extern u16 D_800C3A2E;
+extern u16 D_800C3A36; /* 1: 24-bit display */
+extern u16 D_800C3A3A;
+extern s32 D_800ADB6C; /* movie stopped */
+extern s32 D_800ADB74; /* movie mode */
+extern s32 D_800ADB80;
+extern s32 D_800AFE74;
+extern s32 D_800B00E4;
 extern s32 D_800C3A64; /* movie sound timeline position */
 extern s32 D_800ADB50;
 extern s32 D_800ADB78;
@@ -798,5 +921,36 @@ extern s32 D_800ADB0C;
 extern s32 D_800ADB60; /* field stream running */
 extern void *D_800ADC14; /* field stream ring */
 extern FieldSlot6 D_800B06A4[3];
+
+/* Trigger zone (field component 8): four x, y, z corners. */
+typedef struct {
+    s16 x;
+    s16 y;
+    s16 z;
+} ZonePoint;
+
+typedef struct {
+    ZonePoint corner[4];
+} Zone;
+
+extern Zone *D_800ADBF4;            /* trigger zones */
+extern s16 D_800C3A68[];            /* event variable bank */
+extern s32 func_8004A70C(s32 a, s32 b, s32 point); /* side of edge a-b */
+extern VECTOR *func_8004A414(VECTOR *v, VECTOR *squares); /* square each */
+
+/* Event operand readers; each takes the byte offset from the working PC. */
+extern s32 func_800ACD7C(s32 offset);  /* signed halfword */
+extern s32 func_8009CD7C(s32 offset);  /* actor selector */
+/* Selected operands: when the given bit of `flags` is set the operand is a
+ * signed immediate halfword, otherwise a variable reference. */
+extern s32 func_8009D088(s32 offset, s32 flags); /* bit 0x08 */
+extern s32 func_8009D0CC(s32 offset, s32 flags); /* bit 0x04 */
+extern s32 func_8009D110(s32 offset, s32 flags); /* bit 0x02 */
+extern s32 func_8009D154(s32 offset, s32 flags); /* bit 0x01 */
+
+extern s32 func_80099A04(s32 dx, s32 dy, s32 dz); /* vector length */
+extern void func_80085634(s32 a, s32 b);
+
+#define EVENT_OPERAND_BYTE(offset) (D_800ADC00[D_800B0078->pc + (offset)])
 
 #endif
