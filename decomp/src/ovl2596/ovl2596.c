@@ -664,7 +664,74 @@ void func_801E0A4C(void) {
     D_800D2D28->waitingCross = 0;
 }
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E0ACC);
+/* Show the skills the member learnt in the battle, one at a time: the
+ * summary title, then each new counter skill and each new level skill's
+ * name with its mark, waiting for Cross after each. */
+void func_801E0ACC(u8 member) {
+    u16 newCounter;
+    u16 newLevel;
+    s32 i;
+    void *image;
+    u8 width;
+    RECT rect;
+
+    newCounter = D_8006D634.skills[D_800D2D24[member]].counterSkills & ~D_800C3E0C[member].counterSkills;
+    newLevel = D_8006D634.skills[D_800D2D24[member]].levelSkills & ~D_800C3E0C[member].levelSkills;
+    if (newCounter == 0 && newLevel == 0) {
+        return;
+    }
+    if (D_800D2D28->unkB1 == 0) {
+        func_8008F8F4(1, 0x28, 0x78, 0xE8, 0x58, 0, 1);
+    }
+    D_800D334C->runs[0].count = func_80076A10(member + 0xFC, D_800D334C->title[0], 0x40, 0xA4);
+    D_800D334C->runs[0].buffer = D_800CCB34;
+    D_800D2D28->waitingCross = 0;
+    image = func_8008AC00(0x1B);
+    func_80076D58(D_800D334C->glyphs34B0[0], 1, 2);
+    func_80076D58(D_800D334C->glyphs34B0[1], 0, 3);
+    for (i = 0; i < 16; i++) {
+        if (func_80089C6C(newCounter, i) != 0) {
+            s32 *buffer = &D_800CCB34;
+
+            width = func_80034EAC(func_80033784(D_800D2D24[member], i), image, 0x1B, 0);
+            rect.x = 0x3C0;
+            rect.y = 0x1A;
+            rect.w = 0x1E;
+            rect.h = 0xD;
+            func_800769E8(&rect, image);
+            func_80076C78(&D_800D334C->glyphs34B0[1][*buffer], 0x52, 0x9C, 0, 0x1A, width);
+            SetShadeTex(&D_800D334C->glyphs34B0[1][*buffer], 0);
+            setRGB0(&D_800D334C->glyphs34B0[1][D_800CCB34], 0, 0x80, 0);
+            D_800D334C->buffer34B0[1] = *buffer;
+            func_80076C78(&D_800D334C->glyphs34B0[0][*buffer], width + 0x5A, 0x9C, D_800D2FA0[2], D_800D2FA0[3], D_800D2FA0[0]);
+            D_800D334C->buffer34B0[0] = *buffer;
+            D_800D2D28->show8F = 1;
+            func_801E0A4C();
+        }
+    }
+    for (i = 0; i < 16; i++) {
+        if (func_80089C6C(newLevel, i) != 0) {
+            s32 *buffer = &D_800CCB34;
+
+            width = func_80034EAC(func_80033908(D_800D2D24[member] * 16 + i), image, 0x1B, 0);
+            rect.x = 0x3C0;
+            rect.y = 0x1A;
+            rect.w = 0x1E;
+            rect.h = 0xD;
+            func_800769E8(&rect, image);
+            func_80076C78(&D_800D334C->glyphs34B0[1][*buffer], 0x52, 0x9C, 0, 0x1A, width);
+            SetShadeTex(&D_800D334C->glyphs34B0[1][*buffer], 0);
+            setRGB0(&D_800D334C->glyphs34B0[1][D_800CCB34], 0x80, 0x80, 0);
+            D_800D334C->buffer34B0[1] = *buffer;
+            func_80076C78(&D_800D334C->glyphs34B0[0][*buffer], width + 0x5A, 0x9C, D_800D2FA0[2], D_800D2FA0[3], D_800D2FA0[0]);
+            D_800D334C->buffer34B0[0] = *buffer;
+            D_800D2D28->show8F = 1;
+            func_801E0A4C();
+        }
+    }
+    D_800D2D28->show8F = 0;
+}
+
 
 /* Lay out the summary's seven-glyph label (2d30). */
 void func_801E1044(void) {

@@ -595,4 +595,15 @@ u16 func_801E3700(u16 maxHp, u8 level);
 u8 func_801E38CC(u8 maxEp, u8 level);
 void func_801E0ACC(u8 member);
 
+/* The skills each member knew before the battle (counter, level bits). */
+typedef struct {
+    u16 counterSkills;
+    u16 levelSkills;
+} KnownSkills;
+extern KnownSkills D_800C3E0C[3];
+extern u8 D_800D2FA0[4];        /* the skill mark icon: width, -, u, v */
+u16 func_80089C6C(u16 bits, u8 k);              /* bit k of a skill set */
+void *func_80033784(u8 id, s32 k);              /* counter skill names */
+void *func_80033908(s32 index);                 /* level skill names */
+
 #endif
