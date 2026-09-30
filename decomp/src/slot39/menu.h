@@ -65,7 +65,10 @@ typedef struct MenuParty {
     u8 labels[8]; /* C: shown flags of the command labels */
     u8 unk14[6]; /* 14 */
     u8 unk1A[6]; /* 1A */
-    u8 pad20[0xF];
+    u8 unk20[2]; /* 20 */
+    u8 pad22[0x5];
+    u8 unk27[2]; /* 27 */
+    u8 pad29[0x6];
     u8 unk2F; /* 2F */
     u8 ids[3]; /* 30 */
     u8 pad33[0x5];
@@ -82,8 +85,8 @@ typedef struct MenuParty {
     u8 pad4F[0x1];
     u8 unk50[3]; /* 50 */
     u8 unk53; /* 53 */
-    u8 unk54; /* 54 */
-    u8 pad55[0xB];
+    u8 unk54[6]; /* 54 */
+    u8 pad5A[0x6];
     u8 ready; /* 60 */
     u8 pad61[0x6];
     u8 unk67; /* 67 */
@@ -101,12 +104,15 @@ typedef struct MenuImages {
 
 /* Shared primitive block (*(state + 348)). */
 typedef struct MenuPrims {
-    u8 pad0[0x98];
+    POLY_FT4 polys[2]; /* 0 */
+    u8 pad50[0x48];
     u8 fills[2][0x18]; /* 98: per buffer */
-    u8 padC8[0x78];
+    u8 padC8[0x60];
+    u8 modes0[2][0xc]; /* 128 */
     u8 modes[2][0xc]; /* 140: per buffer */
     u8 frame; /* 158 */
-    u8 pad159[0x2];
+    u8 mode; /* 159 */
+    u8 pad15A[0x1];
     u8 shade; /* 15B */
 } MenuPrims;
 
@@ -241,6 +247,27 @@ typedef struct MenuImageBlock {
     u8 pad76[0x2];
 } MenuImageBlock;
 
+/* The record 801e76ec passes to 801e6ae8. */
+typedef struct MenuViewSet {
+    u8 pad0[0x1C];
+    u8 images[4]; /* 1C: sheet image per view (+14e), ff none */
+} MenuViewSet;
+
+/* The 2dc0-byte block (*(state + 34c)). */
+typedef struct MenuBlock34C {
+    u8 pad0[0xA98];
+    u8 views[4][0x87c]; /* A98 */
+    u8 pad2C88[0x138];
+} MenuBlock34C;
+
+/* Five labels (*(state + 360)). */
+typedef struct MenuLabels360 {
+    MenuLabelSlot labels[5]; /* 0 */
+    u8 pad280[0x14];
+    u8 visible[5]; /* 294 */
+    u8 count; /* 299 */
+} MenuLabels360;
+
 /* The menu mode's state (*D_800625A0). */
 typedef struct MenuState {
     MenuMover movers[3]; /* 0 */
@@ -277,12 +304,12 @@ typedef struct MenuState {
     u8 *fieldMenu; /* 340: field-menu block (328 bytes) */
     u8 *fieldMenu2; /* 344: field-menu block (374 bytes) */
     MenuPrims *primitives; /* 348: shared primitive block (15c bytes) */
-    u8 *block34C; /* 34C: 2dc0 bytes */
+    MenuBlock34C *block34C; /* 34C: 2dc0 bytes */
     MenuImages *screenImages; /* 350: screen images (1194 bytes) */
     MenuSpriteLists *spriteLists; /* 354: 140c bytes */
     u8 *block358; /* 358 */
     u8 *block35C; /* 35C */
-    u8 *block360; /* 360 */
+    MenuLabels360 *labels360; /* 360 */
     u8 *portraits[2]; /* 364: two 720-byte blocks */
     u8 pad36C[0x14];
     u8 *portraitMarks[2]; /* 380 */
@@ -331,6 +358,7 @@ extern u8 D_8006F5C4[150];    /* game data: inventory item counts */
 extern u8 D_8006F65A[150];    /* game data: inventory item ids */
 extern u16 D_8006F958[16];    /* game data */
 extern u16 D_8005A3A0[16];
+extern u8 D_8006F8E5[];       /* game data */
 extern u8 D_8006F008;         /* game data: disc of the loaded file */
 extern u16 D_8006EF64;        /* game data: save title line of text file 1 */
 extern u8 D_800594D0;         /* load result: 0, 1 title timeout, 2 loaded */
@@ -362,6 +390,10 @@ extern u8 D_801EA568[];  /* title file screen command labels */
 extern u8 D_801EA548[];  /* save/load screen labels */
 extern u8 D_801EA8F4[];
 extern u8 D_801EA8FC;
+extern u8 D_801EA8C0;    /* the last printed character was two-byte */
+extern u16 D_801EA5D0[0x80]; /* ASCII to two-byte character codes */
+extern s32 D_801EA004[];
+extern s32 D_801EA010[];
 extern s32 D_801EA900[2];
 extern u8 D_801EA6D0[32];  /* per port and save slot: a save of this game exists */
 extern u8 *D_801EA6F4;     /* the save information of the last matched file */
@@ -382,6 +414,7 @@ void func_8002A498(s32 arg0);
 s32 func_8002C3D8(void);                                /* wait for the read */
 void func_80019CA0(void);
 void func_8001BD40(s32 arg0, s32 arg1);
+void func_8002675C(void *sheet, s32 image, u8 *dst, s32 buffer, s32 x, s32 y, s32 scale);
 void func_80033698(s32 x, s32 y);
 s32 func_80035734(s32 port);  /* pad connected */
 s32 func_80035CDC(void);      /* dequeue pad input */
@@ -393,6 +426,7 @@ void func_80039DB8(s32 id, s32 sound); /* play a sound effect */
 void func_800404C4(u32 event, s32 spec); /* UnDeliverEvent */
 void func_80040484(s32 event);           /* EnableEvent */
 s32 func_80040494(s32 event);            /* TestEvent */
+void func_800405C4(s32 code);
 s32 func_80040534(char *name, s32 mode);  /* open */
 s32 func_80040544(s32 fd, void *buf, s32 size); /* read */
 void func_80040564(s32 fd);               /* close */
@@ -483,7 +517,11 @@ void func_801D2D38(void);
 void func_801D2F4C(u8 message);
 void func_801D3B00(void);
 void func_801D397C(s32 arg0, s32 x, s32 y, s32 w, s32 h, s32 arg5, s32 arg6, s32 arg7, s32 arg8);
-void func_801D4EA0(s32 arg0);
+void func_801D4EA0(u8 slot);
+void func_801D7C3C(u8 slot, u8 mode);
+void func_801D7CFC(u8 slot, u8 mode, u8 arg2);
+void func_801D8DE4(u8 slot, s32 arg1, s32 arg2, u8 mode);
+void func_801D8EA4(u8 slot, s32 arg1, s32 arg2, u8 mode);
 void func_801D5BA4(s32 x, s32 y);
 void func_801D5CF8(s32 x, s32 y);
 void func_801D32B4(void);

@@ -1281,7 +1281,13 @@ void func_801CE2B4(s32 count, POLY_FT4 *polys, s32 first) {
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CE2B4);
 #endif
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CE338);
+/* Add the shared mode primitive and, while panel 4 shows, its quad. */
+void func_801CE338(void) {
+    func_80043B48(&D_800625A0->current->ot[4], D_800625A0->primitives->modes0[D_800625A0->primitives->mode]);
+    if (D_800625A0->party->redraw4 != 0) {
+        func_80043B48(&D_800625A0->current->ot[4], &D_800625A0->primitives->polys[D_800625A0->primitives->frame]);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CE3C8);
 
@@ -1304,7 +1310,19 @@ void func_801CEB5C(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CEBB4);
+/* While party flag +4b is set, draw the visible labels of the block at +360. */
+void func_801CEBB4(void) {
+    s32 i;
+
+    if (D_800625A0->party->unk4B != 0) {
+        for (i = 0; i < 5; i++) {
+            if (D_800625A0->labels360->visible[i] != 0) {
+                func_801CE198(1, D_800625A0->labels360->labels[i].sprites,
+                              (u8 *)&D_800625A0->labels360->labels[i], D_800625A0->labels360->count);
+            }
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CEC40);
 
@@ -1402,7 +1420,17 @@ void func_801D0FD4(void) {
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D1030);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D10DC);
+/* Draw the visible labels at +18e0 whose party flags (+54) are set. */
+void func_801D10DC(void) {
+    s32 i;
+
+    for (i = 0; i < 6; i++) {
+        if (D_800625A0->party->unk54[i] != 0 && D_800625A0->labels18E0[i].visible != 0) {
+            func_801CE198(1, D_800625A0->labels18E0[i].sprites, (u8 *)&D_800625A0->labels18E0[i],
+                          D_800625A0->labels18E0[i].count);
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D1160);
 
@@ -1575,7 +1603,15 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D29A8);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D2D38);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D2EC0);
+/* Refresh the item/status panels of `slot` for `mode` over two frames. */
+void func_801D2EC0(u8 slot, u8 mode) {
+    func_801D7C3C(slot, mode);
+    func_801D7CFC(slot, mode, D_8006F8E5[slot]);
+    func_801C7BF4();
+    func_801D8DE4(slot, 0, 0, mode);
+    func_801C7BF4();
+    func_801D8EA4(slot, 0, 0, mode);
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D2F4C);
 
@@ -1623,7 +1659,13 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D49D0);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D4D1C);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D4EA0);
+/* Hide and free portrait `slot`. */
+void func_801D4EA0(u8 slot) {
+    D_800625A0->party->unk20[slot] = 0;
+    D_800625A0->party->unk27[slot] = 0;
+    func_800320E8(D_800625A0->portraits[slot]);
+    func_800320E8(D_800625A0->portraitMarks[slot]);
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D4F2C);
 
@@ -1809,7 +1851,7 @@ void func_801DE400(void) {
     D_800625A0->party->unk4B = 0;
     func_801C7BF4();
     func_800320E8(D_800625A0->block35C);
-    func_800320E8(D_800625A0->block360);
+    func_800320E8(D_800625A0->labels360);
 }
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DE474);
@@ -1859,14 +1901,14 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E2250);
 
 /* Lay out the six labels of page `page` (D_801EA568) at +18e0. */
 void func_801E2324(u8 page) {
-    func_801E8018(6, D_800625A0->labels18E0, D_801EA568 + page, &D_800625A0->party->unk54);
+    func_801E8018(6, D_800625A0->labels18E0, D_801EA568 + page, D_800625A0->party->unk54);
 }
 
 /* Free the three screen blocks (+358, +35c, +360) and restore the view (13). */
 void func_801E2368(void) {
     func_800320E8(D_800625A0->block358);
     func_800320E8(D_800625A0->block35C);
-    func_800320E8(D_800625A0->block360);
+    func_800320E8(D_800625A0->labels360);
     func_801C72BC(0x13);
 }
 
@@ -1878,7 +1920,7 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E2AE0);
 void func_801E2B80(void) {
     func_800320E8(D_800625A0->block358);
     func_800320E8(D_800625A0->block35C);
-    func_800320E8(D_800625A0->block360);
+    func_800320E8(D_800625A0->labels360);
     func_801C72BC(0x13);
 }
 
@@ -2016,13 +2058,38 @@ void func_801E64E0(void) {
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E6544);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E65E4);
+/* Print the character at `s`: ASCII is converted to its two-byte code
+ * (control characters to a space), two-byte codes pass through. */
+void func_801E65E4(u8 *s) {
+    u8 hi;
+    u8 lo;
+
+    hi = s[0];
+    lo = s[1];
+    D_801EA8C0 = 1;
+    if (hi < 0x80) {
+        if (hi >= 0x20) {
+            lo = D_801EA5D0[hi];
+            D_801EA8C0 = 0;
+            hi = D_801EA5D0[hi] >> 8;
+        } else {
+            hi = 0x81;
+            lo = 0x40;
+            D_801EA8C0 = 0;
+        }
+    }
+    func_800405C4(lo | (hi << 8));
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E6668);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E68AC);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E6AE8);
+/* Set up view `index` of the block at +34c from its sheet image (14e + set). */
+void func_801E6AE8(u8 index, MenuViewSet *set) {
+    func_8002675C(D_800625A0->sheet, set->images[index] + 0x14e, D_800625A0->block34C->views[index],
+                  D_800625A0->bufferIndex, D_801EA004[index], D_801EA010[index], 0x1000);
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E6B70);
 
