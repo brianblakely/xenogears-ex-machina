@@ -59,7 +59,67 @@ void func_8007008C(s32 unused, void *source, void *destination) {
     func_80032EB4(source, destination);
 }
 
+/* Tear the field down: reset the GPU, flush both draw buffers, then release
+ * every model instance, the loaded components, the text windows and the
+ * 801e module's buffers. */
+#ifdef NON_MATCHING
+void func_800700B0(void) {
+    s32 i;
+    FieldInstance *instance;
+
+    ResetGraph(1);
+    func_8001C8DC();
+    for (i = 0; i < 2; i++) {
+        func_80025044();
+        DrawSync(0);
+        func_800250E0((D_800ADB08 + i + 1) & 1);
+        func_80025044();
+        DrawSync(0);
+        func_80024FB8();
+    }
+
+    for (i = 0; i < D_800AF880.components.descriptor_count; i++) {
+        func_8008083C(i);
+        if (!(D_800AF880.components.descriptors[i].flags & 0x40)) {
+            instance = D_800AF880.components.descriptors[i].instance;
+            if (D_800AF880.components.descriptors[i].flags & 0x2000) {
+                func_800306D0(instance->unk14);
+            }
+            func_8002CBBC(instance->mesh);
+            func_800320E8(instance->packets[0]);
+            func_800320E8(D_800AF880.components.descriptors[i].instance);
+        }
+    }
+    func_800A47D4();
+    func_800320E8(D_800AF880.components.descriptors);
+    func_800320E8(D_800ADBF4);
+    func_800320E8(D_800ADBF0);
+    func_800320E8(D_800ADBF8);
+    func_800320E8(D_800AF880.components.collision);
+    func_800320E8(D_800AF880.components.geometry);
+    func_800320E8(D_800AF880.components.sprites);
+    if (D_800B00B2 != 0) {
+        func_80027D40(D_800B007C);
+    }
+    for (i = 0; i < D_800AFEA8.count; i++) {
+        func_8002800C(D_800AFEA8.handles[i]);
+        func_800320E8(D_800AFEA8.buffers[i]);
+        func_800320E8((void *)D_800AFEA8.handles[i]);
+    }
+    func_8003748C();
+    D_800AFEA8.count = 0;
+    if (D_800B2264 != 0) {
+        func_801E7FD4();
+        func_800320E8(D_800ADB20);
+        func_8007999C();
+    }
+    D_800B2264 = 0;
+    func_8003218C(3);
+    func_800A83B4();
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800700B0);
+#endif
 
 /* Load a TIM's image at (x, y) and its CLUT at (clut_x, clut_y) with the
  * given size; a CLUT y of -1 or a zero size keeps the TIM's own. */
@@ -668,7 +728,6 @@ void func_8007520C(void) {
 
 extern u8 D_800ADB05; /* 1 while character drawing is off */
 extern u8 D_800AFA64[];
-void func_800250E0(s32 buffer);
 void func_80024FE4(u32 *ot);
 void func_80024FF4(void *p);
 void func_8001D468(void);
@@ -5192,14 +5251,6 @@ void func_80092044(void) {
     D_800B0078->pc += 5;
 }
 
-/* Up to 32 entries created by func_800921E8. */
-typedef struct {
-    s16 count;
-    s32 handles[32];
-    u8 *buffers[32];
-    s16 lengths[32];
-} WindowList;
-extern WindowList D_800AFEA8;
 void func_80027EAC(s32 handle);
 
 /* Pass every handle in the list at 800afea8 to resident 80027EAC. */

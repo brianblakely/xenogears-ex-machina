@@ -238,9 +238,10 @@ typedef struct {
 typedef struct {
     u8 unk00[4];
     FieldMesh *mesh; /* 04 */
-    u8 unk08[0x12 - 0x08];
+    void *packets[2]; /* 08: per draw buffer */
+    u8 unk10[2];
     s16 mode;        /* 12 */
-    u8 unk14[4];
+    void *unk14;     /* 14 */
     s16 center[3];   /* 18 */
     s16 unk1E;
     s16 radius;      /* 20 */
@@ -958,6 +959,33 @@ typedef struct {
 } Zone;
 
 extern Zone *D_800ADBF4;            /* trigger zones */
+
+/* Up to 32 text windows created by func_800921E8. */
+typedef struct {
+    s16 count;
+    s32 handles[32];
+    u8 *buffers[32];
+    s16 lengths[32];
+} WindowList;
+extern WindowList D_800AFEA8;
+extern void *D_800ADBF0;
+extern s16 D_800B00B2;
+extern s32 D_800B2264; /* 801e module buffers loaded */
+extern void *D_800ADB20;
+extern void func_8001C8DC(void);
+extern void func_80024FB8(void);
+extern void func_80025044(void);
+extern void func_800250E0(s32 buffer);
+extern void func_80027D40(void *);
+extern void func_8002800C(s32 handle);
+extern void func_8002CBBC(void *mesh);
+extern void func_800306D0(void *);
+extern void func_8003218C(s32 tag);
+extern void func_8003748C(void);
+extern void func_801E7FD4(void);
+extern void func_8008083C(s32 index);
+extern void func_8007999C(void);
+extern void func_800A83B4(void);
 extern s16 D_800C3A68[];            /* event variable bank */
 extern s32 func_8004A70C(s32 a, s32 b, s32 point); /* side of edge a-b */
 extern VECTOR *func_8004A414(VECTOR *v, VECTOR *squares); /* square each */
