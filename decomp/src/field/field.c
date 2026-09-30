@@ -9108,34 +9108,22 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A8EAC);
 
 extern RECT D_800AFC28;
 typedef struct {
-    u32 words[4];
-} Block16;
-extern Block16 *D_800AFC70; /* saved screen column */
+    u32 words[0x2000];
+} ScreenColumn; /* a 64x256 16-bit VRAM column */
+extern ScreenColumn *D_800AFC70; /* saved screen column */
 
-#ifdef NON_MATCHING
 /* Move the saved screen column into a new block allocated with `flags`. */
 void func_800A90B4(s32 flags) {
-    Block16 *copy;
-    Block16 *dst;
-    Block16 *src;
-    Block16 *end;
+    ScreenColumn *copy;
 
     if (D_800ADB34 == 1) {
         func_80032498(8, 0);
         copy = func_80031BDC(0x8000, flags);
-        src = D_800AFC70;
-        end = src + 0x800;
-        dst = copy;
-        do {
-            *dst++ = *src++;
-        } while (src != end);
+        *copy = *D_800AFC70;
         func_800320E8(D_800AFC70);
         D_800AFC70 = copy;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A90B4);
-#endif
 
 /* Save the 64x256 VRAM column at (3c0, 100) once. */
 void func_800A915C(void) {
@@ -9147,7 +9135,7 @@ void func_800A915C(void) {
         D_800AFC28.y = 0x100;
         D_800AFC28.w = 0x40;
         D_800AFC28.h = 0x100;
-        StoreImage(&D_800AFC28, (u32 *)D_800AFC70);
+        StoreImage(&D_800AFC28, D_800AFC70->words);
         DrawSync(0);
     }
 }
@@ -9160,7 +9148,7 @@ void func_800A91F0(void) {
         D_800AFC28.y = 0x100;
         D_800AFC28.w = 0x40;
         D_800AFC28.h = 0x100;
-        LoadImage(&D_800AFC28, (u32 *)D_800AFC70);
+        LoadImage(&D_800AFC28, D_800AFC70->words);
         DrawSync(0);
         func_800320E8(D_800AFC70);
     }
@@ -9331,7 +9319,44 @@ void func_800A98E8(s32 owner, s32 release) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A99A8);
+typedef struct {
+    Record78 emitters[8];
+} EmitterSet;
+extern s32 D_800ADB44; /* last effect owner */
+void func_800A8EAC(Particle *particle, s32 a, s32 b);
+
+/* Start an effect for `owner` in a free slot: copy the eight template
+ * emitters and allocate and set up their particles. -1 when no slot. */
+s32 func_800A99A8(s32 owner) {
+    Record78 *emitters;
+    Record78 *emitter;
+    s32 slot;
+    s32 j;
+
+    slot = func_800A98B4();
+    if (slot == -1) {
+        return -1;
+    }
+    func_80032498(8, 0);
+    D_800ADB44 = owner;
+    D_800B14B0[slot] = 1;
+    D_800B0108[slot] = owner;
+    emitters = func_80031BDC(0x3C0, 0);
+    D_800C3918[slot] = emitters;
+    *(EmitterSet *)emitters = *(EmitterSet *)D_800B02CC;
+    emitter = emitters;
+    for (slot = 0; slot < 8; slot++) {
+        if (emitter->count != 0) {
+            emitter->particles = func_80031BDC(emitter->count * sizeof(Particle), 0);
+            for (j = 0; j < emitter->count; j++) {
+                emitter->particles[j].unk00 = 0;
+                func_800A8EAC(&emitter->particles[j], emitter->unk54, ((s16)emitter->flags >> 8) + 1 & 3);
+            }
+        }
+        emitter++;
+    }
+    return 1;
+}
 
 /* `value` + `delta`, clamped to 0..255. */
 s32 func_800A9B1C(s32 value, s32 delta) {

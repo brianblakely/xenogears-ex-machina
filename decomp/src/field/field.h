@@ -545,7 +545,8 @@ typedef struct {
 /* One 0x78-byte particle emitter: the eight at 800b02cc, and copies of
  * them per effect slot (*800c3918). */
 typedef struct {
-    u8 unk00[4];
+    s16 unk00;       /* 00 */
+    u8 unk02[2];
     s16 unk04;       /* 04: set to 1 to release */
     u8 unk06[0xC0 - 6];
 } Particle;
@@ -732,7 +733,7 @@ extern void func_800A484C(s32);
 extern void func_801E8330(s32, s32, s32);
 extern s32 func_8008A558(void);
 extern void func_800A98E8(s32 actor, s32 value);
-extern void func_800A99A8(s32 actor);
+extern s32 func_800A99A8(s32 owner);
 extern void func_80088D38(s32);
 extern void func_800A8BA4(void);
 extern void func_800A915C(void);
