@@ -2551,9 +2551,42 @@ s32 func_800B0D70(SVector *motion, SVector *point) {
     return 0;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800B0FF4);
+/* Push point out of the objects' footprints (800B0D70) moving from from:
+ * the motion is the direction from from, 512 long. */
+void func_800B0FF4(SVector *from, SVector *point) {
+    SVector motion;
+    s32 length;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800B10EC);
+    motion.vx = from->vx - point->vx;
+    motion.vz = from->vz - point->vz;
+    length = SquareRoot0(motion.vx * motion.vx + motion.vz * motion.vz) + 1;
+    motion.vx = (motion.vx << 9) / length;
+    motion.vz = (motion.vz << 9) / length;
+    func_800B0D70(&motion, point);
+}
+
+/* Keep stage object index at least distance from point (x, z): when closer,
+ * move it back to that distance, along the line from the point but shifted
+ * sideways to the side it is facing. */
+void func_800B10EC(s32 index, s32 x, s32 z, s32 distance) {
+    BattleObject **objects = D_800D3368;
+    BattleObject **slot = &objects[index];
+    s32 dx = x - (*slot)->hierarchy->translation[0];
+    s32 dz = z - (*slot)->hierarchy->translation[2];
+    s32 length = SquareRoot0(dx * dx + dz * dz) + 1;
+    s32 angle;
+    s32 gap;
+
+    if (length < distance) {
+        angle = ratan2(dz, -dx);
+        if ((u32)((((*slot)->hierarchy->rotation.vy - angle) & 0xFFF) - 0x401) < 0x7FF) {
+            angle += 0x800;
+        }
+        gap = distance - length;
+        (*slot)->hierarchy->translation[0] = x - dx * distance / length - func_8003F8B0(angle) * gap / 4096;
+        (*slot)->hierarchy->translation[2] = z - dz * distance / length - func_8003F8CC(angle) * gap / 4096;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800B12D0);
 

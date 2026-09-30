@@ -28,7 +28,9 @@ extern s16 D_800C3544;     /* its ground height */
 extern s16 D_800C3546;     /* key of the last update */
 
 /* Resident services. */
-s32 func_8003F8CC(s32 angle); /* cosine (4096 = 1.0) */
+s32 func_8003F8B0(s32 angle); /* rcos (4096 = 1.0) */
+s32 func_8003F8CC(s32 angle); /* rsin */
+s32 ratan2(s32 y, s32 x);
 void func_8004A480(Vector *a, Vector *b, Vector *out); /* OuterProduct12 */
 
 void func_8009F844(BattleObject *object, s32 arg1, s32 arg2, s32 arg3, s32 skipped, s32 arg5, s32 arg6);
