@@ -3,6 +3,16 @@
 
 #include "battle_core.h"
 
+/* The six outputs of func_80026338 for one sprite. */
+typedef struct {
+    s32 unk0;
+    s32 tpageMode;
+    s32 clutX;
+    s32 clutY;
+    s32 pageX;
+    s32 pageY;
+} SpriteInfo;
+
 /* A party member's status panel of the graphics state (0x1E4 bytes). */
 typedef struct {
     POLY_FT4 value[2][2];     /* +0x000 state 1: the value glyphs */
@@ -27,6 +37,8 @@ typedef struct {
     MemberPanel panels[3];    /* +0x835C */
     DR_MODE unk8908[2];       /* +0x8908 per draw buffer */
     DR_MODE unk8920[2];       /* +0x8920 per draw buffer */
+    u8 pad8938[0xA234 - 0x8938]; /* +0x8950 the CLUT rows and their saved copies */
+    SpriteInfo sprites[5];    /* +0xA234 */
 } PanelGraphics;
 
 #define PANEL_GRAPHICS ((PanelGraphics *)D_800C3EA4)
@@ -56,6 +68,7 @@ typedef struct {
 } WindowPrims;
 
 /* Party panel bytes of the UI state (*800d2d28) kept as padding there. */
+#define UI_TEXTURE_WINDOWS ((RECT *)D_800D2D28->unk0) /* +0x00 six texture windows */
 #define UI_BAR_SHOWN(i)     (D_800D2D28->unk7F[i])       /* +0x7F */
 #define UI_STATUS_PARTS(i)  (D_800D2D28->unk70[4 + (i)]) /* +0x74, [3] party-wide */
 #define UI_GAUGE_PARTS(m)   (D_800D2D28->unk70[8 + (m)]) /* +0x78 */
@@ -117,15 +130,6 @@ void func_800898F0(u8 member);
 extern u32 *D_800C3E5C[];   /* text images of battle messages 0-9 */
 void *func_800338D8(s32 id); /* a battle message text */
 
-/* The six outputs of func_80026338 for one sprite. */
-typedef struct {
-    s32 unk0;
-    s32 tpageMode;
-    s32 clutX;
-    s32 clutY;
-    s32 pageX;
-    s32 pageY;
-} SpriteInfo;
 
 void func_80026338(void *sheet, s32 id, s32 *a, s32 *tpageMode, s32 *clutX, s32 *clutY,
                    s32 *pageX, s32 *pageY);

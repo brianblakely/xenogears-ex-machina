@@ -1816,7 +1816,104 @@ void func_80077980(void) {
     D_800D2D28->unkC6 = 0;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80077990);
+/* Save four copies of the four CLUT rows above the panel sprite's CLUT
+ * (for the CLUT cycle), look up the cursor and arrow sprites, place two of
+ * them in VRAM, and set the texture windows and draw modes that use them. */
+void func_80077990(void) {
+    u32 *strip0 = D_800C3EA4->unk8970[0];
+    u32 *strip1 = D_800C3EA4->unk8970[1];
+    u32 *strip2 = D_800C3EA4->unk8970[2];
+    u32 *strip3 = D_800C3EA4->unk8970[3];
+
+    D_800C3EA4->unk8950[0].x = 1;
+    D_800C3EA4->unk8950[0].y = PANEL_GRAPHICS->sprites[0].clutY - 1;
+    D_800C3EA4->unk8950[0].w = 0xC6;
+    D_800C3EA4->unk8950[0].h = 1;
+    D_800C3EA4->unk8950[1].x = 1;
+    D_800C3EA4->unk8950[1].y = PANEL_GRAPHICS->sprites[0].clutY;
+    D_800C3EA4->unk8950[1].w = 0xC6;
+    D_800C3EA4->unk8950[1].h = 1;
+    D_800C3EA4->unk8950[2].x = 1;
+    D_800C3EA4->unk8950[2].y = PANEL_GRAPHICS->sprites[0].clutY - 2;
+    D_800C3EA4->unk8950[2].w = 0xC6;
+    D_800C3EA4->unk8950[2].h = 1;
+    D_800C3EA4->unk8950[3].x = 1;
+    D_800C3EA4->unk8950[3].y = PANEL_GRAPHICS->sprites[0].clutY - 3;
+    D_800C3EA4->unk8950[3].w = 0xC6;
+    D_800C3EA4->unk8950[3].h = 1;
+    StoreImage(&D_800C3EA4->unk8950[0], strip0);
+    StoreImage(&D_800C3EA4->unk8950[1], strip1);
+    StoreImage(&D_800C3EA4->unk8950[2], strip2);
+    StoreImage(&D_800C3EA4->unk8950[3], strip3);
+    StoreImage(&D_800C3EA4->unk8950[0], strip0 + 0x63);
+    StoreImage(&D_800C3EA4->unk8950[1], strip1 + 0x63);
+    StoreImage(&D_800C3EA4->unk8950[2], strip2 + 0x63);
+    StoreImage(&D_800C3EA4->unk8950[3], strip3 + 0x63);
+    StoreImage(&D_800C3EA4->unk8950[0], strip0 + 0x63 * 2);
+    StoreImage(&D_800C3EA4->unk8950[1], strip1 + 0x63 * 2);
+    StoreImage(&D_800C3EA4->unk8950[2], strip2 + 0x63 * 2);
+    StoreImage(&D_800C3EA4->unk8950[3], strip3 + 0x63 * 2);
+    StoreImage(&D_800C3EA4->unk8950[0], strip0 + 0x63 * 3);
+    StoreImage(&D_800C3EA4->unk8950[1], strip1 + 0x63 * 3);
+    StoreImage(&D_800C3EA4->unk8950[2], strip2 + 0x63 * 3);
+    StoreImage(&D_800C3EA4->unk8950[3], strip3 + 0x63 * 3);
+    func_80026338(D_800D2F5C, 0x4B, &PANEL_GRAPHICS->sprites[1].unk0, &PANEL_GRAPHICS->sprites[1].tpageMode,
+                  &PANEL_GRAPHICS->sprites[1].clutX, &PANEL_GRAPHICS->sprites[1].clutY,
+                  &PANEL_GRAPHICS->sprites[1].pageX, &PANEL_GRAPHICS->sprites[1].pageY);
+    func_80026338(D_800D2F5C, 0x50, &PANEL_GRAPHICS->sprites[2].unk0, &PANEL_GRAPHICS->sprites[2].tpageMode,
+                  &PANEL_GRAPHICS->sprites[2].clutX, &PANEL_GRAPHICS->sprites[2].clutY,
+                  &PANEL_GRAPHICS->sprites[2].pageX, &PANEL_GRAPHICS->sprites[2].pageY);
+    func_80026338(D_800D2F5C, 0x4D, &PANEL_GRAPHICS->sprites[3].unk0, &PANEL_GRAPHICS->sprites[3].tpageMode,
+                  &PANEL_GRAPHICS->sprites[3].clutX, &PANEL_GRAPHICS->sprites[3].clutY,
+                  &PANEL_GRAPHICS->sprites[3].pageX, &PANEL_GRAPHICS->sprites[3].pageY);
+    func_80026338(D_800D2F5C, 0x4E, &PANEL_GRAPHICS->sprites[4].unk0, &PANEL_GRAPHICS->sprites[4].tpageMode,
+                  &PANEL_GRAPHICS->sprites[4].clutX, &PANEL_GRAPHICS->sprites[4].clutY,
+                  &PANEL_GRAPHICS->sprites[4].pageX, &PANEL_GRAPHICS->sprites[4].pageY);
+    UI_TEXTURE_WINDOWS[0].y = 0;
+    UI_TEXTURE_WINDOWS[0].x = 0;
+    UI_TEXTURE_WINDOWS[0].h = 0x100;
+    UI_TEXTURE_WINDOWS[0].w = 0x100;
+    PANEL_GRAPHICS->sprites[1].pageX = 0x3C0;
+    PANEL_GRAPHICS->sprites[2].pageX = 0x3C8;
+    PANEL_GRAPHICS->sprites[1].pageY = 0x34;
+    PANEL_GRAPHICS->sprites[2].pageY = 0x34;
+    UI_TEXTURE_WINDOWS[1].x = ((u16)PANEL_GRAPHICS->sprites[0].pageX & 0x3F) * 2;
+    UI_TEXTURE_WINDOWS[1].y = PANEL_GRAPHICS->sprites[0].pageY;
+    UI_TEXTURE_WINDOWS[1].w = 0x100;
+    UI_TEXTURE_WINDOWS[1].h = 0x100;
+    UI_TEXTURE_WINDOWS[2].x = ((u16)PANEL_GRAPHICS->sprites[1].pageX & 0x3F) * 2;
+    UI_TEXTURE_WINDOWS[2].y = PANEL_GRAPHICS->sprites[1].pageY;
+    UI_TEXTURE_WINDOWS[2].w = 8;
+    UI_TEXTURE_WINDOWS[2].h = 0x10;
+    UI_TEXTURE_WINDOWS[3].x = ((u16)PANEL_GRAPHICS->sprites[2].pageX & 0x3F) * 2;
+    UI_TEXTURE_WINDOWS[3].y = PANEL_GRAPHICS->sprites[2].pageY;
+    UI_TEXTURE_WINDOWS[3].w = 8;
+    UI_TEXTURE_WINDOWS[3].h = 0x10;
+    UI_TEXTURE_WINDOWS[4].x = ((u16)PANEL_GRAPHICS->sprites[3].pageX & 0x3F) * 2 + 0xE;
+    UI_TEXTURE_WINDOWS[4].y = PANEL_GRAPHICS->sprites[3].pageY;
+    UI_TEXTURE_WINDOWS[4].w = 0x10;
+    UI_TEXTURE_WINDOWS[4].h = 8;
+    UI_TEXTURE_WINDOWS[5].x = ((u16)PANEL_GRAPHICS->sprites[4].pageX & 0x3F) * 2 + 0xE;
+    UI_TEXTURE_WINDOWS[5].y = PANEL_GRAPHICS->sprites[4].pageY;
+    UI_TEXTURE_WINDOWS[5].w = 0x10;
+    UI_TEXTURE_WINDOWS[5].h = 8;
+    SetDrawMode(&PANEL_GRAPHICS->unk8908[0], 0, 0,
+                GetTPage(PANEL_GRAPHICS->sprites[0].tpageMode, 0, PANEL_GRAPHICS->sprites[0].pageX,
+                         PANEL_GRAPHICS->sprites[0].pageY),
+                &UI_TEXTURE_WINDOWS[1]);
+    SetDrawMode(&PANEL_GRAPHICS->unk8908[1], 0, 0,
+                GetTPage(PANEL_GRAPHICS->sprites[0].tpageMode, 0, PANEL_GRAPHICS->sprites[0].pageX,
+                         PANEL_GRAPHICS->sprites[0].pageY),
+                &UI_TEXTURE_WINDOWS[1]);
+    SetDrawMode(&PANEL_GRAPHICS->unk8920[0], 0, 0,
+                GetTPage(PANEL_GRAPHICS->sprites[0].tpageMode, 0, PANEL_GRAPHICS->sprites[0].pageX,
+                         PANEL_GRAPHICS->sprites[0].pageY),
+                &UI_TEXTURE_WINDOWS[0]);
+    SetDrawMode(&PANEL_GRAPHICS->unk8920[1], 0, 0,
+                GetTPage(PANEL_GRAPHICS->sprites[0].tpageMode, 0, PANEL_GRAPHICS->sprites[0].pageX,
+                         PANEL_GRAPHICS->sprites[0].pageY),
+                &UI_TEXTURE_WINDOWS[0]);
+}
 
 /* Initialise a battle message's quad pair for texture row `row` (13 pixels
  * per pair of rows; odd rows use the alternate CLUT) and hide it. */

@@ -137,6 +137,7 @@ u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y);
 u16 GetClut(s32 x, s32 y);
 void DrawSync(s32 mode);
 void LoadImage(RECT *rect, u32 *pixels);
+void StoreImage(RECT *rect, u32 *pixels);
 s32 OpenTIM(u32 *addr);
 TIM_IMAGE *ReadTIM(TIM_IMAGE *timimg);
 
