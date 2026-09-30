@@ -270,7 +270,6 @@ extern s32 D_80092A00;
 extern s32 D_80092A10;
 extern s32 D_80092A20;
 extern u8 D_80099D9D;
-extern u8 D_80099D9E;
 extern Sprt16 D_8009A14C;
 extern Sprt16 D_8009A244;
 extern s32 D_800910F0;

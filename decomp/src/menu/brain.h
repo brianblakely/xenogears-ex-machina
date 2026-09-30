@@ -7,8 +7,9 @@
 typedef struct Brain {
     Actor *owner;
     s16 timer;          /* 0x04: frames until the next decision */
-    u8 unk6[0x2];
-    u8 mode;            /* 0x08 */
+    u8 unk6;
+    u8 unk7;
+    u8 mode;            /* 0x08: 0 idle, 1 attack, 2 distance, 3 approach */
     u8 unk9;
     s16 unkA;
     s16 unkC;
@@ -50,9 +51,7 @@ extern u8 D_800925A4[14][3]; /* each special move's command inputs */
 
 extern s32 D_8009284C;
 extern s32 D_80092850;
-extern u8 D_80099DA2; /* the opponent's current command */
 extern u8 D_80092848; /* the command the brain last started */
-extern u8 D_80099D9E; /* nonzero while the opponent is being driven */
 extern u8 D_800928C4; /* enables the retreat rule */
 
 s32 func_8008B650(s32 angle, s16 target, s32 step); /* turn angle toward target */
@@ -73,5 +72,19 @@ void func_8008FF24(Actor *actor, struct Brain *brain);
 s32 func_8008FFEC(Actor *actor, struct Brain *brain);
 s32 func_80090258(Actor *actor, struct Brain *brain);
 s32 func_8008F720(Actor *actor, s32 eager);
+
+extern Brain D_80096F30; /* brain of the side-0 opponent */
+extern Brain D_80096F64; /* brain of the side-1 opponent */
+/* Opponent settings. */
+typedef struct {
+    u8 level;   /* 0x0: 0-2 */
+    u8 unk1[0x5];
+    u8 driven;  /* 0x6: nonzero while the opponent is being driven */
+    u8 unk7[0x3];
+    u8 command; /* 0xA: the opponent's current command */
+} OpponentSettings;
+
+extern OpponentSettings D_80099D98;
+s32 func_8008F570(Actor *actor, struct Brain *brain);
 
 #endif

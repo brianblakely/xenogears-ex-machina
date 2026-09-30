@@ -277,7 +277,7 @@ void func_8007191C(s32 scene) {
  * script, then scene 9. */
 void func_800719F0(void) {
     D_80099D9D = 0;
-    D_80099D9E = 0;
+    D_80099D98.driven = 0;
     func_80083C0C(7);
     D_800928C8 = 5;
     D_80092884 = 0;
@@ -429,7 +429,7 @@ void func_800720D4(void) {
         D_8009293C = 1;
         D_800928D4 = 0;
         D_80099D9D = 0;
-        D_80099D9E = 0;
+        D_80099D98.driven = 0;
         D_80092900 = 0;
         D_800925D4 = 0;
         D_800925D8 = 0;
@@ -2529,26 +2529,26 @@ void func_8008F260(Actor *actor, Brain *brain, u8 arg) {
 /* Drive the computer opponent one frame: reset its state when the command
  * changes, count down to the next decision (some commands decide every
  * frame), run the command and then steer and accelerate.
- * Does not match: only the prologue schedule differs (the brain pointer
- * and both command loads come before the driven-flag store). */
+ * Does not match: the command-change test and the stored command are
+ * scheduled/reloaded differently around the stores. */
 void func_8008F280(Actor *actor) {
     Brain *brain = actor->brain;
 
-    D_80099D9E = 1;
-    if (D_80092848 != D_80099DA2) {
+    D_80099D98.driven = 1;
+    if (D_80092848 != D_80099D98.command) {
         brain->timer = 0;
         brain->unkC = 0;
         actor->flags &= ~2;
         actor->state = 0;
         actor->flags &= ~0x38;
         brain->defending = 0;
-        D_80092848 = D_80099DA2;
+        D_80092848 = D_80099D98.command;
         actor->unkCE = actor->unkCC + 0x800;
     }
     if (brain->defending) {
         actor->flags |= 2;
     }
-    switch (D_80099DA2) {
+    switch (D_80099D98.command) {
     case 2:
     case 8:
     case 9:
@@ -2562,7 +2562,7 @@ void func_8008F280(Actor *actor) {
         }
         break;
     }
-    switch (D_80099DA2) {
+    switch (D_80099D98.command) {
     case 3:
         func_8008EF30(actor, brain, 0);
         break;
@@ -2597,7 +2597,7 @@ void func_8008F280(Actor *actor) {
         func_8008F260(actor, brain, 2);
         return;
     case 2:
-        D_80099D9E = 0;
+        D_80099D98.driven = 0;
         return;
     case 1:
         func_8008EFA8(actor, brain);
@@ -2629,7 +2629,7 @@ s32 func_8008F530(Actor *actor, s32 check) {
 }
 
 /* The charge left over after a special move. */
-s32 func_8008F570(Actor *actor) {
+s32 func_8008F570(Actor *actor, Brain *brain) {
     return 0x1000 - actor->unkBE;
 }
 
@@ -3030,7 +3030,7 @@ void func_8009031C(Actor *actor, Brain *brain) {
     }
 }
 
-/* Enter the opponent's special mode: a few steps, fresh rolls, and
+/* Enter the opponent's approach mode (3): a few steps, fresh rolls, and
  * whether it closes in. */
 void func_80090504(Actor *actor, s32 kind) {
     Brain *brain = actor->brain;
@@ -3043,7 +3043,7 @@ void func_80090504(Actor *actor, s32 kind) {
     brain->unk2E = 0;
 }
 
-/* The opponent's approach mode: give up when the other actor retreated,
+/* The opponent's approach mode (3) step: give up when the other actor retreated,
  * sidestep homing shots (and maybe counter-attack), attack when close,
  * and pick a new heading and duration whenever the timer runs out. */
 void func_80090580(Actor *actor, Brain *brain) {
@@ -3096,7 +3096,7 @@ void func_80090580(Actor *actor, Brain *brain) {
     brain->timer--;
 }
 
-/* Enter the opponent's approach mode: maybe act first, then a random
+/* Enter the opponent's distance mode (2): maybe act first, then a random
  * distance to keep and a few decisions. */
 void func_80090894(Actor *actor, s32 kind) {
     Brain *brain = actor->brain;
@@ -3113,7 +3113,7 @@ void func_80090894(Actor *actor, s32 kind) {
     brain->unk2E = 0;
 }
 
-/* The opponent's special mode step: sidestep homing shots (maybe
+/* The opponent's distance mode (2) step: sidestep homing shots (maybe
  * countering), use a special move once far enough (or when forced), and
  * pick a new wide heading and duration whenever the timer runs out. */
 void func_80090990(Actor *actor, Brain *brain) {
@@ -3174,6 +3174,72 @@ void func_80090C88(Actor *actor) {
     brain->unk1C = moves->tendency[3];
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80090CC0);
+/* Attach and reset the opponent brain of the actor's side and start it in
+ * a random mode. */
+void func_80090CC0(Actor *actor) {
+    Brain *brain = &D_80096F30;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80090E10);
+    if (actor->flags & 0x08000000) {
+        brain = &D_80096F64;
+    }
+    actor->brain = brain;
+    brain->unk6 = 0x10;
+    brain->owner = actor;
+    brain->timer = 0;
+    brain->unk7 = 0xA;
+    brain->unkA = 0;
+    brain->unkC = 0;
+    brain->mode = 0;
+    brain->unk9 = 0;
+    actor->state = 0;
+    brain->unk24 = func_8008F570(actor, brain);
+    brain->unkF = D_80099D98.level;
+    func_80090C88(actor);
+    switch (func_8003FA38() % 3) {
+    case 0:
+        func_8008FC7C(actor);
+        break;
+    case 1:
+        func_80090174(actor);
+        break;
+    case 2:
+        func_80090894(actor, 0);
+        break;
+    case 3:
+        func_80090504(actor, 0);
+        break;
+    }
+    func_80076424(actor);
+}
+
+/* Run the computer opponent for one frame when enabled: its current mode's
+ * step, then dodge and guard flags and steering. */
+void func_80090E10(Actor *actor) {
+    Brain *brain;
+
+    if (actor->flags & 0x40) {
+        brain = actor->brain;
+        brain->unkF = D_80099D98.level;
+        switch (brain->mode) {
+        case 0:
+            func_8008FCC8(actor, brain);
+            break;
+        case 1:
+            func_8009031C(actor, brain);
+            break;
+        case 2:
+            func_80090990(actor, brain);
+            break;
+        case 3:
+            func_80090580(actor, brain);
+            break;
+        }
+        if (brain->unkE) {
+            actor->flags |= 0x8000;
+        }
+        if (brain->defending) {
+            actor->flags |= 2;
+        }
+        func_8008EE1C(actor, brain->unkA, brain->unkC);
+    }
+}
