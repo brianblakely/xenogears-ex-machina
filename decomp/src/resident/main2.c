@@ -1394,23 +1394,101 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003A5D0);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003A65C);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003A82C);
+/* Whether a sequence is paused (flag bit 15). */
+u32 func_8003A82C(SoundSeq *seq) {
+    return seq->flags >> 15;
+}
 
+/* Set a sequence's tempo (0 means 0x100), at once or over `frames`.
+ * Nonmatching: matches when compiled with GCC 2.6.3 (a 2.6.3 translation unit). */
+#ifdef NON_MATCHING
+void func_8003A838(SoundSeq *seq, s32 tempo, s32 frames) {
+    s32 delta;
+
+    if (tempo == 0) {
+        tempo = 0x100;
+    }
+    seq->tempo_target = tempo;
+    if (frames == 0) {
+        seq->tick_step = seq->resolution * tempo;
+        seq->tempo_frames = 0;
+        seq->tempo = tempo << 16;
+        return;
+    }
+    delta = (tempo << 16) - seq->tempo;
+    if (delta != 0) {
+        seq->tempo_frames = frames;
+        seq->tempo_step = delta / frames;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003A838);
+#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003A89C);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003A948);
+extern void func_8003E680(s32 bits, SoundSeq *seq);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003A9BC);
+/* Set a sequence's volume, at once or over `frames`. */
+void func_8003A948(SoundSeq *seq, s32 volume, s32 frames) {
+    s32 delta;
+
+    seq->volume_target = volume << 8;
+    if (frames == 0) {
+        seq->volume = volume << 24;
+        seq->volume_frames = 0;
+        func_8003E680(0x200, seq);
+        return;
+    }
+    delta = (volume << 16) - (seq->volume >> 8);
+    if (delta != 0) {
+        seq->volume_frames = frames;
+        seq->volume_step = (delta / frames) << 8;
+    }
+}
+
+/* Set a sequence's pan, at once or over `frames`. */
+void func_8003A9BC(SoundSeq *seq, s32 pan, s32 frames) {
+    s32 delta;
+
+    seq->pan_target = pan << 8;
+    if (frames == 0) {
+        seq->pan = pan << 24;
+        seq->pan_frames = 0;
+        func_8003E680(0x100, seq);
+        return;
+    }
+    delta = (pan << 16) - (seq->pan >> 8);
+    if (delta != 0) {
+        seq->pan_frames = frames;
+        seq->pan_step = (delta / frames) << 8;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003AA30);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003AAC4);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003ABE8);
+void func_8003ABE8(SoundSeq *seq, u8 value) {
+    seq->unk1B = value;
+}
 
+/* A sequence's position: its first word, then frames, seconds and minutes
+ * of its tick counter.
+ * Nonmatching: matches when compiled with GCC 2.6.3 (a 2.6.3 translation unit). */
+#ifdef NON_MATCHING
+void func_8003ABF0(SoundSeq *seq, SoundTime *time) {
+    u32 ticks = seq->ticks >> 8;
+    u32 seconds = ticks / 240;
+
+    time->unk0 = seq->unk24;
+    time->frames = ticks % 240;
+    time->seconds = seconds % 60;
+    time->minutes = seconds / 60;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003ABF0);
+#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003AC58);
 
