@@ -393,11 +393,8 @@ typedef struct GameState {
     u16 unk1856;         /* 1856 */
     u8 unk1858[0x1924 - 0x1858];
     s32 gold;            /* 1924 */
-    u8 unk1928[0x1932 - 0x1928];
-    s16 unk1932;         /* 1932 */
-    u8 unk1934[0x1A16 - 0x1934];
-    u16 unk1A16;         /* 1A16 */
-    u8 unk1A18[0x1D30 - 0x1A18];
+    u8 unk1928[0x1930 - 0x1928];
+    u16 vars[0x200];     /* 1930: saved event variables (800c3a68) */
     u16 unk1D30;         /* 1D30: characters waiting to join */
     u16 unk1D32;         /* 1D32: bit per character */
     u8 unk1D34[0x1D38 - 0x1D34];
@@ -417,9 +414,11 @@ typedef struct GameState {
     u16 unk22B6;         /* 22B6 */
     u8 unk22B8[0x2318 - 0x22B8];
     u16 unk2318;         /* 2318: bit per character */
-    u8 unk231A[0x2320 - 0x231A];
+    u16 unk231A;         /* 231A: saved map */
+    u16 unk231C;         /* 231C */
+    u8 unk231E[2];
     s16 unk2320;         /* 2320 */
-    u8 unk2322[2];
+    u16 unk2322;         /* 2322 */
 } GameState;
 
 /* Field work state 800b2078..800b2388, one object: stores to its members do

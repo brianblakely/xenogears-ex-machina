@@ -4993,7 +4993,7 @@ void func_80093930(void) {
     entry = func_800ACDEC(1);
     D_800ADB64 = 1;
     D_800B00C0 = 1;
-    D_8005A39C->unk1932 = entry;
+    D_8005A39C->vars[1] = entry;
     D_8005A39C->unk2320 = entry;
     D_800C3A68[1] = entry;
     D_8004F350 += 1;
@@ -8594,7 +8594,31 @@ void func_800A30B4(void) {
     func_800A3074(0x42, D_80062590[2]);
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A30FC);
+extern u16 D_8005941C;
+extern u8 D_800594D0;
+s32 func_8009744C(void);
+s32 func_8009A514(void);
+
+/* Record the current map and camera in the game state and variables and
+ * save the event variable bank. */
+void func_800A30FC(void) {
+    s32 i;
+
+    D_8005A39C->unk231A = D_8004F34C;
+    D_8005A39C->unk2322 = D_8004F324;
+    D_8005A39C->unk2320 = D_8005A39C->vars[1];
+    D_8005A39C->unk231C = D_8005A39C->vars[4] << 9;
+    func_800A3074(0x44, D_8005941C);
+    func_800A3074(0x46, D_800594D0);
+    func_800A3074(6, func_8009744C() & 0xFFFF);
+    func_800A3074(8, func_8009A514() & 0xFFFF);
+    func_800A3074(0x24, (s16)D_800AF880.elevation);
+    func_800A3074(0x3C, D_8004F34C);
+    func_800A30B4();
+    for (i = 0; i < 0x200; i++) {
+        D_8005A39C->vars[i] = D_800C3A68[i];
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A31E8);
 
@@ -9339,27 +9363,27 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AB378);
 s32 func_800AB748(u32 which) {
     switch (which) {
     case 0:
-        if (D_8005A39C->unk1A16 & 8) {
+        if (D_8005A39C->vars[0x73] & 8) {
             return 0;
         }
         break;
     case 1:
-        if (D_8005A39C->unk1A16 & 0x10) {
+        if (D_8005A39C->vars[0x73] & 0x10) {
             return 0;
         }
         break;
     case 2:
-        if (D_8005A39C->unk1A16 & 0x20) {
+        if (D_8005A39C->vars[0x73] & 0x20) {
             return 0;
         }
         break;
     case 3:
-        if (D_8005A39C->unk1A16 & 0x40) {
+        if (D_8005A39C->vars[0x73] & 0x40) {
             return 0;
         }
         break;
     case 4:
-        if (!(D_8005A39C->unk1A16 & 0x80)) {
+        if (!(D_8005A39C->vars[0x73] & 0x80)) {
             return 0;
         }
         break;
@@ -9534,4 +9558,21 @@ void func_800AD898(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AD978);
+/* For each party member flagged in 8006be2c, run 800ad4d4 when `mode`
+ * disagrees with its slot state (+22b1) and 800acfd0 otherwise. */
+void func_800AD978(s32 mode) {
+    s32 i;
+
+    if (D_800B2078.unk2268 != 0) {
+        for (i = 0; i < 3; i++) {
+            if (D_8005A444[i] != 0xFF && D_8006BE2C[i] == 1) {
+                D_800AFD1C = D_8006F990[i];
+                if ((D_8005A39C->unk22B1[i] == 0 && mode != 0) || (D_8005A39C->unk22B1[i] != 0 && mode == 0)) {
+                    func_800AD4D4(i);
+                } else {
+                    func_800ACFD0(i);
+                }
+            }
+        }
+    }
+}
