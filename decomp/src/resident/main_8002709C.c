@@ -436,7 +436,104 @@ s32 func_80028AAC(void) {
     return count;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002709C", func_80028B14);
+/* The next chunk of the stream, or NULL. With the PC file server, read the
+ * next sector of the file into a free slot (opening the list's next file
+ * when this one ends); from the disc, take the slot the CD callbacks filled
+ * for the next sequence number. */
+u8 *func_80028B14(void) {
+    StreamRing *ring = D_8004FE30;
+    u8 *payload;
+    StreamSlot *slot;
+    FileRequest *request;
+    s32 count;
+    s32 index;
+    s32 i;
+    s32 file;
+    char *name;
+
+    if (ring == NULL) {
+        return NULL;
+    }
+    payload = (u8 *)ring;
+    slot = ring->slots;
+    count = ring->count;
+    payload = payload + count * 8 + 0x24;
+    if (D_8004FE48 != NULL) {
+        if (D_8004FE4C == -1) {
+            return NULL;
+        }
+        if (D_8004FDF8 <= 0) {
+            return NULL;
+        }
+        for (i = 0; i < D_8004FE40; i++) {
+            slot = &D_8004FE2C[D_8004FE10];
+            index = D_8004FE10;
+            if (++D_8004FE10 >= D_8004FE40) {
+                D_8004FE10 = 0;
+            }
+            if (slot->state == 0) {
+                goto found;
+            }
+        }
+        if (slot->state != 0) {
+            return NULL;
+        }
+    found:
+        slot->state = 3;
+        payload += index << 11;
+        for (i = 0; i < 4; i++) {
+            if (func_8004C398(D_8004FE4C, payload, 0x800) != 0) {
+                goto read;
+            }
+            func_8002804C(i, 0, 0xFF, 0);
+        }
+        return NULL;
+    read:
+        D_8004FDF8 -= 0x800;
+        if (D_8004FDF8 > 0) {
+            return payload;
+        }
+        D_8004FDF8 = 0;
+        for (i = 0; i < 4; i++) {
+            if (PCclose(D_8004FE4C) == 0) {
+                break;
+            }
+            func_8002804C(i, 0, 0, 0xFF);
+        }
+        D_8004FE4C = -1;
+        if (D_8004FE0C != NULL) {
+            request = &D_8004FE0C[++D_8004FE10];
+            file = request->file;
+            D_80059F0C = file;
+            if (file > 0 && request->destination != NULL) {
+                name = func_80028998(file);
+                for (i = 0; i < 4; i++) {
+                    D_8004FE4C = PCopen(name, 0, 0);
+                    if (D_8004FE4C != -1) {
+                        break;
+                    }
+                    func_8002804C(i, 0xFF, 0, 0);
+                }
+                D_8004FDF8 = func_80028808(file);
+                D_8004FDFC--;
+                return payload;
+            }
+            D_8004FDF8 = 0;
+        }
+        D_8004FDFC = 0;
+        return payload;
+    }
+    for (i = 0; i < count; i++, slot++) {
+        if (slot->state == 3 && slot->sequence == D_8004FE24) {
+            break;
+        }
+    }
+    if (i == D_8004FE40) {
+        return NULL;
+    }
+    D_8004FE24++;
+    return payload + (i << 11);
+}
 
 /* Whether any of `count` ring slots from `index` differs from `state` or runs past the last slot. */
 s32 func_80028E60(s32 index, s32 count, s32 state) {
