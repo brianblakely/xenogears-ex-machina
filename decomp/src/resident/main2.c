@@ -1571,16 +1571,15 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038428);
 #endif
 
 /* Remove a sound effect bank from the loaded banks (error 0x10 when it is
- * not loaded, 0xB when its data is no longer valid).
- * Nonmatching: the original walks with a second copy of the bank pointer. */
-#ifdef NON_MATCHING
+ * not loaded, 0xB when its data is no longer valid). */
 void func_8003852C(SoundBank *bank) {
     SoundBank *entry;
     SoundBank *prev = NULL;
+    SoundBank *target = bank;
     s16 error;
 
     for (entry = D_80059440; entry != NULL; entry = entry->next) {
-        if (entry == bank) {
+        if (entry == target) {
             break;
         }
         prev = entry;
@@ -1592,11 +1591,11 @@ void func_8003852C(SoundBank *bank) {
     func_8003A094(bank);
     DisableEvent(D_800595BC);
     if (prev != NULL) {
-        prev->next = bank->next;
+        prev->next = target->next;
     } else {
-        D_80059440 = bank->next;
+        D_80059440 = target->next;
     }
-    bank->next = NULL;
+    target->next = NULL;
     error = func_8003F614((u32 *)bank, 0x73646573, 0x101);
     if (error != 0) {
         func_8003F6B0(0xB);
@@ -1604,9 +1603,6 @@ void func_8003852C(SoundBank *bank) {
     }
     EnableEvent(D_800595BC);
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003852C);
-#endif
 
 void func_80038624(void) {
     func_80039FF8();
@@ -1898,11 +1894,12 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039024);
 #ifdef NON_MATCHING
 void func_80039144(void *data) {
     SoundBlock *head = D_80059410;
-    SoundBlock *block = (SoundBlock *)data - 1;
+    SoundBlock *block;
     SoundBlock *entry;
     SoundBlock *prev;
 
     DisableEvent(D_800595BC);
+    block = (SoundBlock *)data - 1;
     entry = head;
     prev = NULL;
     while (entry != block) {
