@@ -1383,7 +1383,7 @@ void func_8009AA44(u8 member) {
         D_800C34B0->records[member].pilot.status7C &= ~0x1000;
     }
     if (D_800D2C34 == 4) {
-        D_800C34B0->defendEffect = 0x3D;
+        D_800C34B0->message = 0x3D;
     }
 }
 
@@ -1747,9 +1747,202 @@ void func_8009B46C(u16 *damage) {
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009B46C);
 #endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009B684);
+/* Show the message for an applied status, named by its kind and flag bit. */
+void func_8009B684(u8 kind, u16 flag) {
+    switch (kind) {
+    case 0:
+        switch (flag) {
+        case 0x2000:
+            D_800C34B0->message = 0x1;
+            break;
+        case 0x1000:
+            D_800C34B0->message = 0x2;
+            break;
+        case 0x800:
+            D_800C34B0->message = 0x3;
+            break;
+        case 0x400:
+            D_800C34B0->message = 0x4;
+            break;
+        case 0x200:
+            D_800C34B0->message = 0x5;
+            break;
+        case 0x1:
+            D_800C34B0->message = 0x8;
+            break;
+        }
+        break;
+    case 2:
+        switch (flag) {
+        case 0x2000:
+            D_800C34B0->message = 0x9;
+            break;
+        case 0x1000:
+            D_800C34B0->message = 0xA;
+            break;
+        case 0x800:
+            D_800C34B0->message = 0xB;
+            break;
+        case 0x400:
+            D_800C34B0->message = 0xC;
+            break;
+        case 0x1:
+            D_800C34B0->message = 0xD;
+            break;
+        case 0x20:
+            D_800C34B0->message = 0x7;
+            break;
+        }
+        break;
+    case 5:
+        switch (flag) {
+        case 0x8000:
+            D_800C34B0->message = 0xE;
+            break;
+        case 0x4000:
+            D_800C34B0->message = 0xF;
+            break;
+        case 0x2000:
+            D_800C34B0->message = 0x10;
+            break;
+        case 0x1000:
+            D_800C34B0->message = 0x11;
+            break;
+        case 0x800:
+            D_800C34B0->message = 0x12;
+            break;
+        case 0x1800:
+            D_800C34B0->message = 0x13;
+            break;
+        }
+        break;
+    case 7:
+        switch (flag) {
+        case 0x8000:
+            D_800C34B0->message = 0x15;
+            break;
+        case 0x4000:
+            D_800C34B0->message = 0x16;
+            break;
+        case 0x1000:
+            D_800C34B0->message = 0x18;
+            break;
+        case 0x2:
+        case 0x8:
+            D_800C34B0->message = 0x19;
+            break;
+        case 0x1:
+        case 0x4:
+            D_800C34B0->message = 0x1A;
+            break;
+        }
+        break;
+    case 9:
+        switch (flag) {
+        case 0x8000:
+            D_800C34B0->message = 0x1B;
+            break;
+        case 0x4000:
+            D_800C34B0->message = 0x1C;
+            break;
+        case 0x2000:
+            D_800C34B0->message = 0x1D;
+            break;
+        case 0x1000:
+            D_800C34B0->message = 0x1E;
+            break;
+        case 0x400:
+            D_800C34B0->message = 0x1F;
+            break;
+        case 0x800:
+            D_800C34B0->message = 0x20;
+            break;
+        case 0x100:
+            D_800C34B0->message = 0x21;
+            break;
+        case 0x200:
+            D_800C34B0->message = 0x22;
+            break;
+        }
+        break;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009BAC4);
+/* Choose an automatic action for slot (confusion or auto-battle): choice[0]
+ * is the kind (4 defend, 2 a skill with choice[1] its index among the
+ * character's usable skills, 0/1 an attack with choice[1] its strength). Out of
+ * a gear: defend on 10% unless flagged, a known skill on 25%, then Chu-Chu's
+ * basic attack; otherwise attack weak 48%, medium 32%, strong 20%. */
+void func_8009BAC4(u8 slot, u8 *choice, s16 *busy) {
+    Combatant *record = &D_800CCCE8.records[slot];
+    u16 skills;
+    u8 count;
+    u8 skill;
+
+    if (!(D_800CCCE8.records[slot].flags15A & 0x80)) {
+        if (func_8003FA38() % 100 < 10 && !(record->pilot.status7A & 0x100) && *busy == 0) {
+            choice[0] = 4;
+            return;
+        }
+        switch (record->pilot.characterId) {
+        case 3:
+            skills = 0xC3C0;
+            count = 10;
+            break;
+        case 4:
+            skills = 0xDF80;
+            count = 10;
+            break;
+        case 5:
+            skills = 0x1000;
+            count = 4;
+            break;
+        case 7:
+            skills = 0xE000;
+            count = 3;
+            break;
+        case 0:
+        case 8:
+            skills = 0xC000;
+            count = 2;
+            break;
+        case 2:
+        case 9:
+            skills = 0xBFE0;
+            count = 11;
+            break;
+        case 1:
+        case 6:
+        case 10:
+            skills = 0xF000;
+            count = 4;
+            break;
+        }
+        if (func_8003FA38() % 100 < 25 && !(record->pilot.status7A & 0x20)) {
+            choice[0] = 2;
+            skill = func_8003FA38() % count;
+            if (D_8006ECF4[record->pilot.characterId].mask2 & ((0x8000 >> skill) & skills)) {
+                choice[1] = skill;
+                return;
+            }
+        }
+        if (record->pilot.characterId == 8) {
+            choice[0] = 0;
+            choice[1] = 0;
+            return;
+        }
+    }
+    choice[0] = 1;
+    if (func_8003FA38() % 100 < 80) {
+        if (func_8003FA38() % 100 >= 60) {
+            choice[1] = 1;
+        } else {
+            choice[1] = 0;
+        }
+    } else {
+        choice[1] = 2;
+    }
+}
 
 /* Damage the target by the command's power in twentieths of its gear's
  * maximum HP. */

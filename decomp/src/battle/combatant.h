@@ -130,7 +130,7 @@ typedef struct {
     u8 attackerIndex;                       /* 0x5FC1 */
     u8 commandIndex;                        /* 0x5FC2 */
     u8 pad5FC3[0x5FC7 - 0x5FC3];
-    u8 defendEffect;                        /* 0x5FC7 */
+    u8 message;                             /* 0x5FC7: battle message code */
 } BattleWork;
 
 /* Layout checks (a negative array size fails the build). */
@@ -138,7 +138,7 @@ typedef struct {
 typedef char BattleLayoutCheck[(sizeof(UnitRecord) == 0xA4 && sizeof(Combatant) == 0x170
                                && sizeof(CommandDescriptor) == 0x28 && sizeof(BattleItem) == 0x10
                                && BATTLE_OFFSET(BattleWork, targetMask) == 0x5FAC
-                               && BATTLE_OFFSET(BattleWork, defendEffect) == 0x5FC7) ? 1 : -1];
+                               && BATTLE_OFFSET(BattleWork, message) == 0x5FC7) ? 1 : -1];
 
 extern UnitRecord D_8006D8A0[31];
 extern u8 D_8006F8BA[];                 /* item durability by slot */
