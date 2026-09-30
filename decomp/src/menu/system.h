@@ -1,7 +1,7 @@
 #ifndef MENU_SYSTEM_H
 #define MENU_SYSTEM_H
 
-#include "common.h"
+/* Included from menu.h after the generic libgpu/libgte types. */
 
 /* Saved system options word (resident, 0x8006f980). */
 typedef struct {
@@ -37,10 +37,6 @@ typedef struct {
 } Settings;
 
 extern Settings D_80099D98;
-
-typedef struct {
-    s16 x, y, w, h;
-} Rect;
 
 /* libgpu DRAWENV layout. */
 typedef struct {
@@ -97,17 +93,6 @@ typedef struct {
 } Window;
 
 extern Window D_8009A0D8[];
-
-/* libgte MATRIX layout. */
-typedef struct {
-    s16 m[3][3];
-    s32 t[3];
-} Matrix;
-
-/* libgte SVECTOR layout. */
-typedef struct {
-    s16 vx, vy, vz, pad;
-} SVector;
 
 /* Scene node (0x9C bytes): a typed payload with its own transform, linked
  * into a tree of children. */
@@ -393,7 +378,6 @@ void *func_80031BDC(s32 size, s32 mode);
 void func_800295D8(s32 file, void *buffer, s32 a, s32 b);
 void func_800439E0(DispEnv *env, s32 x, s32 y, s32 w, s32 h);
 void func_80043928(DrawEnv *env, s32 x, s32 y, s32 w, s32 h);
-u16 func_80043A1C(s32 tp, s32 abr, s32 x, s32 y);
 void func_80045534(u32 *packet, DrawEnv *env);
 void func_800453E8(u32 *packet, Rect *area);
 void func_8004546C(u32 *packet, s16 *offset);
@@ -411,7 +395,6 @@ void func_8002CB54(ModelFile *file, void **first, void **second);
 void func_8002CC54(u16 tpage);
 void func_8002CC74(s32 x, s32 y);
 void func_8002C8CC(ModelFile *file, void *resource, s32 mode);
-void func_800732AC(void *dst, void *src, s32 size);
 void func_8002DDE4(void *target, s32 on, s32 a, s32 b, s32 c, s32 d, s32 e);
 Node *func_80089B44(Node *node);
 void func_80089D5C(Node *node);
@@ -432,7 +415,6 @@ void func_8008BE4C(ModelPrims *prims, Mesh *mesh);
 void func_8008BD70(Mesh *mesh, ModelPrim *prims, u32 *ot, u8 *work);
 Node *func_8008C188(Node *source, Node *parent);
 Node *func_8008C298(Node *source);
-s32 func_8003FA38(void); /* rand */
 u32 func_800405E4(void);
 void func_8008BB3C(Task *task);
 void func_8008C3A8(void *vertices, u8 *work, s32 count);
@@ -441,7 +423,6 @@ void func_8002C700(ModelFile *file, void *packets, u32 *ot, s32 mode);
 void func_80030B14(Matrix *m);
 void func_8003F738(SVector *angles, Matrix *m);
 void func_8004920C(Matrix *a, Matrix *b, Matrix *out);
-void func_8004931C(Matrix *a, Matrix *b, Matrix *out);
 void func_80049D9C(Matrix *m, Vector *t);
 void func_800731F8(Matrix *m, s16 *scale);
 void func_8008A63C(Model *model);
@@ -500,7 +481,6 @@ void func_8008ABAC(Node **lights);
 void func_80030A30(s32 index, Light *light);
 Model *func_80089F8C(Model *model);
 void func_8004A12C(s32 x, s32 y);
-void func_8004A14C(s32 h);
 void func_8002DFF0(s32 w, s32 h);
 void func_80089210(s32 width, s32 height);
 void func_80089330(s32 width, s32 height);
@@ -511,7 +491,6 @@ void func_80043BE4(void *block);
 void func_80037324(void *block);
 void func_8008EADC(void);
 void func_80032CB8(void);
-void func_80043B48(u32 *ot, void *prim);
 s32 func_8004B54C(s32 mode);
 void func_80088C28(void);
 void func_8003700C(char *format, ...);
@@ -525,7 +504,6 @@ s32 func_800888E4(s32 flag);
 void func_800888B0(void);
 s32 func_800889C8(void);
 void func_8003278C(s32 a, s32 value, s32 c, s32 d);
-s16 func_80043A58(s32 x, s32 y);
 void func_8008895C(void);
 void func_80088A40(void);
 

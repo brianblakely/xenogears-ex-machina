@@ -1,5 +1,4 @@
 #include "menu.h"
-#include "system.h"
 
 /* Start the menu camera: mode 3 setup and its script block. */
 void func_800707A8(void) {
@@ -211,10 +210,11 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007107C);
 
 /* Link the screen offset packet and this frame's texture page packet. */
 void func_80071724(u32 *ot) {
-    MenuFrame *frame = D_80092868;
+    Window *frame = D_80092868;
 
-    frame->offset_prim[2] = D_800925E0 | (D_800925E4 << 16);
-    func_80043B48(ot, frame->offset_prim);
+    /* x0 and y0 of the offset sprite, stored as one word */
+    *(u32 *)&frame->sprite.x0 = D_800925E0 | (D_800925E4 << 16);
+    func_80043B48(ot, &frame->sprite);
     func_80043B48(ot, &D_800929E4[D_800928A0]);
 }
 
@@ -449,7 +449,7 @@ void func_800725B0(SceneData *scene) {
     SceneHeader *header;
 
     func_80030988(5, 4, 0x40, 0x40);
-    D_800910F0 = func_8008A3E0(func_8008A2B8(0x10));
+    D_800910F0 = func_8008A3E0((Holder *)func_8008A2B8(0x10));
     D_80092610 = func_8008C2C0(scene->unk5C);
     func_8008976C(0x280, 0xDA);
     func_8004A14C(0x400);
@@ -485,14 +485,14 @@ void func_800726B4(void) {
 
 /* Copy a model's matrix to out, rotated by the base matrix, with its
  * translation set to the model position relative to the scene origin. */
-void func_8007273C(Model *model, Matrix *matrix, Matrix *out) {
+void func_8007273C(Node *model, Matrix *matrix, Matrix *out) {
     Matrix local;
 
     *out = *matrix;
     local = D_80091C0C;
-    local.t[0] = model->x - D_80096FA8.vx;
+    local.t[0] = model->position.vx - D_80096FA8.vx;
     local.t[1] = -D_80096FA8.vy;
-    local.t[2] = model->z - D_80096FA8.vz;
+    local.t[2] = model->position.vz - D_80096FA8.vz;
     func_8004931C(matrix, &local, &local);
     out->t[0] = local.t[0];
     out->t[1] = local.t[1];
@@ -926,19 +926,19 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80074678);
  * the original leaf keeps an empty 16-byte frame (likely from a call that
  * was optimised away). */
 void func_80074998(Actor *actor) {
-    ModelObject **objects = actor->model->data->objects;
+    Node **nodes = ((ModelSet *)actor->node->data)->nodes;
     s32 i;
 
-    for (i = 0; i < actor->model->data->count; i++) {
-        if (objects[i]->kind == 1) {
-            *objects[i]->flags &= ~1;
+    for (i = 0; i < ((ModelSet *)actor->node->data)->nodeCount; i++) {
+        if (nodes[i]->type == 1) {
+            ((Model *)nodes[i]->data)->flags &= ~1;
         }
     }
     for (i = 0; i < actor->visible_count; i++) {
-        *objects[actor->visible[i]]->flags |= 1;
+        ((Model *)nodes[actor->visible[i]]->data)->flags |= 1;
     }
     if (actor->unk909 == 0xD) {
-        *objects[13]->flags |= 1;
+        ((Model *)nodes[13]->data)->flags |= 1;
     }
 }
 #else
@@ -949,19 +949,19 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80074998);
 void func_80074AB4(Actor *actor) {
     Pose *pose = actor->pose;
     Move *move = actor->move;
-    ModelAnim *anim;
+    Player *anim;
 
     actor->pos.vx = pose->x;
     actor->pos.vy = pose->y;
     actor->pos.vz = pose->z;
     actor->anim = move->anim;
     actor->angle = (pose->flags << 20) >> 20;
-    anim = &actor->model->data->anims[move->anim];
+    anim = &((ModelSet *)actor->node->data)->players[move->anim];
     if (move->flags & 0x1000) {
         func_80074998(actor);
         func_8008B0D8(anim);
     }
-    func_80074678(actor, anim->unk12, actor->move->unk9);
+    func_80074678(actor, anim->frame, actor->move->unk9);
     if (move->unkA != 0) {
         func_8008B730(anim, move->unk9, move->unkA);
     }
@@ -1314,10 +1314,10 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80078D20);
 
 /* Place an actor's model at the actor's position and facing. */
 void func_80078E94(Actor *actor) {
-    actor->model->x = actor->pos.vx;
-    actor->model->y = actor->pos.vy;
-    actor->model->z = actor->pos.vz;
-    actor->model->angle = actor->angle;
+    actor->node->position.vx = actor->pos.vx;
+    actor->node->position.vy = actor->pos.vy;
+    actor->node->position.vz = actor->pos.vz;
+    actor->node->unk44.vy = actor->angle;
 }
 
 /* Default values of a seven-entry parameter block. */

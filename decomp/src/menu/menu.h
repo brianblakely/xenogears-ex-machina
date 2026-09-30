@@ -38,16 +38,17 @@ typedef struct {
     u16 clut;
 } Sprt16;
 
-/* One of the two display buffers: draw and display environments, then
- * packets linked every frame. */
-typedef struct {
-    u8 envs[0x74];
-    u32 offset_prim[3]; /* 0x74: last word is x | y << 16 */
-} MenuFrame;
-
 typedef struct {
     s16 vx, vy, vz, pad;
 } SVector;
+
+/* libgte matrix. */
+typedef struct {
+    s16 m[3][3];
+    s32 t[3];
+} Matrix;
+
+#include "system.h"
 
 /* A projectile fired by an actor. */
 typedef struct {
@@ -116,33 +117,6 @@ typedef struct {
     u8 unkA;
 } Move;
 
-/* One object of a model; bit 0 of *flags hides it. */
-typedef struct {
-    s32 kind;
-    u32 *flags;
-} ModelObject;
-
-/* A model animation (0x14 bytes). */
-typedef struct {
-    u8 unk0[0x12];
-    s16 unk12;
-} ModelAnim;
-
-typedef struct {
-    s16 count;
-    ModelObject **objects;
-    ModelAnim *anims;
-} ModelData;
-
-typedef struct {
-    u8 unk0[0x4];
-    ModelData *data;
-    u8 unk8[0x2C];
-    s32 x, y, z;     /* 0x34 */
-    u8 unk40[0x6];
-    s16 angle;       /* 0x46 */
-} Model;
-
 /* Per-side hit bookkeeping (D_80096FB8, one record per side). */
 typedef struct {
     s32 unk0;
@@ -175,7 +149,7 @@ typedef struct Actor {
     u8 unk4F[0x5];
     s32 angle;           /* 0x54: facing, 4096 = full turn */
     s32 target_angle;    /* 0x58 */
-    Model *model;        /* 0x5C */
+    Node *node;          /* 0x5C: model set node */
     u8 unk60[0x20];
     u32 *combos;         /* 0x80: one entry per combo number */
     u8 *unk84;
@@ -244,12 +218,6 @@ typedef struct Actor {
     s32 unk1654;
     s32 unk1658;
 } Actor;
-
-/* libgte matrix. */
-typedef struct {
-    s16 m[3][3];
-    s32 t[3];
-} Matrix;
 
 /* Header of the loaded scene data. */
 typedef struct {
@@ -343,10 +311,8 @@ extern s16 D_80092600;
 extern s8 D_80092604; /* scene choice cursor */
 extern u8 D_80092608;
 extern s32 D_8009284C;
-extern MenuFrame *D_80092868; /* frame being built */
 extern s32 D_80092880;
 extern u8 D_80092884;
-extern u8 D_800928A0; /* index of the frame being built */
 extern s32 D_800928C8; /* menu mode */
 extern u8 D_800928D4;
 extern s32 D_80092900;
@@ -356,8 +322,6 @@ extern u8 D_8009293C;
 extern s32 D_80092948;
 extern u8 D_800929BC;
 extern u8 D_800925F0;
-extern s32 D_800928E8; /* frame counter */
-extern u32 *D_80092938; /* ordering table being built */
 extern FloorStep D_80091084[8];
 extern u16 D_8005948C; /* pad buttons newly pressed */
 extern u16 D_800594A4; /* pad buttons repeating */
@@ -378,19 +342,16 @@ extern s32 D_80092640;
 extern u8 D_80099D9E;
 extern Sprt16 D_8009A14C;
 extern Sprt16 D_8009A244;
-extern s32 D_800910F0;
-extern s32 D_80092610;
 extern SceneData *D_80092614;
-extern s8 D_80092618;
+extern LightRig *D_800910F0; /* the scene's lights */
+extern Node *D_80092610;     /* the scene's root node */
+extern Vector D_80096FA8;    /* scene origin (last eye position) */extern s8 D_80092618;
 extern s32 D_8009261C;
 extern s32 D_80092620;
 extern s32 D_80092624;
 extern s32 D_80092628;
 extern s32 D_8009262C;
 extern u16 D_80092632;
-extern s16 D_800928D0;
-extern Vector D_80096FA8; /* scene origin */
-extern Matrix D_80091C0C;
 extern ShotKind D_800910F4[];
 extern SideHits D_80096FB8[2];
 extern s32 D_8009112C;
@@ -408,9 +369,9 @@ extern Effect *D_80092644;
 extern s32 D_80092650; /* trail segments added */
 
 /* PsyQ SDK (resident). */
-void func_80043B48(void *ot, void *prim);                   /* AddPrim */
+void func_80043B48(u32 *ot, void *prim);                    /* AddPrim */
 u16 func_80043A1C(s32 tp, s32 abr, s32 x, s32 y);           /* GetTPage */
-u16 func_80043A58(s32 x, s32 y);                            /* GetClut */
+s16 func_80043A58(s32 x, s32 y);                            /* GetClut */
 void func_80043E20(DrTpage *p, s32 dfe, s32 dtd, s32 tpage); /* SetDrawTPage */
 void func_80044894(Rect *rect, u32 *data);                  /* LoadImage */
 void func_800471B4(u32 *tim);                               /* OpenTIM */
@@ -447,6 +408,7 @@ void func_8007099C(u32 mode);
 void func_80070F80(u8 *script);
 void func_8007107C(void);
 void func_80071724(u32 *ot);
+void func_800732AC(void *dst, void *src, s32 size);
 void func_80073064(SVector *dir, SVector *out, s32 scale);
 void func_8008859C(Vector *v, SVector *unit);
 s32 func_800886FC(Vector *v);
@@ -459,8 +421,6 @@ void func_8007639C(Actor *actor, u8 input);
 s32 func_80077584(Actor *actor, s32 angle, s32 shift, s32 lift);
 void func_8007E894(s32 x, s32 y);
 void func_80074678(Actor *actor, s32 arg1, s32 arg2);
-void func_8008B0D8(ModelAnim *anim);
-void func_8008B730(ModelAnim *anim, s32 arg1, s32 arg2);
 void func_8007C880(s32 side, Vector *at, s32 style, s32 type);
 s32 func_8007CD14(s32 side, s32 part, s32 vertex, s32 arg);
 void func_8007CD44(s32 side, Vector *a, Vector *b, s32 style);
@@ -487,12 +447,7 @@ void func_8007F834(void);
 void func_80078F00(SceneData *scene);
 void func_80080D10(void);
 void func_8008976C(s32 a0, s32 a1);
-void func_80089D5C(s32 arg);
-s32 func_8008A2B8(s32 arg);
-s32 func_8008A3E0(s32 arg);
-void func_8008A5BC(s32 arg);
 void func_8008BC04(void);
-s32 func_8008C2C0(s32 arg);
 Effect *func_8008D3F4(s32 kind, s32 arg);
 void func_8008D5C0(Effect *effect, s32 arg);
 
