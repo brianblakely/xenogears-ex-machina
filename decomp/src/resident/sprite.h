@@ -77,6 +77,8 @@ typedef struct {
     s8 offset_y;                   /* +0x3d */
     u8 unknown3e[2];
     s32 word40;                    /* +0x40 */
+    SVECTOR light_angles;          /* +0x44: lit models (800257f0) */
+    u16 light_colour[3];           /* +0x4c */
 } SpriteRenderer;
 
 typedef struct Sprite {
@@ -391,6 +393,17 @@ s32 func_80021C6C(Sprite *sprite);
 void func_80021CA0(Sprite *sprite, u8 value);
 void func_8001E298(Sprite *sprite, s32 ot); /* draw into the ordering table entry at `ot` */
 extern u8 D_800C3664;
+/* The scratchpad work area of the pixel colour scaling (80025c04). */
+typedef struct {
+    u16 colour;     /* +0x0: the scaled pixel */
+    u16 unused2;
+    VECTOR in;      /* +0x4 */
+    VECTOR out;     /* +0x14 */
+} ColourScratch;
+#define COLOUR_SCRATCH ((ColourScratch *)0x1F800000)
+extern MATRIX D_8004FD80; /* light colour matrix of lit sprite models */
+extern MATRIX D_8004FDA0; /* light direction matrix of lit sprite models */
+void func_800B1F6C(SpriteRendererEntry *model, SpritePart *parts, s32 ot, s32 unused, s32 depth, s32 blend); /* battle overlay: draw a lit model */
 /* The tile primitive 80025544 takes from the queue block. */
 typedef struct {
     u8 addr[3];

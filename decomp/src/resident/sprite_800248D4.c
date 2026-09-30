@@ -24,6 +24,7 @@
 #include "pad.h"
 #include "console.h"
 #include "sound.h"
+#include "gte.h"
 
 /* The unit's own small globals ($gp-relative; the assembler knows them as
  * this unit's small commons). */
@@ -525,11 +526,139 @@ void func_80025718(Task *task) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_800248D4", func_800257F0);
+/* Sprite task draw for lit models: rebuild the orientation; with a model
+ * (renderer block), light it when flag bit 1 is set (its light angles and
+ * colour from the renderer), place it at the sprite's position (in view
+ * space unless render bit 24 is set; render bit 31 draws it around the
+ * screen centre 160,112) and draw it with the battle overlay's renderer
+ * (800b1f6c), at the back with a 16-bit depth shift for render bit 25. */
+void func_800257F0(Task *task) {
+    MATRIX view;
+    VECTOR position;
+    MATRIX rotation;
+    MATRIX light;
+    long offset_x;
+    long offset_y;
+    Sprite *sprite = task->data;
+    s32 shift;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_800248D4", func_80025A88);
+    func_80022038(sprite);
+    if (sprite->renderer->pointer34 == NULL) {
+        return;
+    }
+    if ((sprite->flags >> 1) & 1) {
+        PushMatrix();
+        D_8004FD80.m[0][0] = sprite->renderer->light_colour[0];
+        D_8004FD80.m[1][0] = sprite->renderer->light_colour[1];
+        D_8004FD80.m[2][0] = sprite->renderer->light_colour[2];
+        func_8003F738(&sprite->renderer->light_angles, &rotation);
+        MulMatrix0(&rotation, &sprite->renderer->matrix, &rotation);
+        MulMatrix0(&D_8004FDA0, &rotation, &light);
+        SetBackColor(0x20, 0x20, 0x20);
+        SetColorMatrix(&D_8004FD80);
+        SetLightMatrix(&light);
+        PopMatrix();
+    }
+    position.vx = sprite->x >> 16;
+    position.vy = sprite->y >> 16;
+    position.vz = sprite->z >> 16;
+    TransMatrix(&sprite->renderer->matrix, &position);
+    if (!sprite->render.bits.no_view) {
+        CompMatrix(&D_8004FBB8, &sprite->renderer->matrix, &view);
+        SetRotMatrix(&view);
+        SetTransMatrix(&view);
+    } else {
+        SetRotMatrix(&sprite->renderer->matrix);
+        SetTransMatrix(&sprite->renderer->matrix);
+    }
+    if ((s32)sprite->render.word < 0) {
+        ReadGeomOffset(&offset_x, &offset_y);
+        SetGeomOffset(160, 112);
+    }
+    if ((sprite->render.word >> 25) & 1) {
+        shift = D_80050100;
+        D_80050100 = 16;
+        func_800B1F6C(sprite->renderer->pointer34, sprite->renderer->parts[D_800592F8], D_8005956C, 0, 0xFEC,
+                      sprite->render.bits.blend);
+        D_80050100 = shift;
+    } else {
+        func_800B1F6C(sprite->renderer->pointer34, sprite->renderer->parts[D_800592F8], D_8005956C, 0,
+                      sprite->half30, sprite->render.bits.blend);
+    }
+    if ((s32)sprite->render.word < 0) {
+        SetGeomOffset(offset_x, offset_y);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_800248D4", func_80025C04);
+/* Sprite task draw for unlit models: rebuild the orientation and, with a
+ * model, move its matrix to the sprite's position in view space (keeping
+ * its own rotation) and draw it with the battle overlay's renderer
+ * (800b1f6c), at the back with a 16-bit depth shift for render bit 25. */
+void func_80025A88(Task *task) {
+    MATRIX unused; /* the frame reserves 32 bytes no code uses */
+    VECTOR translated;
+    SVECTOR position;
+    Sprite *sprite = task->data;
+    s32 shift;
+
+    func_80022038(sprite);
+    if (sprite->renderer->pointer34 == NULL) {
+        return;
+    }
+    position.vx = sprite->x >> 16;
+    position.vy = sprite->y >> 16;
+    position.vz = sprite->z >> 16;
+    ApplyMatrix(&D_8004FBB8, &position, &translated);
+    sprite->renderer->matrix.t[0] = D_8004FBB8.t[0] + translated.vx;
+    sprite->renderer->matrix.t[1] = D_8004FBB8.t[1] + translated.vy;
+    sprite->renderer->matrix.t[2] = D_8004FBB8.t[2] + translated.vz;
+    SetRotMatrix(&sprite->renderer->matrix);
+    SetTransMatrix(&sprite->renderer->matrix);
+    if ((sprite->render.word >> 25) & 1) {
+        shift = D_80050100;
+        D_80050100 = 16;
+        func_800B1F6C(sprite->renderer->pointer34, sprite->renderer->parts[D_800592F8], D_8005956C, 0, 0xFEC,
+                      sprite->render.bits.blend);
+        D_80050100 = shift;
+    } else {
+        func_800B1F6C(sprite->renderer->pointer34, sprite->renderer->parts[D_800592F8], D_8005956C, 0,
+                      sprite->half30, sprite->render.bits.blend);
+    }
+}
+
+/* Scale `count` 15-bit pixels from `src` into `dst` by `scale` / 32 with
+ * the GTE (through the scratchpad), clamping each component and keeping
+ * the transparency bit. */
+void func_80025C04(s32 count, s32 scale, u16 *dst, u16 *src) {
+    ColourScratch *scratch = COLOUR_SCRATCH;
+
+    gte_lddp(scale << 7);
+    while (--count != -1) {
+        scratch->in.vx = *src & 0x1F;
+        scratch->in.vy = *src & 0x3E0;
+        scratch->in.vz = *src & 0x7C00;
+        gte_ldlvl(&scratch->in);
+        gte_gpf12();
+        gte_stlvl(&scratch->out);
+        if (scratch->out.vx >= 0x20) {
+            scratch->colour = 0x1F;
+        } else {
+            scratch->colour = scratch->out.vx & 0x1F;
+        }
+        if (scratch->out.vy > 0x3E0) {
+            scratch->colour |= 0x3E0;
+        } else {
+            scratch->colour |= scratch->out.vy & 0x3E0;
+        }
+        if (scratch->out.vz > 0x7C00) {
+            scratch->colour |= 0x7C00;
+        } else {
+            scratch->colour |= scratch->out.vz & 0x7C00;
+        }
+        scratch->colour |= *src++ & 0x8000;
+        *dst++ = scratch->colour;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_800248D4", func_80025D4C);
 
