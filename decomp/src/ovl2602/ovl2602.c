@@ -2868,7 +2868,74 @@ void func_801D05EC(void) {
     D_800625A0->details->heading_buffer = D_800625A0->buffer;
 }
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D06D8);
+/* Show the number panel: its two frame lines and three numbers, plus a fourth when `lower` (shifted left and up by `lower`). */
+void func_801D06D8(u32 first, u32 second, u32 third, u32 fourth, u8 lower) {
+    s32 i;
+
+    for (i = 0; i < 2; i++) {
+        SetLineF2(&D_800625A0->details->frame[i]);
+        (D_800625A0->details->frame + i)->r0 = 0xFF;
+        (D_800625A0->details->frame + i)->g0 = 0xFF;
+        (D_800625A0->details->frame + i)->b0 = 0xFF;
+        (D_800625A0->details->frame + i)->x0 = D_801D6D6C - 8 - lower * 16;
+        (D_800625A0->details->frame + i)->y0 = D_801D6D70 + 9 - lower * 8;
+        (D_800625A0->details->frame + i)->x1 = D_801D6D6C + 0x4E - lower * 16;
+        (D_800625A0->details->frame + i)->y1 = D_801D6D70 + 9 - lower * 8;
+    }
+    func_801C5298(first);
+    D_800625A0->details->digits1_count = 0;
+    for (i = 0; i < 9; i++) {
+        if (D_800625A0->digits[i] != 0xFF) {
+            D_800625A0->details->digits1_count +=
+                func_8002675C(D_800625A0->sprite_sheet, D_800625A0->digits[i],
+                              &D_800625A0->details->digits1[D_800625A0->details->digits1_count * 2],
+                              D_800625A0->buffer, D_801D6D64 + i * 8 - lower * 16, D_801D6D68 - lower * 16,
+                              0x1000);
+        }
+    }
+    D_800625A0->details->digits1_buffer = D_800625A0->buffer;
+    func_801C5298(second);
+    D_800625A0->details->digits2_count = 0;
+    for (i = 0; i < 9; i++) {
+        if (D_800625A0->digits[i] != 0xFF) {
+            D_800625A0->details->digits2_count +=
+                func_8002675C(D_800625A0->sprite_sheet, D_800625A0->digits[i],
+                              &D_800625A0->details->digits2[D_800625A0->details->digits2_count * 2],
+                              D_800625A0->buffer, D_801D6D6C + i * 8 - lower * 16, D_801D6D70 - lower * 16,
+                              0x1000);
+        }
+    }
+    D_800625A0->details->digits2_buffer = D_800625A0->buffer;
+    func_801C5298(third);
+    D_800625A0->details->digits3_count = 0;
+    for (i = 0; i < 9; i++) {
+        if (D_800625A0->digits[i] != 0xFF) {
+            D_800625A0->details->digits3_count +=
+                func_8002675C(D_800625A0->sprite_sheet, D_800625A0->digits[i],
+                              &D_800625A0->details->digits3[D_800625A0->details->digits3_count * 2],
+                              D_800625A0->buffer, D_801D6D74 + i * 8 - lower * 16, D_801D6D78 - lower * 8,
+                              0x1000);
+        }
+    }
+    D_800625A0->details->digits3_buffer = D_800625A0->buffer;
+    D_800625A0->details->digits4_count = 0;
+    D_800625A0->details->digits4_shown = 0;
+    if (lower) {
+        func_801C5298(fourth);
+        for (i = 0; i < 9; i++) {
+            if (D_800625A0->digits[i] != 0xFF) {
+                D_800625A0->details->digits4_count +=
+                    func_8002675C(D_800625A0->sprite_sheet, D_800625A0->digits[i],
+                                  &D_800625A0->details->digits4[D_800625A0->details->digits4_count * 2],
+                                  D_800625A0->buffer, D_801D6D6C + i * 8 - lower * 16, D_801D6D70 - lower * 8,
+                                  0x1000);
+            }
+        }
+        D_800625A0->details->digits4_buffer = D_800625A0->buffer;
+        D_800625A0->details->digits4_shown = 1;
+    }
+    D_800625A0->details->digits_shown = 1;
+}
 
 /* Draw a nine-digit number (the party's gold) at (6bh, 54h), or lower at (53h, 64h). */
 void func_801D0C20(u32 value, u8 lower) {

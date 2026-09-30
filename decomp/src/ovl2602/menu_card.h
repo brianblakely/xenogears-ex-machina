@@ -146,7 +146,8 @@ typedef struct {
     POLY_FT4 heading[44];     /* 05a0: count 46ab, buffer 46aa */
     POLY_FT4 digits1[18];     /* 0c80: count 46ad, buffer 46ac */
     POLY_FT4 digits2[18];     /* 0f50: count 46af, buffer 46ae */
-    POLY_FT4 group1220[36];   /* 1220: count 46b4, buffer 46b3 */
+    POLY_FT4 group1220[18];   /* 1220: count 46b4, buffer 46b3 */
+    POLY_FT4 digits4[18];     /* 14f0: count 46b8, buffer 46b7 */
     POLY_FT4 price[20];       /* 17c0: ovl2602, count 46bb, buffer 46ba */
     POLY_FT4 digits3[18];     /* 1ae0: count 46b1, buffer 46b0 */
     POLY_FT4 rows[8][8];      /* 1db0: counts 468c, buffers 4694 */
@@ -186,7 +187,9 @@ typedef struct {
     u8 group1220_count;       /* 46b4 */
     u8 label44B0_shown;       /* 46b5 */
     u8 label4530_shown;       /* 46b6 */
-    u8 unk46B7[3];
+    u8 digits4_buffer;        /* 46b7 */
+    u8 digits4_count;         /* 46b8 */
+    u8 digits4_shown;         /* 46b9 */
     u8 price_buffer;          /* 46ba */
     u8 price_count;           /* 46bb */
     u8 cells_a_count[9];      /* 46bc */
@@ -539,6 +542,7 @@ extern s32 D_801D6D68;   /* first number y */
 extern s32 D_801D6D6C;   /* second number x */
 extern s32 D_801D6D70;   /* second number y */
 extern s32 D_801D6D74;   /* third number x */
+extern s32 D_801D6D78;   /* third number y */
 extern s32 D_801D6C20[]; /* cursor y per position */
 
 /* Game state. */
