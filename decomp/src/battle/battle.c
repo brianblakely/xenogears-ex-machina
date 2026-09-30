@@ -3919,7 +3919,126 @@ u8 member;
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80081B58);
+/* The attack page (5) of the member's turn. The turn state bytes 0x2d4/0x2d5
+ * hold the AP left and the maximum, 0x2df the cost of the pressed attack,
+ * 0x2e0-0x2e5 the execution, closed, shown page, attacked, combo armed and
+ * reacted flags. Cancel (5) leaves the page while no AP were spent, else
+ * closes the command; attacks whose item is blocked beep; directions retarget
+ * until the combo starts. Attacks 6/7/4 cost 1/2/3 AP (4 also arms a known
+ * combo): with enough AP the combo is recorded and executed and the timer
+ * reload set from the AP left; the command closes when no AP remain or the
+ * target reacted. It is an int function that returns no value (the return
+ * register stays live at the exits). */
+s32 func_80081B58(u8 member) {
+    D_800D366C = 0;
+    if (D_800C3EAC->unk2DF[2] != 0) {
+        return;
+    }
+    D_800C3EAC->unk2DF[0] = 0;
+    func_8008189C(member);
+    switch (D_800D3014) {
+    case 5:
+        if (D_800C3EAC->unk2D4[0] != D_800C3EAC->unk2D4[1]) {
+            func_80080B64(member);
+            D_800C3EAC->unk2DF[2] = 1;
+        } else {
+            func_800B8DA4();
+            D_800D366C = 1;
+            D_800D2D28->unk7B = 0;
+            D_800D2D28->unkAF = 0;
+            D_800C3EAC->page = 1;
+            func_80077980();
+            func_8009413C(member, 1);
+        }
+        break;
+    case 4:
+        if (D_800C3EAC->slots[member].items[2] != 0) {
+            D_800D3014 = 5;
+            func_8008AA40(0x4F);
+        }
+        break;
+    case 7:
+        if (D_800C3EAC->slots[member].items[1] != 0) {
+            D_800D3014 = 5;
+            func_8008AA40(0x4F);
+        }
+        break;
+    case 6:
+        if (D_800C3EAC->slots[member].items[0] != 0) {
+            D_800D3014 = 5;
+            func_8008AA40(0x4F);
+        }
+        break;
+    }
+    if (D_800C3EAC->unk2E9 == 0) {
+        switch (D_800D3014) {
+        case 0:
+            D_800C3EAC->unk2E8 = func_80084854(D_800C3EAC->unk2E8, 0);
+            func_800879A8(D_800C3EAC->actor, D_800C3EAC->unk2E8);
+            func_8008AA40(0x4C);
+            break;
+        case 1:
+            D_800C3EAC->unk2E8 = func_80084854(D_800C3EAC->unk2E8, 1);
+            func_800879A8(D_800C3EAC->actor, D_800C3EAC->unk2E8);
+            func_8008AA40(0x4C);
+            break;
+        case 2:
+            D_800C3EAC->unk2E8 = func_80084854(D_800C3EAC->unk2E8, 2);
+            func_800879A8(D_800C3EAC->actor, D_800C3EAC->unk2E8);
+            func_8008AA40(0x4C);
+            break;
+        case 3:
+            D_800C3EAC->unk2E8 = func_80084854(D_800C3EAC->unk2E8, 3);
+            func_800879A8(D_800C3EAC->actor, D_800C3EAC->unk2E8);
+            func_8008AA40(0x4C);
+            break;
+        }
+        func_800877E0(member, D_800C3EAC->unk2E8);
+    }
+    D_800D2D28->unkAF = 1;
+    switch (D_800D3014) {
+    case 4:
+        if (func_80085EB4(4, member) && D_800C3EAC->unk2D4[0] - 3 >= 0) {
+            D_800C3EAC->unk2DF[5]++;
+        }
+        D_800C3EAC->unk2DF[0]++;
+    case 7:
+        D_800C3EAC->unk2DF[0]++;
+    case 6:
+        D_800C3EAC->unk2DF[0]++;
+        if (D_800C3EAC->unk2D4[0] - D_800C3EAC->unk2DF[0] >= 0) {
+            func_8008AA40(0x4D);
+            func_800819A4(member);
+            if (D_800D2D28->unkCB != 0) {
+                D_800C3EAC->page = 0x64;
+                D_800C3EAC->unk2DF[3] = 0xFF;
+                D_800C3EAC->unk2DF[1] = 1;
+            } else {
+                D_800C3EAC->page = 5;
+                D_800C3EAC->unk2DF[3] = 5;
+            }
+            D_800C3EAC->unk2D4[0] -= D_800C3EAC->unk2DF[0];
+            func_80085D34();
+            func_800861D0(D_800D3014, member);
+            D_800C3EAC->unk2DF[6] = func_80087AF0(member, D_800C3EAC->unk2DF[0]);
+            D_800D2E06[member] = D_800C31D4[D_800C3EAC->unk2D4[1]][D_800C3EAC->unk2D4[0]] * 100 / 56;
+            D_800C3EAC->unk2DF[4] = 1;
+        } else {
+            func_8008AA40(0x4F);
+        }
+        if (D_800C3EAC->unk2D4[0] == 0) {
+            func_80080B64(member);
+            D_800C3EAC->unk2DF[2] = 1;
+        }
+        if (D_800C3EAC->unk2DF[6] != 0) {
+            func_80080B64(member);
+            D_800C3EAC->unk2DF[2] = 1;
+        }
+        break;
+    case 5:
+        break;
+    }
+}
 
 /* Confirm the selected entry of the member's special command window:
  * entries 4, 6 and 7 start the selection (800c3eac +0x2e1) when the member

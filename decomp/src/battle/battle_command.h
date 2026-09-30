@@ -13,8 +13,13 @@ u8 func_80084750(u8 member);
 u16 func_80084DE4(u16 selection, u16 fallback, u8 member, u8 mode, u8 own);
 void func_8009AB00(u8 member);
 void func_8009BAC4(u8 slot, u8 *choice, s16 *busy);
-void func_80087AF0(u8 member, u8 strength);
+u8 func_80087AF0(u8 member, u8 cost); /* execute the attack; the target reacted */
+void func_800861D0(u8 code, u8 member);
+u8 func_80085EB4(u8 mode, u8 member);
+void func_800B8DA4(void);
 
+extern u16 D_800D2E06[11]; /* per slot: turn timer reload */
+extern u8 D_800C31D4[][8];  /* timer reload by maximum and remaining AP */
 extern u8 D_800C2050;       /* healing ignores the gear */
 extern u8 *D_800C3160[13]; /* combo input patterns (seven inputs each) */
 extern u8 *D_800C31AC[];   /* per character: the deathblow of each combo */
