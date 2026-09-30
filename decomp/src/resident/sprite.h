@@ -377,6 +377,11 @@ s32 func_80023440(u16 *entry);
 s32 func_80023468(s32 kind, s32 fallback);
 SpriteTask *func_80023A48(s32 kind, s32 mode, SpriteSource *source, s32 extra, Task *owner);
 void func_80024730(SpriteTask *task);
-extern Sprite *D_800C3E1C; /* battle overlay: the current actor's sprite */
+extern Sprite *D_800C3E1C;
+extern VECTOR D_8006F99C; /* the eye marker's position (16.16) */
+extern VECTOR D_8006F9AC; /* the look-at marker's position (16.16) */
+void func_800BC158(SpriteTask *task); /* battle overlay: register a camera marker */
+void func_80022E8C(Task *task);
+void func_80025224(Task *task, s32 kind); /* battle overlay: the current actor's sprite */
 
 #endif

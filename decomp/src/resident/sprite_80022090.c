@@ -1089,7 +1089,70 @@ void func_800245D8(Sprite *sprite, s32 animation) {
     func_800223B0(sprite, sprite->word80);
 }
 
+/* Finish a new sprite task by its kind: 7 counts its updates, 8 and 9 set
+ * their blending and show a frame, 10-13 are camera markers the battle
+ * overlay registers (800bc158) at the eye (10, 12) or look-at (11, 13)
+ * position, 12 and 13 becoming 10 and 11 with a frame shown; then the
+ * auxiliary node gets its kind's update callback. */
+/* Nonmatching: the original copies the task pointer to $a2 and passes it back to $a0 for each 800bc158 call; this build keeps it in $a0. */
+#ifdef NON_MATCHING
+void func_80024730(SpriteTask *task) {
+    Sprite *sprite = &task->sprite;
+    Task *auxiliary = &task->auxiliary;
+    s32 kind = ((SpriteFlagBits *)&sprite->flags)->type;
+
+    switch (kind) {
+    case 12:
+        sprite->frame = 1;
+        kind = ((SpriteFlagBits *)&sprite->flags)->type -= 2;
+        func_800BC158(task);
+        sprite->x = D_8006F99C.vx;
+        sprite->y = D_8006F99C.vy;
+        sprite->z = D_8006F99C.vz;
+        break;
+    case 10:
+        sprite->frame = 0;
+        func_800BC158(task);
+        sprite->x = D_8006F99C.vx;
+        sprite->y = D_8006F99C.vy;
+        sprite->z = D_8006F99C.vz;
+        break;
+    case 13:
+        sprite->frame = 1;
+        kind = ((SpriteFlagBits *)&sprite->flags)->type -= 2;
+        func_800BC158(task);
+        sprite->x = D_8006F99C.vx;
+        sprite->y = D_8006F99C.vy;
+        sprite->z = D_8006F99C.vz;
+        break;
+    case 11:
+        sprite->frame = 0;
+        func_800BC158(task);
+        sprite->x = D_8006F9AC.vx;
+        sprite->y = D_8006F9AC.vy;
+        sprite->z = D_8006F9AC.vz;
+        break;
+    case 7:
+        func_8001CD6C(&task->task, func_80022E8C);
+        break;
+    case 8:
+        sprite->colour_flags = 0x68;
+        sprite->frame = 1;
+        break;
+    case 9:
+        *(u16 *)&sprite->unknown36[0] = 3;
+        sprite->colour_flags = 0x60;
+        sprite->frame = 1;
+        break;
+    case 0:
+    case 14:
+        break;
+    }
+    func_80025224(auxiliary, kind);
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80024730);
+#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_800248D4);
 
