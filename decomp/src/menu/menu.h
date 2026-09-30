@@ -101,7 +101,8 @@ typedef struct Actor {
     s16 unkBE;           /* 0xBE: charge a special move needs */
     u8 unkC0[0x4];
     u8 unkC4;
-    u8 unkC5[0x7];
+    u8 unkC5;
+    u8 unkC6[0x6];
     s16 unkCC;
     s16 unkCE;
     u32 flags;           /* 0xD0: bit 27 = side */
@@ -128,7 +129,7 @@ typedef struct Actor {
     s32 unk1658;
     u8 unk165C[0x8];
     u8 *sounds;          /* 0x1664: command sound table */
-    u16 unk1668;
+    s16 unk1668;
 } Actor;
 
 /* libgte matrix. */

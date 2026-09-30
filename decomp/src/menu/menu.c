@@ -2646,7 +2646,7 @@ s32 func_8008F580(Actor *actor) {
 
 /* Decide whether the opponent attacks now, weighing its eagerness, its
  * charge and hp and the other actor's hp. */
-s32 func_8008F5B4(Actor *actor) {
+s32 func_8008F5B4(Actor *actor, s32 unused) {
     Brain *brain = actor->brain;
 
     if ((func_8003FA38() & 0xFF) < (brain->unk10 * 320) >> 4) {
@@ -2818,9 +2818,70 @@ void func_8008FC7C(Actor *actor) {
     func_8008F7B8(brain);
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008FCC8);
+/* The opponent's idle mode: after the retreat rule, react to closeness,
+ * guard against a charging opponent, pick a fight when the round's clock
+ * runs out, dodge close shots, and wait or attack. */
+void func_8008FCC8(Actor *actor, Brain *brain) {
+    brain->unkC = 0;
+    brain->unkE = 0;
+    brain->unkA = 0;
+    if (func_8008FACC(actor, brain)) {
+        return;
+    }
+    if (D_8009284C < 0x200) {
+        if (brain->unk2C_12) {
+            func_80090174(actor);
+        } else if (brain->unkF) {
+            func_80090894(actor, 1);
+        }
+        if (actor->opponent->unkC5 == 2) {
+            func_8008FBD8(actor, brain);
+        }
+        if (actor->unk1668 + 2 < brain->unk30) {
+            func_80090174(actor);
+        }
+    }
+    if (actor->opponent->nearest_dist < 0x400) {
+        func_80090894(actor, 3);
+        brain->unkE = 1;
+    }
+    switch (brain->unk20) {
+    case 0:
+        if (--brain->timer < 0) {
+            brain->unk20++;
+        }
+        if (actor->opponent->unkC4 != 0) {
+            break;
+        }
+        if (!brain->unk2C_12) {
+            break;
+        }
+        if (func_8008F5B4(actor, 0)) {
+            func_8008F900(actor);
+        }
+        func_80090504(actor, 0);
+        break;
+    case 1:
+        if (func_8008F530(actor, 0)) {
+            func_80090504(actor, 0);
+        }
+        break;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008FE80);
+/* Opponent command: one to three random inputs (1 or 2). */
+void func_8008FE80(Actor *actor) {
+    s32 roll = func_8003FA38() % 10;
+    s32 count = roll >= 2 ? 2 : 1;
+
+    if (roll >= 5) {
+        count++;
+    }
+    while (count != 0) {
+        count--;
+        func_8007639C(actor, (func_8003FA38() & 1) + 1);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008FF24);
 
