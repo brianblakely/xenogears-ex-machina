@@ -302,7 +302,7 @@ void func_8001D034(Task *owner) {
 
     for (task = D_8005958C; task != NULL; task = task->next) {
         if (task->owner == owner && task->link.bits.owner_serial == owner->id.bits.serial && ((task->link.word >> 29) & 1)) {
-            ((Sprite *)task->data)->word70 = 0;
+            ((Sprite *)task->data)->word70 = NULL;
         }
     }
 }
@@ -1539,7 +1539,841 @@ u8 *func_8001FBA4(Sprite *sprite, u8 *code) {
     return operand;
 }
 
+/* Run the script command `op` (0x8a-0xfc) of a sprite on its operand bytes
+ * `code`: motion, placement, colour, renderer angles and scales, byte
+ * arithmetic on the sprite's stack and frame variables, sounds, models. */
+/* Nonmatching: the interpreter compiles to the original's cases and jump tables but not byte-identically: the original shares case tails differently (36/37 jump into case 24, 32-35 into 18-21), keeps the operand pointer in $s1 without $s4, and schedules case 38's stores differently. */
+#ifdef NON_MATCHING
+void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
+    SVECTOR vector;
+    VECTOR sum;
+    SVECTOR angles;
+    MATRIX m;
+    DVECTOR from;
+    DVECTOR to;
+    long flag;
+    Sprite *other;
+    u8 *stack;
+    s32 n;
+    s32 count;
+    s32 distance;
+    s32 angle;
+    s32 value;
+    u16 bits;
+    s32 x, y;
+    s32 group;
+    u8 arg;
+    u8 transform;
+    u8 *p;
+    SpriteModelRenderer *model;
+    SpriteModel *loaded; /* never set: 0xf7 clears a word through whatever the register holds */
+    ModelBuffer *buffer;
+    s16 direction;
+
+    switch (op) {
+    case 0x8D:
+        /* called without a prototype: the coordinates pass as ints */
+        func_8002CC10(((SpriteSource *)sprite->image)->origin.vx, ((SpriteSource *)sprite->image)->origin.vy);
+        break;
+    case 0xC6:
+        if (sprite->frame_bits.sequencer_owned == 1) {
+            ((SpriteSequencer *)sprite->sequencer)->halfc = code[0];
+        }
+        break;
+    case 0xC9:
+        if (sprite->frame_bits.sequencer_owned == 1) {
+            value = code[0] | (s16)(code[1] << 8);
+            ((SpriteSequencer *)sprite->sequencer)->halfc = value;
+        }
+        break;
+    case 0xC5:
+        n = code[0] / (D_80059198 + 1);
+        while (--n != -1) {
+            func_80022CDC(sprite);
+        }
+        break;
+    case 0xB9:
+        if ((SpriteVoice *)sprite->word50 != NULL) {
+            func_80039E60(code[0] | (((SpriteVoice *)sprite->word50)->bank << 16));
+        }
+        break;
+    case 0xB0:
+        if (D_8005919C != NULL) {
+            func_80039E60(code[0] | (D_8005919C->bank << 16));
+        }
+        break;
+    case 0xCC:
+        sprite->frames = sprite->script + (code[0] | (s16)(code[1] << 8));
+        break;
+    case 0x8C:
+        other = sprite->word74;
+        from.vx = sprite->x >> 16;
+        from.vy = sprite->z >> 16;
+        to.vx = other->x >> 16;
+        to.vy = other->z >> 16;
+        direction = func_80023124(to, from);
+        func_80021FE0(sprite, direction);
+        func_800223B0(sprite, direction);
+        break;
+    case 0x94:
+        other = sprite->word70;
+        if ((sprite->render.word & 3) == 2) {
+            sprite->renderer->angle_y = other->direction;
+            sprite->render.bits.dirty = 1;
+        }
+        break;
+    case 0xA7:
+        if (code[0] & 0x80) {
+            D_80059428 = (code[0] & 0x7F) + 1;
+        } else {
+            n = (code[0] + 1) * sprite->motion.bits.divisor / 256;
+            if (n == 0) {
+                n = 1;
+            }
+            sprite->countdown += n;
+        }
+        break;
+    case 0xFC:
+        stack = func_80031BDC(0x2000, 0);
+        STACK_ENTER(stack + 0x1F00);
+        {
+            s32 image_x, image_y;
+
+            D_800592E4 = (s32 *)((((s8)code[2] << 16) + (code[1] << 8) + code[0]) + (s32)code);
+            image_x = ((SpriteSource *)sprite->image)->origin.vx;
+            image_y = ((SpriteSource *)sprite->image)->origin.vy;
+            D_800592E8 = image_x;
+            D_800592EA = image_y;
+        }
+        func_8001FB30();
+        STACK_LEAVE();
+        func_800320E8(stack);
+        break;
+    case 0xBF:
+        sprite->height = code[0];
+        break;
+    case 0x96:
+        func_8001CE74(sprite->block);
+        break;
+    case 0xA2:
+        ((u8 *)&sprite->render)[1] = code[0];
+        break;
+    case 0xCD:
+        if (sprite->renderer != NULL) {
+            value = code[0] | (s16)(code[1] << 8);
+            bits = value;
+            angle = (value & 0x1FF) * 8;
+            group = (bits >> 9) & 7;
+            if (!((bits >> 12) & 1)) {
+                if (group != 0) {
+                    if (sprite->renderer->pointer34 != NULL) {
+                        sprite->renderer->pointer34[group].half2 += angle;
+                    }
+                } else {
+                    sprite->renderer->angle_x += angle;
+                    sprite->render.bits.dirty = 1;
+                }
+            } else if (group != 0) {
+                if (sprite->renderer->pointer34 != NULL) {
+                    sprite->renderer->pointer34[group].half2 = angle;
+                }
+            } else {
+                sprite->renderer->angle_x = angle;
+                sprite->render.bits.dirty = 1;
+            }
+        }
+        break;
+    case 0xCE:
+        value = code[0] | (s16)(code[1] << 8);
+        bits = value;
+        if (sprite->renderer != NULL) {
+            angle = (value & 0x1FF) * 8;
+            group = (bits >> 9) & 7;
+            if ((sprite->motion.word >> 2) & 1) {
+                angle = -angle;
+            }
+            if (!((bits >> 12) & 1)) {
+                if (group != 0) {
+                    if (sprite->renderer->pointer34 != NULL) {
+                        sprite->renderer->pointer34[group].half4 += angle;
+                    }
+                } else {
+                    sprite->renderer->angle_y += angle;
+                    sprite->render.bits.dirty = 1;
+                }
+            } else if (group != 0) {
+                if (sprite->renderer->pointer34 != NULL) {
+                    sprite->renderer->pointer34[group].half4 = angle;
+                }
+            } else {
+                sprite->renderer->angle_y = angle;
+                sprite->render.bits.dirty = 1;
+            }
+        }
+        break;
+    case 0xCF:
+        value = code[0] | (s16)(code[1] << 8);
+        bits = value;
+        if (sprite->renderer != NULL) {
+            angle = (value & 0x1FF) * 8;
+            group = (bits >> 9) & 7;
+            if ((sprite->motion.word >> 2) & 1) {
+                angle = -angle;
+            }
+            if (!((bits >> 12) & 1)) {
+                if (group != 0) {
+                    if (sprite->renderer->pointer34 != NULL) {
+                        sprite->renderer->pointer34[group].half6 += angle;
+                    }
+                } else {
+                    sprite->renderer->angle_z += angle;
+                    sprite->render.bits.dirty = 1;
+                }
+            } else if (group != 0) {
+                if (sprite->renderer->pointer34 != NULL) {
+                    sprite->renderer->pointer34[group].half6 = angle;
+                }
+            } else {
+                sprite->renderer->angle_z = angle;
+                sprite->render.bits.dirty = 1;
+            }
+        }
+        break;
+    case 0xC0:
+        distance = ((s32)((rand() & 0xFF) * code[0]) >> 8) * sprite->scale / 4096;
+        angle = rand();
+        sprite->x += func_80022CAC(sprite, func_8003F8CC(angle)) * distance * 16;
+        sprite->z -= func_80022CAC(sprite, func_8003F8B0(angle)) * distance * 16;
+        break;
+    case 0xC1:
+        distance = ((s32)((rand() & 0xFF) * code[0]) >> 8) * sprite->scale / 4096;
+        func_80021B04(&vector, func_80022CAC(sprite, distance), 0, 0);
+        func_80021B04(&angles, rand(), rand(), 0);
+        func_80021B14(&sum, sprite->x >> 16, sprite->y >> 16, sprite->z >> 16);
+        TransMatrix(&m, &sum);
+        SetTransMatrix(&m);
+        func_8003F738(&angles, &m);
+        SetRotMatrix(&m);
+        RotTransSV(&vector, &vector, &flag);
+        sprite->x = vector.vx << 16;
+        sprite->y = vector.vy << 16;
+        sprite->z = vector.vz << 16;
+        break;
+    case 0xBC:
+        arg = code[0];
+        n = arg & 0x3F;
+        if (arg & 0x80) {
+            transform = sprite->render.bits.no_view;
+            switch (n) {
+            case 38:
+                vector.vx = D_800C3EB0[sprite->frame_bits.unknown30 | ((sprite->motion.word & 3) << 2)].x;
+                vector.vy = 0;
+                vector.vz = D_800C3EB0[sprite->frame_bits.unknown30 | ((sprite->motion.word & 3) << 2)].z;
+                break;
+            case 36:
+                ((Task *)sprite->block)->link.word |= 0x40000000;
+                vector.vx = sprite->x >> 16;
+                vector.vy = sprite->y >> 16;
+                transform = 0;
+                vector.vz = sprite->z >> 16;
+                break;
+            case 37:
+                ((Task *)sprite->block)->link.word &= ~0x40000000;
+                vector.vx = sprite->x >> 16;
+                vector.vy = sprite->y >> 16;
+                transform = 0;
+                vector.vz = sprite->z >> 16;
+                break;
+            case 23:
+                ReadGeomOffset(&sum.vx, &sum.vy);
+                vector.vx = (0xA0 - sum.vx) * 2;
+                vector.vy = (0x70 - sum.vy) * 2;
+                transform = 0;
+                vector.vz = sprite->z >> 16;
+                break;
+            case 24:
+                vector.vx = sprite->x >> 16;
+                vector.vy = sprite->y >> 16;
+                transform = 0;
+                vector.vz = sprite->z >> 16;
+                break;
+            case 22:
+                other = sprite->word70;
+                vector.vx = other->x >> 16;
+                vector.vy = other->y >> 16;
+                transform = 0;
+                vector.vz = other->z >> 16;
+                break;
+            case 32:
+                other = D_800C3E1C;
+                vector.vx = other->x >> 16;
+                vector.vy = other->y >> 16;
+                vector.vz = other->z >> 16;
+                vector.vy -= other->height;
+                break;
+            case 33:
+                other = D_800C3E1C;
+                vector.vx = other->x >> 16;
+                vector.vy = other->y >> 16;
+                vector.vz = other->z >> 16;
+                vector.vy -= other->height - (other->height - other->extent_depth) / 2;
+                break;
+            case 34:
+                other = D_800C3E1C;
+                vector.vx = other->x >> 16;
+                vector.vy = other->y >> 16;
+                vector.vz = other->z >> 16;
+                vector.vy -= other->extent_depth;
+                break;
+            case 35:
+                other = D_800C3E1C;
+                vector.vx = other->x >> 16;
+                vector.vy = other->y >> 16;
+                vector.vz = other->z >> 16;
+                vector.vy -= other->extent_depth - (u16)other->extent_depth / 2;
+                break;
+            case 18:
+                other = sprite->word74;
+                vector.vx = other->x >> 16;
+                vector.vy = other->y >> 16;
+                vector.vz = other->z >> 16;
+                vector.vy -= other->height;
+                break;
+            case 19:
+                other = sprite->word74;
+                vector.vx = other->x >> 16;
+                vector.vy = other->y >> 16;
+                vector.vz = other->z >> 16;
+                vector.vy -= other->height - (other->height - other->extent_depth) / 2;
+                break;
+            case 20:
+                other = sprite->word74;
+                vector.vx = other->x >> 16;
+                vector.vy = other->y >> 16;
+                vector.vz = other->z >> 16;
+                vector.vy -= other->extent_depth;
+                break;
+            case 21:
+                other = sprite->word74;
+                vector.vx = other->x >> 16;
+                vector.vy = other->y >> 16;
+                vector.vz = other->z >> 16;
+                vector.vy -= other->extent_depth - (u16)other->extent_depth / 2;
+                break;
+            case 6:
+                vector.vx = D_8006F99C.vx >> 16;
+                vector.vy = D_8006F99C.vy >> 16;
+                vector.vz = D_8006F99C.vz >> 16;
+                break;
+            case 7:
+                vector.vx = D_8006F9AC.vx >> 16;
+                vector.vy = D_8006F9AC.vy >> 16;
+                vector.vz = D_8006F9AC.vz >> 16;
+                break;
+            case 1:
+                other = D_800C3E1C;
+                vector.vx = other->x >> 16;
+                vector.vy = other->y >> 16;
+                vector.vz = other->z >> 16;
+                break;
+            case 9:
+                n = 11;
+                other = sprite->word74;
+                goto group_place;
+            case 8:
+                n = 12;
+                other = sprite->word74;
+                goto group_place;
+            case 10:
+                n = 13;
+                other = sprite->word74;
+                goto group_place;
+            case 11:
+            case 12:
+            case 13:
+            case 14:
+            case 15:
+            case 16:
+            case 17:
+                other = sprite->word70;
+                if (other == NULL) {
+                    break;
+                }
+                goto group_place;
+            case 25:
+            case 26:
+            case 27:
+            case 28:
+            case 29:
+            case 30:
+            case 31:
+                other = D_800C3E1C;
+                n -= 14;
+            group_place:
+                if (other->renderer == NULL) {
+                    break;
+                }
+                if ((other->render.word & 3) != 1) {
+                    break;
+                }
+                if (other->renderer->pointer34 != NULL) {
+                    x = other->renderer->pointer34[n - 10].byte0;
+                    y = other->renderer->pointer34[n - 10].byte1;
+                } else {
+                    x = 0;
+                    y = 0;
+                }
+                if ((other->motion.word >> 2) & 1) {
+                    x = -x;
+                }
+                x = x * other->scale / 4096;
+                y = y * other->scale / 4096;
+                func_80021B04(&vector, x + (other->x >> 16), y + (other->y >> 16), other->z >> 16);
+                break;
+            case 0:
+                other = sprite->word74;
+                vector.vx = other->x >> 16;
+                vector.vy = other->y >> 16;
+                vector.vz = other->z >> 16;
+                break;
+            case 2:
+                func_80021B14(&sum, 0, 0, 0);
+                for (count = 0; (other = D_800D363C[count]) != NULL; count++) {
+                    sum.vx += other->x;
+                    sum.vy += other->y;
+                    sum.vz += other->z;
+                }
+                sum.vx /= count;
+                sum.vy /= count;
+                sum.vz /= count;
+                vector.vx = sum.vx >> 16;
+                vector.vy = sum.vy >> 16;
+                vector.vz = sum.vz >> 16;
+                break;
+            case 3:
+                other = D_800C3E1C;
+                sum.vx = other->x;
+                sum.vy = other->y;
+                sum.vz = other->z;
+                sum.vx += sprite->x;
+                sum.vy += sprite->y;
+                sum.vz += sprite->z;
+                sum.vx /= 2;
+                sum.vy /= 2;
+                sum.vz /= 2;
+                vector.vx = sum.vx >> 16;
+                vector.vy = sum.vy >> 16;
+                vector.vz = sum.vz >> 16;
+                break;
+            case 4:
+                func_80021B14(&sum, 0, 0, 0);
+                for (count = 0; (other = D_800D363C[count]) != NULL; count++) {
+                    sum.vx += other->x;
+                    sum.vy += other->y;
+                    sum.vz += other->z;
+                }
+                count++;
+                sum.vx += sprite->x;
+                sum.vx /= count;
+                sum.vy += sprite->y;
+                sum.vy /= count;
+                sum.vz += sprite->z;
+                sum.vz /= count;
+                vector.vx = sum.vx >> 16;
+                vector.vy = sum.vy >> 16;
+                vector.vz = sum.vz >> 16;
+                break;
+            case 5:
+                func_80021B14(&sum, 0, 0, 0);
+                sum.vx /= count;
+                sum.vy /= count;
+                sum.vz /= count;
+                vector.vx = sum.vx >> 16;
+                vector.vy = sum.vy >> 16;
+                vector.vz = sum.vz >> 16;
+                break;
+            }
+            if (transform) {
+                ApplyMatrixSV(&D_8004FBB8, &vector, &vector);
+                vector.vx += D_8004FBB8.t[0];
+                vector.vy += D_8004FBB8.t[1];
+                vector.vz += D_8004FBB8.t[2];
+            }
+            if (arg & 0x40) {
+                sprite->target_x = vector.vx;
+                sprite->target_y = vector.vy;
+                sprite->target_z = vector.vz;
+            } else {
+                sprite->x = vector.vx << 16;
+                sprite->y = vector.vy << 16;
+                sprite->z = vector.vz << 16;
+            }
+        } else {
+            other = sprite->word70;
+            if (other != NULL && other->renderer != NULL && (other->render.word & 3) == 1) {
+                if (other->renderer->pointer34 != NULL) {
+                    y = other->renderer->pointer34[arg].byte1;
+                    x = other->renderer->pointer34[arg].byte0;
+                } else {
+                    x = 0;
+                    y = 0;
+                }
+                if ((other->render.word >> 3) & 1) {
+                    x = -x;
+                }
+                y = y * other->scale / 4096;
+                x = x * other->scale / 4096;
+                sprite->z = other->z;
+                sprite->x = other->x + (x << 16);
+                sprite->y = other->y + (y << 16);
+            }
+        }
+        break;
+    case 0xD1:
+        p = func_8001FBA4(sprite, code);
+        *p *= *func_8001FBA4(sprite, code + 1);
+        break;
+    case 0xD2:
+    case 0xD5:
+        p = func_8001FBA4(sprite, code);
+        *p /= *func_8001FBA4(sprite, code + 1);
+        break;
+    case 0xE5:
+        p = func_8001FBA4(sprite, code);
+        *p = (s32)((rand() & 0xFF) * code[1]) >> 8;
+        break;
+    case 0xD6:
+        *func_8001FBA4(sprite, code) += code[1];
+        break;
+    case 0xD7:
+        *func_8001FBA4(sprite, code) *= (s8)code[1];
+        break;
+    case 0xD8:
+        *func_8001FBA4(sprite, code) /= (s8)code[1];
+        break;
+    case 0xD9:
+        *func_8001FBA4(sprite, code) <<= (s8)code[1];
+        break;
+    case 0xDA:
+        *(s8 *)func_8001FBA4(sprite, code) >>= (s8)code[1];
+        break;
+    case 0xDB:
+        {
+            u8 *half = func_8001FBA4(sprite, code);
+
+            value = ((half[1] << 8) | half[0]) << (s8)code[1];
+            half[0] = value;
+            half[1] = value >> 8;
+        }
+        break;
+    case 0xDC:
+        {
+            u8 *half = func_8001FBA4(sprite, code);
+
+            value = ((half[1] << 8) | half[0]) >> (s8)code[1];
+            half[0] = value;
+            half[1] = value >> 8;
+        }
+        break;
+    case 0xD0:
+    case 0xD3:
+    case 0xDD:
+    case 0xDE:
+        p = func_8001FBA4(sprite, code);
+        *p += *func_8001FBA4(sprite, code + 1);
+        break;
+    case 0xA4:
+        func_800245D8(sprite->word74, (s8)code[0]);
+        break;
+    case 0xDF:
+        *func_8001FBA4(sprite, code) = code[1];
+        break;
+    case 0xE6:
+        {
+            u8 *half = func_8001FBA4(sprite, code);
+
+            half[1] = 0;
+            half[0] = code[1];
+        }
+        break;
+    case 0x91:
+        sprite->colour_flags &= ~1;
+        func_8001F6B0(sprite);
+        break;
+    case 0x92:
+        sprite->colour_flags |= 1;
+        func_8001F6B0(sprite);
+        break;
+    case 0xBB:
+        sprite->half30 += (s8)code[0];
+        break;
+    case 0x93:
+        other = sprite->word70;
+        if (other != NULL && (sprite->render.word & 3)) {
+            if (func_8001EE68((u8 *)((SpriteSource *)sprite->image)->frames) == 0) {
+                sprite->flags = (sprite->flags & ~0x1E000) | 0x1C000;
+            }
+            if (sprite->renderer != NULL && other->renderer->pointer34 != NULL) {
+                func_8001D4E8(sprite);
+                for (n = 0; n != 8; n++) {
+                    sprite->renderer->pointer34[n] = other->renderer->pointer34[n];
+                }
+                sprite->renderer->offset_x = other->renderer->offset_x;
+                sprite->renderer->offset_y = other->renderer->offset_y;
+            }
+            func_8001D2B0(sprite, sprite->frame);
+        }
+        break;
+    case 0xBA:
+        func_80023290(sprite, code[0]);
+        break;
+    case 0xF1:
+        model = (SpriteModelRenderer *)sprite->renderer;
+        sprite->red = code[0];
+        sprite->green = code[1];
+        sprite->blue = code[2];
+        if ((sprite->render.word & 3) == 2) {
+            model->red = code[0];
+            model->green = code[1];
+            model->blue = code[2];
+        }
+        if ((sprite->render.word & 3) == 1) {
+            func_8001F6B0(sprite);
+        }
+        break;
+    case 0xF2:
+        model = (SpriteModelRenderer *)sprite->renderer;
+        sprite->red = func_80021AD8(sprite->red, (s8)code[0]);
+        sprite->green = func_80021AD8(sprite->green, (s8)code[1]);
+        sprite->blue = func_80021AD8(sprite->blue, (s8)code[2]);
+        if ((sprite->render.word & 3) == 2) {
+            model->red += (s8)code[0];
+            model->green += (s8)code[1];
+            model->blue += (s8)code[2];
+        }
+        if ((sprite->render.word & 3) == 1) {
+            func_8001F6B0(sprite);
+        }
+        if (((sprite->flags >> 13) & 0xF) == 0xF && ((SpriteModelRenderer *)sprite->renderer)->model != NULL &&
+            !((sprite->flags >> 1) & 1)) {
+            func_800B2AEC(((SpriteModelRenderer *)sprite->renderer)->model,
+                          ((SpriteModelRenderer *)sprite->renderer)->packets[0],
+                          ((SpriteModelRenderer *)sprite->renderer)->packets[1], model->red, model->green, model->blue);
+        }
+        break;
+    case 0x90:
+        if (sprite->resource_block == sprite->animations) {
+            func_800222BC(sprite, (s32 *)sprite->resource);
+            sprite->b0.wordb0 |= 0x400;
+        } else {
+            func_800222BC(sprite, sprite->animations);
+            sprite->b0.wordb0 &= ~0x400;
+        }
+        break;
+    case 0xF5:
+        func_80032498(5, 0);
+        buffer = (ModelBuffer *)(code + (((s8)code[2] << 16) + (code[1] << 8) + code[0]));
+        func_8002C59C((SpriteModel *)buffer);
+        if (((SpriteModelRenderer *)sprite->renderer)->packets[0] != NULL) {
+            func_800320E8(((SpriteModelRenderer *)sprite->renderer)->packets[0]);
+        }
+        func_8002CB54(buffer, &((SpriteModelRenderer *)sprite->renderer)->packets[0],
+                      &((SpriteModelRenderer *)sprite->renderer)->packets[1]);
+        func_8002C8CC(buffer, ((SpriteModelRenderer *)sprite->renderer)->packets[0], 0);
+        memcpy(((SpriteModelRenderer *)sprite->renderer)->packets[1],
+               ((SpriteModelRenderer *)sprite->renderer)->packets[0], buffer->size);
+        ((SpriteModelRenderer *)sprite->renderer)->model = buffer;
+        break;
+    case 0xF6:
+        func_80032498(5, 0);
+        buffer = (ModelBuffer *)(code + (((s8)code[2] << 16) + (code[1] << 8) + code[0]));
+        func_8002C3E8((ModelGroup *)buffer);
+        buffer = (ModelBuffer *)((u8 *)buffer + 0x10);
+        if (((SpriteModelRenderer *)sprite->renderer)->packets[0] != NULL) {
+            func_800320E8(((SpriteModelRenderer *)sprite->renderer)->packets[0]);
+        }
+        func_8002CB54(buffer, &((SpriteModelRenderer *)sprite->renderer)->packets[0],
+                      &((SpriteModelRenderer *)sprite->renderer)->packets[1]);
+        func_8002C8CC(buffer, ((SpriteModelRenderer *)sprite->renderer)->packets[0], 0);
+        memcpy(((SpriteModelRenderer *)sprite->renderer)->packets[1],
+               ((SpriteModelRenderer *)sprite->renderer)->packets[0], buffer->size);
+        ((SpriteModelRenderer *)sprite->renderer)->model = buffer;
+        break;
+    case 0xF7:
+        buffer = (ModelBuffer *)(code + (((s8)code[2] << 16) + (code[1] << 8) + code[0]));
+        func_8002C3E8((ModelGroup *)buffer);
+        buffer = (ModelBuffer *)((u8 *)buffer + 0x10);
+        if (((SpriteModelRenderer *)sprite->renderer)->packets[0] != NULL) {
+            func_800320E8(((SpriteModelRenderer *)sprite->renderer)->packets[0]);
+        }
+        func_8002CB54(buffer, &((SpriteModelRenderer *)sprite->renderer)->packets[0],
+                      &((SpriteModelRenderer *)sprite->renderer)->packets[1]);
+        func_8002C8CC(buffer, ((SpriteModelRenderer *)sprite->renderer)->packets[0], 0);
+        memcpy(((SpriteModelRenderer *)sprite->renderer)->packets[1],
+               ((SpriteModelRenderer *)sprite->renderer)->packets[0], buffer->size);
+        *(s32 *)(loaded->unk10 + 4) = 0;
+        ((SpriteModelRenderer *)sprite->renderer)->model = buffer;
+        break;
+    case 0xB5:
+        if (sprite->render.word & 3) {
+            func_80022000(sprite, (s8)code[0] << 8);
+        }
+        break;
+    case 0xE7:
+        func_80022000(sprite, sprite->scale + (s16)((code[0] | (s16)(code[1] << 8)) * 2));
+        break;
+    case 0xE9:
+        value = code[0] | (s16)(code[1] << 8);
+        if (sprite->renderer != NULL) {
+            sprite->renderer->scale_x += value * 2;
+            sprite->render.bits.dirty = 1;
+        }
+        break;
+    case 0xEA:
+        value = code[0] | (s16)(code[1] << 8);
+        if (sprite->renderer != NULL) {
+            sprite->renderer->scale_y += value * 2;
+            sprite->render.bits.dirty = 1;
+        }
+        break;
+    case 0xEB:
+        value = code[0] | (s16)(code[1] << 8);
+        if (sprite->renderer != NULL) {
+            sprite->renderer->scale_z += value * 2;
+            sprite->render.bits.dirty = 1;
+        }
+        break;
+    case 0xBD:
+        func_80023B84(sprite, D_8006BE20 + ((u16 *)D_8006BE20)[code[0] + 1], sprite->image);
+        break;
+    case 0xE0:
+        func_80023B84(sprite, code + (((s8)code[1] << 8) + code[0]), sprite->image);
+        break;
+    case 0xAD:
+        sprite->frame_bits.bounce = code[0];
+        break;
+    case 0xB4:
+        func_80021CA0(sprite, code[0]);
+        break;
+    case 0xB8:
+        sprite->stack_top -= (s8)code[0];
+        break;
+    case 0xB3:
+        sprite->frame_bits.frame = (s8)code[0];
+        break;
+    case 0xAE:
+        angle = (s8)code[0] * 16;
+        if ((sprite->motion.word >> 2) & 1) {
+            angle = -angle;
+        }
+        if (sprite->renderer != NULL) {
+            sprite->renderer->angle_z += angle;
+            sprite->render.bits.dirty = 1;
+        }
+        break;
+    case 0xB6:
+        if (sprite->renderer != NULL) {
+            sprite->renderer->angle_x += (s8)code[0] * 16;
+            sprite->render.bits.dirty = 1;
+        }
+        break;
+    case 0xB7:
+        if (sprite->renderer != NULL) {
+            sprite->renderer->angle_y += (s8)code[0] * 16;
+            sprite->render.bits.dirty = 1;
+        }
+        break;
+    case 0xAF:
+        angle = (s8)code[0] * 16;
+        if ((sprite->motion.word >> 2) & 1) {
+            angle = -angle;
+        }
+        if (sprite->renderer != NULL) {
+            sprite->renderer->angle_z = angle;
+            sprite->render.bits.dirty = 1;
+        }
+        break;
+    case 0xC4:
+        n = (rand() & 0xFF) * code[0] / 256;
+        func_80021B04(&vector, 0, 0, (n - (code[0] >> 1)) * 16);
+        func_8003F738(&vector, &m);
+        ApplyMatrixLV(&m, (VECTOR *)&sprite->speed_x, &sum);
+        sprite->speed_x = sum.vx;
+        sprite->speed_y = sum.vy;
+        sprite->speed_z = sum.vz;
+        break;
+    case 0xAC:
+        func_80021FE0(sprite, sprite->direction + ((rand() & 0xFF) * code[0] / 256 - (code[0] >> 1)) * 16);
+        break;
+    case 0xA9:
+        value = func_80022CAC(sprite, (s8)code[0] * sprite->scale / 4096) << 16;
+        if ((sprite->motion.word >> 2) & 1) {
+            value = -value;
+        }
+        sprite->x += value;
+        break;
+    case 0xAA:
+        sprite->y += func_80022CAC(sprite, (s8)code[0] * sprite->scale / 4096) << 16;
+        break;
+    case 0xAB:
+        sprite->z += func_80022CAC(sprite, (s8)code[0] * sprite->scale / 4096) << 16;
+        break;
+    case 0xA8:
+        sprite->direction += (s8)code[0] * 16;
+        func_80022974(sprite);
+        break;
+    case 0x8A:
+        sprite->speed_x = 0;
+        sprite->speed_z = 0;
+        sprite->speed = 0;
+        break;
+    case 0xA3:
+        if (sprite->frame_bits.sequencer_owned == 1 && ((SpriteSequencer *)sprite->sequencer)->word4 != 0) {
+            sprite->word1c = ((SpriteSequencer *)sprite->sequencer)->word4;
+        } else {
+            n = 0x10000 / sprite->motion.bits.divisor;
+            sprite->word1c = ((s8)code[0] * 64 * (s16)sprite->word82 / 4096) << 5;
+            sprite->word1c *= n * n / 256;
+            sprite->word1c /= 256;
+            sprite->word1c *= (D_80059198 + 1) * (D_80059198 + 1);
+        }
+        break;
+    case 0xA5:
+        sprite->speed += ((s8)code[0] * 16 * (D_80059198 + 1) * (s16)sprite->word82 / 4096) << 8;
+        func_80022974(sprite);
+        break;
+    case 0xA6:
+        if (sprite->frame_bits.sequencer_owned != 1) {
+            sprite->speed_y +=
+                (((s8)code[0] * 16 * (D_80059198 + 1) * (s16)sprite->word82 / 4096) << 16) / sprite->motion.bits.divisor;
+        }
+        break;
+    case 0xA0:
+        sprite->speed = ((s8)code[0] * 16 * (D_80059198 + 1) * (s16)sprite->word82 / 4096) << 8;
+        func_80022974(sprite);
+        break;
+    case 0xA1:
+        if (sprite->frame_bits.sequencer_owned != 1 ||
+            (sprite->speed_y = ((SpriteSequencer *)sprite->sequencer)->word0) == 0) {
+            sprite->speed_y = ((s8)code[0] * 16 * (D_80059198 + 1) * (s16)sprite->word82 / 4096) << 8;
+        }
+        sprite->speed_y <<= 8;
+        sprite->speed_y /= sprite->motion.bits.divisor;
+        break;
+    case 0xED:
+        sprite->x = (code[0] | ((s8)code[1] << 8)) << 16;
+        break;
+    case 0xEE:
+        sprite->y = (sprite->ground + (code[0] | ((s8)code[1] << 8)) * sprite->scale / 4096) << 16;
+        break;
+    case 0xEF:
+        sprite->z = (code[0] | ((s8)code[1] << 8)) << 16;
+        break;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001FBE4);
+#endif
 
 /* `value + delta` clamped to 0-255. */
 s32 func_80021AD8(s32 value, s32 delta) {

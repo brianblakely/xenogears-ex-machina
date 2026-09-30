@@ -93,8 +93,8 @@ typedef struct Sprite {
     s16 half30;              /* +0x30 */
     s16 direction;           /* +0x32 */
     u16 frame;               /* +0x34: pending frame, 0 none */
-    s16 height;              /* +0x36: frame extent at its scale */
-    s16 extent_depth;        /* +0x38 */
+    u16 height;              /* +0x36: frame extent at its scale */
+    u16 extent_depth;        /* +0x38 */
     u16 rate;                /* +0x3a: speed factor, 1024 = 1 */
     union {
         u32 word;
@@ -125,8 +125,9 @@ typedef struct Sprite {
     u8 *script;              /* +0x64: the next animation command, NULL once finished */
     void *callback;          /* +0x68: completion callback */
     void *block;             /* +0x6c: the allocation holding the sprite */
-    s32 word70;              /* +0x70 */
-    u8 unknown74[8];
+    struct Sprite *word70;   /* +0x70: the sprite this one is attached to */
+    struct Sprite *word74;   /* +0x74: the sprite this one aims at */
+    u8 unknown78[4];
     void *sequencer;         /* +0x7c */
     u16 word80;              /* +0x80: facing angle */
     u16 word82;              /* +0x82 */
@@ -137,7 +138,8 @@ typedef struct Sprite {
     u8 unknown8d;
     u8 stack[0x10];          /* +0x8e */
     s16 countdown;           /* +0x9e: frames to the next command */
-    u8 unknowna0[8];
+    s16 target_x, target_y, target_z; /* +0xa0: a position saved by command bc */
+    u8 unknowna6[2];
     struct {
         unsigned sequencer_owned : 1; /* the sequencer buffer is allocated */
         unsigned bounce : 10;    /* rebound speed on landing, / 256 */
@@ -368,6 +370,49 @@ typedef struct {
 } SpriteCell;
 
 void func_800251C8(u_long *pixels, s16 x, s16 y, s16 w, s16 h); /* queue an image upload */
+
+/* A model sprite's renderer (render mode 2) as the script commands use it. */
+typedef struct {
+    s16 angle_x, angle_y, angle_z; /* +0x0 */
+    u8 unknown6[0x26];
+    u8 *packets[2];                /* +0x2c: the model's two packet buffers */
+    void *model;                   /* +0x34 */
+    s16 red, green, blue;          /* +0x38 */
+} SpriteModelRenderer;
+
+/* The sound owner of a sprite (word50) and of the scripts (8005919c). */
+typedef struct {
+    u8 unknown0[0x14];
+    u16 bank;              /* +0x14: sound numbers of the owner are bank << 16 | number */
+} SpriteVoice;
+
+/* Positions of other modes the script can place a sprite at. */
+typedef struct {
+    u8 unknown0[0xE];
+    s16 x, z;              /* +0xe */
+    u8 unknown12[0xA];
+} SpriteAnchor;
+
+extern SpriteVoice *D_8005919C;
+extern u8 *D_8006BE20;          /* the shared animation block */
+extern VECTOR D_8006F99C;       /* positions (16.16) of two field points */
+extern VECTOR D_8006F9AC;
+extern Sprite *D_800C3E1C;      /* battle overlay: the acting sprite */
+extern SpriteAnchor D_800C3EB0[]; /* battle overlay: formation places by side and slot */
+extern Sprite *D_800D363C[];    /* battle overlay: the sprites of a group, NULL-terminated */
+void func_800B2AEC(void *model, u8 *packets0, u8 *packets1, s16 red, s16 green, s16 blue); /* battle overlay: tint a model */
+
+s32 func_80023124(DVECTOR from, DVECTOR to); /* the direction from `from` to `to` */
+void func_80023290(Sprite *sprite, s32 rate);
+void func_80023B84(Sprite *sprite, u8 *animation, void *image);
+void func_80021B04(SVECTOR *vector, s16 x, s16 y, s16 z);
+void func_80021B14(VECTOR *vector, s32 x, s32 y, s32 z);
+s32 func_80021AD8(s32 value, s32 delta);
+void func_80021CA0(Sprite *sprite, u8 value);
+void func_80021FE0(Sprite *sprite, s16 direction);
+void func_8001D4E8(Sprite *sprite);
+void func_8001FB30(void);
+u8 *func_8001FBA4(Sprite *sprite, u8 *code);
 
 extern SpriteQueueEntry *D_80059580; /* the next free queue entry */
 extern u8 *D_80059534;                /* its end */

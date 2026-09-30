@@ -142,5 +142,9 @@ s32 func_8002DDE4(s32 *images, s16 mode, s32 x, s32 y, s16 mode2, u16 x2, u16 y2
 u8 *func_8002DFE0(void); /* the shared unpack buffer */
 
 void func_8002C700(void *model, void *packets, s32 ot, s32 flags); /* draw primitive groups */
+s32 func_8002C3E8(ModelGroup *group);
+void func_8002C59C(SpriteModel *model);
+void func_8002C8CC(ModelBuffer *buffer, u8 *packets, s32 flags);
+void func_8002CB54(ModelBuffer *buffer, u8 **first, u8 **second);
 
 #endif

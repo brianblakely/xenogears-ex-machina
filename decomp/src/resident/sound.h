@@ -365,6 +365,7 @@ void *func_80039024(s32 size);                         /* allocate driver memory
 void func_80039144(void *data);                        /* release driver memory */
 void func_80039248(void *dst, void *src, s32 size);    /* copy */
 void func_80038310(SoundSequence *bank); /* release a wave bank */
+void func_80039E60(s32 sound);
 void func_80038B4C(void);
 void func_80038E6C(s16 volume, SpuVolume *out, u8 channel);
 void *func_80038F18(s32 size);
