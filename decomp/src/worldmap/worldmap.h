@@ -815,4 +815,29 @@ void func_80037E8C(void);
 void func_80037EE4(void);
 void func_8001FAB4(s32 a, s32 b);
 
+void func_8009766C(void);
+void func_800721E4(void);
+void func_80084580(void);
+void func_800979C8(void);
+void func_800736DC(void);
+void func_800863E0(void);
+void func_80088F64(void);
+void func_80038428(void *bank);
+s32 func_80035734(s32 mode);
+void func_80086700(void);
+void func_80097718(s32 kind, s32 update);
+
+extern void (*D_8009CD40)(void); /* per-frame hook */
+extern LoaderState D_8009BE4C;   /* terrain loader state */
+
+/* Actor handlers (installed by address). */
+s32 func_800923A8();
+s32 func_800925A0();
+s32 func_80077DC8();
+s32 func_80077E68();
+s32 func_8007828C();
+s32 func_800783E8();
+s32 func_80078948();
+s32 func_80078950();
+
 #endif

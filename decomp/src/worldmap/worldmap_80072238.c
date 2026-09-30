@@ -840,7 +840,56 @@ void func_8007634C(void) {
     D_80059488 = saved;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80076594);
+/* Wait on the other buffer until the pad check (func_80035734) succeeds,
+ * then restore the display. */
+void func_80076594(void) {
+    RECT rect;
+    s32 saved;
+
+    saved = D_80059488;
+    DrawSync(0);
+    VSync(0);
+    if (D_8009D7F0 == 0) {
+        rect.x = 0;
+        rect.y = 0xD8;
+        rect.w = 0x140;
+        rect.h = 0xD8;
+        MoveImage(&rect, 0, 0);
+    }
+    PutDispEnv(&D_8009BBC8[1].disp);
+    PutDrawEnv(&D_8009BBC8[1].draw);
+    func_80037EE4();
+    do {
+        DrawSync(0);
+        VSync(0);
+        func_8001FAB4(0x88, 0x64);
+        D_8009BD1C = 0;
+        D_8009BD14 = 0;
+        D_8009CD50 = 0;
+        D_8009BD18 = 0;
+        D_8009BD10 = 0;
+        D_8009CD4C = 0;
+        while (func_80035CDC() != 0) {
+            D_8009CD4C |= D_80059570;
+            D_8009CD50 |= D_80059574;
+            D_8009BD10 |= D_8005948C;
+            D_8009BD14 |= D_80059490;
+            D_8009BD18 |= D_800594A4;
+            D_8009BD1C |= D_800594A8;
+        }
+    } while (func_80035734(0) == 0);
+    func_80037E8C();
+    DrawSync(0);
+    VSync(0);
+    rect.x = 0;
+    rect.y = 0;
+    rect.w = 0x140;
+    rect.h = 0xD8;
+    MoveImage(&rect, 0, 0xD8);
+    PutDispEnv(&D_8009BBC8[D_8009D7F0].disp);
+    PutDrawEnv(&D_8009BBC8[D_8009D7F0].draw);
+    D_80059488 = saved;
+}
 
 /* Replace the music: stop the current sequence and start `data` (the
  * contents of disc file `file`). */
@@ -1208,7 +1257,60 @@ s32 func_8007795C(void) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80077A64);
+/* Set up the scene mode: display, terrain loader, scene objects and its four
+ * actors. */
+void func_80077A64(void) {
+    RECT rect;
+
+    func_80072BB0();
+    rect.x = 0;
+    rect.y = 0;
+    rect.w = 0x140;
+    rect.h = 0xD8;
+    MoveImage(&rect, 0x2C0, 0x100);
+    DrawSync(0);
+    func_80072DB4(0x40, 0, 4, 1);
+    while (func_800286CC() >= 3) {
+    }
+    func_80076954();
+    func_8009766C();
+    D_8009BE4C = D_8009A180;
+    D_8009CCA4 = 1;
+    D_8009D3CC = 4;
+    D_8009D804 = 0;
+    D_8009D144 = 0;
+    D_8009CD40 = func_80086700;
+    func_80098044();
+    func_80028A60(0);
+    func_800721E4();
+    D_8009C5AC.vx = 0x2000000;
+    D_8009C5AC.vy = -0x200000;
+    D_8009C5AC.vz = 0x2000000;
+    func_80084580();
+    func_8008440C();
+    func_800979C8();
+    func_800736DC();
+    func_800863E0();
+    func_80074E58();
+    func_80075030();
+    func_800739B8();
+    func_80088F64();
+    func_80028A60(0);
+    func_80038428(D_8006259C);
+    func_80028470(0x24, 0);
+    func_80097BC0(&D_8009C5AC);
+    do {
+        func_800967E4();
+        VSync(0);
+    } while (func_80096668() > 0);
+    func_80097718((s32)func_800923A8, (s32)func_800925A0);
+    func_80097718((s32)func_80077DC8, (s32)func_80077E68);
+    func_80097718((s32)func_8007828C, (s32)func_800783E8);
+    func_80097718((s32)func_80078948, (s32)func_80078950);
+    func_800978FC();
+    func_8008901C();
+    func_800865A0();
+}
 
 /* Leave for scene 0x10E: stop the sound bank, shut down and free the area. */
 void func_80077CC0(void) {
