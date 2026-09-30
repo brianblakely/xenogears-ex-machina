@@ -4875,7 +4875,50 @@ void func_80084A7C(u8 member) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80084B40);
+/* Pick a target with the direction keys, starting from the attack page
+ * target: highlight member and target each frame; 0-3 move to the nearest
+ * candidate that way, 4/6/7 confirm it as the member's default target (1)
+ * and 5 cancels back to the default target (0). */
+u8 func_80084B40(u8 member) {
+    u8 state = 2;
+    u8 target = D_800C3EAC->unk2E8;
+
+    D_800D3014 = 8;
+    do {
+        while (D_800D3014 == 8) {
+            func_800BC404(func_80089C08(member) | func_80089C08(target));
+            func_800BCD98(func_80089C08(target));
+            func_800716D8();
+        }
+        switch (D_800D3014) {
+        case 4:
+        case 6:
+        case 7:
+            state = 1;
+            D_800C3EAC->slots[member].defaultTarget = target;
+            break;
+        case 5:
+            func_800BC404(func_80089C08(member) | func_80089C08(D_800C3EAC->slots[member].defaultTarget));
+            state = 0;
+            func_800BCD98(func_80089C08(D_800C3EAC->slots[member].defaultTarget));
+            break;
+        case 0:
+            target = func_80084854(target, 0);
+            break;
+        case 1:
+            target = func_80084854(target, 1);
+            break;
+        case 2:
+            target = func_80084854(target, 2);
+            break;
+        case 3:
+            target = func_80084854(target, 3);
+            break;
+        }
+        D_800D3014 = 8;
+    } while (state == 2);
+    return state;
+}
 
 /* The mask of slots in 800c3d64 in the formation group of slot 800c3e2c. */
 u16 func_80084D28(void) {
