@@ -4355,7 +4355,7 @@ void func_80085C88(u8 queue) {
 }
 
 /* Commit an action (attacker, target mask, animation) and resolve it. */
-void func_80085CCC(u8 actor, u16 targets, s16 animation) {
+void func_80085CCC(u8 actor, u16 targets, u16 animation) {
     u8 action; /* 1-based */
 
     D_800C48E8 = 0;
@@ -5359,7 +5359,55 @@ void func_8008AC88(u16 mask, u8 actor) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008ADD0);
+/* Execute the chosen technique (turn state +0x2e6) for the member: reset
+ * the events, commit the command (from 23, or the gear's from 22 in a gear;
+ * command bits 0-2 target the candidates, else the chosen target), apply
+ * its results, face the camera, show the member's model, queue its event
+ * with the targeted enemies' reactions and wait for the presentation. */
+void func_8008ADD0(member)
+u8 member;
+{
+    u16 targets;
+    u16 command;
+    s32 i;
+
+    D_800D366C = 0;
+    func_800BCD98(0);
+    for (i = 0; i < 32; i++) {
+        D_800C3FE8[i].type = 0xFF;
+    }
+    if (D_800D32A0[member].unk1 == 0) {
+        D_800C3EAC->unk2DC = D_800C3EAC->unk2E6 + 23;
+        command = D_800CCCE8.partyCommands[member][D_800C3EAC->unk2E6 + 22].state;
+    } else {
+        D_800C3EAC->unk2DC = D_800C3EAC->unk2E6 + 22;
+        command = D_800CCCE8.gearCommands[member][D_800C3EAC->unk2E6 + 21].state;
+    }
+    if (command & 7) {
+        targets = D_800C3D64;
+    } else {
+        targets = func_80089C08(D_800C3E2C);
+    }
+    func_8008AC88(targets, member);
+    func_80085388();
+    func_80085CCC(member, targets, D_800C3EAC->unk2DC - 1);
+    func_80085C88(D_800C3EAC->eventCount);
+    func_800BC404(D_800D2C94.targets | func_80089C08(member));
+    func_800B89FC(1, member, D_800C3EAC->slots[member].defaultTarget, func_80080AE4(member));
+    D_800C3FE8[D_800C3EAC->eventCount].type = D_800D2C94.animation;
+    D_800C3FE8[D_800C3EAC->eventCount].actor = member;
+    D_800C3FE8[D_800C3EAC->eventCount].targetMask = D_800D2C94.targets;
+    for (i = 3; i < 11; i++) {
+        if (func_80089C9C(D_800D2C94.targets, i)) {
+            func_80079840(member, i);
+        }
+    }
+    D_800C3EAC->eventCount++;
+    func_80080B64(member);
+    while (D_800C3EAC->eventsDone == 0) {
+        func_800716D8();
+    }
+}
 
 /* Hide the command windows (four panels); without `keep` show the
  * +0x641c lists. */
