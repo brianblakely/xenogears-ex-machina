@@ -232,7 +232,7 @@ void func_80095324(VECTOR *normal, VECTOR *direction, VECTOR *out) {
     SCRATCH_VECTOR[1].vx = 0;
     SCRATCH_VECTOR[1].vy = -0x1000;
     func_8004A480(normal, &SCRATCH_VECTOR[1], &SCRATCH_VECTOR[2]);
-    func_80048D7C(&SCRATCH_VECTOR[2], &SCRATCH_VECTOR[0]);
+    VectorNormal(&SCRATCH_VECTOR[2], &SCRATCH_VECTOR[0]);
     tangent = SCRATCH_VECTOR[0].vx;
     dot = tangent * direction->vx + SCRATCH_VECTOR[0].vz * direction->vz;
     if (dot < 0) {
@@ -801,11 +801,11 @@ void func_80097244(void *arg) {
     LOOKAT_SCRATCH->work.vx = -view->eye.vx + view->target.vx;
     LOOKAT_SCRATCH->work.vy = -view->eye.vy + view->target.vy;
     LOOKAT_SCRATCH->work.vz = -view->eye.vz + view->target.vz;
-    func_80048D7C(&LOOKAT_SCRATCH->work, &LOOKAT_SCRATCH->forward);
+    VectorNormal(&LOOKAT_SCRATCH->work, &LOOKAT_SCRATCH->forward);
     func_8004A480(&LOOKAT_SCRATCH->forward, &view->up, &LOOKAT_SCRATCH->work);
-    func_80048D7C(&LOOKAT_SCRATCH->work, &LOOKAT_SCRATCH->right);
+    VectorNormal(&LOOKAT_SCRATCH->work, &LOOKAT_SCRATCH->right);
     func_8004A480(&LOOKAT_SCRATCH->forward, &LOOKAT_SCRATCH->right, &LOOKAT_SCRATCH->work);
-    func_80048D7C(&LOOKAT_SCRATCH->work, &LOOKAT_SCRATCH->up);
+    VectorNormal(&LOOKAT_SCRATCH->work, &LOOKAT_SCRATCH->up);
     D_8009C808.m[0][0] = LOOKAT_SCRATCH->right.vx;
     D_8009C808.m[0][1] = LOOKAT_SCRATCH->right.vy;
     D_8009C808.m[0][2] = LOOKAT_SCRATCH->right.vz;

@@ -670,7 +670,6 @@ typedef struct {
 
 #define TERRAIN_SCRATCH ((TerrainScratch *)0x1F800000)
 
-s32 func_80048D7C(VECTOR *v, VECTOR *out); /* VectorNormal */
 extern s16 D_8009CE68; /* destination id, -1 none */
 extern u16 D_8009A5CC[]; /* resident flag word per exit */
 

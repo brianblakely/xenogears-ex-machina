@@ -274,7 +274,7 @@ void func_80072150(void) {
     func_8003F738(&D_800AF880.world_angles, &D_800AF880.world_matrix);
     func_80072140(&D_800AF880.world_matrix);
     func_8003F738(&D_800AF880.world_angles, &D_800AF880.scaled_world);
-    func_80049BDC(&D_800AF880.previous_view, &D_800AF880.scaled_world);
+    MulMatrix2(&D_800AF880.previous_view, &D_800AF880.scaled_world);
     SetRotMatrix(&D_800AF880.previous_view);
     SetTransMatrix(&D_800AF880.previous_view);
     func_8004A6DC(&D_800AF880.anchor, D_800AF880.scaled_world.t, &flag);
@@ -348,11 +348,11 @@ void func_800723E4(DVECTOR *a, DVECTOR *b, DVECTOR *out) {
     d.vx = a[1].vx - a[0].vx;
     d.vy = 0;
     d.vz = a[1].vy - a[0].vy;
-    func_80048D7C(&d, &ua);
+    VectorNormal(&d, &ua);
     d.vx = b[1].vx - b[0].vx;
     d.vy = 0;
     d.vz = b[1].vy - b[0].vy;
-    func_80048D7C(&d, &ub);
+    VectorNormal(&d, &ub);
     cross = (ub.vx * ua.vz - ub.vz * ua.vx) >> 12;
     if (cross == 0) {
         t = 0;
@@ -717,9 +717,9 @@ void func_800759E4(MATRIX *m, VECTOR *axis) {
     VECTOR cross;
 
     func_8004A480(&up, axis, &cross);
-    func_80048D7C(&cross, &side);
+    VectorNormal(&cross, &side);
     func_8004A480(&side, axis, &cross);
-    func_80048D7C(&cross, &up);
+    VectorNormal(&cross, &up);
     m->m[0][0] = side.vx;
     m->m[0][1] = side.vy;
     m->m[0][2] = side.vz;
@@ -1223,11 +1223,11 @@ void func_8007B07C(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *p, VECTOR *norma
     d.vx = b->vx - a->vx;
     d.vy = b->vy - a->vy;
     d.vz = b->vz - a->vz;
-    func_80048D7C(&d, &edge_b);
+    VectorNormal(&d, &edge_b);
     d.vx = c->vx - a->vx;
     d.vy = c->vy - a->vy;
     d.vz = c->vz - a->vz;
-    func_80048D7C(&d, &edge_c);
+    VectorNormal(&d, &edge_c);
     func_8004A480(&edge_b, &edge_c, normal);
     if (normal->vy == 0) {
         p->vy = 0;
@@ -1312,7 +1312,7 @@ void func_8007D818(VECTOR *v, VECTOR *out) {
         v->vy = -v->vy;
         v->vz = -v->vz;
     }
-    func_80048D7C(v, out);
+    VectorNormal(v, out);
 }
 
 /* The component of largest magnitude (0 when none is strictly ahead). */

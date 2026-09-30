@@ -452,7 +452,7 @@ s32 func_8007BBEC(s32 index) {
     scratch->axis[1].vx = (scratch->axis[1].vx - scratch->axis[0].vx) >> 12;
     scratch->axis[1].vy = (scratch->axis[1].vy - scratch->axis[0].vy) >> 12;
     scratch->axis[1].vz = -((scratch->axis[1].vz - scratch->axis[0].vz) >> 12);
-    func_80048D7C(&scratch->axis[1], &scratch->axis[0]);
+    VectorNormal(&scratch->axis[1], &scratch->axis[0]);
     scratch->angle.vx = 0;
     scratch->angle.vy = ratan2(scratch->axis[0].vx, scratch->axis[0].vz) & 0xFFF;
     scratch->angle.vz = actor->unk54;
@@ -462,9 +462,9 @@ s32 func_8007BBEC(s32 index) {
     scratch->angle.vz = 0;
     ApplyMatrix(&scratch->frame, &scratch->angle, &scratch->axis[1]);
     func_8004A480(&scratch->axis[0], &scratch->axis[1], &scratch->axis[3]);
-    func_80048D7C(&scratch->axis[3], &scratch->axis[2]);
+    VectorNormal(&scratch->axis[3], &scratch->axis[2]);
     func_8004A480(&scratch->axis[0], &scratch->axis[2], &scratch->axis[3]);
-    func_80048D7C(&scratch->axis[3], &scratch->axis[1]);
+    VectorNormal(&scratch->axis[3], &scratch->axis[1]);
     scratch->frame.m[0][0] = scratch->axis[2].vx;
     scratch->frame.m[0][1] = scratch->axis[2].vy;
     scratch->frame.m[0][2] = scratch->axis[2].vz;

@@ -2384,7 +2384,7 @@ void func_80076CA4(void) {
     D_800770B0.vy = -ratan2(dx, dz);
     func_8003F738(&D_800770B0, &D_800770D8);
     RotMatrixZ(D_8007704C, &D_800770D8);
-    func_80049BDC(&D_800770F8, &D_800770D8);
+    MulMatrix2(&D_800770F8, &D_800770D8);
     D_800770D8.t[0] = 0;
     D_800770D8.t[1] = 0;
     D_800770D8.t[2] = SquareRoot0(dx2 + dy * dy + dz2);

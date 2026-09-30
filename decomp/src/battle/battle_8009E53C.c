@@ -1464,8 +1464,8 @@ void func_800AAB34(BattleObject *object) {
                 } else {
                     m = &D_800D3368[object->field5C]->hierarchy->world;
                 }
-                func_80049BDC(m, &object->hierarchy->transform);
-                func_80049BDC(m, &object->hierarchy->world);
+                MulMatrix2(m, &object->hierarchy->transform);
+                MulMatrix2(m, &object->hierarchy->world);
             }
             if (object->parentPart != 0) {
                 CompMatrix(&D_800D3368[object->field5C]->hierarchy->transform,

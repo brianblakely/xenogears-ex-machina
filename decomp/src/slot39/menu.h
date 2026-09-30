@@ -1303,11 +1303,6 @@ s32 func_80036410(void);
 void func_80037E8C(void);     /* resume sound */
 void func_80037EE4(void);     /* pause sound */
 void func_80039DB8(s32 id, s32 sound); /* play a sound effect */
-void func_800404C4(u32 event, s32 spec); /* UnDeliverEvent */
-s32 func_80040494(s32 event);            /* TestEvent */
-u16 *func_800405C4(s32 code);   /* 16x16 font glyph of a two-byte code, -1 none */
-s32 func_80040544(s32 fd, void *buf, s32 size); /* read */
-void func_80040564(s32 fd);               /* close */
 u32 func_801E1418(u8 slot, u8 row);
 void func_801E3A80(MenuTables *tables, u8 id);
 void func_801E433C(MenuTables *tables, u8 gear);

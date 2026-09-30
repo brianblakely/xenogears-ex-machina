@@ -2495,7 +2495,7 @@ void func_801E22F8(Record24 *record, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buff
         n.vx /= 8;
         n.vy /= 8;
         n.vz /= 8;
-        func_80048D7C(&n, &e1);
+        VectorNormal(&n, &e1);
         for (k = 0; k < 3; k++) {
             points[poly->index[k]].normal[0] += e1.vx;
             points[poly->index[k]].normal[1] += e1.vy;
@@ -2717,8 +2717,8 @@ void func_801E37D0(Actor *actor) {
                 } else {
                     m = &D_801E8670[actor->parent]->parts->world;
                 }
-                func_80049BDC(m, &actor->parts->local);
-                func_80049BDC(m, &actor->parts->world);
+                MulMatrix2(m, &actor->parts->local);
+                MulMatrix2(m, &actor->parts->world);
             }
             if (actor->parent_node != 0) {
                 CompMatrix(&D_801E8670[actor->parent]->parts->local,

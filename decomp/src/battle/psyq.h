@@ -116,7 +116,7 @@ void func_8004A92C(SVector *angles, Matrix *m);          /* RotMatrixYXZ */
 void MulMatrix0(Matrix *m0, Matrix *m1, Matrix *out);
 void CompMatrix(Matrix *m0, Matrix *m1, Matrix *out);
 void SetRotMatrix(Matrix *m);
-void func_80049BDC(Matrix *m0, Matrix *m1);              /* multiply m1 by m0 */
+void MulMatrix2(Matrix *m0, Matrix *m1);              /* multiply m1 by m0 */
 void OuterProduct0(Vector *v0, Vector *v1, Vector *out);
 void SetLightMatrix(Matrix *m);
 void SetTransMatrix(Matrix *m);

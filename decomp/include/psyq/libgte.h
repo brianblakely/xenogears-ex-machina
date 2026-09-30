@@ -56,5 +56,7 @@ long RotAverage4(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *v3, long *sxy0,
 void OuterProduct0(VECTOR *v0, VECTOR *v1, VECTOR *v2);
 long ratan2(long y, long x);
 long SquareRoot0(long a);
+long VectorNormal(VECTOR *v0, VECTOR *v1);
+MATRIX *MulMatrix2(MATRIX *m0, MATRIX *m1);
 
 #endif

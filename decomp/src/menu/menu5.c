@@ -1608,7 +1608,7 @@ void func_800884E0(Vector *vector, void *out) {
     scaled.vx /= length;
     scaled.vy /= length;
     scaled.vz /= length;
-    func_80048D7C(&scaled, out);
+    VectorNormal(&scaled, out);
 }
 
 /* Scale a vector down by the square root of its (absolute) length measure
