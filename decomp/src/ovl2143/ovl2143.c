@@ -786,7 +786,55 @@ s32 func_801E0354(ParticlePool *pool, Particle *particle) {
     return index;
 }
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E0398);
+/* Draw the live particles into the ordering table (3D ones projected with
+ * the GTE at their depth, 2D ones at the front), free the expired ones and
+ * fade the rest by `steps` ticks. */
+void func_801E0398(ParticlePool *pool, MATRIX *m, s32 steps, u32 *ot, s32 buffer) {
+    Particle *particle;
+    s32 otz;
+    s32 i;
+
+    SetRotMatrix(m);
+    SetTransMatrix(m);
+    particle = pool->items;
+    for (i = 0; i < pool->capacity; i++, particle++) {
+        if (particle->age == -1) {
+            continue;
+        }
+        if (particle->age >= particle->lifetime) {
+            func_801E0354(pool, particle);
+            continue;
+        }
+        particle->poly[buffer].r0 = particle->color[0] >> 6;
+        particle->poly[buffer].g0 = particle->color[1] >> 6;
+        particle->poly[buffer].b0 = particle->color[2] >> 6;
+        if (particle->projected == 0) {
+            particle->poly[buffer].x0 = particle->x0;
+            particle->poly[buffer].y0 = particle->y0;
+            particle->poly[buffer].x1 = particle->x1;
+            particle->poly[buffer].y1 = particle->y1;
+            particle->poly[buffer].x2 = particle->x2;
+            particle->poly[buffer].y2 = particle->y2;
+            particle->poly[buffer].x3 = particle->x3;
+            particle->poly[buffer].y3 = particle->y3;
+            addPrim(ot, &particle->poly[buffer]);
+        } else {
+            gte_ldv3(&particle->x0, &particle->x1, &particle->x2);
+            gte_rtpt();
+            gte_stsxy3(&particle->poly[buffer].x0, &particle->poly[buffer].x1, &particle->poly[buffer].x2);
+            gte_stszotz(&otz);
+            otz >>= D_80050100;
+            gte_ldv0(&particle->x3);
+            gte_rtps();
+            gte_stsxy(&particle->poly[buffer].x3);
+            addPrim(ot + otz, &particle->poly[buffer]);
+        }
+        particle->age += steps;
+        particle->color[0] -= particle->fade[0] * steps;
+        particle->color[1] -= particle->fade[1] * steps;
+        particle->color[2] -= particle->fade[2] * steps;
+    }
+}
 
 /* Set up a colour fade from (r0, g0, b0) to (r1, g1, b1) over `duration`
  * ticks. */
@@ -1985,7 +2033,7 @@ INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E742C);
 
 /* Advance the scene by the elapsed half-frames: step every actor, carry the
  * carried ones, place the anchors, then draw the actors and particles. */
-void func_801E7D14(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 elapsed) {
+void func_801E7D14(MATRIX *m, s32 arg1, u32 *ot, s32 buffer, s32 elapsed) {
     SVECTOR unused;
     Actor *actor;
     s32 steps;
@@ -2007,7 +2055,7 @@ void func_801E7D14(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 elapsed) {
             D_801E8670[i]->previous[0] = D_801E8670[i]->parts->pos[0];
             D_801E8670[i]->previous[1] = D_801E8670[i]->parts->pos[1];
             D_801E8670[i]->previous[2] = D_801E8670[i]->parts->pos[2];
-            func_801E36BC(D_801E8670[i], &D_801E86A8, steps, arg3, 1);
+            func_801E36BC(D_801E8670[i], &D_801E86A8, steps, buffer, 1);
         }
     }
     for (i = 0; i < 10; i++) {
@@ -2023,10 +2071,10 @@ void func_801E7D14(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 elapsed) {
             D_801E8670[i]->moved[0] = D_801E8670[i]->previous[0] - D_801E8670[i]->parts->pos[0];
             D_801E8670[i]->moved[1] = D_801E8670[i]->previous[1] - D_801E8670[i]->parts->pos[1];
             D_801E8670[i]->moved[2] = D_801E8670[i]->previous[2] - D_801E8670[i]->parts->pos[2];
-            func_801DCEC8(D_801E8670[i], arg0, arg1, 1, 1, arg2, arg3);
+            func_801DCEC8(D_801E8670[i], m, arg1, 1, 1, ot, buffer);
         }
     }
-    func_801E0398(&D_801E86A0, arg0, steps, arg2, arg3);
+    func_801E0398(&D_801E86A0, m, steps, ot, buffer);
 }
 
 /* Release every actor and both pools. */

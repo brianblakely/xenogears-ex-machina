@@ -42,6 +42,18 @@ typedef struct {
     s32 vx, vy, vz, pad;
 } VECTOR;
 
+/* libgpu primitive tag and addPrim. */
+typedef struct {
+    unsigned addr : 24;
+    unsigned len : 8;
+} P_TAG;
+
+#define setaddr(p, _addr) (((P_TAG *)(p))->addr = (u32)(_addr))
+#define getaddr(p) (u32)(((P_TAG *)(p))->addr)
+#define addPrim(ot, p) setaddr(p, getaddr(ot)), setaddr(ot, p)
+
+extern s32 D_80050100; /* ordering-table depth shift */
+
 /* Scratchpad matrix used as a temporary. */
 #define SCRATCH_MATRIX ((MATRIX *)0x1F800000)
 
@@ -489,6 +501,7 @@ void func_801E35D0(Actor *actor, Actor *source, SlotPool *pool, s32 entry);
 void func_801E39F0(Actor *actor, SlotPool *pool, s32 arg2, s32 arg3, s32 arg4);
 s32 func_801E67F8(void);
 s32 func_801E08D4(s16 value, s16 divisor, s32 base);
+s32 func_801E0354(ParticlePool *pool, Particle *particle);
 void func_801E0844(s16 *id, s32 unused);
 void func_801E0A00(ImageAnim *anim, ImageAnim *target, s32 mode, u16 flags, MATRIX *m, s16 x, s16 y,
                    s32 zero, s16 x2, s16 y2, s16 h10, s16 x3, s16 y3, s32 b13, s32 b14, s32 h16,
@@ -496,8 +509,8 @@ void func_801E0A00(ImageAnim *anim, ImageAnim *target, s32 mode, u16 flags, MATR
 FrameCurve func_801E34BC(s32 type);
 void func_801E8330(u16 index, u16 mask, s32 arg2);
 void func_801E8394(Actor *source, u16 index, u16 mask, s32 arg3);
-void func_801DCEC8(Actor *actor, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5, s32 arg6);
-void func_801E0398(ParticlePool *pool, s32 arg1, s32 steps, s32 arg3, s32 arg4);
+void func_801DCEC8(Actor *actor, MATRIX *m, s32 arg2, s32 arg3, s32 arg4, u32 *ot, s32 buffer);
+void func_801E0398(ParticlePool *pool, MATRIX *m, s32 steps, u32 *ot, s32 buffer);
 void func_801E1880(Actor **actors);
 void func_801E37D0(Actor *actor);
 s32 func_801E36BC(Actor *actor, SlotPool *pool, s32 ticks, s32 arg3, s32 arg4);
