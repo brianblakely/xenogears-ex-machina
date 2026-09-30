@@ -5833,7 +5833,175 @@ u8 offset;
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80086028);
 #endif
 
+/* Record attack input `code` in the combo history (+0x2cc, length +0x2d6)
+ * and show it (list 12) with the deathblows it completes or leads into:
+ * the combo it spells when its character knows it and the attack is
+ * available, else (unless the chain is armed) the longer combos it
+ * continues. With an armed chain a completed deathblow becomes the combo step
+ * (+0x2dc). The three text image blocks live for one frame. */
+#ifdef NON_MATCHING
+void func_800861D0(u8 code, u8 member) {
+    s32 index = 0;
+    s32 shown = 0;
+    s32 block;
+    s32 combo;
+    s32 match;
+    s32 i;
+    u8 id;
+
+    for (block = 0; block < 3; block++) {
+        D_800C3A70[block] = (u32 *)func_8008AC00(0x1E);
+    }
+    D_800C3EAC->unk2CC[D_800C3EAC->unk2D6] = code - 4;
+    D_800C3EAC->unk2D6++;
+    if (D_800C3EAC->unk2DF[5] != 0) {
+        D_800C3EAC->unk2CC[D_800C3EAC->unk2D6 - 1] = 0xFF;
+    }
+    for (combo = 0; combo < 13; combo++) {
+        for (i = 0; i < 7; i++) {
+            if (D_800C3EAC->unk2CC[i] == D_800C3160[combo][i]) {
+                match = 1;
+            } else {
+                match = 0;
+                break;
+            }
+        }
+        if (match) {
+            break;
+        }
+    }
+    /* From here the match flag's variable holds the combo. */
+    match = combo;
+    if (D_800C3EAC->unk2DF[5] != 0) {
+        D_800C3EAC->unk2CC[D_800C3EAC->unk2D6 - 1] = code - 4;
+    }
+    D_800D2DB4->counts[12] = 0;
+    D_800D2DB4->counts[11] = 0;
+    for (combo = 0; combo < D_800C3EAC->unk2D6; combo++) {
+        switch (D_800C3EAC->unk2CC[combo]) {
+        case 0:
+            id = 0x5D;
+            break;
+        case 2:
+            id = 0x5E;
+            break;
+        case 3:
+            id = 0x5F;
+            break;
+        }
+        D_800D2DB4->counts[12] +=
+                func_80076A10(id, &D_800D2DB4->unk5640[D_800D2DB4->counts[12] * 2], 0x50 + combo * 16, 0xD0 - index * 16);
+    }
+    /* The deathblow index counts down from the last combo. */
+    i = 0;
+    switch (match) {
+    case 0:
+        i++;
+    case 1:
+        i++;
+    case 2:
+        i++;
+    case 3:
+        i++;
+    case 4:
+        i++;
+    case 5:
+        i++;
+    case 6:
+        i++;
+    case 7:
+        i++;
+    case 8:
+        i++;
+    case 9:
+        i++;
+    case 10:
+        i++;
+    case 11:
+        i++;
+    case 12:
+        if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask0, D_800C31AC[D_800CCCE8.records[member].pilot.characterId][12 - i]) &&
+            D_800C3EAC->slots[member].items[2] == 0) {
+            if (D_800C3EAC->unk2DF[5] == 0) {
+                D_800D2DB4->counts[12] +=
+                func_80076A10(7, &D_800D2DB4->unk5640[D_800D2DB4->counts[12] * 2], 0x50 + combo * 16, 0xD0 - index * 16);
+            } else {
+                combo--;
+            }
+            shown = 1;
+            index = func_80086028(member, index, combo, D_800C31AC[D_800CCCE8.records[member].pilot.characterId][12 - i], &D_800C3A70[index / 2], 0);
+        }
+        break;
+    }
+    if (D_800C3EAC->unk2DF[5] != 0 && shown) {
+        D_800D2DB4->buffers[12] = D_800CCB04.buffer;
+        D_800C3EAC->unk2DC = D_800C31AC[D_800CCCE8.records[member].pilot.characterId][12 - i] + 8;
+        D_800D2DB4->buffers[11] = D_800CCB04.buffer;
+        D_800D2D28->unkA8 = 1;
+        func_800716D8();
+        for (block = 0; block < 3; block++) {
+            func_800320E8(D_800C3A70[block]);
+        }
+        return;
+    }
+    /* The second, longer deathblow (index 13-18, or 19 after combo 8). */
+    i = 0;
+    switch (match) {
+    case 0:
+        i++;
+    case 1:
+        i++;
+    case 2:
+        i++;
+    case 3:
+        i++;
+    case 4:
+        i++;
+    case 5:
+        i++;
+    case 8:
+        if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask0, D_800C31AC[D_800CCCE8.records[member].pilot.characterId][19 - i]) &&
+            D_800C3EAC->slots[member].items[0] == 0 && D_800C3EAC->slots[member].items[2] == 0) {
+            D_800D2DB4->counts[12] +=
+                func_80076A10(8, &D_800D2DB4->unk5640[D_800D2DB4->counts[12] * 2], 0x54 + combo * 16, 0xD0 - index * 16);
+            D_800D2DB4->counts[12] +=
+                func_80076A10(7, &D_800D2DB4->unk5640[D_800D2DB4->counts[12] * 2], 0x64 + combo * 16, 0xD0 - index * 16);
+            index = func_80086028(member, index, combo, D_800C31AC[D_800CCCE8.records[member].pilot.characterId][19 - i], &D_800C3A70[index / 2], 1);
+        }
+        break;
+    case 6:
+    case 7:
+        break;
+    }
+    /* The third deathblow (index 20-22) after combos 0, 1 and 3. */
+    i = 0;
+    switch (match) {
+    case 0:
+        i++;
+    case 1:
+        i++;
+    case 3:
+        if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask0, D_800C31AC[D_800CCCE8.records[member].pilot.characterId][22 - i]) &&
+            D_800C3EAC->slots[member].items[1] == 0 && D_800C3EAC->slots[member].items[2] == 0) {
+            D_800D2DB4->counts[12] +=
+                func_80076A10(9, &D_800D2DB4->unk5640[D_800D2DB4->counts[12] * 2], 0x58 + combo * 16, 0xD0 - index * 16);
+            D_800D2DB4->counts[12] +=
+                func_80076A10(7, &D_800D2DB4->unk5640[D_800D2DB4->counts[12] * 2], 0x68 + combo * 16, 0xD0 - index * 16);
+            func_80086028(member, index, combo, D_800C31AC[D_800CCCE8.records[member].pilot.characterId][22 - i], &D_800C3A70[index / 2], 1);
+        }
+        break;
+    }
+    D_800D2DB4->buffers[12] = D_800CCB04.buffer;
+    D_800D2DB4->buffers[11] = D_800CCB04.buffer;
+    D_800D2D28->unkA8 = 1;
+    func_800716D8();
+    for (block = 0; block < 3; block++) {
+        func_800320E8(D_800C3A70[block]);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800861D0);
+#endif
 
 /* Whether the member can use combo step `step` now: without a combo chain
  * (+0x2d6) always; otherwise its character must know the combo flag

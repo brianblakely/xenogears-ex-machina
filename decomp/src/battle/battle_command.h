@@ -18,10 +18,13 @@ void func_800861D0(u8 code, u8 member);
 u8 func_80085EB4(u8 mode, u8 member);
 u8 func_80086F98(u8 step, u8 member);
 void func_800898F0(u8 member);
+void func_8008AA40(u8 id); /* play a sound effect */
 void func_800B8DA4(void);
 
 extern u16 D_800D2E06[11]; /* per slot: turn timer reload */
 extern u8 D_800C31D4[][8];  /* timer reload by maximum and remaining AP */
+extern u32 *D_800C3A70[3]; /* combo text image blocks */
+s32 func_80086028(u8 member, s32 index, s32 column, u8 id, u32 **pixels, u8 offset);
 extern u8 D_800C2050;
 extern u8 D_800C4929;       /* healing ignores the gear */
 extern u8 *D_800C3160[13]; /* combo input patterns (seven inputs each) */
