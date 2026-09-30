@@ -3117,7 +3117,39 @@ void func_801DB340(u8 index) {
     D_800625A0->party->unk50[index] = 0;
 }
 
+/* Shade the item screen's texts by `mode` (801e8eac): windows 3 and 4, the
+ * window quad, each built entry name and count, the two cursors, the
+ * selected entry, the description and the eight help labels. */
+#ifdef NON_MATCHING
+/* One instruction differs: the original copies the converted mode for the
+ * first loop from $a1 instead of converting it again. */
+void func_801DB39C(s32 mode) {
+    s32 i;
+
+    func_801E8F60(3, mode);
+    func_801E8F60(4, mode);
+    func_801E8EAC(&D_800625A0->block43C->polys[D_800625A0->block43C->buffer], mode);
+    i = 0;
+    do {
+        if (D_800625A0->block42C->names[i].polys[D_800625A0->block42C->names[i].count].r0 != 0x20) {
+            func_801E8EAC(&D_800625A0->block42C->names[i].polys[D_800625A0->block42C->names[i].count], mode);
+            func_801E8EAC(&D_800625A0->block42C->values[i].polys[D_800625A0->block42C->values[i].count], mode);
+        }
+        i++;
+    } while (i < 16);
+    for (i = 0; i < 2; i++) {
+        func_801E8EAC(&D_800625A0->blocks444[i]->polys[D_800625A0->blocks444[i]->count], mode);
+    }
+    func_801E8EAC(&D_800625A0->block42C->extra[0].polys[D_800625A0->block42C->extra[0].count], mode);
+    func_801E8EAC(&D_800625A0->block42C->extra[1].polys[D_800625A0->block42C->extra[1].count], mode);
+    func_801E8EAC(&D_800625A0->block42C->extra[2].polys[D_800625A0->block42C->extra[2].count], mode);
+    for (i = 0; i < 8; i++) {
+        func_801E8EAC(&D_800625A0->labels10E0[i].polys[D_800625A0->labels10E0[i].count], mode);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DB39C);
+#endif
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DB5E4);
 
