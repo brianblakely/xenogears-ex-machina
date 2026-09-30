@@ -9604,7 +9604,7 @@ extern s32 D_800C2684;     /* piece scale, 0x1000 = 1 */
 extern SVECTOR D_800B00B8; /* piece rotation */
 
 /* Set the five screen pieces of the next draw buffer to grey `shade`. */
-void func_800A5600(u8 shade) {
+void func_800A5600(s32 shade) {
     s32 i;
 
     for (i = 0; i < 5; i++) {
@@ -9668,17 +9668,17 @@ void func_800A5774(s32 x, s32 y, s32 h) {
     func_800320E8(pixels);
 }
 
-void func_800A663C(); /* called here without its two arguments */
+void func_800A663C(s32 semitrans, s32 abr);
 void func_800A6408(void);
 void func_800A6924(void);
 
-/* Draw the screen pieces twice, mask the saved screen columns at
+/* Set up the screen pieces, draw them twice, mask the saved screen columns at
  * (2c0..3c0, 100) and draw twice more. */
-void func_800A5884(void) {
+void func_800A5884(s32 semitrans, s32 abr) {
     s32 i;
     s32 x;
 
-    func_800A663C();
+    func_800A663C(semitrans, abr);
     for (i = 0; i < 2; i++) {
         func_80073FE0();
         func_800A6408();
@@ -9696,7 +9696,94 @@ void func_800A5884(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A5924);
+#include "field_screen.h"
+
+/* Run the requested screen transition (800adb38) over 800adb3c frames:
+ * 1-2 fade the screen pieces out, 3 fades them in and holds while it
+ * stays requested, 4 dissolves the screen grid from the centre. */
+void func_800A5924(void) {
+    s32 i;
+    s32 x;
+    s32 level;
+
+    if (D_800ADB38 != 0) {
+        func_8003748C();
+        func_80070C84();
+        func_800A915C();
+        if (D_800ADB38 == 1 || D_800ADB38 == 4) {
+            func_800A4748();
+            DrawSync(0);
+            func_80073FE0();
+            func_800775F8();
+        }
+        func_800775F8();
+    dispatch:
+        switch (D_800ADB38) {
+        case 4:
+            func_800A5884(1, 1);
+            func_800A6E70();
+            D_800ADC08 = 1;
+            func_80071E58(D_800ADB3C);
+            D_800C3A40 = 0;
+            for (i = 0; i < D_800ADB3C; i++) {
+                func_80077DAC();
+                func_800A6C40();
+                func_8007554C();
+                func_80078B5C();
+                D_800C3A40 += 6;
+            }
+            DrawSync(0);
+            func_800A7064();
+            break;
+        case 1:
+        case 2:
+            func_800A5884(1, 1);
+            D_800ADC08 = 1;
+            func_80071E58(D_800ADB3C);
+            level = 0x800000;
+            for (i = 0; i < D_800ADB3C; i++) {
+                func_80077DAC();
+                func_800A6408();
+                func_8007554C();
+                func_80078B5C();
+                func_800A5600(level >> 16);
+                level -= 0x800000 / D_800ADB3C;
+                if (level < 0) {
+                    level = 0;
+                }
+            }
+            break;
+        case 3:
+            func_800A663C(1, 1);
+            for (i = 0, x = 0x2C0; i < 5; i++, x += 0x40) {
+                func_800A5774(x, 0x100, 0xE0);
+            }
+            level = 0;
+            func_80071DCC(D_800ADB3C);
+            func_800A5600(0);
+            for (i = 0; i < D_800ADB3C; i++) {
+                func_80077DAC();
+                func_800A6408();
+                func_8007554C();
+                func_80078B5C();
+                func_800A5600(level >> 16);
+                level += 0x800000 / D_800ADB3C;
+            }
+            for (;;) {
+                if (D_800ADB38 != 3) {
+                    goto dispatch;
+                }
+                func_80077DAC();
+                func_800A6408();
+                func_8007554C();
+                func_80078B5C();
+            }
+        }
+        D_800ADB38 = 0;
+        func_800A91F0();
+        func_80077544();
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A5C40);
 
@@ -9800,8 +9887,6 @@ void func_800A6924(void) {
     PutDispEnv(&D_800C426C->disp);
     DrawOTag(&D_800C426C->overlay_ot[7]);
 }
-
-#include "field_screen.h"
 
 /* Darken corner `corner` of a grid quad by 6 (to 0) while it lies within
  * `radius` of the screen centre (a0, 70). */
