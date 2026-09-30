@@ -1337,7 +1337,7 @@ void func_801E3ECC(MenuTables *tables, u8 gear);
 void func_801E41C0(MenuTables *tables, u8 gear);
 void func_801E42AC(MenuTables *tables, u8 gear);
 void func_801E4258(MenuTables *tables, u8 gear);
-void func_801E4D10(s32 *save, MenuTables *tables);
+void func_801E4D10(SaveData *save, MenuTables *tables);
 void func_801E53CC(u8 index);
 void func_801E56E8(s32 index);
 void func_801E8DA8(u8 image, u8 row);

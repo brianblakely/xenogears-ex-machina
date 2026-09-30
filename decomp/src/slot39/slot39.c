@@ -4147,7 +4147,44 @@ void func_801E4A28(SaveData *save) {
     memcpy(save->unk1124, D_8006D634.unk1920, 0xa38);
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E4D10);
+/* Load the game data from save buffer `save`: characters, records, gears
+ * (recomputing their table values before restoring the kept fields), names
+ * and the other blocks. */
+void func_801E4D10(SaveData *save, MenuTables *tables) {
+    SaveWordsA4 *chara;
+    SaveWordsA4 *saved;
+    GearRecord *dst;
+    SaveGear *src;
+    u8 i;
+
+    for (i = 0; i < 11; i++) {
+        chara = (SaveWordsA4 *)&D_8006D634.chars[i];
+        saved = &save->chars[i];
+        *chara = *saved;
+    }
+    *(SaveWords160 *)D_8006D634.records = save->records;
+    for (i = 0; i < 20; i++) {
+        dst = &D_8006D634.gears[i];
+        src = &save->gears[i];
+        *(SaveWords10 *)dst = src->head;
+        *(SaveWords18 *)dst->slots = src->slots;
+        *(s32 *)dst->attrs = src->attrs;
+        func_801E41C0(tables, i);
+        func_801E4258(tables, i);
+        func_801E42AC(tables, i);
+        func_801E433C(tables, i);
+        dst->unk38 = src->unk38;
+        dst->unk60 = src->unk60;
+        dst->unk99 = src->unk99;
+        dst->unk74 = src->unk74;
+        dst->unk75 = src->unk75;
+    }
+    *(SaveWordsDC *)D_8006D634.names = save->names;
+    *(SaveWords190 *)D_8006D634.unkDC = save->unk100;
+    *(SaveWords78 *)D_8006D634.unk1648 = save->unkE4C;
+    *(SaveWords100 *)D_8006D634.unk1820 = save->unk1024;
+    memcpy(D_8006D634.unk1920, save->unk1124, 0xa38);
+}
 
 /* Debug: put ten of every entry into the five inventory lists. */
 void func_801E5058(void) {
