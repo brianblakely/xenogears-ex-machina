@@ -470,4 +470,79 @@ s32 func_80076A6C(s32 glyph, GlyphPrim *prims, s16 x, s16 y); /* half-scale glyp
 s32 func_80076A10(s32 glyph, GlyphPrim *prims, s16 x, s16 y); /* glyph; returns its parts */
 void func_80076C34(GlyphPrim *prim);                          /* dim a glyph part */
 
+/* Stage setup (stage.c). */
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    u8 u0, v0;
+    u16 clut;
+    s16 x1, y1;
+    u8 u1, v1;
+    u16 tpage;
+    s16 x2, y2;
+    u8 u2, v2;
+    u16 pad1;
+    s16 x3, y3;
+    u8 u3, v3;
+    u16 pad2;
+} POLY_FT4;
+
+typedef struct {
+    s16 vx, vy, vz, pad;
+} SVECTOR;
+
+typedef struct {
+    u8 r, g, b, cd;
+} CVECTOR;
+
+typedef struct {
+    s32 vx, vy, vz, pad;
+} VECTOR;
+
+typedef struct {
+    u32 tag;
+    u32 code[15];
+} DR_ENV;
+
+typedef struct {
+    RECT clip;
+    s16 ofs[2];
+    RECT tw;
+    u16 tpage;
+    u8 dtd;
+    u8 dfe;
+    u8 isbg;
+    u8 r0, g0, b0;
+    DR_ENV dr_env;
+} DRAWENV;
+
+void SetPolyFT4(POLY_FT4 *poly);                /* SetPolyFT4 */
+DRAWENV *GetDrawEnv(DRAWENV *env);              /* GetDrawEnv */
+void func_80032498(s32 tag, s32 arg1);          /* select the heap tag */
+void *func_80031BDC(s32 size, s32 top);         /* heap allocation */
+
+/* The stage backdrop (func_801E7914, 0x17cc bytes): a floor grid of 9 x 9
+ * vertices and 128 tiles, and the fills and fades around it. */
+typedef struct {
+    s16 x;                    /* 0x00 */
+    s16 y;                    /* 0x02 */
+    s16 width;                /* 0x04 */
+    s16 height;               /* 0x06 */
+    s16 v08;                  /* 0x08 */
+    s16 v0A;                  /* 0x0A */
+    s16 v0C;                  /* 0x0C */
+    s16 v0E;                  /* 0x0E */
+    s16 v10;                  /* 0x10 */
+    s16 v12;                  /* 0x12 */
+    s16 position[3];          /* 0x14: the object's position */
+    s16 pad1A;
+    CVECTOR colours[2];       /* 0x1C */
+    DR_MODE modes[4];         /* 0x24 */
+    SVECTOR grid[81];         /* 0x54 */
+    POLY_FT4 tiles[128];      /* 0x2DC */
+    POLY_F4 fills[4];         /* 0x16DC */
+    POLY_G4 fades[4];         /* 0x173C */
+} StageBackdrop;
+
 #endif
