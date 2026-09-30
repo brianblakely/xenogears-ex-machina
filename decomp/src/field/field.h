@@ -163,7 +163,9 @@ typedef struct FieldActor {
     s16 heading_goal; /* 106: bit 15 once turned */
     u8 unk108[0x118 - 0x108];
     s32 *list;       /* 118 */
-    u8 unk11C[0x138 - 0x11C];
+    u8 unk11C[0x128 - 0x11C];
+    s16 unk128;      /* 128 */
+    u8 unk12A[0x138 - 0x12A];
 } FieldActor;
 
 /* A 14-byte collision triangle; +0c indexes the attribute table. */
@@ -234,6 +236,30 @@ typedef struct {
     CollisionTriangle *collision_triangles[4]; /* 800afb24 */
     void *collision_vertices[4];               /* 800afb34 */
 } FieldComponents;
+
+/* A 32-byte record of the game state (+16c0). */
+typedef struct {
+    u8 unk00[0x1A];
+    u16 flags;
+    u8 unk1C[4];
+} GameRecord;
+
+/* Resident persistent game state (*8005a39c). */
+typedef struct GameState {
+    u8 unk0000[0x16C0];
+    GameRecord records[11]; /* 16C0 */
+    u8 unk1820[0x1834 - 0x1820];
+    u16 unk1834;         /* 1834 */
+    u8 unk1836[0x1844 - 0x1836];
+    u16 unk1844;         /* 1844 */
+    u16 unk1846;         /* 1846 */
+    u8 unk1848[0x184E - 0x1848];
+    u16 unk184E;         /* 184E */
+    u8 unk1850[2];
+    u16 unk1852;         /* 1852 */
+    u8 unk1854[0x22B6 - 0x1854];
+    u16 unk22B6;         /* 22B6 */
+} GameState;
 
 /* One of the three positional sound-emitter slots (800afe88). */
 typedef struct {
@@ -308,6 +334,10 @@ extern void func_800496AC(void);                               /* PopMatrix */
 extern void func_8004A6DC(SVECTOR *v, s32 *out, s32 *flag); /* RotTrans */
 
 /* Field overlay. */
+extern s32 func_8009CF78(s32 offset, s32 flags); /* operand, immediate with flag 0x80 */
+extern void func_800A3074(u16 reference, s32 value); /* write an event variable */
+extern s32 func_800ACDB8(s32 offset); /* raw halfword operand */
+extern s32 func_800ACDEC(s32 offset); /* operand: bit 15 immediate, else variable */
 extern void func_80086A1C(s32 emitter, s32 *position);
 extern void func_80081F80(void *owner, s32 heading);
 extern s32 func_800854D0(void);
@@ -335,6 +365,9 @@ extern void func_80078C5C(void);
 extern void func_802815B0(void);
 
 /* Resident state. */
+extern s32 D_8004F300;
+extern u8 D_80050622;
+extern GameState *D_8005A39C;
 extern s32 D_8004F2FC; /* cached sequence */
 extern s32 D_8004F364;
 extern s32 D_8004F368; /* shared wave bank released */
@@ -352,6 +385,9 @@ extern s32 D_8004F34C; /* current map */
 extern u8 D_800625FC[2][0x22]; /* pad buffers */
 
 /* Field state. */
+extern u8 D_800B225F[];
+extern u8 D_800B2354[];
+extern u8 D_800B2357[];
 extern u8 *D_800ADC00; /* event bytecode */
 extern void (*D_800AE6A0[])(void); /* extended event instructions */
 extern EmitterSlot D_800AFE88[3];

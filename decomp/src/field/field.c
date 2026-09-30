@@ -1341,49 +1341,110 @@ void func_80086DE0(void) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80086E1C);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80086F7C);
+/* Event: set the current actor's +128 to (op1 << 12) | op3. */
+void func_80086F7C(void) {
+    s32 high = func_800ACDEC(1);
+
+    D_800B0078->unk128 = (high << 12) | func_800ACDEC(3);
+    D_800B0078->pc += 5;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80086FD0);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80087148);
+/* Event: set bits op3 in the flags of game record op1. */
+void func_80087148(void) {
+    s32 record = func_800ACDEC(1);
+    s32 bits = func_800ACDEC(3);
+
+    D_8005A39C->records[record].flags |= bits;
+    D_800B0078->pc += 5;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800871B0);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800873C4);
+/* Event: store op3 in byte op1 of the table at 800b225f. */
+void func_800873C4(void) {
+    s32 index = func_800ACDEC(1);
+
+    D_800B225F[index] = func_800ACDEC(3);
+    D_800B0078->pc += 5;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80087420);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008752C);
+/* Event: skip a two-byte operand. */
+void func_8008752C(void) {
+    D_800B0078->pc += 3;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008754C);
+/* Event: set game flag 0x4000 of +22b6. */
+void func_8008754C(void) {
+    D_8005A39C->unk22B6 |= 0x4000;
+    D_800B0078->pc++;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80087580);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008764C);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80087800);
+/* Event: store 80050622 in variable op1. */
+void func_80087800(void) {
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, D_80050622);
+    D_800B0078->pc += 3;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80087848);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80087960);
+/* Event: store the game's +1844 and +1846 in variables op1 and op3. */
+void func_80087960(void) {
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, D_8005A39C->unk1844);
+    func_800A3074(func_800ACDB8(3) & 0xFFFF, D_8005A39C->unk1846);
+    D_800B0078->pc += 5;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800879D0);
+/* Event: store the game's +184e and +1852 in variables op1 and op3. */
+void func_800879D0(void) {
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, D_8005A39C->unk184E);
+    func_800A3074(func_800ACDB8(3) & 0xFFFF, D_8005A39C->unk1852);
+    D_800B0078->pc += 5;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80087A40);
+/* Event: set 800b2357 from its byte operand. */
+void func_80087A40(void) {
+    D_800B2357[0] = D_800ADC00[D_800B0078->pc + 1];
+    D_800B0078->pc += 2;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80087A7C);
+/* Event: set 800b2354 from its byte operand. */
+void func_80087A7C(void) {
+    D_800B2354[0] = D_800ADC00[D_800B0078->pc + 1];
+    D_800B0078->pc += 2;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80087AB8);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80087B5C);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80087C0C);
+/* Event: set 8004f300. */
+void func_80087C0C(void) {
+    D_8004F300 = 1;
+    D_800B0078->pc++;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80087C34);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80087D30);
+/* Event: store the game's +1834 in variable op1. */
+void func_80087D30(void) {
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, D_8005A39C->unk1834);
+    D_800B0078->pc += 3;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80087D80);
+/* Event: set the game's +1834 from operand 1 (immediate when flag 0x80 of
+ * byte 3 is set). */
+void func_80087D80(void) {
+    D_8005A39C->unk1834 = func_8009CF78(1, D_800ADC00[D_800B0078->pc + 3]);
+    D_800B0078->pc += 4;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80087DE0);
 
