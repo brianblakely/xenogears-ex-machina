@@ -1135,18 +1135,18 @@ void func_8008FD40(void) {
 
 /* Save the target goal. */
 void func_8008FDD0(void) {
-    D_800AF8F0.vx = D_800AF8C0.vx;
-    D_800AF8F0.vy = D_800AF8C0.vy;
-    D_800AF8F0.vz = D_800AF8C0.vz;
+    D_800AF8F0.vx.value = D_800AF8C0.vx.value;
+    D_800AF8F0.vy.value = D_800AF8C0.vy.value;
+    D_800AF8F0.vz.value = D_800AF8C0.vz.value;
     D_800AFC7C += 1;
     D_800B0078->pc += 1;
 }
 
 /* Set the saved target from three selected operands (whole units). */
 void func_8008FE2C(void) {
-    D_800AF8F0.vx = func_8009CF78(1, EVENT_OPERAND_BYTE(7)) << 16;
-    D_800AF8F0.vz = func_8009CFBC(3, EVENT_OPERAND_BYTE(7)) << 16;
-    D_800AF8F0.vy = func_8009D000(5, EVENT_OPERAND_BYTE(7)) << 16;
+    D_800AF8F0.vx.value = func_8009CF78(1, EVENT_OPERAND_BYTE(7)) << 16;
+    D_800AF8F0.vz.value = func_8009CFBC(3, EVENT_OPERAND_BYTE(7)) << 16;
+    D_800AF8F0.vy.value = func_8009D000(5, EVENT_OPERAND_BYTE(7)) << 16;
     D_800AFC7C += 1;
     D_800B0078->pc += 8;
 }
@@ -1156,36 +1156,36 @@ void func_8008FF04(void) {
     FieldActor *actor;
 
     actor = D_800AFB10[func_8009CD7C(1)].actor;
-    D_800AF900.vx = actor->position[0];
-    D_800AF900.vy = actor->position[1];
-    D_800AF900.vz = actor->position[2];
+    D_800AF900.vx.value = actor->position[0].value;
+    D_800AF900.vy.value = actor->position[1].value;
+    D_800AF900.vz.value = actor->position[2].value;
     D_800AFC7C += 1;
     D_800B0078->pc += 2;
 }
 
 /* Set point A from three selected operands (whole units). */
 void func_8008FF90(void) {
-    D_800AF900.vx = func_8009CF78(1, EVENT_OPERAND_BYTE(7)) << 16;
-    D_800AF900.vz = func_8009CFBC(3, EVENT_OPERAND_BYTE(7)) << 16;
-    D_800AF900.vy = func_8009D000(5, EVENT_OPERAND_BYTE(7)) << 16;
+    D_800AF900.vx.value = func_8009CF78(1, EVENT_OPERAND_BYTE(7)) << 16;
+    D_800AF900.vz.value = func_8009CFBC(3, EVENT_OPERAND_BYTE(7)) << 16;
+    D_800AF900.vy.value = func_8009D000(5, EVENT_OPERAND_BYTE(7)) << 16;
     D_800AFC7C += 1;
     D_800B0078->pc += 8;
 }
 
 /* Save the eye goal. */
 void func_80090068(void) {
-    D_800AF910.vx = D_800AF8B0.vx;
-    D_800AF910.vy = D_800AF8B0.vy;
-    D_800AF910.vz = D_800AF8B0.vz;
+    D_800AF910.vx.value = D_800AF8B0.vx.value;
+    D_800AF910.vy.value = D_800AF8B0.vy.value;
+    D_800AF910.vz.value = D_800AF8B0.vz.value;
     D_800AFC7C += 1;
     D_800B0078->pc += 1;
 }
 
 /* Set the saved eye from three selected operands (whole units). */
 void func_800900C4(void) {
-    D_800AF910.vx = func_8009CF78(1, EVENT_OPERAND_BYTE(7)) << 16;
-    D_800AF910.vz = func_8009CFBC(3, EVENT_OPERAND_BYTE(7)) << 16;
-    D_800AF910.vy = func_8009D000(5, EVENT_OPERAND_BYTE(7)) << 16;
+    D_800AF910.vx.value = func_8009CF78(1, EVENT_OPERAND_BYTE(7)) << 16;
+    D_800AF910.vz.value = func_8009CFBC(3, EVENT_OPERAND_BYTE(7)) << 16;
+    D_800AF910.vy.value = func_8009D000(5, EVENT_OPERAND_BYTE(7)) << 16;
     D_800AFC7C += 1;
     D_800B0078->pc += 8;
 }
@@ -1195,58 +1195,172 @@ void func_8009019C(void) {
     FieldActor *actor;
 
     actor = D_800AFB10[func_8009CD7C(1)].actor;
-    D_800AF920.vx = actor->position[0];
-    D_800AF920.vy = actor->position[1];
-    D_800AF920.vz = actor->position[2];
+    D_800AF920.vx.value = actor->position[0].value;
+    D_800AF920.vy.value = actor->position[1].value;
+    D_800AF920.vz.value = actor->position[2].value;
     D_800AFC7C += 1;
     D_800B0078->pc += 2;
 }
 
 /* Set point B from three selected operands (whole units). */
 void func_80090228(void) {
-    D_800AF920.vx = func_8009CF78(1, EVENT_OPERAND_BYTE(7)) << 16;
-    D_800AF920.vz = func_8009CFBC(3, EVENT_OPERAND_BYTE(7)) << 16;
-    D_800AF920.vy = func_8009D000(5, EVENT_OPERAND_BYTE(7)) << 16;
+    D_800AF920.vx.value = func_8009CF78(1, EVENT_OPERAND_BYTE(7)) << 16;
+    D_800AF920.vz.value = func_8009CFBC(3, EVENT_OPERAND_BYTE(7)) << 16;
+    D_800AF920.vy.value = func_8009D000(5, EVENT_OPERAND_BYTE(7)) << 16;
     D_800AFC7C += 1;
     D_800B0078->pc += 8;
 }
 
 /* Reset the saved/point targets to the target goal and eyes to the eye goal. */
 void func_80090300(void) {
-    D_800AF900.vx = D_800AF8F0.vx = D_800AF8C0.vx;
-    D_800AF900.vy = D_800AF8F0.vy = D_800AF8C0.vy;
-    D_800AF900.vz = D_800AF8F0.vz = D_800AF8C0.vz;
-    D_800AF910.vx = D_800AF8B0.vx;
-    D_800AF910.vy = D_800AF8B0.vy;
-    D_800AF910.vz = D_800AF8B0.vz;
-    D_800AF920.vx = D_800AF8B0.vx;
-    D_800AF920.vy = D_800AF8B0.vy;
-    D_800AF920.vz = D_800AF8B0.vz;
+    D_800AF900.vx.value = D_800AF8F0.vx.value = D_800AF8C0.vx.value;
+    D_800AF900.vy.value = D_800AF8F0.vy.value = D_800AF8C0.vy.value;
+    D_800AF900.vz.value = D_800AF8F0.vz.value = D_800AF8C0.vz.value;
+    D_800AF910.vx.value = D_800AF8B0.vx.value;
+    D_800AF910.vy.value = D_800AF8B0.vy.value;
+    D_800AF910.vz.value = D_800AF8B0.vz.value;
+    D_800AF920.vx.value = D_800AF8B0.vx.value;
+    D_800AF920.vy.value = D_800AF8B0.vy.value;
+    D_800AF920.vz.value = D_800AF8B0.vz.value;
     D_800AFC7C += 1;
     D_800B0078->pc += 1;
 }
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800903BC);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80090A10);
+/* Store the camera target's whole x, z, y in three variables. */
+void func_80090A10(void) {
+    func_800A3074(func_800ACDB8(1), D_800AF890.vx.s.whole);
+    func_800A3074(func_800ACDB8(3), D_800AF890.vz.s.whole);
+    func_800A3074(func_800ACDB8(5), D_800AF890.vy.s.whole);
+    D_800AFC7C += 1;
+    D_800B0078->pc += 7;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80090A94);
+/* Store the camera eye's whole x, z, y in three variables. */
+void func_80090A94(void) {
+    func_800A3074(func_800ACDB8(1), D_800AF880.vx.s.whole);
+    func_800A3074(func_800ACDB8(3), D_800AF880.vz.s.whole);
+    func_800A3074(func_800ACDB8(5), D_800AF880.vy.s.whole);
+    D_800AFC7C += 1;
+    D_800B0078->pc += 7;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80090B18);
+/* Store the target goal's whole x, z, y in three variables. */
+void func_80090B18(void) {
+    func_800A3074(func_800ACDB8(1), D_800AF8C0.vx.s.whole);
+    func_800A3074(func_800ACDB8(3), D_800AF8C0.vz.s.whole);
+    func_800A3074(func_800ACDB8(5), D_800AF8C0.vy.s.whole);
+    D_800AFC7C += 1;
+    D_800B0078->pc += 7;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80090B9C);
+/* Store the eye goal's whole x, z, y in three variables. */
+void func_80090B9C(void) {
+    func_800A3074(func_800ACDB8(1), D_800AF8B0.vx.s.whole);
+    func_800A3074(func_800ACDB8(3), D_800AF8B0.vz.s.whole);
+    func_800A3074(func_800ACDB8(5), D_800AF8B0.vy.s.whole);
+    D_800AFC7C += 1;
+    D_800B0078->pc += 7;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80090C20);
+/* Mode 0: store the scripted heading in a variable; otherwise set it from
+ * the raw operand. */
+void func_80090C20(void) {
+    if (EVENT_OPERAND_BYTE(3) == 0) {
+        func_800A3074(func_800ACDB8(1), D_800AF930.scripted_heading);
+    } else {
+        D_800AF930.scripted_heading = func_800ACDB8(1);
+    }
+    D_800AFC7C += 1;
+    D_800B0078->pc += 4;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80090CB8);
+/* Mode 0: store the scripted elevation in a variable; otherwise set it from
+ * the raw operand. */
+void func_80090CB8(void) {
+    if (EVENT_OPERAND_BYTE(3) == 0) {
+        func_800A3074(func_800ACDB8(1), D_800AF930.scripted_elevation);
+    } else {
+        D_800AF930.scripted_elevation = func_800ACDB8(1);
+    }
+    D_800AFC7C += 1;
+    D_800B0078->pc += 4;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80090D50);
+/* Mode 0: store the scripted zoom in a variable; otherwise set it from the
+ * raw operand. */
+void func_80090D50(void) {
+    if (EVENT_OPERAND_BYTE(3) == 0) {
+        func_800A3074(func_800ACDB8(1), D_800AF930.scripted_zoom);
+    } else {
+        D_800AF930.scripted_zoom = (u16)func_800ACDB8(1);
+    }
+    D_800AFC7C += 1;
+    D_800B0078->pc += 4;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80090DEC);
+/* Store the scripted heading, elevation and zoom in three variables. */
+void func_80090DEC(void) {
+    func_800A3074(func_800ACDB8(1), D_800AF930.scripted_heading);
+    func_800A3074(func_800ACDB8(3), D_800AF930.scripted_elevation);
+    func_800A3074(func_800ACDB8(5), D_800AF930.scripted_zoom);
+    D_800AFC7C += 1;
+    D_800B0078->pc += 7;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80090E70);
+u32 func_80099A04(s32 dx, s32 dy, s32 dz);
+s32 func_80099A4C(s32 dx, s32 dz);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80091008);
+/* Derive a scripted heading, pitch and zoom from point A looking at point B
+ * and store them in three variables. */
+void func_80090E70(void) {
+    VECTOR a;
+    VECTOR b;
+    s32 heading;
+    s32 pitch;
+    s32 zoom;
+
+    a.vx.value = D_800AF900.vx.value;
+    a.vy.value = D_800AF900.vy.value;
+    a.vz.value = D_800AF900.vz.value;
+    b.vx.value = D_800AF920.vx.value;
+    b.vy.value = D_800AF920.vy.value;
+    b.vz.value = D_800AF920.vz.value;
+    zoom = (s32)func_80099A04((b.vx.value - a.vx.value) >> 16, (b.vy.value - a.vy.value) >> 16,
+                              (b.vz.value - a.vz.value) >> 16) / 2;
+    D_800AF930.scripted_scale = 0x1000;
+    heading = ((-func_8004B32C(a.vz.value - b.vz.value, a.vx.value - b.vx.value) & 0xFFFF) - 0x400) & 0xFFF;
+    pitch = ((-func_8004B32C(func_80099A4C((b.vx.value - a.vx.value) >> 16, (b.vz.value - a.vz.value) >> 16),
+                             (a.vy.value - b.vy.value) >> 16) * 360) >> 12) + 91;
+    func_800A3074(func_800ACDB8(1), heading);
+    func_800A3074(func_800ACDB8(3), pitch);
+    func_800A3074(func_800ACDB8(5), zoom);
+    D_800AFC7C += 1;
+    D_800B0078->pc += 7;
+}
+
+/* Rotate `point` about `center` in the XZ plane by `angle` (result mirrored
+ * through the center, as the original subtracts center - point). */
+void func_80091008(LVECTOR *point, LVECTOR *center, s16 angle) {
+    MATRIX m;
+    LVECTOR offset;
+    LVECTOR rotated;
+    SVECTOR angles;
+
+    angles.vx = 0;
+    angles.vy = angle;
+    angles.vz = 0;
+    func_8004960C();
+    func_8003F738(&angles, &m);
+    offset.vx = center->vx - point->vx;
+    offset.vy = center->vy - point->vy;
+    offset.vz = center->vz - point->vz;
+    func_8004947C(&m, &offset, &rotated);
+    point->vx = rotated.vx + center->vx;
+    point->vz = rotated.vz + center->vz;
+    func_800496AC();
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800910C0);
 

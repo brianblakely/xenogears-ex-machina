@@ -117,6 +117,7 @@ decomp/src/debug595/debug595.c
 decomp/src/field/camera.h
 decomp/src/field/event.h
 decomp/src/field/field.c
+decomp/src/field/geometry.h
 decomp/src/mdec/mdec.c
 decomp/src/menu/menu.c
 decomp/src/movie/movie.c

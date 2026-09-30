@@ -1,25 +1,19 @@
 #ifndef FIELD_CAMERA_H
 #define FIELD_CAMERA_H
 
-#include "common.h"
+#include "geometry.h"
 
 /* Field camera state (meanings from src/reconstruction/original_layout.cpp).
  * The block at 800af930 is addressed as one aggregate: its members keep their
  * order against actor-record accesses. The shake words from 800afa28 are
  * separate scalars; the shake vectors are arrays. */
 
-typedef struct {
-    s32 vx;
-    s32 vy;
-    s32 vz;
-    s32 pad;
-} VECTOR;
 
 typedef struct FieldCamera {
     s32 scripted_zoom;              /* 930 */
     s16 mode;                       /* 934 */
-    u16 scripted_elevation;         /* 936 */
-    u16 scripted_heading;           /* 938 */
+    s16 scripted_elevation;         /* 936 */
+    s16 scripted_heading;           /* 938 */
     s16 scripted_scale;             /* 93a */
     s16 scripted;                   /* 93c */
     s16 target_steps;               /* 93e */
@@ -64,6 +58,8 @@ typedef struct FieldCamera {
     s32 step;                       /* a24 */
 } FieldCamera;
 
+extern VECTOR D_800AF880;   /* eye */
+extern VECTOR D_800AF890;   /* target */
 extern VECTOR D_800AF8B0;   /* eye goal */
 extern VECTOR D_800AF8C0;   /* target goal */
 extern VECTOR D_800AF8F0;   /* saved target */

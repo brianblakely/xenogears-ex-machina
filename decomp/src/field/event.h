@@ -1,7 +1,7 @@
 #ifndef FIELD_EVENT_H
 #define FIELD_EVENT_H
 
-#include "common.h"
+#include "geometry.h"
 
 /* Field event interpreter state (analysis/formats/field-lifecycle.md,
  * src/reconstruction/field_script.cpp). Opcode handlers read operands at byte
@@ -12,7 +12,7 @@ typedef struct FieldActor {
     u32 flags;          /* 000 */
     u32 layer_flags;    /* 004 */
     u8 unk008[0x20 - 0x008];
-    s32 position[3];    /* 020: 16.16 x, y, z */
+    Fixed position[3];  /* 020: x, y, z */
     u8 unk02C[0xCC - 0x02C];
     u16 pc;             /* 0CC: working PC, relative to the bytecode */
     u8 slot;            /* 0CE: selected script slot */
@@ -44,6 +44,7 @@ s32 func_800ACDEC(s32 offset);  /* bit 15: 15-bit immediate, else variable */
 s32 func_8009CD7C(s32 offset);  /* actor selector */
 s32 func_8009CDB4(s32 offset);  /* actor selector; 0xFF when none */
 s32 func_800A3018(u16 reference); /* read a variable */
+void func_800A3074(u16 reference, s32 value); /* write a variable */
 
 /* Selected operands: when the given bit of `flags` is set the operand is a
  * signed immediate halfword, otherwise a variable reference. */
