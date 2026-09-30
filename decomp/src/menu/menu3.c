@@ -2551,17 +2551,13 @@ void func_80079D08(Actor *actor) {
     actor->pose->flags = (actor->pose->flags & ~0x4000) | ((actor->flags >> 5) & 0x4000);
 }
 
-#ifdef NON_MATCHING
-/* Restore actor flags 2, 15 and 19 from its pose. Does not match: the
- * original extracts pose bit 14 as a signed bit-field (sll 17; slti). */
+/* Restore actor flags 2, 15 and 19 from its pose. */
 void func_80079D6C(Actor *actor) {
     actor->flags = (actor->flags & ~4) | ((actor->pose->unkA >> 6) & 4);
     actor->flags = (actor->flags & ~0x8000) | ((actor->pose->flags << 2) & 0x8000);
-    actor->flags = (actor->flags & ~0x80000) | (((actor->pose->flags >> 14) & 1) << 19);
+    actor->flags = (actor->flags & ~0x80000)
+                 | ((((PoseFlagBits *)&actor->pose->flags)->flag19 & 1) << 19);
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80079D6C);
-#endif
 
 /* Clear D_80092640. */
 void func_80079DE0(void) {

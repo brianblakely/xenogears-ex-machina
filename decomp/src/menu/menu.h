@@ -115,6 +115,13 @@ typedef struct {
     u16 unkA;        /* bit 8: mirrored actor flag 2 */
 } Pose;
 
+/* Pose flags read as signed bit-fields (80079d6c). */
+typedef struct {
+    s16 facing : 12;
+    s16 unk12 : 2;
+    s16 flag19 : 1;  /* mirrored actor flag 19 */
+} PoseFlagBits;
+
 /* An actor's current move. */
 typedef struct {
     u8 unk0[0x6];
