@@ -3640,7 +3640,63 @@ void func_800826CC(u8 member) {
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800826CC);
 #endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80082820);
+/* Confirm the selected entry of the member's main command window: entries
+ * 4, 6 and 7 board the gear and end the menu; 0 opens page 7 when available,
+ * else on a second press of the repeat entry (800c3e29 = 0) page 1; 2 opens
+ * page 9, else on a repeat press (800c3e29 = 2) page 3; 1 and 3 open pages 8
+ * and 4 unless their item is unavailable (buzzer 0x4f). */
+void func_80082820(member)
+u8 member;
+{
+    switch (D_800D3014) {
+    case 4:
+    case 6:
+    case 7:
+        func_800826CC(member);
+        D_800C3EAC->menuDone = 1;
+        break;
+    case 0:
+        if (D_800C3EAC->slots[member].items[5] == 0) {
+            D_800C3EAC->page = 7;
+        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 0) {
+            if (D_800C3EAC->slots[member].items[9] != 0) {
+                func_8008AA74(0x4F);
+            } else {
+                D_800C3EAC->page = 1;
+            }
+            D_800C3EAC->repeatArmed = 0;
+        } else {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 1:
+        if (D_800C3EAC->slots[member].items[11] == 0) {
+            D_800C3EAC->page = 8;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 2:
+        if (D_800C3EAC->slots[member].items[8] == 0) {
+            D_800C3EAC->page = 9;
+        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 2) {
+            D_800C3EAC->page = 3;
+            D_800C3EAC->repeatArmed = 0;
+        } else {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 3:
+        if (D_800C3EAC->slots[member].items[10] == 0) {
+            D_800C3EAC->page = 4;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    }
+}
 
 /* Confirm the selected entry of the member's on-foot command window: entries
  * 4, 6 and 7 open the attack page (0x19) when the member has a target; 0 and

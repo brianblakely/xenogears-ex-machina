@@ -524,6 +524,7 @@ void func_8009AA44(u8 member);
 void func_80087A38(u8 member);
 void func_80084A7C(u8 member);
 void func_80077698(void);
+void func_800826CC(u8 member);
 extern u16 D_800D2C32; /* fuel gained by charging */
 
 /* Gear boarding (800826cc). */
