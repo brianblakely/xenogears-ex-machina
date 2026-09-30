@@ -2412,7 +2412,57 @@ s32 func_80086B88(s32 step, u8 member) {
     return result;
 }
 
+/* Add entry `index` to lists 11 and 13 (the gear's combo chain display):
+ * render the gear's text for combo step `step` into the shared image (two
+ * entries per image cell) and place its quad after `column` + 1 steps, then
+ * upload the step's fuel cost digits and place their quad. Returns the next
+ * index. Nonmatching: the original reads the fuel cost through the draw
+ * buffer index's address (800ccb34 + 0x60d8, the gear HUD of the battle
+ * work area), so the draw state and the work area form one aggregate there;
+ * the digit loop's registers differ too. */
+#ifdef NON_MATCHING
+s32 func_80086C88(u8 member, s32 index, s32 column, u8 step, u32 **pixels) {
+    RECT rect;
+    RECT digits[4];
+    s32 cell;
+    s32 odd;
+    s32 width;
+    s32 count;
+    s32 i;
+
+    count = 0;
+    cell = index / 2;
+    odd = index % 2;
+    func_80076D58(&D_800D2DB4->unk5550[index * 2], odd, 3);
+    width = func_80034EAC(func_800339C8(D_800CCCE8.records[member].pilot.gearId, D_800C34CC[step]), *pixels, 0x1B, odd);
+    rect.x = cell * 30 + 0x3C0;
+    rect.y = 0x1A;
+    rect.w = 0x1E;
+    rect.h = 0xD;
+    LoadImage(&rect, *pixels);
+    func_80076C78(&D_800D2DB4->unk5550[index * 2 + D_800CCB04.buffer], index * 4 + (column + 1) * 16 + 0x86,
+                  0xC8 - index * 16, cell * 0x78, 0x1A, width);
+    func_80076D58(&D_800D2DB4->unk5C80[index * 2], 0, 3);
+    func_8008AAA0(D_800CCCE8.gearHud.commands[step]);
+    for (i = 0; i < 4; i++) {
+        if (D_800C3CF4[i + 5] != 0xFF) {
+            digits[count].x = index * 8 + i * 2 + 0x3DE;
+            digits[count].y = 0;
+            digits[count].w = 6;
+            digits[count].h = 0xD;
+            func_800769E8(&digits[count], D_800C3E5C[D_800C3CF4[i + 5]].pixels);
+            count++;
+        }
+    }
+    func_80076C78(&D_800D2DB4->unk5C80[index * 2 + D_800CCB04.buffer], index * 4 + (column + 1) * 16 + 0xEA,
+                  0xC8 - index * 16, index * 32 + 0x78, 0, count * 8);
+    D_800D2DB4->counts[11]++;
+    D_800D2DB4->counts[13]++;
+    return index + 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80086C88);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80086F98);
 

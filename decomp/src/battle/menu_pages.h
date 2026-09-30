@@ -24,6 +24,7 @@ u8 *func_80033818(s32 id);   /* item name */
 u8 *func_80033908(s32 id);   /* art name */
 u8 *func_800339FC(s32 id);   /* gear art name */
 u8 *func_800338D8(s32 id);   /* battle system text */
+u8 *func_800339C8(s32 gear, s32 id); /* a gear's combo step text */
 u8 *func_80033A8C(s32 id);   /* gear part text */
 u8 *func_80033848(s32 id);   /* equipment name */
 void func_80076EA4(void);
