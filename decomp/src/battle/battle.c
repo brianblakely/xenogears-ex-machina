@@ -1946,11 +1946,12 @@ void func_8009BAC4(u8 slot, u8 *choice, s16 *busy) {
     }
 }
 
-/* Unit note: a new translation unit starts between 8009BAC4 and 8009E788.
- * GCC aligns jump tables to 8 within a unit's rodata; the tables up to
- * 8009BAC4's (0x800704A0, ending at 0x800704CC) sit at 0 mod 8, those from
+/* Unit note: a new translation unit starts after 8009DBFC and at or before
+ * 8009E788. GCC aligns jump tables to 8 within a unit's rodata; the tables up
+ * to 8009BAC4's (0x800704A0, ending at 0x800704CC) sit at 0 mod 8, those from
  * 8009E788's (0x800704CC) at 4 mod 8, so that unit's rodata starts at
- * 0x800704CC. Its text boundary is not yet known. */
+ * 0x800704CC. Its code divides with ASPSX's checked division (break 7/6,
+ * 8009F1C4 through 800B10EC), the code up to 8009DBFC without. */
 /* Damage the target by the command's power in twentieths of its gear's
  * maximum HP. */
 void func_8009BD94(void) {
