@@ -4870,7 +4870,31 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009187C);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80091B38);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80091D38);
+/* Open the combo/technique entry (column, row) of the member's page when its
+ * character knows it (mask +2 on foot, +6 in a gear): build its graphics for
+ * the current draw buffer; otherwise mark the page closed. */
+void func_80091D38(member, column, row)
+u8 member;
+u8 column;
+u8 row;
+{
+    u8 known = 0;
+
+    if (D_800D32A0[member].unk1 == 0) {
+        known = func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask2, column + row * 2) != 0;
+    } else if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask6, column + row * 2)) {
+        known = 1;
+    }
+    if (known) {
+        func_800916D4(column, row, member);
+        func_8009187C(member, column, row);
+        func_80091B38(member, column, row);
+        D_800C3EA4->unkA230->buffer = D_800CCB04.buffer;
+        D_800C3EA4->unkA230->unk66B = 1;
+    } else {
+        D_800C3EA4->unkA230->unk66B = 0;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80091EC4);
 
