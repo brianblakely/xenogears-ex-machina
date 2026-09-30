@@ -2932,9 +2932,45 @@ s32 func_8008FFEC(Actor *actor, Brain *brain) {
     return 0;
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80090174);
+/* Enter the opponent's attack mode: one attack step now and a number of
+ * further steps that grows with its level. */
+void func_80090174(Actor *actor) {
+    Brain *brain = actor->brain;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80090258);
+    brain->mode = 1;
+    func_8008FF24(actor, brain);
+    if (brain->unkF >= 2) {
+        brain->unk9 = func_8003FA38() % 8 + 1;
+    } else if (brain->unkF != 0) {
+        brain->unk9 = func_8003FA38() % 6 + 1;
+    } else {
+        brain->unk9 = func_8003FA38() % 4 + 1;
+    }
+    brain->unkC = 0;
+    brain->unkE = 0;
+    func_8008F7B8(brain);
+}
+
+/* Opponent attack choice: a jump attack or a special move (when it knows
+ * any and is close enough). Returns 1 when it did nothing. */
+s32 func_80090258(Actor *actor, Brain *brain) {
+    if (actor->move_count != 0) {
+        if (!(func_8003FA38() & 1)) {
+            return 1;
+        }
+        if (!(func_8003FA38() & 1) || !func_8008F5B4(actor, 0)) {
+            if (D_8009284C > 0x1000) {
+                return 1;
+            }
+            func_8008FFEC(actor, brain);
+            return 0;
+        }
+    } else if (!func_8008F5B4(actor, 0)) {
+        return 1;
+    }
+    func_8008F900(actor);
+    return 0;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8009031C);
 
