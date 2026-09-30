@@ -9,18 +9,214 @@
  */
 #include "menu.h"
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C531C);
+/* Run the command at `offset` past the top cursor (0 back, 1 load/save file,
+ * 2..6 the field-menu screens, 7/8 the title file screen's load and new game,
+ * 9 reset), then restore the command window. Returns 0 when the menu ends. */
+u8 func_801C531C(u8 offset) {
+    u8 redraw;
+    u8 stay;
 
+    D_801E977A = 1;
+    stay = 1;
+    redraw = 1;
+    switch (D_800625A0->cursor + offset) {
+    case 7:
+        redraw = func_801D9808();
+        break;
+    case 8:
+        if (func_801D9F98(1, 0)) {
+            D_800594D0 = 2;
+            stay = 0;
+        }
+        break;
+    case 1:
+        redraw = func_801D9F98(0, D_801E96A4);
+        break;
+    case 2:
+        redraw = func_801E23CC();
+        break;
+    case 3:
+        redraw = func_801DE29C(D_800625A0->firstMember, 1);
+        break;
+    case 4:
+        redraw = func_801DBE54();
+        break;
+    case 5:
+        redraw = func_801E0F78(D_800625A0->firstMember, 1);
+        break;
+    case 6:
+        redraw = func_801E2BE4();
+        break;
+    case 9:
+        func_8001B970();
+    case 0:
+        redraw = 0;
+        stay = 0;
+        break;
+    }
+    D_800625A0->card->mode = 0;
+    if (redraw) {
+        func_801D1EB0();
+        if (D_80059460 == 0) {
+            func_801D29A8(1, 0);
+        } else if (D_80059460 == 2) {
+            func_801E8018(8, D_800625A0->commandLabels, D_801EA530, D_800625A0->party->labels);
+            D_800625A0->primitives->shade = 0x4c;
+        }
+    }
+    func_801E3088(offset);
+    func_801D3674();
+    D_800625A0->screenImages->captured = 0;
+    D_800625A0->screenImages->refresh = 1;
+    D_800625A0->party->redraw4 = 1;
+    D_800625A0->party->redraw3 = 1;
+    D_800625A0->cursorShown = 0xff;
+    D_800625A0->party->redrawA = 0;
+    D_801E9784 = 1;
+    return stay;
+}
+
+/* The field menu's command loop: move the cursor over the seven commands and
+ * run the chosen one until the menu is left. */
+#ifdef NON_MATCHING
+void func_801C55A0(void) {
+    u8 ok;
+    u8 stay;
+
+    stay = 1;
+    do {
+        func_801C7BF4();
+        switch (D_800625A0->input) {
+        case 4:
+            ok = 1;
+            if (D_800625A0->cursor == 2 && D_800625A0->fighters == 0) {
+                ok = 0;
+                func_801C8574(4);
+            }
+            if (ok) {
+                D_800625A0->screenImages->captured = 1;
+                func_801D22C4();
+                func_801E8044(8, D_800625A0->party->labels);
+                stay = func_801C531C(0);
+            }
+            break;
+        case 5:
+            stay = 0;
+            break;
+        case 1:
+            if (D_800625A0->cursor != 0) {
+                D_800625A0->cursor--;
+            } else {
+                D_800625A0->cursor = 6;
+            }
+            break;
+        case 3:
+            if (++D_800625A0->cursor >= 7) {
+                D_800625A0->cursor = 0;
+            }
+            break;
+        }
+        if (D_800625A0->cursor != D_800625A0->cursorShown) {
+            func_801E8978(7, D_800625A0->cursor, D_801EA19C);
+            func_801E8070(8, D_800625A0->commandLabels, D_801EA528, D_801E9E64, D_800625A0->party->labels,
+                          D_800625A0->cursor, 0, 0);
+            D_800625A0->cursorShown = D_800625A0->cursor;
+        }
+    } while (stay);
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C55A0);
+#endif
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C57A4);
+/* Menu kind 6: wait for the pad to be released, check the cards and, when a
+ * file can be saved, run the save file screen; then the loaded-disc check. */
+void func_801C57A4(void) {
+    u8 save;
+    u8 found;
 
+    D_80059171 = 1;
+    D_801E977A = 0;
+    save = 1;
+    func_801D1E80();
+    while (D_800625A0->viewMotion != 0) {
+        func_801C7BF4();
+    }
+    func_801D22F4(0);
+    found = func_801CACF8(0x7d, 0xff, 1);
+    if ((found || D_801EA8FC != 0) && func_801CACF8(0x80, 0xff, 1) != 0) {
+        save = 0;
+    }
+    func_801D2484();
+    if (save) {
+        D_801E96A5 = 1;
+        D_801E96A4 = 1;
+        func_801C531C(0);
+        D_801E96A4 = 0;
+        D_801E96A5 = 0;
+    }
+    D_800625A0->party->redraw4 = 0;
+    D_800625A0->party->redraw3 = 0;
+    func_801C8694(D_80059171);
+}
+
+/* The title screen's file screen loop: choose among its three commands; after
+ * 600 idle frames on the first screen it returns with D_800594D0 = 1. */
+#ifdef NON_MATCHING
+void func_801C58EC(void) {
+    u8 stay;
+
+    stay = 1;
+    func_801E8474(4, D_801EA1D4);
+    func_801E8018(8, D_800625A0->commandLabels, D_801EA530, D_800625A0->party->labels);
+    D_800625A0->frameCounter = 0;
+    do {
+        func_801C7BF4();
+        switch (D_800625A0->input) {
+        case 4:
+            D_800625A0->screenImages->captured = 1;
+            func_801D22C4();
+            func_801E8044(8, D_800625A0->party->labels);
+            D_800625A0->primitives->shade = 0x40;
+            stay = func_801C531C(7);
+            D_801E9784 = 0;
+            D_800625A0->frameCounter = 0;
+            break;
+        case 1:
+            if (D_800625A0->cursor != 0) {
+                D_800625A0->cursor--;
+            } else {
+                D_800625A0->cursor = 2;
+            }
+            D_800625A0->frameCounter = 0;
+            break;
+        case 3:
+            if (++D_800625A0->cursor >= 3) {
+                D_800625A0->cursor = 0;
+            }
+            D_800625A0->frameCounter = 0;
+            break;
+        }
+        if (D_800625A0->cursor != D_800625A0->cursorShown) {
+            func_801E8978(3, D_800625A0->cursor, D_801EA1D4);
+            func_801E8070(8, D_800625A0->commandLabels, D_801EA530, D_801E9E84, D_800625A0->party->labels,
+                          D_800625A0->cursor, 0, 0);
+            D_800625A0->cursorShown = D_800625A0->cursor;
+        }
+        if (func_80028530() == 1 && (u32)D_800625A0->frameCounter > 600) {
+            stay = 0;
+            D_800594D0 = 1;
+        }
+    } while (stay);
+    func_801E8044(8, D_800625A0->party->labels);
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C58EC);
+#endif
 
 /* Allocate and clear (nonzero) or free (zero) the memory-card state block. */
 void func_801C5B54(u8 allocate) {
     if (allocate) {
-        u8 *block = func_80031BDC(0x5034, 0);
+        void *block = func_80031BDC(0x5034, 0);
         D_800625A0->card = block;
         func_8003F8E8(block, 0x5034);
     } else {
@@ -31,7 +227,7 @@ void func_801C5B54(u8 allocate) {
 /* Allocate and clear (nonzero) or free (zero) the party block. */
 void func_801C5BB8(u8 allocate) {
     if (allocate) {
-        u8 *block = func_80031BDC(0x6c, 0);
+        void *block = func_80031BDC(0x6c, 0);
         D_800625A0->party = block;
         func_8003F8E8(block, 0x6c);
     } else {
@@ -42,7 +238,7 @@ void func_801C5BB8(u8 allocate) {
 /* Allocate and clear (nonzero) or free (zero) the screen image block. */
 void func_801C5C1C(u8 allocate) {
     if (allocate) {
-        u8 *block = func_80031BDC(0x1194, 0);
+        void *block = func_80031BDC(0x1194, 0);
         D_800625A0->screenImages = block;
         func_8003F8E8(block, 0x1194);
     } else {
@@ -53,7 +249,7 @@ void func_801C5C1C(u8 allocate) {
 /* Allocate and clear (nonzero) or free (zero) the 140c-byte block at +354. */
 void func_801C5C80(u8 allocate) {
     if (allocate) {
-        u8 *block = func_80031BDC(0x140c, 0);
+        void *block = func_80031BDC(0x140c, 0);
         D_800625A0->block354 = block;
         func_8003F8E8(block, 0x140c);
     } else {
@@ -64,7 +260,7 @@ void func_801C5C80(u8 allocate) {
 /* Allocate and clear (nonzero) or free (zero) the data table directory. */
 void func_801C5CE4(u8 allocate) {
     if (allocate) {
-        u8 *block = func_80031BDC(0xcc, 0);
+        void *block = func_80031BDC(0xcc, 0);
         D_800625A0->tables = block;
         func_8003F8E8(block, 0xcc);
     } else {
@@ -75,7 +271,7 @@ void func_801C5CE4(u8 allocate) {
 /* Allocate and clear (nonzero) or free (zero) the first field-menu block. */
 void func_801C5D48(u8 allocate) {
     if (allocate) {
-        u8 *block = func_80031BDC(0x328, 0);
+        void *block = func_80031BDC(0x328, 0);
         D_800625A0->fieldMenu = block;
         func_8003F8E8(block, 0x328);
     } else {
@@ -86,7 +282,7 @@ void func_801C5D48(u8 allocate) {
 /* Allocate and clear (nonzero) or free (zero) the second field-menu block. */
 void func_801C5DAC(u8 allocate) {
     if (allocate) {
-        u8 *block = func_80031BDC(0x374, 0);
+        void *block = func_80031BDC(0x374, 0);
         D_800625A0->fieldMenu2 = block;
         func_8003F8E8(block, 0x374);
     } else {
@@ -97,7 +293,7 @@ void func_801C5DAC(u8 allocate) {
 /* Allocate and clear (nonzero) or free (zero) the shared primitive block. */
 void func_801C5E10(u8 allocate) {
     if (allocate) {
-        u8 *block = func_80031BDC(0x15c, 0);
+        void *block = func_80031BDC(0x15c, 0);
         D_800625A0->primitives = block;
         func_8003F8E8(block, 0x15c);
     } else {
@@ -111,7 +307,7 @@ void func_801C5E74(u8 allocate) {
 
     if (allocate) {
         for (i = 0; i < 3; i++) {
-            u8 *block = func_80031BDC(0x127c, 0);
+            void *block = func_80031BDC(0x127c, 0);
             D_800625A0->fieldBlocks[i] = block;
             func_8003F8E8(block, 0x127c);
         }
@@ -126,7 +322,7 @@ void func_801C5E74(u8 allocate) {
  * title file screen and kind 6; the card state and field blocks for the field
  * menu). */
 void func_801C5F10(void) {
-    u8 *block;
+    void *block;
 
     func_801C5BB8(1);
     func_801C5C1C(1);
