@@ -7,12 +7,38 @@
 /* Resident model renderer. Field names follow their observed use; unknown
  * bytes keep their offsets. */
 
-/* A loaded model group: its heap block ends at `primitives` once trimmed. */
+/* A model's list of paired data offsets: entries 0..last (none when last
+ * is -1). */
 typedef struct {
-    u8 unk0[4];
-    s32 flags;       /* bit 1: trimmed */
-    u8 unk8[0x1C];
+    s32 unk0;
+    u8 *first;
+    u8 *second;
+} ModelListEntry;
+
+typedef struct {
+    s32 last;
+    ModelListEntry entries[1];
+} ModelList;
+
+/* One model of a group. The tables are stored as offsets from the group
+ * and relocated to addresses once. */
+typedef struct {
+    u8 *table0;
+    u8 *table4;
+    u8 *table8;
     u8 *primitives;
+    u8 unk10[4];
+    ModelList *list; /* optional */
+    u8 unk18[0x20];
+} Model;
+
+/* A loaded model group: its heap block ends at the first model's primitives
+ * once trimmed. */
+typedef struct {
+    s32 count;
+    s32 flags;       /* bit 0: relocated; bit 1: trimmed */
+    u8 unk8[0x10];
+    Model models[1];
 } ModelGroup;
 
 /* A model's primitive buffer. */

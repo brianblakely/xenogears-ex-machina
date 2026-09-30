@@ -916,9 +916,87 @@ s32 func_8002C3D8(void) {
     return (s32)D_8004FE48;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002A260", func_8002C3E8);
+/* Relocate a model group's offsets to addresses (once). Returns the number
+ * of models.
+ * Nonmatching: the original adds the group second and walks the models
+ * through one pointer at their list fields. */
+#ifdef NON_MATCHING
+s32 func_8002C3E8(ModelGroup *group) {
+    s32 flags = group->flags;
+    s32 count = group->count;
+    Model *model;
+    ModelListEntry *entry;
+    s32 i;
+    s32 n;
 
+    if (!(flags & 1)) {
+        group->flags = flags | 1;
+        for (i = 0, model = group->models; i < count; i++, model++) {
+            model->table0 += (s32)group;
+            model->table8 += (s32)group;
+            model->table4 += (s32)group;
+            model->primitives += (s32)group;
+            if (model->list != NULL) {
+                model->list = (ModelList *)((u8 *)model->list + (s32)group);
+                n = model->list->last;
+                if (n != -1) {
+                    entry = &model->list->entries[n];
+                    do {
+                        n--;
+                        entry->first += (s32)group;
+                        entry->second += (s32)group;
+                        entry--;
+                    } while (n != -1);
+                }
+            }
+        }
+    }
+    return count;
+}
+#else
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002A260", func_8002C3E8);
+#endif
+
+/* Undo 8002C3E8: turn a relocated model group's addresses back into
+ * offsets. Returns the number of models.
+ * Nonmatching: the original adds the group second and walks the models
+ * through one pointer at their list fields. */
+#ifdef NON_MATCHING
+s32 func_8002C4BC(ModelGroup *group) {
+    s32 flags = group->flags;
+    s32 count = group->count;
+    Model *model;
+    ModelListEntry *entry;
+    s32 i;
+    s32 n;
+
+    if (flags & 1) {
+        group->flags = flags & ~1;
+        for (i = 0, model = group->models; i < count; i++, model++) {
+            model->table0 -= (s32)group;
+            model->table8 -= (s32)group;
+            model->table4 -= (s32)group;
+            model->primitives -= (s32)group;
+            if (model->list != NULL) {
+                n = model->list->last;
+                if (n != -1) {
+                    entry = &model->list->entries[n];
+                    do {
+                        n--;
+                        entry->first -= (s32)group;
+                        entry->second -= (s32)group;
+                        entry--;
+                    } while (n != -1);
+                }
+                model->list = (ModelList *)((u8 *)model->list - (s32)group);
+            }
+        }
+    }
+    return count;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002A260", func_8002C4BC);
+#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002A260", func_8002C59C);
 
@@ -929,7 +1007,7 @@ s32 func_8002C644(ModelGroup *group) {
         return 1;
     }
     group->flags |= 2;
-    func_80031F70((u8 *)group, group->primitives - (u8 *)group);
+    func_80031F70((u8 *)group, group->models[0].primitives - (u8 *)group);
     return 0;
 }
 
