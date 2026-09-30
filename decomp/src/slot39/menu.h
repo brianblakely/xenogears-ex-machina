@@ -838,7 +838,11 @@ extern s32 D_801E9B54;
 extern s32 D_801E9B60[48]; /* detail panel part positions, 24 per layout: x */
 extern s32 D_801E9C20[48]; /* y */
 extern s32 D_801EA39C[48]; /* detail panel part sprites, 24 per layout, ffff none */
-extern s32 D_801E9CF0;   /* detail panel number positions (x, y): hp */
+extern s32 D_801E9CE0;   /* detail panel number positions (x, y): level */
+extern s32 D_801E9CE4;
+extern s32 D_801E9CE8;   /* +63 */
+extern s32 D_801E9CEC;
+extern s32 D_801E9CF0;   /* hp */
 extern s32 D_801E9CF4;
 extern s32 D_801E9CF8;   /* hp max */
 extern s32 D_801E9CFC;
