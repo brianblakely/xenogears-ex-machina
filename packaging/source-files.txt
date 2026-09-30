@@ -329,6 +329,7 @@ decomp/targets/overlays/ovl3387.yaml
 decomp/targets/overlays/slot39.mk
 decomp/targets/overlays/slot39.symbols.txt
 decomp/targets/overlays/slot39.yaml
+decomp/targets/overlays/worldmap.classification.txt
 decomp/targets/overlays/worldmap.mk
 decomp/targets/overlays/worldmap.symbols.txt
 decomp/targets/overlays/worldmap.yaml
