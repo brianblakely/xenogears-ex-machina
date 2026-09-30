@@ -133,8 +133,9 @@ extern s32 D_800912DC;
 
 /* Glyph of the menu font. */
 typedef struct {
-    u8 unk0[2];
-    u8 width; /* 0x02 */
+    u8 u, v;   /* texture position */
+    u8 width;
+    u8 height;
 } Glyph;
 
 /* Text cursor and colour of the menu's text drawing. */
@@ -296,7 +297,7 @@ void func_8008895C(void);
 void func_8007E3CC(void *arg);
 void func_80043B48(void *ot, void *prim); /* link a primitive into an OT entry */
 Glyph *func_8007E8AC(s32 ch);
-void func_8007E964(s32 ch);
+s32 func_8007E964(s32 ch);
 s32 func_8007EB6C(u8 *text);
 void func_8007EE08(s32 highlight);
 void func_8007F834(void);
@@ -337,5 +338,28 @@ extern u16 D_800595D4;
 extern u16 D_80059414;
 void func_80043D14(void *prim);           /* initialise a SPRT */
 void func_80043C24(void *prim, s32 semi); /* set semi-transparency */
+
+/* POLY_FT4 with its positions written as whole words and its texture
+ * coordinates as halfwords. */
+typedef struct {
+    u8 addr[3];
+    u8 len;
+    u32 rgbc;
+    u32 xy0;
+    u16 uv0;
+    u16 clut;
+    u32 xy1;
+    u16 uv1;
+    u16 tpage;
+    u32 xy2;
+    u16 uv2;
+    u16 pad1;
+    u32 xy3;
+    u16 uv3;
+    u16 pad2;
+} PolyFT4Words;
+
+extern u16 D_800926E0; /* text texture page */
+extern u16 D_800926E4; /* text CLUT */
 
 #endif
