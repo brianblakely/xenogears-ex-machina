@@ -4853,9 +4853,251 @@ void func_8007E16C(POLY_FT4 *poly, s32 x, s32 y, s32 w, s32 h, s32 mirror) {
     poly->y3 = y + h;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007E1C0);
+extern RECT D_800ADEDC[];   /* choice cursor frames */
+extern RECT D_800ADF04[];   /* prompt frames */
+s32 func_800347AC(TextBox *text);
+s32 func_800347C0(TextBox *text);
 
+#ifdef NON_MATCHING
+/* Draw dialogue window `w`'s frame into `ot` for `buffer`: while opening
+ * the window grows from its centre (at least 16 pixels each way) and
+ * slides; then the waiting prompt, the eight border pieces, the portrait,
+ * the choice cursor and the backing tile.
+ * Does not match yet: the original spills `buffer` and the area to the
+ * stack (0xa8-byte frame) and keeps `ot` in fp; the layout of the
+ * statements is otherwise as here. */
+void func_8007E1C0(u32 *ot, s32 buffer, s32 w) {
+    RECT area;
+    s32 x;
+    s32 y;
+    s32 width;
+    s32 height;
+    s32 grown_w;
+    s32 grown_h;
+    s32 steps;
+    s32 left;
+    s32 top;
+    s32 right;
+    s32 bottom;
+    s32 side;
+    s32 icon_x;
+    s32 icon_w;
+    s32 icon_h;
+    s32 i;
+
+    if (D_800C2698[w].busy != 0) {
+        return;
+    }
+    x = D_800C2698[w].text.rect.x;
+    y = D_800C2698[w].text.rect.y;
+    width = D_800C2698[w].text.rect.w;
+    height = D_800C2698[w].text.rect.h;
+    if (D_800C2698[w].timer != 0) {
+        steps = D_800B2078.text_speed * 2;
+        grown_w = ((width << 16) / steps) * (D_800B2078.text_speed - D_800C2698[w].timer);
+        grown_h = ((height << 16) / steps) * (D_800B2078.text_speed - D_800C2698[w].timer);
+        x = x + width / 2 - (grown_w >> 16);
+        width = (grown_w * 2) >> 16;
+        y = y + height / 2 - (grown_h >> 16);
+        height = (grown_h * 2) >> 16;
+        if (width < 0x10) {
+            x -= (0x10 - width) / 2;
+            width = 0x10;
+        }
+        if (height < 0x10) {
+            y -= (0x10 - height) / 2;
+            height = 0x10;
+        }
+        D_800C2698[w].slide[0].value += D_800C2698[w].slide_step[0];
+        D_800C2698[w].slide[1].value += D_800C2698[w].slide_step[1];
+        y += D_800C2698[w].slide[1].value >> 16;
+        x += D_800C2698[w].slide[0].s.whole;
+    }
+    if (D_800C2698[w].unk3C4 == 0 && D_800C2698[w].age == 0 && D_800C2698[w].timer == 0
+        && !(D_800C2698[w].style & 0x40) && D_800C2698[w].status != 0) {
+        if (D_800C2698[w].prompt_delay == 0) {
+            left = func_800347AC(&D_800C2698[w].text);
+            top = func_800347C0(&D_800C2698[w].text);
+            area = D_800ADF04[D_800ADE94];
+            SetDrawMode(&D_800C2698[w].prompt_modes[buffer], 0, 0, GetTPage(0, 0, 0x298, 0x1C0), &area);
+            D_800C2698[w].prompt[buffer].x0 = left;
+            D_800C2698[w].prompt[buffer].y0 = top + 4;
+            addPrim(ot, &D_800C2698[w].prompt[buffer]);
+            addPrim(ot, &D_800C2698[w].prompt_modes[buffer]);
+        } else {
+            D_800C2698[w].prompt_delay--;
+        }
+    } else {
+        D_800C2698[w].prompt_delay = 2;
+    }
+    left = x - 8;
+    top = y - 7;
+    right = x + width - 8;
+    bottom = y + height - 9;
+    side = height - 0x12;
+    D_800C2698[w].border[buffer][0].x0 = left;
+    D_800C2698[w].border[buffer][0].y0 = top;
+    D_800C2698[w].border[buffer][2].y0 = top;
+    D_800C2698[w].border[buffer][4].x0 = left;
+    D_800C2698[w].border[buffer][2].x0 = right;
+    D_800C2698[w].border[buffer][6].x0 = right;
+    D_800C2698[w].border[buffer][3].x0 = left;
+    D_800C2698[w].border[buffer][1].x0 = right;
+    D_800C2698[w].border[buffer][4].y0 = bottom;
+    D_800C2698[w].border[buffer][6].y0 = bottom;
+    D_800C2698[w].border[buffer][3].y0 = y + 9;
+    D_800C2698[w].border[buffer][1].y0 = y + 9;
+    if (side < 0) {
+        side = 0;
+    }
+    D_800C2698[w].border[buffer][3].h = side;
+    D_800C2698[w].border[buffer][1].h = side;
+    D_800C2698[w].border[buffer][5].y0 = top;
+    D_800C2698[w].border[buffer][5].x0 = x + 8;
+    D_800C2698[w].border[buffer][7].x0 = x + 8;
+    D_800C2698[w].border[buffer][7].y0 = bottom;
+    D_800C2698[w].border[buffer][5].w = width - 0x10;
+    D_800C2698[w].border[buffer][7].w = width - 0x10;
+    if (!(D_800C2698[w].style & 0x40)) {
+        for (i = 0; i < 8; i++) {
+            addPrim(ot, &D_800C2698[w].border[buffer][i]);
+            addPrim(ot, &D_800C2698[w].border_modes[buffer][i]);
+        }
+    }
+    icon_w = 0x40;
+    if (width - 4 < 0x40) {
+        icon_w = width - 8;
+    }
+    icon_h = 0x40;
+    if (height - 4 < 0x40) {
+        icon_h = height - 8;
+    }
+    icon_x = x + 4;
+    if (D_800C2698[w].style & 0x20) {
+        icon_x = x + width - icon_w - 4;
+    }
+    func_8007E16C(&D_800C2698[w].icon[buffer], icon_x, y + 4, icon_w, icon_h, D_800C2698[w].style & 0x20);
+    if (D_800C2698[w].unk494 == 1) {
+        addPrim(ot, &D_800C2698[w].icon[buffer]);
+        addPrim(ot, &D_800C2698[w].icon_modes[buffer]);
+    }
+    if (D_800C2698[w].status == 0 && D_800C2698[w].age == 0 && D_800C2698[w].timer == 0) {
+        if (D_800C2698[w].unk494 == 1 && !(D_800C2698[w].style & 0x20)) {
+            D_800C2698[w].choice[buffer].x0 = x + 0x5A;
+        } else {
+            D_800C2698[w].choice[buffer].x0 = x + 0x16;
+        }
+        D_800C2698[w].choice[buffer].y0 = (D_800C2698[w].unk382 + D_800C2698[w].unk37E) * 0xE + y + 8;
+        area = D_800ADEDC[D_800ADE94];
+        SetDrawMode(&D_800C2698[w].choice_modes[buffer], 0, 0, GetTPage(0, 0, 0x288, 0x1C0), &area);
+        addPrim(ot, &D_800C2698[w].choice[buffer]);
+        addPrim(ot, &D_800C2698[w].choice_modes[buffer]);
+    }
+    D_800C2698[w].back[buffer].x0 = x;
+    D_800C2698[w].back[buffer].y0 = y + 1;
+    D_800C2698[w].back[buffer].w = width;
+    D_800C2698[w].back[buffer].h = height - 2;
+    if (!(D_800C2698[w].style & 0x40)) {
+        addPrim(ot, &D_800C2698[w].back[buffer]);
+        addPrim(ot, &D_800C2698[w].back_modes[buffer]);
+    }
+}
+#else
+INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007E1C0);
+#endif
+
+extern u8 D_800594D4[3];    /* window colour */
+extern RECT D_800ADE9C[8];  /* border piece texture windows */
+extern RECT D_800ADEDC[];   /* choice cursor frames */
+extern RECT D_800ADF04[];   /* prompt frames */
+
+#ifdef NON_MATCHING
+/* Build dialogue window `w`'s packets for both buffers: the backing draw
+ * mode and semi-transparent tile in the window colour, the prompt and
+ * choice cursor sprites, the eight border sprites (texture windows from
+ * 800ade9c) and the portrait quad.
+ * Does not match: the original addresses these members from a base at
+ * window + 0ac (800c2744) and then from the border sprites (800c2884), where
+ * this code shares window + 0c4; the source form giving that base is not
+ * known yet. */
+void func_8007EE0C(s32 w) {
+    RECT area;
+    s32 i;
+
+    SetDrawMode(&D_800C2698[w].back_modes[0], 0, 0, GetTPage(0, 2, 0x280, 0x1F0), NULL);
+    SetDrawMode(&D_800C2698[w].back_modes[1], 0, 0, GetTPage(0, 2, 0x280, 0x1F0), NULL);
+    SetTile(&D_800C2698[w].back[0]);
+    D_800C2698[w].back[0].r0 = D_800594D4[0];
+    D_800C2698[w].back[0].g0 = D_800594D4[1];
+    D_800C2698[w].back[0].b0 = D_800594D4[2];
+    SetSemiTrans(&D_800C2698[w].back[0], 1);
+    D_800C2698[w].back[1] = D_800C2698[w].back[0];
+    area = D_800ADF04[0];
+    SetDrawMode(&D_800C2698[w].prompt_modes[0], 0, 0, GetTPage(0, 0, 0x298, 0x1C0), &area);
+    SetDrawMode(&D_800C2698[w].prompt_modes[1], 0, 0, GetTPage(0, 0, 0x298, 0x1C0), &area);
+    SetSprt(&D_800C2698[w].prompt[0]);
+    D_800C2698[w].prompt[0].r0 = 0x80;
+    D_800C2698[w].prompt[0].g0 = 0x80;
+    D_800C2698[w].prompt[0].b0 = 0x80;
+    D_800C2698[w].prompt[0].clut = GetClut(0x100, 0xF6);
+    D_800C2698[w].prompt[0].w = 0xC;
+    D_800C2698[w].prompt[0].u0 = 0x80;
+    D_800C2698[w].prompt[0].v0 = 0xC0;
+    D_800C2698[w].prompt[0].h = 8;
+    D_800C2698[w].prompt[0].x0 = 0;
+    D_800C2698[w].prompt[0].y0 = 0;
+    D_800C2698[w].prompt[1] = D_800C2698[w].prompt[0];
+    area = D_800ADEDC[0];
+    SetDrawMode(&D_800C2698[w].choice_modes[0], 0, 0, GetTPage(0, 0, 0x288, 0x1C0), &area);
+    SetDrawMode(&D_800C2698[w].choice_modes[1], 0, 0, GetTPage(0, 0, 0x288, 0x1C0), &area);
+    SetSprt(&D_800C2698[w].choice[0]);
+    D_800C2698[w].choice[0].r0 = 0x80;
+    D_800C2698[w].choice[0].g0 = 0x80;
+    D_800C2698[w].choice[0].b0 = 0x80;
+    D_800C2698[w].choice[0].clut = GetClut(0x100, 0xF6);
+    D_800C2698[w].choice[0].w = 0xC;
+    D_800C2698[w].choice[0].u0 = 0x80;
+    D_800C2698[w].choice[0].v0 = 0xC0;
+    D_800C2698[w].choice[0].h = 8;
+    D_800C2698[w].choice[0].x0 = 0;
+    D_800C2698[w].choice[0].y0 = 0;
+    D_800C2698[w].choice[1] = D_800C2698[w].choice[0];
+    D_800C2698[w].prompt_delay = 2;
+    for (i = 0; i < 8; i++) {
+        area = D_800ADE9C[i];
+        SetDrawMode(&D_800C2698[w].border_modes[0][i], 0, 0, GetTPage(0, 2, 0x280, 0x1F0), &area);
+        SetDrawMode(&D_800C2698[w].border_modes[1][i], 0, 0, GetTPage(0, 2, 0x280, 0x1F0), &area);
+        SetSprt(&D_800C2698[w].border[0][i]);
+        D_800C2698[w].border[0][i].r0 = 0x80;
+        D_800C2698[w].border[0][i].g0 = 0x80;
+        D_800C2698[w].border[0][i].b0 = 0x80;
+        D_800C2698[w].border[0][i].clut = GetClut(0x100, 0xF4);
+        SetSemiTrans(&D_800C2698[w].border[0][i], 1);
+        D_800C2698[w].border[0][i].u0 = 0x80;
+        D_800C2698[w].border[0][i].v0 = 0xC0;
+        D_800C2698[w].border[0][i].w = D_800ADE9C[i].w;
+        D_800C2698[w].border[0][i].x0 = 0;
+        D_800C2698[w].border[0][i].y0 = 0;
+        D_800C2698[w].border[0][i].h = D_800ADE9C[i].h;
+        D_800C2698[w].border[1][i] = D_800C2698[w].border[0][i];
+    }
+    area.x = 0;
+    area.y = 0;
+    area.w = 0xFF;
+    area.h = 0xFF;
+    SetDrawMode(&D_800C2698[w].icon_modes[0], 0, 0, GetTPage(1, 0, 0x2C0, 0x100), &area);
+    SetDrawMode(&D_800C2698[w].icon_modes[1], 0, 0, GetTPage(1, 0, 0x2C0, 0x100), &area);
+    SetPolyFT4(&D_800C2698[w].icon[0]);
+    D_800C2698[w].icon[0].r0 = 0x80;
+    D_800C2698[w].icon[0].g0 = 0x80;
+    D_800C2698[w].icon[0].b0 = 0x80;
+    D_800C2698[w].icon[0].clut = GetClut(0, 0xE0);
+    D_800C2698[w].icon[0].tpage = GetTPage(1, 0, 0x2C0, 0x100);
+    D_800C2698[w].icon[1] = D_800C2698[w].icon[0];
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007EE0C);
+#endif
 
 extern DVECTOR D_800ADF34[]; /* icon texture origin per frame */
 
