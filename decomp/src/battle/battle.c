@@ -3027,19 +3027,31 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A4CF8);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A4DB8);
 
-/* The scene's actor records. */
-void *func_800A577C(void) {
+/* The scene's points. */
+SVector *func_800A577C(void) {
     return D_800D3344;
 }
 
-/* The scene's light entries. */
-void *func_800A578C(void) {
+/* The scene's triangles. */
+SceneTriangle *func_800A578C(void) {
     return D_800D39CC;
 }
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A579C);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A5870);
+/* Process scene triangle index with 800A5BE8; its id, or -1 without scene
+ * geometry. */
+s32 func_800A5870(s32 arg0, s32 index, s32 arg2) {
+    SceneTriangle *triangle;
+
+    if (D_800D3344 == NULL || D_800D39CC == NULL || index < 0) {
+        return -1;
+    }
+    triangle = &D_800D39CC[index];
+    func_800A5BE8(&D_800D3344[triangle->vertices[0]], &D_800D3344[triangle->vertices[1]],
+                  &D_800D3344[triangle->vertices[2]], arg0, arg2);
+    return D_800D39CC[index].id;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A5914);
 
@@ -3057,7 +3069,23 @@ void func_800A5E9C(s32 first, s32 second) {
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A5EB4);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A6444);
+/* Set light slot index (0-3) to a color and two values; a negative red turns
+ * it off. */
+void func_800A6444(s32 index, s32 r, s32 g, s32 b, s32 field4, s32 field5) {
+    if (index < 4) {
+        if (r >= 0) {
+            D_800D3611 = 1;
+            D_800C3AAC[index].active = 1;
+            D_800C3AAC[index].r = r;
+            D_800C3AAC[index].g = g;
+            D_800C3AAC[index].b = b;
+            D_800C3AAC[index].field4 = field4;
+            D_800C3AAC[index].field5 = field5;
+        } else {
+            D_800C3AAC[index].active = 0;
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A64E4);
 

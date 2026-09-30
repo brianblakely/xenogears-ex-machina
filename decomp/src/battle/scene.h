@@ -104,9 +104,29 @@ typedef struct {
     s16 next;
 } SpritePool;
 
+/* A triangle of the scene's light geometry (0xE bytes). */
+typedef struct {
+    s16 vertices[3];        /* indices into the scene's points */
+    u8 pad6[0xC - 0x6];
+    u8 id;                  /* 0x0C */
+    u8 padD;
+} SceneTriangle;
+
+/* A light slot (6 bytes). */
+typedef struct {
+    u8 active;
+    u8 r;
+    u8 g;
+    u8 b;
+    u8 field4;
+    u8 field5;
+} LightSlot;
+
 /* Battle scene and effect state. */
-extern void *D_800D3344;                /* scene actor records */
-extern void *D_800D39CC;                /* scene light entries */
+extern SVector *D_800D3344;             /* scene points */
+extern SceneTriangle *D_800D39CC;       /* scene triangles */
+extern LightSlot D_800C3AAC[4];
+extern u8 D_800D3611;                   /* a light slot changed */
 extern u8 D_800C3B74;
 extern u8 D_800C3D6C;
 extern s32 D_800D2D40;
@@ -125,6 +145,7 @@ s32 func_80048C4C(s32 value);           /* square root */
 void func_8003852C(u8 *texture);
 void func_800AA934(BattleObject *object, BattleObject *target, EffectPool *pool, s32 arg3);
 void func_800B00D0(void);
+void func_800A5BE8(SVector *a, SVector *b, SVector *c, s32 arg3, s32 arg4);
 void func_800A2D5C(SpritePool *pool);
 void func_800A3490(void);
 void func_800A3514(void);
