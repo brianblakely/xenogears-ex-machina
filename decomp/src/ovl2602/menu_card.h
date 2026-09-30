@@ -827,7 +827,15 @@ typedef struct {
     GearEntry *entries;      /* 10 */
     GearPart *parts;         /* 14 */
     GearWeapon *weapons;     /* 18 */
+    u8 unk1C[0x9C - 0x1C];
+    u32 unk9C;               /* 9c: the edited gear's summary */
+    u32 unkA0;               /* a0 */
+    u16 unkA4, unkA6, unkA8; /* a4 */
+    u16 unkAA, unkAC, unkAE; /* aa */
+    u16 unkB0;               /* b0 */
+    u8 unkB2, unkB3, unkB4, unkB5, unkB6; /* b2 */
 } GearTable;
+extern u8 D_801D70FD;
 
 extern Gear D_8006DFAC[];
 extern u32 D_801D6C88[];  /* party bit of each member id */

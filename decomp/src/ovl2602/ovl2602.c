@@ -3176,7 +3176,47 @@ void func_801D5EB8(void) {
     func_800320E8(D_800625A0->model_parts[1]);
 }
 
+/*
+ * Summarise gear `id` for the parts screen: its values plus its parts' and
+ * its pilot's bonuses. Nonmatching: the original has an unused 8-byte stack
+ * frame.
+ */
+#ifdef NON_MATCHING
+void func_801D5F94(GearTable *table, u8 id) {
+    Gear *gear;
+    Character *pilot;
+    s32 value;
+    s32 bonus;
+
+    if (D_8006D634.unk22B6 & 0x1000) {
+        D_801D70FD = 10;
+    }
+    gear = &D_8006D634.gears[id];
+    pilot = &D_8006D634.characters[D_801D70F4[id]];
+    table->unk9C = gear->unk60;
+    table->unkA0 = gear->unk64;
+    table->unkA4 = gear->unk70 + gear->unk40;
+    table->unkA6 = pilot->bonus[4] + pilot->base[4] + gear->unk42 + gear->unk72;
+    table->unkA8 = gear->unk68 + gear->unk44;
+    table->unkAA = gear->unk6A;
+    table->unkAC = gear->unk38;
+    table->unkAE = gear->unk3A;
+    bonus = gear->unk3C * (gear->unk74 + gear->unk55[1]);
+    if (id == 5 || id == 13) {
+        value = (gear->unk12 + gear->unk22) * 6 / 10;
+    } else {
+        value = gear->unk12;
+    }
+    table->unkB0 = value + bonus;
+    table->unkB2 = gear->unk9F + gear->unk4D;
+    table->unkB3 = gear->unk98 - gear->unk4A;
+    table->unkB4 = gear->unk9E;
+    table->unkB5 = gear->unk9D;
+    table->unkB6 = gear->unk9C;
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D5F94);
+#endif
 
 /* Rebuild gear `id`'s derived values. */
 void func_801D6150(GearTable *table, u8 id) {
