@@ -10245,7 +10245,96 @@ void func_800A47D4(void) {
     }
 }
 
+#ifdef NON_MATCHING
+void func_800A484C(s32 resume) {
+    RECT rect;
+    s32 row;
+    s32 column;
+    s32 i;
+    POLY_FT4 *poly;
+    POLY_FT4 *copy;
+    s32 u;
+    s32 v;
+
+    D_800B2078.unk2078 = 1;
+    if (D_800ADB24 == 0) {
+        D_800B2078.effect_buffers[0] = func_80031BDC(0x180, 0);
+        D_800B2078.effect_buffers[1] = func_80031BDC(0x180, 0);
+        D_800B2078.effect_buffers[2] = func_80031BDC(0x3840, 0);
+        D_800B2078.effect_buffers[3] = func_80031BDC(0x3840, 0);
+        D_800ADB24 = 1;
+        for (row = 0; row < 17; row++) {
+            for (column = 0; column < 20; column++) {
+                poly = (POLY_FT4 *)D_800B2078.effect_buffers[2] + row * 20 + column;
+                copy = (POLY_FT4 *)D_800B2078.effect_buffers[3] + row * 20 + column;
+                SetPolyFT4(poly);
+                SetSemiTrans(poly, 0);
+                poly->r0 = 0x80;
+                poly->g0 = 0x80;
+                poly->b0 = 0x80;
+                poly->x0 = column * 16;
+                poly->y0 = row * 16;
+                poly->x1 = column * 16 + 16;
+                poly->y1 = row * 16;
+                poly->x2 = column * 16;
+                poly->y2 = row * 16 + 16;
+                poly->x3 = column * 16 + 16;
+                poly->y3 = row * 16 + 16;
+                if (row >= 14) {
+                    u = (column * 16) & 0x3F;
+                    v = (column >> 2) * 16 + (row - 14) * 80;
+                    poly->u0 = u;
+                    poly->v0 = v;
+                    poly->u1 = u + 16;
+                    poly->v1 = v;
+                    poly->u2 = u;
+                    poly->v2 = v + 16;
+                    poly->u3 = u + 16;
+                    poly->v3 = v + 16;
+                    poly->tpage = GetTPage(2, 0, 0x3C0, 0);
+                    *copy = *poly;
+                } else {
+                    u = (column * 16) & 0x3F;
+                    poly->u0 = u;
+                    poly->v0 = row * 16;
+                    poly->u1 = u + 16;
+                    poly->v1 = row * 16;
+                    poly->u2 = u;
+                    poly->v2 = row * 16 + 16;
+                    poly->u3 = u + 16;
+                    poly->v3 = row * 16 + 16;
+                    poly->tpage = GetTPage(2, 0, (column * 16) & 0xFFC0, 0);
+                    *copy = *poly;
+                    copy->tpage = GetTPage(2, 0, (column * 16) & 0xFFC0, 0x100);
+                }
+            }
+        }
+        rect.x = 0;
+        rect.y = 0x20;
+        rect.w = 0x140;
+        rect.h = 0xC0;
+        SetDrawMove(D_800B2078.effect_buffers[0], &rect, 0, 0);
+        rect.y = 0x120;
+        SetDrawMove(D_800B2078.effect_buffers[1], &rect, 0, 0x100);
+        rect.w = 0x40;
+        rect.h = 0x10;
+        for (i = 0; i < 15; i++) {
+            rect.x = D_800AEB24[i].x;
+            rect.y = D_800AEB24[i].y;
+            SetDrawMove((DR_MOVE *)D_800B2078.effect_buffers[0] + i + 1, &rect, 0x3C0, i * 16);
+            rect.y = D_800AEB24[i].y + 0x100;
+            SetDrawMove((DR_MOVE *)D_800B2078.effect_buffers[1] + i + 1, &rect, 0x3C0, i * 16);
+        }
+    }
+    if (resume == 0) {
+        func_800A4CC4(func_800ACDEC(1), func_800ACDEC(3), func_800ACDEC(5), func_800ACDEC(7),
+                      func_800ACDEC(9), func_800ACDEC(11), func_800ACDEC(13));
+    }
+    D_800B2078.unk207A = 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A484C);
+#endif
 
 /* Move the six screen effect values to the given whole targets over
  * `steps` frames. */

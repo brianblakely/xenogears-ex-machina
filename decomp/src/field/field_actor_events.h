@@ -67,6 +67,10 @@ typedef struct {
     u8 bytes[0x74];
 } ViewSnapshot;
 
+/* The screen distortion (800a484c). */
+extern s32 D_800ADB24;         /* distortion buffers allocated */
+extern RECT D_800AEB24[15];    /* saved strip sources */
+
 s32 func_8009EB48(FieldActor *actor, s32 tag); /* -1 when a slot has `tag` */
 s32 func_800A3090(s32 actor, s32 event);       /* entry PC of an actor's event */
 
