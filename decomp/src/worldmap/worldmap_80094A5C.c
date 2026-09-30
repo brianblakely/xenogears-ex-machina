@@ -1299,36 +1299,26 @@ void func_80097800(void) {
     }
 }
 
+/* The 2048-triangle terrain packet buffer, copied as a whole. */
+typedef struct {
+    PolyFT3 prims[0x800];
+} TriangleBuffer;
+
 /* Allocate both 2048-triangle terrain packet buffers and initialise them. */
-#ifdef NON_MATCHING /* loop counter increment scheduled late */
 void func_800978FC(void) {
     PolyFT3 *prim;
     s32 i;
-    struct {
-        s32 words[4];
-    } *from, *to, *end;
 
     D_8009BC38[1] = func_80031BDC(0x10000, 1);
     D_8009BCB0[1] = func_80031BDC(0x10000, 1);
     prim = D_8009BC38[1];
-    for (i = 0; i < 0x800; i++) {
-        ((u8 *)prim)[3] = 7;
-        prim->code = 0x24;
-        prim->r0 = 0x80;
-        prim->g0 = 0x80;
-        prim->b0 = 0x80;
-        prim++;
+    for (i = 0; i < 0x800; i++, prim++) {
+        setlen(prim, 7);
+        setcode(prim, 0x24);
+        setRGB0(prim, 0x80, 0x80, 0x80);
     }
-    from = D_8009BC38[1];
-    to = D_8009BCB0[1];
-    end = (void *)((u8 *)from + 0x10000);
-    do {
-        *to++ = *from++;
-    } while (from != end);
+    *(TriangleBuffer *)D_8009BCB0[1] = *(TriangleBuffer *)D_8009BC38[1];
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_800978FC);
-#endif
 
 /* Upload the terrain texture image (its buffer is then reused for the
  * palettes), build the faded terrain palettes and their CLUT and texture
