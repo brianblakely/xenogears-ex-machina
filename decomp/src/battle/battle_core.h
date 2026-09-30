@@ -119,7 +119,9 @@ typedef struct {
     POLY_FT4 unk50[2];
     POLY_FT4 unkA0[2];
     POLY_FT4 unkF0[2];
-    u8 unk140[0x280 - 0x140];
+    POLY_FT4 unk140[2]; /* page title quads */
+    POLY_FT4 unk190[2];
+    u8 unk1E0[0x280 - 0x1E0];
     POLY_FT4 unk280[2];
     POLY_FT4 unk2D0[2];
     POLY_FT4 unk320[2];

@@ -4781,7 +4781,27 @@ void func_8009023C(s32 y) {
     D_800D2D28->unk9C = 1;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80090310);
+/* Point the page title quads at list entry (column, row): the entry's image
+ * cell (two per image row, 13 lines each; entries past 16 on the second
+ * image page with the alternate CLUT). */
+void func_80090310(u8 column, u8 row) {
+    s32 index;
+    s32 page;
+
+    index = row * 2 + column;
+    page = 0;
+    if (index > 16) {
+        index -= 16;
+        D_800C3EA4->unkA230->unk140[D_800CCB04.buffer].clut = D_80059414;
+        page = 0x10;
+    } else {
+        D_800C3EA4->unkA230->unk140[D_800CCB04.buffer].clut = D_800595D4;
+    }
+    func_80076C78(&D_800C3EA4->unkA230->unk140[D_800CCB04.buffer], 0x18, 0x33, (index % 2) * 0x78, (index / 2) * 13,
+                  0x60);
+    func_80076C78(&D_800C3EA4->unkA230->unk190[D_800CCB04.buffer], 0x84, 0x33, (index % 2) << 6 | page,
+                  (index / 2) * 13, 0x10);
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800904A0);
 
