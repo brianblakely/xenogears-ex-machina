@@ -52,6 +52,18 @@ typedef struct ScriptSlot {
     u32 unk25 : 7;
 } ScriptSlot;
 
+/* An actor's packed state word (+12c). */
+typedef struct {
+    u32 mode : 2;   /* 0-1 */
+    u32 unk2 : 3;   /* 2-4 */
+    u32 unk5 : 1;   /* 5 */
+    u32 depth : 3;  /* 6-8: script call depth */
+    u32 octant : 3; /* 9-11 */
+    u32 unk12 : 1;  /* 12 */
+    u32 layer : 3;  /* 13-15: 801e layer */
+    u32 unk16 : 16;
+} ActorState;
+
 /* One 0x138-byte event actor record. */
 typedef struct FieldActor {
     u32 flags;           /* 000 */
@@ -123,7 +135,10 @@ typedef struct FieldActor {
     u8 unk126[2];
     s16 unk128;          /* 128 */
     u8 unk12A[2];
-    u32 unk12C;          /* 12C */
+    union {
+        u32 word;
+        ActorState bits;
+    } state;             /* 12C */
     u8 unk130[4];
     u32 unk134;          /* 134 */
 } FieldActor;
@@ -547,6 +562,13 @@ typedef struct {
     s16 c;
 } FieldSlot6;
 
+/* The event package (field component 5, *800adbf8). */
+typedef struct {
+    u32 unsigned_bits[32]; /* 00: bit per variable read unsigned */
+    s32 count;             /* 80: actors */
+    u16 entries[32];       /* 84: 32 event entry PCs per actor */
+} EventPackage;
+
 /* Resident services. */
 extern void func_8001B66C(void);
 extern void func_8002945C(WaveChunk *chunk);
@@ -740,6 +762,7 @@ extern s16 D_800AEA2C[4]; /* party masks */
 extern s32 D_800ADBDC;
 extern s32 D_800ADBE4;
 extern s32 D_800ADBE8;
+extern EventPackage *D_800ADBF8;
 extern s32 D_800ADBFC; /* event actor count */
 extern void *D_800ADBC0; /* pending party sprite buffer */
 extern s32 D_800ADBC8;

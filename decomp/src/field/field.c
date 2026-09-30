@@ -1351,7 +1351,7 @@ void func_8008083C(s32 index) {
         if (actor->unk134 & 0x80) {
             func_800320E8(actor->unk110);
         }
-        if (actor->unk12C & 0x1000) {
+        if (actor->state.word & 0x1000) {
             func_800320E8(actor->unk114);
         }
         if (D_800AF880.components.descriptors[index].flags & 0x2000) {
@@ -3030,9 +3030,9 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008C334);
 /* Event: release the actor's block at +114 when flag 0x1000 of +12c says it
  * holds one. */
 void func_8008C7D8(void) {
-    if (D_800B0078->unk12C & 0x1000) {
+    if (D_800B0078->state.word & 0x1000) {
         func_800320E8(D_800B0078->unk114);
-        D_800B0078->unk12C &= ~0x1000;
+        D_800B0078->state.word &= ~0x1000;
     }
     D_800B0078->pc++;
 }
@@ -5098,8 +5098,8 @@ void func_80093E30(void) {
     FieldActor *actor;
 
     if (!(D_800B0078->flags & 0x100000)) {
-        if (!(D_800B0078->unk12C & 0x20)) {
-            D_800B0078->unk12C |= 0x20;
+        if (!(D_800B0078->state.word & 0x20)) {
+            D_800B0078->state.word |= 0x20;
             D_800B0078->unkE2 = 0;
             func_80085634(8, 3);
         } else {
@@ -5114,7 +5114,7 @@ void func_80093E30(void) {
             } else {
                 actor->unkE2 = 0;
                 actor->flags |= 0x100000;
-                actor->unk12C &= ~0x20;
+                actor->state.word &= ~0x20;
                 D_800B0078->pc += 2;
             }
         }
@@ -5130,8 +5130,8 @@ void func_80093FC0(void) {
     FieldActor *actor;
 
     if (D_800B0078->flags & 0x100000) {
-        if (!(D_800B0078->unk12C & 0x20)) {
-            D_800B0078->unk12C |= 0x20;
+        if (!(D_800B0078->state.word & 0x20)) {
+            D_800B0078->state.word |= 0x20;
             D_800B0078->unkE2 = 0;
             func_80085634(8, 3);
         } else {
@@ -5146,7 +5146,7 @@ void func_80093FC0(void) {
             } else {
                 actor->unkE2 = 0;
                 actor->flags &= ~0x100000;
-                actor->unk12C &= ~0x20;
+                actor->state.word &= ~0x20;
                 D_800B0078->pc += 2;
             }
         }
@@ -5187,23 +5187,23 @@ void func_8009468C(void) {
     D_800B0078->pc += 1;
 }
 
-/* Set the current actor's two-bit mode (unk12C) to 1 with value unk70. */
+/* Set the current actor's two-bit mode (state) to 1 with value unk70. */
 void func_800946BC(void) {
-    D_800B0078->unk12C = (D_800B0078->unk12C & ~3) | 1;
+    D_800B0078->state.word = (D_800B0078->state.word & ~3) | 1;
     D_800B0078->unk70 = func_800ACDEC(1);
     D_800B0078->pc += 3;
 }
 
-/* Set the current actor's two-bit mode (unk12C) to 2 with value unk70. */
+/* Set the current actor's two-bit mode (state) to 2 with value unk70. */
 void func_80094710(void) {
-    D_800B0078->unk12C = (D_800B0078->unk12C & ~3) | 2;
+    D_800B0078->state.word = (D_800B0078->state.word & ~3) | 2;
     D_800B0078->unk70 = func_800ACDEC(1);
     D_800B0078->pc += 3;
 }
 
-/* Set the current actor's two-bit mode (unk12C) to 3 with value unk70. */
+/* Set the current actor's two-bit mode (state) to 3 with value unk70. */
 void func_80094764(void) {
-    D_800B0078->unk12C |= 3;
+    D_800B0078->state.word |= 3;
     D_800B0078->unk70 = func_800ACDEC(1);
     D_800B0078->pc += 3;
 }
@@ -5562,10 +5562,10 @@ void func_8009533C(void) {
     d = (zone->corner[3].z << 16) + zone->corner[3].x;
     if (func_8004A70C(a, b, point) >= 0 && func_8004A70C(b, c, point) >= 0 &&
         func_8004A70C(c, d, point) >= 0 && func_8004A70C(d, a, point) >= 0 &&
-        (D_800B0078->unk12C & 0x1C0) != 0x100) {
-        D_800B0078->call_stack[(D_800B0078->unk12C >> 6) & 7] = D_800B0078->pc + 4;
+        (D_800B0078->state.word & 0x1C0) != 0x100) {
+        D_800B0078->call_stack[(D_800B0078->state.word >> 6) & 7] = D_800B0078->pc + 4;
         D_800B0078->pc = func_800ACDB8(2);
-        D_800B0078->unk12C = (D_800B0078->unk12C & ~0x1C0) | (((((D_800B0078->unk12C >> 6) & 7) + 1) & 7) << 6);
+        D_800B0078->state.word = (D_800B0078->state.word & ~0x1C0) | (((((D_800B0078->state.word >> 6) & 7) + 1) & 7) << 6);
         return;
     }
     D_800AFC7C += 1;
@@ -5598,10 +5598,10 @@ void func_80095520(void) {
         d = (zone->corner[3].z << 16) + zone->corner[3].x;
         if (func_8004A70C(a, b, point) >= 0 && func_8004A70C(b, c, point) >= 0 &&
             func_8004A70C(c, d, point) >= 0 && func_8004A70C(d, a, point) >= 0 &&
-            (D_800B0078->unk12C & 0x1C0) != 0x100) {
-            D_800B0078->call_stack[(D_800B0078->unk12C >> 6) & 7] = D_800B0078->pc + 4;
+            (D_800B0078->state.word & 0x1C0) != 0x100) {
+            D_800B0078->call_stack[(D_800B0078->state.word >> 6) & 7] = D_800B0078->pc + 4;
             D_800B0078->pc = func_800ACDB8(2);
-            D_800B0078->unk12C = (D_800B0078->unk12C & ~0x1C0) | (((((D_800B0078->unk12C >> 6) & 7) + 1) & 7) << 6);
+            D_800B0078->state.word = (D_800B0078->state.word & ~0x1C0) | (((((D_800B0078->state.word >> 6) & 7) + 1) & 7) << 6);
             return;
         }
     }
@@ -7204,10 +7204,10 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009BB0C);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009BC98);
 
-/* Whether the current actor's octant (unk12C bits 9-11) is within four
+/* Whether the current actor's octant (state bits 9-11) is within four
  * octants past the camera's. */
 s32 func_8009BE58(void) {
-    return ((((s32)(D_800B0078->unk12C >> 9) & 7) - (func_8009A514() & 0xFFFF)) & 7) < 5;
+    return ((((s32)(D_800B0078->state.word >> 9) & 7) - (func_8009A514() & 0xFFFF)) & 7) < 5;
 }
 
 s32 func_8009CD18(s32 *window);
@@ -8302,15 +8302,14 @@ void func_800A0EB0(void) {
 extern u8 *D_801E8670[]; /* 801e module layers; +34 is a byte flag */
 extern void func_801E8030(s32 layer);
 
-#ifdef NON_MATCHING
-/* Close the current actor's 801e layer (unk12C bits 13-15): mode 0 clears
- * its flag, mode 1 releases it. Yields. */
+/* Close the current actor's 801e layer: mode 0 clears its flag, mode 1
+ * releases it. Yields. */
 void func_800A0EE8(void) {
     FieldActor *actor;
     s32 layer;
 
     actor = D_800B0078;
-    layer = (actor->unk12C >> 13) & 7;
+    layer = actor->state.bits.layer;
     actor->layer_flags &= ~0x2000;
     switch (D_800ADC00[actor->pc + 1]) {
     case 0:
@@ -8318,16 +8317,13 @@ void func_800A0EE8(void) {
         D_800B0078->pc += 2;
         break;
     case 1:
-        func_801E8030((actor->unk12C >> 13) & 7);
+        func_801E8030(actor->state.bits.layer);
         D_800B2078.unk2264--;
         D_800B0078->pc += 2;
         break;
     }
     D_800B00C0 = 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A0EE8);
-#endif
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A0FD8);
 
@@ -8385,10 +8381,10 @@ void func_800A1730(void) {
     FieldActor *actor;
 
     actor = D_800B0078;
-    if ((actor->unk12C & 0x1C0) != 0x100) {
-        actor->call_stack[(actor->unk12C >> 6) & 7] = actor->pc + 5;
+    if ((actor->state.word & 0x1C0) != 0x100) {
+        actor->call_stack[(actor->state.word >> 6) & 7] = actor->pc + 5;
         D_800B0078->pc = func_800ACDB8(1);
-        D_800B0078->unk12C = (D_800B0078->unk12C & ~0x1C0) | ((((D_800B0078->unk12C >> 6) & 7) + 1) & 7) << 6;
+        D_800B0078->state.word = (D_800B0078->state.word & ~0x1C0) | ((((D_800B0078->state.word >> 6) & 7) + 1) & 7) << 6;
     } else {
         if (D_800C268C == 0) {
             func_800379C8(D_8006FD44, D_800AFD1C);
@@ -8402,10 +8398,10 @@ void func_800A17F4(void) {
     FieldActor *actor;
 
     actor = D_800B0078;
-    if ((actor->unk12C & 0x1C0) != 0x100) {
-        actor->call_stack[(actor->unk12C >> 6) & 7] = actor->pc + 3;
+    if ((actor->state.word & 0x1C0) != 0x100) {
+        actor->call_stack[(actor->state.word >> 6) & 7] = actor->pc + 3;
         D_800B0078->pc = func_800ACDB8(1);
-        D_800B0078->unk12C = (D_800B0078->unk12C & ~0x1C0) | ((((D_800B0078->unk12C >> 6) & 7) + 1) & 7) << 6;
+        D_800B0078->state.word = (D_800B0078->state.word & ~0x1C0) | ((((D_800B0078->state.word >> 6) & 7) + 1) & 7) << 6;
     } else {
         if (D_800C268C == 0) {
             func_800379C8(D_8006FD44, D_800AFD1C);
@@ -8422,7 +8418,7 @@ void func_800A18B8(void) {
     FieldActor *actor;
 
     actor = D_800B0078;
-    if ((actor->unk12C & 0x1C0) == 0) {
+    if ((actor->state.word & 0x1C0) == 0) {
         if (D_800C268C == 0) {
             func_800379C8(D_8006FD44, D_800AFD1C);
         }
@@ -8431,24 +8427,73 @@ void func_800A18B8(void) {
         D_800AFFEC = 1;
         D_800B00C0 = 1;
     } else {
-        actor->unk12C = (actor->unk12C & ~0x1C0) | ((((actor->unk12C >> 6) & 7) - 1) & 7) << 6;
-        actor->pc = actor->call_stack[(actor->unk12C >> 6) & 7];
+        actor->state.word = (actor->state.word & ~0x1C0) | ((((actor->state.word >> 6) & 7) - 1) & 7) << 6;
+        actor->pc = actor->call_stack[(actor->state.word >> 6) & 7];
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A19B0);
+/* Reset the current actor's eight script slots and call stack; yields. */
+void func_800A19B0(void) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A1A8C);
+    for (i = 0; i < 8; i++) {
+        D_800B0078->slots[i].countdown = 0;
+        D_800B0078->slots[i].unk16 = 0;
+        D_800B0078->slots[i].priority = 15;
+        D_800B0078->slots[i].resume_pc = 0xFFFF;
+        D_800B0078->slots[i].unk22 = 0;
+        D_800B0078->slots[i].tag = 0xFF;
+        D_800B0078->slots[i].value = 0xFFFF;
+        D_800B0078->slots[i].move_mode = 0;
+    }
+    D_800B0078->slot = 0;
+    D_800B0078->unk0CF = 0;
+    D_800B00C0 = 1;
+    D_800B0078->unk84 = 0;
+    D_800B0078->state.bits.depth = 0;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A1B70);
+s32 func_800A3090(s32 actor, s32 event);
+
+/* Point every priority-7 script slot at the actor's script 1, end the
+ * current slot and yield. */
+void func_800A1A8C(void) {
+    s32 i;
+
+    for (i = 0; i < 8; i++) {
+        if (D_800B0078->slots[i].priority == 7) {
+            D_800B0078->slots[i].resume_pc = func_800A3090(D_800AFD1C, 1);
+        }
+    }
+    D_800B0078->slots[D_800B0078->slot].priority = 15;
+    D_800B0078->slots[D_800B0078->slot].tag = 0xFF;
+    D_800B00C0 = 1;
+}
+
+extern s32 D_800AFFEC;
+
+/* End the current script slot and yield. */
+void func_800A1B70(void) {
+    D_800B0078->slots[D_800B0078->slot].priority = 15;
+    D_800B0078->slots[D_800B0078->slot].tag = 0xFF;
+    D_800AFFEC = 1;
+    D_800B00C0 = 1;
+}
 
 INCLUDE_RODATA(".local/decomp/field/asm/nonmatchings/field", D_8006FD44);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A1BD0);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A1E74);
+/* Jump to operand 1. */
+void func_800A1E74(void) {
+    D_800B0078->pc = func_800ACDB8(1);
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A1E9C);
+/* Advance, raising the batch limit by 32. */
+void func_800A1E9C(void) {
+    D_800AFC7C += 32;
+    D_800B0078->pc++;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A1EC8);
 
@@ -8464,17 +8509,54 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A2714);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A28D4);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A2FC0);
+/* Advance one byte. */
+void func_800A2FC0(void) {
+    D_800B0078->pc++;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A2FE0);
+/* -1 when event variable `reference` is read unsigned, else 0. */
+s32 func_800A2FE0(s32 reference) {
+    if (D_800ADBF8->unsigned_bits[reference >> 6] & (1 << ((reference >> 1) & 0x1F))) {
+        return -1;
+    }
+    return 0;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A3018);
+/* Read event variable `reference` (a byte offset into the bank). */
+s32 func_800A3018(s32 reference) {
+    s32 value;
 
+    if (D_800ADBF8->unsigned_bits[reference >> 6] & (1 << ((reference >> 1) & 0x1F))) {
+        value = (u16)D_800C3A68[reference >> 1];
+    } else {
+        value = D_800C3A68[reference >> 1];
+    }
+    return value;
+}
+
+#ifdef NON_MATCHING
+/* Write event variable `reference`. The original keeps a temporary
+ * (sra a2 / sll v0) that this form does not. */
+void func_800A3074(u16 reference, s32 value) {
+    D_800C3A68[reference >> 1] = value;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A3074);
+#endif
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A3090);
+/* Entry PC of event `event` of actor `actor`. */
+s32 func_800A3090(s32 actor, s32 event) {
+    u16 *entries = D_800ADBF8->entries;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A30B4);
+    return entries[actor * 32 + event];
+}
+
+/* Store the three party members in variables 3e, 40, 42. */
+void func_800A30B4(void) {
+    func_800A3074(0x3E, D_80062590[0]);
+    func_800A3074(0x40, D_80062590[1]);
+    func_800A3074(0x42, D_80062590[2]);
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A30FC);
 
