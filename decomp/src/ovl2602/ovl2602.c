@@ -569,9 +569,9 @@ void func_801C7E00(u8 index, u16 x, u16 y, u16 w, u16 h) {
                   y + h - 8, 0x1000, 0, 1);
     func_8002675C(D_800625A0->sprite_sheet, 0x106, &panel->parts[24], D_800625A0->buffer, x, y + 8,
                   0x1000);
-    func_801C7604(panel->quads[14], x, y, 8, 8);
-    func_801C7604(panel->quads[15], x, y + h, 8, -8);
-    func_801C7604(panel->quads[13], x, y + 8, 8, h - 8);
+    func_801C7604(&panel->quads[56], x, y, 8, 8);
+    func_801C7604(&panel->quads[60], x, y + h, 8, -8);
+    func_801C7604(&panel->quads[52], x, y + 8, 8, h - 8);
 }
 
 /* Build panel `index`'s four corners around (x, y, w, h). */
@@ -589,10 +589,10 @@ void func_801C7F64(u8 index, u16 x, u16 y, u16 w, u16 h) {
                                        D_800625A0->buffer, 0, 0, 0x1000);
     panel->part_count += func_8002675C(D_800625A0->sprite_sheet, 0x104, &panel->parts[panel->part_count * 2],
                                        D_800625A0->buffer, 0, 0, 0x1000);
-    func_801C7604(panel->quads[0], x - 8, y + 8, 0x10, -0x10);
-    func_801C7604(panel->quads[1], x + w + 8, y + 8, -0x10, -0x10);
-    func_801C7604(panel->quads[2], x - 8, y + h - 8, 0x10, 0x10);
-    func_801C7604(panel->quads[3], x + w + 8, y + h - 8, -0x10, 0x10);
+    func_801C7604(&panel->quads[0], x - 8, y + 8, 0x10, -0x10);
+    func_801C7604(&panel->quads[4], x + w + 8, y + 8, -0x10, -0x10);
+    func_801C7604(&panel->quads[8], x - 8, y + h - 8, 0x10, 0x10);
+    func_801C7604(&panel->quads[12], x + w + 8, y + h - 8, -0x10, 0x10);
     for (i = 0; i < 4; i++) {
         func_801C765C(&panel->parts[i * 2 + D_800625A0->buffer]);
     }
@@ -622,8 +622,8 @@ void func_801C81AC(u8 index, u16 x, u16 y, u16 w) {
     (panel->parts + D_800625A0->buffer + 10)->u3 = 7;
     (panel->parts + D_800625A0->buffer + 10)->v3 = 0x94;
     half = (w - 0x10) / 2;
-    func_801C7604(panel->quads[4], x + 8, y - 8, half, 0x10);
-    func_801C7604(panel->quads[5], x + (half + 8), y - 8, half, 0x10);
+    func_801C7604(&panel->quads[16], x + 8, y - 8, half, 0x10);
+    func_801C7604(&panel->quads[20], x + (half + 8), y - 8, half, 0x10);
     for (i = 0; i < 2; i++) {
         func_801C765C(&panel->parts[i * 2 + D_800625A0->buffer + 8]);
     }
@@ -653,8 +653,8 @@ void func_801C84F0(u8 index, u16 x, u16 y, u16 w, u16 h) {
     (panel->parts + D_800625A0->buffer + 14)->u3 = 0xF;
     (panel->parts + D_800625A0->buffer + 14)->v3 = 0x94;
     half = (w - 0x10) / 2;
-    func_801C7604(panel->quads[6], x + 8, y + h - 8, half, 0x10);
-    func_801C7604(panel->quads[7], x + (half + 8), y + h - 8, half, 0x10);
+    func_801C7604(&panel->quads[24], x + 8, y + h - 8, half, 0x10);
+    func_801C7604(&panel->quads[28], x + (half + 8), y + h - 8, half, 0x10);
     for (i = 0; i < 2; i++) {
         func_801C765C(&panel->parts[i * 2 + D_800625A0->buffer + 12]);
     }
@@ -684,8 +684,8 @@ void func_801C883C(u8 index, u16 x, u16 y, u16 h) {
     (panel->parts + D_800625A0->buffer + 18)->u3 = 0x20;
     (panel->parts + D_800625A0->buffer + 18)->v3 = 0x8B;
     half = (h - 0x10) / 2;
-    func_801C7604(panel->quads[8], x - 8, y + 8, 0x10, half);
-    func_801C7604(panel->quads[9], x - 8, y + (half + 8), 0x10, half);
+    func_801C7604(&panel->quads[32], x - 8, y + 8, 0x10, half);
+    func_801C7604(&panel->quads[36], x - 8, y + (half + 8), 0x10, half);
     for (i = 0; i < 2; i++) {
         func_801C765C(&panel->parts[i * 2 + D_800625A0->buffer + 16]);
     }
@@ -715,20 +715,20 @@ void func_801C8B84(u8 index, u16 x, u16 y, u16 w, u16 h) {
     (panel->parts + D_800625A0->buffer + 22)->u3 = 0x20;
     (panel->parts + D_800625A0->buffer + 22)->v3 = 0x93;
     half = (h - 0x10) / 2;
-    func_801C7604(panel->quads[10], x + w - 8, y + 8, 0x10, half);
-    func_801C7604(panel->quads[11], x + w - 8, y + (half + 8), 0x10, half);
+    func_801C7604(&panel->quads[40], x + w - 8, y + 8, 0x10, half);
+    func_801C7604(&panel->quads[44], x + w - 8, y + (half + 8), 0x10, half);
     for (i = 0; i < 2; i++) {
         func_801C765C(&panel->parts[i * 2 + D_800625A0->buffer + 20]);
     }
 }
 
 /* Lay out panel `index` at (x, y, w, h) for this buffer and mark it shown. */
-void func_801C8ED0(u8 index, u16 x, u16 y, u16 w, u16 h, u8 style, s32 unk718, u8 has_bar) {
+void func_801C8ED0(u8 index, u16 x, u16 y, u16 w, u16 h, u8 flat, s32 ot_entry, u8 has_bar) {
     Panel *panel;
 
     panel = D_800625A0->panels[index];
     D_800625A0->flags->panel_shown[index] = 0;
-    func_801C7604(panel->quads[12], x, y, w, h);
+    func_801C7604(&panel->quads[48], x, y, w, h);
     func_801C7F64(index, x, y, w, h);
     func_801C81AC(index, x, y, w);
     func_801C84F0(index, x, y, w, h);
@@ -738,8 +738,8 @@ void func_801C8ED0(u8 index, u16 x, u16 y, u16 w, u16 h, u8 style, s32 unk718, u
         func_801C7E00(index, x, y, w, h);
     }
     panel->has_bar = has_bar;
-    panel->style = style;
-    panel->unk718 = unk718;
+    panel->flat = flat;
+    panel->ot_entry = ot_entry;
     panel->buffer = D_800625A0->buffer;
     D_800625A0->flags->panel_shown[index] = 1;
 }
@@ -753,7 +753,7 @@ void func_801C9054(u8 index) {
 }
 
 /* Open panel `index` at (x, y, w, h): at once, or growing from its centre when `grow`. */
-void func_801C90E0(u8 index, s16 x, s16 y, s16 w, u16 h, u8 grow, u8 style, s32 unk718,
+void func_801C90E0(u8 index, s16 x, s16 y, s16 w, u16 h, u8 grow, u8 flat, s32 ot_entry,
                    u8 has_bar) {
     PanelGrowth *growth;
 
@@ -775,10 +775,10 @@ void func_801C90E0(u8 index, s16 x, s16 y, s16 w, u16 h, u8 grow, u8 style, s32 
         growth->cur_w = 0;
         growth->cur_h = 0;
         D_800625A0->flags->panel_growing[index] = 1;
-        growth->style = style;
-        growth->unk0C = unk718;
+        growth->flat = flat;
+        growth->ot_entry = ot_entry;
     } else {
-        func_801C8ED0(index, x, y, w, h, style, unk718, has_bar);
+        func_801C8ED0(index, x, y, w, h, flat, ot_entry, has_bar);
     }
 }
 
@@ -809,7 +809,7 @@ void func_801C9264(void) {
             }
             func_801C8ED0(growth->index, growth->x + growth->w / 2 - growth->cur_w / 2,
                           growth->y + growth->h / 2 - growth->cur_h / 2, growth->cur_w,
-                          growth->cur_h, growth->style, growth->unk0C, growth->has_bar);
+                          growth->cur_h, growth->flat, growth->ot_entry, growth->has_bar);
         }
     }
 }
@@ -827,7 +827,7 @@ void func_801C93B0(s32 count, SVECTOR *quads, POLY_FT4 *packets, s32 first) {
         func_8004A73C(&quads[i * 4], &quads[i * 4 + 1], &quads[i * 4 + 2], &quads[i * 4 + 3],
                       &poly->x0, &poly->x1, &poly->x2, &poly->x3, &depth, &flag);
         first += 2;
-        func_80043B48(D_800625A0->draw_env + 0x80, poly);
+        func_80043B48(&D_800625A0->draw_env->ot[4], poly);
     }
 }
 #else
@@ -840,7 +840,7 @@ void func_801C94CC(s32 count, POLY_FT4 *packets, s32 first) {
     s32 i;
 
     for (i = 0; i < count; i++) {
-        func_80043B48(D_800625A0->draw_env + 0x80, packets + first);
+        func_80043B48(&D_800625A0->draw_env->ot[4], packets + first);
         first += 2;
     }
 }
@@ -860,31 +860,193 @@ void func_801C9550(void) {
 
 /* Draw the cursor's label draw mode, and the cursor when shown. */
 void func_801C959C(void) {
-    func_80043B48(D_800625A0->draw_env + 0x80,
+    func_80043B48(&D_800625A0->draw_env->ot[4],
                   &D_800625A0->cursor->mode_label[D_800625A0->cursor->shade_buffer]);
     if (D_800625A0->flags->unk4 != 0) {
-        func_80043B48(D_800625A0->draw_env + 0x80,
+        func_80043B48(&D_800625A0->draw_env->ot[4],
                       &D_800625A0->cursor->sprite[D_800625A0->cursor->sprite_buffer]);
     }
 }
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801C962C);
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801C9690);
+/* Project and link panel `index`'s top edge. */
+void func_801C9690(s32 index) {
+    s32 depth;
+    s32 flag;
+    Panel *panel;
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801C9864);
+    panel = D_800625A0->panels[index];
+    func_8004A73C(&panel->quads[16], &panel->quads[17], &panel->quads[18], &panel->quads[19],
+                  &panel->parts[panel->buffer + 8].x0, &panel->parts[panel->buffer + 8].x1,
+                  &panel->parts[panel->buffer + 8].x2, &panel->parts[panel->buffer + 8].x3,
+                  &depth, &flag);
+    func_80043B48(&D_800625A0->draw_env->ot[panel->ot_entry], &panel->parts[panel->buffer + 8]);
+    func_8004A73C(&panel->quads[20], &panel->quads[21], &panel->quads[22], &panel->quads[23],
+                  &panel->parts[panel->buffer + 10].x0, &panel->parts[panel->buffer + 10].x1,
+                  &panel->parts[panel->buffer + 10].x2, &panel->parts[panel->buffer + 10].x3,
+                  &depth, &flag);
+    func_80043B48(&D_800625A0->draw_env->ot[panel->ot_entry], &panel->parts[panel->buffer + 10]);
+}
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801C9A38);
+/* Project and link panel `index`'s bottom edge. */
+void func_801C9864(s32 index) {
+    s32 depth;
+    s32 flag;
+    Panel *panel;
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801C9C0C);
+    panel = D_800625A0->panels[index];
+    func_8004A73C(&panel->quads[24], &panel->quads[25], &panel->quads[26], &panel->quads[27],
+                  &panel->parts[panel->buffer + 12].x0, &panel->parts[panel->buffer + 12].x1,
+                  &panel->parts[panel->buffer + 12].x2, &panel->parts[panel->buffer + 12].x3,
+                  &depth, &flag);
+    func_80043B48(&D_800625A0->draw_env->ot[panel->ot_entry], &panel->parts[panel->buffer + 12]);
+    func_8004A73C(&panel->quads[28], &panel->quads[29], &panel->quads[30], &panel->quads[31],
+                  &panel->parts[panel->buffer + 14].x0, &panel->parts[panel->buffer + 14].x1,
+                  &panel->parts[panel->buffer + 14].x2, &panel->parts[panel->buffer + 14].x3,
+                  &depth, &flag);
+    func_80043B48(&D_800625A0->draw_env->ot[panel->ot_entry], &panel->parts[panel->buffer + 14]);
+}
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801C9DE0);
+/* Project and link panel `index`'s left edge. */
+void func_801C9A38(s32 index) {
+    s32 depth;
+    s32 flag;
+    Panel *panel;
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801C9F1C);
+    panel = D_800625A0->panels[index];
+    func_8004A73C(&panel->quads[32], &panel->quads[33], &panel->quads[34], &panel->quads[35],
+                  &panel->parts[panel->buffer + 16].x0, &panel->parts[panel->buffer + 16].x1,
+                  &panel->parts[panel->buffer + 16].x2, &panel->parts[panel->buffer + 16].x3,
+                  &depth, &flag);
+    func_80043B48(&D_800625A0->draw_env->ot[panel->ot_entry], &panel->parts[panel->buffer + 16]);
+    func_8004A73C(&panel->quads[36], &panel->quads[37], &panel->quads[38], &panel->quads[39],
+                  &panel->parts[panel->buffer + 18].x0, &panel->parts[panel->buffer + 18].x1,
+                  &panel->parts[panel->buffer + 18].x2, &panel->parts[panel->buffer + 18].x3,
+                  &depth, &flag);
+    func_80043B48(&D_800625A0->draw_env->ot[panel->ot_entry], &panel->parts[panel->buffer + 18]);
+}
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CA068);
+/* Project and link panel `index`'s right edge. */
+void func_801C9C0C(s32 index) {
+    s32 depth;
+    s32 flag;
+    Panel *panel;
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CA28C);
+    panel = D_800625A0->panels[index];
+    func_8004A73C(&panel->quads[40], &panel->quads[41], &panel->quads[42], &panel->quads[43],
+                  &panel->parts[panel->buffer + 20].x0, &panel->parts[panel->buffer + 20].x1,
+                  &panel->parts[panel->buffer + 20].x2, &panel->parts[panel->buffer + 20].x3,
+                  &depth, &flag);
+    func_80043B48(&D_800625A0->draw_env->ot[panel->ot_entry], &panel->parts[panel->buffer + 20]);
+    func_8004A73C(&panel->quads[44], &panel->quads[45], &panel->quads[46], &panel->quads[47],
+                  &panel->parts[panel->buffer + 22].x0, &panel->parts[panel->buffer + 22].x1,
+                  &panel->parts[panel->buffer + 22].x2, &panel->parts[panel->buffer + 22].x3,
+                  &depth, &flag);
+    func_80043B48(&D_800625A0->draw_env->ot[panel->ot_entry], &panel->parts[panel->buffer + 22]);
+}
+
+/* Project and link panel `index`'s background and its draw mode. */
+void func_801C9DE0(s32 index) {
+    s32 depth;
+    s32 flag;
+    Panel *panel;
+
+    panel = D_800625A0->panels[index];
+    func_8004A73C(&panel->quads[48], &panel->quads[49], &panel->quads[50], &panel->quads[51],
+                  &(panel->back + panel->buffer)->x0, &(panel->back + panel->buffer)->x1,
+                  &(panel->back + panel->buffer)->x2, &(panel->back + panel->buffer)->x3, &depth,
+                  &flag);
+    func_80043B48(&D_800625A0->draw_env->ot[panel->ot_entry], &panel->back[panel->buffer]);
+    func_80043B48(&D_800625A0->draw_env->ot[panel->ot_entry], &panel->mode[panel->buffer]);
+}
+
+/* Project and link panel `index`'s four corners. */
+void func_801C9F1C(s32 index) {
+    s32 depth;
+    s32 flag;
+    Panel *panel;
+    s32 i;
+
+    panel = D_800625A0->panels[index];
+    for (i = 0; i < 4; i++) {
+        func_8004A73C(&panel->quads[i * 4], &panel->quads[i * 4 + 1], &panel->quads[i * 4 + 2], &panel->quads[i * 4 + 3],
+                      &(panel->parts + (i * 2 + panel->buffer))->x0,
+                      &(panel->parts + (i * 2 + panel->buffer))->x1,
+                      &(panel->parts + (i * 2 + panel->buffer))->x2,
+                      &(panel->parts + (i * 2 + panel->buffer))->x3, &depth, &flag);
+        func_80043B48(&D_800625A0->draw_env->ot[panel->ot_entry], &panel->parts[i * 2 + panel->buffer]);
+    }
+}
+
+/* Project and link panel `index`'s scroll bar: both arrows, then the track. */
+void func_801CA068(s32 index) {
+    s32 depth;
+    s32 flag;
+    Panel *panel;
+    s32 i;
+
+    panel = D_800625A0->panels[index];
+    for (i = 0; i < 2; i++) {
+        func_8004A73C(&panel->quads[i * 4 + 56], &panel->quads[i * 4 + 57], &panel->quads[i * 4 + 58],
+                      &panel->quads[i * 4 + 59], &panel->parts[i * 2 + panel->buffer + 26].x0, &panel->parts[i * 2 + panel->buffer + 26].x1, &panel->parts[i * 2 + panel->buffer + 26].x2, &panel->parts[i * 2 + panel->buffer + 26].x3, &depth, &flag);
+        func_80043B48(&D_800625A0->draw_env->ot[panel->ot_entry], &panel->parts[i * 2 + panel->buffer + 26]);
+    }
+    func_8004A73C(&panel->quads[52], &panel->quads[53], &panel->quads[54], &panel->quads[55],
+                  &panel->parts[panel->buffer + 24].x0, &panel->parts[panel->buffer + 24].x1,
+                  &panel->parts[panel->buffer + 24].x2, &panel->parts[panel->buffer + 24].x3,
+                  &depth, &flag);
+    func_80043B48(&D_800625A0->draw_env->ot[panel->ot_entry], &panel->parts[panel->buffer + 24]);
+}
+
+/* Draw every shown panel; panels that are not flat get their own 3D matrices. */
+void func_801CA28C(void) {
+    SVECTOR rotation;
+    VECTOR translation;
+    MATRIX matrix;
+    SVECTOR unused; /* never referenced; the original frame reserves it */
+    Panel *panel;
+    s32 i;
+
+    for (i = 0; i < 7; i++) {
+        if (D_800625A0->flags->panel_shown[i] != 0) {
+            panel = D_800625A0->panels[i];
+            if (panel->flat == 0) {
+                func_8004960C();
+                rotation.vz = 0;
+                rotation.vy = 0;
+                rotation.vx = 0;
+                translation.vy = 0;
+                translation.vx = 0;
+                translation.vz = 0x200;
+                func_8003F738(&rotation, &matrix);
+                func_80049D9C(&matrix, &translation);
+                func_80049EFC(&matrix);
+                func_80049F8C(&matrix);
+                func_801C9F1C(i);
+                if (panel->has_bar) {
+                    func_801CA068(i);
+                }
+                func_801C9690(i);
+                func_801C9864(i);
+                func_801C9A38(i);
+                func_801C9C0C(i);
+                func_801C9DE0(i);
+                func_800496AC();
+            } else {
+                func_801C9F1C(i);
+                if (panel->has_bar) {
+                    func_801CA068(i);
+                }
+                func_801C9690(i);
+                func_801C9864(i);
+                func_801C9A38(i);
+                func_801C9C0C(i);
+                func_801C9DE0(i);
+            }
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CA404);
 

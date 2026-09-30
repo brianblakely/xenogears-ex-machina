@@ -127,11 +127,12 @@ typedef struct {
     POLY_FT4 parts[30];  /* 000 */
     POLY_G4 back[2];     /* 4b0: background */
     DR_MODE mode[2];     /* 4f8 */
-    SVECTOR quads[16][4]; /* 510: corners 0-3, top 4-5, bottom 6-7, left 8-9,
-                            right 10-11, background 12, bar 13-15 */
+    SVECTOR quads[64];   /* 510: four corners each for the corner pieces 0-3,
+                            top 4-5, bottom 6-7, left 8-9, right 10-11,
+                            background 12 and bar 13-15 */
     s32 part_count;      /* 710: corner parts the sprite sheet produced */
-    s32 style;           /* 714 */
-    s32 unk718;
+    s32 flat;            /* 714: drawn with the current matrices, not the panel's own */
+    s32 ot_entry;        /* 718 */
     u8 buffer;           /* 71c */
     u8 has_bar;          /* 71d */
     u8 unk71E[2];
@@ -141,10 +142,10 @@ typedef struct {
 typedef struct {
     u16 x, y, w, h;      /* 00: final rectangle */
     u16 cur_w, cur_h;    /* 08: current size */
-    s32 unk0C;           /* 0c */
+    s32 ot_entry;        /* 0c */
     u8 index;            /* 10 */
     u8 done;             /* 11 */
-    u8 style;            /* 12 */
+    u8 flat;             /* 12 */
     u8 has_bar;          /* 13 */
     u8 unk14[4];
 } PanelGrowth;
@@ -191,10 +192,26 @@ typedef struct {
     u8 unk52[0x6C - 0x52];
 } ScreenFlags;
 
+/* A draw buffer's environment block; ordering table entries at +70. */
+typedef struct {
+    u8 unk0[0x70];
+    u32 ot[16]; /* 70 */
+} DrawEnv;
+
+typedef struct {
+    s16 m[3][3];
+    s16 pad;
+    s32 t[3];
+} MATRIX;
+
+typedef struct {
+    s32 vx, vy, vz, pad;
+} VECTOR;
+
 /* Menu state (*800625a0); only the fields this overlay touches are named. */
 typedef struct {
     u8 unk0[0x1D4];
-    u8 *draw_env;        /* 1d4: current buffer's draw environment (OT at +70) */
+    DrawEnv *draw_env;   /* 1d4: current buffer's draw environment */
     u8 unk1D8[0x2DC - 0x1D8];
     void *sprite_sheet;  /* 2dc */
     void *label_text;    /* 2e0 */
@@ -282,6 +299,12 @@ void func_80043DA0(LINE_F3 *prim);                 /* SetLineF3 */
 void func_800454DC(DR_MODE *p, s32 dfe, s32 dtd, s32 tpage, RECT *tw); /* SetDrawMode */
 u16 func_80043A58(s32 x, s32 y);                   /* GetClut */
 void func_80043B48(void *ot, void *prim);          /* AddPrim */
+void func_8004960C(void);                          /* PushMatrix */
+void func_800496AC(void);                          /* PopMatrix */
+MATRIX *func_8003F738(SVECTOR *r, MATRIX *m);      /* RotMatrix */
+MATRIX *func_80049D9C(MATRIX *m, VECTOR *v);       /* TransMatrix */
+void func_80049EFC(MATRIX *m);                     /* SetRotMatrix */
+void func_80049F8C(MATRIX *m);                     /* SetTransMatrix */
 s32 func_8004A73C(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *v3, s16 *xy0, s16 *xy1, s16 *xy2,
                   s16 *xy3, s32 *p, s32 *flag); /* RotTransPers4 */
 void func_80044894(RECT *rect, void *data);        /* LoadImage */
@@ -303,7 +326,14 @@ void func_801C7A38(u8 index, u16 x, u16 y, u16 w);
 void func_801C7D7C(u8 index, u16 x, u16 y, u16 w, u16 h);
 void func_801C80C8(u8 index, u16 x, u16 y, u16 h);
 void func_801C8410(u8 index, u16 x, u16 y, u16 w, u16 h);
-void func_801C875C(u8 index, u16 x, u16 y, u16 w, u16 h, u8 style, s32 unk718, u8 has_bar);
+void func_801C875C(u8 index, u16 x, u16 y, u16 w, u16 h, u8 flat, s32 ot_entry, u8 has_bar);
+void func_801C8EB8(s32 index);
+void func_801C908C(s32 index);
+void func_801C9260(s32 index);
+void func_801C9434(s32 index);
+void func_801C9608(s32 index);
+void func_801C9744(s32 index);
+void func_801C9890(s32 index);
 void func_801C8C3C(s32 count, SVECTOR *quads, POLY_FT4 *packets, s32 first);
 
 #endif
