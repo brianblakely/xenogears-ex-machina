@@ -2880,9 +2880,6 @@ u8 func_801E0F78(u8 slot, u8 arg1) {
     return 1;
 }
 
-/* Open the 801e1544 screen: its block (+438), labels and window, the party
- * panel when two or more members can take part, and the green gauges. */
-#ifdef NON_MATCHING
 void func_801E1014(void) {
     MenuBlock438 *block;
     s32 i;
@@ -2896,9 +2893,10 @@ void func_801E1014(void) {
     func_801E8070(2, D_800625A0->labels17E0, D_801EA564, D_801E9EA0, &D_800625A0->party->unk4E, 0, 0, 4);
     func_801D397C(2, 0x44, 0xa, 0xe4, 0xc4, 0, 1, 4, 0);
     D_800625A0->party->redraw6 = 0;
+    i = 0;
     j = 0; /* members that can take part */
     D_800625A0->party->unk20[1] = 0;
-    for (i = 0; i < 3; i++) {
+    for (; i < 3; i++) {
         if (D_800625A0->party->ids[i] != 0xff) {
             if (D_800625A0->party->ids[i] != 7 && D_800625A0->party->ids[i] != 8) {
                 j++;
@@ -2914,25 +2912,22 @@ void func_801E1014(void) {
         j = 0;
         do {
             SetPolyG4(&D_800625A0->block438->gauges[i][j]);
-            D_800625A0->block438->gauges[i][j].r0 = 0;
-            D_800625A0->block438->gauges[i][j].g0 = 0xff;
-            D_800625A0->block438->gauges[i][j].b0 = 0;
-            D_800625A0->block438->gauges[i][j].r1 = 0;
-            D_800625A0->block438->gauges[i][j].g1 = 0xff;
-            D_800625A0->block438->gauges[i][j].b1 = 0;
-            D_800625A0->block438->gauges[i][j].r2 = 0;
-            D_800625A0->block438->gauges[i][j].g2 = 0;
-            D_800625A0->block438->gauges[i][j].b2 = 0;
-            D_800625A0->block438->gauges[i][j].r3 = 0;
-            D_800625A0->block438->gauges[i][j].g3 = 0;
-            D_800625A0->block438->gauges[i][j].b3 = 0;
+            (D_800625A0->block438->gauges[i] + j)->r0 = 0;
+            (D_800625A0->block438->gauges[i] + j)->g0 = 0xff;
+            (D_800625A0->block438->gauges[i] + j)->b0 = 0;
+            (D_800625A0->block438->gauges[i] + j)->r1 = 0;
+            (D_800625A0->block438->gauges[i] + j)->g1 = 0xff;
+            (D_800625A0->block438->gauges[i] + j)->b1 = 0;
+            (D_800625A0->block438->gauges[i] + j)->r2 = 0;
+            (D_800625A0->block438->gauges[i] + j)->g2 = 0;
+            (D_800625A0->block438->gauges[i] + j)->b2 = 0;
+            (D_800625A0->block438->gauges[i] + j)->r3 = 0;
+            (D_800625A0->block438->gauges[i] + j)->g3 = 0;
+            (D_800625A0->block438->gauges[i] + j)->b3 = 0;
             j++;
         } while (j < 2);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E1014);
-#endif
 
 /* Close the 801e1544 screen: its sprites, labels and block (+438); view 14. */
 void func_801E1398(void) {
