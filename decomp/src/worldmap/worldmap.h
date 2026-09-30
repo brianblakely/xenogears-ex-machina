@@ -406,7 +406,7 @@ typedef struct SceneObject {
     SpriteDef *def;             /* 0x40 */
     s32 unk44;
     void *prims;                /* 0x48 */
-    s32 unk4C;
+    void *prims2;               /* 0x4C: second buffer's copy */
     struct SceneObject *parent; /* 0x50 */
 } SceneObject;
 
@@ -438,7 +438,7 @@ typedef struct {
 
 void func_80083108(SceneObject *object, PolyFT3 *prims, s32 count, s32 mode);
 
-void func_8003F968(void *a, void *b, s32 size);
+void func_8003F968(void *dest, void *src, s32 size); /* copy memory */
 
 extern void *D_8009D7E8, *D_8009D7EC, *D_8009CEB4, *D_8009D150, *D_8009D7F8, *D_8009D7FC;
 extern u16 D_8009B64C[][2]; /* per area: two scene objects */

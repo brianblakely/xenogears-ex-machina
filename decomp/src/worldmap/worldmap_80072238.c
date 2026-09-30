@@ -477,11 +477,12 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80076594);
 
-/* Replace the music: stop the current sequence and start disc file `file`. */
-void func_800767D4(s32 mode, s32 file) {
+/* Replace the music: stop the current sequence and start `data` (the
+ * contents of disc file `file`). */
+void func_800767D4(void *data, s32 file) {
     func_80039CC4();
     func_800399D4(D_80062528);
-    func_8003F968(D_80062648, mode, func_800288EC(file));
+    func_8003F968(D_80062648, data, func_800288EC(file));
     D_80062528 = func_80039850(D_80062648);
     func_80039A80(D_80062528, 0x7F, 0);
 }

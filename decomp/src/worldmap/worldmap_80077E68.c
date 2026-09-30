@@ -74,7 +74,7 @@ void func_8007A06C(SceneObject *object, PolyFT4 *quads, s32 count) {
         setRGB0(quad, 0x80, 0x80, 0x80);
         quad++;
     }
-    func_8003F968((void *)object->unk4C, object->prims, count * sizeof(PolyFT4));
+    func_8003F968(object->prims2, object->prims, count * sizeof(PolyFT4));
 }
 
 /* Rebuild both scene sprites' quads. */
