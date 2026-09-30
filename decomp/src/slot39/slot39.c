@@ -2665,7 +2665,306 @@ u8 func_801CBD90(u8 kind) {
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CBD90);
 #endif
 
+/* The file screen's copy command: pick a file and copy it to the other
+ * card (asking first; no card, a full card or an existing file there
+ * refuse). The copy reads the header and data blocks and writes them to a
+ * temporary file that is then renamed; it reports 5c, or ac for a full
+ * card and 44 otherwise, and refreshes the listing. Returns 1 when there
+ * was no card. */
+#ifdef NON_MATCHING
+/* Differs in register allocation and spills (the original keeps &tempName in a saved register). */
+u8 func_801CC6D8(void) {
+    char destName[64];
+    char other[8];
+    char srcName[64];
+    char tempName[64];
+    char device[8];
+    u8 buffer[0x200];
+    u8 header[0x200];
+    s32 src;
+    u8 first;
+    u8 result;
+    u8 full;
+    s32 again;
+    u8 proceed;
+    s32 dest;
+    u8 ask;
+    u8 noCard;
+    u8 exists;
+    u8 retry;
+    u8 phase;
+    s32 fd;
+    s32 srcFd;
+    s32 destFd;
+    s32 written;
+    s32 i;
+
+    full = 0;
+    first = 1;
+    again = 1;
+    result = 0;
+    func_801CADB0();
+    do {
+        if (func_801C93A8()) {
+            result = 1;
+            break;
+        }
+        if (first) {
+            if (D_800625A0->party->messageShown) {
+                func_801D32B4();
+            }
+            first = 0;
+            D_800625A0->markers->visible[0] = 1;
+        }
+        if (!func_801C9BCC(0) && (D_800625A0->card->cursor = func_801C9D34(0)) == 0xff) {
+            D_800625A0->markers->visible[0] = 0;
+            D_800625A0->party->unkB = 0;
+            func_801CACF8(0x62, 0xff, 0);
+            break;
+        }
+        D_800625A0->party->unk2F = 1;
+        switch (func_801CA750(0)) {
+        case 1:
+            D_800625A0->markers->unk144[0] = 0;
+            D_800625A0->card->mode = 0;
+            dest = D_800625A0->card->cursor / 15 == 0;
+            proceed = 1;
+            if (!dest) {
+                ask = 0x47;
+                noCard = 0x4a;
+                exists = 0x4d;
+            } else {
+                ask = 0xbb;
+                noCard = 0xbe;
+                exists = 0xc1;
+            }
+            if (!(u8)func_801CACF8(ask, 0xff, 1)) {
+                proceed = 0;
+                D_800625A0->card->unk4F80 = 0xff;
+            }
+            if (proceed && !D_800625A0->card->present[dest]) {
+                func_801D2F4C(noCard);
+                if (!D_800625A0->card->present[dest]) {
+                    for (i = 0xb3; i != 0; i--) {
+                        VSync(0);
+                    }
+                    proceed = 0;
+                    again = 0;
+                }
+                func_801D32B4();
+            }
+            if (proceed && D_801EA900[dest] >= 15) {
+                proceed = 0;
+                D_801EA900[dest] = 0;
+                D_800625A0->party->unk2F = 0;
+                again = 0;
+                func_801CACF8(0xac, 0xff, 0);
+            }
+            if (proceed) {
+                dest = D_800625A0->card->cursor / 15 == 0;
+                if (dest) {
+                    __builtin_memcpy(device, D_801C50A8, 6);
+                    __builtin_memcpy(other, D_801C50B0, 6);
+                    src = 0;
+                } else {
+                    __builtin_memcpy(device, D_801C50B0, 6);
+                    __builtin_memcpy(other, D_801C50A8, 6);
+                    src = 1;
+                }
+                if (D_800625A0->card->result[dest] == -2) {
+                    if (!func_801CB8AC(dest)) {
+                        D_800625A0->markers->unk144[0] = 1;
+                        continue;
+                    }
+                    func_801D2F4C(0x26);
+                    if (func_80040574(other)) {
+                        func_801D32B4();
+                        func_801CACF8(0x5c, 0xff, 0);
+                    } else {
+                        func_801D32B4();
+                        proceed = 0;
+                    }
+                }
+            }
+            if (proceed) {
+                for (i = 0; i < D_800625A0->card->unk4F8A[dest]; i++) {
+                    if (!strcmp(D_800625A0->card->files[D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]]].name,
+                                D_800625A0->card->files[dest * 16 + i].name)) {
+                        i = 0xff;
+                        break;
+                    }
+                }
+                if (i == 0xff) {
+                    func_801CACF8(exists, 0xff, 0);
+                    proceed = 0;
+                }
+            }
+            if (proceed) {
+                func_801D2F4C(0x41);
+                D_800625A0->sounds = 0;
+                D_800625A0->party->unk2F = 0;
+                D_800625A0->party->unkB = 0;
+                D_800625A0->card->unk4F80 = 0xff;
+                D_800625A0->card->unk4F8C[0] = 0xff;
+                D_800625A0->card->unk4F8C[1] = 0xff;
+                strcpy(srcName, device);
+                strcpy(destName, other);
+                strcpy(tempName, other);
+                strcat(srcName, D_800625A0->card->files[D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]]].name);
+                strcat(destName, D_800625A0->card->files[D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]]].name);
+                strcat(tempName, D_801C50B8);
+                retry = 3;
+                do {
+                    fd = open(srcName, 1);
+                    if (fd == -1) {
+                        fd = 0;
+                        func_801C8CA4(src);
+                    }
+                } while (fd == 0 && --retry != 0);
+                if (fd != 0) {
+                    srcFd = fd;
+                    retry = 3;
+                    do {
+                        if (func_80040544(fd, header, 0x200) == -1) {
+                            fd = 0;
+                            func_801C8CA4(src);
+                        }
+                    } while (fd == 0 && --retry != 0);
+                    if (fd == 0) {
+                        func_80040564(srcFd);
+                    } else {
+                        func_800405B4(tempName);
+                        retry = 1;
+                        do {
+                            destFd = open(tempName, header[3] << 16 | 0x200);
+                            if (destFd == -1) {
+                                fd = 0;
+                                full = 1;
+                            }
+                        } while (fd == 0 && --retry != 0);
+                        if (fd == 0) {
+                            func_80040564(srcFd);
+                        }
+                        func_80040564(destFd);
+                        if (fd != 0) {
+                            retry = 3;
+                            do {
+                                destFd = open(tempName, 2);
+                                if (destFd == -1) {
+                                    fd = 0;
+                                    func_801C8CA4(dest);
+                                }
+                            } while (fd == 0 && --retry != 0);
+                            if (fd == 0) {
+                                func_80040564(srcFd);
+                                func_800405B4(tempName);
+                            } else {
+                                retry = 3;
+                                do {
+                                    if (write(destFd, header, 0x200) == -1) {
+                                        fd = 0;
+                                        func_801C8CA4(dest);
+                                    }
+                                } while (fd == 0 && --retry != 0);
+                                written = 0x200;
+                                if (fd == 0) {
+                                    func_80040564(srcFd);
+                                    func_80040564(destFd);
+                                    destFd = 0;
+                                    func_800405B4(tempName);
+                                }
+                                phase = 0;
+                                func_801CAE08(1);
+                                for (;;) {
+                                    func_801C7BF4();
+                                    if (phase == 0) {
+                                        retry = 3;
+                                        do {
+                                            if (func_80040544(fd, buffer, 0x200) != 0x200) {
+                                                fd = 0;
+                                                func_801C8CA4(src);
+                                            }
+                                        } while (fd == 0 && --retry != 0);
+                                        if (fd == 0) {
+                                            goto fail;
+                                        }
+                                        phase = 1;
+                                    } else {
+                                        retry = 3;
+                                        do {
+                                            if (write(destFd, buffer, 0x200) != 0x200) {
+                                                fd = 0;
+                                                func_801C8CA4(dest);
+                                            }
+                                        } while (fd == 0 && --retry != 0);
+                                        if (fd == 0) {
+                                            goto fail;
+                                        }
+                                        written += 0x200;
+                                        phase = 0;
+                                        if (written >= header[3] << 13) {
+                                            break;
+                                        }
+                                    }
+                                }
+                                func_80040564(destFd);
+                                func_80040564(fd);
+                                strcpy(tempName, other);
+                                strcat(tempName, D_801C50B8);
+                                func_800405A4(tempName, destName);
+                                goto copied;
+                            fail:
+                                func_80040564(srcFd);
+                                func_80040564(destFd);
+                                strcpy(tempName, other);
+                                strcat(tempName, D_801C50B8);
+                                func_800405B4(tempName);
+                            copied:;
+                            }
+                        }
+                    }
+                }
+            }
+            if (proceed) {
+                func_801CAE08(2);
+                func_801D32B4();
+                if (fd != 0) {
+                    D_800625A0->sounds = 1;
+                    func_801C8574(0x34);
+                    D_800625A0->sounds = 0;
+                    func_801CACF8(0x5c, 0xff, 0);
+                } else {
+                    func_801CACF8(full ? 0xac : 0x44, 0xff, 0);
+                }
+                func_801CAE08(0);
+                D_800625A0->card->mode = 2;
+                while (D_800625A0->cardPollTimer != 1) {
+                    func_801C7BF4();
+                }
+                for (i = 0; i < 32; i++) {
+                    D_800625A0->card->fileSlots[i] = 0xff;
+                    D_800625A0->card->ours[i] = 0;
+                    D_800625A0->card->files[i].state = 0;
+                }
+                D_800625A0->card->scanned[0] = 0;
+                D_800625A0->card->scanned[1] = 0;
+                D_801E9778 = 1;
+            }
+            D_800625A0->markers->unk144[0] = 1;
+            D_800625A0->sounds = 1;
+            /* fallthrough */
+        case 2:
+            again = 0;
+            break;
+        }
+    } while (again);
+    D_800625A0->card->mode = 1;
+    D_800625A0->cardsPresent = 1;
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CC6D8);
+#endif
 
 /* The file screen's delete command: pick a file with the cursor, confirm and
  * erase it, then force the cards to be scanned again. Returns 1 when the
