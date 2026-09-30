@@ -225,7 +225,64 @@ void func_800848B4(s32 parent, s32 child) {
     D_8009C620[child].parent = &D_8009C620[parent];
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_800848F4);
+/* Draw the visible scene objects: build each one's matrix through its
+ * parent chain, place it relative to the camera target, and add its sprite
+ * set to the ordering table when it projects in front and near enough. */
+void func_800848F4(void) {
+    SceneScratch *scratch;
+    SceneObject *parent;
+    s32 i;
+    s32 x;
+    s32 z;
+
+    scratch = (SceneScratch *)0x1F800000;
+    scratch->scale.vz = 0x800;
+    scratch->scale.vy = 0x800;
+    scratch->scale.vx = 0x800;
+    D_80050104 = 3;
+    x = D_8009BE28.target.vx >> 12;
+    z = D_8009BE28.target.vz >> 12;
+    D_800595C0 = 0;
+    D_80059578 = 0;
+    scratch->origin.vz = 0;
+    scratch->origin.vy = 0;
+    scratch->origin.vx = 0;
+    for (i = 0; i < D_8009D7E0; i++) {
+        if (D_8009C620[i].visible == 0) {
+            scratch->m = D_8009C620[i].matrix;
+            scratch->m.t[0] = D_8009C620[i].position.vx;
+            scratch->m.t[1] = D_8009C620[i].position.vy;
+            scratch->m.t[2] = -D_8009C620[i].position.vz;
+            parent = &D_8009C620[i];
+            while (parent->parent != NULL) {
+                parent = parent->parent;
+                parent->matrix.t[0] = parent->position.vx;
+                parent->matrix.t[1] = parent->position.vy;
+                parent->matrix.t[2] = -parent->position.vz;
+                gte_CompMatrix(&parent->matrix, &scratch->m, &scratch->m);
+            }
+            scratch->offset.vx = scratch->m.t[0] - x;
+            scratch->offset.vz = -scratch->m.t[2] - z;
+            func_80093534(&scratch->offset);
+            scratch->m.t[0] = scratch->offset.vx;
+            scratch->m.t[2] = -scratch->offset.vz;
+            ScaleMatrix(&scratch->m, &scratch->scale);
+            CompMatrix(&D_8009C808, &scratch->m, &scratch->out);
+            SetRotMatrix(&scratch->out);
+            SetTransMatrix(&scratch->out);
+            gte_ldv0(&scratch->origin);
+            gte_rtps();
+            gte_stflg(&scratch->flag);
+            if (scratch->flag >= 0) {
+                gte_stsz(&scratch->sz);
+                if (scratch->sz < 0xD80) {
+                    func_8002C700(D_8009C620[i].def, (&D_8009C620[i].prims)[D_8009D7F0], D_8009BE3C->ot,
+                                  D_8009AD2C[(s16)D_8009C620[i].flags]);
+                }
+            }
+        }
+    }
+}
 
 /* Probe the solid scene objects; the first hit's result, with its index. */
 s16 func_80084D00(s32 probe, s16 *hit) {
@@ -249,7 +306,90 @@ s16 func_80084D00(s32 probe, s16 *hit) {
     return 0;
 }
 
+/* Test the probe position against scene object `index`: transform its
+ * collision faces flat (x, z) and record every face whose outline contains
+ * the probe (face number and its attribute) in D_8009D718. Returns twice
+ * the number of faces found. */
+#ifdef NON_MATCHING /* early range test and prologue scheduling differ */
+s16 func_80084DB8(s32 probe, s32 index) {
+    s32 flag;
+    SceneObject *object;
+    FaceTestScratch *scratch;
+    Mesh *mesh;
+    SVECTOR *vertices;
+    MeshFace *face;
+    u16 *hit_face;
+    u16 *hit_kind;
+    s32 count;
+    s32 i;
+    s32 dz;
+    s16 hits;
+
+    object = &D_8009C620[index];
+    index = (((VECTOR *)probe)->vx >> 12) - object->position.vx;
+    FACE_TEST_SCRATCH->u.test.delta.vx = index;
+    if (index < 0) {
+        index = -index;
+    }
+    index = index >= 0x800;
+    dz = object->position.vz - (((VECTOR *)probe)->vz >> 12);
+    FACE_TEST_SCRATCH->u.test.delta.vz = dz;
+    if (dz < 0) {
+        dz = -dz;
+    }
+    scratch = FACE_TEST_SCRATCH;
+    if (index | (dz >= 0x800)) {
+        return 0;
+    }
+    scratch->m = object->matrix;
+    i = 0;
+    scratch->m.t[2] = 0;
+    scratch->m.t[0] = 0;
+    scratch->p[0].vz = 0x800;
+    scratch->p[0].vy = 0x800;
+    scratch->p[0].vx = 0x800;
+    scratch->m.t[1] = object->position.vy;
+    hits = 0;
+    ScaleMatrix(&scratch->m, &scratch->p[0]);
+    SetRotMatrix(&scratch->m);
+    SetTransMatrix(&scratch->m);
+    mesh = (Mesh *)object->unk44;
+    scratch->u.test.point = (scratch->u.test.delta.vz << 16) | (scratch->u.test.delta.vx & 0xFFFF);
+    count = mesh->unk0;
+    vertices = mesh->vertices;
+    face = mesh->faces;
+    hit_face = D_8009D718;
+    hit_kind = D_8009D718 + 1;
+    for (; i < count; i++, face++) {
+        gte_RotTrans(&vertices[face->corner[0]], &scratch->p[0], &flag);
+        gte_RotTrans(&vertices[face->corner[1]], &scratch->p[1], &flag);
+        gte_RotTrans(&vertices[face->corner[2]], &scratch->p[2], &flag);
+        scratch->u.test.edge[0] = (scratch->p[0].vz << 16) | (scratch->p[0].vx & 0xFFFF);
+        scratch->u.test.edge[1] = (scratch->p[1].vz << 16) | (scratch->p[1].vx & 0xFFFF);
+        if (func_8004A70C(scratch->u.test.edge[0], scratch->u.test.edge[1], scratch->u.test.point) > 0) {
+            continue;
+        }
+        scratch->u.test.edge[0] = (scratch->p[1].vz << 16) | (scratch->p[1].vx & 0xFFFF);
+        scratch->u.test.edge[1] = (scratch->p[2].vz << 16) | (scratch->p[2].vx & 0xFFFF);
+        if (func_8004A70C(scratch->u.test.edge[0], scratch->u.test.edge[1], scratch->u.test.point) > 0) {
+            continue;
+        }
+        scratch->u.test.edge[0] = (scratch->p[2].vz << 16) | (scratch->p[2].vx & 0xFFFF);
+        scratch->u.test.edge[1] = (scratch->p[0].vz << 16) | (scratch->p[0].vx & 0xFFFF);
+        if (func_8004A70C(scratch->u.test.edge[0], scratch->u.test.edge[1], scratch->u.test.point) > 0) {
+            continue;
+        }
+        *hit_face = i;
+        hit_face += 2;
+        *hit_kind = face->unk6[3];
+        hits += 2;
+        hit_kind += 2;
+    }
+    return hits;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80084DB8);
+#endif
 
 /* Project `position` onto face `face` of scene object `index`: `offset` gets
  * the object-relative x/z, `normal` the face normal and offset->vy the
@@ -367,7 +507,110 @@ s32 func_80085418(VECTOR *position, s32 height, u16 index, u16 face) {
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80085418);
 #endif
 
+/* Classify the move from `from` to `to` against face `face` of scene object
+ * `index`: bit n is set when `to` lies outside edge n (flat x, z); when it
+ * leaves through a corner, keep only the edge the move crosses. Also leave
+ * the normalised edge directions in the scratchpad. */
+#ifdef NON_MATCHING /* scheduling around the GTE sequences and argument registers differ */
+s32 func_80085760(VECTOR *from, VECTOR *to, s32 index, s32 face) {
+    s32 sides;
+    SceneObject *object;
+    FaceTestScratch *scratch;
+    VECTOR *p1;
+    VECTOR *p2;
+    Mesh *mesh;
+    MeshFace *corners;
+    SVECTOR *vertices;
+
+    scratch = FACE_TEST_SCRATCH;
+    object = &D_8009C620[index];
+    FACE_TEST_SCRATCH->u.test.delta.vx = (to->vx >> 12) - object->position.vx;
+    FACE_TEST_SCRATCH->u.test.delta.vz = object->position.vz - (to->vz >> 12);
+    FACE_TEST_SCRATCH->m = object->matrix;
+    FACE_TEST_SCRATCH->m.t[2] = 0;
+    FACE_TEST_SCRATCH->m.t[0] = 0;
+    FACE_TEST_SCRATCH->p[0].vz = 0x800;
+    FACE_TEST_SCRATCH->p[0].vy = 0x800;
+    scratch->p[0].vx = 0x800;
+    FACE_TEST_SCRATCH->m.t[1] = object->position.vy;
+    ScaleMatrix(&FACE_TEST_SCRATCH->m, &FACE_TEST_SCRATCH->p[0]);
+    SetRotMatrix(&FACE_TEST_SCRATCH->m);
+    SetTransMatrix(&FACE_TEST_SCRATCH->m);
+    mesh = (Mesh *)object->unk44;
+    corners = &mesh->faces[face];
+    vertices = mesh->vertices;
+    gte_RotTrans(&vertices[corners->corner[0]], &scratch->p[0], &sides);
+    p1 = &FACE_TEST_SCRATCH->p[1];
+    gte_RotTrans(&vertices[corners->corner[1]], p1, &sides);
+    p2 = &FACE_TEST_SCRATCH->p[2];
+    gte_RotTrans(&vertices[corners->corner[2]], p2, &sides);
+    sides = 0;
+    FACE_TEST_SCRATCH->u.test.edge[0] = (FACE_TEST_SCRATCH->p[0].vz << 16) | (u16)scratch->p[0].vx;
+    FACE_TEST_SCRATCH->u.test.edge[1] = (FACE_TEST_SCRATCH->p[1].vz << 16) | (u16)p1->vx;
+    FACE_TEST_SCRATCH->u.test.point =
+        (FACE_TEST_SCRATCH->u.test.delta.vz << 16) | (u16)FACE_TEST_SCRATCH->u.test.delta.vx;
+    if (func_8004A70C(FACE_TEST_SCRATCH->u.test.edge[0], FACE_TEST_SCRATCH->u.test.edge[1],
+                      FACE_TEST_SCRATCH->u.test.point) > 0) {
+        sides |= 1;
+    }
+    FACE_TEST_SCRATCH->u.test.edge[0] = (FACE_TEST_SCRATCH->p[1].vz << 16) | (u16)p1->vx;
+    FACE_TEST_SCRATCH->u.test.edge[1] = (FACE_TEST_SCRATCH->p[2].vz << 16) | (u16)p2->vx;
+    if (func_8004A70C(FACE_TEST_SCRATCH->u.test.edge[0], FACE_TEST_SCRATCH->u.test.edge[1],
+                      FACE_TEST_SCRATCH->u.test.point) > 0) {
+        sides |= 2;
+    }
+    FACE_TEST_SCRATCH->u.test.edge[0] = (FACE_TEST_SCRATCH->p[2].vz << 16) | (u16)p2->vx;
+    FACE_TEST_SCRATCH->u.test.edge[1] = (FACE_TEST_SCRATCH->p[0].vz << 16) | (u16)scratch->p[0].vx;
+    if (func_8004A70C(FACE_TEST_SCRATCH->u.test.edge[0], FACE_TEST_SCRATCH->u.test.edge[1],
+                      FACE_TEST_SCRATCH->u.test.point) > 0) {
+        sides |= 4;
+    }
+    switch (sides) {
+    case 3:
+        FACE_TEST_SCRATCH->u.test.edge[0] = ((object->position.vz - (from->vz >> 12)) << 16) |
+                                            (((from->vx >> 12) - object->position.vx) & 0xFFFF);
+        FACE_TEST_SCRATCH->u.test.edge[1] = (FACE_TEST_SCRATCH->p[1].vz << 16) | (u16)p1->vx;
+        if (func_8004A70C(FACE_TEST_SCRATCH->u.test.edge[0], FACE_TEST_SCRATCH->u.test.edge[1],
+                          FACE_TEST_SCRATCH->u.test.point) != 0) {
+            sides = 1;
+        }
+        break;
+    case 5:
+        FACE_TEST_SCRATCH->u.test.edge[0] = ((object->position.vz - (from->vz >> 12)) << 16) |
+                                            (((from->vx >> 12) - object->position.vx) & 0xFFFF);
+        FACE_TEST_SCRATCH->u.test.edge[1] = (FACE_TEST_SCRATCH->p[0].vz << 16) | (u16)scratch->p[0].vx;
+        if (func_8004A70C(FACE_TEST_SCRATCH->u.test.edge[0], FACE_TEST_SCRATCH->u.test.edge[1],
+                          FACE_TEST_SCRATCH->u.test.point) != 0) {
+            sides = 4;
+        }
+        break;
+    case 6:
+        FACE_TEST_SCRATCH->u.test.edge[0] = ((object->position.vz - (from->vz >> 12)) << 16) |
+                                            (((from->vx >> 12) - object->position.vx) & 0xFFFF);
+        FACE_TEST_SCRATCH->u.test.edge[1] = (FACE_TEST_SCRATCH->p[2].vz << 16) | (u16)p2->vx;
+        if (func_8004A70C(FACE_TEST_SCRATCH->u.test.edge[0], FACE_TEST_SCRATCH->u.test.edge[1],
+                          FACE_TEST_SCRATCH->u.test.point) != 0) {
+            sides = 2;
+        }
+        break;
+    }
+    scratch->u.side[0].vx = scratch->p[1].vx - scratch->p[0].vx;
+    scratch->u.side[0].vy = 0;
+    scratch->u.side[0].vz = scratch->p[1].vz - scratch->p[0].vz;
+    func_80048D7C(&scratch->u.side[0], &scratch->u.side[0]);
+    scratch->u.side[1].vx = scratch->p[2].vx - scratch->p[1].vx;
+    scratch->u.side[1].vy = 0;
+    scratch->u.side[1].vz = scratch->p[2].vz - scratch->p[1].vz;
+    func_80048D7C(&scratch->u.side[1], &scratch->u.side[1]);
+    scratch->u.side[2].vx = scratch->p[0].vx - scratch->p[2].vx;
+    scratch->u.side[2].vy = 0;
+    scratch->u.side[2].vz = scratch->p[0].vz - scratch->p[2].vz;
+    func_80048D7C(&scratch->u.side[2], &scratch->u.side[2]);
+    return sides;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80085760);
+#endif
 
 /* Draw the actors' model sprites: place each visible model relative to the
  * camera target, project it for its depth, then add it to the ordering
@@ -1567,7 +1810,95 @@ void func_80089748(void) {
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80089748);
 #endif
 
+/* Draw the live particles: build each one's billboard quad (kind shape,
+ * scaled and optionally rolled), place it relative to the camera target,
+ * project it and add the visible ones to the ordering table. */
+#ifdef NON_MATCHING /* one fewer saved register: the 0xFFFFFF mask is hoisted */
+void func_80089C78(void) {
+    ParticleScratch *scratch;
+    EffectSlot *slot;
+    PolyFT4 *quad;
+    s32 camera_x;
+    s32 camera_z;
+    s32 i;
+
+    scratch = (ParticleScratch *)0x1F800000;
+    PARTICLE_SCRATCH->view = D_8009C808;
+    PARTICLE_SCRATCH->identity = *(MATRIX *)&D_8009A180;
+    i = 0;
+    camera_x = D_8009BE28.target.vx >> 12;
+    camera_z = D_8009BE28.target.vz >> 12;
+    quad = D_8009BE1C[D_8009D7F0];
+    slot = D_8009BDF4;
+    for (; i < 0x100; i++, slot++) {
+        if (EFFECT_ENABLED(slot) == 0) {
+            continue;
+        }
+        scratch->scale.vx = (u16)slot->rot[0];
+        scratch->scale.vz = 0x1000;
+        scratch->scale.vy = (u16)slot->rot[1];
+        scratch->m = scratch->identity;
+        if (((u8 *)&slot->fade)[3] & 1) {
+            RotMatrixZ(slot->unk2, &scratch->m);
+        }
+        ScaleMatrix(&scratch->m, &scratch->scale);
+        scratch->v[0] = D_8009B040[EFFECT_ENABLED(slot)].v[0];
+        scratch->v[1] = D_8009B040[EFFECT_ENABLED(slot)].v[1];
+        scratch->v[2] = D_8009B040[EFFECT_ENABLED(slot)].v[2];
+        scratch->v[3] = D_8009B040[EFFECT_ENABLED(slot)].v[3];
+        scratch->offset.vx = (slot->position.vx >> 12) - camera_x;
+        scratch->offset.vz = (slot->position.vz >> 12) - camera_z;
+        func_80093534(&scratch->offset);
+        scratch->centre.vx = scratch->offset.vx;
+        scratch->centre.vz = -scratch->offset.vz;
+        scratch->centre.vy = slot->position.vy >> 12;
+        gte_SetRotMatrix(&scratch->view);
+        gte_ldv0(&scratch->centre);
+        gte_rtv0();
+        gte_stlvnl(&scratch->offset);
+        scratch->m.t[0] = scratch->offset.vx + scratch->view.t[0];
+        scratch->m.t[1] = scratch->offset.vy + scratch->view.t[1];
+        scratch->m.t[2] = scratch->offset.vz + scratch->view.t[2];
+        gte_SetRotMatrix(&scratch->m);
+        gte_SetTransMatrix(&scratch->m);
+        gte_ldv3(&scratch->v[0], &scratch->v[1], &scratch->v[2]);
+        gte_rtpt();
+        gte_stflg(&scratch->flag);
+        if (scratch->flag < 0) {
+            continue;
+        }
+        gte_stsxy3(&quad->x0, &quad->x1, &quad->x2);
+        gte_ldv0(&scratch->v[3]);
+        gte_rtps();
+        gte_stflg(&scratch->flag);
+        if (scratch->flag & 0x80000000) {
+            continue;
+        }
+        gte_stsxy(&quad->x3);
+        if (!(quad->x0 < 0x140 || quad->x1 < 0x140 || quad->x2 < 0x140 || quad->x3 < 0x140)) {
+            continue;
+        }
+        if (!(quad->y0 < 0xD8 || quad->y1 < 0xD8 || quad->y2 < 0xD8 || quad->y3 < 0xD8)) {
+            continue;
+        }
+        gte_stsz(&scratch->sz);
+        if (scratch->sz < 0xC00) {
+            quad->r0 = ((u8 *)&slot->colour)[0];
+            quad->g0 = ((u8 *)&slot->colour)[1];
+            quad->b0 = ((u8 *)&slot->colour)[2];
+            quad->tpage = slot->code;
+            *(u16 *)&quad->u0 = D_8009AFF0[EFFECT_ENABLED(slot)].uv[0];
+            *(u16 *)&quad->u1 = D_8009AFF0[EFFECT_ENABLED(slot)].uv[1];
+            *(u16 *)&quad->u2 = D_8009AFF0[EFFECT_ENABLED(slot)].uv[2];
+            *(u16 *)&quad->u3 = D_8009AFF0[EFFECT_ENABLED(slot)].uv[3];
+            addPrimTag(&D_8009BE3C->ot[scratch->sz >> 4], quad);
+            quad++;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80089C78);
+#endif
 
 /* Create the party leader's model sprite at the scene's entry position; in
  * movement modes 1-7 follow the player or start hidden. Fill the position
