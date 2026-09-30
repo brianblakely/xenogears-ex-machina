@@ -2722,11 +2722,11 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80087AF0);
 /* Move `actor` into `target`'s formation group when it is another group
  * with room (under four members): leave the old group, take the first free
  * member place and stand at that place of the group's area. (Nonmatching:
- * the target's record offset and register allocation.) */
+ * the original computes the enemy offset before testing the target.) */
 #ifdef NON_MATCHING
 void func_80087EDC(u8 actor, u8 target) {
     u8 base;
-    s8 member;
+    s32 member;
 
     if (D_800C3EB4[actor].group != D_800C3EB4[target].group) {
         base = target < 3 ? (actor >= 3) * 8 : 0;
@@ -2738,8 +2738,8 @@ void func_80087EDC(u8 actor, u8 target) {
                     break;
                 }
             }
-            D_800C3EB4[actor].member = member;
             D_800C3EB4[actor].group = D_800C3EB4[target].group;
+            D_800C3EB4[actor].member = member;
             D_800D301C[D_800C3EB4[actor].group + base].members |= func_80089C08(D_800C3EB4[actor].member);
             if (actor < 3) {
                 D_800C3EB4[actor].x = D_800D3364->areas[D_800C3EB4[actor].group].party[D_800C3EB4[actor].member].x;
@@ -2758,23 +2758,24 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80087EDC);
 /* Move `actor` alone into `target`'s formation group when that group is
  * another one and empty (entries from 0x10, or 0x18 for an enemy joining a
  * party member): it becomes the only member, at the group's position.
- * (Nonmatching: the base selection branches and store/load order.) */
+ * (Nonmatching: the original stores the count before the member mask with
+ * this schedule, and tests the actor into $v1.) */
 #ifdef NON_MATCHING
 void func_800881B8(u8 actor, u8 target) {
     u8 base;
 
     if (D_800C3EB4[actor].group != D_800C3EB4[target].group) {
-        if (target < 3 && actor >= 3) {
-            base = 0x18;
+        if (target < 3) {
+            base = (actor < 3) ? 0x10 : 0x18;
         } else {
             base = 0x10;
         }
         if (D_800D301C[D_800C3EB4[target].group + base].count == 0) {
             func_800883AC(actor);
-            D_800C3EB4[actor].member = 0;
             D_800C3EB4[actor].group = D_800C3EB4[target].group;
-            D_800D301C[D_800C3EB4[actor].group + base].count = 1;
+            D_800C3EB4[actor].member = 0;
             D_800D301C[D_800C3EB4[actor].group + base].members = 1;
+            D_800D301C[D_800C3EB4[actor].group + base].count = 1;
             if (actor < 3) {
                 D_800C3EB4[actor].x = D_800D3364->positions[D_800C3EB4[actor].group].x;
                 D_800C3EB4[actor].z = D_800D3364->positions[D_800C3EB4[actor].group].z;
@@ -3281,13 +3282,14 @@ u16 func_80089C9C(u16 mask, u8 slot) {
  * debug console; start (0x800, while 800ccc58) pauses or resumes, and while
  * paused holding both 4 and 8 on a debug build ends the battle. A finished
  * battle or event returns 0xff. Loops while paused. Nonmatching: the
- * original keeps 800c48ea's address in a register. */
+ * original loads 800c48ea's address after 800c3e28's. */
 #ifdef NON_MATCHING
 void func_80089CCC(s32 mode) {
     u8 code = 8;
     u8 waiting = 1;
     u8 paused = 0;
     s32 vsyncs;
+    u8 *outcome;
 
     do {
         if (func_80035734(0) == 0) {
@@ -3306,18 +3308,19 @@ void func_80089CCC(s32 mode) {
             }
         }
     } while (waiting);
+    outcome = &D_800C48EA;
     do {
         if (func_80036410()) {
             func_80035DB0();
         } else {
             while (func_80035CDC()) {
-                if (D_800C48EA != 0 || D_800C3EAC->eventsDone != 0) {
+                if (*outcome != 0 || D_800C3EAC->eventsDone != 0) {
                     code = 0xFF;
                     break;
                 }
                 if (D_800C3444 != 0) {
                     if (*D_8005917C != -1 && (D_800594A4 & 4) && (D_800594A4 & 8)) {
-                        D_800C48EA = 1;
+                        *outcome = 1;
                         goto resume;
                     }
                 } else if (D_800594A4 & 0x2000) {
