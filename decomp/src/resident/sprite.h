@@ -9,16 +9,22 @@ typedef struct Task {
     void *data;                          /* +0x4: the task's sprite */
     void (*update)(struct Task *task);  /* +0x8 */
     void (*destroy)(struct Task *task); /* +0xc */
-    struct {
-        unsigned serial : 29;            /* +0x10: creation number */
-        unsigned flags : 3;
-    } id;
-    struct {
-        unsigned owner_serial : 29;      /* +0x14: the owner's creation number */
-        unsigned flag29 : 1;
-        unsigned flag30 : 1;
-        unsigned active : 1;
-    } link;
+    union {
+        u32 word;
+        struct {
+            unsigned serial : 29;        /* creation number */
+            unsigned flags : 3;
+        } bits;
+    } id;                                /* +0x10 */
+    union {
+        u32 word;
+        struct {
+            unsigned owner_serial : 29;  /* the owner's creation number */
+            unsigned flag29 : 1;
+            unsigned flag30 : 1;
+            unsigned active : 1;
+        } bits;
+    } link;                              /* +0x14: flag tests read the word */
     struct Task *next;                   /* +0x18 */
 } Task;
 
@@ -82,7 +88,9 @@ typedef struct {
     u8 unknown58[0xC];
     s32 frames_left;         /* +0x64 */
     void *callback;          /* +0x68: completion callback */
-    u8 unknown6c[0x10];
+    u8 unknown6c[4];
+    s32 word70;              /* +0x70 */
+    u8 unknown74[8];
     void *sequencer;         /* +0x7c */
     u8 unknown80[8];
     u8 *frames;              /* +0x88 */

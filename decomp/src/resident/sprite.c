@@ -103,11 +103,11 @@ void func_8001CA58(Task *owner, Task *node) {
     node->owner = owner;
     node->next = D_80059594;
     D_80059594 = node;
-    node->link.owner_serial = owner->id.serial;
-    node->id.serial = D_80059184++;
-    node->link.flag29 = 0;
-    node->link.flag30 = 0;
-    node->link.active = 0;
+    node->link.bits.owner_serial = owner->id.bits.serial;
+    node->id.bits.serial = D_80059184++;
+    node->link.bits.flag29 = 0;
+    node->link.bits.flag30 = 0;
+    node->link.bits.active = 0;
     node->update = NULL;
     node->destroy = func_8001CB48;
     D_8005918C++;
@@ -166,16 +166,16 @@ void func_8001CC18(Task *owner, Task *node) {
     node->update = NULL;
     node->next = D_8005958C;
     D_8005958C = node;
-    node->id.serial = D_80059184++;
-    node->link.owner_serial = owner->id.serial;
-    node->link.flag29 = 0;
-    node->link.flag30 = 0;
-    node->link.active = 0;
+    node->id.bits.serial = D_80059184++;
+    node->link.bits.owner_serial = owner->id.bits.serial;
+    node->link.bits.flag29 = 0;
+    node->link.bits.flag30 = 0;
+    node->link.bits.active = 0;
     if (D_800591AC[0] != 0) {
         D_80059464[0]++;
-        node->link.active = 1;
+        node->link.bits.active = 1;
     } else {
-        node->link.active = 0;
+        node->link.bits.active = 0;
     }
     D_80059188++;
 }
@@ -239,7 +239,7 @@ void func_8001CD94(Task *task) {
         }
         prev = current;
     }
-    if (task->link.active) {
+    if (task->link.bits.active) {
         D_80059464[0]--;
     }
     D_80059188--;
@@ -255,7 +255,7 @@ void func_8001CE44(Task *task) {
 }
 
 /* Destroy every task `owner` created (both lists). */
-/* Nonmatching: the original tests flag 30 by shifting it down (srl/andi); GCC masks it in place. */
+/* Nonmatching: the original keeps the owner in $s3 and the serial mask in $s2; GCC swaps them. */
 #ifdef NON_MATCHING
 void func_8001CE74(Task *owner) {
     Task *prev;
@@ -263,7 +263,7 @@ void func_8001CE74(Task *owner) {
 
     prev = NULL;
     for (task = D_80059594; task != NULL; task = task->next) {
-        if (task->owner == owner && !task->link.flag30 && task->link.owner_serial == owner->id.serial) {
+        if (task->owner == owner && !((task->link.word >> 30) & 1) && task->link.bits.owner_serial == owner->id.bits.serial) {
             if (prev != NULL) {
                 prev->next = task->next;
             } else {
@@ -281,7 +281,7 @@ void func_8001CE74(Task *owner) {
     }
     prev = NULL;
     for (task = D_8005958C; task != NULL; task = task->next) {
-        if (task->owner == owner && !task->link.flag30 && task->link.owner_serial == owner->id.serial) {
+        if (task->owner == owner && !((task->link.word >> 30) & 1) && task->link.bits.owner_serial == owner->id.bits.serial) {
             if (prev != NULL) {
                 prev->next = task->next;
             } else {
@@ -302,17 +302,80 @@ void func_8001CE74(Task *owner) {
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001CE74);
 #endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001D034);
+/* Clear word 0x70 of the sprite of every flag-29 task `owner` created. */
+void func_8001D034(Task *owner) {
+    Task *task;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001D0A4);
+    for (task = D_8005958C; task != NULL; task = task->next) {
+        if (task->owner == owner && task->link.bits.owner_serial == owner->id.bits.serial && ((task->link.word >> 29) & 1)) {
+            ((Sprite *)task->data)->word70 = 0;
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001D10C);
+/* The main-list task `owner` created with update callback `update`, or NULL. */
+Task *func_8001D0A4(Task *owner, void (*update)(Task *)) {
+    Task *task;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001D164);
+    for (task = D_8005958C; task != NULL; task = task->next) {
+        if (task->owner == owner && task->link.bits.owner_serial == owner->id.bits.serial && task->update == update) {
+            return task;
+        }
+    }
+    return NULL;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001D19C);
+/* The first main-list task `owner` created, or NULL. */
+Task *func_8001D10C(Task *owner) {
+    Task *task;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001D1D8);
+    for (task = D_8005958C; task != NULL; task = task->next) {
+        if (task->owner == owner && task->link.bits.owner_serial == owner->id.bits.serial) {
+            return task;
+        }
+    }
+    return NULL;
+}
+
+/* The first main-list task with update callback `update`, or NULL. */
+Task *func_8001D164(void (*update)(Task *)) {
+    Task *task;
+
+    for (task = D_8005958C; task != NULL; task = task->next) {
+        if (task->update == update) {
+            return task;
+        }
+    }
+    return NULL;
+}
+
+/* Destroy callback of a two-node task: unlink both nodes and free it. */
+void func_8001D19C(Task *task) {
+    func_8001CB48(task + 1);
+    func_8001CD94(task);
+    func_800320E8(task);
+}
+
+/* Allocate a `size`-byte task that starts with two nodes: the first on the main
+ * list under `owner` with `update`, the second on the second list with
+ * `update2`; both nodes' data is the task itself. */
+Task *func_8001D1D8(s32 size, Task *owner, void (*update)(Task *), void (*update2)(Task *),
+                    void (*destroy)(Task *)) {
+    Task *node = func_80031BDC(size, D_800591AF[0]);
+
+    func_8001CC18(owner, node);
+    func_8001CA58(node, node + 1);
+    func_8001CD6C(node, update);
+    func_8001CD64(node + 1, update2);
+    if (destroy != NULL) {
+        func_8001CD74(node, destroy);
+    } else {
+        func_8001CD74(node, func_8001D19C);
+    }
+    node->data = node;
+    node[1].data = node;
+    return node;
+}
 
 void func_8001D298(void) {
     D_80059190 = 0;
