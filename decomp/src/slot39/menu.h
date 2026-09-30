@@ -942,6 +942,10 @@ extern s32 D_801EA16C[]; /* party window sprite y per row */
 extern s32 D_801EA17C[]; /* portrait panel x per mode */
 extern s32 D_801EA18C[]; /* portrait panel y per mode */
 extern s32 D_801EA578[]; /* character portrait u / 4 per slot */
+extern s32 D_801E9D78;    /* stat bar x offset */
+extern s32 D_801E9D7C;    /* stat bar y offset */
+extern s32 D_801E9D80;    /* stat digit x offset */
+extern s32 D_801E9D84;    /* stat digit y offset */
 extern s32 D_801E9D88[];  /* part panel row y positions */
 extern s32 D_801EA584[]; /* gear portrait u / 4 per slot */
 extern s32 D_801EA5C4[]; /* character portrait v per slot */
@@ -1347,7 +1351,7 @@ void func_801D7884(u8 slot, u8 mode);
 void func_801D7C3C(u8 slot, u8 mode);
 void func_801D7CFC(u8 slot, u8 mode, u8 arg2);
 void func_801D7F50(s32 x, s32 y, u8 mode);
-void func_801D8644(u8 slot, s32 x, s32 y, u8 arg3, u8 mode);
+void func_801D8644(s32 scale, s32 x, s32 y, u8 compare, u8 first);
 void func_801D8DE4(u8 slot, u8 lower, u8 arg2, u8 mode);
 void func_801D8EA4(u8 slot, u8 mode, u8 kept, u8 gear);
 void func_801D5BA4(s32 x, s32 y);

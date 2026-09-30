@@ -4990,7 +4990,7 @@ void func_801D84B4(u16 from, u16 to, s32 max) {
 }
 
 /* The largest of the seven values in each of `a` and `b`. */
-u16 func_801D85DC(s32 unused, u16 *a, u16 *b) {
+s32 func_801D85DC(s32 unused, u16 *a, u16 *b) {
     u16 max;
     s32 i;
     u8 reserved[24]; /* the original frame reserves 24 unused bytes */
@@ -5011,7 +5011,104 @@ u16 func_801D85DC(s32 unused, u16 *a, u16 *b) {
     return max;
 }
 
+/* Draw the stat bars at (`x`, `y`) for rows `first`..6, scaled to the
+ * largest stat (the unused first argument holds it): each row's bar,
+ * value digits and their quads; with `compare` also the change bar against
+ * the kept stats and, for a change, its signed digits tinted by the change's
+ * colour. */
+#ifdef NON_MATCHING
+/* Two instructions differ: the delay slot of the change digits' 801c80b8
+ * call holds the pointer copy instead of `dx = 0x28`. */
+void func_801D8644(s32 scale, s32 x, s32 y, u8 compare, u8 first) {
+    u16 *before;
+    u16 *shown;
+    s32 row;
+    s32 i;
+    s32 dx;
+    s32 start;
+
+    if (!compare) {
+        shown = D_800625A0->tables->shown;
+        before = shown;
+    } else {
+        before = D_800625A0->labels360->stats;
+        shown = D_800625A0->tables->shown;
+    }
+    scale = func_801D85DC(0, before, shown);
+    for (row = 0; row < 7 - first; row++) {
+        D_800625A0->block35C->rowACount[row] = 0;
+        D_800625A0->block35C->rowBCount[row] = 0;
+        func_801D84B4(before[row], shown[row], scale);
+        func_801D827C(D_800625A0->block35C->bars[row], 0);
+        func_801C851C(D_800625A0->block35C->barAt[row], D_801E9D78 + x, y + D_801E9D7C + row * 8, D_801EA708, 6);
+        D_800625A0->block35C->barBuffer[row] = D_800625A0->bufferIndex;
+        func_801C80B8(D_801EA6FC);
+        for (i = 0; i < 4; i++) {
+            if (D_800625A0->digits[5 + i] != 0xff) {
+                D_800625A0->block35C->rowACount[row] +=
+                    func_8002675C(D_800625A0->sheet, D_800625A0->digits[5 + i],
+                                  &D_800625A0->block35C->rowA[row][D_800625A0->block35C->rowACount[row] * 2],
+                                  D_800625A0->bufferIndex, x + D_801E9D80 + i * 8, y + D_801E9D84 + row * 8, 0x1000);
+            }
+        }
+        for (i = 0; i < D_800625A0->block35C->rowACount[row]; i++) {
+            func_801C851C(&D_800625A0->block35C->rowAAt[row][i * 4],
+                          D_800625A0->block35C->rowA[row][i * 2 + D_800625A0->bufferIndex].x0,
+                          D_800625A0->block35C->rowA[row][i * 2 + D_800625A0->bufferIndex].y0,
+                          D_800625A0->block35C->rowA[row][i * 2 + D_800625A0->bufferIndex].x1 -
+                              D_800625A0->block35C->rowA[row][i * 2 + D_800625A0->bufferIndex].x0,
+                          D_800625A0->block35C->rowA[row][i * 2 + D_800625A0->bufferIndex].y3 -
+                              D_800625A0->block35C->rowA[row][i * 2 + D_800625A0->bufferIndex].y0);
+        }
+        if (row & 1) {
+            func_801D83AC(D_800625A0->block35C->rowA[row], 2, D_800625A0->block35C->rowACount[row],
+                          D_800625A0->bufferIndex);
+        }
+        D_800625A0->block35C->rowABuffer[row] = D_800625A0->bufferIndex;
+        if (compare) {
+            func_801D827C(D_800625A0->block35C->highlights[row], D_801EA710);
+            if (D_801EA710 == 2) {
+                start = x + D_801E9D78 + D_801EA708;
+            } else {
+                start = x + D_801E9D78 + D_801EA708 - D_801EA70C;
+            }
+            func_801C851C(D_800625A0->block35C->highlightAt[row], start, y + D_801E9D7C + row * 8, D_801EA70C, 6);
+            D_800625A0->block35C->highlightBuffer[row] = D_800625A0->bufferIndex;
+            if (compare && D_801EA704 != 0) {
+                D_800625A0->block35C->rowBCount[row] +=
+                    func_8002675C(D_800625A0->sheet, D_801EA714, D_800625A0->block35C->rowB[row],
+                                  D_800625A0->bufferIndex, x + D_801E9D80 + 0x20, y + D_801E9D84 + row * 8, 0x1000);
+                func_801C80B8(D_801EA704);
+                for (i = 0, dx = 0x28; i < 3; i++) {
+                    if (D_800625A0->digits[6 + i] != 0xff) {
+                        D_800625A0->block35C->rowBCount[row] += func_8002675C(
+                            D_800625A0->sheet, D_800625A0->digits[6 + i],
+                            &D_800625A0->block35C->rowB[row][D_800625A0->block35C->rowBCount[row] * 2],
+                            D_800625A0->bufferIndex, x + D_801E9D80 + dx, y + D_801E9D84 + row * 8, 0x1000);
+                        dx += 8;
+                    }
+                }
+                for (i = 0; i < D_800625A0->block35C->rowBCount[row]; i++) {
+                    func_801C851C(&D_800625A0->block35C->rowBAt[row][i * 4],
+                                  D_800625A0->block35C->rowB[row][i * 2 + D_800625A0->bufferIndex].x0,
+                                  D_800625A0->block35C->rowB[row][i * 2 + D_800625A0->bufferIndex].y0,
+                                  D_800625A0->block35C->rowB[row][i * 2 + D_800625A0->bufferIndex].x1 -
+                                      D_800625A0->block35C->rowB[row][i * 2 + D_800625A0->bufferIndex].x0,
+                                  D_800625A0->block35C->rowB[row][i * 2 + D_800625A0->bufferIndex].y3 -
+                                      D_800625A0->block35C->rowB[row][i * 2 + D_800625A0->bufferIndex].y0);
+                }
+                func_801D83AC(D_800625A0->block35C->rowB[row], D_801EA710 - 2, D_800625A0->block35C->rowBCount[row],
+                              D_800625A0->bufferIndex);
+                D_800625A0->block35C->rowBBuffer[row] = D_800625A0->bufferIndex;
+                D_800625A0->block35C->highlighted = 1;
+            }
+        }
+        D_800625A0->block35C->rowShown[row] = 1;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D8644);
+#endif
 
 /* Build the equipment panels of `slot` at the upper or (`lower`) lower place. */
 void func_801D8DE4(u8 slot, u8 lower, u8 arg2, u8 mode) {
