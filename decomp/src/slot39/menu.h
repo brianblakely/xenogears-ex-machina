@@ -769,7 +769,8 @@ extern u8 D_801EA558[];
 extern u8 D_801EA568[];  /* title file screen command labels */
 extern u8 D_801EA548[];  /* save/load screen labels */
 extern u8 D_801EA8F4[];
-extern u8 D_801EA8FC;
+extern u8 D_801EA8FC;    /* the last choice was cancelled */
+extern u8 D_801E9778;    /* a card changed during a choice */
 extern u8 D_801EA8C0;    /* the last printed character was two-byte */
 extern u16 D_801EA5D0[0x80]; /* ASCII to two-byte character codes */
 extern s32 D_801EA6FC;   /* gauge: from, to, difference and lengths */

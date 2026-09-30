@@ -1757,7 +1757,71 @@ void func_801CA8C0(u8 file) {
     strcat(D_800625A0->card->saveTitle, D_800625A0->card->title);
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CAA38);
+/* The yes/no choice: wait for confirm or cancel while left/right move the
+ * highlight (2 yes, 0 no). Without `watch` it waits b4h frames at most while
+ * no input comes and returns on any other input; with `watch` a card change
+ * clears that port's listing and cancels. Returns 1 for yes. */
+u8 func_801CAA38(u8 watch) {
+    u8 present[2];
+    u8 yes;
+    u8 waiting;
+    u8 timer;
+
+    present[0] = D_800625A0->card->present[0];
+    present[1] = D_800625A0->card->present[1];
+    waiting = 1;
+    if (D_801E977A) {
+        D_800625A0->card->mode = 2;
+    }
+    D_801EA8FC = 0;
+    yes = 0;
+    timer = 0xb4;
+    do {
+        if (!watch) {
+            D_800625A0->markers->visible[2] = 0;
+            D_800625A0->markers->visible[3] = 0;
+            if (D_800625A0->input != 8 || --timer == 0) {
+                break;
+            }
+        }
+        func_801C7BF4();
+        if (watch && D_801E977A) {
+            if (present[0] != D_800625A0->card->present[0]) {
+                D_800625A0->card->scanned[0] = 0;
+                D_800625A0->input = 5;
+                D_801E9778 = 1;
+            }
+            if (present[1] != D_800625A0->card->present[1]) {
+                D_800625A0->card->scanned[1] = 0;
+                D_800625A0->input = 5;
+                D_801E9778 = 1;
+            }
+        }
+        switch (D_800625A0->input) {
+        case 4:
+            waiting = 0;
+            break;
+        case 5:
+            waiting = yes = 0;
+            D_801EA8FC = 1;
+            break;
+        case 2:
+            D_800625A0->markers->visible[2] = 1;
+            yes = 1;
+            D_800625A0->markers->visible[3] = 0;
+            break;
+        case 0:
+            D_800625A0->markers->visible[2] = 0;
+            yes = 0;
+            D_800625A0->markers->visible[3] = 1;
+            break;
+        }
+    } while (waiting);
+    D_800625A0->markers->visible[2] = 0;
+    D_800625A0->markers->visible[3] = 0;
+    D_800625A0->card->mode = 0;
+    return yes;
+}
 
 /* Show card message `message` and ask (801caa38 with `arg`); when answered
  * yes and a follow-up `confirm` is given (not ff), ask that too. Returns the
