@@ -159,6 +159,17 @@ extern MATRIX D_800770B8;                      /* camera translation */
 extern MATRIX D_800770D8;                      /* camera rotation */
 extern MATRIX D_800770F8;
 
+/* Menu. */
+extern s32 D_80076EEC;          /* frames the buttons were held */
+extern s32 D_80076EF0;          /* frames until they repeat */
+extern s32 D_80077118;          /* cursor */
+extern s32 D_800773B0;          /* monitor shown */
+extern s32 D_80077394;          /* statistics shown */
+void *func_80028570(char *name, s32 mode);  /* load a host file */
+void func_800320E8(void *block);            /* release a heap block */
+void func_80037FD8(void *bank, s32 arg1);   /* transfer a sound bank */
+s16 func_8003BDFC(s32 arg0);                /* sound transfer busy */
+
 /* Movie playback. */
 extern s32 D_80076F04;          /* frames the buttons were held */
 extern s32 D_80076F08;          /* frames until they repeat */

@@ -298,7 +298,61 @@ INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_800734B8);
 
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_800737EC);
 
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_800747AC);
+/* Menu input: read controller port 0 with a repeat after 16 frames held; Up
+ * and Down move the cursor between `first` and `last`, wrapping; the four
+ * face buttons report 1..4 in `button`; Select toggles the monitor and Start
+ * the statistics. Returns 1 for Right, -1 for Left, else 0. */
+s32 func_800747AC(s32 first, s32 last, s32 *button) {
+    D_800773B4 = D_800773AC;
+    D_800773AC = func_8003569C(0);
+    if (D_800773B4 == D_800773AC && D_800773B4 != 0) {
+        D_80076EEC++;
+        if (D_80076EF0 < D_80076EEC) {
+            D_800773B4 = 0;
+            D_80076EF0 = 1;
+            D_80076EEC = 0;
+        }
+    } else {
+        D_80076EF0 = 16;
+        D_80076EEC = 0;
+    }
+    if (!(D_800773B4 & 0x1000) && (D_800773AC & 0x1000)) {
+        if (--D_80077118 < first) {
+            D_80077118 = last;
+        }
+    }
+    if (!(D_800773B4 & 0x4000) && (D_800773AC & 0x4000)) {
+        if (++D_80077118 > last) {
+            D_80077118 = first;
+        }
+    }
+    *button = 0;
+    if (!(D_800773B4 & 0x10) && (D_800773AC & 0x10)) {
+        *button = 1;
+    }
+    if (!(D_800773B4 & 0x20) && (D_800773AC & 0x20)) {
+        *button = 2;
+    }
+    if (!(D_800773B4 & 0x40) && (D_800773AC & 0x40)) {
+        *button = 3;
+    }
+    if (!(D_800773B4 & 0x80) && (D_800773AC & 0x80)) {
+        *button = 4;
+    }
+    if (!(D_800773B4 & 0x100) && (D_800773AC & 0x100)) {
+        D_800773B0 = 1 - D_800773B0;
+    }
+    if (!(D_800773B4 & 0x800) && (D_800773AC & 0x800)) {
+        D_80077394 = 1 - D_80077394;
+    }
+    if (!(D_800773B4 & 0x2000) && (D_800773AC & 0x2000)) {
+        return 1;
+    }
+    if (!(D_800773B4 & 0x8000) && (D_800773AC & 0x8000)) {
+        return -1;
+    }
+    return 0;
+}
 
 /* Next pseudo-random number (two mixed linear congruential sequences). */
 s32 func_80074AF0(void) {
@@ -327,7 +381,27 @@ INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80074BA4);
 
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_8007519C);
 
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_800753B8);
+/* Load the three sound effect banks from the host PC, waiting for each
+ * transfer to the sound memory. */
+void func_800753B8(void) {
+    void *bank;
+
+    bank = func_80028570("c:\\work\\cdrom\\sound\\wave\\main_se.wd", 0);
+    func_80037FD8(bank, 0);
+    while (func_8003BDFC(0) != 0) {
+    }
+    func_800320E8(bank);
+    bank = func_80028570("c:\\work\\cdrom\\sound\\wave\\bat_se.wd", 0);
+    func_80037FD8(bank, 0);
+    while (func_8003BDFC(0) != 0) {
+    }
+    func_800320E8(bank);
+    bank = func_80028570("c:\\work\\cdrom\\sound\\wave\\gear_se.wd", 0);
+    func_80037FD8(bank, 0);
+    while (func_8003BDFC(0) != 0) {
+    }
+    func_800320E8(bank);
+}
 
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_8007548C);
 
