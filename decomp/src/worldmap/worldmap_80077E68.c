@@ -2,7 +2,35 @@
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80077E68", func_80077E68);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80077E68", func_8007828C);
+/* Link scene objects 1-13 to object 0 and put the scene camera on the player. */
+s32 func_8007828C(s32 index) {
+    WorldmapActor *actor;
+
+    func_800848B4(0, 1);
+    func_800848B4(0, 2);
+    func_800848B4(0, 3);
+    func_800848B4(0, 4);
+    func_800848B4(0, 5);
+    func_800848B4(0, 6);
+    func_800848B4(0, 7);
+    func_800848B4(0, 8);
+    func_800848B4(0, 9);
+    func_800848B4(0, 0xA);
+    func_800848B4(0, 0xB);
+    func_800848B4(0, 0xC);
+    func_800848B4(0, 0xD);
+    actor = &D_8009BE24[index];
+    actor->state = 0;
+    actor->position = D_8009C5AC;
+    actor->unk54 = 0x40;
+    actor->unk58 = 0x200;
+    actor->unk5C = 0x60;
+    actor->unk60 = 0x300;
+    actor->u.script = NULL;
+    actor->unk64 = 0x50;
+    D_8009BE28.target = actor->position;
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80077E68", func_800783E8);
 
@@ -11,11 +39,57 @@ s32 func_80078948(void) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80077E68", func_80078950);
+/* Per-frame update and draw of the scene mode. */
+s32 func_80078950(void) {
+    if (D_8009D144 == 0) {
+        func_80097440(D_8009BD40);
+    } else {
+        func_80097244(D_8009BD40);
+    }
+    func_80089748();
+    func_80089C78();
+    func_800848F4();
+    func_800980D4(D_8009BBB4);
+    if (D_8009D558 != 0) {
+        func_800981C8(&D_8009BE28);
+        func_80096130();
+        func_80098CC0();
+    }
+    func_800983A0(&D_8009BE28);
+    func_8009932C(D_8009BE3C->ot, D_8009BE3C->unk74, &D_8009BE28);
+    D_8009C5BC += 0x40;
+    func_80073B04();
+    func_800737EC();
+    func_80086798();
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80077E68", func_80078A60);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80077E68", func_80078D24);
+/* Leave the scene: release its resources and continue in scene 0x110. */
+void func_80078D24(void) {
+    func_80039FF8();
+    func_8003852C(D_8006259C);
+    func_800320E8(D_8006259C);
+    func_80084818();
+    func_80086568();
+    func_800866C8();
+    func_80074F04();
+    func_800750DC();
+    func_80088FF4();
+    func_80089128();
+    func_80097D64();
+    func_800320E8(D_8009BC38[0]);
+    func_800320E8(D_8009BCB0[0]);
+    func_800320E8(D_8009BC38[1]);
+    func_800320E8(D_8009BCB0[1]);
+    func_800320E8(D_8009C180);
+    func_800976A0();
+    D_8006F94E = 0x110;
+    D_8006F954[0] = 0;
+    D_8009BBC4 = 1;
+    D_8006F950 = D_8009BD38.vy;
+}
 
 /* Start a scripted camera looking down from yaw 0x680. */
 s32 func_80078E2C(s32 index) {
@@ -116,7 +190,33 @@ s32 func_8007A410(s32 index) {
     return 3;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80077E68", func_8007A430);
+/* Carry effect 9 forward from scene object 0 for `wait` frames, then stop it. */
+s32 func_8007A430(s32 index) {
+    WorldmapActor *actor;
+    s32 result;
+
+    actor = &D_8009BE24[index];
+    result = 1;
+    if (actor->unk4 == result) {
+        actor->unk4 = 0;
+        actor->position.vx = D_8009C620[0].position.vx << 12;
+        actor->position.vy = D_8009C620[0].position.vy << 12;
+        actor->position.vz = D_8009C620[0].position.vz << 12;
+    }
+    if (--actor->wait > 0) {
+        actor->position.vz += 0x20000;
+        SCRIPT_VECTOR->vx = actor->position.vx >> 12;
+        SCRIPT_VECTOR->vy = actor->position.vy >> 12;
+        SCRIPT_VECTOR->vz = actor->position.vz >> 12;
+        func_80089160(9, SCRIPT_VECTOR, NULL);
+    } else {
+        actor->wait = 0x60;
+        actor->position = D_8009C5AC;
+        func_800894C8(9);
+        result = 3;
+    }
+    return result;
+}
 
 /* Scene step with nothing to do. */
 s32 func_8007A568(void) {
@@ -138,7 +238,30 @@ s32 func_8007A570(s32 index) {
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80077E68", func_8007A5DC);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80077E68", func_8007A8AC);
+/* Leave the scene: release its resources and continue in scene 0x11A. */
+void func_8007A8AC(void) {
+    func_80039FF8();
+    func_8003852C(D_8006259C);
+    func_800320E8(D_8006259C);
+    func_80084818();
+    func_80086568();
+    func_800866C8();
+    func_80074F04();
+    func_800750DC();
+    func_80088FF4();
+    func_80089128();
+    func_80097D64();
+    func_800320E8(D_8009BC38[0]);
+    func_800320E8(D_8009BCB0[0]);
+    func_800320E8(D_8009BC38[1]);
+    func_800320E8(D_8009BCB0[1]);
+    func_800320E8(D_8009C180);
+    func_800976A0();
+    D_8006F94E = 0x11A;
+    D_8006F954[0] = 0;
+    D_8009BBC4 = 1;
+    D_8006F950 = D_8009BD38.vy;
+}
 
 /* Restart an actor's timed sequence at its first step. */
 s32 func_8007A9B4(s32 index) {
