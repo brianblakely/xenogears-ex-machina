@@ -1619,7 +1619,95 @@ void func_801CB690(void) {
     D_801D9050.step[2] = (D_801D9050.step[2] << 16) / count_x;
 }
 
+/*
+ * Advance the camera move one update: x and y move the model's depth and
+ * height, z the model code's camera distance; each axis stops (clears its
+ * motion bit) at its target. Nonmatching: register allocation of the
+ * division temporaries, and z does not address from[2] off offset[2].
+ */
+#ifdef NON_MATCHING
+void func_801CBA2C(void) {
+    s32 i;
+    s32 travelled;
+    s32 pos;
+    s32 distance;
+
+    if (D_800625A0->view_motion & 1) {
+        for (i = 0; i < D_801D9050.frames; i++) {
+            D_801D9050.offset[0] += D_801D9050.step[0];
+        }
+        if (D_801D9050.negative[0] == 0) {
+            travelled = D_801D9050.offset[0];
+            pos = travelled / 0x10000;
+            pos += D_801D9050.from[0];
+            if (pos >= D_801D9050.to[0]) {
+                D_800625A0->model_translation.vz = D_801D9050.to[0];
+                D_800625A0->view_motion &= 6;
+            } else {
+                D_800625A0->model_translation.vz = pos;
+            }
+        } else {
+            travelled = D_801D9050.offset[0];
+            pos = travelled / 0x10000;
+            pos = D_801D9050.from[0] - pos;
+            if (D_801D9050.to[0] >= pos) {
+                D_800625A0->model_translation.vz = D_801D9050.to[0];
+                D_800625A0->view_motion &= 6;
+            } else {
+                D_800625A0->model_translation.vz = pos;
+            }
+        }
+    }
+    if (D_800625A0->view_motion & 2) {
+        for (i = 0; i < D_801D9050.frames; i++) {
+            D_801D9050.offset[1] += D_801D9050.step[1];
+        }
+        if (D_801D9050.negative[1] == 0) {
+            travelled = D_801D9050.offset[1];
+            pos = travelled / 0x10000;
+            pos += D_801D9050.from[1];
+            if (pos >= D_801D9050.to[1]) {
+                D_800625A0->model_translation.vy = D_801D9050.to[1];
+                D_800625A0->view_motion &= 5;
+            } else {
+                D_800625A0->model_translation.vy = pos;
+            }
+        } else {
+            travelled = D_801D9050.offset[1];
+            pos = travelled / 0x10000;
+            pos = D_801D9050.from[1] - pos;
+            if (D_801D9050.to[1] >= pos) {
+                D_800625A0->model_translation.vy = D_801D9050.to[1];
+                D_800625A0->view_motion &= 5;
+            } else {
+                D_800625A0->model_translation.vy = pos;
+            }
+        }
+    }
+    if (D_800625A0->view_motion & 4) {
+        D_801D9050.offset[2] = travelled = D_801D9050.offset[2] + D_801D9050.step[2];
+        if (D_801D9050.negative[2] == 0) {
+            distance = travelled / 0x10000;
+            if (distance + D_801D9050.from[2] >= D_801D9050.to[2]) {
+                D_801E8674->view->distance = D_801D9050.to[2];
+                D_800625A0->view_motion &= 3;
+            } else {
+                D_801E8674->view->distance = distance + D_801D9050.from[2];
+            }
+        } else {
+            distance = travelled / 0x10000;
+            if (D_801D9050.to[2] >= D_801D9050.from[2] - distance) {
+                D_801E8674->view->distance = D_801D9050.to[2];
+                D_800625A0->view_motion &= 3;
+            } else {
+                D_801E8674->view->distance = D_801D9050.from[2] - distance;
+            }
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CBA2C);
+#endif
 
 /* Load the model's matrices, then the view's. */
 void func_801CBDA0(void) {

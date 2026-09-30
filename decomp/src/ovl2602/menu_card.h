@@ -774,6 +774,17 @@ typedef struct {
     u8 frames;       /* 33: steps per update */
 } CameraMove;
 extern CameraMove D_801D9050;
+
+/* The Gear model code's state (801e8674, outside this overlay). */
+typedef struct {
+    u8 unk0[0x56];
+    s16 distance; /* 56: camera distance */
+} ModelView;
+typedef struct {
+    u8 unk0[4];
+    ModelView *view; /* 04 */
+} ModelState;
+extern ModelState *D_801E8674;
 extern u32 D_8006EF58;     /* party gold */
 void ClearImage(void *env, s32 unk1, s32 unk2, s32 unk3);
 void AddPrims(u32 *ot, u32 *first, u32 *last); /* link an OT range into another OT */
