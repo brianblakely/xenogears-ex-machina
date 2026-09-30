@@ -12,3 +12,7 @@ SOURCE_DIRS := decomp/src/battle
 MASPSX_battle_8009E53C := --aspsx-version=2.34 --expand-div
 # Packed containers of this image (tools/packed_container.py).
 CONTAINERS := 1:38 2:33
+# Unit 800B15D8-end: the Cygnus CDK GCC 2.7.2 with a later ASPSX (global
+# stores through a register for %hi, positive li as addiu; docs/matching.md).
+CC_battle_800B15D8 := 2.7.2-cdk
+MASPSX_battle_800B15D8 := --aspsx-version=2.56

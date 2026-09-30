@@ -1,14 +1,10 @@
-/* Battle unit from 800B15D8 to the end of the overlay text.
- *
- * This code comes from a different toolchain than the rest of the overlay:
- * stores to globals use a register for %hi instead of the assembler's $at
- * expansion, positive `li` becomes `addiu`, and five epilogues (800B8090,
- * 800B88BC, 800BEF84, 800BEFEC, 800BF718) carry the stack adjustment in the
- * `jr $ra` delay slot. Neither GCC 2.6.3 nor 2.7.2 with maspsx (2.34 or 2.79)
- * reproduces that, so the unit stays assembly (the recovered C is kept as
- * NON_MATCHING drafts). The unit starts at 800B15D8, the first function whose
- * global stores take a register for %hi (800B14CC's take $at). Its rodata
- * starts at 0x800707DC, after 800B12D0's jump table. */
+/* Battle unit from 800B15D8 to the end of the overlay text, built by the
+ * Cygnus CDK GCC 2.7.2 with a later ASPSX (docs/matching.md): stores to
+ * globals take a register for %hi, positive `li` becomes `addiu`, and some
+ * epilogues (800B8090, 800B88BC, 800BEF84, 800BEFEC, 800BF718) carry the
+ * stack adjustment in the `jr $ra` delay slot. The unit starts at 800B15D8,
+ * the first function whose global stores take a register for %hi (800B14CC's
+ * take $at); its rodata starts at 0x800707DC, after 800B12D0's jump table. */
 #include "common.h"
 #include "battle_core.h"
 #include "combatant.h"
@@ -18,7 +14,6 @@
 #include "effect.h"
 #include "objects.h"
 
-#ifdef NON_MATCHING
 /* Select script index of an effect script file: copy its entry into
  * D_800C3BD0 (relocating its offsets to addresses unless the file is already
  * relocated) and start its commands; its command count. */
@@ -35,9 +30,6 @@ s32 func_800B15D8(ScriptFile *file, s32 index) {
     D_800C3BEC = D_800C3BD0.commands;
     return entry->count;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B15D8);
-#endif
 
 /* Address of entry index (0x1C bytes each) of a table with a 0xC-byte
  * header. */
@@ -45,13 +37,12 @@ u8 *func_800B168C(u8 *table, s32 index) {
     return table + (index * 0x1C + 0xC);
 }
 
-#ifdef NON_MATCHING
 /* The total size of an unrelocated script entry's commands (each command's
  * first byte + 1 words). */
 s32 func_800B16A4(ScriptEntry *entry) {
     s32 i = 0;
     s32 size = 0;
-    u8 *command = (u8 *)entry + (u32)entry->commands;
+    u8 *command = entry->commands + (u32)entry;
     s32 count = entry->count;
 
     while (i != count) {
@@ -61,20 +52,13 @@ s32 func_800B16A4(ScriptEntry *entry) {
     }
     return size;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B16A4);
-#endif
 
-#ifdef NON_MATCHING
 /* Step the effect script cursor to the next command (its second byte + 1
  * words further). */
 void func_800B16F0(void) {
-    D_800C3BF0++;
     D_800C3BEC += (D_800C3BEC[1] + 1) * 4;
+    D_800C3BF0++;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B16F0);
-#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B1720);
 
