@@ -1703,7 +1703,77 @@ void func_800A4820(void) {
     }
 }
 
+#ifdef NON_MATCHING
+/* Draw the scene hierarchy's visible model parts under view: billboard parts
+ * (field52 1: upright, 2: facing the view) drop the parts' rotation, and
+ * field52 selects the model drawing mode (4-7: 2-5); plain parts (field52 0)
+ * draw at ordering-table depth 16 into ot[depth - 1]. */
+void func_800A48EC(ModelList *models, ModelPart *root, Matrix *view, s32 arg3, s32 arg4, u32 *ot, s32 buffer,
+                   s32 depth) {
+    Matrix *m;
+    ModelPart *part;
+    s32 shift;
+    u32 count;
+    s32 i;
+    s32 mode;
+
+    m = (Matrix *)0x1F800040;
+    part = root;
+    shift = D_80050100;
+    count = part++->index - 1;
+    for (i = 0; i < count; i++, part++) {
+        if (part->modelId != 0xFFFF && part->flag7) {
+            CompMatrix(view, &part->world, m);
+            if ((u16)(part->field52 - 1) < 2) {
+                m->m[0][0] = 0x1000;
+                m->m[0][2] = 0;
+                m->m[1][0] = 0;
+                m->m[1][2] = 0;
+                m->m[2][0] = 0;
+                m->m[2][2] = 0x1000;
+                if ((s16)part->field52 == 1) {
+                    m->m[0][1] = view->m[0][1];
+                    m->m[1][1] = view->m[1][1];
+                    m->m[2][1] = view->m[2][1];
+                } else {
+                    m->m[0][1] = 0;
+                    m->m[1][1] = 0x1000;
+                    m->m[2][1] = 0;
+                }
+            }
+            SetRotMatrix(m);
+            SetTransMatrix(m);
+            switch ((s16)part->field52) {
+            case 4:
+                mode = 2;
+                break;
+            case 5:
+                mode = 3;
+                break;
+            case 6:
+                mode = 4;
+                break;
+            case 7:
+                mode = 5;
+                break;
+            default:
+                mode = 0;
+                break;
+            }
+            if ((s16)part->field52 == 0) {
+                D_80050100 = 16;
+                func_8002C700(models->models[part->modelId], part->packets[buffer], (s32)(ot + depth - 1), mode);
+            } else {
+                D_80050100 = shift;
+                func_8002C700(models->models[part->modelId], part->packets[buffer], (s32)ot, mode);
+            }
+        }
+    }
+    D_80050100 = shift;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A48EC);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A4B3C);
 
