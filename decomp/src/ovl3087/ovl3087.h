@@ -64,7 +64,7 @@ typedef struct {
     u8 unk801;
     u8 unk802;
     u8 pad803;
-    u8 unk804[16];
+    u8 actionRunning[16]; /* 0x804 actor action in progress (cleared on completion) */
     u8 *music;            /* 0x814 music sequence buffer */
     struct SoundBank *soundBank; /* 0x818 the script's sound effect bank */
     s16 musicId;          /* 0x81c */
@@ -111,9 +111,20 @@ typedef struct {
 
 /* Battle state at pointer 800c3eac, only the field this module uses. */
 typedef struct {
-    u8 pad0[0x2EB];
+    u8 pad0[0x2DA];
+    u8 unk2DA;
+    u8 pad2DB[0x2EB - 0x2DB];
     u8 unk2EB;
 } BattleState;
+
+/* Battle objects (pointer table 800d3368, 11 entries). */
+typedef struct {
+    u8 pad0[0x35];
+    u8 unk35;
+} BattleObject;
+extern BattleObject *D_800D3368[11];
+extern u8 D_800C4000[];
+extern u8 D_801E9C20[16]; /* actor action started by the script */
 extern BattleState *D_800C3EAC;
 
 /* Battle UI state (pointer 800d2d28), only the fields this module uses. */
@@ -185,7 +196,13 @@ void func_80039F18(s32 sound, s16 arg1, s16 arg2);
 void func_8003A2E4(s32 sound, u16 arg1);
 void func_8003A89C(s32 handle, s32 volume, s32 time);
 void func_8003F99C(void *src, void *dest, s32 size);
+s32 func_800286CC(void);
 void func_800716D8(void);
+void func_8007FF14(s32 arg);
+void func_800800E8(s32 arg);
+void func_80085388(void);
+void func_800B838C(u16 arg0, u16 arg1);
+void func_800B8D7C(void);
 void func_800883AC(s32 arg);
 void func_80088490(s32 arg);
 void func_8008AB70(void);
@@ -215,6 +232,15 @@ u8 func_801E6CE8(u16 message, u8 actor, u16 flags);
 void func_801E7A5C(s32 thread, u8 *insn);
 void func_801E9958(s32 model, u16 animation);
 s32 func_801E9978(void *file, s32 *info);
+void func_801E9430(u8 actor, s16 animation);
+void func_801E950C(u8 actor);
+void func_801E9550(u8 actor);
+void func_801E958C(u8 actor);
+void func_801E95E4(u8 actor, s16 arg1, s16 arg2, s16 arg3);
+void func_801E9694(u8 actor, s16 arg1, s16 arg2, s16 arg3);
+void func_801E9700(u8 actor, u16 arg1);
+void func_801E9760(u8 actor, u8 target);
+void func_801E9894(u8 actor, u8 target);
 void func_801E9AD4(s32 model);
 void func_801E9B2C(void);
 

@@ -821,31 +821,153 @@ s32 func_801E80F0(s32 thread, u8 *insn) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E818C);
+/* Opcode 3a: start animation b on actor a. */
+s32 func_801E818C(s32 thread, u8 *insn) {
+    func_801E57F8(insn, 2, 0, 1);
+    func_801E9430(func_801E5A98((u8)D_800D3278->operands[0]), D_800D3278->operands[1]);
+    return 5;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E81EC);
+/* Opcode 3b. */
+s32 func_801E81EC(s32 thread, u8 *insn) {
+    func_801E57F8(insn, 1, 0, 1);
+    func_801E950C(func_801E5A98((u8)D_800D3278->operands[0]));
+    return 3;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E823C);
+/* Opcode 3c. */
+s32 func_801E823C(s32 thread, u8 *insn) {
+    func_801E57F8(insn, 1, 0, 1);
+    func_801E9550(func_801E5A98((u8)D_800D3278->operands[0]));
+    return 3;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E828C);
+/* Opcode 3d. */
+s32 func_801E828C(s32 thread, u8 *insn) {
+    func_801E57F8(insn, 1, 0, 1);
+    func_801E958C(func_801E5A98((u8)D_800D3278->operands[0]));
+    return 3;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E82DC);
+/* Opcode 3e: start an actor action with three arguments and wait for it. */
+s32 func_801E82DC(s32 thread, u8 *insn) {
+    s32 slot;
+    s32 length = 0;
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E83C0);
+    func_801E57F8(insn, 4, 0, 1);
+    slot = func_801E5A98((u8)D_800D3278->operands[0]);
+    if (D_801E9C20[slot] == 0) {
+        D_800D3278->actionRunning[slot] = 1;
+        D_801E9C20[slot] = 1;
+        func_801E95E4(slot, D_800D3278->operands[1], D_800D3278->operands[2], D_800D3278->operands[3]);
+    } else if (D_800D3278->actionRunning[slot] == 0) {
+        D_801E9C20[slot] = 0;
+        length = 9;
+    }
+    return length;
+}
 
+/* Opcode 3f: start the other actor action and wait for it. */
+s32 func_801E83C0(s32 thread, u8 *insn) {
+    s32 slot;
+    s32 length = 0;
+
+    func_801E57F8(insn, 4, 0, 1);
+    slot = func_801E5A98((u8)D_800D3278->operands[0]);
+    if (D_801E9C20[slot] == 0) {
+        D_800D3278->actionRunning[slot] = 1;
+        D_801E9C20[slot] = 1;
+        func_801E9694(slot, D_800D3278->operands[1], D_800D3278->operands[2], D_800D3278->operands[3]);
+    } else if (D_800D3278->actionRunning[slot] == 0) {
+        D_801E9C20[slot] = 0;
+        length = 9;
+    }
+    return length;
+}
+
+#ifdef NON_MATCHING
+/* Opcode 45: actor a attacks actor b (animation c, value d) and waits.
+ * (The original masks the actor ids separately at each use.) */
+s32 func_801E84A4(s32 thread, u8 *insn) {
+    s32 length = 0;
+    u8 attacker;
+    u8 target;
+
+    func_801E57F8(insn, 4, 0, 1);
+    attacker = func_801E5A98((u8)D_800D3278->operands[0]);
+    target = func_801E5A98((u8)D_800D3278->operands[1]);
+    D_800C3EAC->unk2DA = 0;
+    func_80085388();
+    D_800C4000[target] = D_800D3278->operands[3];
+    if (D_801E9C20[attacker] == 0) {
+        D_800D3278->actionRunning[attacker] = 1;
+        D_801E9C20[attacker] = 1;
+        func_801E9894(attacker, target);
+        while (func_800286CC() != 0) {
+            func_800716D8();
+        }
+        func_801E9430(attacker, D_800D3278->operands[2]);
+    } else if (D_800D3278->actionRunning[attacker] == 0) {
+        D_801E9C20[attacker] = 0;
+        length = 9;
+    }
+    return length;
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E84A4);
+#endif
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E8600);
+/* Opcode 46. */
+s32 func_801E8600(s32 thread, u8 *insn) {
+    u8 actor;
+    u8 target;
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E86AC);
+    D_800C3EAC->unk2DA = 0;
+    func_80085388();
+    func_801E57F8(insn, 3, 0, 1);
+    actor = func_801E5A98((u8)D_800D3278->operands[0]);
+    target = func_801E5A98((u8)D_800D3278->operands[1]);
+    func_801E9700(actor, D_800D3278->operands[2]);
+    func_801E9760(actor, target);
+    return 7;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E86D0);
+/* Opcode 47. */
+s32 func_801E86AC(s32 thread, u8 *insn) {
+    func_800B8D7C();
+    return 1;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E86F4);
+/* Opcode 42. */
+s32 func_801E86D0(s32 thread, u8 *insn) {
+    func_8007FF14(0);
+    return 1;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E8718);
+/* Opcode 43. */
+s32 func_801E86F4(s32 thread, u8 *insn) {
+    func_800800E8(0);
+    return 1;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E8750);
+/* Opcode 44: clear byte 0x35 of the eleven battle objects. */
+s32 func_801E8718(s32 thread, u8 *insn) {
+    s32 i;
+
+    for (i = 0; i < 11; i++) {
+        if (D_800D3368[i] != NULL) {
+            D_800D3368[i]->unk35 = 0;
+        }
+    }
+    return 1;
+}
+
+/* Opcode 48. */
+s32 func_801E8750(s32 thread, u8 *insn) {
+    func_801E57F8(insn, 2, 0, 1);
+    func_800B838C(D_800D3278->operands[0], D_800D3278->operands[1]);
+    return 5;
+}
 
 INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E879C);
 
