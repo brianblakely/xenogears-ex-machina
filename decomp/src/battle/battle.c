@@ -2124,7 +2124,72 @@ void func_8009C198(void) {
     func_8009C9C4();
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009C4B4);
+/* Per-target follow-up of a gear action: a party gear's attack level (up by
+ * one with commands 0-2, set below D_800D2C34 by the level-3/6/9 command
+ * groups, which also raise the pilot's field 0x54), then the target's
+ * reactions: breaking status 0x2000 on 80%, fuel-drain immunity, halving or
+ * raising damage by its flag 0x80, reflecting it with flag 0x20, and nullifying
+ * with status 0x200. */
+void func_8009C4B4(void) {
+    s32 chance;
+
+    if (D_800C3E04 < 3) {
+        if (D_800C34B0->commandIndex < 3) {
+            if (++D_800C3D3C[0] > D_800C3D3C[1]) {
+                D_800C3D3C[0]--;
+            }
+        }
+        if ((u32)(D_800C34B0->commandIndex - 3) < 3) {
+            D_800C3D3C[0] = D_800D2C34 - 1;
+        }
+        if ((u32)(D_800C34B0->commandIndex - 6) < 3) {
+            D_800C3D3C[0] = D_800D2C34 - 2;
+        }
+        if ((u32)(D_800C34B0->commandIndex - 9) < 3) {
+            D_800C3D3C[0] = D_800D2C34 - 3;
+        }
+        if (D_800C34B0->commandIndex >= 3 && D_800C34B0->commandIndex < 12) {
+            D_800C3E00->pilot.field54 += D_800C34B0->commandIndex / 3;
+        }
+        if (D_800C34B0->commandIndex == 5) {
+            D_800C3E00->pilot.field54 += 1;
+        }
+        if (D_800C34B0->commandIndex == 8) {
+            D_800C3E00->pilot.field54 += 2;
+        }
+        if (D_800C34B0->commandIndex == 11) {
+            D_800C3E00->pilot.field54 += 3;
+        }
+    }
+    if (D_800C34B0->resultCode[D_800C3E50] == 0 && (D_800C3E34->pilot.status80 & 0x2000)
+        && func_8003FA38() % 100 < 80) {
+        D_800C3E34->pilot.status80 &= ~0x2000;
+        D_800D2DC8->status7C &= ~0x1000;
+    }
+    if (D_800C34B0->resultCode[D_800C3E50] == 10 && (D_800D2DC8->field7E & 0x80)) {
+        D_800C34B0->damage[D_800C3E50] = 0;
+    }
+    if (D_800C34B0->resultCode[D_800C3E50] == 0) {
+        if (D_800C3E34->pilot.flags32 & 0x80) {
+            chance = 60;
+            if (D_800C3E34->pilot.characterId == 0) {
+                chance = 80;
+            }
+            if (func_8003FA38() % 100 < chance) {
+                D_800C34B0->damage[D_800C3E50] >>= 1;
+            } else {
+                D_800C34B0->damage[D_800C3E50] += D_800C34B0->damage[D_800C3E50] >> 1;
+            }
+        }
+        if (D_800C3E34->pilot.flags32 & 0x20) {
+            D_800C34B0->resultCode[D_800C3E04] = 0;
+            D_800C34B0->damage[D_800C3E04] = D_800C34B0->damage[D_800C3E50];
+        }
+    }
+    if ((D_800C3E34->pilot.status88.half.permanent & 0x200) && D_800C34B0->resultCode[D_800C3E50] == 1) {
+        D_800C34B0->damage[D_800C3E50] = 0;
+    }
+}
 
 /* The gear version of 80099FB0: make the current command descriptor the
  * battle's current command, a command without an element taking the gear's

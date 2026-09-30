@@ -40,7 +40,8 @@ typedef struct {
     u16 maxHp;              /* 0x4E */
     u16 ep;                 /* 0x50 */
     u16 maxEp;              /* 0x52 */
-    u8 pad54[0x56 - 0x54];
+    u8 field54;             /* 0x54 */
+    u8 pad55;
     u8 characterId;         /* 0x56 */
     u8 pad57[0x5B - 0x57];
     u8 accuracy;            /* 0x5B: added to a command's accuracy */
@@ -93,7 +94,7 @@ typedef struct {
     u16 armor;              /* 0x72 */
     u8 pad74[0x7C - 0x74];
     u16 status7C;
-    u8 pad7E[0x80 - 0x7E];
+    u16 field7E;            /* 0x7E: bit 0x80 blocks fuel drain */
     u16 status80;
     u16 status82;
     StatusPair status84;
@@ -247,7 +248,7 @@ extern GearRecord *D_800D2D6C;          /* attacker's gear record */
 extern u8 D_800C3E04;                   /* attacker slot */
 extern Combatant *D_800C3E34;           /* target record */
 extern u8 *D_800C3D60;                  /* the target's field 0x148 */
-extern u8 *D_800C3D3C;                  /* the attacker's field 0x148 */
+extern u8 *D_800C3D3C;                  /* the attacker's attack level and maximum (+0x148) */
 extern u8 D_800D2DC4;                   /* an ether check failed */
 extern void (*D_800C34DC[])(void);      /* gear formula table */
 extern u8 D_800C3E50;                   /* target slot */
