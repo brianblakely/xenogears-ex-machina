@@ -1,4 +1,5 @@
 #include "menu.h"
+#include "sparkle.h"
 
 /* Start the menu camera: mode 3 setup and its script block. */
 void func_800707A8(void) {
@@ -424,15 +425,89 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007B270);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007B388);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007BACC);
+/* Advance every live sparkle one frame (expiring it after its last frame,
+ * letting it fall otherwise) and latch the per-frame counters. */
+void func_8007BACC(void) {
+    Sparkle *sparkle;
+    s32 i;
+    s32 count;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007BB7C);
+    sparkle = D_80092AD8;
+    for (i = 0; i < SPARKLE_COUNT; i++, sparkle++) {
+        if (sparkle->active) {
+            if (sparkle->frame == sparkle->frame_count) {
+                sparkle->active = 0;
+            } else {
+                sparkle->frame++;
+                if (!sparkle->still) {
+                    sparkle->fall_speed += sparkle->gravity;
+                    sparkle->y += sparkle->fall_speed;
+                }
+            }
+        }
+    }
+    D_800926A4++;
+    count = D_800926B0;
+    D_800926B0 = 0;
+    D_800926B4 = count;
+}
+
+/* Free every sparkle. */
+void func_8007BB7C(void) {
+    Sparkle *sparkle = D_80092AD8;
+    s32 i;
+
+    for (i = SPARKLE_COUNT - 1; i >= 0; i--, sparkle++) {
+        sparkle->active = 0;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007BBA0);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007C100);
+/* Set the colour of kind-2 sparkles. */
+void func_8007C100(Color *color) {
+    D_800926B8 = *color;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007C124);
+/* Start a sparkle of the given kind at a position, in the first free slot. */
+void func_8007C124(s16 *pos, s32 kind) {
+    Sparkle *sparkle = D_80092AD8;
+    SparkleKind *info;
+    PolyFT4 *prim;
+    s32 i;
+
+    for (i = 0; i < SPARKLE_COUNT; i++, sparkle++) {
+        if (!sparkle->active) {
+            break;
+        }
+    }
+    if (i == SPARKLE_COUNT) {
+        return;
+    }
+    sparkle->active = 1;
+    info = &D_80092A74[kind];
+    sparkle->still = 0;
+    sparkle->frame = 0;
+    sparkle->kind = info;
+    sparkle->frame_count = info->frame_count;
+    sparkle->gravity = info->gravity;
+    sparkle->fall_speed = 0;
+    sparkle->x = pos[0];
+    sparkle->y = pos[1];
+    sparkle->z = pos[2];
+    prim = sparkle->prim;
+    prim->tpage = info->tpage;
+    if (kind == 2) {
+        prim->code &= ~1;
+        prim->r0 = D_800926B8.r;
+        prim->g0 = D_800926B8.g;
+        prim->b0 = D_800926B8.b;
+    } else {
+        prim->code |= 1;
+    }
+    prim->clut = info->clut;
+    sparkle->prim[1] = *prim;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007C280);
 
@@ -440,7 +515,11 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007C880);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007CAA4);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007CD14);
+/* Pack four fields into one word: top byte, 16-bit middle, flag bit 7 and
+ * a 7-bit low field. */
+u32 func_8007CD14(s32 flag, s32 top, s32 middle, s32 low) {
+    return (low & 0x7F) | ((flag << 7) & 0x80) | (top << 24) | ((middle << 8) & 0xFFFF00);
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007CD44);
 
