@@ -1680,7 +1680,72 @@ void func_8009B1E4(void) {
     D_8006ECF4[10].field17 = 7;
 }
 
+#ifdef NON_MATCHING
+/* Raise an attack's damage: by half for each of characters 0 and 3 in the
+ * party below half HP (gear HP in a gear) and again below a quarter; then a
+ * critical chance (10%, 60% with attacker flag 0x200) multiplies it by 1.5
+ * (2 with attacker flag 0x400). */
+void func_8009B46C(u16 *damage) {
+    u8 count = 0;
+    u8 i;
+    u32 hp;
+    u32 maxHp;
+    s32 chance;
+    s32 scale;
+
+    for (i = 0; i < 3; i++) {
+        Combatant *record = &D_800C34B0->records[i];
+        UnitRecord *gear = &record->gear;
+
+        if (record->pilot.characterId == 0) {
+            if (D_800CCCE8.records[i].flags15A & 0x80) {
+                maxHp = record->gear.maxGearHp;
+                hp = record->gear.gearHp;
+            } else {
+                maxHp = record->pilot.maxHp;
+                hp = record->pilot.hp;
+            }
+            if (hp < maxHp >> 1) {
+                count++;
+            }
+            if (hp < maxHp >> 2) {
+                count++;
+            }
+        }
+        if (record->pilot.characterId == 3) {
+            if (D_800CCCE8.records[i].flags15A & 0x80) {
+                maxHp = gear->maxGearHp;
+                hp = gear->gearHp;
+            } else {
+                maxHp = record->pilot.maxHp;
+                hp = record->pilot.hp;
+            }
+            if (hp < maxHp >> 1) {
+                count++;
+            }
+            if (hp < maxHp >> 2) {
+                count++;
+            }
+        }
+    }
+    chance = 10;
+    if (count) {
+        *damage += count * (*damage >> 1);
+    }
+    scale = 3;
+    if (D_800C3E00->pilot.flags32 & 0x400) {
+        scale = 4;
+    }
+    if (D_800C3E00->pilot.flags32 & 0x200) {
+        chance = 60;
+    }
+    if (func_8003FA38() % 100 < chance) {
+        *damage = scale * *damage >> 1;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009B46C);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009B684);
 
@@ -1693,7 +1758,81 @@ void func_8009BD94(void) {
     D_800C34B0->damage[D_800C3E50] = D_800C3DFC->power * D_800D2DC8->maxGearHp / 20;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009BE0C);
+/* Write the party back to the game data: each present member's HP (Chu-Chu in
+ * a gear takes hers from the gear's HP), EP, use counts and field 0x3A, with
+ * HP 1 when KO'd, and the HP and fuel of its gear (ids 0-6 and 8-16), a tenth
+ * of the maximum when the gear is wrecked. */
+void func_8009BE0C(void) {
+    u8 i;
+    u8 j;
+    s32 unused[2]; /* never used; it gives the original its 8-byte frame */
+
+    for (i = 0; i < 3; i++) {
+        Combatant *record;
+        UnitRecord *character;
+        UnitRecord *gearRecord;
+        UnitRecord *gear;
+
+        if (D_800D2D24[i] == 0x7F) {
+            continue;
+        }
+        record = &D_800CCCE8.records[i];
+        character = &D_8006D8A0[record->pilot.characterId];
+        gear = &D_800CCCE8.records[i].gear;
+        gearRecord = &D_8006D8A0[11 + record->pilot.gearId];
+        if (record->pilot.characterId == 7 && (D_800CCCE8.records[i].flags15A & 0x80)) {
+            record->pilot.hp = (gear->gearHp + 1) / 50;
+            if (record->pilot.hp == 0) {
+                record->pilot.hp = 1;
+            }
+        }
+        character->hp = record->pilot.hp;
+        character->ep = record->pilot.ep;
+        if (character->hp > character->maxHp) {
+            character->hp = character->maxHp;
+        }
+        if (character->ep > character->maxEp) {
+            character->ep = character->maxEp;
+        }
+        for (j = 0; j < 7; j++) {
+            character->useCounts[j] = record->pilot.useCounts[j];
+        }
+        character->field3A = record->pilot.field3A;
+        if (record->pilot.status7C & 0xC000) {
+            character->hp = 1;
+        }
+        switch (record->pilot.gearId) {
+        case 0:
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+        case 5:
+        case 6:
+        case 8:
+        case 9:
+        case 10:
+        case 11:
+        case 12:
+        case 13:
+        case 14:
+        case 15:
+        case 16:
+            gearRecord->gearHp = gear->gearHp;
+            gearRecord->field38 = gear->field38;
+            if (gearRecord->gearHp > gearRecord->maxGearHp) {
+                gearRecord->gearHp = gearRecord->maxGearHp;
+            }
+            if (gearRecord->field38 > gearRecord->field3A) {
+                gearRecord->field38 = gearRecord->field3A;
+            }
+            if (gear->status7C & 0x8000) {
+                gearRecord->gearHp = gearRecord->maxGearHp / 10;
+            }
+            break;
+        }
+    }
+}
 
 /* Gear warning flags of slot: 1 gear status 0x400, 2 gear HP below an eighth
  * (unless the pilot's flag 1 at +0x36), 4 when field 0x148 is 4. */

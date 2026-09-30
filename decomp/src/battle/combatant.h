@@ -34,8 +34,8 @@ typedef struct {
     u16 flags32;            /* 0x32: bit 0x40 doubles status durations */
     u8 pad34[0x36 - 0x34];
     u16 flags36;            /* 0x36 */
-    u8 pad38[0x3A - 0x38];
-    u16 field3A;            /* 0x3A: a gear's regeneration base */
+    u16 field38;            /* 0x38: a gear's fuel */
+    u16 field3A;            /* 0x3A: a gear's maximum fuel */
     u8 pad3C[0x4C - 0x3C];
     u16 hp;                 /* 0x4C */
     u16 maxHp;              /* 0x4E */
@@ -61,7 +61,10 @@ typedef struct {
     StatusPair status84;
     StatusPair status88;
     StatusPair status8C;
-    u8 pad90[0xA4 - 0x90];
+    u16 useCounts[7];       /* 0x90 */
+    u8 pad9E[0xA0 - 0x9E];
+    u8 gearId;              /* 0xA0: the pilot's gear (game-data record 11 + id) */
+    u8 padA1[0xA4 - 0xA1];
 } UnitRecord;
 
 /* A 16-byte item entry of the battle work area. */
@@ -168,6 +171,7 @@ extern Combatant *D_800C3E34;           /* target record */
 extern u8 D_800C3E50;                   /* target slot */
 extern UnitRecord *D_800D2DC8;          /* target's gear record */
 extern u8 D_800D2C34;
+extern u8 D_800D2D24[3];                /* party character ids, 0x7F none */
 
 s32 func_8003FA38(void);                /* resident rand: 0..0x7FFF */
 
