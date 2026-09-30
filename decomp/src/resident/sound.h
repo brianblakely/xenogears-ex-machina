@@ -22,9 +22,9 @@ typedef struct {
  * each hardware voice). */
 typedef struct {
     u16 voice;         /* hardware voice */
-    u16 mode;
+    u16 mode;          /* 0x10 pitch modulation, 0x20 noise, 0x40 reverb */
     s16 priority;
-    u16 flags;         /* registers to update */
+    u16 flags;         /* registers to update (0x1000-0x4000: mode bits) */
 } SoundChannel;
 
 /* A loaded sound bank (list through `next`). */
@@ -37,7 +37,7 @@ typedef struct SoundBank {
     u16 volumes;       /* offset of the per-effect volume bytes */
     u8 unk1A[2];
     struct SoundBank *next;
-    u16 effect[1][2];  /* data offsets of each effect's two channels */
+    u16 effect[1];     /* data offsets of each effect's two channels */
 } SoundBank;
 
 /* A sound track (list through `next`); flag 1 marks it paused. */
@@ -71,6 +71,16 @@ typedef struct {
     u16 unk1E;
 } SoundModulator;
 
+/* A repeat of a channel's sequence data. */
+typedef struct {
+    u8 count;          /* repeats left */
+    u8 unk1;
+    u8 transpose;      /* at the start of the repeat */
+    u8 exit_transpose; /* at its end */
+    u8 *start;
+    u8 *end;
+} SoundLoop;
+
 /* One channel of a playing sequence (0x158 bytes). */
 typedef struct {
     u16 flags;         /* bit 0: active, 0x20: muted */
@@ -89,7 +99,7 @@ typedef struct {
     u8 unk23;
     u8 unk24;
     u8 unk25;
-    u8 unk26;
+    u8 instrument;
     u8 voice;          /* hardware voice */
     u8 unk28[4];
     struct SoundSequence *instruments;
@@ -106,10 +116,11 @@ typedef struct {
     u8 unk64;
     u8 unk65;
     s16 transpose;     /* in semitones */
-    u8 unk68[6];
-    u16 unk6E;
+    s32 note;          /* 16.16 */
+    s16 unk6C;
+    s16 unk6E;
     u16 unk70;
-    u16 unk72;
+    u16 loop_depth;    /* innermost entry of `loops`, 0xFFFF when none */
     s16 pan;           /* 0 left, 0x4000 centre, 0x7F00 right */
     s16 volume;
     SoundFixed level;  /* its whole part scales the volume */
@@ -118,7 +129,8 @@ typedef struct {
     s16 volume_target;
     u8 unk90[0xA];
     s16 volume_frames;
-    u8 unk9C[0x32];
+    SoundLoop loops[4];
+    u8 unkCC[2];
     u16 unkCE;
     u16 unkD0;
     s16 unkD2;
@@ -151,7 +163,7 @@ typedef struct SoundSeq {
     u16 unk18;
     u8 unk1A;
     u8 unk1B;
-    u8 unk1C[2];
+    u16 noise_clock;
     u16 unk1E;
     s32 unk20;
     s32 unk24;
@@ -179,7 +191,7 @@ typedef struct SoundSeq {
     s32 rate_step;
     s16 rate_frames;
     s16 rate_target;
-    s32 tempo;         /* 16.16 */
+    SoundFixed tempo;  /* 16.16, 1.0 = 0x100 */
     s32 tempo_step;
     s16 tempo_frames;
     s16 tempo_target;
