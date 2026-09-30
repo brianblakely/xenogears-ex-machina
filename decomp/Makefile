@@ -69,7 +69,7 @@ $(ROOT)/$(BUILD)/%.o: $(ROOT)/%.s $(ROOT)/$(LINKER_SCRIPT)
 	@mkdir -p $(dir $@)
 	cd $(ROOT) && $(AS) $(ASFLAGS) -o $@ $<
 
-$(ROOT)/$(BUILD)/%.o: $(ROOT)/%.c $(ROOT)/$(LINKER_SCRIPT) $(wildcard $(ROOT)/decomp/include/*.h $(ROOT)/decomp/include/*/*.h $(dir $(ROOT)/%)*.h)
+$(ROOT)/$(BUILD)/%.o: $(ROOT)/%.c $(ROOT)/$(LINKER_SCRIPT) $(wildcard $(ROOT)/decomp/include/*.h $(ROOT)/decomp/include/*/*.h $(ROOT)/decomp/src/*/*.h)
 	@mkdir -p $(dir $@)
 	cd $(ROOT) && psx-cpp-$(call cc_of,$<) $(CPPFLAGS) $< | psx-cc1-$(call cc_of,$<) $(CC1FLAGS) -G$(call gp_of,$<) -o $@.cc1.s
 	cd $(ROOT) && $(MASPSX) $(call maspsx_of,$<) -G$(call gp_of,$<) < $@.cc1.s > $@.s
