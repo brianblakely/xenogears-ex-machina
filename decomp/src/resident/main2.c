@@ -2527,9 +2527,96 @@ void func_80039360(void) {
     D_8006F9FC[0].next = 0;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800393B8);
+/* Allocate `size` bytes of SPU memory in the first gap of the map that
+ * fits (or after its last entry). Returns the address, 0 when none.
+ * Nonmatching: the entry and end registers are swapped and the map base
+ * is not rematerialised in the loop. */
+#ifdef NON_MATCHING
+s32 func_800393B8(s32 size, u16 mode) {
+    SpuMemBlock *entry = D_8006F9FC;
+    SpuMemBlock *next;
+    SpuMemBlock *block;
+    u32 end = D_8006F9FC[0].address + D_8006F9FC[0].size;
+    s32 i;
 
+    while (entry->next != 0) {
+        next = &D_8006F9FC[entry->next];
+        if ((s32)(next->address - end) >= size) {
+            goto found;
+        }
+        entry = next;
+        end = next->address + next->size;
+    }
+    if ((s32)(0x80000 - end) < size) {
+        return 0;
+    }
+found:
+    i = func_80039784();
+    if (i < 0) {
+        return 0;
+    }
+    block = &D_8006F9FC[i];
+    block->flags = 0x80;
+    block->unk1 = 0;
+    block->address = end;
+    block->size = size;
+    block->next = entry->next;
+    entry->next = i;
+    return end;
+}
+#else
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800393B8);
+#endif
+
+/* Allocate `size` bytes of SPU memory at the top of the last gap of the
+ * map that fits (the space after the last entry included). The new entry
+ * is linked after the map's last entry. Returns the address, 0 when none.
+ * Nonmatching: the next entry and the new entry take swapped registers. */
+#ifdef NON_MATCHING
+s32 func_800394B8(s32 size) {
+    SpuMemBlock *entry = D_8006F9FC;
+    SpuMemBlock *next;
+    SpuMemBlock *found = NULL;
+    SpuMemBlock *block;
+    u32 end;
+    u32 address;
+    s32 i;
+
+    for (;;) {
+        end = entry->address + entry->size;
+        if (entry->next == 0) {
+            if ((s32)(0x80000 - end) >= size) {
+                found = entry;
+                address = 0x80000 - size;
+            }
+            break;
+        }
+        next = &D_8006F9FC[entry->next];
+        if ((s32)(next->address - end) >= size) {
+            found = entry;
+            address = next->address - size;
+        }
+        entry = next;
+    }
+    if (found == NULL) {
+        return 0;
+    }
+    i = func_80039784();
+    if (i < 0) {
+        return 0;
+    }
+    block = &D_8006F9FC[i];
+    block->flags = 0x80;
+    block->unk1 = 0;
+    block->address = address;
+    block->size = size;
+    block->next = entry->next;
+    entry->next = i;
+    return address;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800394B8);
+#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800395B8);
 
