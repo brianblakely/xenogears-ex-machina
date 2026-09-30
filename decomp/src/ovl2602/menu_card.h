@@ -711,11 +711,10 @@ typedef struct {
     u8 unk0[2];
     u8 unk2;       /* 02: entry of the 18h-byte table */
     u8 unk3;       /* 03: entry of the 10h-byte table */
-    u8 unk4, unk5, unk6, unk7; /* 04: entries of the 14h-byte weapon table */
+    u8 unk4[4];    /* 04: weapons (items 32h and up), entries of the 14h-byte weapon table */
     u8 unk8;       /* 08: entry of the 14h-byte table */
     u8 unk9[3];    /* 09: entries of the 1ch-byte part table */
-    u8 unkC;       /* 0c: entry of the 14h-byte weapon table */
-    u8 unkD[3];
+    u8 unkC[4];    /* 0c: weapons (items below 32h); [0] entry of the weapon table */
     u16 unk10;     /* 10: weapon slots of 8 bytes */
     u8 unk12, unk13, unk14;
     u8 unk15[3];

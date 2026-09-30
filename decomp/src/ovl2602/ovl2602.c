@@ -3018,7 +3018,64 @@ void func_801D0EC8(u8 close) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D1078);
+/* Party bits of the present members whose gear carries part `part` of list `kind` (0 frame, 1 engine, 2 armour, 3 parts, 4 weapons). */
+u16 func_801D1078(u8 part, u8 kind) {
+    u16 members;
+    u8 found;
+    s32 i;
+    s32 k;
+
+    members = 0;
+    if (part != 0) {
+        for (i = 0; i < 16; i++) {
+            found = 0;
+            if (D_800625A0->member_present[i] != 0) {
+                switch (kind) {
+                case 1:
+                    if (D_8006DFAC[D_8006D8A0[i].unkA0].unk2 == part) {
+                        found = 1;
+                    }
+                    break;
+                case 0:
+                    if (D_8006DFAC[D_8006D8A0[i].unkA0].unk8 == part) {
+                        found = 1;
+                    }
+                    break;
+                case 2:
+                    if (D_8006DFAC[D_8006D8A0[i].unkA0].unk3 == part) {
+                        found = 1;
+                    }
+                    break;
+                case 4:
+                    for (k = 0; k < 4; k++) {
+                        if (part < 0x32) {
+                            if (D_8006DFAC[D_8006D8A0[i].unkA0].unkC[k] == part) {
+                                found = 1;
+                                break;
+                            }
+                        } else if (D_8006DFAC[D_8006D8A0[i].unkA0].unk4[k] == part) {
+                            found = 1;
+                            break;
+                        }
+                    }
+                    break;
+                case 3:
+                    for (k = 0; k < 3; k++) {
+                        if (D_8006DFAC[D_8006D8A0[i].unkA0].unk9[k] == part) {
+                            found = 1;
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+            if (found) {
+                members |= func_801C5260(D_8006D8A0[i].unkA0);
+            }
+        }
+    }
+    return members;
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D1304);
 
@@ -3599,7 +3656,7 @@ void func_801D6738(GearTable *table, u8 id) {
 
     gear = &D_8006D634.gears[id];
     weapon = table->weapons;
-    weapon += gear->unkC;
+    weapon += gear->unkC[0];
     gear->unk12 = weapon->unkE;
     gear->unk10 = weapon->unk12;
     gear->unk13 = weapon->unk10;
@@ -3614,21 +3671,21 @@ void func_801D6738(GearTable *table, u8 id) {
     }
     if (id == 5 || id == 13) {
         weapon = table->weapons;
-        weapon += gear->unk4;
+        weapon += gear->unk4[0];
         gear->unk12 = weapon->unkE;
         gear->unk10 = weapon->unk12;
         gear->unk13 = weapon->unk10;
         gear->unk14 = weapon->unk11;
         gear->unk5D = weapon->unk1;
         weapon = table->weapons;
-        weapon += gear->unk5;
+        weapon += gear->unk4[1];
         gear->unk1A = weapon->unkE;
         gear->unk18 = weapon->unk12;
         gear->unk1B = weapon->unk10;
         gear->unk1C = weapon->unk11;
         gear->unk5E = weapon->unk2;
         weapon = table->weapons;
-        weapon += gear->unk7;
+        weapon += gear->unk4[3];
         gear->unk22 = weapon->unkE;
         gear->unk20 = weapon->unk12;
         gear->unk23 = weapon->unk10;
