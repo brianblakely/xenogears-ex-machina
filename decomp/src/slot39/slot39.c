@@ -3357,7 +3357,152 @@ void func_801DBDB4(void) {
     }
 }
 
+/* The item screen: a two-column list of eight rows scrolled over the
+ * inventory with a cursor, the selected entry's description and its
+ * windows. Confirm selects an entry, uses it when selected again or swaps
+ * it with the selected one; cancel clears the selection or leaves. */
+#ifdef NON_MATCHING
+/* Cannot match as C in this unit yet: GCC 8-aligns the input jump table
+ * (the original's is at 801c50fc, only 4-aligned); the case-4 tails also
+ * cross-jump differently. */
+u8 func_801DBE54(void) {
+    u8 running;
+    u8 windows;
+    s32 scroll;
+    s32 scrollShown;
+    s32 cursor;
+    s32 cursorShown;
+    s32 selected;
+    s32 next;
+
+    running = 1;
+    windows = 1;
+    scroll = 0;
+    scrollShown = 0xff;
+    cursor = 0;
+    cursorShown = 0xff;
+    selected = 0xff;
+    func_801DA4A8();
+    func_801DBDB4();
+    func_801DB02C(0);
+    func_801DB02C(1);
+    do {
+        func_801C7BF4();
+        if (scroll != scrollShown) {
+            func_801DA5BC(scroll);
+            scrollShown = scroll;
+            func_801D3344(0xc, (u16)D_801EA72C * scroll / 100 + 0x12, (u16)D_801EA724);
+        }
+        func_801DB0A8(cursor, scroll, 0, 0);
+        if (cursor != cursorShown) {
+            func_801DA9A8(cursor, scroll);
+            cursorShown = cursor;
+        }
+        if (windows) {
+            func_801D397C(3, 0xc, 0xa, 0x124, 0x84, 0, 1, 4, 1);
+            func_801D397C(4, 8, 0x8f, 0x130, 0x22, 0, 1, 4, 0);
+            windows = 0;
+            func_801D1E80();
+            func_801D29A8(0, 0);
+        }
+        func_801DB0A8(selected, scroll, 1, 1);
+        switch (D_800625A0->input) {
+        case 4:
+            if (selected == 0xff) {
+                selected = scroll * 2 + cursor;
+            } else if (scroll * 2 + cursor == selected) {
+                if (func_801DB920(scroll, cursor)) {
+                    scrollShown = 0xff;
+                    cursorShown = 0xff;
+                }
+                selected = 0xff;
+            } else {
+                func_801DBD4C(scroll * 2 + cursor, selected);
+                scrollShown = 0xff;
+                cursorShown = 0xff;
+                selected = 0xff;
+            }
+            break;
+        case 5:
+            if (selected == 0xff) {
+                running = 0;
+            } else {
+                selected = 0xff;
+            }
+            break;
+        case 1:
+            next = cursor + 2;
+            if (next >= 16) {
+                if (D_801EA728 < ++scroll) {
+                    scroll--;
+                }
+            } else {
+                cursor = next;
+            }
+            cursorShown = 0xff;
+            break;
+        case 3:
+            next = cursor - 2;
+            if (next < 0) {
+                if (--scroll < 0) {
+                    scroll++;
+                }
+            } else {
+                cursor = next;
+            }
+            cursorShown = 0xff;
+            break;
+        case 0:
+            next = cursor + 1;
+            if (next >= 16) {
+                if (D_801EA728 < ++scroll) {
+                    scroll--;
+                } else {
+                    cursor = 14;
+                }
+            } else {
+                cursor = next;
+            }
+            cursorShown = 0xff;
+            break;
+        case 2:
+            next = cursor - 1;
+            if (next < 0) {
+                if (--scroll < 0) {
+                    scroll++;
+                } else {
+                    cursor = 1;
+                }
+            } else {
+                cursor = next;
+            }
+            cursorShown = 0xff;
+            break;
+        case 9:
+            scroll += 8;
+            if (D_801EA728 < scroll) {
+                scroll = D_801EA728;
+            }
+            cursorShown = 0xff;
+            break;
+        case 10:
+            scroll -= 8;
+            if (scroll < 0) {
+                scroll = 0;
+            }
+            cursorShown = 0xff;
+            break;
+        }
+    } while (running);
+    func_801D2484();
+    func_801DB340(0);
+    func_801DB340(1);
+    func_801E8044(8, D_800625A0->party->unk38);
+    return 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DBE54);
+#endif
 
 /* Open the file list screen of `kind` (0 load, 1 save, 2 the other labels). */
 void func_801DC1D4(u8 kind) {
