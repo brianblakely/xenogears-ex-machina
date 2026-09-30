@@ -501,19 +501,17 @@ void func_80073E38(void) {
     }
 }
 
-#ifdef NON_MATCHING
-/* Switch to the other draw block and clear its overlay ordering table. */
+/* Switch to the other draw block and clear its overlay ordering table.
+ * Breaks (code 1 in the high field; maspsx places `break N` in the low
+ * field, so it is written as 1024) when 800c268c is clear. */
 void func_80073F50(void) {
     if (D_800C268C == 0) {
-        __asm__("break 1");
+        __asm__ volatile("break 1024");
     }
     D_800ADB08 = (D_800ADB08 + 1) % 2;
     D_800C426C = &D_800B249C[D_800ADB08];
     ClearOTagR(D_800C426C->overlay_ot, 8);
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80073F50);
-#endif
 
 /* Swap the draw buffer and clear its ordering tables. */
 void func_80073FE0(void) {
