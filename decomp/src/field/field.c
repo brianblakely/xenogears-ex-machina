@@ -4724,21 +4724,21 @@ void func_8008EA58(void) {
         D_800B0078->pc -= 1;
         return;
     }
-    D_800C3A20 = func_8009CF78(1, EVENT_OPERAND_BYTE(0xB));
-    D_800C3A2A = func_8009CFBC(3, EVENT_OPERAND_BYTE(0xB));
-    D_800C3A2C = func_8009D000(5, EVENT_OPERAND_BYTE(0xB));
-    D_800C3A2E = func_8009D044(7, EVENT_OPERAND_BYTE(0xB));
-    D_800C3A38 = func_8009D088(9, EVENT_OPERAND_BYTE(0xB));
-    D_800C3A32 = 0x140;
+    FIELD_MOVIE.file = func_8009CF78(1, EVENT_OPERAND_BYTE(0xB));
+    FIELD_MOVIE.unk2A = func_8009CFBC(3, EVENT_OPERAND_BYTE(0xB));
+    FIELD_MOVIE.sound_start = func_8009D000(5, EVENT_OPERAND_BYTE(0xB));
+    FIELD_MOVIE.unk2E = func_8009D044(7, EVENT_OPERAND_BYTE(0xB));
+    FIELD_MOVIE.sound_bank = func_8009D088(9, EVENT_OPERAND_BYTE(0xB));
+    FIELD_MOVIE.width = 0x140;
     D_800ADB80 = 0x40;
-    D_800C3A36 = 1;
-    D_800C3A34 = 0x100;
-    D_800C3A26 = 0;
-    D_800C3A24 = 0;
-    D_800C3A22 = 0;
-    D_800C3A28 = 0x100;
-    D_800C3A3A = 0;
-    D_800C3A30 &= 0xF;
+    FIELD_MOVIE.depth24 = 1;
+    FIELD_MOVIE.height = 0x100;
+    FIELD_MOVIE.source_x = 0;
+    FIELD_MOVIE.y = 0;
+    FIELD_MOVIE.x = 0;
+    FIELD_MOVIE.source_y = 0x100;
+    FIELD_MOVIE.unk3A = 0;
+    FIELD_MOVIE.mode &= 0xF;
     D_800ADB74 = 0;
     D_800ADB70 = 1;
     D_800B00C0 = 1;
@@ -4761,45 +4761,45 @@ void func_8008EC30(void) {
         D_800B0078->pc -= 1;
         return;
     }
-    D_800C3A20 = func_800ACDEC(1);
-    D_800C3A2A = func_800ACDEC(3);
-    D_800C3A2E = func_800ACDEC(5);
+    FIELD_MOVIE.file = func_800ACDEC(1);
+    FIELD_MOVIE.unk2A = func_800ACDEC(3);
+    FIELD_MOVIE.unk2E = func_800ACDEC(5);
     mode = func_800ACDEC(7);
     layout = mode & 0xF;
-    D_800C3A30 = mode;
+    FIELD_MOVIE.mode = mode;
     D_800ADB80 = mode & 0xC0;
-    D_800C3A32 = 0x140;
-    D_800C3A34 = 0x100;
-    D_800C3A30 = layout;
-    D_800C3A2C = 1;
+    FIELD_MOVIE.width = 0x140;
+    FIELD_MOVIE.height = 0x100;
+    FIELD_MOVIE.mode = layout;
+    FIELD_MOVIE.sound_start = 1;
     switch (layout) {
     case 0:
-        D_800C3A22 = 0x140;
-        D_800C3A24 = 0;
-        D_800C3A26 = 0x140;
-        D_800C3A28 = 0x100;
+        FIELD_MOVIE.x = 0x140;
+        FIELD_MOVIE.y = 0;
+        FIELD_MOVIE.source_x = 0x140;
+        FIELD_MOVIE.source_y = 0x100;
         D_800ADB74 = 1;
-        D_800C3A36 = 0;
+        FIELD_MOVIE.depth24 = 0;
         break;
     case 1:
-        D_800C3A26 = 0;
-        D_800C3A24 = 0;
-        D_800C3A22 = 0;
-        D_800C3A28 = 0x100;
+        FIELD_MOVIE.source_x = 0;
+        FIELD_MOVIE.y = 0;
+        FIELD_MOVIE.x = 0;
+        FIELD_MOVIE.source_y = 0x100;
         D_800ADB74 = 0;
-        D_800C3A36 = 0;
+        FIELD_MOVIE.depth24 = 0;
         break;
     case 2:
-        D_800C3A26 = 0;
-        D_800C3A24 = 0;
-        D_800C3A22 = 0;
-        D_800C3A28 = 0x100;
+        FIELD_MOVIE.source_x = 0;
+        FIELD_MOVIE.y = 0;
+        FIELD_MOVIE.x = 0;
+        FIELD_MOVIE.source_y = 0x100;
         D_800ADB74 = 0;
-        D_800C3A36 = 1;
+        FIELD_MOVIE.depth24 = 1;
         break;
     }
-    D_800C3A38 = 0xFF;
-    D_800C3A3A = 0;
+    FIELD_MOVIE.sound_bank = 0xFF;
+    FIELD_MOVIE.unk3A = 0;
     D_800ADB70 = 1;
     D_800B00C0 = 1;
     D_800B0078->pc += 9;
@@ -4808,7 +4808,6 @@ void func_8008EC30(void) {
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008EC30);
 #endif
 
-#ifdef NON_MATCHING
 /* Event 0x67: request movie op1 with parameters op3/op5/op7, mode op9 (0xfe
  * marks 800c3a3a, 0x40 the fade), window position op11/op13 and size
  * op15/op17, without a sound bank. */
@@ -4817,36 +4816,33 @@ void func_8008EE14(void) {
     u16 x;
     u16 y;
 
-    D_800C3A20 = func_800ACDEC(1);
-    D_800C3A2A = func_800ACDEC(3);
-    D_800C3A2C = func_800ACDEC(5);
-    D_800C3A2E = func_800ACDEC(7);
-    D_800C3A30 = func_800ACDEC(9);
-    mode = D_800C3A30;
+    FIELD_MOVIE.file = func_800ACDEC(1);
+    FIELD_MOVIE.unk2A = func_800ACDEC(3);
+    FIELD_MOVIE.sound_start = func_800ACDEC(5);
+    FIELD_MOVIE.unk2E = func_800ACDEC(7);
+    FIELD_MOVIE.mode = func_800ACDEC(9);
+    mode = FIELD_MOVIE.mode;
     if (mode == 0xFE) {
-        D_800C3A3A = 1;
+        FIELD_MOVIE.unk3A = 1;
     } else {
-        D_800C3A3A = 0;
+        FIELD_MOVIE.unk3A = 0;
     }
     x = func_800ACDEC(0xB);
-    D_800C3A22 = x;
-    D_800C3A26 = x;
+    FIELD_MOVIE.x = x;
+    FIELD_MOVIE.source_x = x;
     y = func_800ACDEC(0xD);
-    D_800C3A24 = y;
-    D_800C3A28 = y;
-    D_800C3A32 = func_800ACDEC(0xF);
-    D_800C3A34 = func_800ACDEC(0x11);
+    FIELD_MOVIE.y = y;
+    FIELD_MOVIE.source_y = y;
+    FIELD_MOVIE.width = func_800ACDEC(0xF);
+    FIELD_MOVIE.height = func_800ACDEC(0x11);
     D_800ADB80 = mode & 0x40;
-    D_800C3A38 = 0xFF;
+    FIELD_MOVIE.sound_bank = 0xFF;
     D_800ADB74 = 2;
-    D_800C3A36 = 0;
-    D_800C3A30 &= 0xF;
+    FIELD_MOVIE.depth24 = 0;
+    FIELD_MOVIE.mode &= 0xF;
     D_800ADB70 = 1;
     D_800B0078->pc += 0x13;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008EE14);
-#endif
 
 /* Event: request transition 1 with operand 1 (800adb38/800adb3c). */
 void func_8008EF5C(void) {

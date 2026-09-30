@@ -32,10 +32,28 @@ typedef struct {
     s32 data[0x14000 / 4];
 } PartySprite;
 
-/* Movie playback parameters (800c3a20 block; see field.h) set by 0xa0. */
-extern u16 D_800C3A30;
-extern u16 D_800C3A32;
-extern u16 D_800C3A34;
+/* The movie request block at 800c3a20. The instructions that fill it
+ * address it as one object (their stores are not moved past loads through
+ * the actor pointer), although field.h declares its halfwords one by one. */
+typedef struct {
+    s16 file;        /* 20 */
+    u16 x;           /* 22: display position */
+    u16 y;           /* 24 */
+    u16 source_x;    /* 26 */
+    u16 source_y;    /* 28 */
+    u16 unk2A;       /* 2A */
+    u16 sound_start; /* 2C: movie sound time origin */
+    u16 unk2E;       /* 2E */
+    u16 mode;        /* 30: low nibble layout, 0x40/0xc0 fade */
+    u16 width;       /* 32 */
+    u16 height;      /* 34 */
+    u16 depth24;     /* 36: 1 for a 24-bit display */
+    s16 sound_bank;  /* 38: 0xff none */
+    u16 unk3A;       /* 3A */
+} FieldMovieRequest;
+
+#define FIELD_MOVIE (*(FieldMovieRequest *)&D_800C3A20)
+
 extern s32 D_800ADB70; /* movie requested */
 
 extern void func_800379C8(char *format, ...); /* resident debug print */
