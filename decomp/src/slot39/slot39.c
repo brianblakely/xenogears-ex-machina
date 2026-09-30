@@ -3232,7 +3232,163 @@ void func_801E2368(void) {
     func_801C72BC(0x13);
 }
 
+/* The status command: show party slot `slot`'s status page (6 later
+ * labels when its +f8e5 flag is set) and choose among four choices (0 the
+ * 801e05d0 screen, 1 and 2 the 801ddf24 screen modes, 3 toggles the flag
+ * when the member has a gear; member 7 and the flag D_80059179 refuse),
+ * switching members with 9/10, until cancelled. The code matches except
+ * the jump table address (see 801e3ecc). The first 801d9704 call passes
+ * the slot before it is set, as the original does. */
+#ifdef NON_MATCHING
+u8 func_801E23CC(void) {
+    u8 slot;
+    u8 shown;
+    u8 stay;
+    u8 first;
+    u8 page;
+
+    stay = 1;
+    func_801D9704(slot, 0, 1);
+    shown = 0xf3;
+    first = 1;
+    D_800625A0->choice = 0;
+    D_800625A0->choiceShown = 0xff;
+    slot = func_801E2250();
+    while (stay) {
+        func_801C7BF4();
+        if (slot != shown) {
+            shown = slot;
+            func_801DFE2C(shown);
+            func_801D2EC0(shown, 1);
+            page = D_8006F8E5[slot] ? 6 : 0;
+            func_801E2324(page);
+            func_801E8070(6, D_800625A0->labels18E0, D_801EA56E, D_801E9F48, D_800625A0->party->unk54, 4, 7, 6);
+            func_801E8070(6, D_800625A0->labels18E0, D_801EA56E, D_801E9F48, D_800625A0->party->unk54, 5, 7, 6);
+            D_800625A0->labels18E0[4].visible = 1;
+            D_800625A0->labels18E0[5].visible = 1;
+            if (first) {
+                first = 0;
+                func_801D1E80();
+                func_801D29A8(0, 0);
+                func_801E86C8(0);
+            }
+        }
+        if (D_800625A0->choice != D_800625A0->choiceShown) {
+            func_801E8070(4, D_800625A0->labels18E0, D_801EA56E, &D_801E9F48[page], D_800625A0->party->unk54,
+                          D_800625A0->choice, 7, 0);
+            func_801E8B4C(0);
+            D_800625A0->choiceShown = D_800625A0->choice;
+        }
+        switch (D_800625A0->input) {
+        case 4:
+            func_801D22C4();
+            func_801E8044(4, D_800625A0->party->unk54);
+            D_800625A0->party->redraw7 = 0;
+            D_800625A0->party->unk8 = 0;
+            D_800625A0->party->unk4B = 0;
+            D_800625A0->party->unk54[4] = 0;
+            D_800625A0->party->unk54[5] = 0;
+            switch (D_800625A0->choice) {
+            case 0:
+                if (D_800625A0->party->ids[slot] != 7) {
+                    D_800625A0->party->redrawA = 0;
+                    func_801E05D0(slot, 0, 1);
+                    shown = 0xff;
+                    func_801DE36C();
+                    func_801D8DE4(slot, 0, 0, 1);
+                    func_801D8EA4(slot, 0, 0, 1);
+                    D_800625A0->party->redrawA = 1;
+                } else {
+                    func_801C8574(4);
+                    shown = 0xff;
+                }
+                break;
+            case 1:
+                if (D_800625A0->party->ids[slot] != 7) {
+                    func_801DDF24(slot, 0, 1);
+                    func_801DC2CC(1);
+                    shown = 0xff;
+                } else {
+                    func_801C8574(4);
+                    shown = 0xff;
+                }
+                break;
+            case 2:
+                if (D_800625A0->party->ids[slot] != 7) {
+                    func_801DDF24(slot, 0, 2);
+                    func_801DC2CC(2);
+                    shown = 0xff;
+                } else {
+                    func_801C8574(4);
+                    shown = 0xff;
+                }
+                break;
+            case 3:
+                if (D_80059179 == 0) {
+                    if (D_8006F8E5[slot] != 0) {
+                        D_8006F8E5[slot] = 0;
+                        page = 0;
+                    } else if (D_8006D8A0[D_800625A0->party->ids[slot]].gear != 0xff) {
+                        page = 6;
+                        D_8006F8E5[slot] = 1;
+                    }
+                    func_801D7CFC(slot, 1, D_8006F8E5[slot]);
+                    shown = 0xff;
+                } else {
+                    func_801C8574(4);
+                    shown = 0xff;
+                }
+                break;
+            }
+            D_800625A0->party->unk54[4] = 1;
+            D_800625A0->party->unk54[5] = 1;
+            func_801E8018(6, D_800625A0->labels18E0, &D_801EA568[page], D_800625A0->party->unk54);
+            D_800625A0->party->redraw7 = 1;
+            D_800625A0->party->unk8 = 1;
+            D_800625A0->party->unk4B = 1;
+            func_801D1EE0(D_800625A0->choice + 7, 1);
+            D_800625A0->party->redraw4 = 1;
+            D_800625A0->choiceShown = 0xff;
+            func_801D3488(0, 1);
+            break;
+        case 5:
+            stay = 0;
+            break;
+        case 2:
+        case 6:
+        case 7:
+        case 8:
+            break;
+        case 1:
+            if (D_800625A0->choice != 0) {
+                D_800625A0->choice--;
+            } else {
+                D_800625A0->choice = D_800625A0->choiceCount - 1;
+            }
+            break;
+        case 3:
+            if (++D_800625A0->choice >= D_800625A0->choiceCount) {
+                D_800625A0->choice = 0;
+            }
+            break;
+        case 9:
+            slot = func_801D9704(slot, 0, 1);
+            D_800625A0->choiceShown = 0xff;
+            break;
+        case 10:
+            slot = func_801D9704(slot, 1, 1);
+            D_800625A0->choiceShown = 0xff;
+            break;
+        }
+    }
+    func_801E8044(6, D_800625A0->party->unk54);
+    D_800625A0->party->redraw4 = 0;
+    D_800625A0->party->redraw3 = 0;
+    return 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E23CC);
+#endif
 
 /* Open the 801d3488 screen: its three blocks and view 3. */
 void func_801E2AE0(void) {
