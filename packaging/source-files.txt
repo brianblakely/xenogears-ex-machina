@@ -139,6 +139,7 @@ decomp/src/field/field.h
 decomp/src/field/field_actor_events.h
 decomp/src/field/field_effect.h
 decomp/src/field/field_glyph.h
+decomp/src/field/field_motion.h
 decomp/src/field/field_movie.h
 decomp/src/field/field_panel.h
 decomp/src/field/field_party.h

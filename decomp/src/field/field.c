@@ -7977,7 +7977,117 @@ void func_800979F0(void) {
     }
 }
 
+#include "field_motion.h"
+
+#ifdef NON_MATCHING
+s32 func_80097A50(s32 speed) {
+    VECTOR unused; /* the original frame holds 0x10 unused bytes */
+    VECTOR delta;
+    VECTOR direction;
+    VECTOR step;
+    FieldModel *model;
+    s32 reach;
+    s32 extra;
+    s32 turning;
+    s32 x;
+    s32 y;
+    s32 z;
+    s32 from_x;
+    s32 from_y;
+    s32 from_z;
+    s32 angle;
+    s32 distance;
+    s32 scale;
+
+    turning = -1;
+    y = 0;
+    z = 0;
+    model = D_800AF880.components.descriptors[D_800AFD1C].model;
+    x = 0;
+    if (D_800AF880.components.descriptors[D_800AFD1C].actor->layer_flags & 0x2000) {
+        model->unk18 = 0x8000000 / (u16)D_800B0078->unk76;
+    } else {
+        model->unk18 = 0x4000000 / (u16)D_800B0078->unk76;
+    }
+    reach = func_80099A8C(model->unk18 >> 15) + 1;
+    extra = 0;
+    switch (D_800B0078->slots[D_800B0078->slot].move_mode) {
+    case 0:
+        x = func_8009CF78(1, EVENT_OPERAND_BYTE(5));
+        z = func_8009CFBC(3, EVENT_OPERAND_BYTE(5));
+        y = func_8009D000(6, EVENT_OPERAND_BYTE(5));
+        break;
+    case 1:
+        x = func_8009CF78(1, EVENT_OPERAND_BYTE(5)) + D_800B0078->target[0];
+        z = func_8009CFBC(3, EVENT_OPERAND_BYTE(5)) + D_800B0078->target[2];
+        y = D_800B0078->target[1] + func_8009D000(6, EVENT_OPERAND_BYTE(5));
+        break;
+    case 2:
+        if (func_8009CDB4(1) == 0xFF) {
+            return 0;
+        }
+        extra = func_80099A8C((u16)D_800AF880.components.descriptors[func_8009CDB4(1)].actor->gravity.s.whole +
+                              (u16)D_800B0078->gravity.s.whole);
+        x = D_800B0078->target[0];
+        z = D_800B0078->target[2];
+        y = func_8009CF78(2, EVENT_OPERAND_BYTE(4));
+        break;
+    case 3:
+        angle = func_800ACDEC(1) & 0xFFF;
+        x = (D_800B0078->target[0] + (func_8003F8CC(angle) << 5)) >> 12;
+        z = D_800B0078->target[2] + (-(func_8003F8B0(angle) << 5) >> 12);
+        y = D_800B0078->target[1] + func_8009CF78(3, EVENT_OPERAND_BYTE(7));
+        break;
+    }
+    from_x = WHOLE(D_800B0078->position[0]);
+    from_z = WHOLE(D_800B0078->position[2]);
+    from_y = WHOLE(D_800B0078->position[1]);
+    delta.vx = from_x - x;
+    delta.vy = from_y - y;
+    delta.vz = from_z - z;
+    func_80048D7C(&delta, &direction);
+    scale = model->unk18 >> 8;
+    step.vx = -((direction.vx * scale) >> 4);
+    step.vy = -((direction.vy * scale) >> 4);
+    step.vz = -((direction.vz * scale) >> 4);
+    D_800B0078->unk40[0] = step.vx;
+    D_800B0078->unk40[1] = step.vy;
+    D_800B0078->unk40[1] = 0;
+    D_800B0078->unk40[2] = step.vz;
+    distance = func_80099A04(x - from_x, y - from_y, z - from_z);
+    if (WHOLE(D_800B0078->unk40[0]) == 0 && WHOLE(D_800B0078->unk40[2]) == 0) {
+        turning = 0;
+    }
+    D_800B0078->flags |= 0x400000;
+    if (D_800B0078->slots[D_800B0078->slot].value == 0 || reach + extra >= distance) {
+        if (turning == -1) {
+            if (speed != 0) {
+                if (!(D_800B0078->flags & 0x8000)) {
+                    D_800B0078->heading_goal = D_800B0078->heading = (u16)D_800B0078->heading_goal | 0x8000;
+                } else {
+                    D_800B0078->heading_goal = D_800B0078->heading = D_800B0078->unk11C | 0x8000;
+                }
+            } else {
+                D_800B0078->heading_goal = D_800B0078->heading = func_8007B694(&step) | 0x8000;
+            }
+        }
+        D_800B0078->unkEC = (D_800B0078->position[1] + step.vy) >> 16;
+        D_800B0078->slots[D_800B0078->slot].move_mode = 0;
+        D_800B0078->slots[D_800B0078->slot].value = 0xFFFF;
+        return 0;
+    }
+    if (turning == -1) {
+        D_800B0078->heading_goal = D_800B0078->heading = func_8007B694(&step) | 0x8000;
+    }
+    D_800B0078->unkEC = (D_800B0078->position[1] + step.vy) >> 16;
+    D_800B0078->flags |= 0x40000;
+    D_800B00C0 = 1;
+    D_800B0078->slots[D_800B0078->slot].value--;
+    return -1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80097A50);
+#endif
 
 s32 func_80099AC0(s32 speed);
 
@@ -8185,9 +8295,222 @@ void func_80098C3C(void) {
     func_80098CAC(1);
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80098CAC);
+#ifdef NON_MATCHING
+void func_80098CAC(s32 mode) {
+    VECTOR from;
+    FieldModel *model;
+    s32 speed;
+    s32 animation;
+    s32 x;
+    s32 y;
+    s32 z;
+    s32 steps;
+    u16 pc;
+    u8 *code;
 
+    model = D_800AF880.components.descriptors[D_800AFD1C].model;
+    if (D_800AF880.components.descriptors[D_800AFD1C].actor->layer_flags & 0x2000) {
+        speed = (0x8000000 / (u16)D_800B0078->unk76) >> 16;
+    } else {
+        speed = (0x4000000 / (u16)D_800B0078->unk76) >> 16;
+    }
+    if (speed == 0) {
+        speed = 1;
+    }
+    D_800B0078->flags |= 0x10000;
+    pc = D_800B0078->pc;
+    code = pc + D_800ADC00;
+    animation = 1;
+    if (code[1] == 0) {
+        x = func_8009CF78(2, code[8]) << 16;
+        z = func_8009CFBC(4, EVENT_OPERAND_BYTE(8)) << 16;
+        y = func_8009D000(6, EVENT_OPERAND_BYTE(8)) << 16;
+        steps = func_80099A04((x - D_800B0078->position[0]) >> 16, (y - D_800B0078->position[1]) >> 16,
+                              (z - D_800B0078->position[2]) >> 16) / speed;
+        D_800B0078->unk102 = steps;
+        if ((s16)steps == 0) {
+            D_800B0078->unk102 = steps + 1;
+        }
+        D_800B0078->target[0] = (x - D_800B0078->position[0]) / (s16)D_800B0078->unk102;
+        D_800B0078->target[1] = (y - D_800B0078->position[1]) / (s16)D_800B0078->unk102;
+        D_800B0078->target[2] = (z - D_800B0078->position[2]) / (s16)D_800B0078->unk102;
+        if (x >> 16 != WHOLE(D_800B0078->position[0]) || z >> 16 != WHOLE(D_800B0078->position[2])) {
+            D_800B0078->heading_goal = D_800B0078->heading = -ratan2(D_800B0078->target[2] >> 16, WHOLE(D_800B0078->target[0]));
+        }
+        D_800B0078->pc += 9;
+    } else {
+        if ((s16)D_800B0078->unk102 <= 0 || D_800B0078->slots[D_800B0078->slot].value == 0) {
+            D_800B0078->pc = pc - 9;
+            if (D_800B0078->slots[D_800B0078->slot].value != 0) {
+                from.vx = D_800B0078->position[0];
+                from.vy = D_800B0078->position[1];
+                from.vz = D_800B0078->position[2];
+                D_800B0078->position[0] = func_8009CF78(2, EVENT_OPERAND_BYTE(8)) << 16;
+                D_800B0078->position[2] = func_8009CFBC(4, EVENT_OPERAND_BYTE(8)) << 16;
+                D_800B0078->position[1] = func_8009D000(6, EVENT_OPERAND_BYTE(8)) << 16;
+                D_800B0078->unk030[0] = D_800B0078->position[0] - from.vx;
+                D_800B0078->unk030[1] = D_800B0078->position[1] - from.vy;
+                D_800B0078->unk030[2] = D_800B0078->position[2] - from.vz;
+            }
+            animation = D_800B0078->unkE6;
+            if (mode == 0) {
+                D_800B0078->pc += 11;
+            } else {
+                D_800B0078->pc += 13;
+            }
+            D_800B0078->slots[D_800B0078->slot].value = 0xFFFF;
+        } else {
+            D_800B0078->position[0] += D_800B0078->target[0];
+            D_800B0078->position[2] += D_800B0078->target[2];
+            D_800B0078->unk030[1] = D_800B0078->target[1];
+            D_800B0078->unk030[2] = D_800B0078->target[2];
+            D_800B0078->position[1] += D_800B0078->target[1];
+            D_800B0078->unk030[0] = D_800B0078->target[0];
+            D_800B00C0 = animation;
+            D_800B0078->slots[D_800B0078->slot].value--;
+            D_800B0078->unk102--;
+        }
+        D_800AF880.components.descriptors[D_800AFD1C].matrix.t[0] = WHOLE(D_800B0078->position[0]);
+        D_800AF880.components.descriptors[D_800AFD1C].matrix.t[1] = WHOLE(D_800B0078->position[1]);
+        D_800AF880.components.descriptors[D_800AFD1C].matrix.t[2] = WHOLE(D_800B0078->position[2]);
+        model->position[0] = D_800B0078->position[0];
+        model->position[1] = D_800B0078->position[1];
+        model->position[2] = D_800B0078->position[2];
+    }
+    if (D_800B0078->unk0EA != 0xFF) {
+        animation = D_800B0078->unk0EA;
+    }
+    if (D_800B0078->unkE8 != animation && !(D_800B0078->flags & 0x2000000)) {
+        D_800B0078->unkE8 = animation;
+        func_800821F4(model, animation, D_800B06B8);
+        ((void (*)(void *, s32, FieldDescriptor *))func_80081F80)(model, D_800B0078->heading, D_800B06B8);
+    }
+}
+#else
+INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80098CAC);
+#endif
+
+#ifdef NON_MATCHING
+void func_80099214(void) {
+    VECTOR normals[4];
+    SVECTOR points[4];
+    u8 unused[0x20];
+    ModelMotion *model;
+    u8 *code;
+    u16 pc;
+    u8 mode;
+    s32 steps;
+    s32 x;
+    s32 z;
+    s32 y;
+    s32 layer;
+    s32 peak;
+    s32 distance;
+
+    pc = D_800B0078->pc;
+    model = (ModelMotion *)D_800AF880.components.descriptors[D_800AFD1C].model;
+    code = pc + D_800ADC00;
+    D_800B0078->flags |= 0x10000;
+    mode = code[1];
+    switch (mode & 3) {
+    case 0:
+        steps = func_8009D044(8, code[10]);
+    setup:
+        if (steps == 0) {
+            steps = 1;
+        }
+        x = func_8009CF78(2, EVENT_OPERAND_BYTE(10));
+        z = func_8009CFBC(4, EVENT_OPERAND_BYTE(10));
+        if (!(EVENT_OPERAND_BYTE(1) & 0x80)) {
+            y = func_8009D000(6, EVENT_OPERAND_BYTE(10));
+        } else {
+            layer = func_8009D000(6, EVENT_OPERAND_BYTE(10));
+            func_8007B1C4(x, z, layer, &points[layer], &normals[layer]);
+            y = points[layer].vy;
+            D_800B0078->layer = layer;
+        }
+        model->velocity = -(model->gravity.value * steps / 2);
+        model->velocity += ((y << 16) - D_800B0078->position[1]) / steps;
+        D_800B0078->target[1] = 0;
+        ACTOR_ARC_STEPS(D_800B0078) = steps;
+        D_800B0078->unk102 = 0;
+        D_800B0078->pc += 11;
+        D_800B0078->target[0] = ((x << 16) - D_800B0078->position[0]) / (steps + 1);
+        D_800B0078->target[2] = ((z << 16) - D_800B0078->position[2]) / (steps + 1);
+        break;
+    case 1:
+        x = func_8009CF78(2, code[10]);
+        z = func_8009CFBC(4, EVENT_OPERAND_BYTE(10));
+        x = (x << 16) - D_800B0078->position[0];
+        z = (z << 16) - D_800B0078->position[2];
+        steps = func_8009D044(8, EVENT_OPERAND_BYTE(10));
+        steps = func_80099A4C(x >> 16, z >> 16) / steps;
+        goto setup;
+    case 2:
+        func_8009CF78(2, code[10]);
+        func_8009CFBC(4, EVENT_OPERAND_BYTE(10));
+        y = func_8009D000(6, EVENT_OPERAND_BYTE(10));
+        peak = -func_8009D044(8, EVENT_OPERAND_BYTE(10));
+        y = (y << 16) - D_800B0078->position[1];
+        model->velocity = -(SquareRoot0(model->gravity.s.whole * (peak << 1)) << 16);
+        SquareRoot0(peak);
+        steps = SquareRoot0(abs(peak - (y >> 16)));
+        if (steps < 0) {
+            steps = -steps;
+        }
+        goto setup;
+    case 3:
+        if (mode == 0xF) {
+            for (layer = 0; layer < D_800AF880.components.layer_count - 1; layer++) {
+                D_800B0078->triangle[layer] = func_8007B1C4(WHOLE(D_800B0078->position[0]), WHOLE(D_800B0078->position[2]),
+                                                            layer, &points[layer], &normals[layer]);
+            }
+            D_800B0078->flags &= ~0x10000;
+            D_800B0078->layer_flags &= ~0x200000;
+            D_800B0078->pc += 2;
+            break;
+        }
+        if ((s16)D_800B0078->unk102 < ACTOR_ARC_STEPS(D_800B0078)) {
+            D_800B0078->position[0] += D_800B0078->target[0];
+            D_800B0078->position[2] += D_800B0078->target[2];
+            D_800B0078->position[1] += model->velocity;
+            model->velocity += model->gravity.value;
+            if ((D_800B0078->target[0] != 0 || D_800B0078->target[2] != 0) && !(D_800B0078->flags & 0x8000)) {
+                D_800B0078->heading_goal = D_800B0078->heading = func_8007B694((VECTOR *)D_800B0078->target) | 0x8000;
+            }
+        } else {
+            D_800B0078->pc = pc - 11;
+            x = func_8009CF78(2, EVENT_OPERAND_BYTE(10));
+            z = func_8009CFBC(4, EVENT_OPERAND_BYTE(10));
+            if (EVENT_OPERAND_BYTE(1) & 0x80) {
+                layer = func_8009D000(6, EVENT_OPERAND_BYTE(10));
+                D_800B0078->triangle[layer] = func_8007B1C4(x, z, layer, &points[layer], &normals[layer]);
+                y = points[layer].vy;
+            } else {
+                y = func_8009D000(6, EVENT_OPERAND_BYTE(10));
+            }
+            model->velocity = 0;
+            D_800B0078->position[0] = x << 16;
+            D_800B0078->position[1] = y << 16;
+            D_800B0078->position[2] = z << 16;
+            D_800B0078->flags &= ~0x10000;
+            D_800B0078->layer_flags &= ~0x200000;
+            D_800B0078->pc += 13;
+        }
+        D_800AF880.components.descriptors[D_800AFD1C].matrix.t[0] = WHOLE(D_800B0078->position[0]);
+        D_800AF880.components.descriptors[D_800AFD1C].matrix.t[1] = WHOLE(D_800B0078->position[1]);
+        D_800AF880.components.descriptors[D_800AFD1C].matrix.t[2] = WHOLE(D_800B0078->position[2]);
+        model->position[0] = D_800B0078->position[0];
+        model->position[1] = D_800B0078->position[1];
+        model->position[2] = D_800B0078->position[2];
+        D_800B0078->unk102++;
+        break;
+    }
+    D_800B00C0 = 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80099214);
+#endif
 
 /* Turn-move in mode 0 at the default speed. */
 void func_80099980(void) {
@@ -8232,7 +8555,92 @@ s32 func_80099A8C(s32 x) {
     return SquareRoot0(squares.vx);
 }
 
+#ifdef NON_MATCHING
+s32 func_80099AC0(s32 speed) {
+    VECTOR delta;
+    FieldModel *model;
+    s32 reach;
+    s32 extra;
+    s32 from_x;
+    s32 from_z;
+    s32 x;
+    s32 z;
+    s32 angle;
+    s32 distance;
+    FieldActor *other;
+    u16 count;
+    s32 facing;
+
+    extra = 0;
+    z = 0;
+    model = D_800AF880.components.descriptors[D_800AFD1C].model;
+    x = 0;
+    if (D_800AF880.components.descriptors[D_800AFD1C].actor->layer_flags & 0x2000) {
+        model->unk18 = 0x8000000 / (u16)D_800B0078->unk76;
+    } else if (model->unk18 == 0) {
+        model->unk18 = 0x4000000 / (u16)D_800B0078->unk76;
+    }
+    reach = func_80099A8C(model->unk18 >> 15) + 1;
+    from_x = WHOLE(D_800B0078->position[0]);
+    from_z = WHOLE(D_800B0078->position[2]);
+    switch (D_800B0078->slots[D_800B0078->slot].move_mode) {
+    case 1:
+        x = func_8009CF78(1, EVENT_OPERAND_BYTE(5)) + D_800B0078->target[0];
+        z = func_8009CFBC(3, EVENT_OPERAND_BYTE(5)) + D_800B0078->target[2];
+        break;
+    case 2:
+        if (func_8009CDB4(1) == 0xFF) {
+            return 0;
+        }
+        other = D_800AF880.components.descriptors[func_8009CDB4(1)].actor;
+        extra = func_80099A8C((u16)other->gravity.s.whole + (u16)D_800B0078->gravity.s.whole);
+        x = WHOLE(other->position[0]);
+        z = WHOLE(other->position[2]);
+        if (EVENT_OPERAND_BYTE(1) == D_800B2078.controlled) {
+            D_800B0078->flags |= 0x200000;
+        }
+        break;
+    case 3:
+        angle = func_800ACDEC(1) & 0xFFF;
+        x = D_800B0078->target[0] + ((func_8003F8CC(angle) << 12) >> 12);
+        z = D_800B0078->target[2] + (-(func_8003F8B0(angle) << 12) >> 12);
+        break;
+    case 0:
+    case 4:
+        x = func_8009CF78(1, EVENT_OPERAND_BYTE(5));
+        z = func_8009CFBC(3, EVENT_OPERAND_BYTE(5));
+        break;
+    }
+    delta.vx = x - from_x;
+    delta.vy = 0;
+    delta.vz = z - from_z;
+    distance = func_80099A4C(delta.vx, delta.vz);
+    D_800B0078->flags |= 0x400000;
+    count = D_800B0078->slots[D_800B0078->slot].value;
+    if (count == 0 || reach + extra >= distance) {
+        if (speed != 0) {
+            if (!(D_800B0078->flags & 0x8000)) {
+                D_800B0078->heading_goal = D_800B0078->heading = (u16)D_800B0078->heading_goal | 0x8000;
+            } else {
+                D_800B0078->heading_goal = D_800B0078->heading = D_800B0078->unk11C | 0x8000;
+            }
+        } else {
+            D_800B0078->heading_goal = D_800B0078->heading = func_8007B694(&delta);
+        }
+        D_800B0078->slots[D_800B0078->slot].value = 0xFFFF;
+        D_800B0078->slots[D_800B0078->slot].move_mode = 0;
+        D_800B0078->flags &= 0xFDDFF7FF;
+        return 0;
+    }
+    D_800B0078->slots[D_800B0078->slot].value = count - 1;
+    facing = func_8007B694(&delta);
+    D_800B00C0 = 1;
+    D_800B0078->heading_goal = D_800B0078->heading = facing;
+    return -1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80099AC0);
+#endif
 
 /* Store the current actor's unkE4 in a variable. */
 void func_80099EF8(void) {
