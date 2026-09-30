@@ -250,6 +250,9 @@ void func_80039DB8(s32 id, s32 sound); /* play a sound effect */
 void func_800404C4(u32 event, s32 spec); /* UnDeliverEvent */
 void func_80040484(s32 event);           /* EnableEvent */
 s32 func_80040494(s32 event);            /* TestEvent */
+s32 func_80040534(char *name, s32 mode);  /* open */
+s32 func_80040544(s32 fd, void *buf, s32 size); /* read */
+void func_80040564(s32 fd);               /* close */
 void func_800404D4(void);                /* EnterCriticalSection */
 void func_800404E4(void);                /* ExitCriticalSection */
 void func_80043CC4(POLY_G4 *poly);       /* SetPolyG4 */
@@ -287,6 +290,7 @@ void func_801C7F34(u32 frames);
 u8 func_801C881C(void);
 s32 func_801C891C(s32 channel);
 u8 func_801C8A10(u8 port);
+u8 func_801C8D78(u8 port);
 void func_801C8BEC(void);
 void func_801C8EE8(void);
 void func_801C8574(s32 sound);

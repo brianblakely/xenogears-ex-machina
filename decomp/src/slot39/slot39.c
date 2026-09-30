@@ -1041,15 +1041,85 @@ void func_801C8BEC(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C8CA4);
+/* Unless port `port` could not be checked, show the card notice for 59 frames. */
+void func_801C8CA4(u8 port) {
+    MenuCard *card;
+    s32 frames;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C8D1C);
+    card = D_800625A0->card;
+    if (card->result[port] != -2) {
+        card->mode = 2;
+        frames = 59;
+        do {
+            frames--;
+            func_801C7BF4();
+        } while (frames != 0);
+        D_800625A0->card->mode = 0;
+    }
+}
+
+/* Unless port `port` could not be checked, wait 59 vertical blanks. */
+void func_801C8D1C(u8 port) {
+    s32 frames;
+
+    if (D_800625A0->card->result[port] != -2) {
+        frames = 59;
+        do {
+            func_8004B54C(0);
+            frames--;
+        } while (frames != 0);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C8D78);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C8EE8);
+/* List the files of each port not yet scanned; in mode 1 a port with files
+ * marks the cards present. */
+void func_801C8EE8(void) {
+    switch (D_800625A0->card->mode) {
+    case 1:
+        if (D_800625A0->card->scanned[0] == 0) {
+            if (func_801C8D78(0)) {
+                D_800625A0->cardsPresent = 1;
+            }
+            D_800625A0->card->scanned[0] = 1;
+        }
+        if (D_800625A0->card->scanned[1] == 0) {
+            if (func_801C8D78(1)) {
+                D_800625A0->cardsPresent = 1;
+            }
+            D_800625A0->card->scanned[1] = 1;
+        }
+        break;
+    case 2:
+        if (D_800625A0->card->scanned[0] == 0) {
+            func_801C8D78(0);
+            D_800625A0->card->scanned[0] = 1;
+        }
+        if (D_800625A0->card->scanned[1] == 0) {
+            func_801C8D78(1);
+            D_800625A0->card->scanned[1] = 1;
+        }
+        break;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C9038);
+/* Read the 512-byte first block of card file `name` into `dst`; 0 on success,
+ * -1 on failure. */
+s32 func_801C9038(char *name, void *dst) {
+    s32 fd;
+
+    fd = func_80040534(name, 3);
+    if (fd == -1) {
+        return -1;
+    }
+    if (func_80040544(fd, dst, 0x200) != 0x200) {
+        func_80040564(fd);
+        return -1;
+    }
+    func_80040564(fd);
+    return 0;
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C90B0);
 
