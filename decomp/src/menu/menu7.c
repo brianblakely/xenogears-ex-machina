@@ -2579,13 +2579,11 @@ s32 func_8008FA2C(Actor *actor, Brain *brain) {
     return 0;
 }
 
-#ifdef NON_MATCHING
 /* Opponent retreat rule (when enabled and on side 1): leave the far
  * quadrant toward the centre; when the other actor is there, dodge its
  * shots by turning to face away while they are close and stop once they
- * are far. Returns whether the rule took over.
- * Does not match: the far-shot branch keeps the return value in $v0
- * across its stores (temporaries in $v1/$a0). */
+ * are far. Returns whether the rule took over; between the two distances
+ * the original falls off the end with the last comparison (1) in $v0. */
 s32 func_8008FACC(Actor *actor, Brain *brain) {
     s32 dist;
 
@@ -2613,13 +2611,10 @@ s32 func_8008FACC(Actor *actor, Brain *brain) {
             actor->target_angle = 0x800;
             return 1;
         }
-        return 1;
     }
-    /* falls off the end: the original returns the failed check (0) */
+    /* falls off the end: the original returns the failed check (0) or,
+     * between the distances, the comparison result (1) */
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008FACC);
-#endif
 
 /* Opponent guard reaction: always at level 2, else on a random roll
  * (every other round at level 1, one in six at level 0). */
