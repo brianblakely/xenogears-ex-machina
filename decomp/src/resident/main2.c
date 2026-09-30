@@ -1502,7 +1502,131 @@ void func_800379D0(void) {
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800379D8);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80037B88);
+/* The driver's SPU common attributes, the volumes they are built from and
+ * the master and CD volume fades (16.16 levels stepping toward targets). */
+typedef struct {
+    SpuCommonAttr attr;
+    s16 master;
+    s16 cd;
+    s16 unk2C;
+    s16 cd_request;
+    s32 master_level;
+    s32 master_step;
+    s16 master_frames;
+    s16 master_target;
+    s32 cd_level;
+    s32 cd_step;
+    s16 cd_frames;
+    s16 cd_target;
+} SoundVolumes;
+
+extern SoundVolumes D_8005A3C0;
+
+/* A voice whose volume pair follows the output mode (D_80059518). */
+typedef struct {
+    u16 flags;         /* bit 0: in use */
+    u8 unk2[0x10];
+    u16 volume;
+    u8 unk14[0x22];
+    s16 unk36;
+    s16 left;
+    s16 right;
+    u8 unk3C[0x26];
+    s16 unk62;
+    s16 unk64;
+    s16 unk66;
+} SoundModeVoice;
+
+extern SoundModeVoice *D_80059518;
+extern u8 D_8005940A, D_8005940B; /* reverb delay and feedback */
+extern SpuVolume D_8005940C;                   /* reverb depth */
+extern SoundTrack *D_80059564;
+extern s16 D_8005A3EE;
+s32 func_80038824(void);
+void func_8003885C(s32 volume);
+void func_80038DF4(void);
+
+extern void *D_80059458;     /* the SPU transfer ring */
+extern s32 D_800594E4;       /* random state */
+extern SoundSeq *D_800595D8; /* the sound effect channels */
+extern u32 D_800594FC;       /* voices held */
+extern u32 D_80059550;       /* voices to key off */
+extern u32 D_80059554;       /* voices whose registers changed */
+extern u32 D_80059504;       /* effect start clock */
+extern s32 D_80059514;
+extern u8 D_80065B0C[0x6300]; /* the driver memory pool */
+extern u8 D_8006FAC8[];      /* the SPU memory management table */
+extern u32 D_800594D8;       /* SPU address of the reverb work area, -1 none */
+extern s32 D_800595A4;       /* the zeroed transfer buffer */
+extern u8 D_80059409;        /* reverb type */
+void func_8003C020(void);    /* the driver tick */
+void func_8003BB64(void);    /* SPU transfer callback */
+void func_8003BFA0(void);    /* SPU interrupt callback */
+void func_8003E700(void);
+SoundSeq *func_8003B148(s32 count);
+void func_80038EC0(u32 start, s32 size);
+void func_80039360(void);
+void func_800386C4(s32 mode);
+void func_80038DB4(s32 reverb, s32 mix);
+void func_80038C68(s32 volume, s32 frames);
+void func_80038D18(s32 volume, s32 frames);
+void func_8003885C(s32 volume);
+void func_80038934(s32 type, s32 depth, s32 delay, s32 feedback);
+
+/* Start the sound driver (error 0x28 when it runs): memory pools, the SPU
+ * memory map and transfer ring, the tick event on root counter 2 and the
+ * SPU callbacks, then default volumes, output mode, effect channels and
+ * reverb. */
+void func_80037B88(s32 flags) {
+    if (D_8005957C < 0) {
+        func_8003F6B0(0x28);
+        return;
+    }
+    D_8005957C = flags | 0xB801;
+    SpuInitMalloc(4, D_8006FAC8);
+    func_80038EC0((u32)D_80065B0C, 0x6300);
+    func_80039360();
+    D_80059458 = func_80038F18(0xA0);
+    func_8003E700();
+    D_800594E4 = 0x12345678;
+    D_80059564 = NULL;
+    D_800595D8 = NULL;
+    D_80059440 = NULL;
+    D_80059558 = NULL;
+    D_80059518 = NULL;
+    D_800594FC = 0;
+    D_80059550 = 0;
+    D_80059554 = 0;
+    D_8005A3C0.attr.mvolmode.left = 0;
+    D_8005A3C0.attr.mvolmode.right = 0;
+    D_8005A3C0.attr.mask = 0xC;
+    EnterCriticalSection();
+    D_800595BC = OpenEvent(0xF2000002, 2, 0x1000, (long (*)())func_8003C020);
+    SetRCnt(0xF2000002, 0x44E8, 0x1000);
+    StartRCnt(0xF2000002);
+    SpuSetTransferCallback(func_8003BB64);
+    SpuSetIRQCallback(func_8003BFA0);
+    SpuSetIRQ(0);
+    D_80059504 = 0;
+    D_80059514 = 0;
+    ExitCriticalSection();
+    func_800395B8(0x2000, 0x10000, 4);
+    func_800386C4(1);
+    func_80038DB4(0, 1);
+    func_80038C68(0x3FFF, 0);
+    func_80038D18(0x7FFF, 0);
+    if (D_8005957C & 0x4000) {
+        func_8003885C(0x80);
+    }
+    D_800595D8 = func_8003B148(0x10);
+    D_80059544 = 8;
+    D_800594D8 = -1;
+    D_800595A4 = 0;
+    D_80059409 = 0xFF;
+    func_80038934(4, 0, 0, 0);
+    SpuSetReverb(1);
+    D_80059500 = 0;
+}
 
 /* Shut the sound driver down: remove its SPU interrupt, transfer callback,
  * timer and event, release every voice and clear the reverb (error 0x29
@@ -1854,49 +1978,6 @@ void func_8003869C(void) {
     func_80039FF8();
 }
 
-/* The driver's SPU common attributes, the volumes they are built from and
- * the master and CD volume fades (16.16 levels stepping toward targets). */
-typedef struct {
-    SpuCommonAttr attr;
-    s16 master;
-    s16 cd;
-    s16 unk2C;
-    s16 cd_request;
-    s32 master_level;
-    s32 master_step;
-    s16 master_frames;
-    s16 master_target;
-    s32 cd_level;
-    s32 cd_step;
-    s16 cd_frames;
-    s16 cd_target;
-} SoundVolumes;
-
-extern SoundVolumes D_8005A3C0;
-
-/* A voice whose volume pair follows the output mode (D_80059518). */
-typedef struct {
-    u16 flags;         /* bit 0: in use */
-    u8 unk2[0x10];
-    u16 volume;
-    u8 unk14[0x22];
-    s16 unk36;
-    s16 left;
-    s16 right;
-    u8 unk3C[0x26];
-    s16 unk62;
-    s16 unk64;
-    s16 unk66;
-} SoundModeVoice;
-
-extern SoundModeVoice *D_80059518;
-extern u8 D_80059409, D_8005940A, D_8005940B; /* reverb type, delay and feedback */
-extern SpuVolume D_8005940C;                   /* reverb depth */
-extern SoundTrack *D_80059564;
-extern s16 D_8005A3EE;
-s32 func_80038824(void);
-void func_8003885C(s32 volume);
-void func_80038DF4(void);
 
 /* Select the output mode (1, 2 or 3; otherwise the plain one) and reapply
  * the volumes: master and CD, reverb depth, every sequence, the CD mix and
@@ -2006,7 +2087,6 @@ void func_8003890C(SoundBank *bank, s32 enable) {
     }
 }
 
-extern u32 D_800594D8;     /* SPU address of the reverb work area, -1 none */
 extern s32 D_800508E8[10]; /* reverb work area size of each reverb type */
 void func_80038AD4(s32 address, s32 size);
 
@@ -2069,7 +2149,6 @@ void func_80038934(s32 type, s32 depth, s32 delay, s32 feedback) {
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038934);
 #endif
 
-extern s32 D_800595A4; /* the zeroed transfer buffer */
 extern s32 D_800595DC; /* next SPU address to clear */
 extern s32 D_800595E0; /* bytes left to clear */
 
