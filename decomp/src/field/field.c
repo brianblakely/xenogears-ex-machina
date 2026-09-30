@@ -10555,7 +10555,65 @@ void func_800A8408(s32 index, s32 du, s32 dv) {
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A8408);
 #endif
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A84C0);
+/* Draw the status panel: rotate the compass strip by the view angle, the
+ * pitch strip by the camera pitch, their digits, the blinking marker and
+ * the rest of the pieces. */
+void func_800A84C0(void) {
+    s32 pitch;
+    s32 angle;
+    s32 count;
+    s32 i;
+
+    if (D_800AF278 != 0) {
+        count = PANEL_PIECES;
+        pitch = ratan2(func_80099A4C((D_800AF880.target.vx - D_800AF880.eye.vx) >> 16,
+                                     (D_800AF880.target.vz - D_800AF880.eye.vz) >> 16),
+                       (D_800AF880.target.vy - D_800AF880.eye.vy) >> 16) &
+                0xFFF;
+        angle = D_800AF880.view_angle & 0xFFF;
+        for (i = 0; i < 16; i++) {
+            func_800A8408(i, (angle >> 4) & 0xF, 0);
+            addPrim(&D_800C426C->overlay_ot[4], &D_800AFC60[D_800ADB08][i]);
+        }
+        for (; i < 29; i++) {
+            func_800A8408(i, 0, (pitch >> 4) & 0xF);
+            addPrim(&D_800C426C->overlay_ot[4], &D_800AFC60[D_800ADB08][i]);
+        }
+        for (; i < 34; i++) {
+            func_800A8408(i, (angle & 0xF) * 8, 0);
+            angle >>= 2;
+            addPrim(&D_800C426C->overlay_ot[4], &D_800AFC60[D_800ADB08][i]);
+        }
+        for (; i < 39; i++) {
+            func_800A8408(i, (pitch & 0xF) * 8, 0);
+            pitch >>= 2;
+            addPrim(&D_800C426C->overlay_ot[4], &D_800AFC60[D_800ADB08][i]);
+        }
+        for (; i < 40; i++) {
+            if (!(D_800AEB60 & 0xF)) {
+                D_800AEB64++;
+            }
+            if (D_800AEB64 >= 3) {
+                D_800AEB64 = 0;
+            }
+            func_800A8408(i, 0, D_800AEB64 * 8);
+            addPrim(&D_800C426C->overlay_ot[4], &D_800AFC60[D_800ADB08][i]);
+        }
+        for (; i < 42; i++) {
+            func_800A8408(i, (D_800AEB60 >> 2) & 0xF, 0);
+            addPrim(&D_800C426C->overlay_ot[4], &D_800AFC60[D_800ADB08][i]);
+        }
+        for (; i < 43; i++) {
+            if (!(D_800AEB60 & 0x10)) {
+                addPrim(&D_800C426C->overlay_ot[4], &D_800AFC60[D_800ADB08][i]);
+            }
+        }
+        for (; i < count; i++) {
+            addPrim(&D_800C426C->overlay_ot[4], &D_800AFC60[D_800ADB08][i]);
+        }
+        D_800AEB60++;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A8BA4);
 
