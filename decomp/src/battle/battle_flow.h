@@ -39,7 +39,20 @@ s32 func_8001EE68(u8 *frame); /* whether a sprite frame is a gear's (this unit t
 extern u8 D_800C3624;
 extern s16 D_800C3DF0;
 
+/* D_800C4928 (set when the actor acts with its partner, 8008B478), as the
+ * late unit addresses it inside the area. */
+#define AREA_PARTNER_ACTION (((u8 *)&BATTLE_AREA)[0xA78])
+
+extern u8 D_800C35D4; /* a sound to fade at the turn's end */
+
+void func_80080BD0(void);
+void func_800B9508(BattleSprite *sprite);
 void func_800B9B30(void);
+void func_800BA8F4(BattleSprite *sprite);
+void func_800BEDE8(void);
+void func_800BFA9C(void);
+void func_800C0314(void);
+void func_800C0564(void);
 void func_800BC3F8(s32 value);
 BattleMenu *func_800BED4C(void);
 /* Defined without a return value: 800B89FC takes what it leaves in v0, the

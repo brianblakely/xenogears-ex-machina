@@ -26,6 +26,7 @@ typedef struct {
 } MATRIX;
 
 #define setVector(v, _x, _y, _z) (v)->vx = _x, (v)->vy = _y, (v)->vz = _z
+#define copyVector(v0, v1) (v0)->vx = (v1)->vx, (v0)->vy = (v1)->vy, (v0)->vz = (v1)->vz
 
 void InitGeom(void);
 void SetGeomOffset(long ofx, long ofy);

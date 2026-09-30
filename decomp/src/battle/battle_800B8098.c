@@ -377,9 +377,70 @@ void func_800B8D7C(void) {
     func_800B8D04();
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800B8DA4);
+/* Cancel the turn: the turn's slot acts again; a gear turns back (800AA320
+ * 0x1F), a party member returns to its place, ground and idle motion; close
+ * the battle menu. */
+void func_800B8DA4(void) {
+    BattleSprite *sprite;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800B8EBC);
+    if (D_800C3610 != NULL) {
+        func_800BEFF4(D_800C3610->turnSlot);
+        sprite = D_800C3610->sprite;
+        if (BATTLE_AREA.slots[SPRITE_SLOT(sprite)].gear) {
+            func_800BEE2C(SPRITE_SLOT(sprite), 0, 0x1F);
+        } else {
+            sprite->x.fixed = (u16)BATTLE_AREA.slots[D_800C3610->slot].x << 16;
+            sprite->z.fixed = (u16)BATTLE_AREA.slots[D_800C3610->slot].z << 16;
+            func_800BA8F4(sprite);
+            sprite->y.fixed = sprite->ground << 16;
+            func_800245D8(sprite, sprite->idle.mode);
+            func_80021BF8(sprite, NULL);
+        }
+        func_800BEDE8();
+    }
+}
+
+/* End the turn: wait for the command's loads and sprites, restore the view
+ * and the camera, close the battle menu, end the turn's presentation
+ * (800BA4E0), fade a pending sound and clear every sprite's bit 6. */
+void func_800B8EBC(void) {
+    BattleSprite *sprite = D_800C3610->sprite;
+    s32 slot;
+    s32 i;
+
+    if (D_800C3610 != NULL) {
+        D_800C3624 = 0;
+        D_800C3DF0 = 0;
+        D_800C3622 = 0;
+        func_80080BD0();
+        DrawSync(0);
+        slot = D_800C3610->field40;
+        func_80021BF8(sprite, NULL);
+        func_800C0314();
+        while (D_80059464 != func_800BF720()) {
+            func_800BE790();
+        }
+        func_800C0564();
+        func_800B8D7C();
+        func_800BC3F8(1);
+        func_800BE0DC();
+        func_800BF9EC();
+        func_800BFA9C();
+        D_800C3688 = 0;
+        func_800BC454(0xC0);
+        func_800BEDE8();
+        func_800BA4E0(slot);
+        if (D_800C35D4) {
+            func_8003A89C(D_800C3E54, 0x7F, 0x50);
+        }
+        D_800C35D4 = 0;
+        for (i = 0; i != 11; i++) {
+            if (BATTLE_AREA.sprites[i] != NULL) {
+                BATTLE_AREA.sprites[i]->motion.word &= ~0x40;
+            }
+        }
+    }
+}
 
 /* Return the sprite to its idle motion. */
 void func_800B9020(BattleSprite *sprite) {
@@ -387,7 +448,51 @@ void func_800B9020(BattleSprite *sprite) {
     func_80021BF8(sprite, NULL);
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800B905C);
+/* Start the current event: its actor acts, facing its first target. For
+ * a partner action both sprites get bit 6 and face each other, the camera
+ * frames both, and the actor steps 0x50 beside its partner (to the side it
+ * came from, or away from the partner's place when it stands there); then
+ * start the loads and walk (800B9508). */
+void func_800B905C(void) {
+    BattleSprite *sprite;
+    BattleSprite *partner;
+    u16 mask;
+    s16 x;
+
+    func_800BEFF4(BATTLE_AREA.events[D_800C360C].actor);
+    sprite = D_800C3610->sprite;
+    func_800BF3E8(sprite);
+    if (AREA_PARTNER_ACTION) {
+        partner = sprite->partner;
+        partner->motion.word |= 0x40;
+        sprite->motion.word |= 0x40;
+        func_800B9B54(sprite, partner);
+        partner = sprite->partner;
+        mask = (1 << SPRITE_SLOT(sprite)) | (1 << SPRITE_SLOT(partner));
+        func_800BC460(mask);
+        x = partner->x.fixed >> 16;
+        if (x != (u16)BATTLE_AREA.slots[SPRITE_SLOT(partner)].x
+            || (partner->z.fixed >> 16) != (u16)BATTLE_AREA.slots[SPRITE_SLOT(partner)].z) {
+            if (x < (u16)BATTLE_AREA.slots[SPRITE_SLOT(partner)].x) {
+                sprite->target[0] = x - 0x50;
+            } else {
+                sprite->target[0] = x + 0x50;
+            }
+        } else if ((sprite->x.fixed >> 16) < x) {
+            sprite->target[0] = x - 0x50;
+        } else {
+            sprite->target[0] = x + 0x50;
+        }
+        sprite->target[2] = partner->z.fixed >> 16;
+        sprite->target[1] = 0;
+        func_800BC460(mask);
+        copyVector(&D_800D3354, &D_800D30A0[0]);
+        copyVector(&D_800D335C, &D_800D30A0[1]);
+        func_800B9B54(sprite, partner);
+    }
+    func_800BF9EC();
+    func_800B9508(sprite);
+}
 
 /* Count a step of the battle menu (field34), when there is one. */
 void func_800B9258(void) {
