@@ -43,7 +43,16 @@ typedef struct SoundTrack {
 /* One channel of a playing sequence. */
 typedef struct {
     u16 flags;
-    u8 unk2[0x156];
+    u16 flags2;
+    u8 unk4[0x14];
+    u8 *loop;          /* sequence data position to return to */
+    u8 unk1C[7];
+    u8 unk23;
+    u8 unk24[0x38];
+    s16 unk5C;
+    u8 unk5E[8];
+    s16 transpose;     /* in semitones */
+    u8 unk68[0xF0];
 } SoundSeqChannel;
 
 /* A linear slide of a 16.16 value. */
@@ -60,14 +69,22 @@ typedef struct {
     u16 flags;         /* bit 15: paused */
     u8 unk12[2];
     u8 channels;
-    u8 unk15[6];
+    u8 unk15[5];
+    u8 unk1A;
     u8 unk1B;
     u8 unk1C[8];
     s32 unk24;
     u32 ticks;
     u8 unk2C[4];
     u16 unk30;
-    u8 unk32[0x22];
+    s16 unk32;
+    s16 unk34;
+    u16 unk36;
+    s16 unk38;
+    u16 unk3A;
+    s16 unk3C;
+    s16 unk3E;
+    u8 unk40[0x14];
     s32 tick_step;
     u8 unk58[2];
     s16 resolution;

@@ -1789,37 +1789,135 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003C6E8);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003CC84);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003CD00);
+/* Sequence opcode handlers: each takes the opcode's operands, the sequence
+ * and the channel, and returns the position after the operands. */
 
+/* No operands, no effect. */
+u8 *func_8003CD00(u8 *data) {
+    return data;
+}
+
+/* Nonmatching: the flag updates are scheduled in a different order. */
+#ifdef NON_MATCHING
+u8 *func_8003CD08(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    channel->unk5C = *data;
+    channel->flags2 |= 2;
+    channel->flags |= 0x400;
+    return data + 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003CD08);
+#endif
 
+/* Nonmatching: the flag update is scheduled in a different order. */
+#ifdef NON_MATCHING
+u8 *func_8003CD30(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    channel->flags |= 0x100;
+    channel->unk5C = *data;
+    return data + 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003CD30);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003CD4C);
+u8 *func_8003CD4C(u8 *data) {
+    return data;
+}
 
+/* Mark the loop point when the operand matches the sequence's selector.
+ * Nonmatching: matches when compiled with GCC 2.6.3 (byte load of the transpose). */
+#ifdef NON_MATCHING
+u8 *func_8003CD54(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    if (*data++ == seq->unk1B) {
+        channel->loop = data;
+        channel->unk23 = channel->transpose;
+    }
+    return data;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003CD54);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003CD7C);
+/* Skip three operand bytes. */
+u8 *func_8003CD7C(u8 *data) {
+    return data + 3;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003CD84);
+u8 *func_8003CD84(u8 *data) {
+    return data;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003CD8C);
 
+/* Mark the loop point.
+ * Nonmatching: matches when compiled with GCC 2.6.3 (byte load of the transpose). */
+#ifdef NON_MATCHING
+u8 *func_8003CE04(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    channel->loop = data;
+    channel->unk23 = channel->transpose;
+    return data;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003CE04);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003CE18);
+/* Set the octave. */
+u8 *func_8003CE18(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    channel->transpose = *data * 12;
+    return data + 1;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003CE38);
+/* Octave up. */
+u8 *func_8003CE38(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    channel->transpose += 12;
+    return data;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003CE50);
+/* Octave down. */
+u8 *func_8003CE50(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    channel->transpose -= 12;
+    return data;
+}
 
+/* Set the time signature.
+ * Nonmatching: the stores are scheduled in a different order. */
+#ifdef NON_MATCHING
+u8 *func_8003CE68(u8 *data, SoundSeq *seq) {
+    u8 unit = data[1];
+    u8 beats = data[0];
+
+    seq->unk3A = 0xC0 / unit;
+    seq->unk3C = unit;
+    seq->unk38 = beats;
+    seq->unk3E = beats;
+    seq->unk36 = seq->unk3A;
+    return data + 2;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003CE68);
+#endif
 
+/* Nonmatching: the stores are scheduled in a different order. */
+#ifdef NON_MATCHING
+u8 *func_8003CE9C(u8 *data, SoundSeq *seq) {
+    seq->unk32 = data[0];
+    seq->unk36 = seq->unk3A;
+    seq->unk34 = data[1];
+    return data + 2;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003CE9C);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003CEC0);
+u8 *func_8003CEC0(u8 *data, SoundSeq *seq) {
+    seq->unk1A = *data;
+    return data + 1;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003CED4);
+u8 *func_8003CED4(u8 *data, SoundSeq *seq) {
+    seq->unk1A += *data;
+    return data + 1;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003CEF0);
 
