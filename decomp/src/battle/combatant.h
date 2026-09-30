@@ -76,7 +76,7 @@ typedef struct {
     u32 hp;                 /* 0x60 */
     u32 maxHp;              /* 0x64 */
     u8 pad68[0x72 - 0x68];
-    u16 field72;            /* 0x72 */
+    u16 armor;              /* 0x72 */
     u8 pad74[0x7C - 0x74];
     u16 status7C;
     u8 pad7E[0x80 - 0x7E];
@@ -85,7 +85,7 @@ typedef struct {
     StatusPair status84;
     u8 resistances[16];     /* 0x88: by element bit */
     u8 pad98;
-    u8 field99;             /* 0x99 */
+    u8 defense;             /* 0x99: damage reduction in percent */
     u8 pad9A[0x9E - 0x9A];
     u8 frameFactor;         /* 0x9E: attack scale in quarters */
     u8 pad9F[0xA4 - 0x9F];
@@ -127,7 +127,8 @@ typedef struct {
  * member, their gears' 42. */
 typedef struct {
     u16 state;              /* 0x00: 1 usable, 0x2000 sealed */
-    u8 pad2[0xA - 0x2];
+    u8 pad2[0x8 - 0x2];
+    u16 elements;           /* 0x08: element bits */
     u16 flagsA;             /* 0x0A */
     u8 padC[0x10 - 0xC];
     u8 pad10;
@@ -199,6 +200,7 @@ extern Combatant *D_800C3E00;           /* attacker record */
 extern GearRecord *D_800D2D6C;          /* attacker's gear record */
 extern u8 D_800C3E04;                   /* attacker slot */
 extern Combatant *D_800C3E34;           /* target record */
+extern u8 *D_800C3D60;                  /* the target's field 0x148 */
 extern u8 D_800C3E50;                   /* target slot */
 extern GearRecord *D_800D2DC8;          /* target's gear record */
 extern u8 D_800D2C34;
@@ -211,5 +213,6 @@ void func_8009B104(u8 slot, Combatant *chuchu);
 void func_8009BE0C(void);
 s8 func_8009DBFC(s32 arg0);
 u16 func_80096FBC(void);
+u16 func_80097610(void);
 
 #endif

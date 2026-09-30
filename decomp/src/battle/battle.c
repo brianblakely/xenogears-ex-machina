@@ -2141,21 +2141,94 @@ u16 func_8009D948(void) {
     return damage;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009DA04);
+/* Damage of an attack on a gear (80097610): a command with flag 0x100 adds
+ * the target gear's armor (reduced by its defense percentage) when the target
+ * is in a gear, and half again with status 0x20; otherwise the damage itself
+ * is reduced by the defense percentage. */
+u16 func_8009DA04(void) {
+    u16 damage = func_80097610();
+    u16 armor;
+    u8 defense;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009DB54);
+    if (D_800C3DFC->flagsA & 0x100) {
+        defense = D_800D2DC8->defense;
+        armor = D_800D2DC8->armor;
+        if (defense != 0 && armor != 0) {
+            armor = armor * (100 - defense) / 100;
+        }
+        if (D_800C34B0->records[D_800C3E50].flags15A & 0x80) {
+            damage += armor;
+        }
+        if ((D_800D2DC8->status80 | D_800D2DC8->status82) & 0x20) {
+            damage += damage >> 1;
+        }
+    } else if (D_800D2DC8->defense != 0) {
+        damage = damage * (100 - D_800D2DC8->defense) / 100;
+    }
+    return damage;
+}
+
+/* Scale damage by the target gear's resistance (in twentieths, 20 or more
+ * nullifies) to the command's first element. */
+s32 func_8009DB54(s32 damage) {
+    u8 i;
+    u8 element;
+    u8 resistance;
+
+    for (i = 0; i < 16; i++) {
+        if (D_800C3DFC->elements & (0x8000 >> i)) {
+            element = i;
+            break;
+        }
+    }
+    resistance = D_800D2DC8->resistances[element];
+    if (resistance != 0) {
+        if (resistance < 20) {
+            damage = damage * (20 - resistance) / 20;
+        } else {
+            damage = 0;
+        }
+    }
+    return damage;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009DBFC);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009E268);
+/* Clear the target gear's defense percentage. */
+void func_8009E268(void) {
+    D_800D2DC8->defense = 0;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009E278);
+/* Damage the target gear by field 0x4F tenths of its maximum HP. */
+void func_8009E278(void) {
+    u32 damage = D_800D2DC8->field4F * D_800D2DC8->maxHp / 10;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009E2EC);
+    D_800C34B0->resultCode[D_800C3E50] = 2;
+    D_800C34B0->damage[D_800C3E50] = damage;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009E364);
+/* Damage the target gear by the command's power in twentieths of its maximum
+ * HP. */
+void func_8009E2EC(void) {
+    u32 damage = D_800C3DFC->power * D_800D2DC8->maxHp / 20;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009E3C8);
+    D_800C34B0->resultCode[D_800C3E50] = 2;
+    D_800C34B0->damage[D_800C3E50] = damage;
+}
+
+/* Damage the target by the attacker's accuracy times the command's power. */
+void func_8009E364(void) {
+    u32 damage = D_800C3E00->pilot.accuracy * D_800C3DFC->power;
+
+    D_800C34B0->resultCode[D_800C3E50] = 2;
+    D_800C34B0->damage[D_800C3E50] = damage;
+}
+
+/* Put the target into state 4 with timer 6 at three turns. */
+void func_8009E3C8(void) {
+    *D_800C3D60 = 4;
+    D_800CCCE8.records[D_800C3E50].statusTimers[6] = 3;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009E410);
 
