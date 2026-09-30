@@ -453,9 +453,293 @@ void func_8001D4E8(Sprite *sprite) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001D53C);
+/* Build frame `frame` of a cell-directory source (directory bit 15): each
+ * part takes a cell already in VRAM with its own texture position and size,
+ * from the page of a resident cell kind (two-byte kinds), of the sprite's
+ * sequencer or of the source, after the control bytes before it. */
+/* Nonmatching: the original loads the resident page table address after the abr argument's sign extension (lui/addiu into one register); here it is split and scheduled first. */
+#ifdef NON_MATCHING
+void func_8001D53C(Sprite *sprite, s32 frame, SpriteSource *source) {
+    u16 *table;
+    u8 *record;
+    u16 *cells;
+    u16 v_base;
+    u16 blend;
+    u32 colour;
+    s32 count;
+    u8 wide;
+    Sprite *self;
+    u8 *p;
+    SpritePart *parts;
+    s32 group;
+    s32 i;
+    u8 control;
+    u8 *cell;
+    s32 kind;
+    u16 u_base;
+    s16 rate;
+    s32 palette;
+    TexturePosition *page;
+    TexturePosition *pages;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001DAE8);
+    table = source->frames;
+    record = (u8 *)(table[frame] + (s32)table);
+    cells = (u16 *)(record + 4);
+    wide = *record & 0x80;
+    count = *record & 0x3F;
+    p = record + (count * 2 + 4);
+    parts = sprite->renderer->parts[1];
+    self = sprite;
+    sprite->height = record[3] * sprite->scale / 4096;
+    sprite->extent_depth = record[1] * sprite->scale / 4096;
+    v_base = source->origin.vy & 0xFF;
+    blend = sprite->render.bits.blend;
+    group = 4;
+    colour = *(u32 *)&sprite->red;
+    for (i = 0; i != count; i++, p += 3) {
+        parts[i].byte9 = 0;
+        parts[i].byte8 = 0;
+        parts[i].flags &= ~0x20;
+    next:
+        control = *p;
+        if (control & 0x80) {
+            p++;
+            if (control & 0x40) {
+                group = control & 7;
+                if (sprite->renderer->pointer34 == NULL) {
+                    sprite->renderer->pointer34 = func_80031BDC(0x40, 0);
+                    func_800234AC(sprite);
+                }
+                if (control & 0x20) {
+                    sprite->renderer->pointer34[group].byte0 = *p++;
+                    sprite->renderer->pointer34[group].byte1 = *p++;
+                }
+                if (control & 0x10) {
+                    s16 depth = *p++ << 4;
+
+                    sprite->renderer->pointer34[group].half6 = depth;
+                } else {
+                    sprite->renderer->pointer34[group].half6 = 0;
+                }
+            } else {
+                if (control & 4) {
+                    parts[i].flags |= 0x20;
+                }
+                if (control & 1) {
+                    parts[i].byte8 = *p++;
+                }
+                if (control & 2) {
+                    parts[i].byte9 = *p++;
+                }
+            }
+            goto next;
+        }
+        cell = (u8 *)(*cells + (s32)table);
+        kind = *cell;
+        cells++;
+        if (kind & 1) {
+            parts[i].flags |= 8;
+            u_base = (source->origin.vx & 0x3F) >> 1;
+        } else {
+            parts[i].flags &= ~8;
+            u_base = (source->origin.vx & 0x3F) >> 2;
+        }
+        rate = (*p >> 4) & 3;
+        palette = *p & 0xF;
+        parts[i].colour = colour;
+        if (rate != 0 || (rate = blend) != 0) {
+            rate--;
+            ((u8 *)&parts[i].colour)[3] |= 2;
+        }
+        if ((kind >> 4) & 1) {
+            cell++;
+            kind |= *cell << 8;
+            pages = D_8004FAB8;
+            page = (TexturePosition *)(((kind << 1) & 0x1C) + (s32)pages);
+            parts[i].tpage = GetTPage(kind & 1, rate, page->x, page->y);
+            parts[i].clut = GetClut((kind >> 1) & 0xF0, ((kind >> 9) & 0xF) + 0x1CC);
+        } else {
+            if (self->frame_bits.sequencer_owned == 1 &&
+                (pages = (TexturePosition *)((SpriteSequencer *)self->sequencer)->buffer) != NULL) {
+                page = (TexturePosition *)((kind << 1 & 0x1C) + (s32)pages);
+                v_base = page->y & 0xFF;
+                u_base = (page->x & 0x3F) >> 2;
+                parts[i].tpage = getTPage(kind & 1, rate, page->x, page->y);
+            } else {
+                parts[i].tpage = getTPage(kind & 1, rate, source->origin.vx + ((kind << 5) & 0x1C0), source->origin.vy);
+            }
+            parts[i].clut = getClut(source->clut_x + palette * 16, source->clut_y);
+        }
+        parts[i].flags = (parts[i].flags & ~7) | group;
+        parts[i].u = u_base + cell[1];
+        parts[i].v = v_base + cell[2];
+        parts[i].w = cell[3];
+        parts[i].h = cell[4];
+        parts[i].flags = (parts[i].flags & ~0x10) | ((*p >> 2) & 0x10);
+        if (wide) {
+            parts[i].x = p[1] | ((s8)p[2] << 8);
+            parts[i].y = p[3] | ((s8)p[4] << 8);
+            p += 2;
+        } else {
+            parts[i].x = (s8)p[1];
+            parts[i].y = (s8)p[2];
+        }
+    }
+    sprite->flags = (sprite->flags & ~0xFC) | ((i & 0x3F) << 2);
+}
+#else
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001D53C);
+#endif
+
+/* Build frame `frame` of a sprite's source into its parts and queue the
+ * uploads of the cells it uses (to the source's texture position, or a
+ * reserved texture area column for facing group 14), after its palette
+ * when the render flag asks for it; cell-directory sources go to 8001d53c. */
+void func_8001DAE8(Sprite *sprite, s32 frame, SpriteSource *source) {
+    u16 *table;
+    SpritePart *parts;
+    u16 *palette;
+    DVECTOR position;
+    RECT rect; /* the palette area, then a cell's place in the image */
+    u8 *record;
+    u16 *cells;
+    u32 blend;
+    u32 colour;
+    s32 u_base4;           /* texture column of the image in 4-bit texels */
+    s32 u_base8;           /* ... in 8-bit texels */
+    u32 v_base;
+    s32 count;
+    u8 wide;
+    u8 *p;
+    s32 group;
+    s32 i;
+    u8 control;
+    SpriteCell *cell;
+    u16 kind;
+    u8 u;
+    u8 words;
+    s16 rate;
+    s32 clut;
+
+    sprite->flags &= ~0x20000;
+    sprite->flags &= ~0x80000;
+    table = source->frames;
+    parts = sprite->renderer->parts[1];
+    if (frame < (*table & 0x1FF) + 1) {
+        if ((sprite->render.word >> 30) & 1) {
+            sprite->render.word &= ~0x40000000;
+            palette = source->palette;
+            if (*palette != 0) {
+                rect.x = source->clut_x;
+                rect.y = source->clut_y;
+                rect.w = *palette * 16;
+                rect.h = 1;
+                func_800251C8((u_long *)(palette + (*palette * ((sprite->render.word >> 16) & 0xF0) + 2)),
+                              source->clut_x, source->clut_y, *palette * 16, 1);
+            }
+        }
+        if (*table & 0x8000) {
+            func_8001D53C(sprite, frame, source);
+            return;
+        }
+        record = (u8 *)(table[frame] + (s32)table);
+        position = ((SpriteSource *)sprite->image)->origin;
+        if (((sprite->flags >> 13) & 0xF) == 0xE) {
+            position = func_8001F530(record[4]);
+        }
+        cells = (u16 *)(record + 6);
+        wide = *record & 0x80;
+        count = *record & 0x3F;
+        p = record + (count * 4 + 6);
+        sprite->height = record[3] * sprite->scale / 4096;
+        sprite->extent_depth = record[1] * sprite->scale / 4096;
+        blend = sprite->render.bits.blend;
+        u_base4 = (position.vx & 0x3F) * 4;
+        u_base8 = (position.vx & 0x3F) * 2;
+        v_base = position.vy & 0xFF;
+        group = 4;
+        colour = *(u32 *)&sprite->red;
+        for (i = 0; i != count; i++, p += 3) {
+            parts[i].byte9 = 0;
+            parts[i].byte8 = 0;
+            parts[i].flags &= ~0x20;
+        next:
+            control = *p;
+            if (control & 0x80) {
+                p++;
+                if (control & 0x40) {
+                    if (sprite->renderer->pointer34 == NULL) {
+                        sprite->renderer->pointer34 = func_80031BDC(0x40, 0);
+                        func_800234AC(sprite);
+                    }
+                    group = control & 7;
+                    if (control & 0x20) {
+                        sprite->renderer->pointer34[group].byte0 = *p++;
+                        sprite->renderer->pointer34[group].byte1 = *p++;
+                    }
+                    if (control & 0x10) {
+                        s16 depth = *p++ << 4;
+
+                        sprite->renderer->pointer34[group].half6 = depth;
+                    } else {
+                        sprite->renderer->pointer34[group].half6 = 0;
+                    }
+                } else {
+                    if (control & 4) {
+                        parts[i].flags |= 0x20;
+                    }
+                    if (control & 1) {
+                        parts[i].byte8 = *p++;
+                    }
+                    if (control & 2) {
+                        parts[i].byte9 = *p++;
+                    }
+                }
+                goto next;
+            }
+            cell = (SpriteCell *)(cells[0] * 4 + (s32)table);
+            rect.x = cells[1] & 0x1F;
+            rect.y = (cells[1] >> 5) & 0x3F;
+            kind = cell->kind;
+            cells += 2;
+            if (kind & 1) {
+                u = u_base8 + rect.x * 2;
+                words = cell->w >> 1;
+                parts[i].flags |= 8;
+            } else {
+                u = u_base4 + rect.x * 4;
+                words = cell->w >> 2;
+                parts[i].flags &= ~8;
+            }
+            parts[i].u = u;
+            parts[i].flags = (parts[i].flags & ~7) | group;
+            parts[i].v = rect.y + v_base;
+            parts[i].w = cell->w;
+            parts[i].h = cell->h;
+            parts[i].flags = (parts[i].flags & ~0x10) | ((*p >> 2) & 0x10);
+            rate = (*p >> 4) & 3;
+            clut = *p & 0xF;
+            parts[i].colour = colour;
+            if (rate != 0 || (rate = blend) != 0) {
+                rate--;
+                ((u8 *)&parts[i].colour)[3] |= 2;
+            }
+            parts[i].tpage = getTPage(kind & 1, rate, position.vx, position.vy);
+            parts[i].clut = GetClut(source->clut_x + clut * 16, source->clut_y);
+            func_800251C8((u_long *)(cell + 1), position.vx + rect.x, position.vy + rect.y, words, cell->h);
+            if (wide) {
+                parts[i].x = p[1] | ((s8)p[2] << 8);
+                parts[i].y = p[3] | ((s8)p[4] << 8);
+                p += 2;
+            } else {
+                parts[i].x = (s8)p[1];
+                parts[i].y = (s8)p[2];
+            }
+        }
+        sprite->flags = (sprite->flags & ~0xFC) | ((i & 0x3F) << 2);
+        func_800251C8(NULL, position.vx, position.vy, record[4], record[5]);
+    }
+}
 
 /* Set the GTE rotation and translation for drawing a sprite: its position
  * through the view matrix plus its scaled screen offset. */

@@ -93,7 +93,8 @@ typedef struct Sprite {
     s16 half30;              /* +0x30 */
     s16 direction;           /* +0x32 */
     u16 frame;               /* +0x34: pending frame, 0 none */
-    u8 unknown36[4];
+    s16 height;              /* +0x36: frame extent at its scale */
+    s16 extent_depth;        /* +0x38 */
     u16 rate;                /* +0x3a: speed factor, 1024 = 1 */
     union {
         u32 word;
@@ -186,7 +187,10 @@ typedef struct {
  * the offsets of the frame records from the directory) and its animations. */
 typedef struct {
     u16 *frames;           /* +0x0 */
-    u8 unknown4[0xC];
+    DVECTOR origin;        /* +0x4: texture position of its cells */
+    s16 clut_x;            /* +0x8 */
+    s16 clut_y;            /* +0xa */
+    u16 *palette;          /* +0xc */
     u16 *animations;       /* +0x10 */
 } SpriteSource;
 
@@ -334,7 +338,9 @@ void func_80022974(Sprite *sprite); /* velocity from speed and direction */
 void func_80023210(Sprite *sprite);
 void func_800245D8(Sprite *sprite, s32 value);
 void func_8001D2B0(Sprite *sprite, s32 frame);
-void func_8001DAE8(Sprite *sprite, s32 frame, void *image);
+void func_8001D53C(Sprite *sprite, s32 frame, SpriteSource *source);
+void func_8001DAE8(Sprite *sprite, s32 frame, SpriteSource *source);
+DVECTOR func_8001F530(s32 width);
 void func_8001E148(Sprite *sprite);
 void func_80022038(Sprite *sprite);
 void func_8001E3D8(Sprite *sprite, s32 frame);
@@ -354,5 +360,19 @@ Sprite *func_80024524(s32 *data, s16 x, s16 y, s16 width, s16 height, s16 unused
 Sprite *func_8002435C(Sprite *sprite, s32 *data, s16 x, s16 y, s16 width, s16 height, s16 unused);
 s32 func_80022CAC(Sprite *sprite, s32 value);
 void func_80022CDC(Sprite *sprite);
+
+/* An image cell of a sprite source (its pixels follow). */
+typedef struct {
+    u8 w, h;               /* +0x0: width in pixels, height */
+    u16 kind;              /* +0x2: bit 0: 8-bit texture */
+} SpriteCell;
+
+void func_800251C8(u_long *pixels, s16 x, s16 y, s16 w, s16 h); /* queue an image upload */
+
+/* Texture positions of the resident cell pages (two-byte cell kinds). */
+typedef struct {
+    s16 x, y;
+} TexturePosition;
+extern TexturePosition D_8004FAB8[8];
 
 #endif
