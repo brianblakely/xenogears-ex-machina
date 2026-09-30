@@ -787,4 +787,6 @@ void func_800865A0(void);
 void func_8008901C(void);
 void func_80075D4C(void);
 
+#define GROUND_SCROLL ((s32 *)D_8009BBB4) /* ground scroll offset x, y, z */
+
 #endif

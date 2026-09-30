@@ -969,7 +969,40 @@ void func_80076F54(WorldmapActor *actor) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80076FA8);
+/* Move the actor an eighth of the way to the saved camera target (snapping when
+ * close), scrolling the ground offset with it, and look at the actor. */
+void func_80076FA8(WorldmapActor *actor, VECTOR *work) {
+    if ((actor->position.vx != D_8009D55C.target.vx) | (actor->position.vy != D_8009D55C.target.vy) |
+        (actor->position.vz != D_8009D55C.target.vz)) {
+        work[0].vx = D_8009D55C.target.vx - actor->position.vx;
+        work[0].vy = D_8009D55C.target.vy - actor->position.vy;
+        work[0].vz = D_8009D55C.target.vz - actor->position.vz;
+        func_80093484(&work[0]);
+        work[1].vx = work[0].vx >> 3;
+        work[1].vy = work[0].vy >> 3;
+        work[1].vz = work[0].vz >> 3;
+        if (ABS(work[1].vx) < 0x200) {
+            GROUND_SCROLL[0] += work[0].vx;
+            actor->position.vx = D_8009D55C.target.vx;
+        } else {
+            GROUND_SCROLL[0] += work[1].vx;
+            actor->position.vx += work[1].vx;
+        }
+        if (ABS(work[1].vy) < 0x200) {
+            actor->position.vy = D_8009D55C.target.vy;
+        } else {
+            actor->position.vy += work[1].vy;
+        }
+        if (ABS(work[1].vz) < 0x200) {
+            GROUND_SCROLL[2] += work[0].vz;
+            actor->position.vz = D_8009D55C.target.vz;
+        } else {
+            GROUND_SCROLL[2] += work[1].vz;
+            actor->position.vz += work[1].vz;
+        }
+    }
+    D_8009BE28.target = actor->position;
+}
 
 /* Step `value` towards `target` by `delta`, stopping on it. */
 #ifdef NON_MATCHING /* first branch delay slot filled with the delta copy */
