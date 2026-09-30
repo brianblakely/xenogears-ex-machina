@@ -3902,35 +3902,26 @@ s32 func_801E67F8(void) {
 }
 
 /* The actor index (returned) and bit mask of reference `ref` (0xff: the mask's lowest actor,
- * 0xfe: the current actor, 0xfd/0xf9: this actor, ...). The original
- * masks the shift count to 8 bits at the join; this build drops it. */
-#ifdef NON_MATCHING
+ * 0xfe: the current actor, 0xfd/0xf9: this actor, ...). */
 s32 func_801E6830(Actor *actor, u8 ref, u16 *mask) {
-    u8 index;
-
     if (ref == 0xFF) {
-        index = func_801E67F8();
+        ref = func_801E67F8();
     } else if (ref == 0xFE) {
-        index = D_801E86B0;
+        ref = D_801E86B0;
     } else if (ref == 0xFD || ref == 0xF9) {
-        index = actor->index;
+        ref = actor->index;
     } else if (ref == 0xFC) {
-        index = actor->b21;
+        ref = actor->b21;
     } else if (ref == 0xFA) {
-        index = 10;
+        ref = 10;
     } else if (ref == 0xF8) {
-        index = actor->index * 2 + 8;
+        ref = actor->index * 2 + 8;
     } else if (ref == 0xF7) {
-        index = actor->index * 2 + 9;
-    } else {
-        index = ref;
+        ref = actor->index * 2 + 9;
     }
-    *mask = 1 << index;
-    return index;
+    *mask = 1 << ref;
+    return ref;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E6830);
-#endif
 
 /* Script variable `ref` (0xfe/0xff: the actor's default reference, whose bit
  * 7 is returned in `*flag`): a local below 0x40, else a global. */
