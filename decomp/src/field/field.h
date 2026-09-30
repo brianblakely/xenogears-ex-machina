@@ -191,7 +191,8 @@ typedef struct {
     s16 unk382;      /* 382 */
     u8 unk384[0x408 - 0x384];
     s16 timer;       /* 408 */
-    u8 unk40A[0x40E - 0x40A];
+    u8 unk40A[2];
+    u16 layout;      /* 40C: 1 above, 0x81 below the speaker; 0x40 kept */
     s16 busy;        /* 40E */
     u16 age;         /* 410: 0xffff when free */
     s16 unk412;      /* 412 */

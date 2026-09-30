@@ -74,4 +74,20 @@ extern PortraitRequest D_800B00C8[3];  /* file list read by 80029afc */
 extern s32 func_80029AFC(void *list, s32 mode, s32 a2);
 extern s32 func_8009C538(s32 id);
 
+/* Dialogue window opening (8009c5a8). */
+extern s32 D_800AFD04;     /* dialogue gate */
+extern s32 D_800C4268;     /* dialogue windows opened this pass */
+extern s32 D_800ADB64;     /* 0xff when no input jump is pending */
+extern void *D_800ADBF0;   /* field message table */
+extern s32 func_8003373C(void *table, s32 message); /* message columns */
+extern s32 func_80033760(void *table, s32 message); /* message rows */
+extern void func_8007F814(s32 index, s32 *x, s32 *y, s32 height);
+extern void func_8007F8DC(s32 x, s32 y, s32 message, s32 window, s32 columns, s32 rows, s32 owner, s32 speaker,
+                          s32 mode, s32 flags, s32 style);
+extern s32 func_80080720(void);
+extern s32 func_80080760(void);
+extern s32 func_800807B4(void);
+extern s32 func_8009A514(void);
+extern void func_8009CCF8(s32 window);
+
 #endif

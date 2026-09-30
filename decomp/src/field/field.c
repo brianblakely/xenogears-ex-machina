@@ -9204,7 +9204,194 @@ s32 func_8009C538(s32 id) {
     return 0;
 }
 
+#ifdef NON_MATCHING
+/* Open this actor's dialogue window for message op1 above/below speaker
+ * `speaker` (mode 0 follows the speaker, mode 3 is centred, others use the
+ * fixed full-width box); op3 overrides the style byte. Returns -1 while the
+ * window cannot open yet (the instruction is retried) and 0 once opened. */
+s32 func_8009C5A8(s32 speaker, s32 mode) {
+    s32 owned;
+    s32 x;
+    s32 y;
+    u16 message;
+    s32 window;
+    s32 i;
+    s32 idle;
+    s32 combined;
+    s32 columns;
+    u8 rows;
+    s32 progress;
+    s32 low;
+    s32 style;
+    s32 top;
+    s16 left;
+    s32 flags;
+
+    D_800AFC7C += 0x20;
+    if (D_800ADB2C != 0 || D_800AFD04 != 0 || D_800C4268 != 0 || D_800ADB64 != 0xFF ||
+        (D_800ADB70 == 0 && func_8008A558() != 0) ||
+        ((u8)D_800B0078->character != 0xFF && func_8009C154((u8)D_800B0078->character) == -1)) {
+        D_800B00C0 = 1;
+        return -1;
+    }
+    D_800C4268++;
+    if (func_8009CD18(&owned) != -1) {
+        D_800B00C0 = 1;
+        D_800C2698[owned].cleared = 0;
+        return -1;
+    }
+    D_800AFC7C += 8;
+    message = func_800ACDB8(1);
+    if (func_80080720() != 0) {
+        window = func_80080760();
+        if (window != 0xFFFF) {
+            D_800C2698[window].cleared = 0;
+            D_800B00C0 = 1;
+            return -1;
+        }
+    } else {
+        window = func_800807B4();
+    }
+    idle = 0;
+    combined = 0;
+    for (i = 0; i < 4; i++) {
+        if (D_800C2698[i].busy == 0) {
+            idle++;
+            combined |= D_800C2698[i].layout;
+        }
+    }
+    columns = func_8003373C(D_800ADBF0, message);
+    rows = func_80033760(D_800ADBF0, message);
+    if (mode == 0 || mode == 3) {
+        if (D_800B0078->unk82 != 0) {
+            columns = D_800B0078->unk82;
+        }
+        if (D_800B0078->unk83 != 0) {
+            rows = D_800B0078->unk83;
+        }
+    }
+    progress = D_800B0078->unk84;
+    low = progress & 0xFFFF;
+    D_800B0078->unk84 = low;
+    style = low;
+    if (EVENT_OPERAND_BYTE(3) != 0) {
+        style = (progress & 0xFF00) | EVENT_OPERAND_BYTE(3);
+        D_800B0078->unk84 = low | (style << 16);
+    }
+    top = 0x10;
+    switch ((style >> 4) & 3) {
+    case 1:
+        goto above;
+    case 0:
+        if (((((D_800B0078->state.word >> 9) & 7) - func_8009A514()) & 7) >= 5) {
+            if (!(combined & 0x80) && idle == 0) {
+                goto above;
+            }
+        } else if (combined & 0x80) {
+            goto above;
+        }
+        /* fall through */
+    case 2:
+        D_800C2698[window].layout = 0x81;
+        if (mode == 0 || mode == 3) {
+            func_8007F814(speaker, &x, &y, -0x40);
+            top = 0x94;
+            if (mode == 0) {
+                top = y + 0x30;
+            } else {
+                x = 0xA0;
+            }
+            if ((u8)D_800B0078->character != 0xFF && !(style & 2)) {
+                columns += 0x11;
+                if (columns < 0x18) {
+                    columns = 0x29;
+                }
+                rows = 4;
+                top = 0x94;
+            }
+        } else {
+            columns = 0x48;
+            rows = 4;
+            top = 0x94;
+            x = 0xA0;
+        }
+        break;
+    above:
+        D_800C2698[window].layout = 1;
+        if (mode == 0 || mode == 3) {
+            func_8007F814(speaker, &x, &y, -0x40);
+            top = 0x14;
+            if (mode == 0) {
+                top = y - rows * 14 - 0x24;
+            } else {
+                x = 0xA0;
+            }
+            if ((u8)D_800B0078->character != 0xFF && !(style & 2)) {
+                rows = 4;
+                if (columns < 0x18) {
+                    columns = 0x18;
+                }
+                columns += 0x11;
+                top = 0x10;
+            }
+        } else {
+            columns = 0x48;
+            rows = 4;
+            top = 0x10;
+            x = 0xA0;
+        }
+        break;
+    }
+    left = x - 8 - columns * 2;
+    if (left < 0xC) {
+        left = 0xC;
+    }
+    if (left + 0x10 + columns * 4 >= 0x135) {
+        left = 0x124 - columns * 4;
+    }
+    if (top < 0x10) {
+        top = 0x10;
+    }
+    if (top + 8 + rows * 14 >= 0xD5) {
+        top = 0xCC - rows * 14;
+    }
+    if (mode == 0 || mode == 3) {
+        if (D_800B0078->unk88 != 0) {
+            left = D_800B0078->unk88;
+        }
+        if (D_800B0078->unk8A != 0) {
+            top = D_800B0078->unk8A;
+        }
+        if (D_800B0078->unk82 != 0) {
+            columns = D_800B0078->unk82;
+        }
+        if (D_800B0078->unk83 != 0) {
+            rows = D_800B0078->unk83;
+        }
+        if ((u8)D_800B0078->character != 0xFF && !(style & 2)) {
+            rows = 4;
+        }
+    }
+    if (style & 0x40) {
+        D_800C2698[window].layout |= 0x40;
+    }
+    flags = 0;
+    if (!(style & 0xC)) {
+        flags = (((((s16)D_800AF880.components.descriptors[speaker].actor->heading_goal >> 9) - func_8009A514()) + 1) &
+                 7) >= 4;
+        flags <<= 10;
+    } else if (style & 4) {
+        flags = 0x400;
+    }
+    func_8007F8DC(left, top, message, window, columns, rows, D_800AFD1C, speaker, mode, flags, style);
+    func_8009CCF8(window);
+    D_800B0078->heading |= 0x8000;
+    D_800B0078->pc += 4;
+    return 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009C5A8);
+#endif
 
 /* Set talk-inhibit bit `bit`. */
 void func_8009CCF8(s32 bit) {
