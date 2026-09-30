@@ -228,7 +228,11 @@ typedef struct {
 
 /* A model's mesh header; +20/+28 bound it. */
 typedef struct {
-    u8 unk00[0x20];
+    u8 unk00[6];
+    u16 group_count; /* 06: primitive groups */
+    u8 unk08[0x10 - 0x08];
+    u32 *groups;     /* 10: group headers (code, flags, count << 16) and data */
+    u8 unk14[0x20 - 0x14];
     s16 min[3];      /* 20 */
     s16 unk26;
     s16 max[3];      /* 28 */
@@ -238,7 +242,8 @@ typedef struct {
 typedef struct {
     u8 unk00[4];
     FieldMesh *mesh; /* 04 */
-    u8 unk08[0x12 - 0x08];
+    void *prims[2];  /* 08: primitives per draw buffer */
+    u8 unk10[0x12 - 0x10];
     s16 mode;        /* 12 */
     u8 unk14[4];
     s16 center[3];   /* 18 */

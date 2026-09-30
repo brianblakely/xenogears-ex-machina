@@ -3594,7 +3594,98 @@ void func_8008B518(void) {
     D_800B0078->pc += 8;
 }
 
+#ifdef NON_MATCHING
+/* Event 0x1b: scroll the current actor's textured polygons by (op1, op3)
+ * texels in both draw buffers. */
+void func_8008B5D4(void) {
+    FieldInstance *instance;
+    POLY_FT3 *ft3;
+    POLY_FT3 *ft3_other;
+    POLY_FT4 *ft4;
+    POLY_FT4 *ft4_other;
+    u8 *prims;
+    u8 *other;
+    FieldMesh *mesh;
+    u32 *group;
+    s32 du;
+    s32 dv;
+    s32 groups;
+    u32 header;
+    s32 count;
+    s32 code;
+    s32 i;
+
+    instance = D_800AF880.components.descriptors[D_800AFD1C].instance;
+    prims = instance->prims[D_800ADB08];
+    mesh = instance->mesh;
+    other = instance->prims[(D_800ADB08 + 1) & 1];
+    group = mesh->groups;
+    du = (s16)func_800ACD7C(1);
+    dv = (s16)func_800ACD7C(3);
+    for (groups = mesh->group_count; groups > 0; groups--) {
+        header = *group;
+        code = header & 0xFF;
+        count = header >> 16;
+        if (code == 0xC4 || code == 0xC8) {
+            group++;
+        } else {
+            group++;
+            if (!(header & 8)) {
+                ft3 = (POLY_FT3 *)prims;
+                ft3_other = (POLY_FT3 *)other;
+                for (i = 0; i < count; i++) {
+                    ft3->u0 += du;
+                    ft3->u1 += du;
+                    ft3->u2 += du;
+                    ft3->v0 += dv;
+                    ft3->v1 += dv;
+                    ft3->v2 += dv;
+                    ft3_other->u0 = ft3->u0;
+                    ft3_other->u1 = ft3->u1;
+                    ft3_other->u2 = ft3->u2;
+                    ft3_other->v0 = ft3->v0;
+                    ft3_other->v1 = ft3->v1;
+                    ft3_other->v2 = ft3->v2;
+                    group += 2;
+                    ft3++;
+                    ft3_other++;
+                }
+                prims = (u8 *)ft3;
+                other = (u8 *)ft3_other;
+            } else {
+                ft4 = (POLY_FT4 *)prims;
+                ft4_other = (POLY_FT4 *)other;
+                for (i = 0; i < count; i++) {
+                    ft4->u0 += du;
+                    ft4->u1 += du;
+                    ft4->u2 += du;
+                    ft4->u3 += du;
+                    ft4->v0 += dv;
+                    ft4->v1 += dv;
+                    ft4->v2 += dv;
+                    ft4->v3 += dv;
+                    ft4_other->u0 = ft4->u0;
+                    ft4_other->u1 = ft4->u1;
+                    ft4_other->u2 = ft4->u2;
+                    ft4_other->u3 = ft4->u3;
+                    ft4_other->v0 = ft4->v0;
+                    ft4_other->v1 = ft4->v1;
+                    ft4_other->v2 = ft4->v2;
+                    ft4_other->v3 = ft4->v3;
+                    group += 2;
+                    ft4++;
+                    ft4_other++;
+                }
+                prims = (u8 *)ft4;
+                other = (u8 *)ft4_other;
+            }
+        }
+    }
+    D_800B0078->pc += 5;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008B5D4);
+#endif
 
 /* Event: once the disc is idle, stop the stream, decode the pending party
  * sprite into its block, release the buffer and apply it; wait otherwise. */
