@@ -3836,7 +3836,59 @@ void func_801E8474(s32 count, MenuCommandImages *images) {
     }
 }
 
+/* Open the choice window of the command at `offset` past the top cursor:
+ * grow its cursor and label columns one choice per two frames (until an
+ * empty choice, ffff), counting the choices. */
+#ifdef NON_MATCHING
+void func_801E86C8(u8 offset) {
+    s32 n;
+    s32 i;
+    u8 growing;
+
+    D_800625A0->spriteLists->firstCount = 0;
+    D_800625A0->spriteLists->secondCount = 0;
+    D_800625A0->party->redrawA = 1;
+    growing = 1;
+    for (n = 1; n < 5; n++) {
+        D_800625A0->spriteLists->firstCount = 0;
+        D_800625A0->choiceCount = 0;
+        for (i = 0; i < n; i++) {
+            if (D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2] != 0xffff) {
+                D_800625A0->spriteLists->firstCount +=
+                    func_8002675C(D_800625A0->sheet, D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2],
+                                  &D_800625A0->spriteLists->first[D_800625A0->spriteLists->firstCount * 2],
+                                  D_800625A0->bufferIndex, 0xa0, 0x96, 0x1000);
+                D_800625A0->choiceCount++;
+            } else {
+                growing = 0;
+            }
+        }
+        D_800625A0->spriteLists->firstStart = D_800625A0->bufferIndex;
+        if (growing) {
+            for (i = 0; i < 2; i++) {
+                func_801C7BF4();
+            }
+        }
+        D_800625A0->spriteLists->secondCount = 0;
+        for (i = 0; i < n; i++) {
+            if (D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2] != 0xffff) {
+                D_800625A0->spriteLists->secondCount +=
+                    func_8002675C(D_800625A0->sheet, D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2 + 1],
+                                  &D_800625A0->spriteLists->second[D_800625A0->spriteLists->secondCount * 2],
+                                  D_800625A0->bufferIndex, 0xa0, 0x96, 0x1000);
+            }
+        }
+        D_800625A0->spriteLists->secondStart = D_800625A0->bufferIndex;
+        if (growing) {
+            for (i = 0; i < 2; i++) {
+                func_801C7BF4();
+            }
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E86C8);
+#endif
 
 /* Lay out the command cursor sprites for `count` commands (images of the
  * `images`, the chosen one `cursor` taking its lit image,
