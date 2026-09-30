@@ -270,6 +270,12 @@ typedef struct {
     SpriteSequencer *sequencer;
 } FieldSprite;
 
+/* A compass quad record (800b0fec): its corners and its quad per buffer. */
+typedef struct {
+    SVECTOR corners[4];
+    POLY_FT4 quads[2];
+} CompassRecord;
+
 /* A collision attribute word, also read by byte. */
 typedef union {
     u32 word;

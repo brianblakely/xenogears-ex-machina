@@ -843,19 +843,9 @@ void func_800775F8(void) {
     VSync(0);
 }
 
-/* Where each of the eight text-image TIMs goes in VRAM. */
-typedef struct {
-    s16 x;
-    s16 y;
-    s16 clut_x;
-    s16 clut_y;
-    s16 clut_w;
-    s16 clut_h;
-} TextImagePlace;
-
 extern s32 D_8004F344;       /* 1 while the text-image file is already loaded */
 extern s32 *D_8005A4A0;      /* the text-image file (a7) */
-extern TextImagePlace D_800ADC44[8];
+extern s16 D_800ADC44[8 * 6]; /* per text image: x, y, palette x, y, w, h */
 extern RECT D_800B004C;      /* compass colour strip */
 extern u16 D_800AFC08[16];   /* compass colours read back from VRAM */
 extern s16 D_800C2690;
@@ -867,12 +857,13 @@ void func_80070340(u32 *tim, s16 x, s16 y, s16 clut_x, s16 clut_y, s16 clut_w, s
 
 #ifdef NON_MATCHING
 /* Load the field's text images (file a7, read once while 8004f344 is clear):
- * relocate its offset table, load its eight TIMs where 800adc44 places them,
- * read the compass colours back from VRAM (0, fb) and release the file.
- * Does not match: the original walks the placement table with two
- * pointers and an offset (s2..s5); this loop reduces to one pointer. */
+ * relocate its offset table, load its eight TIMs where 800adc44 places them
+ * (x, y, palette x, y, w, h), read the compass colours back from VRAM (0, fb)
+ * and release the file.
+ * Does not match: the original sets up the placement-table walk before
+ * 800320b8 and loads the file table straight into its register; only
+ * that set-up is scheduled differently. */
 void func_80077620(void) {
-    TextImagePlace *place;
     u32 **tim;
     s32 i;
 
@@ -882,7 +873,6 @@ void func_80077620(void) {
         func_800295D8(0xA7, D_8005A4A0, 0, 0x80);
         func_80028A60(0);
     }
-    place = D_800ADC44;
     func_800320B8(D_8005A4A0);
     D_8004F344 = 0;
     D_800C2692 = 0;
@@ -892,8 +882,8 @@ void func_80077620(void) {
     func_8003342C(D_8005A4A0);
     tim = (u32 **)D_8005A4A0 + 1;
     for (i = 0; i < 8; i++) {
-        func_80070340(*tim, place[i].x, place[i].y, place[i].clut_x, place[i].clut_y, place[i].clut_w,
-                      place[i].clut_h);
+        func_80070340(*tim, D_800ADC44[i * 6], D_800ADC44[i * 6 + 1], D_800ADC44[i * 6 + 2],
+                      D_800ADC44[i * 6 + 3], D_800ADC44[i * 6 + 4], D_800ADC44[i * 6 + 5]);
         DrawSync(0);
         tim++;
     }
@@ -1432,7 +1422,52 @@ void func_8007A44C(POLY_FT4 *poly, s16 u0, s16 v0, s16 u1, s16 v1, s16 u2, s16 v
     poly->v3 = v3;
 }
 
+extern CompassRecord D_800B0FEC[4]; /* the four compass letters */
+extern s16 D_800ADE30[32];        /* letter corners: x, z per corner */
+extern u8 D_800ADE70[32];         /* letter texture coordinates */
+
+#ifdef NON_MATCHING
+/* Build the four compass letters: corners from 800ade30, texture
+ * coordinates from 800ade70 (v offset c0), semi-transparent, then copy the
+ * quad to the second buffer.
+ * Does not match: the original copies the quad's destination address
+ * through one more register before the block copy. */
+void func_8007A5C4(void) {
+    CompassRecord *record;
+    POLY_FT4 *quad;
+    s32 i;
+
+    for (i = 0; i < 4; i++) {
+        record = &D_800B0FEC[i];
+        quad = &D_800B0FEC[i].quads[0];
+        SetPolyFT4(quad);
+        record->corners[0].vx = D_800ADE30[i * 8];
+        record->corners[0].vy = 0;
+        record->corners[0].vz = D_800ADE30[i * 8 + 1];
+        record->corners[1].vx = D_800ADE30[i * 8 + 2];
+        record->corners[1].vy = 0;
+        record->corners[1].vz = D_800ADE30[i * 8 + 3];
+        record->corners[2].vx = D_800ADE30[i * 8 + 4];
+        record->corners[2].vy = 0;
+        record->corners[2].vz = D_800ADE30[i * 8 + 5];
+        record->corners[3].vx = D_800ADE30[i * 8 + 6];
+        record->corners[3].vy = 0;
+        record->corners[3].vz = D_800ADE30[i * 8 + 7];
+        quad->r0 = 0x80;
+        quad->g0 = 0x80;
+        quad->b0 = 0x80;
+        func_8007A44C(quad, D_800ADE70[i * 8], D_800ADE70[i * 8 + 1] + 0xC0, D_800ADE70[i * 8 + 2],
+                      D_800ADE70[i * 8 + 3] + 0xC0, D_800ADE70[i * 8 + 4], D_800ADE70[i * 8 + 5] + 0xC0, D_800ADE70[i * 8 + 6],
+                      D_800ADE70[i * 8 + 7] + 0xC0);
+        SetSemiTrans(quad, 1);
+        quad->tpage = GetTPage(0, 2, 0x280, 0x1C0);
+        quad->clut = GetClut(0x100, 0xF2);
+        quad[1] = quad[0];
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007A5C4);
+#endif
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007A7F4);
 
