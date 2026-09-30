@@ -1808,7 +1808,52 @@ s32 func_8007B694(VECTOR *v) {
     return -ratan2(v->vz, v->vx) & 0xFFF;
 }
 
+#ifdef NON_MATCHING
+/* Slide along a wall edge: the heading of `edge` (its two X/Z endpoints);
+ * when `heading` meets it at an angle (not within 0x80 of parallel), the
+ * velocity becomes the X/Z speed (80099a4c) along the edge direction nearer
+ * the heading and that direction's heading is returned; otherwise the
+ * velocity is cleared.
+ * Does not match: the original keeps the edge heading in two more
+ * registers (one for the sum and early return, one for the result). */
+s32 func_8007B6C4(s16 heading, SVECTOR *edge, VECTOR *velocity) {
+    VECTOR d;
+    VECTOR n;
+    s32 angle;
+    s32 relative;
+    s32 result;
+    s32 speed;
+
+    relative = (0xC00 - heading) & 0xFFF;
+    angle = -ratan2(edge[1].vz - edge[0].vz, edge[1].vx - edge[0].vx) & 0xFFF;
+    relative = (relative + angle) & 0xFFF;
+    result = angle;
+    if (relative - 0x80 > 0xF00U) {
+        velocity->vx = 0;
+        velocity->vy = 0;
+        velocity->vz = 0;
+        return angle;
+    }
+    if (relative < 0x800) {
+        d.vx = edge[0].vx - edge[1].vx;
+        d.vy = 0;
+        d.vz = edge[0].vz - edge[1].vz;
+        result = (angle + 0x800) & 0xFFF;
+    } else {
+        d.vx = edge[1].vx - edge[0].vx;
+        d.vy = 0;
+        d.vz = edge[1].vz - edge[0].vz;
+    }
+    func_80048D7C(&d, &n);
+    speed = func_80099A4C(velocity->vx >> 12, velocity->vz >> 12);
+    velocity->vy = 0;
+    velocity->vx = n.vx * speed;
+    velocity->vz = n.vz * speed;
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007B6C4);
+#endif
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007B814);
 
