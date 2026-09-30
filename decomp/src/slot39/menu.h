@@ -1153,6 +1153,7 @@ extern s32 D_801E9D78;    /* stat bar x offset */
 extern s32 D_801E9D7C;    /* stat bar y offset */
 extern s32 D_801E9D80;    /* stat digit x offset */
 extern s32 D_801E9D84;    /* stat digit y offset */
+extern s32 D_801E9DBC[8]; /* equipment screen: part cursor y by special * 4 + part */
 extern s32 D_801E9D88[];
 extern s32 D_801E9DDC[];  /* arts list cost x positions */
 extern s32 D_801E9E14[];  /* arts list cost y positions */
@@ -1603,7 +1604,10 @@ void func_801DE36C(void);
 void func_801DE400(void);
 void func_801DDF24(u8 slot, u8 zoom, u8 kind);
 u8 func_801DE29C(u8 slot, u8 arg1);
-void func_801E05D0(u8 slot, u8 arg1, s32 arg2);
+s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear);
+s32 func_801DF0D4(u8 slot, u8 part, u8 special, u8 gear);
+void func_801DFF5C(s32 part, s32 row, s32 top, u8 special, u8 gear, u8 current, u8 slot);
+void func_801E05D0(u8 slot, u8 fade, u8 gear);
 u8 func_801E0F78(u8 slot, u8 arg1);
 void func_801E2368(void);
 u8 func_801E23CC(void);

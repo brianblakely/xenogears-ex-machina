@@ -1849,7 +1849,254 @@ void func_801E0434(u8 slot, u8 gear) {
     }
 }
 
+/* The equipment screen of party slot `slot` (`gear`: the gear's parts)
+ * until it is left. In part mode the cursor steps over the four parts (a
+ * character 4 toggles its special parts, 9/10 switch the party slot) and
+ * confirm opens the candidate list; in list mode the cursor scrolls the
+ * candidates, confirm equips one (801df0d4) and cancel restores the kept
+ * parts (801df890). Each frame redraws what changed; the first opens the
+ * windows and, with `fade`, waits for the view to settle. */
+#ifdef NON_MATCHING
+/* Differs only in scheduling: the original stores `running` right after
+ * loading the constant 1, and in list-mode confirm sets `reset` right after
+ * the 801df5d0 call (this build moves it after 801db0a8). */
+void func_801E05D0(u8 slot, u8 fade, u8 gear) {
+    u8 running;
+    u8 panel;
+    u8 special;
+    u8 drawnSlot;
+    u8 first;
+    u8 previewed;
+    u8 cursor;
+    u8 committed;
+    u8 listing;
+    u8 reset;
+    s32 part;
+    s32 row;
+    s32 drawnPart;
+    s32 drawnRow;
+    s32 drawnTop;
+    s32 top;
+    s32 limit;
+    s32 y;
+    s32 h;
+    u8 swapped;
+
+    running = 1;
+    panel = 1;
+    special = 0;
+    drawnSlot = 0xff;
+    part = 0;
+    first = 1;
+    row = 0;
+    drawnPart = 0xff;
+    drawnRow = 0xff;
+    previewed = 0;
+    cursor = 0;
+    committed = 0;
+    listing = 0;
+    drawnTop = 0xff;
+    top = 0;
+    D_800625A0->party->redraw7 = 0;
+    func_801DE2C8(gear);
+    func_801DF5D0(slot, gear);
+    while (running) {
+        func_801C7BF4();
+        if (panel || slot != drawnSlot) {
+            func_801D8EA4(slot, special + 1, listing, gear);
+            func_801DE474(special, gear);
+            panel = 0;
+        }
+        if (top != drawnTop || slot != drawnSlot) {
+            limit = func_801DE5CC(slot, top, part, special, gear);
+            if (limit != 0) {
+                y = top * 100 / limit;
+                y /= 2;
+                h = 0x32;
+            } else {
+                y = 0;
+                h = 0x64;
+            }
+            func_801D3344(0x94, y + 0x12, h);
+        }
+        if (cursor) {
+            func_801DB0A8(row, top, 3, 0);
+        } else {
+            D_800625A0->party->unk50[0] = 0;
+        }
+        if (row != drawnRow || slot != drawnSlot || top != drawnTop) {
+            if (previewed) {
+                func_801DFB68(slot, part, row, top, special, gear);
+            }
+            previewed = 1;
+            if (!gear) {
+                func_801E36D4(D_800625A0->tables, D_800625A0->party->ids[slot]);
+                func_801E3A80(D_800625A0->tables, D_800625A0->party->ids[slot]);
+            } else {
+                func_801DFE2C(slot);
+            }
+            func_801DFF5C(part, row, top, special, gear, 0, slot);
+            func_801D8DE4(slot, 1, listing, gear);
+            drawnRow = row;
+            drawnTop = top;
+        }
+        if (part != drawnPart || slot != drawnSlot) {
+            func_801DFF5C(part, row, top, special, gear, 1, slot);
+            (D_800625A0->markers->polys + D_800625A0->markers->current[0])->x0 = 0x8c;
+            (D_800625A0->markers->polys + D_800625A0->markers->current[0])->y0 = D_801E9DBC[special * 4 + part];
+            (D_800625A0->markers->polys + D_800625A0->markers->current[0])->x1 = 0x9c;
+            (D_800625A0->markers->polys + D_800625A0->markers->current[0])->y1 = D_801E9DBC[special * 4 + part];
+            (D_800625A0->markers->polys + D_800625A0->markers->current[0])->x2 = 0x8c;
+            (D_800625A0->markers->polys + D_800625A0->markers->current[0])->y2 = D_801E9DBC[special * 4 + part] + 0x10;
+            (D_800625A0->markers->polys + D_800625A0->markers->current[0])->x3 = 0x9c;
+            drawnPart = part;
+            drawnSlot = slot;
+            (D_800625A0->markers->polys + D_800625A0->markers->current[0])->y3 = D_801E9DBC[special * 4 + part] + 0x10;
+        }
+        if (first) {
+            func_801D397C(2, 0x94, 0xa, 0x94, 0x74, 0, 1, 4, 1);
+            func_801D397C(3, 0x6c, 0x87, 0xc4, 0x48, 0, 1, 4, 0);
+            func_801D397C(5, 8, 0x8e, 0x60, 0x40, 0, 1, 4, 0);
+            if (fade) {
+                func_801D1E80();
+                func_801D29A8(0, 0);
+                while (D_800625A0->viewMotion != 0) {
+                    func_801C7BF4();
+                }
+            }
+            D_800625A0->markers->visible[0] = 1;
+            D_800625A0->party->redraw6 = 0;
+            first = 0;
+            D_800625A0->party->unk20[1] = 0;
+        }
+        D_800625A0->party->unk2F = 1;
+        if (committed) {
+            committed = 0;
+            D_800625A0->input = 4;
+        }
+        if (!listing) {
+            switch (D_800625A0->input) {
+            case 5:
+                running = 0;
+                break;
+            case 4:
+                func_801DF5D0(slot, gear);
+                listing = 1;
+                top = 0;
+                drawnTop = 0xff;
+                drawnRow = 0xff;
+                D_800625A0->markers->visible[0] = 0;
+                panel = 1;
+                cursor = 1;
+                row = 0;
+                D_800625A0->party->unk50[0] = 1;
+                break;
+            case 0:
+            case 2:
+                if (D_800625A0->party->ids[slot] == 4) {
+                    special ^= 1;
+                    drawnPart = 0xff;
+                    panel = 1;
+                    part = 0;
+                }
+                break;
+            case 1:
+                if (++part >= 4) {
+                    part = 0;
+                }
+                if (special && gear && (part == 1 || part == 2)) {
+                    part = 3;
+                }
+                break;
+            case 3:
+                if (--part < 0) {
+                    part = 3;
+                }
+                if (special && gear && (part == 1 || part == 2)) {
+                    part = 0;
+                }
+                break;
+            case 9:
+                if (func_801D9704(slot, 0, gear) != slot) {
+                    slot = func_801D9704(slot, 0, gear);
+                    special = 0;
+                    previewed = 0;
+                }
+                break;
+            case 10:
+                if (func_801D9704(slot, 1, gear) != slot) {
+                    slot = func_801D9704(slot, 1, gear);
+                    special = 0;
+                    previewed = 0;
+                }
+                break;
+            }
+        } else {
+            reset = 0;
+            switch (D_800625A0->input) {
+            case 5:
+                func_801DF890(slot, gear);
+                cursor = 0;
+                D_800625A0->markers->visible[0] = 1;
+                reset = 1;
+                func_801DB0A8(0, top, 3, 0);
+                row = 0;
+                drawnSlot = 0xff;
+                D_800625A0->party->unk50[0] = 0;
+                break;
+            case 4:
+                swapped = func_801DF0D4(slot, part, special, gear);
+                drawnSlot = 0xff;
+                if (swapped) {
+                    special ^= 1;
+                    panel = 1;
+                    committed = 1;
+                    func_801E0434(slot, gear);
+                }
+                func_801DF5D0(slot, gear);
+                cursor = 0;
+                D_800625A0->markers->visible[0] = 1;
+                reset = 1;
+                func_801DB0A8(0, top, 3, 0);
+                row = 0;
+                D_800625A0->party->unk50[0] = 0;
+                break;
+            case 1:
+                if (++row >= 8) {
+                    top++;
+                    row = 7;
+                    if (limit < top) {
+                        top = limit;
+                    }
+                }
+                break;
+            case 3:
+                if (--row < 0) {
+                    top--;
+                    row = 0;
+                    if (top < 0) {
+                        top = 0;
+                    }
+                }
+                break;
+            }
+            if (reset) {
+                row = 0;
+                top = 0;
+                listing = 0;
+                drawnRow = 0xff;
+                panel = 1;
+                previewed = 0;
+                D_800625A0->block35C->highlighted = 0;
+            }
+        }
+    }
+    func_801D2484();
+    func_801DB340(0);
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DA4A8", func_801E05D0);
+#endif
 
 /* Run the 801e05d0 screen for party slot `slot` with its blocks; views 3 and 13. */
 u8 func_801E0F78(u8 slot, u8 arg1) {
