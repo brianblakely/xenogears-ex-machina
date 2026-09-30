@@ -1,5 +1,6 @@
 #include "menu.h"
 #include "sparkle.h"
+#include "scene.h"
 
 /* Start the menu camera: mode 3 setup and its script block. */
 void func_800707A8(void) {
@@ -421,7 +422,41 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007AE10);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007B210);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007B270);
+/* Build a four-entry palette from two colours (components biased by 0x80,
+ * clamped at zero) and load it, keeping the returned CLUT id. */
+void func_8007B270(u8 *first, u8 *second) {
+    s32 r, g, b;
+
+    r = first[0] - 0x80;
+    g = first[1] - 0x80;
+    b = first[2] - 0x80;
+    if (r < 0) {
+        r = 0;
+    }
+    if (g < 0) {
+        g = 0;
+    }
+    if (b < 0) {
+        b = 0;
+    }
+    D_800926A8[0] = (((r >> 2) & 0x1F) + ((g << 3) & 0x3E0) + ((b << 8) & 0x7C00)) | -0x8000;
+    r = second[0] - 0x80;
+    g = second[1] - 0x80;
+    b = second[2] - 0x80;
+    if (r < 0) {
+        r = 0;
+    }
+    if (g < 0) {
+        g = 0;
+    }
+    if (b < 0) {
+        b = 0;
+    }
+    D_800926A8[1] = (((r >> 2) & 0x1F) + ((g << 3) & 0x3E0) + ((b << 8) & 0x7C00)) | -0x8000;
+    D_800926A8[2] = 0;
+    D_800926A8[3] = 0x1111;
+    D_800926A0 = func_800438C0(D_800926A8, D_80092698, D_8009269C);
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007B388);
 
@@ -525,19 +560,42 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007CD44);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007CF78);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007D068);
+/* Copy the camera position to the scratchpad and run the scene pass. */
+void func_8007D068(void *arg) {
+    SCENE_SCRATCH->camera = D_80096FA8;
+    func_8007E3CC(arg);
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007D0B4);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007D190);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007D25C);
+/* Whether a code lies in 0x10..0x1f. */
+s32 func_8007D25C(s32 code) {
+    if (code < 0x10) {
+        return 0;
+    }
+    return code < 0x20;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007D274);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007D334);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007D65C);
+/* Map codes 0x11..0x13 to kinds 0..2 and forward them. */
+void func_8007D65C(s32 arg0, s32 arg1, s32 code) {
+    switch (code) {
+    case 0x11:
+        func_8007D334(arg0, arg1, 0);
+        break;
+    case 0x12:
+        func_8007D334(arg0, arg1, 1);
+        break;
+    case 0x13:
+        func_8007D334(arg0, arg1, 2);
+        break;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007D6B8);
 
@@ -551,27 +609,70 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007DC74);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007E020);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007E24C);
+/* Clear both scene cell tables and the actors' 0x90b bytes. */
+void func_8007E24C(void) {
+    SceneCell12 *cell;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007E2D8);
+    cell = D_800926C8;
+    for (i = 0; i < 0x21C; i++) {
+        cell[i].unk6 = 0;
+        cell[i].unk4 = 0;
+        cell[i].unk2 = 0;
+        cell[i].unk0 = 0;
+    }
+    D_80097010.unk90B = 0;
+    D_8009872C.unk90B = 0;
+    for (i = 0; i < 0xFF; i++) {
+        D_800926BC[i].unk6 = 0;
+        D_800926BC[i].unk0 = D_800926BC[i].unk2 = D_800926BC[i].unk4 = 0;
+    }
+}
+
+/* Initialise the scene's line primitives and clear the per-frame counters. */
+void func_8007E2D8(void) {
+    SceneLine *line;
+    s32 i;
+
+    for (i = 0; i < 100; i++) {
+        line = &D_80094818[i];
+        line->line.len = 3;
+        line->line.code = 0x40;
+    }
+    D_800926B0 = 0;
+    D_800926B4 = 0;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007E31C);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007E3CC);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007E528);
+/* Set the scene state, playing sound 0x24 when state 10 starts from 0. */
+void func_8007E528(s32 state) {
+    if (D_80092708 == 0 && state == 10) {
+        func_8008EB4C(0x24);
+    }
+    D_80092708 = state;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007E574);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007E624);
+s32 func_8007E624(void) {
+    return D_800926DC;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007E634);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007E894);
+void func_8007E894(s16 x, s16 y) {
+    D_800926E8 = x;
+    D_800926EC = y;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007E8AC);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007E954);
+void func_8007E954(s32 value) {
+    D_800912DC = value;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007E964);
 

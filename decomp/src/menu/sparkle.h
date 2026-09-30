@@ -61,4 +61,12 @@ extern s32 D_800926A4;   /* frame counter */
 extern s32 D_800926B0;
 extern s32 D_800926B4;
 
+
+/* Palette of the menu's two-colour sprites and where it is loaded. */
+extern u16 D_800926A8[4];
+extern s16 D_80092698;
+extern s16 D_8009269C;
+extern u16 D_800926A0; /* its CLUT id */
+u16 func_800438C0(u16 *clut, s32 x, s32 y); /* load a CLUT, return its id */
+
 #endif

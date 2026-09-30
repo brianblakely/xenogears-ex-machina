@@ -22,6 +22,8 @@ typedef struct {
     u8 unk5C[0x72];
     s16 unkCE;
     s32 flags;           /* 0xD0 */
+    u8 unkD4[0x837];
+    u8 unk90B;
 } Actor;
 
 /* Menu camera: eye position (D_8009867C) and look-at point (D_8009871C). */
