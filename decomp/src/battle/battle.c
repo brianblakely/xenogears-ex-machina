@@ -6,6 +6,7 @@
 #include "gte.h"
 #include "window_draw.h"
 #include "formation_route.h"
+#include "gear_menu.h"
 
 /* Start the 801e5000 module: reserve its heap span and load it. */
 void func_80070E2C(void) {
@@ -5286,7 +5287,86 @@ u8 func_8008CDE4(u8 member, u8 index) {
     return committed;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008CFB8);
+/* Run the member's gear command menu: list the gear's commands 37-40 the
+ * character may use and no status seals (id and fuel cost), open its three
+ * windows and move the cursor until a command is committed (1, remembered
+ * + 0x10 in the turn state) or the menu is cancelled (0). */
+u8 func_8008CFB8(member)
+u8 member;
+{
+    u8 ids[4];
+    u16 costs[4];
+    u16 seals[4];
+    s32 frame;
+    u8 ticks;
+    s32 shown;
+    s32 cursor;
+    u8 result;
+    s32 i;
+
+    cursor = 0;
+    shown = 0xFF;
+    result = 2;
+    frame = 4;
+    ticks = 0;
+    seals[0] = D_800C3234[13];
+    seals[1] = D_800C3234[14];
+    seals[2] = D_800C3234[15];
+    seals[3] = D_800C3234[3];
+    for (i = 0; i < 4; i++) {
+        ids[i] = 0xFF;
+        costs[i] = 0;
+    }
+    for (i = 0; i < 4; i++) {
+        if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].flags1A, i) != 0 &&
+            !(D_800CCCE8.records[member].pilot.status7A & seals[i])) {
+            ids[i] = D_800CCCE8.records[member].pilot.gearId * 4 + i;
+            costs[i] = D_800CCCE8.gearCommands[member][i + 37].hudState;
+        }
+    }
+    D_800D2D28->unkCB = 0;
+    func_8008F8F4(0, 0x74, 0xA0, 0xAC, 0x38, 0, 1);
+    func_8008F8F4(1, 0x84, 0x4C, 0x9C, 0x50, 0, 1);
+    func_8008F8F4(2, 0x1C, 0xA0, 0x50, 0x18, 0, 1);
+    func_800930AC(member, ids, costs);
+    func_80077698();
+    while (result == 2) {
+        if (cursor != shown) {
+            func_800939CC(member, cursor);
+            shown = cursor;
+        }
+        func_80090B90(0x8C, cursor * 16 + 0x58, &frame, &ticks);
+        func_800716D8();
+        switch (D_800D3014) {
+        case 5:
+            result = 0;
+            break;
+        case 4:
+            if (func_8008CDE4(member, cursor)) {
+                result = 1;
+                D_800C3EAC->unk2E6 = cursor + 0x10;
+            }
+            break;
+        case 1:
+            if (++cursor >= 4) {
+                cursor = 3;
+            }
+            break;
+        case 3:
+            if (--cursor < 0) {
+                cursor = 0;
+            }
+            break;
+        }
+    }
+    func_8008CCCC(result);
+    func_8007765C();
+    func_80077980();
+    func_8008FA60(0);
+    func_8008FA60(1);
+    func_8008FA60(2);
+    return result;
+}
 
 /* Fade the list quads of both draw buffers (every other one from 800d2d28
  * +0xa3): semi-transparent, raw texture, darker by the turn state's step
