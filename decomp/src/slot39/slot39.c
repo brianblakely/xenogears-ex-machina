@@ -60,7 +60,7 @@ u8 func_801C531C(u8 offset) {
         if (D_80059460 == 0) {
             func_801D29A8(1, 0);
         } else if (D_80059460 == 2) {
-            func_801E8018(8, D_800625A0->commandLabels, D_801EA530, D_800625A0->party->labels);
+            func_801E8018(8, D_800625A0->labelSlots[0], D_801EA530, D_800625A0->party->labels);
             D_800625A0->primitives->shade = 0x4c;
         }
     }
@@ -117,7 +117,7 @@ void func_801C55A0(void) {
         }
         if (D_800625A0->cursor != D_800625A0->cursorShown) {
             func_801E8978(7, D_800625A0->cursor, D_801EA19C);
-            func_801E8070(8, D_800625A0->commandLabels, D_801EA528, D_801E9E64, D_800625A0->party->labels,
+            func_801E8070(8, D_800625A0->labelSlots[0], D_801EA528, D_801E9E64, D_800625A0->party->labels,
                           D_800625A0->cursor, 0, 0);
             D_800625A0->cursorShown = D_800625A0->cursor;
         }
@@ -162,7 +162,7 @@ void func_801C58EC(void) {
 
     stay = 1;
     func_801E8474(4, D_801EA1D4);
-    func_801E8018(8, D_800625A0->commandLabels, D_801EA530, D_800625A0->party->labels);
+    func_801E8018(8, D_800625A0->labelSlots[0], D_801EA530, D_800625A0->party->labels);
     D_800625A0->frameCounter = 0;
     do {
         func_801C7BF4();
@@ -193,7 +193,7 @@ void func_801C58EC(void) {
         }
         if (D_800625A0->cursor != D_800625A0->cursorShown) {
             func_801E8978(3, D_800625A0->cursor, D_801EA1D4);
-            func_801E8070(8, D_800625A0->commandLabels, D_801EA530, D_801E9E84, D_800625A0->party->labels,
+            func_801E8070(8, D_800625A0->labelSlots[0], D_801EA530, D_801E9E84, D_800625A0->party->labels,
                           D_800625A0->cursor, 0, 0);
             D_800625A0->cursorShown = D_800625A0->cursor;
         }
@@ -1307,9 +1307,25 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D12D4);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D13F8);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D1464);
+/* While party flag +49 is set, draw the sprites of the block at +43c. */
+void func_801D1464(void) {
+    u8 *block;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D14B0);
+    if (D_800625A0->party->unk49 != 0) {
+        block = D_800625A0->block43C;
+        func_801CE198(1, block + 0x50, block, block[0x70]);
+    }
+}
+
+/* While party flag +53 is set, draw the sprites of the block at +440. */
+void func_801D14B0(void) {
+    u8 *block;
+
+    if (D_800625A0->party->unk53 != 0) {
+        block = D_800625A0->block440;
+        func_801CE198(4, block + 0x140, block, block[0x1c0]);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D14FC);
 
@@ -1371,7 +1387,11 @@ void func_801D25E4(void) {
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D261C);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D28A8);
+/* Draw the small window at (d4, b2) and its element at (d8, b6). */
+void func_801D28A8(void) {
+    func_801D397C(0, 0xd4, 0xb2, 0x60, 0x10, 0, 0, 4, 0);
+    func_801D5BA4(0xd8, 0xb6);
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D28FC);
 
@@ -1582,7 +1602,10 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E20C8);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E2250);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E2324);
+/* Lay out the six labels of page `page` (D_801EA568) in label slot 18. */
+void func_801E2324(u8 page) {
+    func_801E8018(6, D_800625A0->labelSlots[0x12], D_801EA568 + page, &D_800625A0->party->unk54);
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E2368);
 
@@ -1608,11 +1631,27 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E3C2C);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E3ECC);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E4170);
+/* Recompute gear `gear`'s derived values from the data tables. */
+void func_801E4170(MenuTables *tables, u8 gear) {
+    func_801E41C0(tables, gear);
+    func_801E42AC(tables, gear);
+    func_801E4258(tables, gear);
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E41C0);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E4258);
+/* Copy gear `gear`'s two frame values (+8, +a of its frame record) into the
+ * gear record (+70, +72). */
+void func_801E4258(MenuTables *tables, u8 gear) {
+    GearRecord *record;
+    GearFrame *frame;
+
+    record = &D_8006DFAC[gear];
+    frame = tables->frames;
+    frame += record->frame;
+    record->unk70 = frame->unk8;
+    record->unk72 = frame->unkA;
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E42AC);
 
@@ -1640,7 +1679,14 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E5924);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E5ACC);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E5B3C);
+/* Free the 32 image blocks at +3a8. */
+void func_801E5B3C(void) {
+    s32 i;
+
+    for (i = 0; i < 32; i++) {
+        func_800320E8(D_800625A0->images[i]);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E5B88);
 
@@ -1648,9 +1694,26 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E5E4C);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E61B0);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E6450);
+/* Allocate and clear the 2dc0-byte block at +34c, then set it up. */
+#ifdef NON_MATCHING
+void func_801E6450(void) {
+    void *block;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E649C);
+    block = func_80031BDC(0x2dc0, 0);
+    D_800625A0->block34C = block;
+    func_8003F8E8(block, 0x2dc0);
+    func_801E5B88();
+    func_801E5E4C();
+}
+#else
+INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E6450);
+#endif
+
+/* Free the 2dc0-byte block at +34c and clear party flag +b. */
+void func_801E649C(void) {
+    func_800320E8(D_800625A0->block34C);
+    D_800625A0->party->unkB = 0;
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E64E0);
 
@@ -1714,11 +1777,26 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E8EAC);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E8F60);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E91C4);
+/* Make `poly` semi-transparent, textured without shading, at neutral colour. */
+void func_801E91C4(POLY_FT4 *poly) {
+    func_80043BFC(poly, 1);
+    func_80043C24(poly, 0);
+    poly->r0 = 0x80;
+    poly->g0 = 0x80;
+    poly->b0 = 0x80;
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E920C);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E927C);
+/* Initialise `poly` as an opaque textured quad at neutral colour. */
+void func_801E927C(POLY_FT4 *poly) {
+    func_80043CB0(poly);
+    func_80043BFC(poly, 0);
+    func_80043C24(poly, 0);
+    poly->r0 = 0x80;
+    poly->g0 = 0x80;
+    poly->b0 = 0x80;
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E92CC);
 
