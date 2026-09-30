@@ -2719,7 +2719,36 @@ void func_80039A80(SoundSeq *seq, s32 fade, s32 frames) {
     EnableEvent(D_800595BC);
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039B68);
+/* Restart `seq` from its start: reload every channel's wave bank and
+ * sample addresses, mark it stopped by a fade and fade it in. */
+void func_80039B68(SoundSeq *seq, s32 fade, s32 frames) {
+    SoundSeqChannel *channel;
+    SoundSequence *bank;
+    SoundInstrument *instrument;
+    s32 count;
+    u32 start;
+
+    if (seq == NULL) {
+        func_8003F6B0(5);
+        return;
+    }
+    count = seq->channels;
+    channel = seq->channel;
+    do {
+        count--;
+        bank = func_800383EC(channel->unk25);
+        channel->instruments = bank;
+        instrument = &bank->instrument[channel->instrument];
+        start = instrument->start * 8;
+        channel->state.sample_start = start + bank->address;
+        channel->state.sample_loop = start + instrument->loop * 8;
+        channel->state.flags = 0xFFFF;
+        channel++;
+    } while (count != 0);
+    seq->fade.value = 0;
+    seq->flags |= 0x100;
+    func_8003A89C(seq, fade, frames);
+}
 
 /* Resume a track (error 5 without one). */
 void func_80039C4C(SoundTrack *track) {
