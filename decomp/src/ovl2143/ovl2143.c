@@ -1134,11 +1134,9 @@ s16 func_801E0850(s16 angle, s16 divisor, s32 base) {
 
 /* base + value / divisor, or -1 past 32. Differs only in register choice. */
 #ifdef NON_MATCHING
-s32 func_801E08D4(s16 value, s16 divisor, s32 base) {
-    s16 sum;
-
-    sum = base + value / divisor;
-    return sum < 0x21 ? sum : -1;
+s16 func_801E08D4(s16 value, s16 divisor, s16 base) {
+    base += value / divisor;
+    return base < 0x21 ? base : -1;
 }
 #else
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E08D4);

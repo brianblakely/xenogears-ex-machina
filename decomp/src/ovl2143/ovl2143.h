@@ -498,7 +498,7 @@ void func_801E00DC(ParticlePool *pool);
 void func_801E35D0(Actor *actor, Actor *source, SlotPool *pool, s32 entry);
 void func_801E39F0(Actor *actor, SlotPool *pool, s32 arg2, s32 arg3, s32 arg4);
 s32 func_801E67F8(void);
-s32 func_801E08D4(s16 value, s16 divisor, s32 base);
+s16 func_801E08D4(s16 value, s16 divisor, s16 base);
 s32 func_801E0354(ParticlePool *pool, Particle *particle);
 void func_801E0844(s16 *id, s32 unused);
 void func_801E0A00(ImageAnim *anim, ImageAnim *target, s32 mode, u16 flags, MATRIX *m, s16 x, s16 y,
