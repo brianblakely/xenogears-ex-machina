@@ -244,6 +244,7 @@ decomp/targets/overlays/ovl2600.mk
 decomp/targets/overlays/ovl2600.symbols.txt
 decomp/targets/overlays/ovl2600.yaml
 decomp/targets/overlays/ovl2601.mk
+decomp/targets/overlays/ovl2601.resident.ld
 decomp/targets/overlays/ovl2601.symbols.txt
 decomp/targets/overlays/ovl2601.yaml
 decomp/targets/overlays/ovl2602.mk

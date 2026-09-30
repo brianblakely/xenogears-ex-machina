@@ -37,8 +37,10 @@ u16 func_801C50B0(u16 mask, u8 id) {
     return D_801D21F0[id] & mask;
 }
 
-/* The party bit of member `id`. */
-u16 func_801C50CC(u8 id) {
+/* The party bit of member `id` (an old-style definition: callers pass an int). */
+u16 func_801C50CC(id)
+u8 id;
+{
     return D_801D21F0[id];
 }
 
@@ -2280,7 +2282,6 @@ void func_801CD8D0(u32 first, u32 second, u32 third) {
 }
 
 /* Party bits of the available members holding item `item` in their gear (kind 0) or accessories (kind 1). */
-#ifdef NON_MATCHING
 u16 func_801CDBA0(u8 item, u8 kind) {
     u16 members;
     u8 found;
@@ -2296,11 +2297,11 @@ u16 func_801CDBA0(u8 item, u8 kind) {
                 case 0:
                     for (k = 0; k < 5; k++) {
                         if (item < 0x32) {
-                            if (D_8006D8A0[i].gear[k] == item) {
+                            if (D_8006D8A0[i].weapons[k] == item) {
                                 found = 1;
                                 break;
                             }
-                        } else if (D_8006D8A0[i].gear[k + 5] == item) {
+                        } else if (D_8006D8A0[i].armour[k] == item) {
                             found = 1;
                             break;
                         }
@@ -2308,7 +2309,7 @@ u16 func_801CDBA0(u8 item, u8 kind) {
                     break;
                 case 1:
                     for (k = 0; k < 3; k++) {
-                        if (D_8006D8A0[i].gear[k + 10] == item) {
+                        if (D_8006D8A0[i].accessories[k] == item) {
                             found = 1;
                             break;
                         }
@@ -2323,9 +2324,6 @@ u16 func_801CDBA0(u8 item, u8 kind) {
     }
     return members;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CDBA0);
-#endif
 
 INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CDD14);
 
@@ -2432,7 +2430,65 @@ INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CFF58);
 
 INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801D05BC);
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801D0C18);
+/*
+ * Set the party's gold (capped at 9999999) and take the sold items away: with
+ * `inventory`, the chosen amounts out of an inventory's counts; otherwise
+ * each sold item (kind 0 gear, 1 accessory) out of member `member`'s equipment.
+ */
+void func_801D0C18(u32 gold, u8 *ids, u8 *amounts, s32 n, u8 *inv_ids, u8 *inv_counts, u8 *kinds,
+                   u8 inventory, u8 member) {
+    u32 *party_gold;
+    s32 i;
+    s32 j;
+
+    func_801CAC7C(0xD1);
+    party_gold = &D_8006D634.gold;
+    *party_gold = gold;
+    if (gold > 9999999) {
+        *party_gold = 9999999;
+    }
+    if (inventory) {
+        for (i = 0; i < n; i++) {
+            if (ids[i] != 0) {
+                for (j = 0; j < n; j++) {
+                    if (ids[i] == inv_ids[j]) {
+                        inv_counts[j] -= amounts[i];
+                        if (inv_counts[j] == 0) {
+                            inv_ids[j] = 0;
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+        for (i = 0; i < n; i++) {
+            if (ids[i] != 0 && amounts[i] != 0) {
+                switch (kinds[i]) {
+                case 0:
+                    if (ids[i] < 0x32) {
+                        D_8006D634.characters[member].weapons[0] = 0;
+                    } else {
+                        for (j = 0; j < 4; j++) {
+                            if (ids[i] == D_8006D634.characters[member].armour[j]) {
+                                D_8006D634.characters[member].armour[j] = 0;
+                                break;
+                            }
+                        }
+                    }
+                    break;
+                case 1:
+                    for (j = 0; j < 3; j++) {
+                        if (ids[i] == D_8006D634.characters[member].accessories[j]) {
+                            D_8006D634.characters[member].accessories[j] = 0;
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801D0E68);
 

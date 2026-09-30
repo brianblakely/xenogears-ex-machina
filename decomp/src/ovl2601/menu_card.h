@@ -392,11 +392,23 @@ typedef struct {
     u8 unk57;
     u8 bonus[8];   /* 58 */
     u8 unk60[0x6A - 0x60];
-    u8 gear[13];   /* 6a: equipped items */
+    u8 weapons[5];     /* 6a: equipped weapon slots (item ids below 32h) */
+    u8 armour[5];      /* 6f */
+    u8 accessories[3]; /* 74 */
     u8 unk77[0xA0 - 0x77];
     u8 unkA0;      /* a0: ff for a member who cannot be chosen */
     u8 unkA1[3];
 } Character;
+
+/* The persistent game data (8006d634). */
+typedef struct {
+    u8 unk0[0x26C];
+    Character characters[11]; /* 26c */
+    u8 unk978[0x1924 - 0x978];
+    u32 gold;                 /* 1924 */
+} GameData;
+
+extern GameData D_8006D634;
 
 /* A party member's detail view; its nine stat words at +b8. */
 typedef struct {
@@ -657,7 +669,7 @@ void func_80033B34(u8 *codes, u8 *text, s32 count); /* codes to text */
 void func_801D0E68(s32 n, u8 *ids, u8 *counts, u8 kind, u8 unk4, u8 *counts2, u8 unk6);
 void func_801D1968(u8 unk0, u8 unk1);
 void func_801C50E8(u32 value);
-u16 func_801C50CC(u8 id);
+u16 func_801C50CC();
 void func_801CB370(void);
 u8 func_801D1CA4(void);
 u8 func_801CF780(void);
