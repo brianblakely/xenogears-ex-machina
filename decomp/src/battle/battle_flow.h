@@ -46,17 +46,23 @@ extern s16 D_800C3DF0;
 extern u8 D_800C35D4; /* a sound to fade at the turn's end */
 extern s16 D_800C3614; /* frames before the next event */
 extern u8 D_800C3623;
+extern s16 D_800C3626;
+extern s16 D_800C3630[]; /* per target code: its first command */
+extern s16 D_800C3648[]; /* per target code: its commands from here play motion 0x11 */
 
 void func_80080BD0(void);
 void func_800B9508(BattleSprite *sprite);
-void func_800B9B30(void);
+void func_800B9B30(); /* also called with the sprite (800B9508) */
 void func_800BA8F4(BattleSprite *sprite);
 void func_800B8048(BattleSprite *sprite);
 void func_800BF600(s32 command, BattleSprite *sprite);
 void func_800BF730(s32 value);
+void func_80021BF0(BattleSprite *sprite, void *file);
+void func_80021FB8(BattleSprite *sprite, s32 mode); /* set the idle mode */
+s32 func_800BF354(void);
+s32 func_800C0314(void);
 void func_800BEDE8(void);
 void func_800BFA9C(void);
-void func_800C0314(void);
 void func_800C0564(void);
 void func_800BC3F8(s32 value);
 BattleMenu *func_800BED4C(void);

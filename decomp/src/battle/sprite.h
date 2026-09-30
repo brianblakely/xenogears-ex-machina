@@ -102,7 +102,8 @@ typedef struct BattleSprite {
     u8 pad44[0x48 - 0x44];
     s32 field48;           /* 0x48 */
     s32 field4C;           /* 0x4C */
-    u8 pad50[0x64 - 0x50];
+    s32 field50;           /* 0x50 */
+    u8 pad54[0x64 - 0x54];
     s32 framesLeft;        /* 0x64 */
     u8 pad68[0x6C - 0x68];
     ActorTask *task;       /* 0x6C */
@@ -114,6 +115,9 @@ typedef struct BattleSprite {
         u8 pad4[4];
         s32 field8;
         s16 fieldC;
+        struct {
+            s16 a, b;
+        } fieldE;          /* copied whole (800B9508) */
     } *resource;           /* 0x7C */
     u16 field80;
     u16 field82;           /* 0x82 */

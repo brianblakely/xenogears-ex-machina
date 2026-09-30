@@ -551,7 +551,136 @@ void func_800B9284(BattleSprite *sprite, s32 type) {
     }
 }
 
+#ifdef NON_MATCHING
+/* Step the current event for the acting sprite (after any delay): control
+ * events 0xF3-0xFA (800B9284; 0xF9 ends with pose 5), 0xFB takes another
+ * slot's sprite images, 0xFC sets the idle mode, 0xFD walks on, 0xFE (and
+ * 0xFF once 800C0314 is done) returns the turn's sprite to its place;
+ * other types are commands: a motion on foot (from 0x10 a command of the
+ * sprite's slot's field2), or a gear's pose framing it and its partner.
+ * Nonmatching: for a motion on foot the original copies the type into
+ * another saved register (s0) and puts D_800C3618's address in its own
+ * (s1); here both stay in one register. */
+void func_800B9508(BattleSprite *sprite) {
+    s32 motion;
+    BattleSprite *other;
+    BattleSprite *partner;
+    s32 type;
+    s32 command;
+
+    if (D_800C3614 != 0) {
+        D_800C3614--;
+        return;
+    }
+    type = BATTLE_AREA.events[D_800C360C].type;
+    switch (type) {
+    case 0xF3:
+    case 0xF4:
+    case 0xF5:
+    case 0xF6:
+    case 0xF7:
+    case 0xF8:
+    case 0xFA:
+        func_800B9284(sprite, type);
+        break;
+    case 0xF9:
+        func_800245D8(sprite, 5);
+        func_800BC404(0);
+        return;
+    case 0xFF:
+        func_80021BF8(sprite, NULL);
+        D_800C3610->field48 = 1;
+        if (func_800C0314() == 0) {
+            if (((sprite->frameBits.word >> 28) & 3) == 0 && !BATTLE_AREA.slots[SPRITE_SLOT(sprite)].hidden) {
+                func_800245D8(sprite, sprite->idle.mode);
+            }
+            return;
+        }
+    case 0xFE:
+        D_800C3610->field48 = 0;
+        sprite = func_800BEFF4(D_800C3610->turnSlot);
+        func_800BF3E8(sprite);
+        func_80021BF8(sprite, func_800B9B30);
+        func_800BF0B4(5);
+        if (sprite->x.part.whole == (u16)BATTLE_AREA.slots[D_800C3610->slot].x
+            && sprite->z.part.whole == (u16)BATTLE_AREA.slots[D_800C3610->slot].z) {
+            func_800B9B30(sprite);
+        } else {
+            sprite->target[0] = BATTLE_AREA.slots[D_800C3610->slot].x;
+            sprite->target[2] = BATTLE_AREA.slots[D_800C3610->slot].z;
+            sprite->target[1] = 0;
+            func_800245D8(sprite, 4);
+        }
+        return;
+    case 0xFD:
+        D_800C3610->field48 = 1;
+        if (BATTLE_AREA.events[D_800C360C].parameter == 0) {
+            D_800C3610->field48 = 0;
+            func_800BF0C4(sprite);
+            func_80021BF8(sprite, func_800B9B30);
+        }
+        D_800C360C++;
+        return;
+    case 0xFC:
+        D_800C3610->field48 = 1;
+        func_80021BF8(sprite, NULL);
+        func_80021FB8(sprite, BATTLE_AREA.events[D_800C360C].parameter);
+        D_800C360C++;
+        return;
+    case 0xFB:
+        D_800C3610->field48 = 1;
+        func_80021BF8(sprite, NULL);
+        other = BATTLE_AREA.sprites[BATTLE_AREA.events[D_800C360C].parameter];
+        sprite->base = other->base;
+        sprite->resource->fieldE = other->resource->fieldE;
+        sprite->render.word |= 0x40000000;
+        func_800320E8(sprite->view->parts);
+        sprite->view->part = sprite->view->parts = func_80031BDC(func_80031894(other->view->parts), 0);
+        D_800C360C++;
+        return;
+    default:
+        partner = sprite->partner;
+        D_800C3626 = 0;
+        func_800B8048(sprite);
+        func_80021BF8(sprite, func_800B9B30);
+        sprite->resource->field8 = BATTLE_AREA.events[D_800C360C].codes[SPRITE_SLOT(partner)];
+        if (!func_8001EE68(*(u8 **)sprite->base)) {
+            if (type >= 0x10) {
+                command = type - 0x10;
+                command += D_800C3630[BATTLE_AREA.slots[SPRITE_SLOT(sprite)].field2];
+                if (command < D_800C3648[BATTLE_AREA.slots[SPRITE_SLOT(sprite)].field2]) {
+                    sprite->motion.bytes[3] = 0x1C;
+                } else {
+                    sprite->motion.bytes[3] = 0x11;
+                }
+                func_800BF600(command, sprite);
+                func_800BF730((s32)sprite);
+            } else {
+                motion = type;
+                if (!D_800D3350 && D_800C3618 != NULL) {
+                    func_800B8354();
+                    sprite->field50 = func_800BF354();
+                    func_80021BF0(sprite, D_800C3618);
+                }
+                if (D_800C3610->turnSlot == SPRITE_SLOT(sprite)) {
+                    func_800245D8(sprite, ~motion);
+                } else {
+                    func_800245D8(sprite, motion);
+                }
+            }
+        } else {
+            func_800245D8(sprite, type);
+            func_800BC460((1 << SPRITE_SLOT(sprite)) | (1 << SPRITE_SLOT(sprite->partner)));
+        }
+        D_800C3610->field48 = 0;
+        D_800C360C++;
+        return;
+    }
+    D_800C360C++;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800B9508);
+#endif
 
 /* Mark the battle menu (field48) with its state. */
 void func_800B9B30(void) {
