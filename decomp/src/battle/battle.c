@@ -5848,7 +5848,60 @@ void func_8009209C(void) {
     D_800D2D28->unkB7 = 3;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80092298);
+/* Set up the gear page's shaded bar and black box primitives, then build its
+ * glyphs (from the 800c33b4 table) for every entry of `shown` that is not
+ * 0xff into the +0x1e68 list. */
+void func_80092298(s32 unused, u8 *shown) {
+    s32 i;
+    s32 glyph;
+
+    for (i = 0; i < 2; i++) {
+        SetPolyG4(&D_800C3EA4->unkA230->unk5F0[i]);
+        (D_800C3EA4->unkA230->unk5F0 + i)->r0 = 0xFF;
+        (D_800C3EA4->unkA230->unk5F0 + i)->g0 = 0;
+        (D_800C3EA4->unkA230->unk5F0 + i)->b0 = 0;
+        (D_800C3EA4->unkA230->unk5F0 + i)->r1 = 0xFF;
+        (D_800C3EA4->unkA230->unk5F0 + i)->g1 = 0;
+        (D_800C3EA4->unkA230->unk5F0 + i)->b1 = 0;
+        (D_800C3EA4->unkA230->unk5F0 + i)->r2 = 0;
+        (D_800C3EA4->unkA230->unk5F0 + i)->g2 = 0;
+        (D_800C3EA4->unkA230->unk5F0 + i)->b2 = 0;
+        (D_800C3EA4->unkA230->unk5F0 + i)->r3 = 0;
+        (D_800C3EA4->unkA230->unk5F0 + i)->g3 = 0;
+        (D_800C3EA4->unkA230->unk5F0 + i)->b3 = 0;
+        (D_800C3EA4->unkA230->unk5F0 + i)->x0 = 0;
+        (D_800C3EA4->unkA230->unk5F0 + i)->y0 = 0;
+        (D_800C3EA4->unkA230->unk5F0 + i)->x1 = 0;
+        (D_800C3EA4->unkA230->unk5F0 + i)->y1 = 0;
+        (D_800C3EA4->unkA230->unk5F0 + i)->x2 = 0;
+        (D_800C3EA4->unkA230->unk5F0 + i)->y2 = 0;
+        (D_800C3EA4->unkA230->unk5F0 + i)->x3 = 0;
+        (D_800C3EA4->unkA230->unk5F0 + i)->y3 = 0;
+    }
+    for (i = 0; i < 2; i++) {
+        SetPolyF4(&D_800C3EA4->unkA230->unk638[i]);
+        (D_800C3EA4->unkA230->unk638 + i)->r0 = 0;
+        (D_800C3EA4->unkA230->unk638 + i)->g0 = 0;
+        (D_800C3EA4->unkA230->unk638 + i)->b0 = 0;
+        (D_800C3EA4->unkA230->unk638 + i)->x0 = 0;
+        (D_800C3EA4->unkA230->unk638 + i)->y0 = 0;
+        (D_800C3EA4->unkA230->unk638 + i)->x1 = 0;
+        (D_800C3EA4->unkA230->unk638 + i)->y1 = 0;
+        (D_800C3EA4->unkA230->unk638 + i)->x2 = 0;
+        (D_800C3EA4->unkA230->unk638 + i)->y2 = 0;
+        (D_800C3EA4->unkA230->unk638 + i)->x3 = 0;
+        (D_800C3EA4->unkA230->unk638 + i)->y3 = 0;
+    }
+    D_800D2D28->unkFC = 0;
+    for (glyph = 0; glyph < 16; glyph++) {
+        if (shown[glyph] != 0xFF) {
+            D_800D2D28->unkFC += func_80076A10(D_800C33B4[glyph], &D_800C3EA4->unk1E68[D_800D2D28->unkFC * 2],
+                                               D_800C33C4[glyph], D_800C3404[glyph]);
+        }
+    }
+    D_800D2D28->unkA6 = D_800CCB04.buffer;
+    D_800D2D28->unk9D = 1;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80092784);
 

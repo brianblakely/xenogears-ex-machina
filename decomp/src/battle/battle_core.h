@@ -131,7 +131,9 @@ typedef struct {
     POLY_FT4 unk4B0[2];
     POLY_FT4 unk500[2]; /* maximum EP digits */
     POLY_FT4 unk550[2];
-    POLY_FT4 unk5A0[5]; /* EP label glyphs */
+    POLY_FT4 unk5A0[2]; /* EP label glyphs */
+    POLY_G4 unk5F0[2];
+    POLY_F4 unk638[2];
     u8 unk668;         /* buffer of the +0x0..+0xf0 quads */
     u8 unk669;
     u8 buffer;         /* +0x66A */
