@@ -3,6 +3,8 @@
 
 /* Declared here only: other units call it without a prototype. */
 void func_80093354(VECTOR *position);
+/* Defined returning s16 (worldmap_80083A00); this unit uses the value as an int. */
+s32 func_80084D00(s32 probe, s16 *hit);
 
 /* Move a position along a direction across the terrain cells: probe the
  * cell boundaries crossed (by the corner's side for diagonal moves); 1 when
@@ -171,7 +173,14 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80
 
 /* Probe a move and choose the direction to slide along: 1 when free, 0 when
  * the obstacle deflects it (out holds the slide direction). */
-s32 func_800951A8(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s16 mode) {
+/* Old-style definition: callers pass `mode` as an int, unconverted. */
+s32 func_800951A8(position, direction, out, scale, mode)
+    VECTOR *position;
+    VECTOR *direction;
+    VECTOR *out;
+    s32 scale;
+    s16 mode;
+{
     s32 result;
 
     switch (func_80094A5C(position, direction, scale, mode)) {
@@ -247,7 +256,321 @@ void func_80095324(VECTOR *normal, VECTOR *direction, VECTOR *out) {
     out->vy = 0;
 }
 
+/* Scratchpad work area of the structure walk. */
+typedef struct {
+    VECTOR p[3];    /* 0x00: transformed face corners */
+    VECTOR side[3]; /* 0x30: normalised face edge directions */
+    VECTOR probe;   /* 0x60 */
+    VECTOR offset;  /* 0x70: object-relative point; vy is the face height */
+    VECTOR normal;  /* 0x80 */
+} WalkScratch;
+
+#define WALK_SCRATCH ((WalkScratch *)0x1F800000)
+
+void func_80085158(VECTOR *position, VECTOR *offset, VECTOR *normal, u16 index, u16 face);
+s32 func_80085760(VECTOR *from, VECTOR *to, s32 index, s32 face);
+
+/* Move a walking position over the solid scene objects. Off a structure, look
+ * for a face under the probe at about the current height and step onto it;
+ * on one, follow the move across the face edges (bit n of the edge test: the
+ * move leaves through edge n) onto the neighbouring faces, sliding along an
+ * edge whose neighbour is a wall (kind 1) and dropping back to the terrain
+ * when an edge has no neighbour. Returns 1 when the position stands on a face. */
+#ifdef NON_MATCHING /* register allocation: the original hoists -1 (not 1) out of the walk loop and
+                    * keeps the scratch base in $fp */
+s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s32 mode) {
+    s16 object;
+    WalkScratch *scratch;
+    MeshFace *faces;
+    s32 state;
+    s32 count;
+    s32 cleared;
+    s32 i;
+    s32 height;
+    s32 result;
+    u16 face;
+    s16 first;
+    s16 second;
+    s32 edges;
+    s32 walls;
+
+    scratch = WALK_SCRATCH;
+    scratch->probe.vx = position->vx + ((direction->vx * scale) >> 12);
+    scratch->probe.vz = position->vz + ((direction->vz * scale) >> 12);
+    func_80093354(&scratch->probe);
+    scratch->probe.vy = func_80093978(scratch->probe.vx, scratch->probe.vz) - 0x4000;
+    out->vx = position->vx + ((direction->vx * scale) >> 12);
+    out->vz = position->vz + ((direction->vz * scale) >> 12);
+    func_80093354(out);
+    out->vy = func_80093978(out->vx, out->vz) - 0x4000;
+    state = 1;
+    if (D_8009C840 != -1) {
+        state = 3;
+    }
+    switch (state) {
+    case 0:
+        result = func_800951A8(position, direction, out, scale, mode);
+        D_8009C16C = -1;
+        D_8009C840 = -1;
+        break;
+    case 1:
+        count = func_80084D00((s32)&scratch->probe, &object);
+        cleared = 0;
+        if (count != 0) {
+            for (i = 0; i < count; i += 2) {
+                if (func_80085418(&scratch->probe, 0x70, object, D_8009D718[i]) == 0) {
+                    D_8009D718[i] = -1;
+                    cleared += 2;
+                }
+            }
+            if (cleared != count) {
+                result = 0;
+                for (i = 0; i < count; i += 2) {
+                    if (D_8009D718[i] != -1 && D_8009D718[i + 1] != 1) {
+                        func_80085158(&scratch->probe, &scratch->offset, &scratch->normal, object, D_8009D718[i]);
+                        height = scratch->offset.vy - (position->vy >> 12);
+                        if (height < 0) {
+                            height = -height;
+                        }
+                        if (height < 0xB) {
+                            out->vy = scratch->offset.vy << 12;
+                            D_8009C840 = object;
+                            D_8009C16C = D_8009D718[i];
+                            result = 1;
+                            break;
+                        }
+                    }
+                }
+                if (result == 0) {
+                    func_80095324(&scratch->normal, direction, out);
+                }
+                break;
+            }
+        }
+        result = func_800951A8(position, direction, out, scale, mode);
+        D_8009C16C = -1;
+        D_8009C840 = -1;
+        break;
+    case 2:
+    case 3:
+        count = 1;
+        object = D_8009C840;
+        face = D_8009C16C;
+        faces = ((Mesh *)D_8009C620[object].unk44)->faces;
+        do {
+            i = func_80085760(position, &scratch->probe, object, (s16)face);
+            switch (i) {
+            case 0:
+                func_80085158(&scratch->probe, &scratch->offset, &scratch->normal, object, face);
+                result = 1;
+                count = 0;
+                D_8009C16C = (s16)face;
+                out->vy = scratch->offset.vy << 12;
+                D_8009C840 = object;
+                break;
+            case 1:
+                first = faces[(s16)face].next[0];
+                if (first == -1) {
+                    goto fall;
+                }
+                face = first;
+                if (faces[first].kind == 1) {
+                    result = 0;
+                    count = 0;
+                    func_800952B0(direction, out, &scratch->side[0]);
+                }
+                break;
+            case 2:
+                first = faces[(s16)face].next[1];
+                if (first == -1) {
+                    goto fall;
+                }
+                face = first;
+                if (faces[first].kind == 1) {
+                    result = 0;
+                    count = 0;
+                    func_800952B0(direction, out, &scratch->side[1]);
+                }
+                break;
+            case 4:
+                first = faces[(s16)face].next[2];
+                if (first == -1) {
+                    goto fall;
+                }
+                face = first;
+                if (faces[first].kind == 1) {
+                    result = 0;
+                    count = 0;
+                    func_800952B0(direction, out, &scratch->side[2]);
+                }
+                break;
+            case 3:
+                first = faces[(s16)face].next[0];
+                second = faces[(s16)face].next[1];
+                edges = first != -1;
+                if (second != -1) {
+                    edges |= 2;
+                }
+                switch (edges) {
+                case 0:
+                    goto fall;
+                case 1:
+                    face = first;
+                    if (faces[first].kind == edges) {
+                        result = 0;
+                        count = 0;
+                        func_800952B0(direction, out, &scratch->side[0]);
+                    }
+                    break;
+                case 2:
+                    face = second;
+                    if (faces[second].kind == 1) {
+                        result = 0;
+                        count = 0;
+                        func_800952B0(direction, out, &scratch->side[1]);
+                    }
+                    break;
+                case 3:
+                    walls = faces[first].kind == 0;
+                    if (faces[second].kind == 0) {
+                        walls |= 2;
+                    }
+                    switch (walls) {
+                    case 0:
+                        result = 0;
+                        count = 0;
+                        out->vx = out->vy = out->vz = 0;
+                        break;
+                    case 1:
+                        face = faces[(s16)face].next[0];
+                        break;
+                    case 2:
+                        face = second;
+                        break;
+                    case 3:
+                        face = faces[(s16)face].next[0];
+                        break;
+                    }
+                    break;
+                }
+                break;
+            case 5:
+                first = faces[(s16)face].next[0];
+                second = faces[(s16)face].next[2];
+                edges = first != -1;
+                if (second != -1) {
+                    edges |= 2;
+                }
+                switch (edges) {
+                case 0:
+                    goto fall;
+                case 1:
+                    face = first;
+                    if (faces[first].kind == edges) {
+                        result = 0;
+                        count = 0;
+                        func_800952B0(direction, out, &scratch->side[0]);
+                    }
+                    break;
+                case 2:
+                    face = second;
+                    if (faces[second].kind == 1) {
+                        result = 0;
+                        count = 0;
+                        func_800952B0(direction, out, &scratch->side[2]);
+                    }
+                    break;
+                case 3:
+                    walls = faces[first].kind == 0;
+                    if (faces[second].kind == 0) {
+                        walls |= 2;
+                    }
+                    switch (walls) {
+                    case 0:
+                        result = 0;
+                        count = 0;
+                        out->vx = out->vy = out->vz = 0;
+                        break;
+                    case 1:
+                        face = faces[(s16)face].next[0];
+                        break;
+                    case 2:
+                        face = second;
+                        break;
+                    case 3:
+                        face = faces[(s16)face].next[0];
+                        break;
+                    }
+                    break;
+                }
+                break;
+            case 6:
+                first = faces[(s16)face].next[1];
+                second = faces[(s16)face].next[2];
+                edges = first != -1;
+                if (second != -1) {
+                    edges |= 2;
+                }
+                switch (edges) {
+                case 0:
+                    goto fall;
+                case 1:
+                    face = first;
+                    if (faces[first].kind == edges) {
+                        result = 0;
+                        count = 0;
+                        func_800952B0(direction, out, &scratch->side[1]);
+                    }
+                    break;
+                case 2:
+                    face = second;
+                    if (faces[second].kind == 1) {
+                        result = 0;
+                        count = 0;
+                        func_800952B0(direction, out, &scratch->side[2]);
+                    }
+                    break;
+                case 3:
+                    walls = faces[first].kind == 0;
+                    if (faces[second].kind == 0) {
+                        walls |= 2;
+                    }
+                    switch (walls) {
+                    case 0:
+                        result = 0;
+                        count = 0;
+                        out->vx = out->vy = out->vz = 0;
+                        break;
+                    case 1:
+                        face = faces[(s16)face].next[1];
+                        break;
+                    case 2:
+                        face = second;
+                        break;
+                    case 3:
+                        face = faces[(s16)face].next[1];
+                        break;
+                    }
+                    break;
+                }
+                break;
+            case 7:
+                break;
+            fall:
+                result = func_800951A8(position, direction, out, scale, mode);
+                D_8009C16C = -1;
+                D_8009C840 = -1;
+                count = 0;
+                break;
+            }
+        } while (count);
+        break;
+    }
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80095414);
+#endif
 
 /* Move a flying position: clamp its height between the ground and the
  * ceiling, bounce back off solid objects, else slide along the terrain. */

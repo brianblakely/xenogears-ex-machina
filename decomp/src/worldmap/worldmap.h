@@ -869,9 +869,8 @@ void func_8008E034(VECTOR *position);
 /* Movement probe: the scratchpad position a move is tested at. */
 #define SCRATCH_PROBE ((VECTOR *)0x1F800060)
 
-extern u16 D_8009D718[]; /* probe hits: object pairs */
+extern s16 D_8009D718[]; /* probe hits: face and kind pairs */
 
-s16 func_80084D00(s32 probe, s16 *hit);
 s32 func_80085418(VECTOR *probe, s32 radius, u16 object, u16 other);
 
 extern s16 D_8009BBAC[4]; /* grid corner cells */
@@ -1232,7 +1231,8 @@ typedef struct {
 /* Collision mesh of a scene object (behind SceneObject.unk44). */
 typedef struct {
     s16 corner[3];
-    s16 unk6[4];
+    s16 next[3]; /* neighbouring face across each edge; -1 at the border */
+    u16 kind;    /* 1: wall */
 } MeshFace;
 
 typedef struct {

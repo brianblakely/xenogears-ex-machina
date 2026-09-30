@@ -440,8 +440,8 @@ s16 func_80084DB8(s32 probe, s32 index) {
     Mesh *mesh;
     SVECTOR *vertices;
     MeshFace *face;
-    u16 *hit_face;
-    u16 *hit_kind;
+    s16 *hit_face;
+    s16 *hit_kind;
     s32 count;
     s32 i;
     s32 dz;
@@ -503,7 +503,7 @@ s16 func_80084DB8(s32 probe, s32 index) {
         }
         *hit_face = i;
         hit_face += 2;
-        *hit_kind = face->unk6[3];
+        *hit_kind = face->kind;
         hits += 2;
         hit_kind += 2;
     }
