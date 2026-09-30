@@ -2666,11 +2666,107 @@ void func_80095300(void) {
     D_800B0078->pc += 3;
 }
 
+#ifdef NON_MATCHING
+/* Call (operand 2) when the controlled actor stands inside trigger zone
+ * operand 1 and the call stack has room; otherwise skip. */
+void func_8009533C(void) {
+    FieldActor *player;
+    Zone *zone;
+    s32 point;
+    s32 a;
+    s32 b;
+    s32 c;
+    s32 d;
+
+    player = D_800AFB10[D_800B226C].actor;
+    point = (player->position[2].s.whole << 16) + player->position[0].s.whole;
+    zone = &D_800ADBF4[EVENT_OPERAND_BYTE(1)];
+    a = (zone->corner[0].z << 16) + zone->corner[0].x;
+    b = (zone->corner[1].z << 16) + zone->corner[1].x;
+    c = (zone->corner[2].z << 16) + zone->corner[2].x;
+    d = (zone->corner[3].z << 16) + zone->corner[3].x;
+    if (func_8004A70C(a, b, point) >= 0 && func_8004A70C(b, c, point) >= 0 &&
+        func_8004A70C(c, d, point) >= 0 && func_8004A70C(d, a, point) >= 0 &&
+        (D_800B0078->unk12C & 0x1C0) != 0x100) {
+        D_800B0078->call_stack[(D_800B0078->unk12C >> 6) & 7] = D_800B0078->pc + 4;
+        D_800B0078->pc = func_800ACDB8(2);
+        D_800B0078->unk12C = (D_800B0078->unk12C & ~0x1C0) | (((((D_800B0078->unk12C >> 6) & 7) + 1) & 7) << 6);
+        return;
+    }
+    D_800AFC7C += 1;
+    D_800B0078->pc += 4;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009533C);
+#endif
 
+#ifdef NON_MATCHING
+/* As func_8009533C, also requiring the zone's height within the
+ * controlled actor's vertical extent. */
+void func_80095520(void) {
+    FieldActor *player;
+    Zone *zone;
+    s32 point;
+    s32 a;
+    s32 b;
+    s32 c;
+    s32 d;
+
+    player = D_800AFB10[D_800B226C].actor;
+    zone = &D_800ADBF4[EVENT_OPERAND_BYTE(1)];
+    if (zone->corner[0].y < player->position[1].s.whole &&
+        player->position[1].s.whole - player->height < zone->corner[0].y) {
+        a = (zone->corner[0].z << 16) + zone->corner[0].x;
+        b = (zone->corner[1].z << 16) + zone->corner[1].x;
+        point = (player->position[2].s.whole << 16) + player->position[0].s.whole;
+        c = (zone->corner[2].z << 16) + zone->corner[2].x;
+        d = (zone->corner[3].z << 16) + zone->corner[3].x;
+        if (func_8004A70C(a, b, point) >= 0 && func_8004A70C(b, c, point) >= 0 &&
+            func_8004A70C(c, d, point) >= 0 && func_8004A70C(d, a, point) >= 0 &&
+            (D_800B0078->unk12C & 0x1C0) != 0x100) {
+            D_800B0078->call_stack[(D_800B0078->unk12C >> 6) & 7] = D_800B0078->pc + 4;
+            D_800B0078->pc = func_800ACDB8(2);
+            D_800B0078->unk12C = (D_800B0078->unk12C & ~0x1C0) | (((((D_800B0078->unk12C >> 6) & 7) + 1) & 7) << 6);
+            return;
+        }
+    }
+    D_800AFC7C += 1;
+    D_800B0078->pc += 4;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80095520);
+#endif
 
+#ifdef NON_MATCHING
+/* Continue when the controlled actor is inside trigger zone operand 1,
+ * else jump to operand 2. */
+void func_80095734(void) {
+    FieldActor *player;
+    Zone *zone;
+    s32 point;
+    s32 a;
+    s32 b;
+    s32 c;
+    s32 d;
+
+    player = D_800AFB10[D_800B226C].actor;
+    point = (player->position[2].s.whole << 16) + player->position[0].s.whole;
+    zone = &D_800ADBF4[EVENT_OPERAND_BYTE(1)];
+    a = (zone->corner[0].z << 16) + zone->corner[0].x;
+    b = (zone->corner[1].z << 16) + zone->corner[1].x;
+    c = (zone->corner[2].z << 16) + zone->corner[2].x;
+    d = (zone->corner[3].z << 16) + zone->corner[3].x;
+    if (func_8004A70C(a, b, point) >= 0 && func_8004A70C(b, c, point) >= 0 &&
+        func_8004A70C(c, d, point) >= 0 && func_8004A70C(d, a, point) >= 0) {
+        D_800B0078->pc += 4;
+        return;
+    }
+    D_800B0078->pc = func_800ACDB8(2);
+    D_800AFC7C += 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80095734);
+#endif
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800958C0);
 

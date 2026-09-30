@@ -11,7 +11,9 @@
 typedef struct FieldActor {
     u32 flags;          /* 000 */
     u32 layer_flags;    /* 004 */
-    u8 unk008[0x20 - 0x008];
+    u8 unk008[0x01A - 0x008];
+    s16 height;          /* 01A */
+    u8 unk01C[0x020 - 0x01C];
     Fixed position[3];  /* 020: x, y, z */
     u8 unk02C[0x030 - 0x02C];
     s32 unk30[3];        /* 030 */
@@ -23,7 +25,9 @@ typedef struct FieldActor {
     s16 unk64;           /* 064 */
     u8 unk066[0x070 - 0x066];
     s16 unk70;           /* 070 */
-    u8 unk072[0x0CC - 0x072];
+    u8 unk072[0x078 - 0x072];
+    u16 call_stack[4];   /* 078: return PCs */
+    u8 unk080[0x0CC - 0x080];
     u16 pc;             /* 0CC: working PC, relative to the bytecode */
     u8 slot;            /* 0CE: selected script slot */
     u8 unk0CF[0x0E2 - 0x0CF];
@@ -109,6 +113,21 @@ typedef struct FieldSettings {
 } FieldSettings;
 
 extern FieldSettings D_800B2174;
+
+/* Trigger zone (field component 8): four x, y, z corners. */
+typedef struct {
+    s16 x;
+    s16 y;
+    s16 z;
+} ZonePoint;
+
+typedef struct {
+    ZonePoint corner[4];
+} Zone;
+
+extern Zone *D_800ADBF4;            /* trigger zones */
+extern s32 D_800B226C;              /* controlled actor index */
+s32 func_8004A70C(s32 a, s32 b, s32 point); /* side of edge a-b */
 
 extern u8 *D_800ADC00;              /* event bytecode */
 extern FieldDescriptor *D_800AFB10; /* descriptor table */
