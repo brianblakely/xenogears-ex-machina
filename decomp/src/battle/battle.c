@@ -5986,7 +5986,52 @@ void func_80092784(u8 member, u8 *ids, u8 *counts) {
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80092784);
 #endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80092B74);
+/* Build the combo entry display: the AP count as one or two digit glyphs,
+ * the button glyph of each entered step with separators, and the remaining
+ * AP bar (4 pixels per point) on the shaded bar and black box. */
+void func_80092B74(u8 member, u8 ap) {
+    u8 digits[2];
+    u8 tens;
+    s32 i;
+
+    digits[0] = tens = ap / 10;
+    digits[1] = ap - tens * 10;
+    D_800D2D28->unkF8 = 0;
+    if (digits[0] != 0) {
+        D_800D2D28->unkF8 += func_80076A10(digits[0] + 0x67, &D_800C3EA4->unkBA8[D_800D2D28->unkF8 * 2], 0x56, 0x38);
+    }
+    D_800D2D28->unkF8 += func_80076A10(digits[1] + 0x67, &D_800C3EA4->unkBA8[D_800D2D28->unkF8 * 2], 0x5E, 0x38);
+    for (i = 0; i < 7; i++) {
+        if (D_800C3EAC->combo[i] == 0xFF) {
+            break;
+        }
+        D_800D2D28->unkF8 += func_80076A10(D_800C3DE0[i] + 0x39, &D_800C3EA4->unkBA8[D_800D2D28->unkF8 * 2], i * 32 + 0x2A, 0x4A);
+        if (i != 0) {
+            D_800D2D28->unkF8 += func_80076A10(0xA, &D_800C3EA4->unkBA8[D_800D2D28->unkF8 * 2],
+                                               (i - 1) * 32 + 0x3A, 0x4A);
+        }
+    }
+    D_800D2D28->unkA5 = D_800CCB04.buffer;
+    D_800D2D28->unk9C = 1;
+    (D_800C3EA4->unkA230->unk5F0 + D_800CCB04.buffer)->x0 = 0x80;
+    (D_800C3EA4->unkA230->unk5F0 + D_800CCB04.buffer)->y0 = 0x34;
+    (D_800C3EA4->unkA230->unk5F0 + D_800CCB04.buffer)->x1 = ap * 4 + 0x80;
+    (D_800C3EA4->unkA230->unk5F0 + D_800CCB04.buffer)->y1 = 0x34;
+    (D_800C3EA4->unkA230->unk5F0 + D_800CCB04.buffer)->x2 = 0x80;
+    (D_800C3EA4->unkA230->unk5F0 + D_800CCB04.buffer)->y2 = 0x3C;
+    (D_800C3EA4->unkA230->unk5F0 + D_800CCB04.buffer)->x3 = ap * 4 + 0x80;
+    (D_800C3EA4->unkA230->unk5F0 + D_800CCB04.buffer)->y3 = 0x3C;
+    (D_800C3EA4->unkA230->unk638 + D_800CCB04.buffer)->x0 = ap * 4 + 0x80;
+    (D_800C3EA4->unkA230->unk638 + D_800CCB04.buffer)->y0 = 0x34;
+    (D_800C3EA4->unkA230->unk638 + D_800CCB04.buffer)->x1 = 0xF0;
+    (D_800C3EA4->unkA230->unk638 + D_800CCB04.buffer)->y1 = 0x34;
+    (D_800C3EA4->unkA230->unk638 + D_800CCB04.buffer)->x2 = ap * 4 + 0x80;
+    (D_800C3EA4->unkA230->unk638 + D_800CCB04.buffer)->y2 = 0x3C;
+    (D_800C3EA4->unkA230->unk638 + D_800CCB04.buffer)->x3 = 0xF0;
+    (D_800C3EA4->unkA230->unk638 + D_800CCB04.buffer)->y3 = 0x3C;
+    D_800C3EA4->unkA230->unk66C = D_800CCB04.buffer;
+    D_800C3EA4->unkA230->unk66F = 1;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800930AC);
 

@@ -18,6 +18,8 @@ extern u8 D_800C33B4[16];    /* gear page glyph ids */
 extern s32 D_800C33C4[16];   /* their x */
 extern s32 D_800C3404[16];   /* their y */
 
+extern u8 D_800C3DE0[8];     /* the entered combo steps' buttons */
+
 u8 *func_80033818(s32 id);   /* item name */
 u8 *func_80033908(s32 id);   /* art name */
 u8 *func_800339FC(s32 id);   /* gear art name */

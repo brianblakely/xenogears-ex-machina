@@ -18,7 +18,8 @@ typedef struct {
 /* Turn and menu state: the heap block at *800c3eac. */
 typedef struct {
     TurnSlot slots[11];
-    u8 unk2C0[0x2CC - 0x2C0];
+    u8 unk2C0[4];
+    u8 combo[8];       /* +0x2C4 entered combo steps, 0xff ends */
     u8 unk2CC[7];
     u8 actor;          /* +0x2D3 acting slot */
     u8 unk2D4[2];
