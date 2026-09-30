@@ -403,7 +403,7 @@ s32 func_80081B58(u8 member) {
             func_80085D34();
             func_800861D0(D_800D3014, member);
             D_800C3EAC->unk2E1[4] = func_80087AF0(member, D_800C3EAC->unk2DF);
-            D_800D2E06[member] = D_800C31D4[D_800C3EAC->unk2D4[1]][D_800C3EAC->unk2D4[0]] * 100 / 56;
+            D_800D2DCC.timers[1][member] = D_800C31D4[D_800C3EAC->unk2D4[1]][D_800C3EAC->unk2D4[0]] * 100 / 56;
             D_800C3EAC->unk2E1[2] = 1;
         } else {
             func_8008AA40(0x4F);

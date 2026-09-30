@@ -2337,7 +2337,205 @@ void func_800800E8(u8 member) {
     func_800320E8(D_800D2DB4);
 }
 
+/* Run party member `member`'s command menu: reset the turn state's menu
+ * fields, take the AP (800d32a0 +4) as spent and available, wait for its
+ * panel to open, mark the unavailable menu items (status +0x7a bits; with
+ * character 7 in a gear two more, with character 4 the items whose
+ * equipment slots are broken), open the first page (1 attack, 2 when the
+ * status bars it, 4 with item 9 blocked; 0x10/0x13 in a gear) and frame the
+ * member and its target. Then, until the menu is done, the battle ends or
+ * an event runs, redraw a changed page (8008d598) and run the page's
+ * handler (pages 0x64/0x65 redraw 5/0x19). Finally close the panel, return
+ * unspent AP when +0x2e3 is set (up to 28), tidy the windows when done and
+ * reload the member's turn timer. Nonmatching: the original keeps one
+ * zero-extended copy of the member through the character 4 checks. */
+#ifdef NON_MATCHING
+void func_80080160(u8 member) {
+    s32 i;
+    u8 usable;
+    u8 target;
+
+    D_800C3EAC->unk2EA = 1;
+    D_800C3EAC->unk2E9 = 0;
+    D_800C3EAC->menuDone = 0;
+    D_800C3EAC->unk2E0 = 0;
+    D_800C3EAC->unk2E1[0] = 0;
+    D_800C3EAC->unk2E1[1] = 0xFF;
+    D_800C3EAC->unk2E1[2] = 0;
+    D_800C3EAC->unk2E1[3] = 0;
+    D_800C3EAC->unk2DC = 0;
+    D_800C3EAC->unk2D4[0] = D_800C3EAC->unk2D4[1] = D_800D32A0[member].unk2[2];
+    D_800D2D28->unk90[member] = 3;
+    D_800C3EAC->unk2E7 = 0;
+    D_800C3E28[1] = 0xFF;
+    D_800C4929 = 0;
+    while (D_800D2D28->unk90[member] != 1) {
+        func_800716D8();
+    }
+    D_800D366C = 1;
+    func_8008AA74(0x5A);
+    D_800D366C = 0;
+    for (i = 0; i < 16; i++) {
+        D_800C3EAC->slots[member].items[i] = D_800CCCE8.records[member].pilot.status7A & D_800C3234[i];
+    }
+    if (D_800D2D24[member] == 7 && D_800D32A0[member].unk1 != 0) {
+        D_800C3EAC->slots[member].items[13] = D_800C3234[13];
+        D_800C3EAC->slots[member].items[4] = D_800C3234[4];
+    }
+    if (D_800D2D24[member] == 4) {
+        if (D_800D32A0[member].unk1 == 0) {
+            if (D_8006F8BA[D_8006D634.characters[4].entryItems[0]] == 0) {
+                D_800C3EAC->slots[member].items[0] = D_800C3234[0];
+            }
+            usable = D_8006F8BA[D_8006D634.characters[4].entryItems[3]];
+        } else {
+            if (D_8006F8EA[D_8006D634.gears[D_8006D634.characters[4].gearId].partItems[0]] == 0) {
+                D_800C3EAC->slots[member].items[0] = D_800C3234[0];
+            }
+            usable = D_8006F8EA[D_8006D634.gears[D_8006D634.characters[D_800D2D24[member]].gearId].partItems[3]];
+        }
+        if (usable == 0) {
+            D_800C3EAC->slots[member].items[2] = D_800C3234[2];
+        }
+    }
+    if (D_800D32A0[member].unk1 == 0) {
+        if (D_800C3EAC->slots[member].items[9] == 0) {
+            D_800C3EAC->page = 1;
+            D_800C3E28[0] = 0;
+        } else {
+            D_800C3EAC->page = 4;
+            D_800C3E28[0] = 3;
+        }
+        if (D_800CCCE8.records[member].pilot.status7C & 2) {
+            D_800C3EAC->page = 2;
+            D_800C3E28[0] = 1;
+        }
+        func_8007FEC4();
+    } else {
+        if (D_800C3EAC->slots[member].items[9] == 0) {
+            D_800C3EAC->page = 0x10;
+            D_800C3E28[0] = 0;
+        } else {
+            D_800C3EAC->page = 0x13;
+            D_800C3E28[0] = 3;
+        }
+        func_8007FF14(member);
+    }
+    func_80085E78();
+    func_8009AB00(member);
+    func_800BC404(func_80089C08(member) | func_80089C08(D_800C3EAC->slots[member].defaultTarget));
+    target = D_800C3EAC->slots[member].defaultTarget;
+    if (D_800C3EAC->slots[member].defaultTarget == 0xFF) {
+        target = 0;
+    }
+    func_800BCD98(func_80089C08(target));
+    while (D_800C3EAC->menuDone == 0 && D_800C48EA == 0 && D_800C3EAC->eventsDone == 0) {
+        if (D_800D32A0[member].unk1 == 0) {
+            func_8007FBE0(D_800C3EAC->unk2D4[1], D_800C3EAC->unk2D4[0]);
+        }
+        if (D_800C3EAC->unk2E1[1] != D_800C3EAC->page) {
+            D_800C3EAC->repeatArmed = 0;
+            D_800C3EAC->unk2E1[1] = D_800C3EAC->page;
+            D_800D2D28->unkCB = 0;
+            D_800D2D28->unkA3 = func_8008D598(member, D_800C3EAC->page, D_800C3EAC->unk2E0);
+            D_800D2D28->unkCB = 1;
+        }
+        if (D_800D3014 == 0xFF) {
+            break;
+        }
+        func_800716D8();
+        if (D_800C3EAC->eventsDone != 0) {
+            break;
+        }
+        if (D_800C3EAC->unk2E0 == 0) {
+            D_800D366C = 1;
+        }
+        switch (D_800C3EAC->page) {
+        case 1:
+            func_8008115C(member);
+            break;
+        case 2:
+            func_80081318(member);
+            break;
+        case 3:
+            func_80081504(member);
+            break;
+        case 4:
+            func_800816F8(member);
+            break;
+        case 0x64:
+            D_800C3EAC->unk2E1[1] = 0xFF;
+        case 5:
+            func_80081B58(member);
+            break;
+        case 7:
+            func_800820A4(member);
+            break;
+        case 8:
+            func_800822C4(member);
+            break;
+        case 9:
+            func_80082504(member);
+            break;
+        case 0xA:
+            func_80082820(member);
+            break;
+        case 0x10:
+            func_800829F4(member);
+            break;
+        case 0x11:
+            func_80082BB0(member);
+            break;
+        case 0x12:
+            func_80082D4C(member);
+            break;
+        case 0x13:
+            func_80082F7C(member);
+            break;
+        case 0x15:
+            func_800830A8(member);
+            break;
+        case 0x16:
+            func_80083340(member);
+            break;
+        case 0x17:
+            func_80083580(member);
+            break;
+        case 0x18:
+            func_80083748(member);
+            break;
+        case 0x65:
+            D_800C3EAC->unk2E1[1] = 0xFF;
+        case 0x19:
+            func_80083948(member);
+            break;
+        }
+    }
+    D_800D2D28->unkCB = 0;
+    D_800D2D28->unkAF = 0;
+    D_800D2D28->unk90[member] = 0;
+    D_800D2D28->barShown[member] = 0;
+    if (D_800C3EAC->unk2E1[2] != 0) {
+        D_800D32A0[member].unk0 += D_800C3EAC->unk2D4[0];
+        if (D_800D32A0[member].unk0 >= 29) {
+            D_800D32A0[member].unk0 = 28;
+        }
+    }
+    D_800D366C = 0;
+    func_800BAF40(member, 0x100);
+    if (D_800C3EAC->menuDone != 0 || D_800C48EA != 0) {
+        func_8007FCE8();
+        func_8007FDEC();
+        func_800800E8(member);
+        func_8007FB70(member);
+    }
+    D_800D2DCC.timers[1][member] = D_800D2DCC.timers[0][member];
+    D_800D2D28->reaction[member] = 1;
+    D_800C4928 = 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80079ED8", func_80080160);
+#endif
 
 /* The next slot in turn order, other than `actor`, with the lowest turn
  * timer (undefined when there is none). */
