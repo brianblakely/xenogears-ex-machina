@@ -298,6 +298,13 @@ typedef struct {
     s16 layer_count;                           /* 800afb54 */
 } FieldComponents;
 
+/* A field light: direction and 1.3.12 color (80030a30). */
+typedef struct {
+    s32 direction[3];
+    u16 color[3];
+    u16 pad;
+} FieldLight;
+
 /* The field view and camera state (800af880..800afb56), one object: code
  * addresses its members relative to one another. */
 typedef struct {
@@ -365,8 +372,8 @@ typedef struct {
     MATRIX unk204;           /* 204 */
     MATRIX world_matrix;     /* 224 */
     s32 scale;               /* 244 */
-    u8 lights[0x3C];         /* 248 */
-    s16 back_color[3];       /* 284 */
+    FieldLight lights[3];    /* 248 */
+    u16 back_color[3];       /* 284 */
     u8 unk28A[2];
     FieldComponents components; /* 28C: 800afb0c */
 } FieldView;
@@ -712,6 +719,8 @@ extern void func_80032EB4(void *source, void *destination);
 extern MATRIX *func_8003F738(SVECTOR *angles, MATRIX *m); /* RotMatrix */
 extern void func_80049BDC(MATRIX *a, MATRIX *b);            /* MulRotMatrix */
 extern void func_8004A6DC(SVECTOR *v, s32 *out, s32 *flag); /* RotTrans */
+extern void func_80030A30(s32 index, FieldLight *light);
+extern void func_80030B14(MATRIX *m);
 
 /* Field overlay. */
 extern s32 func_8008A790(s32 id, s32 *slot);
@@ -751,6 +760,7 @@ extern s32 func_8009D000(s32 offset, s32 flags); /* operand, immediate with flag
 extern void func_80086590(VECTOR *target);
 extern s32 func_8009CFBC(s32 offset, s32 flags); /* operand, immediate with flag 0x40 */
 extern void func_80074700(void);
+extern void func_80073750(MATRIX *view, VECTOR *eye, VECTOR *target, VECTOR *up);
 extern void func_8008004C(u32 *ot, s32 buffer);
 extern void func_800805F4(void);
 extern void func_800A2030(void);

@@ -1,7 +1,58 @@
 #include "common.h"
 #include "field.h"
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8006FDEC);
+/* Build the camera matrix from the eye, target and up vectors, the world
+ * matrix under it, then the three lights and background color from the
+ * field's view record, and the light matrix under the world matrix. */
+void func_8006FDEC(s16 *record) {
+    s32 flag;
+
+    func_80073750(&D_800AF880.previous_view, &D_800AF880.eye, &D_800AF880.target, &D_800AF880.up);
+    func_8003F738(&D_800AF880.world_angles, &D_800AF880.scaled_world);
+    func_80049BDC(&D_800AF880.previous_view, &D_800AF880.scaled_world);
+
+    D_800AF880.lights[0].direction[0] = *record++;
+    D_800AF880.lights[0].direction[1] = *record++;
+    D_800AF880.lights[0].direction[2] = *record;
+    record += 2;
+    D_800AF880.lights[0].color[0] = *record++ << 3;
+    D_800AF880.lights[0].color[1] = *record++ << 3;
+    D_800AF880.lights[0].color[2] = *record << 3;
+    record += 2;
+    func_80030A30(0, &D_800AF880.lights[0]);
+
+    D_800AF880.lights[1].direction[0] = *record++;
+    D_800AF880.lights[1].direction[1] = *record++;
+    D_800AF880.lights[1].direction[2] = *record;
+    record += 2;
+    D_800AF880.lights[1].color[0] = *record++ << 3;
+    D_800AF880.lights[1].color[1] = *record++ << 3;
+    D_800AF880.lights[1].color[2] = *record << 3;
+    record += 2;
+    func_80030A30(1, &D_800AF880.lights[1]);
+
+    D_800AF880.lights[2].direction[0] = *record++;
+    D_800AF880.lights[2].direction[1] = *record++;
+    D_800AF880.lights[2].direction[2] = *record;
+    record += 2;
+    D_800AF880.lights[2].color[0] = *record++ << 3;
+    D_800AF880.lights[2].color[1] = *record++ << 3;
+    D_800AF880.lights[2].color[2] = *record << 3;
+    D_800AF880.lights[1] = D_800AF880.lights[0];
+    D_800AF880.lights[2] = D_800AF880.lights[0];
+    record += 2;
+    func_80030A30(2, &D_800AF880.lights[2]);
+
+    D_800AF880.back_color[0] = record[0] << 4;
+    D_800AF880.back_color[1] = record[1] << 4;
+    D_800AF880.back_color[2] = record[2] << 4;
+    SetRotMatrix(&D_800AF880.previous_view);
+    SetTransMatrix(&D_800AF880.previous_view);
+    func_8004A6DC(&D_800AF880.anchor, D_800AF880.scaled_world.t, &flag);
+    func_80030B14(&D_800AF880.scaled_world);
+    SetRotMatrix(&D_800AF880.scaled_world);
+    SetTransMatrix(&D_800AF880.scaled_world);
+}
 
 /* Decode compressed `source` data into `destination`. */
 void func_8007008C(s32 unused, void *source, void *destination) {
