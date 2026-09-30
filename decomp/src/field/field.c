@@ -4663,7 +4663,137 @@ void func_8007CD60(s32 words) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007CD80);
 
+#ifdef NON_MATCHING
+/* Find the floor of collision layer `layer` under the actor's next
+ * position: walk the layer's triangles from the actor's current one toward
+ * the point (at most 32 steps), then take the found triangle's plane
+ * height and normal, the triangle, and its floor range; attribute bit
+ * 800000 blocks the layer unless it is disabled for the actor or party
+ * processing runs. Returns -1 when the walk leaves the mesh.
+ * NON_MATCHING: its jump table belongs to the rodata unit noted above
+ * 8007bef4, so it cannot be placed from field.c. */
+s32 func_8007D3D4(FieldActor *actor, s32 layer, s32 *floor, VECTOR *normal, s16 *triangle, s32 *upper) {
+    SVECTOR query;
+    CollisionTriangle *triangles;
+    SVECTOR *vertices;
+    CollisionTriangle *tri;
+    s32 mask;
+    s32 origin;
+    s32 point;
+    s32 a;
+    s32 b;
+    s32 c;
+    s32 side;
+    s32 steps;
+    s32 bump;
+    s16 current;
+
+    current = actor->triangle[layer];
+    triangles = D_800AF880.components.collision_triangles[layer];
+    vertices = D_800AF880.components.collision_vertices[layer];
+    if (current == -1) {
+        return -1;
+    }
+    query.vx = (actor->position[0] + actor->unk030[0]) >> 16;
+    point = (query.vx << 16) + ((actor->position[2] + actor->unk030[2]) >> 16);
+    mask = 0;
+    query.vy = 0;
+    origin = ((actor->position[0] >> 16) << 16) + (actor->position[2] >> 16);
+    query.vz = (actor->position[2] + actor->unk030[2]) >> 16;
+    steps = 0;
+    if (!((actor->layer_flags >> (layer + 3)) & 1)) {
+        mask = -(D_800B2078.party_processing_mode == 0);
+    }
+    for (;;) {
+        tri = &triangles[current];
+        a = (vertices[tri->unk00[0]].vx << 16) + vertices[tri->unk00[0]].vz;
+        b = (vertices[tri->unk00[1]].vx << 16) + vertices[tri->unk00[1]].vz;
+        c = (vertices[tri->unk00[2]].vx << 16) + vertices[tri->unk00[2]].vz;
+        side = (u32)func_8004A70C(a, b, point) >> 31;
+        if (func_8004A70C(b, c, point) < 0) {
+            side |= 2;
+        }
+        if (func_8004A70C(c, a, point) < 0) {
+            side |= 4;
+        }
+        switch (side) {
+        case 0:
+            steps = 0xFF;
+            break;
+        case 1:
+            current = triangles[current].unk00[3];
+            break;
+        case 2:
+            current = triangles[current].unk00[4];
+            break;
+        case 4:
+            current = triangles[current].unk00[5];
+            break;
+        case 3:
+            if (func_8004A70C(b, point, origin) >= 0) {
+                current = triangles[current].unk00[4];
+            } else {
+                current = triangles[current].unk00[3];
+            }
+            break;
+        case 5:
+            if (func_8004A70C(a, point, origin) >= 0) {
+                current = triangles[current].unk00[3];
+            } else {
+                current = triangles[current].unk00[5];
+            }
+            break;
+        case 6:
+            if (func_8004A70C(c, point, origin) < 0) {
+                current = triangles[current].unk00[4];
+            } else {
+                current = triangles[current].unk00[5];
+            }
+            break;
+        case 7:
+            current = -1;
+            break;
+        }
+        steps++;
+        if (current == -1) {
+            return -1;
+        }
+        if (steps >= 0x20) {
+            break;
+        }
+    }
+    if (steps == 0x20) {
+        return -1;
+    }
+    tri = &triangles[current];
+    func_8007B07C(&vertices[tri->unk00[0]], &vertices[tri->unk00[1]], &vertices[tri->unk00[2]], &query, normal);
+    *triangle = current;
+    bump = (s8)tri->unk0D * 4;
+    if (bump < 0) {
+        bump = 0;
+    }
+    if (actor->layer != layer) {
+        if (!(D_800AF880.components.collision_attributes[tri->attribute].word & (mask & 0x800000))) {
+            *floor = query.vy;
+            func_8007C670(floor, upper, bump);
+            return 0;
+        }
+    } else if (!(D_800AF880.components.collision_attributes[tri->attribute].word & (mask & 0x800000))) {
+        if (actor->unk030[0] == 0 && actor->unk030[1] == 0 && actor->unk030[2] == 0) {
+            *floor = query.vy;
+        } else {
+            *floor = actor->unk72;
+        }
+        func_8007C670(floor, upper, bump);
+        return 0;
+    }
+    *floor = 0x7FFFFFFF;
+    *upper = 0x7FFFFFFF;
+    return 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007D3D4);
+#endif
 
 /* Normalise a 20.12 vector, pointing it along its largest component. */
 void func_8007D818(VECTOR *v, VECTOR *out) {
@@ -6813,7 +6943,7 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800859DC);
 #ifdef NON_MATCHING
 /* Change the field music to `music` (0xff: none): release the shared wave
  * bank when the entry asks, then stream its wave file through 800859dc. */
-void func_80085B20(s32 music) {
+void func_80085B20(s32 music, s32 unused) {
     u8 wave;
 
     func_80028A60(0);
