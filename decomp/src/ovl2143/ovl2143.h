@@ -13,6 +13,24 @@ typedef struct {
     s16 vx, vy, vz, pad;
 } SVECTOR;
 
+/* libgpu textured quad. */
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    u8 u0, v0;
+    u16 clut;
+    s16 x1, y1;
+    u8 u1, v1;
+    u16 tpage;
+    s16 x2, y2;
+    u8 u2, v2;
+    u16 pad1;
+    s16 x3, y3;
+    u8 u3, v3;
+    u16 pad2;
+} POLY_FT4;
+
 /* Scratchpad matrix used as a temporary. */
 #define SCRATCH_MATRIX ((MATRIX *)0x1F800000)
 
@@ -58,7 +76,9 @@ typedef struct ModelPart {
 /* A pool slot (0x14 bytes); +0 marks it used. */
 typedef struct PoolSlot {
     u8 used;
-    u8 pad[0x13];
+    u8 pad1[2];
+    u8 tag;         /* +3: 0xff: kept by func_801DFE8C */
+    u8 pad4[0x10];
 } PoolSlot;
 
 /* A pool of slots with the position where the search for a free one starts. */
@@ -67,6 +87,28 @@ typedef struct {
     u16 next;
     u16 capacity;
 } SlotPool;
+
+/* A particle (0x7c bytes): a quad of four vertices, a colour fading each
+ * tick, and its quad for both buffers. */
+typedef struct {
+    s16 x0, y0, z0, pad06;
+    s16 x1, y1, z1;
+    s16 projected;  /* +e: vertices are 3D, projected with the GTE */
+    s16 x2, y2, z2;
+    s16 age;        /* +16: -1 free */
+    s16 x3, y3, z3;
+    s16 lifetime;   /* +1e */
+    u16 color[3];   /* +20: 10.6 fixed point */
+    s16 fade[3];    /* +26: per tick */
+    POLY_FT4 poly[2]; /* +2c */
+} Particle;
+
+/* A pool of particles with a spare one past the end. */
+typedef struct {
+    Particle *items;
+    s16 capacity;
+    s16 next;
+} ParticlePool;
 
 /* Resident heap. */
 void func_80032498(s32 tag, s32 mode);        /* select the allocation tag */
@@ -83,6 +125,15 @@ void *func_8003F968(void *dst, void *src, s32 size); /* memcpy */
 void func_8002C700(ModelRecord *model, void *packets, s32 arg2, s32 arg3); /* draw a model's packets */
 void func_8002CBBC(ModelRecord *model);       /* release a model's own packets */
 
+/* libgpu. */
+u16 func_80043A1C(s32 tp, s32 abr, s32 x, s32 y); /* GetTPage */
+u16 func_80043A58(s32 x, s32 y);                  /* GetClut */
+void func_80043BFC(void *p, s32 abe);            /* SetSemiTrans */
+void func_80043CB0(POLY_FT4 *p);                 /* SetPolyFT4 */
+
+/* Resident maths. */
+s32 func_8003F8CC(s16 angle);                    /* cosine (4096 = 1.0) */
+
 /* libgte. */
 MATRIX *func_8003F738(SVECTOR *rot, MATRIX *m);        /* RotMatrix */
 MATRIX *func_8004A92C(SVECTOR *rot, MATRIX *m);        /* RotMatrixYXZ */
@@ -93,6 +144,7 @@ void func_80049F2C(MATRIX *m);                /* SetLightMatrix */
 void func_80049F8C(MATRIX *m);                /* SetTransMatrix */
 
 /* This overlay. */
+void func_801E011C(ParticlePool *pool);
 void func_801DF6A8(SlotPool *pool);
 s32 func_801DF7A8(SlotPool *pool, PoolSlot *slot);
 void func_801DCD8C(ModelPart *parts);

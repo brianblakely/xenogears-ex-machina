@@ -478,33 +478,181 @@ INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DF7F4);
 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DFAC4);
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DFE8C);
+/* Release every node's attachments except those tagged 0xff. */
+void func_801DFE8C(SlotPool *pool, ModelPart *parts) {
+    u16 count;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DFF78);
+    count = parts->count;
+    for (i = 0; i < count; i++, parts++) {
+        if (parts->attachments[0] != NULL && parts->attachments[0]->tag != 0xFF) {
+            func_801DF7A8(pool, parts->attachments[0]);
+            parts->attachments[0] = NULL;
+        }
+        if (parts->attachments[1] != NULL && parts->attachments[1]->tag != 0xFF) {
+            func_801DF7A8(pool, parts->attachments[1]);
+            parts->attachments[1] = NULL;
+        }
+        if (parts->attachments[2] != NULL && parts->attachments[2]->tag != 0xFF) {
+            func_801DF7A8(pool, parts->attachments[2]);
+            parts->attachments[2] = NULL;
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E0064);
+/* Release every node's attachments tagged `tag`. */
+void func_801DFF78(SlotPool *pool, ModelPart *parts, u8 tag) {
+    u16 count;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E00DC);
+    count = parts->count;
+    for (i = 0; i < count; i++, parts++) {
+        if (parts->attachments[0] != NULL && parts->attachments[0]->tag == tag) {
+            func_801DF7A8(pool, parts->attachments[0]);
+            parts->attachments[0] = NULL;
+        }
+        if (parts->attachments[1] != NULL && parts->attachments[1]->tag == tag) {
+            func_801DF7A8(pool, parts->attachments[1]);
+            parts->attachments[1] = NULL;
+        }
+        if (parts->attachments[2] != NULL && parts->attachments[2]->tag == tag) {
+            func_801DF7A8(pool, parts->attachments[2]);
+            parts->attachments[2] = NULL;
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E011C);
+/* Allocate a particle pool of `capacity` particles plus a spare one returned
+ * when the pool is full, and initialise them. */
+ParticlePool *func_801E0064(ParticlePool *pool, s32 capacity) {
+    func_80032498(4, 0);
+    pool->capacity = capacity;
+    pool->next = 0;
+    pool->items = func_80031BDC((capacity + 1) * sizeof(Particle), 0);
+    if (pool->items != NULL) {
+        func_801E011C(pool);
+        return pool;
+    }
+    return NULL;
+}
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E0248);
+/* Release a particle pool. */
+void func_801E00DC(ParticlePool *pool) {
+    pool->capacity = 0;
+    pool->next = 0;
+    if (pool->items != NULL) {
+        func_800320E8(pool->items);
+    }
+    pool->items = NULL;
+}
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E0354);
+/* Mark every particle free and set up both buffers' semi-transparent textured
+ * quads (a 16x1 texel strip at v=0xbd of page (0x340, 0x100), clut (0, 0x1cd)). */
+void func_801E011C(ParticlePool *pool) {
+    Particle *particle;
+    POLY_FT4 *poly;
+    s32 i;
+    s32 j;
+
+    particle = pool->items;
+    for (i = 0; i < pool->capacity + 1; i++) {
+        particle->age = -1;
+        particle->lifetime = 0;
+        for (j = 0; j < 2; j++) {
+            poly = &particle->poly[j];
+            func_80043CB0(poly);
+            func_80043BFC(poly, 1);
+            particle->poly[j].clut = func_80043A58(0, 0x1CD);
+            particle->poly[j].tpage = func_80043A1C(0, 1, 0x340, 0x100);
+            particle->poly[j].u0 = 0;
+            particle->poly[j].v0 = 0xBD;
+            particle->poly[j].u1 = 0;
+            particle->poly[j].v1 = 0xBD;
+            particle->poly[j].u2 = 0xF;
+            particle->poly[j].v2 = 0xBD;
+            particle->poly[j].u3 = 0xF;
+            particle->poly[j].v3 = 0xBD;
+        }
+        particle++;
+    }
+}
+
+/* Take the next free particle, setting both quads' semi-transparency; when the
+ * pool is full, the spare particle past its end. */
+Particle *func_801E0248(ParticlePool *pool, s16 semi_trans) {
+    Particle *particle;
+
+    if (pool->next < pool->capacity) {
+        particle = &pool->items[pool->next];
+        if (particle->age == -1) {
+            pool->next++;
+            while (pool->next < pool->capacity) {
+                if (pool->items[pool->next].age == -1) {
+                    break;
+                }
+                pool->next++;
+            }
+            func_80043BFC(&particle->poly[0], semi_trans);
+            func_80043BFC(&particle->poly[1], semi_trans);
+            return particle;
+        }
+    }
+    return &pool->items[pool->capacity];
+}
+
+/* Free a particle, moving the search position back to it; returns its index. */
+s32 func_801E0354(ParticlePool *pool, Particle *particle) {
+    s32 index;
+
+    index = ((u32)particle - (u32)pool->items) / sizeof(Particle);
+    if (pool->next >= index) {
+        pool->next = index;
+    }
+    particle->age = -1;
+    return index;
+}
 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E0398);
 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E0698);
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E0844);
+/* Mark a particle free. */
+void func_801E0844(s16 *age) {
+    *age = -1;
+}
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E0850);
+/* base + (cos(angle) + 1.0) / divisor. */
+s16 func_801E0850(s16 angle, s16 divisor, s32 base) {
+    return base + (func_8003F8CC(angle) + 0x1000) / divisor;
+}
 
+/* base + value / divisor, or -1 past 32. Differs only in register choice. */
+#ifdef NON_MATCHING
+s32 func_801E08D4(s16 value, s16 divisor, s32 base) {
+    s16 sum;
+
+    sum = base + value / divisor;
+    return sum < 0x21 ? sum : -1;
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E08D4);
+#endif
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E0938);
+/* base - value / divisor. */
+s16 func_801E0938(s16 value, s16 divisor, s32 base) {
+    return base - value / divisor;
+}
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E0988);
+/* 32 - value / divisor, at least `minimum`. */
+s16 func_801E0988(s16 value, s16 divisor, s16 minimum) {
+    s16 result;
+
+    result = 0x20 - value / divisor;
+    if (result < minimum) {
+        result = minimum;
+    }
+    return result;
+}
 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E0A00);
 
