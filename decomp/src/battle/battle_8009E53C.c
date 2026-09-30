@@ -380,17 +380,20 @@ u16 func_8009EF3C(ModelPart *part, s32 scale) {
     return count;
 }
 
-#ifdef NON_MATCHING
 /* Pose a model hierarchy with per-part scales: as 8009EF3C, but a changed
  * part's transform is scaled by its own scale and by the inverse of its
  * parent's, and a part changes or is marked with its parent. Clears the marks
  * and returns the part count. */
 u16 func_8009F1C4(ModelPart *part, s32 scale) {
     Matrix *diagonal = (Matrix *)0x1F800000;
-    ModelPart *root = part;
-    u32 count = root->index;
+    Matrix *scratch;
+    ModelPart *root;
+    s32 product;
+    u32 count;
     u32 i;
 
+    root = part;
+    count = root->index;
     root->world.t[0] = root->translation[0];
     root->world.t[1] = root->translation[1];
     root->world.t[2] = root->translation[2];
@@ -399,15 +402,21 @@ u16 func_8009F1C4(ModelPart *part, s32 scale) {
     } else {
         func_8003F738(&root->rotation, &root->world);
     }
-    diagonal->m[0][0] = scale * part->scale[0] >> 12;
+    product = scale * part->scale[0];
+    product >>= 12;
+    diagonal->m[0][0] = product;
     diagonal->m[0][1] = 0;
     diagonal->m[0][2] = 0;
     diagonal->m[1][0] = 0;
-    diagonal->m[1][1] = scale * part->scale[1] >> 12;
+    product = scale * part->scale[1];
+    product >>= 12;
+    diagonal->m[1][1] = product;
     diagonal->m[1][2] = 0;
     diagonal->m[2][0] = 0;
     diagonal->m[2][1] = 0;
-    diagonal->m[2][2] = scale * part->scale[2] >> 12;
+    product = scale * part->scale[2];
+    product >>= 12;
+    diagonal->m[2][2] = product;
     MulMatrix0(&part->world, diagonal, &part->transform);
     part->transform.t[0] = part->world.t[0];
     part->transform.t[1] = part->world.t[1];
@@ -423,32 +432,33 @@ u16 func_8009F1C4(ModelPart *part, s32 scale) {
             }
         }
         if (part->flag5) {
+            scratch = (Matrix *)0x1F800000;
             if (part->flag6) {
                 func_8004A92C(&part->rotation, &part->transform);
             } else {
                 func_8003F738(&part->rotation, &part->transform);
             }
-            diagonal->m[0][0] = part->scale[0];
-            diagonal->m[0][1] = 0;
-            diagonal->m[0][2] = 0;
-            diagonal->m[1][0] = 0;
-            diagonal->m[1][1] = part->scale[1];
-            diagonal->m[1][2] = 0;
-            diagonal->m[2][0] = 0;
-            diagonal->m[2][1] = 0;
-            diagonal->m[2][2] = part->scale[2];
-            MulMatrix0(&part->transform, diagonal, &part->transform);
+            scratch->m[0][0] = part->scale[0];
+            scratch->m[0][1] = 0;
+            scratch->m[0][2] = 0;
+            scratch->m[1][0] = 0;
+            scratch->m[1][1] = part->scale[1];
+            scratch->m[1][2] = 0;
+            scratch->m[2][0] = 0;
+            scratch->m[2][1] = 0;
+            scratch->m[2][2] = part->scale[2];
+            MulMatrix0(&part->transform, scratch, &part->transform);
             if (part->parent != NULL) {
-                diagonal->m[0][0] = 0x1000000 / part->parent->scale[0];
-                diagonal->m[0][1] = 0;
-                diagonal->m[0][2] = 0;
-                diagonal->m[1][0] = 0;
-                diagonal->m[1][1] = 0x1000000 / part->parent->scale[1];
-                diagonal->m[1][2] = 0;
-                diagonal->m[2][0] = 0;
-                diagonal->m[2][1] = 0;
-                diagonal->m[2][2] = 0x1000000 / part->parent->scale[2];
-                MulMatrix0(diagonal, &part->transform, &part->transform);
+                scratch->m[0][0] = 0x1000000 / part->parent->scale[0];
+                scratch->m[0][1] = 0;
+                scratch->m[0][2] = 0;
+                scratch->m[1][0] = 0;
+                scratch->m[1][1] = 0x1000000 / part->parent->scale[1];
+                scratch->m[1][2] = 0;
+                scratch->m[2][0] = 0;
+                scratch->m[2][1] = 0;
+                scratch->m[2][2] = 0x1000000 / part->parent->scale[2];
+                MulMatrix0(scratch, &part->transform, &part->transform);
             }
         }
         if (part->flag4) {
@@ -469,9 +479,6 @@ u16 func_8009F1C4(ModelPart *part, s32 scale) {
     }
     return count;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_8009F1C4);
-#endif
 
 void func_8009F5B0(void) {
 }
@@ -608,7 +615,143 @@ u16 func_800A1B50(ModelPart *root, s16 *data) {
     return count;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A1CF4);
+/* Tween the parts after the root towards an animation frame over duration
+ * ticks (at least 1): each changed rotation gets an effect entry (type
+ * mode + 3) of the shortest angle differences (mode 1: to the absolute
+ * angles), each changed translation one of its movement (mode 1: to the
+ * absolute translation); persistent entries (0xFF) stay, other parts lose
+ * theirs. Returns the part count less the root. */
+u16 func_800A1CF4(EffectPool *pool, ModelPart *part, s16 *data, s32 duration, s32 mode, s32 smooth,
+                  s32 tag) {
+    EffectEntry *entry;
+    u16 rotationCount;
+    u16 rotations;
+    u16 translationCount;
+    u16 translations;
+    u16 count;
+    u16 flags;
+    s32 x;
+    s32 y;
+    s32 z;
+    s32 i;
+
+    if (duration == 0) {
+        duration = 1;
+    }
+    rotations = 0;
+    translations = 0;
+    smooth &= 1;
+    rotationCount = data[6];
+    i = data[3]; /* the base flag */
+    translationCount = data[7];
+    mode &= 1;
+    flags = data[2];
+    data += 12;
+    if (i == 0) {
+        data += (rotationCount + 1) * 3;
+    }
+    count = part->index - 1;
+    for (i = 0; i < count; i++) {
+        part++;
+        if (!(flags & 1) && rotations < rotationCount) {
+            x = *data++;
+            y = *data++;
+            z = *data++;
+            rotations++;
+            if (part->rotation.vx != x || part->rotation.vy != y || part->rotation.vz != z) {
+                if (part->effects[0] != NULL) {
+                    entry = part->effects[0];
+                    if (entry->kind == 0xFF) {
+                        goto translation;
+                    }
+                } else {
+                    entry = func_800A2330(pool);
+                }
+                if (entry != NULL) {
+                    entry->used = 1;
+                    entry->field1 = smooth;
+                    entry->field2 = mode + 3;
+                    entry->kind = tag;
+                    entry->params[0] = part->rotation.vx;
+                    entry->params[1] = part->rotation.vy;
+                    entry->params[2] = part->rotation.vz;
+                    x = (x - part->rotation.vx) & 0xFFF;
+                    if (x >= 0x800) {
+                        x -= 0x1000;
+                    }
+                    entry->params[3] = x;
+                    y = (y - part->rotation.vy) & 0xFFF;
+                    if (y >= 0x800) {
+                        y -= 0x1000;
+                    }
+                    entry->params[4] = y;
+                    z = (z - part->rotation.vz) & 0xFFF;
+                    if (z >= 0x800) {
+                        z -= 0x1000;
+                    }
+                    entry->params[5] = z;
+                    if (mode) {
+                        entry->params[3] += part->rotation.vx;
+                        entry->params[4] += part->rotation.vy;
+                        entry->params[5] += part->rotation.vz;
+                    }
+                    entry->field10 = 0;
+                    entry->field12 = duration;
+                    part->effects[0] = entry;
+                    goto translation;
+                }
+            }
+        }
+        if (part->effects[0] != NULL && part->effects[0]->kind != 0xFF) {
+            func_800A23E8(pool, part->effects[0]);
+            part->effects[0] = NULL;
+        }
+    translation:
+        if (!(flags & 2) && translations < translationCount) {
+            x = *data++;
+            y = *data++;
+            z = *data++;
+            translations++;
+            if (part->translation[0] != x || part->translation[1] != y || part->translation[2] != z) {
+                if (part->effects[1] != NULL) {
+                    entry = part->effects[1];
+                    if (entry->kind == 0xFF) {
+                        continue;
+                    }
+                } else {
+                    entry = func_800A2330(pool);
+                }
+                if (entry != NULL) {
+                    entry->used = 1;
+                    entry->field1 = smooth;
+                    entry->field2 = mode + 3;
+                    entry->kind = tag;
+                    entry->params[0] = part->translation[0];
+                    entry->params[1] = part->translation[1];
+                    entry->params[2] = part->translation[2];
+                    if (mode) {
+                        entry->params[3] = x;
+                        entry->params[4] = y;
+                        entry->params[5] = z;
+                    } else {
+                        entry->params[3] = x - part->translation[0];
+                        entry->params[4] = y - part->translation[1];
+                        entry->params[5] = z - part->translation[2];
+                    }
+                    entry->field10 = 0;
+                    entry->field12 = duration;
+                    part->effects[1] = entry;
+                    continue;
+                }
+            }
+        }
+        if (part->effects[1] != NULL && part->effects[1]->kind != 0xFF) {
+            func_800A23E8(pool, part->effects[1]);
+            part->effects[1] = NULL;
+        }
+    }
+    return count;
+}
 
 /* Release the effects attached to part index of a hierarchy, those selected by
  * mask (bit n: attachment n). */
