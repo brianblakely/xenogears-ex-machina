@@ -439,7 +439,7 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800759E4);
 
 /* Pass a colour on to resident 80021b98 unless 800b218e is set. */
 void func_80075B08(void *target, u8 *color) {
-    if (D_800B218E == 0) {
+    if (D_800B218C.unk218E == 0) {
         func_80021B98(target, color[0], color[1], color[2]);
     }
 }
@@ -562,8 +562,8 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80077DAC);
 s32 func_80077E10(void) {
     s32 result = 0;
 
-    if (D_800ADBD0 == 1 && D_800B21AC.unk2344 == 0) {
-        result = -((D_800AFB0C.descriptors[D_800B21AC.controlled].actor->flags & 0x800) != 0);
+    if (D_800ADBD0 == 1 && D_800B218C.unk2344 == 0) {
+        result = -((D_800AFB0C.descriptors[D_800B218C.controlled].actor->flags & 0x800) != 0);
     }
     return result;
 }
@@ -629,13 +629,13 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80079784);
 /* Set the battle-entry flag (80059179): clear only while the controlled
  * actor has neither bit 0x40 nor 0x80 of +14; 800b234c overrides it. */
 void func_800798BC(void) {
-    if (D_800B21AC.unk2268 != 0 && !(D_800AFB0C.descriptors[D_800B21AC.controlled].actor->unk014 & 0xC0)) {
+    if (D_800B218C.unk2268 != 0 && !(D_800AFB0C.descriptors[D_800B218C.controlled].actor->unk014 & 0xC0)) {
         D_80059179 = 0;
     } else {
         D_80059179 = 1;
     }
-    if (D_800B21AC.battle_override != 0xFF) {
-        D_80059179 = D_800B21AC.battle_override;
+    if (D_800B218C.battle_override != 0xFF) {
+        D_80059179 = D_800B218C.battle_override;
     }
 }
 
@@ -716,7 +716,7 @@ void func_8007B614(VECTOR *out, s32 distance, s32 angle) {
 
     distance *= 16;
     angle &= 0xFFF;
-    length = (distance * D_800B218C) >> 12;
+    length = (distance * D_800B218C.scale) >> 12;
     out->vx = func_8003F8CC(angle) * length;
     out->vy = 0;
     out->vz = -(func_8003F8B0(angle) * length);
@@ -1121,7 +1121,7 @@ void func_80085634(s32 id, s32 channel) {
     if (id == 0) {
         func_8003A20C(channel * 2);
     } else {
-        D_800B21AC.last_sound_effect = id;
+        D_800B218C.last_sound_effect = id;
         func_800855C8(id, 0x7F, 0x40, channel);
     }
 }
@@ -1221,10 +1221,10 @@ void func_80086024(void) {
 void func_80086078(s32 distance, u32 *out, s32 volume) {
     s32 level;
 
-    if (distance > D_800B21AC.emitter_range) {
-        distance = D_800B21AC.emitter_range;
+    if (distance > D_800B218C.emitter_range) {
+        distance = D_800B218C.emitter_range;
     }
-    level = 0x80 - (((0x7F0000 / D_800B21AC.emitter_range) * distance) >> 16);
+    level = 0x80 - (((0x7F0000 / D_800B218C.emitter_range) * distance) >> 16);
     *out = ((u32)(level << 16) / 127 * volume) >> 16;
 }
 
@@ -1282,10 +1282,10 @@ void func_800864F0(void) {
         D_800AFE88[i].id = 0xFFFF;
     }
     for (i = 0; i < 4; i++) {
-        if (!(D_800B21AC.effects_kept & 1)) {
+        if (!(D_800B218C.effects_kept & 1)) {
             func_8003A20C(i * 2);
         }
-        D_800B21AC.effects_kept >>= 1;
+        D_800B218C.effects_kept >>= 1;
     }
 }
 
@@ -1305,8 +1305,8 @@ void func_80086BA8(void) {
     s32 i;
 
     for (i = 0; i < 3; i++) {
-        if (D_800B21AC.emitter_descriptor[i] != -1) {
-            func_80086A1C(i, D_800AFB0C.descriptors[D_800B21AC.emitter_descriptor[i]].actor->position);
+        if (D_800B218C.emitter_descriptor[i] != -1) {
+            func_80086A1C(i, D_800AFB0C.descriptors[D_800B218C.emitter_descriptor[i]].actor->position);
         }
     }
 }
@@ -1334,7 +1334,7 @@ void func_80086D8C(void) {
 
 /* Event opcode e0: set 800b2358 from its byte operand. */
 void func_80086DE0(void) {
-    D_800B21AC.unk2358 = D_800ADC00[D_800B0078->pc + 1];
+    D_800B218C.unk2358 = D_800ADC00[D_800B0078->pc + 1];
     D_800B0078->pc += 2;
 }
 
@@ -1365,7 +1365,7 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800871B0);
 void func_800873C4(void) {
     s32 index = func_800ACDEC(1);
 
-    D_800B21AC.unk225F[index] = func_800ACDEC(3);
+    D_800B218C.unk225F[index] = func_800ACDEC(3);
     D_800B0078->pc += 5;
 }
 
@@ -1410,13 +1410,13 @@ void func_800879D0(void) {
 
 /* Event: set 800b2357 from its byte operand. */
 void func_80087A40(void) {
-    D_800B21AC.unk2357 = D_800ADC00[D_800B0078->pc + 1];
+    D_800B218C.unk2357 = D_800ADC00[D_800B0078->pc + 1];
     D_800B0078->pc += 2;
 }
 
 /* Event: set 800b2354 from its byte operand. */
 void func_80087A7C(void) {
-    D_800B21AC.unk2354 = D_800ADC00[D_800B0078->pc + 1];
+    D_800B218C.unk2354 = D_800ADC00[D_800B0078->pc + 1];
     D_800B0078->pc += 2;
 }
 
@@ -1450,16 +1450,16 @@ void func_80087DE0(void) {
     s32 value = func_800ACDEC(2);
 
     if (D_800ADC00[D_800B0078->pc + 1] == 0) {
-        D_800B21AC.unk2355 = value;
+        D_800B218C.unk2355 = value;
     } else {
-        D_800B21AC.unk2356 = value;
+        D_800B218C.unk2356 = value;
     }
     D_800B0078->pc += 4;
 }
 
 /* Event: set the battle-entry override (800b234c) from operand 1. */
 void func_80087E5C(void) {
-    D_800B21AC.battle_override = func_800ACDEC(1);
+    D_800B218C.battle_override = func_800ACDEC(1);
     D_800B0078->pc += 3;
 }
 
@@ -1467,7 +1467,7 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80087E98);
 
 /* Event: count 800b2348 up. */
 void func_80087FA4(void) {
-    D_800B21AC.unk2348++;
+    D_800B218C.unk2348++;
     D_800B0078->pc++;
 }
 
@@ -1529,7 +1529,7 @@ void func_8008848C(void) {
     s32 value = D_800ADC00[D_800B0078->pc + 1] ^ 1;
 
     D_800B0078->pc += 2;
-    D_800B21AC.unk236C = value;
+    D_800B218C.unk236C = value;
 }
 #else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008848C);
@@ -1537,7 +1537,7 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008848C);
 
 /* Event: set the sound-emitter range from operand 1. */
 void func_800884CC(void) {
-    D_800B21AC.emitter_range = func_800ACDEC(1);
+    D_800B218C.emitter_range = func_800ACDEC(1);
     D_800B0078->pc += 3;
 }
 
@@ -1620,13 +1620,13 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80089DCC);
 
 /* Event: set 800b22e0 from operand 1. */
 void func_80089F18(void) {
-    D_800B21AC.unk22E0 = func_800ACDEC(1);
+    D_800B218C.unk22E0 = func_800ACDEC(1);
     D_800B0078->pc += 3;
 }
 
 /* Event: set 800b21d2 to operand 1 less 0x80. */
 void func_80089F54(void) {
-    D_800B21AC.unk21D2 = func_800ACDEC(1) - 0x80;
+    D_800B218C.unk21D2 = func_800ACDEC(1) - 0x80;
     D_800B0078->pc += 3;
 }
 
@@ -1709,7 +1709,7 @@ void func_8008A5A0(void) {
 
 /* Event: set 800b21d4 from operand 1. */
 void func_8008A604(void) {
-    D_800B21AC.unk21D4 = func_800ACDEC(1);
+    D_800B218C.unk21D4 = func_800ACDEC(1);
     D_800B0078->pc += 3;
 }
 
@@ -1776,15 +1776,15 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008AFD8);
 
 /* Event: set the three bytes at 800b225c from operands 1, 3 and 5. */
 void func_8008B0E8(void) {
-    D_800B21AC.unk225C[0] = func_800ACDEC(1);
-    D_800B21AC.unk225C[1] = func_800ACDEC(3);
-    D_800B21AC.unk225C[2] = func_800ACDEC(5);
+    D_800B218C.unk225C[0] = func_800ACDEC(1);
+    D_800B218C.unk225C[1] = func_800ACDEC(3);
+    D_800B218C.unk225C[2] = func_800ACDEC(5);
     D_800B0078->pc += 7;
 }
 
 /* Event: set 800b21b4 from operand 1. */
 void func_8008B144(void) {
-    D_800B21AC.unk21B4 = func_800ACDEC(1);
+    D_800B218C.unk21B4 = func_800ACDEC(1);
     D_800B0078->pc += 3;
 }
 
@@ -1796,7 +1796,7 @@ void func_8008B180(void) {
     if (D_800ADB1C != 0) {
         index = func_800ACDEC(1) & 0xFFFF;
         func_801E8330(index, 0, func_800ACDEC(3));
-        D_800B21AC.unk21E4[func_800ACDEC(1)] = func_800ACDEC(3);
+        D_800B218C.unk21E4[func_800ACDEC(1)] = func_800ACDEC(3);
     }
     D_800B0078->pc += 5;
 }
@@ -1857,36 +1857,136 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008CB4C);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008CC74);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008CD48);
+/* Event: set the actor's sound (op1, op3) with mode 0, stopping its current
+ * one; a zero sound turns the mode off. */
+void func_8008CD48(void) {
+    D_800B0078->sound = func_800ACDEC(1);
+    D_800B0078->sound_mode = 0;
+    D_800B0078->sound_volume = func_800ACDEC(3);
+    D_800B0078->pc += 5;
+    func_800863E8(D_800AFD1C);
+    if (D_800B0078->sound == 0) {
+        D_800B0078->sound_mode = 0xFF;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008CDD4);
+/* Event: as 8008cd48 with mode 0x80. */
+void func_8008CDD4(void) {
+    D_800B0078->sound = func_800ACDEC(1);
+    D_800B0078->sound_mode = 0x80;
+    D_800B0078->sound_volume = func_800ACDEC(3);
+    D_800B0078->pc += 5;
+    func_800863E8(D_800AFD1C);
+    if (D_800B0078->sound == 0) {
+        D_800B0078->sound_mode = 0xFF;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008CE64);
+/* Event: clear party member op1's bit of the game's +1d32. */
+void func_8008CE64(void) {
+    s32 member = func_8008CF3C(func_800ACDEC(1));
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008CED0);
+    if (member != 0xFF) {
+        D_8005A39C->unk1D32 &= ~(1 << member);
+    }
+    D_800B0078->pc += 3;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008CF3C);
+/* Event: set party member op1's bit of the game's +1d32. */
+void func_8008CED0(void) {
+    s32 member = func_8008CF3C(func_800ACDEC(1));
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008CF9C);
+    if (member != 0xFF) {
+        D_8005A39C->unk1D32 |= 1 << member;
+    }
+    D_800B0078->pc += 3;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008CFEC);
+/* Resolve a character id: 0xfd..0xff name the party members, 0xfc none
+ * (0xff). */
+s32 func_8008CF3C(s32 id) {
+    if (id == 0xFF) {
+        return D_80062590[2];
+    }
+    if (id == 0xFE) {
+        return D_80062590[1];
+    }
+    if (id == 0xFD) {
+        return D_80062590[0];
+    }
+    if (id == 0xFC) {
+        return 0xFF;
+    }
+    return id;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008D078);
+/* Event: set the actor's character (+80) from operand 1. */
+void func_8008CF9C(void) {
+    D_800B0078->character = func_8008CF3C(func_800ACDEC(1));
+    D_800B0078->pc += 3;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008D0F4);
+/* Event: set the six halfwords at 800b21a0 from raw operands. */
+void func_8008CFEC(void) {
+    D_800B218C.unk21A0[0] = func_800ACDB8(1);
+    D_800B218C.unk21A0[2] = func_800ACDB8(3);
+    D_800B218C.unk21A0[1] = func_800ACDB8(5);
+    D_800B218C.unk21A0[3] = func_800ACDB8(7);
+    D_800B218C.unk21A0[5] = func_800ACDB8(9);
+    D_800B218C.unk21A0[4] = func_800ACDB8(11);
+    D_800B0078->pc += 13;
+}
+
+/* Event: clear (op1 zero) or set the actor's layer bit 11. */
+void func_8008D078(void) {
+    if (func_800ACDEC(1) == 0) {
+        D_800B0078->layer_flags &= ~0x800;
+    } else {
+        D_800B0078->layer_flags |= 0x800;
+    }
+    D_800B0078->pc += 3;
+}
+
+/* Event: scale the current actor by op1 and rebuild its matrix. */
+void func_8008D0F4(void) {
+    s32 scale = func_800ACDEC(1);
+
+    D_800AFB0C.descriptors[D_800AFD1C].model->unk2C = (u32)(scale * 3) >> 2;
+    D_800B0078->scale[0] = scale;
+    D_800B0078->scale[1] = scale;
+    D_800B0078->scale[2] = scale;
+    func_80072254(D_800AFD1C);
+    D_800B0078->pc += 3;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008D180);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008D230);
+/* Event: set 800b218c from operand 1. */
+void func_8008D230(void) {
+    D_800B218C.scale = func_800ACDEC(1);
+    D_800B0078->pc += 3;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008D26C);
+/* Event: set the current model's +82 to twice operand 1. */
+void func_8008D26C(void) {
+    D_800AFB0C.descriptors[D_800AFD1C].model->unk82 = func_800ACDEC(1) * 2;
+    D_800B0078->pc += 3;
+}
 
 void func_8008D2D8(void) {
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008D2E0);
+/* Write a halfword into the event bytecode at `offset`. */
+void func_8008D2E0(s32 value, s32 offset) {
+    D_800ADC00[offset + 1] = value >> 8;
+    D_800ADC00[offset] = value;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008D30C);
+/* -1 when two descriptors are at least 16 apart in X/Z, else 0. */
+s32 func_8008D30C(s32 a, s32 b) {
+    return -(func_80099A4C(D_800AFB0C.descriptors[a].matrix.t[0] - D_800AFB0C.descriptors[b].matrix.t[0],
+                           D_800AFB0C.descriptors[a].matrix.t[2] - D_800AFB0C.descriptors[b].matrix.t[2]) >= 0x10);
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008D380);
 

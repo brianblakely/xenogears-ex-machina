@@ -153,7 +153,9 @@ typedef struct FieldActor {
     s32 unk030;      /* 030 */
     u8 unk034[4];
     s32 unk038;      /* 038 */
-    u8 unk03C[0xCC - 0x3C];
+    u8 unk03C[0x80 - 0x3C];
+    s8 character;    /* 080 */
+    u8 unk081[0xCC - 0x81];
     u16 pc;          /* 0CC: event working PC */
     u8 slot;         /* 0CE */
     u8 unk0CF[0xEA - 0xCF];
@@ -163,7 +165,11 @@ typedef struct FieldActor {
     u8 unk0FA[0x104 - 0xFA];
     s16 heading;     /* 104 */
     s16 heading_goal; /* 106: bit 15 once turned */
-    u8 unk108[0x114 - 0x108];
+    u8 unk108[2];
+    u16 sound;       /* 10A */
+    u8 sound_volume; /* 10C */
+    u8 sound_mode;   /* 10D: 0xff off */
+    u8 unk10E[0x114 - 0x10E];
     void *unk114;    /* 114 */
     s32 *list;       /* 118 */
     u8 unk11C[2];
@@ -212,8 +218,17 @@ typedef struct {
 } POLY_FT4;
 
 /* One 0x5C-byte descriptor; one per event actor. */
+typedef struct {
+    u8 unk00[0x2C];
+    s16 unk2C;
+    u8 unk2E[0x82 - 0x2E];
+    s16 unk82;
+} FieldModel;
+
 typedef struct FieldDescriptor {
-    u8 unk00[0x0C];
+    u8 unk00[4];
+    FieldModel *model; /* 04 */
+    u8 unk08[4];
     MATRIX matrix;     /* 0C */
     u8 unk2C[0x4C - 0x2C];
     FieldActor *actor; /* 4C */
@@ -287,13 +302,19 @@ typedef struct GameState {
     u16 unk184E;         /* 184E */
     u8 unk1850[2];
     u16 unk1852;         /* 1852 */
-    u8 unk1854[0x22B6 - 0x1854];
+    u8 unk1854[0x1D32 - 0x1854];
+    u16 unk1D32;         /* 1D32: bit per character */
+    u8 unk1D34[0x22B6 - 0x1D34];
     u16 unk22B6;         /* 22B6 */
 } GameState;
 
-/* Field work state 800b21ac..800b2388, one object: stores to its members do
+/* Field work state 800b218c..800b2388, one object: stores to its members do
  * not pass loads of other members. */
 typedef struct {
+    s16 scale;                 /* 218C: offset scale (8007b614) */
+    s16 unk218E;               /* 218E: colour pass-through gate (80075b08) */
+    u8 unk2190[0x21A0 - 0x2190];
+    s16 unk21A0[6];            /* 21A0: set by event 8008cfec */
     s16 emitter_range;         /* 21AC */
 
     u8 unk21AE[0x21B4 - 0x21AE];
@@ -407,6 +428,9 @@ extern void func_800496AC(void);                               /* PopMatrix */
 extern void func_8004A6DC(SVECTOR *v, s32 *out, s32 *flag); /* RotTrans */
 
 /* Field overlay. */
+extern void func_80072254(s32 index);
+extern void func_800863E8(s32 id);
+extern s32 func_8008CF3C(s32 id);
 extern void func_8008A93C(void);
 extern void func_800A484C(s32);
 extern void func_801E8330(s32, s32, s32);
@@ -477,7 +501,7 @@ extern s32 D_800AFC7C; /* batch limit */
 extern s32 D_800AFD1C; /* current actor index */
 extern s32 D_800AFE84;
 extern s32 D_800B06A0;
-extern FieldWork D_800B21AC;
+extern FieldWork D_800B218C;
 extern void *D_800B235C; /* movie sound-effect bank */
 extern u8 *D_800ADC00; /* event bytecode */
 extern void (*D_800AE6A0[])(void); /* extended event instructions */
@@ -501,7 +525,6 @@ extern u16 D_800B005C; /* pointer X divisor */
 extern u16 D_800B0060; /* pointer Y divisor */
 extern s32 D_800B0068[2]; /* pointer X per port */
 extern s32 D_800B0070[2]; /* pointer Y per port */
-extern s16 D_800B218C;
 extern s32 D_800C3A44; /* pointer bounds */
 extern s32 D_800C3A4C;
 extern s32 D_800C3A50;
@@ -518,7 +541,6 @@ extern s16 D_800ADC08; /* fade started */
 extern FieldView D_800AF880;
 extern s32 D_800ADB4C;
 extern FieldComponents D_800AFB0C;
-extern s16 D_800B218E;
 extern FieldDrawBlock *D_800C426C; /* current draw block */
 
 extern s32 D_800C268C;
