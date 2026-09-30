@@ -227,15 +227,165 @@ void func_801C6040(POLY_G4 *poly, u8 r, u8 g, u8 b) {
     poly->b3 = 0;
 }
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C60BC);
+/* Set up the backdrop primitives of both draw buffers: the gradient, the
+ * full-screen fade quad, the two green frame lines and the draw modes. */
+void func_801C60BC(void) {
+    RECT window;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C6408);
+    window.y = 0;
+    window.x = 0;
+    window.h = 0x100;
+    window.w = 0x100;
+    func_801C6010();
+    for (i = 0; i < 2; i++) {
+        func_801C6040(&D_800625A0->backdrop->gradient[i], 0x80, 0x80, 0);
+        func_80043BFC(&D_800625A0->backdrop->gradient[i], 1);
+        func_80043DA0(&D_800625A0->backdrop->line_a[i]);
+        (D_800625A0->backdrop->line_a + i)->r0 = 0;
+        (D_800625A0->backdrop->line_a + i)->g0 = 0x40;
+        (D_800625A0->backdrop->line_a + i)->b0 = 0;
+        func_80043DA0(&D_800625A0->backdrop->line_b[i]);
+        (D_800625A0->backdrop->line_b + i)->r0 = 0;
+        (D_800625A0->backdrop->line_b + i)->g0 = 0x40;
+        (D_800625A0->backdrop->line_b + i)->b0 = 0;
+        func_80043C9C(&D_800625A0->backdrop->fade[i]);
+        (D_800625A0->backdrop->fade + i)->x0 = 0;
+        (D_800625A0->backdrop->fade + i)->y0 = 0;
+        (D_800625A0->backdrop->fade + i)->x1 = 0x140;
+        (D_800625A0->backdrop->fade + i)->y1 = 0;
+        (D_800625A0->backdrop->fade + i)->x2 = 0;
+        (D_800625A0->backdrop->fade + i)->y2 = 0xE0;
+        (D_800625A0->backdrop->fade + i)->x3 = 0x140;
+        (D_800625A0->backdrop->fade + i)->y3 = 0xE0;
+        (D_800625A0->backdrop->fade + i)->r0 = 0x80;
+        (D_800625A0->backdrop->fade + i)->g0 = 0x80;
+        (D_800625A0->backdrop->fade + i)->b0 = 0x80;
+        func_80043BFC(&D_800625A0->backdrop->fade[i], 1);
+        func_800454DC(&D_800625A0->backdrop->mode_a[i], 0, 0, func_80043A1C(0, 0, 0x140, 0x80),
+                      &window);
+        func_800454DC(&D_800625A0->backdrop->mode_b[i], 0, 0, func_80043A1C(0, 2, 0x180, 0),
+                      &window);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C6460);
+/* Place a quad's four vertices around the screen centre (160, 112). */
+void func_801C6408(SVECTOR *v, u16 x, u16 y, u16 w, u16 h) {
+    v[0].vx = x - 160;
+    v[0].vy = y - 112;
+    v[0].vz = 0;
+    v[1].vx = x + w - 160;
+    v[1].vy = y - 112;
+    v[1].vz = 0;
+    v[2].vx = x - 160;
+    v[2].vz = 0;
+    v[3].vx = x + w - 160;
+    v[3].vz = 0;
+    v[2].vy = y + h - 112;
+    v[3].vy = y + h - 112;
+}
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C64A8);
+/* Make `poly` semi-transparent and untinted. */
+void func_801C6460(POLY_FT4 *poly) {
+    func_80043BFC(poly, 1);
+    func_80043C24(poly, 0);
+    poly->r0 = 0x80;
+    poly->g0 = 0x80;
+    poly->b0 = 0x80;
+}
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C67C4);
+/* Set up panel `index`'s primitives: its translucent grey fill and draw
+ * modes, and the textured edge strips from the four frame sprites. */
+void func_801C64A8(u8 index) {
+    Panel *panel = D_800625A0->panels[index];
+    RECT window;
+    u8 i;
+
+    window.y = 0;
+    window.x = 0;
+    window.h = 0x100;
+    window.w = 0x100;
+    D_800625A0->flags->panel_20[index] = 0;
+    D_800625A0->flags->panel_27[index] = 0;
+    for (i = 0; i < 2; i++) {
+        func_80043CC4(&panel->fill[i]);
+        (panel->fill + i)->r0 = 0x68;
+        (panel->fill + i)->g0 = 0x68;
+        (panel->fill + i)->b0 = 0x68;
+        (panel->fill + i)->r1 = 0x68;
+        (panel->fill + i)->g1 = 0x68;
+        (panel->fill + i)->b1 = 0x68;
+        (panel->fill + i)->r2 = 0x68;
+        (panel->fill + i)->g2 = 0x68;
+        (panel->fill + i)->b2 = 0x68;
+        (panel->fill + i)->r3 = 0x68;
+        (panel->fill + i)->g3 = 0x68;
+        (panel->fill + i)->b3 = 0x68;
+        func_80043BFC(&panel->fill[i], 1);
+        func_800454DC(&panel->fill_mode[i], 0, 0,
+                      func_80043A1C(0, 0, D_800625A0->sprites[0].page_x,
+                                    D_800625A0->sprites[0].page_y),
+                      &window);
+    }
+    for (i = 0; i < 4; i++) {
+        func_80043CB0(&panel->edge[0][i]);
+        func_80043C24(&panel->edge[0][i], 1);
+        (panel->edge[0] + i)->r0 = 0xFF;
+        (panel->edge[0] + i)->g0 = 0xFF;
+        (panel->edge[0] + i)->b0 = 0xFF;
+        (panel->edge[0] + i)->tpage =
+            func_80043A1C(D_800625A0->sprites[0].tpage_mode, 0, D_800625A0->sprites[0].page_x,
+                          D_800625A0->sprites[0].page_y);
+        (panel->edge[0] + i)->clut =
+            func_80043A58(D_800625A0->sprites[0].clut_x, D_800625A0->sprites[0].clut_y);
+        func_80043CB0(&panel->edge[1][i]);
+        func_80043C24(&panel->edge[1][i], 1);
+        (panel->edge[1] + i)->r0 = 0xFF;
+        (panel->edge[1] + i)->g0 = 0xFF;
+        (panel->edge[1] + i)->b0 = 0xFF;
+        (panel->edge[1] + i)->tpage =
+            func_80043A1C(D_800625A0->sprites[1].tpage_mode, 0, D_800625A0->sprites[1].page_x,
+                          D_800625A0->sprites[1].page_y);
+        (panel->edge[1] + i)->clut =
+            func_80043A58(D_800625A0->sprites[1].clut_x, D_800625A0->sprites[1].clut_y);
+        func_80043CB0(&panel->edge[2][i]);
+        func_80043C24(&panel->edge[2][i], 1);
+        (panel->edge[2] + i)->r0 = 0xFF;
+        (panel->edge[2] + i)->g0 = 0xFF;
+        (panel->edge[2] + i)->b0 = 0xFF;
+        (panel->edge[2] + i)->tpage =
+            func_80043A1C(D_800625A0->sprites[2].tpage_mode, 0, D_800625A0->sprites[2].page_x,
+                          D_800625A0->sprites[2].page_y);
+        (panel->edge[2] + i)->clut =
+            func_80043A58(D_800625A0->sprites[2].clut_x, D_800625A0->sprites[2].clut_y);
+        func_80043CB0(&panel->edge[3][i]);
+        func_80043C24(&panel->edge[3][i], 1);
+        (panel->edge[3] + i)->r0 = 0xFF;
+        (panel->edge[3] + i)->g0 = 0xFF;
+        (panel->edge[3] + i)->b0 = 0xFF;
+        (panel->edge[3] + i)->tpage =
+            func_80043A1C(D_800625A0->sprites[3].tpage_mode, 0, D_800625A0->sprites[3].page_x,
+                          D_800625A0->sprites[3].page_y);
+        (panel->edge[3] + i)->clut =
+            func_80043A58(D_800625A0->sprites[3].clut_x, D_800625A0->sprites[3].clut_y);
+    }
+}
+
+/* Build panel `index`'s frame sprites for this buffer at (x, y) with height
+ * `h` and place its top, bottom and side vectors. */
+void func_801C67C4(u8 index, u16 x, u16 y, s32 unused, u16 h) {
+    Panel *panel = D_800625A0->panels[index];
+
+    func_8002675C(D_800625A0->sprite_sheet, 0x105, &panel->frame_top, D_800625A0->buffer_index,
+                  x, y, 0x1000);
+    func_800263E4(D_800625A0->sprite_sheet, 0x105, &panel->frame_bottom,
+                  D_800625A0->buffer_index, x, y + h - 8, 0x1000, 0, 1);
+    func_8002675C(D_800625A0->sprite_sheet, 0x106, &panel->frame_side, D_800625A0->buffer_index,
+                  x, y + 8, 0x1000);
+    func_801C6408(panel->top, x, y, 8, 8);
+    func_801C6408(panel->bottom, x, y + h, 8, -8);
+    func_801C6408(panel->side, x, y + 8, 8, h - 8);
+}
 
 INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C6928);
 
