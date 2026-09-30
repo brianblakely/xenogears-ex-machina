@@ -306,7 +306,90 @@ s16 func_80084D00(s32 probe, s16 *hit) {
     return 0;
 }
 
+/* Test the probe position against scene object `index`: transform its
+ * collision faces flat (x, z) and record every face whose outline contains
+ * the probe (face number and its attribute) in D_8009D718. Returns twice
+ * the number of faces found. */
+#ifdef NON_MATCHING /* early range test and prologue scheduling differ */
+s16 func_80084DB8(s32 probe, s32 index) {
+    s32 flag;
+    SceneObject *object;
+    FaceTestScratch *scratch;
+    Mesh *mesh;
+    SVECTOR *vertices;
+    MeshFace *face;
+    u16 *hit_face;
+    u16 *hit_kind;
+    s32 count;
+    s32 i;
+    s32 dz;
+    s16 hits;
+
+    object = &D_8009C620[index];
+    index = (((VECTOR *)probe)->vx >> 12) - object->position.vx;
+    FACE_TEST_SCRATCH->delta.vx = index;
+    if (index < 0) {
+        index = -index;
+    }
+    index = index >= 0x800;
+    dz = object->position.vz - (((VECTOR *)probe)->vz >> 12);
+    FACE_TEST_SCRATCH->delta.vz = dz;
+    if (dz < 0) {
+        dz = -dz;
+    }
+    scratch = FACE_TEST_SCRATCH;
+    if (index | (dz >= 0x800)) {
+        return 0;
+    }
+    scratch->m = object->matrix;
+    i = 0;
+    scratch->m.t[2] = 0;
+    scratch->m.t[0] = 0;
+    scratch->p[0].vz = 0x800;
+    scratch->p[0].vy = 0x800;
+    scratch->p[0].vx = 0x800;
+    scratch->m.t[1] = object->position.vy;
+    hits = 0;
+    ScaleMatrix(&scratch->m, &scratch->p[0]);
+    SetRotMatrix(&scratch->m);
+    SetTransMatrix(&scratch->m);
+    mesh = (Mesh *)object->unk44;
+    scratch->point = (scratch->delta.vz << 16) | (scratch->delta.vx & 0xFFFF);
+    count = mesh->unk0;
+    vertices = mesh->vertices;
+    face = mesh->faces;
+    hit_face = D_8009D718;
+    hit_kind = D_8009D718 + 1;
+    for (; i < count; i++, face++) {
+        gte_RotTrans(&vertices[face->corner[0]], &scratch->p[0], &flag);
+        gte_RotTrans(&vertices[face->corner[1]], &scratch->p[1], &flag);
+        gte_RotTrans(&vertices[face->corner[2]], &scratch->p[2], &flag);
+        scratch->edge[0] = (scratch->p[0].vz << 16) | (scratch->p[0].vx & 0xFFFF);
+        scratch->edge[1] = (scratch->p[1].vz << 16) | (scratch->p[1].vx & 0xFFFF);
+        if (func_8004A70C(scratch->edge[0], scratch->edge[1], scratch->point) > 0) {
+            continue;
+        }
+        scratch->edge[0] = (scratch->p[1].vz << 16) | (scratch->p[1].vx & 0xFFFF);
+        scratch->edge[1] = (scratch->p[2].vz << 16) | (scratch->p[2].vx & 0xFFFF);
+        if (func_8004A70C(scratch->edge[0], scratch->edge[1], scratch->point) > 0) {
+            continue;
+        }
+        scratch->edge[0] = (scratch->p[2].vz << 16) | (scratch->p[2].vx & 0xFFFF);
+        scratch->edge[1] = (scratch->p[0].vz << 16) | (scratch->p[0].vx & 0xFFFF);
+        if (func_8004A70C(scratch->edge[0], scratch->edge[1], scratch->point) > 0) {
+            continue;
+        }
+        *hit_face = i;
+        hit_face += 2;
+        *hit_kind = face->unk6[3];
+        hits += 2;
+        hit_kind += 2;
+    }
+    return hits;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80084DB8);
+#endif
 
 /* Project `position` onto face `face` of scene object `index`: `offset` gets
  * the object-relative x/z, `normal` the face normal and offset->vy the

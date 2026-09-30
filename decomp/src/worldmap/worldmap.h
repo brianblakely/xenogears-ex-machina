@@ -669,7 +669,7 @@ void func_80097DC0(void);
 extern u16 D_8009A68C[];
 extern void *D_8009D788[16]; /* submitted frame lists */
 
-s16 func_80084DB8(s32 probe, s16 object);
+s16 func_80084DB8(s32 probe, s32 object);
 void func_8007EBBC(SceneObject *object, PolyFT4 *quads, s32 count, s32 abr);
 void func_800963E4(s32 *list);
 
@@ -1774,5 +1774,18 @@ typedef struct {
 extern s32 D_80050104, D_800595C0, D_80059578;
 extern s16 D_8009AD2C[]; /* per object flags: draw mode */
 void func_8002C700(SpriteDef *def, void *prims, u32 *ot, s32 mode);
+
+/* Scratchpad work area of the face containment test. */
+typedef struct {
+    VECTOR p[3];    /* 0x00: transformed corners; p[0] first holds the scale */
+    s32 edge[2];    /* 0x30: packed (x, z) corner pairs */
+    s32 point;      /* 0x38: packed (x, z) probe */
+    s32 pad3C;
+    VECTOR delta;   /* 0x40: probe relative to the object */
+    u8 pad50[0xA0];
+    MATRIX m;       /* 0xF0 */
+} FaceTestScratch;
+
+#define FACE_TEST_SCRATCH ((FaceTestScratch *)0x1F800000)
 
 #endif
