@@ -2884,7 +2884,29 @@ void func_801D5BA4(s32 x, s32 y) {
     D_800625A0->fieldMenu->start = D_800625A0->bufferIndex;
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D5CF8);
+/* Lay out the play time digits (hours, minutes, seconds) at (x, y) with
+ * their two separators. */
+void func_801D5CF8(s32 x, s32 y) {
+    s32 i;
+
+    for (i = 0; i < 3; i++) {
+        func_8002675C(D_800625A0->sheet, D_800625A0->time[i], &D_800625A0->fieldMenu2->polys[i * 2],
+                      D_800625A0->bufferIndex, x + i * 8, y, 0x1000);
+    }
+    for (i = 3; i < 5; i++) {
+        func_8002675C(D_800625A0->sheet, D_800625A0->time[i], &D_800625A0->fieldMenu2->polys[i * 2],
+                      D_800625A0->bufferIndex, x + i * 8 + 8, y, 0x1000);
+    }
+    for (i = 5; i < 7; i++) {
+        func_8002675C(D_800625A0->sheet, D_800625A0->time[i], &D_800625A0->fieldMenu2->polys[i * 2],
+                      D_800625A0->bufferIndex, x + i * 8 + 0x10, y, 0x1000);
+    }
+    func_8002675C(D_800625A0->sheet, 0xee, &D_800625A0->fieldMenu2->polys2[0], D_800625A0->bufferIndex, x + 0x18, y,
+                  0x1000);
+    func_8002675C(D_800625A0->sheet, 0xee, &D_800625A0->fieldMenu2->polys2[4], D_800625A0->bufferIndex, x + 0x30, y,
+                  0x1000);
+    D_800625A0->fieldMenu2->start = D_800625A0->bufferIndex;
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D5ED4);
 
