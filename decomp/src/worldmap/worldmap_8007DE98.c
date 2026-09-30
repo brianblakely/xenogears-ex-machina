@@ -391,7 +391,6 @@ s32 func_8007E4E4(s32 index) {
 }
 
 /* Set up `count` translucent blue textured quads of a scene object and copy them to its second buffer. */
-#ifdef NON_MATCHING /* loop pointer biased to b0 instead of the code byte */
 void func_8007EBBC(SceneObject *object, PolyFT4 *quads, s32 count, s32 abr) {
     s32 i;
 
@@ -399,15 +398,12 @@ void func_8007EBBC(SceneObject *object, PolyFT4 *quads, s32 count, s32 abr) {
         setPolyFT4(quads);
         quads->tpage = GetTPage(0, abr, 0x300, 0x100);
         quads->clut = GetClut(0, 0x1FF);
-        setRGB0(quads, 0x3C, 0x3C, 0xC0);
         setSemiTrans(quads, 1);
+        setRGB0(quads, 0x3C, 0x3C, 0xC0);
         quads++;
     }
     memcpy(object->prims2, object->prims, count * sizeof(PolyFT4));
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007DE98", func_8007EBBC);
-#endif
 
 /* Start the flight: link objects 2-3 to 1, build their quads, hide 1 and place the actor behind the player on its entry path. */
 #ifdef NON_MATCHING /* motion reload not hoisted into the load delay slot */

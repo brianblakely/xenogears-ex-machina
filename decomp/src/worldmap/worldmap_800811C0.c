@@ -306,12 +306,12 @@ s32 func_80081C3C(void) {
 }
 
 /* Heat haze: offset each of 192 one-pixel rows by a random amount and copy the result back to the frame. */
-#ifdef NON_MATCHING /* loop pointer biased to a different field; row store order */
 s32 func_80081D80(void) {
     RECT rect;
     PolyFT4 *quad;
     u16 *spread;
     s32 row;
+    s32 next;
     s32 offset;
 
     row = 0;
@@ -328,15 +328,16 @@ s32 func_80081D80(void) {
         quad->u1 = 0xC0;
         quad->u2 = 0;
         quad->u3 = 0xC0;
-        row++;
-        quad->y2 = row;
-        quad->y3 = row;
-        quad->v2 = row;
-        quad->v3 = row;
         quad->x0 = offset + 0x40;
         quad->x1 = offset + 0x100;
         quad->x2 = offset + 0x40;
         quad->x3 = offset + 0x100;
+        next = row + 1;
+        quad->y2 = next;
+        quad->y3 = next;
+        quad->v2 = next;
+        quad->v3 = next;
+        row = next;
         addPrimTag(D_8009BE3C->ot, quad);
         quad++;
     } while (row < 0xC0);
@@ -348,9 +349,6 @@ s32 func_80081D80(void) {
     addPrimTag(D_8009BE3C->ot, &D_8009D164[D_8009D7F0]);
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_80081D80);
-#endif
 
 /* Reset an actor to state 0, step 1. */
 s32 func_80081FB4(s32 index) {
