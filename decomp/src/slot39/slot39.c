@@ -3528,7 +3528,54 @@ void func_801E5B88(void) {
     }
 }
 
+/* Set up the 32x32 cursor sprite and the purple-to-black shaded band
+ * (0,4a)-(140,8a) for both buffers. */
+#ifdef NON_MATCHING
+void func_801E5E4C(void) {
+    s32 *x;
+    s32 *y;
+    s32 i;
+
+    i = 0;
+    x = &D_801E99F0;
+    y = &D_801E99F8;
+    for (; i < 2; i++) {
+        func_801E927C(&D_800625A0->block34C->cursor[i]);
+        (D_800625A0->block34C->cursor + i)->x0 = *x;
+        (D_800625A0->block34C->cursor + i)->y0 = *y;
+        (D_800625A0->block34C->cursor + i)->x1 = *x + 0x20;
+        (D_800625A0->block34C->cursor + i)->y1 = *y;
+        (D_800625A0->block34C->cursor + i)->x2 = *x;
+        (D_800625A0->block34C->cursor + i)->y2 = *y + 0x20;
+        (D_800625A0->block34C->cursor + i)->x3 = *x + 0x20;
+        (D_800625A0->block34C->cursor + i)->y3 = *y + 0x20;
+        D_800625A0->block34C->cursor[i].tpage = GetTPage(0, 0, 0x140, 0x80);
+        SetPolyG4(&D_800625A0->block34C->band[i]);
+        (D_800625A0->block34C->band + i)->r0 = 0x80;
+        (D_800625A0->block34C->band + i)->g0 = 0;
+        (D_800625A0->block34C->band + i)->b0 = 0x80;
+        (D_800625A0->block34C->band + i)->r1 = 0;
+        (D_800625A0->block34C->band + i)->g1 = 0;
+        (D_800625A0->block34C->band + i)->b1 = 0x80;
+        (D_800625A0->block34C->band + i)->r2 = 0x10;
+        (D_800625A0->block34C->band + i)->g2 = 0;
+        (D_800625A0->block34C->band + i)->b2 = 0x10;
+        (D_800625A0->block34C->band + i)->r3 = 0;
+        (D_800625A0->block34C->band + i)->g3 = 0;
+        (D_800625A0->block34C->band + i)->b3 = 0x10;
+        (D_800625A0->block34C->band + i)->x0 = 0;
+        (D_800625A0->block34C->band + i)->y0 = 0x4a;
+        (D_800625A0->block34C->band + i)->x1 = 0x140;
+        (D_800625A0->block34C->band + i)->y1 = 0x4a;
+        (D_800625A0->block34C->band + i)->x2 = 0;
+        (D_800625A0->block34C->band + i)->y2 = 0x8a;
+        (D_800625A0->block34C->band + i)->x3 = 0x140;
+        (D_800625A0->block34C->band + i)->y3 = 0x8a;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E5E4C);
+#endif
 
 /* Lay out the three save views' frames (nine images each, 50 apart) and
  * their 72x13 name quads (label rows 6 + view). */

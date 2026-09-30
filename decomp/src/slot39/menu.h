@@ -480,7 +480,8 @@ typedef struct MenuView {
 /* The 2dc0-byte block (*(state + 34c)). */
 typedef struct MenuBlock34C {
     POLY_FT4 chars[64]; /* 0: 32 text character quads, pairs per buffer */
-    u8 padA00[0x98];
+    POLY_FT4 cursor[2]; /* A00: 32x32 sprite, per buffer */
+    POLY_G4 band[2]; /* A50: shaded band, per buffer */
     MenuView views[3]; /* A98 */
     POLY_FT4 colon0[4]; /* 240C: play time separators */
     POLY_FT4 colon1[4]; /* 24AC */
@@ -908,6 +909,8 @@ extern s32 D_801EA004[];
 extern s32 D_801EA010[];
 extern s32 D_801E9994[21];    /* text character x per column */
 extern s32 D_801E99E8[];      /* text character y per row */
+extern s32 D_801E99F0;        /* cursor sprite x */
+extern s32 D_801E99F8;        /* cursor sprite y */
 extern s32 D_801EA494[9];     /* view frame images, ffff none */
 extern s32 D_801E9F98[9];     /* view frame x (first view) */
 extern s32 D_801E9FBC[9];     /* view frame y */
