@@ -2419,7 +2419,251 @@ void func_801CBA4C(MenuSavePayload *payload, u8 port, u8 digit) {
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CBA4C);
 #endif
 
+/* The save: refresh the cards (none: returns 1), then run the file cursor
+ * until cancel or confirm. An unformatted card asks to format it; an empty
+ * slot asks message 5f, another game's file is refused (c4) and this game's
+ * file asks 38 and is erased (keeping its digit). The save writes the
+ * header (title 801ca8c0) and the checksummed payload (801cba4c) to a
+ * temporary file and renames it to the prefix and digit, then reports 5c or
+ * 35 and refreshes the listing. With `kind` 0 one save ends it. */
+#ifdef NON_MATCHING
+/* Differs in register allocation: the original keeps ff in a saved register
+ * (and so spills `again`). */
+u8 func_801CBD90(u8 kind) {
+    char finalName[64];
+    char tempName[64];
+    char device[8];
+    char digitText[16];
+    s32 again;
+    s32 created;
+    u8 first;
+    u8 result;
+    u8 existing;
+    u8 proceed;
+    u8 port;
+    u8 digit;
+    u8 retry;
+    s32 fd;
+    s32 written;
+    u8 *buffer;
+    u8 *p;
+    u8 *q;
+    u8 sum;
+    s32 i;
+
+    existing = 0xff;
+    first = 1;
+    again = 1;
+    result = 0;
+    func_801CADB0();
+    do {
+        if (func_801C93A8()) {
+            result = 1;
+            break;
+        }
+        if (first) {
+            if (D_800625A0->party->messageShown) {
+                func_801D32B4();
+            }
+            first = 0;
+            D_800625A0->markers->visible[0] = 1;
+        }
+        if (!func_801C9BCC(2) && (D_800625A0->card->cursor = func_801C9D34(2)) == 0xff) {
+            func_801CACF8(0xac, 0xff, 0);
+            break;
+        }
+        D_800625A0->party->unk2F = 1;
+        switch (func_801CA750(2)) {
+        case 1:
+            D_800625A0->markers->unk144[0] = 0;
+            D_800625A0->card->mode = 0;
+            proceed = 1;
+            if (D_800625A0->card->cursor < 15) {
+                __builtin_memcpy(device, D_801C50A8, 6);
+                port = 0;
+            } else {
+                __builtin_memcpy(device, D_801C50B0, 6);
+                port = 1;
+            }
+            if (D_800625A0->card->result[port] == -2) {
+                if (!func_801CB8AC(port)) {
+                    D_800625A0->markers->unk144[0] = 1;
+                    continue;
+                }
+                func_801D2F4C(0x26);
+                if (func_80040574(device)) {
+                    func_801D32B4();
+                    func_801CACF8(0x5c, 0xff, 0);
+                } else {
+                    func_801D32B4();
+                    proceed = 0;
+                    again = 0;
+                }
+            }
+            if (proceed) {
+                if (D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]] != 0xff) {
+                    if (D_800625A0->card->ours[D_801E981C[D_800625A0->card->cursor]]) {
+                        if ((u8)func_801CACF8(0x38, 0xff, 1)) {
+                            strcpy(tempName, device);
+                            strcat(tempName, D_800625A0->card
+                                                 ->files[D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]]]
+                                                 .name);
+                            func_800405B4(tempName);
+                            existing = (D_800625A0->card->headers +
+                                        D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]])[0][0x123];
+                        } else {
+                            proceed = 0;
+                            D_800625A0->card->unk4F80 = 0xff;
+                        }
+                    } else {
+                        func_801CACF8(0xc4, 0xff, 0);
+                        D_800625A0->markers->unk144[0] = 1;
+                        continue;
+                    }
+                } else if (!(u8)func_801CACF8(0x5f, 0xff, 1)) {
+                    proceed = 0;
+                    D_800625A0->card->unk4F80 = 0xff;
+                }
+            }
+            if (proceed) {
+                D_800625A0->party->unk2F = 0;
+                D_800625A0->party->unkB = 0;
+                D_800625A0->card->unk4F80 = 0xff;
+                D_800625A0->card->unk4F8C[0] = 0xff;
+                D_800625A0->card->unk4F8C[1] = 0xff;
+                digit = func_801CB9E8(port, existing);
+                digitText[0] = digit + '0';
+                digitText[1] = 0;
+                strcpy(finalName, device);
+                strcpy(tempName, device);
+                strcat(finalName, D_800625A0->card->prefix);
+                strcat(finalName, digitText);
+                strcat(tempName, D_801C50B8);
+                func_801D2F4C(0x32);
+                D_800625A0->sounds = 0;
+                func_800405B4(tempName);
+                retry = 3;
+                do {
+                    fd = open(tempName, D_800625A0->card->saveBlocks << 16 | 0x200);
+                    if (fd == -1) {
+                        fd = 0;
+                        func_801C8CA4(port);
+                    } else {
+                        created = fd;
+                    }
+                } while (fd == 0 && --retry != 0);
+                func_80040564(created);
+                if (fd != 0) {
+                    retry = 3;
+                    do {
+                        fd = open(tempName, 2);
+                        if (fd == -1) {
+                            fd = 0;
+                            func_801C8CA4(port);
+                        }
+                    } while (fd == 0 && --retry != 0);
+                    if (fd == 0) {
+                        func_800405B4(tempName);
+                    }
+                    func_801C7BF4();
+                }
+                if (fd != 0) {
+                    func_801CA8C0(digit);
+                    retry = 3;
+                    do {
+                        if (write(fd, D_800625A0->card->saveMagic, 0x100) == -1) {
+                            fd = 0;
+                            func_801C8CA4(port);
+                        }
+                    } while (fd == 0 && --retry != 0);
+                    if (fd == 0) {
+                        func_80040564(0);
+                        func_800405B4(tempName);
+                    } else {
+                        written = 0x100;
+                        buffer = func_80031BDC(0x1f00, 1);
+                        bzero(buffer, 0x1f00);
+                        p = buffer;
+                        func_801CBA4C((MenuSavePayload *)buffer, port, digit);
+                        q = buffer;
+                        sum = 0;
+                        for (i = 0; i < 0x1eff; i++) {
+                            sum += *q++;
+                        }
+                        *q = sum;
+                        func_801CAE08(1);
+                        do {
+                            func_801C7BF4();
+                            retry = 3;
+                            do {
+                                if (write(fd, p, 0x100) != 0x100) {
+                                    fd = 0;
+                                    func_801C8CA4(port);
+                                }
+                            } while (fd == 0 && --retry != 0);
+                            if (fd == 0) {
+                                func_80040564(created);
+                                strcpy(tempName, device);
+                                strcat(tempName, D_801C50B8);
+                                func_800405B4(tempName);
+                                goto release;
+                            }
+                            written += 0x100;
+                            p += 0x100;
+                        } while (written < D_800625A0->card->saveBlocks << 13);
+                        func_80040564(fd);
+                        strcpy(tempName, device);
+                        strcat(tempName, D_801C50B8);
+                        retry = 3;
+                        do {
+                            if (!func_800405A4(tempName, finalName)) {
+                                fd = 0;
+                                func_801C8CA4(port);
+                            }
+                        } while (fd == 0 && --retry != 0);
+                        if (fd == 0) {
+                            func_800405B4(tempName);
+                        }
+                    release:
+                        func_800320E8(buffer);
+                    }
+                }
+                func_801D32B4();
+                func_801CAE08(2);
+                if (fd != 0) {
+                    D_800625A0->sounds = 1;
+                    func_801C8574(0x34);
+                    D_800625A0->sounds = 0;
+                    func_801CACF8(0x5c, 0xff, 0);
+                } else {
+                    func_801CACF8(0x35, 0xff, 0);
+                }
+                func_801CAE08(0);
+                D_800625A0->card->mode = 2;
+                while (D_800625A0->cardPollTimer != 1) {
+                    func_801C7BF4();
+                }
+                D_800625A0->card->scanned[0] = 0;
+                D_800625A0->card->scanned[1] = 0;
+            }
+            D_800625A0->markers->unk144[0] = 1;
+            D_800625A0->sounds = 1;
+            if (!kind) {
+                again = 0;
+            }
+            break;
+        case 2:
+            again = 0;
+            break;
+        }
+    } while (again);
+    D_800625A0->card->mode = 1;
+    D_800625A0->cardsPresent = 1;
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CBD90);
+#endif
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CC6D8);
 

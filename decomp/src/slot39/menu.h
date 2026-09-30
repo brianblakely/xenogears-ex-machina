@@ -1329,6 +1329,8 @@ s32 func_80040494(s32 event);            /* TestEvent */
 u16 *func_800405C4(s32 code);   /* 16x16 font glyph of a two-byte code, -1 none */
 s32 func_80040544(s32 fd, void *buf, s32 size); /* read */
 void func_80040564(s32 fd);               /* close */
+s32 func_80040574(char *device);          /* format */
+s32 func_800405A4(char *from, char *to);  /* rename */
 u32 func_801E1418(u8 slot, u8 row);
 void func_801E3A80(MenuTables *tables, u8 id);
 void func_801E433C(MenuTables *tables, u8 gear);
@@ -1662,5 +1664,6 @@ void func_801D3344(s32 x, s32 y, s32 h);
 void func_801D36E0(MenuLabelSlot *label, u8 slot, u8 gear, u8 mode);
 s32 func_801D9704(s32 slot, u8 dir, u8 readyOnly);
 void func_801E4A28(SaveData *save);
+void func_801CBA4C(MenuSavePayload *payload, u8 port, u8 digit);
 
 #endif
