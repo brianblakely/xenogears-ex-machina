@@ -5,9 +5,11 @@
 #include "psyq/libetc.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
+#include "psyq/inline_c.h"
 #include "psyq/libsn.h"
 #include "psyq/libspu.h"
 #include "mode.h"
+#include "gpu.h"
 #include "menu.h"
 #include "sprite.h"
 #include "cd.h"
@@ -19,11 +21,250 @@
 #include "console.h"
 #include "sound.h"
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002709C", func_8002709C);
+/* Create a panoramic backdrop (heap tag 4). `colours` (three RGB words:
+ * sky, horizon, ground) enables the fills, NULL leaves them off. */
+Panorama *func_8002709C(s32 tex_x, s32 tex_y, s32 width, s32 height, s32 clut_x, s32 clut_y,
+                        s32 mode, s32 turn, VECTOR *position, u8 *colours, u16 fill_scale,
+                        u16 fade_range, u16 fade_start) {
+    DRAWENV env;
+    Panorama *panorama;
+    POLY_FT4 *quad;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002709C", func_800273C4);
+    func_80032498(4, 0);
+    panorama = func_80031BDC(sizeof(Panorama), 0);
+    if (panorama == NULL) {
+        return NULL;
+    }
+    GetDrawEnv(&env);
+    panorama->width = width;
+    panorama->height = height;
+    panorama->vx = position->vx;
+    panorama->vy = position->vy;
+    panorama->vz = position->vz;
+    panorama->fill_scale = fill_scale;
+    panorama->fade_range = fade_range;
+    panorama->fade_start = fade_start;
+    if (position->vz >= 0) {
+        panorama->turn = turn;
+    } else {
+        panorama->turn = -turn;
+    }
+    panorama->tex_x = tex_x;
+    panorama->tex_y = tex_y;
+    panorama->mode = mode;
+    panorama->v = tex_y % 256;
+    for (i = 0, quad = panorama->quads[0]; i < 16; i++, quad++) {
+        SetPolyFT4(quad);
+        SetShadeTex(quad, 1);
+        quad->clut = GetClut(clut_x, clut_y);
+    }
+    if (colours != NULL) {
+        panorama->fill = 1;
+        for (i = 0; i < 2; i++) {
+            SetPolyF4(&panorama->fills[i]);
+            setRGB0(&panorama->fills[i], colours[0], colours[1], colours[2]);
+            panorama->fills[i].x0 = 0;
+            panorama->fills[i].y0 = 0;
+            panorama->fills[i].x1 = 320;
+            panorama->fills[i].y1 = 0;
+            panorama->fills[i].x2 = 0;
+            panorama->fills[i].x3 = 320;
+        }
+        colours += 4;
+        for (i = 0; i < 2; i++) {
+            setRGB0(&panorama->fades[i], colours[0], colours[1], colours[2]);
+            setRGB1(&panorama->fades[i], colours[0], colours[1], colours[2]);
+            colours += 4;
+            setRGB2(&panorama->fades[i], colours[0], colours[1], colours[2]);
+            setRGB3(&panorama->fades[i], colours[0], colours[1], colours[2]);
+            colours -= 4;
+            SetPolyG4(&panorama->fades[i]);
+            panorama->fades[i].x0 = 0;
+            panorama->fades[i].x1 = 320;
+            panorama->fades[i].x2 = 0;
+            panorama->fades[i].x3 = 320;
+        }
+        colours += 4;
+        for (i = 2; i < 4; i++) {
+            SetPolyF4(&panorama->fills[i]);
+            setRGB0(&panorama->fills[i], colours[0], colours[1], colours[2]);
+            panorama->fills[i].x0 = 0;
+            panorama->fills[i].x1 = 320;
+            panorama->fills[i].x2 = 0;
+            panorama->fills[i].y2 = 240;
+            panorama->fills[i].x3 = 320;
+            panorama->fills[i].y3 = 240;
+        }
+    } else {
+        panorama->fill = 0;
+    }
+    return panorama;
+}
 
+/* Draw a panoramic backdrop into `ot` for the view from `eye` to `target`:
+ * the strip where its point ahead of the target projects (shrinking with
+ * the distance past fade_start), and the sky, fade and ground fills around
+ * it. Returns the strip's bottom screen row. */
+s32 func_800273C4(Panorama *panorama, SVECTOR *eye, SVECTOR *target, MATRIX *view, u_long *ot,
+                  s32 buffer) {
+    DVECTOR bottom;
+    DVECTOR edge;
+    VECTOR d;
+    SVECTOR p;
+    SVECTOR n;
+    s16 zoom;
+    s16 y;
+
+    if (panorama == NULL) {
+        return 0;
+    }
+    d.vx = target->vx - eye->vx;
+    d.vy = 0;
+    d.vz = target->vz - eye->vz;
+    VectorNormalS(&d, &n);
+    p.vx = n.vx * panorama->vz / 4096 + target->vx;
+    p.vy = panorama->vy;
+    p.vz = n.vz * panorama->vz / 4096 + target->vz;
+    SetRotMatrix(view);
+    SetTransMatrix(view);
+    gte_ldv0(&p);
+    gte_rtps();
+    gte_stsxy(&bottom);
+    if (panorama->fade_range != 0) {
+        d.vx = target->vx - eye->vx;
+        d.vy = target->vy - eye->vy;
+        d.vz = target->vz - eye->vz;
+        zoom = (SquareRoot0(d.vx * d.vx + d.vy * d.vy + d.vz * d.vz) - panorama->fade_start) /
+               panorama->fade_range;
+        if (zoom < 0) {
+            zoom = 0;
+        }
+        if (zoom > 0x100) {
+            zoom = 0x100;
+        }
+    } else {
+        zoom = 0;
+    }
+    func_800278F8(panorama, panorama->width * panorama->turn * (ratan2(d.vx, d.vz) & 0xFFF) / 4096,
+                  bottom.vy, zoom, ot, buffer);
+    if (panorama->fill > 0) {
+        bottom.vx = bottom.vy - panorama->height;
+        if (bottom.vx > 240) {
+            bottom.vx = 240;
+        }
+        if (bottom.vx > 0) {
+            panorama->fills[buffer].y2 = bottom.vx;
+            panorama->fills[buffer].y3 = bottom.vx;
+            addPrim(ot, &panorama->fills[buffer]);
+        }
+        p.vx = n.vx * panorama->vz / 4096 * panorama->fill_scale / 256 + target->vx;
+        p.vy = panorama->vy * panorama->fill_scale / 256;
+        p.vz = n.vz * panorama->vz / 4096 * panorama->fill_scale / 256 + target->vz;
+        gte_ldv0(&p);
+        gte_rtps();
+        gte_stsxy(&edge);
+        if (edge.vy - bottom.vy > 240) {
+            edge.vy = bottom.vy + 240;
+        }
+        if (edge.vy >= 0 && bottom.vy < 240) {
+            panorama->fades[buffer].y0 = bottom.vy;
+            panorama->fades[buffer].y1 = bottom.vy;
+            panorama->fades[buffer].y2 = edge.vy;
+            panorama->fades[buffer].y3 = edge.vy;
+            addPrim(ot, &panorama->fades[buffer]);
+        }
+        if (edge.vy < 0) {
+            y = 0;
+        } else {
+            y = edge.vy;
+        }
+        if (y < 240) {
+            panorama->fills[buffer + 2].y0 = y;
+            panorama->fills[buffer + 2].y1 = y;
+            addPrim(ot, &panorama->fills[buffer + 2]);
+        }
+    }
+    return bottom.vy;
+}
+
+/* Draw the strip of a panoramic backdrop from texture column `start`,
+ * `bottom` its bottom screen row, scaled down by `zoom` (8.8): up to eight
+ * quads across the screen, one per texture page.
+ * Nonmatching: the original keeps a second copy of `bottom` for the quads'
+ * lower corners and saves `bottom`, `top` and `ot` around GetTPage. */
+#ifdef NON_MATCHING
+void func_800278F8(Panorama *panorama, s32 start, s32 bottom, s32 zoom, u_long *ot, s32 buffer) {
+    s32 left;
+    s16 u;
+    s16 top;
+    s16 x;
+    s16 next;
+    s16 w;
+    s16 page_u;
+    s16 page_x;
+    s16 cols;
+    s16 x1;
+    s32 i;
+    POLY_FT4 *quad;
+
+    left = (320 - (panorama->width << 8) / (zoom + 0x100)) / 2;
+    left += left * zoom / 256;
+    u = (s16)(start - left) % panorama->width;
+    if (u < 0) {
+        u += panorama->width;
+    }
+    if (bottom < 0 || panorama->height + 240 < bottom) {
+        top = 0;
+    } else {
+        top = (panorama->height << 8) / (zoom + 0x100);
+    }
+    x = 0;
+    quad = panorama->quads[buffer & 1];
+    if (top > 0) {
+        page_u = (panorama->tex_x % 64) << (2 - panorama->mode);
+        for (i = 0; i < 8; i++, quad++) {
+            page_x = panorama->tex_x + (u >> (2 - panorama->mode));
+            cols = (u + page_u) & ((0x100 >> panorama->mode) - 1);
+            w = 0x100 - cols;
+            if (u + w > panorama->width) {
+                w = panorama->width - u;
+            }
+            x1 = (w << 8) / (zoom + 0x100);
+            if (x + x1 > 320) {
+                x1 = 320 - x;
+                w = x1 * (zoom + 0x100) / 256;
+            }
+            next = (s16)(u + w) % panorama->width;
+            quad->x0 = x;
+            quad->x1 = x + x1;
+            quad->x2 = x;
+            quad->y2 = bottom;
+            quad->x3 = x + x1;
+            quad->y3 = bottom;
+            quad->u0 = cols;
+            quad->y0 = bottom - top;
+            quad->y1 = bottom - top;
+            quad->u1 = cols + w - 1;
+            quad->v0 = panorama->v;
+            quad->u2 = cols;
+            quad->v1 = panorama->v;
+            quad->u3 = cols + w - 1;
+            quad->v2 = panorama->v + panorama->height;
+            quad->v3 = panorama->v + panorama->height;
+            u = next;
+            quad->tpage = GetTPage(panorama->mode, 0, page_x / 64 * 64, panorama->tex_y / 256 * 256);
+            addPrim(ot, quad);
+            x += x1;
+            if (x >= 320) {
+                break;
+            }
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002709C", func_800278F8);
+#endif
 
 /* Release a block if there is one. */
 void func_80027D40(void *block) {

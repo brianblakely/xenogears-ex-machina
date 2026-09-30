@@ -281,6 +281,7 @@ u_short GetTPage(int tp, int abr, int x, int y);
 DRAWENV *SetDefDrawEnv(DRAWENV *env, int x, int y, int w, int h);
 DISPENV *SetDefDispEnv(DISPENV *env, int x, int y, int w, int h);
 DRAWENV *PutDrawEnv(DRAWENV *env);
+DRAWENV *GetDrawEnv(DRAWENV *env);
 DISPENV *PutDispEnv(DISPENV *env);
 int OpenTIM(u_long *addr);
 TIM_IMAGE *ReadTIM(TIM_IMAGE *timimg);
