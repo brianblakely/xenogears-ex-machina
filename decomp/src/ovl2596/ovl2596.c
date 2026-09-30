@@ -1342,7 +1342,61 @@ u8 func_801E38CC(u8 maxEp, u8 level) {
     return maxEp;
 }
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E3A18);
+/* Learn skills for each party slot that is not knocked out: a counter skill
+ * (not characters 7 and 8), a level skill (not 10), the unlocks, and the
+ * special cases of characters 8 and 7. */
+void func_801E3A18(void) {
+    u8 slot;
+    u8 learnt;
+
+    for (slot = 0; slot < 3; slot++) {
+        D_801E44EC = &D_801E44C8->records[slot];
+        if (D_801E44EC->flags7C & 0x8000) {
+            continue;
+        }
+        switch (D_801E44EC->id) {
+        case 7:
+        case 8:
+            break;
+        default:
+            learnt = func_801E3BE0(D_801E44EC->id);
+            if (learnt != 0) {
+                D_801E44C8->learntCounter[slot] = learnt;
+            }
+            break;
+        }
+        if (D_801E44EC->id != 10) {
+            learnt = func_801E3D54(D_801E44EC->id);
+            if (learnt != 0) {
+                D_801E44C8->learntLevel[slot] = learnt;
+            }
+        }
+        switch (D_801E44EC->id) {
+        case 7:
+        case 8:
+        case 10:
+            break;
+        default:
+            func_801E3E14(D_801E44EC->id);
+            break;
+        }
+        switch (D_801E44EC->id) {
+        case 8:
+        case 9:
+        case 10:
+            break;
+        default:
+            func_801E3F28(D_801E44EC->id);
+            break;
+        }
+        if (D_801E44EC->id == 8) {
+            func_801E3EA4();
+        }
+        if (D_801E44EC->id == 7) {
+            func_801E3FB0();
+        }
+    }
+}
 
 /* Learn the first unknown counter skill (of 7, or 13 with option 0x4000)
  * whose level is reached and whose seven counter requirements the current

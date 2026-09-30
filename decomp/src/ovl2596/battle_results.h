@@ -351,7 +351,10 @@ typedef struct {
     Combatant records[11];    /* 0x0000 */
     u8 padFD0[0xFE8 - 0xFD0];
     MemberWide gained[3];     /* 0xFE8: experience pools per slot (800cdcd0) */
-    u8 pad1000[0x5F20 - 0x1000];
+    u8 pad1000[0x101C - 0x1000];
+    u8 learntCounter[3];      /* 0x101C: counter skill learnt per slot */
+    u8 learntLevel[3];        /* 0x101F: level skill learnt per slot */
+    u8 pad1022[0x5F20 - 0x1022];
     GrowthFile *growth;       /* 0x5F20 */
 } BattleWork;
 
@@ -362,6 +365,12 @@ extern u16 D_8006F8EA;          /* option flags */
 extern u32 D_801E44F0;          /* experience pool for level A */
 extern u32 D_801E44F4;          /* experience pool for level B */
 void func_801E335C(void);
+u8 func_801E3BE0(u8 id);
+u8 func_801E3D54(u8 id);
+void func_801E3E14(u8 id);
+void func_801E3EA4(void);
+void func_801E3F28(u8 id);
+void func_801E3FB0(void);
 void func_801E3500(void);
 
 /* Sound and input. */
