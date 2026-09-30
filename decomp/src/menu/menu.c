@@ -3113,9 +3113,66 @@ void func_80090894(Actor *actor, s32 kind) {
     brain->unk2E = 0;
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80090990);
+/* The opponent's special mode step: sidestep homing shots (maybe
+ * countering), use a special move once far enough (or when forced), and
+ * pick a new wide heading and duration whenever the timer runs out. */
+void func_80090990(Actor *actor, Brain *brain) {
+    s32 roll;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80090C88);
+    if (func_8008FACC(actor, brain)) {
+        return;
+    }
+    if (actor->opponent->nearest_shot->steer == 1 && actor->opponent->nearest_dist < 0x500 &&
+        brain->unkF) {
+        brain->unkE = 1;
+        brain->unkA = brain->unk2C_12 ? 0x400 : -0x400;
+        if (brain->unkF >= 2 && func_8008F5B4(actor, 0) && brain->unk2C_12) {
+            if ((func_8003FA38() & 3) == 0) {
+                func_8007639C(actor, 4);
+            }
+            func_8008F900(actor);
+            brain->unk2E = 0;
+        }
+        brain->unk2E++;
+    }
+    if (!func_8008F580(actor)) {
+        brain->unkE = 0;
+    }
+    if (D_8009284C > brain->unk28 || (D_80092884 && D_80092850 > 0x4B0)) {
+        if (D_80092884) {
+            func_8007639C(actor, 4);
+        }
+        func_8008FFEC(actor, brain);
+        func_8008FC7C(actor);
+    }
+    if (brain->timer < 0 || brain->unkC == 0) {
+        brain->unkA = func_8003FA38() % 0x600 + 0x500;
+        roll = func_8003FA38();
+        brain->timer = (brain->unk2C_10 ? roll % 40 : roll % 60) + 10;
+        brain->unkC = 0xFF;
+        if (brain->unk9 != 0) {
+            brain->unk9--;
+        } else {
+            if (func_8008F5B4(actor, 0)) {
+                func_8007639C(actor, 4);
+                func_8008F900(actor);
+            }
+            brain->unk9 = func_8003FA38() % 5 + 3;
+        }
+    }
+    brain->timer--;
+}
+
+/* Load the opponent's four tendencies from its move list. */
+void func_80090C88(Actor *actor) {
+    MoveList *moves = actor->moves;
+    Brain *brain = actor->brain;
+
+    brain->unk10 = moves->tendency[0];
+    brain->unk14 = moves->tendency[1];
+    brain->unk18 = moves->tendency[2];
+    brain->unk1C = moves->tendency[3];
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80090CC0);
 
