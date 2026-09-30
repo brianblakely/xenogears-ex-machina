@@ -78,6 +78,8 @@ typedef struct {
     char name[13];
 } CardPrefix;
 
+extern const CardPrefix D_801C5000; /* "BISLPS-00800" */
+
 /* The menu resources block (*8005945c): packed files by index. */
 typedef struct {
     s32 count;
@@ -598,6 +600,8 @@ void func_8003342C(void *list);          /* relocate an offset list */
 void func_80026338(void *sheet, s32 id, s32 *u, s32 *v, s32 *w, s32 *h, s32 *x, s32 *y);
 void func_80033698(s32 x, s32 y);        /* text palettes */
 u8 *func_80033728(void *table, s32 index); /* entry of a text table */
+u8 *func_80033A2C(s32 id);               /* kind 3 part name */
+u8 *func_80033A5C(s32 id);               /* kind 4 part name */
 s32 func_80034EAC(u8 *text, void *pixels, s32 width, s32 line); /* render a text line */
 s32 func_8002675C(void *sheet, s32 id, void *packets, s32 buffer, s32 x, s32 y, s32 scale); /* sprite */
 s32 func_800263E4(void *sheet, s32 id, void *packets, s32 buffer, s32 x, s32 y, s32 scale, s32 flip_x,
@@ -702,6 +706,8 @@ void func_801C94CC(s32 count, POLY_FT4 *packets, s32 first);
 void func_801C93B0(s32 count, SVECTOR *quads, POLY_FT4 *packets, s32 first);
 
 /* ovl2602 only. */
+extern u8 D_8006F6F0[];  /* inventory 4 counts (100) */
+extern u8 D_8006F7B8[];  /* inventory 3 counts (150) */
 extern u8 D_8006F754[];  /* inventory 4 ids (100), counts just before */
 extern u8 D_8006F84E[];  /* inventory 3 ids (150), counts just before */
 void func_801C5600(u8 allocate);
@@ -811,7 +817,8 @@ typedef struct {
 
 /* A part record (1ch bytes). */
 typedef struct {
-    u8 unk0[6];
+    u32 users;     /* 00: party bits of the members who can use it */
+    u16 price;     /* 04 */
     u16 unk6;      /* 06 */
     u16 unk8;      /* 08: part type (0 none) */
     u8 unkA[3];
@@ -830,7 +837,9 @@ typedef struct {
 /* A weapon record (14h bytes). */
 typedef struct {
     u8 unk0, unk1, unk2, unk3; /* 00 */
-    u8 unk4[0xE - 4];
+    u32 users;     /* 04: party bits of the members who can use it */
+    u16 price;     /* 08 */
+    u8 unkA[0xE - 0xA];
     u8 unkE;       /* 0e */
     u8 unkF;
     u8 unk10, unk11; /* 10 */
@@ -862,6 +871,7 @@ s32 rand(void);  /* rand */
 void func_801E7D14(void *a, void *b, u32 *ot, s32 buffer);
 u32 func_801C527C(u32 mask, u8 id);
 u32 func_801C5260(u8 id);
+u32 func_801D1078(u8 id, u8 kind);
 void func_801CCEBC(u8 count, u8 *shown);
 void func_801D0EC8(u8 close);
 void func_801D61B8(GearTable *table, u8 id);

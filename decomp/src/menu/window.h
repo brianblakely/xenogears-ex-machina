@@ -43,22 +43,41 @@ struct Menu {
     TileRgb panel[2];  /* 0x1C: one per buffer */
 };
 
-/* A 3D panel's per-buffer packet block. */
-typedef struct {
-    u32 unk0;
-    u8 unk4[4];
-    u8 unk8[4];
-} PanelPacket;
+extern s32 D_800911D4; /* second actor also posed by func_8007661C */
+extern s32 D_800928B0; /* selects the look-at marker (func_80082300 or func_80082178) */
 
+/* A playable character's record (12 bytes). */
 typedef struct {
-    s32 unk0;
-    PanelPacket *buffers[2];
-} Panel;
+    char *name;
+    u8 unk4[8];
+} Character;
 
-typedef struct {
-    u8 unk0[0x284];
-    Panel *panel;      /* 0x284 */
-} PanelOwner;
+extern Character D_8009196C[];
+
+/* Bout-end sequence effects. */
+extern Vector D_800929F4[3]; /* sparking embers; pad counts down to the next spark */
+extern s16 D_8009260C;       /* knock-down flash level */
+void func_8008E2B8(u32 *ot, s32 level, s32 subtract);
+void func_8003463C(MenuWindow *window);
+void func_800851D4(void);
+
+/* Menu mode main loop. */
+extern Resource D_800917C0[5]; /* sequence, sound bank, messages, map, scene */
+extern u8 D_8005061D;          /* resident: entry kind (0 bout, 1 bout mode 4, 2 scene) */
+extern u8 D_8005061E;          /* resident: first actor's model id */
+extern u8 D_8005061F;          /* resident: second actor's model id */
+extern u8 D_80050620;          /* resident: option 6 */
+extern u8 D_80050621;          /* resident: level */
+extern s32 D_80092798;         /* first actor's model id */
+extern s32 D_8009279C;         /* second actor's model id */
+extern s32 D_80062528;         /* resident: default sequence handle */
+
+/* Scene script interpreter. */
+extern Actor *D_80092894; /* actor the scene script drives */
+s32 func_80033CD0(MenuWindow *window); /* chosen answer, 0 while open */
+void func_800345E0(MenuWindow *window);
+void func_800707A8(void);
+s32 func_8008F9B0(Actor *actor);
 
 /* libgpu DR_TPAGE. */
 typedef struct {
@@ -103,13 +122,15 @@ extern Vector D_80096FA8; /* view origin */
 
 s32 func_8002DC9C(s32 x, s32 y, s32 z);
 
-/* A recorded path position. */
+/* A recorded path position and its debug marker: three axis lines (red
+ * x, green y, blue z) per buffer. */
 typedef struct {
-    s16 x, y, z;
-    u8 unk6[0x62];
+    LineF2Tag axes[2][3]; /* 0x00 */
+    s16 x, y, z;          /* 0x60 */
+    u8 pad[2];
 } PathPoint;
 
-extern PathPoint D_8009A988[0x1F];
+extern PathPoint D_8009A928[0x1F];
 extern s32 D_800928F8; /* recorded path points */
 extern PolyFT3 *D_80092854[2]; /* triangle pools: template, working copy */
 extern u16 D_800927D4; /* backdrop texture page */
@@ -249,7 +270,7 @@ extern SVector D_80092768; /* stored map position */
 
 void func_80080AE8(void);
 void func_80036420(void);
-s32 func_80081A44(void);
+void func_80081A44(void);
 void func_80087698(s32 x0, s32 y0, s32 x1, s32 y1); /* draw a line */
 void ClearImage(Rect *rect, s32 r, s32 g, s32 b); /* clear a VRAM area */
 void DrawSync(s32 mode); /* wait for drawing */

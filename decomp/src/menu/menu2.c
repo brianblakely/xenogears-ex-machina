@@ -8,11 +8,13 @@
 #include "gte.h"
 
 #ifdef NON_MATCHING
-/* Place the menu camera for one of the view modes. Does not match: GCC
- * 8-aligns the jump table (original at 0x8006faf4), and cases 3/4 are
- * cross-jumped after the look-at copy rather than before the lift store. */
+/* Place the menu camera for one of the view modes. Nearly matches (the jump
+ * table lands at 0x8006faf4 since the unit split): GCC keeps the address of
+ * D_8009872C.angle in a callee-saved register in cases 3/4, where the
+ * original reloads it with lui/lw for each call. */
 void func_8007099C(u32 mode) {
     Vector target;
+    s32 top;
 
     switch (mode) {
     case 0:
@@ -32,34 +34,20 @@ void func_8007099C(u32 mode) {
         break;
     case 3:
         D_800925F4 = 0xA0;
-        target = D_80099078;
-        target.vy += D_800925F4;
-        func_80070808(&target, 0x10);
-        target.vx = D_8009872C.pos.vx + ((func_8003F8B0(D_8009872C.angle + 0xA80) * 0xD0) >> 12);
-        target.vy = D_8009872C.pos.vy - 0x20 - D_800925F4;
-        target.vz = D_8009872C.pos.vz + ((func_8003F8CC(D_8009872C.angle + 0xA80) * 0xD0) >> 12);
-        func_800708C4(&target, 0x46);
-        {
-            s32 top = func_80082488(&D_8009871C, 0) - 0x40 - D_800925F4;
-            if (top < D_8009871C.vy) {
-                D_8009871C.vy = top;
-            }
-        }
-        break;
+        goto lifted;
     case 4:
         D_800925F4 = 0x80;
+    lifted:
         target = D_80099078;
         target.vy += D_800925F4;
         func_80070808(&target, 0x10);
         target.vx = D_8009872C.pos.vx + ((func_8003F8B0(D_8009872C.angle + 0xA80) * 0xD0) >> 12);
-        target.vy = D_8009872C.pos.vy - 0x20 - D_800925F4;
+        target.vy = D_8009872C.pos.vy - (D_800925F4 + 0x20);
         target.vz = D_8009872C.pos.vz + ((func_8003F8CC(D_8009872C.angle + 0xA80) * 0xD0) >> 12);
         func_800708C4(&target, 0x46);
-        {
-            s32 top = func_80082488(&D_8009871C, 0) - 0x40 - D_800925F4;
-            if (top < D_8009871C.vy) {
-                D_8009871C.vy = top;
-            }
+        top = func_80082488(&D_8009871C, 0) - (D_800925F4 + 0x40);
+        if (top < D_8009871C.vy) {
+            D_8009871C.vy = top;
         }
         break;
     case 5:
@@ -168,7 +156,244 @@ s32 func_80070FD8(Actor *actor) {
     return 0;
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu2", func_8007107C);
+/* Run the scene script (D_800925F8) until a command waits: select the
+ * driven actor, queue its inputs, turn it, wait frames or for the message
+ * window, and set scene values (screen offset, caption, camera view,
+ * layout, sequence step, hit points and charge). Declared int with no
+ * value returned, which keeps $v0 live at its exits as in the original. */
+s32 func_8007107C(void) {
+    Actor *actor = D_80092894;
+
+    actor->state = 0;
+    if (D_80092600 != 0) {
+        if (D_80092600 < actor->charge) {
+            D_80092600 = actor->charge;
+        }
+        actor->charge = D_80092600;
+    }
+    for (;;) {
+        switch (*D_800925F8) {
+        case 1:
+            if (D_800925FC == 0) {
+                D_800925FC = D_800925F8[1];
+                return;
+            }
+            if (--D_800925FC != 0) {
+                return;
+            }
+            D_800925F8 += 2;
+            break;
+        case 2:
+            actor = D_80092894 = &D_8009872C;
+            D_800925F8++;
+            break;
+        case 3:
+            actor = D_80092894 = &D_80097010;
+            D_800925F8++;
+            break;
+        case 4:
+            func_80076424(actor);
+            D_800925F8++;
+            break;
+        case 5:
+            func_8007639C(actor, 1);
+            D_800925F8++;
+            break;
+        case 6:
+            func_8007639C(actor, 2);
+            D_800925F8++;
+            break;
+        case 8:
+            func_8007639C(actor, 3);
+            D_800925F8++;
+            break;
+        case 7:
+            func_8007639C(actor, 4);
+            D_800925F8++;
+            break;
+        case 10:
+            func_8007639C(actor, 5);
+            D_800925F8++;
+            break;
+        case 9:
+            func_8007639C(actor, 5);
+            D_800925F8++;
+            break;
+        case 11:
+            if (D_8009284C >= 0x100) {
+                actor->state = 0xF0;
+                actor->target_angle = 0;
+                actor->unkCE = 0;
+                return;
+            }
+            D_800925F8++;
+            break;
+        case 12:
+            if (D_8009284C <= 0x400) {
+                actor->state = 0xF0;
+                actor->target_angle = 0x800;
+                actor->unkCE = 0;
+                return;
+            }
+            D_800925F8++;
+            break;
+        case 13:
+            if (func_8008F9B0(actor)) {
+                func_80070FD8(actor);
+                return;
+            }
+            if (D_8009284C <= 0x800) {
+                actor->state = 0xF0;
+                actor->target_angle = 0x800;
+                actor->unkCE = 0;
+                return;
+            }
+            D_800925F8++;
+            break;
+        case 15:
+            if (D_800925FC == 0) {
+                D_800925FC = D_800925F8[1];
+                return;
+            }
+            if (--D_800925FC != 0) {
+                actor->state = 0xF0;
+                actor->target_angle = 0x400;
+                actor->unkCE = 0;
+                return;
+            }
+            D_800925F8 += 2;
+            break;
+        case 14:
+            if (D_800925FC == 0) {
+                D_800925FC = D_800925F8[1];
+                return;
+            }
+            if (--D_800925FC != 0) {
+                actor->state = 0xF0;
+                actor->target_angle = -0x400;
+                actor->unkCE = 0;
+                return;
+            }
+            D_800925F8 += 2;
+            break;
+        case 20:
+            if (D_800925FC != 0) {
+                if (--D_800925FC != 0) {
+                    actor->state = 0xF0;
+                    actor->target_angle = -0x400;
+                    actor->unkCE = 0;
+                    actor->flags |= 0x8000;
+                    return;
+                }
+                D_800925F8 += 2;
+                break;
+            }
+            D_800925FC = D_800925F8[1];
+            return;
+        case 16:
+        case 17:
+            break;
+        case 18:
+            D_800925F8++;
+            D_800925D4 = *D_800925F8;
+            D_800925F8++;
+            break;
+        case 19:
+            func_800345E0(&D_8009868C);
+            D_800925F8++;
+            break;
+        case 27:
+            D_800925E0 = D_800925E8 = 0xA0;
+            D_800925F0 = 0;
+            D_800925E4 = D_800925EC = 0x6D;
+            D_800925F8++;
+            break;
+        case 21:
+            D_800925E8 = D_800925F8[1] * 2;
+            D_800925EC = D_800925F8[2];
+            D_800925F0 = 1;
+            D_800925F8 += 3;
+            break;
+        case 22:
+            func_80071F8C(D_800925F8[1]);
+            D_800925F8 += 2;
+            break;
+        case 23:
+            D_80092904 = D_800925F8[1];
+            D_800925F8 += 2;
+            break;
+        case 24:
+            D_80092900 = D_800925F8[1];
+            D_800925F8 += 2;
+            break;
+        case 25:
+            if (func_80033CD0(&D_8009868C) == 0 || !(D_8005948C & 0x20)) {
+                return;
+            }
+            if (func_80033CD0(&D_8009868C) == 1) {
+                D_800925F8++;
+            }
+            func_800345E0(&D_8009868C);
+            break;
+        case 26:
+            if (func_80033CD0(&D_8009868C) != 0 && (D_8005948C & 0x20)) {
+                s32 answer = func_80033CD0(&D_8009868C);
+
+                if (answer < 4) {
+                    if (answer >= 2) {
+                        func_800345E0(&D_8009868C);
+                        D_800925F8++;
+                    }
+                }
+            }
+            return;
+        case 28:
+            if (D_800925F8[1]) {
+                actor->opponent->hp = actor->opponent->max_hp;
+            } else {
+                actor->hp = actor->max_hp;
+            }
+            D_800925F8 += 2;
+            break;
+        case 29:
+            if (D_800925F8[1]) {
+                actor->opponent->hp = 1;
+            } else {
+                actor->hp = 1;
+            }
+            D_800925F8 += 2;
+            break;
+        case 30:
+            func_800707A8();
+            D_800925F8++;
+            break;
+        case 31:
+            actor->charge = D_800925F8[1] * 16;
+            D_800925F8 += 2;
+            break;
+        case 32:
+            D_80092600 = D_800925F8[1] * 16;
+            D_800925F8 += 2;
+            break;
+        case 33:
+            func_80070C7C(D_800925F8[1]);
+            D_800925F8 += 2;
+            break;
+        case 34:
+            if (D_800925F8[1]) {
+                actor->flags |= 2;
+            } else {
+                actor->flags &= ~2;
+                actor->flags &= ~0x38;
+            }
+            D_800925F8 += 2;
+            break;
+        case 0:
+        default:
+            return;
+        }
+    }
+}
 
 /* Link the screen offset packet and this frame's texture page packet. */
 void func_80071724(u32 *ot) {
@@ -400,7 +625,91 @@ void func_800720D4(void) {
         D_8009872C.unkE8 = 0;
     }
 }
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu2", func_80072170);
+/* Per-frame scene effects of the bout-end sequence (step D_80092900):
+ * three sparking embers on the first actor's body, or the first actor
+ * knocked down while a flash fades out and back in (which ends the bout);
+ * then the caption when its text changed and the camera view. */
+void func_80072170(void) {
+    Actor *actor;
+    MenuWindow *window;
+    Vector pos;
+    Node *part;
+    s32 i;
+    s32 count;
+
+    if (D_8009293C != 0) {
+        actor = &D_8009872C;
+        window = &D_8009868C;
+        switch (D_80092900) {
+        case 11:
+            func_8008EB4C(0x2A);
+            func_8008EB4C(0x2B);
+            func_8008EB4C(0x2C);
+            D_80092900 = 1;
+        case 1:
+            for (i = 0; i < 3; i++) {
+                if (--D_800929F4[i].pad == -1) {
+                    part = ((ModelSet *)D_8009872C.node->data)->nodes[rand() % ((ModelSet *)D_8009872C.node->data)->nodeCount];
+                    D_800929F4[i].vx = part->unk4C.t[0] + D_8009872C.pos.vx;
+                    D_800929F4[i].vy = part->unk4C.t[1] + D_8009872C.pos.vy;
+                    D_800929F4[i].vz = part->unk4C.t[2] + D_8009872C.pos.vz;
+                    D_800929F4[i].pad = rand() % 16 + 8;
+                }
+                if (D_800929F4[i].pad & 1) {
+                    func_8007D190(&D_800929F4[i], 9);
+                }
+            }
+            break;
+        case 2:
+            actor->hp = 1;
+            D_8009260C = 0xFF;
+            D_80092900++;
+        case 3:
+            func_8008E2B8(D_80092938, D_8009260C, 0);
+            if (D_8009260C < 0) {
+                D_8009260C = 0;
+            }
+            D_8009260C -= 8;
+        knocked:
+            actor->unk4F = 0x10;
+            actor->anim = 0xA;
+            actor->unk52 = 0;
+            actor->charge = 0x1000;
+            actor->flags |= 0x400;
+            if (rand() & 1) {
+                count = ((ModelSet *)D_8009872C.node->data)->nodeCount;
+                part = ((ModelSet *)D_8009872C.node->data)->nodes[rand() % count];
+                pos.vx = part->unk4C.t[0] + D_8009872C.pos.vx;
+                pos.vy = part->unk4C.t[1] + D_8009872C.pos.vy;
+                pos.vz = part->unk4C.t[2] + D_8009872C.pos.vz;
+                func_8007D190(&pos, 0xB);
+                func_8007D190(&pos, 8);
+            }
+            break;
+        case 4:
+            D_8009260C += 3;
+            if (D_8009260C >= 0x100) {
+                D_8009260C = 0xFF;
+                D_80050622 = 0x7F;
+                func_80083BB4(0);
+                func_800851D4();
+            }
+            func_8008E2B8(D_80092938, D_8009260C, 1);
+            goto knocked;
+        }
+        func_8007107C();
+        if (D_800925D4 != D_800925D8) {
+            window->unk68 = 1;
+            func_8003463C(window);
+            func_80034714(window, func_80033728(D_80092880, D_800925D4));
+            window->unkC = 2;
+            window->unk6 = 0xB4;
+            D_800925D8 = D_800925D4;
+        }
+        func_8007099C(D_80092904);
+        D_8009872C.state = 0;
+    }
+}
 
 void func_800725A8(void) {
 }
@@ -411,7 +720,7 @@ void func_800725B0(Actor *scene) {
     SceneHeader *header;
 
     func_80030988(5, 4, 0x40, 0x40);
-    D_800910F0 = func_8008A3E0((Holder *)func_8008A2B8(0x10));
+    D_800910F0 = func_8008A3E0(func_8008A2B8(0x10));
     D_80092610 = func_8008C2C0(scene->node);
     func_8008976C(0x280, 0xDA);
     SetGeomScreen(0x400);
@@ -428,7 +737,7 @@ void func_800725B0(Actor *scene) {
     D_80092624 = header->unk18;
     D_80092628 = header->unk1A;
     D_8009262C = header->unk1C;
-    D_80092632 = header->unk1E;
+    D_80092630.vy = header->unk1E;
 }
 
 /* Tear down the scene set up by func_800725B0. */
@@ -461,7 +770,100 @@ void func_8007273C(Node *model, Matrix *matrix, Matrix *out) {
     out->t[2] = local.t[2];
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu2", func_80072858);
+/* One frame of the winner screen: turn the winner's model with the
+ * shoulder buttons, toggle its record text with the first button, leave
+ * with 0x20; draw the record (name, level, matches, time) and the model
+ * turning in front of the scene's lights. */
+void func_80072858(LightRig *rig) {
+    Matrix unused1; /* the original frame has 32 unused bytes on */
+    Matrix m;
+    Matrix unused2; /* either side of the matrix */
+    char text[64];
+    Actor *winner = D_80092614;
+    u8 y;
+    ModelSet *set;
+
+    func_80036420();
+    if (winner->model_id != 7) {
+        if (D_80059570 & 0x2000) {
+            D_80092620--;
+        }
+        if (D_80059570 & 0x8000) {
+            D_80092620++;
+        }
+    }
+    if (D_80092620 < -0x80) {
+        D_80092620 = -0x80;
+    }
+    if (D_80092620 > 0x80) {
+        D_80092620 = 0x80;
+    }
+    if (D_800928FC == 1) {
+        if (D_80059490 & 0x20) {
+            func_800726B4();
+            return;
+        }
+        if (D_80059490 & 1) {
+            D_80092618++;
+        }
+    } else {
+        if (D_8005948C & 0x20) {
+            func_800726B4();
+            return;
+        }
+        if (D_8005948C & 1) {
+            D_80092618++;
+        }
+    }
+    if (D_80092618 & 1) {
+        y = 0x86;
+        if (D_800928C8 == 2 || D_800928C8 == 3) {
+            y = 0x9A;
+        }
+        func_8007E954(0x1C0);
+        func_8007E894(0x18, y);
+        func_8007EBE0("WINNER");
+        if (D_800928C8 != 2 && D_800928C8 != 3) {
+            func_8007EBE0("LEVEL");
+        }
+        func_8007EBE0("MATCHES");
+        func_8007EBE0("TIME");
+        func_8007E894(0xA8, y);
+        func_8007EBE0(D_8009196C[winner->model_id].name);
+        if (D_800928C8 != 2 && D_800928C8 != 3) {
+            sprintf(text, "%s", func_8007F97C());
+            func_8007EBE0(text);
+        }
+        sprintf(text, "%d/%d VS %s", winner->unkF2, D_80092950, D_8009196C[winner->opponent->model_id].name);
+        func_8007EBE0(text);
+        func_80083CE8();
+    }
+    func_80080D20(D_80092938);
+    D_80092630.vx = D_8009261C;
+    D_80092630.vy += D_80092620;
+    D_80092630.vz = 0;
+    func_8003F738(&D_80092630, &m);
+    func_80049BDC(&D_80096FE0, &m);
+    m.t[0] = 0;
+    m.t[1] = D_80092624;
+    m.t[2] = D_80092628;
+    func_8008AC0C(rig->layer);
+    func_8007B210(winner, 0);
+    winner->node->position.vx = winner->node->position.vy = winner->node->position.vz = 0;
+    winner->node->unk44.vy = 0;
+    set = winner->node->data;
+    set->scale[0] = set->scale[1] = set->scale[2] = D_8009262C;
+    ((Node *)winner->object)->view = m;
+    func_8008A7E0(winner->node);
+    func_8008AE1C(rig->layer);
+    func_8008AC0C(D_800910F0->layer);
+    func_8007273C(winner->node, &m, &D_80092610->view);
+    func_8008A7E0(D_80092610);
+    gte_SetRotMatrix(&D_80092610->view);
+    gte_SetTransMatrix(&D_80092610->view);
+    func_8008C2E8(D_80092610);
+    func_8008AE1C(D_800910F0->layer);
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu2", func_80072D18);
 

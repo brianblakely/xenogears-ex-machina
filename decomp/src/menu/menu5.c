@@ -27,9 +27,9 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_80083CE8);
 
 /* Update an actor's glow light (fading it) at its position relative to its
  * opponent, and the spot light at its position relative to the camera. */
-void func_80083DCC(LightSet *set, Actor *actor, s32 index) {
+void func_80083DCC(LightRig *rig, Actor *actor, s32 index) {
     Vector unused[2]; /* the original frame has 0x20 unused bytes */
-    LightRef *ref = set->lights[index];
+    Node *light = rig->lights[index];
     u8 glow = actor->glow;
     s32 level = glow;
 
@@ -40,64 +40,161 @@ void func_80083DCC(LightSet *set, Actor *actor, s32 index) {
         }
     }
     if (actor->unkD4 & 0x20) {
-        ref->data->r = actor->opponent->colour.r * level / 16;
-        ref->data->g = actor->opponent->colour.g * level / 16;
-        ref->data->b = actor->opponent->colour.b * level / 16;
+        NODE_LIGHT(light)->colour[0] = actor->opponent->colour.r * level / 16;
+        NODE_LIGHT(light)->colour[1] = actor->opponent->colour.g * level / 16;
+        NODE_LIGHT(light)->colour[2] = actor->opponent->colour.b * level / 16;
     } else {
-        ref->data->r = level << 4;
-        ref->data->g = level << 3;
-        ref->data->b = 0;
+        NODE_LIGHT(light)->colour[0] = level << 4;
+        NODE_LIGHT(light)->colour[1] = level << 3;
+        NODE_LIGHT(light)->colour[2] = 0;
     }
     if (D_8009288C->dim) {
-        ref->data->r /= 2;
-        ref->data->g /= 2;
-        ref->data->b /= 2;
+        NODE_LIGHT(light)->colour[0] /= 2;
+        NODE_LIGHT(light)->colour[1] /= 2;
+        NODE_LIGHT(light)->colour[2] /= 2;
     }
-    ref->data->x = actor->pos.vx;
-    ref->data->y = actor->pos.vy;
-    ref->data->z = actor->pos.vz;
-    ref->data->x -= actor->opponent->pos.vx;
-    ref->data->y -= actor->opponent->pos.vy;
-    ref->data->z -= actor->opponent->pos.vz;
-    func_80030A30(index, ref->data);
-    ref = set->lights[2];
-    ref->data->r = ref->data->g = ref->data->b = 0;
-    ref->data->x = actor->pos.vx;
-    ref->data->y = actor->pos.vy;
-    ref->data->z = actor->pos.vz;
-    ref->data->x -= D_8009871C.vx;
-    ref->data->y -= D_8009871C.vy;
-    ref->data->z -= D_8009871C.vz;
-    func_80030A30(2, ref->data);
+    NODE_LIGHT(light)->direction[0] = actor->pos.vx;
+    NODE_LIGHT(light)->direction[1] = actor->pos.vy;
+    NODE_LIGHT(light)->direction[2] = actor->pos.vz;
+    NODE_LIGHT(light)->direction[0] -= actor->opponent->pos.vx;
+    NODE_LIGHT(light)->direction[1] -= actor->opponent->pos.vy;
+    NODE_LIGHT(light)->direction[2] -= actor->opponent->pos.vz;
+    func_80030A30(index, NODE_LIGHT(light));
+    light = rig->lights[2];
+    NODE_LIGHT(light)->colour[0] = NODE_LIGHT(light)->colour[1] = NODE_LIGHT(light)->colour[2] = 0;
+    NODE_LIGHT(light)->direction[0] = actor->pos.vx;
+    NODE_LIGHT(light)->direction[1] = actor->pos.vy;
+    NODE_LIGHT(light)->direction[2] = actor->pos.vz;
+    NODE_LIGHT(light)->direction[0] -= D_8009871C.vx;
+    NODE_LIGHT(light)->direction[1] -= D_8009871C.vy;
+    NODE_LIGHT(light)->direction[2] -= D_8009871C.vz;
+    func_80030A30(2, NODE_LIGHT(light));
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_800840CC);
+/* Draw the 3D arena: aim the camera, pose the actors, then draw the floor,
+ * the actors and their shadows, the look-at marker and the sky. */
+s32 func_800840CC(LightRig *rig) {
+    Matrix floor;
+    Matrix camera;
+    Vector unused; /* the original frame has 16 unused bytes here */
+    OtPair *layer = rig->layer;
+    Light *light;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_800846A0);
+    func_8008AC0C(layer);
+    func_80089A98(rig, &D_8009871C, &D_8009867C);
+    if (D_80092790 != 4 && D_800928C8 != 4 && D_80092790 != 8) {
+        func_80087068(&D_8009872C, &D_80097010);
+    } else if (D_800928C8 == 4) {
+        func_8007661C(&D_8009872C);
+        if (D_800911D4 != 0) {
+            func_8007661C(&D_80097010);
+        }
+    }
+    func_8007E574(D_80092938);
+    func_80080D20(D_80092938);
+    camera = rig->camera->view;
+    ((Node *)D_8009872C.object)->view = ((Node *)D_80097010.object)->view = camera;
+    light = NODE_LIGHT(rig->lights[0]);
+    light->colour[0] = light->colour[1] = light->colour[2] = 0x800;
+    func_80030A30(0, NODE_LIGHT(rig->lights[0]));
+    gte_SetBackColor(D_8009291C, D_80092910, D_80092908);
+    func_80083DCC(rig, &D_8009872C, 1);
+    func_8008A7E0(D_8009872C.node);
+    func_80083DCC(rig, &D_80097010, 1);
+    func_8008A7E0(D_80097010.node);
+    gte_SetRotMatrix(&camera);
+    gte_SetTransMatrix(&camera);
+    func_8008E8B0();
+    func_8007CF78(&camera, layer->ot[D_800928A0]);
+    gte_SetRotMatrix(&camera);
+    gte_SetTransMatrix(&camera);
+    func_8007334C(layer->ot[D_800928A0], &rig->camera->view);
+    floor = D_80091C0C;
+    floor.t[1] = -D_80096FA8.vy;
+    CompMatrix(&camera, &floor, &floor);
+    gte_SetRotMatrix(&floor);
+    gte_SetTransMatrix(&floor);
+    func_80082A70();
+    func_80082E60(layer->ot[D_800928A0], &D_8009871C);
+    func_80087B74(&D_8009872C, layer->ot[D_800928A0], &floor);
+    func_80087B74(&D_80097010, layer->ot[D_800928A0], &floor);
+    gte_SetRotMatrix(&floor);
+    gte_SetTransMatrix(&floor);
+    func_80087650();
+    if (D_800928B0 != 0) {
+        func_80082300(D_8009871C.vx, D_8009871C.vz,
+                      ratan2(D_8009871C.vx - D_8009867C.vx, D_8009871C.vz - D_8009867C.vz));
+    } else {
+        func_80082178(D_8009871C.vx, D_8009871C.vz,
+                      ratan2(D_8009871C.vx - D_8009867C.vx, D_8009871C.vz - D_8009867C.vz));
+    }
+    func_8008779C(layer->ot[D_800928A0], D_8009867C.vx, D_8009867C.vz);
+    func_8008AE1C(layer);
+    func_80086E24();
+    func_80031678(D_80092938, &D_80095580[D_800928A0]);
+    return 0;
+}
 
-/* Draw a 3D panel: update it, link this buffer's packets, finish. */
-s32 func_800849E0(PanelOwner *owner) {
-    Panel *panel = owner->panel;
+/* Draw the 3D scene: aim the camera, give both actors the camera matrix,
+ * light and draw them, then the view's layer and the backdrop sprites. */
+s32 func_800846A0(LightRig *rig) {
+    Matrix floor;   /* unused: the frame matches the arena draw's */
+    Matrix camera;
+    Vector unused;
+    OtPair *layer = rig->layer;
+    Light *light;
 
-    func_8008AC0C(panel);
-    func_80080D20(&panel->buffers[D_800928A0]->unk4);
-    func_8008AE1C(panel);
+    func_8008AC0C(layer);
+    func_80089A98(rig, &D_8009871C, &D_8009867C);
+    func_80080D10();
+    camera = rig->camera->view;
+    ((Node *)D_8009872C.object)->view = ((Node *)D_80097010.object)->view = camera;
+    func_8008A62C();
+    light = NODE_LIGHT(rig->lights[0]);
+    light->colour[0] = light->colour[1] = light->colour[2] = 0x800;
+    func_80030A30(0, NODE_LIGHT(rig->lights[0]));
+    gte_SetBackColor(D_8009291C, D_80092910, D_80092908);
+    func_80083DCC(rig, &D_8009872C, 1);
+    func_8008A7E0(D_8009872C.node);
+    func_80083DCC(rig, &D_80097010, 1);
+    func_8008A7E0(D_80097010.node);
+    gte_SetRotMatrix(&camera);
+    gte_SetTransMatrix(&camera);
+    func_8007334C(layer->ot[D_800928A0], &rig->camera->view);
+    func_8007D068(layer->ot[D_800928A0]);
+    func_8008AE1C(layer);
+    func_80086E24();
+    AddPrim(D_80092938, &D_800955F8[4 + D_800928A0]);
+    AddPrim(D_80092938, &D_800955C8[2 + D_800928A0]);
+    AddPrim(D_80092938, &D_800955F8[2 + D_800928A0]);
+    AddPrim(D_80092938, &D_800955F8[D_800928A0]);
+    AddPrim(D_80092938, &D_800955C8[D_800928A0]);
+    return 0;
+}
+
+/* Draw a 3D view: update its layer, link this buffer's ordering table, finish. */
+s32 func_800849E0(LightRig *rig) {
+    OtPair *layer = rig->layer;
+
+    func_8008AC0C(layer);
+    func_80080D20(&layer->ot[D_800928A0][1]);
+    func_8008AE1C(layer);
     func_80086E24();
     return 0;
 }
 
-/* Update a 3D panel without drawing it. */
-void func_80084A40(PanelOwner *owner) {
-    func_8008AC0C(owner->panel);
+/* Update a 3D view's layer without drawing it. */
+void func_80084A40(LightRig *rig) {
+    func_8008AC0C(rig->layer);
 }
 
-/* Draw a 3D panel with its shading packet at brightness 0xC0. */
-s32 func_80084A64(PanelOwner *owner) {
-    Panel *panel = owner->panel;
+/* Draw a 3D view with its shading packet at brightness 0xC0. */
+s32 func_80084A64(LightRig *rig) {
+    OtPair *layer = rig->layer;
 
-    func_8008E3CC(&panel->buffers[D_800928A0]->unk8, 0xC0, 0);
-    func_80080D20(&panel->buffers[D_800928A0]->unk4);
-    func_8008AE1C(panel);
+    func_8008E3CC(&layer->ot[D_800928A0][2], 0xC0, 0);
+    func_80080D20(&layer->ot[D_800928A0][1]);
+    func_8008AE1C(layer);
     func_80086E24();
     return 0;
 }
@@ -332,7 +429,318 @@ s32 func_80085264(void) {
     return done;
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_800852C4);
+/* The menu mode: load its resources, then run the title/options screens
+ * (until a choice starts a bout or the demo idles out) and the bouts
+ * themselves, one scene mode (D_80092790) per frame. */
+void func_800852C4(s32 arg) {
+    LightRig *rig;
+    s32 *file;
+    void *model;
+    s32 sequence;
+    s32 step;
+    s32 idle;
+    s32 hold; /* never initialised: the first held frame counts from garbage */
+
+    D_800928D0 = 0;
+    D_80092920 |= 1;
+    D_800928DC = func_80031BDC(0x10010, 0);
+    rig = func_8008A3E0(func_8008A2B8(0x1000));
+    func_8002C59C(D_80091FB0);
+    func_8008518C(&D_800917C0[0], 0);
+    func_8008518C(&D_800917C0[1], 0);
+    func_8008518C(&D_800917C0[2], 1);
+    func_8008518C(&D_800917C0[3], 1);
+    func_8008518C(&D_800917C0[4], 1);
+    func_80029AFC(D_800917C0, 0, 0);
+    sequence = (s32)D_800917C0[0].data;
+    D_800927C4 = (s32)D_800917C0[1].data;
+    func_8008976C(0x140, 0xDA);
+    func_80088308();
+    func_80030988(1, 1, 0x40, 0x40);
+    D_80092784 = 0;
+    func_800363F0(func_80084FD0);
+    func_80036E4C(0x7FFF, 0x8000);
+    func_80033698(0x140, 0xFF);
+    func_800814AC();
+    func_80079A8C();
+    func_8008DF30();
+    D_800927B4[1] = NULL;
+    D_800927B4[0] = NULL;
+    D_80097010.object = NULL;
+    D_8009872C.object = NULL;
+    func_80080AA0(1);
+    func_80028A60(0);
+    func_80038428(D_800927C4);
+    if (D_800917F0 != 0) {
+        D_80092948 = func_80039850(sequence);
+        func_80039A80(D_80092948, 0x7F, 0);
+    } else {
+        D_80092948 = D_80062528;
+    }
+    func_80032EB4(D_800917C0[3].data, D_800928DC);
+    func_800320E8(D_800917C0[3].data);
+    func_80081ECC();
+    file = func_80032E88(D_800917C0[2].data, 0);
+    func_800320E8(D_800917C0[2].data);
+    func_8003342C(file);
+    D_80092880 = file[1];
+    D_80092874 = (struct MoveList *)file[2];
+    func_8007EEE8(D_8005061C == 1);
+    file = func_80032E88(D_800917C0[4].data, 1);
+    func_800320E8(D_800917C0[4].data);
+    func_8003342C(file);
+    func_80082C4C(file);
+    func_8007B388(file);
+    func_8007E634(file);
+    func_800878DC(file);
+    func_800868E0(file);
+    func_80071794(file);
+    func_800320E8(file);
+    func_8007EFB4();
+    func_800718C0();
+    func_8008BC04();
+    D_8009289C = 0;
+restart:
+    idle = 0x4650;
+    func_80032D60();
+    func_80089D5C(D_8009872C.object);
+    func_80089D5C(D_80097010.object);
+    func_80032D60();
+    func_800809D8();
+    D_80092780 = 0xFF;
+    D_80092784 = 0;
+    func_8008DF50();
+    func_80079B0C();
+    func_800346A4(&D_8009868C);
+    D_80092794 = -1;
+    D_800928C4 = 0;
+    D_800928B4 = 0;
+    if (D_8005061C == 1) {
+        D_80092898 = 0;
+        step = 0;
+    } else {
+        if (D_8005061C == 2) {
+            D_800928C4 = 1;
+            D_80092884 = 0;
+        }
+        D_8005061C = 0;
+        D_80099D98.level = D_80050621;
+        D_80099D98.option6 = D_80050620;
+        func_80080A58();
+        D_80099D9D = 0;
+        D_80092798 = D_8005061E;
+        D_8009279C = D_8005061F;
+        switch (D_8005061D) {
+        case 0:
+            D_80099D9E = 1;
+            func_80083C0C(1);
+            D_800928C8 = 1;
+            func_80080644(D_80092798, D_8009279C);
+            if (D_8009279C == 5) {
+                D_800928B4 = 1;
+            }
+            break;
+        case 1:
+            D_80099D9E = 1;
+            func_80083C0C(1);
+            D_800928C8 = 4;
+            break;
+        case 2:
+            D_80099D9E = 0;
+            func_80083C0C(7);
+            D_800928C8 = 5;
+            func_800719F0();
+            break;
+        }
+        func_8008509C(0, D_80092798);
+        step = 1;
+        func_8008509C(1, D_8009279C);
+        D_80092924 = 0;
+        D_80092898 = 2;
+    }
+    if (func_80085264()) {
+        func_80028A60(0);
+        step = 10;
+    }
+    if (step != 10) {
+        do {
+            if ((D_80059570 & ~1) || (D_80059574 & ~1)) {
+                idle = 0x4650;
+            }
+            if ((D_80059570 & 1) && func_800809BC()) {
+                if (++hold == 0x78) {
+                    idle = 0;
+                }
+            } else {
+                hold = 0;
+            }
+            if (idle != 0) {
+                idle--;
+            } else if (D_80092780 != 0) {
+                func_80080570();
+                D_80092780 = 0;
+                func_80028A60(0);
+                func_80085014();
+                break;
+            }
+            func_80084A40(rig);
+            switch (step) {
+            case 0:
+                func_80081D2C();
+                if (D_80092924 != 0) {
+                    D_80092898 = 2;
+                    step = 1;
+                }
+                if (D_800928E8 & 1) {
+                    func_8008E120();
+                }
+                break;
+            case 1:
+                func_80036420();
+                if (!func_80085264()) {
+                    func_8008E120();
+                    func_8007F258(D_80092938, 0);
+                }
+                if (!func_80028A60(1)) {
+                    step = 10;
+                }
+                break;
+            }
+            func_80084A64(rig);
+            func_8008BC04();
+        } while (step != 10);
+    }
+    D_80092898 = 0;
+    if (func_80085264()) {
+        D_80092780 = 0;
+        D_80092784 = 0;
+        func_8008E064();
+        func_80080A58();
+    }
+    model = func_80032E88(D_800927B4[0], 0);
+    func_800320E8(D_800927B4[0]);
+    D_800927B4[0] = model;
+    func_80084AE0();
+    model = func_80032E88(D_800927B4[1], 0);
+    func_800320E8(D_800927B4[1]);
+    D_800927B4[1] = model;
+    func_80084AE0();
+    func_80084C88(&D_8009872C, D_800927B4[0], 0);
+    func_80084AE0();
+    func_80084C88(&D_80097010, D_800927B4[1], 1);
+    func_80084AE0();
+    func_8007B270(&D_8009872C.colour, &D_80097010.colour);
+    func_80081E00();
+    if (D_80092780 != 0) {
+        D_80092784 = 1;
+        func_8003A838(D_80092948, 0x158, 0);
+        D_8009292C = 0x200;
+    }
+    D_80092890 = 2;
+new_bout:
+    func_80079B44();
+    D_8009872C.pos.vx = 0x3E80;
+    D_8009872C.pos.vy = 0;
+    D_8009872C.pos.vz = 0x3F80;
+    D_80097010.pos.vx = 0x4080;
+    D_80097010.pos.vy = 0;
+    D_80097010.pos.vz = 0x3F80;
+    for (;;) {
+        func_80036DC8(0, 0xFF, 0);
+        D_80092898 = 2;
+        D_800928B0 = 0;
+        D_80092790 = D_80092794;
+        func_80084B48();
+        func_80034888(&D_8009868C, D_80092938, D_800928A0);
+        switch (D_80092790) {
+        case 1:
+            func_80079DF0(&D_8009872C, &D_80097010);
+            SetGeomScreen(0xC0);
+            if (D_80092794 == 1) {
+                func_800796B8(&D_8009872C, &D_80097010);
+            }
+            func_800840CC(rig);
+            break;
+        case 6:
+            func_80072858(rig);
+            break;
+        case 7:
+            func_80071AD0();
+            SetGeomScreen(0xC0);
+            func_800840CC(rig);
+            if (D_80092794 == 3) {
+                D_80092898 = 0;
+                func_8008BC04();
+                goto leave;
+            }
+            break;
+        case 4:
+            SetGeomScreen(0x800);
+            func_8007A344(&D_8009872C, &D_80097010);
+            if (D_80092794 != 8) {
+                func_80083310(1);
+                D_800928B0 = 1;
+            }
+            func_800840CC(rig);
+            break;
+        case 8:
+            SetGeomScreen(0x200);
+            func_8007AE10(&D_8009872C, &D_80097010);
+            func_800840CC(rig);
+            break;
+        case 0:
+            func_80081D2C();
+            func_800849E0(rig);
+            D_80092898 = 0;
+            break;
+        case 5:
+            func_80036420();
+            if (D_8005948C != 0) {
+                D_8005948C = 0;
+                D_800594A4 = 0;
+                func_80085070();
+                D_80092898 = 0;
+                func_80081E6C();
+                func_8008BC04();
+                goto restart;
+            }
+            func_80079DF0(&D_8009872C, &D_80097010);
+            SetGeomScreen(0xC0);
+            func_800796B8(&D_8009872C, &D_80097010);
+            func_800846A0(rig);
+            break;
+        case 3:
+        leave:
+            if (D_8005061C == 0) {
+                func_800851D4();
+            }
+            func_80081E6C();
+            goto restart;
+        case 2:
+            if (D_80099D98.option6 != 0) {
+                if (D_8009872C.unkF2 == D_80099D98.option6) {
+                    if (D_80099D98.com1) {
+                        goto leave;
+                    }
+                    func_80083C0C(6);
+                    break;
+                }
+                if (D_80097010.unkF2 == D_80099D98.option6) {
+                    if (D_80099D98.driven) {
+                        goto leave;
+                    }
+                    func_80083C0C(6);
+                    break;
+                }
+            }
+            func_80083C0C(1);
+            goto new_bout;
+        }
+        func_8003708C(0x9E, 0);
+        func_80036DC8(0xFF, 0xFF, 0);
+        func_8008BC04();
+    }
+}
 
 /* Screen position of the left-hand gauge for a layout point. */
 void func_80085E34(DVector *point, DVector *out) {
@@ -970,7 +1378,73 @@ void func_80087AB0(Actor *actor) {
     actor->backdrop[1] = actor->backdrop[0];
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_80087B74);
+/* Draw an actor's ground shadow: a square sized by its height, centred
+ * under it and tilted to the ground normal there. */
+void func_80087B74(Actor *actor, u32 *ot, Matrix *view) {
+    SVector corners[4];
+    Vector centre;
+    Vector unused; /* the original frame has 16 unused bytes here */
+    SVector normal;
+    Matrix m;
+    s32 otz;
+    s32 z0, z1, z2, z3;
+    PolyFT4 *quad;
+    s32 size;
+    s32 min;
+
+    if ((actor->flags & 0x60000000) != 0x20000000) {
+        size = (actor->home.vy + actor->unk92C.vy) / 32 + 0x90;
+        if (size > 0) {
+            centre.vx = (actor->home.vx + actor->unk92C.vx) / 2;
+            centre.vz = (actor->home.vz + actor->unk92C.vz) / 2;
+            centre.vy = 0;
+            corners[0].vx = corners[1].vx = corners[0].vz = corners[2].vz = -size;
+            corners[3].vx = corners[2].vx = corners[1].vz = corners[3].vz = size;
+            corners[0].vy = corners[1].vy = corners[2].vy = corners[3].vy = 0;
+            quad = &actor->backdrop[D_800928A0];
+            m.t[0] = centre.vx - D_80096FA8.vx;
+            m.t[1] = func_80082488(&centre, 0);
+            m.t[2] = centre.vz - D_80096FA8.vz;
+            func_80082458(&normal);
+            m.m[0][0] = 0x1000;
+            m.m[0][1] = 0;
+            m.m[0][2] = 0;
+            m.m[1][0] = normal.vx;
+            m.m[1][1] = normal.vy;
+            m.m[1][2] = normal.vz;
+            m.m[2][0] = 0;
+            m.m[2][1] = 0;
+            m.m[2][2] = 0x1000;
+            CompMatrix(view, &m, &m);
+            gte_SetRotMatrix(&m);
+            gte_SetTransMatrix(&m);
+            gte_ldv3c(corners);
+            gte_rtpt();
+            gte_nclip();
+            gte_stopz(&otz);
+            if (otz >= 0) {
+                gte_stsz3v(&z0, &z1, &z2);
+                gte_stsxy3_ft4(quad);
+                gte_ldv0(&corners[3]);
+                gte_rtps();
+                gte_stsz(&z3);
+                gte_stsxy(&quad->x3);
+                min = z0;
+                if (z1 < min) {
+                    min = z1;
+                }
+                if (z2 < min) {
+                    min = z2;
+                }
+                if (z3 < min) {
+                    min = z3;
+                }
+                otz = min >> 4;
+                AddPrim(ot + otz, quad);
+            }
+        }
+    }
+}
 
 /* Record a position in the path list (up to 31 entries). Does not match:
  * the entry address is formed base-first and registers differ. */
@@ -979,7 +1453,7 @@ void func_80087E38(Vector *pos) {
     PathPoint *point;
 
     if (D_800928F8 < 0x1F) {
-        point = &D_8009A988[D_800928F8];
+        point = &D_8009A928[D_800928F8];
         point->x = pos->vx;
         point->y = pos->vy;
         D_800928F8++;
@@ -990,7 +1464,59 @@ void func_80087E38(Vector *pos) {
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_80087E38);
 #endif
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_80087EA0);
+/* Draw the recorded path points as axis crosses (64 units long), then
+ * clear the list. */
+void func_80087EA0(u32 *ot) {
+    SVector ends[6];
+    PathPoint *point;
+    s32 i;
+    s32 j;
+
+    for (i = 0; i < D_800928F8; i++) {
+        point = &D_8009A928[i];
+        ends[0].vx = point->x - 0x20;
+        ends[0].vy = point->y;
+        ends[0].vz = point->z;
+        ends[1].vx = point->x + 0x20;
+        ends[1].vy = point->y;
+        ends[1].vz = point->z;
+        ends[2].vx = point->x;
+        ends[2].vy = point->y - 0x20;
+        ends[2].vz = point->z;
+        ends[3].vx = point->x;
+        ends[3].vy = point->y + 0x20;
+        ends[3].vz = point->z;
+        ends[4].vx = point->x;
+        ends[4].vy = point->y;
+        ends[4].vz = point->z - 0x20;
+        ends[5].vx = point->x;
+        ends[5].vy = point->y;
+        ends[5].vz = point->z + 0x20;
+        for (j = 0; j < 6; j++) {
+            ends[j].vx -= D_80096FA8.vx;
+            ends[j].vy -= D_80096FA8.vy;
+            ends[j].vz -= D_80096FA8.vz;
+        }
+        gte_ldv3(&ends[0], &ends[1], &ends[2]);
+        gte_rtpt();
+        gte_stsxy3(&point->axes[D_800928A0][0].x0, &point->axes[D_800928A0][0].x1,
+                   &point->axes[D_800928A0][1].x0);
+        gte_ldv3(&ends[3], &ends[4], &ends[5]);
+        gte_rtpt();
+        gte_stsxy3(&point->axes[D_800928A0][1].x1, &point->axes[D_800928A0][2].x0,
+                   &point->axes[D_800928A0][2].x1);
+        setlen(&point->axes[D_800928A0][0], 3);
+        *(u32 *)&point->axes[D_800928A0][0].r0 = 0x400000FF;
+        setlen(&point->axes[D_800928A0][1], 3);
+        *(u32 *)&point->axes[D_800928A0][1].r0 = 0x4000FF00;
+        setlen(&point->axes[D_800928A0][2], 3);
+        *(u32 *)&point->axes[D_800928A0][2].r0 = 0x40FF0000;
+        func_800316C0(ot, &point->axes[D_800928A0][0]);
+        func_800316C0(ot, &point->axes[D_800928A0][1]);
+        func_800316C0(ot, &point->axes[D_800928A0][2]);
+    }
+    D_800928F8 = 0;
+}
 
 /* Start a debug line between two points in one of eight colours (bit 0
  * blue, bit 1 red, bit 2 green). Returns the line, or NULL when all 100
@@ -1168,35 +1694,32 @@ s32 func_80088838(Vector *from, Vector *to) {
     return SquareRoot0(delta.vx + delta.vz);
 }
 
-/* Set a bit of the resident flag array. Does not match:
- * the constant 1 is loaded first and registers differ. */
-#ifdef NON_MATCHING
+/* Set a bit of the resident flag array. */
 void func_800888B0(s32 flag) {
-    D_8006F978.flags[flag >> 3] |= 1 << (flag & 7);
-}
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_800888B0);
-#endif
+    s32 bit;
 
-/* Test a bit of the resident flag array. Does not match:
- * the constant 1 is loaded first. */
-#ifdef NON_MATCHING
+    bit = 1;
+    bit <<= flag & 7;
+    D_8006F978.flags[flag >> 3] |= bit;
+}
+
+/* Test a bit of the resident flag array. */
 s32 func_800888E4(s32 flag) {
-    return D_8006F978.flags[flag >> 3] & (1 << (flag & 7));
-}
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_800888E4);
-#endif
+    s32 bit;
 
-/* Clear a bit of the resident flag array. Does not match:
- * the constant 1 is loaded first and registers differ. */
-#ifdef NON_MATCHING
-void func_80088908(s32 flag) {
-    D_8006F978.flags[flag >> 3] &= ~(1 << (flag & 7));
+    bit = 1;
+    bit <<= flag & 7;
+    return D_8006F978.flags[flag >> 3] & bit;
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_80088908);
-#endif
+
+/* Clear a bit of the resident flag array. */
+void func_80088908(s32 flag) {
+    s32 bit;
+
+    bit = 1;
+    bit <<= flag & 7;
+    D_8006F978.flags[flag >> 3] &= ~bit;
+}
 
 /* Set bit 16 of the resident state word. */
 void func_80088940(void) {

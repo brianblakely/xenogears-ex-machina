@@ -194,7 +194,9 @@ typedef struct {
     u8 cells_b_count[9];      /* 46c5 */
     u8 cells_a_buffer[9];     /* 46ce */
     u8 cells_b_buffer[9];     /* 46d7 */
-    u8 unk46E0[0x4785 - 0x46E0];
+    u16 attack[16];           /* 46e0: each member's attack before buying */
+    u16 defence[16];          /* 4700 */
+    u8 unk4720[0x4785 - 0x4720];
     u8 label45B0_shown;       /* 4785 */
     u8 unk4786[2];
 } DetailBlock;
@@ -392,17 +394,62 @@ typedef struct {
     u8 unk57;
     u8 bonus[8];   /* 58 */
     u8 unk60[0x6A - 0x60];
-    u8 gear[13];   /* 6a: equipped items */
+    u8 weapons[5];     /* 6a: equipment slots for weapons (ids below 32h) */
+    u8 armour[5];      /* 6f: equipment slots for armour (ids from 32h) */
+    u8 accessories[3]; /* 74 */
     u8 unk77[0xA0 - 0x77];
     u8 unkA0;      /* a0: ff for a member who cannot be chosen */
     u8 unkA1[3];
 } Character;
 
-/* A party member's detail view; its nine stat words at +b8. */
+/* The persistent game data (8006d634). */
 typedef struct {
-    u8 unk0[0xB8];
-    u16 stats[9]; /* b8 */
-} MemberView;
+    u8 unk0[0x26C];
+    Character characters[11]; /* 26c */
+    u8 unk978[0x1924 - 0x978];
+    u32 gold;                 /* 1924 */
+} GameData;
+
+extern GameData D_8006D634;
+
+/* Entries of the equipment (weapons below 32h, armour from 32h), accessory and item tables (10h bytes each). */
+typedef struct {
+    u16 users; /* 00: party bits of the members who can equip it */
+    u16 unk2;
+    u16 price; /* 04 */
+    u8 type;   /* 06 */
+    u8 unk7[5];
+    u8 power;  /* 0c: attack or defence */
+    u8 unkD[3];
+} EquipInfo;
+
+typedef struct {
+    u16 users; /* 00 */
+    u16 price; /* 02 */
+    u8 unk4[4];
+    u8 power;  /* 08 */
+    u8 unk9[5];
+    u16 group; /* 0e: accessories of one group do not add up */
+} AccessoryInfo;
+
+typedef struct {
+    u16 unk0;
+    u16 price; /* 02 */
+    u8 unk4[2];
+    u8 flags;  /* 06: 10h cannot be sold */
+    u8 unk7[9];
+} ItemInfo;
+
+/* The unpacked resources (menu state + 330, cch bytes). */
+typedef struct {
+    EquipInfo *equipment;       /* 00 */
+    AccessoryInfo *accessories; /* 04 */
+    void *unk8[5];
+    ItemInfo *items;     /* 1c */
+    u8 unk20[0xB8 - 0x20];
+    u16 stats[9];        /* b8: a member's stats, filled by 801cce1c */
+    u8 unkCA[2];
+} ResourceSet;
 
 /* Menu state (*800625a0); only the fields this overlay touches are named. */
 typedef struct {
@@ -433,7 +480,7 @@ typedef struct {
     u8 sounds;           /* 32a: menu sound effects enabled */
     u8 unk32B;
     CardState *card;     /* 32c */
-    void **resources;    /* 330: cch bytes of unpacked resources */
+    ResourceSet *resources; /* 330 */
     u8 unk334;
     u8 unk335;
     u8 top_cursor;       /* 336 */
@@ -491,6 +538,7 @@ extern u8 D_801D1FCC[];  /* command label text ids */
 extern s32 D_801D1FD8[]; /* command label x offsets */
 extern u8 D_801D1FD0[];  /* sell list label text ids */
 extern s32 D_801D1FE8[]; /* sell list label x offsets */
+extern u8 D_801D1FD4[];  /* buy list label text ids */
 extern s32 D_801D1F6C[]; /* list picture pairs (sprite, second layer), eight words per command */
 extern s32 D_801D1FF8[]; /* marker x */
 extern s32 D_801D2008[]; /* marker y */
@@ -516,6 +564,9 @@ extern s32 D_801D225C;   /* third number y */
 extern s32 D_801D21B0[]; /* cursor y per position */
 
 /* Game state. */
+extern u8 D_8006F36C[];  /* inventory 0 counts (100) */
+extern u8 D_8006F434[];  /* inventory 1 counts (200) */
+extern u8 D_8006F5C4[];  /* inventory 2 counts (150) */
 extern u8 D_8006F3D0[];  /* inventory 0 ids (100), counts just before */
 extern u8 D_8006F4FC[];  /* inventory 1 ids (200), counts just before */
 extern u8 D_8006F65A[];  /* inventory 2 ids (150), counts just before */
@@ -567,6 +618,9 @@ void func_8003342C(void *list);          /* relocate an offset list */
 void func_80026338(void *sheet, s32 id, s32 *u, s32 *v, s32 *w, s32 *h, s32 *x, s32 *y);
 void func_80033698(s32 x, s32 y);        /* text palettes */
 u8 *func_80033728(void *table, s32 index); /* entry of a text table */
+u8 *func_80033848(s32 id);               /* equipment name */
+u8 *func_800337E8(s32 id);               /* accessory name */
+u8 *func_80033818(s32 id);               /* item name */
 s32 func_80034EAC(u8 *text, void *pixels, s32 width, s32 line); /* render a text line */
 s32 func_8002675C(void *sheet, s32 id, void *packets, s32 buffer, s32 x, s32 y, s32 scale); /* sprite */
 s32 func_800263E4(void *sheet, s32 id, void *packets, s32 buffer, s32 x, s32 y, s32 scale, s32 flip_x,
@@ -598,7 +652,6 @@ void LoadImage(RECT *rect, void *data);        /* LoadImage */
 s32 DrawSync(s32 mode);                       /* DrawSync */
 
 /* This overlay. */
-u16 func_801C50B0(u16 mask, u8 id);
 void func_801C54B4(void);
 void func_801C5A7C(Label *label, s32 index, s32 row, s32 mode);
 void func_801C5E6C(void);
@@ -654,10 +707,13 @@ void func_801CC720(u8 menu);
 void func_801C70B8(void);
 void func_801C7314(u8 index);
 void func_80033B34(u8 *codes, u8 *text, s32 count); /* codes to text */
-void func_801D0E68(s32 n, u8 *ids, u8 *counts, u8 kind, u8 unk4, u8 *counts2, u8 unk6);
+void func_801D0E68(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds, u8 member);
+void func_801D0C18(u32 gold, u8 *ids, u8 *amounts, s32 n, u8 *inv_ids, u8 *inv_counts, u8 *kinds,
+                   u8 inventory, u8 member);
+u32 func_801CFF58(u8 id, u8 kind);
+void func_801D05BC(s32 top, u8 *ids, u8 *kinds, u8 *chosen, u8 *held);
 void func_801D1968(u8 unk0, u8 unk1);
 void func_801C50E8(u32 value);
-u16 func_801C50CC(u8 id);
 void func_801CB370(void);
 u8 func_801D1CA4(void);
 u8 func_801CF780(void);
@@ -688,6 +744,9 @@ void func_801CA444(void);
 void func_801CAB0C(void);
 void func_801CAB80(void);
 void func_801CCFF4(void);
+void func_801CE480(s32 *diffs, u8 *worse, u8 id, u8 kind, u8 member);
+void func_801CE91C(u8 kind, u8 id);
+void func_801CD404(s32 count, POLY_FT4 *packets, u8 color);
 void func_801CAC7C(u8 sound);
 void func_801C8D58(s32 count, POLY_FT4 *packets, s32 first);
 void func_801C8C3C(s32 count, SVECTOR *quads, POLY_FT4 *packets, s32 first);

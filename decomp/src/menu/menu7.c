@@ -173,7 +173,7 @@ void func_800898BC(Matrix *m, SVector *eye, SVector *at, SVector *up) {
 
 /* Point the owner's view from eye toward target (eye kept as the last eye
  * position). */
-void func_80089A98(NodeOwner *owner, Vector *target, Vector *eye) {
+void func_80089A98(LightRig *view, Vector *target, Vector *eye) {
     SVector up;
     SVector from;
     SVector origin;
@@ -188,7 +188,7 @@ void func_80089A98(NodeOwner *owner, Vector *target, Vector *eye) {
     origin.vz = 0;
     origin.vx = 0;
     origin.vy = 0;
-    func_800898BC(&owner->node->view, &from, &origin, &up);
+    func_800898BC(&view->camera->view, &from, &origin, &up);
 }
 
 /* Reset a node: unlinked, no payload, zero position and angles, identity
@@ -448,14 +448,14 @@ void func_8008A184(Model *model, ModelFile *file) {
     model->flags |= 2;
 }
 
-/* Allocate a dim light pointing along zero angles. */
+/* Allocate a light with a small diagonal direction and no colour. */
 Light *func_8008A254(void) {
     Light *light;
 
     func_800324B8(0xB);
     light = func_80031BDC(sizeof(Light), 0);
-    light->colour[0] = light->colour[1] = light->colour[2] = 0x10;
-    light->direction[0] = light->direction[1] = light->direction[2] = 0;
+    light->direction[0] = light->direction[1] = light->direction[2] = 0x10;
+    light->colour[0] = light->colour[1] = light->colour[2] = 0;
     return light;
 }
 
@@ -498,46 +498,46 @@ void func_8008A3A0(void) {
 }
 
 /* Free a holder and its resource. */
-void func_8008A3A8(Holder *holder) {
-    func_80032C18(holder->resource, 3);
-    func_800320E8(holder);
+void func_8008A3A8(OtPair *layer) {
+    func_80032C18(layer->ot[0], 3);
+    func_800320E8(layer);
 }
 
 /* Allocate a light rig: a root and three light nodes (key light turned
  * round, fill lights level), grey ambient, owning holder. */
-LightRig *func_8008A3E0(Holder *holder) {
+LightRig *func_8008A3E0(OtPair *layer) {
     LightRig *rig;
 
     func_800324B8(9);
     rig = func_80031BDC(sizeof(LightRig), 0);
     rig->unk0 = 0;
-    rig->nodes[0] = &rig->storage[0];
-    rig->nodes[1] = &rig->storage[1];
-    rig->nodes[2] = &rig->storage[2];
-    rig->nodes[3] = &rig->storage[3];
+    rig->camera = &rig->storage[0];
+    rig->lights[0] = &rig->storage[1];
+    rig->lights[1] = &rig->storage[2];
+    rig->lights[2] = &rig->storage[3];
     func_80089B44(&rig->storage[0]);
     func_80089B44(&rig->storage[1]);
     func_80089B44(&rig->storage[2]);
     func_80089B44(&rig->storage[3]);
-    func_80089E64(rig->nodes[1], func_8008A254());
-    func_80089E64(rig->nodes[2], func_8008A254());
-    func_80089E64(rig->nodes[3], func_8008A254());
-    rig->nodes[1]->position.vy = rig->nodes[2]->position.vy = rig->nodes[3]->position.vy = -2;
-    rig->nodes[1]->position.vx = 0;
-    rig->nodes[1]->position.vz = 1;
-    rig->nodes[2]->position.vx = -1;
-    rig->nodes[2]->position.vz = -1;
-    rig->nodes[3]->position.vx = 1;
-    rig->nodes[3]->position.vz = -1;
-    ((Light *)rig->nodes[1]->data)->direction[0] = ((Light *)rig->nodes[1]->data)->direction[1] =
-        ((Light *)rig->nodes[1]->data)->direction[2] = 0x800;
-    ((Light *)rig->nodes[2]->data)->direction[0] = ((Light *)rig->nodes[2]->data)->direction[1] =
-        ((Light *)rig->nodes[2]->data)->direction[2] = 0;
-    *(Light *)rig->nodes[3]->data = *(Light *)rig->nodes[2]->data;
-    rig->holder = holder;
+    func_80089E64(rig->lights[0], func_8008A254());
+    func_80089E64(rig->lights[1], func_8008A254());
+    func_80089E64(rig->lights[2], func_8008A254());
+    rig->lights[0]->position.vy = rig->lights[1]->position.vy = rig->lights[2]->position.vy = -2;
+    rig->lights[0]->position.vx = 0;
+    rig->lights[0]->position.vz = 1;
+    rig->lights[1]->position.vx = -1;
+    rig->lights[1]->position.vz = -1;
+    rig->lights[2]->position.vx = 1;
+    rig->lights[2]->position.vz = -1;
+    NODE_LIGHT(rig->lights[0])->colour[0] = NODE_LIGHT(rig->lights[0])->colour[1] =
+        NODE_LIGHT(rig->lights[0])->colour[2] = 0x800;
+    NODE_LIGHT(rig->lights[1])->colour[0] = NODE_LIGHT(rig->lights[1])->colour[1] =
+        NODE_LIGHT(rig->lights[1])->colour[2] = 0;
+    *(Light *)rig->lights[2]->data = *(Light *)rig->lights[1]->data;
+    rig->layer = layer;
     rig->r = rig->g = rig->b = 0;
     rig->r = rig->g = rig->b = 0x10;
-    func_8008ABAC(&rig->nodes[1]);
+    func_8008ABAC(rig->lights);
     return rig;
 }
 
@@ -546,7 +546,7 @@ void func_8008A5BC(LightRig *rig) {
     func_800320E8(rig->storage[1].data);
     func_800320E8(rig->storage[2].data);
     func_800320E8(rig->storage[3].data);
-    func_8008A3A8(rig->holder);
+    func_8008A3A8(rig->layer);
     func_800320E8(rig);
 }
 
@@ -1142,20 +1142,18 @@ void func_8008BCC8(Mesh *mesh, u8 *work) {
     func_8008C3A8(mesh->data, work, mesh->count);
 }
 
-#ifdef NON_MATCHING
 /* Draw a mesh's primitive groups (flag 8: quads, else triangles) into the
- * given packets and ordering table using the vertex work area. Does not match: the next-group pointer and
- * the primitive count swap registers (t0/v1 vs v1/a0). */
+ * given packets and ordering table using the vertex work area. */
 void func_8008BD70(Mesh *mesh, ModelPrim *prims, u32 *ot, u8 *work) {
     u8 *group;
     s32 groups = mesh->groups;
-    u8 *next = mesh->groupData;
 
+    D_80059528 = mesh->groupData;
     D_80059424 = (s32)prims;
     D_80059568 = (s32)ot;
     D_8005953C = (s32)work;
     D_800595C0 += mesh->prims;
-    while (D_80059528 = next, --groups != -1) {
+    while (--groups != -1) {
         group = D_80059528;
         D_80059528 = group + 4;
         if (group[0] & 8) {
@@ -1163,12 +1161,9 @@ void func_8008BD70(Mesh *mesh, ModelPrim *prims, u32 *ot, u8 *work) {
         } else {
             func_8008C4B0(D_80059528, ((s16 *)group)[1]);
         }
-        next = D_80059528 + ((s16 *)group)[1] * 8;
+        D_80059528 += ((s16 *)group)[1] * 8;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008BD70);
-#endif
 
 /* Build a mesh's packet buffers: a vertex work area and, per display
  * buffer, a flat grey quad (0x18 bytes) or triangle (0x14 bytes) packet
@@ -1626,9 +1621,7 @@ void func_8008D580(Emitter *emitter) {
     }
 }
 
-#ifdef NON_MATCHING
-/* (Re)allocate an emitter's pool for count sparks and set each one up.
- * Does not match: the emitter and loop counter swap $s1/$s2. */
+/* (Re)allocate an emitter's pool for count sparks and set each one up. */
 void func_8008D5C0(Emitter *emitter, s32 count) {
     u8 *spark;
     void (*setup)(void *, Emitter *);
@@ -1639,8 +1632,8 @@ void func_8008D5C0(Emitter *emitter, s32 count) {
     }
     emitter->count = count;
     func_800324B8(0x14);
-    spark = func_80031BDC(emitter->size * emitter->count, 0);
-    emitter->sparks = spark;
+    emitter->sparks = func_80031BDC(emitter->size * emitter->count, 0);
+    spark = emitter->sparks;
     setup = emitter->setup;
     for (i = 0; i < emitter->count; i++) {
         setup(spark, emitter);
@@ -1648,9 +1641,6 @@ void func_8008D5C0(Emitter *emitter, s32 count) {
         spark += emitter->size;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008D5C0);
-#endif
 
 /* Launch up to count idle sparks: each gets a random direction inside the
  * emitter's spread cone and a random speed, both rotated into place, then a
@@ -2069,10 +2059,8 @@ void func_8008E6F8(Actor *owner) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Start a sound on a free positional voice (or a matching unpositioned
- * one, else the oldest); positioned sounds follow pos or its snapshot.
- * Does not match: the search pointer and the age temporary swap $v1/$a0. */
+ * one, else the oldest); positioned sounds follow pos or its snapshot. */
 void func_8008E78C(s32 sound, s32 mode, Vector *pos, s32 arg3) {
     s32 oldest = 0;
     SoundVoice *chosen = &D_80096EA0[3];
@@ -2081,7 +2069,11 @@ void func_8008E78C(s32 sound, s32 mode, Vector *pos, s32 arg3) {
 
     for (i = 0; i < 4; i++) {
         voice = &D_80096EA0[i];
-        if (!voice->active || (mode == 0 && voice->mode == 0)) {
+        if (voice->active == 0) {
+            chosen = voice;
+            break;
+        }
+        if (mode == 0 && voice->mode == 0) {
             chosen = voice;
             break;
         }
@@ -2105,9 +2097,6 @@ void func_8008E78C(s32 sound, s32 mode, Vector *pos, s32 arg3) {
         func_80039F9C(voice->sound, voice->voice, 0x7F, 0x40);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008E78C);
-#endif
 
 /* Pan and attenuate every positioned voice from its screen position and
  * depth; a voice just started is keyed on with those values. */
@@ -2180,17 +2169,12 @@ void func_8008EADC(void) {
     func_8008E67C();
 }
 
-#ifdef NON_MATCHING
-/* Play a menu sound effect (unpositioned).
- * Does not match: the tag load is scheduled after the sound id. */
+/* Play a menu sound effect (unpositioned). */
 void func_8008EB4C(s32 id) {
     if (id != 0) {
         func_8008E78C(0x60000 + id, 0, NULL, D_80059488);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008EB4C);
-#endif
 
 /* Play a character's sound effect, tagged with its id and side. */
 void func_8008EB88(Actor *owner, s32 id, Vector *pos, s32 mode) {
@@ -2240,7 +2224,29 @@ void func_8008ECEC(u8 tag) {
     }
 }
 
+/* Stop the sounds a character's command sound entry started. Does not
+ * match, like the play counterpart func_8008EBD0: the original frame has
+ * an 8-byte local slot and keeps the table base in $s1 for the second id. */
+#ifdef NON_MATCHING
+void func_8008ED6C(Actor *owner, s32 index) {
+    s32 entry;
+    s32 id;
+
+    entry = owner->sounds[index];
+    if (entry != 0xFF) {
+        id = D_80091EE0[entry].first;
+        if (id != 0) {
+            func_8008ECEC((id & 0x7F) | ((owner->flags >> 20) & 0x80));
+        }
+        id = D_80091EE0[entry].second;
+        if (id != 0) {
+            func_8008ECEC((id & 0x7F) | ((owner->flags >> 20) & 0x80));
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008ED6C);
+#endif
 
 /* Accelerate an actor toward the speed limit (or brake to a stop, harder
  * when not guarding) for two ticks, and turn it toward a heading. */

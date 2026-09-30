@@ -119,10 +119,6 @@ typedef struct Node {
     s32 unk98;
 } Node;
 
-typedef struct {
-    s32 unk0;
-    Node *node;
-} NodeOwner;
 
 /* Loaded model file header. */
 typedef struct {
@@ -180,10 +176,12 @@ typedef struct {
 
 /* Light payload (0x14 bytes). */
 typedef struct {
-    s32 colour[3];
-    s16 direction[3];  /* 0x0C */
+    s32 direction[3];
+    s16 colour[3];     /* 0x0C: 0x1000 = full */
     s16 unk12;
 } Light;
+
+#define NODE_LIGHT(node) ((Light *)(node)->data)
 
 /* Drawing layer (0x68 bytes): an ordering table per display buffer with
  * its drawing area, offset and background packets. */
@@ -286,18 +284,14 @@ typedef struct {
     u32 *animations;
 } ModelSetFile;
 
-/* Model resource holder freed with its resource. */
+/* Three-light rig with an ambient colour (0x28C bytes): the 3D view's
+ * camera node, its lights and its drawing layer. */
 typedef struct {
     s32 unk0;
-    void *resource;
-} Holder;
-
-/* Three-light rig with an ambient colour (0x28C bytes). */
-typedef struct {
-    s32 unk0;
-    Node *nodes[4];    /* 0x04: root, then the three lights */
+    Node *camera;      /* 0x04 */
+    Node *lights[3];   /* 0x08 */
     Node storage[4];   /* 0x14 */
-    Holder *holder;    /* 0x284 */
+    OtPair *layer;     /* 0x284 */
     u8 r, g, b;        /* 0x288 */
     u8 unk28B;
 } LightRig;
@@ -480,12 +474,12 @@ s32 func_8008B730(Player *player, s32 frames, s32 steps);
 void ClearOTagR(u32 *ot, s32 length);
 void AddPrims(u32 *ot, u32 *last, u32 *first);
 void func_8008AC7C(OtPair *pair);
-void func_80028A60(s32 a);
+s32 func_80028A60(s32 a);
 SceneFile *func_8008AF6C(SceneFile *scene);
 s32 GetRCnt(s32 counter);
 Light *func_8008A254(void);
 void func_80089E64(Node *node, void *data);
-void func_8008A3A8(Holder *holder);
+void func_8008A3A8(OtPair *layer);
 void func_8008ABAC(Node **lights);
 void func_80030A30(s32 index, Light *light);
 Model *func_80089F8C(Model *model);

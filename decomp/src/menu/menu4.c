@@ -61,7 +61,42 @@ void func_8007E894(s32 x, s32 y) {
     D_800926EC = y;
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_8007E8AC);
+/* The font glyph of a character: digits, capitals and a few punctuation
+ * marks; NULL for anything else. */
+Glyph *func_8007E8AC(s32 ch) {
+    if (ch >= '0' && ch <= '9') {
+        ch -= '0';
+    } else if (ch >= 'A' && ch <= 'Z') {
+        ch -= 'A' - 10;
+    } else {
+        switch (ch) {
+        case '!':
+            ch = 0x24;
+            break;
+        case ':':
+            ch = 0x25;
+            break;
+        case '-':
+            ch = 0x26;
+            break;
+        case '/':
+            ch = 0x27;
+            break;
+        case '#':
+            ch = 0x28;
+            break;
+        case ' ':
+            ch = 0x29;
+            break;
+        case '\'':
+            ch = 0x2A;
+            break;
+        default:
+            return NULL;
+        }
+    }
+    return &D_80091230[ch];
+}
 
 void func_8007E954(s32 value) {
     D_800912DC = value;
@@ -166,9 +201,7 @@ void func_8007ED84(u8 *text, s32 offset) {
     D_800926EC += 0x14;
 }
 
-#ifdef NON_MATCHING
-/* Set the text colour: highlighted (fading red) or plain white.
- * Does not match: the original reloads 0xff in the highlight branch. */
+/* Set the text colour: highlighted (fading red) or plain white. */
 void func_8007EE08(s32 highlight) {
     if (highlight) {
         D_800926F0 = D_80059488 * 20;
@@ -180,9 +213,6 @@ void func_8007EE08(s32 highlight) {
         D_800926F8 = 0xFF;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_8007EE08);
-#endif
 
 #ifdef NON_MATCHING
 /* Set the text colour: highlighted (fading toward blue) or plain white.
@@ -647,7 +677,33 @@ void func_8008040C(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_80080570);
+/* Show both sides' picks; entries 4, 7, 11, 30 and 31 show as a plain
+ * flag instead, depending on the other side's pick. */
+void func_80080570(void) {
+    s32 first = D_800928EC[D_80092700]->id;
+    s32 second = D_800928EC[D_80092704]->id;
+
+    switch (first) {
+    case 4:
+    case 7:
+    case 11:
+    case 30:
+    case 31:
+        first = second == 0;
+        break;
+    }
+    func_8008509C(0, first);
+    switch (second) {
+    case 4:
+    case 7:
+    case 11:
+    case 30:
+    case 31:
+        second = first != 1;
+        break;
+    }
+    func_8008509C(1, second);
+}
 
 /* Load both picks' portraits (palette and image) into their VRAM slots and
  * mark both sides confirmed. */
@@ -1133,7 +1189,110 @@ stick_done:
 
 INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu4", D_8007008C);
 
+#ifdef NON_MATCHING
+/* The controller menu pair (menus 5 and 6) for the current mode: run the
+ * menu of the available port (both in mode 2, where an unavailable port's
+ * menu returns to menu 5 instead of 4), note when neither port is
+ * available, set which sides the pads drive, then draw. Does not match:
+ * the original rereads D_80092710 after each store, does not keep menu 5's
+ * address in a register, and cross-jumps less. */
+void func_80081A44(void) {
+    switch (D_800928C8) {
+    case 1:
+        switch (D_80092710) {
+        case 0:
+            D_80092754 = 0;
+            func_8008162C(&D_800915AC[5], 0);
+            break;
+        case 1:
+            D_80092754 = 1;
+            func_8008162C(&D_800915AC[6], 0);
+            break;
+        case 3:
+            D_80092924 = 1;
+            break;
+        }
+        D_80099D9D = 0;
+        D_80099D9E = 1;
+        break;
+    case 2:
+        D_80092754 = 1;
+        D_800915AC[5].parent = (D_80092710 & 1) ? 5 : 4;
+        D_800915AC[6].parent = (D_80092710 & 2) ? 5 : 4;
+        func_8008162C(&D_800915AC[5], 0);
+        func_8008162C(&D_800915AC[6], 1);
+        if (D_80092710 == 3) {
+            D_80092924 = 1;
+        }
+        D_80099D9D = 0;
+        D_80099D9E = 0;
+        break;
+    case 3:
+        switch (D_80092710) {
+        case 0:
+            D_80092754 = 0;
+            func_8008162C(&D_800915AC[5], 0);
+            break;
+        case 1:
+            D_80092754 = 1;
+            func_8008162C(&D_800915AC[6], 0);
+            break;
+        case 3:
+            D_80092924 = 1;
+            break;
+        }
+        D_80099D9D = 1;
+        D_80099D9E = 1;
+        break;
+    case 4:
+        switch (D_80092710) {
+        case 0:
+            D_80092754 = 0;
+            func_8008162C(&D_800915AC[5], 0);
+            break;
+        case 1:
+            D_80092754 = 1;
+            func_8008162C(&D_800915AC[6], 0);
+            break;
+        case 3:
+            D_80092924 = 1;
+            break;
+        }
+        D_80099D9D = 0;
+        D_80099D9E = 1;
+        break;
+    case 5:
+        switch (D_80092710) {
+        case 0:
+            D_80092754 = 0;
+            func_8008162C(&D_800915AC[5], 0);
+            break;
+        case 1:
+            if (D_80092704 == 3) {
+                D_80092710 = 3;
+            } else {
+                D_80092704++;
+                if (D_80092704 > D_80092888) {
+                    D_80092704 -= D_80092888;
+                }
+                if (D_80092704 < 0) {
+                    D_80092704 += D_80092888;
+                }
+            }
+            break;
+        case 3:
+            D_80092924 = 1;
+            break;
+        }
+        D_80099D9D = 0;
+        D_80099D9E = 1;
+        break;
+    }
+    func_8007FBEC();
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_80081A44);
+#endif
 
 /* One frame of the menu layer: pending refresh, the shown menu's input
  * (with the extra-speed button) and its drawing. */
@@ -1320,7 +1479,77 @@ void func_80082458(SVector *out) {
     *out = D_80092768;
 }
 
+/* Raise a ground corner by its square's kind: 1 by 0x100, 3 by 0x40. */
+#define GROUND_KIND_LIFT(corner, x, z)                                          \
+    switch (((u32 *)D_800928DC)[(z) * 128 + (x)] & 0x3000000) {                \
+    case 0x1000000:                                                            \
+        (corner).vy += 0xC0;                                                   \
+    case 0x3000000:                                                            \
+        (corner).vy += 0x40;                                                   \
+    }
+
+#ifdef NON_MATCHING
+/* Ground height under a position: the plane through the triangle of its
+ * 256-unit square that contains it (corners optionally raised by their
+ * square's kind); the plane's normal is kept in D_80092768.
+ * Does not match: only the frame layout differs: the original frame is 8 bytes larger, with the corners at sp+0x18, the triangle at sp+0x40 and the plane point sharing sp+0x30 with the last corner. */
+s32 func_80082488(Vector *pos, s32 lift) {
+    SVector corner[4];
+    SVector tri[3];
+    GroundSquare *square;
+    s32 x;
+    s32 z;
+    s32 x0;
+    s32 z0;
+
+    x0 = pos->vx & ~0xFF;
+    x = pos->vx >> 8;
+    z0 = pos->vz & ~0xFF;
+    z = pos->vz >> 8;
+    square = &D_800928DC[z * 128 + x];
+    corner[0].vx = x0;
+    corner[0].vy = square[0].height;
+    corner[0].vz = z0;
+    corner[1].vx = x0 + 0x100;
+    corner[1].vy = square[129].height;
+    corner[1].vz = z0 + 0x100;
+    corner[2].vx = x0 + 0x100;
+    corner[2].vy = square[1].height;
+    corner[2].vz = z0;
+    corner[3].vx = x0;
+    corner[3].vy = square[128].height;
+    corner[3].vz = z0 + 0x100;
+    if (lift) {
+        GROUND_KIND_LIFT(corner[0], x, z);
+        GROUND_KIND_LIFT(corner[1], x + 1, z + 1);
+        GROUND_KIND_LIFT(corner[2], x + 1, z);
+        GROUND_KIND_LIFT(corner[3], x, z + 1);
+    }
+    if ((corner[0].vz - corner[1].vz) * pos->vx + (corner[1].vx - corner[0].vx) * pos->vz +
+            corner[0].vx * corner[1].vz - corner[1].vx * corner[0].vz < 0) {
+        tri[0] = corner[0];
+        tri[1] = corner[1];
+        tri[2] = corner[2];
+    } else {
+        tri[0] = corner[0];
+        tri[1] = corner[3];
+        tri[2] = corner[1];
+    }
+    func_8002DB84(&tri[0], &tri[1], &tri[2], &D_80092768);
+    {
+        Vector point;
+
+        point.vx = tri[0].vx;
+        point.vy = tri[0].vy;
+        point.vz = tri[0].vz;
+        return pos->vy + (point.vx * D_80092768.vx + point.vy * D_80092768.vy + point.vz * D_80092768.vz -
+                          (pos->vx * D_80092768.vx + pos->vy * D_80092768.vy + pos->vz * D_80092768.vz)) /
+                             D_80092768.vy;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_80082488);
+#endif
 
 /* Ground height of the map cell under a position (cells of 256 units). Does not match:
  * two shift instructions are scheduled differently. */
@@ -1495,7 +1724,84 @@ void func_80082C4C(StageFiles *files) {
     func_800732AC(D_80092788[1], D_80092788[0], 0xA00);
 }
 
+#ifdef NON_MATCHING
+/* Draw the arena wall: a ring of 32 two-storey textured segments around
+ * the scene centre, starting behind the given position, depth-cued and
+ * skipped when too far away.
+ * Does not match: GCC folds the camera offset into x + 0x3f80 - camera, the original keeps the output table in $fp and addresses the packet bytes from quad + 0x2f. */
+void func_80082E60(u32 *ot, Vector *pos) {
+    Vector centre;
+    SVector base0;
+    SVector base1;
+    SVector mid0;
+    SVector mid1;
+    SVector top0;
+    SVector top1;
+    s32 z[4];
+    PolyFT4 *quad;
+    s32 angle;
+    s32 depth;
+    s32 i;
+
+    centre = *pos;
+    i = 0;
+    centre.vx -= 0x3F80;
+    quad = D_80092788[D_800928A0];
+    centre.vz -= 0x3F80;
+    angle = (ratan2(centre.vx, centre.vz) & 0xFFF0) - 0x100;
+    mid1.vy = mid0.vy = -0x290;
+    base1.vy = base0.vy = 0;
+    top1.vy = top0.vy = -0x520;
+    base0.vx = ((func_8003F8B0(angle) * 0x3F80) >> 12) - (D_80096FA8.vx - 0x3F80);
+    base0.vz = ((func_8003F8CC(angle) * 0x3F80) >> 12) - (D_80096FA8.vz - 0x3F80);
+    angle += 0x10;
+    for (; i < 32; i++) {
+        top0.vx = mid0.vx = base0.vx;
+        top0.vz = mid0.vz = base0.vz;
+        top1.vx = mid1.vx = base1.vx = ((func_8003F8B0(angle) * 0x3F80) >> 12) - (D_80096FA8.vx - 0x3F80);
+        top1.vz = mid1.vz = base1.vz = ((func_8003F8CC(angle) * 0x3F80) >> 12) - (D_80096FA8.vz - 0x3F80);
+        gte_ldv3(&base0, &base1, &mid0);
+        gte_rtpt();
+        gte_dpcs();
+        gte_stsxy3(&quad[0].x0, &quad[0].x1, &quad[0].x2);
+        gte_stsz3v(&z[0], &z[1], &z[2]);
+        gte_ldv3(&mid1, &top0, &top1);
+        gte_rtpt();
+        depth = z[0];
+        if (depth < z[1]) {
+            depth = z[1];
+        }
+        if (depth <= z[2]) {
+            depth = z[2];
+        }
+        *(u32 *)&quad[1].x0 = *(u32 *)&quad[0].x2;
+        gte_stsxy(&quad[0].x3);
+        gte_stsxy3(&quad[0].x3, &quad[1].x2, &quad[1].x3);
+        gte_stsz(&z[3]);
+        *(u32 *)&quad[1].x1 = *(u32 *)&quad[0].x3;
+        if (depth <= z[3]) {
+            depth = z[3];
+        }
+        if (depth < 0x1C00) {
+            gte_strgb(&quad[0].r0);
+            gte_strgb(&quad[1].r0);
+            depth >>= 4;
+            ((PacketTag *)&quad[0])->len = 9;
+            quad[0].code = 0x2C;
+            ((PacketTag *)&quad[1])->len = 9;
+            quad[1].code = 0x2C;
+            AddPrim(&ot[depth], &quad[0]);
+            AddPrim(&ot[depth], &quad[1]);
+        }
+        quad += 2;
+        angle += 0x10;
+        base0.vx = base1.vx;
+        base0.vz = base1.vz;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_80082E60);
+#endif
 
 /* Put the look-at point somewhere random around the scene centre and set
  * the idle camera motion parameters. */
