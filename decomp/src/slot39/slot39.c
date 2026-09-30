@@ -2226,7 +2226,41 @@ void func_801CF308(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CF37C);
+/* In file selection (+4d8 == 2), draw the pulsing cursor box of every slot
+ * of the selected slot's file (only the selected slot when it is empty). */
+void func_801CF37C(void) {
+    MenuSlotImage *image;
+    s32 i;
+    s32 p;
+    s32 flag;
+    u8 file;
+    u8 match;
+
+    if (D_800625A0->loadState == 2) {
+        file = D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]];
+        for (i = 0; i < 32; i++) {
+            match = 1;
+            if (file == D_800625A0->card->fileSlots[i]) {
+                if (file == 0xff) {
+                    match = i == D_801E981C[D_800625A0->card->cursor];
+                }
+                if (match) {
+                    image = D_800625A0->images[i];
+                    (image->box + D_800625A0->bufferIndex)->r0 = D_800625A0->unk4D4;
+                    (image->box + D_800625A0->bufferIndex)->g0 = D_800625A0->unk4D4;
+                    (image->box + D_800625A0->bufferIndex)->b0 = D_800625A0->unk4D4;
+                    RotTransPers4(&image->iconAt[0], &image->iconAt[1], &image->iconAt[2], &image->iconAt[3],
+                                  (s32 *)&image->box[D_800625A0->bufferIndex].x0,
+                                  (s32 *)&image->box[D_800625A0->bufferIndex].x1,
+                                  (s32 *)&image->box[D_800625A0->bufferIndex].x2,
+                                  (s32 *)&image->box[D_800625A0->bufferIndex].x3, &p, &flag);
+                    AddPrim(&D_800625A0->current->ot[4], &image->box[D_800625A0->bufferIndex]);
+                    AddPrim(&D_800625A0->current->ot[4], &image->boxMode[D_800625A0->bufferIndex]);
+                }
+            }
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CF5E4);
 

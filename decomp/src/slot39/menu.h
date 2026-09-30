@@ -172,7 +172,7 @@ typedef struct MenuPrims {
 
 /* One file entry of a card listing. */
 typedef struct MenuCardFile {
-    u8 pad0[0x18];
+    s32 iconV[6]; /* 0: icon texture row per animation frame (+4cc) */
     char name[21]; /* 18: directory entry name */
     u8 pad2D[0x2B];
     u8 state; /* 58 */
@@ -704,6 +704,19 @@ typedef struct MenuIndicator {
     u8 pad7B9[0x3];
 } MenuIndicator;
 
+/* A file screen slot (*(state + 3a8 + 4 * slot)): its icon, the two
+ * connector lines to the next slot and the cursor box, one per buffer. */
+typedef struct MenuSlotImage {
+    POLY_FT4 icon[2];  /* 0 */
+    LINE_F3 lineA[2];  /* 50 */
+    LINE_F3 lineB[2];  /* 80 */
+    POLY_F4 box[2];    /* B0 */
+    SVECTOR iconAt[4]; /* E0: also the cursor box */
+    SVECTOR lineAAt[4]; /* 100 */
+    SVECTOR lineBAt[4]; /* 120 */
+    DR_MODE boxMode[2]; /* 140 */
+} MenuSlotImage;
+
 /* The menu mode's state (*D_800625A0). */
 typedef struct MenuState {
     MenuMover movers[3]; /* 0 */
@@ -752,7 +765,7 @@ typedef struct MenuState {
     MenuPortrait *portraits[7]; /* 364 */
     MenuMark *portraitMarks[7]; /* 380 */
     MenuFieldBlock *fieldBlocks[3]; /* 39C: three 127c-byte field blocks */
-    u8 *images[32]; /* 3A8 */
+    MenuSlotImage *images[32]; /* 3A8: file screen slots */
     MenuMarkers *markers; /* 428: marker block (14c bytes) */
     MenuBlock42C *block42C; /* 42C: 1198 bytes */
     MenuBlock430 *block430; /* 430: 1094 bytes */
