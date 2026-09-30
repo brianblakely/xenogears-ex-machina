@@ -680,9 +680,11 @@ typedef struct {
     u8 unk0[2];
     u8 unk2;       /* 02: entry of the 18h-byte table */
     u8 unk3;       /* 03: entry of the 10h-byte table */
-    u8 unk4[4];
+    u8 unk4[4];    /* 04: fitted parts (items of 32h and above) */
     u8 unk8;       /* 08: entry of the 14h-byte table */
-    u8 unk9[0x38 - 9];
+    u8 unk9[3];    /* 09: kind 3 parts */
+    u8 unkC[4];    /* 0c: fitted parts (items below 32h) */
+    u8 unk10[0x38 - 0x10];
     u16 unk38;     /* 38 */
     u16 unk3A;     /* 3a */
     u8 unk3C, unk3D, unk3E, unk3F; /* 3c */

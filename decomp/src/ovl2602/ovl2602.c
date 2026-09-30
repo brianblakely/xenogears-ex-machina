@@ -2438,7 +2438,64 @@ void func_801D0EC8(u8 close) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D1078);
+/* Party bits of the available members whose gear has part `item` of kind `kind` fitted. */
+u32 func_801D1078(u8 item, u8 kind) {
+    u16 members;
+    u8 found;
+    s32 i;
+    s32 k;
+
+    members = 0;
+    if (item != 0) {
+        for (i = 0; i < 16; i++) {
+            found = 0;
+            if (D_800625A0->member_present[i] != 0) {
+                switch (kind) {
+                case 1:
+                    if (D_8006DFAC[D_8006D8A0[i].unkA0].unk2 == item) {
+                        found = 1;
+                    }
+                    break;
+                case 0:
+                    if (D_8006DFAC[D_8006D8A0[i].unkA0].unk8 == item) {
+                        found = 1;
+                    }
+                    break;
+                case 2:
+                    if (D_8006DFAC[D_8006D8A0[i].unkA0].unk3 == item) {
+                        found = 1;
+                    }
+                    break;
+                case 4:
+                    for (k = 0; k < 4; k++) {
+                        if (item < 0x32) {
+                            if (D_8006DFAC[D_8006D8A0[i].unkA0].unkC[k] == item) {
+                                found = 1;
+                                break;
+                            }
+                        } else if (D_8006DFAC[D_8006D8A0[i].unkA0].unk4[k] == item) {
+                            found = 1;
+                            break;
+                        }
+                    }
+                    break;
+                case 3:
+                    for (k = 0; k < 3; k++) {
+                        if (D_8006DFAC[D_8006D8A0[i].unkA0].unk9[k] == item) {
+                            found = 1;
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+            if (found) {
+                members |= func_801C5260(D_8006D8A0[i].unkA0);
+            }
+        }
+    }
+    return members;
+}
 
 /*
  * Show part `id` of kind `kind` (3 or 4): its name and sell price (half the
