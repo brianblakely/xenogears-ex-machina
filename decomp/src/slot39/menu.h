@@ -136,6 +136,12 @@ typedef struct MenuCardFile {
     u8 pad59[0x3];
 } MenuCardFile;
 
+/* The second half of a listed file's header block (+100). */
+typedef struct MenuSaveInfo {
+    u8 pad0[0x24];
+    u8 names[4][0x14]; /* 24: names of the sheet entries (two-byte text) */
+} MenuSaveInfo;
+
 /* Memory-card state (*(state + 32c)). */
 typedef struct MenuCard {
     MenuCardFile files[32]; /* 0 */
@@ -740,6 +746,8 @@ extern u8 D_801EA714;
 extern u8 D_8006D634[][2][0x14]; /* game data: name line pairs */
 extern u16 D_801EA578[][2];      /* label image x per row pair */
 extern u16 D_801EA5C4[][2];      /* label image y per row pair */
+extern u16 D_801EA590[][2];      /* view name image x (D_801EA578 from row 6) */
+extern u16 D_801EA5DC[][2];      /* view name image y */
 extern s32 D_801EA34C[20]; /* field block part images, ffff none */
 extern s32 D_801E9A78[20];
 extern s32 D_801E9AC8[20];

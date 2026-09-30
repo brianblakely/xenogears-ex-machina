@@ -3430,7 +3430,41 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E6CFC);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E6F5C);
 
+/* Render the name of view `index`'s sheet entry from listed file `file`'s
+ * header (up to ten two-byte characters) and upload it to label row
+ * `index` of the view rows. */
+#ifdef NON_MATCHING
+void func_801E71B4(u8 index, MenuViewSet *set, s32 file) {
+    RECT rect;
+    u8 name[24];
+    u8 text[24];
+    u8 *pixels;
+    MenuSaveInfo *info;
+    s32 i;
+
+    info = (MenuSaveInfo *)(D_800625A0->card->headers[file] + 0x100);
+    for (i = 0; i < 20; i += 2) {
+        name[i] = info->names[set->images[index]][i];
+        name[i + 1] = info->names[set->images[index]][i + 1];
+        if (name[i] == 0 && name[i + 1] == 0) {
+            break;
+        }
+    }
+    func_80033B34(name, text, i / 2);
+    pixels = func_80031BDC(0x3f6, 0);
+    bzero(pixels, 0x3f6);
+    func_80034EAC(text, pixels, 0x24, 0);
+    rect.x = D_801EA590[index][0] + 0x180;
+    rect.y = D_801EA5DC[index][0];
+    rect.w = 0x28;
+    rect.h = 0xd;
+    LoadImage(&rect, pixels);
+    DrawSync(0);
+    func_800320E8(pixels);
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E71B4);
+#endif
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E733C);
 
