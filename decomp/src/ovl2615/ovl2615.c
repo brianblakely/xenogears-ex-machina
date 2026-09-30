@@ -67,9 +67,8 @@ void func_801E4CD0(void) {
     }
     listed = 0;
     for (i = 0; i < INVENTORY_SLOTS && listed < BATTLE_ITEMS; i++) {
-        id = D_8006F65A[i];
-        if (id != 0 && id < 49) {
-            D_800D2CE0[listed] = id;
+        if (D_8006F65A[i] != 0 && D_8006F65A[i] < 49) {
+            D_800D2CE0[listed] = D_8006F65A[i];
             D_800D2CB0[listed] = D_8006F5C4[i];
             D_800D2FE4[listed] = D_8006F65A[i];
             listed++;
@@ -94,7 +93,49 @@ void func_801E4CD0(void) {
 INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E4CD0);
 #endif
 
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E4E7C);
+/* Start the turn timers, draw a random turn order of the eleven slots, let
+ * enemies flagged 0x200 act first, then rebase every present timer so the
+ * smallest becomes 1. */
+void func_801E4E7C(void) {
+    u8 drawn[SLOT_COUNT];
+    s32 i;
+    s32 least;
+    s32 delta;
+    u8 slot;
+
+    D_800D2CAA = 0;
+    func_80078508(drawn);
+    i = 0;
+    do {
+        slot = func_8001BD40(0, 10);
+        if (drawn[slot] == 0) {
+            drawn[slot] = 1;
+            D_800D2DCC.order[i] = slot;
+            i++;
+        }
+    } while (i < SLOT_COUNT);
+    D_800D2DCC.order_pos = 0;
+    for (i = 3; i < SLOT_COUNT; i++) {
+        if (D_800D2DCC.present[i] != 0 && (D_800CCCE8[i].flags & 0x200)) {
+            D_800D2DCC.timer_reset[i] = D_800D2DCC.timer[i] = 1;
+        }
+    }
+    least = 0xFFFF;
+    for (i = 0; i < SLOT_COUNT; i++) {
+        if (D_800D2DCC.present[i] != 0) {
+            if (D_800D2DCC.timer[i] < least) {
+                least = D_800D2DCC.timer[i];
+            }
+        }
+    }
+    i = 0;
+    delta = least - 1;
+    for (; i < SLOT_COUNT; i++) {
+        if (D_800D2DCC.present[i] != 0) {
+            D_800D2DCC.timer[i] -= delta;
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E5014);
 
@@ -129,7 +170,29 @@ void func_801E5840(u8 phase) {
 
 INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E5924);
 
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E5D2C);
+/* Prepare the two white semi-transparent panel quads and their draw modes
+ * (blend mode 2 on the effect texture page). */
+void func_801E5D2C(void) {
+    RECT window;
+    s32 i;
+
+    window.y = 0;
+    window.x = 0;
+    window.h = 0x100;
+    window.w = 0x100;
+    for (i = 0; i < 2; i++) {
+        func_80043C9C(&D_800C3EA4->panel[i]);
+        (D_800C3EA4->panel + i)->r0 = 0xFF;
+        (D_800C3EA4->panel + i)->g0 = 0xFF;
+        (D_800C3EA4->panel + i)->b0 = 0xFF;
+        func_80043BFC(&D_800C3EA4->panel[i], 1);
+        func_800454DC(&D_800C3EA4->panel_mode[i], 0, 0,
+                      func_80043A1C(0, 2, D_800C3EA4->tpage_x, D_800C3EA4->tpage_y), &window);
+    }
+    D_800C3EA4->panel6415 = 0;
+    D_800C3EA4->panel_alpha = 0xFF;
+    D_800C3EA4->panel6416 = 0;
+}
 
 /* Render the ten battle messages 0-9 into text images. */
 void func_801E5E78(void) {
@@ -195,7 +258,6 @@ INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E7914);
 /* Register the stage actors and light entries; clear each light's active
  * flag. Without lights both pointers are cleared. */
 void func_801E7EC4(void *actors, StageLight *lights, s32 count) {
-    s32 unused[1]; /* an 8-byte local the original frame reserves */
     s32 i;
 
     D_800D3344 = actors;

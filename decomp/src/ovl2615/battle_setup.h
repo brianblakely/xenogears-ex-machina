@@ -102,4 +102,72 @@ typedef struct {
 
 extern TurnState *D_800C3EAC;
 
+/* Combatant record (0x800CCCE8, 0x170 bytes per slot). */
+typedef struct {
+    u8 pad0[0x34];
+    u16 flags; /* 0x34: 0x200 acts first */
+    u8 pad36[0x170 - 0x36];
+} CombatantRecord;
+
+extern CombatantRecord D_800CCCE8[SLOT_COUNT];
+
+/* Slot presence and the turn order and timers (0x800D2DCC). */
+typedef struct {
+    u8 present[SLOT_COUNT];     /* 0x00 */
+    u8 order_pos;               /* 0x0B */
+    u8 order[SLOT_COUNT];       /* 0x0C: slots in drawn order */
+    u8 pad17;
+    u8 ready[SLOT_COUNT];       /* 0x18 */
+    u8 pad23;
+    s16 timer_reset[SLOT_COUNT]; /* 0x24 */
+    s16 timer[SLOT_COUNT];      /* 0x3A */
+    s16 alternate[SLOT_COUNT];  /* 0x50 */
+} TurnOrder;
+
+extern TurnOrder D_800D2DCC;
+extern u8 D_800D2CAA;
+
+void func_80078508(u8 *drawn); /* initial turn timers; clears the drawn flags */
+s32 func_8001BD40(s32 low, s32 high); /* random number in [low, high] */
+
+/* libgpu primitives. */
+typedef struct {
+    s16 x, y, w, h;
+} RECT;
+
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    s16 x1, y1;
+    s16 x2, y2;
+    s16 x3, y3;
+} POLY_F4;
+
+typedef struct {
+    u32 tag;
+    u32 code[2];
+} DR_MODE;
+
+void func_80043C9C(POLY_F4 *poly);                  /* SetPolyF4 */
+void func_80043BFC(void *prim, s32 semi);           /* SetSemiTrans */
+u16 func_80043A1C(s32 tp, s32 abr, s32 x, s32 y);   /* GetTPage */
+void func_800454DC(DR_MODE *mode, s32 dfe, s32 dtd, s32 tpage, RECT *tw); /* SetDrawMode */
+
+/* Battle graphics state (pointer 0x800C3EA4). */
+typedef struct {
+    u8 pad0[0x63C8];
+    POLY_F4 panel[2];       /* 0x63C8: semi-transparent panel backdrops */
+    DR_MODE panel_mode[2];  /* 0x63F8 */
+    s32 panel_alpha;        /* 0x6410 */
+    u8 pad6414;
+    u8 panel6415;
+    u8 panel6416;
+    u8 pad6417[0xA244 - 0x6417];
+    s32 tpage_x;            /* 0xA244 */
+    s32 tpage_y;            /* 0xA248 */
+} GraphicsState;
+
+extern GraphicsState *D_800C3EA4;
+
 #endif
