@@ -1,6 +1,6 @@
 #include "common.h"
 #include "field.h"
-#include "gte.h"
+#include "field_gte.h"
 
 /* Build the camera matrix from the eye, target and up vectors, the world
  * matrix under it, then the three lights and background color from the
@@ -323,9 +323,9 @@ void func_800705DC(void) {
     D_800B2078.sprite_angles.vz = 0;
     D_800ADB6C = -1;
     for (i = 0; i < 16; i++) {
-        D_800B2078.unk2270[i] = 0x1D;
+        D_800B2078.encounter_music[i] = 0x1D;
     }
-    D_800B2078.unk2270[16] = 0x1D;
+    D_800B2078.battle_music = 0x1D;
     D_800ADBEC = -1;
     D_800B2078.camera_counter = 2;
     D_800B2078.input_mask = 0xFFFF;
@@ -1961,7 +1961,52 @@ void func_800771F8(u32 *tim) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80077268);
+/* Declared without a prototype: 80084a40 also reads a fifth, stack
+ * argument that this caller never passes. */
+void func_80084A40();
+
+/* Place the party at the controlled actor: run its position pass (80084a40),
+ * then give each other party member (slots 1 and 2) the leader's model
+ * position and descriptor origin after its own pass, and fill the 32
+ * history records. */
+void func_80077268(void) {
+    FieldDescriptor *descriptor;
+    FieldActor *actor;
+    FieldModel *model;
+    s32 slot;
+    s32 i;
+
+    func_80084A40(D_800B2078.controlled,
+                  WHOLE(D_800AF880.components.descriptors[D_800B2078.controlled].actor->position[1]),
+                  &D_800AF880.components.descriptors[D_800B2078.controlled],
+                  D_800AF880.components.descriptors[D_800B2078.controlled].actor);
+    for (i = 0; i < D_800ADBFC; i++) {
+        descriptor = &D_800AF880.components.descriptors[i];
+        actor = descriptor->actor;
+        if ((descriptor->flags & 0xF80) == 0x200) {
+            slot = func_8009FA00(actor->unkE4);
+            if (slot != -1) {
+                model = D_800AF880.components.descriptors[i].model;
+                if (slot != 0) {
+                    func_80084A40(i, WHOLE(D_800AF880.components.descriptors[i].actor->position[1]),
+                                  descriptor, actor);
+                    model->position[0] = D_800AF880.components.descriptors[D_800B2078.controlled].model->position[0];
+                    model->position[1] = D_800AF880.components.descriptors[D_800B2078.controlled].model->position[1];
+                    model->position[2] = D_800AF880.components.descriptors[D_800B2078.controlled].model->position[2];
+                    descriptor->matrix.t[0] = D_800AF880.components.descriptors[D_800B2078.controlled].matrix.t[0];
+                    descriptor->matrix.t[1] = D_800AF880.components.descriptors[D_800B2078.controlled].matrix.t[1];
+                    descriptor->matrix.t[2] = D_800AF880.components.descriptors[D_800B2078.controlled].matrix.t[2];
+                }
+            }
+        }
+    }
+    D_800B2078.unk2368 = 0;
+    D_800B2078.unk2364 = 0;
+    D_800B2078.unk2360 = 0;
+    for (i = 0; i < 0x20; i++) {
+        func_80081C54(D_800B2078.controlled);
+    }
+}
 
 /* Load the text palette, with the debug font first when enabled. */
 void func_80077544(void) {
@@ -1985,7 +2030,61 @@ void func_800775F8(void) {
     VSync(0);
 }
 
+extern s32 D_8004F344;       /* 1 while the text-image file is already loaded */
+extern s32 *D_8005A4A0;      /* the text-image file (a7) */
+extern s16 D_800ADC44[8 * 6]; /* per text image: x, y, palette x, y, w, h */
+extern RECT D_800B004C;      /* compass colour strip */
+extern u16 D_800AFC08[16];   /* compass colours read back from VRAM */
+extern s16 D_800C2690;
+extern s16 D_800C2692;
+extern s16 D_800C38FC;
+extern s16 D_800C38FE;
+void func_8003342C(void *table);
+void func_80070340(u32 *tim, s16 x, s16 y, s16 clut_x, s16 clut_y, s16 clut_w, s16 clut_h);
+
+#ifdef NON_MATCHING
+/* Load the field's text images (file a7, read once while 8004f344 is clear):
+ * relocate its offset table, load its eight TIMs where 800adc44 places them
+ * (x, y, palette x, y, w, h), read the compass colours back from VRAM (0, fb)
+ * and release the file.
+ * Does not match: the original sets up the placement-table walk before
+ * 800320b8 and loads the file table straight into its register; only
+ * that set-up is scheduled differently. */
+void func_80077620(void) {
+    u32 **tim;
+    s32 i;
+
+    if (D_8004F344 == 0) {
+        D_8005A4A0 = func_80031BDC(func_800288EC(0xA7), 1);
+        func_800320A4(D_8005A4A0);
+        func_800295D8(0xA7, D_8005A4A0, 0, 0x80);
+        func_80028A60(0);
+    }
+    func_800320B8(D_8005A4A0);
+    D_8004F344 = 0;
+    D_800C2692 = 0;
+    D_800C2690 = 0;
+    D_800C38FE = 0;
+    D_800C38FC = 0;
+    func_8003342C(D_8005A4A0);
+    tim = (u32 **)D_8005A4A0 + 1;
+    for (i = 0; i < 8; i++) {
+        func_80070340(*tim, D_800ADC44[i * 6], D_800ADC44[i * 6 + 1], D_800ADC44[i * 6 + 2],
+                      D_800ADC44[i * 6 + 3], D_800ADC44[i * 6 + 4], D_800ADC44[i * 6 + 5]);
+        DrawSync(0);
+        tim++;
+    }
+    D_800B004C.x = 0;
+    D_800B004C.y = 0xFB;
+    D_800B004C.w = 0x10;
+    D_800B004C.h = 1;
+    StoreImage(&D_800B004C, (u32 *)D_800AFC08);
+    DrawSync(0);
+    func_800320E8(D_8005A4A0);
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80077620);
+#endif
 
 /* Stop the stream, then read the map's data ahead until it is in. */
 void func_800777DC(void) {
@@ -2013,9 +2112,100 @@ void func_80077844(MATRIX *m, s32 m00, s32 m01, s32 m02, s32 m10, s32 m11, s32 m
     m->m[2][2] = m22;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80077884);
+/* One entry of a resident file-read list (80029afc); a zero file ends it. */
+typedef struct {
+    u16 file;
+    void *destination;
+} FieldFileRequest;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80077AB4);
+extern s32 D_8004F370;         /* 1 when the module file comes from the disc */
+extern void *D_8005A420[4];    /* per 801e layer: second resource */
+extern void *D_8005A450[4];    /* per 801e layer: first resource */
+extern void *D_800ADB20;       /* the 801e module (file 6b9) */
+extern u32 D_800ADB30;
+extern FieldFileRequest D_800B2394[];
+s32 func_80029AFC(FieldFileRequest *list, s32 mode, s32 a2);
+
+#ifdef NON_MATCHING
+/* Load the 801e module and its per-layer resources when the layer is
+ * enabled: allocate the module (file 6b9), two blocks per layer (files
+ * 6bb and 6ba plus the layer's id), then read them all as one list.
+ * Does not match: only the registers of the module size computation differ
+ * (the original keeps 800adb30 in v1 and the size in a0). */
+void func_80077884(void) {
+    u32 end;
+    s32 size;
+    s32 i;
+
+    if (D_800B2078.unk2264 != 0) {
+        func_8008A520();
+        func_80028470(4, 0);
+        func_800A90B4(0);
+        end = D_800ADB30;
+        if (D_8004F370 == 0) {
+            size = (end & 0xFFFFFF) - 0x1DC008;
+        } else {
+            size = func_800288EC(0x6B9);
+        }
+        D_800ADB20 = func_80031BDC(size, 1);
+        func_800A90B4(1);
+        for (i = 0; i < D_800B2078.unk2264; i++) {
+            D_800B2394[i * 2 + 1].file = D_800B2078.unk21DC[i] + 0x6BB;
+            D_8005A450[i] = func_80031BDC(func_800288EC(D_800B2078.unk21DC[i] + 0x6BB), 1);
+            D_800B2394[i * 2 + 1].destination = D_8005A450[i];
+        }
+        for (i = 0; i < D_800B2078.unk2264; i++) {
+            D_800B2394[i * 2].file = D_800B2078.unk21DC[i] + 0x6BA;
+            D_8005A420[i] = func_80031BDC(func_800288EC(D_800B2078.unk21DC[i] + 0x6BA), 0);
+            D_800B2394[i * 2].destination = D_8005A420[i];
+        }
+        D_800B2394[i * 2].file = 0x6B9;
+        D_800B2394[i * 2].destination = D_800ADB20;
+        D_800B2394[i * 2 + 1].file = 0;
+        D_800B2394[i * 2 + 1].destination = 0;
+        func_8008A520();
+        func_80029AFC(D_800B2394, 0, 0);
+    }
+}
+#else
+INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80077884);
+#endif
+
+extern void *D_801E8644;
+extern u8 *D_801E8670[]; /* 801e module layers */
+void func_801E738C(s32 a0);
+void func_801E742C(s32 layer, s32 a1, void *resource_a, void *resource_b, s32 y, s32 a5, s32 a6, s32 a7,
+                   SVECTOR *angles);
+
+/* Start the 801e module's layers when enabled: sync and flush the cache,
+ * initialise the module, set the back colour, then create each layer from
+ * its two resources (releasing the first) and keep its depth. */
+void func_80077AB4(void) {
+    SVECTOR *angles;
+    s32 row;
+    s32 i;
+
+    if (D_800B2078.unk2264 != 0) {
+        func_8008A520();
+        func_8007999C();
+        func_801E738C(D_800B2078.unk234A);
+        D_801E8644 = D_800B2078.unk223C;
+        SetBackColor(D_800B2078.unk225C[0], D_800B2078.unk225C[1], D_800B2078.unk225C[2]);
+        for (i = 0; i < D_800B2078.unk2264; i++) {
+            angles = &D_800B2078.layer_angles[i];
+            angles->vx = 0;
+            angles->vy = 0;
+            angles->vz = 0;
+            row = D_800B2078.unk225F[i];
+            func_801E742C(i, 0, D_8005A420[i], D_8005A450[i],
+                          (s16)(0x240 - ((i + row) << 6)), 0x100, 0, (s16)(i + 0xFC),
+                          angles);
+            func_800320E8(D_8005A450[i]);
+            D_800B2078.layer_depths[i] = *(s16 *)(D_801E8670[i] + 0x1C);
+        }
+        func_80032498(8, 0);
+    }
+}
 
 /* Run 80077884 then 80077ab4. */
 void func_80077C60(void) {
@@ -2044,7 +2234,25 @@ void func_80077D2C(void) {
     func_800320E8(D_8005A414[2]);
 }
 
+extern s32 D_800ADB9C;
+
+#ifdef NON_MATCHING
+/* Field pre-frame work: record the VSync counter, clear the order table,
+ * run 80074700, start the debug "Clear OTAG" timer and 800a31e8.
+ * The instructions match; the original rodata has a non-zero padding byte
+ * (0x6b) after "Clear OTAG" that a C literal cannot reproduce. */
+void func_80077DAC(void) {
+    D_800ADB9C = VSync(1);
+    func_80073FE0();
+    func_80074700();
+    if (D_800C268C == 0) {
+        func_80281B00("Clear OTAG");
+    }
+    func_800A31E8();
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80077DAC);
+#endif
 
 #ifdef NON_MATCHING
 /* -1 when the field may leave (800adbd0 is 1, 800b2344 clear, and the
@@ -2129,9 +2337,152 @@ void func_80078C5C(void) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80078D44);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80079288);
+extern u8 D_800ADB04;       /* random encounters enabled */
+extern s32 D_800ADBEC;
+extern u8 D_800594F8;
+extern u8 D_80059508;       /* the battle's encounter kind */
+extern u8 D_80065ADC[16];   /* encounter kind weights */
+void func_800199CC(s32 mode);
+void func_80281204(s32 kind);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007954C);
+#ifdef NON_MATCHING
+/* Count down the random-encounter steps while encounters are possible; on a
+ * step whose drawn number (800b22a0) reaches zero, pick an encounter kind by
+ * the weights at 80065adc and request battle with its music.
+ * Does not match: the original reloads the step count on every pass of
+ * the zero search, and schedules one early constant differently. */
+void func_80079288(void) {
+    s32 start[16];
+    u8 *weights;
+    s32 total;
+    s32 sum;
+    s32 roll;
+    s32 found;
+    s32 i;
+
+    if (D_800ADBDC == 0 || D_800ADBE4 == 0 || D_800ADBEC == 0 || D_8004F308 == -1 || D_800B2078.unk2298 == 0
+        || D_800B2078.encounter_inhibition == -1 || D_800ADB2C == 1 || D_800ADB04 == 0) {
+        return;
+    }
+    if (--D_800B2078.unk2294 == 0) {
+        func_8008E718();
+    }
+    for (i = 0; i < D_800B2078.unk229C; i++) {
+        if (D_800B2078.unk22A0[i] != 0xFFFF) {
+            D_800B2078.unk22A0[i]--;
+        }
+    }
+    for (i = 0; i < D_800B2078.unk229C; i++) {
+        if (D_800B2078.unk22A0[i] == 0) {
+            goto draw;
+        }
+    }
+    return;
+draw:
+    D_800B2078.unk22A0[i] = 0xFFFF;
+    weights = D_80065ADC;
+    total = 0;
+    for (i = 0; i < 16; i++) {
+        total += weights[i];
+    }
+    sum = 0;
+    for (i = 0; i < 16; i++) {
+        start[i] = sum;
+        sum += weights[i];
+    }
+    roll = (rand() * (total + 1)) >> 15;
+    found = 0;
+    for (i = 15; i >= 0; i--) {
+        if (weights[i] != 0 && start[i] < roll) {
+            found++;
+            break;
+        }
+    }
+    if (found != 0) {
+        D_80059508 = i;
+        D_800594F8 = 0;
+        D_800B2078.battle_music = D_800B2078.encounter_music[i];
+        if (D_8004F370 == 0) {
+            func_800199CC(2);
+        }
+        D_800ADBDC = 0;
+        D_800ADBD0 = 1;
+        if (D_800C268C == 0) {
+            func_80281204(i);
+        }
+    }
+}
+#else
+INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80079288);
+#endif
+
+extern s32 D_8004F30C;
+extern s32 D_8004F310;
+extern s32 D_8004F324;
+extern s8 D_8005942C;
+extern s32 D_800AFC78;
+extern s32 D_800B0064;
+void func_8001996C(s32 mode);
+void func_80019ACC(s32 a0);
+void func_8001BB50(void);
+void func_800A30FC(void);
+s32 func_80085F30(void);
+void func_80085FB8(void);
+
+/* Leave the field for another game mode, then run the mode dispatcher:
+ * kind 0 selects battle (2) after saving the map and event variable 1 in
+ * the game state, kind 1 mode 3 (first stopping the field sound and
+ * stream work while 8004f384 is 1), kind 2 mode 4, kind 3 the mode in 800b0064's low bits (bit 7 runs
+ * 8001bb50 first). Nothing is selected while 8004f370 is set. */
+void func_8007954C(s32 kind) {
+    D_8005942C = 0;
+    switch (kind) {
+    case 0:
+        func_800A30FC();
+        D_8004F324 = D_800AFC78;
+        D_8005A39C->unk2322 = D_800AFC78;
+        D_8005A39C->unk2320 = D_8005A39C->vars[1];
+        if (D_8004F370 != 0) {
+            return;
+        }
+        func_8001996C(2);
+        break;
+    case 1:
+        if (D_8004F384 == kind) {
+            func_8001B66C();
+            func_80085FB8();
+            func_80028A60(0);
+            func_80085F30();
+            func_8001B66C();
+        }
+        if (D_8004F370 != 0) {
+            return;
+        }
+        func_8001996C(3);
+        break;
+    case 2:
+        D_8005A39C->unk2322 = D_8004F324;
+        D_8005A39C->unk2320 = D_8005A39C->vars[1];
+        if (D_8004F370 != 0) {
+            return;
+        }
+        func_8001996C(4);
+        D_8004F30C++;
+        break;
+    case 3:
+        D_8004F310 = 0;
+        D_8004F30C = 0;
+        if (D_8004F370 != 0) {
+            return;
+        }
+        if (D_800B0064 & 0x80) {
+            func_8001BB50();
+        }
+        func_8001996C(D_800B0064 & 0x7F);
+        break;
+    }
+    func_80019ACC(0);
+}
 
 void func_800796F4(void) {
 }
@@ -2258,9 +2609,94 @@ void func_8007A44C(POLY_FT4 *poly, s16 u0, s16 v0, s16 u1, s16 v1, s16 u2, s16 v
     poly->v3 = v3;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007A5C4);
+extern CompassRecord D_800B0FEC[4]; /* the four compass letters */
+extern s16 D_800ADE30[32];        /* letter corners: x, z per corner */
+extern u8 D_800ADE70[32];         /* letter texture coordinates */
 
+#ifdef NON_MATCHING
+/* Build the four compass letters: corners from 800ade30, texture
+ * coordinates from 800ade70 (v offset c0), semi-transparent, then copy the
+ * quad to the second buffer.
+ * Does not match: the original copies the quad's destination address
+ * through one more register before the block copy. */
+void func_8007A5C4(void) {
+    CompassRecord *record;
+    POLY_FT4 *quad;
+    s32 i;
+
+    for (i = 0; i < 4; i++) {
+        record = &D_800B0FEC[i];
+        quad = &D_800B0FEC[i].quads[0];
+        SetPolyFT4(quad);
+        record->corners[0].vx = D_800ADE30[i * 8];
+        record->corners[0].vy = 0;
+        record->corners[0].vz = D_800ADE30[i * 8 + 1];
+        record->corners[1].vx = D_800ADE30[i * 8 + 2];
+        record->corners[1].vy = 0;
+        record->corners[1].vz = D_800ADE30[i * 8 + 3];
+        record->corners[2].vx = D_800ADE30[i * 8 + 4];
+        record->corners[2].vy = 0;
+        record->corners[2].vz = D_800ADE30[i * 8 + 5];
+        record->corners[3].vx = D_800ADE30[i * 8 + 6];
+        record->corners[3].vy = 0;
+        record->corners[3].vz = D_800ADE30[i * 8 + 7];
+        quad->r0 = 0x80;
+        quad->g0 = 0x80;
+        quad->b0 = 0x80;
+        func_8007A44C(quad, D_800ADE70[i * 8], D_800ADE70[i * 8 + 1] + 0xC0, D_800ADE70[i * 8 + 2],
+                      D_800ADE70[i * 8 + 3] + 0xC0, D_800ADE70[i * 8 + 4], D_800ADE70[i * 8 + 5] + 0xC0, D_800ADE70[i * 8 + 6],
+                      D_800ADE70[i * 8 + 7] + 0xC0);
+        SetSemiTrans(quad, 1);
+        quad->tpage = GetTPage(0, 2, 0x280, 0x1C0);
+        quad->clut = GetClut(0x100, 0xF2);
+        quad[1] = quad[0];
+    }
+}
+#else
+INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007A5C4);
+#endif
+
+extern s16 D_800ADCE0[][4]; /* compass corner x by column */
+extern s16 D_800ADD28[][4]; /* compass corner z by row */
+extern s16 D_800ADD70[][4]; /* texture u by column */
+extern s16 D_800ADDB8[][4]; /* texture v by row */
+extern s16 D_800ADE00[][6]; /* texture page (tp, abr, x, y) and palette (x, y) by style */
+
+#ifdef NON_MATCHING
+/* Build a compass quad record for a grid column and row in a style, then
+ * copy the quad to the second buffer.
+ * Does not match: as in 8007a5c4, the original copies the quad's
+ * destination address through one more register before the block copy. */
+void func_8007A7F4(CompassRecord *record, s32 column, s32 row, s32 style) {
+    u8 unused[0x88]; /* never used; the original frame reserves it */
+    POLY_FT4 *quad;
+
+    quad = &record->quads[0];
+    SetPolyFT4(quad);
+    record->corners[0].vx = D_800ADCE0[column][0];
+    record->corners[0].vy = 0;
+    record->corners[0].vz = D_800ADD28[row][0];
+    record->corners[1].vx = D_800ADCE0[column][1];
+    record->corners[1].vy = 0;
+    record->corners[1].vz = D_800ADD28[row][1];
+    record->corners[2].vx = D_800ADCE0[column][2];
+    record->corners[2].vy = 0;
+    record->corners[2].vz = D_800ADD28[row][2];
+    record->corners[3].vx = D_800ADCE0[column][3];
+    record->corners[3].vy = 0;
+    record->corners[3].vz = D_800ADD28[row][3];
+    quad->r0 = 0x80;
+    quad->g0 = 0x80;
+    quad->b0 = 0x80;
+    quad->tpage = GetTPage(D_800ADE00[style][0], D_800ADE00[style][1], D_800ADE00[style][2], D_800ADE00[style][3]);
+    quad->clut = GetClut(D_800ADE00[style][4], D_800ADE00[style][5]);
+    func_8007A44C(quad, D_800ADD70[column][0], D_800ADDB8[row][0], D_800ADD70[column][1], D_800ADDB8[row][1],
+                  D_800ADD70[column][2], D_800ADDB8[row][2], D_800ADD70[column][3], D_800ADDB8[row][3]);
+    record->quads[1] = record->quads[0];
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007A7F4);
+#endif
 
 #ifdef NON_MATCHING
 /* Set up a pointer marker: a 48x48 quad around the origin and its
@@ -2426,9 +2862,120 @@ void func_8007B07C(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *p, VECTOR *norma
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007B07C);
 #endif
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007B1C4);
+void func_8007B07C(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *p, VECTOR *normal);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007B478);
+/* Find the collision triangle of `layer` under the X/Z point: the index of
+ * the first triangle whose three edges wind around it (normal clip on the
+ * X/Z plane), with the point's height on it in `point` and the plane normal
+ * in `normal`; 0 with both cleared when none does. */
+s32 func_8007B1C4(s32 x, s32 z, s32 layer, SVECTOR *point, VECTOR *normal) {
+    u8 unused[0x30]; /* never used; the original frame reserves it */
+    SVECTOR a;
+    SVECTOR b;
+    SVECTOR c;
+    SVECTOR p;
+    s32 winding[3];
+    CollisionTriangle *triangles;
+    SVECTOR *vertices;
+    s32 count;
+    s32 sxy0;
+    s32 sxy1;
+    s32 sxy2;
+    s32 sxy;
+    s32 i;
+
+    p.vx = x;
+    p.vy = 0;
+    p.vz = z;
+    triangles = D_800AF880.components.collision_triangles[layer];
+    count = D_800AF880.components.triangle_counts[layer];
+    vertices = D_800AF880.components.collision_vertices[layer];
+    sxy = (x << 16) + z;
+    for (i = 0; i < count; i++) {
+        sxy0 = (vertices[triangles[i].unk00[0]].vx << 16) + vertices[triangles[i].unk00[0]].vz;
+        sxy1 = (vertices[triangles[i].unk00[1]].vx << 16) + vertices[triangles[i].unk00[1]].vz;
+        sxy2 = (vertices[triangles[i].unk00[2]].vx << 16) + vertices[triangles[i].unk00[2]].vz;
+        gte_ldsxy3(sxy0, sxy1, sxy);
+        gte_nclip();
+        gte_stopz(&winding[0]);
+        if (winding[0] < 0) {
+            continue;
+        }
+        gte_ldsxy3(sxy1, sxy2, sxy);
+        gte_nclip();
+        gte_stopz(&winding[1]);
+        if (winding[1] < 0) {
+            continue;
+        }
+        gte_ldsxy3(sxy2, sxy0, sxy);
+        gte_nclip();
+        gte_stopz(&winding[2]);
+        if (winding[2] < 0) {
+            continue;
+        }
+        a.vx = vertices[triangles[i].unk00[0]].vx;
+        a.vy = vertices[triangles[i].unk00[0]].vy;
+        a.vz = vertices[triangles[i].unk00[0]].vz;
+        b.vx = vertices[triangles[i].unk00[1]].vx;
+        b.vy = vertices[triangles[i].unk00[1]].vy;
+        b.vz = vertices[triangles[i].unk00[1]].vz;
+        c.vx = vertices[triangles[i].unk00[2]].vx;
+        c.vy = vertices[triangles[i].unk00[2]].vy;
+        c.vz = vertices[triangles[i].unk00[2]].vz;
+        func_8007B07C(&a, &b, &c, &p, normal);
+        point->vx = p.vx;
+        point->vy = p.vy;
+        point->vz = p.vz;
+        return i;
+    }
+    point->vx = 0;
+    point->vy = 0;
+    point->vz = 0;
+    normal->vx = 0;
+    normal->vy = 0;
+    normal->vz = 0;
+    return 0;
+}
+
+/* -1 when `p` lies outside triangle a, b, c on the X/Z plane (to the
+ * negative side of an edge), else 0. */
+s32 func_8007B478(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *p) {
+    VECTOR edge;
+    VECTOR to_p;
+    VECTOR cross;
+
+    edge.vx = b->vx - a->vx;
+    edge.vy = 0;
+    edge.vz = b->vz - a->vz;
+    to_p.vx = p->vx - a->vx;
+    to_p.vy = 0;
+    to_p.vz = p->vz - a->vz;
+    OuterProduct0(&edge, &to_p, &cross);
+    if (cross.vy < 0) {
+        return -1;
+    }
+    edge.vx = c->vx - b->vx;
+    edge.vy = 0;
+    edge.vz = c->vz - b->vz;
+    to_p.vx = p->vx - b->vx;
+    to_p.vy = 0;
+    to_p.vz = p->vz - b->vz;
+    OuterProduct0(&edge, &to_p, &cross);
+    if (cross.vy < 0) {
+        return -1;
+    }
+    edge.vx = a->vx - c->vx;
+    edge.vy = 0;
+    edge.vz = a->vz - c->vz;
+    to_p.vx = p->vx - c->vx;
+    to_p.vy = 0;
+    to_p.vz = p->vz - c->vz;
+    OuterProduct0(&edge, &to_p, &cross);
+    if (cross.vy < 0) {
+        return -1;
+    }
+    return 0;
+}
 
 /* The X/Z offset `distance` away at `angle`, scaled by 800b218c. */
 void func_8007B614(VECTOR *out, s32 distance, s32 angle) {
@@ -2447,12 +2994,239 @@ s32 func_8007B694(VECTOR *v) {
     return -ratan2(v->vz, v->vx) & 0xFFF;
 }
 
+#ifdef NON_MATCHING
+/* Slide along a wall edge: the heading of `edge` (its two X/Z endpoints);
+ * when `heading` meets it at an angle (not within 0x80 of parallel), the
+ * velocity becomes the X/Z speed (80099a4c) along the edge direction nearer
+ * the heading and that direction's heading is returned; otherwise the
+ * velocity is cleared.
+ * Does not match: the original keeps the edge heading in two more
+ * registers (one for the sum and early return, one for the result). */
+s32 func_8007B6C4(s16 heading, SVECTOR *edge, VECTOR *velocity, s32 unused) {
+    VECTOR d;
+    VECTOR n;
+    s32 angle;
+    s32 relative;
+    s32 result;
+    s32 speed;
+
+    relative = (0xC00 - heading) & 0xFFF;
+    angle = -ratan2(edge[1].vz - edge[0].vz, edge[1].vx - edge[0].vx) & 0xFFF;
+    relative = (relative + angle) & 0xFFF;
+    result = angle;
+    if (relative - 0x80 > 0xF00U) {
+        velocity->vx = 0;
+        velocity->vy = 0;
+        velocity->vz = 0;
+        return angle;
+    }
+    if (relative < 0x800) {
+        d.vx = edge[0].vx - edge[1].vx;
+        d.vy = 0;
+        d.vz = edge[0].vz - edge[1].vz;
+        result = (angle + 0x800) & 0xFFF;
+    } else {
+        d.vx = edge[1].vx - edge[0].vx;
+        d.vy = 0;
+        d.vz = edge[1].vz - edge[0].vz;
+    }
+    func_80048D7C(&d, &n);
+    speed = func_80099A4C(velocity->vx >> 12, velocity->vz >> 12);
+    velocity->vy = 0;
+    velocity->vx = n.vx * speed;
+    velocity->vz = n.vz * speed;
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007B6C4);
+#endif
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007B814);
+s32 func_8007B6C4(s16 heading, SVECTOR *edge, VECTOR *velocity, s32 unused);
+s32 func_8007C694(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge, SVECTOR *floor, s32 mode);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007BAC0);
+/* Move `actor` by `delta` (in/out) heading `heading`: probe 64 units ahead
+ * and 0x100 to each side (8007c694 mode -1); when any probe is blocked, slide
+ * the delta along the blocking edge (8007b6c4). Then find the floor under the
+ * moved point: -1 when there is none or it rises above the actor (unless
+ * 800adb98 is set or the actor has flag 40000, which keeps its +ec height),
+ * else put the delta's height on the floor, update the actor's +72 and
+ * return 0. */
+s32 func_8007B814(VECTOR *delta, FieldActor *actor, SVECTOR *edge, s16 heading) {
+    VECTOR probe;
+    SVECTOR floor;
+    u8 unused[0x20]; /* never used; the original frame reserves it */
+    s32 angle;
 
+    angle = heading & 0xFFF;
+    probe.vx = delta->vx + (func_8003F8CC(angle) << 6);
+    probe.vz = delta->vz - (func_8003F8B0(angle) << 6);
+    if (func_8007C694(&probe, actor->position, actor, edge, &floor, -1) == -1) {
+        probe.vx = delta->vx;
+        probe.vy = delta->vy;
+        probe.vz = delta->vz;
+        func_8007B6C4(heading, edge, &probe, 0);
+    } else {
+        angle = heading - 0x100;
+        angle &= 0xFFF;
+        probe.vx = delta->vx + (func_8003F8CC(angle) << 6);
+        probe.vz = delta->vz - (func_8003F8B0(angle) << 6);
+        if (func_8007C694(&probe, actor->position, actor, edge, &floor, -1) == -1) {
+            probe.vx = delta->vx;
+            probe.vy = delta->vy;
+            probe.vz = delta->vz;
+            func_8007B6C4(heading, edge, &probe, 0);
+        } else {
+            angle = heading + 0x100;
+            angle &= 0xFFF;
+            probe.vx = delta->vx + (func_8003F8CC(angle) << 6);
+            probe.vz = delta->vz - (func_8003F8B0(angle) << 6);
+            if (func_8007C694(&probe, actor->position, actor, edge, &floor, -1) == -1) {
+                probe.vx = delta->vx;
+                probe.vy = delta->vy;
+                probe.vz = delta->vz;
+                func_8007B6C4(heading, edge, &probe, 0);
+            } else {
+                probe.vx = delta->vx;
+                probe.vy = delta->vy;
+                probe.vz = delta->vz;
+            }
+        }
+    }
+    if (func_8007C694(&probe, actor->position, actor, edge, &floor, 0) == -1) {
+        return -1;
+    }
+    if (!(actor->flags & 0x40000)) {
+        if ((floor.vy << 16) < actor->position[1] && D_800ADB98 == 0) {
+            return -1;
+        }
+    } else {
+        floor.vy = actor->unkEC;
+    }
+    probe.vy = (floor.vy << 16) - actor->position[1];
+    delta->vx = probe.vx;
+    delta->vy = probe.vy;
+    delta->vz = probe.vz;
+    actor->unk72 = (actor->position[1] + delta->vy) >> 16;
+    return 0;
+}
+
+s32 func_8007BEF4(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge, SVECTOR *floor, s32 mode,
+                  s32 *attribute);
+
+/* Move `actor` by `delta` (in/out) heading `heading`, as 8007b814 but with
+ * the attribute-aware floor search (8007bef4): probe 0x100 to each side and
+ * straight ahead, sliding along a blocking edge. The delta is pushed back
+ * away from the floor found (flag 4000000) when its height is above the
+ * actor's (smaller y), it has attribute 200000, it has 420000 while the
+ * actor's +14 does too, or (without 420000) it is less than 0x40 below;
+ * -1 when no floor remains. */
+s32 func_8007BAC0(VECTOR *delta, FieldActor *actor, SVECTOR *edge, s16 heading) {
+    VECTOR probe;
+    VECTOR saved;
+    SVECTOR floor;
+    SVECTOR saved_floor;
+    VECTOR d;
+    VECTOR n;
+    s32 attribute;
+    s32 angle;
+    s32 speed;
+
+    angle = heading - 0x100;
+    angle &= 0xFFF;
+    probe.vx = delta->vx + (func_8003F8CC(angle) << 6);
+    probe.vz = delta->vz - (func_8003F8B0(angle) << 6);
+    if (func_8007BEF4(&probe, actor->position, actor, edge, &floor, -1, &attribute) == -1) {
+        probe.vx = delta->vx;
+        probe.vy = delta->vy;
+        probe.vz = delta->vz;
+        func_8007B6C4(heading, edge, &probe, attribute);
+    } else {
+        angle = heading + 0x100;
+        angle &= 0xFFF;
+        probe.vx = delta->vx + (func_8003F8CC(angle) << 6);
+        probe.vz = delta->vz - (func_8003F8B0(angle) << 6);
+        if (func_8007BEF4(&probe, actor->position, actor, edge, &floor, -1, &attribute) == -1) {
+            probe.vx = delta->vx;
+            probe.vy = delta->vy;
+            probe.vz = delta->vz;
+            func_8007B6C4(heading, edge, &probe, attribute);
+        } else {
+            angle = heading & 0xFFF;
+            probe.vx = delta->vx + (func_8003F8CC(angle) << 6);
+            probe.vz = delta->vz - (func_8003F8B0(angle) << 6);
+            if (func_8007BEF4(&probe, actor->position, actor, edge, &floor, -1, &attribute) == -1) {
+                probe.vx = delta->vx;
+                probe.vy = delta->vy;
+                probe.vz = delta->vz;
+                func_8007B6C4(heading, edge, &probe, attribute);
+            } else {
+                probe.vx = delta->vx;
+                probe.vy = delta->vy;
+                probe.vz = delta->vz;
+            }
+        }
+    }
+    if (func_8007BEF4(&probe, actor->position, actor, edge, &floor, 0, &attribute) == -1) {
+        return -1;
+    }
+    saved.vx = probe.vx;
+    saved.vy = probe.vy;
+    saved.vz = probe.vz;
+    saved_floor.vx = floor.vx;
+    saved_floor.vy = floor.vy;
+    saved_floor.vz = floor.vz;
+    if (WHOLE(actor->position[1]) > floor.vy) {
+    push:
+        d.vx = -probe.vx >> 8;
+        d.vy = ((floor.vy << 16) - actor->position[1]) >> 8;
+        d.vz = -probe.vz >> 8;
+        func_80048D7C(&d, &n);
+        speed = func_80099A4C(probe.vx >> 8, probe.vz >> 8);
+        probe.vx = -(speed * n.vx) >> 4;
+        probe.vy = (speed * n.vy) >> 4;
+        probe.vz = -(speed * n.vz) >> 4;
+        if (func_8007BEF4(&probe, actor->position, actor, edge, &floor, 0, &attribute) == -1) {
+            return -1;
+        }
+        actor->flags |= 0x4000000;
+        goto done;
+    }
+    if (attribute & 0x200000) {
+        goto push;
+    }
+    if (attribute & 0x420000) {
+        if (!(actor->unk014 & 0x420000)) {
+            goto restore;
+        }
+        goto push;
+    }
+    if (floor.vy < WHOLE(actor->position[1]) + 0x40) {
+        goto push;
+    }
+restore:
+    probe.vx = saved.vx;
+    probe.vy = saved.vy;
+    probe.vz = saved.vz;
+    floor.vx = saved_floor.vx;
+    floor.vy = saved_floor.vy;
+    floor.vz = saved_floor.vz;
+done:
+    probe.vy = (floor.vy << 16) - actor->position[1];
+    delta->vx = probe.vx;
+    delta->vy = probe.vy;
+    delta->vz = probe.vz;
+    actor->unk72 = (actor->position[1] + delta->vy) >> 16;
+    return 0;
+}
+
+/* Unit boundary: the jump tables of 8007bef4, 8007c694, 8007cd80 and 8007d3d4
+ * (rodata 0x9c-0x11c) sit 4 mod 8, and GCC 8-aligns jump tables within a
+ * unit, so they belong to a unit whose rodata starts at 0x9c (after
+ * "Clear OTAG" and its junk padding byte, the previous unit's end) and ends
+ * at 0x198 (after "ERROR ID0 ACT=%d" and its junk padding "ot"; those strings
+ * are used by 8008110c, 80084158, 80084a40). Its text starts after 80077dac
+ * and at or before 8007bef4 and ends after 80084a40 and before 8008e59c.
+ * Switch functions in it cannot match until field.c is split there. */
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007BEF4);
 
 /* The floor range: `high` is `low` raised by a nonnegative extent. */
@@ -2468,7 +3242,155 @@ void func_8007C670(s32 *low, s32 *high, s32 extent) {
     *high = base;
 }
 
+#ifdef NON_MATCHING
+/* Walk the actor's collision layer from its current triangle to the one
+ * under position + probe (X/Z, in 16.16): across the edge each normal clip
+ * rejects, at most 32 steps. On arrival return 0 with the point's height in
+ * `floor` (skipped for mode -1). Return -1 when the walk leaves the mesh,
+ * runs out of steps or enters a triangle whose attribute the actor may not
+ * cross (masked off by the actor's layer bits or 800b21cc; 800000 rejects
+ * layer 0), leaving the edge last crossed in `edge`.
+ * Does not match: its switch table must sit 4 mod 8 (see the unit note at
+ * 8007bef4), and the original places the rejection's "triangle = -1" block
+ * before the walk and keeps the start position's X/Z loads for `origin`. */
+s32 func_8007C694(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge, SVECTOR *floor, s32 mode) {
+    VECTOR normal;
+    CollisionTriangle *triangles;
+    SVECTOR *vertices;
+    s32 triangle;
+    s32 current;
+    s32 point;
+    s32 origin;
+    s32 a;
+    s32 b;
+    s32 c;
+    u32 side;
+    u32 mask;
+    u32 attribute;
+    s32 steps;
+
+    triangle = actor->triangle[actor->layer];
+    triangles = D_800AF880.components.collision_triangles[actor->layer];
+    vertices = D_800AF880.components.collision_vertices[actor->layer];
+    if (triangle == -1) {
+        return -1;
+    }
+    floor->vx = (position[0] + probe->vx) >> 16;
+    point = (floor->vx << 16) + ((position[2] + probe->vz) >> 16);
+    mask = 0;
+    floor->vy = 0;
+    floor->vz = (position[2] + probe->vz) >> 16;
+    origin = ((position[0] >> 16) << 16) + (position[2] >> 16);
+    if (!((actor->layer_flags >> (actor->layer + 3)) & 1)) {
+        mask = -(D_800B2078.party_processing_mode == 0);
+    }
+    steps = 0;
+    do {
+        current = triangle;
+        a = (vertices[triangles[triangle].unk00[0]].vx << 16) + vertices[triangles[triangle].unk00[0]].vz;
+        b = (vertices[triangles[triangle].unk00[1]].vx << 16) + vertices[triangles[triangle].unk00[1]].vz;
+        c = (vertices[triangles[triangle].unk00[2]].vx << 16) + vertices[triangles[triangle].unk00[2]].vz;
+        side = (u32)func_8004A70C(a, b, point) >> 31;
+        if (func_8004A70C(b, c, point) < 0) {
+            side |= 2;
+        }
+        if (func_8004A70C(c, a, point) < 0) {
+            side |= 4;
+        }
+        switch (side) {
+        case 0:
+            steps = 0xFF;
+            break;
+        case 1:
+            triangle = triangles[triangle].unk00[3];
+            break;
+        case 2:
+            triangle = triangles[triangle].unk00[4];
+            break;
+        case 3:
+            if (func_8004A70C(b, point, origin) < 0) {
+                triangle = triangles[triangle].unk00[3];
+                side = 1;
+            } else {
+                triangle = triangles[triangle].unk00[4];
+                side = 2;
+            }
+            break;
+        case 4:
+            triangle = triangles[triangle].unk00[5];
+            break;
+        case 5:
+            if (func_8004A70C(a, point, origin) < 0) {
+                triangle = triangles[triangle].unk00[5];
+                side = 4;
+            } else {
+                triangle = triangles[triangle].unk00[3];
+                side = 1;
+            }
+            break;
+        case 6:
+            if (func_8004A70C(c, point, origin) < 0) {
+                triangle = triangles[triangle].unk00[4];
+                side = 2;
+            } else {
+                triangle = triangles[triangle].unk00[5];
+                side = 4;
+            }
+            break;
+        case 7:
+            triangle = -1;
+            break;
+        }
+        attribute = D_800AF880.components.collision_attributes[triangles[triangle].attribute].word & mask;
+        if ((((actor->flags >> 9) & 3) & (attribute >> 3)) || (((actor->flags >> 8) & 7) & (attribute >> 5))
+            || ((attribute & 0x800000) && actor->layer == 0)) {
+            triangle = -1;
+            break;
+        }
+        if (triangle == -1) {
+            break;
+        }
+        steps++;
+    } while (steps < 0x20);
+    if (triangle != -1 && steps != 0x20) {
+        if (mode == -1) {
+            return 0;
+        }
+        func_8007B07C(&vertices[triangles[triangle].unk00[0]], &vertices[triangles[triangle].unk00[1]],
+                      &vertices[triangles[triangle].unk00[2]], floor, &normal);
+        return 0;
+    }
+    switch (side) {
+    case 1:
+        edge[0].vx = vertices[triangles[current].unk00[0]].vx;
+        edge[0].vy = vertices[triangles[current].unk00[0]].vy;
+        edge[0].vz = vertices[triangles[current].unk00[0]].vz;
+        edge[1].vx = vertices[triangles[current].unk00[1]].vx;
+        edge[1].vy = vertices[triangles[current].unk00[1]].vy;
+        edge[1].vz = vertices[triangles[current].unk00[1]].vz;
+        break;
+    case 2:
+        edge[0].vx = vertices[triangles[current].unk00[1]].vx;
+        edge[0].vy = vertices[triangles[current].unk00[1]].vy;
+        edge[0].vz = vertices[triangles[current].unk00[1]].vz;
+        edge[1].vx = vertices[triangles[current].unk00[2]].vx;
+        edge[1].vy = vertices[triangles[current].unk00[2]].vy;
+        edge[1].vz = vertices[triangles[current].unk00[2]].vz;
+        break;
+    case 4:
+        edge[0].vx = vertices[triangles[current].unk00[2]].vx;
+        edge[0].vy = vertices[triangles[current].unk00[2]].vy;
+        edge[0].vz = vertices[triangles[current].unk00[2]].vz;
+        edge[1].vx = vertices[triangles[current].unk00[0]].vx;
+        edge[1].vy = vertices[triangles[current].unk00[0]].vy;
+        edge[1].vz = vertices[triangles[current].unk00[0]].vz;
+        break;
+    }
+    return -1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007C694);
+#endif
 
 /* Allocate `words` words of the scratchpad. */
 u32 *func_8007CD3C(s32 words) {

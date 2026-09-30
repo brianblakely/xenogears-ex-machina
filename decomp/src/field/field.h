@@ -274,6 +274,12 @@ typedef struct {
     SpriteSequencer *sequencer;
 } FieldSprite;
 
+/* A compass quad record (800b0fec): its corners and its quad per buffer. */
+typedef struct {
+    SVECTOR corners[4];
+    POLY_FT4 quads[2];
+} CompassRecord;
+
 /* A collision attribute word, also read by byte. */
 typedef union {
     u32 word;
@@ -513,7 +519,9 @@ typedef struct {
     s16 text_speed;            /* 21D6 */
     s32 camera_counter;        /* 21D8 */
     s16 unk21DC[4];            /* 21DC: per 801e layer */
-    s16 unk21E4[(0x221C - 0x21E4) / 2]; /* 21E4 */
+    s16 unk21E4[4];            /* 21E4 */
+    SVECTOR layer_angles[4];   /* 21EC: per 801e layer */
+    s32 layer_depths[4];       /* 220C: per 801e layer, from its +1c */
     s16 unk221C[5][3];         /* 221C */
     u8 unk223A[2];
     s16 unk223C[3][3];         /* 223C */
@@ -523,7 +531,8 @@ typedef struct {
     s32 unk2264;               /* 2264: 801e layer enabled */
     s32 unk2268;               /* 2268 */
     s32 controlled;            /* 226C: controlled actor/descriptor index */
-    s16 unk2270[17];           /* 2270 */
+    u16 encounter_music[16];   /* 2270: per encounter kind */
+    u16 battle_music;          /* 2290: the chosen encounter's */
     u8 unk2292[2];
     s32 unk2294;               /* 2294 */
     s32 unk2298;               /* 2298 */
