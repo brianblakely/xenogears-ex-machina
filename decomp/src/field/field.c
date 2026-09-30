@@ -2706,17 +2706,13 @@ void func_800883D4(void) {
     D_800B0078->pc += 4;
 }
 
-#ifdef NON_MATCHING
+#include "field_script.h"
+
 /* Event: set 800b236c to the inverse of its byte operand's low bit. */
 void func_8008848C(void) {
-    s32 value = D_800ADC00[D_800B0078->pc + 1] ^ 1;
-
+    D_800B236C = EVENT_OPERAND_BYTE(1) ^ 1;
     D_800B0078->pc += 2;
-    D_800B2078.unk236C = value;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008848C);
-#endif
 
 /* Event: set the sound-emitter range from operand 1. */
 void func_800884CC(void) {
@@ -2902,7 +2898,20 @@ void func_80088D18(void) {
     func_80088D38(4);
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80088D38);
+/* Set the current emitter record's four +30 pairs from index first on to the
+ * selected operands 1..15 (flags byte 0x11); four batch steps. */
+void func_80088D38(s32 first) {
+    D_800B02CC[D_800B2078.unk2384].unk30[first][0] = func_8009CF78(1, EVENT_OPERAND_BYTE(0x11));
+    D_800B02CC[D_800B2078.unk2384].unk30[first][1] = func_8009CFBC(3, EVENT_OPERAND_BYTE(0x11));
+    D_800B02CC[D_800B2078.unk2384].unk30[first + 1][0] = func_8009D000(5, EVENT_OPERAND_BYTE(0x11));
+    D_800B02CC[D_800B2078.unk2384].unk30[first + 1][1] = func_8009D044(7, EVENT_OPERAND_BYTE(0x11));
+    D_800B02CC[D_800B2078.unk2384].unk30[first + 2][0] = func_8009D088(9, EVENT_OPERAND_BYTE(0x11));
+    D_800B02CC[D_800B2078.unk2384].unk30[first + 2][1] = func_8009D0CC(0xB, EVENT_OPERAND_BYTE(0x11));
+    D_800B02CC[D_800B2078.unk2384].unk30[first + 3][0] = func_8009D110(0xD, EVENT_OPERAND_BYTE(0x11));
+    D_800B02CC[D_800B2078.unk2384].unk30[first + 3][1] = func_8009D154(0xF, EVENT_OPERAND_BYTE(0x11));
+    D_800AFC7C += 4;
+    D_800B0078->pc += 0x12;
+}
 
 extern s32 D_800ADB40;
 /* Event: select emitter record operand 1 and start it with the effect
