@@ -276,7 +276,7 @@ void func_8001E3D8(Sprite *sprite, s32 frame);
 void func_8001E9BC(Sprite *sprite, s32 frame);
 void func_8001EE88(Sprite *sprite, s32 frame, void *image);
 void func_8001F1D4(Sprite *sprite, s32 frame, void *image);
-void func_8001F8E8(Sprite *sprite, s32 frame);
+void func_8001F8E8(Sprite *sprite, s32 frame, void *image);
 void func_800234AC(Sprite *sprite);
 s32 func_8003F8B0(s32 angle); /* rcos */
 s32 func_8003F8CC(s32 angle); /* rsin */

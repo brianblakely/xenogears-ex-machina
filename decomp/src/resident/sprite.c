@@ -383,8 +383,6 @@ void func_8001D2A4(void) {
 
 /* Request frame `frame` for a one-sided sprite: it joins the pending list
  * (drawn by 8001d468), or, already pending, first draws its previous one. */
-/* Nonmatching: in the pending-list scan the original builds the two image addresses through $v0 and walks the list in $v1. */
-#ifdef NON_MATCHING
 void func_8001D2B0(Sprite *sprite, s32 frame) {
     Sprite *pending;
 
@@ -402,7 +400,7 @@ void func_8001D2B0(Sprite *sprite, s32 frame) {
         for (pending = D_80059190; pending != NULL; pending = pending->renderer->next_pending) {
             if (pending == sprite) {
                 if (sprite->image != D_8005A474 && sprite->image != D_8006BE10 && !((sprite->flags >> 19) & 1)) {
-                    func_8001F8E8(sprite, sprite->frame);
+                    func_8001F8E8(sprite, sprite->frame, sprite->image);
                 }
                 sprite->frame = frame;
                 return;
@@ -414,9 +412,6 @@ void func_8001D2B0(Sprite *sprite, s32 frame) {
     sprite->renderer->next_pending = D_80059190;
     D_80059190 = sprite;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001D2B0);
-#endif
 
 /* Remove a sprite from the pending list. */
 void func_8001D3F4(Sprite *sprite) {
