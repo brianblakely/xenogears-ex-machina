@@ -1961,7 +1961,24 @@ void func_8008A08C(void) {
     D_800B0078->pc += 8;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008A148);
+/* Event: set the object parameters at 800b00a0 from twelve operands and
+ * enable it (800b00b2). */
+void func_8008A148(void) {
+    D_800B0080.unkA0[0] = func_800ACDEC(1);
+    D_800B0080.unkA0[1] = func_800ACDEC(3);
+    D_800B0080.unkA0[2] = func_800ACDEC(5);
+    D_800B0080.unkA4[0] = func_800ACDEC(7);
+    D_800B0080.unkA4[1] = func_800ACDEC(9);
+    D_800B0080.unkA4[2] = func_800ACDEC(11);
+    D_800B0080.unkA8[0] = func_800ACDEC(13);
+    D_800B0080.unkA8[1] = func_800ACDEC(15);
+    D_800B0080.unkA8[2] = func_800ACDEC(17);
+    D_800B0080.unkAC = func_800ACDEC(19);
+    D_800B0080.unkAE = func_800ACDEC(21);
+    D_800B0080.unkB0 = func_800ACDEC(23);
+    D_800B0078->pc += 25;
+    D_800B0080.enabled = 1;
+}
 
 /* Event: wait while 800adb88 is set, yielding each time. */
 void func_8008A244(void) {
@@ -2133,9 +2150,27 @@ void func_8008AE5C(void) {
     D_800B0078->pc += 2;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008AEC8);
+/* Event: set entry op1 of the 800b221c triples from operands 3, 5 and 7
+ * (immediate by flags of byte 9). */
+void func_8008AEC8(void) {
+    s32 index = func_8009CF78(1, D_800ADC00[D_800B0078->pc + 9]);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008AFD8);
+    D_800B2184.unk221C[index][0] = func_8009CFBC(3, D_800ADC00[D_800B0078->pc + 9]);
+    D_800B2184.unk221C[index][1] = func_8009D000(5, D_800ADC00[D_800B0078->pc + 9]);
+    D_800B2184.unk221C[index][2] = func_8009D044(7, D_800ADC00[D_800B0078->pc + 9]);
+    D_800B0078->pc += 10;
+}
+
+/* Event: set column op1 of the 800b223c table from operands 3, 5 and 7
+ * (immediate by flags of byte 9). */
+void func_8008AFD8(void) {
+    s32 index = func_8009CF78(1, D_800ADC00[D_800B0078->pc + 9]);
+
+    D_800B2184.unk223C[0][index] = func_8009CFBC(3, D_800ADC00[D_800B0078->pc + 9]);
+    D_800B2184.unk223C[1][index] = func_8009D000(5, D_800ADC00[D_800B0078->pc + 9]);
+    D_800B2184.unk223C[2][index] = func_8009D044(7, D_800ADC00[D_800B0078->pc + 9]);
+    D_800B0078->pc += 10;
+}
 
 /* Event: set the three bytes at 800b225c from operands 1, 3 and 5. */
 void func_8008B0E8(void) {
@@ -2557,9 +2592,37 @@ s32 func_8008DBF0(s32 member, s32 amount) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008DC74);
+/* Event: add operand 1 to the points of the party members the byte-3 mask
+ * names. */
+void func_8008DC74(void) {
+    s32 i;
+    s32 amount = func_8009CF78(1, D_800ADC00[D_800B0078->pc + 3]);
+    s32 mask = D_800AEA2C[D_800ADC00[D_800B0078->pc + 3] & 3];
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008DD6C);
+    for (i = 0; i < 3; i++) {
+        if (D_80062590[i] != 0xFF && (mask & 1)) {
+            func_8008DB68(i, amount);
+        }
+        mask >>= 1;
+    }
+    D_800B0078->pc += 4;
+}
+
+/* Event: take operand 1 from the points of the party members the byte-3
+ * mask names. */
+void func_8008DD6C(void) {
+    s32 i;
+    s32 amount = func_8009CF78(1, D_800ADC00[D_800B0078->pc + 3]);
+    s32 mask = D_800AEA2C[D_800ADC00[D_800B0078->pc + 3] & 3];
+
+    for (i = 0; i < 3; i++) {
+        if (D_80062590[i] != 0xFF && (mask & 1)) {
+            func_8008DBF0(i, amount);
+        }
+        mask >>= 1;
+    }
+    D_800B0078->pc += 4;
+}
 
 /* Event: set the actor's +75 to the selected actor, if any. */
 void func_8008DE64(void) {

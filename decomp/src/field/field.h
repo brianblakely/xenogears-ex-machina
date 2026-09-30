@@ -354,7 +354,11 @@ typedef struct {
     u8 unk21D3;
     s16 unk21D4;               /* 21D4 */
     u8 unk21D6[0x21E4 - 0x21D6];
-    s16 unk21E4[(0x225C - 0x21E4) / 2]; /* 21E4 */
+    s16 unk21E4[(0x221C - 0x21E4) / 2]; /* 21E4 */
+    s16 unk221C[5][3];         /* 221C */
+    u8 unk223A[2];
+    s16 unk223C[3][3];         /* 223C */
+    u8 unk224E[0x225C - 0x224E];
     u8 unk225C[3];             /* 225C */
     u8 unk225F[0x2268 - 0x225F]; /* 225F: event byte table */
     s32 unk2268;               /* 2268 */
@@ -403,6 +407,17 @@ typedef struct {
     s32 unk90;    /* 800b0090 */
     s32 unk94;    /* 800b0094 */
     s32 unk98;    /* 800b0098 */
+    u8 unk9C[4];
+    u8 unkA0[3];  /* 800b00a0 */
+    u8 unkA3;
+    u8 unkA4[3];  /* 800b00a4 */
+    u8 unkA7;
+    u8 unkA8[3];  /* 800b00a8 */
+    u8 unkAB;
+    s16 unkAC;    /* 800b00ac */
+    s16 unkAE;    /* 800b00ae */
+    s16 unkB0;    /* 800b00b0 */
+    s16 enabled;  /* 800b00b2 */
 } FieldEventParams;
 
 /* One 0x78-byte record of the table at 800b02cc. */
@@ -501,6 +516,8 @@ extern void func_800496AC(void);                               /* PopMatrix */
 extern void func_8004A6DC(SVECTOR *v, s32 *out, s32 *flag); /* RotTrans */
 
 /* Field overlay. */
+extern s32 func_8008DB68(s32 member, s32 amount);
+extern s32 func_8008DBF0(s32 member, s32 amount);
 extern s32 func_8009D044(s32 offset, s32 flags); /* operand, immediate with flag 0x10 */
 extern void func_800A94A4(s32 actor);
 extern void func_8007AF74(void);
@@ -589,6 +606,7 @@ extern s32 D_8004F34C; /* current map */
 extern u8 D_800625FC[2][0x22]; /* pad buffers */
 
 /* Field state. */
+extern s16 D_800AEA2C[4]; /* party masks */
 extern s32 D_800ADBDC;
 extern s32 D_800ADBE4;
 extern s32 D_800ADBE8;
@@ -604,7 +622,7 @@ extern s32 D_800C3A64; /* movie sound timeline position */
 extern s32 D_800ADB50;
 extern s32 D_800ADB78;
 extern void *D_800B007C;
-extern s16 D_800B00B2;
+
 extern s32 D_800ADB38; /* requested transition */
 extern s32 D_800ADB3C; /* transition operand */
 extern s32 D_800ADB7C;
