@@ -1751,7 +1751,43 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008110C);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800815F0);
 
+#ifdef NON_MATCHING
+/* Record the controlled actor `index`'s state in the next movement-history
+ * slot, unless party processing is suspended. */
+void func_80081C54(s32 index) {
+    FieldModel *model;
+    FieldActor *actor;
+    s32 i;
+
+    actor = D_800AF880.components.descriptors[index].actor;
+    model = D_800AF880.components.descriptors[index].model;
+    if (index == D_800B2078.controlled && D_800B2078.party_processing_mode == 0) {
+        D_800B14F0[D_800B2078.unk2360].model_c[0] = model->unk0C;
+        D_800B14F0[D_800B2078.unk2360].model_c[1] = model->unk10;
+        D_800B14F0[D_800B2078.unk2360].model_c[2] = model->unk14;
+        D_800B14F0[D_800B2078.unk2360].unk30[0] = actor->unk50[0];
+        D_800B14F0[D_800B2078.unk2360].unk30[1] = actor->unk50[1];
+        D_800B14F0[D_800B2078.unk2360].unk30[2] = actor->unk50[2];
+        D_800B14F0[D_800B2078.unk2360].heading = actor->heading_goal & 0xFFF;
+        D_800B14F0[D_800B2078.unk2360].model84 = model->unk84;
+        D_800B14F0[D_800B2078.unk2360].position[0] = WHOLE(actor->position[0]);
+        D_800B14F0[D_800B2078.unk2360].position[1] = WHOLE(actor->position[1]);
+        D_800B14F0[D_800B2078.unk2360].position[2] = WHOLE(actor->position[2]);
+        D_800B14F0[D_800B2078.unk2360].unk12 = actor->unkE8;
+        D_800B14F0[D_800B2078.unk2360].unk40 = actor->unk014;
+        D_800B14F0[D_800B2078.unk2360].flags = actor->flags;
+        D_800B14F0[D_800B2078.unk2360].layer_flags = actor->layer_flags;
+        for (i = 0; i < 4; i++) {
+            D_800B14F0[D_800B2078.unk2360].triangle[i] = actor->triangle[i];
+        }
+        D_800B14F0[D_800B2078.unk2360].layer = actor->layer;
+        D_800C3910 = 0;
+        D_800B2078.unk2360 = (D_800B2078.unk2360 - 1) & 0x1F;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80081C54);
+#endif
 
 /* -1 when the actor's bits 9-10 meet bits 3-4 of +14, else 0. */
 s32 func_80081F5C(FieldActor *actor) {
