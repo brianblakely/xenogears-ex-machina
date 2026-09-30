@@ -331,14 +331,46 @@ typedef struct MenuItem {
 } MenuItem;
 
 /* The data table directory (*(state + 330)). */
+/* A weapon (or special part) record of the data tables. */
+typedef struct MenuWeapon {
+    u16 users; /* 0: characters that can equip it (bit per character) */
+    u8 pad2[0x4];
+    u8 kind; /* 6: weapon class; special parts share their weapon's */
+    u8 pad7[0x9];
+} MenuWeapon;
+
+/* An accessory record of the data tables. */
+typedef struct MenuAccessory {
+    u16 users; /* 0 */
+    u8 pad2[0xC];
+    u16 groups; /* E: exclusive groups */
+} MenuAccessory;
+
+/* A gear weapon (or special part) record of the data tables. */
+typedef struct MenuGearWeapon {
+    u8 pad0[0x4];
+    u32 users; /* 4: gears that can equip it */
+    u8 pad8[0x7];
+    u8 kind; /* F */
+    u8 pad10[0x4];
+} MenuGearWeapon;
+
+/* A gear accessory record of the data tables. */
+typedef struct MenuGearAccessory {
+    u32 users; /* 0 */
+    u8 pad4[0x4];
+    u16 groups; /* 8 */
+    u8 padA[0x12];
+} MenuGearAccessory;
+
 typedef struct MenuTables {
-    u8 *weapons; /* 0 */
-    u8 *accessories; /* 4 */
+    MenuWeapon *weapons; /* 0 */
+    MenuAccessory *accessories; /* 4 */
     GearEngine *engines; /* 8 */
     GearPart *parts; /* C */
     GearFrame *frames; /* 10 */
-    void *unk14; /* 14 */
-    void *unk18; /* 18 */
+    MenuGearAccessory *gearAccessories; /* 14 */
+    MenuGearWeapon *gearWeapons; /* 18 */
     MenuItem *items; /* 1C */
     MenuEffect *effects[33]; /* 20: per character, then per gear from 11 */
     u16 unkA4; /* A4 */
@@ -949,7 +981,8 @@ extern s32 D_801E9D84;    /* stat digit y offset */
 extern s32 D_801E9D88[];
 extern s32 D_801E9DDC[];  /* arts list cost x positions */
 extern s32 D_801E9E14[];  /* arts list cost y positions */
-extern u16 D_801E97F0[];  /* per character: arts usable from the menu */
+extern u16 D_801E97F0[];
+extern u8 D_801EA7F8[];  /* equipment list entry counts */  /* per character: arts usable from the menu */
 extern u16 D_8006ECF6[];  /* game data: per character (32 bytes): arts known */
 extern u16 D_8006ECFA[];
 extern u16 D_8006ED0E[];  /* part panel row y positions */
@@ -1155,6 +1188,7 @@ void func_801C6400(void);
 void func_801C65F4(void);
 void func_801C6AA0(MenuState *state);
 u16 func_801C865C(u16 flags, u8 bit);
+u32 func_801C8678(u32 flags, u8 bit);
 void func_801C6D4C(void);
 void func_801C6D5C(void);
 void func_801C6D90(void);
