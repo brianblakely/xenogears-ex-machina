@@ -1162,7 +1162,73 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80078D44);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80079288);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007954C);
+extern s32 D_8004F30C;
+extern s32 D_8004F310;
+extern s32 D_8004F324;
+extern s8 D_8005942C;
+extern s32 D_800AFC78;
+extern s32 D_800B0064;
+void func_8001996C(s32 mode);
+void func_80019ACC(s32 a0);
+void func_8001BB50(void);
+void func_800A30FC(void);
+s32 func_80085F30(void);
+void func_80085FB8(void);
+
+/* Leave the field for another game mode, then run the mode dispatcher:
+ * kind 0 selects battle (2) after saving the map and event variable 1 in
+ * the game state, kind 1 mode 3 (first stopping the field sound and
+ * stream work while 8004f384 is 1), kind 2 mode 4, kind 3 the mode in 800b0064's low bits (bit 7 runs
+ * 8001bb50 first). Nothing is selected while 8004f370 is set. */
+void func_8007954C(s32 kind) {
+    D_8005942C = 0;
+    switch (kind) {
+    case 0:
+        func_800A30FC();
+        D_8004F324 = D_800AFC78;
+        D_8005A39C->unk2322 = D_800AFC78;
+        D_8005A39C->unk2320 = D_8005A39C->vars[1];
+        if (D_8004F370 != 0) {
+            return;
+        }
+        func_8001996C(2);
+        break;
+    case 1:
+        if (D_8004F384 == kind) {
+            func_8001B66C();
+            func_80085FB8();
+            func_80028A60(0);
+            func_80085F30();
+            func_8001B66C();
+        }
+        if (D_8004F370 != 0) {
+            return;
+        }
+        func_8001996C(3);
+        break;
+    case 2:
+        D_8005A39C->unk2322 = D_8004F324;
+        D_8005A39C->unk2320 = D_8005A39C->vars[1];
+        if (D_8004F370 != 0) {
+            return;
+        }
+        func_8001996C(4);
+        D_8004F30C++;
+        break;
+    case 3:
+        D_8004F310 = 0;
+        D_8004F30C = 0;
+        if (D_8004F370 != 0) {
+            return;
+        }
+        if (D_800B0064 & 0x80) {
+            func_8001BB50();
+        }
+        func_8001996C(D_800B0064 & 0x7F);
+        break;
+    }
+    func_80019ACC(0);
+}
 
 void func_800796F4(void) {
 }
