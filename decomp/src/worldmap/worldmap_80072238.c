@@ -897,7 +897,110 @@ void func_80074794(s16 id, VECTOR *position) {
     D_8009BE38 = (D_8009BE38 + 1) & 0xF;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_800747DC);
+/* Draw the recorded footprints: lay a quad on the ground at each ring position
+ * (sized by the spot id, turned with the vehicle for id 2) and add it to the
+ * ordering table; then empty the ring. */
+void func_800747DC(void) {
+    FootprintScratch *scratch;
+    WorldmapSpot *spot;
+    PolyFT4 *quad;
+    s32 i;
+    s32 z;
+    s32 flag;
+    s32 camera_x;
+    s32 camera_z;
+
+    if (D_8009BE38 != 0) {
+        scratch = FOOTPRINT_SCRATCH;
+        scratch->corner[0].vx = -0x10;
+        scratch->corner[0].vz = 0x10;
+        scratch->corner[1].vx = 0x10;
+        scratch->corner[1].vz = 0x10;
+        scratch->corner[2].vx = -0x10;
+        scratch->corner[2].vz = -0x10;
+        scratch->corner3.vx = 0x10;
+        scratch->corner3.vz = -0x10;
+        scratch->corner[0].vy = scratch->corner[1].vy = scratch->corner[2].vy = scratch->corner3.vy = 0;
+        scratch->view = D_8009C808;
+        spot = D_8009D30C;
+        i = D_8009BE38;
+        scratch->up.vz = 0x1000;
+        scratch->up.vx = 0;
+        scratch->up.vy = 0;
+        quad = (&D_8009BE14)[D_8009D7F0];
+        camera_x = D_8009BE28.target.vx;
+        camera_z = D_8009BE28.target.vz;
+        for (i--; i != -1; i--) {
+            scratch->position.vx = spot->x << 12;
+            scratch->position.vz = spot->z << 12;
+            scratch->position.vy = func_80093978(scratch->position.vx, scratch->position.vz);
+            func_80093740(&scratch->normal, scratch->position.vx, scratch->position.vz);
+            func_8004A480(&scratch->up, &scratch->normal, &scratch->side);
+            func_80048D7C(&scratch->side, &scratch->forward);
+            func_8004A480(&scratch->normal, &scratch->forward, &scratch->scale);
+            func_80048D7C(&scratch->scale, &scratch->side);
+            scratch->local.m[0][0] = scratch->forward.vx;
+            scratch->local.m[0][1] = scratch->forward.vy;
+            scratch->local.m[0][2] = scratch->forward.vz;
+            scratch->local.m[1][0] = scratch->normal.vx;
+            scratch->local.m[1][1] = scratch->normal.vy;
+            scratch->local.m[1][2] = scratch->normal.vz;
+            scratch->local.m[2][0] = scratch->side.vx;
+            scratch->local.m[2][1] = scratch->side.vy;
+            scratch->local.m[2][2] = scratch->side.vz;
+            switch (spot->id) {
+            case 0:
+                break;
+            case 1:
+                scratch->scale.vx = scratch->scale.vy = scratch->scale.vz = 0x1800;
+                ScaleMatrix(&scratch->local, &scratch->scale);
+                break;
+            case 2:
+                scratch->heading = D_8009A180;
+                func_8004AFEC(D_8006EE66, &scratch->heading);
+                func_80049ACC(&scratch->local, &scratch->heading);
+                scratch->scale.vx = 0x1800;
+                scratch->scale.vy = 0x1000;
+                scratch->scale.vz = 0x4800;
+                ScaleMatrix(&scratch->local, &scratch->scale);
+                break;
+            }
+            scratch->local.t[0] = (scratch->position.vx - camera_x) >> 12;
+            scratch->local.t[2] = (camera_z - scratch->position.vz) >> 12;
+            scratch->local.t[1] = scratch->position.vy >> 12;
+            gte_CompMatrix(&scratch->view, &scratch->local, &scratch->screen);
+            gte_SetRotMatrix(&scratch->screen);
+            gte_SetTransMatrix(&scratch->screen);
+            gte_ldv3(&scratch->corner[0], &scratch->corner[1], &scratch->corner[2]);
+            gte_rtpt();
+            gte_stflg(&flag);
+            if (flag >= 0) {
+                gte_stsxy3(&quad->x0, &quad->x1, &quad->x2);
+                gte_stsz3(&scratch->scale.vx, &scratch->scale.vy, &scratch->scale.vz);
+                z = scratch->scale.vx;
+                if (scratch->scale.vy < z) {
+                    z = scratch->scale.vy;
+                }
+                if (scratch->scale.vz < z) {
+                    z = scratch->scale.vz;
+                }
+                gte_ldv0(&scratch->corner3);
+                gte_rtps();
+                gte_stsxy(&quad->x3);
+                gte_stsz(&scratch->scale.vx);
+                if (scratch->scale.vx < z) {
+                    z = scratch->scale.vx;
+                }
+                if (z < 0x1000) {
+                    addPrim(D_8009BE3C->ot + (z >> 4), quad);
+                    quad++;
+                }
+            }
+            spot++;
+        }
+        D_8009BE38 = 0;
+    }
+}
 
 /* Create the terrain texture animations from their area section. */
 void func_80074E58(void) {
