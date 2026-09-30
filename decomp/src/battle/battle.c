@@ -5013,7 +5013,88 @@ u16 func_80084DE4(u16 selection, u16 fallback, u8 member, u8 mode, u8 own) {
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80084DE4);
 #endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085084);
+/* Select a target for selection word `target` (80084de4): each frame
+ * highlight the current target (mode 0), all candidates (1) or those in the
+ * current target's formation group (2); keys 0-3 move to the nearest
+ * candidate that way, 4 confirms (1) and 5 cancels (0). The direction
+ * arrows are refreshed whenever the key changes. Returns 0 when there is no
+ * candidate. */
+u8 func_80085084(u16 target, u8 member, s32 mode) {
+    u8 lastKey = 0xFE;
+    u8 state;
+    u16 group;
+    u8 next;
+    s32 direction;
+
+    func_80084DE4(target, target, member, 0, mode);
+    group = D_800C3D64;
+    state = D_800C3E2C == 0xFF;
+    while (state == 0) {
+        func_800716D8();
+        switch (target & 0xF) {
+        case 0:
+            func_800BCD98(func_80089C08(D_800C3E2C));
+            func_800BC404(func_80089C08(D_800C3E2C));
+            break;
+        case 1:
+            func_800BCD98(D_800C3D64);
+            func_800BC404(D_800C3D64);
+            break;
+        case 2:
+            group = func_80084D28();
+            func_800BCD98(group);
+            func_800BC404(group);
+            break;
+        }
+        switch (D_800D3014) {
+        case 5:
+            state = 1;
+            break;
+        case 4:
+            D_800C3D64 = group;
+            state = 2;
+            break;
+        case 0:
+            next = func_80084854(D_800C3E2C, 0);
+            if (func_80089C9C(D_800C3D64, next)) {
+                D_800C3E2C = next;
+            }
+            break;
+        case 1:
+            next = func_80084854(D_800C3E2C, 1);
+            if (func_80089C9C(D_800C3D64, next)) {
+                D_800C3E2C = next;
+            }
+            break;
+        case 2:
+            next = func_80084854(D_800C3E2C, 2);
+            if (func_80089C9C(D_800C3D64, next)) {
+                D_800C3E2C = next;
+            }
+            break;
+        case 3:
+            next = func_80084854(D_800C3E2C, 3);
+            if (func_80089C9C(D_800C3D64, next)) {
+                D_800C3E2C = next;
+            }
+            break;
+        case 6:
+        case 7:
+            break;
+        }
+        if (D_800D3014 != lastKey) {
+            lastKey = D_800D3014;
+            for (direction = 0; direction < 4; direction++) {
+                if (func_80084854(D_800C3E2C, direction) != D_800C3E2C) {
+                    D_800C3E24->arrows[direction] = 1;
+                } else {
+                    D_800C3E24->arrows[direction] = 0;
+                }
+            }
+        }
+    }
+    return state - 1;
+}
 
 /* Whether slot b's slot-info +0xa is below slot a's. */
 s32 func_80085310(u8 a, u8 b) {
