@@ -1306,19 +1306,13 @@ void func_801CA09C(void) {
     }
 }
 
-/* An empty loop over five entries; whatever it drew was removed. */
-#ifdef NON_MATCHING
+/* An empty loop over six entries; whatever it drew was removed. */
 void func_801CA214(void) {
     s32 i;
-    s32 x;
 
-    for (i = 0; i < 5; i++) {
-        x = i;
+    for (i = 0; i < 6; i++) {
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CA214);
-#endif
 
 /* Link the message labels while the message is shown, projecting the 3D ones first. */
 void func_801CA22C(void) {
