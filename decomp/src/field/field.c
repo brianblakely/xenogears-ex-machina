@@ -9785,7 +9785,215 @@ void func_800A5924(void) {
     }
 }
 
+#ifdef NON_MATCHING
+/* Reload the field for a map change inside the field mode (800b0048 the
+ * transition kind, 800afd14 its frames): stop effects, keep the map
+ * read-ahead block across the heap reset, then per kind fade or dissolve
+ * out, reload the components (80070cc8), restart the music and fade in.
+ * Unrecovered details: the original passes 800adb08 as a second argument
+ * to 80071cb4, and uses a jump table. */
+void func_800A5C40(void) {
+    RECT rect;
+    u8 *ahead;
+    s32 kind;
+    s32 frames;
+    s32 level;
+    s32 i;
+
+    func_8003748C();
+    func_800A9460();
+    func_800864F0();
+    func_8007FFE8();
+    if (D_800B0048 != 6) {
+        func_800A915C();
+        if (D_800B0048 != 4) {
+            func_800A4748();
+        }
+    }
+    DrawSync(0);
+    func_80073FE0();
+    func_800775F8();
+    func_800700B0();
+    ahead = func_80031BDC(D_8005A4C0, 0);
+    memcpy(ahead, D_8005A4E0, D_8005A4C0);
+    func_800320B8(D_8005A4E0);
+    func_800320E8(D_8005A4E0);
+    if (D_800B0048 != 6) {
+        func_800A90B4(1);
+    }
+    D_8005A4E0 = func_80031BDC(D_8005A4C0, 1);
+    memcpy(D_8005A4E0, ahead, D_8005A4C0);
+    func_800320A4(D_8005A4E0);
+    func_800320E8(ahead);
+    switch (D_800B0048) {
+    case 6:
+        func_80071DCC(D_800AFD14);
+        for (i = 0; i < D_800AFD14; i++) {
+            func_80073FE0();
+            func_80071CB4(&D_800C426C->overlay_ot[0]);
+            func_800A6924();
+        }
+    reload:
+        func_80073FE0();
+        func_800A6924();
+        func_8001B044();
+        func_8001B3A8();
+        kind = D_800B0048;
+        frames = D_800AFD14;
+        func_80070CC8();
+        func_80070488();
+        func_80070508();
+        D_800B0048 = kind;
+        D_800AFD14 = frames;
+        if (D_8004F308 == -1) {
+            func_80085B20(D_8004F324, 0);
+        }
+        func_80071E58(D_800AFD14);
+        break;
+    case 0:
+        func_800A663C(0, 0);
+        func_80071DCC(D_800AFD14);
+        for (i = 0; i < D_800AFD14; i++) {
+            func_80073FE0();
+            func_80071CB4(&D_800C426C->overlay_ot[0]);
+            func_800A6408();
+            func_800A6924();
+        }
+        goto reload;
+    case 1:
+        func_800A663C(0, 0);
+        func_800A5710(D_800AFD14);
+        for (i = 0; i < D_800AFD14; i++) {
+            func_80073FE0();
+            func_80071CB4(&D_800C426C->overlay_ot[0]);
+            func_800A6408();
+            func_800A6924();
+        }
+        func_800775F8();
+        func_8001B044();
+        func_8001B3A8();
+        kind = D_800B0048;
+        frames = D_800AFD14;
+        func_80070CC8();
+        func_80070488();
+        func_80070508();
+        D_800B0048 = kind;
+        D_800AFD14 = frames;
+        if (D_8004F308 == -1) {
+            func_80085B20(D_8004F324, 0);
+        }
+        func_800A56A8(D_800AFD14);
+        break;
+    case 2:
+    case 4:
+        func_800A5884(1, 1);
+        func_8001B044();
+        func_8001B3A8();
+        kind = D_800B0048;
+        frames = D_800AFD14;
+        func_80070CC8();
+        func_80070488();
+        if (D_800ADB60 == 1) {
+            while (func_800286CC() != 0) {
+                func_80073FE0();
+                func_800A6408();
+                func_800A6924();
+                if (D_800C2684 < 0x22C0) {
+                    D_800C2684 += 0x20;
+                }
+            }
+            func_800320E8(D_800ADC14);
+            D_800ADB60 = 0;
+            func_80078C5C();
+        }
+        D_800AFD04 = 1;
+        D_800B0048 = kind;
+        D_800AFD14 = frames;
+        if (D_8004F308 == -1) {
+            func_80085B20(D_8004F324, 0);
+        }
+        level = 0x800000;
+        func_80071E58(D_800AFD14);
+        for (i = 0; i < D_800AFD14; i++) {
+            func_80077DAC();
+            func_800A6408();
+            func_8007554C();
+            func_80078B5C();
+            func_800A5600(level >> 16);
+            level -= 0x800000 / D_800AFD14;
+            if (level < 0) {
+                level = 0;
+            }
+            if (D_800C2684 < 0x22C0) {
+                D_800C2684 += 0x20;
+            }
+        }
+        break;
+    case 3:
+        func_800A663C(0, 0);
+        func_80070488();
+        func_80073FE0();
+        func_800A6408();
+        func_800A6924();
+        func_8001B044();
+        func_8001B3A8();
+        kind = D_800B0048;
+        frames = D_800AFD14;
+        D_800AFD04 = 1;
+        func_80070CC8();
+        func_80070508();
+        D_800B0048 = kind;
+        D_800AFD14 = frames;
+        if (D_8004F308 == -1) {
+            func_80085B20(D_8004F324, 0);
+        }
+        for (i = 0; i < 4; i++) {
+            func_80077DAC();
+            func_800A6408();
+            func_8007554C();
+            func_80078B5C();
+        }
+        break;
+    case 5:
+        func_800A663C(0, 0);
+        func_80070488();
+        func_80073FE0();
+        func_800A6408();
+        func_800A6924();
+        func_8001B044();
+        func_8001B3A8();
+        kind = D_800B0048;
+        frames = D_800AFD14;
+        D_800AFD04 = 1;
+        func_80070CC8();
+        func_80070508();
+        setRECT(&rect, 0x2C0, 0x100, 0x140, 0xFF);
+        D_800B0048 = kind;
+        D_800AFD14 = frames;
+        MoveImage(&rect, 0x140, 0xFF);
+        if (D_8004F308 == -1) {
+            func_80085B20(D_8004F324, 0);
+        }
+        for (i = 0; i < 4; i++) {
+            func_80077DAC();
+            func_800A6408();
+            func_8007554C();
+            func_80078B5C();
+        }
+        break;
+    }
+    if (D_800B0048 != 6) {
+        func_800A91F0();
+    }
+    D_800B0048 = 2;
+    D_800AFD14 = 0x20;
+    D_800AFD04 = 0;
+    func_80077544();
+    func_80031FF8();
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A5C40);
+#endif
 
 /* Rotate and scale the screen pieces (when scaled) into their quads and
  * link the quads and draw modes of the current buffer. */
