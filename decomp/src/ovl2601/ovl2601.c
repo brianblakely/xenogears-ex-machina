@@ -80,23 +80,23 @@ void func_801C51F8(u8 allocate) {
     }
 }
 
-/* Allocate (nonzero) or release the block at menu state +350. */
+/* Allocate (nonzero) or release the image packet block. */
 void func_801C525C(u8 allocate) {
     if (allocate) {
-        D_800625A0->unk350 = func_80031BDC(0x1194, 0);
-        func_8003F8E8(D_800625A0->unk350, 0x1194);
+        D_800625A0->images = func_80031BDC(sizeof(ImageBlock), 0);
+        func_8003F8E8(D_800625A0->images, sizeof(ImageBlock));
     } else {
-        func_800320E8(D_800625A0->unk350);
+        func_800320E8(D_800625A0->images);
     }
 }
 
-/* Allocate (nonzero) or release the block at menu state +354. */
+/* Allocate (nonzero) or release the list packet block. */
 void func_801C52C0(u8 allocate) {
     if (allocate) {
-        D_800625A0->unk354 = func_80031BDC(0x140C, 0);
-        func_8003F8E8(D_800625A0->unk354, 0x140C);
+        D_800625A0->lists = func_80031BDC(sizeof(ListBlock), 0);
+        func_8003F8E8(D_800625A0->lists, sizeof(ListBlock));
     } else {
-        func_800320E8(D_800625A0->unk354);
+        func_800320E8(D_800625A0->lists);
     }
 }
 
@@ -1228,19 +1228,223 @@ void func_801CA404(void) {
     func_801CA22C();
 }
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CA444);
+/* Link both image packet groups, first applying a changed dimming (semi-transparent, 20h grey). */
+void func_801CA444(void) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CAB0C);
+    if (D_800625A0->flags->images_shown != 0) {
+        if (D_800625A0->images->dim != D_800625A0->images->dimmed) {
+            if (D_800625A0->images->dim != 0) {
+                for (i = 0; i < D_800625A0->images->count2; i++) {
+                    func_80043BFC(D_800625A0->images->packets2 + (i * 2 + D_800625A0->images->buffer2), 1);
+                    func_80043C24(D_800625A0->images->packets2 + (i * 2 + D_800625A0->images->buffer2), 0);
+                    D_800625A0->images->packets2[i * 2 + D_800625A0->images->buffer2].tpage |= 0x20;
+                    (D_800625A0->images->packets2 + (i * 2 + D_800625A0->images->buffer2))->r0 = 0x20;
+                    (D_800625A0->images->packets2 + (i * 2 + D_800625A0->images->buffer2))->g0 = 0x20;
+                    (D_800625A0->images->packets2 + (i * 2 + D_800625A0->images->buffer2))->b0 = 0x20;
+                }
+                for (i = 0; i < D_800625A0->images->count; i++) {
+                    func_80043BFC(D_800625A0->images->packets + (i * 2 + D_800625A0->images->buffer), 1);
+                    func_80043C24(D_800625A0->images->packets + (i * 2 + D_800625A0->images->buffer), 0);
+                    D_800625A0->images->packets[i * 2 + D_800625A0->images->buffer].tpage |= 0x20;
+                    (D_800625A0->images->packets + (i * 2 + D_800625A0->images->buffer))->r0 = 0x20;
+                    (D_800625A0->images->packets + (i * 2 + D_800625A0->images->buffer))->g0 = 0x20;
+                    (D_800625A0->images->packets + (i * 2 + D_800625A0->images->buffer))->b0 = 0x20;
+                }
+            } else {
+                for (i = 0; i < D_800625A0->images->count2; i++) {
+                    func_80043BFC(D_800625A0->images->packets2 + (i * 2 + D_800625A0->images->buffer2), 0);
+                    func_80043C24(D_800625A0->images->packets2 + (i * 2 + D_800625A0->images->buffer2), 0);
+                    D_800625A0->images->packets2[i * 2 + D_800625A0->images->buffer2].tpage |= 0x20;
+                    (D_800625A0->images->packets2 + (i * 2 + D_800625A0->images->buffer2))->r0 = 0x80;
+                    (D_800625A0->images->packets2 + (i * 2 + D_800625A0->images->buffer2))->g0 = 0x80;
+                    (D_800625A0->images->packets2 + (i * 2 + D_800625A0->images->buffer2))->b0 = 0x80;
+                }
+                for (i = 0; i < D_800625A0->images->count; i++) {
+                    func_80043BFC(D_800625A0->images->packets + (i * 2 + D_800625A0->images->buffer), 0);
+                    func_80043C24(D_800625A0->images->packets + (i * 2 + D_800625A0->images->buffer), 0);
+                    D_800625A0->images->packets[i * 2 + D_800625A0->images->buffer].tpage |= 0x20;
+                    (D_800625A0->images->packets + (i * 2 + D_800625A0->images->buffer))->r0 = 0x80;
+                    (D_800625A0->images->packets + (i * 2 + D_800625A0->images->buffer))->g0 = 0x80;
+                    (D_800625A0->images->packets + (i * 2 + D_800625A0->images->buffer))->b0 = 0x80;
+                }
+            }
+            D_800625A0->images->dimmed = D_800625A0->images->dim;
+        }
+        func_801C8D58(D_800625A0->images->count2, D_800625A0->images->packets2, D_800625A0->images->buffer2);
+        func_801C8D58(D_800625A0->images->count, D_800625A0->images->packets, D_800625A0->images->buffer);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CAB80);
+/* Link both list packet groups when shown. */
+void func_801CAB0C(void) {
+    if (D_800625A0->flags->lists_shown != 0) {
+        func_801C8D58(D_800625A0->lists->count2, D_800625A0->lists->packets2, D_800625A0->lists->buffer2);
+        func_801C8D58(D_800625A0->lists->count, D_800625A0->lists->packets, D_800625A0->lists->buffer);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CABF4);
+/* Project and link the shown markers. */
+void func_801CAB80(void) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CAC7C);
+    for (i = 0; i < 2; i++) {
+        if (D_800625A0->flags->marker_shown[i] != 0) {
+            func_801C8C3C(1, D_800625A0->markers[i]->quad, D_800625A0->markers[i]->sprite,
+                          D_800625A0->markers[i]->buffer);
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CACC8);
+/* Build the frame's packets: every element while the screen is drawn, then the screen quad. */
+void func_801CABF4(void) {
+    if (D_800625A0->drawing != 0) {
+        func_801C8AF0();
+        func_801C9C2C();
+        func_801CA404();
+        func_801C8E28();
+        func_801CAB80();
+        func_801CCFF4();
+        func_801C8DDC();
+        func_801CA444();
+        func_801CAB0C();
+        func_801C9AB4();
+    }
+    func_801CA388();
+}
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CAED4);
+/* Play menu sound `sound` of the effect bank when sounds are on. */
+void func_801CAC7C(u8 sound) {
+    if (D_800625A0->sounds != 0) {
+        func_80039DB8((D_800625A0->effect_bank->id << 16) | sound);
+    }
+}
+
+/* Wait for a controller (sound paused meanwhile), then decode the frame's input into +325. */
+void func_801CACC8(void) {
+    s32 saved;
+    u8 waiting;
+    u8 paused;
+    u8 code;
+
+    code = 8;
+    waiting = 1;
+    paused = 0;
+    do {
+        if (func_80035734(0) == 0) {
+            if (!paused) {
+                paused++;
+                func_80037EE4();
+                saved = D_80059488;
+            }
+        } else {
+            waiting--;
+            if (paused) {
+                func_80037E8C();
+                D_80059488 = saved;
+            }
+        }
+    } while (waiting);
+    if (func_80036410() != 0) {
+        func_80035DB0();
+    } else {
+        while (func_80035CDC() != 0) {
+            if (D_800594A4 & 0x2000) {
+                code = 0;
+                func_801CAC7C(1);
+                break;
+            } else if (D_800594A4 & 0x4000) {
+                code = 1;
+                func_801CAC7C(1);
+                break;
+            } else if (D_800594A4 & 0x8000) {
+                code = 2;
+                func_801CAC7C(1);
+                break;
+            } else if (D_800594A4 & 0x1000) {
+                code = 3;
+                func_801CAC7C(1);
+                break;
+            } else if (D_8005948C & 0x20) {
+                code = 4;
+                break;
+            } else if (D_8005948C & 0x40) {
+                code = 5;
+                func_801CAC7C(3);
+                break;
+            } else if (D_8005948C & 0x80) {
+                code = 6;
+                break;
+            } else if (D_8005948C & 0x10) {
+                code = 7;
+                break;
+            } else if (D_8005948C & 4) {
+                code = 0xA;
+                break;
+            } else if (D_8005948C & 8) {
+                code = 9;
+                break;
+            } else if (D_8005948C & 0x800) {
+                code = 0xB;
+                break;
+            } else if (D_8005948C & 0x100) {
+                code = 0xC;
+                D_800625A0->select_toggle = D_800625A0->select_toggle == 0;
+                break;
+            } else if (D_8005948C & 1) {
+                D_800625A0->unk1E95++;
+                break;
+            }
+        }
+    }
+    D_800625A0->input = code;
+}
+
+/* Advance the view's zoom (+329) and load the view matrices. */
+void func_801CAED4(void) {
+    switch (D_800625A0->view_motion) {
+    case 4:
+        D_800625A0->view_translation.vz = 0x200;
+        D_800625A0->view_rotation.vz = 0;
+        D_800625A0->view_rotation.vy = 0;
+        D_800625A0->view_rotation.vx = 0;
+        D_800625A0->view_translation.vy = 0;
+        D_800625A0->view_translation.vx = 0;
+        D_800625A0->view_motion = 2;
+        break;
+    case 3:
+        D_800625A0->view_translation.vz = 0x800;
+        D_800625A0->view_rotation.vz = 0;
+        D_800625A0->view_rotation.vy = 0;
+        D_800625A0->view_rotation.vx = 0;
+        D_800625A0->view_translation.vy = 0;
+        D_800625A0->view_translation.vx = 0;
+        D_800625A0->view_motion = 1;
+        break;
+    case 2:
+        D_800625A0->view_rotation.vy -= 0x60;
+        D_800625A0->view_translation.vz += 0x40;
+        if (D_800625A0->view_translation.vz >= 0xE00) {
+            D_800625A0->view_motion = 0;
+        }
+        break;
+    case 1:
+        D_800625A0->view_rotation.vx += 0x7C;
+        D_800625A0->view_translation.vz -= 0x30;
+        if (D_800625A0->view_translation.vz < 0x200) {
+            D_800625A0->view_translation.vz = 0x200;
+            D_800625A0->view_rotation.vz = 0;
+            D_800625A0->view_rotation.vx = 0;
+            D_800625A0->view_rotation.vy = 0;
+            D_800625A0->view_motion = 0;
+        }
+        break;
+    }
+    func_8003F738(&D_800625A0->view_rotation, &D_800625A0->view_matrix);
+    func_80049D9C(&D_800625A0->view_matrix, &D_800625A0->view_translation);
+    func_80049EFC(&D_800625A0->view_matrix);
+    func_80049F8C(&D_800625A0->view_matrix);
+}
 
 INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CB014);
 

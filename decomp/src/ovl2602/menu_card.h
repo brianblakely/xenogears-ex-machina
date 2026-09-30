@@ -84,6 +84,30 @@ typedef struct {
     u8 projected;     /* 7f: drawn through the GTE */
 } Label;
 
+/* Two packet groups (menu state + 350, 1194h bytes). */
+typedef struct {
+    POLY_FT4 packets[56];  /* 000 */
+    POLY_FT4 packets2[56]; /* 8c0 */
+    u8 unk1180[8];
+    s32 count;             /* 1188 */
+    s32 count2;            /* 118c */
+    u8 buffer;             /* 1190 */
+    u8 buffer2;            /* 1191 */
+    u8 dim;                /* 1192: requested dimming */
+    u8 dimmed;             /* 1193: applied dimming */
+} ImageBlock;
+
+/* Two list packet groups (menu state + 354, 140ch bytes). */
+typedef struct {
+    POLY_FT4 packets[32];  /* 000 */
+    POLY_FT4 packets2[96]; /* 500 */
+    s32 count;             /* 1400 */
+    s32 count2;            /* 1404 */
+    u8 buffer;             /* 1408 */
+    u8 buffer2;            /* 1409 */
+    u8 unk140A[2];
+} ListBlock;
+
 /* Cursor and yes/no markers (menu state + 428). */
 typedef struct {
     POLY_FT4 packets[8]; /* 000: two per marker */
@@ -188,7 +212,10 @@ typedef struct {
     u8 unk0[3];
     u8 cursor_shown; /* 03 */
     u8 unk4;         /* 04 */
-    u8 unk5[0xC - 5];
+    u8 unk5[9 - 5];
+    u8 images_shown; /* 09 */
+    u8 lists_shown;  /* 0a */
+    u8 unkB;
     u8 list_label_shown[8]; /* 0c */
     u8 info_label_shown[6]; /* 14 */
     u8 unk1A[0x20 - 0x1A];
@@ -205,6 +232,12 @@ typedef struct {
     u8 marker_shown[2]; /* 50 */
     u8 unk52[0x6C - 0x52];
 } ScreenFlags;
+
+/* A linked sound effect bank. */
+typedef struct {
+    u8 unk0[0x14];
+    u16 id; /* 14 */
+} EffectBank;
 
 /* A draw buffer's environment block; ordering table entries at +70. */
 typedef struct {
@@ -226,17 +259,24 @@ typedef struct {
 typedef struct {
     u8 unk0[0x1D4];
     DrawEnv *draw_env;   /* 1d4: current buffer's draw environment */
-    u8 unk1D8[0x2DC - 0x1D8];
+    SVECTOR view_rotation;    /* 1d8 */
+    VECTOR view_translation;  /* 1e0 */
+    MATRIX view_matrix;       /* 1f0 */
+    u8 unk210[0x2DC - 0x210];
     void *sprite_sheet;  /* 2dc */
     void *label_text;    /* 2e0 */
-    void *effect_bank;   /* 2e4 */
+    EffectBank *effect_bank; /* 2e4 */
     u8 unk2E8[0x308 - 0x2E8];
     s32 buffer;          /* 308: draw buffer being built (0/1) */
     u8 member_present[16]; /* 30c */
     u8 digits[9];        /* 31c: decimal digits, leading zeros ff */
-    u8 unk325;
+    u8 input;            /* 325: the frame's decoded input */
     u8 poll_timer;       /* 326 */
-    u8 unk327[0x32C - 0x327];
+    u8 drawing;          /* 327: the screen is drawn */
+    u8 unk328;
+    u8 view_motion;      /* 329: 4/3 start zooming in/out, 2/1 zooming */
+    u8 sounds;           /* 32a: menu sound effects enabled */
+    u8 unk32B;
     CardState *card;     /* 32c */
     void **resources;    /* 330: cch bytes of unpacked resources */
     u8 unk334;
@@ -248,8 +288,8 @@ typedef struct {
     u8 unk340[0x348 - 0x340];
     CursorBlock *cursor; /* 348 */
     u8 unk34C[0x350 - 0x34C];
-    void *unk350;        /* 350: 1194h bytes */
-    void *unk354;        /* 354: 140ch bytes */
+    ImageBlock *images;  /* 350 */
+    ListBlock *lists;    /* 354 */
     u8 unk358[0x364 - 0x358];
     Panel *panels[7];    /* 364 */
     PanelGrowth *growth[7]; /* 380 */
@@ -273,6 +313,9 @@ typedef struct {
     void *unk1E20;       /* 1e20: dech bytes */
     u8 unk1E24[0x1E2C - 0x1E24];
     void *unk1E2C;       /* 1e2c */
+    u8 unk1E30[0x1E94 - 0x1E30];
+    u8 select_toggle;    /* 1e94: flipped by select */
+    u8 unk1E95;          /* 1e95: counts button-1 presses */
 } MenuState;
 
 extern MenuState *D_800625A0;
@@ -294,6 +337,16 @@ extern u16 D_80059414;   /* highlighted text CLUT */
 extern u16 D_800595D4;   /* plain text CLUT */
 
 /* Resident services. */
+s32 func_80035734(s32 port);             /* controller present */
+void func_80037EE4(void);                /* pause the sound */
+void func_80037E8C(void);                /* resume the sound */
+s32 func_80036410(void);                 /* input queue overflowed */
+void func_80035DB0(void);                /* reset the input queue */
+s32 func_80035CDC(void);                 /* dequeue an input entry */
+void func_80039DB8(s32 effect);          /* play a sound effect */
+extern s32 D_80059488;                   /* sound state saved while paused */
+extern u16 D_800594A4;                   /* dequeued buttons */
+extern u16 D_8005948C;                   /* dequeued buttons, second set */
 void *func_80031BDC(s32 size, s32 mode); /* heap allocate */
 void func_800320E8(void *block);         /* heap free */
 void func_8003F8E8(void *dst, s32 size); /* bzero */
@@ -362,6 +415,19 @@ void func_801CA7E4(void);
 void func_801CA874(void);
 void func_801CA9EC(void);
 void func_801CAA7C(void);
+void func_801C9264(void);
+void func_801CA28C(void);
+void func_801CA404(void);
+void func_801CA388(void);
+void func_801CABE0(void);
+void func_801C959C(void);
+void func_801C9550(void);
+void func_801CAC20(void);
+void func_801CB2E8(void);
+void func_801CB35C(void);
+void func_801CCFF4(void);
+void func_801CB498(u8 sound);
+void func_801C94CC(s32 count, POLY_FT4 *packets, s32 first);
 void func_801C93B0(s32 count, SVECTOR *quads, POLY_FT4 *packets, s32 first);
 
 #endif

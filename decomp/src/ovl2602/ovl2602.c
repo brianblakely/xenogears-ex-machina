@@ -78,23 +78,23 @@ void func_801C53A8(u8 allocate) {
     }
 }
 
-/* Allocate (nonzero) or release the block at menu state +350. */
+/* Allocate (nonzero) or release the image packet block. */
 void func_801C540C(u8 allocate) {
     if (allocate) {
-        D_800625A0->unk350 = func_80031BDC(0x1194, 0);
-        func_8003F8E8(D_800625A0->unk350, 0x1194);
+        D_800625A0->images = func_80031BDC(sizeof(ImageBlock), 0);
+        func_8003F8E8(D_800625A0->images, sizeof(ImageBlock));
     } else {
-        func_800320E8(D_800625A0->unk350);
+        func_800320E8(D_800625A0->images);
     }
 }
 
-/* Allocate (nonzero) or release the block at menu state +354. */
+/* Allocate (nonzero) or release the list packet block. */
 void func_801C5470(u8 allocate) {
     if (allocate) {
-        D_800625A0->unk354 = func_80031BDC(0x140C, 0);
-        func_8003F8E8(D_800625A0->unk354, 0x140C);
+        D_800625A0->lists = func_80031BDC(sizeof(ListBlock), 0);
+        func_8003F8E8(D_800625A0->lists, sizeof(ListBlock));
     } else {
-        func_800320E8(D_800625A0->unk354);
+        func_800320E8(D_800625A0->lists);
     }
 }
 
@@ -1156,15 +1156,82 @@ void func_801CABE0(void) {
     func_801CAA7C();
 }
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CAC20);
+/* Link both image packet groups, first applying a changed dimming (semi-transparent, 20h grey). */
+void func_801CAC20(void) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CB2E8);
+    if (D_800625A0->flags->images_shown != 0) {
+        if (D_800625A0->images->dim != D_800625A0->images->dimmed) {
+            if (D_800625A0->images->dim != 0) {
+                for (i = 0; i < D_800625A0->images->count2; i++) {
+                    func_80043BFC(D_800625A0->images->packets2 + (i * 2 + D_800625A0->images->buffer2), 1);
+                    func_80043C24(D_800625A0->images->packets2 + (i * 2 + D_800625A0->images->buffer2), 0);
+                    D_800625A0->images->packets2[i * 2 + D_800625A0->images->buffer2].tpage |= 0x20;
+                    (D_800625A0->images->packets2 + (i * 2 + D_800625A0->images->buffer2))->r0 = 0x20;
+                    (D_800625A0->images->packets2 + (i * 2 + D_800625A0->images->buffer2))->g0 = 0x20;
+                    (D_800625A0->images->packets2 + (i * 2 + D_800625A0->images->buffer2))->b0 = 0x20;
+                }
+                for (i = 0; i < D_800625A0->images->count; i++) {
+                    func_80043BFC(D_800625A0->images->packets + (i * 2 + D_800625A0->images->buffer), 1);
+                    func_80043C24(D_800625A0->images->packets + (i * 2 + D_800625A0->images->buffer), 0);
+                    D_800625A0->images->packets[i * 2 + D_800625A0->images->buffer].tpage |= 0x20;
+                    (D_800625A0->images->packets + (i * 2 + D_800625A0->images->buffer))->r0 = 0x20;
+                    (D_800625A0->images->packets + (i * 2 + D_800625A0->images->buffer))->g0 = 0x20;
+                    (D_800625A0->images->packets + (i * 2 + D_800625A0->images->buffer))->b0 = 0x20;
+                }
+            } else {
+                for (i = 0; i < D_800625A0->images->count2; i++) {
+                    func_80043BFC(D_800625A0->images->packets2 + (i * 2 + D_800625A0->images->buffer2), 0);
+                    func_80043C24(D_800625A0->images->packets2 + (i * 2 + D_800625A0->images->buffer2), 0);
+                    D_800625A0->images->packets2[i * 2 + D_800625A0->images->buffer2].tpage |= 0x20;
+                    (D_800625A0->images->packets2 + (i * 2 + D_800625A0->images->buffer2))->r0 = 0x80;
+                    (D_800625A0->images->packets2 + (i * 2 + D_800625A0->images->buffer2))->g0 = 0x80;
+                    (D_800625A0->images->packets2 + (i * 2 + D_800625A0->images->buffer2))->b0 = 0x80;
+                }
+                for (i = 0; i < D_800625A0->images->count; i++) {
+                    func_80043BFC(D_800625A0->images->packets + (i * 2 + D_800625A0->images->buffer), 0);
+                    func_80043C24(D_800625A0->images->packets + (i * 2 + D_800625A0->images->buffer), 0);
+                    D_800625A0->images->packets[i * 2 + D_800625A0->images->buffer].tpage |= 0x20;
+                    (D_800625A0->images->packets + (i * 2 + D_800625A0->images->buffer))->r0 = 0x80;
+                    (D_800625A0->images->packets + (i * 2 + D_800625A0->images->buffer))->g0 = 0x80;
+                    (D_800625A0->images->packets + (i * 2 + D_800625A0->images->buffer))->b0 = 0x80;
+                }
+            }
+            D_800625A0->images->dimmed = D_800625A0->images->dim;
+        }
+        func_801C94CC(D_800625A0->images->count2, D_800625A0->images->packets2, D_800625A0->images->buffer2);
+        func_801C94CC(D_800625A0->images->count, D_800625A0->images->packets, D_800625A0->images->buffer);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CB35C);
+/* Link both list packet groups when shown. */
+void func_801CB2E8(void) {
+    if (D_800625A0->flags->lists_shown != 0) {
+        func_801C94CC(D_800625A0->lists->count2, D_800625A0->lists->packets2, D_800625A0->lists->buffer2);
+        func_801C94CC(D_800625A0->lists->count, D_800625A0->lists->packets, D_800625A0->lists->buffer);
+    }
+}
+
+/* Project and link the shown markers. */
+void func_801CB35C(void) {
+    s32 i;
+
+    for (i = 0; i < 2; i++) {
+        if (D_800625A0->flags->marker_shown[i] != 0) {
+            func_801C93B0(1, D_800625A0->markers[i]->quad, D_800625A0->markers[i]->sprite,
+                          D_800625A0->markers[i]->buffer);
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CB3D0);
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CB498);
+/* Play menu sound `sound` of the effect bank when sounds are on. */
+void func_801CB498(u8 sound) {
+    if (D_800625A0->sounds != 0) {
+        func_80039DB8((D_800625A0->effect_bank->id << 16) | sound);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CB4E4);
 
