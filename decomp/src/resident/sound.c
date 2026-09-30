@@ -900,8 +900,8 @@ void func_8003B424(SoundSeq *seq) {
             channel->pitch_mod = 0;
             channel->level_mod = 0;
             channel->pan_mod = 0;
-            channel->unk3C = 0;
-            channel->unk3E = 0;
+            channel->state.unkC = 0;
+            channel->state.unkE = 0;
             channel->modulators = 0;
             for (i = 3; i >= 0; i--) {
                 channel->modulator[i].flags = 0;
@@ -1000,8 +1000,8 @@ void func_8003B644(s16 code, s32 id, s16 volume, s16 pan) {
             channel->pitch_mod = 0;
             channel->level_mod = 0;
             channel->pan_mod = 0;
-            channel->unk3C = 0;
-            channel->unk3E = 0;
+            channel->state.unkC = 0;
+            channel->state.unkE = 0;
             channel->modulators = 0;
             channel->pan = pan;
             channel->position = channel->start = (u8 *)bank + *offset;
@@ -1741,11 +1741,11 @@ u8 *func_8003D5D4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
 u8 *func_8003D60C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value;
 
-    channel->envelope.attack_mode = data[0];
-    channel->envelope.sustain_mode = data[1];
+    channel->state.envelope.attack_mode = data[0];
+    channel->state.envelope.sustain_mode = data[1];
     value = data[2];
     channel->state.flags |= 0x1F0;
-    channel->envelope.release_mode = value;
+    channel->state.envelope.release_mode = value;
     return data + 3;
 }
 
@@ -1754,7 +1754,7 @@ u8 *func_8003D640(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value = *data++;
 
     channel->state.flags |= 0x10;
-    channel->envelope.attack_rate = value;
+    channel->state.envelope.attack_rate = value;
     return data;
 }
 
@@ -1762,7 +1762,7 @@ u8 *func_8003D65C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value = *data++;
 
     channel->state.flags |= 0x20;
-    channel->envelope.decay_rate = value;
+    channel->state.envelope.decay_rate = value;
     return data;
 }
 
@@ -1770,7 +1770,7 @@ u8 *func_8003D678(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value = *data++;
 
     channel->state.flags |= 0x40;
-    channel->envelope.sustain_rate = value;
+    channel->state.envelope.sustain_rate = value;
     return data;
 }
 
@@ -1779,7 +1779,7 @@ u8 *func_8003D694(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
 
     channel->state.flags |= 0x80;
     channel->unk28 = value;
-    channel->envelope.release_rate = value;
+    channel->state.envelope.release_rate = value;
     return data + 1;
 }
 
@@ -1787,17 +1787,17 @@ u8 *func_8003D6B4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value = *data++;
 
     channel->state.flags |= 0x100;
-    channel->envelope.sustain_level = value;
+    channel->state.envelope.sustain_level = value;
     return data;
 }
 
 u8 *func_8003D6D0(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value;
 
-    channel->envelope.decay_rate = data[0];
+    channel->state.envelope.decay_rate = data[0];
     value = data[1];
     channel->state.flags |= 0x120;
-    channel->envelope.sustain_level = value;
+    channel->state.envelope.sustain_level = value;
     return data + 2;
 }
 
@@ -1805,7 +1805,7 @@ u8 *func_8003D6F8(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value = *data++;
 
     channel->state.flags |= 0x10;
-    channel->envelope.attack_mode = value;
+    channel->state.envelope.attack_mode = value;
     return data;
 }
 
@@ -1813,7 +1813,7 @@ u8 *func_8003D714(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value = *data++;
 
     channel->state.flags |= 0x40;
-    channel->envelope.sustain_mode = value;
+    channel->state.envelope.sustain_mode = value;
     return data;
 }
 
@@ -1821,7 +1821,7 @@ u8 *func_8003D730(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value = *data++;
 
     channel->state.flags |= 0x80;
-    channel->envelope.release_mode = value;
+    channel->state.envelope.release_mode = value;
     return data;
 }
 
@@ -2411,18 +2411,18 @@ void func_8003E5BC(s16 index, SoundSeqChannel *channel) {
     bank = channel->instruments;
     instrument = &bank->instrument[index];
     start = instrument->start * 8;
-    channel->sample_start = start + bank->address;
-    channel->sample_loop = start + instrument->loop * 8;
+    channel->state.sample_start = start + bank->address;
+    channel->state.sample_loop = start + instrument->loop * 8;
     bits = instrument->modes;
-    channel->envelope.attack_mode = bits & 7;
-    channel->envelope.sustain_mode = (bits >> 4) & 7;
-    channel->envelope.release_mode = (bits >> 8) & 7;
+    channel->state.envelope.attack_mode = bits & 7;
+    channel->state.envelope.sustain_mode = (bits >> 4) & 7;
+    channel->state.envelope.release_mode = (bits >> 8) & 7;
     bits = instrument->envelope;
-    channel->envelope.attack_rate = bits & 0x7F;
-    channel->envelope.decay_rate = (bits >> 8) & 0xF;
-    channel->envelope.sustain_rate = (bits >> 16) & 0x7F;
-    channel->envelope.sustain_level = (bits >> 12) & 0xF;
-    channel->envelope.release_rate = channel->unk28 = (bits >> 24) & 0x1F;
+    channel->state.envelope.attack_rate = bits & 0x7F;
+    channel->state.envelope.decay_rate = (bits >> 8) & 0xF;
+    channel->state.envelope.sustain_rate = (bits >> 16) & 0x7F;
+    channel->state.envelope.sustain_level = (bits >> 12) & 0xF;
+    channel->state.envelope.release_rate = channel->unk28 = (bits >> 24) & 0x1F;
     channel->unk6C = instrument->note;
     channel->flags |= 0x8000;
 }
@@ -2633,13 +2633,13 @@ void func_8003EBF0(SoundSeq *seq, SoundSeqChannel *channels, s16 count) {
                     /* Mono: the centre gain on both sides. */
                     right = left = (volume * 0x5A00) >> 15;
                 }
-                channel->volume_left = left;
-                channel->volume_right = right;
+                channel->state.volume_left = left;
+                channel->state.volume_right = right;
                 channel->state.flags |= 1;
             }
             if (changes & 0x200) {
                 note = channel->note.part.whole + channel->pitch_mod + seq->pitch.part.whole;
-                channel->pitch = func_8003EEA0(note) & 0x3FFF;
+                channel->state.pitch = func_8003EEA0(note) & 0x3FFF;
                 channel->state.flags |= 4;
             }
             if ((changes & 1) && !(channel->flags & 0x20)) {

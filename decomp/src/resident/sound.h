@@ -27,13 +27,37 @@ typedef struct {
     u16 key_off[2];
 } SpuRegs;
 
-/* A voice's claim on a hardware SPU voice (D_8006252C holds the owner of
- * each hardware voice). */
+/* A voice envelope in parts (SPU ADSR fields). */
+typedef struct {
+    u8 attack_mode;
+    u8 sustain_mode;
+    u8 release_mode;
+    u8 attack_rate;
+    u8 decay_rate;
+    u8 sustain_rate;
+    u8 release_rate;
+    u8 sustain_level;
+} SoundEnvelope;
+
+/* A channel's claim on a hardware SPU voice and its staged register
+ * values (D_8006252C holds the owner of each hardware voice). */
 typedef struct {
     u16 voice;         /* hardware voice */
     u16 mode;          /* 0x10 pitch modulation, 0x20 noise, 0x40 reverb */
     s16 priority;
-    u16 flags;         /* registers to update (0x1000-0x4000: mode bits) */
+    u16 flags;         /* registers to update: 1 volume, 4 pitch, 8 sample
+                        * addresses, 0x10-0x100 envelope parts, 0x1000-0x4000
+                        * mode bits */
+    s16 volume_left;
+    s16 volume_right;
+    u16 unkC;
+    u16 unkE;
+    u8 unk10[4];
+    u16 pitch;
+    u8 unk16[6];
+    u32 sample_start;  /* SPU address */
+    u32 sample_loop;
+    SoundEnvelope envelope;
 } SoundChannel;
 
 /* A loaded sound bank (list through `next`). */
@@ -92,18 +116,6 @@ typedef struct {
     u16 flags;         /* bit 0: on */
 } SoundModulator;
 
-/* A voice envelope in parts (SPU ADSR fields). */
-typedef struct {
-    u8 attack_mode;
-    u8 sustain_mode;
-    u8 release_mode;
-    u8 attack_rate;
-    u8 decay_rate;
-    u8 sustain_rate;
-    u8 release_rate;
-    u8 sustain_level;
-} SoundEnvelope;
-
 /* A repeat of a channel's sequence data. */
 typedef struct {
     u8 count;          /* repeats left */
@@ -138,16 +150,6 @@ typedef struct {
     u8 unk29[3];
     struct SoundSequence *instruments;
     SoundChannel state;
-    s16 volume_left;   /* staged SPU voice volumes */
-    s16 volume_right;
-    u16 unk3C;
-    u16 unk3E;
-    u8 unk40[4];
-    u16 pitch;         /* staged SPU voice pitch */
-    u8 unk46[6];
-    u32 sample_start;  /* SPU address */
-    u32 sample_loop;
-    SoundEnvelope envelope; /* state.flags 0x10-0x100 update it */
     s16 unk5C;
     u8 unk5E[2];
     u8 unk60;
