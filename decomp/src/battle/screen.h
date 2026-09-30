@@ -76,6 +76,28 @@ typedef struct {
     u32 code;
 } DrawPrim8;
 
+/* A shard of the shattered screen (0x7C bytes): turning and falling, drawn
+ * as a textured triangle per buffer. */
+typedef struct {
+    SVector angles;    /* 0x00 */
+    SVector spin;      /* 0x08: added to the angles each frame */
+    Vector position;   /* 0x10 */
+    u8 pad20[4];
+    POLY_FT3 poly[2];  /* 0x24: one per drawing buffer */
+    s32 delay;         /* 0x64: frames before it moves */
+    Vector velocity;   /* 0x68: 16.16, easing out, with gravity */
+    s32 fall;          /* 0x78: added to velocity.vy each frame */
+} ScreenShard;
+
+/* The shattered screen (800B73A0, 0x10F7C bytes): two layers of 14 rows of
+ * 20 shards cut from the screen copied to VRAM (0x2C0, 0x100). */
+typedef struct {
+    BattleTask task;
+    BattleTask draw;                 /* 0x1C */
+    s32 frame;                       /* 0x38 */
+    ScreenShard shards[2][14][20];   /* 0x3C */
+} ScreenShatter;
+
 extern DrawPrim8 D_800C3BF8; /* a draw mode primitive */
 extern RECT D_800C3C9C;
 extern s16 D_800C3668[3][2]; /* VRAM places (x, y) */
@@ -104,6 +126,7 @@ void func_8001CD64(void *task, void (*update)());
 void func_8001CD74(void *task, void (*destroy)());
 void func_8001CD94(void *task); /* end a task */
 void func_8001CB48(void *node);
+void func_80025180(void *owner); /* end the owner's sprites */
 
 /* GTE: IR0, IR1-IR3 and the general purpose interpolation (no shift). */
 #define gte_lddp(r0) __asm__ volatile("mtc2 %0, $8" : : "r"(r0))
@@ -138,6 +161,14 @@ void func_800B383C(ScreenFade *fade);
 void func_800B3B94(LightFade *fade);
 void func_800B3C74(BattleTask *draw);
 void func_800B3C2C(LightFade *fade);
+
+extern u32 *D_800C3CB4; /* the ordering table the shatter draws into */
+void func_800B6F0C(ScreenShatter *shatter);
+void func_800B7134(ScreenShatter *shatter);
+void func_800B7160(ScreenShatter *shatter);
+void func_800B7364(ScreenShatter *shatter);
+void func_800B73A0(void);
+ScreenShatter *func_800B7424(ScreenShatter *shatter);
 void func_800A6444(s32 index, s32 r, s32 g, s32 b, s32 field4, s32 field5);
 void func_800A6F98(void);
 void func_800A5EB4(void);

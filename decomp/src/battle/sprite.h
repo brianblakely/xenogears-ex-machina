@@ -43,7 +43,10 @@ typedef struct {
     Matrix matrix;           /* 0x0C: local screen matrix */
     void *parts;             /* 0x2C */
     SpriteImagePart *part;   /* 0x30 */
-    SpriteAnchor *anchors;   /* 0x34 */
+    SpriteAnchor *anchors;   /* 0x34: 8 of them */
+    u8 pad38[0x3C - 0x38];
+    u8 field3C;
+    u8 field3D;
 } SpriteView;
 
 /* A resident sprite (fields as far as used). */
@@ -152,6 +155,17 @@ void func_800B5588(BattleTask *task);
 void func_8004A414(Vector *v, Vector *out); /* Square0 */
 s16 func_80023124(Point2 to, Point2 from); /* direction from from to to */
 void func_80025A88();                      /* the resident sprite drawer */
+void func_800245D8(BattleSprite *sprite, s32 value);
+
+/* The battle state at 800C3EB0 (battle_core.h declares its first word,
+ * the formation), as far as the sprite code reaches it from its base. */
+typedef struct {
+    u8 pad0[0x8C84];
+    s32 buffer;                  /* 0x8C84: the drawing buffer, 0 or 1 */
+    u8 pad8C88[0x8C8C - 0x8C88];
+    BattleSprite *sprites[1];    /* 0x8C8C */
+} BattleState;
+#define BATTLE_STATE (*(BattleState *)&D_800C3EB0)
 
 /* Sprite script commands (800B3F04). */
 extern BattleSprite *D_800C3E1C;

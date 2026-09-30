@@ -786,7 +786,10 @@ void func_800B6464(BattleSprite *sprite, u8 *args) {
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B6464);
 #endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B64D4);
+/* Script command: set battle sprite args[1]'s value (800245D8) to args[0]. */
+void func_800B64D4(BattleSprite *sprite, u8 *args) {
+    func_800245D8(BATTLE_STATE.sprites[args[1]], args[0]);
+}
 
 /* Script command: turn the sprite towards its target (on the x-z plane). */
 void func_800B6518(BattleSprite *sprite) {
@@ -976,31 +979,118 @@ void func_800B6B98(BattleSprite *sprite, u8 *args) {
     func_801FC53C(sprite, data[0] * 16, data[1], ((s8 *)data)[2] * 8, data[3] * 8, ((s8 *)data)[4] * 8, data[5]);
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B6BFC);
+/* Script command: copy the screen to VRAM (0x2C0, 0x100) and shatter it
+ * (800B73A0). */
+void func_800B6BFC(void) {
+    RECT rect;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B6C44);
+    rect.w = 320;
+    rect.x = 0;
+    rect.y = 0;
+    rect.h = 224;
+    MoveImage(&rect, 0x2C0, 0x100);
+    func_800B73A0();
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B6C98);
+/* Script command: turn the sprite about z to its speed's direction in x-y. */
+void func_800B6C44(BattleSprite *sprite) {
+    sprite->view->angle[2] = ratan2(sprite->speed[1] >> 8, sprite->speed[0] >> 8);
+    sprite->render.word |= 0x10000000;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B6CEC);
+/* Script command: turn the sprite about x to its speed's direction in x-z. */
+void func_800B6C98(BattleSprite *sprite) {
+    sprite->view->angle[0] = ratan2(sprite->speed[2] >> 8, sprite->speed[0] >> 8);
+    sprite->render.word |= 0x10000000;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B6DC0);
+/* Script command: turn the sprite to its speed's direction. */
+void func_800B6CEC(BattleSprite *sprite) {
+    Vector speed;
+    Vector squares;
+    s32 distance;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B6E84);
+    speed.vx = sprite->speed[0] >> 8;
+    speed.vy = sprite->speed[1] >> 8;
+    speed.vz = sprite->speed[2] >> 8;
+    if (speed.vz == 0) {
+        speed.vz = 4;
+    }
+    func_8004A414(&speed, &squares);
+    distance = SquareRoot0(squares.vx + squares.vz);
+    sprite->view->angle[1] = -ratan2(speed.vz, speed.vx);
+    sprite->view->angle[2] = ratan2(speed.vy, distance);
+    sprite->view->angle[0] = 0;
+    sprite->render.word |= 0x10000000;
+}
+
+/* Script command: clear the sprite's eight anchors. */
+void func_800B6DC0(BattleSprite *sprite) {
+    s32 i;
+
+    if (sprite->view != NULL && sprite->view->anchors != NULL) {
+        for (i = 0; i != 8; i++) {
+            sprite->view->anchors[i].x = 0;
+            sprite->view->anchors[i].y = 0;
+            sprite->view->anchors[i].angle[0] = 0;
+            sprite->view->anchors[i].angle[1] = 0;
+            sprite->view->anchors[i].angle[2] = 0;
+        }
+        sprite->view->field3C = 0;
+        sprite->view->field3D = 0;
+    }
+}
+
+/* Script command: turn the sprite's speed about z by args[0] * 16. */
+void func_800B6E84(BattleSprite *sprite, s8 *args) {
+    SVector angles;
+    Matrix m;
+    Vector speed;
+
+    func_80021B04(&angles, 0, 0, args[0] * 16);
+    func_8003F738(&angles, &m);
+    ApplyMatrixLV(&m, (Vector *)sprite->speed, &speed);
+    sprite->speed[0] = speed.vx;
+    sprite->speed[1] = speed.vy;
+    sprite->speed[2] = speed.vz;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B6F0C);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B7134);
+/* Shatter draw: into the ordering table (800B7160). */
+void func_800B7134(ScreenShatter *shatter) {
+    D_800C3CB4 = D_8005956C;
+    func_800B7160(shatter);
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B7160);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B7330);
+/* Free a heap block once drawing is done. */
+void func_800B7330(void *block) {
+    DrawSync(0);
+    func_800320E8(block);
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B7364);
+/* Shatter destroy: end the draw task, the task and its sprites. */
+void func_800B7364(ScreenShatter *shatter) {
+    func_8001CB48(&shatter->draw);
+    func_8001CD94(shatter);
+    func_80025180(shatter);
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B73A0);
+/* Shatter the screen copied to VRAM (0x2C0, 0x100). */
+void func_800B73A0(void) {
+    func_800B7424(func_8001D1D8(sizeof(ScreenShatter), 0, func_800B6F0C, func_800B7134, func_800B7364));
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B73EC);
+/* Set up a shattered screen in a heap block (not run as a task). */
+void func_800B73EC(void) {
+    ScreenShatter *shatter = func_80031BDC(sizeof(ScreenShatter), 1);
+
+    shatter->task.data = shatter;
+    shatter->draw.data = shatter;
+    func_800B7424(shatter);
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B7424);
 
