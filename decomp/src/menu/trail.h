@@ -95,6 +95,7 @@ typedef struct {
                      "nop;" \
                      ".word 0x4A280030")
 #define gte_stsxy(r0) __asm__ volatile("swc2 $14, 0(%0)" : : "r"(r0) : "memory")
+#define gte_stsz(r0) __asm__ volatile("swc2 $19, 0(%0)" : : "r"(r0) : "memory")
 #define gte_stsxy3(r0, r1, r2) \
     __asm__ volatile("swc2 $12, 0(%0);" \
                      "swc2 $13, 0(%1);" \

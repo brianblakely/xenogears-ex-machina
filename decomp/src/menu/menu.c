@@ -1,5 +1,6 @@
 #include "menu.h"
 #include "trail.h"
+#include "sound.h"
 
 /* Start the menu camera: mode 3 setup and its script block. */
 void func_800707A8(void) {
@@ -2188,15 +2189,156 @@ void func_8008E3CC(u32 *ot, s32 level, s32 brighten) {
     func_80043B48(ot, &D_80096E00[D_800928A0]);
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008E620);
+/* Reset the sound driver and the four positional voices. */
+void func_8008E620(void) {
+    s32 mask = 0x300;
+    SoundVoice *voice;
+    u32 i;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008E67C);
+    func_80039FF8();
+    for (i = 0; i < 4; i++) {
+        voice = &D_80096EA0[i];
+        voice->mask = mask;
+        mask <<= 2;
+        voice->active = 0;
+        voice->age = 0;
+        voice->voice = i * 2;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008E6F8);
+/* Age every positional voice (saturating). */
+void func_8008E67C(void) {
+    if (D_80096EA0[0].age != 0xFFFF) {
+        D_80096EA0[0].age++;
+    }
+    if (D_80096EA0[1].age != 0xFFFF) {
+        D_80096EA0[1].age++;
+    }
+    if (D_80096EA0[2].age != 0xFFFF) {
+        D_80096EA0[2].age++;
+    }
+    if (D_80096EA0[3].age != 0xFFFF) {
+        D_80096EA0[3].age++;
+    }
+}
 
+/* Choose a character's command sound table by its model kind. */
+void func_8008E6F8(SoundOwner *owner) {
+    switch (owner->kind) {
+    case 9:
+        owner->sounds = D_80091FA0;
+        break;
+    case 0x1D:
+        owner->sounds = D_80091F60;
+        break;
+    case 0x1B:
+        owner->sounds = D_80091F80;
+        break;
+    case 0x24:
+        owner->sounds = D_80091F70;
+        break;
+    default:
+        owner->sounds = D_80091F90;
+        break;
+    }
+}
+
+#ifdef NON_MATCHING
+/* Start a sound on a free positional voice (or a matching unpositioned
+ * one, else the oldest); positioned sounds follow pos or its snapshot.
+ * Does not match: the search pointer and the age temporary swap $v1/$a0. */
+void func_8008E78C(s32 sound, s32 mode, Vector *pos, s32 arg3) {
+    s32 oldest = 0;
+    SoundVoice *chosen = &D_80096EA0[3];
+    SoundVoice *voice;
+    s32 i;
+
+    for (i = 0; i < 4; i++) {
+        voice = &D_80096EA0[i];
+        if (!voice->active || (mode == 0 && voice->mode == 0)) {
+            chosen = voice;
+            break;
+        }
+        if (oldest < voice->age) {
+            oldest = voice->age;
+            chosen = voice;
+        }
+    }
+    func_8008E67C();
+    voice = chosen;
+    voice->mode = mode;
+    voice->sound = sound;
+    voice->active = 1;
+    voice->unk3 = arg3;
+    voice->follow = pos;
+    if (pos != NULL) {
+        voice->pos = *pos;
+    }
+    voice->age = 0;
+    if (mode == 0) {
+        func_80039F9C(voice->sound, voice->voice, 0x7F, 0x40);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008E78C);
+#endif
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008E8B0);
+/* Pan and attenuate every positioned voice from its screen position and
+ * depth; a voice just started is keyed on with those values. */
+void func_8008E8B0(void) {
+    SVector v;
+    SVector screen;
+    s32 sz;
+    SoundVoice *voice;
+    s32 volume;
+    s32 x;
+    s32 pan;
+    s32 i;
+
+    for (i = 0; i < 4; i++) {
+        voice = &D_80096EA0[i];
+        if (voice->active && voice->mode != 0) {
+            if (voice->mode == 1) {
+                v.vx = voice->pos.vx;
+                v.vy = voice->pos.vy;
+                v.vz = voice->pos.vz;
+            } else {
+                v.vx = voice->follow->vx;
+                v.vy = voice->follow->vy;
+                v.vz = voice->follow->vz;
+            }
+            v.vx -= D_80096FA8.vx;
+            v.vy -= D_80096FA8.vy;
+            v.vz -= D_80096FA8.vz;
+            gte_ldv0(&v);
+            gte_rtps();
+            gte_stsxy(&screen);
+            gte_stsz(&sz);
+            x = screen.vx;
+            if (x < 0) {
+                x = 0;
+            }
+            if (x > 0x140) {
+                x = 0x140;
+            }
+            volume = (0x3000 - sz) * 0x7F / 0x3000;
+            if (volume < 0x28) {
+                volume = 0x28;
+            }
+            if (volume > 0x7F) {
+                volume = 0x7F;
+            }
+            pan = x * 0x7F / 0x140;
+            if (voice->age != 0) {
+                func_8003A55C(voice->voice, pan);
+                func_8003A344(voice->voice, volume);
+            } else {
+                func_80039F9C(voice->sound, voice->voice, volume, pan);
+            }
+        }
+    }
+    func_8008E67C();
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008EADC);
 
