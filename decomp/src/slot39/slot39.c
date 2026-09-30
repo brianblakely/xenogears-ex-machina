@@ -1272,7 +1272,44 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CC6D8);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CD2AC);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CD710);
+/* Run the card command chosen on the file screen (0 copy?, 1 delete?, 2 the
+ * save or load of the menu kind); returns 0 when the menu should close. */
+u8 func_801CD710(u8 arg) {
+    u8 stay;
+
+    func_801D22F4(0);
+    D_800625A0->party->unk2F = 0;
+    stay = 1;
+    switch (D_800625A0->choice) {
+    case 0:
+        D_800625A0->cardsPresent = 7;
+        if (func_801CD2AC()) {
+            stay = 0;
+        }
+        break;
+    case 1:
+        D_800625A0->cardsPresent = 6;
+        if (func_801CC6D8()) {
+            stay = 0;
+        }
+        break;
+    case 2:
+        if (D_80059460 != 2) {
+            D_800625A0->cardsPresent = 3;
+            if (func_801CBD90(arg)) {
+                stay = 0;
+            }
+        } else {
+            D_800625A0->cardsPresent = 2;
+            if (func_801CB304()) {
+                stay = 0;
+            }
+        }
+        break;
+    }
+    func_801D2484();
+    return stay;
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CD81C);
 
@@ -1412,7 +1449,35 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CFB48);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CFF64);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D01D0);
+/* Animate the file screen: its layers, the 15-frame x 6 blink and the
+ * 4-step pulse between 4 and 128. */
+void func_801D01D0(void) {
+    func_801CF37C();
+    func_801CF5E4(0, 0, 0x10);
+    func_801CF5E4(0x10, 0x10, 0x20);
+    func_801CFB48();
+    func_801CF8D8();
+    func_801CFF64();
+    if (++D_800625A0->unk4D0 == 15) {
+        D_800625A0->unk4D0 = 0;
+        if (++D_800625A0->unk4CC == 6) {
+            D_800625A0->unk4CC = 0;
+        }
+    }
+    if (D_800625A0->unk4D9 == 0) {
+        D_800625A0->unk4D4 += 4;
+        if (D_800625A0->unk4D4 > 0x80) {
+            D_800625A0->unk4D9 = 1;
+            D_800625A0->unk4D4 = 0x7c;
+        }
+    } else {
+        D_800625A0->unk4D4 -= 4;
+        if (D_800625A0->unk4D4 < 0) {
+            D_800625A0->unk4D9 = 0;
+            D_800625A0->unk4D4 = 4;
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D02D8);
 
@@ -1900,7 +1965,43 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D7F50);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D827C);
 
+/* Tint `count` quads of `polys` (every other one from `first`): 0 red,
+ * 1 blue, 2 grey. */
+#ifdef NON_MATCHING
+void func_801D83AC(POLY_FT4 *polys, u8 colour, u8 count, u8 first) {
+    u8 rgb[3];
+    s32 i;
+    s32 index;
+    POLY_FT4 *poly;
+
+    rgb[1] = 0x40;
+    switch (colour) {
+    case 0:
+        rgb[0] = 0x80;
+        rgb[2] = 0x40;
+        break;
+    case 1:
+        rgb[0] = 0x40;
+        rgb[2] = 0x80;
+        break;
+    case 2:
+        rgb[0] = 0x40;
+        rgb[2] = 0x40;
+        break;
+    }
+    index = first;
+    for (i = 0; i < count; i++) {
+        poly = &polys[index];
+        func_80043C24(poly, 0);
+        poly->r0 = rgb[0];
+        poly->g0 = rgb[1];
+        poly->b0 = rgb[2];
+        index += 2;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D83AC);
+#endif
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D84B4);
 
