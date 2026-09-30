@@ -289,7 +289,7 @@ typedef struct GearRecord {
     u8 unk3; /* 3: record of table +c */
     u8 unk4[0x4]; /* 4: part ids */
     u8 frame; /* 8 */
-    u8 unk9[3]; /* 9: part ids; the equipment screen reads four from here */
+    u8 unk9[3]; /* 9: part ids (801df5d0 keeps four from here) */
     u8 unkC[4]; /* C: part ids */
     u8 pad10[0x28];
     u16 unk38; /* 38 */
