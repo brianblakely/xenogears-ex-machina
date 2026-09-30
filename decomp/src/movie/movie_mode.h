@@ -266,6 +266,7 @@ void func_8002945C(void *chunk);      /* release a stream chunk */
 s32 func_80028F30(s32 *arg0, s32 *arg1);
 void func_800294B4(s32 arg0);
 void func_80071BA0(void);
+void func_80070DCC(void);
 void func_80071C34(s32 command);
 s32 func_80074AF0(void);
 
@@ -285,7 +286,7 @@ s32 func_80039850(void *sequence); /* load a music sequence */
 /* CD-ROM monitor screen. */
 extern s32 D_80076E64;          /* read phase: waiting, reading, verifying */
 extern s32 D_80076E68, D_80076E6C, D_80076E70, D_80076E74, D_80076E78; /* last error */
-extern s32 D_80076E80, D_80076E88, D_80076E8C;
+extern s32 D_80076E80, D_80076E8C;
 extern s32 *D_80076E98;         /* stream buffer */
 extern s32 D_80076EA8;          /* reads in total */
 extern s32 D_8005A4DC;          /* resident read error count */
@@ -300,6 +301,14 @@ void *func_80028A94(void *ring); /* replace the stream ring */
 s32 func_800286CC(void);         /* files left to read */
 s32 func_800286BC(void);         /* bytes left to read */
 void func_800712C4(void);
+extern s32 D_80076E90;          /* read size */
+extern s32 *D_80076E88;         /* read buffer */
+StreamEntry *func_8002A57C(s32 list, s32 mode);          /* a directory's file list */
+void func_80029AFC(StreamEntry *list, s32 mode, s32 flags); /* stream a file list */
+void func_800295D8(s32 file, void *dest, s32 mode, s32 flags); /* host-file stream */
+void func_80029EB0(s32 file, void *ring, s32 a2, s32 a3, s32 a4, s32 a5, s32 a6, s32 a7, s32 a8,
+                   s32 a9);
+void *func_8002A260(s32 blocks, s32 mode);                /* allocate a stream ring */
 
 /* Disc change test. */
 extern char D_8006FC6C[]; /* "\n", first used by the menu (800704E8) */

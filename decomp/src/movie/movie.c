@@ -8,8 +8,6 @@
 #include "common.h"
 #include "movie_mode.h"
 
-INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_8006FAF0);
-
 /* The menu's CD-ROM monitor: at 640x240, show the read statistics, the
  * resident's error counters and stream state, a dump of the stream buffer
  * and the reads per result class, run the monitor's input every frame and
@@ -286,7 +284,162 @@ void func_80071BA0(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80071C34);
+/* Clear `size` bytes of words at `dest`, counting in `n`. */
+#define CLEAR_WORDS(dest, size, n)         \
+    {                                      \
+        s32 *word;                         \
+        n = 0;                             \
+        word = (dest);                     \
+        for (; n < (size) / 4; n++) {      \
+            *word++ = 0;                   \
+        }                                  \
+    }
+
+/* Start monitor command `command` when no read is running: 1/4 read file
+ * 40h into a fresh 8 KB buffer, 2/5 file 7 through the host-file stream,
+ * 3/6 the directory's file list, 7/8 the stream ring, 11 stream file 6 and
+ * 12 the file list into the ring, 13 file 3 into a new 64-block ring. Each
+ * destination is cleared first; the command counts in its class. */
+void func_80071C34(s32 command) {
+    s32 i;
+    s32 index;
+    s32 file;
+    s32 *dest;
+
+    if (D_80076E48 != 0 || D_80076E64 != 0) {
+        return;
+    }
+    func_80028470(0xC, 3);
+    D_80076E64 = 1;
+    D_80076E48 = command;
+    switch (command) {
+    case 1:
+        D_80076E90 = 0x2000;
+        D_80076F3C[1]++;
+        D_80076E88 = func_80031BDC(0x2000, 0);
+        CLEAR_WORDS(D_80076E88, D_80076E90, i);
+        func_8002954C(0x40, D_80076E88, D_80076E90, 0, 0);
+        break;
+    case 2:
+        D_80076F3C[2]++;
+        D_80076E90 = func_800288EC(7);
+        D_80076E88 = func_80031BDC(D_80076E90, 0);
+        CLEAR_WORDS(D_80076E88, D_80076E90, i);
+        func_800295D8(7, D_80076E88, 0, 0);
+        break;
+    case 3:
+        D_80076F3C[3]++;
+        D_80076E7C = func_8002A57C(2, 0);
+        if (D_80076E7C == NULL) {
+            D_80076E64 = 0;
+            D_80076E48 = 0;
+            break;
+        }
+        for (index = 0; (file = D_80076E7C[index].file) > 0; index++) {
+            dest = D_80076E7C[index].dest;
+            D_80076E90 = func_800288EC(file);
+            CLEAR_WORDS(dest, D_80076E90, i);
+        }
+        func_80029AFC(D_80076E7C, 0, 0);
+        break;
+    case 4:
+        D_80076E90 = 0x2000;
+        D_80076F3C[4]++;
+        D_80076E88 = func_80031BDC(0x2000, 0);
+        CLEAR_WORDS(D_80076E88, D_80076E90, i);
+        func_8002954C(0x40, D_80076E88, D_80076E90, 0, 0);
+        break;
+    case 5:
+        D_80076F3C[5]++;
+        D_80076E90 = func_800288EC(7);
+        D_80076E88 = func_80031BDC(D_80076E90, 0);
+        CLEAR_WORDS(D_80076E88, D_80076E90, i);
+        func_800295D8(7, D_80076E88, 1, 0);
+        break;
+    case 6:
+        D_80076F3C[6]++;
+        D_80076E7C = func_8002A57C(2, 0);
+        if (D_80076E7C == NULL) {
+            D_80076E64 = 0;
+            D_80076E48 = 0;
+            break;
+        }
+        for (index = 0; (file = D_80076E7C[index].file) > 0; index++) {
+            dest = D_80076E7C[index].dest;
+            D_80076E90 = func_800288EC(file);
+            CLEAR_WORDS(dest, D_80076E90, i);
+        }
+        func_80029AFC(D_80076E7C, 1, 0);
+        break;
+    case 7:
+        D_80076F3C[7]++;
+        if (D_80076E98 == NULL) {
+            D_80076E98 = func_8002A260(4, 0);
+        }
+        func_80029EB0(1, D_80076E98, 0, 0, 1, 0, 0, 0, 0, 0);
+        break;
+    case 8:
+        D_80076F3C[8]++;
+        if (D_80076E98 == NULL) {
+            D_80076E98 = func_8002A260(4, 0);
+        }
+        func_80029EB0(1, D_80076E98, 1, 0, 1, 0, 0, 0, 0, 0);
+        break;
+    case 11:
+        if (D_80076EB8 == 2) {
+            D_80076EB8 = 1;
+        }
+        D_80076F3C[11]++;
+        if (D_80076E98 == NULL) {
+            D_80076E98 = func_8002A260(4, 0);
+        }
+        D_80076E94 = D_80076E90 = func_800288EC(6);
+        D_80076E84 = D_80076E88 = func_80031BDC(D_80076E90, 0);
+        CLEAR_WORDS(D_80076E88, D_80076E90, i);
+        func_800295D8(6, D_80076E98, 1, 0x100);
+        break;
+    case 12:
+        if (D_80076EB8 == 2) {
+            D_80076EB8 = 1;
+        }
+        D_80076F3C[12]++;
+        if (D_80076E98 == NULL) {
+            D_80076E98 = func_8002A260(4, 0);
+        }
+        D_80076E7C = func_8002A57C(2, 0);
+        if (D_80076E7C == NULL) {
+            D_80076E64 = 0;
+            D_80076E48 = 0;
+            break;
+        }
+        file = D_80076E7C[0].file;
+        D_80076E94 = func_800288EC(file);
+        D_80076EB4 = 0;
+        D_80076E84 = D_80076E7C[0].dest;
+        for (index = 0; file > 0; file = D_80076E7C[++index].file) {
+            dest = D_80076E7C[index].dest;
+            D_80076E90 = func_800288EC(file);
+            CLEAR_WORDS(dest, D_80076E90, i);
+        }
+        func_80028A94(D_80076E98);
+        func_80029AFC(D_80076E7C, 1, 0x100);
+        break;
+    case 13:
+        D_80076EB8 = 2;
+        D_80076F3C[13]++;
+        if (D_80076E98 != NULL) {
+            func_800320E8(D_80076E98);
+        }
+        D_80076E98 = func_8002A260(0x40, 0);
+        func_80028470(0x18, 0);
+        func_800295D8(3, D_80076E98, 0, 0x200);
+        break;
+    }
+    if (D_80076E4C == 0) {
+        D_80076EAC = D_80076EB0;
+        D_80076EB0 = D_80076E48;
+    }
+}
 
 /* Vertical-blank tick: count frames and whole seconds. */
 void func_80072428(void) {
@@ -297,13 +450,10 @@ void func_80072428(void) {
     }
 }
 
-#ifdef NON_MATCHING
 /* The menu's disc change test: show the test state (the steps reached, the
  * error and the last CD command result); Start begins a test from a stopped
  * or failed state, Cross steps a waiting one, and each frame runs one step
- * of it for the other disc. Circle returns to the menu. The instructions
- * match; the original rodata also holds an unreferenced "" after the
- * strings (dead code?), which this source does not emit. */
+ * of it for the other disc. Circle returns to the menu. */
 void func_80072480(void) {
     s32 button;
     s32 error;
@@ -417,9 +567,6 @@ void func_80072480(void) {
         frames++;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80072480);
-#endif
 
 /* Stop the resident disc read and wait until the drive reports its status. */
 void func_8007293C(void) {
@@ -443,15 +590,12 @@ void func_800729A8(char *name, void *buffer, s32 size) {
     PCclose(fd);
 }
 
-#ifdef NON_MATCHING
 /* One step of the disc change test for disc `disc`: stop the drive, wait for
  * the lid to open and close and the spindle, read the TOC, seek sector 0 and
  * check the disc label, then reload the directory tables. With the host PC
  * the tables are read from its files instead. `*error` gets 1 (seek error),
  * 2 (not a Xenogears disc) or 3 (wrong disc); `*done` the command result.
- * Returns the next state. The instructions match; the original rodata also
- * holds an unreferenced "" after the host file names (dead code?), which this
- * source does not emit. */
+ * Returns the next state. */
 s32 func_80072A08(s32 disc, s32 state, s32 *error, s32 *done) {
     u32 label[4] = {0, 0, 0, 0};
     CdlLOC loc;
@@ -549,9 +693,6 @@ s32 func_80072A08(s32 disc, s32 state, s32 *error, s32 *done) {
     }
     return state;
 }
-#else
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80072A08);
-#endif
 
 /* Set up the menu backdrop quads of both buffers at (x, y), w by h, with
  * random dark blue corner fades. */
