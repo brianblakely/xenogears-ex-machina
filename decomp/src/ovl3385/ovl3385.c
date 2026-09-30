@@ -13,27 +13,28 @@
 
 /* The bounds of a sprite frame's cells; returns the cell count and stores
  * the width and height. */
-#ifdef NON_MATCHING
-/* Same operations; the original's loop steps a second pointer to the cell's
- * y and loads the height before the x. */
 s32 func_801FC000(Actor *actor, s32 *width, s32 *height, Bounds *bounds) {
     SpriteCell *cell;
-    s32 count;
+    u32 count;
     s32 i;
-    s32 x, y;
+    s32 x, y, w, h, top;
     s32 right, bottom;
 
     bounds->y0 = 0x400;
     bounds->y1 = -0x400;
     bounds->x0 = 0x400;
     bounds->x1 = -0x400;
-    count = actor->cell_bytes >> 2;
+    count = actor->cell_bytes;
+    count >>= 2;
     cell = actor->sprite->cells;
     for (i = 0; i != count; i++, cell++) {
-        y = cell->y;
-        bottom = y + cell->height;
         x = cell->x;
-        right = x + cell->width;
+        w = cell->width;
+        h = cell->height;
+        top = cell->y;
+        y = top;
+        bottom = y + h;
+        right = x + w;
         if (x < bounds->x0) {
             bounds->x0 = x;
         }
@@ -51,9 +52,6 @@ s32 func_801FC000(Actor *actor, s32 *width, s32 *height, Bounds *bounds) {
     *height = bounds->y1 - bounds->y0;
     return count;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3385/asm/nonmatchings/ovl3385", func_801FC000);
-#endif
 
 /* Hold the actor in place, keeping the movement it would have made. */
 void func_801FC0EC(TaskNode *node) {
