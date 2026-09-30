@@ -9801,7 +9801,66 @@ s32 func_800A1EC8(s32 limit) {
     }
 }
 
+#ifdef NON_MATCHING
+void func_800A2030(void) {
+    FieldDescriptor *descriptor;
+    FieldActor *actor;
+    s32 count;
+    s32 index;
+    s32 i;
+    s32 priority;
+
+    if (D_800ADB74 == 1) {
+        count = 1;
+    } else {
+        count = D_800ADBFC;
+    }
+    D_800ADB68 = 0;
+    D_800C4268 = 0;
+    for (index = 0; index < count; index++) {
+        descriptor = &D_800AF880.components.descriptors[index];
+        if (!(descriptor->flags & 0xF00) || (descriptor->actor->layer_flags & 0x100000)) {
+            continue;
+        }
+        if (D_800ADB1C != 0 && (D_800ADBE0 == 0 || D_800ADBE4 == 0 || D_800ADBEC == 0)) {
+            continue;
+        }
+        actor = descriptor->actor;
+        actor->flags &= ~0x1000000;
+        D_800B06B8 = descriptor;
+        D_800AFD1C = index;
+        D_800B0078 = actor;
+        priority = 0xF;
+        if (D_800B2078.party_processing_mode != 0) {
+            for (i = 0; i < 3; i++) {
+                if (D_8005A444[i] != 0xFF && D_8005A444[i] == index) {
+                    goto next;
+                }
+            }
+        }
+        for (i = 0; i < 8; i++) {
+            if (priority >= D_800B0078->slots[i].priority) {
+                priority = D_800B0078->slots[i].priority;
+                D_800B0078->slot = i;
+            }
+        }
+        if (priority == 0xF) {
+            D_800B0078->slots[0].resume_pc = func_800A3090(index, 1);
+            D_800B0078->slots[0].priority = 7;
+            D_800B0078->slot = 0;
+        }
+        D_800B0078->pc = D_800B0078->slots[D_800B0078->slot].resume_pc;
+        D_800AFFEC = 1;
+        if (!(D_800B0078->flags & 1)) {
+            func_800A1EC8(8);
+        }
+        D_800B0078->slots[D_800B0078->slot].resume_pc = D_800B0078->pc;
+    next:;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A2030);
+#endif
 
 s32 func_800A1EC8(s32 limit);
 extern s32 D_800AFFEC;
