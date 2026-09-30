@@ -37,7 +37,10 @@ typedef struct {
     u16 flags36; /* 0x36 */
     u16 weakness; /* 0x38: weak element bits 0x3f, 0x40 very weak */
     u16 field3A; /* 0x3A */
-    u8 pad3C[0x4C - 0x3C];
+    u32 field3C;
+    u32 field40;
+    u32 field44;
+    u32 field48;
     u16 hp;     /* 0x4C */
     u16 maxHp;  /* 0x4E */
     u16 ep;     /* 0x50 */
@@ -255,7 +258,9 @@ typedef struct {
     u16 targetMask;    /* 0x5FAC: effect target mask */
     u16 targetMask2;   /* 0x5FAE */
     u16 shownCommand;  /* 0x5FB0 */
-    u8 pad5FB2[0x5FBC - 0x5FB2];
+    u8 pad5FB2[0x5FB6 - 0x5FB2];
+    u16 revived;       /* 0x5FB6: slots an item revived */
+    u8 pad5FB8[0x5FBC - 0x5FB8];
     u8 commandAttributes[4]; /* 0x5FBC */
     u8 commandIndexCopy;     /* 0x5FC0 */
     u8 attackerIndex;        /* 0x5FC1 */

@@ -386,7 +386,11 @@ extern WindowRect *D_800D2D90[7];
 typedef struct {
     u8 unk0[4];
     u16 target;    /* +0x4 target selection */
-    u8 unk6[0xE - 0x6];
+    u8 unk6[0x8 - 0x6];
+    u8 amount;     /* +0x8 */
+    u8 duration;   /* +0x9 */
+    s16 flags;     /* +0xA effect bits; 1 selects the special effect amount */
+    s16 status;    /* +0xC status bits */
     u16 animation; /* +0xE */
 } ItemEffect;
 

@@ -6466,7 +6466,173 @@ void func_80098C6C(u16 param) {
     }
 }
 
+#ifdef NON_MATCHING
+/* Apply item effect `param` to `slot`: HP (amount x 50, doubled with status
+ * 0x80 of +0x86) and EP (amount x 10) restoration, and unless either ran,
+ * the status cures, revival (amount tenths of the maximum HP), status
+ * grants, immunities and the special effects of flags value 1. The item
+ * effect table lies inside the battle work area (+0x5518, D_800D2200). */
+void func_80098D2C(u8 slot, u8 param) {
+    u8 restored;
+    Combatant *record;
+    ItemEffect *effect;
+    GearRecord *gear;
+    u8 i;
+    s32 hpUnit;
+    s32 epUnit;
+
+    restored = 0;
+    record = &D_800CCCE8.records[slot];
+    effect = &((ItemEffect *)&D_800CCCE8.lists)[param + 2];
+    gear = &D_800CCCE8.records[slot].gear;
+    epUnit = 10;
+
+    if (effect->flags & 0x8000) {
+        hpUnit = 50;
+        D_800CCCE8.damage[slot] = effect->amount * hpUnit;
+        D_800D2C88[slot] = 2;
+        if (record->pilot.status84.half.permanent & 0x80) {
+            D_800C34B0->damage[slot] *= 2;
+        }
+        if (record->pilot.flags36 & 0x8000) {
+            D_800D2C88[slot] = 0;
+        }
+        restored = 1;
+    }
+    if (effect->flags & 0x4000) {
+        D_800D2C54[slot] = epUnit * effect->amount;
+        D_800D2C88[slot] = 3;
+        restored++;
+    }
+    if (restored) {
+        return;
+    }
+    if ((D_800CCCE8.records[slot].flags15A & 0x80) && effect->flags != 1) {
+        D_800D2C94.message = 0x30;
+        D_800D2C94.held |= 0x8000;
+        return;
+    }
+    if (effect->flags & 0x2000) {
+        record->pilot.status7C &= 0x8000;
+    }
+    if (effect->flags & 0x1000) {
+        record->pilot.status80 = 0;
+        record->pilot.status7A &= 0xFFDF;
+    }
+    if (effect->flags & 0x100) {
+        if (D_800CCCE8.records[slot].pilot.characterId == 2) {
+            func_8009AC48(slot, 0);
+        }
+        record->pilot.status7C = 0;
+        record->pilot.status80 = 0;
+        record->pilot.status84.half.active = 0;
+        record->pilot.status88.half.active = 0;
+        record->pilot.status8C.half.active = 0;
+        record->pilot.hp = record->pilot.maxHp * effect->amount / 10;
+        D_800C34B0->revived |= 1 << slot;
+    }
+    if (effect->flags & 0x800) {
+        record->pilot.status84.half.active |= effect->status;
+        func_800995A0(slot, 5, effect->status, 5);
+        func_8009B684(5, effect->status);
+    }
+    if (effect->flags & 0x400) {
+        record->pilot.status88.half.active |= effect->status;
+        func_800995A0(slot, 7, effect->status, 5);
+        func_8009B684(7, effect->status);
+    }
+    if (effect->flags & 0x200) {
+        record->pilot.status8C.half.active |= effect->status;
+        if ((effect->status & 0xF000) && !(record->pilot.status8C.half.permanent & 0xF000)) {
+            record->pilot.status8C.half.active &= 0xFFF;
+            record->pilot.status8C.half.active |= effect->status;
+            func_800995A0(slot, 9, effect->status, 5);
+            func_8009B684(9, effect->status);
+        }
+        if ((effect->status & 0xF00) && !(record->pilot.status8C.half.permanent & 0xF00)) {
+            record->pilot.status8C.half.active &= 0xF0FF;
+            record->pilot.status8C.half.active |= effect->status;
+            func_800995A0(slot, 9, effect->status, 5);
+            func_8009B684(9, effect->status);
+        }
+    }
+    if (effect->flags & 0x20) {
+        record->pilot.status7E |= 0x3F7C;
+    }
+    if (effect->flags & 0x10) {
+        record->pilot.status7E |= 0xFFFE;
+    }
+    if (effect->flags & 8) {
+        (&record->pilot.status84.half.active)[effect->amount] = 0;
+        switch (effect->amount) {
+        case 0:
+            D_800C34B0->message = 0x35;
+            break;
+        case 2:
+            D_800C34B0->message = 0x36;
+            break;
+        case 4:
+            D_800C34B0->message = 0x37;
+            break;
+        }
+    }
+    if ((effect->flags & 0x80) && (effect->status & 2)) {
+        if (slot >= 3) {
+            D_800C34B0->message = 0x33;
+            return;
+        }
+        if (effect->duration == 0) {
+            if ((u8)func_80099498()) {
+                record->pilot.status7C |= effect->status;
+                D_800C34B0->message = 0x31;
+                record->pilot.status7A = 0xFFEF;
+            } else {
+                D_800C34B0->message = 0x32;
+            }
+        } else {
+            record->pilot.status7C &= ~effect->status;
+            record->pilot.status7A = D_800C3AA4[slot];
+        }
+    }
+    if (effect->flags == 1) {
+        switch (effect->amount) {
+        case 10:
+            record->pilot.weakness = 0;
+            record->pilot.weakness = effect->status;
+            break;
+        case 11:
+            if (!(record->pilot.status7E & effect->status)) {
+                record->pilot.status7C |= effect->status;
+                func_800995A0(slot, 0, effect->status, effect->duration);
+                func_8009B684(0, effect->status);
+            }
+            break;
+        case 12:
+            if (!(record->pilot.status82 & effect->status)) {
+                record->pilot.status80 |= effect->status;
+                func_800995A0(slot, 2, effect->status, effect->duration);
+                func_8009B684(2, effect->status);
+            }
+            break;
+        case 13:
+            gear->defense += effect->status;
+            D_800C34B0->message = 0x28;
+            break;
+        case 14:
+            D_8006D8A0.characters[record->pilot.characterId].field44 = 1;
+            D_8006D8A0.characters[record->pilot.characterId].field48 = 1;
+            break;
+        case 15:
+            for (i = 0; i < 7; i++) {
+                record->pilot.useCounts[i] += 10;
+            }
+            break;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80098D2C);
+#endif
 
 /* Party gate on the formation mode: 1 when mode 2 has no member with status
  * bits 0xC002, or mode 3 does not have exactly two; otherwise 0. */
