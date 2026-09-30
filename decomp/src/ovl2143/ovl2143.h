@@ -13,6 +13,9 @@ typedef struct {
     s16 vx, vy, vz, pad;
 } SVECTOR;
 
+/* Scratchpad matrix used as a temporary. */
+#define SCRATCH_MATRIX ((MATRIX *)0x1F800000)
+
 /* A model record of a relocated model group (0x38 bytes; the resident
  * relocates the group's offsets, 8002c3e8). */
 typedef struct {

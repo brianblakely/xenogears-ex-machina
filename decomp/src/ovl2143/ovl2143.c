@@ -196,7 +196,105 @@ u32 func_801DC5C0(ModelPart *parts, s32 scale) {
     return count;
 }
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DC848);
+/* Like func_801DC5C0, with scaled nodes: a rebuilt local matrix takes the
+ * node's own scale and the inverse of its parent's, and a parent's rebuild or
+ * change propagates to its children. Clears both flags afterwards. */
+u32 func_801DC848(ModelPart *parts, s32 scale) {
+    MATRIX *scaling = (MATRIX *)0x1F800000;
+    MATRIX *scratch;
+    ModelPart *part;
+    s32 product;
+    u32 count;
+    u32 i;
+
+    part = parts;
+    count = part->count;
+    part->world.t[0] = part->pos[0];
+    part->world.t[1] = part->pos[1];
+    part->world.t[2] = part->pos[2];
+    if (part->yxz) {
+        func_8004A92C(&part->rot, &part->world);
+    } else {
+        func_8003F738(&part->rot, &part->world);
+    }
+    product = scale * parts->scale[0];
+    product >>= 12;
+    scaling->m[0][0] = product;
+    scaling->m[0][1] = 0;
+    scaling->m[0][2] = 0;
+    scaling->m[1][0] = 0;
+    product = scale * parts->scale[1];
+    product >>= 12;
+    scaling->m[1][1] = product;
+    scaling->m[1][2] = 0;
+    scaling->m[2][0] = 0;
+    scaling->m[2][1] = 0;
+    product = scale * parts->scale[2];
+    product >>= 12;
+    scaling->m[2][2] = product;
+    func_8004920C(&parts->world, scaling, &parts->local);
+    parts->local.t[0] = parts->world.t[0];
+    parts->local.t[1] = parts->world.t[1];
+    parts->local.t[2] = parts->world.t[2];
+
+    for (i = 1; i < count; i++) {
+        parts++;
+        if (parts->parent != NULL) {
+            if (parts->parent->rotate == 1) {
+                parts->rotate = 1;
+            }
+            if (parts->parent->dirty == 1) {
+                parts->dirty = 1;
+            }
+        }
+        if (parts->rotate) {
+            scratch = (MATRIX *)0x1F800000;
+            if (parts->yxz) {
+                func_8004A92C(&parts->rot, &parts->local);
+            } else {
+                func_8003F738(&parts->rot, &parts->local);
+            }
+            scratch->m[0][0] = parts->scale[0];
+            scratch->m[0][1] = 0;
+            scratch->m[0][2] = 0;
+            scratch->m[1][0] = 0;
+            scratch->m[1][1] = parts->scale[1];
+            scratch->m[1][2] = 0;
+            scratch->m[2][0] = 0;
+            scratch->m[2][1] = 0;
+            scratch->m[2][2] = parts->scale[2];
+            func_8004920C(&parts->local, scratch, &parts->local);
+            if (parts->parent != NULL) {
+                scratch->m[0][0] = 0x1000000 / parts->parent->scale[0];
+                scratch->m[0][1] = 0;
+                scratch->m[0][2] = 0;
+                scratch->m[1][0] = 0;
+                scratch->m[1][1] = 0x1000000 / parts->parent->scale[1];
+                scratch->m[1][2] = 0;
+                scratch->m[2][0] = 0;
+                scratch->m[2][1] = 0;
+                scratch->m[2][2] = 0x1000000 / parts->parent->scale[2];
+                func_8004920C(scratch, &parts->local, &parts->local);
+            }
+        }
+        if (parts->dirty) {
+            parts->local.t[0] = parts->pos[0];
+            parts->local.t[1] = parts->pos[1];
+            parts->local.t[2] = parts->pos[2];
+            if (parts->parent != NULL) {
+                func_8004931C(&parts->parent->world, &parts->local, &parts->world);
+            } else {
+                parts->world = parts->local;
+            }
+        }
+    }
+    for (i = 1; i < count; i++) {
+        part++;
+        part->rotate = 0;
+        part->dirty = 0;
+    }
+    return count;
+}
 
 void func_801DCC34(void) {
 }
