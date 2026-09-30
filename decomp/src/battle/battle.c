@@ -3453,7 +3453,33 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800822C4);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80082504);
 
+/* The member boards its gear: it takes a formation group of its own, its
+ * records and panel switch to the gear, and the game data notes that the
+ * party member (8006f368) entered a gear unless 80059179 is set. */
+#ifdef NON_MATCHING
+void func_800826CC(u8 member) {
+    s32 i;
+
+    func_80088490(member);
+    func_8009AEFC(member);
+    func_800BAF48(member);
+    D_800CCCE8.records[member].flags15A |= 0x80;
+    func_800883AC(member);
+    D_800D32A0[member].unk1 = 2;
+    if (D_800D2D24[member] != 7) {
+        D_800C3EA4->panels[member].unk1E1 = 2;
+    }
+    D_800C3EB4[member].gear = 1;
+    D_800C3EAC->reaction[member] = 1;
+    for (i = 0; i < 3; i++) {
+        if (D_800D2D24[member] == D_8006F368[i] && D_80059179 == 0) {
+            D_8006F8E5[i] = 1;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800826CC);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80082820);
 

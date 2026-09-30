@@ -494,6 +494,14 @@ void func_8008AA74(u8 id);   /* play a menu sound */
 void func_8008ADD0(u8 member);
 u8 func_8008B478(u8 member); /* the member has a gear list */
 
+/* Gear boarding (800826cc). */
+extern u8 D_80059179;
+extern u8 D_8006F368[3]; /* the party's character ids */
+extern u8 D_8006F8E5[3]; /* per party member: entered a gear */
+void func_80088490(s32 slot);
+void func_8009AEFC(u8 slot);
+void func_800BAF48(u8 slot);
+
 /* Turn start (80071b94). */
 extern u8 D_800C4922;      /* acting slot */
 extern void *D_800C3DDC;   /* enemy name table */
