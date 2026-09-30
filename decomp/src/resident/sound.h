@@ -302,11 +302,14 @@ typedef struct {
     u8 unkE[2];
 } SoundInstrument;
 
-/* A playing sequence (list through `next`). */
+/* A loaded wave bank (list through `next`): a copy of the bank file's
+ * header, whose samples were transferred to SPU memory at `address`. */
 typedef struct SoundSequence {
-    u8 unk0[0x14];
-    s32 voice;
-    u8 unk18[6];
+    u8 unk0[0x10];
+    s32 header_size;   /* bytes of this header, instruments included */
+    s32 size;          /* sample bytes */
+    s32 offset;        /* file offset of the samples */
+    u8 unk1C[2];
     u16 volume;
     u16 key;
     u8 unk22[6];
@@ -336,13 +339,17 @@ extern SoundBank *D_80059440;         /* loaded banks */
 extern SoundSequence *D_80059558;     /* playing sequences */
 
 /* Driver interface (0x80037e8c-0x8003f738). */
-s32 func_80037FD8(void *data, s32 flags);
-void func_80038310(s32 bank);      /* release a wave bank */
+SoundSequence *func_80037FD8(SoundSequence *bank, s32 mode);
+s32 func_800381F4(SoundSequence *bank, s32 mode);
+void *func_80039024(s32 size);                         /* allocate driver memory */
+void func_80039144(void *block);                       /* release driver memory */
+void func_80039248(void *dst, void *src, s32 size);    /* copy */
+void func_80038310(SoundSequence *bank); /* release a wave bank */
 void func_80038B4C(void);
 void func_80038E6C(s32 volume, SpuVolume *out, u8 channel);
 void *func_80038F18(s32 size);
-void func_800393B8(s32 voice, u16 volume);
-void func_800395B8(s32 voice, s32 fade, u16 volume);
+s32 func_800393B8(s32 size, u16 mode);                 /* allocate SPU memory */
+s32 func_800395B8(s32 size, s32 address, u16 mode);    /* allocate SPU memory at */
 void func_800399D4(s32 sequence);  /* release a sequence */
 void func_80039C4C(SoundTrack *track); /* resume a track */
 void func_80039CC4(void);
@@ -358,5 +365,6 @@ void func_8003E83C(SoundChannel *state, u32 voice);
 void func_8003F484(u32 voices);   /* key off */
 void func_8003F5BC(s32 voice, s32 rate, s32 mode); /* set a voice's release */
 void func_8003F6B0(s32 error);
+void func_8003BC10(u32 address, u8 *data, s32 size, void (*callback)(void)); /* SPU transfer */
 
 #endif

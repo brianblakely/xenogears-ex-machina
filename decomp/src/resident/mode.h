@@ -86,7 +86,7 @@ extern void *D_8005A414[3];       /* party field sprite blocks */
 extern s32 D_8005A4C0;            /* map read-ahead size */
 extern void *D_8005A4E0;          /* map read-ahead block */
 extern s32 D_80062528;            /* the active sequence */
-extern s32 D_8006258C;            /* the transferred wave bank */
+extern struct SoundSequence *D_8006258C; /* the transferred wave bank */
 
 extern u8 *const D_80018084; /* overlay decode destination */
 extern u8 D_8006FAF0[];
@@ -95,8 +95,8 @@ extern ModeEntry D_8001808C[];
 extern s32 D_8004EAA0[];     /* each mode's overlay file in directory 1 */
 extern void *D_800592BC;     /* the loaded mode block */
 extern s32 D_800592C0;       /* the mode whose block is loaded, or -1 */
-extern s32 D_80059560;
-extern s32 D_800595AC;
+extern struct SoundSequence *D_80059560; /* resident wave banks */
+extern struct SoundSequence *D_800595AC;
 extern s32 D_80010000;
 extern u8 D_8004EABC[];      /* compressed boot logo image */
 extern char *D_8004F0C0[];   /* error messages by number */

@@ -1357,23 +1357,104 @@ void func_80037F88(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80037FD8);
+s32 func_800396E0(u32 address); /* release SPU memory */
+SoundSequence *func_800383EC(s32 key);
+void func_80038264(s32 address, s32 size);
+s32 func_8003827C(u8 *data, s32 size);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800380D0);
+/* Load a wave bank: allocate SPU memory for its samples (800381F4),
+ * transfer them and add a copy of its header to the loaded banks. Returns
+ * the copy, or NULL (error 0x1F without SPU memory, 0x1E without memory
+ * for the copy). */
+SoundSequence *func_80037FD8(SoundSequence *bank, s32 mode) {
+    s32 address = func_800381F4(bank, mode);
+    SoundSequence *copy;
+    SoundSequence **link;
 
-/* Stop a sequence's voice at once or with a fade (0: its own fade, -1:
- * none). */
-void func_800381F4(SoundSequence *sequence, s32 fade) {
-    if (fade == 0) {
-        fade = sequence->address;
-    } else if (fade == -1) {
-        fade = 0;
+    if (address == 0) {
+        func_8003F6B0(0x1F);
+        return NULL;
     }
-    if (fade == 0) {
-        func_800393B8(sequence->voice, sequence->volume);
+    func_8003BC10(address, (u8 *)bank + bank->offset, bank->size, NULL);
+    copy = func_80039024(bank->header_size);
+    if (copy == NULL) {
+        func_800396E0(address);
+        func_8003F6B0(0x1E);
+        return NULL;
+    }
+    func_80039248(copy, bank, bank->header_size);
+    copy->address = address;
+    DisableEvent(D_800595BC);
+    link = &D_80059558;
+    if (D_80059558 != NULL) {
+        do {
+            link = &(*link)->next;
+        } while (*link != NULL);
+    }
+    *link = copy;
+    copy->next = NULL;
+    EnableEvent(D_800595BC);
+    return copy;
+}
+
+/* Start loading a wave bank whose samples arrive in parts: allocate its SPU
+ * memory, transfer the samples among the first `size` bytes of the file
+ * (8003827C takes the rest) and add a copy of its header to the loaded
+ * banks. Returns the copy, or NULL (error 0x16 when a bank with its key is
+ * loaded, 0x1F without SPU memory, 0x1E without memory for the copy). */
+SoundSequence *func_800380D0(SoundSequence *bank, s32 size, s32 mode) {
+    s32 address;
+    SoundSequence *copy;
+    SoundSequence **link;
+
+    if (func_800383EC(bank->key) != NULL) {
+        func_8003F6B0(0x16);
+        return NULL;
+    }
+    address = func_800381F4(bank, mode);
+    if (address == 0) {
+        func_8003F6B0(0x1F);
+        return NULL;
+    }
+    func_80038264(address, bank->size);
+    func_8003827C((u8 *)bank + bank->offset, size - bank->header_size);
+    copy = func_80039024(bank->header_size);
+    if (copy == NULL) {
+        func_800396E0(address);
+        func_8003F6B0(0x1E);
+        return NULL;
+    }
+    func_80039248(copy, bank, bank->header_size);
+    copy->address = address;
+    DisableEvent(D_800595BC);
+    link = &D_80059558;
+    if (D_80059558 != NULL) {
+        do {
+            link = &(*link)->next;
+        } while (*link != NULL);
+    }
+    *link = copy;
+    copy->next = NULL;
+    EnableEvent(D_800595BC);
+    return copy;
+}
+
+/* Allocate SPU memory for a wave bank's samples: anywhere for mode -1, or
+ * for mode 0 when the bank asks for no address; otherwise at the bank's
+ * address. Returns the address, 0 when there is no room. */
+s32 func_800381F4(SoundSequence *bank, s32 mode) {
+    if (mode == 0) {
+        mode = bank->address;
+    } else if (mode == -1) {
+        mode = 0;
+    }
+    /* The allocator's result is returned as the value it leaves; the
+     * function has no return expression. */
+    if (mode == 0) {
+        func_800393B8(bank->size, bank->volume);
         return;
     }
-    func_800395B8(sequence->voice, sequence->address, sequence->volume);
+    func_800395B8(bank->size, bank->address, bank->volume);
 }
 
 extern s32 D_80059584;
@@ -1384,9 +1465,61 @@ void func_80038264(s32 a, s32 b) {
     D_80059588 = b;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003827C);
+/* Transfer the next part of a streamed wave bank's samples (at most what
+ * is still missing). Returns the bytes still missing.
+ * Nonmatching: the original takes the minimum through an extra register
+ * copy. */
+#ifdef NON_MATCHING
+s32 func_8003827C(u8 *data, s32 size) {
+    s32 left = D_80059588;
+    s32 address;
+    s32 n;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038310);
+    if (left == 0) {
+        return 0;
+    }
+    n = left;
+    if (size < left) {
+        n = size;
+    }
+    address = D_80059584;
+    func_8003BC10(address, data, n, NULL);
+    D_80059584 = address + n;
+    return D_80059588 = left - n;
+}
+#else
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003827C);
+#endif
+
+
+/* Release a loaded wave bank: unlink it, free its SPU memory (error 0x24
+ * when that fails, 0x11 when the bank is not loaded) and its copy. */
+void func_80038310(SoundSequence *bank) {
+    SoundSequence *entry;
+    SoundSequence *prev = NULL;
+
+    for (entry = D_80059558; entry != NULL; entry = entry->next) {
+        if (entry == bank) {
+            break;
+        }
+        prev = entry;
+    }
+    if (entry == NULL) {
+        func_8003F6B0(0x11);
+        return;
+    }
+    DisableEvent(D_800595BC);
+    if (prev != NULL) {
+        prev->next = bank->next;
+    } else {
+        D_80059558 = bank->next;
+    }
+    EnableEvent(D_800595BC);
+    if (bank->address != func_800396E0(bank->address)) {
+        func_8003F6B0(0x24);
+    }
+    func_80039144(bank);
+}
 
 /* The playing sequence with `key`, or NULL. */
 SoundSequence *func_800383EC(s32 key) {

@@ -584,7 +584,6 @@ void func_8003AD98(SoundSeq *seq) {
     }
 }
 
-extern void func_80039248(void *dst, void *src, s32 size);
 extern s32 func_8003BB40(s32 index);
 
 /* Save a copy of a sequence to restart from (reusing an earlier one). The
@@ -745,7 +744,6 @@ SoundSeq *func_8003B148(s32 count) {
 }
 
 extern s32 func_8003BA38(SoundSeq *seq);
-extern void func_80039144(void *block);
 
 void func_8003B1FC(SoundSeq *seq) {
     func_8003BA38(seq);
@@ -3095,7 +3093,7 @@ void func_8003F6B0(s32 error) {
     D_8005957C |= 8;
     D_80059500 = error;
     func_800396E0(0x10000, error);
-    func_80037FD8(D_80050940, 0);
+    func_80037FD8((SoundSequence *)D_80050940, 0);
     func_80038428(D_80050910);
     func_8003BDFC(0x10);
     func_80039E60((D_80050924 << 16) | 1);
