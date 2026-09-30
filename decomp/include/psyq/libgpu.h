@@ -235,6 +235,7 @@ void TermPrim(void *p);
 void SetPolyF3(POLY_F3 *p);
 void SetPolyF4(POLY_F4 *p);
 void SetPolyG4(POLY_G4 *p);
+void SetPolyFT3(POLY_FT3 *p);
 void SetPolyFT4(POLY_FT4 *p);
 void SetLineF3(LINE_F3 *p);
 void SetTile(TILE *p);

@@ -382,13 +382,87 @@ s32 func_8002DA14(u16 *command, s16 *vertices) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002DAFC);
+/* Make the primitive being built a shade-free textured triangle on the
+ * override texture page and CLUT. */
+s32 func_8002DAFC(void) {
+    POLY_FT3 *poly = (POLY_FT3 *)D_80059424;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002DB84);
+    SetPolyFT3(poly);
+    SetShadeTex(poly, 1);
+    poly->tpage = (GetTPage(1, 0, 640, 0) & 0xFFE0) | D_80059310;
+    poly->clut = (GetClut(0, 480) & 0xF) | D_80059314;
+    return 1;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002DC9C);
+/* The unit normal of the triangle (v0, v1, v2). */
+void func_8002DB84(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *normal) {
+    VECTOR a;
+    VECTOR b;
+    VECTOR cross;
+    s32 largest;
+    s32 length;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002DD20);
+    a.vx = v1->vx - v0->vx;
+    a.vy = v1->vy - v0->vy;
+    a.vz = v1->vz - v0->vz;
+    b.vx = v2->vx - v0->vx;
+    b.vy = v2->vy - v0->vy;
+    b.vz = v2->vz - v0->vz;
+    OuterProduct0(&b, &a, &cross);
+    largest = func_8002DC9C(cross.vx, cross.vy, cross.vz);
+    if (largest < 0) {
+        largest = -largest;
+    }
+    length = SquareRoot0(largest);
+    cross.vx /= length;
+    cross.vy /= length;
+    cross.vz /= length;
+    VectorNormalS(&cross, normal);
+}
+
+/* The component of (x, y, z) with the largest magnitude. */
+s32 func_8002DC9C(s32 x, s32 y, s32 z) {
+    s32 ax = x;
+    s32 ay = y;
+    s32 az = z;
+
+    if (ax < 0) {
+        ax = -ax;
+    }
+    if (ay < 0) {
+        ay = -ay;
+    }
+    if (az < 0) {
+        az = -z;
+    }
+    if (ax >= ay && ax >= az) {
+        return x;
+    }
+    if (ay >= ax && ay >= az) {
+        return y;
+    }
+    if (az >= ax && az >= ay) {
+        return z;
+    }
+}
+
+/* Load every image (and CLUT) of a TIM list: a count, then the byte
+ * offsets of the TIMs from the list, loaded last to first. */
+void func_8002DD20(u32 *list) {
+    TIM_IMAGE image;
+    s32 i = list[0];
+
+    while (--i != -1) {
+        OpenTIM((u_long *)(list + (list[i + 1] >> 2)));
+        ReadTIM(&image);
+        if (image.caddr != NULL) {
+            DrawSync(0);
+            LoadImage(image.crect, image.caddr);
+        }
+        DrawSync(0);
+        LoadImage(image.prect, image.paddr);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002DDE4);
 
