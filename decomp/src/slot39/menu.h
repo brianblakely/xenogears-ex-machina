@@ -461,7 +461,7 @@ typedef struct MenuState {
     u8 *images[32]; /* 3A8 */
     MenuMarkers *markers; /* 428: marker block (14c bytes) */
     MenuBlock42C *block42C; /* 42C: 1198 bytes */
-    u8 pad430[0x4];
+    u8 *block430; /* 430: 1094 bytes */
     u8 *block434; /* 434 */
     u8 *block438; /* 438 */
     MenuBlock43C *block43C; /* 43C */
@@ -539,6 +539,9 @@ extern u16 D_801EA5D0[0x80]; /* ASCII to two-byte character codes */
 extern s16 D_801EA724;   /* item list scroll bar */
 extern s32 D_801EA728;
 extern s16 D_801EA72C;
+extern s32 D_801EA718;   /* card event and handler ids */
+extern s32 D_801EA71C;
+extern s32 D_801EA720;
 extern s32 D_801EA004[];
 extern s32 D_801EA010[];
 extern s32 D_801EA900[2];
@@ -561,7 +564,7 @@ void func_8002A498(s32 arg0);
 s32 func_8002C3D8(void);                                /* wait for the read */
 void func_80019CA0(void);
 void func_8001BD40(s32 arg0, s32 arg1);
-void func_8002675C(void *sheet, s32 image, u8 *dst, s32 buffer, s32 x, s32 y, s32 scale);
+void func_8002675C(void *sheet, s32 image, void *dst, s32 buffer, s32 x, s32 y, s32 scale);
 void func_80033698(s32 x, s32 y);
 s32 func_80035734(s32 port);  /* pad connected */
 s32 func_80035CDC(void);      /* dequeue pad input */
@@ -574,6 +577,9 @@ void func_800404C4(u32 event, s32 spec); /* UnDeliverEvent */
 void func_80040484(s32 event);           /* EnableEvent */
 s32 func_80040494(s32 event);            /* TestEvent */
 void func_800405C4(s32 code);
+void func_80040FB4(s32 event);  /* CloseEvent */
+void func_80040FCC(s32 event);
+void func_8004373C(s32 arg0);
 s32 func_80040534(char *name, s32 mode);  /* open */
 s32 func_80040544(s32 fd, void *buf, s32 size); /* read */
 void func_80040564(s32 fd);               /* close */
@@ -624,6 +630,7 @@ void func_801CB184(void);
 void func_801C7BF4(void);
 void func_801C7D78(void);
 void func_801C7F34(u32 frames);
+void func_801C851C(SVECTOR *v, u16 x, u16 y, u16 w, u16 h);
 u8 func_801C881C(void);
 s32 func_801C891C(s32 channel);
 u8 func_801C8A10(u8 port);

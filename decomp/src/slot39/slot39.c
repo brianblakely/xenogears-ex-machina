@@ -847,7 +847,7 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C8324);
 #endif
 
 /* Set the four corners of a screen rectangle as vertices centred on (a0, 70). */
-void func_801C851C(SVECTOR *v, u16 x, u16 y, s32 w, s32 h) {
+void func_801C851C(SVECTOR *v, u16 x, u16 y, u16 w, u16 h) {
     v[0].vx = x - 0xa0;
     v[0].vy = y - 0x70;
     v[0].vz = 0;
@@ -1783,7 +1783,20 @@ void func_801D32B4(void) {
     func_801C7BF4();
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D3344);
+/* Show the one-quad sprite (+43c; sheet image 107) at (x, y), `h` high. */
+void func_801D3344(s32 x, s32 y, s32 h) {
+    void *block;
+
+    if (D_800625A0->party->unk49 == 0) {
+        block = func_80031BDC(0x74, 0);
+        D_800625A0->block43C = block;
+        func_8003F8E8(block, 0x74);
+    }
+    func_8002675C(D_800625A0->sheet, 0x107, D_800625A0->block43C, D_800625A0->bufferIndex, x, y, 0x1000);
+    func_801C851C(D_800625A0->block43C->verts, x, y, 8, h);
+    D_800625A0->block43C->buffer = D_800625A0->bufferIndex;
+    D_800625A0->party->unk49 = 1;
+}
 
 /* Clear party flag +49 and free the block at state +43c. */
 void func_801D3444(void) {
@@ -1942,7 +1955,30 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D9B08);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D9C84);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D9E3C);
+/* Leave the save/load screen: clear its images and listing, and close the
+ * card events and handlers. */
+void func_801D9E3C(void) {
+    s32 i;
+
+    D_800625A0->loadState = 0;
+    func_801E64E0();
+    func_801E5B3C();
+    func_801E649C();
+    for (i = 0; i < 32; i++) {
+        D_800625A0->card->files[i].state = 0;
+    }
+    D_800625A0->card->unk4F8C[0] = 0xff;
+    D_800625A0->card->unk4F8C[1] = 0xff;
+    D_801EA900[1] = 0;
+    D_801EA900[0] = 0;
+    func_800445D0(0);
+    func_8004B54C(0);
+    func_800404D4();
+    func_80040FB4(D_801EA718);
+    func_80040FCC(D_801EA71C);
+    func_8004373C(D_801EA720);
+    func_800404E4();
+}
 
 /* Lay out the six file screen command labels (save or title variant). */
 void func_801D9F34(void) {
@@ -2046,7 +2082,33 @@ void func_801DBDB4(void) {
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DBE54);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DC1D4);
+/* Open the file list screen of `kind` (0 load, 1 save, 2 the other labels). */
+void func_801DC1D4(u8 kind) {
+    void *block;
+    u8 view;
+    s32 page;
+
+    page = 0;
+    block = func_80031BDC(0x1094, 0);
+    D_800625A0->block430 = block;
+    func_8003F8E8(block, 0x1094);
+    switch (kind) {
+    case 0:
+        view = 2;
+        break;
+    case 1:
+        view = 5;
+        break;
+    case 2:
+        view = 6;
+        page = 1;
+        break;
+    }
+    func_801E8018(8, D_800625A0->labels10E0, D_801EA548 + page * 8, D_800625A0->party->unk38);
+    func_801C72BC(view);
+    func_801D22F4(2);
+    func_801D3488(2, kind);
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DC2CC);
 
