@@ -559,6 +559,9 @@ extern s32 D_801D225C;   /* third number y */
 extern s32 D_801D21B0[]; /* cursor y per position */
 
 /* Game state. */
+extern u8 D_8006F36C[];  /* inventory 0 counts (100) */
+extern u8 D_8006F434[];  /* inventory 1 counts (200) */
+extern u8 D_8006F5C4[];  /* inventory 2 counts (150) */
 extern u8 D_8006F3D0[];  /* inventory 0 ids (100), counts just before */
 extern u8 D_8006F4FC[];  /* inventory 1 ids (200), counts just before */
 extern u8 D_8006F65A[];  /* inventory 2 ids (150), counts just before */

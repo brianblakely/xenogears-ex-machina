@@ -468,7 +468,90 @@ void func_801CE91C(u8 kind, u8 id) {
 
 INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/shop", func_801CEB3C);
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/shop", func_801CF2A0);
+/*
+ * Set the party's gold (capped at 9999999) and put the bought amounts into
+ * the inventories: added to an item already held (at most 99), otherwise
+ * into the first free slot.
+ */
+void func_801CF2A0(u32 gold) {
+    u32 *party_gold;
+    s32 i;
+    s32 j;
+    u8 new_item;
+
+    func_801CAC7C(0xD1);
+    party_gold = &D_8006D634.gold;
+    *party_gold = gold;
+    if (gold > 9999999) {
+        *party_gold = 9999999;
+    }
+    for (i = 0; i < 0x30; i++) {
+        if (D_800625A0->shop_items[i] != 0 && D_800625A0->details->amounts[i] != 0) {
+            switch (D_800625A0->shop_kinds[i]) {
+            case 0:
+                new_item = 1;
+                for (j = 0; j < 100; j++) {
+                    if (D_8006F3D0[j] == D_800625A0->shop_items[i]) {
+                        new_item = 0;
+                        if ((D_8006F36C[j] += D_800625A0->details->amounts[i]) >= 100) {
+                            D_8006F36C[j] = 99;
+                        }
+                    }
+                }
+                if (new_item) {
+                    for (j = 0; j < 100; j++) {
+                        if (D_8006F3D0[j] == 0) {
+                            D_8006F3D0[j] = D_800625A0->shop_items[i];
+                            D_8006F36C[j] = D_800625A0->details->amounts[i];
+                            break;
+                        }
+                    }
+                }
+                break;
+            case 1:
+                new_item = 1;
+                for (j = 0; j < 200; j++) {
+                    if (D_8006F4FC[j] == D_800625A0->shop_items[i]) {
+                        new_item = 0;
+                        if ((D_8006F434[j] += D_800625A0->details->amounts[i]) >= 100) {
+                            D_8006F434[j] = 99;
+                        }
+                    }
+                }
+                if (new_item) {
+                    for (j = 0; j < 200; j++) {
+                        if (D_8006F4FC[j] == 0) {
+                            D_8006F4FC[j] = D_800625A0->shop_items[i];
+                            D_8006F434[j] = D_800625A0->details->amounts[i];
+                            break;
+                        }
+                    }
+                }
+                break;
+            case 2:
+                new_item = 1;
+                for (j = 0; j < 150; j++) {
+                    if (D_8006F65A[j] == D_800625A0->shop_items[i]) {
+                        new_item = 0;
+                        if ((D_8006F5C4[j] += D_800625A0->details->amounts[i]) >= 100) {
+                            D_8006F5C4[j] = 99;
+                        }
+                    }
+                }
+                if (new_item) {
+                    for (j = 0; j < 150; j++) {
+                        if (D_8006F65A[j] == 0) {
+                            D_8006F65A[j] = D_800625A0->shop_items[i];
+                            D_8006F5C4[j] = D_800625A0->details->amounts[i];
+                            break;
+                        }
+                    }
+                }
+                break;
+            }
+        }
+    }
+}
 
 /* Draw a nine-digit number (the party's gold) at (6bh, 54h). */
 void func_801CF678(u32 value) {
