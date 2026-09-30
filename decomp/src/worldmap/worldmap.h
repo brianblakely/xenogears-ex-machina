@@ -782,6 +782,31 @@ void func_8001E298(s32 model, u32 *ot);
 void func_800223B0(s32 model, s32 angle);
 void func_80023210(s32 model);
 
+/* Scratchpad work area of the terrain pass. */
+typedef struct {
+    SVECTOR corner[4]; /* block quad */
+    u8 pad20[8];
+    MATRIX view;       /* 0x28 */
+    MATRIX roll;       /* 0x48 */
+    u16 clut[16];      /* 0x68 */
+} TerrainScratch;
+
+#define TERRAIN_SCRATCH ((TerrainScratch *)0x1F800000)
+
+/* Terrain block cursor (block column and row of the 9x9 map). */
+typedef struct {
+    s16 x;
+    s16 pad2;
+    s16 z;
+} TerrainCursor;
+
+extern TerrainCursor D_8009C838;
+extern s16 D_8009D570[];   /* 9x9 block texture indices */
+extern s16 D_8009D618[25]; /* 5x5 visible blocks; -1 empty */
+extern s16 D_8009BE04;     /* quads used this frame */
+MATRIX *RotMatrixZ(s32 angle, MATRIX *m);
+void func_80099BFC(u8 *data, s32 count, u32 *ot, PolyFT4 *quads);
+
 #define gte_ldv0(r0) \
     __asm__ volatile("lwc2 $0, 0(%0);" \
                      "lwc2 $1, 4(%0)" \

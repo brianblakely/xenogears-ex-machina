@@ -233,7 +233,47 @@ void func_80086124(void) {
     func_800320E8(D_8009D7E8[0]);
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008615C);
+/* Draw the 5x5 terrain blocks around the cursor: set up the scratchpad quad,
+ * camera and roll matrices and CLUTs, then submit each present block's
+ * texture list into the current quad buffer. */
+void func_8008615C(void) {
+    TerrainTexture *textures;
+    s32 index;
+    s32 i;
+    s32 row;
+
+    TERRAIN_SCRATCH->corner[0].vx = -0x18;
+    TERRAIN_SCRATCH->corner[0].vy = -0x48;
+    TERRAIN_SCRATCH->corner[0].vz = 0;
+    TERRAIN_SCRATCH->corner[1].vx = 0x18;
+    TERRAIN_SCRATCH->corner[1].vy = -0x48;
+    TERRAIN_SCRATCH->corner[1].vz = 0;
+    TERRAIN_SCRATCH->corner[2].vx = -0x18;
+    TERRAIN_SCRATCH->corner[2].vy = 0;
+    TERRAIN_SCRATCH->corner[2].vz = 0;
+    TERRAIN_SCRATCH->corner[3].vx = 0x18;
+    TERRAIN_SCRATCH->corner[3].vy = 0;
+    TERRAIN_SCRATCH->corner[3].vz = 0;
+    TERRAIN_SCRATCH->view = D_8009C808;
+    TERRAIN_SCRATCH->roll = *(MATRIX *)&D_8009A180;
+    RotMatrixZ(-D_8009BD38.vz, &TERRAIN_SCRATCH->roll);
+    for (i = 0; i < 0x10; i++) {
+        TERRAIN_SCRATCH->clut[i] = D_8009D478[i];
+    }
+    textures = D_8009C7EC;
+    D_8009BE04 = 0;
+    for (row = 0; row < 5; row++) {
+        for (i = 0; i < 5; i++) {
+            if (D_8009D618[row * 5 + i] != -1) {
+                index = D_8009D570[(row + D_8009C838.z) * 9 + i + D_8009C838.x];
+                if (textures[index].unk4 != 0) {
+                    func_80099BFC(textures[index].data, textures[index].unk4, D_8009BE3C->ot,
+                                  (PolyFT4 *)D_8009D7E8[D_8009D7F0] + D_8009BE04);
+                }
+            }
+        }
+    }
+}
 
 /* Scatter the 80 drifting positions: five template points repeated over a
  * 4x4 grid of 0x800-unit cells at random heights, with random velocities. */
