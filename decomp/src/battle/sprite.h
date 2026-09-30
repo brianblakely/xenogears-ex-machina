@@ -237,4 +237,8 @@ void func_80021B04(SVECTOR *v, s32 x, s32 y, s32 z);
 void func_801FC4C4(SpriteAnchor *anchors, void *parts, MATRIX *m, s32 a, s32 b, s32 c, s32 d, s32 e);
 void func_801FC53C(BattleSprite *sprite, s32 a, s32 b, s32 c, s32 d, s32 e, s32 f);
 
+/* Sprite streaks and sprite effects (800B5DF4-800B7424). */
+extern MATRIX D_8004FBB8; /* resident: the sprite camera */
+extern MATRIX D_800C3574; /* the screen-space camera (render bit 24) */
+
 #endif

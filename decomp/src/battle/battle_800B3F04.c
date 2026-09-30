@@ -319,7 +319,60 @@ void func_800B5DC4(BattleSprite *sprite) {
     func_8001CD6C(sprite->task, func_800B5CC0);
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B3F04", func_800B5DF4);
+/* Draw the sprite as a streak: a line in its colour from its position back
+ * along its velocity (scaled down by its size), blended by its render mode;
+ * sets its depth. */
+void func_800B5DF4(BattleTask *draw) {
+    BattleSprite *sprite = draw->data;
+    u8 *cursor;
+    LINE_F2 *line;
+    DR_TPAGE *tpage;
+    SVECTOR position;
+    long p;
+    s32 depth;
+    s32 shift;
+    u32 blend;
+
+    if (sprite->frame != 0) {
+        return;
+    }
+    cursor = D_80059580;
+    if (cursor + sizeof(LINE_F2) >= D_80059534) {
+        return;
+    }
+    position.vx = sprite->x.fixed >> 16;
+    position.vy = sprite->y.fixed >> 16;
+    D_80059580 = cursor + sizeof(LINE_F2);
+    position.vz = sprite->z.fixed >> 16;
+    line = (LINE_F2 *)cursor;
+    if (sprite->render.bytes[3] & 1) {
+        SetRotMatrix(&D_800C3574);
+        SetTransMatrix(&D_800C3574);
+    } else {
+        SetRotMatrix(&D_8004FBB8);
+        SetTransMatrix(&D_8004FBB8);
+    }
+    depth = RotTransPers(&position, (long *)&line->x0, &p, &p) >> D_80050100;
+    shift = sprite->size + 8;
+    sprite->depth = depth;
+    position.vx -= sprite->velocity[0] >> shift;
+    position.vy -= sprite->velocity[1] >> shift;
+    position.vz -= sprite->velocity[2] >> shift;
+    RotTransPers(&position, (long *)&line->x1, &p, &p);
+    setlen(line, 3);
+    *(u32 *)&line->r0 = *(u32 *)sprite->colour;
+    AddPrim(D_8005956C + depth, line);
+    tpage = (DR_TPAGE *)D_80059580;
+    if (D_80059580 + sizeof(DR_TPAGE) < D_80059534) {
+        blend = sprite->render.bytes[0] >> 5;
+        if (blend != 0) {
+            D_80059580 += sizeof(DR_TPAGE);
+            setlen(tpage, 1);
+            tpage->code[0] = 0xE1000000 | (((blend - 1) & 3) << 5);
+            AddPrim(D_8005956C + depth, tpage);
+        }
+    }
+}
 
 /* Draw sprite with 800B5DF4, uncoloured. */
 void func_800B5FBC(BattleSprite *sprite) {
