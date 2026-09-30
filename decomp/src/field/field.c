@@ -8582,7 +8582,18 @@ void func_8009E10C(void) {
 
 #include "field_actor_events.h"
 
+#ifdef NON_MATCHING
+void func_8009E1A0(void) {
+    FieldActor *actor = D_800B0078;
+    u8 *code = D_800ADC00;
+
+    actor->layer_flags = (actor->layer_flags & ~7) | (code[actor->pc + 1] & 7);
+    actor->layer_flags = (actor->layer_flags & ~0x38) | ((code[actor->pc + 1] >> 1) & 0x38);
+    actor->pc += 2;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009E1A0);
+#endif
 
 /* Enter mode 0x400000 (clearing 0x40000) from the current height. */
 void func_8009E208(void) {
