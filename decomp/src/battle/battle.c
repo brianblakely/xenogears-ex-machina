@@ -5,6 +5,7 @@
 #include "scene.h"
 #include "gte.h"
 #include "window_draw.h"
+#include "formation_route.h"
 
 /* Start the 801e5000 module: reserve its heap span and load it. */
 void func_80070E2C(void) {
@@ -4449,7 +4450,43 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80086C88);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80086F98);
 
+/* Plan the approach route from `actor` to `target`: the actor's position,
+ * then the route points the formation lists between their groups. Returns
+ * 1 when the actor's character is 4. (Nonmatching: the link address is
+ * formed as formation + from * 0x40 first.) */
+#ifdef NON_MATCHING
+s32 func_800877E0(u8 actor, u8 target) {
+    s32 result = 0;
+    s32 i;
+
+    for (i = 0; i < 9; i++) {
+        D_800C48EC[i].x = 0xFFFF;
+        D_800C48EC[i].z = 0xFFFF;
+    }
+    D_800C48EC[0].x = D_800C3EB4[actor].x;
+    D_800C48EC[0].z = D_800C3EB4[actor].z;
+    D_800C48EC[0].flag = 0;
+    for (i = 1; i < 8; i++) {
+        if (D_800D3364->links[D_800C3EB4[actor].group][D_800C3EB4[target].group].points[i - 1] == 0xFF) {
+            break;
+        }
+        D_800C48EC[i].x =
+            D_800D3364->areas[D_800D3364->links[D_800C3EB4[actor].group][D_800C3EB4[target].group].points[i - 1] & 7]
+                .centre.x;
+        D_800C48EC[i].z =
+            D_800D3364->areas[D_800D3364->links[D_800C3EB4[actor].group][D_800C3EB4[target].group].points[i - 1] & 7]
+                .centre.z;
+        D_800C48EC[i].flag =
+            D_800D3364->links[D_800C3EB4[actor].group][D_800C3EB4[target].group].points[i - 1] & 0x80;
+    }
+    if (D_800D2D24[actor] == 4) {
+        result = 1;
+    }
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800877E0);
+#endif
 
 /* Reset every event to type 0xff for `actor` against `target`'s bit. */
 void func_800879A8(u8 actor, u8 target) {
@@ -4478,9 +4515,75 @@ void func_80087A38(u8 member) {
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80087AF0);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80087EDC);
+/* Move `actor` into `target`'s formation group when it is another group
+ * with room (under four members): leave the old group, take the first free
+ * member place and stand at that place of the group's area. (Nonmatching:
+ * the target's record offset and register allocation.) */
+#ifdef NON_MATCHING
+void func_80087EDC(u8 actor, u8 target) {
+    u8 base;
+    s8 member;
 
+    if (D_800C3EB4[actor].group != D_800C3EB4[target].group) {
+        base = target < 3 ? (actor >= 3) * 8 : 0;
+        if (D_800D301C[D_800C3EB4[target].group + base].count < 4) {
+            func_800883AC(actor);
+            D_800D301C[D_800C3EB4[target].group + base].count++;
+            for (member = 0; member < 4; member++) {
+                if (func_80089C9C(D_800D301C[D_800C3EB4[target].group + base].members, member) == 0) {
+                    break;
+                }
+            }
+            D_800C3EB4[actor].member = member;
+            D_800C3EB4[actor].group = D_800C3EB4[target].group;
+            D_800D301C[D_800C3EB4[actor].group + base].members |= func_80089C08(D_800C3EB4[actor].member);
+            if (actor < 3) {
+                D_800C3EB4[actor].x = D_800D3364->areas[D_800C3EB4[actor].group].party[D_800C3EB4[actor].member].x;
+                D_800C3EB4[actor].z = D_800D3364->areas[D_800C3EB4[actor].group].party[D_800C3EB4[actor].member].z;
+            } else {
+                D_800C3EB4[actor].x = D_800D3364->areas[D_800C3EB4[actor].group].enemies[D_800C3EB4[actor].member].x;
+                D_800C3EB4[actor].z = D_800D3364->areas[D_800C3EB4[actor].group].enemies[D_800C3EB4[actor].member].z;
+            }
+        }
+    }
+}
+#else
+INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80087EDC);
+#endif
+
+/* Move `actor` alone into `target`'s formation group when that group is
+ * another one and empty (entries from 0x10, or 0x18 for an enemy joining a
+ * party member): it becomes the only member, at the group's position.
+ * (Nonmatching: the base selection branches and store/load order.) */
+#ifdef NON_MATCHING
+void func_800881B8(u8 actor, u8 target) {
+    u8 base;
+
+    if (D_800C3EB4[actor].group != D_800C3EB4[target].group) {
+        if (target < 3 && actor >= 3) {
+            base = 0x18;
+        } else {
+            base = 0x10;
+        }
+        if (D_800D301C[D_800C3EB4[target].group + base].count == 0) {
+            func_800883AC(actor);
+            D_800C3EB4[actor].member = 0;
+            D_800C3EB4[actor].group = D_800C3EB4[target].group;
+            D_800D301C[D_800C3EB4[actor].group + base].count = 1;
+            D_800D301C[D_800C3EB4[actor].group + base].members = 1;
+            if (actor < 3) {
+                D_800C3EB4[actor].x = D_800D3364->positions[D_800C3EB4[actor].group].x;
+                D_800C3EB4[actor].z = D_800D3364->positions[D_800C3EB4[actor].group].z;
+            } else {
+                D_800C3EB4[actor].x = D_800D3364->positions[D_800C3EB4[actor].group].enemyX;
+                D_800C3EB4[actor].z = D_800D3364->positions[D_800C3EB4[actor].group].enemyZ;
+            }
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800881B8);
+#endif
 
 /* Drop a slot from its formation group (enemy entries from 8, flagged slots
  * add 0x10). */

@@ -223,18 +223,33 @@ extern u8 D_800D3014;
 /* Formation data (*800d3364). */
 typedef struct {
     u8 distance;
-    u8 unk1[7];
+    u8 points[7];      /* route points to the other group (formation area
+                        * index in bits 0-2, bit 0x80 a flag), 0xFF ends */
 } GroupLink;
 
 /* A formation group's position (8 bytes). */
 typedef struct {
     s16 x;
     s16 z;
-    u8 pad4[4];
+    s16 enemyX; /* +0x04 the position for enemies */
+    s16 enemyZ;
 } GroupPosition;
 
+/* A formation point. */
 typedef struct {
-    u8 unk0[0x100];
+    s16 x;
+    s16 z;
+} FormationPoint;
+
+/* A formation area (0x20 bytes): its centre and its member places. */
+typedef struct {
+    FormationPoint centre;
+    FormationPoint party[3];   /* +0x04 */
+    FormationPoint enemies[4]; /* +0x10 */
+} FormationArea;
+
+typedef struct {
+    FormationArea areas[8];
     GroupPosition positions[8]; /* +0x100 */
     GroupLink links[8][8];      /* +0x140 per formation-group pair */
 } Formation;
