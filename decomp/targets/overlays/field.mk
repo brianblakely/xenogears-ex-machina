@@ -7,3 +7,8 @@ IMAGE := .local/decomp/build/field.bin
 LINKER_SCRIPT := .local/decomp/field/field.ld
 LINKER_EXTRA := .local/decomp/field/undefined_syms_auto.txt .local/decomp/field/undefined_funcs_auto.txt
 SOURCE_DIRS := decomp/src/field
+# The field overlay's assembler expanded `li` of a positive 16-bit value as
+# `ori` (its text never has `addiu $r, $zero, +imm`). maspsx models that only
+# for ASPSX below 2.50 (its --expand-li flag is inert); with -G0 and no
+# negative-immediate sltu, 2.34 differs from 2.79 only in this expansion.
+override MASPSXFLAGS := --aspsx-version=2.34

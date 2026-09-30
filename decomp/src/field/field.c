@@ -1,4 +1,5 @@
 #include "common.h"
+#include "event.h"
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8006FDEC);
 
@@ -767,33 +768,173 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008EFA0);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008EFE4);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008F070);
+extern s32 D_800ADB38;
+extern s32 D_800ADB3C;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008F0B4);
+/* Store an operand in D_800ADB3C and set D_800ADB38 to 3. */
+void func_8008F070(void) {
+    D_800ADB3C = func_800ACDEC(1);
+    D_800ADB38 = 3;
+    D_800B0078->pc += 3;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008F1C8);
+/* Set a selected actor's colour triples; mode bits 1/2 select each triple. */
+void func_8008F0B4(void) {
+    FieldActor *actor;
+    s32 index;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008F2D8);
+    index = func_8009CDB4(2);
+    if (index != 0xFF) {
+        actor = D_800AFB10[index].actor;
+        if (EVENT_OPERAND_BYTE(1) & 1) {
+            actor->color0[0] = func_800ACDEC(3);
+            actor->color0[1] = func_800ACDEC(5);
+            actor->color0[2] = func_800ACDEC(7);
+        }
+        if (EVENT_OPERAND_BYTE(1) & 2) {
+            actor->color1[0] = func_800ACDEC(3);
+            actor->color1[1] = func_800ACDEC(5);
+            actor->color1[2] = func_800ACDEC(7);
+        }
+    }
+    D_800B0078->pc += 9;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008F348);
+/* Set the current actor's colour triples; mode bits 1/2 select each triple. */
+void func_8008F1C8(void) {
+    if (EVENT_OPERAND_BYTE(1) & 1) {
+        D_800B0078->color0[0] = func_800ACDEC(2);
+        D_800B0078->color0[1] = func_800ACDEC(4);
+        D_800B0078->color0[2] = func_800ACDEC(6);
+    }
+    if (EVENT_OPERAND_BYTE(1) & 2) {
+        D_800B0078->color1[0] = func_800ACDEC(2);
+        D_800B0078->color1[1] = func_800ACDEC(4);
+        D_800B0078->color1[2] = func_800ACDEC(6);
+    }
+    D_800B0078->pc += 8;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008F394);
+void func_80023290(s32 handle, s32 value);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008F3D0);
+/* Pass an operand to resident 80023290 with the current descriptor's word 04. */
+void func_8008F2D8(void) {
+    s32 value = func_800ACDEC(1);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008F444);
+    func_80023290(D_800AFB10[D_800AFD1C].unk04, value);
+    D_800B0078->pc += 3;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008F4A0);
+extern s32 D_800C3A5C;
+extern s32 D_800C3A60;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008F4FC);
+/* Store two operands in D_800C3A5C/D_800C3A60. */
+void func_8008F348(void) {
+    D_800C3A5C = func_800ACDEC(1);
+    D_800C3A60 = func_800ACDEC(3);
+    D_800B0078->pc += 5;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008F558);
+extern s16 D_800B233C[]; /* reload flags; addressed as an aggregate */
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008F5E4);
+/* Store an operand in D_800B233C. */
+void func_8008F394(void) {
+    D_800B233C[0] = func_800ACDEC(1);
+    D_800B0078->pc += 3;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008F668);
+void func_8003A450(s32 a, s32 b, s32 c);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008F6AC);
+/* Resident 8003A450(2 * op3, op1, op5). */
+void func_8008F3D0(void) {
+    s32 a;
+    s32 b;
+
+    a = func_800ACDEC(3) * 2;
+    b = func_800ACDEC(1);
+    func_8003A450(a, b, func_800ACDEC(5));
+    D_800B0078->pc += 7;
+}
+
+void func_8003A344(s32 a, s32 b);
+
+/* Resident 8003A344(2 * op3, op1). */
+void func_8008F444(void) {
+    s32 a;
+
+    a = func_800ACDEC(3) * 2;
+    func_8003A344(a, func_800ACDEC(1));
+    D_800B0078->pc += 5;
+}
+
+void func_8003A55C(s32 a, s32 b);
+
+/* Resident 8003A55C(2 * op3, op1). */
+void func_8008F4A0(void) {
+    s32 a;
+
+    a = func_800ACDEC(3) * 2;
+    func_8003A55C(a, func_800ACDEC(1));
+    D_800B0078->pc += 5;
+}
+
+void func_80085634(s32 a, s32 b);
+
+/* Field 80085634(op1, op3). */
+void func_8008F4FC(void) {
+    s32 a;
+
+    a = func_800ACDEC(1);
+    func_80085634(a, func_800ACDEC(3));
+    D_800B0078->pc += 5;
+}
+
+void func_800855C8(s32 a, s32 b, s32 c, s32 d);
+
+/* Field 800855C8(op1, op5, op3, op7). */
+void func_8008F558(void) {
+    s32 a;
+    s32 b;
+    s32 c;
+
+    a = func_800ACDEC(1);
+    b = func_800ACDEC(5);
+    c = func_800ACDEC(3);
+    func_800855C8(a, b, c, func_800ACDEC(7));
+    D_800B0078->pc += 9;
+}
+
+s32 func_8003A5D0(s32 mask);
+
+/* Re-run this opcode each frame while any operand button (<< 8) is held. */
+void func_8008F5E4(void) {
+    s32 buttons;
+
+    buttons = func_8003A5D0(-1);
+    if (!(buttons & (func_800ACDEC(1) << 8))) {
+        D_800B0078->pc += 3;
+    } else {
+        D_800B0078->pc -= 1;
+    }
+    D_800B00C0 = 1;
+}
+
+/* Field 80085634(op1, 3). */
+void func_8008F668(void) {
+    func_80085634(func_800ACDEC(1), 3);
+    D_800B0078->pc += 3;
+}
+
+/* Field 800855C8(op1, op5, op3, 3). */
+void func_8008F6AC(void) {
+    s32 a;
+    s32 b;
+
+    a = func_800ACDEC(1);
+    b = func_800ACDEC(5);
+    func_800855C8(a, b, func_800ACDEC(3), 3);
+    D_800B0078->pc += 7;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008F724);
 
