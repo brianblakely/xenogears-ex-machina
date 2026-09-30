@@ -1012,13 +1012,52 @@ void func_8007F9A0(MenuPage *page) {
     func_8007EE08(0);
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007FB0C);
+/* Draw the values column of the second settings page; the chosen entry of
+ * setting 10 is also passed to 80081100 as 0x15 + entry. */
+void func_8007FB0C(MenuPage *page) {
+    char text[8];
+
+    func_8007E894(page->x + page->width - 10, page->y);
+    func_8007EE08(0);
+    func_8007ECF0(D_8006FF7C);
+    func_8007F948(page, 1);
+    func_8007ECF0(D_8009132C[D_80099D98[10]]);
+    func_80081100(D_80099D98[10] + 0x15, 1);
+    func_8007F948(page, 2);
+    func_8003FBF8(text, D_8006FF60, D_80091300[D_80099D98[2]]);
+    func_8007ECF0(text);
+    func_8007EE08(0);
+}
 
 INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu", D_8006FF7C);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007FBEC);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007FE48);
+/* Draw the values column of the options page. */
+void func_8007FE48(MenuPage *page) {
+    char text[16];
+    char *value;
+
+    func_8007EE08(0);
+    func_8007E894(page->x + page->width - 10, page->y);
+    func_8007ECF0(D_8006FF7C);
+    func_8007ECF0(D_8006FF7C);
+    func_8007ECF0(D_8006FF7C);
+    func_8007ECF0(D_8006FF7C);
+    func_8007F948(page, 4);
+    if (D_80099D98[7] != 0) {
+        func_8003FBF8(text, D_8006FF5C, D_80099D98[7]);
+        value = text;
+    } else {
+        value = "#";
+    }
+    func_8007ECF0(value);
+    func_8007F948(page, 5);
+    func_8007ECF0(D_800912F4[D_80099D98[0]]);
+    func_8007F948(page, 6);
+    func_8007ECF0(D_80092884 ? "ON" : "OFF");
+    func_8007EE08(0);
+}
 
 /* Step a settings value with left/right: flag 4 reverses the direction,
  * flag 2 uses the repeating buttons, flag 1 wraps around (else clamps

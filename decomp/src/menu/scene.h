@@ -167,6 +167,9 @@ typedef struct {
 /* Formats shared by the settings pages ("%d", "%dFPS"). */
 extern char D_8006FF5C[];
 extern char D_8006FF60[];
+extern char D_8006FF7C[]; /* "" */
+extern char *D_8009132C[]; /* names of the entries of setting 10 */
+void func_80081100(s32 sound, s32 arg);
 extern s32 D_8009130C[]; /* value of each speed setting */
 extern u8 D_80091300[];  /* frame rate of each rate setting */
 extern s16 D_80099DA4;
