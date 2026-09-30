@@ -3212,7 +3212,115 @@ void func_801DB5E4(u8 mode) {
     }
 }
 
+/* Use the item at visible entry `entry` of scroll row `row`: for an item
+ * usable here, select targets (the whole party for all-target items, else
+ * the cursor's slot; left/right move it) and use the item on them on
+ * confirm until it runs out or the player cancels. Returns the targets
+ * marked last (0 when cancelled or unusable). */
+#ifdef NON_MATCHING
+/* Register allocation differs: the original spills `row` and keeps the
+ * inventory index in a saved register. */
+u8 func_801DB920(s32 row, s32 entry) {
+    u16 marks;
+    u8 running;
+    u8 redraw;
+    s32 slot;
+    u8 used;
+    s32 all;
+    s32 i;
+    MenuItem *item;
+
+    marks = 0;
+    running = 1;
+    slot = D_800625A0->firstMember;
+    D_801E9785 = 0;
+    item = &D_800625A0->tables->items[D_8006F65A[row * 2 + entry]];
+    redraw = 1;
+    if (item->use & 0x80) {
+        marks = 1;
+        if (item->use & 0x20) {
+            marks = D_80059171 != 0;
+        }
+    }
+    all = item->target & 1;
+    if (marks) {
+        func_801D397C(2, 0x10, 0xe, 0x90, 0xb0, 0, 0, 4, 0);
+        while (running) {
+            func_801C7BF4();
+            marks = 0;
+            if (redraw) {
+                redraw = 0;
+                func_801DA5BC(row);
+                func_801DA9A8(entry, row);
+                func_801DB39C(1);
+                func_801DB5E4(0);
+            }
+            D_800625A0->markers->visible[0] = D_800625A0->markers->visible[1] = D_800625A0->markers->visible[2] = 0;
+            if (all) {
+                for (i = 0; i < 3; i++) {
+                    if (D_800625A0->party->ids[i] != 0xff) {
+                        marks |= 1 << i;
+                        D_800625A0->markers->visible[i] = 1;
+                    }
+                }
+            } else {
+                marks = 1 << slot;
+                D_800625A0->markers->visible[slot] = 1;
+            }
+            D_800625A0->party->unk2F = 1;
+            if (INVENTORY->counts[row * 2 + entry] == 0) {
+                running = 0;
+            }
+            if (!running) {
+                break;
+            }
+            switch (D_800625A0->input) {
+            case 4:
+                used = 0;
+                for (i = 0; i < 3; i++) {
+                    if (func_801C865C(marks, i) &&
+                        func_801E31C0(D_800625A0->tables, D_800625A0->party->ids[i], D_8006F65A[row * 2 + entry]) == 0) {
+                        used |= 1;
+                    }
+                }
+                if (used) {
+                    func_801C8574(0x37);
+                    redraw = 1;
+                    if (--INVENTORY->counts[row * 2 + entry] == 0) {
+                        INVENTORY->ids[row * 2 + entry] = 0;
+                    }
+                } else {
+                    func_801C8574(4);
+                    redraw = 1;
+                }
+                break;
+            case 5:
+                running = 0;
+                marks = 0;
+                break;
+            case 1:
+                slot = func_801D9704(slot, 0, 0);
+                break;
+            case 3:
+                slot = func_801D9704(slot, 1, 0);
+                break;
+            }
+        }
+        D_800625A0->markers->visible[0] = D_800625A0->markers->visible[1] = D_800625A0->markers->visible[2] = 0;
+        func_801DB39C(0);
+        D_800625A0->party->unk46 = 0;
+        func_801C7BF4();
+        for (i = 0; i < 3; i++) {
+            func_800320E8(D_800625A0->panels[i]);
+        }
+        D_801E9785 = 0;
+        func_801D4EA0(2);
+    }
+    return marks;
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DB920);
+#endif
 
 /* Swap inventory entries `a` and `b` (item id and count). */
 void func_801DBD4C(s32 a, s32 b) {
