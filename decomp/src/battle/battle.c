@@ -5768,7 +5768,34 @@ void func_8009187C(u8 member, u8 column, u8 row) {
     D_800C3EA4->unkA230->unk370[D_800CCB04.buffer].clut = D_800D2F68[frame].alternate ? D_80059414 : D_800595D4;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80091B38);
+/* Build the description of art (column, row) of the member (its gear's in
+ * a gear): two text lines from the menu module block into VRAM, placed on
+ * the page's two description quads. */
+void func_80091B38(u8 member, u8 column, u8 row) {
+    RECT rect;
+    u32 *pixels;
+    s32 text;
+    s32 width0;
+    s32 width1;
+
+    if (D_800D32A0[member].unk1 == 0) {
+        text = D_800D2D24[member] * 32 + (row * 2 + column) * 2;
+    } else {
+        text = D_8006D8A0.characters[D_800D2D24[member]].gearId * 32 + (row * 2 + column) * 2;
+    }
+    pixels = (u32 *)func_8008AC00(0x39);
+    bzero(pixels, 0x618);
+    width0 = func_80034EAC(func_80033728(D_800D367C, text & 0xFFFF), pixels, 0x39, 0);
+    width1 = func_80034EAC(func_80033728(D_800D367C, (text & 0xFFFF) | 1), pixels, 0x39, 1);
+    rect.x = 0x3C0;
+    rect.y = 0;
+    rect.w = 0x3C;
+    rect.h = 13;
+    func_800769E8(&rect, pixels);
+    func_80076C78(&D_800C3EA4->unkA230->unk280[D_800CCB04.buffer], 0x30, 0xB6, 0, 0, width0);
+    func_80076C78(&D_800C3EA4->unkA230->unk2D0[D_800CCB04.buffer], 0x30, 0xC6, 0, 0, width1);
+    func_800320E8(pixels);
+}
 
 /* Open the combo/technique entry (column, row) of the member's page when its
  * character knows it (mask +2 on foot, +6 in a gear): build its graphics for
