@@ -307,11 +307,65 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80072938);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80072A9C);
 
+/* Build the member's panel name glyphs (800d2d88) and tint them by `mode`. */
+#ifdef NON_MATCHING
+void func_80072DA8(member, mode)
+s32 member;
+u8 mode;
+{
+    s32 i;
+    s32 first;
+
+    i = 0;
+    first = D_800D2D28->unkE0[member];
+    for (; i < 5; i++) {
+        if (D_800D2D88[i] != 0xFF) {
+            D_800D2D28->unkE0[member] +=
+                func_80076A10(D_800D2D88[i] + 0x67, &D_800C3EA4->unk3A88[member][D_800D2D28->unkE0[member] * 2],
+                              D_800C3076[member][i] + D_800C3254[D_800D3280][member], 0x10);
+        }
+    }
+    if (mode != 0) {
+        func_80072938(D_800C3EA4->unk3A88[member], first, D_800D2D28->unkE0[member], mode);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80072DA8);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80072F38);
 
+/* Build the member's four-digit panel value (the 800d32a0 value or record
+ * +0xdc) as glyphs. */
+#ifdef NON_MATCHING
+void func_80073380(s32 member) {
+    s16 value;
+    s32 i;
+    s32 x;
+    u8 digit;
+
+    if (D_800C3EA4->panels[member].unk1E1 == 1) {
+        value = D_800D32A0[member].unk0;
+    } else {
+        value = D_800CCCE8[member].unkDC;
+    }
+    func_8008AAA0(value);
+    i = 0;
+    x = 0;
+    for (; i < 4; i++) {
+        digit = D_800C3CF4[i + 5];
+        if (digit != 0xFF) {
+            D_800D2D28->unkEC[member] +=
+                func_80076A10(digit + 0x83, &D_800C3EA4->unk6008[member][D_800D2D28->unkEC[member] * 2],
+                              member * 0x60 + (D_800C3254[D_800D3280][member] + 0x4A) + x, 0x25);
+        }
+        x += 6;
+    }
+    D_800D2D28->unk99[member] = D_800CCB04.buffer;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80073380);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80073538);
 

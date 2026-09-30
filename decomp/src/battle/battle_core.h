@@ -76,7 +76,9 @@ typedef struct {
     u16 unk8C;
     u16 unk8E;
     u8 unk90[0xA4 - 0x90];
-    u8 unkA4[0x104 - 0xA4]; /* the slot's attacker block */
+    u8 unkA4[0xDC - 0xA4]; /* the slot's attacker block */
+    u16 unkDC;
+    u8 unkDE[0x104 - 0xDE];
     u32 unk104;
     s32 unk108;
     u8 unk10C[0x120 - 0x10C];
@@ -143,7 +145,7 @@ typedef struct {
     u8 unk96;          /* file 3 block loaded */
     u8 unk97;          /* selected list row */
     u8 unk98;
-    u8 unk99[0x9C - 0x99];
+    u8 unk99[3];       /* party panel digit buffers */
     u8 unk9C;
     u8 unk9D;
     u8 unk9E;
@@ -201,6 +203,13 @@ typedef struct {
     u8 unk66B[0x670 - 0x66B];
 } GraphicsBlock;
 
+/* Party status panel state of the graphics block (0x1e4 bytes). */
+typedef struct {
+    u8 unk0[0x1E1];
+    u8 unk1E1;         /* 1: show the 800d32a0 value */
+    u8 unk1E2[2];
+} PartyPanel;
+
 /* A texture location of the graphics state (0x18 bytes). */
 typedef struct {
     s32 mode;
@@ -219,7 +228,9 @@ typedef struct {
     POLY_FT4 unkBA8[120];
     POLY_FT4 unk1E68[60];
     POLY_FT4 unk27C8[1];
-    u8 unk27F0[0x63C8 - 0x27F0];
+    u8 unk27F0[0x3A88 - 0x27F0];
+    POLY_FT4 unk3A88[3][80]; /* party panel name glyphs */
+    POLY_FT4 unk6008[3][8];  /* party panel value digits */
     POLY_F4 unk63C8[2];
     DR_MODE unk63F8[2];
     s32 unk6410;       /* shade */
@@ -228,7 +239,8 @@ typedef struct {
     u8 unk6416;        /* fading down */
     u8 unk6417[5];
     POLY_FT4 unk641C[2][100];
-    u8 unk835C[0x8950 - 0x835C];
+    PartyPanel panels[3];    /* +0x835C */
+    u8 unk8908[0x8950 - 0x8908];
     RECT unk8950[4];
     u32 unk8970[4][0x630 / 4]; /* four CLUT strips, cycled */
     GraphicsBlock *unkA230;
@@ -501,6 +513,10 @@ extern u8 D_800D2C38;
 extern u8 D_800CCC58;
 extern s32 D_800D3288;
 extern u8 D_800D39D4;
+extern u8 D_800D3280;      /* party panel layout */
+extern s16 D_800C3254[][3]; /* party panel x per layout */
+extern s16 D_800C3076[3][24]; /* party panel name glyph x */
+extern u8 D_800D2D88[5];   /* name glyph codes */
 extern u16 D_800D2C2A;
 extern u8 D_800D2C35;
 extern u8 D_800D2C36;
@@ -660,8 +676,9 @@ void func_80079934(u8 **pc);
 void func_800728B8(POLY_FT4 *prims, s32 count, s32 first);
 void func_80073380(s32 member);
 u8 func_80072F38(s32 member, u8 flag);
-void func_80072DA8(s32 member, u8 value);
+void func_80072DA8(s32 member, s32 mode);
 void func_80072A9C(s32 member, u8 value);
+void func_80072938(POLY_FT4 *prims, s32 first, s32 last, u8 mode);
 void func_80076C78(POLY_FT4 *prim, s16 x, s16 y, u8 u, u8 v, u8 w);
 s32 func_80098AF8(s32 slot, s32 mode);
 void func_80079E18(u8 index);
