@@ -71,16 +71,16 @@ void func_80022090(Sprite *sprite) {
 /* Resolve a resource block's section offsets into `resource`; with flag
  * 800591ad set, a nonzero field of the first section's first halfword (bits
  * 6-11) goes to 800591b3. */
-/* Nonmatching: the original schedules the flag load before the stores and copies the origin through one register. */
+/* Nonmatching: the original copies the origin a word at a time through one register (the destination copied to $t0); this build's block move uses two. The mode argument is unused. */
 #ifdef NON_MATCHING
-void func_80022224(SpriteResource *resource, u8 *data, SVECTOR origin) {
+void func_80022224(SpriteResource *resource, s32 *data, SVECTOR origin, s32 mode) {
     s32 value;
 
     resource->origin = origin;
-    resource->section3 = data + ((s32 *)data)[3];
-    resource->section2 = data + ((s32 *)data)[2];
+    resource->section3 = (u8 *)(data[3] + (s32)data);
+    resource->section2 = (u8 *)(data[2] + (s32)data);
     D_800591B0 = 0;
-    resource->section1 = (u16 *)(data + ((s32 *)data)[1]);
+    resource->section1 = (u16 *)(data[1] + (s32)data);
     if (D_800591AD != 0) {
         value = (*resource->section1 >> 6) & 0x3F;
         if (value != 0) {
@@ -92,7 +92,30 @@ void func_80022224(SpriteResource *resource, u8 *data, SVECTOR origin) {
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80022224);
 #endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_800222BC);
+/* Bind a sprite's image to resource block `data` (unless it already is: its
+ * sections through 80022224, render bit 30 set); with 800591ad set, the image
+ * size comes from the sequencer for sequencer frames, else 768 x 256. */
+void func_800222BC(Sprite *sprite, s32 *data) {
+    SpriteResource *resource = sprite->image;
+    s32 unused[2]; /* the frame reserves 8 bytes no code uses */
+
+    if (data == NULL) {
+        return;
+    }
+    if (data != sprite->resource_block) {
+        func_80022224(resource, data, resource->origin, (sprite->render.word >> 20) & 0xF);
+        sprite->resource_block = data;
+        sprite->render.word |= 0x40000000;
+    }
+    if (D_800591AD != 0) {
+        if (!func_8001EE68(resource->section2)) {
+            ((SpriteImage *)resource)->size.height = 0x100;
+            ((SpriteImage *)resource)->size.width = 0x300;
+        } else {
+            ((SpriteImage *)resource)->size = ((SpriteSequencer *)sprite->sequencer)->size;
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_800223B0);
 
@@ -425,8 +448,6 @@ s32 func_80023440(u16 *entry) {
 }
 
 /* A property (0, 1 or 2) of kind `kind`; `fallback` for kind 3 and the rest. */
-/* Nonmatching: the original loads the jump table address with la and adds the index; GCC 2.7.2 indexes the symbol through $at (as in 80025224). */
-#ifdef NON_MATCHING
 s32 func_80023468(s32 kind, s32 fallback) {
     switch (kind) {
     case 0:
@@ -453,9 +474,6 @@ s32 func_80023468(s32 kind, s32 fallback) {
     }
     return fallback;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80023468);
-#endif
 
 /* Clear the eight entries of a sprite renderer's 0x40-byte block. */
 void func_800234AC(Sprite *sprite) {

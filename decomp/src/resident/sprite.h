@@ -106,7 +106,8 @@ typedef struct Sprite {
         } bits;
     } render;                /* +0x3c: tests read the word, as the original does */
     u32 flags;               /* +0x40: bits 8-12 facing group */
-    u8 unknown44[8];
+    s32 *resource_block;     /* +0x44: the block the image's sections come from */
+    u8 unknown48[4];
     s32 resource;            /* +0x4c */
     u8 unknown50[4];
     u16 *frame_table;        /* +0x54 */
@@ -155,11 +156,18 @@ typedef struct Sprite {
     } b0;                    /* +0xb0 */
 } Sprite; /* 0xb4 bytes; an inline renderer may follow */
 
+typedef struct {
+    u16 width;
+    u16 height;
+} SpriteImageSize;
+
 /* A sprite's animation sequencer (0x1c bytes; inline at sprite + 0xf4). */
 typedef struct {
     s32 word0;
     s32 word4;
-    u8 unknown8[0x10];
+    u8 unknown8[6];
+    SpriteImageSize size;  /* +0xe: image size for sequencer frames */
+    u8 unknown12[6];
     u16 *buffer;           /* +0x18: allocated by 8002303c */
 } SpriteSequencer;
 
@@ -184,11 +192,6 @@ typedef struct {
 } SheetPart;
 
 /* A sprite image header (inline at sprite + 0x110). */
-typedef struct {
-    u16 width;
-    u16 height;
-} SpriteImageSize;
-
 typedef struct {
     u8 unknown0[4];
     SpriteImageSize size;  /* +0x4 */
@@ -286,6 +289,8 @@ void func_8002393C(SpriteRenderer *renderer);
 
 void func_8001F6B0(Sprite *sprite); /* recolour the parts */
 void func_80022090(Sprite *sprite); /* rebuild the orientation */
+void func_80022224(SpriteResource *resource, s32 *data, SVECTOR origin, s32 mode);
+void func_800222BC(Sprite *sprite, s32 *data);
 void func_80022974(Sprite *sprite); /* velocity from speed and direction */
 void func_80023210(Sprite *sprite);
 void func_800245D8(Sprite *sprite, s32 value);
