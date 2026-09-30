@@ -250,7 +250,7 @@ typedef struct {
     s32 table;
 } SpotHeader;
 
-extern void *D_8009D308, *D_8009CD48, *D_8009C7EC, *D_8009BD30, *D_8009D784;
+extern void *D_8009D308, *D_8009CD48, *D_8009BD30, *D_8009D784;
 extern void *D_8009BCC0;
 extern s32 *D_8009D7C8, *D_8009D77C; /* texture animation sections: count, offsets */
 extern void *D_8009D73C[16];
@@ -477,12 +477,12 @@ typedef struct {
 
 extern PathTable D_8009B6C4[2];
 extern PathTable *D_8009D7D8;
-extern u16 D_8009BD24;
+extern s16 D_8009BD24;
 extern u8 D_8009D738, D_8009BD60;
 
 extern u16 D_8009CD4C; /* pad buttons held */
 extern s32 D_8009CEC0, D_8009C7E8, D_8009BD34;
-extern u8 D_8009D498[], D_8009BD64[];
+extern u8 D_8009BD64[];
 extern s16 D_8009BAC8[]; /* 8 columns per row */
 
 void func_800346D4(void *object);
@@ -525,6 +525,37 @@ extern s32 D_8009D3D4;
 extern Vec3 D_8009D55C;
 
 void func_80097BC0(Vec3 *position);
+
+/* Terrain block: 16x16 cell attributes at 0x510. */
+typedef struct {
+    u8 pad0[0x510];
+    s16 attributes[256];
+} TerrainBlock;
+
+/* Terrain texture entry (8 bytes): offset of its data within the section. */
+typedef struct {
+    u8 *data;
+    s32 unk4;
+} TerrainTexture;
+
+extern u16 D_8009D478[16]; /* terrain CLUTs */
+extern TerrainTexture *D_8009C7EC;
+
+/* Resident text window. */
+typedef struct {
+    u8 pad0[0x10];
+    u16 flags;      /* 0x10 */
+    u8 pad12[0x56];
+    s8 unk68;       /* 0x68 */
+} TextWindow;
+
+extern TextWindow D_8009D498;
+
+s32 func_80024524(void *model, s32 a, s32 b, s32 c, s32 d, s32 e);
+void func_800245D8(s32 handle, s32 mode);
+void func_80022000(s32 handle, s32 scale);
+void func_80032F54(void *window, s32 x, s32 y, s32 w, s32 h, s32 a, s32 b);
+void func_80034614(void *window);
 
 /* Frame state. */
 typedef struct {

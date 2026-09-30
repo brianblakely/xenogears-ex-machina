@@ -46,7 +46,21 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80085CDC);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80085F58);
+/* Resolve the terrain texture offsets and create the terrain CLUTs. */
+void func_80085F58(void) {
+    TerrainTexture *texture;
+    s32 i;
+
+    texture = D_8009C7EC;
+    for (i = 0; i < 0x100; i++, texture++) {
+        if (texture->data != NULL) {
+            texture->data += (s32)D_8009C7EC;
+        }
+    }
+    for (i = 0; i < 0x10; i++) {
+        D_8009D478[i] = func_80043A58(0xF0, i + 0x1F0);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80085FE0);
 
@@ -289,7 +303,17 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008A2C8);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008A52C);
+/* Create the lead party member's model sprite for the actor. */
+s32 func_8008A52C(s32 index) {
+    WorldmapActor *actor;
+
+    actor = &D_8009BE24[index];
+    actor->handle = func_80024524(D_8009CD34[0], 0x100, 0x1E0, 0x140, 0x100, 0x40);
+    func_800245D8(actor->handle, 0);
+    func_80022000(actor->handle, 0x1800);
+    ((s32 *)actor->handle)[15] &= ~4;
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008A5B8);
 

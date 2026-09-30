@@ -2,7 +2,21 @@
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_800811C0);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_800813E8);
+/* Start a scripted camera at the player position. */
+s32 func_800813E8(s32 index) {
+    WorldmapActor *actor;
+
+    D_8009D144 = 0;
+    actor = &D_8009BE24[index];
+    actor->unk7C = 0x1000;
+    D_8009BE0C = 0x78;
+    D_8009D55C.vx = D_8009BE28.target.vx = D_8009C5AC.vx;
+    D_8009D55C.vy = D_8009BE28.target.vy = D_8009C5AC.vy;
+    D_8009D55C.vz = D_8009BE28.target.vz = D_8009C5AC.vz;
+    actor->unk4 = 1;
+    actor->state = 0;
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_80081470);
 

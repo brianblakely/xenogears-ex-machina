@@ -47,13 +47,21 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_800925A0);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80092BE4);
+/* Open the text window. */
+s32 func_80092BE4(void) {
+    D_8009BD24 = -1;
+    func_80032F54(&D_8009D498, 0x3C0, 0x180, 0xA0, 0x78, 0x20, 1);
+    D_8009D498.unk68 = 8;
+    D_8009D498.flags |= 2;
+    func_80034614(&D_8009D498);
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80092C70);
 
 /* Release a resident object. */
 void func_80092DD0(void) {
-    func_800346D4(D_8009D498);
+    func_800346D4(&D_8009D498);
 }
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80092DF8);
@@ -94,7 +102,25 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80093A5C);
 
+/* Terrain attribute of the cell under a position. */
+#ifdef NON_MATCHING /* final address sum operands swapped */
+s32 func_80093E8C(Vec3 *position) {
+    s32 x;
+    s32 z;
+    s32 row;
+    s16 block;
+    TerrainBlock *terrain;
+
+    z = position->vz;
+    row = (z >> 20) / 8;
+    x = position->vx;
+    block = row * D_8009D160 + (x >> 20) / 8;
+    terrain = D_8009C184[block];
+    return terrain->attributes[(((z & 0x7FF000) >> 19) << 4) | ((x & 0x7FF000) >> 19)];
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80093E8C);
+#endif
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80093F18);
 
