@@ -92,10 +92,9 @@ s32 func_80081470(s32 index) {
     WorldmapActor *actor;
     ActorScratch *scratch;
     s32 delta;
-    s32 shake;
 
-    actor = &D_8009BE24[index];
     scratch = (ActorScratch *)0x1F800000;
+    actor = &D_8009BE24[index];
     switch (actor->unk4) {
     case 2:
         break;
@@ -139,9 +138,8 @@ s32 func_80081470(s32 index) {
             D_8009BD38.vy = actor->unk60 >> 12;
         }
     }
-    shake = actor->unk7C;
-    scratch->position.vy = rand() % (shake >> 12) - (shake >> 13);
-    VIEW_VECTORS[0].vy += scratch->position.vy;
+    scratch->position.vy = rand() % (actor->unk7C >> 12) - (actor->unk7C >> 13);
+    ((s16 *)D_8009BD40)[1] += scratch->position.vy; /* VIEW_VECTORS[0].vy */
     VIEW_VECTORS[1].vy += scratch->position.vy;
     return 1;
 }
