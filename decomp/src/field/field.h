@@ -721,6 +721,8 @@ extern void func_8008A7DC(s32 member, s32 slot);
 extern void func_80085560(s32 file, s32 unused, void (*callback)(s32));
 extern void func_800859DC(WaveChunk *chunk);
 extern void func_80086024(void);
+extern s32 func_80085F30(void);
+extern void func_80085FB8(void);
 extern void func_800A47D4(void);
 extern void func_800ACE24(void);
 extern void func_800A30B4(void);
@@ -825,6 +827,16 @@ extern s32 D_8004F300;
 extern u8 D_80050622;
 extern GameState *D_8005A39C;
 extern s32 D_8004F2FC; /* cached sequence */
+extern s32 D_8004F338; /* loaded music sequence */
+extern s32 D_8004F340; /* -1: start the sequence at full volume */
+extern s32 D_8004F348; /* reuse the cached sequence */
+extern s32 D_8004F358; /* sequence read pending */
+extern s32 D_8004F35C; /* sequence active */
+extern s32 D_8004F360; /* wave loaded this request */
+extern u8 D_80062648[]; /* sequence buffer */
+extern s32 func_80039850(void *data, s32 volume);
+extern void func_80039A80(s32 sequence, s32 volume, s32);
+extern void func_80039B68(s32 sequence, s32 volume, s32 fade);
 extern s32 D_8004F364;
 extern s32 D_8004F368; /* shared wave bank released */
 extern s16 D_8004F384;
@@ -899,6 +911,11 @@ extern void (*D_800AE6A0[])(void); /* extended event instructions */
 extern EmitterSlot D_800AFE88[3];
 extern FieldActor *D_800B0078; /* current event actor */
 extern s32 D_800B00C0; /* yield */
+extern RECT D_800AFC58;    /* screen band saved by event op dd */
+extern u16 *D_800C3A48;    /* the band's saved pixels */
+extern u16 *D_800AF87C;    /* the band's working pixels */
+extern s32 D_800ADBB4;
+extern void func_80026F44(s32 w, s32 h, u16 *work, u16 *saved);
 extern void *D_800B00E0; /* shared wave bank buffer */
 extern void *D_800ADBB8; /* music-wave stream ring */
 extern s32 D_800ADBBC;   /* stream arrivals */

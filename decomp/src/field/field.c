@@ -2141,7 +2141,72 @@ s32 func_80085C3C(void) {
     return -1;
 }
 
+#ifdef NON_MATCHING
+/* Advance the load of music `music`: its wave chunks, the shared wave bank,
+ * the deferred sequence read and the sequence start; 0 once complete, else
+ * -1. */
+s32 func_80085C90(s32 music) {
+    s32 sequence;
+
+    if (D_8004F354 == 1) {
+        if (func_80085C3C() == -1) {
+            return -1;
+        }
+        func_8003BDFC(0x10);
+        func_800320E8(D_800C3A1C);
+        D_8004F354 = 0;
+        D_8004F360 = 1;
+        D_8004F33C = D_800ADFCC[music][0];
+    }
+    if (D_800ADFCC[music][1] == 0) {
+        if (D_8004F364 == 0) {
+            func_80085FB8();
+            return -1;
+        }
+        if ((D_8004F364 & 0x80) && func_80085F30() == -1) {
+            return -1;
+        }
+    }
+    if (D_800AFC54 == 1) {
+        if (D_8004F338 != music) {
+            func_80028470(0x1C, 0);
+            func_800295D8(music * 2 + 0x14, D_80062648, 0, 0x80);
+            D_8004F358 = 1;
+            func_80028470(4, 0);
+        }
+        D_800AFC54 = 0;
+        return -1;
+    }
+    if (func_800286CC() != 0) {
+        return -1;
+    }
+    if (D_8004F358 == 1) {
+        if (D_8004F348 == 0) {
+            sequence = func_80039850(D_80062648, 0x7F);
+            D_80062528 = sequence;
+            if (D_8004F340 == -1) {
+                func_80039A80(sequence, 0x7F, 0);
+            } else {
+                func_80039A80(D_80062528, 0, 0);
+                func_8003A89C(D_80062528, 0, 0);
+            }
+        } else {
+            D_80062528 = D_8004F2FC;
+            func_80039B68(D_8004F2FC, 0x7F, 0xF0);
+            D_8004F348 = 0;
+            D_8004F2FC = 0;
+        }
+        D_8004F358 = 0;
+        D_8004F35C = 1;
+        D_8004F338 = music;
+    }
+    D_8004F340 = -1;
+    D_8004F36C = 1;
+    return 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80085C90);
+#endif
 
 /* Stop and release the cached sequence. */
 void func_80085EEC(void) {
@@ -2521,7 +2586,51 @@ void func_80087148(void) {
     D_800B0078->pc += 5;
 }
 
+#ifdef NON_MATCHING
+/* Event op dd: save a 256-wide screen band (0), process rows of it (1),
+ * release its buffers (2) or do nothing (3). */
+void func_800871B0(void) {
+    s32 y;
+    s32 h;
+    s32 row;
+
+    switch (EVENT_OPERAND_BYTE(1)) {
+    case 0:
+        D_800AFC7C += 0x20;
+        y = func_800ACDEC(2);
+        h = func_800ACDEC(4);
+        D_800C3A48 = func_80031BDC(h << 9, 0);
+        D_800AF87C = func_80031BDC(h << 9, 0);
+        D_800AFC58.x = 0;
+        D_800AFC58.y = y;
+        D_800AFC58.w = 0x100;
+        D_800AFC58.h = h;
+        StoreImage(&D_800AFC58, (u_long *)D_800C3A48);
+        D_800B00C0 = 1;
+        D_800B0078->pc += 6;
+        break;
+    case 1:
+        D_800AFC7C += 0x20;
+        row = func_800ACDEC(2);
+        func_80026F44(0x100, func_800ACDEC(4), D_800AF87C + (row << 8), D_800C3A48 + (row << 8));
+        D_800ADBB4 = 1;
+        D_800B0078->pc += 6;
+        break;
+    case 2:
+        func_800320E8(D_800C3A48);
+        func_800320E8(D_800AF87C);
+        D_800B00C0 = 1;
+        D_800B0078->pc += 2;
+        break;
+    case 3:
+        D_800B0078->pc += 2;
+        D_800B00C0 = 1;
+        break;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800871B0);
+#endif
 
 /* Event: store op3 in byte op1 of the table at 800b225f. */
 void func_800873C4(void) {
