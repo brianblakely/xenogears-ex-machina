@@ -3357,7 +3357,45 @@ void func_801D7CFC(u8 slot, u8 shown, u8 second) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D7F50);
+/* Lay out the stat names of rows `first`..6 at (x, y) into the block at
+ * +35c, dimming the odd rows, and place their quads. */
+void func_801D7F50(s32 x, s32 y, u8 first) {
+    s32 clutX;
+    s32 clutY;
+    s32 pageX;
+    s32 pageY;
+    s32 u;
+    s32 v;
+    s32 i;
+    s32 start;
+    s32 part;
+
+    func_80026338(D_800625A0->sheet, 0xe0, &clutX, &clutY, &pageX, &pageY, &u, &v);
+    D_800625A0->block35C->kind = 0;
+    for (i = 0; i < 7 - first; i++) {
+        start = D_800625A0->block35C->kind;
+        D_800625A0->block35C->kind += func_8002675C(D_800625A0->sheet, D_801EA45C[first * 7 + i],
+                                                    &D_800625A0->block35C->polys[start * 2], D_800625A0->bufferIndex,
+                                                    x + D_801E9D40[i], y + D_801E9D5C[i], 0x1000);
+        if (i & 1) {
+            for (part = start; part < D_800625A0->block35C->kind; part++) {
+                SetShadeTex(&D_800625A0->block35C->polys[part * 2 + D_800625A0->bufferIndex], 0);
+                (D_800625A0->block35C->polys + (part * 2 + D_800625A0->bufferIndex))->r0 = 0x40;
+                (D_800625A0->block35C->polys + (part * 2 + D_800625A0->bufferIndex))->g0 = 0x40;
+                (D_800625A0->block35C->polys + (part * 2 + D_800625A0->bufferIndex))->b0 = 0x40;
+            }
+        }
+    }
+    for (i = 0; i < D_800625A0->block35C->kind; i++) {
+        func_801C851C(&D_800625A0->block35C->verts[i * 4],
+                      D_800625A0->block35C->polys[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block35C->polys[i * 2 + D_800625A0->bufferIndex].y0,
+                      D_800625A0->block35C->polys[i * 2 + D_800625A0->bufferIndex].x1 -
+                          D_800625A0->block35C->polys[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block35C->polys[i * 2 + D_800625A0->bufferIndex].y3 -
+                          D_800625A0->block35C->polys[i * 2 + D_800625A0->bufferIndex].y0);
+    }
+}
 
 /* Initialise the two gradient quads of a gauge in colour `colour` (0 pink,
  * 1 green, 2 red, 3 blue), fading to black. */

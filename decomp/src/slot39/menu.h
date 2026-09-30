@@ -538,7 +538,7 @@ typedef struct MenuBlock35C {
     u8 pad32F0[0x1];
     u8 buffer; /* 32F1 */
     u8 pad32F2[0x1];
-    u8 kind; /* 32F3 */
+    u8 kind; /* 32F3: parts built */
 } MenuBlock35C;
 
 /* A position record passed to the panel builders (+28 base). */
@@ -858,6 +858,9 @@ extern s32 D_801E9D2C;
 extern s32 D_801E9D30;   /* detail panel +77..79 value */
 extern s32 D_801E9D34;
 extern s32 D_801E977C[2]; /* detail panel tab sprites */
+extern s32 D_801E9D40[7]; /* stat name positions per row: x */
+extern s32 D_801E9D5C[7]; /* y */
+extern s32 D_801EA45C[];  /* stat name sprites, seven per start row */
 extern s32 D_801E9CF0;   /* hp */
 extern s32 D_801E9CF4;
 extern s32 D_801E9CF8;   /* hp max */
