@@ -5729,15 +5729,12 @@ s32 func_801D85DC(s32 unused, u16 *a, u16 *b) {
  * value digits and their quads; with `compare` also the change bar against
  * the kept stats and, for a change, its signed digits tinted by the change's
  * colour. */
-#ifdef NON_MATCHING
-/* Two instructions differ: the delay slot of the change digits' 801c80b8
- * call holds the pointer copy instead of `dx = 0x28`. */
 void func_801D8644(s32 scale, s32 x, s32 y, u8 compare, u8 first) {
     u16 *before;
     u16 *shown;
     s32 row;
     s32 i;
-    s32 dx;
+    s32 drawn;
     s32 start;
 
     if (!compare) {
@@ -5792,13 +5789,13 @@ void func_801D8644(s32 scale, s32 x, s32 y, u8 compare, u8 first) {
                     func_8002675C(D_800625A0->sheet, D_801EA714, D_800625A0->block35C->rowB[row],
                                   D_800625A0->bufferIndex, x + D_801E9D80 + 0x20, y + D_801E9D84 + row * 8, 0x1000);
                 func_801C80B8(D_801EA704);
-                for (i = 0, dx = 0x28; i < 3; i++) {
+                for (i = 0, drawn = 0; i < 3; i++) {
                     if (D_800625A0->digits[6 + i] != 0xff) {
                         D_800625A0->block35C->rowBCount[row] += func_8002675C(
                             D_800625A0->sheet, D_800625A0->digits[6 + i],
                             &D_800625A0->block35C->rowB[row][D_800625A0->block35C->rowBCount[row] * 2],
-                            D_800625A0->bufferIndex, x + D_801E9D80 + dx, y + D_801E9D84 + row * 8, 0x1000);
-                        dx += 8;
+                            D_800625A0->bufferIndex, x + D_801E9D80 + 0x28 + drawn * 8, y + D_801E9D84 + row * 8, 0x1000);
+                        drawn++;
                     }
                 }
                 for (i = 0; i < D_800625A0->block35C->rowBCount[row]; i++) {
@@ -5819,9 +5816,6 @@ void func_801D8644(s32 scale, s32 x, s32 y, u8 compare, u8 first) {
         D_800625A0->block35C->rowShown[row] = 1;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D8644);
-#endif
 
 /* Build the equipment panels of `slot` at the upper or (`lower`) lower place. */
 void func_801D8DE4(u8 slot, u8 lower, u8 arg2, u8 mode) {
