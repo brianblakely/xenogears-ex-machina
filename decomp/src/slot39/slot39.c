@@ -1740,7 +1740,22 @@ s32 func_801CA750(s32 mode) {
     return result;
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CA8C0);
+/* Build the save header's title: "XENOGEARS/No." (full width), file number
+ * `file` + 1 as two full-width digits, a full-width space and the save title
+ * line. */
+void func_801CA8C0(u8 file) {
+    strcpy(D_800625A0->card->saveTitle, "\x82\x77\x82\x64\x82\x6d\x82\x6e\x82\x66\x82\x64\x82\x60\x82\x71\x82\x72"
+                                         "\x81\x5e\x82\x6d\x82\x8f\x81\x44");
+    D_800625A0->card->saveTitle[26] = 0x82;
+    D_800625A0->card->saveTitle[27] = (file + 1) / 10 + 0x4f;
+    D_800625A0->card->saveTitle[28] = 0x82;
+    D_800625A0->card->saveTitle[29] = (file + 1) % 10 + 0x4f;
+    D_800625A0->card->saveTitle[30] = 0x81;
+    D_800625A0->card->saveTitle[31] = 0x40;
+    D_800625A0->card->saveTitle[32] = 0;
+    D_800625A0->card->saveTitle[33] = 0;
+    strcat(D_800625A0->card->saveTitle, D_800625A0->card->title);
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CAA38);
 

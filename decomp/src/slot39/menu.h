@@ -183,7 +183,7 @@ typedef struct MenuCard {
     u8 saveMagic[2]; /* 4B94: header of a written file: "SC" */
     u8 saveIconFlag; /* 4B96 */
     u8 saveBlocks; /* 4B97 */
-    u8 saveTitle[0x5C]; /* 4B98 */
+    char saveTitle[0x5C]; /* 4B98: Shift-JIS */
     u8 savePalette[0x20]; /* 4BF4 */
     u8 saveIcon[0x80]; /* 4C14 */
     u8 pad4C94[0x2E0];
@@ -204,7 +204,7 @@ typedef struct MenuCard {
     u8 presentShown[2]; /* 4FE8 */
     u8 pad4FEA[0x2];
     s32 events[4]; /* 4FEC: card event descriptors */
-    u8 title[30]; /* 4FFC: save title line of the text file */
+    char title[30]; /* 4FFC: save title line of the text file */
     u8 unk501A; /* 501A */
     u8 unk501B; /* 501B */
     u32 otherPrefix[4]; /* 501C: the other file name prefix (13 bytes) */
