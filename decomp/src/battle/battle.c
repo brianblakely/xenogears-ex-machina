@@ -5270,26 +5270,21 @@ void func_8008FDE4(void) {
 /* Build the item list page: (with `open`) set up the graphics block and the
  * message frame, then render every list entry's two item names and their
  * two-digit counts into VRAM text images (names at 0x380, digits at 0x3c0,
- * one 13-line row per entry pair). Nonmatching: the digit image table
- * address is hoisted out of the entry loop into $s4. */
-#ifdef NON_MATCHING
+ * one 13-line row per entry pair). */
 void func_8008FE18(u8 column, u8 row, u8 open) {
-    u32 *images[32];
+    TextImage images[32];
     RECT nameRect;
     RECT tensRect;
     RECT onesRect;
     RECT tens2Rect;
     RECT ones2Rect;
     RECT rect;
-    s32 unused[2];
+    s32 unused[2]; /* an unreferenced 8-byte local in the frame */
     u8 counts[48];
     u8 ids[48];
     s32 i;
-    s16 x;
-    s16 y;
     u8 tens;
     u32 *digit;
-    u32 **image;
 
     if (open != 0) {
         func_80077610();
@@ -5308,75 +5303,69 @@ void func_8008FE18(u8 column, u8 row, u8 open) {
         counts[i] = D_800D2CB0[i];
     }
     for (i = 0; i < 32; i++) {
-        image = &images[i];
-        *image = (u32 *)func_8008AC00(0x1B);
-        bzero(*image, 0x30C);
-        y = (i / 2) * 13 + 0x100;
-        x = (i % 2) * 16;
+        images[i].pixels = (u32 *)func_8008AC00(0x1B);
+        bzero(images[i].pixels, 0x30C);
         nameRect.x = (i % 2) * 30 + 0x380;
-        nameRect.y = y;
+        nameRect.y = (i / 2) * 13 + 0x100;
         nameRect.w = 30;
         nameRect.h = 13;
-        tensRect.x = x + 0x3C0;
-        tensRect.y = y;
+        tensRect.x = (i % 2) * 16 + 0x3C0;
+        tensRect.y = (i / 2) * 13 + 0x100;
         tensRect.w = 6;
         tensRect.h = 13;
-        onesRect.x = x + 0x3C2;
-        onesRect.y = y;
+        onesRect.x = (i % 2) * 16 + 0x3C2;
+        onesRect.y = (i / 2) * 13 + 0x100;
         onesRect.w = 6;
         onesRect.h = 13;
-        tens2Rect.x = x + 0x3C4;
-        tens2Rect.y = y;
+        tens2Rect.x = (i % 2) * 16 + 0x3C4;
+        tens2Rect.y = (i / 2) * 13 + 0x100;
         tens2Rect.w = 6;
         tens2Rect.h = 13;
-        ones2Rect.x = x + 0x3C6;
-        ones2Rect.y = y;
+        ones2Rect.x = (i % 2) * 16 + 0x3C6;
+        ones2Rect.y = (i / 2) * 13 + 0x100;
         ones2Rect.w = 6;
         ones2Rect.h = 13;
         if (ids[i] != 0) {
-            func_80034EAC(func_80033818(ids[i]), *image, 0x1B, 0);
+            func_80034EAC(func_80033818(ids[i]), images[i].pixels, 0x1B, 0);
         }
         if (ids[i + 16] != 0) {
-            func_80034EAC(func_80033818(ids[i + 16]), *image, 0x1B, 1);
+            func_80034EAC(func_80033818(ids[i + 16]), images[i].pixels, 0x1B, 1);
         }
-        func_800769E8(&nameRect, *image);
+        func_800769E8(&nameRect, images[i].pixels);
         tens = counts[i] / 10;
         if (tens != 0) {
-            digit = D_800C3E5C[tens];
+            digit = D_800C3E5C[tens].pixels;
         } else {
             digit = D_800D2DB0;
         }
         func_800769E8(&tensRect, digit);
         if (ids[i] != 0) {
-            digit = D_800C3E5C[(u8)(counts[i] % 10)];
+            digit = D_800C3E5C[(u8)(counts[i] % 10)].pixels;
         } else {
             digit = D_800D2DB0;
         }
         func_800769E8(&onesRect, digit);
         if ((u8)(D_800D2CC0[i] / 10) != 0) {
-            digit = D_800C3E5C[counts[i + 16] / 10];
+            digit = D_800C3E5C[counts[i + 16] / 10].pixels;
         } else {
             digit = D_800D2DB0;
         }
         func_800769E8(&tens2Rect, digit);
         if (ids[i + 16] != 0) {
-            digit = D_800C3E5C[(u8)(counts[i + 16] % 10)];
+            digit = D_800C3E5C[(u8)(counts[i + 16] % 10)].pixels;
         } else {
             digit = D_800D2DB0;
         }
         func_800769E8(&ones2Rect, digit);
     }
     for (i = 0; i < 32; i++) {
-        func_800320E8(images[i]);
+        func_800320E8(images[i].pixels);
     }
     func_800320E8(D_800D2DB0);
     func_800716D8();
     D_800C3EA4->unkA230->unk669 = 1;
     D_800D2D28->unkB7 = 2;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008FE18);
-#endif
 
 /* Build nine glyph rows (0x66) from y + 0x64 into the +0xba8 primitives. */
 void func_8009023C(s32 y) {
@@ -5563,10 +5552,7 @@ void func_80090E7C(u8 member) {
 
 /* Build the member's art list page: set up the graphics block and the
  * message frame, then render the name and two-digit EP cost of every art its
- * character (or its gear) knows into VRAM text images, then the EP panel.
- * Nonmatching: the image slot address is formed index-first from the frame
- * base (sp+0x18 plus 0x30) instead of from sp+0x48. */
-#ifdef NON_MATCHING
+ * character (or its gear) knows into VRAM text images, then the EP panel. */
 void func_80091064(u8 member) {
     RECT nameRect;
     RECT tensRect;
@@ -5574,7 +5560,7 @@ void func_80091064(u8 member) {
     RECT rowRect;
     RECT rightRect;
     RECT rect;
-    u32 *images[16];
+    TextImage images[16];
     u8 known[16];
     u8 costs[16];
     s32 i;
@@ -5613,8 +5599,8 @@ void func_80091064(u8 member) {
         }
     }
     for (i = 0; i < 16; i++) {
-        images[i] = (u32 *)func_8008AC00(0x1B);
-        bzero(images[i], 0x30C);
+        images[i].pixels = (u32 *)func_8008AC00(0x1B);
+        bzero(images[i].pixels, 0x30C);
         rowRect.x = (i % 2) * 30 + 0x380;
         rowRect.y = (i / 2) * 16 + 0x100;
         rowRect.w = 0x1B;
@@ -5622,16 +5608,16 @@ void func_80091064(u8 member) {
         func_800769E8(&rowRect, D_800D2DB0);
         if (known[i] != 0) {
             if (D_800D32A0[member].unk1 == 0) {
-                func_80034EAC(func_80033908(D_800CCCE8.records[member].pilot.characterId * 16 + i), images[i], 0x1B,
+                func_80034EAC(func_80033908(D_800CCCE8.records[member].pilot.characterId * 16 + i), images[i].pixels, 0x1B,
                               0);
             } else {
-                func_80034EAC(func_800339FC(D_800CCCE8.records[member].pilot.gearId * 16 + i), images[i], 0x1B, 0);
+                func_80034EAC(func_800339FC(D_800CCCE8.records[member].pilot.gearId * 16 + i), images[i].pixels, 0x1B, 0);
             }
             nameRect.x = (i % 2) * 30 + 0x380;
             nameRect.y = (i / 2) * 16 + 0x102;
             nameRect.w = 30;
             nameRect.h = 13;
-            func_800769E8(&nameRect, images[i]);
+            func_800769E8(&nameRect, images[i].pixels);
         }
         if (!(i & 1)) {
             rightRect.x = 0x3C0;
@@ -5646,7 +5632,7 @@ void func_80091064(u8 member) {
         tensRect.h = 13;
         tens = costs[i] / 10;
         if (tens != 0) {
-            digit = D_800C3E5C[tens];
+            digit = D_800C3E5C[tens].pixels;
         } else {
             digit = D_800D2DB0;
         }
@@ -5656,7 +5642,7 @@ void func_80091064(u8 member) {
         onesRect.w = 6;
         onesRect.h = 13;
         if (known[i] != 0) {
-            digit = D_800C3E5C[(u8)(costs[i] % 10)];
+            digit = D_800C3E5C[(u8)(costs[i] % 10)].pixels;
         } else {
             digit = D_800D2DB0;
         }
@@ -5664,7 +5650,7 @@ void func_80091064(u8 member) {
     }
     func_80090E7C(member);
     for (i = 0; i < 16; i++) {
-        func_800320E8(images[i]);
+        func_800320E8(images[i].pixels);
     }
     func_800320E8(D_800D2DB0);
     func_800716D8();
@@ -5673,9 +5659,6 @@ void func_80091064(u8 member) {
     D_800C3EA4->unkA230->unk669 = 1;
     D_800D2D28->unkB7 = 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80091064);
-#endif
 
 /* Build eight glyph rows (0x66) from y + 0x38 into the +0xba8 primitives. */
 void func_80091604(s32 y) {
@@ -5851,7 +5834,7 @@ void func_8009209C(void) {
 /* Set up the gear page's shaded bar and black box primitives, then build its
  * glyphs (from the 800c33b4 table) for every entry of `shown` that is not
  * 0xff into the +0x1e68 list. */
-void func_80092298(s32 unused, u8 *shown) {
+void func_80092298(u8 member, u8 *shown) {
     s32 i;
     s32 glyph;
 
@@ -5903,7 +5886,110 @@ void func_80092298(s32 unused, u8 *shown) {
     D_800D2D28->unk9D = 1;
 }
 
+/* Build the member's gear page: set up the graphics block, render the name
+ * and two-digit count of each of the seven gear parts in `ids` (0xff none)
+ * and the fixed eighth entry (system text 10) into VRAM text images, then
+ * the page glyphs and quads. Nonmatching: scheduling of the row rectangle
+ * address and the name rectangle width register. */
+#ifdef NON_MATCHING
+void func_80092784(u8 member, u8 *ids, u8 *counts) {
+    RECT nameRect;
+    RECT tensRect;
+    RECT onesRect;
+    RECT rowRect;
+    RECT rightRect;
+    RECT rect;
+    TextImage images[8];
+    s32 i;
+    s16 x;
+    s32 y;
+    u8 tens;
+    u32 *digit;
+
+    func_80077610();
+    func_80076EA4();
+    D_800D2DB0 = (u32 *)func_8008AC00(0x39);
+    bzero(D_800D2DB0, 0x618);
+    rect.x = 0x3C0;
+    rect.w = 0x3C;
+    rect.y = 0;
+    rect.h = 0xD;
+    func_800769E8(&rect, D_800D2DB0);
+    for (i = 0; i < 8; i++) {
+        images[i].pixels = (u32 *)func_8008AC00(0x1B);
+        bzero(images[i].pixels, 0x30C);
+        x = (i % 2) * 30 + 0x380;
+        y = (i / 2) * 16;
+        rowRect.x = x;
+        rowRect.y = y + 0x100;
+        rowRect.w = 0x1B;
+        rowRect.h = 16;
+        func_800769E8(&rowRect, D_800D2DB0);
+        if (i != 7) {
+            if (ids[i] != 0xFF) {
+                func_80034EAC(func_80033784(D_800D2D24[member], ids[i]), images[i].pixels, 0x1B, 0);
+                nameRect.x = x;
+                nameRect.y = y + 0x102;
+                nameRect.w = 30;
+                nameRect.h = 13;
+                func_800769E8(&nameRect, images[i].pixels);
+            }
+        } else {
+            func_80034EAC(func_800338D8(10), images[7].pixels, 0x1B, 0);
+            nameRect.x = 0x39E;
+            nameRect.y = 0x132;
+            nameRect.w = 30;
+            nameRect.h = 13;
+            func_800769E8(&nameRect, images[7].pixels);
+        }
+        if (!(i & 1)) {
+            rightRect.x = 0x3C0;
+            rightRect.y = (i / 2) * 16 + 0x100;
+            rightRect.w = 0x1B;
+            rightRect.h = 16;
+            func_800769E8(&rightRect, D_800D2DB0);
+        }
+        tensRect.x = (i % 2) * 16 + 0x3C0;
+        tensRect.y = (i / 2) * 16 + 0x102;
+        tensRect.w = 6;
+        tensRect.h = 13;
+        if (i != 7) {
+            tens = counts[i] / 10;
+            if (tens != 0) {
+                digit = D_800C3E5C[tens].pixels;
+            } else {
+                digit = D_800D2DB0;
+            }
+            func_800769E8(&tensRect, digit);
+            onesRect.x = (i % 2) * 16 + 0x3C2;
+            onesRect.y = (i / 2) * 16 + 0x102;
+            onesRect.w = 6;
+            onesRect.h = 13;
+            if (ids[i] != 0xFF) {
+                digit = D_800C3E5C[(u8)(counts[i] % 10)].pixels;
+            } else {
+                digit = D_800D2DB0;
+            }
+        } else {
+            func_800769E8(&tensRect, D_800D2DB0);
+            onesRect.x = 0x3D2;
+            onesRect.y = 0x132;
+            onesRect.w = 6;
+            onesRect.h = 13;
+            digit = D_800D2DB0;
+        }
+        func_800769E8(&onesRect, digit);
+    }
+    func_80092298(member, ids);
+    for (i = 0; i < 8; i++) {
+        func_800320E8(images[i].pixels);
+    }
+    func_800320E8(D_800D2DB0);
+    func_8009209C();
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80092784);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80092B74);
 
