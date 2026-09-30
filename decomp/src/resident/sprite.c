@@ -142,21 +142,18 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001FAB4);
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001FB30);
 
 /* The operand a script byte names: a frame table entry (bit 7 set) or a byte on the sprite's stack. */
-/* Nonmatching under GCC 2.7.2 and 2.6.3: register choice for the stack index and operand byte. */
-#ifdef NON_MATCHING
 u8 *func_8001FBA4(Sprite *sprite, u8 *code) {
     u8 *operand;
+    s32 offset;
 
     if (*code & 0x80) {
         operand = sprite->frames + (*code & 0x7F);
     } else {
-        operand = &sprite->stack[(s8)*code + sprite->stack_top];
+        offset = (s8)*code;
+        operand = &sprite->stack[sprite->stack_top + offset];
     }
     return operand;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001FBA4);
-#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001FBE4);
 
