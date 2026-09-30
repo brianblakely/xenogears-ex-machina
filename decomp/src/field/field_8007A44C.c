@@ -87,19 +87,18 @@ extern FieldMarker D_800B0FEC[4]; /* the four compass letters */
 extern s16 D_800ADE30[32];        /* letter corners: x, z per corner */
 extern u8 D_800ADE70[32];         /* letter texture coordinates */
 
-#ifdef NON_MATCHING
 /* Build the four compass letters: corners from 800ade30, texture
  * coordinates from 800ade70 (v offset c0), semi-transparent, then copy the
- * quad to the second buffer.
- * Does not match: the original copies the quad's destination address
- * through one more register before the block copy. */
+ * quad to the second buffer. */
 void func_8007A5C4(void) {
     FieldMarker *record;
     POLY_FT4 *quad;
+    POLY_FT4 *copy;
     s32 i;
 
     for (i = 0; i < 4; i++) {
         record = &D_800B0FEC[i];
+        copy = &D_800B0FEC[i].poly[1];
         quad = &D_800B0FEC[i].poly[0];
         SetPolyFT4(quad);
         record->v[0].vx = D_800ADE30[i * 8];
@@ -123,12 +122,9 @@ void func_8007A5C4(void) {
         SetSemiTrans(quad, 1);
         quad->tpage = GetTPage(0, 2, 0x280, 0x1C0);
         quad->clut = GetClut(0x100, 0xF2);
-        quad[1] = quad[0];
+        *copy = *quad;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8007A5C4);
-#endif
 
 extern s16 D_800ADCE0[][4]; /* compass corner x by column */
 extern s16 D_800ADD28[][4]; /* compass corner z by row */
@@ -136,15 +132,14 @@ extern s16 D_800ADD70[][4]; /* texture u by column */
 extern s16 D_800ADDB8[][4]; /* texture v by row */
 extern s16 D_800ADE00[][6]; /* texture page (tp, abr, x, y) and palette (x, y) by style */
 
-#ifdef NON_MATCHING
 /* Build a compass quad record for a grid column and row in a style, then
- * copy the quad to the second buffer.
- * Does not match: as in 8007a5c4, the original copies the quad's
- * destination address through one more register before the block copy. */
+ * copy the quad to the second buffer. */
 void func_8007A7F4(FieldMarker *record, s32 column, s32 row, s32 style) {
     u8 unused[0x88]; /* never used; the original frame reserves it */
     POLY_FT4 *quad;
+    POLY_FT4 *copy;
 
+    copy = &record->poly[1];
     quad = &record->poly[0];
     SetPolyFT4(quad);
     record->v[0].vx = D_800ADCE0[column][0];
@@ -166,16 +161,14 @@ void func_8007A7F4(FieldMarker *record, s32 column, s32 row, s32 style) {
     quad->clut = GetClut(D_800ADE00[style][4], D_800ADE00[style][5]);
     func_8007A44C(quad, D_800ADD70[column][0], D_800ADDB8[row][0], D_800ADD70[column][1], D_800ADDB8[row][1],
                   D_800ADD70[column][2], D_800ADDB8[row][2], D_800ADD70[column][3], D_800ADDB8[row][3]);
-    record->poly[1] = record->poly[0];
+    *copy = record->poly[0];
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8007A7F4);
-#endif
 
-#ifdef NON_MATCHING
 /* Set up a pointer marker: a 48x48 quad around the origin and its
  * semi-transparent textured primitive, copied for the second buffer. */
 void func_8007AA44(FieldMarker *m) {
+    POLY_FT4 *copy = &m->poly[1];
+
     SetPolyFT4(&m->poly[0]);
     m->v[3].vx = -0x18;
     m->v[3].vy = 0;
@@ -203,11 +196,8 @@ void func_8007AA44(FieldMarker *m) {
     m->poly[0].v2 = 0xEF;
     m->poly[0].u3 = 0xF;
     m->poly[0].v3 = 0xEF;
-    m->poly[1] = m->poly[0];
+    *copy = m->poly[0];
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8007AA44);
-#endif
 
 /* Project a marker quad's four corners with the given matrix into its buffer's
  * textured polygon and link that polygon into the ordering table entry. */
@@ -308,10 +298,8 @@ void func_8007AF74(s32 port) {
     }
 }
 
-#ifdef NON_MATCHING
 /* The height of `p` on the plane through triangle a, b, c (0 for a vertical
- * plane); the plane normal is left in `normal`. Differs only in the register
- * of the second product (t1 in the original). */
+ * plane); the plane normal is left in `normal`. */
 void func_8007B07C(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *p, VECTOR *normal) {
     VECTOR edge_b;
     VECTOR edge_c;
@@ -332,9 +320,6 @@ void func_8007B07C(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *p, VECTOR *norma
     }
     p->vy = a->vy + (-(normal->vx * (p->vx - a->vx)) - normal->vz * (p->vz - a->vz)) / normal->vy;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8007B07C);
-#endif
 
 void func_8007B07C(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *p, VECTOR *normal);
 
@@ -468,20 +453,17 @@ s32 func_8007B694(VECTOR *v) {
     return -ratan2(v->vz, v->vx) & 0xFFF;
 }
 
-#ifdef NON_MATCHING
 /* Slide along a wall edge: the heading of `edge` (its two X/Z endpoints);
  * when `heading` meets it at an angle (not within 0x80 of parallel), the
  * velocity becomes the X/Z speed (80099a4c) along the edge direction nearer
  * the heading and that direction's heading is returned; otherwise the
- * velocity is cleared.
- * Does not match: the original keeps the edge heading in two more
- * registers (one for the sum and early return, one for the result). */
+ * velocity is cleared. */
 s32 func_8007B6C4(s16 heading, SVECTOR *edge, VECTOR *velocity, s32 unused) {
     VECTOR d;
     VECTOR n;
-    s32 angle;
+    s16 angle;
     s32 relative;
-    s32 result;
+    s16 result;
     s32 speed;
 
     relative = (0xC00 - heading) & 0xFFF;
@@ -506,14 +488,11 @@ s32 func_8007B6C4(s16 heading, SVECTOR *edge, VECTOR *velocity, s32 unused) {
     }
     VectorNormal(&d, &n);
     speed = func_80099A4C(velocity->vx >> 12, velocity->vz >> 12);
-    velocity->vy = 0;
     velocity->vx = n.vx * speed;
+    velocity->vy = 0;
     velocity->vz = n.vz * speed;
     return result;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8007B6C4);
-#endif
 
 s32 func_8007B6C4(s16 heading, SVECTOR *edge, VECTOR *velocity, s32 unused);
 s32 func_8007C694(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge, SVECTOR *floor, s32 mode);
@@ -3082,19 +3061,24 @@ void func_800831D0(SVECTOR *out, VECTOR *in) {
 
 #ifdef NON_MATCHING
 /* While the actor moves, turn its heading a quarter (left with flag bit 0,
- * else right) once, apply it, and mark the heading as turned. */
+ * else right) once, apply it, and mark the heading as turned.
+ * NON_MATCHING: the original keeps the goal store ahead of the heading reload
+ * for the call (ours moves the store into its delay slot). */
 void func_800831F4(void *owner, FieldActor *actor, FieldDescriptor *descriptor, s32 flags) {
-    s32 heading;
+    s16 heading;
+    s16 turned;
+    s32 unused[2]; /* never used; the original frame reserves it */
 
     if (actor->unk030[0] != 0 || actor->unk030[2] != 0) {
         heading = actor->heading_goal;
         if (!(heading & 0x8000)) {
-            if (!(flags & 1)) {
-                heading += 0x400;
+            if (flags & 1) {
+                turned = heading - 0x400;
             } else {
-                heading -= 0x400;
+                turned = heading + 0x400;
             }
-            actor->heading = actor->heading_goal = heading & 0xFFF;
+            actor->heading = turned & 0xFFF;
+            actor->heading_goal = turned & 0xFFF;
             func_80081F80(owner, actor->heading, descriptor);
             actor->heading = actor->heading_goal = actor->heading_goal | 0x8000;
         }
@@ -3238,7 +3222,6 @@ s32 func_80083288(s32 index, PolyModel *model, s32 x, s32 z, s32 *height, VECTOR
 void func_80083994(void) {
 }
 
-#ifdef NON_MATCHING
 /* The controlled actor's talk (event 2) and touch (event 3) triggers: each
  * other actor within reach (rectangle 0x2000 or circle), facing and not
  * inhibited, turns toward it and gets the event in a free script slot. */
@@ -3253,7 +3236,7 @@ void func_8008399C(s32 index, FieldDescriptor *descriptor, FieldActor *player) {
     s32 talk;
     s32 py;
     s32 head;
-    s32 facing;
+    s16 facing;
     s32 px;
     s32 pz;
     s32 talked;
@@ -3408,9 +3391,6 @@ void func_8008399C(s32 index, FieldDescriptor *descriptor, FieldActor *player) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8008399C);
-#endif
 
 /* The controlled actor's contacts: against every other actor (its floor
  * polygon, its box, or its radius) either ride it, stand below it or push
@@ -3614,7 +3594,8 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_80084158
 #endif
 
 #ifdef NON_MATCHING
-/* -1 when the actor's motion, collision state or layer prevents idling. */
+/* -1 when the actor's motion, collision state or layer prevents idling.
+ * NON_MATCHING: the original places the layer-1 -1 return after the last test. */
 s32 func_8008492C(FieldActor *actor) {
     if ((actor->unk014 & 0x420000) || D_800ADB98 != 0 || actor->unk030[0] != 0 ||
         actor->unk030[1] != 0 || actor->unk030[2] != 0 || D_800ADC0C != 1 || actor->unk074 != 0xFF ||
@@ -3627,10 +3608,11 @@ s32 func_8008492C(FieldActor *actor) {
     if ((actor->layer_flags & 2) && actor->layer == 1) {
         return -1;
     }
-    if (actor->layer_flags & 4) {
-        return -(actor->layer == 2);
+    if ((actor->layer_flags & 4) && actor->layer == 2) {
+        return -1;
+    } else {
+        return 0;
     }
-    return 0;
 }
 #else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8008492C);
