@@ -173,10 +173,7 @@ void func_8002C6E0(u8 r, u8 g, u8 b) {
 
 /* Draw a sprite model's primitive groups into `ot` with the routines of
  * sort mode `mode`, building packets from `packets`. Returns 0 when its
- * bounding box test finds it off screen, else 1.
- * Nonmatching: the model fields loaded before the loop take other
- * registers (the primitive count is loaded first). */
-#ifdef NON_MATCHING
+ * bounding box test finds it off screen, else 1. */
 s32 func_8002C700(SpriteModel *model, RenderPacket *packets, u32 *ot, s32 mode) {
     s32 count;
     PrimitiveGroup *group;
@@ -189,11 +186,11 @@ s32 func_8002C700(SpriteModel *model, RenderPacket *packets, u32 *ot, s32 mode) 
     count = model->group_count;
     D_80059424 = packets;
     D_80059568 = ot;
-    D_800595C0 += model->primitive_count;
     D_80059528 = (PrimitiveGroup *)model->unk10;
     D_80059498 = (s32 *)model->unk18;
     D_8005952C = model->normals;
     D_8005953C = model->vertices;
+    D_800595C0 += model->primitive_count;
     for (count--; count != -1; count--) {
         group = D_80059528;
         type = &D_8004FE50[group->type];
@@ -223,9 +220,6 @@ s32 func_8002C700(SpriteModel *model, RenderPacket *packets, u32 *ot, s32 mode) 
     }
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002C700);
-#endif
 
 /* Build a sprite model's packets in `packets`. A mode other than 0 keeps
  * an auxiliary block and selects the variant the preparing routines
