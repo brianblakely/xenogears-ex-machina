@@ -125,6 +125,19 @@ typedef struct Sprite {
     u8 unknownb1[3];
 } Sprite; /* 0xb4 bytes; an inline renderer may follow */
 
+/* A sprite's animation sequencer (0x1c bytes; inline at sprite + 0xf4). */
+typedef struct {
+    u8 unknown0[0x18];
+    u16 *buffer;           /* +0x18: allocated by 8002303c */
+} SpriteSequencer;
+
+/* A sprite image header (inline at sprite + 0x110). */
+typedef struct {
+    u8 unknown0[4];
+    u16 word4;             /* +0x4 */
+    u16 word6;             /* +0x6 */
+} SpriteImage;
+
 /* A sprite with its two task nodes, as 800233a4 allocates it. */
 typedef struct {
     Task task;
@@ -145,6 +158,7 @@ extern u8 D_800591AD[];
 extern u8 D_800591AE[];
 extern u8 D_8005A474[];
 extern u8 *D_800594B8[];  /* [0]: end of the queue entry block */
+extern s32 D_800591B8;    /* extra argument of 80024524/8002435c for one call */
 
 /* An entry of the two sprite queues (bump-allocated from 800594b4). */
 typedef struct SpriteQueueEntry {
@@ -195,6 +209,8 @@ extern struct {
     s32 unknown[2];
 } D_80059198;
 void func_80022B2C(Sprite *sprite);
+void func_80024524(void *a0, s16 a1, s16 a2, s16 a3, s16 a4, s16 a5);
+void func_8002435C(void *a0, s32 a1, s16 a2, s16 a3, s16 a4, s16 a5, s16 a6);
 s32 func_80022CAC(Sprite *sprite, s32 value);
 void func_80022CDC(Sprite *sprite);
 

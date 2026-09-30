@@ -30,6 +30,7 @@ s32 D_8005918C;
 Sprite *D_80059190;
 s16 D_80059194; /* texture area row (0-2) of the next image */
 s16 D_80059196; /* texture area column of the next image */
+s32 D_800591B8;
 s32 D_800592EC;
 s32 D_800592F8;               /* the queue being filled (0 or 1) */
 s32 D_800592FC;               /* bytes of the queue entry block / 2 */
@@ -895,7 +896,13 @@ void func_80022FC4(Sprite *sprite, s32 count, s32 from_top) {
     sprite->renderer->part_cursor = sprite->renderer->parts = func_80031BDC(count * 24, from_top);
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8002303C);
+/* Allocate a sprite sequencer's buffer of `count` words and store the image's
+ * two header halfwords in its first entry. */
+void func_8002303C(Sprite *sprite, s32 count, s32 mode) {
+    ((SpriteSequencer *)sprite->sequencer)->buffer = func_80031BDC(count * 4, mode);
+    ((SpriteSequencer *)sprite->sequencer)->buffer[1] = ((SpriteImage *)sprite->image)->word6;
+    ((SpriteSequencer *)sprite->sequencer)->buffer[0] = ((SpriteImage *)sprite->image)->word4;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_800230A8);
 
@@ -1097,9 +1104,19 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80023B84);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80023FD8);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80024294);
+/* 80024524 with `extra` in 800591b8 for the call. */
+void func_80024294(void *a0, s16 a1, s16 a2, s16 a3, s16 a4, s16 a5, s32 extra) {
+    D_800591B8 = extra;
+    func_80024524(a0, a1, a2, a3, a4, a5);
+    D_800591B8 = 0;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_800242F4);
+/* 8002435c with `extra` in 800591b8 for the call. */
+void func_800242F4(void *a0, s32 a1, s16 a2, s16 a3, s16 a4, s16 a5, s16 a6, s32 extra) {
+    D_800591B8 = extra;
+    func_8002435C(a0, a1, a2, a3, a4, a5, a6);
+    D_800591B8 = 0;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8002435C);
 
