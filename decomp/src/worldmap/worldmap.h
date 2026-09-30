@@ -804,4 +804,11 @@ extern s8 D_8009C588[8];
 s32 func_80094A5C(VECTOR *position, VECTOR *direction, s32 scale, s32 mode);
 s32 func_80094088(VECTOR *position, VECTOR *direction, VECTOR *out);
 
+s32 func_800289D0(s32 file); /* first sector of a disc file */
+s32 func_80028998(s32 file); /* host path of a file */
+s32 func_8009623C(s32 a, s32 b, s32 c);
+s32 func_800962B0(s32 a, s32 b, s32 c, s32 d);
+s32 func_80096328(void);
+s32 func_800965A4(void);
+
 #endif

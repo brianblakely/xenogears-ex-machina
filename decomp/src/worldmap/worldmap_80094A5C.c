@@ -852,7 +852,62 @@ void func_80097D64(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80097DC0);
+/* Queue reads of the terrain blocks around the camera that are not loaded:
+ * from disc the centre 3x3 first, then the whole 9x9 grid. */
+void func_80097DC0(void) {
+    s32 first;
+    s32 second;
+    s32 row;
+    s32 column;
+    s32 block;
+    void *buffer;
+    s32 sector;
+    s32 path;
+
+    first = func_8002C3D8();
+    second = func_8002C3D8();
+    if ((first == 0) | (second == -1)) {
+        sector = func_800289D0(D_8009BCD8);
+        for (row = 3; row < 6; row++) {
+            for (column = 3; column < 6; column++) {
+                block = D_8009D570.cells[row * 9 + column];
+                if (D_8009C184[block] == NULL) {
+                    buffer = func_80031BDC(0x710, 0);
+                    D_8009C184[block] = buffer;
+                    func_8009623C(sector + block, 0x710, (s32)buffer);
+                }
+            }
+        }
+        func_8009623C(0, 0, 0);
+        func_80096328();
+        for (row = 0; row < 9; row++) {
+            for (column = 0; column < 9; column++) {
+                block = D_8009D570.cells[row * 9 + column];
+                if (D_8009C184[block] == NULL) {
+                    buffer = func_80031BDC(0x710, 0);
+                    D_8009C184[block] = buffer;
+                    func_8009623C(sector + block, 0x710, (s32)buffer);
+                }
+            }
+        }
+        func_8009623C(0, 0, 0);
+        func_80096328();
+    } else {
+        path = func_80028998(D_8009BCD8);
+        for (row = 0; row < 9; row++) {
+            for (column = 0; column < 9; column++) {
+                block = D_8009D570.cells[row * 9 + column];
+                if (D_8009C184[block] == NULL) {
+                    buffer = func_80031BDC(0x710, 0);
+                    D_8009C184[block] = buffer;
+                    func_800962B0(path, block << 11, 0x710, (s32)buffer);
+                }
+            }
+        }
+        func_800962B0(0, 0, 0, 0);
+        func_800965A4();
+    }
+}
 
 /* Compute the four horizon plane normals. */
 void func_80098044(void) {
