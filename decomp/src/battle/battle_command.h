@@ -7,5 +7,6 @@
 #include "battle_core.h"
 
 u8 func_8008C4A8(u8 member); /* the member has a special available */
+u8 func_8008CFB8(u8 member); /* the gear has a part list */
 
 #endif
