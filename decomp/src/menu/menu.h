@@ -116,7 +116,9 @@ typedef struct Actor {
     u8 unk8B0[0x44];
     s32 nearest_dist;    /* 0x8F4: distance of the closest shot */
     Shot *nearest_shot;  /* 0x8F8 */
-    u8 unk8FC[0x50];
+    u8 unk8FC[0xD];
+    u8 kind;             /* 0x909: model kind */
+    u8 unk90A[0x42];
     Vector core;         /* 0x94C: where shots home in */
     u8 unk95C[0xC78];
     u8 unk15D4[0x28];
@@ -124,6 +126,9 @@ typedef struct Actor {
     u8 unk1600[0x54];
     s32 unk1654;
     s32 unk1658;
+    u8 unk165C[0x8];
+    u8 *sounds;          /* 0x1664: command sound table */
+    u16 unk1668;
 } Actor;
 
 /* libgte matrix. */

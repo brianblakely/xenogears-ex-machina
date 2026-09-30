@@ -5,7 +5,7 @@
 
 /* The computer opponent's decision state, handed to its command handlers. */
 typedef struct Brain {
-    u8 unk0[0x4];
+    Actor *owner;
     s16 timer;          /* 0x04: frames until the next decision */
     u8 unk6[0x2];
     u8 mode;            /* 0x08 */
@@ -21,9 +21,15 @@ typedef struct Brain {
     s32 unk20;
     s32 unk24;          /* 0x24: charge it waits for */
     s32 unk28;
-    u32 unk2C_0 : 13;
+    u32 roll : 8;       /* 0x2C: a random byte for this round */
+    u32 unk2C_8 : 1;
+    u32 unk2C_9 : 1;
+    u32 unk2C_10 : 1;
+    u32 unk2C_11 : 1;
+    u32 unk2C_12 : 1;
     u32 defending : 1;  /* 0x2C bit 13 */
     u32 unk2C_14 : 18;
+    u16 unk30;
 } Brain;
 
 extern s32 D_8009284C;

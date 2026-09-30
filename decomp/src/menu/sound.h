@@ -19,16 +19,6 @@ typedef struct {
 
 extern SoundVoice D_80096EA0[4];
 
-/* A character record (the menu's Actor) as far as its sounds read it. */
-typedef struct {
-    u8 unk0[0xD0];
-    u32 flags; /* 0xD0: bit 27 is the character's side */
-    u8 unkD4[0x909 - 0xD4];
-    u8 kind; /* 0x909 */
-    u8 unk90A[0x1664 - 0x90A];
-    u8 *sounds; /* 0x1664: command sound table */
-} SoundOwner;
-
 extern u8 D_80091F60[];
 extern u8 D_80091F70[];
 extern u8 D_80091F80[];

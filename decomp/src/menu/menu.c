@@ -2224,7 +2224,7 @@ void func_8008E67C(void) {
 }
 
 /* Choose a character's command sound table by its model kind. */
-void func_8008E6F8(SoundOwner *owner) {
+void func_8008E6F8(Actor *owner) {
     switch (owner->kind) {
     case 9:
         owner->sounds = D_80091FA0;
@@ -2368,7 +2368,7 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008EB4C);
 #endif
 
 /* Play a character's sound effect, tagged with its id and side. */
-void func_8008EB88(SoundOwner *owner, s32 id, Vector *pos, s32 mode) {
+void func_8008EB88(Actor *owner, s32 id, Vector *pos, s32 mode) {
     if (id != 0) {
         func_8008E78C(id + 0x60000, mode, pos, (id & 0x7F) | ((owner->flags >> 20) & 0x80));
     }
@@ -2379,7 +2379,7 @@ void func_8008EB88(SoundOwner *owner, s32 id, Vector *pos, s32 mode) {
  * up to two effects from the shared pair table.
  * Does not match: the original keeps the pair table address in
  * a saved register for the second id. */
-void func_8008EBD0(SoundOwner *owner, s32 index, Vector *pos, s32 mode) {
+void func_8008EBD0(Actor *owner, s32 index, Vector *pos, s32 mode) {
     s32 entry;
 
     if (index == 0) {
@@ -2680,9 +2680,30 @@ press:
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008F720);
+/* Decide whether the opponent closes in: an eager opponent that is already
+ * near holds back; otherwise it follows its charge or its eagerness. */
+s32 func_8008F720(Actor *actor, s32 eager) {
+    Brain *brain = actor->brain;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008F7B8);
+    if (eager && (func_8003FA38() & 0xFF) < brain->unk10 && D_8009284C < 0x600) {
+        return 0;
+    }
+    if (func_8008F580(actor)) {
+        return 1;
+    }
+    return (func_8003FA38() & 0xFF) < brain->unk1C;
+}
+
+/* Roll the opponent's choices for the next round from its tendencies. */
+void func_8008F7B8(Brain *brain) {
+    brain->unk2C_9 = (func_8003FA38() & 0xFF) < brain->unk10;
+    brain->unk2C_10 = (func_8003FA38() & 0xFF) < brain->unk14;
+    brain->unk2C_12 = func_8003FA38() & 1;
+    brain->unk2C_11 = (func_8003FA38() & 0xFF) < brain->unk18;
+    brain->unk2C_8 = (func_8003FA38() & 0xFF) < brain->unk10 && func_8003FA38() % 10 < 3;
+    brain->roll = func_8003FA38();
+    brain->unk30 = brain->owner->unk1668;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008F900);
 
