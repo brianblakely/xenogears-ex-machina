@@ -2008,7 +2008,36 @@ void func_801D1EB0(void) {
     func_801C8574(0x5c);
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D1EE0);
+/* Place the highlight sprite at position `index`; with `outline` also its
+ * background box and outline around the text, as wide as the block's +15b. */
+void func_801D1EE0(s32 index, u8 outline) {
+    func_8002675C(D_800625A0->sheet, 0x108, D_800625A0->primitives, D_800625A0->bufferIndex, D_801E9A00[index], D_801E9A2C[index], 0x1000);
+    D_800625A0->primitives->frame = D_800625A0->bufferIndex;
+    if (outline) {
+        (D_800625A0->primitives->box + D_800625A0->bufferIndex)->x0 = D_801E9A00[index] + 0x14;
+        (D_800625A0->primitives->box + D_800625A0->bufferIndex)->y0 = D_801E9A2C[index] - 0x24;
+        (D_800625A0->primitives->box + D_800625A0->bufferIndex)->x1 = D_801E9A00[index] + (D_800625A0->primitives->shade + 0x14);
+        (D_800625A0->primitives->box + D_800625A0->bufferIndex)->y1 = D_801E9A2C[index] - 0x24;
+        (D_800625A0->primitives->box + D_800625A0->bufferIndex)->x2 = D_801E9A00[index] + 0x14;
+        (D_800625A0->primitives->box + D_800625A0->bufferIndex)->y2 = D_801E9A2C[index] - 0x14;
+        (D_800625A0->primitives->box + D_800625A0->bufferIndex)->x3 = D_801E9A00[index] + (D_800625A0->primitives->shade + 0x14);
+        (D_800625A0->primitives->box + D_800625A0->bufferIndex)->y3 = D_801E9A2C[index] - 0x14;
+        (D_800625A0->primitives->edgeA + D_800625A0->bufferIndex)->x0 = D_801E9A00[index] + 0x14;
+        (D_800625A0->primitives->edgeA + D_800625A0->bufferIndex)->y0 = D_801E9A2C[index] - 0x24;
+        (D_800625A0->primitives->edgeA + D_800625A0->bufferIndex)->x1 = D_801E9A00[index] + (D_800625A0->primitives->shade + 0x14);
+        (D_800625A0->primitives->edgeA + D_800625A0->bufferIndex)->y1 = D_801E9A2C[index] - 0x24;
+        (D_800625A0->primitives->edgeA + D_800625A0->bufferIndex)->x2 = D_801E9A00[index] + (D_800625A0->primitives->shade + 0x14);
+        (D_800625A0->primitives->edgeA + D_800625A0->bufferIndex)->y2 = D_801E9A2C[index] - 0x14;
+        (D_800625A0->primitives->edgeB + D_800625A0->bufferIndex)->x0 = D_801E9A00[index] + 0x14;
+        (D_800625A0->primitives->edgeB + D_800625A0->bufferIndex)->y0 = D_801E9A2C[index] - 0x24;
+        (D_800625A0->primitives->edgeB + D_800625A0->bufferIndex)->x1 = D_801E9A00[index] + 0x14;
+        (D_800625A0->primitives->edgeB + D_800625A0->bufferIndex)->y1 = D_801E9A2C[index] - 0x14;
+        (D_800625A0->primitives->edgeB + D_800625A0->bufferIndex)->x2 = D_801E9A00[index] + (D_800625A0->primitives->shade + 0x14);
+        (D_800625A0->primitives->edgeB + D_800625A0->bufferIndex)->y2 = D_801E9A2C[index] - 0x14;
+        D_800625A0->primitives->mode = D_800625A0->bufferIndex;
+        D_800625A0->party->redraw3 = 1;
+    }
+}
 
 /* Hide the party panels (redraw flags 3 and 4). */
 void func_801D22C4(void) {

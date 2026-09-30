@@ -46,6 +46,15 @@ typedef struct DR_MODE {
     u32 code[2];
 } DR_MODE;
 
+typedef struct LINE_F3 {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    s16 x1, y1;
+    s16 x2, y2;
+    u32 pad;
+} LINE_F3;
+
 typedef struct POLY_FT4 {
     u32 tag;
     u8 r0, g0, b0, code;
@@ -121,9 +130,10 @@ typedef struct MenuImages {
 /* Shared primitive block (*(state + 348)). */
 typedef struct MenuPrims {
     POLY_FT4 polys[2]; /* 0 */
-    u8 pad50[0x48];
+    POLY_G4 box[2]; /* 50: highlight background */
     u8 fills[2][0x18]; /* 98: per buffer */
-    u8 padC8[0x60];
+    LINE_F3 edgeA[2]; /* C8: highlight outline, top and right */
+    LINE_F3 edgeB[2]; /* F8: highlight outline, left and bottom */
     u8 modes0[2][0xc]; /* 128 */
     u8 modes[2][0xc]; /* 140: per buffer */
     u8 frame; /* 158 */
@@ -732,6 +742,8 @@ extern u8 D_801EA710;
 extern u8 D_801EA714;
 extern s32 D_801EA34C[20]; /* field block part images, ffff none */
 extern s32 D_801E9A78[20];
+extern s32 D_801E9A00[]; /* highlight positions: x */
+extern s32 D_801E9A2C[]; /* y */
 extern s32 D_801E9AC8[20];
 extern s32 D_801E9A58[4]; /* marker positions */
 extern s32 D_801E9A68[4];
