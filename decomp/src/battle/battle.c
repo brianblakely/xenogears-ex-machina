@@ -4804,7 +4804,57 @@ u8 func_80084750(u8 member) {
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80084750);
 #endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80084854);
+/* The candidate nearest to `origin` that lies in screen direction
+ * `direction` (0-3, each a quarter turn around it); `origin` when none. */
+u8 func_80084854(u8 origin, u8 direction) {
+    s32 best = 0xFFFFFF;
+    s32 i;
+    s32 angle;
+    s32 inside;
+    s32 distance;
+    u8 nearest = origin;
+
+    for (i = 0; i < 11; i++) {
+        if (D_800C3E90[i] != 0xFF && D_800C3E90[i] != origin) {
+            inside = 0;
+            angle = ratan2(SLOT_Z(D_800C3E90[i]) - SLOT_Z(origin), SLOT_X(D_800C3E90[i]) - SLOT_X(origin));
+            switch (direction) {
+            case 0:
+                if ((u16)(angle + 0x200) < 0x400) {
+                    inside = 1;
+                }
+                break;
+            case 1:
+                if ((u16)(angle + 0x600) < 0x400) {
+                    inside = 1;
+                }
+                break;
+            case 2:
+                if ((u16)(angle + 0x800) < 0x200) {
+                    inside = 1;
+                }
+                if ((u16)(angle - 0x600) <= 0x200) {
+                    inside = 1;
+                }
+                break;
+            case 3:
+                if ((u16)(angle - 0x200) < 0x400) {
+                    inside = 1;
+                }
+                break;
+            }
+            if (inside) {
+                distance = SQUARE(SLOT_Z(D_800C3E90[i]) - SLOT_Z(origin));
+                distance += SQUARE(SLOT_X(D_800C3E90[i]) - SLOT_X(origin));
+                if (distance < best) {
+                    best = distance;
+                    nearest = D_800C3E90[i];
+                }
+            }
+        }
+    }
+    return nearest;
+}
 
 /* Keep the member's default target as the attack page target when it is
  * still a candidate, else take the first candidate. */
