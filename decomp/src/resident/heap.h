@@ -16,6 +16,12 @@ typedef struct {
 
 #define HEAP_HEADER(data) ((HeapHeader *)(data) - 1)
 
+/* Store the return address register at `p` (the heap records its callers). */
+#define GET_RA(p) __asm__ volatile("move $15, %0\n\tsw $31, 0($15)" : : "r"(p) : "$15")
+
+/* Resident fatal error handler; does not return. */
+extern void func_80019ACC() __attribute__((noreturn));
+
 /* Heap state ($gp-relative in the heap unit). */
 extern s16 D_80059318;     /* allocation class of the next block */
 extern u16 D_8005931C;     /* owner tag of the next block */
@@ -38,6 +44,6 @@ extern s32 func_8004C338(s32 fd);
 
 /* Allocate `size` bytes with an allocation mode, free a block. */
 extern void *func_80031BDC(s32 size, s32 mode);
-extern void func_800320E8(void *block);
+extern s32 func_800320E8(void *block);
 
 #endif

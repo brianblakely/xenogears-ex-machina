@@ -151,17 +151,83 @@ void func_80031BC4(s32 *caller, s32 *size) {
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_80031BDC);
 
+/* Shrink a block to `size` bytes, splitting the rest off as a free block.
+ * Returns the block's header, or NULL when the rest would be too small.
+ * Nonmatching: two independent instructions are scheduled in swapped order. */
+#ifdef NON_MATCHING
+HeapHeader *func_80031F70(u8 *data, s32 size) {
+    u8 *next = HEAP_HEADER(data)->next;
+    HeapHeader *header = HEAP_HEADER(data);
+    HeapHeader *rest;
+
+    if ((u32)(next - (u8 *)header - 0x10) <= (u32)(size + 0x10)) {
+        return NULL;
+    }
+    rest = (HeapHeader *)(data + size);
+    D_8005932C = 1;
+    rest->next = next;
+    rest->tag = 0;
+    rest->kind = 0x21;
+    rest->caller = 0;
+    rest->keep = 0;
+    header->next = (u8 *)(rest + 1);
+    return header;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_80031F70);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_80031FF8);
+/* Merge every run of adjacent free blocks. */
+void func_80031FF8(void) {
+    HeapHeader *header;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_800320A4);
+    for (header = HEAP_HEADER(D_80059320); header->tag != 1;
+         header = HEAP_HEADER(header->next)) {
+        while (header->tag == 0 && HEAP_HEADER(header->next)->tag == 0) {
+            header->next = HEAP_HEADER(header->next)->next;
+        }
+    }
+    D_8005932C = 0;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_800320B8);
+/* Protect a block from release. */
+void func_800320A4(u8 *data) {
+    HEAP_HEADER(data)->keep = 1;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_800320D0);
+/* Allow a block's release again. */
+void func_800320B8(u8 *data) {
+    HEAP_HEADER(data)->keep = 0;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_800320E8);
+void func_800320D0(u8 *data) {
+    HEAP_HEADER(data)->keep = 0;
+}
+
+/* Release a block: mark it free for the next coalescing pass. Returns 0, or
+ * -1 for a protected block; a NULL block is fatal unless failures are quiet
+ * (then 1). */
+s32 func_800320E8(void *data) {
+    u32 caller;
+
+    if (data == NULL) {
+        if (D_80059330 != 0) {
+            return 1;
+        }
+        GET_RA(&caller);
+        D_8005933C = 0;
+        D_80059340 = caller - 8;
+        func_80019ACC(0x83);
+    }
+    if (HEAP_HEADER(data)->keep) {
+        return -1;
+    }
+    HEAP_HEADER(data)->kind = 0x21;
+    HEAP_HEADER(data)->tag = 0;
+    HEAP_HEADER(data)->caller = 0;
+    D_8005932C = 1;
+    return 0;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_8003218C);
 
