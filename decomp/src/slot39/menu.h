@@ -602,7 +602,11 @@ typedef struct MenuAnchor {
     s32 parts[9]; /* 0: layout sprite positions */
     s32 frame; /* 24: frame sprite */
     s32 base; /* 28: level digits */
-    u8 pad2C[0x14];
+    s32 unk2C; /* 2C */
+    s32 hp; /* 30 */
+    s32 hpMax; /* 34 */
+    s32 ep; /* 38 */
+    s32 epMax; /* 3C */
     s32 label; /* 40: name label */
 } MenuAnchor;
 

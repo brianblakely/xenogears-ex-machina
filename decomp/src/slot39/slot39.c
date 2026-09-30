@@ -2061,7 +2061,71 @@ void func_801CDB1C(MenuPanel *panel, u8 ch, u8 row, MenuAnchor *x, MenuAnchor *y
     panel->counts[1] = 0;
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CDC6C);
+/* Lay out status panel `panel`'s numbers for character `ch` on row `row`:
+ * hp (by digit position) and hp maximum (packed) of the character (three
+ * digits) or, in layout 1, of its gear (five digits); in layout 0 also ep and
+ * ep maximum (two digits). */
+void func_801CDC6C(MenuPanel *panel, u8 ch, u8 row, MenuAnchor *x, MenuAnchor *y, u8 layout) {
+    s32 digits;
+    s32 first;
+    s32 i;
+    s32 n;
+    u8 digit;
+
+    if (layout == 0) {
+        func_801C80B8(D_8006D8A0[ch].hp);
+        digits = 3;
+        first = 6;
+    } else {
+        digits = 5;
+        func_801C80B8(D_8006DFAC[D_8006D8A0[ch].gear].unk60);
+        first = 4;
+    }
+    panel->counts[2] = 0;
+    for (i = 0; i < digits; i++) {
+        digit = D_800625A0->digits[first + i];
+        if (digit != 0xff) {
+            panel->counts[2] += func_8002675C(D_800625A0->sheet, digit, &panel->list3[panel->counts[2] * 2],
+                                              D_800625A0->bufferIndex, i * 8 + x->hp, row * 56 + y->hp, 0x1000);
+        }
+    }
+    if (layout == 0) {
+        func_801C80B8(D_8006D8A0[ch].hpMax);
+    } else {
+        func_801C80B8(D_8006DFAC[D_8006D8A0[ch].gear].unk64);
+    }
+    panel->counts[3] = 0;
+    for (i = 0, n = 0; i < digits; i++) {
+        digit = D_800625A0->digits[first + i];
+        if (digit != 0xff) {
+            panel->counts[3] += func_8002675C(D_800625A0->sheet, digit, &panel->list4[panel->counts[3] * 2],
+                                              D_800625A0->bufferIndex, n * 8 + x->hpMax, row * 56 + y->hpMax, 0x1000);
+            n++;
+        }
+    }
+    if (layout == 0) {
+        func_801C80B8(D_8006D8A0[ch].ep);
+        panel->counts[4] = 0;
+        for (i = 0; i < 2; i++) {
+            digit = D_800625A0->digits[7 + i];
+            if (digit != 0xff) {
+                panel->counts[4] += func_8002675C(D_800625A0->sheet, digit, &panel->list5[panel->counts[4] * 2],
+                                                  D_800625A0->bufferIndex, i * 8 + x->ep, row * 56 + y->ep, 0x1000);
+            }
+        }
+        func_801C80B8(D_8006D8A0[ch].epMax);
+        panel->counts[5] = 0;
+        for (i = 0, n = 0; i < 2; i++) {
+            digit = D_800625A0->digits[7 + i];
+            if (digit != 0xff) {
+                panel->counts[5] += func_8002675C(D_800625A0->sheet, digit, &panel->list6[panel->counts[5] * 2],
+                                                  D_800625A0->bufferIndex, n * 8 + x->epMax, row * 56 + y->epMax,
+                                                  0x1000);
+                n++;
+            }
+        }
+    }
+}
 
 /* Build the parts of `panel` (801cd81c, 801cdb1c, 801cdc6c) and show it. */
 void func_801CE0CC(MenuPanel *panel, u8 a, u8 b, MenuAnchor *c, MenuAnchor *d, u8 e) {
