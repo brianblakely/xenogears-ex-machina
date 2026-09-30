@@ -178,7 +178,7 @@ typedef struct {
     u32 unk8970[4][0x630 / 4]; /* four CLUT strips, cycled */
     GraphicsBlock *unkA230;
     u8 unkA234[4];
-    GraphicsTexture textures[1]; /* +0xA238 */
+    GraphicsTexture textures[5]; /* +0xA238 */
 } BattleGraphics;
 
 extern BattleGraphics *D_800C3EA4;
@@ -368,7 +368,17 @@ typedef struct {
     u8 style;          /* +0xC */
 } WindowRect;
 
-extern void *D_800D2E38[7]; /* window blocks */
+/* A window's primitives (0x5a8-byte heap block). */
+typedef struct {
+    u8 unk0[0x140];
+    POLY_FT4 frame[4][4]; /* +0x140 edge pieces, textures 1-4 */
+    POLY_G4 shade[2];     /* +0x3C0 background, one per draw buffer */
+    DR_MODE mode[2];      /* +0x408 */
+    u8 unk420[0x5A8 - 0x420];
+} WindowBlock;
+
+extern WindowBlock *D_800D2E38[7];
+extern u8 D_800594D4[3]; /* window colour */
 extern WindowRect *D_800D2D90[7];
 
 

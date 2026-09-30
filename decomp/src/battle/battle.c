@@ -1282,7 +1282,39 @@ void func_80077364(POLY_FT4 *prims, u8 index) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80077454);
+/* Initialise a window's primitives: its semi-transparent background in the
+ * window colour (one per draw buffer, with its draw mode) and its four edge
+ * piece sets (textures 1-4). The draw mode's texture window argument is the
+ * UI block pointer. */
+void func_80077454(u8 window) {
+    WindowBlock *block;
+    u8 i;
+
+    block = D_800D2E38[window];
+    for (i = 0; i < 2; i++) {
+        SetPolyG4(&block->shade[i]);
+        (block->shade + i)->r0 = D_800594D4[0];
+        (block->shade + i)->g0 = D_800594D4[1];
+        (block->shade + i)->b0 = D_800594D4[2];
+        (block->shade + i)->r1 = D_800594D4[0];
+        (block->shade + i)->g1 = D_800594D4[1];
+        (block->shade + i)->b1 = D_800594D4[2];
+        (block->shade + i)->r2 = D_800594D4[0];
+        (block->shade + i)->g2 = D_800594D4[1];
+        (block->shade + i)->b2 = D_800594D4[2];
+        (block->shade + i)->r3 = D_800594D4[0];
+        (block->shade + i)->g3 = D_800594D4[1];
+        (block->shade + i)->b3 = D_800594D4[2];
+        SetSemiTrans(&block->shade[i], 1);
+        SetDrawMode(&block->mode[i], 0, 0,
+                    GetTPage(0, D_800595A0, D_800C3EA4->textures[1].x, D_800C3EA4->textures[1].y),
+                    (RECT *)D_800D2D28);
+    }
+    func_80077364(block->frame[0], 1);
+    func_80077364(block->frame[1], 2);
+    func_80077364(block->frame[2], 3);
+    func_80077364(block->frame[3], 4);
+}
 
 /* Allocate and clear the 0x670-byte graphics block, then initialise it. */
 void func_80077610(void) {
