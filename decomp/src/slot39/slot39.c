@@ -1313,12 +1313,30 @@ u8 func_801CD710(u8 arg) {
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CD81C);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CDB1C);
+/* Lay out character `ch`'s level digits (the last three of +62) at row `row`
+ * of `panel` and prepare the +63 digits. */
+void func_801CDB1C(MenuPanel *panel, u8 ch, u8 row, MenuAnchor *x, MenuAnchor *y) {
+    s32 i;
+    u8 digit;
+
+    func_801C80B8(D_8006D8A0[ch].unk62);
+    panel->counts[0] = 0;
+    for (i = 0; i < 3; i++) {
+        digit = D_800625A0->digits[6 + i];
+        if (digit != 0xff) {
+            panel->counts[0] += func_8002675C(D_800625A0->sheet, digit, &panel->list1[panel->counts[0] * 2],
+                                              D_800625A0->bufferIndex, i * 8 + x->base, row * 56 + y->base,
+                                              0x1000);
+        }
+    }
+    func_801C80B8(D_8006D8A0[ch].unk63);
+    panel->counts[1] = 0;
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CDC6C);
 
 /* Build the parts of `panel` (801cd81c, 801cdb1c, 801cdc6c) and show it. */
-void func_801CE0CC(MenuPanel *panel, u8 a, u8 b, s32 c, s32 d, u8 e) {
+void func_801CE0CC(MenuPanel *panel, u8 a, u8 b, MenuAnchor *c, MenuAnchor *d, u8 e) {
     func_801CD81C(panel, a, b, c, d, e);
     func_801CDB1C(panel, a, b, c, d);
     func_801CDC6C(panel, a, b, c, d, e);
@@ -2166,9 +2184,52 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D55B4);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D5794);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D5A50);
+/* Lay out field block `index` (none for ff) at its mover's position in
+ * `mode` and show it. */
+void func_801D5A50(u8 index, u8 mode) {
+    MenuFieldBlock *block;
+    s32 x;
+    s32 y;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D5BA4);
+    if (index != 0xff) {
+        block = D_800625A0->fieldBlocks[index];
+        x = D_800625A0->movers[index].accX / 256 + D_800625A0->movers[index].x0;
+        y = D_800625A0->movers[index].accY / 256 + D_800625A0->movers[index].y0;
+        func_801D4F2C(index, mode, x, y);
+        func_801D50EC(index, x, y);
+        func_801D51EC(index, mode, x, y);
+        func_801D53D0(index, mode, x, y);
+        func_801D55B4(index, mode, x, y);
+        func_801D5794(index, mode, x, y);
+        D_800625A0->party->fieldShown[index] = 1;
+        block->buffer = D_800625A0->bufferIndex;
+    }
+}
+
+/* Lay out the money (D_8006EF58) digits at (x, y) and its unit mark. */
+void func_801D5BA4(s32 x, s32 y) {
+    s32 i;
+    s32 dx;
+    u8 digit;
+
+    func_801C80B8(D_8006EF58);
+    i = 0;
+    dx = x;
+    D_800625A0->fieldMenu->count = 0;
+    for (; i < 9; i++) {
+        digit = D_800625A0->digits[i];
+        if (digit != 0xff) {
+            D_800625A0->fieldMenu->count +=
+                func_8002675C(D_800625A0->sheet, digit, &D_800625A0->fieldMenu->polys[D_800625A0->fieldMenu->count * 2],
+                              D_800625A0->bufferIndex, dx, y, 0x1000);
+        }
+        dx += 8;
+    }
+    func_8002675C(D_800625A0->sheet, 0x10, D_800625A0->fieldMenu->cursor, D_800625A0->bufferIndex, x + 0x50, y,
+                  0x1000);
+    D_800625A0->party->redraw5 = 1;
+    D_800625A0->fieldMenu->start = D_800625A0->bufferIndex;
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D5CF8);
 
@@ -2774,20 +2835,20 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E31C0);
  * effect's +11, capped at the maximum), or with `gear` to the user's gear
  * (+60 up by a tenth of +64, capped at +64). */
 void func_801E35BC(MenuTables *tables, u8 user, u8 target, u8 effect, u8 gear) {
-    GearRecord *source;
-    GearRecord *dest;
+    CharRecord *source;
+    CharRecord *dest;
     GearRecord *machine;
     MenuEffect *record;
 
     source = &D_8006D8A0[user];
     dest = &D_8006D8A0[target];
-    machine = &D_8006D8A0[D_8006D8A0[user].gear + 11];
+    machine = (GearRecord *)&D_8006D8A0[D_8006D8A0[user].gear + 11];
     if (!gear) {
         record = tables->effects[user];
         record += effect;
-        dest->unk4C += source->unk5B * record->unk11;
-        if (dest->unk4C > dest->unk4E) {
-            dest->unk4C = dest->unk4E;
+        dest->hp += source->unk5B * record->unk11;
+        if (dest->hp > dest->hpMax) {
+            dest->hp = dest->hpMax;
         }
     } else {
         machine->unk60 += machine->unk64 / 10;

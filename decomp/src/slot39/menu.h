@@ -232,6 +232,21 @@ typedef struct MenuEffect {
     u8 pad12[0x16];
 } MenuEffect;
 
+/* A character record of the game data (D_8006D8A0; gears follow from 11). */
+typedef struct CharRecord {
+    u8 pad0[0x4C];
+    u16 hp; /* 4C */
+    u16 hpMax; /* 4E */
+    u8 pad50[0xB];
+    u8 unk5B; /* 5B */
+    u8 pad5C[0x6];
+    u8 unk62; /* 62 */
+    u8 unk63; /* 63 */
+    u8 pad64[0x3C];
+    u8 gear; /* A0: gear record (+11), ff none */
+    u8 padA1[0x3];
+} CharRecord;
+
 /* The data table directory (*(state + 330)). */
 typedef struct MenuTables {
     u8 *weapons; /* 0 */
@@ -271,12 +286,7 @@ typedef struct GearRecord {
     u8 unk3F; /* 3F */
     u8 pad40[0x4];
     u16 unk44; /* 44 */
-    u8 pad46[0x6];
-    u16 unk4C; /* 4C */
-    u16 unk4E; /* 4E */
-    u8 pad50[0xB];
-    u8 unk5B; /* 5B */
-    u8 pad5C[0x4];
+    u8 pad46[0x1A];
     u32 unk60; /* 60 */
     u32 unk64; /* 64 */
     u8 pad68[0x8];
@@ -290,8 +300,7 @@ typedef struct GearRecord {
     u8 unk9D; /* 9D */
     u8 unk9E; /* 9E */
     u8 unk9F; /* 9F */
-    u8 gear; /* A0: characters: their gear record (+11), ff none */
-    u8 padA1[0x3];
+    u8 padA0[0x4];
 } GearRecord;
 
 /* A laid-out label: its quads and sprite list. */
@@ -459,6 +468,12 @@ typedef struct MenuBlock35C {
     u8 pad32F2[0x1];
     u8 kind; /* 32F3 */
 } MenuBlock35C;
+
+/* A position record passed to the panel builders (+28 base). */
+typedef struct MenuAnchor {
+    u8 pad0[0x28];
+    s32 base; /* 28 */
+} MenuAnchor;
 
 /* A panel built by 801ce0cc: frame quads and part lists (two quads per entry). */
 typedef struct MenuPanel {
@@ -632,7 +647,7 @@ extern u8 D_80059460;         /* menu kind: 0 field menu, 2 title file screen, 6
 extern u8 D_80059171;         /* the triangle menu opened the menu */
 extern u8 D_80059178;         /* menu sound effects loaded */
 extern u8 D_800594CC;         /* field menu cursor kept between openings */
-extern GearRecord D_8006D8A0[]; /* game data: character records, then gears from 11 */
+extern CharRecord D_8006D8A0[]; /* game data: character records, then gears from 11 */
 extern GearRecord D_8006DFAC[]; /* game data: gear records (D_8006D8A0 + 11) */
 extern u8 D_8006F5C4[150];    /* game data: inventory item counts */
 extern u8 D_8006F65A[150];    /* game data: inventory item ids */
@@ -650,7 +665,8 @@ extern u8 D_8006F754[];
 extern u8 D_8006F7B8[];
 extern u8 D_8006F84E[];
 extern u8 D_8006F008;         /* game data: disc of the loaded file */
-extern u16 D_8006EF64;        /* game data: save title line of text file 1 */
+extern u16 D_8006EF64;
+extern s32 D_8006EF58;        /* game data: money */        /* game data: save title line of text file 1 */
 extern u8 D_800594D0;         /* load result: 0, 1 title timeout, 2 loaded */
 
 extern u16 D_8005948C;         /* pad buttons pressed this frame */
@@ -798,6 +814,7 @@ u8 func_801CD2AC(void);
 void func_801C7BF4(void);
 void func_801C7D78(void);
 void func_801C7F34(u32 frames);
+void func_801C80B8(u32 value);
 void func_801C851C(SVECTOR *v, u16 x, u16 y, u16 w, u16 h);
 u8 func_801C881C(void);
 s32 func_801C891C(s32 channel);
@@ -810,9 +827,9 @@ void func_801C8694(u8 arg0);
 u8 func_801CAA38(u8 arg);
 s32 func_801CACF8(u8 message, u8 confirm, u8 arg);
 void func_801CE2B4(s32 count, POLY_FT4 *polys, s32 first);
-void func_801CD81C(MenuPanel *panel, u8 a, u8 b, s32 c, s32 d, u8 e);
-void func_801CDB1C(MenuPanel *panel, u8 a, u8 b, s32 c, s32 d);
-void func_801CDC6C(MenuPanel *panel, u8 a, u8 b, s32 c, s32 d, u8 e);
+void func_801CD81C(MenuPanel *panel, u8 a, u8 b, MenuAnchor *c, MenuAnchor *d, u8 e);
+void func_801CDB1C(MenuPanel *panel, u8 ch, u8 row, MenuAnchor *x, MenuAnchor *y);
+void func_801CDC6C(MenuPanel *panel, u8 a, u8 b, MenuAnchor *c, MenuAnchor *d, u8 e);
 void func_801CE540(void);
 void func_801CE660(void);
 void func_801CEB5C(void);
@@ -871,6 +888,12 @@ void func_801D3B00(void);
 void func_801D397C(s32 arg0, s32 x, s32 y, s32 w, s32 h, s32 arg5, s32 arg6, s32 arg7, s32 arg8);
 void func_801D4D1C(u8 image, u16 x, u16 y, u16 w, u16 h, u8 arg5, s32 arg6, u8 arg7);
 void func_801D4EA0(u8 slot);
+void func_801D4F2C(u8 index, u8 mode, s32 x, s32 y);
+void func_801D50EC(u8 index, s32 x, s32 y);
+void func_801D51EC(u8 index, u8 mode, s32 x, s32 y);
+void func_801D53D0(u8 index, u8 mode, s32 x, s32 y);
+void func_801D55B4(u8 index, u8 mode, s32 x, s32 y);
+void func_801D5794(u8 index, u8 mode, s32 x, s32 y);
 void func_801D5ED4(u8 slot, u8 mode);
 void func_801D6194(u8 mode);
 void func_801D6338(u8 slot, u8 mode);
