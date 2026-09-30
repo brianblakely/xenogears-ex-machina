@@ -2033,6 +2033,14 @@ done:
     return 0;
 }
 
+/* Unit boundary: the jump tables of 8007bef4, 8007c694, 8007cd80 and 8007d3d4
+ * (rodata 0x9c-0x11c) sit 4 mod 8, and GCC 8-aligns jump tables within a
+ * unit, so they belong to a unit whose rodata starts at 0x9c (after
+ * "Clear OTAG" and its junk padding byte, the previous unit's end) and ends
+ * at 0x198 (after "ERROR ID0 ACT=%d" and its junk padding "ot"; those strings
+ * are used by 8008110c, 80084158, 80084a40). Its text starts after 80077dac
+ * and at or before 8007bef4 and ends after 80084a40 and before 8008e59c.
+ * Switch functions in it cannot match until field.c is split there. */
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007BEF4);
 
 /* The floor range: `high` is `low` raised by a nonnegative extent. */
@@ -2048,7 +2056,155 @@ void func_8007C670(s32 *low, s32 *high, s32 extent) {
     *high = base;
 }
 
+#ifdef NON_MATCHING
+/* Walk the actor's collision layer from its current triangle to the one
+ * under position + probe (X/Z, in 16.16): across the edge each normal clip
+ * rejects, at most 32 steps. On arrival return 0 with the point's height in
+ * `floor` (skipped for mode -1). Return -1 when the walk leaves the mesh,
+ * runs out of steps or enters a triangle whose attribute the actor may not
+ * cross (masked off by the actor's layer bits or 800b21cc; 800000 rejects
+ * layer 0), leaving the edge last crossed in `edge`.
+ * Does not match: its switch table must sit 4 mod 8 (see the unit note at
+ * 8007bef4), and the original places the rejection's "triangle = -1" block
+ * before the walk and keeps the start position's X/Z loads for `origin`. */
+s32 func_8007C694(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge, SVECTOR *floor, s32 mode) {
+    VECTOR normal;
+    CollisionTriangle *triangles;
+    SVECTOR *vertices;
+    s32 triangle;
+    s32 current;
+    s32 point;
+    s32 origin;
+    s32 a;
+    s32 b;
+    s32 c;
+    u32 side;
+    u32 mask;
+    u32 attribute;
+    s32 steps;
+
+    triangle = actor->triangle[actor->layer];
+    triangles = D_800AF880.components.collision_triangles[actor->layer];
+    vertices = D_800AF880.components.collision_vertices[actor->layer];
+    if (triangle == -1) {
+        return -1;
+    }
+    floor->vx = (position[0] + probe->vx) >> 16;
+    point = (floor->vx << 16) + ((position[2] + probe->vz) >> 16);
+    mask = 0;
+    floor->vy = 0;
+    floor->vz = (position[2] + probe->vz) >> 16;
+    origin = ((position[0] >> 16) << 16) + (position[2] >> 16);
+    if (!((actor->layer_flags >> (actor->layer + 3)) & 1)) {
+        mask = -(D_800B2078.party_processing_mode == 0);
+    }
+    steps = 0;
+    do {
+        current = triangle;
+        a = (vertices[triangles[triangle].unk00[0]].vx << 16) + vertices[triangles[triangle].unk00[0]].vz;
+        b = (vertices[triangles[triangle].unk00[1]].vx << 16) + vertices[triangles[triangle].unk00[1]].vz;
+        c = (vertices[triangles[triangle].unk00[2]].vx << 16) + vertices[triangles[triangle].unk00[2]].vz;
+        side = (u32)func_8004A70C(a, b, point) >> 31;
+        if (func_8004A70C(b, c, point) < 0) {
+            side |= 2;
+        }
+        if (func_8004A70C(c, a, point) < 0) {
+            side |= 4;
+        }
+        switch (side) {
+        case 0:
+            steps = 0xFF;
+            break;
+        case 1:
+            triangle = triangles[triangle].unk00[3];
+            break;
+        case 2:
+            triangle = triangles[triangle].unk00[4];
+            break;
+        case 3:
+            if (func_8004A70C(b, point, origin) < 0) {
+                triangle = triangles[triangle].unk00[3];
+                side = 1;
+            } else {
+                triangle = triangles[triangle].unk00[4];
+                side = 2;
+            }
+            break;
+        case 4:
+            triangle = triangles[triangle].unk00[5];
+            break;
+        case 5:
+            if (func_8004A70C(a, point, origin) < 0) {
+                triangle = triangles[triangle].unk00[5];
+                side = 4;
+            } else {
+                triangle = triangles[triangle].unk00[3];
+                side = 1;
+            }
+            break;
+        case 6:
+            if (func_8004A70C(c, point, origin) < 0) {
+                triangle = triangles[triangle].unk00[4];
+                side = 2;
+            } else {
+                triangle = triangles[triangle].unk00[5];
+                side = 4;
+            }
+            break;
+        case 7:
+            triangle = -1;
+            break;
+        }
+        attribute = D_800AF880.components.collision_attributes[triangles[triangle].attribute].word & mask;
+        if ((((actor->flags >> 9) & 3) & (attribute >> 3)) || (((actor->flags >> 8) & 7) & (attribute >> 5))
+            || ((attribute & 0x800000) && actor->layer == 0)) {
+            triangle = -1;
+            break;
+        }
+        if (triangle == -1) {
+            break;
+        }
+        steps++;
+    } while (steps < 0x20);
+    if (triangle != -1 && steps != 0x20) {
+        if (mode == -1) {
+            return 0;
+        }
+        func_8007B07C(&vertices[triangles[triangle].unk00[0]], &vertices[triangles[triangle].unk00[1]],
+                      &vertices[triangles[triangle].unk00[2]], floor, &normal);
+        return 0;
+    }
+    switch (side) {
+    case 1:
+        edge[0].vx = vertices[triangles[current].unk00[0]].vx;
+        edge[0].vy = vertices[triangles[current].unk00[0]].vy;
+        edge[0].vz = vertices[triangles[current].unk00[0]].vz;
+        edge[1].vx = vertices[triangles[current].unk00[1]].vx;
+        edge[1].vy = vertices[triangles[current].unk00[1]].vy;
+        edge[1].vz = vertices[triangles[current].unk00[1]].vz;
+        break;
+    case 2:
+        edge[0].vx = vertices[triangles[current].unk00[1]].vx;
+        edge[0].vy = vertices[triangles[current].unk00[1]].vy;
+        edge[0].vz = vertices[triangles[current].unk00[1]].vz;
+        edge[1].vx = vertices[triangles[current].unk00[2]].vx;
+        edge[1].vy = vertices[triangles[current].unk00[2]].vy;
+        edge[1].vz = vertices[triangles[current].unk00[2]].vz;
+        break;
+    case 4:
+        edge[0].vx = vertices[triangles[current].unk00[2]].vx;
+        edge[0].vy = vertices[triangles[current].unk00[2]].vy;
+        edge[0].vz = vertices[triangles[current].unk00[2]].vz;
+        edge[1].vx = vertices[triangles[current].unk00[0]].vx;
+        edge[1].vy = vertices[triangles[current].unk00[0]].vy;
+        edge[1].vz = vertices[triangles[current].unk00[0]].vz;
+        break;
+    }
+    return -1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007C694);
+#endif
 
 /* Allocate `words` words of the scratchpad. */
 u32 *func_8007CD3C(s32 words) {
