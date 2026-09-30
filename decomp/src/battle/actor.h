@@ -40,7 +40,7 @@ typedef struct {
     s16 depth;      /* 0x2E: ordering-table depth, 0 hidden */
     s16 depthBias;  /* 0x30 */
     s16 direction;  /* 0x32 */
-    s16 field34;    /* 0x34 */
+    u16 field34;    /* 0x34: 1 takes over a running camera sprite */
     u16 size;       /* 0x36 */
     s16 halfSize;   /* 0x38 */
     u8 pad3A[2];
@@ -184,7 +184,9 @@ extern ActorTask *D_800C3680;    /* the eye sprite's task */
 extern ActorTask *D_800C3684;    /* the look-at sprite's task */
 extern Vector D_8006F99C;        /* resident: the eye sprite's position (16.16) */
 extern Vector D_8006F9AC;        /* resident: the look-at sprite's position (16.16) */
-extern SVector D_800D30A0[2];    /* saved eye and look-at points */
+extern SVector D_800D30A0[2];    /* the camera's wanted eye and look-at points */
+extern SVector D_800C3CCC;       /* the eye point saved while the camera sprites run */
+extern SVector D_800C3CD4;       /* the look-at point saved while they run */
 extern u16 D_80059454;
 extern u16 D_800C3CDC;
 

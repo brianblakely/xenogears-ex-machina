@@ -914,11 +914,128 @@ void func_800BBAB8(void) {
     D_800D309C.rot.vz = 0;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BBEE0);
+/* Destroy of a camera sprite task: release its camera role (restoring the
+ * saved point unless effects are off), free it, and when the last one ends
+ * return to camera mode 800c367c. */
+void func_800BBEE0(ActorTask *task) {
+    SVector *point;
+    BattleSprite *sprite = task->data;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BC018);
+    if (sprite->flags.bits.group == 0xA) {
+        if (D_800C3680 == task) {
+            D_800C3680 = NULL;
+            if (D_800C37C8 == 0) {
+                D_800D30A0[0].vx = D_800C3CCC.vx;
+                D_800D30A0[0].vy = D_800C3CCC.vy;
+                D_800D30A0[0].vz = D_800C3CCC.vz;
+            }
+        }
+    } else if (D_800C3684 == task) {
+        D_800C3684 = NULL;
+        if (D_800C37C8 == 0) {
+            point = &D_800D30A0[1];
+            point->vx = D_800C3CD4.vx;
+            point->vy = D_800C3CD4.vy;
+            point->vz = D_800C3CD4.vz;
+        }
+    }
+    if (sprite->motion.bits.owned) {
+        func_8001CE74(task);
+    }
+    func_8001CD94(task);
+    func_8001CB48(&task->field1C);
+    func_800320E8(task);
+    if (--D_800C3CC4 == 0) {
+        func_800BC2F0(D_800C367C);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BC158);
+/* Update of a camera sprite task: step its animation (twice when double
+ * stepping), make its position the camera eye (group 0xA) or look-at point,
+ * and destroy it when its animation ends. */
+void func_800BC018(ActorTask *task) {
+    BattleSprite *sprite = task->data;
+
+    func_80023210(sprite);
+    func_80022CDC(sprite);
+    if (sprite->flags.bits.group == 0xA) {
+        D_8006F99C.vx = sprite->x;
+        D_8006F99C.vy = sprite->y;
+        D_8006F99C.vz = sprite->z;
+    } else {
+        D_8006F9AC.vx = sprite->x;
+        D_8006F9AC.vy = sprite->y;
+        D_8006F9AC.vz = sprite->z;
+    }
+    if (sprite->framesLeft != 0) {
+        if (sprite->motion.bits.doubleStep) {
+            func_80023210(sprite);
+            func_80022CDC(sprite);
+            if (sprite->flags.bits.group == 0xA) {
+                D_8006F99C.vx = sprite->x;
+                D_8006F99C.vy = sprite->y;
+                D_8006F99C.vz = sprite->z;
+            } else {
+                D_8006F9AC.vx = sprite->x;
+                D_8006F9AC.vy = sprite->y;
+                D_8006F9AC.vz = sprite->z;
+            }
+            if (sprite->framesLeft == 0) {
+                task->destroy(task);
+            }
+        }
+    } else {
+        task->destroy(task);
+    }
+}
+
+/* Make sprite task a camera sprite: the eye (group 0xA) or look-at sprite,
+ * saving the camera point or taking over (field34 1) from a running one,
+ * else stopping the new one; then camera mode 2 follows the sprites. */
+void func_800BC158(ActorTask *task) {
+    SVector *point;
+    BattleSprite *sprite = (BattleSprite *)(task + 1);
+
+    if (sprite->flags.bits.group == 0xA) {
+        if (D_800C3680 != NULL) {
+            if (((BattleSprite *)(D_800C3680 + 1))->field34 != 1 && sprite->field34 == 1) {
+                D_800C3680->destroy(D_800C3680);
+                D_800C3680 = task;
+            } else {
+                sprite->countdown = 0;
+                sprite->framesLeft = 0;
+            }
+        } else {
+            D_800C3680 = task;
+            D_800C3CCC.vx = D_800D30A0[0].vx;
+            D_800C3CCC.vy = D_800D30A0[0].vy;
+            D_800C3CCC.vz = D_800D30A0[0].vz;
+        }
+    } else if (D_800C3684 != NULL) {
+        if (((BattleSprite *)(D_800C3684 + 1))->field34 != 1 && sprite->field34 == 1) {
+            D_800C3684->destroy(D_800C3684);
+            D_800C3684 = task;
+        } else {
+            sprite->countdown = 0;
+            sprite->framesLeft = 0;
+        }
+    } else {
+        D_800C3684 = task;
+        point = &D_800D30A0[1];
+        D_800C3CD4.vx = point->vx;
+        D_800C3CD4.vy = point->vy;
+        D_800C3CD4.vz = point->vz;
+    }
+    D_800C3CC4++;
+    if (sprite->motion.bits.flip) {
+        sprite->direction = 0x800;
+    } else {
+        sprite->direction = 0;
+    }
+    func_8001CD74(task, func_800BBEE0);
+    func_8001CD6C((EffectSprite *)task, (void (*)(EffectSprite *))func_800BC018);
+    func_800BC2F0(2);
+}
 
 /* Set the camera mode: 2 puts the eye and look-at sprites at the saved
  * points, 4 sets D_800C3CBC to 5, others release them. */
