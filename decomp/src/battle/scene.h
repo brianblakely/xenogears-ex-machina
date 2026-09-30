@@ -252,7 +252,7 @@ void func_800A22A8(EffectPool *pool);
 void func_800A2D1C(SpritePool *pool);
 s32 func_800AF400(void);
 void func_800AFA98(BattleObject *object, ModelPart *part, s32 flags);
-void func_800A5BE8(SVector *a, SVector *b, SVector *c, SVector *point, void *out);
+void func_800A5BE8(SVector *a, SVector *b, SVector *c, SVector *point, Vector *normal);
 s32 func_800A5870(SVector *point, s32 index, void *out);
 s32 func_800A579C(SVector *point);
 s32 func_800A5A48(SVector *a, SVector *b, SVector *c, SVector *point);

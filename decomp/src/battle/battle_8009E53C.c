@@ -1936,7 +1936,28 @@ s32 func_800A5A48(SVector *a, SVector *b, SVector *c, SVector *point) {
     return -(cross.vy >= 0);
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A5BE8);
+/* The ground height of point on the plane through triangle (a, b, c): the
+ * plane's unit normal goes to normal; a vertical plane leaves height 0. */
+void func_800A5BE8(SVector *a, SVector *b, SVector *c, SVector *point, Vector *normal) {
+    Vector edgeB;
+    Vector edgeC;
+    Vector edge;
+
+    edge.vx = b->vx - a->vx;
+    edge.vy = b->vy - a->vy;
+    edge.vz = b->vz - a->vz;
+    func_80048D7C(&edge, &edgeB);
+    edge.vx = c->vx - a->vx;
+    edge.vy = c->vy - a->vy;
+    edge.vz = c->vz - a->vz;
+    func_80048D7C(&edge, &edgeC);
+    func_8004A480(&edgeB, &edgeC, normal);
+    if (normal->vy == 0) {
+        point->vy = 0;
+        return;
+    }
+    point->vy = a->vy + (-((point->vx - a->vx) * normal->vx) - (point->vz - a->vz) * normal->vz) / normal->vy;
+}
 
 #ifdef NON_MATCHING
 /* Search triangle and, up to depth levels, its unvisited neighbours for the one

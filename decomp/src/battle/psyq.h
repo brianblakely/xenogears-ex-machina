@@ -130,5 +130,7 @@ void OuterProduct0(Vector *v0, Vector *v1, Vector *out);
 void SetLightMatrix(Matrix *m);
 void SetTransMatrix(Matrix *m);
 s32 SquareRoot0(s32 value);
+s32 func_80048D7C(Vector *v, Vector *out);                /* VectorNormal */
+void func_8004A480(Vector *a, Vector *b, Vector *out);   /* OuterProduct12 */
 
 #endif
