@@ -5124,7 +5124,53 @@ void func_80085388(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085454);
+/* Copy the resolver's damage and result codes into event `queue` and
+ * accumulate them into the running amount and code of each slot: damage
+ * (codes 0 and 5) and healing (code 2) add up or cancel out, any other code
+ * replaces the running result. */
+void func_80085454(u8 queue) {
+    s32 slot;
+
+    for (slot = 0; slot < 11; slot++) {
+        D_800C3FE8[queue].amounts[slot] = D_800D2C54[slot];
+        D_800C3FE8[queue].codes[slot] = D_800D2C88[slot];
+        switch (D_800D2C88[slot]) {
+        case 0:
+        case 5:
+            if (D_800D2D5C[slot] == 0 || D_800D2D5C[slot] == 5) {
+                D_800D2D70[slot] += D_800D2C54[slot];
+            } else if (D_800D2D5C[slot] == 2) {
+                if ((s16)D_800D2C54[slot] - D_800D2D70[slot] < 0) {
+                    D_800D2D70[slot] = D_800D2D70[slot] - (s16)D_800D2C54[slot];
+                } else {
+                    D_800D2D70[slot] = (s16)D_800D2C54[slot] - D_800D2D70[slot];
+                    D_800D2D5C[slot] = 0;
+                }
+            } else {
+                D_800D2D70[slot] = D_800D2C54[slot];
+                D_800D2D5C[slot] = D_800D2C88[slot];
+            }
+            break;
+        case 2:
+            if (D_800D2D5C[slot] == 2) {
+                D_800D2D70[slot] += D_800D2C54[slot];
+            } else if (D_800D2D5C[slot] == 0 || D_800D2D5C[slot] == 5) {
+                if ((s16)D_800D2C54[slot] - D_800D2D70[slot] < 0) {
+                    D_800D2D70[slot] = D_800D2D70[slot] - (s16)D_800D2C54[slot];
+                } else {
+                    D_800D2D70[slot] = (s16)D_800D2C54[slot] - D_800D2D70[slot];
+                    D_800D2D5C[slot] = 2;
+                }
+            } else {
+                D_800D2D70[slot] = D_800D2C54[slot];
+                D_800D2D5C[slot] = D_800D2C88[slot];
+            }
+            break;
+        }
+        D_800C3FE8[queue].accumulated[slot] = D_800D2D70[slot];
+        D_800C3FE8[queue].accumulatedCodes[slot] = D_800D2D5C[slot];
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085618);
 
