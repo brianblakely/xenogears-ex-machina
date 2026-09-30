@@ -1755,8 +1755,8 @@ void func_80086078(s32 distance, u32 *out, s32 volume) {
     *out = ((u32)(level << 16) / 127 * volume) >> 16;
 }
 
-/* Update the voices of the emitter playing sound `id`: volume by distance,
- * pan by the descriptor's screen X. */
+/* Update the voices of the emitter following descriptor `id`: volume by
+ * distance, pan by the descriptor's screen X. */
 void func_800860F0(s32 unused0, s32 volume, s32 unused2, s32 distance, s32 id) {
     s32 i;
     s32 voice;
@@ -1838,7 +1838,7 @@ void func_800862CC(u16 sound, s32 volume, s32 unused, s32 distance, s32 actor) {
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800862CC);
 #endif
 
-/* Stop the emitter playing sound `id`, freeing its slot. */
+/* Stop the emitter following descriptor `id`, freeing its slot. */
 void func_800863E8(s32 id) {
     s32 i;
 
@@ -1852,7 +1852,7 @@ void func_800863E8(s32 id) {
     }
 }
 
-/* The emitter slot already playing `id`, or -1. */
+/* The emitter slot following descriptor `id`, or -1. */
 s32 func_80086470(s32 owner, s32 id) {
     s32 i;
 
