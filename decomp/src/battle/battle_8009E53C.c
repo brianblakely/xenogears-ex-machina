@@ -2447,7 +2447,7 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800B02
 
 /* Whether a point (x at [0], z at [2]) lies strictly inside the scene's
  * bounds. */
-s32 func_800B0AB4(s16 *point) {
+s16 func_800B0AB4(s16 *point) {
     BattleSceneData *scene = D_800658C8;
     s16 x = point[0];
     s16 z;
@@ -2461,7 +2461,50 @@ s32 func_800B0AB4(s16 *point) {
     return 0;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800B0B14);
+/* The ground height 512 units in front of the camera (towards its look-at
+ * point, the height difference quartered) for view key; the previous height
+ * when the point is off the stage or the key is unchanged. */
+s16 func_800B0B14(s32 key) {
+    Vector out;
+    SVector point;
+    s16 dx;
+    s32 dy;
+    s16 dz;
+    s32 length;
+    s32 stepX;
+    s32 stepY;
+    s32 stepZ;
+    s16 triangle;
+
+    dx = D_800D335C.vx - D_800D3354.vx;
+    dy = (D_800D335C.vy - D_800D3354.vy) / 4;
+    dz = D_800D335C.vz - D_800D3354.vz;
+    length = SquareRoot0(dx * dx + dy * dy + dz * dz) + 1;
+    stepX = (dx << 9) / length;
+    stepY = (dy << 9) / length;
+    stepZ = (dz << 9) / length;
+    triangle = -1;
+    point.vx = D_800D3354.vx + stepX;
+    point.vy = D_800D3354.vy + stepY;
+    point.vz = D_800D3354.vz + stepZ;
+    if (func_800B0AB4(&point.vx) && key != D_800C3546) {
+        D_800C3546 = key;
+        triangle = func_800A5914(&point, D_800C3542, 5);
+        if (triangle < 0) {
+            triangle = func_800A579C(&point);
+        }
+        if (triangle >= 0) {
+            D_800C3542 = triangle;
+        }
+    }
+    if (triangle >= 0) {
+        func_800A5870(&point, D_800C3542, &out);
+        D_800C3544 = point.vy;
+    } else {
+        point.vy = D_800C3544;
+    }
+    return point.vy;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800B0D70);
 

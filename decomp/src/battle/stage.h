@@ -21,6 +21,11 @@ extern u8 D_800C3DF8;      /* effects run */
 extern Matrix *D_800D2FC0; /* the stage colour matrix */
 extern s32 D_80050104;     /* resident: drawing with lighting */
 extern SoundSystem *D_800C4924;
+extern SVector D_800D3354; /* camera position */
+extern SVector D_800D335C; /* camera look-at point */
+extern s16 D_800C3542;     /* last scene triangle under the camera's view point */
+extern s16 D_800C3544;     /* its ground height */
+extern s16 D_800C3546;     /* key of the last update */
 
 /* Resident services. */
 s32 func_8003F8CC(s32 angle); /* cosine (4096 = 1.0) */
