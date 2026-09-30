@@ -2142,7 +2142,51 @@ void func_8008E2B8(u32 *ot, s32 level, s32 subtract) {
     func_80043B48(ot, &D_80096E00[D_800928A0]);
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008E3CC);
+/* Draw the glow field: upload its byte image and stretch it over the
+ * screen as a semi-transparent textured quad at two thirds of the level
+ * (plain texture at full level); optionally add a brightening tile. */
+void func_8008E3CC(u32 *ot, s32 level, s32 brighten) {
+    PolyFT4 *quad = &D_80096D90[D_800928A0];
+    Tile *tile;
+    Rect rect;
+    s32 shade;
+
+    setlen(quad, 9);
+    shade = level * 2 / 3;
+    *(u32 *)&quad->r0 = shade | (shade << 8) | (shade << 16) | 0x2C000000;
+    setShadeTex(quad, shade == 0x80);
+    *(u32 *)&quad->x0 = 0;
+    *(u32 *)&quad->x1 = 0x140;
+    *(u32 *)&quad->x2 = 0xDA0000;
+    *(u32 *)&quad->x3 = 0xDA0140;
+    *(u16 *)&quad->u0 = 0;
+    *(u16 *)&quad->u1 = 0x6F;
+    *(u16 *)&quad->u2 = 0x2A00;
+    *(u16 *)&quad->u3 = 0x2A6F;
+    setSemiTrans(quad, 1);
+    quad->tpage = func_80043A1C(1, 1, 0x140, 0x100);
+    quad->clut = func_80043A58(0, 0x1FD);
+    func_80043B48(ot, quad);
+    rect.x = 0x140;
+    rect.y = 0x100;
+    rect.w = 0x38;
+    rect.h = 0x2B;
+    func_80044894(&rect, D_80092844);
+    if (brighten) {
+        tile = &D_80096DE0[D_800928A0];
+        if (level > 0x80) {
+            shade = level * 2;
+            *(u32 *)&tile->r0 = shade | (shade << 8) | (shade << 16) | 0x60000000;
+            setlen(tile, 3);
+            *(u32 *)&tile->x0 = 0;
+            *(u32 *)&tile->w = 0xDA0140;
+            setSemiTrans(tile, 1);
+            func_80043B48(ot, tile);
+        }
+    }
+    func_800454DC(&D_80096E00[D_800928A0], 0, 1, func_80043A1C(0, 2, 0, 0), NULL);
+    func_80043B48(ot, &D_80096E00[D_800928A0]);
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008E620);
 

@@ -300,10 +300,32 @@ typedef struct {
     u32 code[2];
 } DrawMode;
 
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    u8 u0, v0;
+    u16 clut;
+    s16 x1, y1;
+    u8 u1, v1;
+    u16 tpage;
+    s16 x2, y2;
+    u8 u2, v2;
+    u16 pad1;
+    s16 x3, y3;
+    u8 u3, v3;
+    u16 pad2;
+} PolyFT4;
+
+#define setShadeTex(p, tge) \
+    ((tge) ? setcode(p, getcode(p) | 0x01) : setcode(p, getcode(p) & ~0x01))
+
+extern PolyFT4 D_80096D90[2];  /* glow field quad per draw buffer */
 extern Tile D_80096DE0[2];     /* full-screen shade tile per draw buffer */
 extern DrawMode D_80096E00[2]; /* its blend mode per draw buffer */
 void func_80043B48(u32 *ot, void *prim); /* AddPrim */
 u16 func_80043A1C(s32 tp, s32 abr, s32 x, s32 y); /* GetTPage */
+u16 func_80043A58(s32 x, s32 y);                  /* GetClut */
 void func_800454DC(DrawMode *p, s32 dfe, s32 dtd, s32 tpage, Rect *tw); /* SetDrawMode */
 
 int abs(int x);
