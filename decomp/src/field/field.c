@@ -10349,7 +10349,44 @@ void func_800AA9DC(FieldInstance *instance) {
     instance->radius = size * 2 + 1;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AAA74);
+extern MATRIX D_800B00E8; /* instance view: the rotation with its translation */
+
+/* 0 when an instance's bounding square (its radius around its centre) is
+ * on screen, else -1. */
+s32 func_800AAA74(FieldInstance *instance) {
+    VECTOR position;
+    SVECTOR corner;
+    s32 flag;
+    s32 sxy;
+    s32 depth;
+    s32 radius;
+    s32 top;
+    s32 left;
+    s32 bottom;
+    s32 right;
+
+    func_8004A6DC((SVECTOR *)instance->center, &position.vx, &flag);
+    D_800B00E8.t[0] = position.vx;
+    D_800B00E8.t[1] = position.vy;
+    D_800B00E8.t[2] = position.vz;
+    SetRotMatrix(&D_800B00E8);
+    SetTransMatrix(&D_800B00E8);
+    radius = instance->radius;
+    corner.vy = corner.vx = -radius;
+    corner.vz = 0;
+    RotTransPers(&corner, &sxy, &depth, &flag);
+    top = sxy >> 16;
+    left = (s16)sxy;
+    corner.vy = corner.vx = radius;
+    corner.vz = 0;
+    RotTransPers(&corner, &sxy, &depth, &flag);
+    bottom = sxy >> 16;
+    right = (s16)sxy;
+    if (top < D_800C3A60 + 0xE0 && -D_800C3A60 < bottom && left < D_800C3A5C + 0x140 && -D_800C3A5C < right) {
+        return 0;
+    }
+    return -1;
+}
 
 typedef struct {
     DR_MODE modes[33][2];
@@ -10418,7 +10455,24 @@ void func_800AADC8(s32 index, s32 r, s32 g, s32 b) {
     (D_800AFC68->sprites[index] + 1)->b0 = b;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AAE4C);
+/* Place sprite `index` at (x, y) (anchor 0: 4, 12 above-left; 1: 4, 4)
+ * and link it with its draw mode into the overlay ordering table. */
+void func_800AAE4C(s32 index, s32 x, s32 y, s32 anchor) {
+    switch (anchor) {
+    case 0:
+        y -= 12;
+        x -= 4;
+        break;
+    case 1:
+        y -= 4;
+        x -= 4;
+        break;
+    }
+    D_800AFC68->sprites[index][D_800ADB08].x0 = x;
+    D_800AFC68->sprites[index][D_800ADB08].y0 = y;
+    addPrim(&D_800C426C->overlay_ot[0], &D_800AFC68->sprites[index][D_800ADB08]);
+    addPrim(&D_800C426C->overlay_ot[0], &D_800AFC68->modes[index][D_800ADB08]);
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AAF80);
 
