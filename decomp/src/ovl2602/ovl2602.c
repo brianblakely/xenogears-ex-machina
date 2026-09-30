@@ -2038,7 +2038,47 @@ void func_801CCEBC(u8 count, u8 *shown) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CCEE8);
+/* Show label `index`: in list row `row` (mode 0, offset by its column) or at the info position (mode 1; labels past the first further left). */
+void func_801CCEE8(u8 count, Label *labels, u8 *text_ids, s32 *offsets, u8 *shown, u8 index, u8 row, u8 mode) {
+    switch (mode) {
+    case 0:
+        func_801CCEBC(count, shown);
+        (labels[index].poly + D_800625A0->buffer)->x0 = D_801D6BFC[row + index] + 0x16 + offsets[index];
+        (labels[index].poly + D_800625A0->buffer)->y0 = D_801D6C20[row + index] - 0x22;
+        (labels[index].poly + D_800625A0->buffer)->x1 =
+            labels[index].width + (D_801D6BFC[row + index] + 0x16 + offsets[index]);
+        (labels[index].poly + D_800625A0->buffer)->y1 = D_801D6C20[row + index] - 0x22;
+        (labels[index].poly + D_800625A0->buffer)->x2 = D_801D6BFC[row + index] + 0x16 + offsets[index];
+        (labels[index].poly + D_800625A0->buffer)->y2 = D_801D6C20[row + index] - 0x15;
+        (labels[index].poly + D_800625A0->buffer)->x3 =
+            labels[index].width + (D_801D6BFC[row + index] + 0x16 + offsets[index]);
+        (labels[index].poly + D_800625A0->buffer)->y3 = D_801D6C20[row + index] - 0x15;
+        break;
+    case 1:
+        if (index != 0) {
+            (labels[index].poly + D_800625A0->buffer)->x0 = 0xCE;
+            (labels[index].poly + D_800625A0->buffer)->y0 = 0x7E;
+            (labels[index].poly + D_800625A0->buffer)->x1 = labels->width + 0xCE;
+            (labels[index].poly + D_800625A0->buffer)->y1 = 0x7E;
+            (labels[index].poly + D_800625A0->buffer)->x2 = 0xCE;
+            (labels[index].poly + D_800625A0->buffer)->y2 = 0x8B;
+            (labels[index].poly + D_800625A0->buffer)->x3 = labels->width + 0xCE;
+            (labels[index].poly + D_800625A0->buffer)->y3 = 0x8B;
+        } else {
+            (labels->poly + D_800625A0->buffer)->x0 = 0xEC;
+            (labels->poly + D_800625A0->buffer)->y0 = 0x7E;
+            (labels->poly + D_800625A0->buffer)->x1 = labels->width + 0xEC;
+            (labels->poly + D_800625A0->buffer)->y1 = 0x7E;
+            (labels->poly + D_800625A0->buffer)->x2 = 0xEC;
+            (labels->poly + D_800625A0->buffer)->y2 = 0x8B;
+            (labels->poly + D_800625A0->buffer)->x3 = labels->width + 0xEC;
+            (labels->poly + D_800625A0->buffer)->y3 = 0x8B;
+        }
+        break;
+    }
+    labels[index].buffer = D_800625A0->buffer;
+    shown[index] = 1;
+}
 
 /* Reveal `count` image pairs one step at a time (two frames each), the second of each pair one step behind. */
 void func_801CD310(s32 count, s32 *ids) {
