@@ -176,6 +176,13 @@ typedef struct {
     u8 unk4786[2];
 } DetailBlock;
 
+/* Projected markers (ovl2602, menu state + 440). */
+typedef struct {
+    POLY_FT4 packets[8]; /* 000 */
+    SVECTOR quads[16];   /* 140 */
+    u8 buffer;           /* 1c0 */
+} MarkerQuads;
+
 /* Cursor and yes/no markers (menu state + 428). */
 typedef struct {
     POLY_FT4 packets[8]; /* 000: two per marker */
@@ -303,7 +310,9 @@ typedef struct {
     u8 unk54[0x5A - 0x54];
     u8 unk5A;
     u8 unk5B;
-    u8 unk5C[0x6C - 0x5C];
+    u8 unk5C[0x63 - 0x5C];
+    u8 model_shown;  /* 63: ovl2602 */
+    u8 unk64[0x6C - 0x64];
 } ScreenFlags;
 
 /* A linked sound effect bank. */
@@ -363,7 +372,9 @@ typedef struct {
     SVECTOR view_rotation;    /* 1d8 */
     VECTOR view_translation;  /* 1e0 */
     MATRIX view_matrix;       /* 1f0 */
-    u8 unk210[0x2DC - 0x210];
+    u8 unk210[0x230 - 0x210];
+    u8 model_a[0x68];         /* 230: ovl2602, drawn by 801e7d14 */
+    u8 model_b[0x2DC - 0x298]; /* 298 */
     void *sprite_sheet;  /* 2dc */
     void *label_text;    /* 2e0 */
     EffectBank *effect_bank; /* 2e4 */
@@ -401,7 +412,7 @@ typedef struct {
     MarkerBlock *marks;  /* 428 */
     u8 unk42C[0x43C - 0x42C];
     ScrollBar *scroll;   /* 43c */
-    MarkerBlock *marks_b; /* 440: ovl2602's marker block */
+    MarkerQuads *marks_b; /* 440: ovl2602's projected markers */
     Marker *markers[2];  /* 444 */
     u8 unk44C[4];
     DetailBlock *details; /* 450 */
@@ -604,5 +615,46 @@ extern u8 D_8006F84E[];  /* inventory 3 ids (150), counts just before */
 void func_801C5600(u8 allocate);
 void func_801C5664(u8 allocate);
 u8 func_801CCA40(u8 wait, u8 movable);
+
+/* A gear record of the game data (a4h bytes, 8006dfac). */
+typedef struct {
+    u8 unk0[8];
+    u8 unk8;       /* 08: entry of the gear table */
+    u8 unk9[0x44 - 9];
+    u16 unk44;     /* 44 */
+    u8 unk46[0x70 - 0x46];
+    u16 unk70;     /* 70 */
+    u16 unk72;     /* 72 */
+    u8 unk74;
+    u8 unk75;      /* 75 */
+    u8 unk76[0xA4 - 0x76];
+} Gear;
+
+typedef struct {
+    u8 unk0[8];
+    u16 unk8; /* 08 */
+    u16 unkA; /* 0a */
+    u8 unkC[0x14 - 0xC];
+} GearEntry;
+
+typedef struct {
+    u8 unk0[0x10];
+    GearEntry *entries; /* 10 */
+} GearTable;
+
+extern Gear D_8006DFAC[];
+extern u32 D_801D6C88[];  /* party bit of each member id */
+extern s32 D_801D6FD8;    /* available members 1-10 */
+s32 func_8003FA38(void);  /* rand */
+void func_801E7D14(void *a, void *b, u32 ot, s32 buffer);
+u32 func_801C527C(u32 mask, u8 id);
+u32 func_801C5260(u8 id);
+void func_801CCEBC(u8 count, u8 *shown);
+void func_801D0EC8(u8 close);
+void func_801D61B8(GearTable *table, u8 id);
+void func_801D62A4(GearTable *table, u8 id);
+void func_801D6250(GearTable *table, u8 id);
+void func_801D6334(GearTable *table, u8 id);
+void func_801D6738(GearTable *table, u8 id);
 
 #endif

@@ -176,6 +176,13 @@ typedef struct {
     u8 unk4786[2];
 } DetailBlock;
 
+/* Projected markers (ovl2602, menu state + 440). */
+typedef struct {
+    POLY_FT4 packets[8]; /* 000 */
+    SVECTOR quads[16];   /* 140 */
+    u8 buffer;           /* 1c0 */
+} MarkerQuads;
+
 /* Cursor and yes/no markers (menu state + 428). */
 typedef struct {
     POLY_FT4 packets[8]; /* 000: two per marker */
@@ -303,7 +310,9 @@ typedef struct {
     u8 unk54[0x5A - 0x54];
     u8 unk5A;
     u8 unk5B;
-    u8 unk5C[0x6C - 0x5C];
+    u8 unk5C[0x63 - 0x5C];
+    u8 model_shown;  /* 63: ovl2602 */
+    u8 unk64[0x6C - 0x64];
 } ScreenFlags;
 
 /* A linked sound effect bank. */
@@ -363,7 +372,9 @@ typedef struct {
     SVECTOR view_rotation;    /* 1d8 */
     VECTOR view_translation;  /* 1e0 */
     MATRIX view_matrix;       /* 1f0 */
-    u8 unk210[0x2DC - 0x210];
+    u8 unk210[0x230 - 0x210];
+    u8 model_a[0x68];         /* 230: ovl2602, drawn by 801e7d14 */
+    u8 model_b[0x2DC - 0x298]; /* 298 */
     void *sprite_sheet;  /* 2dc */
     void *label_text;    /* 2e0 */
     EffectBank *effect_bank; /* 2e4 */
@@ -401,7 +412,7 @@ typedef struct {
     MarkerBlock *marks;  /* 428 */
     u8 unk42C[0x43C - 0x42C];
     ScrollBar *scroll;   /* 43c */
-    MarkerBlock *marks_b; /* 440: ovl2602's marker block */
+    MarkerQuads *marks_b; /* 440: ovl2602's projected markers */
     Marker *markers[2];  /* 444 */
     u8 unk44C[4];
     DetailBlock *details; /* 450 */

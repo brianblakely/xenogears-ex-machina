@@ -1,6 +1,30 @@
 #include "menu_card.h"
 
+/* A random value in [min, max] (ffff stays ffff, a zero max gives 0). */
+#ifdef NON_MATCHING
+u16 func_801C511C(u16 min, u16 max) {
+    s32 range;
+    u16 result;
+
+    if (min == 0xFFFF) {
+        result = 0xFFFF;
+    } else if (max == 0) {
+        result = 0;
+    } else {
+        range = max - min;
+        if (min == max) {
+            result = min;
+        } else if (range <= 0xFFFE) {
+            result = min + (u16)func_8003FA38() % (range + 1);
+        } else {
+            result = func_8003FA38();
+        }
+    }
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801C511C);
+#endif
 
 /* Place a textured quad at (x, y) of size w x h showing texels (u, v)..(u + w, v + h). */
 void func_801C51B8(POLY_FT4 *poly, s16 x, s16 y, u8 u, u8 v, s32 w, s32 h) {
@@ -32,9 +56,15 @@ u16 func_801C5244(u8 id) {
     return D_801D6C68[id];
 }
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801C5260);
+/* The party bit of member `id`. */
+u32 func_801C5260(u8 id) {
+    return D_801D6C88[id];
+}
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801C527C);
+/* Test member `id`'s bit of a party bit mask. */
+u32 func_801C527C(u32 mask, u8 id) {
+    return mask & D_801D6C88[id];
+}
 
 /* Split `value` into nine decimal digits (menu state +31c), leading zeros blanked (ff). */
 void func_801C5298(u32 value) {
@@ -897,7 +927,12 @@ void func_801C959C(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801C962C);
+/* Project and link the four second markers when shown and at least two members are available. */
+void func_801C962C(void) {
+    if (D_800625A0->flags->marks_b_shown != 0 && D_801D6FD8 >= 2) {
+        func_801C93B0(4, D_800625A0->marks_b->quads, D_800625A0->marks_b->packets, D_800625A0->marks_b->buffer);
+    }
+}
 
 /* Project and link panel `index`'s top edge. */
 void func_801C9690(s32 index) {
@@ -1435,9 +1470,19 @@ void func_801CCD20(void) {
     func_800320E8(D_800625A0);
 }
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CCE90);
+/* Render `count` labels into VRAM. */
+void func_801CCE90(u8 count, Label *labels, u8 *text_ids) {
+    func_801C5EE8(labels, text_ids, 2, count);
+}
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CCEBC);
+/* Clear `count` shown flags. */
+void func_801CCEBC(u8 count, u8 *shown) {
+    s32 i;
+
+    for (i = 0; i < count; i++) {
+        shown[i] = 0;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CCEE8);
 
@@ -1603,7 +1648,12 @@ void func_801CE2E8(void) {
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CE32C);
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CE7E0);
+/* Draw the separately loaded model when shown. */
+void func_801CE7E0(void) {
+    if (D_800625A0->flags->model_shown != 0) {
+        func_801E7D14(D_800625A0->model_a, D_800625A0->model_b, D_800625A0->draw_env->unkB0, D_800625A0->buffer);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CE82C);
 
@@ -1671,7 +1721,16 @@ void func_801D0220(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D0348);
+/* Count the available members 0-10 into D_801D6FD8. */
+void func_801D0348(void) {
+    s32 i;
+
+    for (i = 0; i < 11; i++) {
+        if (D_800625A0->member_present[i] != 0) {
+            D_801D6FD8++;
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D0398);
 
@@ -1861,7 +1920,14 @@ INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D498C);
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D5398);
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D573C);
+/* Leave the gear list: hide the cursor and labels and the transfer packets. */
+u8 func_801D573C(void) {
+    D_800625A0->flags->unk4 = 0;
+    D_800625A0->flags->cursor_shown = 0;
+    func_801CCEBC(4, D_800625A0->flags->list_label_shown);
+    func_801D0EC8(0);
+    return 2;
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D57A8);
 
@@ -1873,11 +1939,28 @@ INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D5EB8);
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D5F94);
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D6150);
+/* Rebuild gear `id`'s derived values. */
+void func_801D6150(GearTable *table, u8 id) {
+    func_801D61B8(table, id);
+    func_801D62A4(table, id);
+    func_801D6250(table, id);
+    func_801D6334(table, id);
+    func_801D6738(table, id);
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D61B8);
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D6250);
+/* Copy gear `id`'s two words from its entry (+8) of the table's 14h-byte records. */
+void func_801D6250(GearTable *table, u8 id) {
+    Gear *gear;
+    GearEntry *entry;
+
+    gear = &D_8006DFAC[id];
+    entry = table->entries;
+    entry += gear->unk8;
+    gear->unk70 = entry->unk8;
+    gear->unk72 = entry->unkA;
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D62A4);
 
@@ -1885,4 +1968,15 @@ INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D6334);
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D6738);
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D690C);
+/* Half of (gear `id`'s +44 / 120 less its +75), not below zero. */
+u8 func_801D690C(u8 id) {
+    Gear *gear;
+    s16 value;
+
+    gear = &D_8006DFAC[id];
+    value = ((u16)(gear->unk44 / 120) - gear->unk75) / 2;
+    if (value < 0) {
+        value = 0;
+    }
+    return value;
+}
