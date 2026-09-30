@@ -27,9 +27,9 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_80083CE8);
 
 /* Update an actor's glow light (fading it) at its position relative to its
  * opponent, and the spot light at its position relative to the camera. */
-void func_80083DCC(View3D *set, Actor *actor, s32 index) {
+void func_80083DCC(LightRig *rig, Actor *actor, s32 index) {
     Vector unused[2]; /* the original frame has 0x20 unused bytes */
-    LightRef *ref = set->lights[index];
+    Node *light = rig->lights[index];
     u8 glow = actor->glow;
     s32 level = glow;
 
@@ -40,48 +40,48 @@ void func_80083DCC(View3D *set, Actor *actor, s32 index) {
         }
     }
     if (actor->unkD4 & 0x20) {
-        ref->data->r = actor->opponent->colour.r * level / 16;
-        ref->data->g = actor->opponent->colour.g * level / 16;
-        ref->data->b = actor->opponent->colour.b * level / 16;
+        NODE_LIGHT(light)->colour[0] = actor->opponent->colour.r * level / 16;
+        NODE_LIGHT(light)->colour[1] = actor->opponent->colour.g * level / 16;
+        NODE_LIGHT(light)->colour[2] = actor->opponent->colour.b * level / 16;
     } else {
-        ref->data->r = level << 4;
-        ref->data->g = level << 3;
-        ref->data->b = 0;
+        NODE_LIGHT(light)->colour[0] = level << 4;
+        NODE_LIGHT(light)->colour[1] = level << 3;
+        NODE_LIGHT(light)->colour[2] = 0;
     }
     if (D_8009288C->dim) {
-        ref->data->r /= 2;
-        ref->data->g /= 2;
-        ref->data->b /= 2;
+        NODE_LIGHT(light)->colour[0] /= 2;
+        NODE_LIGHT(light)->colour[1] /= 2;
+        NODE_LIGHT(light)->colour[2] /= 2;
     }
-    ref->data->x = actor->pos.vx;
-    ref->data->y = actor->pos.vy;
-    ref->data->z = actor->pos.vz;
-    ref->data->x -= actor->opponent->pos.vx;
-    ref->data->y -= actor->opponent->pos.vy;
-    ref->data->z -= actor->opponent->pos.vz;
-    func_80030A30(index, ref->data);
-    ref = set->lights[2];
-    ref->data->r = ref->data->g = ref->data->b = 0;
-    ref->data->x = actor->pos.vx;
-    ref->data->y = actor->pos.vy;
-    ref->data->z = actor->pos.vz;
-    ref->data->x -= D_8009871C.vx;
-    ref->data->y -= D_8009871C.vy;
-    ref->data->z -= D_8009871C.vz;
-    func_80030A30(2, ref->data);
+    NODE_LIGHT(light)->direction[0] = actor->pos.vx;
+    NODE_LIGHT(light)->direction[1] = actor->pos.vy;
+    NODE_LIGHT(light)->direction[2] = actor->pos.vz;
+    NODE_LIGHT(light)->direction[0] -= actor->opponent->pos.vx;
+    NODE_LIGHT(light)->direction[1] -= actor->opponent->pos.vy;
+    NODE_LIGHT(light)->direction[2] -= actor->opponent->pos.vz;
+    func_80030A30(index, NODE_LIGHT(light));
+    light = rig->lights[2];
+    NODE_LIGHT(light)->colour[0] = NODE_LIGHT(light)->colour[1] = NODE_LIGHT(light)->colour[2] = 0;
+    NODE_LIGHT(light)->direction[0] = actor->pos.vx;
+    NODE_LIGHT(light)->direction[1] = actor->pos.vy;
+    NODE_LIGHT(light)->direction[2] = actor->pos.vz;
+    NODE_LIGHT(light)->direction[0] -= D_8009871C.vx;
+    NODE_LIGHT(light)->direction[1] -= D_8009871C.vy;
+    NODE_LIGHT(light)->direction[2] -= D_8009871C.vz;
+    func_80030A30(2, NODE_LIGHT(light));
 }
 
 /* Draw the 3D arena: aim the camera, pose the actors, then draw the floor,
  * the actors and their shadows, the look-at marker and the sky. */
-s32 func_800840CC(View3D *view) {
+s32 func_800840CC(LightRig *rig) {
     Matrix floor;
     Matrix camera;
     Vector unused; /* the original frame has 16 unused bytes here */
-    Panel *panel = view->panel;
-    LightData *light;
+    OtPair *layer = rig->layer;
+    Light *light;
 
-    func_8008AC0C(panel);
-    func_80089A98(view, &D_8009871C, &D_8009867C);
+    func_8008AC0C(layer);
+    func_80089A98(rig, &D_8009871C, &D_8009867C);
     if (D_80092790 != 4 && D_800928C8 != 4 && D_80092790 != 8) {
         func_80087068(&D_8009872C, &D_80097010);
     } else if (D_800928C8 == 4) {
@@ -92,32 +92,32 @@ s32 func_800840CC(View3D *view) {
     }
     func_8007E574(D_80092938);
     func_80080D20(D_80092938);
-    camera = view->camera->view;
+    camera = rig->camera->view;
     ((Node *)D_8009872C.object)->view = ((Node *)D_80097010.object)->view = camera;
-    light = view->lights[0]->data;
-    light->r = light->g = light->b = 0x800;
-    func_80030A30(0, view->lights[0]->data);
+    light = NODE_LIGHT(rig->lights[0]);
+    light->colour[0] = light->colour[1] = light->colour[2] = 0x800;
+    func_80030A30(0, NODE_LIGHT(rig->lights[0]));
     gte_SetBackColor(D_8009291C, D_80092910, D_80092908);
-    func_80083DCC(view, &D_8009872C, 1);
+    func_80083DCC(rig, &D_8009872C, 1);
     func_8008A7E0(D_8009872C.node);
-    func_80083DCC(view, &D_80097010, 1);
+    func_80083DCC(rig, &D_80097010, 1);
     func_8008A7E0(D_80097010.node);
     gte_SetRotMatrix(&camera);
     gte_SetTransMatrix(&camera);
     func_8008E8B0();
-    func_8007CF78(&camera, panel->buffers[D_800928A0]);
+    func_8007CF78(&camera, layer->ot[D_800928A0]);
     gte_SetRotMatrix(&camera);
     gte_SetTransMatrix(&camera);
-    func_8007334C(panel->buffers[D_800928A0], &view->camera->view);
+    func_8007334C(layer->ot[D_800928A0], &rig->camera->view);
     floor = D_80091C0C;
     floor.t[1] = -D_80096FA8.vy;
     CompMatrix(&camera, &floor, &floor);
     gte_SetRotMatrix(&floor);
     gte_SetTransMatrix(&floor);
     func_80082A70();
-    func_80082E60(panel->buffers[D_800928A0], &D_8009871C);
-    func_80087B74(&D_8009872C, panel->buffers[D_800928A0], &floor);
-    func_80087B74(&D_80097010, panel->buffers[D_800928A0], &floor);
+    func_80082E60(layer->ot[D_800928A0], &D_8009871C);
+    func_80087B74(&D_8009872C, layer->ot[D_800928A0], &floor);
+    func_80087B74(&D_80097010, layer->ot[D_800928A0], &floor);
     gte_SetRotMatrix(&floor);
     gte_SetTransMatrix(&floor);
     func_80087650();
@@ -128,41 +128,41 @@ s32 func_800840CC(View3D *view) {
         func_80082178(D_8009871C.vx, D_8009871C.vz,
                       ratan2(D_8009871C.vx - D_8009867C.vx, D_8009871C.vz - D_8009867C.vz));
     }
-    func_8008779C(panel->buffers[D_800928A0], D_8009867C.vx, D_8009867C.vz);
-    func_8008AE1C(panel);
+    func_8008779C(layer->ot[D_800928A0], D_8009867C.vx, D_8009867C.vz);
+    func_8008AE1C(layer);
     func_80086E24();
     func_80031678(D_80092938, &D_80095580[D_800928A0]);
     return 0;
 }
 
 /* Draw the 3D scene: aim the camera, give both actors the camera matrix,
- * light and draw them, then the panel and the backdrop sprites. */
-s32 func_800846A0(View3D *view) {
+ * light and draw them, then the view's layer and the backdrop sprites. */
+s32 func_800846A0(LightRig *rig) {
     Matrix floor;   /* unused: the frame matches the arena draw's */
     Matrix camera;
     Vector unused;
-    Panel *panel = view->panel;
-    LightData *light;
+    OtPair *layer = rig->layer;
+    Light *light;
 
-    func_8008AC0C(panel);
-    func_80089A98(view, &D_8009871C, &D_8009867C);
+    func_8008AC0C(layer);
+    func_80089A98(rig, &D_8009871C, &D_8009867C);
     func_80080D10();
-    camera = view->camera->view;
+    camera = rig->camera->view;
     ((Node *)D_8009872C.object)->view = ((Node *)D_80097010.object)->view = camera;
     func_8008A62C();
-    light = view->lights[0]->data;
-    light->r = light->g = light->b = 0x800;
-    func_80030A30(0, view->lights[0]->data);
+    light = NODE_LIGHT(rig->lights[0]);
+    light->colour[0] = light->colour[1] = light->colour[2] = 0x800;
+    func_80030A30(0, NODE_LIGHT(rig->lights[0]));
     gte_SetBackColor(D_8009291C, D_80092910, D_80092908);
-    func_80083DCC(view, &D_8009872C, 1);
+    func_80083DCC(rig, &D_8009872C, 1);
     func_8008A7E0(D_8009872C.node);
-    func_80083DCC(view, &D_80097010, 1);
+    func_80083DCC(rig, &D_80097010, 1);
     func_8008A7E0(D_80097010.node);
     gte_SetRotMatrix(&camera);
     gte_SetTransMatrix(&camera);
-    func_8007334C(panel->buffers[D_800928A0], &view->camera->view);
-    func_8007D068(panel->buffers[D_800928A0]);
-    func_8008AE1C(panel);
+    func_8007334C(layer->ot[D_800928A0], &rig->camera->view);
+    func_8007D068(layer->ot[D_800928A0]);
+    func_8008AE1C(layer);
     func_80086E24();
     AddPrim(D_80092938, &D_800955F8[4 + D_800928A0]);
     AddPrim(D_80092938, &D_800955C8[2 + D_800928A0]);
@@ -172,29 +172,29 @@ s32 func_800846A0(View3D *view) {
     return 0;
 }
 
-/* Draw a 3D panel: update it, link this buffer's packets, finish. */
-s32 func_800849E0(View3D *owner) {
-    Panel *panel = owner->panel;
+/* Draw a 3D view: update its layer, link this buffer's ordering table, finish. */
+s32 func_800849E0(LightRig *rig) {
+    OtPair *layer = rig->layer;
 
-    func_8008AC0C(panel);
-    func_80080D20(&panel->buffers[D_800928A0]->unk4);
-    func_8008AE1C(panel);
+    func_8008AC0C(layer);
+    func_80080D20(&layer->ot[D_800928A0][1]);
+    func_8008AE1C(layer);
     func_80086E24();
     return 0;
 }
 
-/* Update a 3D panel without drawing it. */
-void func_80084A40(View3D *owner) {
-    func_8008AC0C(owner->panel);
+/* Update a 3D view's layer without drawing it. */
+void func_80084A40(LightRig *rig) {
+    func_8008AC0C(rig->layer);
 }
 
-/* Draw a 3D panel with its shading packet at brightness 0xC0. */
-s32 func_80084A64(View3D *owner) {
-    Panel *panel = owner->panel;
+/* Draw a 3D view with its shading packet at brightness 0xC0. */
+s32 func_80084A64(LightRig *rig) {
+    OtPair *layer = rig->layer;
 
-    func_8008E3CC(&panel->buffers[D_800928A0]->unk8, 0xC0, 0);
-    func_80080D20(&panel->buffers[D_800928A0]->unk4);
-    func_8008AE1C(panel);
+    func_8008E3CC(&layer->ot[D_800928A0][2], 0xC0, 0);
+    func_80080D20(&layer->ot[D_800928A0][1]);
+    func_8008AE1C(layer);
     func_80086E24();
     return 0;
 }

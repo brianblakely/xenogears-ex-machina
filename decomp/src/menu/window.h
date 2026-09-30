@@ -43,27 +43,6 @@ struct Menu {
     TileRgb panel[2];  /* 0x1C: one per buffer */
 };
 
-/* A 3D panel's per-buffer packet block. */
-typedef struct {
-    u32 unk0;
-    u8 unk4[4];
-    u8 unk8[4];
-} PanelPacket;
-
-typedef struct {
-    s32 unk0;
-    PanelPacket *buffers[2];
-} Panel;
-
-/* A 3D view: its camera node, lights and panel. */
-typedef struct {
-    s32 unk0;
-    Node *camera;        /* 0x04 */
-    LightRef *lights[3]; /* 0x08: two actor glows and the camera spot */
-    u8 unk14[0x270];
-    Panel *panel;        /* 0x284 */
-} View3D;
-
 extern s32 D_800911D4; /* second actor also posed by func_8007661C */
 extern s32 D_800928B0; /* selects the look-at marker (func_80082300 or func_80082178) */
 

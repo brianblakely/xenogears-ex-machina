@@ -174,16 +174,6 @@ typedef struct {
     s16 vy;
 } DVector;
 
-/* A scene light (position, then colour). */
-typedef struct {
-    s32 x, y, z;
-    s16 r, g, b;
-} LightData;
-
-typedef struct {
-    u32 unk0;
-    LightData *data;
-} LightRef;
 
 
 
@@ -531,7 +521,7 @@ void func_8007E954(s32 arg);
 void func_8007F834(void);
 void func_80078F00(Actor *actor);
 OtPair *func_8008A2B8(u16 length);
-LightRig *func_8008A3E0(Holder *holder);
+LightRig *func_8008A3E0(OtPair *layer);
 void func_8008A5BC(LightRig *rig);
 Node *func_8008C2C0(Node *source);
 void func_80080D10(void);

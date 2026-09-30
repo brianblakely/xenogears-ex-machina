@@ -173,7 +173,7 @@ void func_800898BC(Matrix *m, SVector *eye, SVector *at, SVector *up) {
 
 /* Point the owner's view from eye toward target (eye kept as the last eye
  * position). */
-void func_80089A98(View3D *owner, Vector *target, Vector *eye) {
+void func_80089A98(LightRig *view, Vector *target, Vector *eye) {
     SVector up;
     SVector from;
     SVector origin;
@@ -188,7 +188,7 @@ void func_80089A98(View3D *owner, Vector *target, Vector *eye) {
     origin.vz = 0;
     origin.vx = 0;
     origin.vy = 0;
-    func_800898BC(&owner->camera->view, &from, &origin, &up);
+    func_800898BC(&view->camera->view, &from, &origin, &up);
 }
 
 /* Reset a node: unlinked, no payload, zero position and angles, identity
@@ -448,14 +448,14 @@ void func_8008A184(Model *model, ModelFile *file) {
     model->flags |= 2;
 }
 
-/* Allocate a dim light pointing along zero angles. */
+/* Allocate a light with a small diagonal direction and no colour. */
 Light *func_8008A254(void) {
     Light *light;
 
     func_800324B8(0xB);
     light = func_80031BDC(sizeof(Light), 0);
-    light->colour[0] = light->colour[1] = light->colour[2] = 0x10;
-    light->direction[0] = light->direction[1] = light->direction[2] = 0;
+    light->direction[0] = light->direction[1] = light->direction[2] = 0x10;
+    light->colour[0] = light->colour[1] = light->colour[2] = 0;
     return light;
 }
 
@@ -498,46 +498,46 @@ void func_8008A3A0(void) {
 }
 
 /* Free a holder and its resource. */
-void func_8008A3A8(Holder *holder) {
-    func_80032C18(holder->resource, 3);
-    func_800320E8(holder);
+void func_8008A3A8(OtPair *layer) {
+    func_80032C18(layer->ot[0], 3);
+    func_800320E8(layer);
 }
 
 /* Allocate a light rig: a root and three light nodes (key light turned
  * round, fill lights level), grey ambient, owning holder. */
-LightRig *func_8008A3E0(Holder *holder) {
+LightRig *func_8008A3E0(OtPair *layer) {
     LightRig *rig;
 
     func_800324B8(9);
     rig = func_80031BDC(sizeof(LightRig), 0);
     rig->unk0 = 0;
-    rig->nodes[0] = &rig->storage[0];
-    rig->nodes[1] = &rig->storage[1];
-    rig->nodes[2] = &rig->storage[2];
-    rig->nodes[3] = &rig->storage[3];
+    rig->camera = &rig->storage[0];
+    rig->lights[0] = &rig->storage[1];
+    rig->lights[1] = &rig->storage[2];
+    rig->lights[2] = &rig->storage[3];
     func_80089B44(&rig->storage[0]);
     func_80089B44(&rig->storage[1]);
     func_80089B44(&rig->storage[2]);
     func_80089B44(&rig->storage[3]);
-    func_80089E64(rig->nodes[1], func_8008A254());
-    func_80089E64(rig->nodes[2], func_8008A254());
-    func_80089E64(rig->nodes[3], func_8008A254());
-    rig->nodes[1]->position.vy = rig->nodes[2]->position.vy = rig->nodes[3]->position.vy = -2;
-    rig->nodes[1]->position.vx = 0;
-    rig->nodes[1]->position.vz = 1;
-    rig->nodes[2]->position.vx = -1;
-    rig->nodes[2]->position.vz = -1;
-    rig->nodes[3]->position.vx = 1;
-    rig->nodes[3]->position.vz = -1;
-    ((Light *)rig->nodes[1]->data)->direction[0] = ((Light *)rig->nodes[1]->data)->direction[1] =
-        ((Light *)rig->nodes[1]->data)->direction[2] = 0x800;
-    ((Light *)rig->nodes[2]->data)->direction[0] = ((Light *)rig->nodes[2]->data)->direction[1] =
-        ((Light *)rig->nodes[2]->data)->direction[2] = 0;
-    *(Light *)rig->nodes[3]->data = *(Light *)rig->nodes[2]->data;
-    rig->holder = holder;
+    func_80089E64(rig->lights[0], func_8008A254());
+    func_80089E64(rig->lights[1], func_8008A254());
+    func_80089E64(rig->lights[2], func_8008A254());
+    rig->lights[0]->position.vy = rig->lights[1]->position.vy = rig->lights[2]->position.vy = -2;
+    rig->lights[0]->position.vx = 0;
+    rig->lights[0]->position.vz = 1;
+    rig->lights[1]->position.vx = -1;
+    rig->lights[1]->position.vz = -1;
+    rig->lights[2]->position.vx = 1;
+    rig->lights[2]->position.vz = -1;
+    NODE_LIGHT(rig->lights[0])->colour[0] = NODE_LIGHT(rig->lights[0])->colour[1] =
+        NODE_LIGHT(rig->lights[0])->colour[2] = 0x800;
+    NODE_LIGHT(rig->lights[1])->colour[0] = NODE_LIGHT(rig->lights[1])->colour[1] =
+        NODE_LIGHT(rig->lights[1])->colour[2] = 0;
+    *(Light *)rig->lights[2]->data = *(Light *)rig->lights[1]->data;
+    rig->layer = layer;
     rig->r = rig->g = rig->b = 0;
     rig->r = rig->g = rig->b = 0x10;
-    func_8008ABAC(&rig->nodes[1]);
+    func_8008ABAC(rig->lights);
     return rig;
 }
 
@@ -546,7 +546,7 @@ void func_8008A5BC(LightRig *rig) {
     func_800320E8(rig->storage[1].data);
     func_800320E8(rig->storage[2].data);
     func_800320E8(rig->storage[3].data);
-    func_8008A3A8(rig->holder);
+    func_8008A3A8(rig->layer);
     func_800320E8(rig);
 }
 

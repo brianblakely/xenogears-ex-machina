@@ -483,7 +483,7 @@ void func_800725B0(Actor *scene) {
     SceneHeader *header;
 
     func_80030988(5, 4, 0x40, 0x40);
-    D_800910F0 = func_8008A3E0((Holder *)func_8008A2B8(0x10));
+    D_800910F0 = func_8008A3E0(func_8008A2B8(0x10));
     D_80092610 = func_8008C2C0(scene->node);
     func_8008976C(0x280, 0xDA);
     SetGeomScreen(0x400);
