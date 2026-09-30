@@ -404,7 +404,7 @@ extern void func_80043CC4(POLY_G4 *p);         /* SetPolyG4 */
 extern void func_80043C9C(POLY_F4 *p);         /* SetPolyF4 */
 extern void func_80043DA0(LINE_F3 *p);         /* SetLineF3 */
 extern void func_80043D78(LINE_F2 *p);         /* SetLineF2 */
-extern void func_80033B34(u16 *codes, u8 *text, s32 count); /* decode text codes */
+extern void func_80033B34(void *codes, u8 *text, s32 count); /* decode text codes */
 extern void func_800454DC(DR_MODE *p, s32 dfe, s32 dtd, s32 tpage, RECT *tw); /* SetDrawMode */
 extern void func_80043BFC(void *p, s32 abe);   /* SetSemiTrans */
 extern void func_80043C24(void *p, s32 tge);   /* SetShadeTex */

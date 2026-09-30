@@ -1603,7 +1603,192 @@ u8 func_801CB2F0(u8 *codes) {
     return i / 2;
 }
 
+#ifdef NON_MATCHING
+/* The name entry loop: zoom the view in, open the grid, move the cursor over
+ * the character grid (skipping blank cells) and edit the name until it is
+ * confirmed with a non-empty name; then store it for the three characters
+ * of the portrait list (trailing blanks cut), and close the screen. */
+void func_801CB33C(void) {
+    u8 codes[24];
+    u8 name[24];
+    s32 prev_col = 0xFF;
+    s32 prev_row = 0xFF;
+    s32 col = 22;
+    s32 row = 4;
+    u8 dirty;
+    u8 running;
+    u8 c;
+    s32 index;
+    s32 i;
+    s32 k;
+    s32 last;
+    u8 *p;
+
+    func_801CB25C(codes, name);
+    dirty = 0;
+    func_801CADC8();
+    func_801CB1C4(name);
+    running = 1;
+    func_801C9F60();
+    while (D_800625A0->view_motion) {
+        func_801C9C34();
+    }
+    func_801C7AA4(2, 0x38, 0x26, 0xD0, 0x60, 1, 0, 4, 0);
+    while (!D_800625A0->growth[2]->open) {
+        func_801C9C34();
+    }
+    D_800625A0->entry->grid_shown = 1;
+    D_800625A0->flags->label_shown[0] = 1;
+    D_800625A0->flags->label_shown[3] = 1;
+    func_801C9D5C(1);
+    D_800625A0->flags->markers_on = 1;
+    while (running) {
+        if (col != prev_col || row != prev_row) {
+            func_8002675C(D_800625A0->sprite_sheet, 0x108, D_800625A0->markers,
+                          D_800625A0->buffer_index, col * 8 + 0x48, row * 16 + 0x36, 0x800);
+            (D_800625A0->entry->line_a + D_800625A0->buffer_index)->x0 = col * 8 + 0x44;
+            (D_800625A0->entry->line_a + D_800625A0->buffer_index)->y0 = row * 16 + 0x2E;
+            (D_800625A0->entry->line_a + D_800625A0->buffer_index)->x1 = col * 8 + 0x4C;
+            (D_800625A0->entry->line_a + D_800625A0->buffer_index)->y1 = row * 16 + 0x2E;
+            (D_800625A0->entry->line_a + D_800625A0->buffer_index)->x2 = col * 8 + 0x4C;
+            (D_800625A0->entry->line_a + D_800625A0->buffer_index)->y2 = row * 16 + 0x3A;
+            (D_800625A0->entry->line_b + D_800625A0->buffer_index)->x0 = col * 8 + 0x44;
+            (D_800625A0->entry->line_b + D_800625A0->buffer_index)->y0 = row * 16 + 0x2E;
+            (D_800625A0->entry->line_b + D_800625A0->buffer_index)->x1 = col * 8 + 0x44;
+            (D_800625A0->entry->line_b + D_800625A0->buffer_index)->y1 = row * 16 + 0x3A;
+            (D_800625A0->entry->line_b + D_800625A0->buffer_index)->x2 = col * 8 + 0x4C;
+            (D_800625A0->entry->line_b + D_800625A0->buffer_index)->y2 = row * 16 + 0x3A;
+            D_800625A0->entry->lines_buffer = D_800625A0->buffer_index;
+            prev_col = col;
+            D_800625A0->markers->buffer[0] = D_800625A0->buffer_index;
+            prev_row = row;
+            D_800625A0->markers->shown[0] = 1;
+        }
+        if (dirty) {
+            func_801CB1C4(name);
+            dirty = 0;
+        }
+        func_801C9C34();
+        switch (D_800625A0->input_code) {
+        case 5:
+            if (D_800625A0->entry->length) {
+                D_800625A0->entry->length--;
+            }
+            codes[D_800625A0->entry->length * 2] = 0xF;
+            dirty = 1;
+            codes[D_800625A0->entry->length * 2 + 1] = 0;
+            func_80033B34(codes, name, func_801CB2F0(codes));
+            break;
+        case 4:
+            index = (row + (col / 6) * 9) * 6 + col % 6;
+            c = D_801CBEC0[index];
+            if (c != 0x1F) {
+                if (D_800625A0->entry->length < D_800625A0->entry->max_length) {
+                    if (c == 0xCF || c == 0xF) {
+                        D_801CBEC0[index] = 0xC3;
+                    }
+                    codes[D_800625A0->entry->length * 2] = D_801CBEC0[index];
+                    codes[D_800625A0->entry->length * 2 + 1] = 0;
+                    func_80033B34(codes, name, func_801CB2F0(codes));
+                    dirty = 1;
+                    D_800625A0->entry->length++;
+                    func_801C989C(2);
+                } else {
+                    func_801C989C(4);
+                }
+                break;
+            }
+        case 11:
+            if (codes[0] != 0xF) {
+                running = 0;
+            }
+            break;
+        case 0:
+            col++;
+            c = D_801CBEC0[(row + (col / 6) * 9) * 6 + col % 6];
+            if (c == 0xFF) {
+                col = 0;
+            } else if (c == 0xF || c == 0xCF) {
+                col++;
+            }
+            break;
+        case 2:
+            if (--col < 0) {
+                col = 22;
+            } else {
+                c = D_801CBEC0[(row + (col / 6) * 9) * 6 + col % 6];
+                if (c == 0xF || c == 0xCF) {
+                    col--;
+                }
+            }
+            break;
+        case 1:
+            if (++row >= 5) {
+                row = 0;
+            }
+            c = D_801CBEC0[(row + (col / 6) * 9) * 6 + col % 6];
+            if (c == 0xCF) {
+                row = 0;
+            } else if (c == 0xF) {
+                row++;
+            }
+            break;
+        case 3:
+            if (--row < 0) {
+                row = 4;
+            }
+            c = D_801CBEC0[(row + (col / 6) * 9) * 6 + col % 6];
+            if (c == 0xF || c == 0xCF) {
+                row--;
+            }
+            break;
+        case 9:
+            if (++D_800625A0->entry->length > D_800625A0->entry->max_length) {
+                D_800625A0->entry->length--;
+            }
+            break;
+        case 10:
+            if (D_800625A0->entry->length) {
+                D_800625A0->entry->length--;
+            }
+            break;
+        }
+    }
+    last = 0;
+    for (i = 0; i < 3; i++) {
+        for (k = 0; k < 20; k++) {
+            D_8006D634.names[D_800625A0->portraits[i]][k] = 0;
+        }
+        p = name;
+        for (k = 0; k < 18; k++) {
+            D_8006D634.names[D_800625A0->portraits[i]][k] = *p;
+            if (*p == 0) {
+                break;
+            }
+            if (*p++ != 0x4F) {
+                last = k;
+            }
+        }
+        for (k = last + 1; k < 20; k++) {
+            D_8006D634.names[D_800625A0->portraits[i]][k] = 0;
+        }
+    }
+    D_800625A0->flags->label_shown[0] = 0;
+    D_800625A0->flags->label_shown[3] = 0;
+    func_801C9F1C();
+    D_800625A0->entry->grid_shown = 0;
+    func_801C7A18(2);
+    func_801C9F90();
+    while (D_800625A0->view_translation.vz < 0x600) {
+        func_801C9C34();
+    }
+    D_800625A0->flags->entry_on = 0;
+    func_801CA39C();
+    func_801C7A18(3);
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801CB33C);
+#endif
 
 /* Overlay entry: allocate and set up the name entry screen, run it and leave. */
 void func_801CBDBC(void) {
