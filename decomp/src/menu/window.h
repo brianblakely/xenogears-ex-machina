@@ -139,6 +139,21 @@ void func_8002C6E0(s32 r, s32 g, s32 b); /* back colour */
 void func_8004A10C(s32 r, s32 g, s32 b); /* far colour */
 void func_80048AB0(s32 near, s32 far, s32 arg);
 
+/* Stage floor. */
+typedef struct {
+    u8 unk0[0x6C];
+    void *floor_tim;   /* 0x6C */
+} StageFiles;
+
+extern u16 D_800927A0; /* floor palette */
+extern u16 D_800927A4; /* floor texture page */
+extern u16 D_800927A8; /* floor texture row */
+extern PolyFT4 *D_80092788[2]; /* floor quad pools: template, working copy */
+void func_800471B4(void *tim); /* open a TIM */
+void func_800471C4(TimImage *image); /* read the next TIM image */
+u16 func_80043A58(s32 x, s32 y); /* palette id */
+u16 func_80043A1C(s32 mode, s32 rate, s32 x, s32 y); /* texture page id */
+
 /* Fading overlay. */
 extern s16 D_80092780; /* fade level */
 extern s32 D_80092784;

@@ -66,19 +66,32 @@ typedef struct {
     u16 uv2, pad;
 } PolyFT3;
 
-/* Textured quadrilateral packet (libgpu POLY_FT4, texel pairs as u16). */
+/* Textured quadrilateral packet (libgpu POLY_FT4). */
 typedef struct {
     u32 tag;
     u8 r0, g0, b0, code;
     s16 x0, y0;
-    u16 uv0, clut;
+    u8 u0, v0;
+    u16 clut;
     s16 x1, y1;
-    u16 uv1, tpage;
+    u8 u1, v1;
+    u16 tpage;
     s16 x2, y2;
-    u16 uv2, pad1;
+    u8 u2, v2;
+    u16 pad1;
     s16 x3, y3;
-    u16 uv3, pad2;
+    u8 u3, v3;
+    u16 pad2;
 } PolyFT4;
+
+/* libgpu TIM_IMAGE. */
+typedef struct {
+    u32 mode;
+    Rect *crect;
+    u16 *caddr;
+    Rect *prect;
+    void *paddr;
+} TimImage;
 
 /* The common packet head (libgpu P_TAG). */
 typedef struct {

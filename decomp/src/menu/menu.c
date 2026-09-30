@@ -1086,7 +1086,59 @@ void func_80082A70(void) {
     gte_ldrgb(&D_80059598);
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80082C4C);
+/* Load the stage's floor texture (a TIM, palette made semi-transparent)
+ * and build the two pools of 64 textured floor quads, alternating the two
+ * halves of the texture. */
+void func_80082C4C(StageFiles *files) {
+    TimImage tim;
+    PolyFT4 *quad;
+    s16 *clut;
+    s32 i;
+
+    func_800471B4(files->floor_tim);
+    func_800471C4(&tim);
+    clut = (s16 *)tim.caddr;
+    for (i = 0; i < 0x100; i++) {
+        *clut++ |= 0x8000;
+    }
+    func_80044894(tim.crect, tim.caddr);
+    func_80044894(tim.prect, tim.paddr);
+    D_800927A0 = func_80043A58(tim.crect->x, tim.crect->y);
+    D_800927A4 = func_80043A1C(1, 0, tim.prect->x, tim.prect->y);
+    D_800927A8 = (u8)tim.prect->y;
+    D_80092788[0] = func_80031BDC(0xA00, 0);
+    D_80092788[1] = func_80031BDC(0xA00, 0);
+    quad = D_80092788[0];
+    for (i = 0; i < 0x40; i += 2) {
+        ((PacketTag *)&quad[0])->len = 9;
+        quad[0].code = 0x2C;
+        ((PacketTag *)&quad[1])->len = 9;
+        quad[1].code = 0x2C;
+        quad->clut = D_800927A0;
+        quad->tpage = D_800927A4;
+        quad->u0 = 0x7F;
+        quad->v0 = D_800927A8 + 0x3F;
+        quad->u1 = 0x7F;
+        quad->v1 = D_800927A8;
+        quad->u2 = 0x3F;
+        quad->v2 = D_800927A8 + 0x3F;
+        quad->u3 = 0x3F;
+        quad->v3 = D_800927A8;
+        quad++;
+        quad->clut = D_800927A0;
+        quad->tpage = D_800927A4;
+        quad->u0 = 0x3F;
+        quad->v0 = D_800927A8 + 0x3F;
+        quad->u1 = 0x3F;
+        quad->v1 = D_800927A8;
+        quad->u2 = 0;
+        quad->v2 = D_800927A8 + 0x3F;
+        quad->u3 = 0;
+        quad->v3 = D_800927A8;
+        quad++;
+    }
+    func_800732AC(D_80092788[1], D_80092788[0], 0xA00);
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80082E60);
 
@@ -1629,10 +1681,10 @@ void func_80087AB0(Actor *actor) {
     quad->code |= 2;
     quad->clut = D_800927D8;
     quad->tpage = D_800927D4;
-    quad->uv0 = D_800927DC | (D_800927E0 << 8);
-    quad->uv1 = (D_800927DC + 0x3F) | (D_800927E0 << 8);
-    quad->uv2 = D_800927DC | ((D_800927E0 + 0x3F) << 8);
-    quad->uv3 = (D_800927DC + 0x3F) | ((D_800927E0 + 0x3F) << 8);
+    *(u16 *)&quad->u0 = D_800927DC | (D_800927E0 << 8);
+    *(u16 *)&quad->u1 = (D_800927DC + 0x3F) | (D_800927E0 << 8);
+    *(u16 *)&quad->u2 = D_800927DC | ((D_800927E0 + 0x3F) << 8);
+    *(u16 *)&quad->u3 = (D_800927DC + 0x3F) | ((D_800927E0 + 0x3F) << 8);
     actor->backdrop[1] = actor->backdrop[0];
 }
 
