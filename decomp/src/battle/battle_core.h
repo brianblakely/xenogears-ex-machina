@@ -520,6 +520,8 @@ void func_8008ADD0(u8 member);
 u8 func_8008B478(u8 member); /* the member has a gear list */
 u8 func_8008BED8(u8 member);
 void func_8008B908(u8 member);
+void func_8009AA44(u8 member);
+extern u16 D_800D2C32; /* fuel gained by charging */
 
 /* Gear boarding (800826cc). */
 extern u8 D_80059179;

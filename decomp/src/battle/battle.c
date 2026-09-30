@@ -3697,7 +3697,65 @@ u8 member;
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80082D4C);
+/* Confirm the selected entry of the member's gear window with charge:
+ * entries 4, 6 and 7 charge the gear's fuel (by 800d2c32, capped) and end
+ * the member's turn; 0, 1 and 2 open pages 0x10, 0x11 and 0x17 unless their
+ * item is unavailable (buzzer 0x4f); 3 opens page 0x13 when available, else
+ * on a second press of the repeat entry page 0x18. */
+void func_80082D4C(member)
+u8 member;
+{
+    switch (D_800D3014) {
+    case 4:
+    case 6:
+    case 7:
+        func_8009AA44(member);
+        D_800CCCE8.records[member].gear.fuel += D_800D2C32;
+        if (D_800CCCE8.records[member].gear.fuel > D_800CCCE8.records[member].gear.maxFuel) {
+            D_800CCCE8.records[member].gear.fuel = D_800CCCE8.records[member].gear.maxFuel;
+        }
+        D_800C3EAC->reaction[member] = 1;
+        D_800C3EAC->unk2EA = 0;
+        D_800C3EAC->menuDone = 1;
+        break;
+    case 0:
+        if (D_800C3EAC->slots[member].items[9] == 0) {
+            D_800C3EAC->page = 0x10;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 1:
+        if (D_800C3EAC->slots[member].items[12] == 0) {
+            D_800C3EAC->page = 0x11;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 3:
+        if (D_800C3EAC->slots[member].items[6] == 0) {
+            D_800C3EAC->page = 0x13;
+        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 3) {
+            if (D_800C3EAC->slots[member].items[4] != 0) {
+                func_8008AA74(0x4F);
+            } else {
+                D_800C3EAC->page = 0x18;
+            }
+            D_800C3EAC->repeatArmed = 0;
+        } else {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 2:
+        if (D_800C3EAC->slots[member].items[8] == 0) {
+            D_800C3EAC->page = 0x17;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    }
+}
 
 /* Confirm the selected entry of the member's command window (800d3014):
  * entries 4, 6 and 7 open the gear list when the member has one (else page
