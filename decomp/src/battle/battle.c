@@ -143,14 +143,14 @@ void func_80071A38(void) {
     func_800716D8();
 }
 
-/* Reset the eight 0x60-byte entries at 800d3720 and two UI bytes, then wait a
+/* Hide the eight battle messages and clear two UI bytes, then wait a
  * frame. */
 #ifdef NON_MATCHING
 void func_80071A8C(void) {
     s32 i;
 
     for (i = 7; i >= 0; i--) {
-        D_800D3720[i].unk5 = 0;
+        D_800D36C8[i].shown = 0;
     }
     D_800D2D28->unkB5 = 0;
     D_800D2D28->unkB4 = 0;
@@ -315,7 +315,21 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80073380);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80073538);
 
+/* When enabled, shade the current flat quad at graphics +0x63c8 grey by
+ * +0x6410 and add it with its draw mode to the ordering table. */
+#ifdef NON_MATCHING
+void func_80073A58(void) {
+    if (D_800C3EA4->unk6415 != 0) {
+        D_800C3EA4->unk63C8[D_800C3EA4->unk6414].r0 = D_800C3EA4->unk6410;
+        D_800C3EA4->unk63C8[D_800C3EA4->unk6414].g0 = D_800C3EA4->unk6410;
+        D_800C3EA4->unk63C8[D_800C3EA4->unk6414].b0 = D_800C3EA4->unk6410;
+        func_80043B48(D_800CCB04.ot + 1, &D_800C3EA4->unk63C8[D_800C3EA4->unk6414]);
+        func_80043B48(D_800CCB04.ot + 1, &D_800C3EA4->unk63F8[D_800C3EA4->unk6414]);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80073A58);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80073B64);
 
@@ -345,9 +359,40 @@ void func_80073F08(void) {
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80073FB8);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800742A0);
+/* Redraw the party markers flagged in UI +0x7c. */
+void func_800742A0(void) {
+    s32 member;
+    u8 value;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800743A4);
+    for (member = 0; member < 3; member++) {
+        if (D_800D2D28->reaction[member] != 0) {
+            D_800D2D28->unkE0[member] = 0;
+            D_800D2D28->unkEC[member] = 0;
+            if (D_800C3EB4[member].unk2 != 0x7F) {
+                func_80073380(member);
+                value = func_80072F38(member, D_800D32A0[member].unk1);
+                if (D_800D32A0[member].unk1 != 0) {
+                    func_80072DA8(member, value);
+                } else {
+                    func_80072A9C(member, value);
+                }
+                D_800D2D28->unk93[member] = D_800CCB04.buffer;
+                D_800D2D28->reaction[member] = 0;
+            }
+        }
+    }
+}
+
+/* When enabled, add the graphics block's four current quads to the ordering
+ * table. */
+void func_800743A4(void) {
+    if (D_800C3EA4->unkA230->unk669 != 0) {
+        func_80043B48(D_800CCB04.ot + 1, &D_800C3EA4->unkA230->unk0[D_800C3EA4->unkA230->unk668]);
+        func_80043B48(D_800CCB04.ot + 1, &D_800C3EA4->unkA230->unk50[D_800C3EA4->unkA230->unk668]);
+        func_80043B48(D_800CCB04.ot + 1, &D_800C3EA4->unkA230->unkA0[D_800C3EA4->unkA230->unk668]);
+        func_80043B48(D_800CCB04.ot + 1, &D_800C3EA4->unkA230->unkF0[D_800C3EA4->unkA230->unk668]);
+    }
+}
 
 /* Add the graphics block's current +0x320 and +0x370 quads to the ordering
  * table. */
@@ -391,7 +436,29 @@ void func_80074F70(void) {
     }
 }
 
+/* Place and add the shown battle messages: the first centred at (0x40,
+ * 0x2c), the others centred at (0x9a, 0xca), texture rows 13 apart per
+ * pair. */
+#ifdef NON_MATCHING
+void func_8007500C(void) {
+    s32 i;
+
+    for (i = 0; i < 8; i++) {
+        if (D_800D36C8[i].shown != 0) {
+            if (i == 0) {
+                func_80076C78(&D_800D36C8[0].prims[D_800CCB04.buffer], 0x40 - (D_800D36C8[0].width >> 1), 0x2C, 0, 0,
+                              D_800D36C8[0].width);
+            } else {
+                func_80076C78(&D_800D36C8[i].prims[D_800CCB04.buffer], 0x9A - (D_800D36C8[i].width >> 1), 0xCA, 0,
+                              (i / 2) * 13, D_800D36C8[i].width);
+            }
+            func_80043B48(D_800CCB04.ot + 1, &D_800D36C8[i].prims[D_800CCB04.buffer]);
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007500C);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80075168);
 
@@ -571,7 +638,44 @@ void func_80076CE8(POLY_FT4 *prim, s16 x, s16 y, u8 u, u8 v, s32 w, s32 h) {
     prim->v3 = v + h;
 }
 
+/* Initialise a quad pair: semi-transparent, raw texture, texture page by
+ * `page` (0/1 at x 0x380, 2/3 at 0x3c0; odd pages at y 0x100) and the CLUT
+ * chosen by `alternate`. */
+#ifdef NON_MATCHING
+void func_80076D58(POLY_FT4 *prims, u8 alternate, u8 page) {
+    s32 i;
+
+    for (i = 0; i < 2; i++) {
+        func_80043CB0(&prims[i]);
+        prims[i].r0 = 0x80;
+        prims[i].g0 = 0x80;
+        prims[i].b0 = 0x80;
+        func_80043BFC(&prims[i], 0);
+        func_80043C24(&prims[i], 1);
+        switch (page) {
+        case 0:
+            prims[i].tpage = func_80043A1C(0, 0, 0x380, 0);
+            break;
+        case 1:
+            prims[i].tpage = func_80043A1C(0, 0, 0x380, 0x100);
+            break;
+        case 2:
+            prims[i].tpage = func_80043A1C(0, 0, 0x3C0, 0x100);
+            break;
+        case 3:
+            prims[i].tpage = func_80043A1C(0, 0, 0x3C0, 0);
+            break;
+        }
+        if (alternate != 0) {
+            prims[i].clut = D_80059414;
+        } else {
+            prims[i].clut = D_800595D4;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80076D58);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80076EA4);
 

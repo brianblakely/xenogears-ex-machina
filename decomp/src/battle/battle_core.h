@@ -25,6 +25,20 @@ typedef struct {
     u16 pad2;
 } POLY_FT4;
 
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    s16 x1, y1;
+    s16 x2, y2;
+    s16 x3, y3;
+} POLY_F4;
+
+typedef struct {
+    u32 tag;
+    u32 code[2];
+} DR_MODE;
+
 /* Combatant record: 11 slots (0-2 party, 3-10 enemies) of 0x170 bytes,
  * addressed absolutely from 800ccce8. */
 typedef struct {
@@ -86,7 +100,9 @@ extern TurnState *D_800C3EAC;
 typedef struct {
     u8 unk0[0x7C];
     u8 reaction[3];    /* +0x7C */
-    u8 unk7F[0x9C - 0x7F];
+    u8 unk7F[0x93 - 0x7F];
+    u8 unk93[3];
+    u8 unk96[0x9C - 0x96];
     u8 unk9C;
     u8 unk9D;
     u8 unk9E;
@@ -109,7 +125,9 @@ typedef struct {
     u8 unkCB;
     u8 unkCC[4];
     s32 unkD0[2];
-    u8 unkD8[0xF8 - 0xD8];
+    u8 unkD8[0xE0 - 0xD8];
+    s32 unkE0[3];
+    s32 unkEC[3];
     s32 unkF8;
     s32 unkFC;
     s32 unk100;
@@ -119,12 +137,18 @@ extern BattleUi *D_800D2D28;
 
 /* The 0x670-byte graphics block (*800c3ea4 + 0xa230). */
 typedef struct {
-    u8 unk0[0x280];
+    POLY_FT4 unk0[2];
+    POLY_FT4 unk50[2];
+    POLY_FT4 unkA0[2];
+    POLY_FT4 unkF0[2];
+    u8 unk140[0x280 - 0x140];
     POLY_FT4 unk280[2];
     POLY_FT4 unk2D0[2];
     POLY_FT4 unk320[2];
     POLY_FT4 unk370[2];
-    u8 unk3C0[0x66A - 0x3C0];
+    u8 unk3C0[0x668 - 0x3C0];
+    u8 unk668;         /* buffer of the +0x0..+0xf0 quads */
+    u8 unk669;
     u8 buffer;         /* +0x66A */
     u8 unk66B[0x670 - 0x66B];
 } GraphicsBlock;
@@ -135,7 +159,14 @@ typedef struct {
     POLY_FT4 unkBA8[120];
     POLY_FT4 unk1E68[60];
     POLY_FT4 unk27C8[1];
-    u8 unk27F0[0x641C - 0x27F0];
+    u8 unk27F0[0x63C8 - 0x27F0];
+    POLY_F4 unk63C8[2];
+    DR_MODE unk63F8[2];
+    u8 unk6410;
+    u8 unk6411[3];
+    u8 unk6414;
+    u8 unk6415;
+    u8 unk6416[6];
     POLY_FT4 unk641C[2][100];
     u8 unk835C[0xA230 - 0x835C];
     GraphicsBlock *unkA230;
@@ -170,13 +201,16 @@ extern s16 D_800D2C94;     /* committed target mask */
 extern s16 D_800C48E8;
 extern u16 D_800D2C9E;     /* party members whose timers are held */
 
+/* Eight 0x60-byte message entries from 800d36c8. */
 typedef struct {
-    u8 unk0[5];
-    u8 unk5;
-    u8 unk6[0x60 - 6];
-} BattleUnk3720;
+    POLY_FT4 prims[2];
+    u8 unk50[0x5D - 0x50];
+    u8 shown;          /* +0x5D */
+    u8 width;          /* +0x5E */
+    u8 unk5F;
+} BattleMessage;
 
-extern BattleUnk3720 D_800D3720[8];
+extern BattleMessage D_800D36C8[8];
 extern u8 D_800D3014;
 /* Formation data (*800d3364). */
 typedef struct {
@@ -263,7 +297,7 @@ extern EnemyAi D_800D3400[8];
 typedef struct {
     u8 group;          /* +0x0 formation group */
     u8 member;         /* +0x1 */
-    u8 unk2;
+    u8 unk2;           /* 0x7f: none */
     u8 hidden;         /* +0x3 */
     u8 unk4[0x1C - 4];
 } SlotInfo;
@@ -304,6 +338,8 @@ extern u16 D_800D2E1C[11]; /* slow-status alternation */
 extern s32 *D_8005917C;
 extern u8 D_8005959C;
 extern s32 D_800595A0;
+extern u16 D_80059414;
+extern u16 D_800595D4;
 extern s16 D_8005A3A0[];
 extern s32 D_8006EF58;     /* party gold */
 
@@ -312,6 +348,8 @@ u8 func_8001BD40(u8 low, u8 high);
 void func_80043B48(u32 *ot, void *prim);
 void func_80043C24(void *prim, s32 abe);
 void func_80043BFC(void *prim, s32 tge);
+void func_80043CB0(void *prim);
+u16 func_80043A1C(s32 tp, s32 abr, s32 x, s32 y);
 void func_800445D0(s32 mode);
 void func_8003F8E8(void *block, s32 size);
 void func_800320E8(void *block);
@@ -351,6 +389,11 @@ void func_80077074(void);
 void func_800785D4(u8 actor, u8 index);
 void func_80079934(u8 **pc);
 void func_800728B8(POLY_FT4 *prims, s32 count, s32 first);
+void func_80073380(s32 member);
+u8 func_80072F38(s32 member, u8 flag);
+void func_80072DA8(s32 member, u8 value);
+void func_80072A9C(s32 member, u8 value);
+void func_80076C78(POLY_FT4 *prim, s16 x, s16 y, u8 u, u8 v, u8 w);
 s32 func_80098AF8(s32 slot, s32 mode);
 void func_80079E18(s32);
 void func_80079E4C(s32);
