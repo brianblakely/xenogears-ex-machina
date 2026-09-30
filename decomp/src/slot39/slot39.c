@@ -1585,11 +1585,113 @@ s32 func_801C9D34(s32 mode) {
     return found;
 }
 
+/* Move the cursor from `slot` a row down for `mode`: 0 to the next slot
+ * below holding a file, else to the first file after the next row; 1 the
+ * same for this game's files; 2 a row down when that card is present. */
+#ifdef NON_MATCHING
+void func_801C9EF4(s32 mode, s32 slot) {
+    s32 cursor;
+    s32 next;
+    s32 i;
+
+    switch (mode) {
+    case 0:
+        for (; slot + 3 < 30; slot += 3) {
+            if (D_800625A0->card->fileSlots[D_801E981C[slot + 3]] != 0xff) {
+                D_800625A0->card->cursor = slot + 3;
+                break;
+            }
+        }
+        if (slot + 3 >= 30) {
+            cursor = D_800625A0->card->cursor;
+            i = cursor + 3;
+            if (i < 30) {
+                for (; i + 1 < 30; i++) {
+                    if (D_800625A0->card->fileSlots[D_801E981C[i + 1]] != 0xff) {
+                        D_800625A0->card->cursor = i + 1;
+                        break;
+                    }
+                }
+            }
+        }
+        break;
+    case 1:
+        for (next = slot + 3; next < 30; next += 3, slot += 3) {
+            if (D_800625A0->card->fileSlots[D_801E981C[next]] != 0xff &&
+                D_800625A0->card->ours[D_801E981C[next]]) {
+                D_800625A0->card->cursor = next;
+                break;
+            }
+        }
+        if (slot + 3 >= 30) {
+            cursor = D_800625A0->card->cursor;
+            if (cursor + 3 < 30) {
+                for (i = cursor + 4; i < 30; i++) {
+                    if (D_800625A0->card->fileSlots[D_801E981C[i]] != 0xff &&
+                        D_800625A0->card->ours[D_801E981C[i]]) {
+                        D_800625A0->card->cursor = i;
+                        break;
+                    }
+                }
+            }
+        }
+        break;
+    case 2:
+        next = slot + 3;
+        if (D_800625A0->card->present[next / 15]) {
+            if (next < 30) {
+                D_800625A0->card->cursor = next;
+            } else {
+                cursor = D_800625A0->card->cursor;
+                if (cursor + 3 < 30 && cursor + 4 < 30) {
+                    D_800625A0->card->cursor = cursor + 4;
+                }
+            }
+        }
+        break;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C9EF4);
+#endif
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CA1D4);
 
+/* Move the cursor from `slot` right for `mode`: 0 to the next slot holding
+ * a file, 1 to the next slot holding this game's file, 2 one slot on when
+ * that card is present. */
+#ifdef NON_MATCHING
+void func_801CA480(s32 mode, s32 slot) {
+    s32 next;
+
+    switch (mode) {
+    case 0:
+        for (; slot + 1 < 30; slot++) {
+            if (D_800625A0->card->fileSlots[D_801E981C[slot + 1]] != 0xff) {
+                D_800625A0->card->cursor = slot + 1;
+                break;
+            }
+        }
+        break;
+    case 1:
+        for (next = slot + 1; next < 30; next++) {
+            if (D_800625A0->card->fileSlots[D_801E981C[next]] != 0xff && D_800625A0->card->ours[D_801E981C[next]]) {
+                D_800625A0->card->cursor = next;
+                break;
+            }
+        }
+        break;
+    case 2:
+        slot++;
+        if (D_800625A0->card->present[slot / 15] && slot < 30) {
+            D_800625A0->card->cursor = slot;
+        }
+        break;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CA480);
+#endif
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CA5F0);
 
@@ -1603,7 +1705,40 @@ INCLUDE_RODATA(".local/decomp/slot39/asm/nonmatchings/slot39", D_801C50B4);
 
 INCLUDE_RODATA(".local/decomp/slot39/asm/nonmatchings/slot39", D_801C50B8);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CA750);
+/* The file screen's cursor input for `mode` (801c9bcc): move the cursor
+ * (down, right, up, left), confirm (1) or cancel (2); a new cursor slot shows
+ * its file's details. */
+s32 func_801CA750(s32 mode) {
+    s32 result;
+
+    result = 0;
+    switch (D_800625A0->input) {
+    case 4:
+        result = 1;
+        break;
+    case 5:
+        result = 2;
+        break;
+    case 0:
+        func_801C9EF4(mode, D_800625A0->card->cursor);
+        break;
+    case 2:
+        func_801CA1D4(mode, D_800625A0->card->cursor);
+        break;
+    case 1:
+        func_801CA480(mode, D_800625A0->card->cursor);
+        break;
+    case 3:
+        func_801CA5F0(mode, D_800625A0->card->cursor);
+        break;
+    }
+    if (D_800625A0->card->cursor != D_800625A0->card->unk4F80) {
+        func_801E781C(D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]],
+                      D_800625A0->card->ours[D_801E981C[D_800625A0->card->cursor]]);
+        D_800625A0->card->unk4F80 = D_800625A0->card->cursor;
+    }
+    return result;
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CA8C0);
 

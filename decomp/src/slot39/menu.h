@@ -939,6 +939,11 @@ extern char D_801C50B0[] __attribute__((aligned(4)));
 extern char D_801C50B8[];         /* "__tmp_file" */
 s32 func_800405B4(char *name);    /* erase */
 void func_801D9B08(void);
+void func_801C9EF4(s32 mode, s32 slot);
+void func_801CA1D4(s32 mode, s32 slot);
+void func_801CA480(s32 mode, s32 slot);
+void func_801CA5F0(s32 mode, s32 slot);
+void func_801E781C(s32 index, u8 rebuild);
 void func_801E78C8(s32 file);
 void func_801C9270(s32 port);
 extern u8 D_801EA6F8;
