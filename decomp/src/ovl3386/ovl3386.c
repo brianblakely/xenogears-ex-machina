@@ -16,7 +16,7 @@
 
 extern MATRIX D_8004FBB8; /* sprite camera */
 
-s32 func_801FC110(SpriteCell *cells, s32 count, s32 x, s32 y, Actor *actor);
+u8 func_801FC110(SpriteCell *cell, s32 count, s32 x, s32 y, Actor *actor);
 void func_80022038(Actor *actor); /* refresh the actor's sprite matrix */
 
 /* The bounds of the actor's sprite cells; returns the cell count and stores
@@ -70,7 +70,112 @@ void func_801FC0EC(TaskNode *node) {
     scroll->scroll -= scroll->actor->speed;
 }
 
+/* Queue `count` sprite cells as textured quads offset by (x, y) through the
+ * loaded matrices, mirrored or flipped per cell with the actor's sprite
+ * scale; cells right of the screen's left edge are clipped to it, cells
+ * wholly left of it skipped. Returns how many cells have a corner inside
+ * the screen. */
+#ifdef NON_MATCHING
+u8 func_801FC110(SpriteCell *cell, s32 count, s32 x, s32 y, Actor *actor) {
+    SVECTOR quad[4];
+    s32 p, flag;
+    POLY_FT4 *prim;
+    s32 left, top, right, bottom;
+    s32 depth;
+    s32 visible = 0;
+    s32 i;
+
+    memset(quad, visible, sizeof(quad));
+    if (D_80059580 + count * sizeof(POLY_FT4) >= D_80059534) {
+        return 0;
+    }
+    for (i = 0; i != count; i++, cell++) {
+        prim = (POLY_FT4 *)D_80059580;
+        D_80059580 += sizeof(POLY_FT4);
+        ((P_TAG *)prim)->len = 9;
+        prim->color = cell->color;
+        prim->tpage = cell->tpage;
+        prim->clut = cell->clut;
+        left = cell->x;
+        top = cell->y;
+        right = left + cell->width;
+        if (!((cell->flags >> 4) & 1)) {
+            quad[0].vx = left;
+            quad[1].vx = right;
+            quad[2].vx = right;
+            quad[3].vx = left;
+        } else {
+            quad[0].vx = right;
+            quad[1].vx = left;
+            quad[2].vx = left;
+            quad[3].vx = right;
+        }
+        bottom = top + cell->height;
+        if (!((cell->flags >> 5) & 1)) {
+            quad[0].vy = top;
+            quad[1].vy = top;
+            quad[2].vy = bottom;
+            quad[3].vy = bottom;
+        } else {
+            quad[0].vy = bottom;
+            quad[1].vy = bottom;
+            quad[2].vy = top;
+            quad[3].vy = top;
+        }
+        quad[0].vx += x;
+        quad[1].vx += x;
+        quad[2].vx += x;
+        quad[3].vx += x;
+        quad[0].vy += y;
+        quad[1].vy += y;
+        quad[2].vy += y;
+        quad[3].vy += y;
+        quad[0].vx <<= actor->shift;
+        quad[1].vx <<= actor->shift;
+        quad[2].vx <<= actor->shift;
+        quad[3].vx <<= actor->shift;
+        quad[0].vy <<= actor->shift;
+        quad[1].vy <<= actor->shift;
+        quad[2].vy <<= actor->shift;
+        quad[3].vy <<= actor->shift;
+        if (quad[1].vx < 0) {
+            continue;
+        }
+        if (quad[0].vx < 0) {
+            quad[0].vx = 0;
+            quad[3].vx = 0;
+        }
+        depth = (RotAverage4(&quad[0], &quad[1], &quad[2], &quad[3], (s32 *)&prim->x0,
+                             (s32 *)&prim->x1, (s32 *)&prim->x3, (s32 *)&prim->x2, &p, &flag) >>
+                 D_80050100) +
+                actor->depth_bias;
+        if (flag & 0x8000) {
+            continue;
+        }
+        if ((u32)(depth - 1) >= 0xFFF) {
+            continue;
+        }
+        prim->u0 = cell->u;
+        prim->v0 = cell->v;
+        prim->u1 = cell->u + cell->width - 1;
+        prim->v1 = cell->v;
+        prim->u2 = cell->u;
+        prim->v2 = cell->v + cell->height - 1;
+        prim->u3 = cell->u + cell->width - 1;
+        prim->v3 = cell->v + cell->height - 1;
+        addPrim(D_8005956C + depth, prim);
+        if (((u16)(prim->x0 - 1) < 319 && (u16)(prim->y0 - 1) < 223) ||
+            ((u16)(prim->x1 - 1) < 319 && (u16)(prim->y1 - 1) < 223) ||
+            ((u16)(prim->x2 - 1) < 319 && (u16)(prim->y2 - 1) < 223) ||
+            ((u16)(prim->x3 - 1) < 319 && (u16)(prim->y3 - 1) < 223)) {
+            visible++;
+        }
+    }
+    return visible;
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl3386/asm/nonmatchings/ovl3386", func_801FC110);
+#endif
 
 /* Keep the actor at its held position and draw its sprite sixteen times in a
  * row, offset by the scroll (wrapped to the sprite's width). */

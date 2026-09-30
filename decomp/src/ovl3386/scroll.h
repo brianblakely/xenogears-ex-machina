@@ -31,13 +31,57 @@ void *func_8001D1D8(s32 size, void *owner, void (*update)(TaskNode *),
 
 /* One cell of a sprite frame (0x18 bytes). */
 typedef struct {
-    s16 x;
-    s16 y;
-    u8 unk4[2];
-    u8 width;
-    u8 height;
-    u8 unk8[0x10];
+    s16 x;       /* +00 */
+    s16 y;       /* +02 */
+    u8 u, v;     /* +04 */
+    u8 width;    /* +06 */
+    u8 height;   /* +07 */
+    u8 unk8[2];
+    u16 tpage;   /* +0a */
+    u16 clut;    /* +0c */
+    u8 unkE[2];
+    u32 color;   /* +10 */
+    u32 flags;   /* +14: bit 4 mirrored, bit 5 flipped */
 } SpriteCell;
+
+typedef struct {
+    s16 vx, vy, vz, pad;
+} SVECTOR;
+
+/* A primitive's tag: the next primitive's address and this one's length. */
+typedef struct {
+    u32 addr : 24;
+    u32 len : 8;
+} P_TAG;
+
+#define addPrim(ot, p) \
+    (((P_TAG *)(p))->addr = ((P_TAG *)(ot))->addr, ((P_TAG *)(ot))->addr = (u32)(p))
+
+typedef struct {
+    u32 tag;
+    u32 color;          /* +04: r0, g0, b0, code */
+    s16 x0, y0;
+    u8 u0, v0;
+    u16 clut;
+    s16 x1, y1;
+    u8 u1, v1;
+    u16 tpage;
+    s16 x2, y2;
+    u8 u2, v2;
+    u16 pad1;
+    s16 x3, y3;
+    u8 u3, v3;
+    u16 pad2;
+} POLY_FT4;
+
+s32 RotAverage4(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *v3, s32 *sxy0, s32 *sxy1,
+                s32 *sxy2, s32 *sxy3, s32 *p, s32 *flag);
+void *memset(void *dst, s32 c, u32 n);
+
+extern s32 D_80050100;     /* model depth shift */
+extern u32 *D_8005956C;    /* current ordering table */
+extern u8 *D_80059534;     /* primitive buffer end */
+extern u8 *D_80059580;     /* next free primitive */
 
 /* An actor's sprite drawing state. */
 typedef struct {
@@ -55,9 +99,13 @@ typedef struct {
     s32 speed;       /* +18: the scroll's speed */
     u8 unk1C[4];
     SpriteDraw *sprite; /* +20 */
-    u8 unk24[0x1C];
-    u8 cell_bytes;   /* +40: four per cell */
-    u8 unk41[0x2B];
+    u8 unk24[0xC];
+    s16 depth_bias;     /* +30 */
+    u8 unk32[0xE];
+    u32 cell_bytes : 8; /* +40: four per cell */
+    u32 shift : 5;      /* sprite scale shift */
+    u32 unk40 : 19;
+    u8 unk44[0x28];
     void *task;      /* +6c: owner of the actor's effect tasks */
     u8 unk70[0x3C];
     u32 flags;       /* +ac: 0x20 while an effect holds the actor */
