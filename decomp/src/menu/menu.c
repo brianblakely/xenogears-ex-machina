@@ -514,7 +514,7 @@ void func_8007C100(Color *color) {
 }
 
 /* Start a sparkle of the given kind at a position, in the first free slot. */
-void func_8007C124(s16 *pos, s32 kind) {
+void func_8007C124(SVector *pos, s32 kind) {
     Sparkle *sparkle = D_80092AD8;
     SparkleKind *info;
     PolyFT4 *prim;
@@ -536,9 +536,9 @@ void func_8007C124(s16 *pos, s32 kind) {
     sparkle->frame_count = info->frame_count;
     sparkle->gravity = info->gravity;
     sparkle->fall_speed = 0;
-    sparkle->x = pos[0];
-    sparkle->y = pos[1];
-    sparkle->z = pos[2];
+    sparkle->x = pos->vx;
+    sparkle->y = pos->vy;
+    sparkle->z = pos->vz;
     prim = sparkle->prim;
     prim->tpage = info->tpage;
     if (kind == 2) {
@@ -582,7 +582,43 @@ void func_8007D0B4(SVector *pos) {
     pos->vz += func_8003FA38() % 48 - 24;
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007D190);
+/* Start a sparkle of kind 0..4 at a position; kinds 8..12 are the same
+ * sparkles with the position jittered first. Declared int without a return
+ * value, as the original's unfilled branch delay slot shows. */
+s32 func_8007D190(Vector *pos, u32 kind) {
+    SVector at;
+
+    at.vx = pos->vx;
+    at.vy = pos->vy;
+    at.vz = pos->vz;
+    switch (kind) {
+    case 8:
+        func_8007D0B4(&at);
+    case 0:
+        func_8007C124(&at, 0);
+        break;
+    case 9:
+        func_8007D0B4(&at);
+    case 1:
+        func_8007C124(&at, 1);
+        break;
+    case 10:
+        func_8007D0B4(&at);
+    case 2:
+        func_8007C124(&at, 2);
+        break;
+    case 11:
+        func_8007D0B4(&at);
+    case 3:
+        func_8007C124(&at, 3);
+        break;
+    case 12:
+        func_8007D0B4(&at);
+    case 4:
+        func_8007C124(&at, 4);
+        break;
+    }
+}
 
 /* Whether a code lies in 0x10..0x1f. */
 s32 func_8007D25C(s32 code) {
