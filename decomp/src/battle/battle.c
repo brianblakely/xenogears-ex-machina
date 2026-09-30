@@ -1,6 +1,7 @@
 #include "common.h"
 #include "combatant.h"
 #include "model.h"
+#include "scene.h"
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80070E2C);
 
@@ -2915,7 +2916,10 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A2FD8);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A32D8);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A3484);
+/* Mark a halfword slot empty. */
+void func_800A3484(s16 *slot) {
+    *slot = -1;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A3490);
 
@@ -2949,9 +2953,15 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A4CF8);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A4DB8);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A577C);
+/* The scene's actor records. */
+void *func_800A577C(void) {
+    return D_800D3344;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A578C);
+/* The scene's light entries. */
+void *func_800A578C(void) {
+    return D_800D39CC;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A579C);
 
@@ -2965,7 +2975,11 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A5BE8);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A5D54);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A5E9C);
+/* Set the two words D_800D2D40 and D_800D2D48. */
+void func_800A5E9C(s32 first, s32 second) {
+    D_800D2D40 = first;
+    D_800D2D48 = second;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A5EB4);
 
@@ -3017,9 +3031,17 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA650);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA6E0);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA760);
+/* Set stage object index's byte 0x2A, when it exists. */
+void func_800AA760(s32 index, u8 value) {
+    if (D_800D3368[index] != NULL) {
+        D_800D3368[index][0x2A] = value;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA788);
+/* Set the flag D_800C3B74 to the low bit of value. */
+void func_800AA788(s32 value) {
+    D_800C3B74 = value & 1;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA79C);
 
@@ -3059,7 +3081,17 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AF270);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AF2C4);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AF400);
+/* The lowest slot (0-12) set in the mask D_800C3E30; 13 when none. */
+s32 func_800AF400(void) {
+    s32 slot;
+
+    for (slot = 0; slot < 13; slot++) {
+        if ((D_800C3E30 >> slot) & 1) {
+            break;
+        }
+    }
+    return slot;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AF438);
 
@@ -3079,7 +3111,14 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AFF9C);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B0060);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B00D0);
+/* Clear the words D_800C3BAC[0..8]. */
+void func_800B00D0(void) {
+    s32 i;
+
+    for (i = 8; i >= 0; i--) {
+        D_800C3BAC[i] = 0;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B00F4);
 
@@ -3101,13 +3140,20 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B12D0);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B136C);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B14B8);
+/* Set the flag D_800C3D6C. */
+void func_800B14B8(void) {
+    D_800C3D6C = 1;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B14CC);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B15D8);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B168C);
+/* Address of entry index (0x1C bytes each) of a table with a 0xC-byte
+ * header. */
+u8 *func_800B168C(u8 *table, s32 index) {
+    return table + (index * 0x1C + 0xC);
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B16A4);
 
