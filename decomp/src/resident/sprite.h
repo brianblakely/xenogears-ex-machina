@@ -40,14 +40,36 @@ extern struct Sprite *D_80059190; /* sprites awaiting a frame (through renderer-
 
 /* Resident sprite/actor engine (the unit around 0x8001c8dc-0x8002709c).
  * Only the fields the recovered functions use are named. */
+/* One drawn part of a sprite (0x18 bytes; the renderer's part list). */
+typedef struct {
+    s16 x, y;              /* +0x0 */
+    u8 u, v;               /* +0x4 */
+    u8 w, h;               /* +0x6 */
+    u8 byte8, byte9;       /* +0x8 */
+    u16 tpage;             /* +0xa: bits 5-6 blend mode */
+    u16 clut;              /* +0xc */
+    u8 unknowne[2];
+    u32 colour;            /* +0x10: rgb and primitive code */
+    u32 flags;             /* +0x14 */
+} SpritePart;
+
+/* One of the eight 8-byte entries of a renderer's 0x40-byte block. */
+typedef struct {
+    u8 byte0;
+    u8 byte1;
+    s16 half2;
+    s16 half4;
+    s16 half6;
+} SpriteRendererEntry;
+
 /* A sprite's renderer (its part list header). */
 typedef struct {
     s16 angle_x, angle_y, angle_z; /* +0x0 */
     s16 scale_x, scale_y, scale_z; /* +0x6 */
     MATRIX matrix;                 /* +0xc: local screen matrix */
     void *parts;                   /* +0x2c: 0x18 bytes per part */
-    void *part_cursor;             /* +0x30 */
-    void *pointer34;               /* +0x34 */
+    SpritePart *part_cursor;       /* +0x30 */
+    SpriteRendererEntry *pointer34; /* +0x34: 8 entries */
     struct Sprite *next_pending;   /* +0x38 */
     s8 offset_x;                   /* +0x3c: screen offset, before scaling */
     s8 offset_y;                   /* +0x3d */
@@ -133,10 +155,15 @@ typedef struct {
 
 /* A sprite image header (inline at sprite + 0x110). */
 typedef struct {
+    u16 width;
+    u16 height;
+} SpriteImageSize;
+
+typedef struct {
     u8 unknown0[4];
-    u16 word4;             /* +0x4 */
-    u16 word6;             /* +0x6 */
+    SpriteImageSize size;  /* +0x4 */
 } SpriteImage;
+
 
 /* A sprite with its two task nodes, as 800233a4 allocates it. */
 typedef struct {

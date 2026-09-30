@@ -583,7 +583,35 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001F530);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001F5BC);
 
+/* Recolour a one-sided sprite's parts: the sprite's colour word and blend
+ * mode (its blend rate - 1). */
+/* Nonmatching: same instructions; the original numbers its registers differently (sprite in $t1, part in $a0). */
+#ifdef NON_MATCHING
+void func_8001F6B0(Sprite *sprite) {
+    SpriteImageSize size;
+    SpritePart *part;
+    u32 colour;
+    s32 blend;
+    s32 i;
+
+    if ((sprite->render.word & 3) != 1) {
+        return;
+    }
+    blend = (sprite->render.word >> 5) & 7;
+    if (blend != 0) {
+        blend--;
+    }
+    size = ((SpriteImage *)sprite->image)->size;
+    colour = *(u32 *)&sprite->red;
+    part = sprite->renderer->part_cursor;
+    for (i = 0; i != (u8)sprite->flags >> 2; i++) {
+        part[i].colour = colour;
+        part[i].tpage = (part[i].tpage & 0xFF9F) | (blend << 5);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001F6B0);
+#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001F750);
 
@@ -900,8 +928,8 @@ void func_80022FC4(Sprite *sprite, s32 count, s32 from_top) {
  * two header halfwords in its first entry. */
 void func_8002303C(Sprite *sprite, s32 count, s32 mode) {
     ((SpriteSequencer *)sprite->sequencer)->buffer = func_80031BDC(count * 4, mode);
-    ((SpriteSequencer *)sprite->sequencer)->buffer[1] = ((SpriteImage *)sprite->image)->word6;
-    ((SpriteSequencer *)sprite->sequencer)->buffer[0] = ((SpriteImage *)sprite->image)->word4;
+    ((SpriteSequencer *)sprite->sequencer)->buffer[1] = ((SpriteImage *)sprite->image)->size.height;
+    ((SpriteSequencer *)sprite->sequencer)->buffer[0] = ((SpriteImage *)sprite->image)->size.width;
 }
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_800230A8);
@@ -1053,7 +1081,18 @@ s32 func_80023468(s32 kind, s32 fallback) {
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80023468);
 #endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_800234AC);
+/* Clear the eight entries of a sprite renderer's 0x40-byte block. */
+void func_800234AC(Sprite *sprite) {
+    s32 i;
+
+    for (i = 0; i != 8; i++) {
+        sprite->renderer->pointer34[i].byte0 = 0;
+        sprite->renderer->pointer34[i].byte1 = 0;
+        sprite->renderer->pointer34[i].half2 = 0;
+        sprite->renderer->pointer34[i].half4 = 0;
+        sprite->renderer->pointer34[i].half6 = 0;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80023538);
 
@@ -1084,7 +1123,7 @@ void func_800239A0(Sprite *sprite) {
     sprite->renderer = (SpriteRenderer *)(sprite + 1);
     func_8002393C(sprite->renderer);
     sprite->sequencer = (u8 *)sprite + 0xF4;
-    sprite->renderer->pointer34 = (u8 *)sprite + 0x124;
+    sprite->renderer->pointer34 = (SpriteRendererEntry *)((u8 *)sprite + 0x124);
     sprite->image = (u8 *)sprite + 0x110;
     sprite->renderer->next_pending = NULL;
 }
@@ -1093,7 +1132,7 @@ void func_800239A0(Sprite *sprite) {
 void func_800239F4(Sprite *sprite) {
     sprite->renderer = (SpriteRenderer *)(sprite + 1);
     func_8002393C(sprite->renderer);
-    sprite->renderer->part_cursor = (u8 *)sprite + 0xF4;
+    sprite->renderer->part_cursor = (SpritePart *)((u8 *)sprite + 0xF4);
     sprite->renderer->pointer34 = NULL;
     sprite->renderer->next_pending = NULL;
 }
