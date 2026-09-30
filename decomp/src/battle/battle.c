@@ -3782,7 +3782,54 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AAB34);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AAD54);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800ADF1C);
+/* Turn a part to rotation (x, y, z): at once for a duration below 2, else by
+ * a turning effect (kind 0xFE) over duration frames along the shortest way (x, y, z become the
+ * turns). */
+void func_800ADF1C(EffectPool *pool, ModelPart *part, s32 duration, s32 x, s32 y, s32 z) {
+    EffectEntry *entry;
+
+    if (duration < 2) {
+        part->rotation.vx = x;
+        part->rotation.vy = y;
+        part->rotation.vz = z;
+        part->flag5 = 1;
+        return;
+    }
+    if (part->rotation.vx != x || part->rotation.vy != y || part->rotation.vz != z) {
+        if (part->effects[0] != NULL) {
+            entry = part->effects[0];
+        } else {
+            entry = func_800A2330(pool);
+        }
+        if (entry != NULL) {
+            entry->used = 1;
+            entry->field2 = 3;
+            entry->field1 = 0;
+            entry->kind = 0xFE;
+            entry->params[0] = part->rotation.vx;
+            entry->params[1] = part->rotation.vy;
+            entry->params[2] = part->rotation.vz;
+            x = (x - part->rotation.vx) & 0xFFF;
+            if (x >= 0x800) {
+                x -= 0x1000;
+            }
+            entry->params[3] = x;
+            y = (y - part->rotation.vy) & 0xFFF;
+            if (y >= 0x800) {
+                y -= 0x1000;
+            }
+            entry->params[4] = y;
+            z = (z - part->rotation.vz) & 0xFFF;
+            if (z >= 0x800) {
+                z -= 0x1000;
+            }
+            entry->params[5] = z;
+            entry->field10 = 0;
+            entry->field12 = duration;
+            part->effects[0] = entry;
+        }
+    }
+}
 
 /* Attach a travelling effect (kind 0xFE) to a part: from its translation to
  * (x, y, z), over a length of its distance plus one. */
