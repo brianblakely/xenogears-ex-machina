@@ -21,7 +21,6 @@ void func_801FC000(TaskNode *node) {
 /* Draw the actor's first sprite part as 4-pixel rows from the bottom up, each
  * row's top edge shifted by the sine of an angle that advances (with a growing
  * step and swing) from row to row, so the sprite twists around its axis. */
-#ifdef NON_MATCHING
 void func_801FC020(TaskNode *node) {
     SpinTask *spin = node->object;
     Actor *actor = spin->actor;
@@ -32,16 +31,16 @@ void func_801FC020(TaskNode *node) {
     VECTOR trans;
     s32 sxy, flag;
     s32 depth;
-    s32 angle, swing, angle_step;
-    s32 shift_prev, shift;
+    s32 angle, angle_step, swing;
+    s32 shift_prev;
     s32 top, row;
-    s32 x;
-    u8 u, w, u_right;
-    s32 y;
+    s16 x;
+    u8 u, w;
+    s16 y;
 
-    pos.vx = actor->pos[0].part.whole;
-    pos.vy = actor->pos[1].part.whole;
-    pos.vz = actor->pos[2].part.whole;
+    pos.vx = actor->pos[0].raw >> 16;
+    pos.vy = actor->pos[1].raw >> 16;
+    pos.vz = actor->pos[2].raw >> 16;
     SetRotMatrix(&D_8004FBB8);
     SetTransMatrix(&D_8004FBB8);
     depth = (RotTransPers(&pos, &sxy, &sxy, &flag) >> D_80050100) + actor->depth_bias;
@@ -61,9 +60,9 @@ void func_801FC020(TaskNode *node) {
             depth = 0xFFF;
         } else {
             depth = actor->depth_bias;
-            if ((u32)(depth - 1) >= 0xFFF) {
-                return;
-            }
+        }
+        if ((u32)(depth - 1) >= 0xFFF) {
+            return;
         }
     } else {
         if ((actor->flags >> 29) & 1) {
@@ -80,16 +79,15 @@ void func_801FC020(TaskNode *node) {
     swing = spin->radius << 8;
     part = actor->renderer->parts;
     angle_step = spin->arg4 << 8;
+    row = part->y + part->h - 4;
     top = part->y;
     u = part->u;
     w = part->w;
-    row = part->y + part->h - 4;
     if (top >= row) {
         return;
     }
-    u_right = u + w;
     do {
-        shift = func_8003F8B0(angle) * (swing >> 8) / 4096;
+        s32 shift = func_8003F8B0(angle) * (swing >> 8) / 4096;
         prim = (POLY_FT4 *)D_80059580;
         if (!(D_80059580 + sizeof(POLY_FT4) < D_80059534)) {
             return;
@@ -122,25 +120,22 @@ void func_801FC020(TaskNode *node) {
                       &sxy, &flag);
         prim->u0 = u;
         prim->v0 = part->v + part->h + row;
-        prim->u1 = u_right;
+        prim->u1 = u + w;
         prim->v1 = part->v + part->h + row;
         prim->u2 = u;
         prim->v2 = part->v + part->h + row + 4;
-        prim->u3 = u_right;
+        prim->u3 = u + w;
         prim->v3 = part->v + part->h + row + 4;
+        shift_prev = shift;
         if (!(flag & 0x8000) && depth < 0x1000) {
             AddPrim(D_8005956C + depth, prim);
         }
-        shift_prev = shift;
         row -= 4;
         angle += angle_step >> 8;
         angle_step += spin->arg5;
         swing += spin->arg3;
     } while (top < row);
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3383/asm/nonmatchings/ovl3383", func_801FC020);
-#endif
 
 /* Opcode entry: start the effect circling `actor` from `angle`, advancing by
  * `step` each frame (operands from the battle script, see 800b6b98). */
