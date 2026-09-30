@@ -522,7 +522,52 @@ void func_801C6708(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801C6A54);
+/* Unpack (mode 0) or release (mode 10h) the item tables, pictures and gear part pictures from file 2. */
+void func_801C6A54(u8 mode) {
+    void **list;
+
+    if (mode < 0x10) {
+        list = func_80031BDC(func_800288EC(2), 1);
+        func_800295D8(2, list, 0, 0x80);
+        func_80028A60(0);
+        func_8003342C(list);
+    }
+    switch (mode) {
+    case 0:
+        D_800625A0->resources[2] = func_80032E88(list[0x11], 0);
+        D_800625A0->resources[3] = func_80032E88(list[0x13], 0);
+        D_800625A0->resources[4] = func_80032E88(list[0x12], 0);
+        D_800625A0->resources[5] = func_80032E88(list[0x14], 0);
+        D_800625A0->resources[6] = func_80032E88(list[0x2B], 0);
+        D_800625A0->details->resources[1] = func_80032E88(list[0x33], 0);
+        D_800625A0->details->resources[2] = func_80032E88(list[0x34], 0);
+        D_800625A0->details->resources[3] = func_80032E88(list[0x30], 0);
+        D_800625A0->details->resources[4] = func_80032E88(list[0x31], 0);
+        D_800625A0->details->resources[5] = func_80032E88(list[0x32], 0);
+        D_800625A0->details->resources[6] = func_80032E88(list[0x2D], 0);
+        D_800625A0->details->resources[7] = func_80032E88(list[0x2E], 0);
+        D_800625A0->details->resources[8] = func_80032E88(list[0x2F], 0);
+        break;
+    case 0x10:
+        func_800320E8(D_800625A0->resources[2]);
+        func_800320E8(D_800625A0->resources[3]);
+        func_800320E8(D_800625A0->resources[4]);
+        func_800320E8(D_800625A0->resources[5]);
+        func_800320E8(D_800625A0->resources[6]);
+        func_800320E8(D_800625A0->details->resources[1]);
+        func_800320E8(D_800625A0->details->resources[2]);
+        func_800320E8(D_800625A0->details->resources[3]);
+        func_800320E8(D_800625A0->details->resources[4]);
+        func_800320E8(D_800625A0->details->resources[5]);
+        func_800320E8(D_800625A0->details->resources[6]);
+        func_800320E8(D_800625A0->details->resources[7]);
+        func_800320E8(D_800625A0->details->resources[8]);
+        break;
+    }
+    if (mode < 0x10) {
+        func_800320E8(list);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801C6E74);
 

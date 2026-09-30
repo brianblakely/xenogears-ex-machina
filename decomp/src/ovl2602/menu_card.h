@@ -162,8 +162,7 @@ typedef struct {
     Label label44B0;          /* 44b0 */
     Label label4530;          /* 4530 */
     Label label45B0;          /* 45b0 */
-    void *resources[3];       /* 4630 */
-    u8 unk463C[0x4654 - 0x463C];
+    void *resources[9];       /* 4630: unpacked from file 2 */
     u8 amounts[0x30];         /* 4654 */
     u8 name_shown[8];         /* 4684 */
     u8 row_count[8];          /* 468c */
