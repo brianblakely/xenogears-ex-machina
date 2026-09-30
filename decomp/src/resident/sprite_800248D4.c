@@ -886,17 +886,15 @@ void func_80026338(u16 *sheet, s32 id, s32 *first, s32 *mode, s32 *clut_x, s32 *
  * `index`) placed and sized by `scale` / 4096, mirrored by the flip
  * arguments and by its own flip bytes; mirrored parts lose a texel at the
  * edge. Returns the number of parts. */
-/* Nonmatching: the spilled scale and part offset take each other's stack slots (0x38/0x3c). */
-#ifdef NON_MATCHING
 s32 func_800263E4(u16 *sheet, s32 id, POLY_FT4 *prims, s32 index, s16 x, s16 y, u16 scale, u8 flip_x, u8 flip_y) {
     s16 *entry;
     SheetPart *part;
     POLY_FT4 *poly;
     s32 i;
-    s32 left;
-    s32 top;
-    s32 width;
-    s32 height;
+    s16 left;
+    s16 top;
+    s16 width;
+    s16 height;
     s16 dx;
     s16 dy;
     s16 dw;
@@ -986,11 +984,91 @@ s32 func_800263E4(u16 *sheet, s32 id, POLY_FT4 *prims, s32 index, s16 x, s16 y, 
     }
     return entry[0];
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_800248D4", func_800263E4);
-#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_800248D4", func_8002675C);
+/* 800263e4 without the flip arguments: each part mirrored by its own flip
+ * bytes, losing a texel at the edge. Returns the number of parts. */
+s32 func_8002675C(u16 *sheet, s32 id, POLY_FT4 *prims, s32 index, s16 x, s16 y, u16 scale) {
+    s16 *entry;
+    SheetPart *part;
+    POLY_FT4 *poly;
+    s32 i;
+    s16 left;
+    s16 top;
+    s16 width;
+    s16 height;
+    s16 u;
+    s16 v;
+    s16 w;
+    s16 h;
+    s16 a;
+    s16 b;
+
+    entry = (s16 *)(sheet[id + 2] + (s32)sheet);
+    for (i = 0; i != entry[0]; i++) {
+        poly = prims + i * 2 + index;
+        part = &((SheetPart *)(entry + 2))[i];
+        left = (s16)part->x * scale / 4096;
+        top = (s16)part->y * scale / 4096;
+        width = (s16)part->w * scale / 4096;
+        height = (s16)part->h * scale / 4096;
+        SetPolyFT4(poly);
+        SetSemiTrans(poly, 0);
+        SetShadeTex(poly, 1);
+        poly->tpage = GetTPage(part->mode, 0, (s16)part->page_x, (s16)part->page_y);
+        poly->clut = GetClut(part->clut_x, part->clut_y);
+        u = part->u;
+        v = part->v;
+        w = part->w;
+        h = part->h;
+        if (!part->flip_x) {
+            a = x + left;
+            b = width + a;
+            poly->x0 = a;
+            poly->x1 = b;
+            poly->x2 = a;
+            poly->x3 = b;
+        } else {
+            a = x + left;
+            b = width + a;
+            poly->x0 = b;
+            poly->x1 = a;
+            poly->x2 = b;
+            poly->x3 = a;
+            if (--u < 0) {
+                u = 0;
+                w--;
+            }
+        }
+        if (!part->flip_y) {
+            a = y + top;
+            b = height + a;
+            poly->y0 = a;
+            poly->y1 = a;
+            poly->y2 = b;
+            poly->y3 = b;
+        } else {
+            a = y + top;
+            b = height + a;
+            poly->y0 = b;
+            poly->y1 = b;
+            poly->y2 = a;
+            poly->y3 = a;
+            if (--v < 0) {
+                v = 0;
+                h--;
+            }
+        }
+        poly->u0 = u;
+        poly->v0 = v;
+        poly->u1 = u + w;
+        poly->v1 = v;
+        poly->u2 = u;
+        poly->v2 = v + h;
+        poly->u3 = u + w;
+        poly->v3 = v + h;
+    }
+    return entry[0];
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_800248D4", func_80026A0C);
 
