@@ -1500,7 +1500,7 @@ void func_8007E7C0(u8 **pc) {
 /* AI action 6f: set (b2 != 0) or clear flag b1 + 7 in every party record's
  * +0x7a. */
 #ifdef NON_MATCHING
-void func_8007E7E4(u8 **pc) {
+void func_8007E7E4(u8 **pc, u8 enemy) {
     Combatant *record = D_800CCCE8.records;
     u8 set = (*pc)[2] != 0;
 
@@ -1726,7 +1726,363 @@ s32 func_8007EF44(u8 enemy) {
     return D_800C3EB4[enemy + 3].hidden >> 7;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80079ED8", func_8007EF6C);
+/* Run the AI action at *pc (opcodes 01-74; 62 does nothing here, other
+ * values queue the opcode as an action, 8007a7bc) for `enemy`, with `count`
+ * actions in the list at 800d2e5c, and step past it. Returns the new
+ * action count. */
+u8 func_8007EF6C(u8 **pc, u8 enemy, u8 count) {
+    u8 *list = (u8 *)D_800D2E5C;
+
+    switch (**pc) {
+    case 0x01:
+        count = func_8007A828(pc, list, count);
+        break;
+    case 0x02:
+        func_8007A874(pc, list, enemy, count);
+        break;
+    case 0x03:
+        func_8007A8B4(pc, list);
+        break;
+    case 0x04:
+        func_8007A900(pc, enemy);
+        break;
+    case 0x05:
+        func_8007A92C(pc, enemy);
+        break;
+    case 0x06:
+        func_8007A968(pc, enemy);
+        break;
+    case 0x07:
+        func_8007A9A8(pc);
+        break;
+    case 0x08:
+        func_8007A9D0(pc, enemy);
+        break;
+    case 0x09:
+        func_8007AA1C(pc, enemy);
+        break;
+    case 0x0A:
+        func_8007AA60(pc, enemy);
+        break;
+    case 0x0B:
+        func_8007AAB8(pc, enemy);
+        break;
+    case 0x0C:
+        func_8007AAF4(pc, enemy);
+        break;
+    case 0x0D:
+        func_8007AB30(pc, enemy);
+        break;
+    case 0x0E:
+        func_8007AB68(pc, enemy);
+        break;
+    case 0x0F:
+        func_8007ABA0(pc, enemy);
+        break;
+    case 0x10:
+        func_8007ABD8(pc, enemy);
+        break;
+    case 0x11:
+        func_8007AC30(pc, enemy);
+        break;
+    case 0x12:
+        func_8007AC80(pc, enemy);
+        break;
+    case 0x13:
+        func_8007ACDC(pc, enemy);
+        break;
+    case 0x14:
+        func_8007AD24(pc, enemy);
+        break;
+    case 0x15:
+        func_8007AD6C(pc, enemy);
+        break;
+    case 0x16:
+        func_8007ADB0(pc, enemy);
+        break;
+    case 0x17:
+        func_8007ADF4(pc, enemy);
+        break;
+    case 0x18:
+        func_8007AE38(pc, enemy);
+        break;
+    case 0x19:
+        func_8007AE98(pc, enemy);
+        break;
+    case 0x1A:
+        func_8007AEF0(pc, enemy);
+        break;
+    case 0x1B:
+        func_8007AF5C(pc, enemy);
+        break;
+    case 0x1C:
+        func_8007AFAC(pc, enemy);
+        break;
+    case 0x1D:
+        func_8007AFFC(pc, enemy);
+        break;
+    case 0x1E:
+        func_8007B040(pc, enemy);
+        break;
+    case 0x1F:
+        func_8007B084(pc, enemy);
+        break;
+    case 0x20:
+        func_8007B0C8(pc, enemy);
+        break;
+    case 0x21:
+        func_8007B134(pc, enemy);
+        break;
+    case 0x22:
+        func_8007B198(pc, enemy);
+        break;
+    case 0x23:
+        func_8007B208(pc, enemy);
+        break;
+    case 0x24:
+        func_8007B264(pc, enemy);
+        break;
+    case 0x25:
+        func_8007B2C0(pc, enemy);
+        break;
+    case 0x26:
+        func_8007B310(pc, enemy);
+        break;
+    case 0x27:
+        func_8007B360(pc, enemy);
+        break;
+    case 0x28:
+        func_8007B3B0(pc, enemy);
+        break;
+    case 0x29:
+        func_8007B3E4(pc, enemy);
+        break;
+    case 0x2A:
+        func_8007B424(pc, enemy);
+        break;
+    case 0x2B:
+        count = func_8007B4B8(pc, enemy, count);
+        break;
+    case 0x2C:
+        func_8007B578(pc, enemy);
+        break;
+    case 0x2D:
+        count = func_8007B608(pc, enemy, count);
+        break;
+    case 0x2E:
+        func_8007B6C0(pc, enemy);
+        break;
+    case 0x2F:
+        count = func_8007B7B0(pc, enemy, count);
+        break;
+    case 0x30:
+        func_8007B8D4(pc, enemy);
+        break;
+    case 0x31:
+        func_8007B914(pc, enemy);
+        break;
+    case 0x32:
+        func_8007B958(pc, enemy);
+        break;
+    case 0x33:
+        func_8007B98C(pc, enemy);
+        break;
+    case 0x34:
+        func_8007B9C8(pc, enemy);
+        break;
+    case 0x35:
+        func_8007BA04(pc, enemy);
+        break;
+    case 0x36:
+        func_8007BA44(pc, enemy);
+        break;
+    case 0x37:
+        func_8007BA88(enemy);
+        break;
+    case 0x38:
+        func_8007BAB8(enemy);
+        break;
+    case 0x39:
+        func_8007BAE8(pc, enemy);
+        break;
+    case 0x3A:
+        func_8007BB2C(pc, enemy);
+        break;
+    case 0x3B:
+        func_8007BB70(pc, enemy);
+        break;
+    case 0x3C:
+        func_8007BBD8(pc, enemy);
+        break;
+    case 0x3D:
+        func_8007BC40(pc, list, count);
+        break;
+    case 0x3E:
+        func_8007BC84(pc, enemy);
+        break;
+    case 0x3F:
+        func_8007BCE8(pc, enemy);
+        break;
+    case 0x40:
+        func_8007BD5C(pc, enemy);
+        break;
+    case 0x41:
+        func_8007BEA8(pc, enemy);
+        break;
+    case 0x42:
+        func_8007C040(pc, enemy);
+        break;
+    case 0x43:
+        func_8007C1A4(pc, enemy);
+        break;
+    case 0x44:
+        func_8007C33C(pc, enemy);
+        break;
+    case 0x45:
+        func_8007C4A0(pc, enemy);
+        break;
+    case 0x46:
+        func_8007C580(pc, enemy);
+        break;
+    case 0x47:
+        func_8007C678(pc, enemy);
+        break;
+    case 0x48:
+        func_8007C75C(pc, enemy);
+        break;
+    case 0x49:
+        func_8007C840(pc, enemy);
+        break;
+    case 0x4A:
+        func_8007C9D4(pc, enemy);
+        break;
+    case 0x4B:
+        func_8007CB20(pc, enemy);
+        break;
+    case 0x4C:
+        func_8007CC50(pc, enemy);
+        break;
+    case 0x4D:
+        func_8007CD10(pc, enemy);
+        break;
+    case 0x4E:
+        func_8007CDD0(pc, enemy);
+        break;
+    case 0x4F:
+        func_8007CEA4(pc, enemy);
+        break;
+    case 0x50:
+        func_8007CFB8(pc, enemy);
+        break;
+    case 0x51:
+        func_8007D0CC(pc, enemy);
+        break;
+    case 0x52:
+        func_8007D148(pc, list, enemy, count);
+        break;
+    case 0x53:
+        func_8007D1A8(pc, enemy);
+        break;
+    case 0x54:
+        func_8007D1DC(pc, enemy);
+        break;
+    case 0x55:
+        func_8007D30C(pc, enemy);
+        break;
+    case 0x56:
+        func_8007D344(pc, enemy);
+        break;
+    case 0x57:
+        func_8007D478(pc, enemy);
+        break;
+    case 0x58:
+        func_8007D5B0(pc, enemy);
+        break;
+    case 0x59:
+        func_8007D610(pc, enemy);
+        break;
+    case 0x5A:
+        func_8007D6A8(pc, enemy);
+        break;
+    case 0x5B:
+        func_8007D7B4(pc, enemy);
+        break;
+    case 0x5C:
+        func_8007D8C0(pc, enemy);
+        break;
+    case 0x5D:
+        func_8007DA1C(pc, enemy);
+        break;
+    case 0x5E:
+        func_8007DB78(pc, enemy);
+        break;
+    case 0x5F:
+        func_8007DCF8(pc, enemy);
+        break;
+    case 0x60:
+        func_8007DE78(pc, enemy);
+        break;
+    case 0x61:
+        func_8007DFD4(pc, enemy);
+        break;
+    case 0x62:
+        /* only noted by the reaction script runner (80079ab0) */
+        break;
+    case 0x63:
+        func_8007E154(pc, enemy);
+        break;
+    case 0x64:
+        func_8007E1D0(pc, enemy);
+        break;
+    case 0x65:
+        func_8007E234(pc, enemy);
+        break;
+    case 0x66:
+        func_8007E334(pc, enemy);
+        break;
+    case 0x67:
+        func_8007E438(pc, enemy);
+        break;
+    case 0x68:
+        func_8007E554(pc, enemy);
+        break;
+    case 0x69:
+        func_8007E674(enemy);
+        break;
+    case 0x6A:
+        func_8007E6A0(pc, enemy);
+        break;
+    case 0x6B:
+        func_8007E6F0(pc, enemy);
+        break;
+    case 0x6C:
+        func_8007E740(pc, enemy);
+        break;
+    case 0x6D:
+        func_8007E780(pc, enemy);
+        break;
+    case 0x70:
+        func_8007E7C0(pc);
+        break;
+    case 0x71:
+        func_8007E7E4(pc, enemy);
+        break;
+    case 0x72:
+        func_8007E8AC(pc);
+        break;
+    case 0x73:
+        func_8007E8E0(pc, enemy);
+        break;
+    case 0x74:
+        func_8007E934();
+        break;
+    default:
+        count = func_8007A7BC(pc, list, enemy, count);
+        break;
+    }
+    func_80079934(pc);
+    return count;
+}
 
 /* Evaluate the AI condition at *pc (opcodes 80-9b; 80 and 9a always hold)
  * and step past it. After opcode 99 the following conditions are or-ed
