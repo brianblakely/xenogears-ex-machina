@@ -18,11 +18,14 @@ typedef struct Task {
  * Only the fields the recovered functions use are named. */
 /* A sprite's renderer (its part list header). */
 typedef struct {
-    u8 unknown0[6];
+    s16 angle_x, angle_y, angle_z; /* +0x0 */
     s16 scale_x, scale_y, scale_z; /* +0x6 */
     u8 unknownc[0x20];
     void *parts;                   /* +0x2c: 0x18 bytes per part */
     void *part_cursor;             /* +0x30 */
+    s32 word34;                    /* +0x34 */
+    u8 unknown38[8];
+    s32 word40;                    /* +0x40 */
 } SpriteRenderer;
 
 typedef struct {
@@ -87,7 +90,25 @@ typedef struct {
         } bits;
     } motion;                /* +0xac */
     u8 byteb0;               /* +0xb0 */
-} Sprite;
+    u8 unknownb1[3];
+} Sprite; /* 0xb4 bytes; an inline renderer may follow */
+
+/* A sprite with its two task nodes, as 800233a4 allocates it. */
+typedef struct {
+    Task task;
+    Task auxiliary;
+    Sprite sprite;
+} SpriteTask;
+
+extern u8 D_800591AF; /* allocation mode for sprite tasks */
+void func_8001CA58(Task *owner, Task *node);
+void func_8001CC18(Task *owner, Task *node);
+void func_8001CD6C(Task *task, void (*update)(Task *));
+void func_8001CD74(Task *task, void (*destroy)(Task *));
+void func_80022DF4(Task *task);
+void func_80022EB8(Task *task);
+void func_80023804(Sprite *sprite);
+void func_8002393C(SpriteRenderer *renderer);
 
 void func_8001F6B0(Sprite *sprite); /* recolour the parts */
 void func_80022090(Sprite *sprite); /* rebuild the orientation */

@@ -1633,13 +1633,67 @@ void func_80023210(Sprite *sprite) {
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80023210);
 #endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80023290);
+/* Set a sprite's blend rate; type 8 and 9 sprites keep it one lower, the others recolour their parts. */
+void func_80023290(Sprite *sprite, s32 rate) {
+    s32 type;
+    s32 blend;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80023340);
+    rate &= 7;
+    sprite->render.bits.blend = rate;
+    if (rate != 0) {
+        sprite->colour_flags |= 2;
+    } else {
+        sprite->colour_flags &= ~2;
+    }
+    type = (sprite->flags >> 13) & 0xF;
+    if (type == 8 || type == 9) {
+        blend = (sprite->render.word >> 5) & 7;
+        if (blend != 0) {
+            sprite->render.bits.blend = blend - 1;
+        }
+    } else {
+        func_8001F6B0(sprite);
+    }
+}
 
+/* Replace a sprite renderer's part list with room for `count` parts (from the heap bottom). */
+void func_80023340(Sprite *sprite, s32 count) {
+    func_800320E8(sprite->renderer->parts);
+    sprite->renderer->parts = sprite->renderer->part_cursor = func_80031BDC(count * 24, 0);
+}
+
+/* Create a sprite task (with `extra` bytes after the sprite) under `owner`: its auxiliary node, default sprite and update/destroy callbacks. */
+/* Nonmatching: the original keeps the auxiliary node pointer in its own register (s2); GCC folds its offset. */
+#ifdef NON_MATCHING
+SpriteTask *func_800233A4(Task *owner, s32 extra) {
+    SpriteTask *node = func_80031BDC(extra + sizeof(SpriteTask), D_800591AF);
+    Task *auxiliary;
+    Sprite *sprite;
+
+    func_8001CC18(owner, &node->task);
+    auxiliary = &node->auxiliary;
+    func_8001CA58(&node->task, auxiliary);
+    sprite = &node->sprite;
+    func_80023804(sprite);
+    node->task.data = sprite;
+    auxiliary->data = sprite;
+    func_8001CD6C(&node->task, func_80022DF4);
+    func_8001CD74(&node->task, func_80022EB8);
+    return node;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800233A4);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80023440);
+/* A frame entry's image index: bits 8-10, plus 8 when bit 14 is set. */
+s32 func_80023440(u16 *entry) {
+    s32 index = (*entry >> 8) & 7;
+
+    if ((*entry >> 14) & 1) {
+        index += 8;
+    }
+    return index;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80023468);
 
@@ -1649,11 +1703,25 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80023538);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80023804);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002393C);
+/* Clear a renderer's angles and part list. */
+void func_8002393C(SpriteRenderer *renderer) {
+    renderer->angle_x = 0;
+    renderer->angle_y = 0;
+    renderer->angle_z = 0;
+    renderer->parts = NULL;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80023950);
+void func_80023950(Sprite *sprite) {
+    sprite->renderer = NULL;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80023958);
+/* Give a sprite the renderer stored right after it. */
+void func_80023958(Sprite *sprite) {
+    sprite->renderer = (SpriteRenderer *)(sprite + 1);
+    func_8002393C(sprite->renderer);
+    sprite->renderer->word34 = 0;
+    sprite->renderer->word40 = 0;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800239A0);
 
