@@ -4748,7 +4748,65 @@ void func_8008EA58(void) {
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008EA58);
 #endif
 
+#ifdef NON_MATCHING
+/* Event 0x60: once sound is available, request movie op1 with parameters
+ * op3/op5; op7's low nibble picks the display layout (0: half-width at
+ * x 0x140, 1: full 16-bit, 2: full 24-bit) and its 0xc0 bits the fade. */
+void func_8008EC30(void) {
+    s32 mode;
+    s32 layout;
+
+    if (D_800ADBDC == 0) {
+        D_800B00C0 = 1;
+        D_800B0078->pc -= 1;
+        return;
+    }
+    D_800C3A20 = func_800ACDEC(1);
+    D_800C3A2A = func_800ACDEC(3);
+    D_800C3A2E = func_800ACDEC(5);
+    mode = func_800ACDEC(7);
+    layout = mode & 0xF;
+    D_800C3A30 = mode;
+    D_800ADB80 = mode & 0xC0;
+    D_800C3A32 = 0x140;
+    D_800C3A34 = 0x100;
+    D_800C3A30 = layout;
+    D_800C3A2C = 1;
+    switch (layout) {
+    case 0:
+        D_800C3A22 = 0x140;
+        D_800C3A24 = 0;
+        D_800C3A26 = 0x140;
+        D_800C3A28 = 0x100;
+        D_800ADB74 = 1;
+        D_800C3A36 = 0;
+        break;
+    case 1:
+        D_800C3A26 = 0;
+        D_800C3A24 = 0;
+        D_800C3A22 = 0;
+        D_800C3A28 = 0x100;
+        D_800ADB74 = 0;
+        D_800C3A36 = 0;
+        break;
+    case 2:
+        D_800C3A26 = 0;
+        D_800C3A24 = 0;
+        D_800C3A22 = 0;
+        D_800C3A28 = 0x100;
+        D_800ADB74 = 0;
+        D_800C3A36 = 1;
+        break;
+    }
+    D_800C3A38 = 0xFF;
+    D_800C3A3A = 0;
+    D_800ADB70 = 1;
+    D_800B00C0 = 1;
+    D_800B0078->pc += 9;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008EC30);
+#endif
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008EE14);
 
