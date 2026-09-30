@@ -19,7 +19,7 @@ typedef struct {
 /* A battle object: a stage object or an effect (fields as far as
  * recovered). */
 typedef struct {
-    u8 pad0[4];
+    s32 field0;             /* 0x00: nonzero in use */
     ModelPart *hierarchy;   /* 0x04 */
     s32 field8;             /* 0x08 */
     void *packets;          /* 0x0C */
@@ -174,6 +174,10 @@ s32 func_80048C4C(s32 value);           /* square root */
 void func_8003852C(u8 *texture);
 void func_800AA934(BattleObject *object, BattleObject *target, EffectPool *pool, s32 arg3);
 void func_800B00D0(void);
+void func_800AFF9C(BattleObject *object);
+s32 func_800A0838(ModelList *models, ModelPart *root, u16 animation, s16 scale);
+void func_800AE2A4(BattleObject *object, ModelList *models, s32 arg2);
+void func_800AAD54(BattleObject *object, ModelList *models, s32 flags, s32 steps, s32 arg4);
 void func_800AF180(EffectPool *pool, s32 index, ModelPart *from, ModelPart *to);
 EffectPool *func_800A2234(EffectPool *pool, s32 count);
 SpritePool *func_800A2CA4(SpritePool *pool, s32 count);

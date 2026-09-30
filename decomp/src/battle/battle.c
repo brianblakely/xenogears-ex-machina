@@ -3584,7 +3584,32 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA898);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA934);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AAA20);
+/* Update a battle object for steps frames: put it on the ground, pose its
+ * hierarchy (per-part scales when field37 is set) and animate it (800A0838,
+ * 800AE2A4) each step, then run its effects (800AAD54). Returns the combined
+ * animation flags. */
+s32 func_800AAA20(BattleObject *object, ModelList *models, s32 steps, s32 arg3, s32 arg4) {
+    s32 flags;
+    s32 i;
+
+    if (object->field0 != 0) {
+        flags = 0;
+        if (object->active) {
+            func_800AFF9C(object);
+            if (object->field37) {
+                func_8009F1C4(object->hierarchy, object->scale1C);
+            } else {
+                func_8009EF3C(object->hierarchy, object->scale1C);
+            }
+            for (i = 0; i < steps; i++) {
+                flags |= func_800A0838(models, object->hierarchy, object->field3C, object->scale1C);
+                func_800AE2A4(object, models, arg3);
+            }
+        }
+        func_800AAD54(object, models, flags, steps, arg4);
+    }
+    return flags;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AAB34);
 
@@ -3592,7 +3617,39 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AAD54);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800ADF1C);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AE098);
+/* Attach a travelling effect (kind 0xFE) to a part: from its translation to
+ * (x, y, z), over a length of its distance plus one. */
+void func_800AE098(EffectPool *pool, ModelPart *part, s32 type, s32 param1, s32 param2, s32 field12, s32 x,
+                   s32 y, s32 z) {
+    EffectEntry *entry;
+    s32 dx;
+    s32 dy;
+    s32 dz;
+
+    if (part->effects[0] != NULL) {
+        entry = part->effects[0];
+    } else {
+        entry = func_800A2330(pool);
+    }
+    if (entry != NULL) {
+        entry->used = 1;
+        entry->field2 = type + 7;
+        entry->field1 = 0;
+        entry->kind = 0xFE;
+        dx = x - part->translation[0];
+        dy = y - part->translation[1];
+        dz = z - part->translation[2];
+        entry->params[0] = func_80048C4C(dx * dx + dy * dy + dz * dz) + 1;
+        entry->params[1] = param1;
+        entry->params[2] = param2;
+        entry->params[3] = x;
+        entry->params[4] = y;
+        entry->params[5] = z;
+        entry->field10 = 0;
+        entry->field12 = field12;
+        part->effects[0] = entry;
+    }
+}
 
 /* Start an animation on a battle object (looping when loop is set); an empty
  * animation stops it. */

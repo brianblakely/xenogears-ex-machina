@@ -99,6 +99,8 @@ void func_800320E8(void *block);                           /* free */
 void func_8002CBBC(Model *model);                          /* release a model */
 
 void func_8009F708(ModelPart *root);
+u16 func_8009EF3C(ModelPart *part, s32 scale);
+u16 func_8009F1C4(ModelPart *part, s32 scale);
 void func_800A22E8(EffectPool *pool);
 s32 func_800A23E8(EffectPool *pool, EffectEntry *entry);
 EffectEntry *func_800A2330(EffectPool *pool);
