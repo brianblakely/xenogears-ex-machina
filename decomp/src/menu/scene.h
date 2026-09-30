@@ -58,8 +58,23 @@ extern s32 D_800928E8;
 
 typedef struct {
     s16 unk0, unk2, unk4, unk6;
-    u8 unk8[4];
+    u8 unk8;
+    u8 unk9;
+    s16 unkA;
 } SceneCell12;
+
+/* TILE with its colour and code as one word (16 bytes). */
+typedef struct {
+    u8 addr[3];
+    u8 len;
+    u32 rgbc;
+    s16 x0, y0;
+    s16 w, h;
+} TileWords;
+
+extern TileWords *D_800926CC;
+extern TileWords *D_800926D0;
+void func_800732AC(void *dst, void *src, s32 size); /* copy memory */
 
 /* A ground particle of the scene (10 bytes; table at D_800926BC). */
 typedef struct {

@@ -710,7 +710,28 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007D7A8);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007D918);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007DB28);
+/* Allocate the 540 scene cells and their small tiles (2..4 pixels square,
+ * pale blue), with a copy of the tiles for the other draw buffer. */
+void func_8007DB28(void) {
+    SceneCell12 *cell;
+    TileWords *tile;
+    s32 i;
+
+    D_800926C8 = func_80031BDC(0x1950, 0);
+    tile = func_80031BDC(0x21C0, 0);
+    D_800926CC = tile;
+    D_800926D0 = func_80031BDC(0x21C0, 0);
+    cell = D_800926C8;
+    for (i = 0; i < 540; i++, cell++, tile++) {
+        tile->len = 3;
+        tile->rgbc = 0x60FFD0A0;
+        tile->w = func_8003FA38() % 3 + 2;
+        tile->h = func_8003FA38() % 3 + 2;
+        cell->unk0 = cell->unk2 = cell->unk4 = 0;
+        cell->unk8 = cell->unkA = cell->unk9 = cell->unk6 = 0;
+    }
+    func_800732AC(D_800926D0, D_800926CC, 0x21C0);
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007DC74);
 
