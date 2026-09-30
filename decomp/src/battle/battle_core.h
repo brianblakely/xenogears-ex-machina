@@ -106,9 +106,12 @@ typedef struct {
     u8 unk0[0x7B];
     u8 unk7B;          /* AP text part count */
     u8 reaction[3];    /* +0x7C */
-    u8 unk7F[0x93 - 0x7F];
+    u8 unk7F[0x8E - 0x7F];
+    u8 unk8E;
+    u8 unk8F[0x93 - 0x8F];
     u8 unk93[3];
-    u8 unk96[0x9C - 0x96];
+    u8 unk96;          /* file 3 block loaded */
+    u8 unk97[0x9C - 0x97];
     u8 unk9C;
     u8 unk9D;
     u8 unk9E;
@@ -121,7 +124,8 @@ typedef struct {
     u8 unkA8;
     u8 unkA9[0xAD - 0xA9];
     u8 unkAD;
-    u8 unkAE[0xB4 - 0xAE];
+    u8 unkAE;          /* menu module block loaded */
+    u8 unkAF[0xB4 - 0xAF];
     u8 unkB4;
     u8 unkB5;
     u8 unkB6[0xC6 - 0xB6];
@@ -308,6 +312,10 @@ typedef struct {
     u8 unk5D80[3];
     u8 unk5D83[0xC];
     u8 unk5D8F[3];
+    u8 unk5D92[0x5D9C - 0x5D92];
+    s16 unk5D9C;
+    s16 unk5D9E;
+    u8 unk5DA0[4];
 } BattleUnk2DB4;
 
 extern BattleUnk2DB4 *D_800D2DB4;
@@ -339,6 +347,9 @@ extern u8 D_800D366C;      /* menu effects enabled */
 extern u8 D_800D2CA4[5];
 extern u8 D_800C204C;
 extern u8 D_800C3E18;
+extern u8 D_800D2D24[3];   /* party character ids */
+extern void *D_800D367C;   /* menu module block */
+extern void *D_800C3DE8;   /* file 3 block */
 
 /* Per-slot formation information (0x1c bytes from 800c3eb4). */
 typedef struct {
@@ -376,8 +387,6 @@ extern u16 D_800C3468[16]; /* flag bits */
 extern u8 D_800D2D5C[11];  /* running result code per slot */
 extern s16 D_800D2D70[11]; /* running result amount per slot */
 extern u8 D_800D2DC0;      /* forced next turn: slot + 1 */
-extern u8 D_800D2DD7;      /* turn order cursor */
-extern u8 D_800D2DD8[11];  /* turn order */      /* decoded menu input code; 8 = none */
 
 extern u8 D_800C3D48;      /* the 801e5000 module is loaded */
 extern u8 D_800C48EA;      /* battle outcome */
@@ -385,10 +394,20 @@ extern s32 D_800C3E54;
 extern s32 D_800D3284;
 extern s32 D_800D328C;
 extern u8 D_800D3298;      /* ATB enabled */
-extern u8 D_800D2DCC[11];  /* slot present */
-extern u8 D_800D2DE4[11];  /* slot ready to act */
-extern s16 D_800D2DF0[3][11]; /* turn timers: [0] reload values, [1] counters,
-                                * [2] slow-status alternation */
+
+/* Turn queue (800d2dcc). */
+typedef struct {
+    u8 present[11];    /* slot takes part */
+    u8 cursor;         /* +0x0B turn order position */
+    u8 order[11];      /* +0x0C slots in turn order */
+    u8 unk17;
+    u8 ready[11];      /* +0x18 slot ready to act (0xff: out) */
+    u8 unk23;
+    s16 timers[3][11]; /* +0x24 [0] reload values, [1] counters,
+                        * [2] slow-status alternation */
+} TurnQueue;
+
+extern TurnQueue D_800D2DCC;
 extern s32 *D_8005917C;
 extern u8 D_8005959C;
 extern s32 D_800595A0;
@@ -409,6 +428,7 @@ u16 func_80043A58(s32 x, s32 y);
 void func_800445D0(s32 mode);
 void func_8003F8E8(void *block, s32 size);
 void func_800320E8(void *block);
+s32 func_800288EC(s32 file);
 void func_80034888(s32 arg0, u32 *ot, s32 buffer);
 s32 func_8002675C(void *table, s32 id, POLY_FT4 *prims, s32 buffer, s32 x, s32 y, s32 scale);
 void *func_80033728(void *table, s32 index);
@@ -496,6 +516,9 @@ s32 func_80076A10(s32 id, POLY_FT4 *prims, s16 x, s16 y);
 s32 func_800877E0(u8 actor, u8 target);
 void func_80085D34(void);
 void func_800879A8(u8 actor, u8 target);
+void func_8008FA60(s32 window);
+void func_8007765C(void);
+void func_8008AB94(void);
 void func_80078508(u8 *order);
 void func_80087EDC(u8 actor, u8 target);
 void func_800883AC(u8 slot);

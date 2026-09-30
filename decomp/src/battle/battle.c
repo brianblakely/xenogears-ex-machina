@@ -60,9 +60,9 @@ void func_8007171C(void) {
 
     if (D_800D3298 != 0) {
         slot = 0;
-        ready = D_800D2DE4;
+        ready = D_800D2DCC.ready;
         for (; slot < 11; ready++, slot++) {
-            if (D_800D2DCC[slot] == 0 || *ready != 0) {
+            if (D_800D2DCC.present[slot] == 0 || *ready != 0) {
                 continue;
             }
             step = 1;
@@ -70,7 +70,7 @@ void func_8007171C(void) {
                 step = 2;
             }
             if (D_800CCCE8[slot].flags7C & 0x1000) {
-                toggle = &D_800D2DF0[2][slot];
+                toggle = &D_800D2DCC.timers[2][slot];
                 if ((*toggle ^= 1) != 0) {
                     continue;
                 }
@@ -87,7 +87,7 @@ void func_8007171C(void) {
             if ((flags & 0x80) || (D_800CCCE8[slot].flags80 & 0x1000)) {
                 continue;
             }
-            timer = &D_800D2DF0[1][slot];
+            timer = &D_800D2DCC.timers[1][slot];
             if ((*timer -= step) <= 0) {
                 *ready = 1;
                 *timer = 0;
@@ -100,11 +100,11 @@ void func_8007171C(void) {
 void func_800718BC(void) {
     u8 actor = D_800C3EAC->actor;
 
-    if (D_800D2DE4[actor] != 0xFF) {
-        D_800D2DE4[actor] = 0;
+    if (D_800D2DCC.ready[actor] != 0xFF) {
+        D_800D2DCC.ready[actor] = 0;
     }
-    D_800D2DF0[1][D_800C3EAC->actor] = func_80098AF8(D_800C3EAC->actor, 0);
-    D_800D2DF0[0][D_800C3EAC->actor] = D_800D2DF0[1][D_800C3EAC->actor];
+    D_800D2DCC.timers[1][D_800C3EAC->actor] = func_80098AF8(D_800C3EAC->actor, 0);
+    D_800D2DCC.timers[0][D_800C3EAC->actor] = D_800D2DCC.timers[1][D_800C3EAC->actor];
 }
 
 /* Render the pending battle message into its image, upload it and hold it
@@ -188,8 +188,8 @@ void func_80072270(void) {
     if (D_800D2C9E & 7) {
         for (member = 0; member < 3; member++) {
             if (func_80089C9C(D_800D2C9E, member)) {
-                D_800D2DE4[member] = 0;
-                D_800D2DF0[1][member] = D_800D2DF0[0][member];
+                D_800D2DCC.ready[member] = 0;
+                D_800D2DCC.timers[1][member] = D_800D2DCC.timers[0][member];
                 D_800D2D28->reaction[member] = 1;
             }
         }
@@ -240,17 +240,17 @@ void func_800723E0(void) {
     if (D_800D39E0 == 0) {
         if (D_800D2DC0 != 0) {
             D_800C3EAC->actor = D_800D2DC0;
-            D_800D2DE4[D_800D2DC0 - 1] = 1;
+            D_800D2DCC.ready[D_800D2DC0 - 1] = 1;
             slot = D_800D2DC0;
             D_800D2DC0 = 0;
-            D_800D2DF0[1][slot - 1] = 0;
+            D_800D2DCC.timers[1][slot - 1] = 0;
         } else {
             D_800C3EAC->actor = 0;
-            cursor = &D_800D2DD7;
+            cursor = &D_800D2DCC.cursor;
             position = *cursor;
             do {
-                slot = D_800D2DD8[position];
-                if (D_800D2DE4[slot] == 1) {
+                slot = D_800D2DCC.order[position];
+                if (D_800D2DCC.ready[slot] == 1) {
                     D_800C3EAC->actor = slot + 1;
                     *cursor = next = position + 1;
                     if (next == 11) {
@@ -753,13 +753,13 @@ void func_80078508(u8 *order) {
     s32 slot;
 
     for (slot = 0; slot < 11; slot++) {
-        if (D_800D2DCC[slot] != 0) {
-            D_800D2DF0[0][slot] = D_800D2DF0[1][slot] = func_80098AF8(slot, 0);
+        if (D_800D2DCC.present[slot] != 0) {
+            D_800D2DCC.timers[0][slot] = D_800D2DCC.timers[1][slot] = func_80098AF8(slot, 0);
         } else {
-            D_800D2DF0[0][slot] = D_800D2DF0[1][slot] = 0xFF;
+            D_800D2DCC.timers[0][slot] = D_800D2DCC.timers[1][slot] = 0xFF;
         }
-        D_800D2DE4[slot] = 0;
-        D_800D2DF0[2][slot] = 0;
+        D_800D2DCC.ready[slot] = 0;
+        D_800D2DCC.timers[2][slot] = 0;
         order[slot] = 0;
     }
 }
@@ -832,7 +832,7 @@ void func_80078D48(u8 actor, u8 index) {
 void func_80078D6C(u8 actor, u8 index) {
     D_800C3FE8[D_800C3EAC->eventCount].type = 0xF9;
     func_800785D4(actor, index);
-    D_800D2DE4[actor] = 0xFF;
+    D_800D2DCC.ready[actor] = 0xFF;
     D_800C3D18[actor - 3].unk3 = 1;
     D_800CCCE8[actor].flags7C &= 0x8000;
 }
@@ -1055,7 +1055,7 @@ u8 func_8007A628(u8 slot, u8 any) {
     u8 result = 0;
     u16 status;
 
-    if (D_800D2DCC[slot] != 0 && D_800C3EB4[slot].hidden == 0 && !(D_800CCCE8[slot].flags7C & 0xC002)) {
+    if (D_800D2DCC.present[slot] != 0 && D_800C3EB4[slot].hidden == 0 && !(D_800CCCE8[slot].flags7C & 0xC002)) {
         result = 1;
         if (any == 0) {
             status = D_800CCCE8[slot].status84 & 0x20;
@@ -1073,7 +1073,7 @@ u8 func_8007A6C8(u8 slot, u8 any) {
     u8 result = 0;
     u16 status;
 
-    if (D_800D2DCC[slot] != 0 && !(D_800CCCE8[slot].flags7C & 0xC002)) {
+    if (D_800D2DCC.present[slot] != 0 && !(D_800CCCE8[slot].flags7C & 0xC002)) {
         result = 1;
         if (any == 0) {
             status = D_800CCCE8[slot].status84 & 0x20;
@@ -1087,7 +1087,7 @@ u8 func_8007A6C8(u8 slot, u8 any) {
 u8 func_8007A744(u8 slot) {
     u8 result = 0;
 
-    if (D_800D2DCC[slot] != 0 && D_800C3EB4[slot].hidden == 0) {
+    if (D_800D2DCC.present[slot] != 0 && D_800C3EB4[slot].hidden == 0) {
         result = (D_800CCCE8[slot].flags7C & 0xC000) == 0;
     }
     return result;
@@ -1785,8 +1785,8 @@ void func_8007C4A0(u8 **pc, u8 enemy) {
     s32 target = 0;
 
     for (slot = 0; slot < 3; slot++) {
-        if (func_8007A628(slot, (*pc)[2]) && lowest >= D_800D2DF0[1][slot]) {
-            lowest = D_800D2DF0[1][slot];
+        if (func_8007A628(slot, (*pc)[2]) && lowest >= D_800D2DCC.timers[1][slot]) {
+            lowest = D_800D2DCC.timers[1][slot];
             target = slot;
         }
     }
@@ -1801,8 +1801,8 @@ void func_8007C580(u8 **pc, u8 enemy) {
     s32 target = 0;
 
     for (slot = 3; slot < 11; slot++) {
-        if (func_8007A628(slot, (*pc)[2]) && lowest >= D_800D2DF0[1][slot] && slot != enemy + 3) {
-            lowest = D_800D2DF0[1][slot];
+        if (func_8007A628(slot, (*pc)[2]) && lowest >= D_800D2DCC.timers[1][slot] && slot != enemy + 3) {
+            lowest = D_800D2DCC.timers[1][slot];
             target = slot;
         }
     }
@@ -2111,7 +2111,7 @@ void func_8007D610(u8 **pc, u8 enemy) {
     u8 count = 0;
 
     for (slot = 3; slot < 11; slot++) {
-        if (D_800D2DCC[slot] != 0 && !(D_800CCCE8[slot].flags7C & 0xC000) && D_800C3EB4[slot].hidden == 0) {
+        if (D_800D2DCC.present[slot] != 0 && !(D_800CCCE8[slot].flags7C & 0xC000) && D_800C3EB4[slot].hidden == 0) {
             count++;
         }
     }
@@ -2673,27 +2673,110 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007EF6C);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007F8C0);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007FB70);
+/* For party character 4 with its UI flag +0x8e set: close window 0 and
+ * release the graphics block. */
+void func_8007FB70(u8 member) {
+    if (D_800D2D24[member] == 4 && D_800D2D28->unk8E != 0) {
+        func_8008FA60(0);
+        func_8007765C();
+        D_800D2D28->unk8E = 0;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007FBE0);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007FCE8);
+/* Release the loaded menu module block (UI +0xae). */
+void func_8007FCE8(void) {
+    if (D_800D2D28->unkAE != 0) {
+        func_800320E8(D_800D367C);
+        D_800D2D28->unkAE = 0;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007FD38);
+/* Load file 2 (a member flagged at 800d32a1) or 1 into a new heap block
+ * unless loaded (UI +0xae). */
+void func_8007FD38(u8 member) {
+    s32 file;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007FDEC);
+    if (D_800D2D28->unkAE == 0) {
+        func_8008AC50();
+        file = 2;
+        if (D_800D32A0[member].unk1 == 0) {
+            file = 1;
+        }
+        func_8008AB94();
+        D_800D367C = (void *)func_8008ABB8(func_800288EC(file), 0);
+        func_800295D8(file, (s32)D_800D367C, 0, 0x80);
+        func_8008AC50();
+        D_800D2D28->unkAE = 1;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007FE3C);
+/* Release the loaded file-3 block (UI +0x96). */
+void func_8007FDEC(void) {
+    if (D_800D2D28->unk96 != 0) {
+        func_800320E8(D_800C3DE8);
+        D_800D2D28->unk96 = 0;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007FEC4);
+/* Load file 3 into a new heap block unless loaded (UI +0x96). */
+void func_8007FE3C(void) {
+    if (D_800D2D28->unk96 == 0) {
+        func_8008AC50();
+        func_8008AB94();
+        D_800C3DE8 = (void *)func_8008ABB8(func_800288EC(3), 0);
+        func_800295D8(3, (s32)D_800C3DE8, 0, 0x80);
+        func_8008AC50();
+        D_800D2D28->unk96 = 1;
+    }
+}
+
+/* Allocate and clear the 0x5da4-byte *800d2db4 block. */
+void func_8007FEC4(void) {
+    D_800D2DB4 = (BattleUnk2DB4 *)func_8008ABB8(0x5DA4, 0);
+    func_8003F8E8(D_800D2DB4, 0x5DA4);
+    D_800D2DB4->unk5D9C = 0xA0;
+    D_800D2DB4->unk5D9E = 0x64;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007FF14);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800800E8);
+/* Leave a member's menu: clear UI +0xad, +0xc7, +0xa8, turn a 2 at 800d32a1
+ * into 1 and release *800d2db4. */
+void func_800800E8(u8 member) {
+    D_800D2D28->unkAD = 0;
+    D_800D2D28->unkC7 = 0;
+    D_800D2D28->unkA8 = 0;
+    if (D_800D32A0[member].unk1 == 2) {
+        D_800D32A0[member].unk1 = 1;
+    }
+    func_800320E8(D_800D2DB4);
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80080160);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80080AE4);
+/* The next slot in turn order, other than `actor`, with the lowest turn
+ * timer (undefined when there is none). */
+s32 func_80080AE4(u8 actor) {
+    u8 lowest = 0xFF;
+    s32 position = D_800D2DCC.cursor;
+    s32 slot;
+    u8 next;
+
+    do {
+        slot = D_800D2DCC.order[position];
+        position++;
+        if (D_800D2DCC.timers[1][slot] < lowest && slot != actor) {
+            next = slot;
+            lowest = D_800D2DCC.timers[1][slot];
+        }
+        if (position == 11) {
+            position = 0;
+        }
+    } while (position != D_800D2DCC.cursor);
+    return next;
+}
 
 /* Close the actor's event queue (event 0xfe); menu effects off. */
 void func_80080B64(u8 actor) {
