@@ -62,13 +62,15 @@ typedef struct {
     u8 speed;    /* 0x5A */
     u8 accuracy; /* 0x5B: added to a command's accuracy */
     u8 etherDefense; /* 0x5C */
-    u8 pad5D;
+    u8 field5D;
     u8 field5E;
     u8 field5F;
     u8 field60; /* 0x60: chance in percent */
-    u8 pad61;
+    u8 field61;
     u8 field62; /* 0x62 */
-    u8 pad63[0x6A - 0x63];
+    u8 pad63;
+    u8 field64[4]; /* 0x64 */
+    u8 pad68[0x6A - 0x68];
     u8 field6A;
     u8 pad6B[0x6F - 0x6B];
     u8 entryItems[4]; /* 0x6F: item slot of each entry */
@@ -136,7 +138,9 @@ typedef struct {
     u32 hp;    /* 0x60 */
     u32 maxHp; /* 0x64 */
     u16 field68;
-    u8 pad6A[0x70 - 0x6A];
+    u8 pad6A[0x6C - 0x6A];
+    u16 field6C;
+    u8 pad6E[0x70 - 0x6E];
     u16 bodyDefense; /* 0x70 */
     u16 armor;       /* 0x72 */
     u8 field74;
@@ -151,7 +155,7 @@ typedef struct {
     u8 defense; /* 0x99: damage reduction in percent */
     u8 pad9A[0x9C - 0x9A];
     u8 guard; /* 0x9C: tenths a half hit loses (at most 9) */
-    u8 pad9D;
+    u8 field9D;
     u8 frameFactor; /* 0x9E: attack scale in quarters */
     s8 hitBonus;    /* 0x9F: accuracy with broken weapons, half as evasion */
     u8 padA0[0xA4 - 0xA0];

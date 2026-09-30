@@ -1629,5 +1629,19 @@ s32 func_801E93A0(s32 disc);
 void func_801E6668(s32 index);
 void func_801E76EC(s32 index);
 void func_801E8978(u8 count, u8 cursor, MenuCommandImages *images);
+s32 func_801D9704(s32 slot, u8 dir, u8 readyOnly);
+u16 func_801C8640(u16 flags, u8 bit);
+void func_801D1EE0(s32 index, u8 outline);
+void func_801D261C(void);
+void func_801D2EC0(u8 slot, u8 mode);
+void func_801D3344(s32 x, s32 y, s32 h);
+void func_801D36E0(MenuLabelSlot *label, u8 slot, u8 gear, u8 mode);
+void func_801DA4A8(void);
+void func_801DB02C(u8 index);
+void func_801DB0A8(s32 entry, s32 row, u8 kind, u8 index);
+void func_801DB340(u8 index);
+void func_801DBD4C(s32 a, s32 b);
+void func_801DBDB4(void);
+void func_801E4A28(SaveData *save);
 
 #endif
