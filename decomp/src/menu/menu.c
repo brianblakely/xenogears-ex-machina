@@ -1031,7 +1031,60 @@ void func_8007FB0C(MenuPage *page) {
 
 INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu", D_8006FF7C);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007FBEC);
+/* Draw the vibration page: per controller port, the vibration setting when
+ * a type-4 controller without the "COM" setting is connected (the entry is
+ * hidden otherwise). */
+void func_8007FBEC(void) {
+    MenuPage *page;
+    s32 active;
+    s32 unused[2]; /* never used; the original frame keeps its slot */
+
+    func_8007E894(0xA0, 0x8C);
+    active = D_80092710 ^ 1;
+    active &= 1;
+    page = &D_800915AC[5];
+    if (active && D_800915AC[5].cursor == 0) {
+        D_8009272C = 1;
+    } else {
+        D_8009272C = 0;
+    }
+    func_8007E894(0x50, 0x8C);
+    if (func_80035734(0) == 4 && D_80099D98[5] == 0) {
+        if (active) {
+            func_8007F948(page, 1);
+        }
+        func_8007EC54((D_80099D98[3] & 1) ? "VIBRATION ON" : "VIBRATION OFF");
+        D_800915AC[5].item->flags &= ~4;
+    } else {
+        D_800915AC[5].item->flags |= 4;
+    }
+    func_8007EE08(0);
+
+    active = D_80092710 >> 1;
+    active ^= 1;
+    active &= 1;
+    if (active && D_80092754 == 0) {
+        active = 0;
+    }
+    page = &D_800915AC[6];
+    if (active && D_800915AC[6].cursor == 0) {
+        D_80092730 = 1;
+    } else {
+        D_80092730 = 0;
+    }
+    func_8007E894(0xF0, 0x8C);
+    if (func_80035734(1) == 4 && D_80099D98[6] == 0) {
+        if (active) {
+            func_8007F948(page, 1);
+        }
+        func_8007EC54((D_80099D98[4] & 1) ? "VIBRATION ON" : "VIBRATION OFF");
+        D_800915AC[6].item->flags &= ~4;
+    } else {
+        D_800915AC[6].item->flags |= 4;
+    }
+    func_8007EE08(0);
+    func_8007F258(D_80092938, 1);
+}
 
 /* Draw the values column of the options page. */
 void func_8007FE48(MenuPage *page) {
