@@ -119,6 +119,7 @@ ShatterTask *func_801E82EC(void) {
  * away at its place on the grid. */
 #ifdef NON_MATCHING
 ShatterTask *func_801E8320(ShatterTask *task) {
+    u8 unused[0x38]; /* unused locals: the original's frame */
     ShatterCell *cell;
     POLY_FT3 *prim;
     s32 half, row, col, k;
@@ -135,13 +136,13 @@ ShatterTask *func_801E8320(ShatterTask *task) {
                 cell->rot.vy = 0;
                 cell->rot.vz = 0;
                 if (half == 0) {
-                    cell->trans.vx = col * 0x200 - 0x960;
+                    cell->trans.vx = (col - 5) * 0x200 + 0xA0;
                     cell->trans.vz = 0x2000;
-                    cell->trans.vy = row * 0x200 - 0x660;
+                    cell->trans.vy = (row - 3) * 0x200 - 0x60;
                 } else {
-                    cell->trans.vx = col * 0x200 - 0x8A0;
+                    cell->trans.vx = (col - 5) * 0x200 + 0x160;
                     cell->trans.vz = 0x2000;
-                    cell->trans.vy = row * 0x200 - 0x5A0;
+                    cell->trans.vy = (row - 3) * 0x200 + 0x60;
                 }
                 u = (col * 0x20) & 0x3F;
                 u_right = u + 0x20;
@@ -474,11 +475,11 @@ BurstTask *func_801E8DF0(BurstTask *burst) {
                     cell->corner[k].vy = triangle[k].vy;
                     cell->corner[k].vz = triangle[k].vz;
                     if (half == 0) {
-                        cell->corner[k].vx += col * 0x100 - 0x9B0;
-                        cell->corner[k].vy += row * 0x100 - 0x6B0;
+                        cell->corner[k].vx += (s16)(col * 0x100 - 0x9B0);
+                        cell->corner[k].vy += (s16)(row * 0x100 - 0x6B0);
                     } else {
-                        cell->corner[k].vy += (v - 101) * 16;
-                        cell->corner[k].vx += col * 0x100 - 0x950;
+                        cell->corner[k].vy += (s16)((v - 101) * 16);
+                        cell->corner[k].vx += (s16)(col * 0x100 - 0x950);
                     }
                     square.vx = cell->corner[k].vx;
                     square.vy = cell->corner[k].vy;
