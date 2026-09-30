@@ -528,9 +528,51 @@ void func_800BE330(s32 value) {
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BE538);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BE6A0);
+/* Write value as digits hexadecimal glyphs (D_800C3784, plus base) after
+ * the count in text. */
+void func_800BE6A0(s32 value, u8 *text, s32 digits, s32 base) {
+    s32 i;
+    s32 last;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BE6E8);
+    i = 0;
+    if (digits != 0) {
+        last = digits - 1;
+        do {
+            text[i + 1] = D_800C3784[(value >> ((last - i) * 4)) & 0xF] + base;
+        } while (++i != digits);
+    }
+    text[0] = digits;
+}
+
+/* Write value in decimal after the count in text: a '-' for a negative
+ * value, then its last digits + 1 digits (plus base), leading zeros only
+ * when leading is set. */
+void func_800BE6E8(s32 value, u8 *text, s32 digits, u8 leading, s32 base) {
+    s32 count = 0;
+    u8 *out = text + 1;
+    u8 digit;
+
+    if (value < 0) {
+        count = 1;
+        text[1] = '-';
+        out = text + 2;
+        value = -value;
+        digits--;
+    }
+    while (value %= D_800C37A4[digits], digits != 0) {
+        digits--;
+        digit = value / D_800C37A4[digits];
+        if (digit) {
+            leading = 1;
+        }
+        if (leading) {
+            *out++ = digit + base;
+            count++;
+        }
+    }
+    *out = value + base;
+    text[0] = count + 1;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BE790);
 

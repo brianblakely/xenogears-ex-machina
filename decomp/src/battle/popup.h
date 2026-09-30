@@ -56,6 +56,6 @@ void *func_8001D1D8(s32 size, void *owner, void (*update)(), void (*draw)(), s32
 s32 func_80026DCC(void *font, s32 character, PopupGlyph *out, s16 x, s32 y); /* glyphs added */
 
 void func_800BD810(PopupGlyph *glyph, s32 colour);
-void func_800BE6E8(s32 value, u8 *text, s32 digits, s32 leading, s32 base);
+void func_800BE6E8(s32 value, u8 *text, s32 digits, u8 leading, s32 base);
 
 #endif
