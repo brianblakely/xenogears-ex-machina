@@ -33,7 +33,30 @@ void func_800816DC(SceneObject *object, PolyFT4 *quads, s32 count, s32 abr) {
     func_8003F968(object->prims2, object->prims, count * sizeof(PolyFT4));
 }
 
+/* Start the actor above the player and build scene object 2 there. */
+#ifdef NON_MATCHING /* scene-object pointer loaded at a different point */
+s32 func_800817A0(s32 index) {
+    WorldmapActor *actor;
+    SceneObject *objects;
+
+    actor = &D_8009BE24[index];
+    actor->state = 0;
+    actor->position.vx = D_8009C5AC.vx;
+    objects = D_8009C620;
+    actor->position.vy = D_8009C5AC.vy - 0x100000;
+    actor->u.step = 0;
+    actor->unk54 = 0;
+    actor->unk58 = 0;
+    actor->position.vz = D_8009C5AC.vz;
+    func_800816DC(&objects[2], objects[2].prims, objects[2].def->count, 1);
+    objects[2].position.vx = actor->position.vx >> 12;
+    objects[2].position.vy = actor->position.vy >> 12;
+    objects[2].position.vz = actor->position.vz >> 12;
+    return 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_800817A0);
+#endif
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_80081868);
 
@@ -73,7 +96,22 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_80082F64);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_80083108);
+/* Build `count` semi-transparent black textured triangles on page 0x2C0,0x100. */
+void func_80083108(SceneObject *object, PolyFT3 *prims, s32 count, s32 abr) {
+    s32 i;
+
+    for (i = count - 1; i != -1; i--) {
+        ((u8 *)prims)[3] = 7;
+        prims->code = 0x24;
+        prims->tpage = func_80043A1C(0, abr, 0x2C0, 0x100);
+        prims->r0 = 0;
+        prims->g0 = 0;
+        prims->b0 = 0;
+        prims->code |= 2;
+        prims++;
+    }
+    func_8003F968(object->prims2, object->prims, count * sizeof(PolyFT3));
+}
 
 /* Set the colour of `count` textured triangles. */
 void func_800831D8(PolyFT3 *prims, s32 count, s32 r, s32 g, s32 b) {

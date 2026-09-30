@@ -41,7 +41,7 @@ typedef struct {
 } SoundBank;
 
 extern SoundBank *D_8006259C; /* area sound bank */
-extern void *D_8009BC38, *D_8009BCB0;
+extern void *D_8009BC38[2], *D_8009BCB0[2]; /* work and packet buffers, per display buffer */
 extern FileLoad D_8009D3F8[]; /* shared read list */
 
 /* Party: three character ids (0xFF empty) and per-character records. */
@@ -102,13 +102,12 @@ extern WorldmapReturn D_8006EE54;
 extern u8 D_8006F8E5, D_8006F8E6, D_8006F8E7;
 
 typedef struct {
-    s32 vx, vy, vz;
-} Vec3;
+    s32 vx, vy, vz, pad;
+} VECTOR;
 
 /* Camera: its target and orientation. */
 typedef struct {
-    Vec3 target;
-    s32 unkC;
+    VECTOR target;
 } Camera;
 
 extern Camera D_8009BE28;
@@ -122,11 +121,11 @@ typedef struct {
 } WorldmapSpot;
 
 extern s32 D_8009BE10; /* movement mode */
-extern Vec3 D_8009C5AC; /* player position (20.12) */
+extern VECTOR D_8009C5AC; /* player position (20.12) */
 extern s32 D_8009C584;  /* player heading */
 extern WorldmapSpot *D_8009D3F4;
 
-void func_8008DFF4(Vec3 *position);
+void func_8008DFF4(VECTOR *position);
 void func_800848B4(s32 parent, s32 child);
 
 /* PsyQ libgpu environments. */
@@ -185,12 +184,8 @@ typedef struct {
     s16 wait;     /* 0x22: script wait counter */
     s16 unk24;
     s16 unk26;
-    Vec3 position; /* 0x28 */
-    s32 unk34;
-    s32 unk38;
-    s32 unk3C;
-    s32 unk40;
-    s32 unk44;
+    VECTOR position; /* 0x28 */
+    VECTOR motion;   /* 0x38 */
     s32 unk48;
     s32 handle;   /* 0x4C */
     union {
@@ -218,7 +213,6 @@ extern ScriptOp D_8009A3C0[];
 extern WorldmapActor *D_8009BE24;
 extern void *D_80062528;
 extern u16 D_8006F954[]; /* resident flag words */
-extern void *D_8009BC3C, *D_8009BCB4;
 
 void func_800320E8(void *block); /* free a block */
 void *func_80032E88(void *block, s32 mode);
@@ -409,8 +403,7 @@ typedef struct SceneObject {
     s16 unk2;
     u16 flags;                  /* 0x04: 1 solid */
     s16 unk6;
-    Vec3 position;              /* 0x08 */
-    s32 unk14;
+    VECTOR position;            /* 0x08 */
     SVECTOR angle;              /* 0x18 */
     MATRIX matrix;              /* 0x20 */
     SpriteDef *def;             /* 0x40 */
@@ -460,13 +453,13 @@ extern s16 D_8009AFDC[]; /* scene objects to show; -1 ends */
 extern u16 D_8006EF64;
 extern void *D_8009BE1C, *D_8009BE20;
 
-void func_8008BFD4(s32 index, Vec3 *position, s32 x, s32 z);
+void func_8008BFD4(s32 index, VECTOR *position, s32 x, s32 z);
 
 /* Queued actor placement (0x18 bytes, ring of 32). */
 typedef struct {
     s16 actor;
     s16 pad2;
-    Vec3 position;
+    s32 px, py, pz;
     s32 z;
     s16 x;
     s16 pad16;
@@ -494,7 +487,7 @@ extern u8 D_8009BD64[];
 extern s16 D_8009BAC8[]; /* 8 columns per row */
 
 void func_800346D4(void *object);
-s32 func_80093E8C(Vec3 *position); /* terrain attribute at a position */
+s32 func_80093E8C(VECTOR *position); /* terrain attribute at a position */
 u8 *func_80093660(s32 x, s32 z);   /* terrain cell at a position */
 
 extern void *D_8009BE08, *D_8009D3C0, *D_8009D7D4; /* effect command buffers */
@@ -532,7 +525,7 @@ extern Sequence D_8009A65C[];
 extern s32 D_8009D3D4;
 extern Camera D_8009D55C; /* saved camera */
 
-void func_80097BC0(Vec3 *position);
+void func_80097BC0(VECTOR *position);
 
 /* Terrain block: 16x16 cell attributes at 0x510. */
 typedef struct {
@@ -595,10 +588,6 @@ typedef struct {
     u8 pad8[0x44];
 } EffectSlot;
 
-typedef struct {
-    s32 vx, vy, vz, pad;
-} VECTOR;
-
 /* Drifting position (0x10 bytes) and its velocity (8 bytes). */
 typedef struct {
     s32 x;
@@ -630,7 +619,7 @@ extern u16 D_8009D52C;
 
 void func_8007A06C(SceneObject *object, PolyFT4 *quads, s32 count);
 void func_8002CBBC(void *def);
-s32 func_80095414(Vec3 *position, Vec3 *direction, VECTOR *hit, s32 range, s32 mode);
+s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *hit, s32 range, s32 mode);
 
 /* Scratchpad work area of the actor updaters. */
 typedef struct {
@@ -648,7 +637,7 @@ extern LoaderState D_8009D534;
 extern s32 D_8009C618;
 
 s32 func_80093A5C(s32 x, s32 z);  /* terrain height */
-s16 func_80093F18(Vec3 *position);
+s16 func_80093F18(VECTOR *position);
 void func_8003F738(SVECTOR *angle, MATRIX *m);
 void func_80097DC0(void);
 
@@ -658,6 +647,32 @@ extern void *D_8009D788[16]; /* submitted frame lists */
 s16 func_80084DB8(s32 probe, s16 object);
 void func_8007EBBC(SceneObject *object, PolyFT4 *quads, s32 count, s32 abr);
 void func_800963E4(s32 *list);
+
+extern s32 D_8009B224[2], D_8009B22C[2], D_8009B234[2], D_8009B23C[2];
+extern void *D_8009C624[16]; /* submitted four-word lists */
+
+/* Terrain slope plane per type (16 bytes). */
+typedef struct {
+    s32 nx;
+    s32 unk4;
+    s32 nz;
+    s32 unkC;
+} SlopeNormal;
+
+extern SlopeNormal D_8009B264[16];
+
+void func_800964B0(s32 *list);
+
+/* Path region (16 bytes); an id of -1 ends a list. */
+typedef struct {
+    s16 x, z, w, h;
+    s16 id;
+    s16 pad[2];
+    s16 kind;
+} PathRegion;
+
+extern s16 D_8009B18C[4], D_8009B194[4], D_8009B19C[4], D_8009B1A4[4];
+extern s32 D_8009CD44, D_8009BD2C;
 
 /* Frame state. */
 typedef struct {

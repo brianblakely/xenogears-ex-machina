@@ -39,10 +39,10 @@ s32 func_8007CC6C(s32 index) {
     D_8009C620[4].angle.vx = 0;
     func_8004A92C(&D_8009C620[4].angle, &D_8009C620[4].matrix);
     actor = &D_8009BE24[index];
-    actor->unk40 = -0x4000;
+    actor->motion.vz = -0x4000;
     actor->position.vx = 0xD00000;
-    actor->unk3C = 0;
-    actor->unk38 = 0;
+    actor->motion.vy = 0;
+    actor->motion.vx = 0;
     actor->position.vy = 0;
     actor->position.vz = 0x400000;
     return 1;
@@ -65,11 +65,11 @@ s32 func_8007CE84(s32 index) {
     D_8009C620[5].angle.vx = 0;
     func_8004A92C(&D_8009C620[5].angle, &D_8009C620[5].matrix);
     actor = &D_8009BE24[index];
-    actor->unk40 = -0x4000;
+    actor->motion.vz = -0x4000;
     actor->position.vx = 0xB00000;
     actor->state = 0;
-    actor->unk3C = 0;
-    actor->unk38 = 0;
+    actor->motion.vy = 0;
+    actor->motion.vx = 0;
     actor->position.vy = 0;
     actor->position.vz = 0x200000;
     return 1;
@@ -93,9 +93,9 @@ s32 func_8007D078(s32 index) {
     D_8009C620[9].angle.vx = 0;
     func_8004A92C(&D_8009C620[9].angle, &D_8009C620[9].matrix);
     actor = &D_8009BE24[index];
-    actor->unk40 = -0x4000;
-    actor->unk3C = 0;
-    actor->unk38 = 0;
+    actor->motion.vz = -0x4000;
+    actor->motion.vy = 0;
+    actor->motion.vx = 0;
     actor->position.vx = 0xC00000;
     actor->position.vy = 0;
     actor->position.vz = 0;
@@ -119,10 +119,10 @@ s32 func_8007D228(s32 index) {
     D_8009C620[10].angle.vx = 0;
     func_8004A92C(&D_8009C620[10].angle, &D_8009C620[10].matrix);
     actor = &D_8009BE24[index];
-    actor->unk40 = -0x4000;
+    actor->motion.vz = -0x4000;
     actor->position.vx = 0xE00000;
-    actor->unk3C = 0;
-    actor->unk38 = 0;
+    actor->motion.vy = 0;
+    actor->motion.vx = 0;
     actor->position.vy = 0;
     actor->position.vz = 0x100000;
     return 1;
@@ -145,10 +145,10 @@ s32 func_8007D414(s32 index) {
     D_8009C620[12].angle.vx = 0;
     func_8004A92C(&D_8009C620[12].angle, &D_8009C620[12].matrix);
     actor = &D_8009BE24[index];
-    actor->unk40 = -0x4000;
+    actor->motion.vz = -0x4000;
     actor->position.vx = 0xE80000;
-    actor->unk3C = 0;
-    actor->unk38 = 0;
+    actor->motion.vy = 0;
+    actor->motion.vx = 0;
     actor->position.vy = 0;
     actor->position.vz = 0x280000;
     return 1;
@@ -171,10 +171,10 @@ s32 func_8007D600(s32 index) {
     D_8009C620[13].angle.vx = 0;
     func_8004A92C(&D_8009C620[13].angle, &D_8009C620[13].matrix);
     actor = &D_8009BE24[index];
-    actor->unk40 = -0x4000;
+    actor->motion.vz = -0x4000;
     actor->position.vx = 0xF80000;
-    actor->unk3C = 0;
-    actor->unk38 = 0;
+    actor->motion.vy = 0;
+    actor->motion.vx = 0;
     actor->position.vy = 0;
     actor->position.vz = 0x380000;
     return 1;
@@ -199,9 +199,9 @@ s32 func_8007D774(s32 index) {
     actor->position.vx = 0xD00000;
     actor->position.vz = 0x400000;
     actor->position.vy = -0x280000;
-    actor->unk3C = 0;
-    actor->unk38 = 0;
-    actor->unk40 = -0x6000;
+    actor->motion.vy = 0;
+    actor->motion.vx = 0;
+    actor->motion.vz = -0x6000;
     return 3;
 }
 #else

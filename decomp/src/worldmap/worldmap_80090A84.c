@@ -17,7 +17,7 @@ s32 func_80091430(s32 index) {
     actor = &D_8009BE24[index];
     saved = &D_8009D55C;
     actor->position = saved->target;
-    actor->unk34 = saved->unkC;
+    actor->position.pad = saved->target.pad;
     D_8009BD38.vz = 0;
     D_8009BD38.vy = D_8009D52C;
     actor->u.step = (s16)D_8009D52C;
@@ -36,7 +36,35 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_800914D0);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80091B54);
+/* Choose the camera distance for the movement mode (unchanged in mode 6). */
+s32 func_80091B54(s32 index) {
+    WorldmapActor *actor;
+
+    actor = &D_8009BE24[index];
+    switch (D_8009BE10) {
+    case 6:
+        break;
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+    case 5:
+        actor->u.step = 3;
+        D_8009D3F0 = 0x460000;
+        D_8009BD38.vx = -0x260;
+        actor->unk64 = (s32)D_8009B224;
+        actor->unk68 = (s32)D_8009B234;
+        break;
+    case 7:
+        actor->u.step = 3;
+        D_8009D3F0 = 0x280000;
+        D_8009BD38.vx = -0x260;
+        actor->unk64 = (s32)D_8009B22C;
+        actor->unk68 = (s32)D_8009B23C;
+        break;
+    }
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80091C18);
 
@@ -100,7 +128,7 @@ void func_800931B0(void) {
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_800931D8);
 
 /* Wrap a position (20.12) onto the area's extent. */
-void func_80093354(Vec3 *position) {
+void func_80093354(VECTOR *position) {
     if (position->vx >= D_8009D160 << 23) {
         position->vx -= D_8009D160 << 23;
     }
@@ -116,7 +144,7 @@ void func_80093354(Vec3 *position) {
 }
 
 /* Wrap a position (world units) onto the area's extent. */
-void func_800933EC(Vec3 *position) {
+void func_800933EC(VECTOR *position) {
     if (position->vx >= D_8009D160 << 11) {
         position->vx -= D_8009D160 << 11;
     }
@@ -132,7 +160,7 @@ void func_800933EC(Vec3 *position) {
 }
 
 /* Wrap a ground-plane offset (20.12) into half the area extent. */
-void func_80093484(Vec3 *offset) {
+void func_80093484(VECTOR *offset) {
     if (offset->vx < -0x4000000) {
         offset->vx += D_8009D160 << 23;
     } else if (offset->vx > 0x4000000) {
@@ -146,7 +174,7 @@ void func_80093484(Vec3 *offset) {
 }
 
 /* Wrap a ground-plane offset (world units) into half the area extent. */
-void func_80093534(Vec3 *offset) {
+void func_80093534(VECTOR *offset) {
     if (offset->vx < -0x4000) {
         offset->vx += D_8009D160 << 11;
     } else if (offset->vx > 0x4000) {
@@ -162,7 +190,7 @@ void func_80093534(Vec3 *offset) {
 /* Set the point's height to lie on the plane through `origin` with normal
  * `normal`. */
 #ifdef NON_MATCHING /* matches once maspsx expands div (--expand-div) */
-void func_800935DC(Vec3 *point, Vec3 *origin, Vec3 *normal) {
+void func_800935DC(VECTOR *point, VECTOR *origin, VECTOR *normal) {
     point->vy = (-(normal->vx * (point->vx - origin->vx)) - normal->vz * (point->vz - origin->vz)) / normal->vy;
     point->vy += origin->vy;
 }
@@ -180,7 +208,7 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80
 
 /* Terrain attribute of the cell under a position. */
 #ifdef NON_MATCHING /* final address sum operands swapped */
-s32 func_80093E8C(Vec3 *position) {
+s32 func_80093E8C(VECTOR *position) {
     s32 x;
     s32 z;
     s32 row;
@@ -201,17 +229,17 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80093F18);
 
 /* Terrain type (low four attribute bits) at a position. */
-s32 func_80093FE4(Vec3 *position) {
+s32 func_80093FE4(VECTOR *position) {
     return func_80093E8C(position) & 0xF;
 }
 
 /* Terrain height class (attribute bits 10-15) at a position. */
-u32 func_80094004(Vec3 *position) {
+u32 func_80094004(VECTOR *position) {
     return ((u32)func_80093E8C(position) << 16) >> 26;
 }
 
 /* Terrain cell flags (bits 2-5 of the cell's fourth byte) at a position. */
-s32 func_80094028(Vec3 *position) {
+s32 func_80094028(VECTOR *position) {
     return (func_80093660(position->vx, position->vz)[3] >> 2) & 0xF;
 }
 
@@ -220,11 +248,31 @@ s16 func_80094060(s16 row, s16 column) {
     return *(s16 *)((u8 *)D_8009BAC8 + row * 16 + column * 2);
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80094088);
+/* Slide `direction` along the slope under the position; 0 when level. */
+s32 func_80094088(VECTOR *position, VECTOR *direction, VECTOR *out) {
+    s32 type;
+    s32 dot;
+
+    type = (s16)func_80093FE4(position);
+    dot = direction->vx * D_8009B264[type].nx + direction->vz * D_8009B264[type].nz;
+    if (dot == 0) {
+        out->vx = direction->vx;
+        out->vz = direction->vz;
+        return 0;
+    }
+    if (dot < 0) {
+        out->vx = -D_8009B264[type].nx;
+        out->vz = -D_8009B264[type].nz;
+    } else {
+        out->vx = D_8009B264[type].nx;
+        out->vz = D_8009B264[type].nz;
+    }
+    return 1;
+}
 
 /* Distance between two positions on the ground plane, in world units. */
 #ifdef NON_MATCHING /* delta held in the argument register */
-s32 func_80094154(Vec3 *a, Vec3 *b) {
+s32 func_80094154(VECTOR *a, VECTOR *b) {
     s32 dx;
     s32 dz;
 
@@ -245,7 +293,7 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80
 #endif
 
 /* Heading from `from` to `to` (0..0xFFF) and its unit direction. */
-void func_800941C4(Vec3 *from, Vec3 *to, Vec3 *direction, s16 *heading) {
+void func_800941C4(VECTOR *from, VECTOR *to, VECTOR *direction, s16 *heading) {
     s32 x;
 
     x = to->vx;
@@ -256,7 +304,36 @@ void func_800941C4(Vec3 *from, Vec3 *to, Vec3 *direction, s16 *heading) {
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80094238);
 
+/* Find the region of path table `table` of kind `kind` containing the
+ * position; it becomes the current path. */
+#ifdef NON_MATCHING /* position loads scheduled after the table index */
+s32 func_80094364(VECTOR *position, s32 table, s32 kind) {
+    PathRegion *region;
+    u32 world_x;
+    u32 world_z;
+    s32 x;
+    s32 z;
+
+    world_x = (u32)position->vx >> 12;
+    world_z = (u32)position->vz >> 12;
+    region = ((PathRegion **)D_8009BD00)[table];
+    if (region->id != -1) {
+        x = (u16)world_x;
+        z = (u16)world_z;
+        do {
+            if (((x >= region->x) & (region->x + region->w >= x) & (z >= region->z) & (region->z + region->h >= z)) &&
+                region->kind == kind) {
+                D_8009D7D8 = (PathTable *)region;
+                return 1;
+            }
+            region++;
+        } while (region->id != -1);
+    }
+    return 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80094364);
+#endif
 
 void func_80094434(void) {
 }

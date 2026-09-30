@@ -43,10 +43,10 @@ s32 func_8007F8AC(s32 index) {
         abr = 1;
     }
     func_8007EBBC(object, object->prims, object->def->count, abr);
-    actor->unk38 = -0x85A;
-    actor->unk40 = 0xDA6;
+    actor->motion.vx = -0x85A;
+    actor->motion.vz = 0xDA6;
     actor->state = 0;
-    actor->unk3C = 0;
+    actor->motion.vy = 0;
     actor->unk5C = D_8009A68C[slot];
     actor->wait = 0x3C;
     return 1;

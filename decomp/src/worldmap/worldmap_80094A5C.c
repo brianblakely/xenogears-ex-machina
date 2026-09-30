@@ -6,7 +6,7 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80
 
 /* Orient `normal` towards `direction` on the ground plane (zero when
  * perpendicular). */
-void func_800952B0(Vec3 *direction, Vec3 *out, Vec3 *normal) {
+void func_800952B0(VECTOR *direction, VECTOR *out, VECTOR *normal) {
     s32 dot;
 
     dot = normal->vx * direction->vx + normal->vz * direction->vz;
@@ -104,7 +104,22 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_800964B0);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_800965A4);
+/* Submit the current four-word command list; -1 when there is nothing to
+ * send or its ring slot is still busy. */
+s32 func_800965A4(void) {
+    s32 *list;
+
+    list = (s32 *)((u8 *)D_8009D3C0 + D_8009BE44 * 0x580);
+    if (*list != 0 && D_8009C624[D_8009BE44] == NULL) {
+        func_800964B0(list);
+        D_8009D808 = 0;
+        D_8009C624[D_8009BE44] = list;
+        D_8009BE44 = (D_8009BE44 + 1) & 0xF;
+        return 0;
+    }
+    D_8009D808 = 0;
+    return -1;
+}
 
 /* Frames queued between the writer and reader (ring of 16). */
 s32 func_80096668(void) {
@@ -129,7 +144,28 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_800967E4);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_800968E0);
+/* Step the stream reader: 0 idle, 1 busy, 2 finished a frame, 3 error. */
+s32 func_800968E0(void) {
+    switch (D_8009CD44) {
+    case 0:
+        return 0;
+    case 4:
+        if (--D_8009BD2C == 0) {
+            D_8009CD44++;
+        }
+    case 1:
+    case 2:
+    case 3:
+        return 1;
+    case 5:
+        D_8009CD44 = 0;
+        D_8009D788[D_8009BCB8] = NULL;
+        D_8009BCB8 = (D_8009BCB8 + 1) & 0xF;
+        return 2;
+    default:
+        return 3;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_8009699C);
 
@@ -235,7 +271,36 @@ void func_800977E0(s32 index, s16 arg) {
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80097800);
 
+/* Allocate both 2048-triangle terrain packet buffers and initialise them. */
+#ifdef NON_MATCHING /* loop counter increment scheduled late */
+void func_800978FC(void) {
+    PolyFT3 *prim;
+    s32 i;
+    struct {
+        s32 words[4];
+    } *from, *to, *end;
+
+    D_8009BC38[1] = func_80031BDC(0x10000, 1);
+    D_8009BCB0[1] = func_80031BDC(0x10000, 1);
+    prim = D_8009BC38[1];
+    for (i = 0; i < 0x800; i++) {
+        ((u8 *)prim)[3] = 7;
+        prim->code = 0x24;
+        prim->r0 = 0x80;
+        prim->g0 = 0x80;
+        prim->b0 = 0x80;
+        prim++;
+    }
+    from = D_8009BC38[1];
+    to = D_8009BCB0[1];
+    end = (void *)((u8 *)from + 0x10000);
+    do {
+        *to++ = *from++;
+    } while (from != end);
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_800978FC);
+#endif
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_800979C8);
 

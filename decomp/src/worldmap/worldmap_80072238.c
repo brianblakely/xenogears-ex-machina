@@ -36,10 +36,10 @@ void func_8007299C(void) {
     func_80088FF4();
     func_80089128();
     func_80097D64();
-    func_800320E8(D_8009BC38);
-    func_800320E8(D_8009BCB0);
-    func_800320E8(D_8009BC3C);
-    func_800320E8(D_8009BCB4);
+    func_800320E8(D_8009BC38[0]);
+    func_800320E8(D_8009BCB0[0]);
+    func_800320E8(D_8009BC38[1]);
+    func_800320E8(D_8009BCB0[1]);
     func_800320E8(D_8009C180);
     for (i = 0; i < 3; i++) {
         if (D_8009CD34[i] != NULL) {
@@ -207,8 +207,8 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80
 
 /* Allocate the two 4 KiB work buffers. */
 void func_8007369C(void) {
-    D_8009BC38 = func_80031BDC(0x1000, 0);
-    D_8009BCB0 = func_80031BDC(0x1000, 0);
+    D_8009BC38[0] = func_80031BDC(0x1000, 0);
+    D_8009BCB0[0] = func_80031BDC(0x1000, 0);
 }
 
 /* Initialise the sky gradient: four bands of Gouraud quads in both buffers. */
@@ -329,7 +329,7 @@ void func_8007474C(void) {
 }
 
 /* Record a position (in world units) with an id in the 16-entry ring. */
-void func_80074794(s16 id, Vec3 *position) {
+void func_80074794(s16 id, VECTOR *position) {
     D_8009D30C[D_8009BE38].x = position->vx >> 12;
     D_8009D30C[D_8009BE38].z = position->vz >> 12;
     D_8009D30C[D_8009BE38].id = id;
@@ -488,7 +488,7 @@ void func_800767D4(void *data, s32 file) {
 }
 
 /* Quadratic Bezier point at t (0..0x1000) through three control points. */
-void func_80076858(s32 t, SVECTOR *p0, SVECTOR *p1, SVECTOR *p2, Vec3 *out) {
+void func_80076858(s32 t, SVECTOR *p0, SVECTOR *p1, SVECTOR *p2, VECTOR *out) {
     s32 w0;
     s32 w1;
     s32 w2;
@@ -708,10 +708,10 @@ void func_80077480(void) {
     func_80088FF4();
     func_80089128();
     func_80097D64();
-    func_800320E8(D_8009BC38);
-    func_800320E8(D_8009BCB0);
-    func_800320E8(D_8009BC3C);
-    func_800320E8(D_8009BCB4);
+    func_800320E8(D_8009BC38[0]);
+    func_800320E8(D_8009BCB0[0]);
+    func_800320E8(D_8009BC38[1]);
+    func_800320E8(D_8009BCB0[1]);
     func_800320E8(D_8009C180);
     func_800976A0();
     D_8006F94E = 0x11;
@@ -768,10 +768,10 @@ void func_80077CC0(void) {
     func_80088FF4();
     func_80089128();
     func_80097D64();
-    func_800320E8(D_8009BC38);
-    func_800320E8(D_8009BCB0);
-    func_800320E8(D_8009BC3C);
-    func_800320E8(D_8009BCB4);
+    func_800320E8(D_8009BC38[0]);
+    func_800320E8(D_8009BCB0[0]);
+    func_800320E8(D_8009BC38[1]);
+    func_800320E8(D_8009BCB0[1]);
     func_800320E8(D_8009C180);
     func_800976A0();
     D_8006F94E = 0x10E;

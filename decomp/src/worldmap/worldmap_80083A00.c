@@ -516,14 +516,14 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008BEC8);
 
 /* Queue a placement of actor `index` at `position`, facing (x, z). */
-void func_8008BFD4(s32 index, Vec3 *position, s32 x, s32 z) {
+void func_8008BFD4(s32 index, VECTOR *position, s32 x, s32 z) {
     PlaceRequest *request;
 
     request = &D_8009BE6C[D_8009BD04];
     request->actor = index;
-    request->position.vx = position->vx;
-    request->position.vy = position->vy;
-    request->position.vz = position->vz;
+    request->px = position->vx;
+    request->py = position->vy;
+    request->pz = position->vz;
     request->z = (s16)z;
     request->x = x;
     D_8009BD04 = (D_8009BD04 + 1) & 0x1F;
@@ -547,4 +547,21 @@ void func_8008C1DC(s32 effect, WorldmapActor *actor, ActorScratch *scratch) {
     func_800894C8(effect);
 }
 
+/* Create a party member's gear sprite for the actor. */
+#ifdef NON_MATCHING /* mode selection compiled branch-free */
+void func_8008C28C(WorldmapActor *actor, s32 member) {
+    s32 mode;
+
+    actor->handle = func_80024524(D_8009BDF8[member], D_8009B18C[member], D_8009B194[member],
+                                  D_8009B19C[member], D_8009B1A4[member], 0x40);
+    mode = 3;
+    if ((&D_8006F8E5)[member] == 1) {
+        mode = 0;
+    }
+    func_800245D8(actor->handle, mode);
+    func_80022000(actor->handle, 0x2000);
+    ((s32 *)actor->handle)[15] &= ~4;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008C28C);
+#endif

@@ -85,14 +85,14 @@ s32 func_8008DE9C(s32 index) {
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8008C364", func_8008DF0C);
 
 /* Restore the saved vehicle position (world units to 20.12). */
-void func_8008DFF4(Vec3 *position) {
+void func_8008DFF4(VECTOR *position) {
     position->vx = D_8006EE54.unk60 << 12;
     position->vy = D_8006EE54.unk62 << 12;
     position->vz = D_8006EE54.unk64 << 12;
 }
 
 /* Save the vehicle position in world units. */
-void func_8008E034(Vec3 *position) {
+void func_8008E034(VECTOR *position) {
     D_8006EE54.unk60 = position->vx >> 12;
     D_8006EE54.unk62 = position->vy >> 12;
     D_8006EE54.unk64 = position->vz >> 12;
@@ -116,9 +116,9 @@ void func_8008E078(void) {
 
 /* First of sixteen headings in which a probe from the position hits; -1 if
  * none does. */
-s32 func_8008E0F0(Vec3 *position, s32 unused, s32 range) {
+s32 func_8008E0F0(VECTOR *position, s32 unused, s32 range) {
     VECTOR hit;
-    Vec3 direction;
+    VECTOR direction;
     s32 heading;
 
     for (heading = 0; heading < 0x1000; heading += 0x100) {
