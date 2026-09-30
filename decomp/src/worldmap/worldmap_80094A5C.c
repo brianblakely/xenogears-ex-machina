@@ -1,6 +1,9 @@
 #include "worldmap.h"
 #include "psyq/libsn.h"
 
+/* Declared here only: other units call it without a prototype. */
+void func_80093354(VECTOR *position);
+
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80094A5C);
 
 /* Probe a move and choose the direction to slide along: 1 when free, 0 when

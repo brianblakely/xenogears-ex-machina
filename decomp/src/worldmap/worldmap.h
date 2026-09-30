@@ -730,7 +730,6 @@ void MoveImage(RECT *rect, s32 x, s32 y);
 s32 func_800286CC(void);
 void func_80028A60(s32 mode);
 void func_8001B66C(void);
-void *func_80037FD8(void *data, s32 mode);
 void func_80028470(s32 a, s32 b);
 void func_80038428(void *bank);
 void func_80072BB0(void);
@@ -767,7 +766,7 @@ void func_800721E4(void);
 extern MATRIX D_8009BE4C;
 extern void (*D_8009CD40)(void);
 extern u16 D_8005957C; /* debug switches */
-extern void *D_8006258C;
+extern s32 D_8006258C;
 extern s32 D_8009D804;
 extern SVECTOR D_8009A5B4[]; /* start position per entry */
 extern SVECTOR D_8009A488; /* exhaust effect angle */
@@ -929,7 +928,6 @@ extern u16 D_8009D718[]; /* probe hits: object pairs */
 
 s16 func_80084D00(s32 probe, s16 *hit);
 s32 func_80085418(VECTOR *probe, s32 radius, u16 object, u16 other);
-void func_80093354(VECTOR *position);
 
 extern s16 D_8009BBAC[4]; /* grid corner cells */
 /* Parked vehicle headings and the flying vehicle's heading: scalars inside
@@ -949,4 +947,265 @@ typedef struct {
 
 extern QuadBuffer *D_8009D158[2]; /* per display buffer */
 extern s16 *D_8009D148; /* per-quad free flags */
+/* worldmap_80072238, 80077E68, worldmap */
+
+#define VIEW_VECTORS ((SVECTOR *)D_8009BD40) /* two view vectors, swapped per frame */
+
+void func_80096F18(u8 *view, Camera *camera, s32 distance, SVECTOR *angle);
+
+s32 rand(void);
+void func_80093484(VECTOR *offset);
+
+/* Sixteen footprint quads, copied between display buffers as a whole. */
+typedef struct {
+    PolyFT4 quad[16];
+} QuadSet;
+
+/* Whole-set copies of runtime tables. */
+typedef struct {
+    WorldmapActor actor[64];
+} ActorSet;
+
+typedef struct {
+    s16 timer[16];
+} TimerSet;
+
+typedef struct {
+    TrailPoint points[32];
+} WorldmapQueue; /* the vehicle trail, saved as a whole */
+extern SVECTOR D_8009C838;
+
+/* Resident save of the world-map state across a scene change (0x8005a4e4). */
+typedef struct {
+    ActorSet actors;       /* 0x0000 */
+    VECTOR position;       /* 0x2000 */
+    s32 unk2010;           /* D_8009D52C */
+    s32 timer_period;      /* D_8009BE40 */
+    s32 timer_count;       /* D_8009BCC4 */
+    s32 timer_countdown;   /* D_8009D64C */
+    TimerSet timers;       /* 0x2020 */
+    WorldmapQueue queue;   /* 0x2040 */
+    s32 queue_count;       /* 0x22C0 */
+    s32 camera_angle[2];   /* 0x22C4: SVECTOR D_8009BD38 as words */
+    s32 camera_distance;   /* 0x22CC */
+    s32 unk22D0;           /* D_8009BE0C */
+    VECTOR unk22D4;        /* D_8009BBB4 */
+    s32 unk22E4[2];        /* SVECTOR D_8009C838 as words */
+    VECTOR camera_target;  /* 0x22EC */
+} WorldmapSave;
+
+extern WorldmapSave D_8005A4E4;
+
+void StoreImage(RECT *rect, void *pixels);
+void MoveImage(RECT *rect, s32 x, s32 y);
+void ClearOTagR(u32 *ot, s32 count);
+
+extern void *D_8009C7E4; /* free memory block kept while away */
+extern void *D_8009C800, *D_8009C890; /* saved VRAM areas */
+extern s32 D_8009D14C, D_8009D804;
+extern u8 D_80059179;
+
+void func_80096694(void);
+void func_80071FEC(void);
+void func_80072BB0(void);
+void func_80072DB4(s32 a, s32 b, s32 c, s32 d);
+s32 func_800286CC(void);
+void func_80032EB4(void *a, void *b);
+void func_80028A60(s32 mode);
+void func_80028470(s32 a, s32 b);
+void func_80032498(s32 a, s32 b);
+void func_80033698(s32 a, s32 b);
+void func_80035DB0(void);
+void func_800978FC(void);
+void func_8008440C(void);
+void func_80085FE0(void);
+void func_800865A0(void);
+void func_8008901C(void);
+void func_80075D4C(void);
+
+#define GROUND_SCROLL ((s32 *)D_8009BBB4) /* ground scroll offset x, y, z */
+
+/* Encounter tables of a terrain kind: 0x200 bytes of formations, then per level
+ * bracket 16 formation weights. */
+typedef struct {
+    u8 data[0x200];
+} EncounterSet;
+
+extern EncounterSet D_800658DC; /* encounter set of the next battle */
+extern u8 D_80059508;           /* chosen formation */
+extern s16 D_8009A3A0[];        /* terrain kind substitutes */
+extern u16 D_8009B578[];        /* level bracket thresholds, from 1 */
+
+s32 func_80094028(VECTOR *position);
+
+/* Resident pad state, gathered per dequeued input event. */
+extern s32 D_80059488;
+extern u16 D_80059570, D_80059574; /* buttons held */
+extern u16 D_8005948C, D_80059490; /* buttons pressed */
+extern u16 D_800594A4, D_800594A8;
+extern u16 D_8009CD50, D_8009BD10, D_8009BD14, D_8009BD18, D_8009BD1C;
+
+void PutDispEnv(DISPENV *env);
+void PutDrawEnv(DRAWENV *env);
+s32 func_80035CDC(void); /* dequeue one input event */
+void func_80037E8C(void);
+void func_80037EE4(void);
+void func_8001FAB4(s32 a, s32 b);
+
+void func_8009766C(void);
+void func_800721E4(void);
+void func_80084580(void);
+void func_800979C8(void);
+void func_800736DC(void);
+void func_800863E0(void);
+void func_80088F64(void);
+void func_80038428(void *bank);
+s32 func_80035734(s32 mode);
+void func_80086700(void);
+void func_80097718(s32 kind, s32 update);
+
+extern void (*D_8009CD40)(void); /* per-frame hook */
+
+void func_80073530(void);
+void func_80085F58(void);
+
+MATRIX *ScaleMatrix(MATRIX *m, VECTOR *scale);
+
+
+/* Scratchpad work area of the camera steering. */
+typedef struct {
+    VECTOR delta;     /* 0x00 */
+    u8 pad10[0x90];
+    SVECTOR view;     /* 0xA0: swap space */
+} CameraScratch;
+
+/* Gouraud triangle packet (PsyQ POLY_G3 layout). */
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    u8 r1, g1, b1, pad1;
+    s16 x1, y1;
+    u8 r2, g2, b2, pad2;
+    s16 x2, y2;
+} PolyG3;
+
+/* Flat rectangle packet (PsyQ TILE layout). */
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    s16 w, h;
+} Tile;
+
+typedef struct {
+    u32 tag;
+    u32 code[1];
+} DR_TPAGE;
+
+void SetDrawTPage(DR_TPAGE *p, s32 dfe, s32 dtd, s32 tpage);
+
+extern PolyFT4 D_8009C5C0[2]; /* overlay picture, per buffer */
+extern DR_TPAGE D_8009C5A0;
+extern PolyG3 D_8009C664[8];
+extern Tile D_8009C898[0x40];
+
+/* PsyQ primitive tag view (libgpu P_TAG). */
+typedef struct {
+    u32 addr : 24;
+    u32 len : 8;
+    u8 r0, g0, b0, code;
+} P_TAG;
+
+#define setPrimLen(p, n) (((P_TAG *)(p))->len = (n))
+
+void func_80076954(void);
+void func_80074E58(void);
+void func_80075030(void);
+void func_800739B8(void);
+void func_80075228(void);
+
+/* Actor spawn list entry; a zero kind ends a list. */
+typedef struct {
+    s32 kind;
+    s32 update;
+} ActorSpawn;
+
+extern ActorSpawn D_80099E8C[];  /* actors of every area */
+extern ActorSpawn *D_8009A034[]; /* per area: its actors */
+extern s32 D_8009C894;           /* nonzero when resuming a saved state */
+extern s32 D_8009C178, D_80059198;
+extern u16 D_8005957C;
+extern void *D_8004F2FC;
+
+void func_8001B66C(void);
+void func_80024F64(s32 a, s32 b);
+s32 func_80037FD8(void *data, s32 mode);
+void func_80039B68(void *seq, s32 volume, s32 c);
+void func_80071EF0(void);
+void func_80072090(void);
+void func_80073398(void);
+void func_80073448(s32 id);
+void func_80073E30(void);
+void func_80074594(void);
+void func_8007565C(void);
+void func_80097CB8(Camera *camera);
+void func_800976FC(s32 kind, s32 index);
+
+void DrawOTag(u32 *ot);
+#define setShadeTex(p, tge) \
+    ((tge) ? (((u8 *)(p))[7] |= 1) : (((u8 *)(p))[7] &= ~1))
+
+/* PsyQ POLY_G4 with per-vertex fields. */
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    u8 r1, g1, b1, pad1;
+    s16 x1, y1;
+    u8 r2, g2, b2, pad2;
+    s16 x2, y2;
+    u8 r3, g3, b3, pad3;
+    s16 x3, y3;
+} PolyG4v;
+
+/* Scratchpad work area of the scene rigs. */
+typedef struct {
+    VECTOR position;   /* 0x00 */
+    u8 pad10[0x90];
+    SVECTOR angle[4];  /* 0xA0 */
+    u8 padC0[0x30];
+    MATRIX matrix[4];  /* 0xF0 */
+} RigScratch;
+
+#define RIG_SCRATCH ((RigScratch *)0x1F800000)
+
+/* View setup at D_8009BD40: eye and look-at points and the up vector. */
+typedef struct {
+    SVECTOR eye;
+    SVECTOR at;
+    VECTOR up;
+} ViewSetup;
+
+#define VIEW (*(ViewSetup *)D_8009BD40)
+
+extern SVECTOR D_8009A3F0[]; /* camera path control points; pad -1 ends */
+
+/* Scratchpad work area of the camera path. */
+typedef struct {
+    VECTOR at;        /* 0x00: path point, then look-at */
+    VECTOR eye;       /* 0x10 */
+    s32 distance;     /* 0x20 */
+    u8 pad24[0x7C];
+    SVECTOR points[3]; /* 0xA0 */
+} PathScratch;
+
+#define PATH_SCRATCH ((PathScratch *)0x1F800000)
+
+void func_80076858(s32 t, SVECTOR *p0, SVECTOR *p1, SVECTOR *p2, VECTOR *out);
+s32 func_80094154(VECTOR *a, VECTOR *b);
+void func_80097070(MATRIX *m, SVECTOR *angle);
+void func_8003A2E4(s32 sound, s32 volume);
+
+
 #endif
