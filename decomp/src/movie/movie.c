@@ -1247,7 +1247,170 @@ void func_80075508(void) {
     func_80039A80(D_8007700C, 0x7F, 0);
 }
 
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80075534);
+/* The menu's sector monitor: at 640x240, dump 192 bytes of the current
+ * sector (Up/Down by a row, Triangle/Cross by twelve) with its position;
+ * Left/Right step the sector by one, L1/R1 by 75 (a second) and L2/R2 by
+ * 4500 (a minute), rereading it when it changes. Circle returns to the
+ * 320-wide menu. The original reads the menu cursor before the exit test and
+ * stores it back after. */
+void func_80075534(void) {
+    CdlLOC loc;
+    s32 button;
+    u8 *buffer;
+    s32 sector;
+    s32 row;
+    s32 i;
+    u8 *hex;
+    u8 *text;
+    u8 c;
+    s32 cursor;
+    MovieBuffer *draw;
+    u32 *ot;
+
+    func_80074B58();
+    buffer = func_80031BDC(0x800, 0);
+    if (buffer == NULL) {
+        return;
+    }
+    SetDefDrawEnv(&D_80077124[0].draw, 0, 0, 640, 240);
+    SetDefDispEnv(&D_80077124[0].disp, 0, 240, 640, 240);
+    SetDefDrawEnv(&D_80077124[1].draw, 0, 240, 640, 240);
+    SetDefDispEnv(&D_80077124[1].disp, 0, 0, 640, 240);
+    D_80077124[0].draw.isbg = 1;
+    D_80077124[1].draw.isbg = 1;
+    D_80077124[0].disp.screen.x = 0;
+    D_80077124[0].disp.screen.y = 10;
+    D_80077124[0].disp.screen.w = 256;
+    D_80077124[0].disp.screen.h = 216;
+    D_80077124[1].disp.screen.x = 0;
+    D_80077124[1].disp.screen.y = 10;
+    D_80077124[1].disp.screen.w = 256;
+    D_80077124[1].disp.screen.h = 216;
+    func_8002954C(D_80076EFC, buffer, 0x800, 0, 0);
+    func_80028A60(0);
+    for (;;) {
+        if (D_80077120 == &D_80077124[0]) {
+            draw = &D_80077124[1];
+        } else {
+            draw = &D_80077124[0];
+        }
+        ot = draw->ot;
+        D_80077120 = draw;
+        D_8007744C = 1 - D_8007744C;
+        ClearOTagR(ot, 32);
+        func_8003700C("\n[ MONITOR ]\n");
+        func_800747AC(0, 0, &button);
+        sector = D_80076EFC;
+        if (!(D_800773B4 & 0x1000) && (D_800773AC & 0x1000) && D_80076F00 > 0) {
+            D_80076F00--;
+        }
+        if (!(D_800773B4 & 0x10) && (D_800773AC & 0x10)) {
+            D_80076F00 -= 12;
+            if (D_80076F00 < 0) {
+                D_80076F00 = 0;
+            }
+        }
+        if (!(D_800773B4 & 0x4000) && (D_800773AC & 0x4000) && D_80076F00 < 116) {
+            D_80076F00++;
+        }
+        if (!(D_800773B4 & 0x40) && (D_800773AC & 0x40)) {
+            D_80076F00 += 12;
+            if (D_80076F00 >= 116) {
+                D_80076F00 = 116;
+            }
+        }
+        if (!(D_800773B4 & 0x8000) && (D_800773AC & 0x8000) && D_80076EFC > 0) {
+            D_80076EFC--;
+        }
+        if (!(D_800773B4 & 0x2000) && (D_800773AC & 0x2000)) {
+            D_80076EFC++;
+        }
+        if (!(D_800773B4 & 4) && (D_800773AC & 4)) {
+            D_80076EFC -= 75;
+            if (D_80076EFC < 0) {
+                D_80076EFC = 0;
+            }
+        }
+        if (!(D_800773B4 & 8) && (D_800773AC & 8)) {
+            D_80076EFC += 75;
+        }
+        if (!(D_800773B4 & 1) && (D_800773AC & 1)) {
+            D_80076EFC -= 4500;
+            if (D_80076EFC < 0) {
+                D_80076EFC = 0;
+            }
+        }
+        if (!(D_800773B4 & 2) && (D_800773AC & 2)) {
+            D_80076EFC += 4500;
+        }
+        if (sector != D_80076EFC) {
+            func_8002954C(D_80076EFC, buffer, 0x800, 0, 0);
+            func_80028A60(0);
+        }
+        CdIntToPos(D_80076EFC, &loc);
+        func_8003700C("ABSPOS %8d POS %04x\nMINUTE %02x SECOND %02x SECTOR %02x\n\n", D_80076EFC,
+                      D_80076F00 * 16, loc.minute, loc.second, loc.sector);
+        text = buffer + D_80076F00 * 16;
+        hex = text;
+        for (row = 0; row < 12; row++) {
+            func_8003700C("%03x:", (row + D_80076F00) * 16);
+            for (i = 0; i < 15; i++) {
+                func_8003700C("%02x ", *hex);
+                hex++;
+            }
+            func_8003700C("%02x", *hex);
+            hex++;
+            func_8003700C(":");
+            for (i = 0; i < 16; i++) {
+                c = *text;
+                if (c >= 0x20 && c < 0x7E) {
+                    func_8003700C("%c", c);
+                } else {
+                    func_8003700C(" ");
+                }
+                text++;
+            }
+            func_8003700C(D_8007042C);
+        }
+        func_8003700C(D_80070430);
+        if (D_80077394 > 0) {
+            func_8003278C(1, 0, 6, 0x808D);
+        }
+        func_80037324(D_80077120->ot);
+        func_80072F98(D_80077120->ot, (POLY_G4 *)D_80077120->box, 8, 20, 624, 160);
+        func_800734B8(D_80077120->ot, (POLY_G4 *)D_80077120->frame, 7, 19, 626, 162);
+        DrawSync(0);
+        VSync(0);
+        PutDrawEnv(&D_80077120->draw);
+        PutDispEnv(&D_80077120->disp);
+        DrawOTag(&D_80077120->ot[31]);
+        cursor = D_80077118;
+        if (button == 2) {
+            break;
+        }
+        D_80077118 = cursor;
+    }
+    func_800320E8(buffer);
+    func_80074B58();
+    SetDefDrawEnv(&D_80077124[0].draw, 0, 0, 320, 240);
+    SetDefDispEnv(&D_80077124[0].disp, 0, 240, 320, 240);
+    SetDefDrawEnv(&D_80077124[1].draw, 0, 240, 320, 240);
+    SetDefDispEnv(&D_80077124[1].disp, 0, 0, 320, 240);
+    D_80077124[0].draw.isbg = 1;
+    D_80077124[1].draw.isbg = 1;
+    D_80077124[0].disp.screen.x = 0;
+    D_80077124[0].disp.screen.y = 10;
+    D_80077124[0].disp.screen.w = 256;
+    D_80077124[0].disp.screen.h = 216;
+    D_80077124[1].disp.screen.x = 0;
+    D_80077124[1].disp.screen.y = 10;
+    D_80077124[1].disp.screen.w = 256;
+    D_80077124[1].disp.screen.h = 216;
+}
+
+INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_8007042C);
+
+INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_80070430);
 
 /* The first sector of directory record `index` (bytes 3..6). */
 u32 func_80075D4C(s32 index) {
@@ -1256,10 +1419,6 @@ u32 func_80075D4C(s32 index) {
     record = D_8004FDF0 + index * 7;
     return ((record[6] << 24) + (record[5] << 16) + (record[4] << 8)) | record[3];
 }
-
-INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_8007042C);
-
-INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_80070430);
 
 #ifdef NON_MATCHING
 /* The menu's FAT check: list twenty directory records from the cursor

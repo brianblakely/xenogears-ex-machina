@@ -281,6 +281,8 @@ void func_800734B8(u32 *ot, POLY_G4 *poly, s32 x, s32 y, s32 w, s32 h);
 s32 func_800747AC(s32 first, s32 last, s32 *button);
 void func_80074B58(void);
 u32 func_80075D4C(s32 index);
+extern char D_8007042C[]; /* "\n", shared with the asm-backed FAT check */
+extern char D_80070430[]; /* "\nPUSH CIRCLE BUTTON TO MENU." */
 s32 func_80039850(void *sequence); /* load a music sequence */
 
 /* CD-ROM monitor screen. */
@@ -301,6 +303,8 @@ void *func_80028A94(void *ring); /* replace the stream ring */
 s32 func_800286CC(void);         /* files left to read */
 s32 func_800286BC(void);         /* bytes left to read */
 void func_800712C4(void);
+extern s32 D_80076EFC;          /* monitor sector */
+extern s32 D_80076F00;          /* monitor row */
 extern s32 D_80076E90;          /* read size */
 extern s32 *D_80076E88;         /* read buffer */
 StreamEntry *func_8002A57C(s32 list, s32 mode);          /* a directory's file list */
@@ -315,7 +319,5 @@ extern char D_8006FC6C[]; /* "\n", first used by the menu (800704E8) */
 s32 func_80028530(void);  /* the disc in the drive */
 void func_8007293C(void);
 s32 func_80072A08(s32 disc, s32 state, s32 *error, s32 *done);
-extern char D_8007042C[]; /* "\n", first used by the monitor (80075534) */
-extern char D_80070430[]; /* "\nPUSH CIRCLE BUTTON TO MENU." */
 
 #endif
