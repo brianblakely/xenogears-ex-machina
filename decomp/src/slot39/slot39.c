@@ -3676,7 +3676,144 @@ void func_801DD5E8(u8 mode) {
     }
 }
 
+/* Use art `row` of party slot `slot` (`kind` 0 the character's, 1 its
+ * gear's, 2 the gear's other list) from the menu: select the targets (the
+ * whole party for all-target arts, else the cursor's slot) and use it on
+ * confirm while its cost can be paid, until cancelled. */
+#ifdef NON_MATCHING
+/* Same shape as the original; register allocation and a few schedules differ. */
+void func_801DD790(u8 slot, s32 row, u8 kind) {
+    MenuEffect *effect;
+    s32 x;
+    s32 all;
+    s32 i;
+    s32 sound;
+    u16 now;
+    u16 max;
+    u8 redraw;
+    u8 cursor;
+    u8 targets;
+    u8 used;
+
+    redraw = 1;
+    x = 0;
+    cursor = D_800625A0->firstMember;
+    switch (kind) {
+    case 0:
+        effect = D_800625A0->tables->effects[D_800625A0->party->ids[slot]] + row;
+        effect += 22;
+        break;
+    case 1:
+        effect = D_800625A0->tables->effects[11 + D_8006D8A0[D_800625A0->party->ids[slot]].gear] + row;
+        effect += 21;
+        break;
+    case 2:
+        x = 0x18;
+        cursor = slot;
+        effect = D_800625A0->tables->effects[11 + D_8006D8A0[D_800625A0->party->ids[slot]].gear] + row;
+        effect += 37;
+        break;
+    }
+    func_801D397C(2, 0x10, 0xe, x + 0x90, 0xb0, 0, 0, 4, 0);
+    all = effect->target & 1;
+    targets = 1;
+    while (targets) {
+        func_801C7BF4();
+        targets = 0;
+        if (redraw) {
+            func_801DC3D8(slot, kind);
+            func_801DCE60(slot, row, kind);
+            func_801DD5E8(1);
+            func_801DB5E4(kind);
+            redraw = 0;
+        }
+        D_800625A0->markers->visible[0] = D_800625A0->markers->visible[1] = D_800625A0->markers->visible[2] = 0;
+        if (all) {
+            for (i = 0; i < 3; i++) {
+                if (D_800625A0->party->ids[i] != 0xff) {
+                    targets |= 1 << i;
+                    D_800625A0->markers->visible[i] = 1;
+                }
+            }
+        } else {
+            targets = 1 << cursor;
+            D_800625A0->markers->visible[cursor] = 1;
+        }
+        D_800625A0->party->unk2F = 1;
+        if (kind != 2) {
+            i = D_8006D8A0[D_800625A0->party->ids[slot]].ether - effect->cost;
+        } else {
+            i = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk38 - effect->gearCost;
+        }
+        if (i < 0) {
+            targets = 0;
+        }
+        if (!targets) {
+            break;
+        }
+        switch (D_800625A0->input) {
+        case 4:
+            used = 0;
+            for (i = 0; i < 3; i++) {
+                if (func_801C865C(targets, i)) {
+                    if (kind != 2) {
+                        now = D_8006D8A0[D_800625A0->party->ids[i]].hp;
+                        max = D_8006D8A0[D_800625A0->party->ids[i]].hpMax;
+                    } else {
+                        /* the maximum is read from party slot `row` */
+                        now = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[i]].gear].unk60;
+                        max = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[row]].gear].unk64;
+                    }
+                    if (now != max) {
+                        used = 1;
+                        func_801E35BC(D_800625A0->tables, D_800625A0->party->ids[slot], D_800625A0->party->ids[i],
+                                      row, kind);
+                    }
+                }
+            }
+            if (used) {
+                if (kind != 2) {
+                    D_8006D8A0[D_800625A0->party->ids[slot]].ether -= effect->cost;
+                } else {
+                    D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk38 -= effect->gearCost;
+                }
+                sound = 0x37;
+            } else {
+                sound = 4;
+            }
+            redraw = 1;
+            func_801C8574(sound);
+            break;
+        case 5:
+            targets = 0;
+            break;
+        case 1:
+            if (kind == 0) {
+                cursor = func_801D9704(cursor, 0, 0);
+            }
+            break;
+        case 3:
+            if (kind == 0) {
+                cursor = func_801D9704(cursor, 1, 0);
+            }
+            break;
+        }
+    }
+    D_800625A0->markers->visible[0] = D_800625A0->markers->visible[1] = D_800625A0->markers->visible[2] = 0;
+    func_801DD5E8(0);
+    D_800625A0->party->unk46 = 0;
+    func_801C7BF4();
+    if (D_801E9785 != 0) {
+        for (i = 0; i < 3; i++) {
+            func_800320E8(D_800625A0->panels[i]);
+        }
+        D_801E9785 = 0;
+    }
+    func_801D4EA0(2);
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DD790);
+#endif
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DDF24);
 

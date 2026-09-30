@@ -232,7 +232,11 @@ typedef struct MenuEffect {
     u16 target; /* 0: 4000 all, 1000 none, else one; low bits: target kind */
     u8 pad2[0xF];
     u8 unk11; /* 11 */
-    u8 pad12[0x16];
+    u8 pad12[0x1];
+    u8 cost; /* 13: character ether cost */
+    u8 pad14[0x10];
+    u16 gearCost; /* 24: gear fuel cost */
+    u8 pad26[0x2];
 } MenuEffect;
 
 /* A character record of the game data (D_8006D8A0; gears follow from 11). */
@@ -240,7 +244,8 @@ typedef struct CharRecord {
     u8 pad0[0x4C];
     u16 hp; /* 4C */
     u16 hpMax; /* 4E */
-    u8 pad50[0xB];
+    u16 ether; /* 50 */
+    u8 pad52[0x9];
     u8 unk5B; /* 5B */
     u8 pad5C[0x6];
     u8 unk62; /* 62 */
@@ -997,6 +1002,9 @@ void func_801E8B4C(u8 row);
 u8 func_801C93A8(void);
 u16 func_801C865C(u16 flags, u8 bit);
 void func_801DA5BC(s32 row);
+void func_801DC3D8(u8 slot, u8 kind);
+void func_801DCE60(u8 slot, u8 row, u8 kind);
+void func_801E35BC(MenuTables *tables, u8 user, u8 target, u8 effect, u8 gear);
 void func_801DA9A8(s32 entry, s32 row);
 void func_801DB39C(u8 mode);
 u8 func_801DB920(s32 row, s32 entry);
