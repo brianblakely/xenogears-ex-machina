@@ -353,6 +353,10 @@ extern SVECTOR D_8009BD38; /* camera angle */
 extern s32 D_8009D3F0;    /* camera distance */
 extern s32 D_8009BE0C;
 
+extern s16 D_8006F94E; /* next scene */
+extern u16 D_8006F950; /* heading carried into the next scene */
+extern s32 D_8009BBC4;
+
 /* Frame state. */
 typedef struct {
     u8 pad0[0x70];

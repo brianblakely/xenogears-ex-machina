@@ -696,7 +696,28 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80077214);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80077480);
+/* Leave for scene 0x11: shut down the subsystems and free the area. */
+void func_80077480(void) {
+    func_80084818();
+    func_80086124();
+    func_80086568();
+    func_800866C8();
+    func_80074F04();
+    func_800750DC();
+    func_80088FF4();
+    func_80089128();
+    func_80097D64();
+    func_800320E8(D_8009BC38);
+    func_800320E8(D_8009BCB0);
+    func_800320E8(D_8009BC3C);
+    func_800320E8(D_8009BCB4);
+    func_800320E8(D_8009C180);
+    func_800976A0();
+    D_8006F94E = 0x11;
+    D_8006F954[0] = 7;
+    D_8009BBC4 = 1;
+    D_8006F950 = D_8009BD38.vy;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_8007756C);
 
@@ -707,11 +728,56 @@ s32 func_80077954(void) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_8007795C);
+/* One world-map frame of a scripted scene without actor updates. */
+s32 func_8007795C(void) {
+    if (D_8009D144 == 0) {
+        func_80097440(D_8009BD40);
+    } else {
+        func_80097244(D_8009BD40);
+    }
+    func_8008615C();
+    func_800848F4();
+    func_800980D4(D_8009BBB4);
+    if (D_8009D558 != 0) {
+        func_800981C8(D_8009BE28);
+        func_80096130();
+        func_80098CC0();
+    }
+    func_800983A0(D_8009BE28);
+    func_8009932C(D_8009BE3C->ot, D_8009BE3C->unk74, D_8009BE28);
+    D_8009C5BC += 0x40;
+    func_80073B04();
+    func_800737EC();
+    func_80086798();
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80077A64);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80077CC0);
+/* Leave for scene 0x10E: stop the sound bank, shut down and free the area. */
+void func_80077CC0(void) {
+    func_80039FF8();
+    func_8003852C(D_8006259C);
+    func_800320E8(D_8006259C);
+    func_80084818();
+    func_80086568();
+    func_800866C8();
+    func_80074F04();
+    func_800750DC();
+    func_80088FF4();
+    func_80089128();
+    func_80097D64();
+    func_800320E8(D_8009BC38);
+    func_800320E8(D_8009BCB0);
+    func_800320E8(D_8009BC3C);
+    func_800320E8(D_8009BCB4);
+    func_800320E8(D_8009C180);
+    func_800976A0();
+    D_8006F94E = 0x10E;
+    D_8006F954[0] = 0;
+    D_8009BBC4 = 1;
+    D_8006F950 = D_8009BD38.vy;
+}
 
 /* Start a scripted camera: reset the actor and camera, play a sound. */
 s32 func_80077DC8(s32 index) {
