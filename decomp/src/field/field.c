@@ -620,15 +620,48 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007954C);
 void func_800796F4(void) {
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800796FC);
+/* Switch to the other draw block and put its display and draw environments. */
+void func_800796FC(void) {
+    D_800ADB08 = (D_800ADB08 + 1) % 2;
+    D_800C426C = &D_800B249C[D_800ADB08];
+    func_80044E9C(&D_800C426C->disp);
+    func_80044C44(&D_800C426C->draw);
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80079784);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800798BC);
+/* Set the battle-entry flag (80059179): clear only while the controlled
+ * actor has neither bit 0x40 nor 0x80 of +14; 800b234c overrides it. */
+void func_800798BC(void) {
+    if (D_800B2268 != 0 && !(D_800AFB10[D_800B226C].actor->unk014 & 0xC0)) {
+        D_80059179 = 0;
+    } else {
+        D_80059179 = 1;
+    }
+    if (D_800B234C != 0xFF) {
+        D_80059179 = D_800B234C;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007995C);
+/* Move a VRAM rectangle (MoveImage) and wait for it. */
+void func_8007995C(s32 w, s32 h, s32 x, s32 y, s32 to_x, s32 to_y) {
+    RECT rect;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007999C);
+    rect.w = w;
+    rect.h = h;
+    rect.x = x;
+    rect.y = y;
+    func_8004495C(&rect, to_x, to_y);
+    func_800445D0(0);
+}
+
+/* Sync, then flush the instruction cache inside a critical section. */
+void func_8007999C(void) {
+    func_800775F8();
+    func_800404D4();
+    func_80040454();
+    func_800404E4();
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800799D4);
 
@@ -644,13 +677,31 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007AB6C);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007AC58);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007AD8C);
+/* Set the pointer's two pad buffers. */
+void func_8007AD8C(void *pad0, void *pad1) {
+    D_800B0054 = pad0;
+    D_800B0058 = pad1;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007ADA4);
+/* Set the pointer bounds, scaled by the divisors. */
+void func_8007ADA4(s32 left, s32 right, s32 top, s32 bottom) {
+    D_800C3A44 = left * D_800B005C;
+    D_800C3A50 = right * D_800B005C;
+    D_800C3A4C = top * D_800B0060;
+    D_800C3A54 = bottom * D_800B0060;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007AE14);
+/* Set the pointer's X and Y divisors. */
+void func_8007AE14(s32 x_divisor, s32 y_divisor) {
+    D_800B005C = x_divisor;
+    D_800B0060 = y_divisor;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007AE2C);
+/* Set a port's pointer position, scaled by the divisors. */
+void func_8007AE2C(s32 port, s32 x, s32 y) {
+    D_800B0068[port] = x * D_800B005C;
+    D_800B0070[port] = y * D_800B0060;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007AE78);
 
@@ -662,9 +713,26 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007B1C4);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007B478);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007B614);
+#ifdef NON_MATCHING
+/* The X/Z offset `distance` away at `angle`, scaled by 800b218c. */
+void func_8007B614(VECTOR *out, s32 distance, s32 angle) {
+    s32 length;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007B694);
+    distance *= 16;
+    angle &= 0xFFF;
+    length = (distance * D_800B218C) >> 12;
+    out->vx = func_8003F8CC(angle) * length;
+    out->vy = 0;
+    out->vz = -(func_8003F8B0(angle) * length);
+}
+#else
+INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007B614);
+#endif
+
+/* The heading of an X/Z offset. */
+s32 func_8007B694(VECTOR *v) {
+    return -func_8004B32C(v->vz, v->vx) & 0xFFF;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007B6C4);
 
@@ -674,13 +742,33 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007BAC0);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007BEF4);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007C670);
+/* The floor range: `high` is `low` raised by a nonnegative extent. */
+void func_8007C670(s32 *low, s32 *high, s32 extent) {
+    s32 base = *low;
+
+    if (extent >= 0) {
+        *low = base;
+        base += extent;
+    } else {
+        *low = base;
+    }
+    *high = base;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007C694);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007CD3C);
+/* Allocate `words` words of the scratchpad. */
+u32 *func_8007CD3C(s32 words) {
+    u32 *p = (u32 *)0x1F800000 + D_800ADC10;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007CD60);
+    D_800ADC10 += words;
+    return p;
+}
+
+/* Release `words` words of the scratchpad. */
+void func_8007CD60(s32 words) {
+    D_800ADC10 -= words;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007CD80);
 

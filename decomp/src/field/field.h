@@ -141,7 +141,9 @@ typedef struct {
 typedef struct FieldActor {
     u32 flags;       /* 000 */
     u32 layer_flags; /* 004 */
-    u8 unk008[0xF4 - 0x8];
+    u8 unk008[0x14 - 0x8];
+    u32 unk014;      /* 014 */
+    u8 unk018[0xF4 - 0x18];
     s16 scale[3]; /* 0F4 */
     u8 unk0FA[0x138 - 0xFA];
 } FieldActor;
@@ -176,6 +178,15 @@ typedef struct {
 } FieldSlot6;
 
 /* Resident services. */
+extern s32 func_8003F8B0(s32 angle); /* rcos */
+extern s32 func_8003F8CC(s32 angle); /* rsin */
+extern void func_80040454(void);
+extern void func_800404D4(void);
+extern void func_800404E4(void);
+extern void func_80044C44(DRAWENV *env);  /* PutDrawEnv */
+extern void func_80044E9C(DISPENV *env);  /* PutDispEnv */
+extern void func_8004495C(RECT *rect, s32 x, s32 y); /* MoveImage */
+extern s32 func_8004B32C(s32 y, s32 x); /* ratan2 */
 extern s32 func_8001B484(s32 file, s32);
 extern void func_80028470(s32 directory, s32);
 extern s32 func_800286CC(void);
@@ -210,6 +221,7 @@ extern void func_800496AC(void);                               /* PopMatrix */
 extern void func_8004A6DC(SVECTOR *v, s32 *out, s32 *flag); /* RotTrans */
 
 /* Field overlay. */
+extern void func_800775F8(void);
 extern void func_80071EE8(void);
 extern void func_80077884(void);
 extern void func_80077AB4(void);
@@ -229,6 +241,7 @@ extern void func_80078C5C(void);
 extern void func_802815B0(void);
 
 /* Resident state. */
+extern u8 D_80059179; /* battle-entry flag */
 extern s32 D_8004F308; /* pending sound; -1 until resolved */
 extern s32 D_8004F324;
 extern void *D_8005A414[3];
@@ -237,6 +250,20 @@ extern s32 D_8004F34C; /* current map */
 extern u8 D_800625FC[2][0x22]; /* pad buffers */
 
 /* Field state. */
+extern s32 D_800ADC10; /* scratchpad words in use */
+extern void *D_800B0054; /* pointer pad buffers */
+extern void *D_800B0058;
+extern u16 D_800B005C; /* pointer X divisor */
+extern u16 D_800B0060; /* pointer Y divisor */
+extern s32 D_800B0068[2]; /* pointer X per port */
+extern s32 D_800B0070[2]; /* pointer Y per port */
+extern s16 D_800B218C;
+extern s32 D_800B2268;
+extern s16 D_800B234C;
+extern s32 D_800C3A44; /* pointer bounds */
+extern s32 D_800C3A4C;
+extern s32 D_800C3A50;
+extern s32 D_800C3A54;
 extern s32 D_800ADB2C;
 extern s32 D_800ADB34;
 extern s32 D_800ADB90;
