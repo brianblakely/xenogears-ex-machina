@@ -90,7 +90,37 @@ s32 func_8002CD64(u8 *command) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002CDCC);
+/* Build a flat triangle's color: lit by the face normal of `vertices`
+ * (flag 1; with flag 2 the color and normal are also recorded in the
+ * lit-color cache), lit from the cache (flag 4), or copied. */
+s32 func_8002CDCC(CVECTOR *color, s16 *vertices, s32 flags) {
+    POLY_F3 *poly = (POLY_F3 *)D_80059424;
+    SVECTOR normal;
+
+    setlen(poly, 4);
+    if (flags & 1) {
+        if (flags & 2) {
+            *D_80059498 = *(s32 *)color;
+            func_8002DB84(&D_8005953C[vertices[0]], &D_8005953C[vertices[1]],
+                          &D_8005953C[vertices[2]], (SVECTOR *)++D_80059498);
+            NormalColorCol((SVECTOR *)D_80059498, color, (CVECTOR *)&poly->r0);
+            D_80059498 += 2;
+        } else {
+            func_8002DB84(&D_8005953C[vertices[0]], &D_8005953C[vertices[1]],
+                          &D_8005953C[vertices[2]], &normal);
+            NormalColorCol(&normal, color, (CVECTOR *)&poly->r0);
+        }
+        poly->code = color->cd;
+    } else if (flags & 4) {
+        D_80059498++;
+        NormalColorCol((SVECTOR *)D_80059498, color, (CVECTOR *)&poly->r0);
+        D_80059498 += 2;
+        poly->code = color->cd;
+    } else {
+        *(s32 *)&poly->r0 = *(s32 *)color;
+    }
+    return 1;
+}
 
 s32 func_8002CF34(s32 *value) {
     RenderPacket *packet = D_80059424;
@@ -100,7 +130,35 @@ s32 func_8002CF34(s32 *value) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002CF58);
+/* The same flat triangle color handler for a second primitive command. */
+s32 func_8002CF58(CVECTOR *color, s16 *vertices, s32 flags) {
+    POLY_F3 *poly = (POLY_F3 *)D_80059424;
+    SVECTOR normal;
+
+    setlen(poly, 4);
+    if (flags & 1) {
+        if (flags & 2) {
+            *D_80059498 = *(s32 *)color;
+            func_8002DB84(&D_8005953C[vertices[0]], &D_8005953C[vertices[1]],
+                          &D_8005953C[vertices[2]], (SVECTOR *)++D_80059498);
+            NormalColorCol((SVECTOR *)D_80059498, color, (CVECTOR *)&poly->r0);
+            D_80059498 += 2;
+        } else {
+            func_8002DB84(&D_8005953C[vertices[0]], &D_8005953C[vertices[1]],
+                          &D_8005953C[vertices[2]], &normal);
+            NormalColorCol(&normal, color, (CVECTOR *)&poly->r0);
+        }
+        poly->code = color->cd;
+    } else if (flags & 4) {
+        D_80059498++;
+        NormalColorCol((SVECTOR *)D_80059498, color, (CVECTOR *)&poly->r0);
+        D_80059498 += 2;
+        poly->code = color->cd;
+    } else {
+        *(s32 *)&poly->r0 = *(s32 *)color;
+    }
+    return 1;
+}
 
 s32 func_8002D0C0(s32 *value) {
     RenderPacket *packet = D_80059424;
@@ -110,9 +168,35 @@ s32 func_8002D0C0(s32 *value) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002D0E4);
+/* Build a textured quad (after any texture page/CLUT override command):
+ * its color, CLUT and texture page (with the overrides) and coordinates. */
+s32 func_8002D0E4(u16 *command) {
+    POLY_FT4 *poly;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002D180);
+    if (func_8002CD64((u8 *)command) == 0) {
+        return 0;
+    }
+    poly = (POLY_FT4 *)D_80059424;
+    setlen(poly, 9);
+    *(s32 *)&poly->r0 = *(s32 *)command;
+    *(s32 *)&poly->u0 = command[2] | (D_8005930C << 16);
+    *(s32 *)&poly->u1 = command[3] | (D_80059308 << 16);
+    *(u16 *)&poly->u2 = command[4];
+    *(u16 *)&poly->u3 = command[5];
+    return 1;
+}
+
+/* Build a Gouraud quad: each corner's color lit by its vertex normal. */
+s32 func_8002D180(CVECTOR *color, s16 *vertices) {
+    POLY_G4 *poly = (POLY_G4 *)D_80059424;
+
+    setlen(poly, 8);
+    NormalColorCol3(&D_8005952C[vertices[0]], &D_8005952C[vertices[1]], &D_8005952C[vertices[2]],
+                    color, (CVECTOR *)&poly->r0, (CVECTOR *)&poly->r1, (CVECTOR *)&poly->r2);
+    NormalColorCol(&D_8005952C[vertices[3]], color, (CVECTOR *)&poly->r3);
+    poly->code = color->cd;
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002D244);
 
