@@ -1973,11 +1973,11 @@ void func_801E2368(void) {
  * when the member has a gear; member 7 and the flag D_80059179 refuse),
  * switching members with 9/10, until cancelled. The first 801d9704 call
  * passes the slot before it is set, as the original does. Nonmatching: the
- * original keeps that slot unmasked and masks 801e2250's result (register
- * allocation differs from there). */
+ * slot and the shown slot take each other's saved registers, and the
+ * original calls 801d7cfc with the slot unmasked (as without a prototype). */
 #ifdef NON_MATCHING
 u8 func_801E23CC(void) {
-    u8 slot;
+    s32 slot;
     u8 shown;
     u8 stay;
     u8 first;
