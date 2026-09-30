@@ -479,7 +479,7 @@ s32 func_8003F8CC(s32 angle); /* cosine, 4096 = 1.0 */
 s32 func_800707D8(s32 target, s32 current, s32 steps);
 void func_8007099C(u32 mode);
 void func_80070F80(u8 *script);
-void func_8007107C(void);
+s32 func_8007107C(void);
 void func_80071724(u32 *ot);
 void func_800732AC(void *dst, void *src, s32 size);
 void func_80073064(SVector *dir, SVector *out, s32 scale);

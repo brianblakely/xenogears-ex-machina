@@ -156,7 +156,244 @@ s32 func_80070FD8(Actor *actor) {
     return 0;
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu2", func_8007107C);
+/* Run the scene script (D_800925F8) until a command waits: select the
+ * driven actor, queue its inputs, turn it, wait frames or for the message
+ * window, and set scene values (screen offset, caption, camera view,
+ * layout, sequence step, hit points and charge). Declared int with no
+ * value returned, which keeps $v0 live at its exits as in the original. */
+s32 func_8007107C(void) {
+    Actor *actor = D_80092894;
+
+    actor->state = 0;
+    if (D_80092600 != 0) {
+        if (D_80092600 < actor->charge) {
+            D_80092600 = actor->charge;
+        }
+        actor->charge = D_80092600;
+    }
+    for (;;) {
+        switch (*D_800925F8) {
+        case 1:
+            if (D_800925FC == 0) {
+                D_800925FC = D_800925F8[1];
+                return;
+            }
+            if (--D_800925FC != 0) {
+                return;
+            }
+            D_800925F8 += 2;
+            break;
+        case 2:
+            actor = D_80092894 = &D_8009872C;
+            D_800925F8++;
+            break;
+        case 3:
+            actor = D_80092894 = &D_80097010;
+            D_800925F8++;
+            break;
+        case 4:
+            func_80076424(actor);
+            D_800925F8++;
+            break;
+        case 5:
+            func_8007639C(actor, 1);
+            D_800925F8++;
+            break;
+        case 6:
+            func_8007639C(actor, 2);
+            D_800925F8++;
+            break;
+        case 8:
+            func_8007639C(actor, 3);
+            D_800925F8++;
+            break;
+        case 7:
+            func_8007639C(actor, 4);
+            D_800925F8++;
+            break;
+        case 10:
+            func_8007639C(actor, 5);
+            D_800925F8++;
+            break;
+        case 9:
+            func_8007639C(actor, 5);
+            D_800925F8++;
+            break;
+        case 11:
+            if (D_8009284C >= 0x100) {
+                actor->state = 0xF0;
+                actor->target_angle = 0;
+                actor->unkCE = 0;
+                return;
+            }
+            D_800925F8++;
+            break;
+        case 12:
+            if (D_8009284C <= 0x400) {
+                actor->state = 0xF0;
+                actor->target_angle = 0x800;
+                actor->unkCE = 0;
+                return;
+            }
+            D_800925F8++;
+            break;
+        case 13:
+            if (func_8008F9B0(actor)) {
+                func_80070FD8(actor);
+                return;
+            }
+            if (D_8009284C <= 0x800) {
+                actor->state = 0xF0;
+                actor->target_angle = 0x800;
+                actor->unkCE = 0;
+                return;
+            }
+            D_800925F8++;
+            break;
+        case 15:
+            if (D_800925FC == 0) {
+                D_800925FC = D_800925F8[1];
+                return;
+            }
+            if (--D_800925FC != 0) {
+                actor->state = 0xF0;
+                actor->target_angle = 0x400;
+                actor->unkCE = 0;
+                return;
+            }
+            D_800925F8 += 2;
+            break;
+        case 14:
+            if (D_800925FC == 0) {
+                D_800925FC = D_800925F8[1];
+                return;
+            }
+            if (--D_800925FC != 0) {
+                actor->state = 0xF0;
+                actor->target_angle = -0x400;
+                actor->unkCE = 0;
+                return;
+            }
+            D_800925F8 += 2;
+            break;
+        case 20:
+            if (D_800925FC != 0) {
+                if (--D_800925FC != 0) {
+                    actor->state = 0xF0;
+                    actor->target_angle = -0x400;
+                    actor->unkCE = 0;
+                    actor->flags |= 0x8000;
+                    return;
+                }
+                D_800925F8 += 2;
+                break;
+            }
+            D_800925FC = D_800925F8[1];
+            return;
+        case 16:
+        case 17:
+            break;
+        case 18:
+            D_800925F8++;
+            D_800925D4 = *D_800925F8;
+            D_800925F8++;
+            break;
+        case 19:
+            func_800345E0(&D_8009868C);
+            D_800925F8++;
+            break;
+        case 27:
+            D_800925E0 = D_800925E8 = 0xA0;
+            D_800925F0 = 0;
+            D_800925E4 = D_800925EC = 0x6D;
+            D_800925F8++;
+            break;
+        case 21:
+            D_800925E8 = D_800925F8[1] * 2;
+            D_800925EC = D_800925F8[2];
+            D_800925F0 = 1;
+            D_800925F8 += 3;
+            break;
+        case 22:
+            func_80071F8C(D_800925F8[1]);
+            D_800925F8 += 2;
+            break;
+        case 23:
+            D_80092904 = D_800925F8[1];
+            D_800925F8 += 2;
+            break;
+        case 24:
+            D_80092900 = D_800925F8[1];
+            D_800925F8 += 2;
+            break;
+        case 25:
+            if (func_80033CD0(&D_8009868C) == 0 || !(D_8005948C & 0x20)) {
+                return;
+            }
+            if (func_80033CD0(&D_8009868C) == 1) {
+                D_800925F8++;
+            }
+            func_800345E0(&D_8009868C);
+            break;
+        case 26:
+            if (func_80033CD0(&D_8009868C) != 0 && (D_8005948C & 0x20)) {
+                s32 answer = func_80033CD0(&D_8009868C);
+
+                if (answer < 4) {
+                    if (answer >= 2) {
+                        func_800345E0(&D_8009868C);
+                        D_800925F8++;
+                    }
+                }
+            }
+            return;
+        case 28:
+            if (D_800925F8[1]) {
+                actor->opponent->hp = actor->opponent->max_hp;
+            } else {
+                actor->hp = actor->max_hp;
+            }
+            D_800925F8 += 2;
+            break;
+        case 29:
+            if (D_800925F8[1]) {
+                actor->opponent->hp = 1;
+            } else {
+                actor->hp = 1;
+            }
+            D_800925F8 += 2;
+            break;
+        case 30:
+            func_800707A8();
+            D_800925F8++;
+            break;
+        case 31:
+            actor->charge = D_800925F8[1] * 16;
+            D_800925F8 += 2;
+            break;
+        case 32:
+            D_80092600 = D_800925F8[1] * 16;
+            D_800925F8 += 2;
+            break;
+        case 33:
+            func_80070C7C(D_800925F8[1]);
+            D_800925F8 += 2;
+            break;
+        case 34:
+            if (D_800925F8[1]) {
+                actor->flags |= 2;
+            } else {
+                actor->flags &= ~2;
+                actor->flags &= ~0x38;
+            }
+            D_800925F8 += 2;
+            break;
+        case 0:
+        default:
+            return;
+        }
+    }
+}
 
 /* Link the screen offset packet and this frame's texture page packet. */
 void func_80071724(u32 *ot) {

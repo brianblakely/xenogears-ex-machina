@@ -61,6 +61,13 @@ void func_8008E2B8(u32 *ot, s32 level, s32 subtract);
 void func_8003463C(MenuWindow *window);
 void func_800851D4(void);
 
+/* Scene script interpreter. */
+extern Actor *D_80092894; /* actor the scene script drives */
+s32 func_80033CD0(MenuWindow *window); /* chosen answer, 0 while open */
+void func_800345E0(MenuWindow *window);
+void func_800707A8(void);
+s32 func_8008F9B0(Actor *actor);
+
 /* libgpu DR_TPAGE. */
 typedef struct {
     u32 tag;
