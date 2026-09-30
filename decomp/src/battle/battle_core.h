@@ -103,7 +103,8 @@ extern TurnState *D_800C3EAC;
 
 /* Battle UI state: the heap block at *800d2d28. */
 typedef struct {
-    u8 unk0[0x7C];
+    u8 unk0[0x7B];
+    u8 unk7B;          /* AP text part count */
     u8 reaction[3];    /* +0x7C */
     u8 unk7F[0x93 - 0x7F];
     u8 unk93[3];
@@ -172,7 +173,8 @@ typedef struct {
 
 /* Battle graphics state (*800c3ea4). */
 typedef struct {
-    u8 unk0[0xBA8];
+    u8 unk0[0x9C8];
+    POLY_FT4 unk9C8[6][2];
     POLY_FT4 unkBA8[120];
     POLY_FT4 unk1E68[60];
     POLY_FT4 unk27C8[1];
@@ -282,7 +284,14 @@ extern u8 D_800D2C8B[8];
 extern s32 D_800D2C60[8];
 
 typedef struct {
-    u8 unk0[0x394];
+    u8 unk0[0x34];
+    u8 active;         /* +0x34 */
+    u8 unk35[3];
+} BattleUnk3278Entry;
+
+typedef struct {
+    BattleUnk3278Entry entries[16];
+    u8 unk380[0x394 - 0x380];
     s16 unk394[(0x7A4 - 0x394) / 2];
     POLY_FT4 unk7A4[2];
     u8 unk7F4;
@@ -328,6 +337,8 @@ extern EnemyReaction D_800C3D18[8];
 extern u8 D_800C3E8C;      /* pending battle message + 1 */
 extern u8 D_800D366C;      /* menu effects enabled */
 extern u8 D_800D2CA4[5];
+extern u8 D_800C204C;
+extern u8 D_800C3E18;
 
 /* Per-slot formation information (0x1c bytes from 800c3eb4). */
 typedef struct {
@@ -475,6 +486,16 @@ void func_80089348(void);
 void func_8008946C(void);
 void func_8008963C(void);
 void func_800897CC(void);
+void func_8007FCE8(void);
+void func_8007FDEC(void);
+void func_800800E8(u8 member);
+void func_8007FB70(u8 member);
+s32 func_8009ADA0(u8 slot, s32 *amounts);
+void func_800BE538(u8 slot, s32 a, s32 b, s32 c);
+s32 func_80076A10(s32 id, POLY_FT4 *prims, s16 x, s16 y);
+s32 func_800877E0(u8 actor, u8 target);
+void func_80085D34(void);
+void func_800879A8(u8 actor, u8 target);
 void func_80078508(u8 *order);
 void func_80087EDC(u8 actor, u8 target);
 void func_800883AC(u8 slot);

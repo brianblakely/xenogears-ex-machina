@@ -2695,11 +2695,28 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80080160);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80080AE4);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80080B64);
+/* Close the actor's event queue (event 0xfe); menu effects off. */
+void func_80080B64(u8 actor) {
+    D_800C3FE8[D_800C3EAC->eventCount].type = 0xFE;
+    D_800C3FE8[D_800C3EAC->eventCount].actor = actor;
+    D_800D366C = 0;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80080BD0);
+/* Events done; for a party actor outside 800c204c refresh its menu state. */
+void func_80080BD0(void) {
+    D_800C3EAC->eventsDone = 1;
+    if (D_800C3EAC->actor < 3 && D_800C204C == 0) {
+        func_8007FCE8();
+        func_8007FDEC();
+        func_800800E8(D_800C3EAC->actor);
+        func_8007FB70(D_800C3EAC->actor);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80080C6C);
+/* Set the 0x38-byte entry `index` of *800d3278 active (+0x34). */
+void func_80080C6C(u8 index) {
+    D_800D3278->entries[index].active = 1;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80080C94);
 
@@ -2801,7 +2818,28 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085618);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085AC4);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085B58);
+/* Apply up to three recovery amounts from 8009ada0 to `slot` as separate
+ * events (codes 8..10) and show them. */
+void func_80085B58(u8 slot) {
+    s32 amounts[3];
+    s32 i;
+
+    amounts[2] = 0;
+    amounts[1] = 0;
+    amounts[0] = 0;
+    if (func_8009ADA0(slot, amounts) != 0) {
+        for (i = 0; i < 3; i++) {
+            if (amounts[i] != 0) {
+                D_800C3EAC->eventCount = 0;
+                func_80085388();
+                D_800C3FE8[0].codes[slot] = i + 8;
+                D_800C3FE8[0].amounts[slot] = amounts[i];
+                func_80085618(D_800C3EAC->eventCount);
+            }
+        }
+        func_800BE538(slot, amounts[0], amounts[1], amounts[2]);
+    }
+}
 
 /* Commit the targets for an item/effect and run 80098c6c with `param`. */
 void func_80085C48(u8 actor, s16 targets, u16 param) {
@@ -2832,7 +2870,17 @@ void func_80085CCC(u8 actor, s16 targets, s16 animation) {
     func_800941A4();
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085D34);
+/* Build the attack page's AP text (current AP, '/', maximum) as glyph
+ * primitives and remember the draw buffer. */
+void func_80085D34(void) {
+    D_800D2D28->unk7B = 0;
+    D_800D2D28->unk7B +=
+        func_80076A10(D_800C3EAC->unk2D4[0] + 0xF, D_800C3EA4->unk9C8[D_800D2D28->unk7B], 0x2A, 0xD0);
+    D_800D2D28->unk7B += func_80076A10(0x19, D_800C3EA4->unk9C8[D_800D2D28->unk7B], 0x32, 0xD0);
+    D_800D2D28->unk7B +=
+        func_80076A10(D_800C3EAC->unk2D4[1] + 0xF, D_800C3EA4->unk9C8[D_800D2D28->unk7B], 0x3A, 0xD0);
+    D_800D2D28->unkA4 = D_800CCB04.buffer;
+}
 
 /* Reset the turn state's seven +0x2cc bytes to 0xff and clear +0x2d6. */
 void func_80085E78(void) {
@@ -2858,9 +2906,30 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80086F98);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800877E0);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800879A8);
+/* Reset every event to type 0xff for `actor` against `target`'s bit. */
+void func_800879A8(u8 actor, u8 target) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80087A38);
+    for (i = 0; i < 32; i++) {
+        D_800C3FE8[i].type = 0xFF;
+        D_800C3FE8[i].actor = actor;
+        D_800C3FE8[i].targets = func_80089C08(target);
+    }
+}
+
+/* Enter the attack page: AP text, events against the default target, and
+ * the member's attack model. */
+void func_80087A38(u8 member) {
+    s32 route;
+
+    func_80085D34();
+    func_800879A8(member, D_800C3EAC->slots[member].defaultTarget);
+    D_800D366C = 0;
+    route = func_800877E0(member, D_800C3EAC->slots[member].defaultTarget);
+    func_800B89FC(route, member, D_800C3EAC->slots[member].defaultTarget, func_80080AE4(member));
+    D_800D366C = 1;
+    D_800C3E18 = 0;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80087AF0);
 
