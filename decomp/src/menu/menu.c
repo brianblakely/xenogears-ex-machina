@@ -1060,8 +1060,8 @@ void func_80089534(s32 width, s32 height) {
     D_8009A0D8[0].draw.tpage = D_8009A0D8[1].draw.tpage = func_80043A1C(0, 2, 0x280, 0);
     func_80045534(D_8009A0D8[0].draw.dr_env, &D_8009A0D8[0].draw);
     func_80045534(D_8009A0D8[1].draw.dr_env, &D_8009A0D8[1].draw);
-    func_800453E8(D_8009A0D8[0].modeD0, &D_8009A0D8[0].draw);
-    func_800453E8(D_8009A0D8[1].modeD0, &D_8009A0D8[1].draw);
+    func_800453E8(D_8009A0D8[0].modeD0, &D_8009A0D8[0].draw.clip);
+    func_800453E8(D_8009A0D8[1].modeD0, &D_8009A0D8[1].draw.clip);
     func_8004546C(D_8009A0D8[0].modeDC, D_8009A0D8[0].draw.ofs);
     func_8004546C(D_8009A0D8[1].modeDC, D_8009A0D8[1].draw.ofs);
 }
@@ -1085,13 +1085,105 @@ void func_8008976C(s32 width, s32 height) {
     func_80089534(width, height);
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800897AC);
+/* Set a layer's drawing areas and offsets for both buffers (the second
+ * buffer lies `second` lines lower) and its black background tiles. */
+void func_800897AC(Layer *layer, s32 x, s32 y, s32 w, s32 h, s32 second) {
+    Rect area;
+    s16 offset[2];
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800898BC);
+    area.x = x;
+    area.y = y;
+    area.w = w;
+    area.h = h;
+    func_800453E8(layer->area[0], &area);
+    area.y = y + second;
+    func_800453E8(layer->area[1], &area);
+    offset[0] = x;
+    offset[1] = y;
+    func_8004546C(layer->offset[0], offset);
+    offset[1] = y + second;
+    func_8004546C(layer->offset[1], offset);
+    layer->tile[0].len = 3;
+    layer->tile[0].colour = 0x60000000;
+    layer->tile[0].x0 = 0;
+    layer->tile[0].y0 = 0;
+    layer->tile[0].w = w;
+    layer->tile[0].h = h;
+    layer->tile[1] = layer->tile[0];
+    layer->flags |= 0xC;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80089A98);
+/* Build a view matrix looking from eye to at with the given up vector. */
+void func_800898BC(Matrix *m, SVector *eye, SVector *at, SVector *up) {
+    D_8009A0C8.vx = at->vx - eye->vx;
+    D_8009A0C8.vy = at->vy - eye->vy;
+    D_8009A0C8.vz = at->vz - eye->vz;
+    D_8009A918.vx = up->vx;
+    D_8009A918.vy = up->vy;
+    D_8009A918.vz = up->vz;
+    func_80048D7C(&D_8009A0C8, &D_80096F98);
+    func_8004A480(&D_8009A918, &D_80096F98, &D_8009A0C8);
+    func_80048D7C(&D_8009A0C8, &D_80097000);
+    func_8004A480(&D_80096F98, &D_80097000, &D_8009A0C8);
+    func_80048D7C(&D_8009A0C8, &D_8009A918);
+    m->m[0][0] = D_80097000.vx;
+    m->m[0][1] = D_80097000.vy;
+    m->m[0][2] = D_80097000.vz;
+    m->m[1][0] = D_8009A918.vx;
+    m->m[1][1] = D_8009A918.vy;
+    m->m[1][2] = D_8009A918.vz;
+    m->m[2][0] = D_80096F98.vx;
+    m->m[2][1] = D_80096F98.vy;
+    m->m[2][2] = D_80096F98.vz;
+    func_80049CEC(m, eye, &D_8009A0C8);
+    func_80049BDC(&D_80096FE0, m);
+    m->t[0] = -D_8009A0C8.vx;
+    m->t[1] = -D_8009A0C8.vy;
+    m->t[2] = -D_8009A0C8.vz;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80089B44);
+/* Point the owner's view from eye toward target (eye kept as the last eye
+ * position). */
+void func_80089A98(ViewOwner *owner, Vector *target, Vector *eye) {
+    SVector up;
+    SVector from;
+    SVector origin;
+
+    up.vy = 0x1000;
+    up.vz = 0;
+    up.vx = 0;
+    D_80096FA8 = *eye;
+    from.vx = target->vx - eye->vx;
+    from.vy = target->vy - eye->vy;
+    from.vz = target->vz - eye->vz;
+    origin.vz = 0;
+    origin.vx = 0;
+    origin.vy = 0;
+    func_800898BC(&owner->view->view, &from, &origin, &up);
+}
+
+/* Reset a view: zero position and angles, identity matrices. */
+View *func_80089B44(View *view) {
+    view->unk0 = 0;
+    view->unk8C = 0;
+    view->unk94 = 0;
+    view->unk90 = 0;
+    view->unk8 = 0;
+    view->unk4 = 0;
+    view->position.vz = 0;
+    view->position.vy = 0;
+    view->position.vx = 0;
+    view->unk44.vz = 0;
+    view->unk44.vy = 0;
+    view->unk44.vx = 0;
+    view->rotation.vz = 0;
+    view->rotation.vy = 0;
+    view->rotation.vx = 0;
+    view->unk6C = D_80091C0C;
+    view->unk4C = view->unk6C;
+    view->view = view->unk4C;
+    return view;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80089C54);
 

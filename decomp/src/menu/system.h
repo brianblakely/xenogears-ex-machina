@@ -104,7 +104,49 @@ typedef struct {
     s32 t[3];
 } Matrix;
 
+/* libgte SVECTOR layout. */
+typedef struct {
+    s16 vx, vy, vz, pad;
+} SVector;
+
+/* Drawing layer: area/offset packets for both buffers and a background
+ * tile per buffer. */
+typedef struct {
+    u8 unk0[0x16];
+    u8 flags;          /* 0x16 */
+    u8 unk17;
+    u32 area[2][3];    /* 0x18: DR_AREA per buffer */
+    u32 offset[2][3];  /* 0x30: DR_OFFSET per buffer */
+    Tile tile[2];      /* 0x48 */
+} Layer;
+
+/* View transform state. */
+typedef struct {
+    s32 unk0;
+    s32 unk4;
+    s32 unk8;
+    Matrix view;       /* 0x0C */
+    SVector rotation;  /* 0x2C */
+    Vector position;   /* 0x34 */
+    SVector unk44;
+    Matrix unk4C;
+    Matrix unk6C;
+    s32 unk8C;
+    s32 unk90;
+    s32 unk94;
+} View;
+
+typedef struct {
+    s32 unk0;
+    View *view;
+} ViewOwner;
+
 extern Matrix D_80091C0C; /* identity */
+extern Vector D_8009A0C8; /* look-at work: forward */
+extern Vector D_8009A918; /* look-at work: up */
+extern Vector D_80096F98; /* look-at work: side */
+extern Vector D_80097000; /* look-at work: third axis */
+extern Vector D_80096FA8; /* last eye position */
 extern Matrix D_8009A2D8;
 extern Matrix D_80096FE0; /* screen scale */
 extern s16 D_8009285C;    /* display width */
@@ -148,8 +190,13 @@ void func_800439E0(DispEnv *env, s32 x, s32 y, s32 w, s32 h);
 void func_80043928(DrawEnv *env, s32 x, s32 y, s32 w, s32 h);
 u16 func_80043A1C(s32 tp, s32 abr, s32 x, s32 y);
 void func_80045534(u32 *packet, DrawEnv *env);
-void func_800453E8(u32 *packet, DrawEnv *env);
+void func_800453E8(u32 *packet, Rect *area);
 void func_8004546C(u32 *packet, s16 *offset);
+void func_80048D7C(Vector *in, Vector *out);
+void func_8004A480(Vector *a, Vector *b, Vector *out);
+void func_80049CEC(Matrix *m, SVector *in, Vector *out);
+void func_80049BDC(Matrix *a, Matrix *b);
+void func_800898BC(Matrix *m, SVector *eye, SVector *at, SVector *up);
 void func_8004A12C(s32 x, s32 y);
 void func_8004A14C(s32 h);
 void func_8002DFF0(s32 w, s32 h);
