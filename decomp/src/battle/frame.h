@@ -253,8 +253,8 @@ void func_800BF0C4(SlotSprite *sprite);
 void func_800BF1EC(SlotSprite *sprite, s32 mode);
 void func_800BF4F0(SlotSprite *sprite, SlotSprite *target);
 s32 func_800C07CC(GroundPoint from, GroundPoint to);
-s32 func_800C0FAC(void *file);
-void func_800C1140(void *file);
+SoundSystem *func_800C0FAC(s32 *file);
+void func_800C1140(s32 *file);
 
 /* Command motions, value watches and targets (800BF5E8-800BF998). */
 typedef struct SlotWatch {
@@ -297,5 +297,18 @@ s16 func_8003BDFC(s32 wait);             /* sound transfer busy */
 void func_800B8D04(void);
 void func_800BB760(s32 slot);
 SlotSprite *func_800BFC80(SlotSprite *sprite, s32 mode, s32 action);
+
+/* Distances, blends and command file parts (800C06E4-800C1140). */
+typedef struct {
+    s16 x;
+    s16 y;
+} VramPoint;
+
+extern s32 (*D_800C3A68)[4]; /* four weights per cell, 8 cells a row */
+
+void func_8004A414(Vector *v, Vector *squares); /* Square0 */
+void func_80022224(void *resource, void *image, VramPoint at, VramPoint clut, s32 arg4); /* upload an image */
+void func_80031F70(void *block, s32 size); /* shrink a heap block */
+void func_80038310(s32 bank); /* release a wave bank */
 
 #endif

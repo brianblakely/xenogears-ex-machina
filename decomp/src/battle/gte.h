@@ -103,4 +103,22 @@
 #define gte_nccs() __asm__ volatile("nop;nop;.word 0x4B08041B")
 #define gte_strgb(r0) __asm__ volatile("swc2 $22, 0(%0)" : : "r"(r0) : "memory")
 
+/* Weight a long vector: load the weight into IR0 and the vector into IR1-3,
+ * GPF with the 12-bit shift, store IR1-3 (800C0D18). */
+#define gte_lddp(r0) __asm__ volatile("mtc2 %0, $8" : : "r"(r0))
+#define gte_ldlvl(r0)                                                          \
+    __asm__ volatile("lwc2 $9, 0(%0);"                                         \
+                     "lwc2 $10, 4(%0);"                                        \
+                     "lwc2 $11, 8(%0)"                                         \
+                     :                                                         \
+                     : "r"(r0))
+#define gte_gpf12() __asm__ volatile("nop;nop;.word 0x4B98003D")
+#define gte_stlvl(r0)                                                          \
+    __asm__ volatile("swc2 $9, 0(%0);"                                         \
+                     "swc2 $10, 4(%0);"                                        \
+                     "swc2 $11, 8(%0)"                                         \
+                     :                                                         \
+                     : "r"(r0)                                                 \
+                     : "memory")
+
 #endif
