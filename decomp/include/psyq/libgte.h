@@ -14,9 +14,17 @@ typedef struct {
     short vx, vy;
 } DVECTOR;
 
+typedef struct {
+    short m[3][3];
+    long t[3];
+} MATRIX;
+
 void InitGeom(void);
 void SetGeomOffset(long ofx, long ofy);
 void SetGeomScreen(long h);
 long ratan2(long y, long x);
+VECTOR *ApplyMatrix(MATRIX *m, SVECTOR *v0, VECTOR *v1);
+void SetRotMatrix(MATRIX *m);
+void SetTransMatrix(MATRIX *m);
 
 #endif

@@ -44,12 +44,14 @@ extern struct Sprite *D_80059190; /* sprites awaiting a frame (through renderer-
 typedef struct {
     s16 angle_x, angle_y, angle_z; /* +0x0 */
     s16 scale_x, scale_y, scale_z; /* +0x6 */
-    u8 unknownc[0x20];
+    MATRIX matrix;                 /* +0xc: local screen matrix */
     void *parts;                   /* +0x2c: 0x18 bytes per part */
     void *part_cursor;             /* +0x30 */
     void *pointer34;               /* +0x34 */
     struct Sprite *next_pending;   /* +0x38 */
-    u8 unknown3c[4];
+    s8 offset_x;                   /* +0x3c: screen offset, before scaling */
+    s8 offset_y;                   /* +0x3d */
+    u8 unknown3e[2];
     s32 word40;                    /* +0x40 */
 } SpriteRenderer;
 
@@ -138,15 +140,14 @@ extern s32 D_80059428[];  /* [0]: frames the main task list stays paused */
 extern s16 D_80059494[];
 extern u8 D_800591AC[];   /* [0]: new main-list tasks count as active */
 extern s32 D_80059464[];  /* [0]: active main-list tasks */
+extern u8 D_800591AD[];
+extern u8 D_800591AE[];
 extern u8 D_8005A474[];
 extern u8 D_8006BE10[];
 extern s32 D_8005956C[];
 
-/* 0x20 bytes of lighting state copied by 80024ff4. */
-typedef struct {
-    s32 words[8];
-} SpriteLight;
-extern SpriteLight D_8004FBB8;
+/* The view matrix sprites are placed with (80024ff4 sets it). */
+extern MATRIX D_8004FBB8;
 extern void (*D_8004FD40[])(Task *); /* task update callbacks by kind */
 void func_8001CD64(Task *task, void (*update)(Task *));
 void func_8001CA58(Task *owner, Task *node);
@@ -169,6 +170,7 @@ void func_80023210(Sprite *sprite);
 void func_8001D2B0(Sprite *sprite, s32 frame);
 void func_8001DAE8(Sprite *sprite, s32 frame, void *image);
 void func_8001E148(Sprite *sprite);
+void func_80022038(Sprite *sprite);
 void func_8001E3D8(Sprite *sprite, s32 frame);
 void func_8001E9BC(Sprite *sprite, s32 frame);
 void func_8001EE88(Sprite *sprite, s32 frame, void *image);

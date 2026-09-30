@@ -466,7 +466,43 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001D53C);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001DAE8);
 
+/* Set the GTE rotation and translation for drawing a sprite: its position
+ * through the view matrix plus its scaled screen offset. */
+/* Nonmatching: the original keeps the view matrix address in $s1 and reuses the sprite register for the renderer matrix; GCC folds the address into each access. */
+#ifdef NON_MATCHING
+void func_8001E148(Sprite *sprite) {
+    SVECTOR position;
+    VECTOR view;
+    s32 shift;
+    s32 offset_y;
+    s32 offset_x;
+    MATRIX *matrix;
+
+    if (D_800591AD[0] != 0 || D_800591AE[0] != 0) {
+        func_80022038(sprite);
+    }
+    shift = (sprite->flags >> 8) & 0x1F;
+    offset_y = sprite->renderer->offset_y << shift;
+    offset_x = sprite->renderer->offset_x << shift;
+    if ((sprite->motion.word >> 2) & 1) {
+        offset_x = -offset_x;
+    }
+    offset_y = offset_y * sprite->scale / 4096;
+    offset_x = offset_x * sprite->scale / 4096;
+    position.vx = sprite->x >> 16;
+    position.vy = sprite->y >> 16;
+    position.vz = sprite->z >> 16;
+    ApplyMatrix(&D_8004FBB8, &position, &view);
+    matrix = &sprite->renderer->matrix;
+    matrix->t[0] = D_8004FBB8.t[0] + view.vx + offset_x;
+    matrix->t[1] = D_8004FBB8.t[1] + view.vy + offset_y;
+    matrix->t[2] = D_8004FBB8.t[2] + view.vz;
+    SetRotMatrix(matrix);
+    SetTransMatrix(matrix);
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001E148);
+#endif
 
 /* Build frame `frame` with 8001e3d8 (and 8001e9bc for render flag 2). */
 void func_8001E298(Sprite *sprite, s32 frame) {
@@ -1012,8 +1048,8 @@ void func_80024FE4(s32 value) {
 /* Copy the current light settings. */
 /* Sprite-unit code (GCC 2.7.2-cdk, -G8, ASPSX 2.5+): this C matches under that configuration (object compare with relocations masked), not in this build. */
 #ifdef NON_MATCHING
-void func_80024FF4(SpriteLight *light) {
-    D_8004FBB8 = *light;
+void func_80024FF4(MATRIX *view) {
+    D_8004FBB8 = *view;
 }
 #else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80024FF4);
