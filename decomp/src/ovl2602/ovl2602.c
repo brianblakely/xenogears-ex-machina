@@ -1289,7 +1289,20 @@ void func_801CC528(void) {
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CC530);
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CC9A0);
+/* Close the message panel and release its labels, then let a frame pass. */
+void func_801CC9A0(void) {
+    s32 i;
+
+    if (D_800625A0->flags->panel_shown[4] != 0) {
+        func_801C9054(4);
+        D_800625A0->flags->message_shown = 0;
+        for (i = 0; i < 4; i++) {
+            func_800320E8(D_800625A0->message_labels[i]);
+        }
+    }
+    D_800625A0->flags->unk5B = 0;
+    func_801CC1C4();
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CCA40);
 

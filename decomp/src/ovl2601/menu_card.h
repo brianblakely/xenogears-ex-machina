@@ -359,6 +359,9 @@ s32 func_80036410(void);                 /* input queue overflowed */
 void func_80035DB0(void);                /* reset the input queue */
 s32 func_80035CDC(void);                 /* dequeue an input entry */
 void func_80039DB8(s32 effect);          /* play a sound effect */
+extern u8 D_80059178;                    /* menu sound effects loaded */
+void func_8003A094(EffectBank *bank);    /* stop the bank's effects */
+void func_8003852C(EffectBank *bank);    /* unlink an effect bank */
 extern s32 D_80059488;                   /* sound state saved while paused */
 extern u16 D_800594A4;                   /* dequeued buttons */
 extern u16 D_8005948C;                   /* dequeued buttons, second set */
@@ -431,6 +434,21 @@ void func_801CA09C(void);
 void func_801CA214(void);
 void func_801CA22C(void);
 void func_801C8AF0(void);
+void func_801C5194(u8 allocate);
+void func_801C51F8(u8 allocate);
+void func_801C525C(u8 allocate);
+void func_801C52C0(u8 allocate);
+void func_801C5324(u8 allocate);
+void func_801C5388(u8 allocate);
+void func_801C53EC(u8 allocate);
+void func_801C5450(u8 allocate);
+void func_801C6828(u8 mode);
+void func_801C88E0(u8 index);
+void func_801C5CBC(Label *labels, u8 *text_ids, s32 row, s32 count);
+void func_801CB384(u8 first);
+void func_801CB7F4(void);
+u8 func_801CB894(u8 wait);
+void func_801CBC88(u8 render, u8 count, Label *labels, u8 *text_ids, u8 *shown);
 void func_801CB014(void);
 void func_801CACC8(void);
 void func_801CAED4(void);

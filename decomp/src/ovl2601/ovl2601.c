@@ -1579,17 +1579,165 @@ void func_801CB384(u8 first) {
 INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CB384);
 #endif
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CB7F4);
+/* Close the message panel and release its labels, then let a frame pass. */
+void func_801CB7F4(void) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CB894);
+    if (D_800625A0->flags->panel_shown[4] != 0) {
+        func_801C88E0(4);
+        D_800625A0->flags->message_shown = 0;
+        for (i = 0; i < 4; i++) {
+            func_800320E8(D_800625A0->message_labels[i]);
+        }
+    }
+    D_800625A0->flags->unk5B = 0;
+    func_801CB014();
+}
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CBA50);
+/* Let the player choose yes or no (1 = yes); without `wait` the choice ends after 60 idle frames. */
+u8 func_801CB894(u8 wait) {
+    u8 choosing;
+    u8 yes;
+    u8 timer;
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CBB08);
+    choosing = 1;
+    yes = 0;
+    timer = 60;
+    while (choosing) {
+        if (!wait) {
+            D_800625A0->marks->shown[2] = 0;
+            D_800625A0->marks->shown[3] = 0;
+            if (D_800625A0->input != 8) {
+                break;
+            }
+            if (--timer == 0) {
+                break;
+            }
+        }
+        func_801CB014();
+        switch (D_800625A0->input) {
+        case 4:
+            func_801CAC7C(2);
+            choosing = 0;
+            break;
+        case 5:
+            yes = 0;
+            choosing = 0;
+            break;
+        case 2:
+            D_800625A0->marks->shown[2] = 1;
+            yes = 1;
+            D_800625A0->marks->shown[3] = 0;
+            break;
+        case 0:
+            D_800625A0->marks->shown[2] = 0;
+            yes = 0;
+            D_800625A0->marks->shown[3] = 1;
+            break;
+        }
+    }
+    D_800625A0->marks->shown[2] = 0;
+    D_800625A0->marks->shown[3] = 0;
+    return yes;
+}
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CBC88);
+/* Ask message `message` as a yes/no question; a yes is confirmed by `confirm` unless it is ff. */
+u8 func_801CBA50(u8 message, u8 confirm, u8 wait) {
+    u8 answer;
 
+    func_801CB384(message);
+    D_800625A0->marks->shown[3] = 1;
+    answer = func_801CB894(wait);
+    func_801CB7F4();
+    if (confirm != 0xFF && answer) {
+        func_801CB384(confirm);
+        D_800625A0->marks->shown[3] = 1;
+        answer = func_801CB894(wait);
+        func_801CB7F4();
+    }
+    return answer;
+}
+
+/* Close the screen: stop drawing, release every block and resource, then the menu state itself. */
+void func_801CBB08(void) {
+    func_801CB014();
+    func_801CB014();
+    D_800625A0->drawing = 0;
+    func_801CB014();
+    do {
+        func_801CB014();
+    } while (D_800625A0->buffer != 0);
+    func_801C5194(0);
+    func_801C51F8(0);
+    func_801C525C(0);
+    func_801C52C0(0);
+    func_801C5324(0);
+    func_801C5388(0);
+    func_801C6828(0x10);
+    func_801C5450(0);
+    func_800320E8(D_800625A0->sprite_sheet);
+    func_800320E8(D_800625A0->label_text);
+    func_800320E8(D_800625A0->labels[0].pixels);
+    if (D_80059178 != 0) {
+        func_8003A094(D_800625A0->effect_bank);
+        func_801CB014();
+        func_8003852C(D_800625A0->effect_bank);
+        func_801CB014();
+        func_800320E8(D_800625A0->effect_bank);
+    }
+    func_800320E8(D_800625A0->unk1E2C);
+    func_801C53EC(0);
+    func_800320E8(D_800625A0);
+}
+
+/* Render `count` labels (render != 0) or clear their shown flags. */
+void func_801CBC88(u8 render, u8 count, Label *labels, u8 *text_ids, u8 *shown) {
+    s32 i;
+
+    if (render) {
+        func_801C5CBC(labels, text_ids, 2, count);
+    } else {
+        for (i = 0; i < count; i++) {
+            shown[i] = 0;
+        }
+    }
+}
+
+/* Show label `index`: in list row `row` (mode 0, offset by its column) or at the info position (mode 1). */
+#ifdef NON_MATCHING
+void func_801CBCF0(u8 count, Label *labels, u8 *text_ids, s32 *offsets, u8 *shown, u8 index, u8 row,
+                   u8 mode) {
+    switch (mode) {
+    case 0:
+        func_801CBC88(0, count, labels, text_ids, shown);
+        (labels[index].poly + D_800625A0->buffer)->x0 = D_801D2194[row + index] + (offsets[index] + 0x16);
+        (labels[index].poly + D_800625A0->buffer)->y0 = D_801D21B0[row + index] - 0x22;
+        (labels[index].poly + D_800625A0->buffer)->x1 =
+            labels[index].width + (D_801D2194[row + index] + 0x16 + offsets[index]);
+        (labels[index].poly + D_800625A0->buffer)->y1 = D_801D21B0[row + index] - 0x22;
+        (labels[index].poly + D_800625A0->buffer)->x2 = D_801D2194[row + index] + (offsets[index] + 0x16);
+        (labels[index].poly + D_800625A0->buffer)->y2 = D_801D21B0[row + index] - 0x15;
+        (labels[index].poly + D_800625A0->buffer)->x3 =
+            labels[index].width + (D_801D2194[row + index] + 0x16 + offsets[index]);
+        (labels[index].poly + D_800625A0->buffer)->y3 = D_801D21B0[row + index] - 0x15;
+        break;
+    case 1:
+        (labels[index].poly + D_800625A0->buffer)->x0 = 0xEC;
+        (labels[index].poly + D_800625A0->buffer)->y0 = 0x7E;
+        (labels[index].poly + D_800625A0->buffer)->x1 = labels->width + 0xEC;
+        (labels[index].poly + D_800625A0->buffer)->y1 = 0x7E;
+        (labels[index].poly + D_800625A0->buffer)->x2 = 0xEC;
+        (labels[index].poly + D_800625A0->buffer)->y2 = 0x8B;
+        (labels[index].poly + D_800625A0->buffer)->x3 = labels->width + 0xEC;
+        (labels[index].poly + D_800625A0->buffer)->y3 = 0x8B;
+        break;
+    }
+    labels[index].buffer = D_800625A0->buffer;
+    shown[index] = 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CBCF0);
+#endif
 
 INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CC024);
 
