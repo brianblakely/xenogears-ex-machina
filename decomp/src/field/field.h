@@ -331,9 +331,10 @@ typedef struct GameState {
     u16 unk2318;         /* 2318: bit per character */
 } GameState;
 
-/* Field work state 800b218c..800b2388, one object: stores to its members do
+/* Field work state 800b2184..800b2388, one object: stores to its members do
  * not pass loads of other members. */
 typedef struct {
+    SVECTOR sprite_angles;     /* 2184: sprite view rotation */
     s16 scale;                 /* 218C: offset scale (8007b614) */
     s16 unk218E;               /* 218E: colour pass-through gate (80075b08) */
 
@@ -491,6 +492,7 @@ extern void func_800496AC(void);                               /* PopMatrix */
 extern void func_8004A6DC(SVECTOR *v, s32 *out, s32 *flag); /* RotTrans */
 
 /* Field overlay. */
+extern void func_80071D08(s32 channel, s32 steps, s32 red, s32 green, s32 blue, s32 abr);
 extern s32 func_8009D000(s32 offset, s32 flags); /* operand, immediate with flag 0x20 */
 extern void func_80086590(VECTOR *target);
 extern s32 func_8009CFBC(s32 offset, s32 flags); /* operand, immediate with flag 0x40 */
@@ -590,7 +592,7 @@ extern s32 D_800AFC7C; /* batch limit */
 extern s32 D_800AFD1C; /* current actor index */
 extern s32 D_800AFE84;
 extern s32 D_800B06A0;
-extern FieldWork D_800B218C;
+extern FieldWork D_800B2184;
 extern FieldSoundBank *D_800B235C; /* movie sound-effect bank */
 extern u8 *D_800ADC00; /* event bytecode */
 extern void (*D_800AE6A0[])(void); /* extended event instructions */
