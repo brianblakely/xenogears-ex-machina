@@ -1919,14 +1919,17 @@ ImageAnim *func_800A3640(ImageAnim *anim, ImageAnim *target, u16 mode, u16 flags
 /* Advance an image animation by `ticks` + 1: when its curve selects another
  * frame, rebuild the image (resident decoders or fades) and copy the
  * overlap into its target image. Returns the frame, or a negative value
- * once the animation ended. Differs only in the unchanged-frame branch,
- * which the original sends straight to the epilogue. */
+ * once the animation ended. The curve's result is used as a halfword and,
+ * as the frame, sign-extended. Differs only in the unchanged-frame branch,
+ * which the original sends straight to the epilogue (and in computing the
+ * frame from the saved result). */
 s16 func_800A3E98(ImageAnim *anim, s32 ticks) {
     RECT src;
     RECT dst;
     ImageAnim *target;
     u16 *pixels;
     u16 *work;
+    u16 result;
     s16 frame;
     s32 x;
     s32 y;
@@ -1935,13 +1938,14 @@ s16 func_800A3E98(ImageAnim *anim, s32 ticks) {
         return -1;
     }
     anim->time += anim->speed * (ticks + 1);
-    frame = anim->curve(anim->time, anim->divisor, anim->base);
+    result = anim->curve(anim->time, anim->divisor, anim->base);
+    frame = result;
     if (frame < 0) {
         func_800A429C(anim);
         return frame;
     }
     if (frame != anim->frame) {
-        anim->frame = frame;
+        anim->frame = result;
         switch (anim->mode) {
         case 0:
             func_80026F44(anim->size, frame, anim->work, anim->pixels);
@@ -2004,7 +2008,7 @@ s16 func_800A3E98(ImageAnim *anim, s32 ticks) {
             }
         }
     }
-    return frame;
+    return result;
 }
 #else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A3E98);

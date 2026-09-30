@@ -87,7 +87,7 @@ typedef struct {
 
 /* A frame curve mapping time to a frame (800A3490-800A35C8, called without
  * a prototype: time, divisor, base); negative ends the animation. */
-typedef s16 (*FrameCurve)();
+typedef s32 (*FrameCurve)();
 
 /* A row of three colours. */
 typedef struct {
