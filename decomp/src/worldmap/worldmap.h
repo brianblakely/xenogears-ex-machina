@@ -728,4 +728,45 @@ s32 func_80048D7C(VECTOR *v, VECTOR *out); /* VectorNormal */
 extern s16 D_8009CE68; /* destination id, -1 none */
 extern u16 D_8009A5CC[]; /* resident flag word per exit */
 
+/* Scene set-up. */
+void MoveImage(RECT *rect, s32 x, s32 y);
+s32 func_800286CC(void);
+void func_80028A60(s32 mode);
+void func_8001B66C(void);
+void *func_80037FD8(void *data, s32 mode);
+void func_80028470(s32 a, s32 b);
+void func_80038428(void *bank);
+void func_80072BB0(void);
+void func_80072DB4(s32 a, s32 b, s32 c, s32 d);
+void func_80076954(void);
+void func_8009766C(void);
+void func_80084580(void);
+void func_8008440C(void);
+void func_800979C8(void);
+void func_80072090(void);
+void func_800736DC(void);
+void func_800863E0(void);
+void func_80074E58(void);
+void func_80075030(void);
+void func_800739B8(void);
+void func_80088F64(void);
+void func_800978FC(void);
+void func_8008901C(void);
+void func_800865A0(void);
+void func_80075228(void);
+void func_80098044(void);
+void func_80097718(s32 kind, s32 update); /* start an actor */
+void func_80086700(void);
+s32 func_800923A8(), func_800925A0(), func_8007DE14(), func_8007DE98();
+s32 func_8007E450(), func_8007E4E4(), func_8007ECA4(), func_8007EE34();
+s32 func_8007F8AC(), func_8007F968(), func_8007FC8C(), func_8007FD30();
+s32 func_80078948(), func_80078950();
+
+extern LoaderState D_8009BE4C; /* terrain loader state */
+extern void (*D_8009CD40)(void);
+extern u16 D_8005957C; /* debug switches */
+extern void *D_8006258C;
+extern s32 D_8009D804;
+extern SVECTOR D_8009A5B4[]; /* start position per entry */
+
 #endif

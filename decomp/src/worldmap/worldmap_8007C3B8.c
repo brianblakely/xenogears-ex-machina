@@ -412,7 +412,83 @@ s32 func_8007D7FC(s32 index) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007C3B8", func_8007D918);
+/* Set up the vehicle scene: load its area, place the player at the entry, start music and its scripted actors. */
+void func_8007D918(void) {
+    RECT rect;
+    void *sequence;
+    void *data;
+    u16 debug;
+
+    func_80072BB0();
+    rect.w = 0x140;
+    rect.x = 0;
+    rect.y = 0;
+    rect.h = 0xD8;
+    MoveImage(&rect, 0x2C0, 0x100);
+    DrawSync(0);
+    func_80072DB4(0x40, 0, 4, 2);
+    while (func_800286CC() >= 3) {
+    }
+    func_80076954();
+    func_8009766C();
+    D_8009BE4C = D_8009A180;
+    D_8009CCA4 = 2;
+    D_8009D3CC = 0x10;
+    D_8009D804 = 0;
+    D_8009D144 = 0;
+    D_8009CD40 = func_80086700;
+    func_80098044();
+    func_80028A60(0);
+    func_8001B66C();
+    D_8009C5AC.vx = D_8009A5B4[D_8009D3D4].vx << 12;
+    D_8009C5AC.vy = D_8009A5B4[D_8009D3D4].vy << 12;
+    D_8009C5AC.vz = D_8009A5B4[D_8009D3D4].vz << 12;
+    func_80084580();
+    func_8008440C();
+    func_800979C8();
+    func_80072090();
+    func_800736DC();
+    func_800863E0();
+    func_80074E58();
+    func_80075030();
+    func_800739B8();
+    func_80088F64();
+    func_80028A60(0);
+    D_8006258C = func_80037FD8(D_8009C88C, 0);
+    func_80028470(0x24, 0);
+    func_80097BC0(&D_8009C5AC);
+    do {
+        func_800967E4();
+        VSync(0);
+    } while (func_80096668() > 0);
+    debug = D_8005957C & 0x10;
+    if (debug) {
+        while (debug) {
+        }
+    }
+    func_800320E8(D_8009C88C);
+    func_80038428(D_8006259C);
+    data = D_8009C884;
+    memcpy(D_80062648, data, func_800288EC(D_8009D3D0));
+    sequence = func_80039850(D_80062648);
+    D_80062528 = sequence;
+    func_80039A80(sequence, 0x7F, 0);
+    func_80097718((s32)func_800923A8, (s32)func_800925A0);
+    func_80097718((s32)func_8007DE14, (s32)func_8007DE98);
+    func_80097718((s32)func_8007E450, (s32)func_8007E4E4);
+    func_80097718((s32)func_8007ECA4, (s32)func_8007EE34);
+    func_80097718((s32)func_8007F8AC, (s32)func_8007F968);
+    func_80097718((s32)func_8007F8AC, (s32)func_8007F968);
+    func_80097718((s32)func_8007F8AC, (s32)func_8007F968);
+    func_80097718((s32)func_8007F8AC, (s32)func_8007F968);
+    func_80097718((s32)func_8007F8AC, (s32)func_8007F968);
+    func_80097718((s32)func_8007FC8C, (s32)func_8007FD30);
+    func_80097718((s32)func_80078948, (s32)func_80078950);
+    func_800978FC();
+    func_8008901C();
+    func_800865A0();
+    func_80075228();
+}
 
 /* Leave the world map: release its sound, subsystems and buffers, and request scene 0x1A1 with the exit's flag word. */
 void func_8007DCE0(void) {
