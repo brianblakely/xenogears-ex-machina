@@ -1959,42 +1959,39 @@ void func_800A5BE8(SVector *a, SVector *b, SVector *c, SVector *point, Vector *n
     point->vy = a->vy + (-((point->vx - a->vx) * normal->vx) - (point->vz - a->vz) * normal->vz) / normal->vy;
 }
 
-#ifdef NON_MATCHING
-/* Search triangle and, up to depth levels, its unvisited neighbours for the one
- * containing point (800A5A48 gives -1); -1 for none. */
+/* Search triangle and, up to depth levels, its neighbours for the one
+ * containing point (800A5A48 gives -1), testing each triangle once per visit
+ * stamp; -1 for none. */
 s32 func_800A5D54(SVector *point, s32 triangle, s32 depth) {
     s32 found;
 
-    if (triangle >= 0) {
-        if (D_800D39CC[triangle].visited != D_800D2F64) {
-            D_800D39CC[triangle].visited = D_800D2F64;
-            if (func_800A5A48(&D_800D3344[D_800D39CC[triangle].vertices[0]],
-                              &D_800D3344[D_800D39CC[triangle].vertices[1]],
-                              &D_800D3344[D_800D39CC[triangle].vertices[2]], point)
-                == -1) {
-                return triangle;
-            }
-            if (depth > 0) {
-                found = func_800A5D54(point, D_800D39CC[triangle].neighbours[0], depth - 1);
-                if (found >= 0) {
-                    return found;
-                }
-                found = func_800A5D54(point, D_800D39CC[triangle].neighbours[1], depth - 1);
-                if (found >= 0) {
-                    return found;
-                }
-                found = func_800A5D54(point, D_800D39CC[triangle].neighbours[2], depth - 1);
-                if (found >= 0) {
-                    return found;
-                }
-            }
+    if (triangle < 0) {
+        return -1;
+    }
+    if (D_800D39CC[triangle].visited != D_800D2F64) {
+        D_800D39CC[triangle].visited = D_800D2F64;
+        if (func_800A5A48(&D_800D3344[D_800D39CC[triangle].vertices[0]], &D_800D3344[D_800D39CC[triangle].vertices[1]],
+                          &D_800D3344[D_800D39CC[triangle].vertices[2]], point)
+            == -1) {
+            return triangle;
+        }
+    }
+    if (depth > 0) {
+        found = func_800A5D54(point, D_800D39CC[triangle].neighbours[0], depth - 1);
+        if (found >= 0) {
+            return found;
+        }
+        found = func_800A5D54(point, D_800D39CC[triangle].neighbours[1], depth - 1);
+        if (found >= 0) {
+            return found;
+        }
+        found = func_800A5D54(point, D_800D39CC[triangle].neighbours[2], depth - 1);
+        if (found >= 0) {
+            return found;
         }
     }
     return -1;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A5D54);
-#endif
 
 /* Set the two words D_800D2D40 and D_800D2D48. */
 void func_800A5E9C(s32 first, s32 second) {
