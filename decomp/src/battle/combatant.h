@@ -49,7 +49,8 @@ typedef struct {
     u8 pad5C[0x5E - 0x5C];
     u8 field5E;
     u8 field5F;
-    u8 pad60[0x62 - 0x60];
+    u8 field60; /* 0x60: formula 3 chance */
+    u8 pad61;
     u8 field62; /* 0x62 */
     u8 pad63[0x6F - 0x63];
     u8 entryItems[4]; /* 0x6F: item slot of each entry */
@@ -195,7 +196,9 @@ typedef struct {
     u8 accuracy; /* 0x14 */
     u8 pad15;
     u8 formula; /* 0x16: index into the formula table */
-    u8 pad17[0x1A - 0x17];
+    u8 pad17;
+    u8 field18; /* 0x18: formula 3 chance source */
+    u8 pad19;
     u8 field1A; /* 0x1A: 0-1 scale the damage by the power */
     u8 pad1B;
     u8 field1C;

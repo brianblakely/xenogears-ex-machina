@@ -6798,7 +6798,69 @@ void func_80095BAC(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80095D4C);
+/* Formula type 3: on a chance roll (the attacker's +0x60 or the command's
+ * +0x1c), transfer power / 20 of a maximum (attacker's or target's HP for
+ * kinds 0-1, EP for 2-3; kind 5 the target's HP less one) between attacker
+ * and target: both slots get the amount, HP kinds with results 2 / 0, EP
+ * kinds 3 / 1 unless the target nullifies (status88 0x200). A failed roll
+ * or nullified transfer is result 6. */
+void func_80095D4C(void) {
+    u8 chance;
+    u16 base;
+    u16 amount;
+
+    switch (D_800C3DFC->field18) {
+    case 0:
+        chance = D_800C3E00->pilot.field60;
+        break;
+    case 1:
+        chance = D_800C3DFC->field1C;
+        break;
+    }
+    if (chance < rand() % 100) {
+        goto missed;
+    }
+    switch (D_800C3DFC->field1A) {
+    case 0:
+        base = D_800C3E00->pilot.maxHp;
+        break;
+    case 1:
+        base = D_800C3E34->pilot.maxHp;
+        break;
+    case 2:
+        base = D_800C3E00->pilot.maxEp;
+        break;
+    case 3:
+        base = D_800C3E34->pilot.maxEp;
+        break;
+    }
+    amount = base * D_800C3DFC->power / 20;
+    if (D_800C3DFC->field1A == 5) {
+        amount = D_800C3E34->pilot.hp - 1;
+    }
+    switch (D_800C3DFC->field1A) {
+    case 0:
+    case 1:
+    case 5:
+        D_800C34B0->resultCode[D_800C3E04] = 2;
+        D_800C34B0->resultCode[D_800C3E50] = 0;
+        D_800C34B0->damage[D_800C3E04] = amount;
+        D_800C34B0->damage[D_800C3E50] = amount;
+        break;
+    case 2:
+    case 3:
+        if ((D_800C3E34->pilot.status88.half.active | D_800C3E34->pilot.status88.half.permanent) & 0x200) {
+        missed:
+            D_800C34B0->resultCode[D_800C3E50] = 6;
+        } else {
+            D_800C34B0->resultCode[D_800C3E04] = 3;
+            D_800C34B0->resultCode[D_800C3E50] = 1;
+            D_800C34B0->damage[D_800C3E04] = amount;
+            D_800C34B0->damage[D_800C3E50] = amount;
+        }
+        break;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80096018);
 
