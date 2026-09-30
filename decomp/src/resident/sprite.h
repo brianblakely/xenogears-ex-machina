@@ -118,7 +118,7 @@ typedef struct Sprite {
     u16 *frame_table;        /* +0x54: the facing's frame table */
     u16 *animation;          /* +0x58: the animation header */
     u16 *facings;            /* +0x5c */
-    u8 unknown60[4];
+    u16 *word60;             /* +0x60: after the first section's count */
     u8 *script;              /* +0x64: the next animation command, NULL once finished */
     void *callback;          /* +0x68: completion callback */
     void *block;             /* +0x6c: the allocation holding the sprite */
@@ -128,7 +128,7 @@ typedef struct Sprite {
     u16 word80;              /* +0x80: facing angle */
     u16 word82;              /* +0x82 */
     s16 ground;              /* +0x84: floor height (whole units) */
-    u8 unknown86[2];
+    u16 size;                /* +0x86: bytes allocated for the sprite */
     u8 *frames;              /* +0x88 */
     s8 stack_top;            /* +0x8c: byte stack index, growing down */
     u8 unknown8d;
@@ -172,7 +172,8 @@ typedef struct {
 typedef struct {
     s32 word0;
     s32 word4;
-    u8 unknown8[6];
+    s32 word8;
+    s16 halfc;
     SpriteImageSize size;  /* +0xe: image size for sequencer frames */
     u8 unknown12[6];
     u16 *buffer;           /* +0x18: allocated by 8002303c */
@@ -291,6 +292,9 @@ void func_80025180(u32 value);
 void func_8001CE74(Task *owner);
 void func_8001D034(Task *owner);
 void func_8001D3F4(Sprite *sprite);
+s32 func_8001EE74(u16 *header); /* the part count of a frame header */
+void func_80022000(Sprite *sprite, s16 scale);
+void func_800239A0(Sprite *sprite);
 void func_80023804(Sprite *sprite);
 void func_8002393C(SpriteRenderer *renderer);
 
@@ -320,8 +324,8 @@ s32 func_8003F8CC(s32 angle); /* rsin */
 void func_800248D4(Sprite *sprite); /* run the next script command */
 extern s32 D_80059198; /* extra frames per update */
 void func_80022B2C(Sprite *sprite);
-void func_80024524(void *a0, s16 a1, s16 a2, s16 a3, s16 a4, s16 a5);
-void func_8002435C(void *a0, s32 a1, s16 a2, s16 a3, s16 a4, s16 a5, s16 a6);
+Sprite *func_80024524(s32 *data, s16 x, s16 y, s16 width, s16 height, s16 unused);
+Sprite *func_8002435C(Sprite *sprite, s32 *data, s16 x, s16 y, s16 width, s16 height, s16 unused);
 s32 func_80022CAC(Sprite *sprite, s32 value);
 void func_80022CDC(Sprite *sprite);
 

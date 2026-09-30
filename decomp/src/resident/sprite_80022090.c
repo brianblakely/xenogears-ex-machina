@@ -663,9 +663,55 @@ void func_800242F4(void *a0, s32 a1, s16 a2, s16 a3, s16 a4, s16 a5, s16 a6, s32
     D_800591B8 = 0;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_8002435C);
+/* Construct a sprite from resource block `data`: defaults, inline storage,
+ * unit scale, one-sided rendering, the sequencer (reset, or owned when
+ * 800591ad is clear), render modes from 800591b8, a part list for its
+ * first frame, the image origin (width, height, x, y), the resource binding
+ * and animation 0. */
+/* Nonmatching: the prologue copies the data argument before the sprite argument in the original; GCC copies them in order. */
+#ifdef NON_MATCHING
+Sprite *func_8002435C(Sprite *sprite, s32 *data, s16 x, s16 y, s16 width, s16 height, s16 unused) {
+    s32 *block = data;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80024524);
+    func_80023804(sprite);
+    func_800239A0(sprite);
+    func_80022000(sprite, 0x1000);
+    sprite->flags &= ~0x1E000;
+    sprite->render.bits.sides = 1;
+    if (D_800591AD != 0) {
+        sprite->frame_bits.sequencer_owned = 0;
+        ((SpriteSequencer *)sprite->sequencer)->word8 = 0;
+        ((SpriteSequencer *)sprite->sequencer)->halfc = 0;
+    } else {
+        sprite->frame_bits.sequencer_owned = 1;
+        ((SpriteSequencer *)sprite->sequencer)->buffer = NULL;
+    }
+    sprite->block = sprite;
+    sprite->render.bits.mode = D_800591B8;
+    sprite->render.bits.field16 = D_800591B8;
+    sprite->renderer->part_cursor = sprite->renderer->parts = func_80031BDC(func_8001EE74((u16 *)(block[2] + (s32)block)) * 24, 0);
+    ((SpriteResource *)sprite->image)->origin.vx = width;
+    ((SpriteResource *)sprite->image)->origin.vy = height;
+    ((SpriteResource *)sprite->image)->origin.vz = x;
+    ((SpriteResource *)sprite->image)->origin.pad = y;
+    sprite->animations = data;
+    func_800222BC(sprite, data);
+    sprite->word60 = (u16 *)((s32)((SpriteResource *)sprite->image)->section1 + ((*((SpriteResource *)sprite->image)->section1 & 0x3F) + 1) * 2);
+    func_800245D8(sprite, 0);
+    return sprite;
+}
+#else
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_8002435C);
+#endif
+
+/* Allocate a sprite (356 bytes, its inline storage included) and construct
+ * it from resource block `data` (8002435c). */
+Sprite *func_80024524(s32 *data, s16 x, s16 y, s16 width, s16 height, s16 unused) {
+    Sprite *sprite = func_80031BDC(0x164, 0);
+
+    sprite->size = 0x164;
+    return func_8002435C(sprite, data, x, y, width, height, unused);
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_800245D8);
 

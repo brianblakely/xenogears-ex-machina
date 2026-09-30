@@ -527,7 +527,7 @@ u8 func_8001EE68(u8 *frame) {
 }
 
 /* The part count of a frame header (bits 9-14). */
-u16 func_8001EE74(u16 *header) {
+s32 func_8001EE74(u16 *header) {
     return (*header >> 9) & 0x3F;
 }
 
