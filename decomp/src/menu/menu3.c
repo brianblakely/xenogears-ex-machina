@@ -1253,7 +1253,172 @@ s32 func_800767C8(Actor *actor) {
     }
 }
 
+/* Accelerate a directional speed toward a limit, or brake it to zero. */
+#define STEER(speed, on, limit)                                                 \
+    if (on) {                                                                  \
+        (speed) += accel;                                                      \
+        if ((speed) > (limit)) {                                               \
+            (speed) = (limit);                                                 \
+        }                                                                      \
+    } else {                                                                   \
+        (speed) -= brake;                                                      \
+        if ((speed) < 0) {                                                     \
+            (speed) = 0;                                                       \
+        }                                                                      \
+    }
+
+#ifdef NON_MATCHING
+/* Read a player's pad (analog sticks or the d-pad) and turn it into the
+ * actor's commands, guard/dash flags and its four directional speeds,
+ * giving the move speed and heading.
+ * Does not match: only the side flag update swaps a0/v1 (the mask and the flag word). Declared s32 with a bare return so the early exit keeps the original's empty delay slot. */
+s32 func_80076884(Actor *actor) {
+    u8 stick_y;
+    u8 stick_x;
+    u16 held;
+    u16 pressed;
+    s32 analog;
+    s32 accel;
+    s32 brake;
+    s32 move;
+    s32 dx;
+    s32 dy;
+    s32 dir;
+    s32 heading;
+    s32 speed;
+
+    if (actor->flags & 0x8000000) {
+        analog = (u32)(func_80035734(1) - 3) < 2;
+        held = D_80059574;
+        pressed = D_80059490;
+        if (analog) {
+            stick_y = D_80059434;
+            stick_x = D_8005943C;
+        } else {
+            stick_y = func_80035884(held);
+            stick_x = func_800358A0(D_80059574);
+        }
+    } else {
+        analog = (u32)(func_80035734(0) - 3) < 2;
+        held = D_80059570;
+        pressed = D_8005948C;
+        if (analog) {
+            stick_y = D_80059430;
+            stick_x = D_80059438;
+        } else {
+            stick_y = func_80035884(held);
+            stick_x = func_800358A0(D_80059570);
+        }
+    }
+    if (actor->flags & 0x40) {
+        return;
+    }
+    if (D_800928F4 != ((actor->flags >> 17) & 1)) {
+        if (D_800928F4 != 0) {
+            actor->unkCE = -actor->unkCC;
+        } else {
+            actor->unkCE = actor->unkCC;
+        }
+        actor->flags = (actor->flags & ~0x20000) | ((D_800928F4 & 1) << 17);
+        actor->unk648 += 0x800;
+        actor->unkFC += 0x800;
+    }
+    if (pressed & 0x10) {
+        func_8007639C(actor, 1);
+        actor->unk1660++;
+    }
+    if (pressed & 0x20) {
+        func_8007639C(actor, 2);
+        actor->unk1660++;
+    }
+    if (pressed & 8) {
+        func_8007639C(actor, 3);
+        actor->unk165C++;
+    }
+    if (pressed & 0x80) {
+        func_80076424(actor);
+        func_8007639C(actor, 4);
+    }
+    if (held & 0x40) {
+        actor->flags |= 0x8000;
+    }
+    if (pressed & 0x40) {
+        func_80076424(actor);
+    }
+    brake = actor->brake;
+    if (held & 4) {
+        actor->flags |= 2;
+        func_80076424(actor);
+        brake <<= 2;
+        actor->flags |= 0x100;
+    } else {
+        actor->flags &= ~0x38;
+    }
+    if ((actor->flags & 0x60000000) == 0x60000000 && !(actor->kind & 4)) {
+        accel = actor->accel / 2;
+    } else {
+        accel = actor->accel;
+    }
+    if ((actor->flags & 0x60000000) == 0x20000000 && (actor->kind & 4)) {
+        accel = actor->accel / 2;
+    }
+    if (actor->flags & 0x100) {
+        move = 0;
+        brake = brake * 2 / 3;
+    } else {
+        move = 1;
+    }
+    dx = (stick_x - 0x80) * 2;
+    dy = (stick_y - 0x80) * 2;
+    dir = ratan2(dx, dy) + actor->unkCE;
+    if (held & 0xF000) {
+        STEER(actor->unk8C, (held & 0x1000) && move, 0x100);
+        STEER(actor->unk94, (held & 0x4000) && move, 0x100);
+        STEER(actor->unk88, (held & 0x8000) && move, 0x100);
+        STEER(actor->unk90, (held & 0x2000) && move, 0x100);
+        if (!(held & 0xF000)) {
+            dir = 0;
+        }
+    } else {
+        if (SquareRoot0(dx * dx + dy * dy) < 0x30) {
+            dir = 0;
+        }
+        STEER(actor->unk8C, dx < 0 && move, abs(dx));
+        STEER(actor->unk94, dx > 0 && move, dx);
+        STEER(actor->unk88, dy < 0 && move, abs(dy));
+        STEER(actor->unk90, dy > 0 && move, dy);
+    }
+    dx = actor->unk8C - actor->unk94;
+    dy = actor->unk90 - actor->unk88;
+    heading = ratan2(dy, dx);
+    speed = SquareRoot0(dx * dx + dy * dy);
+    if (speed > 0x100) {
+        speed = 0x100;
+    }
+    if (speed < 0x30) {
+        speed = 0;
+    }
+    actor->state = speed;
+    if (speed != 0) {
+        actor->target_angle = heading + actor->unkCE;
+    } else {
+        actor->target_angle = 0;
+    }
+    dir &= 0xFFF;
+    if ((u32)(dir - 0x201) < 0x3FF) {
+        func_800767C8(actor);
+        actor->flags |= 0x1000000;
+    } else {
+        actor->flags &= ~0x1000000;
+    }
+    if ((actor->flags & 0x80000) && actor->state != 0 &&
+        abs((heading & 0xFFF) - ((ratan2(stick_x - 0x80, stick_y - 0x80) + 0x400) & 0xFFF)) > 0x200) {
+        actor->flags |= 0x80000;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80076884);
+#endif
 
 /* Per-frame actor status: count down its timers, drain its charge, apply
  * this frame's damage to its hit points (with the hit sound), update its
