@@ -1448,15 +1448,37 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021D50);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021EBC);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021FB8);
+void func_80021FB8(Sprite *sprite, u8 value) {
+    sprite->byteb0 = value;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021FC0);
+void func_80021FC0(Sprite *sprite, s32 value) {
+    sprite->word18 = value;
+    func_80022974(sprite);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021FE0);
+void func_80021FE0(Sprite *sprite, u16 value) {
+    sprite->half32 = value;
+    func_80022974(sprite);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80022000);
+/* Set a sprite's uniform scale (and its renderer's), marking the orientation dirty. */
+void func_80022000(Sprite *sprite, s16 scale) {
+    SpriteRenderer *renderer = sprite->renderer;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80022038);
+    if (renderer != NULL) {
+        renderer->scale_x = renderer->scale_y = renderer->scale_z = sprite->scale = scale;
+        sprite->render_flags |= 0x10000000;
+    }
+}
+
+/* Rebuild a sprite's orientation if it is marked dirty. */
+void func_80022038(Sprite *sprite) {
+    if ((sprite->render_flags >> 28) & 1) {
+        func_80022090(sprite);
+        sprite->render_flags &= ~0x10000000;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80022090);
 
@@ -1470,7 +1492,9 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80022660);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80022974);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80022A00);
+s32 func_80022A00(s32 *word) {
+    return *word;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80022A0C);
 
@@ -1478,9 +1502,21 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80022A70);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80022B2C);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80022CAC);
+/* Scale a value by the sprite's speed factor (1024 = 1) when it has one. */
+s32 func_80022CAC(Sprite *sprite, s32 value) {
+    if (sprite->rate != 0) {
+        value *= sprite->rate;
+        value /= 1024;
+    }
+    return value;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80022CDC);
+/* Move a sprite horizontally by its speed (scaled by its speed factor), then 80022b2c. */
+void func_80022CDC(Sprite *sprite) {
+    sprite->x += func_80022CAC(sprite, sprite->speed_x >> 4) << 4;
+    sprite->z += func_80022CAC(sprite, sprite->speed_z >> 4) << 4;
+    func_80022B2C(sprite);
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80022D44);
 
