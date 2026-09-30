@@ -690,6 +690,7 @@ extern void func_80085560(s32 file, s32 unused, void (*callback)(s32));
 extern void func_800859DC(WaveChunk *chunk);
 extern void func_80086024(void);
 extern void func_800A47D4(void);
+extern void func_800ACE24(void);
 extern void func_800A4CC4(s32, s32, s32, s32, s32, s32, s32);
 extern void func_80086BA8(void);
 extern void func_801E7D14(MATRIX *world, s16 (*table)[3], u32 *ot, s32 buffer, s32);

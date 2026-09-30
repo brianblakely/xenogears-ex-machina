@@ -592,7 +592,23 @@ void func_80075458(void *ot, u32 *table, s32 depth) {
     AddPrims(ot, table + depth, table);
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80075484);
+/* Draw the 801e-layer object from the camera eye and target when event
+ * parameters are enabled. */
+void func_80075484(void) {
+    SVECTOR eye;
+    SVECTOR target;
+
+    if (D_800B0080.enabled != 0 && D_800ADB50 == 0) {
+        eye.vx = D_800AF880.eye.vx >> 16;
+        eye.vy = D_800AF880.eye.vy >> 16;
+        eye.vz = D_800AF880.eye.vz >> 16;
+        target.vx = D_800AF880.target.vx >> 16;
+        target.vy = D_800AF880.target.vy >> 16;
+        target.vz = D_800AF880.target.vz >> 16;
+        func_800273C4(D_800B007C, &eye, &target, &D_800AF880.scaled_world,
+                      D_800C426C->ot + D_800B2078.unk21D4 + 0x1000, D_800ADB08);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007554C);
 
@@ -8513,7 +8529,15 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A2030);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A22AC);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A2488);
+void func_800A22AC(s32 mode);
+
+/* Rebuild the party (mode 3) with 800adb8c set. */
+void func_800A2488(void) {
+    D_800ADB8C = 1;
+    func_800A22AC(3);
+    func_800ACE24();
+    D_800ADB8C = 0;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A24C4);
 
@@ -9495,6 +9519,19 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800ACFD0);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AD4D4);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AD898);
+/* For party members in slot state 1, set actor flag 0x200 and clear
+ * 0x500. */
+void func_800AD898(void) {
+    s32 i;
+
+    if (D_800B2078.unk2268 != 0) {
+        for (i = 0; i < 3; i++) {
+            if (D_8005A444[i] != 0xFF && D_8005A39C->unk22B1[i] == 1) {
+                D_800AF880.components.descriptors[D_8005A444[i]].actor->flags |= 0x200;
+                D_800AF880.components.descriptors[D_8005A444[i]].actor->flags &= ~0x500;
+            }
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AD978);
