@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "model.h"
+#include "mesh.h"
 
 /* Presentation event queue slot (0x48 bytes, from D_800C3FE8). */
 typedef struct {
@@ -19,7 +20,7 @@ typedef struct {
 /* A battle object: a stage object or an effect (fields as far as
  * recovered). */
 typedef struct {
-    s32 field0;           /* 0x00: nonzero in use */
+    ModelList *field0;    /* 0x00: the object's models (D_800C3ACC), NULL unused */
     ModelPart *hierarchy; /* 0x04 */
     s32 field8;           /* 0x08 */
     void *packets;        /* 0x0C */
@@ -55,7 +56,7 @@ typedef struct {
     u8 field5D;     /* 0x5D: turn with the parent */
     s16 parentPart; /* 0x5E */
     s16 groundY;    /* 0x60 */
-    u8 pad62;
+    u8 field62;      /* 0x62: its model has its own texture */
     u8 hasTexture;   /* 0x63 */
     s16 offset[3];   /* 0x64: position relative to the target */
     s16 offset2[3];  /* 0x6A */
@@ -69,11 +70,19 @@ typedef struct {
     u16 animationLength; /* 0x9E */
     u8 *animationStart;  /* 0xA0 */
     u8 *animationCursor; /* 0xA4 */
-    u8 padA8[0xB0 - 0xA8];
-    u8 *model;       /* 0xB0 */
+    void *imageFile; /* 0xA8: its images, NULL none */
+    void *modelFile; /* 0xAC: its model file, NULL shared */
+    void **model;    /* 0xB0: the model block; [2] its texture */
     u8 *textureInfo; /* 0xB4 */
     u8 padB8[0x10A - 0xB8];
     u16 slotMask; /* 0x10A */
+    u8 field10C;      /* 0x10C: block field110 allocated */
+    u8 meshCount;     /* 0x10D */
+    u8 imageAnimCount; /* 0x10E */
+    u8 pad10F;
+    void *field110;   /* 0x110 */
+    StageMesh *meshes; /* 0x114 */
+    u8 *imageAnims;    /* 0x118: 0x30 bytes each, VRAM images restored on free */
 } BattleObject;
 
 /* An animation header (fields as far as recovered). */

@@ -1416,7 +1416,63 @@ void func_800A9F94(void) {
     func_800A2D1C(&D_800C3D04);
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A9FF0);
+/* Free stage object index: its images and model files, its hierarchy and
+ * attached effects (or, for the gear part objects 19-30, the hierarchy
+ * block), its image animations and meshes and the object; for a party slot
+ * (0-2) also its part objects 2 * index + 13 and + 14. */
+void func_800A9FF0(s32 index) {
+    BattleObject **objects = D_800D3368;
+    BattleObject **slot = &objects[index];
+    s32 i;
+
+    if (*slot != NULL) {
+        if ((*slot)->imageFile != NULL) {
+            func_800320E8((*slot)->imageFile);
+            func_8009F794((*slot)->field0, 1);
+        }
+        if ((*slot)->field62) {
+            func_8003852C((*slot)->model[2]);
+        }
+        if ((*slot)->modelFile != NULL) {
+            func_800320E8((*slot)->modelFile);
+        }
+        if ((u32)(index - 19) >= 12) {
+            if ((*slot)->hierarchy != NULL) {
+                func_800A2ACC(&D_800C3D0C, (*slot)->hierarchy);
+                func_800A2BB8(&D_800C3D0C, (*slot)->hierarchy, 0xFF);
+                func_8009F708((*slot)->hierarchy);
+                (*slot)->field0 = NULL;
+                (*slot)->hierarchy = NULL;
+            }
+            func_800B0060(*slot);
+        } else if ((*slot)->hierarchy != NULL) {
+            func_800A2ACC(&D_800C3D0C, (*slot)->hierarchy);
+            func_800A2BB8(&D_800C3D0C, (*slot)->hierarchy, 0xFF);
+            func_800320E8((*slot)->hierarchy);
+        }
+        if (D_800D3368[index]->field10C) {
+            func_800320E8(D_800D3368[index]->field110);
+        }
+        if (D_800D3368[index]->imageAnimCount != 0) {
+            for (i = 0; i < D_800D3368[index]->imageAnimCount; i++) {
+                func_800A429C(D_800D3368[index]->imageAnims + i * 0x30);
+            }
+            func_800320E8(D_800D3368[index]->imageAnims);
+        }
+        if (D_800D3368[index]->meshCount != 0) {
+            for (i = 0; i < D_800D3368[index]->meshCount; i++) {
+                func_800A8A88(&D_800D3368[index]->meshes[i]);
+            }
+            func_800320E8(D_800D3368[index]->meshes);
+        }
+        func_800320E8(D_800D3368[index]);
+        D_800D3368[index] = NULL;
+    }
+    if (index < 3) {
+        func_800A9FF0(index * 2 + 13);
+        func_800A9FF0(index * 2 + 14);
+    }
+}
 
 /* Select stage object index with slot mask, and start its effect (800AA934). */
 void func_800AA320(u16 index, s16 mask, s32 arg2) {
