@@ -658,7 +658,7 @@ extern void func_8003852C(void *bank);
 extern void func_80039F9C(s32 id, s32 voice, s16 volume, s16 pan);
 extern void func_80039FF8(void);
 extern void func_8003A20C(s32 voice);
-extern void func_80048D7C(VECTOR *v, SVECTOR *out); /* VectorNormalS */
+extern void func_80048D7C(VECTOR *v, VECTOR *out); /* VectorNormal */
 extern s32 func_8003F8B0(s32 angle); /* rcos */
 extern s32 func_8003F8CC(s32 angle); /* rsin */
 extern void FlushCache(void);

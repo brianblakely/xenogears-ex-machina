@@ -633,7 +633,29 @@ void func_80075910(void) {
     DrawOTag(&D_800C426C->overlay_ot[7]);
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800759E4);
+void func_8004A480(VECTOR *a, VECTOR *b, VECTOR *out); /* OuterProduct12 */
+
+/* The rotation matrix whose second row is `axis`: the first row is the unit
+ * vector perpendicular to world up and `axis`, the third completes the basis. */
+void func_800759E4(MATRIX *m, VECTOR *axis) {
+    VECTOR up = { 0, 0, 0x1000, 0 };
+    VECTOR side;
+    VECTOR cross;
+
+    func_8004A480(&up, axis, &cross);
+    func_80048D7C(&cross, &side);
+    func_8004A480(&side, axis, &cross);
+    func_80048D7C(&cross, &up);
+    m->m[0][0] = side.vx;
+    m->m[0][1] = side.vy;
+    m->m[0][2] = side.vz;
+    m->m[1][0] = axis->vx;
+    m->m[1][1] = axis->vy;
+    m->m[1][2] = axis->vz;
+    m->m[2][0] = up.vx;
+    m->m[2][1] = up.vy;
+    m->m[2][2] = up.vz;
+}
 
 /* Pass a colour on to resident 80021b98 unless 800b218e is set. */
 void func_80075B08(void *target, u8 *color) {
@@ -1124,21 +1146,17 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007B1C4);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007B478);
 
-#ifdef NON_MATCHING
 /* The X/Z offset `distance` away at `angle`, scaled by 800b218c. */
 void func_8007B614(VECTOR *out, s32 distance, s32 angle) {
-    s32 length;
+    s32 heading;
 
     distance *= 16;
-    angle &= 0xFFF;
-    length = (distance * D_800B2078.scale) >> 12;
-    out->vx = func_8003F8CC(angle) * length;
+    distance = (distance * D_800B2078.scale) >> 12;
+    heading = angle & 0xFFF;
+    out->vx = func_8003F8CC(heading) * distance;
+    out->vz = -(func_8003F8B0(heading) * distance);
     out->vy = 0;
-    out->vz = -(func_8003F8B0(angle) * length);
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007B614);
-#endif
 
 /* The heading of an X/Z offset. */
 s32 func_8007B694(VECTOR *v) {
@@ -1186,7 +1204,7 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007CD80);
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007D3D4);
 
 /* Normalise a 20.12 vector, pointing it along its largest component. */
-void func_8007D818(VECTOR *v, SVECTOR *out) {
+void func_8007D818(VECTOR *v, VECTOR *out) {
     s32 largest = func_8007D8B4(v->vx, v->vy, v->vz);
 
     v->vx >>= 12;
