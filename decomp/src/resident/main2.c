@@ -125,28 +125,20 @@ u8 *func_80033728(u8 *resource, s32 index) {
 }
 
 /* First and second byte of entry `index` in a table after a header of
- * (count + 3) halfwords.
- * Nonmatching: the table and index additions are emitted in the other operand order. */
-#ifdef NON_MATCHING
+ * (count + 3) halfwords. */
 u8 func_8003373C(u16 *table, s32 index) {
-    u8 *entries = (u8 *)table + (*table * 2 + 6);
-
-    return entries[index * 2];
+    u8 *entries = (u8 *)table;
+    entries += *table * 2 + 6;
+    entries += index * 2;
+    return entries[0];
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003373C);
-#endif
 
-/* Nonmatching: the table and index additions are emitted in the other operand order. */
-#ifdef NON_MATCHING
 u8 func_80033760(u16 *table, s32 index) {
-    u8 *entries = (u8 *)table + (*table * 2 + 6);
-
-    return entries[index * 2 + 1];
+    u8 *entries = (u8 *)table;
+    entries += *table * 2 + 6;
+    entries += index * 2;
+    return entries[1];
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80033760);
-#endif
 
 u8 *func_80033784(s32 table, s32 index) {
     return func_80033728(D_80059360[table], index);
@@ -678,23 +670,19 @@ s32 func_80035734(s32 port) {
     return -1;
 }
 
-/* Remap the low button byte through the configured assignment.
- * Nonmatching: the argument and result registers are swapped. */
-#ifdef NON_MATCHING
+/* Remap the low button byte through the configured assignment. */
 s16 func_800357C0(s32 buttons) {
-    s32 result = buttons & 0xFF00;
+    s32 held = buttons;
     s32 i;
 
+    buttons &= 0xFF00;
     for (i = 0; i < 8; i++) {
-        if (buttons & D_800501E8[i]) {
-            result |= D_800501E8[D_80050238[i]];
+        if (held & D_800501E8[i]) {
+            buttons |= D_800501E8[D_80050238[i]];
         }
     }
-    return result;
+    return buttons;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800357C0);
-#endif
 
 /* Swap the shoulder and face button bits between the two layouts. */
 s16 func_8003582C(s32 buttons) {
@@ -741,9 +729,7 @@ extern u8 D_80059448, D_80059450, D_80059434, D_8005943C; /* sticks, second port
  * swapped), the stick positions (the directional buttons' on a digital
  * pad), newly pressed buttons and the auto-repeating buttons (the newly
  * pressed ones; once the held buttons have not changed for 32 frames, all
- * held buttons every fourth frame).
- * Nonmatching: the operands of the two `and`s are swapped. */
-#ifdef NON_MATCHING
+ * held buttons every fourth frame). */
 void func_800358BC(void) {
     D_80059570 = func_8003569C(0);
     D_80059570 = func_800357C0((s16)D_80059570);
@@ -770,7 +756,8 @@ void func_800358BC(void) {
         D_80059438 = 0;
         D_80059430 = 0;
     }
-    D_8005948C = (D_80059570 ^ D_80059374) & D_80059570;
+    D_8005948C = D_80059570 ^ D_80059374;
+    D_8005948C &= D_80059570;
     D_80059374 = D_80059570;
     if (D_8005948C) {
         D_8005022C = 0;
@@ -808,7 +795,8 @@ void func_800358BC(void) {
         D_8005943C = 0;
         D_80059434 = 0;
     }
-    D_80059490 = (D_80059574 ^ D_80059378) & D_80059574;
+    D_80059490 = D_80059574 ^ D_80059378;
+    D_80059490 &= D_80059574;
     D_80059378 = D_80059574;
     if (D_80059490) {
         D_80050230 = 0;
@@ -821,9 +809,6 @@ void func_800358BC(void) {
         D_800594A8 = D_80059490;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800358BC);
-#endif
 
 /* Queued controller states (16 entries of the six state words). */
 extern u32 D_8005937C; /* queued count */
@@ -1129,12 +1114,7 @@ void func_80036420(void) {
     D_800594A8 = s5;
 }
 
-
-/* Print a controller receive buffer in hex, and a digital pad's buttons.
- * Kept as assembly: its C matches, but the string literals then end the
- * rodata where 80036718's table, still assembly, needs the alignment its C
- * literal would carry. */
-#ifdef NON_MATCHING
+/* Print a controller receive buffer in hex, and a digital pad's buttons. */
 void func_80036528(PadBuffer *pad) {
     s32 count = (pad->type & 0xF) * 2 + 2;
     s32 i;
@@ -1147,9 +1127,6 @@ void func_80036528(PadBuffer *pad) {
         func_8003700C("%04x\n", (~pad->buttons[1] & 0xFF) | ((pad->buttons[0] << 8) ^ 0xFF00));
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036528);
-#endif
 
 /* Print both controller buffers, the actuator values, the held buttons and
  * every queued pad entry.

@@ -995,10 +995,9 @@ void func_800242F4(void *a0, s32 a1, s16 a2, s16 a3, s16 a4, s16 a5, s16 a6, s32
  * 800591ad is clear), render modes from 800591b8, a part list for its
  * first frame, the image origin (width, height, x, y), the resource binding
  * and animation 0. */
-/* Nonmatching: the prologue copies the data argument before the sprite argument in the original; GCC copies them in order. */
-#ifdef NON_MATCHING
-Sprite *func_8002435C(Sprite *sprite, s32 *data, s16 x, s16 y, s16 width, s16 height, s16 unused) {
+Sprite *func_8002435C(Sprite *self, s32 *data, s16 x, s16 y, s16 width, s16 height, s16 unused) {
     s32 *block = data;
+    Sprite *sprite = self;
 
     func_80023804(sprite);
     func_800239A0(sprite);
@@ -1027,9 +1026,6 @@ Sprite *func_8002435C(Sprite *sprite, s32 *data, s16 x, s16 y, s16 width, s16 he
     func_800245D8(sprite, 0);
     return sprite;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_8002435C);
-#endif
 
 /* Allocate a sprite (356 bytes, its inline storage included) and construct
  * it from resource block `data` (8002435c). */
@@ -1132,7 +1128,7 @@ void func_80024730(SpriteTask *task) {
         sprite->frame = 1;
         break;
     case 9:
-        *(u16 *)&sprite->unknown36[0] = 3;
+        sprite->height = 3;
         sprite->colour_flags = 0x60;
         sprite->frame = 1;
         break;

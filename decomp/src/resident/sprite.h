@@ -415,7 +415,7 @@ void func_800B2AEC(void *model, u8 *packets0, u8 *packets1, s16 red, s16 green, 
 
 s32 func_80023124(DVECTOR from, DVECTOR to); /* the direction from `from` to `to` */
 void func_80023290(Sprite *sprite, s32 rate);
-void func_80023B84(Sprite *sprite, u8 *animation, void *image);
+Sprite *func_80023B84(Sprite *sprite, u16 *animation, SpriteSource *image);
 void func_80021B04(SVECTOR *vector, s16 x, s16 y, s16 z);
 void func_80021B14(VECTOR *vector, s32 x, s32 y, s32 z);
 s32 func_80021AD8(s32 value, s32 delta);

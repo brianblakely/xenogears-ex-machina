@@ -109,14 +109,16 @@ void func_8003A14C(s32 id) {
     } while (count != 0);
 }
 
-/* Stop the two effect channels of `sound`.
- * Nonmatching: the original computes the channel index before the loop
- * constants. */
-#ifdef NON_MATCHING
+/* Stop the two effect channels of `sound`. */
 void func_8003A20C(s32 sound) {
     SoundSeq *effects = D_800595D8;
-    SoundSeqChannel *channel = &effects->channel[(sound & 0xFE) ^ 8];
-    s32 count = 2;
+    SoundSeqChannel *channel;
+    s32 count;
+
+    sound &= 0xFE;
+    sound ^= 8;
+    channel = &effects->channel[sound];
+    count = 2;
 
     do {
         count--;
@@ -128,9 +130,6 @@ void func_8003A20C(s32 sound) {
         channel++;
     } while (count != 0);
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003A20C);
-#endif
 
 void func_8003A2D4(void) {
 }
@@ -153,13 +152,15 @@ void func_8003A2E4(s32 id, s32 volume) {
     } while (count != 0);
 }
 
-/* Set the volume of the two effect channels of `sound`.
- * Nonmatching: the original computes the channel index before the loop
- * constants. */
-#ifdef NON_MATCHING
+/* Set the volume of the two effect channels of `sound`. */
 void func_8003A344(s32 sound, s32 volume) {
-    SoundSeqChannel *channel = &D_800595D8->channel[(sound & 0xFE) ^ 8];
-    s32 count = 2;
+    SoundSeqChannel *channel;
+    s32 count;
+
+    sound &= 0xFE;
+    sound ^= 8;
+    channel = &D_800595D8->channel[sound];
+    count = 2;
 
     do {
         if (channel->flags & 1) {
@@ -170,9 +171,6 @@ void func_8003A344(s32 sound, s32 volume) {
         count--;
     } while (count != 0);
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003A344);
-#endif
 
 /* Slide the volume of the effect channels playing effect `id` over
  * `frames` (at least one). */
@@ -200,15 +198,16 @@ void func_8003A3B8(s32 id, s32 volume, s32 frames) {
     } while (count != 0);
 }
 
-/* Slide the volume of the two effect channels of `sound`.
- * Nonmatching: the original computes the channel index before the loop
- * constants. */
-#ifdef NON_MATCHING
+/* Slide the volume of the two effect channels of `sound`. */
 void func_8003A450(s32 sound, s32 volume, s32 frames) {
-    SoundSeqChannel *channel = &D_800595D8->channel[(sound & 0xFE) ^ 8];
-    s32 count = 2;
+    SoundSeqChannel *channel;
+    s32 count;
     s32 delta;
 
+    sound &= 0xFE;
+    sound ^= 8;
+    channel = &D_800595D8->channel[sound];
+    count = 2;
     volume <<= 8;
     do {
         if (channel->flags & 1) {
@@ -227,9 +226,6 @@ void func_8003A450(s32 sound, s32 volume, s32 frames) {
         count--;
     } while (count != 0);
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003A450);
-#endif
 
 /* Set the pan of the effect channels playing effect `id`. */
 void func_8003A4FC(s32 id, s32 pan) {
@@ -246,13 +242,15 @@ void func_8003A4FC(s32 id, s32 pan) {
     } while (count != 0);
 }
 
-/* Set the pan of the two effect channels of `sound`.
- * Nonmatching: the original computes the channel index before the loop
- * constants. */
-#ifdef NON_MATCHING
+/* Set the pan of the two effect channels of `sound`. */
 void func_8003A55C(s32 sound, s32 pan) {
-    SoundSeqChannel *channel = &D_800595D8->channel[(sound & 0xFE) ^ 8];
-    s32 count = 2;
+    SoundSeqChannel *channel;
+    s32 count;
+
+    sound &= 0xFE;
+    sound ^= 8;
+    channel = &D_800595D8->channel[sound];
+    count = 2;
 
     do {
         if (channel->flags & 1) {
@@ -263,9 +261,7 @@ void func_8003A55C(s32 sound, s32 pan) {
         count--;
     } while (count != 0);
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003A55C);
-#endif
+
 
 /* Mask of the active effect channels (playing effect `id`, or any for -1). */
 s32 func_8003A5D0(s32 id) {
@@ -2841,35 +2837,33 @@ void func_8003E900(void) {
 extern u32 D_80059550;           /* voices to key off */
 
 /* Key off the requested voices; voices whose registers changed are first
- * switched to a fast linear release (release rate 6).
- * Nonmatching: register allocation differs (the original keeps the change
- * mask in v1 and a pointer to the ADSR word). */
-#ifdef NON_MATCHING
+ * switched to a fast linear release (release rate 6). */
 void func_8003EB5C(void) {
+    u32 mask = D_80059554;
     SpuRegs *regs = D_800508E4;
-    u32 off;
     s32 voice;
+    s32 bit;
+    u16 *adsr;
 
-    if (D_80059554 != 0) {
+    if (mask != 0) {
         voice = 0;
+        bit = 1;
+        adsr = &regs->voice[0].adsr2;
         do {
-            if (D_80059554 & (1 << voice)) {
-                regs->voice[voice].adsr2 = (regs->voice[voice].adsr2 & 0xFFC0) | 6;
+            if (mask & (bit << voice++)) {
+                *adsr = (*adsr & 0xFFC0) | 6;
             }
-            voice++;
+            adsr = (u16 *)((u8 *)adsr + sizeof(SpuVoice));
         } while (voice < 24);
     }
-    off = D_80059550 | D_80059554;
-    if (off != 0) {
-        regs->key_off[0] = off;
-        regs->key_off[1] = off >> 16;
+    mask = D_80059550 | D_80059554;
+    if (mask != 0) {
+        regs->key_off[0] = mask;
+        regs->key_off[1] = mask >> 16;
         D_80059554 = 0;
         D_80059550 = 0;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003EB5C);
-#endif
 
 extern s16 func_8003EEA0(s16 note);
 extern void func_8003EF04(SoundChannel *state, u32 voice);

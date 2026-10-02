@@ -1717,20 +1717,13 @@ void func_80076FA8(WorldmapActor *actor, VECTOR *work) {
 }
 
 /* Step `value` towards `target` by `delta`, stopping on it. */
-#ifdef NON_MATCHING /* one instruction: the step magnitude is negated from delta, not from its copy */
 s32 func_800771D8(s32 value, s32 target, s32 delta) {
     s32 distance;
     s32 size;
 
     if (value != target) {
-        distance = target - value;
-        if (distance < 0) {
-            distance = -distance;
-        }
-        size = delta;
-        if (size < 0) {
-            size = -size;
-        }
+        distance = abs(target - value);
+        size = abs(delta);
         if (distance < size) {
             value = target;
         } else {
@@ -1739,9 +1732,6 @@ s32 func_800771D8(s32 value, s32 target, s32 delta) {
     }
     return value;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_800771D8);
-#endif
 
 /* Set up the scripted flight scene: display, terrain loader, scene objects and
  * its four actors. */

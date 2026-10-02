@@ -290,22 +290,19 @@ void func_80025044(void) {
 
 /* Start filling queue `queue`: its entry block becomes the free space, and
  * the blocks its entries hold are released. */
-/* Nonmatching: the original computes the index before the entry array's address. */
-#ifdef NON_MATCHING
 void func_800250E0(s32 queue) {
-    SpriteQueueEntry *entry = D_80059300[queue];
+    s32 offset = queue * sizeof(SpriteQueueEntry *);
+    SpriteQueueEntry *entry = *(SpriteQueueEntry **)((u8 *)D_80059300 + offset);
 
     D_800592F8 = queue;
-    D_80059580 = (SpriteQueueEntry *)(D_80059524 = (&D_800594B4)[queue]);
+    D_80059580 = (SpriteQueueEntry *)(&D_800594B4)[queue];
+    D_80059524 = (u8 *)D_80059580;
     D_80059534 = D_80059524 + D_800592FC;
     for (; entry != NULL; entry = entry->next) {
         func_800320E8((void *)entry->value);
     }
     D_80059300[queue] = NULL;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_800248D4", func_800250E0);
-#endif
 
 /* Queue `value` on the queue being filled. */
 void func_80025180(u32 value) {
@@ -458,7 +455,7 @@ void func_80025544(Task *task) {
     if (sprite->frame != 0) {
         return;
     }
-    size = *(u16 *)sprite->unknown36;
+    size = sprite->height;
     tile = (TilePrim *)D_80059580;
     if ((u8 *)(tile + 1) < D_80059534) {
         centre.vx = sprite->x >> 16;

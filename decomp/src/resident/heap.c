@@ -106,24 +106,22 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_80031A68);
 #endif
 
 /* Move the heap start down to `start`: settle pending frees, then make the
- * new first block a free block reaching the old first block's successor.
- * Nonmatching: register allocation of the header update. */
-#ifdef NON_MATCHING
+ * new first block a free block reaching the old first block's successor. */
 void func_80031B10(HeapHeader *first) {
+    u8 *next;
+
     func_8003223C();
     if (D_8005932C != 0) {
         func_80031FF8();
     }
     first = (HeapHeader *)((u32)first & ~3);
+    next = HEAP_HEADER(D_80059320)->next;
     first->tag = 0;
     first->kind = 0x21;
-    first->next = HEAP_HEADER(D_80059320)->next;
+    first->next = next;
     D_80059320 = (u8 *)(first + 1);
     D_80059FCC[0] = NULL;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_80031B10);
-#endif
 
 /* Owner tag given to the next blocks. */
 s32 func_80031B9C(void) {

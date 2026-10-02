@@ -1344,27 +1344,14 @@ s32 func_80094088(VECTOR *position, VECTOR *direction, VECTOR *out) {
 }
 
 /* Distance between two positions on the ground plane, in world units. */
-#ifdef NON_MATCHING /* delta held in the argument register */
 s32 func_80094154(VECTOR *a, VECTOR *b) {
-    s32 delta;
-    s32 sum;
+    s32 x;
+    s32 z;
 
-    delta = a->vx - b->vx;
-    if (delta < 0) {
-        delta = -delta;
-    }
-    delta >>= 12;
-    sum = delta * delta;
-    delta = a->vz - b->vz;
-    if (delta < 0) {
-        delta = -delta;
-    }
-    delta >>= 12;
-    return SquareRoot0(sum + delta * delta);
+    x = abs(a->vx - b->vx) >> 12;
+    z = abs(a->vz - b->vz) >> 12;
+    return SquareRoot0(x * x + z * z);
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80094154);
-#endif
 
 /* Heading from `from` to `to` (0..0xFFF) and its unit direction. */
 void func_800941C4(VECTOR *from, VECTOR *to, VECTOR *direction, s16 *heading) {
