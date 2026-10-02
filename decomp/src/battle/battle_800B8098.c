@@ -2121,13 +2121,13 @@ void func_800BD098(ActorTask *owner) {
     }
     ring->actor.link &= 0x7FFFFFFF;
     func_80021B04(&ring->angle, 0, 0, 0);
-    size = func_800B16A4((ScriptEntry *)func_800B168C(func_8001C76C, 0));
+    size = func_800B16A4((ScriptEntry *)func_800B168C(D_8001C76C, 0));
     vertices = func_80031BDC(size * 2, 0);
-    func_800B1720(func_800B168C(func_8001C76C, 0), vertices, 0, 1);
+    func_800B1720(func_800B168C(D_8001C76C, 0), vertices, 0, 1);
     memcpy(vertices + size, vertices, size);
     ring->vertices[0] = vertices;
     ring->vertices[1] = vertices + size;
-    ring->script = func_800B168C(func_8001C76C, 0);
+    ring->script = func_800B168C(D_8001C76C, 0);
     sprite->colourFlags &= ~1;
     func_8001F6B0(sprite);
     func_800BCFAC(&ring->actor);

@@ -552,7 +552,316 @@ void func_8009F794(ModelList *list, s32 release) {
     }
 }
 
+/* The in-place matrix product used to scale the shadow's rotation. */
+void func_80049ACC(MATRIX *m, MATRIX *scale);
+SpriteRecord *func_800A2E88(SpritePool *pool, s16 abe);
+void func_800A7948(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buffer, s32 scale, s32 floor);
+
+/* Draw an active object: attenuate its two tracked lights, draw its ground
+ * shadow and visible model parts, carry the cloth anchors/collision centres
+ * with their model parts, step image animations and extend sprite trails.
+ * When a trail's signed age becomes zero (including its initial -1 to 0),
+ * it keeps the same channel cursor for the next iteration, matching the
+ * original's conditional pointer advance.
+ * Nonmatching: the frame size agrees, but scratch-pointer registers, spill
+ * slots and instruction scheduling differ. */
+#ifdef NON_MATCHING
+void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, s32 skipped, u32 *ot,
+                   s32 buffer) {
+    MATRIX *scratch = (MATRIX *)0x1F800000;
+    MATRIX *lighting = (MATRIX *)0x1F800020;
+    MATRIX *camera = (MATRIX *)0x1F800040;
+    ModelList *models;
+    ModelPart *part;
+    ModelPart *root;
+    s16 *intensity;
+    SVECTOR point;
+    VECTOR forward;
+    VECTOR origin;
+    VECTOR transformed;
+    SVECTOR wind;
+    Surface *surface;
+    SurfaceEntry *entry;
+    ImageAnim *image;
+    ColorFade *channel;
+    DVECTOR *screen0;
+    DVECTOR *screen1;
+    VECTOR *world0;
+    VECTOR *world1;
+    POLY_FT4 *shadow;
+    s16 dx, dy, dz;
+    s32 distance;
+    s32 shadowScale;
+    s32 depth;
+    s32 nextDepth;
+    s32 index;
+    s32 slot;
+    u16 scale;
+    u32 count;
+    s32 i;
+    s32 j;
+
+    if (object->active) {
+        models = object->field0;
+        scale = object->scale1C;
+        part = object->hierarchy;
+        root = part;
+        count = part->index;
+        intensity = &D_800D3304[0].active;
+        for (i = 0; i < 2; i++, intensity += sizeof(Tracker) / sizeof(s16)) {
+            if (*intensity != 0) {
+                dx = D_800D3304[i].x - root->translation[0];
+                dy = D_800D3304[i].y - ((root->translation[1] - object->scale24 * (scale * root->scale[1] >> 12)) >> 13);
+                dz = D_800D3304[i].z - root->translation[2];
+                distance = SquareRoot0(dx * dx + dy * dy + dz * dz) + 1;
+                light->m[i + 1][0] = ((dx << 12) / distance) * *intensity / (*intensity + distance);
+                light->m[i + 1][1] = ((dy << 12) / distance) * *intensity / (*intensity + distance);
+                light->m[i + 1][2] = ((dz << 12) / distance) * *intensity / (*intensity + distance);
+            } else {
+                light->m[i + 1][0] = 0;
+                light->m[i + 1][1] = 0;
+                light->m[i + 1][2] = 0;
+            }
+        }
+        CompMatrix(view, &part->transform, camera);
+        if (!(object->flags4A & 1) && D_800C3D6C != 0) {
+            CompMatrix(&part->transform, &object->hierarchy[1].world, scratch);
+            SetRotMatrix(scratch);
+            SetTransMatrix(scratch);
+            point.vx = 0;
+            point.vy = 0;
+            point.vz = 0x1000;
+            gte_ldv0(&point);
+            gte_rtv0tr();
+            gte_stlvnl(&forward);
+            point.vx = 0;
+            point.vy = 0;
+            point.vz = 0;
+            gte_ldv0(&point);
+            gte_rtv0tr();
+            gte_stlvnl(&origin);
+            point.vy = -ratan2(forward.vz - origin.vz, forward.vx - origin.vx);
+            point.vx = 0;
+            point.vz = 0;
+            func_8003F738(&point, lighting);
+            lighting->t[0] = origin.vx;
+            lighting->t[2] = origin.vz;
+            lighting->t[1] = object->groundY;
+            CompMatrix(view, lighting, lighting);
+            shadowScale = object->scale1C - (object->groundY - object->hierarchy->translation[1]) / 4;
+            if (shadowScale < 0) {
+                shadowScale = 0;
+            }
+            scratch->m[0][0] = shadowScale;
+            scratch->m[0][1] = 0;
+            scratch->m[0][2] = 0;
+            scratch->m[1][0] = 0;
+            scratch->m[1][1] = shadowScale;
+            scratch->m[1][2] = 0;
+            scratch->m[2][0] = 0;
+            scratch->m[2][1] = 0;
+            scratch->m[2][2] = shadowScale;
+            func_80049ACC(lighting, scratch);
+            SetRotMatrix(lighting);
+            SetTransMatrix(lighting);
+            point.vy = 0;
+            point.vx = object->scale26;
+            point.vz = object->scale28;
+            gte_ldv0(&point);
+            gte_rtps();
+            shadow = &object->shadow[buffer];
+            gte_stsxy(&shadow->x0);
+            gte_stszotz(&depth);
+            point.vx = -object->scale26;
+            gte_ldv0(&point);
+            gte_rtps();
+            gte_stsxy(&shadow->x1);
+            gte_stszotz(&nextDepth);
+            if (nextDepth < depth) {
+                depth = nextDepth;
+            }
+            point.vx = object->scale26;
+            point.vz = -object->scale28;
+            gte_ldv0(&point);
+            gte_rtps();
+            gte_stsxy(&shadow->x2);
+            gte_stszotz(&nextDepth);
+            if (nextDepth < depth) {
+                depth = nextDepth;
+            }
+            point.vx = -object->scale26;
+            gte_ldv0(&point);
+            gte_rtps();
+            gte_stsxy(&shadow->x3);
+            gte_stszotz(&nextDepth);
+            if (nextDepth < depth) {
+                depth = nextDepth;
+            }
+            depth >>= D_80050100;
+            addPrim(ot + depth, shadow);
+            if (depth >= 0x2D9) {
+                depth = 0x2D8;
+            }
+            object->field39 = 0x6B - depth / 8;
+        }
+        MulMatrix0(light, &part->world, lighting);
+        part++;
+        for (i = 1; i < count; i++, part++) {
+            if (part->modelId != 0xFFFF && part->flag7 != 0) {
+                MulMatrix0(lighting, &part->world, scratch);
+                SetLightMatrix(scratch);
+                CompMatrix(camera, &part->world, scratch);
+                if ((s16)part->field52 > 0) {
+                    scratch->m[0][2] = 0;
+                    scratch->m[1][0] = 0;
+                    scratch->m[1][2] = 0;
+                    scratch->m[2][0] = 0;
+                    scratch->m[0][0] = object->scale1C;
+                    scratch->m[2][2] = object->scale1C;
+                    if (part->field52 == 1) {
+                        scratch->m[0][1] = camera->m[0][1];
+                        scratch->m[1][1] = camera->m[1][1];
+                        scratch->m[2][1] = camera->m[2][1];
+                    } else {
+                        scratch->m[0][1] = 0;
+                        scratch->m[2][1] = 0;
+                        scratch->m[1][1] = object->scale1C;
+                    }
+                }
+                SetRotMatrix(scratch);
+                SetTransMatrix(scratch);
+                func_8002C700(models->models[part->modelId], part->packets[buffer], (s32)ot, mode);
+            }
+        }
+        surface = object->surfaces;
+        for (i = 0; i < object->surfaceCount; i++, surface++) {
+            if ((s16)surface->h0 >= 0) {
+                wind.vx = -D_800D39E8 * func_8003F8CC(root->rotation.vy + 0x400) / 0x1000;
+                wind.vz = D_800D39E8 * func_8003F8B0(root->rotation.vy + 0x400) / 0x1000;
+                wind.vy = OBJECT_FIELD3E(object);
+                CompMatrix(&root->transform, &root[(s16)surface->h0].world, scratch);
+                SetRotMatrix(scratch);
+                SetTransMatrix(scratch);
+                for (j = 0; j < surface->rings; j++) {
+                    gte_ldv0(&surface->centres[j]);
+                    gte_rtv0tr();
+                    gte_stlvnl(&transformed);
+                    surface->strands[j]->pos[0] = transformed.vx;
+                    surface->strands[j]->pos[1] = transformed.vy;
+                    surface->strands[j]->pos[2] = transformed.vz;
+                }
+                entry = surface->entries;
+                for (j = 0; j < surface->entryCount; j++, entry++) {
+                    CompMatrix(&root->transform, &root[entry->h6].world, scratch);
+                    SetRotMatrix(scratch);
+                    SetTransMatrix(scratch);
+                    gte_ldv0(entry);
+                    gte_rtv0tr();
+                    gte_stlvnl(&transformed);
+                    entry->h8 = transformed.vx;
+                    entry->hA = transformed.vy;
+                    entry->hC = transformed.vz;
+                }
+                func_800A7948(surface, &wind, view, ot, buffer, scale, object->groundY);
+            }
+        }
+        image = object->images;
+        for (i = 0; i < object->imageCount; i++, image++) {
+            func_800A3E98(image, skipped);
+        }
+        channel = object->channels;
+        for (i = 0; i < object->channelCount; i++) {
+            if (channel->field0 >= 0) {
+                channel->time = (channel->time - 1) & 7;
+                if (channel->field2 == 0) {
+                    CompMatrix(camera, &root[channel->field0].world, scratch);
+                    SetRotMatrix(scratch);
+                    SetTransMatrix(scratch);
+                    gte_ldv0(&channel->fieldC);
+                    gte_rtps();
+                    gte_stsxy(&channel->history.screen.first[channel->time]);
+                    gte_ldv0(&channel->field14);
+                    gte_rtps();
+                    gte_stsxy(&channel->history.screen.second[channel->time]);
+                    channel->field5E++;
+                    if (channel->field5E == 0) {
+                        continue;
+                    }
+                    if (channel->field5E > channel->field60 || channel->sprite == NULL) {
+                        channel->field5E = 1;
+                        channel->sprite = (Sprite *)func_800A2E88(channel->pool, channel->field3);
+                        channel->sprite->projected = 0;
+                        channel->sprite->age = 0;
+                        channel->sprite->lifetime = channel->duration;
+                        channel->sprite->color[0] = channel->color[0];
+                        channel->sprite->color[1] = channel->color[1];
+                        channel->sprite->color[2] = channel->color[2];
+                        channel->sprite->fade[0] = channel->step[0];
+                        channel->sprite->fade[1] = channel->step[1];
+                        channel->sprite->fade[2] = channel->step[2];
+                        index = (channel->time + channel->field5E) & 7;
+                        screen0 = &channel->history.screen.first[index];
+                        screen1 = &channel->history.screen.second[index];
+                        channel->sprite->x0 = screen0->vx;
+                        channel->sprite->y0 = screen0->vy;
+                        channel->sprite->x2 = screen1->vx;
+                        channel->sprite->y2 = screen1->vy;
+                    }
+                    channel->sprite->x1 = channel->history.screen.first[channel->time].vx;
+                    channel->sprite->y1 = channel->history.screen.first[channel->time].vy;
+                    channel->sprite->x3 = channel->history.screen.second[channel->time].vx;
+                    channel->sprite->y3 = channel->history.screen.second[channel->time].vy;
+                } else {
+                    CompMatrix(&root->transform, &root[channel->field0].world, scratch);
+                    SetRotMatrix(scratch);
+                    SetTransMatrix(scratch);
+                    slot = channel->time & 1;
+                    world0 = &channel->history.world.first[slot];
+                    world1 = &channel->history.world.second[slot];
+                    gte_ldv0(&channel->fieldC);
+                    gte_rtv0tr();
+                    gte_stlvnl(world0);
+                    gte_ldv0(&channel->field14);
+                    gte_rtv0tr();
+                    gte_stlvnl(world1);
+                    channel->field5E++;
+                    if (channel->field5E == 0) {
+                        continue;
+                    }
+                    if (channel->field5E > channel->field60 || channel->sprite == NULL) {
+                        channel->field5E = 1;
+                        channel->sprite = (Sprite *)func_800A2E88(channel->pool, channel->field3);
+                        channel->sprite->projected = 1;
+                        channel->sprite->age = 0;
+                        channel->sprite->lifetime = channel->duration;
+                        channel->sprite->color[0] = channel->color[0];
+                        channel->sprite->color[1] = channel->color[1];
+                        channel->sprite->color[2] = channel->color[2];
+                        channel->sprite->fade[0] = channel->step[0];
+                        channel->sprite->fade[1] = channel->step[1];
+                        channel->sprite->fade[2] = channel->step[2];
+                        channel->sprite->x0 = channel->history.world.first[1 - slot].vx;
+                        channel->sprite->y0 = channel->history.world.first[1 - slot].vy;
+                        channel->sprite->z0 = channel->history.world.first[1 - slot].vz;
+                        channel->sprite->x2 = channel->history.world.second[1 - slot].vx;
+                        channel->sprite->y2 = channel->history.world.second[1 - slot].vy;
+                        channel->sprite->z2 = channel->history.world.second[1 - slot].vz;
+                    }
+                    channel->sprite->x1 = world0->vx;
+                    channel->sprite->y1 = world0->vy;
+                    channel->sprite->z1 = world0->vz;
+                    channel->sprite->x3 = world1->vx;
+                    channel->sprite->y3 = world1->vy;
+                    channel->sprite->z3 = world1->vz;
+                }
+            }
+            channel++;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_8009F844);
+#endif
 
 #ifdef NON_MATCHING
 /* Step the tweens attached to each node of a hierarchy: its rotation
@@ -1690,7 +1999,7 @@ s32 func_800A32D8(ColorFade *fade, s32 field4, s16 field0, u8 field2, s16 field6
         fade->field5E = -1;
         fade->field0 = field0;
         fade->field2 = field2;
-        fade->field4 = field4;
+        fade->pool = (SpritePool *)field4;
         fade->fieldC = fieldC;
         fade->fieldE = fieldE;
         fade->field10 = field10;
@@ -1707,7 +2016,7 @@ s32 func_800A32D8(ColorFade *fade, s32 field4, s16 field0, u8 field2, s16 field6
         fade->color[1] = g0 << 6;
         fade->color[2] = b0 << 6;
         fade->duration = duration;
-        fade->field8 = 0;
+        fade->sprite = NULL;
         fade->step[0] = (fade->color[0] - (r1 << 6)) / duration;
         fade->step[1] = (fade->color[1] - (g1 << 6)) / duration;
         fade->step[2] = (fade->color[2] - (b1 << 6)) / duration;
@@ -3770,7 +4079,7 @@ void func_800A9A50(MATRIX *m, s32 arg1, u32 *ot, s32 buffer) {
                 } else {
                     D_80050104 = 1;
                 }
-                func_8009F844(*objects, m, arg1, 1, D_800CCC5C, ot, buffer);
+                func_8009F844(*objects, m, (MATRIX *)arg1, 1, D_800CCC5C, ot, buffer);
                 D_80050104 = 0;
             }
         }
@@ -3961,7 +4270,7 @@ void func_800AA6E0(BattleObject *object) {
         channels = func_80031BDC(object->channelCount * sizeof(ColorFade), 0);
         for (i = 0; i < object->channelCount; i++) {
             channels[i].field0 = -1;
-            channels[i].field8 = 0;
+            channels[i].sprite = NULL;
         }
         object->channels = channels;
     }

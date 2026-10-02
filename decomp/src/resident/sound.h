@@ -139,8 +139,8 @@ typedef struct {
     u8 priority;
     SoundEffectId id;
     u32 stamp;         /* start time (effect channels) */
-    u8 *position;      /* sequence data position */
-    u8 *start;
+    u8 *start;         /* initial sequence data */
+    u8 *position;      /* current sequence data position */
     u8 *loop;          /* sequence data position to return to */
     s32 unk1C;
     u16 unk20;
@@ -154,13 +154,13 @@ typedef struct {
     u8 unk29[3];
     struct SoundSequence *instruments;
     SoundChannel state;
-    s16 unk5C;         /* frames to the key off */
-    u16 unk5E;         /* frames to the next note */
-    u8 unk60;
+    s16 unk5C;         /* ticks to the next note */
+    u16 unk5E;         /* ticks to the key off */
+    u8 duration_adjust; /* signed tick bias, accumulated when a note is too short */
     u8 unk61;
-    u16 unk62;
-    u8 unk64;
-    u8 unk65;
+    u16 gate_fraction; /* sixteenths; 15 means duration - 1, 16 the full duration */
+    u8 previous_note;
+    u8 current_note;
     s16 transpose;     /* in semitones */
     SoundFixed note;   /* 8.8 semitones in the high half */
     s16 unk6C;
@@ -378,10 +378,11 @@ s32 func_800381F4(SoundSequence *bank, s32 mode);
 void *func_80039024(s32 size);                         /* allocate driver memory */
 void func_80039144(void *data);                        /* release driver memory */
 void func_80039248(void *dst, void *src, s32 size);    /* copy */
+void func_800392EC(void *data, s32 size);             /* clear */
 void func_80038310(SoundSequence *bank); /* release a wave bank */
 void func_80039E60(s32 sound);
 void func_80038B4C(void);
-void func_80038E6C(s16 volume, SpuVolume *out, u8 channel);
+void func_80038E6C(s32 volume, SpuVolume *out, s32 channel);
 void *func_80038F18(s32 size);
 s32 func_800393B8(s32 size, u16 mode);                 /* allocate SPU memory */
 s32 func_800395B8(s32 size, s32 address, u16 mode);    /* allocate SPU memory at */

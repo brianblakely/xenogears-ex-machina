@@ -71,11 +71,13 @@ u32 func_80032404(void);
 void func_80032498(s32 tag, s32 value);
 void func_800324B8(s16 kind);
 void func_800324C4(u32 address, char *out);
-void func_8003278C(s32 a, s32 b, s32 c, s32 d);
+void func_8003278C(s32 mode, s32 skip, s32 count, s32 flags);
 void *func_80032B0C(s32 size);
 void *func_80032B64(s32 count, s32 size);
 void func_80032BAC(void *data);
-void func_80032BDC(char *format, void *args);
+/* Original calls pass the format alone or one argument word. The shim
+ * forwards incoming a1 to sprintf; preserve this C89 unspecified arity. */
+void func_80032BDC();
 void func_80032C18(void *data, s32 frames);
 void func_80032CB8(void);
 void func_80032D60(void);

@@ -43,7 +43,7 @@ typedef struct {
     s16 unk18;      /* lines started */
     u8 unk1A[2];
     u8 *text;
-    s32 unk20;
+    u8 *resume;     /* return position of an inserted message */
     u8 unk24[4];
     WindowLine *layout;
     void *image;
@@ -57,7 +57,9 @@ typedef struct {
     u8 unk6C;
     u8 unk6D;
     u8 unk6E;
-    u8 unk6F[0x13];
+    u8 unk6F;
+    s32 values[4];  /* numeric substitutions */
+    s16 selection; /* resource kind in the high byte, entry in the low byte */
     s16 queued;
     s16 unk84;      /* frames to wait */
     s16 unk86;      /* frames to the next glyphs */

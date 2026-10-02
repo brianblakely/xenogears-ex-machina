@@ -62,13 +62,15 @@ typedef struct {
     POLY_FT4 packets[2]; /* 0x2C */
 } Sprite;
 
-/* A colour fade record (fields as far as recovered). */
+/* An object's trail channel (0x70 bytes): a sprite following two points of a
+ * model part, with fading colours. Screen-space trails retain eight projected
+ * positions per endpoint; world-space trails retain two full vectors. */
 typedef struct ColorFade {
-    s16 field0;
-    u8 field2;
-    u8 field3;
-    s32 field4;
-    s32 field8;
+    s16 field0; /* model part; negative when idle */
+    u8 field2;  /* 0 screen-space history, otherwise world-space */
+    u8 field3;  /* sprite semi-transparency */
+    SpritePool *pool; /* 0x04 */
+    Sprite *sprite;   /* 0x08: the currently extended quad */
     s16 fieldC;
     s16 fieldE;
     s16 field10;
@@ -76,14 +78,26 @@ typedef struct ColorFade {
     s16 field14;
     s16 field16;
     s16 field18;
-    u8 pad1A[0x42];
-    s16 time;     /* 0x5C */
-    s16 field5E;  /* 0x5E */
-    s16 field60;  /* 0x60: at most 7 */
+    u8 pad1A[2];
+    union {
+        struct {
+            DVECTOR first[8];
+            DVECTOR second[8];
+        } screen;
+        struct {
+            VECTOR first[2];
+            VECTOR second[2];
+        } world;
+    } history; /* 0x1C-0x5B */
+    s16 time;     /* 0x5C: history cursor, decremented modulo 8 */
+    s16 field5E;  /* 0x5E: age of the current quad, -1 before the first tick */
+    s16 field60;  /* 0x60: quad extension interval, at most 7 */
     s16 duration; /* 0x62 */
     s16 color[3]; /* 0x64: 10.6 fixed point */
     s16 step[3];  /* 0x6A */
 } ColorFade;
+
+typedef char ColorFadeLayoutCheck[sizeof(ColorFade) == 0x70 ? 1 : -1];
 
 /* A frame curve mapping time to a frame (800A3490-800A35C8, called without
  * a prototype: time, divisor, base); negative ends the animation. */

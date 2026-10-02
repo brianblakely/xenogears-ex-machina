@@ -102,7 +102,7 @@ extern s16 D_800C3546;     /* key of the last update */
 /* Resident services. */
 s32 func_8003F8B0(s32 angle); /* rcos (4096 = 1.0) */
 
-void func_8009F844(BattleObject *object, MATRIX *m, s32 arg2, s32 arg3, s32 skipped, u32 *ot, s32 buffer);
+void func_8009F844(BattleObject *object, MATRIX *m, MATRIX *light, s32 arg3, s32 skipped, u32 *ot, s32 buffer);
 s32 func_800AAA20(BattleObject *object, EffectPool *pool, s32 steps, s32 arg3, s32 arg4);
 void func_800AAB34(BattleObject *object);
 u8 func_800AA514(s16 a, s16 b, s32 c);

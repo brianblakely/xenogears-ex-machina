@@ -252,6 +252,7 @@ decomp/src/ovl3386/ovl3386.c
 decomp/src/ovl3386/scroll.h
 decomp/src/ovl3387/burst.h
 decomp/src/ovl3387/ovl3387.c
+decomp/src/resident/battle_mode.c
 decomp/src/resident/cd.h
 decomp/src/resident/console.h
 decomp/src/resident/gpu.h
@@ -269,6 +270,7 @@ decomp/src/resident/menu.h
 decomp/src/resident/mode.h
 decomp/src/resident/model.h
 decomp/src/resident/pad.h
+decomp/src/resident/psyq_tail_80048BC4.c
 decomp/src/resident/sound.c
 decomp/src/resident/sound.h
 decomp/src/resident/sprite.c

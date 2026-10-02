@@ -243,7 +243,6 @@ void func_800BDB08(DamagePopup *popup) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Damage popup fade out: darken by 8 a frame (green and blue follow red)
  * until black or its time is up. */
 void func_800BDB74(BattleTask *task) {
@@ -254,12 +253,9 @@ void func_800BDB74(BattleTask *task) {
     popup->colour.rgbc[1] = func_80021AD8(popup->colour.rgbc[0], -8);
     popup->colour.rgbc[2] = func_80021AD8(popup->colour.rgbc[0], -8);
     if (--popup->timer < 0 || (popup->colour.rgbc[0] | popup->colour.rgbc[1] | popup->colour.rgbc[2]) == 0) {
-        task->destroy(task);
+        popup->task.destroy(&popup->task);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800BD3AC", func_800BDB74);
-#endif
 
 /* Damage popup hold: after 16 frames switch to the fade out (800BDB74). */
 void func_800BDC14(DamagePopup *popup) {

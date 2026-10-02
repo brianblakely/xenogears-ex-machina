@@ -2911,7 +2911,116 @@ void func_8007AC3C(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007AE10);
+extern char D_8006FDD8[];
+
+/* Update the bout-result view: finish its effects once, allow the selected
+ * controller to leave, show the winner's caption for the current bout mode,
+ * keep the camera above the ground, and pose both actors for victory/defeat.
+ * Debug bouts repeat the result timer unless both actors are computer driven. */
+void func_8007AE10(Actor *first, Actor *second) {
+    char text[64];
+    s32 held;
+    s32 ground;
+
+    if (D_800928AC == 0x95) {
+        func_8007A884();
+    }
+    first->flags &= ~0x40;
+    second->flags &= ~0x40;
+    func_800764CC(first);
+    func_800764CC(second);
+    D_80092648 = 0;
+    func_80036420();
+    if (D_800928FC == 1) {
+        held = D_80059490 & 0x20;
+    } else {
+        held = D_8005948C & 0x20;
+    }
+    if (held != 0) {
+        func_80083C0C(2);
+    }
+    D_800928AC--;
+    if (D_800928AC == -1) {
+        if (D_800911D4 == 0 || D_800928C8 == 3) {
+            func_80083C0C(2);
+        } else {
+            first->flags |= 0x2000000;
+            second->flags |= 0x2000000;
+            D_800928AC = 0x95;
+        }
+    }
+    func_8007E894(0xA0, 0xA0);
+    switch (D_80092890) {
+    case 0:
+        func_8007A958(first);
+        switch (D_800928C8) {
+        case 1:
+            func_8007EC54("YOU WERE VICTORIOUS");
+            break;
+        case 2:
+            func_8007EC54("1PLAYER VICTORY");
+            break;
+        case 3:
+            func_8007EC54("COM1 VICTORY");
+            break;
+        }
+        break;
+    case 1:
+        func_8007A958(second);
+        switch (D_800928C8) {
+        case 1:
+            func_8007EC54("YOU WERE DEFEATED");
+            sprintf(text, "     BY %s", D_8009196C[second->model_id].name);
+            func_8007EC54(text);
+            break;
+        case 2:
+            func_8007EC54("2PLAYER VICTORY");
+            break;
+        case 3:
+            func_8007EC54(D_8006FDD8);
+            break;
+        }
+        break;
+    case 2:
+        func_8007EC54(D_8006FC3C);
+        break;
+    }
+    ground = func_80082488(&D_8009871C, 0) - D_80092670;
+    if (ground < D_8009871C.vy) {
+        D_8009871C.vy = ground;
+    }
+    first->state = 0;
+    second->state = 0;
+    func_80076424(first);
+    func_80076424(second);
+    func_800764CC(first);
+    func_800764CC(second);
+    D_80092648 = 0;
+    func_80078194(first);
+    func_80078194(second);
+    func_80078D20(second);
+    func_80078D20(first);
+    func_80078920(first, second);
+    func_80078E94(second);
+    func_80078E94(first);
+    if (first->flags & 0x800000) {
+        func_8007A6D0(second);
+        func_8007A730(first);
+    } else {
+        func_8007A6D0(first);
+        func_8007A730(second);
+    }
+    func_80074BA4(first);
+    func_80074BA4(second);
+    func_8007920C(first);
+    func_8007920C(second);
+    func_80074678(first, first->unk998, first->unk99A);
+    func_80074678(second, second->unk998, second->unk99A);
+    func_8007BACC();
+}
+
+/* This original string also contains nonzero bytes after its terminator. */
+INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu3", D_8006FDD8);
 
 /* Set up a scene model with the given mode and place it. */
 void func_8007B210(Actor *model, s32 mode) {

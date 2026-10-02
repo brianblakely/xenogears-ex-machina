@@ -291,25 +291,26 @@ u8 func_80033CD0(u8 *window) {
 /* Decode `value` as ten decimal digit codes in palette `color` (with a
  * sign code when `sign` is set) into text; leading zeros are dropped for
  * plain palettes.
- * Nonmatching: GCC reverses the digit loop counter, which the original
- * counts up. */
+ * Nonmatching: the digit loop matches, but the leading-zero scan's loop
+ * rotation and tail register allocation still differ (240 vs 228 bytes). */
 #ifdef NON_MATCHING
 void func_80033CF0(u32 value, s32 color, s32 sign) {
     u32 divisor = 1000000000;
+    u32 remaining = value;
     u16 *p;
     s32 i;
 
     color <<= 4;
     if (sign != 0) {
         sign = 11;
-        if ((s32)value < 0) {
-            value = -value;
+        if ((s32)remaining < 0) {
+            remaining = -remaining;
             sign = 10;
         }
     }
-    for (i = 0, p = &D_8005A0C8[1]; i < 10; i++) {
-        *p++ = value / divisor + color;
-        value %= divisor;
+    for (i = 0; i < 10; i++) {
+        D_8005A0C8[i + 1] = remaining / divisor + color;
+        remaining %= divisor;
         divisor /= 10;
     }
     D_8005A0C8[11] = 0xFFFF;
@@ -331,15 +332,266 @@ void func_80033CF0(u32 value, s32 color, s32 sign) {
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80033CF0);
 #endif
 
-void func_80033DD4(u8 *window, s32 value) {
-    s32 previous = *(s32 *)(window + 0x1C);
+void func_80033DD4(Window *window, u8 *text) {
+    u8 *previous = window->text;
 
-    *(s32 *)(window + 0x1C) = value;
-    *(s32 *)(window + 0x20) = previous;
-    *(u16 *)(window + 0x10) |= 0x80;
+    window->text = text;
+    window->resume = previous;
+    window->flags |= 0x80;
 }
 
+/* Reveal a window's next text bytes. Line images alternate between two glyph
+ * planes; text controls pause, change reveal speed, insert resource/name/number
+ * text and return to the byte after an inserted message's saved position.
+ * Pointer increments below retain the control stream's original resume slots.
+ * NON_MATCHING: the original 0x48 frame is reproduced, but line-row temporaries
+ * and text-control scheduling still differ; this candidate is eight bytes short. */
+#ifdef NON_MATCHING
+void func_80033DF0(Window *window) {
+    s32 remaining = window->unk69;
+    s32 line_slot;
+    s16 current_line;
+    u16 first;
+    u16 second;
+    u16 parameter;
+    u16 glyph_width;
+    u8 byte;
+    u8 old_speed;
+    s32 text_bytes;
+    s32 category;
+    s32 palette;
+    s32 sign;
+    u8 *resource;
+    u8 *name;
+    s32 index;
+
+    if (window->x > window->width) {
+        window->x = 0;
+        window->y++;
+        window->unk18++;
+        if (window->y >= window->lines) {
+            window->y = 0;
+            window->flags |= 1;
+        }
+        if (window->flags & 1) {
+            window->layout[window->unk16].width = 0;
+            if (++window->unk16 >= window->lines) {
+                window->unk16 = 0;
+            }
+        }
+        current_line = window->y;
+        line_slot = window->unk18 % (window->lines + 1);
+        window->layout[current_line].row = window->unkE + (line_slot / 2) * 13;
+        if (line_slot & 1) {
+            window->layout[current_line].clut = D_80059414;
+        } else {
+            window->layout[current_line].clut = D_800595D4;
+        }
+        window->layout[current_line].plane = line_slot & 1;
+        window->layout[current_line].slot = line_slot;
+        window->layout[current_line].rect.y = window->unkE + (line_slot / 2) * 13;
+    }
+    remaining--;
+    if (window->unk6C != 0) {
+        window->unk6C = 0;
+        window->flags &= ~4;
+        return;
+    }
+    while (remaining != -1) {
+        byte = *window->text;
+        first = byte;
+        if (first == 0) {
+            if (window->flags & 0x80) {
+                window->flags &= ~0x80;
+                window->text = window->resume + 1;
+                goto next_byte;
+            }
+            window->flags |= 8;
+            window->unk6B = 1;
+            window->unk6C = 1;
+            return;
+        }
+        if (first == 3) {
+            window->unk6B = 3;
+            window->flags |= 8;
+            window->text++;
+            return;
+        }
+        if (first == 15) {
+            switch (window->text[1]) {
+            case 0:
+                window->unk84 = window->text[2];
+                window->text += 3;
+                return;
+            case 1:
+                parameter = window->text[2];
+                if (parameter != 0) {
+                    old_speed = window->unk68;
+                    remaining += parameter;
+                    window->unk68 = parameter;
+                    window->unk69 = parameter;
+                    window->unk6A = old_speed;
+                } else {
+                    window->unk68 = window->unk6A;
+                    window->unk69 = window->unk6A;
+                    window->unk6A = 0;
+                }
+                window->text += 3;
+                break;
+            case 2:
+                window->unk84 = window->text[2];
+                window->text += 3;
+                window->unk6C = 1;
+                return;
+            case 3:
+                parameter = window->text[2];
+                second = window->text[3];
+                window->text += 3;
+                resource = D_80059360[parameter];
+                remaining++;
+                goto insert_resource;
+            case 4:
+                category = window->selection;
+                second = category & 0xFF;
+                category &= 0xFF00;
+                window->text++;
+                switch (category) {
+                case 0x000: resource = D_80059360[22]; goto insert_resource;
+                case 0x100: resource = D_80059360[23]; goto insert_resource;
+                case 0x200: resource = D_80059360[17]; goto insert_resource;
+                case 0x300: resource = D_80059360[51]; goto insert_resource;
+                case 0x400: resource = D_80059360[50]; goto insert_resource;
+                }
+                break;
+            case 5:
+                parameter = window->text[2];
+                window->text += 2;
+                index = parameter;
+                if (parameter >= 0x80) {
+                    index = D_8006F2E8[parameter];
+                    if (index == 0xFF) {
+                        name = func_80033728(D_80059360[26], 0);
+                        goto insert_name;
+                    }
+                }
+                name = (u8 *)&D_8006D634 + index * 20;
+insert_name:
+                remaining++;
+                func_80033DD4(window, name);
+                break;
+            case 6:
+                remaining++;
+                parameter = window->text[2];
+                window->text += 2;
+                resource = D_80059360[23];
+                second = parameter;
+                goto insert_resource;
+            case 7:
+                remaining++;
+                parameter = window->text[2];
+                window->text += 2;
+                resource = D_80059360[24];
+                second = parameter;
+                goto insert_resource;
+            case 8:
+                remaining++;
+                parameter = window->text[2];
+                window->text += 2;
+                resource = D_80059360[25];
+                second = parameter;
+                goto insert_resource;
+            case 9:
+                palette = 0;
+                sign = 0;
+                goto insert_number;
+            case 10:
+                palette = 1;
+                sign = 0;
+                goto insert_number;
+            case 11:
+                window->unk6D = window->text[2];
+                window->text += 2;
+                break;
+            case 12:
+                palette = 1;
+                sign = 1;
+insert_number:
+                parameter = window->text[2];
+                window->text += 2;
+                remaining++;
+                func_80033CF0(window->values[parameter], palette, sign);
+                func_80033DD4(window, D_8005A0E4);
+                break;
+            case 13:
+                parameter = window->text[2];
+                window->text += 3;
+                window->unk6C = 1;
+                window->flags |= 0x200;
+                window->unk84 = parameter;
+                return;
+            case 14:
+                old_speed = window->unk68;
+                window->unk68 = 1;
+                window->unk69 = 1;
+                window->unk6A = old_speed;
+                parameter = window->text[2];
+                window->text += 3;
+                window->unk88 = parameter;
+                window->unk86 = parameter;
+                return;
+            case 15:
+                parameter = window->text[2];
+                window->text += 2;
+                resource = D_80059360[49];
+                second = D_80050238[parameter];
+                remaining++;
+insert_resource:
+                remaining--;
+                func_80033DD4(window, func_80033728(resource, second));
+                goto check_budget;
+            }
+        } else if (first == 2) {
+            window->unk6B = 2;
+            window->flags |= 0x48;
+            window->text++;
+            if (*window->text == 1) {
+                window->text++;
+            }
+            return;
+        } else if (first == 1) {
+            window->x = 100;
+            window->text++;
+            return;
+        } else {
+            text_bytes = 1;
+            if (first < D_8005934C) {
+                first = 0;
+                second = byte;
+            } else {
+                second = window->text[1];
+                text_bytes = 2;
+            }
+            glyph_width = func_80034F98(first, second);
+            if (window->x + glyph_width > window->width) {
+                window->x += glyph_width;
+                return;
+            }
+            func_80034FFC(first, second, (u16 *)window->image + window->x,
+                         window->stride, window->layout[window->y].plane);
+            window->text += text_bytes;
+            window->x += glyph_width;
+            window->layout[window->y].width = window->x;
+        }
+next_byte:
+        remaining--;
+check_budget:
+        ;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80033DF0);
+#endif
+
 
 /* Clear flag 8; a window with flag 0x200 also drops its pending state. */
 void func_800345E0(Window *window) {
@@ -612,28 +864,138 @@ s32 func_80034EAC(u8 *text, void *image, s16 width, s32 flags) {
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80034EAC);
 #endif
 
-/* Draw class of a character: 2 for a narrow glyph, else 3.
- * Nonmatching: register allocation of the loaded limits. */
-#ifdef NON_MATCHING
+/* Draw class of a character: 2 for a narrow glyph, else 3. */
 s32 func_80034F98(u16 first, u16 second) {
-    s32 result = 3;
+    if (first == 0) {
+        if ((s32)((u32)second - (u32)D_80059364) < D_80059354) {
+            return 2;
+        }
+        return 3;
+    }
+    if (first == D_8005934C && second < D_80059358) {
+        return 2;
+    }
+    return 3;
+}
+
+/* Expand the font's twelve bits per row into the window's packed 4-bit
+ * pixels. Each glyph has eleven rows; its three-row stencil also sets the
+ * neighbouring pixels. The two glyph planes occupy opposite two-bit pairs
+ * in each nibble, so clearing/drawing one preserves the other.
+ * NON_MATCHING: loop strength reduction keeps extra row addresses live and
+ * introduces an eight-byte register-save frame absent from the original. */
+#ifdef NON_MATCHING
+#define DRAW_GLYPH_PLANE(keep, shift) do { \
+    image[2] &= keep; \
+    image[0] &= keep; \
+    image[1] &= keep; \
+    middle = image + stride; \
+    last = middle + 2; \
+    lower = middle + stride; \
+    upper = middle - stride; \
+    middle[0] &= keep; \
+    middle[2] &= keep; \
+    middle[1] &= keep; \
+    do { \
+        lower[0] &= keep; \
+        lower[2] &= keep; \
+        lower[1] &= keep; \
+        bits = *glyph++; \
+        edge = -((bits & 0x80) != 0) & (0x222 << shift); \
+        if (bits & 0x40) edge |= 0x2220 << shift; \
+        if (bits & 0x20) edge |= 0x2200 << shift; \
+        spread = edge | (0x2000 << shift); \
+        if (!(bits & 0x10)) spread = edge; \
+        upper[0] |= spread; \
+        centre = -((bits & 0x80) != 0) & (0x212 << shift); \
+        lower[0] |= spread; \
+        if (bits & 0x40) centre |= 0x2120 << shift; \
+        edge = centre; \
+        if (bits & 0x20) edge |= 0x1200 << shift; \
+        previous = middle[0]; \
+        if (bits & 0x10) middle[0] = previous | (0x2000 << shift) | edge; \
+        else middle[0] = previous | edge; \
+        spread = 0x222 << shift; \
+        if (!(bits & 8)) { \
+            if (!(bits & 0x10)) spread = (bits >> (4 - shift)) & (2 << shift); \
+            else spread = 0x22 << shift; \
+        } \
+        edge = spread; \
+        if (bits & 4) edge |= 0x2220 << shift; \
+        if (bits & 2) edge |= 0x2200 << shift; \
+        spread = edge | (0x2000 << shift); \
+        if (!(bits & 1)) spread = edge; \
+        upper[1] |= spread; \
+        lower[1] |= spread; \
+        edge = (bits >> (4 - shift)) & (2 << shift); \
+        if (bits & 0x10) edge |= 0x21 << shift; \
+        if (bits & 8) edge |= 0x212 << shift; \
+        if (bits & 4) edge |= 0x2120 << shift; \
+        if (bits & 2) edge |= 0x1200 << shift; \
+        previous = last[-1]; \
+        if (bits & 1) last[-1] = previous | (0x2000 << shift) | edge; \
+        else last[-1] = previous | edge; \
+        spread = 0x222 << shift; \
+        if (!(bits & 0x8000)) { \
+            spread = 0x22 << shift; \
+            if (!(bits & 1)) spread = (bits << shift) & (2 << shift); \
+        } \
+        edge = spread; \
+        if (bits & 0x4000) edge |= 0x2220 << shift; \
+        if (bits & 0x2000) edge |= 0x2200 << shift; \
+        spread = edge | (0x2000 << shift); \
+        if (!(bits & 0x1000)) spread = edge; \
+        upper[2] |= spread; \
+        lower[2] |= spread; \
+        edge = (bits << shift) & (2 << shift); \
+        if (bits & 1) edge |= 0x21 << shift; \
+        if (bits & 0x8000) edge |= 0x212 << shift; \
+        if (bits & 0x4000) edge |= 0x2120 << shift; \
+        if (bits & 0x2000) edge |= 0x1200 << shift; \
+        previous = last[0]; \
+        if (bits & 0x1000) last[0] = previous | (0x2000 << shift) | edge; \
+        else last[0] = previous | edge; \
+        last += stride; \
+        lower += stride; \
+        upper += stride; \
+        row++; \
+        middle += stride; \
+    } while (row < 11); \
+} while (0)
+
+void func_80034FFC(u16 first, u16 second, u16 *image, s16 stride, s32 plane) {
+    u16 *glyph;
+    u16 *middle;
+    u16 *last;
+    u16 *lower;
+    u16 *upper;
+    u16 bits;
+    u16 previous;
+    s32 edge;
+    s32 centre;
+    s32 spread;
+    s32 row = 0;
 
     if (first == 0) {
-        if (second - D_80059364 < D_80059354) {
-            result = 2;
-        }
-    } else if (first == D_8005934C) {
-        if (second < D_80059358) {
-            result = 2;
-        }
+        glyph = (u16 *)(D_8005935C + (second - D_80059364) * 22);
+    } else if (first == 0xFF && second == 0xFF) {
+        glyph = D_800501D0;
+    } else {
+        glyph = (u16 *)(D_8005935C + second * 22 + D_80059350 +
+                       (first - D_8005934C) * 0x1600);
     }
-    return result;
+    if (plane == 0) {
+        DRAW_GLYPH_PLANE(0xCCCC, 0);
+    } else {
+        DRAW_GLYPH_PLANE(0x3333, 2);
+    }
 }
+
+#undef DRAW_GLYPH_PLANE
 #else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80034F98);
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80034FFC);
 #endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80034FFC);
 
 /* Buttons held on controller `port` (active high), or 0 without a digital
  * or analog pad. */
@@ -1582,25 +1944,26 @@ void func_800370DC(s32 c) {
     con->x += width;
 }
 
-/* Home the console cursor and select the active text buffer.
- * Nonmatching: the original loads every field before the stores. */
-#ifdef NON_MATCHING
+/* Home the console cursor and select the active text buffer. Capture the
+ * window coordinates, cleared mode byte and buffer before writing the cursor. */
 void func_800372CC(void) {
     Console *console = D_80059394;
+    s32 slot = console->flags2E & 1;
+    s16 top = console->top;
+    u8 mode = console->mode & 0xFE;
+    u8 *current = console->buffer[slot];
+    s16 left = console->left;
 
     console->unk34 = 0;
-    console->y = console->top;
-    console->saved_y = console->top;
-    console->mode &= ~1;
-    console->x = console->left;
-    console->saved_x = console->left;
-    console->unk36 = console->left;
-    console->saved_36 = console->left;
-    console->current = console->buffer[console->flags2E & 1];
+    console->y = top;
+    console->saved_y = top;
+    console->mode = mode;
+    console->x = left;
+    console->saved_x = left;
+    console->unk36 = left;
+    console->saved_36 = left;
+    console->current = current;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800372CC);
-#endif
 
 /* Flush this frame's console sprites (and texture page, and background
  * tile) into `ot`, or into the console's own ordering table, drawn at once,
@@ -2006,9 +2369,7 @@ void func_80037E8C(void) {
     D_8005957C &= ~0x40;
 }
 
-/* Silence every SPU voice.
- * Nonmatching: the voice fields are addressed from a different base. */
-#ifdef NON_MATCHING
+/* Silence every SPU voice, preserving the low ADSR1 byte. */
 void func_80037EE4(void) {
     SpuVoice *voice = D_800508E4->voice;
     s32 i;
@@ -2018,14 +2379,11 @@ void func_80037EE4(void) {
         voice->volume_left = 0;
         voice->volume_right = 0;
         voice->pitch = 0;
-        voice->adsr2 = 0x1FDF;
         voice->adsr1 = (voice->adsr1 & 0xFF) + 0x7F00;
+        voice->adsr2 = 0x1FDF;
         voice++;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80037EE4);
-#endif
 
 
 /* Enable the driver's tick event once. */
@@ -2151,30 +2509,20 @@ void func_80038264(s32 a, s32 b) {
 }
 
 /* Transfer the next part of a streamed wave bank's samples (at most what
- * is still missing). Returns the bytes still missing.
- * Nonmatching: the original takes the minimum through an extra register
- * copy. */
-#ifdef NON_MATCHING
+ * is still missing). Returns the bytes still missing. */
 s32 func_8003827C(u8 *data, s32 size) {
     s32 left = D_80059588;
     s32 address;
-    s32 n;
 
     if (left == 0) {
         return 0;
     }
-    n = left;
-    if (size < left) {
-        n = size;
-    }
+    size = left < size ? left : size;
     address = D_80059584;
-    func_8003BC10(address, data, n, NULL);
-    D_80059584 = address + n;
-    return D_80059588 = left - n;
+    func_8003BC10(address, data, size, NULL);
+    D_80059584 = (u32)address + (u32)size;
+    return D_80059588 = (u32)left - (u32)size;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003827C);
-#endif
 
 
 /* Release a loaded wave bank: unlink it, free its SPU memory (error 0x24
@@ -2378,31 +2726,27 @@ s32 func_80038824(void) {
     return mode;
 }
 
-extern CdlATV D_80059530;
+/* These fixed, contiguous attenuation bytes form CdMix's CdlATV argument. */
+extern u8 D_80059530, D_80059531, D_80059532, D_80059533;
 
-/* Set the CD audio volume (halved into the right channels without
- * reverb).
- * Nonmatching: the attribute stores are addressed and scheduled differently. */
-#ifdef NON_MATCHING
+/* Remember CD volume; Mono halves it into both channels, while stereo
+ * modes keep the same-channel volume and clear the cross channels. */
 void func_8003885C(s32 volume) {
-    s32 cross;
+    u16 flags = D_8005957C;
+    s32 same;
 
     D_8005A3EE = volume;
-    if (D_8005957C & 0x700) {
-        cross = 0;
+    if (flags & 0x700) {
+        same = volume;
+        volume = 0;
     } else {
-        cross = volume >> 1;
-        volume = cross;
+        volume >>= 1;
+        same = volume;
     }
-    D_80059530.val2 = volume;
-    D_80059530.val0 = volume;
-    D_80059530.val3 = cross;
-    D_80059530.val1 = cross;
-    CdMix(&D_80059530);
+    D_80059530 = D_80059532 = same;
+    D_80059531 = D_80059533 = volume;
+    CdMix((CdlATV *)&D_80059530);
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003885C);
-#endif
 
 void func_800388D4(s32 enable) {
     if (enable != 0) {
@@ -2539,7 +2883,7 @@ void func_80038C68(s32 volume, s32 frames) {
         D_8005A3C0.master_slide.value.value = volume << 16;
         D_8005A3C0.master_slide.frames = 0;
         D_8005A3C0.master = volume;
-        func_80038E6C(volume, &D_8005A3C0.attr.mvol, 0);
+        func_80038E6C((s16)volume, &D_8005A3C0.attr.mvol, 0);
         D_8005A3C0.attr.mask |= 3;
         return;
     }
@@ -2586,29 +2930,28 @@ void func_80038DF4(void) {
     D_8005A3C0.attr.mask |= 0xC3;
 }
 
-/* Set a stereo volume pair, inverting one side for the surround modes.
- * Nonmatching: register allocation and branch layout differ. */
-#ifdef NON_MATCHING
-void func_80038E6C(s16 volume, SpuVolume *out, u8 channel) {
+/* Set a stereo volume pair from the low volume halfword, inverting one
+ * side for the surround modes. The channel selector is an unsigned byte. */
+void func_80038E6C(s32 volume, SpuVolume *out, s32 channel) {
+    u16 flags = D_8005957C;
+
     out->right = volume;
     out->left = volume;
-    if (D_8005957C & 0x600) {
-        if (!(D_8005957C & 0x200)) {
-            if (channel == 1) {
-                out->right = -volume;
+    if (flags & 0x600) {
+        channel = (u8)channel;
+        if (!(flags & 0x200)) {
+            if ((channel ^ 1) != 0) {
+                out->left = 0U - (u32)volume;
             } else {
-                out->left = -volume;
+                out->right = 0U - (u32)volume;
             }
         } else if (channel != 0) {
-            out->left = -volume;
+            out->left = 0U - (u32)volume;
         } else {
-            out->right = -volume;
+            out->right = 0U - (u32)volume;
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038E6C);
-#endif
 
 extern s32 D_8005951C;
 
@@ -2766,13 +3109,7 @@ s32 func_800391CC(void) {
     return largest & ~0xF;
 }
 
-typedef struct {
-    s32 word[4];
-} Quad;
-
-/* Copy `size` bytes: sixteen at a time, then words, then bytes.
- * Nonmatching: the source and destination offset pointers swap registers. */
-#ifdef NON_MATCHING
+/* Copy `size` bytes: sixteen at a time, then words, then bytes. */
 void func_80039248(void *dst, void *src, s32 size) {
     s32 *d = dst;
     s32 *s = src;
@@ -2787,8 +3124,8 @@ void func_80039248(void *dst, void *src, s32 size) {
         d[1] = a;
         d[2] = b;
         d[3] = c;
-        d += 4;
         s += 4;
+        d += 4;
     }
     for (n = (size >> 2) & 3; n != 0; n--) {
         *d++ = *s++;
@@ -2799,14 +3136,9 @@ void func_80039248(void *dst, void *src, s32 size) {
         s = (s32 *)((u8 *)s + 1);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039248);
-#endif
-
-/* Clear `size` bytes: sixteen at a time, then words, then bytes.
- * Nonmatching: the pointer and its offset copy swap registers. */
-#ifdef NON_MATCHING
-void func_800392EC(u32 *p, s32 size) {
+/* Clear `size` bytes: sixteen at a time, then words, then bytes. */
+void func_800392EC(void *data, s32 size) {
+    u32 *p = data;
     s32 n;
 
     for (n = size >> 4; n != 0; n--) {
@@ -2824,9 +3156,6 @@ void func_800392EC(u32 *p, s32 size) {
         p = (u32 *)((u8 *)p + 1);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800392EC);
-#endif
 
 /* Reset the SPU memory map to one reserved entry for the first 0x1010
  * bytes. */

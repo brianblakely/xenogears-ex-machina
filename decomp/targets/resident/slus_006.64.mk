@@ -50,11 +50,20 @@ EXTERN_sprite_80025C04 := absolute
 # 2.6.3 with inline division checks.
 CC_main_8002709C := 2.6.3
 MASPSX_main_8002709C := --aspsx-version=2.34 --expand-div
-# The menu-support unit (8001B6C4-8001C8DC) is compiled by GCC 2.6.3; its
-# $gp accesses (8001B6C4-8001BBAC) stay assembly: they need small data the
-# unit defines, which cc1 -G8 cannot express here (all small externs would
-# become $gp-relative).
+# The battle-mode entry owns 8005959C, while its setup flags are owned by
+# the following menu-support unit. This split preserves those GP/absolute
+# accesses with the same qualified GCC 2.6.3 small-common pipeline.
+CC_battle_mode := 2.6.3
+GP_battle_mode := 8
+MASPSX_battle_mode := --aspsx-version=2.34 --use-comm-section
+EXTERN_battle_mode := absolute
+# The menu-support unit (8001B844-8001C76C) is compiled by GCC 2.6.3.
+# Its own small commons use $gp; other units' small externs and every
+# address taken with `la` are absolute, as in the sprite units above.
 CC_main_8001B6C4 := 2.6.3
+GP_main_8001B6C4 := 8
+MASPSX_main_8001B6C4 := --aspsx-version=2.34 --use-comm-section
+EXTERN_main_8001B6C4 := absolute
 # The CD read callback, stream and model buffer unit (8002A260-8002C3E8)
 # is compiled by GCC 2.6.3.
 CC_main_8002A260 := 2.6.3

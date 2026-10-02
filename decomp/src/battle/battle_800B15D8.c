@@ -633,7 +633,223 @@ void func_800B1F6C(entry, buffer, ot, unused, bias, blend)
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B1F6C);
 #endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B2AEC);
+/* Apply clamped RGB offsets to both packet buffers of an unrelocated script
+ * entry. Lit primitives use their command colours; unlit textured primitives
+ * start at neutral 0x80. The two packet streams advance by each command's
+ * packet size, while the command stream advances by its separate length. */
+void func_800B2AEC(entry, packets0, packets1, red, green, blue)
+    ScriptEntry *entry;
+    u8 *packets0;
+    u8 *packets1;
+    s32 red;
+    s32 green;
+    s32 blue;
+{
+    u8 *cmd;
+    s32 i = 0;
+    s32 count;
+    s32 kind;
+    s32 size;
+
+    cmd = entry->commands + (u32)entry;
+    count = entry->count;
+    for (; i != count; i++) {
+        kind = cmd[3] & 0x1C;
+        kind |= ((cmd[2] ^ 1) & 1) << 8;
+        switch (kind) {
+        case 0x0:
+            ((POLY_F3 *)packets0)->r0 = func_80021AD8(cmd[0x4], red);
+            ((POLY_F3 *)packets0)->g0 = func_80021AD8(cmd[0x5], green);
+            ((POLY_F3 *)packets0)->b0 = func_80021AD8(cmd[0x6], blue);
+            ((POLY_F3 *)packets1)->r0 = ((POLY_F3 *)packets0)->r0;
+            ((POLY_F3 *)packets1)->g0 = ((POLY_F3 *)packets0)->g0;
+            ((POLY_F3 *)packets1)->b0 = ((POLY_F3 *)packets0)->b0;
+            break;
+        case 0x10:
+            ((POLY_G3 *)packets0)->r0 = func_80021AD8(cmd[0x4], red);
+            ((POLY_G3 *)packets0)->g0 = func_80021AD8(cmd[0x5], green);
+            ((POLY_G3 *)packets0)->b0 = func_80021AD8(cmd[0x6], blue);
+            ((POLY_G3 *)packets0)->r1 = func_80021AD8(cmd[0x8], red);
+            ((POLY_G3 *)packets0)->g1 = func_80021AD8(cmd[0x9], green);
+            ((POLY_G3 *)packets0)->b1 = func_80021AD8(cmd[0xA], blue);
+            ((POLY_G3 *)packets0)->r2 = func_80021AD8(cmd[0xC], red);
+            ((POLY_G3 *)packets0)->g2 = func_80021AD8(cmd[0xD], green);
+            ((POLY_G3 *)packets0)->b2 = func_80021AD8(cmd[0xE], blue);
+            ((POLY_G3 *)packets1)->r0 = ((POLY_G3 *)packets0)->r0;
+            ((POLY_G3 *)packets1)->g0 = ((POLY_G3 *)packets0)->g0;
+            ((POLY_G3 *)packets1)->b0 = ((POLY_G3 *)packets0)->b0;
+            ((POLY_G3 *)packets1)->r1 = ((POLY_G3 *)packets0)->r1;
+            ((POLY_G3 *)packets1)->g1 = ((POLY_G3 *)packets0)->g1;
+            ((POLY_G3 *)packets1)->b1 = ((POLY_G3 *)packets0)->b1;
+            ((POLY_G3 *)packets1)->r2 = ((POLY_G3 *)packets0)->r2;
+            ((POLY_G3 *)packets1)->g2 = ((POLY_G3 *)packets0)->g2;
+            ((POLY_G3 *)packets1)->b2 = ((POLY_G3 *)packets0)->b2;
+            break;
+        case 0x18:
+            ((POLY_G4 *)packets0)->r0 = func_80021AD8(cmd[0x4], red);
+            ((POLY_G4 *)packets0)->g0 = func_80021AD8(cmd[0x5], green);
+            ((POLY_G4 *)packets0)->b0 = func_80021AD8(cmd[0x6], blue);
+            ((POLY_G4 *)packets0)->r1 = func_80021AD8(cmd[0x8], red);
+            ((POLY_G4 *)packets0)->g1 = func_80021AD8(cmd[0x9], green);
+            ((POLY_G4 *)packets0)->b1 = func_80021AD8(cmd[0xA], blue);
+            ((POLY_G4 *)packets0)->r2 = func_80021AD8(cmd[0xC], red);
+            ((POLY_G4 *)packets0)->g2 = func_80021AD8(cmd[0xD], green);
+            ((POLY_G4 *)packets0)->b2 = func_80021AD8(cmd[0xE], blue);
+            ((POLY_G4 *)packets0)->r3 = func_80021AD8(cmd[0x10], red);
+            ((POLY_G4 *)packets0)->g3 = func_80021AD8(cmd[0x11], green);
+            ((POLY_G4 *)packets0)->b3 = func_80021AD8(cmd[0x12], blue);
+            ((POLY_G4 *)packets1)->r0 = ((POLY_G4 *)packets0)->r0;
+            ((POLY_G4 *)packets1)->g0 = ((POLY_G4 *)packets0)->g0;
+            ((POLY_G4 *)packets1)->b0 = ((POLY_G4 *)packets0)->b0;
+            ((POLY_G4 *)packets1)->r1 = ((POLY_G4 *)packets0)->r1;
+            ((POLY_G4 *)packets1)->g1 = ((POLY_G4 *)packets0)->g1;
+            ((POLY_G4 *)packets1)->b1 = ((POLY_G4 *)packets0)->b1;
+            ((POLY_G4 *)packets1)->r2 = ((POLY_G4 *)packets0)->r2;
+            ((POLY_G4 *)packets1)->g2 = ((POLY_G4 *)packets0)->g2;
+            ((POLY_G4 *)packets1)->b2 = ((POLY_G4 *)packets0)->b2;
+            ((POLY_G4 *)packets1)->r3 = ((POLY_G4 *)packets0)->r3;
+            ((POLY_G4 *)packets1)->g3 = ((POLY_G4 *)packets0)->g3;
+            ((POLY_G4 *)packets1)->b3 = ((POLY_G4 *)packets0)->b3;
+            break;
+        case 0x8:
+            ((POLY_F4 *)packets0)->r0 = func_80021AD8(cmd[0x4], red);
+            ((POLY_F4 *)packets0)->g0 = func_80021AD8(cmd[0x5], green);
+            ((POLY_F4 *)packets0)->b0 = func_80021AD8(cmd[0x6], blue);
+            ((POLY_F4 *)packets1)->r0 = ((POLY_F4 *)packets0)->r0;
+            ((POLY_F4 *)packets1)->g0 = ((POLY_F4 *)packets0)->g0;
+            ((POLY_F4 *)packets1)->b0 = ((POLY_F4 *)packets0)->b0;
+            break;
+        case 0x104:
+            ((POLY_FT3 *)packets0)->r0 = func_80021AD8(0x80, red);
+            ((POLY_FT3 *)packets0)->g0 = func_80021AD8(0x80, green);
+            ((POLY_FT3 *)packets0)->b0 = func_80021AD8(0x80, blue);
+            ((POLY_FT3 *)packets1)->r0 = ((POLY_FT3 *)packets0)->r0;
+            ((POLY_FT3 *)packets1)->g0 = ((POLY_FT3 *)packets0)->g0;
+            ((POLY_FT3 *)packets1)->b0 = ((POLY_FT3 *)packets0)->b0;
+            break;
+        case 0x4:
+            ((POLY_FT3 *)packets0)->r0 = func_80021AD8(cmd[0x10], red);
+            ((POLY_FT3 *)packets0)->g0 = func_80021AD8(cmd[0x11], green);
+            ((POLY_FT3 *)packets0)->b0 = func_80021AD8(cmd[0x12], blue);
+            ((POLY_FT3 *)packets1)->r0 = ((POLY_FT3 *)packets0)->r0;
+            ((POLY_FT3 *)packets1)->g0 = ((POLY_FT3 *)packets0)->g0;
+            ((POLY_FT3 *)packets1)->b0 = ((POLY_FT3 *)packets0)->b0;
+            break;
+        case 0x114:
+            ((POLY_GT3 *)packets0)->r0 = func_80021AD8(0x80, red);
+            ((POLY_GT3 *)packets0)->g0 = func_80021AD8(0x80, green);
+            ((POLY_GT3 *)packets0)->b0 = func_80021AD8(0x80, blue);
+            ((POLY_GT3 *)packets0)->r1 = func_80021AD8(0x80, red);
+            ((POLY_GT3 *)packets0)->g1 = func_80021AD8(0x80, green);
+            ((POLY_GT3 *)packets0)->b1 = func_80021AD8(0x80, blue);
+            ((POLY_GT3 *)packets0)->r2 = func_80021AD8(0x80, red);
+            ((POLY_GT3 *)packets0)->g2 = func_80021AD8(0x80, green);
+            ((POLY_GT3 *)packets0)->b2 = func_80021AD8(0x80, blue);
+            ((POLY_GT3 *)packets1)->r0 = ((POLY_GT3 *)packets0)->r0;
+            ((POLY_GT3 *)packets1)->g0 = ((POLY_GT3 *)packets0)->g0;
+            ((POLY_GT3 *)packets1)->b0 = ((POLY_GT3 *)packets0)->b0;
+            ((POLY_GT3 *)packets1)->r1 = ((POLY_GT3 *)packets0)->r1;
+            ((POLY_GT3 *)packets1)->g1 = ((POLY_GT3 *)packets0)->g1;
+            ((POLY_GT3 *)packets1)->b1 = ((POLY_GT3 *)packets0)->b1;
+            ((POLY_GT3 *)packets1)->r2 = ((POLY_GT3 *)packets0)->r2;
+            ((POLY_GT3 *)packets1)->g2 = ((POLY_GT3 *)packets0)->g2;
+            ((POLY_GT3 *)packets1)->b2 = ((POLY_GT3 *)packets0)->b2;
+            break;
+        case 0x14:
+            ((POLY_GT3 *)packets0)->r0 = func_80021AD8(cmd[0x10], red);
+            ((POLY_GT3 *)packets0)->g0 = func_80021AD8(cmd[0x11], green);
+            ((POLY_GT3 *)packets0)->b0 = func_80021AD8(cmd[0x12], blue);
+            ((POLY_GT3 *)packets0)->r1 = func_80021AD8(cmd[0x14], red);
+            ((POLY_GT3 *)packets0)->g1 = func_80021AD8(cmd[0x15], green);
+            ((POLY_GT3 *)packets0)->b1 = func_80021AD8(cmd[0x16], blue);
+            ((POLY_GT3 *)packets0)->r2 = func_80021AD8(cmd[0x18], red);
+            ((POLY_GT3 *)packets0)->g2 = func_80021AD8(cmd[0x19], green);
+            ((POLY_GT3 *)packets0)->b2 = func_80021AD8(cmd[0x1A], blue);
+            ((POLY_GT3 *)packets1)->r0 = ((POLY_GT3 *)packets0)->r0;
+            ((POLY_GT3 *)packets1)->g0 = ((POLY_GT3 *)packets0)->g0;
+            ((POLY_GT3 *)packets1)->b0 = ((POLY_GT3 *)packets0)->b0;
+            ((POLY_GT3 *)packets1)->r1 = ((POLY_GT3 *)packets0)->r1;
+            ((POLY_GT3 *)packets1)->g1 = ((POLY_GT3 *)packets0)->g1;
+            ((POLY_GT3 *)packets1)->b1 = ((POLY_GT3 *)packets0)->b1;
+            ((POLY_GT3 *)packets1)->r2 = ((POLY_GT3 *)packets0)->r2;
+            ((POLY_GT3 *)packets1)->g2 = ((POLY_GT3 *)packets0)->g2;
+            ((POLY_GT3 *)packets1)->b2 = ((POLY_GT3 *)packets0)->b2;
+            break;
+        case 0x10C:
+            ((POLY_FT4 *)packets0)->r0 = func_80021AD8(0x80, red);
+            ((POLY_FT4 *)packets0)->g0 = func_80021AD8(0x80, green);
+            ((POLY_FT4 *)packets0)->b0 = func_80021AD8(0x80, blue);
+            ((POLY_FT4 *)packets1)->r0 = ((POLY_FT4 *)packets0)->r0;
+            ((POLY_FT4 *)packets1)->g0 = ((POLY_FT4 *)packets0)->g0;
+            ((POLY_FT4 *)packets1)->b0 = ((POLY_FT4 *)packets0)->b0;
+            break;
+        case 0xC:
+            ((POLY_FT4 *)packets0)->r0 = func_80021AD8(cmd[0x14], red);
+            ((POLY_FT4 *)packets0)->g0 = func_80021AD8(cmd[0x15], green);
+            ((POLY_FT4 *)packets0)->b0 = func_80021AD8(cmd[0x16], blue);
+            ((POLY_FT4 *)packets1)->r0 = ((POLY_FT4 *)packets0)->r0;
+            ((POLY_FT4 *)packets1)->g0 = ((POLY_FT4 *)packets0)->g0;
+            ((POLY_FT4 *)packets1)->b0 = ((POLY_FT4 *)packets0)->b0;
+            break;
+        case 0x11C:
+            ((POLY_GT4 *)packets0)->r0 = func_80021AD8(0x80, red);
+            ((POLY_GT4 *)packets0)->g0 = func_80021AD8(0x80, green);
+            ((POLY_GT4 *)packets0)->b0 = func_80021AD8(0x80, blue);
+            ((POLY_GT4 *)packets0)->r1 = func_80021AD8(0x80, red);
+            ((POLY_GT4 *)packets0)->g1 = func_80021AD8(0x80, green);
+            ((POLY_GT4 *)packets0)->b1 = func_80021AD8(0x80, blue);
+            ((POLY_GT4 *)packets0)->r2 = func_80021AD8(0x80, red);
+            ((POLY_GT4 *)packets0)->g2 = func_80021AD8(0x80, green);
+            ((POLY_GT4 *)packets0)->b2 = func_80021AD8(0x80, blue);
+            ((POLY_GT4 *)packets0)->r3 = func_80021AD8(0x80, red);
+            ((POLY_GT4 *)packets0)->g3 = func_80021AD8(0x80, green);
+            ((POLY_GT4 *)packets0)->b3 = func_80021AD8(0x80, blue);
+            ((POLY_GT4 *)packets1)->r0 = ((POLY_GT4 *)packets0)->r0;
+            ((POLY_GT4 *)packets1)->g0 = ((POLY_GT4 *)packets0)->g0;
+            ((POLY_GT4 *)packets1)->b0 = ((POLY_GT4 *)packets0)->b0;
+            ((POLY_GT4 *)packets1)->r1 = ((POLY_GT4 *)packets0)->r1;
+            ((POLY_GT4 *)packets1)->g1 = ((POLY_GT4 *)packets0)->g1;
+            ((POLY_GT4 *)packets1)->b1 = ((POLY_GT4 *)packets0)->b1;
+            ((POLY_GT4 *)packets1)->r2 = ((POLY_GT4 *)packets0)->r2;
+            ((POLY_GT4 *)packets1)->g2 = ((POLY_GT4 *)packets0)->g2;
+            ((POLY_GT4 *)packets1)->b2 = ((POLY_GT4 *)packets0)->b2;
+            ((POLY_GT4 *)packets1)->r3 = ((POLY_GT4 *)packets0)->r3;
+            ((POLY_GT4 *)packets1)->g3 = ((POLY_GT4 *)packets0)->g3;
+            ((POLY_GT4 *)packets1)->b3 = ((POLY_GT4 *)packets0)->b3;
+            break;
+        case 0x1C:
+            ((POLY_GT4 *)packets0)->r0 = func_80021AD8(cmd[0x14], red);
+            ((POLY_GT4 *)packets0)->g0 = func_80021AD8(cmd[0x15], green);
+            ((POLY_GT4 *)packets0)->b0 = func_80021AD8(cmd[0x16], blue);
+            ((POLY_GT4 *)packets0)->r1 = func_80021AD8(cmd[0x18], red);
+            ((POLY_GT4 *)packets0)->g1 = func_80021AD8(cmd[0x19], green);
+            ((POLY_GT4 *)packets0)->b1 = func_80021AD8(cmd[0x1A], blue);
+            ((POLY_GT4 *)packets0)->r2 = func_80021AD8(cmd[0x1C], red);
+            ((POLY_GT4 *)packets0)->g2 = func_80021AD8(cmd[0x1D], green);
+            ((POLY_GT4 *)packets0)->b2 = func_80021AD8(cmd[0x1E], blue);
+            ((POLY_GT4 *)packets0)->r3 = func_80021AD8(cmd[0x20], red);
+            ((POLY_GT4 *)packets0)->g3 = func_80021AD8(cmd[0x21], green);
+            ((POLY_GT4 *)packets0)->b3 = func_80021AD8(cmd[0x22], blue);
+            ((POLY_GT4 *)packets1)->r0 = ((POLY_GT4 *)packets0)->r0;
+            ((POLY_GT4 *)packets1)->g0 = ((POLY_GT4 *)packets0)->g0;
+            ((POLY_GT4 *)packets1)->b0 = ((POLY_GT4 *)packets0)->b0;
+            ((POLY_GT4 *)packets1)->r1 = ((POLY_GT4 *)packets0)->r1;
+            ((POLY_GT4 *)packets1)->g1 = ((POLY_GT4 *)packets0)->g1;
+            ((POLY_GT4 *)packets1)->b1 = ((POLY_GT4 *)packets0)->b1;
+            ((POLY_GT4 *)packets1)->r2 = ((POLY_GT4 *)packets0)->r2;
+            ((POLY_GT4 *)packets1)->g2 = ((POLY_GT4 *)packets0)->g2;
+            ((POLY_GT4 *)packets1)->b2 = ((POLY_GT4 *)packets0)->b2;
+            ((POLY_GT4 *)packets1)->r3 = ((POLY_GT4 *)packets0)->r3;
+            ((POLY_GT4 *)packets1)->g3 = ((POLY_GT4 *)packets0)->g3;
+            ((POLY_GT4 *)packets1)->b3 = ((POLY_GT4 *)packets0)->b3;
+            break;
+        }
+        size = (cmd[0] + 1) * 4;
+        packets0 += size;
+        packets1 += size;
+        cmd += (cmd[1] + 1) * 4;
+    }
+}
 
 void func_800B3348(void) {
 }
@@ -770,7 +986,6 @@ void func_800B383C(ScreenFade *fade) {
     D_800C3558 = NULL;
 }
 
-#ifdef NON_MATCHING
 /* Draw the screen fade: a blended rectangle over the whole screen. */
 void func_800B3878(BattleTask *draw) {
     POLY_F4 *poly = (POLY_F4 *)D_80059580;
@@ -798,9 +1013,6 @@ void func_800B3878(BattleTask *draw) {
         AddPrim(D_8005956C + 2, mode);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B3878);
-#endif
 
 /* Fade the second screen fade (800B39C0). */
 void func_800B397C(s32 frames, s32 blend, u8 r, u8 g, u8 b) {

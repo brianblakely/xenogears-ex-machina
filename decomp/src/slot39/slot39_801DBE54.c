@@ -3735,13 +3735,17 @@ void func_801E781C(s32 index, u8 rebuild) {
  * to its slot of the icon pages, set its animation steps from the header's
  * frame count (11-13), and add its block count to its port's total; a file
  * without animation is marked still (state 0). */
+/* Nonmatching: the upload loop and row values match; the animation switch
+ * still allocates its card pointer and record offsets differently. */
 #ifdef NON_MATCHING
 void func_801E78C8(s32 file) {
     s32 i;
+    s32 row_y, first_y;
+    s32 second_y, third_y;
     u8 still;
 
     still = 1;
-    D_801EA8E4.x = file % 16 * 4 + 0x140;
+    D_801EA8E4.x = file * 4 - (s16)(file / 16 * 64 - 0x140);
     D_801EA8E4.w = 4;
     D_801EA8E4.h = 0x10;
     D_801EA8EC.x = file * 16;
@@ -3752,36 +3756,39 @@ void func_801E78C8(s32 file) {
     LoadImage(&D_801EA8EC, D_801EA8C4);
     DrawSync(0);
     for (i = 0; i < 3; i++) {
-        D_801EA8E4.y = file / 16 * 16 + 0x80 + i * 32;
+        D_801EA8E4.y = i * 32 + (first_y = (row_y = file / 16 * 16) + 0x80);
         LoadImage(&D_801EA8E4, &D_800625A0->card->headers[file][0x80 + i * 0x80]);
         DrawSync(0);
     }
     switch (D_800625A0->card->headers[file][2]) {
     case 0x11:
-        D_800625A0->card->files[file].frames[0] = file / 16 * 16 + 0x80;
-        D_800625A0->card->files[file].frames[1] = file / 16 * 16 + 0x80;
-        D_800625A0->card->files[file].frames[2] = file / 16 * 16 + 0x80;
-        D_800625A0->card->files[file].frames[3] = file / 16 * 16 + 0x80;
-        D_800625A0->card->files[file].frames[4] = file / 16 * 16 + 0x80;
-        D_800625A0->card->files[file].frames[5] = file / 16 * 16 + 0x80;
+        D_800625A0->card->files[file].frames[0] = first_y;
+        D_800625A0->card->files[file].frames[1] = first_y;
+        D_800625A0->card->files[file].frames[2] = first_y;
+        D_800625A0->card->files[file].frames[3] = first_y;
+        D_800625A0->card->files[file].frames[4] = first_y;
+        D_800625A0->card->files[file].frames[5] = first_y;
         still = 0;
         break;
     case 0x12:
-        D_800625A0->card->files[file].frames[0] = file / 16 * 16 + 0x80;
-        D_800625A0->card->files[file].frames[1] = file / 16 * 16 + 0xa0;
-        D_800625A0->card->files[file].frames[2] = file / 16 * 16 + 0x80;
-        D_800625A0->card->files[file].frames[3] = file / 16 * 16 + 0xa0;
-        D_800625A0->card->files[file].frames[4] = file / 16 * 16 + 0x80;
-        D_800625A0->card->files[file].frames[5] = file / 16 * 16 + 0xa0;
+        D_800625A0->card->files[file].frames[0] = first_y;
+        second_y = row_y + 0xa0;
+        D_800625A0->card->files[file].frames[1] = second_y;
+        D_800625A0->card->files[file].frames[2] = first_y;
+        D_800625A0->card->files[file].frames[3] = second_y;
+        D_800625A0->card->files[file].frames[4] = first_y;
+        D_800625A0->card->files[file].frames[5] = second_y;
         still = 0;
         break;
     case 0x13:
-        D_800625A0->card->files[file].frames[0] = file / 16 * 16 + 0x80;
-        D_800625A0->card->files[file].frames[1] = file / 16 * 16 + 0xa0;
-        D_800625A0->card->files[file].frames[2] = file / 16 * 16 + 0xc0;
-        D_800625A0->card->files[file].frames[3] = file / 16 * 16 + 0x80;
-        D_800625A0->card->files[file].frames[4] = file / 16 * 16 + 0xa0;
-        D_800625A0->card->files[file].frames[5] = file / 16 * 16 + 0xc0;
+        D_800625A0->card->files[file].frames[0] = first_y;
+        second_y = row_y + 0xa0;
+        D_800625A0->card->files[file].frames[1] = second_y;
+        third_y = row_y + 0xc0;
+        D_800625A0->card->files[file].frames[2] = third_y;
+        D_800625A0->card->files[file].frames[3] = first_y;
+        D_800625A0->card->files[file].frames[4] = second_y;
+        D_800625A0->card->files[file].frames[5] = third_y;
         still = 0;
         break;
     }

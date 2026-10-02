@@ -182,10 +182,10 @@ void func_801FC4C4(Model *model, u8 *prims, MATRIX *matrix, s32 gravity, s32 spe
     desc = (PacketDesc *)(model->packets + (s32)model);
     vertices = (SVECTOR *)(model->vertices + (s32)model);
     for (i = 0; i != count; i++) {
-        /* The primitive's kind with bit 8 for a one-sided primitive; its
-         * vertex indices follow the kind's header and colours. */
+        /* Bit 8 selects the unlit command layout; descriptor flags bit 0
+         * selects lighting. Vertex indices follow its header and colours. */
         kind = desc->kind & 0x1C;
-        kind |= ((desc->unk2 ^ 1) & 1) << 8;
+        kind |= ((desc->flags ^ 1) & 1) << 8;
         switch (kind) {
         case 0x00:
             v0 = VERTEX(4);

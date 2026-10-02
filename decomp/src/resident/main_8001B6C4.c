@@ -19,9 +19,35 @@
 #include "console.h"
 #include "sound.h"
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8001B6C4", func_8001B6C4);
+extern DISPENV D_800C4A7C;
+/* Stripped debug hooks share this no-op entry. Their old argument lists
+ * and forwarded return register remain part of the calling sequence. */
+s32 func_800379D0();
+void func_8001B94C(DRAWENV *env);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8001B6C4", func_8001B844);
+/* Initialize the battle's 320x224 double buffer and GTE projection. The
+ * display environments are 0x4070 bytes apart, after their draw environments. */
+void func_8001B844(void) {
+    DISPENV *disp;
+    DRAWENV *draw;
+    DRAWENV *otherDraw;
+
+    ResetGraph(1);
+    func_800379D0(0x300, 0);
+    func_800379D0(func_800379D0(8, 0x10, 0x140, 0xF0, 0, 0x1000));
+    InitGeom();
+    SetGeomOffset(0xA0, 0xB4);
+    SetGeomScreen(0x200);
+    disp = &D_800C4A7C;
+    SetDefDispEnv(disp, 0, 0xE0, 0x140, 0xE0);
+    draw = (DRAWENV *)((u8 *)disp - sizeof(DRAWENV));
+    SetDefDrawEnv(draw, 0, 0, 0x140, 0xE0);
+    SetDefDispEnv((DISPENV *)((u8 *)disp + 0x4070), 0, 0, 0x140, 0xE0);
+    otherDraw = (DRAWENV *)((u8 *)disp + 0x4070 - sizeof(DRAWENV));
+    SetDefDrawEnv(otherDraw, 0, 0xE0, 0x140, 0xE0);
+    func_8001B94C(draw);
+    func_8001B94C(otherDraw);
+}
 
 /* Battle draw environment: clear the background to (0x3c, 0x78, 0x78) with dithering. */
 void func_8001B94C(DRAWENV *env) {
@@ -32,16 +58,134 @@ void func_8001B94C(DRAWENV *env) {
     env->b0 = 0x78;
 }
 
+extern u8 D_8006D635[]; /* the second byte of the saved name slots */
+extern u16 D_8005A3C6;  /* last of the twenty battle setup counters */
+u8 D_800594CC;
+u8 D_8005947C; /* pending scene + 1 */
+void func_80033B34(u16 *codes, u8 *out, u32 count);
+
+/* Load directory 16 file 3 into the saved game data, decode the first
+ * 31 twenty-byte name slots, and reset the battle setup counters.
+ * NON_MATCHING: the compiler keeps the second-column name pointer in
+ * an extra saved register; the original rebuilds it for each name. */
+#ifdef NON_MATCHING
+void func_8001B970(void) {
+    u16 codes[12]; /* 24-byte workspace; at most ten codes per name */
+    u8 decoded[20];
+    void *file;
+    u8 *name;
+    u16 *counter;
+    s32 offset;
+    s32 i;
+
+    func_80028470(16, 0);
+    func_80032498(2, 0);
+    file = func_80031BDC(func_800288EC(3), 1);
+    func_800295D8(3, file, 0, 0x80);
+    func_80028A60(0);
+    name = (u8 *)&D_8006D634;
+    memmove(name, file, 0x2358);
+    func_800320E8(file);
+    for (offset = 0; offset < 0x26C; offset += 20) {
+        for (i = 0; i < 20; i += 2) {
+            ((u8 *)codes)[i] = name[i];
+            ((u8 *)codes)[i + 1] = D_8006D635[offset + i];
+            if (name[i] == 0xF && D_8006D635[offset + i] == 0) {
+                break;
+            }
+        }
+        func_80033B34(codes, decoded, i / 2);
+        for (i = 0; i < 20; i++) {
+            name[i] = decoded[i];
+        }
+        name += 20;
+    }
+    counter = &D_8005A3C6;
+    for (i = 19; i >= 0; i--) {
+        *counter-- = 0;
+    }
+    D_800594CC = 6;
+    D_8005947C = 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8001B6C4", func_8001B970);
+#endif
 
 /* Pass the scene selector 8006f9de and three resident tables to 800379d8. */
 void func_8001BB0C(void) {
     func_800379D8(D_8006F9DE, 0, &D_80059470, &D_80059520, &D_8005949C);
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8001B6C4", func_8001BB50);
+u8 D_800594F8;
+u8 D_8005946C;
+u8 D_800594D4;
+extern u8 D_800594D5;
+extern u8 D_800594D6;
+s32 D_800595A0;
+void func_8001B970(void);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8001B6C4", func_8001BBAC);
+/* Set the battle setup flags, initialize battle setup data, wait for disc I/O,
+ * then install the three initial bytes and the phase selector. */
+void func_8001BB50(void) {
+    D_800594F8 = 1;
+    D_8005946C = 0;
+    func_8001B970();
+    func_80028A60(0);
+    D_800594D4 = 0x88;
+    D_800594D5 = 0x76;
+    D_800594D6 = 0x54;
+    D_800595A0 = 2;
+}
+
+/* This unit's small commons merge with the original BSS labels and are
+ * addressed through $gp. */
+void *D_80059480; /* heap marker for the high-memory reservation */
+void *D_800594AC; /* reservation below the heap marker */
+SoundBank *D_800595D0;
+void *D_800595A8;
+extern FileRequest D_8006F9BC[4];
+u8 D_8005954C;
+extern u8 D_8004F388[][3]; /* sound programs for each battle mode; 0xff absent */
+void func_80038428(SoundBank *bank);
+void func_80039DB8(s32 program);
+
+/* Reserve high memory, load a sound bank and files 3 and 4, then request
+ * the mode's three optional sound programs. */
+void func_8001BBAC(void) {
+    s32 i;
+    u8 program;
+    void *overlay;
+    void *file;
+
+    func_80032498(2, 0);
+    func_80028470(12, 0);
+    D_80059480 = func_80031BDC(4, 1);
+    D_800594AC = func_80031BDC((u32)D_80059480 - 0x801E4000U, 1);
+    overlay = (void *)0x801E4000;
+    D_800595D0 = func_80031BDC(func_800288EC(2), 1);
+    file = func_80031BDC(func_800288EC(3), 1);
+    D_8006F9BC[0].file = 2;
+    D_8006F9BC[1].file = 3;
+    D_800595A8 = file;
+    D_8006F9BC[1].destination = file;
+    D_8006F9BC[2].file = 4;
+    D_8006F9BC[2].destination = overlay;
+    D_8006F9BC[3].file = 0;
+    D_8006F9BC[3].destination = NULL;
+    D_8006F9BC[0].destination = D_800595D0;
+    func_80029AFC(D_8006F9BC, 0, 0x80);
+    while (func_800286CC() == 3) {
+    }
+    func_80038428(D_800595D0);
+    if (D_8005954C != 4) {
+        for (i = 0; i < 3; i++) {
+            program = ((u8 *)D_8004F388)[D_8005954C * 3 + i];
+            if (program != 0xFF) {
+                func_80039DB8(((u32)D_800595D0->id << 16) | program);
+            }
+        }
+    }
+}
 
 /* A random byte in [low, high]: any byte for an unset low (0xff) or a range of 0xff or wider, 0 for an unset high. */
 /* Nonmatching: GCC 2.6.3 cross-jumps the low == high return into the tail of the modulo result; the original keeps its own. */
@@ -341,6 +485,3 @@ void func_8001C634(void) {
     func_8001C1A8();
     D_80059178 = 1;
 }
-
-/* 0x170 bytes of constant data in text (8001C76C-8001C8DC), not code. */
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8001B6C4", func_8001C76C);

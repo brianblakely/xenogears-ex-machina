@@ -55,11 +55,12 @@ void func_800320E8(void *block);    /* release a heap block */
 typedef struct {
     u8 prim_words;
     u8 words;
-    u8 unk2;
+    u8 flags; /* bit 0: lit; selects the command's vertex-index layout */
     u8 kind;
 } PacketDesc;
 
-/* A model; only the members the module reads. */
+/* An unrelocated effect script entry (the layout used by battle 800B16A4
+ * and 800B1720); only the members this module reads. */
 typedef struct {
     s32 vertices; /* +00: offset of the vertices */
     u8 unk4[0xC];

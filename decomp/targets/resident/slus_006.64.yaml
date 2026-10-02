@@ -76,17 +76,26 @@ segments:
       - [0x93DC, .rodata, sound]
       # Hand-written rotation helpers and the PsyQ library objects.
       - [0x93F0, .rodata, main3]
+      # Rodata used by the SDK tail beginning with libgte MSC00.
+      - [0x9BC4, .rodata, psyq_tail_80048BC4]
       - [0x9D24, c, main]
-      # Menu-support unit (GCC 2.6.3): 8001BF38 and 8001C1A8 match only so,
-      # its rodata opens at 0x8001833C and it addresses small globals through
-      # $gp from 8001B6C4. It starts after 8001A4B4 (GCC 2.7.2: its epilogue
-      # fills the jr delay slot); 8001B6C4, the first $gp use, is chosen.
-      - [0xBEC4, c, main_8001B6C4]
+      # The battle entry owns 8005959C through GP, but accesses the setup
+      # flags 8005947C/F8 absolutely. Isolate that ownership from the
+      # following unit's small commons; the original object seam may be
+      # later than 8001B844, which has no own-GP reference or rodata.
+      - [0xBEC4, c, battle_mode]
+      # Menu support (GCC 2.6.3): 8001BF38 and 8001C1A8 match only so;
+      # its rodata opens at 0x8001833C.
+      - [0xC044, c, main_8001B6C4]
+      # Battle effect-script table embedded in .text; keep the private data
+      # at its original position rather than classify it as a function.
+      - start: 0xCF6C
+        type: data
+        name: battle_effect_script
+        linker_section_order: .text
       # Sprite/actor engine unit (8001C8DC-8002709C): -G8 ($gp-relative
       # small globals) and positive `li` assembled as `addiu` (ASPSX 2.50+),
-      # unlike its neighbours. The 0x170 bytes of constant data in text
-      # before it (8001C76C) stay at the end of main.c; which object held
-      # them is not established.
+      # unlike its neighbours.
       - [0xD0DC, c, sprite]
       # Second sprite unit (same build): it starts after 8001FBE4's jump
       # tables and by 80022090, whose constant opens its rodata; 80022090 is
@@ -123,6 +132,15 @@ segments:
       # only under 2.6.3, and the functions between compile identically.
       - [0x2A618, c, sound]
       - [0x2FF38, c, main3]
+      # SDK object data embedded in .text at the head of libgte MSC00.
+      - start: 0x393BC
+        type: data
+        name: libgte_msc00_data
+        linker_section_order: .text
+      - [0x393C4, c, psyq_tail_80048BC4]
       - [0x3F288, data, data]
       - { start: 0x49ABC, type: bss, vram: 0x800592BC }
+  - [0x49ABC]
+  # Zero file padding is reproduced by objcopy --pad-to 0x4A000. It is
+  # outside the resident segment and does not extend its BSS.
   - [0x4A000]

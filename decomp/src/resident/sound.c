@@ -869,7 +869,7 @@ void func_8003B424(SoundSeq *seq) {
             channel->voice_bit = index;
             channel->start = channel->position = (u8 *)header + *offset;
             channel->transpose = 0x3C;
-            channel->unk62 = 0xF;
+            channel->gate_fraction = 0xF;
             channel->loop_depth = 0xFFFF;
             channel->volume = 0x6000;
             channel->level.value = 0x7F000000;
@@ -878,9 +878,9 @@ void func_8003B424(SoundSeq *seq) {
             channel->unk20 = 0;
             channel->unk22 = 0;
             channel->unk5C = 0;
-            channel->unk60 = 0;
+            channel->duration_adjust = 0;
             channel->detune = 0;
-            channel->unk64 = 0;
+            channel->previous_note = 0;
             channel->pan = 0x4000;
             channel->unk70 = 0;
             channel->pitch_mod = 0;
@@ -970,16 +970,16 @@ void func_8003B644(s16 code, s32 id, s16 volume, s16 pan) {
             channel->flags2 = 0x170;
             channel->flags3 = 0;
             channel->transpose = 0x3C;
-            channel->unk62 = 0xF;
+            channel->gate_fraction = 0xF;
             channel->loop_depth = 0xFFFF;
             channel->loop = NULL;
             channel->unk1C = 0;
             channel->unk20 = 0;
             channel->unk22 = 0;
             channel->unk5C = 0;
-            channel->unk60 = 0;
+            channel->duration_adjust = 0;
             channel->detune = 0;
-            channel->unk64 = 0;
+            channel->previous_note = 0;
             channel->volume = level;
             channel->level.value = 0x7F000000;
             channel->unk70 = 0;
@@ -1275,7 +1275,7 @@ void func_8003C010(void (*callback)(void)) {
 extern long GetRCnt(unsigned long spec);
 extern void func_8003C484(SoundSlide *slide);
 extern void func_8003C4C4(SoundSeq *seq, SoundSeqChannel *channels, s16 count);
-extern void func_8003C6E8(SoundSeq *seq, SoundSeqChannel *channels, s32 count);
+extern void func_8003C6E8(SoundSeq *seq, SoundSeqChannel *channels, s16 count);
 extern void func_8003E900(void);
 extern void func_8003EB5C(void);
 extern void func_8003EBF0(SoundSeq *seq, SoundSeqChannel *channels, s16 count);
@@ -1420,17 +1420,17 @@ void func_8003C484(SoundSlide *slide) {
 }
 
 /* Advance a sequence's rate slide and `count` channels' slides (note,
- * level, pan and volume) and their note timers by one tick: a channel
- * whose key-off timer reaches 1 releases its voice (when flagged), one
- * whose note timer runs out asks for its next note. */
+ * level, pan and volume) and timers by one tick. One tick before the
+ * next note, change the release rate when flagged; when the gate timer
+ * expires, request key off and remember it for the next note. */
 void func_8003C4C4(SoundSeq *seq, SoundSeqChannel *channel, s16 count) {
     u16 frames;
     u16 flags;
     u16 flags2;
     u16 flags3;
     u32 timers;
-    u32 gate;
-    u32 length;
+    u32 note_ticks;
+    u32 gate_ticks;
 
     frames = seq->rate_frames;
     if (frames != 0) {
@@ -1448,9 +1448,9 @@ void func_8003C4C4(SoundSeq *seq, SoundSeqChannel *channel, s16 count) {
         if (flags != 0) {
             timers = *(u32 *)&channel->unk5C;
             flags2 = channel->flags2;
-            gate = timers & 0xFFFF;
-            length = timers >> 16;
-            if (gate != 0) {
+            note_ticks = timers & 0xFFFF;
+            gate_ticks = timers >> 16;
+            if (note_ticks != 0) {
                 flags3 = channel->flags3;
                 if (flags3 & 8) {
                     flags2 |= 0x100;
@@ -1487,17 +1487,17 @@ void func_8003C4C4(SoundSeq *seq, SoundSeqChannel *channel, s16 count) {
                     flags2 |= 0x100;
                 }
                 channel->flags3 = flags3;
-                gate--;
-                length--;
-                if (gate == 1 && (flags & 0x1000)) {
+                note_ticks--;
+                gate_ticks--;
+                if (note_ticks == 1 && (flags & 0x1000)) {
                     channel->state.envelope.release_rate = 6;
                     channel->state.flags |= 0x80;
                 }
-                if (length == 0) {
+                if (gate_ticks == 0) {
                     channel->flags |= 0x400;
                     flags2 |= 2;
                 }
-                *(u32 *)&channel->unk5C = gate + (length << 16);
+                *(u32 *)&channel->unk5C = note_ticks + (gate_ticks << 16);
             }
             channel->flags2 = flags2;
         }
@@ -1505,7 +1505,209 @@ void func_8003C4C4(SoundSeq *seq, SoundSeqChannel *channel, s16 count) {
     } while (--count != 0);
 }
 
+extern void func_8003CC84(SoundSeq *seq, SoundSeqChannel *channel, s32 index);
+extern u8 *(*D_80050624[])(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+extern u8 D_80050824[]; /* opcode lengths, including the opcode byte */
+extern u8 D_800509B0[]; /* encoded note -> duration (0: a following byte) */
+extern u8 D_80050A94[]; /* encoded note -> semitone */
+
+/* Decode channels whose note timer expired. Bytes below 0x80 give a volume
+ * followed by an encoded note/duration; the other bytes dispatch sequence
+ * opcodes. Look ahead through opcodes and repeats to decide whether to
+ * release the note, without executing that future data or advancing the
+ * saved channel position. A new note also restarts portamento, the level
+ * sweep and the modulators marked for a per-note restart.
+ *
+ * The two tick counters share a word. Keep the original signed addition
+ * when packing it: the low half is not masked before adding the high half.
+ * NON_MATCHING: the operand temporaries, lookahead branches and register
+ * allocation differ; the original function is 0x59c bytes. */
+#ifdef NON_MATCHING
+void func_8003C6E8(SoundSeq *seq, SoundSeqChannel *channels, s16 count) {
+    s16 remaining_channels;
+    SoundSeqChannel *channel;
+    u8 *position;
+    SoundLoop *loop;
+    SoundModulator *modulator;
+    u16 previous_flags;
+    u16 modulator_flags;
+    s16 opcode;
+    s16 duration;
+    u16 gate;
+    u16 fraction;
+    u8 encoded;
+    s32 note;
+    u8 length;
+    s32 new_note;
+    s32 distance;
+    s32 remaining;
+
+    remaining_channels = count;
+    channel = channels;
+    do {
+        if (channel->flags != 0 && (u16)channel->unk5C == 0) {
+            new_note = 0;
+            previous_flags = channel->flags;
+            position = channel->position;
+            channel->flags = previous_flags & ~0x700;
+            while (1) {
+                opcode = *position++;
+                if (opcode < 0x80) {
+                    if (!(channel->flags & 8)) {
+                        channel->volume = opcode << 8;
+                    }
+                    channel->flags2 |= 0x100;
+                    encoded = *position++;
+                    note = channel->current_note = (u8)channel->transpose + D_80050A94[encoded];
+                    length = D_800509B0[encoded];
+                    if (length == 0) {
+                        length = *position++;
+                    }
+                    channel->unk5C = length;
+                    channel->state.envelope.release_rate = channel->unk28;
+                    channel->state.flags |= 0x80;
+                    if (channel->flags & 0x10) {
+                        func_8003CC84(seq, channel, note);
+                    } else {
+                        channel->note.value = ((note << 8) + channel->detune + channel->unk6C) << 16;
+                    }
+                    channel->flags2 |= 0x200;
+                    channel->flags |= 0x180;
+                    new_note = 1;
+                    if (previous_flags & 0x400) {
+                        channel->flags2 |= 1;
+                    }
+                    if (channel->flags & 0x8000) {
+                        channel->flags &= ~0x8000;
+                        channel->state.flags = 0xFFFF;
+                        channel->flags2 |= 0x300;
+                    }
+                } else {
+                    position = D_80050624[(s16)(opcode - 0x80)](position, seq, channel);
+                    if (channel->flags == 0) {
+                        seq->voices &= ~(1 << channel->voice_bit);
+                        break;
+                    }
+                }
+                if (channel->flags & 0x500) {
+                    break;
+                }
+            }
+            channel->position = position;
+            if (channel->flags == 0) {
+                channel++;
+                continue;
+            }
+            if (channel->flags & 0x800) {
+                channel->flags |= 0x200;
+            }
+            loop = &channel->loops[channel->loop_depth];
+            opcode = *position;
+            while (opcode >= 0x80) {
+                if (opcode == 0x90) {
+                    position = channel->loop;
+                    if (position == NULL) {
+                        break;
+                    }
+                } else {
+                    if (opcode == 0x80) {
+                        channel->flags &= ~0x200;
+                        break;
+                    }
+                    if (opcode == 0x81) {
+                        channel->flags |= 0x200;
+                        break;
+                    }
+                    if ((u32)((u8)opcode - 0xB0) < 2) {
+                        channel->flags &= ~0x200;
+                        break;
+                    }
+                    if (opcode == 0x99 && loop->count != 0) {
+                        position = loop->start;
+                    } else {
+                        if (opcode == 0x99) {
+                            loop--;
+                        }
+                        if (opcode == 0x9A && loop->count == 0) {
+                            position = loop->end;
+                            loop--;
+                        } else {
+                            position += D_80050824[(s16)(opcode - 0x80)];
+                        }
+                    }
+                }
+                opcode = *position;
+            }
+            if (opcode < 0x80) {
+                channel->flags |= 0x1000;
+            } else {
+                channel->flags &= ~0x1000;
+            }
+            duration = (s8)channel->duration_adjust + (u16)channel->unk5C;
+            if (duration <= 0) {
+                duration += (u16)channel->unk5C;
+                channel->duration_adjust += (u8)channel->unk5C;
+            }
+            gate = 0x7FFF;
+            if (!(channel->flags & 0x600)) {
+                fraction = channel->gate_fraction;
+                if (fraction != 15) {
+                    if (fraction == 16) {
+                        gate = duration;
+                        goto packed_timers;
+                    }
+                    goto scaled_gate;
+                }
+                gate = duration - 1;
+                goto minimum_gate;
+scaled_gate:
+                gate = (u32)(duration * fraction) >> 4;
+minimum_gate:
+                if (gate == 0) {
+                    gate = 1;
+                }
+            }
+packed_timers:
+            *(s32 *)&channel->unk5C = duration + (gate << 16);
+            if (new_note) {
+                if (channel->flags3 & 4) {
+                    distance = (channel->current_note - channel->previous_note) << 24;
+                    if (distance != 0) {
+                        channel->unk84 = distance / channel->unk70;
+                        channel->flags3 |= 1;
+                        channel->unk94 = channel->unk70;
+                        channel->note.value = ((channel->previous_note << 8) + channel->detune + channel->unk6C) << 16;
+                    }
+                }
+                channel->previous_note = channel->current_note;
+                if (channel->flags3 & 0x100) {
+                    channel->unk96 = channel->unk80;
+                    channel->unk88 = channel->unk7C;
+                    channel->level.value = (u16)channel->unk82 << 16;
+                    channel->flags3 |= 8;
+                }
+                remaining = 4;
+                modulator = channel->modulator;
+                do {
+                    modulator_flags = modulator->flags;
+                    if ((modulator_flags & 3) == 3) {
+                        modulator->phase = 0;
+                        modulator->count = 1;
+                        modulator->delay_count = modulator->delay;
+                        modulator->period_count = modulator->period;
+                        channel->flags2 |= 0x100;
+                        modulator->flags = modulator_flags & ~0xC;
+                    }
+                    modulator++;
+                } while (--remaining != 0);
+            }
+        }
+        channel++;
+    } while (--remaining_channels != 0);
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003C6E8);
+#endif
 
 extern void func_8003E5BC(s16 index, SoundSeqChannel *channel);
 
@@ -1714,31 +1916,24 @@ u8 *func_8003D070(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 3;
 }
 
-/* Set the tick rate.
- * Nonmatching: the original masks the loaded rate again. */
-#ifdef NON_MATCHING
+/* Set the tick rate and recompute ticks per frame from the current tempo. */
 u8 *func_8003D0E8(u8 *data, SoundSeq *seq) {
-    u8 rate = *data;
-
+    u8 rate = *data++;
     seq->rate.value = rate << 16;
     seq->tick_step = rate * seq->tempo.part.whole;
-    return data + 1;
+    return data;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003D0E8);
-#endif
 
-/* Add to the tick rate.
- * Nonmatching: the original has an empty 8-byte frame. */
-#ifdef NON_MATCHING
+/* Add a signed operand to the tick rate. */
 u8 *func_8003D110(s8 *data, SoundSeq *seq) {
+    u8 reserved[4]; /* Retain the original unused eight-byte stack frame. */
+    s32 rate = *data;
+    s32 old_rate = seq->rate.value;
+
     seq->tick_step = 0;
-    seq->rate.value += *data << 16;
+    seq->rate.value = (rate << 16) + old_rate;
     return data + 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003D110);
-#endif
 
 /* Slide the tick rate to a target over a number of frames. */
 u8 *func_8003D13C(u8 *data, SoundSeq *seq) {
@@ -1777,7 +1972,7 @@ u8 *func_8003D1BC(u8 *data, SoundSeq *seq) {
 }
 
 u8 *func_8003D208(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
-    channel->unk62 = *data;
+    channel->gate_fraction = *data;
     return data + 1;
 }
 
@@ -1802,9 +1997,9 @@ u8 *func_8003D2D0(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value = *data++;
 
     if (value != 0) {
-        channel->unk60 += value;
+        channel->duration_adjust += value;
     } else {
-        channel->unk60 = 0;
+        channel->duration_adjust = 0;
     }
     return data;
 }
@@ -2050,20 +2245,14 @@ u8 *func_8003D79C(s8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 1;
 }
 
-/* Add a 16-bit (big-endian) value to the detune.
- * Nonmatching: the original adds the operand bytes before the flag
- * update. */
-#ifdef NON_MATCHING
+/* Add a 16-bit (big-endian) value to the detune. */
 u8 *func_8003D7C8(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     s32 delta = data[1] + (s16)(data[0] << 8);
 
-    channel->flags2 |= 0x200;
     channel->detune += delta;
+    channel->flags2 |= 0x200;
     return data + 2;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003D7C8);
-#endif
 
 /* Start a slide of `unk84` per frame over `frames` frames (flags3 bit 0),
  * or stop it. */

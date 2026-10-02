@@ -8,6 +8,25 @@
 #include "heap.h"
 #include "mode.h"
 
+extern char *D_80050110[]; /* owner-tag names */
+extern char *D_80050140[]; /* built-in allocation-class names */
+extern char D_80059248[]; /* "%06x " */
+extern char D_80059250[]; /* "%6x " */
+extern char D_80059258[]; /* "%s " */
+extern char D_8005925C[]; /* "%s" */
+extern char D_80059260[]; /* " / " */
+extern char D_80059264[]; /* newline */
+extern char D_80059268[]; /* "No- " */
+extern char D_80059270[]; /* "MCB--- " */
+extern char D_80059278[]; /* "ADDR-- " */
+extern char D_80059280[]; /* "SIZE-- " */
+extern char D_80059288[]; /* "USER " */
+extern char D_80059290[]; /* "GETADD " */
+extern char D_80059298[]; /* "%3d " */
+extern char D_800592A0[]; /* "--- " */
+extern char D_800592A8[]; /* "------ " */
+extern char D_800592B0[]; /* "---- " */
+
 /* Usable size of a block: the distance to the next block's header. */
 s32 func_80031894(u8 *data) {
     return HEAP_HEADER(data)->next - data - 8;
@@ -473,11 +492,152 @@ void func_800324C4(u32 address, char *out) {
     *out = 0;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_80032584);
+/* Print one heap-report row: selected addresses, usable size, owner tag,
+ * caller address/name and allocation-class contents. A grouped row uses its
+ * last header, first data address, and sum of usable sizes. */
+void func_80032584(HeapHeader *header, u8 *data, s32 size, s32 flags) {
+    char name[64];
+    char *contents;
+
+    if (flags & 2) {
+        func_80032BDC(D_80059248, (void *)((u32)header & 0xFFFFFF));
+    }
+    if (flags & 4) {
+        func_80032BDC(D_80059248, (void *)((u32)data & 0xFFFFFF));
+    }
+    if (flags & 8) {
+        func_80032BDC(D_80059250, (void *)size);
+    }
+    if (flags & 0x10) {
+        func_80032BDC(D_80059258, D_80050110[header->tag]);
+    }
+    if (flags & 0x20) {
+        func_80032BDC(D_80059248, (void *)(header->caller * 4));
+    }
+    if ((flags & 0x40) && header->tag != 0) {
+        func_800324C4(header->caller * 4 + 0x80000000U, name);
+        func_80032BDC(D_8005925C, name);
+        if ((flags & 0x80) && (header->kind & 0x1F)) {
+            func_80032BDC(D_80059260);
+        }
+    }
+    if ((flags & 0x80) && (header->kind & 0x1F)) {
+        if (header->kind & 0x20) {
+            contents = D_80050140[header->kind & 0x1F];
+        } else {
+            contents = ((char **)D_80059FA4[header->tag])[header->kind];
+        }
+        func_80032BDC(D_8005925C, contents);
+    }
+    func_80032BDC(D_80059264);
+}
 
 INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/heap", D_80018998);
 
+/* Report the heap, coalescing free blocks for nonzero modes. Mode 2 groups
+ * equal owner tags/allocation classes (ignoring keep/caller); mode 3 groups
+ * equal callers. Skip/count apply to finished rows; zero count is unlimited.
+ * Column flags: 1 number, 2 header, 4 data, 8 size, 0x10 owner, 0x20 caller,
+ * 0x40 caller symbol, 0x80 contents, 0x8000 total free bytes.
+ * Nonmatching: the original reserves an additional untouched 64-byte stack
+ * area and compares tag/kind with one packed-word mask. */
+#ifdef NON_MATCHING
+void func_8003278C(s32 mode, s32 skip, s32 count, s32 flags) {
+    s32 number = 0;
+    s32 limited = 0;
+    HeapHeader *header;
+    u8 *data;
+    s32 size;
+
+    if (flags == 0) {
+        flags = 0x808D;
+    }
+    if (mode != 0) {
+        func_80031FF8();
+    }
+    if (count != 0) {
+        limited = 1;
+    }
+    if (D_80059334 == NULL) {
+        flags &= ~0x40;
+    }
+    if (flags & 1) {
+        func_80032BDC(D_80059268);
+    }
+    if (flags & 2) {
+        func_80032BDC(D_80059270);
+    }
+    if (flags & 4) {
+        func_80032BDC(D_80059278);
+    }
+    if (flags & 8) {
+        func_80032BDC(D_80059280);
+    }
+    if (flags & 0x10) {
+        func_80032BDC(D_80059288);
+    }
+    if (flags & 0x20) {
+        func_80032BDC(D_80059290);
+    }
+    if (flags & 0x40) {
+        func_80032BDC("FUNCTION/");
+    }
+    if (flags & 0x80) {
+        func_80032BDC("CONTENTS");
+    }
+    func_80032BDC(D_80059264);
+    header = HEAP_HEADER(D_80059320);
+    data = D_80059320;
+    size = 0;
+    while (header->tag != 1) {
+        size += header->next - (u8 *)header - 0x10;
+        if ((mode == 2 && header->tag == HEAP_HEADER(header->next)->tag &&
+                         header->kind == HEAP_HEADER(header->next)->kind) ||
+            (mode == 3 && header->caller == HEAP_HEADER(header->next)->caller)) {
+            number++;
+            header = HEAP_HEADER(header->next);
+            continue;
+        }
+        if (skip != 0) {
+            skip--;
+        } else {
+            if (flags & 1) {
+                func_80032BDC(D_80059298, (void *)number);
+            }
+            func_80032584(header, data, size, flags);
+            count--;
+        }
+        if (limited && count == 0) {
+            break;
+        }
+        number++;
+        data = header->next;
+        size = 0;
+        header = HEAP_HEADER(data);
+    }
+    if (flags & 1) {
+        func_80032BDC(D_800592A0);
+    }
+    if (flags & 2) {
+        func_80032BDC(D_800592A8);
+    }
+    if (flags & 4) {
+        func_80032BDC(D_800592A8);
+    }
+    if (flags & 8) {
+        func_80032BDC(D_800592A8);
+    }
+    if (flags & 0x10) {
+        func_80032BDC(D_800592B0);
+    }
+    if (flags & 0x8000) {
+        func_80032BDC("\nFree %6x", (void *)func_80032340());
+    }
+    func_80032BDC(D_80059264);
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_8003278C);
+#endif
 
 /* Allocate a protected block owned by tag 7 (class 0x2F), from the top. */
 void *func_80032B0C(s32 size) {

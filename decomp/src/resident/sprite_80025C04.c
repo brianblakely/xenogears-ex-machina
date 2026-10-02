@@ -455,14 +455,147 @@ s32 func_8002675C(u16 *sheet, s32 id, POLY_FT4 *prims, s32 index, s16 x, s16 y, 
     return entry[0];
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80025C04", func_80026A0C);
+/* Draw a sheet entry into every second SPRT from `index`, then place a
+ * draw-mode packet in the following slot. The texture page comes from the
+ * first sheet part, including when the entry has no parts. */
+s32 func_80026A0C(u16 *sheet, s32 id, SPRT *prims, s32 index, s16 x, s16 y) {
+    s16 *entry;
+    SheetPart *part;
+    SPRT *sprt;
+    s32 i;
+    s16 left, top;
+    u16 u, v, w, h;
+
+    entry = (s16 *)(sheet[id + 2] + (s32)sheet);
+    for (i = 0; i != entry[0]; i++) {
+        sprt = prims + i * 2 + index;
+        part = &((SheetPart *)(entry + 2))[i];
+        SetSprt(sprt);
+        sprt->clut = GetClut(part->clut_x, part->clut_y);
+        SetSemiTrans(sprt, 0);
+        SetShadeTex(sprt, 1);
+        left = part->x;
+        top = part->y;
+        u = part->u;
+        v = part->v;
+        w = part->w;
+        h = part->h;
+        sprt->x0 = x + left;
+        sprt->y0 = y + top;
+        sprt->u0 = u;
+        sprt->v0 = v;
+        sprt->w = w;
+        sprt->h = h;
+    }
+    part = (SheetPart *)(entry + 2);
+    SetDrawMode((DR_MODE *)(prims + (i << 1) + index), 0, 0,
+                GetTPage(part->mode, 0, (s16)part->page_x, (s16)part->page_y), 0);
+    return entry[0] + 1;
+}
 
 void func_80026B9C(void) {
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80025C04", func_80026BA4);
+/* Queue the sheet entry as textured quads at (x, y), linking each quad at
+ * `ot`. Its signed texture coordinates supply the offsets within its VRAM
+ * page. Leave the queue untouched unless every part fits before its end. */
+/* Nonmatching: register allocation and store scheduling differ; the C
+ * candidate is four bytes shorter than the original. */
+#ifdef NON_MATCHING
+void func_80026BA4(u16 *sheet, s32 id, s32 x, s32 y, u_long *ot) {
+    s16 *entry;
+    SheetPart *part;
+    POLY_FT4 *poly;
+    s32 i;
+    s32 count;
+    s32 u, v, w, h, left, top, mode;
+    s32 page_x, page_y, column, texture_u;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80025C04", func_80026DCC);
+    entry = (s16 *)(sheet[id + 2] + (s32)sheet);
+    count = entry[0];
+    if ((u8 *)D_80059580 + count * sizeof(POLY_FT4) < D_80059534) {
+        for (i = 0; i != count; i++) {
+            poly = (POLY_FT4 *)D_80059580;
+            D_80059580 = (SpriteQueueEntry *)(poly + 1);
+            setlen(poly, 9);
+            setcode(poly, 0x2d);
+            part = &((SheetPart *)(entry + 2))[i];
+            texture_u = part->u << 16;
+            if (part->mode) {
+                column = texture_u >> 18;
+            } else {
+                column = texture_u >> 20;
+            }
+            page_x = (s16)(part->page_x & 0xffc0) + column;
+            page_y = (s16)(part->page_y & 0xff00) + part->v;
+            v = part->v;
+            mode = part->mode;
+            w = (s16)part->w;
+            h = (s16)part->h;
+            left = (s16)part->x;
+            top = (s16)part->y;
+            u = (s16)part->u;
+            poly->clut = GetClut(part->clut_x, part->clut_y);
+            poly->tpage = GetTPage(mode, 0, page_x, page_y);
+            poly->x0 = left + x;
+            poly->v0 = v;
+            poly->v1 = v;
+            poly->x1 = left + x + w;
+            poly->x2 = left + x;
+            poly->x3 = left + x + w;
+            poly->v2 = v + h;
+            poly->v3 = v + h;
+            poly->y0 = top + y;
+            poly->y1 = top + y;
+            poly->y2 = top + y + h;
+            poly->y3 = top + y + h;
+            poly->u0 = u;
+            poly->u1 = u + w;
+            poly->u2 = u;
+            poly->u3 = u + w;
+            AddPrim(ot, poly);
+        }
+    }
+}
+#else
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80025C04", func_80026BA4);
+#endif
+
+/* Fill the renderer's compact part records from the sheet entry, translated
+ * by (x, y), with blend mode 1. Preserve each record's other fields. */
+s32 func_80026DCC(u16 *sheet, s32 id, SpritePart *parts, s16 x, s16 y) {
+    s16 *entry;
+    SheetPart *part;
+    s32 count;
+    s32 i;
+    s32 mode;
+    s32 u, column;
+    s32 page_x, page_y;
+
+    entry = (s16 *)(sheet[id + 2] + (s32)sheet);
+    count = entry[0];
+    part = (SheetPart *)(entry + 2);
+    for (i = 0; i != count; i++, part++, parts++) {
+        u = part->u << 16;
+        if (part->mode) {
+            column = u >> 18;
+        } else {
+            column = u >> 20;
+        }
+        page_x = (s16)(part->page_x & 0xffc0) + column;
+        page_y = (s16)(part->page_y & 0xff00) + part->v;
+        mode = part->mode;
+        parts->clut = GetClut(part->clut_x, part->clut_y);
+        parts->tpage = GetTPage(mode, 1, page_x, page_y);
+        parts->u = part->u;
+        parts->v = part->v;
+        parts->w = part->w;
+        parts->h = part->h;
+        parts->x = part->x + x;
+        parts->y = part->y + y;
+    }
+    return count;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80025C04", func_80026F44);
 

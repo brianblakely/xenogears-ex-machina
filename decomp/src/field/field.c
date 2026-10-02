@@ -68,19 +68,21 @@ void func_8007008C(s32 unused, void *source, void *destination) {
 
 /* Tear the field down: reset the GPU, flush both draw buffers, then release
  * every model instance, the loaded components, the text windows and the
- * 801e module's buffers.
- * NON_MATCHING: the original computes the buffer index increment into a temporary. */
-#ifdef NON_MATCHING
+ * 801e module's buffers. */
 void func_800700B0(void) {
     s32 i;
+    s32 next;
     FieldInstance *instance;
+    s32 *module_loaded;
 
     ResetGraph(1);
     func_8001C8DC();
-    for (i = 0; i < 2; i++) {
+    for (i = 0; i < 2;) {
         func_80025044();
         DrawSync(0);
-        func_800250E0((D_800ADB08 + i + 1) & 1);
+        next = i + 1;
+        func_800250E0((D_800ADB08 + next) & 1);
+        i = next;
         func_80025044();
         DrawSync(0);
         func_80024FB8();
@@ -115,19 +117,17 @@ void func_800700B0(void) {
         func_800320E8((void *)D_800AFEA8.handles[i]);
     }
     func_8003748C();
+    module_loaded = &D_800B2264;
     D_800AFEA8.count = 0;
-    if (D_800B2264 != 0) {
+    if (*module_loaded != 0) {
         func_801E7FD4();
         func_800320E8(D_800ADB20);
         func_8007999C();
     }
-    D_800B2264 = 0;
+    *module_loaded = 0;
     func_8003218C(3);
     func_800A83B4();
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800700B0);
-#endif
 
 /* Load a TIM's image at (x, y) and its CLUT at (clut_x, clut_y) with the
  * given size; a CLUT y of -1 or a zero size keeps the TIM's own. */
