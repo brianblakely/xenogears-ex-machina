@@ -18,12 +18,266 @@
 #include "popup.h"
 #include "frame.h"
 #include "stage.h"
+#include "settle.h"
+#include "curve.h"
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800BFE48", func_800BFE48);
+/* Return the slots' sprites to their places after an action: sprites in a
+ * hit motion leave it, sprites away from their slot walk back, then each
+ * takes its condition's idle motion and gains or loses the status effect
+ * sprites of its changed status bits (bits 13-15). */
+void func_800BFE48(void) {
+    BattleSprite *sprite;
+    s32 slot;
+    s32 motion;
+    s32 bit;
+    u32 bits;
+    u32 removed;
+    u32 status;
+    u32 old;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800BFE48", func_800C0314);
+    for (slot = 0; slot != 11; slot++) {
+        if (BATTLE_AREA.slots[slot].gear) {
+            continue;
+        }
+        sprite = BATTLE_AREA.sprites[slot];
+        if (sprite == NULL || func_8009A0DC(slot) == 8) {
+            continue;
+        }
+        switch (sprite->motion.bytes[3]) {
+        case 5:
+        case 7:
+        case 14:
+        case 15:
+        case 21:
+            if (sprite->motion.bytes[3] != D_800C37D4[func_8009A0DC(slot)]) {
+                func_800245D8(sprite, 0x10);
+                D_800D2E54 &= ~(1 << SPRITE_SLOT(sprite));
+            }
+            break;
+        }
+    }
+    func_800C0564();
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800BFE48", func_800C0564);
+    for (slot = 0; slot != 11; slot++) {
+        if (BATTLE_AREA.slots[slot].gear) {
+            continue;
+        }
+        sprite = BATTLE_AREA.sprites[slot];
+        if (sprite == NULL || func_8009A0DC(slot) == 8 || sprite->motion.bytes[3] == 0x15) {
+            continue;
+        }
+        if (DISTANCE(sprite->x.part.whole, (u16)BATTLE_AREA.slots[slot].x) >= 9) {
+            goto walk;
+        }
+        if (DISTANCE(sprite->z.part.whole, (u16)BATTLE_AREA.slots[slot].z) < 9) {
+            continue;
+        }
+    walk:
+        sprite->motion.bits.doubleStep = 1;
+        sprite->target[0] = BATTLE_AREA.slots[slot].x;
+        sprite->target[2] = BATTLE_AREA.slots[slot].z;
+        sprite->target[1] = 0;
+        func_800245D8(sprite, 3);
+    }
+    func_800C0564();
+
+    for (slot = 0; slot != 11; slot++) {
+        if (BATTLE_AREA.sprites[slot] != NULL) {
+            BATTLE_AREA.sprites[slot]->motion.bits.doubleStep = 0;
+        }
+    }
+
+    for (slot = 0; slot != 11; slot++) {
+        if (BATTLE_AREA.slots[slot].gear) {
+            continue;
+        }
+        sprite = BATTLE_AREA.sprites[slot];
+        if (sprite == NULL) {
+            continue;
+        }
+        if (sprite->motion.bytes[3] != 0x15) {
+            func_800BAEB8(slot);
+        }
+        func_800C0314();
+        if (func_8009A0DC(slot) != 8) {
+            motion = D_800C37D4[func_8009A0DC(slot)];
+            if (!BATTLE_AREA.slots[slot].gear
+                && (motion != 0x15 || (D_800C3608 >> SPRITE_SLOT(sprite)) & 1)) {
+                if (motion == 1) {
+                    motion = sprite->idle.mode;
+                }
+                if (!BATTLE_AREA.slots[slot].hidden && sprite->motion.bytes[3] != motion) {
+                    func_800245D8(sprite, motion);
+                }
+            }
+        }
+        status = func_8009A1AC(slot);
+        old = (u16)sprite->resource->fieldC;
+        sprite->resource->fieldC = status;
+        removed = old & ~status;
+        bits = status & ~old;
+        for (bit = 0; bit != 16; bit++, bits = (bits & 0xFFFF) >> 1) {
+            if (bits & 1) {
+                switch (bit) {
+                case 5:
+                case 6:
+                case 7:
+                case 8:
+                case 9:
+                case 10:
+                case 11:
+                case 12:
+                    break;
+                case 13:
+                    func_800BFDA8(sprite, 9);
+                    break;
+                case 14:
+                    func_800BFDA8(sprite, 10);
+                    break;
+                case 15:
+                    func_800BFDA8(sprite, 11);
+                    break;
+                }
+            }
+        }
+        bits = removed;
+        for (bit = 0; bit != 16; bit++, bits = (bits & 0xFFFF) >> 1) {
+            if (bits & 1) {
+                switch (bit) {
+                case 5:
+                case 6:
+                case 7:
+                case 8:
+                case 9:
+                case 10:
+                case 11:
+                case 12:
+                    break;
+                case 13:
+                    func_800BFD88(sprite, 9);
+                    break;
+                case 14:
+                    func_800BFD88(sprite, 10);
+                    break;
+                case 15:
+                    func_800BFD88(sprite, 11);
+                    break;
+                }
+            }
+        }
+    }
+}
+
+/* Knock down the slots of the area's down mask not yet down: each slot
+ * sprite (unless its slot still counts while down) plays motion 0x15 (gears
+ * through their stage object), then frames run until their countdowns end;
+ * the number knocked down. */
+s32 func_800C0314(void) {
+    BattleArea *area = &BATTLE_AREA;
+    BattleSprite *list[12];
+    BattleSprite *sprite;
+    s32 i;
+    s32 slot;
+    s32 downed;
+    u8 gear;
+    u8 busy;
+
+    downed = 0;
+    gear = downed;
+    i = func_800BEEB4(AREA_DOWN_MASK(area) & (AREA_DOWN_MASK(area) ^ (u16)D_800D2E54), list, D_800C3E1C);
+    if (i != 0) {
+        for (i--; i >= 0; i--) {
+            sprite = list[i];
+            if ((D_800C3608 >> SPRITE_SLOT(sprite)) & 1) {
+                list[i] = NULL;
+                continue;
+            }
+            sprite->countdown = 0;
+            slot = SPRITE_SLOT(sprite);
+            if (BATTLE_AREA.slots[slot].gear) {
+                gear = 1;
+                D_800D3368[slot]->field38 = gear;
+                func_800BEE2C(SPRITE_SLOT(sprite), SPRITE_SLOT(sprite), 0x15);
+            } else if (sprite->motion.bytes[3] != 0x15) {
+                func_800245D8(sprite, 0x15);
+            }
+            downed++;
+            D_800D2E54 |= 1 << SPRITE_SLOT(sprite);
+        }
+    }
+    do {
+        busy = 0;
+        for (i = 0; i != downed; i++) {
+            if (list[i] != NULL && list[i]->field48 != 0 && list[i]->countdown != 0) {
+                busy = 1;
+            }
+        }
+        if (busy && downed != 0) {
+            func_800BF9EC();
+        }
+        if (busy && downed != 0) {
+            func_800BE790();
+        }
+    } while (busy);
+    if (gear) {
+        func_800B136C();
+    }
+    return downed;
+}
+
+/* Run frames until every slot's sprite has settled: gear slots until their
+ * sprite's frames run out, others (unless hidden or out of action) until
+ * they are back in their condition's idle motion or their idle mode. */
+void func_800C0564(void) {
+    BattleSprite *sprite;
+    s32 slot;
+    s8 motion;
+    u8 busy;
+
+    while (1) {
+        busy = 0;
+        for (slot = 0; slot != 11; slot++) {
+            sprite = BATTLE_AREA.sprites[slot];
+            if (sprite == NULL) {
+                continue;
+            }
+            if (BATTLE_AREA.slots[slot].gear) {
+                if (sprite->framesLeft != 0) {
+                    busy = 1;
+                }
+                continue;
+            }
+            if (func_8009A0DC(slot) == 8) {
+                continue;
+            }
+            switch (sprite->motion.bytes[3]) {
+            case 0:
+            case 1:
+            case 5:
+            case 7:
+            case 14:
+            case 15:
+            case 20:
+            case 21:
+            case 22:
+            case 24:
+                break;
+            default:
+                if (!BATTLE_AREA.slots[slot].hidden) {
+                    motion = sprite->motion.bytes[3];
+                    if (motion != D_800C37D4[func_8009A0DC(slot)] && sprite->motion.bytes[3] != sprite->idle.mode) {
+                        busy = 1;
+                    }
+                }
+                break;
+            }
+        }
+        if (!busy) {
+            break;
+        }
+        func_800BE790();
+    }
+}
 
 /* The distance between two points. */
 s32 func_800C06E4(VECTOR *a, VECTOR *b) {
@@ -74,7 +328,94 @@ void func_800C0828(SVECTOR *from, SVECTOR *to, SVECTOR *angles) {
     angles->vx = 0;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800BFE48", func_800C08CC);
+/* One span of a curve: the eight points of cell row row over the four
+ * control points from p, each drawn as a segment from the previous point
+ * (a and b alternate as the current point). */
+#define CURVE_SPAN(row, p)                                   \
+    for (column = 1; column != 8; column++) {                \
+        if (column & 1) {                                    \
+            func_800C0D18(row, column, p, &b);               \
+            draw(&a, &b);                                    \
+        } else {                                             \
+            func_800C0D18(row, column, p, &a);               \
+            draw(&b, &a);                                    \
+        }                                                    \
+    }
+
+/* Draw a smooth curve through count points (at least 2; 3 and 4 are padded
+ * to 5 by repeating the last point) as segments draw(from, to): a line for
+ * 2, otherwise spans of eight segments ending at the last point. */
+void func_800C08CC(s32 count, SVECTOR *points, void (*draw)()) {
+    VECTOR a;
+    VECTOR b;
+    SVECTOR unused; /* 8 bytes of the frame that no code touches */
+    s32 column;
+    s32 first;
+
+    D_800D2FCC = 0;
+    if (count < 5) {
+        if (count < 3) {
+            if (count < 2) {
+                return;
+            }
+            a.vx = points[0].vx;
+            a.vy = points[0].vy;
+            a.vz = points[0].vz;
+            b.vx = points[1].vx;
+            b.vy = points[1].vy;
+            b.vz = points[1].vz;
+            draw(&a, &b);
+            return;
+        }
+        switch (count) {
+        case 3:
+            points[3].vx = points[2].vx;
+            points[3].vy = points[2].vy;
+            points[3].vz = points[2].vz;
+            points[4].vx = points[2].vx;
+            points[4].vy = points[2].vy;
+            points[4].vz = points[2].vz;
+            break;
+        case 4:
+            points[4].vx = points[3].vx;
+            points[4].vy = points[3].vy;
+            points[4].vz = points[3].vz;
+            break;
+        }
+        count = 5;
+    }
+
+    first = 0;
+    func_800C0D18(0, 0, &points[first], &a);
+    CURVE_SPAN(0, &points[first]);
+    if (count >= 6) {
+        first = 1;
+        func_800C0D18(1, 0, &points[first], &a);
+        draw(&b, &a);
+        CURVE_SPAN(1, &points[first]);
+    }
+    for (first = 2; first < count - 5; first++) {
+        func_800C0D18(2, 0, &points[first], &a);
+        draw(&b, &a);
+        CURVE_SPAN(2, &points[first]);
+    }
+    if (count >= 7) {
+        first = count - 5;
+        func_800C0D18(3, 0, &points[first], &a);
+        draw(&b, &a);
+        CURVE_SPAN(3, &points[first]);
+    }
+    first = count - 4;
+    func_800C0D18(4, 0, &points[first], &a);
+    draw(&b, &a);
+    CURVE_SPAN(4, &points[first]);
+    if (count >= 5) {
+        a.vx = points[count - 1].vx;
+        a.vy = points[count - 1].vy;
+        a.vz = points[count - 1].vz;
+        draw(&b, &a);
+    }
+}
 
 /* The average of the four points weighted by the weights of cell
  * (row, column). */
