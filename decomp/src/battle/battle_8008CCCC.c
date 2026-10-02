@@ -467,17 +467,13 @@ void func_8008FAD8(void) {
 
 /* Build a message frame from glyphs into the +0x1e68 list: `rows` side
  * glyphs down from `top`, the corner at (x, y) and a stretched edge of
- * width `w`. Nonmatching: prologue scheduling (the original reads `rows`
- * after clearing the count). */
-#ifdef NON_MATCHING
+ * width `w`. */
 void func_8008FC1C(s16 x, s16 y, s16 w, s16 top, u8 rows) {
     s32 i;
-    s32 row;
 
     D_800D2D28->unkFC = 0;
-    for (i = 0, row = top; i < rows; i++) {
-        D_800D2D28->unkFC += func_80076A10(0x65, &D_800C3EA4->unk1E68[D_800D2D28->unkFC * 2], x, row);
-        row += 8;
+    for (i = 0; i < rows; i++) {
+        D_800D2D28->unkFC += func_80076A10(0x65, &D_800C3EA4->unk1E68[D_800D2D28->unkFC * 2], x, top + i * 8);
     }
     D_800D2D28->unkFC = func_80076A10(0x64, &D_800C3EA4->unk1E68[D_800D2D28->unkFC * 2], x, y) + D_800D2D28->unkFC;
     D_800D2D28->unkFC += func_800263E4(D_800D2F5C, 0x64, &D_800C3EA4->unk1E68[D_800D2D28->unkFC * 2],
@@ -485,9 +481,6 @@ void func_8008FC1C(s16 x, s16 y, s16 w, s16 top, u8 rows) {
     D_800D2D28->unkA6 = D_800CCB04.buffer;
     D_800D2D28->unk9D = 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8008CCCC", func_8008FC1C);
-#endif
 
 /* Open the standard message window (0x20, 0x5c, 0xcc x 0x60, style 0xe). */
 void func_8008FDE4(void) {
@@ -1116,9 +1109,7 @@ void func_80092298(u8 member, u8 *shown) {
 /* Build the member's gear page: set up the graphics block, render the name
  * and two-digit count of each of the seven gear parts in `ids` (0xff none)
  * and the fixed eighth entry (system text 10) into VRAM text images, then
- * the page glyphs and quads. Nonmatching: the original keeps the name
- * rectangle width 30 in $t0 on both paths. */
-#ifdef NON_MATCHING
+ * the page glyphs and quads. */
 void func_80092784(u8 member, u8 *ids, u8 *counts) {
     RECT nameRect;
     RECT tensRect;
@@ -1130,6 +1121,7 @@ void func_80092784(u8 member, u8 *ids, u8 *counts) {
     s32 i;
     u8 tens;
     u32 *digit;
+    s16 nameWidth;
 
     func_80077610();
     func_80076EA4();
@@ -1140,6 +1132,7 @@ void func_80092784(u8 member, u8 *ids, u8 *counts) {
     rect.y = 0;
     rect.h = 0xD;
     func_800769E8(&rect, D_800D2DB0);
+    nameWidth = 30;
     for (i = 0; i < 8; i++) {
         images[i].pixels = (u32 *)func_8008AC00(0x1B);
         bzero(images[i].pixels, 0x30C);
@@ -1153,7 +1146,7 @@ void func_80092784(u8 member, u8 *ids, u8 *counts) {
                 func_80034EAC(func_80033784(D_800D2D24[member], ids[i]), images[i].pixels, 0x1B, 0);
                 nameRect.x = (i % 2) * 30 + 0x380;
                 nameRect.y = (i / 2) * 16 + 0x102;
-                nameRect.w = 30;
+                nameRect.w = nameWidth;
                 nameRect.h = 13;
                 func_800769E8(&nameRect, images[i].pixels);
             }
@@ -1161,7 +1154,7 @@ void func_80092784(u8 member, u8 *ids, u8 *counts) {
             func_80034EAC(func_800338D8(10), images[7].pixels, 0x1B, 0);
             nameRect.x = 0x39E;
             nameRect.y = 0x132;
-            nameRect.w = 30;
+            nameRect.w = nameWidth;
             nameRect.h = 13;
             func_800769E8(&nameRect, images[7].pixels);
         }
@@ -1209,9 +1202,6 @@ void func_80092784(u8 member, u8 *ids, u8 *counts) {
     func_800320E8(D_800D2DB0);
     func_8009209C();
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8008CCCC", func_80092784);
-#endif
 
 /* Build the combo entry display: the AP count as one or two digit glyphs,
  * the button glyph of each entered step with separators, and the remaining
@@ -1932,11 +1922,12 @@ void func_80095690(void) {
 
 /* The target defends: a +0x56 state 2 target first leaves it (8009ac48),
  * its status words clear, result code 2 and a tenth of its +0x4e times the
- * descriptor's +0x11 as the amount; its timer is held. Nonmatching: the
- * original addresses the held mask (800d2c9e) with its own %hi/%lo on the
- * load and the store instead of one address register. */
-#ifdef NON_MATCHING
+ * descriptor's +0x11 as the amount; its timer is held (the held mask
+ * 800d2c9e is addressed as its own variable here). */
 void func_800957D8(void) {
+    s32 *amount;
+    u8 slot;
+
     if (D_800CCCE8.records[D_800C3E50].pilot.characterId == 2) {
         func_8009AC48(D_800C3E50, 1);
     }
@@ -1946,12 +1937,11 @@ void func_800957D8(void) {
     D_800C3E34->pilot.status88.half.active = 0;
     D_800C3E34->pilot.status8C.half.active = 0;
     D_800D2C88[D_800C3E50] = 2;
-    D_800D2C54[D_800C3E50] = (D_800C3E34->pilot.maxHp * D_800C3DFC->power) / 10;
-    D_800D2C94.held |= 1 << D_800C3E50;
+    slot = D_800C3E50;
+    amount = &D_800D2C54[slot];
+    *amount = (D_800C3E34->pilot.maxHp * D_800C3DFC->power) / 10;
+    D_800D2C9E |= 1 << slot;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8008CCCC", func_800957D8);
-#endif
 
 /* With the command's chance (+0x1c in percent) and kind 0x6e, clear the
  * target's status words named by the command's bits 0x8000-0x400 (message
@@ -3022,7 +3012,6 @@ void func_80098C6C(u16 param) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Apply item effect `param` to `slot`: HP (amount x 50, doubled with status
  * 0x80 of +0x86) and EP (amount x 10) restoration, and unless either ran,
  * the status cures, revival (amount tenths of the maximum HP), status
@@ -3034,6 +3023,7 @@ void func_80098D2C(u8 slot, u8 param) {
     ItemEffect *effect;
     GearRecord *gear;
     u8 i;
+    s32 hp;
     s32 hpUnit;
     s32 epUnit;
 
@@ -3045,8 +3035,9 @@ void func_80098D2C(u8 slot, u8 param) {
 
     if (effect->flags & 0x8000) {
         hpUnit = 50;
-        D_800CCCE8.damage[slot] = effect->amount * hpUnit;
+        hp = effect->amount * hpUnit;
         D_800D2C88[slot] = 2;
+        D_800CCCE8.damage[slot] = hp;
         if (record->pilot.status84.half.permanent & 0x80) {
             D_800C34B0->damage[slot] *= 2;
         }
@@ -3186,9 +3177,6 @@ void func_80098D2C(u8 slot, u8 param) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8008CCCC", func_80098D2C);
-#endif
 
 /* Party gate on the formation mode: 1 when mode 2 has no member with status
  * bits 0xC002, or mode 3 does not have exactly two; otherwise 0. */

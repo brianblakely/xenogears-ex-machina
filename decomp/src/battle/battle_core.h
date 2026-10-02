@@ -216,14 +216,18 @@ typedef struct {
 extern BattleGraphics *D_800C3EA4;
 extern u8 D_800C492A;
 
-/* Battle drawing state (800ccb04). */
+/* Battle drawing state (800ccb04). The battle work area (800ccce8) follows
+ * it within one aggregate: some code addresses the work area from here. */
 typedef struct {
     u32 *ot;           /* current ordering table */
     u8 unk4[0x2C];
     s32 buffer;        /* +0x30 draw buffer index */
+    u8 unk34[0x1E4 - 0x34];
+    BattleWork work;   /* +0x1E4 (D_800CCCE8) */
 } BattleDraw;
 
 extern BattleDraw D_800CCB04;
+extern u8 D_800CCB34;   /* D_800CCB04.buffer's low byte, read on its own */
 extern void *D_800D2F5C; /* glyph table */
 extern u8 D_800C3E4C;   /* battle end state */
 
@@ -377,7 +381,7 @@ typedef struct {
     u8 *script;        /* +0x00 */
     u8 *unk4;
     u8 *reaction;      /* +0x08 reaction script */
-    u8 unkC[4];
+    u8 *turnScript;    /* +0x0C script run each turn */
     s32 longs[4];      /* +0x10 */
     u16 vars[8];       /* +0x20 */
     u8 bytes[16];      /* +0x30 */
@@ -413,6 +417,7 @@ typedef struct {
 } ActionCommit;
 
 extern ActionCommit D_800D2C94;
+extern u16 D_800D2C9E;            /* D_800D2C94.held addressed on its own */
 extern u8 D_800C204C;
 extern u8 D_800C3E18;
 extern u8 D_800C3D70[0x30];

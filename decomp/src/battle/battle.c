@@ -1382,7 +1382,6 @@ u8 func_80084108(u8 slot, u8 any) {
 /* Order the member's attack candidates: the reachable opposing slots, those
  * in its own formation group first, and the lowest-HP one (within the group
  * when there is one) moved to the front. Returns the default target. */
-#ifdef NON_MATCHING
 u8 func_800841E0(u8 member) {
     u8 slots[12];
     u8 grouped[12];
@@ -1427,12 +1426,13 @@ u8 func_800841E0(u8 member) {
     }
     for (i = 0; i < count; i++) {
         if (slots[i] != 0xFF) {
-            D_800C3E90[n++] = slots[i];
+            D_800C3E90[n] = slots[i];
+            n++;
         }
     }
     if (grouped[0] != 0) {
         for (i = 1; i < count; i++) {
-            if (grouped[i] != 0 && D_800CCCE8.records[D_800C3E90[i]].pilot.hp < D_800CCCE8.records[D_800C3E90[0]].pilot.hp) {
+            if (grouped[i] != 0 && D_800CCCE8.records[D_800C3E90[0]].pilot.hp > D_800CCCE8.records[D_800C3E90[i]].pilot.hp) {
                 swap = D_800C3E90[0];
                 D_800C3E90[0] = D_800C3E90[i];
                 D_800C3E90[i] = swap;
@@ -1440,7 +1440,7 @@ u8 func_800841E0(u8 member) {
         }
     } else {
         for (i = 1; i < count; i++) {
-            if (D_800CCCE8.records[D_800C3E90[i]].pilot.hp < D_800CCCE8.records[D_800C3E90[0]].pilot.hp) {
+            if (D_800CCCE8.records[D_800C3E90[0]].pilot.hp > D_800CCCE8.records[D_800C3E90[i]].pilot.hp) {
                 swap = D_800C3E90[0];
                 D_800C3E90[0] = D_800C3E90[i];
                 D_800C3E90[i] = swap;
@@ -1449,15 +1449,11 @@ u8 func_800841E0(u8 member) {
     }
     return D_800C3E90[0];
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800841E0);
-#endif
 
 /* Collect the slots a party attack can target (80084108, `any` includes
  * downed ones) as candidates with their mask: side 0 the enemies, 1 the
  * party, 2 both (the party first unless `partyFirst` is clear). Returns the
  * first candidate. */
-#ifdef NON_MATCHING
 u8 func_80084548(u8 side, u8 any, u8 partyFirst) {
     s32 i;
     s32 count;
@@ -1498,31 +1494,31 @@ u8 func_80084548(u8 side, u8 any, u8 partyFirst) {
     D_800C3D64 = 0;
     i = first1;
     while (--n1 >= 0) {
-        slot = i++;
+        slot = i;
         if (func_80084108(slot, any)) {
-            D_800C3E90[count++] = slot;
+            D_800C3E90[count] = slot;
             D_800C3D64 |= func_80089C08(slot);
             D_800D3274++;
+            count++;
         }
+        i++;
     }
     i = first2;
     while (--n2 >= 0) {
-        slot = i++;
+        slot = i;
         if (func_80084108(slot, any)) {
-            D_800C3E90[count++] = slot;
+            D_800C3E90[count] = slot;
             D_800C3D64 |= func_80089C08(slot);
             D_800D3274++;
+            count++;
         }
+        i++;
     }
     return D_800C3E90[0];
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80084548);
-#endif
 
 /* Collect the enemy slots the member can target (80083ff4) as candidates
  * and their mask; returns the first candidate. */
-#ifdef NON_MATCHING
 u8 func_80084750(u8 member) {
     s32 i;
     s32 n;
@@ -1538,18 +1534,17 @@ u8 func_80084750(u8 member) {
     D_800C3D64 = 0;
     i = 3;
     while (--n >= 0) {
-        slot = i++;
+        slot = i;
         if (func_80083FF4(member, slot)) {
-            D_800C3E90[count++] = slot;
+            D_800C3E90[count] = slot;
             D_800C3D64 |= func_80089C08(slot);
             D_800D3274++;
+            count++;
         }
+        i++;
     }
     return D_800C3E90[0];
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80084750);
-#endif
 
 /* The candidate nearest to `origin` that lies in screen direction
  * `direction` (0-3, each a quarter turn around it); `origin` when none. */
@@ -2416,10 +2411,10 @@ s32 func_80086B88(s32 step, u8 member) {
  * render the gear's text for combo step `step` into the shared image (two
  * entries per image cell) and place its quad after `column` + 1 steps, then
  * upload the step's fuel cost digits and place their quad. Returns the next
- * index. Nonmatching: the original reads the fuel cost through the draw
- * buffer index's address (800ccb34 + 0x60d8, the gear HUD of the battle
- * work area), so the draw state and the work area form one aggregate there;
- * the digit loop's registers differ too. */
+ * index. The fuel cost is read through the draw state (800ccb34 + 0x60d8):
+ * the draw state and the work area form one aggregate. Nonmatching: the
+ * original stores the digit rectangles from the frame base (not from the
+ * call's rectangle address) and swaps $s7/$fp (index, digit pointer). */
 #ifdef NON_MATCHING
 s32 func_80086C88(u8 member, s32 index, s32 column, u8 step, u32 **pixels) {
     RECT rect;
@@ -2429,8 +2424,11 @@ s32 func_80086C88(u8 member, s32 index, s32 column, u8 step, u32 **pixels) {
     s32 width;
     s32 count;
     s32 i;
+    u8 *fuel;
+    s32 x;
 
     count = 0;
+    fuel = &D_800C3CF4[5];
     cell = index / 2;
     odd = index % 2;
     func_80076D58(&D_800D2DB4->list11[index * 2], odd, 3);
@@ -2443,14 +2441,16 @@ s32 func_80086C88(u8 member, s32 index, s32 column, u8 step, u32 **pixels) {
     func_80076C78(&D_800D2DB4->list11[index * 2 + D_800CCB04.buffer], index * 4 + (column + 1) * 16 + 0x86,
                   0xC8 - index * 16, cell * 0x78, 0x1A, width);
     func_80076D58(&D_800D2DB4->list13[index * 2], 0, 3);
-    func_8008AAA0(D_800CCCE8.gearHud.commands[step]);
+    func_8008AAA0(D_800CCB04.work.gearHud.commands[step]);
+    x = index * 8 + 0x3DE;
     for (i = 0; i < 4; i++) {
-        if (D_800C3CF4[i + 5] != 0xFF) {
-            digits[count].x = index * 8 + i * 2 + 0x3DE;
+        if (fuel[i] != 0xFF) {
+            digits[count].x = x;
             digits[count].y = 0;
             digits[count].w = 6;
             digits[count].h = 0xD;
-            func_800769E8(&digits[count], D_800C3E5C[D_800C3CF4[i + 5]].pixels);
+            func_800769E8(&digits[count], D_800C3E5C[fuel[i]].pixels);
+            x += 2;
             count++;
         }
     }
@@ -2722,11 +2722,11 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80087AF0);
 /* Move `actor` into `target`'s formation group when it is another group
  * with room (under four members): leave the old group, take the first free
  * member place and stand at that place of the group's area. (Nonmatching:
- * the target's record offset and register allocation.) */
+ * the original computes the enemy offset before testing the target.) */
 #ifdef NON_MATCHING
 void func_80087EDC(u8 actor, u8 target) {
     u8 base;
-    s8 member;
+    s32 member;
 
     if (D_800C3EB4[actor].group != D_800C3EB4[target].group) {
         base = target < 3 ? (actor >= 3) * 8 : 0;
@@ -2738,8 +2738,8 @@ void func_80087EDC(u8 actor, u8 target) {
                     break;
                 }
             }
-            D_800C3EB4[actor].member = member;
             D_800C3EB4[actor].group = D_800C3EB4[target].group;
+            D_800C3EB4[actor].member = member;
             D_800D301C[D_800C3EB4[actor].group + base].members |= func_80089C08(D_800C3EB4[actor].member);
             if (actor < 3) {
                 D_800C3EB4[actor].x = D_800D3364->areas[D_800C3EB4[actor].group].party[D_800C3EB4[actor].member].x;
@@ -2758,23 +2758,24 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80087EDC);
 /* Move `actor` alone into `target`'s formation group when that group is
  * another one and empty (entries from 0x10, or 0x18 for an enemy joining a
  * party member): it becomes the only member, at the group's position.
- * (Nonmatching: the base selection branches and store/load order.) */
+ * (Nonmatching: the original stores the count before the member mask with
+ * this schedule, and tests the actor into $v1.) */
 #ifdef NON_MATCHING
 void func_800881B8(u8 actor, u8 target) {
     u8 base;
 
     if (D_800C3EB4[actor].group != D_800C3EB4[target].group) {
-        if (target < 3 && actor >= 3) {
-            base = 0x18;
+        if (target < 3) {
+            base = (actor < 3) ? 0x10 : 0x18;
         } else {
             base = 0x10;
         }
         if (D_800D301C[D_800C3EB4[target].group + base].count == 0) {
             func_800883AC(actor);
-            D_800C3EB4[actor].member = 0;
             D_800C3EB4[actor].group = D_800C3EB4[target].group;
-            D_800D301C[D_800C3EB4[actor].group + base].count = 1;
+            D_800C3EB4[actor].member = 0;
             D_800D301C[D_800C3EB4[actor].group + base].members = 1;
+            D_800D301C[D_800C3EB4[actor].group + base].count = 1;
             if (actor < 3) {
                 D_800C3EB4[actor].x = D_800D3364->positions[D_800C3EB4[actor].group].x;
                 D_800C3EB4[actor].z = D_800D3364->positions[D_800C3EB4[actor].group].z;
@@ -3027,15 +3028,17 @@ void func_80089110(void) {
 
 /* Build the two glyphs of the escape/limit page (800d2c34 - 0x5d and
  * - 0x25) into lists 2 and 10 and initialise their quads. */
-#ifdef NON_MATCHING
 void func_800891E4(void) {
     s32 i;
-    u8 second = D_800D2C34 - 0x25;
+    u8 first;
+    u8 second;
 
-    D_800D2DB4->counts[2] = func_80076A10((u8)(D_800D2C34 - 0x5D), D_800D2DB4->list2, 0xA0, 0x64);
-    D_800D2DB4->buffers[2] = D_800CCB04.buffer;
+    first = D_800D2C34 - 0x5D;
+    second = D_800D2C34 - 0x25;
+    D_800D2DB4->counts[2] = func_80076A10(first, D_800D2DB4->list2, 0xA0, 0x64);
+    D_800D2DB4->buffers[2] = D_800CCB34;
     D_800D2DB4->counts[10] = func_80076A10(second, D_800D2DB4->list10, 0xA0, 0x64);
-    D_800D2DB4->buffers[10] = D_800CCB04.buffer;
+    D_800D2DB4->buffers[10] = D_800CCB34;
     for (i = 0; i < D_800D2DB4->counts[2]; i++) {
         func_80076B68(&D_800D2DB4->list2[i * 2 + D_800D2DB4->buffers[2]]);
     }
@@ -3043,9 +3046,6 @@ void func_800891E4(void) {
         func_80076BF0(&D_800D2DB4->list10[i * 2 + D_800D2DB4->buffers[10]]);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800891E4);
-#endif
 
 /* Build the five-digit value 800d2c2a as glyphs into list 3 at (0x11a, 0x46)
  * and initialise its quads. */
@@ -3278,13 +3278,14 @@ u16 func_80089C9C(u16 mask, u8 slot) {
  * debug console; start (0x800, while 800ccc58) pauses or resumes, and while
  * paused holding both 4 and 8 on a debug build ends the battle. A finished
  * battle or event returns 0xff. Loops while paused. Nonmatching: the
- * original keeps 800c48ea's address in a register. */
+ * original loads 800c48ea's address after 800c3e28's. */
 #ifdef NON_MATCHING
 void func_80089CCC(s32 mode) {
     u8 code = 8;
     u8 waiting = 1;
     u8 paused = 0;
     s32 vsyncs;
+    u8 *outcome;
 
     do {
         if (func_80035734(0) == 0) {
@@ -3303,18 +3304,19 @@ void func_80089CCC(s32 mode) {
             }
         }
     } while (waiting);
+    outcome = &D_800C48EA;
     do {
         if (func_80036410()) {
             func_80035DB0();
         } else {
             while (func_80035CDC()) {
-                if (D_800C48EA != 0 || D_800C3EAC->eventsDone != 0) {
+                if (*outcome != 0 || D_800C3EAC->eventsDone != 0) {
                     code = 0xFF;
                     break;
                 }
                 if (D_800C3444 != 0) {
                     if (*D_8005917C != -1 && (D_800594A4 & 4) && (D_800594A4 & 8)) {
-                        D_800C48EA = 1;
+                        *outcome = 1;
                         goto resume;
                     }
                 } else if (D_800594A4 & 0x2000) {
