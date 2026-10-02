@@ -195,11 +195,25 @@ typedef struct {
 
 /* A linear slide of a 16.16 value. */
 typedef struct {
-    s32 value;
+    SoundFixed value;
     s32 step;
     s16 frames;
     s16 target;
 } SoundSlide;
+
+/* The driver's SPU common attributes and the volumes they are built from
+ * (D_8005A3C0). */
+typedef struct {
+    SpuCommonAttr attr;
+    s16 master;
+    s16 cd;
+    s16 unk2C;
+    s16 cd_request;
+    SoundSlide master_slide; /* stepped every other tick */
+    SoundSlide cd_slide;
+} SoundVolumes;
+
+extern SoundVolumes D_8005A3C0;
 
 /* A sequence being played: header, then its channels. Sequences are
  * listed through `next` (D_80059564). */
@@ -220,9 +234,9 @@ typedef struct SoundSeq {
     u16 noise_clock;
     u16 unk1E;
     s32 unk20;
-    s32 unk24;
+    u32 unk24;
     u32 ticks;
-    s32 unk2C;
+    u32 unk2C;
     u16 unk30;
     s16 unk32;
     s16 unk34;

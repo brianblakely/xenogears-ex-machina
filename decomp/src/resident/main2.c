@@ -1878,26 +1878,6 @@ s32 func_800379D8(s32 scene, s32 variant, u8 **sequence, s32 *unused, u8 **bank)
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800379D8);
 #endif
 
-/* The driver's SPU common attributes, the volumes they are built from and
- * the master and CD volume fades (16.16 levels stepping toward targets). */
-typedef struct {
-    SpuCommonAttr attr;
-    s16 master;
-    s16 cd;
-    s16 unk2C;
-    s16 cd_request;
-    s32 master_level;
-    s32 master_step;
-    s16 master_frames;
-    s16 master_target;
-    s32 cd_level;
-    s32 cd_step;
-    s16 cd_frames;
-    s16 cd_target;
-} SoundVolumes;
-
-extern SoundVolumes D_8005A3C0;
-
 /* A voice whose volume pair follows the output mode (D_80059518). */
 typedef struct {
     u16 flags;         /* bit 0: in use */
@@ -1935,7 +1915,7 @@ extern u8 D_8006FAC8[];      /* the SPU memory management table */
 extern u32 D_800594D8;       /* SPU address of the reverb work area, -1 none */
 extern s32 D_800595A4;       /* the zeroed transfer buffer */
 extern u8 D_80059409;        /* reverb type */
-void func_8003C020(void);    /* the driver tick */
+s32 func_8003C020(void);    /* the driver tick */
 void func_8003BB64(void);    /* SPU transfer callback */
 void func_8003BFA0(void);    /* SPU interrupt callback */
 void func_8003E700(void);
@@ -2577,19 +2557,19 @@ void func_80038B4C(void) {
 void func_80038C68(s32 volume, s32 frames) {
     s32 delta;
 
-    D_8005A3C0.master_target = volume;
+    D_8005A3C0.master_slide.target = volume;
     if (frames == 0) {
-        D_8005A3C0.master_level = volume << 16;
-        D_8005A3C0.master_frames = 0;
+        D_8005A3C0.master_slide.value.value = volume << 16;
+        D_8005A3C0.master_slide.frames = 0;
         D_8005A3C0.master = volume;
         func_80038E6C(volume, &D_8005A3C0.attr.mvol, 0);
         D_8005A3C0.attr.mask |= 3;
         return;
     }
-    delta = (volume << 8) - (D_8005A3C0.master_level >> 8);
+    delta = (volume << 8) - (D_8005A3C0.master_slide.value.value >> 8);
     if (delta != 0) {
-        D_8005A3C0.master_frames = frames;
-        D_8005A3C0.master_step = (delta / frames) << 8;
+        D_8005A3C0.master_slide.frames = frames;
+        D_8005A3C0.master_slide.step = (delta / frames) << 8;
     }
 }
 
@@ -2597,18 +2577,18 @@ void func_80038C68(s32 volume, s32 frames) {
 void func_80038D18(s32 volume, s32 frames) {
     s32 delta;
 
-    D_8005A3C0.cd_target = volume;
+    D_8005A3C0.cd_slide.target = volume;
     if (frames == 0) {
-        D_8005A3C0.cd_level = volume << 16;
-        D_8005A3C0.cd_frames = 0;
+        D_8005A3C0.cd_slide.value.value = volume << 16;
+        D_8005A3C0.cd_slide.frames = 0;
         D_8005A3C0.attr.cd.volume.left = D_8005A3C0.attr.cd.volume.right = D_8005A3C0.cd = volume;
         D_8005A3C0.attr.mask |= 0xC0;
         return;
     }
-    delta = (volume << 8) - (D_8005A3C0.cd_level >> 8);
+    delta = (volume << 8) - (D_8005A3C0.cd_slide.value.value >> 8);
     if (delta != 0) {
-        D_8005A3C0.cd_frames = frames;
-        D_8005A3C0.cd_step = (delta / frames) << 8;
+        D_8005A3C0.cd_slide.frames = frames;
+        D_8005A3C0.cd_slide.step = (delta / frames) << 8;
     }
 }
 

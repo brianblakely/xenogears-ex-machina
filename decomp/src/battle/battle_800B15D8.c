@@ -306,7 +306,332 @@ void func_800B1F0C(u32 *ot) {
     }
 }
 
+#ifdef NON_MATCHING
+/* Draw script entry's commands with their built primitives prims (800B1720,
+ * one set per display buffer) into ordering table ot: transform each
+ * polygon's vertices, cull back faces, colour the lit ones from their
+ * normals and add the facing ones at their average depth (shifted by
+ * D_80050100, plus bias, at least 5); untextured ones in blend mode blend
+ * (1-4) also get the blend mode's texture page. */
+void func_800B1F6C(entry, buffer, ot, unused, bias, blend)
+    ScriptEntry *entry;
+    u8 *buffer;
+    u32 *ot;
+    s32 unused;
+    s32 bias;
+    s32 blend;
+{
+    u8 *cmd;
+    SVECTOR *vertices;
+    SVECTOR *normals;
+    SVECTOR *v0;
+    SVECTOR *v1;
+    SVECTOR *v2;
+    SVECTOR *v3;
+    s32 count;
+    s32 i;
+    long opz;
+    long otz;
+    long p;
+    long flag;
+    s32 kind;
+    u8 *prims;
+
+    if (blend != 0) {
+        SetDrawTPage((DR_TPAGE *)&D_800C3BF8, 0, 0, ((blend - 1) & 3) << 5);
+    }
+    prims = buffer;
+    i = 0;
+    cmd = entry->commands + (u32)entry;
+    vertices = (SVECTOR *)(entry->data0 + (u32)entry);
+    count = entry->count;
+    normals = (SVECTOR *)(entry->data8 + (u32)entry);
+    for (; i != count; i++) {
+        kind = cmd[3] & 0x1C;
+        kind |= ((cmd[2] ^ 1) & 1) << 8; /* lit */
+        switch (kind) {
+        case 0x0:
+            v0 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x8);
+            v1 = SCRIPT_CMD_VERTEX(vertices, cmd, 0xA);
+            v2 = SCRIPT_CMD_VERTEX(vertices, cmd, 0xC);
+            break;
+        case 0x10:
+            v0 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x10);
+            v1 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x12);
+            v2 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x14);
+            break;
+        case 0x18:
+            v0 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x14);
+            v1 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x16);
+            v2 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x18);
+            v3 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x1A);
+            break;
+        case 0x8:
+            v0 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x8);
+            v1 = SCRIPT_CMD_VERTEX(vertices, cmd, 0xA);
+            v2 = SCRIPT_CMD_VERTEX(vertices, cmd, 0xC);
+            v3 = SCRIPT_CMD_VERTEX(vertices, cmd, 0xE);
+            break;
+        case 0x4:
+            v0 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x14);
+            v1 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x16);
+            v2 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x18);
+            break;
+        case 0x14:
+            v0 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x1C);
+            v1 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x1E);
+            v2 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x20);
+            break;
+        case 0xC:
+            v0 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x18);
+            v1 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x1A);
+            v2 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x1C);
+            v3 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x1E);
+            break;
+        case 0x1C:
+            v0 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x24);
+            v1 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x26);
+            v2 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x28);
+            v3 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x2A);
+            break;
+        case 0x100:
+            {
+                u8 code = prims[7];
+
+                NormalColor(SCRIPT_CMD_VERTEX(normals, cmd, 0x8), (CVECTOR *)(prims + 4));
+                prims[7] = code;
+            }
+            v0 = SCRIPT_CMD_VERTEX(vertices, cmd, 0xA);
+            v1 = SCRIPT_CMD_VERTEX(vertices, cmd, 0xC);
+            v2 = SCRIPT_CMD_VERTEX(vertices, cmd, 0xE);
+            break;
+        case 0x110:
+            v0 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x10);
+            v1 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x16);
+            v2 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x1A);
+            break;
+        case 0x108:
+            {
+                u8 code = prims[7];
+
+                NormalColor(SCRIPT_CMD_VERTEX(normals, cmd, 0x8), (CVECTOR *)(prims + 4));
+                prims[7] = code;
+            }
+            v0 = SCRIPT_CMD_VERTEX(vertices, cmd, 0xA);
+            v1 = SCRIPT_CMD_VERTEX(vertices, cmd, 0xC);
+            v2 = SCRIPT_CMD_VERTEX(vertices, cmd, 0xE);
+            v3 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x10);
+            break;
+        case 0x104:
+            {
+                u8 code = prims[7];
+
+                NormalColor(SCRIPT_CMD_VERTEX(normals, cmd, 0x10), (CVECTOR *)(prims + 4));
+                prims[7] = code;
+            }
+            v0 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x12);
+            v1 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x14);
+            v2 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x16);
+            break;
+        case 0x114:
+            {
+                u8 code = prims[7];
+
+                NormalColor3(SCRIPT_CMD_VERTEX(normals, cmd, 0x10), SCRIPT_CMD_VERTEX(normals, cmd, 0x14), SCRIPT_CMD_VERTEX(normals, cmd, 0x18), (CVECTOR *)(prims + 4), (CVECTOR *)(prims + 0x10),
+                             (CVECTOR *)(prims + 0x1C));
+                prims[7] = code;
+            }
+            v0 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x12);
+            v1 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x16);
+            v2 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x1A);
+            break;
+        case 0x10C:
+            v0 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x16);
+            v1 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x18);
+            v2 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x1A);
+            v3 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x1C);
+            break;
+        case 0x118:
+        case 0x11C:
+            v0 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x16);
+            v1 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x1A);
+            v2 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x1E);
+            v3 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x22);
+            break;
+        }
+        switch (cmd[3] & 0x1C) {
+        case 0x0:
+            {
+                long flag;
+
+                gte_ldv3(v0, v1, v2);
+                gte_rtpt();
+                gte_stflg(&flag);
+                gte_nclip();
+                if (!(flag & 0x4000)) {
+                    gte_stopz(&opz);
+                    gte_avsz3();
+                    if (opz > 0) {
+                        gte_stotz(&otz);
+                        otz = (otz >> D_80050100) + bias;
+                        if (otz < 5) {
+                            otz = 5;
+                        }
+                        if (otz < 0x1000) {
+                            gte_stsxy3(&((POLY_F3 *)prims)->x0, &((POLY_F3 *)prims)->x1, &((POLY_F3 *)prims)->x2);
+                            addPrim(ot + otz, prims);
+                            if (blend != 0) {
+                                func_800B1F0C(ot + otz);
+                            }
+                        }
+                    }
+                }
+            }
+            break;
+        case 0x10:
+            {
+                long flag;
+
+                gte_ldv3(v0, v1, v2);
+                gte_rtpt();
+                gte_stflg(&flag);
+                gte_nclip();
+                if (!(flag & 0x4000)) {
+                    gte_stopz(&opz);
+                    gte_avsz3();
+                    if (opz > 0) {
+                        gte_stotz(&otz);
+                        otz = (otz >> D_80050100) + bias;
+                        if (otz < 5) {
+                            otz = 5;
+                        }
+                        if (otz < 0x1000) {
+                            gte_stsxy3(&((POLY_G3 *)prims)->x0, &((POLY_G3 *)prims)->x1, &((POLY_G3 *)prims)->x2);
+                            addPrim(ot + otz, prims);
+                            if (blend != 0) {
+                                func_800B1F0C(ot + otz);
+                            }
+                        }
+                    }
+                }
+            }
+            break;
+        case 0x4:
+            {
+                long flag;
+
+                gte_ldv3(v0, v1, v2);
+                gte_rtpt();
+                gte_stflg(&flag);
+                gte_nclip();
+                if (!(flag & 0x4000)) {
+                    gte_stopz(&opz);
+                    gte_avsz3();
+                    if (opz > 0) {
+                        gte_stotz(&otz);
+                        otz = (otz >> D_80050100) + bias;
+                        if (otz < 5) {
+                            otz = 5;
+                        }
+                        if (otz < 0x1000) {
+                            gte_stsxy3(&((POLY_FT3 *)prims)->x0, &((POLY_FT3 *)prims)->x1, &((POLY_FT3 *)prims)->x2);
+                            addPrim(ot + otz, prims);
+                        }
+                    }
+                }
+            }
+            break;
+        case 0x14:
+            {
+                long flag;
+
+                gte_ldv3(v0, v1, v2);
+                gte_rtpt();
+                gte_stflg(&flag);
+                gte_nclip();
+                if (!(flag & 0x4000)) {
+                    gte_stopz(&opz);
+                    gte_avsz3();
+                    if (opz > 0) {
+                        gte_stotz(&otz);
+                        otz = (otz >> D_80050100) + bias;
+                        if (otz < 5) {
+                            otz = 5;
+                        }
+                        if (otz < 0x1000) {
+                            gte_stsxy3(&((POLY_GT3 *)prims)->x0, &((POLY_GT3 *)prims)->x1, &((POLY_GT3 *)prims)->x2);
+                            addPrim(ot + otz, prims);
+                        }
+                    }
+                }
+            }
+            break;
+        case 0x8:
+            opz = func_8004A83C(v0, v1, v2, v3, (long *)&((POLY_F4 *)prims)->x0, (long *)&((POLY_F4 *)prims)->x1,
+                                (long *)&((POLY_F4 *)prims)->x2, (long *)&((POLY_F4 *)prims)->x3, &p, &otz, &flag);
+            if (opz > 0) {
+                otz = (otz >> D_80050100) + bias;
+                if (otz < 5) {
+                    otz = 5;
+                }
+                if (!(flag & 0x8000) && otz < 0x1000) {
+                    addPrim(ot + otz, prims);
+                    if (blend != 0) {
+                        func_800B1F0C(ot + otz);
+                    }
+                }
+            }
+            break;
+        case 0x18:
+            opz = func_8004A83C(v0, v1, v2, v3, (long *)&((POLY_G4 *)prims)->x0, (long *)&((POLY_G4 *)prims)->x1,
+                                (long *)&((POLY_G4 *)prims)->x2, (long *)&((POLY_G4 *)prims)->x3, &p, &otz, &flag);
+            if (opz > 0) {
+                otz = (otz >> D_80050100) + bias;
+                if (otz < 5) {
+                    otz = 5;
+                }
+                if (!(flag & 0x8000) && otz < 0x1000) {
+                    addPrim(ot + otz, prims);
+                    if (blend != 0) {
+                        func_800B1F0C(ot + otz);
+                    }
+                }
+            }
+            break;
+        case 0xC:
+            opz = func_8004A83C(v0, v1, v2, v3, (long *)&((POLY_FT4 *)prims)->x0, (long *)&((POLY_FT4 *)prims)->x1,
+                                (long *)&((POLY_FT4 *)prims)->x2, (long *)&((POLY_FT4 *)prims)->x3, &p, &otz, &flag);
+            if (opz > 0) {
+                otz = (otz >> D_80050100) + bias;
+                if (otz < 5) {
+                    otz = 5;
+                }
+                if (!(flag & 0x8000) && otz < 0x1000) {
+                    addPrim(ot + otz, prims);
+                }
+            }
+            break;
+        case 0x1C:
+            opz = func_8004A83C(v0, v1, v2, v3, (long *)&((POLY_GT4 *)prims)->x0, (long *)&((POLY_GT4 *)prims)->x1,
+                                (long *)&((POLY_GT4 *)prims)->x2, (long *)&((POLY_GT4 *)prims)->x3, &p, &otz, &flag);
+            if (opz > 0) {
+                otz = (otz >> D_80050100) + bias;
+                if (otz < 5) {
+                    otz = 5;
+                }
+                if (!(flag & 0x8000) && otz < 0x1000) {
+                    addPrim(ot + otz, prims);
+                }
+            }
+            break;
+        }
+        prims += (cmd[0] + 1) * 4;
+        cmd += (cmd[1] + 1) * 4;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B1F6C);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B2AEC);
 

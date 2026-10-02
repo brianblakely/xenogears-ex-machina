@@ -47,6 +47,9 @@ typedef struct {
     u8 pad38[0x3C - 0x38];
     u8 field3C;
     u8 field3D;
+    u8 pad3E[0x44 - 0x3E];
+    s16 field44[4];          /* 0x44: moved by script commands 0x5B/0x5D */
+    s16 field4C[4];          /* 0x4C: moved by script commands 0x5C/0x5E */
 } SpriteView;
 
 /* A sprite's task (resident Task) with its draw task after it (0x38
@@ -120,7 +123,7 @@ typedef struct BattleSprite {
         } fieldE;          /* copied whole (800B9508) */
     } *resource;           /* 0x7C */
     u16 field80;
-    u16 field82;           /* 0x82 */
+    s16 field82;           /* 0x82: speed scale (0x1000 = 1) */
     s16 ground;            /* 0x84 */
     u8 pad86[0x9E - 0x86];
     s16 countdown;         /* 0x9E */
@@ -231,7 +234,7 @@ void func_8001F6B0(BattleSprite *sprite);
 
 /* Sprite script commands (800B3F04). */
 extern BattleSprite *D_800C3E1C;
-extern u16 D_800D36BC;
+extern s16 D_800D36BC;
 void func_800A96B4(s32 set);
 void func_800A979C(s32 index, s16 x, s16 y, s16 z, s16 angle);
 void func_800B3CD4(); /* unprototyped (to, frames, red, blue, field4C, field4E) */

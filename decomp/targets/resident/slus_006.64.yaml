@@ -61,11 +61,9 @@ segments:
       # Third sprite unit: its interpreter's jump table (800186E0) follows
       # the second unit's 15-entry table (800186A4) with no `.align 3` pad.
       - [0x8EE0, .rodata, sprite_800248D4]
-      # Texture-scroll and disc unit: its rodata opens with the identity
-      # matrix 800188CC that the sprite sheet draw 80025FA8 copies; the
-      # sprite unit emits its constants ahead of its jump tables, so the
-      # matrix after the last table is this unit's.
-      - [0x90CC, .rodata, main_8002709C]
+      # Fourth sprite unit: the identity matrix constant of 80025FA8.
+      - [0x90CC, .rodata, sprite_80025C04]
+      - [0x90EC, .rodata, main_8002709C]
       - [0x90F4, .rodata, main_8002A260]
       # Model unit (GCC 2.7.2): 8002C700's jump table at 0 mod 8 follows
       # the CD/stream unit's tables at 4 mod 8.
@@ -98,6 +96,9 @@ segments:
       # whose jump table opens its rodata; the $gp globals of the image
       # queues are addressed only from here.
       - [0x150D4, c, sprite_800248D4]
+      # Fourth sprite unit (same build): its constant follows the third
+      # unit's jump table, and it addresses the queue globals absolutely.
+      - [0x16404, c, sprite_80025C04]
       # Texture-scroll and disc unit (GCC 2.6.3, inline division checks):
       # 80027D64/80027EAC/80028808/80029AFC match only so. It ends after
       # 80029EB0 and before 8002DB84 (a register division without checks);

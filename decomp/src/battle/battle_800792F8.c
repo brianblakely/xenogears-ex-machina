@@ -277,24 +277,22 @@ s32 func_80079AB0(u8 slot) {
  * enemy not down unless +0x34 bit 0x800 lets it act) as the acting slot,
  * then execute its action list; restore the acting slot.
  * Nonmatching: the original schedules the script pointer load before the
- * status test and increments the slot first. */
+ * status test and the action list address after it. */
 #ifdef NON_MATCHING
 void func_80079C24(void) {
     u8 *pc;
     u8 count;
     s32 enemy;
-    u8 slot;
     u8 actor;
     u8 *p;
     u8 *end;
     s32 offset;
 
     count = 0;
-    slot = 3;
     actor = D_800C3EAC->actor;
-    for (enemy = 0; enemy < 8; enemy++, slot++) {
+    for (enemy = 0; enemy < 8; enemy++) {
         if (D_800C3D18[enemy].unk1[1] != 0 && D_800C3D18[enemy].unk1[0] != 0) {
-            D_800C3EAC->actor = slot;
+            D_800C3EAC->actor = enemy + 3;
             pc = D_800D3400[enemy].turnScript;
             p = (u8 *)D_800D2E5C;
             if (!(D_800CCCE8.records[enemy + 3].pilot.status7C & 0x8000) ||
@@ -316,7 +314,7 @@ void func_80079C24(void) {
                     }
                 }
                 D_800C3EAC->eventsDone = 0;
-                func_80079778(slot);
+                func_80079778(enemy + 3);
                 func_80070EB0(0);
             }
         }

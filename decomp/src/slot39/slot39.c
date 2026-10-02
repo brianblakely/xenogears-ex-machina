@@ -435,14 +435,17 @@ void func_801C62A8(void) {
     func_801C5FE4();
 }
 
-#ifdef NON_MATCHING
+/* Initialize the card scan and read the scenario's title from its text
+ * file, skipping complete lines and two-byte characters. */
 void func_801C6400(void) {
+    u8 *file;
     u8 *text;
     s32 i;
     s32 j;
     u16 line;
-    u8 *src;
     u8 c;
+    s32 newline;
+    s32 decrement;
 
     for (i = 0; i < 2; i++) {
         D_800625A0->card->scanned[i] = 0;
@@ -457,10 +460,13 @@ void func_801C6400(void) {
     line = D_8006EF64;
     i = 0;
     func_80028470(0x10, 1);
-    text = func_80031BDC(func_800288EC(1), 1);
-    func_800295D8(1, text, 0, 0x80);
+    file = func_80031BDC(func_800288EC(1), 1);
+    func_800295D8(1, file, 0, 0x80);
     func_80028A60(0);
+    text = file;
     if (line != 0) {
+        decrement = 0xFFFF;
+        newline = '\n';
         do {
         next:
             c = text[i];
@@ -468,25 +474,21 @@ void func_801C6400(void) {
                 i += 2;
                 goto next;
             }
-            if (c != '\n') {
+            if (c != newline) {
                 i += 1;
                 goto next;
             }
-            line--;
+            line += decrement;
             i += 1;
         } while (line != 0);
     }
-    src = text + i;
     for (j = 0; j < 30; j++) {
-        D_800625A0->card->title[j] = *src++;
+        D_800625A0->card->title[j] = text[i++];
     }
     D_800625A0->card->unk501A = D_800625A0->card->unk501B = 0;
     func_80028470(0x10, 0);
     func_800320E8(text);
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C6400);
-#endif
 
 /* Load the menu resources: the card file header template (name prefixes,
  * "SC" header, icon palette and pixels), the TIM list, sprite sheet and

@@ -18,8 +18,491 @@
 #include "popup.h"
 #include "frame.h"
 #include "stage.h"
+#include "sprite_script.h"
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B3F04", func_800B3F04);
+/* Run battle sprite script command (1-107) on sprite with its argument
+ * bytes: motion, velocity and gravity settings, render flags, camera and
+ * display switches, sounds, target highlights and the helpers 800B4EDC-
+ * 800B6E84 and the battle module's 801FC6FC/801FC7B0/801FC898. */
+void func_800B3F04(BattleSprite *sprite, s32 command, u8 *args) {
+    s32 unused[10]; /* allocated in the original frame */
+    VECTOR eye;
+    VECTOR target;
+    BattleSprite *other;
+    BattleTask *task;
+    s32 distance;
+    s32 scale;
+    s32 kind;
+    u8 isbg, r, g, b;
+    u16 played;
+
+    switch (command) {
+    case 0x6B:
+        func_800B3E04();
+        break;
+    case 0x6A:
+        D_800C492A = 1;
+        D_800C35D4 = 0;
+        func_8003A89C(D_800C3E54, 0, 0x78);
+        break;
+    case 0x69:
+        if ((sprite->idle.word >> 10) & 1) {
+            func_800222BC(sprite, sprite->field4C);
+            sprite->idle.word |= 0x400;
+        } else {
+            func_800222BC(sprite, sprite->field48);
+            sprite->idle.word &= ~0x400;
+        }
+        break;
+    case 0x68:
+        if (sprite->motion.bytes[3] < 0) {
+            func_800222BC(sprite, sprite->field4C);
+            sprite->idle.word |= 0x400;
+        } else {
+            func_800222BC(sprite, sprite->field48);
+            sprite->idle.word &= ~0x400;
+        }
+        break;
+    case 0x66:
+        D_800C3688 = 1;
+        break;
+    case 0x64:
+        sprite->idle.word |= 0x200;
+    case 0x63:
+        if ((s16)D_80059454 > 0x200) {
+            sprite->field3A = D_80059454;
+            sprite->flags.word = (sprite->flags.word & ~0x1F00) | 0x300;
+            sprite->render.word |= 0x10000000;
+        }
+        break;
+    case 0x62:
+        func_800BD1FC(SPRITE_SLOT(sprite));
+        break;
+    case 0x61:
+        sprite->y.fixed = (sprite->ground - 1) << 16;
+        other = sprite->partner;
+        distance = (s8)args[0] * sprite->scale / 4096;
+        if (other->x.part.whole == (u16)BATTLE_AREA.slots[SPRITE_SLOT(other)].x) {
+            if (!sprite->motion.bits.flip) {
+                distance = -distance;
+            }
+        } else if (other->x.part.whole < (u16)BATTLE_AREA.slots[SPRITE_SLOT(other)].x) {
+            distance = -distance;
+        }
+        sprite->target[0] = (other->x.fixed >> 16) + distance;
+        sprite->target[2] = other->z.fixed >> 16;
+        sprite->target[1] = 0;
+        func_800BA768(sprite);
+        break;
+    case 0x5F:
+        D_800C3564 = 1;
+        break;
+    case 0x60:
+        D_800C3564 = SPRITE_SLOT(sprite) + 2;
+        break;
+    case 0x59:
+        D_800D3638 = 0;
+        break;
+    case 0x5A:
+        D_800D3638 = 1;
+        break;
+    case 0x57:
+        func_800AA788(1);
+        break;
+    case 0x58:
+        func_800AA788(0);
+        break;
+    case 0x56: {
+        s32 slot;
+        s32 low_slot;
+        if (D_800C3622) {
+            low_slot = sprite->frameBits.bits.slotLow;
+            slot = sprite->motion.bits.slotHigh << 2 | low_slot;
+            kind = BATTLE_AREA.slots[slot].field2;
+            if (kind == 9) {
+                kind = 2;
+            }
+            if (kind == 10) {
+                kind = 6;
+            }
+            if (kind == 8) {
+                kind = 15;
+            }
+            played = D_800C3626;
+            if (!((played >> slot) & 1)) {
+                D_800C3626 = played | (1 << slot);
+                func_80039E60((kind + 0x52) | (D_8005919C->bank << 16));
+            }
+        }
+        break;
+    }
+    case 0x54:
+        func_801FC898();
+        break;
+    case 0x4F:
+        if (sprite->sound != NULL) {
+            func_80039DB8(args[0] | (((SoundSystem *)sprite->sound)->bank << 16));
+        }
+        break;
+    case 0x52:
+        if (sprite->sound != NULL) {
+            func_80039EC4(args[0] | (((SoundSystem *)sprite->sound)->bank << 16), args[1]);
+        }
+        break;
+    case 0x4D:
+        if (sprite->sound != NULL) {
+            func_8003A14C(args[0] | (((SoundSystem *)sprite->sound)->bank << 16));
+        }
+        break;
+    case 0x4E:
+        if (D_8005919C != NULL) {
+            func_8003A14C(args[0] | (D_8005919C->bank << 16));
+        }
+        break;
+    case 0x4C:
+        sprite->flags.word |= 2;
+        break;
+    case 0x48:
+        sprite->flags.word |= 1;
+        break;
+    case 0x67:
+        sprite->countdown++;
+        eye.vx = D_800D309C.eye.vx - D_800D3354.vx;
+        eye.vy = D_800D309C.eye.vy - D_800D3354.vy;
+        eye.vz = D_800D309C.eye.vz - D_800D3354.vz;
+        func_8004A414(&eye, &eye);
+        target.vx = D_800D309C.target.vx - D_800D335C.vx;
+        target.vy = D_800D309C.target.vy - D_800D335C.vy;
+        target.vz = D_800D309C.target.vz - D_800D335C.vz;
+        func_8004A414(&target, &target);
+        if (SquareRoot0(eye.vx + eye.vy + eye.vz) < 4 && SquareRoot0(target.vx + target.vy + target.vz) < 4) {
+            break;
+        }
+        sprite->framesLeft -= 2;
+        break;
+    case 0x50:
+        sprite->countdown++;
+        if (D_800D36BC != 0) {
+            D_800D36BC--;
+            break;
+        }
+        sprite->framesLeft -= 2;
+        break;
+    case 0x46:
+        func_800B61F8(sprite, args);
+        D_800D2D4C = 0;
+        break;
+    case 0x51:
+        func_800B626C(sprite, args);
+        break;
+    case 0x47:
+        func_800B62C8(sprite, args);
+        break;
+    case 0x44:
+        if (*(s32 *)0x80010000 != -1) {
+            D_800C3568 = sprite;
+        }
+        break;
+    case 0x45:
+        if (*(s32 *)0x80010000 != -1) {
+            D_800C3568 = NULL;
+        }
+        break;
+    case 0x43:
+        sprite->render.word |= 0x80000000;
+        break;
+    case 0x3E:
+        func_800BF8CC(sprite);
+        break;
+    case 0x3D:
+        func_800B4EDC(sprite);
+        break;
+    case 0x3A:
+        func_800B639C(sprite, args);
+        break;
+    case 0x42:
+        sprite->motion.word &= ~0x20;
+        break;
+    case 0x38:
+        func_800B63F0(sprite, args);
+        break;
+    case 0x37:
+        D_800C3621 = 1;
+        break;
+    case 0x34:
+        sprite->gravity = (((s8)args[0] << 1) * sprite->field82 / 4096) << 5;
+        sprite->gravity *= (D_80059198 + 1) * (D_80059198 + 1);
+        break;
+    case 0x33:
+        if (sprite->field48 != 0) {
+            func_800245D8(sprite, args[0]);
+        }
+        break;
+    case 0x31:
+        SetGeomOffset(0xA0, 0x70);
+        break;
+    case 0x32:
+        SetGeomOffset(0xA0, 0xA4);
+        break;
+    case 0x30:
+        if (sprite->view != NULL && (sprite->render.word & 3) == 1 && sprite->view->anchors != NULL) {
+            sprite->view->field3D = sprite->view->anchors[args[0]].y;
+            sprite->view->field3C = sprite->view->anchors[args[0]].x;
+        }
+        break;
+    case 0x2F:
+        func_800BF730((s32)sprite);
+        break;
+    case 0x2C:
+        func_800B6438(sprite, args);
+        break;
+    case 0x27:
+        func_800B6464(sprite, args);
+        break;
+    case 0x26:
+        func_800B64D4(sprite, args);
+        break;
+    case 0x28:
+        sprite->velocity[0] = (((s8)args[0] << 4) * sprite->field82 / 4096) << 8;
+        break;
+    case 0x29:
+        sprite->velocity[0] += (((s8)args[0] << 4) * sprite->field82 / 4096) << 8;
+        break;
+    case 0x21:
+        sprite->velocity[2] = (((s8)args[0] << 4) * sprite->field82 / 4096) << 12;
+        break;
+    case 0x22:
+        sprite->velocity[2] += (((s8)args[0] << 4) * sprite->field82 / 4096) << 8;
+        break;
+    case 0x2A:
+        sprite->velocity[1] = (((s8)args[0] << 4) * sprite->field82 / 4096) << 12;
+        break;
+    case 0x2B:
+        sprite->velocity[1] += (((s8)args[0] << 4) * sprite->field82 / 4096) << 8;
+        break;
+    case 0x1F:
+        sprite->render.word &= ~0x04000000;
+        func_800BA8F4(sprite);
+        break;
+    case 0x3F:
+        sprite->render.word |= 0x04000000;
+        break;
+    case 0x3B:
+        sprite->render.word |= 0x20000000;
+        break;
+    case 0x3C:
+        sprite->render.word &= ~0x20000000;
+        break;
+    case 0x35:
+        sprite->render.word |= 0x08000000;
+        break;
+    case 0x36:
+        sprite->render.word &= ~0x08000000;
+        break;
+    case 0x23:
+        func_800B6518(sprite, args);
+        break;
+    case 0x40:
+        func_800B65B0(sprite, args);
+        break;
+    case 0x1C:
+        func_800B6808(sprite, args);
+        break;
+    case 0x1B:
+        func_800B6A50(sprite, args);
+        break;
+    case 0x1A:
+        func_8001CE74(sprite->task);
+        break;
+    case 0x2D:
+        func_800B6930(sprite, args);
+        break;
+    case 0x2E:
+        func_800B6990(sprite->target, args);
+        break;
+    case 0x5B:
+        func_800B6990(sprite->view->field44, args);
+        break;
+    case 0x5C:
+        func_800B6990(sprite->view->field4C, args);
+        break;
+    case 0x5D:
+        func_800B69E4(sprite->view->field44, args);
+        break;
+    case 0x5E:
+        func_800B69E4(sprite->view->field4C, args);
+        break;
+    case 0x1D:
+        func_800B6A7C(sprite, args);
+        break;
+    case 0x19:
+        func_800B6B98(sprite, args);
+        break;
+    case 0x18:
+        func_800B6BFC(sprite, args);
+        break;
+    case 0x17:
+        scale = (s8)args[0] << 2;
+        sprite->velocity[0] = sprite->velocity[0] * scale / 256;
+        sprite->velocity[1] = sprite->velocity[1] * scale / 256;
+        sprite->velocity[2] = sprite->velocity[2] * scale / 256;
+        break;
+    case 0x16:
+        sprite->render.word |= 0x02000000;
+        break;
+    case 0x15:
+        sprite->render.word |= 0x01000000;
+        break;
+    case 0x11:
+        D_800C3664 = 1;
+        break;
+    case 0x12:
+        D_800C372C = 1;
+        isbg = BATTLE_AREA.buffers[0].drawEnv.isbg;
+        r = BATTLE_AREA.buffers[0].drawEnv.r0;
+        g = BATTLE_AREA.buffers[0].drawEnv.g0;
+        b = BATTLE_AREA.buffers[0].drawEnv.b0;
+        BATTLE_AREA.buffers[1].drawEnv.isbg = 1;
+        BATTLE_AREA.buffers[0].drawEnv.isbg = 1;
+        BATTLE_AREA.buffers[0].drawEnv.r0 = 0;
+        BATTLE_AREA.buffers[1].drawEnv.r0 = 0;
+        BATTLE_AREA.buffers[0].drawEnv.g0 = 0;
+        BATTLE_AREA.buffers[1].drawEnv.g0 = 0;
+        BATTLE_AREA.buffers[0].drawEnv.b0 = 0;
+        BATTLE_AREA.buffers[1].drawEnv.b0 = 0;
+        D_800C3CAC = isbg;
+        D_800C3CB0[0] = r;
+        D_800C3CB0[1] = g;
+        D_800C3CB0[2] = b;
+        break;
+    case 0x13:
+        D_800C3664 = 0;
+        break;
+    case 0x14:
+        D_800C372C = 0;
+        BATTLE_AREA.buffers[1].drawEnv.isbg = D_800C3CAC;
+        BATTLE_AREA.buffers[0].drawEnv.isbg = D_800C3CAC;
+        BATTLE_AREA.buffers[0].drawEnv.r0 = D_800C3CB0[0];
+        BATTLE_AREA.buffers[1].drawEnv.r0 = D_800C3CB0[0];
+        BATTLE_AREA.buffers[0].drawEnv.g0 = D_800C3CB0[1];
+        BATTLE_AREA.buffers[1].drawEnv.g0 = D_800C3CB0[1];
+        BATTLE_AREA.buffers[0].drawEnv.b0 = D_800C3CB0[2];
+        BATTLE_AREA.buffers[1].drawEnv.b0 = D_800C3CB0[2];
+        break;
+    case 0x10:
+        sprite->x.fixed = D_800D335C.vx << 16;
+        sprite->y.fixed = D_800D335C.vy << 16;
+        sprite->z.fixed = D_800D335C.vz << 16;
+        break;
+    case 0x53:
+        sprite->motion.word &= ~8;
+        sprite->motion.word &= ~4;
+        sprite->render.word &= ~8;
+        sprite->render.word &= ~0x10;
+        break;
+    case 0xF:
+        sprite->motion.word &= ~8;
+        sprite->motion.word &= ~4;
+        sprite->render.word &= ~8;
+        sprite->render.word &= ~0x10;
+        func_80021FE0(sprite, 0);
+        break;
+    case 0xE:
+        func_80021FE0(sprite, (s8)args[0] * 16);
+        break;
+    case 0xD:
+        func_800B6E84(sprite, args);
+        break;
+    case 0xA:
+        func_800B6C44(sprite, args);
+        break;
+    case 0xB:
+        func_800B6C98(sprite, args);
+        break;
+    case 0x49:
+        if (sprite->view != NULL) {
+            sprite->view->angle[0] += (s8)args[0];
+            sprite->render.word |= 0x10000000;
+        }
+        break;
+    case 0x4A:
+        if (sprite->view != NULL) {
+            sprite->view->angle[1] += (s8)args[0];
+            sprite->render.word |= 0x10000000;
+        }
+        break;
+    case 0x4B:
+        if (sprite->view != NULL) {
+            sprite->view->angle[2] += (s8)args[0];
+            sprite->render.word |= 0x10000000;
+        }
+        break;
+    case 0xC:
+        func_800B6CEC(sprite, args);
+        break;
+    case 0x9:
+        sprite->direction += 0x800;
+        sprite->velocity[0] = -sprite->velocity[0];
+        sprite->velocity[1] = -sprite->velocity[1];
+        sprite->velocity[2] = -sprite->velocity[2];
+        break;
+    case 0x1:
+        func_8001D4E8(sprite);
+        func_800B572C(sprite, func_8001FBA4(sprite, args));
+        break;
+    case 0x24:
+        func_801FC7B0(sprite, args);
+        break;
+    case 0x25:
+        func_801FC6FC(sprite, args);
+        break;
+    case 0x2:
+        task = func_8001D0A4(sprite->task, func_800B5588);
+        if (task != NULL) {
+            task->destroy(task);
+        }
+        break;
+    case 0x3:
+        func_800B5C18(sprite, args);
+        break;
+    case 0x4:
+        while ((task = func_8001D164(func_800B5B3C)) != NULL) {
+            task->destroy(task);
+        }
+        break;
+    case 0x1E:
+        func_800B61B0(sprite, args);
+        break;
+    case 0x20:
+        func_800B5DC4(sprite);
+        break;
+    case 0x5:
+        func_800B5FBC(sprite, args);
+        break;
+    case 0x6:
+        func_800BC404(1 << SPRITE_SLOT(D_800C3E1C));
+        break;
+    case 0x55:
+        func_800BC404((1 << SPRITE_SLOT(D_800C3E1C)) | D_800D3634);
+        break;
+    case 0x7:
+        func_800BC404(1 << SPRITE_SLOT(sprite->partner));
+        break;
+    case 0x65:
+        func_800BC404(D_800D3634);
+        break;
+    case 0x41: {
+        BattleSprite **active = &D_800C3E1C;
+        s32 a = SPRITE_SLOT(sprite->partner);
+        func_800BC404((1 << a) | (1 << SPRITE_SLOT(*active)));
+        break;
+    }
+    case 0x8:
+        sprite->flags.word |= 0x80000;
+        func_800B6DC0(sprite, args);
+        break;
+    }
+}
 
 /* Copy the sprite's current part's 8 x 8 texture block and its 16-colour
  * CLUT row to VRAM (0x3F0, 0x1F0) and (0x3F0, 0x1EE). */
@@ -744,7 +1227,6 @@ void func_800B6930(Fixed16 *point, u8 *args) {
 /* Script command: set a vector to the script's three s16s. */
 void func_800B6990(s16 *vector, u8 *args) {
     u8 *data = SCRIPT_DATA(args);
-
     s32 value;
 
     value = SCRIPT_S16(data, 0);
@@ -758,7 +1240,6 @@ void func_800B6990(s16 *vector, u8 *args) {
 /* Script command: add the script's three s16s to a vector. */
 void func_800B69E4(s16 *vector, u8 *args) {
     u8 *data = SCRIPT_DATA(args);
-
     s32 value;
 
     value = SCRIPT_S16(data, 0);

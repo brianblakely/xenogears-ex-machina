@@ -1276,14 +1276,150 @@ void func_8003C010(void (*callback)(void)) {
     D_8005950C = callback;
 }
 
+extern long GetRCnt(unsigned long spec);
+extern void func_8003C484(SoundSlide *slide);
+extern void func_8003C4C4(SoundSeq *seq, SoundSeqChannel *channels, s16 count);
+extern void func_8003C6E8(SoundSeq *seq, SoundSeqChannel *channels, s32 count);
+extern void func_8003E900(void);
+extern void func_8003EB5C(void);
+extern void func_8003EBF0(SoundSeq *seq, SoundSeqChannel *channels, s16 count);
+extern void func_8003EFE4(SoundSeq *seq, SoundSeqChannel *channels, s16 count);
+extern u32 D_80059504;           /* driver tick count */
+extern u16 D_8005955C;           /* pending SPU IRQ re-enable */
+extern s32 D_800595C4;           /* root counter time spent in ticks */
+extern s32 D_80059540;           /* timed ticks */
+
+/* The sound driver tick. Every other tick it steps the master and CD
+ * volume fades; the master volume goes through 80038e6c, which gives it
+ * the Wide mode's inverted right channel at every step. Then it writes
+ * the staged voice registers, advances every playing sequence (tempo,
+ * fade, pitch and pan slides, beats, channel data) and stages the next
+ * voice registers (modulators, then volumes and pitches, where the
+ * Mono/Stereo pan law applies). The global address reuse and register
+ * allocation still differ from the original. */
+#ifdef NON_MATCHING
+s32 func_8003C020(void) {
+    u32 start;
+    u32 end;
+    SoundSeq *seq;
+    s32 count;
+    SoundSeqChannel *channels;
+    s32 volume;
+
+    if (D_8005957C & 0x40) {
+        return 0;
+    }
+    start = GetRCnt(0xF2000002);
+    if (D_80059504++ & 1) {
+        if (D_8005A3C0.master_slide.frames != 0) {
+            func_8003C484(&D_8005A3C0.master_slide);
+            volume = D_8005A3C0.master_slide.value.part.whole;
+            D_8005A3C0.master = volume;
+            func_80038E6C(volume, &D_8005A3C0.attr.mvol, 0);
+            D_8005A3C0.attr.mask |= 3;
+        }
+        if (D_8005A3C0.cd_slide.frames != 0) {
+            func_8003C484(&D_8005A3C0.cd_slide);
+            D_8005A3C0.attr.cd.volume.left = D_8005A3C0.attr.cd.volume.right = D_8005A3C0.cd =
+                D_8005A3C0.cd_slide.value.part.whole;
+            D_8005A3C0.attr.mask |= 0xC0;
+        }
+        if (D_8005A3C0.attr.mask != 0) {
+            SpuSetCommonAttr(&D_8005A3C0.attr);
+            D_8005A3C0.attr.mask = 0;
+        }
+    }
+    func_8003E900();
+    for (seq = D_80059564; seq != NULL; seq = seq->next) {
+        if ((s16)seq->flags >= 0) {
+            continue;
+        }
+        if (seq->unk2C != 0 && seq->unk24 >= seq->unk2C) {
+            func_8003AE84(seq);
+        }
+        if (seq->tempo_frames != 0) {
+            func_8003C484((SoundSlide *)&seq->tempo);
+            seq->tick_step = seq->rate.part.whole * seq->tempo.part.whole;
+        }
+        if (seq->fade_frames != 0) {
+            func_8003C484((SoundSlide *)&seq->fade);
+            func_8003E680(0x100, seq);
+        }
+        if (seq->pitch_frames != 0) {
+            func_8003C484((SoundSlide *)&seq->pitch);
+            func_8003E680(0x200, seq);
+        }
+        if (seq->pan_frames != 0) {
+            func_8003C484((SoundSlide *)&seq->pan);
+            func_8003E680(0x100, seq);
+        }
+        seq->unk20++;
+        seq->ticks += seq->tempo.part.whole;
+        seq->unk50 -= seq->tick_step;
+        while (seq->unk50 < 0) {
+            seq->unk50 += 0x10000;
+            if (--seq->unk36 == 0) {
+                seq->unk36 = seq->unk3A;
+                if (++seq->unk34 > (u16)seq->unk38) {
+                    seq->unk34 = 1;
+                    seq->unk32++;
+                }
+            }
+            count = seq->channels;
+            channels = seq->channel;
+            if (count != 0) {
+                func_8003C4C4(seq, channels, count);
+                func_8003C6E8(seq, channels, count);
+            }
+            if (seq->voices == 0) {
+                seq->flags &= 0x7FFF;
+                break;
+            }
+            seq->unk24++;
+            if (seq->fade.value == 0) {
+                func_80039C4C((SoundTrack *)seq);
+                seq->flags |= 0x100;
+            }
+            if (seq->unk32 == seq->unk1E) {
+                seq->flags &= ~0x20;
+                func_8003A838(seq, 0, 0);
+                seq->unk1E = 0;
+            }
+        }
+    }
+    for (seq = D_80059564; seq != NULL; seq = seq->next) {
+        if ((s16)seq->flags < 0) {
+            count = seq->channels;
+            channels = seq->channel;
+            if (count != 0) {
+                func_8003EFE4(seq, channels, count);
+                func_8003EBF0(seq, channels, count);
+            }
+        }
+    }
+    func_8003EB5C();
+    if (D_8005955C & 1) {
+        D_8005955C &= ~1;
+        SpuSetIRQ(1);
+    }
+    end = GetRCnt(0xF2000002);
+    if (end >= start) {
+        D_800595C4 += end - start;
+        D_80059540++;
+    }
+    return 0;
+}
+
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003C020);
+#endif
 
 /* Step a linear slide; on its last frame land exactly on the target. */
 void func_8003C484(SoundSlide *slide) {
     if (--slide->frames != 0) {
-        slide->value += slide->step;
+        slide->value.value += slide->step;
     } else {
-        slide->value = slide->target << 16;
+        slide->value.value = slide->target << 16;
     }
 }
 

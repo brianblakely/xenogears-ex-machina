@@ -1592,7 +1592,7 @@ void func_800983A0(Camera *camera) {
     GRID_SCRATCH->v[0].vz = -GRID_SCRATCH->z0;
     for (row = 0; row < 5; row++) {
         scratch->v[0].vx = scratch->x0;
-        for (column = 0; column < 5; column++) {
+        for (column = 0; column < 5; quarters += 2, column++, scratch->v[0].vx += 0x800, block++) {
             scratch->v[1].vx = scratch->v[0].vx + 0x800;
             scratch->v[2].vz = scratch->v[0].vz - 0x800;
             scratch->v[1].vz = scratch->v[0].vz;
@@ -1628,9 +1628,6 @@ void func_800983A0(Camera *camera) {
                 quarters[0] = visible;
             }
             quarters[1] = visible;
-            quarters += 2;
-            scratch->v[0].vx += 0x800;
-            block++;
         }
         scratch->v[0].vz -= 0x800;
     }

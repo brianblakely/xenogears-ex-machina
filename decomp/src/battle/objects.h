@@ -9,9 +9,13 @@
 
 /* An object's model or extra data (fields as far as recovered). */
 struct ObjectData {
-    u8 pad0[8];
+    u8 pad0[4];
+    void *image;        /* 0x04: image == sounds when there is none */
     SoundSystem *sounds; /* 0x08: its sound bank */
     void *soundsEnd;     /* 0x0C: the same as sounds when there are none */
+    u8 pad10[4];
+    void *images;       /* 0x14: additional image data */
+    void *imagesEnd;    /* 0x18: the same as images when there are none */
 };
 
 /* A stage object's scripts: its animations and effect scripts. */

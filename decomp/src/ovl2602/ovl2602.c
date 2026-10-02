@@ -2884,9 +2884,9 @@ void func_801CFAB8(u8 slot, u8 gear) {
                   (slot << 6) + 0x200, 0, 0, slot + 0x1C0, D_800625A0->model_parts[slot]->unk8);
     D_801E8670[slot]->unk60 = D_801D6DB4[gear];
     D_801E8670[slot]->unk1C = D_801D6DD8[gear];
-    D_801E8674->view->distance -= 0x400;
+    D_801E8670[1]->view->distance -= 0x400;
     D_80050100 = 0;
-    D_801E8674->view->unk54 -= 0x20;
+    D_801E8670[1]->view->unk54 -= 0x20;
     variant = 0;
     if (gear != 0xFF) {
         variant = D_801D6DA0[gear];

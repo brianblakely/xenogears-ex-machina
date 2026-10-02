@@ -58,7 +58,7 @@ typedef union {
 /* The completion callback (0x68). */
 #define SPRITE_CALLBACK(sprite) (*(void (**)(BattleSprite *))(sprite)->pad68)
 /* The frame remapping table (0x60) of one-sided sprites. */
-#define SPRITE_FRAME_MAP(sprite) (*(u8 **)&(sprite)->pad50[0x60 - 0x50])
+#define SPRITE_FRAME_MAP(sprite) (*(u8 **)&(sprite)->pad54[0x60 - 0x54])
 /* The motion a sprite's parent is waited on in (0x8D, command 98). */
 #define SPRITE_WAIT_MOTION(sprite) (*(s8 *)&(sprite)->pad86[0x8D - 0x86])
 

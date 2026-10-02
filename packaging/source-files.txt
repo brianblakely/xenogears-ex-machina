@@ -143,8 +143,10 @@ decomp/src/battle/battle_command.h
 decomp/src/battle/battle_core.h
 decomp/src/battle/battle_flow.h
 decomp/src/battle/combatant.h
+decomp/src/battle/curve.h
 decomp/src/battle/effect.h
 decomp/src/battle/effect_script.h
+decomp/src/battle/effect_vm.h
 decomp/src/battle/files.h
 decomp/src/battle/formation_route.h
 decomp/src/battle/frame.h
@@ -163,7 +165,10 @@ decomp/src/battle/resolver.h
 decomp/src/battle/result_input.h
 decomp/src/battle/scene.h
 decomp/src/battle/screen.h
+decomp/src/battle/settle.h
 decomp/src/battle/sprite.h
+decomp/src/battle/sprite_script.h
+decomp/src/battle/sprite_vm.h
 decomp/src/battle/stage.h
 decomp/src/battle/window_draw.h
 decomp/src/debug2611/battle_debug.h
@@ -270,6 +275,7 @@ decomp/src/resident/sprite.c
 decomp/src/resident/sprite.h
 decomp/src/resident/sprite_80022090.c
 decomp/src/resident/sprite_800248D4.c
+decomp/src/resident/sprite_80025C04.c
 decomp/src/resident/stream.h
 decomp/src/resident/text.h
 decomp/src/resident/window.h

@@ -32,8 +32,8 @@ CC_sprite := 2.7.2-cdk
 GP_sprite := 8
 MASPSX_sprite := --aspsx-version=2.79 --use-comm-section
 EXTERN_sprite := absolute
-# The second (80022090-800248D4) and third (800248D4-8002709C) sprite
-# units are built the same way.
+# The second (80022090-800248D4), third (800248D4-80025C04) and fourth
+# (80025C04-8002709C) sprite units are built the same way.
 CC_sprite_80022090 := 2.7.2-cdk
 GP_sprite_80022090 := 8
 MASPSX_sprite_80022090 := --aspsx-version=2.79 --use-comm-section
@@ -42,6 +42,10 @@ CC_sprite_800248D4 := 2.7.2-cdk
 GP_sprite_800248D4 := 8
 MASPSX_sprite_800248D4 := --aspsx-version=2.79 --use-comm-section
 EXTERN_sprite_800248D4 := absolute
+CC_sprite_80025C04 := 2.7.2-cdk
+GP_sprite_80025C04 := 8
+MASPSX_sprite_80025C04 := --aspsx-version=2.79 --use-comm-section
+EXTERN_sprite_80025C04 := absolute
 # The texture-scroll and disc unit (8002709C-8002A260) is compiled by GCC
 # 2.6.3 with inline division checks.
 CC_main_8002709C := 2.6.3
