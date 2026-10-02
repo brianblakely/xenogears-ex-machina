@@ -102,7 +102,8 @@ typedef struct BattleSprite {
     u8 pad44[0x48 - 0x44];
     s32 field48;           /* 0x48 */
     s32 field4C;           /* 0x4C */
-    u8 pad50[0x64 - 0x50];
+    void *sound;           /* 0x50: its command file's sound bank */
+    u8 pad54[0x64 - 0x54];
     s32 framesLeft;        /* 0x64 */
     u8 pad68[0x6C - 0x68];
     ActorTask *task;       /* 0x6C */
@@ -114,6 +115,9 @@ typedef struct BattleSprite {
         u8 pad4[4];
         s32 field8;
         s16 fieldC;
+        struct {
+            s16 a, b;
+        } fieldE;          /* copied whole (800B9508) */
     } *resource;           /* 0x7C */
     u16 field80;
     u16 field82;           /* 0x82 */
@@ -236,5 +240,14 @@ void func_800B6004();
 void func_80021B04(SVECTOR *v, s32 x, s32 y, s32 z);
 void func_801FC4C4(SpriteAnchor *anchors, void *parts, MATRIX *m, s32 a, s32 b, s32 c, s32 d, s32 e);
 void func_801FC53C(BattleSprite *sprite, s32 a, s32 b, s32 c, s32 d, s32 e, s32 f);
+
+/* Sprite streaks and sprite effects (800B5DF4-800B7424). */
+extern MATRIX D_8004FBB8; /* resident: the sprite camera */
+extern MATRIX D_800C3574; /* the screen-space camera (render bit 24) */
+extern s32 D_800D2FCC;     /* the trail segment being drawn */
+extern s16 D_800C3CA4; /* the last trail segment's far corners */
+extern s16 D_800C3CA6;
+extern s16 D_800C3CA8;
+extern s16 D_800C3CAA;
 
 #endif
