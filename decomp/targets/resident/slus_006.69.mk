@@ -41,6 +41,6 @@ MASPSX_main_8002709C := --aspsx-version=2.34 --expand-div
 # unit defines, which cc1 -G8 cannot express here (all small externs would
 # become $gp-relative).
 CC_main_8001B6C4 := 2.6.3
-# The CD read callback, stream and model buffer unit (8002A260-8002CC10)
+# The CD read callback, stream and model buffer unit (8002A260-8002C3E8)
 # is compiled by GCC 2.6.3.
 CC_main_8002A260 := 2.6.3

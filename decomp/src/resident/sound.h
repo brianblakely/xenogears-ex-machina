@@ -154,8 +154,8 @@ typedef struct {
     u8 unk29[3];
     struct SoundSequence *instruments;
     SoundChannel state;
-    s16 unk5C;
-    u8 unk5E[2];
+    s16 unk5C;         /* frames to the key off */
+    u16 unk5E;         /* frames to the next note */
     u8 unk60;
     u8 unk61;
     u16 unk62;
@@ -179,10 +179,10 @@ typedef struct {
     s16 volume_target;
     s16 pan_step;
     s16 pan_target;
-    s16 unk94;
-    s16 unk96;
-    s16 pan_frames;
-    s16 volume_frames;
+    u16 unk94;         /* frames of the note slide */
+    u16 unk96;         /* frames of the level slide */
+    u16 pan_frames;
+    u16 volume_frames;
     SoundLoop loops[4];
     u16 modulator_index; /* modulator the generic opcodes address */
     u16 modulators;    /* mask of the running modulators */
@@ -243,8 +243,8 @@ typedef struct SoundSeq {
     s32 tick_step;     /* rate * tempo */
     SoundFixed rate;   /* 16.16 ticks per frame at tempo 1 */
     s32 rate_step;
-    s16 rate_frames;
-    s16 rate_target;
+    u16 rate_frames;
+    u16 rate_target;
     SoundFixed tempo;  /* 16.16, 1.0 = 0x100 */
     s32 tempo_step;
     s16 tempo_frames;
@@ -365,6 +365,7 @@ void *func_80039024(s32 size);                         /* allocate driver memory
 void func_80039144(void *data);                        /* release driver memory */
 void func_80039248(void *dst, void *src, s32 size);    /* copy */
 void func_80038310(SoundSequence *bank); /* release a wave bank */
+void func_80039E60(s32 sound);
 void func_80038B4C(void);
 void func_80038E6C(s16 volume, SpuVolume *out, u8 channel);
 void *func_80038F18(s32 size);

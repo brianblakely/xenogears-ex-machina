@@ -12,6 +12,7 @@
 #include "sound.h"
 #include "cd.h"
 #include "heap.h"
+#include "mode.h"
 
 /* Unpacked size of packed data (its first word). */
 s32 func_80032E7C(s32 *packed) {
@@ -443,9 +444,9 @@ void func_80034800(Window *window, u8 r, u8 g, u8 b) {
 
     for (i = 0; i < window->lines; i++) {
         line = &window->layout[i];
-        line->sprite[0].r0 = line->sprite[1].r0 = line->sprite[2].r0 = line->sprite[3].r0 = r;
-        line->sprite[0].g0 = line->sprite[1].g0 = line->sprite[2].g0 = line->sprite[3].g0 = g;
-        line->sprite[0].b0 = line->sprite[1].b0 = line->sprite[2].b0 = line->sprite[3].b0 = b;
+        line->sprite[0][0].r0 = line->sprite[0][1].r0 = line->sprite[1][0].r0 = line->sprite[1][1].r0 = r;
+        line->sprite[0][0].g0 = line->sprite[0][1].g0 = line->sprite[1][0].g0 = line->sprite[1][1].g0 = g;
+        line->sprite[0][0].b0 = line->sprite[0][1].b0 = line->sprite[1][0].b0 = line->sprite[1][1].b0 = b;
     }
 }
 
@@ -457,7 +458,118 @@ void func_8003487C(Window *window) {
     window->unk6E = 0xFF;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80034888);
+/* Draw a window into `ot` for draw buffer `buffer`: start its next queued
+ * message when the current one is done, link each line's two sprites
+ * (from the first shown line, the highlighted line lit), reveal the next
+ * glyphs when the wait is over and link its background. */
+void func_80034888(Window *window, u_long *ot, s32 buffer) {
+    WindowQueue *entry;
+    s32 i;
+    s32 line;
+
+    if (!(window->flags & 4)) {
+        if (window->queued == 0) {
+            return;
+        }
+        entry = window->queue;
+        window->text = (u8 *)entry->message;
+        window->queue = window->queue->next;
+        func_800320E8(entry);
+        window->queued--;
+        window->flags = (window->flags & 2) | 0x24;
+        if (window->unk6A != 0) {
+            window->unk68 = window->unk6A;
+            window->unk69 = window->unk6A;
+            window->unk6A = 0;
+        }
+        window->unk88 = 0;
+        window->unk86 = 0;
+        window->unk69 = window->unk68;
+    }
+    if (window->flags & 0x100) {
+        window->unk69 = window->unk68 * 3;
+    } else {
+        window->unk69 = window->unk68;
+    }
+    if (window->flags & 0x40) {
+        if (!(window->flags & 8)) {
+            window->flags = (window->flags & ~0x40) | 0x20;
+        }
+    }
+    if (window->flags & 0x20) {
+        window->unk16 = 0;
+        window->unk18 = 0;
+        window->y = 0;
+        window->x = 0;
+        window->layout[0].row = window->unkE;
+        window->layout[0].clut = D_800595D4;
+        window->layout[0].plane = 0;
+        window->layout[0].rect.y = window->unkE;
+        for (line = 0; line < window->lines; line++) {
+            window->layout[line].width = 0;
+        }
+        window->flags &= ~0x21;
+    }
+
+    line = window->unk16;
+    for (i = 0; i < window->lines; line++, i++) {
+        if (line >= window->lines) {
+            line = 0;
+        }
+        setShadeTex(&window->layout[line].sprite[buffer][1], window->unk6E != i);
+        if (window->layout[line].width > 0x40) {
+            window->layout[line].sprite[buffer][1].v0 = window->layout[line].row;
+            window->layout[line].sprite[buffer][1].clut = window->layout[line].clut;
+            window->layout[line].sprite[buffer][1].y0 = window->unk6 + window->unk14 * i;
+            window->layout[line].sprite[buffer][1].w = (window->layout[line].width - 0x40) * 4;
+            func_80031798(ot, &window->layout[line].sprite[buffer][1]);
+        }
+    }
+    AddPrim(ot, window->unk3C);
+    line = window->unk16;
+    for (i = 0; i < window->lines; line++, i++) {
+        if (line >= window->lines) {
+            line = 0;
+        }
+        setShadeTex(&window->layout[line].sprite[buffer][0], window->unk6E != i);
+        if (window->layout[line].width != 0) {
+            window->layout[line].sprite[buffer][0].v0 = window->layout[line].row;
+            window->layout[line].sprite[buffer][0].clut = window->layout[line].clut;
+            window->layout[line].sprite[buffer][0].y0 = window->unk6 + window->unk14 * i;
+            if (window->layout[line].width > 0x40) {
+                window->layout[line].sprite[buffer][0].w = 0x100;
+            } else {
+                window->layout[line].sprite[buffer][0].w = window->layout[line].width * 4;
+            }
+            func_80031798(ot, &window->layout[line].sprite[buffer][0]);
+        }
+    }
+
+    if (window->unk84 != 0) {
+        window->unk84--;
+    } else if (window->unk86 != 0) {
+        window->unk86--;
+    } else {
+        window->unk86 = window->unk88;
+        if (!(window->flags & 0x58)) {
+            func_80033DF0(window);
+            LoadImage(&window->layout[window->y].rect, window->image);
+        }
+    }
+    if (window->unk84 != 0) {
+        if (--window->unk84 == -1) {
+            window->flags &= ~0x10;
+        }
+    }
+    if (!(window->flags & 2)) {
+        *(u32 *)&window->tile[buffer].x0 = (window->unk4 - 7) | ((window->unk6 - 5) << 16);
+        *(u32 *)&window->tile[buffer].w = ((s16)(window->width | 1) * 4 + 0xD) |
+                                          ((window->lines * window->unk14 + 10) << 16);
+        addPrim(ot, &window->tile[buffer]);
+    }
+    window->flags &= ~0x100;
+    AddPrim(ot, window->unk30);
+}
 
 /* The one-line layout window (0x80059FD8) and its line (0x8005A068). */
 extern s16 D_80059FD8; /* x */
@@ -499,10 +611,10 @@ s32 func_80034EAC(u8 *text, void *image, s16 width, s32 flags) {
     D_80059FD8 = 0;
     D_8005A041 = 100;
     D_8005A000 = &D_8005A068;
-    D_8005A068.unk58 = 0;
-    D_8005A068.unk5A = flags & 1;
+    D_8005A068.width = 0;
+    D_8005A068.plane = flags & 1;
     func_80033DF0((Window *)&D_80059FD8);
-    return D_8005A000->unk58 * 4;
+    return D_8005A000->width * 4;
 }
 #else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80034EAC);
@@ -614,16 +726,110 @@ u8 func_800358A0(s32 buttons) {
     return D_8005021C[(buttons >> 12) & 0xF];
 }
 
+extern u16 D_80059574;       /* held pad buttons, second port */
+extern u16 D_80059490;       /* pad buttons pressed, second port */
+extern u16 D_800594A8;       /* pad buttons repeated, second port */
+extern s32 D_80059488;       /* vertical blank count */
+extern u32 D_80059374;       /* held pad buttons of the last frame */
+extern u32 D_80059378;
+extern s32 D_8005022C;       /* frames the held buttons have not changed */
+extern s32 D_80050230;
+extern u8 D_80059444, D_8005944C, D_80059430, D_80059438; /* sticks, first port */
+extern u8 D_80059448, D_80059450, D_80059434, D_8005943C; /* sticks, second port */
+
+/* Read both controllers: held buttons (remapped; an analog stick's layout
+ * swapped), the stick positions (the directional buttons' on a digital
+ * pad), newly pressed buttons and the auto-repeating buttons (the newly
+ * pressed ones; once the held buttons have not changed for 32 frames, all
+ * held buttons every fourth frame).
+ * Nonmatching: the operands of the two `and`s are swapped. */
+#ifdef NON_MATCHING
+void func_800358BC(void) {
+    D_80059570 = func_8003569C(0);
+    D_80059570 = func_800357C0((s16)D_80059570);
+    if (D_80059388 != 0) {
+        if (D_80059388 == 0x50) {
+            D_80059570 = func_8003582C((s16)D_80059570);
+            goto analog0;
+        }
+        if (D_80059388 == 0x70) {
+        analog0:
+            D_80059444 = D_800625FC[0].data[0];
+            D_8005944C = D_800625FC[0].data[1];
+            D_80059430 = D_800625FC[0].data[2];
+            D_80059438 = D_800625FC[0].data[3];
+        } else {
+            D_8005944C = 0;
+            D_80059444 = 0;
+            D_80059430 = D_8005020C[D_80059570 >> 12];
+            D_80059438 = D_8005021C[D_80059570 >> 12];
+        }
+    } else {
+        D_8005944C = 0;
+        D_80059444 = 0;
+        D_80059438 = 0;
+        D_80059430 = 0;
+    }
+    D_8005948C = (D_80059570 ^ D_80059374) & D_80059570;
+    D_80059374 = D_80059570;
+    if (D_8005948C) {
+        D_8005022C = 0;
+    }
+    D_800594A4 = D_80059570;
+    if (D_8005022C < 0x20) {
+        D_8005022C++;
+        D_800594A4 = D_8005948C;
+    } else if (D_80059488 & 3) {
+        D_800594A4 = D_8005948C;
+    }
+
+    D_80059574 = func_8003569C(1);
+    D_80059574 = func_800357C0((s16)D_80059574);
+    if (D_80059388 != 0) {
+        if (D_80059388 == 0x50) {
+            D_80059574 = func_8003582C((s16)D_80059574);
+            goto analog1;
+        }
+        if (D_80059388 == 0x70) {
+        analog1:
+            D_80059448 = D_800625FC[1].data[0];
+            D_80059450 = D_800625FC[1].data[1];
+            D_80059434 = D_800625FC[1].data[2];
+            D_8005943C = D_800625FC[1].data[3];
+        } else {
+            D_80059450 = 0;
+            D_80059448 = 0;
+            D_80059434 = D_8005020C[D_80059574 >> 12];
+            D_8005943C = D_8005021C[D_80059574 >> 12];
+        }
+    } else {
+        D_80059450 = 0;
+        D_80059448 = 0;
+        D_8005943C = 0;
+        D_80059434 = 0;
+    }
+    D_80059490 = (D_80059574 ^ D_80059378) & D_80059574;
+    D_80059378 = D_80059574;
+    if (D_80059490) {
+        D_80050230 = 0;
+    }
+    D_800594A8 = D_80059574;
+    if (D_80050230 < 0x20) {
+        D_80050230++;
+        D_800594A8 = D_80059490;
+    } else if (D_80059488 & 3) {
+        D_800594A8 = D_80059490;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800358BC);
+#endif
 
 /* Queued controller states (16 entries of the six state words). */
 extern u32 D_8005937C; /* queued count */
 extern u32 D_80059380; /* write index */
 extern u32 D_80059384; /* read index */
 extern s32 D_80050208; /* queue overflowed */
-extern u16 D_80059574;
-extern u16 D_80059490;
-extern u16 D_800594A8;
 extern u16 D_8005A0FC[16];
 extern u16 D_8005A11C[16];
 extern u16 D_8005A13C[16];
@@ -858,15 +1064,33 @@ void func_8003633C(u8 value) {
     D_8005938C = value;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003634C);
+extern void (*D_800501FC)(void);
+
+/* Vertical-blank callback: counts frames, polls the controllers, input queue
+ * and play clock, runs the installed hook, and on a development (host)
+ * configuration with the debugger request set traps into the debugger.
+ * The frame holds 40 bytes of locals that the code never touches. */
+void func_8003634C(void) {
+    u8 unused[40];
+
+    D_80059488++;
+    func_800358BC();
+    func_80035C0C();
+    func_80035E44();
+    func_80036220();
+    if (D_800501FC != NULL) {
+        D_800501FC();
+    }
+    if (D_80010000 != -1 && D_80059390 != 0) {
+        pollhost();
+    }
+}
 
 void func_800363E0(s32 value) {
     D_80059390 = value;
 }
 
-extern s32 D_800501FC;
-
-void func_800363F0(s32 value) {
+void func_800363F0(void (*value)(void)) {
     D_800501FC = value;
 }
 
@@ -905,7 +1129,6 @@ void func_80036420(void) {
     D_800594A8 = s5;
 }
 
-extern u8 D_80059430, D_80059434, D_80059438, D_8005943C; /* actuator values */
 
 /* Print a controller receive buffer in hex, and a digital pad's buttons.
  * Kept as assembly: its C matches, but the string literals then end the
@@ -1471,7 +1694,108 @@ void func_8003748C(void) {
     D_800593A0 = 0;
 }
 
+extern u8 D_80050240[]; /* the built-in font (packed) */
+
+/* Open the debug text console at (left, top, width, height) with room for
+ * `capacity` characters per frame: allocate it (unless a block was
+ * supplied through 8003747C), load the font (packed; the built-in one when
+ * `font` is NULL) to VRAM at (tex_x, tex_y) with its four CLUTs at
+ * (clut_x, clut_y), and make it the report output.
+ * Nonmatching: the allocation's size arms are merged, and the font flags
+ * are read in another order. */
+#ifdef NON_MATCHING
+Console *func_800374E8(s32 left, s32 top, s32 width, s32 height, s32 capacity, u32 flags,
+                       s32 tex_x, s32 tex_y, s32 clut_x, s32 clut_y, void *font) {
+    Console *console;
+    u8 *data;
+    s16 lower;
+    s32 wide;
+    s32 rows;
+    u8 *pixels;
+    RECT rect;
+
+    if (D_800593A0 != 0) {
+        console = (Console *)D_800593A0;
+    } else {
+        func_800324B8(0x32);
+        console = func_80031BDC(((flags & 1) ? capacity * 16 : capacity * 32) + sizeof(Console),
+                                ((flags >> 2) ^ 1) & 1);
+    }
+    console->buffer[0] = (u8 *)(console + 1);
+    if (flags & 1) {
+        console->buffer[1] = console->buffer[0];
+    } else {
+        console->buffer[1] = console->buffer[0] + capacity * 16;
+    }
+    if (font == NULL) {
+        font = D_80050240;
+    }
+    data = func_80032E88(font, 0);
+    wide = data[0] & 1;
+    lower = data[0] & 2;
+    console->unk14 = data[2];
+    console->unk16 = data[3];
+    if (flags & 2) {
+        lower = 0;
+    }
+    console->x = console->left = left;
+    console->flags = flags;
+    console->y = console->top = top;
+    console->width = width;
+    console->height = height;
+    console->r = console->g = console->b = 0xFF;
+    console->capacity = capacity;
+    console->unk34 = 0;
+    console->flags2E = 0;
+    console->mode = wide ? 0x7D : 0x75;
+    console->texture_v = tex_y;
+    if (lower == 0) {
+        console->flags2E |= 4;
+    }
+    if (wide) {
+        console->flags2E |= 2;
+        rows = lower ? 0x30 : 0x20;
+    } else {
+        rows = lower ? 0x10 : 8;
+    }
+    rect.x = tex_x;
+    rect.y = tex_y;
+    rect.w = 0x20;
+    rect.h = rows;
+    pixels = data + 4;
+    if (console->unk14 == 0) {
+        console->flags2E |= 8;
+        memmove(console->widths, data + 4, 0x60);
+        pixels = data + 0x64;
+    }
+    LoadImage(&rect, (u_long *)pixels);
+    console->tpage_id = GetTPage(0, 0, tex_x, tex_y);
+    rect.x = clut_x;
+    rect.y = clut_y;
+    rect.w = 0x40;
+    rect.h = 1;
+    console->cluts[0] = GetClut(clut_x, clut_y);
+    console->cluts[1] = GetClut(clut_x + 0x10, clut_y);
+    console->cluts[2] = GetClut(clut_x + 0x20, clut_y);
+    console->cluts[3] = GetClut(clut_x + 0x30, clut_y);
+    D_80059398 = rect;
+    func_80036E4C(0x7FFF, 0);
+    SetDrawTPage(&console->tpage[0], 0, 0, console->tpage_id);
+    SetDrawTPage(&console->tpage[1], 0, 0, console->tpage_id);
+    setTile(&console->tile[0]);
+    setRGB0(&console->tile[0], 0, 0, 0);
+    *(u32 *)&console->tile[0].x0 = left | (top << 16);
+    *(u32 *)&console->tile[0].w = width | (height << 16);
+    setSemiTrans(&console->tile[0], 1);
+    console->tile[1] = console->tile[0];
+    D_80059394 = console;
+    func_800372CC();
+    func_800320E8(data);
+    return console;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800374E8);
+#endif
 
 /* Sort `count` elements of `size` bytes at `base` in place (selection
  * sort): `compare` is positive when its second element goes first. */
@@ -2351,7 +2675,42 @@ void func_80038EC0(u32 start, s32 size) {
     block->next = NULL;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038F18);
+/* Allocate `size` bytes of driver memory, cleared, from the first gap that
+ * fits (between blocks or after the last one). Returns the data or NULL
+ * (then the driver event stays disabled). */
+void *func_80038F18(s32 size) {
+    SoundBlock *block;
+    SoundBlock *new;
+    u32 need;
+    u32 limit;
+    u8 *data;
+
+    DisableEvent(D_800595BC);
+    need = ((size + 0xF) & ~0xF) + 0x10;
+    for (block = D_80059410; block->next != NULL; block = block->next) {
+        limit = (u32)block->next;
+        if (limit - block->end >= need) {
+            goto found;
+        }
+    }
+    limit = D_800595E4;
+    if (limit - block->end >= need) {
+    found:
+        new = (SoundBlock *)((block->end + 0xF) & ~0xF);
+        data = (u8 *)(new + 1);
+        new->end = (u32)(data + size);
+        new->next = NULL;
+        new->unk4 = 0;
+        new->flags = 2;
+        new->unk2 = 0;
+        new->next = block->next;
+        block->next = new;
+        EnableEvent(D_800595BC);
+        func_800392EC((u32 *)data, size);
+        return data;
+    }
+    return NULL;
+}
 
 /* Allocate `size` bytes of driver memory, cleared, from the highest gap
  * that fits (between blocks or after the last one). Returns the data or
@@ -2618,7 +2977,53 @@ s32 func_800394B8(s32 size) {
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800394B8);
 #endif
 
+/* Reserve `size` bytes of SPU memory at `address` when the map leaves
+ * that range free, linking the new entry after the one before it.
+ * Returns the address, 0 when the range is taken or no entry is free.
+ * Nonmatching: the entry and the address (and the next entry and its
+ * address) take swapped registers, as in 800393B8 and 800394B8. */
+#ifdef NON_MATCHING
+s32 func_800395B8(s32 size, s32 address, u16 mode) {
+    SpuMemBlock *entry = D_8006F9FC;
+    SpuMemBlock *next;
+    SpuMemBlock *block;
+    s32 gap = 0;
+    s32 end = entry->address + entry->size;
+    s32 top = address + size;
+    s32 i;
+
+    while ((s32)entry->address < address) {
+        if (entry->next == 0) {
+            gap = 0x80000 - end;
+            break;
+        }
+        next = &D_8006F9FC[entry->next];
+        if ((s32)next->address >= top) {
+            gap = next->address - end;
+            break;
+        }
+        end = next->address + next->size;
+        entry = next;
+    }
+    if (gap < size || address < end) {
+        return 0;
+    }
+    i = func_80039784();
+    if (i < 0) {
+        return 0;
+    }
+    block = &D_8006F9FC[i];
+    block->flags = 0x80;
+    block->unk1 = 0;
+    block->address = address;
+    block->size = size;
+    block->next = entry->next;
+    entry->next = i;
+    return address;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800395B8);
+#endif
 
 /* Release the SPU memory map entry at `address`, unlinking it. Returns the
  * address, 0 when no entry has it. */

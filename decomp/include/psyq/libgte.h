@@ -42,6 +42,7 @@ MATRIX *RotMatrixZ(long r, MATRIX *m);
 MATRIX *TransMatrix(MATRIX *m, VECTOR *v);
 VECTOR *ApplyMatrix(MATRIX *m, SVECTOR *v0, VECTOR *v1);
 VECTOR *ApplyMatrixLV(MATRIX *m, VECTOR *v0, VECTOR *v1);
+SVECTOR *ApplyMatrixSV(MATRIX *m, SVECTOR *v0, SVECTOR *v1);
 MATRIX *ScaleMatrix(MATRIX *m, VECTOR *v);
 MATRIX *SetMulMatrix(MATRIX *m0, MATRIX *m1);
 void ReadGeomOffset(long *ofx, long *ofy);

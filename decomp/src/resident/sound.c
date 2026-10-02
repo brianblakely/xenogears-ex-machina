@@ -1287,7 +1287,91 @@ void func_8003C484(SoundSlide *slide) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003C4C4);
+/* Advance a sequence's rate slide and `count` channels' slides (note,
+ * level, pan and volume) and their note timers by one tick: a channel
+ * whose key-off timer reaches 1 releases its voice (when flagged), one
+ * whose note timer runs out asks for its next note. */
+void func_8003C4C4(SoundSeq *seq, SoundSeqChannel *channel, s16 count) {
+    u16 frames;
+    u16 flags;
+    u16 flags2;
+    u16 flags3;
+    u32 timers;
+    u32 gate;
+    u32 length;
+
+    frames = seq->rate_frames;
+    if (frames != 0) {
+        frames--;
+        if (frames != 0) {
+            seq->rate.value += seq->rate_step;
+        } else {
+            seq->rate.value = seq->rate_target << 16;
+        }
+        seq->rate_frames = frames;
+        seq->tick_step = seq->rate.part.whole * seq->tempo.part.whole;
+    }
+    do {
+        flags = channel->flags;
+        if (flags != 0) {
+            timers = *(u32 *)&channel->unk5C;
+            flags2 = channel->flags2;
+            gate = timers & 0xFFFF;
+            length = timers >> 16;
+            if (gate != 0) {
+                flags3 = channel->flags3;
+                if (flags3 & 8) {
+                    flags2 |= 0x100;
+                    if (--channel->unk96 == 0) {
+                        flags3 &= ~8;
+                    }
+                    channel->level.value += channel->unk88;
+                }
+                if (flags3 & 1) {
+                    flags2 |= 0x200;
+                    if (!(flags3 & 2)) {
+                        if (--channel->unk94 == 0) {
+                            flags3 &= ~1;
+                        }
+                    }
+                    channel->note.value += channel->unk84;
+                }
+                if (flags3 & 0x10) {
+                    if (--channel->pan_frames == 0) {
+                        channel->pan = channel->pan_target;
+                        flags3 &= ~0x10;
+                    } else {
+                        channel->pan += channel->pan_step;
+                    }
+                    flags2 |= 0x100;
+                }
+                if (flags3 & 0x20) {
+                    if (--channel->volume_frames == 0) {
+                        channel->volume = channel->volume_target;
+                        flags3 &= ~0x20;
+                    } else {
+                        channel->volume += channel->volume_step;
+                    }
+                    flags2 |= 0x100;
+                }
+                channel->flags3 = flags3;
+                gate--;
+                length--;
+                if (gate == 1 && (flags & 0x1000)) {
+                    channel->state.envelope.release_rate = 6;
+                    channel->state.flags |= 0x80;
+                }
+                if (length == 0) {
+                    channel->flags |= 0x400;
+                    flags2 |= 2;
+                }
+                *(u32 *)&channel->unk5C = gate + (length << 16);
+            }
+            channel->flags2 = flags2;
+        }
+        channel++;
+    } while (--count != 0);
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003C6E8);
 

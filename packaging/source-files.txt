@@ -249,7 +249,7 @@ decomp/src/resident/main3.c
 decomp/src/resident/main_8001B6C4.c
 decomp/src/resident/main_8002709C.c
 decomp/src/resident/main_8002A260.c
-decomp/src/resident/main_8002CC10.c
+decomp/src/resident/main_8002C3E8.c
 decomp/src/resident/menu.h
 decomp/src/resident/mode.h
 decomp/src/resident/model.h
