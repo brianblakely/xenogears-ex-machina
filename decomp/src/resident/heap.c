@@ -720,24 +720,25 @@ void func_80032CB8(void) {
     }
 }
 
-/* Release every delayed block now.
- * Nonmatching: the list head is kept in a callee-saved register. */
-#ifdef NON_MATCHING
+/* Release every delayed block now. Keep the head alias live across both
+ * releases so the list update and next-node test follow the original order. */
 void func_80032D60(void) {
-    DelayedFree *node = D_80059FCC[0];
+    DelayedFree **head = D_80059FCC;
+    DelayedFree *node;
+    DelayedFree *next;
 
-    if (node != NULL) {
-        do {
-            func_800320E8(node->data);
-            D_80059FCC[0] = node->next;
-            func_800320E8(node);
-            node = D_80059FCC[0];
-        } while (node != NULL);
+    node = *head;
+    while (node != NULL) {
+        func_800320E8(node->data);
+        *head = node->next;
+        func_800320E8(node);
+        next = *head;
+        if (next == NULL) {
+            break;
+        }
+        node = next;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_80032D60);
-#endif
 
 /* Report output to the host file. */
 void func_80032DCC(char *line) {

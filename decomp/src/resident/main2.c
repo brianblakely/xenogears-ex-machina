@@ -3359,27 +3359,21 @@ s32 func_80039784(void) {
     return 0;
 }
 
-/* The SPU memory map entry at `address`, or NULL. Only the first entry is
- * examined: the walk returns as soon as that entry has a successor.
- * Nonmatching: GCC sees that the walk never leaves the first entry and
- * drops the entry pointer, which the original keeps. */
-#ifdef NON_MATCHING
+/* The SPU memory map entry at `address`, or NULL. */
 SpuMemBlock *func_800397C0(u32 address) {
     SpuMemBlock *entry = D_8006F9FC;
-    s32 i;
+    SpuMemBlock *head = entry;
 
-    while (entry->address != address) {
-        i = entry->next;
-        if (i != 0) {
+    for (;;) {
+        if (entry->address == address) {
+            return entry;
+        }
+        if (entry->next != 0) {
             return NULL;
         }
-        entry = &D_8006F9FC[i];
+        entry = head;
     }
-    return entry;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800397C0);
-#endif
 
 /* Create a sequence for `header` and play it. Returns the sequence. */
 SoundSeq *func_800397FC(SoundSeqHeader *header, s32 fade, s32 frames) {
