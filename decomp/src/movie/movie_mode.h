@@ -164,7 +164,7 @@ void SetSemiTrans(void *p, s32 abe);
 extern VECTOR D_8007702C;                      /* eye */
 extern VECTOR D_8007703C;                      /* target */
 extern s32 D_8007704C;                         /* roll */
-extern s32 D_80076F2C, D_80076F30, D_80076F34; /* translation */
+extern VECTOR D_80076F2C; /* translation */
 extern MATRIX D_80077050;                      /* world to screen */
 extern MATRIX D_80077070;                      /* light colors */
 extern MATRIX D_80077090;                      /* light directions */

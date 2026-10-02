@@ -845,7 +845,7 @@ void func_80021FE0(BattleSprite *sprite, s32 angle);       /* sprite heading */
 void func_800BB350(s32 slot);
 void func_800BB760(s32 slot);
 void func_800BA8F4(BattleSprite *sprite);                  /* place on the stage floor */
-void func_800245D8(BattleSprite *sprite, s32 animation, s32 arg);
+void func_800245D8(BattleSprite *sprite, s32 animation);
 s16 func_8003BDFC(s32 arg);                                /* sound transfer busy */
 void func_80022224(void *binding, void *data, Point image, Point clut, s32 a4);
 void func_80038428(void *bank);                            /* link an effect bank */

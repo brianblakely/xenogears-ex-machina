@@ -277,8 +277,7 @@ void func_801E4CD0(void) {
         }
     }
     D_800C3EAC->last_item = 47;
-    listed = 0;
-    for (i = 0; i < 100; i++) {
+    for (i = 0, listed = 0; i < 100; i++) {
         id = D_8006F3D0[i];
         if ((u32)(id - 50) < 23) {
             D_800C3D70[listed] = id;

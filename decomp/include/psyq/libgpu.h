@@ -196,6 +196,14 @@ typedef struct {
 
 typedef struct {
     u_long tag;
+    u_char r0, g0, b0, code;
+    short x0, y0;
+    u_char r1, g1, b1, p1;
+    short x1, y1;
+} LINE_G2;
+
+typedef struct {
+    u_long tag;
     u_long code[2];
 } DR_MODE;
 
@@ -267,6 +275,7 @@ void SetPolyGT3(POLY_GT3 *p);
 void SetPolyFT3(POLY_FT3 *p);
 void SetPolyFT4(POLY_FT4 *p);
 void SetPolyGT4(POLY_GT4 *p);
+void SetLineG2(LINE_G2 *p);
 void SetLineF3(LINE_F3 *p);
 void SetTile(TILE *p);
 void SetSprt(SPRT *p);

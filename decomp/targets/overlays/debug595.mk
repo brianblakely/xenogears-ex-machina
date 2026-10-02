@@ -1,5 +1,7 @@
 # debug595: decoded overlay image at 0x80280000 (0x61c8 bytes).
-CC_VERSION := 2.6.3
+# GCC 2.7.2: every recovered function builds identically under 2.6.3 and 2.7.2;
+# only 2.7.2 reproduces 80284fb4's product in $t0 and 80281b90's operand order.
+CC_VERSION := 2.7.2
 SPLAT_CONFIG := decomp/targets/overlays/debug595.yaml
 ORIGINAL := .local/extract/overlays/debug595.bin
 ORIGINAL_SHA256 := c123c880e71cfa0448a6ea4d9961bb0f1c0e2ced0595d9fa5eefc4a913248048

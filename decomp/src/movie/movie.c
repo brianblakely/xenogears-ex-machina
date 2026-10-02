@@ -2364,10 +2364,8 @@ void func_80076C68(void) {
     SetTransMatrix(&D_80077050);
 }
 
-#ifdef NON_MATCHING
 /* Aim the camera from the eye at the target, rolled, and compose the world
- * to screen matrix. Same instructions except that the original keeps
- * &D_8007703C (not &D_8007703C.vz) in $s5 for its two target.vx reads. */
+ * to screen matrix. */
 void func_80076CA4(void) {
     s32 dz;
     s32 dx;
@@ -2375,9 +2373,9 @@ void func_80076CA4(void) {
     s32 dz2;
     s32 dx2;
 
+    dx = D_8007703C.vx - D_8007702C.vx;
     dz = D_8007703C.vz - D_8007702C.vz;
     dz2 = dz * dz;
-    dx = D_8007703C.vx - D_8007702C.vx;
     dx2 = dx * dx;
     dy = D_8007703C.vy - D_8007702C.vy;
     D_800770B0.vx = ratan2(dy, SquareRoot0(dz2 + dx2));
@@ -2388,13 +2386,10 @@ void func_80076CA4(void) {
     D_800770D8.t[0] = 0;
     D_800770D8.t[1] = 0;
     D_800770D8.t[2] = SquareRoot0(dx2 + dy * dy + dz2);
-    D_800770B8.t[0] = D_80076F2C - D_8007703C.vx;
-    D_800770B8.t[1] = D_80076F30 - D_8007703C.vy;
-    D_800770B8.t[2] = D_80076F34 - D_8007703C.vz;
+    D_800770B8.t[0] = D_80076F2C.vx - D_8007703C.vx;
+    D_800770B8.t[1] = D_80076F2C.vy - D_8007703C.vy;
+    D_800770B8.t[2] = D_80076F2C.vz - D_8007703C.vz;
     CompMatrix(&D_800770D8, &D_800770B8, &D_80077050);
 }
-#else
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80076CA4);
-#endif
 
 INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_800704E0);
