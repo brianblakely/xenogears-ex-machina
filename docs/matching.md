@@ -21,30 +21,116 @@ The stable psx-* commands wrap the pinned little-endian MIPS binutils. The smoke
 check assembles an authored MIPS-I function and checks its exact linked bytes.
 It establishes tooling, not Xenogears compiler identity or game-source progress.
 
-## Establish the actual target
+## Qualified configuration and targets
 
-Qualify the compiler/assembler/linker on a representative resident/overlay sample.
-Reuse existing Ghidra types and reviewed algorithms. Record exact flags, GP/small
--data settings, source identity, addresses and layout in each target's build file.
-Do not select a PsyQ version from an unsupported loader default. Add maspsx or a
-historical compiler through a pinned Nix recipe when that trial establishes the
-need; do not install another large speculative toolchain upfront.
+GCC 2.6.3 and 2.7.2 (`psx-cc1-2.6.3`, `psx-cc1-2.7.2`; decompals/old-gcc 0.17
+PSX builds) with `-O2 -mcpu=3000 -msoft-float -fgnu-linker -mgas`, ASPSX 2.34
+behaviour through maspsx, and GNU as/ld reproduce original code exactly. The
+version is per translation unit: 2.7.2 can move the stack adjustment into the
+epilogue's `jr $ra` delay slot (`lw ra; move v0,0; jr ra; addiu sp`), which 2.6.3
+never does (`move v0,0; lw ra; addiu sp; jr ra; nop`, battle 800716d8); 2.7.2
+does not always fill it, and 2.6.3 also differs in commutative operand order and
+narrow loads (menu 80070808, 80071794). A filled slot proves 2.7.2; 2.6.3 is
+established per unit by functions that only it reproduces. Targets set `CC_VERSION`; `CC_<file> := 2.7.2` overrides. ASPSX below 2.50 expands
+positive `li` to `ori` as the original does (resident, movie library). Qualification: resident
+`80028aac` (ring reset) matches only under 2.7.2 — 2.8.1 omits its empty
+8-byte frame and reschedules the stores. The small-data threshold is a
+property of each translation unit: most code is `-G0`, while units that address
+`.sdata`/`.sbss` (around `_gp = 0x80059170`) through `$gp` need `-G8`; set
+`GP_<file> := 8` in the target fragment.
 
-`decomp/Makefile` provides the small assemble/link/verify loop. A target supplies
-`ORIGINAL`, `ORIGINAL_SHA256`, `IMAGE`, `OBJECTS`, `LINKER_SCRIPT` and its source
-compilation rules in a make fragment. There is deliberately no invented game
-configuration or default host C compiler. Until qualified targets exist, ordinary
-`make -C decomp verify` fails with an actionable error rather than passing empty work.
+Jump tables: GCC emits `.align 3` before each table in `.rdata`. The original
+assembler honoured it relative to the unit's own rodata section, and the
+original linker placed each unit's section at a 4-byte boundary, so all tables
+of one unit share one phase mod 8. `tools/jump_table_phases.py` (after
+`all-verify`) finds every original switch dispatch in the 25 distinct images:
+45 odd-length tables followed by another table are padded with one zero word
+that keeps the phase, 20 of them at 4 mod 8 (resident 800188f4 -> 8001892c
+within 8002a68c; slot39 801c50fc -> 801c512c; battle 80070514 -> 8007053c);
+the phase changes 34 times, never within one function; no odd-length table
+abuts a same-phase table. Ignoring the directive or taking it as 4-byte would
+leave no pads; absolute 8-byte alignment would leave no tables at 4 mod 8.
+GNU as pads the same way, and splat's `SUBALIGN(4)` overrides the 8-byte
+section alignment it records, so maspsx passes `.align` through unchanged:
+what matters is that each object's rodata starts where the original unit's
+did. A phase change between two tables marks a unit boundary in the target
+yaml (menu, battle, slot39). The five overlays at 8006faf0 open with their
+number (field 4, worldmap 5, battle 6, menu 7, movie 8) ahead of the first
+unit's rodata. spimdisasm emits `.align 3` only before 8-aligned tables, so a
+file whose rodata starts at 4 mod 8 cannot hold assembly tables of a
+0-mod-8 unit.
+
+A third compiler builds the later battle code: the Cygnus CDK build of GCC
+2.7.2 (`psx-cc1-2.7.2-cdk`, old-gcc 0.17 `gcc-2.7.2-cdk`, cdk-gcc b18) at `-O2`
+with a later ASPSX (positive `li` as `addiu`; maspsx `--aspsx-version=2.56`).
+It keeps a symbol's `%hi` in a register and addresses members from it, leaves
+load-delay `nop`s and the epilogue `jr` slot of ovl3381 `801fc000`/`801fc278`
+unfilled, and fills other `jr` slots (debug2611 `802818c4`). Units: the six
+0x801fc000 battle modules (ovl3381, ovl3383-ovl3387), debug2611's tools unit
+(80280844-end) and ovl2615's battle_loader and load_modes. Qualification: of
+cc1 2.5.7, 2.6.0, 2.6.3, 2.7.2, 2.7.2-cdk, 2.8.0, 2.8.1, 2.91.66 and 2.95.2
+(`-O1`/`-O2`/`-O3`, `-fno-delayed-branch`, `-fno-schedule-insns[2]`) under
+ASPSX 2.34-2.86, only 2.7.2-cdk `-O2`/`-O3` with ASPSX >= 2.56 reproduces
+ovl3381 `801fc000` and `801fc278`; over the nine units' existing C, `-O2`
+reproduces 21 functions that 2.6.3/2.7.2 do not (`-O3` 18, `-O1` 1), and the
+units' previously matching C still matches. ASPSX 2.56-2.86 give identical
+bytes here. Set it with `CC_VERSION`/`CC_<file> := 2.7.2-cdk`. SDK library code (PsyQ 3.x-4.x) is
+located with `tools/psyq_signatures.py` and classified, not decompiled.
+
+Targets (`decomp/targets/`): both resident executables (SLUS_006.64/69 share all
+source; only the embedded disc index differs) and 24 decoded overlay images,
+byte-identical on both discs. `tools/extraction/disc_files.py` and
+`tools/extraction/overlays.py` write the local inputs; splat writes the local
+assembly. Distinct overlays at the same address keep separate targets and
+symbol files.
 
 ```sh
-make -C decomp CONFIG=targets/<target>/target.mk verify
-python3 tools/matching.py ORIGINAL REBUILT --sha256 EXPECTED_ORIGINAL_SHA256
+nix --extra-experimental-features 'nix-command flakes' develop path:./nix/ghidra#matching
+python3 tools/extraction/disc_files.py .local/discs/disc1.bin .local/extract/disc1  # and disc2
+python3 tools/extraction/overlays.py
+make -C decomp all-split all-verify all-coverage
+make -C decomp CONFIG=targets/overlays/field.mk verify
+python3 tools/matching_diff.py decomp/targets/overlays/field.mk [-f func_8007xxxx]
 ```
 
-Original files and build output belong under ignored `.local/`; source/build
-recipes belong under `decomp/`. Use the existing extraction/source profiles rather
-than a new disc importer. Keep each overlay's identity with its addresses. Distinct
-images sharing a load address must never collapse into one symbol space.
+## Compressed containers
+
+The six packed overlay files (mode overlays in slots 35-40 and the slot-39
+image's second copy) are reproduced from the rebuilt images by
+`tools/packed_container.py` (`make -C decomp all-container`). The packer is
+Okumura's LZSS binary-tree encoder without preset-ring matches, ending on a
+complete eight-token group; the same rule reproduces a 25-file sample of other
+packed disc files. This is a separate claim from image matching; whole-disc
+filesystem/ECC reproduction is not attempted.
+
+## Original-environment smoke check
+
+`tools/matching_ram.py` compares code loaded by an original scenario run with the
+rebuilt images. The painting-room (Disc 1) and disc2-field-15 (Disc 2) routes load
+resident and field code identical to the rebuilt SLUS_006.64/69 and field images;
+the only resident differences are the harness's documented startup guard at
+0x80019930 (EVID-REF-007) and PsyQ variables kept inside SDK text at
+0x8004e960-0x8004e96b.
+
+```sh
+nix ... develop path:./nix#observation -c python3 tools/reference/scenario.py painting-room \
+  --content 'discs/Xenogears disc 1.chd' --output .local/scenarios/<new>
+python3 tools/matching_ram.py .local/scenarios/<new>/capture/final.ram --header 0x800 \
+  .local/decomp/build/SLUS_006.64@80010000:80019524-8004e960 \
+  .local/decomp/build/field.bin@8006faf0:8006fdec-800ada68
+```
+
+## Converting a function
+
+Replace one `INCLUDE_ASM(...)` in the target's C file with C. Start from m2c
+(`m2c --target mipsel-gcc-c <asm file>`), existing findings and the host
+reconstruction (search `src/reconstruction` for the address), then compile,
+`make verify`, and read `matching_diff.py -f` for the first difference. Keep
+functions in original order; the function's jump tables and strings move with
+it (splat migrated them into the function's assembly). Shared structures go in
+small headers beside the source. A function that is understood but does not yet
+match stays linked as assembly inside `#ifdef NON_MATCHING ... #else
+INCLUDE_ASM(...) #endif`; the coverage report counts it separately.
 
 ## Recover incrementally
 

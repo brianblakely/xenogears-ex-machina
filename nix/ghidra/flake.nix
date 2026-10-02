@@ -134,6 +134,148 @@
             ln -s "${tools}/bin/${prefix}$tool" "$out/bin/psx-$tool"
           done
         '';
+      # decompals/old-gcc 0.17 static i386 cpp/cc1 builds (GCC sources with the
+      # PSX target patch). Each occurs in the original program, per translation
+      # unit: 2.7.2 fills the epilogue's jr delay slot with the stack adjustment,
+      # 2.6.3 never does, and the later battle modules come from the Cygnus CDK
+      # build of 2.7.2 (cdk-gcc b18), which keeps a symbol's %hi in a register
+      # (docs/matching.md). Commands are psx-cpp-/psx-cc1-<version>[-cdk].
+      oldGcc =
+        version: variant: hash:
+        let
+          name = if variant == "psx" then version else "${version}-${variant}";
+        in
+        pkgs.stdenvNoCC.mkDerivation {
+          pname = "psx-gcc";
+          version = "${version}-${variant}-old-gcc-0.17";
+          src = pkgs.fetchurl {
+            url = "https://github.com/decompals/old-gcc/releases/download/0.17/gcc-${version}-${variant}.tar.gz";
+            inherit hash;
+          };
+          sourceRoot = ".";
+          dontBuild = true;
+          installPhase = ''
+            mkdir -p "$out/lib/psx-gcc-${name}" "$out/bin"
+            install -m755 cpp cc1 "$out/lib/psx-gcc-${name}/"
+            ln -s "$out/lib/psx-gcc-${name}/cpp" "$out/bin/psx-cpp-${name}"
+            ln -s "$out/lib/psx-gcc-${name}/cc1" "$out/bin/psx-cc1-${name}"
+          '';
+          meta = {
+            description = "GCC ${name} cpp/cc1 for the PlayStation R3000 target";
+            homepage = "https://github.com/decompals/old-gcc";
+            license = pkgs.lib.licenses.gpl2Plus;
+            platforms = [ system ];
+          };
+        };
+      psxGcc272 = oldGcc "2.7.2" "psx" "sha256-UApFmzSF6IWo0wLKwjwqRjLzkA4DoJFT9hkGmf1yNXE=";
+      psxGcc263 = oldGcc "2.6.3" "psx" "sha256-AeboxJM0FOo/jY47x2ah9fr9T8ARDgt10faRvXkZibE=";
+      psxGcc272cdk = oldGcc "2.7.2" "cdk" "sha256-QrsN+W2xGptdLiPXi9yWJ5H0AEYoDT02Dak/5e728Ls=";
+      maspsx = pkgs.stdenvNoCC.mkDerivation {
+        pname = "maspsx";
+        version = "2026-7686f845";
+        src = pkgs.fetchzip {
+          extension = "tar.gz";
+          url = "https://codeload.github.com/mkst/maspsx/tar.gz/7686f845a181700534c83c0419183e38aeb3e49c";
+          hash = "sha256-Q6NDNesXDj79mBeM24h+RhSZQG5fo4JuVPexQVSqnIQ=";
+        };
+        dontBuild = true;
+        installPhase = ''
+          mkdir -p "$out/lib/maspsx" "$out/bin"
+          cp -R maspsx maspsx.py "$out/lib/maspsx/"
+          printf '#!%s\nexec %s %s "$@"\n' "${pkgs.runtimeShell}" "${pkgs.python3}/bin/python3" \
+            "$out/lib/maspsx/maspsx.py" > "$out/bin/maspsx"
+          chmod +x "$out/bin/maspsx"
+        '';
+        meta = {
+          description = "ASPSX-compatible preprocessing of GCC assembly for GNU as";
+          homepage = "https://github.com/mkst/maspsx";
+          license = pkgs.lib.licenses.mit;
+          platforms = [ system ];
+        };
+      };
+      pylibyaml = pkgs.python3Packages.buildPythonPackage {
+        pname = "pylibyaml";
+        version = "0.1.0";
+        src = pkgs.fetchPypi {
+          pname = "pylibyaml";
+          version = "0.1.0";
+          hash = "sha256-O1jeoGGQPARonjX6tj7BSffPXoLwgIvTQl+zqzlQYj4=";
+        };
+        pyproject = true;
+        build-system = [ pkgs.python3Packages.setuptools ];
+        dependencies = [ pkgs.python3Packages.pyyaml ];
+        doCheck = false;
+      };
+      n64img = pkgs.python3Packages.buildPythonPackage {
+        pname = "n64img";
+        version = "0.3.3";
+        src = pkgs.fetchPypi {
+          pname = "n64img";
+          version = "0.3.3";
+          hash = "sha256-SIs3kW60qUMjHq9JzpBS99b5b3yQcS7zrqqu9J47vxI=";
+        };
+        pyproject = true;
+        build-system = [ pkgs.python3Packages.setuptools ];
+        dependencies = [ pkgs.python3Packages.pypng ];
+        doCheck = false;
+      };
+      pygfxd = pkgs.python3Packages.buildPythonPackage {
+        pname = "pygfxd";
+        version = "1.0.5";
+        src = pkgs.fetchPypi {
+          pname = "pygfxd";
+          version = "1.0.5";
+          hash = "sha256-sx9fhi3MwuD6pgXMFs1joi/rMkTAeiBjA3Qh/NP2cUU=";
+        };
+        pyproject = true;
+        build-system = [ pkgs.python3Packages.setuptools ];
+        doCheck = false;
+      };
+      # splat imports its N64 codecs unconditionally; this is the upstream
+      # manylinux abi3 wheel (the sdist needs a Rust/maturin build).
+      crunch64 = pkgs.python3Packages.buildPythonPackage {
+        pname = "crunch64";
+        version = "0.6.2";
+        format = "wheel";
+        src = pkgs.fetchurl {
+          url = "https://files.pythonhosted.org/packages/7a/e7/9788e5a4a1b86e905378a09534dc7a5d4a4ba8ad38b1aedfa3a645470086/crunch64-0.6.2-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl";
+          hash = "sha256-t2TMUAyxyrm8xtVoPhrbzk64V6vzEhjTEa7X1Tv8lu4=";
+        };
+        nativeBuildInputs = [ pkgs.autoPatchelfHook ];
+        buildInputs = [ pkgs.stdenv.cc.cc.lib ];
+      };
+      splat = pkgs.python3Packages.buildPythonApplication {
+        pname = "splat64";
+        version = "0.50.0";
+        src = pkgs.fetchPypi {
+          pname = "splat64";
+          version = "0.50.0";
+          hash = "sha256-9TvDo/7NG3oBNnUJvs51ScWOjLmEmASr2eDzD34Vywo=";
+        };
+        pyproject = true;
+        build-system = [ pkgs.python3Packages.hatchling ];
+        dependencies = with pkgs.python3Packages; [
+          colorama
+          intervaltree
+          crunch64
+          n64img
+          pygfxd
+          pylibyaml
+          pyyaml
+          tqdm
+          (toPythonModule spimdisasm)
+          rabbitizer
+        ];
+        pythonRelaxDeps = true;
+        doCheck = false;
+        pythonImportsCheck = [ "splat" ];
+        meta = {
+          description = "Binary splitting into linkable assembly/data/source segments";
+          homepage = "https://github.com/ethteck/splat";
+          license = pkgs.lib.licenses.mit;
+          platforms = [ system ];
+        };
+      };
       base = pkgs.mkShell {
         packages = [
           ghidra
@@ -166,6 +308,11 @@
             m2c
             spimdisasm
             psxBinutils
+            psxGcc272
+            psxGcc263
+            psxGcc272cdk
+            maspsx
+            splat
             pkgs.gnumake
             pkgs.diffutils
             pkgs.git

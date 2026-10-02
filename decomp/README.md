@@ -4,12 +4,13 @@ This directory owns new PS1-target recovery. Group source and small shared heade
 by resident/overlay subsystem. Keep the existing host reconstruction separate as
 reference/portability code; do not duplicate its Program abstraction here.
 
-Read ../docs/matching.md. No Xenogears target/compiler is claimed qualified yet.
-Add a target make fragment with its exact source identity, object list, linker
-script and original-compatible compile rules. Unconverted original assembly/data
-remain in ignored .local/ and are explicitly unfinished source recovery.
+Read ../docs/matching.md for the qualified compiler configuration and the
+per-function loop. `targets/` holds one splat configuration and make fragment
+per executable image (both residents and every decoded overlay); `src/<target>/`
+holds its C. Functions not yet recovered are linked from locally generated
+assembly with `INCLUDE_ASM`; that assembly, the original images and all build
+output stay in ignored `.local/`.
 
-`make smoke` runs the authored MIPS toolchain fixture. `make CONFIG=... verify`
-links the declared objects and performs exact, fingerprinted binary comparison.
-Neither command infers source coverage. Track remaining source/assembly ranges
-from actual target inputs and linker maps, not from another handwritten dashboard.
+`make all-verify` compares every target exactly. `make all-coverage` reports C,
+nonmatching, SDK, hand-written and remaining assembly per target from the linked
+symbols; binary agreement and source coverage are separate claims.

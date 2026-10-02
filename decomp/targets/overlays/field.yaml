@@ -1,0 +1,63 @@
+# Overlay image from Disc 1 slot 36 / Disc 2 slot 31 (packed; the discs are
+# byte-identical). Load address from its internal calls and pointers; the
+# rodata/text/data boundaries are initial and are refined during recovery.
+name: field
+sha1: 7bdc0e2be7797ab821fb7d0ce10438a0e91f4c7b
+options:
+  basename: field
+  base_path: ../../..
+  target_path: .local/extract/overlays/field.bin
+  platform: psx
+  compiler: PSYQ
+  asm_path: .local/decomp/field/asm
+  asset_path: .local/decomp/field/assets
+  src_path: decomp/src/field
+  build_path: .local/decomp/build/field
+  ld_script_path: .local/decomp/field/field.ld
+  cache_path: .local/decomp/field/.splat_cache
+  symbol_addrs_path:
+    - decomp/targets/overlays/field.symbols.txt
+    - decomp/targets/resident/symbol_addrs.txt
+  undefined_funcs_auto_path: .local/decomp/field/undefined_funcs_auto.txt
+  undefined_syms_auto_path: .local/decomp/field/undefined_syms_auto.txt
+  find_file_boundaries: False
+  gp_value: 0x80059170
+  ld_gp_expression: "0x80059170"
+  o_as_suffix: True
+  generate_asm_macros_files: False
+  ld_bss_is_noload: True
+  ld_align_segment_vram_end: False
+  ld_align_section_vram_end: False
+  use_legacy_include_asm: False
+  section_order: [".rodata", ".text", ".data", ".bss"]
+  subalign: 4
+  string_encoding: ASCII
+  data_string_encoding: ASCII
+  rodata_string_guesser_level: 2
+  data_string_guesser_level: 2
+  include_asm_macro_style: maspsx_hack
+segments:
+  - name: field
+    type: code
+    start: 0x0
+    vram: 0x8006faf0
+    subsegments:
+      # The overlay's number (4) ahead of the units' rodata (as in battle).
+      - [0x0, rodata, field_prefix]
+      # Units change where the jump tables change phase mod 8 (GCC's .align 3
+      # is relative to the unit's rodata, placed at 4-byte boundaries; see
+      # docs/matching.md). The text boundaries are documented in each file.
+      - [0x4, .rodata, field]
+      - [0x9C, .rodata, field_8007A44C]
+      - [0x198, .rodata, field_800854D0]
+      - [0x2BC, .rodata, field_800A4748]
+      - [0x2D8, .rodata, field_800A9274]
+      - [0x2fc, c, field]
+      - [0xA95C, c, field_8007A44C]
+      - [0x159E0, c, field_800854D0]
+      - [0x34C58, c, field_800A4748]
+      - [0x39784, c, field_800A9274]
+      - [0x3df78, data, field_data]
+      # The decoded length is not word-aligned; its final bytes are zero.
+      - [0x3fafc, databin, field_tail]
+  - [0x3fafe]

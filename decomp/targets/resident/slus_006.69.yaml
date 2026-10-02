@@ -1,0 +1,147 @@
+# Disc 2 resident boot program; shares all source with Disc 1 (slus_006.64).
+# Paths are relative to the repository root.
+# Original bytes, generated assembly and build output stay under .local/.
+name: SLUS_006.69
+sha1: a378608389f04456925c6afaccb644ab90eaff30
+options:
+  basename: slus_006.69
+  base_path: ../../..
+  target_path: .local/extract/disc2/SLUS_006.69
+  elf_path: .local/decomp/build/slus_006.69.elf
+  platform: psx
+  compiler: PSYQ
+  asm_path: .local/decomp/resident/asm
+  asset_path: .local/decomp/resident2/assets
+  src_path: decomp/src/resident
+  build_path: .local/decomp/build/resident2
+  ld_script_path: .local/decomp/resident2/slus_006.69.ld
+  cache_path: .local/decomp/resident2/.splat_cache
+  symbol_addrs_path:
+    - decomp/targets/resident/symbol_addrs.txt
+  undefined_funcs_auto_path: .local/decomp/resident2/undefined_funcs_auto.txt
+  undefined_syms_auto_path: .local/decomp/resident2/undefined_syms_auto.txt
+  find_file_boundaries: False
+  gp_value: 0x80059170
+  ld_gp_expression: "0x80059170"
+  o_as_suffix: True
+  generate_asm_macros_files: False
+  ld_bss_is_noload: True
+  ld_align_segment_vram_end: False
+  ld_align_section_vram_end: False
+  use_legacy_include_asm: False
+  section_order: [".rodata", ".text", ".data", ".bss"]
+  subalign: 4
+  string_encoding: ASCII
+  data_string_encoding: ASCII
+  rodata_string_guesser_level: 2
+  data_string_guesser_level: 2
+  include_asm_macro_style: maspsx_hack
+segments:
+  - name: header
+    type: header
+    start: 0x0
+
+  - name: main
+    type: code
+    start: 0x800
+    vram: 0x80010000
+    bss_size: 0x16830
+    subsegments:
+      # Disc-specific copies of the sector-24 file index and sector-40
+      # directory table (EVID-REF-007); user-supplied disc data, not code.
+      - [0x800, rodatabin, disc2_index]
+      - [0x8880, .rodata, main]
+      - [0x8B3C, .rodata, main_8001B6C4]
+      # Sprite/actor engine unit (8001C8DC-8002709C): its jump tables and
+      # constants open at 0x800183D8.
+      - [0x8BD8, .rodata, sprite]
+      # Second sprite unit: its identity matrix constant (80022090) follows
+      # the first unit's jump tables (8001FBE4); a -G8 CDK unit emits its
+      # constants ahead of its jump tables, so the two are separate units.
+      - [0x8E44, .rodata, sprite_80022090]
+      # Third sprite unit: its interpreter's jump table (800186E0) follows
+      # the second unit's 15-entry table (800186A4) with no `.align 3` pad.
+      - [0x8EE0, .rodata, sprite_800248D4]
+      # Fourth sprite unit: the identity matrix constant of 80025FA8.
+      - [0x90CC, .rodata, sprite_80025C04]
+      - [0x90EC, .rodata, main_8002709C]
+      - [0x90F4, .rodata, main_8002A260]
+      # Model unit (GCC 2.7.2): 8002C700's jump table at 0 mod 8 follows
+      # the CD/stream unit's tables at 4 mod 8.
+      - [0x9180, .rodata, main_8002C3E8]
+      # Heap unit (80031894-80032E7C): its allocation-name strings open the
+      # rodata (0x80018998 "DelayFree"), its $gp-relative accesses need -G8.
+      - [0x9198, .rodata, heap]
+      - [0x927C, .rodata, main2]
+      # Sound driver unit (GCC 2.6.3): its opcode-table jump table.
+      - [0x93DC, .rodata, sound]
+      # Hand-written rotation helpers and the PsyQ library objects.
+      - [0x93F0, .rodata, main3]
+      # Rodata used by the SDK tail beginning with libgte MSC00.
+      - [0x9BC4, .rodata, psyq_tail_80048BC4]
+      - [0x9D24, c, main]
+      # The battle entry owns 8005959C through GP, but accesses the setup
+      # flags 8005947C/F8 absolutely. Isolate that ownership from the
+      # following unit's small commons; the original object seam may be
+      # later than 8001B844, which has no own-GP reference or rodata.
+      - [0xBEC4, c, battle_mode]
+      # Menu support (GCC 2.6.3): 8001BF38 and 8001C1A8 match only so;
+      # its rodata opens at 0x8001833C.
+      - [0xC044, c, main_8001B6C4]
+      # Battle effect-script table embedded in .text; keep the private data
+      # at its original position rather than classify it as a function.
+      - start: 0xCF6C
+        type: data
+        name: battle_effect_script
+        linker_section_order: .text
+      # Sprite/actor engine unit (8001C8DC-8002709C): -G8 ($gp-relative
+      # small globals) and positive `li` assembled as `addiu` (ASPSX 2.50+),
+      # unlike its neighbours.
+      - [0xD0DC, c, sprite]
+      # Second sprite unit (same build): it starts after 8001FBE4's jump
+      # tables and by 80022090, whose constant opens its rodata; 80022090 is
+      # chosen.
+      - [0x12890, c, sprite_80022090]
+      # Third sprite unit (same build) from the script interpreter 800248D4,
+      # whose jump table opens its rodata; the $gp globals of the image
+      # queues are addressed only from here.
+      - [0x150D4, c, sprite_800248D4]
+      # Fourth sprite unit (same build): its constant follows the third
+      # unit's jump table, and it addresses the queue globals absolutely.
+      - [0x16404, c, sprite_80025C04]
+      # Texture-scroll and disc unit (GCC 2.6.3, inline division checks):
+      # 80027D64/80027EAC/80028808/80029AFC match only so. It ends after
+      # 80029EB0 and before 8002DB84 (a register division without checks);
+      # 8002A260, where the rodata continues at 0x800188F4, is chosen.
+      - [0x1789C, c, main_8002709C]
+      # CD read callback, stream and model buffer unit: GCC 2.6.3 (8002BB50
+      # matches only so).
+      - [0x1AA60, c, main_8002A260]
+      # Model unit (GCC 2.7.2): 8002C700's jump table (0x80018980, 0 mod 8)
+      # follows 8002A68C's tables at 4 mod 8, so a unit starts after
+      # 8002C310, the last user of the CD/stream unit's rodata (its report
+      # strings end at 0x80018980). 8002C700 matches only under 2.7.2 (mflo
+      # into $t0), as do 8002CCC8, 8002CD24 and 8002CD64; 8002C3E8, 8002C4BC
+      # and 8002C59C add the relocation base second, as 2.7.2 does and 2.6.3
+      # does not. 8002C3E8, the first model relocation function, is chosen
+      # (8002C3D8 compiles identically under both).
+      - [0x1CBE8, c, main_8002C3E8]
+      - [0x22094, c, heap]
+      - [0x2367C, c, main2]
+      # Sound driver unit (GCC 2.6.3) to 8003F738. Its start lies in
+      # 80039E18-8003A094: 80039DB8 needs 2.7.2, 8003A094 and later match
+      # only under 2.6.3, and the functions between compile identically.
+      - [0x2A618, c, sound]
+      - [0x2FF38, c, main3]
+      # SDK object data embedded in .text at the head of libgte MSC00.
+      - start: 0x393BC
+        type: data
+        name: libgte_msc00_data
+        linker_section_order: .text
+      - [0x393C4, c, psyq_tail_80048BC4]
+      - [0x3F288, data, data]
+      - { start: 0x49ABC, type: bss, vram: 0x800592BC }
+  - [0x49ABC]
+  # Zero file padding is reproduced by objcopy --pad-to 0x4A000. It is
+  # outside the resident segment and does not extend its BSS.
+  - [0x4A000]

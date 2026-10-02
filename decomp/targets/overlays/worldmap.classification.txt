@@ -1,0 +1,7 @@
+# START END CLASS NOTE (hex VRAM, END exclusive); see targets/resident/classification.txt.
+# Not compiler output: frames too small for the registers saved (addiu sp,-8 then
+# sw s1,8(sp), i.e. into the caller's frame), raw cop2 sequences, and ori for
+# positive constants where this unit's assembler emits addiu.
+800987ac 80098cc0 handwritten world-map GTE terrain routine (no GCC frame, raw cop2)
+8009980c 80099bfc handwritten world-map GTE routine saving into the caller's frame
+80099bfc 80099e8c handwritten world-map routine (addiu sp,-8 with sw s1,8(sp); scratchpad 0x1F800068 base)

@@ -1,0 +1,83 @@
+# Overlay image from Disc 1 slot 38 / Disc 2 slot 33 (packed; the discs are
+# byte-identical). Load address from its internal calls and pointers; the
+# rodata/text/data boundaries are initial and are refined during recovery.
+name: battle
+sha1: 124703d415f570f9cd8d7dad89c6a4eddfd7e6f0
+options:
+  basename: battle
+  base_path: ../../..
+  target_path: .local/extract/overlays/battle.bin
+  platform: psx
+  compiler: PSYQ
+  asm_path: .local/decomp/battle/asm
+  asset_path: .local/decomp/battle/assets
+  src_path: decomp/src/battle
+  build_path: .local/decomp/build/battle
+  ld_script_path: .local/decomp/battle/battle.ld
+  cache_path: .local/decomp/battle/.splat_cache
+  symbol_addrs_path:
+    - decomp/targets/overlays/battle.symbols.txt
+    - decomp/targets/resident/symbol_addrs.txt
+  undefined_funcs_auto_path: .local/decomp/battle/undefined_funcs_auto.txt
+  undefined_syms_auto_path: .local/decomp/battle/undefined_syms_auto.txt
+  find_file_boundaries: False
+  gp_value: 0x80059170
+  ld_gp_expression: "0x80059170"
+  o_as_suffix: True
+  generate_asm_macros_files: False
+  ld_bss_is_noload: True
+  ld_align_segment_vram_end: False
+  ld_align_section_vram_end: False
+  use_legacy_include_asm: False
+  section_order: [".rodata", ".text", ".data", ".bss"]
+  subalign: 4
+  string_encoding: ASCII
+  data_string_encoding: ASCII
+  rodata_string_guesser_level: 2
+  data_string_guesser_level: 2
+  include_asm_macro_style: maspsx_hack
+segments:
+  - name: battle
+    type: code
+    start: 0x0
+    vram: 0x8006faf0
+    subsegments:
+      # The overlay's number (6) ahead of the units' rodata, as in field (4),
+      # worldmap (5), menu (7) and movie (8); the first unit's rodata starts
+      # at 0x4, where its jump tables sit (4 mod 8, docs/matching.md).
+      - [0x0, rodata, battle_prefix]
+      # Units change where the jump tables change phase mod 8 (GCC's .align 3
+      # is relative to the unit's rodata, placed at 4-byte boundaries; see
+      # docs/matching.md). The tables at 80070314-80070370 (8008B478,
+      # 8008BED8, 8008C81C) sit at 4 mod 8 between runs at 0 mod 8; their
+      # unit's text starts after 800861D0 and ends before 80094EE4.
+      - [0x4, .rodata, battle_80070E2C]
+      - [0x18, .rodata, battle_800792F8]
+      - [0x8C, .rodata, battle_80079ED8]
+      - [0x520, .rodata, battle]
+      - [0x824, .rodata, battle_8008B478]
+      - [0x880, .rodata, battle_8008CCCC]
+      - [0x9DC, .rodata, battle_8009E53C]
+      - [0xCEC, .rodata, battle_800B15D8]
+      - [0xD60, .rodata, battle_800B3F04]
+      - [0xF0C, .rodata, battle_800B7870]
+      - [0xF20, .rodata, battle_800B8098]
+      - [0xFEC, .rodata, battle_800BD3AC]
+      - [0x1018, .rodata, battle_800BFE48]
+      - [0x1124, .rodata, battle_800C11CC]
+      - [0x133c, c, battle_80070E2C]
+      - [0x9808, c, battle_800792F8]
+      - [0xA3E8, c, battle_80079ED8]
+      - [0x1166C, c, battle]
+      - [0x1B988, c, battle_8008B478]
+      - [0x1D1DC, c, battle_8008CCCC]
+      - [0x2EA4C, c, battle_8009E53C]
+      - [0x41AE8, c, battle_800B15D8]
+      - [0x44414, c, battle_800B3F04]
+      - [0x47D80, c, battle_800B7870]
+      - [0x485A8, c, battle_800B8098]
+      - [0x4D8BC, c, battle_800BD3AC]
+      - [0x50358, c, battle_800BFE48]
+      - [0x516DC, c, battle_800C11CC]
+      - [0x52558, data, battle_data]
+  - [0x53f80]

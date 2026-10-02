@@ -1,0 +1,4 @@
+# START END CLASS NOTE (hex VRAM, END exclusive); see targets/resident/classification.txt.
+# Game movie code ends at 0x801d444c; the rest of the text is the linked PsyQ
+# movie libraries, identified with tools/psyq_signatures.py.
+801d444c 801d68b4 sdk PsyQ libpress (BUILD, LIBPRESS, DCT, VLC, VLC_C, ENCSPU), libds, libcd CD streaming (CDROM, CDREAD2, C_0xx)

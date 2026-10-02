@@ -1,0 +1,53 @@
+# Overlay image from Disc 1 slot 40 / Disc 2 slot 35 (packed; the discs are
+# byte-identical). Load address from its internal calls and pointers; the
+# rodata/text/data boundaries are initial and are refined during recovery.
+name: movie
+sha1: e7ff2568b918b75e290050597c86584f3499ebdf
+options:
+  basename: movie
+  base_path: ../../..
+  target_path: .local/extract/overlays/movie.bin
+  platform: psx
+  compiler: PSYQ
+  asm_path: .local/decomp/movie/asm
+  asset_path: .local/decomp/movie/assets
+  src_path: decomp/src/movie
+  build_path: .local/decomp/build/movie
+  ld_script_path: .local/decomp/movie/movie.ld
+  cache_path: .local/decomp/movie/.splat_cache
+  symbol_addrs_path:
+    - decomp/targets/overlays/movie.symbols.txt
+    - decomp/targets/resident/symbol_addrs.txt
+  undefined_funcs_auto_path: .local/decomp/movie/undefined_funcs_auto.txt
+  undefined_syms_auto_path: .local/decomp/movie/undefined_syms_auto.txt
+  find_file_boundaries: False
+  gp_value: 0x80059170
+  ld_gp_expression: "0x80059170"
+  o_as_suffix: True
+  generate_asm_macros_files: False
+  ld_bss_is_noload: True
+  ld_align_segment_vram_end: False
+  ld_align_section_vram_end: False
+  use_legacy_include_asm: False
+  section_order: [".rodata", ".text", ".data", ".bss"]
+  subalign: 4
+  string_encoding: ASCII
+  data_string_encoding: ASCII
+  rodata_string_guesser_level: 2
+  data_string_guesser_level: 2
+  include_asm_macro_style: maspsx_hack
+segments:
+  - name: movie
+    type: code
+    start: 0x0
+    vram: 0x8006faf0
+    subsegments:
+      # An unreferenced word (8) ahead of the unit's rodata; the unit's own
+      # rodata starts at 0x4 (its 8-aligned jump tables sit at 4 mod 8).
+      - [0x0, rodata, movie_prefix]
+      - [0x4, .rodata, movie]
+      - [0x9f8, c, movie]
+      - [0x7358, data, movie_data]
+      # The decoded length is not word-aligned; its final bytes are zero.
+      - [0x7450, databin, movie_tail]
+  - [0x7453]

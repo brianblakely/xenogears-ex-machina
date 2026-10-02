@@ -1,0 +1,48 @@
+# Overlay image from Disc 1 slot 3384 / Disc 2 slot 3379 (unpacked; the discs are
+# byte-identical). Load address from its internal calls and pointers; the
+# rodata/text/data boundaries are initial and are refined during recovery.
+name: ovl3384
+sha1: 85a658bfa6591957e3d8b45e50dfda9099b2fe46
+options:
+  basename: ovl3384
+  base_path: ../../..
+  target_path: .local/extract/overlays/ovl3384.bin
+  platform: psx
+  compiler: PSYQ
+  asm_path: .local/decomp/ovl3384/asm
+  asset_path: .local/decomp/ovl3384/assets
+  src_path: decomp/src/ovl3384
+  build_path: .local/decomp/build/ovl3384
+  ld_script_path: .local/decomp/ovl3384/ovl3384.ld
+  cache_path: .local/decomp/ovl3384/.splat_cache
+  symbol_addrs_path:
+    - decomp/targets/overlays/ovl3384.symbols.txt
+    - decomp/targets/resident/symbol_addrs.txt
+  undefined_funcs_auto_path: .local/decomp/ovl3384/undefined_funcs_auto.txt
+  undefined_syms_auto_path: .local/decomp/ovl3384/undefined_syms_auto.txt
+  find_file_boundaries: False
+  gp_value: 0x80059170
+  ld_gp_expression: "0x80059170"
+  o_as_suffix: True
+  generate_asm_macros_files: False
+  ld_bss_is_noload: True
+  ld_align_segment_vram_end: False
+  ld_align_section_vram_end: False
+  use_legacy_include_asm: False
+  section_order: [".rodata", ".text", ".data", ".bss"]
+  subalign: 4
+  string_encoding: ASCII
+  data_string_encoding: ASCII
+  rodata_string_guesser_level: 2
+  data_string_guesser_level: 2
+  include_asm_macro_style: maspsx_hack
+segments:
+  - name: ovl3384
+    type: code
+    start: 0x0
+    vram: 0x801fc000
+    subsegments:
+      - [0x0, .rodata, ovl3384]
+      - [0x74, c, ovl3384]
+      - [0xe14, data, ovl3384_data]
+  - [0xe1c]
