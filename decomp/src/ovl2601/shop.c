@@ -556,7 +556,6 @@ void func_801CE91C(u8 kind, u8 id) {
  * the attack and defence change (tinted by whether it drops), then how many
  * the party holds. Returns its price.
  */
-#ifdef NON_MATCHING
 u32 func_801CEB3C(s32 row, s32 top, u8 *dims) {
     RECT rect;
     s32 diffs[2];
@@ -570,7 +569,8 @@ u32 func_801CEB3C(s32 row, s32 top, u8 *dims) {
     s32 i;
     s32 shown;
     s32 k;
-    s32 x;
+    s32 xa;
+    s32 xb;
 
     users = 0;
     id = D_800625A0->shop_items[top + row];
@@ -638,12 +638,12 @@ u32 func_801CEB3C(s32 row, s32 top, u8 *dims) {
                 func_801CE480(diffs, worse, id, kind, i);
                 if (diffs[0] != 0) {
                     func_801C50E8(diffs[0]);
-                    for (k = 0, x = shown * 26 + 0x49; k < 3; k++, x += 8) {
+                    for (k = 0, xa = shown * 26 + 0x49; k < 3; k++) {
                         if (D_800625A0->digits[k + 6] != 0xFF) {
                             D_800625A0->details->cells_a_count[shown] += func_8002675C(
                                 D_800625A0->sprite_sheet, D_800625A0->digits[k + 6],
                                 &D_800625A0->details->cells_a[shown][D_800625A0->details->cells_a_count[shown] * 2],
-                                D_800625A0->buffer, x, 0xBE, 0x1000);
+                                D_800625A0->buffer, xa + k * 8, 0xBE, 0x1000);
                         }
                     }
                     func_801CD404(D_800625A0->details->cells_a_count[shown], D_800625A0->details->cells_a[shown],
@@ -652,12 +652,12 @@ u32 func_801CEB3C(s32 row, s32 top, u8 *dims) {
                 }
                 if (diffs[1] != 0) {
                     func_801C50E8(diffs[1]);
-                    for (k = 0, x = shown * 26 + 0x49; k < 3; k++, x += 8) {
+                    for (k = 0, xb = shown * 26 + 0x49; k < 3; k++) {
                         if (D_800625A0->digits[k + 6] != 0xFF) {
                             D_800625A0->details->cells_b_count[shown] += func_8002675C(
                                 D_800625A0->sprite_sheet, D_800625A0->digits[k + 6],
                                 &D_800625A0->details->cells_b[shown][D_800625A0->details->cells_b_count[shown] * 2],
-                                D_800625A0->buffer, x, 0xC6, 0x1000);
+                                D_800625A0->buffer, xb + k * 8, 0xC6, 0x1000);
                         }
                     }
                     func_801CD404(D_800625A0->details->cells_b_count[shown], D_800625A0->details->cells_b[shown],
@@ -672,9 +672,6 @@ u32 func_801CEB3C(s32 row, s32 top, u8 *dims) {
     func_801CE91C(kind, id);
     return price;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/shop", func_801CEB3C);
-#endif
 
 /*
  * Set the party's gold (capped at 9999999) and put the bought amounts into
@@ -937,7 +934,7 @@ u8 func_801CF780(void) {
             if (dims[row] != 0 && D_800625A0->details->amounts[top + row] + (D_801D2260 + 1) < 100) {
                 total += price;
                 new_gold -= price;
-                D_800625A0->details->amounts[top + row]++;
+                D_800625A0->details->amounts[top + row] += 1;
                 redraw = 1;
             }
             break;
@@ -945,7 +942,7 @@ u8 func_801CF780(void) {
             if (D_800625A0->details->amounts[top + row] != 0) {
                 total -= price;
                 new_gold += price;
-                D_800625A0->details->amounts[top + row]--;
+                D_800625A0->details->amounts[top + row] -= 1;
                 redraw = 1;
             }
             break;

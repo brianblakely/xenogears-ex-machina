@@ -1876,12 +1876,10 @@ void func_801E41B4(void) {
 
 /* Roll one drop per defeated enemy: the first at its chance (always when a
  * party member has flag 0x800), else the second at its chance. */
-#ifdef NON_MATCHING
-/* The original compares forced with its own constant 1 (masked); here GCC
- * reuses the hoisted 1 of the bit shift. */
 void func_801E42C4(void) {
     u8 i;
     u8 forced;
+    s32 low_bit;
     s32 bit;
     Combatant *enemy;
 
@@ -1892,9 +1890,10 @@ void func_801E42C4(void) {
             forced = 1;
         }
     }
+    low_bit = 1;
     for (i = 0; i < 8; i++) {
         D_801E44C8->drops.ids[i] = 0;
-        bit = 1 << i;
+        bit = low_bit << i;
         if (!(D_801E44C8->defeated & bit)) {
             continue;
         }
@@ -1908,6 +1907,3 @@ void func_801E42C4(void) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E42C4);
-#endif

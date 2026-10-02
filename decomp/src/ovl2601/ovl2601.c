@@ -635,7 +635,7 @@ void func_801C70FC(u8 index) {
 void func_801C7178(s32 row, s32 unused, u8 fixed, u8 index) {
     Marker *marker;
     POLY_FT4 *poly;
-    s32 visible;
+    u8 visible;
     s32 y;
 
     visible = 1;
@@ -648,8 +648,10 @@ void func_801C7178(s32 row, s32 unused, u8 fixed, u8 index) {
     }
     if (!fixed) {
         y = row * 13 + 0x32;
+        visible = 1;
+    } else {
+        visible = 1;
     }
-    visible = 1;
     if (visible) {
         func_8002675C(D_800625A0->sprite_sheet, marker->frame + 0x15B, marker, D_800625A0->buffer, 0,
                       0, 0x1000);
@@ -1638,7 +1640,6 @@ void func_801CB370(void) {
 }
 
 /* Open the message panel and show three lines of label text from entry `first`. */
-#ifdef NON_MATCHING
 void func_801CB384(u8 first) {
     PanelGrowth *growth;
     Label *label;
@@ -1679,9 +1680,9 @@ void func_801CB384(u8 first) {
         (label->poly + D_800625A0->buffer)->v2 = (i / 2) * 13 + 0x5B;
         (label->poly + D_800625A0->buffer)->u3 = label->width;
         (label->poly + D_800625A0->buffer)->v3 = (i / 2) * 13 + 0x5B;
-        i++;
-        label->projected = 1;
         label->buffer = D_800625A0->buffer;
+        label->projected = 1;
+        i++;
     } while (i < 3);
     LoadImage(&D_800625A0->message_labels[0]->rect, D_800625A0->message_labels[0]->pixels);
     LoadImage(&D_800625A0->message_labels[2]->rect, D_800625A0->message_labels[2]->pixels);
@@ -1695,9 +1696,6 @@ void func_801CB384(u8 first) {
     func_801CB014();
     func_801CB014();
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CB384);
-#endif
 
 /* Close the message panel and release its labels, then let a frame pass. */
 void func_801CB7F4(void) {
