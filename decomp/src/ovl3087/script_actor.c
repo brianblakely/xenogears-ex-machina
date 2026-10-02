@@ -4,18 +4,15 @@
 #include "ovl3087.h"
 #include "script_actor.h"
 
-#ifdef NON_MATCHING
 /* Action completion callback: clear the actor's action-running flag and
  * remove the callback. */
 void func_801E93E8(BattleActor *actor) {
-    D_800D3278->actionRunning[actor->slotLow | (actor->slotHigh << 2)] = 0;
+    s32 low = actor->slotLow;
+    s32 high = actor->slotHigh;
+    D_800D3278->actionRunning[(high << 2) | low] = 0;
     func_80021BF8(actor, 0);
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/script_actor", func_801E93E8);
-#endif
 
-#ifdef NON_MATCHING
 /* Start an animation on actor n and report its completion; a negative
  * animation first restores the actor's battle pose when one is pending. */
 void func_801E9430(s32 actor, s32 animation) {
@@ -36,22 +33,14 @@ void func_801E9430(s32 actor, s32 animation) {
         self->nextAnimation = -1;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/script_actor", func_801E9430);
-#endif
 
-#ifdef NON_MATCHING
 /* Return actor n to its idle animation. */
 void func_801E950C(s32 actor) {
     BattleActor *self = D_800C3EB0.actors[actor];
 
     func_800245D8(self, self->idleAnimation);
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/script_actor", func_801E950C);
-#endif
 
-#ifdef NON_MATCHING
 void func_801E9550(s32 actor) {
     BattleActor *self = D_800C3EB0.actors[actor];
 
@@ -59,19 +48,11 @@ void func_801E9550(s32 actor) {
     self->unk34 = 0;
     self->flags40 &= ~0xFC;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/script_actor", func_801E9550);
-#endif
 
-#ifdef NON_MATCHING
 void func_801E958C(s32 actor) {
     D_800C3EB0.actors[actor]->unk9E = 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/script_actor", func_801E958C);
-#endif
 
-#ifdef NON_MATCHING
 /* Movement end callback: play the animation queued after the action (1
  * when none). */
 void func_801E95B0(BattleActor *actor) {
@@ -82,11 +63,7 @@ void func_801E95B0(BattleActor *actor) {
     }
     func_800245D8(actor, animation);
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/script_actor", func_801E95B0);
-#endif
 
-#ifdef NON_MATCHING
 /* Move actor n to (x, y, z) with animation 2 and report the completion. */
 void func_801E95E4(s16 actor, s16 x, s16 y, s16 z) {
     BattleActor *self = D_800C3EB0.actors[actor];
@@ -100,11 +77,7 @@ void func_801E95E4(s16 actor, s16 x, s16 y, s16 z) {
     func_800BF7C8(self, 8, func_801E95B0);
     func_80021BF8(self, func_801E93E8);
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/script_actor", func_801E95E4);
-#endif
 
-#ifdef NON_MATCHING
 /* Run actor n's action 3 with (x, y, z) and report the completion. */
 void func_801E9694(s16 actor, s16 x, s16 y, s16 z) {
     BattleActor *self = D_800C3EB0.actors[actor];
@@ -115,9 +88,6 @@ void func_801E9694(s16 actor, s16 x, s16 y, s16 z) {
     func_800245D8(self, 3);
     func_80021BF8(self, func_801E93E8);
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/script_actor", func_801E9694);
-#endif
 
 #ifdef NON_MATCHING
 void func_801E9700(s32 actor, s32 arg1) {
@@ -134,49 +104,46 @@ void func_801E9700(s32 actor, s32 arg1) {
 INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/script_actor", func_801E9700);
 #endif
 
-#ifdef NON_MATCHING
 /* Actor n attacks the target the battle search picks (itself when none):
  * wait for the next frame, run the attack, wait again. */
 void func_801E9760(s32 actor, s32 target) {
     BattleActor *self = D_800C3EB0.actors[actor];
+    s32 any = 0xFFFF;
 
-    D_800D3634 = 0xFFFF;
-    D_800D3678 = func_800BEEB4(0xFFFF, &D_800D363C, self);
+    D_800D3634 = any;
+    D_800D3678 = func_800BEEB4(any, &D_800D363C, self);
     if (D_800D3678 == 0) {
         D_800D363C.target = self;
     }
     self->target = D_800D363C.target;
-    while (func_800BF720() != D_80059464) {
+    while (D_80059464 != func_800BF720()) {
         func_800BE790();
     }
     D_80059464 = 0;
     D_800591AC = 1;
     if (func_800B7E94() != 0) {
-        func_80021BF8(self, D_800BAB30);
+        func_80021BF8(self, D_800B9B30);
     } else {
         if (self->unk34 != 0) {
             func_800245D8(self, 0x12);
         }
         func_800BC404(D_800D3634);
     }
-    while (func_800BF720() != D_80059464) {
+    while (D_80059464 != func_800BF720()) {
         func_800BE790();
     }
     D_80059464 = 0;
     D_800591AC = 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/script_actor", func_801E9760);
-#endif
 
-#ifdef NON_MATCHING
 /* Turn actor n towards actor m and make m its target. */
 void func_801E9894(s32 actor, u16 target) {
     BattleActor *self = D_800C3EB0.actors[actor];
+    TargetSearch *search = &D_800D363C;
     BattleActor *other = D_800C3EB0.actors[target];
 
-    D_800D363C.unk4 = 0;
-    D_800D363C.target = other;
+    search->unk4 = 0;
+    search->target = other;
     self->target = other;
     func_800223B0(self, func_800BEF24(self, other));
     func_80021FE0(self, func_800BEF24(self, other));
@@ -184,20 +151,12 @@ void func_801E9894(s32 actor, u16 target) {
         func_800BF2B8(self);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/script_actor", func_801E9894);
-#endif
 
-#ifdef NON_MATCHING
 /* Play an animation on a script slot model. */
 void func_801E9958(BattleModel *model, s32 animation) {
     func_800245D8(&model->body, animation);
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/script_actor", func_801E9958);
-#endif
 
-#ifdef NON_MATCHING
 /* Create a script slot model from model data at a position. */
 BattleModel *func_801E9978(void *file, s16 *position) {
     BattleModel *model;
@@ -230,11 +189,7 @@ BattleModel *func_801E9978(void *file, s16 *position) {
     D_800C37C8 = 1;
     return model;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/script_actor", func_801E9978);
-#endif
 
-#ifdef NON_MATCHING
 /* Release a script slot model. */
 void func_801E9AD4(BattleModel *model) {
     func_8001CE74(model);
@@ -245,16 +200,9 @@ void func_801E9AD4(BattleModel *model) {
     func_800BC2F0(1);
     D_800C37C8 = 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/script_actor", func_801E9AD4);
-#endif
 
-#ifdef NON_MATCHING
 void func_801E9B2C(void) {
     func_800BC3F8(0);
     func_800BC2F0(0);
     D_800C37C8 = 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/script_actor", func_801E9B2C);
-#endif

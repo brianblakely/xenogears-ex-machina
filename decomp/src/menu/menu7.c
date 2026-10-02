@@ -2225,22 +2225,22 @@ void func_8008ECEC(u8 tag) {
 }
 
 /* Stop the sounds a character's command sound entry started. Does not
- * match, like the play counterpart func_8008EBD0: the original frame has
- * an 8-byte local slot and keeps the table base in $s1 for the second id. */
+ * match: the table base and the entry offset swap $s1/$s2 and the flag
+ * load of the second id is scheduled after its mask. */
 #ifdef NON_MATCHING
 void func_8008ED6C(Actor *owner, s32 index) {
     s32 entry;
-    s32 id;
+    SoundPair *table;
+    s32 unused[2];
 
     entry = owner->sounds[index];
     if (entry != 0xFF) {
-        id = D_80091EE0[entry].first;
-        if (id != 0) {
-            func_8008ECEC((id & 0x7F) | ((owner->flags >> 20) & 0x80));
+        table = D_80091EE0;
+        if (D_80091EE0[entry].first != 0) {
+            func_8008ECEC((D_80091EE0[entry].first & 0x7F) | ((owner->flags >> 20) & 0x80));
         }
-        id = D_80091EE0[entry].second;
-        if (id != 0) {
-            func_8008ECEC((id & 0x7F) | ((owner->flags >> 20) & 0x80));
+        if (table[entry].second != 0) {
+            func_8008ECEC((table[entry].second & 0x7F) | ((owner->flags >> 20) & 0x80));
         }
     }
 }

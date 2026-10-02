@@ -1446,23 +1446,21 @@ void func_80087B74(Actor *actor, u32 *ot, Matrix *view) {
     }
 }
 
-/* Record a position in the path list (up to 31 entries). Does not match:
- * the entry address is formed base-first and registers differ. */
-#ifdef NON_MATCHING
+/* Record a position in the path list (up to 31 entries). */
 void func_80087E38(Vector *pos) {
-    PathPoint *point;
+    s32 count = D_800928F8;
+    s16 *base;
+    s16 *at;
 
-    if (D_800928F8 < 0x1F) {
-        point = &D_8009A928[D_800928F8];
-        point->x = pos->vx;
-        point->y = pos->vy;
-        D_800928F8++;
-        point->z = pos->vz;
+    if (count < 0x1F) {
+        base = &D_8009A928[0].x;
+        at = base + count * (sizeof(PathPoint) / sizeof(s16));
+        at[0] = pos->vx;
+        at[1] = pos->vy;
+        D_800928F8 = count + 1;
+        at[2] = pos->vz;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_80087E38);
-#endif
 
 /* Draw the recorded path points as axis crosses (64 units long), then
  * clear the list. */

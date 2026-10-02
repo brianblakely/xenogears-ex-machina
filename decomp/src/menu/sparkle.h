@@ -17,6 +17,17 @@ typedef struct {
     u8 unk12[2];
 } SparkleKind;
 
+/* Trail state of a type-1 sparkle (at 0x60). */
+typedef struct {
+    s16 screen[6];        /* 0x60: projected leading edge (x0, y0, x1, y1)
+                           * and centre (x, y) */
+    struct Sparkle *prev; /* 0x6C */
+    u16 stamp;            /* 0x70: frame counter when started */
+    s16 owner;            /* 0x72 */
+    s32 size;             /* 0x74 */
+    s32 key;              /* 0x78 */
+} SparkleTrail;
+
 /* A sprite particle of the menu scene: a quad per draw buffer. Type 0
  * falls; types 1 and 2 are trail and line segments linked to the previous
  * frame's segment of the same key and owner. */
@@ -34,14 +45,7 @@ typedef struct Sparkle {
             u16 gravity;       /* 0x64 */
             u16 fall_speed;    /* 0x66 */
         } fall;
-        struct {
-            u8 unk60[0xC];
-            struct Sparkle *prev; /* 0x6C */
-            u16 stamp;            /* 0x70: frame counter when started */
-            s16 owner;            /* 0x72 */
-            s32 size;             /* 0x74 */
-            s32 key;              /* 0x78 */
-        } trail;
+        SparkleTrail trail;
         struct {
             struct Sparkle *prev; /* 0x60 */
             s16 x, y, z;          /* 0x64: the other end */

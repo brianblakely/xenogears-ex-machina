@@ -258,10 +258,8 @@ void func_8007EEE8(s32 filter) {
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_8007EEE8);
 #endif
 
-#ifdef NON_MATCHING
 /* Allocate and lay out the 49 portrait slots: palette rows 511 down and
- * a 7x7 grid of image areas.
- * Does not match: the x shift is scheduled after the first stores. */
+ * a 7x7 grid of image areas. */
 void func_8007EFB4(void) {
     u8 unused[0x30]; /* never used; the original frame keeps its slot */
     GridCell *cell;
@@ -275,21 +273,20 @@ void func_8007EFB4(void) {
     for (row = 0; row < 7; row++) {
         top = row * 0x20 + 0x1A0;
         for (col = 0; col < 7; col++) {
+            s16 left = col << 6;
+
             cell->clut_x = 0x200;
             cell->clut_y = id--;
             cell->clut_w = 0x80;
             cell->clut_h = 1;
             cell->image_x = top;
-            cell->image_y = col << 6;
+            cell->image_y = left;
             cell->image_w = 0x1E;
             cell->image_h = 0x40;
             cell++;
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_8007EFB4);
-#endif
 
 #ifdef NON_MATCHING
 /* Draw the portrait of a list entry (the index wraps around the list) on
@@ -802,14 +799,11 @@ void func_80080644(s32 first, s32 second) {
     func_80032C18(data, 2);
 }
 
-#ifdef NON_MATCHING
 /* Enter the selection screen in a mode: upload every portrait once, set
- * the pages' entry counts and labels, and reset both sides.
- * Does not match: the original reloads 4 into the branch delay slot. */
+ * the pages' entry counts and labels, and reset both sides. */
 void func_80080780(s32 mode) {
     GridCell *cell;
     s32 i;
-    s32 count;
 
     if (D_80092940 == 0) {
         func_80028A60(0);
@@ -822,11 +816,11 @@ void func_80080780(s32 mode) {
         D_80092940 = 1;
     }
     D_800928C8 = mode;
-    count = 4;
     if (mode == 4) {
-        count = 3;
+        ((MenuPage *)D_800915AC)[5].count = 3;
+    } else {
+        ((MenuPage *)D_800915AC)[5].count = 4;
     }
-    ((MenuPage *)D_800915AC)[5].count = count;
     ((MenuPage *)D_800915AC)[6].count = 5;
     if (mode == 3) {
         D_80091369 = 0x27;
@@ -845,9 +839,6 @@ void func_80080780(s32 mode) {
     D_80092720 = D_80092704;
     func_80080964(5);
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_80080780);
-#endif
 
 void func_800808F4(void) {
     D_80092924 = 1;
@@ -948,9 +939,7 @@ void func_80080B58(void) {
     DrawSync(0);
 }
 
-#ifdef NON_MATCHING
-/* Open the system menu: mode 1 at page 0, mode 2 at page 7, else close.
- * Does not match: the shared tail is cross-jumped one instruction early. */
+/* Open the system menu: mode 1 at page 0, mode 2 at page 7, else close. */
 void func_80080C48(s32 mode) {
     func_80039FF8();
     func_8008EB4C(0x1F);
@@ -964,18 +953,17 @@ void func_80080C48(s32 mode) {
         func_80080964(7);
         ((MenuPage *)D_800915AC)[7].cursor = 1;
     } else {
-        func_8007F8B4();
-        return;
+        goto close;
     }
     func_80083C0C(0);
     D_80092758 = 1;
     D_800926FC = 0;
     D_8009275C = 1;
     func_80080B58();
+    return;
+close:
+    func_8007F8B4();
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_80080C48);
-#endif
 
 void func_80080D10(void) {
     D_800926DC = 0;
@@ -1623,19 +1611,15 @@ s32 func_80082488(Vector *pos, s32 lift) {
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_80082488);
 #endif
 
-/* Ground height of the map cell under a position (cells of 256 units). Does not match:
- * two shift instructions are scheduled differently. */
-#ifdef NON_MATCHING
+/* Ground height of the map cell under a position (cells of 256 units). */
 s32 func_80082880(SVector *pos) {
     Vector unused[3]; /* the original frame has 0x30 unused bytes */
-    s16 x = pos->vx >> 8;
-    s16 z = pos->vz >> 8;
+    s16 x, z;
 
-    return *(s16 *)&((s32 *)D_800928DC)[z * 128 + x];
+    x = pos->vx >> 8;
+    z = pos->vz >> 8;
+    return *(s16 *)&((s32 *)D_800928DC)[x + z * 128];
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_80082880);
-#endif
 
 /* The map cell word under a position (cells of 256 units). */
 s32 func_800828C4(Vector *pos) {

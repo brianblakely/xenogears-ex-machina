@@ -10,7 +10,8 @@ typedef struct {
     SVector from;  /* 0x18: line end points relative to the camera */
     SVector to;    /* 0x20 */
     SVector extra; /* 0x28: fourth corner of a projected quad */
-    u8 unk30[0x80];
+    Vector corner[6]; /* 0x30: view-rotated sprite corner offsets */
+    u8 unk90[0x20];
     s32 depth;     /* 0xB0: projected depth */
 } SceneScratch;
 
@@ -118,7 +119,7 @@ typedef struct {
 
 /* Text cursor and colour of the menu's text drawing. */
 extern u8 D_800926F0, D_800926F4, D_800926F8; /* text colour r, g, b */
-extern s32 D_80059488;
+extern volatile s32 D_80059488;
 
 extern char *D_800912F4[];
 extern u32 D_8009274C; /* pad buttons repeating this frame */

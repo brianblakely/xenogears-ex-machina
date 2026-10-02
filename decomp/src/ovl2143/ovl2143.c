@@ -1332,33 +1332,25 @@ void func_801DF6A8(SlotPool *pool) {
 }
 
 /* Take the first free slot (the caller marks it used) and advance the search
- * position past used slots; NULL when the pool is full. Differs only in the
- * allocation of two argument registers. */
-#ifdef NON_MATCHING
+ * position past used slots; NULL when the pool is full. */
 PoolSlot *func_801DF6F0(SlotPool *pool) {
     PoolSlot *slot;
     u32 capacity;
 
     if (pool->next < pool->capacity) {
         slot = &pool->slots[pool->next];
-        if (slot->used != 0) {
+        if (slot->used) {
             return NULL;
         }
         pool->next++;
         capacity = pool->capacity;
-        while (pool->next < capacity) {
-            if (pool->slots[pool->next].used == 0) {
-                return slot;
-            }
+        while (pool->next < capacity && pool->slots[pool->next].used != 0) {
             pool->next++;
         }
         return slot;
     }
     return NULL;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DF6F0);
-#endif
 
 /* Free a slot, moving the search position back to it; returns its index or
  * -1 without a slot. */
@@ -1830,15 +1822,14 @@ s16 func_801E0850(s16 angle, s16 divisor, s32 base) {
     return base + (func_8003F8CC(angle) + 0x1000) / divisor;
 }
 
-/* base + value / divisor, or -1 past 32. Differs only in register choice. */
-#ifdef NON_MATCHING
+/* base + value / divisor, or -1 past 32. */
 s16 func_801E08D4(s16 value, s16 divisor, s16 base) {
     base += value / divisor;
-    return base < 0x21 ? base : -1;
+    if (base > 0x20) {
+        return -1;
+    }
+    return base;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E08D4);
-#endif
 
 /* base - value / divisor. */
 s16 func_801E0938(s16 value, s16 divisor, s32 base) {
@@ -2027,9 +2018,8 @@ ImageAnim *func_801E0A00(ImageAnim *anim, ImageAnim *target, u16 mode, u16 flags
 /* Advance an image animation by `ticks` + 1: when its curve selects another
  * frame, rebuild the image (resident decoders or fades) and copy the
  * overlap into its target image. Returns the frame, or a negative value
- * once the animation ended. Differs only in the unchanged-frame branch,
- * which the original sends straight to the epilogue. */
-#ifdef NON_MATCHING
+ * once the animation ended; an unchanged frame returns nothing (the
+ * original falls off the end). */
 s16 func_801E1258(ImageAnim *anim, s32 ticks) {
     RECT src;
     RECT dst;
@@ -2112,12 +2102,9 @@ s16 func_801E1258(ImageAnim *anim, s32 ticks) {
                 }
             }
         }
+        return frame;
     }
-    return frame;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E1258);
-#endif
 
 /* Stop an image animation: restore its original pixels to VRAM (resident
  * decoder modes) and release its blocks. */
@@ -3847,37 +3834,30 @@ void func_801E63A8(Actor *actor) {
 }
 
 /* Hide node `index` of `parts` and its descendants, showing the same nodes of
- * `other`, and release their attachments. Differs in register assignment and
- * one addu operand order. */
-#ifdef NON_MATCHING
+ * `other`, and release their attachments. */
 void func_801E6578(SlotPool *pool, s32 index, ModelPart *parts, ModelPart *other) {
-    ModelPart *part;
     ModelPart *child;
     s32 count;
     s32 i;
 
     child = parts;
-    part = &parts[index];
     count = parts->count;
-    part->visible = 0;
+    parts[index].visible = 0;
     other[index].visible = 1;
-    func_801DF7A8(pool, part->attachments[0]);
-    part->attachments[0] = NULL;
-    func_801DF7A8(pool, part->attachments[1]);
-    part->attachments[1] = NULL;
-    func_801DF7A8(pool, part->attachments[2]);
-    part->attachments[2] = NULL;
+    func_801DF7A8(pool, parts[index].attachments[0]);
+    parts[index].attachments[0] = NULL;
+    func_801DF7A8(pool, parts[index].attachments[1]);
+    parts[index].attachments[1] = NULL;
+    func_801DF7A8(pool, parts[index].attachments[2]);
+    parts[index].attachments[2] = NULL;
     for (i = 1; i < count;) {
         child++;
         i++;
-        if (child->parent == part) {
+        if (child->parent == &parts[index]) {
             func_801E6578(pool, child->count, parts, other);
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E6578);
-#endif
 
 /* Move the visibility of every shown node of `parts` to the same node of
  * `other`. */
@@ -3922,35 +3902,26 @@ s32 func_801E67F8(void) {
 }
 
 /* The actor index (returned) and bit mask of reference `ref` (0xff: the mask's lowest actor,
- * 0xfe: the current actor, 0xfd/0xf9: this actor, ...). The original
- * masks the shift count to 8 bits at the join; this build drops it. */
-#ifdef NON_MATCHING
+ * 0xfe: the current actor, 0xfd/0xf9: this actor, ...). */
 s32 func_801E6830(Actor *actor, u8 ref, u16 *mask) {
-    u8 index;
-
     if (ref == 0xFF) {
-        index = func_801E67F8();
+        ref = func_801E67F8();
     } else if (ref == 0xFE) {
-        index = D_801E86B0;
+        ref = D_801E86B0;
     } else if (ref == 0xFD || ref == 0xF9) {
-        index = actor->index;
+        ref = actor->index;
     } else if (ref == 0xFC) {
-        index = actor->b21;
+        ref = actor->b21;
     } else if (ref == 0xFA) {
-        index = 10;
+        ref = 10;
     } else if (ref == 0xF8) {
-        index = actor->index * 2 + 8;
+        ref = actor->index * 2 + 8;
     } else if (ref == 0xF7) {
-        index = actor->index * 2 + 9;
-    } else {
-        index = ref;
+        ref = actor->index * 2 + 9;
     }
-    *mask = 1 << index;
-    return index;
+    *mask = 1 << ref;
+    return ref;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E6830);
-#endif
 
 /* Script variable `ref` (0xfe/0xff: the actor's default reference, whose bit
  * 7 is returned in `*flag`): a local below 0x40, else a global. */

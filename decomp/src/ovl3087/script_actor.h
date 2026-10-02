@@ -75,7 +75,7 @@ extern u8 D_800D3350;
 extern s32 D_80059464; /* frame counter */
 extern u8 D_800591AC;
 extern u8 D_800C37C8;
-extern void D_800BAB30(BattleActor *actor);
+extern void D_800B9B30(BattleActor *actor);
 extern u8 D_800BABDC[];
 extern u8 D_800BAC50[];
 extern u8 D_800BAB0C[];
