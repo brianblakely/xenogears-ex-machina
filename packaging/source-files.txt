@@ -241,6 +241,7 @@ decomp/src/ovl3387/ovl3387.c
 decomp/src/resident/cd.h
 decomp/src/resident/console.h
 decomp/src/resident/gpu.h
+decomp/src/resident/gte.h
 decomp/src/resident/heap.c
 decomp/src/resident/heap.h
 decomp/src/resident/main.c
@@ -259,6 +260,7 @@ decomp/src/resident/sound.h
 decomp/src/resident/sprite.c
 decomp/src/resident/sprite.h
 decomp/src/resident/sprite_80022090.c
+decomp/src/resident/sprite_800248D4.c
 decomp/src/resident/stream.h
 decomp/src/resident/text.h
 decomp/src/resident/window.h

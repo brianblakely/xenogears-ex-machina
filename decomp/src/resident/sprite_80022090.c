@@ -1,6 +1,6 @@
-/* Resident sprite engine, second unit (0x80022090-0x8002709c): sprite
- * orientation, resources, construction, frame commands and the image
- * queues. Built like the first unit (sprite.c). */
+/* Resident sprite engine, second unit (0x80022090-0x800248d4): sprite
+ * orientation, resources, construction and child sprites. Built like the
+ * first unit (sprite.c). */
 #include "common.h"
 #include "psyq/libapi.h"
 #include "psyq/libc.h"
@@ -28,14 +28,6 @@ s32 D_800591B8;
 s32 D_800592EC;
 RECT *D_800592F0;             /* LoadImage area for 80022a0c */
 u_long *D_800592F4;           /* LoadImage pixels for 80022a0c */
-s32 D_800592F8;               /* the queue being filled (0 or 1) */
-s32 D_800592FC;               /* bytes of the queue entry block / 2 */
-SpriteQueueEntry *D_80059300[2]; /* the two queues */
-u8 *D_800594B4;               /* the first queue's entry block (the second's follows) */
-ImageUpload *D_800594C4;      /* the upload list of the first queue (the second follows) */
-SpriteQueueEntry *D_80059580; /* the next free queue entry */
-u8 *D_80059524;                /* the queue block being filled */
-u8 *D_80059534;                /* its end */
 
 /* Rebuild a sprite renderer's matrix: rotation by its angles, scaled by
  * its scales (flag bit 0: scale before rotating), then halved by the
@@ -191,7 +183,92 @@ void func_800223B0(Sprite *sprite, s16 angle) {
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_800223B0);
 #endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80022660);
+/* Replay a sprite's frame commands without timing until the script reaches
+ * `target` with `count` commands run: frame commands step or look up the
+ * frame and add their duration (commands 40-7f repeat the last one), b3
+ * sets the frame index, be shows a frame with its flip and duration, e2
+ * pushes its return point and jumps; 80-82 end, and 86, 87 and 97 end at
+ * the target. Others are skipped by their length (8004fc40). */
+void func_80022660(Sprite *sprite, u8 *target, s32 count) {
+    u8 *script;
+    u8 op;
+    s32 duration;
+    s32 value;
+    s16 offset;
+    u8 *args;
+
+next:
+    script = sprite->script;
+    if (script == target && sprite->frame_bits.field22 == count) {
+        return;
+    }
+    {
+        op = *script;
+        args = script + 1;
+        if (op < 0x80) {
+            sprite->script = args;
+            if (op < 0x10) {
+                func_8001D2B0(sprite, sprite->frame + 1);
+                duration = (op & 0xF) + 1;
+            } else if (op < 0x20) {
+                sprite->frame_bits.frame++;
+                func_80022D44(sprite);
+                duration = (op & 0xF) + 1;
+            } else if (op < 0x30) {
+                func_8001D2B0(sprite, sprite->frame - 1);
+                duration = (op & 0xF) + 1;
+            }
+            if (op < 0x40) {
+                duration = (op & 0xF) + 1;
+            }
+            sprite->countdown += duration;
+            if (++sprite->frame_bits.field22 == 0) {
+                sprite->frame_bits.field22--;
+            }
+            goto next;
+        }
+        switch (op) {
+        case 0xBE:
+            value = script[1] | (script[2] << 8);
+            sprite->motion.bits.frame_flip = value >> 9;
+            sprite->render.bits.flip = sprite->motion.bits.frame_flip ^ sprite->motion.bits.mirror;
+            if (sprite->frame != (value & 0x1FF)) {
+                func_8001D2B0(sprite, value & 0x1FF);
+            }
+            sprite->countdown += ((value >> 11) & 0xF) + 1;
+            break;
+        case 0xE2:
+            offset = script[1] + ((s8)args[1] << 8);
+            func_80021CF8(sprite, (s32)(script + 3));
+            sprite->script += offset;
+            goto next;
+        case 0xB3:
+            sprite->frame_bits.frame = (s8)script[1];
+            break;
+        case 0x80:
+        case 0x81:
+        case 0x82:
+            return;
+        case 0x86:
+            if (script == target) {
+                return;
+            }
+            break;
+        case 0x87:
+            if (script == target) {
+                return;
+            }
+            break;
+        case 0x97:
+            if (script == target) {
+                return;
+            }
+            break;
+        }
+        sprite->script += D_8004FC40[op];
+        goto next;
+    }
+}
 
 /* Derive a sprite's horizontal velocity from its walking speed, gravity divisor and direction. */
 void func_80022974(Sprite *sprite) {
@@ -744,9 +821,160 @@ SpriteTask *func_80023A48(s32 kind, s32 mode, SpriteSource *source, s32 extra, T
     return task;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80023B84);
+/* Create a child sprite of `parent` running animation `header` from
+ * `source`: its kind from the frame entry (3: the parent's), its storage
+ * mode from the kind; it inherits the parent's facing, blending, speeds,
+ * frame, position, resources and (with a mode) renderer angles and scales,
+ * then takes the animation and its kind's callbacks. With the parent's
+ * passive_children flag the task starts inactive. */
+/* Nonmatching: the original also loads the child's image pointer (0x24) into $s3 after creating the task and never uses it, which shifts the register allocation and scheduling of the field copies. */
+#ifdef NON_MATCHING
+Sprite *func_80023B84(Sprite *parent, u16 *header, SpriteSource *source) {
+    u8 active = D_800591AC;
+    s32 kind;
+    s32 mode;
+    SpriteTask *task;
+    Sprite *child;
+    u32 split;
 
+    parent->b0.wordb0 |= 0x800;
+    if (parent->b0.bits.passive_children) {
+        D_800591AC = 0;
+    }
+    kind = func_80023440(header);
+    if (kind == 3) {
+        kind = (parent->flags >> 13) & 0xF;
+    }
+    mode = ((s32 (*)())func_80023468)(kind); /* the fallback argument is not passed */
+    task = func_80023A48(kind, mode, source, 0, parent->block);
+    task->task.link.bits.flag29 = 1;
+    child = &task->sprite;
+    child->flags = (child->flags & ~0x1E000) | ((kind & 0xF) << 13);
+    child->render.bits.sides = mode;
+    child->flags = (child->flags & ~0x1F00) | (parent->flags & 0x1F00);
+    child->render.word = (child->render.word & ~8) | (parent->render.word & 8);
+    child->render.word = (child->render.word & ~0x10) | (parent->render.word & 0x10);
+    child->render.bits.unknown8 = parent->render.bits.unknown8;
+    child->flags = (child->flags & ~0x40000) | (parent->flags & 0x40000);
+    child->render.word = (child->render.word | 0x4000000) & ~4;
+    child->speed = parent->speed;
+    child->direction = parent->direction;
+    child->scale = parent->scale;
+    child->frame = parent->frame;
+    child->b0.bits.share_rate = parent->b0.bits.share_rate;
+    if (parent->b0.bits.share_rate) {
+        child->rate = parent->rate;
+        child->flags = (child->flags & ~0x1F00) | 0x300;
+    }
+    split = (parent->motion.bits.unknown0 << 2) | parent->frame_bits.unknown30;
+    child->frame_bits.unknown30 = split;
+    child->motion.bits.unknown0 = split >> 2;
+    child->b0.bits.passive_children = parent->b0.bits.passive_children;
+    child->motion.bits.double_step = parent->motion.bits.double_step;
+    child->motion.bits.divisor = parent->motion.bits.divisor;
+    child->frame_bits.sequencer_owned = 0;
+    child->motion.bits.mirror = parent->motion.bits.mirror;
+    if (!parent->frame_bits.sequencer_owned) {
+        child->sequencer = parent->sequencer;
+    } else {
+        child->sequencer = NULL;
+    }
+    child->word70 = parent;
+    child->resource_block = parent->resource_block;
+    child->animations = parent->animations;
+    child->word74 = parent->word74;
+    child->word82 = parent->word82;
+    child->word50 = parent->word50;
+    child->unknown8d = parent->motion.bytes[3];
+    child->word78 = parent->word78;
+    child->x = parent->x;
+    child->y = parent->y;
+    child->z = parent->z;
+    child->speed_x = parent->speed_x;
+    child->speed_y = parent->speed_y;
+    child->speed_z = parent->speed_z;
+    if (mode != 0) {
+        child->renderer->angle_x = parent->renderer->angle_x;
+        child->renderer->angle_y = parent->renderer->angle_y;
+        child->renderer->angle_z = parent->renderer->angle_z;
+        child->renderer->scale_x = parent->renderer->scale_x;
+        child->renderer->scale_y = parent->renderer->scale_y;
+        child->renderer->scale_z = parent->renderer->scale_z;
+    }
+    func_80023538(child, header);
+    func_80024730(task);
+    D_800591AC = active;
+    return child;
+}
+#else
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80023B84);
+#endif
+
+/* Create an effect sprite task running animation `index` of `source` at
+ * `position` (whole units), with `extra` bytes after the sprite: its kind
+ * and storage mode come from the animation's frame entry; in battle (flag
+ * 800591ad) it takes the facing, blending, speed, scale and resources of
+ * the battle's current actor (800c3e1c) before its own resources are
+ * cleared. */
+/* Nonmatching: the 4-bit value copied across the 0xa8/0xac words ends up in the other of its two temporaries (v0/v1 swapped for 8 instructions). */
+#ifdef NON_MATCHING
+SpriteTask *func_80023FD8(s32 index, SpriteSource *source, SVECTOR *position, s32 extra) {
+    u16 *table = source->animations;
+    u16 *header = (u16 *)(table[index + 1] + (s32)table);
+    s32 kind;
+    s32 mode;
+    SpriteTask *task;
+    Sprite *child;
+    Sprite *actor;
+    u32 split;
+
+    kind = func_80023440(header);
+    mode = ((s32 (*)())func_80023468)(kind); /* the fallback argument is not passed */
+    task = func_80023A48(kind, mode, source, extra, NULL);
+    task->task.link.bits.flag29 = 1;
+    child = &task->sprite;
+    source = child->image; /* kept across the actor copy */
+    child->word70 = 0;
+    child->word74 = 0;
+    if (D_800591AD != 0 && (actor = D_800C3E1C) != NULL) {
+        child->resource_block = actor->resource_block;
+        child->animations = actor->animations;
+        child->word74 = actor->word74;
+        child->speed = actor->speed;
+        child->direction = actor->direction;
+        child->flags = (child->flags & ~0x1F00) | (actor->flags & 0x1F00);
+        child->render.word = (child->render.word & ~8) | (actor->render.word & 8);
+        child->render.word = (child->render.word & ~0x10) | (actor->render.word & 0x10);
+        child->render.bits.unknown8 = actor->render.bits.unknown8;
+        child->scale = actor->scale;
+        child->render.word = (child->render.word | 0x4000000) & ~4;
+        child->motion.bits.mirror = actor->motion.bits.mirror;
+        child->motion.bits.divisor = actor->motion.bits.divisor;
+        child->sequencer = actor->sequencer;
+        child->sequencer = actor->sequencer;
+        split = actor->frame_bits.unknown30 | (actor->motion.bits.unknown0 << 2);
+        child->frame_bits.unknown30 = split;
+        child->motion.bits.unknown0 = split >> 2;
+        child->word50 = actor->word50;
+        child->unknown8d = actor->motion.bytes[3];
+    }
+    child->resource_block = NULL;
+    child->animations = NULL;
+    child->frame = 0;
+    child->image = source;
+    ((SpriteFlagBits *)&child->flags)->type = kind;
+    child->render.bits.sides = mode;
+    child->word82 = D_800591A8;
+    child->x = position->vx << 16;
+    child->y = position->vy << 16;
+    child->z = position->vz << 16;
+    func_80023538(child, header);
+    func_80024730(task);
+    return task;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80023FD8);
+#endif
 
 /* 80024524 with `extra` in 800591b8 for the call. */
 void func_80024294(void *a0, s16 a1, s16 a2, s16 a3, s16 a4, s16 a5, s32 extra) {
@@ -853,231 +1081,67 @@ void func_800245D8(Sprite *sprite, s32 animation) {
     func_800223B0(sprite, sprite->word80);
 }
 
+/* Finish a new sprite task by its kind: 7 counts its updates, 8 and 9 set
+ * their blending and show a frame, 10-13 are camera markers the battle
+ * overlay registers (800bc158) at the eye (10, 12) or look-at (11, 13)
+ * position, 12 and 13 becoming 10 and 11 with a frame shown; then the
+ * auxiliary node gets its kind's update callback. */
+/* Nonmatching: the original copies the task pointer to $a2 and passes it back to $a0 for each 800bc158 call; this build keeps it in $a0. */
+#ifdef NON_MATCHING
+void func_80024730(SpriteTask *task) {
+    Sprite *sprite = &task->sprite;
+    Task *auxiliary = &task->auxiliary;
+    s32 kind = ((SpriteFlagBits *)&sprite->flags)->type;
+
+    switch (kind) {
+    case 12:
+        sprite->frame = 1;
+        kind = ((SpriteFlagBits *)&sprite->flags)->type -= 2;
+        func_800BC158(task);
+        sprite->x = D_8006F99C.vx;
+        sprite->y = D_8006F99C.vy;
+        sprite->z = D_8006F99C.vz;
+        break;
+    case 10:
+        sprite->frame = 0;
+        func_800BC158(task);
+        sprite->x = D_8006F99C.vx;
+        sprite->y = D_8006F99C.vy;
+        sprite->z = D_8006F99C.vz;
+        break;
+    case 13:
+        sprite->frame = 1;
+        kind = ((SpriteFlagBits *)&sprite->flags)->type -= 2;
+        func_800BC158(task);
+        sprite->x = D_8006F99C.vx;
+        sprite->y = D_8006F99C.vy;
+        sprite->z = D_8006F99C.vz;
+        break;
+    case 11:
+        sprite->frame = 0;
+        func_800BC158(task);
+        sprite->x = D_8006F9AC.vx;
+        sprite->y = D_8006F9AC.vy;
+        sprite->z = D_8006F9AC.vz;
+        break;
+    case 7:
+        func_8001CD6C(&task->task, func_80022E8C);
+        break;
+    case 8:
+        sprite->colour_flags = 0x68;
+        sprite->frame = 1;
+        break;
+    case 9:
+        *(u16 *)&sprite->unknown36[0] = 3;
+        sprite->colour_flags = 0x60;
+        sprite->frame = 1;
+        break;
+    case 0:
+    case 14:
+        break;
+    }
+    func_80025224(auxiliary, kind);
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80024730);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_800248D4);
-
-/* Reset the sprite engine: flags, the value at 800591a8, the task lists and
- * the pending-frame list. */
-void func_80024F20(void) {
-    D_800591AD = 0;
-    D_800591AE = 0;
-    D_800591A8 = 0x2000;
-    func_8001C944();
-    func_8001D298();
-}
-
-/* Allocate the queue entry block (`size` * 2 bytes) and empty both queues. */
-void func_80024F64(s32 size, s32 mode) {
-    D_800592FC = size;
-    D_800594B4 = func_80031BDC(size * 2, mode);
-    D_800594B8 = D_800594B4 + size;
-    D_80059300[1] = NULL;
-    D_80059300[0] = NULL;
-    D_800594C4 = NULL;
-    func_8001D298();
-}
-
-/* Release the queue entry block. */
-void func_80024FB8(void) {
-    func_800320E8(D_800594B4);
-    func_8001D2A4();
-}
-
-void func_80024FE4(s32 value) {
-    D_8005956C = value;
-}
-
-/* Copy the current light settings. */
-void func_80024FF4(MATRIX *view) {
-    D_8004FBB8 = *view;
-}
-
-/* Run the uploads queued on the queue being filled and empty its list. */
-void func_80025044(void) {
-    ImageUpload *upload;
-
-    for (upload = (&D_800594C4)[D_800592F8]; upload != NULL; upload = upload->next) {
-        if (upload->pixels != NULL) {
-            LoadImage(&upload->rect, upload->pixels);
-        } else {
-            ClearImage(&upload->rect, 0, 0, 0);
-        }
-    }
-    (&D_800594C4)[D_800592F8] = NULL;
-}
-
-/* Start filling queue `queue`: its entry block becomes the free space, and
- * the blocks its entries hold are released. */
-/* Nonmatching: the original computes the index before the entry array's address. */
-#ifdef NON_MATCHING
-void func_800250E0(s32 queue) {
-    SpriteQueueEntry *entry = D_80059300[queue];
-
-    D_800592F8 = queue;
-    D_80059580 = (SpriteQueueEntry *)(D_80059524 = (&D_800594B4)[queue]);
-    D_80059534 = D_80059524 + D_800592FC;
-    for (; entry != NULL; entry = entry->next) {
-        func_800320E8((void *)entry->value);
-    }
-    D_80059300[queue] = NULL;
-}
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_800250E0);
 #endif
-
-/* Queue `value` on the queue being filled. */
-void func_80025180(u32 value) {
-    SpriteQueueEntry *entry = D_80059580;
-
-    D_80059580 = entry + 1;
-    if (entry != NULL) {
-        entry->value = value;
-        entry->next = D_80059300[D_800592F8];
-        D_80059300[D_800592F8] = entry;
-    }
-}
-
-/* Queue an upload of `pixels` to (x, y, w, h) on the queue being filled
- * (dropped when its block is full). */
-void func_800251C8(u_long *pixels, s16 x, s16 y, s16 w, s16 h) {
-    ImageUpload *upload = (ImageUpload *)D_80059580;
-
-    if ((u8 *)(upload + 1) < D_80059534) {
-        upload->rect.h = h;
-        upload->rect.x = x;
-        upload->rect.y = y;
-        upload->rect.w = w;
-        upload->pixels = pixels;
-        D_80059580 = (SpriteQueueEntry *)(upload + 1);
-        upload->next = (&D_800594C4)[D_800592F8];
-        (&D_800594C4)[D_800592F8] = upload;
-    }
-}
-
-/* Set a task's update callback from the table at 8004fd40. */
-void func_80025224(Task *task, s32 kind) {
-    func_8001CD64(task, D_8004FD40[kind]);
-}
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80025258);
-
-/* Sprite task draw for a sprite without a frame: a point primitive at its
- * screen position (its colour word) and a draw-mode primitive with its
- * blend bits, both from the queue entry block, at its depth. */
-/* Nonmatching: the original copies the point to $a1 for the call before storing its colour through that copy, and its first AddPrim argument is set up later. */
-#ifdef NON_MATCHING
-void func_8002541C(Task *task) {
-    SVECTOR position;
-    s32 flag;
-    Sprite *sprite = task->data;
-    PointPrim *point;
-    ModePrim *mode;
-    s32 depth;
-
-    if (sprite->frame != 0) {
-        return;
-    }
-    point = (PointPrim *)D_80059580;
-    if ((u8 *)(point + 1) < D_80059534) {
-        position.vx = sprite->x >> 16;
-        position.vy = sprite->y >> 16;
-        D_80059580 = (SpriteQueueEntry *)(point + 1);
-        position.vz = sprite->z >> 16;
-        SetRotMatrix(&D_8004FBB8);
-        SetTransMatrix(&D_8004FBB8);
-        depth = RotTransPers(&position, (long *)&point->xy, &flag, &flag) >> D_80050100;
-        sprite->depth = depth;
-        point->len = 2;
-        point->colour = *(u32 *)&sprite->red;
-        AddPrim((u32 *)D_8005956C + depth, point);
-        mode = (ModePrim *)D_80059580;
-        if ((u8 *)(mode + 1) < D_80059534) {
-            D_80059580 = (SpriteQueueEntry *)(mode + 1);
-            mode->len = 1;
-            mode->code = (sprite->render.word & 0x60) | 0xE1000000;
-            AddPrim((u32 *)D_8005956C + depth, mode);
-        }
-    }
-}
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_8002541C);
-#endif
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80025544);
-
-void func_80025710(void) {
-}
-
-/* Sprite task draw: rebuild the orientation if needed and, with a renderer
- * block, place the model at the sprite's position (in view space unless
- * render bit 24 is set) and draw it (8002c700) with the part list of the
- * queue being filled. */
-void func_80025718(Task *task) {
-    MATRIX matrix;
-    VECTOR position;
-    Sprite *sprite = task->data;
-
-    func_80022038(sprite);
-    if (sprite->renderer->pointer34 != NULL) {
-        position.vx = sprite->x >> 16;
-        position.vy = sprite->y >> 16;
-        position.vz = sprite->z >> 16;
-        TransMatrix(&sprite->renderer->matrix, &position);
-        if (!sprite->render.bits.no_view) {
-            CompMatrix(&D_8004FBB8, &sprite->renderer->matrix, &matrix);
-        }
-        SetRotMatrix(&matrix);
-        SetTransMatrix(&matrix);
-        func_8002C700(sprite->renderer->pointer34, sprite->renderer->parts[D_800592F8], D_8005956C, ((u16 *)&sprite->flags)[1] & 4); /* flags bit 18, as a halfword */
-    }
-}
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_800257F0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80025A88);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80025C04);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80025D4C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80025FA8);
-
-/* The texture of sheet entry `id`: its first word, mode, CLUT position and
- * the VRAM position of its pixels (page plus column and row). */
-void func_80026338(u16 *sheet, s32 id, s32 *first, s32 *mode, s32 *clut_x, s32 *clut_y, s32 *x, s32 *y) {
-    s16 *entry = (s16 *)(sheet[id + 2] + (s32)sheet);
-    SheetPart *part = (SheetPart *)(entry + 2);
-    s32 u;
-    s32 column;
-
-    *first = entry[0];
-    u = part->u << 16;
-    if (part->mode != 0) {
-        column = u >> 18;
-    } else {
-        column = u >> 20;
-    }
-    *mode = part->mode;
-    *clut_x = part->clut_x;
-    *clut_y = part->clut_y;
-    *x = (s16)(part->page_x & 0xFFC0) + column;
-    *y = (s16)(part->page_y & 0xFF00) + part->v;
-}
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_800263E4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_8002675C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80026A0C);
-
-void func_80026B9C(void) {
-}
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80026BA4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80026DCC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80026F44);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80026FE8);

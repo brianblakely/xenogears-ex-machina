@@ -77,6 +77,8 @@ typedef struct {
     s8 offset_y;                   /* +0x3d */
     u8 unknown3e[2];
     s32 word40;                    /* +0x40 */
+    SVECTOR light_angles;          /* +0x44: lit models (800257f0) */
+    u16 light_colour[3];           /* +0x4c */
 } SpriteRenderer;
 
 typedef struct Sprite {
@@ -123,11 +125,11 @@ typedef struct Sprite {
     u16 *facings;            /* +0x5c */
     u16 *word60;             /* +0x60: after the first section's count */
     u8 *script;              /* +0x64: the next animation command, NULL once finished */
-    void *callback;          /* +0x68: completion callback */
+    void (*callback)(struct Sprite *sprite); /* +0x68: completion callback */
     void *block;             /* +0x6c: the allocation holding the sprite */
     struct Sprite *word70;   /* +0x70: the sprite this one is attached to */
     struct Sprite *word74;   /* +0x74: the sprite this one aims at */
-    u8 unknown78[4];
+    s32 word78;              /* +0x78 */
     void *sequencer;         /* +0x7c */
     u16 word80;              /* +0x80: facing angle */
     u16 word82;              /* +0x82 */
@@ -166,6 +168,12 @@ typedef struct Sprite {
     union {
         u32 wordb0;          /* bit 11: destroy flag-29 child tasks with the sprite */
         u8 byteb0;
+        struct {
+            unsigned unknown0 : 8;
+            unsigned passive_children : 1; /* its child sprites start inactive */
+            unsigned share_rate : 1;       /* its child sprites take its speed factor */
+            unsigned unknown10 : 22;
+        } bits;
     } b0;                    /* +0xb0 */
 } Sprite; /* 0xb4 bytes; an inline renderer may follow */
 
@@ -200,13 +208,16 @@ typedef struct {
 typedef struct {
     u16 u;             /* +0x0: texture column, in its top bits */
     s16 v;             /* +0x2 */
-    u8 unknown4[0xC];
+    u16 w, h;          /* +0x4: size */
+    u16 x, y;          /* +0x8: placement from the sheet origin */
+    u8 unknownc[4];
     s16 mode;          /* +0x10: nonzero: 8-bit texture (column / 4, else / 16) */
     s16 clut_x;        /* +0x12 */
     s16 clut_y;        /* +0x14 */
     u16 page_x;        /* +0x16 */
     u16 page_y;        /* +0x18 */
-} SheetPart;
+    u8 flip_x, flip_y; /* +0x1a */
+} SheetPart; /* 0x1c bytes */
 
 /* A sprite image header (inline at sprite + 0x110). */
 typedef struct {
@@ -425,5 +436,50 @@ typedef struct {
     s16 x, y;
 } TexturePosition;
 extern TexturePosition D_8004FAB8[8];
+/* Second sprite unit (80022090-8002709c). */
+/* The bits of a sprite's flags word (+0x40) that the original writes as fields. */
+typedef struct {
+    unsigned unknown0 : 8;
+    unsigned group : 5;      /* facing group */
+    unsigned type : 4;       /* sprite kind (80023440) */
+    unsigned unknown17 : 15;
+} SpriteFlagBits;
+extern u8 D_8004FC40[]; /* frame command lengths */
+void func_80021CF8(Sprite *sprite, s32 value); /* push three bytes */
+void func_80022D44(Sprite *sprite);
+s32 func_80023440(u16 *entry);
+s32 func_80023468(s32 kind, s32 fallback);
+SpriteTask *func_80023A48(s32 kind, s32 mode, SpriteSource *source, s32 extra, Task *owner);
+void func_80024730(SpriteTask *task);
+void func_800BC158(SpriteTask *task); /* battle overlay: register a camera marker */
+void func_80022E8C(Task *task);
+void func_80025224(Task *task, s32 kind);
+void func_800C11CC(Sprite *sprite); /* battle overlay: run a sprite's script */
+void func_8001FBE4(Sprite *sprite, u8 op, u8 *args); /* run a script command */
+u8 func_80021C20(Sprite *sprite);
+s32 func_80021C6C(Sprite *sprite);
+void func_8001E298(Sprite *sprite, u_long *ot); /* draw into the ordering table entry at `ot` */
+extern u8 D_800C3664;
+/* The scratchpad work area of the pixel colour scaling (80025c04). */
+typedef struct {
+    u16 colour;     /* +0x0: the scaled pixel */
+    u16 unused2;
+    VECTOR in;      /* +0x4 */
+    VECTOR out;     /* +0x14 */
+} ColourScratch;
+#define COLOUR_SCRATCH ((ColourScratch *)0x1F800000)
+extern const MATRIX D_800188CC; /* identity */
+extern SVECTOR D_8004FDC0[4]; /* corners of a sheet part being drawn */
+extern MATRIX D_8004FD80; /* light colour matrix of lit sprite models */
+extern MATRIX D_8004FDA0; /* light direction matrix of lit sprite models */
+void func_800B1F6C(SpriteRendererEntry *model, SpritePart *parts, s32 ot, s32 unused, s32 depth, s32 blend); /* battle overlay: draw a lit model */
+/* The tile primitive 80025544 takes from the queue block. */
+typedef struct {
+    u8 addr[3];
+    u8 len;
+    u32 colour;
+    s16 x, y;
+    s16 w, h;
+} TilePrim;
 
 #endif

@@ -21,6 +21,9 @@
 #include "console.h"
 #include "sound.h"
 
+/* The identity matrix the sprite sheet draw 80025fa8 starts from. */
+const MATRIX D_800188CC = {{{0x1000, 0, 0}, {0, 0x1000, 0}, {0, 0, 0x1000}}, {0, 0, 0}};
+
 /* Create a panoramic backdrop (heap tag 4). `colours` (three RGB words:
  * sky, horizon, ground) enables the fills, NULL leaves them off. */
 Panorama *func_8002709C(s32 tex_x, s32 tex_y, s32 width, s32 height, s32 clut_x, s32 clut_y,
