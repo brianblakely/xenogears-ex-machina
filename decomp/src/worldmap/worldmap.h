@@ -595,7 +595,7 @@ void func_80097DC0(void);
 extern u16 D_8009A68C[];
 extern void *D_8009D788[16]; /* submitted frame lists */
 
-s16 func_80084DB8(s32 probe, s32 object);
+s32 func_80084DB8(s32 probe, s32 object);
 void func_8007EBBC(SceneObject *object, PolyFT4 *quads, s32 count, s32 abr);
 void func_800963E4(s32 *list);
 

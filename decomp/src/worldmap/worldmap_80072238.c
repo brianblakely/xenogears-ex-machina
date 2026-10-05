@@ -445,7 +445,7 @@ void func_80073448(s32 id) {
 }
 
 /* Unpack the area file and resolve its section offsets to pointers. */
-#ifdef NON_MATCHING /* area pointer reaches $a0 through an extra copy */
+#ifdef NON_MATCHING /* decoded base and spot-block operands differ */
 void func_80073530(void) {
     u8 *block;
     u8 *base;
@@ -456,8 +456,9 @@ void func_80073530(void) {
     block = D_8009C180;
     D_8009C180 = func_80032E88(block, 0);
     func_800320E8(block);
-    base = D_8009C180;
-    area = (AreaHeader *)base;
+    block = D_8009C180;
+    base = block;
+    area = (AreaHeader *)block;
     block = base + area->spots;
     D_8009CD48 = base + area->off8;
     D_8009D308 = base + area->offC;
@@ -582,7 +583,7 @@ void func_800739B8(void) {
 /* Scroll the horizon texture with the camera yaw, transform the two horizon
  * quads of this buffer and link them, inside their texture windows, into the
  * ordering table. */
-#ifdef NON_MATCHING /* loop keeps the quad row offset apart from the buffer base; uv registers differ */
+#ifdef NON_MATCHING /* setup scheduling, UV copies and one row-address operand differ */
 void func_80073B04(void) {
     SVECTOR *corners;
     HorizonScratch *scratch;
@@ -617,10 +618,11 @@ void func_80073B04(void) {
     SetRotMatrix(&scratch->view);
     SetTransMatrix(&scratch->view);
     do {
-        i++;
-        quad = (PolyFT4 *)((u8 *)&D_8009C744[D_8009D7F0] + offset);
+        quad = &D_8009C744[D_8009D7F0];
+        quad = (PolyFT4 *)(offset + (u32)quad);
         otz = RotTransPers4(&corners[0], &corners[1], &corners[2], &corners[3], (s32 *)&quad->x0,
                             (s32 *)&quad->x1, (s32 *)&quad->x2, (s32 *)&quad->x3, &scratch->p, &scratch->flag);
+        i++;
         corners += 4;
         offset += 2 * sizeof(PolyFT4);
     } while (i < 2);
@@ -1251,7 +1253,6 @@ void func_80075D4C(void) {
 /* Roll an encounter for the terrain at a position and a party level: pick a
  * formation by the bracket's weights and copy the terrain's encounter set.
  * Returns 0 when the bracket has no formations. */
-#ifdef NON_MATCHING /* formation search: the original tests the weight through a copy of the pointer */
 s32 func_80075E7C(VECTOR *position, s32 level) {
     u8 weights[16];
     s32 kind;
@@ -1261,7 +1262,6 @@ s32 func_80075E7C(VECTOR *position, s32 level) {
     s32 formation;
     s32 result;
     s32 i;
-    u8 *weight;
     u8 *row;
 
     kind = (s16)func_80094028(position);
@@ -1284,16 +1284,14 @@ s32 func_80075E7C(VECTOR *position, s32 level) {
     if (total > 0) {
         roll = rand() % total + 1;
         formation = 0;
-        weight = weights;
         do {
             roll--;
         next:
-            if (*weight == 0) {
-                weight++;
+            if (weights[formation] == 0) {
                 formation++;
                 goto next;
             }
-            (*weight)--;
+            weights[formation]--;
         } while (roll > 0);
         D_800658DC = *(EncounterSet *)D_8009D73C[kind];
         D_80059508 = formation;
@@ -1301,9 +1299,6 @@ s32 func_80075E7C(VECTOR *position, s32 level) {
     }
     return result;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80075E7C);
-#endif
 
 /* Place the distant landmark model (drawn by the scene overlay) relative to
  * the camera and draw it when it is in front and nearer than depth 0xD00. */

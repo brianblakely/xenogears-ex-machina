@@ -430,10 +430,10 @@ s16 func_80084D00(s32 probe, s16 *hit) {
 
 /* Test the probe position against scene object `index`: transform its
  * collision faces flat (x, z) and record every face whose outline contains
- * the probe (face number and its attribute) in D_8009D718. Returns twice
- * the number of faces found. */
-#ifdef NON_MATCHING /* early range test and prologue scheduling differ */
-s16 func_80084DB8(s32 probe, s32 index) {
+ * the probe (face number and its attribute) in D_8009D718. Returns a word-sized
+ * count of table entries; the caller narrows it to s16. */
+#ifdef NON_MATCHING /* range-check scheduling and loop register allocation differ */
+s32 func_80084DB8(s32 probe, s32 index) {
     s32 flag;
     SceneObject *object;
     FaceTestScratch *scratch;
@@ -445,32 +445,35 @@ s16 func_80084DB8(s32 probe, s32 index) {
     s32 count;
     s32 i;
     s32 dz;
-    s16 hits;
+    s32 hits;
 
     object = &D_8009C620[index];
-    index = (((VECTOR *)probe)->vx >> 12) - object->position.vx;
+    index = ((VECTOR *)probe)->vx;
+    index >>= 12;
+    index -= object->position.vx;
     FACE_TEST_SCRATCH->u.test.delta.vx = index;
-    if (index < 0) {
-        index = -index;
-    }
-    index = index >= 0x800;
+    index = index >= 0 ? index : -index;
+    index = index < 0x800;
+    index ^= 1;
     dz = object->position.vz - (((VECTOR *)probe)->vz >> 12);
     FACE_TEST_SCRATCH->u.test.delta.vz = dz;
-    if (dz < 0) {
-        dz = -dz;
-    }
+    dz = dz >= 0 ? dz : -dz;
+    dz = dz < 0x800;
+    dz ^= 1;
+    index |= dz;
     scratch = FACE_TEST_SCRATCH;
-    if (index | (dz >= 0x800)) {
+    if (index) {
         return 0;
     }
     scratch->m = object->matrix;
     i = 0;
     scratch->m.t[2] = 0;
     scratch->m.t[0] = 0;
+    dz = object->position.vy;
     scratch->p[0].vz = 0x800;
     scratch->p[0].vy = 0x800;
     scratch->p[0].vx = 0x800;
-    scratch->m.t[1] = object->position.vy;
+    scratch->m.t[1] = dz;
     hits = 0;
     ScaleMatrix(&scratch->m, &scratch->p[0]);
     SetRotMatrix(&scratch->m);
