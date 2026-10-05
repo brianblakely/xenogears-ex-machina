@@ -147,13 +147,13 @@ s32 func_80090E14(WorldmapActor *actor) {
 /* Free flight input: bank and turn with the d-pad and shoulder buttons,
  * pitch with triangle/cross and climb with R1 (R2 descends); returns 1 when
  * landing at a path, 4 on take-off when level, else 0. */
-#ifdef NON_MATCHING /* register allocation of the bank target and the step magnitudes */
 s32 func_80090FB4(WorldmapActor *actor) {
     s32 turn;
     s32 bank_step;
     s32 turn_step;
     s32 delta;
-    s32 amount;
+    s32 bankAmount;
+    s32 turnAmount;
     s32 bank;
     s32 yaw;
 
@@ -187,16 +187,14 @@ s32 func_80090FB4(WorldmapActor *actor) {
         if (D_8009CD4C & 0xA00C) {
             turn_step = 0x1000;
             delta = D_8009BD38.vz - bank;
-            if (delta < 0) {
-                delta = -delta;
-            }
+            delta = delta >= 0 ? delta : -delta;
             bank_step = delta >> 4;
         }
         if (D_8009BD38.vz != bank) {
             delta = D_8009BD38.vz - bank;
-            amount = ABS(delta);
-            if (amount < bank_step) {
-                bank_step = amount;
+            bankAmount = delta >= 0 ? delta : -delta;
+            if (bankAmount < bank_step) {
+                bank_step = bankAmount;
             }
             if (D_8009BD38.vz < bank) {
                 D_8009BD38.vz += bank_step;
@@ -206,9 +204,9 @@ s32 func_80090FB4(WorldmapActor *actor) {
         }
         if (actor->unk5C != turn) {
             delta = actor->unk5C - turn;
-            amount = ABS(delta);
-            if (amount < turn_step) {
-                turn_step = amount;
+            turnAmount = delta >= 0 ? delta : -delta;
+            if (turnAmount < turn_step) {
+                turn_step = turnAmount;
             }
             if (actor->unk5C < turn) {
                 actor->unk5C += turn_step;
@@ -303,9 +301,6 @@ s32 func_80090FB4(WorldmapActor *actor) {
     }
     return 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80090FB4);
-#endif
 
 /* Restore the actor from the saved camera state; vehicles get state 3. */
 s32 func_80091430(s32 index) {
