@@ -628,9 +628,9 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80
  * `index`: bit n is set when `to` lies outside edge n (flat x, z); when it
  * leaves through a corner, keep only the edge the move crosses. Also leave
  * the normalised edge directions in the scratchpad. */
-#ifdef NON_MATCHING /* scheduling around the GTE sequences and argument registers differ */
 s32 func_80085760(VECTOR *from, VECTOR *to, s32 index, s32 face) {
-    s32 sides;
+    u32 sides;
+    s32 y;
     SceneObject *object;
     FaceTestScratch *scratch;
     VECTOR *p1;
@@ -646,21 +646,29 @@ s32 func_80085760(VECTOR *from, VECTOR *to, s32 index, s32 face) {
     FACE_TEST_SCRATCH->m = object->matrix;
     FACE_TEST_SCRATCH->m.t[2] = 0;
     FACE_TEST_SCRATCH->m.t[0] = 0;
+    y = object->position.vy;
     FACE_TEST_SCRATCH->p[0].vz = 0x800;
     FACE_TEST_SCRATCH->p[0].vy = 0x800;
     scratch->p[0].vx = 0x800;
-    FACE_TEST_SCRATCH->m.t[1] = object->position.vy;
+    FACE_TEST_SCRATCH->m.t[1] = y;
     ScaleMatrix(&FACE_TEST_SCRATCH->m, &FACE_TEST_SCRATCH->p[0]);
     SetRotMatrix(&FACE_TEST_SCRATCH->m);
     SetTransMatrix(&FACE_TEST_SCRATCH->m);
     mesh = (Mesh *)object->unk44;
-    corners = &mesh->faces[face];
+    corners = mesh->faces;
+    corners += face;
     vertices = mesh->vertices;
     gte_RotTrans(&vertices[corners->corner[0]], &scratch->p[0], &sides);
+    gte_ldv0(&vertices[corners->corner[1]]);
+    gte_rt();
     p1 = &FACE_TEST_SCRATCH->p[1];
-    gte_RotTrans(&vertices[corners->corner[1]], p1, &sides);
+    gte_stlvnl(p1);
+    gte_stflg(&sides);
+    gte_ldv0(&vertices[corners->corner[2]]);
+    gte_rt();
     p2 = &FACE_TEST_SCRATCH->p[2];
-    gte_RotTrans(&vertices[corners->corner[2]], p2, &sides);
+    gte_stlvnl(p2);
+    gte_stflg(&sides);
     sides = 0;
     FACE_TEST_SCRATCH->u.test.edge[0] = (FACE_TEST_SCRATCH->p[0].vz << 16) | (u16)scratch->p[0].vx;
     FACE_TEST_SCRATCH->u.test.edge[1] = (FACE_TEST_SCRATCH->p[1].vz << 16) | (u16)p1->vx;
@@ -725,9 +733,6 @@ s32 func_80085760(VECTOR *from, VECTOR *to, s32 index, s32 face) {
     VectorNormal(&scratch->u.side[2], &scratch->u.side[2]);
     return sides;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80085760);
-#endif
 
 /* Draw the actors' model sprites: place each visible model relative to the
  * camera target, project it for its depth, then add it to the ordering
