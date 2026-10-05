@@ -2149,18 +2149,16 @@ void func_80089580(void) {
 /* Run the emitters: count down their timers and every interval spawn one
  * particle into a free effect slot, starting at a random point around the
  * emitter and flying towards a random point around its target. */
-#ifdef NON_MATCHING /* counter register: the original sets it in the condition branch's delay slot (a1, after the
-                     * last use of unk8); set before the test it conflicts and takes a2 */
 void func_80089748(void) {
     AreaObject *object;
     EffectSlot *slot;
     EmitScratch *scratch;
     s32 i;
     s32 flags;
+    /* The original initializes these timer locals only for flag 0x10. */
     s32 delay;
     s32 repeats;
-    s32 distance;
-    s32 j;
+    s32 value;
 
     object = D_8009BCC0;
     scratch = EMIT_SCRATCH;
@@ -2186,11 +2184,11 @@ void func_80089748(void) {
             object->unk12--;
             goto store;
         }
-        j = 0xFF;
         object->unk12 = object->unk10;
         if ((((s16 *)&object->life)[1] != 0) & (object->unk8 > 0) & (object->unkA < object->unk8)) {
+            value = 0xFF;
             slot = D_8009BDF4;
-            for (; j != -1; j--, slot++) {
+            for (; value != -1; value--, slot++) {
                 if (EFFECT_ENABLED(slot) == 0) {
                     slot->id = i;
                     slot->timer = object->life;
@@ -2205,15 +2203,15 @@ void func_80089748(void) {
                     scratch->random.vz = (rand() & 0xFFF) - 0x800;
                     VectorNormal(&scratch->random, &scratch->normal);
                     if (flags & 4) {
-                        distance = object->spread[0];
+                        value = object->spread[0];
                     } else {
-                        distance = rand() % object->spread[0];
+                        value = rand() % object->spread[0];
                     }
-                    slot->position.vx = (scratch->offset.vx << 12) + scratch->normal.vx * distance +
+                    slot->position.vx = (scratch->offset.vx << 12) + scratch->normal.vx * value +
                                         (object->position.vx << 12);
-                    slot->position.vy = (scratch->offset.vy << 12) + scratch->normal.vy * distance +
+                    slot->position.vy = (scratch->offset.vy << 12) + scratch->normal.vy * value +
                                         (object->position.vy << 12);
-                    slot->position.vz = (scratch->offset.vz << 12) + scratch->normal.vz * distance +
+                    slot->position.vz = (scratch->offset.vz << 12) + scratch->normal.vz * value +
                                         (object->position.vz << 12);
                     ApplyMatrix(&scratch->m, &object->direction, &scratch->offset);
                     if (!(flags & 0x40)) {
@@ -2225,15 +2223,15 @@ void func_80089748(void) {
                     scratch->random.vz = (rand() & 0xFFF) - 0x800;
                     VectorNormal(&scratch->random, &scratch->normal);
                     if (flags & 8) {
-                        distance = object->spread[1];
+                        value = object->spread[1];
                     } else {
-                        distance = rand() % object->spread[1];
+                        value = rand() % object->spread[1];
                     }
-                    scratch->normal.vx = (scratch->offset.vx << 12) + scratch->normal.vx * distance +
+                    scratch->normal.vx = (scratch->offset.vx << 12) + scratch->normal.vx * value +
                                          (object->position.vx << 12);
-                    scratch->normal.vy = (scratch->offset.vy << 12) + scratch->normal.vy * distance +
+                    scratch->normal.vy = (scratch->offset.vy << 12) + scratch->normal.vy * value +
                                          (object->position.vy << 12);
-                    scratch->normal.vz = (scratch->offset.vz << 12) + scratch->normal.vz * distance +
+                    scratch->normal.vz = (scratch->offset.vz << 12) + scratch->normal.vz * value +
                                          (object->position.vz << 12);
                     scratch->normal.vx = (scratch->normal.vx - slot->position.vx) >> 12;
                     scratch->normal.vy = (scratch->normal.vy - slot->position.vy) >> 12;
@@ -2265,9 +2263,6 @@ void func_80089748(void) {
     }
     func_80089580();
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80089748);
-#endif
 
 /* Draw the live particles: build each one's billboard quad (kind shape,
  * scaled and optionally rolled), place it relative to the camera target,
@@ -2490,15 +2485,13 @@ s32 func_8008A5B8(s32 index) {
 /* Update the party leader on foot: walk by the pad and record the trail,
  * gather the others into a vehicle or let them out on command, walk out of
  * the parked vehicle, and save the return spot and heading. */
-#ifdef NON_MATCHING /* two register choices (probe result, target) differ */
 s32 func_8008A72C(s32 index) {
     WorldmapActor *actor;
     WorldmapActor *target;
     LeaderScratch *scratch;
     TrailPoint *point;
     s32 result;
-    s16 hit;
-    s16 k;
+    s16 value;
     u16 heading;
 
     result = 1;
@@ -2556,30 +2549,30 @@ s32 func_8008A72C(s32 index) {
                     }
                     func_8008C1DC(0x2F, actor, (ActorScratch *)scratch);
                 }
-                hit = func_80095414(&actor->position, &actor->motion, &scratch->probe, actor->turn << 12,
+                value = func_80095414(&actor->position, &actor->motion, &scratch->probe, actor->turn << 12,
                                     D_8009BE10);
-                if (hit == 0) {
+                if (value == 0) {
                     actor->motion = scratch->probe;
-                    hit = func_80095414(&actor->position, &actor->motion, &scratch->probe, actor->turn << 12,
+                    value = func_80095414(&actor->position, &actor->motion, &scratch->probe, actor->turn << 12,
                                         D_8009BE10);
-                    if (hit == 0) {
+                    if (value == 0) {
                         actor->motion.vz = 0;
                         actor->motion.vx = 0;
                     }
                 }
-                if (hit == 1) {
+                if (value == 1) {
                     func_8008C040(&scratch->probe, 0x10, 0x20, &D_8009D738, &D_8009BD60);
                     if (D_8009BD60 == 7) {
-                        hit = D_8009D738 + 3;
+                        value = D_8009D738 + 3;
                     } else {
-                        hit = D_8009D738;
+                        value = D_8009D738;
                     }
-                    if ((u16)D_8009B180[hit] != 0) {
+                    if ((u16)D_8009B180[value] != 0) {
                         actor->position = scratch->probe;
                         if (actor->motion.vx | actor->motion.vz) {
-                            k = (D_8009D154 + 1) & 0x1F;
-                            point = &D_8009CEC4[k];
-                            D_8009D154 = k;
+                            value = (D_8009D154 + 1) & 0x1F;
+                            point = &D_8009CEC4[value];
+                            D_8009D154 = value;
                             point->position = actor->position;
                             point->heading = actor->heading;
                             func_8007528C();
@@ -2651,7 +2644,7 @@ s32 func_8008A72C(s32 index) {
         break;
     case 0xD:
         func_800941C4(&actor->position, &D_8009BE24[D_8009BD60].position, &actor->motion, &actor->heading);
-        target = D_8009BD60 + D_8009BE24;
+        target = (WorldmapActor *)((D_8009BD60 * sizeof(*target)) + (u32)D_8009BE24);
         actor->u.step = target->position.vx >> 12;
         actor->unk54 = target->position.vz >> 12;
         func_800245D8(actor->handle, 1);
@@ -2699,12 +2692,12 @@ s32 func_8008A72C(s32 index) {
         scratch->start.vz = D_8006EF8E[0].z << 12;
         scratch->start.vy = func_80093978(scratch->start.vx, scratch->start.vz);
         scratch->heading = D_8006EE54.unk5A;
-        k = 0x1F;
+        value = 0x1F;
         do {
             point->position = scratch->start;
             point->heading = scratch->heading;
             point++;
-        } while (--k != -1);
+        } while (--value != -1);
         actor->state = 0xD;
         break;
     case 0x28:
@@ -2741,12 +2734,12 @@ s32 func_8008A72C(s32 index) {
         D_8009D154 = 0;
         scratch->target = actor->position;
         scratch->heading = actor->heading;
-        k = 0x1F;
+        value = 0x1F;
         do {
             point->position = scratch->target;
             point->heading = scratch->heading;
             point++;
-        } while (--k != -1);
+        } while (--value != -1);
         actor->state++;
         /* fallthrough */
     case 0x2B:
@@ -2791,9 +2784,6 @@ s32 func_8008A72C(s32 index) {
     }
     return result;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008A72C);
-#endif
 
 /* Create party member 2's model sprite (if present) at the saved world-map
  * position; in movement modes 1-7 follow the player or start hidden. */
