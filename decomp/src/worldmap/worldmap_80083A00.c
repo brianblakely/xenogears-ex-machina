@@ -935,26 +935,30 @@ void func_80086568(void) {
 
 /* Allocate the two buffers of 0x120 semi-transparent grey textured quads
  * on the 0x3C0,0x100 page, the second a copy of the first. */
-#ifdef NON_MATCHING /* the code byte 0x2C is not hoisted out of the loop */
 void func_800865A0(void) {
     PolyFT4 *quad;
     s32 i;
+    s32 code;
+    s32 colour;
+    s32 length;
 
     D_8009D7F8[0] = func_80031BDC(sizeof(QuadBlock288), 1);
     D_8009D7F8[1] = func_80031BDC(sizeof(QuadBlock288), 1);
+    colour = 0x26;
+    i = 0;
     quad = D_8009D7F8[0];
-    for (i = 0; i < 0x120; i++, quad++) {
-        setPolyFT4(quad);
-        setRGB0(quad, 0x26, 0x26, 0x26);
+    length = 9;
+    code = 0x2C;
+    for (; i < 0x120; i++, quad++) {
+        setlen(quad, length);
+        setcode(quad, code);
+        setRGB0(quad, colour, colour, colour);
         quad->tpage = GetTPage(0, 1, 0x3C0, 0x100);
         quad->clut = GetClut(0x130, 0x1FE);
         SetSemiTrans(quad, 1);
     }
     *(QuadBlock288 *)D_8009D7F8[1] = *(QuadBlock288 *)D_8009D7F8[0];
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_800865A0);
-#endif
 
 /* Free two work buffers. */
 void func_800866C8(void) {
@@ -1941,7 +1945,6 @@ void func_80089128(void) {
 
 /* Place the eight emitters of group `group` at `position` facing `angle`
  * (either may be NULL for zero); start them unless one is already live. */
-#ifdef NON_MATCHING /* emitter start: two field loads scheduled above the flag store */
 void func_80089160(s32 group, SVECTOR *position, SVECTOR *angle) {
     AreaObject *object;
     s32 live;
@@ -1957,34 +1960,34 @@ void func_80089160(s32 group, SVECTOR *position, SVECTOR *angle) {
     }
     object = &D_8009BCC0[group * 8];
     if ((position == NULL) & (angle == NULL)) {
-        for (i = 7; i != -1; i--, object++) {
+        for (i = 7; i != -1; object++, i--) {
             if (live == 0) {
                 object->flags |= 0x80;
-                object->unkA = 0;
-                object->unk12 = object->unk10;
                 object->unk4 = object->unk0;
+                object->unk12 = object->unk10;
+                object->unkA = 0;
             }
             *(s32 *)&object->position.vx = *(s32 *)&object->angle.vx = 0;
             object->position.vz = object->angle.vz = 0;
         }
     } else if ((position != NULL) & (angle == NULL)) {
-        for (i = 7; i != -1; i--, object++) {
+        for (i = 7; i != -1; object++, i--) {
             if (live == 0) {
                 object->flags |= 0x80;
-                object->unkA = 0;
-                object->unk12 = object->unk10;
                 object->unk4 = object->unk0;
+                object->unk12 = object->unk10;
+                object->unkA = 0;
             }
             object->position = *position;
             SVECTOR_ZERO(&object->angle);
         }
     } else if ((position == NULL) & (angle != NULL)) {
-        for (i = 7; i != -1; i--, object++) {
+        for (i = 7; i != -1; object++, i--) {
             if (live == 0) {
                 object->flags |= 0x80;
-                object->unkA = 0;
-                object->unk12 = object->unk10;
                 object->unk4 = object->unk0;
+                object->unk12 = object->unk10;
+                object->unkA = 0;
             }
             SVECTOR_ZERO(&object->position);
             object->angle.vx = -angle->vx;
@@ -1992,12 +1995,12 @@ void func_80089160(s32 group, SVECTOR *position, SVECTOR *angle) {
             object->angle.vz = -angle->vz;
         }
     } else {
-        for (i = 7; i != -1; i--, object++) {
+        for (i = 7; i != -1; object++, i--) {
             if (live == 0) {
                 object->flags |= 0x80;
-                object->unkA = 0;
-                object->unk12 = object->unk10;
                 object->unk4 = object->unk0;
+                object->unk12 = object->unk10;
+                object->unkA = 0;
             }
             object->position = *position;
             object->angle.vx = -angle->vx;
@@ -2006,9 +2009,6 @@ void func_80089160(s32 group, SVECTOR *position, SVECTOR *angle) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80089160);
-#endif
 
 /* Place the eight emitters of group `group` at the origin, aimed along
  * `direction` and turned by `angle`; start them unless one is already live. */
