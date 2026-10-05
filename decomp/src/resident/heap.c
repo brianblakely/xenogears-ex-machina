@@ -291,9 +291,7 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_80031BDC);
 #endif
 
 /* Shrink a block to `size` bytes, splitting the rest off as a free block.
- * Returns the block's header, or NULL when the rest would be too small.
- * Nonmatching: two independent instructions are scheduled in swapped order. */
-#ifdef NON_MATCHING
+ * Returns the block's header, or NULL when the rest would be too small. */
 HeapHeader *func_80031F70(u8 *data, s32 size) {
     u8 *next = HEAP_HEADER(data)->next;
     HeapHeader *header = HEAP_HEADER(data);
@@ -303,8 +301,8 @@ HeapHeader *func_80031F70(u8 *data, s32 size) {
         return NULL;
     }
     rest = (HeapHeader *)(data + size);
-    D_8005932C = 1;
     rest->next = next;
+    D_8005932C = 1;
     rest->tag = 0;
     rest->kind = 0x21;
     rest->caller = 0;
@@ -312,9 +310,6 @@ HeapHeader *func_80031F70(u8 *data, s32 size) {
     header->next = (u8 *)(rest + 1);
     return header;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_80031F70);
-#endif
 
 /* Merge every run of adjacent free blocks. */
 void func_80031FF8(void) {
