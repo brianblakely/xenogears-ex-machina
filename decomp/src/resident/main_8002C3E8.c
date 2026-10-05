@@ -22,24 +22,22 @@
 
 /* Relocate a model group's offsets to addresses (once). Returns the number
  * of models.
- * Nonmatching: the original has an 8-byte frame, walks the models through
- * one pointer at their list fields and the entries from their start. */
+ * Nonmatching: the outer cursor points at the group base rather than each
+ * model's list field; the remaining differences are its offsets. */
 #ifdef NON_MATCHING
 s32 func_8002C3E8(ModelGroup *group) {
-    s32 flags = group->flags;
+    s32 i = group->flags; /* reused as the model index after the flag update */
     s32 count = group->count;
     ModelList *list;
     ModelListEntry *entries;
-    ModelListEntry *entry;
-    s32 i;
     s32 n;
 
-    if (!(flags & 1)) {
-        group->flags = flags | 1;
+    if (!(i & 1)) {
+        group->flags = i | 1;
         for (i = 0; i < count; i++) {
             group->models[i].table0 += (s32)group;
-            group->models[i].table8 += (s32)group;
             group->models[i].table4 += (s32)group;
+            group->models[i].table8 += (s32)group;
             group->models[i].primitives += (s32)group;
             if (group->models[i].list != NULL) {
                 list = (ModelList *)((u8 *)group->models[i].list + (s32)group);
@@ -47,13 +45,10 @@ s32 func_8002C3E8(ModelGroup *group) {
                 entries = list->entries;
                 n = list->last;
                 if (n != -1) {
-                    entry = &entries[n];
-                    do {
-                        n--;
-                        entry->first += (s32)group;
-                        entry->second += (s32)group;
-                        entry--;
-                    } while (n != -1);
+                    for (; n != -1; n--) {
+                        entries[n].first += (s32)group;
+                        entries[n].second += (s32)group;
+                    }
                 }
             }
         }
@@ -105,13 +100,10 @@ s32 func_8002C4BC(ModelGroup *group) {
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002C4BC);
 #endif
 
-/* Relocate a sprite model's offsets to addresses (once).
- * Nonmatching: the target loop's pointer is biased differently. */
-#ifdef NON_MATCHING
+/* Relocate a sprite model's offsets to addresses (once). */
 void func_8002C59C(SpriteModel *model) {
     MorphTable *table;
     MorphTarget *targets;
-    MorphTarget *target;
     s32 n;
 
     if (!(model->flags & 0x20)) {
@@ -126,20 +118,14 @@ void func_8002C59C(SpriteModel *model) {
             model->morphs = table;
             n = table->count;
             if (n != -1) {
-                target = &targets[n];
-                do {
-                    n--;
-                    target->deltas = (u8 *)target->deltas + (s32)model;
-                    target->normals = (MorphDelta *)((u8 *)target->normals + (s32)model);
-                    target--;
-                } while (n != -1);
+                for (; n != -1; n--) {
+                    targets[n].deltas = (u8 *)targets[n].deltas + (s32)model;
+                    targets[n].normals = (MorphDelta *)((u8 *)targets[n].normals + (s32)model);
+                }
             }
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002C59C);
-#endif
 
 /* Trim a model group's heap block to its data (once). Returns 1 when it
  * was already trimmed. */
