@@ -1,5 +1,7 @@
 #include "worldmap.h"
 
+void func_80093354(VECTOR *position);
+
 /* Walking input: steer by the d-pad relative to the camera; 3 on a menu request, 1 when a path or its entrance is selected, else 0. */
 s32 func_80090A84(WorldmapActor *actor) {
     switch (D_8009CD4C >> 12) {
@@ -331,7 +333,6 @@ s32 func_80091430(s32 index) {
 /* Camera yaw and target follower: turn by the shoulder buttons in 0x200
  * steps, ease towards requested yaws (commands 9, 10, 15-17), and move the
  * target towards the saved camera, scrolling the terrain origin with it. */
-#ifdef NON_MATCHING /* eased yaw in states 2 and 0x10: the new angle is shifted before the yaw store (v0/v1 swapped) */
 s32 func_800914D0(s32 index) {
     WorldmapActor *actor;
     s32 angle;
@@ -339,6 +340,8 @@ s32 func_800914D0(s32 index) {
     VECTOR step;
     s32 yaw;
     s32 amount;
+    s32 absX;
+    s32 absZ;
 
     actor = &D_8009BE24[index];
     switch (actor->unk4) {
@@ -427,7 +430,7 @@ s32 func_800914D0(s32 index) {
             }
         }
         actor->unk58 = (actor->unk58 + ((yaw << 12) >> 3)) & 0xFFFFFF;
-        D_8009BD38.vy = angle = actor->unk58 >> 12;
+        angle = D_8009BD38.vy = actor->unk58 >> 12;
         if ((angle == actor->u.step) & (actor->unk60 == 0)) {
             actor->state = 3;
             func_80097770(7, 0xB);
@@ -453,7 +456,7 @@ s32 func_800914D0(s32 index) {
             }
         }
         actor->unk58 = (actor->unk58 + ((yaw << 12) >> 5)) & 0xFFFFFF;
-        D_8009BD38.vy = angle = actor->unk58 >> 12;
+        angle = D_8009BD38.vy = actor->unk58 >> 12;
         if ((angle == actor->u.step) & (actor->unk60 == 0)) {
             actor->state = 3;
         }
@@ -475,7 +478,11 @@ s32 func_800914D0(s32 index) {
             step.vx = delta.vx >> 3;
             step.vy = delta.vy >> 3;
             step.vz = delta.vz >> 3;
-            if ((ABS(step.vx) < 0x40) & (ABS(step.vz) < 0x40)) {
+            absX = ABS(step.vx);
+            absX = absX < 0x40;
+            absZ = ABS(step.vz);
+            absZ = absZ < 0x40;
+            if (absX & absZ) {
                 actor->unk60 = 0;
                 TERRAIN_ORIGIN.vx += delta.vx;
                 TERRAIN_ORIGIN.vz += delta.vz;
@@ -510,9 +517,6 @@ s32 func_800914D0(s32 index) {
     D_8009BE28.target = actor->position;
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_800914D0);
-#endif
 
 /* Choose the camera distance for the movement mode (unchanged in mode 6). */
 s32 func_80091B54(s32 index) {

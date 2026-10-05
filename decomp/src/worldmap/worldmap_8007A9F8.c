@@ -97,10 +97,10 @@ s32 func_8007AD34(s32 index) {
 
 /* Scene camera shake: commands pick a shot or a shake ramp (u.step is the
  * shake amplitude, 20.12); every frame jitter both view vectors by it. */
-#ifdef NON_MATCHING /* state 4: target.vz address lands in $a1 instead of $a2 */
 s32 func_8007ADD4(s32 index) {
     WorldmapActor *actor;
     CameraScratch *scratch;
+    s32 originZ;
 
     actor = &D_8009BE24[index];
     scratch = (CameraScratch *)0x1F800000;
@@ -182,10 +182,11 @@ s32 func_8007ADD4(s32 index) {
             actor->state = 0;
         }
         VIEW.eye.vx = (actor->unk58 - D_8009BE28.target.vx) >> 12;
+        originZ = actor->unk5C;
         VIEW.at.vx = VIEW.at.vz = 0;
         VIEW.at.vy = D_8009BE28.target.vy >> 12;
         VIEW.eye.vy = (D_8009BE28.target.vy >> 12) - 0x40;
-        VIEW.eye.vz = (D_8009BE28.target.vz - actor->unk5C) >> 12;
+        VIEW.eye.vz = (D_8009BE28.target.vz - originZ) >> 12;
         func_80097244(D_8009BD40);
         func_80097070(&D_8009C808, &D_8009BD38);
         break;
@@ -205,9 +206,6 @@ s32 func_8007ADD4(s32 index) {
     VIEW.at.vy += scratch->view.vy;
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007A9F8", func_8007ADD4);
-#endif
 
 /* Rebuild scene objects 4-5 and show objects 6-7 at zero scale. */
 s32 func_8007B200(s32 index) {

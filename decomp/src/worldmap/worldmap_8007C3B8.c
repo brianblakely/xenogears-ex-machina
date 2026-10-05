@@ -104,7 +104,6 @@ s32 func_8007C724(s32 index) {
 
 /* Camera shot director: move the camera along a shot path (u.step, speed
  * unk58), keep the saved camera target, and shake the view by unk7C. */
-#ifdef NON_MATCHING /* view-vector stores scheduled differently (same pattern as 80077E68) */
 s32 func_8007C7D8(s32 index) {
     WorldmapActor *actor;
     ShotScratch *scratch;
@@ -174,8 +173,8 @@ s32 func_8007C7D8(s32 index) {
             VIEW.eye.vx = scratch->point.vx >> 16;
             VIEW.up.vy = -0x1000;
             VIEW.eye.vz = -(scratch->point.vz >> 16);
-            VIEW.at.vy = D_8009BE28.target.vy >> 12;
             VIEW.eye.vy = scratch->point.vy >> 16;
+            VIEW.at.vy = D_8009BE28.target.vy >> 12;
         }
         func_80097244(D_8009BD40);
         func_80097070(&D_8009C808, &D_8009BD38);
@@ -228,8 +227,8 @@ s32 func_8007C7D8(s32 index) {
             VIEW.eye.vx = scratch->point.vx >> 16;
             VIEW.up.vy = -0x1000;
             VIEW.eye.vz = -(scratch->point.vz >> 16);
-            VIEW.at.vy = D_8009BE28.target.vy >> 12;
             VIEW.eye.vy = scratch->point.vy >> 16;
+            VIEW.at.vy = D_8009BE28.target.vy >> 12;
         }
         func_80097244(D_8009BD40);
         func_80097070(&D_8009C808, &D_8009BD38);
@@ -241,9 +240,6 @@ s32 func_8007C7D8(s32 index) {
     VIEW.at.vy += scratch->spot.vy;
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007C3B8", func_8007C7D8);
-#endif
 
 /* Link scene objects 0-3 to 4, hide 4 and reset its rotation; place the actor. */
 s32 func_8007CC6C(s32 index) {
