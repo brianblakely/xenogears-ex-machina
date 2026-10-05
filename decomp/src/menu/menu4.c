@@ -211,23 +211,22 @@ void func_8007EE08(s32 highlight) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Set the text colour: highlighted (fading toward blue) or plain white.
- * Does not match: the original reloads 0xff in the highlight branch. */
+ * Sample the VBlank counter separately for the red and green channels. */
 void func_8007EE68(s32 highlight) {
     if (highlight) {
+        s32 red = 0xFF - D_80059488 * 20;
+        s32 green = 0xFF - D_80059488 * 20;
+
         D_800926F8 = 0xFF;
-        D_800926F0 = 0xFF - D_80059488 * 20;
-        D_800926F4 = 0xFF - D_80059488 * 20;
+        D_800926F0 = red;
+        D_800926F4 = green;
         return;
     }
     D_800926F0 = 0xFF;
     D_800926F4 = 0xFF;
     D_800926F8 = 0xFF;
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_8007EE68);
-#endif
 
 #ifdef NON_MATCHING
 /* Build the list of the 49 entries (or, when filtering, of those whose
