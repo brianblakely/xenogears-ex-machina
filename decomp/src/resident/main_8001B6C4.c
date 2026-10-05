@@ -187,7 +187,9 @@ void func_8001BBAC(void) {
     }
 }
 
-/* A random byte in [low, high]: any byte for an unset low (0xff) or a range of 0xff or wider, 0 for an unset high. */
+/* A random byte from the requested range. Low 0xff is returned unchanged;
+ * otherwise high 0 returns 0 and equal bounds return low. A span of 0xff
+ * uses the whole random byte; smaller signed spans use modulo span + 1. */
 /* Nonmatching: GCC 2.6.3 cross-jumps the low == high return into the tail of the modulo result; the original keeps its own. */
 #ifdef NON_MATCHING
 u8 func_8001BD40(u8 low, u8 high) {
@@ -204,8 +206,9 @@ u8 func_8001BD40(u8 low, u8 high) {
         if (span < 0xFF) {
             return low + (u8)rand() % (span + 1);
         }
+        return rand();
     }
-    return rand();
+    return low;
 }
 #else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8001B6C4", func_8001BD40);
