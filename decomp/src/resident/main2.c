@@ -1571,11 +1571,8 @@ void func_80036528(PadBuffer *pad) {
 }
 
 /* Print both controller buffers, the actuator values, the held buttons and
- * every queued pad entry.
- * Kept as assembly: its C matches, but the string literals then end the
- * rodata where 80036718's table, still assembly, needs the alignment its C
- * literal would carry. */
-#ifdef NON_MATCHING
+ * every queued pad entry. The final format occupies a full word-aligned
+ * slot before the formatter's digit tables. */
 void func_800365FC(void) {
     func_80036528(&D_800625FC[0]);
     func_80036528(&D_800625FC[1]);
@@ -1583,12 +1580,11 @@ void func_800365FC(void) {
     func_8003700C("vect1 %02x %02x\n", D_80059434, D_8005943C);
     func_8003700C("PADD %04x %04x\n", D_80059570, D_80059574);
     while (func_80035CDC() != 0) {
-        func_8003700C("%04x %04x %04x %04x\n", func_8003569C(0), D_80059570, D_8005948C, D_800594A4);
+        static const char queued_format[24] = "%04x %04x %04x %04x\n";
+
+        func_8003700C((char *)queued_format, func_8003569C(0), D_80059570, D_8005948C, D_800594A4);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800365FC);
-#endif
 
 extern void (*D_80050594)(s32 c);
 
@@ -2047,14 +2043,11 @@ void func_800372CC(void) {
 
 /* Flush this frame's console sprites (and texture page, and background
  * tile) into `ot`, or into the console's own ordering table, drawn at once,
- * when `ot` is NULL or -1; then flip the sprite buffers and home the cursor.
- * Nonmatching: the original copies the buffer index and the own-table flag
- * into fresh registers before their last uses. */
-#ifdef NON_MATCHING
+ * when `ot` is NULL or -1; then flip the sprite buffers and home the cursor. */
 void func_80037324(u_long *ot) {
     Console *con = D_80059394;
     s32 own;
-    s32 index;
+    s16 index;
     s32 n;
     SPRT_8 *sprite;
 
@@ -2088,14 +2081,11 @@ void func_80037324(u_long *ot) {
             func_80031804(ot, &con->tile[index]);
         }
         func_800372CC();
-        if (own) {
+        if ((s16)own) {
             DrawOTag(ot);
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80037324);
-#endif
 
 void func_8003747C(s32 value) {
     D_800593A0 = value;
@@ -3465,42 +3455,36 @@ SoundSeq *func_800397FC(SoundSeqHeader *header, s32 fade, s32 frames) {
 
 /* Create a sequence for valid sequence data in driver memory (with room
  * for a snapshot when the data has a table). Returns it, or NULL (the
- * data's error, or 0x1E without memory).
- * Nonmatching: the original sign-extends the error again for the report
- * call, so that call is not shared with the allocation failure's. */
-#ifdef NON_MATCHING
+ * data's error, or 0x1E without memory). */
 SoundSeq *func_80039850(SoundSeqHeader *header) {
     SoundSeqHeader *data = header;
     s16 error = func_8003F67C(header);
     s32 size;
     SoundSeq *seq;
 
-    if (error == 0) {
-        size = func_8003BB40(data->channels);
-        if (data->entries != 0) {
-            size += 0x180;
-        }
-        seq = func_80038F18(size);
-        if (seq == NULL) {
-            func_8003F6B0(0x1E);
-            return NULL;
-        }
-        seq->header = data;
-        if (data->entries != 0) {
-            func_8003B0AC(seq, data);
-        }
-        func_8003B22C(seq);
-        func_8003B424(seq);
-        seq->muted = 0;
-        func_8003B9E4(seq);
-        return seq;
+    if (error != 0) {
+        func_8003F6B0(error);
+        return NULL;
     }
-    func_8003F6B0(error);
-    return NULL;
+    size = func_8003BB40(data->channels);
+    if (data->entries != 0) {
+        size += 0x180;
+    }
+    seq = func_80038F18(size);
+    if (seq == NULL) {
+        func_8003F6B0(0x1E);
+        return NULL;
+    }
+    seq->header = data;
+    if (data->entries != 0) {
+        func_8003B0AC(seq, data);
+    }
+    func_8003B22C(seq);
+    func_8003B424(seq);
+    seq->muted = 0;
+    func_8003B9E4(seq);
+    return seq;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039850);
-#endif
 
 /* Create a sequence for valid sequence data in memory the caller provides
  * (flag 0x4000: not released with it). Returns it, or NULL. */
