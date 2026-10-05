@@ -6,10 +6,12 @@ void func_80093354(VECTOR *position);
 /* Defined returning s16 (worldmap_80083A00); this unit uses the value as an int. */
 s32 func_80084D00(s32 probe, s16 *hit);
 
+void func_80099708(u32 *heights, u32 *ot, s32 depth, SVECTOR *origin);
+
 /* Move a position along a direction across the terrain cells: probe the
  * cell boundaries crossed (by the corner's side for diagonal moves); 1 when
  * the target cell is walkable (step[0] = target), else the boundary result. */
-#ifdef NON_MATCHING /* saved registers of the position and the probe are swapped */
+#ifdef NON_MATCHING /* crossing and corner-value lifetimes still differ */
 s32 func_80094A5C(VECTOR *position, VECTOR *direction, s32 scale, s32 mode) {
     CellProbe *probe;
     s32 from;
@@ -92,15 +94,15 @@ s32 func_80094A5C(VECTOR *position, VECTOR *direction, s32 scale, s32 mode) {
         probe->step[4].vx = (probe->step[2].vz << 16) | (probe->step[2].vx & 0xFFFF);
         probe->step[4].vz = (probe->step[3].vz << 16) | (probe->step[3].vx & 0xFFFF);
         side = func_8004A70C(probe->step[4].vx, probe->step[4].vy, probe->step[4].vz);
-        if (side < 0) {
-            result = func_80094750(position, direction, probe->step, mode);
-            if (result == 0) {
-                result = func_800945C8(position, direction, probe->step, mode);
-            }
-        } else if (side > 0) {
+        if (side > 0) {
             result = func_800945C8(position, direction, probe->step, mode);
             if (result == 0) {
                 result = func_80094750(position, direction, probe->step, mode);
+            }
+        } else if (side < 0) {
+            result = func_80094750(position, direction, probe->step, mode);
+            if (result == 0) {
+                result = func_800945C8(position, direction, probe->step, mode);
             }
         } else {
             result = func_800945C8(position, direction, probe->step, mode);
@@ -117,15 +119,15 @@ s32 func_80094A5C(VECTOR *position, VECTOR *direction, s32 scale, s32 mode) {
         probe->step[4].vx = (probe->step[2].vz << 16) | (probe->step[2].vx & 0xFFFF);
         probe->step[4].vz = (probe->step[3].vz << 16) | (probe->step[3].vx & 0xFFFF);
         side = func_8004A70C(probe->step[4].vx, probe->step[4].vy, probe->step[4].vz);
-        if (side < 0) {
-            result = func_800948D8(position, direction, probe->step, mode);
-            if (result == 0) {
-                result = func_8009443C(position, direction, probe->step, mode);
-            }
-        } else if (side > 0) {
+        if (side > 0) {
             result = func_8009443C(position, direction, probe->step, mode);
             if (result == 0) {
                 result = func_800948D8(position, direction, probe->step, mode);
+            }
+        } else if (side < 0) {
+            result = func_800948D8(position, direction, probe->step, mode);
+            if (result == 0) {
+                result = func_8009443C(position, direction, probe->step, mode);
             }
         } else {
             result = func_8009443C(position, direction, probe->step, mode);
@@ -158,8 +160,8 @@ s32 func_80094A5C(VECTOR *position, VECTOR *direction, s32 scale, s32 mode) {
         break;
     }
     if (result == 0) {
-        func_80093354(probe->step);
-        if (func_80094060(mode, func_80093F18(probe->step)) == 0) {
+        func_80093354(&probe->step[1]);
+        if (func_80094060(mode, func_80093F18(&probe->step[1])) == 0) {
             probe->step[0] = probe->step[1];
             return 1;
         }
@@ -1852,7 +1854,6 @@ void func_8009932C(u32 *ot, s32 packets, Camera *camera) {
 
 /* Build a terrain block's 9x9 vertices in the scratchpad (heights of
  * water cells follow two travelling sine waves), then draw the block. */
-#ifdef NON_MATCHING /* register allocation: the draw arguments are kept in a1/a2 */
 void func_80099708(u32 *heights, u32 *ot, s32 depth, SVECTOR *origin) {
     SVECTOR *vertex;
     u32 *cell;
@@ -1865,25 +1866,29 @@ void func_80099708(u32 *heights, u32 *ot, s32 depth, SVECTOR *origin) {
     s32 i;
     s32 phase;
     s32 swell;
-    s32 y;
+    s32 height;
+    s32 wave;
 
     vertex = (SVECTOR *)0x1F800000;
     cell = heights;
+    j = 8;
     sine = D_800523F0;
     row_phase = D_8009C618;
     left = origin->vx;
     z = origin->vz;
-    for (j = 8; j != -1; j--) {
+    for (; j != -1; j--) {
         x = left;
+        i = 8;
         swell = sine[row_phase & 0xFFF][0] * 2;
         phase = D_8009C5BC;
-        for (i = 8; i != -1; i--) {
+        for (; i != -1; i--) {
             if (*cell & 0x1000) {
-                y = (((sine[phase & 0xFFF][0] * swell) >> 20) + ((s32)(*cell << 24) >> 21)) << 16;
+                height = (s32)(*cell << 24) >> 21;
+                wave = (sine[phase & 0xFFF][0] * swell) >> 20;
+                *(s32 *)&vertex->vx = ((wave + height) << 16) | (x & 0xFFFF);
             } else {
-                y = (s32)(*cell << 24) >> 5;
+                *(s32 *)&vertex->vx = ((s32)(*cell << 24) >> 5) | (x & 0xFFFF);
             }
-            *(s32 *)&vertex->vx = y | (x & 0xFFFF);
             vertex->vz = z;
             x += 0x80;
             vertex++;
@@ -1895,9 +1900,6 @@ void func_80099708(u32 *heights, u32 *ot, s32 depth, SVECTOR *origin) {
     }
     func_8009980C(heights, ot, depth);
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80099708);
-#endif
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_8009980C);
 

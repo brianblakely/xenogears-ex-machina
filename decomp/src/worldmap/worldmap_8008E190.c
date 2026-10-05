@@ -64,9 +64,9 @@ s32 func_8008E190(s32 index) {
         actor->state = 2;
         actor->position.vx = D_8009C5AC.vx;
         actor->position.vz = D_8009C5AC.vz;
+        actor->position.vy = D_8009C5AC.vy;
         actor->heading = D_8009C584;
         actor->unk74 = D_8009C170;
-        actor->position.vy = D_8009C5AC.vy;
         D_8009D55C.target = actor->position;
         D_8009D52C = actor->heading;
         break;
