@@ -8,7 +8,7 @@
 8002e010 8003014c handwritten GTE model primitive renderers (rtpt/nclip/avsz3 loops): no frame, $s registers saved below $sp, several entry points per routine selecting the packet size and code, and branches between routines into shared loop bodies and the common exit at 8002e1f4
 80030750 80030a30 handwritten Gouraud-lit GTE renderer and its patcher 80030988, which rewrites shift fields of instructions inside 80030750 (self-modifying code); saves below $sp, add/sub pseudo-ops, exits through 8002e1f4
 800315a0 80031894 handwritten ordering-table link helpers: $t0 and $at macro expansions of 32-bit and/or immediates
-80032e88 8003342c handwritten packed-data (LZSS) decoder and its allocate-and-decode entry, which branches into it; leaf code in $t registers
+80032e88 80032f54 handwritten packed-data (LZSS) decoder and its allocate-and-decode entry, which branches into it; leaf code in $t registers
 800379b4 800379d0 handwritten store to D_80050618 through $t0 and the default report output, a tail jump to 8003700c
 8003f738 8003f8e8 handwritten rotation matrix from the sin/cos table D_800523F0 and the table sin/cos lookups; $t registers, neg/add/sub pseudo-ops
 8003f8e8 8004ea88 sdk PsyQ libc/libc2/libapi/libcd/libds/libgpu/libgte/libetc/libspu/libcard/libsn

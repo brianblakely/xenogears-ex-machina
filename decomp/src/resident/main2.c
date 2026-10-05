@@ -23,6 +23,86 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80032E88);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80032EB4);
 
+/* Build a message window's two texture halves for each line and display
+ * buffer. Lines share a glyph image in pairs, using alternating CLUTs;
+ * two draw modes select the texture pages either side of the 256-pixel split. */
+void func_80032F54(Window *window, s16 vram_x, s16 vram_y, s16 x, u16 y,
+                   u16 columns, u16 rows) {
+    s32 i;
+    s32 half_row;
+    s32 plane;
+    s32 uv;
+    s16 texture_y;
+    SPRT *sprite;
+
+    window->unk4 = x;
+    window->flags = 0;
+    window->unk84 = 0;
+    window->queue = NULL;
+    window->queued = 0;
+    window->unk14 = 14;
+    window->unk68 = 1;
+    window->unk69 = 1;
+    window->width = columns;
+    window->unk6C = 0;
+    window->unk6A = 0;
+    window->unk6D = 0;
+    window->unk6B = 0;
+    window->unk6E = 0xFF;
+    window->unkE = vram_y;
+    window->unk6 = y;
+    window->lines = rows;
+    window->width |= 1;
+    window->unk8 = (u16)window->width * 4;
+    window->stride = (u16)window->width + 3;
+    func_800324B8(0x29);
+    window->layout = func_80031BDC(window->lines * sizeof(WindowLine), 2);
+    func_800324B8(0x28);
+    window->image = func_80031BDC(window->stride * 28, 2);
+    setlen(&window->tile[0], 3);
+    *(u32 *)&window->tile[0].r0 = 0x60000000;
+    *(u32 *)&window->tile[0].x0 = (window->unk4 - 7) | ((window->unk6 - 5) << 16);
+    *(u32 *)&window->tile[0].w = (window->width * 4 + 13) |
+                                 ((window->lines * window->unk14 + 10) << 16);
+    SetSemiTrans(&window->tile[0], 1);
+    window->tile[1] = window->tile[0];
+    for (i = 0; i < window->lines; i++) {
+        *(u32 *)&window->layout[i].sprite[0][0].x0 = window->unk4 |
+                                        ((window->unk6 + window->unk14 * i) << 16);
+        *(u32 *)&window->layout[i].sprite[0][1].x0 = (window->unk4 + 256) |
+                                        ((window->unk6 + window->unk14 * i) << 16);
+        half_row = i / 2;
+        plane = i & 1;
+        *(u32 *)&window->layout[i].sprite[0][0].w =
+            window->unk8 < 257 ? window->unk8 | 0xD0000 : 0xD0100;
+        *(u32 *)&window->layout[i].sprite[0][1].w =
+            window->unk8 >= 257 ? (window->unk8 - 240) | 0xD0000 : 0xD0000;
+        texture_y = vram_y + half_row * 13;
+        uv = (vram_x & 0x3F) * 4 | ((texture_y & 0xFF) << 8);
+        *(u16 *)&window->layout[i].sprite[0][0].u0 = uv;
+        *(u16 *)&window->layout[i].sprite[0][1].u0 = uv;
+        setSprt(&window->layout[i].sprite[0][0]);
+        setSprt(&window->layout[i].sprite[0][1]);
+        setShadeTex(&window->layout[i].sprite[0][0], 1);
+        setShadeTex(&window->layout[i].sprite[0][1], 1);
+        sprite = (SPRT *)(i * sizeof(WindowLine) + (s32)window->layout);
+        window->layout[i].sprite[1][0] = *sprite;
+        sprite = (SPRT *)(i * sizeof(WindowLine) + (s32)window->layout + sizeof(SPRT));
+        window->layout[i].sprite[1][1] = *sprite;
+        window->layout[i].rect.x = vram_x;
+        window->layout[i].rect.y = texture_y;
+        window->layout[i].rect.w = window->stride;
+        window->layout[i].rect.h = 13;
+        window->layout[i].width = 0;
+        window->layout[i].clut = plane == 0 ? D_800595D4 : D_80059414;
+        window->layout[i].row = vram_y + half_row * 13;
+        window->layout[i].plane = plane;
+        window->layout[i].slot = i;
+    }
+    SetDrawMode((DR_MODE *)window->unk30, 0, 0, GetTPage(0, 0, vram_x, vram_y), NULL);
+    SetDrawMode((DR_MODE *)window->unk3C, 0, 0, GetTPage(0, 0, vram_x + 64, vram_y), NULL);
+}
+
 /* Turn a resource's offset table (count, then offsets) into pointers.
  * Returns the count. */
 u32 func_8003342C(void *data) {

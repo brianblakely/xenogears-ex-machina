@@ -333,3 +333,6 @@ D_80048BBC = 0x80048BBC; // size:0x8
 D_8004BED0 = 0x8004BED0; // size:0x8
 // Game data the C addresses by its start although no assembly names it.
 D_8005A0C8 = 0x8005A0C8; // size:0x18
+
+// Compiled window setup follows the handwritten packed-data decoder.
+func_80032F54 = 0x80032F54; // type:func
