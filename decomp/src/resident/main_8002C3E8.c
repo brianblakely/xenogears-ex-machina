@@ -1048,20 +1048,17 @@ void func_80030C78(s32 r, s32 g, s32 b) {
 /* Render `count` flat quads lit from the lit-color cache: transform the
  * four vertices, drop quads with a GTE error or facing away, fill a
  * POLY_F4 and link it into the ordering table at its average depth.
- * Nonmatching: the loop counter and the face index pointer (the original
- * addresses the last two indices from +4) swap registers. */
-#ifdef NON_MATCHING
+ * The last two indices share a packed word, like the first pair. */
 void func_80030C98(QuadFace *faces, s32 count) {
     POLY_F4 *poly;
     s32 flag;
     s32 sz0, sz1, sz2, sz3;
     s32 otz;
-    s32 i;
 
-    for (i = count - 1; i != -1; i--) {
+    for (count--; count != -1; count--) {
         poly = (POLY_F4 *)D_80059424;
         gte_ldv3(&D_8005953C[faces->v01 & 0xFFFF], &D_8005953C[faces->v01 >> 16],
-                 &D_8005953C[faces->v2]);
+                 &D_8005953C[(*(u32 *)&faces->v2 & 0xFFFF)]);
         gte_rtpt();
         gte_stflg(&flag);
         if (flag >= 0) {
@@ -1070,7 +1067,7 @@ void func_80030C98(QuadFace *faces, s32 count) {
             if (flag > 0) {
                 gte_stsxy3(&poly->x0, &poly->x1, &poly->x2);
                 gte_stsz3(&sz0, &sz1, &sz2);
-                gte_ldv0(&D_8005953C[faces->v3]);
+                gte_ldv0(&D_8005953C[(*(u32 *)&faces->v2 >> 16)]);
                 gte_rtps();
                 gte_stsxy(&poly->x3);
                 gte_stsz(&sz3);
@@ -1093,9 +1090,6 @@ void func_80030C98(QuadFace *faces, s32 count) {
         D_80059498 += 3;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_80030C98);
-#endif
 
 /* Perspective-transform the three loaded vertices. Nonzero when one of
  * them has a usable depth and lands inside the screen (8002DFF0). */
