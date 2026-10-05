@@ -7,12 +7,11 @@
 #include "window.h"
 #include "gte.h"
 
-#ifdef NON_MATCHING
 /* Allocate the text quads, load the font (with its palette's colours 0, 2
- * and 3 replaced) and the banner image, and build the banner sprite.
- * Does not match: the banner sprite address is taken from its length byte. */
+ * and 3 replaced) and the banner image, and build the banner sprite. */
 void func_8007E634(MenuFiles *files) {
     TimImage image;
+    SceneSprite *banner;
     s32 unused[2]; /* never used; the original frame keeps its slot */
     s16 *palette;
     s32 i;
@@ -29,8 +28,8 @@ void func_8007E634(MenuFiles *files) {
     palette[2] = -0x6F9D;
     palette[0] = 0;
     palette[3] = -1;
-    LoadImage(&image.crect->x, image.caddr);
-    LoadImage(&image.prect->x, image.paddr);
+    LoadImage(image.crect, image.caddr);
+    LoadImage(image.prect, image.paddr);
     D_800926E4 = GetClut(image.crect->x, image.crect->y);
     D_800926E0 = GetTPage(0, 1, image.prect->x, image.prect->y);
     D_800926DC = 0;
@@ -38,11 +37,12 @@ void func_8007E634(MenuFiles *files) {
     ReadTIM(&image);
     palette = image.caddr;
     palette[0] = 0;
-    LoadImage(&image.crect->x, image.caddr);
-    LoadImage(&image.prect->x, image.paddr);
-    D_800954D8[0].sprite.len = 4;
-    D_800954D8[0].sprite.code = 0x65;
-    SetDrawTPage(&D_800954D8[0].tpage, 0, 0, GetTPage(0, 1, image.prect->x, image.prect->y));
+    LoadImage(image.crect, image.caddr);
+    LoadImage(image.prect, image.paddr);
+    banner = &D_800954D8[0];
+    setlen(&D_800954D8[0].sprite, 4);
+    setcode(&D_800954D8[0].sprite, 0x65);
+    SetDrawTPage(&banner->tpage, 0, 0, GetTPage(0, 1, image.prect->x, image.prect->y));
     D_800954D8[0].sprite.clut = GetClut(image.crect->x, image.crect->y);
     D_800954D8[0].sprite.x0 = 0x40;
     D_800954D8[0].sprite.y0 = 0xBE;
@@ -50,11 +50,8 @@ void func_8007E634(MenuFiles *files) {
     D_800954D8[0].sprite.h = 0xD;
     D_800954D8[0].sprite.u0 = image.prect->x * 4;
     D_800954D8[0].sprite.v0 = image.prect->y;
-    D_800954D8[1] = D_800954D8[0];
+    D_800954D8[1] = *banner;
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_8007E634);
-#endif
 
 void func_8007E894(s32 x, s32 y) {
     D_800926E8 = x;
@@ -1548,68 +1545,81 @@ void func_80082458(SVector *out) {
         (corner).vy += 0x40;                                                   \
     }
 
-#ifdef NON_MATCHING
 /* Ground height under a position: the plane through the triangle of its
  * 256-unit square that contains it (corners optionally raised by their
  * square's kind); the plane's normal is kept in D_80092768.
- * Does not match: only the frame layout differs: the original frame is 8 bytes larger, with the corners at sp+0x18, the triangle at sp+0x40 and the plane point sharing sp+0x30 with the last corner. */
+ * Once the triangle is copied, its wide plane point reuses the last
+ * corner's scratch slot and the following eight bytes. */
 s32 func_80082488(Vector *pos, s32 lift) {
-    SVector corner[4];
-    SVector tri[3];
+    struct {
+        s32 unused0[2];
+        union {
+            SVector corner[5]; /* four corners and room for the later Vector */
+            struct {
+                SVector unused[3];
+                Vector point;
+            } plane;
+        } geometry;
+        SVector tri[3];
+        s32 unused1[2];
+    } scratch;
     GroundSquare *square;
     s32 x;
     s32 z;
     s32 x0;
     s32 z0;
 
-    x0 = pos->vx & ~0xFF;
-    x = pos->vx >> 8;
-    z0 = pos->vz & ~0xFF;
-    z = pos->vz >> 8;
-    square = &D_800928DC[z * 128 + x];
-    corner[0].vx = x0;
-    corner[0].vy = square[0].height;
-    corner[0].vz = z0;
-    corner[1].vx = x0 + 0x100;
-    corner[1].vy = square[129].height;
-    corner[1].vz = z0 + 0x100;
-    corner[2].vx = x0 + 0x100;
-    corner[2].vy = square[1].height;
-    corner[2].vz = z0;
-    corner[3].vx = x0;
-    corner[3].vy = square[128].height;
-    corner[3].vz = z0 + 0x100;
+    x = pos->vx;
+    z = pos->vz;
+    x0 = x & ~0xFF;
+    x >>= 8;
+    z0 = z & ~0xFF;
+    z >>= 8;
+    square = (GroundSquare *)((z * 128 + x) * sizeof(GroundSquare) +
+                             (s32)D_800928DC);
+    scratch.geometry.corner[0].vx = x0;
+    scratch.geometry.corner[0].vy = square[0].height;
+    scratch.geometry.corner[0].vz = z0;
+    scratch.geometry.corner[1].vx = x0 + 0x100;
+    scratch.geometry.corner[1].vy = square[129].height;
+    scratch.geometry.corner[1].vz = z0 + 0x100;
+    scratch.geometry.corner[2].vx = x0 + 0x100;
+    scratch.geometry.corner[2].vy = square[1].height;
+    scratch.geometry.corner[2].vz = z0;
+    scratch.geometry.corner[3].vx = x0;
+    scratch.geometry.corner[3].vy = square[128].height;
+    scratch.geometry.corner[3].vz = z0 + 0x100;
     if (lift) {
-        GROUND_KIND_LIFT(corner[0], x, z);
-        GROUND_KIND_LIFT(corner[1], x + 1, z + 1);
-        GROUND_KIND_LIFT(corner[2], x + 1, z);
-        GROUND_KIND_LIFT(corner[3], x, z + 1);
+        GROUND_KIND_LIFT(scratch.geometry.corner[0], x, z);
+        GROUND_KIND_LIFT(scratch.geometry.corner[1], x + 1, z + 1);
+        GROUND_KIND_LIFT(scratch.geometry.corner[2], x + 1, z);
+        GROUND_KIND_LIFT(scratch.geometry.corner[3], x, z + 1);
     }
-    if ((corner[0].vz - corner[1].vz) * pos->vx + (corner[1].vx - corner[0].vx) * pos->vz +
-            corner[0].vx * corner[1].vz - corner[1].vx * corner[0].vz < 0) {
-        tri[0] = corner[0];
-        tri[1] = corner[1];
-        tri[2] = corner[2];
+    if ((scratch.geometry.corner[0].vz - scratch.geometry.corner[1].vz) * pos->vx +
+            (scratch.geometry.corner[1].vx - scratch.geometry.corner[0].vx) * pos->vz +
+            scratch.geometry.corner[0].vx * scratch.geometry.corner[1].vz -
+            scratch.geometry.corner[1].vx * scratch.geometry.corner[0].vz < 0) {
+        scratch.tri[0] = scratch.geometry.corner[0];
+        scratch.tri[1] = scratch.geometry.corner[1];
+        scratch.tri[2] = scratch.geometry.corner[2];
     } else {
-        tri[0] = corner[0];
-        tri[1] = corner[3];
-        tri[2] = corner[1];
+        scratch.tri[0] = scratch.geometry.corner[0];
+        scratch.tri[1] = scratch.geometry.corner[3];
+        scratch.tri[2] = scratch.geometry.corner[1];
     }
-    func_8002DB84(&tri[0], &tri[1], &tri[2], &D_80092768);
+    func_8002DB84(&scratch.tri[0], &scratch.tri[1], &scratch.tri[2], &D_80092768);
     {
-        Vector point;
-
-        point.vx = tri[0].vx;
-        point.vy = tri[0].vy;
-        point.vz = tri[0].vz;
-        return pos->vy + (point.vx * D_80092768.vx + point.vy * D_80092768.vy + point.vz * D_80092768.vz -
-                          (pos->vx * D_80092768.vx + pos->vy * D_80092768.vy + pos->vz * D_80092768.vz)) /
-                             D_80092768.vy;
+        scratch.geometry.plane.point.vx = scratch.tri[0].vx;
+        scratch.geometry.plane.point.vy = scratch.tri[0].vy;
+        scratch.geometry.plane.point.vz = scratch.tri[0].vz;
+        return pos->vy +
+               (scratch.geometry.plane.point.vx * D_80092768.vx +
+                scratch.geometry.plane.point.vy * D_80092768.vy +
+                scratch.geometry.plane.point.vz * D_80092768.vz -
+                (pos->vx * D_80092768.vx + pos->vy * D_80092768.vy +
+                 pos->vz * D_80092768.vz)) / D_80092768.vy;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_80082488);
-#endif
 
 /* Ground height of the map cell under a position (cells of 256 units). */
 s32 func_80082880(SVector *pos) {
