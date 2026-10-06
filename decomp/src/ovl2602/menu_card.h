@@ -735,8 +735,8 @@ typedef struct {
     u16 unk20;     /* 20 */
     u8 unk22, unk23, unk24;
     u8 unk25[0x38 - 0x25];
-    u16 unk38;     /* 38 */
-    u16 unk3A;     /* 3a */
+    u16 fuel;     /* 38 */
+    u16 max_fuel;     /* 3a */
     u8 unk3C, unk3D, unk3E, unk3F; /* 3c */
     u16 unk40;     /* 40 */
     u16 unk42;     /* 42 */
@@ -751,8 +751,8 @@ typedef struct {
     u8 unk55[3];   /* 55 */
     u8 unk58[0x5C - 0x58];
     u8 unk5C, unk5D, unk5E, unk5F; /* 5c */
-    u32 unk60;     /* 60 */
-    u32 unk64;     /* 64 */
+    u32 hp;     /* 60 */
+    u32 max_hp;     /* 64 */
     u16 unk68;     /* 68 */
     u16 unk6A;     /* 6a */
     u8 unk6C[2];

@@ -1951,8 +1951,9 @@ void func_801CC31C(u8 mode) {
     }
 }
 
-/* Hide the markers, let a frame pass, and release them. */
-void func_801CC4DC(void) {
+/* Hide the markers, let a frame pass, and release them. The refuel caller
+ * passes an ignored zero; unspecified arity preserves that call. */
+void func_801CC4DC() {
     D_800625A0->flags->marks_shown = 0;
     func_801CC1C4();
     func_800320E8(D_800625A0->marks);
@@ -2838,7 +2839,7 @@ void func_801CF448(void) {
         func_8002675C(D_800625A0->sprite_sheet, D_801D708C[j], &D_800625A0->unk454->frame[j * 2],
                       D_800625A0->buffer, D_801D70A8[j], D_801D70C4[j], 0x1000);
     }
-    func_801C5298(D_8006DFAC[D_801D9084].unk60);
+    func_801C5298(D_8006DFAC[D_801D9084].hp);
     D_800625A0->unk454->part_count[0] = 0;
     for (i = 0; i < 5; i++) {
         if (D_800625A0->digits[i + 4] != 0xFF) {
@@ -2848,7 +2849,7 @@ void func_801CF448(void) {
                               D_800625A0->buffer, D_801D70E0 + i * 8, D_801D70E2, 0x1000);
         }
     }
-    func_801C5298(D_8006DFAC[D_801D9084].unk64);
+    func_801C5298(D_8006DFAC[D_801D9084].max_hp);
     D_800625A0->unk454->part_count[1] = 0;
     for (i = 0, j = 0; i < 5; i++) {
         if (D_800625A0->digits[i + 4] != 0xFF) {
@@ -2859,7 +2860,7 @@ void func_801CF448(void) {
             j++;
         }
     }
-    func_801C5298(D_8006DFAC[D_801D9084].unk38);
+    func_801C5298(D_8006DFAC[D_801D9084].fuel);
     D_800625A0->unk454->part_count[2] = 0;
     for (i = 0; i < 4; i++) {
         if (D_800625A0->digits[i + 5] != 0xFF) {
@@ -2869,7 +2870,7 @@ void func_801CF448(void) {
                               D_800625A0->buffer, D_801D70E8 + i * 8, D_801D70EA, 0x1000);
         }
     }
-    func_801C5298(D_8006DFAC[D_801D9084].unk3A);
+    func_801C5298(D_8006DFAC[D_801D9084].max_fuel);
     D_800625A0->unk454->part_count[3] = 0;
     for (i = 0, j = 0; i < 4; i++) {
         if (D_800625A0->digits[i + 5] != 0xFF) {
@@ -4584,10 +4585,8 @@ INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D498C);
 /*
  * Refuel and repair the edited gear. Fuel costs 10 gold per 100 missing (at
  * least 10); with too little gold, buy what the gold covers. Repairs are free
- * and come with any purchase. Nonmatching: register allocation of the price
- * and mode.
+ * and come with any purchase. A full tank can be repaired without buying fuel.
  */
-#ifdef NON_MATCHING
 void func_801D5398(void) {
     u8 message;
     u8 mode;
@@ -4600,9 +4599,9 @@ void func_801D5398(void) {
     message = 0xA6;
     mode = 1;
     confirm = 1;
-    if (D_8006DFAC[D_801D9084].unk3A == D_8006DFAC[D_801D9084].unk38) {
+    if (D_8006DFAC[D_801D9084].max_fuel == D_8006DFAC[D_801D9084].fuel) {
         message = 0xB5;
-        if (D_8006DFAC[D_801D9084].unk60 == D_8006DFAC[D_801D9084].unk64) {
+        if (D_8006DFAC[D_801D9084].hp == D_8006DFAC[D_801D9084].max_hp) {
             message = 0xB8;
             mode = 0;
             confirm = 0;
@@ -4610,7 +4609,7 @@ void func_801D5398(void) {
             mode = 2;
         }
     }
-    units = (D_8006DFAC[D_801D9084].unk3A - D_8006DFAC[D_801D9084].unk38) / 100;
+    units = (D_8006DFAC[D_801D9084].max_fuel - D_8006DFAC[D_801D9084].fuel) / 100;
     if (units == 0) {
         units = 1;
     }
@@ -4631,15 +4630,16 @@ void func_801D5398(void) {
                     if (D_8006D634.gold != 0) {
                         done = 1;
                     }
-                    D_8006DFAC[D_801D9084].unk38 += D_8006D634.gold / 10 * 100;
+                    price = D_8006D634.gold / 10;
+                    D_8006DFAC[D_801D9084].fuel += price * 100;
                     D_8006D634.gold %= 10;
-                    if (D_8006DFAC[D_801D9084].unk3A < D_8006DFAC[D_801D9084].unk38) {
-                        D_8006DFAC[D_801D9084].unk38 = D_8006DFAC[D_801D9084].unk3A;
+                    if (D_8006DFAC[D_801D9084].max_fuel < D_8006DFAC[D_801D9084].fuel) {
+                        D_8006DFAC[D_801D9084].fuel = D_8006DFAC[D_801D9084].max_fuel;
                     }
                 }
             } else {
                 D_8006D634.gold -= price;
-                D_8006DFAC[D_801D9084].unk38 = D_8006DFAC[D_801D9084].unk3A;
+                D_8006DFAC[D_801D9084].fuel = D_8006DFAC[D_801D9084].max_fuel;
                 done = 1;
             }
             break;
@@ -4649,16 +4649,13 @@ void func_801D5398(void) {
         }
     }
     if (done) {
-        D_8006DFAC[D_801D9084].unk60 = D_8006DFAC[D_801D9084].unk64;
+        D_8006DFAC[D_801D9084].hp = D_8006DFAC[D_801D9084].max_hp;
         func_801CB498(0xD1);
     }
-    func_801CC4DC();
+    func_801CC4DC(0);
     D_800625A0->flags->price_shown = 0;
     func_801C9054(5);
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D5398);
-#endif
 
 /* Leave the gear list: hide the cursor and labels and the shop list packets. */
 u8 func_801D573C(void) {
@@ -4688,10 +4685,7 @@ void func_801D57A8(void) {
  * The gear parts list of the current command (the fourth command starts at
  * its fourth entry, when func_801D573C allows it): move the cursor, open the
  * gear view for the chosen list (4), page the members (9, 10), leave (5).
- * Nonmatching: the original tests `running` on loop entry and does not keep
- * the constant 3 in a register.
  */
-#ifdef NON_MATCHING
 u8 func_801D5828(void) {
     u8 running;
     u8 first;
@@ -4700,96 +4694,94 @@ u8 func_801D5828(void) {
     running = 1;
     first = 1;
     base = 0;
-    if (D_800625A0->top_cursor != 3 || func_801D573C()) {
-        D_800625A0->list_cursor = 0;
-        D_800625A0->unk339 = 0xFF;
-        if (D_800625A0->top_cursor == 3) {
-            D_800625A0->list_cursor = 3;
-            base = 4;
+    if (D_800625A0->top_cursor == 3 && !func_801D573C()) {
+        return 1;
+    }
+    D_800625A0->list_cursor = 0;
+    D_800625A0->unk339 = 0xFF;
+    if (D_800625A0->top_cursor == 3) {
+        D_800625A0->list_cursor = 3;
+        base = 4;
+    }
+    while (running) {
+        func_801CC1C4();
+        if (D_800625A0->view_motion == 0 && D_801D6FD8 >= 2) {
+            D_800625A0->flags->marks_b_shown = 1;
         }
-        while (running) {
-            func_801CC1C4();
-            if (D_800625A0->view_motion == 0 && D_801D6FD8 >= 2) {
-                D_800625A0->flags->marks_b_shown = 1;
-            }
-            if (first) {
-                first = 0;
-                func_801CCE90(4, D_800625A0->list_labels, &D_801D6A24[base], D_800625A0->flags->list_label_shown);
-                func_801CD564(0);
-            }
-            if (D_800625A0->list_cursor != D_800625A0->unk339) {
-                func_801CCEE8(4, D_800625A0->list_labels, &D_801D6A24[base], &D_801D6A40[base],
-                              D_800625A0->flags->list_label_shown, D_800625A0->list_cursor, 4, 0);
-                func_801CDA0C(0);
-                D_800625A0->unk339 = D_800625A0->list_cursor;
-            }
-            if (D_800625A0->unk454->lamp_state[0] == 0) {
-                D_800625A0->flags->gear_parts_shown = 1;
-                D_800625A0->flags->gear_shown = 0;
-            }
-            switch (D_800625A0->input) {
-            case 4:
-                D_800625A0->flags->unk4 = 0;
-                D_800625A0->flags->cursor_shown = 0;
-                D_800625A0->flags->lists_shown = 0;
-                D_800625A0->flags->gear_parts_shown = 0;
-                func_801CCEBC(4, D_800625A0->flags->list_label_shown);
-                func_801CB498(2);
-                func_801CFC60();
-                D_800625A0->flags->marks_b_shown = 0;
-                switch (D_800625A0->top_cursor) {
-                case 1:
-                    func_801D2804(1);
-                    break;
-                case 2:
-                    func_801D498C(1, 0);
-                    break;
-                case 3:
-                    func_801D57A8();
-                    break;
-                }
-                func_801CFF18();
-                func_801CC1C4();
-                func_801CF448();
-                func_801CC1C4();
-                D_800625A0->flags->unk4 = 1;
-                D_800625A0->flags->cursor_shown = 1;
-                D_800625A0->flags->lists_shown = 1;
-                func_801CCE90(4, D_800625A0->list_labels, &D_801D6A24[base], D_800625A0->flags->list_label_shown);
-                D_800625A0->unk339 = 0xFF;
-                break;
-            case 5:
-                running = 0;
-                break;
+        if (first) {
+            func_801CCE90(4, D_800625A0->list_labels, &D_801D6A24[base], D_800625A0->flags->list_label_shown);
+            func_801CD564(0);
+            first = 0;
+        }
+        if (D_800625A0->list_cursor != D_800625A0->unk339) {
+            func_801CCEE8(4, D_800625A0->list_labels, &D_801D6A24[base], &D_801D6A40[base],
+                          D_800625A0->flags->list_label_shown, D_800625A0->list_cursor, 4, 0);
+            func_801CDA0C(0);
+            D_800625A0->unk339 = D_800625A0->list_cursor;
+        }
+        if (D_800625A0->unk454->lamp_state[0] == 0) {
+            D_800625A0->flags->gear_parts_shown = 1;
+            D_800625A0->flags->gear_shown = 0;
+        }
+        switch (D_800625A0->input) {
+        case 4:
+            D_800625A0->flags->unk4 = 0;
+            D_800625A0->flags->cursor_shown = 0;
+            D_800625A0->flags->lists_shown = 0;
+            D_800625A0->flags->gear_parts_shown = 0;
+            func_801CCEBC(4, D_800625A0->flags->list_label_shown);
+            func_801CB498(2);
+            func_801CFC60();
+            D_800625A0->flags->marks_b_shown = 0;
+            switch (D_800625A0->top_cursor) {
             case 1:
-                if (D_800625A0->list_cursor != 0) {
-                    D_800625A0->list_cursor--;
-                } else {
-                    D_800625A0->list_cursor = D_800625A0->list_count - 1;
-                }
+                func_801D2804(1);
+                break;
+            case 2:
+                func_801D498C(1, 0);
                 break;
             case 3:
-                if (++D_800625A0->list_cursor >= D_800625A0->list_count) {
-                    D_800625A0->list_cursor = 0;
-                }
-                break;
-            case 9:
-                func_801D0398(0);
-                break;
-            case 10:
-                func_801D0398(1);
+                func_801D57A8();
                 break;
             }
+            func_801CFF18();
+            func_801CC1C4();
+            func_801CF448();
+            func_801CC1C4();
+            D_800625A0->flags->unk4 = 1;
+            D_800625A0->flags->cursor_shown = 1;
+            D_800625A0->flags->lists_shown = 1;
+            func_801CCE90(4, D_800625A0->list_labels, &D_801D6A24[base], D_800625A0->flags->list_label_shown);
+            D_800625A0->unk339 = 0xFF;
+            break;
+        case 5:
+            running = 0;
+            break;
+        case 1:
+            if (D_800625A0->list_cursor != 0) {
+                D_800625A0->list_cursor--;
+            } else {
+                D_800625A0->list_cursor = D_800625A0->list_count - 1;
+            }
+            break;
+        case 3:
+            if (++D_800625A0->list_cursor >= D_800625A0->list_count) {
+                D_800625A0->list_cursor = 0;
+            }
+            break;
+        case 9:
+            func_801D0398(0);
+            break;
+        case 10:
+            func_801D0398(1);
+            break;
         }
-        D_800625A0->flags->unk4 = 0;
-        D_800625A0->flags->cursor_shown = 0;
-        func_801CCEBC(4, D_800625A0->flags->list_label_shown);
     }
+    D_800625A0->flags->unk4 = 0;
+    D_800625A0->flags->cursor_shown = 0;
+    func_801CCEBC(4, D_800625A0->flags->list_label_shown);
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D5828);
-#endif
 
 /* Set up the Gear model: the model code, its light, both large ordering tables and the two model blocks, then show the first present member's gear. */
 void func_801D5D38(void) {
@@ -4860,14 +4852,14 @@ void func_801D5F94(GearTable *table, u8 id) {
     }
     gear = &D_8006D634.gears[id];
     pilot = &D_8006D634.characters[D_801D70F4[id]];
-    table->unk9C = gear->unk60;
-    table->unkA0 = gear->unk64;
+    table->unk9C = gear->hp;
+    table->unkA0 = gear->max_hp;
     table->unkA4 = gear->unk70 + gear->unk40;
     table->unkA6 = pilot->bonus[4] + pilot->base[4] + gear->unk42 + gear->unk72;
     table->unkA8 = gear->unk68 + gear->unk44;
     table->unkAA = gear->unk6A;
-    table->unkAC = gear->unk38;
-    table->unkAE = gear->unk3A;
+    table->unkAC = gear->fuel;
+    table->unkAE = gear->max_fuel;
     bonus = gear->unk3C * (gear->unk74 + gear->unk55[1]);
     if (id == 5 || id == 13) {
         table->unkB0 = (gear->unk12 + gear->unk22) * 6 / 10 + bonus;
@@ -4898,14 +4890,14 @@ void func_801D61B8(GearTable *table, u8 id) {
     gear = &D_8006DFAC[id];
     record = table->records18;
     record += gear->unk2;
-    gear->unk64 = record->unk4;
+    gear->max_hp = record->unk4;
     gear->unk68 = record->unk8;
     gear->unk98 = record->unk14;
     gear->unk9E = record->unk15;
     gear->unk9D = record->unk16;
     gear->unk9F = record->unk17;
-    if (gear->unk64 < gear->unk60) {
-        gear->unk60 = gear->unk64;
+    if (gear->max_hp < gear->hp) {
+        gear->hp = gear->max_hp;
     }
 }
 
@@ -4929,15 +4921,15 @@ void func_801D62A4(GearTable *table, u8 id) {
 
     gear = &D_8006DFAC[id];
     record = table->records10;
-    limit = gear->unk38;
+    limit = gear->fuel;
     record += gear->unk3;
-    gear->unk3A = record->unk6;
+    gear->max_fuel = record->unk6;
     gear->unk3C = record->unkC;
     gear->unk3D = record->unkD;
     gear->unk3E = record->unkE;
     gear->unk3F = record->unkE;
-    if (gear->unk3A < limit) {
-        gear->unk38 = gear->unk3A;
+    if (gear->max_fuel < limit) {
+        gear->fuel = gear->max_fuel;
     }
 }
 
