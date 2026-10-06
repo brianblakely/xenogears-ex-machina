@@ -3312,11 +3312,15 @@ void func_800A6F98(void) {
  * ox/oy/oz), each strand's points (segment length and sag), and two textured
  * triangles per point pair between neighbouring rings, their texture
  * spanning u_span x v_span from (tx, ty) with the CLUT at (clut_x, clut_y);
- * then `count` zeroed entries. On an allocation failure the surface is left
- * empty. The original keeps the loop state in caller-saved registers across
- * SetPolyGT3 (saved on the stack). */
+ * then `count` zeroed entries (using its signed low halfword). The table's
+ * first halfword is the ring count; h0 is the mesh identifier set by the caller.
+ * Texture steps narrow to a signed halfword in u and an unsigned one in v.
+ * On an allocation failure the surface is left empty; the original clears
+ * centres before passing NULL to the free service, even when a centre block
+ * was allocated. Nonmatching: loop strength reduction, saved registers and
+ * spill slots still differ around SetPolyGT3. */
 void func_800A7064(Surface *surface, u16 *table, s16 angle_base, s32 scale, s16 ox, s16 oy, s16 oz,
-                   s16 count, s16 tx, s16 ty, s16 u_span, s16 v_span, s16 clut_x, s16 clut_y, u8 b0,
+                   s32 count, s16 tx, s16 ty, s16 u_span, s16 v_span, s16 clut_x, s16 clut_y, u8 b0,
                    u8 b1, u8 b2, u8 b3, u8 b4, u8 b5) {
     SVECTOR *centres;
     SVECTOR *centre;
@@ -3331,12 +3335,16 @@ void func_800A7064(Surface *surface, u16 *table, s16 angle_base, s32 scale, s16 
     u16 tpage, clut;
     s32 page_x, page_y;
     s32 u_base, v_base;
-    s32 u_step, u, u_next;
-    s32 v_step;
+    s16 u_step;
+    s32 u, u_next;
+    u16 v_step;
     s32 first;
+    s32 index;
+    SurfaceEntry *entries;
+    u16 total;
     s32 i, k, b, n;
 
-    surface->h0 = *table++;
+    surface->rings = *table++;
     surface->polys = *table * 2;
     func_80032498(4, 0);
     table++;
@@ -3351,8 +3359,8 @@ void func_800A7064(Surface *surface, u16 *table, s16 angle_base, s32 scale, s16 
         centres->vy = (*table++ + oy) * scale / 4096;
         centres->vz = (*table++ + oz) * scale / 4096;
     }
-    n = table[surface->rings];
-    surface->points = n + surface->rings;
+    total = table[surface->rings];
+    surface->points = total + surface->rings;
     rings = func_80031BDC(surface->rings * sizeof(SurfacePoint *), 0);
     if (rings == NULL) {
         surface->centres = NULL;
@@ -3362,8 +3370,8 @@ void func_800A7064(Surface *surface, u16 *table, s16 angle_base, s32 scale, s16 
     surface->strands = rings;
     counts = table;
     radii = table + surface->rings + 1;
-    angles = (u8 *)(radii + n);
-    points = func_80031BDC((n + surface->rings) * sizeof(SurfacePoint), 0);
+    angles = (u8 *)(radii + total);
+    points = func_80031BDC((total + surface->rings) * sizeof(SurfacePoint), 0);
     if (points == NULL) {
         surface->centres = NULL;
         func_800320E8(NULL);
@@ -3392,6 +3400,7 @@ void func_800A7064(Surface *surface, u16 *table, s16 angle_base, s32 scale, s16 
     polys = func_80031BDC(surface->polys * sizeof(SurfacePoly), 0);
     if (polys == NULL) {
         surface->centres = NULL;
+        func_800320E8(NULL);
         func_800320E8(surface->strands);
         func_800320E8(points);
         return;
@@ -3407,14 +3416,14 @@ void func_800A7064(Surface *surface, u16 *table, s16 angle_base, s32 scale, s16 
     u_step = u_span / (surface->rings - 1);
     for (i = 0, u = 0, u_next = u_step; i < surface->rings - 1; i++, u += u_step, u_next += u_step) {
         n = counts[1];
-        if (counts[0] < n) {
+        if ((u32)counts[0] < (u32)n) {
             n = counts[0];
         }
-        v_step = (s16)(v_span / n);
-        for (k = 0; k < n; k++, first++) {
-            polys->index[0] = first;
-            polys->index[2] = first + 1;
-            polys->index[1] = first + counts[0] + 1;
+        v_step = v_span / n;
+        for (k = 0, index = first; k < n; k++, index++) {
+            polys->index[0] = index;
+            polys->index[2] = index + 1;
+            polys->index[1] = index + counts[0] + 1;
             for (b = 0; b < 2; b++) {
                 prim = &polys->prim[b];
                 SetPolyGT3(prim);
@@ -3428,9 +3437,9 @@ void func_800A7064(Surface *surface, u16 *table, s16 angle_base, s32 scale, s16 
                 prim->v2 = v_base + v_step * (k + 1);
             }
             polys++;
-            polys->index[0] = first + counts[0] + 1;
-            polys->index[2] = first + 1;
-            polys->index[1] = first + counts[0] + 2;
+            polys->index[0] = index + counts[0] + 1;
+            polys->index[2] = index + 1;
+            polys->index[1] = index + counts[0] + 2;
             for (b = 0; b < 2; b++) {
                 prim = &polys->prim[b];
                 SetPolyGT3(prim);
@@ -3445,7 +3454,7 @@ void func_800A7064(Surface *surface, u16 *table, s16 angle_base, s32 scale, s16 
             }
             polys++;
         }
-        first = (first - k) + 1 + counts[0];
+        first += 1 + counts[0];
         counts++;
     }
     surface->b[0] = b0;
@@ -3455,20 +3464,21 @@ void func_800A7064(Surface *surface, u16 *table, s16 angle_base, s32 scale, s16 
     surface->b[4] = b4;
     surface->b[5] = b5;
     surface->entryCount = count;
-    if (count > 0) {
-        surface->entries = func_80031BDC(count * sizeof(SurfaceEntry), 0);
-        if (surface->entries == NULL) {
+    if ((s16)count > 0) {
+        entries = func_80031BDC((s16)count * sizeof(SurfaceEntry), 0);
+        if (entries == NULL) {
             surface->entryCount = 0;
         }
-        for (i = 0; i < surface->entryCount; i++) {
-            surface->entries[i].h0 = 0;
-            surface->entries[i].h2 = 0;
-            surface->entries[i].h4 = 0;
-            surface->entries[i].h6 = 0;
-            surface->entries[i].h8 = 0;
-            surface->entries[i].hA = 0;
-            surface->entries[i].hC = 0;
-            surface->entries[i].hE = 0;
+        surface->entries = entries;
+        for (i = 0; i < surface->entryCount; i++, entries++) {
+            entries->h0 = 0;
+            entries->h2 = 0;
+            entries->h4 = 0;
+            entries->h6 = 0;
+            entries->h8 = 0;
+            entries->hA = 0;
+            entries->hC = 0;
+            entries->hE = 0;
         }
     } else {
         surface->entries = NULL;
