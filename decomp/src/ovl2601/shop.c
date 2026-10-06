@@ -1243,6 +1243,7 @@ void func_801D0C18(u32 gold, u8 *ids, u8 *amounts, s32 n, u8 *inv_ids, u8 *inv_c
  * the sale; confirming settles the sale. Items of kind 2 flagged unsellable
  * are left out. With `same_kind` every item is of kind `kind`, otherwise
  * `kinds` gives each one's kind; `member` is the member selling equipment.
+ * Nonmatching: five temporary-register differences in the quantity return.
  */
 #ifdef NON_MATCHING
 void func_801D0E68(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds, u8 member) {
@@ -1257,17 +1258,19 @@ void func_801D0E68(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds,
     u8 sell_kinds[n];
     u8 chosen[n];
     u8 selectable[n];
-    u8 held[n];
+    u8 *held;
+    u32 gold = D_8006D634.gold;
+    u8 held_storage[n];
     u32 total;
     u32 new_gold;
     u32 price;
     s32 count;
+    s32 collected;
     u8 ok;
     s32 i;
     s32 index;
-    u32 gold;
 
-    gold = D_8006D634.gold;
+    held = held_storage;
     new_gold = gold;
     total = 0;
 
@@ -1282,18 +1285,21 @@ void func_801D0E68(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds,
             sell_kinds[i] = kinds[i];
         }
     }
-    count = 0;
+    /* The original assigns count only when an item is collected. */
+    collected = 0;
     for (i = 0; i < n; i++) {
         if (ids[i] != 0 && counts[i] != 0) {
             ok = 1;
             if (sell_kinds[i] == 2) {
-                ok = (D_800625A0->resources->items[ids[i]].flags & 0x10) == 0;
+                if (D_800625A0->resources->items[ids[i]].flags & 0x10) {
+                    ok = 0;
+                }
             }
             if (ok) {
-                sell_ids[count] = ids[i];
-                held[count] = counts[i];
-                selectable[count] = 1;
-                count++;
+                sell_ids[collected] = ids[i];
+                held[collected] = counts[i];
+                selectable[collected] = 1;
+                count = ++collected;
             }
         }
     }
@@ -1380,9 +1386,8 @@ void func_801D0E68(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds,
         case 1:
             row++;
             if (row >= 8) {
-                top++;
                 row = 7;
-                if (count - 8 < top) {
+                if (count - 8 < ++top) {
                     top--;
                 }
             }

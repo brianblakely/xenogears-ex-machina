@@ -1055,7 +1055,7 @@ void func_801D18F8(s32 top, u8 *ids, u8 *kinds, u8 *chosen, u8 *held) {
 
 /* Set the party's gold (capped at 9999999) and, with `remove`, take the chosen amounts out of the inventory. */
 void func_801D1F20(u32 gold, u8 *ids, u8 *amounts, s32 n, u8 *inv_ids, u8 *inv_counts, u8 *unused,
-                   u8 remove) {
+                   u8 remove, u8 unused_member) {
     u32 *party_gold;
     s32 i;
     s32 j;
@@ -1085,10 +1085,12 @@ void func_801D1F20(u32 gold, u8 *ids, u8 *amounts, s32 n, u8 *inv_ids, u8 *inv_c
 /*
  * The sell list (twin of the item shop's): choose how many of each of `n`
  * held parts to sell, eight rows at a time, with the running total and the
- * gold after the sale; confirming settles the sale.
+ * gold after the sale; confirming settles the sale. Every row uses `kind`;
+ * `remove` controls inventory removal and the settlement ignores `member`.
+ * Nonmatching: five temporary-register differences in the quantity return.
  */
 #ifdef NON_MATCHING
-void func_801D2054(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds, u8 member) {
+void func_801D2054(s32 n, u8 *ids, u8 *counts, u8 kind, u8 remove, u8 *unused_kinds, u8 member) {
     u8 running = 1;
     u8 first = 1;
     u8 redraw = 1;
@@ -1100,16 +1102,18 @@ void func_801D2054(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds,
     u8 sell_kinds[n];
     u8 chosen[n];
     u8 selectable[n];
-    u8 held[n];
+    u8 *held;
+    u32 gold = D_8006EF58;
+    u8 held_storage[n];
     u32 total;
     u32 new_gold;
     u32 price;
     s32 count;
+    s32 collected;
     s32 i;
     s32 index;
-    u32 gold;
 
-    gold = D_8006EF58;
+    held = held_storage;
     new_gold = gold;
     total = 0;
 
@@ -1118,21 +1122,18 @@ void func_801D2054(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds,
         selectable[i] = 0;
         chosen[i] = 0;
         sell_ids[i] = 0;
-        if (same_kind) {
-            sell_kinds[i] = kind;
-        } else {
-            sell_kinds[i] = kinds[i];
-        }
+        sell_kinds[i] = kind;
     }
-    count = 0;
+    collected = 0;
     for (i = 0; i < n; i++) {
         if (ids[i] != 0 && counts[i] != 0) {
-            sell_ids[count] = ids[i];
-            held[count] = counts[i];
-            selectable[count] = 1;
-            count++;
+            sell_ids[collected] = ids[i];
+            held[collected] = counts[i];
+            selectable[collected] = 1;
+            collected++;
         }
     }
+    count = collected;
     func_801C7870(0);
     while (running) {
         func_801CC1C4();
@@ -1171,7 +1172,7 @@ void func_801D2054(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds,
                 func_801CC31C(0);
                 func_801D0C20(total, 0);
                 if (func_801CCC18(0x95, 0xFF, 1)) {
-                    func_801D1F20(new_gold, sell_ids, chosen, n, ids, counts, sell_kinds, same_kind);
+                    func_801D1F20(new_gold, sell_ids, chosen, n, ids, counts, sell_kinds, remove, member);
                 } else {
                     running = 1;
                     D_800625A0->flags->panel_shown[2] = 1;
@@ -1210,9 +1211,8 @@ void func_801D2054(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds,
         case 1:
             row++;
             if (row >= 8) {
-                top++;
                 row = 7;
-                if (count - 8 < top) {
+                if (count - 8 < ++top) {
                     top--;
                 }
             }
@@ -1875,7 +1875,6 @@ u8 func_801D4888(s32 index) {
  * part is fitted to the edited gear, trading in its current part; otherwise
  * (lists 3 and 4) parts are bought by amount into the inventories.
  */
-#ifdef NON_MATCHING
 u8 func_801D498C(u8 page, u8 fit) {
     u8 dims[8];
     u8 running;
@@ -1898,16 +1897,18 @@ u8 func_801D498C(u8 page, u8 fit) {
     s32 count;
     u32 price;
     s32 i;
+    s32 held_next;
+    u8 *stock;
 
     gold = D_8006D634.gold;
     running = 1;
     first = 1;
     redraw = 1;
     row = 0;
-    top = 0;
     last_row = 0xFF;
-    total = 0;
+    top = 0;
     last_top = 0xFF;
+    total = 0;
     message = 0x8F;
     confirm = 0xFF;
     panel_x = 0xE0;
@@ -1927,7 +1928,9 @@ u8 func_801D498C(u8 page, u8 fit) {
     bzero(D_800625A0->shop_kinds, 0x30);
     bzero(D_800625A0->details->amounts, 0x30);
     for (i = 0; i < 20; i++) {
-        D_800625A0->shop_items[i] = D_800625A0->details->stock[page * 3 + D_800625A0->list_cursor][i];
+        stock = (u8 *)D_800625A0->details->stock;
+        stock += (page * 3 + D_800625A0->list_cursor) * 20 + i;
+        D_800625A0->shop_items[i] = *stock;
         D_800625A0->shop_kinds[i] = page * 3 + D_800625A0->list_cursor;
     }
     count = D_801D908C[page * 3 + D_800625A0->list_cursor];
@@ -1936,7 +1939,11 @@ u8 func_801D498C(u8 page, u8 fit) {
     while (running) {
         func_801CC1C4();
         if (top != last_top || redraw) {
-            trade_in = func_801D2B74(top, fit ? funds : new_gold, dims);
+            if (fit) {
+                trade_in = func_801D2B74(top, funds, dims);
+            } else {
+                trade_in = func_801D2B74(top, new_gold, dims);
+            }
             func_801C76A4(0xC, 0x32, 0x3C, count, top);
         }
         if (row != last_row || top != last_top) {
@@ -1946,16 +1953,16 @@ u8 func_801D498C(u8 page, u8 fit) {
             D_800625A0->flags->unk5A = 1;
             if (fit) {
                 panel_x = 0xC8;
+                panel_w = 0x70;
                 redraw = 1;
                 new_gold = funds;
-                panel_w = 0x70;
                 total = 0;
                 credit = 0;
                 if (dims[row] != 0) {
                     total = price;
                     new_gold -= price;
-                    new_gold += trade_in;
                     credit = trade_in;
+                    new_gold += credit;
                 }
             }
         }
@@ -2069,7 +2076,8 @@ u8 func_801D498C(u8 page, u8 fit) {
             }
             break;
         case 0:
-            if (dims[row] != 0 && !fit && D_800625A0->details->amounts[top + row] + (D_801D904C + 1) < 100) {
+            if (dims[row] != 0 && !fit &&
+                D_800625A0->details->amounts[top + row] + (held_next = D_801D904C + 1) < 100) {
                 total += price;
                 new_gold -= price;
                 redraw = 1;
@@ -2092,9 +2100,6 @@ u8 func_801D498C(u8 page, u8 fit) {
     func_801D0EC8(1);
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/gear_shop", func_801D498C);
-#endif
 
 /*
  * Refuel and repair the edited gear. Fuel costs 10 gold per 100 missing (at
