@@ -44,10 +44,10 @@ void func_80088CBC(s32 index) {
 }
 
 /* Menu mode start-up: frame callback, display and windows, the start
- * state from the boot word, then the mode's first screen. */
+ * state from the boot word, then the mode's first screen.
+ * Nonmatching: the original reserves eight more frame bytes. */
+#ifdef NON_MATCHING
 void func_80088D1C(void) {
-    s32 unused[2]; /* never used; the original frame has these 8 bytes */
-
     DrawSyncCallback(func_80088C00);
     InitGeom();
     func_80032498(6, D_80091BB0);
@@ -80,22 +80,25 @@ void func_80088D1C(void) {
     D_800928D0 = 7;
     func_8008E620();
 }
+#else
+INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu6", func_80088D1C);
+#endif
 
 INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu6", D_80070284);
 
-#ifdef NON_MATCHING
+extern const char D_800706D4[20];
+
 /* Menu mode entry: start up, start the mode's task, then run the frame
  * loop forever (resume the task, build one buffer while the other is
- * shown, debug meters).
- * Does not match: the buffer flip stores are scheduled differently, and the
- * original rate string is followed by two non-zero padding bytes (0x0894)
- * that a C literal cannot reproduce. */
+ * shown, debug meters). The original reads the tick counter at entry but
+ * leaves `last` uninitialized until the first frame's rate calculation. */
 void func_80088E90(void) {
     DispEnv disp;
     Task *task;
     s32 last;
     s32 fps;
     s32 load;
+    u8 index;
 
     func_80088D1C();
     task = func_8008BA2C(D_80088BFC[D_80050618], 0, (u32 *)0x801FE000, 0x400);
@@ -103,10 +106,11 @@ void func_80088E90(void) {
 frame:
     D_800595C0 = 0;
     D_80059578 = 0;
-    D_800928A0 = (D_800928E8 + 1) & 1;
+    /* Keep the byte written to the draw-buffer selector for this frame. */
+    index = D_800928A0 = (D_800928E8 + 1) & 1;
     D_80092870 = &D_8009A0D8[D_800928E8 & 1];
     D_800928E8++;
-    D_80092868 = &D_8009A0D8[D_800928A0];
+    D_80092868 = &D_8009A0D8[index];
     D_80092938 = &D_80092868->ot;
     disp = D_80092868->disp;
     func_80019CA0();
@@ -134,7 +138,7 @@ frame:
         func_8003700C("CPU/GPU:%4d/%3d\n", load, D_800927F0);
     }
     if (D_800928D0 & 4) {
-        func_8003700C("RATE   : %3dfps\n", fps);
+        func_8003700C((char *)D_800706D4, fps);
     }
     func_80036DC8(0xFF, 0xFF, 0xFF);
     func_8008ACB8(D_80092898);
@@ -145,6 +149,6 @@ frame:
     DrawOTagEnv(D_80092938, D_80092868);
     goto frame;
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu6", func_80088E90);
-#endif
+
+/* The original rate-format object retains data after its terminator. */
+const char D_800706D4[20] = "RATE   : %3dfps\n\0\0\x94\x08";
