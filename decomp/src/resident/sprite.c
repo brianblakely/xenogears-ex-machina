@@ -1192,9 +1192,6 @@ void func_8001EE88(Sprite *sprite, u_long *ot, s32 height) {
 /* Draw a sprite's parts as 8001ee88 does, cut off above `height` instead:
  * parts entirely above it are skipped, parts crossing it lose the rows
  * above it, texture included. Linked at `ot`. */
-/* Nonmatching: the original keeps the texture row in $a1 and the column in
- * $a2; this build swaps them and their store order. */
-#ifdef NON_MATCHING
 void func_8001F1D4(Sprite *sprite, u_long *ot, s32 height) {
     u32 flags;
     s32 count;
@@ -1206,7 +1203,7 @@ void func_8001F1D4(Sprite *sprite, u_long *ot, s32 height) {
     s32 cut;
     long depth;
     long flag;
-    u8 u;
+    u16 u;
     s32 v, du, dv;
 
     height <<= (sprite->flags >> 8) & 0x1F;
@@ -1295,8 +1292,11 @@ void func_8001F1D4(Sprite *sprite, u_long *ot, s32 height) {
             u = parts[i].u;
             du = parts[i].w;
             if (poly->x3 < poly->x0) {
-                if (u - 1 >= 0) {
-                    u--;
+                s16 column = u;
+
+                column--;
+                if (column >= 0) {
+                    u = column;
                 } else {
                     u = 0;
                     du--;
@@ -1307,9 +1307,6 @@ void func_8001F1D4(Sprite *sprite, u_long *ot, s32 height) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001F1D4);
-#endif
 
 /* Reserve `width` columns of the sprite texture area (three 64-line rows from
  * (0x300, 0x140), 0x40 columns each) and return their position. */
