@@ -1246,9 +1246,9 @@ void func_800BB13C(ActorTask *task) {
 
     if (object != NULL) {
         if (sprite->countdown == 0) {
-            sprite->framesLeft = 0;
+            sprite->script = 0;
         }
-        if (sprite->framesLeft != 0) {
+        if (sprite->script != 0) {
             func_80023210(sprite);
             func_80022CDC(sprite);
             if (sprite->motion.bits.doubleStep) {
@@ -1603,7 +1603,7 @@ void func_800BC018(ActorTask *task) {
         D_8006F9AC.vy = sprite->y.fixed;
         D_8006F9AC.vz = sprite->z.fixed;
     }
-    if (sprite->framesLeft != 0) {
+    if (sprite->script != 0) {
         if (sprite->motion.bits.doubleStep) {
             func_80023210(sprite);
             func_80022CDC(sprite);
@@ -1616,7 +1616,7 @@ void func_800BC018(ActorTask *task) {
                 D_8006F9AC.vy = sprite->y.fixed;
                 D_8006F9AC.vz = sprite->z.fixed;
             }
-            if (sprite->framesLeft == 0) {
+            if (sprite->script == 0) {
                 task->destroy(task);
             }
         }
@@ -1639,7 +1639,7 @@ void func_800BC158(ActorTask *task) {
                 D_800C3680 = task;
             } else {
                 sprite->countdown = 0;
-                sprite->framesLeft = 0;
+                sprite->script = 0;
             }
         } else {
             D_800C3680 = task;
@@ -1653,7 +1653,7 @@ void func_800BC158(ActorTask *task) {
             D_800C3684 = task;
         } else {
             sprite->countdown = 0;
-            sprite->framesLeft = 0;
+            sprite->script = 0;
         }
     } else {
         D_800C3684 = task;

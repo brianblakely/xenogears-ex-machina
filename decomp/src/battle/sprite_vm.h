@@ -53,8 +53,6 @@ typedef union {
 #define SPRITE_RENDER_BITS(sprite) (((SpriteRenderBits *)&(sprite)->render)->bits)
 #define SPRITE_FRAME_BITS(sprite) (((SpriteFrameBits *)&(sprite)->frameBits)->bits)
 #define SPRITE_MOTION_BITS(sprite) (((SpriteMotionBits *)&(sprite)->motion)->bits)
-/* The next animation command (0x64), NULL once the script finished. */
-#define SPRITE_SCRIPT(sprite) (*(u8 **)&(sprite)->framesLeft)
 /* The completion callback (0x68). */
 #define SPRITE_CALLBACK(sprite) (*(void (**)(BattleSprite *))(sprite)->pad68)
 /* The frame remapping table (0x60) of one-sided sprites. */
@@ -92,7 +90,6 @@ void func_800B1EA0();
 void func_800B3658();
 s32 func_800B3B6C(); /* a u8, taken as int */
 void func_800B3F04();
-void *func_800B5924();
 void func_800BA614(BattleSprite *sprite);
 void func_800BA768(BattleSprite *sprite);
 void func_800BF8CC(BattleSprite *sprite);

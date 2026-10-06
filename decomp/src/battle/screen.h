@@ -138,7 +138,7 @@ void func_800B3588(Quake *quake);
 void func_800B36BC(ScreenFade *fade);
 void func_800B3878(BattleTask *draw);
 void func_800B383C(ScreenFade *fade);
-void func_800B3B94(LightFade *fade);
+void func_800B3B94(BattleTask *task);
 void func_800B3C74(BattleTask *draw);
 void func_800B3C2C(LightFade *fade);
 

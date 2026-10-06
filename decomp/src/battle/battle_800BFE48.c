@@ -242,7 +242,7 @@ void func_800C0564(void) {
                 continue;
             }
             if (BATTLE_AREA.slots[slot].gear) {
-                if (sprite->framesLeft != 0) {
+                if (sprite->script != 0) {
                     busy = 1;
                 }
                 continue;

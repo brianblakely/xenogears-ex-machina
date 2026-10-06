@@ -107,7 +107,7 @@ typedef struct BattleSprite {
     s32 field4C;           /* 0x4C */
     void *sound;           /* 0x50: its command file's sound bank */
     u8 pad54[0x64 - 0x54];
-    s32 framesLeft;        /* 0x64 */
+    u8 *script;            /* 0x64: next animation command, NULL once finished */
     u8 pad68[0x6C - 0x68];
     ActorTask *task;       /* 0x6C */
     struct BattleSprite *parent;  /* 0x70 */
@@ -190,7 +190,7 @@ typedef struct {
     s32 motion;             /* 0x24 */
     s32 distance;           /* 0x28 */
     s32 near;               /* 0x2C */
-    s32 frames;             /* 0x30 */
+    u8 *resume;             /* 0x30: script to resume near the target */
 } SpriteApproach;
 
 /* A link keeping a sprite's partner at one of its anchors (800B5C18). */
@@ -217,7 +217,8 @@ void func_800C08CC(s32 count, SVECTOR *points, void (*draw)());
 void func_800B50D4(BattleSprite *sprite, SVECTOR *out);
 void func_800B51B0();
 void func_800B5DF4();
-void func_800B5854(SpriteApproach *approach);
+void func_800B5854(BattleTask *task);
+SpriteApproach *func_800B5924(BattleSprite *sprite, s32 near, u8 *resume);
 void func_800B5588(BattleTask *task);
 
 /* A point on the ground passed by value. */

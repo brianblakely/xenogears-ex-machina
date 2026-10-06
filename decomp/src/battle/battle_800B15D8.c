@@ -1094,23 +1094,29 @@ u8 func_800B3B6C(void) {
     return 1;
 }
 
-#ifdef NON_MATCHING
 /* Light fade update: ease the level from its start to its target over the
  * frames left; end once it is zero. */
-void func_800B3B94(LightFade *fade) {
+void func_800B3B94(BattleTask *task) {
+    LightFade *fade = (LightFade *)task;
     s32 left;
+    s32 to;
+    s32 fraction;
+    s32 level;
 
     if (fade->left != 0) {
         left = fade->left - 1;
         fade->left = left;
-        fade->level = fade->to - (fade->to - fade->from) * ((left << 5) / fade->total) / 32;
+        fraction = (left << 5) / fade->total;
+        to = fade->to;
+        level = to - fade->from;
+        level *= fraction;
+        level /= 32;
+        level = to - level;
+        fade->level = level;
     } else if (fade->level == 0) {
         fade->task.destroy(&fade->task);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B3B94);
-#endif
 
 /* End the light fade tasks and restore the stage lights (800A6F98). */
 void func_800B3C2C(LightFade *fade) {
@@ -1167,7 +1173,7 @@ void func_800B3CD4(to, frames, red, blue, field4C, field4E)
     fade->field4C = field4C;
     fade->field4E = field4E;
     fade->red = red;
-    func_800B3B94(fade);
+    func_800B3B94(&fade->task);
 }
 
 /* Copy the three 64 x 256 VRAM columns at x 0x280, 0x240 and 0x200 to the

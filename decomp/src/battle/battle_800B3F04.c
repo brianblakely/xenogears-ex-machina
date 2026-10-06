@@ -178,7 +178,7 @@ void func_800B3F04(BattleSprite *sprite, s32 command, u8 *args) {
         if (SquareRoot0(eye.vx + eye.vy + eye.vz) < 4 && SquareRoot0(target.vx + target.vy + target.vz) < 4) {
             break;
         }
-        sprite->framesLeft -= 2;
+        sprite->script -= 2;
         break;
     case 0x50:
         sprite->countdown++;
@@ -186,7 +186,7 @@ void func_800B3F04(BattleSprite *sprite, s32 command, u8 *args) {
             D_800D36BC--;
             break;
         }
-        sprite->framesLeft -= 2;
+        sprite->script -= 2;
         break;
     case 0x46:
         func_800B61F8(sprite, args);
@@ -683,13 +683,13 @@ void func_800B51B0(VECTOR *a, VECTOR *b) {
     D_800D2FCC++;
 }
 
-#ifdef NON_MATCHING
 /* Trail update: publish its colours and blend for drawing, refresh the
  * anchors when the sprite's frame changed and ease the trail towards them;
  * end once the sprite's motion changes or its phase is 0 or 1. */
 void func_800B5588(BattleTask *task) {
     SpriteTrail *trail = task->data;
     BattleSprite *sprite;
+    BattleSprite *current;
     s32 phase;
     s32 i;
 
@@ -710,14 +710,11 @@ void func_800B5588(BattleTask *task) {
     trail->trail[0].vx = trail->anchors[0].vx;
     trail->trail[0].vy = trail->anchors[0].vy;
     trail->trail[0].vz = trail->anchors[0].vz;
-    sprite = trail->sprite;
-    if (trail->motion != sprite->motion.bytes[3] || (phase = (sprite->frameBits.word >> 28) & 3) == 0 || phase == 1) {
+    current = trail->sprite;
+    if (trail->motion != current->motion.bytes[3] || (phase = (current->frameBits.word >> 28) & 3) == 0 || phase == 1) {
         trail->task.destroy(&trail->task);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B3F04", func_800B5588);
-#endif
 
 /* Trail draw: the sprite, then the trail (800C08CC). */
 void func_800B56E4(BattleTask *draw) {
@@ -727,7 +724,6 @@ void func_800B56E4(BattleTask *draw) {
     func_800C08CC(5, trail->trail, func_800B51B0);
 }
 
-#ifdef NON_MATCHING
 /* Give sprite a trail in colours (the first byte the colour count, 0 for
  * 4). */
 void func_800B572C(BattleSprite *sprite, u8 *colours) {
@@ -738,13 +734,14 @@ void func_800B572C(BattleSprite *sprite, u8 *colours) {
     trail->motion = sprite->motion.bytes[3];
     trail->colours = colours;
     trail->blend = sprite->render.bytes[0] >> 5;
-    trail->count = colours[0] == 0 ? 4 : colours[0];
+    if (colours[0] == 0) {
+        trail->count = 4;
+    } else {
+        trail->count = colours[0];
+    }
     func_800B50D4(sprite, trail->trail);
     func_800B50D4(sprite, trail->anchors);
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B3F04", func_800B572C);
-#endif
 
 /* The distance from the sprite to its target. */
 s32 func_800B57E4(BattleSprite *sprite) {
@@ -758,20 +755,23 @@ s32 func_800B57E4(BattleSprite *sprite) {
     return SquareRoot0(squares.vx + squares.vz + squares.vy);
 }
 
-#ifdef NON_MATCHING
-/* Approach watch update: stop the sprite (after frames) once it passes its
- * target or comes near it; end when it stopped or its motion changed. */
-void func_800B5854(SpriteApproach *approach) {
+/* Approach watch update: resume the sprite at the given script on its next
+ * tick once it passes its target or comes near it; end once redirected,
+ * its countdown reaches zero, or its motion changes. */
+void func_800B5854(BattleTask *task) {
+    SpriteApproach *approach = (SpriteApproach *)task;
     u8 done = 0;
     BattleSprite *sprite = approach->sprite;
     s32 last = approach->distance;
     s32 distance = func_800B57E4(sprite);
+    u8 *resume;
 
     approach->distance = distance;
     if (last < distance || distance < approach->near) {
         done = 1;
+        resume = approach->resume;
         sprite->countdown = 1;
-        sprite->framesLeft = approach->frames;
+        sprite->script = resume;
     }
     if (sprite->countdown == 0) {
         done = 1;
@@ -783,19 +783,16 @@ void func_800B5854(SpriteApproach *approach) {
         approach->task.destroy(&approach->task);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B3F04", func_800B5854);
-#endif
 
-/* Watch sprite approach its target (800B5854). */
-SpriteApproach *func_800B5924(BattleSprite *sprite, s32 near, s32 frames) {
+/* Watch sprite approach its target (800B5854), resuming at the given script. */
+SpriteApproach *func_800B5924(BattleSprite *sprite, s32 near, u8 *resume) {
     SpriteApproach *approach = func_8001CD08(sprite->task, sizeof(SpriteApproach) - sizeof(BattleTask));
 
     func_8001CD6C(approach, func_800B5854);
     approach->sprite = sprite;
     approach->distance = func_800B57E4(sprite);
     approach->near = near;
-    approach->frames = frames;
+    approach->resume = resume;
     approach->motion = sprite->motion.bytes[3];
     sprite->motion.word |= 0x20;
     return approach;
@@ -887,7 +884,7 @@ void func_800B5CC0(BattleTask *task) {
     sprite->x.fixed = position.vx << 16;
     sprite->y.fixed = position.vy << 16;
     sprite->z.fixed = position.vz << 16;
-    if (sprite->framesLeft == 0) {
+    if (sprite->script == 0) {
         task->destroy(task);
     }
 }
@@ -1078,12 +1075,11 @@ void func_800B6438(BattleSprite *sprite) {
     func_8001CD64(&sprite->task->draw, func_80025A88);
 }
 
-#ifdef NON_MATCHING
 /* Script command: move the CLUTs of the sprite's parts by (args[0],
  * args[1]). */
 void func_800B6464(BattleSprite *sprite, u8 *args) {
     SpriteImagePart *part = sprite->view->part;
-    u32 count = sprite->flags.bytes[0] >> 2;
+    s16 count = sprite->flags.bytes[0] >> 2;
     s16 i = 0;
     s32 x;
     s32 y;
@@ -1091,16 +1087,15 @@ void func_800B6464(BattleSprite *sprite, u8 *args) {
     if (count != 0) {
         do {
             i++;
-            x = (part->clut & 0x3F) + args[0];
-            y = ((part->clut >> 6) & 0x1FF) + args[1];
+            x = part->clut & 0x3F;
+            y = (part->clut >> 6) & 0x1FF;
+            x += args[0];
+            y += args[1];
             part->clut = x | (y << 6);
             part++;
         } while (i != count);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B3F04", func_800B6464);
-#endif
 
 /* Script command: set battle sprite args[1]'s value (800245D8) to args[0]. */
 void func_800B64D4(BattleSprite *sprite, u8 *args) {

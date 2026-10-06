@@ -51,10 +51,10 @@ void func_800C11CC(BattleSprite *sprite) {
 
 next:
     if (sprite->countdown == 0) {
-        op = *SPRITE_SCRIPT(sprite);
-        args = SPRITE_SCRIPT(sprite) + 1;
+        op = *sprite->script;
+        args = sprite->script + 1;
         if (op < 0x80) {
-            SPRITE_SCRIPT(sprite) = args;
+            sprite->script = args;
             if (op < 0x10) {
                 func_8001D2B0(sprite, sprite->frame + 1);
                 duration = (op & 0xF) + 1;
@@ -102,14 +102,14 @@ next:
         case 0xE3:
             {
                 BattleSprite *target = sprite->partner;
-                u8 *animation = SPRITE_SCRIPT(sprite) + VM_S16(args, 0);
+                u8 *animation = sprite->script + VM_S16(args, 0);
 
                 target->motion.bytes[3] = 0x3F;
                 func_80023538(target, animation);
             }
             break;
         case 0xFB:
-            func_800B5924(sprite, args[2] * 2, SPRITE_SCRIPT(sprite) + VM_S16(args, 0));
+            func_800B5924(sprite, args[2] * 2, sprite->script + VM_S16(args, 0));
             break;
         case 0xC3:
         case 0xEC:
@@ -236,7 +236,7 @@ next:
             break;
         case 0x8F:
             D_800C3624 = 1;
-            SPRITE_SCRIPT(sprite) = NULL;
+            sprite->script = NULL;
             SPRITE_FRAME_BITS(sprite).state = 0;
             return;
         case 0xF8:
@@ -288,7 +288,7 @@ next:
             if (!cond) {
                 break;
             }
-            SPRITE_SCRIPT(sprite) += VM_S16(args, 0);
+            sprite->script += VM_S16(args, 0);
             goto next;
         case 0xF3:
             if (sprite->view->parts != NULL) {
@@ -327,7 +327,7 @@ next:
             if ((sprite->render.word & 3) != 1) {
                 sprite->frame = frame;
                 sprite->countdown += wait;
-                SPRITE_SCRIPT(sprite) += 3;
+                sprite->script += 3;
                 return;
             } else {
                 if (argument < 0 && frame != 0) {
@@ -343,30 +343,30 @@ next:
                 func_8001D2B0(sprite, frame);
             }
             sprite->countdown += wait;
-            SPRITE_SCRIPT(sprite) += 3;
+            sprite->script += 3;
             return;
         case 0x8E:
-            SPRITE_SCRIPT(sprite) = NULL;
+            sprite->script = NULL;
             return;
         case 0xE2:
             {
                 s32 jump = args[0] + (s16)(args[1] << 8);
 
-                func_80021CF8(sprite, SPRITE_SCRIPT(sprite) + 3);
-                SPRITE_SCRIPT(sprite) += (s16)jump;
+                func_80021CF8(sprite, sprite->script + 3);
+                sprite->script += (s16)jump;
             }
             goto next;
         case 0x85:
-            SPRITE_SCRIPT(sprite) = (u8 *)(((u32)SPRITE_SCRIPT(sprite) & 0xFF000000) | func_80021C6C(sprite));
+            sprite->script = (u8 *)(((u32)sprite->script & 0xFF000000) | func_80021C6C(sprite));
             goto next;
         case 0xFA:
             if (*func_8001FBA4(sprite, args) == 0) {
                 break;
             }
-            SPRITE_SCRIPT(sprite) += VM_S16(args, 1);
+            sprite->script += VM_S16(args, 1);
             goto next;
         case 0xD4:
-            SPRITE_SCRIPT(sprite) += VM_S16(args, 0);
+            sprite->script += VM_S16(args, 0);
             if (SPRITE_CALLBACK(sprite) != NULL) {
                 SPRITE_CALLBACK(sprite)(sprite);
             }
@@ -440,10 +440,10 @@ next:
             func_80021CA0(sprite, count);
             /* fall through */
         case 0xE1:
-            SPRITE_SCRIPT(sprite) += VM_S16(args, 0);
+            sprite->script += VM_S16(args, 0);
             goto next;
         case 0xA7:
-            SPRITE_SCRIPT(sprite) += D_8004FC40[op];
+            sprite->script += D_8004FC40[op];
             value = args[0];
             if (value & 0x80) {
                 s32 repeat = (value & 0x7F) + 1;
@@ -470,7 +470,7 @@ next:
         case 0x9F:
             break;
         }
-        SPRITE_SCRIPT(sprite) += D_8004FC40[op];
+        sprite->script += D_8004FC40[op];
         goto next;
     }
 }
