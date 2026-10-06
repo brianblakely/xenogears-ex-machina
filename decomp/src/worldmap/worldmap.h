@@ -108,6 +108,8 @@ typedef struct {
 } WorldmapReturn;
 
 extern WorldmapReturn D_8006EE54;
+/* Halfword view of the three saved gear flags in that same return state. */
+extern u16 D_8006EE70, D_8006EE72, D_8006EE74;
 extern u8 D_8006F8E5, D_8006F8E6, D_8006F8E7;
 
 /* Camera: its target and orientation. */

@@ -143,9 +143,11 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap", func_80070CFC);
 /* The world-map main loop: gather input, flip the display buffers, run the
  * frame, and handle pause, encounters and leaving for another scene until
  * D_8009D554 clears. */
-#ifdef NON_MATCHING /* original hoists &D_8006F8E5 and reaches D_8006F368 from it; here &unk70 is hoisted */
+#ifdef NON_MATCHING /* seven instruction positions still differ in scene-exit load scheduling */
 void func_800712D0(void) {
     WorldmapView *view;
+    /* The live gear-byte base also reaches the party IDs 0x57D bytes earlier. */
+    u8 *gear_state = &D_8006F8E5;
     RECT rect;
     s32 i;
     s32 found;
@@ -192,21 +194,21 @@ void func_800712D0(void) {
             D_8009BD34 = 0;
             if (func_80093F18(&D_8009D55C.target) != 4) {
                 for (i = 0; i < 3; i++) {
-                    (&D_8006EE54.unk70)[i] = (&D_8006F8E5)[i];
+                    (&D_8006EE70)[i] = (&D_8006F8E5)[i];
                 }
-                if ((&D_8006F8E5)[0] != 0) {
-                    (&D_8006F8E5)[2] = 0;
-                    (&D_8006F8E5)[1] = 0;
-                    (&D_8006F8E5)[0] = 0;
+                if (gear_state[0] != 0) {
+                    gear_state[2] = 0;
+                    gear_state[1] = 0;
+                    gear_state[0] = 0;
                 } else {
-                    if (D_8006D940[D_8006F368[0]].gear != 0xFF) {
-                        (&D_8006F8E5)[0] = 1;
+                    if (D_8006D940[(gear_state - 0x57D)[0]].gear != 0xFF) {
+                        gear_state[0] = 1;
                     }
-                    if (D_8006D940[D_8006F368[1]].gear != 0xFF) {
-                        (&D_8006F8E5)[1] = 1;
+                    if (D_8006D940[(gear_state - 0x57D)[1]].gear != 0xFF) {
+                        gear_state[1] = 1;
                     }
-                    if (D_8006D940[D_8006F368[2]].gear != 0xFF) {
-                        (&D_8006F8E5)[2] = 1;
+                    if (D_8006D940[(gear_state - 0x57D)[2]].gear != 0xFF) {
+                        gear_state[2] = 1;
                     }
                 }
                 func_80075D4C();
@@ -224,21 +226,22 @@ void func_800712D0(void) {
                 }
                 if (D_8009C178 == 0 && D_8009D804 == 0 && D_8009BD24 == -1 &&
                     D_8009CE68 == D_8009BD24 && D_8009D554 != 0 && D_8009D80C != 0) {
-                    found = func_80075E7C(&D_8009D55C.target, D_8006EF64);
+                    found = func_80075E7C(&D_8009D55C.target, D_8006EF64[0]);
                     if (found == 1) {
                         D_8009D554 = 0;
                         D_8009D7CC = found;
                         D_8005954C = 0;
-                        D_8006EE54.unk70 = D_8006F8E5;
-                        D_8006EE54.unk72 = D_8006F8E6;
-                        D_8006EE54.unk74 = D_8006F8E7;
+                        D_8006EE70 = D_8006F8E5;
+                        D_8006EE72 = D_8006F8E6;
+                        D_8006EE74 = D_8006F8E7;
                     }
                 }
             }
         }
         D_8009D80C = 0;
         if (D_8009BD10 & 0x100) {
-            D_8006EE76 ^= 1;
+            u16 *camera_mode = &D_8006EE76;
+            *camera_mode ^= 1;
         }
         if (D_8009C178 == 0 && D_8009D804 != 0 && D_8009D554 != 0) {
             if (D_8009BE10 > 0) {
@@ -252,10 +255,11 @@ void func_800712D0(void) {
                     func_800762FC();
                     func_80075B58();
                 } else if (D_8009BE10 < 8) {
+                    u16 *return_flags = &D_8006EE68;
                     D_8009D554 = 0;
                     D_8009D7CC = 0;
                     D_8009D7D8 = &D_8009B6C4[2];
-                    D_8006EE68 |= 0x2000;
+                    *return_flags |= 0x2000;
                 }
             }
         } else {
@@ -280,6 +284,7 @@ void func_800712D0(void) {
     VSync(0);
     PutDispEnv(&D_8009BBC8[1].disp);
 }
+
 #else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap", func_800712D0);
 #endif
@@ -290,9 +295,8 @@ s32 func_80071A50(void) {
 }
 
 /* One world-map frame: input, actors, camera, terrain, sky and HUD. */
+#ifdef NON_MATCHING /* eight extra bytes of the original frame remain unexplained */
 s32 func_80071A58(void) {
-    s32 unused[2]; /* unreferenced; the original frame reserves it */
-
     if (D_8009D144 == 0) {
         func_80097440(&D_8009BD40);
     } else {
@@ -321,6 +325,10 @@ s32 func_80071A58(void) {
     }
     return 1;
 }
+
+#else
+INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap", func_80071A58);
+#endif
 
 /* Select the file set of an area (by index, or for the low indices by the
  * position against the threshold table) and derive its file numbers. */
