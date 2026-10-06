@@ -2,8 +2,8 @@
 
 /* Place a party member's vehicle actor: parked at its spot, with the
  * player when riding, or hidden (3) when the member has no vehicle. */
+#ifdef NON_MATCHING /* eight extra bytes of the original frame remain unexplained */
 s32 func_8008C364(WorldmapActor *actor, s32 member) {
-    SVECTOR unused; /* unreferenced local: the original frame reserves it */
     s32 result;
     u32 state;
 
@@ -56,6 +56,10 @@ s32 func_8008C364(WorldmapActor *actor, s32 member) {
     }
     return result;
 }
+
+#else
+INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8008C364", func_8008C364);
+#endif
 
 /* Start party vehicle 0: place it, and while its member rides (movement
  * modes 1-3) put it under the player, reset the saved camera target and the
@@ -525,9 +529,8 @@ s32 func_8008D590(s32 index) {
 /* Update party vehicle actor `index` (slots 4-6): take commands (1 go to an
  * actor, 2 park, 3 leave the flying vehicle, 5 go to the player, 8 board),
  * follow the player's trail while ridden, and save its spot and heading. */
-#ifdef NON_MATCHING /* the saved spot and heading share one resident base address */
+#ifdef NON_MATCHING /* original frame size, saved-state addressing and result scheduling differ */
 s32 func_8008D678(s32 index) {
-    SVECTOR unused; /* unreferenced local: the original frame reserves it */
     WorldmapActor *actor;
     WorldmapActor *target;
     ActorScratch *scratch;

@@ -684,8 +684,6 @@ void func_80073E30(void) {
 /* Draw the map overlay: the player marker (four triangles rotated by the camera
  * yaw at the player's map position) and one dot per set bit of the resident
  * map flags; bits 24-26 are the vehicles. */
-#ifdef NON_MATCHING /* dot loop: the original steps two pointers through the position table and keeps
-                    * the division constants in other registers */
 void func_800740B8(void) {
     MapScratch *scratch;
     MATRIX *matrix;
@@ -694,7 +692,8 @@ void func_800740B8(void) {
     PolyG3 *marker;
     Tile *dot;
     u32 bits;
-    u16 (*positions)[2];
+    u16 *position_x;
+    u16 *position_z;
     s32 i;
 
     scratch = (MapScratch *)0x1F800000;
@@ -724,8 +723,10 @@ void func_800740B8(void) {
     dot = &D_8009C898[D_8009D7F0 * 32];
     addPrim(D_8009BE3C->ot, &D_8009C5A0);
     bits = STATE_U32(0x30C);
-    positions = D_8009B6F4;
-    for (i = 0; i < 32; i++) {
+    /* Interleaved X/Z halfwords: index each coordinate with a stride of two. */
+    position_x = D_8009B6F4;
+    position_z = position_x + 1;
+    for (i = 0; i < 32; i++, dot++) {
         if (bits & 1) {
             switch (i) {
             case 24:
@@ -741,20 +742,16 @@ void func_800740B8(void) {
                 dot->y0 = STATE_U16(0x26) / 341 + 0x77;
                 break;
             default:
-                dot->x0 = positions[i][0] + 0xD0;
-                dot->y0 = positions[i][1] + 0x78;
+                dot->x0 = position_x[i * 2] + 0xD0;
+                dot->y0 = position_z[i * 2] + 0x78;
                 break;
             }
             addPrim(D_8009BE3C->ot, dot);
         }
         bits >>= 1;
-        dot++;
     }
     addPrim(D_8009BE3C->ot, &D_8009C5C0[D_8009D7F0]);
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_800740B8);
-#endif
 
 /* Allocate the recent-position ring and the two buffers of 16 footprint quads,
  * and initialise them. */

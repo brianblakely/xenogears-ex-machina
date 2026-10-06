@@ -1798,7 +1798,7 @@ extern ParticleShape D_8009B040[];
 extern ParticleUV D_8009AFF0[];
 
 extern SVECTOR D_8009A340[4][3]; /* map player marker triangles */
-extern u16 D_8009B6F4[32][2];    /* map dot positions */
+extern u16 D_8009B6F4[64];       /* 32 map dot positions: interleaved X/Z */
 
 /* Resident words of the world state relative to D_8006EE54. */
 #define STATE_U16(offset) (*(u16 *)((u8 *)&D_8006EE54 + (offset)))
