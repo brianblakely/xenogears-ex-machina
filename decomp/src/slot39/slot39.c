@@ -5840,9 +5840,6 @@ void func_801D8DE4(u8 slot, u8 lower, u8 arg2, u8 mode) {
  * part names (weapon and accessories for `mode` 0, the special parts in rows
  * of four for 1 and 2), from the kept parts with `kept` and from the gear
  * with `gear`; a character's row 4 shows its portrait instead. */
-#ifdef NON_MATCHING
-/* Nearly matches: the original adds the portrait row's 0x200 offset to the
- * buffer index before the block address (tpage and clut stores). */
 void func_801D8EA4(u8 slot, u8 mode, u8 kept, u8 gear) {
     RECT rect;
     s32 rows;
@@ -5941,9 +5938,20 @@ void func_801D8EA4(u8 slot, u8 mode, u8 kept, u8 gear) {
         }
         func_801E7C50(&D_800625A0->labels360->labels[i], i, 0xc, 0);
         if (i == 4 && !gear) {
-            D_800625A0->labels360->labels[4].polys[D_800625A0->bufferIndex].tpage = GetTPage(0, 0, 0x180, 0);
-            D_800625A0->labels360->labels[4].polys[D_800625A0->bufferIndex].clut =
-                ((D_8006D8A0[D_800625A0->party->ids[slot]].gear + 11) & 1) ? D_80059414 : D_800595D4;
+            s32 page;
+
+            page = GetTPage(0, 0, 0x180, 0);
+            {
+                s32 packetOffset = D_800625A0->bufferIndex * sizeof(POLY_FT4) +
+                    4 * sizeof(MenuLabelSlot);
+                ((POLY_FT4 *)((u8 *)D_800625A0->labels360 + packetOffset))->tpage = page;
+            }
+            {
+                s32 packetOffset = D_800625A0->bufferIndex * sizeof(POLY_FT4) +
+                    4 * sizeof(MenuLabelSlot);
+                ((POLY_FT4 *)((u8 *)D_800625A0->labels360 + packetOffset))->clut =
+                    ((D_8006D8A0[D_800625A0->party->ids[slot]].gear + 11) & 1) ? D_80059414 : D_800595D4;
+            }
             (D_800625A0->labels360->labels[i].polys + D_800625A0->bufferIndex)->u0 = D_801EA584[slot] * 4;
             (D_800625A0->labels360->labels[i].polys + D_800625A0->bufferIndex)->v0 = ((s32 *)D_801EA5D0)[slot];
             (D_800625A0->labels360->labels[i].polys + D_800625A0->bufferIndex)->u1 = D_801EA584[slot] * 4 + 0x60;
@@ -5962,9 +5970,6 @@ void func_801D8EA4(u8 slot, u8 mode, u8 kept, u8 gear) {
     D_800625A0->party->unk4B = 1;
     func_800320E8(image);
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D8EA4);
-#endif
 
 /* Step party slot `slot` forward (`dir` 0) or back (1) to the next occupied
  * slot, or with `readyOnly` to the next ready one; wraps around the three. */
