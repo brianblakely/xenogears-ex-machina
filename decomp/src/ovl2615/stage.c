@@ -63,8 +63,8 @@ s32 func_801E70E8(s32 *images) {
  * has fog (its colour goes to tint); 0 without a stage or scene. */
 #ifdef NON_MATCHING
 /* Register allocation differs: the original keeps stage and colours on the
- * stack, the scene data in s6 and computes actors/entries with store-flag
- * masks (sltu/negu/and). */
+ * stack and the scene data in s6. Frame and register lifetimes remain
+ * unresolved. */
 u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin, s16 *colours,
                  u8 *tint) {
     BattleScene *data;
@@ -73,8 +73,11 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
     StageObject *object;
     ModelPart *part;
     PartPosition *position;
+    s32 *motion_list;
     s32 *table;
     u8 *motions[4];
+    u8 *first_motion;
+    u16 motion_count;
     void *actors;
     s32 *lights;
     StageLight *entries;
@@ -132,18 +135,22 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
     actors = data->actors != 0 ? (u8 *)data + data->actors : NULL;
     lights = (s32 *)((u8 *)data + data->lights);
     entries = data->lights != 0 ? (StageLight *)(lights + 1) : NULL;
-    table = (s32 *)((u8 *)data + data->motion);
-    func_8003342C(table);
+    /* Reset from the list payload, then use its first relocated entry. */
+    motion_list = (s32 *)((u8 *)data + data->motion);
+    func_8003342C(motion_list);
     info = &data->info;
-    table = (s32 *)table[1];
+    table = (s32 *)motion_list[1];
     if (stage != NULL) {
-        func_800AA898(D_800D33E4, &D_800C3D0C, table + 2, 0);
+        func_800AA898(D_800D33E4, &D_800C3D0C, motion_list + 2, 0);
         func_800AA934(D_800D33E4, D_800D33E4, &D_800C3D0C, 0);
         func_8009EF3C(D_800C3E38, D_800D33E4->pose);
     }
     for (i = 0; i < 4; i++) {
         motions[i] = (u8 *)table + *table;
     }
+    /* Read the header before the output matrix stores, as the original does. */
+    first_motion = motions[0];
+    motion_count = *(u16 *)first_motion;
     origin[0] = data->origin[0];
     origin[1] = data->origin[1];
     origin[2] = data->origin[2];
@@ -162,8 +169,8 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
     colours[6] = data->colours[2];
     colours[7] = 0;
     colours[8] = 0;
-    D_800D2FD0 = motions[0] + 2;
-    D_800D2FC8 = *(u16 *)motions[0];
+    D_800D2FD0 = first_motion + 2;
+    D_800D2FC8 = motion_count;
     D_800D2FC0 = colours;
     SetColorMatrix(colours);
     SetBackColor(data->back[0], data->back[1], data->back[2]);
