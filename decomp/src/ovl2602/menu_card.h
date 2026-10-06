@@ -246,7 +246,8 @@ typedef struct {
 typedef struct {
     void *data0; /* 00 */
     void *data1; /* 04 */
-    u8 unk8[0x12 - 8];
+    s16 position[3]; /* 08: initial actor position */
+    u8 unkE[4];
     u8 unk12;    /* 12 */
 } ModelParts;
 
@@ -952,8 +953,9 @@ extern s32 D_80050100;            /* ordering-table depth shift */
 extern u8 D_801D6DA0[];           /* model variant per gear */
 extern u16 D_801D6DB4[];          /* model value 60h per gear */
 extern u16 D_801D6DD8[];          /* model value 1ch per gear */
-void func_801E742C(u8 slot, s32 unk1, void *data0, void *data1, s32 unk4, s32 unk5, s32 unk6, s32 unk7, void *unk8);
-void func_801E8330(u8 slot, s32 unk1, u8 variant);
+void func_801E742C(s32 index, u16 flags, void *script, void *file, s16 x, s16 y, s16 z,
+                   s16 w, s16 *pos);
+void func_801E8330(u16 index, u16 mask, s32 variant);
 extern POLY_FT4 D_801D7108[]; /* camera debug display packets, two per sprite */
 extern s32 D_801D9048;        /* their sprite count */
 u8 func_8001BD40(u8 low, u8 high); /* random number in [low, high] */

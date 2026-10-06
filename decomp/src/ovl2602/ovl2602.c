@@ -390,9 +390,11 @@ void func_801C5EE8(Label *labels, u8 *text_ids, s32 row, s32 count) {
 }
 
 /* Upload a 16-colour palette with only colour 1 set (7fff, white) at (0, 1c0). */
+/* Frame layout unresolved: the original reserves 8 additional bytes
+ * that the recovered operations do not explain. */
+#ifdef NON_MATCHING
 void func_801C6098(void) {
     RECT rect;
-    RECT unused; /* never referenced; the original frame reserves it */
     u16 *palette;
 
     palette = func_80031BDC(0x20, 0);
@@ -406,6 +408,9 @@ void func_801C6098(void) {
     DrawSync(0);
     func_800320E8(palette);
 }
+#else
+INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801C6098);
+#endif
 
 /* Load the text palettes and render the four command labels. */
 void func_801C6114(void) {
@@ -416,8 +421,10 @@ void func_801C6114(void) {
 }
 
 /* Look up the four sprite sheet entries the screen draws. */
+/* Frame layout unresolved: the original reserves 40 additional bytes
+ * that the recovered operations do not explain. */
+#ifdef NON_MATCHING
 void func_801C6170(void) {
-    POLY_FT4 unused; /* never referenced; the original frame reserves 28h bytes */
     SheetEntry *e;
 
     e = &D_800625A0->sheet_entries[0];
@@ -429,6 +436,9 @@ void func_801C6170(void) {
     e = &D_800625A0->sheet_entries[3];
     func_80026338(D_800625A0->sprite_sheet, 0x101, &e->unk0, &e->mode, &e->clut_x, &e->clut_y, &e->page_x, &e->page_y);
 }
+#else
+INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801C6170);
+#endif
 
 /* Draw the cursor at `position`; with `frame` also place its shade and edge lines. */
 void func_801C6278(s32 position, u8 frame) {
@@ -1296,11 +1306,13 @@ void func_801CA068(s32 index) {
 }
 
 /* Draw every shown panel; panels that are not flat get their own 3D matrices. */
+/* Frame layout unresolved: the original reserves 8 additional bytes
+ * that the recovered operations do not explain. */
+#ifdef NON_MATCHING
 void func_801CA28C(void) {
     SVECTOR rotation;
     VECTOR translation;
     MATRIX matrix;
-    SVECTOR unused; /* never referenced; the original frame reserves it */
     Panel *panel;
     s32 i;
 
@@ -1343,6 +1355,9 @@ void func_801CA28C(void) {
         }
     }
 }
+#else
+INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CA28C);
+#endif
 
 /* Link the shown markers; markers that follow the file cursor move to its slot first. */
 void func_801CA404(void) {
@@ -2223,25 +2238,35 @@ void func_801CD310(s32 count, s32 *ids) {
 }
 
 /* Reveal the list pictures of the current command (up to four pairs), two frames per step. */
-#ifdef NON_MATCHING
 void func_801CD564(u8 menu) {
     s32 animate;
     s32 step;
     s32 i;
+    s32 command;
+    s32 *ids;
+    s32 *paired;
 
     D_800625A0->images->dim = 0;
     animate = 1;
+    step = 1;
     D_800625A0->images->dimmed = 0;
+    command = menu;
     D_800625A0->lists->count = 0;
+    ids = D_801D69A0;
     D_800625A0->lists->count2 = 0;
+    paired = ids + 1;
     D_800625A0->flags->lists_shown = 1;
-    for (step = 1; step < 5; step++) {
+    for (; step < 5; step++) {
         D_800625A0->lists->count = 0;
         D_800625A0->list_count = 0;
         for (i = 0; i < step; i++) {
-            if (D_801D69A0[i * 2 + (menu + D_800625A0->top_cursor) * 8] != 0xFFFF) {
+            s32 offset;
+
+            offset = i * 2;
+            offset += (command + D_800625A0->top_cursor) * 8;
+            if (ids[offset] != 0xFFFF) {
                 D_800625A0->lists->count +=
-                    func_8002675C(D_800625A0->sprite_sheet, D_801D69A0[i * 2 + (menu + D_800625A0->top_cursor) * 8],
+                    func_8002675C(D_800625A0->sprite_sheet, ids[offset],
                                   D_800625A0->lists->packets + D_800625A0->lists->count * 2,
                                   D_800625A0->buffer, 0xA0, 0x96, 0x1000);
                 D_800625A0->list_count++;
@@ -2257,9 +2282,13 @@ void func_801CD564(u8 menu) {
         }
         D_800625A0->lists->count2 = 0;
         for (i = 0; i < step; i++) {
-            if (D_801D69A0[i * 2 + (menu + D_800625A0->top_cursor) * 8] != 0xFFFF) {
+            s32 offset;
+
+            offset = i * 2;
+            offset += (command + D_800625A0->top_cursor) * 8;
+            if (ids[offset] != 0xFFFF) {
                 D_800625A0->lists->count2 += func_8002675C(
-                    D_800625A0->sprite_sheet, D_801D69A0[i * 2 + (menu + D_800625A0->top_cursor) * 8 + 1],
+                    D_800625A0->sprite_sheet, paired[offset],
                     D_800625A0->lists->packets2 + D_800625A0->lists->count2 * 2, D_800625A0->buffer, 0xA0,
                     0x96, 0x1000);
             }
@@ -2272,9 +2301,6 @@ void func_801CD564(u8 menu) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CD564);
-#endif
 
 /* Draw `count` image pairs with pair `selected` highlighted (+0dh), and put the cursor on it. */
 void func_801CD838(u8 count, u8 selected, s32 *ids) {
@@ -2890,7 +2916,7 @@ void func_801CFAB8(u8 slot, u8 gear) {
     u8 variant;
 
     func_801E742C(slot, 0, D_800625A0->model_parts[slot]->data0, D_800625A0->model_parts[slot]->data1,
-                  (slot << 6) + 0x200, 0, 0, slot + 0x1C0, D_800625A0->model_parts[slot]->unk8);
+                  (slot << 6) + 0x200, 0, 0, slot + 0x1C0, D_800625A0->model_parts[slot]->position);
     D_801E8670[slot]->unk60 = D_801D6DB4[gear];
     D_801E8670[slot]->unk1C = D_801D6DD8[gear];
     D_801E8670[1]->view->distance -= 0x400;
@@ -3304,9 +3330,11 @@ u32 func_801D1078(u8 item, u8 kind) {
  * table price) labels, the bars of the members who can use it and the marks
  * of those holding it. Returns the sell price.
  */
+/* Frame layout unresolved: the original reserves 16 additional bytes
+ * that the recovered operations do not explain. */
+#ifdef NON_MATCHING
 u32 func_801D1304(u8 id, u8 kind) {
     RECT rect;
-    u8 unused[16]; /* never referenced */
     u8 codes[14];
     u8 text[16];
     s32 divisors[5];
@@ -3407,6 +3435,9 @@ u32 func_801D1304(u8 id, u8 kind) {
     D_800625A0->details->group2D0_buffer = D_800625A0->buffer;
     return price;
 }
+#else
+INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D1304);
+#endif
 
 /*
  * Draw the eight visible rows of a list from entry `top`: each part's name,
