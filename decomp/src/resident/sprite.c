@@ -452,8 +452,6 @@ void func_8001D4E8(Sprite *sprite) {
  * part takes a cell already in VRAM with its own texture position and size,
  * from the page of a resident cell kind (two-byte kinds), of the sprite's
  * sequencer or of the source, after the control bytes before it. */
-/* Nonmatching: the original loads the resident page table address after the abr argument's sign extension (lui/addiu into one register); here it is split and scheduled first. */
-#ifdef NON_MATCHING
 void func_8001D53C(Sprite *sprite, s32 frame, SpriteSource *source) {
     u16 *table;
     u8 *record;
@@ -547,11 +545,14 @@ void func_8001D53C(Sprite *sprite, s32 frame, SpriteSource *source) {
             ((u8 *)&parts[i].colour)[3] |= 2;
         }
         if ((kind >> 4) & 1) {
+            TexturePosition *resident_pages;
+            TexturePosition *resident_page;
+
             cell++;
             kind |= *cell << 8;
-            pages = D_8004FAB8;
-            page = (TexturePosition *)(((kind << 1) & 0x1C) + (s32)pages);
-            parts[i].tpage = GetTPage(kind & 1, rate, page->x, page->y);
+            resident_pages = D_8004FAB8;
+            resident_page = (TexturePosition *)(((kind << 1) & 0x1C) + (s32)resident_pages);
+            parts[i].tpage = GetTPage(kind & 1, rate, resident_page->x, resident_page->y);
             parts[i].clut = GetClut((kind >> 1) & 0xF0, ((kind >> 9) & 0xF) + 0x1CC);
         } else {
             if (self->frame_bits.sequencer_owned == 1 &&
@@ -582,9 +583,6 @@ void func_8001D53C(Sprite *sprite, s32 frame, SpriteSource *source) {
     }
     sprite->flags = (sprite->flags & ~0xFC) | ((i & 0x3F) << 2);
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001D53C);
-#endif
 
 /* Build frame `frame` of a sprite's source into its parts and queue the
  * uploads of the cells it uses (to the source's texture position, or a
