@@ -240,16 +240,15 @@ void func_800B8840(void) {
     D_80050104 = 0;
 }
 
-#ifdef NON_MATCHING
 /* Start the first frame: the frame skip from the gear enemies present,
  * draw into the second buffer with the first one's background colour. */
 void func_800B88C4(void) {
-    s32 i;
+    s32 i = 3;
     s32 skip;
     FrameBuffer *buffer;
 
     D_800C3D58 = 0;
-    for (i = 3; i != 11; i++) {
+    for (; i != 11; i++) {
         if (BATTLE_AREA.slots[i].field2 < 0x11 && BATTLE_AREA.slots[i].gear != 0) {
             D_800C3D58++;
         }
@@ -259,9 +258,9 @@ void func_800B88C4(void) {
         D_80059198 = 0;
     }
     skip = D_80059198;
+    BATTLE_AREA.frameTicks = skip;
     D_80059198 = 0;
     D_80050100 = 2;
-    BATTLE_AREA.frameTicks = skip;
     buffer = &BATTLE_AREA.buffers[0];
     if (BATTLE_AREA.current == buffer) {
         buffer = &BATTLE_AREA.buffers[1];
@@ -277,9 +276,6 @@ void func_800B88C4(void) {
     BATTLE_AREA.buffers[1].drawEnv.g0 = BATTLE_AREA.buffers[0].drawEnv.g0;
     BATTLE_AREA.buffers[1].drawEnv.b0 = BATTLE_AREA.buffers[0].drawEnv.b0;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800B88C4);
-#endif
 
 void func_800B89F4(void) {
 }

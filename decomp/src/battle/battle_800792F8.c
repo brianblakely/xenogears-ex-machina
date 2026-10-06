@@ -275,12 +275,9 @@ s32 func_80079AB0(u8 slot) {
 
 /* Run each armed enemy's AI script at +0xc (reaction bytes 1 and 2 set, the
  * enemy not down unless +0x34 bit 0x800 lets it act) as the acting slot,
- * then execute its action list; restore the acting slot.
- * Nonmatching: the original schedules the script pointer load before the
- * status test and the action list address after it. */
-#ifdef NON_MATCHING
+ * then execute its action list; restore the acting slot. */
 void func_80079C24(void) {
-    u8 *pc;
+    u8 *pc[1]; /* Mutable cursor shared with the AI opcode handlers. */
     u8 count;
     s32 enemy;
     u8 actor;
@@ -293,7 +290,7 @@ void func_80079C24(void) {
     for (enemy = 0; enemy < 8; enemy++) {
         if (D_800C3D18[enemy].unk1[1] != 0 && D_800C3D18[enemy].unk1[0] != 0) {
             D_800C3EAC->actor = enemy + 3;
-            pc = D_800D3400[enemy].turnScript;
+            pc[0] = D_800D3400[enemy].turnScript;
             p = (u8 *)D_800D2E5C;
             if (!(D_800CCCE8.records[enemy + 3].pilot.status7C & 0x8000) ||
                 (D_800CCCE8.records[enemy + 3].pilot.flags34 & 0x800)) {
@@ -304,13 +301,13 @@ void func_80079C24(void) {
                 do {
                     *p++ = 0;
                 } while (p < end);
-                while (*pc != 0xFD && *pc != 0xFF) {
-                    if (*pc >= 0x80) {
-                        if (!func_8007F8C0(&pc, enemy)) {
-                            func_80079948(&pc);
+                while (*pc[0] != 0xFD && *pc[0] != 0xFF) {
+                    if (*pc[0] >= 0x80) {
+                        if (!func_8007F8C0(pc, enemy)) {
+                            func_80079948(pc);
                         }
                     } else {
-                        count = func_8007EF6C(&pc, enemy, count);
+                        count = func_8007EF6C(pc, enemy, count);
                     }
                 }
                 D_800C3EAC->eventsDone = 0;
@@ -321,9 +318,6 @@ void func_80079C24(void) {
     }
     D_800C3EAC->actor = actor;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800792F8", func_80079C24);
-#endif
 
 /* Show battle message window `index`. */
 void func_80079E18(u8 index) {
