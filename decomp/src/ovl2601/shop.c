@@ -791,7 +791,6 @@ void func_801CF678(u32 value) {
  * with the running total and the gold left; confirming settles the
  * purchase. Returns 1 (the command screen is redrawn).
  */
-#ifdef NON_MATCHING
 u8 func_801CF780(void) {
     u8 dims[8];
     u8 first;
@@ -806,6 +805,7 @@ u8 func_801CF780(void) {
     u32 new_gold;
     u32 price;
     s32 i;
+    s32 held_next;
 
     gold = D_8006D634.gold;
     first = 1;
@@ -938,7 +938,7 @@ u8 func_801CF780(void) {
             }
             break;
         case 0:
-            if (dims[row] != 0 && D_800625A0->details->amounts[top + row] + (D_801D2260 + 1) < 100) {
+            if (dims[row] != 0 && D_800625A0->details->amounts[top + row] + (held_next = D_801D2260 + 1) < 100) {
                 total += price;
                 new_gold -= price;
                 D_800625A0->details->amounts[top + row] += 1;
@@ -958,9 +958,6 @@ u8 func_801CF780(void) {
     D_800625A0->details->label45B0_shown = 0;
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/shop", func_801CF780);
-#endif
 
 /*
  * Show item `id` of kind `kind` (0 equipment, 1 accessory, 2 item): its name and
