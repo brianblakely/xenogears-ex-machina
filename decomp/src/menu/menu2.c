@@ -7,12 +7,9 @@
 #include "window.h"
 #include "gte.h"
 
-#ifdef NON_MATCHING
-/* Place the menu camera for one of the view modes. Nearly matches (the jump
- * table lands at 0x8006faf4 since the unit split): GCC keeps the address of
- * D_8009872C.angle in a callee-saved register in cases 3/4, where the
- * original reloads it with lui/lw for each call. */
+/* Place the menu camera for one of the view modes. */
 void func_8007099C(u32 mode) {
+    extern s32 D_80098780; /* D_8009872C.angle, the word at +0x54. */
     Vector target;
     s32 top;
 
@@ -41,9 +38,9 @@ void func_8007099C(u32 mode) {
         target = D_80099078;
         target.vy += D_800925F4;
         func_80070808(&target, 0x10);
-        target.vx = D_8009872C.pos.vx + ((func_8003F8B0(D_8009872C.angle + 0xA80) * 0xD0) >> 12);
+        target.vx = D_8009872C.pos.vx + ((func_8003F8B0(D_80098780 + 0xA80) * 0xD0) >> 12);
         target.vy = D_8009872C.pos.vy - (D_800925F4 + 0x20);
-        target.vz = D_8009872C.pos.vz + ((func_8003F8CC(D_8009872C.angle + 0xA80) * 0xD0) >> 12);
+        target.vz = D_8009872C.pos.vz + ((func_8003F8CC(D_80098780 + 0xA80) * 0xD0) >> 12);
         func_800708C4(&target, 0x46);
         top = func_80082488(&D_8009871C, 0) - (D_800925F4 + 0x40);
         if (top < D_8009871C.vy) {
@@ -60,9 +57,6 @@ void func_8007099C(u32 mode) {
         break;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu2", func_8007099C);
-#endif
 
 /* Re-centre the two actors and the look-at point on a fixed scene spot:
  * the midpoint of the actors moves to the layout's anchor, actors on the
