@@ -2234,7 +2234,6 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80086028);
  * available, else (unless the chain is armed) the longer combos it
  * continues. With an armed chain a completed deathblow becomes the combo step
  * (+0x2dc). The three text image blocks live for one frame. */
-#ifdef NON_MATCHING
 void func_800861D0(u8 code, u8 member) {
     s32 index = 0;
     s32 shown = 0;
@@ -2324,8 +2323,8 @@ void func_800861D0(u8 code, u8 member) {
             } else {
                 combo--;
             }
-            shown = 1;
             index = func_80086028(member, index, combo, D_800C31AC[D_800CCCE8.records[member].pilot.characterId][12 - i], &D_800C3A70[index / 2], 0);
+            shown = 1;
         }
         break;
     }
@@ -2361,7 +2360,7 @@ void func_800861D0(u8 code, u8 member) {
             D_800D2DB4->counts[12] +=
                 func_80076A10(8, &D_800D2DB4->list12[D_800D2DB4->counts[12] * 2], 0x54 + combo * 16, 0xD0 - index * 16);
             D_800D2DB4->counts[12] +=
-                func_80076A10(7, &D_800D2DB4->list12[D_800D2DB4->counts[12] * 2], 0x64 + combo * 16, 0xD0 - index * 16);
+                func_80076A10(7, &D_800D2DB4->list12[D_800D2DB4->counts[12] * 2], 0x54 + (combo + 1) * 16, 0xD0 - index * 16);
             index = func_80086028(member, index, combo, D_800C31AC[D_800CCCE8.records[member].pilot.characterId][19 - i], &D_800C3A70[index / 2], 1);
         }
         break;
@@ -2382,7 +2381,7 @@ void func_800861D0(u8 code, u8 member) {
             D_800D2DB4->counts[12] +=
                 func_80076A10(9, &D_800D2DB4->list12[D_800D2DB4->counts[12] * 2], 0x58 + combo * 16, 0xD0 - index * 16);
             D_800D2DB4->counts[12] +=
-                func_80076A10(7, &D_800D2DB4->list12[D_800D2DB4->counts[12] * 2], 0x68 + combo * 16, 0xD0 - index * 16);
+                func_80076A10(7, &D_800D2DB4->list12[D_800D2DB4->counts[12] * 2], 0x58 + (combo + 1) * 16, 0xD0 - index * 16);
             func_80086028(member, index, combo, D_800C31AC[D_800CCCE8.records[member].pilot.characterId][22 - i], &D_800C3A70[index / 2], 1);
         }
         break;
@@ -2395,9 +2394,6 @@ void func_800861D0(u8 code, u8 member) {
         func_800320E8(*((u32 **)((u8 *)D_800C3A70 + block)));
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800861D0);
-#endif
 
 /* Whether the member can use combo step `step` now: without a combo chain
  * (+0x2d6) always; otherwise its character must know the combo flag
