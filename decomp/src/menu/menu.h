@@ -535,8 +535,12 @@ void func_8007099C(u32 mode);
 void func_80070F80(u8 *script);
 s32 func_8007107C(void);
 void func_80071724(u32 *ot);
+/* Forward word copy, with a positive count divisible by four. */
 void func_800732AC(void *dst, void *src, s32 size);
-void func_80073064(SVector *dir, SVector *out, s32 scale);
+/* GTE scaling; all three write x/y/z and preserve out->pad. */
+void func_80073064(SVector *dir, SVector *out, s32 scale); /* GPF, sf=1 */
+void func_800730AC(SVector *dir, SVector *out, s32 scale); /* GPF, sf=0 */
+void func_800730F4(Vector *dir, SVector *out, s32 scale);  /* low signed halfwords, sf=1 */
 void func_8008859C(Vector *vector, void *out);
 s32 func_800886FC(Vector *v);
 s32 func_80088754(Vector *v);

@@ -197,6 +197,12 @@ decomp/src/field/field_script.h
 decomp/src/mdec/mdec.c
 decomp/src/mdec/movie.h
 decomp/src/menu/brain.h
+decomp/src/menu/func_80073064.s
+decomp/src/menu/func_800730AC.s
+decomp/src/menu/func_800730F4.s
+decomp/src/menu/func_8007313C.s
+decomp/src/menu/func_800731F8.s
+decomp/src/menu/func_800732AC.s
 decomp/src/menu/func_8008BB00.s
 decomp/src/menu/func_8008BB1C.s
 decomp/src/menu/func_8008BB3C.s
@@ -221,6 +227,7 @@ decomp/src/menu/sound.h
 decomp/src/menu/spark.h
 decomp/src/menu/sparkle.h
 decomp/src/menu/system.h
+decomp/src/menu/vector_scale.s
 decomp/src/menu/window.h
 decomp/src/movie/movie.c
 decomp/src/movie/movie_mode.h

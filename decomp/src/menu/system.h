@@ -259,7 +259,7 @@ typedef struct {
 typedef struct {
     s16 parent;        /* -1: the set's root */
     s16 model;         /* -1: none; else index of a 0x38-byte model */
-    SVector angle;     /* 0x04 (x, y, z) */
+    struct { s16 vx, vy, vz; } angle; /* 0x04: no vector padding */
     s16 offset[3];     /* 0x0A: initial 0x2C components */
 } HierarchyRecord;
 
@@ -441,6 +441,8 @@ void func_80030B14(Matrix *m);
 Matrix *func_8003F738(SVector *angles, Matrix *m);
 void MulMatrix0(Matrix *a, Matrix *b, Matrix *out);
 void TransMatrix(Matrix *m, Vector *t);
+/* Scale each rotation column through the GTE, preserving m's translation
+ * and leaving the original rotation loaded in the GTE. */
 void func_800731F8(Matrix *m, s16 *scale);
 void func_8008A63C(Model *model);
 void func_8008A78C(Node *node);

@@ -865,14 +865,14 @@ void func_80072858(LightRig *rig) {
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu2", func_80072D18);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu2", func_80073064);
+INCLUDE_ASM("decomp/src/menu", func_80073064);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu2", func_800730AC);
+INCLUDE_ASM("decomp/src/menu", func_800730AC);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu2", func_800730F4);
+INCLUDE_ASM("decomp/src/menu", func_800730F4);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu2", func_8007313C);
+INCLUDE_ASM("decomp/src/menu", func_8007313C);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu2", func_800731F8);
+INCLUDE_ASM("decomp/src/menu", func_800731F8);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu2", func_800732AC);
+INCLUDE_ASM("decomp/src/menu", func_800732AC);

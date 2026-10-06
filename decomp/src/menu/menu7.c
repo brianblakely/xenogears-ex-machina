@@ -914,6 +914,7 @@ Node *func_8008B38C(ModelSetFile *file) {
     Node *node;
     Model *model;
     Player *player;
+    Node *parent;
 
     func_8002C3E8(models);
     func_800324B8(0x12);
@@ -925,13 +926,19 @@ Node *func_8008B38C(ModelSetFile *file) {
     set->nodeCount = count;
     set->records = records;
     for (i = 0; i < count; i++) {
-        node = nodes[i] = func_80089C54();
+        node = func_80089C54();
+        nodes[i] = node;
         if (records[i].model != -1) {
             model = func_80089FC4();
             func_80089E2C(node, model);
-            func_8008A184(model, (ModelFile *)(models + records[i].model * 0x38 + 0x10));
+            func_8008A184(model, (ModelFile *)(models + (records[i].model * 0x38 + 0x10)));
         }
-        func_80089C88(records[i].parent == -1 ? root : nodes[records[i].parent], node);
+        if (records[i].parent == -1) {
+            parent = root;
+        } else {
+            parent = nodes[records[i].parent];
+        }
+        func_80089C88(parent, node);
         node->unk44.vx = records[i].angle.vx;
         node->unk44.vy = records[i].angle.vy;
         node->unk44.vz = records[i].angle.vz;

@@ -194,7 +194,9 @@ extern u8 D_8009275C;
 void func_80080AA0(s32 forget);
 void func_8008509C(s32 a, s32 b);
 void *func_800891C0(s32 arg);
-void func_8007313C(void *src, void *dst);
+/* In-place RGB555 sliding box filter; second row is 0x280 bytes ahead.
+ * end is the terminating read cursor, and a pair there is prefetched. */
+void func_8007313C(void *pixels, void *end);
 
 typedef struct {
     s32 id;

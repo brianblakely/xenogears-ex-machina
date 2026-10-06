@@ -26,9 +26,10 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_80083CE8);
 #endif
 
 /* Update an actor's glow light (fading it) at its position relative to its
- * opponent, and the spot light at its position relative to the camera. */
+ * opponent, and the spot light at its position relative to the camera.
+ * Nonmatching: the original reserves 0x20 more frame bytes. */
+#ifdef NON_MATCHING
 void func_80083DCC(LightRig *rig, Actor *actor, s32 index) {
-    Vector unused[2]; /* the original frame has 0x20 unused bytes */
     Node *light = rig->lights[index];
     u8 glow = actor->glow;
     s32 level = glow;
@@ -70,13 +71,17 @@ void func_80083DCC(LightRig *rig, Actor *actor, s32 index) {
     NODE_LIGHT(light)->direction[2] -= D_8009871C.vz;
     func_80030A30(2, NODE_LIGHT(light));
 }
+#else
+INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_80083DCC);
+#endif
 
 /* Draw the 3D arena: aim the camera, pose the actors, then draw the floor,
- * the actors and their shadows, the look-at marker and the sky. */
+ * the actors and their shadows, the look-at marker and the sky.
+ * Nonmatching: the original reserves 0x10 more frame bytes. */
+#ifdef NON_MATCHING
 s32 func_800840CC(LightRig *rig) {
     Matrix floor;
     Matrix camera;
-    Vector unused; /* the original frame has 16 unused bytes here */
     OtPair *layer = rig->layer;
     Light *light;
 
@@ -134,13 +139,17 @@ s32 func_800840CC(LightRig *rig) {
     func_80031678(D_80092938, &D_80095580[D_800928A0]);
     return 0;
 }
+#else
+INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_800840CC);
+#endif
 
 /* Draw the 3D scene: aim the camera, give both actors the camera matrix,
- * light and draw them, then the view's layer and the backdrop sprites. */
+ * light and draw them, then the view's layer and the backdrop sprites.
+ * Nonmatching: the original reserves 0x30 more frame bytes and places the
+ * camera matrix 0x20 bytes later. */
+#ifdef NON_MATCHING
 s32 func_800846A0(LightRig *rig) {
-    Matrix floor;   /* unused: the frame matches the arena draw's */
     Matrix camera;
-    Vector unused;
     OtPair *layer = rig->layer;
     Light *light;
 
@@ -171,6 +180,9 @@ s32 func_800846A0(LightRig *rig) {
     AddPrim(D_80092938, &D_800955C8[D_800928A0]);
     return 0;
 }
+#else
+INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_800846A0);
+#endif
 
 /* Draw a 3D view: update its layer, link this buffer's ordering table, finish. */
 s32 func_800849E0(LightRig *rig) {
@@ -1379,11 +1391,13 @@ void func_80087AB0(Actor *actor) {
 }
 
 /* Draw an actor's ground shadow: a square sized by its height, centred
- * under it and tilted to the ground normal there. */
+ * under it and tilted to the ground normal there.
+ * Nonmatching: the original reserves 0x10 more frame bytes before the
+ * normal, matrix and projected depths. */
+#ifdef NON_MATCHING
 void func_80087B74(Actor *actor, u32 *ot, Matrix *view) {
     SVector corners[4];
     Vector centre;
-    Vector unused; /* the original frame has 16 unused bytes here */
     SVector normal;
     Matrix m;
     s32 otz;
@@ -1445,6 +1459,9 @@ void func_80087B74(Actor *actor, u32 *ot, Matrix *view) {
         }
     }
 }
+#else
+INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_80087B74);
+#endif
 
 /* Record a position in the path list (up to 31 entries). */
 void func_80087E38(Vector *pos) {
