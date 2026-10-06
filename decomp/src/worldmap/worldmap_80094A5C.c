@@ -278,14 +278,14 @@ s32 func_80085760(VECTOR *from, VECTOR *to, s32 index, s32 face);
  * move leaves through edge n) onto the neighbouring faces, sliding along an
  * edge whose neighbour is a wall (kind 1) and dropping back to the terrain
  * when an edge has no neighbour. Returns 1 when the position stands on a face. */
-#ifdef NON_MATCHING /* register allocation: the original hoists -1 (not 1) out of the walk loop and
-                    * keeps the scratch base in $fp */
+#ifdef NON_MATCHING /* neighbor copies and nested switch tails still differ */
 s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s32 mode) {
     s16 object;
     WalkScratch *scratch;
     MeshFace *faces;
     s32 state;
     s32 count;
+    s32 walking;
     s32 cleared;
     s32 i;
     s32 height;
@@ -355,7 +355,7 @@ s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s
         break;
     case 2:
     case 3:
-        count = 1;
+        walking = 1;
         object = D_8009C840;
         face = D_8009C16C;
         faces = ((Mesh *)D_8009C620[object].unk44)->faces;
@@ -365,7 +365,7 @@ s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s
             case 0:
                 func_80085158(&scratch->probe, &scratch->offset, &scratch->normal, object, face);
                 result = 1;
-                count = 0;
+                walking = 0;
                 D_8009C16C = (s16)face;
                 out->vy = scratch->offset.vy << 12;
                 D_8009C840 = object;
@@ -373,36 +373,48 @@ s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s
             case 1:
                 first = faces[(s16)face].next[0];
                 if (first == -1) {
-                    goto fall;
+                    result = func_800951A8(position, direction, out, scale, mode);
+                    D_8009C16C = -1;
+                    D_8009C840 = -1;
+                    walking = 0;
+                    break;
                 }
                 face = first;
                 if (faces[first].kind == 1) {
                     result = 0;
-                    count = 0;
+                    walking = 0;
                     func_800952B0(direction, out, &scratch->side[0]);
                 }
                 break;
             case 2:
                 first = faces[(s16)face].next[1];
                 if (first == -1) {
-                    goto fall;
+                    result = func_800951A8(position, direction, out, scale, mode);
+                    D_8009C16C = -1;
+                    D_8009C840 = -1;
+                    walking = 0;
+                    break;
                 }
                 face = first;
                 if (faces[first].kind == 1) {
                     result = 0;
-                    count = 0;
+                    walking = 0;
                     func_800952B0(direction, out, &scratch->side[1]);
                 }
                 break;
             case 4:
                 first = faces[(s16)face].next[2];
                 if (first == -1) {
-                    goto fall;
+                    result = func_800951A8(position, direction, out, scale, mode);
+                    D_8009C16C = -1;
+                    D_8009C840 = -1;
+                    walking = 0;
+                    break;
                 }
                 face = first;
                 if (faces[first].kind == 1) {
                     result = 0;
-                    count = 0;
+                    walking = 0;
                     func_800952B0(direction, out, &scratch->side[2]);
                 }
                 break;
@@ -415,12 +427,16 @@ s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s
                 }
                 switch (edges) {
                 case 0:
-                    goto fall;
+                    result = func_800951A8(position, direction, out, scale, mode);
+                    D_8009C16C = -1;
+                    D_8009C840 = -1;
+                    walking = 0;
+                    break;
                 case 1:
                     face = first;
                     if (faces[first].kind == edges) {
                         result = 0;
-                        count = 0;
+                        walking = 0;
                         func_800952B0(direction, out, &scratch->side[0]);
                     }
                     break;
@@ -428,7 +444,7 @@ s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s
                     face = second;
                     if (faces[second].kind == 1) {
                         result = 0;
-                        count = 0;
+                        walking = 0;
                         func_800952B0(direction, out, &scratch->side[1]);
                     }
                     break;
@@ -440,7 +456,7 @@ s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s
                     switch (walls) {
                     case 0:
                         result = 0;
-                        count = 0;
+                        walking = 0;
                         out->vx = out->vy = out->vz = 0;
                         break;
                     case 1:
@@ -465,12 +481,16 @@ s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s
                 }
                 switch (edges) {
                 case 0:
-                    goto fall;
+                    result = func_800951A8(position, direction, out, scale, mode);
+                    D_8009C16C = -1;
+                    D_8009C840 = -1;
+                    walking = 0;
+                    break;
                 case 1:
                     face = first;
                     if (faces[first].kind == edges) {
                         result = 0;
-                        count = 0;
+                        walking = 0;
                         func_800952B0(direction, out, &scratch->side[0]);
                     }
                     break;
@@ -478,7 +498,7 @@ s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s
                     face = second;
                     if (faces[second].kind == 1) {
                         result = 0;
-                        count = 0;
+                        walking = 0;
                         func_800952B0(direction, out, &scratch->side[2]);
                     }
                     break;
@@ -490,7 +510,7 @@ s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s
                     switch (walls) {
                     case 0:
                         result = 0;
-                        count = 0;
+                        walking = 0;
                         out->vx = out->vy = out->vz = 0;
                         break;
                     case 1:
@@ -515,12 +535,16 @@ s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s
                 }
                 switch (edges) {
                 case 0:
-                    goto fall;
+                    result = func_800951A8(position, direction, out, scale, mode);
+                    D_8009C16C = -1;
+                    D_8009C840 = -1;
+                    walking = 0;
+                    break;
                 case 1:
                     face = first;
                     if (faces[first].kind == edges) {
                         result = 0;
-                        count = 0;
+                        walking = 0;
                         func_800952B0(direction, out, &scratch->side[1]);
                     }
                     break;
@@ -528,7 +552,7 @@ s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s
                     face = second;
                     if (faces[second].kind == 1) {
                         result = 0;
-                        count = 0;
+                        walking = 0;
                         func_800952B0(direction, out, &scratch->side[2]);
                     }
                     break;
@@ -540,7 +564,7 @@ s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s
                     switch (walls) {
                     case 0:
                         result = 0;
-                        count = 0;
+                        walking = 0;
                         out->vx = out->vy = out->vz = 0;
                         break;
                     case 1:
@@ -558,14 +582,8 @@ s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s
                 break;
             case 7:
                 break;
-            fall:
-                result = func_800951A8(position, direction, out, scale, mode);
-                D_8009C16C = -1;
-                D_8009C840 = -1;
-                count = 0;
-                break;
             }
-        } while (count);
+        } while (walking);
         break;
     }
     return result;

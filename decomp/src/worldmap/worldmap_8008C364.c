@@ -152,18 +152,15 @@ s32 func_8008C75C(s32 index) {
 /* Update the player's vehicle (actor slot 4): drive it by the pad, record
  * the trail, board and park the other party vehicles on command, and save
  * its spot and heading. */
-#ifdef NON_MATCHING /* draft: register allocation (constant 1 kept in s5) and layout differ */
+#ifdef NON_MATCHING /* original 0x58-byte frame and boarding target registers still differ */
 s32 func_8008C844(s32 index) {
-    VECTOR unused0; /* unreferenced locals: the original frame reserves them */
-    VECTOR unused1;
-    SVECTOR unused2;
     WorldmapActor *actor;
     WorldmapActor *target;
     ActorScratch *scratch;
     TrailPoint *point;
-    s32 hit;
-    u8 landing;
-    s32 i;
+    s32 value;
+    u16 trail;
+    s32 result = 1;
 
     actor = &D_8009BE24[index];
     scratch = (ActorScratch *)0x1F800000;
@@ -171,16 +168,8 @@ s32 func_8008C844(s32 index) {
     case 4:
         actor->state = 0x10;
         actor->unk4 = 0;
-        actor->unk58 = 1;
+        actor->unk58 = result;
         D_8006F8E5 = 1;
-        break;
-    case 3:
-        actor->unk4 = 0;
-        actor->state = 0x30;
-        break;
-    case 8:
-        actor->unk4 = 0;
-        actor->state = 0x18;
         break;
     case 7:
         actor->unk4 = 0;
@@ -189,6 +178,14 @@ s32 func_8008C844(s32 index) {
             D_8009BE10 = 2;
             D_8009BD04 = 0;
         }
+        break;
+    case 3:
+        actor->unk4 = 0;
+        actor->state = 0x30;
+        break;
+    case 8:
+        actor->unk4 = 0;
+        actor->state = 0x18;
         break;
     }
     switch (actor->state) {
@@ -220,27 +217,29 @@ s32 func_8008C844(s32 index) {
                     }
                     func_8008C1DC(0x2C, actor, scratch);
                 }
-                hit = func_80095414(&actor->position, &actor->motion, SCRATCH_HIT, actor->turn << 12, D_8009BE10);
-                if (hit == 0) {
-                    actor->motion = *SCRATCH_HIT;
-                    hit = func_80095414(&actor->position, &actor->motion, SCRATCH_HIT, actor->turn << 12,
+                value = func_80095414(&actor->position, &actor->motion, &scratch->probe, actor->turn << 12,
+                                    D_8009BE10);
+                if (value == 0) {
+                    actor->motion = scratch->probe;
+                    value = func_80095414(&actor->position, &actor->motion, &scratch->probe, actor->turn << 12,
                                         D_8009BE10);
-                    if (hit == 0) {
+                    if (value == 0) {
                         actor->motion.vz = 0;
                         actor->motion.vx = 0;
                     }
                 }
-                if (hit == 1) {
-                    func_8008C040(SCRATCH_HIT, 0x18, 0x30, &D_8009D738, &D_8009BD60);
-                    landing = D_8009D738;
+                if (value == 1) {
+                    func_8008C040(&scratch->probe, 0x18, 0x30, &D_8009D738, &D_8009BD60);
+                    value = D_8009D738;
                     if (D_8009BD60 == 7) {
-                        landing += 3;
+                        value += 3;
                     }
-                    if (D_8009B180[landing] != 0) {
-                        actor->position = *SCRATCH_HIT;
+                    if ((u16)D_8009B180[value] != 0) {
+                        actor->position = scratch->probe;
                         if (actor->motion.vx | actor->motion.vz) {
-                            D_8009D154 = (D_8009D154 + 1) & 0x1F;
-                            point = &D_8009CEC4[D_8009D154];
+                            trail = (D_8009D154 + 1) & 0x1F;
+                            point = &D_8009CEC4[trail];
+                            D_8009D154 = trail;
                             point->position = actor->position;
                             point->heading = actor->heading;
                             func_8007528C();
@@ -335,7 +334,7 @@ s32 func_8008C844(s32 index) {
             }
             break;
         case 3:
-            if (D_8006F8E7 & D_8006F8E6) {
+            if (D_8006F8E6 & D_8006F8E7) {
                 actor->state++;
             }
             break;
@@ -422,12 +421,13 @@ s32 func_8008C844(s32 index) {
         D_8009D52C = actor->heading;
         break;
     case 0x32:
+        point = D_8009CEC4;
         D_8009D154 = 0;
-        SCRATCH_VECTOR[3] = actor->position;
+        scratch->start = actor->position;
         scratch->position.vx = actor->heading;
-        for (i = 0x1F, point = D_8009CEC4; i != -1; i--, point++) {
-            point->position = SCRATCH_VECTOR[3];
-            point->heading = scratch->position.vx;
+        for (value = 0x1F; value != -1; value--, point++) {
+            point->position = scratch->start;
+            point->heading = (u16)scratch->position.vx;
         }
         actor->state = 1;
         D_8009BE10 = 2;
@@ -441,7 +441,7 @@ s32 func_8008C844(s32 index) {
     D_8006EF8E[0].x = actor->position.vx >> 12;
     D_8006EF8E[0].z = actor->position.vz >> 12;
     D_8006EE54.unk5A = actor->heading;
-    return 1;
+    return result;
 }
 #else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8008C364", func_8008C844);

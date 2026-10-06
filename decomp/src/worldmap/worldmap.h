@@ -585,7 +585,10 @@ s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *hit, s32 range, s
 /* Scratchpad work area of the actor updaters. */
 typedef struct {
     VECTOR work;      /* 0x00 */
-    u8 pad10[0x90];
+    u8 pad10[0x20];
+    VECTOR start;     /* 0x30: trail reset position */
+    u8 pad40[0x50];
+    VECTOR probe;     /* 0x90: move probe result */
     SVECTOR position; /* 0xA0 */
     SVECTOR angle;    /* 0xA8 */
 } ActorScratch;
