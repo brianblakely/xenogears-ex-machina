@@ -3084,11 +3084,10 @@ void *func_80038F18(s32 size) {
 
 /* Allocate `size` bytes of driver memory, cleared, from the highest gap
  * that fits (between blocks or after the last one). Returns the data or
- * NULL (then the driver event stays disabled).
- * Nonmatching: the block pointers take other registers. */
-#ifdef NON_MATCHING
+ * NULL (then the driver event stays disabled). */
 void *func_80039024(s32 size) {
     s32 need;
+    SoundBlock *entry;
     SoundBlock *after;
     u32 limit;
     SoundBlock *block;
@@ -3098,17 +3097,17 @@ void *func_80039024(s32 size) {
     need = ((size + 0xF) & ~0xF) + 0x10;
     after = NULL;
     limit = 0;
-    for (block = D_80059410;; block = block->next) {
-        if (block->next == NULL) {
-            if ((s32)(D_800595E4 - block->end) >= need) {
-                after = block;
+    for (entry = D_80059410;; entry = entry->next) {
+        if (entry->next == NULL) {
+            if ((s32)(D_800595E4 - entry->end) >= need) {
+                after = entry;
                 limit = D_800595E4;
             }
             break;
         }
-        if ((s32)((u32)block->next - block->end) >= need) {
-            after = block;
-            limit = (u32)block->next;
+        if ((s32)((u32)entry->next - entry->end) >= need) {
+            after = entry;
+            limit = (u32)entry->next;
         }
     }
     limit -= need;
@@ -3128,9 +3127,6 @@ void *func_80039024(s32 size) {
     func_800392EC((u32 *)data, size);
     return data;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039024);
-#endif
 
 /* Release a block of driver memory.
  * Nonmatching: the original keeps the pool head and the block address in
