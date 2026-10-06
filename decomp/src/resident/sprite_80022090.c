@@ -830,8 +830,6 @@ SpriteTask *func_80023A48(s32 kind, s32 mode, SpriteSource *source, s32 extra, T
  * frame, position, resources and (with a mode) renderer angles and scales,
  * then takes the animation and its kind's callbacks. With the parent's
  * passive_children flag the task starts inactive. */
-/* Nonmatching: the original also loads the child's image pointer (0x24) into $s3 after creating the task and never uses it, which shifts the register allocation and scheduling of the field copies. */
-#ifdef NON_MATCHING
 Sprite *func_80023B84(Sprite *parent, u16 *header, SpriteSource *source) {
     u8 active = D_800591AC;
     s32 kind;
@@ -839,6 +837,10 @@ Sprite *func_80023B84(Sprite *parent, u16 *header, SpriteSource *source) {
     SpriteTask *task;
     Sprite *child;
     u32 split;
+    u32 frame_bits;
+    u32 divisor;
+    u32 motion;
+    u32 owner_word;
 
     parent->b0.wordb0 |= 0x800;
     if (parent->b0.bits.passive_children) {
@@ -846,37 +848,43 @@ Sprite *func_80023B84(Sprite *parent, u16 *header, SpriteSource *source) {
     }
     kind = func_80023440(header);
     if (kind == 3) {
-        kind = (parent->flags >> 13) & 0xF;
+        kind = ((SpriteFlagBits *)&parent->flags)->type;
     }
     mode = ((s32 (*)())func_80023468)(kind); /* the fallback argument is not passed */
     task = func_80023A48(kind, mode, source, 0, parent->block);
     task->task.link.bits.flag29 = 1;
     child = &task->sprite;
-    child->flags = (child->flags & ~0x1E000) | ((kind & 0xF) << 13);
+    /* The original reads this pointer once without using the value. */
+    source = ((volatile Sprite *)child)->image;
+    ((SpriteFlagBits *)&child->flags)->type = kind;
     child->render.bits.sides = mode;
     child->flags = (child->flags & ~0x1F00) | (parent->flags & 0x1F00);
     child->render.word = (child->render.word & ~8) | (parent->render.word & 8);
     child->render.word = (child->render.word & ~0x10) | (parent->render.word & 0x10);
     child->render.bits.unknown8 = parent->render.bits.unknown8;
-    child->flags = (child->flags & ~0x40000) | (parent->flags & 0x40000);
+    ((SpriteFlagBits *)&child->flags)->flag18 = ((SpriteFlagBits *)&parent->flags)->flag18;
     child->render.word = (child->render.word | 0x4000000) & ~4;
     child->speed = parent->speed;
     child->direction = parent->direction;
     child->scale = parent->scale;
     child->frame = parent->frame;
-    child->b0.bits.share_rate = parent->b0.bits.share_rate;
-    if (parent->b0.bits.share_rate) {
+    if ((child->b0.bits.share_rate = parent->b0.bits.share_rate)) {
         child->rate = parent->rate;
         child->flags = (child->flags & ~0x1F00) | 0x300;
     }
-    split = (parent->motion.bits.unknown0 << 2) | parent->frame_bits.unknown30;
+    frame_bits = parent->frame_bits.unknown30;
+    split = (parent->motion.bits.unknown0 << 2) | frame_bits;
     child->frame_bits.unknown30 = split;
     child->motion.bits.unknown0 = split >> 2;
     child->b0.bits.passive_children = parent->b0.bits.passive_children;
-    child->motion.bits.double_step = parent->motion.bits.double_step;
-    child->motion.bits.divisor = parent->motion.bits.divisor;
-    child->frame_bits.sequencer_owned = 0;
-    child->motion.bits.mirror = parent->motion.bits.mirror;
+    child->motion.word = (child->motion.word & ~0x40) | (parent->motion.word & 0x40);
+    divisor = parent->motion.word & 0x7FF80;
+    child->motion.word = (child->motion.word & ~0x7FF80) | divisor;
+    motion = child->motion.word & ~4;
+    owner_word = *(u32 *)&child->frame_bits & ~1;
+    motion |= parent->motion.word & 4;
+    *(u32 *)&child->frame_bits = owner_word;
+    child->motion.word = motion;
     if (!parent->frame_bits.sequencer_owned) {
         child->sequencer = parent->sequencer;
     } else {
@@ -909,9 +917,6 @@ Sprite *func_80023B84(Sprite *parent, u16 *header, SpriteSource *source) {
     D_800591AC = active;
     return child;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80023B84);
-#endif
 
 /* Create an effect sprite task running animation `index` of `source` at
  * `position` (whole units), with `extra` bytes after the sprite: its kind
@@ -919,8 +924,6 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_8002
  * 800591ad) it takes the facing, blending, speed, scale and resources of
  * the battle's current actor (800c3e1c) before its own resources are
  * cleared. */
-/* Nonmatching: the 4-bit value copied across the 0xa8/0xac words ends up in the other of its two temporaries (v0/v1 swapped for 8 instructions). */
-#ifdef NON_MATCHING
 SpriteTask *func_80023FD8(s32 index, SpriteSource *source, SVECTOR *position, s32 extra) {
     u16 *table = source->animations;
     u16 *header = (u16 *)(table[index + 1] + (s32)table);
@@ -930,6 +933,7 @@ SpriteTask *func_80023FD8(s32 index, SpriteSource *source, SVECTOR *position, s3
     Sprite *child;
     Sprite *actor;
     u32 split;
+    u32 frame_bits;
 
     kind = func_80023440(header);
     mode = ((s32 (*)())func_80023468)(kind); /* the fallback argument is not passed */
@@ -953,9 +957,11 @@ SpriteTask *func_80023FD8(s32 index, SpriteSource *source, SVECTOR *position, s3
         child->render.word = (child->render.word | 0x4000000) & ~4;
         child->motion.bits.mirror = actor->motion.bits.mirror;
         child->motion.bits.divisor = actor->motion.bits.divisor;
+        /* Both pointer reads and stores are present in the original. */
         child->sequencer = actor->sequencer;
         child->sequencer = actor->sequencer;
-        split = actor->frame_bits.unknown30 | (actor->motion.bits.unknown0 << 2);
+        frame_bits = actor->frame_bits.unknown30;
+        split = (actor->motion.bits.unknown0 << 2) | frame_bits;
         child->frame_bits.unknown30 = split;
         child->motion.bits.unknown0 = split >> 2;
         child->word50 = actor->word50;
@@ -975,9 +981,6 @@ SpriteTask *func_80023FD8(s32 index, SpriteSource *source, SVECTOR *position, s3
     func_80024730(task);
     return task;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80023FD8);
-#endif
 
 /* 80024524 with `extra` in 800591b8 for the call. */
 void func_80024294(void *a0, s16 a1, s16 a2, s16 a3, s16 a4, s16 a5, s32 extra) {

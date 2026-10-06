@@ -442,7 +442,9 @@ typedef struct {
     unsigned unknown0 : 8;
     unsigned group : 5;      /* facing group */
     unsigned type : 4;       /* sprite kind (80023440) */
-    unsigned unknown17 : 15;
+    unsigned unknown17 : 1;
+    unsigned flag18 : 1;     /* inherited by child sprites (80023b84) */
+    unsigned unknown19 : 13;
 } SpriteFlagBits;
 extern u8 D_8004FC40[]; /* frame command lengths */
 void func_80021CF8(Sprite *sprite, s32 value); /* push three bytes */
