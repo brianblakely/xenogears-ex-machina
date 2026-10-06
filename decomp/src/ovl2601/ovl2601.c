@@ -263,13 +263,12 @@ void func_801C5A7C(Label *label, s32 index, s32 row, s32 mode) {
     s32 column;
     s32 line;
     s32 u;
-    s32 v;
 
+    i = 0;
     column = index & 1;
     line = index / 2;
     u = (line & 1) << 7;
     poly = label->poly;
-    i = 0;
 loop:
         semi = 0;
         SetPolyFT4(poly);
@@ -282,14 +281,13 @@ loop:
             label->highlight = column;
             poly->tpage = GetTPage(0, 0, 0x140, 0);
             poly->u0 = u;
-            v = ((index + row) / 4) * 13;
-            poly->v0 = v;
+            poly->v0 = ((index + row) / 4) * 13;
             poly->u1 = u + label->width;
-            poly->v1 = v;
+            poly->v1 = ((index + row) / 4) * 13;
             poly->u2 = u;
-            poly->v2 = v + 13;
+            poly->v2 = ((index + row) / 4) * 13 + 13;
             poly->u3 = u + label->width;
-            poly->v3 = v + 13;
+            poly->v3 = ((index + row) / 4) * 13 + 13;
         } else {
             if (!(mode & 0x80)) {
                 semi = 0x20;
@@ -298,17 +296,16 @@ loop:
                 poly->g0 = semi;
                 poly->b0 = semi;
             }
-            label->highlight = (mode & 0x7F) - 1;
+            label->highlight = (u8)(mode & 0x7F) - 1;
             poly->tpage = semi | GetTPage(0, 0, 0x180, 0x80);
             poly->u0 = column * 0x60;
-            v = line * 13 + row;
-            poly->v0 = v;
-            poly->v1 = v;
-            poly->u2 = column * 0x60;
-            poly->v2 = v + 13;
+            poly->v0 = line * 13 + row;
             poly->u1 = column * 0x60 + label->width;
-            poly->v3 = v + 13;
+            poly->v1 = line * 13 + row;
+            poly->u2 = column * 0x60;
+            poly->v2 = line * 13 + row + 13;
             poly->u3 = column * 0x60 + label->width;
+            poly->v3 = line * 13 + row + 13;
         }
         if (label->highlight) {
             poly->clut = D_80059414;

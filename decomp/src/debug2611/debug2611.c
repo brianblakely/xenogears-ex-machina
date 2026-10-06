@@ -103,14 +103,11 @@ void func_80280960(s32 buttons) {
  * (0x800), the performance counters (0x20) and the camera tool (0x100, which
  * also switches the battle's display mode). The camera tool shows the
  * palette pages, prints the camera, marks the look-at point, emits a marker
- * effect there every 8 frames and moves the camera or look-at point.
- * The instructions match; the original's strings hold an unreferenced
- * "bitmap: %x\n" between "frameRate %d\n" and "lenge:  %d\n". */
-#ifdef NON_MATCHING
+ * effect there every 8 frames and moves the camera or look-at point. */
 void func_80280A9C(void) {
     SVECTOR angle;
     SVECTOR watch;
-    s32 sxy, z;
+    s32 z;
     POLY_FT4 *page;
     POLY_FT4 *page2;
     TILE_1 *mark;
@@ -133,6 +130,10 @@ void func_80280A9C(void) {
         func_8003700C("tasks     %d\n", D_80059188);
         func_8003700C("polys     %d%%\n", (D_80059534 - D_80059580) * 100 / 20480);
         func_8003700C("frameRate %d\n", D_800C3EB0.frame_rate + 1);
+        {
+            /* Unreferenced bitmap format retained in the original rodata. */
+            static const char bitmap_format[] = "bitmap: %x\n";
+        }
     }
     if (D_800C3EB0.pressed & 0x100) {
         D_80282040 = 1 - D_80282040;
@@ -234,9 +235,6 @@ void func_80280A9C(void) {
     }
     func_8028103C();
 }
-#else
-INCLUDE_ASM(".local/decomp/debug2611/asm/nonmatchings/debug2611", func_80280A9C);
-#endif
 
 /* Open the debug text window while any button is pressed. */
 void func_8028103C(void) {
