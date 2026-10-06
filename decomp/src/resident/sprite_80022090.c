@@ -65,12 +65,15 @@ void func_80022090(Sprite *sprite) {
 /* Resolve a resource block's section offsets into `resource`; with flag
  * 800591ad set, a nonzero field of the first section's first halfword (bits
  * 6-11) goes to 800591b3. */
-/* Nonmatching: the original copies the origin a word at a time through one register (the destination copied to $t0); this build's block move uses two. The mode argument is unused. */
+/* Nonmatching: the resource remains in $a0 instead of being copied to $t0.
+ * The mode argument is unused. */
 #ifdef NON_MATCHING
 void func_80022224(SpriteResource *resource, s32 *data, SVECTOR origin, s32 mode) {
     s32 value;
 
-    resource->origin = origin;
+    /* Preserve the two halfword-aligned coordinate words. */
+    ((DVECTOR *)&resource->origin)[0] = ((DVECTOR *)&origin)[0];
+    ((DVECTOR *)&resource->origin)[1] = ((DVECTOR *)&origin)[1];
     resource->section3 = (u8 *)(data[3] + (s32)data);
     resource->section2 = (u8 *)(data[2] + (s32)data);
     D_800591B0 = 0;
