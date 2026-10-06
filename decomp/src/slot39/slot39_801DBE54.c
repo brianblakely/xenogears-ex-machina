@@ -1679,7 +1679,8 @@ void func_801E1398(void) {
 
 /* Return party slot `slot`'s average completion (percent, each capped at
  * 100) of the seven targets of row `row` of its table (+438 +2578), counting
- * entries where either side is set; rows from 7 need game flag 4000. */
+ * nonzero target entries (ffff contributes zero); rows from 7 need
+ * game flag 4000. */
 #ifdef NON_MATCHING
 u32 func_801E1418(u8 slot, u8 row) {
     u32 sum;
@@ -1688,8 +1689,8 @@ u32 func_801E1418(u8 slot, u8 row) {
     s32 id;
     u16 *values;
     u8 *table;
-    u16 value;
-    u16 target;
+    u32 value;
+    u32 target;
     u32 percent;
 
     sum = 0;

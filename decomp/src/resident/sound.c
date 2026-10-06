@@ -2468,7 +2468,7 @@ u8 *func_8003DC50(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
  * Nonmatching: register allocation of rate/mode differs. */
 #ifdef NON_MATCHING
 u8 *func_8003DD24(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
-    s32 rate = data[0];
+    s16 rate = data[0];
     s32 depth = ((s8 *)data)[1];
     s32 mode = data[2];
     SoundModulator *modulator;
