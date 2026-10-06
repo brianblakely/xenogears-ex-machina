@@ -85,7 +85,8 @@ typedef struct {
 /* Ground height map: 128 columns of 256-unit squares, 4 bytes each. */
 typedef struct {
     u16 height;
-    u16 unk2;
+    u16 unk2; /* map renderer: UV high nibbles 0xF0F0, orientation bits 0..1,
+               * texture-page/CLUT selector bits 2..3 */
 } GroundSquare;
 
 extern GroundSquare *D_800928DC;

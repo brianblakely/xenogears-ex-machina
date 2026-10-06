@@ -132,7 +132,7 @@ typedef struct {
 
 extern PathPoint D_8009A928[0x1F];
 extern s32 D_800928F8; /* recorded path points */
-extern PolyFT3 *D_80092854[2]; /* triangle pools: template, working copy */
+extern PolyFT3 *D_80092854[2]; /* map triangle pool per draw buffer */
 extern u16 D_800927D4; /* backdrop texture page */
 extern u16 D_800927D8; /* backdrop palette */
 extern u8 D_800927DC;  /* backdrop texel u */
@@ -141,7 +141,10 @@ extern u8 D_800927E0;  /* backdrop texel v */
 void func_800732AC(void *dst, void *src, s32 size); /* copy bytes */
 
 extern u32 D_80059598; /* resident map colour (r, g, b, code) */
-void func_80072D18(s32 arg0, s32 arg1, s32 arg2);
+/* Draw selected map cells using scratchpad row spans and MapTable.
+ * Return the emitted triangle count; loaded GTE view/depth-cue state is used. */
+u32 func_80072D18(u32 *ot, s32 originX, s32 originZ);
+void func_8008779C(u32 *ot, s32 originX, s32 originZ);
 
 /* Stage colours (17 bytes each). */
 typedef struct {
@@ -188,7 +191,7 @@ typedef struct {
 
 /* Map drawing table copied into the scratchpad; ends with the icons. */
 typedef struct {
-    u8 unk0[0x20];
+    u16 uv[4][4];      /* four orientations: upper-left/right, lower-left/right */
     TexRef icons[4];   /* 0x20 */
 } MapTable;
 

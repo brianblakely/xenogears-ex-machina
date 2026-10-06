@@ -197,6 +197,7 @@ decomp/src/field/field_script.h
 decomp/src/mdec/mdec.c
 decomp/src/mdec/movie.h
 decomp/src/menu/brain.h
+decomp/src/menu/func_80072D18.s
 decomp/src/menu/func_80073064.s
 decomp/src/menu/func_800730AC.s
 decomp/src/menu/func_800730F4.s
@@ -211,7 +212,9 @@ decomp/src/menu/func_8008C3A8.s
 decomp/src/menu/func_8008C4B0.s
 decomp/src/menu/func_8008C620.s
 decomp/src/menu/func_8008DDFC.s
+decomp/src/menu/func_8008DE54.s
 decomp/src/menu/gpu.h
+decomp/src/menu/ground_packet.s
 decomp/src/menu/gte.h
 decomp/src/menu/menu.c
 decomp/src/menu/menu.h

@@ -1839,7 +1839,7 @@ void func_8008DCB8(u32 *ot, SparkModel *model, Matrix *view, Vector *pos) {
 
 INCLUDE_ASM("decomp/src/menu", func_8008DDFC);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008DE54);
+INCLUDE_ASM("decomp/src/menu", func_8008DE54);
 
 /* Forget the three glow buffers. */
 void func_8008DF30(void) {

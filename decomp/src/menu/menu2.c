@@ -863,7 +863,7 @@ void func_80072858(LightRig *rig) {
     func_8008AE1C(D_800910F0->layer);
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu2", func_80072D18);
+INCLUDE_ASM("decomp/src/menu", func_80072D18);
 
 INCLUDE_ASM("decomp/src/menu", func_80073064);
 
