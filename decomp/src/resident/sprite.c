@@ -96,8 +96,6 @@ void func_8001C9F8(void) {
 }
 
 /* Link `node` at the head of the second task list under `owner`. */
-/* Nonmatching: the original loads the serial counter and list head before the link word. */
-#ifdef NON_MATCHING
 void func_8001CA58(Task *owner, Task *node) {
     TaskLink link;
     Task *head = D_80059594;
@@ -105,7 +103,7 @@ void func_8001CA58(Task *owner, Task *node) {
     node->owner = owner;
     node->next = head;
     D_80059594 = node;
-    link = node->link;
+    link.word = node->link.word;
     link.bits.owner_serial = owner->id.bits.serial;
     node->id.bits.serial = D_80059184++;
     link.bits.flag29 = 0;
@@ -116,9 +114,6 @@ void func_8001CA58(Task *owner, Task *node) {
     node->destroy = func_8001CB48;
     D_8005918C++;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001CA58);
-#endif
 
 /* Allocate a task with `size` bytes after its node on the second list. */
 Task *func_8001CAF0(Task *owner, s32 size) {
@@ -162,7 +157,7 @@ void func_8001CBE8(Task *task) {
 
 /* Link `node` at the head of the main task list under `owner`; it counts as
  * active while the active flag (800591ac) is set. */
-/* Nonmatching: id-word scheduling as in 8001ca58, and the active count (absolute) is kept in a register. */
+/* Nonmatching: task-word scheduling and the active-branch pointer copies. */
 #ifdef NON_MATCHING
 void func_8001CC18(Task *owner, Task *node) {
     node->owner = owner;
