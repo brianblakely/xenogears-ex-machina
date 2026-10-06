@@ -618,7 +618,7 @@ extern u8 D_8006F368[3]; /* the party's character ids */
 extern u8 D_8006F8E5[3]; /* per party member: entered a gear */
 void func_80088490(s32 slot);
 void func_8009AEFC(u8 slot);
-void func_800BAF48(u8 slot);
+void func_800BAF48(s32 slot);
 
 /* Turn start (80071b94). */
 extern u8 D_800C4922;      /* acting slot */

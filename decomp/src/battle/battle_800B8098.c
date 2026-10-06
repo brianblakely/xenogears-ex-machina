@@ -547,16 +547,12 @@ void func_800B9284(BattleSprite *sprite, s32 type) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Step the current event for the acting sprite (after any delay): control
  * events 0xF3-0xFA (800B9284; 0xF9 ends with pose 5), 0xFB takes another
  * slot's sprite images, 0xFC sets the idle mode, 0xFD walks on, 0xFE (and
  * 0xFF once 800C0314 is done) returns the turn's sprite to its place;
  * other types are commands: a motion on foot (from 0x10 a command of the
- * sprite's slot's field2), or a gear's pose framing it and its partner.
- * Nonmatching: for a motion on foot the original copies the type into
- * another saved register (s0) and puts D_800C3618's address in its own
- * (s1); here both stay in one register. */
+ * sprite's slot's field2), or a gear's pose framing it and its partner. */
 void func_800B9508(BattleSprite *sprite) {
     s32 motion;
     BattleSprite *other;
@@ -659,7 +655,8 @@ void func_800B9508(BattleSprite *sprite) {
                     func_80021BF0(sprite, D_800C3618);
                 }
                 if (D_800C3610->turnSlot == SPRITE_SLOT(sprite)) {
-                    func_800245D8(sprite, ~motion);
+                    motion = ~motion;
+                    func_800245D8(sprite, motion);
                 } else {
                     func_800245D8(sprite, motion);
                 }
@@ -674,9 +671,6 @@ void func_800B9508(BattleSprite *sprite) {
     }
     D_800C360C++;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800B9508);
-#endif
 
 /* Mark the battle menu (field48) with its state. */
 void func_800B9B30(void) {
@@ -1195,13 +1189,10 @@ void func_800BAEB8(s32 slot) {
 void func_800BAF40(void) {
 }
 
-#ifdef NON_MATCHING
 /* Send party slot's sprite off: select it (800BC404), run its exit
  * animation 0x16 and wait for it and its tasks, then remove the sprite and
- * load the slot's gear object in its place (800BB760), waiting for it.
- * Nonmatching: battle_core.h declares slot u8 and 800BC404's mask u16; the
- * original takes and passes words, unextended. */
-void func_800BAF48(u8 slot) {
+ * load the slot's gear object in its place (800BB760), waiting for it. */
+void func_800BAF48(s32 slot) {
     BattleSprite *sprite;
     s32 tasks;
 
@@ -1225,9 +1216,6 @@ void func_800BAF48(u8 slot) {
         func_800BE790();
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800BAF48);
-#endif
 
 /* Destroy the party members' sprites other than keep's that are not in
  * use, then end their stage objects (800B14CC). */
