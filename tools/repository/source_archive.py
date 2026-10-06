@@ -33,6 +33,7 @@ ALLOWED_SUFFIXES = {
     ".cmake",
     ".cpp",
     ".c",
+    ".s",
     ".ld",
     ".mk",
     ".java",

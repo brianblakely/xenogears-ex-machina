@@ -302,6 +302,15 @@ typedef struct {
     u32 *stack;        /* 0x80 */
 } Task;
 
+/* The caller state pair saved/restored around a nested task scheduler. */
+typedef struct {
+    u32 *caller_stack;
+    Task *task;
+} TaskCallerContext;
+
+void func_8008BB00(TaskCallerContext *context);
+void func_8008BB1C(TaskCallerContext *context);
+
 extern Vector D_8009A2C8;     /* mesh light direction */
 extern s32 D_80059424;
 extern s32 D_80059568;

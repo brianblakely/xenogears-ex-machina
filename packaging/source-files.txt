@@ -197,6 +197,10 @@ decomp/src/field/field_script.h
 decomp/src/mdec/mdec.c
 decomp/src/mdec/movie.h
 decomp/src/menu/brain.h
+decomp/src/menu/func_8008BB00.s
+decomp/src/menu/func_8008BB1C.s
+decomp/src/menu/func_8008BB3C.s
+decomp/src/menu/func_8008BC04.s
 decomp/src/menu/gpu.h
 decomp/src/menu/gte.h
 decomp/src/menu/menu.c

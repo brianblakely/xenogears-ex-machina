@@ -2,9 +2,10 @@
 #define INCLUDE_ASM_H
 
 /*
- * Link a function that is still original assembly into this translation unit.
- * The .s file is generated locally under .local/ and is not recovered source;
- * tools/matching_coverage.py counts every such inclusion as assembly.
+ * Link a MIPS function into this translation unit. Files generated under
+ * .local/ are private recovery scaffolding; authored handwritten routines
+ * belong under decomp/src/. tools/matching_coverage.py counts both as assembly
+ * under their explicit classification, never as recovered compiled C.
  * The maspsx_hack form keeps GCC from reordering file-scope asm blocks.
  */
 #define INCLUDE_ASM(FOLDER, NAME)                                              \

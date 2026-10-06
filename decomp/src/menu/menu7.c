@@ -1118,13 +1118,13 @@ void func_8008BAE0(Task *task) {
     func_800320E8(task);
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008BB00);
+INCLUDE_ASM("decomp/src/menu", func_8008BB00);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008BB1C);
+INCLUDE_ASM("decomp/src/menu", func_8008BB1C);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008BB3C);
+INCLUDE_ASM("decomp/src/menu", func_8008BB3C);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008BC04);
+INCLUDE_ASM("decomp/src/menu", func_8008BC04);
 
 /* Set the mesh light direction (a fixed down-left vector) and light a
  * mesh's vertices. */
