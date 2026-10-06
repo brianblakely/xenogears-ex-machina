@@ -2680,10 +2680,10 @@ void func_80087A38(u8 member) {
  * attack and run its reaction script, and apply the results. Returns
  * whether the combo completed a known deathblow or the reaction ran action
  * 0x62. */
-#ifdef NON_MATCHING
 u8 func_80087AF0(u8 member, u8 cost) {
     u8 queue;
     u8 reacted = 0;
+    s32 payment;
 
     if (D_800C3E18 == 0) {
         if (D_800D32A0[member].unk1 == 0) {
@@ -2698,7 +2698,8 @@ u8 func_80087AF0(u8 member, u8 cost) {
     func_80085388();
     if (D_800D32A0[member].unk1 == 0) {
         if (D_800C3EAC->unk2DC < 8) {
-            D_800C3EAC->unk2DC = D_800C34B3[D_800C3EAC->unk2DC][cost];
+            payment = cost;
+            D_800C3EAC->unk2DC = D_800C34B3[D_800C3EAC->unk2DC][payment];
         } else if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask0, D_800C3EAC->unk2DC - 8)) {
             reacted = 1;
         } else {
@@ -2726,9 +2727,6 @@ u8 func_80087AF0(u8 member, u8 cost) {
     func_80085C88(queue);
     return reacted;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80087AF0);
-#endif
 
 /* Move `actor` into `target`'s formation group when it is another group
  * with room (under four members): leave the old group, take the first free
@@ -3288,14 +3286,13 @@ u16 func_80089C9C(u16 mask, u8 slot) {
  * with the debug flag, select refills the party's AP and button 2 opens the
  * debug console; start (0x800, while 800ccc58) pauses or resumes, and while
  * paused holding both 4 and 8 on a debug build ends the battle. A finished
- * battle or event returns 0xff. Loops while paused. Nonmatching: the
- * original loads 800c48ea's address after 800c3e28's. */
-#ifdef NON_MATCHING
+ * battle or event returns 0xff. Loops while paused. */
 void func_80089CCC(s32 mode) {
     u8 code = 8;
     u8 waiting = 1;
     u8 paused = 0;
     s32 vsyncs;
+    u8 *directions;
     u8 *outcome;
 
     do {
@@ -3315,6 +3312,7 @@ void func_80089CCC(s32 mode) {
             }
         }
     } while (waiting);
+    directions = D_800C3E28;
     outcome = &D_800C48EA;
     do {
         if (func_80036410()) {
@@ -3333,26 +3331,26 @@ void func_80089CCC(s32 mode) {
                 } else if (D_800594A4 & 0x2000) {
                     func_8008AA74(0x4C);
                     code = 0;
-                    D_800C3E28[0] = D_800C3E28[1];
-                    D_800C3E28[1] = code;
+                    directions[0] = directions[1];
+                    directions[1] = code;
                     break;
                 } else if (D_800594A4 & 0x4000) {
                     func_8008AA74(0x4C);
                     code = 1;
-                    D_800C3E28[0] = D_800C3E28[1];
-                    D_800C3E28[1] = code;
+                    directions[0] = directions[1];
+                    directions[1] = code;
                     break;
                 } else if (D_800594A4 & 0x8000) {
                     func_8008AA74(0x4C);
                     code = 2;
-                    D_800C3E28[0] = D_800C3E28[1];
-                    D_800C3E28[1] = code;
+                    directions[0] = directions[1];
+                    directions[1] = code;
                     break;
                 } else if (D_800594A4 & 0x1000) {
                     func_8008AA74(0x4C);
                     code = 3;
-                    D_800C3E28[0] = D_800C3E28[1];
-                    D_800C3E28[1] = code;
+                    directions[0] = directions[1];
+                    directions[1] = code;
                     break;
                 } else if (D_8005948C & 0x20) {
                     code = 4;
@@ -3424,9 +3422,6 @@ void func_80089CCC(s32 mode) {
     } while (D_800C3444 != 0);
     D_800D3014 = code;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80089CCC);
-#endif
 
 /* Every other frame upload the next step of the four cycling CLUT strips. */
 void func_8008A144(void) {

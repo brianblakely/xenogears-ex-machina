@@ -546,14 +546,15 @@ typedef struct {
 
 extern SlotFlags D_800D32A0[11];
 
-/* Formation group entries (4 bytes from 800d301c). */
+/* Formation group entries (4 bytes from 800d301c): four eight-group
+ * sets, with flagged slots using bases 0x10 and 0x18. */
 typedef struct {
     u8 count;
     u8 members;        /* member bits */
     u8 unk2[2];
 } GroupEntry;
 
-extern GroupEntry D_800D301C[16];
+extern GroupEntry D_800D301C[32];
 extern u16 D_800D39DC;     /* alive mask */
 extern u16 D_800C3448[16]; /* slot bits */
 extern u16 D_800C3468[16]; /* flag bits */
