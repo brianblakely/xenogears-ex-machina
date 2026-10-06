@@ -1003,20 +1003,24 @@ s32 func_800295D8(s32 file, void *destination, s32 a2, s32 a3) {
 }
 
 /* Start reading `D_8004FDF8` bytes from sector D_8004FE04: into a stream ring (flags 0x100, or 0x200 with CD mode byte flags | 0xa0) or into memory; with the PC file server the file is opened (ring) or read now. */
-/* GCC 2.6.3 disc-unit code; under 2.6.3 + --expand-div this C differs only in the file/destination register assignment (s3/s2 swapped). */
+/* Keep the ring count read at setup while the callback globals are written.
+ * Nonmatching: under the qualified GCC 2.6.3 / ASPSX 2.34 pipeline, the
+ * original loads the data callback address before storing the read-active
+ * flag; this C reverses those two pairs of instructions (four differences). */
 #ifdef NON_MATCHING
 s32 func_80029690(s32 file, void *destination, s32 mode, s32 flags) {
     StreamRing *ring;
-    char *name;
     s32 fd;
+    s32 count;
     s32 i;
-    CdlLOC *position = &D_80059F10;
+    CdlLOC *position;
     u8 *mode_byte;
 
     D_80059F0C = file;
     for (i = 2; i >= 0; i--) {
         D_80059EF8[i] = 0;
     }
+    position = &D_80059F10;
     D_8004FDFC = 1;
     D_8004FE08 = destination;
     D_8004FE38 = mode & 0xFFFF;
@@ -1028,18 +1032,19 @@ s32 func_80029690(s32 file, void *destination, s32 mode, s32 flags) {
     if (flags & 0x100) {
         func_80028A94(destination);
         ring = D_8004FE30;
-        if (ring->count == 0) {
+        count = ring->count;
+        if (count == 0) {
             return -4;
         }
-        D_8004FE08 = (u8 *)ring + ring->count * 8 + 0x24;
+        D_8004FE08 = (u8 *)ring + count * 8 + 0x24;
         D_8004FE2C = ring->slots;
-        D_8004FE40 = ring->count;
+        D_8004FE40 = count;
         D_8004FE26 = 0;
         D_8004FE28 = 0;
         D_8004FE24 = 0;
         func_80028AAC();
         if (D_8004FE48 != NULL) {
-            name = func_80028998(file);
+            char *name = func_80028998(file);
             for (i = 0; i < 4; i++) {
                 D_8004FE4C = PCopen(name, 0, 0);
                 if (D_8004FE4C != -1) {
@@ -1054,14 +1059,17 @@ s32 func_80029690(s32 file, void *destination, s32 mode, s32 flags) {
         CdSyncCallback(func_8002A68C);
         CdReadyCallback(func_8002B2F0);
     } else if (flags & 0x200) {
+        char *name;
+
         func_80028A94(destination);
         ring = D_8004FE30;
-        if (ring->count == 0) {
+        count = ring->count;
+        if (count == 0) {
             return -4;
         }
-        D_8004FE08 = (u8 *)ring + ring->count * 8 + 0x24;
+        D_8004FE08 = (u8 *)ring + count * 8 + 0x24;
         D_8004FE2C = ring->slots;
-        D_8004FE40 = ring->count;
+        D_8004FE40 = count;
         D_80059F60 = 0;
         D_8004FE26 = 0;
         D_8004FE28 = 0;
@@ -1085,7 +1093,7 @@ s32 func_80029690(s32 file, void *destination, s32 mode, s32 flags) {
         return D_8004FE4C == -1 ? -3 : 0;
     } else {
         if (D_8004FE48 != NULL) {
-            name = func_80028998(file);
+            char *name = func_80028998(file);
             for (i = 0; i < 4; i++) {
                 fd = PCopen(name, 0, 0);
                 if (fd != -1) {

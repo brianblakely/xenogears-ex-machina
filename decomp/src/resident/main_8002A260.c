@@ -642,27 +642,31 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002A260", func_8002B5
  * data callback: read a sector from the file server into the next free ring slot
  * (up to four read attempts); stop the read when no slot is free or after
  * the last sector.
- * Nonmatching: the slot index copy and the slot state store (see 8002B2F0). */
+ * Slots are four halfwords: state, sequence, free-run length and reserved.
+ * Accessing the state and sequence as halfwords preserves the original
+ * store-before-counter-read order.
+ * Nonmatching: the original copies the selected index before computing
+ * the next cursor; this C reverses those two instructions. */
 #ifdef NON_MATCHING
 void func_8002B8B0(void) {
-    StreamSlot *slot;
+    u16 *slot;
     s32 index;
     s16 i;
 
     if (D_8004FDF8 > 0) {
         for (i = 0; i < D_8004FE40; i++) {
             index = D_8004FE10++;
-            slot = &D_8004FE2C[index];
+            slot = (u16 *)&D_8004FE2C[index];
             if (D_8004FE10 >= D_8004FE40) {
                 D_8004FE10 = 0;
             }
-            if (slot->state == 0) {
+            if (slot[0] == 0) {
                 break;
             }
         }
-        if (slot->state == 0) {
-            slot->state = 1;
-            slot->sequence = D_8004FE26;
+        if (slot[0] == 0) {
+            slot[0] = 1;
+            slot[1] = D_8004FE26;
             D_8004FE26++;
             for (i = 0; i < 4; i++) {
                 if (func_8004C398(D_80059F04, (u8 *)D_8004FE08 + index * 0x800, 0x800) != 0) {
