@@ -413,4 +413,10 @@ extern void func_80033698(s32 a, s32 b);
 extern void func_80026338(void *sheet, s32 id, s32 *a, s32 *b, s32 *c, s32 *d,
                           s32 *e, s32 *f);
 
+/* Resource loading and panel drawing. */
+void func_801C5390(void);
+void func_801C5724(void);
+void func_801C5BEC(void);
+void func_801C9098(void);
+
 #endif

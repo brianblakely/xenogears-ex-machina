@@ -1105,8 +1105,9 @@ void func_801E1FB8(u32 experience) {
 /* Hide the battle windows and reload the results resources: archive file
  * 2 of directory 0x10 (its items 1-4: text, a table, the glyph sprites and
  * the portraits). */
+/* NON_MATCHING: original frame 0x80 bytes; this C needs 0x20. */
+#ifdef NON_MATCHING
 void func_801E211C(void) {
-    u8 unused[0x60]; /* the original frame reserves 0x60 unused bytes */
     ResultArchive *archive;
     void *data;
 
@@ -1135,6 +1136,9 @@ void func_801E211C(void) {
     func_800320E8(archive);
     func_80076EA4();
 }
+#else
+INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E211C);
+#endif
 
 /* Total the experience and gold of the defeated enemies, add the gold (up
  * to 9999999), clear empty party slots, grant the rewards and run the
@@ -1285,8 +1289,9 @@ void func_801E2794(void) {
 /* Write each party member's HP, EP, counters and gear HP and fuel back to
  * the game data, clamped to their maximums (HP 1 when knocked out, gear HP a
  * tenth of the maximum when destroyed). */
+/* NON_MATCHING: original frame 0x8 bytes; this C needs 0x0. */
+#ifdef NON_MATCHING
 void func_801E2888(void) {
-    u8 unused[8]; /* the original frame reserves 8 unused bytes */
     u8 slot;
     u8 k;
     Combatant *record;
@@ -1341,6 +1346,9 @@ void func_801E2888(void) {
         }
     }
 }
+#else
+INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E2888);
+#endif
 
 /* Distribute the experience won: party members that stand share it (less
  * the penalty), every other character gets a reserve share of a third;
