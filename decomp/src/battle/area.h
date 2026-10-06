@@ -40,7 +40,9 @@ typedef struct {
     Formation *formation;       /* 0x0000 */
     BattleSlot slots[11];       /* 0x0004 */
     BattleEvent events[32];     /* 0x0138 */
-    u8 padA38[4];
+    u16 knockedOut;            /* 0x0A38: D_800C48E8 */
+    u8 outcome;               /* 0x0A3A: D_800C48EA */
+    u8 padA3B;
     PathPoint path[51];         /* 0x0A3C */
     u8 padB6E[2];
     FrameBuffer buffers[2];     /* 0x0B70 */
@@ -71,6 +73,8 @@ typedef struct {
 
 /* Layout checks. */
 typedef char BattleAreaCheck[(sizeof(BattleSlot) == 0x1C && sizeof(BattleEvent) == 0x48 && sizeof(PathPoint) == 6 &&
+                              BATTLE_OFFSET(BattleArea, knockedOut) == 0xA38 &&
+                              BATTLE_OFFSET(BattleArea, outcome) == 0xA3A &&
                               BATTLE_OFFSET(BattleArea, work) == 0x8E38) ? 1 : -1];
 
 #endif

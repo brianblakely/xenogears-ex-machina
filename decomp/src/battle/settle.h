@@ -7,9 +7,6 @@
 #include "common.h"
 #include "sprite.h"
 
-/* The slots to go down (a u16 at 0xA38 of the battle area). */
-#define AREA_DOWN_MASK(area) (*(u16 *)(area)->padA38)
-
 /* The distance between a and b on one axis. */
 #define DISTANCE(a, b) ((a) - (b) >= 0 ? (a) - (b) : (b) - (a))
 

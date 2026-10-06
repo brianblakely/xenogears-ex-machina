@@ -184,7 +184,7 @@ s32 func_800C0314(void) {
 
     downed = 0;
     gear = downed;
-    i = func_800BEEB4(AREA_DOWN_MASK(area) & (AREA_DOWN_MASK(area) ^ (u16)D_800D2E54), list, D_800C3E1C);
+    i = func_800BEEB4(area->knockedOut & (area->knockedOut ^ (u16)D_800D2E54), list, D_800C3E1C);
     if (i != 0) {
         for (i--; i >= 0; i--) {
             sprite = list[i];

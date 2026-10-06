@@ -571,7 +571,7 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_800723
 #ifdef NON_MATCHING
 void func_8007252C(void) {
     s32 slot;
-    u16 waiting;
+    s32 waiting; /* The mask remains word sized between slot-bit calls. */
 
     D_800D39DC = 0;
     for (slot = 0; slot < 3; slot++) {
