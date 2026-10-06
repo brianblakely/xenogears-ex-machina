@@ -41,11 +41,12 @@ void func_8007334C(u32 *ot, Matrix *view) {
 }
 
 /* Fire a projectile of the given kind from a point toward the actor's
- * target (or away from origin when given), in the first free slot. */
+ * target (or away from origin when given), in the first free slot.
+ * Nonmatching: the original reserves eight more frame bytes. */
+#ifdef NON_MATCHING
 void func_80073424(Vector *from, Vector *origin, Actor *actor, s32 kind, s32 arg4, s32 arg5) {
     Vector toward;
     Vector aim;
-    SVector unused; /* the original frame reserves 8 more bytes */
     Actor *opponent;
     ShotKind *info;
     Shot *shot;
@@ -88,6 +89,9 @@ void func_80073424(Vector *from, Vector *origin, Actor *actor, s32 kind, s32 arg
     shot->prev = shot->pos;
     shot->active = 1;
 }
+#else
+INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80073424);
+#endif
 
 /* Move an actor's shots: expire, hit the floor, home in on the opponent's
  * core, draw the trail for their look and update speed and homing. */
@@ -343,11 +347,12 @@ void func_80073F34(Actor *actor, HitSpec *hit) {
 }
 
 /* Resolve a hit on an actor's model: impact effects at the hit points and,
- * when it lands, a charged shot, a projectile or a trail segment. */
+ * when it lands, a charged shot, a projectile or a trail segment.
+ * Nonmatching: the original reserves sixteen more frame bytes. */
+#ifdef NON_MATCHING
 void func_800740E4(Actor *actor, HitSpec *hit, s32 lands) {
     Vector a;
     Vector b;
-    Vector unused; /* the original frame reserves 16 more bytes */
     s32 style;
     s32 power;
     s32 single;
@@ -440,6 +445,9 @@ void func_800740E4(Actor *actor, HitSpec *hit, s32 lands) {
         }
     }
 }
+#else
+INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_800740E4);
+#endif
 
 INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu3", D_8006FC10);
 

@@ -2202,21 +2202,22 @@ void func_8008EB88(Actor *owner, s32 id, Vector *pos, s32 mode) {
 #ifdef NON_MATCHING
 /* Play one of a character's command sounds (random 1-6 when index is 0):
  * up to two effects from the shared pair table.
- * Does not match: the original keeps the pair table address in
- * a saved register for the second id. */
+ * Nonmatching: the frame size and saved-register allocation differ. */
 void func_8008EBD0(Actor *owner, s32 index, Vector *pos, s32 mode) {
     s32 entry;
+    SoundPair *table;
 
     if (index == 0) {
         index = rand() % 6 + 1;
     }
     entry = owner->sounds[index];
     if (entry != 0xFF) {
+        table = D_80091EE0;
         index = D_80091EE0[entry].first;
         if (index != 0) {
             func_8008E78C(index | 0x60000, mode, pos, (index & 0x7F) | ((owner->flags >> 20) & 0x80));
         }
-        index = D_80091EE0[entry].second;
+        index = table[entry].second;
         if (index != 0) {
             func_8008E78C(index | 0x60000, mode, pos, (index & 0x7F) | ((owner->flags >> 20) & 0x80));
         }
@@ -2242,12 +2243,12 @@ void func_8008ECEC(u8 tag) {
 
 /* Stop the sounds a character's command sound entry started. Does not
  * match: the table base and the entry offset swap $s1/$s2 and the flag
- * load of the second id is scheduled after its mask. */
+ * load of the second id is scheduled after its mask. The original also
+ * reserves eight more frame bytes. */
 #ifdef NON_MATCHING
 void func_8008ED6C(Actor *owner, s32 index) {
     s32 entry;
     SoundPair *table;
-    s32 unused[2];
 
     entry = owner->sounds[index];
     if (entry != 0xFF) {
@@ -2265,9 +2266,10 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008ED6C);
 #endif
 
 /* Accelerate an actor toward the speed limit (or brake to a stop, harder
- * when not guarding) for two ticks, and turn it toward a heading. */
+ * when not guarding) for two ticks, and turn it toward a heading.
+ * Nonmatching: the original reserves sixteen more frame bytes. */
+#ifdef NON_MATCHING
 void func_8008EE1C(Actor *actor, s16 heading, s16 limit) {
-    Vector unused;
     s32 brake = actor->brake;
     s32 accel = actor->accel;
     s32 moving;
@@ -2295,6 +2297,9 @@ void func_8008EE1C(Actor *actor, s16 heading, s16 limit) {
     actor->target_angle = func_8008B650(actor->target_angle, heading, 0x40);
     actor->unkCE = 0;
 }
+#else
+INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008EE1C);
+#endif
 
 /* Opponent command: act, then wait a second. */
 void func_8008EF00(Actor *actor, Brain *brain) {
