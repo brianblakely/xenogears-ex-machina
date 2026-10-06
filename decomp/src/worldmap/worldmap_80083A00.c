@@ -566,7 +566,6 @@ void func_80085158(VECTOR *position, VECTOR *offset, VECTOR *normal, u16 index, 
 
 /* Does the vertical segment from `position` down by `height` cross the plane
  * of face `face` of scene object `index`? Returns -1 if so, else 0. */
-#ifdef NON_MATCHING /* the two Z inputs occupy v1/a3 in the opposite order */
 s32 func_80085418(VECTOR *position, s32 height, u16 index, u16 face) {
     s32 flag;
     SceneObject *object;
@@ -577,7 +576,7 @@ s32 func_80085418(VECTOR *position, s32 height, u16 index, u16 face) {
     VECTOR *edge2;
     s32 depth;
     s32 y;
-    s32 z;
+    s16 z;
 
     object = &D_8009C620[index];
     FACE_SCRATCH->m = object->matrix;
@@ -623,9 +622,6 @@ s32 func_80085418(VECTOR *position, s32 height, u16 index, u16 face) {
     ApplyMatrixLV(&FACE_SCRATCH->probe, &FACE_SCRATCH->normal, &FACE_SCRATCH->side);
     return (FACE_SCRATCH->side.vx ^ FACE_SCRATCH->side.vy) >> 31;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80085418);
-#endif
 
 /* Classify the move from `from` to `to` against face `face` of scene object
  * `index`: bit n is set when `to` lies outside edge n (flat x, z); when it
