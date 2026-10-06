@@ -133,18 +133,15 @@ void func_800BD7A0(BattleTask *task) {
     func_8001D19C(task);
 }
 
-#ifdef NON_MATCHING
 /* Draw a popup glyph as a textured quad in colour (its word also sets the
  * primitive code) through the current matrices, added to the ordering
- * table's first entry, while the primitive buffer has room. Nonmatching:
- * the corner sums are scheduled before the first corner stores and the
- * registers differ; the texture half matches. */
+ * table's first entry, while the primitive buffer has room. */
 void func_800BD810(PopupGlyph *glyph, s32 colour) {
     POLY_FT4 *poly = (POLY_FT4 *)D_80059580;
     long p;
     long flag;
     u16 x, y;
-    u8 w, h;
+    s32 w, h;
     u8 u, v;
     u8 uw, vh;
 
@@ -183,9 +180,6 @@ void func_800BD810(PopupGlyph *glyph, s32 colour) {
         addPrim(D_8005956C, poly);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800BD3AC", func_800BD810);
-#endif
 
 /* The camera-space offset of point's projection from the geometry offset
  * (doubled), at the screen distance. */
