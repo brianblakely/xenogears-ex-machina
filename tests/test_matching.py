@@ -81,6 +81,55 @@ class MatchingTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("Set CONFIG=targets/", result.stderr)
 
+    @unittest.skipUnless(
+        all(shutil.which(tool) for tool in (
+            "make", "psx-cpp-2.7.2", "psx-cc1-2.7.2",
+            "psx-cpp-2.6.3", "psx-cc1-2.6.3", "maspsx", "psx-as",
+        )),
+        "enter the matching Nix shell to test cached compiler settings",
+    )
+    def test_c_object_rebuilds_when_settings_change_and_restore(self):
+        repo = Path(__file__).resolve().parents[1]
+        (self.root / "cache.c").write_text("int cache(int value) { return value + 1; }\n")
+        (self.root / "fixture.ld").write_text("SECTIONS { .text : { *(.text) } }\n")
+        (self.root / "fixture.mk").write_text(
+            "ORIGINAL := original.bin\nORIGINAL_SHA256 := " + self.digest + "\n"
+            "IMAGE := image.bin\nLINKER_SCRIPT := fixture.ld\n"
+            "SPLAT_CONFIG := unused.yaml\nBUILD := build\nCC_VERSION := 2.7.2\n"
+        )
+        obj = self.root / "build/cache.o"
+        stamp = obj.with_suffix(".cflags")
+
+        def build(settings):
+            result = subprocess.run(
+                ["make", "--no-print-directory", "-f", str(repo / "decomp/Makefile"),
+                 "ROOT=" + str(self.root), "CONFIG=fixture.mk", *settings, str(obj)],
+                cwd=self.root, text=True, capture_output=True, check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            return obj.stat().st_mtime_ns
+
+        previous = build([])
+        self.assertEqual(build([]), previous)
+        changes = (
+            (["CC_cache=2.6.3"], "CC=2.6.3"),
+            (["CC_cache=2.6.3", "GP_cache=8"], "GP=8"),
+            ([], "CC=2.7.2"),
+            (["MASPSX_cache=--aspsx-version=2.56"], "MASPSX_FLAGS=--aspsx-version=2.56"),
+            (["EXTERN_cache=absolute"], "EXTERN=absolute"),
+            (["TARGET_CPPFLAGS=-DQUOTED='1'"], "-DQUOTED='1'"),
+            (["CC1FLAGS=-quiet -mcpu=3000 -fgnu-linker -mgas -msoft-float -O1"], "-O1"),
+            (["ASFLAGS=-EL -march=r3000 -mtune=r3000 -msoft-float -G0"], "ASFLAGS=-EL"),
+            ([], "GP=0"),
+        )
+        for settings, signature in changes:
+            with self.subTest(settings=settings):
+                current = build(settings)
+                self.assertGreater(current, previous)
+                self.assertIn(signature, stamp.read_text())
+                self.assertEqual(build(settings), current)
+                previous = current
+
     def test_cli_exit_codes(self):
         args = [str(self.original), str(self.rebuilt), "--sha256", self.digest]
         self.assertEqual(main(args), 0)

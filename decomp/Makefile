@@ -58,6 +58,28 @@ ABSOLUTE_FILTER := | sed -E -e '/^\.extern/d' \
 	-e 's/^la\t(\$$[0-9a-z]+),([A-Za-z_][A-Za-z0-9_]*(\+[0-9]+)?)$$/lui\t\1,%hi(\2)\naddiu\t\1,\1,%lo(\2)/'
 extern_of = $(if $(filter absolute,$(EXTERN_$(basename $(notdir $(1))))),$(ABSOLUTE_FILTER))
 
+# A probe's settings must invalidate its object, including when switching back.
+# Keep the stamp's timestamp only while its contents and resolved tools agree.
+shell_quote = '$(subst ','"'"',$(1))'
+.PHONY: matching-flags-force
+matching-flags-force:
+
+$(ROOT)/$(BUILD)/%.cflags: matching-flags-force
+	@mkdir -p $(dir $@)
+	@{ printf '%s\n' \
+		$(call shell_quote,CC=$(call cc_of,$*)) \
+		$(call shell_quote,CPPFLAGS=$(CPPFLAGS)) \
+		$(call shell_quote,CC1FLAGS=$(CC1FLAGS)) \
+		$(call shell_quote,GP=$(call gp_of,$*)) \
+		$(call shell_quote,MASPSX=$(MASPSX)) \
+		$(call shell_quote,MASPSX_FLAGS=$(call maspsx_of,$*)) \
+		$(call shell_quote,EXTERN=$(EXTERN_$(basename $(notdir $*)))) \
+		$(call shell_quote,AS=$(AS)) \
+		$(call shell_quote,ASFLAGS=$(ASFLAGS)); \
+		command -v psx-cpp-$(call cc_of,$*) psx-cc1-$(call cc_of,$*) $(firstword $(MASPSX)) $(firstword $(AS)); \
+	} > $@.tmp
+	@cmp -s $@.tmp $@ && rm $@.tmp || mv $@.tmp $@
+
 # Objects come from the splat-generated linker script (regenerate with `split`).
 LP := (
 OBJECTS = $(addprefix $(ROOT)/,$(shell sed -n 's/^ *\([^ ]*\.o\)[$(LP)].*/\1/p' $(ROOT)/$(LINKER_SCRIPT) 2>/dev/null | sort -u))
@@ -76,7 +98,7 @@ $(ROOT)/$(BUILD)/%.o: $(ROOT)/%.s $(ROOT)/$(LINKER_SCRIPT)
 	@mkdir -p $(dir $@)
 	cd $(ROOT) && $(AS) $(ASFLAGS) -o $@ $<
 
-$(ROOT)/$(BUILD)/%.o: $(ROOT)/%.c $(ROOT)/$(LINKER_SCRIPT) $(wildcard $(ROOT)/decomp/include/*.h $(ROOT)/decomp/include/*/*.h $(ROOT)/decomp/src/*/*.h $(ROOT)/decomp/src/*/*.s)
+$(ROOT)/$(BUILD)/%.o: $(ROOT)/%.c $(ROOT)/$(LINKER_SCRIPT) $(ROOT)/$(BUILD)/%.cflags $(MAKEFILE_LIST) $(wildcard $(ROOT)/decomp/include/*.h $(ROOT)/decomp/include/*/*.h $(ROOT)/decomp/src/*/*.h $(ROOT)/decomp/src/*/*.s)
 	@mkdir -p $(dir $@)
 	cd $(ROOT) && psx-cpp-$(call cc_of,$<) $(CPPFLAGS) $< | psx-cc1-$(call cc_of,$<) $(CC1FLAGS) -G$(call gp_of,$<) -o $@.cc1.s
 	cd $(ROOT) && $(MASPSX) $(call maspsx_of,$<) -G$(call gp_of,$<) < $@.cc1.s $(call extern_of,$<) > $@.s
