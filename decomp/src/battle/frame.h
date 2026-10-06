@@ -3,34 +3,19 @@
 
 /* The battle's frame loop, controller state and slot sprites (800BE538-
  * 800BF0B4): the late unit addresses the area from D_800C3EB0 as one
- * aggregate, BattleFrame. */
+ * aggregate, BattleArea (area.h). */
 
 #include "common.h"
 #include "psyq.h"
 #include "scene.h"
 #include "battle_core.h"
+#include "area.h"
 #include "files.h"
 #include "objects.h"
 #include "screen.h"
 #include "sprite.h"
 #include "psyq/libetc.h"
 #include "psyq/libapi.h"
-
-/* One of the two display buffers (0x4070 bytes). */
-typedef struct {
-    DRAWENV drawEnv;
-    DISPENV dispEnv;   /* 0x5C */
-    u32 ot[0x1000];    /* 0x70: cleared in reverse */
-} FrameBuffer;
-
-/* Controller state history entry (8 bytes). */
-typedef struct {
-    u16 held;
-    u16 pressed;
-    u16 released;
-    u16 time;
-} PadRecord;
-
 
 /* The resident sprite resource block of D_8006BE10. */
 typedef struct {
@@ -44,59 +29,7 @@ typedef struct {
 /* The battle slot of a slot's sprite. */
 #define SPRITE_SLOT(sprite) ({ s32 low_ = (sprite)->frameBits.bits.slotLow; (sprite)->motion.bits.slotHigh << 2 | low_; })
 
-/* A point of the battle menu's walk (6 bytes); x and z 0xFFFF end it. */
-typedef struct {
-    u16 x;
-    u16 z;
-    u8 run; /* 0x04 */
-    u8 pad5;
-} PathPoint;
-
-
 #define STACK_LEAVE() __asm__ volatile("addiu $29, $29, 4\n\tlw $29, 0($29)" : : : "memory")
-
-/* A slot's sprite source (0xC bytes). */
-typedef struct {
-    void *data;
-    s16 x;
-    s16 y;
-    s32 variant;
-} SpriteSource;
-
-/* The battle's state from D_800C3EB0 (as the late unit sees it). */
-typedef struct {
-    Formation *formation;       /* 0x0000 */
-    BattleSlot slots[11];       /* 0x0004 */
-    BattleEvent events[32];     /* 0x0138 */
-    u8 padA38[4];
-    PathPoint path[51];         /* 0x0A3C */
-    u8 padB6E[2];
-    FrameBuffer buffers[2];     /* 0x0B70 */
-    FrameBuffer *current;       /* 0x8C50 */
-    u32 *ot;                    /* 0x8C54 */
-    u16 held;                   /* 0x8C58 */
-    u16 held2;                  /* 0x8C5A: the second controller */
-    u16 pressed;                /* 0x8C5C */
-    u16 pressed2;               /* 0x8C5E */
-    u16 released;               /* 0x8C60 */
-    u16 heldOnly;               /* 0x8C62: held on the first, not the second */
-    PadRecord history[4];       /* 0x8C64: the last changes, newest first */
-    s32 buffer;                 /* 0x8C84: the buffer being drawn */
-    u8 pad8C88[4];
-    BattleSprite *sprites[11];  /* 0x8C8C: the slots' sprites */
-    struct ActorTask *tasks[11]; /* 0x8CB8: their tasks */
-    u8 pad8CE4[0x8D24 - 0x8CE4];
-    SpriteSource sources[11];   /* 0x8D24 */
-    u8 field8DA8;               /* 0x8DA8 */
-    u8 pad8DA9[0x8DAC - 0x8DA9];
-    s32 frameTicks;             /* 0x8DAC: vertical blanks of the last frame */
-} BattleArea;
-
-/* battle_core.h declares the area's first member as D_800C3EB0. */
-#define BATTLE_AREA (*(BattleArea *)&D_800C3EB0)
-
-/* Layout checks. */
-typedef char BattleFrameCheck[(sizeof(BattleSlot) == 0x1C && sizeof(BattleEvent) == 0x48 && sizeof(PathPoint) == 6) ? 1 : -1];
 
 extern s32 D_800C37D0;    /* frame loop nesting */
 extern s16 D_80059494;    /* extra vertical blanks of the last frame (0-4) */

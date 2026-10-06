@@ -19,6 +19,7 @@
 #include "glyph_lists.h"
 #include "item_command.h"
 #include "result_input.h"
+#include "area.h"
 
 /* Confirm the selected entry of the member's on-foot window: entries 4, 6
  * and 7 open the attack page (5) when the member has a target; 1 and 0 open
@@ -1918,11 +1919,18 @@ void func_80085454(u8 queue) {
  * 0, 5, 7, 8) to HP or, in a gear, gear HP (knocking the slot out at 0),
  * healing (2) up to the maximum, EP loss (1, 9) and gain (3), fuel loss
  * (10) and gain (11). A knocked-out slot only joins the 800c48e8 mask.
- * Slots whose values changed get their refresh flag (+0x2eb). */
+ * Slots whose values changed get their refresh flag (+0x2eb). Pilot damage
+ * treats both HP and amount as signed halfwords; healing wraps to the
+ * stored width before the maximum check. The original healing stores use
+ * the battle-area view of the work table. Frame/register allocation still
+ * differs (original frame 0x58). */
 #ifdef NON_MATCHING
 void func_80085618(u8 queue) {
     s32 slot;
     s32 left;
+    s32 amount;
+    u32 total;
+    u16 value;
 
     for (slot = 0; slot < 11; slot++) {
         if (D_800D2DCC.present[slot] == 0) {
@@ -1938,9 +1946,10 @@ void func_80085618(u8 queue) {
         case 7:
         case 8:
             if (D_800C3EB4[slot].gear == 0) {
-                left = D_800CCCE8.records[slot].pilot.hp - (s16)D_800C3FE8[queue].amounts[slot];
-                if (left > 0) {
-                    D_800CCCE8.records[slot].pilot.hp = left;
+                left = (s16)D_800CCCE8.records[slot].pilot.hp;
+                amount = (s16)D_800C3FE8[queue].amounts[slot];
+                if (left - amount > 0) {
+                    D_800CCCE8.records[slot].pilot.hp = left - amount;
                     break;
                 }
                 D_800CCCE8.records[slot].pilot.hp = 0;
@@ -1963,22 +1972,25 @@ void func_80085618(u8 queue) {
             break;
         case 2:
             if (D_800C3EB4[slot].gear != 0 && D_800C2050 == 0) {
-                D_800CCCE8.records[slot].gear.hp += D_800C3FE8[queue].amounts[slot];
-                if (D_800CCCE8.records[slot].gear.maxHp < D_800CCCE8.records[slot].gear.hp) {
+                total = D_800CCCE8.records[slot].gear.hp + D_800C3FE8[queue].amounts[slot];
+                BATTLE_AREA.work.records[slot].gear.hp = total;
+                if (D_800CCCE8.records[slot].gear.maxHp < total) {
                     D_800CCCE8.records[slot].gear.hp = D_800CCCE8.records[slot].gear.maxHp;
                 }
             } else {
-                D_800CCCE8.records[slot].pilot.hp += D_800C3FE8[queue].amounts[slot];
-                if (D_800CCCE8.records[slot].pilot.maxHp < D_800CCCE8.records[slot].pilot.hp) {
+                value = D_800CCCE8.records[slot].pilot.hp + D_800C3FE8[queue].amounts[slot];
+                BATTLE_AREA.work.records[slot].pilot.hp = value;
+                if (D_800CCCE8.records[slot].pilot.maxHp < value) {
                     D_800CCCE8.records[slot].pilot.hp = D_800CCCE8.records[slot].pilot.maxHp;
                 }
             }
             break;
         case 1:
         case 9:
-            left = (s16)D_800CCCE8.records[slot].pilot.ep - (s16)D_800C3FE8[queue].amounts[slot];
-            if (left > 0) {
-                D_800CCCE8.records[slot].pilot.ep = left;
+            left = (s16)D_800CCCE8.records[slot].pilot.ep;
+            amount = (s16)D_800C3FE8[queue].amounts[slot];
+            if (left - amount > 0) {
+                D_800CCCE8.records[slot].pilot.ep = left - amount;
             } else {
                 D_800CCCE8.records[slot].pilot.ep = 0;
             }
@@ -1987,8 +1999,9 @@ void func_80085618(u8 queue) {
             if (D_800C3EB4[slot].gear != 0 && D_800C2050 == 0) {
                 continue;
             }
-            D_800CCCE8.records[slot].pilot.ep += D_800C3FE8[queue].amounts[slot];
-            if (D_800CCCE8.records[slot].pilot.maxEp < D_800CCCE8.records[slot].pilot.ep) {
+            value = D_800CCCE8.records[slot].pilot.ep + D_800C3FE8[queue].amounts[slot];
+            BATTLE_AREA.work.records[slot].pilot.ep = value;
+            if (D_800CCCE8.records[slot].pilot.maxEp < value) {
                 D_800CCCE8.records[slot].pilot.ep = D_800CCCE8.records[slot].pilot.maxEp;
             }
             continue;
@@ -2000,8 +2013,9 @@ void func_80085618(u8 queue) {
             }
             break;
         case 11:
-            D_800CCCE8.records[slot].gear.fuel += D_800C3FE8[queue].amounts[slot];
-            if (D_800CCCE8.records[slot].gear.maxFuel < D_800CCCE8.records[slot].gear.fuel) {
+            value = D_800CCCE8.records[slot].gear.fuel + D_800C3FE8[queue].amounts[slot];
+            BATTLE_AREA.work.records[slot].gear.fuel = value;
+            if (D_800CCCE8.records[slot].gear.maxFuel < value) {
                 D_800CCCE8.records[slot].gear.fuel = D_800CCCE8.records[slot].gear.maxFuel;
             }
             break;
@@ -3555,9 +3569,8 @@ void func_8008A3EC(u8 member) {
  * input (confirm sets input code 4, start pauses or resumes) while paused,
  * then count each member's two result values one step; while any is still
  * counting redraw the panels (801df270, 801df4c0), else stop counting.
- * (Nonmatching: the original addresses the work area's counters from an
- * aggregate that starts at 0x800c3eb0, so the stores' base differs.) */
-#ifdef NON_MATCHING
+ * Reads use the work table; stores use its position in the battle area.
+ * These are two views of the same counters at 800cdcb8/800cdcd0. */
 void func_8008A684(u8 member) {
     u8 done = 1;
     u8 waiting = 1;
@@ -3617,16 +3630,16 @@ void func_8008A684(u8 member) {
                 if (D_800CCCE8.toCount[i][0] == 0) {
                     D_800D32F8[i]->done[0] = 1;
                 } else {
-                    D_800CCCE8.toCount[i][0]--;
-                    D_800CCCE8.expTotals[i][0]++;
+                    BATTLE_AREA.work.toCount[i][0] = D_800CCCE8.toCount[i][0] - 1;
+                    BATTLE_AREA.work.expTotals[i][0] = D_800CCCE8.expTotals[i][0] + 1;
                 }
             }
             if (D_800D32F8[i]->done[1] == 0) {
                 if (D_800CCCE8.toCount[i][1] == 0) {
                     D_800D32F8[i]->done[1] = 1;
                 } else {
-                    D_800CCCE8.toCount[i][1]--;
-                    D_800CCCE8.expTotals[i][1]++;
+                    BATTLE_AREA.work.toCount[i][1] = D_800CCCE8.toCount[i][1] - 1;
+                    BATTLE_AREA.work.expTotals[i][1] = D_800CCCE8.expTotals[i][1] + 1;
                 }
             }
             done &= D_800D32F8[i]->done[0];
@@ -3642,9 +3655,6 @@ void func_8008A684(u8 member) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008A684);
-#endif
 
 /* Result-screen step by the battle end state 800c3e4c. */
 void func_8008A9C0(u8 member) {
