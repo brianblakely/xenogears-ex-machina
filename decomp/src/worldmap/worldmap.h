@@ -17,7 +17,8 @@ s32 func_800288EC(s32 file);                              /* file size, rounded 
 void *func_80031BDC(s32 size, s32 mode);                  /* allocate a block */
 s32 func_800295D8(s32 file, void *dest, s32 offset, s32 mode); /* read one file */
 
-/* One entry of a disc-read list; a zero file ends the list. */
+/* Eight-byte disc-read entry: file at 0, destination at 4. A zero file
+ * ends the list; the two bytes between its members are left untouched. */
 typedef struct {
     s16 file;
     void *dest;
@@ -50,6 +51,9 @@ typedef struct {
 extern SoundBank *D_8006259C; /* area sound bank */
 extern void *D_8009BC38[2], *D_8009BCB0[2]; /* work and packet buffers, per display buffer */
 extern FileLoad D_8009D3F8[]; /* shared read list */
+extern void *D_8009D3FC; /* first destination member of that same read list */
+/* The loaders also address the list from its first destination member. */
+#define WORLD_READ_LIST ((FileLoad *)((u8 *)&D_8009D3FC - 4))
 
 /* Party: three character ids (0xFF empty) and per-character records. */
 typedef struct {
@@ -305,6 +309,9 @@ extern s32 D_8009D64C, D_8009BE40, D_8009BCC4, D_8009D80C;
 
 extern s32 D_8009D554, D_8009CCA4, D_8009D3CC;
 extern u8 D_80062648[];
+/* Sequence header view of the same resident music buffer; its layout is
+ * owned by resident/sound.h and consumed by func_80039850. */
+extern struct SoundSeqHeader D_80062648_sequence;
 #define SCRIPT_VECTOR ((SVECTOR *)0x1F8000A0) /* scratchpad script vector */
 
 void func_80039CC4(void);
@@ -1056,6 +1063,8 @@ typedef struct {
 } ActorSpawn;
 
 extern ActorSpawn D_80099E8C[];  /* actors of every area */
+extern s32 D_80099E90;           /* first update member of that same list */
+#define WORLD_COMMON_ACTORS ((ActorSpawn *)((u8 *)&D_80099E90 - 4))
 extern ActorSpawn *D_8009A034[]; /* per area: its actors */
 extern s32 D_8009C894;           /* nonzero when resuming a saved state */
 extern s32 D_8009C178, D_80059198;

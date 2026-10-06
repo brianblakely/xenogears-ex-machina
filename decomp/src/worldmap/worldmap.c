@@ -404,8 +404,7 @@ void func_80071CDC(void) {
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap", func_80071CDC);
 #endif
 
-/* Allocate and read the three area files into their resident buffers.
- * Differs in store scheduling of the read list. */
+/* Allocate and read the three area files into their resident buffers. */
 void func_80071EF0(void) {
     D_8009C59C = func_80031BDC(func_800288EC(D_8009C17C), 1);
     D_8009BD20 = func_80031BDC(func_800288EC(D_8009C174), 1);
@@ -421,9 +420,7 @@ void func_80071EF0(void) {
     func_80029AFC(D_8009D3F8, 0, 0);
 }
 
-/* Allocate and read the two shared world-map files (0x25, 0x26).
- * Differs in store scheduling of the read list. */
-#ifdef NON_MATCHING
+/* Allocate and read the two shared world-map files (0x25, 0x26). */
 void func_80071FEC(void) {
     D_8005945C = func_80031BDC(func_800288EC(0x26), 1);
     D_8009D528 = func_80031BDC(func_800288EC(0x25), 1);
@@ -433,14 +430,10 @@ void func_80071FEC(void) {
     D_8009D3F8[1].dest = D_8005945C;
     D_8009D3F8[2].file = 0;
     D_8009D3F8[2].dest = NULL;
-    func_80029AFC(D_8009D3F8, 0, 0);
+    func_80029AFC(WORLD_READ_LIST, 0, 0);
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap", func_80071FEC);
-#endif
 
-/* Allocate and read the area's terrain, texture and object files. */
-#ifdef NON_MATCHING /* read-list base address kept in $s0 across calls */
+/* Allocate the area's five file buffers and read the zero-terminated list. */
 void func_80072090(void) {
     D_8004F304++;
     D_8009D3F8[0].file = D_8009CC98;
@@ -455,11 +448,8 @@ void func_80072090(void) {
     D_8009D3F8[4].dest = D_8009C614 = func_80031BDC(func_800288EC(D_8009BCC8), 0);
     D_8009D3F8[5].file = 0;
     D_8009D3F8[5].dest = NULL;
-    func_80029AFC(D_8009D3F8, 0, 0);
+    func_80029AFC(WORLD_READ_LIST, 0, 0);
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap", func_80072090);
-#endif
 
 /* Allocate and read the area's sixth file (kept, mode 0). */
 void func_800721E4(void) {

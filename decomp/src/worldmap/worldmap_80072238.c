@@ -31,8 +31,9 @@ s32 func_800879E0();
 s32 func_80088C90();
 
 /* Enter the world map: set up the display, load or restore the area, start the
- * subsystems, the music and the area's actors. */
-#ifdef NON_MATCHING /* flag stores scheduled early; music buffer address kept in $s0 */
+ * subsystems, the music and the area's actors. The C body still differs in
+ * scheduling the initial state stores. */
+#ifdef NON_MATCHING
 void func_80072238(void) {
     RECT rect;
     ActorSpawn *spawn;
@@ -114,6 +115,7 @@ void func_80072238(void) {
         func_80096694();
     }
     if (D_8009C894 == 0) {
+        /* The original debug halt tests this flag once and then spins. */
         while (D_8005957C & 0x10) {
         }
         func_800320E8(D_8009C88C);
@@ -126,7 +128,7 @@ void func_80072238(void) {
             data = D_8009C884;
         }
         memcpy(D_80062648, data, func_800288EC(file));
-        seq = func_80039850(D_80062648);
+        seq = func_80039850(&D_80062648_sequence);
         D_80062528 = seq;
         func_80039A80(D_80062528, 0x7F, 0);
     } else {
@@ -142,18 +144,25 @@ void func_80072238(void) {
         memcpy(D_80062648, data, func_800288EC(file));
         func_80039B68(D_80062528, 0x7F, 0xF0);
     }
-    if (D_8009C894 == 0) {
-        if (D_80099E8C[0].kind != 0) {
+    switch (D_8009C894) {
+    case 0:
+        if (WORLD_COMMON_ACTORS[0].kind != 0) {
             i = 0;
             do {
                 func_80097718(D_80099E8C[i].kind, D_80099E8C[i].update);
                 i++;
             } while (D_80099E8C[i].kind != 0);
         }
-        for (spawn = D_8009A034[D_8009C610]; spawn->kind != 0; spawn++) {
-            func_80097718(spawn->kind, spawn->update);
+        spawn = D_8009A034[D_8009C610];
+        if (spawn->kind != 0) {
+            ActorSpawn *actor = spawn;
+            do {
+                func_80097718(actor->kind, actor->update);
+                actor++;
+            } while (actor->kind != 0);
         }
-    } else if (D_8009C894 == 1) {
+        break;
+    case 1:
         func_800976FC((s32)func_800923A8, 0);
         func_800976FC((s32)func_8008A52C, 1);
         func_800976FC((s32)func_8008B498, 2);
@@ -186,6 +195,7 @@ void func_80072238(void) {
             func_800976FC((s32)func_800879E0, 0x11);
             break;
         }
+        break;
     }
     D_80059179 = 0;
     if (D_8009C610 == 0) {
@@ -201,6 +211,7 @@ void func_80072238(void) {
     }
     func_80033698(0x130, 0x1E0);
 }
+
 #else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80072238);
 #endif
