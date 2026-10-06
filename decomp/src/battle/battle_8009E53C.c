@@ -872,8 +872,10 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_8009F8
  * released (or restarted when looping: tracks rewind, others stop). Returns
  * flags: 0x100/0x200/0x400 some tween ran/ended/looped (1/2/4 when it has
  * `tag`). As in the original, the "spin" stop clears the step of the last
- * slot a computing kind used, which may belong to an earlier node. */
-s32 func_800A0838(EffectPool *pool, ModelPart *parts, u16 tag, s16 scale) {
+ * slot a computing kind used, which may belong to an earlier node. Tag and
+ * scale remain full words; packed escapes advance the cursor before reading
+ * each byte. Nonmatching: spill slots, registers and scheduling still differ. */
+s32 func_800A0838(EffectPool *pool, ModelPart *parts, s32 tag, s32 scale) {
     ModelPart *part = parts;
     Tween *slot;
     Tween *last;
@@ -917,9 +919,12 @@ s32 func_800A0838(EffectPool *pool, ModelPart *parts, u16 tag, s16 scale) {
                     if ((s8)track[0] != -0x80) {
                         part->rotation.vx += (s8)track[0];
                     } else {
+                        s32 low;
+
                         slot->u.track.cursor = track + 2;
+                        low = track[1];
                         slot->u.track.cursor = track + 3;
-                        part->rotation.vx = track[1] | ((s8)track[2] << 8);
+                        part->rotation.vx = low | ((s8)track[2] << 8);
                     }
                 }
                 if (!(kind & 0x20)) {
@@ -927,9 +932,12 @@ s32 func_800A0838(EffectPool *pool, ModelPart *parts, u16 tag, s16 scale) {
                     if ((s8)track[0] != -0x80) {
                         part->rotation.vy += (s8)track[0];
                     } else {
+                        s32 low;
+
                         slot->u.track.cursor = track + 2;
+                        low = track[1];
                         slot->u.track.cursor = track + 3;
-                        part->rotation.vy = track[1] | ((s8)track[2] << 8);
+                        part->rotation.vy = low | ((s8)track[2] << 8);
                     }
                 }
                 if (!(kind & 0x40)) {
@@ -937,9 +945,12 @@ s32 func_800A0838(EffectPool *pool, ModelPart *parts, u16 tag, s16 scale) {
                     if ((s8)track[0] != -0x80) {
                         part->rotation.vz += (s8)track[0];
                     } else {
+                        s32 low;
+
                         slot->u.track.cursor = track + 2;
+                        low = track[1];
                         slot->u.track.cursor = track + 3;
-                        part->rotation.vz = track[1] | ((s8)track[2] << 8);
+                        part->rotation.vz = low | ((s8)track[2] << 8);
                     }
                 }
                 goto check_rot;
@@ -1095,9 +1106,12 @@ s32 func_800A0838(EffectPool *pool, ModelPart *parts, u16 tag, s16 scale) {
                     if ((s8)track[0] != -0x80) {
                         part->translation[0] += (s8)track[0];
                     } else {
+                        s32 low;
+
                         slot->u.track.cursor = track + 2;
+                        low = track[1];
                         slot->u.track.cursor = track + 3;
-                        part->translation[0] = track[1] | ((s8)track[2] << 8);
+                        part->translation[0] = low | ((s8)track[2] << 8);
                     }
                 }
                 if (!(kind & 0x20)) {
@@ -1105,9 +1119,12 @@ s32 func_800A0838(EffectPool *pool, ModelPart *parts, u16 tag, s16 scale) {
                     if ((s8)track[0] != -0x80) {
                         part->translation[1] += (s8)track[0];
                     } else {
+                        s32 low;
+
                         slot->u.track.cursor = track + 2;
+                        low = track[1];
                         slot->u.track.cursor = track + 3;
-                        part->translation[1] = track[1] | ((s8)track[2] << 8);
+                        part->translation[1] = low | ((s8)track[2] << 8);
                     }
                 }
                 if (!(kind & 0x40)) {
@@ -1115,9 +1132,12 @@ s32 func_800A0838(EffectPool *pool, ModelPart *parts, u16 tag, s16 scale) {
                     if ((s8)track[0] != -0x80) {
                         part->translation[2] += (s8)track[0];
                     } else {
+                        s32 low;
+
                         slot->u.track.cursor = track + 2;
+                        low = track[1];
                         slot->u.track.cursor = track + 3;
-                        part->translation[2] = track[1] | ((s8)track[2] << 8);
+                        part->translation[2] = low | ((s8)track[2] << 8);
                     }
                 }
                 break;
@@ -1990,10 +2010,18 @@ void func_800A2FD8(SpritePool *pool, MATRIX *m, s32 steps, u32 *ot, s32 buffer) 
 }
 
 /* Set up a colour fade from (r0, g0, b0) to (r1, g1, b1) over duration
- * ticks. */
-s32 func_800A32D8(ColorFade *fade, s32 field4, s16 field0, u8 field2, s16 field60, s16 duration, u8 r0,
-                  u8 g0, u8 b0, u8 r1, u8 g1, u8 b1, u16 fieldC, u16 fieldE, u16 field10, u16 field14,
-                  u16 field16, u16 field18, u16 field3) {
+ * ticks. Original calls use default argument promotion for the channel bytes
+ * and signed event halfwords. */
+s32 func_800A32D8(fade, field4, field0, field2, field60, duration, r0, g0, b0, r1, g1, b1, fieldC, fieldE,
+                  field10, field14, field16, field18, field3)
+    ColorFade *fade;
+    s32 field4;
+    s16 field0;
+    u8 field2;
+    s16 field60, duration;
+    u8 r0, g0, b0, r1, g1, b1;
+    u16 fieldC, fieldE, field10, field14, field16, field18, field3;
+{
     if (fade != NULL) {
         fade->field3 = field3;
         fade->field5E = -1;
@@ -2064,10 +2092,18 @@ s16 func_800A35C8(s16 value, s16 divisor, s16 minimum) {
  * the work and frame buffers `flags` bits 8-10 ask for, and each frame
  * buffer's first contents (flags nibbles 0 and 1): 1 the VRAM rectangle at
  * (x, y) / (x2, y2) (modes 4/5: rows of `colors` from there), 2 one colour
- * (modes 4/5: the three values cycling by row). */
-ImageAnim *func_800A3640(ImageAnim *anim, ImageAnim *target, u16 mode, u16 flags, ColorRow *colors,
-                         s16 x, s16 y, s16 z, s16 x2, s16 y2, s16 z2, s16 x3, s16 y3, s16 w, s16 h,
-                         u16 speed, s16 divisor, s16 base, FrameCurve curve) {
+ * (modes 4/5: the three values cycling by row). Original calls promote the
+ * event halfwords before speed is stored as an unsigned halfword. */
+ImageAnim *func_800A3640(anim, target, mode, flags, colors, x, y, z, x2, y2, z2, x3, y3, w, h, speed,
+                         divisor, base, curve)
+    ImageAnim *anim, *target;
+    u16 mode, flags;
+    ColorRow *colors;
+    s16 x, y, z, x2, y2, z2, x3, y3, w, h;
+    u16 speed;
+    s16 divisor, base;
+    FrameCurve curve;
+{
     RECT rect;
     s32 half;
     s32 i, col;
@@ -6016,13 +6052,9 @@ s32 func_800AE220(BattleObject *object, s32 source) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Run the events of object's animation for its current frame (sprites,
  * lights, effect channels, sounds, part flags, the slots' effect scripts and
- * image animations), then advance the frame, looping at its loop length.
- * Nonmatching: the original hoists the constant 1 of four compares out of
- * the event loop (reloaded into $t7), and adds 0x400 to the event's angle
- * before the object's. */
+ * image animations), then advance the frame, looping at its loop length. */
 void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
     AnimEvent *event;
     SpriteCommand *sprite;
@@ -6044,6 +6076,7 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
     s32 variant;
     s16 volume;
     s32 i;
+    s32 one = 1;
     BattleObject **stage = D_800D3368;
     BattleObject **objects;
     u16 savedMask;
@@ -6108,7 +6141,7 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                         gte_stlvnl(&out);
                         point.vx = out.vx;
                         point.vz = out.vz;
-                        if ((sprite->mode & 0x7F) == 1) {
+                        if ((sprite->mode & 0x7F) == one) {
                             point.vy = object->groundY;
                         } else if ((sprite->mode & 0x7F) == 2) {
                             point.vx = D_800658C8->centre.vx;
@@ -6121,7 +6154,9 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                         if (sprite->absolute) {
                             angle = sprite->angle;
                         } else {
-                            angle = object->hierarchy->rotation.vy + (sprite->angle + 0x400);
+                            s32 relative = sprite->angle + 0x400;
+
+                            angle = object->hierarchy->rotation.vy + relative;
                         }
                         resource = D_8006BE10;
                         scale = sprite->scale * object->scale1C >> 8;
@@ -6181,7 +6216,7 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                     sound = &event->sound;
                     if (func_800B12D0(func_800AF400(), sound->flags)) {
                         variant = 0;
-                        if (sound->kind == 1 && D_800658C8->soundMode != 0) {
+                        if (sound->kind == one && D_800658C8->soundMode != 0) {
                             func_80039E60((object->model->sounds->bank << 16) | (D_800658C8->soundMode + 10));
                         }
                         base = func_800AE220(object, sound->source);
@@ -6217,7 +6252,7 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                     objects = D_800D3368;
                     savedIndex = D_800C3D40;
                     savedMask = D_800C3E30;
-                    mask = 1 << savedIndex;
+                    mask = one << savedIndex;
                     for (; i < 13; i++, objects++) {
                         if ((object->slotMask >> i) & 1) {
                             onTarget = slots->onTarget;
@@ -6285,7 +6320,7 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                                 }
                                 x += object->placement[2];
                                 y += object->placement[3];
-                                if (event->image.field12 >> 4 == 1) {
+                                if (event->image.field12 >> 4 == one) {
                                     x2 += object->placement[2];
                                     y2 += object->placement[3];
                                 }
@@ -6312,9 +6347,6 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800AE2A4);
-#endif
 
 /* Stop a battle object's animation. */
 void func_800AEEEC(BattleObject *object) {

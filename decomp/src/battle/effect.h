@@ -133,9 +133,8 @@ typedef struct ImageAnim {
 void func_80026F44(s32 size, s32 frame, u16 *out, u16 *pixels);
 void func_80026FE8(s32 size, s32 frame, u16 *out, u16 *pixels2, u16 *pixels);
 
-ImageAnim *func_800A3640(ImageAnim *anim, ImageAnim *target, u16 mode, u16 flags, ColorRow *colors, s16 x, s16 y,
-                         s16 z, s16 x2, s16 y2, s16 z2, s16 x3, s16 y3, s16 w, s16 h, u16 speed, s16 divisor,
-                         s16 base, FrameCurve curve);
+/* Original calls promote the event halfwords before the callee narrows them. */
+ImageAnim *func_800A3640();
 s16 func_800A3E98(ImageAnim *anim, s32 ticks);
 void func_800A429C(ImageAnim *anim);
 void func_800A4348(ImageAnim *anim, s16 level);
