@@ -657,7 +657,6 @@ void func_801C5A7C(Label *label, s32 index, s32 row, s32 mode);
 void func_801C5E6C(void);
 void func_801C6430(void);
 void func_801C6460(POLY_G4 *poly, u8 r, u8 g, u8 b);
-void func_801C6E90(SVECTOR *quad, u16 x, u16 y, u16 w, u16 h);
 void func_801C6EE8(POLY_FT4 *poly);
 void func_801C7370(u8 index);
 void func_801C768C(u8 index, u16 x, u16 y, u16 w, u16 h);

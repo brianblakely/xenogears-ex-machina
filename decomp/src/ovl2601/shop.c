@@ -7,6 +7,10 @@
  */
 #include "menu_card.h"
 
+/* This unit passes quad coordinates as words; the shared screen unit sees
+ * the helper's narrow definition before its local calls. */
+void func_801C6E90();
+
 /* Fill a view's nine stat words from character `id`'s base and bonus bytes, capped at 999 or 99. */
 void func_801CCE1C(ResourceSet *view, u8 id) {
     Character *c;
@@ -281,7 +285,6 @@ u16 func_801CDBA0(u8 item, u8 kind) {
  * item's name and price (dimmed, `dims[row]` 0, when it costs more than
  * `gold`) and, when some are chosen, "x" and the amount.
  */
-#ifdef NON_MATCHING
 void func_801CDD14(s32 top, s32 gold, u8 *dims) {
     RECT rect;
     u8 codes[14];
@@ -344,7 +347,7 @@ void func_801CDD14(s32 top, s32 gold, u8 *dims) {
                     codes[i * 2] = 0xC3;
                 }
             }
-            codes[8] = value % 10 + 0x10;
+            codes[i * 2] = value % 10 + 0x10;
             func_80033B34(codes, text, 5);
             D_800625A0->details->names_b[row].width = func_80034EAC(text, pixels, 0x24, 1);
             rect.x = (row & 1) * 0x18 + 0x180;
@@ -390,9 +393,6 @@ void func_801CDD14(s32 top, s32 gold, u8 *dims) {
     }
     func_800320E8(pixels);
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/shop", func_801CDD14);
-#endif
 
 /*
  * Compare member `member`'s attack (kind 0) or defence (kind 1) with item
@@ -1083,7 +1083,6 @@ INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/shop", func_801CFF58);
  * Draw the eight visible rows of a list from entry `top`: each item's name,
  * the count held and, when some are chosen, "x" and the chosen count.
  */
-#ifdef NON_MATCHING
 void func_801D05BC(s32 top, u8 *ids, u8 *kinds, u8 *chosen, u8 *held) {
     RECT rect;
     u8 codes[14];
@@ -1134,7 +1133,7 @@ void func_801D05BC(s32 top, u8 *ids, u8 *kinds, u8 *chosen, u8 *held) {
                     codes[i * 2] = 0xC3;
                 }
             }
-            codes[8] = value % 10 + 0x10;
+            codes[i * 2] = value % 10 + 0x10;
             func_80033B34(codes, text, 5);
             D_800625A0->details->names_b[row].width = func_80034EAC(text, pixels, 0x24, 1);
             rect.x = (row & 1) * 0x18 + 0x180;
@@ -1180,9 +1179,6 @@ void func_801D05BC(s32 top, u8 *ids, u8 *kinds, u8 *chosen, u8 *held) {
     }
     func_800320E8(pixels);
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/shop", func_801D05BC);
-#endif
 
 /*
  * Set the party's gold (capped at 9999999) and take the sold items away: with

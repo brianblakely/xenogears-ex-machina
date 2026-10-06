@@ -43,6 +43,8 @@ segments:
     vram: 0x801c5000
     subsegments:
       - [0x0, .rodata, ovl2602]
+      - [0x38, .rodata, gear_shop]
       - [0x11c, c, ovl2602]
+      - [0x91D0, c, gear_shop]
       - [0x1197c, data, ovl2602_data]
   - [0x140a0]
