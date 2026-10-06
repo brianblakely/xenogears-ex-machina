@@ -2117,25 +2117,29 @@ void func_800BD098(ActorTask *owner) {
     func_800BCFAC(&ring->actor);
 }
 
-#ifdef NON_MATCHING
 /* Show the current event's result on slot's sprite (800BD3AC), with the
  * running total and colour kind, once. */
 void func_800BD1FC(s32 slot) {
     BattleSprite *sprite;
+    s32 code;
+    s32 total;
+    s32 colour;
+    s32 amount;
 
     if (BATTLE_AREA.events[D_800C360C - 1].codes[slot] != 0xFF && BATTLE_AREA.events[D_800C360C - 1].amounts[slot] != 0xFFFF) {
         sprite = BATTLE_AREA.sprites[slot];
         if (sprite != NULL) {
-            D_800C3D38 = BATTLE_AREA.events[D_800C360C - 1].accumulated[slot];
-            D_800D3630 = BATTLE_AREA.events[D_800C360C - 1].accumulatedCodes[slot];
-            func_800BD3AC(sprite, BATTLE_AREA.events[D_800C360C - 1].amounts[slot], BATTLE_AREA.events[D_800C360C - 1].codes[slot]);
+            code = BATTLE_AREA.events[D_800C360C - 1].codes[slot];
+            total = BATTLE_AREA.events[D_800C360C - 1].accumulated[slot];
+            colour = BATTLE_AREA.events[D_800C360C - 1].accumulatedCodes[slot];
+            amount = BATTLE_AREA.events[D_800C360C - 1].amounts[slot];
+            D_800C3D38 = total;
+            D_800D3630 = colour;
+            func_800BD3AC(sprite, amount, code);
             BATTLE_AREA.events[D_800C360C - 1].amounts[slot] = 0xFFFF;
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800BD1FC);
-#endif
 
 /* Show the current event's results on every slot (800BD1FC); once a slot
  * has code 7, not on the acting sprite. */
