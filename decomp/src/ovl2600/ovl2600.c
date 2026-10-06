@@ -98,14 +98,17 @@ void func_801C52B4(u8 allocate) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Load the screen's resources: the card icon TIM and file name into the work
  * block's save header, the palette data, sprite sheet and label texts, the
  * named character's entry length and three portraits (uploaded to the
  * portrait sprites' VRAM), and the menu sound bank when sound is on. */
 void func_801C5318(void) {
+    enum {
+        ENTRY_UNUSED, ENTRY_MODE, ENTRY_CLUT_X, ENTRY_CLUT_Y,
+        ENTRY_PAGE_X, ENTRY_PAGE_Y, ENTRY_WORDS
+    };
     TIM_IMAGE tim;
-    SpriteInfo info[3];
+    s32 entries[3 * ENTRY_WORDS];
     MenuArchive *archive = D_8005945C;
     u8 *data;
     u8 use_table = 1;
@@ -130,12 +133,18 @@ void func_801C5318(void) {
     func_800320E8(data);
     D_800625A0->sprite_sheet = func_80032E88(archive->entry[2], 0);
     D_800625A0->label_text = func_80032E88(archive->entry[3], 0);
-    func_80026338(D_800625A0->sprite_sheet, 0x14B, &info[0].unk0, &info[0].tpage_mode,
-                  &info[0].clut_x, &info[0].clut_y, &info[0].page_x, &info[0].page_y);
-    func_80026338(D_800625A0->sprite_sheet, 0x14C, &info[1].unk0, &info[1].tpage_mode,
-                  &info[1].clut_x, &info[1].clut_y, &info[1].page_x, &info[1].page_y);
-    func_80026338(D_800625A0->sprite_sheet, 0x14D, &info[2].unk0, &info[2].tpage_mode,
-                  &info[2].clut_x, &info[2].clut_y, &info[2].page_x, &info[2].page_y);
+    func_80026338(D_800625A0->sprite_sheet, 0x14B,
+                  &entries[ENTRY_UNUSED], &entries[ENTRY_MODE],
+                  &entries[ENTRY_CLUT_X], &entries[ENTRY_CLUT_Y],
+                  &entries[ENTRY_PAGE_X], &entries[ENTRY_PAGE_Y]);
+    func_80026338(D_800625A0->sprite_sheet, 0x14C,
+                  &entries[ENTRY_WORDS + ENTRY_UNUSED], &entries[ENTRY_WORDS + ENTRY_MODE],
+                  &entries[ENTRY_WORDS + ENTRY_CLUT_X], &entries[ENTRY_WORDS + ENTRY_CLUT_Y],
+                  &entries[ENTRY_WORDS + ENTRY_PAGE_X], &entries[ENTRY_WORDS + ENTRY_PAGE_Y]);
+    func_80026338(D_800625A0->sprite_sheet, 0x14D,
+                  &entries[2 * ENTRY_WORDS + ENTRY_UNUSED], &entries[2 * ENTRY_WORDS + ENTRY_MODE],
+                  &entries[2 * ENTRY_WORDS + ENTRY_CLUT_X], &entries[2 * ENTRY_WORDS + ENTRY_CLUT_Y],
+                  &entries[2 * ENTRY_WORDS + ENTRY_PAGE_X], &entries[2 * ENTRY_WORDS + ENTRY_PAGE_Y]);
     D_800625A0->portrait_table = func_80032E88(archive->entry[5], 1);
     if (D_80059171 < 11) {
         D_800625A0->entry->max_length = 9;
@@ -153,18 +162,19 @@ void func_801C5318(void) {
     D_800625A0->portraits[0] = D_800625A0->portrait_table[D_80059171 * 3 + 0x20];
     D_800625A0->portraits[1] = D_800625A0->portrait_table[D_80059171 * 3 + 0x21];
     D_800625A0->portraits[2] = D_800625A0->portrait_table[D_80059171 * 3 + 0x22];
+    i = 0;
     func_800320E8(D_800625A0->portrait_table);
-    info[1].page_x += 12;
+    entries[ENTRY_WORDS + ENTRY_PAGE_X] += 12;
     data = func_80032E88(archive->entry[4], 1);
-    for (i = 0; i < 3; i++) {
+    for (; i < 3; i++) {
         id = D_800625A0->flags->party[i];
         if (id != 0xFF) {
             OpenTIM(data + id * 0xB20);
             ReadTIM(&tim);
-            tim.crect->x = info[i].clut_x;
-            tim.crect->y = info[i].clut_y;
-            tim.prect->x = info[i].page_x;
-            tim.prect->y = info[i].page_y;
+            tim.crect->x = entries[i * ENTRY_WORDS + ENTRY_CLUT_X];
+            tim.crect->y = entries[i * ENTRY_WORDS + ENTRY_CLUT_Y];
+            tim.prect->x = entries[i * ENTRY_WORDS + ENTRY_PAGE_X];
+            tim.prect->y = entries[i * ENTRY_WORDS + ENTRY_PAGE_Y];
             LoadImage(tim.crect, tim.caddr);
             LoadImage(tim.prect, tim.paddr);
         }
@@ -182,9 +192,6 @@ void func_801C5318(void) {
     D_800625A0->effect_bank = D_8006259C;
     func_800320E8(archive);
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C5318);
-#endif
 
 /* Reset the screen state, mark which characters may join, take the current
  * party (members that may not join become empty) and load the resources. */
@@ -223,9 +230,11 @@ void func_801C5A30(void) {
 }
 
 /* Upload the text CLUT: 16 black entries except white entry 1 at (0, 0x1C0). */
+#ifdef NON_MATCHING
+/* Frame layout unresolved: the original reserves eight more bytes than the
+ * recovered RECT and saved registers require. */
 void func_801C5A40(void) {
     RECT rect;
-    u8 unused[8];
     u16 *clut = func_80031BDC(0x20, 0);
 
     bzero(clut, 0x20);
@@ -238,20 +247,27 @@ void func_801C5A40(void) {
     DrawSync(0);
     func_800320E8(clut);
 }
+#else
+INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C5A40);
+#endif
 
 /* Set up label `index`'s two quads: mode 0 maps the text rendered for the
  * command column at row + index; otherwise the list layout, dimmed unless
  * bit 7 is set, with the highlight from the low bits. */
 #ifdef NON_MATCHING
-void func_801C5ABC(MenuLabel *label, s32 index, s32 row, u8 mode) {
-    POLY_FT4 *poly = label->poly;
-    s32 column = index & 1;
-    s32 line = index / 2;
-    s32 u = (line & 1) << 7;
-    s32 i = 0;
+void func_801C5ABC(MenuLabel *label, s32 index, s32 row, s32 mode) {
+    POLY_FT4 *poly;
+    s32 column;
+    s32 line;
+    s32 u;
+    s32 i;
     s32 dim;
-    s32 v;
-    s32 list_u;
+
+    i = 0;
+    column = index & 1;
+    line = index / 2;
+    u = (line & 1) << 7;
+    poly = label->poly;
 
 loop:
     dim = 0;
@@ -261,19 +277,17 @@ loop:
     poly->r0 = 0x80;
     poly->g0 = 0x80;
     poly->b0 = 0x80;
-    if (mode == 0) {
+    if ((u8)mode == 0) {
         label->highlight = column;
         poly->tpage = GetTPage(0, 0, 0x140, 0);
         poly->u0 = u;
-        v = ((index + row) / 4) * 13;
-        poly->v0 = v;
+        poly->v0 = ((index + row) / 4) * 13;
         poly->u1 = u + label->width;
-        poly->v1 = v;
+        poly->v1 = ((index + row) / 4) * 13;
         poly->u2 = u;
-        v += 13;
-        poly->v2 = v;
+        poly->v2 = ((index + row) / 4) * 13 + 13;
         poly->u3 = u + label->width;
-        poly->v3 = v;
+        poly->v3 = ((index + row) / 4) * 13 + 13;
     } else {
         if (!(mode & 0x80)) {
             dim = 0x20;
@@ -282,19 +296,16 @@ loop:
             poly->g0 = dim;
             poly->b0 = dim;
         }
-        label->highlight = (mode & 0x7F) - 1;
+        label->highlight = (u8)(mode & 0x7F) - 1;
         poly->tpage = dim | GetTPage(0, 0, 0x180, 0x80);
-        list_u = column * 0x60;
-        v = line * 13 + row;
-        poly->u0 = list_u;
-        poly->v0 = v;
-        poly->v1 = v;
-        v += 13;
-        poly->u2 = list_u;
-        poly->v2 = v;
-        poly->u1 = list_u + label->width;
-        poly->v3 = v;
-        poly->u3 = list_u + label->width;
+        poly->u0 = column * 0x60;
+        poly->v0 = line * 13 + row;
+        poly->u1 = column * 0x60 + label->width;
+        poly->v1 = line * 13 + row;
+        poly->u2 = column * 0x60;
+        poly->v2 = line * 13 + row + 13;
+        poly->u3 = column * 0x60 + label->width;
+        poly->v3 = line * 13 + row + 13;
     }
     if (label->highlight) {
         poly->clut = D_80059414;
@@ -346,9 +357,10 @@ void func_801C5EAC(void) {
 }
 
 /* Look up the four cursor/frame sprites of the sheet. */
+#ifdef NON_MATCHING
+/* Frame layout unresolved: the original reserves 0x28 additional bytes despite
+ * having no recovered automatic data beyond call arguments. */
 void func_801C5F08(void) {
-    u8 unused[0x28];
-
     func_80026338(D_800625A0->sprite_sheet, 0xFE, &D_800625A0->sprites[0].unk0,
                   &D_800625A0->sprites[0].tpage_mode, &D_800625A0->sprites[0].clut_x,
                   &D_800625A0->sprites[0].clut_y, &D_800625A0->sprites[0].page_x,
@@ -366,6 +378,9 @@ void func_801C5F08(void) {
                   &D_800625A0->sprites[3].clut_y, &D_800625A0->sprites[3].page_x,
                   &D_800625A0->sprites[3].page_y);
 }
+#else
+INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C5F08);
+#endif
 
 /* Clear the party list's flags 3 and 4. */
 void func_801C6010(void) {
@@ -925,11 +940,13 @@ void func_801C874C(s32 index) {
 
 /* Draw every shown panel; style-0 panels are projected with an identity
  * rotation at depth 0x200. */
+#ifdef NON_MATCHING
+/* Frame layout unresolved: the original reserves eight more bytes than the
+ * recovered vectors, matrix and saved registers require. */
 void func_801C8970(void) {
     SVECTOR rotation;
     VECTOR translation;
     MATRIX matrix;
-    u8 unused[8];
     Panel *panel;
     s32 i;
 
@@ -972,6 +989,9 @@ void func_801C8970(void) {
         }
     }
 }
+#else
+INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C8970);
+#endif
 
 /* Draw the four cursor markers when markers are on; a marker that follows
  * the file cursor is first moved to the selected slot's position. */

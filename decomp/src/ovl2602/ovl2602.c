@@ -10,6 +10,8 @@
  */
 #include "menu_card.h"
 
+const CardPrefix D_801C5000 = {"BISLPS-00800"};
+
 /* A random value in [min, max] (ffff stays ffff, a zero max gives 0). */
 u16 func_801C511C(u16 min, u16 max) {
     s32 range;
@@ -183,10 +185,13 @@ void func_801C5664(u8 allocate) {
 }
 
 /* Load the screen's resources: the card header (prefix, icon), text images, sprite sheet, labels, the party's portraits, the sound bank and the gear shop tables. */
-#ifdef NON_MATCHING
 void func_801C56C8(void) {
+    enum {
+        ENTRY_UNUSED, ENTRY_MODE, ENTRY_CLUT_X, ENTRY_CLUT_Y,
+        ENTRY_PAGE_X, ENTRY_PAGE_Y, ENTRY_WORDS
+    };
     TIM_IMAGE tim;
-    SheetEntry entries[3];
+    s32 entries[3 * ENTRY_WORDS];
     MenuResources *res;
     u32 *packed;
     s32 i;
@@ -204,6 +209,7 @@ void func_801C56C8(void) {
     D_800625A0->card->save_blocks = 1;
     bzero(D_800625A0->card->save_title, sizeof(D_800625A0->card->save_title));
     memmove(D_800625A0->card->save_palette, D_800625A0->card->icon.caddr, 0x20);
+    i = 0;
     memmove(D_800625A0->card->save_icon, D_800625A0->card->icon.paddr, 0x80);
     func_800320E8(packed);
     packed = func_80032E88(res->files[1], 1);
@@ -211,23 +217,29 @@ void func_801C56C8(void) {
     func_800320E8(packed);
     D_800625A0->sprite_sheet = func_80032E88(res->files[2], 0);
     D_800625A0->label_text = func_80032E88(res->files[3], 0);
-    func_80026338(D_800625A0->sprite_sheet, 0x14B, &entries[0].unk0, &entries[0].mode, &entries[0].clut_x,
-                  &entries[0].clut_y, &entries[0].page_x, &entries[0].page_y);
-    func_80026338(D_800625A0->sprite_sheet, 0x14C, &entries[1].unk0, &entries[1].mode, &entries[1].clut_x,
-                  &entries[1].clut_y, &entries[1].page_x, &entries[1].page_y);
-    func_80026338(D_800625A0->sprite_sheet, 0x14D, &entries[2].unk0, &entries[2].mode, &entries[2].clut_x,
-                  &entries[2].clut_y, &entries[2].page_x, &entries[2].page_y);
-    entries[1].page_x += 0xC;
+    func_80026338(D_800625A0->sprite_sheet, 0x14B,
+                  &entries[ENTRY_UNUSED], &entries[ENTRY_MODE],
+                  &entries[ENTRY_CLUT_X], &entries[ENTRY_CLUT_Y],
+                  &entries[ENTRY_PAGE_X], &entries[ENTRY_PAGE_Y]);
+    func_80026338(D_800625A0->sprite_sheet, 0x14C,
+                  &entries[ENTRY_WORDS + ENTRY_UNUSED], &entries[ENTRY_WORDS + ENTRY_MODE],
+                  &entries[ENTRY_WORDS + ENTRY_CLUT_X], &entries[ENTRY_WORDS + ENTRY_CLUT_Y],
+                  &entries[ENTRY_WORDS + ENTRY_PAGE_X], &entries[ENTRY_WORDS + ENTRY_PAGE_Y]);
+    func_80026338(D_800625A0->sprite_sheet, 0x14D,
+                  &entries[2 * ENTRY_WORDS + ENTRY_UNUSED], &entries[2 * ENTRY_WORDS + ENTRY_MODE],
+                  &entries[2 * ENTRY_WORDS + ENTRY_CLUT_X], &entries[2 * ENTRY_WORDS + ENTRY_CLUT_Y],
+                  &entries[2 * ENTRY_WORDS + ENTRY_PAGE_X], &entries[2 * ENTRY_WORDS + ENTRY_PAGE_Y]);
+    entries[ENTRY_WORDS + ENTRY_PAGE_X] += 0xC;
     packed = func_80032E88(res->files[4], 1);
-    for (i = 0; i < 3; i++) {
+    for (; i < 3; i++) {
         id = D_800625A0->flags->members[i];
         if (id != 0xFF) {
             OpenTIM((u8 *)packed + id * 0xB20);
             ReadTIM(&tim);
-            tim.crect->x = entries[i].clut_x;
-            tim.crect->y = entries[i].clut_y;
-            tim.prect->x = entries[i].page_x;
-            tim.prect->y = entries[i].page_y;
+            tim.crect->x = entries[i * ENTRY_WORDS + ENTRY_CLUT_X];
+            tim.crect->y = entries[i * ENTRY_WORDS + ENTRY_CLUT_Y];
+            tim.prect->x = entries[i * ENTRY_WORDS + ENTRY_PAGE_X];
+            tim.prect->y = entries[i * ENTRY_WORDS + ENTRY_PAGE_Y];
             LoadImage(tim.crect, tim.caddr);
             LoadImage(tim.prect, tim.paddr);
         }
@@ -246,9 +258,6 @@ void func_801C56C8(void) {
     D_800625A0->gear_tables = func_80032E88(res->files[7], 1);
     func_800320E8(res);
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801C56C8);
-#endif
 
 /* Reset the screen state, note which party members are available (and selectable) and load the resources. */
 void func_801C5B08(void) {
