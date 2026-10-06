@@ -529,15 +529,15 @@ void func_80071AD0(void) {
     func_8007099C(D_80092904);
 }
 
-#ifdef NON_MATCHING
 /* Settle an actor on the floor: while a probe 0xC0 away in one of eight
  * directions finds the floor more than 0x40 higher, step away from it (at
  * most 20 times); then record the floor height and its attribute bits.
- * Does not match: the original strength-reduces the step table walk into
- * two pointers (x from a register base, z from the symbol + 4). */
+ * The direction table holds interleaved x/z words; each cursor follows
+ * one column at the FloorStep stride. */
 void func_80071DA4(Actor *actor) {
     Vector *pos = &actor->pos;
     s32 tries = 0;
+    u8 *steps_x = (u8 *)D_80091084;
     s32 best;
     s32 highest;
     s32 dir;
@@ -545,11 +545,15 @@ void func_80071DA4(Actor *actor) {
     Vector probe;
 
     do {
-        pos->vy = highest = func_80082488(pos, 1);
+        u8 *steps_z;
+
+        pos->vy = func_80082488(pos, 1);
+        highest = pos->vy;
+        steps_z = (u8 *)D_80091084 + sizeof(s32);
         for (dir = 0; dir < 8; dir++) {
             probe = *pos;
-            probe.vx += D_80091084[dir].x * 0xC0;
-            probe.vz += D_80091084[dir].z * 0xC0;
+            probe.vx += *(s32 *)(steps_x + dir * sizeof(FloorStep)) * 0xC0;
+            probe.vz += *(s32 *)(steps_z + dir * sizeof(FloorStep)) * 0xC0;
             floor = func_80082488(&probe, 1);
             if (floor < highest - 0x40) {
                 best = dir;
@@ -560,17 +564,17 @@ void func_80071DA4(Actor *actor) {
             pos->vy = func_80082488(pos, 1);
             break;
         }
-        pos->vx -= D_80091084[best].x * 0xC0;
-        pos->vz -= D_80091084[best].z * 0xC0;
+        {
+            u8 *steps_z = (u8 *)D_80091084 + sizeof(s32);
+
+            pos->vx -= *(s32 *)(steps_x + best * sizeof(FloorStep)) * 0xC0;
+            pos->vz -= *(s32 *)(steps_z + best * sizeof(FloorStep)) * 0xC0;
+        }
         tries++;
     } while (tries < 20);
     actor->floor_y = func_80082488(&actor->pos, 1);
-    actor->flags = (actor->flags & 0x9FFFFFFF) | (((func_800828C4(&actor->pos) >> 24) & 3) << 29);
+    actor->flags = (actor->flags & 0x9FFFFFFF) | ((((u32)func_800828C4(&actor->pos) >> 24) & 3) << 29);
 }
-
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu2", func_80071DA4);
-#endif
 
 /* Scene script callback: 0 plays the stored sound, 1/2 act on one actor
  * (1 also picks the message for whichever actor has more HP left), 3 sets
