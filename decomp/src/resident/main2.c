@@ -3243,24 +3243,24 @@ void func_80039360(void) {
 }
 
 /* Allocate `size` bytes of SPU memory in the first gap of the map that
- * fits (or after its last entry). Returns the address, 0 when none.
- * Nonmatching: the entry and end registers are swapped and the map base
- * is not rematerialised in the loop. */
-#ifdef NON_MATCHING
+ * fits (or after its last entry). Returns the address, 0 when none. */
 s32 func_800393B8(s32 size, u16 mode) {
     SpuMemBlock *entry = D_8006F9FC;
-    SpuMemBlock *next;
     SpuMemBlock *block;
     u32 end = D_8006F9FC[0].address + D_8006F9FC[0].size;
     s32 i;
 
-    while (entry->next != 0) {
-        next = &D_8006F9FC[entry->next];
-        if ((s32)(next->address - end) >= size) {
+    if (entry->next != 0) {
+    scan_gap:
+        block = &D_8006F9FC[entry->next];
+        if ((s32)(block->address - end) >= size) {
             goto found;
         }
-        entry = next;
-        end = next->address + next->size;
+        entry = block;
+        end = block->address + block->size;
+        if (entry->next != 0) {
+            goto scan_gap;
+        }
     }
     if ((s32)(0x80000 - end) < size) {
         return 0;
@@ -3279,9 +3279,6 @@ found:
     entry->next = i;
     return end;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800393B8);
-#endif
 
 /* Allocate `size` bytes of SPU memory at the top of the last gap of the
  * map that fits (the space after the last entry included). The new entry
