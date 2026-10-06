@@ -738,8 +738,6 @@ void func_8001DAE8(Sprite *sprite, s32 frame, SpriteSource *source) {
 
 /* Set the GTE rotation and translation for drawing a sprite: its position
  * through the view matrix plus its scaled screen offset. */
-/* Nonmatching: the original keeps the view matrix address in $s1 and reuses the sprite register for the renderer matrix; GCC folds the address into each access. */
-#ifdef NON_MATCHING
 void func_8001E148(Sprite *sprite) {
     SVECTOR position;
     VECTOR view;
@@ -752,8 +750,10 @@ void func_8001E148(Sprite *sprite) {
         func_80022038(sprite);
     }
     shift = (sprite->flags >> 8) & 0x1F;
-    offset_y = sprite->renderer->offset_y << shift;
-    offset_x = sprite->renderer->offset_x << shift;
+    offset_y = sprite->renderer->offset_y;
+    offset_x = sprite->renderer->offset_x;
+    offset_y <<= shift;
+    offset_x <<= shift;
     if ((sprite->motion.word >> 2) & 1) {
         offset_x = -offset_x;
     }
@@ -770,9 +770,6 @@ void func_8001E148(Sprite *sprite) {
     SetRotMatrix(matrix);
     SetTransMatrix(matrix);
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001E148);
-#endif
 
 /* Draw a sprite's parts at `ot` with 8001e3d8 (and 8001e9bc for render flag 2). */
 void func_8001E298(Sprite *sprite, u_long *ot) {
@@ -1083,11 +1080,8 @@ s32 func_8001EE74(u16 *header) {
  * cut off below `height` (in the parts' units before the sprite's shift):
  * parts entirely past it are skipped, parts crossing it lose the rows past
  * it, texture included. Linked at `ot`. */
-/* Nonmatching: register allocation only: the original gives the cut-off height $s5, the sprite $s6 and the part index $s7. */
-#ifdef NON_MATCHING
 void func_8001EE88(Sprite *sprite, u_long *ot, s32 height) {
     u32 flags;
-    s32 limit;
     s32 count;
     SpritePart *parts;
     s32 i;
@@ -1100,7 +1094,7 @@ void func_8001EE88(Sprite *sprite, u_long *ot, s32 height) {
     u8 u;
     s32 v, du, dv;
 
-    limit = height << ((sprite->flags >> 8) & 0x1F);
+    height <<= (sprite->flags >> 8) & 0x1F;
     count = (sprite->flags >> 2) & 0x3F;
     parts = sprite->renderer->parts[1];
     if ((u8 *)D_80059580 + count * sizeof(POLY_FT4) < D_80059534) {
@@ -1145,12 +1139,12 @@ void func_8001EE88(Sprite *sprite, u_long *ot, s32 height) {
                 top = y + h;
                 bottom = y;
             }
-            if (limit < top) {
+            if (height < top) {
                 continue;
             }
             cut = 0;
-            if (limit < bottom) {
-                cut = bottom - limit;
+            if (height < bottom) {
+                cut = bottom - height;
             }
             h -= cut;
             if (h < 0) {
@@ -1172,10 +1166,12 @@ void func_8001EE88(Sprite *sprite, u_long *ot, s32 height) {
             cut >>= (sprite->flags >> 8) & 0x1F;
             v = parts[i].v;
             if (h > 0) {
-                dv = parts[i].h - cut;
+                dv = parts[i].h;
+                dv -= cut;
             } else {
                 v -= cut;
-                dv = parts[i].h - cut;
+                dv = parts[i].h;
+                dv -= cut;
             }
             u = parts[i].u;
             du = parts[i].w;
@@ -1192,18 +1188,15 @@ void func_8001EE88(Sprite *sprite, u_long *ot, s32 height) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001EE88);
-#endif
 
 /* Draw a sprite's parts as 8001ee88 does, cut off above `height` instead:
  * parts entirely above it are skipped, parts crossing it lose the rows
  * above it, texture included. Linked at `ot`. */
-/* Nonmatching: register allocation only, as in 8001ee88 ($s5-$s7), and the row base $a1 against $a3 here. */
+/* Nonmatching: the original keeps the texture row in $a1 and the column in
+ * $a2; this build swaps them and their store order. */
 #ifdef NON_MATCHING
 void func_8001F1D4(Sprite *sprite, u_long *ot, s32 height) {
     u32 flags;
-    s32 limit;
     s32 count;
     SpritePart *parts;
     s32 i;
@@ -1216,7 +1209,7 @@ void func_8001F1D4(Sprite *sprite, u_long *ot, s32 height) {
     u8 u;
     s32 v, du, dv;
 
-    limit = height << ((sprite->flags >> 8) & 0x1F);
+    height <<= (sprite->flags >> 8) & 0x1F;
     count = (sprite->flags >> 2) & 0x3F;
     parts = sprite->renderer->parts[1];
     if ((u8 *)D_80059580 + count * sizeof(POLY_FT4) < D_80059534) {
@@ -1261,12 +1254,12 @@ void func_8001F1D4(Sprite *sprite, u_long *ot, s32 height) {
                 top = y + h;
                 bottom = y;
             }
-            if (bottom < limit) {
+            if (bottom < height) {
                 continue;
             }
             cut = 0;
-            if (top < limit) {
-                cut = limit - top;
+            if (top < height) {
+                cut = height - top;
             }
             if (h > 0) {
                 y += cut;
@@ -1290,10 +1283,12 @@ void func_8001F1D4(Sprite *sprite, u_long *ot, s32 height) {
                         (long *)&poly->x1, (long *)&poly->x3, (long *)&poly->x2, &depth, &flag);
             cut >>= (sprite->flags >> 8) & 0x1F;
             if (h > 0) {
-                v = parts[i].v + cut;
+                v = parts[i].v;
+                v += cut;
                 dv = parts[i].h;
             } else {
-                v = parts[i].v - cut;
+                v = parts[i].v;
+                v -= cut;
                 dv = parts[i].h;
             }
             dv -= cut;
