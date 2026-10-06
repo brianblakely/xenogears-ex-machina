@@ -50,19 +50,24 @@ void func_80025C04(s32 count, s32 scale, u16 *dst, u16 *src) {
  * or made grey (3), offset by the tint and clamped; the result moves from
  * that towards the `base` pixel by `factor` / 32 (at most 1) and goes to
  * `dst`, except for transparent (zero) source pixels. */
-/* Nonmatching: register allocation differs (the original moves the count and source pointer out of $a0/$a1, keeps the tint in $s0 and needs one callee-saved register fewer). */
+/* Nonmatching: the original sign-extends the red component in $v0 for the
+ * base subtraction; GCC extends it in $a0 and shares that value with the
+ * packed output. Five instructions differ. */
 #ifdef NON_MATCHING
 void func_80025D4C(s32 count, u16 *src, u16 *base, u16 *dst, s32 red, s32 green, s32 blue, s32 mode,
                    s32 factor) {
     VECTOR delta;
     u16 pixel;
-    s32 source_r;
-    s32 source_g;
-    s32 source_b;
+    s16 source_r;
+    s16 source_g;
+    s16 source_b;
     s16 r;
     s16 g;
     s16 b;
     s32 grey;
+    u32 grey_green;
+    u32 grey_blue;
+    u32 colour;
 
     if (factor > 0x20) {
         factor = 0x20;
@@ -89,7 +94,9 @@ void func_80025D4C(s32 count, u16 *src, u16 *base, u16 *dst, s32 red, s32 green,
             source_b = (pixel & 0x7000) >> 2;
             break;
         case 3:
-            grey = ((pixel & 0x1F) + ((pixel & 0x3E0) >> 5) + ((pixel & 0x7C00) >> 10)) / 3;
+            grey_green = pixel & 0x3E0;
+            grey_blue = pixel & 0x7C00;
+            grey = (s32)((pixel & 0x1F) + (grey_green >> 5) + (grey_blue >> 10)) / 3;
             source_r = grey;
             source_g = grey << 5;
             source_b = grey << 10;
@@ -123,7 +130,8 @@ void func_80025D4C(s32 count, u16 *src, u16 *base, u16 *dst, s32 red, s32 green,
         gte_gpf12();
         gte_stlvl(&delta);
         if (pixel != 0) {
-            *dst = ((r + (delta.vx & 0x1F)) | 0x8000) | (g + (delta.vy & 0x3E0)) | (b + (delta.vz & 0x7C00));
+            colour = (r + ((u16)delta.vx & 0x1F)) | 0x8000;
+            *dst = colour | (g + (delta.vy & 0x3E0)) | (b + (delta.vz & 0x7C00));
         }
         src++;
         base++;
