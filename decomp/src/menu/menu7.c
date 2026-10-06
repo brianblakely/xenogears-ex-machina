@@ -791,7 +791,6 @@ SceneFile *func_8008B070(s32 file) {
 
 /* Rewind every channel of a player. */
 void func_8008B0D8(Player *player) {
-    s32 unused; /* never used; the original frame has these bytes */
     Channel *channel;
     s32 i;
 
@@ -860,8 +859,8 @@ void func_8008B13C(u8 *data, Player *player, Node *root) {
     }
     for (i = 0; i < anim->channels; i++) {
         node = nodes[record->node];
-        channel->current = data + record->value;
-        channel->start = data + record->value;
+        channel->current = (u8 *)(record->value + (u32)data);
+        channel->start = (u8 *)(record->value + (u32)data);
         switch (record->kind & 0x7F) {
         case 3:
             channel->target = &node->unk44.vx;
@@ -1010,16 +1009,17 @@ s32 func_8008B650(s32 from, s32 to, s32 step) {
 /* Advance a player by some frames (clamped to the animation's end) and
  * move every target 1/steps of the way to its key or channel value.
  * Channel streams hold a byte per frame: 0xxxxxxx a 7-bit delta, 10xxxxxx
- * hold the delta for x frames, 11xxxxxx plus a byte a 14-bit delta.
+ * hold the previous delta for x following frames, 11xxxxxx plus a byte
+ * a signed 14-bit delta.
  * Returns whether the end was reached in a final step (1 without an
- * animation). Does not match: the stream byte is tested in its load
- * register rather than the copy, which shifts registers in the decoder. */
+ * animation). Nonmatching: the first tag copy and the completion
+ * comparison use different registers. */
 s32 func_8008B730(Player *player, s32 frames, s32 steps) {
     Key *key;
     Channel *channel;
     u8 *code;
-    s8 value;
-    s16 current;
+    s8 command;
+    s16 value; /* decoded payload/delta or the current target value */
     s32 i;
     s32 j;
 
@@ -1044,11 +1044,11 @@ s32 func_8008B730(Player *player, s32 frames, s32 steps) {
         }
     } else {
         for (i = 0; i < player->header->keys; i++, key++) {
-            current = *key->target;
+            value = *key->target;
             if (key->angular) {
-                *key->target = func_8008B5FC(current, key->value, steps);
+                *key->target = func_8008B5FC(value, key->value, steps);
             } else {
-                *key->target = current + (key->value - current) / steps;
+                *key->target = value + (key->value - value) / steps;
             }
         }
     }
@@ -1059,16 +1059,18 @@ s32 func_8008B730(Player *player, s32 frames, s32 steps) {
                 channel->hold--;
             } else {
                 code = channel->current++;
-                value = *(s8 *)code;
-                if (value & 0x80) {
-                    if (value & 0x40) {
+                command = *(s8 *)code;
+                if (command & 0x80) {
+                    value = command & 0x3F;
+                    if (command & 0x40) {
                         channel->current = code + 2;
-                        channel->delta = (value & 0x3F) | ((s8)code[1] << 6);
+                        value |= (s8)code[1] << 6;
+                        channel->delta = value;
                     } else {
-                        channel->hold = value & 0x3F;
+                        channel->hold = value;
                     }
                 } else {
-                    channel->delta = (value << 25) >> 25;
+                    channel->delta = (command << 25) >> 25;
                 }
             }
             channel->value += channel->delta;
@@ -1076,11 +1078,11 @@ s32 func_8008B730(Player *player, s32 frames, s32 steps) {
         if (steps == 1) {
             *channel->target = channel->value;
         } else {
-            current = *channel->target;
+            value = *channel->target;
             if (channel->angular) {
-                *channel->target = func_8008B5FC(current, channel->value, steps);
+                *channel->target = func_8008B5FC(value, channel->value, steps);
             } else {
-                *channel->target = current + (channel->value - current) / steps;
+                *channel->target = value + (channel->value - value) / steps;
             }
         }
     }
