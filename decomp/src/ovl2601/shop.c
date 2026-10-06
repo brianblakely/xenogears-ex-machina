@@ -401,10 +401,13 @@ INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/shop", func_801CDD14);
  * accessories of one group replace each other, otherwise the weakest is
  * replaced.
  */
-#ifdef NON_MATCHING
 void func_801CE480(s32 *diffs, u8 *worse, u8 id, u8 kind, u8 member) {
     s16 after[2];
     s16 before[2];
+    EquipInfo *current;
+    EquipInfo *fitted;
+    AccessoryInfo *accessory;
+    AccessoryInfo *fitted_accessory;
     u8 lowest;
     u8 replace;
     s32 weakest;
@@ -417,19 +420,22 @@ void func_801CE480(s32 *diffs, u8 *worse, u8 id, u8 kind, u8 member) {
     switch (kind) {
     case 0:
         if (member != 4) {
-            before[0] = D_800625A0->resources->equipment[D_8006D8A0[member].weapons[0]].power +
-                        D_8006D8A0[member].bonus[0];
-            after[0] = D_800625A0->resources->equipment[id].power + D_8006D8A0[member].bonus[0];
+            current = &D_800625A0->resources->equipment[D_8006D8A0[member].weapons[0]];
+            before[0] = current->power + D_8006D8A0[member].bonus[0];
+            current = &D_800625A0->resources->equipment[id];
+            after[0] = current->power + D_8006D8A0[member].bonus[0];
         } else {
             for (k = 0; k < 4; k++) {
-                before[0] += D_800625A0->resources->equipment[D_8006D8A0[4].armour[k]].power;
+                current = &D_800625A0->resources->equipment[D_8006D8A0[member].armour[k]];
+                before[0] += current->power;
             }
+            fitted = &D_800625A0->resources->equipment[id];
             for (k = 0; k < 4; k++) {
-                if (D_800625A0->resources->equipment[D_8006D8A0[member].armour[k]].type == D_800625A0->resources->equipment[id].type &&
-                    D_800625A0->resources->equipment[D_8006D8A0[member].armour[k]].type != 5) {
-                    after[0] += D_800625A0->resources->equipment[id].power;
+                current = &D_800625A0->resources->equipment[D_8006D8A0[member].armour[k]];
+                if (current->type == fitted->type && current->type != 5) {
+                    after[0] += fitted->power;
                 } else {
-                    after[0] += D_800625A0->resources->equipment[D_8006D8A0[member].armour[k]].power;
+                    after[0] += current->power;
                 }
             }
         }
@@ -438,29 +444,33 @@ void func_801CE480(s32 *diffs, u8 *worse, u8 id, u8 kind, u8 member) {
         replace = 1;
         before[1] = after[1] = D_8006D8A0[member].bonus[1];
         for (k = 0; k < 3; k++) {
-            before[1] += D_800625A0->resources->accessories[D_8006D8A0[member].accessories[k]].power;
+            accessory = &D_800625A0->resources->accessories[D_8006D8A0[member].accessories[k]];
+            before[1] += accessory->power;
         }
+        fitted_accessory = &D_800625A0->resources->accessories[id];
         for (k = 0; k < 3; k++) {
-            if (D_800625A0->resources->accessories[D_8006D8A0[member].accessories[k]].group != 0 &&
-                D_800625A0->resources->accessories[D_8006D8A0[member].accessories[k]].group == D_800625A0->resources->accessories[id].group) {
-                after[1] += D_800625A0->resources->accessories[id].power;
+            accessory = &D_800625A0->resources->accessories[D_8006D8A0[member].accessories[k]];
+            if (accessory->group != 0 && accessory->group == fitted_accessory->group) {
+                after[1] += fitted_accessory->power;
                 replace = 0;
             } else {
-                after[1] += D_800625A0->resources->accessories[D_8006D8A0[member].accessories[k]].power;
+                after[1] += accessory->power;
             }
         }
         if (replace) {
             lowest = 0xFF;
             for (k = 0; k < 3; k++) {
-                if (lowest >= D_800625A0->resources->accessories[D_8006D8A0[member].accessories[k]].power) {
-                    lowest = D_800625A0->resources->accessories[D_8006D8A0[member].accessories[k]].power;
+                accessory = &D_800625A0->resources->accessories[D_8006D8A0[member].accessories[k]];
+                if (lowest >= accessory->power) {
+                    lowest = accessory->power;
                     weakest = k;
                 }
             }
-            after[1] = D_8006D8A0[member].bonus[1] + D_800625A0->resources->accessories[id].power;
+            after[1] = D_8006D8A0[member].bonus[1] + fitted_accessory->power;
             for (k = 0; k < 3; k++) {
                 if (k != weakest) {
-                    after[1] += D_800625A0->resources->accessories[D_8006D8A0[member].accessories[k]].power;
+                    accessory = &D_800625A0->resources->accessories[D_8006D8A0[member].accessories[k]];
+                    after[1] += accessory->power;
                 }
             }
         }
@@ -476,9 +486,6 @@ void func_801CE480(s32 *diffs, u8 *worse, u8 id, u8 kind, u8 member) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/shop", func_801CE480);
-#endif
 
 /* The count held of item `id` in an inventory of `n` ids and counts (0 if absent). */
 u16 func_801CE8D8(u8 *ids, u8 *counts, s32 n, u8 id) {
