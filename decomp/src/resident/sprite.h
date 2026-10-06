@@ -474,13 +474,4 @@ extern SVECTOR D_8004FDC0[4]; /* corners of a sheet part being drawn */
 extern MATRIX D_8004FD80; /* light colour matrix of lit sprite models */
 extern MATRIX D_8004FDA0; /* light direction matrix of lit sprite models */
 void func_800B1F6C(SpriteRendererEntry *model, SpritePart *parts, s32 ot, s32 unused, s32 depth, s32 blend); /* battle overlay: draw a lit model */
-/* The tile primitive 80025544 takes from the queue block. */
-typedef struct {
-    u8 addr[3];
-    u8 len;
-    u32 colour;
-    s16 x, y;
-    s16 w, h;
-} TilePrim;
-
 #endif

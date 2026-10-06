@@ -394,13 +394,12 @@ void func_80025258(Task *task) {
 /* Sprite task draw for a sprite without a frame: a point primitive at its
  * screen position (its colour word) and a draw-mode primitive with its
  * blend bits, both from the queue entry block, at its depth. */
-/* Nonmatching: the original copies the point to $a1 for the call before storing its colour through that copy, and its first AddPrim argument is set up later. */
-#ifdef NON_MATCHING
 void func_8002541C(Task *task) {
     SVECTOR position;
     s32 flag;
     Sprite *sprite = task->data;
     PointPrim *point;
+    P_TAG *primitive;
     ModePrim *mode;
     s32 depth;
 
@@ -418,8 +417,9 @@ void func_8002541C(Task *task) {
         depth = RotTransPers(&position, (long *)&point->xy, &flag, &flag) >> D_80050100;
         sprite->depth = depth;
         point->len = 2;
-        point->colour = *(u32 *)&sprite->red;
-        AddPrim((u32 *)D_8005956C + depth, point);
+        primitive = (P_TAG *)point;
+        *(u32 *)&primitive->r0 = *(u32 *)&sprite->red;
+        AddPrim((u32 *)D_8005956C + depth, primitive);
         mode = (ModePrim *)D_80059580;
         if ((u8 *)(mode + 1) < D_80059534) {
             D_80059580 = (SpriteQueueEntry *)(mode + 1);
@@ -429,17 +429,12 @@ void func_8002541C(Task *task) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_800248D4", func_8002541C);
-#endif
 
 /* Sprite task draw for a sprite without a frame drawn as a square: a tile
  * primitive (its colour word) centred on its screen position, as wide as
  * the projection of its size (halfword 0x36) at its distance, and a
  * draw-mode primitive with its blend bits, both from the queue entry
  * block, at its depth. */
-/* Nonmatching: the original leaves the delay slot of the absolute-value branch empty and stores the colour word right after the length; this build fills the slot with the tile pointer copy and stores the colour in the AddPrim delay slot. */
-#ifdef NON_MATCHING
 void func_80025544(Task *task) {
     SVECTOR centre;
     SVECTOR edge;
@@ -448,7 +443,7 @@ void func_80025544(Task *task) {
     s32 flag;
     Sprite *sprite = task->data;
     s32 size;
-    TilePrim *tile;
+    TILE *tile;
     ModePrim *mode;
     s32 depth;
 
@@ -456,7 +451,7 @@ void func_80025544(Task *task) {
         return;
     }
     size = sprite->height;
-    tile = (TilePrim *)D_80059580;
+    tile = (TILE *)D_80059580;
     if ((u8 *)(tile + 1) < D_80059534) {
         centre.vx = sprite->x >> 16;
         centre.vy = sprite->y >> 16;
@@ -466,19 +461,17 @@ void func_80025544(Task *task) {
         SetTransMatrix(&D_8004FBB8);
         edge = centre;
         edge.vx += size;
-        depth = RotTransPers3(&centre, &edge, &centre, (long *)&tile->x, edge_xy, &unused_xy, &flag, &flag) >> D_80050100;
+        depth = RotTransPers3(&centre, &edge, &centre, (long *)&tile->x0, edge_xy, &unused_xy, &flag, &flag) >> D_80050100;
         sprite->depth = depth;
-        size = (s16)edge_xy[0] - tile->x;
+        size = (s16)edge_xy[0] - tile->x0;
         if (size == 0) {
             size = 1;
         }
-        if (size < 0) {
-            size = -size;
-        }
-        tile->x -= size / 2;
-        tile->y -= size / 2;
-        tile->colour = *(u32 *)&sprite->red;
-        tile->len = 3;
+        size = abs(size);
+        tile->x0 -= size / 2;
+        tile->y0 -= size / 2;
+        *(u32 *)&tile->r0 = *(u32 *)&sprite->red;
+        setlen(tile, 3);
         tile->h = size;
         tile->w = size;
         AddPrim((u32 *)D_8005956C + depth, tile);
@@ -491,9 +484,6 @@ void func_80025544(Task *task) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_800248D4", func_80025544);
-#endif
 
 void func_80025710(void) {
 }
