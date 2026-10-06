@@ -326,8 +326,6 @@ void func_80022A70(s32 *list, s32 x, s16 y) {
  * its gravity (word 0x1c): unless render bit 26 is set, the battle stage
  * floor (800ba8f4) stops a falling sprite, which rebounds by its bounce
  * factor and settles once the rebound is below the gravity. */
-/* Nonmatching: the rebound division reuses the product's register and the floor store follows mflo in the original; GCC copies the product first. */
-#ifdef NON_MATCHING
 void func_80022B2C(Sprite *sprite) {
     s32 speed;
     s32 gravity;
@@ -342,15 +340,14 @@ void func_80022B2C(Sprite *sprite) {
             if ((sprite->y >> 16) >= sprite->ground) {
                 speed = -sprite->speed_y * sprite->frame_bits.bounce;
                 sprite->y = sprite->ground << 16;
-                sprite->speed_y = speed = speed / 256;
-                gravity = sprite->word1c;
+                /* Round the signed rebound toward zero before scaling. */
                 if (speed < 0) {
-                    speed = -speed;
+                    speed += 0xFF;
                 }
-                if (gravity < 0) {
-                    gravity = -gravity;
-                }
-                if (speed < gravity) {
+                speed >>= 8;
+                sprite->speed_y = speed;
+                gravity = sprite->word1c;
+                if (abs(speed) < abs(gravity)) {
                     sprite->speed_y = 0;
                 }
                 return;
@@ -367,9 +364,6 @@ void func_80022B2C(Sprite *sprite) {
         sprite->speed_y += sprite->word1c;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80022B2C);
-#endif
 
 /* Scale a value by the sprite's speed factor (1024 = 1) when it has one. */
 s32 func_80022CAC(Sprite *sprite, s32 value) {
