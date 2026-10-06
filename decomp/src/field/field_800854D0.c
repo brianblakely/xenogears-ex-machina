@@ -838,7 +838,6 @@ void func_80087580(void) {
     D_800B0078->pc += 5;
 }
 
-#ifdef NON_MATCHING
 /* Event: copy character slot and record op1 over op3; slots 9 and 10 set
  * game flags 0x2000 / 0x1000. */
 void func_8008764C(void) {
@@ -847,17 +846,18 @@ void func_8008764C(void) {
 
     D_8005A39C->characters[to] = D_8005A39C->characters[from];
     D_8005A39C->records[to] = D_8005A39C->records[from];
-    if (to == 9) {
-        D_8005A39C->unk22B6 |= 0x2000;
+    {
+        GameState *state = D_8005A39C;
+
+        if (to == 9) {
+            state->unk22B6 |= 0x2000;
+        }
     }
     if (to == 10) {
         D_8005A39C->unk22B6 |= 0x1000;
     }
     D_800B0078->pc += 5;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_8008764C);
-#endif
 
 /* Event: store 80050622 in variable op1. */
 void func_80087800(void) {
