@@ -1408,7 +1408,6 @@ void func_800B7134(BattleTask *draw) {
     func_800B7160(draw);
 }
 
-#ifdef NON_MATCHING
 /* Shatter draw: each shard that has fallen in front of the screen (z at
  * least 64), its layer's triangle turned and placed, projected at the
  * screen centre and distance 512. */
@@ -1416,9 +1415,6 @@ void func_800B7160(BattleTask *draw) {
     ScreenShatter *shatter = draw->data;
     s32 offsetX;
     s32 offsetY;
-    MATRIX m;
-    s32 p;
-    s32 flag;
     s32 screen;
     s32 layer;
     s32 row;
@@ -1437,6 +1433,11 @@ void func_800B7160(BattleTask *draw) {
                 shard = &shatter->shards[layer][row][column];
                 poly = &shard->poly[BATTLE_AREA.buffer];
                 if (shard->position.vz >= 64) {
+                    MATRIX m;
+                    s32 p;
+                    s32 flag;
+                    s32 depth;
+
                     func_8003F738(&shard->angles, &m);
                     TransMatrix(&m, &shard->position);
                     SetRotMatrix(&m);
@@ -1446,9 +1447,9 @@ void func_800B7160(BattleTask *draw) {
                     } else {
                         triangle = D_800C35AC;
                     }
-                    AddPrim(D_800C3CB4 + (RotTransPers3(&triangle[0], &triangle[1], &triangle[2], (u32 *)&poly->x0,
-                                                        (u32 *)&poly->x1, (u32 *)&poly->x2, &p, &flag) >> 6),
-                            poly);
+                    depth = RotTransPers3(&triangle[0], &triangle[1], &triangle[2], (u32 *)&poly->x0,
+                                          (u32 *)&poly->x1, (u32 *)&poly->x2, &p, &flag) >> 6;
+                    AddPrim(D_800C3CB4 + depth, poly);
                 }
             }
         }
@@ -1456,9 +1457,6 @@ void func_800B7160(BattleTask *draw) {
     SetGeomOffset(offsetX, offsetY);
     SetGeomScreen(screen);
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B3F04", func_800B7160);
-#endif
 
 /* Free a heap block once drawing is done. */
 void func_800B7330(void *block) {
