@@ -1368,7 +1368,6 @@ void func_800941C4(VECTOR *from, VECTOR *to, VECTOR *direction, s16 *heading) {
 }
 
 /* Find the region of path table `table` containing the position: a path becomes current, a destination (kind 4) is recorded. */
-#ifdef NON_MATCHING /* the destination and failure tails are cross-jumped */
 s32 func_80094238(VECTOR *position, s32 table) {
     PathRegion *region;
     u16 x;
@@ -1384,11 +1383,11 @@ s32 func_80094238(VECTOR *position, s32 table) {
                     D_8009D7D8 = (PathTable *)-1;
                     D_8009BD24 = -1;
                     D_8009CE68 = region->link;
-                    return 1;
+                } else {
+                    D_8009D7D8 = (PathTable *)region;
+                    D_8009CE68 = -1;
+                    D_8009BD24 = region->link;
                 }
-                D_8009D7D8 = (PathTable *)region;
-                D_8009CE68 = -1;
-                D_8009BD24 = region->link;
                 return 1;
             }
             region++;
@@ -1399,9 +1398,6 @@ s32 func_80094238(VECTOR *position, s32 table) {
     D_8009CE68 = -1;
     return 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80094238);
-#endif
 
 /* Find the region of path table `table` of kind `kind` containing the
  * position; it becomes the current path. */
