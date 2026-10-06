@@ -334,5 +334,14 @@ D_8004BED0 = 0x8004BED0; // size:0x8
 // Game data the C addresses by its start although no assembly names it.
 D_8005A0C8 = 0x8005A0C8; // size:0x18
 
+// Authored kernel-menu names follow the fatal screen's format strings.
+// Keep them out of the preceding function's migrated assembly rodata.
+D_8001826C = 0x8001826C; // size:0x8 force_not_migration:True
+D_80018274 = 0x80018274; // size:0x8 force_not_migration:True
+D_8001827C = 0x8001827C; // size:0xC force_not_migration:True
+D_80018288 = 0x80018288; // size:0x8 force_not_migration:True
+D_80018290 = 0x80018290; // size:0x18 force_not_migration:True
+D_800182A8 = 0x800182A8; // size:0x8 force_not_migration:True
+
 // Compiled window setup follows the handwritten packed-data decoder.
 func_80032F54 = 0x80032F54; // type:func

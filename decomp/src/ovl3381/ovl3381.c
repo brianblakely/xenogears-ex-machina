@@ -26,6 +26,8 @@ void func_801FC000(TaskNode *node) {
 
 /* Queue every triangle of the current display buffer at a fixed 64,64
  * offset. */
+/* NON_MATCHING: the compiled frame is 0x50; the original reserves 0x78. */
+#ifdef NON_MATCHING
 void func_801FC064(TaskNode *node) {
     TileTask *task;
     Tile *tile;
@@ -41,7 +43,6 @@ void func_801FC064(TaskNode *node) {
     SetGeomScreen(0x200);
     {
         SVECTOR offset;
-        u8 unused[0x28]; /* frame space of the original's unused locals (0x20..0x48) */
         offset.vy = offset.vx = 64;
         for (half = 0; half != 2; half++) {
             for (row = 0; row < 16; row++) {
@@ -68,6 +69,10 @@ void func_801FC064(TaskNode *node) {
     SetGeomOffset(ofx, ofy);
     SetGeomScreen(h);
 }
+
+#else
+INCLUDE_ASM(".local/decomp/ovl3381/asm/nonmatchings/ovl3381", func_801FC064);
+#endif
 
 /* Unlink the effect's nodes, release it and restore the depth shift. */
 void func_801FC278(TaskNode *node) {

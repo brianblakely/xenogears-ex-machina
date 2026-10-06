@@ -84,6 +84,7 @@ extern s16 D_800C373C;           /* its angle round it */
 
 /* This unit. */
 void func_800BB13C(ActorTask *task);
+void func_800BB314(ActorTask *task);
 void func_800BB760(s32 slot);
 void func_800BAB0C(ActorTask *task);
 void func_800BABDC(BattleTask *task);

@@ -116,6 +116,7 @@ void func_80019C7C(void);
 void func_80019CD0(void);
 void func_80019D48(void);
 void func_80019EF8(s32 error, u32 caller);
+void func_8001A250(void);
 void func_8001AADC(void);
 void func_8001B6BC(void);
 void func_8001B158(s32 extra);

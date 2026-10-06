@@ -1352,8 +1352,9 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_80081A44);
 
 /* One frame of the menu layer: pending refresh, the shown menu's input
  * (with the extra-speed button) and its drawing. */
+/* NON_MATCHING: the compiled frame is 0x18; the original reserves 0x20. */
+#ifdef NON_MATCHING
 void func_80081D2C(void) {
-    s32 unused[2]; /* the original frame has 8 bytes of unused locals */
     Menu *menu;
 
     if (D_8009275C != 0) {
@@ -1375,6 +1376,10 @@ void func_80081D2C(void) {
     }
     func_8008151C(D_80092734);
 }
+
+#else
+INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_80081D2C);
+#endif
 
 /* Dim the screen below the top band with the half-grey fade tiles. */
 void func_80081E00(void) {

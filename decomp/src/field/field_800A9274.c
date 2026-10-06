@@ -74,7 +74,6 @@ void func_800A93CC(s32 slot) {
     s32 i;
     s32 j;
     Particle *particle;
-    s32 unused[1]; /* the original frame reserves an unused local */
 
     if (D_800B14B0[slot] == 1) {
         emitter = D_800C3918[slot];
