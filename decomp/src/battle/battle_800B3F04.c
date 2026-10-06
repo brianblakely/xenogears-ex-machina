@@ -1037,25 +1037,23 @@ void func_800B626C(void) {
     func_800320E8(stack);
 }
 
-#ifdef NON_MATCHING
 /* Script command: show stage object 11 in mode args[0] (800BEE2C); mode 2
  * first places it and shows it to the side of D_800C3E1C only. */
 void func_800B62C8(BattleSprite *sprite, u8 *args) {
     u8 *stack = func_80031BDC(0x4000, 1);
+    u32 frame_bits;
 
     STACK_ENTER(stack + 0x3E00);
     if (args[0] == 2) {
         func_800A979C(0xB, 0x300, 0x100, 0, 0x1DB);
-        func_800BEE2C(0xB, 1 << (((D_800C3E1C->motion.word & 3) << 2) | (D_800C3E1C->frameBits.word >> 30)), args[0]);
+        frame_bits = D_800C3E1C->frameBits.word >> 30;
+        func_800BEE2C(0xB, 1 << (((D_800C3E1C->motion.word & 3) << 2) | frame_bits), args[0]);
     } else {
         func_800BEE2C(0xB, D_800D3634, args[0]);
     }
     STACK_LEAVE();
     func_800320E8(stack);
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B3F04", func_800B62C8);
-#endif
 
 /* Script command: fade the lights (800B3CD4) with the parameters at the
  * relative offset in args. */
@@ -1117,7 +1115,6 @@ void func_800B6518(BattleSprite *sprite) {
     func_800223B0(sprite, direction);
 }
 
-#ifdef NON_MATCHING
 /* Script command: turn the sprite's speed towards its target by at most
  * args[0] * 4 (of 4096) in each angle, keeping its length. */
 void func_800B65B0(BattleSprite *sprite, u8 *args) {
@@ -1133,7 +1130,8 @@ void func_800B65B0(BattleSprite *sprite, u8 *args) {
     s16 speedLength;
     s32 step;
     s16 turn;
-    s32 difference;
+    s16 difference;
+    SVECTOR *length_vector;
 
     delta.vx = sprite->target[0] - sprite->x.part.whole;
     delta.vy = sprite->target[1] - sprite->y.part.whole;
@@ -1164,6 +1162,7 @@ void func_800B65B0(BattleSprite *sprite, u8 *args) {
     angles.vy += turn;
     difference = ((s32)((u16)want.vz - (u16)angles.vz) << 20) >> 20;
     turn = difference;
+    length_vector = &length;
     if (step < abs(difference)) {
         turn = step;
         if (difference < 0) {
@@ -1171,16 +1170,13 @@ void func_800B65B0(BattleSprite *sprite, u8 *args) {
         }
     }
     angles.vz += turn;
-    func_80021B04(&length, speedLength, 0, 0);
+    func_80021B04(length_vector, speedLength, 0, 0);
     func_8003F738(&angles, &m);
-    ApplyMatrix(&m, &length, &speed);
+    ApplyMatrix(&m, length_vector, &speed);
     sprite->velocity[0] = speed.vx << 7;
     sprite->velocity[1] = speed.vy << 7;
     sprite->velocity[2] = speed.vz << 7;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B3F04", func_800B65B0);
-#endif
 
 /* Script command: aim the sprite's speed (its speed setting, field18) at
  * its target and face it that way. */
