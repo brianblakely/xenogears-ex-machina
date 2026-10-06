@@ -201,6 +201,10 @@ decomp/src/menu/func_8008BB00.s
 decomp/src/menu/func_8008BB1C.s
 decomp/src/menu/func_8008BB3C.s
 decomp/src/menu/func_8008BC04.s
+decomp/src/menu/func_8008C3A8.s
+decomp/src/menu/func_8008C4B0.s
+decomp/src/menu/func_8008C620.s
+decomp/src/menu/func_8008DDFC.s
 decomp/src/menu/gpu.h
 decomp/src/menu/gte.h
 decomp/src/menu/menu.c
@@ -211,6 +215,7 @@ decomp/src/menu/menu4.c
 decomp/src/menu/menu5.c
 decomp/src/menu/menu6.c
 decomp/src/menu/menu7.c
+decomp/src/menu/mesh_packet.s
 decomp/src/menu/scene.h
 decomp/src/menu/sound.h
 decomp/src/menu/spark.h

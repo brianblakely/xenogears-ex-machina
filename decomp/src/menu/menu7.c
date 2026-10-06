@@ -1126,11 +1126,11 @@ INCLUDE_ASM("decomp/src/menu", func_8008BB3C);
 
 INCLUDE_ASM("decomp/src/menu", func_8008BC04);
 
-/* Set the mesh light direction (a fixed down-left vector) and light a
- * mesh's vertices. */
+/* Set the mesh light direction (a fixed down-left vector) and project
+ * its vertices onto the ground plane for the shadow packets. */
+#ifdef NON_MATCHING
 void func_8008BCC8(Mesh *mesh, u8 *work) {
     Vector direction;
-    Vector unused; /* never used; the original frame has these bytes */
 
     direction.vx = -8;
     direction.vy = -8;
@@ -1141,6 +1141,9 @@ void func_8008BCC8(Mesh *mesh, u8 *work) {
     D_8009A2C8.vz <<= 4;
     func_8008C3A8(mesh->data, work, mesh->count);
 }
+#else
+INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008BCC8);
+#endif
 
 /* Draw a mesh's primitive groups (flag 8: quads, else triangles) into the
  * given packets and ordering table using the vertex work area. */
@@ -1323,11 +1326,11 @@ void func_8008C2E8(Node *node) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008C3A8);
+INCLUDE_ASM("decomp/src/menu", func_8008C3A8);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008C4B0);
+INCLUDE_ASM("decomp/src/menu", func_8008C4B0);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008C620);
+INCLUDE_ASM("decomp/src/menu", func_8008C620);
 
 /* Shift a vector history: entries 4, 3 and 2 all take entry 0. */
 void func_8008C7C0(SVector *history) {
@@ -1731,9 +1734,8 @@ void func_8008D9F0(Spark *spark) {
 
 /* Move and draw every live spark of an emitter: gravity, a bounce on the
  * ground plane, projection relative to the camera through the scratchpad. */
+#ifdef NON_MATCHING
 void func_8008DA48(Emitter *emitter, u32 *ot, Matrix *view) {
-    Matrix unused_matrix;
-    SVector unused_vector;
     Spark *spark;
     void (*draw)(void *, u32 *);
     s32 i;
@@ -1763,13 +1765,18 @@ void func_8008DA48(Emitter *emitter, u32 *ot, Matrix *view) {
         spark = (Spark *)((u8 *)spark + emitter->size);
     }
 }
+#else
+INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008DA48);
+#endif
 
 /* Copy one model part's local transform. */
+#ifdef NON_MATCHING
 void func_8008DBC0(SparkModel *model, s16 part, Matrix *out) {
-    Matrix unused;
-
     *out = model->list->parts[part]->matrix;
 }
+#else
+INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008DBC0);
+#endif
 
 /* Create the menu's spark emitter: 256 orange three-point sparks. */
 void func_8008DC28(void) {
@@ -1821,7 +1828,7 @@ void func_8008DCB8(u32 *ot, SparkModel *model, Matrix *view, Vector *pos) {
     func_8008DA48(emitter, ot, view);
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008DDFC);
+INCLUDE_ASM("decomp/src/menu", func_8008DDFC);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008DE54);
 

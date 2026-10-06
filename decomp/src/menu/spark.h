@@ -300,5 +300,9 @@ void func_8008D580(Emitter *emitter);
 void func_8008D5C0(Emitter *emitter, s32 count);
 void func_8008D680(Emitter *emitter, Matrix *rotation, s32 count);
 void func_8008DA48(Emitter *emitter, u32 *ot, Matrix *view);
+void func_8008DBC0(SparkModel *model, s16 part, Matrix *out);
+/* Rotate with the loaded GTE matrix, then scale through IR0 with GPF12.
+ * Only out->vx/vy/vz are written; out->pad is preserved. */
+void func_8008DDFC(SVector *vector, SVector *out, s32 scale);
 
 #endif

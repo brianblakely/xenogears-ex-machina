@@ -429,7 +429,12 @@ Node *func_8008C188(Node *source, Node *parent);
 Node *func_8008C298(Node *source);
 u32 func_800405E4(void);
 void func_8008BB3C(Task *task);
+/* Project toward D_8009A2C8 onto y=0; writes work.vx/vz, preserving vy/pad.
+ * count must be positive. Reads the next vertex even on the last iteration. */
 void func_8008C3A8(void *vertices, u8 *work, s32 count);
+/* Mesh packet builders consume eight-byte u16 index records and preload one
+ * beyond count. They advance D_80059424 past culled packet slots too, and
+ * prepend accepted packets to D_80059568 without a depth sort. */
 void func_8008C620(u8 *prims, s32 count);
 void func_8002C700(ModelFile *file, void *packets, u32 *ot, s32 mode);
 void func_80030B14(Matrix *m);
@@ -478,7 +483,7 @@ extern s32 D_80050104;
                      :                                                         \
                      : "r"(r0), "r"(r1), "r"(r2)                               \
                      : "$12", "$13", "$14")
-void func_8008C4B0(u8 *prims, s32 count);
+void func_8008C4B0(u8 *prims, s32 count); /* same packet interface as C620 */
 s32 func_8008B730(Player *player, s32 frames, s32 steps);
 void ClearOTagR(u32 *ot, s32 length);
 void AddPrims(u32 *ot, u32 *last, u32 *first);
