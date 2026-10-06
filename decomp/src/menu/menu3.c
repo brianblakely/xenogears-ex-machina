@@ -3766,11 +3766,9 @@ void func_8007D274(Vector *from, Vector *to) {
     to->vz = from->vz + rand() % 64 - 32;
 }
 
-#ifdef NON_MATCHING
 /* Queue a three-strand bolt of jittered 7-segment lines between two points,
  * coloured by kind: 0 green-blue flicker, 1 random grey-yellow, 2
- * alternating white and red segments.
- * Does not match: the address of prev is kept in a saved register. */
+ * alternating white and red segments. */
 void func_8007D334(Vector *from, Vector *to, s32 kind) {
     Vector point;
     Vector step;
@@ -3825,14 +3823,15 @@ void func_8007D334(Vector *from, Vector *to, s32 kind) {
                 }
                 break;
             }
-            func_8007E31C(&prev, i == 6 ? to : &next, &color);
+            if (i != 6) {
+                func_8007E31C(&prev, &next, &color);
+            } else {
+                func_8007E31C(&prev, to, &color);
+            }
             prev = next;
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007D334);
-#endif
 
 /* Map codes 0x11..0x13 to kinds 0..2 and forward them. */
 void func_8007D65C(Vector *from, Vector *to, s32 code) {
