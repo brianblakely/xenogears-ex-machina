@@ -3285,12 +3285,9 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800393B8);
 
 /* Allocate `size` bytes of SPU memory at the top of the last gap of the
  * map that fits (the space after the last entry included). The new entry
- * is linked after the map's last entry. Returns the address, 0 when none.
- * Nonmatching: the next entry and the new entry take swapped registers. */
-#ifdef NON_MATCHING
+ * is linked after the map's last entry. Returns the address, 0 when none. */
 s32 func_800394B8(s32 size) {
     SpuMemBlock *entry = D_8006F9FC;
-    SpuMemBlock *next;
     SpuMemBlock *found = NULL;
     SpuMemBlock *block;
     u32 end;
@@ -3306,12 +3303,12 @@ s32 func_800394B8(s32 size) {
             }
             break;
         }
-        next = &D_8006F9FC[entry->next];
-        if ((s32)(next->address - end) >= size) {
+        block = &D_8006F9FC[entry->next];
+        if ((s32)(block->address - end) >= size) {
             found = entry;
-            address = next->address - size;
+            address = block->address - size;
         }
-        entry = next;
+        entry = block;
     }
     if (found == NULL) {
         return 0;
@@ -3329,9 +3326,6 @@ s32 func_800394B8(s32 size) {
     entry->next = i;
     return address;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800394B8);
-#endif
 
 /* Reserve `size` bytes of SPU memory at `address` when the map leaves
  * that range free, linking the new entry after the one before it.
