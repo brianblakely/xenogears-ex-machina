@@ -753,13 +753,15 @@ void func_8002DD20(u32 *list) {
  * Each type has a placement mode (1: base + offset, 2: base + origin +
  * offset, otherwise origin + offset) and a base position. Returns 1 at an
  * unknown image type, else 0.
- * Nonmatching: register allocation of the base position and the order of
- * the placement sums differ. */
+ * Nonmatching: switch delay slots, shared placement tails and the loop
+ * increment scheduling differ. */
 #ifdef NON_MATCHING
 s32 func_8002DDE4(s32 *images, s16 mode, s32 x, s32 y, s16 mode2, u16 x2, u16 y2) {
     RECT rect;
+    s32 base_x = x;
+    s32 base_y = y;
     s32 count = images[0];
-    u16 *p = (u16 *)(images + count + 1);
+    u16 *p = (u16 *)(images + (count + 1));
     s32 type;
     s32 i;
 
@@ -769,12 +771,12 @@ s32 func_8002DDE4(s32 *images, s16 mode, s32 x, s32 y, s16 mode2, u16 x2, u16 y2
         if (type == 0x1100) {
             switch (mode) {
             case 1:
-                rect.x = x + p[2];
-                rect.y = y + p[3];
+                rect.x = base_x + p[2];
+                rect.y = base_y + p[3];
                 break;
             case 2:
-                rect.x = x + p[0] + p[2];
-                rect.y = y + p[1] + p[3];
+                rect.x = p[2] + (base_x + p[0]);
+                rect.y = p[3] + (base_y + p[1]);
                 break;
             default:
                 rect.x = p[0] + p[2];
@@ -788,8 +790,8 @@ s32 func_8002DDE4(s32 *images, s16 mode, s32 x, s32 y, s16 mode2, u16 x2, u16 y2
                 rect.y = y2 + p[3];
                 break;
             case 2:
-                rect.x = x2 + p[0] + p[2];
-                rect.y = y2 + p[1] + p[3];
+                rect.x = p[2] + (x2 + p[0]);
+                rect.y = p[3] + (y2 + p[1]);
                 break;
             default:
                 rect.x = p[0] + p[2];
