@@ -313,7 +313,12 @@ typedef struct {
     u8 pad6[2];
 } SlotState;
 
-extern SlotState D_800D32A1[SLOT_COUNT];
+typedef struct {
+    SlotState party[3];
+    SlotState enemy[8];
+} BattleSlotStates;
+
+extern BattleSlotStates D_800D32A1;
 
 void func_80097D5C(void); /* derive the party's battle stats */
 void func_8009B098(void); /* demo battle members */
@@ -326,7 +331,12 @@ typedef struct {
     u8 b3;
 } EnemyAiFlags;
 
-extern EnemyAiFlags D_800C3D0C[SLOT_COUNT];
+typedef struct {
+    EnemyAiFlags party[3];
+    EnemyAiFlags enemy[8];
+} BattleAiFlags;
+
+extern BattleAiFlags D_800C3D0C;
 
 /* Per-enemy AI state (0x800D3400, 0x40 bytes per enemy). */
 typedef struct {

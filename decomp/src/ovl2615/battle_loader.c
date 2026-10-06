@@ -25,7 +25,7 @@ void func_801E6314(u8 *data) {
     s32 slot;
     u8 *base;
     s16 columns[16];
-    s32 types[13]; /* SLOT_COUNT used; the size reproduces the original frame */
+    s32 types[SLOT_COUNT];
     EnemyEntry *entry;
     EnemyEntry *other;
     s32 table;

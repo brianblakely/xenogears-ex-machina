@@ -137,8 +137,8 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
     info = &data->info;
     table = (s32 *)table[1];
     if (stage != NULL) {
-        func_800AA898(D_800D33E4, D_800C3D0C, table + 2, 0);
-        func_800AA934(D_800D33E4, D_800D33E4, D_800C3D0C, 0);
+        func_800AA898(D_800D33E4, &D_800C3D0C, table + 2, 0);
+        func_800AA934(D_800D33E4, D_800D33E4, &D_800C3D0C, 0);
         func_8009EF3C(D_800C3E38, D_800D33E4->pose);
     }
     for (i = 0; i < 4; i++) {

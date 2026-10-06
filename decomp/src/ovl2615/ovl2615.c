@@ -147,21 +147,18 @@ INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E4160);
 
 /* Copy each present enemy's combatant record from the enemy data file and
  * point its AI state at its scripts (absent enemies are cleared). */
-#ifdef NON_MATCHING
 void func_801E4870(void) {
-    u8 *file;
     u8 *records;
     u16 *scripts;
     s32 i;
     s32 j;
 
     D_800C3EB4.w48E8 = 0;
-    file = D_800C3DD0;
     D_800D39E0 = 0;
-    records = file + 0x32;
-    D_800C3DDC = file + *(u16 *)(file + 0x30);
+    records = D_800C3DD0 + 0x32;
+    D_800C3DDC = D_800C3DD0 + ((u16 *)D_800C3DD0)[0x18];
     for (i = 3; i < SLOT_COUNT; i++) {
-        D_800C3D0C[i].b3 = 0;
+        D_800C3D0C.enemy[i - 3].b3 = 0;
         if (D_800C3EB4.slot[i].id != NO_COMBATANT) {
             memmove(&D_800CCCE8.record[i], records + D_800C3EB4.slot[i].id * sizeof(CombatantRecord),
                           sizeof(CombatantRecord));
@@ -170,15 +167,15 @@ void func_801E4870(void) {
             D_800D3400[i - 3].sub = (u8 *)scripts + scripts[1];
             if (scripts[2] != 0xFFFF) {
                 D_800D3400[i - 3].script = (u8 *)scripts + scripts[2];
-                D_800C3D0C[i].script_armed = 1;
+                D_800C3D0C.enemy[i - 3].script_armed = 1;
             } else {
-                D_800C3D0C[i].script_armed = 0;
+                D_800C3D0C.enemy[i - 3].script_armed = 0;
             }
             if (scripts[3] != 0xFFFF) {
                 D_800D3400[i - 3].reaction = (u8 *)scripts + scripts[3];
-                D_800C3D0C[i].reaction_armed = 1;
+                D_800C3D0C.enemy[i - 3].reaction_armed = 1;
             } else {
-                D_800C3D0C[i].reaction_armed = 0;
+                D_800C3D0C.enemy[i - 3].reaction_armed = 0;
             }
             for (j = 3; j >= 0; j--) {
                 D_800D3400[i - 3].vars[j] = 0;
@@ -191,18 +188,14 @@ void func_801E4870(void) {
             }
         } else {
             bzero(&D_800CCCE8.record[i], sizeof(CombatantRecord));
-            D_800C3D0C[i].script_armed = 0;
-            D_800C3D0C[i].reaction_armed = 0;
+            D_800C3D0C.enemy[i - 3].script_armed = 0;
+            D_800C3D0C.enemy[i - 3].reaction_armed = 0;
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E4870);
-#endif
 
 /* Derive the party's stats, then each slot's placed-alone flags and the
  * party members' panel states. */
-#ifdef NON_MATCHING
 void func_801E4AC0(void) {
     s32 i;
 
@@ -214,36 +207,37 @@ void func_801E4AC0(void) {
         if (D_800C3EB4.slot[i].id != NO_COMBATANT) {
             D_800C3EA4->member_panel[i].state = 1;
             if (D_800C3EB4.slot[i].alone != 0) {
-                D_800D32A1[i].alone = 1;
+                D_800D32A1.party[i].alone = 1;
                 D_800CCCE8.record[i].state |= 0x80;
                 if (D_800C3EB4.slot[i].id != 7) {
                     D_800C3EA4->member_panel[i].state = 2;
                 }
             } else {
-                D_800D32A1[i].alone = 0;
+                D_800D32A1.party[i].alone = 0;
                 D_800CCCE8.record[i].state &= 0x7F;
             }
         } else {
-            D_800D32A1[i].alone = 0;
+            D_800D32A1.party[i].alone = 0;
             D_800CCCE8.record[i].state &= 0x7F;
             D_800C3EA4->member_panel[i].state = 0;
         }
     }
     for (i = 3; i < SLOT_COUNT; i++) {
-        if (D_800C3EB4.slot[i].id != NO_COMBATANT && D_800C3EB4.slot[i].alone != 0) {
-            D_800D32A1[i].alone = 1;
+        if (D_800C3EB4.slot[i].id != NO_COMBATANT) {
+            if (D_800C3EB4.slot[i].alone != 0) {
+                D_800D32A1.enemy[i - 3].alone = 1;
+            } else {
+                D_800D32A1.enemy[i - 3].alone = 0;
+            }
         } else {
-            D_800D32A1[i].alone = 0;
+            D_800D32A1.enemy[i - 3].alone = 0;
         }
     }
     for (i = 0; i < 3; i++) {
-        D_800D32A1[i].stat62 = D_800CCCE8.record[i].stat62;
-        D_800D32A1[i].stat63 = D_800CCCE8.record[i].stat63;
+        D_800D32A1.party[i].stat62 = D_800CCCE8.record[i].stat62;
+        D_800D32A1.party[i].stat63 = D_800CCCE8.record[i].stat63;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E4AC0);
-#endif
 
 /* Build the battle item lists from the inventory (counts capped at 99, empty
  * slots cleared) and the special item list from ids 50..72. */
@@ -350,7 +344,7 @@ void func_801E5014(void) {
         D_800C3D48 = 1;
     }
     for (i = 0; i < 3; i++) {
-        D_800D32A1[i].character_b = D_8006ED0B[D_800CCCE8.party_ids[i]][0];
+        D_800D32A1.party[i].character_b = D_8006ED0B[D_800CCCE8.party_ids[i]][0];
         for (j = 0; j < 8; j++) {
             D_800C3EAC->slot[i].layout[j] = D_800C20F0[D_800CCCE8.record[i].menu_layout][j];
         }
@@ -569,9 +563,10 @@ void func_801E5D2C(void) {
     D_800C3EA4->panel6416 = 0;
 }
 
-/* Render the ten battle messages 0-9 into text images. */
+/* Render the ten battle messages 0-9 into text images. The original frame
+ * reserves eight additional bytes; their source use remains unresolved. */
+#ifdef NON_MATCHING
 void func_801E5E78(void) {
-    s32 unused[2]; /* an 8-byte local the original frame reserves */
     s32 i;
 
     for (i = 0; i < 10; i++) {
@@ -579,6 +574,9 @@ void func_801E5E78(void) {
         func_80034EAC(func_800338D8(i), D_800C3E5C[i], 2, 0);
     }
 }
+#else
+INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E5E78);
+#endif
 
 /* Draw each present member's gauge glyphs (the second set dimmed), its
  * portrait and its two digit glyphs, placed by the party layout's columns. */
