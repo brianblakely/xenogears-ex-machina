@@ -1889,25 +1889,35 @@ void func_801CC024(s32 count, s32 *ids) {
 }
 
 /* Reveal the list pictures of the current command (up to four pairs), two frames per step. */
-#ifdef NON_MATCHING
 void func_801CC278(u8 menu) {
     s32 animate;
     s32 step;
     s32 i;
+    s32 command;
+    s32 *ids;
+    s32 *paired;
 
     D_800625A0->images->dim = 0;
     animate = 1;
+    step = 1;
     D_800625A0->images->dimmed = 0;
+    command = menu;
     D_800625A0->lists->count = 0;
+    ids = D_801D1F6C;
     D_800625A0->lists->count2 = 0;
+    paired = ids + 1;
     D_800625A0->flags->lists_shown = 1;
-    for (step = 1; step < 5; step++) {
+    for (; step < 5; step++) {
         D_800625A0->lists->count = 0;
         D_800625A0->list_count = 0;
         for (i = 0; i < step; i++) {
-            if (D_801D1F6C[i * 2 + (menu + D_800625A0->top_cursor) * 8] != 0xFFFF) {
+            s32 offset;
+
+            offset = i * 2;
+            offset += (command + D_800625A0->top_cursor) * 8;
+            if (ids[offset] != 0xFFFF) {
                 D_800625A0->lists->count +=
-                    func_8002675C(D_800625A0->sprite_sheet, D_801D1F6C[i * 2 + (menu + D_800625A0->top_cursor) * 8],
+                    func_8002675C(D_800625A0->sprite_sheet, ids[offset],
                                   D_800625A0->lists->packets + D_800625A0->lists->count * 2,
                                   D_800625A0->buffer, 0xA0, 0x96, 0x1000);
                 D_800625A0->list_count++;
@@ -1923,9 +1933,13 @@ void func_801CC278(u8 menu) {
         }
         D_800625A0->lists->count2 = 0;
         for (i = 0; i < step; i++) {
-            if (D_801D1F6C[i * 2 + (menu + D_800625A0->top_cursor) * 8] != 0xFFFF) {
+            s32 offset;
+
+            offset = i * 2;
+            offset += (command + D_800625A0->top_cursor) * 8;
+            if (ids[offset] != 0xFFFF) {
                 D_800625A0->lists->count2 += func_8002675C(
-                    D_800625A0->sprite_sheet, D_801D1F6C[i * 2 + (menu + D_800625A0->top_cursor) * 8 + 1],
+                    D_800625A0->sprite_sheet, paired[offset],
                     D_800625A0->lists->packets2 + D_800625A0->lists->count2 * 2, D_800625A0->buffer, 0xA0,
                     0x96, 0x1000);
             }
@@ -1938,9 +1952,6 @@ void func_801CC278(u8 menu) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CC278);
-#endif
 
 /* Draw `count` image pairs with pair `selected` highlighted (+0dh), and put the cursor on it. */
 void func_801CC54C(u8 count, u8 selected, s32 *ids) {

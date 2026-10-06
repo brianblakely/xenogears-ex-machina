@@ -1195,8 +1195,7 @@ INCLUDE_ASM(".local/decomp/debug595/asm/nonmatchings/debug595", func_80284EA4);
 /* Load an image archive's sections into VRAM; sections of kind 0x1100 and
  * 0x1101 are placed by `mode0`/`mode1`: 1 at the given origin plus the
  * section offset, 2 also plus the section position, else at the position.
- * Differs: the original fills the unknown-kind exit's delay slot with the
- * next comparison (v0 dead there) and takes the product into $t0. */
+ * Returns 1 for an unknown section kind, 0 after all sections are loaded. */
 s32 func_80284FB4(u32 *archive, s16 mode0, s16 x0, s16 y0, s16 mode1, u16 x1, u16 y1) {
     s32 count;
     s32 i;
@@ -1240,7 +1239,7 @@ s32 func_80284FB4(u32 *archive, s16 mode0, s16 x0, s16 y0, s16 mode1, u16 x1, u1
                 break;
             }
         } else {
-            return; /* the original returns no value here */
+            return 1;
         }
         p += 4;
         rect.w = *p++;
