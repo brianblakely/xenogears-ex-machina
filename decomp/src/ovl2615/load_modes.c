@@ -19,9 +19,11 @@ static inline void swap_buffers(void) {
 }
 
 /* Shatter update: fade every cell and (variant 0) push it away. */
+#ifdef NON_MATCHING
+/* The original reserves 8 more stack bytes than the recovered locals.
+ * The frame layout remains unresolved. */
 void func_801E7F4C(TaskNode *node) {
     ShatterTask *task = node->object;
-    SVECTOR unused; /* an unused 8-byte local: the original's frame */
     ShatterCell *cell;
     POLY_FT3 *prim;
     s32 half, row, col;
@@ -42,6 +44,9 @@ void func_801E7F4C(TaskNode *node) {
         }
     }
 }
+#else
+INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/load_modes", func_801E7F4C);
+#endif
 
 /* Shatter drawing callback: into the current ordering table. */
 void func_801E8088(TaskNode *node) {
@@ -119,7 +124,6 @@ ShatterTask *func_801E82EC(void) {
  * away at its place on the grid. */
 #ifdef NON_MATCHING
 ShatterTask *func_801E8320(ShatterTask *task) {
-    u8 unused[0x38]; /* unused locals: the original's frame */
     ShatterCell *cell;
     POLY_FT3 *prim;
     s32 half, row, col, k;
@@ -298,7 +302,6 @@ void func_801E893C(void) {
 #ifdef NON_MATCHING
 void func_801E8964(TaskNode *node) {
     BurstTask *burst = node->object;
-    SVECTOR unused; /* an unused 8-byte local: the original's frame */
     s32 frame;
     s32 i, j, k;
 
