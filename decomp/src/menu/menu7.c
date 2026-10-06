@@ -2356,30 +2356,29 @@ void func_8008F260(Actor *actor, Brain *brain, u8 arg) {
     func_80090E10(actor);
 }
 
-#ifdef NON_MATCHING
 /* Drive the computer opponent one frame: reset its state when the command
  * changes, count down to the next decision (some commands decide every
- * frame), run the command and then steer and accelerate.
- * Does not match: the command-change test and the stored command are
- * scheduled/reloaded differently around the stores. */
+ * frame), run the command and then steer and accelerate. */
 void func_8008F280(Actor *actor) {
+    extern u8 D_80099DA2; /* D_80099D98.command, the byte at +0x0A. */
     Brain *brain = actor->brain;
+    s32 command = D_80099DA2;
 
     D_80099D98.driven = 1;
-    if (D_80092848 != D_80099D98.command) {
+    if (D_80092848 != command) {
         brain->timer = 0;
         brain->unkC = 0;
         actor->flags &= ~2;
         actor->state = 0;
         actor->flags &= ~0x38;
         brain->defending = 0;
-        D_80092848 = D_80099D98.command;
+        D_80092848 = command;
         actor->unkCE = actor->unkCC + 0x800;
     }
     if (brain->defending) {
         actor->flags |= 2;
     }
-    switch (D_80099D98.command) {
+    switch (D_80099DA2) {
     case 2:
     case 8:
     case 9:
@@ -2393,7 +2392,7 @@ void func_8008F280(Actor *actor) {
         }
         break;
     }
-    switch (D_80099D98.command) {
+    switch (D_80099DA2) {
     case 3:
         func_8008EF30(actor, brain, 0);
         break;
@@ -2440,9 +2439,6 @@ void func_8008F280(Actor *actor) {
     }
     func_8008EE1C(actor, brain->unkA, brain->unkC);
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008F280);
-#endif
 
 /* Whether an actor's hp is still above the given fraction (of 255) of
  * its maximum. */
