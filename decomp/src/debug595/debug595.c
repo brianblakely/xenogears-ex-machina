@@ -289,8 +289,7 @@ channels:
         func_800379C8("Pos X%6d Z=%6d Y=%6d\n", D_800AFB10[D_800B226C].actor->pos[0].part.whole,
                       D_800AFB10[D_800B226C].actor->pos[2].part.whole,
                       D_800AFB10[D_800B226C].actor->pos[1].part.whole);
-        func_800379C8("Free Size=%x\n", func_80032340());
-        break;
+        goto free_size;
     case 13:
         func_800379C8("RGB CALC\n\n");
         if (D_800C3900 & 2) {
@@ -434,6 +433,7 @@ channels:
         if (D_800C3900 & 2) {
             D_8028597C -= 4;
         }
+free_size:
         func_800379C8("Free Size=%x\n", func_80032340());
         break;
     case 3:
@@ -1033,13 +1033,12 @@ s32 func_80284670(s8 *v, s32 axis) {
 
 
 
-#ifdef NON_MATCHING
 /* Edit field `item` (component `axis`) of the selected particle emitter.
- * Differs only in the flag cases: the original sign-extends the flags
- * halfword (lhu, sll 16, sra) before masking and shifting it. */
+ * Preserve the old flag word across the edit call; the destination emitter
+ * is selected again after the call. */
 void func_802846CC(s32 axis, u32 item) {
     s32 flags;
-    s32 kept;
+    s32 value;
 
     switch (item) {
     case 0:
@@ -1120,18 +1119,24 @@ void func_802846CC(s32 axis, u32 item) {
         break;
     case 17:
         flags = D_800B02CC[D_800B0044].flags.value;
-        kept = flags & 0xFFFE;
-        D_800B02CC[D_800B0044].flags.value = kept | func_80284424(flags & 1, 0, 1);
+        value = flags & 1;
+        flags &= 0xFFFE;
+        flags |= func_80284424(value, 0, 1);
+        D_800B02CC[D_800B0044].flags.value = flags;
         break;
     case 18:
         flags = D_800B02CC[D_800B0044].flags.value;
-        kept = flags & 0xFFF9;
-        D_800B02CC[D_800B0044].flags.value = kept | (func_80284424((flags >> 1) & 3, 0, 3) << 1);
+        value = (flags >> 1) & 3;
+        flags &= 0xFFF9;
+        flags |= func_80284424(value, 0, 3) << 1;
+        D_800B02CC[D_800B0044].flags.value = flags;
         break;
     case 19:
         flags = D_800B02CC[D_800B0044].flags.value;
-        kept = flags & 0xFCFF;
-        D_800B02CC[D_800B0044].flags.value = kept | (func_80284424((flags >> 8) & 3, 0, 3) << 8);
+        value = (flags >> 8) & 3;
+        flags &= 0xFCFF;
+        flags |= func_80284424(value, 0, 3) << 8;
+        D_800B02CC[D_800B0044].flags.value = flags;
         break;
     case 20:
         D_800B02CC[D_800B0044].rot_angle =
@@ -1139,8 +1144,10 @@ void func_802846CC(s32 axis, u32 item) {
         break;
     case 21:
         flags = D_800B02CC[D_800B0044].flags.value;
-        kept = flags & 0xFF3F;
-        D_800B02CC[D_800B0044].flags.value = kept | (func_80284424((flags >> 6) & 3, 0, 2) << 6);
+        value = (flags >> 6) & 3;
+        flags &= 0xFF3F;
+        flags |= func_80284424(value, 0, 2) << 6;
+        D_800B02CC[D_800B0044].flags.value = flags;
         break;
     case 22:
     case 23:
@@ -1160,9 +1167,6 @@ void func_802846CC(s32 axis, u32 item) {
         break;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/debug595/asm/nonmatchings/debug595", func_802846CC);
-#endif
 
 /* With L2 and the debug button held, move the camera by the pad's analog
  * steps: dolly (mode 4), zoom (mode 8) or rotate and raise (other modes).
