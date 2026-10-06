@@ -19,6 +19,9 @@
 #include "item_command.h"
 #include "result_input.h"
 
+/* Word view of BattleDraw.buffer, alongside the low-byte view in battle_core.h. */
+extern s32 D_800CCB34_word __asm__("D_800CCB34");
+
 /* Hide the command windows (three panels); without `keep` show the +0x641c
  * lists. */
 void func_8008CCCC(u8 keep) {
@@ -198,12 +201,12 @@ void func_8008D328(void) {
  * skipped) and shades them (from 0x2000 by a slot item's availability:
  * shaded semi-transparent, else full brightness). With `fade` fade the lists
  * instead (8008d328) and return their buffer; otherwise return the draw
- * buffer. Nonmatching: the loops' pointers and registers differ. */
+ * buffer. Nonmatching: 18 instruction differences in the glyph call's
+ * destination/count setup (8008d740-8008d7ac); the rest matches. */
 #ifdef NON_MATCHING
-u8 func_8008D598(u8 member, u8 page, u8 fade) {
+s32 func_8008D598(u8 member, u8 page, u8 fade) {
     u16 lists[2];
     u8 sets[2];
-    GlyphEntry *entry;
     s32 i;
     s32 j;
     s32 n;
@@ -212,8 +215,7 @@ u8 func_8008D598(u8 member, u8 page, u8 fade) {
     u32 value;
 
     if (fade != 0) {
-        /* 8008d328 takes no arguments; the call passes the flag. */
-        ((void (*)())func_8008D328)(fade);
+        func_8008D328();
         return D_800D2D28->unkA3;
     }
     for (i = 0; i < 2; i++) {
@@ -225,21 +227,24 @@ u8 func_8008D598(u8 member, u8 page, u8 fade) {
         if (lists[i] == 0xFF) {
             break;
         }
-        for (j = 0; (id = D_800C2F4C[sets[i]][j].id) != 0xFFFF; j++) {
+        /* Four halfwords per glyph record. */
+        j = 0;
+        while ((id = ((u16 *)D_800C2F4C[sets[i]])[j]) != 0xFFFF) {
             if (id >= 0x4000) {
                 D_800C3EAC->unk2C0[id & 3] = D_800C3EAC->slots[member].unk0[id & 0xFF];
                 id = D_800C3EAC->slots[member].unk0[id & 0xFF];
                 if (id == 0xFF) {
+                    j += 4;
                     continue;
                 }
             }
             n = D_800D2D28->unkD0[lists[i]] * 2;
-            entry = &D_800C2F4C[sets[i]][j];
             D_800D2D28->unkD0[lists[i]] +=
-                func_80076A10(id, &D_800C3EA4->unk641C[lists[i]][n], entry->x, entry->y);
-            shade = D_800C2F4C[sets[i]][j].shade;
+                func_80076A10(id, &D_800C3EA4->unk641C[lists[i]][D_800D2D28->unkD0[lists[i]] * 2],
+                             ((s16 *)D_800C2F4C[sets[i]])[j + 1], ((s16 *)D_800C2F4C[sets[i]])[j + 2]);
+            shade = ((u16 *)D_800C2F4C[sets[i]])[j + 3];
             value = (shade & 0xFF) >> 1;
-            if (shade >= 0x2000) {
+            if (((u16 *)D_800C2F4C[sets[i]])[j + 3] >= 0x2000) {
                 value = 0x10;
                 if (D_800C3EAC->slots[member].items[shade & 0xF] == 0) {
                     value = (shade & 0xF0) >> 1;
@@ -249,21 +254,22 @@ u8 func_8008D598(u8 member, u8 page, u8 fade) {
                 for (; n < D_800D2D28->unkD0[lists[i]] * 2; n += 2) {
                     SetSemiTrans(&D_800C3EA4->unk641C[lists[i]][n + D_800CCB04.buffer], 1);
                     SetShadeTex(&D_800C3EA4->unk641C[lists[i]][n + D_800CCB04.buffer], 0);
-                    D_800C3EA4->unk641C[lists[i]][n + D_800CCB04.buffer].r0 = value;
-                    D_800C3EA4->unk641C[lists[i]][n + D_800CCB04.buffer].g0 = value;
-                    D_800C3EA4->unk641C[lists[i]][n + D_800CCB04.buffer].b0 = value;
+                    (D_800C3EA4->unk641C[lists[i]] + (n + D_800CCB34_word))->r0 = value;
+                    (D_800C3EA4->unk641C[lists[i]] + (n + D_800CCB34_word))->g0 = value;
+                    (D_800C3EA4->unk641C[lists[i]] + (n + D_800CCB34_word))->b0 = value;
                     D_800C3EA4->unk641C[lists[i]][n + D_800CCB04.buffer].tpage |= 0x20;
                 }
             } else {
                 for (; n < D_800D2D28->unkD0[lists[i]] * 2; n += 2) {
-                    D_800C3EA4->unk641C[lists[i]][n + D_800CCB04.buffer].r0 = 0x80;
-                    D_800C3EA4->unk641C[lists[i]][n + D_800CCB04.buffer].g0 = 0x80;
-                    D_800C3EA4->unk641C[lists[i]][n + D_800CCB04.buffer].b0 = 0x80;
+                    (D_800C3EA4->unk641C[lists[i]] + (n + D_800CCB34_word))->r0 = 0x80;
+                    (D_800C3EA4->unk641C[lists[i]] + (n + D_800CCB34_word))->g0 = 0x80;
+                    (D_800C3EA4->unk641C[lists[i]] + (n + D_800CCB34_word))->b0 = 0x80;
                 }
             }
+            j += 4;
         }
     }
-    return D_800CCB04.buffer;
+    return D_800CCB34_word;
 }
 #else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8008CCCC", func_8008D598);
@@ -2626,12 +2632,13 @@ s16 func_80097610(void) {
 void func_8009795C(void) {
 }
 
-#ifdef NON_MATCHING
 /* Roll a status onto the target (never a gear): with the chance in percent,
  * check the kind's immunities and clear the statuses it overrides, then set
  * the flag bits in the kind's status word and show its message. Returns 1
  * when the status took (or cancelled its opposite). */
 s8 func_80097964(u8 chance, u8 kind, u16 flags) {
+    Combatant *statusRecord;
+
     if (D_800C34B0->records[D_800C3E50].flags15A & 0x80) {
         return 0;
     }
@@ -2639,14 +2646,16 @@ s8 func_80097964(u8 chance, u8 kind, u16 flags) {
         return 0;
     }
     switch (kind) {
-    case 0:
-        if (D_800C3E34->pilot.status7E & (flags & 0xFFFD)) {
+    case 0: {
+        u16 immuneFlags = flags & 0xFFFD;
+        if (immuneFlags & D_800C3E34->pilot.status7E) {
             return 0;
         }
         if (flags & 0x1000) {
             D_800C3E34->pilot.status84.half.active &= 0x7FFF;
         }
         break;
+    }
     case 2:
         if (flags & D_800C3E34->pilot.status82) {
             return 0;
@@ -2702,7 +2711,8 @@ s8 func_80097964(u8 chance, u8 kind, u16 flags) {
             if ((u8)func_80099498()) {
                 D_800C3E34->pilot.status7C |= flags;
                 D_800C34B0->message = 0x31;
-                D_800C3E34->pilot.status7A = 0xFFEF;
+                statusRecord = D_800C3E34;
+                statusRecord->pilot.status7A = 0xFFEF;
             } else {
                 D_800C34B0->message = 0x32;
             }
@@ -2711,21 +2721,22 @@ s8 func_80097964(u8 chance, u8 kind, u16 flags) {
     case 2:
         D_800C3E34->pilot.status80 |= flags;
         if (flags & 0x800) {
-            D_800C3E34->pilot.status7A |= 0x20;
+            statusRecord = D_800C3E34;
+            statusRecord->pilot.status7A |= 0x20;
         }
         break;
     case 5:
     case 7:
     case 9:
-        (&D_800C3E34->pilot.status7A)[kind] |= flags;
+        /* Status halfwords from +0x7A: kinds 5/7/9 select +0x84/88/8C. */
+        statusRecord = D_800C3E34;
+        statusRecord = (Combatant *)((u8 *)statusRecord + kind * 2);
+        statusRecord->pilot.status7A |= flags;
         break;
     }
     func_8009B684(kind, flags);
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8008CCCC", func_80097964);
-#endif
 
 /* Clear the per-slot damage and result codes (12 entries). */
 void func_80097D08(void) {
