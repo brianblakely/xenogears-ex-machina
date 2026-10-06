@@ -177,9 +177,10 @@ u8 func_801FC110(SpriteCell *cell, s32 count, s32 x, s32 y, Actor *actor) {
 }
 
 /* Keep the actor at its held position and draw its sprite sixteen times in a
- * row, offset by the scroll (wrapped to the sprite's width). */
+ * row, offset by the scroll (wrapped to the sprite's width).
+ * NON_MATCHING: the original frame is 0x80 bytes; this C needs 0x78. */
+#ifdef NON_MATCHING
 void func_801FC5C4(TaskNode *node) {
-    SVECTOR unused; /* allocated but never used */
     ScrollTask *scroll;
     Actor *actor;
     Bounds bounds;
@@ -211,6 +212,9 @@ void func_801FC5C4(TaskNode *node) {
         x += width;
     }
 }
+#else
+INCLUDE_ASM(".local/decomp/ovl3386/asm/nonmatchings/ovl3386", func_801FC5C4);
+#endif
 
 /* Opcode entry: hold `actor` where it is under the scrolling effect. */
 void func_801FC6FC(Actor *actor) {

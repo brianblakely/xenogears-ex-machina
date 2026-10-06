@@ -1194,7 +1194,9 @@ void func_80284EA4(void) {
 /* Load an image archive's sections into VRAM; sections of kind 0x1100 and
  * 0x1101 are placed by `mode0`/`mode1`: 1 at the given origin plus the
  * section offset, 2 also plus the section position, else at the position.
- * Returns 1 for an unknown section kind, 0 after all sections are loaded. */
+ * Returns 1 for an unknown section kind, 0 after all sections are loaded.
+ * NON_MATCHING: the loop increment is scheduled before mflo; the original
+ * advances the payload pointer before incrementing the section index. */
 s32 func_80284FB4(u32 *archive, s16 mode0, s16 x0, s16 y0, s16 mode1, u16 x1, u16 y1) {
     s32 count;
     s32 i;
@@ -1222,7 +1224,10 @@ s32 func_80284FB4(u32 *archive, s16 mode0, s16 x0, s16 y0, s16 mode1, u16 x1, u1
                 rect.y = p[1] + p[3];
                 break;
             }
-        } else if (kind == 0x1101) {
+        } else {
+            if (kind != 0x1101) {
+                return 1;
+            }
             switch (mode1) {
             case 1:
                 rect.x = x1 + p[2];
@@ -1237,13 +1242,11 @@ s32 func_80284FB4(u32 *archive, s16 mode0, s16 x0, s16 y0, s16 mode1, u16 x1, u1
                 rect.y = p[1] + p[3];
                 break;
             }
-        } else {
-            return 1;
         }
         p += 4;
         rect.w = *p++;
         rect.h = *p++;
-        LoadImage(&rect, (u32 *)p);
+        LoadImage(&rect, (u_long *)p);
         p += rect.w * rect.h;
     }
     return 0;

@@ -13,10 +13,11 @@
 #include "burst.h"
 
 /* Advance the effect one frame (two variants), fading it out after 100 or 24
- * frames. The empty loops over a 2x14x20 grid are left from removed work. */
+ * frames. The empty loops over a 2x14x20 grid are left from removed work.
+ * NON_MATCHING: the original allocates an unused 8-byte frame. */
+#ifdef NON_MATCHING
 void func_801FC000(TaskNode *node) {
     Burst *burst = node->object;
-    SVECTOR unused; /* allocated but never used (the removed work's) */
     s32 i, j, k;
 
     if (D_801FCE14 != 0) {
@@ -46,6 +47,9 @@ void func_801FC000(TaskNode *node) {
         }
     }
 }
+#else
+INCLUDE_ASM(".local/decomp/ovl3387/asm/nonmatchings/ovl3387", func_801FC000);
+#endif
 
 /* Draw the captured screen's cells: each corner rises by the sine (variant
  * 1: of the angle plus its distance; otherwise the cosine of its distance)
