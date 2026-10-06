@@ -1164,18 +1164,20 @@ void func_802846CC(s32 axis, u32 item) {
 INCLUDE_ASM(".local/decomp/debug595/asm/nonmatchings/debug595", func_802846CC);
 #endif
 
-#ifdef NON_MATCHING
 /* With L2 and the debug button held, move the camera by the pad's analog
  * steps: dolly (mode 4), zoom (mode 8) or rotate and raise (other modes).
- * Differs: the original loads D_800AF9FC with lh before the step and the
- * step with a full lw where this narrows both loads. */
+ * Accumulate zoom as a signed word and narrow only at its final store. */
 void func_80284EA4(void) {
+    s32 zoom;
+
     if ((D_800AFE9C & 1) && (D_800AFE9C & 0x40)) {
         if (D_80065850 == 4) {
             D_800ADB98 = 1;
             D_800ADB94 += D_80065858;
         } else if (D_80065850 == 8) {
-            D_800AF9FC += (u32)(D_80065858 << 4) >> 5;
+            zoom = D_800AF9FC;
+            zoom += ((u32)D_80065858 << 4) >> 5;
+            D_800AF9FC = zoom;
             D_800AF984 = 1;
             D_800AF988 = 1;
         } else {
@@ -1187,9 +1189,6 @@ void func_80284EA4(void) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/debug595/asm/nonmatchings/debug595", func_80284EA4);
-#endif
 
 #ifdef NON_MATCHING
 /* Load an image archive's sections into VRAM; sections of kind 0x1100 and
