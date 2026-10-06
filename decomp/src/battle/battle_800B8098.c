@@ -1096,11 +1096,9 @@ void func_800BAB0C(ActorTask *task) {
     }
 }
 
-#ifdef NON_MATCHING
-/* Destroy a sprite task: its part block, children, sprite and node.
- * Nonmatching: the original computes the sprite from $a0 before copying the
- * task to $s0. */
-void func_800BABDC(ActorTask *task) {
+/* Destroy a sprite task: its part block, children, sprite and node. */
+void func_800BABDC(BattleTask *node) {
+    ActorTask *task = (ActorTask *)node;
     BattleSprite *sprite = (BattleSprite *)(task + 1);
     void *parts = sprite->view->parts;
 
@@ -1113,9 +1111,6 @@ void func_800BABDC(ActorTask *task) {
     func_8001CD94(task);
     func_800320E8(task);
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800BABDC);
-#endif
 
 /* Update a sprite task (twice with double steps) unless paused. */
 void func_800BAC50(ActorTask *task) {

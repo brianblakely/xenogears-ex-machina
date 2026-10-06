@@ -135,7 +135,7 @@ void func_80025180(void *owner); /* end the owner's sprites */
 
 void func_800B3358(Quake *quake);
 void func_800B3588(Quake *quake);
-void func_800B36BC(ScreenFade *fade);
+void func_800B36BC(BattleTask *task);
 void func_800B3878(BattleTask *draw);
 void func_800B383C(ScreenFade *fade);
 void func_800B3B94(BattleTask *task);

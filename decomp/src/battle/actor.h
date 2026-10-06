@@ -86,7 +86,7 @@ extern s16 D_800C373C;           /* its angle round it */
 void func_800BB13C(ActorTask *task);
 void func_800BB760(s32 slot);
 void func_800BAB0C(ActorTask *task);
-void func_800BABDC(ActorTask *task);
+void func_800BABDC(BattleTask *task);
 void func_800BAC50(ActorTask *task);
 void func_800BB350(u32 slot);
 void func_800BA59C(BattleSprite *sprite, s16 direction);

@@ -945,10 +945,10 @@ void func_800B3658(SVECTOR *amplitude, s32 frames) {
     func_800B3358(quake);
 }
 
-#ifdef NON_MATCHING
 /* Screen fade update: ease the colour to the target over the frames left;
  * end once it is black. */
-void func_800B36BC(ScreenFade *fade) {
+void func_800B36BC(BattleTask *task) {
+    ScreenFade *fade = (ScreenFade *)task;
     VECTOR delta;
 
     if (fade->left == 0) {
@@ -975,9 +975,6 @@ void func_800B36BC(ScreenFade *fade) {
         fade->colour[2] = fade->to[2] - delta.vz;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B36BC);
-#endif
 
 /* End the screen fade tasks. */
 void func_800B383C(ScreenFade *fade) {
@@ -1083,7 +1080,7 @@ start:
     fade->to[2] = b;
     fade->total = frames;
     fade->left = frames;
-    func_800B36BC(fade);
+    func_800B36BC(&fade->task);
 }
 
 /* The screen fade's blend mode (1 when none runs). */
