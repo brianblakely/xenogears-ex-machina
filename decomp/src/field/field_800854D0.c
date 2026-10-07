@@ -9210,11 +9210,11 @@ s16 func_8009E330(s32 offset);
 /* Place the current actor at entry point `entry` of the bytecode's entry
  * table (when present): layer, x/z, camera octant and facing (0xFF: from
  * variables 8 and 6).
- * NON_MATCHING: the original sets the return 0 in the first branch's delay
- * slot, keeps heading/facing in a1, stores D_800AF880.heading as the
- * sign-extended (heading << 16) >> 16 shared with heading_high, and copies
- * facing to v1 before its three stores; GCC here folds the extension away
- * (heading's range is known) and stores facing straight from a0. */
+ * NON_MATCHING: the original branches straight to the epilogue with the
+ * return 0 in the delay slot (the early return here jumps over a separate
+ * return block), keeps the heading in a1 and stores vy, heading, heading_high
+ * in that order (here heading_high is stored first, which is what keeps the
+ * (heading << 16) >> 16 extension). */
 s32 func_8009FA54(s32 entry) {
     s32 marker;
     s32 record;
@@ -9223,26 +9223,25 @@ s32 func_8009FA54(s32 entry) {
     s32 facing;
 
     marker = D_800ADC00[0];
-    if (marker == 0xFF) {
-        record = entry * 7;
-        D_800B0078->layer = D_800ADC00[record + 5];
-        x = func_8009E330(record + 1);
-        func_8009E574(x, func_8009E330(record + 3));
-        heading = ((D_800ADC00[record + 6] + 4) & 7) << 9;
-        if (D_800ADC00[record + 6] == marker) {
-            heading = ((func_800A3018(8) + 4) & 7) << 9;
-        }
-        D_800AF880.heading_angles.vy = heading;
-        D_800AF880.heading = heading;
-        D_800AF880.heading_high = heading << 16;
-        facing = (((D_800ADC00[record + 7] - 2) & 7) << 9) | 0x8000;
-        if (D_800ADC00[record + 7] == marker) {
-            facing = (((func_800A3018(6) - 2) & 7) << 9) | 0x8000;
-        }
-        D_800B0078->heading = facing;
-        D_800B0078->heading_goal = facing;
-        D_800B0078->unk108 = facing;
+    if (marker != 0xFF) {
+        return 0;
     }
+    record = entry * 7;
+    D_800B0078->layer = D_800ADC00[record + 5];
+    x = func_8009E330(record + 1);
+    func_8009E574(x, func_8009E330(record + 3));
+    heading = ((D_800ADC00[record + 6] + 4) & 7) << 9;
+    if (D_800ADC00[record + 6] == marker) {
+        heading = ((func_800A3018(8) + 4) & 7) << 9;
+    }
+    D_800AF880.heading_high = heading << 16;
+    D_800AF880.heading_angles.vy = heading;
+    D_800AF880.heading = D_800AF880.heading_high >> 16;
+    facing = (((D_800ADC00[record + 7] - 2) & 7) << 9) | 0x8000;
+    if (D_800ADC00[record + 7] == marker) {
+        facing = (((func_800A3018(6) - 2) & 7) << 9) | 0x8000;
+    }
+    D_800B0078->unk108 = D_800B0078->heading_goal = D_800B0078->heading = facing;
     return 0;
 }
 #else
