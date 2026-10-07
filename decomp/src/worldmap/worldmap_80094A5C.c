@@ -11,13 +11,18 @@ void func_80099708(u32 *heights, u32 *ot, s32 depth, SVECTOR *origin);
 /* Move a position along a direction across the terrain cells: probe the
  * cell boundaries crossed (by the corner's side for diagonal moves); 1 when
  * the target cell is walkable (step[0] = target), else the boundary result. */
-#ifdef NON_MATCHING /* crossing and corner-value lifetimes still differ */
+/* NON_MATCHING: size and instructions now line up (corner cases test the
+ * first neighbour and return its nonzero result directly; the scale
+ * argument is reused for the result as the original allocates it), but in
+ * the prologue the original keeps `from` in a1 and `crossing` in t0 (here
+ * v1/a1, and the product temp t0 instead of t1) and stores the from corner
+ * before the to corner. */
+#ifdef NON_MATCHING
 s32 func_80094A5C(VECTOR *position, VECTOR *direction, s32 scale, s32 mode) {
     CellProbe *probe;
     s32 from;
     s32 to;
     u32 crossing;
-    s32 result;
     s32 side;
 
     SCRATCH_VECTOR[1].vx = position->vx + ((direction->vx * scale) >> 12);
@@ -26,11 +31,11 @@ s32 func_80094A5C(VECTOR *position, VECTOR *direction, s32 scale, s32 mode) {
     from = position->vx >> 19;
     to = SCRATCH_VECTOR[1].vx >> 19;
     ((SVECTOR *)0x1F8000A0)->vx = from;
+    ((SVECTOR *)0x1F8000A0)->vz = position->vz >> 19;
     ((SVECTOR *)0x1F8000A8)->vx = to;
     ((SVECTOR *)0x1F8000A8)->vz = SCRATCH_VECTOR[1].vz >> 19;
-    ((SVECTOR *)0x1F8000A0)->vz = position->vz >> 19;
     probe = CELL_PROBE;
-    result = 0;
+    scale = 0;
     if (to < from) {
         crossing = 2;
     } else if (from < to) {
@@ -47,119 +52,127 @@ s32 func_80094A5C(VECTOR *position, VECTOR *direction, s32 scale, s32 mode) {
     case 7:
         break;
     case 1:
-        result = func_8009443C(position, direction, probe->step, mode);
+        scale = func_8009443C(position, direction, probe->step, mode);
         break;
     case 2:
-        result = func_800945C8(position, direction, probe->step, mode);
+        scale = func_800945C8(position, direction, probe->step, mode);
         break;
     case 4:
-        result = func_80094750(position, direction, probe->step, mode);
+        scale = func_80094750(position, direction, probe->step, mode);
         break;
     case 8:
-        result = func_800948D8(position, direction, probe->step, mode);
+        scale = func_800948D8(position, direction, probe->step, mode);
         break;
     case 5:
         probe->step[0].vx = (position->vx & 0xFFF80000) + 0x80000;
         probe->step[0].vz = (position->vz & 0xFFF80000) + 0x80000;
         probe->step[2].vx = (position->vx - probe->step[0].vx) >> 12;
-        probe->step[4].vy = 0;
+        probe->step[2].vz = (position->vz - probe->step[0].vz) >> 12;
         probe->step[3].vx = (probe->step[1].vx - probe->step[0].vx) >> 12;
         probe->step[3].vz = (probe->step[1].vz - probe->step[0].vz) >> 12;
-        probe->step[2].vz = (position->vz - probe->step[0].vz) >> 12;
+        probe->step[4].vy = 0;
         probe->step[4].vx = (probe->step[2].vz << 16) | (probe->step[2].vx & 0xFFFF);
         probe->step[4].vz = (probe->step[3].vz << 16) | (probe->step[3].vx & 0xFFFF);
         side = func_8004A70C(probe->step[4].vx, probe->step[4].vy, probe->step[4].vz);
         if (side < 0) {
-            result = func_8009443C(position, direction, probe->step, mode);
-            if (result == 0) {
-                result = func_80094750(position, direction, probe->step, mode);
+            scale = func_8009443C(position, direction, probe->step, mode);
+            if (scale != 0) {
+                return scale;
             }
+            scale = func_80094750(position, direction, probe->step, mode);
         } else if (side > 0) {
-            result = func_80094750(position, direction, probe->step, mode);
-            if (result == 0) {
-                result = func_8009443C(position, direction, probe->step, mode);
+            scale = func_80094750(position, direction, probe->step, mode);
+            if (scale != 0) {
+                return scale;
             }
+            scale = func_8009443C(position, direction, probe->step, mode);
         } else {
-            result = func_8009443C(position, direction, probe->step, mode);
+            scale = func_8009443C(position, direction, probe->step, mode);
         }
         break;
     case 6:
         probe->step[0].vx = (position->vx & 0xFFF80000);
         probe->step[0].vz = (position->vz & 0xFFF80000) + 0x80000;
         probe->step[2].vx = (position->vx - probe->step[0].vx) >> 12;
-        probe->step[4].vy = 0;
+        probe->step[2].vz = (position->vz - probe->step[0].vz) >> 12;
         probe->step[3].vx = (probe->step[1].vx - probe->step[0].vx) >> 12;
         probe->step[3].vz = (probe->step[1].vz - probe->step[0].vz) >> 12;
-        probe->step[2].vz = (position->vz - probe->step[0].vz) >> 12;
+        probe->step[4].vy = 0;
         probe->step[4].vx = (probe->step[2].vz << 16) | (probe->step[2].vx & 0xFFFF);
         probe->step[4].vz = (probe->step[3].vz << 16) | (probe->step[3].vx & 0xFFFF);
         side = func_8004A70C(probe->step[4].vx, probe->step[4].vy, probe->step[4].vz);
         if (side > 0) {
-            result = func_800945C8(position, direction, probe->step, mode);
-            if (result == 0) {
-                result = func_80094750(position, direction, probe->step, mode);
+            scale = func_800945C8(position, direction, probe->step, mode);
+            if (scale != 0) {
+                return scale;
             }
+            scale = func_80094750(position, direction, probe->step, mode);
         } else if (side < 0) {
-            result = func_80094750(position, direction, probe->step, mode);
-            if (result == 0) {
-                result = func_800945C8(position, direction, probe->step, mode);
+            scale = func_80094750(position, direction, probe->step, mode);
+            if (scale != 0) {
+                return scale;
             }
+            scale = func_800945C8(position, direction, probe->step, mode);
         } else {
-            result = func_800945C8(position, direction, probe->step, mode);
+            scale = func_800945C8(position, direction, probe->step, mode);
         }
         break;
     case 9:
         probe->step[0].vx = (position->vx & 0xFFF80000) + 0x80000;
         probe->step[0].vz = (position->vz & 0xFFF80000);
         probe->step[2].vx = (position->vx - probe->step[0].vx) >> 12;
-        probe->step[4].vy = 0;
+        probe->step[2].vz = (position->vz - probe->step[0].vz) >> 12;
         probe->step[3].vx = (probe->step[1].vx - probe->step[0].vx) >> 12;
         probe->step[3].vz = (probe->step[1].vz - probe->step[0].vz) >> 12;
-        probe->step[2].vz = (position->vz - probe->step[0].vz) >> 12;
+        probe->step[4].vy = 0;
         probe->step[4].vx = (probe->step[2].vz << 16) | (probe->step[2].vx & 0xFFFF);
         probe->step[4].vz = (probe->step[3].vz << 16) | (probe->step[3].vx & 0xFFFF);
         side = func_8004A70C(probe->step[4].vx, probe->step[4].vy, probe->step[4].vz);
         if (side > 0) {
-            result = func_8009443C(position, direction, probe->step, mode);
-            if (result == 0) {
-                result = func_800948D8(position, direction, probe->step, mode);
+            scale = func_8009443C(position, direction, probe->step, mode);
+            if (scale != 0) {
+                return scale;
             }
+            scale = func_800948D8(position, direction, probe->step, mode);
         } else if (side < 0) {
-            result = func_800948D8(position, direction, probe->step, mode);
-            if (result == 0) {
-                result = func_8009443C(position, direction, probe->step, mode);
+            scale = func_800948D8(position, direction, probe->step, mode);
+            if (scale != 0) {
+                return scale;
             }
+            scale = func_8009443C(position, direction, probe->step, mode);
         } else {
-            result = func_8009443C(position, direction, probe->step, mode);
+            scale = func_8009443C(position, direction, probe->step, mode);
         }
         break;
     case 10:
         probe->step[0].vx = (position->vx & 0xFFF80000);
         probe->step[0].vz = (position->vz & 0xFFF80000);
         probe->step[2].vx = (position->vx - probe->step[0].vx) >> 12;
-        probe->step[4].vy = 0;
+        probe->step[2].vz = (position->vz - probe->step[0].vz) >> 12;
         probe->step[3].vx = (probe->step[1].vx - probe->step[0].vx) >> 12;
         probe->step[3].vz = (probe->step[1].vz - probe->step[0].vz) >> 12;
-        probe->step[2].vz = (position->vz - probe->step[0].vz) >> 12;
+        probe->step[4].vy = 0;
         probe->step[4].vx = (probe->step[2].vz << 16) | (probe->step[2].vx & 0xFFFF);
         probe->step[4].vz = (probe->step[3].vz << 16) | (probe->step[3].vx & 0xFFFF);
         side = func_8004A70C(probe->step[4].vx, probe->step[4].vy, probe->step[4].vz);
         if (side < 0) {
-            result = func_800945C8(position, direction, probe->step, mode);
-            if (result == 0) {
-                result = func_800948D8(position, direction, probe->step, mode);
+            scale = func_800945C8(position, direction, probe->step, mode);
+            if (scale != 0) {
+                return scale;
             }
+            scale = func_800948D8(position, direction, probe->step, mode);
         } else if (side > 0) {
-            result = func_800948D8(position, direction, probe->step, mode);
-            if (result == 0) {
-                result = func_800945C8(position, direction, probe->step, mode);
+            scale = func_800948D8(position, direction, probe->step, mode);
+            if (scale != 0) {
+                return scale;
             }
+            scale = func_800945C8(position, direction, probe->step, mode);
         } else {
-            result = func_800945C8(position, direction, probe->step, mode);
+            scale = func_800945C8(position, direction, probe->step, mode);
         }
         break;
     }
-    if (result == 0) {
+    if (scale == 0) {
         func_80093354(&probe->step[1]);
         if (func_80094060(mode, func_80093F18(&probe->step[1])) == 0) {
             probe->step[0] = probe->step[1];
@@ -167,7 +180,7 @@ s32 func_80094A5C(VECTOR *position, VECTOR *direction, s32 scale, s32 mode) {
         }
         return 0;
     }
-    return result;
+    return scale;
 }
 #else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80094A5C);
