@@ -21,16 +21,19 @@ typedef struct {
     ModelListEntry entries[1];
 } ModelList;
 
-/* One model of a group. The tables are stored as offsets from the group
- * and relocated to addresses once. */
+/* One model of a group (0x38 bytes from group + 0x14). The tables are
+ * stored as offsets from the group and relocated to addresses once. The
+ * relocation loops address every field from the model pointer at nonzero
+ * offsets, so the record starts with a word ahead of the tables. */
 typedef struct {
+    u8 unk0[4];
     u8 *table0;
     u8 *table4;
     u8 *table8;
     u8 *primitives;
-    u8 unk10[4];
+    u8 unk14[4];
     ModelList *list; /* optional */
-    u8 unk18[0x20];
+    u8 unk1C[0x1C];
 } Model;
 
 /* A loaded model group: its heap block ends at the first model's primitives
@@ -38,7 +41,7 @@ typedef struct {
 typedef struct {
     s32 count;
     s32 flags;       /* bit 0: relocated; bit 1: trimmed */
-    u8 unk8[0x10];
+    u8 unk8[0xC];
     Model models[1];
 } ModelGroup;
 

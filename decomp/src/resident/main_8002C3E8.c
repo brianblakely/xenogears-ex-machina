@@ -21,27 +21,25 @@
 #include "sound.h"
 
 /* Relocate a model group's offsets to addresses (once). Returns the number
- * of models.
- * Nonmatching: the outer cursor points at the group base rather than each
- * model's list field; the remaining differences are its offsets. */
-#ifdef NON_MATCHING
+ * of models. */
 s32 func_8002C3E8(ModelGroup *group) {
     s32 i = group->flags; /* reused as the model index after the flag update */
     s32 count = group->count;
+    Model *model;
     ModelList *list;
     ModelListEntry *entries;
     s32 n;
 
     if (!(i & 1)) {
         group->flags = i | 1;
-        for (i = 0; i < count; i++) {
-            group->models[i].table0 += (s32)group;
-            group->models[i].table4 += (s32)group;
-            group->models[i].table8 += (s32)group;
-            group->models[i].primitives += (s32)group;
-            if (group->models[i].list != NULL) {
-                list = (ModelList *)((u8 *)group->models[i].list + (s32)group);
-                group->models[i].list = list;
+        for (i = 0, model = group->models; i < count; i++, model++) {
+            model->table0 += (s32)group;
+            model->table4 += (s32)group;
+            model->table8 += (s32)group;
+            model->primitives += (s32)group;
+            if (model->list != NULL) {
+                list = (ModelList *)((u8 *)model->list + (s32)group);
+                model->list = list;
                 entries = list->entries;
                 n = list->last;
                 if (n != -1) {
@@ -55,18 +53,9 @@ s32 func_8002C3E8(ModelGroup *group) {
     }
     return count;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002C3E8);
-#endif
 
 /* Undo 8002C3E8: turn a relocated model group's addresses back into
- * offsets. Returns the number of models.
- * Nonmatching: the original walks the models through one pointer at their
- * list fields ($a3 = group + 0x2c, the tables at -0x14..-0x8); here the
- * model pointer itself ($t1, group + 0x18) is kept for the first table, the
- * other fields use the list-field pointer as in the original (236 vs 224
- * bytes). */
-#ifdef NON_MATCHING
+ * offsets. Returns the number of models. */
 s32 func_8002C4BC(ModelGroup *group) {
     s32 i = group->flags; /* reused as the model index after the flag update */
     s32 count = group->count;
@@ -79,8 +68,8 @@ s32 func_8002C4BC(ModelGroup *group) {
         group->flags = i & ~1;
         for (i = 0, model = group->models; i < count; i++, model++) {
             model->table0 -= (s32)group;
-            model->table8 -= (s32)group;
             model->table4 -= (s32)group;
+            model->table8 -= (s32)group;
             model->primitives -= (s32)group;
             if (model->list != NULL) {
                 list = model->list;
@@ -98,9 +87,6 @@ s32 func_8002C4BC(ModelGroup *group) {
     }
     return count;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002C4BC);
-#endif
 
 /* Relocate a sprite model's offsets to addresses (once). */
 void func_8002C59C(SpriteModel *model) {
