@@ -2192,7 +2192,8 @@ void func_801CB28C(s32 *save) {
  * a goto read-retry loop whose body is another such block, u8 sum, and
  * p = buffer + 0x100 passed to 801cb28c. Left: the open test's delay slot
  * and the 0x100 compare constant (the original's is a spilled invariant
- * reloaded into a3). */
+ * reloaded into a3; comparing against a variable set to 0x100 at the start
+ * reproduces that, leaving only the delay slot). */
 u8 func_801CB304(void) {
     char path[64];
     s32 first;
