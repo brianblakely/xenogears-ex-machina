@@ -1053,7 +1053,7 @@ extern s32 D_8004F34C; /* current map */
 extern u8 D_800625FC[2][0x22]; /* pad buffers */
 
 /* Field state. */
-extern u8 D_800ADFCC[][2]; /* per music: wave file, release shared bank */
+extern u8 D_800ADFCC[]; /* per music, two bytes: wave file, release shared bank */
 extern s32 D_800AFC54;
 extern void *D_800C3A1C; /* music-wave gather buffer */
 extern s16 D_800ADB54;

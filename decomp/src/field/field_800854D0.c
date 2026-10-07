@@ -199,11 +199,11 @@ void func_800859DC(WaveChunk *chunk) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Change the field music to `music` (0xff: none): release the shared wave
  * bank when the entry asks, then stream its wave file through 800859dc. */
 void func_80085B20(s32 music, s32 unused) {
     u8 wave;
+    s32 file;
 
     func_80028A60(0);
     func_8001B66C();
@@ -212,23 +212,23 @@ void func_80085B20(s32 music, s32 unused) {
         return;
     }
     func_80028470(0x1C, 0);
-    if (D_800ADFCC[music][1] == 1) {
+    if (D_800ADFCC[music * 2 + 1] == 1) {
         func_80086024();
     }
-    wave = D_800ADFCC[music][0];
-    if (wave != 0xFF && D_8004F33C != wave) {
-        func_80085560(wave * 2 + 0x13, 1, (void (*)(s32))func_800859DC);
-        D_8004F354 = 1;
-        D_800B2078.wave_chunks = 0;
-        D_800C3A1C = func_80031BDC(0x2000, 1);
+    wave = D_800ADFCC[music * 2];
+    if (wave != 0xFF) {
+        file = wave * 2 + 0x13;
+        if (D_8004F33C != wave) {
+            func_80085560(file, 1, (void (*)(s32))func_800859DC);
+            D_8004F354 = 1;
+            D_800B2078.wave_chunks = 0;
+            D_800C3A1C = func_80031BDC(0x2000, 1);
+        }
     }
     func_80028470(4, 0);
     D_8004F308 = -1;
     D_800AFC54 = 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_80085B20);
-#endif
 
 /* Run up to five stream steps; 0 once the stream finished, else -1. */
 s32 func_80085C3C(void) {
@@ -256,9 +256,9 @@ s32 func_80085C90(s32 music) {
         func_800320E8(D_800C3A1C);
         D_8004F354 = 0;
         D_8004F360 = 1;
-        D_8004F33C = D_800ADFCC[music][0];
+        D_8004F33C = D_800ADFCC[music * 2];
     }
-    if (D_800ADFCC[music][1] == 0) {
+    if (D_800ADFCC[music * 2 + 1] == 0) {
         if (D_8004F364 == 0) {
             func_80085FB8();
             return -1;
