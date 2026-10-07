@@ -4444,23 +4444,21 @@ void func_80092808(void) {
  * retries the instruction) and 0 once it has arrived or is stuck, when it
  * stops, turns and the instruction continues. */
 s32 func_80092894(s32 angle, s32 mode, s32 x, s32 z) {
-    FieldDescriptor *descriptor;
     FieldActor *player;
     FieldModel *model;
-    s16 from_x;
-    s16 from_z;
+    s32 from_x;
+    s32 from_z;
     s32 reach;
-    s32 dx;
-    s32 dz;
     s32 value;
     s32 field;
+    s32 direction;
+    s32 dx;
+    s32 dz;
     VECTOR delta;
-    u16 heading;
 
     D_800B2078.encounter_inhibition = -1;
-    descriptor = &D_800AF880.components.descriptors[D_800B2078.controlled];
-    player = descriptor->actor;
-    model = descriptor->model;
+    player = D_800AF880.components.descriptors[D_800B2078.controlled].actor;
+    model = D_800AF880.components.descriptors[D_800B2078.controlled].model;
     player->layer_flags |= 0x38;
     model->unk18 = 0x80000;
     from_x = WHOLE(player->position[0]);
@@ -4478,9 +4476,9 @@ s32 func_80092894(s32 angle, s32 mode, s32 x, s32 z) {
             func_800A3074(2, value);
             D_8004F34C = field;
         }
-        angle = D_800B06B8->rotation.vy + angle - 0x400;
-        x = D_800B0078->unk60 + WHOLE(D_800B0078->position[0]) + ((func_8003F8CC(angle) * 40) >> 12);
-        z = D_800B0078->unk64 + WHOLE(D_800B0078->position[2]) + (-(func_8003F8B0(angle) * 40) >> 12);
+        direction = D_800B06B8->rotation.vy + angle - 0x400;
+        x = D_800B0078->unk60 + WHOLE(D_800B0078->position[0]) + ((func_8003F8CC(direction) * 40) >> 12);
+        z = D_800B0078->unk64 + WHOLE(D_800B0078->position[2]) + (-(func_8003F8B0(direction) * 40) >> 12);
     }
     dx = x - from_x;
     dz = z - from_z;
@@ -4488,22 +4486,9 @@ s32 func_80092894(s32 angle, s32 mode, s32 x, s32 z) {
     delta.vy = 0;
     delta.vz = dz;
     if (reach < func_80099A4C(dx, dz)) {
-        if (player->last_position[0] == WHOLE(player->position[0]) &&
-            player->last_position[1] == WHOLE(player->position[1]) &&
-            player->last_position[2] == WHOLE(player->position[2])) {
-            player->stuck++;
-        } else {
-            player->stuck = 0;
-        }
-        if ((s16)player->stuck <= 0x40) {
-            player->heading_goal = player->heading = func_8007B694(&delta);
-            D_800B00C0 = 1;
-            if (mode != 0) {
-                D_800B0078->pc -= 1;
-            }
-            return -1;
-        }
+        goto walk;
     }
+arrive:
     player->heading_goal = player->heading = player->heading_goal | 0x8000;
     model->unk18 = 0;
     player->unkE8 = 0;
@@ -4518,6 +4503,23 @@ s32 func_80092894(s32 angle, s32 mode, s32 x, s32 z) {
     player->stuck = 0;
     D_800B0078->pc += 6;
     return 0;
+walk:
+    if (player->last_position[0] == WHOLE(player->position[0]) &&
+        player->last_position[1] == WHOLE(player->position[1]) &&
+        player->last_position[2] == WHOLE(player->position[2])) {
+        player->stuck++;
+    } else {
+        player->stuck = 0;
+    }
+    if ((s16)player->stuck > 0x40) {
+        goto arrive;
+    }
+    player->heading_goal = player->heading = func_8007B694(&delta);
+    D_800B00C0 = 1;
+    if (mode != 0) {
+        D_800B0078->pc -= 1;
+    }
+    return -1;
 }
 #else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_80092894);
@@ -7772,7 +7774,11 @@ void func_8009BB0C(void) {
 
 #ifdef NON_MATCHING
 /* Event 0xa9: once this actor's dialogue window has its answer (or is
- * still being typed), highlight lines op1 >> 4 .. op1 & 0xf as a choice. */
+ * still being typed), highlight lines op1 >> 4 .. op1 & 0xf as a choice.
+ * NON_MATCHING: after the 0xff store the original loads the actor, the
+ * script base and the operand before reloading `window`, and stores
+ * unk37e, unk382 and unk380 in that order; GCC here reloads `window` first
+ * and stores unk382 before unk37e. */
 void func_8009BC98(void) {
     s32 window;
     u32 first;
@@ -7780,7 +7786,7 @@ void func_8009BC98(void) {
     if (func_8009CD18(&window) == 0) {
         D_800AFC7C += 8;
         if (func_80033CD0(&D_800C2698[window].text) == 1 ||
-            (D_800C2698[window].text.unk84 != 0 && D_800C2698[window].text.unk6C != 0)) {
+            ((&D_800C2698[window].text)->unk84 != 0 && (&D_800C2698[window].text)->unk6C != 0)) {
             D_800C2698[window].status = 0;
             D_800B0078->unk081 = 0xFF;
             first = EVENT_OPERAND_BYTE(1) >> 4;
@@ -10555,6 +10561,13 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_800A3C8C
 #endif
 
 #ifdef NON_MATCHING
+/* Write the field state block at D_8005A4E4 (descriptor count, view,
+ * collision attributes, D_800B2078, per-actor records and D_800C3A68) and
+ * print its size.
+ * NON_MATCHING: the original adds the descriptor base before the index for
+ * the rotation copy (a descriptor pointer for that copy alone reproduces
+ * it) and holds &D_8005A4E4 in s1, loaded before D_800C268C, for the size
+ * computed in the branch delay slot. */
 void func_800A3F4C(void) {
     s32 i;
     s32 flags;
