@@ -1369,9 +1369,11 @@ void func_801E0434(u8 slot, u8 gear) {
  * parts (801df890). Each frame redraws what changed; the first opens the
  * windows and, with `fade`, waits for the view to settle. */
 #ifdef NON_MATCHING
-/* Differs only in scheduling: the original stores `running` right after
- * loading the constant 1, and in list-mode confirm sets `reset` right after
- * the 801df5d0 call (this build moves it after 801db0a8). */
+/* Differs only in scheduling (8 instructions): the original stores
+ * `running` (sb 0x38) right after loading the constant 1, before the other
+ * initial values (this build stores it after `part`), and in list-mode
+ * confirm sets `reset` (s0) right after the 801df5d0 call (this build fills
+ * the load delay after the 801db0a8 call with it). */
 void func_801E05D0(u8 slot, u8 fade, u8 gear) {
     u8 running;
     u8 panel;
@@ -1575,8 +1577,8 @@ void func_801E05D0(u8 slot, u8 fade, u8 gear) {
                 break;
             case 1:
                 if (++row >= 8) {
-                    top++;
                     row = 7;
+                    top++;
                     if (limit < top) {
                         top = limit;
                     }
@@ -1694,11 +1696,15 @@ void func_801E1398(void) {
  * game flag 4000. */
 #ifdef NON_MATCHING
 /* The original's target loop is not loop-optimized (each target address is
- * recomputed), hence the goto loop. Remaining: the original zero-extends
- * `row` once before the loop (in place, a1) where this build does it in the
- * loop, and i/values take t1/t2 the other way round. */
+ * recomputed), hence the goto loop; the u16 copy of `row` zero-extends it
+ * once before the loop, in place in a1, as the original does. Remaining:
+ * i/values take t2/t1 (the original t1/t2: `values` wins the global
+ * allocation priority here) and the target address adds id * 0x110 to the
+ * table after the row offset (the original: table + id * 0x110 first, then
+ * row * 14 + that). */
 u32 func_801E1418(u8 slot, u8 row) {
     u32 sum;
+    u16 r;
     s32 i;
     u32 count;
     s32 id;
@@ -1710,14 +1716,15 @@ u32 func_801E1418(u8 slot, u8 row) {
 
     sum = 0;
     if (row < 7 || (D_8006F8EA & 0x4000)) {
+        i = 0;
         count = 0;
+        r = row;
         id = D_800625A0->party->ids[slot];
         table = D_800625A0->block438->unk2578;
         values = D_8006D8A0[id].unk90;
-        i = 0;
     loop:
         value = *values;
-        target = *(u16 *)(table + id * 0x110 + row * 14 + i * 2);
+        target = *(u16 *)(table + id * 0x110 + r * 14 + i * 2);
         if (value != 0) {
             if (target != 0) {
                 if (target != 0xffff) {
