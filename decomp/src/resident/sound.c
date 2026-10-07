@@ -2512,26 +2512,19 @@ u8 *func_8003DEB4(s8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 1;
 }
 
-/* Slide the pan to a target over `frames`.
- * Nonmatching: the original tests the frame count before computing the
- * distance (register allocation differs). */
-#ifdef NON_MATCHING
+/* Slide the pan to a target over `frames`. */
 u8 *func_8003DEE4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u16 frames = data[0];
     s32 delta = ((s8 *)data)[1] - (channel->pan >> 8);
 
     if (frames != 0 && delta != 0) {
-        delta <<= 8;
-        channel->pan_target = delta;
+        channel->pan_target = delta << 8;
         channel->pan_frames = frames;
         channel->flags3 |= 0x10;
-        channel->pan_step = delta / frames;
+        channel->pan_step = (delta << 8) / frames;
     }
     return data + 2;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003DEE4);
-#endif
 
 /* Set the pan modulator's period. */
 u8 *func_8003DF3C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {

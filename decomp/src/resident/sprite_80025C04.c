@@ -500,11 +500,7 @@ void func_80026B9C(void) {
 /* Queue the sheet entry as textured quads at (x, y), linking each quad at
  * `ot`. Its signed texture coordinates supply the offsets within its VRAM
  * page. Leave the queue untouched unless every part fits before its end. */
-/* The texture column variable is reused for the part's u coordinate.
- * Nonmatching: the left edge and v take $s4/$s3 swapped (original $s3/$s4),
- * which also moves the v0/v1 stores after the x0 store as in the original
- * (same size). */
-#ifdef NON_MATCHING
+/* The texture column variable is reused for the part's u coordinate. */
 void func_80026BA4(u16 *sheet, s32 id, s32 x, s32 y, u_long *ot) {
     s16 *entry;
     SheetPart *part;
@@ -540,29 +536,12 @@ void func_80026BA4(u16 *sheet, s32 id, s32 x, s32 y, u_long *ot) {
             column = (s16)part->u;
             poly->clut = GetClut(part->clut_x, part->clut_y);
             poly->tpage = GetTPage(mode, 0, page_x, page_y);
-            poly->x0 = left + x;
-            poly->v0 = v;
-            poly->v1 = v;
-            poly->x1 = left + x + w;
-            poly->x2 = left + x;
-            poly->x3 = left + x + w;
-            poly->v2 = v + h;
-            poly->v3 = v + h;
-            poly->y0 = top + y;
-            poly->y1 = top + y;
-            poly->y2 = top + y + h;
-            poly->y3 = top + y + h;
-            poly->u0 = column;
-            poly->u1 = column + w;
-            poly->u2 = column;
-            poly->u3 = column + w;
+            setXYWH(poly, left + x, top + y, w, h);
+            setUVWH(poly, column, v, w, h);
             AddPrim(ot, poly);
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80025C04", func_80026BA4);
-#endif
 
 /* Fill the renderer's compact part records from the sheet entry, translated
  * by (x, y), with blend mode 1. Preserve each record's other fields. */
