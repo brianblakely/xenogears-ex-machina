@@ -287,10 +287,12 @@ s32 func_80085760(VECTOR *from, VECTOR *to, s32 index, s32 face);
  * when an edge has no neighbour. Returns 1 when the position stands on a face. */
 /* NON_MATCHING: 4 bytes short. Testing the neighbour field itself and then
  * stepping face to it reproduces the single-edge cases (the lh value is
- * copied instead of reloaded with lhu). In the two-edge cases `second` is
- * still reloaded with lhu (the original copies the lh value into a3), `first`
- * takes t0 (v1) and `edges` is formed with nor (the original xors with s7,
- * -1), so the three cases' walls tails are not cross-jumped as in the
+ * copied instead of reloaded with lhu). In the two-edge cases, setting bit 0
+ * with `if (...) edges |= 1` after `edges = 0` gives the original's xor with
+ * the hoisted -1 (s7): jump converts the test to a store-flag only after
+ * cse, so the -1 register survives. `second` is still loaded with lhu (the
+ * original copies the lh value of the bit-1 test into a3), so `first` takes
+ * t0 (v1) and the three cases' walls tails are not cross-jumped as in the
  * original. Declaring face s32 loses the original's 0xb8 frame. */
 #ifdef NON_MATCHING
 s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s32 mode) {
@@ -430,7 +432,10 @@ s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s
                 }
                 break;
             case 3:
-                edges = faces[(s16)face].next[0] != -1;
+                edges = 0;
+                if (faces[(s16)face].next[0] != -1) {
+                    edges |= 1;
+                }
                 first = faces[(s16)face].next[0];
                 second = faces[(s16)face].next[1];
                 if (faces[(s16)face].next[1] != -1) {
@@ -484,7 +489,10 @@ s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s
                 }
                 break;
             case 5:
-                edges = faces[(s16)face].next[0] != -1;
+                edges = 0;
+                if (faces[(s16)face].next[0] != -1) {
+                    edges |= 1;
+                }
                 first = faces[(s16)face].next[0];
                 second = faces[(s16)face].next[2];
                 if (faces[(s16)face].next[2] != -1) {
@@ -538,7 +546,10 @@ s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s
                 }
                 break;
             case 6:
-                edges = faces[(s16)face].next[1] != -1;
+                edges = 0;
+                if (faces[(s16)face].next[1] != -1) {
+                    edges |= 1;
+                }
                 first = faces[(s16)face].next[1];
                 second = faces[(s16)face].next[2];
                 if (faces[(s16)face].next[2] != -1) {
