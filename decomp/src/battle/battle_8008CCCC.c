@@ -202,15 +202,15 @@ void func_8008D328(void) {
  * skipped) and shades them (from 0x2000 by a slot item's availability:
  * shaded semi-transparent, else full brightness). With `fade` fade the lists
  * instead (8008d328) and return their buffer; otherwise return the draw
- * buffer. Nonmatching: 18 instruction differences in the glyph call's
- * destination/count setup (8008d740-8008d7ac); the rest matches. */
-#ifdef NON_MATCHING
+ * buffer. The list's first new glyph (`first`, set once) starts each
+ * shading loop. */
 s32 func_8008D598(u8 member, u8 page, u8 fade) {
     u16 lists[2];
     u8 sets[2];
     s32 i;
     s32 j;
     s32 n;
+    s32 first;
     s32 id;
     u16 shade;
     u32 value;
@@ -239,7 +239,7 @@ s32 func_8008D598(u8 member, u8 page, u8 fade) {
                     continue;
                 }
             }
-            n = D_800D2D28->unkD0[lists[i]] * 2;
+            first = D_800D2D28->unkD0[lists[i]] * 2;
             D_800D2D28->unkD0[lists[i]] +=
                 func_80076A10(id, &D_800C3EA4->unk641C[lists[i]][D_800D2D28->unkD0[lists[i]] * 2],
                              ((s16 *)D_800C2F4C[sets[i]])[j + 1], ((s16 *)D_800C2F4C[sets[i]])[j + 2]);
@@ -252,7 +252,7 @@ s32 func_8008D598(u8 member, u8 page, u8 fade) {
                 }
             }
             if (value != 0) {
-                for (; n < D_800D2D28->unkD0[lists[i]] * 2; n += 2) {
+                for (n = first; n < D_800D2D28->unkD0[lists[i]] * 2; n += 2) {
                     SetSemiTrans(&D_800C3EA4->unk641C[lists[i]][n + D_800CCB04.buffer], 1);
                     SetShadeTex(&D_800C3EA4->unk641C[lists[i]][n + D_800CCB04.buffer], 0);
                     (D_800C3EA4->unk641C[lists[i]] + (n + D_800CCB34_word))->r0 = value;
@@ -261,7 +261,7 @@ s32 func_8008D598(u8 member, u8 page, u8 fade) {
                     D_800C3EA4->unk641C[lists[i]][n + D_800CCB04.buffer].tpage |= 0x20;
                 }
             } else {
-                for (; n < D_800D2D28->unkD0[lists[i]] * 2; n += 2) {
+                for (n = first; n < D_800D2D28->unkD0[lists[i]] * 2; n += 2) {
                     (D_800C3EA4->unk641C[lists[i]] + (n + D_800CCB34_word))->r0 = 0x80;
                     (D_800C3EA4->unk641C[lists[i]] + (n + D_800CCB34_word))->g0 = 0x80;
                     (D_800C3EA4->unk641C[lists[i]] + (n + D_800CCB34_word))->b0 = 0x80;
@@ -272,9 +272,6 @@ s32 func_8008D598(u8 member, u8 page, u8 fade) {
     }
     return D_800CCB34_word;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8008CCCC", func_8008D598);
-#endif
 
 /* Place a window's four corner glyphs (the alternate set while the battle
  * is ending) at its corners in the current draw buffer. */
