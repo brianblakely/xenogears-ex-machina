@@ -212,8 +212,6 @@ void func_801DC2CC(u8 kind) {
  * gear's, 2 the gear's other list): each known art's name and cost, then the
  * current and maximum ether (fuel for kind 2) in rows 12 and 13; arts that
  * cannot be used now are greyed. */
-#ifdef NON_MATCHING
-/* Same logic as the original; register allocation and stack layout differ. */
 void func_801DC3D8(u8 slot, u8 kind) {
     u8 codes[10];
     u8 text[16];
@@ -224,12 +222,11 @@ void func_801DC3D8(u8 slot, u8 kind) {
     s32 digits;
     s32 n;
     s32 pos;
-    s32 *power;
-    u8 *code;
+    s32 cost;
+    s32 value;
+    s32 digit;
     u8 *image;
     u8 known;
-    u8 cost;
-    u8 value;
     u8 started;
     u8 grey;
     u8 fuel;
@@ -242,8 +239,8 @@ void func_801DC3D8(u8 slot, u8 kind) {
     powers[2] = 100;
     powers[3] = 1000;
     powers[4] = 10000;
-    for (n = 4; n >= 0; n--) {
-        codes[n * 2 + 1] = 0;
+    for (row = 4; row >= 0; row--) {
+        codes[row * 2 + 1] = 0;
     }
     for (row = 0; row < 14; row++) {
         bzero(codes, 8);
@@ -273,13 +270,13 @@ void func_801DC3D8(u8 slot, u8 kind) {
                 case 1:
                     D_800625A0->block430->names[row].width = func_80034EAC(
                         func_800339FC(D_8006D8A0[D_800625A0->party->ids[slot]].gear * 16 + row), image, 0x24, 0);
-                    cost = D_800625A0->tables->effects[11 + D_8006D8A0[D_800625A0->party->ids[slot]].gear][21 + row].cost;
+                    cost = (D_800625A0->tables->effects + 11)[D_8006D8A0[D_800625A0->party->ids[slot]].gear][21 + row].cost;
                     break;
                 case 2:
                     D_800625A0->block430->names[row].width = func_80034EAC(
                         func_80033A8C(D_8006D8A0[D_800625A0->party->ids[slot]].gear * 4 + row / 2), image, 0x24, 0);
                     ep = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk38;
-                    cost = D_800625A0->tables->effects[11 + D_8006D8A0[D_800625A0->party->ids[slot]].gear][37 + row / 2].gearCost;
+                    cost = (D_800625A0->tables->effects + 11)[D_8006D8A0[D_800625A0->party->ids[slot]].gear][37 + row / 2].gearCost;
                     digits = 4;
                     break;
                 }
@@ -297,27 +294,20 @@ void func_801DC3D8(u8 slot, u8 kind) {
             value = cost;
             started = 0;
             pos = 0;
-            n = digits - 1;
-            if (n > 0) {
-                code = codes;
-                power = &powers[n];
-                do {
-                    if (value / *power != 0 || started) {
-                        *code = value / *power + 0x10;
-                        started = 1;
-                        value %= *power;
-                    } else {
-                        *code = 0xc3;
-                    }
-                    code += 2;
-                    pos++;
-                    n--;
-                    power--;
-                } while (n > 0);
+            for (n = digits - 1; n > 0; n--) {
+                digit = value / powers[n];
+                if (digit != 0 || started) {
+                    codes[pos * 2] = digit + 0x10;
+                    started = 1;
+                    value -= digit * powers[n];
+                } else {
+                    codes[pos * 2] = 0xc3;
+                }
+                pos++;
             }
-            grey = 0x80;
             codes[pos * 2] = value % 10 + 0x10;
             func_80033B34(codes, text, digits);
+            grey = 0x80;
             D_800625A0->block430->values[row].width = func_80034EAC(text, image, 0x24, 1);
             rect.x = (row & 1) * 0x18 + 0x180;
             rect.y = row / 2 * 0xd + 0x80;
@@ -328,11 +318,11 @@ void func_801DC3D8(u8 slot, u8 kind) {
             if (row < 12) {
                 switch (kind) {
                 case 0:
-                    if (!func_801C865C(D_801E97F0[D_800625A0->party->ids[slot]], row)) {
-                        grey = 0;
-                        break;
-                    }
-                    if (ep < cost) {
+                    if (func_801C865C(D_801E97F0[D_800625A0->party->ids[slot]], row)) {
+                        if (ep < cost) {
+                            grey = 0;
+                        }
+                    } else {
                         grey = 0;
                     }
                     break;
@@ -345,6 +335,8 @@ void func_801DC3D8(u8 slot, u8 kind) {
                     }
                     break;
                 }
+            }
+            if (row < 12) {
                 func_801E7C50(&D_800625A0->block430->names[row], row, 0x80, grey | 1);
                 func_801C851C(D_800625A0->block430->names[row].verts, (row % 2 * 0x88 + 0x24) & 0xfffc,
                               (row / 2 * 0x10 + 0x12) & 0xfffe, D_800625A0->block430->names[row].width, 0xd);
@@ -365,16 +357,15 @@ void func_801DC3D8(u8 slot, u8 kind) {
     func_801D36E0(&D_800625A0->block430->footer, slot, kind, 1);
     D_800625A0->party->unk4A = 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801DC3D8);
-#endif
 
 /* Show the description of file list row `row` for party slot `slot` (`kind`
  * 0 the character's, 1 the gear's, 2 the gear's paired rows): the entry's
  * two text lines, a copy of its name and its target labels; an unused row
  * hides them. */
 #ifdef NON_MATCHING
-/* Differs in the first switch's tail merging and register allocation. */
+/* Differs in register allocation (the original keeps `row` in a1 and gives
+ * slot s4, row & 0xff s3 and the effect s5) and the first switch's shared
+ * `text` sum takes its operands the other way round. */
 void func_801DCE60(u8 slot, u8 row, u8 kind) {
     RECT rect;
     MenuEffect *effect;
@@ -430,11 +421,11 @@ void func_801DCE60(u8 slot, u8 row, u8 kind) {
             effect += 22;
             break;
         case 1:
-            effect = D_800625A0->tables->effects[11 + D_8006D8A0[D_800625A0->party->ids[slot]].gear] + row;
+            effect = (D_800625A0->tables->effects + 11)[D_8006D8A0[D_800625A0->party->ids[slot]].gear] + row;
             effect += 21;
             break;
         case 2:
-            effect = D_800625A0->tables->effects[11 + D_8006D8A0[D_800625A0->party->ids[slot]].gear] + (row >> 1);
+            effect = (D_800625A0->tables->effects + 11)[D_8006D8A0[D_800625A0->party->ids[slot]].gear] + (row >> 1);
             effect += 37;
             break;
         }
@@ -493,42 +484,46 @@ void func_801DD5E8(u8 mode) {
  * whole party for all-target arts, else the cursor's slot) and use it on
  * confirm while its cost can be paid, until cancelled. */
 #ifdef NON_MATCHING
-/* Same shape as the original; register allocation and a few schedules differ. */
+/* Same code shape as the original; remaining: global register allocation
+ * (original s2 kind/used, s3 kind&0xff, s4 targets, s5 slot&0xff; here
+ * `used` ranks below kind&0xff, targets and slot&0xff) and v0/v1 swapped in
+ * the `left` subtraction. Wrapping `used = 0` and the target loop of case 4
+ * in a do/while (0) block (a statement macro, as 801db920's item use also
+ * suggests) fixes targets/slot&0xff and leaves 44 differing instructions. */
 void func_801DD790(u8 slot, s32 row, u8 kind) {
     MenuEffect *effect;
     s32 x;
+    s32 cursor;
     s32 all;
     s32 i;
     s32 sound;
-    u16 now;
-    u16 max;
+    s32 left;
+    s32 now;
+    s32 max;
     u8 redraw;
-    u8 cursor;
+    u8 hit;
     u8 targets;
     u8 used;
 
+    targets = 1;
     redraw = 1;
     x = 0;
     cursor = D_800625A0->firstMember;
     switch (kind) {
     case 0:
-        effect = D_800625A0->tables->effects[D_800625A0->party->ids[slot]] + row;
-        effect += 22;
+        effect = D_800625A0->tables->effects[D_800625A0->party->ids[slot]] + row + 22;
         break;
     case 1:
-        effect = D_800625A0->tables->effects[11 + D_8006D8A0[D_800625A0->party->ids[slot]].gear] + row;
-        effect += 21;
+        effect = (D_800625A0->tables->effects + 11)[D_8006D8A0[D_800625A0->party->ids[slot]].gear] + row + 21;
         break;
     case 2:
         x = 0x18;
+        effect = (D_800625A0->tables->effects + 11)[D_8006D8A0[D_800625A0->party->ids[slot]].gear] + row + 37;
         cursor = slot;
-        effect = D_800625A0->tables->effects[11 + D_8006D8A0[D_800625A0->party->ids[slot]].gear] + row;
-        effect += 37;
         break;
     }
     func_801D397C(2, 0x10, 0xe, x + 0x90, 0xb0, 0, 0, 4, 0);
     all = effect->target & 1;
-    targets = 1;
     while (targets) {
         func_801C7BF4();
         targets = 0;
@@ -553,20 +548,24 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
         }
         D_800625A0->party->unk2F = 1;
         if (kind != 2) {
-            i = D_8006D8A0[D_800625A0->party->ids[slot]].ep - effect->cost;
+            left = D_8006D8A0[D_800625A0->party->ids[slot]].ep - effect->cost;
         } else {
-            i = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk38 - effect->gearCost;
+            left = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk38 - effect->gearCost;
         }
-        if (i < 0) {
+        if (left < 0) {
             targets = 0;
         }
         if (!targets) {
             break;
         }
         switch (D_800625A0->input) {
+        case 5:
+            targets = 0;
+            break;
         case 4:
             used = 0;
             for (i = 0; i < 3; i++) {
+                hit = 0;
                 if (func_801C865C(targets, i)) {
                     if (kind != 2) {
                         now = D_8006D8A0[D_800625A0->party->ids[i]].hp;
@@ -578,6 +577,9 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
                     }
                     if (now != max) {
                         used = 1;
+                        hit = 1;
+                    }
+                    if (hit) {
                         func_801E35BC(D_800625A0->tables, D_800625A0->party->ids[slot], D_800625A0->party->ids[i],
                                       row, kind);
                     }
@@ -595,9 +597,6 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
             }
             redraw = 1;
             func_801C8574(sound);
-            break;
-        case 5:
-            targets = 0;
             break;
         case 1:
             if (kind == 0) {
@@ -627,9 +626,24 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801DD790);
 #endif
 
+/* The arts screen's windows are up: clear `windows`, zoom in when `zoom`
+ * asks for it and drop the panel redraw flags. A statement macro. */
+#define FINISH_OPENING(windows, zoom)                  \
+    do {                                               \
+        (windows) = 0;                                 \
+        if (zoom) {                                    \
+            func_801D1E80();                           \
+            func_801D29A8(0, 0);                       \
+            func_801C7BF4();                           \
+        }                                              \
+        D_800625A0->party->redraw6 = 0;                \
+        D_800625A0->party->unk20[1] = 0;               \
+    } while (0)
+
 #ifdef NON_MATCHING
-/* Nonmatching: its jump table lands at 801c512c now; GCC allocates one
- * more saved register (frame 0x70, the original's 0x68). */
+/* Nonmatching: the original schedules the copy of `slot` into s2 after the
+ * other locals' initial values (this build puts it first); its jump table
+ * also lands at 801c512c when built from C. */
 /* The arts screen of party slot `slot` (`kind` 0 the character's, 1 its
  * gear's, 2 the gear's other list): a cursor over twelve rows (two columns,
  * one for kind 2), the selected art's description; confirm uses a usable
@@ -641,11 +655,11 @@ void func_801DDF24(u8 slot, u8 zoom, u8 kind) {
     u8 windows;
     u8 running;
 
+    running = 1;
     windows = 1;
     cursor = 0;
     cursorShown = 0xff;
     slotShown = 0xff;
-    running = 1;
     func_801DC1D4(kind);
     func_801DB02C(0);
     do {
@@ -665,14 +679,7 @@ void func_801DDF24(u8 slot, u8 zoom, u8 kind) {
             func_801D397C(5, 0xc, 0x86, 0xac, 0x38, 0, 1, 4, 0);
             func_801D397C(4, D_801E9794[kind], 0xa6, D_801E97A0[kind], 0x18, 0, 1, 4, 0);
             func_801D397C(3, 0xc8, 0x86, 0x50, 0x18, 0, 1, 4, 0);
-            windows = 0;
-            if (zoom) {
-                func_801D1E80();
-                func_801D29A8(0, 0);
-                func_801C7BF4();
-            }
-            D_800625A0->party->redraw6 = 0;
-            D_800625A0->party->unk20[1] = 0;
+            FINISH_OPENING(windows, zoom);
         }
         switch (D_800625A0->input) {
         case 4:
@@ -797,53 +804,59 @@ void func_801DE474(u8 wide, u8 page) {
     func_801D397C(4, 0x10, 0xc, 0x80, h, 0, 1, 4, 0);
 }
 
-#ifdef NON_MATCHING
-/* Same logic as the original; register allocation and stack layout differ. */
 /* Build the equipment candidate list for part `part` of party slot `slot`
  * (`special` special parts, `gear` the gear's lists) and draw its rows from
  * `top`: usable weapons of a class below 5, special parts of the kept part's
  * class, or accessories whose groups are free or held by the replaced one
  * (entry 0 of the accessory list stays empty for removing). Returns the
  * scroll limit. */
+#ifdef NON_MATCHING
+/* Remaining: the gear switch's `< 50` tails are cross-jumped into the
+ * character switch's, `used = 0` is scheduled before `i = 0`, and the drawing
+ * loop keeps `kind` in a register and forms &D_801EA7F8[top + i] in one. */
 s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
+    RECT rect;
     u8 codes[4];
     u8 text[8];
-    RECT rect;
+    s32 length;
+    u8 kind;
+    s32 count;
     MenuWeapon *weapon;
     MenuAccessory *accessory;
     MenuWeapon *keptWeapon;
     GearWeapon *gearWeapon;
-    MenuGearAccessory *gearAccessory;
     GearWeapon *keptGearWeapon;
-    s32 length;
-    s32 count;
-    s32 i;
-    s32 tens;
+    MenuGearAccessory *gearAccessory;
     u16 own;
     u16 used;
-    u16 groups;
-    u8 kind;
+    s32 i;
+    u8 tens;
     u8 ok;
     u8 *image;
+    u8 *name;
 
     codes[1] = 0;
     codes[3] = 0;
     if (special) {
-        kind = part + 1;
-        count = 100;
         if (!gear) {
+            kind = part + 1;
+            count = 100;
             keptWeapon = &D_800625A0->tables->weapons[D_800625A0->labels360->parts[0][part]];
         } else {
+            kind = part + 1;
+            count = 100;
             keptGearWeapon = &D_800625A0->tables->gearWeapons[D_800625A0->labels360->parts[0][part]];
         }
     } else if (!gear) {
         if (part != 0) {
             kind = 5;
             count = 200;
-            own = D_800625A0->tables->accessories[D_800625A0->labels360->parts[2][part - 1]].groups;
+            accessory = &D_800625A0->tables->accessories[D_800625A0->labels360->parts[2][part - 1]];
+            own = accessory->groups;
             used = 0;
             for (i = 0; i < 3; i++) {
-                used |= D_800625A0->tables->accessories[D_800625A0->labels360->parts[2][i]].groups;
+                accessory = &D_800625A0->tables->accessories[D_800625A0->labels360->parts[2][i]];
+                used |= accessory->groups;
             }
         } else {
             kind = 0;
@@ -852,10 +865,12 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
     } else if (part != 0) {
         kind = 5;
         count = 150;
-        own = D_800625A0->tables->gearAccessories[D_800625A0->labels360->parts[2][part - 1]].groups;
         used = 0;
+        gearAccessory = &D_800625A0->tables->gearAccessories[D_800625A0->labels360->parts[2][part - 1]];
+        own = gearAccessory->groups;
         for (i = 0; i < 3; i++) {
-            used |= D_800625A0->tables->gearAccessories[D_800625A0->labels360->parts[2][i]].groups;
+            gearAccessory = &D_800625A0->tables->gearAccessories[D_800625A0->labels360->parts[2][i]];
+            used |= gearAccessory->groups;
         }
     } else {
         kind = 0;
@@ -868,65 +883,80 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
     length = kind == 5;
     for (i = 0; i < count; i++) {
         if (!gear) {
-            accessory = &D_800625A0->tables->accessories[D_8006F4FC[i]];
-            weapon = &D_800625A0->tables->weapons[D_8006F3D0[i]];
+            accessory = &D_800625A0->tables->accessories[D_8006D634.accessoryIds[i]];
+            weapon = &D_800625A0->tables->weapons[D_8006D634.weaponIds[i]];
         } else {
-            gearWeapon = &D_800625A0->tables->gearWeapons[D_8006F754[i]];
-            gearAccessory = &D_800625A0->tables->gearAccessories[D_8006F84E[i]];
+            gearWeapon = &D_800625A0->tables->gearWeapons[D_8006D634.gearPartIds[i]];
+            gearAccessory = &D_800625A0->tables->gearAccessories[D_8006D634.gearAccessoryIds[i]];
         }
         ok = 0;
         if (!gear) {
-            if (kind == 0) {
+            switch (kind) {
+            case 0:
                 if (func_801C865C(weapon->users, D_800625A0->party->ids[slot]) && weapon->kind < 5 &&
-                    D_8006F3D0[i] < 50) {
+                    D_8006D634.weaponIds[i] < 50) {
                     ok = 1;
                 }
-            } else if (kind < 5) {
+                break;
+            case 1:
+            case 2:
+            case 3:
+            case 4:
                 if (func_801C865C(weapon->users, D_800625A0->party->ids[slot]) &&
-                    weapon->kind == keptWeapon->kind && D_8006F3D0[i] >= 50) {
+                    weapon->kind == keptWeapon->kind && D_8006D634.weaponIds[i] >= 50) {
                     ok = 1;
                 }
-            } else if (kind == 5) {
+                break;
+            case 5:
                 if (func_801C865C(accessory->users, D_800625A0->party->ids[slot])) {
-                    groups = accessory->groups;
-                    if (groups == 0 || (own & groups) || !(used & groups)) {
+                    if (accessory->groups == 0 || (own & accessory->groups) || !(used & accessory->groups)) {
                         ok = 1;
                     }
                 }
+                break;
             }
-        } else if (kind == 0) {
-            if (func_801C8678(gearWeapon->users, D_8006D8A0[D_800625A0->party->ids[slot]].gear) &&
-                gearWeapon->kind < 5 && D_8006F754[i] < 50) {
-                ok = 1;
-            }
-        } else if (kind < 5) {
-            if (func_801C8678(gearWeapon->users, D_8006D8A0[D_800625A0->party->ids[slot]].gear) &&
-                gearWeapon->kind == keptGearWeapon->kind && D_8006F754[i] >= 50) {
-                ok = 1;
-            }
-        } else if (kind == 5) {
-            if (func_801C8678(gearAccessory->users, D_8006D8A0[D_800625A0->party->ids[slot]].gear)) {
-                groups = gearAccessory->groups;
-                if (groups == 0 || (own & groups) || !(used & groups)) {
+        } else {
+            switch (kind) {
+            case 0:
+                if (func_801C8678(gearWeapon->users, D_8006D8A0[D_800625A0->party->ids[slot]].gear) &&
+                    gearWeapon->kind < 5 && D_8006D634.gearPartIds[i] < 50) {
                     ok = 1;
                 }
+                break;
+            case 1:
+            case 2:
+            case 3:
+            case 4:
+                if (func_801C8678(gearWeapon->users, D_8006D8A0[D_800625A0->party->ids[slot]].gear) &&
+                    gearWeapon->kind == keptGearWeapon->kind && D_8006D634.gearPartIds[i] >= 50) {
+                    ok = 1;
+                }
+                break;
+            case 5:
+                if (func_801C8678(gearAccessory->users, D_8006D8A0[D_800625A0->party->ids[slot]].gear)) {
+                    if (gearAccessory->groups == 0 || (own & gearAccessory->groups) ||
+                        !(used & gearAccessory->groups)) {
+                        ok = 1;
+                    }
+                }
+                break;
             }
         }
         if (ok) {
             if (!gear) {
                 if (kind != 5) {
-                    D_801EA730[length] = D_8006F3D0[i];
-                    D_801EA7F8[length] = D_8006F36C[i];
+                    D_801EA730[length] = D_8006D634.weaponIds[i];
+                    D_801EA7F8[length] = D_8006D634.weaponCounts[i];
                 } else {
-                    D_801EA730[length] = D_8006F4FC[i];
-                    D_801EA7F8[length] = D_8006F434[i];
+                    D_801EA730[length] = D_8006D634.accessoryIds[i];
+                    D_801EA7F8[length] = D_8006D634.accessoryCounts[i];
                 }
             } else if (kind != 5) {
-                D_801EA730[length] = D_8006F754[i];
-                D_801EA7F8[length] = D_8006F6F0[i];
+                D_801EA730[length] = D_8006D634.gearPartIds[i];
+                D_801EA7F8[length] = D_8006D634.gearPartCounts[i];
             } else {
-                D_801EA730[length] = D_8006F84E[i];
-                D_801EA7F8[length] = D_8006F7B8[i];
+                D_801EA730[length] = D_8006D634.gearAccessoryIds[i];
+                D_801EA7F8[length] = D_8006D634.gearAccessoryCounts[i];
             }
             length++;
         }
@@ -936,24 +966,18 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
         if (D_801EA730[top + i] != 0) {
             if (!gear) {
                 if (kind != 5) {
-                    D_800625A0->block434->names[i].width =
-                        func_80034EAC(func_80033848(D_801EA730[top + i]), image, 0x24, 0);
+                    name = func_80033848(D_801EA730[top + i]);
                 } else {
-                    D_800625A0->block434->names[i].width =
-                        func_80034EAC(func_800337E8(D_801EA730[top + i]), image, 0x24, 0);
+                    name = func_800337E8(D_801EA730[top + i]);
                 }
             } else if (kind != 5) {
-                D_800625A0->block434->names[i].width =
-                    func_80034EAC(func_80033A5C(D_801EA730[top + i]), image, 0x24, 0);
+                name = func_80033A5C(D_801EA730[top + i]);
             } else {
-                D_800625A0->block434->names[i].width =
-                    func_80034EAC(func_80033A2C(D_801EA730[top + i]), image, 0x24, 0);
+                name = func_80033A2C(D_801EA730[top + i]);
             }
+            D_800625A0->block434->names[i].width = func_80034EAC(name, image, 0x24, 0);
             tens = D_801EA7F8[top + i] / 10;
-            codes[0] = tens + 0x10;
-            if ((u8)tens == 0) {
-                codes[0] = 0xc3;
-            }
+            codes[0] = tens != 0 ? tens + 0x10 : 0xc3;
             codes[2] = D_801EA7F8[top + i] % 10 + 0x10;
             func_80033B34(codes, text, 2);
             D_800625A0->block434->values[i].width = func_80034EAC(text, image, 0x24, 1);
@@ -995,8 +1019,10 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801DE5
  * (worn special parts are dropped). Without a new part the kept one goes
  * back. Returns 1 when character 4 changed weapon. */
 #ifdef NON_MATCHING
-/* Differs: the original's frame is 0x28 (this builds 0x18) and it converts
- * `gear` at each use; the inventory update code otherwise has the same shape. */
+/* Differs: the original's frame is 0x28 (this builds 0x18: the extra slots
+ * are left by two more compare-and-branch pseudos that combine deletes, so the
+ * original has two more such compares) and it converts `gear` at each use;
+ * the inventory update code otherwise has the same shape. */
 s32 func_801DF0D4(u8 slot, u8 part, u8 special, u8 gear) {
     u8 *ids;
     u8 *counts;
@@ -2426,7 +2452,13 @@ u8 func_801E31C0(MenuTables *tables, u8 id, u8 item) {
 /* Apply `user`'s restoring effect: to `target`'s HP (its +5b times the
  * effect's +11, capped at the maximum), or with `gear` to the user's gear
  * (+60 up by a tenth of +64, capped at +64). */
-void func_801E35BC(MenuTables *tables, u8 user, u8 target, u8 effect, u8 gear) {
+void func_801E35BC(tables, user, target, effect, gear)
+MenuTables *tables;
+u8 user;
+u8 target;
+u8 effect;
+u8 gear;
+{
     CharRecord *source;
     CharRecord *dest;
     GearRecord *machine;
@@ -3176,8 +3208,8 @@ void func_801E53CC(u8 index) {
  * its position for both buffers, and the two draw modes (blend mode 2). */
 void func_801E56E8(s32 index) {
     MenuImage *image;
-    u16 *x;
-    u16 *y;
+    s16 *x;
+    s16 *y;
     s32 i;
     RECT window;
 
@@ -3223,8 +3255,8 @@ void func_801E56E8(s32 index) {
  * top/right and left/bottom lines and their vertices, for both buffers. */
 void func_801E5924(s32 index) {
     MenuImage *image;
-    u16 *x;
-    u16 *y;
+    s16 *x;
+    s16 *y;
     s32 i;
 
     x = D_801E9894[index];
@@ -3312,12 +3344,13 @@ void func_801E5B88(void) {
 
 /* Set up the 32x32 cursor sprite and the purple-to-black shaded band
  * (0,4a)-(140,8a) for both buffers. */
-#ifdef NON_MATCHING
 void func_801E5E4C(void) {
     s32 *x;
     s32 *y;
     s32 i;
+    s32 right; /* the band's right edge */
 
+    right = 0x140;
     i = 0;
     x = &D_801E99F0;
     y = &D_801E99F8;
@@ -3347,17 +3380,14 @@ void func_801E5E4C(void) {
         (D_800625A0->block34C->band + i)->b3 = 0x10;
         (D_800625A0->block34C->band + i)->x0 = 0;
         (D_800625A0->block34C->band + i)->y0 = 0x4a;
-        (D_800625A0->block34C->band + i)->x1 = 0x140;
+        (D_800625A0->block34C->band + i)->x1 = right;
         (D_800625A0->block34C->band + i)->y1 = 0x4a;
         (D_800625A0->block34C->band + i)->x2 = 0;
         (D_800625A0->block34C->band + i)->y2 = 0x8a;
-        (D_800625A0->block34C->band + i)->x3 = 0x140;
+        (D_800625A0->block34C->band + i)->x3 = right;
         (D_800625A0->block34C->band + i)->y3 = 0x8a;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801E5E4C);
-#endif
 
 /* Lay out the three save views' frames (nine images each, 50 apart) and
  * their 72x13 name quads (label rows 6 + view). */

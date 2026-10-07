@@ -1492,6 +1492,9 @@ void func_801C9270(s32 port) {
  * while the cards stay as they were, mark this game's files and place the
  * cursor marker. */
 #ifdef NON_MATCHING
+/* Remaining: the original keeps `marked` (always 0 here) as a copy of noCard
+ * and tests it before setting party +0b (this build folds it away), and its
+ * frame is 0xe8 (0x30 more: six more dead address pseudos). */
 u8 func_801C93A8(void) {
     char path[64];
     u8 present[2];
@@ -2231,7 +2234,7 @@ u8 func_801CB304(void) {
             }
             strcat(path,
                    D_800625A0->card->files[D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]]].name);
-            if (!func_801CACF8(0x65, 0xff, 1)) {
+            if (!(u8)func_801CACF8(0x65, 0xff, 1)) {
                 D_800625A0->card->unk4F80 = 0xff;
             } else {
                 func_801D2F4C(0x3b);
@@ -2429,9 +2432,6 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CBA4C);
  * header (title 801ca8c0) and the checksummed payload (801cba4c) to a
  * temporary file and renames it to the prefix and digit, then reports 5c or
  * 35 and refreshes the listing. With `kind` 0 one save ends it. */
-#ifdef NON_MATCHING
-/* Differs in register allocation: the original keeps ff in a saved register
- * (and so spills `again`). */
 u8 func_801CBD90(u8 kind) {
     char finalName[64];
     char tempName[64];
@@ -2651,10 +2651,10 @@ u8 func_801CBD90(u8 kind) {
             }
             D_800625A0->markers->unk144[0] = 1;
             D_800625A0->sounds = 1;
-            if (!kind) {
-                again = 0;
+            if (kind) {
+                break;
             }
-            break;
+            /* fall through: a single save ends it */
         case 2:
             again = 0;
             break;
@@ -2664,9 +2664,6 @@ u8 func_801CBD90(u8 kind) {
     D_800625A0->cardsPresent = 1;
     return result;
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CBD90);
-#endif
 
 /* The file screen's copy command: pick a file and copy it to the other
  * card (asking first; no card, a full card or an existing file there
@@ -5460,9 +5457,7 @@ void func_801D74EC(u8 slot, u8 gear) {
 
 /* Lay out the detail panel's value derived from record +77..+79 of party
  * slot `slot` ((+78 + +77) * 10 + +79) * 22 shown in hundredths with one
- * decimal) or, with `gear`, its gear's +68 (five digits). Only the register
- * allocation differs (the gear and the tenth digit trade saved registers). */
-#ifdef NON_MATCHING
+ * decimal) or, with `gear`, its gear's +68 (five digits). */
 void func_801D7884(u8 slot, u8 gear) {
     s32 digits;
     s32 first;
@@ -5471,7 +5466,7 @@ void func_801D7884(u8 slot, u8 gear) {
     u8 digit;
     u16 value;
     u16 whole;
-    u16 tenth;
+    s32 tenth;
 
     if (!gear) {
         value = ((D_8006D8A0[D_800625A0->party->ids[slot]].accessories[4] + D_8006D8A0[D_800625A0->party->ids[slot]].accessories[3]) *
@@ -5481,7 +5476,8 @@ void func_801D7884(u8 slot, u8 gear) {
         whole = value / 100;
         digits = 3;
         first = 6;
-        tenth = (value - whole * 100) / 10;
+        tenth = value;
+        tenth = (tenth - whole * 100) / 10;
         func_801C80B8(whole);
         x = D_801E9D30;
     } else {
@@ -5502,7 +5498,7 @@ void func_801D7884(u8 slot, u8 gear) {
     }
     if (!gear) {
         D_800625A0->block358->list1C70Count +=
-            func_8002675C(D_800625A0->sheet, tenth,
+            func_8002675C(D_800625A0->sheet, (u16)tenth,
                           &D_800625A0->block358->list1C70[D_800625A0->block358->list1C70Count * 2],
                           D_800625A0->bufferIndex, D_801E9D30 + 0x20, D_801E9D34, 0x1000);
     }
@@ -5516,9 +5512,6 @@ void func_801D7884(u8 slot, u8 gear) {
                           D_800625A0->block358->list1C70[i * 2 + D_800625A0->bufferIndex].y0);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D7884);
-#endif
 
 /* Build the status panels of party slot `slot` for `mode` and show them. */
 void func_801D7C3C(u8 slot, u8 mode) {
@@ -6331,15 +6324,20 @@ void func_801DA518(void) {
     func_800320E8(D_800625A0->tables->items);
 }
 
+/* Column of item entry `i`: its x offset and its name's left edge (8-aligned).
+ * A statement macro (do/while (0)). */
+#define ITEM_COLUMN(i, x, left)            \
+    do {                                   \
+        (x) = ((i) % 2) * 0x88;            \
+        (left) = ((x) + 0x28) & 0xfff8;    \
+    } while (0)
+
 /* Build the 16 visible entries of the item list from scroll row `row`: an
  * entry without an id or count is emptied; otherwise the count is capped at
  * 99 and the item name and two-digit count are rendered into the image area
  * and laid out, greyed when the item cannot be used here. */
-#ifdef NON_MATCHING
 /* The counts are addressed from the ids (D_8006F65A - 150), as the original
- * does. Differs only in the x/y layout block: the original computes the
- * column offset before the row (i / 2 and y in s0, x in s1); this build
- * schedules y first (y in s1, x in s0). */
+ * does. */
 void func_801DA5BC(s32 row) {
     u8 codes[4];
     u8 text[8];
@@ -6389,9 +6387,8 @@ void func_801DA5BC(s32 row) {
                 }
                 func_801E7C50(&D_800625A0->block42C->names[i], i, 0x80, grey | 1);
                 func_801E7C50(&D_800625A0->block42C->values[i], i, 0x80, grey | 2);
-                x = (i % 2) * 0x88;
+                ITEM_COLUMN(i, x, left);
                 y = (i / 2) * 0x10 | 0xe;
-                left = (x + 0x28) & 0xfff8;
                 func_801C851C(D_800625A0->block42C->names[i].verts, left, y, D_800625A0->block42C->names[i].width,
                               0xd);
                 left = (x + 0x90) & 0xfff8;
@@ -6412,9 +6409,6 @@ void func_801DA5BC(s32 row) {
     func_800320E8(image);
     D_800625A0->party->unk48 = 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DA5BC);
-#endif
 
 /* Show the description of item list entry `entry` at scroll row `row`: the
  * item's message line, a copy of its name and count texts and, for items
@@ -6663,7 +6657,10 @@ void func_801DB5E4(u8 mode) {
 #ifdef NON_MATCHING
 /* Differs: the original clears the used-up id through &D_8006F5C4 + 0x96
  * (reloaded into t0, as is the counts base before the loop); this build
- * addresses D_8006F65A directly. */
+ * addresses D_8006F65A directly (INVENTORY->ids reorders the saved registers).
+ * The original also uses 801e31c0's result unmasked, as an implicitly
+ * declared (int) function would be. A do/while (0) block (statement macro)
+ * around the case-4 target loop brings it to 20 differing instructions. */
 u8 func_801DB920(s32 row, s32 entry) {
     u16 marks;
     u8 running;
