@@ -1919,14 +1919,22 @@ void func_80085454(u8 queue) {
  * (10) and gain (11). A knocked-out slot only joins the 800c48e8 mask.
  * Slots whose values changed get their refresh flag (+0x2eb). Pilot damage
  * treats both HP and amount as signed halfwords; healing wraps to the
- * stored width before the maximum check. The original healing stores use
- * the battle-area view of the work table. Frame/register allocation still
- * differs (original frame 0x58). */
+ * stored width before the maximum check. The event queue, slot table and
+ * knocked-out mask are members of D_800C3EB0 (one symbol, so every base is
+ * formed from the events address), while the healing stores use the
+ * BATTLE_AREA view of the work table. The signed halfword locals (have and
+ * amount, ep and cost) give the original's 0x58 frame and register copies.
+ * Nonmatching: the induction registers differ (slot in $s3 and the amounts
+ * pointer in $s2, swapped) and the latch increments the work pointer first;
+ * the original increments amounts, fuel, work, record offset, slot. */
 #ifdef NON_MATCHING
 void func_80085618(u8 queue) {
     s32 slot;
     s32 left;
-    s32 amount;
+    s16 have;
+    s16 amount;
+    s16 ep;
+    s16 cost;
     u32 total;
     u16 value;
 
@@ -1935,48 +1943,51 @@ void func_80085618(u8 queue) {
             continue;
         }
         if (D_800CCCE8.records[slot].pilot.status7C & 0x8000) {
-            D_800C48E8 |= func_80089C08(slot);
+            D_800C3EB0.knockedOut |= func_80089C08(slot);
             continue;
         }
-        switch (D_800C3FE8[queue].codes[slot]) {
+        switch (D_800C3EB0.events[queue].codes[slot]) {
         case 0:
         case 5:
         case 7:
         case 8:
-            if (D_800C3EB4[slot].gear == 0) {
-                left = (s16)D_800CCCE8.records[slot].pilot.hp;
-                amount = (s16)D_800C3FE8[queue].amounts[slot];
-                if (left - amount > 0) {
-                    D_800CCCE8.records[slot].pilot.hp = left - amount;
+            if (D_800C3EB0.slots[slot].gear == 0) {
+                have = D_800CCCE8.records[slot].pilot.hp;
+                amount = D_800C3EB0.events[queue].amounts[slot];
+                if (have - amount > 0) {
+                    D_800CCCE8.records[slot].pilot.hp = have - amount;
                     break;
                 }
                 D_800CCCE8.records[slot].pilot.hp = 0;
-                BATTLE_AREA.knockedOut |= func_80089C08(slot);
+                D_800C3EB0.knockedOut |= func_80089C08(slot);
                 D_800CCCE8.records[slot].pilot.status7C |= 0x8000;
+                if (slot >= 3) {
+                    func_800883AC(slot);
+                }
             } else {
-                left = D_800CCCE8.records[slot].gear.hp - D_800C3FE8[queue].amounts[slot];
+                left = D_800CCCE8.records[slot].gear.hp - D_800C3EB0.events[queue].amounts[slot];
                 if (left > 0) {
                     D_800CCCE8.records[slot].gear.hp = left;
                     break;
                 }
                 D_800CCCE8.records[slot].gear.hp = 0;
-                BATTLE_AREA.knockedOut |= func_80089C08(slot);
+                D_800C3EB0.knockedOut |= func_80089C08(slot);
                 D_800CCCE8.records[slot].gear.status7C |= 0x8000;
                 D_800CCCE8.records[slot].pilot.status7C |= 0x8000;
-            }
-            if (slot >= 3) {
-                func_800883AC(slot);
+                if (slot >= 3) {
+                    func_800883AC(slot);
+                }
             }
             break;
         case 2:
-            if (D_800C3EB4[slot].gear != 0 && D_800C2050 == 0) {
-                total = D_800CCCE8.records[slot].gear.hp + D_800C3FE8[queue].amounts[slot];
+            if (D_800C3EB0.slots[slot].gear != 0 && D_800C2050 == 0) {
+                total = D_800CCCE8.records[slot].gear.hp + D_800C3EB0.events[queue].amounts[slot];
                 BATTLE_AREA.work.records[slot].gear.hp = total;
                 if (D_800CCCE8.records[slot].gear.maxHp < total) {
                     D_800CCCE8.records[slot].gear.hp = D_800CCCE8.records[slot].gear.maxHp;
                 }
             } else {
-                value = D_800CCCE8.records[slot].pilot.hp + D_800C3FE8[queue].amounts[slot];
+                value = D_800CCCE8.records[slot].pilot.hp + D_800C3EB0.events[queue].amounts[slot];
                 BATTLE_AREA.work.records[slot].pilot.hp = value;
                 if (D_800CCCE8.records[slot].pilot.maxHp < value) {
                     D_800CCCE8.records[slot].pilot.hp = D_800CCCE8.records[slot].pilot.maxHp;
@@ -1985,33 +1996,33 @@ void func_80085618(u8 queue) {
             break;
         case 1:
         case 9:
-            left = (s16)D_800CCCE8.records[slot].pilot.ep;
-            amount = (s16)D_800C3FE8[queue].amounts[slot];
-            if (left - amount > 0) {
-                D_800CCCE8.records[slot].pilot.ep = left - amount;
+            ep = D_800CCCE8.records[slot].pilot.ep;
+            cost = D_800C3EB0.events[queue].amounts[slot];
+            if (ep - cost > 0) {
+                D_800CCCE8.records[slot].pilot.ep = ep - cost;
             } else {
                 D_800CCCE8.records[slot].pilot.ep = 0;
             }
             continue;
         case 3:
-            if (D_800C3EB4[slot].gear != 0 && D_800C2050 == 0) {
+            if (D_800C3EB0.slots[slot].gear != 0 && D_800C2050 == 0) {
                 continue;
             }
-            value = D_800CCCE8.records[slot].pilot.ep + D_800C3FE8[queue].amounts[slot];
+            value = D_800CCCE8.records[slot].pilot.ep + D_800C3EB0.events[queue].amounts[slot];
             BATTLE_AREA.work.records[slot].pilot.ep = value;
             if (D_800CCCE8.records[slot].pilot.maxEp < value) {
                 D_800CCCE8.records[slot].pilot.ep = D_800CCCE8.records[slot].pilot.maxEp;
             }
             continue;
         case 10:
-            if (D_800CCCE8.records[slot].gear.fuel - D_800C3FE8[queue].amounts[slot] > 0) {
-                D_800CCCE8.records[slot].gear.fuel -= D_800C3FE8[queue].amounts[slot];
+            if (D_800CCCE8.records[slot].gear.fuel - D_800C3EB0.events[queue].amounts[slot] > 0) {
+                D_800CCCE8.records[slot].gear.fuel -= D_800C3EB0.events[queue].amounts[slot];
             } else {
                 D_800CCCE8.records[slot].gear.fuel = 0;
             }
             break;
         case 11:
-            value = D_800CCCE8.records[slot].gear.fuel + D_800C3FE8[queue].amounts[slot];
+            value = D_800CCCE8.records[slot].gear.fuel + D_800C3EB0.events[queue].amounts[slot];
             BATTLE_AREA.work.records[slot].gear.fuel = value;
             if (D_800CCCE8.records[slot].gear.maxFuel < value) {
                 D_800CCCE8.records[slot].gear.fuel = D_800CCCE8.records[slot].gear.maxFuel;
@@ -2602,8 +2613,11 @@ done:
 
 /* Plan the approach route from `actor` to `target`: the actor's position,
  * then the route points the formation lists between their groups. Returns
- * 1 when the actor's character is 4. (Nonmatching: the link address is
- * formed as formation + from * 0x40 first.) */
+ * 1 when the actor's character is 4. The link row is taken through a
+ * pointer (links + from) so that from * 0x40 is added before to * 8, as in
+ * the original. Nonmatching: the original adds the row as formation +
+ * from * 0x40 (here from * 0x40 + formation) and loads the actor's group
+ * before the target's in the first and third link reads. */
 #ifdef NON_MATCHING
 s32 func_800877E0(u8 actor, u8 target) {
     s32 result = 0;
@@ -2617,17 +2631,17 @@ s32 func_800877E0(u8 actor, u8 target) {
     D_800C48EC[0].z = D_800C3EB4[actor].z;
     D_800C48EC[0].flag = 0;
     for (i = 1; i < 8; i++) {
-        if (D_800D3364->links[D_800C3EB4[actor].group][D_800C3EB4[target].group].points[i - 1] == 0xFF) {
+        if ((*(D_800D3364->links + D_800C3EB4[actor].group))[D_800C3EB4[target].group].points[i - 1] == 0xFF) {
             break;
         }
         D_800C48EC[i].x =
-            D_800D3364->areas[D_800D3364->links[D_800C3EB4[actor].group][D_800C3EB4[target].group].points[i - 1] & 7]
+            D_800D3364->areas[(*(D_800D3364->links + D_800C3EB4[actor].group))[D_800C3EB4[target].group].points[i - 1] & 7]
                 .centre.x;
         D_800C48EC[i].z =
-            D_800D3364->areas[D_800D3364->links[D_800C3EB4[actor].group][D_800C3EB4[target].group].points[i - 1] & 7]
+            D_800D3364->areas[(*(D_800D3364->links + D_800C3EB4[actor].group))[D_800C3EB4[target].group].points[i - 1] & 7]
                 .centre.z;
         D_800C48EC[i].flag =
-            D_800D3364->links[D_800C3EB4[actor].group][D_800C3EB4[target].group].points[i - 1] & 0x80;
+            (*(D_800D3364->links + D_800C3EB4[actor].group))[D_800C3EB4[target].group].points[i - 1] & 0x80;
     }
     if (D_800D2D24[actor] == 4) {
         result = 1;
