@@ -1558,18 +1558,15 @@ u8 func_801E3610(u8 stat, u8 target, u8 cap, u8 level) {
 
 /* Grow max HP by a random share of the distance to the growth data's
  * target for the level range, at least 2. Capped at 999. */
-#ifdef NON_MATCHING
-/* NON_MATCHING: only the first share differs: the original computes
- * (level - 99) with its own addiu and subtracts it before hp; GCC folds the
- * constant here (addiu 0x63 after the hp subtraction). */
 u16 func_801E3700(u16 maxHp, u8 level) {
     s16 gain;
     u16 hp;
     u16 result;
+    s32 top = 99; /* the first range's top level */
 
     hp = maxHp;
     if (level < 100) {
-        gain = rand() % 100 * (D_801E44E8->characters[D_801E44EC->id].maxHpTargets[0] - hp - (level - 99))
+        gain = rand() % 100 * (D_801E44E8->characters[D_801E44EC->id].maxHpTargets[0] - (level - top) - hp)
             / ((100 - level) * 100) + 2;
         if (gain < 0) {
             result = hp;
@@ -1590,9 +1587,6 @@ u16 func_801E3700(u16 maxHp, u8 level) {
     }
     return result;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E3700);
-#endif
 
 /* Grow max EP by 0 or 1 toward the growth data's target for the level
  * range (as func_801E3610). Capped at 99. */
