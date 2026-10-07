@@ -3870,10 +3870,8 @@ void func_8007D6B8(void) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Spawn up to count ground particles in free cells around a position: on
- * the ground below a random point within 32 units, rising for 20 frames.
- * Does not match: the x coordinate is kept pre-shifted for the map index. */
+ * the ground below a random point within 32 units, rising for 20 frames. */
 void func_8007D7A8(Vector *pos, s32 count) {
     SceneCell10 *cell = D_800926BC;
     s32 i;
@@ -3887,18 +3885,17 @@ void func_8007D7A8(Vector *pos, s32 count) {
         if (cell->unk6 == 0) {
             x = pos->vx + (rand() % 64 - 32);
             cell->unk0 = x;
+            x = (s16)x;
             z = pos->vz + (rand() % 64 - 32);
             cell->unk4 = z;
-            cell->unk2 = cell->unk8 = D_800928DC[((s16)z >> 8) * 128 + ((s16)x >> 8)].height;
+            z = (s16)z;
+            cell->unk2 = cell->unk8 = D_800928DC[(x >> 8) + (z >> 8) * 128].height;
             cell->unk7 = -(rand() % 10 + 10);
             count--;
             cell->unk6 = 20;
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007D7A8);
-#endif
 
 /* Draw and advance this buffer's half of the ground particles: project
  * them three at a time into point tiles, then let each fall (accelerating)
