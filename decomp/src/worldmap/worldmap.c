@@ -3,12 +3,6 @@
 /* Overlay entry: set up the display, start a new game's world state if none
  * is set, enter the requested mode and run its main loop until the world
  * map is left, then hand over to the next scene. */
-/* NON_MATCHING: only the new-game block and the mode read differ. The
- * original loads 0x400 (a1) and 0x7580 (a3) early and stores the two gear
- * 9s after the zeroed bytes, where here 0x7580 takes v1 after them; and
- * after the setup calls it addresses the flag word directly, where here
- * the load and store share its address in a3. */
-#ifdef NON_MATCHING
 void func_80070CFC(void) {
     void (*step)(void);
     void *data;
@@ -23,17 +17,25 @@ void func_80070CFC(void) {
     InitGeom();
     D_800591AE = 1;
     if (D_8006F954[0] == 0) {
+        D_8006F94E.scene = 0x400;
         D_8006F94E.area = 0xFFF;
         D_8006F94E.heading = 0xC00;
-        D_8006F94E.scene = 0x400;
         D_8006F954[0] = 1;
         D_8006EE54.flags = 0x4003;
+        D_8006EE54.unk6A = 1;
         D_8006EE54.unk60 = 0x6680;
         D_8006EE54.unk62 = 0xFF00;
         D_8006EE54.unk64 = 0x2A00;
+        D_8006EE66 = 0;
+        D_8006EE54.x = 0x7580;
         D_8006EE54.z = 0x2C00;
+        D_8006EE54.heading = 0;
         D_8006F368[1] = 0xA;
         D_8006F368[2] = 5;
+        D_8006F368[0] = 0;
+        D_8006F8E5 = 0;
+        D_8006F8E6 = 0;
+        D_8006F8E7 = 0;
         D_8006D940[0].gear = 0xF;
         D_8006D940[1].gear = 2;
         D_8006D940[2].gear = 3;
@@ -45,14 +47,6 @@ void func_80070CFC(void) {
         D_8006D940[8].gear = 8;
         D_8006D940[9].gear = 3;
         D_8006D940[10].gear = 9;
-        D_8006EE54.unk6A = 1;
-        D_8006EE66 = 0;
-        D_8006EE54.x = 0x7580;
-        D_8006EE54.heading = 0;
-        D_8006F368[0] = 0;
-        D_8006F8E5 = 0;
-        D_8006F8E6 = 0;
-        D_8006F8E7 = 0;
         D_8006EF8E[0].flags = 0x400;
         D_8006EF8E[0].x = 0x7500;
         D_8006EF8E[0].z = 0x2E58;
@@ -64,8 +58,8 @@ void func_80070CFC(void) {
         D_8006EF8E[2].z = 0x2E58;
         D_8006EE78[2] = 1;
         D_8006EE78[0] = D_8009AF80[D_8006EE78[1]];
-        D_8006F160 = 0x7FFFFFF;
         D_8006EE78[1] = D_8009AF90[D_8006EE78[1]];
+        D_8006F160 = 0x7FFFFFF;
     }
     func_80032498(3, 0);
     func_80028470(0x24, 0);
@@ -83,7 +77,7 @@ void func_80070CFC(void) {
     D_8009D3D4 = D_8006F94E.area;
     D_8009C584 = D_8006F94E.heading;
     D_8009C5A8 = mode;
-    D_8006F954[0] = mode;
+    D_8006F94E.mode = mode;
     func_80071B9C(mode, D_8006EF64[0]);
     step = D_8009A058[D_8009C5A8].enter;
     if (step != NULL) {
@@ -142,9 +136,6 @@ void func_80070CFC(void) {
     func_800762FC();
     func_80019ACC(0);
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap", func_80070CFC);
-#endif
 
 /* The world-map main loop: gather input, flip the display buffers, run the
  * frame, and handle pause, encounters and leaving for another scene until

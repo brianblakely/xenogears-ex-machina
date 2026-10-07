@@ -331,11 +331,12 @@ extern SVECTOR D_8009BD38; /* camera angle */
 extern s32 D_8009D3F0;    /* camera distance */
 extern s32 D_8009BE0C;
 
-/* Resident scene hand-over words ahead of the flag words (8006f954). */
+/* Resident scene hand-over words; mode is the first flag word (D_8006F954). */
 typedef struct {
     s16 scene;   /* 8006f94e: next scene */
     u16 heading; /* heading carried into the next scene */
     u16 area;    /* area carried into the world map */
+    u16 mode;    /* 8006f954: world-map mode and flags */
 } SceneResume;
 
 extern SceneResume D_8006F94E;
