@@ -2740,40 +2740,11 @@ s32 func_800825AC(s32 from, s32 to) {
     return func_80099A4C(to_x - from_x, to_z - from_z);
 }
 
-#ifdef NON_MATCHING
 /* An actor's additive motion before it moves: the terrain push and conveyor
  * of the floor it stands on, the platform it rides and its gear layer's
- * drift.
- * NON_MATCHING (14 edits): allocation now matches (a block-local `dir`
- * takes $s0 before radius, so actor/terrain/radius land as in the
- * original). Left: the original computes ratan2 - angle in a temporary
- * ($v0) and only the final - 0x800 into $s0, where ours reuses angle for
- * the difference; and it schedules the turn.vy sign extension (sra) into
- * the heading test's delay slot, so the heading load uses $v1, not $a0.
- * One variable for angle and the result gives the temporary but puts
- * radius in $s0 (local-alloc) and swaps actor/terrain. sched1 dump: the
- * sra (angle) is in the block's ready list with priority 5 because angle
- * is set twice; set once (dir = ratan2 - angle - 0x800) it becomes a
- * register birth but ties with the self/other position loads and loses on
- * luid, so the original's late sra needs the sign extension emitted after
- * those loads; re-reading turn.vy there reloads it from the stack. Keeping
- * the difference in an s16 temporary (`turn.vy = dy = ...`) and assigning
- * `angle = dy` after the other_z load does give the late sra (delay slot,
- * heading in $v1), but with `dir = (s16)ratan2(..) - angle - 0x800` set
- * once, local-alloc ties the ratan2/difference chain into dir (all $s0) and
- * angle moves to $s6 (28 edits); reusing a function-wide variable for dir or
- * radius, or do { } while (0) groups around the link statements, does not
- * separate them. Register map wanted: angle and dir $s0 (sharing with
- * push_x), radius $s1 (with terrain), actor $s2, and the difference in
- * $v0: local-alloc only leaves the difference untied from dir when the
- * difference is not a local quantity (dies twice/multi-block) or dir is
- * already born. `angle = (s16)ratan2(..) - angle - 0x800` (angle dies
- * twice) gives the $v0 difference, but radius is then the only local
- * crossing calls and takes $s0 (actor $s1, angle/terrain $s2); also
- * setting radius in the func_800825AC branch makes it global, and then
- * actor takes $s0 instead.
- * limit/speed/push_x as the difference variable, dir -= forms and a
- * signed terrain reused for radius are all worse. */
+ * drift. The conveyor magnitude and later platform-relative bearing use
+ * the same motion value; the stored rotation delta is signed before the
+ * bearing is adjusted. */
 void func_80082620(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
     u32 terrain;
     VECTOR conveyor;
@@ -2795,6 +2766,8 @@ void func_80082620(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
     s32 radius;
     s32 angle;
     s32 dir;
+    s32 motion_value;
+    s16 rotation_delta;
 
     push_x = 0;
     push_z = 0;
@@ -2803,7 +2776,8 @@ void func_80082620(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
         terrain = actor->unk014;
     }
     model = descriptor->model;
-    func_8007B614(&conveyor, D_800ADFC4[(terrain >> 9) & 3],
+    motion_value = D_800ADFC4[(terrain >> 9) & 3];
+    func_8007B614(&conveyor, motion_value,
                   (D_800ADFA8[(terrain >> 11) & 7] + (u16)D_800B2078.terrain_angle) & 0xFFF);
     if (!(actor->flags & 0x41800)) {
         speed = actor->unkF0;
@@ -2871,7 +2845,7 @@ conveyed:
                 actor->unk134 |= 0x80;
             }
             turn.vx = D_800AF880.components.descriptors[actor->unk074].rotation.vx - actor->link->rotation.vx;
-            angle = turn.vy = D_800AF880.components.descriptors[actor->unk074].rotation.vy - actor->link->rotation.vy;
+            turn.vy = rotation_delta = D_800AF880.components.descriptors[actor->unk074].rotation.vy - actor->link->rotation.vy;
             turn.vz = D_800AF880.components.descriptors[actor->unk074].rotation.vz - actor->link->rotation.vz;
             actor->link->rotation.vy = D_800AF880.components.descriptors[actor->unk074].rotation.vy;
             self_x = actor->position[0];
@@ -2879,12 +2853,13 @@ conveyed:
             platform = D_800AF880.components.descriptors[actor->unk074].actor;
             other_x = platform->position[0];
             other_z = platform->position[2];
+            angle = rotation_delta;
             if (!(actor->heading & 0x8000)) {
                 actor->link->radius = func_800825AC(index, actor->unk074);
             }
             radius = actor->link->radius;
-            angle = (s16)ratan2(other_z - self_z, other_x - self_x) - angle;
-            dir = angle - 0x800;
+            motion_value = (s16)ratan2(other_z - self_z, other_x - self_x) - angle;
+            dir = motion_value - 0x800;
             actor->unk40[0] += other_x + func_8003F8CC(dir) * radius * 16 - self_x;
             actor->unk40[2] += other_z + func_8003F8B0(dir) * radius * 16 - self_z;
         }
@@ -2896,9 +2871,6 @@ conveyed:
         D_800AF858++;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_80082620);
-#endif
 
 /* Sweep `actor`'s move against the collision layers. The controlled actor
  * borrows the 0x600 flags of the party members in slots 1 and 2 for the
