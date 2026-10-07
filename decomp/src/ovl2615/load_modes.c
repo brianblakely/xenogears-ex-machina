@@ -181,19 +181,14 @@ INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/load_modes", func_801E8320);
 /* Load mode (shatter): copy the screen (made semi-transparent) to
  * 0x2c0,0x100, then for at least 82 frames and until the four setup phases
  * are done (one per idle disc frame, 8001bb0c between the first two), fade
- * the background and run the shatter on the scratchpad stack.
- * NON_MATCHING: taking the first buffer after swap_buffers() gives the
- * original's s3/s4 assignment, but the address is recomputed after
- * ClearOTagR; the original copies swap_buffers()' &buffers[0] (v1) into s4
- * before its comparison and stores s4 there. With the pointer taken before
- * swap_buffers(), it is computed into s3 and s3/s4 swap. */
-#ifdef NON_MATCHING
+ * the background and run the shatter on the scratchpad stack. */
 void func_801E8588(void) {
     RECT rect;
     u16 *screen;
     u16 *pixel;
     BattleWork *work;
     DrawBuffer *first;
+    DrawBuffer *next;
     ShatterTask *shatter;
     s32 frames;
     u32 state;
@@ -223,8 +218,13 @@ void func_801E8588(void) {
     DrawSync(0);
     func_800320E8(screen);
     work = &D_800C3EB0;
-    swap_buffers();
-    first = &work->buffers[0];
+    next = &work->buffers[0];
+    if (work->current == (first = next)) {
+        next = &work->buffers[1];
+    }
+    work->current = next;
+    work->ot = next->ot;
+    ClearOTagR(next->ot, 0x1000);
     work->buffer = 0;
     work->current = first;
     work->buffers[0].draw.isbg = 1;
@@ -286,9 +286,6 @@ void func_801E8588(void) {
     func_80028A60(0);
     func_801E5840(3);
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/load_modes", func_801E8588);
-#endif
 
 /* Load mode: the shatter's variant 1 (cells fade in place). */
 void func_801E893C(void) {
@@ -532,7 +529,9 @@ INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/load_modes", func_801E8DF0);
 
 /* Load mode (burst): like the shatter mode, but the background fades before
  * the burst runs on the scratchpad stack.
- * NON_MATCHING: the same first-buffer difference as func_801E8588. */
+ * NON_MATCHING: the instructions match; its jump table follows
+ * func_801E8588's at 4 mod 8 without the alignment pad one unit would get,
+ * so the original unit boundary lies between the two functions. */
 #ifdef NON_MATCHING
 void func_801E91E8(void) {
     RECT rect;
@@ -540,6 +539,7 @@ void func_801E91E8(void) {
     u16 *pixel;
     BattleWork *work;
     DrawBuffer *first;
+    DrawBuffer *next;
     BurstTask *burst;
     s32 frames;
     u32 state;
@@ -569,8 +569,14 @@ void func_801E91E8(void) {
     DrawSync(0);
     func_800320E8(screen);
     work = &D_800C3EB0;
-    swap_buffers();
-    first = &work->buffers[0];
+    /* Flip as swap_buffers() does, remembering the first buffer. */
+    next = &work->buffers[0];
+    if (work->current == (first = next)) {
+        next = &work->buffers[1];
+    }
+    work->current = next;
+    work->ot = next->ot;
+    ClearOTagR(next->ot, 0x1000);
     work->buffer = 0;
     work->current = first;
     work->buffers[0].draw.isbg = 1;
