@@ -10499,25 +10499,12 @@ void func_800A3474(void) {
     D_800AFC50 += 0x800;
 }
 
-#ifdef NON_MATCHING
 /* Read the descriptor count, view block and per-actor records from the
- * block at D_8005A4E4, passing each model its record (func_80021D50).
- * NON_MATCHING: the descriptor address is now formed offset-first
- * (addu a0,s1,v0) as in the original, but the pointer kept for the model
- * argument is a copy of it (move v1,a0 in the unk2268 test's delay slot,
- * then lw a0,4(v1)); the original keeps the sum itself in a0 for the call
- * block (lw a0,4(a0)). A descriptor variable assigned before the layer test
- * is formed base-first (binop expansion) unless written as
- * (FieldDescriptor *)(i * sizeof(FieldDescriptor) + (u32)descriptors);
- * then the actor load outranks it (a0/a1 swapped); assigning it in two
- * steps (descriptor = descriptors; descriptor += i) fixes the allocation
- * but is base-first again (score 6). */
+ * block at D_8005A4E4, passing each model its record (func_80021D50). */
 void func_800A3C8C(void) {
     s32 changed;
     s32 i;
     u8 *record;
-    FieldDescriptor *descriptor;
-    FieldActor *actor;
 
     D_800AFC50 = D_8005A4E4;
     D_800AF880.components.descriptor_count = *D_800AFC50;
@@ -10537,9 +10524,10 @@ void func_800A3C8C(void) {
             *(s16 *)(record + 0x14) = D_800AF880.components.descriptors[i].actor->unk0EA;
         }
         if (!(D_800AF880.components.descriptors[i].actor->layer_flags & 0x1000000)) {
-            descriptor = &D_800AF880.components.descriptors[i];
-            if (D_800B2078.unk2268 == 0 || !(descriptor->actor->flags & 0x600) || changed == 0) {
-                func_80021D50(descriptor->model, D_800AFC50);
+            if (D_800B2078.unk2268 == 0 || !(D_800AF880.components.descriptors[i].actor->flags & 0x600)) {
+                func_80021D50(D_800AF880.components.descriptors[i].model, D_800AFC50);
+            } else if (changed == 0) {
+                func_80021D50(D_800AF880.components.descriptors[i].model, D_800AFC50);
             }
         }
         record = D_800AFC50;
@@ -10552,9 +10540,6 @@ void func_800A3C8C(void) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_800A3C8C);
-#endif
 
 #ifdef NON_MATCHING
 /* Write the field state block at D_8005A4E4 (descriptor count, view,
