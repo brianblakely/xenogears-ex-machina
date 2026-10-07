@@ -1677,7 +1677,9 @@ u16 func_80084D28(void) {
  * the party; 0x2000 both; 0x8000 keeps only downed slots (+0x7c bit
  * 0x8000); 0x4000 the member alone. `own` takes the member's reachable
  * enemies (80084750). Sets the current target 800c3e2c and returns the
- * selection. */
+ * selection. Nonmatching: the selection lives in $s5 here, $s6 in the
+ * original, and in the downed loop the original keeps the slot byte in $s2
+ * across both calls (and the counters in other registers). */
 #ifdef NON_MATCHING
 u16 func_80084DE4(u16 selection, u16 fallback, u8 member, u8 mode, u8 own) {
     u8 downed = 0;
@@ -1702,8 +1704,8 @@ u16 func_80084DE4(u16 selection, u16 fallback, u8 member, u8 mode, u8 own) {
     if (selection & 0x8000) {
         downed = 1;
     }
-    partyFirst = 0;
     if (selection & 0x1000) {
+        partyFirst = 0;
         side = 0;
         mask = 0xFFF8;
     } else {

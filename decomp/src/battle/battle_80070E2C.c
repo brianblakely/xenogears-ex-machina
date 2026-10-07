@@ -572,7 +572,10 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_800723
 /* Rebuild the alive mask: knocked-out slots lose their HP (gear +0x104) and
  * leave the turn order unless held by 800c3608; set the outcome when a side
  * is defeated; when every alive slot waits (+0x80 bit 0x1000), release the
- * first. */
+ * first. The outcome is the battle area's member, so the mask is reloaded
+ * after it is set. Nonmatching: in the enemy loop the original walks a
+ * pointer from &D_800C3D18[0].unk3 (la $s5) where this keeps an index, and
+ * its $s3/$s4 induction registers are swapped. */
 #ifdef NON_MATCHING
 void func_8007252C(void) {
     s32 slot;
@@ -618,12 +621,12 @@ void func_8007252C(void) {
         }
     }
     if (!(D_800D39DC & 0x7F8)) {
-        D_800C48EA = 1;
+        D_800C3EB0.outcome = 1;
     }
     if (!(D_800D39DC & 7)) {
-        D_800C48EA = 0x81;
+        D_800C3EB0.outcome = 0x81;
     }
-    if (D_800C48EA == 0) {
+    if (D_800C3EB0.outcome == 0) {
         waiting = D_800D39DC;
         for (slot = 0; slot < 11; slot++) {
             if (func_80089C9C(waiting, slot) && (D_800CCCE8.records[slot].pilot.status80 & 0x1000)) {
@@ -1437,28 +1440,35 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_800765
 /* Step the panel cursor window's opening: move the party-wide status label
  * by the pending steps, rebuild it semi-transparent at its growing scale,
  * and mark the member's panel open once the label reaches the window.
- * The original keeps x and y in 8-byte stack slots. */
+ * The original keeps x and y in memory (8-byte stack slots at sp+0x28 and
+ * sp+0x30, so its y load is not forwarded from the +0x6c store); here they
+ * are two-element u16 arrays only for that shape (the second element is
+ * unused). Nonmatching (181 vs 182 instructions): the original doubles the
+ * status part count (sll $s0, tied to the +0x77 load) before the second
+ * call, this after it in the jump's delay slot. */
 #ifdef NON_MATCHING
 void func_80076710(s32 member) {
-    u16 x;
-    u16 y;
+    u16 x[2];
+    u16 y[2];
     s32 i;
+    s32 first;
     s32 part;
 
     for (i = 0; i < D_800D2D28->unkA9; i++) {
         D_800D2D28->unk64 -= D_800D2D28->unk54;
         D_800D2D28->unk6C += D_800D2D28->unk5C;
-        x = ((u32)D_800D2D28->unk64 >> 8) + D_800D2D28->unk34;
-        y = ((u32)D_800D2D28->unk6C >> 8) + D_800D2D28->unk44;
+        x[0] = ((u32)D_800D2D28->unk64 >> 8) + D_800D2D28->unk34;
+        y[0] = ((u32)D_800D2D28->unk6C >> 8) + D_800D2D28->unk44;
     }
     D_800D2D28->unkA9 = 0;
     D_800D2D28->statusParts[3] = 0;
-    D_800D2D28->statusParts[3] = func_80025FA8(D_800D2F5C, 0x52, D_800C3EA4->status[3][0], D_800CCB04.buffer, x, y,
+    D_800D2D28->statusParts[3] = func_80025FA8(D_800D2F5C, 0x52, D_800C3EA4->status[3][0], D_800CCB04.buffer, x[0], y[0],
                                        D_800D2D28->unk104, D_800D2D28->unk104, D_800D2D28->unk106);
-    part = D_800D2D28->statusParts[3] * 2;
-    D_800D2D28->statusParts[3] += func_80025FA8(D_800D2F5C, 0x53, D_800C3EA4->status[3][D_800D2D28->statusParts[3]],
-                                        D_800CCB04.buffer, x, y, D_800D2D28->unk104, D_800D2D28->unk104,
+    first = D_800D2D28->statusParts[3];
+    D_800D2D28->statusParts[3] += func_80025FA8(D_800D2F5C, 0x53, D_800C3EA4->status[3][first],
+                                        D_800CCB04.buffer, x[0], y[0], D_800D2D28->unk104, D_800D2D28->unk104,
                                         D_800D2D28->unk106);
+    part = first * 2;
     for (; part < D_800D2D28->statusParts[3] * 2; part += 2) {
         SetSemiTrans(&D_800C3EA4->status[3][0][part + D_800CCB04.buffer], 1);
     }
@@ -1468,10 +1478,10 @@ void func_80076710(s32 member) {
         D_800D2D28->unk106 += 0x80;
     }
     D_800D2D28->unkAB = 0;
-    if (D_800D2D28->unk3C >= x) {
+    if (D_800D2D28->unk3C >= x[0]) {
         D_800D2D28->unk90[member] = 1;
     }
-    if (y >= D_800D2D28->unk4C) {
+    if (y[0] >= D_800D2D28->unk4C) {
         D_800D2D28->unk90[member] = 1;
     }
 }

@@ -52,11 +52,11 @@ typedef struct {
     u32 unk30;         /* CLUT cycle position */
     s32 unk34;         /* +0x34 panel cursor window: x */
     s32 unk38;
-    s32 unk3C;         /* y */
+    u32 unk3C;         /* y */
     s32 unk40;
     s32 unk44;         /* width */
     s32 unk48;
-    s32 unk4C;         /* height */
+    u32 unk4C;         /* height */
     s32 unk50;
     u32 unk54;         /* x step (8.8) */
     s32 unk58;
