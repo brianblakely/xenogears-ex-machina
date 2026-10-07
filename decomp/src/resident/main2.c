@@ -423,15 +423,8 @@ void func_80033DD4(Window *window, u8 *text) {
  * planes; text controls pause, change reveal speed, insert resource/name/number
  * text and return to the byte after an inserted message's saved position.
  * Pointer increments below retain the control stream's original resume slots.
- * The control parameter reuses `first` (both live in $a3 in the original).
- * NON_MATCHING: same size; left: the name insertion (case 5) builds the name
- * in $v0 and keeps its own call (the original computes it in $a1 and shares
- * the func_80033DD4 call with the func_80033728 path), the number insertion
- * loads window->text after the jump instead of before it in cases 9/10, case
- * 15 zero-extends the resource index at the shared call (and increments the
- * budget first), and the case 4 selection load and one glyph-path addition
- * are ordered differently. */
-#ifdef NON_MATCHING
+ * The control parameter reuses `first`. Resource controls resolve their
+ * entries before sharing the text insertion and budget update. */
 void func_80033DF0(Window *window) {
     s32 remaining = window->unk69;
     s32 line_slot;
@@ -446,7 +439,7 @@ void func_80033DF0(Window *window) {
     s32 palette;
     s32 sign;
     u8 *resource;
-    u8 *name;
+    u8 *cursor;
     s32 index;
     RECT unused; /* unused in the original; reserves 8 bytes */
 
@@ -529,18 +522,41 @@ void func_80033DF0(Window *window) {
                 window->text += 3;
                 resource = D_80059360[first];
                 remaining++;
-                goto insert_resource;
+                resource = func_80033728(resource, second);
+                goto resource_ready;
             case 4:
+                cursor = window->text;
+                cursor++;
                 category = window->selection;
                 second = category;
                 category &= 0xFF00;
-                window->text++;
+                window->text = cursor;
                 switch (category) {
-                case 0x000: resource = D_80059360[22]; second &= 0xFF; goto insert_resource;
-                case 0x100: resource = D_80059360[23]; second &= 0xFF; goto insert_resource;
-                case 0x200: resource = D_80059360[17]; second &= 0xFF; goto insert_resource;
-                case 0x300: resource = D_80059360[51]; second &= 0xFF; goto insert_resource;
-                case 0x400: resource = D_80059360[50]; second &= 0xFF; goto insert_resource;
+                case 0x000:
+                    resource = D_80059360[22];
+                    second &= 0xFF;
+                    resource = func_80033728(resource, second);
+                    goto resource_ready;
+                case 0x100:
+                    resource = D_80059360[23];
+                    second &= 0xFF;
+                    resource = func_80033728(resource, second);
+                    goto resource_ready;
+                case 0x200:
+                    resource = D_80059360[17];
+                    second &= 0xFF;
+                    resource = func_80033728(resource, second);
+                    goto resource_ready;
+                case 0x300:
+                    resource = D_80059360[51];
+                    second &= 0xFF;
+                    resource = func_80033728(resource, second);
+                    goto resource_ready;
+                case 0x400:
+                    resource = D_80059360[50];
+                    second &= 0xFF;
+                    resource = func_80033728(resource, second);
+                    goto resource_ready;
                 }
                 break;
             case 5:
@@ -550,42 +566,44 @@ void func_80033DF0(Window *window) {
                 if (first >= 0x80) {
                     index = D_8006F2E8[first];
                     if (index == 0xFF) {
-                        name = func_80033728(D_80059360[26], 0);
-                        goto insert_name;
+                        func_80033DD4(window, func_80033728(D_80059360[26], 0));
+                    } else {
+                        func_80033DD4(window, D_8006D634.names[index]);
                     }
+                } else {
+                    func_80033DD4(window, D_8006D634.names[index]);
                 }
-                name = (u8 *)&D_8006D634 + index * 20;
-insert_name:
                 remaining++;
-                func_80033DD4(window, name);
                 break;
             case 6:
                 remaining++;
                 first = window->text[2];
                 window->text += 2;
                 resource = D_80059360[23];
-                second = first;
-                goto insert_resource;
+                resource = func_80033728(resource, first);
+                goto resource_ready;
             case 7:
                 remaining++;
                 first = window->text[2];
                 window->text += 2;
                 resource = D_80059360[24];
-                second = first;
-                goto insert_resource;
+                resource = func_80033728(resource, first);
+                goto resource_ready;
             case 8:
                 remaining++;
                 first = window->text[2];
                 window->text += 2;
                 resource = D_80059360[25];
-                second = first;
-                goto insert_resource;
+                resource = func_80033728(resource, first);
+                goto resource_ready;
             case 9:
                 palette = 0;
                 sign = 0;
+                cursor = window->text;
                 goto insert_number;
             case 10:
                 palette = 1;
+                cursor = window->text;
                 sign = 0;
                 goto insert_number;
             case 11:
@@ -594,10 +612,12 @@ insert_name:
                 break;
             case 12:
                 palette = 1;
+                cursor = window->text;
                 sign = 1;
 insert_number:
-                first = window->text[2];
-                window->text += 2;
+                first = cursor[2];
+                cursor += 2;
+                window->text = cursor;
                 remaining++;
                 func_80033CF0(window->values[first], palette, sign);
                 func_80033DD4(window, D_8005A0E4);
@@ -622,9 +642,10 @@ insert_number:
                 resource = D_80059360[49];
                 second = D_80050238[first];
                 remaining++;
-insert_resource:
+                resource = func_80033728(resource, second);
+resource_ready:
                 remaining--;
-                func_80033DD4(window, func_80033728(resource, second));
+                func_80033DD4(window, resource);
                 goto check_budget;
             }
         } else if (first == 2) {
@@ -655,7 +676,7 @@ insert_resource:
             }
             func_80034FFC(first, second, (u16 *)window->image + window->x,
                          window->stride, window->layout[window->y].plane);
-            window->text += text_bytes;
+            window->text = (u8 *)(text_bytes + (u32)window->text);
             window->x += glyph_width;
             window->layout[window->y].width = window->x;
         }
@@ -665,10 +686,6 @@ check_budget:
         ;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80033DF0);
-#endif
-
 
 /* Clear flag 8; a window with flag 0x200 also drops its pending state. */
 void func_800345E0(Window *window) {
