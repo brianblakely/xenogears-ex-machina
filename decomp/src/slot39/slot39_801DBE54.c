@@ -493,20 +493,26 @@ void func_801DD5E8(u8 mode) {
  * whole party for all-target arts, else the cursor's slot) and use it on
  * confirm while its cost can be paid, until cancelled. */
 #ifdef NON_MATCHING
-/* Same shape as the original; register allocation and a few schedules differ. */
+/* Same code shape as the original; remaining: global register allocation
+ * (original s2 kind/used, s3 kind&0xff, s4 targets, s5 slot&0xff, s6 row,
+ * s7 cursor, fp effect; here effect outranks row/cursor and used ranks last)
+ * and v0/v1 swapped in the `left` subtraction. */
 void func_801DD790(u8 slot, s32 row, u8 kind) {
     MenuEffect *effect;
     s32 x;
+    s32 cursor;
     s32 all;
     s32 i;
     s32 sound;
-    u16 now;
-    u16 max;
+    s32 left;
+    s32 now;
+    s32 max;
     u8 redraw;
-    u8 cursor;
+    u8 hit;
     u8 targets;
     u8 used;
 
+    targets = 1;
     redraw = 1;
     x = 0;
     cursor = D_800625A0->firstMember;
@@ -516,19 +522,18 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
         effect += 22;
         break;
     case 1:
-        effect = D_800625A0->tables->effects[11 + D_8006D8A0[D_800625A0->party->ids[slot]].gear] + row;
+        effect = (D_800625A0->tables->effects + 11)[D_8006D8A0[D_800625A0->party->ids[slot]].gear] + row;
         effect += 21;
         break;
     case 2:
         x = 0x18;
+        effect = (D_800625A0->tables->effects + 11)[D_8006D8A0[D_800625A0->party->ids[slot]].gear] + row;
         cursor = slot;
-        effect = D_800625A0->tables->effects[11 + D_8006D8A0[D_800625A0->party->ids[slot]].gear] + row;
         effect += 37;
         break;
     }
     func_801D397C(2, 0x10, 0xe, x + 0x90, 0xb0, 0, 0, 4, 0);
     all = effect->target & 1;
-    targets = 1;
     while (targets) {
         func_801C7BF4();
         targets = 0;
@@ -553,20 +558,24 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
         }
         D_800625A0->party->unk2F = 1;
         if (kind != 2) {
-            i = D_8006D8A0[D_800625A0->party->ids[slot]].ep - effect->cost;
+            left = D_8006D8A0[D_800625A0->party->ids[slot]].ep - effect->cost;
         } else {
-            i = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk38 - effect->gearCost;
+            left = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk38 - effect->gearCost;
         }
-        if (i < 0) {
+        if (left < 0) {
             targets = 0;
         }
         if (!targets) {
             break;
         }
         switch (D_800625A0->input) {
+        case 5:
+            targets = 0;
+            break;
         case 4:
             used = 0;
             for (i = 0; i < 3; i++) {
+                hit = 0;
                 if (func_801C865C(targets, i)) {
                     if (kind != 2) {
                         now = D_8006D8A0[D_800625A0->party->ids[i]].hp;
@@ -578,6 +587,9 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
                     }
                     if (now != max) {
                         used = 1;
+                        hit = 1;
+                    }
+                    if (hit) {
                         func_801E35BC(D_800625A0->tables, D_800625A0->party->ids[slot], D_800625A0->party->ids[i],
                                       row, kind);
                     }
@@ -595,9 +607,6 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
             }
             redraw = 1;
             func_801C8574(sound);
-            break;
-        case 5:
-            targets = 0;
             break;
         case 1:
             if (kind == 0) {
@@ -2426,7 +2435,13 @@ u8 func_801E31C0(MenuTables *tables, u8 id, u8 item) {
 /* Apply `user`'s restoring effect: to `target`'s HP (its +5b times the
  * effect's +11, capped at the maximum), or with `gear` to the user's gear
  * (+60 up by a tenth of +64, capped at +64). */
-void func_801E35BC(MenuTables *tables, u8 user, u8 target, u8 effect, u8 gear) {
+void func_801E35BC(tables, user, target, effect, gear)
+MenuTables *tables;
+u8 user;
+u8 target;
+u8 effect;
+u8 gear;
+{
     CharRecord *source;
     CharRecord *dest;
     GearRecord *machine;

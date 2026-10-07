@@ -1584,7 +1584,7 @@ void func_801DA5BC(s32 row);
 void func_801DC3D8(u8 slot, u8 kind);
 void func_801DCE60(u8 slot, u8 row, u8 kind);
 void func_801DD790(u8 slot, s32 row, u8 kind);
-void func_801E35BC(MenuTables *tables, u8 user, u8 target, u8 effect, u8 gear);
+void func_801E35BC();
 void func_801DA9A8(s32 entry, s32 row);
 void func_801DB39C(u8 mode);
 u8 func_801DB920(s32 row, s32 entry);
