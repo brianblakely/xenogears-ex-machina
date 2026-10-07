@@ -806,30 +806,11 @@ void func_8008B0D8(Player *player) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Bind an animation to a model set node: its constant keys and streamed
- * channels drive node angle (short way round) or 0x2C components. The
- * animation pointer parameter is reused as the record walker (the original
- * keeps both in $t1), and the channel streams are based on a copy of the
- * header pointer (kept in $s1).
- * Taking the base from the parameter before the header copy keeps the
- * parameter copy in $t1 and stores the $s0 copy, as the original does
- * (storing `anim` with no earlier use of the parameter lets combine fold the
- * parameter copy into $s0 = $a0).
- * Does not match: one instruction is out of place: the $s1 = $s0 base copy
- * comes before the first call here (its source is the parameter, which
- * does not cross calls, so sched1 keeps it ahead of the call) where the
- * original has it right after the allocation. Taking the base from `anim`
- * frees the copy (the draft's earlier form) but sched1 then puts it last in
- * its block and the header store reads $t1; no order of the base, `anim`
- * and header statements (26 tried) gives both.
- * A scheduling barrier (an empty do-while(0), i.e. loop notes) right before
- * `player->keys = key` with `anim = record; base = (u32)anim; player->header
- * = anim` places the base copy exactly as the original (everything after
- * the calls then matches), but combine folds the parameter copy into
- * $s0 = $a0; taking the header store from the parameter instead keeps
- * $t1 but stores $t1 and moves the record walker ahead of the anim->keys
- * load (3 differences). */
+ * channels drive node angle (short way round) or 0x2C components. Keep the
+ * animation's base for stream offsets, then walk its records. The record
+ * cursor starts before the channel allocation; the header remains available
+ * for both counts. */
 void func_8008B13C(AnimRecord *record, Player *player, Node *root) {
     Node **nodes = ((ModelSet *)root->data)->nodes;
     AnimHeader *anim;
@@ -842,10 +823,10 @@ void func_8008B13C(AnimRecord *record, Player *player, Node *root) {
     base = (u32)record;
     anim = (AnimHeader *)record;
     player->header = anim;
+    record = anim->records;
     func_800324B8(0x10);
     key = func_80031BDC(anim->keys * sizeof(Key) + anim->channels * sizeof(Channel), 0);
     player->keys = key;
-    record = anim->records;
     channel = (Channel *)(key + anim->keys);
     player->channels = channel;
     for (i = 0; i < anim->keys; i++) {
@@ -915,9 +896,6 @@ void func_8008B13C(AnimRecord *record, Player *player, Node *root) {
     }
     func_8008B0D8(player);
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008B13C);
-#endif
 
 /* Build a model set node tree from a model set file: a node per hierarchy
  * record (with its model, parent, angle and offset) and a player per

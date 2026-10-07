@@ -80,22 +80,12 @@ void func_801FC278(TaskNode *node) {
 /* Start the effect: build both triangle halves of every 8x8 cell of the
  * 128x128 area around the screen centre, textured from the displayed buffer,
  * with each corner also pushed out onto the circle of its larger coordinate
- * (the square grid mapped onto a disc).
- * NON_MATCHING (frame and column/corner code now as the original; 81
- * instruction lines differ, all in the row loop's register and slot use):
- * the original recomputes v = row * 8 from the row counter at each row
- * (sll into a slot) and keeps y0 and y1 as two row induction variables
- * copied into row slots; here row * 8 becomes its own induction variable
- * and y1 is formed from y0 in the row body. Computing v in the column
- * loop (as in ovl3387) gets the sll from the counter but loses the y0/y1
- * copies. */
-#ifdef NON_MATCHING
+ * (the square grid mapped onto a disc). */
 void func_801FC2C0(void) {
     TileTask *task;
     Tile *tile;
     POLY_FT3 *prim;
     s32 i, column, row, half;
-    s32 y1, x1, y0, x0;
     s32 radius, angle;
     u8 u;
 
@@ -104,32 +94,28 @@ void func_801FC2C0(void) {
     task->frame = 0;
     for (half = 0; half != 2; half++) {
         for (row = 0; row < 16; row++) {
-            y0 = row * 8 - 64;
             for (column = 0; column < 16; column++) {
-                y1 = y0 + 8;
-                x0 = column * 8 - 64;
-                x1 = x0 + 8;
                 tile = &task->tiles[half][row][column];
                 if (half == 0) {
-                    tile->corner[0].vx = x0;
-                    tile->corner[0].vy = y0;
+                    tile->corner[0].vx = column * 8 - 64;
+                    tile->corner[0].vy = row * 8 - 64;
                     tile->corner[0].vz = 0x200;
-                    tile->corner[1].vx = x1;
-                    tile->corner[1].vy = y0;
+                    tile->corner[1].vx = column * 8 - 56;
+                    tile->corner[1].vy = row * 8 - 64;
                     tile->corner[1].vz = 0x200;
-                    tile->corner[2].vx = x0;
-                    tile->corner[2].vy = y1;
+                    tile->corner[2].vx = column * 8 - 64;
+                    tile->corner[2].vy = (row + 1) * 8 - 64;
                     tile->corner[2].vz = 0x200;
                 } else {
-                    tile->corner[0].vx = x1;
-                    tile->corner[0].vy = y0;
+                    tile->corner[0].vx = column * 8 - 56;
+                    tile->corner[0].vy = row * 8 - 64;
                     tile->corner[0].vz = 0x200;
-                    tile->corner[1].vx = x1;
-                    tile->corner[1].vy = y1;
-                    tile->corner[1].vz = 0x200;
-                    tile->corner[2].vx = x0;
-                    tile->corner[2].vy = y1;
+                    tile->corner[2].vx = column * 8 - 64;
+                    tile->corner[2].vy = (row + 1) * 8 - 64;
                     tile->corner[2].vz = 0x200;
+                    tile->corner[1].vx = column * 8 - 56;
+                    tile->corner[1].vy = (row + 1) * 8 - 64;
+                    tile->corner[1].vz = 0x200;
                 }
                 for (i = 0; i != 3; i++) {
                     radius = ABS(abs(tile->corner[i].vx) > abs(tile->corner[i].vy)
@@ -168,6 +154,3 @@ void func_801FC2C0(void) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3381/asm/nonmatchings/ovl3381", func_801FC2C0);
-#endif

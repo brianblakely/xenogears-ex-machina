@@ -5,50 +5,48 @@
  * load_modes (see ovl2615.mk). */
 #include "battle_setup.h"
 
-/* One burst frame: speed up, count the frame and turn one spin field. */
-#define BURST_STEP(burst, frame, dspeed, spin, dspin) \
-    do {                                              \
-        (burst)->speed += (dspeed);                   \
-        (frame) = ++(burst)->frame;                   \
-        (burst)->spin += (dspin);                     \
+/* Advance the two burst variants, keeping the twist variant's current speed
+ * for the translation that follows. */
+#define BURST_ROTATE_STEP(burst, frame_out)               \
+    do {                                                  \
+        (burst)->speed += 1;                              \
+        (frame_out) = ++(burst)->frame;                   \
+        (burst)->angle += 0xA0;                           \
+    } while (0)
+
+#define BURST_TWIST_STEP(burst, frame_out, speed_out)     \
+    do {                                                  \
+        (burst)->speed += 10;                             \
+        (frame_out) = ++(burst)->frame;                   \
+        (burst)->twist += 0x600;                          \
+        (speed_out) = (burst)->speed;                     \
     } while (0)
 
 /* Burst update: variant 1 turns faster and faster, rising and fading after
  * 67 frames; variant 0 twists and rises, fading after 25 frames. The empty
- * loops over the 2x14x20 grid are left from removed work.
- * NON_MATCHING: 4 bytes long. The BURST_STEP block keeps sched1 from
- * hoisting the trans.vz load above the spin store, as in the original, but
- * its end barrier also ties the code after it: in the first branch the frame
- * test cannot fill the trans.vz load delay (a nop instead of the original's
- * slti), and in the second the speed reload stays after the trans.vz load
- * (the original loads it before the frame store). Without the block,
- * -fno-schedule-insns gives the original order, so it is sched1 alone. In
- * the sched1 trace the trans.vz load waits two cycles for its add and the
- * spin store fills that slot, pulling the spin chain below it; the frame
- * compare (a register birth) is taken first. Same-base accesses at disjoint
- * offsets never conflict; a VECTOR *trans base does (the load then depends
- * on the spin store) and reproduces both branches' order exactly, but keeps
- * the pointer in a2 with 8(a2) offsets; volatile fields reorder the frame
- * load. */
-#ifdef NON_MATCHING
+ * loops over the 2x14x20 grid are left from removed work. */
 void func_801E8964(TaskNode *node) {
     SVECTOR unused; /* unused in the original; reserves 8 bytes */
     BurstTask *burst = node->object;
     s32 frame;
+    s32 growing;
+    s32 speed;
     s32 i, j, k;
 
     if (D_801E9680 != 0) {
-        BURST_STEP(burst, frame, 1, angle, 0xA0);
+        BURST_ROTATE_STEP(burst, frame);
         burst->trans.vz -= 0x3C;
-        if (frame >= 0x43) {
+        growing = frame < 0x43;
+        if (!growing) {
             burst->brightness -= 0x18;
         } else {
             burst->twist += 0x80;
         }
     } else {
-        BURST_STEP(burst, frame, 10, twist, 0x600);
-        burst->trans.vz -= burst->speed;
-        if (frame >= 0x19) {
+        BURST_TWIST_STEP(burst, frame, speed);
+        burst->trans.vz -= speed;
+        growing = frame < 0x19;
+        if (!growing) {
             burst->brightness -= 0x14;
         }
     }
@@ -59,9 +57,6 @@ void func_801E8964(TaskNode *node) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/burst_modes", func_801E8964);
-#endif
 
 /* Burst drawing: each corner rises by the sine (variant 1: of the angle
  * plus its distance; otherwise the cosine of its distance) scaled by the
