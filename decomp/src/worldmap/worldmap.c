@@ -333,7 +333,6 @@ s32 func_80071A58(void) {
 
 /* Select the file set of an area (by index, or for the low indices by the
  * position against the threshold table) and derive its file numbers. */
-#ifdef NON_MATCHING /* last three loads scheduled differently */
 void func_80071B9C(s32 index, s32 position) {
     WorldmapArea *area;
     s32 i;
@@ -347,22 +346,19 @@ void func_80071B9C(s32 index, s32 position) {
         area = &D_8009B57C[index + 2];
     }
     D_8009D3C4 = area->file + 1;
-    D_8009C174 = area->file + 3;
     D_8009C17C = area->file + 2;
-    D_8009D3D0 = area->file + 5;
+    D_8009C174 = area->file + 3;
     D_8009CC98 = area->file + 4;
-    D_8009D800 = area->file + 7;
+    D_8009D3D0 = area->file + 5;
     D_8009D3C8 = area->file + 6;
-    D_8009BCD8 = area->file + 9;
+    D_8009D800 = area->file + 7;
     D_8009BCC8 = area->file + 8;
+    D_8009BCD8 = area->file + 9;
+    D_8009BD08 = area->file + 10;
     D_8009D160 = area->param2;
     D_8009D2B4 = area->param4;
-    D_8009BD08 = area->file + 10;
     D_8009D7CC = area->param6;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap", func_80071B9C);
-#endif
 
 /* Allocate buffers for each party member's model and gear model, then read
  * them all with one list. */
