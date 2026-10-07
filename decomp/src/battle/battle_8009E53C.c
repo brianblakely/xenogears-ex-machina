@@ -4823,11 +4823,11 @@ chosen:
             break;
         case 0x13:
             b1 = (word = *pc++) >> 8;
-            flags = -1;
             b0 = word;
             b3 = (word = *pc++) >> 8;
             b2 = word;
             func_800A1CF4(pool, object->hierarchy, (s16 *)func_800AF518(object, b0, &i), b3, arg, b2, b1);
+            flags = -1;
             func_800AEEEC(object);
             break;
         case 0x14: /* start a script on the objects of a mask */
@@ -4961,8 +4961,9 @@ chosen:
                 } else {
                     target = NULL;
                 }
-                colors = NULL;
-                if (((b1 = (s16)word >> 8) & 0x7F) >= 4) {
+                if (((b1 = (s16)word >> 8) & 0x7F) < 4) {
+                    colors = NULL;
+                } else {
                     colors = (ColorRow *)D_800D2FC0;
                 }
                 word = *pc++;
@@ -5006,11 +5007,11 @@ chosen:
             break;
         case 0x1D: /* start a tween of a part */
             b1 = (word = *pc++) >> 8;
-            flags = -1;
             b0 = word;
             b3 = (word = *pc++) >> 8;
             func_800AF678(object, pool, &object->hierarchy[arg], b0, b1, (u8)word, b3, *pc++, *pc++, *pc++, *pc++,
                           *pc++, *pc++, *pc++);
+            flags = -1;
             break;
         case 0x1E:
             object->field37 = arg;
