@@ -4498,14 +4498,25 @@ void func_800AAB34(BattleObject *object) {
     }
 }
 
+/* A script jump: offset is in bytes from the command's start. */
+#define SCRIPT_JUMP(start, offset) ((u16 *)((u8 *)(start) + (offset)))
+
 #ifdef NON_MATCHING
 /* Run a battle object's effect script for steps frames: first move it by its
  * angular and linear velocities (substeps + 1 times), take a pending jump
  * whose condition came true (2E distance, 37 ground, 36 timer), then run
  * its commands until one waits. flags are the animation flags of the step
- * (-1 when called to start a script). Nonmatching: the register
- * allocation and spill slots differ, and the loop's exit test is not
- * duplicated at its entry as in the original. */
+ * (-1 when called to start a script). The command word is signed (its
+ * byte views are u8): `arg = word >> 8` narrowed to a byte compiles to srl,
+ * but combine still sees the sign-extended source and cannot bound arg's
+ * upper bits, which keeps the original's `andi 0xFF` at every use of arg
+ * (no path uses arg before the fetch). Unsigned uses of the high byte are
+ * narrowed with (u8), as the original's srl there shows. Jump offsets are in
+ * bytes from the command's start (SCRIPT_JUMP). Nonmatching: the frame is
+ * 0x10 smaller and stack slots shift, the register allocation differs
+ * (start/op/arg in $s1/$s6/$s5 instead of $s5/$fp/$s6), and some
+ * `word >> 8` after a call are reloaded from word's slot where the original
+ * keeps the value in a saved register. */
 void func_800AAD54(BattleObject *object, EffectPool *pool, s32 flags, s32 steps, s32 substeps) {
     VECTOR delta;
     SVECTOR velocity;
@@ -4514,7 +4525,7 @@ void func_800AAD54(BattleObject *object, EffectPool *pool, s32 flags, s32 steps,
     s32 savedA;
     s32 savedB;
     s32 i;
-    u16 word;
+    s16 word;
     u16 value;
     BattleObject *self;
     BattleObject *created;
@@ -4774,10 +4785,10 @@ chosen:
 
                 word = *pc++;
                 if (i == 0) {
-                    func_800A2434(pool, object->hierarchy, (u16 *)animation, word >> 8, (u8)word);
+                    func_800A2434(pool, object->hierarchy, (u16 *)animation, (u8)(word >> 8), (u8)word);
                     flags = -1;
                     object->field8E = ABS(ANIMATION_SPAN(animation) * (object->scale1C * object->hierarchy->scale[2] >> 12) >> 12);
-                    func_800AE1BC(object, animation, word >> 8);
+                    func_800AE1BC(object, animation, (u8)(word >> 8));
                 }
             }
             break;
@@ -4787,7 +4798,7 @@ chosen:
 
                 word = *pc++;
                 if (i == 0) {
-                    func_800A2704(pool, object->hierarchy, (u16 *)animation, word >> 8, (u8)word);
+                    func_800A2704(pool, object->hierarchy, (u16 *)animation, (u8)(word >> 8), (u8)word);
                     flags = -1;
                     object->field8E = ABS(ANIMATION_SPAN(animation) * (object->scale1C * object->hierarchy->scale[2] >> 12) >> 12);
                 }
@@ -4796,8 +4807,8 @@ chosen:
         case 0x13:
             {
                 u8 index;
-                u32 smooth;
-                u32 duration;
+                u8 smooth;
+                u8 duration;
                 u8 tag;
 
                 smooth = (word = *pc++) >> 8;
@@ -4955,7 +4966,7 @@ chosen:
                 }
                 word = *pc++;
                 flagsB = word;
-                curve = func_800AA820(word >> 8);
+                curve = func_800AA820((u8)(word >> 8));
                 x = *pc++;
                 y = *pc++;
                 z = *pc++;
@@ -5230,7 +5241,7 @@ chosen:
             OBJECT_AT_DISTANCE(object) = object->field8E;
             word = *pc++;
             if (arg) {
-                OBJECT_AT_SCRIPT(object) = start + (s16)word;
+                OBJECT_AT_SCRIPT(object) = SCRIPT_JUMP(start, (s16)word);
             } else {
                 OBJECT_AT_SCRIPT(object) = NULL;
             }
@@ -5250,9 +5261,9 @@ chosen:
                 s32 count;
 
                 word = *pc++;
-                counter = start + (s16)word;
+                counter = SCRIPT_JUMP(start, (s16)word);
                 word = *counter++;
-                count = word >> 8;
+                count = (u8)(word >> 8);
                 word = *counter + 1;
                 *counter++ = word;
                 if ((s16)word < count) {
@@ -5262,24 +5273,24 @@ chosen:
             break;
         case 0x32: /* jump */
             word = *pc++;
-            pc = start + (s16)word;
+            pc = SCRIPT_JUMP(start, (s16)word);
             break;
         case 0x33:
             word = *pc++;
             if (D_800D36B8 != 0) {
-                pc = start + (s16)word;
+                pc = SCRIPT_JUMP(start, (s16)word);
             }
             break;
         case 0x34:
             word = *pc++;
             if (object->field22 == 0) {
-                pc = start + (s16)word;
+                pc = SCRIPT_JUMP(start, (s16)word);
             }
             break;
         case 0x35:
             word = *pc++;
             if (rand() >= 0x4000) {
-                pc = start + (s16)word;
+                pc = SCRIPT_JUMP(start, (s16)word);
             }
             break;
         case 0x36:
@@ -5287,7 +5298,7 @@ chosen:
             OBJECT_TIMER_LIMIT(object) = *pc++;
             word = *pc++;
             if (arg) {
-                OBJECT_TIMER_SCRIPT(object) = start + (s16)word;
+                OBJECT_TIMER_SCRIPT(object) = SCRIPT_JUMP(start, (s16)word);
             } else {
                 OBJECT_TIMER_SCRIPT(object) = NULL;
             }
@@ -5295,19 +5306,19 @@ chosen:
         case 0x37:
             word = *pc++;
             if (arg) {
-                OBJECT_GROUND_SCRIPT(object) = start + (s16)word;
+                OBJECT_GROUND_SCRIPT(object) = SCRIPT_JUMP(start, (s16)word);
             } else {
                 OBJECT_GROUND_SCRIPT(object) = NULL;
             }
             break;
         case 0x38:
             word = *pc++;
-            func_800AE098(pool, object->hierarchy, 0, arg, (u8)word, word >> 8, object->position[0], object->position[1],
+            func_800AE098(pool, object->hierarchy, 0, arg, (u8)word, (u8)(word >> 8), object->position[0], object->position[1],
                           object->position[2]);
             break;
         case 0x39:
             word = *pc++;
-            func_800AE098(pool, object->hierarchy, 1, arg, (u8)word, word >> 8, object->position[0], object->position[1],
+            func_800AE098(pool, object->hierarchy, 1, arg, (u8)word, (u8)(word >> 8), object->position[0], object->position[1],
                           object->position[2]);
             break;
         case 0x3A:
@@ -5319,7 +5330,7 @@ chosen:
         case 0x3B:
             word = *pc++;
             if ((D_800C48E8 >> object->slot) & 1) {
-                pc = start + (s16)word;
+                pc = SCRIPT_JUMP(start, (s16)word);
             }
             break;
         case 0x3C: /* play a sound */
@@ -5374,7 +5385,7 @@ chosen:
                 }
                 word = *pc++;
                 if (all) {
-                    pc = start + (s16)word;
+                    pc = SCRIPT_JUMP(start, (s16)word);
                 }
             }
             break;
@@ -5604,7 +5615,7 @@ chosen:
             if (object->position[0] == object->hierarchy->translation[0]
                 && object->position[1] == object->hierarchy->translation[1]
                 && object->position[2] == object->hierarchy->translation[2]) {
-                pc = start + (s16)word;
+                pc = SCRIPT_JUMP(start, (s16)word);
             }
             break;
         case 0x5D:
@@ -5631,7 +5642,7 @@ chosen:
         case 0x61:
             word = *pc++;
             if (func_800885D0(object->slot)) {
-                pc = start + (s16)word;
+                pc = SCRIPT_JUMP(start, (s16)word);
             }
             break;
         case 0x62:
@@ -5651,7 +5662,7 @@ chosen:
             object->animationFrame = 0;
             object->animationLength = arg;
             object->animationStart = (u8 *)pc;
-            pc = start + (s16)word;
+            pc = SCRIPT_JUMP(start, (s16)word);
             break;
         case 0x64:
             word = *pc++;
@@ -5867,7 +5878,7 @@ chosen:
         case 0x70:
             word = *pc++;
             if (object->field3A == D_800C3E30) {
-                pc = start + (s16)word;
+                pc = SCRIPT_JUMP(start, (s16)word);
                 running = 0;
             }
             break;
@@ -5896,7 +5907,7 @@ chosen:
                         object->hierarchy->translation[2] - object->position[2])
                  & 0xFFF)
                 == (object->hierarchy->rotation.vy & 0xFFF)) {
-                pc = start + (s16)word;
+                pc = SCRIPT_JUMP(start, (s16)word);
             }
             break;
         default:
