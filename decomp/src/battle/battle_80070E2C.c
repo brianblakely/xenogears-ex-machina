@@ -840,14 +840,13 @@ void func_80073380(s32 member) {
  * record the draw buffer they were built for. In state 3 each outcome is
  * written out, so both stores address the panel arrays from the switch's
  * D_800D2D28 + member (cross-jumping later merges the two identical
- * stores). Nonmatching (1316 vs 1312 bytes): the hoisted 0xC00 angle of
- * the state-1 calls is rematerialised into $t1 before each call here; the
- * original reloads it once into $s0 and reuses it for the second call. */
-#ifdef NON_MATCHING
+ * stores). The first new part index of the label (`start`, set once) is
+ * doubled just before its glyph call. */
 void func_80073538(void) {
     s32 member;
     s32 first;
     s32 part;
+    s32 start;
 
     D_800D2D28->statusParts[3] = 0;
     for (member = 0; member < 3; member++) {
@@ -864,11 +863,11 @@ void func_80073538(void) {
                 0x52, D_800C3EA4->status[member][D_800D2D28->statusParts[member]],
                 member * 0x60 + (D_800C3254[D_800D3280 * 3 + member] + 0x48), 0x1C);
             first = D_800D2D28->statusParts[member];
-            part = first * 2;
+            start = first * 2;
             D_800D2D28->statusParts[member] += func_80076A6C(
                 0x53, D_800C3EA4->status[member][first],
                 member * 0x60 + (D_800C3254[D_800D3280 * 3 + member] + 0x48), 0x1C);
-            for (; part < D_800D2D28->statusParts[member] * 2; part += 2) {
+            for (part = start; part < D_800D2D28->statusParts[member] * 2; part += 2) {
                 func_80076C34(&D_800C3EA4->status[member][0][part + D_800CCB04.buffer]);
             }
             D_800D2D28->statusBuffer[member] = D_800CCB04.buffer;
@@ -878,10 +877,10 @@ void func_80073538(void) {
             D_800D2D28->statusParts[3] = func_80025FA8(D_800D2F5C, 0x52, D_800C3EA4->status[3][0], D_800CCB04.buffer,
                                             0x10, 0x98, 0x1000, 0x1000, 0xC00);
             first = D_800D2D28->statusParts[3];
-            part = first * 2;
+            start = first * 2;
             D_800D2D28->statusParts[3] += func_80025FA8(D_800D2F5C, 0x53, D_800C3EA4->status[3][first],
                                              D_800CCB04.buffer, 0x10, 0x98, 0x1000, 0x1000, 0xC00);
-            for (; part < D_800D2D28->statusParts[3] * 2; part += 2) {
+            for (part = start; part < D_800D2D28->statusParts[3] * 2; part += 2) {
                 func_80076C34(&D_800C3EA4->status[3][0][part + D_800CCB04.buffer]);
             }
             D_800D2D28->statusBuffer[3] = D_800CCB04.buffer;
@@ -907,9 +906,6 @@ void func_80073538(void) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80073538);
-#endif
 
 /* When enabled, shade the current flat quad at graphics +0x63c8 grey by
  * +0x6410 and add it with its draw mode to the ordering table. */
