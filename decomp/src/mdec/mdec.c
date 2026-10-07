@@ -131,16 +131,15 @@ s32 movie_open(u16 width, u16 height, u16 scale, u16 slice, u16 sectors, u16 lim
  * CD-XA audio of `channel` when `select` bit 0 is set, `hold` keeps the first
  * frame, `x0, y0, x1, y1` place the two display buffers, `rows` limits the
  * rows a slice loads, and `callback` receives each loaded frame. */
-#ifdef NON_MATCHING
-/* Register pressure differs: the original keeps file in $fp and spills sector, both frame bounds and the callback (frame 0x70). */
-void movie_start(u16 file, s32 sector, u16 first_frame, u16 last_frame, u16 channel, s32 select,
+void movie_start(s32 file, s32 sector, u16 first_frame, u16 last_frame, u16 channel, s32 select,
                  u16 hold, u16 x0, u16 y0, u16 x1, u16 y1, u16 rows, void (*callback)()) {
+    s32 unused[2]; /* unused in the original; reserves 8 bytes */
     CdlFILTER filter;
 
     if (movie_player_state == 0) {
         return;
     }
-    func_800284B4(&movie_saved_directory[0], &movie_saved_directory[1]);
+    func_800284B4(&movie_saved_directory, &movie_saved_index);
     DecDCToutCallback(movie_slice_decoded);
     if (hold != 0) {
         movie_player_state = 2;
@@ -182,17 +181,18 @@ void movie_start(u16 file, s32 sector, u16 first_frame, u16 last_frame, u16 chan
     movie_frame_callback = callback;
     if (movie_color_mode & 1) {
         /* Three bytes per pixel: VRAM units are two thirds of pixels. */
-        movie_decoder.display[0].x = (x0 * 3) >> 1;
-        movie_decoder.display[1].x = (x1 * 3) >> 1;
+        movie_decoder.display[0].x = x0 * 3 / 2;
         movie_decoder.display[0].y = y0;
+        movie_decoder.display[1].x = x1 * 3 / 2;
+        movie_decoder.display[1].y = y1;
         movie_slice_width = 24;
     } else {
         movie_decoder.display[0].x = x0;
         movie_decoder.display[0].y = y0;
         movie_decoder.display[1].x = x1;
+        movie_decoder.display[1].y = y1;
         movie_slice_width = 16;
     }
-    movie_decoder.display[1].y = y1;
     movie_mdec_idle = 1;
     movie_frame_waiting = 1;
     movie_shown_frame = -1;
@@ -211,9 +211,6 @@ void movie_start(u16 file, s32 sector, u16 first_frame, u16 last_frame, u16 chan
     movie_end_frame = last_frame;
     movie_restart(file, sector, movie_xa_channel, movie_cd_mode, NULL);
 }
-#else
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", movie_start);
-#endif
 
 /* The next frame's bitstream from the ring, or NULL when no frame is complete;
  * its first sector's header goes to `header`. A frame of another size moves
@@ -372,7 +369,7 @@ void movie_restart(s32 file, s32 sector, s32 arg2, s32 mode, CdlLOC *location) {
     func_8002A498(0);
     func_80028A60(0);
     func_800284B4(&kept_directory, &kept_offset);
-    func_80028470(movie_saved_directory[0], movie_saved_directory[1]);
+    func_80028470(movie_saved_directory, movie_saved_index);
     movie_fade_in_pending = 1;
     movie_fade_out_pending = 1;
     if (movie_host_stream != 0) {

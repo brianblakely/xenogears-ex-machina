@@ -122,7 +122,8 @@ extern s32 D_8005A4B4;
 extern s16 D_80062514;      /* -1 stopped, 0 closed, 1, 2 */
 extern u8 movie_host_stream;       /* resident host-file table in use */
 extern void *movie_ring_buffer;    /* the stream ring */
-extern s32 movie_saved_directory[2]; /* directory of the movie files */
+extern s32 movie_saved_directory; /* directory group of the movie files */
+extern s32 movie_saved_index;     /* and index */
 extern s32 movie_fade_in_pending;
 extern s32 movie_fade_out_pending;
 extern s32 D_8004FE4C;             /* resident host-file handle */
