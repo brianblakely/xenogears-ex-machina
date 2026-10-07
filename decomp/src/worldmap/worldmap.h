@@ -331,8 +331,14 @@ extern SVECTOR D_8009BD38; /* camera angle */
 extern s32 D_8009D3F0;    /* camera distance */
 extern s32 D_8009BE0C;
 
-extern s16 D_8006F94E; /* next scene */
-extern u16 D_8006F950; /* heading carried into the next scene */
+/* Resident scene hand-over words ahead of the flag words (8006f954). */
+typedef struct {
+    s16 scene;   /* 8006f94e: next scene */
+    u16 heading; /* heading carried into the next scene */
+    u16 area;    /* area carried into the world map */
+} SceneResume;
+
+extern SceneResume D_8006F94E;
 extern s32 D_8009BBC4;
 
 /* Scene object (0x54 bytes): a transformed sprite set linked to a parent. */
@@ -1842,7 +1848,6 @@ typedef struct {
 
 extern WorldmapMode D_8009A058[]; /* per mode */
 extern u8 D_800591AE, D_800594F8;
-extern u16 D_8006F952;            /* area carried into the world map */
 extern u32 D_8006F160;            /* map flags */
 extern s16 D_8006EF68;
 extern s32 D_8009BD0C;
