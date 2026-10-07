@@ -2589,7 +2589,11 @@ void func_800A4CF8(s32 index) {
  * each front-facing tile textured from the scroll position. Differs in the
  * tile loop's register allocation: the original also copies half (for the
  * multiplies) and u0 before the rows and loads the tag masks per row; here
- * the masks and the row copy of half are hoisted out of both loops. */
+ * the masks and the row copy of half are hoisted out of both loops. The
+ * original's row loop was not loop-optimized at all (the masks hoisted out
+ * of the tile loop stay in the row body); a goto row loop reproduces that,
+ * but then ot loses its loop-weighted references and swaps $s4/$s5 with
+ * &turn, so the for loop stays here. */
 void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *view, u32 *ot,
                    s32 buffer) {
     SVECTOR unused; /* declared, never used (its slot stays in the frame) */
@@ -3450,7 +3454,10 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A70
  * queued. As in the original, a triangle the GTE flags as off screen does
  * not advance the triangle pointer. Nonmatching: loop invariant motion
  * hoists addPrim's 0x00FFFFFF mask out of the triangle loop (into $t2),
- * which the original computes per triangle; the rest is identical. */
+ * which the original computes per triangle; the rest is identical. (cc1
+ * 2.6.3 moves an invariant when threshold * savings * life >= the loop's
+ * insns, the threshold starting at 52 and dropping 3 per moved register: here
+ * 37 * 10 >= 291, so the original's loop must differ in length or order.) */
 void func_800A7948(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buffer, s32 scale,
                    s16 floor) {
     VECTOR d;
@@ -3964,7 +3971,9 @@ void func_800A96B4(s32 set) {
  * file and images) at x, y, z, facing angle; with a variant file, also its
  * extra parts as objects 2 * index + 13 + k attached to parts of the gear,
  * then free the files. Nonmatching: GCC hoists index * 2 + 13 out of the
- * loop and spills angle instead of y and z. */
+ * loop and spills angle instead of y and z. Forms that keep index * 2 in the
+ * loop (k + 13 first) let the threshold also hoist y's sign extension; the
+ * original hoists only x's. */
 void func_800A979C(s32 index, s16 x, s16 y, s16 z, s16 angle) {
     GearPartFile *parts;
     s16 *entry;

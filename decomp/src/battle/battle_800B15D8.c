@@ -312,7 +312,13 @@ void func_800B1F0C(u32 *ot) {
  * polygon's vertices, cull back faces, colour the lit ones from their
  * normals and add the facing ones at their average depth (shifted by
  * D_80050100, plus bias, at least 5); untextured ones in blend mode blend
- * (1-4) also get the blend mode's texture page. */
+ * (1-4) also get the blend mode's texture page. As in the original, the
+ * buffer parameter is reused as the command cursor and the first vertex
+ * pointer holds the primitive's code byte across the lighting call.
+ * Nonmatching: only the allocation of the first five saved registers differs
+ * (the original has v0 $s0, the cursor $s1, prims $s2, vertices $s3, entry and
+ * then the 0x00FFFFFF mask $s4; here v0 ranks below entry and lands in $s4,
+ * shifting prims/vertices/entry down by one). */
 void func_800B1F6C(entry, buffer, ot, unused, bias, blend)
     ScriptEntry *entry;
     u8 *buffer;
@@ -321,7 +327,6 @@ void func_800B1F6C(entry, buffer, ot, unused, bias, blend)
     s32 bias;
     s32 blend;
 {
-    u8 *cmd;
     SVECTOR *vertices;
     SVECTOR *normals;
     SVECTOR *v0;
@@ -342,124 +347,124 @@ void func_800B1F6C(entry, buffer, ot, unused, bias, blend)
     }
     prims = buffer;
     i = 0;
-    cmd = entry->commands + (u32)entry;
+    buffer = entry->commands + (u32)entry;
     vertices = (SVECTOR *)(entry->data0 + (u32)entry);
     count = entry->count;
     normals = (SVECTOR *)(entry->data8 + (u32)entry);
     for (; i != count; i++) {
-        kind = cmd[3] & 0x1C;
-        kind |= ((cmd[2] ^ 1) & 1) << 8; /* lit */
+        kind = buffer[3] & 0x1C;
+        kind |= ((buffer[2] ^ 1) & 1) << 8; /* lit */
         switch (kind) {
         case 0x0:
-            v0 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x8);
-            v1 = SCRIPT_CMD_VERTEX(vertices, cmd, 0xA);
-            v2 = SCRIPT_CMD_VERTEX(vertices, cmd, 0xC);
+            v0 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x8);
+            v1 = SCRIPT_CMD_VERTEX(vertices, buffer, 0xA);
+            v2 = SCRIPT_CMD_VERTEX(vertices, buffer, 0xC);
             break;
         case 0x10:
-            v0 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x10);
-            v1 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x12);
-            v2 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x14);
+            v0 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x10);
+            v1 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x12);
+            v2 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x14);
             break;
         case 0x18:
-            v0 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x14);
-            v1 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x16);
-            v2 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x18);
-            v3 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x1A);
+            v0 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x14);
+            v1 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x16);
+            v2 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x18);
+            v3 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x1A);
             break;
         case 0x8:
-            v0 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x8);
-            v1 = SCRIPT_CMD_VERTEX(vertices, cmd, 0xA);
-            v2 = SCRIPT_CMD_VERTEX(vertices, cmd, 0xC);
-            v3 = SCRIPT_CMD_VERTEX(vertices, cmd, 0xE);
+            v0 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x8);
+            v1 = SCRIPT_CMD_VERTEX(vertices, buffer, 0xA);
+            v2 = SCRIPT_CMD_VERTEX(vertices, buffer, 0xC);
+            v3 = SCRIPT_CMD_VERTEX(vertices, buffer, 0xE);
             break;
         case 0x4:
-            v0 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x14);
-            v1 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x16);
-            v2 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x18);
+            v0 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x14);
+            v1 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x16);
+            v2 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x18);
             break;
         case 0x14:
-            v0 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x1C);
-            v1 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x1E);
-            v2 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x20);
+            v0 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x1C);
+            v1 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x1E);
+            v2 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x20);
             break;
         case 0xC:
-            v0 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x18);
-            v1 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x1A);
-            v2 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x1C);
-            v3 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x1E);
+            v0 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x18);
+            v1 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x1A);
+            v2 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x1C);
+            v3 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x1E);
             break;
         case 0x1C:
-            v0 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x24);
-            v1 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x26);
-            v2 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x28);
-            v3 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x2A);
+            v0 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x24);
+            v1 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x26);
+            v2 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x28);
+            v3 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x2A);
             break;
         case 0x100:
             {
-                u8 code = prims[7];
+                v0 = (SVECTOR *)(u32)prims[7];
 
-                NormalColor(SCRIPT_CMD_VERTEX(normals, cmd, 0x8), (CVECTOR *)(prims + 4));
-                prims[7] = code;
+                NormalColor(SCRIPT_CMD_VERTEX(normals, buffer, 0x8), (CVECTOR *)(prims + 4));
+                prims[7] = (u32)v0;
             }
-            v0 = SCRIPT_CMD_VERTEX(vertices, cmd, 0xA);
-            v1 = SCRIPT_CMD_VERTEX(vertices, cmd, 0xC);
-            v2 = SCRIPT_CMD_VERTEX(vertices, cmd, 0xE);
+            v0 = SCRIPT_CMD_VERTEX(vertices, buffer, 0xA);
+            v1 = SCRIPT_CMD_VERTEX(vertices, buffer, 0xC);
+            v2 = SCRIPT_CMD_VERTEX(vertices, buffer, 0xE);
             break;
         case 0x110:
-            v0 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x10);
-            v1 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x16);
-            v2 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x1A);
+            v0 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x10);
+            v1 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x16);
+            v2 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x1A);
             break;
         case 0x108:
             {
-                u8 code = prims[7];
+                v0 = (SVECTOR *)(u32)prims[7];
 
-                NormalColor(SCRIPT_CMD_VERTEX(normals, cmd, 0x8), (CVECTOR *)(prims + 4));
-                prims[7] = code;
+                NormalColor(SCRIPT_CMD_VERTEX(normals, buffer, 0x8), (CVECTOR *)(prims + 4));
+                prims[7] = (u32)v0;
             }
-            v0 = SCRIPT_CMD_VERTEX(vertices, cmd, 0xA);
-            v1 = SCRIPT_CMD_VERTEX(vertices, cmd, 0xC);
-            v2 = SCRIPT_CMD_VERTEX(vertices, cmd, 0xE);
-            v3 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x10);
+            v0 = SCRIPT_CMD_VERTEX(vertices, buffer, 0xA);
+            v1 = SCRIPT_CMD_VERTEX(vertices, buffer, 0xC);
+            v2 = SCRIPT_CMD_VERTEX(vertices, buffer, 0xE);
+            v3 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x10);
             break;
         case 0x104:
             {
-                u8 code = prims[7];
+                v0 = (SVECTOR *)(u32)prims[7];
 
-                NormalColor(SCRIPT_CMD_VERTEX(normals, cmd, 0x10), (CVECTOR *)(prims + 4));
-                prims[7] = code;
+                NormalColor(SCRIPT_CMD_VERTEX(normals, buffer, 0x10), (CVECTOR *)(prims + 4));
+                prims[7] = (u32)v0;
             }
-            v0 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x12);
-            v1 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x14);
-            v2 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x16);
+            v0 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x12);
+            v1 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x14);
+            v2 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x16);
             break;
         case 0x114:
             {
-                u8 code = prims[7];
+                v0 = (SVECTOR *)(u32)prims[7];
 
-                NormalColor3(SCRIPT_CMD_VERTEX(normals, cmd, 0x10), SCRIPT_CMD_VERTEX(normals, cmd, 0x14), SCRIPT_CMD_VERTEX(normals, cmd, 0x18), (CVECTOR *)(prims + 4), (CVECTOR *)(prims + 0x10),
+                NormalColor3(SCRIPT_CMD_VERTEX(normals, buffer, 0x10), SCRIPT_CMD_VERTEX(normals, buffer, 0x14), SCRIPT_CMD_VERTEX(normals, buffer, 0x18), (CVECTOR *)(prims + 4), (CVECTOR *)(prims + 0x10),
                              (CVECTOR *)(prims + 0x1C));
-                prims[7] = code;
+                prims[7] = (u32)v0;
             }
-            v0 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x12);
-            v1 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x16);
-            v2 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x1A);
+            v0 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x12);
+            v1 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x16);
+            v2 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x1A);
             break;
         case 0x10C:
-            v0 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x16);
-            v1 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x18);
-            v2 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x1A);
-            v3 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x1C);
+            v0 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x16);
+            v1 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x18);
+            v2 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x1A);
+            v3 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x1C);
             break;
         case 0x118:
         case 0x11C:
-            v0 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x16);
-            v1 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x1A);
-            v2 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x1E);
-            v3 = SCRIPT_CMD_VERTEX(vertices, cmd, 0x22);
+            v0 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x16);
+            v1 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x1A);
+            v2 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x1E);
+            v3 = SCRIPT_CMD_VERTEX(vertices, buffer, 0x22);
             break;
         }
-        switch (cmd[3] & 0x1C) {
+        switch (buffer[3] & 0x1C) {
         case 0x0:
             {
                 long flag;
@@ -625,8 +630,8 @@ void func_800B1F6C(entry, buffer, ot, unused, bias, blend)
             }
             break;
         }
-        prims += (cmd[0] + 1) * 4;
-        cmd += (cmd[1] + 1) * 4;
+        prims += (buffer[0] + 1) * 4;
+        buffer += (buffer[1] + 1) * 4;
     }
 }
 #else
