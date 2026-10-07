@@ -162,6 +162,18 @@ typedef struct FieldActor {
  * sixteen bits at a time. */
 #define ACTOR_FLAG_HALF(actor, n) (((u16 *)(actor))[n])
 
+/* Bit-field view of the actor's +134 word: bits 0-3 animation bank, bit 4
+ * its flag, bits 5-6 a two-bit field cleared on reset, bit 7 the platform
+ * link flag. */
+typedef struct {
+    u32 bank : 4;
+    u32 bank_flag : 1;
+    u32 unk5 : 2;
+    u32 linked : 1;
+    u32 unk8 : 24;
+} ActorBits134;
+#define ACTOR_BITS134(actor) (*(ActorBits134 *)&(actor)->unk134)
+
 /* A 14-byte collision triangle; +0c indexes the attribute table. */
 typedef struct {
     s16 unk00[6];
@@ -184,18 +196,25 @@ typedef struct {
     s16 unk84;       /* 84 */
     u8 unk86[0x90 - 0x86];
     s32 unk90;       /* 90 */
-    RECT rect;       /* 94 */
-} TextBox;
+} TextBox;           /* the resident code reads the window area that follows at +94 */
+
+/* A dialogue window's frame (window + 0ac): its area and the backing and
+ * border packets. The window code addresses these members from the frame,
+ * so its address (800c2744 + window) is the base it keeps. */
+typedef struct {
+    RECT rect;                  /* 00 (0AC): the window's area */
+    u8 unk08[0x18 - 0x08];
+    DR_MODE back_modes[2];      /* 18 (0C4): per buffer */
+    TILE back[2];               /* 30 (0DC): the backing tile per buffer */
+    DR_MODE border_modes[2][10]; /* 50 (0FC): per buffer, eight used */
+    SPRT border[2][10];         /* 140 (1EC): per buffer, eight used */
+} DialogueFrame;
 
 /* One of the four 0x498-byte dialogue windows at 800c2698. */
 typedef struct {
     DR_MODE modes[2]; /* 000: per buffer */
-    TextBox text;    /* 018: its rect (0ac) is the window's area */
-    u8 unk0B4[0xC4 - 0xB4];
-    DR_MODE back_modes[2];      /* 0C4: per buffer */
-    TILE back[2];               /* 0DC: the backing tile per buffer */
-    DR_MODE border_modes[2][10]; /* 0FC: per buffer, eight used */
-    SPRT border[2][10];         /* 1EC: per buffer, eight used */
+    TextBox text;    /* 018 */
+    DialogueFrame frame; /* 0AC */
     s16 status;      /* 37C: zero while displayed */
     s16 unk37E;      /* 37E: first line */
     s16 unk380;      /* 380: line count */
