@@ -1027,20 +1027,18 @@ void func_8007CD60(s32 words) {
     D_800ADC10 -= words;
 }
 
-#ifdef NON_MATCHING
 /* Walk the top collision layer from the camera point clamped to the view
  * bounds toward the followed point (x, z whole parts of `point`), through
  * triangles with attribute 800000, at most 0xf0 steps. Returns 0 when the
  * point is reached; otherwise -1 with the crossed edge's two vertices in
- * `edge` and the point and clamped point in `segment`.
- * NON_MATCHING: far from the original (register allocation and order). */
+ * `edge` and the point and clamped point in `segment`. Each winding test
+ * reads the previous one's result after the next GTE load and nclip. */
 s32 func_8007CD80(VECTOR *point, SVECTOR *edge, DVECTOR *segment) {
     SVECTOR floor;
     VECTOR normal;
     s32 opz;
     CollisionTriangle *triangles;
     SVECTOR *vertices;
-    CollisionTriangle *tri;
     s32 x;
     s32 z;
     s32 cx;
@@ -1055,48 +1053,45 @@ s32 func_8007CD80(VECTOR *point, SVECTOR *edge, DVECTOR *segment) {
     s32 current;
     s32 previous;
 
-    x = WHOLE(point->vx);
-    z = WHOLE(point->vz);
     triangles = D_800AF880.components.collision_triangles[D_800AF880.components.layer_count - 1];
     vertices = D_800AF880.components.collision_vertices[D_800AF880.components.layer_count - 1];
-    packed = (x << 16) + z;
+    packed = (WHOLE(point->vx) << 16) + WHOLE(point->vz);
+    x = WHOLE(point->vx);
+    z = WHOLE(point->vz);
     if (x < D_800AF880.bounds[0]) {
         cx = D_800AF880.bounds[0];
+    } else if (D_800AF880.bounds[0] + D_800AF880.bounds[2] < x) {
+        cx = D_800AF880.bounds[0] + D_800AF880.bounds[2];
     } else {
         cx = x;
-        if (D_800AF880.bounds[0] + D_800AF880.bounds[2] < x) {
-            cx = D_800AF880.bounds[0] + D_800AF880.bounds[2];
-        }
     }
     if (D_800AF880.bounds[1] < z) {
         cz = D_800AF880.bounds[1];
+    } else if (z < D_800AF880.bounds[1] + D_800AF880.bounds[3]) {
+        cz = D_800AF880.bounds[1] + D_800AF880.bounds[3];
     } else {
         cz = z;
-        if (z < D_800AF880.bounds[1] + D_800AF880.bounds[3]) {
-            cz = D_800AF880.bounds[1] + D_800AF880.bounds[3];
-        }
     }
     clamped = (cx << 16) + cz;
     current = func_8007B1C4(cx, cz, D_800AF880.components.layer_count - 1, &floor, &normal);
     steps = 0;
     for (;;) {
         previous = current;
-        tri = &triangles[current];
-        a = (vertices[tri->unk00[0]].vx << 16) + vertices[tri->unk00[0]].vz;
-        b = (vertices[tri->unk00[1]].vx << 16) + vertices[tri->unk00[1]].vz;
-        c = (vertices[tri->unk00[2]].vx << 16) + vertices[tri->unk00[2]].vz;
+        a = (vertices[triangles[current].unk00[0]].vx << 16) + vertices[triangles[current].unk00[0]].vz;
+        b = (vertices[triangles[current].unk00[1]].vx << 16) + vertices[triangles[current].unk00[1]].vz;
+        c = (vertices[triangles[current].unk00[2]].vx << 16) + vertices[triangles[current].unk00[2]].vz;
         gte_ldsxy3(a, b, packed);
         gte_nclip();
         gte_stopz(&opz);
-        side = (u32)opz >> 31;
         gte_ldsxy3(b, c, packed);
         gte_nclip();
+        side = (u32)opz >> 31;
         gte_stopz(&opz);
+        gte_ldsxy3(c, a, packed);
+        gte_nclip();
         if (opz < 0) {
             side |= 2;
         }
-        gte_ldsxy3(c, a, packed);
-        gte_nclip();
         gte_stopz(&opz);
         if (opz < 0) {
             side |= 4;
@@ -1111,20 +1106,20 @@ s32 func_8007CD80(VECTOR *point, SVECTOR *edge, DVECTOR *segment) {
         case 2:
             current = triangles[current].unk00[4];
             break;
-        case 4:
-            current = triangles[current].unk00[5];
-            break;
         case 3:
             gte_ldsxy3(b, packed, clamped);
             gte_nclip();
             gte_stopz(&opz);
-            if (opz >= 0) {
-                current = triangles[current].unk00[4];
-                side = 2;
-            } else {
+            if (opz < 0) {
                 current = triangles[current].unk00[3];
                 side = 1;
+            } else {
+                current = triangles[current].unk00[4];
+                side = 2;
             }
+            break;
+        case 4:
+            current = triangles[current].unk00[5];
             break;
         case 5:
             gte_ldsxy3(a, packed, clamped);
@@ -1166,31 +1161,30 @@ s32 func_8007CD80(VECTOR *point, SVECTOR *edge, DVECTOR *segment) {
     if (current != -1 && steps != 0xF0) {
         return 0;
     }
-    tri = &triangles[previous];
     switch (side) {
     case 1:
-        edge[0].vx = vertices[tri->unk00[0]].vx;
-        edge[0].vy = vertices[tri->unk00[0]].vy;
-        edge[0].vz = vertices[tri->unk00[0]].vz;
-        edge[1].vx = vertices[tri->unk00[1]].vx;
-        edge[1].vy = vertices[tri->unk00[1]].vy;
-        edge[1].vz = vertices[tri->unk00[1]].vz;
+        edge[0].vx = vertices[triangles[previous].unk00[0]].vx;
+        edge[0].vy = vertices[triangles[previous].unk00[0]].vy;
+        edge[0].vz = vertices[triangles[previous].unk00[0]].vz;
+        edge[1].vx = vertices[triangles[previous].unk00[1]].vx;
+        edge[1].vy = vertices[triangles[previous].unk00[1]].vy;
+        edge[1].vz = vertices[triangles[previous].unk00[1]].vz;
         break;
     case 2:
-        edge[0].vx = vertices[tri->unk00[1]].vx;
-        edge[0].vy = vertices[tri->unk00[1]].vy;
-        edge[0].vz = vertices[tri->unk00[1]].vz;
-        edge[1].vx = vertices[tri->unk00[2]].vx;
-        edge[1].vy = vertices[tri->unk00[2]].vy;
-        edge[1].vz = vertices[tri->unk00[2]].vz;
+        edge[0].vx = vertices[triangles[previous].unk00[1]].vx;
+        edge[0].vy = vertices[triangles[previous].unk00[1]].vy;
+        edge[0].vz = vertices[triangles[previous].unk00[1]].vz;
+        edge[1].vx = vertices[triangles[previous].unk00[2]].vx;
+        edge[1].vy = vertices[triangles[previous].unk00[2]].vy;
+        edge[1].vz = vertices[triangles[previous].unk00[2]].vz;
         break;
     case 4:
-        edge[0].vx = vertices[tri->unk00[2]].vx;
-        edge[0].vy = vertices[tri->unk00[2]].vy;
-        edge[0].vz = vertices[tri->unk00[2]].vz;
-        edge[1].vx = vertices[tri->unk00[0]].vx;
-        edge[1].vy = vertices[tri->unk00[0]].vy;
-        edge[1].vz = vertices[tri->unk00[0]].vz;
+        edge[0].vx = vertices[triangles[previous].unk00[2]].vx;
+        edge[0].vy = vertices[triangles[previous].unk00[2]].vy;
+        edge[0].vz = vertices[triangles[previous].unk00[2]].vz;
+        edge[1].vx = vertices[triangles[previous].unk00[0]].vx;
+        edge[1].vy = vertices[triangles[previous].unk00[0]].vy;
+        edge[1].vz = vertices[triangles[previous].unk00[0]].vz;
         break;
     }
     segment[0].vx = x;
@@ -1199,9 +1193,6 @@ s32 func_8007CD80(VECTOR *point, SVECTOR *edge, DVECTOR *segment) {
     segment[1].vy = cz;
     return -1;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8007CD80);
-#endif
 
 #ifdef NON_MATCHING
 /* Find the floor of collision layer `layer` under the actor's next
