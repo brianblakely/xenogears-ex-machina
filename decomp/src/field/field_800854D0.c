@@ -100,8 +100,12 @@ void func_80085738(void) {
 
 #ifdef NON_MATCHING
 /* Load a movie's sound-effect bank (file 0x115 + bank) and seek the movie
- * sound timeline past the bank's 0xffff-terminated runs. */
+ * sound timeline past the bank's 0xffff-terminated runs.
+ * NON_MATCHING: the original copies the loaded bank from s0 into s1 (s0
+ * then holds the file) and recomputes bank + 1 in the loop test; this
+ * keeps the bank in s1 directly and hoists bank + 1 into s0. */
 void func_80085788(void) {
+    u16 *times;
     s32 bank;
     s32 file;
     s32 pos;
@@ -119,9 +123,10 @@ void func_80085788(void) {
         func_8003BDFC(0x10);
         func_80028470(4, 0);
         pos = 0;
+        times = &D_800AE060[0][0];
         for (i = 0; i < bank + 1; i++) {
             while (1) {
-                if (D_800AE060[pos][0] == 0xFFFF) {
+                if (times[pos * 2] == 0xFFFF) {
                     break;
                 }
                 pos++;
@@ -8840,7 +8845,11 @@ void func_8009E574(s32 x, s32 z) {
 }
 
 #ifdef NON_MATCHING
-/* Set the current actor's height `y` (whole units). */
+/* Set the current actor's height `y` (whole units).
+ * NON_MATCHING: the original opens an empty 0x18-byte frame with no saved
+ * registers and computes `y << 16` before loading D_800B0078 (load delay
+ * left as a nop); an unused 0x18-byte local reproduces the frame but not
+ * that order. */
 void func_8009E810(s32 y) {
     D_800B0078->position[1] = y << 16;
     D_800B0078->unkEC = y;
@@ -9185,7 +9194,12 @@ s16 func_8009E330(s32 offset);
 #ifdef NON_MATCHING
 /* Place the current actor at entry point `entry` of the bytecode's entry
  * table (when present): layer, x/z, camera octant and facing (0xFF: from
- * variables 8 and 6). */
+ * variables 8 and 6).
+ * NON_MATCHING: the original sets the return 0 in the first branch's delay
+ * slot, keeps heading/facing in a1, stores D_800AF880.heading as the
+ * sign-extended (heading << 16) >> 16 shared with heading_high, and copies
+ * facing to v1 before its three stores; GCC here folds the extension away
+ * (heading's range is known) and stores facing straight from a0. */
 s32 func_8009FA54(s32 entry) {
     s32 marker;
     s32 record;
@@ -9653,7 +9667,11 @@ void func_800A0EE8(void) {
     D_800B00C0 = 1;
 }
 
-#ifdef NON_MATCHING
+/* Layer model command for the current actor's layer (yields while
+ * D_800ADB2C or func_8008A558 is busy): operand 1 = 0 deactivates the
+ * layer's model, 1 starts loading its two resources (files 0x6ba/0x6bb +
+ * 2 * operand 5), 2 waits for the load and then builds the model at the
+ * actor's position. */
 void func_800A0FD8(void) {
     s32 layer;
 
@@ -9683,29 +9701,26 @@ void func_800A0FD8(void) {
         D_800B0078->pc += 2;
         break;
     case 2:
-        if (func_80028A60(1) != 0) {
+        if (func_80028A60(1) == 0) {
+            func_800ACDEC(2);
+            func_801E742C(layer, 0, D_8005A420[layer], D_8005A450[layer],
+                          (s16)(0x240 - (layer + D_800B2078.unk225F[layer]) * 64), 0x100, 0,
+                          (s16)(layer + 0xFC), &D_800B2078.layer_angles[layer]);
+            D_800B2078.layer_depths[layer] = D_801E8670[layer]->scale;
+            func_800320E8(D_8005A450[layer]);
+            D_800B0078->pc += 4;
+            D_800B0078->layer_flags |= 0x2000;
+            D_801E8670[layer]->scale = (D_800B0078->scale[0] * 5) >> 6;
+            D_801E8670[layer]->y = D_800B0078->position[1] >> 16;
+            D_801E8670[layer]->model->x = WHOLE(D_800B0078->position[0]);
+            D_801E8670[layer]->model->z = WHOLE(D_800B0078->position[2]);
+        } else {
             D_800B0078->pc--;
-            break;
         }
-        func_800ACDEC(2);
-        func_801E742C(layer, 0, D_8005A420[layer], D_8005A450[layer],
-                      0x240 - ((layer + D_800B2078.unk225F[layer]) << 6), 0x100, 0, layer + 0xFC,
-                      &D_800B2078.layer_angles[layer]);
-        D_800B2078.layer_depths[layer] = D_801E8670[layer]->scale;
-        func_800320E8(D_8005A450[layer]);
-        D_800B0078->pc += 4;
-        D_800B0078->layer_flags |= 0x2000;
-        D_801E8670[layer]->scale = (D_800B0078->scale[0] * 5) >> 6;
-        D_801E8670[layer]->y = D_800B0078->position[1] >> 16;
-        D_801E8670[layer]->model->x = WHOLE(D_800B0078->position[0]);
-        D_801E8670[layer]->model->z = WHOLE(D_800B0078->position[2]);
         break;
     }
     D_800B00C0 = 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_800A0FD8);
-#endif
 
 /* Give the current actor the field's first sprite on the next free 801e
  * layer (operand 1: layer parameter) and show it. */
@@ -10491,6 +10506,11 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_800A3474
 #endif
 
 #ifdef NON_MATCHING
+/* Read the descriptor count, view block and per-actor records from the
+ * block at D_8005A4E4, passing each model its record (func_80021D50).
+ * NON_MATCHING: the original forms the first descriptor pointer offset
+ * first (`addu a0,s1,v0`) and keeps it in a0 with the actor in a1; the
+ * pointer local here adds base first and swaps a0/a1 through both blocks. */
 void func_800A3C8C(void) {
     s32 changed;
     s32 i;
@@ -10521,12 +10541,11 @@ void func_800A3C8C(void) {
             func_80021D50(descriptor->model, D_800AFC50);
         }
         record = D_800AFC50;
-        descriptor = &D_800AF880.components.descriptors[i];
         D_800AFC50 = record + 0x168;
-        if (descriptor->actor->unk134 & 0x80) {
+        if (D_800AF880.components.descriptors[i].actor->unk134 & 0x80) {
             D_800AFC50 = record + 0x174;
         }
-        if (descriptor->actor->state.word & 0x1000) {
+        if (D_800AF880.components.descriptors[i].actor->state.word & 0x1000) {
             D_800AFC50 += 0x10;
         }
     }
