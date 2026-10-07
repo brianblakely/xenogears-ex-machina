@@ -55,6 +55,14 @@ void func_800A47D4(void) {
 }
 
 #ifdef NON_MATCHING
+/* Start the screen distortion: on first use allocate its buffers, build the
+ * 20x17 grid of 16x16 textured quads (rows 14-16 sample the saved strips at
+ * (3c0, 0)) and the screen/strip copy commands; unless resuming, read the
+ * six targets and the step count from the operands.
+ * NON_MATCHING: global allocation numbers the grid loop's registers one
+ * apart (row s7 and copy s3 here, s3 and s4 in the original), and the strip
+ * loop reads the x sources through a symbol-relative offset where the
+ * original walks a pointer (it also keeps the y pointer as base + 2). */
 void func_800A484C(s32 resume) {
     RECT rect;
     s32 row;
@@ -74,8 +82,8 @@ void func_800A484C(s32 resume) {
         D_800ADB24 = 1;
         for (row = 0; row < 17; row++) {
             for (column = 0; column < 20; column++) {
-                poly = (POLY_FT4 *)D_800B2078.effect_buffers[2] + row * 20 + column;
-                copy = (POLY_FT4 *)D_800B2078.effect_buffers[3] + row * 20 + column;
+                poly = (POLY_FT4 *)D_800B2078.effect_buffers[2] + (column + row * 20);
+                copy = (POLY_FT4 *)D_800B2078.effect_buffers[3] + (column + row * 20);
                 SetPolyFT4(poly);
                 SetSemiTrans(poly, 0);
                 poly->r0 = 0x80;
@@ -91,26 +99,24 @@ void func_800A484C(s32 resume) {
                 poly->y3 = row * 16 + 16;
                 if (row >= 14) {
                     u = (column * 16) & 0x3F;
-                    v = (column >> 2) * 16 + (row - 14) * 80;
                     poly->u0 = u;
-                    poly->v0 = v;
+                    poly->v0 = (column >> 2) * 16 + (row - 14) * 80;
                     poly->u1 = u + 16;
-                    poly->v1 = v;
+                    poly->v1 = (column >> 2) * 16 + (row - 14) * 80;
                     poly->u2 = u;
-                    poly->v2 = v + 16;
+                    poly->v2 = (column >> 2) * 16 + ((row - 14) * 80 + 16);
                     poly->u3 = u + 16;
-                    poly->v3 = v + 16;
+                    poly->v3 = (column >> 2) * 16 + ((row - 14) * 80 + 16);
                     poly->tpage = GetTPage(2, 0, 0x3C0, 0);
                     *copy = *poly;
                 } else {
-                    u = (column * 16) & 0x3F;
-                    poly->u0 = u;
+                    poly->u0 = (column * 16) & 0x3F;
                     poly->v0 = row * 16;
-                    poly->u1 = u + 16;
+                    poly->u1 = ((column * 16) & 0x3F) + 16;
                     poly->v1 = row * 16;
-                    poly->u2 = u;
+                    poly->u2 = (column * 16) & 0x3F;
                     poly->v2 = row * 16 + 16;
-                    poly->u3 = u + 16;
+                    poly->u3 = ((column * 16) & 0x3F) + 16;
                     poly->v3 = row * 16 + 16;
                     poly->tpage = GetTPage(2, 0, (column * 16) & 0xFFC0, 0);
                     *copy = *poly;
@@ -128,11 +134,11 @@ void func_800A484C(s32 resume) {
         rect.w = 0x40;
         rect.h = 0x10;
         for (i = 0; i < 15; i++) {
-            rect.x = D_800AEB24[i].x;
-            rect.y = D_800AEB24[i].y;
-            SetDrawMove((DR_MOVE *)D_800B2078.effect_buffers[0] + i + 1, &rect, 0x3C0, i * 16);
-            rect.y = D_800AEB24[i].y + 0x100;
-            SetDrawMove((DR_MOVE *)D_800B2078.effect_buffers[1] + i + 1, &rect, 0x3C0, i * 16);
+            rect.x = D_800AEB24[i].vx;
+            rect.y = D_800AEB24[i].vy;
+            SetDrawMove((DR_MOVE *)D_800B2078.effect_buffers[0] + (i + 1), &rect, 0x3C0, i * 16);
+            rect.y = D_800AEB24[i].vy + 0x100;
+            SetDrawMove((DR_MOVE *)D_800B2078.effect_buffers[1] + (i + 1), &rect, 0x3C0, i * 16);
         }
     }
     if (resume == 0) {
