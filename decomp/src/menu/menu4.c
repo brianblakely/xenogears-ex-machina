@@ -430,10 +430,8 @@ void func_8007F834(void) {
     D_80092744 = 0;
 }
 
-#ifdef NON_MATCHING
-/* Leave the settings screen: camera mode 1 and flags 0xc on both actors.
- * Does not match: the original addresses both flag words through two
- * address registers in the opposite register order. */
+/* Leave the settings screen: camera mode 1, and both actors' previous
+ * stance effect state (unkD4 bits 2-3) set to 3. */
 void func_8007F854(void) {
     s32 unused[2]; /* unused in the original; reserves 8 bytes */
 
@@ -441,12 +439,9 @@ void func_8007F854(void) {
     func_80083C0C(1);
     D_80092734 = (Menu *)NULL;
     func_8007F834();
-    D_8009872C.unkD4 |= 0xC;
-    D_80097010.unkD4 |= 0xC;
+    ACTOR_STANCE_BITS(&D_8009872C)->prev_stance = 3;
+    ACTOR_STANCE_BITS(&D_80097010)->prev_stance = 3;
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_8007F854);
-#endif
 
 void func_8007F8B4(void) {
     s32 unused[2]; /* unused in the original; reserves 8 bytes */
