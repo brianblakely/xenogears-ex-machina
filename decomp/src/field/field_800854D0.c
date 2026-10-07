@@ -6772,20 +6772,12 @@ void func_80098CAC(s32 mode) {
     ((void (*)(void *, s32, FieldDescriptor *))func_80081F80)(model, D_800B0078->heading, D_800B06B8);
 }
 
-#ifdef NON_MATCHING
 /* Event arc jump: set up a parabolic move to an operand position (modes
  * 0-2) or step it (3; 0xf re-reads the floor triangles).
- * NON_MATCHING: case 2's |peak - (y >> 16)| is written as the two-arm
- * branch the original has (`bgez v0; move a0,v0; negu a0,v0`; the abssi2
- * template of both 2.6.3 and 2.7.2 ends `negu %0,%0`, and the folded ternary
- * becomes abs). Here the arms write steps (s2) and a `move a0,s2` follows,
- * where the original writes a0 directly. Any fresh temporary for the arms
- * is coalesced with the difference into a0: global.c's expand_preferences
- * merges the copy preferences (a0, from the argument copy) at the arm copy
- * where the difference dies; steps only escapes that because its own v0
- * preference (the return copy) wins for the difference. The `t = d;
- * if (d < 0) t = -d;` form makes them conflict, but CSE then rewrites -d
- * as -t (t lives past the join, so it becomes the canonical register). */
+ * Case 2 copies the height difference before testing its sign and
+ * negates the difference itself; `value` is the function's scratch
+ * variable, reused for the heading in case 3.
+ */
 void func_80099214(void) {
     VECTOR normals[4];
     SVECTOR points[4];
@@ -6800,7 +6792,8 @@ void func_80099214(void) {
     s32 y;
     s32 layer;
     s32 peak;
-    s32 distance;
+    s32 value;
+    s32 magnitude;
 
     pc = D_800B0078->pc;
     model = D_800AF880.components.descriptors[D_800AFD1C].model;
@@ -6849,13 +6842,12 @@ void func_80099214(void) {
         y = (y << 16) - D_800B0078->position[1];
         model->velocity[1] = -(SquareRoot0(model->gravity.s.whole * (peak << 1)) << 16);
         SquareRoot0(peak);
-        distance = peak - (y >> 16);
-        if (distance >= 0) {
-            steps = distance;
-        } else {
-            steps = -distance;
+        value = peak - (y >> 16);
+        magnitude = value;
+        if (value < 0) {
+            magnitude = -value;
         }
-        steps = SquareRoot0(steps);
+        steps = SquareRoot0(magnitude);
         if (steps < 0) {
             steps = -steps;
         }
@@ -6877,7 +6869,9 @@ void func_80099214(void) {
             D_800B0078->position[1] += model->velocity[1];
             model->velocity[1] += model->gravity.value;
             if ((D_800B0078->target[0] != 0 || D_800B0078->target[2] != 0) && !(D_800B0078->flags & 0x8000)) {
-                D_800B0078->heading_goal = D_800B0078->heading = func_8007B694((VECTOR *)D_800B0078->target) | 0x8000;
+                value = func_8007B694((VECTOR *)D_800B0078->target) | 0x8000;
+                D_800B0078->heading = value;
+                D_800B0078->heading_goal = value;
             }
         } else {
             D_800B0078->pc = pc - 11;
@@ -6909,9 +6903,6 @@ void func_80099214(void) {
     }
     D_800B00C0 = 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_80099214);
-#endif
 
 /* Turn-move in mode 0 at the default speed. */
 void func_80099980(void) {
