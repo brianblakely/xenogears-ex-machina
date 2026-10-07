@@ -2751,12 +2751,15 @@ void func_801E37D0(Actor *actor) {
  * vectors; spilled scalars follow in declaration order.
  * Case 0x4A keeps its offsets and distance in block-scope variables: they
  * live in one basic block, so local allocation gives them s0-s2, which
- * moves pc and actor to the original's s3/s4.
- * NON_MATCHING (4 bytes longer): the remaining differences are per-case
- * register choices for the byte operands (e.g. 0x13 loads `reference`
- * into a3 where the original uses s0 and low2 into s0 where it uses fp;
- * 0x14 keeps its mask byte in s6/s1 where the original uses s7/s1), the
- * 0x22 reload of `changed` after the 0xff compare, and the frame layout. */
+ * moves pc and actor to the original's s3/s4. `reference` and `entry` also
+ * carry 0x3C's sound and volume (so `reference` crosses a call and takes
+ * s0), and 0x13/0x14 reuse `op` and `depth` for their extra bytes and the
+ * resolved actor index (their registers and the zero-extensions at use).
+ * NON_MATCHING (8 bytes longer): loop.c hoists the 0xff compare constant
+ * out of the interpreter loop (6 uses; the original loads it at each use),
+ * which shifts the reload registers in 0x14, 0x15, 0x22 and later cases;
+ * further per-case register choices remain (e.g. 0x28 keeps the distance
+ * in a1 where the original uses a2). */
 #ifdef NON_MATCHING
 void func_801E39F0(Actor *actor, SlotPool *pool, s32 changed, s32 ticks, s32 arg4) {
     Actor *self;
@@ -2774,7 +2777,7 @@ void func_801E39F0(Actor *actor, SlotPool *pool, s32 changed, s32 ticks, s32 arg
      * bytes before a resolver overwrites the halfword. */
     s16 word;
     u16 operand;
-    u8 reference, entry, low2, high2;
+    u8 reference, entry;
     u8 op, arg;
     s32 running, redraw;
     Actor *copy;
@@ -2942,13 +2945,14 @@ aim:
             entry = word >> 8;
             reference = (u8)word;
             word = *pc++;
-            high2 = word >> 8;
-            low2 = (u8)word;
+            /* op and depth double as the second word's bytes */
+            op = word >> 8;
+            depth = (u8)word;
             key = func_801E6910(actor, reference, &n);
             if (D_801E85CC != 0) {
                 func_801DEF10(actor->parts, (s16 *)key);
             } else {
-                func_801DF0B4(pool, actor->parts, (s16 *)key, high2, arg, low2,
+                func_801DF0B4(pool, actor->parts, (s16 *)key, op, arg, depth,
                               entry);
             }
             changed = -1;
@@ -2958,7 +2962,7 @@ aim:
             word = *pc++;
             reference = (u8)word;
             entry = word >> 8;
-            i = func_801E6830(actor, reference, &word);
+            op = func_801E6830(actor, reference, &word);
             func_801E6830(actor, arg, &word);
             depth = actor->depth;
             if (arg == 0xFD) {
@@ -2969,7 +2973,7 @@ aim:
                     if (reference == 0xFF) {
                         func_801E35D0(D_801E8670[n], D_801E8670[n], pool, entry);
                     } else {
-                        func_801E35D0(D_801E8670[n], D_801E8670[i & 0xFF], pool, entry);
+                        func_801E35D0(D_801E8670[n], D_801E8670[op], pool, entry);
                     }
                 }
             }
@@ -3322,15 +3326,12 @@ aim:
         case 0x3B:
             word = *pc++;
             break;
-        case 0x3C: { /* play a sound */
-            u8 sound, volume;
-
+        case 0x3C: /* play a sound */
             word = *pc++;
-            sound = word;
-            volume = word >> 8;
-            func_8003A3B8(sound + func_801E5CD8(actor, arg), 0, volume);
+            reference = word;
+            entry = word >> 8;
+            func_8003A3B8(reference + func_801E5CD8(actor, arg), 0, entry);
             break;
-        }
         case 0x3D: /* run the queued calls once `arg` is among them */
             word = actor->depth;
             if ((s16)word < 2) {
