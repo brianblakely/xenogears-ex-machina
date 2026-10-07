@@ -996,11 +996,9 @@ s32 func_800295D8(s32 file, void *destination, s32 a2, s32 a3) {
 }
 
 /* Start reading `D_8004FDF8` bytes from sector D_8004FE04: into a stream ring (flags 0x100, or 0x200 with CD mode byte flags | 0xa0) or into memory; with the PC file server the file is opened (ring) or read now. */
-/* Keep the ring count read at setup while the callback globals are written.
- * Nonmatching: under the qualified GCC 2.6.3 / ASPSX 2.34 pipeline, the
- * original loads the data callback address before storing the read-active
- * flag; this C reverses those two pairs of instructions (four differences). */
-#ifdef NON_MATCHING
+/* The ring branch starts the read itself; its copy of the shared tail is
+ * merged back by cross-jumping, but its references keep the data callback
+ * address load ahead of the read-active flag store. */
 s32 func_80029690(s32 file, void *destination, s32 mode, s32 flags) {
     StreamRing *ring;
     s32 fd;
@@ -1051,6 +1049,9 @@ s32 func_80029690(s32 file, void *destination, s32 mode, s32 flags) {
         CdDataCallback(func_8002BA58);
         CdSyncCallback(func_8002A68C);
         CdReadyCallback(func_8002B2F0);
+        D_8005A488++;
+        CdControlF(2, (u8 *)position);
+        return 0;
     } else if (flags & 0x200) {
         char *name;
 
@@ -1125,9 +1126,6 @@ s32 func_80029690(s32 file, void *destination, s32 mode, s32 flags) {
     CdControlF(2, (u8 *)position);
     return 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002709C", func_80029690);
-#endif
 
 /* Read a zero-terminated file list: sort it by file, then start the CD reads (the callbacks continue them), or with the PC file server read every file now. Returns 0, or -3 for an empty list. */
 s32 func_80029AFC(FileRequest *list, s32 mode, s32 unused) {
