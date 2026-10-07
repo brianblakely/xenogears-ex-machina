@@ -1138,7 +1138,8 @@ void func_800AC308(void) {
  * NON_MATCHING: differs only in when the scheduler loads the constant
  * 0x280: the original loads it with 0xff at the top of the block, this
  * after the colour stores (moving the x stores or holding 0x280 in a
- * local does not change it). */
+ * local does not change it; a local assigned twice, so not a register
+ * birth for sched1, puts it above the GetTPage arguments instead). */
 void func_800AC3AC(void) {
     SPRT *sprite;
     s32 i;
