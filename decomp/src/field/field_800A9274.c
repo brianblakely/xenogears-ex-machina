@@ -1134,8 +1134,11 @@ void func_800AC308(void) {
 
 #ifdef NON_MATCHING
 /* Set up the text roll: the white top and bottom fades (640 wide, 24
- * tall at 0 and c8) and the 16 lines of sprites. Differs only in when
- * the scheduler loads the constants 0x280 and 0x80. */
+ * tall at 0 and c8) and the 16 lines of sprites.
+ * NON_MATCHING: differs only in when the scheduler loads the constant
+ * 0x280: the original loads it with 0xff at the top of the block, this
+ * after the colour stores (moving the x stores or holding 0x280 in a
+ * local does not change it). */
 void func_800AC3AC(void) {
     SPRT *sprite;
     s32 i;
@@ -1197,10 +1200,10 @@ void func_800AC3AC(void) {
         setRGB0(sprite, 0x80, 0x80, 0x80);
         SetSemiTrans(sprite, 0);
         sprite->clut = GetClut(0, 0x1FF);
-        sprite->h = 0x10;
         sprite->u0 = 0;
         sprite->v0 = i * 16;
         sprite->w = 0x80;
+        sprite->h = 0x10;
         sprite->x0 = 0x40;
         sprite->y0 = i * 16;
         sprite[4] = *sprite;

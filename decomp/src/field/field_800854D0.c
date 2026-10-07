@@ -103,7 +103,11 @@ void func_80085738(void) {
  * sound timeline past the bank's 0xffff-terminated runs.
  * NON_MATCHING: the original copies the loaded bank from s0 into s1 (s0
  * then holds the file) and recomputes bank + 1 in the loop test; this
- * keeps the bank in s1 directly and hoists bank + 1 into s0. */
+ * keeps the bank in s1 directly and hoists bank + 1 into s0. Loading the
+ * bank into `file` first and copying it to `bank` inside the if reproduces
+ * the prologue exactly; with that, a for loop still hoists bank + 1, and
+ * a goto loop keeps it but then fails to hoist the table base and 0xffff
+ * out of the outer loop. */
 void func_80085788(void) {
     u16 *times;
     s32 bank;
