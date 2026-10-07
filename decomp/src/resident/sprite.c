@@ -1561,7 +1561,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
     u8 *p;
     SpriteModelRenderer *model;
     SpriteModel *loaded; /* never set: 0xf7 clears a word through whatever the register holds */
-    ModelBuffer *buffer;
+    s32 buffer;
     s16 direction;
 
     switch (op) {
@@ -2205,47 +2205,56 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         break;
     case 0xF5:
         func_80032498(5, 0);
-        buffer = (ModelBuffer *)(code + (((s8)code[2] << 16) + (code[1] << 8) + code[0]));
+        buffer = (s8)code[2] << 16;
+        buffer += code[1] << 8;
+        buffer += code[0];
+        buffer += (s32)code;
         func_8002C59C((SpriteModel *)buffer);
         if (((SpriteModelRenderer *)sprite->renderer)->packets[0] != NULL) {
             func_800320E8(((SpriteModelRenderer *)sprite->renderer)->packets[0]);
         }
-        func_8002CB54(buffer, &((SpriteModelRenderer *)sprite->renderer)->packets[0],
+        func_8002CB54((ModelBuffer *)buffer, &((SpriteModelRenderer *)sprite->renderer)->packets[0],
                       &((SpriteModelRenderer *)sprite->renderer)->packets[1]);
-        func_8002C8CC(buffer, ((SpriteModelRenderer *)sprite->renderer)->packets[0], 0);
+        func_8002C8CC((ModelBuffer *)buffer, ((SpriteModelRenderer *)sprite->renderer)->packets[0], 0);
         memcpy(((SpriteModelRenderer *)sprite->renderer)->packets[1],
-               ((SpriteModelRenderer *)sprite->renderer)->packets[0], buffer->size);
-        ((SpriteModelRenderer *)sprite->renderer)->model = buffer;
+               ((SpriteModelRenderer *)sprite->renderer)->packets[0], ((ModelBuffer *)buffer)->size);
+        ((SpriteModelRenderer *)sprite->renderer)->model = (ModelBuffer *)buffer;
         break;
     case 0xF6:
         func_80032498(5, 0);
-        buffer = (ModelBuffer *)(code + (((s8)code[2] << 16) + (code[1] << 8) + code[0]));
+        buffer = (s8)code[2] << 16;
+        buffer += code[1] << 8;
+        buffer += code[0];
+        buffer += (s32)code;
         func_8002C3E8((ModelGroup *)buffer);
-        buffer = (ModelBuffer *)((u8 *)buffer + 0x10);
+        buffer += 0x10;
         if (((SpriteModelRenderer *)sprite->renderer)->packets[0] != NULL) {
             func_800320E8(((SpriteModelRenderer *)sprite->renderer)->packets[0]);
         }
-        func_8002CB54(buffer, &((SpriteModelRenderer *)sprite->renderer)->packets[0],
+        func_8002CB54((ModelBuffer *)buffer, &((SpriteModelRenderer *)sprite->renderer)->packets[0],
                       &((SpriteModelRenderer *)sprite->renderer)->packets[1]);
-        func_8002C8CC(buffer, ((SpriteModelRenderer *)sprite->renderer)->packets[0], 0);
+        func_8002C8CC((ModelBuffer *)buffer, ((SpriteModelRenderer *)sprite->renderer)->packets[0], 0);
         memcpy(((SpriteModelRenderer *)sprite->renderer)->packets[1],
-               ((SpriteModelRenderer *)sprite->renderer)->packets[0], buffer->size);
-        ((SpriteModelRenderer *)sprite->renderer)->model = buffer;
+               ((SpriteModelRenderer *)sprite->renderer)->packets[0], ((ModelBuffer *)buffer)->size);
+        ((SpriteModelRenderer *)sprite->renderer)->model = (ModelBuffer *)buffer;
         break;
     case 0xF7:
-        buffer = (ModelBuffer *)(code + (((s8)code[2] << 16) + (code[1] << 8) + code[0]));
+        buffer = (s8)code[2] << 16;
+        buffer += code[1] << 8;
+        buffer += code[0];
+        buffer += (s32)code;
         func_8002C3E8((ModelGroup *)buffer);
-        buffer = (ModelBuffer *)((u8 *)buffer + 0x10);
+        buffer += 0x10;
         if (((SpriteModelRenderer *)sprite->renderer)->packets[0] != NULL) {
             func_800320E8(((SpriteModelRenderer *)sprite->renderer)->packets[0]);
         }
-        func_8002CB54(buffer, &((SpriteModelRenderer *)sprite->renderer)->packets[0],
+        func_8002CB54((ModelBuffer *)buffer, &((SpriteModelRenderer *)sprite->renderer)->packets[0],
                       &((SpriteModelRenderer *)sprite->renderer)->packets[1]);
-        func_8002C8CC(buffer, ((SpriteModelRenderer *)sprite->renderer)->packets[0], 0);
+        func_8002C8CC((ModelBuffer *)buffer, ((SpriteModelRenderer *)sprite->renderer)->packets[0], 0);
         memcpy(((SpriteModelRenderer *)sprite->renderer)->packets[1],
-               ((SpriteModelRenderer *)sprite->renderer)->packets[0], buffer->size);
+               ((SpriteModelRenderer *)sprite->renderer)->packets[0], ((ModelBuffer *)buffer)->size);
         *(s32 *)(loaded->unk10 + 4) = 0;
-        ((SpriteModelRenderer *)sprite->renderer)->model = buffer;
+        ((SpriteModelRenderer *)sprite->renderer)->model = (ModelBuffer *)buffer;
         break;
     case 0xB5:
         {
