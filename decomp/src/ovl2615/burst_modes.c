@@ -21,7 +21,15 @@
  * its end barrier also ties the code after it: in the first branch the frame
  * test cannot fill the trans.vz load delay (a nop instead of the original's
  * slti), and in the second the speed reload stays after the trans.vz load
- * (the original loads it before the frame store). */
+ * (the original loads it before the frame store). Without the block,
+ * -fno-schedule-insns gives the original order, so it is sched1 alone. In
+ * the sched1 trace the trans.vz load waits two cycles for its add and the
+ * spin store fills that slot, pulling the spin chain below it; the frame
+ * compare (a register birth) is taken first. Same-base accesses at disjoint
+ * offsets never conflict; a VECTOR *trans base does (the load then depends
+ * on the spin store) and reproduces both branches' order exactly, but keeps
+ * the pointer in a2 with 8(a2) offsets; volatile fields reorder the frame
+ * load. */
 #ifdef NON_MATCHING
 void func_801E8964(TaskNode *node) {
     SVECTOR unused; /* unused in the original; reserves 8 bytes */

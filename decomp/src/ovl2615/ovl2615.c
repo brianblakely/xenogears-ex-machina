@@ -46,7 +46,12 @@ void func_801E4048(void) {
  * In the loop dump the two FORMATION_ID (and FLAGS3) reads are combined
  * givs (benefit 4) and reduced; the original keeps every byte-array access
  * on a register incremented with i (a0, like a mult-1 DEST_REG giv the
- * address givs were expressed from). */
+ * address givs were expressed from). Each mult-1 address giv has benefit 2
+ * less add_cost 2 = 0 (not worth reducing); only the identical pairs
+ * (FORMATION_ID, FLAGS3 and present[i] stored in both branches) sum to 4
+ * and are reduced, so the original's pairs were not identical givs. A copy
+ * k = i (CSE folds it) or a second counter k (its pairs combine the same
+ * way) does not reproduce the index form. */
 #ifdef NON_MATCHING
 void func_801E4160(void) {
     s32 i;
