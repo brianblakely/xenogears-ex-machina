@@ -256,20 +256,18 @@ void func_80073CEC(Vector *a, Vector *b, s32 flip, HitSpec *hit, Trail *trail, s
     D_80092650++;
 }
 
-#ifdef NON_MATCHING
 /* Whether an actor can take amount more: always below 0x1000 total,
- * otherwise only while the excess / 20 is below its HP. Does not match:
- * the loaded field lands in v0 instead of v1. */
+ * otherwise only while the excess / 20 is below its HP. */
 s32 func_80073DE4(Actor *actor, s32 amount) {
-    amount += actor->charge;
-    if (amount > 0x1000) {
-        return (amount - 0xFF1) / 20 < actor->hp;
+    s32 total = actor->charge + amount;
+
+    if (total > 0x1000) {
+        if ((total - 0xFF1) / 20 >= actor->hp) {
+            return 0;
+        }
     }
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80073DE4);
-#endif
 
 /* Add charge to an actor. Past full charge the excess / 20 is spent from
  * its HP-bound reserve (and counted by kind); if it cannot be, the charge
