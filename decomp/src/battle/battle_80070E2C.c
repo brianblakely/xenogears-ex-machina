@@ -522,7 +522,10 @@ void func_80072324(void) {
 
 /* Select the next slot to act: the forced slot, else the next ready slot in
  * the turn order from the cursor; then run the turn procedure. With slots
- * acting together, run their pass instead. */
+ * acting together, run their pass instead.
+ * Nonmatching: the original loads the first slot before the loop and jumps
+ * to its ready test, the loop starting at the position wrap (332 bytes);
+ * this lays the loop out from the slot load (300 bytes). */
 #ifdef NON_MATCHING
 void func_800723E0(void) {
     s32 position;
@@ -544,8 +547,7 @@ void func_800723E0(void) {
                 slot = D_800D2DCC.order[position];
                 if (D_800D2DCC.ready[slot] == 1) {
                     D_800C3EAC->actor = slot + 1;
-                    *cursor = position + 1;
-                    if (*cursor == 11) {
+                    if ((*cursor = position + 1) == 11) {
                         *cursor = 0;
                     }
                 }
