@@ -21,7 +21,13 @@
  * its end barrier also ties the code after it: in the first branch the frame
  * test cannot fill the trans.vz load delay (a nop instead of the original's
  * slti), and in the second the speed reload stays after the trans.vz load
- * (the original loads it before the frame store). */
+ * (the original loads it before the frame store). Without the block,
+ * -fno-schedule-insns gives the original order, so it is sched1 alone; in
+ * GCC 2.7.2 true_dependence never orders two accesses off the same base
+ * pseudo at disjoint offsets, so the original's trans.vz load must have used
+ * a different base pseudo than the spin store (a VECTOR *trans reproduces
+ * both branches' order exactly but keeps the pointer in a2 with 8(a2)
+ * offsets; volatile fields reorder the frame load). */
 #ifdef NON_MATCHING
 void func_801E8964(TaskNode *node) {
     SVECTOR unused; /* unused in the original; reserves 8 bytes */

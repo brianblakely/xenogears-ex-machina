@@ -1504,7 +1504,12 @@ void func_80087B84(VECTOR *direction, VECTOR *up, MATRIX *m) {
  * dependence on the saves; at the last cycles the s0 save wins the tie by
  * potential hazard after the index copy (a0 -> s0) is placed, leaving the
  * blocked load for the top. A local copy of index (s32/s16/u8) or other
- * id/index types do not change it. */
+ * id/index types do not change it. sched2 trace (-dR): the original order
+ * (sp, s0 save, load, index copy, ra..s1 saves) needs the load chosen over
+ * the s0 save at T-26; both have priority 1 and a store always has the
+ * greater potential hazard, so the original's load must have had priority
+ * >= 2 or depended on the s0 save, i.e. different RTL before the call; an
+ * area local, a void cast of the call and u16/s16 ids leave it unchanged. */
 #ifdef NON_MATCHING
 s32 func_80087C6C(s32 index) {
     WorldmapActor *actor;

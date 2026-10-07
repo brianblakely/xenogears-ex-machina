@@ -109,7 +109,14 @@ ShatterTask *func_801E82EC(void) {
  * threshold is used up by the nine moved insns of the half offset
  * (half * 0x21e8), so both heights stay strength-reduced row values and the
  * frame is 0xa8 instead of 0xb0. Computing the heights before `cell`, or a
- * per-half grid pointer, moves them but then loses the half-offset hoist. */
+ * per-half grid pointer, moves them but then loses the half-offset hoist.
+ * loop.c numbers (-dL): the column loop has a call, so threshold = 29 and
+ * drops by 3 per moved insn; the half chain is 9 movables (2 left), the
+ * heights' head needs threshold * 4 * 4 >= 95 insns. Heights computed first
+ * (or from a row-body y) leave 17-23, too little for the half chain head
+ * (savings 2, life 2). Heights computed in the row body are replaceable
+ * givs (no copies); the original's copies come from moved (non-replaceable)
+ * giv insns, and a shared (row - 3) * 0x200 makes them benefit-0 givs. */
 #ifdef NON_MATCHING
 ShatterTask *func_801E8320(ShatterTask *task) {
     MATRIX m;      /* unused in the original; with pos and angle reserves 0x38 bytes */
