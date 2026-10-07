@@ -2740,18 +2740,15 @@ void func_801E37D0(Actor *actor) {
  * that release or hand over (0x14 with 0xfd, 0x16, 0x17, 0x5b) return without
  * storing it, and 0x15 copies into an uninitialised block when all actor
  * slots 8 and 9 are used, as in the original.
- * The decoded word is a plain halfword (its low byte read through a u8
- * view), so stores through actor pointers do not make CSE forget it.
- * NON_MATCHING (20 bytes shorter): the case bodies are in the original's
- * order (jump table checked case by case, 19 of 0x71 bodies still differ in
- * size: 13 15 1A 1D 21 25 28 2E 36 37 38 39 40 41 42 4F 5D 63 6F); the
- * original zero-extends the srl-derived bytes (`arg`, `entry`, `high2`) at
- * each use (andi 0xff) but not the lbu-derived ones (`reference`, `low2`)
- * (combine knows their high bits are zero here; a test use of `arg` before
- * the loop, making it live at entry, reproduces every andi and fixes 4F, so
- * the original's bytes are not tracked by combine for some such reason),
- * keeps m/ex/ey/ez and the d/v vectors in block scopes (v and d share a slot,
- * so n and word sit at 0x68/0x6c), and allocates registers differently. */
+ * The script word is an s16 (its bytes taken as (u8)word and
+ * (u8)(word >> 8)): the arithmetic shift narrowed to a byte compiles to
+ * srl, but combine cannot prove the byte's high bits clear, so the original
+ * zero-extends `arg`, `entry` and `high2` (andi 0xff) at every use in a
+ * later block.
+ * NON_MATCHING (8 bytes longer): case bodies 15 1A 1D 22 25 40 41 42 still
+ * differ in size (jump table checked case by case), the frame is 0x160 vs
+ * 0x168 (n/word at 0xc0/0xc4 vs 0x68/0x6c) and registers are allocated
+ * differently (actor/pc/start in s3/s2/s1 vs s4/s3/s0). */
 #ifdef NON_MATCHING
 void func_801E39F0(Actor *actor, SlotPool *pool, s32 changed, s32 ticks, s32 arg4) {
     Actor *self;
@@ -2769,15 +2766,15 @@ void func_801E39F0(Actor *actor, SlotPool *pool, s32 changed, s32 ticks, s32 arg
     u16 *counter;
     /* Reused by word decoding and actor-mask resolution. Save decoded
      * bytes before a resolver overwrites the halfword. */
-    u16 word;
+    s16 word;
     MATRIX m;
     VECTOR ex, ey, ez;
     SVECTOR v;
-    u16 raw;
     u16 operand;
     u8 reference, entry, low2, high2;
     u8 op, arg;
     s32 running, redraw;
+    s32 found;
     s32 i, key;
     s32 dx, dy, dz, dist, pitch, yaw;
     s16 c0, c1, c2;
@@ -2839,10 +2836,9 @@ aim:
     }
     while (running) {
         start = pc;
-        raw = *pc++;
-        word = raw;
-        arg = raw >> 8;
-        op = *(u8 *)&word;
+        word = *pc++;
+        arg = word >> 8;
+        op = (u8)word;
         switch (op) {
         case 0x00: /* wait */
             pc = start;
@@ -2927,7 +2923,7 @@ aim:
             word = operand;
             if (n == 0) {
                 entry = operand >> 8;
-                func_801DF7F4(pool, actor->parts, (u16 *)key, entry, *(u8 *)&word);
+                func_801DF7F4(pool, actor->parts, (u16 *)key, entry, (u8)word);
                 changed = -1;
                 size = (s16)((u16 *)key)[8] * (actor->scale * actor->parts->scale[2] >> 12) >> 12;
                 actor->h8E = size < 0 ? -size : size;
@@ -2936,14 +2932,12 @@ aim:
             break;
         }
         case 0x13: /* tween to keyframe */
-            raw = *pc++;
-            word = raw;
-            entry = raw >> 8;
-            reference = *(u8 *)&word;
-            raw = *pc++;
-            word = raw;
-            high2 = raw >> 8;
-            low2 = *(u8 *)&word;
+            word = *pc++;
+            entry = word >> 8;
+            reference = (u8)word;
+            word = *pc++;
+            high2 = word >> 8;
+            low2 = (u8)word;
             key = func_801E6910(actor, reference, &n);
             if (D_801E85CC != 0) {
                 func_801DEF10(actor->parts, (s16 *)key);
@@ -2955,10 +2949,9 @@ aim:
             func_801E632C(actor);
             break;
         case 0x14: /* call an entry in the masked actors */
-            raw = *pc++;
-            word = raw;
-            reference = *(u8 *)&word;
-            entry = raw >> 8;
+            word = *pc++;
+            reference = (u8)word;
+            entry = word >> 8;
             i = func_801E6830(actor, reference, &word);
             func_801E6830(actor, arg, &word);
             depth = actor->depth;
@@ -3055,29 +3048,15 @@ aim:
             }
             MoveImage(&rect, (s16)dx, (s16)dy);
             break;
-        case 0x1D: { /* tween node `arg` between two poses */
-            s32 x0, y0, z0, x1, y1, z1, duration;
-
-            raw = *pc++;
-            word = raw;
-            entry = raw >> 8;
-            reference = *(u8 *)&word;
-            raw = *pc++;
-            word = raw;
-            high2 = raw >> 8;
-            low2 = *(u8 *)&word;
+        case 0x1D: /* tween node `arg` between two poses */
+            word = *pc++;
+            entry = word >> 8;
+            reference = (u8)word;
+            word = *pc++;
             changed = -1;
-            x0 = (s16)*pc++;
-            y0 = (s16)*pc++;
-            z0 = (s16)*pc++;
-            x1 = (s16)*pc++;
-            y1 = (s16)*pc++;
-            z1 = (s16)*pc++;
-            duration = (s16)*pc++;
-            func_801E6974(actor, pool, &actor->parts[arg], reference, entry, low2,
-                          high2, x0, y0, z0, x1, y1, z1, duration);
+            func_801E6974(actor, pool, &actor->parts[arg], reference, entry, (u8)word, word >> 8,
+                          *pc++, *pc++, *pc++, *pc++, *pc++, *pc++, *pc++);
             break;
-        }
         case 0x1E: /* use the scaled hierarchy update */
             actor->scaled = arg;
             break;
@@ -3155,10 +3134,9 @@ aim:
             break;
         case 0x25: /* attach the masked actors to node (high byte), keeping
                     * their place (arg bit 0) or at an offset */
-            raw = *pc++;
-            word = raw;
-            entry = raw >> 8;
-            func_801E6830(actor, *(u8 *)&word, &word);
+            word = *pc++;
+            entry = word >> 8;
+            func_801E6830(actor, (u8)word, &word);
             c0 = *pc++;
             c1 = *pc++;
             c2 = *pc++;
@@ -3222,35 +3200,40 @@ aim:
             }
             break;
         case 0x28:
-        case 0x29: /* wait until the distance (in h8e units) passes `arg` while
+        case 0x29: { /* wait until the distance (in h8e units) passes `arg` while
                     * node (low byte) tweens with the given time */
+            ModelPart *tween;
+
             dist = func_801E6338(actor);
             if (actor->h8E == 0) {
                 actor->h8E = 1;
             }
             word = *pc++;
-            node = &actor->parts[*(u8 *)&word];
+            tween = &actor->parts[(u8)word];
+            entry = word >> 8;
             dist /= actor->h8E;
-            n = 0;
-            if (node->attachments[0] != NULL) {
-                n = (word >> 8) == node->attachments[0]->time;
-            } else if (node->attachments[1] != NULL &&
-                       node->attachments[1]->time == ((word >> 8) & 0xFF)) {
-                n = 1;
+            found = 0;
+            if (tween->attachments[0] != NULL) {
+                found = entry == tween->attachments[0]->time;
+            } else if (tween->attachments[1] != NULL && tween->attachments[1]->time == entry) {
+                found = 1;
             }
-            if (!n) {
-                pc = start;
-                running = 0;
-            } else if (op == 0x28) {
-                if (dist >= arg) {
+            if (found) {
+                if (op == 0x28) {
+                    if (dist >= arg) {
+                        pc = start;
+                        running = 0;
+                    }
+                } else if (dist < arg) {
                     pc = start;
                     running = 0;
                 }
-            } else if (dist < arg) {
+            } else {
                 pc = start;
                 running = 0;
             }
             break;
+        }
         case 0x2A: /* wait while nearer than h8e */
             if (func_801E6338(actor) >= actor->h8E) {
                 pc = start;
@@ -3276,7 +3259,7 @@ aim:
 
             word = *pc++;
             counter = (u16 *)((u8 *)start + (s16)word);
-            limit = (word = *counter++) >> 8;
+            limit = (u16)(word = *counter++) >> 8;
             *counter = word = *counter + 1;
             if ((s16)word < limit) {
                 pc = counter + 1;
@@ -3304,12 +3287,12 @@ aim:
             break;
         case 0x38: /* move node `arg` toward the target */
             word = *pc++;
-            func_801E5B50(pool, actor->parts, 0, arg, *(u8 *)&word, word >> 8,
+            func_801E5B50(pool, actor->parts, 0, arg, (u8)word, (u8)(word >> 8),
                           actor->target[0], actor->target[1], actor->target[2]);
             break;
         case 0x39: /* the same, flag 1 */
             word = *pc++;
-            func_801E5B50(pool, actor->parts, 1, arg, *(u8 *)&word, word >> 8,
+            func_801E5B50(pool, actor->parts, 1, arg, (u8)word, (u8)(word >> 8),
                           actor->target[0], actor->target[1], actor->target[2]);
             break;
         case 0x33:
@@ -3319,7 +3302,7 @@ aim:
             break;
         case 0x3C: /* play a sound */
             word = *pc++;
-            func_8003A3B8(*(u8 *)&word + func_801E5CD8(actor, arg), 0, word >> 8);
+            func_8003A3B8((u8)word + func_801E5CD8(actor, arg), 0, (u16)word >> 8);
             break;
         case 0x3D: /* run the queued calls once `arg` is among them */
             word = actor->depth;
