@@ -2749,13 +2749,23 @@ void func_801E37D0(Actor *actor) {
  * probe's block frees 16 bytes that 0x25's `d` reuses before n/word (whose
  * slots are made when their address is first taken) and 0x25's matrix and
  * vectors; spilled scalars follow in declaration order.
- * NON_MATCHING (4 bytes longer): case bodies 1D (4 shorter: `reference` is
- * loaded straight into a3, the original loads it into s0 and copies it) and
- * 22 (8 longer: `changed` is reloaded after the 0xff compare clobbers its
- * reload register) differ in size (jump table checked case by case), the
- * frame is 0x160 vs 0x168, and global allocation differs (actor/pc in s3/s2
- * vs s4/s3: the original's local allocation also takes s2 in some block,
- * e.g. 0x3C keeps its volume byte in s2 with s1 free). */
+ * Case 0x4A keeps its offsets and distance in block-scope variables: they
+ * live in one basic block, so local allocation gives them s0-s2, which
+ * moves pc and actor to the original's s3/s4. `reference` and `entry` also
+ * carry 0x3C's sound and volume (so `reference` crosses a call and takes
+ * s0), and 0x13/0x14 reuse `op` and `depth` for their extra bytes and the
+ * resolved actor index (their registers and the zero-extensions at use).
+ * 0x26 keeps its 0xff marker in a block-scope variable: as a constant it
+ * would join the other 0xff loads, which loop.c then hoists out of the
+ * interpreter loop (the original loads 0xff at each use).
+ * NON_MATCHING (same text size): the frame is 0x160 bytes rather than the
+ * original 0x168; the final eight bytes of local storage remain unresolved.
+ * Per-case scheduling and allocation also remain: 0x41 loads the -1 for
+ * `changed` earlier,
+ * 0x42 has dx/dz in s1/s0 (s0/s1 in the original, whose 0x4f uses other
+ * registers for its own offsets; giving either case block-scope offsets
+ * moves `arg` out of s5), 0x4f keeps dy in s2 instead of a2, and the
+ * table load before the 0x6e mask test is placed earlier. */
 #ifdef NON_MATCHING
 void func_801E39F0(Actor *actor, SlotPool *pool, s32 changed, s32 ticks, s32 arg4) {
     Actor *self;
@@ -2773,7 +2783,7 @@ void func_801E39F0(Actor *actor, SlotPool *pool, s32 changed, s32 ticks, s32 arg
      * bytes before a resolver overwrites the halfword. */
     s16 word;
     u16 operand;
-    u8 reference, entry, low2, high2;
+    u8 reference, entry;
     u8 op, arg;
     s32 running, redraw;
     Actor *copy;
@@ -2941,13 +2951,14 @@ aim:
             entry = word >> 8;
             reference = (u8)word;
             word = *pc++;
-            high2 = word >> 8;
-            low2 = (u8)word;
+            /* op and depth double as the second word's bytes */
+            op = word >> 8;
+            depth = (u8)word;
             key = func_801E6910(actor, reference, &n);
             if (D_801E85CC != 0) {
                 func_801DEF10(actor->parts, (s16 *)key);
             } else {
-                func_801DF0B4(pool, actor->parts, (s16 *)key, high2, arg, low2,
+                func_801DF0B4(pool, actor->parts, (s16 *)key, op, arg, depth,
                               entry);
             }
             changed = -1;
@@ -2957,7 +2968,7 @@ aim:
             word = *pc++;
             reference = (u8)word;
             entry = word >> 8;
-            i = func_801E6830(actor, reference, &word);
+            op = func_801E6830(actor, reference, &word);
             func_801E6830(actor, arg, &word);
             depth = actor->depth;
             if (arg == 0xFD) {
@@ -2968,7 +2979,7 @@ aim:
                     if (reference == 0xFF) {
                         func_801E35D0(D_801E8670[n], D_801E8670[n], pool, entry);
                     } else {
-                        func_801E35D0(D_801E8670[n], D_801E8670[i & 0xFF], pool, entry);
+                        func_801E35D0(D_801E8670[n], D_801E8670[op], pool, entry);
                     }
                 }
             }
@@ -2989,8 +3000,8 @@ aim:
             }
             *copy = *actor;
             D_801E8670[n] = copy;
-            copy->h3C = 0xFFFF;
             copy->anim_state = -1;
+            copy->h3C = 0xFFFF;
             copy->parent = 0xFF;
             copy->h40 = 0;
             copy->aim_actor = 0;
@@ -3001,9 +3012,9 @@ aim:
             copy->b39 = 0x6B;
             copy->pc = 0;
             copy->b21 = actor->index;
+            copy->index = n;
             copy->count10D = 0;
             copy->count10E = 0;
-            copy->index = n;
             func_801E8510(copy);
             parts = func_80031BDC(actor->parts->count * sizeof(ModelPart), 1);
             copy->parts = parts;
@@ -3067,9 +3078,9 @@ aim:
             entry = word >> 8;
             reference = (u8)word;
             word = *pc++;
-            changed = -1;
             func_801E6974(actor, pool, &actor->parts[arg], reference, entry, (u8)word, word >> 8,
                           *pc++, *pc++, *pc++, *pc++, *pc++, *pc++, *pc++);
+            changed = -1;
             break;
         case 0x1E: /* use the scaled hierarchy update */
             actor->scaled = arg;
@@ -3205,14 +3216,17 @@ aim:
             }
             break;
         }
-        case 0x26: /* detach the masked actors */
+        case 0x26: { /* detach the masked actors */
+            u8 none;
+
             func_801E6830(actor, arg, &word);
-            for (n = 0; n < 8; n++) {
+            for (n = 0, none = 0xFF; n < 8; n++) {
                 if ((((s16)word >> n) & 1) && D_801E8670[n] != NULL) {
-                    D_801E8670[n]->parent = 0xFF;
+                    D_801E8670[n]->parent = none;
                 }
             }
             break;
+        }
         case 0x27: /* recompose the hierarchy */
             if (actor->scaled) {
                 func_801DC848(actor->parts, actor->scale);
@@ -3282,13 +3296,15 @@ aim:
             counter = (u16 *)((u8 *)start + (s16)word);
             limit = (u16)(word = *counter++) >> 8;
             *counter = word = *counter + 1;
+            counter++;
             if ((s16)word < limit) {
-                pc = counter + 1;
+                pc = counter;
             }
             break;
         }
         case 0x32: /* jump */
-            pc = (u16 *)((u8 *)start + (s16)*pc);
+            word = *pc;
+            pc = (u16 *)((u8 *)start + (s16)word);
             break;
         case 0x35: /* jump at random (half the time) */
             word = *pc++;
@@ -3321,15 +3337,12 @@ aim:
         case 0x3B:
             word = *pc++;
             break;
-        case 0x3C: { /* play a sound */
-            u8 sound, volume;
-
+        case 0x3C: /* play a sound */
             word = *pc++;
-            sound = word;
-            volume = word >> 8;
-            func_8003A3B8(sound + func_801E5CD8(actor, arg), 0, volume);
+            reference = word;
+            entry = word >> 8;
+            func_8003A3B8(reference + func_801E5CD8(actor, arg), 0, entry);
             break;
-        }
         case 0x3D: /* run the queued calls once `arg` is among them */
             word = actor->depth;
             if ((s16)word < 2) {
@@ -3347,8 +3360,8 @@ aim:
             rx = *pc++;
             ry = *pc++;
             rz = *pc++;
-            changed = -1;
             func_801E59D4(pool, actor->parts, arg, rx, ry, rz);
+            changed = -1;
             break;
         }
         case 0x41: { /* turn the root by a rotation */
@@ -3415,13 +3428,17 @@ aim:
             if (arg != 0xFB) {
                 break;
             }
-            dx = actor->parts->pos[0] - actor->target[0];
-            dy = actor->parts->pos[1] - actor->target[1];
-            dz = actor->parts->pos[2] - actor->target[2];
-            dist = SquareRoot0(dx * dx + dy * dy + dz * dz) + 1;
-            actor->parts->pos[0] = actor->target[0] + dx * actor->h8E / dist;
-            actor->parts->pos[1] = actor->target[1] + dy * actor->h8E / dist;
-            actor->parts->pos[2] = actor->target[2] + dz * actor->h8E / dist;
+            {
+                s32 dx, dy, dz, dist;
+
+                dx = actor->parts->pos[0] - actor->target[0];
+                dy = actor->parts->pos[1] - actor->target[1];
+                dz = actor->parts->pos[2] - actor->target[2];
+                dist = SquareRoot0(dx * dx + dy * dy + dz * dz) + 1;
+                actor->parts->pos[0] = actor->target[0] + dx * actor->h8E / dist;
+                actor->parts->pos[1] = actor->target[1] + dy * actor->h8E / dist;
+                actor->parts->pos[2] = actor->target[2] + dz * actor->h8E / dist;
+            }
             break;
         case 0x4B:
             actor->drift[0] = *pc++;

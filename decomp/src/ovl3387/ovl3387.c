@@ -146,24 +146,16 @@ Burst *func_801FC470(void) {
 /* Set up the effect: the screen as two triangles per 16x16 cell over a
  * 320x224 grid (textured from the copy at 0x2c0,0x100), each corner's
  * distance from the centre (variant 1: twice it; otherwise 3/5 of it). */
-#ifdef NON_MATCHING
-/* Same operations. v = row * 16 is written in the column loop so loop.c
- * hoists it to the row body instead of making it a row induction variable
- * (the original recomputes it from the row counter), and the shading bytes
- * are stored r, g, b in order. Remaining: the original also hoists the
- * second triangle's (v - 101) * 16 to the column body (s3) and copies the
- * column offsets (col * 16 - 155/149) * 16 into a frame slot and s4 before
- * the corner loop; here (v - 101) * 16 stays in the corner loop's second arm
- * (8 bytes shorter) and the k/u/u_right/v_bottom registers rotate. Writing
- * the four offsets as row/column variables loses the column induction
- * variables altogether. */
 Burst *func_801FC4A8(Burst *burst) {
+    s32 row, half;
     BurstCell *cell;
     SVECTOR *triangle;
     POLY_GT3 *prim;
     VECTOR square;
-    s32 half, row, col, k;
-    s32 v, u, u_right, v_bottom;
+    s32 col, k;
+    s32 v, u, u_right;
+    s32 second_y;
+    s32 v_bottom;
 
     if (D_801FCE14 != 0) {
         burst->frame = 0;
@@ -192,12 +184,13 @@ Burst *func_801FC4A8(Burst *burst) {
                 triangle = half == 0 ? D_801FCE18 : D_801FCE30;
                 for (k = 0; k != 3; k++) {
                     copyVector(&cell->corner[k], &triangle[k]);
+                    second_y = v - 101;
                     if (half == 0) {
                         cell->corner[k].vx += (col * 16 - 155) * 16;
                         cell->corner[k].vy += (row * 16 - 107) * 16;
                     } else {
                         cell->corner[k].vx += (col * 16 - 149) * 16;
-                        cell->corner[k].vy += (v - 101) * 16;
+                        cell->corner[k].vy += second_y * 16;
                     }
                     copyVector(&square, &cell->corner[k]);
                     func_8004A414(&square, &square);
@@ -230,23 +223,22 @@ Burst *func_801FC4A8(Burst *burst) {
                         prim->v0 = v;
                         prim->u1 = u_right;
                         prim->v1 = v;
+                        prim->u2 = u;
+                        prim->v2 = v_bottom;
                     } else {
                         prim->u0 = u_right;
                         prim->v0 = v;
                         prim->u1 = u_right;
                         prim->v1 = v_bottom;
+                        prim->u2 = u;
+                        prim->v2 = v_bottom;
                     }
-                    prim->u2 = u;
-                    prim->v2 = v_bottom;
                 }
             }
         }
     }
     return burst;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3387/asm/nonmatchings/ovl3387", func_801FC4A8);
-#endif
 
 /* Opcode entry: run the effect on a private 8 KB stack (its frame loop needs
  * more than the battle's). */
