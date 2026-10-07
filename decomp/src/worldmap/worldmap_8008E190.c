@@ -727,12 +727,12 @@ s32 func_8008E76C(s32 index) {
         break;
     case 0x2A:
         if (--actor->wait < 0) {
-            D_8006F94E = 0x50;
+            D_8006F94E.scene = 0x50;
             D_8006F954[0] = 1;
             D_8009D554 = 0;
             D_8009D7CC = 0;
             D_8009BBC4 = 1;
-            D_8006F950 = D_8009BD38.vy;
+            D_8006F94E.heading = D_8009BD38.vy;
         }
         goto circle;
     case 0x30:
@@ -771,12 +771,12 @@ s32 func_8008E76C(s32 index) {
         break;
     case 0x32:
         if (--actor->wait < 0) {
-            D_8006F94E = 0x120;
+            D_8006F94E.scene = 0x120;
             D_8006F954[0] = 6;
             D_8009D554 = 0;
             D_8009D7CC = 0;
             D_8009BBC4 = 1;
-            D_8006F950 = D_8009BD38.vy;
+            D_8006F94E.heading = D_8009BD38.vy;
         }
         goto walk;
     case 0x34:
@@ -850,12 +850,12 @@ s32 func_8008E76C(s32 index) {
         goto glide;
     case 0x39:
         if (--actor->wait < 0) {
-            D_8006F94E = 0x1F0;
+            D_8006F94E.scene = 0x1F0;
             D_8009D554 = 0;
             D_8009D7CC = 0;
             D_8006F954[0] = 0;
             D_8009BBC4 = 1;
-            D_8006F950 = D_8009BD38.vy;
+            D_8006F94E.heading = D_8009BD38.vy;
         }
     glide:
         actor->position.vx += actor->motion.vx * 8;

@@ -104,16 +104,20 @@ ShatterTask *func_801E82EC(void) {
 /* Set up the shatter: the screen as two triangles per 32x32 cell over a
  * 320x224 grid (textured from the copy at 0x2c0,0x100), each cell 0x2000
  * away at its place on the grid.
- * NON_MATCHING: the original frame is 0xb0 (0x10-0x47 never accessed) and
- * its column loop reads the row's two heights and col * 0x20 from copies of
- * the strength-reduced row/column values (spilled, like the caller-saved
- * t0-t5 around each call); here those values are used directly, so the
- * frame is 0x70 and the spills differ. */
+ * NON_MATCHING: the original also hoists the two row heights (trans.vy) out
+ * of the column loop into spilled copies (0x4c/0x50); here GCC's loop
+ * threshold is used up by the nine moved insns of the half offset
+ * (half * 0x21e8), so both heights stay strength-reduced row values and the
+ * frame is 0xa8 instead of 0xb0. Computing the heights before `cell`, or a
+ * per-half grid pointer, moves them but then loses the half-offset hoist. */
 #ifdef NON_MATCHING
 ShatterTask *func_801E8320(ShatterTask *task) {
+    MATRIX m;      /* unused in the original; with pos and angle reserves 0x38 bytes */
+    VECTOR pos;
+    SVECTOR angle;
     ShatterCell *cell;
     POLY_FT3 *prim;
-    s32 half, row, col, k;
+    s32 half, row, col, k, x;
     u8 u, v, u_right, v_bottom;
 
     task->frame = 0;
@@ -140,13 +144,14 @@ ShatterTask *func_801E8320(ShatterTask *task) {
                 v_bottom = v + 0x20;
                 for (k = 0; k != 2; k++) {
                     prim = &cell->prim[k];
+                    x = col * 0x20;
                     SetPolyFT3(prim);
                     SetShadeTex(prim, 0);
                     prim->r0 = 0x80;
                     prim->g0 = 0x80;
                     prim->b0 = 0x80;
                     prim->code |= 2;
-                    prim->tpage = GetTPage(2, 1, col * 0x20 + 0x2C0, 0x100);
+                    prim->tpage = GetTPage(2, 1, x + 0x2C0, 0x100);
                     if (half == 0) {
                         prim->u0 = u;
                         prim->v0 = v;

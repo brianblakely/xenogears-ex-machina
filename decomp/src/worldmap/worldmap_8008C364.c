@@ -794,9 +794,9 @@ s32 func_8008DF0C(s32 index) {
 
 /* Restore the saved vehicle position (world units to 20.12). */
 void func_8008DFF4(VECTOR *position) {
-    position->vx = D_8006EE54.unk60 << 12;
-    position->vy = D_8006EE54.unk62 << 12;
-    position->vz = D_8006EE54.unk64 << 12;
+    position->vx = (s16)D_8006EE54.unk60 << 12;
+    position->vy = (s16)D_8006EE54.unk62 << 12;
+    position->vz = (s16)D_8006EE54.unk64 << 12;
 }
 
 /* Save the vehicle position in world units. */

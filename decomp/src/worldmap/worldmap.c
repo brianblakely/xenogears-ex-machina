@@ -3,14 +3,11 @@
 /* Overlay entry: set up the display, start a new game's world state if none
  * is set, enter the requested mode and run its main loop until the world
  * map is left, then hand over to the next scene. */
-/* NON_MATCHING: with the gears set in index order the new-game stores are
- * placed as the original's except 0x400 (D_8006F94E, stored late here) and
- * 0x7580 (a3 there); the original stores 0xFF00 to the s16 unk62 as a
- * positive constant, addresses the flag word after the setup calls
- * directly (through a3 here), reloads D_8009D7CC after the loop test and
- * reads the next scene's word 5 after storing word 4. Storing 0xFF00
- * through STATE_U16(0xE) gives the original's ori; moving the x = 0x7580
- * store up after unk64 puts 0x7580 in a3 loaded early but stores x early. */
+/* NON_MATCHING: only the new-game block and the mode read differ. The
+ * original loads 0x400 (a1) and 0x7580 (a3) early and stores the two gear
+ * 9s after the zeroed bytes, where here 0x7580 takes v1 after them; and
+ * after the setup calls it addresses the flag word directly, where here
+ * the load and store share its address in a3. */
 #ifdef NON_MATCHING
 void func_80070CFC(void) {
     void (*step)(void);
@@ -26,9 +23,9 @@ void func_80070CFC(void) {
     InitGeom();
     D_800591AE = 1;
     if (D_8006F954[0] == 0) {
-        D_8006F952 = 0xFFF;
-        D_8006F950 = 0xC00;
-        D_8006F94E = 0x400;
+        D_8006F94E.area = 0xFFF;
+        D_8006F94E.heading = 0xC00;
+        D_8006F94E.scene = 0x400;
         D_8006F954[0] = 1;
         D_8006EE54.flags = 0x4003;
         D_8006EE54.unk60 = 0x6680;
@@ -82,18 +79,17 @@ void func_80070CFC(void) {
     }
     D_8009BBC4 = 0;
     mode = D_8006F954[0] & 0x7FFF;
-    D_8009BD0C = (D_8006F94E & 0x3FFF) - 0x400;
-    D_8009D3D4 = D_8006F952;
-    D_8009C584 = D_8006F950;
+    D_8009BD0C = (D_8006F94E.scene & 0x3FFF) - 0x400;
+    D_8009D3D4 = D_8006F94E.area;
+    D_8009C584 = D_8006F94E.heading;
     D_8009C5A8 = mode;
     D_8006F954[0] = mode;
     func_80071B9C(mode, D_8006EF64[0]);
     step = D_8009A058[D_8009C5A8].enter;
-    if (step == NULL) {
-        goto check;
+    if (step != NULL) {
+        step();
     }
-    goto run;
-    do {
+    while (D_8009D7CC >= 2) {
         D_8009A058[D_8009C5A8].start();
         func_80097800();
         DrawSync(0);
@@ -102,10 +98,8 @@ void func_80070CFC(void) {
         D_8009C894 = D_8009D7CC;
         func_800712D0();
         step = D_8009A058[D_8009C5A8].leave;
-    run:
         step();
-    check:;
-    } while (D_8009D7CC >= 2);
+    }
     switch (D_8009D7CC) {
     case 0:
         func_800199CC(1);
@@ -114,8 +108,8 @@ void func_80070CFC(void) {
             if ((s16)D_8009D7D8->pad == 3) {
                 func_80094364(&D_8009D55C.target, 3, D_8006EF64[0]);
             }
-            D_8006F950 = D_8009BD38.vy;
-            D_8006F94E = ((s16 *)D_8009D7D8->data)[4];
+            D_8006F94E.scene = ((s16 *)D_8009D7D8->data)[4];
+            D_8006F94E.heading = D_8009BD38.vy;
             D_8006F954[0] = ((s16 *)D_8009D7D8->data)[5];
         }
         D_8006EF68 = D_8009BD0C + 0x400;

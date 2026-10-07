@@ -1105,7 +1105,7 @@ void func_800758C0(void) {
     s32 i;
 
     D_8006EE54.unk6A = 1;
-    D_8006F950 = (D_8009BD38.vy + 0x2000) & 0x3FFF;
+    D_8006F94E.heading = (D_8009BD38.vy + 0x2000) & 0x3FFF;
     for (i = 0; i < 3; i++) {
         (&D_8006EE54.unk70)[i] = (&D_8006F8E5)[i];
     }
@@ -1806,10 +1806,10 @@ void func_80077480(void) {
     func_800320E8(D_8009BCB0[1]);
     func_800320E8(D_8009C180);
     func_800976A0();
-    D_8006F94E = 0x11;
+    D_8006F94E.scene = 0x11;
     D_8006F954[0] = 7;
     D_8009BBC4 = 1;
-    D_8006F950 = D_8009BD38.vy;
+    D_8006F94E.heading = D_8009BD38.vy;
 }
 
 /* Start a scripted camera looking along the player's heading from above. */
@@ -1985,10 +1985,10 @@ void func_80077CC0(void) {
     func_800320E8(D_8009BCB0[1]);
     func_800320E8(D_8009C180);
     func_800976A0();
-    D_8006F94E = 0x10E;
+    D_8006F94E.scene = 0x10E;
     D_8006F954[0] = 0;
     D_8009BBC4 = 1;
-    D_8006F950 = D_8009BD38.vy;
+    D_8006F94E.heading = D_8009BD38.vy;
 }
 
 /* Start a scripted camera: reset the actor and camera, play a sound. */
