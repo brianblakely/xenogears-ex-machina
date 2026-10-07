@@ -2727,20 +2727,15 @@ void func_80077DAC(void) {
     func_800A31E8();
 }
 
-#ifdef NON_MATCHING
 /* -1 when the field may leave (800adbd0 is 1, 800b2344 clear, and the
  * controlled actor has flag 0x800), else 0. */
 s32 func_80077E10(void) {
-    s32 result = 0;
-
-    if (D_800ADBD0 == 1 && D_800B2078.jump_mode == 0) {
-        result = -((D_800AF880.components.descriptors[D_800B2078.controlled].actor->flags & 0x800) != 0);
+    if (D_800ADBD0 == 1 && D_800B2078.jump_mode == 0
+        && (D_800AF880.components.descriptors[D_800B2078.controlled].actor->flags & 0x800)) {
+        return -1;
     }
-    return result;
+    return 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80077E10);
-#endif
 
 extern s32 D_8004F310;
 extern s32 D_8004F2F8;
@@ -3076,24 +3071,18 @@ s32 func_80078B5C(void) {
     }
 }
 
-#ifdef NON_MATCHING
-/* -1 while a battle menu, the disc, the music, a battle request or a pending
- * transition is busy; otherwise -1 only when 800adbc4 is not 0xff. */
+/* 0 when no battle menu, disc, music, battle request or pending transition
+ * is busy and 800adbc4 is 0xff; otherwise -1. */
 s32 func_80078BC8(void) {
-    s32 result;
-
     if (D_800ADB2C != 0) {
         return -1;
     }
-    result = -1;
-    if (func_800286CC() == 0 && D_8004F308 == 0 && D_800ADB90 == 0 && D_800ADB34 == 0) {
-        result = -(D_800ADBC4 != 0xFF);
+    if (func_800286CC() == 0 && D_8004F308 == 0 && D_800ADB90 == 0 && D_800ADB34 == 0
+        && D_800ADBC4 == 0xFF) {
+        return 0;
     }
-    return result;
+    return -1;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80078BC8);
-#endif
 
 /* With 800b2344 set, brighten the 256x32 text strip at (0, 1e0) in VRAM
  * (every non-transparent pixel gains 0x0c63) and disable both buffers'
