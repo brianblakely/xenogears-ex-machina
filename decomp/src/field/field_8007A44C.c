@@ -1813,32 +1813,13 @@ extern u16 D_800ADF54[4][2];   /* text VRAM position per window */
 void func_80032F54(TextBox *text, s32 vram_x, s32 vram_y, s32 x, s32 y, s32 columns, s32 rows);
 s32 func_80033728(void *messages, void *message);
 
-#ifdef NON_MATCHING
 /* Open dialogue window `w` for `message` at (x, y) with `columns` x `rows`
  * characters for actor `owner`, spoken by `speaker`: take a message slot,
  * keep event variables 16-1c, find where the window flies in from (mode 2:
  * the screen top, 3: its own centre, else above the speaker), show the
  * owner's portrait unless disabled, set up the text and the opening slide.
- * Returns -1 (clearing the window's +414) when the speaker has layer flag
- * 0x200 and the style lacks bit 1, else 0.
- * NON_MATCHING: every instruction matches except the frame size: the
- * original's frame is 0x70 (ours 0x68). Its extra 8 bytes sit above the
- * x/y/message spill slots (0x28/0x30/0x38) and are never accessed, so they
- * look like a fourth spill slot that reload allocated and then left unused;
- * a local declared in C would land below the spill slots instead.
- * Reload spills $t0 here (for a stack-argument reload); alter_reg gives a
- * slot to every pseudo kicked out of a spilled register, so the original
- * probably had one more pseudo in $t0 after global-alloc that was then
- * retried into another register, leaving its slot unused.
- * Correction: spill_hard_reg only gives a slot to a pseudo whose retry
- * failed. 8007e1c0's seven never-accessed slots (which our build now
- * reproduces) come from combine instead: when it folds an HImode load
- * plus its sll/sra sign extension into one lh, it leaves a (use (reg))
- * of the dead shift temporary; that pseudo has no hard register, gets a
- * stack slot and is never referenced. The extra 8 bytes here are most
- * likely one more such fold (an s16 value used both as a halfword and
- * sign-extended); routing text_speed through an s16 local does not
- * produce it. */
+ * The signed opening result is -1 (clearing the window's +414) when the
+ * speaker has layer flag 0x200 and the style lacks bit 1, else 0. */
 s32 func_8007F8DC(s16 x, s16 y, void *message, s32 w, s32 columns, s32 rows, s32 owner, s32 speaker,
                   s32 mode, s32 turned, s32 flags) {
     s32 target_x;
@@ -1848,6 +1829,7 @@ s32 func_8007F8DC(s16 x, s16 y, void *message, s32 w, s32 columns, s32 rows, s32
     s32 slot;
     s32 extra;
     s32 i;
+    s16 opening_result;
 
     y -= 8;
     progress = D_800AF880.components.descriptors[owner].actor->unk84;
@@ -1935,15 +1917,14 @@ s32 func_8007F8DC(s16 x, s16 y, void *message, s32 w, s32 columns, s32 rows, s32
         D_800C2698[w].slide_step[0] = -D_800C2698[w].slide[0].value;
         D_800C2698[w].slide_step[1] = -D_800C2698[w].slide[1].value;
     }
+    opening_result = 0;
     if ((D_800AF880.components.descriptors[speaker].actor->layer_flags & 0x200) && !(style & 1)) {
         D_800C2698[w].cleared = 0;
-        return -1;
+        opening_result = -1;
+        return opening_result;
     }
-    return 0;
+    return opening_result;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8007F8DC);
-#endif
 
 /* Close every dialogue window that is not busy. */
 void func_8007FFE8(void) {
