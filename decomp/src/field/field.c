@@ -442,8 +442,8 @@ void func_80070CC8(void) {
 
     size = D_8005A4E0->sizes[BUNDLE_PALETTES] + 0x10;
     palettes = func_80031BDC(size, 1);
-    entry = palettes;
     func_8007008C(size, BUNDLE_COMPONENT(BUNDLE_PALETTES), palettes);
+    entry = palettes;
     count = *entry++;
     for (i = 0; i < count; i++) {
         func_800771F8((u32 *)(*entry++ + (s32)palettes));
@@ -451,8 +451,8 @@ void func_80070CC8(void) {
 
     size = D_8005A4E0->sizes[BUNDLE_IMAGES] + 0x10;
     images = func_80031BDC(size, 0);
-    entry = images;
     func_8007008C(size, BUNDLE_COMPONENT(BUNDLE_IMAGES), images);
+    entry = images;
     count = *entry;
     for (i = 0; i < count; i++) {
         x = D_800B1F78.slot[i].x;
@@ -1201,9 +1201,7 @@ void func_80072D74(void) {
 /* Per-frame camera update: in mode 1 follow the scripted target and eye
  * interpolations; in modes 0 and 2 follow the controlled actor (mode 2
  * returns to 0 once both goals are reached or after 64 frames), keeping
- * the eye above the floor; then move the camera toward its goals.
- * NON_MATCHING: the original addresses the camera members without a shared base register. */
-#ifdef NON_MATCHING
+ * the eye above the floor; then move the camera toward its goals. */
 void func_80073230(void) {
     VECTOR position;
     VECTOR normal;
@@ -1221,8 +1219,16 @@ void func_80073230(void) {
     case 0:
         D_800ADBB0 = 0;
         if (!(D_800ADBAC & 3)) {
-            D_800AF880.target_a = D_800AF880.target_a < 9 ? 8 : D_800AF880.target_a - 2;
-            D_800AF880.target_b = D_800AF880.target_b < 9 ? 8 : D_800AF880.target_b - 2;
+            if (D_800AF880.target_a < 9) {
+                D_800AF880.target_a = 8;
+            } else {
+                D_800AF880.target_a -= 2;
+            }
+            if (D_800AF880.target_b < 9) {
+                D_800AF880.target_b = 8;
+            } else {
+                D_800AF880.target_b -= 2;
+            }
         }
         D_800ADBAC++;
     follow:
@@ -1234,7 +1240,7 @@ void func_80073230(void) {
         if (!(D_800AF880.flags & 0x4000)) {
             func_8007B1C4(WHOLE(D_800AF880.eye_goal.vx), WHOLE(D_800AF880.eye_goal.vz),
                           D_800AF880.components.layer_count - 1, &floor, &normal);
-            if (floor.vy < WHOLE(D_800AF880.eye_goal.vy)) {
+            if (WHOLE(D_800AF880.eye_goal.vy) > floor.vy) {
                 D_800AF880.eye_goal.vy = floor.vy << 16;
             }
         }
@@ -1282,9 +1288,6 @@ void func_80073230(void) {
     func_80072D74();
     D_800AF880.heading_angles.vy &= 0xFFF;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80073230);
-#endif
 
 /* Rotate `point` in X/Z about `center` by the camera heading angles. */
 void func_80073684(VECTOR *point, VECTOR *center) {
@@ -1553,9 +1556,7 @@ void func_8007409C(MATRIX *to, MATRIX *from) {
  * black), look at it from the camera's height and distance, turn the
  * needle toward the controlled actor's heading, and draw the needle,
  * letters, ring and pointer quads; also leave the upright view in the
- * model pass matrix.
- * NON_MATCHING: the original keeps the matrix addresses in two more callee-saved registers in the letter loop. */
-#ifdef NON_MATCHING
+ * model pass matrix. */
 void func_80074108(void) {
     MATRIX base;
     MATRIX look;
@@ -1568,6 +1569,9 @@ void func_80074108(void) {
     s32 i;
     s32 j;
     u8 blocked;
+    s16 view;
+    s16 *offset_x;
+    s16 *offset_z;
 
     blocked = D_800AF880.heading_blocks[1];
     for (i = 0; i < 8; i++) {
@@ -1597,7 +1601,8 @@ void func_80074108(void) {
     base.t[2] = 0x80;
     SetRotMatrix(&base);
     SetTransMatrix(&base);
-    D_800ADB4A = D_800AF880.components.descriptors[D_800B2078.unk233E].actor->heading_goal + (D_800AF880.view_angle + 0x400);
+    view = D_800AF880.view_angle + 0x400;
+    D_800ADB4A = D_800AF880.components.descriptors[D_800B2078.unk233E].actor->heading_goal + view;
     D_800ADB48 = func_80073988(D_800ADB48, D_800ADB4A, 0x40);
     angles.vx = 0;
     angles.vy = D_800ADB48;
@@ -1631,8 +1636,10 @@ void func_80074108(void) {
     if (D_800B2078.script_control[1] == 0 && D_800ADC18 == 0 && D_8004F378 == 0) {
         for (i = 16; i < 20; i++) {
             func_80070594(&turn);
-            turn.t[0] = D_800ADC34[i - 16].vx;
-            turn.t[2] = D_800ADC34[i - 16].vy;
+            offset_x = &D_800ADC34[i - 16].vx;
+            offset_z = &D_800ADC34[i - 16].vy;
+            turn.t[0] = *offset_x;
+            turn.t[2] = *offset_z;
             CompMatrix(&base, &turn, &placed);
             func_8007409C(&placed, &tilt);
             func_8007AC58(D_800C426C->overlay_ot, &D_800B06BC[i], &placed, D_800ADB08);
@@ -1648,9 +1655,6 @@ void func_80074108(void) {
     SetGeomOffset(0xA0, 0x70);
     SetGeomScreen(D_800AF880.projection);
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80074108);
-#endif
 
 /* Whether any shown descriptor (flag 0x40 clear) has flag 0x8000. */
 s32 func_8007469C(void) {
@@ -2725,20 +2729,15 @@ void func_80077DAC(void) {
     func_800A31E8();
 }
 
-#ifdef NON_MATCHING
 /* -1 when the field may leave (800adbd0 is 1, 800b2344 clear, and the
  * controlled actor has flag 0x800), else 0. */
 s32 func_80077E10(void) {
-    s32 result = 0;
-
-    if (D_800ADBD0 == 1 && D_800B2078.jump_mode == 0) {
-        result = -((D_800AF880.components.descriptors[D_800B2078.controlled].actor->flags & 0x800) != 0);
+    if (D_800ADBD0 == 1 && D_800B2078.jump_mode == 0
+        && (D_800AF880.components.descriptors[D_800B2078.controlled].actor->flags & 0x800)) {
+        return -1;
     }
-    return result;
+    return 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80077E10);
-#endif
 
 extern s32 D_8004F310;
 extern s32 D_8004F2F8;
@@ -3074,24 +3073,18 @@ s32 func_80078B5C(void) {
     }
 }
 
-#ifdef NON_MATCHING
-/* -1 while a battle menu, the disc, the music, a battle request or a pending
- * transition is busy; otherwise -1 only when 800adbc4 is not 0xff. */
+/* 0 when no battle menu, disc, music, battle request or pending transition
+ * is busy and 800adbc4 is 0xff; otherwise -1. */
 s32 func_80078BC8(void) {
-    s32 result;
-
     if (D_800ADB2C != 0) {
         return -1;
     }
-    result = -1;
-    if (func_800286CC() == 0 && D_8004F308 == 0 && D_800ADB90 == 0 && D_800ADB34 == 0) {
-        result = -(D_800ADBC4 != 0xFF);
+    if (func_800286CC() == 0 && D_8004F308 == 0 && D_800ADB90 == 0 && D_800ADB34 == 0
+        && D_800ADBC4 == 0xFF) {
+        return 0;
     }
-    return result;
+    return -1;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80078BC8);
-#endif
 
 /* With 800b2344 set, brighten the 256x32 text strip at (0, 1e0) in VRAM
  * (every non-transparent pixel gains 0x0c63) and disable both buffers'
@@ -3307,18 +3300,17 @@ extern u8 D_80065ADC[16];   /* encounter kind weights */
 void func_800199CC(s32 mode);
 void func_80281204(s32 kind);
 
-#ifdef NON_MATCHING
 /* Count down the random-encounter steps while encounters are possible; on a
  * step whose drawn number (800b22a0) reaches zero, pick an encounter kind by
- * the weights at 80065adc and request battle with its music.
- * Does not match: the original reloads the step count on every pass of
- * the zero search, and schedules one early constant differently. */
-void func_80079288(void) {
+ * the weights at 80065adc and request battle with its music. The original
+ * is an int function (implicit int) that returns no value: its epilogue keeps
+ * $v0 live, so no delay slot is filled with a $v0 write. */
+s32 func_80079288(void) {
     s32 start[16];
+    s32 spare[2]; /* unused in the original; reserves 8 bytes */
     u8 *weights;
     s32 total;
     s32 sum;
-    s32 roll;
     s32 found;
     s32 i;
 
@@ -3336,12 +3328,12 @@ void func_80079288(void) {
     }
     for (i = 0; i < D_800B2078.unk229C; i++) {
         if (D_800B2078.unk22A0[i] == 0) {
+            D_800B2078.unk22A0[i] = 0xFFFF;
             goto draw;
         }
     }
     return;
 draw:
-    D_800B2078.unk22A0[i] = 0xFFFF;
     weights = D_80065ADC;
     total = 0;
     for (i = 0; i < 16; i++) {
@@ -3352,10 +3344,10 @@ draw:
         start[i] = sum;
         sum += weights[i];
     }
-    roll = (rand() * (total + 1)) >> 15;
+    total = (rand() * (total + 1)) >> 15;
     found = 0;
     for (i = 15; i >= 0; i--) {
-        if (weights[i] != 0 && start[i] < roll) {
+        if (weights[i] != 0 && start[i] < total) {
             found++;
             break;
         }
@@ -3374,9 +3366,6 @@ draw:
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80079288);
-#endif
 
 extern s32 D_8004F30C;
 extern s32 D_8004F310;

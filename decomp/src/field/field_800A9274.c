@@ -908,42 +908,33 @@ void func_800AB808(void) {
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800A9274", func_800AB808);
 #endif
 
-#ifdef NON_MATCHING
 /* Show the current map's picture while its item is held: park the VRAM
  * at (300, 100), load the picture, fade it in, hold until the button, fade
- * it out and restore the VRAM. Differs in addressing the entry: the
- * original keeps the table base and the entry offset apart. */
+ * it out and restore the VRAM. */
 void func_800ABA98(void) {
     RECT rect;
-    Picture *table;
-    Picture *entry;
     u8 *saved;
     u32 *file;
     s32 picture;
     s32 i;
 
-    table = D_800AF47C;
-    i = 0;
-    entry = table;
-    for (;;) {
-        if (entry->map == 0xFFFF) {
+    for (i = 0;; i++) {
+        if (D_800AF47C[i * PICTURE_WORDS + PICTURE_MAP] == 0xFFFF) {
             return;
         }
-        if ((D_8004F34C & 0x3FFF) == entry->map) {
+        if ((D_8004F34C & 0x3FFF) == D_800AF47C[i * PICTURE_WORDS + PICTURE_MAP]) {
             break;
         }
-        entry++;
-        i++;
     }
-    if (func_800AB328(table[i].item) == -1) {
+    if (func_800AB328(D_800AF47C[i * PICTURE_WORDS + PICTURE_ITEM]) == -1) {
         return;
     }
-    picture = table[i].picture;
+    D_800C3914 = D_800AF47C[i * PICTURE_WORDS + PICTURE_UNK04];
+    D_800C3A18 = D_800AF47C[i * PICTURE_WORDS + PICTURE_UNK08];
+    picture = D_800AF47C[i * PICTURE_WORDS + PICTURE_FILE];
+    D_800AFE78 = D_800AF47C[i * PICTURE_WORDS + PICTURE_X];
+    D_800AFE7C = D_800AF47C[i * PICTURE_WORDS + PICTURE_Y];
     setRECT(&rect, 0x300, 0x100, 0xA0, 0x100);
-    D_800C3914 = table[i].unk04;
-    D_800C3A18 = table[i].unk08;
-    D_800AFE78 = table[i].x;
-    D_800AFE7C = table[i].y;
     saved = func_80031BDC(0x14000, 0);
     StoreImage(&rect, (u_long *)saved);
     DrawSync(0);
@@ -954,7 +945,7 @@ void func_800ABA98(void) {
     func_80028A60(0);
     func_80070340(file, 0x300, 0x100, 0, 0xF6, 0, 0);
     func_800320E8(file);
-    if (table[i].pieces == 1) {
+    if (D_800AF47C[i * PICTURE_WORDS + PICTURE_PIECES] == 1) {
         func_800AB808();
     }
     func_800AAF80();
@@ -981,9 +972,6 @@ void func_800ABA98(void) {
     DrawSync(0);
     func_800320E8(saved);
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800A9274", func_800ABA98);
-#endif
 
 typedef struct {
     DR_MODE modes[5][2];

@@ -64,7 +64,7 @@ typedef struct {
 
 extern FormatSpec D_8005A1CC;
 
-s32 func_80036718(s32 target, char *format, va_list args); /* the console printf core */
+s32 func_80036718(s32 target, const char *format, va_list args); /* the console printf core */
 void func_8003700C(char *format, ...); /* printf to the console */
 void func_80037324(u_long *ot);            /* flush the debug text into ot */
 void func_8003747C(s32 value);

@@ -31,9 +31,10 @@ typedef struct {
     s32 data[0x14000 / 4];
 } PartySprite;
 
-/* The movie request block at 800c3a20. The instructions that fill it
- * address it as one object (their stores are not moved past loads through
- * the actor pointer), although field.h declares its halfwords one by one. */
+/* The movie request block at 800c3a20, one object: the instructions that
+ * fill it keep their stores ahead of loads through the actor pointer, and
+ * the movie player (800a7c58) hoists one base for its fields. field.h
+ * still names some halfwords one by one for the older users. */
 typedef struct {
     s16 file;        /* 20 */
     u16 x;           /* 22: display position */
@@ -51,7 +52,8 @@ typedef struct {
     u16 unk3A;       /* 3A */
 } FieldMovieRequest;
 
-#define FIELD_MOVIE (*(FieldMovieRequest *)&D_800C3A20)
+extern FieldMovieRequest D_800C3A20;
+#define FIELD_MOVIE D_800C3A20
 
 extern s32 D_800ADB70; /* movie requested */
 

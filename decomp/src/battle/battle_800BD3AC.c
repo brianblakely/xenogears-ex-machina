@@ -1043,24 +1043,18 @@ void func_800BF7C8(BattleSprite *sprite, s32 threshold, void (*callback)(BattleS
     sprite->motion.word |= 0x20;
 }
 
-#ifdef NON_MATCHING
-/* Make slot's sprite act on the sprite of slot target alone. Nonmatching:
- * the original keeps the store of D_800D3634 before the sprite's, and
- * allocates the registers otherwise. */
+/* Make slot's sprite act on the sprite of slot target alone. */
 void func_800BF85C(s32 slot, s32 target) {
     BattleSprite *sprite = BATTLE_AREA.sprites[slot];
 
     if (sprite != NULL) {
         D_800C3E1C = sprite;
-        D_800D3634 = 1 << target;
         sprite->partner = BATTLE_AREA.sprites[target];
-        D_800D363C[1] = NULL;
+        D_800D3634 = 1 << target;
         D_800D363C[0] = BATTLE_AREA.sprites[target];
+        D_800D363C[1] = NULL;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800BD3AC", func_800BF85C);
-#endif
 
 /* Move sprite's target to the next of the event's targets. */
 void func_800BF8CC(BattleSprite *sprite) {

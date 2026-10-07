@@ -555,35 +555,29 @@ void func_800B4F88(BattleSprite *sprite, s32 index, MATRIX *m) {
     }
 }
 
-#ifdef NON_MATCHING
 /* The offsets of the sprite's five trail anchors (D_800C356C), mirrored with
  * the sprite and scaled, as points (x, y, 0) of out, when it is drawn one
  * sided. */
 void func_800B50D4(BattleSprite *sprite, SVECTOR *out) {
-    SpriteAnchor *anchor;
     s32 i;
     s32 x;
     s32 y;
 
     if ((sprite->render.word & 3) == 1 && sprite->view != NULL && sprite->view->anchors != NULL) {
-        for (i = 0; i != 5; i++) {
-            anchor = &sprite->view->anchors[D_800C356C[i]];
-            x = anchor->x;
-            y = anchor->y;
+        for (i = 0; i != 5; i++, out++) {
+            x = sprite->view->anchors[D_800C356C[i]].x;
+            y = sprite->view->anchors[D_800C356C[i]].y;
             if ((sprite->motion.word >> 2) & 1) {
                 x = -x;
             }
             x = x * sprite->scale / 8192;
             y = y * sprite->scale / 8192;
-            out[i].vx = x;
-            out[i].vy = y;
-            out[i].vz = 0;
+            out->vx = x;
+            out->vy = y;
+            out->vz = 0;
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B3F04", func_800B50D4);
-#endif
 
 /* Draw one segment of a sprite trail (800C08CC) from point a to point b: a
  * light line, and when on screen a quad as wide as the trail (D_800C3E9C)

@@ -248,7 +248,11 @@ void func_801C5A40(void) {
 
 /* Set up label `index`'s two quads: mode 0 maps the text rendered for the
  * command column at row + index; otherwise the list layout, dimmed unless
- * bit 7 is set, with the highlight from the low bits. */
+ * bit 7 is set, with the highlight from the low bits.
+ * NON_MATCHING: index and column swap callee-saved registers (the original
+ * has index in fp, column in s5: global allocation ranks column above i and
+ * index last), and the original stores the CLUT through a v1 copy of poly
+ * made in the highlight test's delay slot. */
 #ifdef NON_MATCHING
 void func_801C5ABC(MenuLabel *label, s32 index, s32 row, s32 mode) {
     POLY_FT4 *poly;
@@ -256,10 +260,10 @@ void func_801C5ABC(MenuLabel *label, s32 index, s32 row, s32 mode) {
     s32 line;
     s32 u;
     s32 i;
-    s32 dim;
+    u8 dim;
 
-    i = 0;
     column = index & 1;
+    i = 0;
     line = index / 2;
     u = (line & 1) << 7;
     poly = label->poly;
@@ -292,7 +296,7 @@ loop:
             poly->b0 = dim;
         }
         label->highlight = (u8)(mode & 0x7F) - 1;
-        poly->tpage = dim | GetTPage(0, 0, 0x180, 0x80);
+        poly->tpage = GetTPage(0, 0, 0x180, 0x80) | dim;
         poly->u0 = column * 0x60;
         poly->v0 = line * 13 + row;
         poly->u1 = column * 0x60 + label->width;
@@ -1690,7 +1694,12 @@ u8 func_801CB2F0(u8 *codes) {
 /* The name entry loop: zoom the view in, open the grid, move the cursor over
  * the character grid (skipping blank cells) and edit the name until it is
  * confirmed with a non-empty name; then store it for the three characters
- * of the portrait list (trailing blanks cut), and close the screen. */
+ * of the portrait list (trailing blanks cut), and close the screen.
+ * NON_MATCHING: the register allocation differs (2684 of 2688 bytes): the
+ * original gives running fp and 15 s5, leaving the 0xCF constant spilled
+ * (reloaded into t3 at each compare, 0x88-byte frame); here 0xCF gets fp and
+ * running is spilled to the stack (0x90-byte frame), and 15, the 1/6
+ * multiplier and dirty rotate through s5-s7. */
 void func_801CB33C(void) {
     u8 codes[24];
     u8 name[24];
@@ -1788,7 +1797,8 @@ void func_801CB33C(void) {
             break;
         case 0:
             col++;
-            c = D_801CBEC0[(row + (col / 6) * 9) * 6 + col % 6];
+            index = (row + (col / 6) * 9) * 6 + col % 6;
+            c = D_801CBEC0[index];
             if (c == 0xFF) {
                 col = 0;
             } else if (c == 0xF || c == 0xCF) {
@@ -1799,7 +1809,8 @@ void func_801CB33C(void) {
             if (--col < 0) {
                 col = 22;
             } else {
-                c = D_801CBEC0[(row + (col / 6) * 9) * 6 + col % 6];
+                index = (row + (col / 6) * 9) * 6 + col % 6;
+                c = D_801CBEC0[index];
                 if (c == 0xF || c == 0xCF) {
                     col--;
                 }
@@ -1809,7 +1820,8 @@ void func_801CB33C(void) {
             if (++row >= 5) {
                 row = 0;
             }
-            c = D_801CBEC0[(row + (col / 6) * 9) * 6 + col % 6];
+            index = (row + (col / 6) * 9) * 6 + col % 6;
+            c = D_801CBEC0[index];
             if (c == 0xCF) {
                 row = 0;
             } else if (c == 0xF) {
@@ -1820,7 +1832,8 @@ void func_801CB33C(void) {
             if (--row < 0) {
                 row = 4;
             }
-            c = D_801CBEC0[(row + (col / 6) * 9) * 6 + col % 6];
+            index = (row + (col / 6) * 9) * 6 + col % 6;
+            c = D_801CBEC0[index];
             if (c == 0xF || c == 0xCF) {
                 row--;
             }

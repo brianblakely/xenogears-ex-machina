@@ -41,7 +41,7 @@ long SpuSetTransferMode(long mode);
 typedef void (*SpuTransferCallbackProc)(void);
 SpuTransferCallbackProc SpuSetTransferCallback(SpuTransferCallbackProc func);
 void SpuGetVoiceEnvelopeAttr(int voice, long *status, short *level);
-void SpuSetNoiseClock(long clock);
+long SpuSetNoiseClock(long clock);
 long SpuSetIRQ(long on_off);
 long SpuSetReverb(long on_off);
 long SpuInitMalloc(long num, char *top);

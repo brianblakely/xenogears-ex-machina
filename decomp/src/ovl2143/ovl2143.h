@@ -244,7 +244,7 @@ typedef struct {
 /* Two triangles' textured primitives (one per buffer) and their vertex
  * indices (0x58 bytes). */
 typedef struct {
-    u16 index[3];
+    s16 index[3];
     u8 pad6[2];
     POLY_GT3 prim[2];
 } RingPoly;
@@ -515,7 +515,7 @@ void SetSemiTrans(void *p, s32 abe);            /* SetSemiTrans */
 void SetPolyFT4(POLY_FT4 *p);                 /* SetPolyFT4 */
 
 /* Resident maths. */
-s32 func_8003F8CC(s16 angle);                    /* cosine (4096 = 1.0) */
+s32 func_8003F8CC(s32 angle);                    /* cosine (4096 = 1.0) */
 s32 SquareRoot0(s32 value);                    /* square root */
 
 /* libgte. */
@@ -624,18 +624,18 @@ ModelList *func_801DC22C(u8 *group, ModelList *list);
 ModelPart *func_801DC2D0(ModelList *group, HierarchyLink *links, s32 mode, s32 configure,
                          s16 param0, s16 param1, s16 param2, s16 param3);
 void func_801E1A14(Record24 *record, u16 *table, s16 angle_base, s32 scale, s16 ox, s16 oy, s16 oz,
-                   s16 count, s16 tx, s16 ty, s16 u_span, s16 v_span, s16 clut_x, s16 clut_y, u8 b0,
+                   s32 count, s16 tx, s16 ty, s16 u_span, s16 v_span, s16 clut_x, s16 clut_y, u8 b0,
                    u8 b1, u8 b2, u8 b3, u8 b4, u8 b5);
 void func_801E3534(Actor *actor, SlotPool *pool, s32 *entries, s32 *locals);
 void func_801E8510(Actor *actor);
 
-s16 ratan2(s32 y, s32 x);
-s32 func_8003F8B0(s16 angle);                 /* sine (4096 = 1.0) */
+s32 ratan2(s32 y, s32 x);
+s32 func_8003F8B0(s32 angle);                 /* sine (4096 = 1.0) */
 MATRIX *func_80049ACC(MATRIX *m, MATRIX *scale); /* scale a matrix's columns */
 struct Particle *func_801E0248(struct ParticlePool *pool, s16 semi_trans);
 s16 func_801E1258(ImageAnim *anim, s32 ticks);
 void func_801E22F8(Record24 *record, SVECTOR *light, MATRIX *m, u32 *ot, s32 buffer, s32 scale,
-                   s32 floor);
+                   s16 floor);
 
 void VectorNormal(VECTOR *v0, VECTOR *v1);
 VECTOR *ApplyMatrix(MATRIX *m, SVECTOR *v0, VECTOR *v1);
@@ -683,7 +683,7 @@ s32 func_801E0354(ParticlePool *pool, Particle *particle);
 void func_801E0844(s16 *id, s32 unused);
 ImageAnim *func_801E0A00(ImageAnim *anim, ImageAnim *target, u16 mode, u16 flags, ColorRow *colors,
                          s16 x, s16 y, s16 z, s16 x2, s16 y2, s16 z2, s16 x3, s16 y3, s16 w, s16 h,
-                         u16 speed, s16 divisor, s16 base, FrameCurve curve);
+                         s16 speed, s16 divisor, s16 base, FrameCurve curve);
 void StoreImage(RECT *rect, u16 *pixels);
 s32 DrawSync(s32 mode);
 FrameCurve func_801E34BC(s32 type);
@@ -705,7 +705,7 @@ void func_8003852C(void *bank);              /* release a sound effect bank */
 void MulMatrix2(MATRIX *m, MATRIX *out);  /* out = m * out (rotation) */
 u32 func_801DC5C0(ModelPart *parts, s32 scale);
 u32 func_801DC848(ModelPart *parts, s32 scale);
-s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, u16 arg2, s16 scale);
+s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, s32 tag, s32 scale);
 void func_801E5D44(Actor *actor, SlotPool *pool, s32 arg2);
 void func_801E7298(Actor *actor);
 void func_801E6F64(Sprite *sprite);

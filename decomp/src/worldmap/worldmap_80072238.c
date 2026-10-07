@@ -31,9 +31,7 @@ s32 func_800879E0();
 s32 func_80088C90();
 
 /* Enter the world map: set up the display, load or restore the area, start the
- * subsystems, the music and the area's actors. The C body still differs in
- * scheduling the initial state stores. */
-#ifdef NON_MATCHING
+ * subsystems, the music and the area's actors. */
 void func_80072238(void) {
     RECT rect;
     ActorSpawn *spawn;
@@ -57,14 +55,15 @@ void func_80072238(void) {
     func_80073530();
     func_8009766C();
     D_8009BE4C = D_8009A180;
-    D_8009CCA4 = 2;
-    D_8009D3CC = 4;
     D_8009D804 = 0;
     D_8009CEC0 = 0;
     D_8009C7E8 = 0;
     D_8009BD34 = 0;
     D_8009D144 = 0;
-    D_8009C178 = D_80059198 = 1;
+    D_80059198 = 1;
+    D_8009CCA4 = 2;
+    D_8009D3CC = 4;
+    D_8009C178 = 1;
     D_8009CD40 = func_80086700;
     func_80098044();
     if (D_8009C894 == 0) {
@@ -212,9 +211,6 @@ void func_80072238(void) {
     func_80033698(0x130, 0x1E0);
 }
 
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80072238);
-#endif
 
 /* Leave the world map: stop audio, release actor handles, shut down each
  * subsystem and free the area buffers. */
@@ -456,7 +452,6 @@ void func_80073448(s32 id) {
 }
 
 /* Unpack the area file and resolve its section offsets to pointers. */
-#ifdef NON_MATCHING /* decoded base and spot-block operands differ */
 void func_80073530(void) {
     u8 *block;
     u8 *base;
@@ -467,9 +462,8 @@ void func_80073530(void) {
     block = D_8009C180;
     D_8009C180 = func_80032E88(block, 0);
     func_800320E8(block);
-    block = D_8009C180;
-    base = block;
-    area = (AreaHeader *)block;
+    base = D_8009C180;
+    area = (AreaHeader *)base;
     block = base + area->spots;
     D_8009CD48 = base + area->off8;
     D_8009D308 = base + area->offC;
@@ -480,7 +474,7 @@ void func_80073530(void) {
     D_8009D77C = base + area->off20;
     D_8009D7C8 = base + area->off24;
     for (i = 0; i < 16; i++) {
-        D_8009D73C[i] = base + area->models[i];
+        D_8009D73C[i] = D_8009C180 + area->models[i];
     }
     D_8009D3F4 = (WorldmapSpot *)(block + ((SpotHeader *)block)->spots);
     D_8009BD00 = table = (s32 *)(block + ((SpotHeader *)block)->table);
@@ -489,9 +483,6 @@ void func_80073530(void) {
     D_8009BD00[2] = (s32)block + table[2];
     D_8009BD00[3] = (s32)block + table[3];
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80073530);
-#endif
 
 /* Allocate the two 4 KiB work buffers. */
 void func_8007369C(void) {
@@ -594,11 +585,16 @@ void func_800739B8(void) {
 /* Scroll the horizon texture with the camera yaw, transform the two horizon
  * quads of this buffer and link them, inside their texture windows, into the
  * ordering table. */
-#ifdef NON_MATCHING /* setup scheduling, UV copies and one row-address operand differ */
+/* NON_MATCHING: the original sets up func_8004A92C's arguments first (a0/a1
+ * at the very top) and keeps right and the heading address in t1/t2 (here
+ * t2/t1). Computing u in one expression fixes those two but swaps u and its
+ * store copy (a2/a3) and moves the 0x3F00 stores. */
+#ifdef NON_MATCHING
 void func_80073B04(void) {
     SVECTOR *corners;
     HorizonScratch *scratch;
     PolyFT4 *quad;
+    PolyFT4 *row;
     s32 u;
     s32 right;
     s32 i;
@@ -606,9 +602,10 @@ void func_80073B04(void) {
     s32 otz;
     u32 *ot;
 
+    right = D_8009BD38.vy >> 2;
     corners = D_8009A300[0];
     i = 0;
-    u = (D_8009BD38.vy >> 2) & 0x7F;
+    u = right & 0x7F;
     right = u | 0x80;
     *(u16 *)&D_8009C744[D_8009D7F0].u0 = *(u16 *)&D_8009C744[D_8009D7F0 + 2].u0 = u;
     *(u16 *)&D_8009C744[D_8009D7F0].u1 = *(u16 *)&D_8009C744[D_8009D7F0 + 2].u1 = right;
@@ -630,9 +627,9 @@ void func_80073B04(void) {
     SetTransMatrix(&scratch->view);
     do {
         quad = &D_8009C744[D_8009D7F0];
-        quad = (PolyFT4 *)(offset + (u32)quad);
-        otz = RotTransPers4(&corners[0], &corners[1], &corners[2], &corners[3], (s32 *)&quad->x0,
-                            (s32 *)&quad->x1, (s32 *)&quad->x2, (s32 *)&quad->x3, &scratch->p, &scratch->flag);
+        row = (PolyFT4 *)(offset + (u32)quad);
+        otz = RotTransPers4(&corners[0], &corners[1], &corners[2], &corners[3], (s32 *)&row->x0,
+                            (s32 *)&row->x1, (s32 *)&row->x2, (s32 *)&row->x3, &scratch->p, &scratch->flag);
         i++;
         corners += 4;
         offset += 2 * sizeof(PolyFT4);

@@ -1053,7 +1053,7 @@ extern s32 D_8004F34C; /* current map */
 extern u8 D_800625FC[2][0x22]; /* pad buffers */
 
 /* Field state. */
-extern u8 D_800ADFCC[][2]; /* per music: wave file, release shared bank */
+extern u8 D_800ADFCC[]; /* per music, two bytes: wave file, release shared bank */
 extern s32 D_800AFC54;
 extern void *D_800C3A1C; /* music-wave gather buffer */
 extern s16 D_800ADB54;
@@ -1073,8 +1073,8 @@ extern s32 D_800ADBCC; /* pending party slot */
 extern FieldEventParams D_800B0080;
 extern Record78 D_800B02CC[];
 extern u16 D_800AE060[][2]; /* movie sound timeline: time, sound */
-/* Field movie parameters (800c3a20..800c3a3a), set by the movie events. */
-extern s16 D_800C3A20; /* movie file */
+/* Field movie parameters (800c3a22..800c3a3a) by halfword; the whole
+ * block is D_800C3A20 (FieldMovieRequest, field_script.h). */
 extern u16 D_800C3A22;
 extern u16 D_800C3A24;
 extern u16 D_800C3A26;

@@ -6,19 +6,21 @@
 /* The picture viewer: on some maps an item shows a full-screen picture
  * (file 0x7fb + picture) faded in over the field until dismissed. */
 
-/* One picture of the table at 800af47c, ended by map 0xffff. */
-typedef struct {
-    s32 map;      /* 00 */
-    s32 unk04;    /* 04: to 800c3914 */
-    s32 unk08;    /* 08: to 800c3a18 */
-    s32 picture;  /* 0C: file 0x7fb + picture */
-    s32 item;     /* 10: shown while held */
-    s32 x;        /* 14: to 800afe78 */
-    s32 y;        /* 18: to 800afe7c */
-    s32 pieces;   /* 1C: 1 adds the flagged pieces (800ab808) */
-} Picture;
+/* The picture table at 800af47c: eight words per picture, ended by map
+ * 0xffff. The viewer indexes it as one word array (picture * 8 + word);
+ * with a struct array GCC folds the base into each address instead of
+ * keeping it in a register. */
+#define PICTURE_WORDS 8
+#define PICTURE_MAP 0     /* map id */
+#define PICTURE_UNK04 1   /* to 800c3914 */
+#define PICTURE_UNK08 2   /* to 800c3a18 */
+#define PICTURE_FILE 3    /* file 0x7fb + this */
+#define PICTURE_ITEM 4    /* shown while held */
+#define PICTURE_X 5       /* to 800afe78 */
+#define PICTURE_Y 6       /* to 800afe7c */
+#define PICTURE_PIECES 7  /* 1 adds the flagged pieces (800ab808) */
 
-extern Picture D_800AF47C[];
+extern s32 D_800AF47C[];
 extern s32 D_800C3914;
 extern s32 D_800C3A18;
 extern s32 D_800AFE78;

@@ -143,7 +143,12 @@ typedef struct {
 } DrawState;
 
 extern DrawState D_800CCB00;
-extern s32 D_800CCB34;      /* D_800CCB00.buffer, also addressed directly */
+/* D_800CCB00.buffer, also addressed directly as a one-field structure (the
+ * loads are then structure accesses that structure stores may alias). */
+typedef struct {
+    s32 index;
+} DrawBufferIndex;
+extern DrawBufferIndex D_800CCB34;
 
 /* func_8008AAA0 writes a value's nine decimal digits to 800c3cf4, leading
  * zeros as 0xff; the cards read the last digits through these two views. */
@@ -542,7 +547,7 @@ void func_801DFF50(u8 member);
 void func_801DF710(POLY_G4 *bar, u8 colour);
 void func_801DF840(POLY_FT4 *prims, u8 blue, u8 count, u8 buffer);
 void func_801DF910(u8 from, u8 to, s32 max);
-u8 func_801DFA38(u8 slot);
+s32 func_801DFA38(u8 slot);
 void func_801E0184(u8 member);
 void func_801E1690(void);
 

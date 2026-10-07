@@ -432,7 +432,6 @@ s16 func_80084D00(s32 probe, s16 *hit) {
  * collision faces flat (x, z) and record every face whose outline contains
  * the probe (face number and its attribute) in D_8009D718. Returns a word-sized
  * count of table entries; the caller narrows it to s16. */
-#ifdef NON_MATCHING /* range-check scheduling and loop register allocation differ */
 s32 func_80084DB8(s32 probe, s32 index) {
     s32 flag;
     SceneObject *object;
@@ -440,52 +439,41 @@ s32 func_80084DB8(s32 probe, s32 index) {
     Mesh *mesh;
     SVECTOR *vertices;
     MeshFace *face;
-    s16 *hit_face;
-    s16 *hit_kind;
     s32 count;
     s32 i;
-    s32 dz;
+    s32 dx, dz, far;
     s32 hits;
 
     object = &D_8009C620[index];
-    index = ((VECTOR *)probe)->vx;
-    index >>= 12;
-    index -= object->position.vx;
-    FACE_TEST_SCRATCH->u.test.delta.vx = index;
-    index = index >= 0 ? index : -index;
-    index = index < 0x800;
-    index ^= 1;
+    dx = (((VECTOR *)probe)->vx >> 12) - object->position.vx;
+    FACE_TEST_SCRATCH->u.test.delta.vx = dx;
+    dx = dx >= 0 ? dx : -dx;
+    far = dx >= 0x800;
     dz = object->position.vz - (((VECTOR *)probe)->vz >> 12);
     FACE_TEST_SCRATCH->u.test.delta.vz = dz;
     dz = dz >= 0 ? dz : -dz;
-    dz = dz < 0x800;
-    dz ^= 1;
-    index |= dz;
+    far |= dz >= 0x800;
     scratch = FACE_TEST_SCRATCH;
-    if (index) {
+    if (far) {
         return 0;
     }
     scratch->m = object->matrix;
-    i = 0;
     scratch->m.t[2] = 0;
     scratch->m.t[0] = 0;
-    dz = object->position.vy;
+    scratch->m.t[1] = object->position.vy;
     scratch->p[0].vz = 0x800;
     scratch->p[0].vy = 0x800;
     scratch->p[0].vx = 0x800;
-    scratch->m.t[1] = dz;
     hits = 0;
     ScaleMatrix(&scratch->m, &scratch->p[0]);
     SetRotMatrix(&scratch->m);
     SetTransMatrix(&scratch->m);
     mesh = (Mesh *)object->unk44;
-    scratch->u.test.point = (scratch->u.test.delta.vz << 16) | (scratch->u.test.delta.vx & 0xFFFF);
     count = mesh->unk0;
     vertices = mesh->vertices;
+    scratch->u.test.point = (scratch->u.test.delta.vz << 16) | (scratch->u.test.delta.vx & 0xFFFF);
     face = mesh->faces;
-    hit_face = D_8009D718;
-    hit_kind = D_8009D718 + 1;
-    for (; i < count; i++, face++) {
+    for (i = 0; i < count; i++, face++) {
         gte_RotTrans(&vertices[face->corner[0]], &scratch->p[0], &flag);
         gte_RotTrans(&vertices[face->corner[1]], &scratch->p[1], &flag);
         gte_RotTrans(&vertices[face->corner[2]], &scratch->p[2], &flag);
@@ -504,17 +492,12 @@ s32 func_80084DB8(s32 probe, s32 index) {
         if (func_8004A70C(scratch->u.test.edge[0], scratch->u.test.edge[1], scratch->u.test.point) > 0) {
             continue;
         }
-        *hit_face = i;
-        hit_face += 2;
-        *hit_kind = face->kind;
+        D_8009D718[hits] = i;
+        D_8009D718[hits + 1] = face->kind;
         hits += 2;
-        hit_kind += 2;
     }
     return hits;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80084DB8);
-#endif
 
 /* Project `position` onto face `face` of scene object `index`: `offset` gets
  * the object-relative x/z, `normal` the face normal and offset->vy the
@@ -1496,10 +1479,16 @@ void func_80087B84(VECTOR *direction, VECTOR *up, MATRIX *m) {
     func_8004A8EC(m, m);
 }
 
+/* Compiled-out debug trace of the ferry's resumed position. */
+#define FERRY_TRACE_POSITION(actor) do { } while (0)
+
 /* Start the area's ferry: before scene 0xCD it rests at a fixed dock;
  * otherwise it resumes its route (first time: at waypoint 0), advancing
- * when within 8 units of the waypoint, and heads for the next one. */
-#ifdef NON_MATCHING /* prologue load and one post-call load scheduled early */
+ * when within 8 units of the waypoint, and heads for the next one.
+ * NON_MATCHING: only the prologue differs: the D_8009C610 load is
+ * scheduled ahead of the stack adjustment (the original adjusts sp and
+ * saves s0 first, then loads it). */
+#ifdef NON_MATCHING
 s32 func_80087C6C(s32 index) {
     WorldmapActor *actor;
     SceneObject *object;
@@ -1534,6 +1523,7 @@ s32 func_80087C6C(s32 index) {
         }
         actor->position.vz = z << 12;
         actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+        FERRY_TRACE_POSITION(actor);
         scratch->work.vx = D_8009AF80[actor->u.step] << 12;
         scratch->work.vz = D_8009AF90[actor->u.step] << 12;
         distance = func_80094154(&actor->position, &scratch->work);
@@ -1544,8 +1534,8 @@ s32 func_80087C6C(s32 index) {
             actor->u.step = (actor->u.step + 1) & 7;
         }
         scratch->work.vx = D_8009AF80[actor->u.step] - (actor->position.vx >> 12);
-        scratch->work.vy = 0;
         scratch->work.vz = D_8009AF90[actor->u.step] - (actor->position.vz >> 12);
+        scratch->work.vy = 0;
         func_80093534(&scratch->work);
         VectorNormal(&scratch->work, &scratch->work);
         for (i = 0; i < 0x20; i++) {
@@ -2266,7 +2256,6 @@ void func_80089748(void) {
 /* Draw the live particles: build each one's billboard quad (kind shape,
  * scaled and optionally rolled), place it relative to the camera target,
  * project it and add the visible ones to the ordering table. */
-#ifdef NON_MATCHING /* one fewer saved register: the 0xFFFFFF mask is hoisted */
 void func_80089C78(void) {
     ParticleScratch *scratch;
     EffectSlot *slot;
@@ -2288,8 +2277,8 @@ void func_80089C78(void) {
             continue;
         }
         scratch->scale.vx = (u16)slot->rot[0];
-        scratch->scale.vz = 0x1000;
         scratch->scale.vy = (u16)slot->rot[1];
+        scratch->scale.vz = 0x1000;
         scratch->m = scratch->identity;
         if (((u8 *)&slot->fade)[3] & 1) {
             RotMatrixZ(slot->unk2, &scratch->m);
@@ -2303,8 +2292,8 @@ void func_80089C78(void) {
         scratch->offset.vz = (slot->position.vz >> 12) - camera_z;
         func_80093534(&scratch->offset);
         scratch->centre.vx = scratch->offset.vx;
-        scratch->centre.vz = -scratch->offset.vz;
         scratch->centre.vy = slot->position.vy >> 12;
+        scratch->centre.vz = -scratch->offset.vz;
         gte_SetRotMatrix(&scratch->view);
         gte_ldv0(&scratch->centre);
         gte_rtv0();
@@ -2317,7 +2306,7 @@ void func_80089C78(void) {
         gte_ldv3(&scratch->v[0], &scratch->v[1], &scratch->v[2]);
         gte_rtpt();
         gte_stflg(&scratch->flag);
-        if (scratch->flag < 0) {
+        if (scratch->flag & 0x80000000) {
             continue;
         }
         gte_stsxy3(&quad->x0, &quad->x1, &quad->x2);
@@ -2340,18 +2329,15 @@ void func_80089C78(void) {
             quad->g0 = ((u8 *)&slot->colour)[1];
             quad->b0 = ((u8 *)&slot->colour)[2];
             quad->tpage = slot->code;
-            *(u16 *)&quad->u0 = D_8009AFF0[EFFECT_ENABLED(slot)].uv[0];
-            *(u16 *)&quad->u1 = D_8009AFF0[EFFECT_ENABLED(slot)].uv[1];
-            *(u16 *)&quad->u2 = D_8009AFF0[EFFECT_ENABLED(slot)].uv[2];
-            *(u16 *)&quad->u3 = D_8009AFF0[EFFECT_ENABLED(slot)].uv[3];
+            *(u16 *)&quad->u0 = D_8009AFF0[EFFECT_ENABLED(slot) * 4];
+            *(u16 *)&quad->u1 = D_8009AFF0[EFFECT_ENABLED(slot) * 4 + 1];
+            *(u16 *)&quad->u2 = D_8009AFF0[EFFECT_ENABLED(slot) * 4 + 2];
+            *(u16 *)&quad->u3 = D_8009AFF0[EFFECT_ENABLED(slot) * 4 + 3];
             addPrim(&D_8009BE3C->ot[scratch->sz >> 4], quad);
             quad++;
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80089C78);
-#endif
 
 /* Create the party leader's model sprite at the scene's entry position; in
  * movement modes 1-7 follow the player or start hidden. Fill the position

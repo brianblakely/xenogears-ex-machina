@@ -163,18 +163,17 @@ void *func_800199CC(s32 mode) {
 INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/main", D_80018080);
 
 /* Mode dispatcher: report a fatal error (with the caller) if given, reset graphics and the heap, clear the next mode's BSS, load its overlay, then run it and dispatch again. */
-/* NON_MATCHING: the compiled frame is 0x28; the original reserves 0x30. */
-#ifdef NON_MATCHING
 /* Where a mode's overlay block is decoded. */
 u8 *const D_80018084 = D_8006FAF0;
 
 void func_80019ACC(s32 error) {
     ModeEntry *mode;
     void *block;
+    u32 unused[2]; /* unused in the original; reserves 8 bytes */
     u32 caller;
 
     if (error != 0) {
-        __asm__ volatile("move $15, %0\n\tsw $31, 0($15)" : : "r"(&caller) : "$15");
+        GET_RA(&caller);
         func_80019EF8(error, caller);
     }
     mode = &D_8001808C[D_80018088];
@@ -206,10 +205,6 @@ void func_80019ACC(s32 error) {
     mode->entry();
     func_80019ACC(0);
 }
-
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80019ACC);
-#endif
 
 INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/main", D_80018088);
 
@@ -317,12 +312,11 @@ void func_80019D48(void) {
 }
 
 /* Fatal error screen: dump the heap log to the PC (or, without one, clear the screen red and hang), then print the error, its caller and heap details every frame forever. */
-/* NON_MATCHING: the compiled frame is 0x138; the original reserves 0x140. */
-#ifdef NON_MATCHING
 void func_80019EF8(s32 error, u32 caller) {
     DRAWENV draw[2];
     DISPENV disp[2];
     RECT rect;
+    RECT unused; /* unused in the original; reserves 8 bytes */
     s32 frame;
     s32 first;
     s32 second;
@@ -387,10 +381,6 @@ loop:
     goto loop;
 }
 
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80019EF8);
-#endif
-
 /* Names listed by the table at 8004f2dc. */
 const char D_8001826C[] = "MASAKI";
 const char D_80018274[] = "HIGUCHI";
@@ -415,9 +405,9 @@ void func_8001A1E4(s32 index) {
 }
 
 /* Kernel menu set-up: debug text window and the two display buffers. */
-/* NON_MATCHING: the compiled frame is 0x40; the original reserves 0x48. */
-#ifdef NON_MATCHING
 void func_8001A250(void) {
+    RECT unused; /* unused in the original; reserves 8 bytes */
+
     func_80032498(6, 0);
     func_800374E8(8, 0x10, 0x170, 0x1E0, 0x3E8, 1, 0x3C0, 0x100, 0x3C0, 0x1FF, 0);
     SetDefDrawEnv(&D_800595E8[0].draw, 0, 0, 0x140, 0xE0);
@@ -427,10 +417,6 @@ void func_8001A250(void) {
     func_8001A1E4(0);
     func_8001A1E4(1);
 }
-
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001A250);
-#endif
 
 /* Kernel menu frame: move the cursor over the six modes, start the chosen one, print the menu with the play time and place the cursor. */
 void func_8001A344(void) {
