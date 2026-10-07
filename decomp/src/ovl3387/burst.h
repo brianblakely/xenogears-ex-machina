@@ -3,6 +3,9 @@
 
 #include "common.h"
 
+/* libgte's field-by-field vector copy. */
+#define copyVector(v0, v1) (v0)->vx = (v1)->vx, (v0)->vy = (v1)->vy, (v0)->vz = (v1)->vz
+
 /* Resident task system: a task node (update) followed by its drawing node;
  * both callbacks receive their node, whose +4 names the node's object. */
 typedef struct TaskNode {

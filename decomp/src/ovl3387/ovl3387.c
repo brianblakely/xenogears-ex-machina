@@ -147,11 +147,10 @@ Burst *func_801FC470(void) {
  * 320x224 grid (textured from the copy at 0x2c0,0x100), each corner's
  * distance from the centre (variant 1: twice it; otherwise 3/5 of it). */
 #ifdef NON_MATCHING
-/* Same operations; the original keeps v (row * 16) apart and computes the
- * second triangle's (v - 101) * 16 per column, steps both column x offsets
- * (col * 256 - 0x9b0 / - 0x950) as spilled induction variables and needs a
- * 0x78-byte frame; here GCC folds (v - 101) * 16 into a row induction
- * variable and allocates a 0x68-byte frame. */
+/* Same operations; the original keeps v (row * 16) out of strength
+ * reduction (recomputed from the row counter) and computes the second
+ * triangle's (v - 101) * 16 per column; here both become row induction
+ * variables (the frame slots and s-registers shift accordingly). */
 Burst *func_801FC4A8(Burst *burst) {
     BurstCell *cell;
     SVECTOR *triangle;
@@ -186,19 +185,15 @@ Burst *func_801FC4A8(Burst *burst) {
                 cell = &burst->cells[half][row][col];
                 triangle = half == 0 ? D_801FCE18 : D_801FCE30;
                 for (k = 0; k != 3; k++) {
-                    cell->corner[k].vx = triangle[k].vx;
-                    cell->corner[k].vy = triangle[k].vy;
-                    cell->corner[k].vz = triangle[k].vz;
+                    copyVector(&cell->corner[k], &triangle[k]);
                     if (half == 0) {
-                        cell->corner[k].vx += col * 0x100 - 0x9B0;
-                        cell->corner[k].vy += row * 0x100 - 0x6B0;
+                        cell->corner[k].vx += (col * 16 - 155) * 16;
+                        cell->corner[k].vy += (row * 16 - 107) * 16;
                     } else {
-                        cell->corner[k].vx += col * 0x100 - 0x950;
+                        cell->corner[k].vx += (col * 16 - 149) * 16;
                         cell->corner[k].vy += (v - 101) * 16;
                     }
-                    square.vx = cell->corner[k].vx;
-                    square.vy = cell->corner[k].vy;
-                    square.vz = cell->corner[k].vz;
+                    copyVector(&square, &cell->corner[k]);
                     func_8004A414(&square, &square);
                     if (D_801FCE14 != 0) {
                         cell->distance[k] = SquareRoot0(square.vx + square.vy) * 2;
