@@ -8,22 +8,17 @@
 #include "gte.h"
 
 /* Draw the elapsed time (frames at 30 per second) as minutes, seconds and
- * hundredths. Does not match:
- * the minutes are computed into another register and copied. */
-#ifdef NON_MATCHING
+ * hundredths. */
 void func_80083CE8(void) {
     char text[32];
     s32 minutes;
     s32 seconds;
 
+    seconds = D_80092944 % 1800;
     minutes = D_80092944 / 1800;
-    seconds = D_80092944 - minutes * 1800;
     sprintf(text, "%02d'%02d''%02d", minutes, seconds / 30, D_80092944 % 30 * 99 / 30);
     func_8007EBE0((s32)text);
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_80083CE8);
-#endif
 
 /* Update an actor's glow light (fading it) at its position relative to its
  * opponent, and the spot light at its position relative to the camera. */
