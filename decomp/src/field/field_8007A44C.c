@@ -3572,34 +3572,25 @@ void func_80084158(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
     func_8007CD60(0x20);
 }
 
-#ifdef NON_MATCHING
-/* -1 when the actor's motion, collision state or layer prevents idling.
- * NON_MATCHING: the original places the layer-1 `return -1` block at the end
- * (beq into it, falling into the epilogue) after the layer-2 store-flag code,
- * while still reloading layer_flags for every test. The separate-if form
- * here reloads but keeps that return inline; every nested/else form tried
- * lets CSE reuse layer_flags instead. */
+/* 0 when the actor may idle: no motion, collision or script state is
+ * pending and none of its disabled layers (layer flag bits 0-2) is the
+ * layer it stands on; -1 otherwise. */
 s32 func_8008492C(FieldActor *actor) {
-    if ((actor->unk014 & 0x420000) || D_800ADB98 != 0 || actor->unk030[0] != 0 ||
-        actor->unk030[1] != 0 || actor->unk030[2] != 0 || D_800ADC0C != 1 || actor->unk074 != 0xFF ||
-        (actor->flags & 0x401800)) {
-        return -1;
-    }
-    if ((actor->layer_flags & 1) && actor->layer == 0) {
-        return -1;
-    }
-    if ((actor->layer_flags & 2) && actor->layer == 1) {
-        return -1;
-    }
-    if ((actor->layer_flags & 4) && actor->layer == 2) {
-        return -1;
-    } else {
+    if (!(actor->unk014 & 0x420000) && D_800ADB98 == 0 && actor->unk030[0] == 0 && actor->unk030[1] == 0 &&
+        actor->unk030[2] == 0 && D_800ADC0C == 1 && actor->unk074 == 0xFF && !(actor->flags & 0x401800)) {
+        if ((actor->layer_flags & 1) && actor->layer == 0) {
+            return -1;
+        }
+        if ((actor->layer_flags & 2) && actor->layer == 1) {
+            return -1;
+        }
+        if ((actor->layer_flags & 4) && actor->layer == 2) {
+            return -1;
+        }
         return 0;
     }
+    return -1;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8008492C);
-#endif
 
 /* Move an actor to its next position: query every collision layer's floor
  * and ceiling there, sort the layers by floor, choose the actor's layer,
