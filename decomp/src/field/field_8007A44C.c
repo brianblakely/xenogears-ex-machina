@@ -1651,7 +1651,6 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8007E1C0
 
 extern u8 D_800594D4[3];    /* window colour */
 
-#ifdef NON_MATCHING
 /* Build dialogue window `w`'s packets for both buffers: the backing draw
  * mode and semi-transparent tile in the window colour, the prompt and
  * choice cursor sprites, the eight border sprites (texture windows from
@@ -1660,14 +1659,8 @@ extern u8 D_800594D4[3];    /* window colour */
  * (as the original indexes them; it keeps the loop large enough that the
  * w * 0x498 chain stays in it), and the border pair is copied through
  * element pointers, which keeps the setRGB0 address for the copy source.
- * NON_MATCHING (1 swapped pair): after the prompt's GetClut the original
- * loads 0xc0 ($s4) before rematerialising 0xc ($t2); ours the other way.
- * The 0xc pseudo (shared by both blocks) is spilled and reloaded into $t2
- * at its store, so the order is sched2's luid tie-break: the original's
- * 0xc0 set already precedes the w store before sched2, i.e. in sched1 it
- * was not a register birth hugging its store. All 24 orders of the
- * w/u0/v0/h stores (prompt only or both blocks) and a local `v` assigned
- * 0xc0 in both blocks (cse folds the second set) leave this pair. */
+ * The prompt sprite is 12x8 and the choice cursor 8x12.
+ */
 void func_8007EE0C(s32 w) {
     RECT area;
     s32 i;
@@ -1687,9 +1680,9 @@ void func_8007EE0C(s32 w) {
     SetSprt(&D_800C2698[w].prompt.sprite[0]);
     setRGB0(&D_800C2698[w].prompt.sprite[0], 0x80, 0x80, 0x80);
     D_800C2698[w].prompt.sprite[0].clut = GetClut(0x100, 0xF6);
-    D_800C2698[w].prompt.sprite[0].w = 0xC;
     D_800C2698[w].prompt.sprite[0].u0 = 0x80;
     D_800C2698[w].prompt.sprite[0].v0 = 0xC0;
+    D_800C2698[w].prompt.sprite[0].w = 0xC;
     D_800C2698[w].prompt.sprite[0].h = 8;
     D_800C2698[w].prompt.sprite[0].x0 = 0;
     D_800C2698[w].prompt.sprite[0].y0 = 0;
@@ -1703,10 +1696,10 @@ void func_8007EE0C(s32 w) {
     SetSprt(&D_800C2698[w].choice.cursor[0]);
     setRGB0(&D_800C2698[w].choice.cursor[0], 0x80, 0x80, 0x80);
     D_800C2698[w].choice.cursor[0].clut = GetClut(0x100, 0xF6);
-    D_800C2698[w].choice.cursor[0].w = 0xC;
     D_800C2698[w].choice.cursor[0].u0 = 0x80;
     D_800C2698[w].choice.cursor[0].v0 = 0xC0;
-    D_800C2698[w].choice.cursor[0].h = 8;
+    D_800C2698[w].choice.cursor[0].w = 8;
+    D_800C2698[w].choice.cursor[0].h = 0xC;
     D_800C2698[w].choice.cursor[0].x0 = 0;
     D_800C2698[w].choice.cursor[0].y0 = 0;
     D_800C2698[w].choice.cursor[1] = D_800C2698[w].choice.cursor[0];
@@ -1742,9 +1735,6 @@ void func_8007EE0C(s32 w) {
     D_800C2698[w].icon[0].tpage = GetTPage(1, 0, 0x2C0, 0x100);
     D_800C2698[w].icon[1] = D_800C2698[w].icon[0];
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8007EE0C);
-#endif
 
 extern DVECTOR D_800ADF34[]; /* icon texture origin per frame */
 
@@ -2174,20 +2164,21 @@ s32 func_80080A18(void) {
 #ifdef NON_MATCHING
 /* Reset event actor `index` to its defaults and settle it on the floor of
  * each collision layer under its descriptor's position.
- * NON_MATCHING (10 edits): only the first constant stores differ: the
- * original hoists the 0x10 (+18/+1c) constant into $v1 above the +0 store
- * and loads 0xff for +74/+75 later; ours hoists the 0xff constant instead.
- * This is local-alloc: the original's 0x10 and 0xff(QI) both overlap the
- * 0x60 (+1a) constant, which takes $v0, so both get $v1 and sched2 floats
- * the 0x10 load up. All 120 orders of the five statements give >= 10:
- * unk18, height, fraction, unk074, unk075 gets 0x10 into $v1 but 0xff into
- * $v0; unk18, fraction, unk074, height, unk075 the reverse (the sets are
- * sched1 register births, so each constant sits next to its first store).
- * The (point + i)-> and (normal + layer)-> forms keep the point clears off
- * the call argument as the original does. All 5040 orders of the seven
- * first stores (flags .. unk075) were compiled: none beats this one; a
- * shared s32 temporary for 0x10/0xff stops being a register birth and is
- * hoisted to the function entry; do { } while (0) groups split the block. */
+ * NON_MATCHING (4 edits): only the +4 store is misplaced. With this order
+ * (flags, unk18, layer_flags, fraction, unk074, height, unk075) local-alloc
+ * gives the original's registers (0x10 in $v1 across the 0x800 constant,
+ * 0x60 in $v0, the 0xff bytes in $v1); sched2 then keeps the +4 store after
+ * the +18/+1c stores (higher luid), where the original stores +4 right after
+ * +0 and loads 0x60 before the +18 store. That needs the 0x60 load ahead of
+ * the 0xff load in luid order, which the register births (each constant set
+ * next to its first store) never give while 0xff spans the 0x60 store.
+ * All 5040 orders of these seven stores were compiled (none exact; this is
+ * the best); the earlier draft order gave 10. The (point + i)-> and
+ * (normal + layer)-> forms keep the point clears off the call argument as
+ * the original does; a shared s32 temporary for 0x10/0xff stops being a
+ * register birth and is hoisted to the function entry; do { } while (0)
+ * groups split the block.
+ */
 void func_80080A74(s32 index) {
     VECTOR normal[4];
     SVECTOR point[4];
@@ -2196,10 +2187,10 @@ void func_80080A74(s32 index) {
 
     actor = D_800AF880.components.descriptors[index].actor;
     actor->flags = 0xB0;
-    actor->layer_flags = 0x800;
-    actor->unk074 = 0xFF;
     actor->unk18 = 0x10;
+    actor->layer_flags = 0x800;
     actor->gravity.s.fraction = 0x10;
+    actor->unk074 = 0xFF;
     actor->height = 0x60;
     actor->unk075 = 0xFF;
     actor->unk40[0] = 0;
