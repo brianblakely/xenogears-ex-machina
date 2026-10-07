@@ -378,16 +378,20 @@ void func_801DCE18(ModelList *list, s32 release_models) {
     }
 }
 
+/* Set the middle column of a rotation matrix (its local y axis). */
+#define SET_COLUMN_Y(mat, x, y, z)                                             \
+    do {                                                                       \
+        (mat)->m[0][1] = (x);                                                  \
+        (mat)->m[1][1] = (y);                                                  \
+        (mat)->m[2][1] = (z);                                                  \
+    } while (0)
+
 /* Draw an active actor under the camera `m`: its shadow quad at the root's
  * floor height (unless flags bit 0; the depth also sets b39), every visible
  * model node (lit by `light`; billboard nodes face the view), its records24
  * surfaces, its image animations (advanced by `ticks`) and its channels'
  * ribbons. A channel whose frame count wraps to 0 leaves the channel pointer
- * where it is, so the next channel index redraws it (as the original).
- * NON_MATCHING: same size, frame and instructions; only the actor and
- * `placed` (then the records24 pointer and end1) swap s5/s6 (global
- * allocation ranks one of the latter above the actor here). */
-#ifdef NON_MATCHING
+ * where it is, so the next channel index redraws it (as the original). */
 void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, u32 *ot, s32 buffer) {
     MATRIX *scratch = (MATRIX *)0x1F800000;
     MATRIX *placed = (MATRIX *)0x1F800020;
@@ -515,13 +519,9 @@ void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, 
             scratch->m[2][0] = 0;
             scratch->m[2][2] = actor->scale;
             if (part->billboard == 1) {
-                scratch->m[0][1] = view->m[0][1];
-                scratch->m[1][1] = view->m[1][1];
-                scratch->m[2][1] = view->m[2][1];
+                SET_COLUMN_Y(scratch, view->m[0][1], view->m[1][1], view->m[2][1]);
             } else {
-                scratch->m[0][1] = 0;
-                scratch->m[1][1] = actor->scale;
-                scratch->m[2][1] = 0;
+                SET_COLUMN_Y(scratch, 0, actor->scale, 0);
             }
         }
         SetRotMatrix(scratch);
@@ -657,9 +657,6 @@ void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, 
         ch++;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DCEC8);
-#endif
 
 /* Step the tweens attached to each node of a hierarchy: its rotation
  * (attachment 0: set, delta or add from a track, interpolate, approach,
