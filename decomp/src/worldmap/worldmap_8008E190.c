@@ -1,18 +1,21 @@
 #include "worldmap.h"
 
+/* Compiled-out debug trace of the restored vehicle position. */
+#define VEHICLE_TRACE_POSITION(actor) do { } while (0)
+
 /* Start the flying vehicle: restore its saved spot and heading, set its
  * turn rate by kind, and place it by movement mode (landed, boarded or
  * flying with the player); scene objects 0 and 1 follow it. */
-#ifdef NON_MATCHING /* the result constant is set before the first call */
 s32 func_8008E190(s32 index) {
     ActorScratch *scratch;
     WorldmapActor *actor;
     s32 result;
 
-    scratch = (ActorScratch *)0x1F800000;
     actor = &D_8009BE24[index];
     actor->unk24 = 0;
     func_8008DFF4(&actor->position);
+    VEHICLE_TRACE_POSITION(actor);
+    result = 1;
     actor->motion.vz = 0;
     actor->motion.vy = 0;
     actor->motion.vx = 0;
@@ -23,7 +26,7 @@ s32 func_8008E190(s32 index) {
     actor->unk70 = 0;
     actor->unk6C = 0;
     actor->heading = D_8006EE66;
-    result = 1;
+    scratch = (ActorScratch *)0x1F800000;
     switch (D_8006EE54.flags & 0x1FFF) {
     case 0:
         result = 3;
@@ -99,9 +102,6 @@ s32 func_8008E190(s32 index) {
     }
     return result;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8008E190", func_8008E190);
-#endif
 
 /* Move scene object 0 to the vehicle actor and orient objects 0 and 1;
  * modes 4-5 show objects 1-3, modes 6-7 hide them. 3 once the vehicle kind
