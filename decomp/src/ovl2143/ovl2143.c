@@ -2745,21 +2745,23 @@ void func_801E37D0(Actor *actor) {
  * srl, but combine cannot prove the byte's high bits clear, so the original
  * zero-extends `arg`, `entry` and `high2` (andi 0xff) at every use in a
  * later block.
- * NON_MATCHING (8 bytes longer): case bodies 15 1A 1D 22 25 40 41 42 still
- * differ in size (jump table checked case by case), the frame is 0x160 vs
- * 0x168 (n/word at 0xc0/0xc4 vs 0x68/0x6c) and registers are allocated
- * differently (actor/pc/start in s3/s2/s1 vs s4/s3/s0). */
+ * Block-scope aggregates take the stack slots of the original: the landing
+ * probe's block frees 16 bytes that 0x25's `d` reuses before n/word (whose
+ * slots are made when their address is first taken) and 0x25's matrix and
+ * vectors; spilled scalars follow in declaration order.
+ * NON_MATCHING (12 bytes shorter): case bodies 1D 22 41 still differ in size
+ * (jump table checked case by case; 41 shares its call tail with 40/42 where
+ * the original's 42 keeps `changed = -1` last), the frame is 0x160 vs 0x168
+ * and registers are allocated differently (actor/pc in s3/s2 vs s4/s3). */
 #ifdef NON_MATCHING
 void func_801E39F0(Actor *actor, SlotPool *pool, s32 changed, s32 ticks, s32 arg4) {
     Actor *self;
     Actor *other;
-    Actor *copy;
     ModelPart *part;
     ModelPart *node;
     VECTOR moved;
     SVECTOR step;
     RECT rect;
-    VECTOR d;
     s32 n;
     u16 *pc;
     u16 *start;
@@ -2767,17 +2769,14 @@ void func_801E39F0(Actor *actor, SlotPool *pool, s32 changed, s32 ticks, s32 arg
     /* Reused by word decoding and actor-mask resolution. Save decoded
      * bytes before a resolver overwrites the halfword. */
     s16 word;
-    MATRIX m;
-    VECTOR ex, ey, ez;
-    SVECTOR v;
     u16 operand;
     u8 reference, entry, low2, high2;
     u8 op, arg;
     s32 running, redraw;
+    Actor *copy;
     s32 found;
     s32 i, key;
-    s32 dx, dy, dz, dist, pitch, yaw;
-    s16 c0, c1, c2;
+    s32 dx, dy, dz, dist, pitch, yaw, roll;
     u8 depth;
 
     if (ticks == 0 || actor->pc == 0) {
@@ -2811,12 +2810,15 @@ void func_801E39F0(Actor *actor, SlotPool *pool, s32 changed, s32 ticks, s32 arg
         actor->w4C = 0;
     } else {
         if (actor->w54 != 0) {
-            v.vx = actor->parts->pos[0];
-            v.vy = 0;
-            v.vz = actor->parts->pos[2];
-            v.vy = actor->h60;
-            if (v.vy < actor->parts->pos[1]) {
-                actor->parts->pos[1] = v.vy;
+            SVECTOR unused; /* unused in the original; reserves 8 bytes */
+            SVECTOR probe;
+
+            probe.vx = actor->parts->pos[0];
+            probe.vy = 0;
+            probe.vz = actor->parts->pos[2];
+            probe.vy = actor->h60;
+            if (probe.vy < actor->parts->pos[1]) {
+                actor->parts->pos[1] = probe.vy;
                 pc = (u16 *)actor->w54;
                 actor->w54 = 0;
                 goto aim;
@@ -2972,7 +2974,9 @@ aim:
                 return;
             }
             break;
-        case 0x15: /* clone this actor into a free slot 8 or 9 */
+        case 0x15: { /* clone this actor into a free slot 8 or 9 */
+            ModelPart *parts;
+
             word = *pc++;
             for (n = 8; n < 10; n++) {
                 if (D_801E8670[n] == NULL) {
@@ -2998,21 +3002,24 @@ aim:
             copy->count10E = 0;
             copy->index = n;
             func_801E8510(copy);
-            copy->parts = func_80031BDC(actor->parts->count * sizeof(ModelPart), 1);
+            parts = func_80031BDC(actor->parts->count * sizeof(ModelPart), 1);
+            copy->parts = parts;
             for (n = 0; n < actor->parts->count; n++) {
-                copy->parts[n] = actor->parts[n];
+                parts[n] = actor->parts[n];
                 if (actor->parts[n].parent != NULL) {
-                    copy->parts[n].parent = copy->parts + (actor->parts[n].parent - actor->parts);
+                    parts[n].parent =
+                        parts + ((u32)actor->parts[n].parent - (u32)actor->parts) / sizeof(ModelPart);
                 }
-                copy->parts[n].visible = 0;
-                copy->parts[n].attachments[0] = NULL;
-                copy->parts[n].attachments[1] = NULL;
+                parts[n].visible = 0;
+                parts[n].attachments[0] = NULL;
+                parts[n].attachments[1] = NULL;
             }
-            func_801E6578(pool, (s16)word, actor->parts, copy->parts);
+            func_801E6578(pool, word, actor->parts, parts);
             if (arg != 0xFF) {
                 func_801E35D0(copy, copy, pool, arg);
             }
             break;
+        }
         case 0x16: /* merge back into the actor this one was cloned from */
             func_801E6668(actor->parts, D_801E8670[actor->b21]->parts);
             func_801E8030(actor->index);
@@ -3030,12 +3037,15 @@ aim:
         case 0x19: /* stop the animation */
             func_801E632C(actor);
             break;
-        case 0x1A: /* move a VRAM rectangle (arg bit 0: by the actor's image offset) */
+        case 0x1A: { /* move a VRAM rectangle (arg bit 0: by the actor's image offset) */
+            s16 x, y;
+
             rect.x = *pc++;
             rect.y = *pc++;
-            dx = *pc++;
-            dy = *pc++;
-            rect.w = ((s16)*pc++ + 1) / 2 * 2;
+            x = *pc++;
+            y = *pc++;
+            rect.w = *pc++;
+            rect.w = (rect.w + 1) / 2 * 2;
             rect.h = *pc++;
             if (arg & 1) {
                 if (actor->h90 < 0) {
@@ -3043,11 +3053,12 @@ aim:
                 }
                 rect.x += actor->h90;
                 rect.y += actor->h92;
-                dx += actor->h90;
-                dy += actor->h92;
+                x += actor->h90;
+                y += actor->h92;
             }
-            MoveImage(&rect, (s16)dx, (s16)dy);
+            MoveImage(&rect, x, y);
             break;
+        }
         case 0x1D: /* tween node `arg` between two poses */
             word = *pc++;
             entry = word >> 8;
@@ -3132,8 +3143,14 @@ aim:
                 actor->active = arg & 1;
             }
             break;
-        case 0x25: /* attach the masked actors to node (high byte), keeping
-                    * their place (arg bit 0) or at an offset */
+        case 0x25: { /* attach the masked actors to node (high byte), keeping
+                      * their place (arg bit 0) or at an offset */
+            VECTOR d;
+            MATRIX m;
+            VECTOR ex, ey, ez;
+            SVECTOR v;
+            s16 c0, c1, c2;
+
             word = *pc++;
             entry = word >> 8;
             func_801E6830(actor, (u8)word, &word);
@@ -3184,6 +3201,7 @@ aim:
                 }
             }
             break;
+        }
         case 0x26: /* detach the masked actors */
             func_801E6830(actor, arg, &word);
             for (n = 0; n < 8; n++) {
@@ -3315,21 +3333,29 @@ aim:
                 }
             }
             break;
-        case 0x40: /* turn the root to a rotation */
-            c0 = *pc++;
-            c1 = *pc++;
-            c2 = *pc++;
+        case 0x40: { /* turn the root to a rotation */
+            s16 rx, ry, rz;
+
+            rx = *pc++;
+            ry = *pc++;
+            rz = *pc++;
             changed = -1;
-            func_801E59D4(pool, actor->parts, arg, c0, c1, c2);
+            func_801E59D4(pool, actor->parts, arg, rx, ry, rz);
             break;
-        case 0x41: /* turn the root by a rotation */
-            c0 = *pc++;
-            c1 = *pc++;
-            c2 = *pc++;
+        }
+        case 0x41: { /* turn the root by a rotation */
+            s16 rx, ry, rz;
+            ModelPart *root;
+
+            rx = *pc++;
+            ry = *pc++;
+            rz = *pc++;
+            root = actor->parts;
             changed = -1;
-            func_801E59D4(pool, actor->parts, arg, (s16)(actor->parts->rot.vx + c0),
-                          (s16)(actor->parts->rot.vy + c1), (s16)(actor->parts->rot.vz + c2));
+            func_801E59D4(pool, actor->parts, arg, (s16)(root->rot.vx + rx), (s16)(root->rot.vy + ry),
+                          (s16)(root->rot.vz + rz));
             break;
+        }
         case 0x42:
         case 0x43: /* turn the root toward the target (0x43: heading only) */
             dy = actor->target[1] - actor->parts->pos[1];
@@ -3342,11 +3368,12 @@ aim:
                 pitch = ratan2(dy, SquareRoot0(dx * dx + dz * dz));
             }
             yaw = ratan2(-dx, -dz);
+            roll = 0;
             if (dx == 0 && dy == 0 && dz == 0) {
                 break;
             }
             changed = -1;
-            func_801E59D4(pool, actor->parts, arg, (s16)pitch, (s16)yaw, 0);
+            func_801E59D4(pool, actor->parts, arg, (s16)pitch, (s16)yaw, (s16)roll);
             break;
         case 0x44:
             actor->spin[0] = *pc++;
