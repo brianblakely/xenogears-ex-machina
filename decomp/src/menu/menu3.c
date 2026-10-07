@@ -2536,25 +2536,25 @@ void func_80079DE0(void) {
     D_80092640 = 0;
 }
 
-#ifdef NON_MATCHING
-/* One frame of the bout (every D_80099D9A + 1 frames): record the pose
- * slot, read the pads (letting a player on the free port take over while
- * the pause is open), then run both actors' frame: moves, AI, physics,
- * separation, model placement, anchors and frame events.
- * Does not match: only the pose slot setup is scheduled differently: the original loads the slot index and the frame delay (and sets the first call's argument) before the pose stores, one instruction shorter. */
+/* One frame of the bout (every frame rate setting + 1 frames): record the
+ * pose slot, read the pads (letting a player on the free port take over
+ * while the pause is open), then run both actors' frame: moves, AI,
+ * physics, separation, model placement, anchors and frame events. The
+ * settings are read through the Settings struct, which keeps the rate
+ * load ahead of the pose stores. */
 void func_80079DF0(Actor *first, Actor *second) {
     if (D_80092664 != 0) {
         D_80092664--;
         return;
     }
-    D_80092664 = D_80099D9A;
+    D_80092664 = D_80099D98.rate;
     first->pose = (Pose *)first->unk9CC + D_800928C0;
     second->pose = (Pose *)second->unk9CC + D_800928C0;
     first->move = (Move *)first->pose;
     D_800928C0++;
     second->move = (Move *)second->pose;
-    first->flags = (first->flags & ~0x40) | ((D_80099D9D & 1) << 6);
-    second->flags = (second->flags & ~0x40) | ((D_80099D9E & 1) << 6);
+    first->flags = (first->flags & ~0x40) | ((D_80099D98.com1 & 1) << 6);
+    second->flags = (second->flags & ~0x40) | ((D_80099D98.driven & 1) << 6);
     func_80073644(first);
     func_80073644(second);
     func_800764CC(first);
@@ -2639,9 +2639,6 @@ void func_80079DF0(Actor *first, Actor *second) {
         func_8007D65C(&first->core, &second->core, 0x13);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80079DF0);
-#endif
 
 /* Save both actors' positions and homes (at height 0x100) and set the
  * countdown from the given frame count. */
