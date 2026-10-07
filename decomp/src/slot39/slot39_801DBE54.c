@@ -1682,6 +1682,10 @@ void func_801E1398(void) {
  * nonzero target entries (ffff contributes zero); rows from 7 need
  * game flag 4000. */
 #ifdef NON_MATCHING
+/* The original's target loop is not loop-optimized (each target address is
+ * recomputed), hence the goto loop. Remaining: the original zero-extends
+ * `row` once before the loop (in place, a1) where this build does it in the
+ * loop, and i/values take t1/t2 the other way round. */
 u32 func_801E1418(u8 slot, u8 row) {
     u32 sum;
     s32 i;
@@ -1699,24 +1703,29 @@ u32 func_801E1418(u8 slot, u8 row) {
         id = D_800625A0->party->ids[slot];
         table = D_800625A0->block438->unk2578;
         values = D_8006D8A0[id].unk90;
-        for (i = 0; i < 7; i++, values++) {
-            value = *values;
-            target = *(u16 *)(table + id * 0x110 + row * 14 + i * 2);
-            if (value != 0) {
-                if (target != 0) {
-                    if (target != 0xffff) {
-                        percent = value * 100 / target;
-                        if (percent >= 100) {
-                            sum += 100;
-                        } else {
-                            sum += percent;
-                        }
+        i = 0;
+    loop:
+        value = *values;
+        target = *(u16 *)(table + id * 0x110 + row * 14 + i * 2);
+        if (value != 0) {
+            if (target != 0) {
+                if (target != 0xffff) {
+                    percent = value * 100 / target;
+                    if (percent >= 100) {
+                        sum += 100;
+                    } else {
+                        sum += percent;
                     }
-                    count++;
                 }
-            } else if (target != 0) {
                 count++;
             }
+        } else if (target != 0) {
+            count++;
+        }
+        i++;
+        values++;
+        if (i < 7) {
+            goto loop;
         }
         if (count != 0) {
             return sum / count;

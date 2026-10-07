@@ -292,7 +292,7 @@ void func_802814F8(u8 r, u8 g, u8 b);
 void func_802815E8(s16 length, u8 r, u8 g, u8 b);
 void func_802816AC(TaskNode *node);
 void func_8028191C(void);
-void func_80281980(void);
+s32 func_80281980(void);
 void func_80281F98(void);
 
 #endif
