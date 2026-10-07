@@ -872,7 +872,10 @@ extern RECT D_800AF5C0[5]; /* pieces of file 0x802's 320-wide image */
  * the outer w and h through a flat halfword view gives the original's outer
  * pointers (h, w, y from one sym + 6 base); the row loop still reads x, y
  * and w symbol-relative, so nothing else is hoisted and nothing spills.
- * Every struct/flat/pointer mix of the nine reads was scored (best 139). */
+ * Every struct/flat/pointer mix of the nine reads was scored (best 139).
+ * The row offset is summed in words before scaling, as the original does
+ * ((y + row) * 0x50 + x / 4, then << 2 and + paddr); adding the two terms
+ * to the pointer separately scales each one. */
 #define PIECE(n, field) (((s16 *)D_800AF5C0)[(n) * 4 + (field)])
 enum { PIECE_X, PIECE_Y, PIECE_W, PIECE_H };
 void func_800AB808(void) {
@@ -893,7 +896,7 @@ void func_800AB808(void) {
             if (func_800AB748(i) == -1 && tim.paddr != NULL) {
                 row_pixels = pixels;
                 for (row = 0; row < PIECE(i, PIECE_H); row++) {
-                    memcpy(row_pixels, tim.paddr + (D_800AF5C0[i].y + row) * 0x50 + D_800AF5C0[i].x / 4,
+                    memcpy(row_pixels, tim.paddr + ((D_800AF5C0[i].y + row) * 0x50 + D_800AF5C0[i].x / 4),
                            D_800AF5C0[i].w);
                     row_pixels += D_800AF5C0[i].w / 4 * 4;
                 }

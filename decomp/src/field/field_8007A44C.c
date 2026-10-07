@@ -1492,15 +1492,24 @@ s32 func_800347C0(TextBox *text);
  * the window grows from its centre (at least 16 pixels each way) and
  * slides; then the waiting prompt, the eight border pieces, the portrait,
  * the choice cursor and the backing tile.
- * NON_MATCHING (268 edits): the nested choice/prompt structs give
+ * NON_MATCHING (126 edits): the nested choice/prompt structs give
  * the original's +37c/+3c4 bases, the texture windows are read from the
  * flat 800ade9c table and the prompt position has its own locals (the
- * original keeps them in $s5/$s2 across the calls). Left: the original's
- * frame is 0xa8 (ours 0x78) with 0x48-0x7f never accessed (save areas or
- * spill slots of values that lost their registers during reload); in the
- * opening branch its locals get other temporaries, and the border
- * coordinates are computed next to each store in store order (ours
- * schedules the stores differently). */
+ * original keeps them in $s5/$s2 across the calls). The frame (0xa8) and
+ * the opening branch match: both quotients are taken before the products
+ * and x, y, height, width are updated in that order. The s16 corner
+ * values give the original's registers (left a0, top t0, right v1, the
+ * window/buffer offsets t2/a2); s32 ones (or inline expressions) get
+ * v1/a3/v0 and a0/a2 offsets (154 by instruction text). Left: their
+ * (subreg) sets are not register births, so sched1 hoists the corner
+ * computations to the top of the block where the original computes each
+ * next to its first store; side and bottom swap a3/t1; the reloads that
+ * follow alternate t8/t9 the other way round. The original also computes
+ * the portrait's y + 4 before the style & 0x20 test (in its delay slot),
+ * which a variable set next to icon_x reproduces, but with the current
+ * reload parity that scores worse (161 vs 102 by instruction text). All
+ * 3^7 inline/s32/s16 choices for the seven border values were scored;
+ * none removes the hoisting. */
 void func_8007E1C0(u32 *ot, s32 buffer, s32 w) {
     RECT area;
     s32 x;
@@ -1510,12 +1519,12 @@ void func_8007E1C0(u32 *ot, s32 buffer, s32 w) {
     s32 grown_w;
     s32 grown_h;
     s32 steps;
-    s32 left;
+    s16 left;
     s32 prompt_x;
     s32 prompt_y;
-    s32 top;
-    s32 right;
-    s32 bottom;
+    s16 top;
+    s16 right;
+    s16 bottom;
     s32 side;
     s32 icon_x;
     s32 icon_w;
@@ -1534,9 +1543,9 @@ void func_8007E1C0(u32 *ot, s32 buffer, s32 w) {
         grown_w = ((width << 16) / steps) * (D_800B2078.text_speed - D_800C2698[w].timer);
         grown_h = ((height << 16) / steps) * (D_800B2078.text_speed - D_800C2698[w].timer);
         x = x + width / 2 - (grown_w >> 16);
-        width = (grown_w * 2) >> 16;
         y = y + height / 2 - (grown_h >> 16);
         height = (grown_h * 2) >> 16;
+        width = (grown_w * 2) >> 16;
         if (width < 0x10) {
             x -= (0x10 - width) / 2;
             width = 0x10;
@@ -1570,11 +1579,11 @@ void func_8007E1C0(u32 *ot, s32 buffer, s32 w) {
     } else {
         D_800C2698[w].prompt_delay = 2;
     }
+    side = height - 0x12;
     left = x - 8;
     top = y - 7;
     right = x + width - 8;
     bottom = y + height - 9;
-    side = height - 0x12;
     D_800C2698[w].frame.border[buffer][0].x0 = left;
     D_800C2698[w].frame.border[buffer][0].y0 = top;
     D_800C2698[w].frame.border[buffer][2].y0 = top;
@@ -1820,7 +1829,16 @@ s32 func_80033728(void *messages, void *message);
  * Reload spills $t0 here (for a stack-argument reload); alter_reg gives a
  * slot to every pseudo kicked out of a spilled register, so the original
  * probably had one more pseudo in $t0 after global-alloc that was then
- * retried into another register, leaving its slot unused. */
+ * retried into another register, leaving its slot unused.
+ * Correction: spill_hard_reg only gives a slot to a pseudo whose retry
+ * failed. 8007e1c0's seven never-accessed slots (which our build now
+ * reproduces) come from combine instead: when it folds an HImode load
+ * plus its sll/sra sign extension into one lh, it leaves a (use (reg))
+ * of the dead shift temporary; that pseudo has no hard register, gets a
+ * stack slot and is never referenced. The extra 8 bytes here are most
+ * likely one more such fold (an s16 value used both as a halfword and
+ * sign-extended); routing text_speed through an s16 local does not
+ * produce it. */
 s32 func_8007F8DC(s16 x, s16 y, void *message, s32 w, s32 columns, s32 rows, s32 owner, s32 speaker,
                   s32 mode, s32 turned, s32 flags) {
     s32 target_x;
