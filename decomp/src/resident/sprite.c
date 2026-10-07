@@ -1521,19 +1521,15 @@ u8 *func_8001FBA4(Sprite *sprite, u8 *code) {
     return operand;
 }
 
+/* Apply the script's direction offset, in units of sixteen angle steps. */
+#define SPRITE_OFFSET_DIRECTION(sprite_, offset_) \
+    do { \
+        func_80021FE0((sprite_), (sprite_)->direction + (offset_) * 16); \
+    } while (0)
+
 /* Run the script command `op` (0x8a-0xfc) of a sprite on its operand bytes
  * `code`: motion, placement, colour, renderer angles and scales, byte
  * arithmetic on the sprite's stack and frame variables, sounds, models. */
-/* Nonmatching: same size, frame, case layout and tail sharing as the
- * original; left (about 10 instructions): case 38 loads the motion word
- * before the frame bits (with the frame bits operand first the loads are in
- * order but take $v1/$v0 swapped), 0xAC sets
- * $a0 before loading the direction (which then goes through $a0, original
- * through $s3 with $a0 set after the load), 0xBD loads the code byte before
- * the D_8006BE20 pointer, and 0xB8 reads the code byte with lbu after the
- * stack index (original lb first; a block-local s32 for it fixes 0xB8 but
- * moves the code byte of 0xE6 and 0xC4 from $v1 to $a1). */
-#ifdef NON_MATCHING
 void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
     SVECTOR vector;
     VECTOR sum;
@@ -1801,11 +1797,18 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         if (arg & 0x80) {
             transform = sprite->render.bits.no_view;
             switch (index) {
-            case 38:
-                vector.vx = D_800C3EB0[((sprite->motion.word & 3) << 2) | sprite->frame_bits.unknown30].x;
-                vector.vz = D_800C3EB0[((sprite->motion.word & 3) << 2) | sprite->frame_bits.unknown30].z;
+            case 38: {
+                u32 slot, side;
+
+                slot = sprite->frame_bits.unknown30;
+                side = sprite->motion.word & 3;
+                vector.vx = D_800C3EB0[(side << 2) | slot].x;
+                slot = sprite->frame_bits.unknown30;
+                side = sprite->motion.word & 3;
+                vector.vz = D_800C3EB0[(side << 2) | slot].z;
                 vector.vy = 0;
                 break;
+            }
             case 36:
                 ((Task *)sprite->block)->link.word |= 0x40000000;
                 goto own_position;
@@ -2217,7 +2220,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         }
         func_8002CB54(data, &((SpriteModelRenderer *)sprite->renderer)->packets[0],
                       &((SpriteModelRenderer *)sprite->renderer)->packets[1]);
-        func_8002C8CC(data, ((SpriteModelRenderer *)sprite->renderer)->packets[0], 0);
+        func_8002C8CC((SpriteModel *)data, (RenderPacket *)((SpriteModelRenderer *)sprite->renderer)->packets[0], 0);
         memcpy(((SpriteModelRenderer *)sprite->renderer)->packets[1],
                ((SpriteModelRenderer *)sprite->renderer)->packets[0], data->size);
         ((SpriteModelRenderer *)sprite->renderer)->model = data;
@@ -2237,7 +2240,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         }
         func_8002CB54((ModelBuffer *)buffer, &((SpriteModelRenderer *)sprite->renderer)->packets[0],
                       &((SpriteModelRenderer *)sprite->renderer)->packets[1]);
-        func_8002C8CC((ModelBuffer *)buffer, ((SpriteModelRenderer *)sprite->renderer)->packets[0], 0);
+        func_8002C8CC((SpriteModel *)buffer, (RenderPacket *)((SpriteModelRenderer *)sprite->renderer)->packets[0], 0);
         memcpy(((SpriteModelRenderer *)sprite->renderer)->packets[1],
                ((SpriteModelRenderer *)sprite->renderer)->packets[0], ((ModelBuffer *)buffer)->size);
         ((SpriteModelRenderer *)sprite->renderer)->model = (ModelBuffer *)buffer;
@@ -2255,7 +2258,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         }
         func_8002CB54((ModelBuffer *)buffer, &((SpriteModelRenderer *)sprite->renderer)->packets[0],
                       &((SpriteModelRenderer *)sprite->renderer)->packets[1]);
-        func_8002C8CC((ModelBuffer *)buffer, ((SpriteModelRenderer *)sprite->renderer)->packets[0], 0);
+        func_8002C8CC((SpriteModel *)buffer, (RenderPacket *)((SpriteModelRenderer *)sprite->renderer)->packets[0], 0);
         memcpy(((SpriteModelRenderer *)sprite->renderer)->packets[1],
                ((SpriteModelRenderer *)sprite->renderer)->packets[0], ((ModelBuffer *)buffer)->size);
         *(s32 *)(loaded->unk10 + 4) = 0;
@@ -2263,7 +2266,10 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         break;
     case 0xB5:
         {
-            s16 scale = code[0] << 8;
+            s16 scale;
+
+            angle = code[0];
+            scale = angle << 8;
 
             if (sprite->render.word & 3) {
                 func_80022000(sprite, scale);
@@ -2303,11 +2309,14 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         }
         break;
     }
-    case 0xBD:
-        func_80023B84(sprite, (u8 *)(((u16 *)D_8006BE20)[code[0] + 1] + (s32)D_8006BE20), sprite->image);
+    case 0xBD: {
+        SpriteSource *source = (SpriteSource *)D_8006BE10;
+
+        func_80023B84(sprite, (u16 *)(source->animations[code[0] + 1] + (s32)source->animations), sprite->image);
         break;
+    }
     case 0xE0:
-        func_80023B84(sprite, code + (((s8)code[1] << 8) + code[0]), sprite->image);
+        func_80023B84(sprite, (u16 *)(code + (((s8)code[1] << 8) + code[0])), sprite->image);
         break;
     case 0xAD:
         sprite->frame_bits.bounce = code[0];
@@ -2316,7 +2325,8 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         func_80021CA0(sprite, code[0]);
         break;
     case 0xB8:
-        sprite->stack_top -= (s8)code[0];
+        angle = (s8)code[0];
+        sprite->stack_top -= angle;
         break;
     case 0xB3:
         sprite->frame_bits.frame = (s8)code[0];
@@ -2371,7 +2381,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
 
         offset = (rand() & 0xFF) * code[0] / 256;
         offset -= code[0] >> 1;
-        func_80021FE0(sprite, sprite->direction + offset * 16);
+        SPRITE_OFFSET_DIRECTION(sprite, offset);
         break;
     }
     case 0xA9:
@@ -2441,9 +2451,6 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         break;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001FBE4);
-#endif
 
 /* `value + delta` clamped to 0-255. */
 s32 func_80021AD8(s32 value, s32 delta) {
