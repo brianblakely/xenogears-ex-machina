@@ -1201,12 +1201,14 @@ s32 func_8007CD80(VECTOR *point, SVECTOR *edge, DVECTOR *segment) {
  * height and normal, the triangle, and its floor range; attribute bit
  * 800000 blocks the layer unless it is disabled for the actor or party
  * processing runs. Returns -1 when the walk leaves the mesh.
- * NON_MATCHING: far from the original (register allocation and order). */
+ * NON_MATCHING: control flow and the body match; in the block before the
+ * walk the original loads position/unk030 into a1/v1/a3/a0 (ours
+ * a2/v1/a3/a1) and schedules the layer spill and the mask/query.vy stores
+ * later. */
 s32 func_8007D3D4(FieldActor *actor, s32 layer, s32 *floor, VECTOR *normal, s16 *triangle, s32 *upper) {
     SVECTOR query;
     CollisionTriangle *triangles;
     SVECTOR *vertices;
-    CollisionTriangle *tri;
     s32 mask;
     s32 origin;
     s32 point;
@@ -1216,110 +1218,104 @@ s32 func_8007D3D4(FieldActor *actor, s32 layer, s32 *floor, VECTOR *normal, s16 
     s32 side;
     s32 steps;
     s32 bump;
-    s16 current;
+    s32 current;
 
     current = actor->triangle[layer];
     triangles = D_800AF880.components.collision_triangles[layer];
     vertices = D_800AF880.components.collision_vertices[layer];
-    if (current == -1) {
-        return -1;
-    }
-    query.vx = (actor->position[0] + actor->unk030[0]) >> 16;
-    point = (query.vx << 16) + ((actor->position[2] + actor->unk030[2]) >> 16);
-    mask = 0;
-    query.vy = 0;
-    origin = ((actor->position[0] >> 16) << 16) + (actor->position[2] >> 16);
-    query.vz = (actor->position[2] + actor->unk030[2]) >> 16;
-    steps = 0;
-    if (!((actor->layer_flags >> (layer + 3)) & 1)) {
-        mask = -(D_800B2078.party_processing_mode == 0);
-    }
-    for (;;) {
-        tri = &triangles[current];
-        a = (vertices[tri->unk00[0]].vx << 16) + vertices[tri->unk00[0]].vz;
-        b = (vertices[tri->unk00[1]].vx << 16) + vertices[tri->unk00[1]].vz;
-        c = (vertices[tri->unk00[2]].vx << 16) + vertices[tri->unk00[2]].vz;
-        side = (u32)func_8004A70C(a, b, point) >> 31;
-        if (func_8004A70C(b, c, point) < 0) {
-            side |= 2;
+    if (current != -1) {
+        point = (((actor->position[0] + actor->unk030[0]) >> 16) << 16) +
+                ((actor->position[2] + actor->unk030[2]) >> 16);
+        origin = ((actor->position[0] >> 16) << 16) + (actor->position[2] >> 16);
+        query.vx = (actor->position[0] + actor->unk030[0]) >> 16;
+        mask = 0;
+        query.vy = 0;
+        query.vz = (actor->position[2] + actor->unk030[2]) >> 16;
+        steps = 0;
+        if (!((actor->layer_flags >> (layer + 3)) & 1)) {
+            mask = -(D_800B2078.party_processing_mode == 0);
         }
-        if (func_8004A70C(c, a, point) < 0) {
-            side |= 4;
-        }
-        switch (side) {
-        case 0:
-            steps = 0xFF;
-            break;
-        case 1:
-            current = triangles[current].unk00[3];
-            break;
-        case 2:
-            current = triangles[current].unk00[4];
-            break;
-        case 4:
-            current = triangles[current].unk00[5];
-            break;
-        case 3:
-            if (func_8004A70C(b, point, origin) >= 0) {
-                current = triangles[current].unk00[4];
-            } else {
+        do {
+            a = (vertices[triangles[current].unk00[0]].vx << 16) + vertices[triangles[current].unk00[0]].vz;
+            b = (vertices[triangles[current].unk00[1]].vx << 16) + vertices[triangles[current].unk00[1]].vz;
+            c = (vertices[triangles[current].unk00[2]].vx << 16) + vertices[triangles[current].unk00[2]].vz;
+            side = (u32)func_8004A70C(a, b, point) >> 31;
+            if (func_8004A70C(b, c, point) < 0) {
+                side |= 2;
+            }
+            if (func_8004A70C(c, a, point) < 0) {
+                side |= 4;
+            }
+            switch (side) {
+            case 0:
+                steps = 0xFF;
+                break;
+            case 3:
+                if (func_8004A70C(b, point, origin) < 0) {
+                    current = triangles[current].unk00[3];
+                } else {
+                    current = triangles[current].unk00[4];
+                }
+                break;
+            case 5:
+                if (func_8004A70C(a, point, origin) < 0) {
+                    current = triangles[current].unk00[5];
+                    break;
+                }
+                /* fallthrough */
+            case 1:
                 current = triangles[current].unk00[3];
-            }
-            break;
-        case 5:
-            if (func_8004A70C(a, point, origin) >= 0) {
-                current = triangles[current].unk00[3];
-            } else {
-                current = triangles[current].unk00[5];
-            }
-            break;
-        case 6:
-            if (func_8004A70C(c, point, origin) < 0) {
+                break;
+            case 6:
+                if (func_8004A70C(c, point, origin) >= 0) {
+                    current = triangles[current].unk00[5];
+                    break;
+                }
+                /* fallthrough */
+            case 2:
                 current = triangles[current].unk00[4];
-            } else {
+                break;
+            case 4:
                 current = triangles[current].unk00[5];
+                break;
+            case 7:
+                current = -1;
+                break;
             }
-            break;
-        case 7:
-            current = -1;
-            break;
-        }
-        steps++;
-        if (current == -1) {
-            return -1;
-        }
-        if (steps >= 0x20) {
-            break;
-        }
-    }
-    if (steps == 0x20) {
-        return -1;
-    }
-    tri = &triangles[current];
-    func_8007B07C(&vertices[tri->unk00[0]], &vertices[tri->unk00[1]], &vertices[tri->unk00[2]], &query, normal);
-    *triangle = current;
-    bump = (s8)tri->unk0D * 4;
-    if (bump < 0) {
-        bump = 0;
-    }
-    if (actor->layer != layer) {
-        if (!(D_800AF880.components.collision_attributes[tri->attribute].word & (mask & 0x800000))) {
-            *floor = query.vy;
-            func_8007C670(floor, upper, bump);
+            steps++;
+        } while (current != -1 && steps < 0x20);
+        if (current != -1 && steps != 0x20) {
+            func_8007B07C(&vertices[triangles[current].unk00[0]], &vertices[triangles[current].unk00[1]],
+                          &vertices[triangles[current].unk00[2]], &query, normal);
+            *triangle = current;
+            bump = (s8)triangles[current].unk0D * 4;
+            if (bump < 0) {
+                bump = 0;
+            }
+            if (actor->layer != layer) {
+                if (!((D_800AF880.components.collision_attributes[triangles[current].attribute].word & 0x800000) &
+                      mask)) {
+                    *floor = query.vy;
+                    func_8007C670(floor, upper, bump);
+                } else {
+                    *floor = 0x7FFFFFFF;
+                    *upper = 0x7FFFFFFF;
+                }
+            } else if ((D_800AF880.components.collision_attributes[triangles[current].attribute].word & 0x800000) &
+                       mask) {
+                *floor = 0x7FFFFFFF;
+                *upper = 0x7FFFFFFF;
+            } else if (actor->unk030[0] == 0 && actor->unk030[1] == 0 && actor->unk030[2] == 0) {
+                *floor = query.vy;
+                func_8007C670(floor, upper, bump);
+            } else {
+                *floor = actor->unk72;
+                func_8007C670(floor, upper, bump);
+            }
             return 0;
         }
-    } else if (!(D_800AF880.components.collision_attributes[tri->attribute].word & (mask & 0x800000))) {
-        if (actor->unk030[0] == 0 && actor->unk030[1] == 0 && actor->unk030[2] == 0) {
-            *floor = query.vy;
-        } else {
-            *floor = actor->unk72;
-        }
-        func_8007C670(floor, upper, bump);
-        return 0;
     }
-    *floor = 0x7FFFFFFF;
-    *upper = 0x7FFFFFFF;
-    return 0;
+    return -1;
 }
 #else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8007D3D4);
@@ -1835,25 +1831,28 @@ s32 func_80033728(void *messages, void *message);
  * owner's portrait unless disabled, set up the text and the opening slide.
  * Returns -1 (clearing the window's +414) when the speaker has layer flag
  * 0x200 and the style lacks bit 1, else 0.
- * Does not match yet: the statements and spill slots follow the original,
- * but it assigns the saved registers differently (owner in s4, rows in s2,
- * mode in s6, w in s1) and reserves one more 8-byte slot (0x70 frame). */
+ * NON_MATCHING: the prologue, slot loop and most of the body match; the
+ * original's frame is 0x70 (ours 0x68, an unused 8-byte spill slot above the
+ * message), case 3 adds 8 before the columns/rows term, the 494/495 stores
+ * keep the character in a0, extra stays in a3 (8 added before x), and the
+ * stores after func_80033728 recompute the window offset and load the text
+ * flags first. */
 s32 func_8007F8DC(s16 x, s16 y, void *message, s32 w, s32 columns, s32 rows, s32 owner, s32 speaker,
                   s32 mode, s32 turned, s32 flags) {
     s32 target_x;
     s32 target_y;
     u32 progress;
-    u16 style;
+    s32 style;
     s32 slot;
     s32 extra;
     s32 i;
 
     y -= 8;
     progress = D_800AF880.components.descriptors[owner].actor->unk84;
-    if (progress >> 16) {
-        style = progress >> 16;
+    if ((progress >> 16) == 0) {
+        style = (u16)progress;
     } else {
-        style = progress;
+        style = (u16)(progress >> 16);
     }
     style |= turned;
     for (i = 0; i < 4; i++) {
@@ -1870,16 +1869,20 @@ s32 func_8007F8DC(s16 x, s16 y, void *message, s32 w, s32 columns, s32 rows, s32
     D_800C2698[w].text.vars[2] = func_800A3018(0x1A);
     D_800C2698[w].text.vars[3] = func_800A3018(0x1C);
     D_800C2698[w].text.unk80 = D_800C2698[w].text.vars[3];
-    if (mode == 2) {
+    switch (mode) {
+    case 2:
         target_x = 0xA0;
         target_y = y + 0x20;
-    } else if (mode == 3) {
+        break;
+    case 3:
         target_x = x + 8 + columns * 2;
         target_y = y + 8 + rows * 7;
-    } else {
+        break;
+    default:
         func_8007F814(speaker, &target_x, &target_y, -0x40);
+        break;
     }
-    if (D_800AF880.components.descriptors[owner].actor->character != -1 && !(style & 2)) {
+    if (D_800AF880.components.descriptors[owner].actor->character != 0xFF && !(style & 2)) {
         if (!(style & 0x402)) {
             func_8007F5AC(w, ((D_800AF880.components.descriptors[owner].actor->state.word >> 1) & 0xE) | 1);
         } else {
@@ -1894,7 +1897,7 @@ s32 func_8007F8DC(s16 x, s16 y, void *message, s32 w, s32 columns, s32 rows, s32
     D_800C2698[w].status = -1;
     func_8007E114(w, x, y, columns * 4 + 0x10, rows * 14 + 0x10);
     extra = 0;
-    if (D_800AF880.components.descriptors[owner].actor->character != -1) {
+    if (D_800AF880.components.descriptors[owner].actor->character != 0xFF) {
         extra = (style & 0x402) == 0 ? 0x44 : 0;
     }
     func_80032F54(&D_800C2698[w].text, D_800ADF54[slot][0], D_800ADF54[slot][1], x + extra + 8, y + 8, columns,
@@ -1902,7 +1905,11 @@ s32 func_8007F8DC(s16 x, s16 y, void *message, s32 w, s32 columns, s32 rows, s32
     if (style & 0x400) {
         D_800C2698[w].style |= 0x20;
     }
-    D_800C2698[w].text.speed = D_800B2078.text_speed == 8 ? 1 : 2;
+    if (D_800B2078.text_speed == 8) {
+        D_800C2698[w].text.speed = 1;
+    } else {
+        D_800C2698[w].text.speed = 2;
+    }
     D_800C2698[w].text.unk90 = func_80033728(D_800ADBF0, message);
     D_800C2698[w].busy = 0;
     D_800C2698[w].text.flags |= 2;
