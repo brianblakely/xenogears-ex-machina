@@ -21,6 +21,11 @@
 #include "console.h"
 #include "sound.h"
 
+/* The CD mode byte, first of the CdlSetmode parameter (main_8002A260.c
+ * declares the whole 4-byte parameter). Read as a scalar: an array or
+ * aggregate view makes GCC keep its address in a register. */
+extern u8 D_80059F18;
+
 /* Create a panoramic backdrop (heap tag 4). `colours` (three RGB words:
  * sky, horizon, ground) enables the fills, NULL leaves them off. */
 Panorama *func_8002709C(s32 tex_x, s32 tex_y, s32 width, s32 height, s32 clut_x, s32 clut_y,
@@ -804,19 +809,13 @@ void func_80028ECC(s32 index) {
  * data in *data (0 when one is available, 1 otherwise). With the PC file
  * server, first read the next sector: a frame's first sector reserves a free
  * run of slots for all its sectors, later sectors fill them. */
-/* Nonmatching: the original reads the CD mode byte as a scalar (lui/lbu
- * %lo each time); any array, union or struct access to D_80059F18 makes
- * GCC 2.6.3 load its address into a pseudo that CSE then keeps in $s4,
- * which pushes `data` onto the stack (with a scalar alias the frame and
- * $fp/$s7 match). Remaining with that alias: payload/offset take $s4/$s5
- * swapped, the frame is 0x48 (original 0x50), the frame size store
- * D_80059F5C is scheduled after the slot length load and is not reloaded
- * after `slot->state = 3`, and the -0x20 PClseek is not cross-jumped. */
-#ifdef NON_MATCHING
+/* Slots are accessed as halfwords (state, sequence, free-run length): the
+ * state store then may alias the frame size global, which is reloaded after
+ * it (8002B8B0 does the same). */
 s32 func_80028F30(u8 **data, StreamFrame **frame) {
     StreamRing *ring = D_8004FE30;
     StreamSlot *slots;
-    StreamSlot *slot;
+    u16 *slot;
     StreamFrame *header;
     u8 *payload;
     s32 count;
@@ -833,70 +832,69 @@ s32 func_80028F30(u8 **data, StreamFrame **frame) {
     payload = payload + count * 8 + 0x24;
     if (D_8004FE48 != NULL && D_8004FE4C != -1 && D_8004FDF8 > 0) {
         if (D_80059F60 == 0) {
-            for (i = 0; i < D_8004FE40; i += slot->length) {
-                slot = &D_8004FE2C[i];
-                if (slot->state == 0) {
+            for (i = 0; i < D_8004FE40; i += slot[2]) {
+                slot = (u16 *)&D_8004FE2C[i];
+                if (slot[0] == 0) {
                     break;
                 }
             }
             if (i >= D_8004FE40) {
                 goto search;
             }
-            offset = i << 11;
-            if (D_80059F18[0] & 8) {
+            if (D_80059F18 & 8) {
                 func_8004C398(D_8004FE4C, D_800596F8, 8);
                 if (D_800596F8[0] == 1) {
                     goto skip;
                 }
             }
+            offset = i << 11;
             D_80059F54 = (u8 *)D_8004FE08 + offset;
             header = (StreamFrame *)D_80059F54;
             func_8004C398(D_8004FE4C, (u8 *)header, 0x20);
             D_80059F5C = header->sectors;
             D_8005A4B8 = header->word8;
-            if (slot->length < D_80059F5C) {
-                if (D_80059F18[0] & 8) {
+            if (slot[2] < D_80059F5C) {
+                if (D_80059F18 & 8) {
                     PClseek(D_8004FE4C, -0x28, 1);
                 } else {
                     PClseek(D_8004FE4C, -0x20, 1);
                 }
-                *frame = NULL;
-                goto search_all;
+                goto search;
             }
-            slot->state = 3;
-            slot->sequence = D_8004FE26;
-            rest = slot->length - D_80059F5C;
+            slot[1] = D_8004FE26;
+            slot[0] = 3;
+            rest = slot[2] - D_80059F5C;
             if (rest >= 3) {
-                slot->length = D_80059F5C + 1;
-                slot[D_80059F5C + 1].length = rest - 1;
-                slot[D_80059F5C + 1].state = 0;
+                slot[2] = D_80059F5C + 1;
+                slot[(D_80059F5C + 1) * 4 + 2] = rest - 1;
+                slot[(D_80059F5C + 1) * 4] = 0;
                 func_80028ECC(D_80059F5C + 1);
             }
             D_8004FE26++;
             D_80059F58 = (u8 *)D_8004FE08 + offset + D_80059F5C * 32;
             func_8004C398(D_8004FE4C, D_80059F58, 0x7E0);
-            if (D_80059F18[0] & 8) {
+            if (D_80059F18 & 8) {
                 PClseek(D_8004FE4C, 0x118, 1);
             }
             D_8004FE10 = i;
             D_8004FDF8 -= 0x800;
             D_80059F60++;
         } else {
-            if (D_80059F18[0] & 8) {
+            if (D_80059F18 & 8) {
                 func_8004C398(D_8004FE4C, D_800596F8, 8);
                 if (D_800596F8[0] == 1) {
                 skip:
                     PClseek(D_8004FE4C, 0x918, 1);
-                    *frame = NULL;
-                    goto search_all;
+                    goto search;
                 }
             }
-            slot = &D_8004FE2C[++D_8004FE10];
-            slot->state = 3;
-            slot->sequence = D_8004FE26++;
+            slot = (u16 *)&D_8004FE2C[++D_8004FE10];
+            slot[1] = D_8004FE26;
+            slot[0] = 3;
+            D_8004FE26++;
             func_8004C398(D_8004FE4C, D_80059F54 + D_80059F60 * 32, 0x20);
             func_8004C398(D_8004FE4C, D_80059F58 + D_80059F60 * 0x7E0, 0x7E0);
-            if (D_80059F18[0] & 8) {
+            if (D_80059F18 & 8) {
                 PClseek(D_8004FE4C, 0x118, 1);
             }
             D_8004FDF8 -= 0x800;
@@ -907,7 +905,6 @@ s32 func_80028F30(u8 **data, StreamFrame **frame) {
     }
 search:
     *frame = NULL;
-search_all:
     for (i = 0; i < count; i++, slots++) {
         if (slots->state == 3 && slots->sequence == D_8004FE24) {
             break;
@@ -925,9 +922,6 @@ search_all:
     D_8004FE24 += header->sectors;
     return 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002709C", func_80028F30);
-#endif
 
 /* Release a ring chunk: clear its slot's state and return the old state (0xffff without a ring, 0 for no chunk). */
 u16 func_8002945C(u8 *chunk) {
@@ -1074,10 +1068,10 @@ s32 func_80029690(s32 file, void *destination, s32 mode, s32 flags) {
         D_8004FE28 = 0;
         D_8004FE24 = 0;
         func_80028AAC();
-        for (i = 3, mode_byte = &D_80059F18[3]; i >= 0; i--) {
+        for (i = 3, mode_byte = &D_80059F18 + 3; i >= 0; i--) {
             *mode_byte-- = 0;
         }
-        D_80059F18[0] = flags | 0xA0;
+        D_80059F18 = flags | 0xA0;
         if (D_8004FE48 == NULL) {
             return 0;
         }
