@@ -552,6 +552,11 @@ typedef struct {
 /* PsyQ libgte. */
 #define copyVector(v0, v1) (v0)->vx = (v1)->vx, (v0)->vy = (v1)->vy, (v0)->vz = (v1)->vz
 
+/* PsyQ libgpu. */
+#define setRGB0(p, _r0, _g0, _b0) ((p)->r0 = _r0, (p)->g0 = _g0, (p)->b0 = _b0)
+#define setRGB1(p, _r1, _g1, _b1) ((p)->r1 = _r1, (p)->g1 = _g1, (p)->b1 = _b1)
+#define setRGB2(p, _r2, _g2, _b2) ((p)->r2 = _r2, (p)->g2 = _g2, (p)->b2 = _b2)
+
 typedef struct {
     u32 tag;
     u32 code[15];
