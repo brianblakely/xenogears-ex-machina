@@ -1306,14 +1306,6 @@ typedef struct MenuResources {
     void *files[8]; /* packed files, relocated by 8003342c */
 } MenuResources;
 
-/* Texture of a sprite sheet entry (80026338's six outputs). */
-typedef struct SheetEntry {
-    s32 unk0;
-    s32 mode;
-    s32 clutX, clutY;
-    s32 pageX, pageY;
-} SheetEntry;
-
 extern MenuResources *D_8005945C; /* the menu resources */
 extern void *D_8006259C;          /* the menu effect bank */
 void func_8003342C(void *archive);                /* relocate an offset table */

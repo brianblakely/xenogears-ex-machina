@@ -493,21 +493,18 @@ void func_801C6400(void) {
 /* Load the menu resources: the card file header template (name prefixes,
  * "SC" header, icon palette and pixels), the TIM list, sprite sheet and
  * label text, the party's portraits and, with sound, the effect bank. */
-#ifdef NON_MATCHING
 void func_801C65F4(void) {
     TIM_IMAGE tim;
-    SheetEntry entries[3];
+    s32 tex[3 * 6]; /* per entry 80026338's six outputs: -, mode, clut x/y, page x/y */
     MenuResources *res;
-    void *icon;
-    void *list;
-    void *portraits;
+    void *data;
     s32 i;
     u8 id;
 
     res = D_8005945C;
     func_8003342C(res);
-    icon = func_80032E88(res->files[0], 1);
-    OpenTIM(icon);
+    data = func_80032E88(res->files[0], 1);
+    OpenTIM(data);
     ReadTIM(&D_800625A0->card->icon);
     strcpy(D_800625A0->card->prefix, "BASLUS-00664");
     strcpy((char *)D_800625A0->card->otherPrefix, "BASLUS-01160");
@@ -518,37 +515,37 @@ void func_801C65F4(void) {
     bzero(D_800625A0->card->saveTitle, sizeof(D_800625A0->card->saveTitle));
     memmove(D_800625A0->card->savePalette, D_800625A0->card->icon.caddr, sizeof(D_800625A0->card->savePalette));
     memmove(D_800625A0->card->saveIcon, D_800625A0->card->icon.paddr, sizeof(D_800625A0->card->saveIcon));
-    func_800320E8(icon);
-    list = func_80032E88(res->files[1], 1);
-    func_8002DD20(list);
-    func_800320E8(list);
+    func_800320E8(data);
+    data = func_80032E88(res->files[1], 1);
+    func_8002DD20(data);
+    func_800320E8(data);
     D_800625A0->sheet = func_80032E88(res->files[2], 0);
     D_800625A0->labels = func_80032E88(res->files[3], 0);
-    func_80026338(D_800625A0->sheet, 0xe0, &entries[0].unk0, &entries[0].mode, &entries[0].clutX,
-                  &entries[0].clutY, &entries[0].pageX, &entries[0].pageY);
-    func_80026338(D_800625A0->sheet, 0x14b, &entries[0].unk0, &entries[0].mode, &entries[0].clutX,
-                  &entries[0].clutY, &entries[0].pageX, &entries[0].pageY);
-    func_80026338(D_800625A0->sheet, 0x14c, &entries[1].unk0, &entries[1].mode, &entries[1].clutX,
-                  &entries[1].clutY, &entries[1].pageX, &entries[1].pageY);
-    func_80026338(D_800625A0->sheet, 0x14d, &entries[2].unk0, &entries[2].mode, &entries[2].clutX,
-                  &entries[2].clutY, &entries[2].pageX, &entries[2].pageY);
-    entries[1].pageX += 0xc;
-    portraits = func_80032E88(res->files[4], 1);
+    func_80026338(D_800625A0->sheet, 0xe0, &tex[0], &tex[1], &tex[2],
+                  &tex[3], &tex[4], &tex[5]);
+    func_80026338(D_800625A0->sheet, 0x14b, &tex[0], &tex[1], &tex[2],
+                  &tex[3], &tex[4], &tex[5]);
+    func_80026338(D_800625A0->sheet, 0x14c, &tex[6], &tex[7], &tex[8],
+                  &tex[9], &tex[10], &tex[11]);
+    func_80026338(D_800625A0->sheet, 0x14d, &tex[12], &tex[13], &tex[14],
+                  &tex[15], &tex[16], &tex[17]);
+    tex[10] += 0xc;
+    data = func_80032E88(res->files[4], 1);
     for (i = 0; i < 3; i++) {
         id = D_800625A0->party->ids[i];
         if (id != 0xff) {
-            OpenTIM((u8 *)portraits + id * 0xb20);
+            OpenTIM((u8 *)data + id * 0xb20);
             ReadTIM(&tim);
-            tim.crect->x = entries[i].clutX;
-            tim.crect->y = entries[i].clutY;
-            tim.prect->x = entries[i].pageX;
-            tim.prect->y = entries[i].pageY;
+            tim.crect->x = tex[i * 6 + 2];
+            tim.crect->y = tex[i * 6 + 3];
+            tim.prect->x = tex[i * 6 + 4];
+            tim.prect->y = tex[i * 6 + 5];
             LoadImage(tim.crect, tim.caddr);
             LoadImage(tim.prect, tim.paddr);
         }
     }
     DrawSync(0);
-    func_800320E8(portraits);
+    func_800320E8(data);
     if (D_80059178 != 0) {
         func_80028470(0x10, 2);
         D_8006259C = func_80031BDC(func_800288EC(5), 0);
@@ -560,9 +557,6 @@ void func_801C65F4(void) {
     D_800625A0->effectBank = D_8006259C;
     func_800320E8(res);
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C65F4);
-#endif
 
 /* Set up the party: the starting top cursor, which characters are present,
  * the party slots (and which have a gear), the first occupied slot; then
