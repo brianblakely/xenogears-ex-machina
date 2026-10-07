@@ -2161,7 +2161,16 @@ void func_801CAE08(u8 mode) {
  * (notes and labels count). With threshold 1 + non-fixed registers (about
  * 28, two moves before it: 22) r84 stays only if 22 * span < 440, i.e. an
  * inner loop under 20 luids, or with a row loop of 72+ insns. The inner
- * loop as do/while, while, nested ifs or a goto exit scores 25-53. */
+ * loop as do/while, while, nested ifs or a goto exit scores 25-53.
+ * A third doubling also works: with `name = GAME_NAMES + n;` set inside
+ * the inner loop the GAME_NAMES constant is a further re-moved invariant
+ * before r84, and &GAME_NAMES[1] then stays in the row loop exactly as in
+ * the original (t0). But that name is no longer a row induction variable:
+ * the row loop keeps n + GAME_NAMES as an add per row (s0 + s4) instead of
+ * the original's separate walking pointer (26 with name set again before
+ * the copy loop, 29 without; the row loop never strength-reduces it).
+ * Also tried: n as a row index with GAME_NAMES[n * 20 + i + 1] or a
+ * [31][20] view (35-57), (GAME_NAMES + n)[i] reads (58-65). */
 void func_801CB184(void) {
     u8 codes[24];
     u8 decoded[20];
@@ -6708,7 +6717,18 @@ void func_801DB5E4(u8 mode) {
  * Also tried: ids = inv->ids before the decrement (12), &inv->ids[idx]
  * through a pointer (115), ids += idx, idx[ids], (u8 *)inv + 150 (2). A
  * 30-minute permuter run (func_801e31c0 declared K&R in its copy, as the
- * permuter cannot type an undeclared call) found nothing below the base. */
+ * permuter cannot type an undeclared call) found nothing below the base.
+ * Closest structure found (8, only the count base differs): count and
+ * decrement through INVENTORY, the clear as `inv = INVENTORY; ids =
+ * inv->ids;` (cse then knows inv in the clear block and orders the clear
+ * index first), plus a second, never-read `inv = INVENTORY` before the
+ * loop that keeps loop.c from hoisting the clear; without it the clear's
+ * base + 150 is moved out (115). The extra store is a dead assignment, so
+ * it is not used; the count base then gets its own register (v1) where
+ * the original rematerialises one equivalence register (t0) for both the
+ * count base and the clear. Also tried (74-143): the clear's inv set
+ * inside case 4 / before the decrement, inv set at entry for the item
+ * lookup, counts through inv and the clear resetting inv. */
 u8 func_801DB920(s32 row, s32 entry) {
     u16 marks;
     u8 running;
