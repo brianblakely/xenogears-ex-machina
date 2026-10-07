@@ -474,11 +474,12 @@ void func_801DD5E8(u8 mode) {
  * confirm while its cost can be paid, until cancelled. */
 #ifdef NON_MATCHING
 /* Same code shape as the original; remaining: global register allocation
- * (original s2 kind/used, s3 kind&0xff, s4 targets, s5 slot&0xff; here
- * `used` ranks below kind&0xff, targets and slot&0xff) and v0/v1 swapped in
- * the `left` subtraction. Wrapping `used = 0` and the target loop of case 4
- * in a do/while (0) block (a statement macro, as 801db920's item use also
- * suggests) fixes targets/slot&0xff and leaves 44 differing instructions. */
+ * (original s2 kind/used, s3 kind&0xff, s4 targets, s5 slot&0xff) and v0/v1
+ * swapped in the `left` subtraction. do/while (0) blocks (statement macros)
+ * around `used = 0` plus the case-4 target loop and around `used = 1;
+ * hit = 1;` (refs inside count double for the allocator), with
+ * `targets = 0` after the redraw block, leave 29 differing instructions
+ * (local scorer): `left` and the gear maximum's address registers. */
 void func_801DD790(u8 slot, s32 row, u8 kind) {
     MenuEffect *effect;
     s32 x;
@@ -1696,9 +1697,11 @@ void func_801E1398(void) {
  * recomputed), hence the goto loop; the u16 copy of `row` zero-extends it
  * once before the loop, in place in a1, as the original does. Remaining:
  * i/values take t2/t1 (the original t1/t2: `values` wins the global
- * allocation priority here) and the target address adds id * 0x110 to the
- * table after the row offset (the original: table + id * 0x110 first, then
- * row * 14 + that). */
+ * allocation priority here; a do/while (0) block around the loop body,
+ * whose refs then count double, fixes that) and the target address adds
+ * id * 0x110 to the table after the row offset (the original: table +
+ * id * 0x110 first, then row * 14 + that), 9 differing instructions with
+ * the block (local scorer). */
 u32 func_801E1418(u8 slot, u8 row) {
     u32 sum;
     u16 r;

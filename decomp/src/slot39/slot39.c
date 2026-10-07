@@ -1487,8 +1487,10 @@ void func_801C9270(s32 port) {
  * cursor marker. */
 #ifdef NON_MATCHING
 /* Remaining: the original keeps `marked` (always 0 here) as a copy of noCard
- * and tests it before setting party +0b (this build folds it away), and its
- * frame is 0xe8 (0x30 more: six more dead address pseudos). */
+ * (`move s6,s4` in the first branch's delay slot) and tests it before
+ * setting party +0b; this build folds it to a constant whatever the
+ * assignment form (marked = noCard = 0, noCard = 0; marked = noCard), and
+ * its frame is 0xe8 (0x30 more; the 0x58-0xc8 gap is never accessed). */
 u8 func_801C93A8(void) {
     char path[64];
     u8 present[2];
@@ -2126,9 +2128,14 @@ void func_801CAE08(u8 mode) {
  * to the first zero pair go through 80033b34 into a 20-byte buffer that is
  * copied back whole. */
 #ifdef NON_MATCHING
-/* Loop-invariant motion differs: this build hoists &GAME_NAMES[1] out of the
- * row loop into s2 (one more saved register, ra at 0x54), the original
- * reloads it into t0 for every row. */
+/* Loop-invariant motion differs: this build hoists &GAME_NAMES[1] (a
+ * movable the inner loop already moved) out of the row loop into s2, the
+ * original reloads it into t0 for every row. GCC's loop pass doubles the
+ * loop's insn count for every such re-moved invariant, so the original had
+ * one more before it (fp+16, fp+17 and this one are moved here); writing
+ * every access as GAME_NAMES[n + i] keeps it but loses the name pointer.
+ * Wrapping the inner loop in a do/while (0) block gets 19 -> 13 differing
+ * instructions (local scorer). */
 void func_801CB184(void) {
     u8 codes[24];
     u8 decoded[20];
@@ -2175,6 +2182,13 @@ void func_801CB28C(s32 *save) {
  * its last byte, apply it; message 5c ends the load, a failure shows message
  * 3e and continues. */
 #ifdef NON_MATCHING
+/* Remaining: register allocation and block placement. A do/while (0)
+ * block (statement macro) from `done = 0` through the checksum test moves
+ * the close-and-release and checksum-ok paths out of line as the original
+ * places them (GCC moves loop-exit blocks out of loops); passing
+ * p = buffer + 0x100 to 801cb28c and a goto read-retry loop then leave the
+ * 0x100 compare constant spilled and 0xff in s8 as in the original, 24
+ * differing instructions (local scorer). */
 u8 func_801CB304(void) {
     char path[64];
     s32 first;
@@ -2369,6 +2383,12 @@ u8 func_801CB9E8(u8 port, u8 slot) {
  * encoded in place, the disc, then the game data copy (801e4a28) and the names
  * decoded back. */
 #ifdef NON_MATCHING
+/* Remaining: the original allocates the name pointer s0 and the row index
+ * s1 (here the other way round), and schedules the name pointer's
+ * initialisation after the hoisted codes/encoded addresses. A do/while (0)
+ * block (statement macro) around the copy-back loop fixes the allocation
+ * and storing the play time before the digit gets to 5 differing
+ * instructions (the name pointer's lui/addiu placement; local scorer). */
 void func_801CBA4C(MenuSavePayload *payload, u8 port, u8 digit) {
     u8 codes[24];
     u8 encoded[20];
@@ -2666,7 +2686,10 @@ u8 func_801CBD90(u8 kind) {
  * card and 44 otherwise, and refreshes the listing. Returns 1 when there
  * was no card. */
 #ifdef NON_MATCHING
-/* Differs in register allocation and spills (the original keeps &tempName in a saved register). */
+/* Differs in register allocation and spills (the original keeps &tempName
+ * in a saved register) and block placement; do/while (0) blocks around the
+ * read/write retry sections get 131 -> 111 differing instructions (local
+ * scorer) but not the allocation. */
 u8 func_801CC6D8(void) {
     char destName[64];
     char other[8];
@@ -6651,10 +6674,11 @@ void func_801DB5E4(u8 mode) {
 #ifdef NON_MATCHING
 /* Differs: the original clears the used-up id through &D_8006F5C4 + 0x96
  * (reloaded into t0, as is the counts base before the loop); this build
- * addresses D_8006F65A directly (INVENTORY->ids reorders the saved registers).
- * The original also uses 801e31c0's result unmasked, as an implicitly
- * declared (int) function would be. A do/while (0) block (statement macro)
- * around the case-4 target loop brings it to 20 differing instructions. */
+ * addresses D_8006F65A directly (INVENTORY->ids lets CSE fold it into
+ * 150(&counts[idx]) or hoists the whole address). The original also uses
+ * 801e31c0's result unmasked, as an implicitly declared (int) function
+ * would be: without the menu.h prototype in this unit 13 instructions
+ * differ (local scorer). */
 u8 func_801DB920(s32 row, s32 entry) {
     u16 marks;
     u8 running;
