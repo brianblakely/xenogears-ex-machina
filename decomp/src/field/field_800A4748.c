@@ -1532,14 +1532,19 @@ void func_800A84C0(void) {
  * buffers and texture each piece from its frame (flip in flags bits 0-3,
  * 4- or 8-bit page by bits 4-7). The original passes the coordinates to
  * 8007a44c unconverted (no s16 prototype in scope: a separate unit).
- * NON_MATCHING: the original addresses D_800AFC60/D_800AFC64 by symbol
- * (no hoisted base), indexes the layout and frame tables as i * 8 from
- * hoisted bases (fp = layout + 6, s5 = frames + 4) with a second copy of
- * i, and has v in t0 and w in t1; GCC here strength-reduces the table
- * pointers and keeps &D_800AFC60 in a register. Indexing both tables as
- * flat u16 arrays ((u16 *)table)[n * 4 + field] and storing the second
- * buffer through a scalar D_800AFC64 reproduces the frame-table addressing
- * (score 123 -> 99), but the layout reads stay strength-reduced. */
+ * NON_MATCHING: the original indexes the layout table as i * 8 from hoisted
+ * bases (fp = layout + 6, s7 = layout) with a second counter for i, stores
+ * the first buffer pointer by symbol, and has v in t0 and w in t1; GCC here
+ * strength-reduces the layout addresses (i * 8 and layout + 4 + i * 8) and
+ * keeps &D_800AFC60 in s0 for the first store. The flat field reads give the
+ * frame table's per-field addressing (score 123 -> 106; a scalar
+ * D_800AFC64 for the second buffer gives 99 but grows the function). */
+/* The layout and frame tables read as flat halfword arrays, one field at a
+ * time, as the original indexes them (n * 4 + field). */
+#define PIECE(n, field) (((u16 *)D_800AEF10)[(n) * 4 + (field)])
+#define FRAME(n, field) (((u16 *)D_800AEB68)[(n) * 4 + (field)])
+enum { PIECE_X, PIECE_Y, PIECE_FRAME, PIECE_FLAGS };
+enum { FRAME_U, FRAME_V, FRAME_W, FRAME_H };
 void func_800A8BA4(void) {
     POLY_FT4 *quad;
     POLY_FT4 *copy;
@@ -1565,7 +1570,7 @@ void func_800A8BA4(void) {
         SetPolyFT4(quad);
         setRGB0(quad, 0x80, 0x80, 0x80);
         quad->clut = GetClut(0, 0xE8);
-        switch ((D_800AEF10[i].flags >> 4) & 0xF) {
+        switch ((PIECE(i, PIECE_FLAGS) >> 4) & 0xF) {
         case 0:
             mode = 1;
             break;
@@ -1575,13 +1580,13 @@ void func_800A8BA4(void) {
         }
         quad->tpage = GetTPage(0, mode, 0x380, 0);
         SetSemiTrans(quad, 1);
-        frame = D_800AEF10[i].frame;
-        x = D_800AEF10[i].x;
-        y = D_800AEF10[i].y;
-        w = D_800AEB68[frame].w;
-        h = D_800AEB68[frame].h;
-        u = D_800AEB68[frame].u;
-        v = D_800AEB68[frame].v;
+        frame = PIECE(i, PIECE_FRAME);
+        x = PIECE(i, PIECE_X);
+        y = PIECE(i, PIECE_Y);
+        w = FRAME(frame, FRAME_W);
+        h = FRAME(frame, FRAME_H);
+        u = FRAME(frame, FRAME_U);
+        v = FRAME(frame, FRAME_V);
         quad->x0 = x;
         quad->y0 = y;
         quad->y1 = y;
@@ -1590,7 +1595,7 @@ void func_800A8BA4(void) {
         quad->y2 = y + h;
         quad->x3 = x + w;
         quad->y3 = y + h;
-        switch (D_800AEF10[i].flags & 0xF) {
+        switch (PIECE(i, PIECE_FLAGS) & 0xF) {
         case 0:
             func_8007A44C(quad, u, v, u + w, v, u, v + h, u + w, v + h);
             break;
