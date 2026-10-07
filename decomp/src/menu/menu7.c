@@ -1905,9 +1905,9 @@ void func_8008E0C8(void) {
 /* Advance the glow field one step: seed the two bottom rows with random
  * heat, let every cell take the cooled average of its neighbours below,
  * then keep the result for the next step.
- * Does not match (408 vs 388 bytes): the original also keeps the row
- * counter and a separate destination-row pointer, uses $s5 for the
- * quotient (frame 0x30 vs 0x28), and the first loop swaps $s0/$s1. */
+ * Does not match (408 vs 400 bytes): the original also keeps the source
+ * index i in $s1 (so the quotient lands in $s5, frame 0x30 vs 0x28), the
+ * first loop swaps $s0/$s1, and the loop setup is ordered differently. */
 void func_8008E120(void) {
     s16 *new;
     s16 *old;
@@ -1922,6 +1922,7 @@ void func_8008E120(void) {
     s16 *left;
     s16 *down_right;
     s16 *down_left;
+    s16 *dst;
 
     if (D_80092844 != NULL) {
         heat = 0;
@@ -1946,13 +1947,14 @@ void func_8008E120(void) {
         down_left = old + 0x6F;
         for (y = 0x2F; y > 1; y--) {
             i = y * 0x70 + 1;
+            dst = &new[(y - 1) * 0x70];
             for (x = 1; x < 0x70; x++) {
                 value = (up[i] + right[i] + left[i] + down_right[i] + down_left[i]) / 5;
+                i++;
                 if (value > 3) {
                     value -= 3;
                 }
-                new[(y - 1) * 0x70 + x] = value;
-                i++;
+                dst[x] = value;
             }
         }
         func_8008E0C8();
