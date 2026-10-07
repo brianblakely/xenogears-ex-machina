@@ -9,6 +9,9 @@
  */
 #include "menu.h"
 
+/* Declared here only: slot39_801DBE54.c calls it without a prototype. */
+void func_801D7CFC(u8 slot, u8 mode, u8 arg2);
+
 /* Run the command at `offset` past the top cursor (0 back, 1 load/save file,
  * 2..6 the field-menu screens, 7/8 the title file screen's load and new game,
  * 9 reset), then restore the command window. Returns 0 when the menu ends. */
@@ -2184,16 +2187,61 @@ void func_801CB28C(s32 *save) {
  * its last byte, apply it; message 5c ends the load, a failure shows message
  * 3e and continues. */
 #ifdef NON_MATCHING
-/* Remaining: register allocation and block placement. 3 differing
- * instructions (local scorer) with: result/first/again initialised in
- * that order, result = 0 after the 62 message, the open loop followed by
- * if (file != 0), a do/while (0) block (statement macro) from the
- * buffer allocation (with done = 0 after it) through the checksum test,
- * a goto read-retry loop whose body is another such block, u8 sum, and
- * p = buffer + 0x100 passed to 801cb28c. Left: the open test's delay slot
- * and the 0x100 compare constant (the original's is a spilled invariant
- * reloaded into a3; comparing against a variable set to 0x100 at the start
- * reproduces that, leaving only the delay slot). */
+/* Remaining: the open retry loop. As a real loop (do/while) its -1 is
+ * hoisted into s0 as in the original, but loop.c then doubles the outer
+ * loop's insn count for that re-moved invariant and no longer hoists the
+ * read size 0x100 out of the outer loop (it stays in s6 instead of being a
+ * spilled invariant rematerialised into a3, which shifts fp/s7/s6). As the
+ * goto loop below everything else matches: the -1 is loaded inside the loop
+ * and the port argument there is not re-masked (6 differing instructions,
+ * local scorer). Recipe: file = fd after the open loop (fills the delay
+ * slot of its test and keeps the exit branch from being threaded), the
+ * READ_SAVE block from the buffer allocation through the checksum test
+ * (moves the success block out of line), and the read retry as a real
+ * do/while loop followed by the close-and-release exit. */
+/* Read the save file in 100h chunks into a 2100h block (a failed read
+ * closes the file and frees the block) and apply it when its sum
+ * matches (a statement macro). */
+#define READ_SAVE()                                          \
+    do {                                                     \
+        D_800625A0->party->unk2F = 0;                        \
+        buffer = func_80031BDC(0x2100, 1);                   \
+        done = 0;                                            \
+        p = buffer;                                          \
+        D_800625A0->party->unkB = 0;                         \
+        func_801CAE08(1);                                    \
+        do {                                                 \
+            func_801C7BF4();                                 \
+            retry = 5;                                       \
+            do {                                             \
+                if (read(fd, p, 0x100) != 0x100) {           \
+                    fd = 0;                                  \
+                    func_801C8CA4(port);                     \
+                }                                            \
+            } while (fd == 0 && --retry != 0);               \
+            if (fd == 0) {                                   \
+                close(file);                                 \
+                goto release;                                \
+            }                                                \
+            done += 0x100;                                   \
+            p += 0x100;                                      \
+        } while (done < D_800625A0->card->saveBlocks << 13); \
+        close(fd);                                           \
+        p = buffer + 0x100;                                  \
+        sum = 0;                                             \
+        for (i = 0; i < 0x1eff; i++) {                       \
+            sum += *p++;                                     \
+        }                                                    \
+        if (sum == *p) {                                     \
+            p = buffer + 0x100;                              \
+            func_801C72BC(1);                                \
+            func_801CB28C((s32 *)p);                         \
+            func_801C72BC(0x11);                             \
+        } else {                                             \
+            fd = 0;                                          \
+        }                                                    \
+    } while (0)
+
 u8 func_801CB304(void) {
     char path[64];
     s32 first;
@@ -2206,12 +2254,12 @@ u8 func_801CB304(void) {
     s32 done;
     u8 *buffer;
     u8 *p;
-    s32 sum;
+    u8 sum;
     s32 i;
 
     result = 1;
-    again = 1;
     first = 1;
+    again = 1;
     func_801CADB0();
     do {
         if (func_801C93A8()) {
@@ -2228,9 +2276,9 @@ u8 func_801CB304(void) {
             D_800625A0->party->unk2F = 0;
             D_800625A0->party->unkB = 0;
             D_800625A0->loadState = 1;
-            result = 0;
             D_800625A0->party->unkB = 0;
             func_801CACF8(0x62, 0xff, 0);
+            result = 0;
             break;
         }
         D_800625A0->party->unk2F = 1;
@@ -2253,50 +2301,18 @@ u8 func_801CB304(void) {
                 func_801D2F4C(0x3b);
                 retry = 5;
                 D_800625A0->sounds = 0;
-                do {
-                    fd = open(path, 1);
-                    if (fd == -1) {
-                        fd = 0;
-                        func_801C8CA4(port);
-                    }
-                    file = fd;
-                } while (fd == 0 && --retry != 0);
-                if (fd != 0) {
-                    done = 0;
-                    D_800625A0->party->unk2F = 0;
-                    buffer = func_80031BDC(0x2100, 1);
-                    p = buffer;
-                    D_800625A0->party->unkB = 0;
-                    func_801CAE08(1);
-                    do {
-                        func_801C7BF4();
-                        retry = 5;
-                        do {
-                            if (read(fd, p, 0x100) != 0x100) {
-                                fd = 0;
-                                func_801C8CA4(port);
-                            }
-                        } while (fd == 0 && --retry != 0);
-                        if (fd == 0) {
-                            close(file);
-                            goto release;
-                        }
-                        done += 0x100;
-                        p += 0x100;
-                    } while (done < D_800625A0->card->saveBlocks << 13);
-                    close(fd);
-                    p = buffer + 0x100;
-                    sum = 0;
-                    for (i = 0; i < 0x1eff; i++) {
-                        sum += *p++;
-                    }
-                    if ((u8)sum == *p) {
-                        func_801C72BC(1);
-                        func_801CB28C((s32 *)(buffer + 0x100));
-                        func_801C72BC(0x11);
-                    } else {
-                        fd = 0;
-                    }
+            open_again:
+                fd = open(path, 1);
+                if (fd == -1) {
+                    fd = 0;
+                    func_801C8CA4(port);
+                }
+                if (fd == 0 && --retry != 0) {
+                    goto open_again;
+                }
+                file = fd;
+                if (file != 0) {
+                    READ_SAVE();
                 release:
                     func_800320E8(buffer);
                 }
@@ -2388,12 +2404,19 @@ u8 func_801CB9E8(u8 port, u8 slot) {
  * encoded in place, the disc, then the game data copy (801e4a28) and the names
  * decoded back. */
 #ifdef NON_MATCHING
-/* Remaining: the original allocates the name pointer s0 and the row index
- * s1 (here the other way round), and schedules the name pointer's
- * initialisation after the hoisted codes/encoded addresses. A do/while (0)
- * block (statement macro) around the copy-back loop fixes the allocation
- * and storing the play time before the digit gets to 5 differing
- * instructions (the name pointer's lui/addiu placement; local scorer). */
+/* Copy a 20-byte name buffer over `dst` (a statement macro). */
+#define COPY_NAME(dst, src, j)     \
+    do {                           \
+        for (j = 0; j < 20; j++) { \
+            (dst)[j] = (src)[j];   \
+        }                          \
+    } while (0)
+
+/* Remaining: the name pointer's lui/addiu is scheduled first in the block
+ * before the name loop; the original places it after the play-time load
+ * (5 differing instructions, local scorer, for every order of the three
+ * payload stores and the name initialisation). The COPY_NAME block gives
+ * the original's s0 name pointer / s1 row index allocation. */
 void func_801CBA4C(MenuSavePayload *payload, u8 port, u8 digit) {
     u8 codes[24];
     u8 encoded[20];
@@ -2417,9 +2440,9 @@ void func_801CBA4C(MenuSavePayload *payload, u8 port, u8 digit) {
             payload->ids[i] = 0xff;
         }
     }
+    payload->time = D_80059488;
     payload->unk1F = 0;
     payload->digit = digit;
-    payload->time = D_80059488;
     name = GAME_NAMES;
     for (i = 0; i < 31; i++) {
         for (j = 0; j < 20; j++) {
@@ -2427,9 +2450,7 @@ void func_801CBA4C(MenuSavePayload *payload, u8 port, u8 digit) {
             encoded[j] = 0;
         }
         func_80033C20(codes, encoded);
-        for (j = 0; j < 20; j++) {
-            name[j] = encoded[j];
-        }
+        COPY_NAME(name, encoded, j);
         name += 20;
     }
     if (!D_801E96A5) {
@@ -6677,15 +6698,15 @@ void func_801DB5E4(u8 mode) {
  * confirm until it runs out or the player cancels. Returns the targets
  * marked last (0 when cancelled or unusable). */
 #ifdef NON_MATCHING
-/* Differs: the original clears the used-up id through &D_8006F5C4 + 0x96
- * (reloaded into t0, as is the counts base before the loop); this build
- * addresses D_8006F65A directly (INVENTORY->ids lets CSE fold it into
- * 150(&counts[idx]) or hoists the whole address). The original also uses
- * 801e31c0's result unmasked, as an implicitly declared (int) function
- * would be: without the menu.h prototype in this unit 11 instructions
- * differ (local scorer). With *(INVENTORY->ids + idx) and a do/while (0)
- * block around the case-4 target loop the clear is formed from the
- * INVENTORY base as in the original, but its whole address is hoisted. */
+/* Remaining: two commutative operand orders. The original adds the index
+ * first (addu s7,fp,t0 for &counts[idx] and addu v0,fp,v0 for the cleared
+ * id), this build the base first. Everything else matches (2 differing
+ * instructions, local scorer): the inventory base is one pointer set once
+ * (spilled and rematerialised into t0 for both uses), the id is cleared
+ * through inv->ids taken after the count reaches zero, and 801e31c0 is
+ * called without a prototype (its result is used unmasked). With
+ * INVENTORY used directly CSE knows the base and orders the adds as the
+ * original, but the clear folds into 150(&counts[idx]). */
 u8 func_801DB920(s32 row, s32 entry) {
     u16 marks;
     u8 running;
@@ -6695,7 +6716,10 @@ u8 func_801DB920(s32 row, s32 entry) {
     s32 all;
     s32 i;
     MenuItem *item;
+    Inventory *inv;
+    u8 *ids;
 
+    inv = INVENTORY;
     marks = 0;
     running = 1;
     slot = D_800625A0->firstMember;
@@ -6734,7 +6758,7 @@ u8 func_801DB920(s32 row, s32 entry) {
                 D_800625A0->markers->visible[slot] = 1;
             }
             D_800625A0->party->unk2F = 1;
-            if (INVENTORY->counts[row * 2 + entry] == 0) {
+            if (inv->counts[row * 2 + entry] == 0) {
                 running = 0;
             }
             if (!running) {
@@ -6752,8 +6776,9 @@ u8 func_801DB920(s32 row, s32 entry) {
                 if (used) {
                     func_801C8574(0x37);
                     redraw = 1;
-                    if (--INVENTORY->counts[row * 2 + entry] == 0) {
-                        D_8006F65A[row * 2 + entry] = 0;
+                    if (--inv->counts[row * 2 + entry] == 0) {
+                        ids = inv->ids;
+                        ids[row * 2 + entry] = 0;
                     }
                 } else {
                     func_801C8574(4);
