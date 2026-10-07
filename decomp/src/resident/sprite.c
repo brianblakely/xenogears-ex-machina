@@ -2408,8 +2408,9 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         func_80022974(sprite);
         break;
     case 0xA1:
-        if (sprite->frame_bits.sequencer_owned != 1 ||
-            (sprite->speed_y = ((SpriteSequencer *)sprite->sequencer)->word0) == 0) {
+        if (sprite->frame_bits.sequencer_owned == 1 && ((SpriteSequencer *)sprite->sequencer)->word0 != 0) {
+            sprite->speed_y = ((SpriteSequencer *)sprite->sequencer)->word0;
+        } else {
             sprite->speed_y = (((s8)code[0] << 4) * (D_80059198 + 1) * (s16)sprite->word82 / 4096) << 8;
         }
         sprite->speed_y <<= 8;
