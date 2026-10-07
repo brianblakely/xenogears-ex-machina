@@ -295,8 +295,9 @@ s32 func_80071A50(void) {
 }
 
 /* One world-map frame: input, actors, camera, terrain, sky and HUD. */
-#ifdef NON_MATCHING /* eight extra bytes of the original frame remain unexplained */
 s32 func_80071A58(void) {
+    SVECTOR unused; /* unused in the original; reserves 8 bytes */
+
     if (D_8009D144 == 0) {
         func_80097440(&D_8009BD40);
     } else {
@@ -325,10 +326,6 @@ s32 func_80071A58(void) {
     }
     return 1;
 }
-
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap", func_80071A58);
-#endif
 
 /* Select the file set of an area (by index, or for the low indices by the
  * position against the threshold table) and derive its file numbers. */

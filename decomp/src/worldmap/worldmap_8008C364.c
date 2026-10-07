@@ -2,8 +2,8 @@
 
 /* Place a party member's vehicle actor: parked at its spot, with the
  * player when riding, or hidden (3) when the member has no vehicle. */
-#ifdef NON_MATCHING /* eight extra bytes of the original frame remain unexplained */
 s32 func_8008C364(WorldmapActor *actor, s32 member) {
+    SVECTOR unused; /* unused in the original; reserves 8 bytes */
     s32 result;
     u32 state;
 
@@ -56,10 +56,6 @@ s32 func_8008C364(WorldmapActor *actor, s32 member) {
     }
     return result;
 }
-
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8008C364", func_8008C364);
-#endif
 
 /* Start party vehicle 0: place it, and while its member rides (movement
  * modes 1-3) put it under the player, reset the saved camera target and the
