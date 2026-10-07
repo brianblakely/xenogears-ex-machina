@@ -520,18 +520,13 @@ s32 func_8008D590(s32 index) {
 /* Update party vehicle actor `index` (slots 4-6): take commands (1 go to an
  * actor, 2 park, 3 leave the flying vehicle, 5 go to the player, 8 board),
  * follow the player's trail while ridden, and save its spot and heading. */
-#ifdef NON_MATCHING /* saved-state tail differs: the original keeps one base (8006ef90) in a
-                      * register for the z (+2) and heading (-0x13e) stores, so it addresses
-                      * D_8006EF8E and D_8006EE5A from one symbol, and sets the result 1 in
-                      * the delay slots before the tail. Addressing both as offsets of
-                      * D_8006EE54 gives a register base but folds index - 4 into it */
 s32 func_8008D678(s32 index) {
-    SVECTOR unused; /* unused in the original; reserves 8 bytes */
     WorldmapActor *actor;
     WorldmapActor *target;
     ActorScratch *scratch;
     TrailPoint *point;
     s32 flag;
+    s32 slot;
 
     actor = &D_8009BE24[index];
     scratch = (ActorScratch *)0x1F800000;
@@ -709,14 +704,14 @@ s32 func_8008D678(s32 index) {
     if (actor->state != 2 && (D_8009BE10 == 2 || D_8006F364[index] != 7)) {
         func_80074794(1, &actor->position);
     }
-    D_8006EF8E[index - 4].x = actor->position.vx >> 12;
-    D_8006EF8E[index - 4].z = actor->position.vz >> 12;
-    (&D_8006EE5A)[index - 4] = actor->heading;
+    /* Save the spot (D_8006EF8E[slot].x/z) and heading (D_8006EE5A[slot])
+     * as offsets into the resident state. */
+    slot = index - 4;
+    STATE_U16(0x13C + slot * 6) = actor->position.vx >> 12;
+    STATE_U16(0x13E + slot * 6) = actor->position.vz >> 12;
+    STATE_U16(6 + (index - 4) * 2) = actor->heading;
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8008C364", func_8008D678);
-#endif
 
 /* Start party vehicle 2: place it, and while its member rides (movement
  * modes 1-3) put it under the player; modes 4-7 mark it boarded. Save its
