@@ -284,18 +284,18 @@ void func_8007EFB4(void) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Draw the portrait of a list entry (the index wraps around the list) on
  * the left or right side. At fade 64 it is shown full size and unshaded;
- * below, it is shaded and shrunk by fade / 16.
- * Does not match: the vertex arithmetic is scheduled differently. */
+ * below, it is shaded and shrunk by fade / 16, inset from x and grown from
+ * a 0x34 by 0x38 base. */
 void func_8007F05C(s32 index, PolyFT4Words *quad, s32 right_side, s32 x, s32 fade) {
     GridCell *cell;
-    s32 shrink;
+    s32 inset;
     s32 top;
     s32 bottom;
     s32 left;
-    s32 right;
+    s32 width;
+    s32 height;
     s32 u;
 
     if (right_side) {
@@ -309,28 +309,31 @@ void func_8007F05C(s32 index, PolyFT4Words *quad, s32 right_side, s32 x, s32 fad
     if (index < 0) {
         index += D_80092888;
     }
-    cell = &D_8009270C[D_800928EC[index]->id];
+    index = D_800928EC[index]->id;
+    cell = &D_8009270C[index];
     if (fade == 0x40) {
         quad->len = 9;
         ((u8 *)&quad->rgbc)[3] = 0x2D;
         quad->xy0 = x | 0x300000;
-        right = x + 0x3C;
-        quad->xy1 = right | 0x300000;
+        quad->xy1 = (x + 0x3C) | 0x300000;
         quad->xy2 = x | 0x700000;
-        quad->xy3 = right | 0x700000;
+        quad->xy3 = (x + 0x3C) | 0x700000;
     } else {
         fade += 0x40;
-        shrink = (fade - 0x40) >> 4;
         quad->len = 9;
         quad->rgbc = fade | (fade << 8) | (fade << 16) | 0x2C000000;
-        left = x - (shrink - 4);
-        top = 0x34 - shrink;
+        fade -= 0x40;
+        fade >>= 4; /* from here on, how far the portrait shrinks */
+        inset = fade - 4;
+        left = x - inset;
+        top = 0x34 - fade;
         quad->xy0 = left | (top << 16);
-        right = left + 0x34 + shrink * 2;
-        bottom = top + 0x38 + shrink * 2;
-        quad->xy1 = right | (top << 16);
+        width = 0x34;
+        quad->xy1 = (left + width + fade * 2) | (top << 16);
+        height = 0x38;
+        bottom = top + height + fade * 2;
         quad->xy2 = left | (bottom << 16);
-        quad->xy3 = right | (bottom << 16);
+        quad->xy3 = (left + width + fade * 2) | (bottom << 16);
     }
     u = cell->image_x * 2;
     quad->uv0 = u | (cell->image_y << 8);
@@ -341,9 +344,6 @@ void func_8007F05C(s32 index, PolyFT4Words *quad, s32 right_side, s32 x, s32 fad
     quad->tpage = GetTPage(1, 0, cell->image_x & 0xFF80, cell->image_y);
     AddPrim(D_80092938, quad);
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_8007F05C);
-#endif
 
 /* Draw the two-player selection: each side's pick, sliding in from its
  * previous one (the long way round wraps), with its neighbours when the
@@ -1777,11 +1777,10 @@ void func_80082C4C(StageFiles *files) {
     func_800732AC(D_80092788[1], D_80092788[0], 0xA00);
 }
 
-#ifdef NON_MATCHING
 /* Draw the arena wall: a ring of 32 two-storey textured segments around
  * the scene centre, starting behind the given position, depth-cued and
- * skipped when too far away.
- * Does not match: GCC folds the camera offset into x + 0x3f80 - camera, the original keeps the output table in $fp and addresses the packet bytes from quad + 0x2f. */
+ * skipped when too far away. The wall's corners are taken relative to the
+ * camera as 16-bit offsets. */
 void func_80082E60(u32 *ot, Vector *pos) {
     Vector centre;
     SVector base0;
@@ -1792,27 +1791,29 @@ void func_80082E60(u32 *ot, Vector *pos) {
     SVector top1;
     s32 z[4];
     PolyFT4 *quad;
+    PolyFT4 *next;
     s32 angle;
     s32 depth;
     s32 i;
 
     centre = *pos;
     i = 0;
-    centre.vx -= 0x3F80;
     quad = D_80092788[D_800928A0];
+    centre.vx -= 0x3F80;
     centre.vz -= 0x3F80;
-    angle = (ratan2(centre.vx, centre.vz) & 0xFFF0) - 0x100;
-    mid1.vy = mid0.vy = -0x290;
-    base1.vy = base0.vy = 0;
-    top1.vy = top0.vy = -0x520;
-    base0.vx = ((func_8003F8B0(angle) * 0x3F80) >> 12) - (D_80096FA8.vx - 0x3F80);
-    base0.vz = ((func_8003F8CC(angle) * 0x3F80) >> 12) - (D_80096FA8.vz - 0x3F80);
+    angle = ratan2(centre.vx, centre.vz) & 0xFFF0;
+    angle -= 0x100;
+    mid0.vy = mid1.vy = -0x290;
+    base0.vy = base1.vy = 0;
+    top0.vy = top1.vy = -0x520;
+    base0.vx = ((func_8003F8B0(angle) * 0x3F80) >> 12) - (s16)(D_80096FA8.vx - 0x3F80);
+    base0.vz = ((func_8003F8CC(angle) * 0x3F80) >> 12) - (s16)(D_80096FA8.vz - 0x3F80);
     angle += 0x10;
     for (; i < 32; i++) {
         top0.vx = mid0.vx = base0.vx;
         top0.vz = mid0.vz = base0.vz;
-        top1.vx = mid1.vx = base1.vx = ((func_8003F8B0(angle) * 0x3F80) >> 12) - (D_80096FA8.vx - 0x3F80);
-        top1.vz = mid1.vz = base1.vz = ((func_8003F8CC(angle) * 0x3F80) >> 12) - (D_80096FA8.vz - 0x3F80);
+        top1.vx = mid1.vx = base1.vx = ((func_8003F8B0(angle) * 0x3F80) >> 12) - (s16)(D_80096FA8.vx - 0x3F80);
+        top1.vz = mid1.vz = base1.vz = ((func_8003F8CC(angle) * 0x3F80) >> 12) - (s16)(D_80096FA8.vz - 0x3F80);
         gte_ldv3(&base0, &base1, &mid0);
         gte_rtpt();
         gte_dpcs();
@@ -1820,6 +1821,7 @@ void func_80082E60(u32 *ot, Vector *pos) {
         gte_stsz3v(&z[0], &z[1], &z[2]);
         gte_ldv3(&mid1, &top0, &top1);
         gte_rtpt();
+        next = &quad[1];
         depth = z[0];
         if (depth < z[1]) {
             depth = z[1];
@@ -1827,24 +1829,24 @@ void func_80082E60(u32 *ot, Vector *pos) {
         if (depth <= z[2]) {
             depth = z[2];
         }
-        *(u32 *)&quad[1].x0 = *(u32 *)&quad[0].x2;
+        *(u32 *)&next->x0 = *(u32 *)&quad[0].x2;
         gte_stsxy(&quad[0].x3);
-        gte_stsxy3(&quad[0].x3, &quad[1].x2, &quad[1].x3);
+        gte_stsxy3(&quad[0].x3, &next->x2, &next->x3);
         gte_stsz(&z[3]);
-        *(u32 *)&quad[1].x1 = *(u32 *)&quad[0].x3;
+        *(u32 *)&next->x1 = *(u32 *)&quad[0].x3;
         if (depth <= z[3]) {
             depth = z[3];
         }
         if (depth < 0x1C00) {
-            gte_strgb(&quad[0].r0);
-            gte_strgb(&quad[1].r0);
             depth >>= 4;
+            gte_strgb(&quad[0].r0);
+            gte_strgb(&next->r0);
             ((PacketTag *)&quad[0])->len = 9;
             quad[0].code = 0x2C;
-            ((PacketTag *)&quad[1])->len = 9;
-            quad[1].code = 0x2C;
+            ((PacketTag *)next)->len = 9;
+            next->code = 0x2C;
             AddPrim(&ot[depth], &quad[0]);
-            AddPrim(&ot[depth], &quad[1]);
+            AddPrim(&ot[depth], next);
         }
         quad += 2;
         angle += 0x10;
@@ -1852,9 +1854,6 @@ void func_80082E60(u32 *ot, Vector *pos) {
         base0.vz = base1.vz;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_80082E60);
-#endif
 
 /* Put the look-at point somewhere random around the scene centre and set
  * the idle camera motion parameters. */

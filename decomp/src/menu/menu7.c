@@ -1012,15 +1012,13 @@ s32 func_8008B650(s32 from, s32 to, s32 step) {
     return angle;
 }
 
-#ifdef NON_MATCHING
 /* Advance a player by some frames (clamped to the animation's end) and
  * move every target 1/steps of the way to its key or channel value.
  * Channel streams hold a byte per frame: 0xxxxxxx a 7-bit delta, 10xxxxxx
  * hold the previous delta for x following frames, 11xxxxxx plus a byte
  * a signed 14-bit delta.
  * Returns whether the end was reached in a final step (1 without an
- * animation). Nonmatching: the first tag copy and the completion
- * comparison use different registers. */
+ * animation). */
 s32 func_8008B730(Player *player, s32 frames, s32 steps) {
     Key *key;
     Channel *channel;
@@ -1077,7 +1075,7 @@ s32 func_8008B730(Player *player, s32 frames, s32 steps) {
                         channel->hold = value;
                     }
                 } else {
-                    channel->delta = (command << 25) >> 25;
+                    channel->delta = ((u8)command << 25) >> 25; /* 7-bit signed delta */
                 }
             }
             channel->value += channel->delta;
@@ -1094,13 +1092,12 @@ s32 func_8008B730(Player *player, s32 frames, s32 steps) {
         }
     }
     if (player->frame == player->header->frames) {
-        return steps == 1;
+        if (steps == 1) {
+            return 1;
+        }
     }
     return 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008B730);
-#endif
 
 /* Create a task running entry(arg) on its own stack of `words` words and
  * run it until it first yields. */
@@ -1901,9 +1898,9 @@ void func_8008E0C8(void) {
 /* Advance the glow field one step: seed the two bottom rows with random
  * heat, let every cell take the cooled average of its neighbours below,
  * then keep the result for the next step.
- * Does not match (408 vs 388 bytes): the original also keeps the row
- * counter and a separate destination-row pointer, uses $s5 for the
- * quotient (frame 0x30 vs 0x28), and the first loop swaps $s0/$s1. */
+ * Does not match (408 vs 400 bytes): the original also keeps the source
+ * index i in $s1 (so the quotient lands in $s5, frame 0x30 vs 0x28), the
+ * first loop swaps $s0/$s1, and the loop setup is ordered differently. */
 void func_8008E120(void) {
     s16 *new;
     s16 *old;
@@ -1918,6 +1915,7 @@ void func_8008E120(void) {
     s16 *left;
     s16 *down_right;
     s16 *down_left;
+    s16 *dst;
 
     if (D_80092844 != NULL) {
         heat = 0;
@@ -1942,13 +1940,14 @@ void func_8008E120(void) {
         down_left = old + 0x6F;
         for (y = 0x2F; y > 1; y--) {
             i = y * 0x70 + 1;
+            dst = &new[(y - 1) * 0x70];
             for (x = 1; x < 0x70; x++) {
                 value = (up[i] + right[i] + left[i] + down_right[i] + down_left[i]) / 5;
+                i++;
                 if (value > 3) {
                     value -= 3;
                 }
-                new[(y - 1) * 0x70 + x] = value;
-                i++;
+                dst[x] = value;
             }
         }
         func_8008E0C8();
@@ -2246,11 +2245,11 @@ void func_8008ECEC(u8 tag) {
     }
 }
 
-/* Stop the sounds a character's command sound entry started. Does not
- * match: the table base and the entry offset swap $s1/$s2 and the flag
- * load of the second id is scheduled after its mask. */
+/* Stop the sounds a character's command sound entry started. Declared int
+ * without a return value, as the original's unfilled last delay slot shows.
+ * Does not match: the table base and the entry offset swap $s1/$s2. */
 #ifdef NON_MATCHING
-void func_8008ED6C(Actor *owner, s32 index) {
+s32 func_8008ED6C(Actor *owner, s32 index) {
     s32 unused[2]; /* unused in the original; reserves 8 bytes */
     s32 entry;
     SoundPair *table;
@@ -2258,11 +2257,13 @@ void func_8008ED6C(Actor *owner, s32 index) {
     entry = owner->sounds[index];
     if (entry != 0xFF) {
         table = D_80091EE0;
-        if (D_80091EE0[entry].first != 0) {
-            func_8008ECEC((D_80091EE0[entry].first & 0x7F) | ((owner->flags >> 20) & 0x80));
+        index = D_80091EE0[entry].first;
+        if (index != 0) {
+            func_8008ECEC((index & 0x7F) | ((owner->flags >> 20) & 0x80));
         }
-        if (table[entry].second != 0) {
-            func_8008ECEC((table[entry].second & 0x7F) | ((owner->flags >> 20) & 0x80));
+        index = table[entry].second;
+        if (index != 0) {
+            func_8008ECEC((index & 0x7F) | ((owner->flags >> 20) & 0x80));
         }
     }
 }

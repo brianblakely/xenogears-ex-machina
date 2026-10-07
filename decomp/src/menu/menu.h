@@ -574,7 +574,7 @@ void func_8007C880(s32 column, Vector *pos, s32 key, s32 size);
 u32 func_8007CD14(s32 flag, s32 top, s32 middle, s32 low);
 void func_8007CD44(s32 column, Vector *from, Vector *to, s32 key);
 void func_8007D7A8(Vector *pos, s32 count);
-void func_8008ED6C(Actor *owner, s32 index);
+s32 func_8008ED6C(Actor *owner, s32 index);
 void func_8007E528(s32 state);
 s32 func_8007D190(Vector *pos, u32 kind);
 s32 func_8007D25C(s32 type);
