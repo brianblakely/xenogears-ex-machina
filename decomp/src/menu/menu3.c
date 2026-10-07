@@ -3528,11 +3528,9 @@ void func_8007C280(Matrix *view, Matrix *local, u32 *ot) {
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007C280);
 #endif
 
-#ifdef NON_MATCHING
 /* Start a trail segment of a key at a position for the current owner
  * (once per key and owner), with the given texture column and size, linked
- * to the segment started on the previous frame.
- * Does not match: the texture and header stores are scheduled in a different order. */
+ * to the segment started on the previous frame. */
 void func_8007C880(s32 column, Vector *pos, s32 key, s32 size) {
     Sparkle *sparkle;
     Sparkle *other;
@@ -3556,9 +3554,9 @@ void func_8007C880(s32 column, Vector *pos, s32 key, s32 size) {
     prim = sparkle->prim;
     prim->u0 = prim->u1 = prim->u2 = prim->u3 = (u8)D_80092698 * 4 + 8 + column * 4;
     prim->v0 = prim->v1 = prim->v2 = prim->v3 = D_8009269C;
-    prim->code &= ~1;
     prim->tpage = D_80092694;
     prim->clut = D_800926A0;
+    prim->code &= ~1;
     sparkle->prim[1] = *prim;
     sparkle->frame_count = 7;
     sparkle->type = 1;
@@ -3566,22 +3564,19 @@ void func_8007C880(s32 column, Vector *pos, s32 key, s32 size) {
     sparkle->frame = 0;
     sparkle->x = pos->vx;
     sparkle->y = pos->vy;
+    sparkle->z = pos->vz;
     sparkle->u.trail.owner = D_800928E8;
     sparkle->u.trail.key = key;
     sparkle->u.trail.prev = NULL;
     sparkle->u.trail.stamp = D_800926A4;
-    sparkle->z = pos->vz;
     sparkle->u.trail.size = D_80091228[size];
-    for (i = 0, other = D_80092AD8; i < SPARKLE_COUNT; i++, other++) {
+    for (other = D_80092AD8, i = 0; i < SPARKLE_COUNT; i++, other++) {
         if (other->active && other->u.trail.key == key && other != sparkle && other->type == 1 &&
             other->u.trail.stamp == (u16)(D_800926A4 - 1)) {
             sparkle->u.trail.prev = other;
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007C880);
-#endif
 
 /* Draw the line sparkles that continue last frame's segment as quads
  * joining both segments, fading with their age. */
