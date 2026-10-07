@@ -3114,7 +3114,6 @@ void func_8008E9F8(void) {
     D_800B00C0 = 1;
 }
 
-#ifdef NON_MATCHING
 /* Event 0xa0: once sound is available, request a movie: file op1, the
  * parameters at 800c3a2a/2c/2e from op3/op5/op7 and its sound bank op9
  * (selected operands, flags byte 11), with the default window and fade. */
@@ -3131,9 +3130,9 @@ void func_8008EA58(void) {
     FIELD_MOVIE.sound_bank = func_8009D088(9, EVENT_OPERAND_BYTE(0xB));
     FIELD_MOVIE.width = 0x140;
     D_800ADB80 = 0x40;
-    FIELD_MOVIE.depth24 = 1;
     FIELD_MOVIE.height = 0x100;
     FIELD_MOVIE.source_x = 0;
+    FIELD_MOVIE.depth24 = 1;
     FIELD_MOVIE.y = 0;
     FIELD_MOVIE.x = 0;
     FIELD_MOVIE.source_y = 0x100;
@@ -3144,9 +3143,6 @@ void func_8008EA58(void) {
     D_800B00C0 = 1;
     D_800B0078->pc += 0xC;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_8008EA58);
-#endif
 
 #ifdef NON_MATCHING
 /* Event 0x60: once sound is available, request movie op1 with parameters
