@@ -1689,13 +1689,13 @@ void func_80077A88(Actor *actor) {
     actor->flags |= 0x80000;
 }
 
+/* Debug trace of a started special move, compiled out of the release. */
+#define MOVE_TRACE() do { } while (0)
+
 /* Per-frame actor action: unless busy or stunned, start the move for the
  * decoded command (combo attacks by button, the charged shot, the jump,
  * the dash), then set the animation, drift and turn for the current
- * stance, derive the walking speed and let a dash use up charge.
- * Does not match: in the charged-shot case bounce = 1 is scheduled
- * before the 0x1000 flag update instead of after it. */
-#ifdef NON_MATCHING
+ * stance, derive the walking speed and let a dash use up charge. */
 void func_80077A9C(Actor *actor) {
     MoveSlot *slot;
     s32 bounce;
@@ -1764,6 +1764,7 @@ void func_80077A9C(Actor *actor) {
                 }
                 actor->unk4E = 0xFF;
                 actor->flags |= 0x1000;
+                MOVE_TRACE();
                 bounce = 1;
                 actor->unkC5 = 2;
                 actor->flags |= 1;
@@ -1882,9 +1883,6 @@ done:
         actor->flags &= ~0x8000;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80077A9C);
-#endif
 
 /* Put an actor back at its home position, idle. */
 void func_80078154(Actor *actor) {
