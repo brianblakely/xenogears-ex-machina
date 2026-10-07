@@ -190,11 +190,8 @@ s32 func_800273C4(Panorama *panorama, SVECTOR *eye, SVECTOR *target, MATRIX *vie
 
 /* Draw the strip of a panoramic backdrop from texture column `start`,
  * `bottom` its bottom screen row, scaled down by `zoom` (8.8): up to eight
- * quads across the screen, one per texture page.
- * Nonmatching: one copy differs. The original computes `w + cols` into w's
- * register from a copy of cols ($v1, also stored as u2), subtracting 1
- * later; here the sum goes to a new register and u2 stores cols directly. */
-#ifdef NON_MATCHING
+ * quads across the screen, one per texture page. The quads' lower row is
+ * an s16 copy of `bottom` taken in the loop. */
 void func_800278F8(Panorama *panorama, s32 start, s32 bottom, s32 zoom, u_long *ot, s32 buffer) {
     s32 left;
     s16 u;
@@ -207,7 +204,6 @@ void func_800278F8(Panorama *panorama, s32 start, s32 bottom, s32 zoom, u_long *
     s16 cols;
     s16 x1;
     s16 y;
-    s16 right;
     s32 tex_x;
     s32 i;
     POLY_FT4 *quad;
@@ -248,16 +244,15 @@ void func_800278F8(Panorama *panorama, s32 start, s32 bottom, s32 zoom, u_long *
             quad->y2 = y;
             quad->x3 = x + x1;
             quad->y3 = y;
-            quad->u0 = cols;
-            right = w + cols - 1;
             quad->y0 = bottom - top;
             quad->y1 = bottom - top;
-            quad->u1 = right;
+            quad->u0 = cols;
             quad->v0 = panorama->v;
-            quad->u2 = cols;
+            quad->u1 = cols + w - 1;
             quad->v1 = panorama->v;
-            quad->u3 = right;
+            quad->u2 = cols;
             quad->v2 = panorama->v + panorama->height;
+            quad->u3 = cols + w - 1;
             quad->v3 = panorama->v + panorama->height;
             u = next;
             quad->tpage = GetTPage(panorama->mode, 0, page_x / 64 * 64, panorama->tex_y / 256 * 256);
@@ -269,9 +264,6 @@ void func_800278F8(Panorama *panorama, s32 start, s32 bottom, s32 zoom, u_long *
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002709C", func_800278F8);
-#endif
 
 /* Release a block if there is one. */
 void func_80027D40(void *block) {
