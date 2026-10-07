@@ -779,25 +779,23 @@ void func_8003B32C(SoundSeq *seq) {
 }
 
 /* Reset a sequence's playback state: 4/4 time, tempo 1, rate 0x66, full
- * fade level, no snapshot.
- * Nonmatching: the original keeps the constant 4 in its own register. */
-#ifdef NON_MATCHING
+ * fade level, no snapshot. */
 void func_8003B370(SoundSeq *seq) {
     func_8003B930(seq);
+    seq->unk1A = 0;
+    seq->unk1B = 0;
+    seq->unk30 = 0;
     seq->unk32 = 1;
+    seq->unk34 = 0;
     seq->unk36 = 1;
+    seq->unk38 = 4;
     seq->unk3A = 0x30;
+    seq->unk3C = 4;
+    seq->unk3E = 4;
     seq->tempo.value = 0x1000000;
     seq->fade.value = 0x7F000000;
     seq->rate.value = 0x660000;
     seq->tick_step = 0x6600;
-    seq->unk1A = 0;
-    seq->unk1B = 0;
-    seq->unk30 = 0;
-    seq->unk34 = 0;
-    seq->unk38 = 4;
-    seq->unk3C = 4;
-    seq->unk3E = 4;
     seq->ticks = 0;
     seq->unk24 = 0;
     seq->unk20 = 0;
@@ -812,9 +810,6 @@ void func_8003B370(SoundSeq *seq) {
     seq->rate_frames = 0;
     seq->unk50 = 0x10000;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003B370);
-#endif
 
 extern SoundSequence *func_800383EC(s32 key);
 extern void func_8003E5BC(s16 index, SoundSeqChannel *channel);
