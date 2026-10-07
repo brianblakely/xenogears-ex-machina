@@ -1833,12 +1833,11 @@ s32 func_80033728(void *messages, void *message);
  * owner's portrait unless disabled, set up the text and the opening slide.
  * Returns -1 (clearing the window's +414) when the speaker has layer flag
  * 0x200 and the style lacks bit 1, else 0.
- * NON_MATCHING: the prologue, slot loop and most of the body match; the
- * original's frame is 0x70 (ours 0x68, an unused 8-byte spill slot above the
- * message), case 3 adds 8 before the columns/rows term, the 494/495 stores
- * keep the character in a0, extra stays in a3 (8 added before x), and the
- * stores after func_80033728 recompute the window offset and load the text
- * flags first. */
+ * NON_MATCHING: every instruction matches except the frame size: the
+ * original's frame is 0x70 (ours 0x68). Its extra 8 bytes sit above the
+ * x/y/message spill slots (0x28/0x30/0x38) and are never accessed, so they
+ * look like a fourth spill slot that reload allocated and then left unused;
+ * a local declared in C would land below the spill slots instead. */
 s32 func_8007F8DC(s16 x, s16 y, void *message, s32 w, s32 columns, s32 rows, s32 owner, s32 speaker,
                   s32 mode, s32 turned, s32 flags) {
     s32 target_x;
@@ -1877,8 +1876,8 @@ s32 func_8007F8DC(s16 x, s16 y, void *message, s32 w, s32 columns, s32 rows, s32
         target_y = y + 0x20;
         break;
     case 3:
-        target_x = x + 8 + columns * 2;
-        target_y = y + 8 + rows * 7;
+        target_x = x + (columns * 2 + 8);
+        target_y = y + (rows * 7 + 8);
         break;
     default:
         func_8007F814(speaker, &target_x, &target_y, -0x40);
@@ -1890,8 +1889,8 @@ s32 func_8007F8DC(s16 x, s16 y, void *message, s32 w, s32 columns, s32 rows, s32
         } else {
             func_8007F5AC(w, (D_800AF880.components.descriptors[owner].actor->state.word >> 1) & 0xE);
         }
-        D_800C2698[w].unk494 = 1;
         D_800C2698[w].unk495 = D_800AF880.components.descriptors[owner].actor->character;
+        D_800C2698[w].unk494 = 1;
     } else {
         D_800C2698[w].unk495 = 0x80;
         D_800C2698[w].unk494 = 0;
@@ -1902,7 +1901,7 @@ s32 func_8007F8DC(s16 x, s16 y, void *message, s32 w, s32 columns, s32 rows, s32
     if (D_800AF880.components.descriptors[owner].actor->character != 0xFF) {
         extra = (style & 0x402) == 0 ? 0x44 : 0;
     }
-    func_80032F54(&D_800C2698[w].text, D_800ADF54[slot][0], D_800ADF54[slot][1], x + extra + 8, y + 8, columns,
+    func_80032F54(&D_800C2698[w].text, D_800ADF54[slot][0], D_800ADF54[slot][1], x + 8 + extra, y + 8, columns,
                   rows);
     if (style & 0x400) {
         D_800C2698[w].style |= 0x20;
@@ -1915,9 +1914,9 @@ s32 func_8007F8DC(s16 x, s16 y, void *message, s32 w, s32 columns, s32 rows, s32
     D_800C2698[w].text.unk90 = func_80033728(D_800ADBF0, message);
     D_800C2698[w].busy = 0;
     D_800C2698[w].text.flags |= 2;
+    D_800C2698[w].timer = D_800B2078.text_speed;
     D_800C2698[w].owner = owner;
     D_800C2698[w].unk418 = speaker;
-    D_800C2698[w].timer = D_800B2078.text_speed;
     if (!(flags & 0x800)) {
         D_800C2698[w].unk412 = 0;
     } else {
