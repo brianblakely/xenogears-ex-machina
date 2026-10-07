@@ -210,21 +210,33 @@ typedef struct {
     SPRT border[2][10];         /* 140 (1EC): per buffer, eight used */
 } DialogueFrame;
 
+/* A dialogue window's choice (window + 37c): its state, the selectable
+ * lines and the cursor packets. The window code addresses the packets from
+ * this struct's base. */
+typedef struct {
+    s16 status;       /* 00 (37C): zero while a choice is shown */
+    s16 first;        /* 02 (37E): first selectable line */
+    s16 count;        /* 04 (380): selectable line count */
+    s16 index;        /* 06 (382): selected line */
+    DR_MODE modes[2]; /* 08 (384): per buffer */
+    SPRT cursor[2];   /* 20 (39C): the choice cursor per buffer */
+} DialogueChoice;
+
+/* A dialogue window's waiting prompt (window + 3c4). */
+typedef struct {
+    s16 status;       /* 00 (3C4): zero while waiting for the player */
+    u8 unk02[2];
+    DR_MODE modes[2]; /* 04 (3C8): per buffer */
+    SPRT sprite[2];   /* 1C (3E0): the waiting prompt per buffer */
+} DialoguePrompt;
+
 /* One of the four 0x498-byte dialogue windows at 800c2698. */
 typedef struct {
     DR_MODE modes[2]; /* 000: per buffer */
     TextBox text;    /* 018 */
     DialogueFrame frame; /* 0AC */
-    s16 status;      /* 37C: zero while displayed */
-    s16 unk37E;      /* 37E: first line */
-    s16 unk380;      /* 380: line count */
-    s16 unk382;      /* 382 */
-    DR_MODE choice_modes[2];    /* 384: per buffer */
-    SPRT choice[2];             /* 39C: the choice cursor per buffer */
-    s16 unk3C4;      /* 3C4 */
-    u8 unk3C6[2];
-    DR_MODE prompt_modes[2];    /* 3C8: per buffer */
-    SPRT prompt[2];             /* 3E0: the waiting prompt per buffer */
+    DialogueChoice choice; /* 37C */
+    DialoguePrompt prompt; /* 3C4 */
     s16 timer;       /* 408: opening steps left */
     s16 prompt_delay; /* 40A */
     u16 style;       /* 40C: 1 above, 0x81 below the speaker; 0x20 portrait on
