@@ -54,24 +54,20 @@ void func_800A47D4(void) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Start the screen distortion: on first use allocate its buffers, build the
  * 20x17 grid of 16x16 textured quads (rows 14-16 sample the saved strips at
  * (3c0, 0)) and the screen/strip copy commands; unless resuming, read the
- * six targets and the step count from the operands.
- * NON_MATCHING: global allocation numbers the grid loop's registers one
- * apart (row s7 and copy s3 here, s3 and s4 in the original), and the strip
- * loop reads the x sources through a symbol-relative offset where the
- * original walks a pointer (it also keeps the y pointer as base + 2). */
+ * six targets and the step count from the operands. The strip loop reuses
+ * the row counter and reads the strip x through a pointer to the table
+ * (its own induction pointer; y is read from the table). */
 void func_800A484C(s32 resume) {
     RECT rect;
     s32 row;
     s32 column;
-    s32 i;
     POLY_FT4 *poly;
+    DVECTOR *strips;
     POLY_FT4 *copy;
     s32 u;
-    s32 v;
 
     D_800B2078.unk2078 = 1;
     if (D_800ADB24 == 0) {
@@ -133,12 +129,13 @@ void func_800A484C(s32 resume) {
         SetDrawMove(D_800B2078.effect_buffers[1], &rect, 0, 0x100);
         rect.w = 0x40;
         rect.h = 0x10;
-        for (i = 0; i < 15; i++) {
-            rect.x = D_800AEB24[i].vx;
-            rect.y = D_800AEB24[i].vy;
-            SetDrawMove((DR_MOVE *)D_800B2078.effect_buffers[0] + (i + 1), &rect, 0x3C0, i * 16);
-            rect.y = D_800AEB24[i].vy + 0x100;
-            SetDrawMove((DR_MOVE *)D_800B2078.effect_buffers[1] + (i + 1), &rect, 0x3C0, i * 16);
+        strips = D_800AEB24;
+        for (row = 0; row < 15; row++) {
+            rect.x = strips[row].vx;
+            rect.y = D_800AEB24[row].vy;
+            SetDrawMove((DR_MOVE *)D_800B2078.effect_buffers[0] + (row + 1), &rect, 0x3C0, row * 16);
+            rect.y = D_800AEB24[row].vy + 0x100;
+            SetDrawMove((DR_MOVE *)D_800B2078.effect_buffers[1] + (row + 1), &rect, 0x3C0, row * 16);
         }
     }
     if (resume == 0) {
@@ -147,9 +144,6 @@ void func_800A484C(s32 resume) {
     }
     D_800B2078.unk207A = 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800A4748", func_800A484C);
-#endif
 
 /* Move the six screen effect values to the given whole targets over
  * `steps` frames. */
