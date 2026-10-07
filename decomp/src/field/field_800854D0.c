@@ -4442,7 +4442,10 @@ void func_80092808(void) {
  * is 40 units along direction `angle` from the running actor (publishing
  * the field id first when 800adbec asks). Returns -1 while walking (mode 1
  * retries the instruction) and 0 once it has arrived or is stuck, when it
- * stops, turns and the instruction continues. */
+ * stops, turns and the instruction continues.
+ * NON_MATCHING: register allocation only: the original keeps x in s0 and z
+ * in s1 (here swapped) and joins the two goal paths with z in a3 (copied
+ * from s1 when mode != 0). */
 s32 func_80092894(s32 angle, s32 mode, s32 x, s32 z) {
     FieldActor *player;
     FieldModel *model;
@@ -4461,9 +4464,9 @@ s32 func_80092894(s32 angle, s32 mode, s32 x, s32 z) {
     model = D_800AF880.components.descriptors[D_800B2078.controlled].model;
     player->layer_flags |= 0x38;
     model->unk18 = 0x80000;
+    reach = func_80099A8C(8) * 2;
     from_x = WHOLE(player->position[0]);
     from_z = WHOLE(player->position[2]);
-    reach = func_80099A8C(8) * 2;
     if (mode == 0) {
         if (D_800ADBDC == 0 || D_800ADBE4 == 0) {
             D_800B00C0 = 1;
