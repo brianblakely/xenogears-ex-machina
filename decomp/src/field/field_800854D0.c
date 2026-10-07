@@ -6777,7 +6777,10 @@ void func_80098CAC(s32 mode) {
  * NON_MATCHING: case 2's abs(peak - (y >> 16)) keeps the difference in s0
  * (`subu s0,s0,v0; bgez s0; move a0,s0; negu a0,a0`) where the original
  * keeps it in v0 and negates it into a0 (`negu a0,v0`); the folded
- * ternary, if-statement and temporary forms do not reproduce it. */
+ * ternary, if-statement and temporary forms do not reproduce it. abs is
+ * the single abssi2 insn here; local-alloc ties the difference to peak
+ * (local to case 2, dying at the subtraction). A difference set twice
+ * avoids the tie but then takes a0 from the abs output's suggestion. */
 void func_80099214(void) {
     VECTOR normals[4];
     SVECTOR points[4];
