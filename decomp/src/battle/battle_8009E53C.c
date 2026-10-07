@@ -2594,6 +2594,8 @@ void func_800A4CF8(s32 index) {
  * of the tile loop stay in the row body); a goto row loop reproduces that,
  * but then ot loses its loop-weighted references and swaps $s4/$s5 with
  * &turn, so the for loop stays here. */
+/* Link a ceiling tile after its screen coordinates and texture corners. */
+#define LINK_SKY_TILE(table, tile) do { addPrim((table), (tile)); } while (0)
 void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *view, u32 *ot,
                    s32 buffer) {
     SVECTOR unused; /* declared, never used (its slot stays in the frame) */
@@ -2735,7 +2737,7 @@ void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *vi
                 sky->tiles[n].u0 = u;
                 sky->tiles[n].u2 = u;
                 sky->tiles[n].u3 = sky->tiles[n].u1 = u + halfU - 1;
-                addPrim(ot, &sky->tiles[n]);
+                LINK_SKY_TILE(ot, &sky->tiles[n]);
             }
             n++;
             vertex++;
@@ -2750,6 +2752,7 @@ void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *vi
     }
     addPrim(ot, &sky->modes[buffer]);
 }
+#undef LINK_SKY_TILE
 #else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A4DB8);
 #endif
