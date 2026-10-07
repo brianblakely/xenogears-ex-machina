@@ -869,49 +869,47 @@ void func_801E1590(u8 *ids, u8 *counts, u8 *categories) {
 
 /* Build the spoils window's item list: collect the drops, render each
  * item's name into VRAM with its count, then add the drops to the
- * inventory.
- * NON_MATCHING: i and the &ids[i] pointer swap s2/s3, and the original's
- * &text[count] pointer starts from its own sp + 0x38 where this C bases it
- * on the ids pointer (sp + 0x18, stores at 0x20($s1)). */
-#ifdef NON_MATCHING
+ * inventory. */
 void func_801E1690(void) {
     u8 ids[8];
     u8 categories[8];
     u8 counts[8];
     RECT rect;
     void *text[8];
+    void **names; /* the text buffers as the name loop fills them */
     s32 i;
     s32 count;
     s32 width;
 
     func_801E1590(ids, counts, categories);
+    names = text;
     for (i = 0, count = 0; i < 8; i++) {
         if (ids[i] != 0) {
             func_80076D58(D_800D334C->listA[count], 0, 1);
             func_80076D58(D_800D334C->listB[count], 0, 2);
-            text[count] = func_8008AC00(0x1B);
+            names[count] = func_8008AC00(0x1B);
             switch (categories[i]) {
             case 0:
-                width = func_80034EAC(func_80033848(ids[i]), text[count], 0x1B, 0);
+                width = func_80034EAC(func_80033848(ids[i]), names[count], 0x1B, 0);
                 break;
             case 1:
-                width = func_80034EAC(func_800337E8(ids[i]), text[count], 0x1B, 0);
+                width = func_80034EAC(func_800337E8(ids[i]), names[count], 0x1B, 0);
                 break;
             case 2:
-                width = func_80034EAC(func_80033818(ids[i]), text[count], 0x1B, 0);
+                width = func_80034EAC(func_80033818(ids[i]), names[count], 0x1B, 0);
                 break;
             case 3:
-                width = func_80034EAC(func_80033A5C(ids[i]), text[count], 0x1B, 0);
+                width = func_80034EAC(func_80033A5C(ids[i]), names[count], 0x1B, 0);
                 break;
             case 4:
-                width = func_80034EAC(func_80033A2C(ids[i]), text[count], 0x1B, 0);
+                width = func_80034EAC(func_80033A2C(ids[i]), names[count], 0x1B, 0);
                 break;
             }
             rect.x = 0x380;
             rect.y = count * 13 + 0x100;
             rect.w = 0x1E;
             rect.h = 0xD;
-            func_800769E8(&rect, text[count]);
+            func_800769E8(&rect, names[count]);
             func_80076C78(&D_800D334C->listA[count][D_800CCB34.index], 0x2C, count * 16 + 0x30, 0, count * 13, width);
             func_80076C78(&D_800D334C->listB[count][D_800CCB34.index], 0x94, count * 16 + 0x30, counts[i] * 8 + 0x78, 0, 8);
             count++;
@@ -924,9 +922,6 @@ void func_801E1690(void) {
     D_800D334C->listCount = count;
     D_800D334C->listBuffer = D_800CCB34.index;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E1690);
-#endif
 
 /* Show the member cards over six frames, then wait for Cross. */
 void func_801E196C(void) {
