@@ -1105,7 +1105,9 @@ void func_800734B8(u32 *ot, POLY_G4 *poly, s32 x, s32 y, s32 w, s32 h) {
  * original has it just below that setup, before the D_80077450 store.
  * Both sched1 and sched2 keep it there here; moving `last = 1` anywhere
  * between the call and the first store of 1, or making `last` hold the
- * call's result first, changes nothing. */
+ * call's result first, changes nothing. In sched1 every insn of this block
+ * has priority 1 and the 1 load loses the LUID tie to the argument setup;
+ * using step/dir/line/cursor for the 1s or plain constants is worse. */
 void func_800737EC(void) {
     char name[8] = "trouble";
     s32 button;
