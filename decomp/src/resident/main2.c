@@ -146,10 +146,12 @@ void func_80033518(void) {
     D_80059368 = NULL;
 }
 
-/* Install a loaded font block (protected from release).
- * Nonmatching: the font field loads are scheduled above the global stores. */
-#ifdef NON_MATCHING
+/* Install a loaded font block (protected from release): its header
+ * halfwords are read in turn (glyph offset, then the character ranges). */
 void func_80033558(u16 *font) {
+    u16 *p;
+    s32 offset;
+
     if (font == NULL) {
         func_800324B8(0x20);
         return;
@@ -157,16 +159,15 @@ void func_80033558(u16 *font) {
     func_800320A4(font);
     D_8005936C = font;
     D_8005935C = (u8 *)font;
-    D_8005934C = *(font + 2);
-    D_80059350 = *(font + 3);
-    D_80059354 = *(font + 4);
-    D_80059358 = *(font + 5);
-    D_8005935C = (u8 *)font + *(font + 1);
-    D_80059364 = *(font + 6);
+    p = font + 1;
+    offset = *p++;
+    D_8005934C = *p++;
+    D_80059350 = *p++;
+    D_80059354 = *p++;
+    D_80059358 = *p++;
+    D_80059364 = *p;
+    D_8005935C = (u8 *)font + offset;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80033558);
-#endif
 
 /* Install a loaded system data block (protected from release). */
 void func_800335F4(u8 *data) {
