@@ -3734,7 +3734,13 @@ void func_801E781C(s32 index, u8 rebuild) {
  * case (74). local-alloc only ties a pseudo whose reg_qty is -2 (lives in
  * one block, dies once); the original's three different offset registers
  * mean three pseudos, each untied from its chain. A 12-minute permuter
- * run found only a cosmetic 300 -> 295 change. */
+ * run found only a cosmetic 300 -> 295 change. In the original the chain
+ * (v0) and the offset are not tied, so at local-alloc time the offset
+ * failed combine_regs: either it was not block-local (reg_qty -1: used in
+ * another block or dying twice) or file * 23 was not; three registers
+ * mean three such pseudos, one per case. As a block-local qty it would
+ * still be allocated before second_y (7 refs against 4), so it must have
+ * reached global-alloc. A second 20-minute permuter run found nothing. */
 #ifdef NON_MATCHING
 void func_801E78C8(s32 file) {
     s32 i;
