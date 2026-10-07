@@ -2761,15 +2761,19 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80087EDC);
 /* Move `actor` alone into `target`'s formation group when that group is
  * another one and empty (entries from 0x10, or 0x18 for an enemy joining a
  * party member): it becomes the only member, at the group's position.
- * (Nonmatching: the original stores the count before the member mask with
- * this schedule, and tests the actor into $v1.) */
+ * Nonmatching: this differs only in the order of the two group-entry stores
+ * (the original sets the count at +0 first, then the member mask, with this
+ * same schedule); written count first, GCC hoists the second group reload
+ * above the count store. */
 #ifdef NON_MATCHING
 void func_800881B8(u8 actor, u8 target) {
     u8 base;
+    s32 party;
 
     if (D_800C3EB4[actor].group != D_800C3EB4[target].group) {
+        party = actor < 3;
         if (target < 3) {
-            base = (actor < 3) ? 0x10 : 0x18;
+            base = party ? 0x10 : 0x18;
         } else {
             base = 0x10;
         }
