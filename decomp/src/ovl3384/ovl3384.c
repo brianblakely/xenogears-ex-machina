@@ -49,13 +49,8 @@ void func_801FC0CC(TaskNode *node) {
 
 /* Draw every piece: place it by its position and rotation under the model's
  * matrix and the camera, project its corners into its primitive and queue it.
- * NON_MATCHING: only the switch dispatch differs; the original loads the jump
- * table address before scaling the index (lui in the range check's delay
- * slot, table in v0, index in v1), this C scales the index first. Here
- * loop.c hoists the table address out of the piece loop (life 3, savings 2
- * against 140 loop insns) and reload rematerializes it into t0; the
- * original's loop keeps it at the dispatch. */
-#ifdef NON_MATCHING
+ * Each primitive kind has its own case (the compiler merges the identical
+ * ones afterwards). */
 void func_801FC1A8(TaskNode *node) {
     DebrisTask *debris;
     Piece *piece;
@@ -89,11 +84,12 @@ void func_801FC1A8(TaskNode *node) {
         if (kind & 8) {
             RotTransPers4(&piece->vertex[0], &piece->vertex[1], &piece->vertex[2], &piece->vertex[3],
                           &sxy[0], &sxy[1], &sxy[2], &sxy[3], &p, &flag);
+            AddPrim(D_8005956C, prim);
         } else {
             RotTransPers3(&piece->vertex[0], &piece->vertex[1], &piece->vertex[2], &sxy[0], &sxy[1],
                           &sxy[2], &p, &flag);
+            AddPrim(D_8005956C, prim);
         }
-        AddPrim(D_8005956C, prim);
         /* The corners' places in POLY_F3/F4/FT3/G3/GT3/FT4/G4/GT4. */
         switch (kind) {
         case 0:
@@ -108,6 +104,10 @@ void func_801FC1A8(TaskNode *node) {
             *(s32 *)(prim + 0x14) = sxy[3];
             break;
         case 4:
+            *(s32 *)(prim + 0x8) = sxy[0];
+            *(s32 *)(prim + 0x10) = sxy[1];
+            *(s32 *)(prim + 0x18) = sxy[2];
+            break;
         case 16:
             *(s32 *)(prim + 0x8) = sxy[0];
             *(s32 *)(prim + 0x10) = sxy[1];
@@ -119,6 +119,11 @@ void func_801FC1A8(TaskNode *node) {
             *(s32 *)(prim + 0x20) = sxy[2];
             break;
         case 12:
+            *(s32 *)(prim + 0x8) = sxy[0];
+            *(s32 *)(prim + 0x10) = sxy[1];
+            *(s32 *)(prim + 0x18) = sxy[2];
+            *(s32 *)(prim + 0x20) = sxy[3];
+            break;
         case 24:
             *(s32 *)(prim + 0x8) = sxy[0];
             *(s32 *)(prim + 0x10) = sxy[1];
@@ -136,9 +141,6 @@ void func_801FC1A8(TaskNode *node) {
         desc = (PacketDesc *)((u8 *)desc + (desc->words + 1) * 4);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3384/asm/nonmatchings/ovl3384", func_801FC1A8);
-#endif
 
 /* Opcode entry: break `model` (placed by `matrix`) into one piece per
  * primitive. Each piece keeps its corners about its centre and flies from the
