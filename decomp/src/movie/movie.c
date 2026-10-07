@@ -917,13 +917,16 @@ void func_80072D84(POLY_G4 *poly0, POLY_G4 *poly1, s32 x, s32 y, s32 w, s32 h) {
 #ifdef NON_MATCHING
 /* Add the menu backdrop to `ot`: a gouraud quad at (x, y), w by h, whose
  * corner colors each fade toward a new random color (as func_800734B8).
- * Does not match: only the order of the strength-reduced pointers differs;
- * the original sets up and advances the from-red pointer ($s7) after the
- * fade counter pointer ($s3), here before it. */
+ * The difference of two bytes is kept in a short. Does not match: only the
+ * two loads of the red difference are swapped; the original loads the
+ * to-red ($s6) before the from-red ($s7), here the from-red comes first.
+ * (With func_800734B8's form, delta = (to - from) * n / d, the loads are
+ * right but the from-red pointer is set up and advanced before the fade
+ * counter pointer instead of after it.) */
 void func_80072F98(u32 *ot, POLY_G4 *poly, s32 x, s32 y, s32 w, s32 h) {
     s32 i;
     u8 from;
-    s32 delta;
+    s16 delta;
     s32 r;
     s32 g;
     s32 b;
@@ -948,14 +951,14 @@ void func_80072F98(u32 *ot, POLY_G4 *poly, s32 x, s32 y, s32 w, s32 h) {
             D_80076F9C[i].b = (func_80074AF0() & 0xFF) / 3 + 16;
         }
         from = D_80076F8C[i].r;
-        delta = (D_80076F9C[i].r - from) * D_80076FAC[i] / D_80076FBC[i];
-        r = D_80076F8C[i].r + delta;
+        delta = D_80076F9C[i].r - from;
+        r = D_80076F8C[i].r + delta * D_80076FAC[i] / D_80076FBC[i];
         from = D_80076F8C[i].g;
-        delta = (D_80076F9C[i].g - from) * D_80076FAC[i] / D_80076FBC[i];
-        g = D_80076F8C[i].g + delta;
+        delta = D_80076F9C[i].g - from;
+        g = D_80076F8C[i].g + delta * D_80076FAC[i] / D_80076FBC[i];
         from = D_80076F8C[i].b;
-        delta = (D_80076F9C[i].b - from) * D_80076FAC[i] / D_80076FBC[i];
-        b = D_80076F8C[i].b + delta;
+        delta = D_80076F9C[i].b - from;
+        b = D_80076F8C[i].b + delta * D_80076FAC[i] / D_80076FBC[i];
         switch (i) {
         case 0:
             poly->r0 = r;
