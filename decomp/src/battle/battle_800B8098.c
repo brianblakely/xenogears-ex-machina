@@ -1233,9 +1233,8 @@ void func_800BB080(s32 keep) {
 
 /* Update of a sprite following its slot's stage object: step its animation
  * while it runs, then put it at the object's position. */
-/* NON_MATCHING: the compiled frame is 0x20; the original reserves 0x28. */
-#ifdef NON_MATCHING
 void func_800BB13C(ActorTask *task) {
+    SVECTOR unused; /* unused in the original; reserves 8 bytes */
     BattleSprite *sprite = task->data;
     u32 low = sprite->frameBits.bits.slotLow;
     BattleObject *object = D_800D3368[sprite->motion.bits.slotHigh << 2 | low];
@@ -1257,10 +1256,6 @@ void func_800BB13C(ActorTask *task) {
         sprite->z.fixed = object->hierarchy->translation[2] << 16;
     }
 }
-
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800BB13C);
-#endif
 
 /* Draw of a slot-following sprite: its size from the slot's object and its
  * depth in the view. */
@@ -1287,18 +1282,13 @@ void func_800BB248(ActorTask *task) {
 }
 
 /* Destroy a task node. */
-/* NON_MATCHING: the compiled frame is 0x18; the original reserves 0x20. */
-#ifdef NON_MATCHING
 void func_800BB314(ActorTask *task) {
+    SVECTOR unused; /* unused in the original; reserves 8 bytes */
 
     func_8001CB48(&task->draw);
     func_8001CD94(task);
     func_800320E8(task);
 }
-
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800BB314);
-#endif
 
 /* Create slot's sprite following its stage object (800BB13C, 800BB248),
  * unless it has one. */
@@ -1472,12 +1462,12 @@ void func_800BB9D4(void) {
 /* Step the battle camera: take its wanted points from the camera mode, move
  * the eye and look-at points a fraction (800c3674) of the way there, and
  * derive its angles and range. */
-/* NON_MATCHING: the compiled frame is 0x50; the original reserves 0x80. */
-#ifdef NON_MATCHING
 void func_800BBAB8(void) {
     SVECTOR *point;
     VECTOR step;
+    VECTOR unused[2]; /* unused in the original; reserves 32 bytes */
     VECTOR delta;
+    VECTOR unused2; /* unused in the original; reserves 16 bytes */
     VECTOR square;
     s32 horizontal;
 
@@ -1554,10 +1544,6 @@ void func_800BBAB8(void) {
     D_800D309C.rot.vx = -ratan2(delta.vy, horizontal);
     D_800D309C.rot.vz = 0;
 }
-
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800BBAB8);
-#endif
 
 /* Destroy of a camera sprite task: release its camera role (restoring the
  * saved point unless effects are off), free it, and when the last one ends
