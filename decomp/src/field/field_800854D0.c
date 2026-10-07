@@ -107,7 +107,12 @@ void func_80085738(void) {
  * bank into `file` first and copying it to `bank` inside the if reproduces
  * the prologue exactly; with that, a for loop still hoists bank + 1, and
  * a goto loop keeps it but then fails to hoist the table base and 0xffff
- * out of the outer loop. */
+ * out of the outer loop. loop.c (scan_loop) leaves a bottom-test insn in
+ * place only if its register is first set outside the loop (or is a user
+ * variable used in the exit test after a conditional jump); a user
+ * variable in the condition (i < (n = bank + 1)) is renamed in the entry
+ * copy of the test and still hoisted, and `i <= bank` compares without the
+ * add. */
 void func_80085788(void) {
     u16 *times;
     s32 bank;
@@ -1998,20 +2003,10 @@ void func_8008B518(void) {
     D_800B0078->pc += 8;
 }
 
-#ifdef NON_MATCHING
 /* Event 0x1b: scroll the current actor's textured polygons by (op1, op3)
- * texels in both draw buffers.
- * Each branch steps the group pointer itself, which gives it the original's
- * allocation priority (group s1, other s2, prims s3).
- * NON_MATCHING: only the else branch's step is placed differently: the
- * original steps the group pointer in the delay slot of the FT3/FT4 branch
- * (bnez; addiu s1,s1,4); here the slot takes the FT3 path's packet copy
- * (move t0,s3) and each path steps the pointer itself. One step before the
- * FT3/FT4 test gives the original's code exactly except that `other` then
- * outranks `group` in global allocation (group s2, other s1): group has 27
- * loop-weighted references over 131 insns against other's 13 over 42, and
- * would need about 31; statement order in the prologue and declaration
- * order do not change it. */
+ * texels in both draw buffers. Each polygon's two group words are stepped
+ * over one at a time (the two steps combine into one add, but count twice
+ * in allocation, which gives group s1, other s2, prims s3). */
 void func_8008B5D4(void) {
     FieldInstance *instance;
     POLY_FT3 *ft3;
@@ -2041,13 +2036,11 @@ void func_8008B5D4(void) {
         header = *group;
         code = header & 0xFF;
         count = header >> 16;
-        if (code == 0xC4) {
-            group++;
-        } else if (code == 0xC8) {
+        if (code == 0xC4 || code == 0xC8) {
             group++;
         } else {
+            group++;
             if (!(header & 8)) {
-                group++;
                 ft3 = (POLY_FT3 *)prims;
                 ft3_other = (POLY_FT3 *)other;
                 for (i = 0; i < count; i++) {
@@ -2063,14 +2056,14 @@ void func_8008B5D4(void) {
                     ft3_other->v0 = ft3->v0;
                     ft3_other->v1 = ft3->v1;
                     ft3_other->v2 = ft3->v2;
-                    group += 2;
+                    group++;
+                    group++;
                     ft3++;
                     ft3_other++;
                 }
                 prims = (u8 *)ft3;
                 other = (u8 *)ft3_other;
             } else {
-                group++;
                 ft4 = (POLY_FT4 *)prims;
                 ft4_other = (POLY_FT4 *)other;
                 for (i = 0; i < count; i++) {
@@ -2090,7 +2083,8 @@ void func_8008B5D4(void) {
                     ft4_other->v1 = ft4->v1;
                     ft4_other->v2 = ft4->v2;
                     ft4_other->v3 = ft4->v3;
-                    group += 2;
+                    group++;
+                    group++;
                     ft4++;
                     ft4_other++;
                 }
@@ -2101,9 +2095,6 @@ void func_8008B5D4(void) {
     }
     D_800B0078->pc += 5;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_8008B5D4);
-#endif
 
 /* Event: once the disc is idle, stop the stream, decode the pending party
  * sprite into its block, release the buffer and apply it; wait otherwise. */
@@ -6785,7 +6776,11 @@ void func_80098CAC(s32 mode) {
  * ternary, if-statement and temporary forms do not reproduce it. abs is
  * the single abssi2 insn here; local-alloc ties the difference to peak
  * (local to case 2, dying at the subtraction). A difference set twice
- * avoids the tie but then takes a0 from the abs output's suggestion. */
+ * avoids the tie but then takes a0 from the abs output's suggestion.
+ * The 2.7.2 abssi2 template itself always ends `negu %0,%0`, so the
+ * original's `move a0,v0` (delay slot) and `negu a0,v0` are a two-arm
+ * branch (each arm writing a0 from v0) rather than abs; an explicit if/else
+ * into a temporary is still coalesced into one register here. */
 void func_80099214(void) {
     VECTOR normals[4];
     SVECTOR points[4];
@@ -7888,7 +7883,11 @@ void func_8009C12C(void) {
  * indexed as flat arrays, which keeps their bases in registers as the
  * original does.
  * NON_MATCHING: only the second file's address differs: the original
- * computes it into a0, GCC here into s1 (c * 2 + &D_800AE1E1). */
+ * computes it into a0, GCC here into s1 (c * 2 + &D_800AE1E1). The sum
+ * is allocated before c * 2 and find_reg's first pass takes s1 (already
+ * used, free once the PLACE base dies); the original's first pass must
+ * have found s1 taken. Other spellings of the index (D_800AE1E0[c][1],
+ * 1 + c * 2, a row pointer) all give 6 or worse. */
 #define PLACE(i, k) (((s16 *)D_800AEAE4)[(i) * 8 + (k)])
 #define FILES(c, k) (((u8 *)D_800AE1E0)[(c) * 2 + (k)])
 s32 func_8009C154(s32 character) {
@@ -10507,7 +10506,12 @@ void func_800A3474(void) {
  * (addu a0,s1,v0) as in the original, but the pointer kept for the model
  * argument is a copy of it (move v1,a0 in the unk2268 test's delay slot,
  * then lw a0,4(v1)); the original keeps the sum itself in a0 for the call
- * block (lw a0,4(a0)). */
+ * block (lw a0,4(a0)). A descriptor variable assigned before the layer test
+ * is formed base-first (binop expansion) unless written as
+ * (FieldDescriptor *)(i * sizeof(FieldDescriptor) + (u32)descriptors);
+ * then the actor load outranks it (a0/a1 swapped); assigning it in two
+ * steps (descriptor = descriptors; descriptor += i) fixes the allocation
+ * but is base-first again (score 6). */
 void func_800A3C8C(void) {
     s32 changed;
     s32 i;
@@ -10556,12 +10560,13 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_800A3C8C
 /* Write the field state block at D_8005A4E4 (descriptor count, view,
  * collision attributes, D_800B2078, per-actor records and D_800C3A68) and
  * print its size.
- * NON_MATCHING: only the size print differs: the original holds
- * &D_8005A4E4 in s1 and loads it and D_800AFC50 before testing D_800C268C
- * (the subtraction lands in the branch delay slot); here both follow the
- * test, and computing the size before the test keeps the address in v0
- * loaded after D_800AFC50. The original's s1 is the loop counter's
- * register; a snapshot pointer taken at the top goes to s2 instead. */
+ * NON_MATCHING: only the register of &D_8005A4E4 differs: reading
+ * D_800AFC50 before the D_800C268C test and subtracting the snapshot inside
+ * it gives the original's order and delay slot (and size), but global
+ * allocation puts the snapshot in v1 (already used, free) where the
+ * original has s1, the last loop counter's register. A snapshot taken at
+ * the top goes to s2; reusing the counter itself gives s1 but loads it
+ * after D_800C268C. */
 void func_800A3F4C(void) {
     s32 i;
     s32 flags;
@@ -10608,8 +10613,9 @@ void func_800A3F4C(void) {
         D_8005A408[i] = D_8005A39C->unk22B1[i];
     }
     snapshot = D_8005A4E4;
+    size = (s32)D_800AFC50;
     if (D_800C268C == 0) {
-        size = D_800AFC50 - snapshot;
+        size -= (s32)snapshot;
         func_800379C8("SAVESIZE=%d %x\n", size, size);
     }
 }

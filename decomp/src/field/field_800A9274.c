@@ -863,8 +863,18 @@ extern RECT D_800AF5C0[5]; /* pieces of file 0x802's 320-wide image */
 
 #ifdef NON_MATCHING
 /* Upload the pieces of file 0x802's image whose game flag (800ab748) is
- * clear to the 8-bit page area at (300, 100). The original keeps one
- * pointer per piece field and spills most of its variables. */
+ * clear to the 8-bit page area at (300, 100).
+ * NON_MATCHING (score 171 -> 139): the original indexes the piece table
+ * with i * 8 against bases held in registers (constants CSE reuses as
+ * related values: &x in t0 rematerialized, h = (i * 8) + (sym + 6) hoisted
+ * out of the row loop, y and w as copies of the outer field pointers) and
+ * spills file, pixels, i and the x pointer. Reading h in the row test and
+ * the outer w and h through a flat halfword view gives the original's outer
+ * pointers (h, w, y from one sym + 6 base); the row loop still reads x, y
+ * and w symbol-relative, so nothing else is hoisted and nothing spills.
+ * Every struct/flat/pointer mix of the nine reads was scored (best 139). */
+#define PIECE(n, field) (((s16 *)D_800AF5C0)[(n) * 4 + (field)])
+enum { PIECE_X, PIECE_Y, PIECE_W, PIECE_H };
 void func_800AB808(void) {
     TIM_IMAGE tim;
     u_long *file;
@@ -882,15 +892,15 @@ void func_800AB808(void) {
         for (i = 0; i < 5; i++) {
             if (func_800AB748(i) == -1 && tim.paddr != NULL) {
                 row_pixels = pixels;
-                for (row = 0; row < D_800AF5C0[i].h; row++) {
+                for (row = 0; row < PIECE(i, PIECE_H); row++) {
                     memcpy(row_pixels, tim.paddr + (D_800AF5C0[i].y + row) * 0x50 + D_800AF5C0[i].x / 4,
                            D_800AF5C0[i].w);
                     row_pixels += D_800AF5C0[i].w / 4 * 4;
                 }
                 tim.prect->x = D_800AF5C0[i].x / 2 + 0x300;
                 tim.prect->y = D_800AF5C0[i].y + 0x100;
-                tim.prect->w = D_800AF5C0[i].w / 2;
-                tim.prect->h = D_800AF5C0[i].h;
+                tim.prect->w = PIECE(i, PIECE_W) / 2;
+                tim.prect->h = PIECE(i, PIECE_H);
                 LoadImage(tim.prect, (u_long *)pixels);
                 DrawSync(0);
             }
@@ -1132,17 +1142,8 @@ void func_800AC308(void) {
     func_80028A60(0);
 }
 
-#ifdef NON_MATCHING
 /* Set up the text roll: the white top and bottom fades (640 wide, 24
- * tall at 0 and c8) and the 16 lines of sprites.
- * NON_MATCHING: differs only in when the scheduler loads the constant
- * 0x280: the original loads it with 0xff at the top of the block, this
- * after the colour stores (moving the x stores or holding 0x280 in a
- * local does not change it; a local assigned twice, so not a register
- * birth for sched1, puts it above the GetTPage arguments instead). Sched2
- * orders these constant loads by their sched1 position, so the original
- * had li 0x280 between li 0xff and li 0x18 there, which neither a birth
- * (placed at its first use) nor a non-birth (scheduled last) gives. */
+ * tall at 0 and c8) and the 16 lines of sprites. */
 void func_800AC3AC(void) {
     SPRT *sprite;
     s32 i;
@@ -1154,25 +1155,12 @@ void func_800AC3AC(void) {
     D_800AF788[0][0].r1 = D_800AF788[0][0].g1 = D_800AF788[0][0].b1 = 0xFF;
     D_800AF788[1][0].r2 = D_800AF788[1][0].g2 = D_800AF788[1][0].b2 = 0xFF;
     D_800AF788[1][0].r3 = D_800AF788[1][0].g3 = D_800AF788[1][0].b3 = 0xFF;
-    D_800AF788[0][0].y3 = D_800AF788[0][0].y2 = 0x18;
     D_800AF788[0][0].r2 = D_800AF788[0][0].g2 = D_800AF788[0][0].b2 = 0;
     D_800AF788[0][0].r3 = D_800AF788[0][0].g3 = D_800AF788[0][0].b3 = 0;
     D_800AF788[1][0].r0 = D_800AF788[1][0].g0 = D_800AF788[1][0].b0 = 0;
     D_800AF788[1][0].r1 = D_800AF788[1][0].g1 = D_800AF788[1][0].b1 = 0;
-    D_800AF788[0][0].x0 = 0;
-    D_800AF788[0][0].y0 = 0;
-    D_800AF788[0][0].x1 = 0x280;
-    D_800AF788[0][0].y1 = 0;
-    D_800AF788[0][0].x2 = 0;
-    D_800AF788[0][0].x3 = 0x280;
-    D_800AF788[1][0].x0 = 0;
-    D_800AF788[1][0].y0 = 0xC8;
-    D_800AF788[1][0].y1 = 0xC8;
-    D_800AF788[1][0].y2 = 0xE0;
-    D_800AF788[1][0].y3 = 0xE0;
-    D_800AF788[1][0].x1 = 0x280;
-    D_800AF788[1][0].x2 = 0;
-    D_800AF788[1][0].x3 = 0x280;
+    setXY4(&D_800AF788[0][0], 0, 0, 0x280, 0, 0, 0x18, 0x280, 0x18);
+    setXY4(&D_800AF788[1][0], 0, 0xC8, 0x280, 0xC8, 0, 0xE0, 0x280, 0xE0);
     D_800AF788[0][0].u0 = 0;
     D_800AF788[0][0].v0 = 0;
     D_800AF788[0][0].u1 = 2;
@@ -1181,14 +1169,7 @@ void func_800AC3AC(void) {
     D_800AF788[0][0].v2 = 2;
     D_800AF788[0][0].u3 = 2;
     D_800AF788[0][0].v3 = 2;
-    D_800AF788[1][0].u0 = 0;
-    D_800AF788[1][0].v0 = 0;
-    D_800AF788[1][0].u1 = 2;
-    D_800AF788[1][0].v1 = 0;
-    D_800AF788[1][0].u2 = 0;
-    D_800AF788[1][0].v2 = 2;
-    D_800AF788[1][0].u3 = 2;
-    D_800AF788[1][0].v3 = 2;
+    setUV4(&D_800AF788[1][0], 0, 0, 2, 0, 0, 2, 2, 2);
     D_800AF788[0][0].tpage = GetTPage(1, 2, 0x3C0, 0x100);
     D_800AF788[1][0].tpage = GetTPage(1, 2, 0x3C0, 0x100);
     D_800AF788[0][0].clut = GetClut(0, 0x1FF);
@@ -1225,9 +1206,6 @@ void func_800AC3AC(void) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800A9274", func_800AC3AC);
-#endif
 
 /* Draw the text roll: its two fades, then each line scrolled up a pixel
  * from the other buffer's position. */
