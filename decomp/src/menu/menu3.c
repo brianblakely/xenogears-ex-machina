@@ -3396,12 +3396,9 @@ void func_8007C124(SVector *pos, s32 kind) {
     sparkle->prim[1] = *prim;
 }
 
-#ifdef NON_MATCHING
 /* Draw the trail sparkles as quads from the previous segment's edge to an
  * edge across the direction of travel on screen (vertical for the first
- * segment), sized by the trail and shaded by age.
- * Does not match: the square root result is copied to $a1 and the scaled
- * offsets land in $a0/$v1 in the original. */
+ * segment), sized by the trail and shaded by age. */
 void func_8007C280(Matrix *view, Matrix *local, u32 *ot) {
     SceneScratch *scratch = SCENE_SCRATCH;
     Sparkle *sparkle;
@@ -3410,12 +3407,11 @@ void func_8007C280(Matrix *view, Matrix *local, u32 *ot) {
     s32 i;
     s32 dx;
     s32 dy;
-    s32 length;
+    s32 tmp; /* the segment length, then the shade, then the link address */
     s32 nx;
     s32 ny;
     s32 side;
     u32 prevlink;
-    u32 addr;
 
     scratch->from.vx = 0;
     scratch->from.vz = 0;
@@ -3439,9 +3435,9 @@ void func_8007C280(Matrix *view, Matrix *local, u32 *ot) {
             prev = &sparkle->u.trail.prev->u.trail;
             dx = sparkle->u.trail.screen[4] - prev->screen[4];
             dy = sparkle->u.trail.screen[5] - prev->screen[5];
-            length = SquareRoot0(dx * dx + dy * dy);
-            nx = dx * sparkle->u.trail.size / length;
-            ny = dy * sparkle->u.trail.size / length;
+            tmp = SquareRoot0(dx * dx + dy * dy);
+            nx = dx * sparkle->u.trail.size / tmp;
+            ny = dy * sparkle->u.trail.size / tmp;
             scratch->point.vz = 0;
             scratch->point.vy = -nx;
             scratch->point.vx = ny;
@@ -3506,21 +3502,17 @@ void func_8007C280(Matrix *view, Matrix *local, u32 *ot) {
             prim->x2 = prev->screen[2];
             prim->y2 = prev->screen[3];
         }
-        /* the shade shares its register with the link address */
-        addr = 0x40 - sparkle->frame * 8;
-        prim->r0 = addr;
-        prim->g0 = addr;
-        prim->b0 = addr;
+        tmp = 0x40 - sparkle->frame * 8;
+        prim->r0 = tmp;
+        prim->g0 = tmp;
+        prim->b0 = tmp;
         prevlink = ot[scratch->depth >> 4];
-        addr = (u32)prim & 0xFFFFFF;
-        ot[scratch->depth >> 4] = addr;
+        tmp = (u32)prim & 0xFFFFFF;
+        ot[scratch->depth >> 4] = tmp;
         prevlink |= 0x09000000;
-        *(u32 *)addr = prevlink;
+        *(u32 *)tmp = prevlink;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007C280);
-#endif
 
 /* Start a trail segment of a key at a position for the current owner
  * (once per key and owner), with the given texture column and size, linked
