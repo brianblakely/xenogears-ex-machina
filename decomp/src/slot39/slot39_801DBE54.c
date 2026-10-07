@@ -1238,15 +1238,12 @@ void func_801DFE2C(u8 slot) {
 /* Show the three-line description of equipment list entry `top` + `row` (or,
  * with `current`, of the part equipped) for part `part` of party slot
  * `slot` (`special` a special part, `gear` the gear's parts). */
-#ifdef NON_MATCHING
-/* Differs: GCC strength-reduces the line's y position into a saved register
- * (the original recomputes it) and combines the kind with an `or`. */
 void func_801DFF5C(s32 part, s32 row, s32 top, u8 special, u8 gear, u8 current, u8 slot) {
     RECT rect;
     u8 *table;
     u8 *image;
     s32 line;
-    s32 kind;
+    u8 kind;
     u16 id;
 
     id = D_801EA730[top + row];
@@ -1258,7 +1255,8 @@ void func_801DFF5C(s32 part, s32 row, s32 top, u8 special, u8 gear, u8 current, 
         if (!special && part != 0) {
             kind = 1;
         }
-        switch ((u8)(kind + gear * 2)) {
+        kind += gear * 2;
+        switch (kind) {
         case 0:
             table = D_800625A0->block434->texts[0];
             if (current) {
@@ -1305,7 +1303,7 @@ void func_801DFF5C(s32 part, s32 row, s32 top, u8 special, u8 gear, u8 current, 
                 LoadImage(&rect, image);
                 DrawSync(0);
                 func_801E7C50(&D_800625A0->block434->extra[line], line + 8, 0x80, 0x81);
-                func_801C851C(D_800625A0->block434->extra[line].verts, 0x10, (line * 0x10 + 0x96) & ~1,
+                func_801C851C(D_800625A0->block434->extra[line].verts, 0x10, (u16)(line * 0x10 + 0x96) / 2 * 2,
                               D_800625A0->block434->extra[line].width, 0xd);
                 D_800625A0->block434->extra[line].count = D_800625A0->bufferIndex;
             }
@@ -1316,9 +1314,6 @@ void func_801DFF5C(s32 part, s32 row, s32 top, u8 special, u8 gear, u8 current, 
     }
     D_800625A0->block434->extraShown = 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801DFF5C);
-#endif
 
 /* Return party slot `slot`'s accessory (or with `gear` its gear's part) to
  * its inventory list: add one to the entry holding it (at most 99), or put
