@@ -371,10 +371,8 @@ u8 func_80033CD0(u8 *window) {
 
 /* Decode `value` as ten decimal digit codes in palette `color` (with a
  * sign code when `sign` is set) into text; leading zeros are dropped for
- * plain palettes.
- * Nonmatching: the digit loop matches, but the leading-zero scan's loop
- * rotation and tail register allocation still differ (240 vs 228 bytes). */
-#ifdef NON_MATCHING
+ * plain palettes. The leading-zero scan tests its end first in an
+ * unrotated loop, as the original does. */
 void func_80033CF0(u32 value, s32 color, s32 sign) {
     u32 divisor = 1000000000;
     u32 remaining = value;
@@ -398,7 +396,10 @@ void func_80033CF0(u32 value, s32 color, s32 sign) {
     p = D_8005A0C8;
     D_8005A0C8[0] = color;
     if ((color & 0xFFF0) == color) {
-        while (p != &D_8005A0C8[10]) {
+        while (1) {
+            if (p == &D_8005A0C8[10]) {
+                break;
+            }
             if (*++p != color) {
                 break;
             }
@@ -409,9 +410,6 @@ void func_80033CF0(u32 value, s32 color, s32 sign) {
     }
     func_80033ABC(p);
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80033CF0);
-#endif
 
 void func_80033DD4(Window *window, u8 *text) {
     u8 *previous = window->text;
