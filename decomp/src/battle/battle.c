@@ -2031,26 +2031,20 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085618);
 
 /* Revive slot at full HP and clear its timed statuses (the active halves of
  * the status words 0x7c-0x80 and 0x84-0x8c). */
-#ifdef NON_MATCHING
 void func_80085AC4(slot)
 u8 slot;
 {
     s32 i;
     u16 *status;
 
-    status = &D_800CCCE8.records[slot].pilot.status7C;
     D_800CCCE8.records[slot].pilot.hp = D_800CCCE8.records[slot].pilot.maxHp;
-    for (i = 2; i >= 0; i -= 2) {
-        status[i] = 0;
+    for (i = 2, status = &D_800CCCE8.records[slot].pilot.status80; i >= 0; i -= 2, status -= 2) {
+        *status = 0;
     }
-    status = &D_800CCCE8.records[slot].pilot.status84.half.active;
-    for (i = 4; i >= 0; i -= 2) {
-        status[i] = 0;
+    for (i = 4, status = &D_800CCCE8.records[slot].pilot.status8C.half.active; i >= 0; i -= 2, status -= 2) {
+        *status = 0;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085AC4);
-#endif
 
 /* Apply up to three recovery amounts from 8009ada0 to `slot` as separate
  * events (codes 8..10) and show them. */
@@ -2767,15 +2761,19 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80087EDC);
 /* Move `actor` alone into `target`'s formation group when that group is
  * another one and empty (entries from 0x10, or 0x18 for an enemy joining a
  * party member): it becomes the only member, at the group's position.
- * (Nonmatching: the original stores the count before the member mask with
- * this schedule, and tests the actor into $v1.) */
+ * Nonmatching: this differs only in the order of the two group-entry stores
+ * (the original sets the count at +0 first, then the member mask, with this
+ * same schedule); written count first, GCC hoists the second group reload
+ * above the count store. */
 #ifdef NON_MATCHING
 void func_800881B8(u8 actor, u8 target) {
     u8 base;
+    s32 party;
 
     if (D_800C3EB4[actor].group != D_800C3EB4[target].group) {
+        party = actor < 3;
         if (target < 3) {
-            base = (actor < 3) ? 0x10 : 0x18;
+            base = party ? 0x10 : 0x18;
         } else {
             base = 0x10;
         }
