@@ -10556,12 +10556,13 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_800A3C8C
 /* Write the field state block at D_8005A4E4 (descriptor count, view,
  * collision attributes, D_800B2078, per-actor records and D_800C3A68) and
  * print its size.
- * NON_MATCHING: only the size print differs: the original holds
- * &D_8005A4E4 in s1 and loads it and D_800AFC50 before testing D_800C268C
- * (the subtraction lands in the branch delay slot); here both follow the
- * test, and computing the size before the test keeps the address in v0
- * loaded after D_800AFC50. The original's s1 is the loop counter's
- * register; a snapshot pointer taken at the top goes to s2 instead. */
+ * NON_MATCHING: only the register of &D_8005A4E4 differs: reading
+ * D_800AFC50 before the D_800C268C test and subtracting the snapshot inside
+ * it gives the original's order and delay slot (and size), but global
+ * allocation puts the snapshot in v1 (already used, free) where the
+ * original has s1, the last loop counter's register. A snapshot taken at
+ * the top goes to s2; reusing the counter itself gives s1 but loads it
+ * after D_800C268C. */
 void func_800A3F4C(void) {
     s32 i;
     s32 flags;
@@ -10608,8 +10609,9 @@ void func_800A3F4C(void) {
         D_8005A408[i] = D_8005A39C->unk22B1[i];
     }
     snapshot = D_8005A4E4;
+    size = (s32)D_800AFC50;
     if (D_800C268C == 0) {
-        size = D_800AFC50 - snapshot;
+        size -= (s32)snapshot;
         func_800379C8("SAVESIZE=%d %x\n", size, size);
     }
 }
