@@ -39,29 +39,10 @@ void func_801E4048(void) {
 
 /* Place the formation: party and enemy presence, ids and groups from the
  * formation record, group membership and each member's standing position
- * from the battle scene data.
- * NON_MATCHING: the original indexes the formation record (D_8006F9DC) with
- * i itself; here loop optimization combines its repeated reads into reduced
- * pointers (and eliminates i), and the later loops' registers differ.
- * In the loop dump the two FORMATION_ID (and FLAGS3) reads are combined
- * givs (benefit 4) and reduced; the original keeps every byte-array access
- * on a register incremented with i (a0, like a mult-1 DEST_REG giv the
- * address givs were expressed from). Each mult-1 address giv has benefit 2
- * less add_cost 2 = 0 (not worth reducing); only the identical pairs
- * (FORMATION_ID, FLAGS3 and present[i] stored in both branches) sum to 4
- * and are reduced, so the original's pairs were not identical givs. A copy
- * k = i (CSE folds it) or a second counter k (its pairs combine the same
- * way) does not reproduce the index form. Writing the D_800C3E3D store and
- * i++ in both branches (two biv increments, benefit - 2 * add_cost) keeps
- * every mult-1 access on i as in the original, but then the else branch's
- * flag3/alone stores combine with the then branch's identical givs and are
- * reduced to their own pointers (the original expresses them from the
- * i * 28 register a1), and the tails are only partly cross-jumped. */
-#ifdef NON_MATCHING
+ * from the battle scene data. The eight enemies take slots 3-10. */
 void func_801E4160(void) {
     s32 i;
     u8 id;
-    BattleScene *scene;
 
     D_800D3280 = 0;
     D_800D3364 = D_8005949C;
@@ -80,24 +61,24 @@ void func_801E4160(void) {
         }
     }
     D_800D3280 += 0xFF; /* one less */
-    for (i = 3; i < SLOT_COUNT; i++) {
-        id = FORMATION_ID(i) & 0x7F;
+    for (i = 0; i < 8; i++) {
+        id = FORMATION_ENEMY_ID(i) & 0x7F;
         if (id != NO_COMBATANT) {
-            D_800C3EB4.slot[i].id = id;
-            D_800C3EB4.slot[i].flag3 = FORMATION_FLAGS3(i) & 0x80;
-            D_800C3EB4.slot[i].alone = FORMATION_ID(i) & 0x80;
-            D_800C3EB4.slot[i].flag5 = FORMATION_FLAGS3(i) & 1;
-            D_800D2DCC.present[i] = 1;
-            D_800C3EB4.slot[i].group = FORMATION_GROUP(i) & 0x7F;
+            D_800C3EB4.slot[i + 3].id = id;
+            D_800C3EB4.slot[i + 3].flag3 = FORMATION_ENEMY_FLAGS(i) & 0x80;
+            D_800C3EB4.slot[i + 3].alone = FORMATION_ENEMY_ID(i) & 0x80;
+            D_800C3EB4.slot[i + 3].flag5 = FORMATION_ENEMY_FLAGS(i) & 1;
+            D_800D2DCC.present[i + 3] = 1;
+            D_800C3EB4.slot[i + 3].group = FORMATION_ENEMY_GROUP(i) & 0x7F;
         } else {
-            D_800CCCE8.record[i].pos4E = 0;
-            D_800CCCE8.record[i].pos4C = 0;
-            D_800C3EB4.slot[i].id = NO_COMBATANT;
-            D_800C3EB4.slot[i].flag3 = 0;
-            D_800C3EB4.slot[i].alone = 0;
-            D_800D2DCC.present[i] = 0;
+            D_800CCCE8.record[i + 3].pos4E = 0;
+            D_800CCCE8.record[i + 3].pos4C = 0;
+            D_800C3EB4.slot[i + 3].id = NO_COMBATANT;
+            D_800C3EB4.slot[i + 3].flag3 = 0;
+            D_800C3EB4.slot[i + 3].alone = 0;
+            D_800D2DCC.present[i + 3] = 0;
         }
-        D_800C3E3D[i] = D_800C3EB4.slot[i].id + 1;
+        D_800C3E3D[i + 3] = D_800C3EB4.slot[i + 3].id + 1;
     }
     for (i = 0; i < 32; i++) {
         D_800D301C[i].count = 0;
@@ -129,17 +110,16 @@ void func_801E4160(void) {
             }
         }
     }
-    scene = D_800D3364;
     for (i = 0; i < 3; i++) {
         if (D_800C3EB4.slot[i].id != NO_COMBATANT) {
             if (D_800C3EB4.slot[i].alone == 0) {
                 D_800C3EB4.slot[i].x =
-                    scene->group[D_800C3EB4.slot[i].group].party[D_800C3EB4.slot[i].index].x;
+                    D_800D3364->group[D_800C3EB4.slot[i].group].party[D_800C3EB4.slot[i].index].x;
                 D_800C3EB4.slot[i].z =
-                    scene->group[D_800C3EB4.slot[i].group].party[D_800C3EB4.slot[i].index].z;
+                    D_800D3364->group[D_800C3EB4.slot[i].group].party[D_800C3EB4.slot[i].index].z;
             } else {
-                D_800C3EB4.slot[i].x = scene->alone[D_800C3EB4.slot[i].group].party.x;
-                D_800C3EB4.slot[i].z = scene->alone[D_800C3EB4.slot[i].group].party.z;
+                D_800C3EB4.slot[i].x = D_800D3364->alone[D_800C3EB4.slot[i].group].party.x;
+                D_800C3EB4.slot[i].z = D_800D3364->alone[D_800C3EB4.slot[i].group].party.z;
             }
         }
     }
@@ -150,17 +130,15 @@ void func_801E4160(void) {
                     D_800D3364->group[D_800C3EB4.slot[i].group].enemy[D_800C3EB4.slot[i].index].x;
                 D_800C3EB4.slot[i].z =
                     D_800D3364->group[D_800C3EB4.slot[i].group].enemy[D_800C3EB4.slot[i].index].z;
+                D_800C3EB4.slot[i].flag6 = FORMATION_FLAG6(i) & 0x80;
             } else {
                 D_800C3EB4.slot[i].x = D_800D3364->alone[D_800C3EB4.slot[i].group].enemy.x;
                 D_800C3EB4.slot[i].z = D_800D3364->alone[D_800C3EB4.slot[i].group].enemy.z;
+                D_800C3EB4.slot[i].flag6 = FORMATION_FLAG6(i) & 0x80;
             }
-            D_800C3EB4.slot[i].flag6 = FORMATION_FLAG6(i) & 0x80;
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E4160);
-#endif
 
 /* Copy each present enemy's combatant record from the enemy data file and
  * point its AI state at its scripts (absent enemies are cleared). */

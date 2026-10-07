@@ -365,9 +365,9 @@ extern u8 D_8006F9DC[];
 
 #define FORMATION_FLAGS D_8006F9DC[1] /* 0x20 alternate module, 0x40/0x80 commands 7/8 */
 #define FORMATION_PARTY_GROUP(member) D_8006F9DC[4 + (member)]
-#define FORMATION_ID(slot) D_8006F9DC[5 + (slot)]      /* 0x80: placed alone */
-#define FORMATION_FLAGS3(slot) D_8006F9DC[0xD + (slot)]
-#define FORMATION_GROUP(slot) D_8006F9DC[0x15 + (slot)]
+#define FORMATION_ENEMY_ID(enemy) D_8006F9DC[8 + (enemy)] /* 0x80: placed alone */
+#define FORMATION_ENEMY_FLAGS(enemy) D_8006F9DC[0x10 + (enemy)]
+#define FORMATION_ENEMY_GROUP(enemy) D_8006F9DC[0x18 + (enemy)]
 #define FORMATION_FLAG6(slot) D_8006F9DC[0x18 + (slot)]
 extern u8 D_800C3D48;
 extern u8 D_8006ED0B[][0x20];   /* character table (+0xB) */
