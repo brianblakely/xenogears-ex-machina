@@ -1492,14 +1492,15 @@ s32 func_800347C0(TextBox *text);
  * the window grows from its centre (at least 16 pixels each way) and
  * slides; then the waiting prompt, the eight border pieces, the portrait,
  * the choice cursor and the backing tile.
- * NON_MATCHING (400 edits): the nested choice/prompt structs give
- * the original's +37c/+3c4 bases and the RECT copies go field by field as
- * in the original. Left: the original spills `buffer` (0x20) and about six
- * more values to a 0xa8-byte frame (ours 0x78); in the opening branch it
- * divides both (width << 16) and (height << 16) by the step count before
- * the (text_speed - timer) factor, ours interleaves them; the prompt's
- * left/top call results and the border coordinates land in other
- * registers. */
+ * NON_MATCHING (268 edits): the nested choice/prompt structs give
+ * the original's +37c/+3c4 bases, the texture windows are read from the
+ * flat 800ade9c table and the prompt position has its own locals (the
+ * original keeps them in $s5/$s2 across the calls). Left: the original's
+ * frame is 0xa8 (ours 0x78) with 0x48-0x7f never accessed (save areas or
+ * spill slots of values that lost their registers during reload); in the
+ * opening branch its locals get other temporaries, and the border
+ * coordinates are computed next to each store in store order (ours
+ * schedules the stores differently). */
 void func_8007E1C0(u32 *ot, s32 buffer, s32 w) {
     RECT area;
     s32 x;
@@ -1510,6 +1511,8 @@ void func_8007E1C0(u32 *ot, s32 buffer, s32 w) {
     s32 grown_h;
     s32 steps;
     s32 left;
+    s32 prompt_x;
+    s32 prompt_y;
     s32 top;
     s32 right;
     s32 bottom;
@@ -1550,15 +1553,15 @@ void func_8007E1C0(u32 *ot, s32 buffer, s32 w) {
     if (D_800C2698[w].prompt.status == 0 && D_800C2698[w].age == 0 && D_800C2698[w].timer == 0
         && !(D_800C2698[w].style & 0x40) && D_800C2698[w].choice.status != 0) {
         if (D_800C2698[w].prompt_delay == 0) {
-            left = func_800347AC(&D_800C2698[w].text);
-            top = func_800347C0(&D_800C2698[w].text);
+            prompt_x = func_800347AC(&D_800C2698[w].text);
+            prompt_y = func_800347C0(&D_800C2698[w].text);
             area.x = D_800ADE9C[D_800ADE94 * 4 + 52];
             area.y = D_800ADE9C[D_800ADE94 * 4 + 53];
             area.w = D_800ADE9C[D_800ADE94 * 4 + 54];
             area.h = D_800ADE9C[D_800ADE94 * 4 + 55];
             SetDrawMode(&D_800C2698[w].prompt.modes[buffer], 0, 0, GetTPage(0, 0, 0x298, 0x1C0), &area);
-            D_800C2698[w].prompt.sprite[buffer].x0 = left;
-            D_800C2698[w].prompt.sprite[buffer].y0 = top + 4;
+            D_800C2698[w].prompt.sprite[buffer].x0 = prompt_x;
+            D_800C2698[w].prompt.sprite[buffer].y0 = prompt_y + 4;
             addPrim(ot, &D_800C2698[w].prompt.sprite[buffer]);
             addPrim(ot, &D_800C2698[w].prompt.modes[buffer]);
         } else {
