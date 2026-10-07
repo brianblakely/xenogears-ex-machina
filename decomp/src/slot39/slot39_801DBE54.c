@@ -999,28 +999,7 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801DE5
  * leaves its inventory list and the replaced one kept by 801df5d0 joins it
  * (worn special parts are dropped). Without a new part the kept one goes
  * back. Returns 1 when character 4 changed weapon. */
-#ifdef NON_MATCHING
-/* The equipment lists and records are addressed through the one GameData
- * object, as the original does (it forms the list addresses from the
- * record address it loaded). Remaining: register assignment (the original
- * copies slot to t0 and part to a0 and converts `gear` at each test; this
- * build converts gear once in a3 and keeps slot in v1, so every list
- * pointer and flag moves down one register).
- * Cse dump: the parameters are QImode pseudos; the first test's
- * zero_extend of gear (r90) is reused by cse for the later tests (through
- * skip_blocks over `ids = D_8006F3D0`), gear then dies there and the
- * extension is tied into a3. The original re-extends at every test, so its
- * later tests were not in cse reach of the first one. Tried (no change):
- * a K&R definition, the ids choice as if/else or ?:, result = 0 after
- * the choice, the special/gear nest as an if chain (`special && !gear`,
- * `special`, `!gear`). A do { } while (0) around the ids choice stops cse1
- * at its NOTE_INSN_LOOP_END (3 extensions survive), but cse2 runs after
- * loop.c, ignores loop notes and merges them again (247-255). Between the
- * first test and the second the original has only the skipped ids block
- * and the special branch, and neither ends a cse path, so the original
- * must have had a label there that cse cannot pass. */
 s32 func_801DF0D4(u8 slot, u8 part, u8 special, u8 gear) {
-    VECTOR unused; /* unused in the original; reserves 16 bytes */
     u8 *ids;
     u8 *counts;
     u8 *at;
@@ -1035,18 +1014,20 @@ s32 func_801DF0D4(u8 slot, u8 part, u8 special, u8 gear) {
 
     add = 1;
     swap = 1;
-    ids = D_8006F754;
     result = 0;
     if (!gear) {
         ids = D_8006F3D0;
+        counts = ids - 100;
+    } else {
+        ids = D_8006F754;
+        counts = ids - 100;
     }
-    counts = ids - 100;
     length = 100;
     if (special) {
         if (!gear) {
+            kept = D_800625A0->labels360->parts[1][part];
             at = &D_8006D634.chars[D_800625A0->party->ids[slot]].specials[part];
             selected = *at;
-            kept = D_800625A0->labels360->parts[1][part];
             if (selected == 0) {
                 *at = kept;
                 swap = 0;
@@ -1057,9 +1038,9 @@ s32 func_801DF0D4(u8 slot, u8 part, u8 special, u8 gear) {
                 D_8006F8BA[*at] = 100;
             }
         } else {
+            kept = D_800625A0->labels360->parts[1][part];
             at = &D_8006D634.gears[D_8006D634.chars[D_800625A0->party->ids[slot]].gear].unk4[part];
             selected = *at;
-            kept = D_800625A0->labels360->parts[1][part];
             if (selected == 0) {
                 *at = kept;
                 swap = 0;
@@ -1082,10 +1063,10 @@ s32 func_801DF0D4(u8 slot, u8 part, u8 special, u8 gear) {
                 result = 1;
             }
         } else {
+            selected = D_8006D634.chars[D_800625A0->party->ids[slot]].accessories[part - 1];
             ids = D_8006D634.accessoryIds;
             counts = D_8006D634.accessoryCounts;
             kept = D_800625A0->labels360->parts[2][part - 1];
-            selected = D_8006D634.chars[D_800625A0->party->ids[slot]].accessories[part - 1];
             length = 200;
         }
     } else {
@@ -1100,11 +1081,11 @@ s32 func_801DF0D4(u8 slot, u8 part, u8 special, u8 gear) {
                 result = 1;
             }
         } else {
+            selected = D_8006D634.gears[D_8006D634.chars[D_800625A0->party->ids[slot]].gear].unk9[part - 1];
             ids = D_8006D634.gearAccessoryIds;
             counts = D_8006D634.gearAccessoryCounts;
             length = 150;
             kept = D_800625A0->labels360->parts[2][part - 1];
-            selected = D_8006D634.gears[D_8006D634.chars[D_800625A0->party->ids[slot]].gear].unk9[part - 1];
         }
     }
     if (swap) {
@@ -1144,9 +1125,6 @@ s32 func_801DF0D4(u8 slot, u8 part, u8 special, u8 gear) {
     }
     return result;
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801DF0D4);
-#endif
 
 /* Keep the shown stats and the equipment of party slot `slot` (its gear's
  * parts when `gear`) in the equipment screen's block. */
