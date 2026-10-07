@@ -413,19 +413,16 @@ void func_80070C84(void) {
  * and collision offset tables.
  * The chained unk90 = unkA0[0] store keeps the unk90 address pseudo first
  * (it is expanded before the inner store) while storing unkA0[0] first.
- * NON_MATCHING (1 difference left): the original computes the mesh sum
- * entry[1] + geometry in $v0 and only the final +0x10 in $a0; ours ties the
- * chain into $a0. local-alloc (combine_regs) only refuses that tie when the
- * sum or the result is a pseudo it does not allocate (used in more than one
- * block or dying twice): routing the result through `table` or `x` gives the
- * exact mesh code but their own loops then take the $a0 preference. */
-#ifdef NON_MATCHING
+ * One offset local holds the descriptor's model index and then the mesh's
+ * offset in the model block (it dies twice, so the sum stays out of the
+ * mesh argument's register). */
 void func_80070CC8(void) {
     VECTOR unused = {0, -100, 2000, 0};
     s32 *table;
     s32 *data;
     s32 *images;
     s32 *entry;
+    s32 offset;
     s32 size;
     s32 count;
     s32 i;
@@ -552,8 +549,10 @@ void func_80070CC8(void) {
         if (!(D_800AF880.components.descriptors[i].flags & 0x40)) {
             instance = func_80031BDC(0x24, 0);
             D_800AF880.components.descriptors[i].instance = instance;
-            entry = (s32 *)(*record * 4 + (s32)D_800AF880.components.geometry);
-            instance->mesh = (FieldMesh *)(entry[1] + (s32)D_800AF880.components.geometry + 0x10);
+            offset = *record;
+            entry = (s32 *)(offset * 4 + (s32)D_800AF880.components.geometry);
+            offset = entry[1] + (s32)D_800AF880.components.geometry;
+            instance->mesh = (FieldMesh *)(offset + 0x10);
             func_8002CB54(instance->mesh, &instance->packets[0], &instance->packets[1]);
             func_8002C8CC(instance->mesh, instance->packets[0], (D_800AF880.components.descriptors[i].flags & 0xC) >> 2);
             memcpy(instance->packets[1], instance->packets[0], instance->mesh->size);
@@ -656,9 +655,6 @@ void func_80070CC8(void) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80070CC8);
-#endif
 
 /* Initialise both fade channels' primitives. */
 void func_80071A64(void) {
