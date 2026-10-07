@@ -1681,8 +1681,8 @@ u16 func_80084D28(void) {
  * the party; 0x2000 both; 0x8000 keeps only downed slots (+0x7c bit
  * 0x8000); 0x4000 the member alone. `own` takes the member's reachable
  * enemies (80084750). Sets the current target 800c3e2c and returns the
- * selection. */
-#ifdef NON_MATCHING
+ * selection. Each downed test keeps its own store and release (merged
+ * again by the compiler). */
 u16 func_80084DE4(u16 selection, u16 fallback, u8 member, u8 mode, u8 own) {
     u8 downed = 0;
     u8 side;
@@ -1706,8 +1706,8 @@ u16 func_80084DE4(u16 selection, u16 fallback, u8 member, u8 mode, u8 own) {
     if (selection & 0x8000) {
         downed = 1;
     }
-    partyFirst = 0;
     if (selection & 0x1000) {
+        partyFirst = 0;
         side = 0;
         mask = 0xFFF8;
     } else {
@@ -1731,10 +1731,18 @@ u16 func_80084DE4(u16 selection, u16 fallback, u8 member, u8 mode, u8 own) {
         for (i = 0; i < 11; i++) {
             slot = i;
             if (func_80089C9C(D_800C3D64, slot)) {
-                if (D_800D32A0[i].unk1 == 0 ? D_800CCCE8.records[i].pilot.status7C & 0x8000
-                                            : D_800CCCE8.records[i].gear.status7C & 0x8000) {
+                if (D_800D32A0[i].unk1 == 0) {
+                    if (D_800CCCE8.records[i].pilot.status7C & 0x8000) {
+                        D_800C3E2C = slot;
+                        D_800C3E90[count] = slot;
+                        count++;
+                    } else {
+                        D_800C3D64 &= func_80089C48(slot);
+                    }
+                } else if (D_800CCCE8.records[i].gear.status7C & 0x8000) {
                     D_800C3E2C = slot;
-                    D_800C3E90[count++] = slot;
+                    D_800C3E90[count] = slot;
+                    count++;
                 } else {
                     D_800C3D64 &= func_80089C48(slot);
                 }
@@ -1746,15 +1754,12 @@ u16 func_80084DE4(u16 selection, u16 fallback, u8 member, u8 mode, u8 own) {
     } else if (selection & 0x4000) {
         D_800C3E2C = member;
         D_800C3D64 = func_80089C08(member);
-        for (i = 0; i < 11; i++) {
-            D_800C3E90[i] = 0xFF;
+        for (count = 0; count < 11; count++) {
+            D_800C3E90[count] = 0xFF;
         }
     }
     return selection;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80084DE4);
-#endif
 
 /* Select a target for selection word `target` (80084de4): each frame
  * highlight the current target (mode 0), all candidates (1) or those in the
