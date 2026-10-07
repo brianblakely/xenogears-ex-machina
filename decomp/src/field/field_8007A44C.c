@@ -3620,8 +3620,8 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8008492C
  * commit the planar move (or roll it back on a blocking attribute or a
  * ceiling), then fall, land or rise onto the floor, and record the
  * controlled actor's history. Returns -1 when the actor did not move.
- * NON_MATCHING: the original keeps the two rollback tails apart and schedules the
- * flag and attribute test differently. */
+ * NON_MATCHING: only register choice differs: the original keeps the
+ * position height (y) in $a0 and the floor-scan pointer in $a1; ours swaps them. */
 #ifdef NON_MATCHING
 s32 func_80084A40(s32 index, s32 lowest, FieldDescriptor *descriptor, FieldActor *actor, s32 status) {
     s32 floors[4];
@@ -3641,6 +3641,7 @@ s32 func_80084A40(s32 index, s32 lowest, FieldDescriptor *descriptor, FieldActor
     s32 y;
     s32 bump;
     u32 attributes;
+    u32 layers;
 
     sprite = D_800AF880.components.descriptors[index].model;
     if (index == D_800B2078.controlled) {
@@ -3728,7 +3729,8 @@ s32 func_80084A40(s32 index, s32 lowest, FieldDescriptor *descriptor, FieldActor
             actor->layer = ids[i];
         }
         attributes = func_80080968(actor);
-        if ((attributes >> 5) & ((actor->flags >> 8) & 7)) {
+        layers = (actor->flags >> 8) & 7;
+        if (layers & (attributes >> 5)) {
             if (D_800C268C == 0) {
                 func_800379C8("ERROR ID1 ACT=%d\n", index);
             }
@@ -3814,9 +3816,9 @@ s32 func_80084A40(s32 index, s32 lowest, FieldDescriptor *descriptor, FieldActor
         }
     }
     actor->position[0] = old.vx;
+    actor->position[2] = old.vz;
     actor->layer = old_layer;
     actor->unkF0 = 0;
-    actor->position[2] = old.vz;
     for (i = 0; i < 4; i++) {
         actor->triangle[i] = old_triangles[i];
     }
@@ -3831,13 +3833,15 @@ s32 func_80084A40(s32 index, s32 lowest, FieldDescriptor *descriptor, FieldActor
     sprite->position[1] = actor->position[1];
     sprite->position[2] = actor->position[2];
     D_800AF880.components.descriptors[index].matrix.t[1] = actor->position[1] >> 16;
-    goto done;
+done:
+    func_80081C54(index);
+    return 0;
 
 rollback:
     actor->position[0] = old.vx;
+    actor->position[2] = old.vz;
     actor->layer = old_layer;
     actor->unkF0 = 0;
-    actor->position[2] = old.vz;
     for (i = 0; i < 4; i++) {
         actor->triangle[i] = old_triangles[i];
     }
@@ -3856,7 +3860,6 @@ rollback:
     sprite->position[1] = actor->position[1];
     sprite->position[2] = actor->position[2];
     D_800AF880.components.descriptors[index].matrix.t[1] = actor->position[1] >> 16;
-done:
     func_80081C54(index);
     return 0;
 }
