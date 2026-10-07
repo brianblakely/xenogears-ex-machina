@@ -555,7 +555,7 @@ void func_8009F794(ModelList *list, s32 release) {
 /* The in-place matrix product used to scale the shadow's rotation. */
 void func_80049ACC(MATRIX *m, MATRIX *scale);
 SpriteRecord *func_800A2E88(SpritePool *pool, s16 abe);
-void func_800A7948(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buffer, s32 scale, s32 floor);
+void func_800A7948(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buffer, s32 scale, s16 floor);
 
 /* Draw an active object: attenuate its two tracked lights, draw its ground
  * shadow and visible model parts, carry the cloth anchors/collision centres
@@ -3494,21 +3494,27 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A70
  * collision spheres; then the points' normals are averaged from their
  * triangles, and the visible triangles are lit (front and back colours) and
  * queued. As in the original, a triangle the GTE flags as off screen does
- * not advance the triangle pointer. */
+ * not advance the triangle pointer. Nonmatching: loop invariant motion
+ * hoists addPrim's 0x00FFFFFF mask out of the triangle loop (into $t2),
+ * which the original computes per triangle; the rest is identical. */
 void func_800A7948(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buffer, s32 scale,
-                   s32 floor) {
+                   s16 floor) {
     VECTOR d;
-    VECTOR e1, e2, n;
     SVECTOR normal;
+    VECTOR e1;
+    VECTOR e2;
+    VECTOR n;
+    SVECTOR spare; /* unused in the original; reserves 8 bytes */
     u8 rgb[4];
-    s32 flag, opz, otz;
+    s32 k; /* the sphere counter, then the GTE flag */
+    s32 opz;
+    s32 otz;
     SurfacePoint *p, *q;
-    SurfacePoint *points;
     SurfacePoly *poly;
     POLY_GT3 *prim;
     SurfaceEntry *entry;
     s32 len, radius;
-    s32 i, k;
+    s32 i;
 
     if (surface->centres == NULL) {
         return;
@@ -3537,7 +3543,7 @@ void func_800A7948(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buff
             q->pos[0] = p->pos[0] + p->length * d.vx * scale / 0x100000;
             q->pos[1] = p->pos[1] + p->length * d.vy * scale / 0x100000;
             q->pos[2] = p->pos[2] + p->length * d.vz * scale / 0x100000;
-            if ((s16)floor < q->pos[1]) {
+            if (floor < q->pos[1]) {
                 q->pos[1] = floor;
             }
             entry = surface->entries;
@@ -3546,7 +3552,7 @@ void func_800A7948(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buff
                 d.vy = q->pos[1] - entry->hA;
                 d.vz = q->pos[2] - entry->hC;
                 len = SquareRoot0(d.vx * d.vx + d.vy * d.vy + d.vz * d.vz);
-                radius = (s16)(entry->h2 * scale / 4096);
+                radius = (s16)(entry->hE * scale / 4096);
                 if (len >= radius) {
                     continue;
                 }
@@ -3579,21 +3585,23 @@ void func_800A7948(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buff
             p++;
         } while (p->length != 0);
     }
-    points = *surface->strands;
+    p = *surface->strands;
     for (i = 0; i < surface->points; i++) {
-        points[i].normalCount = 0;
-        points[i].normal[0] = 0;
-        points[i].normal[1] = 0;
-        points[i].normal[2] = 0;
+        p->normalCount = 0;
+        p->normal[0] = 0;
+        p->normal[1] = 0;
+        p->normal[2] = 0;
+        p++;
     }
     poly = surface->polyList;
+    p = *surface->strands;
     for (i = 0; i < surface->polys; i++, poly++) {
-        e1.vx = points[poly->index[0]].pos[0] - points[poly->index[1]].pos[0];
-        e1.vy = points[poly->index[0]].pos[1] - points[poly->index[1]].pos[1];
-        e1.vz = points[poly->index[0]].pos[2] - points[poly->index[1]].pos[2];
-        e2.vx = points[poly->index[0]].pos[0] - points[poly->index[2]].pos[0];
-        e2.vy = points[poly->index[0]].pos[1] - points[poly->index[2]].pos[1];
-        e2.vz = points[poly->index[0]].pos[2] - points[poly->index[2]].pos[2];
+        e1.vx = p[poly->index[0]].pos[0] - p[poly->index[1]].pos[0];
+        e1.vy = p[poly->index[0]].pos[1] - p[poly->index[1]].pos[1];
+        e1.vz = p[poly->index[0]].pos[2] - p[poly->index[1]].pos[2];
+        e2.vx = p[poly->index[0]].pos[0] - p[poly->index[2]].pos[0];
+        e2.vy = p[poly->index[0]].pos[1] - p[poly->index[2]].pos[1];
+        e2.vz = p[poly->index[0]].pos[2] - p[poly->index[2]].pos[2];
         gte_ldopv1(&e1);
         gte_ldopv2(&e2);
         gte_op0();
@@ -3602,29 +3610,37 @@ void func_800A7948(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buff
         n.vy /= 8;
         n.vz /= 8;
         VectorNormal(&n, &e1);
-        for (k = 0; k < 3; k++) {
-            points[poly->index[k]].normal[0] += e1.vx;
-            points[poly->index[k]].normal[1] += e1.vy;
-            points[poly->index[k]].normal[2] += e1.vz;
-            points[poly->index[k]].normalCount++;
-        }
+        p[poly->index[0]].normal[0] += e1.vx;
+        p[poly->index[0]].normal[1] += e1.vy;
+        p[poly->index[0]].normal[2] += e1.vz;
+        p[poly->index[0]].normalCount++;
+        p[poly->index[1]].normal[0] += e1.vx;
+        p[poly->index[1]].normal[1] += e1.vy;
+        p[poly->index[1]].normal[2] += e1.vz;
+        p[poly->index[1]].normalCount++;
+        p[poly->index[2]].normal[0] += e1.vx;
+        p[poly->index[2]].normal[1] += e1.vy;
+        p[poly->index[2]].normal[2] += e1.vz;
+        p[poly->index[2]].normalCount++;
     }
+    p = *surface->strands;
     for (i = 0; i < surface->points; i++) {
-        points[i].normal[0] /= (s16)points[i].normalCount;
-        points[i].normal[1] /= (s16)points[i].normalCount;
-        points[i].normal[2] /= (s16)points[i].normalCount;
+        p->normal[0] /= (s16)p->normalCount;
+        p->normal[1] /= (s16)p->normalCount;
+        p->normal[2] /= (s16)p->normalCount;
+        p++;
     }
     SetRotMatrix(m);
     SetTransMatrix(m);
     poly = surface->polyList;
-    points = *surface->strands;
+    p = *surface->strands;
     for (i = 0; i < surface->polys; i++) {
         prim = &poly->prim[buffer];
-        gte_ldv3(points[poly->index[0]].pos, points[poly->index[1]].pos, points[poly->index[2]].pos);
+        gte_ldv3(p[poly->index[0]].pos, p[poly->index[1]].pos, p[poly->index[2]].pos);
         gte_rtpt();
-        flag = 0;
-        gte_stflg(&flag);
-        if (flag & 0x40000) {
+        k = 0;
+        gte_stflg(&k);
+        if (k & 0x40000) {
             continue;
         }
         gte_nclip();
@@ -3633,44 +3649,50 @@ void func_800A7948(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buff
         gte_avsz3();
         gte_stotz(&otz);
         otz >>= D_80050100;
-        for (k = 0; k < 3; k++) {
-            if (opz < 0) {
-                if (k == 0) {
-                    rgb[0] = surface->b[0];
-                    rgb[1] = surface->b[1];
-                    rgb[2] = surface->b[2];
-                }
-                normal.vx = points[poly->index[k]].normal[0];
-                normal.vy = points[poly->index[k]].normal[1];
-                normal.vz = points[poly->index[k]].normal[2];
-            } else {
-                if (k == 0) {
-                    rgb[0] = surface->b[3];
-                    rgb[1] = surface->b[4];
-                    rgb[2] = surface->b[5];
-                }
-                normal.vx = -points[poly->index[k]].normal[0];
-                normal.vy = -points[poly->index[k]].normal[1];
-                normal.vz = -points[poly->index[k]].normal[2];
-            }
-            gte_ldv0(&normal);
-            if (k == 0) {
-                gte_ldrgb(rgb);
-            }
-            gte_nccs();
-            switch (k) {
-            case 0:
-                gte_strgb(&prim->r0);
-                break;
-            case 1:
-                gte_strgb(&prim->r1);
-                break;
-            case 2:
-                gte_strgb(&prim->r2);
-                break;
-            }
+        if (opz < 0) {
+            rgb[0] = surface->b[0];
+            rgb[1] = surface->b[1];
+            rgb[2] = surface->b[2];
+            normal.vx = p[poly->index[0]].normal[0];
+            normal.vy = p[poly->index[0]].normal[1];
+            normal.vz = p[poly->index[0]].normal[2];
+        } else {
+            rgb[0] = surface->b[3];
+            rgb[1] = surface->b[4];
+            rgb[2] = surface->b[5];
+            normal.vx = -p[poly->index[0]].normal[0];
+            normal.vy = -p[poly->index[0]].normal[1];
+            normal.vz = -p[poly->index[0]].normal[2];
         }
-        addPrim(ot + otz, prim);
+        gte_ldv0(&normal);
+        gte_ldrgb(rgb);
+        gte_nccs();
+        gte_strgb(&prim->r0);
+        if (opz < 0) {
+            normal.vx = p[poly->index[1]].normal[0];
+            normal.vy = p[poly->index[1]].normal[1];
+            normal.vz = p[poly->index[1]].normal[2];
+        } else {
+            normal.vx = -p[poly->index[1]].normal[0];
+            normal.vy = -p[poly->index[1]].normal[1];
+            normal.vz = -p[poly->index[1]].normal[2];
+        }
+        gte_ldv0(&normal);
+        gte_nccs();
+        gte_strgb(&prim->r1);
+        if (opz < 0) {
+            normal.vx = p[poly->index[2]].normal[0];
+            normal.vy = p[poly->index[2]].normal[1];
+            normal.vz = p[poly->index[2]].normal[2];
+        } else {
+            normal.vx = -p[poly->index[2]].normal[0];
+            normal.vy = -p[poly->index[2]].normal[1];
+            normal.vz = -p[poly->index[2]].normal[2];
+        }
+        gte_ldv0(&normal);
+        gte_nccs();
+        gte_strgb(&prim->r2);
+        addPrim(ot + otz, &poly->prim[buffer]);
         poly++;
     }
 }

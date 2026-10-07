@@ -159,7 +159,7 @@ typedef struct {
 /* Two triangles' textured primitives (one per frame buffer) and their vertex
  * indices (0x58 bytes). */
 typedef struct {
-    u16 index[3];
+    s16 index[3];
     u8 pad6[2];
     POLY_GT3 prim[2];
 } SurfacePoly;
