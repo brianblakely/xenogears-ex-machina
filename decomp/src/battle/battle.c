@@ -2196,7 +2196,6 @@ u8 func_80085EB4(u8 mode, u8 member) {
  * member's text `id` into the shared image (two entries per image cell),
  * upload it and place its quad after `column` + `offset` + 1 steps.
  * Returns the next index. */
-#ifdef NON_MATCHING
 s32 func_80086028(member, index, column, id, pixels, offset)
 u8 member;
 s32 index;
@@ -2219,14 +2218,12 @@ u8 offset;
     rect.w = 0x1E;
     rect.h = 13;
     LoadImage(&rect, *pixels);
-    func_80076C78(&D_800D2DB4->list11[index * 2 + D_800CCB04.buffer], (column + (offset + 1)) * 16 + 0x50 + index * 4,
+    func_80076C78(&D_800D2DB4->list11[index * 2 + D_800CCB04.buffer], (column + 1 + offset) * 16 + 0x50 + index * 4,
                   0xC8 - index * 16, cell * 0x78, 0x1A, width);
     D_800D2DB4->counts[11]++;
-    return index + 1;
+    index++;
+    return index;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80086028);
-#endif
 
 /* Record attack input `code` in the combo history (+0x2cc, length +0x2d6)
  * and show it (list 12) with the deathblows it completes or leads into:
