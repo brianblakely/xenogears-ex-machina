@@ -163,9 +163,19 @@ BurstTask *func_801E8DB8(void) {
 /* Set up the burst: the screen as two triangles per 16x16 cell over a
  * 320x224 grid (textured from the copy at 0x2c0,0x100), each corner's
  * distance from the centre (variant 1: twice it; otherwise 3/5 of it).
- * NON_MATCHING: as func_801E8320, the original works from spilled copies of
- * the strength-reduced row/column offsets and keeps 0x80 in s7; register
- * allocation and spills differ (1032 bytes here, 1016 in the original). */
+ * NON_MATCHING: 4 bytes long; same loop structure as the original after the
+ * func_801E8320 changes (v and x computed at the top of the column body, so
+ * v is moved and x is a reduced column giv; the vy0 copy, the vx copies and
+ * the u2/v2 join match). Remaining: (1) the original computes the half-1
+ * height (v - 101) * 16 in the first k loop's preheader; here its row * 0x100
+ * is also moved out of the column loop (loop.c: threshold 20 * life 97 >=
+ * 1440, the count doubled per already-moved insn; one more doubling would
+ * keep it, e.g. v moved once from an inner loop, but that breaks the k-loop
+ * moves), and (v - 101) * 16 written with v moves both insns out; (2) the
+ * corner copies use a pointer (addiu v1, s0, 0x54 then 2(v1)/4(v1)) for vy
+ * and vz in the original: a corner pointer variable makes it a separate giv;
+ * (3) register allocation follows: v s6 / col fp / 0x80 s7 in the original,
+ * here fp / s7 / s6, and u_right/v_bottom swap s3/s4. */
 #ifdef NON_MATCHING
 BurstTask *func_801E8DF0(BurstTask *burst) {
     BurstCell *cell;
@@ -173,7 +183,7 @@ BurstTask *func_801E8DF0(BurstTask *burst) {
     POLY_GT3 *prim;
     VECTOR square;
     s32 half, row, col, k;
-    s32 v, u, u_right, v_bottom;
+    s32 v, u, u_right, v_bottom, x;
 
     if (D_801E9680 != 0) {
         burst->frame = 0;
@@ -197,8 +207,9 @@ BurstTask *func_801E8DF0(BurstTask *burst) {
     burst->rot.vz = 0;
     for (half = 0; half != 2; half++) {
         for (row = 0; row != 14; row++) {
-            v = row * 16;
             for (col = 0; col != 20; col++) {
+                v = row * 16;
+                x = col * 16;
                 cell = &burst->cells[half][row][col];
                 triangle = half == 0 ? D_801E9684 : D_801E969C;
                 for (k = 0; k != 3; k++) {
@@ -207,10 +218,10 @@ BurstTask *func_801E8DF0(BurstTask *burst) {
                     cell->corner[k].vz = triangle[k].vz;
                     if (half == 0) {
                         cell->corner[k].vx += (s16)(col * 0x100 - 0x9B0);
-                        cell->corner[k].vy += (s16)(row * 0x100 - 0x6B0);
+                        cell->corner[k].vy += (s16)((v - 107) * 16);
                     } else {
-                        cell->corner[k].vy += (s16)((v - 101) * 16);
                         cell->corner[k].vx += (s16)(col * 0x100 - 0x950);
+                        cell->corner[k].vy += (s16)(row * 0x100 - 0x650);
                     }
                     square.vx = cell->corner[k].vx;
                     square.vy = cell->corner[k].vy;
@@ -222,31 +233,33 @@ BurstTask *func_801E8DF0(BurstTask *burst) {
                         cell->distance[k] = SquareRoot0(square.vx + square.vy) * 3 / 5;
                     }
                 }
-                u = (col * 16) & 0x3F;
-                u_right = u + 16;
-                v_bottom = v + 16;
                 for (k = 0; k != 2; k++) {
                     prim = &cell->prim[k];
+                    v_bottom = v + 16;
+                    u = (col * 16) & 0x3F;
+                    u_right = u + 16;
                     SetPolyGT3(prim);
                     SetShadeTex(prim, 0);
-                    prim->r0 = prim->g0 = prim->b0 = 0x80;
-                    prim->r1 = prim->g1 = prim->b1 = 0x80;
-                    prim->r2 = prim->g2 = prim->b2 = 0x80;
+                    prim->r0 = 0x80, prim->g0 = 0x80, prim->b0 = 0x80;
+                    prim->r1 = 0x80, prim->g1 = 0x80, prim->b1 = 0x80;
+                    prim->r2 = 0x80, prim->g2 = 0x80, prim->b2 = 0x80;
                     prim->code |= 2;
-                    prim->tpage = GetTPage(2, 0, col * 16 + 0x2C0, 0x100);
+                    prim->tpage = GetTPage(2, 0, x + 0x2C0, 0x100);
                     if (half == 0) {
                         prim->u0 = u;
                         prim->v0 = v;
                         prim->u1 = u_right;
                         prim->v1 = v;
+                        prim->u2 = u;
+                        prim->v2 = v_bottom;
                     } else {
                         prim->u0 = u_right;
                         prim->v0 = v;
                         prim->u1 = u_right;
                         prim->v1 = v_bottom;
+                        prim->u2 = u;
+                        prim->v2 = v_bottom;
                     }
-                    prim->u2 = u;
-                    prim->v2 = v_bottom;
                 }
             }
         }
