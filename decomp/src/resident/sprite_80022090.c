@@ -118,16 +118,8 @@ void func_800222BC(Sprite *sprite, s32 *data) {
  * the angle's facing group (one, four or eight groups; the others mirror
  * one), and when the group changes replay the animation's commands from its
  * start up to the current command (80022660), keeping the countdown. */
-/* Nonmatching: control flow and cross-jumping now match; register
- * allocation differs (the original keeps the angle in $a3 and the old step
- * in $t0, here $a2/$a3), the case-0 animation load is not hoisted above
- * the step store, and after the switch the original reloads the frame bits
- * word for the frame/count reset instead of reusing the compared one. */
-#ifdef NON_MATCHING
 void func_800223B0(Sprite *sprite, s16 angle) {
     s32 old = sprite->frame_bits.step;
-    u16 *animation;
-    s32 offset;
     s32 countdown;
 
     sprite->word80 = angle;
@@ -146,33 +138,30 @@ void func_800223B0(Sprite *sprite, s16 angle) {
         } else {
             sprite->motion.word &= ~4;
         }
+        sprite->frame_table = (u16 *)(sprite->animation[2] + (s32)&sprite->animation[2]);
         sprite->frame_bits.step = 0;
-        animation = sprite->animation;
-        sprite->facings = animation + 3;
-        offset = animation[2] + 4;
-        sprite->frame_table = (u16 *)(offset + (s32)animation);
+        sprite->facings = sprite->animation + 3;
         break;
     case 1:
         angle = ((angle + 0x600) >> 10) & 3;
         if (angle < 3) {
-            sprite->motion.word &= ~4;
             sprite->frame_table = (u16 *)(sprite->animation[angle + 2] + (s32)&sprite->animation[angle + 2]);
+            sprite->motion.word &= ~4;
         } else {
+            sprite->frame_table = (u16 *)(sprite->animation[3] + (s32)&sprite->animation[3]);
             sprite->motion.word |= 4;
-            offset = sprite->animation[3] + 6;
-            sprite->frame_table = (u16 *)(offset + (s32)sprite->animation);
         }
         sprite->frame_bits.step = angle;
         break;
     case 2:
         angle = ((angle + 0x500) >> 9) & 7;
         if (angle < 5) {
-            sprite->motion.word &= ~4;
             sprite->frame_table = (u16 *)(sprite->animation[angle + 2] + (s32)&sprite->animation[angle + 2]);
+            sprite->motion.word &= ~4;
         } else {
             angle = (angle - 5) ^ 3;
-            sprite->motion.word |= 4;
             sprite->frame_table = (u16 *)(sprite->animation[angle + 2] + (s32)&sprite->animation[angle + 2]);
+            sprite->motion.word |= 4;
         }
         sprite->frame_bits.step = angle;
         break;
@@ -181,21 +170,16 @@ void func_800223B0(Sprite *sprite, s16 angle) {
         u8 *target;
         s32 count = sprite->frame_bits.field22;
 
+        target = sprite->script;
+        sprite->script = (u8 *)(sprite->animation[1] + (s32)&sprite->animation[1]);
         sprite->frame_bits.frame = 0x3F;
         sprite->frame_bits.field22 = 0;
-        animation = sprite->animation;
         countdown = sprite->countdown;
-        target = sprite->script;
-        offset = animation[1] + 2;
-        sprite->script = (u8 *)(offset + (s32)animation);
         func_80022660(sprite, target, count);
         sprite->countdown = countdown;
     }
     sprite->render.bits.flip = sprite->motion.bits.frame_flip ^ sprite->motion.bits.mirror;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_800223B0);
-#endif
 
 /* Replay a sprite's frame commands without timing until the script reaches
  * `target` with `count` commands run: frame commands step or look up the

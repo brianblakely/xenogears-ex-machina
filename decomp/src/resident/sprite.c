@@ -1537,11 +1537,12 @@ u8 *func_8001FBA4(Sprite *sprite, u8 *code) {
  * `code`: motion, placement, colour, renderer angles and scales, byte
  * arithmetic on the sprite's stack and frame variables, sounds, models. */
 /* Nonmatching: same size, frame, case layout and tail sharing as the
- * original; left (about 40 instructions): 0xCD keeps the angle in a second
+ * original; left (about 35 instructions): 0xCD keeps the angle in a second
  * register for the angle_x store, case 38 loads the motion word before the
- * frame bits, 0xF5 accumulates the model address in $s0 (the original in
- * $a0, copied to $s0 in the call's delay slot), and 0xBD, 0xB8, 0xC4, 0xAC
- * and 0xA3 order or allocate one load or operand differently. */
+ * frame bits (with the frame bits operand first the loads are in order but
+ * take $v1/$v0 swapped), 0xF5 accumulates the model address in $s0 (the
+ * original in $a0, copied to $s0 in the call's delay slot), and 0xBD, 0xB8,
+ * 0xC4, 0xAC and 0xA3 order or allocate one load or operand differently. */
 #ifdef NON_MATCHING
 void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
     SVECTOR vector;
@@ -2211,7 +2212,8 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         break;
     case 0xF5:
         func_80032498(5, 0);
-        buffer = (s8)code[2] << 16;
+        buffer = (s8)code[2];
+        buffer <<= 16;
         buffer += code[1] << 8;
         buffer += code[0];
         buffer += (s32)code;
@@ -2228,7 +2230,8 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         break;
     case 0xF6:
         func_80032498(5, 0);
-        buffer = (s8)code[2] << 16;
+        buffer = (s8)code[2];
+        buffer <<= 16;
         buffer += code[1] << 8;
         buffer += code[0];
         buffer += (s32)code;
@@ -2245,7 +2248,8 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         ((SpriteModelRenderer *)sprite->renderer)->model = (ModelBuffer *)buffer;
         break;
     case 0xF7:
-        buffer = (s8)code[2] << 16;
+        buffer = (s8)code[2];
+        buffer <<= 16;
         buffer += code[1] << 8;
         buffer += code[0];
         buffer += (s32)code;

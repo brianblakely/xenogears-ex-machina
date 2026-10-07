@@ -423,13 +423,15 @@ void func_80033DD4(Window *window, u8 *text) {
  * planes; text controls pause, change reveal speed, insert resource/name/number
  * text and return to the byte after an inserted message's saved position.
  * Pointer increments below retain the control stream's original resume slots.
- * NON_MATCHING: the original 0x48 frame is reproduced, but line-row temporaries
- * and text-control scheduling still differ; this candidate is eight bytes short. */
+ * NON_MATCHING: same size; the inserted-text paths still differ: the original
+ * builds the resource/name arguments straight in $a0/$a1 (here in $v0/$v1 with
+ * copies, the control parameter taking $a0 instead of $a3), and a few loads
+ * and operands are ordered differently. */
 #ifdef NON_MATCHING
 void func_80033DF0(Window *window) {
     s32 remaining = window->unk69;
     s32 line_slot;
-    s16 current_line;
+    s32 current_line;
     u16 first;
     u16 second;
     u16 parameter;
@@ -443,6 +445,7 @@ void func_80033DF0(Window *window) {
     u8 *resource;
     u8 *name;
     s32 index;
+    RECT unused; /* unused in the original; reserves 8 bytes */
 
     if (window->x > window->width) {
         window->x = 0;
@@ -461,11 +464,7 @@ void func_80033DF0(Window *window) {
         current_line = window->y;
         line_slot = window->unk18 % (window->lines + 1);
         window->layout[current_line].row = window->unkE + (line_slot / 2) * 13;
-        if (line_slot & 1) {
-            window->layout[current_line].clut = D_80059414;
-        } else {
-            window->layout[current_line].clut = D_800595D4;
-        }
+        window->layout[current_line].clut = !(line_slot & 1) ? D_800595D4 : D_80059414;
         window->layout[current_line].plane = line_slot & 1;
         window->layout[current_line].slot = line_slot;
         window->layout[current_line].rect.y = window->unkE + (line_slot / 2) * 13;
@@ -602,21 +601,18 @@ insert_number:
                 func_80033DD4(window, D_8005A0E4);
                 break;
             case 13:
-                parameter = window->text[2];
+                window->unk84 = window->text[2];
                 window->text += 3;
                 window->unk6C = 1;
                 window->flags |= 0x200;
-                window->unk84 = parameter;
                 return;
             case 14:
                 old_speed = window->unk68;
                 window->unk68 = 1;
                 window->unk69 = 1;
                 window->unk6A = old_speed;
-                parameter = window->text[2];
+                window->unk86 = window->unk88 = window->text[2];
                 window->text += 3;
-                window->unk88 = parameter;
-                window->unk86 = parameter;
                 return;
             case 15:
                 parameter = window->text[2];
@@ -951,13 +947,13 @@ s32 func_80034F98(u16 first, u16 second) {
     image[2] &= keep; \
     image[0] &= keep; \
     image[1] &= keep; \
-    middle = image + stride; \
-    last = middle + 2; \
-    lower = middle + stride; \
-    upper = middle - stride; \
-    middle[0] &= keep; \
-    middle[2] &= keep; \
-    middle[1] &= keep; \
+    image += stride; \
+    last = image + 2; \
+    lower = image + stride; \
+    upper = image - stride; \
+    image[0] &= keep; \
+    image[2] &= keep; \
+    image[1] &= keep; \
     do { \
         lower[0] &= keep; \
         lower[2] &= keep; \
@@ -974,9 +970,9 @@ s32 func_80034F98(u16 first, u16 second) {
         if (bits & 0x40) centre |= 0x2120 << shift; \
         edge = centre; \
         if (bits & 0x20) edge |= 0x1200 << shift; \
-        previous = middle[0]; \
-        if (bits & 0x10) middle[0] = previous | (0x2000 << shift) | edge; \
-        else middle[0] = previous | edge; \
+        previous = image[0]; \
+        if (bits & 0x10) image[0] = previous | (0x2000 << shift) | edge; \
+        else image[0] = previous | edge; \
         spread = 0x222 << shift; \
         if (!(bits & 8)) { \
             if (!(bits & 0x10)) spread = (bits >> (4 - shift)) & (2 << shift); \
@@ -1021,13 +1017,12 @@ s32 func_80034F98(u16 first, u16 second) {
         lower += stride; \
         upper += stride; \
         row++; \
-        middle += stride; \
+        image += stride; \
     } while (row < 11); \
 } while (0)
 
 void func_80034FFC(u16 first, u16 second, u16 *image, s16 stride, s32 plane) {
     u16 *glyph;
-    u16 *middle;
     u16 *last;
     u16 *lower;
     u16 *upper;
