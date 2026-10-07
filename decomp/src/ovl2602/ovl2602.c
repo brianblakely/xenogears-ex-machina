@@ -1729,38 +1729,29 @@ void func_801CB690(void) {
 /*
  * Advance the camera move one update: x and y move the model's depth and
  * height, z the model code's camera distance; each axis stops (clears its
- * motion bit) at its target. Nonmatching: x and y keep the 16.16 offset in
- * v1 and the whole part in a0 where the original has the offset in a0 and
- * divides into v1; z does not address from[2] off offset[2] (the original's
- * a3 = &offset[2], from[2] at -36(a3)).
+ * motion bit) at its target. The whole part of the 16.16 offset is written
+ * out in each comparison and store.
  */
-#ifdef NON_MATCHING
 void func_801CBA2C(void) {
     s32 i;
-    s32 travelled;
-    s32 distance;
 
     if (D_800625A0->view_motion & 1) {
         for (i = 0; i < D_801D9050.frames; i++) {
             D_801D9050.offset[0] += D_801D9050.step[0];
         }
         if (D_801D9050.negative[0] == 0) {
-            travelled = D_801D9050.offset[0];
-            distance = travelled / 0x10000;
-            if (distance + D_801D9050.from[0] >= D_801D9050.to[0]) {
+            if (D_801D9050.offset[0] / 0x10000 + D_801D9050.from[0] >= D_801D9050.to[0]) {
                 D_800625A0->model_translation.vz = D_801D9050.to[0];
                 D_800625A0->view_motion &= 6;
             } else {
-                D_800625A0->model_translation.vz = distance + D_801D9050.from[0];
+                D_800625A0->model_translation.vz = D_801D9050.offset[0] / 0x10000 + D_801D9050.from[0];
             }
         } else {
-            travelled = D_801D9050.offset[0];
-            distance = travelled / 0x10000;
-            if (D_801D9050.to[0] >= D_801D9050.from[0] - distance) {
+            if (D_801D9050.to[0] >= D_801D9050.from[0] - D_801D9050.offset[0] / 0x10000) {
                 D_800625A0->model_translation.vz = D_801D9050.to[0];
                 D_800625A0->view_motion &= 6;
             } else {
-                D_800625A0->model_translation.vz = D_801D9050.from[0] - distance;
+                D_800625A0->model_translation.vz = D_801D9050.from[0] - D_801D9050.offset[0] / 0x10000;
             }
         }
     }
@@ -1769,49 +1760,40 @@ void func_801CBA2C(void) {
             D_801D9050.offset[1] += D_801D9050.step[1];
         }
         if (D_801D9050.negative[1] == 0) {
-            travelled = D_801D9050.offset[1];
-            distance = travelled / 0x10000;
-            if (distance + D_801D9050.from[1] >= D_801D9050.to[1]) {
+            if (D_801D9050.offset[1] / 0x10000 + D_801D9050.from[1] >= D_801D9050.to[1]) {
                 D_800625A0->model_translation.vy = D_801D9050.to[1];
                 D_800625A0->view_motion &= 5;
             } else {
-                D_800625A0->model_translation.vy = distance + D_801D9050.from[1];
+                D_800625A0->model_translation.vy = D_801D9050.offset[1] / 0x10000 + D_801D9050.from[1];
             }
         } else {
-            travelled = D_801D9050.offset[1];
-            distance = travelled / 0x10000;
-            if (D_801D9050.to[1] >= D_801D9050.from[1] - distance) {
+            if (D_801D9050.to[1] >= D_801D9050.from[1] - D_801D9050.offset[1] / 0x10000) {
                 D_800625A0->model_translation.vy = D_801D9050.to[1];
                 D_800625A0->view_motion &= 5;
             } else {
-                D_800625A0->model_translation.vy = D_801D9050.from[1] - distance;
+                D_800625A0->model_translation.vy = D_801D9050.from[1] - D_801D9050.offset[1] / 0x10000;
             }
         }
     }
     if (D_800625A0->view_motion & 4) {
-        D_801D9050.offset[2] = travelled = D_801D9050.offset[2] + D_801D9050.step[2];
+        D_801D9050.offset[2] += D_801D9050.step[2];
         if (D_801D9050.negative[2] == 0) {
-            distance = travelled / 0x10000;
-            if (distance + D_801D9050.from[2] >= D_801D9050.to[2]) {
+            if (D_801D9050.offset[2] / 0x10000 + D_801D9050.from[2] >= D_801D9050.to[2]) {
                 D_801E8674->view->distance = D_801D9050.to[2];
                 D_800625A0->view_motion &= 3;
             } else {
-                D_801E8674->view->distance = distance + D_801D9050.from[2];
+                D_801E8674->view->distance = D_801D9050.offset[2] / 0x10000 + D_801D9050.from[2];
             }
         } else {
-            distance = travelled / 0x10000;
-            if (D_801D9050.to[2] >= D_801D9050.from[2] - distance) {
+            if (D_801D9050.to[2] >= D_801D9050.from[2] - D_801D9050.offset[2] / 0x10000) {
                 D_801E8674->view->distance = D_801D9050.to[2];
                 D_800625A0->view_motion &= 3;
             } else {
-                D_801E8674->view->distance = D_801D9050.from[2] - distance;
+                D_801E8674->view->distance = D_801D9050.from[2] - D_801D9050.offset[2] / 0x10000;
             }
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CBA2C);
-#endif
 
 /* Load the model's matrices, then the view's. */
 void func_801CBDA0(void) {
