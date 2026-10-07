@@ -1661,7 +1661,13 @@ extern u8 D_800594D4[3];    /* window colour */
  * w * 0x498 chain stays in it), and the border pair is copied through
  * element pointers, which keeps the setRGB0 address for the copy source.
  * NON_MATCHING (1 swapped pair): after the prompt's GetClut the original
- * loads 0xc0 ($s4) before rematerialising 0xc ($t2); ours the other way. */
+ * loads 0xc0 ($s4) before rematerialising 0xc ($t2); ours the other way.
+ * The 0xc pseudo (shared by both blocks) is spilled and reloaded into $t2
+ * at its store, so the order is sched2's luid tie-break: the original's
+ * 0xc0 set already precedes the w store before sched2, i.e. in sched1 it
+ * was not a register birth hugging its store. All 24 orders of the
+ * w/u0/v0/h stores (prompt only or both blocks) and a local `v` assigned
+ * 0xc0 in both blocks (cse folds the second set) leave this pair. */
 void func_8007EE0C(s32 w) {
     RECT area;
     s32 i;
@@ -1820,7 +1826,11 @@ s32 func_80033728(void *messages, void *message);
  * original's frame is 0x70 (ours 0x68). Its extra 8 bytes sit above the
  * x/y/message spill slots (0x28/0x30/0x38) and are never accessed, so they
  * look like a fourth spill slot that reload allocated and then left unused;
- * a local declared in C would land below the spill slots instead. */
+ * a local declared in C would land below the spill slots instead.
+ * Reload spills $t0 here (for a stack-argument reload); alter_reg gives a
+ * slot to every pseudo kicked out of a spilled register, so the original
+ * probably had one more pseudo in $t0 after global-alloc that was then
+ * retried into another register, leaving its slot unused. */
 s32 func_8007F8DC(s16 x, s16 y, void *message, s32 w, s32 columns, s32 rows, s32 owner, s32 speaker,
                   s32 mode, s32 turned, s32 flags) {
     s32 target_x;
@@ -2763,7 +2773,17 @@ s32 func_800825AC(s32 from, s32 to) {
  * once, local-alloc ties the ratan2/difference chain into dir (all $s0) and
  * angle moves to $s6 (28 edits); reusing a function-wide variable for dir or
  * radius, or do { } while (0) groups around the link statements, does not
- * separate them. */
+ * separate them. Register map wanted: angle and dir $s0 (sharing with
+ * push_x), radius $s1 (with terrain), actor $s2, and the difference in
+ * $v0: local-alloc only leaves the difference untied from dir when the
+ * difference is not a local quantity (dies twice/multi-block) or dir is
+ * already born. `angle = (s16)ratan2(..) - angle - 0x800` (angle dies
+ * twice) gives the $v0 difference, but radius is then the only local
+ * crossing calls and takes $s0 (actor $s1, angle/terrain $s2); also
+ * setting radius in the func_800825AC branch makes it global, and then
+ * actor takes $s0 instead.
+ * limit/speed/push_x as the difference variable, dir -= forms and a
+ * signed terrain reused for radius are all worse. */
 void func_80082620(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
     u32 terrain;
     VECTOR conveyor;
