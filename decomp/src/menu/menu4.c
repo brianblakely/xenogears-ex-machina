@@ -1458,13 +1458,10 @@ void func_80081ECC(void) {
     func_80087830();
 }
 
-/* Draw the large direction arrow at a map position (8.8 fixed point). Does not match:
- * the start point is stored and re-read from the stack, and s5/s6 are swapped. */
-#ifdef NON_MATCHING
+/* Draw the large direction arrow at a map position (8.8 fixed point). */
 void func_80082178(s32 x, s32 z, s32 direction) {
-    Vector start;
-    s32 centre_x;
-    s32 centre_z;
+    s32 start_x;
+    s32 start_z;
     s32 last_x;
     s32 last_z;
     s32 next_x;
@@ -1472,35 +1469,29 @@ void func_80082178(s32 x, s32 z, s32 direction) {
     s32 angle;
     s32 i;
 
-    centre_x = x >> 8;
-    centre_z = z >> 8;
-    last_x = start.vx = centre_x + ((func_8003F8B0(direction + 0x280) * 10) >> 12);
-    last_z = start.vz = centre_z + ((func_8003F8CC(direction + 0x280) * 10) >> 12);
+    x >>= 8;
+    z >>= 8;
+    last_x = start_x = x + ((func_8003F8B0(direction + 0x280) * 10) >> 12);
+    last_z = start_z = z + ((func_8003F8CC(direction + 0x280) * 10) >> 12);
     angle = direction + 0x580;
     for (i = 0; i < 6; i++) {
-        next_x = centre_x + ((func_8003F8B0(angle) * 24) >> 12);
-        next_z = centre_z + ((func_8003F8CC(angle) * 24) >> 12);
+        next_x = x + ((func_8003F8B0(angle) * 24) >> 12);
+        next_z = z + ((func_8003F8CC(angle) * 24) >> 12);
         func_80087698(last_x, last_z, next_x, next_z);
         last_x = next_x;
         last_z = next_z;
         angle += 0x100;
     }
-    next_x = centre_x + ((func_8003F8B0(direction - 0x280) * 10) >> 12);
-    next_z = centre_z + ((func_8003F8CC(direction - 0x280) * 10) >> 12);
+    next_x = x + ((func_8003F8B0(direction - 0x280) * 10) >> 12);
+    next_z = z + ((func_8003F8CC(direction - 0x280) * 10) >> 12);
     func_80087698(last_x, last_z, next_x, next_z);
-    func_80087698(start.vx, start.vz, next_x, next_z);
+    func_80087698(start_x, start_z, next_x, next_z);
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_80082178);
-#endif
 
-/* Draw the small direction arrow at a map position (8.8 fixed point). Does not match:
- * the start point is stored and re-read from the stack, and s5/s6 are swapped. */
-#ifdef NON_MATCHING
+/* Draw the small direction arrow at a map position (8.8 fixed point). */
 void func_80082300(s32 x, s32 z, s32 direction) {
-    Vector start;
-    s32 centre_x;
-    s32 centre_z;
+    s32 start_x;
+    s32 start_z;
     s32 last_x;
     s32 last_z;
     s32 next_x;
@@ -1508,27 +1499,24 @@ void func_80082300(s32 x, s32 z, s32 direction) {
     s32 angle;
     s32 i;
 
-    centre_x = x >> 8;
-    centre_z = z >> 8;
-    last_x = start.vx = centre_x + ((func_8003F8B0(direction + 0x100) * 16) >> 12);
-    last_z = start.vz = centre_z + ((func_8003F8CC(direction + 0x100) * 16) >> 12);
+    x >>= 8;
+    z >>= 8;
+    last_x = start_x = x + ((func_8003F8B0(direction + 0x100) * 16) >> 12);
+    last_z = start_z = z + ((func_8003F8CC(direction + 0x100) * 16) >> 12);
     angle = direction + 0x78A;
     for (i = 0; i < 3; i++) {
-        next_x = centre_x + ((func_8003F8B0(angle) * 32) >> 12);
-        next_z = centre_z + ((func_8003F8CC(angle) * 32) >> 12);
+        next_x = x + ((func_8003F8B0(angle) * 32) >> 12);
+        next_z = z + ((func_8003F8CC(angle) * 32) >> 12);
         func_80087698(last_x, last_z, next_x, next_z);
         last_x = next_x;
         last_z = next_z;
         angle += 0x75;
     }
-    next_x = centre_x + ((func_8003F8B0(direction - 0x100) * 16) >> 12);
-    next_z = centre_z + ((func_8003F8CC(direction - 0x100) * 16) >> 12);
+    next_x = x + ((func_8003F8B0(direction - 0x100) * 16) >> 12);
+    next_z = z + ((func_8003F8CC(direction - 0x100) * 16) >> 12);
     func_80087698(last_x, last_z, next_x, next_z);
-    func_80087698(start.vx, start.vz, next_x, next_z);
+    func_80087698(start_x, start_z, next_x, next_z);
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_80082300);
-#endif
 
 /* Copy the stored map position. */
 void func_80082458(SVector *out) {
