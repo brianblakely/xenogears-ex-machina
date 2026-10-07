@@ -1181,16 +1181,20 @@ void func_80284EA4(void) {
     }
 }
 
-#ifdef NON_MATCHING
+/* Skip a section's position and offset, read its size and upload its
+ * pixels at `rect`, leaving `p` past the pixels. */
+#define LOAD_SECTION_IMAGE(rect, p) do {     \
+        (p) += 4;                            \
+        (rect).w = *(p)++;                   \
+        (rect).h = *(p)++;                   \
+        LoadImage(&(rect), (u_long *)(p));   \
+        (p) += (rect).w * (rect).h;          \
+    } while (0)
+
 /* Load an image archive's sections into VRAM; sections of kind 0x1100 and
  * 0x1101 are placed by `mode0`/`mode1`: 1 at the given origin plus the
  * section offset, 2 also plus the section position, else at the position.
- * Returns 1 for an unknown section kind, 0 after all sections are loaded.
- * NON_MATCHING: the loop increment is scheduled between mult and mflo; the
- * original advances the payload pointer before incrementing the section
- * index. Any loop boundary just before the increment (e.g. the body in a
- * do { } while (0)) reproduces the original, so the original body probably
- * ended in a construct that is not recovered yet. */
+ * Returns 1 for an unknown section kind, 0 after all sections are loaded. */
 s32 func_80284FB4(u32 *archive, s16 mode0, s16 x0, s16 y0, s16 mode1, u16 x1, u16 y1) {
     s32 count;
     s32 i;
@@ -1237,17 +1241,10 @@ s32 func_80284FB4(u32 *archive, s16 mode0, s16 x0, s16 y0, s16 mode1, u16 x1, u1
                 break;
             }
         }
-        p += 4;
-        rect.w = *p++;
-        rect.h = *p++;
-        LoadImage(&rect, (u_long *)p);
-        p += rect.w * rect.h;
+        LOAD_SECTION_IMAGE(rect, p);
     }
     return 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/debug595/asm/nonmatchings/debug595", func_80284FB4);
-#endif
 
 /* Print the name of sound bank `bank` (effects, music and voice banks). */
 void func_802851B0(s32 bank) {
