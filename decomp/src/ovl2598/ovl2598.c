@@ -1582,16 +1582,19 @@ void func_801CAB04(void) {
 /* Swap the party member and the list member picked by the two cursor
  * positions unless either is empty or locked (D_8006F94C); an exchange that
  * would leave the party empty is undone. Returns whether they were swapped. */
-#ifdef NON_MATCHING
 u8 func_801CAB48(u8 list, s32 row, s32 page, u8 prev_list, s32 prev_row, s32 prev_page) {
-    u8 party_ok = 1;
-    u8 member_ok = 1;
-    u8 swapped = 0;
+    u8 party_ok;
+    u8 member_ok;
+    u8 swapped;
     u8 slot;
     u8 index;
     u8 id;
     u8 count;
     s32 i;
+
+    swapped = 0;
+    party_ok = 1;
+    member_ok = 1;
 
     if (list == 0) {
         slot = row;
@@ -1600,20 +1603,21 @@ u8 func_801CAB48(u8 list, s32 row, s32 page, u8 prev_list, s32 prev_row, s32 pre
         slot = prev_row;
         index = row + page;
     }
-    if (D_800625A0->flags->party[slot] == 0xFF ||
-        (func_801C5018(D_8006F94C, D_800625A0->flags->party[slot]) & 0xFFFF)) {
+    if (D_800625A0->flags->party[slot] == 0xFF) {
+        party_ok = 0;
+    } else if (func_801C5018(D_8006F94C, D_800625A0->flags->party[slot]) & 0xFFFF) {
         party_ok = 0;
     }
-    if (D_800625A0->members[index] == 0xFF ||
-        (func_801C5018(D_8006F94C, D_800625A0->members[index]) & 0xFFFF)) {
+    if (D_800625A0->members[index] == 0xFF) {
+        member_ok = 0;
+    } else if (func_801C5018(D_8006F94C, D_800625A0->members[index]) & 0xFFFF) {
         member_ok = 0;
     }
     if (party_ok && member_ok) {
         id = D_800625A0->flags->party[slot];
         D_800625A0->flags->party[slot] = D_800625A0->members[index];
         D_800625A0->members[index] = id;
-        count = 0;
-        for (i = 0; i < 3; i++) {
+        for (i = 0, count = 0; i < 3; i++) {
             if (D_800625A0->flags->party[i] != 0xFF) {
                 count++;
             }
@@ -1628,9 +1632,6 @@ u8 func_801CAB48(u8 list, s32 row, s32 page, u8 prev_list, s32 prev_row, s32 pre
     }
     return swapped;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801CAB48);
-#endif
 
 /* The party screen loop: open the list panel, then move the cursor between
  * the party (list 0) and the member list (list 1) and pick two entries to
