@@ -121,9 +121,14 @@ void func_8002A524(FileEntry *table) {
 
 /* Load the files following `first` into `table` (allocated when NULL). On an
  * allocation failure everything loaded is freed and NULL returned.
- * Nonmatching: GCC strength-reduces &table[i]; the original recomputes it. */
+ * The original recomputes &table[i] and first + i each pass, as GCC does
+ * for a loop the loop optimizer does not see (here a goto loop under the
+ * count guard).
+ * Nonmatching: the table and the index take $s1/$s2 swapped (the original
+ * keeps the table in $s2); instructions and frame (0x38) otherwise match. */
 #ifdef NON_MATCHING
 FileEntry *func_8002A57C(s32 first, FileEntry *table) {
+    u8 unused[8]; /* unused in the original; reserves 8 bytes */
     s32 count;
     s32 owned = 0;
     s32 i;
@@ -137,7 +142,9 @@ FileEntry *func_8002A57C(s32 first, FileEntry *table) {
                 return NULL;
             }
         }
-        for (i = 0; i < count; i++) {
+        i = 0;
+        if (count > 0) {
+        next:
             table[i].id = first + i + 1;
             table[i].data = func_80031BDC(func_800288EC(first + i + 1), 0);
             if (table[i].data == NULL) {
@@ -146,6 +153,9 @@ FileEntry *func_8002A57C(s32 first, FileEntry *table) {
                     func_800320E8(table);
                 }
                 return NULL;
+            }
+            if (++i < count) {
+                goto next;
             }
         }
         table[count].id = 0;
