@@ -5454,9 +5454,7 @@ void func_801D74EC(u8 slot, u8 gear) {
 
 /* Lay out the detail panel's value derived from record +77..+79 of party
  * slot `slot` ((+78 + +77) * 10 + +79) * 22 shown in hundredths with one
- * decimal) or, with `gear`, its gear's +68 (five digits). Only the register
- * allocation differs (the gear and the tenth digit trade saved registers). */
-#ifdef NON_MATCHING
+ * decimal) or, with `gear`, its gear's +68 (five digits). */
 void func_801D7884(u8 slot, u8 gear) {
     s32 digits;
     s32 first;
@@ -5465,7 +5463,7 @@ void func_801D7884(u8 slot, u8 gear) {
     u8 digit;
     u16 value;
     u16 whole;
-    u16 tenth;
+    s32 tenth;
 
     if (!gear) {
         value = ((D_8006D8A0[D_800625A0->party->ids[slot]].accessories[4] + D_8006D8A0[D_800625A0->party->ids[slot]].accessories[3]) *
@@ -5475,7 +5473,8 @@ void func_801D7884(u8 slot, u8 gear) {
         whole = value / 100;
         digits = 3;
         first = 6;
-        tenth = (value - whole * 100) / 10;
+        tenth = value;
+        tenth = (tenth - whole * 100) / 10;
         func_801C80B8(whole);
         x = D_801E9D30;
     } else {
@@ -5496,7 +5495,7 @@ void func_801D7884(u8 slot, u8 gear) {
     }
     if (!gear) {
         D_800625A0->block358->list1C70Count +=
-            func_8002675C(D_800625A0->sheet, tenth,
+            func_8002675C(D_800625A0->sheet, (u16)tenth,
                           &D_800625A0->block358->list1C70[D_800625A0->block358->list1C70Count * 2],
                           D_800625A0->bufferIndex, D_801E9D30 + 0x20, D_801E9D34, 0x1000);
     }
@@ -5510,9 +5509,6 @@ void func_801D7884(u8 slot, u8 gear) {
                           D_800625A0->block358->list1C70[i * 2 + D_800625A0->bufferIndex].y0);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D7884);
-#endif
 
 /* Build the status panels of party slot `slot` for `mode` and show them. */
 void func_801D7C3C(u8 slot, u8 mode) {
