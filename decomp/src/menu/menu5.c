@@ -1316,30 +1316,20 @@ void func_80087830(void) {
 
 /* Load the stage's icon, backdrop and extra TIM images into VRAM, noting
  * the icon and backdrop palettes and texture pages; the backdrop palette's
- * first entry is transparent and the rest semi-transparent. Does not match
- * (464 vs 468 bytes): the original computes the palette pointer's start in
- * a temporary (v0, then s3 = v0 - 2, s2 = v0) and gives the file pointer
- * walk s1; here the palette pointer takes s1 directly and the file walk s2. */
-#ifdef NON_MATCHING
+ * first entry is transparent and the rest semi-transparent. */
 void func_800878DC(StageFiles *files) {
     TimImage tim;
     s32 unused[2]; /* unused in the original; reserves 8 bytes */
     s16 *clut;
     s32 i;
-    u16 *icon_clut;
-    u16 *icon_tpage;
 
-    icon_clut = &D_80091934.icons[0].clut;
-    icon_tpage = &D_80091934.icons[0].tpage;
     for (i = 0; i < 4; i++) {
         OpenTIM(files->icon_tims[i]);
         ReadTIM(&tim);
-        *icon_clut = GetClut(tim.crect->x, tim.crect->y);
-        *icon_tpage = GetTPage(1, 1, tim.prect->x, tim.prect->y);
+        D_80091934.icons[i * 2 + 1] = GetClut(tim.crect->x, tim.crect->y);
+        D_80091934.icons[i * 2] = GetTPage(1, 1, tim.prect->x, tim.prect->y);
         LoadImage(tim.crect, tim.caddr);
         LoadImage(tim.prect, tim.paddr);
-        icon_clut += 2;
-        icon_tpage += 2;
     }
     OpenTIM(files->backdrop_tim);
     ReadTIM(&tim);
@@ -1361,9 +1351,6 @@ void func_800878DC(StageFiles *files) {
         LoadImage(tim.prect, tim.paddr);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_800878DC);
-#endif
 
 /* Build an actor's textured backdrop quad (64x64 texels) for both buffers. */
 void func_80087AB0(Actor *actor) {

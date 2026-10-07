@@ -183,16 +183,10 @@ typedef struct {
     void *extra_tims[9];  /* 0x70 */
 } StageFiles;
 
-/* Texture page and palette of an icon. */
-typedef struct {
-    u16 tpage;
-    u16 clut;
-} TexRef;
-
 /* Map drawing table copied into the scratchpad; ends with the icons. */
 typedef struct {
     u16 uv[4][4];      /* four orientations: upper-left/right, lower-left/right */
-    TexRef icons[4];   /* 0x20 */
+    u16 icons[8];      /* 0x20: per icon its texture page, then its palette */
 } MapTable;
 
 extern MapTable D_80091934;
