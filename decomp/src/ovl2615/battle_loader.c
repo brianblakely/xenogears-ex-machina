@@ -17,14 +17,7 @@ void func_801E62E0(u8 *data) {
  * copied; sprite entries upload their image list (or reuse an earlier one)
  * and fill their slot's row; model entries place the model on every enemy
  * slot of their type, and of later model entries sharing their data.
- * The placement mode reuses j: its unknown bits keep the original's
- * andi 0xffff after the ori.
- * NON_MATCHING: the original loads a sprite entry's image offset into a0
- * and copies it to index (s0) in the branch delay slot (here it loads
- * straight into s0; an else branch assigning index reproduces the load but
- * adds a jump over it), and schedules the mode's ori before moving enemy
- * into a0 for func_800A8BF0 (here after the placed++ arithmetic). */
-#ifdef NON_MATCHING
+ * The placement mode reuses j (its unknown bits keep the andi 0xffff). */
 void func_801E6314(u8 *data) {
     s32 count;
     s32 k;
@@ -92,16 +85,19 @@ void func_801E6314(u8 *data) {
                             j = 5;
                         }
                     }
-                    func_800A8BF0(enemy, (u16)(j | 0x80), (u8 *)(entry->offset + (s32)base),
+                    j |= 0x80;
+                    func_800A8BF0(enemy, (u16)j, (u8 *)(entry->offset + (s32)base),
                                   (u8 *)(entry->images + (s32)data), (s16)(column - 0x40), 0x100, 0,
-                                  (s16)(enemy - (s16)(placed++ - 0x1C0)), 0);
+                                  (s16)(enemy - (s16)(placed - 0x1C0)), 0);
+                    placed++;
                     func_800BB350(enemy);
                 }
             }
         } else {
-            index = entry->images;
-            if (index >= 8) {
-                func_80022A70((u8 *)(index + (s32)data), column, 0x100);
+            if (entry->images < 8) {
+                index = entry->images;
+            } else {
+                func_80022A70((u8 *)(entry->images + (s32)data), column, 0x100);
                 index = images;
                 columns[images++] = column;
                 column += func_80022A00((u8 *)(entry->images + (s32)data)) << 6;
@@ -118,9 +114,6 @@ void func_801E6314(u8 *data) {
         slot++;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/battle_loader", func_801E6314);
-#endif
 
 /* Each enemy slot's sprite from its type's row, when that row has data
  * (`data`, the enemy set file, is passed but unused). */

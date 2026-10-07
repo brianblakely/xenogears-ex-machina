@@ -11,7 +11,11 @@
  * NON_MATCHING: frame and size now match; the original keeps the task in a1
  * and loads each field after the previous store (here the loads are hoisted
  * and the frame counter takes a0). Reaching trans through its own VECTOR
- * pointer reproduces the original load order but keeps that pointer in a2. */
+ * pointer reproduces the original load order but keeps that pointer in a2.
+ * The original's first branch equals this draft compiled without sched1
+ * (-fno-schedule-insns): sched1 here hoists the trans.vz load next to the
+ * angle load (all four stores are independent ready roots and the angle
+ * store is taken before the trans load launches). */
 #ifdef NON_MATCHING
 void func_801E8964(TaskNode *node) {
     SVECTOR unused; /* unused in the original; reserves 8 bytes */
