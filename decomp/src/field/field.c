@@ -446,7 +446,8 @@ void func_80070CC8(void) {
     entry = palettes;
     count = *entry++;
     for (i = 0; i < count; i++) {
-        func_800771F8((u32 *)(*entry++ + (s32)palettes));
+        func_800771F8((u32 *)(*entry + (s32)palettes));
+        entry++;
     }
 
     size = D_8005A4E0->sizes[BUNDLE_IMAGES] + 0x10;
@@ -555,8 +556,8 @@ void func_80070CC8(void) {
             D_800AF880.components.descriptors[i].rotation.vy = 0;
             D_800AF880.components.descriptors[i].rotation.vz = 0;
         }
-        record++;
         func_80080F44(i);
+        record++;
     }
     if (D_800C268C == 0) {
         func_802812A4();
@@ -909,7 +910,12 @@ void func_800723E4(DVECTOR *a, DVECTOR *b, DVECTOR *out) {
 }
 
 #ifdef NON_MATCHING
-/* The camera's initial state. */
+/* The camera's initial state.
+ * NON_MATCHING (measured 69 differing lines): after func_80070594 the original
+ * addresses most fields relative to 800af984 kept in $s0 (CSE's related
+ * value from the first store); here cse2 folds those back into absolute
+ * addresses because the register is a known constant, so ours keeps no $s0
+ * and is 27 instructions longer. */
 void func_8007254C(void) {
     D_800AF880.target_a = 8;
     D_800AF880.target_b = 8;
@@ -2344,16 +2350,14 @@ void func_80076A74(FieldSprite *sprite) {
  * actor, release any sprite the descriptor had, build the new one (a
  * character sheet in the slot's VRAM area, a banked sheet, or one of the two
  * small effect kinds), place it at the actor and register the completion
- * callback.
- * NON_MATCHING: the original keeps the descriptor offset in a callee-saved register across the calls. */
-#ifdef NON_MATCHING
+ * callback. */
 void func_80076AC0(s32 index, s32 slot, void *data, s32 kind, s32 bank, s32 unk, s32 flag) {
     s32 width;
     s32 height;
     s32 depth;
     FieldModel *sprite;
-    u16 y;
-    u16 x;
+    s32 y;
+    s32 x;
 
     func_80032498(8, 0);
     D_800AF880.components.descriptors[index].actor->unk127 = slot;
@@ -2371,24 +2375,29 @@ void func_80076AC0(s32 index, s32 slot, void *data, s32 kind, s32 bank, s32 unk,
                 func_800230A8(D_800AF880.components.descriptors[index].model);
             }
             sprite = func_80024524(data, 0x100, slot + 0x1E0, x, y, 0x40);
+            D_800AF880.components.descriptors[index].model = sprite;
         } else {
             if (D_800AF880.components.descriptors[index].unk5A & 1) {
                 func_800230A8(D_800AF880.components.descriptors[index].model);
             }
             sprite = func_80024294(data, bank * 16 + 0x100, slot + 0x1E0, x, y, 0x40, bank);
+            D_800AF880.components.descriptors[index].model = sprite;
         }
-        D_800AF880.components.descriptors[index].model = sprite;
     } else {
         if (D_800AF880.components.descriptors[index].unk5A & 1) {
             func_800230A8(D_800AF880.components.descriptors[index].model);
         }
         if (kind == 1) {
-            sprite = func_80024524(data, 0x100, slot + 0xE0, 0x280, (slot << 6) + 0x100, 8);
+            y = (slot << 6) + 0x100;
+            sprite = func_80024524(data, 0x100, slot + 0xE0, 0x280, y, 8);
+            D_800AF880.components.descriptors[index].model = sprite;
+            func_80023340(sprite, 0x20);
         } else {
-            sprite = func_80024524(data, 0x100, slot + 0xE3, 0x2A0, (slot << 6) + 0x100, 8);
+            y = (slot << 6) + 0x100;
+            sprite = func_80024524(data, 0x100, slot + 0xE3, 0x2A0, y, 8);
+            D_800AF880.components.descriptors[index].model = sprite;
+            func_80023340(sprite, 0x20);
         }
-        D_800AF880.components.descriptors[index].model = sprite;
-        func_80023340(sprite, 0x20);
     }
     D_800AF880.components.descriptors[index].unk5A |= 1;
     func_8001F5BC(sprite, 0, &width, &height, &depth);
@@ -2399,12 +2408,12 @@ void func_80076AC0(s32 index, s32 slot, void *data, s32 kind, s32 bank, s32 unk,
         sprite->position[0] = D_800AF880.components.descriptors[index].actor->position[0];
         sprite->position[1] = D_800AF880.components.descriptors[index].actor->position[1];
         sprite->position[2] = D_800AF880.components.descriptors[index].actor->position[2];
+        sprite->unk84 = D_800AF880.components.descriptors[index].matrix.t[1];
         sprite->velocity[1] = 0;
         sprite->velocity[0] = 0;
         sprite->velocity[1] = 0;
         sprite->velocity[2] = 0;
         sprite->gravity.value = 0x10000;
-        sprite->unk84 = D_800AF880.components.descriptors[index].matrix.t[1];
         if (kind == 0) {
             D_800AF880.components.descriptors[index].actor->height = height * 2;
         } else {
@@ -2442,9 +2451,6 @@ void func_80076AC0(s32 index, s32 slot, void *data, s32 kind, s32 bank, s32 unk,
     sprite->position[2] = D_800AF880.components.descriptors[index].actor->position[2];
     D_800AFC74++;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80076AC0);
-#endif
 
 /* Set the semi-transparency bit of each of `count` 16-bit pixels. */
 void func_800771B0(u32 *pixels, s32 count) {
@@ -3504,28 +3510,26 @@ extern u8 D_80059178;
 extern u8 D_80059460;       /* menu kind */
 extern u32 *D_8005A4AC;     /* the menu's order tables */
 extern u32 *D_8005A4B0;
-extern u16 D_800ADCB0[6][2]; /* VRAM blocks the menu overwrites */
-extern s16 D_800ADCC8[6][2]; /* where they are saved meanwhile */
+extern s16 D_800ADCB0[12]; /* VRAM blocks the menu overwrites (x, y pairs) */
+extern s16 D_800ADCC8[12]; /* where they are saved meanwhile (x, y pairs) */
 extern s32 D_8004F31C;
 extern s32 D_8004F320;
 void func_8001C634(void);
 
-#ifdef NON_MATCHING
 /* Run a menu (kind in 800adb64, 0x80 marks a pending event-only one) over
  * the field: fade out, save the 801e module and the VRAM the menu uses,
  * load the menu (file kind + 5, and the shared file 1), run it (8001c634),
  * apply its results (entering a map from a save), then restore VRAM, fade
- * back in and reload the module and the party sprites.
- * Does not match yet: the original keeps more values in saved registers
- * (the module in fp, the menu block in s7) and spills 800adb30's copy to
- * the stack, giving a 0x78-byte frame. */
+ * back in and reload the module and the party sprites. */
 void func_800799D4(void) {
     RECT rect;
     FieldFileRequest files[4];
+    RECT unused; /* unused in the original; reserves 8 bytes */
     u32 end;
     void *module;
     void *source;
     void *menu;
+    void *sprites;
     u32 *saved_a;
     u32 *saved_b;
     s32 i;
@@ -3567,7 +3571,7 @@ void func_800799D4(void) {
     files[3].file = 0;
     files[3].destination = NULL;
     files[0].file = 1;
-    D_8005945C = files[0].destination = func_80031BDC(func_800288EC(1), 1);
+    files[0].destination = D_8005945C = func_80031BDC(func_800288EC(1), 1);
     files[1].destination = menu;
     files[1].file = (D_800ADB64 & 0x7F) + 5;
     if ((D_800ADB64 & 0x7F) == 5 && D_8004F370 == 0) {
@@ -3580,9 +3584,9 @@ void func_800799D4(void) {
     rect.w = 0x40;
     rect.h = 0x20;
     for (i = 0; i < 6; i++) {
-        rect.x = D_800ADCB0[i][0];
-        rect.y = D_800ADCB0[i][1];
-        MoveImage(&rect, D_800ADCC8[i][0], D_800ADCC8[i][1]);
+        rect.x = D_800ADCB0[i * 2];
+        rect.y = D_800ADCB0[i * 2 + 1];
+        MoveImage(&rect, D_800ADCC8[i * 2], D_800ADCC8[i * 2 + 1]);
         DrawSync(0);
     }
     func_8007995C(0x40, 0x100, 0x3C0, 0x100, 0x300, 0);
@@ -3670,9 +3674,9 @@ void func_800799D4(void) {
     for (i = 0; i < 6; i++) {
         rect.w = 0x40;
         rect.h = 0x20;
-        rect.x = D_800ADCC8[i][0];
-        rect.y = D_800ADCC8[i][1];
-        MoveImage(&rect, D_800ADCB0[i][0], D_800ADCB0[i][1]);
+        rect.x = D_800ADCC8[i * 2];
+        rect.y = D_800ADCC8[i * 2 + 1];
+        MoveImage(&rect, D_800ADCB0[i * 2], D_800ADCB0[i * 2 + 1]);
         DrawSync(0);
     }
     func_80028470(4, 0);
@@ -3733,11 +3737,11 @@ void func_800799D4(void) {
     } else {
         for (i = 0; i < 3; i++) {
             if (D_8006FABC[i] != 0xFF) {
-                menu = func_80031BDC(func_800288EC(D_8006FABC[i] + 5), 1);
-                func_800295D8(D_8006FABC[i] + 5, menu, 0, 0x80);
+                sprites = func_80031BDC(func_800288EC(D_8006FABC[i] + 5), 1);
+                func_800295D8(D_8006FABC[i] + 5, sprites, 0, 0x80);
                 func_80028A60(0);
-                func_80032EB4(menu, D_8005A414[i]);
-                func_800320E8(menu);
+                func_80032EB4(sprites, D_8005A414[i]);
+                func_800320E8(sprites);
             }
         }
         func_800A2488();
@@ -3747,6 +3751,3 @@ void func_800799D4(void) {
     func_80077544();
     D_8004F350 = 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800799D4);
-#endif

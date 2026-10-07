@@ -673,7 +673,6 @@ done:
     return 0;
 }
 
-#ifdef NON_MATCHING
 /* The attribute-aware floor search: walk the actor's collision layer from
  * its current triangle toward `position` moved by `probe` (at most 32
  * steps), stopping at triangles whose attribute blocks the actor (its flag
@@ -681,11 +680,7 @@ done:
  * at ledges (attribute 400000 above the actor, unless it started on one or
  * `mode` is 0x80). Returns 0 with the floor point (and, unless `mode` is -1,
  * its plane height) in `floor`, else -1 with the crossed edge in `edge`.
- * The masked attribute of the last triangle goes to `attribute`.
- * NON_MATCHING: control flow, frame and the walk match; the original keeps
- * `probe` in t0 and computes the origin from the position words loaded for
- * the point (ours reloads position[0] by halfword after the floor->vx
- * store), and loads actor->flags before shifting the attribute bits. */
+ * The masked attribute of the last triangle goes to `attribute`. */
 s32 func_8007BEF4(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge, SVECTOR *floor, s32 mode,
                   s32 *attribute) {
     VECTOR normal;
@@ -707,141 +702,139 @@ s32 func_8007BEF4(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge
     current = actor->triangle[actor->layer];
     triangles = D_800AF880.components.collision_triangles[actor->layer];
     vertices = D_800AF880.components.collision_vertices[actor->layer];
-    if (current != -1) {
-        floor->vx = (position[0] + probe->vx) >> 16;
-        point = (floor->vx << 16) + ((position[2] + probe->vz) >> 16);
-        origin = ((position[0] >> 16) << 16) + (position[2] >> 16);
-        mask = 0;
-        floor->vy = 0;
-        floor->vz = (position[2] + probe->vz) >> 16;
-        if (!((actor->layer_flags >> (actor->layer + 3)) & 1)) {
-            mask = -(D_800B2078.party_processing_mode == 0);
+    if (current == -1) {
+        return -1;
+    }
+    point = (((position[0] + probe->vx) >> 16) << 16) + ((position[2] + probe->vz) >> 16);
+    origin = ((position[0] >> 16) << 16) + (position[2] >> 16);
+    floor->vx = (position[0] + probe->vx) >> 16;
+    floor->vz = (position[2] + probe->vz) >> 16;
+    mask = 0;
+    floor->vy = 0;
+    if (!((actor->layer_flags >> (actor->layer + 3)) & 1)) {
+        mask = -(D_800B2078.party_processing_mode == 0);
+    }
+    bits = D_800AF880.components.collision_attributes[triangles[current].attribute].word & mask;
+    if ((bits & 0x400000) || mode == 0x80) {
+        on_ledge = 1;
+    } else {
+        on_ledge = 0;
+    }
+    steps = 0;
+    do {
+        previous = current;
+        a = (vertices[triangles[current].unk00[0]].vx << 16) + vertices[triangles[current].unk00[0]].vz;
+        b = (vertices[triangles[current].unk00[1]].vx << 16) + vertices[triangles[current].unk00[1]].vz;
+        c = (vertices[triangles[current].unk00[2]].vx << 16) + vertices[triangles[current].unk00[2]].vz;
+        side = (u32)func_8004A70C(a, b, point) >> 31;
+        if (func_8004A70C(b, c, point) < 0) {
+            side |= 2;
         }
-        bits = D_800AF880.components.collision_attributes[triangles[current].attribute].word & mask;
-        if ((bits & 0x400000) || mode == 0x80) {
-            on_ledge = 1;
-        } else {
-            on_ledge = 0;
-        }
-        steps = 0;
-        do {
-            previous = current;
-            a = (vertices[triangles[current].unk00[0]].vx << 16) + vertices[triangles[current].unk00[0]].vz;
-            b = (vertices[triangles[current].unk00[1]].vx << 16) + vertices[triangles[current].unk00[1]].vz;
-            c = (vertices[triangles[current].unk00[2]].vx << 16) + vertices[triangles[current].unk00[2]].vz;
-            side = (u32)func_8004A70C(a, b, point) >> 31;
-            if (func_8004A70C(b, c, point) < 0) {
-                side |= 2;
-            }
-            if (func_8004A70C(c, a, point) < 0) {
-                side |= 4;
-            }
-            switch (side) {
-            case 0:
-                steps = 0xFF;
-                break;
-            case 1:
-                current = triangles[current].unk00[3];
-                break;
-            case 2:
-                current = triangles[current].unk00[4];
-                break;
-            case 3:
-                if (func_8004A70C(b, point, origin) < 0) {
-                    current = triangles[current].unk00[3];
-                    side = 1;
-                } else {
-                    current = triangles[current].unk00[4];
-                    side = 2;
-                }
-                break;
-            case 4:
-                current = triangles[current].unk00[5];
-                break;
-            case 5:
-                if (func_8004A70C(a, point, origin) >= 0) {
-                    current = triangles[current].unk00[3];
-                    side = 1;
-                } else {
-                    current = triangles[current].unk00[5];
-                    side = 4;
-                }
-                break;
-            case 6:
-                if (func_8004A70C(c, point, origin) < 0) {
-                    current = triangles[current].unk00[4];
-                    side = 2;
-                } else {
-                    current = triangles[current].unk00[5];
-                    side = 4;
-                }
-                break;
-            case 7:
-                current = -1;
-                break;
-            }
-            bits = D_800AF880.components.collision_attributes[triangles[current].attribute].word & mask;
-            *attribute = bits;
-            if (((actor->flags >> 8) & 7) & (bits >> 5)) {
-                current = -1;
-                break;
-            }
-            if ((bits & 0x800000) && actor->layer == 0) {
-                current = -1;
-                break;
-            }
-            if ((bits & 0x400000) && on_ledge == 0) {
-                func_8007B07C(&vertices[triangles[current].unk00[0]], &vertices[triangles[current].unk00[1]],
-                              &vertices[triangles[current].unk00[2]], floor, &normal);
-                if (floor->vy < WHOLE(position[1])) {
-                    current = -1;
-                    break;
-                }
-            }
-            if (current == -1) {
-                break;
-            }
-        } while (++steps < 0x20);
-        if (current != -1 && steps != 0x20) {
-            if (mode == -1) {
-                return 0;
-            }
-            func_8007B07C(&vertices[triangles[current].unk00[0]], &vertices[triangles[current].unk00[1]],
-                          &vertices[triangles[current].unk00[2]], floor, &normal);
-            return 0;
+        if (func_8004A70C(c, a, point) < 0) {
+            side |= 4;
         }
         switch (side) {
+        case 0:
+            steps = 0xFF;
+            break;
         case 1:
-            edge[0].vx = vertices[triangles[previous].unk00[0]].vx;
-            edge[0].vy = vertices[triangles[previous].unk00[0]].vy;
-            edge[0].vz = vertices[triangles[previous].unk00[0]].vz;
-            edge[1].vx = vertices[triangles[previous].unk00[1]].vx;
-            edge[1].vy = vertices[triangles[previous].unk00[1]].vy;
-            edge[1].vz = vertices[triangles[previous].unk00[1]].vz;
+            current = triangles[current].unk00[3];
             break;
         case 2:
-            edge[0].vx = vertices[triangles[previous].unk00[1]].vx;
-            edge[0].vy = vertices[triangles[previous].unk00[1]].vy;
-            edge[0].vz = vertices[triangles[previous].unk00[1]].vz;
-            edge[1].vx = vertices[triangles[previous].unk00[2]].vx;
-            edge[1].vy = vertices[triangles[previous].unk00[2]].vy;
-            edge[1].vz = vertices[triangles[previous].unk00[2]].vz;
+            current = triangles[current].unk00[4];
+            break;
+        case 3:
+            if (func_8004A70C(b, point, origin) < 0) {
+                current = triangles[current].unk00[3];
+                side = 1;
+            } else {
+                current = triangles[current].unk00[4];
+                side = 2;
+            }
             break;
         case 4:
-            edge[0].vx = vertices[triangles[previous].unk00[2]].vx;
-            edge[0].vy = vertices[triangles[previous].unk00[2]].vy;
-            edge[0].vz = vertices[triangles[previous].unk00[2]].vz;
-            edge[1].vx = vertices[triangles[previous].unk00[0]].vx;
-            edge[1].vy = vertices[triangles[previous].unk00[0]].vy;
-            edge[1].vz = vertices[triangles[previous].unk00[0]].vz;
+            current = triangles[current].unk00[5];
+            break;
+        case 5:
+            if (func_8004A70C(a, point, origin) >= 0) {
+                current = triangles[current].unk00[3];
+                side = 1;
+            } else {
+                current = triangles[current].unk00[5];
+                side = 4;
+            }
+            break;
+        case 6:
+            if (func_8004A70C(c, point, origin) < 0) {
+                current = triangles[current].unk00[4];
+                side = 2;
+            } else {
+                current = triangles[current].unk00[5];
+                side = 4;
+            }
+            break;
+        case 7:
+            current = -1;
             break;
         }
+        bits = D_800AF880.components.collision_attributes[triangles[current].attribute].word & mask;
+        *attribute = bits;
+        if ((actor->flags >> 8) & ((bits >> 5) & 7)) {
+            current = -1;
+            break;
+        }
+        if ((bits & 0x800000) && actor->layer == 0) {
+            current = -1;
+            break;
+        }
+        if ((bits & 0x400000) && on_ledge == 0) {
+            func_8007B07C(&vertices[triangles[current].unk00[0]], &vertices[triangles[current].unk00[1]],
+                          &vertices[triangles[current].unk00[2]], floor, &normal);
+            if (floor->vy < WHOLE(position[1])) {
+                current = -1;
+                break;
+            }
+        }
+        if (current == -1) {
+            break;
+        }
+    } while (++steps < 0x20);
+    if (current != -1 && steps != 0x20) {
+        if (mode == -1) {
+            return 0;
+        }
+        func_8007B07C(&vertices[triangles[current].unk00[0]], &vertices[triangles[current].unk00[1]],
+                      &vertices[triangles[current].unk00[2]], floor, &normal);
+        return 0;
+    }
+    switch (side) {
+    case 1:
+        edge[0].vx = vertices[triangles[previous].unk00[0]].vx;
+        edge[0].vy = vertices[triangles[previous].unk00[0]].vy;
+        edge[0].vz = vertices[triangles[previous].unk00[0]].vz;
+        edge[1].vx = vertices[triangles[previous].unk00[1]].vx;
+        edge[1].vy = vertices[triangles[previous].unk00[1]].vy;
+        edge[1].vz = vertices[triangles[previous].unk00[1]].vz;
+        break;
+    case 2:
+        edge[0].vx = vertices[triangles[previous].unk00[1]].vx;
+        edge[0].vy = vertices[triangles[previous].unk00[1]].vy;
+        edge[0].vz = vertices[triangles[previous].unk00[1]].vz;
+        edge[1].vx = vertices[triangles[previous].unk00[2]].vx;
+        edge[1].vy = vertices[triangles[previous].unk00[2]].vy;
+        edge[1].vz = vertices[triangles[previous].unk00[2]].vz;
+        break;
+    case 4:
+        edge[0].vx = vertices[triangles[previous].unk00[2]].vx;
+        edge[0].vy = vertices[triangles[previous].unk00[2]].vy;
+        edge[0].vz = vertices[triangles[previous].unk00[2]].vz;
+        edge[1].vx = vertices[triangles[previous].unk00[0]].vx;
+        edge[1].vy = vertices[triangles[previous].unk00[0]].vy;
+        edge[1].vz = vertices[triangles[previous].unk00[0]].vz;
+        break;
     }
     return -1;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8007BEF4);
-#endif
 
 /* The floor range: `high` is `low` raised by a nonnegative extent. */
 void func_8007C670(s32 *low, s32 *high, s32 extent) {
@@ -856,20 +849,13 @@ void func_8007C670(s32 *low, s32 *high, s32 extent) {
     *high = base;
 }
 
-#ifdef NON_MATCHING
 /* Walk the actor's collision layer from its current triangle to the one
  * under position + probe (X/Z, in 16.16): across the edge each normal clip
  * rejects, at most 32 steps. On arrival return 0 with the point's height in
  * `floor` (skipped for mode -1). Return -1 when the walk leaves the mesh,
  * runs out of steps or enters a triangle whose attribute the actor may not
  * cross (masked off by the actor's layer bits or 800b21cc; 800000 rejects
- * layer 0), leaving the edge last crossed in `edge`.
- * NON_MATCHING: three separate rejection tests let loop.c move their shared
- * "triangle = -1" exit block before the walk as in the original. Left: the
- * original keeps the start position's X/Z loads in registers for `origin`
- * (ours reloads their high halves), so `origin` and `mask` swap stack slots,
- * and the layer-bit tests apply "& 3"/"& 7" to the attribute side (fold
- * reassociation) where the original masks the actor bits. */
+ * layer 0), leaving the edge last crossed in `edge`. */
 s32 func_8007C694(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge, SVECTOR *floor, s32 mode) {
     VECTOR normal;
     CollisionTriangle *triangles;
@@ -877,12 +863,12 @@ s32 func_8007C694(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge
     s32 triangle;
     s32 current;
     s32 point;
+    u32 mask;
     s32 origin;
     s32 a;
     s32 b;
     s32 c;
     s32 side;
-    u32 mask;
     u32 attribute;
     s32 steps;
 
@@ -892,12 +878,12 @@ s32 func_8007C694(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge
     if (triangle == -1) {
         return -1;
     }
+    point = (((position[0] + probe->vx) >> 16) << 16) + ((position[2] + probe->vz) >> 16);
+    origin = ((position[0] >> 16) << 16) + (position[2] >> 16);
     floor->vx = (position[0] + probe->vx) >> 16;
-    point = (floor->vx << 16) + ((position[2] + probe->vz) >> 16);
+    floor->vz = (position[2] + probe->vz) >> 16;
     mask = 0;
     floor->vy = 0;
-    floor->vz = (position[2] + probe->vz) >> 16;
-    origin = ((position[0] >> 16) << 16) + (position[2] >> 16);
     if (!((actor->layer_flags >> (actor->layer + 3)) & 1)) {
         mask = -(D_800B2078.party_processing_mode == 0);
     }
@@ -959,11 +945,11 @@ s32 func_8007C694(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge
             break;
         }
         attribute = D_800AF880.components.collision_attributes[triangles[triangle].attribute].word & mask;
-        if (((actor->flags >> 9) & 3) & (attribute >> 3)) {
+        if ((actor->flags >> 9) & ((attribute >> 3) & 3)) {
             triangle = -1;
             break;
         }
-        if (((actor->flags >> 8) & 7) & (attribute >> 5)) {
+        if ((actor->flags >> 8) & ((attribute >> 5) & 7)) {
             triangle = -1;
             break;
         }
@@ -1012,9 +998,6 @@ s32 func_8007C694(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge
     }
     return -1;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8007C694);
-#endif
 
 /* Allocate `words` words of the scratchpad. */
 u32 *func_8007CD3C(s32 words) {
@@ -1196,17 +1179,12 @@ s32 func_8007CD80(VECTOR *point, SVECTOR *edge, DVECTOR *segment) {
     return -1;
 }
 
-#ifdef NON_MATCHING
 /* Find the floor of collision layer `layer` under the actor's next
  * position: walk the layer's triangles from the actor's current one toward
  * the point (at most 32 steps), then take the found triangle's plane
  * height and normal, the triangle, and its floor range; attribute bit
  * 800000 blocks the layer unless it is disabled for the actor or party
- * processing runs. Returns -1 when the walk leaves the mesh.
- * NON_MATCHING: control flow and the body match; in the block before the
- * walk the original loads position/unk030 into a1/v1/a3/a0 (ours
- * a2/v1/a3/a1) and schedules the layer spill and the mask/query.vy stores
- * later. */
+ * processing runs. Returns -1 when the walk leaves the mesh. */
 s32 func_8007D3D4(FieldActor *actor, s32 layer, s32 *floor, VECTOR *normal, s16 *triangle, s32 *upper) {
     SVECTOR query;
     CollisionTriangle *triangles;
@@ -1222,21 +1200,21 @@ s32 func_8007D3D4(FieldActor *actor, s32 layer, s32 *floor, VECTOR *normal, s16 
     s32 bump;
     s32 current;
 
-    current = actor->triangle[layer];
     triangles = D_800AF880.components.collision_triangles[layer];
+    current = actor->triangle[layer];
     vertices = D_800AF880.components.collision_vertices[layer];
     if (current != -1) {
         point = (((actor->position[0] + actor->unk030[0]) >> 16) << 16) +
                 ((actor->position[2] + actor->unk030[2]) >> 16);
         origin = ((actor->position[0] >> 16) << 16) + (actor->position[2] >> 16);
         query.vx = (actor->position[0] + actor->unk030[0]) >> 16;
+        query.vz = (actor->position[2] + actor->unk030[2]) >> 16;
         mask = 0;
         query.vy = 0;
-        query.vz = (actor->position[2] + actor->unk030[2]) >> 16;
-        steps = 0;
         if (!((actor->layer_flags >> (layer + 3)) & 1)) {
             mask = -(D_800B2078.party_processing_mode == 0);
         }
+        steps = 0;
         do {
             a = (vertices[triangles[current].unk00[0]].vx << 16) + vertices[triangles[current].unk00[0]].vz;
             b = (vertices[triangles[current].unk00[1]].vx << 16) + vertices[triangles[current].unk00[1]].vz;
@@ -1319,9 +1297,6 @@ s32 func_8007D3D4(FieldActor *actor, s32 layer, s32 *floor, VECTOR *normal, s16 
     }
     return -1;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8007D3D4);
-#endif
 
 /* Normalise a 20.12 vector, pointing it along its largest component. */
 void func_8007D818(VECTOR *v, VECTOR *out) {
@@ -1383,7 +1358,14 @@ void func_8007D93C(s32 channel) {
 
 #ifdef NON_MATCHING
 /* Link each active fade channel's tile and draw mode into `ot` (channel 1
- * one entry further); a channel whose levels reached zero stops. */
+ * one entry further); a channel whose levels reached zero stops.
+ * NON_MATCHING (measured 118 instruction edits; ours 604 bytes, original
+ * 692): the original strength-reduces more of the loop (the mode and tile
+ * offsets buffer*12/16 + i*0x58 and the tile base as separate induction
+ * values, spilled with ot, the fade base and the 0xff000000 mask to a
+ * 0x78-byte frame), computes ot + (i == 1) with a store-flag instead of a
+ * branch, and loads abr with lh. Passing the tile/mode expressions to
+ * addPrim directly reproduces the spills but not the tile colour stores. */
 void func_8007DA44(u32 *ot, s32 buffer) {
     DR_MODE *mode;
     TILE *tile;
@@ -1833,12 +1815,11 @@ s32 func_80033728(void *messages, void *message);
  * owner's portrait unless disabled, set up the text and the opening slide.
  * Returns -1 (clearing the window's +414) when the speaker has layer flag
  * 0x200 and the style lacks bit 1, else 0.
- * NON_MATCHING: the prologue, slot loop and most of the body match; the
- * original's frame is 0x70 (ours 0x68, an unused 8-byte spill slot above the
- * message), case 3 adds 8 before the columns/rows term, the 494/495 stores
- * keep the character in a0, extra stays in a3 (8 added before x), and the
- * stores after func_80033728 recompute the window offset and load the text
- * flags first. */
+ * NON_MATCHING: every instruction matches except the frame size: the
+ * original's frame is 0x70 (ours 0x68). Its extra 8 bytes sit above the
+ * x/y/message spill slots (0x28/0x30/0x38) and are never accessed, so they
+ * look like a fourth spill slot that reload allocated and then left unused;
+ * a local declared in C would land below the spill slots instead. */
 s32 func_8007F8DC(s16 x, s16 y, void *message, s32 w, s32 columns, s32 rows, s32 owner, s32 speaker,
                   s32 mode, s32 turned, s32 flags) {
     s32 target_x;
@@ -1877,8 +1858,8 @@ s32 func_8007F8DC(s16 x, s16 y, void *message, s32 w, s32 columns, s32 rows, s32
         target_y = y + 0x20;
         break;
     case 3:
-        target_x = x + 8 + columns * 2;
-        target_y = y + 8 + rows * 7;
+        target_x = x + (columns * 2 + 8);
+        target_y = y + (rows * 7 + 8);
         break;
     default:
         func_8007F814(speaker, &target_x, &target_y, -0x40);
@@ -1890,8 +1871,8 @@ s32 func_8007F8DC(s16 x, s16 y, void *message, s32 w, s32 columns, s32 rows, s32
         } else {
             func_8007F5AC(w, (D_800AF880.components.descriptors[owner].actor->state.word >> 1) & 0xE);
         }
-        D_800C2698[w].unk494 = 1;
         D_800C2698[w].unk495 = D_800AF880.components.descriptors[owner].actor->character;
+        D_800C2698[w].unk494 = 1;
     } else {
         D_800C2698[w].unk495 = 0x80;
         D_800C2698[w].unk494 = 0;
@@ -1902,7 +1883,7 @@ s32 func_8007F8DC(s16 x, s16 y, void *message, s32 w, s32 columns, s32 rows, s32
     if (D_800AF880.components.descriptors[owner].actor->character != 0xFF) {
         extra = (style & 0x402) == 0 ? 0x44 : 0;
     }
-    func_80032F54(&D_800C2698[w].text, D_800ADF54[slot][0], D_800ADF54[slot][1], x + extra + 8, y + 8, columns,
+    func_80032F54(&D_800C2698[w].text, D_800ADF54[slot][0], D_800ADF54[slot][1], x + 8 + extra, y + 8, columns,
                   rows);
     if (style & 0x400) {
         D_800C2698[w].style |= 0x20;
@@ -1915,9 +1896,9 @@ s32 func_8007F8DC(s16 x, s16 y, void *message, s32 w, s32 columns, s32 rows, s32
     D_800C2698[w].text.unk90 = func_80033728(D_800ADBF0, message);
     D_800C2698[w].busy = 0;
     D_800C2698[w].text.flags |= 2;
+    D_800C2698[w].timer = D_800B2078.text_speed;
     D_800C2698[w].owner = owner;
     D_800C2698[w].unk418 = speaker;
-    D_800C2698[w].timer = D_800B2078.text_speed;
     if (!(flags & 0x800)) {
         D_800C2698[w].unk412 = 0;
     } else {
@@ -1956,7 +1937,6 @@ void func_8007FFE8(void) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Draw the dialogue windows: advance the cursor animation, draw the
  * selected window (+412) first and the others by rank (+410), renumber the
  * ranks, then link the frame's text draw mode into `ot`. */
@@ -1981,7 +1961,7 @@ void func_8008004C(u32 *ot, s32 buffer) {
         }
     }
     next = 0;
-    for (i = 3; i >= 0; i--) {
+    for (i = 0; i < 4; i++) {
         order[i] = 0xFFFF;
     }
     for (i = 0; i < 4; i++) {
@@ -1999,7 +1979,7 @@ void func_8008004C(u32 *ot, s32 buffer) {
                     func_800345E0(text);
                 }
                 if (text->unk82 == 0) {
-                    func_80034714(text, text->unk90);
+                    func_80034714(text, D_800C2698[i].text.unk90);
                 }
                 func_80034888(text, ot, buffer);
             }
@@ -2023,7 +2003,7 @@ void func_8008004C(u32 *ot, s32 buffer) {
                             func_800345E0(text);
                         }
                         if (text->unk82 == 0) {
-                            func_80034714(text, text->unk90);
+                            func_80034714(text, D_800C2698[i].text.unk90);
                         }
                         func_80034888(text, ot, buffer);
                         if (func_80033CD0(text) != 0 && D_800C2698[i].status != 0) {
@@ -2040,14 +2020,11 @@ void func_8008004C(u32 *ot, s32 buffer) {
             }
         }
     }
-    for (i = 0; i < 4; i++) {
-        D_800C2698[i].age = order[i];
+    for (rank = 0; rank < 4; rank++) {
+        D_800C2698[rank].age = order[rank];
     }
     addPrim(ot, &D_800B1DF4[D_800ADB08][0]);
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8008004C);
-#endif
 
 /* Close each idle dialogue window whose timer ran out (unless flag 4 keeps
  * it) or that was cleared, and count the timers down. */
@@ -2185,7 +2162,13 @@ s32 func_80080A18(void) {
 
 #ifdef NON_MATCHING
 /* Reset event actor `index` to its defaults and settle it on the floor of
- * each collision layer under its descriptor's position. */
+ * each collision layer under its descriptor's position.
+ * NON_MATCHING (measured 46 edits): in the floor loop the original passes
+ * point + i computed afresh each iteration (sp+0x58 + i*8) while it clears
+ * the point through a stride-8 induction register based at normal
+ * (0x40($s2)); ours shares one register for both. Also the 0x10/0x60
+ * constant stores at the top, two loop-invariant masks and the +134 mask
+ * are scheduled/allocated differently. */
 void func_80080A74(s32 index) {
     VECTOR normal[4];
     SVECTOR point[4];
@@ -2424,9 +2407,7 @@ void func_8008110C(void) {
 
 /* Move the party followers: while they idle, return each to its idle
  * animation; otherwise replay the leader's movement history, each follower
- * lagging its own number of records behind, settling when it catches up.
- * NON_MATCHING: the original hoists the history field base, not the constant 1, out of the loop. */
-#ifdef NON_MATCHING
+ * lagging its own number of records behind, settling when it catches up. */
 void func_800815F0(void) {
     FieldDescriptor *descriptor;
     FieldActor *actor;
@@ -2439,6 +2420,7 @@ void func_800815F0(void) {
     s32 *index;
     s16 animation;
     s16 idle;
+    u32 motion;
 
     if (D_800B2078.followers_idle != 0) {
         for (i = 0; i < D_800ADBFC; i++) {
@@ -2474,26 +2456,29 @@ void func_800815F0(void) {
         index = &D_800B2360[slot];
         func_80081F80(sprite, D_800B14F0[*index].heading, descriptor);
         recorded = D_800B14F0[*index].flags;
+        motion = actor->unk014;
         if (D_800B2078.forced_position == 1) {
             *index = (D_800B2360[0] + 1) & 0x1F;
         } else {
             if (!(recorded & 0x800)) {
                 actor->layer_flags &= ~0x1000;
-                if (!(actor->unk014 & 0x420000)) {
+                if (!(motion & 0x420000)) {
                     if (D_800C3910 == -1) {
                         if ((s16)sprite->unk84 == actor->position[1] >> 16) {
-                            if (actor->unkE8 == 6) {
+                            if (actor->unkE8 != 6) {
+                                s16 rest = actor->unkE6;
+
+                                if (actor->unkE8 == rest) {
+                                    continue;
+                                }
+                                actor->unkE8 = rest;
+                                if (rest < 0) {
+                                    actor->unkE8 = 0;
+                                }
+                                func_800821F4(sprite, actor->unkE8, descriptor);
+                            } else {
                                 actor->layer_flags |= 0x1000;
-                                continue;
                             }
-                            if (actor->unkE8 == actor->unkE6) {
-                                continue;
-                            }
-                            actor->unkE8 = actor->unkE6;
-                            if (actor->unkE6 < 0) {
-                                actor->unkE8 = 0;
-                            }
-                            func_800821F4(sprite, actor->unkE8, descriptor);
                             continue;
                         }
                     } else {
@@ -2533,72 +2518,52 @@ void func_800815F0(void) {
         for (k = 0; k < 4; k++) {
             actor->triangle[k] = D_800B14F0[D_800B2360[slot]].triangle[k];
         }
-        index = &D_800B2360[slot];
-        actor->layer = D_800B14F0[*index].layer;
-        actor->unk50[0] = D_800B14F0[*index].unk30[0];
-        actor->unk50[1] = D_800B14F0[*index].unk30[1];
-        actor->unk50[2] = D_800B14F0[*index].unk30[2];
-        sprite->velocity[0] = D_800B14F0[*index].model_velocity[0];
-        sprite->velocity[1] = D_800B14F0[*index].model_velocity[1];
-        sprite->velocity[2] = D_800B14F0[*index].model_velocity[2];
-        descriptor->matrix.t[0] = D_800B14F0[*index].position[0];
-        descriptor->matrix.t[1] = D_800B14F0[*index].position[1];
-        descriptor->matrix.t[2] = D_800B14F0[*index].position[2];
+        actor->layer = D_800B14F0[D_800B2360[slot]].layer;
+        copyVector((VECTOR *)actor->unk50, (VECTOR *)D_800B14F0[D_800B2360[slot]].unk30);
+        copyVector((VECTOR *)sprite->velocity, (VECTOR *)D_800B14F0[D_800B2360[slot]].model_velocity);
+        descriptor->matrix.t[0] = D_800B14F0[D_800B2360[slot]].position[0];
+        descriptor->matrix.t[1] = D_800B14F0[D_800B2360[slot]].position[1];
+        descriptor->matrix.t[2] = D_800B14F0[D_800B2360[slot]].position[2];
         actor->position[0] = sprite->position[0] = descriptor->matrix.t[0] << 16;
         actor->position[1] = sprite->position[1] = descriptor->matrix.t[1] << 16;
         actor->position[2] = sprite->position[2] = descriptor->matrix.t[2] << 16;
-        sprite->unk84 = D_800B14F0[*index].model84;
-        actor->heading = actor->heading_goal = D_800B14F0[*index].heading;
-        *index = (*index - 1) & 0x1F;
+        sprite->unk84 = D_800B14F0[D_800B2360[slot]].model84;
+        actor->heading = actor->heading_goal = D_800B14F0[D_800B2360[slot]].heading;
+        D_800B2360[slot] = (D_800B2360[slot] - 1) & 0x1F;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_800815F0);
-#endif
 
-#ifdef NON_MATCHING
 /* Record the controlled actor `index`'s state in the next movement-history
- * slot, unless party processing is suspended.
- * NON_MATCHING: the original addresses the unk30 and triangle stores through
- * registers holding 800b1510+0x10 / -0xa and reads the history index through
- * a register once the heading is stored; ours addresses all of them
- * absolutely (lui $at). Frame and statement order match. */
+ * slot, unless party processing is suspended. */
 void func_80081C54(s32 index) {
     FieldModel *model;
     FieldActor *actor;
     s32 i;
-    VECTOR unused0; /* unused in the original; reserves 16 bytes */
-    SVECTOR unused1; /* unused in the original; reserves 8 bytes */
+    FieldDescriptor *descriptor;
 
-    actor = D_800AF880.components.descriptors[index].actor;
-    model = D_800AF880.components.descriptors[index].model;
+    descriptor = &D_800AF880.components.descriptors[index];
+    actor = descriptor->actor;
+    model = descriptor->model;
     if (index == D_800B2078.controlled && D_800B2078.party_processing_mode == 0) {
-        D_800B14F0[D_800B2078.history[0]].model_velocity[0] = model->velocity[0];
-        D_800B14F0[D_800B2078.history[0]].model_velocity[1] = model->velocity[1];
-        D_800B14F0[D_800B2078.history[0]].model_velocity[2] = model->velocity[2];
-        D_800B14F0[D_800B2078.history[0]].unk30[0] = actor->unk50[0];
-        D_800B14F0[D_800B2078.history[0]].unk30[1] = actor->unk50[1];
-        D_800B14F0[D_800B2078.history[0]].unk30[2] = actor->unk50[2];
-        D_800B14F0[D_800B2078.history[0]].heading = actor->heading_goal & 0xFFF;
-        D_800B14F0[D_800B2078.history[0]].model84 = model->unk84;
-        D_800B14F0[D_800B2078.history[0]].position[0] = WHOLE(actor->position[0]);
-        D_800B14F0[D_800B2078.history[0]].position[1] = WHOLE(actor->position[1]);
-        D_800B14F0[D_800B2078.history[0]].position[2] = WHOLE(actor->position[2]);
-        D_800B14F0[D_800B2078.history[0]].unk12 = actor->unkE8;
-        D_800B14F0[D_800B2078.history[0]].unk40 = actor->unk014;
-        D_800B14F0[D_800B2078.history[0]].flags = actor->flags;
-        D_800B14F0[D_800B2078.history[0]].layer_flags = actor->layer_flags;
+        copyVector((VECTOR *)D_800B14F0[D_800B2360[0]].model_velocity, (VECTOR *)model->velocity);
+        copyVector((VECTOR *)D_800B14F0[D_800B2360[0]].unk30, (VECTOR *)actor->unk50);
+        D_800B14F0[D_800B2360[0]].heading = actor->heading_goal & 0xFFF;
+        D_800B14F0[D_800B2360[0]].model84 = model->unk84;
+        D_800B14F0[D_800B2360[0]].position[0] = actor->position[0] >> 16;
+        D_800B14F0[D_800B2360[0]].position[1] = actor->position[1] >> 16;
+        D_800B14F0[D_800B2360[0]].position[2] = actor->position[2] >> 16;
+        D_800B14F0[D_800B2360[0]].unk12 = actor->unkE8;
+        D_800B14F0[D_800B2360[0]].unk40 = actor->unk014;
+        D_800B14F0[D_800B2360[0]].flags = actor->flags;
+        D_800B14F0[D_800B2360[0]].layer_flags = actor->layer_flags;
         for (i = 0; i < 4; i++) {
-            D_800B14F0[D_800B2078.history[0]].triangle[i] = actor->triangle[i];
+            D_800B14F0[D_800B2360[0]].triangle[i] = actor->triangle[i];
         }
-        D_800B14F0[D_800B2078.history[0]].layer = actor->layer;
+        D_800B14F0[D_800B2360[0]].layer = actor->layer;
         D_800C3910 = 0;
-        D_800B2078.history[0] = (D_800B2078.history[0] - 1) & 0x1F;
+        D_800B2360[0] = (D_800B2360[0] - 1) & 0x1F;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_80081C54);
-#endif
 
 /* -1 when the actor's bits 9-10 meet bits 3-4 of +14, else 0. */
 s32 func_80081F5C(FieldActor *actor) {
@@ -2769,7 +2734,12 @@ s32 func_800825AC(s32 from, s32 to) {
 #ifdef NON_MATCHING
 /* An actor's additive motion before it moves: the terrain push and conveyor
  * of the floor it stands on, the platform it rides and its gear layer's
- * drift. */
+ * drift.
+ * NON_MATCHING (measured 83 edits): actor/terrain take s1/s2 swapped and
+ * angle/radius s0/s1 swapped against the original; the original also
+ * sign-extends turn.vy into angle only just before the heading test. With
+ * angle declared s16 the allocation matches (12 edits) but the final
+ * direction would then be truncated, so that is not used. */
 void func_80082620(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
     u32 terrain;
     VECTOR conveyor;
@@ -3409,9 +3379,7 @@ void func_8008399C(s32 index, FieldDescriptor *descriptor, FieldActor *player) {
 /* The controlled actor's contacts: against every other actor (its floor
  * polygon, its box, or its radius) either ride it, stand below it or push
  * it, recording the lowest ceiling; then remember the ridden actor, and
- * integrate the actor's own position against the floor.
- * NON_MATCHING: the original schedules the `linked` reset after the second position load. */
-#ifdef NON_MATCHING
+ * integrate the actor's own position against the floor. */
 void func_80084158(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
     VECTOR next;
     SVECTOR cell;
@@ -3439,7 +3407,6 @@ void func_80084158(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
     next.vy = actor->position[1];
     next.vz = actor->position[2];
     next.vx += actor->unk030[0];
-    linked = 0;
     next.vy += actor->unk030[1];
     next.vz += actor->unk030[2];
     func_800831D0(&cell, &next);
@@ -3449,6 +3416,7 @@ void func_80084158(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
     status = 0;
     z = cell.vz;
     lowest = 0x7FFFFFFF;
+    linked = 0;
     entry_flags = actor->flags;
     link = actor->unk074;
     for (u = 0; u < D_800ADBFC; u++) {
@@ -3509,8 +3477,8 @@ void func_80084158(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
             }
             bottom = other->position[1] >> 16;
             top = bottom - (u16)other->height;
+        owned:
             if (actor->unk074 == u) {
-            owned:
                 if ((entry_flags & 0x40800) == 0) {
                     goto ride;
                 }
@@ -3603,13 +3571,14 @@ void func_80084158(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
     }
     func_8007CD60(0x20);
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_80084158);
-#endif
 
 #ifdef NON_MATCHING
 /* -1 when the actor's motion, collision state or layer prevents idling.
- * NON_MATCHING: the original places the layer-1 -1 return after the last test. */
+ * NON_MATCHING: the original places the layer-1 `return -1` block at the end
+ * (beq into it, falling into the epilogue) after the layer-2 store-flag code,
+ * while still reloading layer_flags for every test. The separate-if form
+ * here reloads but keeps that return inline; every nested/else form tried
+ * lets CSE reuse layer_flags instead. */
 s32 func_8008492C(FieldActor *actor) {
     if ((actor->unk014 & 0x420000) || D_800ADB98 != 0 || actor->unk030[0] != 0 ||
         actor->unk030[1] != 0 || actor->unk030[2] != 0 || D_800ADC0C != 1 || actor->unk074 != 0xFF ||
