@@ -1416,12 +1416,12 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80076884);
 
 /* Per-frame actor status: count down its timers, drain its charge, apply
  * this frame's damage to its hit points (with the hit sound), update its
- * gauge and knock it out when the hit points run out.
- * Does not match (1356 vs 1344 bytes): the charge is tested in its load
- * register and copied, the knock-out test leaves two delay slots empty, and
- * the knock-out block rereads the flags after each store. */
+ * gauge and knock it out when the hit points run out. Declared int without
+ * a return value, as the original's unfilled delay slots in the knock-out
+ * test show. Does not match: only the charge test: the original tests the
+ * loaded value and copies it to $a0 in the branch delay slot. */
 #ifdef NON_MATCHING
-void func_80077038(Actor *actor) {
+s32 func_80077038(Actor *actor) {
     s32 unused[2]; /* unused in the original; reserves 8 bytes */
     s32 charge;
     u8 state;
@@ -1555,10 +1555,10 @@ void func_80077038(Actor *actor) {
         actor->anim = 0xD;
         actor->unk4E = 0xFF;
         actor->unkC4 = 5;
-        actor->unkC5 = 0;
         actor->flags |= 0x1000;
-        actor->velocity.vy -= 0x50;
+        actor->unkC5 = 0;
         actor->flags |= 0x400;
+        actor->velocity.vy -= 0x50;
         if (actor->flags & 0x08000000) {
             actor->push.vx -= func_8003F8B0(D_80092934) >> 9;
             actor->push.vz -= func_8003F8CC(D_80092934) >> 9;
