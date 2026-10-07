@@ -2320,10 +2320,11 @@ extern s32 (*D_800508A4[])(SoundModulator *modulator); /* modulator waves by sha
 
 /* Vibrato with an explicit shape (low nibble of the third operand; bit 4
  * selects a one-sided wave).
- * Nonmatching: the original masks the shape into $a2 for the call and
- * copies it back to the mode register (andi $a2,$s3,0xf; move $s3,$a2),
- * with the depth shift scheduled ahead of the rate boost; this build masks
- * in place and moves the shape to $a2 at the call (as 8003DD24/8003E04C). */
+ * Nonmatching: the original loads the rate before the depth, masks the
+ * shape into $a2 for the call and copies it back to the mode register
+ * (andi $a2,$s3,0xf; move $s3,$a2), and stores the shape, target and
+ * flags before taking the modulator address; this build masks in place and
+ * moves the shape to $a2 at the call (as 8003DD24/8003E04C). */
 #ifdef NON_MATCHING
 u8 *func_8003D9A4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     s32 depth = ((s8 *)data)[1];
@@ -2338,11 +2339,12 @@ u8 *func_8003D9A4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
         } else {
             depth = depth * depth;
         }
+        depth <<= 14;
         rate += rate * rate / 64;
         flags = ((mode & 0x10) == 0) * 2;
         mode &= 0xF;
         modulator = &channel->modulator[0];
-        modulator->step = func_8003E290(depth << 14, rate, mode);
+        modulator->step = func_8003E290(depth, rate, mode);
         modulator->period = 0x400;
         modulator->rate = rate;
         modulator->delay = 0;
