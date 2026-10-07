@@ -485,9 +485,9 @@ void func_801DD5E8(u8 mode) {
  * confirm while its cost can be paid, until cancelled. */
 #ifdef NON_MATCHING
 /* Same code shape as the original; remaining: global register allocation
- * (original s2 kind/used, s3 kind&0xff, s4 targets, s5 slot&0xff, s6 row,
- * s7 cursor, fp effect; here effect outranks row/cursor and used ranks last)
- * and v0/v1 swapped in the `left` subtraction. */
+ * (original s2 kind/used, s3 kind&0xff, s4 targets, s5 slot&0xff; here
+ * `used` ranks below kind&0xff, targets and slot&0xff) and v0/v1 swapped in
+ * the `left` subtraction. */
 void func_801DD790(u8 slot, s32 row, u8 kind) {
     MenuEffect *effect;
     s32 x;
@@ -509,18 +509,15 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
     cursor = D_800625A0->firstMember;
     switch (kind) {
     case 0:
-        effect = D_800625A0->tables->effects[D_800625A0->party->ids[slot]] + row;
-        effect += 22;
+        effect = D_800625A0->tables->effects[D_800625A0->party->ids[slot]] + row + 22;
         break;
     case 1:
-        effect = (D_800625A0->tables->effects + 11)[D_8006D8A0[D_800625A0->party->ids[slot]].gear] + row;
-        effect += 21;
+        effect = (D_800625A0->tables->effects + 11)[D_8006D8A0[D_800625A0->party->ids[slot]].gear] + row + 21;
         break;
     case 2:
         x = 0x18;
-        effect = (D_800625A0->tables->effects + 11)[D_8006D8A0[D_800625A0->party->ids[slot]].gear] + row;
+        effect = (D_800625A0->tables->effects + 11)[D_8006D8A0[D_800625A0->party->ids[slot]].gear] + row + 37;
         cursor = slot;
-        effect += 37;
         break;
     }
     func_801D397C(2, 0x10, 0xe, x + 0x90, 0xb0, 0, 0, 4, 0);
