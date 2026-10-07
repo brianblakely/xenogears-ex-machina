@@ -10563,15 +10563,17 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_800A3C8C
 /* Write the field state block at D_8005A4E4 (descriptor count, view,
  * collision attributes, D_800B2078, per-actor records and D_800C3A68) and
  * print its size.
- * NON_MATCHING: the original adds the descriptor base before the index for
- * the rotation copy (a descriptor pointer for that copy alone reproduces
- * it) and holds &D_8005A4E4 in s1, loaded before D_800C268C, for the size
- * computed in the branch delay slot. */
+ * NON_MATCHING: only the size print differs: the original holds
+ * &D_8005A4E4 in s1 and loads it and D_800AFC50 before testing D_800C268C
+ * (the subtraction lands in the branch delay slot); here both follow the
+ * test, and computing the size before the test keeps the address in v0
+ * loaded after D_800AFC50. */
 void func_800A3F4C(void) {
     s32 i;
     s32 flags;
     s32 size;
     u8 *snapshot;
+    FieldDescriptor *descriptor;
 
     D_800AFC50 = D_8005A4E4;
     *D_800AFC50 = D_800AF880.components.descriptor_count;
@@ -10587,7 +10589,8 @@ void func_800A3F4C(void) {
     COPY_BLOCK(D_800AFC50, &D_800AF880, 0x1C8);
     D_800AFC50 += 0x1C8;
     for (i = 0; i < D_800ADBFC; i++) {
-        COPY_BLOCK(D_800AFC50, &D_800AF880.components.descriptors[i].rotation, 8);
+        descriptor = &D_800AF880.components.descriptors[i];
+        COPY_BLOCK(D_800AFC50, &descriptor->rotation, 8);
         D_800AFC50 += 8;
         flags = D_800AF880.components.descriptors[i].flags;
         COPY_BLOCK(D_800AFC50, &flags, 4);
@@ -10611,8 +10614,8 @@ void func_800A3F4C(void) {
         D_8005A408[i] = D_8005A39C->unk22B1[i];
     }
     snapshot = D_8005A4E4;
-    size = D_800AFC50 - snapshot;
     if (D_800C268C == 0) {
+        size = D_800AFC50 - snapshot;
         func_800379C8("SAVESIZE=%d %x\n", size, size);
     }
 }
