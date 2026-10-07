@@ -1137,9 +1137,9 @@ INCLUDE_ASM("decomp/src/menu", func_8008BC04);
 
 /* Set the mesh light direction (a fixed down-left vector) and project
  * its vertices onto the ground plane for the shadow packets. */
-#ifdef NON_MATCHING
 void func_8008BCC8(Mesh *mesh, u8 *work) {
     Vector direction;
+    Vector unused; /* unused in the original; reserves 16 bytes */
 
     direction.vx = -8;
     direction.vy = -8;
@@ -1150,9 +1150,6 @@ void func_8008BCC8(Mesh *mesh, u8 *work) {
     D_8009A2C8.vz <<= 4;
     func_8008C3A8(mesh->data, work, mesh->count);
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008BCC8);
-#endif
 
 /* Draw a mesh's primitive groups (flag 8: quads, else triangles) into the
  * given packets and ordering table using the vertex work area. */
@@ -1743,8 +1740,8 @@ void func_8008D9F0(Spark *spark) {
 
 /* Move and draw every live spark of an emitter: gravity, a bounce on the
  * ground plane, projection relative to the camera through the scratchpad. */
-#ifdef NON_MATCHING
 void func_8008DA48(Emitter *emitter, u32 *ot, Matrix *view) {
+    SVector unused[5]; /* unused in the original; reserves 40 bytes */
     Spark *spark;
     void (*draw)(void *, u32 *);
     s32 i;
@@ -1774,9 +1771,6 @@ void func_8008DA48(Emitter *emitter, u32 *ot, Matrix *view) {
         spark = (Spark *)((u8 *)spark + emitter->size);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008DA48);
-#endif
 
 /* Copy one model part's local transform. */
 #ifdef NON_MATCHING
@@ -2266,10 +2260,9 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008ED6C);
 #endif
 
 /* Accelerate an actor toward the speed limit (or brake to a stop, harder
- * when not guarding) for two ticks, and turn it toward a heading.
- * Nonmatching: the original reserves sixteen more frame bytes. */
-#ifdef NON_MATCHING
+ * when not guarding) for two ticks, and turn it toward a heading. */
 void func_8008EE1C(Actor *actor, s16 heading, s16 limit) {
+    s32 unused[4]; /* unused in the original; reserves 16 bytes */
     s32 brake = actor->brake;
     s32 accel = actor->accel;
     s32 moving;
@@ -2297,9 +2290,6 @@ void func_8008EE1C(Actor *actor, s16 heading, s16 limit) {
     actor->target_angle = func_8008B650(actor->target_angle, heading, 0x40);
     actor->unkCE = 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008EE1C);
-#endif
 
 /* Opponent command: act, then wait a second. */
 void func_8008EF00(Actor *actor, Brain *brain) {
