@@ -70,7 +70,8 @@ typedef struct {
 /* Game data 8006d634 (saved with the game). The record count is not
  * established; the party list follows at +0x1d34. */
 typedef struct {
-    u8 unknown0[0x30C];
+    u8 names[31][0x14]; /* text codes, two bytes per code */
+    u8 unknown0[0x30C - 31 * 0x14];
     CharacterRecord characters[11];
     u8 unknown1[0x1D34 - 0x30C - 11 * 0xA4];
     u8 party[3]; /* character per slot, 0xff empty */
