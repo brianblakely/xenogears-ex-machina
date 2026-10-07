@@ -2424,9 +2424,7 @@ void func_8008110C(void) {
 
 /* Move the party followers: while they idle, return each to its idle
  * animation; otherwise replay the leader's movement history, each follower
- * lagging its own number of records behind, settling when it catches up.
- * NON_MATCHING: the original hoists the history field base, not the constant 1, out of the loop. */
-#ifdef NON_MATCHING
+ * lagging its own number of records behind, settling when it catches up. */
 void func_800815F0(void) {
     FieldDescriptor *descriptor;
     FieldActor *actor;
@@ -2439,6 +2437,7 @@ void func_800815F0(void) {
     s32 *index;
     s16 animation;
     s16 idle;
+    u32 motion;
 
     if (D_800B2078.followers_idle != 0) {
         for (i = 0; i < D_800ADBFC; i++) {
@@ -2474,26 +2473,29 @@ void func_800815F0(void) {
         index = &D_800B2360[slot];
         func_80081F80(sprite, D_800B14F0[*index].heading, descriptor);
         recorded = D_800B14F0[*index].flags;
+        motion = actor->unk014;
         if (D_800B2078.forced_position == 1) {
             *index = (D_800B2360[0] + 1) & 0x1F;
         } else {
             if (!(recorded & 0x800)) {
                 actor->layer_flags &= ~0x1000;
-                if (!(actor->unk014 & 0x420000)) {
+                if (!(motion & 0x420000)) {
                     if (D_800C3910 == -1) {
                         if ((s16)sprite->unk84 == actor->position[1] >> 16) {
-                            if (actor->unkE8 == 6) {
+                            if (actor->unkE8 != 6) {
+                                s16 rest = actor->unkE6;
+
+                                if (actor->unkE8 == rest) {
+                                    continue;
+                                }
+                                actor->unkE8 = rest;
+                                if (rest < 0) {
+                                    actor->unkE8 = 0;
+                                }
+                                func_800821F4(sprite, actor->unkE8, descriptor);
+                            } else {
                                 actor->layer_flags |= 0x1000;
-                                continue;
                             }
-                            if (actor->unkE8 == actor->unkE6) {
-                                continue;
-                            }
-                            actor->unkE8 = actor->unkE6;
-                            if (actor->unkE6 < 0) {
-                                actor->unkE8 = 0;
-                            }
-                            func_800821F4(sprite, actor->unkE8, descriptor);
                             continue;
                         }
                     } else {
@@ -2533,28 +2535,20 @@ void func_800815F0(void) {
         for (k = 0; k < 4; k++) {
             actor->triangle[k] = D_800B14F0[D_800B2360[slot]].triangle[k];
         }
-        index = &D_800B2360[slot];
-        actor->layer = D_800B14F0[*index].layer;
-        actor->unk50[0] = D_800B14F0[*index].unk30[0];
-        actor->unk50[1] = D_800B14F0[*index].unk30[1];
-        actor->unk50[2] = D_800B14F0[*index].unk30[2];
-        sprite->velocity[0] = D_800B14F0[*index].model_velocity[0];
-        sprite->velocity[1] = D_800B14F0[*index].model_velocity[1];
-        sprite->velocity[2] = D_800B14F0[*index].model_velocity[2];
-        descriptor->matrix.t[0] = D_800B14F0[*index].position[0];
-        descriptor->matrix.t[1] = D_800B14F0[*index].position[1];
-        descriptor->matrix.t[2] = D_800B14F0[*index].position[2];
+        actor->layer = D_800B14F0[D_800B2360[slot]].layer;
+        copyVector((VECTOR *)actor->unk50, (VECTOR *)D_800B14F0[D_800B2360[slot]].unk30);
+        copyVector((VECTOR *)sprite->velocity, (VECTOR *)D_800B14F0[D_800B2360[slot]].model_velocity);
+        descriptor->matrix.t[0] = D_800B14F0[D_800B2360[slot]].position[0];
+        descriptor->matrix.t[1] = D_800B14F0[D_800B2360[slot]].position[1];
+        descriptor->matrix.t[2] = D_800B14F0[D_800B2360[slot]].position[2];
         actor->position[0] = sprite->position[0] = descriptor->matrix.t[0] << 16;
         actor->position[1] = sprite->position[1] = descriptor->matrix.t[1] << 16;
         actor->position[2] = sprite->position[2] = descriptor->matrix.t[2] << 16;
-        sprite->unk84 = D_800B14F0[*index].model84;
-        actor->heading = actor->heading_goal = D_800B14F0[*index].heading;
-        *index = (*index - 1) & 0x1F;
+        sprite->unk84 = D_800B14F0[D_800B2360[slot]].model84;
+        actor->heading = actor->heading_goal = D_800B14F0[D_800B2360[slot]].heading;
+        D_800B2360[slot] = (D_800B2360[slot] - 1) & 0x1F;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_800815F0);
-#endif
 
 #ifdef NON_MATCHING
 /* Record the controlled actor `index`'s state in the next movement-history
