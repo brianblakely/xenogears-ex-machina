@@ -6324,15 +6324,20 @@ void func_801DA518(void) {
     func_800320E8(D_800625A0->tables->items);
 }
 
+/* Column of item entry `i`: its x offset and its name's left edge (8-aligned).
+ * A statement macro (do/while (0)). */
+#define ITEM_COLUMN(i, x, left)            \
+    do {                                   \
+        (x) = ((i) % 2) * 0x88;            \
+        (left) = ((x) + 0x28) & 0xfff8;    \
+    } while (0)
+
 /* Build the 16 visible entries of the item list from scroll row `row`: an
  * entry without an id or count is emptied; otherwise the count is capped at
  * 99 and the item name and two-digit count are rendered into the image area
  * and laid out, greyed when the item cannot be used here. */
-#ifdef NON_MATCHING
 /* The counts are addressed from the ids (D_8006F65A - 150), as the original
- * does. Differs only in the x/y layout block: the original computes the
- * column offset before the row (i / 2 and y in s0, x in s1); this build
- * schedules y first (y in s1, x in s0). */
+ * does. */
 void func_801DA5BC(s32 row) {
     u8 codes[4];
     u8 text[8];
@@ -6382,9 +6387,8 @@ void func_801DA5BC(s32 row) {
                 }
                 func_801E7C50(&D_800625A0->block42C->names[i], i, 0x80, grey | 1);
                 func_801E7C50(&D_800625A0->block42C->values[i], i, 0x80, grey | 2);
-                x = (i % 2) * 0x88;
+                ITEM_COLUMN(i, x, left);
                 y = (i / 2) * 0x10 | 0xe;
-                left = (x + 0x28) & 0xfff8;
                 func_801C851C(D_800625A0->block42C->names[i].verts, left, y, D_800625A0->block42C->names[i].width,
                               0xd);
                 left = (x + 0x90) & 0xfff8;
@@ -6405,9 +6409,6 @@ void func_801DA5BC(s32 row) {
     func_800320E8(image);
     D_800625A0->party->unk48 = 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DA5BC);
-#endif
 
 /* Show the description of item list entry `entry` at scroll row `row`: the
  * item's message line, a copy of its name and count texts and, for items

@@ -1446,12 +1446,14 @@ void func_801E05D0(u8 slot, u8 fade, u8 gear) {
                 func_801DFB68(slot, part, row, top, special, gear);
             }
             previewed = 1;
-            if (!gear) {
-                func_801E36D4(D_800625A0->tables, D_800625A0->party->ids[slot]);
-                func_801E3A80(D_800625A0->tables, D_800625A0->party->ids[slot]);
-            } else {
-                func_801DFE2C(slot);
-            }
+            do {
+                if (!gear) {
+                    func_801E36D4(D_800625A0->tables, D_800625A0->party->ids[slot]);
+                    func_801E3A80(D_800625A0->tables, D_800625A0->party->ids[slot]);
+                } else {
+                    func_801DFE2C(slot);
+                }
+            } while (0);
             func_801DFF5C(part, row, top, special, gear, 0, slot);
             func_801D8DE4(slot, 1, listing, gear);
             drawnRow = row;
