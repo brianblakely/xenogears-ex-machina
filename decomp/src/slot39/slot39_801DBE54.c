@@ -518,7 +518,6 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
     all = effect->target & 1;
     while (targets) {
         func_801C7BF4();
-        targets = 0;
         if (redraw) {
             func_801DC3D8(slot, kind);
             func_801DCE60(slot, row, kind);
@@ -526,6 +525,7 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
             func_801DB5E4(kind);
             redraw = 0;
         }
+        targets = 0;
         D_800625A0->markers->visible[0] = D_800625A0->markers->visible[1] = D_800625A0->markers->visible[2] = 0;
         if (all) {
             for (i = 0; i < 3; i++) {
