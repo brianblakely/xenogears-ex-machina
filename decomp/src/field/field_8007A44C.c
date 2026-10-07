@@ -3618,17 +3618,14 @@ s32 func_8008492C(FieldActor *actor) {
     return -1;
 }
 
+extern char D_8006FC74[];
+
 /* Move an actor to its next position: query every collision layer's floor
  * and ceiling there, sort the layers by floor, choose the actor's layer,
  * commit the planar move (or roll it back on a blocking attribute or a
  * ceiling), then fall, land or rise onto the floor, and record the
  * controlled actor's history. Returns -1 when the actor did not move.
- * NON_MATCHING (14 edits): only register choice differs: the original keeps
- * the position height (y) in $a0 and the floor-scan pointer in $a1; ours
- * swaps them. Global allocation takes the strength-reduced scan pointer
- * (6 refs over 10 insns) long before y (4 refs over 21); y as s16, declared
- * elsewhere, or not a variable (loop-invariant hoist) does not reorder it. */
-#ifdef NON_MATCHING
+ * One temporary serves the layer sort's swaps and the position height. */
 s32 func_80084A40(s32 index, s32 lowest, FieldDescriptor *descriptor, FieldActor *actor, s32 status) {
     s32 floors[4];
     s32 uppers[4];
@@ -3643,8 +3640,7 @@ s32 func_80084A40(s32 index, s32 lowest, FieldDescriptor *descriptor, FieldActor
     s32 layer;
     s32 i;
     s32 k;
-    s32 swap;
-    s32 y;
+    s32 temp;
     s32 bump;
     u32 attributes;
     u32 layers;
@@ -3699,15 +3695,15 @@ s32 func_80084A40(s32 index, s32 lowest, FieldDescriptor *descriptor, FieldActor
     for (i = 0; i < 2; i++) {
         for (k = 0; k < 2; k++) {
             if (floors[k] > floors[k + 1]) {
-                swap = floors[k + 1];
+                temp = floors[k + 1];
                 floors[k + 1] = floors[k];
-                floors[k] = swap;
-                swap = uppers[k + 1];
+                floors[k] = temp;
+                temp = uppers[k + 1];
                 uppers[k + 1] = uppers[k];
-                uppers[k] = swap;
-                swap = ids[k + 1];
+                uppers[k] = temp;
+                temp = ids[k + 1];
                 ids[k + 1] = ids[k];
-                ids[k] = swap;
+                ids[k] = temp;
             }
         }
     }
@@ -3715,10 +3711,10 @@ s32 func_80084A40(s32 index, s32 lowest, FieldDescriptor *descriptor, FieldActor
         for (i = 0; i < D_800AF880.components.layer_count - 1; i++) {
             actor->triangle[i] = triangles[i];
         }
-        y = actor->position[1] >> 16;
-        if (y < old_floor || (actor->flags & 0x1800)) {
+        temp = actor->position[1] >> 16;
+        if (temp < old_floor || (actor->flags & 0x1800)) {
             for (i = 0; i < D_800AF880.components.layer_count - 1; i++) {
-                if (!(floors[i] < y)) {
+                if (!(floors[i] < temp)) {
                     actor->layer = ids[i];
                     break;
                 }
@@ -3743,7 +3739,7 @@ s32 func_80084A40(s32 index, s32 lowest, FieldDescriptor *descriptor, FieldActor
             goto blocked;
         } else if (attributes & 0x800000) {
             if (D_800C268C == 0) {
-                func_800379C8("ERROR ID0 ACT=%d\n", index);
+                func_800379C8(D_8006FC74, index);
             }
         blocked:
             if (index == D_800B2078.controlled) {
@@ -3869,6 +3865,7 @@ rollback:
     func_80081C54(index);
     return 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_80084A40);
-#endif
+
+/* "ERROR ID0 ACT=%d\n". The original assembler left two stray bytes (0x6f 0x74)
+ * in the string's alignment padding, so it is linked as original rodata. */
+INCLUDE_RODATA(".local/decomp/field/asm/nonmatchings/field_8007A44C", D_8006FC74);
