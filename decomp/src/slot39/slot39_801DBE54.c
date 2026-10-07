@@ -1361,6 +1361,18 @@ void func_801E0434(u8 slot, u8 gear) {
     }
 }
 
+/* Keep the newly equipped parts (801df5d0) and leave the candidate list:
+ * hide its cursor, show the part marker again and ask for the list reset.
+ * A statement macro. */
+#define KEEP_AND_LEAVE_LIST()                          \
+    do {                                               \
+        func_801DF5D0(slot, gear);                     \
+        cursor = 0;                                    \
+        D_800625A0->markers->visible[0] = 1;           \
+        reset = 1;                                     \
+        func_801DB0A8(0, top, 3, 0);                   \
+    } while (0)
+
 /* The equipment screen of party slot `slot` (`gear`: the gear's parts)
  * until it is left. In part mode the cursor steps over the four parts (a
  * character 4 toggles its special parts, 9/10 switch the party slot) and
@@ -1368,11 +1380,6 @@ void func_801E0434(u8 slot, u8 gear) {
  * candidates, confirm equips one (801df0d4) and cancel restores the kept
  * parts (801df890). Each frame redraws what changed; the first opens the
  * windows and, with `fade`, waits for the view to settle. */
-#ifdef NON_MATCHING
-/* Differs only in scheduling (2 instructions): in list-mode confirm the
- * original sets `reset` (s0) right after the 801df5d0 call; this build
- * fills the load delay after the 801db0a8 call with it (with reset = 1
- * first, reload reuses s0 for the marker's constant 1). */
 void func_801E05D0(u8 slot, u8 fade, u8 gear) {
     u8 running;
     u8 panel;
@@ -1566,13 +1573,9 @@ void func_801E05D0(u8 slot, u8 fade, u8 gear) {
                     committed = 1;
                     func_801E0434(slot, gear);
                 }
-                func_801DF5D0(slot, gear);
-                cursor = 0;
-                D_800625A0->markers->visible[0] = 1;
-                reset = 1;
-                func_801DB0A8(0, top, 3, 0);
-                row = 0;
+                KEEP_AND_LEAVE_LIST();
                 D_800625A0->party->unk50[0] = 0;
+                row = 0;
                 break;
             case 1:
                 if (++row >= 8) {
@@ -1607,9 +1610,6 @@ void func_801E05D0(u8 slot, u8 fade, u8 gear) {
     func_801D2484();
     func_801DB340(0);
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801E05D0);
-#endif
 
 /* Run the 801e05d0 screen for party slot `slot` with its blocks; views 3 and 13. */
 u8 func_801E0F78(u8 slot, u8 arg1) {
