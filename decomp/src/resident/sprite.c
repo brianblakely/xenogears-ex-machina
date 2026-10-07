@@ -2154,7 +2154,9 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
     case 0xBA:
         func_80023290(sprite, code[0]);
         break;
-    case 0xF1:
+    case 0xF1: {
+        SpriteModelRenderer *model;
+
         model = (SpriteModelRenderer *)sprite->renderer;
         sprite->red = code[0];
         sprite->green = code[1];
@@ -2168,6 +2170,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
             func_8001F6B0(sprite);
         }
         break;
+    }
     case 0xF2:
         model = (SpriteModelRenderer *)sprite->renderer;
         sprite->red = func_80021AD8(sprite->red, (s8)code[0]);
@@ -2249,27 +2252,36 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
     case 0xE7:
         func_80022000(sprite, sprite->scale + (s16)((code[0] | (s16)(code[1] << 8)) * 2));
         break;
-    case 0xE9:
+    case 0xE9: {
+        s32 value;
+
         value = code[0] | (s16)(code[1] << 8);
         if (sprite->renderer != NULL) {
             sprite->renderer->scale_x += value * 2;
             sprite->render.bits.dirty = 1;
         }
         break;
-    case 0xEA:
+    }
+    case 0xEA: {
+        s32 value;
+
         value = code[0] | (s16)(code[1] << 8);
         if (sprite->renderer != NULL) {
             sprite->renderer->scale_y += value * 2;
             sprite->render.bits.dirty = 1;
         }
         break;
-    case 0xEB:
+    }
+    case 0xEB: {
+        s32 value;
+
         value = code[0] | (s16)(code[1] << 8);
         if (sprite->renderer != NULL) {
             sprite->renderer->scale_z += value * 2;
             sprite->render.bits.dirty = 1;
         }
         break;
+    }
     case 0xBD:
         func_80023B84(sprite, (u8 *)(((u16 *)D_8006BE20)[code[0] + 1] + (s32)D_8006BE20), sprite->image);
         break;
