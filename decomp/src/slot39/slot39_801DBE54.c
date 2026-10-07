@@ -776,7 +776,10 @@ void func_801DE474(u8 wide, u8 page) {
  * scroll limit. */
 #ifdef NON_MATCHING
 /* Remaining: the gear switch's `< 50` tails are cross-jumped into the
- * character switch's (the original keeps both), and the drawing loop keeps
+ * character switch's (the original keeps both; from the sltiu on the four
+ * insns are identical in both, the loads differing only in s6 / s3, so at
+ * cross-jump time the original's two tails must still have differed, e.g.
+ * in their branch targets), and the drawing loop keeps
  * `kind` in a hoisted register and forms &D_801EA7F8[top + i] from a hoisted
  * (spilled) address where the original reloads kind and uses %hi/%lo. */
 s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
@@ -987,7 +990,14 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801DE5
  * record address it loaded). Remaining: register assignment (the original
  * copies slot to t0 and part to a0 and converts `gear` at each test; this
  * build converts gear once in a3 and keeps slot in v1, so every list
- * pointer and flag moves down one register). */
+ * pointer and flag moves down one register).
+ * Cse dump: the parameters are QImode pseudos; the first test's
+ * zero_extend of gear (r90) is reused by cse for the later tests (through
+ * skip_blocks over `ids = D_8006F3D0`), gear then dies there and the
+ * extension is tied into a3. The original re-extends at every test, so its
+ * later tests were not in cse reach of the first one. Tried (no change):
+ * a K&R definition, the ids choice as if/else or ?:, result = 0 after
+ * the choice. */
 s32 func_801DF0D4(u8 slot, u8 part, u8 special, u8 gear) {
     VECTOR unused; /* unused in the original; reserves 16 bytes */
     u8 *ids;
@@ -3737,7 +3747,15 @@ void func_801E781C(s32 index, u8 rebuild) {
  * frame count (11-13), and add its block count to its port's total; a file
  * without animation is marked still (state 0). */
 /* Nonmatching: the upload loop and row values match; the animation switch
- * still allocates its card pointer and record offsets differently. */
+ * still allocates its card pointer and record offsets differently.
+ * Lreg dump: here the record offset (file * 92) is a block-local pseudo
+ * that local-alloc ties to its multiply chain (all v1), so the card
+ * pointer gets a0. The original keeps the chain in v0 and the offset apart
+ * (v1 / a0 / a2 in cases 11 / 12 / 13, the first register free after
+ * second_y and third_y), the pattern of a pseudo allocated after the block
+ * locals, i.e. one local-alloc did not take (not single-block or not
+ * dying exactly once), which then pushes the card pointer to a3. Tried:
+ * second_y/third_y set before the first store or written inline. */
 #ifdef NON_MATCHING
 void func_801E78C8(s32 file) {
     s32 i;
