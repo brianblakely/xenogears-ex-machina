@@ -4,7 +4,7 @@
 #include "battle_core.h"
 
 /* Committing a chosen command or item (8008b478-8008c81c). */
-extern s8 D_800C2050;  /* results are being applied for a committed item */
+extern u8 D_800C2050;  /* results are being applied for a committed item (read with lbu) */
 extern u8 D_800C3D00;  /* item list row of the chosen item */
 extern u8 D_800D3670;  /* item list column of the chosen item */
 

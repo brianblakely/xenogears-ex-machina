@@ -2273,38 +2273,39 @@ void func_8007FEC4(void) {
 /* Build the member's number strings 2-4 (glyphs 0x83 + digit, no leading
  * zeros) from 800d2c0c, set up the list block and, unless the member is
  * character 7, the menu lists; then show them.
- * The slot is addressed as a pointer sum, so its base is formed before
- * the row offset as in the original. Nonmatching: the original keeps k as
- * the loop counter (slti 5) where GCC here eliminates it (slti 0x14 on the
- * k * 4 offset), and it adds the operands in the other order
- * (offset + (base + slot), digit index + row offset). */
+ * The strings are written as one byte run per slot with their own row
+ * offset (stepping by four from string 2), so k stays the loop counter
+ * (slti 5) as in the original. Nonmatching: the original adds the slot as
+ * base + member * 0x40 (here member * 0x40 + base) and schedules the k
+ * increment later in the loop tail. */
 #ifdef NON_MATCHING
 void func_8007FF14(u8 member) {
     s32 k;
     s32 n;
+    s32 row;
     u8 value;
     u8 digit;
     u8 *values;
 
     func_8009A2D4(member);
-    for (k = 2, values = D_800D2C0C[0]; k < 5; k++, values += 2) {
+    for (k = 2, row = 8, values = D_800D2C0C[0]; k < 5; k++, row += 4, values += 2) {
         value = *values;
-        (D_800C3EAC->slots + member)->digits[k][0] = 0xFF;
-        (D_800C3EAC->slots + member)->digits[k][1] = 0xFF;
-        (D_800C3EAC->slots + member)->digits[k][2] = 0xFF;
+        ((u8 *)(D_800C3EAC->slots + member)->digits)[row] = 0xFF;
+        ((u8 *)(D_800C3EAC->slots + member)->digits)[row + 1] = 0xFF;
+        ((u8 *)(D_800C3EAC->slots + member)->digits)[row + 2] = 0xFF;
         n = 0;
         digit = value / 100;
         if (digit != 0) {
             value -= digit * 100;
             n = 1;
-            (D_800C3EAC->slots + member)->digits[k][0] = digit + 0x83;
+            ((u8 *)(D_800C3EAC->slots + member)->digits)[row] = digit + 0x83;
         }
         digit = value / 10;
         if (digit != 0 || n != 0) {
             value -= digit * 10;
-            (D_800C3EAC->slots + member)->digits[k][n++] = digit + 0x83;
+            ((u8 *)(D_800C3EAC->slots + member)->digits)[row + n++] = digit + 0x83;
         }
-        (D_800C3EAC->slots + member)->digits[k][n] = value + 0x83;
+        ((u8 *)(D_800C3EAC->slots + member)->digits)[row + n] = value + 0x83;
     }
     func_8007FEC4();
     if (D_800D2D24[member] != 7) {
