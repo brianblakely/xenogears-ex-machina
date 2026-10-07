@@ -1481,8 +1481,9 @@ void func_8007E16C(POLY_FT4 *poly, s32 x, s32 y, s32 w, s32 h, s32 mirror) {
     poly->y3 = y + h;
 }
 
-extern RECT D_800ADEDC[];   /* choice cursor frames */
-extern RECT D_800ADF04[];   /* prompt frames */
+/* Dialogue texture windows, four halfwords (x, y, w, h) each: 0-7 the
+ * border pieces, 8-12 the choice cursor frames, 13- the prompt frames. */
+extern s16 D_800ADE9C[];
 s32 func_800347AC(TextBox *text);
 s32 func_800347C0(TextBox *text);
 
@@ -1491,7 +1492,7 @@ s32 func_800347C0(TextBox *text);
  * the window grows from its centre (at least 16 pixels each way) and
  * slides; then the waiting prompt, the eight border pieces, the portrait,
  * the choice cursor and the backing tile.
- * NON_MATCHING (444 edits, was 849): the nested choice/prompt structs give
+ * NON_MATCHING (400 edits): the nested choice/prompt structs give
  * the original's +37c/+3c4 bases and the RECT copies go field by field as
  * in the original. Left: the original spills `buffer` (0x20) and about six
  * more values to a 0xa8-byte frame (ours 0x78); in the opening branch it
@@ -1551,10 +1552,10 @@ void func_8007E1C0(u32 *ot, s32 buffer, s32 w) {
         if (D_800C2698[w].prompt_delay == 0) {
             left = func_800347AC(&D_800C2698[w].text);
             top = func_800347C0(&D_800C2698[w].text);
-            area.x = D_800ADF04[D_800ADE94].x;
-            area.y = D_800ADF04[D_800ADE94].y;
-            area.w = D_800ADF04[D_800ADE94].w;
-            area.h = D_800ADF04[D_800ADE94].h;
+            area.x = D_800ADE9C[D_800ADE94 * 4 + 52];
+            area.y = D_800ADE9C[D_800ADE94 * 4 + 53];
+            area.w = D_800ADE9C[D_800ADE94 * 4 + 54];
+            area.h = D_800ADE9C[D_800ADE94 * 4 + 55];
             SetDrawMode(&D_800C2698[w].prompt.modes[buffer], 0, 0, GetTPage(0, 0, 0x298, 0x1C0), &area);
             D_800C2698[w].prompt.sprite[buffer].x0 = left;
             D_800C2698[w].prompt.sprite[buffer].y0 = top + 4;
@@ -1624,10 +1625,10 @@ void func_8007E1C0(u32 *ot, s32 buffer, s32 w) {
             D_800C2698[w].choice.cursor[buffer].x0 = x + 0x16;
         }
         D_800C2698[w].choice.cursor[buffer].y0 = (D_800C2698[w].choice.index + D_800C2698[w].choice.first) * 0xE + y + 8;
-        area.x = D_800ADEDC[D_800ADE94].x;
-        area.y = D_800ADEDC[D_800ADE94].y;
-        area.w = D_800ADEDC[D_800ADE94].w;
-        area.h = D_800ADEDC[D_800ADE94].h;
+        area.x = D_800ADE9C[D_800ADE94 * 4 + 32];
+        area.y = D_800ADE9C[D_800ADE94 * 4 + 33];
+        area.w = D_800ADE9C[D_800ADE94 * 4 + 34];
+        area.h = D_800ADE9C[D_800ADE94 * 4 + 35];
         SetDrawMode(&D_800C2698[w].choice.modes[buffer], 0, 0, GetTPage(0, 0, 0x288, 0x1C0), &area);
         addPrim(ot, &D_800C2698[w].choice.cursor[buffer]);
         addPrim(ot, &D_800C2698[w].choice.modes[buffer]);
@@ -1646,28 +1647,18 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8007E1C0
 #endif
 
 extern u8 D_800594D4[3];    /* window colour */
-extern RECT D_800ADE9C[8];  /* border piece texture windows */
-extern RECT D_800ADEDC[];   /* choice cursor frames */
-extern RECT D_800ADF04[];   /* prompt frames */
 
 #ifdef NON_MATCHING
 /* Build dialogue window `w`'s packets for both buffers: the backing draw
  * mode and semi-transparent tile in the window colour, the prompt and
  * choice cursor sprites, the eight border sprites (texture windows from
  * 800ade9c) and the portrait quad.
- * NON_MATCHING (538 edits; 1864 bytes, original 1952): the nested
- * DialogueFrame (+0ac), DialogueChoice (+37c) and DialoguePrompt (+3c4)
- * give all of the original's packet bases, setRGB0 on the packet addresses
- * keeps them in $s1 and the RECT copies go field by field (the border loop
- * reads x, y, w and h of 800ade9c[i] separately, as the original does).
- * Left: the original's border loop recomputes w * 0x498 every iteration
- * and strength-reduces only the i-based offsets (0x50/0xc8/0x140 + i * k,
- * spilled to 0x20-0x40); ours has 92 insns at loop time (below loop.c's
- * 4 * threshold), so the multiply chain is hoisted and folded into
- * window-relative induction values. Before the loop the window offset is in
- * $s5 (original $s0, w in $s6 not $s2), and the 0xc/8 width/height
- * constants are kept the other way round ($s4 0xc vs the original's $s3 8,
- * 0xc rematerialised in $t2). */
+ * The texture windows are read as halfwords of the flat 800ade9c table
+ * (as the original indexes them; it keeps the loop large enough that the
+ * w * 0x498 chain stays in it), and the border pair is copied through
+ * element pointers, which keeps the setRGB0 address for the copy source.
+ * NON_MATCHING (1 swapped pair): after the prompt's GetClut the original
+ * loads 0xc0 ($s4) before rematerialising 0xc ($t2); ours the other way. */
 void func_8007EE0C(s32 w) {
     RECT area;
     s32 i;
@@ -1678,10 +1669,10 @@ void func_8007EE0C(s32 w) {
     setRGB0(&D_800C2698[w].frame.back[0], D_800594D4[0], D_800594D4[1], D_800594D4[2]);
     SetSemiTrans(&D_800C2698[w].frame.back[0], 1);
     D_800C2698[w].frame.back[1] = D_800C2698[w].frame.back[0];
-    area.x = D_800ADF04[0].x;
-    area.y = D_800ADF04[0].y;
-    area.w = D_800ADF04[0].w;
-    area.h = D_800ADF04[0].h;
+    area.x = D_800ADE9C[52];
+    area.y = D_800ADE9C[53];
+    area.w = D_800ADE9C[54];
+    area.h = D_800ADE9C[55];
     SetDrawMode(&D_800C2698[w].prompt.modes[0], 0, 0, GetTPage(0, 0, 0x298, 0x1C0), &area);
     SetDrawMode(&D_800C2698[w].prompt.modes[1], 0, 0, GetTPage(0, 0, 0x298, 0x1C0), &area);
     SetSprt(&D_800C2698[w].prompt.sprite[0]);
@@ -1694,10 +1685,10 @@ void func_8007EE0C(s32 w) {
     D_800C2698[w].prompt.sprite[0].x0 = 0;
     D_800C2698[w].prompt.sprite[0].y0 = 0;
     D_800C2698[w].prompt.sprite[1] = D_800C2698[w].prompt.sprite[0];
-    area.x = D_800ADEDC[0].x;
-    area.y = D_800ADEDC[0].y;
-    area.w = D_800ADEDC[0].w;
-    area.h = D_800ADEDC[0].h;
+    area.x = D_800ADE9C[32];
+    area.y = D_800ADE9C[33];
+    area.w = D_800ADE9C[34];
+    area.h = D_800ADE9C[35];
     SetDrawMode(&D_800C2698[w].choice.modes[0], 0, 0, GetTPage(0, 0, 0x288, 0x1C0), &area);
     SetDrawMode(&D_800C2698[w].choice.modes[1], 0, 0, GetTPage(0, 0, 0x288, 0x1C0), &area);
     SetSprt(&D_800C2698[w].choice.cursor[0]);
@@ -1712,10 +1703,10 @@ void func_8007EE0C(s32 w) {
     D_800C2698[w].choice.cursor[1] = D_800C2698[w].choice.cursor[0];
     D_800C2698[w].prompt_delay = 2;
     for (i = 0; i < 8; i++) {
-        area.x = D_800ADE9C[i].x;
-        area.y = D_800ADE9C[i].y;
-        area.w = D_800ADE9C[i].w;
-        area.h = D_800ADE9C[i].h;
+        area.x = D_800ADE9C[i * 4];
+        area.y = D_800ADE9C[i * 4 + 1];
+        area.w = D_800ADE9C[i * 4 + 2];
+        area.h = D_800ADE9C[i * 4 + 3];
         SetDrawMode(&D_800C2698[w].frame.border_modes[0][i], 0, 0, GetTPage(0, 2, 0x280, 0x1F0), &area);
         SetDrawMode(&D_800C2698[w].frame.border_modes[1][i], 0, 0, GetTPage(0, 2, 0x280, 0x1F0), &area);
         SetSprt(&D_800C2698[w].frame.border[0][i]);
@@ -1724,16 +1715,16 @@ void func_8007EE0C(s32 w) {
         SetSemiTrans(&D_800C2698[w].frame.border[0][i], 1);
         D_800C2698[w].frame.border[0][i].u0 = 0x80;
         D_800C2698[w].frame.border[0][i].v0 = 0xC0;
-        D_800C2698[w].frame.border[0][i].w = D_800ADE9C[i].w;
+        D_800C2698[w].frame.border[0][i].w = D_800ADE9C[i * 4 + 2];
+        D_800C2698[w].frame.border[0][i].h = D_800ADE9C[i * 4 + 3];
         D_800C2698[w].frame.border[0][i].x0 = 0;
         D_800C2698[w].frame.border[0][i].y0 = 0;
-        D_800C2698[w].frame.border[0][i].h = D_800ADE9C[i].h;
-        D_800C2698[w].frame.border[1][i] = D_800C2698[w].frame.border[0][i];
+        (&D_800C2698[w].frame.border[1][0])[i] = (&D_800C2698[w].frame.border[0][0])[i];
     }
-    area.x = 0;
     area.y = 0;
-    area.w = 0xFF;
+    area.x = 0;
     area.h = 0xFF;
+    area.w = 0xFF;
     SetDrawMode(&D_800C2698[w].icon_modes[0], 0, 0, GetTPage(1, 0, 0x2C0, 0x100), &area);
     SetDrawMode(&D_800C2698[w].icon_modes[1], 0, 0, GetTPage(1, 0, 0x2C0, 0x100), &area);
     SetPolyFT4(&D_800C2698[w].icon[0]);
