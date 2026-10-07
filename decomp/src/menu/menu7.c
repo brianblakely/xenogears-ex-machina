@@ -1773,13 +1773,11 @@ void func_8008DA48(Emitter *emitter, u32 *ot, Matrix *view) {
 }
 
 /* Copy one model part's local transform. */
-#ifdef NON_MATCHING
 void func_8008DBC0(SparkModel *model, s16 part, Matrix *out) {
+    Matrix unused; /* unused in the original; reserves 32 bytes */
+
     *out = model->list->parts[part]->matrix;
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008DBC0);
-#endif
 
 /* Create the menu's spark emitter: 256 orange three-point sparks. */
 void func_8008DC28(void) {
@@ -2237,10 +2235,10 @@ void func_8008ECEC(u8 tag) {
 
 /* Stop the sounds a character's command sound entry started. Does not
  * match: the table base and the entry offset swap $s1/$s2 and the flag
- * load of the second id is scheduled after its mask. The original also
- * reserves eight more frame bytes. */
+ * load of the second id is scheduled after its mask. */
 #ifdef NON_MATCHING
 void func_8008ED6C(Actor *owner, s32 index) {
+    s32 unused[2]; /* unused in the original; reserves 8 bytes */
     s32 entry;
     SoundPair *table;
 

@@ -1423,10 +1423,12 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80076884);
 /* Per-frame actor status: count down its timers, drain its charge, apply
  * this frame's damage to its hit points (with the hit sound), update its
  * gauge and knock it out when the hit points run out.
- * Does not match: the charge is tested in its load register and copied,
- * and the knock-out block rereads the flags after each store. */
+ * Does not match (1356 vs 1344 bytes): the charge is tested in its load
+ * register and copied, the knock-out test leaves two delay slots empty, and
+ * the knock-out block rereads the flags after each store. */
 #ifdef NON_MATCHING
 void func_80077038(Actor *actor) {
+    s32 unused[2]; /* unused in the original; reserves 8 bytes */
     s32 charge;
     u8 state;
     u8 gauge;

@@ -12,7 +12,7 @@
 void func_8007E634(MenuFiles *files) {
     TimImage image;
     SceneSprite *banner;
-    s32 unused[2]; /* never used; the original frame keeps its slot */
+    s32 unused[2]; /* unused in the original; reserves 8 bytes */
     s16 *palette;
     s32 i;
 
@@ -187,7 +187,7 @@ void func_8007ECF0(u8 *text) {
 
 /* Draw a line of text shifted left by an offset, then move to the next line. */
 void func_8007ED84(u8 *text, s32 offset) {
-    s32 unused[2]; /* never used; the original frame keeps its slot */
+    s32 unused[2]; /* unused in the original; reserves 8 bytes */
     s32 x = D_800926E8;
 
     D_800926E8 = x - offset;
@@ -432,7 +432,7 @@ void func_8007F834(void) {
  * Does not match: the original addresses both flag words through two
  * address registers in the opposite register order. */
 void func_8007F854(void) {
-    s32 unused[2]; /* never used; the original frame keeps its slot */
+    s32 unused[2]; /* unused in the original; reserves 8 bytes */
 
     D_800912F0 = 1;
     func_80083C0C(1);
@@ -446,7 +446,7 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_8007F854);
 #endif
 
 void func_8007F8B4(void) {
-    s32 unused[2]; /* never used; the original frame keeps its slot */
+    s32 unused[2]; /* unused in the original; reserves 8 bytes */
 
     func_80083C0C(1);
     D_80092734 = (Menu *)NULL;
@@ -529,7 +529,7 @@ INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu4", D_8006FF7C);
 void func_8007FBEC(void) {
     MenuPage *page;
     s32 active;
-    s32 unused[2]; /* never used; the original frame keeps its slot */
+    s32 unused[2]; /* unused in the original; reserves 8 bytes */
 
     func_8007E894(0xA0, 0x8C);
     active = D_80092710 ^ 1;
