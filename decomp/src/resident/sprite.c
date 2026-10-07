@@ -1533,12 +1533,15 @@ u8 *func_8001FBA4(Sprite *sprite, u8 *code) {
  * `code`: motion, placement, colour, renderer angles and scales, byte
  * arithmetic on the sprite's stack and frame variables, sounds, models. */
 /* Nonmatching: same size, frame, case layout and tail sharing as the
- * original; left (about 35 instructions): 0xCD keeps the angle in a second
- * register for the angle_x store, case 38 loads the motion word before the
- * frame bits (with the frame bits operand first the loads are in order but
- * take $v1/$v0 swapped), 0xF5 accumulates the model address in $s0 (the
- * original in $a0, copied to $s0 in the call's delay slot), and 0xBD, 0xB8,
- * 0xC4, 0xAC and 0xA3 order or allocate one load or operand differently. */
+ * original; left (about 14 instructions): case 38 loads the motion word
+ * before the frame bits (with the frame bits operand first the loads are in
+ * order but take $v1/$v0 swapped), 0xF5 accumulates the model address in $s0
+ * (the original in $a0, copied to $s0 in the call's delay slot), 0xAC sets
+ * $a0 before loading the direction (which then goes through $a0, original
+ * through $s3 with $a0 set after the load), 0xBD loads the code byte before
+ * the D_8006BE20 pointer, and 0xB8 reads the code byte with lbu after the
+ * stack index (original lb first; a block-local s32 for it fixes 0xB8 but
+ * moves the code byte of 0xE6 and 0xC4 from $v1 to $a1). */
 #ifdef NON_MATCHING
 void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
     SVECTOR vector;
@@ -1674,7 +1677,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         if (sprite->renderer != NULL) {
             value = code[0] | (s16)(code[1] << 8);
             bits = value;
-            angle = (value & 0x1FF) * 8;
+            angle = (value & 0x1FF) << 3;
             group = (bits >> 9) & 7;
             if (!((bits >> 12) & 1)) {
                 if (group != 0) {
@@ -2354,18 +2357,27 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
             sprite->render.bits.dirty = 1;
         }
         break;
-    case 0xC4:
-        n = (rand() & 0xFF) * code[0] / 256;
-        func_80021B04(&vector, 0, 0, (n - (code[0] >> 1)) * 16);
+    case 0xC4: {
+        s32 offset;
+
+        offset = (rand() & 0xFF) * code[0] / 256;
+        offset -= code[0] >> 1;
+        func_80021B04(&vector, 0, 0, offset * 16);
         func_8003F738(&vector, &m);
         ApplyMatrixLV(&m, (VECTOR *)&sprite->speed_x, &sum);
         sprite->speed_x = sum.vx;
         sprite->speed_y = sum.vy;
         sprite->speed_z = sum.vz;
         break;
-    case 0xAC:
-        func_80021FE0(sprite, sprite->direction + ((rand() & 0xFF) * code[0] / 256 - (code[0] >> 1)) * 16);
+    }
+    case 0xAC: {
+        s32 offset;
+
+        offset = (rand() & 0xFF) * code[0] / 256;
+        offset -= code[0] >> 1;
+        func_80021FE0(sprite, sprite->direction + offset * 16);
         break;
+    }
     case 0xA9:
         value = func_80022CAC(sprite, (s8)code[0] * sprite->scale / 4096) << 16;
         if ((sprite->motion.word >> 2) & 1) {
