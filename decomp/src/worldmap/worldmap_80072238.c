@@ -589,7 +589,11 @@ void func_800739B8(void) {
  * through t2 straight into u (a3) and keeps right in t1 (here the heading
  * address is in t1 and the shifted heading in t2). Computing u in one
  * expression fixes those but swaps u and its store copy (a2/a3) and moves
- * the 0x3F00 stores. */
+ * the 0x3F00 stores: sched1 places `right = u | 0x80` after the u0 stores,
+ * so right shares a3 with the u0 copy (local-alloc: u a2, copy a3, right a3,
+ * u1 copy t1; the original has right live across the u0 stores in t1).
+ * Types (s32/u32/u16/s16 for u and right), declaration order, `u &= 0x7F`
+ * or u computed from a first `u = vy >> 2` leave the same two shapes. */
 #ifdef NON_MATCHING
 void func_80073B04(void) {
     SVECTOR *corners;

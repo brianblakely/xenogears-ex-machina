@@ -103,55 +103,42 @@ ShatterTask *func_801E82EC(void) {
 
 /* Set up the shatter: the screen as two triangles per 32x32 cell over a
  * 320x224 grid (textured from the copy at 0x2c0,0x100), each cell 0x2000
- * away at its place on the grid.
- * NON_MATCHING: the original also hoists the two row heights (trans.vy) out
- * of the column loop into spilled copies (0x4c/0x50); here GCC's loop
- * threshold is used up by the nine moved insns of the half offset
- * (half * 0x21e8), so both heights stay strength-reduced row values and the
- * frame is 0xa8 instead of 0xb0. Computing the heights before `cell`, or a
- * per-half grid pointer, moves them but then loses the half-offset hoist.
- * loop.c numbers (-dL): the column loop has a call, so threshold = 29 and
- * drops by 3 per moved insn; the half chain is 9 movables (2 left), the
- * heights' head needs threshold * 4 * 4 >= 95 insns. Heights computed first
- * (or from a row-body y) leave 17-23, too little for the half chain head
- * (savings 2, life 2). Heights computed in the row body are replaceable
- * givs (no copies); the original's copies come from moved (non-replaceable)
- * giv insns, and a shared (row - 3) * 0x200 makes them benefit-0 givs. */
-#ifdef NON_MATCHING
+ * away at its place on the grid (each triangle centred on its centroid). */
 ShatterTask *func_801E8320(ShatterTask *task) {
     MATRIX m;      /* unused in the original; with pos and angle reserves 0x38 bytes */
     VECTOR pos;
     SVECTOR angle;
     ShatterCell *cell;
     POLY_FT3 *prim;
-    s32 half, row, col, k, x;
-    u8 u, v, u_right, v_bottom;
+    s32 half, row, col, k, x, y;
+    s32 u, v, u_right, v_bottom;
 
     task->frame = 0;
     SquareRoot0(0x9500);
     for (half = 0; half != 2; half++) {
         for (row = 0; row != 7; row++) {
-            v = row << 5;
             for (col = 0; col != 10; col++) {
+                v = row << 5;
+                y = row * 0x200;
                 cell = &task->cells[half][row][col];
                 cell->rot.vx = 0;
                 cell->rot.vy = 0;
                 cell->rot.vz = 0;
                 if (half == 0) {
                     cell->trans.vx = (col - 5) * 0x200 + 0xA0;
+                    cell->trans.vy = y - 0x660; /* (v + 10 - 112) * 16 */
                     cell->trans.vz = 0x2000;
-                    cell->trans.vy = (row - 3) * 0x200 - 0x60;
                 } else {
                     cell->trans.vx = (col - 5) * 0x200 + 0x160;
+                    cell->trans.vy = y - 0x5A0; /* (v + 22 - 112) * 16 */
                     cell->trans.vz = 0x2000;
-                    cell->trans.vy = (row - 3) * 0x200 + 0x60;
                 }
-                u = (col * 0x20) & 0x3F;
-                u_right = u + 0x20;
-                v_bottom = v + 0x20;
                 for (k = 0; k != 2; k++) {
                     prim = &cell->prim[k];
                     x = col * 0x20;
+                    u = x & 0x3F;
+                    u_right = u + 0x20;
+                    v_bottom = v + 0x20;
                     SetPolyFT3(prim);
                     SetShadeTex(prim, 0);
                     prim->r0 = 0x80;
@@ -164,23 +151,22 @@ ShatterTask *func_801E8320(ShatterTask *task) {
                         prim->v0 = v;
                         prim->u1 = u_right;
                         prim->v1 = v;
+                        prim->u2 = u;
+                        prim->v2 = v_bottom;
                     } else {
                         prim->u0 = u_right;
                         prim->v0 = v;
                         prim->u1 = u_right;
                         prim->v1 = v_bottom;
+                        prim->u2 = u;
+                        prim->v2 = v_bottom;
                     }
-                    prim->u2 = u;
-                    prim->v2 = v_bottom;
                 }
             }
         }
     }
     return task;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/load_modes", func_801E8320);
-#endif
 
 /* Load mode (shatter): copy the screen (made semi-transparent) to
  * 0x2c0,0x100, then for at least 82 frames and until the four setup phases

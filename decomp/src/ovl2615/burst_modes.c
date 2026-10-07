@@ -162,18 +162,16 @@ BurstTask *func_801E8DB8(void) {
 
 /* Set up the burst: the screen as two triangles per 16x16 cell over a
  * 320x224 grid (textured from the copy at 0x2c0,0x100), each corner's
- * distance from the centre (variant 1: twice it; otherwise 3/5 of it).
- * NON_MATCHING: as func_801E8320, the original works from spilled copies of
- * the strength-reduced row/column offsets and keeps 0x80 in s7; register
- * allocation and spills differ (1032 bytes here, 1016 in the original). */
-#ifdef NON_MATCHING
+ * distance from the centre (variant 1: twice it; otherwise 3/5 of it). The
+ * corners sit around the triangles' centroids: (x + 5 - 160, v + 5 - 112) * 16
+ * for the first half, (x + 11 - 160, v + 11 - 112) * 16 for the second. */
 BurstTask *func_801E8DF0(BurstTask *burst) {
-    BurstCell *cell;
     SVECTOR *triangle;
     POLY_GT3 *prim;
     VECTOR square;
-    s32 half, row, col, k;
-    s32 v, u, u_right, v_bottom;
+    s32 row, half, col, k;
+    BurstCell *cell;
+    s32 v, u, u_right, v_bottom, x, y;
 
     if (D_801E9680 != 0) {
         burst->frame = 0;
@@ -197,24 +195,22 @@ BurstTask *func_801E8DF0(BurstTask *burst) {
     burst->rot.vz = 0;
     for (half = 0; half != 2; half++) {
         for (row = 0; row != 14; row++) {
-            v = row * 16;
             for (col = 0; col != 20; col++) {
+                v = row * 16;
+                x = col * 16;
                 cell = &burst->cells[half][row][col];
                 triangle = half == 0 ? D_801E9684 : D_801E969C;
                 for (k = 0; k != 3; k++) {
-                    cell->corner[k].vx = triangle[k].vx;
-                    cell->corner[k].vy = triangle[k].vy;
-                    cell->corner[k].vz = triangle[k].vz;
+                    copyVector(&cell->corner[k], &triangle[k]);
                     if (half == 0) {
-                        cell->corner[k].vx += (s16)(col * 0x100 - 0x9B0);
-                        cell->corner[k].vy += (s16)(row * 0x100 - 0x6B0);
+                        cell->corner[k].vx += (s16)(x * 16 - 0x9B0);
+                        cell->corner[k].vy += (s16)((v - 107) * 16);
                     } else {
-                        cell->corner[k].vy += (s16)((v - 101) * 16);
-                        cell->corner[k].vx += (s16)(col * 0x100 - 0x950);
+                        cell->corner[k].vx += (s16)(x * 16 - 0x950);
+                        y = v - 101; /* v + 11 - 112 */
+                        cell->corner[k].vy += (s16)(y * 16);
                     }
-                    square.vx = cell->corner[k].vx;
-                    square.vy = cell->corner[k].vy;
-                    square.vz = cell->corner[k].vz;
+                    copyVector(&square, &cell->corner[k]);
                     func_8004A414(&square, &square);
                     if (D_801E9680 != 0) {
                         cell->distance[k] = SquareRoot0(square.vx + square.vy) * 2;
@@ -222,16 +218,16 @@ BurstTask *func_801E8DF0(BurstTask *burst) {
                         cell->distance[k] = SquareRoot0(square.vx + square.vy) * 3 / 5;
                     }
                 }
-                u = (col * 16) & 0x3F;
-                u_right = u + 16;
-                v_bottom = v + 16;
                 for (k = 0; k != 2; k++) {
                     prim = &cell->prim[k];
+                    u = (col * 16) & 0x3F;
+                    u_right = u + 16;
+                    v_bottom = v + 16;
                     SetPolyGT3(prim);
                     SetShadeTex(prim, 0);
-                    prim->r0 = prim->g0 = prim->b0 = 0x80;
-                    prim->r1 = prim->g1 = prim->b1 = 0x80;
-                    prim->r2 = prim->g2 = prim->b2 = 0x80;
+                    setRGB0(prim, 0x80, 0x80, 0x80);
+                    setRGB1(prim, 0x80, 0x80, 0x80);
+                    setRGB2(prim, 0x80, 0x80, 0x80);
                     prim->code |= 2;
                     prim->tpage = GetTPage(2, 0, col * 16 + 0x2C0, 0x100);
                     if (half == 0) {
@@ -239,23 +235,22 @@ BurstTask *func_801E8DF0(BurstTask *burst) {
                         prim->v0 = v;
                         prim->u1 = u_right;
                         prim->v1 = v;
+                        prim->u2 = u;
+                        prim->v2 = v_bottom;
                     } else {
                         prim->u0 = u_right;
                         prim->v0 = v;
                         prim->u1 = u_right;
                         prim->v1 = v_bottom;
+                        prim->u2 = u;
+                        prim->v2 = v_bottom;
                     }
-                    prim->u2 = u;
-                    prim->v2 = v_bottom;
                 }
             }
         }
     }
     return burst;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/burst_modes", func_801E8DF0);
-#endif
 
 /* Load mode (burst): like the shatter mode, but the background fades before
  * the burst runs on the scratchpad stack. */

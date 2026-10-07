@@ -293,7 +293,11 @@ s32 func_80085760(VECTOR *from, VECTOR *to, s32 index, s32 face);
  * cse, so the -1 register survives. `second` is still loaded with lhu (the
  * original copies the lh value of the bit-1 test into a3), so `first` takes
  * t0 (v1) and the three cases' walls tails are not cross-jumped as in the
- * original. Declaring face s32 loses the original's 0xb8 frame. */
+ * original. Declaring face s32 loses the original's 0xb8 frame. Assigning
+ * `second` after its bit-1 test makes it a copy of the lh value (as in the
+ * original) but through an extra copy (v0 then a3), and cse then carries
+ * the face * 14 index (t1) into the walls tail, which the original
+ * recomputes; first/second as s32 (in any combination) are further off. */
 #ifdef NON_MATCHING
 s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s32 mode) {
     s16 object;
@@ -1706,7 +1710,14 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80
  * block takes s0 and its table slot s1 (original s4/s0) with the flags and
  * corner pointer shifted accordingly; block = 1/9 is scheduled above the
  * func_800289D0 call (the original sets it after `sector`); in the second
- * edge loop `changed |= 1` is scheduled before the division. 8 bytes short. */
+ * edge loop `changed |= 1` is scheduled before the division. 8 bytes short.
+ * The block = 1 placement is sched1's call rule: a pseudo that crosses no
+ * call gets an anti-dependence on the preceding call. Keeping the start
+ * index in n itself (n = 1 / 0x49 around the edge loop, n's increments
+ * eliminated by strength reduction) or in a separate variable reproduces
+ * the placement exactly, but that pseudo then takes v0 instead of s0.
+ * Merging sector and path into one variable changes nothing (changed still
+ * outranks it: 29 refs / 156 insns vs 16 / 117). */
 #ifdef NON_MATCHING
 void func_80098CC0(void) {
     s32 first;

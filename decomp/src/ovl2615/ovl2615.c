@@ -51,7 +51,12 @@ void func_801E4048(void) {
  * (FORMATION_ID, FLAGS3 and present[i] stored in both branches) sum to 4
  * and are reduced, so the original's pairs were not identical givs. A copy
  * k = i (CSE folds it) or a second counter k (its pairs combine the same
- * way) does not reproduce the index form. */
+ * way) does not reproduce the index form. Writing the D_800C3E3D store and
+ * i++ in both branches (two biv increments, benefit - 2 * add_cost) keeps
+ * every mult-1 access on i as in the original, but then the else branch's
+ * flag3/alone stores combine with the then branch's identical givs and are
+ * reduced to their own pointers (the original expresses them from the
+ * i * 28 register a1), and the tails are only partly cross-jumped. */
 #ifdef NON_MATCHING
 void func_801E4160(void) {
     s32 i;

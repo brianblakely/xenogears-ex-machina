@@ -64,7 +64,13 @@ s32 func_801E70E8(s32 *images) {
 #ifdef NON_MATCHING
 /* Register allocation differs: the original keeps stage and colours on the
  * stack and the scene data in s6. Frame and register lifetimes remain
- * unresolved. */
+ * unresolved. The original computes actors and entries without branches
+ * ((data + offset) & -(offset != 0): sltu, negu, and); GCC 2.6.3 folds every
+ * single-expression form of that (and the ternary) into a branch, and only a
+ * separately assigned mask reproduces it. There the three offsets share s0
+ * and the three pointers s2 (s0 also holds size and source - 1, s2 the motion
+ * list), as if one offset and one pointer temporary were reused; the second
+ * stage loop also has no counter (the 0x18 offset alone tests >= 0). */
 u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin, s16 *colours,
                  u8 *tint) {
     BattleScene *data;
