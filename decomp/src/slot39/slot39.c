@@ -1499,7 +1499,9 @@ void func_801C9270(s32 port) {
  * with a known constant whenever it can (const 0 costs less than a reg), so
  * at cse time the original's copy source was not known to be 0 in that
  * block. A standalone 2.6.3 test (`a = 0; b = a; ... if (b)`) folds the
- * test away as here. */
+ * test away as here. With `marked` as s32 the test survives (11) but
+ * the copy is still folded to 0 and the andi is lost; other widths of
+ * either variable and both assignment orders score 15-28. */
 u8 func_801C93A8(void) {
     char path[64];
     u8 present[2];
@@ -2150,7 +2152,10 @@ void func_801CAE08(u8 mode) {
  * &codes[1] (r81) and &GAME_NAMES[1] (r84, life 26) are weighed in that
  * order at 110, 220 and 440, and the copy loop's &decoded (r105, life 13)
  * fails at 880. r84 needs one more doubling (or a lifetime under about
- * 15) to stay in the loop. A 20-minute permuter run found nothing valid. */
+ * 15) to stay in the loop. A 20-minute permuter run found nothing valid.
+ * A pointer variable for &GAME_NAMES[1] (set before the row loop, at the
+ * row start or in the inner loop) and the row pointer as &names[n] give
+ * the same or worse code (25-50). */
 void func_801CB184(void) {
     u8 codes[24];
     u8 decoded[20];
@@ -2196,26 +2201,6 @@ void func_801CB28C(s32 *save) {
  * 100h chunks into a 2100h block and, when the payload's eight-bit sum matches
  * its last byte, apply it; message 5c ends the load, a failure shows message
  * 3e and continues. */
-#ifdef NON_MATCHING
-/* Remaining: the open retry loop. As a real loop (do/while) its -1 is
- * hoisted into s0 as in the original, but loop.c then doubles the outer
- * loop's insn count for that re-moved invariant and no longer hoists the
- * read size 0x100 out of the outer loop (it stays in s6 instead of being a
- * spilled invariant rematerialised into a3, which shifts fp/s7/s6). As the
- * goto loop below everything else matches: the -1 is loaded inside the loop
- * and the port argument there is not re-masked (6 differing instructions,
- * local scorer). Recipe: file = fd after the open loop (fills the delay
- * slot of its test and keeps the exit branch from being threaded), the
- * READ_SAVE block from the buffer allocation through the checksum test
- * (moves the success block out of line), and the read retry as a real
- * do/while loop followed by the close-and-release exit.
- * Loop dump (-dL) of the do/while form: move_movables doubles insn_count
- * cumulatively for each already-moved invariant it considers, in insn
- * order, so the open loop's -1 (r154, earlier in the body) is weighed
- * before the read loop's 0x100 (r164, life 39 against 246 insns, now
- * quadrupled) and 0x100 becomes "not desirable". The original must not
- * present the -1 as a re-moved invariant ahead of 0x100. Also tried: port
- * as s32, while (1)/for (;;) open loops with break (28-38 instructions). */
 /* Read the save file in 100h chunks into a 2100h block (a failed read
  * closes the file and frees the block) and apply it when its sum
  * matches (a statement macro). */
@@ -2273,6 +2258,7 @@ u8 func_801CB304(void) {
     u8 *p;
     u8 sum;
     s32 i;
+    s32 failed; /* open's failure result, held in a variable */
 
     result = 1;
     first = 1;
@@ -2318,15 +2304,14 @@ u8 func_801CB304(void) {
                 func_801D2F4C(0x3b);
                 retry = 5;
                 D_800625A0->sounds = 0;
-            open_again:
-                fd = open(path, 1);
-                if (fd == -1) {
-                    fd = 0;
-                    func_801C8CA4(port);
-                }
-                if (fd == 0 && --retry != 0) {
-                    goto open_again;
-                }
+                failed = -1;
+                do {
+                    fd = open(path, 1);
+                    if (fd == failed) {
+                        fd = 0;
+                        func_801C8CA4(port);
+                    }
+                } while (fd == 0 && --retry != 0);
                 file = fd;
                 if (file != 0) {
                     READ_SAVE();
@@ -2364,9 +2349,6 @@ u8 func_801CB304(void) {
     D_800625A0->cardsPresent = 1;
     return result;
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CB304);
-#endif
 
 /* The unformatted-card question for `port`: show message 29h + 3 * port and
  * wait while no input comes and the cards stay as they were; a card change
@@ -2420,34 +2402,13 @@ u8 func_801CB9E8(u8 port, u8 slot) {
  * and three more bytes), the play time and file digit `digit`, each name
  * encoded in place, the disc, then the game data copy (801e4a28) and the names
  * decoded back. */
-#ifdef NON_MATCHING
-/* Copy a 20-byte name buffer over `dst` (a statement macro). */
-#define COPY_NAME(dst, src, j)     \
-    do {                           \
-        for (j = 0; j < 20; j++) { \
-            (dst)[j] = (src)[j];   \
-        }                          \
-    } while (0)
-
-/* Remaining: the name pointer's lui/addiu is scheduled first in the block
- * before the name loop; the original places it after the play-time load
- * (5 differing instructions, local scorer, for every order of the three
- * payload stores and the name initialisation). The COPY_NAME block gives
- * the original's s0 name pointer / s1 row index allocation.
- * Sched1 dump (-dS): the block's sinks (name = GAME_NAMES, i = 0, the
- * hoisted &codes/&encoded and the three stores) tie on priority and are
- * taken bottom-up by descending LUID, so the original's order (i, &codes,
- * &encoded, time load, name, stores) needs the name set to come after the
- * time load and after the loop-hoisted addresses in insn order, or to be a
- * register birth (set once). All 24 orders of the four statements score
- * 5-8; name = D_8006D634.names[0][0], a for-init name, name per row
- * (&GAME_NAMES[i * 20]) and `i = 0` reuse do not help. */
 void func_801CBA4C(MenuSavePayload *payload, u8 port, u8 digit) {
     u8 codes[24];
     u8 encoded[20];
     s32 i;
     s32 j;
     u8 *name;
+    u8 *names;
 
     for (j = 0; j < 16; j++) {
         D_8006F958[j] = D_8005A3A0[j];
@@ -2468,15 +2429,17 @@ void func_801CBA4C(MenuSavePayload *payload, u8 port, u8 digit) {
     payload->time = D_80059488;
     payload->unk1F = 0;
     payload->digit = digit;
-    name = GAME_NAMES;
+    names = GAME_NAMES;
     for (i = 0; i < 31; i++) {
+        name = &names[i * 20];
         for (j = 0; j < 20; j++) {
             codes[j] = name[j];
             encoded[j] = 0;
         }
         func_80033C20(codes, encoded);
-        COPY_NAME(name, encoded, j);
-        name += 20;
+        for (j = 0; j < 20; j++) {
+            name[j] = encoded[j];
+        }
     }
     if (!D_801E96A5) {
         D_8006F008 = func_80028530() - 1;
@@ -2486,9 +2449,6 @@ void func_801CBA4C(MenuSavePayload *payload, u8 port, u8 digit) {
     func_801E4A28((SaveData *)payload);
     func_801CB184();
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CBA4C);
-#endif
 
 /* The save: refresh the cards (none: returns 1), then run the file cursor
  * until cancel or confirm. An unformatted card asks to format it; an empty
@@ -2753,7 +2713,8 @@ u8 func_801CBD90(u8 kind) {
  *   weight must come out lower some other way.
  * - Scheduling: the full-card block (`proceed = 0` / `again = 0` sit
  *   between the argument loads in the original) and `written += 0x200`
- *   (the original fills the header[3] load delay with it). */
+ *   (the original fills the header[3] load delay with it).
+ * src as u8/u32/s16 or declared first or last changes nothing (117). */
 u8 func_801CC6D8(void) {
     char destName[64];
     char other[8];
@@ -6738,24 +6699,26 @@ void func_801DB5E4(u8 mode) {
  * confirm until it runs out or the player cancels. Returns the targets
  * marked last (0 when cancelled or unusable). */
 #ifdef NON_MATCHING
-/* Remaining: two commutative operand orders. The original adds the index
- * first (addu s7,fp,t0 for &counts[idx] and addu v0,fp,v0 for the cleared
- * id), this build the base first. Everything else matches (2 differing
- * instructions, local scorer): the inventory base is one pointer set once
- * (spilled and rematerialised into t0 for both uses), the id is cleared
- * through inv->ids taken after the count reaches zero, and 801e31c0 is
- * called without a prototype (its result is used unmasked). With
- * INVENTORY used directly CSE knows the base and orders the adds as the
- * original, but the clear folds into 150(&counts[idx]).
- * Mechanism (GCC source): expand emits the pointer first for every pointer
- * + index form (pointer_int_sum, both_summands), so idx-first can only come
- * from cse's fold_rtx, which puts an operand with a known constant value
- * second. The original's base must therefore be known constant in the
- * blocks of both adds while still being one spilled pseudo. Tried: the
- * clear as inv->ids[idx], ((u8 *)inv)[idx + 150], inv->counts[idx + 150],
- * a u8 *base = D_8006F5C4 (all fold into 0x96(s7), 69-75), D_8006F5C4[idx
- * + 150] (right order, but loop hoists the address, 68), and inv set at
- * the loop top or before the count test (42-79). */
+/* Remaining: one commutative operand order. The original clears the id as
+ * addu v0,fp,v0 (index first, v0 = inventory + 150); this build adds the
+ * base first (2 differing instructions, local scorer). Everything else
+ * matches: the inventory base is one pointer set once (spilled and
+ * rematerialised into t0 for both uses), the id is cleared through
+ * inv->ids taken after the count reaches zero, and 801e31c0 is called
+ * without a prototype (its result is used unmasked). Setting inv after
+ * the 801d397c call puts it in the extended block of the loop preheader,
+ * so the rerun cse knows its value there and orders the hoisted
+ * &counts[idx] index first as the original does.
+ * Mechanism (GCC source): expand emits the pointer first for pointer +
+ * index forms unless the pointer is not a register (expand_binop swaps
+ * then), and cse's fold_rtx puts an operand second when its value is a
+ * known constant; the clear block is not in an extended block where the
+ * base is known. Tried for the clear: inv->ids[idx], *(inv->ids + idx),
+ * ((u8 *)inv + 150)[idx], inv->counts[idx + 150] (all fold into 0x96 of
+ * the count address, 111-115), a second pointer or inv set again in the
+ * clear block (33-75), INVENTORY used directly for the count, decrement
+ * and clear (correct orders, but loop.c then moves the clear's base + 150
+ * out of the loop because it forces the already-moved base, 111-143). */
 u8 func_801DB920(s32 row, s32 entry) {
     u16 marks;
     u8 running;
@@ -6768,7 +6731,6 @@ u8 func_801DB920(s32 row, s32 entry) {
     Inventory *inv;
     u8 *ids;
 
-    inv = INVENTORY;
     marks = 0;
     running = 1;
     slot = D_800625A0->firstMember;
@@ -6784,6 +6746,7 @@ u8 func_801DB920(s32 row, s32 entry) {
     all = item->target & 1;
     if (marks) {
         func_801D397C(2, 0x10, 0xe, 0x90, 0xb0, 0, 0, 4, 0);
+        inv = INVENTORY;
         while (running) {
             func_801C7BF4();
             if (redraw) {
