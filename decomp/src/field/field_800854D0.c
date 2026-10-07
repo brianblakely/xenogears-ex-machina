@@ -10487,11 +10487,11 @@ void func_800A3474(void) {
 #ifdef NON_MATCHING
 /* Read the descriptor count, view block and per-actor records from the
  * block at D_8005A4E4, passing each model its record (func_80021D50).
- * NON_MATCHING: only the descriptor pointer's addition differs: the
- * original loads the table base into v0 and forms `addu a0,s1,v0` (offset
- * first, as direct indexing does); here the base is loaded into a0 and
- * offset by i. A pointer formed in one expression (&table[i], table + i,
- * byte arithmetic) puts the base first and swaps a0/a1. */
+ * NON_MATCHING: the descriptor address is now formed offset-first
+ * (addu a0,s1,v0) as in the original, but the pointer kept for the model
+ * argument is a copy of it (move v1,a0 in the unk2268 test's delay slot,
+ * then lw a0,4(v1)); the original keeps the sum itself in a0 for the call
+ * block (lw a0,4(a0)). */
 void func_800A3C8C(void) {
     s32 changed;
     s32 i;
@@ -10516,11 +10516,11 @@ void func_800A3C8C(void) {
         if (D_800AF880.components.descriptors[i].actor->unk124 != -1 && D_800AF880.components.descriptors[i].actor->unk0EA != 0xFF) {
             *(s16 *)(record + 0x14) = D_800AF880.components.descriptors[i].actor->unk0EA;
         }
-        descriptor = D_800AF880.components.descriptors;
-        descriptor += i;
-        if (!(descriptor->actor->layer_flags & 0x1000000)
-            && (D_800B2078.unk2268 == 0 || !(descriptor->actor->flags & 0x600) || changed == 0)) {
-            func_80021D50(descriptor->model, D_800AFC50);
+        if (!(D_800AF880.components.descriptors[i].actor->layer_flags & 0x1000000)) {
+            descriptor = &D_800AF880.components.descriptors[i];
+            if (D_800B2078.unk2268 == 0 || !(descriptor->actor->flags & 0x600) || changed == 0) {
+                func_80021D50(descriptor->model, D_800AFC50);
+            }
         }
         record = D_800AFC50;
         D_800AFC50 = record + 0x168;
