@@ -748,16 +748,22 @@ void func_8002DD20(u32 *list) {
     }
 }
 
+/* Skip a listed image's origin and offset, read its size, upload its
+ * pixels to `rect` and step `p` past them. */
+#define LOAD_LISTED_IMAGE(rect, p)                                                                 \
+    do {                                                                                           \
+        (p) += 4;                                                                                  \
+        (rect).w = *(p)++;                                                                         \
+        (rect).h = *(p)++;                                                                         \
+        LoadImage(&(rect), (u_long *)(p));                                                         \
+        (p) += (rect).w * (rect).h;                                                                \
+    } while (0)
+
 /* Upload the images of an image list (a count and an offset table, then
  * the images: type 0x1100 or 0x1101, origin, offset, size and pixels).
  * Each type has a placement mode (1: base + offset, 2: base + origin +
  * offset, otherwise origin + offset) and a base position. Returns 1 at an
- * unknown image type, else 0.
- * Nonmatching: the original leaves the first case branch's delay slot
- * empty, shares the mode-1 y store with the default tail (the add moving
- * into the jump's delay slot), and schedules the loop increment after the
- * size multiply (516 vs 508 bytes). */
-#ifdef NON_MATCHING
+ * unknown image type, else 0. */
 s32 func_8002DDE4(s32 *images, s16 mode, s32 x, s32 y, s16 mode2, u16 x2, u16 y2) {
     RECT rect;
     u16 base_x = x;
@@ -785,7 +791,9 @@ s32 func_8002DDE4(s32 *images, s16 mode, s32 x, s32 y, s16 mode2, u16 x2, u16 y2
                 rect.y = p[1] + p[3];
                 break;
             }
-        } else if (type == 0x1101) {
+        } else if (type != 0x1101) {
+            return 1;
+        } else {
             switch (mode2) {
             case 1:
                 rect.x = x2 + p[2];
@@ -800,20 +808,11 @@ s32 func_8002DDE4(s32 *images, s16 mode, s32 x, s32 y, s16 mode2, u16 x2, u16 y2
                 rect.y = p[1] + p[3];
                 break;
             }
-        } else {
-            return 1;
         }
-        p += 4;
-        rect.w = *p++;
-        rect.h = *p++;
-        LoadImage(&rect, (u_long *)p);
-        p += rect.w * rect.h;
+        LOAD_LISTED_IMAGE(rect, p);
     }
     return 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002DDE4);
-#endif
 
 /* The shared unpack buffer. */
 u8 *func_8002DFE0(void) {
