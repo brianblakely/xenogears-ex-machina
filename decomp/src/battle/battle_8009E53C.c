@@ -3703,8 +3703,11 @@ void func_800A8B0C(void) {
  * files with its images placed at x, y, z, w (flag 1: the model file is
  * already set up, no images; 4: no script file; 0x40: a plain object with no
  * scripts; 0x80: the script file is shared; 2: its models stay in the loaded
- * group), its root at position when given. Nonmatching: the register
- * allocator keeps header in $fp and spills flags, the original the reverse. */
+ * group), its root at position when given. Nonmatching: the saved
+ * registers are assigned in a different order (the original has modelFile
+ * $s2, object $s3, the counter $s4, images $s5, models $s6, position $s7;
+ * here object $s2, modelFile and the counter $s3, images $s4, models $s5,
+ * position $s6), and the surface loop's increments are ordered differently. */
 void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *scriptFile, ObjectModelFile *modelFile, s16 x, s16 y,
                    s16 z, s16 w, SVECTOR *position) {
     BattleObject *object;
@@ -3716,12 +3719,11 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *scriptFile, ObjectMod
     u8 *models;
     u16 *hierarchy;
     s32 size;
-    s16 on;
     s32 i;
     s32 j;
     Surface *surface;
     s16 *stream;
-    s16 keyCount;
+    s32 keyCount;
     u8 *copy;
 
     func_80032498(4, 0);
@@ -3761,11 +3763,13 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *scriptFile, ObjectMod
             func_80030988(2, 2, 0x40, 0x40);
         }
         if (!(flags & 1)) {
-            on = 0;
+            i = 0; /* the images' on flag (the original reuses the loop counter) */
             if (!(flags & 0x40)) {
-                on = !(object->flags4A & 4);
+                s32 bit = object->flags4A & 4;
+
+                i = !bit;
             }
-            func_8002DDE4(images, on, x, y, on, z, w);
+            func_8002DDE4(images, i, x, y, i, z, w);
             D_800C3B70 = func_80031BDC(size, 1);
             memcpy(D_800C3B70, models, size);
             for (D_800C3B6C = 0; D_800C3B6C < 20; D_800C3B6C++) {
@@ -3776,12 +3780,14 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *scriptFile, ObjectMod
             func_8009EBA8(D_800C3B70, (ModelList *)&D_800C3ACC[D_800C3B6C]);
         }
         object->field0 = (ModelList *)&D_800C3ACC[D_800C3B6C];
-        if (flags & 0x40) {
-            object->hierarchy = func_8009EC4C(object->field0, hierarchy, 0, 0, 0, 0, 0, 0);
-        } else if (object->flags4A & 4) {
-            object->hierarchy = func_8009EC4C(object->field0, hierarchy, 2, 0, 0, 0, 0, 0);
+        if (!(flags & 0x40)) {
+            if (object->flags4A & 4) {
+                object->hierarchy = func_8009EC4C(object->field0, hierarchy, 2, 0, 0, 0, 0, 0);
+            } else {
+                object->hierarchy = func_8009EC4C(object->field0, hierarchy, 2, 1, x, y, z, w);
+            }
         } else {
-            object->hierarchy = func_8009EC4C(object->field0, hierarchy, 2, 1, x, y, z, w);
+            object->hierarchy = func_8009EC4C(object->field0, hierarchy, 0, 0, 0, 0, 0, 0);
         }
         if (position != NULL) {
             object->hierarchy->translation[0] = position->vx;
@@ -3843,10 +3849,10 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *scriptFile, ObjectMod
             for (i = 0; i < object->surfaceCount; i++) {
                 keyCount = stream[17];
                 surface->h0 = *stream++;
-                func_800A7064(surface, header->meshData[i], stream[0], stream[1], stream[2], stream[3], stream[4], keyCount,
-                              x + stream[5], y + stream[6], stream[7], stream[8], z + stream[9], w, stream[10],
-                              stream[11], stream[12], stream[13], stream[14], stream[15]);
-                stream += 17;
+                func_800A7064(surface, header->meshData[i], *stream++, *stream++, *stream++, *stream++, *stream++,
+                              keyCount, x + *stream++, y + *stream++, *stream++, *stream++, z + *stream++, w,
+                              *stream++, *stream++, *stream++, *stream++, *stream++, *stream);
+                stream += 2;
                 for (j = 0; j < keyCount; j++) {
                     surface->entries[j].h6 = *stream++;
                     surface->entries[j].hE = *stream++;
