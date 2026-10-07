@@ -1073,8 +1073,8 @@ extern s32 D_800ADBCC; /* pending party slot */
 extern FieldEventParams D_800B0080;
 extern Record78 D_800B02CC[];
 extern u16 D_800AE060[][2]; /* movie sound timeline: time, sound */
-/* Field movie parameters (800c3a20..800c3a3a), set by the movie events. */
-extern s16 D_800C3A20; /* movie file */
+/* Field movie parameters (800c3a22..800c3a3a) by halfword; the whole
+ * block is D_800C3A20 (FieldMovieRequest, field_script.h). */
 extern u16 D_800C3A22;
 extern u16 D_800C3A24;
 extern u16 D_800C3A26;

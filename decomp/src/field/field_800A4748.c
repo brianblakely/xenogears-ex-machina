@@ -1003,7 +1003,7 @@ void func_800A7218(void) {
         if (D_800C3A38 != 0xFF || (D_800ADB80 & 0x40)) {
             mode = 3;
         }
-        func_801D37CC(D_800C3A20 + 2, D_800C3A2A, D_800C3A2C, D_800C3A2E, 1, mode, D_800C3A3A, D_800C3A22,
+        func_801D37CC(FIELD_MOVIE.file + 2, D_800C3A2A, D_800C3A2C, D_800C3A2E, 1, mode, D_800C3A3A, D_800C3A22,
                       D_800C3A24, D_800C3A26, D_800C3A28, 0xE0, func_800A7120);
         func_80028470(4, 0);
     }
@@ -1140,8 +1140,8 @@ u32 func_800A7744(void) {
 extern u32 *D_800C390C; /* converted pixels */
 
 /* Convert the 24-bit screen (five 96-pixel columns at x 0) to 15-bit
- * pixels at (0..0x140, 100). */
-void func_800A77C4(void) {
+ * pixels at (0..0x140, 100). Both callers pass 0, which it ignores. */
+void func_800A77C4(s32 unused) {
     RECT rect;
     u32 *packed;
     u32 *pixels;
@@ -1243,14 +1243,11 @@ s32 func_800A7948(void) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Play the requested field movie (800c3a20..): move the movie library
  * (file 0xa9) into place, park the VRAM the movie uses, stop the field's
  * effects and the 801e module, then decode and present frames by movie
  * mode until it ends or is skipped; finally restore VRAM, the display and
- * the field stream. The original addresses the movie parameters as one
- * aggregate (800c3a3a and 800c3a2e off one hoisted base), which field.h
- * does not declare yet. */
+ * the field stream. */
 void func_800A7C58(void) {
     RECT rect;
     u8 *data;
@@ -1267,7 +1264,7 @@ void func_800A7C58(void) {
     D_800AFE74 = 0;
     func_800A7394();
     func_80028470(0x18, 0);
-    func_8002A2D0(D_800C3A20);
+    func_8002A2D0(FIELD_MOVIE.file);
     func_80028470(4, 0);
     func_800A7394();
     if (D_800B2078.unk2264 != 0) {
@@ -1356,7 +1353,7 @@ void func_800A7C58(void) {
         if (D_800ADB74 == 2 && D_800ADB84 != 0) {
             break;
         }
-    } while ((s16)D_800C3A3A != 0 || D_800B06A0 < D_800C3A2E);
+    } while ((s16)FIELD_MOVIE.unk3A != 0 || D_800B06A0 < FIELD_MOVIE.unk2E);
     VSync(0);
     DrawSync(0);
     func_801D43B0();
@@ -1370,14 +1367,14 @@ void func_800A7C58(void) {
     func_800A74F8();
     func_80077884();
     setRECT(&rect, 0, D_800ADB78 << 8, 0x1E0, 0xE0);
-    MoveImage(&rect, 0, 0);
+    MoveImage(&rect, 0, D_800ADB78 << 8);
     DrawSync(0);
     VSync(0);
     D_800C426C = &D_800B249C[1];
     PutDispEnv(&D_800B249C[1].disp);
     PutDrawEnv(&D_800C426C->draw);
     if (D_800ADB74 != 2) {
-        func_800A77C4();
+        func_800A77C4(0);
     }
     VSync(0);
     D_800B249C[0].disp.isrgb24 = 0;
@@ -1412,9 +1409,6 @@ void func_800A7C58(void) {
     D_800ADB74 = 0;
     D_800ADB6C = -1;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800A4748", func_800A7C58);
-#endif
 
 void func_80070340(u32 *tim, s16 x, s16 y, s16 clut_x, s16 clut_y, s16 clut_w, s16 clut_h);
 
@@ -1622,15 +1616,19 @@ extern ParticleSprite D_800AF27C[];
 
 #ifdef NON_MATCHING
 /* Set up a particle's quad in both buffers from sprite `sprite` with
- * semi-transparency rate `abr`. The original scales each term by 16
- * before subtracting (GCC folds x * 16 - w * 16 into (x - w) * 16) and
- * computes w * 16 twice. */
+ * semi-transparency rate `abr`.
+ * NON_MATCHING: only the corner arithmetic differs. The original scales
+ * each term by 16 before subtracting/adding (x16 - w16, w16 + x16, x * 16
+ * computed once but w * 16 and h * 16 twice); GCC folds x * 16 - w * 16
+ * into (x - w) * 16, and int/u16/s16 locals or pre-scaled x/y all share a
+ * single w * 16. */
 void func_800A8EAC(Particle *particle, s32 sprite, s32 abr) {
     POLY_FT4 *quad;
     s32 half_w;
     s32 half_h;
     s32 x;
     s32 y;
+    SVECTOR unused[11]; /* unused in the original; reserves 88 bytes */
 
     quad = &particle->quads[0];
     SetPolyFT4(quad);

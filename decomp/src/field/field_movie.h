@@ -29,7 +29,7 @@ void func_80085738(void);
 void func_80085788(void);
 void func_801D43B0(void);                      /* movie library: close */
 void func_801E7FD4(void);                      /* 801e module: stop */
-void func_800A77C4(void);
+void func_800A77C4(s32 unused);
 void func_800AC99C(void);
 void func_800ACB90(void);
 void func_800ACCB0(void);
