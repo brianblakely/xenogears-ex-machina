@@ -410,7 +410,10 @@ typedef struct Actor {
     u8 b63;                 /* +63 */
     s16 aim_offset[3];      /* +64: point aimed at in the node's space */
     s16 offset[3];          /* +6a: position in the carrier node's space */
-    s16 h70[12];            /* +70 */
+    s16 spin[3];            /* +70: angular step, applied in eighths */
+    s16 spin_accel[3];      /* +76: added to spin each tick */
+    s16 drift[3];           /* +7c: local movement before model/actor scaling */
+    s16 drift_accel[3];     /* +82: added to drift each tick */
     s16 target[3];          /* +88 */
     s16 h8E;                /* +8e */
     s16 h90;                /* +90: -1 none */
