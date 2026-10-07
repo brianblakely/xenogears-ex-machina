@@ -2180,7 +2180,10 @@ s32 func_80080A18(void) {
  * $v0; unk18, fraction, unk074, height, unk075 the reverse (the sets are
  * sched1 register births, so each constant sits next to its first store).
  * The (point + i)-> and (normal + layer)-> forms keep the point clears off
- * the call argument as the original does. */
+ * the call argument as the original does. All 5040 orders of the seven
+ * first stores (flags .. unk075) were compiled: none beats this one; a
+ * shared s32 temporary for 0x10/0xff stops being a register birth and is
+ * hoisted to the function entry; do { } while (0) groups split the block. */
 void func_80080A74(s32 index) {
     VECTOR normal[4];
     SVECTOR point[4];
@@ -2759,7 +2762,14 @@ s32 func_800825AC(s32 from, s32 to) {
  * is set twice; set once (dir = ratan2 - angle - 0x800) it becomes a
  * register birth but ties with the self/other position loads and loses on
  * luid, so the original's late sra needs the sign extension emitted after
- * those loads; re-reading turn.vy there reloads it from the stack. */
+ * those loads; re-reading turn.vy there reloads it from the stack. Keeping
+ * the difference in an s16 temporary (`turn.vy = dy = ...`) and assigning
+ * `angle = dy` after the other_z load does give the late sra (delay slot,
+ * heading in $v1), but with `dir = (s16)ratan2(..) - angle - 0x800` set
+ * once, local-alloc ties the ratan2/difference chain into dir (all $s0) and
+ * angle moves to $s6 (28 edits); reusing a function-wide variable for dir or
+ * radius, or do { } while (0) groups around the link statements, does not
+ * separate them. */
 void func_80082620(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
     u32 terrain;
     VECTOR conveyor;
