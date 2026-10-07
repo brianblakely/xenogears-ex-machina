@@ -1285,9 +1285,8 @@ void func_801E2794(void) {
 /* Write each party member's HP, EP, counters and gear HP and fuel back to
  * the game data, clamped to their maximums (HP 1 when knocked out, gear HP a
  * tenth of the maximum when destroyed). */
-/* NON_MATCHING: original frame 0x8 bytes; this C needs 0x0. */
-#ifdef NON_MATCHING
 void func_801E2888(void) {
+    s32 unused[2]; /* unused in the original; reserves 8 bytes */
     u8 slot;
     u8 k;
     Combatant *record;
@@ -1342,9 +1341,6 @@ void func_801E2888(void) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E2888);
-#endif
 
 /* Distribute the experience won: party members that stand share it (less
  * the penalty), every other character gets a reserve share of a third;
