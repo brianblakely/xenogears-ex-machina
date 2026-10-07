@@ -1342,11 +1342,11 @@ void func_801C9908(void) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Build a status panel's layout sprites and face for character `id` in row
  * `slot` (x/y tables, row height) and its name label quad. */
 void func_801C9A08(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_height) {
     s32 i;
+    s32 face;
 
     panel->layout_count = 0;
     for (i = 0; i < 9; i++) {
@@ -1357,7 +1357,8 @@ void func_801C9A08(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_h
                               x[i], row_height * slot + y[i], 0x1000);
         }
     }
-    func_8002675C(D_800625A0->sprite_sheet, id + 0x14E, panel->face, D_800625A0->buffer_index,
+    face = id;
+    func_8002675C(D_800625A0->sprite_sheet, face + 0x14E, panel->face, D_800625A0->buffer_index,
                   x[9], row_height * slot + y[9], 0x1000);
     SetPolyFT4(&panel->label[D_800625A0->buffer_index]);
     (panel->label + D_800625A0->buffer_index)->r0 = 0x80;
@@ -1365,7 +1366,7 @@ void func_801C9A08(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_h
     (panel->label + D_800625A0->buffer_index)->b0 = 0x80;
     SetSemiTrans(&panel->label[D_800625A0->buffer_index], 0);
     panel->label[D_800625A0->buffer_index].tpage = GetTPage(0, 0, 0x180, 0);
-    panel->label[D_800625A0->buffer_index].clut = (id & 1) ? D_80059414 : D_800595D4;
+    panel->label[D_800625A0->buffer_index].clut = (face & 1) ? D_80059414 : D_800595D4;
     (panel->label + D_800625A0->buffer_index)->x0 = x[16];
     (panel->label + D_800625A0->buffer_index)->y0 = y[16] + row_height * slot;
     (panel->label + D_800625A0->buffer_index)->x1 = x[16] + 0x48;
@@ -1383,9 +1384,6 @@ void func_801C9A08(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_h
     (panel->label + D_800625A0->buffer_index)->u3 = D_801CB344[id / 2] * 4 + 0x48;
     (panel->label + D_800625A0->buffer_index)->v3 = D_801CB390[id / 2] + 13;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C9A08);
-#endif
 
 /* Build a status panel's level digits and the green digits of the record's
  * next value (+0x63) for character `id` in row `slot`. */
