@@ -2264,13 +2264,12 @@ void func_8008BF38(s32 slot) {
     D_8005A444[slot + 1] = 0xFF;
 }
 
-#ifdef NON_MATCHING
 /* Take party slot `slot`'s member out of the party: its actor gets the
  * lead's sprite and is hidden, and the slot's ids are cleared. The
  * descriptor table pointer is read through its address, which the original
  * keeps in s0 across the calls.
- * NON_MATCHING: only s5/s6 are swapped: the original gives slot * 4 s5 and
- * &D_8005A444[slot] s6. */
+ * An empty slot only clears its two other ids (an early return; the
+ * duplicated stores give slot * 4 the original's allocation priority). */
 void func_8008C180(s32 slot) {
     FieldDescriptor *descriptor;
     FieldActor *actor;
@@ -2281,38 +2280,38 @@ void func_8008C180(s32 slot) {
     FieldDescriptor **table;
     FieldDescriptor *member_descriptor;
 
-    if (D_8005A444[slot] != 0xFF) {
-        table = &D_800AF880.components.descriptors;
-        descriptor = D_800B06B8;
-        actor = D_800B0078;
-        current = D_800AFD1C;
-        pc = actor->pc;
-        D_800B06B8 = &(*table)[D_8005A444[slot]];
-        D_800B0078 = D_800B06B8->actor;
-        func_80080A74(D_8005A444[slot]);
-        index = D_8005A444[slot];
-        D_800AFD1C = index;
-        member_descriptor = &(*table)[index];
-        member_descriptor->flags = (member_descriptor->flags & 0xF07F) | 0x200;
-        func_80076AC0(index, 0, D_8005A414[0], 1, 0, 0, 1);
-        member = D_800B0078;
-        member->flags |= 1;
-        member->layer_flags |= 0x100000;
-        D_800B00C0 = 0;
-        D_800B0078 = actor;
-        D_800B06B8 = descriptor;
-        D_800AFD1C = current;
-        member->pc = pc;
-        member->flags |= 0x20000;
-        member->layer_flags |= 0x400;
-        D_8005A444[slot] = 0xFF;
+    if (D_8005A444[slot] == 0xFF) {
+        D_80062590[slot] = 0xFF;
+        D_8006FABC[slot] = 0xFF;
+        return;
     }
+    table = &D_800AF880.components.descriptors;
+    descriptor = D_800B06B8;
+    actor = D_800B0078;
+    current = D_800AFD1C;
+    pc = actor->pc;
+    D_800B06B8 = &(*table)[D_8005A444[slot]];
+    D_800B0078 = D_800B06B8->actor;
+    func_80080A74(D_8005A444[slot]);
+    index = D_8005A444[slot];
+    D_800AFD1C = index;
+    member_descriptor = &(*table)[index];
+    member_descriptor->flags = (member_descriptor->flags & 0xF07F) | 0x200;
+    func_80076AC0(index, 0, D_8005A414[0], 1, 0, 0, 1);
+    member = D_800B0078;
+    member->flags |= 1;
+    member->layer_flags |= 0x100000;
+    D_800B00C0 = 0;
+    D_800B0078 = actor;
+    D_800B06B8 = descriptor;
+    D_800AFD1C = current;
+    member->pc = pc;
+    member->flags |= 0x20000;
+    member->layer_flags |= 0x400;
+    D_8005A444[slot] = 0xFF;
     D_80062590[slot] = 0xFF;
     D_8006FABC[slot] = 0xFF;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_8008C180);
-#endif
 
 /* Event 0x19: remove character op1 from the party once no sprite load is
  * pending. Before the field is set up only the slot tables and sprite data
