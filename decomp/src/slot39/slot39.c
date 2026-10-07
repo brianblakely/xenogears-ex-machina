@@ -2231,7 +2231,7 @@ u8 func_801CB304(void) {
             }
             strcat(path,
                    D_800625A0->card->files[D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]]].name);
-            if (!func_801CACF8(0x65, 0xff, 1)) {
+            if (!(u8)func_801CACF8(0x65, 0xff, 1)) {
                 D_800625A0->card->unk4F80 = 0xff;
             } else {
                 func_801D2F4C(0x3b);
