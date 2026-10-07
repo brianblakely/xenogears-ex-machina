@@ -773,8 +773,11 @@ void func_80085EAC(s32 mirrored, s16 *out, s32 y) {
  * outlines and gauge quads of both sides (left from the corner layout,
  * right mirrored), the arrow triangles and the marks. The mirror loop runs
  * over six arrows and so also writes three past the array into the marks,
- * which are set afterwards. Does not match:
- * the arrow mirroring and final mark stores are scheduled differently. */
+ * which are set afterwards. Does not match: only the two decrement loads
+ * (arrows[1][1].y0 at 0x292, .x2 at 0x298) differ; the original keeps them
+ * at their source positions (after the marks[1].y0 store and after the 0x1E
+ * stores), here they move below the length stores, and the registers of the
+ * hoisted marks[2]/[3] constants and of the 0x1E/length constants differ. */
 #ifdef NON_MATCHING
 void func_80085EC8(OverlayBuffer *buf) {
     s32 i;
