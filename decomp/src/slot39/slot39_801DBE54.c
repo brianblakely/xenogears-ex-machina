@@ -3838,61 +3838,74 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801E78
  * 180 page (+80 keeps it opaque, else dimmed), with palette choice
  * `mode & 7f` - 1. Hides the label. */
 #ifdef NON_MATCHING
+/* The original's quad loop is not loop-optimized (the palette, u and v are
+ * recomputed for each quad), hence the goto loop. Remaining: global
+ * allocation (the original gives index fp, mode s7, i s6, half s5; here
+ * index wins s5), mode 0 keeps index + first apart from its /4 rounding
+ * copy and copies column for u2, and the stores keep source order where
+ * this build fills load delays with them (528 vs 536 bytes). */
 void func_801E7C50(MenuLabelSlot *label, s32 index, s32 first, u8 mode) {
     POLY_FT4 *poly;
     s32 i;
     s32 semi;
+    s32 half;
     s32 row;
-    u8 half;
-    u8 column;
+    s32 column;
     u8 u;
     u8 v;
+    s32 n;
 
+    i = 0;
     half = index & 1;
     row = index / 2;
     column = (row & 1) << 7;
-    for (i = 0; i < 2; i++) {
-        poly = &label->polys[i];
-        semi = 0;
-        func_801E927C(poly);
-        if (mode == 0) {
-            label->palette = half;
-            poly->tpage = GetTPage(0, 0, 0x140, 0);
-            v = (index + first) / 4 * 0xd;
-            poly->u0 = column;
-            poly->v0 = v;
-            poly->u1 = column + label->width;
-            poly->v1 = v;
-            poly->u2 = column;
-            poly->v2 = v + 0xd;
-            poly->u3 = column + label->width;
-            poly->v3 = v + 0xd;
-        } else {
-            if (!(mode & 0x80)) {
-                semi = 0x20;
-                SetSemiTrans(poly, 1);
-                poly->r0 = 0x20;
-                poly->g0 = 0x20;
-                poly->b0 = 0x20;
-            }
-            label->palette = (mode & 0x7f) - 1;
-            u = half * 0x60;
-            poly->tpage = semi | GetTPage(0, 0, 0x180, 0x80);
-            v = row * 0xd + first;
-            poly->u0 = u;
-            poly->v0 = v;
-            poly->u1 = u + label->width;
-            poly->v1 = v;
-            poly->u2 = u;
-            poly->v2 = v + 0xd;
-            poly->u3 = u + label->width;
-            poly->v3 = v + 0xd;
+    poly = label->polys;
+loop:
+    semi = 0;
+    func_801E927C(poly);
+    if (mode == 0) {
+        label->palette = half;
+        poly->tpage = GetTPage(0, 0, 0x140, 0);
+        poly->u0 = column;
+        n = index + first;
+        v = n / 4 * 0xd;
+        poly->v0 = v;
+        poly->u1 = column + label->width;
+        poly->v1 = v;
+        poly->u2 = column;
+        poly->v2 = v + 0xd;
+        poly->u3 = column + label->width;
+        poly->v3 = v + 0xd;
+    } else {
+        if (!(mode & 0x80)) {
+            semi = 0x20;
+            SetSemiTrans(poly, 1);
+            poly->r0 = semi;
+            poly->g0 = semi;
+            poly->b0 = semi;
         }
-        if (label->palette != 0) {
-            poly->clut = D_80059414;
-        } else {
-            poly->clut = D_800595D4;
-        }
+        label->palette = (mode & 0x7f) - 1;
+        poly->tpage = semi | GetTPage(0, 0, 0x180, 0x80);
+        u = half * 0x60;
+        v = row * 0xd + first;
+        poly->u0 = u;
+        poly->v0 = v;
+        poly->u1 = u + label->width;
+        poly->v1 = v;
+        poly->u2 = u;
+        poly->v2 = v + 0xd;
+        poly->u3 = u + label->width;
+        poly->v3 = v + 0xd;
+    }
+    if (label->palette != 0) {
+        poly->clut = D_80059414;
+    } else {
+        poly->clut = D_800595D4;
+    }
+    i++;
+    poly++;
+    if (i < 2) {
+        goto loop;
     }
     label->visible = 0;
 }
