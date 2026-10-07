@@ -809,7 +809,12 @@ void func_8008B0D8(Player *player) {
 #ifdef NON_MATCHING
 /* Bind an animation to a model set node: its constant keys and streamed
  * channels drive node angle (short way round) or 0x2C components.
- * Does not match: the data pointer's register copies (t1/s0/s1) differ. */
+ * Does not match: only the copies of the data pointer differ (4 bytes
+ * short). The original copies $a0 to $t1 and $t1 to $s0 (the header) at
+ * entry and copies $s0 to $s1 after the allocation for the channel
+ * streams; here `data` itself lives in $s1 from entry ($s1 = $a0,
+ * $s0 = $s1). A separate base pointer set after the allocation gets a
+ * caller-saved register instead. */
 void func_8008B13C(u8 *data, Player *player, Node *root) {
     Node **nodes = ((ModelSet *)root->data)->nodes;
     AnimHeader *anim = (AnimHeader *)data;
@@ -824,7 +829,8 @@ void func_8008B13C(u8 *data, Player *player, Node *root) {
     key = func_80031BDC(anim->keys * sizeof(Key) + anim->channels * sizeof(Channel), 0);
     player->keys = key;
     record = anim->records;
-    channel = player->channels = (Channel *)(key + anim->keys);
+    channel = (Channel *)(key + anim->keys);
+    player->channels = channel;
     for (i = 0; i < anim->keys; i++) {
         node = nodes[record->node];
         key->value = record->value;
