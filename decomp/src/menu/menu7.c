@@ -812,17 +812,17 @@ void func_8008B0D8(Player *player) {
  * animation pointer parameter is reused as the record walker (the original
  * keeps both in $t1), and the channel streams are based on a copy of the
  * header pointer (kept in $s1).
- * Does not match: 2 instructions differ. The header store in the first
- * call's delay slot reads $t1 where the original stores the $s0 copy, and
- * the $s1 = $s0 base copy is scheduled last in its block (into the loop
- * branch's delay slot) where the original places it right after the
- * allocation; the base is set only once here, so sched1 treats the copy as
- * a register birth and places it latest. Wrapping everything from the
- * `player->keys` store through the channel loop in a do { } while (0)
- * (a loop-note scheduling barrier right after the allocation) places the
- * copy as the original does and leaves only the header store. Storing the
- * $s0 copy instead (anim assigned before the store) lets combine fold the
- * parameter copy into $s0 = $a0, which the original does not. */
+ * Taking the base from the parameter before the header copy keeps the
+ * parameter copy in $t1 and stores the $s0 copy, as the original does
+ * (storing `anim` with no earlier use of the parameter lets combine fold the
+ * parameter copy into $s0 = $a0).
+ * Does not match: one instruction is out of place: the $s1 = $s0 base copy
+ * comes before the first call here (its source is the parameter, which
+ * does not cross calls, so sched1 keeps it ahead of the call) where the
+ * original has it right after the allocation. Taking the base from `anim`
+ * frees the copy (the draft's earlier form) but sched1 then puts it last in
+ * its block and the header store reads $t1; no order of the base, `anim`
+ * and header statements (26 tried) gives both. */
 void func_8008B13C(AnimRecord *record, Player *player, Node *root) {
     Node **nodes = ((ModelSet *)root->data)->nodes;
     AnimHeader *anim;
@@ -832,9 +832,9 @@ void func_8008B13C(AnimRecord *record, Player *player, Node *root) {
     u32 i;
     u32 base;
 
-    player->header = (AnimHeader *)record;
+    base = (u32)record;
     anim = (AnimHeader *)record;
-    base = (u32)anim;
+    player->header = anim;
     func_800324B8(0x10);
     key = func_80031BDC(anim->keys * sizeof(Key) + anim->channels * sizeof(Channel), 0);
     player->keys = key;
