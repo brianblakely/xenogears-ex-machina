@@ -587,12 +587,14 @@ void func_800739B8(void) {
  * ordering table. */
 /* NON_MATCHING: the original sets up func_8004A92C's arguments first (a0/a1
  * at the very top) and keeps right and the heading address in t1/t2 (here
- * t2/t1); one row address adds offset + quad where this adds quad + offset. */
+ * t2/t1). Computing u in one expression fixes those two but swaps u and its
+ * store copy (a2/a3) and moves the 0x3F00 stores. */
 #ifdef NON_MATCHING
 void func_80073B04(void) {
     SVECTOR *corners;
     HorizonScratch *scratch;
     PolyFT4 *quad;
+    PolyFT4 *row;
     s32 u;
     s32 right;
     s32 i;
@@ -625,9 +627,9 @@ void func_80073B04(void) {
     SetTransMatrix(&scratch->view);
     do {
         quad = &D_8009C744[D_8009D7F0];
-        quad = (PolyFT4 *)(offset + (u32)quad);
-        otz = RotTransPers4(&corners[0], &corners[1], &corners[2], &corners[3], (s32 *)&quad->x0,
-                            (s32 *)&quad->x1, (s32 *)&quad->x2, (s32 *)&quad->x3, &scratch->p, &scratch->flag);
+        row = (PolyFT4 *)(offset + (u32)quad);
+        otz = RotTransPers4(&corners[0], &corners[1], &corners[2], &corners[3], (s32 *)&row->x0,
+                            (s32 *)&row->x1, (s32 *)&row->x2, (s32 *)&row->x3, &scratch->p, &scratch->flag);
         i++;
         corners += 4;
         offset += 2 * sizeof(PolyFT4);
