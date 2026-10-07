@@ -1115,21 +1115,14 @@ s32 func_80086FF8(Actor *actor, PolyF4 *packet) {
 
 /* Link the HUD and map overlay for this frame: each side's arrows (one per
  * point), state marks, name plates, icons, gauges, the charge bars (flashing
- * when nearly full) and the level bars (tinted by the level). Does not match:
- * the original adds each HUD array's offset to the HUD base register before
- * the index (as if the arrays were separate symbols related by CSE), keeps the
- * HUD base in $s1 and the count in $s2, and saves one more register
- * (frame 0x30 vs 0x28); it also fills the delay slot after the first mark
- * test. */
-#ifdef NON_MATCHING
+ * when nearly full) and the level bars (tinted by the level). The level
+ * tints are written as loop-invariant expressions inside the loops (the
+ * original's moved invariants include a copy of the repeated green term). */
 void func_80087068(Actor *left, Actor *right) {
     OverlayBuffer *buf;
-    PolyF4 *mark;
     PolyFT4 *bar;
     s32 n;
     s32 level;
-    s32 green;
-    s32 blue;
 
     buf = &D_8009A2F8[D_800928A0];
     n = left->unkF2;
@@ -1152,13 +1145,11 @@ void func_80087068(Actor *left, Actor *right) {
     if (n > 2) {
         AddPrim(D_80092938, &buf->arrows[1][2]);
     }
-    mark = &buf->marks[2];
-    if (func_80086FF8(left, mark)) {
-        AddPrim(D_80092938, mark);
+    if (func_80086FF8(left, &buf->marks[2])) {
+        AddPrim(D_80092938, &buf->marks[2]);
     }
-    mark = &buf->marks[3];
-    if (func_80086FF8(right, mark)) {
-        AddPrim(D_80092938, mark);
+    if (func_80086FF8(right, &buf->marks[3])) {
+        AddPrim(D_80092938, &buf->marks[3]);
     }
     AddPrim(D_80092938, &D_80095698.name_l[D_800928A0]);
     AddPrim(D_80092938, &D_80095698.name_r[D_800928A0]);
@@ -1196,23 +1187,19 @@ void func_80087068(Actor *left, Actor *right) {
     bar->v0 = bar->v1 = D_80092860 - (n - 0x40);
     if (left->level != 0) {
         level = 0x100 - left->level;
-        green = (level * 3) >> 3;
-        blue = level >> 1;
         for (n = 0; n < 3; n++) {
-            buf->bars_lit[n].g0 = green;
-            buf->bars_lit[n].b0 = blue;
-            buf->bars_lit[n].r0 = green + ((left->level * 255) >> 8);
+            buf->bars_lit[n].r0 = ((level * 3) >> 3) + ((left->level * 255) >> 8);
+            buf->bars_lit[n].g0 = (level * 3) >> 3;
+            buf->bars_lit[n].b0 = level >> 1;
         }
         func_80086E70(D_80092938, (GaugeBar *)&buf->bars_lit[0], left->unkC1, 0);
     }
     if (right->level != 0) {
         level = 0x100 - right->level;
-        green = (level * 3) >> 3;
-        blue = level >> 1;
         for (n = 3; n < 6; n++) {
-            buf->bars_lit[n].g0 = green;
-            buf->bars_lit[n].b0 = blue;
-            buf->bars_lit[n].r0 = green + ((right->level * 255) >> 8);
+            buf->bars_lit[n].r0 = ((level * 3) >> 3) + ((right->level * 255) >> 8);
+            buf->bars_lit[n].g0 = (level * 3) >> 3;
+            buf->bars_lit[n].b0 = level >> 1;
         }
         func_80086E70(D_80092938, (GaugeBar *)&buf->bars_lit[3], right->unkC1, 1);
     }
@@ -1221,9 +1208,6 @@ void func_80087068(Actor *left, Actor *right) {
     }
     AddPrim(D_80092938, buf);
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_80087068);
-#endif
 
 /* Build the overlay packets for buffer 0 and copy them to buffer 1. */
 void func_800875EC(void) {
