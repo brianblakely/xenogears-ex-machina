@@ -175,7 +175,9 @@ s32 func_8008E680(s32 index) {
     return 1;
 }
 
-#ifdef NON_MATCHING /* frame 0x38 vs 0x48; text remains 56 bytes larger */
+#ifdef NON_MATCHING /* frame matches; text remains 56 bytes larger: the flag/heading stores of
+                     * the scripted take-offs use direct addresses where the original keeps
+                     * D_8006EE68 in a register, and s1/s4 are swapped from the start */
 /* Turn the vehicle towards `goal` (heading units), by at most `step` per frame
  * from the heading it had last frame (D_8006EE66). */
 #define VEHICLE_TURN(goal, step)                                              \
@@ -219,6 +221,7 @@ s32 func_8008E680(s32 index) {
  * landing checks, the scripted take-offs and landings, and the scene exits.
  * Returns 2 when the party leaves on foot. */
 s32 func_8008E76C(s32 index) {
+    VECTOR unused; /* unused in the original; reserves 16 bytes */
     s32 result;
     WorldmapActor *actor;
     VehicleScratch *scratch;
