@@ -7991,11 +7991,8 @@ s32 func_8007F8DC(s16 x, s16 y, s32 message, s32 window, s32 columns, s32 rows, 
  * `speaker` (mode 0 follows the speaker, mode 3 is centred, others use the
  * fixed full-width box); op3 overrides the style byte. Returns -1 while the
  * window cannot open yet (the instruction is retried) and 0 once opened.
- * NON_MATCHING: two differences remain. GCC keeps the D_800ADB64 value
- * (known to be 0xff past its test) in s0 and compares the character with
- * it, where the original loads the constant again (like the actor pointer
- * reload in 800a2030); and in the "above" placement the original loads y
- * before computing rows * 14. */
+ * NON_MATCHING: only the "above" placement's schedule differs: the
+ * original loads y before computing rows * 14 for top. */
 s32 func_8009C5A8(s32 speaker, s32 mode) {
     s32 owned;
     s32 x;
@@ -8018,8 +8015,11 @@ s32 func_8009C5A8(s32 speaker, s32 mode) {
 
     D_800AFC7C += 0x20;
     if (D_800ADB2C != 0 || D_800AFD04 != 0 || D_800C4268 != 0 || D_800ADB64 != 0xFF ||
-        (D_800ADB70 == 0 && func_8008A558() != 0) ||
-        (D_800B0078->character != 0xFF && func_8009C154(D_800B0078->character) == -1)) {
+        (D_800ADB70 == 0 && func_8008A558() != 0)) {
+        D_800B00C0 = 1;
+        return -1;
+    }
+    if (D_800B0078->character != 0xFF && func_8009C154(D_800B0078->character) == -1) {
         D_800B00C0 = 1;
         return -1;
     }
