@@ -446,7 +446,8 @@ void func_80070CC8(void) {
     entry = palettes;
     count = *entry++;
     for (i = 0; i < count; i++) {
-        func_800771F8((u32 *)(*entry++ + (s32)palettes));
+        func_800771F8((u32 *)(*entry + (s32)palettes));
+        entry++;
     }
 
     size = D_8005A4E0->sizes[BUNDLE_IMAGES] + 0x10;
@@ -555,8 +556,8 @@ void func_80070CC8(void) {
             D_800AF880.components.descriptors[i].rotation.vy = 0;
             D_800AF880.components.descriptors[i].rotation.vz = 0;
         }
-        record++;
         func_80080F44(i);
+        record++;
     }
     if (D_800C268C == 0) {
         func_802812A4();
@@ -2344,16 +2345,14 @@ void func_80076A74(FieldSprite *sprite) {
  * actor, release any sprite the descriptor had, build the new one (a
  * character sheet in the slot's VRAM area, a banked sheet, or one of the two
  * small effect kinds), place it at the actor and register the completion
- * callback.
- * NON_MATCHING: the original keeps the descriptor offset in a callee-saved register across the calls. */
-#ifdef NON_MATCHING
+ * callback. */
 void func_80076AC0(s32 index, s32 slot, void *data, s32 kind, s32 bank, s32 unk, s32 flag) {
     s32 width;
     s32 height;
     s32 depth;
     FieldModel *sprite;
-    u16 y;
-    u16 x;
+    s32 y;
+    s32 x;
 
     func_80032498(8, 0);
     D_800AF880.components.descriptors[index].actor->unk127 = slot;
@@ -2371,24 +2370,29 @@ void func_80076AC0(s32 index, s32 slot, void *data, s32 kind, s32 bank, s32 unk,
                 func_800230A8(D_800AF880.components.descriptors[index].model);
             }
             sprite = func_80024524(data, 0x100, slot + 0x1E0, x, y, 0x40);
+            D_800AF880.components.descriptors[index].model = sprite;
         } else {
             if (D_800AF880.components.descriptors[index].unk5A & 1) {
                 func_800230A8(D_800AF880.components.descriptors[index].model);
             }
             sprite = func_80024294(data, bank * 16 + 0x100, slot + 0x1E0, x, y, 0x40, bank);
+            D_800AF880.components.descriptors[index].model = sprite;
         }
-        D_800AF880.components.descriptors[index].model = sprite;
     } else {
         if (D_800AF880.components.descriptors[index].unk5A & 1) {
             func_800230A8(D_800AF880.components.descriptors[index].model);
         }
         if (kind == 1) {
-            sprite = func_80024524(data, 0x100, slot + 0xE0, 0x280, (slot << 6) + 0x100, 8);
+            y = (slot << 6) + 0x100;
+            sprite = func_80024524(data, 0x100, slot + 0xE0, 0x280, y, 8);
+            D_800AF880.components.descriptors[index].model = sprite;
+            func_80023340(sprite, 0x20);
         } else {
-            sprite = func_80024524(data, 0x100, slot + 0xE3, 0x2A0, (slot << 6) + 0x100, 8);
+            y = (slot << 6) + 0x100;
+            sprite = func_80024524(data, 0x100, slot + 0xE3, 0x2A0, y, 8);
+            D_800AF880.components.descriptors[index].model = sprite;
+            func_80023340(sprite, 0x20);
         }
-        D_800AF880.components.descriptors[index].model = sprite;
-        func_80023340(sprite, 0x20);
     }
     D_800AF880.components.descriptors[index].unk5A |= 1;
     func_8001F5BC(sprite, 0, &width, &height, &depth);
@@ -2399,12 +2403,12 @@ void func_80076AC0(s32 index, s32 slot, void *data, s32 kind, s32 bank, s32 unk,
         sprite->position[0] = D_800AF880.components.descriptors[index].actor->position[0];
         sprite->position[1] = D_800AF880.components.descriptors[index].actor->position[1];
         sprite->position[2] = D_800AF880.components.descriptors[index].actor->position[2];
+        sprite->unk84 = D_800AF880.components.descriptors[index].matrix.t[1];
         sprite->velocity[1] = 0;
         sprite->velocity[0] = 0;
         sprite->velocity[1] = 0;
         sprite->velocity[2] = 0;
         sprite->gravity.value = 0x10000;
-        sprite->unk84 = D_800AF880.components.descriptors[index].matrix.t[1];
         if (kind == 0) {
             D_800AF880.components.descriptors[index].actor->height = height * 2;
         } else {
@@ -2442,9 +2446,6 @@ void func_80076AC0(s32 index, s32 slot, void *data, s32 kind, s32 bank, s32 unk,
     sprite->position[2] = D_800AF880.components.descriptors[index].actor->position[2];
     D_800AFC74++;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80076AC0);
-#endif
 
 /* Set the semi-transparency bit of each of `count` 16-bit pixels. */
 void func_800771B0(u32 *pixels, s32 count) {
