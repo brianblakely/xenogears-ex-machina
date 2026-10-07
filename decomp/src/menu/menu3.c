@@ -441,16 +441,13 @@ void func_800740E4(Actor *actor, HitSpec *hit, s32 lands) {
 
 INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu3", D_8006FC10);
 
-#ifdef NON_MATCHING
 /* Run the frame events of an actor's current move for count frames from
  * frame (once per frame): hits (flagged 0x4000000 on their first frame),
  * one pair of sound effects, trails (each spec once), return home, and
  * showing or hiding model parts. An unknown event kind stalls the loop, as
- * in the original.
- * Does not match: only the sound flag: the original sets it (a spilled
- * byte) after the first sound call's arguments, in the call's delay slot. */
+ * in the original. */
 void func_80074678(Actor *actor, s16 frame, s16 count) {
-    Vector unused; /* keeps the original's 16-byte frame slot */
+    Vector unused; /* unused in the original; reserves 16 bytes */
     HitSpec *trails[20];
     u8 sounded;
     FrameEvent *events;
@@ -491,8 +488,8 @@ void func_80074678(Actor *actor, s16 frame, s16 count) {
                     break;
                 case 1:
                     if (!sounded) {
-                        sounded = 1;
                         func_8008EB88(actor, spec->part_a, &actor->pos, 2);
+                        sounded = 1;
                         func_8008EB88(actor, spec->part_b, &actor->pos, 2);
                     }
                     break;
@@ -527,9 +524,6 @@ void func_80074678(Actor *actor, s16 frame, s16 count) {
     }
     func_80073CA4(actor);
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80074678);
-#endif
 
 /* Show the model objects of the current move: unhide every kind-1 object,
  * then hide the listed ones (and object 13 in mode 0xD). */
