@@ -107,7 +107,12 @@ void func_80085738(void) {
  * bank into `file` first and copying it to `bank` inside the if reproduces
  * the prologue exactly; with that, a for loop still hoists bank + 1, and
  * a goto loop keeps it but then fails to hoist the table base and 0xffff
- * out of the outer loop. */
+ * out of the outer loop. loop.c (scan_loop) leaves a bottom-test insn in
+ * place only if its register is first set outside the loop (or is a user
+ * variable used in the exit test after a conditional jump); a user
+ * variable in the condition (i < (n = bank + 1)) is renamed in the entry
+ * copy of the test and still hoisted, and `i <= bank` compares without the
+ * add. */
 void func_80085788(void) {
     u16 *times;
     s32 bank;
@@ -6771,7 +6776,11 @@ void func_80098CAC(s32 mode) {
  * ternary, if-statement and temporary forms do not reproduce it. abs is
  * the single abssi2 insn here; local-alloc ties the difference to peak
  * (local to case 2, dying at the subtraction). A difference set twice
- * avoids the tie but then takes a0 from the abs output's suggestion. */
+ * avoids the tie but then takes a0 from the abs output's suggestion.
+ * The 2.7.2 abssi2 template itself always ends `negu %0,%0`, so the
+ * original's `move a0,v0` (delay slot) and `negu a0,v0` are a two-arm
+ * branch (each arm writing a0 from v0) rather than abs; an explicit if/else
+ * into a temporary is still coalesced into one register here. */
 void func_80099214(void) {
     VECTOR normals[4];
     SVECTOR points[4];
@@ -7874,7 +7883,11 @@ void func_8009C12C(void) {
  * indexed as flat arrays, which keeps their bases in registers as the
  * original does.
  * NON_MATCHING: only the second file's address differs: the original
- * computes it into a0, GCC here into s1 (c * 2 + &D_800AE1E1). */
+ * computes it into a0, GCC here into s1 (c * 2 + &D_800AE1E1). The sum
+ * is allocated before c * 2 and find_reg's first pass takes s1 (already
+ * used, free once the PLACE base dies); the original's first pass must
+ * have found s1 taken. Other spellings of the index (D_800AE1E0[c][1],
+ * 1 + c * 2, a row pointer) all give 6 or worse. */
 #define PLACE(i, k) (((s16 *)D_800AEAE4)[(i) * 8 + (k)])
 #define FILES(c, k) (((u8 *)D_800AE1E0)[(c) * 2 + (k)])
 s32 func_8009C154(s32 character) {
@@ -10493,7 +10506,12 @@ void func_800A3474(void) {
  * (addu a0,s1,v0) as in the original, but the pointer kept for the model
  * argument is a copy of it (move v1,a0 in the unk2268 test's delay slot,
  * then lw a0,4(v1)); the original keeps the sum itself in a0 for the call
- * block (lw a0,4(a0)). */
+ * block (lw a0,4(a0)). A descriptor variable assigned before the layer test
+ * is formed base-first (binop expansion) unless written as
+ * (FieldDescriptor *)(i * sizeof(FieldDescriptor) + (u32)descriptors);
+ * then the actor load outranks it (a0/a1 swapped); assigning it in two
+ * steps (descriptor = descriptors; descriptor += i) fixes the allocation
+ * but is base-first again (score 6). */
 void func_800A3C8C(void) {
     s32 changed;
     s32 i;
