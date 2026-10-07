@@ -2775,7 +2775,9 @@ void func_8007A730(Actor *actor) {
 #ifdef NON_MATCHING
 /* Point the camera at an actor for its victory view: height and distance
  * from its move header, a random direction around it. Does not match: GCC
- * folds the look-at height into y - (D_80092670 + 0x400). */
+ * keeps &D_8009867C in $s2 for the eye x store (the original addresses it
+ * directly), so the D_80092670 and position loads move ahead of the eye
+ * stores. */
 void func_8007A768(Actor *actor) {
     SceneHeader *header = actor->header;
     s32 angle;
@@ -2790,7 +2792,8 @@ void func_8007A768(Actor *actor) {
     y = actor->pos.vy;
     D_8009867C.vy = y;
     D_8009867C.vx = actor->pos.vx;
-    D_8009871C.vy = y - 0x400 - D_80092670;
+    y -= 0x400;
+    D_8009871C.vy = y - D_80092670;
     D_8009867C.vz = actor->pos.vz;
     D_8009871C.vx = D_8009867C.vx + (((func_8003F8B0(angle) << 2) * D_80092674) >> 12);
     D_8009871C.vz = D_8009867C.vz + (((func_8003F8CC(angle) << 2) * D_80092674) >> 12);

@@ -1019,9 +1019,10 @@ void func_80073328(POLY_G4 *poly0, POLY_G4 *poly1, s32 x, s32 y, s32 w, s32 h) {
 
 #ifdef NON_MATCHING
 /* Add the menu frame to `ot`: a gouraud quad at (x, y), w by h, whose corner
- * colors each fade toward a new random pale yellow. Same instructions but
- * for register allocation and one difference: the original reloads each
- * from-color after its division instead of keeping it. */
+ * colors each fade toward a new random pale yellow. Does not match: the
+ * original adds each from-color after all three divisions by reloading it
+ * (CSE here reuses the value loaded for the difference), and the colour
+ * pointers get other registers. */
 void func_800734B8(u32 *ot, POLY_G4 *poly, s32 x, s32 y, s32 w, s32 h) {
     s32 i;
     s32 r;
@@ -1047,12 +1048,12 @@ void func_800734B8(u32 *ot, POLY_G4 *poly, s32 x, s32 y, s32 w, s32 h) {
             D_80076FDC[i].g = 0xFF;
             D_80076FDC[i].b = (func_80074AF0() & 0x3F) - 0x42;
         }
-        r = D_80076FCC[i].r +
-            (D_80076FDC[i].r - D_80076FCC[i].r) * D_80076FEC[i] / D_80076FFC[i];
-        g = D_80076FCC[i].g +
-            (D_80076FDC[i].g - D_80076FCC[i].g) * D_80076FEC[i] / D_80076FFC[i];
-        b = D_80076FCC[i].b +
-            (D_80076FDC[i].b - D_80076FCC[i].b) * D_80076FEC[i] / D_80076FFC[i];
+        r = (D_80076FDC[i].r - D_80076FCC[i].r) * D_80076FEC[i] / D_80076FFC[i];
+        g = (D_80076FDC[i].g - D_80076FCC[i].g) * D_80076FEC[i] / D_80076FFC[i];
+        b = (D_80076FDC[i].b - D_80076FCC[i].b) * D_80076FEC[i] / D_80076FFC[i];
+        r += D_80076FCC[i].r;
+        g += D_80076FCC[i].g;
+        b += D_80076FCC[i].b;
         switch (i) {
         case 0:
             poly->r0 = r;
@@ -1091,10 +1092,9 @@ INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_800734B8);
  * then the movie test, CD-ROM monitor, CD-ROM check, FAT check, disc change
  * test and a return to the kernel. Square and Cross speed up the frame
  * settings. The menu cursor is kept across the screens it opens. The unused
- * name reproduces the original's frame. Draft: the register count and most
- * code match; the constant 1 of the setup stores gets another register
- * (scheduling differs), and the request byte 8004fe44 is reread in the
- * original where this source reuses the value. */
+ * name reproduces the original's frame. Does not match: only the setup
+ * stores differ: the original loads the constant 1 into $v1 first and keeps
+ * the stores in source order, here the four stores of 1 are grouped. */
 void func_800737EC(void) {
     char name[8] = "trouble";
     s32 button;
@@ -1168,17 +1168,21 @@ void func_800737EC(void) {
     } else {
         D_800773AC = 0;
     }
-    if (D_8004FE44 != 0xFF && !(D_800773AC & 0x100)) {
+    if (D_8004FE44[0] != 0xFF && !(D_800773AC & 0x100)) {
         D_80077440 = 0;
         D_80077398 = 1;
         D_800773A4 = 1;
-        D_80077448 = D_8004FE44 & 0x7F;
-        D_8007711C = D_8004FE45;
-        D_8007739C = (D_8004FE44 & 0x80) ? D_80062514 : 0xE9;
-        func_800763BC(D_8004FE47);
+        D_80077448 = D_8004FE44[0] & 0x7F;
+        D_8007711C = D_8004FE44[1];
+        if (D_8004FE44[0] & 0x80) {
+            D_8007739C = D_80062514;
+        } else {
+            D_8007739C = 0xE9;
+        }
+        func_800763BC(D_8004FE44[3]);
         func_801D43B0();
         func_800320E8(library);
-        func_8001996C(D_8004FE46);
+        func_8001996C(D_8004FE44[2]);
         func_80019ACC(0);
     }
     func_80072D84((POLY_G4 *)D_80077124[0].box, (POLY_G4 *)D_80077124[1].box, 0, 0, 0, 0);
@@ -1203,9 +1207,9 @@ void func_800737EC(void) {
         } else {
             func_8003700C("  [ MOVIE PC HDD MODE  DISK %1d ]  \n\n", func_80028530());
         }
-        step = 1;
         func_8003700C("    ERROR %2d Sect %2d:%2d FM%3d\n", D_8005A4DC, D_8005A4A8, D_8005A4B4,
                       D_8005A4B8);
+        step = 1;
         func_8003700C("    LesMem%2d NoMem%2d Skp%3d\n", D_8005A49C, D_8005A4A4, D_801E89D4,
                       D_80062514);
         dir = func_800747AC(0, 13, &button);
@@ -2181,7 +2185,7 @@ s32 func_80076488(void) {
     }
     if (func_80028738(file) == 0x18) {
         SetDispMask(1);
-        D_8004FE46 = 0;
+        D_8004FE44[2] = 0;
     } else {
         VSync(0);
         ClearImage(&screen, 0, 0, 0);

@@ -1019,8 +1019,10 @@ s32 func_8008B650(s32 from, s32 to, s32 step) {
  * hold the previous delta for x following frames, 11xxxxxx plus a byte
  * a signed 14-bit delta.
  * Returns whether the end was reached in a final step (1 without an
- * animation). Nonmatching: the first tag copy and the completion
- * comparison use different registers. */
+ * animation). Nonmatching: the original copies the command byte to $v1
+ * before testing bit 7 of the loaded byte and uses the copy on both paths;
+ * here the 7-bit delta path uses the loaded byte (one more instruction in
+ * the delay slot). */
 s32 func_8008B730(Player *player, s32 frames, s32 steps) {
     Key *key;
     Channel *channel;
@@ -1094,7 +1096,9 @@ s32 func_8008B730(Player *player, s32 frames, s32 steps) {
         }
     }
     if (player->frame == player->header->frames) {
-        return steps == 1;
+        if (steps == 1) {
+            return 1;
+        }
     }
     return 0;
 }
