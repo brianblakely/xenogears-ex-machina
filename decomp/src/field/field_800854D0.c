@@ -756,7 +756,6 @@ void func_80087148(void) {
     D_800B0078->pc += 5;
 }
 
-#ifdef NON_MATCHING
 /* Event op dd: save a 256-wide screen band (0), process rows of it (1),
  * release its buffers (2) or do nothing (3). */
 void func_800871B0(void) {
@@ -782,7 +781,8 @@ void func_800871B0(void) {
     case 1:
         D_800AFC7C += 0x20;
         row = func_800ACDEC(2);
-        func_80026F44(0x100, func_800ACDEC(4), D_800AF87C + (row << 8), D_800C3A48 + (row << 8));
+        h = func_800ACDEC(4);
+        func_80026F44(0x100, h, D_800AF87C + (row << 8), D_800C3A48 + (row << 8));
         D_800ADBB4 = 1;
         D_800B0078->pc += 6;
         break;
@@ -798,9 +798,6 @@ void func_800871B0(void) {
         break;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_800871B0);
-#endif
 
 /* Event: store op3 in byte op1 of the table at 800b225f. */
 void func_800873C4(void) {
