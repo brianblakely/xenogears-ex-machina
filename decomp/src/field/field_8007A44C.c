@@ -862,8 +862,12 @@ void func_8007C670(s32 *low, s32 *high, s32 extent) {
  * runs out of steps or enters a triangle whose attribute the actor may not
  * cross (masked off by the actor's layer bits or 800b21cc; 800000 rejects
  * layer 0), leaving the edge last crossed in `edge`.
- * Does not match: the original places the rejection's "triangle = -1" block
- * before the walk and keeps the start position's X/Z loads for `origin`. */
+ * NON_MATCHING: three separate rejection tests let loop.c move their shared
+ * "triangle = -1" exit block before the walk as in the original. Left: the
+ * original keeps the start position's X/Z loads in registers for `origin`
+ * (ours reloads their high halves), so `origin` and `mask` swap stack slots,
+ * and the layer-bit tests apply "& 3"/"& 7" to the attribute side (fold
+ * reassociation) where the original masks the actor bits. */
 s32 func_8007C694(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge, SVECTOR *floor, s32 mode) {
     VECTOR normal;
     CollisionTriangle *triangles;
@@ -875,7 +879,7 @@ s32 func_8007C694(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge
     s32 a;
     s32 b;
     s32 c;
-    u32 side;
+    s32 side;
     u32 mask;
     u32 attribute;
     s32 steps;
@@ -953,8 +957,15 @@ s32 func_8007C694(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge
             break;
         }
         attribute = D_800AF880.components.collision_attributes[triangles[triangle].attribute].word & mask;
-        if ((((actor->flags >> 9) & 3) & (attribute >> 3)) || (((actor->flags >> 8) & 7) & (attribute >> 5))
-            || ((attribute & 0x800000) && actor->layer == 0)) {
+        if (((actor->flags >> 9) & 3) & (attribute >> 3)) {
+            triangle = -1;
+            break;
+        }
+        if (((actor->flags >> 8) & 7) & (attribute >> 5)) {
+            triangle = -1;
+            break;
+        }
+        if ((attribute & 0x800000) && actor->layer == 0) {
             triangle = -1;
             break;
         }
