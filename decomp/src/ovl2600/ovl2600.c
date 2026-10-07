@@ -248,7 +248,11 @@ void func_801C5A40(void) {
 
 /* Set up label `index`'s two quads: mode 0 maps the text rendered for the
  * command column at row + index; otherwise the list layout, dimmed unless
- * bit 7 is set, with the highlight from the low bits. */
+ * bit 7 is set, with the highlight from the low bits.
+ * NON_MATCHING: index and column swap callee-saved registers (the original
+ * has index in fp, column in s5: global allocation ranks column above i and
+ * index last), and the original stores the CLUT through a v1 copy of poly
+ * made in the highlight test's delay slot. */
 #ifdef NON_MATCHING
 void func_801C5ABC(MenuLabel *label, s32 index, s32 row, s32 mode) {
     POLY_FT4 *poly;
@@ -256,10 +260,10 @@ void func_801C5ABC(MenuLabel *label, s32 index, s32 row, s32 mode) {
     s32 line;
     s32 u;
     s32 i;
-    s32 dim;
+    u8 dim;
 
-    i = 0;
     column = index & 1;
+    i = 0;
     line = index / 2;
     u = (line & 1) << 7;
     poly = label->poly;
@@ -292,7 +296,7 @@ loop:
             poly->b0 = dim;
         }
         label->highlight = (u8)(mode & 0x7F) - 1;
-        poly->tpage = dim | GetTPage(0, 0, 0x180, 0x80);
+        poly->tpage = GetTPage(0, 0, 0x180, 0x80) | dim;
         poly->u0 = column * 0x60;
         poly->v0 = line * 13 + row;
         poly->u1 = column * 0x60 + label->width;

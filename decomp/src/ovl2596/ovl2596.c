@@ -1559,30 +1559,36 @@ u8 func_801E3610(u8 stat, u8 target, u8 cap, u8 level) {
 /* Grow max HP by a random share of the distance to the growth data's
  * target for the level range, at least 2. Capped at 999. */
 #ifdef NON_MATCHING
-/* The original subtracts (level - 99) as its own addiu and schedules the
- * remainder registers differently; the result tail is also duplicated. */
+/* NON_MATCHING: only the first share differs: the original computes
+ * (level - 99) with its own addiu and subtracts it before hp; GCC folds the
+ * constant here (addiu 0x63 after the hp subtraction). */
 u16 func_801E3700(u16 maxHp, u8 level) {
     s16 gain;
-    s32 random;
     u16 hp;
+    u16 result;
 
     hp = maxHp;
     if (level < 100) {
-        random = rand() % 100;
-        gain = random * (D_801E44E8->characters[D_801E44EC->id].maxHpTargets[0] - (level - 99) - hp)
+        gain = rand() % 100 * (D_801E44E8->characters[D_801E44EC->id].maxHpTargets[0] - hp - (level - 99))
             / ((100 - level) * 100) + 2;
+        if (gain < 0) {
+            result = hp;
+        } else {
+            result = gain + maxHp;
+        }
     } else {
-        random = rand() % 100;
-        gain = random * ((D_801E44E8->characters[D_801E44EC->id].maxHpTargets[1] - hp)
+        gain = rand() % 100 * ((D_801E44E8->characters[D_801E44EC->id].maxHpTargets[1] - hp)
             / ((201 - level) * 100)) * 2 + 2;
+        if (gain < 0) {
+            result = hp;
+        } else {
+            result = gain + maxHp;
+        }
     }
-    if (gain >= 0) {
-        hp = maxHp + gain;
+    if ((s16)result >= 1000) {
+        result = 999;
     }
-    if ((s16)hp >= 1000) {
-        hp = 999;
-    }
-    return hp;
+    return result;
 }
 #else
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E3700);
