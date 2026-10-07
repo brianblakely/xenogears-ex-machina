@@ -1631,11 +1631,15 @@ extern ParticleSprite D_800AF27C[];
 #ifdef NON_MATCHING
 /* Set up a particle's quad in both buffers from sprite `sprite` with
  * semi-transparency rate `abr`.
- * NON_MATCHING: only the corner arithmetic differs. The original scales
- * each term by 16 before subtracting/adding (x16 - w16, w16 + x16, x * 16
- * computed once but w * 16 and h * 16 twice); GCC folds x * 16 - w * 16
- * into (x - w) * 16, and int/u16/s16 locals or pre-scaled x/y all share a
- * single w * 16. */
+ * The corners scale each term by 16 before subtracting/adding: x * 16
+ * and y * 16 are computed once, but w * 16 and h * 16 twice (once for the
+ * left/top edge, once for the right/bottom). Shifting in the differences
+ * keeps GCC from folding x * 16 - w * 16 into (x - w) * 16, and the
+ * (u16) view of the half sizes in the sums (a no-op on their values) keeps
+ * CSE from sharing the second w * 16 / h * 16 with the first.
+ * NON_MATCHING: only the copy to the second buffer differs: the original
+ * forms &particle->quads[1] in v1 and copies it into the block-move
+ * pointer a2 (addiu v1,s0,0x78; move a2,v1); here it is formed in a2. */
 void func_800A8EAC(Particle *particle, s32 sprite, s32 abr) {
     POLY_FT4 *quad;
     s32 half_w;
@@ -1655,14 +1659,14 @@ void func_800A8EAC(Particle *particle, s32 sprite, s32 abr) {
     particle->corners[2].vz = 0;
     particle->corners[3].vz = 0;
     setRGB0(quad, 0x80, 0x80, 0x80);
-    particle->corners[0].vx = x * 16 - half_w * 16;
-    particle->corners[0].vy = y * 16 - half_h * 16;
-    particle->corners[1].vx = half_w * 16 + x * 16;
-    particle->corners[1].vy = y * 16 - half_h * 16;
-    particle->corners[2].vx = x * 16 - half_w * 16;
-    particle->corners[2].vy = half_h * 16 + y * 16;
-    particle->corners[3].vx = half_w * 16 + x * 16;
-    particle->corners[3].vy = half_h * 16 + y * 16;
+    particle->corners[0].vx = (x << 4) - (half_w << 4);
+    particle->corners[0].vy = (y << 4) - (half_h << 4);
+    particle->corners[1].vx = (u16)half_w * 16 + (x << 4);
+    particle->corners[1].vy = (y << 4) - (half_h << 4);
+    particle->corners[2].vx = (x << 4) - (half_w << 4);
+    particle->corners[2].vy = (u16)half_h * 16 + (y << 4);
+    particle->corners[3].vx = (u16)half_w * 16 + (x << 4);
+    particle->corners[3].vy = (u16)half_h * 16 + (y << 4);
     func_8007A44C(quad, D_800AF27C[sprite].uv[0][0], D_800AF27C[sprite].uv[0][1] + 0x40,
                   D_800AF27C[sprite].uv[1][0] - 1, D_800AF27C[sprite].uv[1][1] + 0x40,
                   D_800AF27C[sprite].uv[2][0], D_800AF27C[sprite].uv[2][1] + 0x3F,
