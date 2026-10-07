@@ -2775,7 +2775,13 @@ void func_801E37D0(Actor *actor) {
  * to another actor (0x1f) store the script position in that actor; those
  * that release or hand over (0x14 with 0xfd, 0x16, 0x17, 0x5b) return without
  * storing it, and 0x15 copies into an uninitialised block when all actor
- * slots 8 and 9 are used, as in the original. */
+ * slots 8 and 9 are used, as in the original.
+ * NON_MATCHING (100 bytes shorter): the case bodies are in the original's
+ * order (jump table checked case by case); still different: the original
+ * passes every operand through the `word` slot (sh to 0x6c even when only
+ * the register value is used), reuses `n` (0x68) as the counter of most
+ * loops, keeps m/ex/ey/ez and the d/v vectors in block scopes (v and d share
+ * a slot), and allocates registers differently throughout. */
 #ifdef NON_MATCHING
 void func_801E39F0(Actor *actor, SlotPool *pool, s32 changed, s32 ticks, s32 arg4) {
     Actor *self;
@@ -2878,20 +2884,22 @@ aim:
             if (changed == -1) {
                 pc = start;
                 running = 0;
-                break;
+            } else {
+                word.value = *pc++;
+                actor->h40 += ticks;
+                if ((s16)actor->h40 < (s16)word.value) {
+                    pc = start;
+                    running = 0;
+                    break;
+                }
+                actor->h40 = 0;
+                ticks = 0;
             }
-            word.value = *pc++;
-            actor->h40 += ticks;
-            if ((s16)actor->h40 < (s16)word.value) {
-                pc = start;
-                running = 0;
-                break;
-            }
-            actor->h40 = 0;
-            ticks = 0;
             break;
-        case 0x02:
-        case 0x03: /* redraw */
+        case 0x02: /* redraw */
+            redraw = 1;
+            break;
+        case 0x03:
             redraw = 1;
             break;
         case 0x08: /* drop the node tweens and the animation */
@@ -3024,14 +3032,14 @@ aim:
             copy->index = n;
             func_801E8510(copy);
             copy->parts = func_80031BDC(actor->parts->count * sizeof(ModelPart), 1);
-            for (i = 0; i < actor->parts->count; i++) {
-                copy->parts[i] = actor->parts[i];
-                if (actor->parts[i].parent != NULL) {
-                    copy->parts[i].parent = copy->parts + (actor->parts[i].parent - actor->parts);
+            for (n = 0; n < actor->parts->count; n++) {
+                copy->parts[n] = actor->parts[n];
+                if (actor->parts[n].parent != NULL) {
+                    copy->parts[n].parent = copy->parts + (actor->parts[n].parent - actor->parts);
                 }
-                copy->parts[i].visible = 0;
-                copy->parts[i].attachments[0] = NULL;
-                copy->parts[i].attachments[1] = NULL;
+                copy->parts[n].visible = 0;
+                copy->parts[n].attachments[0] = NULL;
+                copy->parts[n].attachments[1] = NULL;
             }
             func_801E6578(pool, (s16)word.value, actor->parts, copy->parts);
             if (arg != 0xFF) {
@@ -3119,32 +3127,39 @@ aim:
             }
             break;
         case 0x22: /* wait for a number of loops (of all, or those tagged `arg`) */
-            if (changed == -1) {
-                pc = start;
-                running = 0;
-                break;
-            }
-            word.value = *pc++;
-            if (arg == 0xFF) {
-                if (!(changed & 0x400)) {
-                    pc = start;
-                    running = 0;
-                    break;
+            if (changed != -1) {
+                word.value = *pc++;
+                if (arg == 0xFF) {
+                    if (!(changed & 0x400)) {
+                        pc = start;
+                        running = 0;
+                        break;
+                    }
+                    actor->h42++;
+                    if (actor->h42 < (s16)word.value) {
+                        pc = start;
+                        running = 0;
+                        break;
+                    }
+                } else {
+                    actor->h3C = arg;
+                    if (!(changed & 4)) {
+                        pc = start;
+                        running = 0;
+                        break;
+                    }
+                    actor->h42++;
+                    if (actor->h42 < (s16)word.value) {
+                        pc = start;
+                        running = 0;
+                        break;
+                    }
                 }
+                actor->h42 = 0;
             } else {
-                actor->h3C = arg;
-                if (!(changed & 4)) {
-                    pc = start;
-                    running = 0;
-                    break;
-                }
-            }
-            if (++actor->h42 < (s16)word.value) {
                 pc = start;
                 running = 0;
-                break;
             }
-            actor->h42 = 0;
             break;
         case 0x23:
             func_801E6D94(actor, &actor->parts[(s16)*pc++], arg);
@@ -3283,11 +3298,6 @@ aim:
         case 0x32: /* jump */
             pc = (u16 *)((u8 *)start + (s16)*pc);
             break;
-        case 0x33:
-        case 0x34:
-        case 0x3B:
-            pc++;
-            break;
         case 0x35: /* jump at random (half the time) */
             word.value = *pc++;
             if (rand() >= 0x4000) {
@@ -3304,23 +3314,32 @@ aim:
             word.value = *pc++;
             actor->w54 = arg ? (s32)((u8 *)start + (s16)word.value) : 0;
             break;
-        case 0x38:
-        case 0x39: /* move node `arg` toward the target */
+        case 0x38: /* move node `arg` toward the target */
             word.value = *pc++;
-            func_801E5B50(pool, actor->parts, op == 0x39, arg, word.low, word.value >> 8,
+            func_801E5B50(pool, actor->parts, 0, arg, word.low, word.value >> 8,
                           actor->target[0], actor->target[1], actor->target[2]);
+            break;
+        case 0x39: /* the same, flag 1 */
+            word.value = *pc++;
+            func_801E5B50(pool, actor->parts, 1, arg, word.low, word.value >> 8,
+                          actor->target[0], actor->target[1], actor->target[2]);
+            break;
+        case 0x33:
+        case 0x34:
+        case 0x3B:
+            pc++;
             break;
         case 0x3C: /* play a sound */
             word.value = *pc++;
             func_8003A3B8(word.low + func_801E5CD8(actor, arg), 0, word.value >> 8);
             break;
         case 0x3D: /* run the queued calls once `arg` is among them */
-            n = actor->depth;
-            if (n < 2) {
+            word.value = actor->depth;
+            if ((s16)word.value < 2) {
                 break;
             }
-            for (i = 1; i < n; i++) {
-                if (actor->queue_entry[i - 1] == arg) {
+            for (n = 1; n < (s16)word.value; n++) {
+                if (actor->queue_entry[n - 1] == arg) {
                     goto dequeue;
                 }
             }
@@ -3451,8 +3470,8 @@ aim:
             actor->h8E += func_801E8480(n);
             break;
         case 0x5B: /* set the call depth; 2 runs the queued calls */
-            n = actor->depth;
-            if (arg == 1 && n >= 2) {
+            word.value = actor->depth;
+            if (arg == 1 && (s16)word.value >= 2) {
                 break;
             }
             actor->depth = arg;
@@ -3461,12 +3480,12 @@ aim:
             }
         dequeue:
             actor->depth = 0;
-            if (n < 2) {
+            if ((s16)word.value < 2) {
                 break;
             }
-            for (i = 1; i < n; i++) {
-                func_801E35D0(actor, D_801E8670[actor->queue_source[i - 1]], pool,
-                              actor->queue_entry[i - 1]);
+            for (n = 1; n < (s16)word.value; n++) {
+                func_801E35D0(actor, D_801E8670[actor->queue_source[n - 1]], pool,
+                              actor->queue_entry[n - 1]);
             }
             return;
         case 0x5C: /* jump when at the target */
