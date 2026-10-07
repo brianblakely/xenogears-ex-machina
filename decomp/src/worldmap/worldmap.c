@@ -3,11 +3,12 @@
 /* Overlay entry: set up the display, start a new game's world state if none
  * is set, enter the requested mode and run its main loop until the world
  * map is left, then hand over to the next scene. */
-/* NON_MATCHING: the new-game defaults are scheduled differently (the original
- * loads the shared constants 0x400, 0x7580, 3, 5 and 9 into a1/a3/a0/v1
- * early and stores 0xFF00 to the s16 unk62 as a positive constant), the
- * flag word after the setup calls is addressed through a3, and the leave
- * path keeps D_8009D7CC from the loop test instead of reloading it. */
+/* NON_MATCHING: with the gears set in index order the new-game stores are
+ * placed as the original's except 0x400 (D_8006F94E, stored late here) and
+ * 0x7580 (a3 there); the original stores 0xFF00 to the s16 unk62 as a
+ * positive constant, addresses the flag word after the setup calls
+ * directly (through a3 here), reloads D_8009D7CC after the loop test and
+ * reads the next scene's word 5 after storing word 4. */
 #ifdef NON_MATCHING
 void func_80070CFC(void) {
     void (*step)(void);
@@ -33,16 +34,18 @@ void func_80070CFC(void) {
         D_8006EE54.unk64 = 0x2A00;
         D_8006EE54.z = 0x2C00;
         D_8006F368[1] = 0xA;
+        D_8006F368[2] = 5;
         D_8006D940[0].gear = 0xF;
         D_8006D940[1].gear = 2;
+        D_8006D940[2].gear = 3;
         D_8006D940[3].gear = 4;
-        D_8006F368[2] = 5;
         D_8006D940[4].gear = 5;
         D_8006D940[5].gear = 6;
+        D_8006D940[6].gear = 9;
         D_8006D940[7].gear = 7;
         D_8006D940[8].gear = 8;
-        D_8006D940[2].gear = 3;
         D_8006D940[9].gear = 3;
+        D_8006D940[10].gear = 9;
         D_8006EE54.unk6A = 1;
         D_8006EE66 = 0;
         D_8006EE54.x = 0x7580;
@@ -51,8 +54,6 @@ void func_80070CFC(void) {
         D_8006F8E5 = 0;
         D_8006F8E6 = 0;
         D_8006F8E7 = 0;
-        D_8006D940[6].gear = 9;
-        D_8006D940[10].gear = 9;
         D_8006EF8E[0].flags = 0x400;
         D_8006EF8E[0].x = 0x7500;
         D_8006EF8E[0].z = 0x2E58;
