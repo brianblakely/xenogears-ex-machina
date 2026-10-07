@@ -171,30 +171,33 @@ void func_80085988(void) {
     D_8004F32C = -1;
 }
 
-#ifdef NON_MATCHING
+/* The music-wave chunk count (D_800B2078.wave_chunks), which the chunk
+ * callback addresses as a scalar of its own. */
+extern s32 D_800B2370;
+
 /* Music-wave chunk callback: gather four 2 KiB chunks and open them as a
  * wave bank; later chunks feed the bank. */
 void func_800859DC(WaveChunk *chunk) {
-    if (D_800B2078.wave_chunks < 0) {
-        return;
-    }
-    if (D_800B2078.wave_chunks < 4) {
-        ((WaveChunk *)D_800C3A1C)[D_800B2078.wave_chunks] = *chunk;
-        D_800B2078.wave_chunks++;
+    switch (D_800B2370) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+        ((WaveChunk *)D_800C3A1C)[D_800B2370] = *chunk;
+        D_800B2370++;
         func_8002945C(chunk);
-        if (D_800B2078.wave_chunks == 4) {
+        if (D_800B2370 == 4) {
             D_8006258C = func_800380D0(D_800C3A1C, 0x2000, 0);
         }
-    } else if (D_800B2078.wave_chunks == 4) {
+        break;
+    case 4:
         func_8003BDFC(0x10);
         *(WaveChunk *)D_800C3A1C = *chunk;
         func_8003827C(D_800C3A1C, 0x800);
         func_8002945C(chunk);
+        break;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_800859DC);
-#endif
 
 #ifdef NON_MATCHING
 /* Change the field music to `music` (0xff: none): release the shared wave
