@@ -4433,15 +4433,11 @@ void func_80092808(void) {
     actor->pc++;
 }
 
-#ifdef NON_MATCHING
 /* Walk the controlled actor one step toward (x, z); with `mode` 0 the goal
  * is 40 units along direction `angle` from the running actor (publishing
  * the field id first when 800adbec asks). Returns -1 while walking (mode 1
  * retries the instruction) and 0 once it has arrived or is stuck, when it
- * stops, turns and the instruction continues.
- * NON_MATCHING: register allocation only: the original keeps x in s0 and z
- * in s1 (here swapped) and joins the two goal paths with z in a3 (copied
- * from s1 when mode != 0). */
+ * stops, turns and the instruction continues. */
 s32 func_80092894(s32 angle, s32 mode, s32 x, s32 z) {
     FieldActor *player;
     FieldModel *model;
@@ -4453,6 +4449,8 @@ s32 func_80092894(s32 angle, s32 mode, s32 x, s32 z) {
     s32 direction;
     s32 dx;
     s32 dz;
+    s32 goal_x;
+    s32 goal_z;
     VECTOR delta;
 
     D_800B2078.encounter_inhibition = -1;
@@ -4476,11 +4474,14 @@ s32 func_80092894(s32 angle, s32 mode, s32 x, s32 z) {
             D_8004F34C = field;
         }
         direction = D_800B06B8->rotation.vy + angle - 0x400;
-        x = D_800B0078->unk60 + WHOLE(D_800B0078->position[0]) + ((func_8003F8CC(direction) * 40) >> 12);
-        z = D_800B0078->unk64 + WHOLE(D_800B0078->position[2]) + (-(func_8003F8B0(direction) * 40) >> 12);
+        goal_x = D_800B0078->unk60 + WHOLE(D_800B0078->position[0]) + ((func_8003F8CC(direction) * 40) >> 12);
+        goal_z = D_800B0078->unk64 + WHOLE(D_800B0078->position[2]) + (-(func_8003F8B0(direction) * 40) >> 12);
+    } else {
+        goal_x = x;
+        goal_z = z;
     }
-    dx = x - from_x;
-    dz = z - from_z;
+    dx = goal_x - from_x;
+    dz = goal_z - from_z;
     delta.vx = dx;
     delta.vy = 0;
     delta.vz = dz;
@@ -4520,9 +4521,6 @@ walk:
     }
     return -1;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_80092894);
-#endif
 
 /* Walk the player to the selected x/z (800a0c4c/80092894) when the field
  * is idle, restoring its flag 0x80 on arrival; otherwise retry. */
