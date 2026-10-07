@@ -175,14 +175,6 @@ s32 func_8008E680(s32 index) {
     return 1;
 }
 
-/* NON_MATCHING: frame matches; 37 instructions short. Jump optimization
- * cross-jumps the identical tails of the circling (0x29) and walking (0x31)
- * states, and of the departure (0x35) and 0x37 states, which the original
- * keeps separate; the boarding take-off keeps D_8006EE68's address in a0
- * (addressing it as D_8006EE54.flags does that but hoists the load above
- * the D_8009D55C copy), and s1/s4 are swapped from the start; case 2 reuses
- * the s1 constant 1 for the second hit test. */
-#ifdef NON_MATCHING
 /* The vehicle helpers below are plain statement blocks: a do { } while (0)
  * wrapper would leave loop notes that keep the scheduler from interleaving
  * them with the surrounding stores as the original does. */
@@ -219,6 +211,14 @@ s32 func_8008E680(s32 index) {
         func_8004A92C(&scratch->rotation, &D_8009C620[1].matrix);            \
     }
 
+/* Point the camera at the vehicle. Expanded per state: each copy ends its
+ * state, and the copies are merged into one tail by jump optimization. */
+#define VEHICLE_CAMERA()                                                     \
+    {                                                                        \
+        D_8009D55C.target = actor->position;                                 \
+        D_8009D52C = actor->heading;                                         \
+    }
+
 /* Stop the vehicle after a landing and clear its take-off counter. */
 #define VEHICLE_STOP()                                                       \
     do {                                                                     \
@@ -228,6 +228,7 @@ s32 func_8008E680(s32 index) {
         actor->unk74 = 0;                                                    \
     } while (0)
 
+/* The vehicle's position in world units (at height `y`) for an effect. */
 #define VEHICLE_SPOT(scratch, y)                                             \
     {                                                                        \
         scratch->spot.vx = actor->position.vx >> 12;                         \
@@ -258,10 +259,9 @@ s32 func_8008E76C(s32 index) {
         actor->unk4 = 0;
         if (D_8009C170 == ++actor->unk74) {
             func_80097770(8, 9);
-            D_8009D55C.target = actor->position;
-            D_8006EE68 |= 0x4000;
-            kind = D_8006EE68 & 0x1FFF;
-            D_8009D52C = actor->heading;
+            VEHICLE_CAMERA();
+            D_8006EE54.flags |= 0x4000;
+            kind = D_8006EE54.flags & 0x1FFF;
             switch (kind) {
             case 1:
                 actor->state = 0xC;
@@ -322,13 +322,12 @@ s32 func_8008E76C(s32 index) {
         func_8008BFD4(index, &actor->position, 0x40, 0x400);
         break;
     case 2:
-        hit = func_80090FB4(actor);
-        if (hit == 1) {
+        switch (func_80090FB4(actor)) {
+        case 1:
             D_8009D554 = 0;
             D_8009D7CC = 0;
             break;
-        }
-        if (hit == 4) {
+        case 4:
             if ((s16)func_80094060(2, func_80093F18(&actor->position)) != 0) {
                 hit = func_8008E0F0(&actor->position, (s32)&actor->motion, 0x68000);
                 if (hit != -1) {
@@ -349,48 +348,49 @@ s32 func_8008E76C(s32 index) {
                 }
             }
             break;
-        }
-        hit = func_80095CD4(&actor->position, &actor->motion, &scratch->hit, actor->unk60, D_8009BE10);
-        if (hit == 0) {
-            actor->unk60 = 0;
-            actor->motion.vz = 0;
-            actor->motion.vx = 0;
-        }
-        if (hit == 1) {
-            func_8008C040(&scratch->hit, 0x40, 0x20, &D_8009D738, &D_8009BD60);
-            if (D_8009D738 != 2) {
-                actor->position = scratch->hit;
-            } else {
+        default:
+            hit = func_80095CD4(&actor->position, &actor->motion, &scratch->hit, actor->unk60, D_8009BE10);
+            if (hit == 0) {
                 actor->unk60 = 0;
+                actor->motion.vz = 0;
+                actor->motion.vx = 0;
             }
-        }
-        D_8009D55C.target = actor->position;
-        D_8009D52C = actor->heading;
-        func_80094238(&actor->position, 2);
-        func_8008E078();
-        VEHICLE_ORIENT();
-        height = func_80093978(actor->position.vx, actor->position.vz) - actor->position.vy;
-        if (ABS(height) < 0x60000 && actor->unk60 != 0) {
-            VEHICLE_SPOT(scratch, actor->position.vy);
-            terrain = func_80093F18(&actor->position);
-            if (terrain == 2) {
-                func_80089160(0x3F, &scratch->spot, &scratch->rotation);
-                func_800894C8(0x3C);
-            } else if (terrain == 3) {
-                func_80089160(0x3C, &scratch->spot, &scratch->rotation);
-                func_800894C8(0x3F);
+            if (hit == 1) {
+                func_8008C040(&scratch->hit, 0x40, 0x20, &D_8009D738, &D_8009BD60);
+                if (D_8009D738 != 2) {
+                    actor->position = scratch->hit;
+                } else {
+                    actor->unk60 = 0;
+                }
+            }
+            VEHICLE_CAMERA();
+            func_80094238(&actor->position, 2);
+            func_8008E078();
+            VEHICLE_ORIENT();
+            height = func_80093978(actor->position.vx, actor->position.vz) - actor->position.vy;
+            if (ABS(height) < 0x60000 && actor->unk60 != 0) {
+                VEHICLE_SPOT(scratch, actor->position.vy);
+                terrain = func_80093F18(&actor->position);
+                if (terrain == 2) {
+                    func_80089160(0x3F, &scratch->spot, &scratch->rotation);
+                    func_800894C8(0x3C);
+                } else if (terrain == 3) {
+                    func_80089160(0x3C, &scratch->spot, &scratch->rotation);
+                    func_800894C8(0x3F);
+                } else {
+                    func_800894C8(0x3C);
+                    func_800894C8(0x3F);
+                }
             } else {
                 func_800894C8(0x3C);
                 func_800894C8(0x3F);
             }
-        } else {
-            func_800894C8(0x3C);
-            func_800894C8(0x3F);
+            actor->motion.vz = 0;
+            actor->motion.vy = 0;
+            actor->motion.vx = 0;
+            D_8009BD04 = 0;
+            break;
         }
-        actor->motion.vz = 0;
-        actor->motion.vy = 0;
-        actor->motion.vx = 0;
-        D_8009BD04 = 0;
         break;
     case 3:
         switch (func_80090E14(actor)) {
@@ -443,8 +443,7 @@ s32 func_8008E76C(s32 index) {
                     actor->unk60 = 0;
                 }
             }
-            D_8009D55C.target = actor->position;
-            D_8009D52C = actor->heading;
+            VEHICLE_CAMERA();
             func_80094238(&actor->position, 2);
             VEHICLE_ORIENT();
             if (actor->motion.vx | actor->motion.vz) {
@@ -504,8 +503,7 @@ s32 func_8008E76C(s32 index) {
         } else {
             actor->position.vy = func_80093A5C(actor->position.vx, actor->position.vz) + 0x18000;
         }
-        D_8009D55C.target = actor->position;
-        D_8009D52C = actor->heading;
+        VEHICLE_CAMERA();
         func_80094238(&actor->position, 2);
         func_8008E078();
         VEHICLE_ORIENT();
@@ -544,7 +542,8 @@ s32 func_8008E76C(s32 index) {
                 func_800767D4(D_8009C888, D_8009D800);
             }
         }
-        goto camera;
+        VEHICLE_CAMERA();
+        break;
     case 0xC:
         actor->position.vy += 0x800;
         if (actor->position.vy >= actor->unk68) {
@@ -554,7 +553,8 @@ s32 func_8008E76C(s32 index) {
             D_8009C620[2].visible = 1;
             D_8009C620[1].visible = 1;
         }
-        goto camera;
+        VEHICLE_CAMERA();
+        break;
     case 0x10:
         actor->position.vy += 0x8000;
         if (actor->position.vy >= actor->unk68) {
@@ -637,13 +637,15 @@ s32 func_8008E76C(s32 index) {
             actor->u.step = scratch->target.vx >> 12;
             actor->unk54 = scratch->target.vz >> 12;
         }
-        goto camera;
+        VEHICLE_CAMERA();
+        break;
     case 0x21:
         if (func_8008BEC8(actor) == 3) {
             actor->state++;
         }
         actor->position.vy = actor->unk68;
-        goto camera;
+        VEHICLE_CAMERA();
+        break;
     case 0x22:
         actor->state = 0x40;
         D_8009D554 = 0;
@@ -658,8 +660,7 @@ s32 func_8008E76C(s32 index) {
         func_800941C4(&actor->position, &scratch->target, &actor->motion, &actor->heading);
         actor->u.step = scratch->target.vx >> 12;
         actor->unk54 = scratch->target.vz >> 12;
-        D_8009D55C.target = actor->position;
-        D_8009D52C = actor->heading;
+        VEHICLE_CAMERA();
         D_8009C620[3].visible = 1;
         D_8009C620[2].visible = 1;
         D_8009C620[1].visible = 1;
@@ -680,7 +681,8 @@ s32 func_8008E76C(s32 index) {
             D_8009C620[0].visible = 0;
         }
         actor->position.vy = 0x30000;
-        goto camera;
+        VEHICLE_CAMERA();
+        break;
     case 0x26:
         actor->position.vy -= 0x2000;
         if (actor->unk68 >= actor->position.vy) {
@@ -688,7 +690,8 @@ s32 func_8008E76C(s32 index) {
             func_800894C8(2);
             actor->state = 3;
         }
-        goto camera;
+        VEHICLE_CAMERA();
+        break;
     case 0x28:
         actor->state++;
         actor->position.vy = func_80093978(actor->position.vx, actor->position.vz) + 0x18000;
@@ -720,7 +723,8 @@ s32 func_8008E76C(s32 index) {
         VEHICLE_SPOT(scratch, actor->position.vy);
         func_80089160(1, &scratch->spot, &scratch->rotation);
         VEHICLE_ORIENT();
-        goto camera;
+        VEHICLE_CAMERA();
+        break;
     case 0x2A:
         if (--actor->wait < 0) {
             D_8006F94E = 0x50;
@@ -763,7 +767,8 @@ s32 func_8008E76C(s32 index) {
         VEHICLE_SPOT(scratch, actor->position.vy);
         func_80089160(4, &scratch->spot, &scratch->rotation);
         VEHICLE_ORIENT();
-        goto camera;
+        VEHICLE_CAMERA();
+        break;
     case 0x32:
         if (--actor->wait < 0) {
             D_8006F94E = 0x120;
@@ -811,7 +816,8 @@ s32 func_8008E76C(s32 index) {
         } else {
             func_800894C8(0x3F);
         }
-        goto camera;
+        VEHICLE_CAMERA();
+        break;
     case 0x37:
         if (--actor->wait < 0) {
             actor->wait = 0x5A;
@@ -831,7 +837,8 @@ s32 func_8008E76C(s32 index) {
             VEHICLE_SPOT(scratch, 0);
             func_80089160(0x2B, &scratch->spot, &scratch->rotation);
         }
-        goto camera;
+        VEHICLE_CAMERA();
+        break;
     case 0x38:
         if (--actor->wait < 0) {
             actor->wait = 0x80;
@@ -853,9 +860,7 @@ s32 func_8008E76C(s32 index) {
     glide:
         actor->position.vx += actor->motion.vx * 8;
         actor->position.vz += actor->motion.vz * 8;
-    camera:
-        D_8009D55C.target = actor->position;
-        D_8009D52C = actor->heading;
+        VEHICLE_CAMERA();
         break;
     case 0x40: /* Idle state at the end of the 0x41-entry dispatch. */
         break;
@@ -864,7 +869,7 @@ s32 func_8008E76C(s32 index) {
     D_8009C620[0].position.vy = D_8009C620[1].position.vy = actor->position.vy >> 12;
     D_8009C620[0].position.vz = D_8009C620[1].position.vz = actor->position.vz >> 12;
     func_8008E034(&actor->position);
-    D_8006EE66 = actor->heading;
+    D_8006EE54.vehicle_heading = actor->heading;
     switch (actor->state) {
     case 2:
     case 8:
@@ -874,9 +879,6 @@ s32 func_8008E76C(s32 index) {
     }
     return result;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8008E190", func_8008E76C);
-#endif
 
 /* Restore the actor from scene objects 2 and 3 after linking them to 0. */
 s32 func_800906E0(s32 index) {
