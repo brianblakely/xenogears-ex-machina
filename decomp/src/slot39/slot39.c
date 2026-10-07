@@ -6659,7 +6659,8 @@ void func_801DB5E4(u8 mode) {
  * (reloaded into t0, as is the counts base before the loop); this build
  * addresses D_8006F65A directly (INVENTORY->ids reorders the saved registers).
  * The original also uses 801e31c0's result unmasked, as an implicitly
- * declared (int) function would be. */
+ * declared (int) function would be. A do/while (0) block (statement macro)
+ * around the case-4 target loop brings it to 20 differing instructions. */
 u8 func_801DB920(s32 row, s32 entry) {
     u16 marks;
     u8 running;

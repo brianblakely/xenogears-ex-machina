@@ -487,7 +487,9 @@ void func_801DD5E8(u8 mode) {
 /* Same code shape as the original; remaining: global register allocation
  * (original s2 kind/used, s3 kind&0xff, s4 targets, s5 slot&0xff; here
  * `used` ranks below kind&0xff, targets and slot&0xff) and v0/v1 swapped in
- * the `left` subtraction. */
+ * the `left` subtraction. Wrapping `used = 0` and the target loop of case 4
+ * in a do/while (0) block (a statement macro, as 801db920's item use also
+ * suggests) fixes targets/slot&0xff and leaves 44 differing instructions. */
 void func_801DD790(u8 slot, s32 row, u8 kind) {
     MenuEffect *effect;
     s32 x;
