@@ -1574,18 +1574,24 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
             ((SpriteSequencer *)sprite->sequencer)->halfc = code[0];
         }
         break;
-    case 0xC9:
+    case 0xC9: {
+        s32 value;
+
         if (sprite->frame_bits.sequencer_owned == 1) {
             value = code[0] | (s16)(code[1] << 8);
             ((SpriteSequencer *)sprite->sequencer)->halfc = value;
         }
         break;
-    case 0xC5:
+    }
+    case 0xC5: {
+        s32 n;
+
         n = code[0] / (D_80059198 + 1);
         while (--n != -1) {
             func_80022CDC(sprite);
         }
         break;
+    }
     case 0xB9:
         if ((SpriteVoice *)sprite->word50 != NULL) {
             func_80039E60(code[0] | (((SpriteVoice *)sprite->word50)->bank << 16));
@@ -1616,7 +1622,9 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
             sprite->render.bits.dirty = 1;
         }
         break;
-    case 0xA7:
+    case 0xA7: {
+        s32 n;
+
         if (code[0] & 0x80) {
             D_80059428 = (code[0] & 0x7F) + 1;
         } else {
@@ -1627,6 +1635,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
             sprite->countdown += n;
         }
         break;
+    }
     case 0xFC:
         stack = func_80031BDC(0x2000, 0);
         STACK_ENTER(stack + 0x1F00);
@@ -1652,7 +1661,12 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
     case 0xA2:
         ((u8 *)&sprite->render)[1] = code[0];
         break;
-    case 0xCD:
+    case 0xCD: {
+        s32 value;
+        u16 bits;
+        s32 angle;
+        s32 group;
+
         if (sprite->renderer != NULL) {
             value = code[0] | (s16)(code[1] << 8);
             bits = value;
@@ -1677,7 +1691,13 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
             }
         }
         break;
-    case 0xCE:
+    }
+    case 0xCE: {
+        s32 value;
+        u16 bits;
+        s32 angle;
+        s32 group;
+
         value = code[0] | (s16)(code[1] << 8);
         bits = value;
         if (sprite->renderer != NULL) {
@@ -1705,7 +1725,13 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
             }
         }
         break;
-    case 0xCF:
+    }
+    case 0xCF: {
+        s32 value;
+        u16 bits;
+        s32 angle;
+        s32 group;
+
         value = code[0] | (s16)(code[1] << 8);
         bits = value;
         if (sprite->renderer != NULL) {
@@ -1733,6 +1759,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
             }
         }
         break;
+    }
     case 0xC0:
         distance = ((s32)((rand() & 0xFF) * code[0]) >> 8) * sprite->scale / 4096;
         angle = rand();
@@ -1993,35 +2020,35 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                 sprite->z = vector.vz << 16;
             }
         } else {
+            s32 dx, dy;
+
             other = sprite->word70;
             if (other != NULL && other->renderer != NULL && (other->render.word & 3) == 1) {
                 if (other->renderer->pointer34 != NULL) {
-                    y = other->renderer->pointer34[arg].byte1;
-                    x = other->renderer->pointer34[arg].byte0;
+                    dy = other->renderer->pointer34[arg].byte1;
+                    dx = other->renderer->pointer34[arg].byte0;
                 } else {
-                    x = 0;
-                    y = 0;
+                    dx = 0;
+                    dy = 0;
                 }
                 if ((other->render.word >> 3) & 1) {
-                    x = -x;
+                    dx = -dx;
                 }
-                y = y * other->scale / 4096;
-                x = x * other->scale / 4096;
+                dy = (dy * other->scale / 4096) << 16;
+                dx = (dx * other->scale / 4096) << 16;
                 sprite->z = other->z;
-                sprite->x = other->x + (x << 16);
-                sprite->y = other->y + (y << 16);
+                sprite->x = other->x + dx;
+                sprite->y = other->y + dy;
             }
         }
         break;
     }
     case 0xD1:
-        p = func_8001FBA4(sprite, code);
-        *p *= *func_8001FBA4(sprite, code + 1);
+        *func_8001FBA4(sprite, code) *= *func_8001FBA4(sprite, code + 1);
         break;
     case 0xD2:
     case 0xD5:
-        p = func_8001FBA4(sprite, code);
-        *p /= *func_8001FBA4(sprite, code + 1);
+        *func_8001FBA4(sprite, code) /= *func_8001FBA4(sprite, code + 1);
         break;
     case 0xE5:
         p = func_8001FBA4(sprite, code);
@@ -2064,8 +2091,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
     case 0xD3:
     case 0xDD:
     case 0xDE:
-        p = func_8001FBA4(sprite, code);
-        *p += *func_8001FBA4(sprite, code + 1);
+        *func_8001FBA4(sprite, code) += *func_8001FBA4(sprite, code + 1);
         break;
     case 0xA4:
         func_800245D8(sprite->word74, (s8)code[0]);
@@ -2077,8 +2103,8 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         {
             u8 *half = func_8001FBA4(sprite, code);
 
-            half[1] = 0;
             half[0] = code[1];
+            half[1] = 0;
         }
         break;
     case 0x91:
