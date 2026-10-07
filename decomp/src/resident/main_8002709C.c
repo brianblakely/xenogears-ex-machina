@@ -926,8 +926,6 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002709C", func_80028F
 #endif
 
 /* Release a ring chunk: clear its slot's state and return the old state (0xffff without a ring, 0 for no chunk). */
-/* Nonmatching: the original keeps the ring in $a1 (so the 0xffff return fills the branch delay slot); GCC puts it in $v0. */
-#ifdef NON_MATCHING
 u16 func_8002945C(u8 *chunk) {
     StreamRing *ring = D_8004FE30;
     StreamSlot *slots;
@@ -938,19 +936,16 @@ u16 func_8002945C(u8 *chunk) {
     if (ring == NULL) {
         return 0xFFFF;
     }
-    slots = ring->slots;
     if (chunk == NULL) {
         return 0;
     }
+    slots = ring->slots;
     payload = (u8 *)ring + ring->count * 8 + 0x24;
     index = (u32)(chunk - payload) >> 11;
     state = slots[index].state;
     slots[index].state = 0;
     return state;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002709C", func_8002945C);
-#endif
 
 /* Release a run of ring chunks (the chunk header's halfword 3 counts them), merge the freed run and return the first slot's old state. */
 u16 func_800294B4(u8 *chunk) {
