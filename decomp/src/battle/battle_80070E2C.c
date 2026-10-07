@@ -515,22 +515,14 @@ void func_80072324(void) {
 
 /* Select the next slot to act: the forced slot, else the next ready slot in
  * the turn order from the cursor; then run the turn procedure. With slots
- * acting together, run their pass instead.
- * Nonmatching: stmt.c rolls the found test (ready check, actor, cursor
- * update, break) to the loop end and enters with a jump, as the original
- * does; with the cursor read as the struct member (loop.c's hoisted address
- * copied from the entry load) everything else matches. But jump.c (after
- * deleting unused sets) counts 20 RTL insns of rolled exit code here and
- * GCC 2.6.3 copies exit code of up to 22 insns to the loop entry (measured
- * with throwaway stores: 22 copied, 23 kept); the original's was not copied,
- * so its source spent at least 3 more RTL insns there that later passes
- * remove. Not found: an s16 slot in `ready[slot = order[position]]` reaches
- * 23 but leaves sign-extension copies; u8/u16 reach 22 and add andi masks;
- * re-reading the cursor after the store keeps the load. */
-#ifdef NON_MATCHING
+ * acting together, run their pass instead. The ready state 1 is kept in
+ * `one`, which also steps the actor number and the cursor; stmt.c rolls the
+ * found test to the loop end and enters with a jump, and with the extra
+ * copies jump.c no longer duplicates that test at the loop entry. */
 void func_800723E0(void) {
     s32 position;
     s32 slot;
+    s32 one;
 
     if (D_800D39E0 == 0) {
         if (D_800D2DC0 != 0) {
@@ -543,9 +535,9 @@ void func_800723E0(void) {
             D_800C3EAC->actor = 0;
             position = D_800D2DCC.cursor;
             for (;;) {
-                if (D_800D2DCC.ready[D_800D2DCC.order[position]] == 1) {
-                    D_800C3EAC->actor = D_800D2DCC.order[position] + 1;
-                    if ((D_800D2DCC.cursor = position + 1) == 11) {
+                if (D_800D2DCC.ready[D_800D2DCC.order[position]] == (one = 1)) {
+                    D_800C3EAC->actor = D_800D2DCC.order[position] + one;
+                    if ((D_800D2DCC.cursor = position + one) == 11) {
                         D_800D2DCC.cursor = 0;
                         break;
                     }
@@ -564,9 +556,6 @@ void func_800723E0(void) {
         func_80072324();
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_800723E0);
-#endif
 
 /* Rebuild the alive mask: knocked-out slots lose their HP (gear +0x104) and
  * leave the turn order unless held by 800c3608; set the outcome when a side
@@ -582,7 +571,13 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_800723
  * read at reg + 3 (cost 1) while slot - 3 is still a giv for present[] and
  * ready[]. `&D_800C3D18[slot - 3]` folds to slot * 4 + (sym - 12) and drops
  * that giv (present[] then uses slot, ready[] a pointer); an
- * `enemy = slot - 3` variable keeps it but ready[] still gets a pointer. */
+ * `enemy = slot - 3` variable keeps it but ready[] still gets a pointer.
+ * Follow-up: explicit byte/struct reaction walks put ready[] in a pointer
+ * and emit 888 rather than 908 bytes. Independent actor/enemy counters,
+ * flat byte/row views, split party/enemy array views and a defeated-slot
+ * statement macro do not match. Nested pilot/gear arms with duplicated
+ * eligibility tails reduce the nmscore edit score to 31, still 888 bytes;
+ * retain the simpler indexed draft below (912 bytes vs 908 original). */
 #ifdef NON_MATCHING
 void func_8007252C(void) {
     s32 slot;
