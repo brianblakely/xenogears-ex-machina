@@ -1449,16 +1449,15 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_800765
  * The original keeps x and y in memory (8-byte stack slots at sp+0x28 and
  * sp+0x30, so its y load is not forwarded from the +0x6c store); here they
  * are two-element u16 arrays only for that shape (the second element is
- * unused). Nonmatching (181 vs 182 instructions): the original doubles the
- * status part count (sll $s0, tied to the +0x77 load) before the second
- * call, this after it in the jump's delay slot. */
-#ifdef NON_MATCHING
+ * unused). The first new part index (`start`, set once) is doubled before
+ * the second call, just ahead of it. */
 void func_80076710(s32 member) {
     u16 x[2];
     u16 y[2];
     s32 i;
     s32 first;
     s32 part;
+    s32 start;
 
     for (i = 0; i < D_800D2D28->unkA9; i++) {
         D_800D2D28->unk64 -= D_800D2D28->unk54;
@@ -1471,11 +1470,11 @@ void func_80076710(s32 member) {
     D_800D2D28->statusParts[3] = func_80025FA8(D_800D2F5C, 0x52, D_800C3EA4->status[3][0], D_800CCB04.buffer, x[0], y[0],
                                        D_800D2D28->unk104, D_800D2D28->unk104, D_800D2D28->unk106);
     first = D_800D2D28->statusParts[3];
+    start = first * 2;
     D_800D2D28->statusParts[3] += func_80025FA8(D_800D2F5C, 0x53, D_800C3EA4->status[3][first],
                                         D_800CCB04.buffer, x[0], y[0], D_800D2D28->unk104, D_800D2D28->unk104,
                                         D_800D2D28->unk106);
-    part = first * 2;
-    for (; part < D_800D2D28->statusParts[3] * 2; part += 2) {
+    for (part = start; part < D_800D2D28->statusParts[3] * 2; part += 2) {
         SetSemiTrans(&D_800C3EA4->status[3][0][part + D_800CCB04.buffer], 1);
     }
     D_800D2D28->statusBuffer[3] = D_800CCB04.buffer;
@@ -1491,9 +1490,6 @@ void func_80076710(s32 member) {
         D_800D2D28->unk90[member] = 1;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80076710);
-#endif
 
 /* Upload an image and wait for the transfer. */
 void func_800769E8(RECT *rect, u32 *pixels) {
