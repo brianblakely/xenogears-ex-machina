@@ -98,35 +98,21 @@ void func_80085738(void) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Load a movie's sound-effect bank (file 0x115 + bank) and seek the movie
  * sound timeline past the bank's 0xffff-terminated runs.
- * NON_MATCHING: the original copies the loaded bank from s0 into s1 (s0
- * then holds the file) and recomputes bank + 1 in the loop test; this
- * keeps the bank in s1 directly and hoists bank + 1 into s0. Loading the
- * bank into `file` first and copying it to `bank` inside the if reproduces
- * the prologue exactly; with that, a for loop still hoists bank + 1, and
- * a goto loop keeps it but then fails to hoist the table base and 0xffff
- * out of the outer loop. loop.c (scan_loop) leaves a bottom-test insn in
- * place only if its register is first set outside the loop (or is a user
- * variable used in the exit test after a conditional jump); a user
- * variable in the condition (i < (n = bank + 1)) is renamed in the entry
- * copy of the test and still hoisted, and `i <= bank` compares without the
- * add. The loop dump shows why: the bottom test follows NOTE_INSN_LOOP_VTOP,
- * where scan_loop clears maybe_never, so its bank + 1 is movable unless the
- * register is used earlier in the loop body; even a variable first set
- * before the loop (`i < (file = bank + 1)`) is moved as a global movable.
- * while, do-while with a guard, `bank + 1 > i` and a (long) bound are all
- * hoisted the same way. */
+ * The value is read into `file` and copied to `bank` (the original keeps
+ * the loaded copy in s0 for the file number), and the timeline is indexed
+ * as a flat halfword table, which leaves bank + 1 in the loop test.
+ */
 void func_80085788(void) {
-    u16 *times;
     s32 bank;
     s32 file;
     s32 pos;
     s32 i;
 
-    bank = D_800C3A38;
-    if (bank != 0xFF) {
+    file = D_800C3A38;
+    if (file != 0xFF) {
+        bank = file;
         func_80039FF8();
         func_80028470(0x1C, 0);
         file = bank + 0x115;
@@ -137,10 +123,9 @@ void func_80085788(void) {
         func_8003BDFC(0x10);
         func_80028470(4, 0);
         pos = 0;
-        times = &D_800AE060[0][0];
         for (i = 0; i < bank + 1; i++) {
             while (1) {
-                if (times[pos * 2] == 0xFFFF) {
+                if (((u16 *)D_800AE060)[pos * 2] == 0xFFFF) {
                     break;
                 }
                 pos++;
@@ -150,9 +135,6 @@ void func_80085788(void) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_80085788);
-#endif
 
 /* Load the field's sound-effect bank (file 0xa8), from the disc or from the
  * copy at 8005a4bc, and open it. */
