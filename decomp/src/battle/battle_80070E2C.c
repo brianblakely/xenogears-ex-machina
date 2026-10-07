@@ -360,13 +360,9 @@ void func_80071AE0(void) {
 
 /* Start the turn of the acting slot (turn state actor + 1; none when 0). An
  * enemy runs its AI script (unless mode is set) and shows its name; a party
- * member gets its panel highlight and its command menu. Then each slot's
- * default target is chosen and the turn's actions play out.
- * Nonmatching (1752 vs 1756 bytes): in the panel highlight's right
- * corners the original sums into $v0 where this uses $v1, and for the last
- * corner it loads the actor byte after the buffer offset (keeping a
- * load-delay nop) where this schedules it earlier. */
-#ifdef NON_MATCHING
+ * member gets its panel highlight (a 24x24 square) and its command menu.
+ * Then each slot's default target is chosen and the turn's actions play
+ * out. */
 void func_80071B94(u8 mode) {
     s32 i;
     s32 offset;
@@ -420,11 +416,8 @@ void func_80071B94(u8 mode) {
         for (offset = 7 * sizeof(EnemyReaction); offset >= 0; offset -= sizeof(EnemyReaction)) {
             ((EnemyReaction *)((u8 *)D_800C3D18 + offset))->unk1[1] = 0;
         }
-        setXY4(&D_800C3EA4->unk63C8[D_800CCB04.buffer],
-               D_800C3EAC->actor * 0x60 + (D_800C3254[D_800D3280 * 3 + D_800C3EAC->actor] + 0x10), 8,
-               D_800C3EAC->actor * 0x60 + D_800C3254[D_800D3280 * 3 + D_800C3EAC->actor] + 0x28, 8,
-               D_800C3EAC->actor * 0x60 + (D_800C3254[D_800D3280 * 3 + D_800C3EAC->actor] + 0x10), 0x20,
-               D_800C3EAC->actor * 0x60 + D_800C3254[D_800D3280 * 3 + D_800C3EAC->actor] + 0x28, 0x20);
+        setXYWH(&D_800C3EA4->unk63C8[D_800CCB04.buffer],
+                D_800C3EAC->actor * 0x60 + (D_800C3254[D_800D3280 * 3 + D_800C3EAC->actor] + 0x10), 8, 0x18, 0x18);
         D_800C3EA4->unk6414 = D_800CCB04.buffer;
         D_800C3EA4->unk6415 = 1;
         actor = D_800C3EAC->actor;
@@ -474,9 +467,6 @@ void func_80071B94(u8 mode) {
     func_800718BC();
     D_800D3298 = 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80071B94);
-#endif
 
 /* Party members held by the mask 800d2c9e lose their ready flag, restart
  * their turn timer from its reload value and show the held marker. */
