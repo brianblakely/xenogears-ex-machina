@@ -4516,9 +4516,10 @@ void func_800AAB34(BattleObject *object) {
  * opcode and argument views are unsigned bytes. Jump offsets are in bytes
  * from the command's start (SCRIPT_JUMP). b0..b3 are the low/high bytes of
  * the first and second parameter words, shared by several commands, as is
- * the looked-up animation of 11/12. Still NON_MATCHING: parameter lifetimes,
- * caller saves, turn-command scheduling and camera temporaries differ from
- * the original; the compiled frame is eight bytes smaller. */
+ * the looked-up animation of 11/12. Still NON_MATCHING: decoded-byte register
+ * allocation, part-reset loop scheduling and camera temporaries differ from
+ * the original. The compiled frame is eight bytes smaller because the decoded
+ * high fields do not use the original caller-save home. */
 void func_800AAD54(BattleObject *object, EffectPool *pool, s32 flags, s32 steps, s32 substeps) {
     VECTOR delta;
     SVECTOR velocity;
@@ -4740,7 +4741,7 @@ chosen:
         case 0x0A:
             func_800A216C(pool, object->hierarchy, arg, 7);
             break;
-        case 0x0B: /* stop the parts' effects and reset their scales */
+        case 0x0B: /* stop the parts' effects and reset their transforms */
             {
                 ModelPart *root = object->hierarchy;
                 ModelPart *part;
@@ -4749,8 +4750,7 @@ chosen:
 
                 func_800A2ACC(pool, root);
                 count = root->index - 1;
-                for (k = 0, part = root; k < count; k++) {
-                    part++;
+                for (k = 0, part = root + 1; k < count; k++, part++) {
                     part->rotation.vx = 0;
                     part->rotation.vy = 0;
                     part->rotation.vz = 0;
@@ -5401,8 +5401,10 @@ chosen:
                 s32 y = *pc++;
                 s32 z = *pc++;
 
-                func_800ADF1C(pool, object->hierarchy, arg, (s16)(object->hierarchy->rotation.vx + x),
-                              (s16)(object->hierarchy->rotation.vy + y), (s16)(object->hierarchy->rotation.vz + z));
+                x = (s16)(object->hierarchy->rotation.vx + x);
+                y = (s16)(object->hierarchy->rotation.vy + y);
+                z = (s16)(object->hierarchy->rotation.vz + z);
+                func_800ADF1C(pool, object->hierarchy, arg, (s16)x, (s16)y, (s16)z);
                 flags = -1;
             }
             break;
