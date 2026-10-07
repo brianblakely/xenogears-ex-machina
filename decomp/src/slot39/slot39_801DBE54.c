@@ -463,14 +463,6 @@ void func_801DD5E8(u8 mode) {
  * gear's, 2 the gear's other list) from the menu: select the targets (the
  * whole party for all-target arts, else the cursor's slot) and use it on
  * confirm while its cost can be paid, until cancelled. */
-#ifdef NON_MATCHING
-/* Same code shape as the original; remaining: global register allocation
- * (original s2 kind/used, s3 kind&0xff, s4 targets, s5 slot&0xff) and v0/v1
- * swapped in the `left` subtraction. do/while (0) blocks (statement macros)
- * around `used = 0` plus the case-4 target loop and around `used = 1;
- * hit = 1;` (refs inside count double for the allocator), with
- * `targets = 0` after the redraw block, leave 29 differing instructions
- * (local scorer): `left` and the gear maximum's address registers. */
 void func_801DD790(u8 slot, s32 row, u8 kind) {
     MenuEffect *effect;
     s32 x;
@@ -478,9 +470,6 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
     s32 all;
     s32 i;
     s32 sound;
-    s32 left;
-    s32 now;
-    s32 max;
     u8 redraw;
     u8 hit;
     u8 targets;
@@ -529,12 +518,13 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
         }
         D_800625A0->party->unk2F = 1;
         if (kind != 2) {
-            left = D_8006D8A0[D_800625A0->party->ids[slot]].ep - effect->cost;
+            if (D_8006D8A0[D_800625A0->party->ids[slot]].ep - effect->cost < 0) {
+                targets = 0;
+            }
         } else {
-            left = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk38 - effect->gearCost;
-        }
-        if (left < 0) {
-            targets = 0;
+            if (D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk38 - effect->gearCost < 0) {
+                targets = 0;
+            }
         }
         if (!targets) {
             break;
@@ -549,16 +539,16 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
                 hit = 0;
                 if (func_801C865C(targets, i)) {
                     if (kind != 2) {
-                        now = D_8006D8A0[D_800625A0->party->ids[i]].hp;
-                        max = D_8006D8A0[D_800625A0->party->ids[i]].hpMax;
+                        if (D_8006D8A0[D_800625A0->party->ids[i]].hp != D_8006D8A0[D_800625A0->party->ids[i]].hpMax) {
+                            used = 1;
+                            hit = 1;
+                        }
                     } else {
-                        /* the maximum is read from party slot `row` */
-                        now = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[i]].gear].unk60;
-                        max = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[row]].gear].unk64;
-                    }
-                    if (now != max) {
-                        used = 1;
-                        hit = 1;
+                        if (D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[i]].gear].unk60 !=
+                            D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[row]].gear].unk64) {
+                            used = 1;
+                            hit = 1;
+                        }
                     }
                     if (hit) {
                         func_801E35BC(D_800625A0->tables, D_800625A0->party->ids[slot], D_800625A0->party->ids[i],
@@ -603,9 +593,6 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
     }
     func_801D4EA0(2);
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801DD790);
-#endif
 
 /* The arts screen's windows are up: clear `windows`, zoom in when `zoom`
  * asks for it and drop the panel redraw flags. A statement macro. */
