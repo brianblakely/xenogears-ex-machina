@@ -2195,10 +2195,53 @@ void func_801CB28C(s32 *save) {
  * goto loop below everything else matches: the -1 is loaded inside the loop
  * and the port argument there is not re-masked (6 differing instructions,
  * local scorer). Recipe: file = fd after the open loop (fills the delay
- * slot of its test and keeps the exit branch from being threaded), a
- * do/while (0) block from the buffer allocation through the checksum test
+ * slot of its test and keeps the exit branch from being threaded), the
+ * READ_SAVE block from the buffer allocation through the checksum test
  * (moves the success block out of line), and the read retry as a real
  * do/while loop followed by the close-and-release exit. */
+/* Read the save file in 100h chunks into a 2100h block (a failed read
+ * closes the file and frees the block) and apply it when its sum
+ * matches (a statement macro). */
+#define READ_SAVE()                                          \
+    do {                                                     \
+        D_800625A0->party->unk2F = 0;                        \
+        buffer = func_80031BDC(0x2100, 1);                   \
+        done = 0;                                            \
+        p = buffer;                                          \
+        D_800625A0->party->unkB = 0;                         \
+        func_801CAE08(1);                                    \
+        do {                                                 \
+            func_801C7BF4();                                 \
+            retry = 5;                                       \
+            do {                                             \
+                if (read(fd, p, 0x100) != 0x100) {           \
+                    fd = 0;                                  \
+                    func_801C8CA4(port);                     \
+                }                                            \
+            } while (fd == 0 && --retry != 0);               \
+            if (fd == 0) {                                   \
+                close(file);                                 \
+                goto release;                                \
+            }                                                \
+            done += 0x100;                                   \
+            p += 0x100;                                      \
+        } while (done < D_800625A0->card->saveBlocks << 13); \
+        close(fd);                                           \
+        p = buffer + 0x100;                                  \
+        sum = 0;                                             \
+        for (i = 0; i < 0x1eff; i++) {                       \
+            sum += *p++;                                     \
+        }                                                    \
+        if (sum == *p) {                                     \
+            p = buffer + 0x100;                              \
+            func_801C72BC(1);                                \
+            func_801CB28C((s32 *)p);                         \
+            func_801C72BC(0x11);                             \
+        } else {                                             \
+            fd = 0;                                          \
+        }                                                    \
+    } while (0)
+
 u8 func_801CB304(void) {
     char path[64];
     s32 first;
@@ -2269,44 +2312,7 @@ u8 func_801CB304(void) {
                 }
                 file = fd;
                 if (file != 0) {
-                    do {
-                        D_800625A0->party->unk2F = 0;
-                        buffer = func_80031BDC(0x2100, 1);
-                        done = 0;
-                        p = buffer;
-                        D_800625A0->party->unkB = 0;
-                        func_801CAE08(1);
-                        do {
-                            func_801C7BF4();
-                            retry = 5;
-                            do {
-                                if (read(fd, p, 0x100) != 0x100) {
-                                    fd = 0;
-                                    func_801C8CA4(port);
-                                }
-                            } while (fd == 0 && --retry != 0);
-                            if (fd == 0) {
-                                close(file);
-                                goto release;
-                            }
-                            done += 0x100;
-                            p += 0x100;
-                        } while (done < D_800625A0->card->saveBlocks << 13);
-                        close(fd);
-                        p = buffer + 0x100;
-                        sum = 0;
-                        for (i = 0; i < 0x1eff; i++) {
-                            sum += *p++;
-                        }
-                        if (sum == *p) {
-                            p = buffer + 0x100;
-                            func_801C72BC(1);
-                            func_801CB28C((s32 *)p);
-                            func_801C72BC(0x11);
-                        } else {
-                            fd = 0;
-                        }
-                    } while (0);
+                    READ_SAVE();
                 release:
                     func_800320E8(buffer);
                 }
@@ -2398,12 +2404,19 @@ u8 func_801CB9E8(u8 port, u8 slot) {
  * encoded in place, the disc, then the game data copy (801e4a28) and the names
  * decoded back. */
 #ifdef NON_MATCHING
-/* Remaining: the original allocates the name pointer s0 and the row index
- * s1 (here the other way round), and schedules the name pointer's
- * initialisation after the hoisted codes/encoded addresses. A do/while (0)
- * block (statement macro) around the copy-back loop fixes the allocation
- * and storing the play time before the digit gets to 5 differing
- * instructions (the name pointer's lui/addiu placement; local scorer). */
+/* Copy a 20-byte name buffer over `dst` (a statement macro). */
+#define COPY_NAME(dst, src, j)     \
+    do {                           \
+        for (j = 0; j < 20; j++) { \
+            (dst)[j] = (src)[j];   \
+        }                          \
+    } while (0)
+
+/* Remaining: the name pointer's lui/addiu is scheduled first in the block
+ * before the name loop; the original places it after the play-time load
+ * (5 differing instructions, local scorer, for every order of the three
+ * payload stores and the name initialisation). The COPY_NAME block gives
+ * the original's s0 name pointer / s1 row index allocation. */
 void func_801CBA4C(MenuSavePayload *payload, u8 port, u8 digit) {
     u8 codes[24];
     u8 encoded[20];
@@ -2427,9 +2440,9 @@ void func_801CBA4C(MenuSavePayload *payload, u8 port, u8 digit) {
             payload->ids[i] = 0xff;
         }
     }
+    payload->time = D_80059488;
     payload->unk1F = 0;
     payload->digit = digit;
-    payload->time = D_80059488;
     name = GAME_NAMES;
     for (i = 0; i < 31; i++) {
         for (j = 0; j < 20; j++) {
@@ -2437,9 +2450,7 @@ void func_801CBA4C(MenuSavePayload *payload, u8 port, u8 digit) {
             encoded[j] = 0;
         }
         func_80033C20(codes, encoded);
-        for (j = 0; j < 20; j++) {
-            name[j] = encoded[j];
-        }
+        COPY_NAME(name, encoded, j);
         name += 20;
     }
     if (!D_801E96A5) {
