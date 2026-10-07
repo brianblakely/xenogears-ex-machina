@@ -291,7 +291,11 @@ s32 func_80085760(VECTOR *from, VECTOR *to, s32 index, s32 face);
  * move leaves through edge n) onto the neighbouring faces, sliding along an
  * edge whose neighbour is a wall (kind 1) and dropping back to the terrain
  * when an edge has no neighbour. Returns 1 when the position stands on a face. */
-#ifdef NON_MATCHING /* neighbor copies and nested switch tails still differ */
+/* NON_MATCHING: 16 bytes short. The original copies each neighbour face
+ * (loaded with lh) into a0 before testing it against -1 and sets face from
+ * that copy; here face (u16) reloads it with lhu. Declaring face s32 gives
+ * the copies but loses the original's 0xb8 frame (its 0x30-0x8f spill area). */
+#ifdef NON_MATCHING
 s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s32 mode) {
     s16 object;
     WalkScratch *scratch;
@@ -1685,7 +1689,11 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80
 /* After the grid moved: free the blocks that left it and queue reads of the
  * new edge blocks, rows from the row-major file and columns from the
  * column-major file; corners from whichever edge changed. */
-#ifdef NON_MATCHING /* register allocation of the edge loops */
+/* NON_MATCHING: register allocation of the edge loops: the original hoists
+ * the cell array and the block table addresses (fp/s7) into each edge loop's
+ * preheader and loads -1 for the inner test every iteration; here -1 is
+ * hoisted instead and the cell array address is rebuilt per row. */
+#ifdef NON_MATCHING
 void func_80098CC0(void) {
     s32 first;
     s32 second;
