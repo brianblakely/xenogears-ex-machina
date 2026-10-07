@@ -1696,15 +1696,16 @@ void func_801E1398(void) {
 #ifdef NON_MATCHING
 /* The original's target loop is not loop-optimized (each target address is
  * recomputed), hence the goto loop; the u16 copy of `row` zero-extends it
- * once before the loop, in place in a1, as the original does. Remaining:
- * i/values take t2/t1 (the original t1/t2: `values` wins the global
- * allocation priority here; a do/while (0) block around the loop body,
- * whose refs then count double, fixes that) and the target address adds
- * id * 0x110 to the table after the row offset (the original: table +
- * id * 0x110 first, then row * 14 + that), 9 differing instructions with
- * the block (local scorer). */
+ * once before the loop, in place in a1, and the address is formed from the
+ * index offset and the table line as in the original. Remaining: i/values
+ * take t2/t1 (the original t1/t2: `values` wins the global allocation
+ * priority here); a do/while (0) block around the loop body, whose refs
+ * then count double, fixes that and leaves only the final address add's
+ * operand order (2 differing instructions, local scorer). */
 u32 func_801E1418(u8 slot, u8 row) {
     u32 sum;
+    s32 off;
+    u8 *line;
     u16 r;
     s32 i;
     u32 count;
@@ -1725,7 +1726,9 @@ u32 func_801E1418(u8 slot, u8 row) {
         values = D_8006D8A0[id].unk90;
     loop:
         value = *values;
-        target = *(u16 *)(table + id * 0x110 + r * 14 + i * 2);
+        off = i * 2;
+        line = table + id * 0x110;
+        target = *(u16 *)(off + (r * 14 + line));
         if (value != 0) {
             if (target != 0) {
                 if (target != 0xffff) {
