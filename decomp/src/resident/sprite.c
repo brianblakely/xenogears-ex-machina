@@ -806,7 +806,11 @@ void func_8001E368(Sprite *sprite, u_long *ot, s32 height) {
 /* Nonmatching: the RotTransPers4 depth output is the last word of a 16-byte
  * aggregate at 0x50 (0x50-0x5B never accessed), which reproduces the frame;
  * only the part width ($t0 in the original) and the column span ($a3)
- * take each other's registers (score 8). */
+ * take each other's registers (score 8). Global allocation takes the width
+ * byte first because sched1 puts du = w - 1 right after its load, giving du
+ * the longer life (16 insns against 14); storing u1 before u0/v0 shortens du
+ * enough to fix the registers but then that store is first (score 2), and
+ * an s32 u also fixes them but merges the u - 1 test into u. */
 #ifdef NON_MATCHING
 void func_8001E3D8(Sprite *sprite, u_long *ot) {
     SpriteRenderer *renderer;
