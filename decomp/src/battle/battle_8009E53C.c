@@ -5392,8 +5392,8 @@ chosen:
                 s16 y = *pc++;
                 s16 z = *pc++;
 
-                flags = -1;
                 func_800ADF1C(pool, object->hierarchy, arg, x, y, z);
+                flags = -1;
             }
             break;
         case 0x41: /* turn by angles */
@@ -5425,8 +5425,8 @@ chosen:
                 }
                 yaw = ratan2(-dx, -dz);
                 if (dx != 0 || dy != 0 || dz != 0) {
-                    flags = -1;
                     func_800ADF1C(pool, object->hierarchy, arg, pitch, yaw, 0);
+                    flags = -1;
                 }
             }
             break;
