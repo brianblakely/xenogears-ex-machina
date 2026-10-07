@@ -4797,13 +4797,15 @@ chosen:
             {
                 u8 index;
                 u32 smooth;
+                u32 duration;
+                u8 tag;
 
-                word = *pc++;
+                smooth = (word = *pc++) >> 8;
                 flags = -1;
                 index = word;
-                smooth = word >> 8;
-                word = *pc++;
-                func_800A1CF4(pool, object->hierarchy, (s16 *)func_800AF518(object, index, &i), word >> 8, arg, (u8)word, smooth);
+                duration = (word = *pc++) >> 8;
+                tag = word;
+                func_800A1CF4(pool, object->hierarchy, (s16 *)func_800AF518(object, index, &i), duration, arg, tag, smooth);
                 func_800AEEEC(object);
             }
             break;
