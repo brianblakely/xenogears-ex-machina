@@ -4854,8 +4854,8 @@ chosen:
                 }
                 *created = *object;
                 D_800D3368[i] = created;
-                created->field3C = 0xFFFF;
                 created->animation = -1;
+                created->field3C = 0xFFFF;
                 created->scriptWait = 0;
                 created->field58 = 0;
                 created->field5C = 0xFF;
@@ -4866,16 +4866,17 @@ chosen:
                 created->field39 = 0x6B;
                 created->script = NULL;
                 created->slot2 = object->slot;
+                created->slot = i;
                 created->surfaceCount = 0;
                 created->imageCount = 0;
-                created->slot = i;
                 func_800AA6E0(created);
                 parts = func_80031BDC(object->hierarchy->index * sizeof(ModelPart), 1);
                 created->hierarchy = parts;
                 for (i = 0; i < object->hierarchy->index; i++) {
                     parts[i] = object->hierarchy[i];
                     if (object->hierarchy[i].parent != NULL) {
-                        parts[i].parent = &parts[object->hierarchy[i].parent - object->hierarchy];
+                        parts[i].parent =
+                            &parts[((u8 *)object->hierarchy[i].parent - (u8 *)object->hierarchy) / sizeof(ModelPart)];
                     }
                     parts[i].flag7 = 0;
                     parts[i].effects[0] = NULL;
