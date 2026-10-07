@@ -2003,11 +2003,7 @@ void func_801E2368(void) {
  * when the member has a gear; member 7 and the flag D_80059179 refuse),
  * switching members with 9/10, until cancelled. The first 801d9704 call
  * passes the slot before it is set, as the original does; 801d7cfc is
- * called without a prototype in this unit (the slot goes unmasked).
- * Nonmatching: the slot and the shown slot take each other's saved
- * registers (s2/s1 in the original; global-alloc priority 6896 for the slot
- * against 2008 for the shown slot here). */
-#ifdef NON_MATCHING
+ * called without a prototype in this unit (the slot goes unmasked). */
 u8 func_801E23CC(void) {
     s32 slot;
     u8 shown;
@@ -2025,9 +2021,9 @@ u8 func_801E23CC(void) {
     while (stay) {
         func_801C7BF4();
         if (slot != shown) {
+            func_801DFE2C(slot);
+            func_801D2EC0(slot, 1);
             shown = slot;
-            func_801DFE2C(shown);
-            func_801D2EC0(shown, 1);
             page = D_8006F8E5[slot] ? 6 : 0;
             func_801E2324(page);
             func_801E8070(6, D_800625A0->labels18E0, D_801EA56E, D_801E9F48, D_800625A0->party->unk54, 4, 7, 6);
@@ -2150,9 +2146,6 @@ u8 func_801E23CC(void) {
     D_800625A0->party->redraw3 = 0;
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801E23CC);
-#endif
 
 /* Open the 801d3488 screen: its three blocks and view 3. */
 void func_801E2AE0(void) {
