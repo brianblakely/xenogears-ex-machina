@@ -2031,26 +2031,20 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085618);
 
 /* Revive slot at full HP and clear its timed statuses (the active halves of
  * the status words 0x7c-0x80 and 0x84-0x8c). */
-#ifdef NON_MATCHING
 void func_80085AC4(slot)
 u8 slot;
 {
     s32 i;
     u16 *status;
 
-    status = &D_800CCCE8.records[slot].pilot.status7C;
     D_800CCCE8.records[slot].pilot.hp = D_800CCCE8.records[slot].pilot.maxHp;
-    for (i = 2; i >= 0; i -= 2) {
-        status[i] = 0;
+    for (i = 2, status = &D_800CCCE8.records[slot].pilot.status80; i >= 0; i -= 2, status -= 2) {
+        *status = 0;
     }
-    status = &D_800CCCE8.records[slot].pilot.status84.half.active;
-    for (i = 4; i >= 0; i -= 2) {
-        status[i] = 0;
+    for (i = 4, status = &D_800CCCE8.records[slot].pilot.status8C.half.active; i >= 0; i -= 2, status -= 2) {
+        *status = 0;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085AC4);
-#endif
 
 /* Apply up to three recovery amounts from 8009ada0 to `slot` as separate
  * events (codes 8..10) and show them. */
