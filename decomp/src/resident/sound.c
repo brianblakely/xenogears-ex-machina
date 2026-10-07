@@ -2323,9 +2323,9 @@ extern s32 (*D_800508A4[])(SoundModulator *modulator); /* modulator waves by sha
  * selects a one-sided wave).
  * Nonmatching: the original loads the rate before the depth, masks the
  * shape into $a2 for the call and copies it back to the mode register
- * (andi $a2,$s3,0xf; move $s3,$a2), and stores the shape, target and
- * flags before taking the modulator address; this build masks in place and
- * moves the shape to $a2 at the call (as 8003DD24/8003E04C). */
+ * (andi $a2,$s3,0xf; move $s3,$a2), and stores the shape before the target;
+ * this build masks in place and moves the shape to $a2 at the call (as
+ * 8003DD24/8003E04C). */
 #ifdef NON_MATCHING
 u8 *func_8003D9A4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     s32 depth = ((s8 *)data)[1];
@@ -2349,10 +2349,10 @@ u8 *func_8003D9A4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
         modulator->period = 0x400;
         modulator->rate = rate;
         modulator->delay = 0;
-        modulator->shape = mode;
-        modulator->target = 0;
-        modulator->flags = flags + 1;
         modulator->wave = D_800508A4[mode];
+        modulator->target = 0;
+        modulator->shape = mode;
+        modulator->flags = flags + 1;
         channel->modulators |= 1;
         func_8003E3E0(modulator);
     }
@@ -2459,7 +2459,9 @@ u8 *func_8003DC50(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
 
 /* Tremolo with an explicit shape (low nibble of the third operand; bit 4
  * selects a one-sided wave).
- * Nonmatching: register allocation of rate/mode differs. */
+ * Nonmatching: rate and mode take $s3/$s2 (original $s2/$s3), and the
+ * shape is masked in place instead of into $a2 and copied back (see
+ * 8003D9A4). */
 #ifdef NON_MATCHING
 u8 *func_8003DD24(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     s16 rate = data[0];
@@ -2477,10 +2479,10 @@ u8 *func_8003DD24(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
         modulator->period = 0x400;
         modulator->rate = rate;
         modulator->delay = 0;
+        modulator->wave = D_800508A4[mode];
         modulator->target = 1;
         modulator->shape = mode;
         modulator->flags = flags + 1;
-        modulator->wave = D_800508A4[mode];
         channel->modulators |= 2;
         func_8003E3E0(modulator);
     }
@@ -2584,7 +2586,9 @@ u8 *func_8003DF78(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
 
 /* Auto-pan with an explicit shape (low nibble of the third operand; bit 4
  * selects a one-sided wave).
- * Nonmatching: register allocation of rate/mode differs. */
+ * Nonmatching: rate and mode take $s3/$s2 (original $s2/$s3), and the
+ * shape is masked in place instead of into $a2 and copied back (see
+ * 8003D9A4). */
 #ifdef NON_MATCHING
 u8 *func_8003E04C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     s16 rate = data[0];
@@ -2602,10 +2606,10 @@ u8 *func_8003E04C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
         modulator->period = 0x400;
         modulator->rate = rate;
         modulator->delay = 0;
+        modulator->wave = D_800508A4[mode];
         modulator->target = 2;
         modulator->shape = mode;
         modulator->flags = flags + 1;
-        modulator->wave = D_800508A4[mode];
         channel->modulators |= 4;
         func_8003E3E0(modulator);
     }
