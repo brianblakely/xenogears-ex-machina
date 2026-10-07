@@ -99,17 +99,14 @@ void func_8007E954(s32 value) {
     D_800912DC = value;
 }
 
-#ifdef NON_MATCHING
 /* Draw one character at the text cursor (at most 101 quads a frame; '('
  * only advances) and move the cursor right by its scaled width. Declared
  * int without a return value, as the original's unfilled delay slot shows.
- * Does not match: the original loads the glyph width before storing the
- * first vertex, and the texture page/CLUT before the packet length. Reading
- * the width first and D_800912DC as aggregate (struct/array) memory makes
- * everything up to the third UV match (the scale load then stays behind the
- * first vertex store); the rest is the packet length/colour schedule. */
+ * The vertices, UVs and colour word are written through casts of the packet
+ * fields (not struct member stores), so no global load moves above them;
+ * the texture page/CLUT and the length are member stores. */
 s32 func_8007E964(s32 ch) {
-    PolyFT4Words *quad;
+    PolyFT4 *quad;
     Glyph *glyph;
     s32 right;
 
@@ -119,29 +116,26 @@ s32 func_8007E964(s32 ch) {
         glyph = func_8007E8AC(ch);
         if (glyph != NULL) {
             if (ch != '(') {
-                quad->xy0 = D_800926E8 | (D_800926EC << 16);
                 ch = glyph->width | 3; /* the quad width, in the same variable */
+                *(u32 *)&quad->x0 = D_800926E8 | (D_800926EC << 16);
                 right = D_800926E8 + ((ch * D_800912DC) >> 8);
-                quad->xy1 = right | (D_800926EC << 16);
-                quad->xy2 = D_800926E8 | ((D_800926EC + glyph->height) << 16);
-                quad->xy3 = right | ((D_800926EC + glyph->height) << 16);
-                quad->uv0 = glyph->u | (glyph->v << 8);
-                quad->uv1 = (glyph->u + ch) | (glyph->v << 8);
-                quad->uv2 = glyph->u | ((glyph->v + (glyph->height + 1)) << 8);
-                quad->uv3 = (glyph->u + ch) | ((glyph->v + (glyph->height + 1)) << 8);
-                quad->len = 9;
-                quad->rgbc = D_800926F0 | (D_800926F4 << 8) | (D_800926F8 << 16) | 0x2C000000;
+                *(u32 *)&quad->x1 = right | (D_800926EC << 16);
+                *(u32 *)&quad->x2 = D_800926E8 | ((D_800926EC + glyph->height) << 16);
+                *(u32 *)&quad->x3 = right | ((D_800926EC + glyph->height) << 16);
+                *(u16 *)&quad->u0 = glyph->u | (glyph->v << 8);
+                *(u16 *)&quad->u1 = (glyph->u + ch) | (glyph->v << 8);
+                *(u16 *)&quad->u2 = glyph->u | ((glyph->v + (glyph->height + 1)) << 8);
+                *(u16 *)&quad->u3 = (glyph->u + ch) | ((glyph->v + (glyph->height + 1)) << 8);
                 quad->tpage = D_800926E0;
                 quad->clut = D_800926E4;
+                setlen(quad, 9);
+                *(u32 *)&quad->r0 = D_800926F0 | (D_800926F4 << 8) | (D_800926F8 << 16) | 0x2C000000;
                 D_800926DC++;
             }
             D_800926E8 += ((glyph->width * D_800912DC) >> 8) + 2;
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_8007E964);
-#endif
 
 /* Width of a text string in pixels at the current text scale. */
 s32 func_8007EB6C(u8 *text) {
