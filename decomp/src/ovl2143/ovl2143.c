@@ -678,8 +678,8 @@ s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, s32 tag, s32 scale) {
     u8 *track;
     SVECTOR move;
     VECTOR moved;
-    u32 count;
     u32 i;
+    u32 count;
     s32 result = 0;
     u32 kind;
     u32 pos_kind;
@@ -2395,12 +2395,7 @@ INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E1A14);
  * triangles, and the visible triangles are lit (front and back colours) and
  * queued. As in the original, a triangle the GTE flags as off screen does
  * not advance the triangle pointer, and one variable is both the collision
- * loop's counter and the GTE flag store.
- * NON_MATCHING: same size and instructions except the normal-clearing and
- * normal-averaging loops: the original strength-reduces their point address
- * to &p[i].normal[2] (fields at -0xa..0), this C to &p[i] (fields at
- * 0xa..0x14). */
-#ifdef NON_MATCHING
+ * loop's counter and the GTE flag store. */
 void func_801E22F8(Record24 *record, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buffer, s32 scale,
                    s16 floor) {
     VECTOR d;
@@ -2482,10 +2477,11 @@ void func_801E22F8(Record24 *record, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buff
     }
     p = *record->block1C;
     for (i = 0; i < record->points; i++) {
-        p[i].normal_count = 0;
-        p[i].normal[0] = 0;
-        p[i].normal[1] = 0;
-        p[i].normal[2] = 0;
+        p->normal_count = 0;
+        p->normal[0] = 0;
+        p->normal[1] = 0;
+        p->normal[2] = 0;
+        p++;
     }
     poly = record->block20;
     p = *record->block1C;
@@ -2519,9 +2515,10 @@ void func_801E22F8(Record24 *record, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buff
     }
     p = *record->block1C;
     for (i = 0; i < record->points; i++) {
-        p[i].normal[0] /= (s16)p[i].normal_count;
-        p[i].normal[1] /= (s16)p[i].normal_count;
-        p[i].normal[2] /= (s16)p[i].normal_count;
+        p->normal[0] /= (s16)p->normal_count;
+        p->normal[1] /= (s16)p->normal_count;
+        p->normal[2] /= (s16)p->normal_count;
+        p++;
     }
     SetRotMatrix(m);
     SetTransMatrix(m);
@@ -2588,9 +2585,6 @@ void func_801E22F8(Record24 *record, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buff
         poly++;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E22F8);
-#endif
 
 /* Release a record's heap blocks. */
 void func_801E3438(Record24 *record) {
