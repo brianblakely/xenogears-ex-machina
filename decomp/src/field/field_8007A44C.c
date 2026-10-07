@@ -2172,8 +2172,13 @@ s32 func_80080A18(void) {
  * each collision layer under its descriptor's position.
  * NON_MATCHING (10 edits): only the first constant stores differ: the
  * original hoists the 0x10 (+18/+1c) constant into $v1 above the +0 store
- * and loads 0xff for +74/+75 later; ours hoists the 0xff constant instead
- * (the store order and statement permutations tried do not change it).
+ * and loads 0xff for +74/+75 later; ours hoists the 0xff constant instead.
+ * This is local-alloc: the original's 0x10 and 0xff(QI) both overlap the
+ * 0x60 (+1a) constant, which takes $v0, so both get $v1 and sched2 floats
+ * the 0x10 load up. All 120 orders of the five statements give >= 10:
+ * unk18, height, fraction, unk074, unk075 gets 0x10 into $v1 but 0xff into
+ * $v0; unk18, fraction, unk074, height, unk075 the reverse (the sets are
+ * sched1 register births, so each constant sits next to its first store).
  * The (point + i)-> and (normal + layer)-> forms keep the point clears off
  * the call argument as the original does. */
 void func_80080A74(s32 index) {
@@ -2749,7 +2754,12 @@ s32 func_800825AC(s32 from, s32 to) {
  * the difference; and it schedules the turn.vy sign extension (sra) into
  * the heading test's delay slot, so the heading load uses $v1, not $a0.
  * One variable for angle and the result gives the temporary but puts
- * radius in $s0 (local-alloc) and swaps actor/terrain. */
+ * radius in $s0 (local-alloc) and swaps actor/terrain. sched1 dump: the
+ * sra (angle) is in the block's ready list with priority 5 because angle
+ * is set twice; set once (dir = ratan2 - angle - 0x800) it becomes a
+ * register birth but ties with the self/other position loads and loses on
+ * luid, so the original's late sra needs the sign extension emitted after
+ * those loads; re-reading turn.vy there reloads it from the stack. */
 void func_80082620(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
     u32 terrain;
     VECTOR conveyor;
@@ -2883,9 +2893,13 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_80082620
  * store the result as its velocity (+30).
  * NON_MATCHING (16 edits): only index and descriptor swap $s5/$s6. Global
  * allocation takes descriptor (4 refs over 261 insns) before index (3 refs
- * over 111); the original allocates index first. The (u16) view of the
- * first heading test keeps jump threading from merging it with the second,
- * as in the original. */
+ * over 111); the original allocates index first, which needs index's live
+ * length below ~98 insns or descriptor's above ~296 (or one ref fewer for
+ * descriptor). Writing the switch on unkE8 as an if-chain or duplicating
+ * the stop block at its gotos (cross-jumped back to one copy) does not do
+ * it; the duplicates raise model's refs and swap model/heading instead.
+ * The (u16) view of the first heading test keeps jump threading from
+ * merging it with the second, as in the original. */
 void func_80082BB8(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
     VECTOR move;
     SVECTOR edge[2];
@@ -3609,8 +3623,11 @@ s32 func_8008492C(FieldActor *actor) {
  * commit the planar move (or roll it back on a blocking attribute or a
  * ceiling), then fall, land or rise onto the floor, and record the
  * controlled actor's history. Returns -1 when the actor did not move.
- * NON_MATCHING: only register choice differs: the original keeps the
- * position height (y) in $a0 and the floor-scan pointer in $a1; ours swaps them. */
+ * NON_MATCHING (14 edits): only register choice differs: the original keeps
+ * the position height (y) in $a0 and the floor-scan pointer in $a1; ours
+ * swaps them. Global allocation takes the strength-reduced scan pointer
+ * (6 refs over 10 insns) long before y (4 refs over 21); y as s16, declared
+ * elsewhere, or not a variable (loop-invariant hoist) does not reorder it. */
 #ifdef NON_MATCHING
 s32 func_80084A40(s32 index, s32 lowest, FieldDescriptor *descriptor, FieldActor *actor, s32 status) {
     s32 floors[4];
