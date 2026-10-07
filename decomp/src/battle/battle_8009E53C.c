@@ -3264,7 +3264,6 @@ void func_800A6F98(void) {
     func_800320E8(D_800C3AC8);
 }
 
-#ifdef NON_MATCHING
 /* Build a surface from `table`: a scaled centre per ring (offset by
  * ox/oy/oz), each strand's points (segment length and sag), and two textured
  * triangles per point pair between neighbouring rings, their texture
@@ -3274,47 +3273,63 @@ void func_800A6F98(void) {
  * Texture steps narrow to a signed halfword in u and an unsigned one in v.
  * On an allocation failure the surface is left empty; the original clears
  * centres before passing NULL to the free service, even when a centre block
- * was allocated. Nonmatching: loop strength reduction, saved registers and
- * spill slots still differ around SetPolyGT3. */
+ * was allocated.
+ * NON_MATCHING: the shared centre cursor and triangle setup group recover
+ * the original 0x130-byte frame, but the table/scale/angle registers and
+ * strip-loop spills still differ. The original reloads v_step before each
+ * triangle loop; this C strength-reduces its row calculations. */
+#ifdef NON_MATCHING
+/* Initialize one buffer's textured triangle, whose vertices are filled when drawn. */
+#define SET_RING_TRIANGLE(_p, _page, _clut, _u0, _v0, _u1, _v1, _u2, _v2) \
+    do { \
+        SetPolyGT3(_p); \
+        (_p)->tpage = (_page); \
+        (_p)->u0 = (_u0); \
+        (_p)->v0 = (_v0); \
+        (_p)->clut = (_clut); \
+        (_p)->u1 = (_u1); \
+        (_p)->v1 = (_v1); \
+        (_p)->u2 = (_u2); \
+        (_p)->v2 = (_v2); \
+    } while (0)
+
 void func_800A7064(Surface *surface, u16 *table, s16 angle_base, s32 scale, s16 ox, s16 oy, s16 oz,
                    s32 count, s16 tx, s16 ty, s16 u_span, s16 v_span, s16 clut_x, s16 clut_y, u8 b0,
                    u8 b1, u8 b2, u8 b3, u8 b4, u8 b5) {
-    SVECTOR *centres;
     SVECTOR *centre;
     SurfacePoint **rings;
-    SurfacePoint *points;
+    SurfacePoint *points_base;
     SurfacePoint *point;
     SurfacePoly *polys;
-    POLY_GT3 *prim;
     u16 *counts;
     u16 *radii;
     u8 *angles;
+    SurfaceEntry *entry;
     u16 tpage, clut;
     s32 page_x, page_y;
     s32 u_base, v_base;
     s16 u_step;
-    s32 u, u_next;
     u16 v_step;
-    s32 first;
-    s32 index;
-    SurfaceEntry *entries;
+    s32 start, first;
+    s32 u, u_next;
+    s32 i, k, b;
+    s32 n;
     u16 total;
-    s32 i, k, b, n;
 
     surface->rings = *table++;
     surface->polys = *table * 2;
     func_80032498(4, 0);
     table++;
-    centres = func_80031BDC(surface->rings * sizeof(SVECTOR), 0);
-    if (centres == NULL) {
+    centre = func_80031BDC(surface->rings * sizeof(SVECTOR), 0);
+    if (centre == NULL) {
         surface->centres = NULL;
         return;
     }
-    surface->centres = centres;
-    for (i = 0; i < surface->rings; i++, centres++) {
-        centres->vx = (*table++ + ox) * scale / 4096;
-        centres->vy = (*table++ + oy) * scale / 4096;
-        centres->vz = (*table++ + oz) * scale / 4096;
+    surface->centres = centre;
+    for (i = 0; i < surface->rings; i++, centre++) {
+        centre->vx = (*table++ + ox) * scale / 4096;
+        centre->vy = (*table++ + oy) * scale / 4096;
+        centre->vz = (*table++ + oz) * scale / 4096;
     }
     total = table[surface->rings];
     surface->points = total + surface->rings;
@@ -3328,15 +3343,15 @@ void func_800A7064(Surface *surface, u16 *table, s16 angle_base, s32 scale, s16 
     counts = table;
     radii = table + surface->rings + 1;
     angles = (u8 *)(radii + total);
-    points = func_80031BDC((total + surface->rings) * sizeof(SurfacePoint), 0);
-    if (points == NULL) {
+    point = func_80031BDC((total + surface->rings) * sizeof(SurfacePoint), 0);
+    if (point == NULL) {
         surface->centres = NULL;
         func_800320E8(NULL);
         func_800320E8(surface->strands);
         return;
     }
     centre = surface->centres;
-    point = points;
+    points_base = point;
     for (i = 0; i < surface->rings; i++, counts++, centre++) {
         *rings++ = point;
         for (k = 0; k < *counts; k++, point++) {
@@ -3359,7 +3374,7 @@ void func_800A7064(Surface *surface, u16 *table, s16 angle_base, s32 scale, s16 
         surface->centres = NULL;
         func_800320E8(NULL);
         func_800320E8(surface->strands);
-        func_800320E8(points);
+        func_800320E8(points_base);
         return;
     }
     surface->polyList = polys;
@@ -3369,49 +3384,43 @@ void func_800A7064(Surface *surface, u16 *table, s16 angle_base, s32 scale, s16 
     clut = GetClut(clut_x, clut_y);
     u_base = (tx - (s16)(page_x << 6)) * 4;
     v_base = ty - (page_y << 8);
-    first = 0;
+    start = 0;
     u_step = u_span / (surface->rings - 1);
-    for (i = 0, u = 0, u_next = u_step; i < surface->rings - 1; i++, u += u_step, u_next += u_step) {
+    for (i = 0, u = 0; i < surface->rings - 1; i++, u += u_step) {
+        u_next = u + u_step;
         n = counts[1];
-        if ((u32)counts[0] < (u32)n) {
+        if (counts[0] < counts[1]) {
             n = counts[0];
         }
         v_step = v_span / n;
-        for (k = 0, index = first; k < n; k++, index++) {
-            polys->index[0] = index;
-            polys->index[2] = index + 1;
-            polys->index[1] = index + counts[0] + 1;
+        first = start;
+        for (k = 0; k < n; k++, first++) {
+            polys->index[0] = first;
+            polys->index[1] = first + counts[0] + 1;
+            polys->index[2] = first + 1;
             for (b = 0; b < 2; b++) {
-                prim = &polys->prim[b];
-                SetPolyGT3(prim);
-                prim->tpage = tpage;
-                prim->u0 = u_base + u;
-                prim->v0 = v_base + v_step * k;
-                prim->clut = clut;
-                prim->u1 = u_base + u_next;
-                prim->v1 = v_base + v_step * k;
-                prim->u2 = u_base + u;
-                prim->v2 = v_base + v_step * (k + 1);
+                SET_RING_TRIANGLE(&polys->prim[b], tpage, clut,
+                                  u_base + u, v_base + v_step * k,
+                                  u_base + u_next, v_base + v_step * k,
+                                  u_base + u, v_base + v_step * (k + 1));
             }
             polys++;
-            polys->index[0] = index + counts[0] + 1;
-            polys->index[2] = index + 1;
-            polys->index[1] = index + counts[0] + 2;
+            {
+                s32 next_index = first + 1;
+
+                polys->index[0] = next_index + counts[0];
+                polys->index[1] = next_index + counts[0] + 1;
+                polys->index[2] = next_index;
+            }
             for (b = 0; b < 2; b++) {
-                prim = &polys->prim[b];
-                SetPolyGT3(prim);
-                prim->tpage = tpage;
-                prim->u0 = u_base + u_next;
-                prim->v0 = v_base + v_step * k;
-                prim->clut = clut;
-                prim->u1 = u_base + u_next;
-                prim->v1 = v_base + v_step * (k + 1);
-                prim->u2 = u_base + u;
-                prim->v2 = v_base + v_step * (k + 1);
+                SET_RING_TRIANGLE(&polys->prim[b], tpage, clut,
+                                  u_base + u_next, v_base + v_step * k,
+                                  u_base + u_next, v_base + v_step * (k + 1),
+                                  u_base + u, v_base + v_step * (k + 1));
             }
             polys++;
         }
-        first += 1 + counts[0];
+        start += counts[0] + 1;
         counts++;
     }
     surface->b[0] = b0;
@@ -3422,25 +3431,27 @@ void func_800A7064(Surface *surface, u16 *table, s16 angle_base, s32 scale, s16 
     surface->b[5] = b5;
     surface->entryCount = count;
     if ((s16)count > 0) {
-        entries = func_80031BDC((s16)count * sizeof(SurfaceEntry), 0);
-        if (entries == NULL) {
+        entry = func_80031BDC((s16)count * sizeof(SurfaceEntry), 0);
+        if (entry == NULL) {
             surface->entryCount = 0;
         }
-        surface->entries = entries;
-        for (i = 0; i < surface->entryCount; i++, entries++) {
-            entries->h0 = 0;
-            entries->h2 = 0;
-            entries->h4 = 0;
-            entries->h6 = 0;
-            entries->h8 = 0;
-            entries->hA = 0;
-            entries->hC = 0;
-            entries->hE = 0;
+        surface->entries = entry;
+        for (i = 0; i < surface->entryCount; i++, entry++) {
+            entry->h0 = 0;
+            entry->h2 = 0;
+            entry->h4 = 0;
+            entry->h6 = 0;
+            entry->h8 = 0;
+            entry->hA = 0;
+            entry->hC = 0;
+            entry->hE = 0;
         }
     } else {
         surface->entries = NULL;
     }
 }
+
+#undef SET_RING_TRIANGLE
 #else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A7064);
 #endif
