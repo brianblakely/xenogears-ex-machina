@@ -162,6 +162,18 @@ typedef struct FieldActor {
  * sixteen bits at a time. */
 #define ACTOR_FLAG_HALF(actor, n) (((u16 *)(actor))[n])
 
+/* Bit-field view of the actor's +134 word: bits 0-3 animation bank, bit 4
+ * its flag, bits 5-6 a two-bit field cleared on reset, bit 7 the platform
+ * link flag. */
+typedef struct {
+    u32 bank : 4;
+    u32 bank_flag : 1;
+    u32 unk5 : 2;
+    u32 linked : 1;
+    u32 unk8 : 24;
+} ActorBits134;
+#define ACTOR_BITS134(actor) (*(ActorBits134 *)&(actor)->unk134)
+
 /* A 14-byte collision triangle; +0c indexes the attribute table. */
 typedef struct {
     s16 unk00[6];

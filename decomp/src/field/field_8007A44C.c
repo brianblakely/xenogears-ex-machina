@@ -2163,12 +2163,12 @@ s32 func_80080A18(void) {
 #ifdef NON_MATCHING
 /* Reset event actor `index` to its defaults and settle it on the floor of
  * each collision layer under its descriptor's position.
- * NON_MATCHING (measured 46 edits): in the floor loop the original passes
- * point + i computed afresh each iteration (sp+0x58 + i*8) while it clears
- * the point through a stride-8 induction register based at normal
- * (0x40($s2)); ours shares one register for both. Also the 0x10/0x60
- * constant stores at the top, two loop-invariant masks and the +134 mask
- * are scheduled/allocated differently. */
+ * NON_MATCHING (10 edits): only the first constant stores differ: the
+ * original hoists the 0x10 (+18/+1c) constant into $v1 above the +0 store
+ * and loads 0xff for +74/+75 later; ours hoists the 0xff constant instead
+ * (the store order and statement permutations tried do not change it).
+ * The (point + i)-> and (normal + layer)-> forms keep the point clears off
+ * the call argument as the original does. */
 void func_80080A74(s32 index) {
     VECTOR normal[4];
     SVECTOR point[4];
@@ -2178,10 +2178,10 @@ void func_80080A74(s32 index) {
     actor = D_800AF880.components.descriptors[index].actor;
     actor->flags = 0xB0;
     actor->layer_flags = 0x800;
+    actor->unk074 = 0xFF;
     actor->unk18 = 0x10;
     actor->gravity.s.fraction = 0x10;
     actor->height = 0x60;
-    actor->unk074 = 0xFF;
     actor->unk075 = 0xFF;
     actor->unk40[0] = 0;
     actor->unk40[1] = 0;
@@ -2218,13 +2218,13 @@ void func_80080A74(s32 index) {
     actor->state.bits.unk18 = 0;
     for (i = 0; i < 8; i++) {
         actor->slots[i].countdown = 0;
-        actor->slots[i].resume_pc = 0xFFFF;
-        actor->slots[i].tag = 0xFF;
         actor->slots[i].unk16 = 0;
         actor->slots[i].unk22 = 0;
         actor->slots[i].move_mode = 0;
         actor->slots[i].priority = 15;
         actor->slots[i].value = 0xFFFF;
+        actor->slots[i].resume_pc = 0xFFFF;
+        actor->slots[i].tag = 0xFF;
     }
     actor->unk120 = NULL;
     actor->unkE4 = 0xFF;
@@ -2243,7 +2243,7 @@ void func_80080A74(s32 index) {
     actor->state.bits.depth = 0;
     actor->state.bits.octant = 0;
     actor->state.bits.unk12 = 0;
-    actor->unk134 &= ~0x60;
+    ACTOR_BITS134(actor).unk5 = 0;
     actor->unk102 = rand();
     actor->scale[0] = 0x1000;
     actor->scale[1] = 0x1000;
@@ -2269,15 +2269,15 @@ void func_80080A74(s32 index) {
             normal[i].vx = 0;
             normal[i].vy = 0;
             normal[i].vz = 0;
-            point[i].vx = 0;
-            point[i].vy = 0;
-            point[i].vz = 0;
+            (point + i)->vx = 0;
+            (point + i)->vy = 0;
+            (point + i)->vz = 0;
         }
     }
     actor->unk014 = func_80080968(actor);
-    actor->unk50[0] = normal[actor->layer].vx;
-    actor->unk50[1] = normal[actor->layer].vy;
-    actor->unk50[2] = normal[actor->layer].vz;
+    actor->unk50[0] = (normal + actor->layer)->vx;
+    actor->unk50[1] = (normal + actor->layer)->vy;
+    actor->unk50[2] = (normal + actor->layer)->vz;
     if (!(D_800AF880.components.descriptors[index].flags & 0x80)) {
         D_800AF880.components.descriptors[index].matrix.t[1] = point[actor->layer].vy;
     }
@@ -2735,11 +2735,14 @@ s32 func_800825AC(s32 from, s32 to) {
 /* An actor's additive motion before it moves: the terrain push and conveyor
  * of the floor it stands on, the platform it rides and its gear layer's
  * drift.
- * NON_MATCHING (measured 83 edits): actor/terrain take s1/s2 swapped and
- * angle/radius s0/s1 swapped against the original; the original also
- * sign-extends turn.vy into angle only just before the heading test. With
- * angle declared s16 the allocation matches (12 edits) but the final
- * direction would then be truncated, so that is not used. */
+ * NON_MATCHING (14 edits): allocation now matches (a block-local `dir`
+ * takes $s0 before radius, so actor/terrain/radius land as in the
+ * original). Left: the original computes ratan2 - angle in a temporary
+ * ($v0) and only the final - 0x800 into $s0, where ours reuses angle for
+ * the difference; and it schedules the turn.vy sign extension (sra) into
+ * the heading test's delay slot, so the heading load uses $v1, not $a0.
+ * One variable for angle and the result gives the temporary but puts
+ * radius in $s0 (local-alloc) and swaps actor/terrain. */
 void func_80082620(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
     u32 terrain;
     VECTOR conveyor;
@@ -2760,6 +2763,7 @@ void func_80082620(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
     s32 other_z;
     s32 radius;
     s32 angle;
+    s32 dir;
 
     push_x = 0;
     push_z = 0;
@@ -2848,9 +2852,10 @@ conveyed:
                 actor->link->radius = func_800825AC(index, actor->unk074);
             }
             radius = actor->link->radius;
-            angle = (s16)ratan2(other_z - self_z, other_x - self_x) - angle - 0x800;
-            actor->unk40[0] += other_x + func_8003F8CC(angle) * radius * 16 - self_x;
-            actor->unk40[2] += other_z + func_8003F8B0(angle) * radius * 16 - self_z;
+            angle = (s16)ratan2(other_z - self_z, other_x - self_x) - angle;
+            dir = angle - 0x800;
+            actor->unk40[0] += other_x + func_8003F8CC(dir) * radius * 16 - self_x;
+            actor->unk40[2] += other_z + func_8003F8B0(dir) * radius * 16 - self_z;
         }
     }
     if ((actor->layer_flags & 0x22000) == 0x22000) {
@@ -2869,11 +2874,11 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_80082620
  * requested heading into a velocity (80081f80) plus its additive motion,
  * sweep that against the collision layers, then pick its animation and
  * store the result as its velocity (+30).
- * NON_MATCHING: ours threads the idle test's "heading & 0x8000" jump straight
- * into the turn branch; the original re-tests it (andi at 80082cf8), so its
- * two tests were not identical to jump threading (a (s16)heading < 0 form
- * avoids the threading but tests with bgez). Also index/descriptor swap
- * s5/s6 and the unk0EA test is laid out differently. */
+ * NON_MATCHING (16 edits): only index and descriptor swap $s5/$s6. Global
+ * allocation takes descriptor (4 refs over 261 insns) before index (3 refs
+ * over 111); the original allocates index first. The (u16) view of the
+ * first heading test keeps jump threading from merging it with the second,
+ * as in the original. */
 void func_80082BB8(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
     VECTOR move;
     SVECTOR edge[2];
@@ -2911,7 +2916,7 @@ void func_80082BB8(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
     if (func_8008492C(actor) == -1) {
         moving = 1;
     }
-    if ((heading & 0x8000) && moving == 0 && !(actor->flags & 0x40800)) {
+    if (((u16)heading & 0x8000) && moving == 0 && !(actor->flags & 0x40800)) {
         goto idle;
     }
     if (!(heading & 0x8000)) {
@@ -2924,9 +2929,9 @@ void func_80082BB8(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
         move.vz += actor->unk40[2];
         actor->heading_goal = heading;
     } else {
+        heading = actor->heading_goal & 0xFFF;
         move.vx = actor->unk40[0];
         move.vy = actor->unk40[1];
-        heading = actor->heading_goal & 0xFFF;
         move.vz = actor->unk40[2];
     }
     if (func_80082494(&move.vx, actor) != 0) {
@@ -2953,10 +2958,10 @@ void func_80082BB8(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
         }
         actor->flags = (actor->flags & ~0x600) | (saved & 0x600);
     }
-    if (result != -1) {
-        goto moved;
+    if (result == -1) {
+        goto stop;
     }
-    goto stop;
+    goto moved;
 idle:
     mode = actor->unkE6;
     actor->heading |= 0x8000;
@@ -3010,10 +3015,10 @@ moved:
     }
     actor->unk030[0] = move.vx;
     actor->unk030[1] = move.vy;
+    actor->unk030[2] = move.vz;
     actor->unk40[0] = 0;
     actor->unk40[1] = 0;
     actor->unk40[2] = 0;
-    actor->unk030[2] = move.vz;
 }
 #else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_80082BB8);
