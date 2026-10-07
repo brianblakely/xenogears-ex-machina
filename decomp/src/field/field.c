@@ -3504,28 +3504,26 @@ extern u8 D_80059178;
 extern u8 D_80059460;       /* menu kind */
 extern u32 *D_8005A4AC;     /* the menu's order tables */
 extern u32 *D_8005A4B0;
-extern u16 D_800ADCB0[6][2]; /* VRAM blocks the menu overwrites */
-extern s16 D_800ADCC8[6][2]; /* where they are saved meanwhile */
+extern s16 D_800ADCB0[12]; /* VRAM blocks the menu overwrites (x, y pairs) */
+extern s16 D_800ADCC8[12]; /* where they are saved meanwhile (x, y pairs) */
 extern s32 D_8004F31C;
 extern s32 D_8004F320;
 void func_8001C634(void);
 
-#ifdef NON_MATCHING
 /* Run a menu (kind in 800adb64, 0x80 marks a pending event-only one) over
  * the field: fade out, save the 801e module and the VRAM the menu uses,
  * load the menu (file kind + 5, and the shared file 1), run it (8001c634),
  * apply its results (entering a map from a save), then restore VRAM, fade
- * back in and reload the module and the party sprites.
- * Does not match yet: the original keeps more values in saved registers
- * (the module in fp, the menu block in s7) and spills 800adb30's copy to
- * the stack, giving a 0x78-byte frame. */
+ * back in and reload the module and the party sprites. */
 void func_800799D4(void) {
     RECT rect;
     FieldFileRequest files[4];
+    RECT unused; /* unused in the original; reserves 8 bytes */
     u32 end;
     void *module;
     void *source;
     void *menu;
+    void *sprites;
     u32 *saved_a;
     u32 *saved_b;
     s32 i;
@@ -3567,7 +3565,7 @@ void func_800799D4(void) {
     files[3].file = 0;
     files[3].destination = NULL;
     files[0].file = 1;
-    D_8005945C = files[0].destination = func_80031BDC(func_800288EC(1), 1);
+    files[0].destination = D_8005945C = func_80031BDC(func_800288EC(1), 1);
     files[1].destination = menu;
     files[1].file = (D_800ADB64 & 0x7F) + 5;
     if ((D_800ADB64 & 0x7F) == 5 && D_8004F370 == 0) {
@@ -3580,9 +3578,9 @@ void func_800799D4(void) {
     rect.w = 0x40;
     rect.h = 0x20;
     for (i = 0; i < 6; i++) {
-        rect.x = D_800ADCB0[i][0];
-        rect.y = D_800ADCB0[i][1];
-        MoveImage(&rect, D_800ADCC8[i][0], D_800ADCC8[i][1]);
+        rect.x = D_800ADCB0[i * 2];
+        rect.y = D_800ADCB0[i * 2 + 1];
+        MoveImage(&rect, D_800ADCC8[i * 2], D_800ADCC8[i * 2 + 1]);
         DrawSync(0);
     }
     func_8007995C(0x40, 0x100, 0x3C0, 0x100, 0x300, 0);
@@ -3670,9 +3668,9 @@ void func_800799D4(void) {
     for (i = 0; i < 6; i++) {
         rect.w = 0x40;
         rect.h = 0x20;
-        rect.x = D_800ADCC8[i][0];
-        rect.y = D_800ADCC8[i][1];
-        MoveImage(&rect, D_800ADCB0[i][0], D_800ADCB0[i][1]);
+        rect.x = D_800ADCC8[i * 2];
+        rect.y = D_800ADCC8[i * 2 + 1];
+        MoveImage(&rect, D_800ADCB0[i * 2], D_800ADCB0[i * 2 + 1]);
         DrawSync(0);
     }
     func_80028470(4, 0);
@@ -3733,11 +3731,11 @@ void func_800799D4(void) {
     } else {
         for (i = 0; i < 3; i++) {
             if (D_8006FABC[i] != 0xFF) {
-                menu = func_80031BDC(func_800288EC(D_8006FABC[i] + 5), 1);
-                func_800295D8(D_8006FABC[i] + 5, menu, 0, 0x80);
+                sprites = func_80031BDC(func_800288EC(D_8006FABC[i] + 5), 1);
+                func_800295D8(D_8006FABC[i] + 5, sprites, 0, 0x80);
                 func_80028A60(0);
-                func_80032EB4(menu, D_8005A414[i]);
-                func_800320E8(menu);
+                func_80032EB4(sprites, D_8005A414[i]);
+                func_800320E8(sprites);
             }
         }
         func_800A2488();
@@ -3747,6 +3745,3 @@ void func_800799D4(void) {
     func_80077544();
     D_8004F350 = 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800799D4);
-#endif
