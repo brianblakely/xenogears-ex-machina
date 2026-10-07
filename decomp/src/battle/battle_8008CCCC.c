@@ -2168,33 +2168,35 @@ void func_80096018(void) {
 /* Element adjustment of an attack/defense pair: the command's element (or
  * the attacker's own element status) against the target's weakness, its
  * resistance statuses (which may also force hit result 4) and its single
- * element guards, then a 20% boost for either side's +0x32 bit 0x10. The
- * guard switch tests the target's guard bits shifted back into place
- * (status = bits << 8, computed once). defenseScale is a signed char (the
- * defense division keeps its sign correction).
- * Nonmatching: element, bits and flag are allocated $t0/$t1/$t2 here and
- * $t1/$t2/$t0 in the original; the original tests element == 0 with an
- * andi but forms element & own without one. */
+ * element guards, then a 20% boost for either side's +0x32 bit 0x10.
+ * Nonmatching (4 instruction edits): in both target branches the resist
+ * bit is taken from the status copy ($v1: srl/andi $v0,$v1) where the
+ * original reads the freshly combined word ($v0). CSE folds the resist's
+ * zero_extend of word into status = word; with a u32 word the copy is
+ * kept but local-alloc's reg-copy optimization still redirects the use. */
 void func_80096494(u16 *attack, u16 *defense, s8 *hit) {
-    u8 ether = 0;
+    s8 ether = 0;
     u8 flag = 0;
+    s8 resist;
     u8 element;
     u8 bits;
     u8 targetGear;
-    u16 own;
-    u16 status;
+    u32 status;
     s8 scale;
     s8 defenseScale;
+    u32 guards;
+    u16 word;
+    u8 own;
 
     targetGear = D_800C34B0->records[D_800C3E50].flags15A >> 7;
     element = D_800C3DFC->attributes[2] & 0x3F;
     bits = D_800C3E34->pilot.weakness & 0x3F;
     if (!(D_800C34B0->records[D_800C3E04].flags15A >> 7)) {
-        own = D_800C3E00->pilot.status8C.half.active | D_800C3E00->pilot.status8C.half.permanent;
+        status = D_800C3E00->pilot.status8C.half.active | D_800C3E00->pilot.status8C.half.permanent;
     } else {
-        own = D_800D2D6C->status84.half.active | D_800D2D6C->status84.half.permanent;
+        status = D_800D2D6C->status84.half.active | D_800D2D6C->status84.half.permanent;
     }
-    own >>= 12;
+    own = status >> 12;
     if (D_800C3DFC->flagsA & 0x100) {
         ether = 1;
     }
@@ -2215,16 +2217,18 @@ void func_80096494(u16 *attack, u16 *defense, s8 *hit) {
             scale += 2;
         }
     }
-    flag = 0;
+    resist = 0;
     if (!targetGear) {
-        status = D_800C3E34->pilot.status8C.half.active | D_800C3E34->pilot.status8C.half.permanent;
-        bits = (status & 0xF00) >> 8;
-        flag = (status >> 1) & 1;
+        word = D_800C3E34->pilot.status8C.half.active | D_800C3E34->pilot.status8C.half.permanent;
+        bits = (word & 0xF00) >> 8;
+        status = word;
+        resist = (word >> 1) & 1;
     } else {
-        status = D_800D2DC8->status84.half.active | D_800D2DC8->status84.half.permanent;
-        bits = (status & 0xF00) >> 8;
-        if (status & 2) {
-            flag = 1;
+        word = D_800D2DC8->status84.half.active | D_800D2DC8->status84.half.permanent;
+        bits = (word & 0xF00) >> 8;
+        status = word;
+        if (word & 2) {
+            resist = 1;
         }
     }
     if ((element & bits) && ether) {
@@ -2236,7 +2240,7 @@ void func_80096494(u16 *attack, u16 *defense, s8 *hit) {
             *hit = 4;
         }
     }
-    if ((element & bits) && flag) {
+    if ((element & bits) && resist) {
         scale -= 3;
         if (status & 4) {
             scale -= 3;
@@ -2245,25 +2249,25 @@ void func_80096494(u16 *attack, u16 *defense, s8 *hit) {
             *hit = 4;
         }
     }
-    status = bits << 8;
+    guards = bits << 8;
     switch (element) {
-    case 1:
-        if (status & 0x200) {
-            scale += 3;
-        }
-        break;
-    case 2:
-        if (status & 0x100) {
+    case 8:
+        if (guards & 0x400) {
             scale += 3;
         }
         break;
     case 4:
-        if (status & 0x800) {
+        if (guards & 0x800) {
             scale += 3;
         }
         break;
-    case 8:
-        if (status & 0x400) {
+    case 1:
+        if (guards & 0x200) {
+            scale += 3;
+        }
+        break;
+    case 2:
+        if (guards & 0x100) {
             scale += 3;
         }
         break;
