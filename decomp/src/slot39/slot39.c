@@ -493,21 +493,18 @@ void func_801C6400(void) {
 /* Load the menu resources: the card file header template (name prefixes,
  * "SC" header, icon palette and pixels), the TIM list, sprite sheet and
  * label text, the party's portraits and, with sound, the effect bank. */
-#ifdef NON_MATCHING
 void func_801C65F4(void) {
     TIM_IMAGE tim;
-    SheetEntry entries[3];
+    s32 tex[3 * 6]; /* per entry 80026338's six outputs: -, mode, clut x/y, page x/y */
     MenuResources *res;
-    void *icon;
-    void *list;
-    void *portraits;
+    void *data;
     s32 i;
     u8 id;
 
     res = D_8005945C;
     func_8003342C(res);
-    icon = func_80032E88(res->files[0], 1);
-    OpenTIM(icon);
+    data = func_80032E88(res->files[0], 1);
+    OpenTIM(data);
     ReadTIM(&D_800625A0->card->icon);
     strcpy(D_800625A0->card->prefix, "BASLUS-00664");
     strcpy((char *)D_800625A0->card->otherPrefix, "BASLUS-01160");
@@ -518,37 +515,37 @@ void func_801C65F4(void) {
     bzero(D_800625A0->card->saveTitle, sizeof(D_800625A0->card->saveTitle));
     memmove(D_800625A0->card->savePalette, D_800625A0->card->icon.caddr, sizeof(D_800625A0->card->savePalette));
     memmove(D_800625A0->card->saveIcon, D_800625A0->card->icon.paddr, sizeof(D_800625A0->card->saveIcon));
-    func_800320E8(icon);
-    list = func_80032E88(res->files[1], 1);
-    func_8002DD20(list);
-    func_800320E8(list);
+    func_800320E8(data);
+    data = func_80032E88(res->files[1], 1);
+    func_8002DD20(data);
+    func_800320E8(data);
     D_800625A0->sheet = func_80032E88(res->files[2], 0);
     D_800625A0->labels = func_80032E88(res->files[3], 0);
-    func_80026338(D_800625A0->sheet, 0xe0, &entries[0].unk0, &entries[0].mode, &entries[0].clutX,
-                  &entries[0].clutY, &entries[0].pageX, &entries[0].pageY);
-    func_80026338(D_800625A0->sheet, 0x14b, &entries[0].unk0, &entries[0].mode, &entries[0].clutX,
-                  &entries[0].clutY, &entries[0].pageX, &entries[0].pageY);
-    func_80026338(D_800625A0->sheet, 0x14c, &entries[1].unk0, &entries[1].mode, &entries[1].clutX,
-                  &entries[1].clutY, &entries[1].pageX, &entries[1].pageY);
-    func_80026338(D_800625A0->sheet, 0x14d, &entries[2].unk0, &entries[2].mode, &entries[2].clutX,
-                  &entries[2].clutY, &entries[2].pageX, &entries[2].pageY);
-    entries[1].pageX += 0xc;
-    portraits = func_80032E88(res->files[4], 1);
+    func_80026338(D_800625A0->sheet, 0xe0, &tex[0], &tex[1], &tex[2],
+                  &tex[3], &tex[4], &tex[5]);
+    func_80026338(D_800625A0->sheet, 0x14b, &tex[0], &tex[1], &tex[2],
+                  &tex[3], &tex[4], &tex[5]);
+    func_80026338(D_800625A0->sheet, 0x14c, &tex[6], &tex[7], &tex[8],
+                  &tex[9], &tex[10], &tex[11]);
+    func_80026338(D_800625A0->sheet, 0x14d, &tex[12], &tex[13], &tex[14],
+                  &tex[15], &tex[16], &tex[17]);
+    tex[10] += 0xc;
+    data = func_80032E88(res->files[4], 1);
     for (i = 0; i < 3; i++) {
         id = D_800625A0->party->ids[i];
         if (id != 0xff) {
-            OpenTIM((u8 *)portraits + id * 0xb20);
+            OpenTIM((u8 *)data + id * 0xb20);
             ReadTIM(&tim);
-            tim.crect->x = entries[i].clutX;
-            tim.crect->y = entries[i].clutY;
-            tim.prect->x = entries[i].pageX;
-            tim.prect->y = entries[i].pageY;
+            tim.crect->x = tex[i * 6 + 2];
+            tim.crect->y = tex[i * 6 + 3];
+            tim.prect->x = tex[i * 6 + 4];
+            tim.prect->y = tex[i * 6 + 5];
             LoadImage(tim.crect, tim.caddr);
             LoadImage(tim.prect, tim.paddr);
         }
     }
     DrawSync(0);
-    func_800320E8(portraits);
+    func_800320E8(data);
     if (D_80059178 != 0) {
         func_80028470(0x10, 2);
         D_8006259C = func_80031BDC(func_800288EC(5), 0);
@@ -560,9 +557,6 @@ void func_801C65F4(void) {
     D_800625A0->effectBank = D_8006259C;
     func_800320E8(res);
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C65F4);
-#endif
 
 /* Set up the party: the starting top cursor, which characters are present,
  * the party slots (and which have a gear), the first occupied slot; then
@@ -1493,11 +1487,15 @@ void func_801C9270(s32 port) {
  * cursor marker. */
 #ifdef NON_MATCHING
 /* Remaining: the original keeps `marked` (always 0 here) as a copy of noCard
- * and tests it before setting party +0b (this build folds it away), and its
- * frame is 0xe8 (0x30 more: six more dead address pseudos). */
+ * (`move s6,s4` in the first branch's delay slot) and tests it before
+ * setting party +0b; this build folds it to a constant whatever the
+ * assignment form (marked = noCard = 0, noCard = 0; marked = noCard). The
+ * original's frame holds 48 more bytes its code never touches (10
+ * differing instructions, local scorer). */
 u8 func_801C93A8(void) {
     char path[64];
     u8 present[2];
+    u8 unused[48]; /* unused in the original; reserves 48 bytes */
     MenuState *state;
     s32 port;
     s32 i;
@@ -2132,9 +2130,14 @@ void func_801CAE08(u8 mode) {
  * to the first zero pair go through 80033b34 into a 20-byte buffer that is
  * copied back whole. */
 #ifdef NON_MATCHING
-/* Loop-invariant motion differs: this build hoists &GAME_NAMES[1] out of the
- * row loop into s2 (one more saved register, ra at 0x54), the original
- * reloads it into t0 for every row. */
+/* Loop-invariant motion differs: this build hoists &GAME_NAMES[1] (a
+ * movable the inner loop already moved) out of the row loop into s2, the
+ * original reloads it into t0 for every row. GCC's loop pass doubles the
+ * loop's insn count for every such re-moved invariant, so the original had
+ * one more before it (fp+16, fp+17 and this one are moved here); writing
+ * every access as GAME_NAMES[n + i] keeps it but loses the name pointer.
+ * Wrapping the inner loop in a do/while (0) block gets 19 -> 13 differing
+ * instructions (local scorer). */
 void func_801CB184(void) {
     u8 codes[24];
     u8 decoded[20];
@@ -2181,6 +2184,16 @@ void func_801CB28C(s32 *save) {
  * its last byte, apply it; message 5c ends the load, a failure shows message
  * 3e and continues. */
 #ifdef NON_MATCHING
+/* Remaining: register allocation and block placement. 3 differing
+ * instructions (local scorer) with: result/first/again initialised in
+ * that order, result = 0 after the 62 message, the open loop followed by
+ * if (file != 0), a do/while (0) block (statement macro) from the
+ * buffer allocation (with done = 0 after it) through the checksum test,
+ * a goto read-retry loop whose body is another such block, u8 sum, and
+ * p = buffer + 0x100 passed to 801cb28c. Left: the open test's delay slot
+ * and the 0x100 compare constant (the original's is a spilled invariant
+ * reloaded into a3; comparing against a variable set to 0x100 at the start
+ * reproduces that, leaving only the delay slot). */
 u8 func_801CB304(void) {
     char path[64];
     s32 first;
@@ -2375,6 +2388,12 @@ u8 func_801CB9E8(u8 port, u8 slot) {
  * encoded in place, the disc, then the game data copy (801e4a28) and the names
  * decoded back. */
 #ifdef NON_MATCHING
+/* Remaining: the original allocates the name pointer s0 and the row index
+ * s1 (here the other way round), and schedules the name pointer's
+ * initialisation after the hoisted codes/encoded addresses. A do/while (0)
+ * block (statement macro) around the copy-back loop fixes the allocation
+ * and storing the play time before the digit gets to 5 differing
+ * instructions (the name pointer's lui/addiu placement; local scorer). */
 void func_801CBA4C(MenuSavePayload *payload, u8 port, u8 digit) {
     u8 codes[24];
     u8 encoded[20];
@@ -2672,7 +2691,10 @@ u8 func_801CBD90(u8 kind) {
  * card and 44 otherwise, and refreshes the listing. Returns 1 when there
  * was no card. */
 #ifdef NON_MATCHING
-/* Differs in register allocation and spills (the original keeps &tempName in a saved register). */
+/* Differs in register allocation and spills (the original keeps &tempName
+ * in a saved register) and block placement; do/while (0) blocks around the
+ * read/write retry sections get 131 -> 111 differing instructions (local
+ * scorer) but not the allocation. */
 u8 func_801CC6D8(void) {
     char destName[64];
     char other[8];
@@ -6657,10 +6679,13 @@ void func_801DB5E4(u8 mode) {
 #ifdef NON_MATCHING
 /* Differs: the original clears the used-up id through &D_8006F5C4 + 0x96
  * (reloaded into t0, as is the counts base before the loop); this build
- * addresses D_8006F65A directly (INVENTORY->ids reorders the saved registers).
- * The original also uses 801e31c0's result unmasked, as an implicitly
- * declared (int) function would be. A do/while (0) block (statement macro)
- * around the case-4 target loop brings it to 20 differing instructions. */
+ * addresses D_8006F65A directly (INVENTORY->ids lets CSE fold it into
+ * 150(&counts[idx]) or hoists the whole address). The original also uses
+ * 801e31c0's result unmasked, as an implicitly declared (int) function
+ * would be: without the menu.h prototype in this unit 11 instructions
+ * differ (local scorer). With *(INVENTORY->ids + idx) and a do/while (0)
+ * block around the case-4 target loop the clear is formed from the
+ * INVENTORY base as in the original, but its whole address is hoisted. */
 u8 func_801DB920(s32 row, s32 entry) {
     u16 marks;
     u8 running;
@@ -6688,7 +6713,6 @@ u8 func_801DB920(s32 row, s32 entry) {
         func_801D397C(2, 0x10, 0xe, 0x90, 0xb0, 0, 0, 4, 0);
         while (running) {
             func_801C7BF4();
-            marks = 0;
             if (redraw) {
                 redraw = 0;
                 func_801DA5BC(row);
@@ -6696,6 +6720,7 @@ u8 func_801DB920(s32 row, s32 entry) {
                 func_801DB39C(1);
                 func_801DB5E4(0);
             }
+            marks = 0;
             D_800625A0->markers->visible[0] = D_800625A0->markers->visible[1] = D_800625A0->markers->visible[2] = 0;
             if (all) {
                 for (i = 0; i < 3; i++) {
