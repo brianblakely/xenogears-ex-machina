@@ -123,10 +123,7 @@ void func_8002A524(FileEntry *table) {
  * allocation failure everything loaded is freed and NULL returned.
  * The original recomputes &table[i] and first + i each pass, as GCC does
  * for a loop the loop optimizer does not see (here a goto loop under the
- * count guard).
- * Nonmatching: the table and the index take $s1/$s2 swapped (the original
- * keeps the table in $s2); instructions and frame (0x38) otherwise match. */
-#ifdef NON_MATCHING
+ * count guard); the terminator is written through the index. */
 FileEntry *func_8002A57C(s32 first, FileEntry *table) {
     u8 unused[8]; /* unused in the original; reserves 8 bytes */
     s32 count;
@@ -158,16 +155,14 @@ FileEntry *func_8002A57C(s32 first, FileEntry *table) {
                 goto next;
             }
         }
-        table[count].id = 0;
-        table[count].data = NULL;
+        i = count;
+        table[i].id = 0;
+        table[i].data = NULL;
     } else {
         table = NULL;
     }
     return table;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002A260", func_8002A57C);
-#endif
 
 /* CD command-complete callback: advance the seek/read state machine
  * (D_8004FE1C). Status 2 is success; on failure the retry reason is kept in
