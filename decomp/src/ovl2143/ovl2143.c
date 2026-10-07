@@ -2286,6 +2286,7 @@ void func_801E1A14(Record24 *record, u16 *table, s16 angle_base, s32 scale, s16 
     polys = func_80031BDC(record->polys * sizeof(RingPoly), 0);
     if (polys == NULL) {
         record->centres = NULL;
+        func_800320E8(NULL);
         func_800320E8(record->block1C);
         func_800320E8(points_base);
         return;
