@@ -896,27 +896,26 @@ void func_8008B13C(u8 *data, Player *player, Node *root) {
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008B13C);
 #endif
 
-#ifdef NON_MATCHING
 /* Build a model set node tree from a model set file: a node per hierarchy
  * record (with its model, parent, angle and offset) and a player per
- * animation. Returns the root node. Does not match: register allocation
- * spills the models pointer where the original spills the animations. */
+ * animation. Returns the root node. One pointer serves first as the model
+ * file and then as the animation table, as the original's register use
+ * shows. */
 Node *func_8008B38C(ModelSetFile *file) {
+    Node *root;
     u32 i;
-    u8 *models = file->models;
+    u32 *data = (u32 *)file->models;
     u32 *hierarchy = file->hierarchy;
     u32 *animations = file->animations;
     u32 count = hierarchy[0];
     HierarchyRecord *records = (HierarchyRecord *)(hierarchy + 1);
     Node **nodes;
     ModelSet *set;
-    Node *root;
     Node *node;
     Model *model;
     Player *player;
-    Node *parent;
 
-    func_8002C3E8(models);
+    func_8002C3E8((u8 *)data);
     func_800324B8(0x12);
     nodes = func_80031BDC(count * 4, 0);
     set = func_80089E74();
@@ -931,14 +930,13 @@ Node *func_8008B38C(ModelSetFile *file) {
         if (records[i].model != -1) {
             model = func_80089FC4();
             func_80089E2C(node, model);
-            func_8008A184(model, (ModelFile *)(models + (records[i].model * 0x38 + 0x10)));
+            func_8008A184(model, (ModelFile *)((u8 *)data + (records[i].model * 0x38 + 0x10)));
         }
         if (records[i].parent == -1) {
-            parent = root;
+            func_80089C88(root, node);
         } else {
-            parent = nodes[records[i].parent];
+            func_80089C88(nodes[records[i].parent], node);
         }
-        func_80089C88(parent, node);
         node->unk44.vx = records[i].angle.vx;
         node->unk44.vy = records[i].angle.vy;
         node->unk44.vz = records[i].angle.vz;
@@ -947,23 +945,20 @@ Node *func_8008B38C(ModelSetFile *file) {
         node->rotation.vz = records[i].offset[2];
     }
     if (animations != NULL) {
+        data = animations;
         func_800324B8(0x11);
-        player = set->players = func_80031BDC(animations[0] * sizeof(Player), 0);
-        set->count = animations[0];
-        for (i = 0; i < animations[0]; i++) {
-            if (animations[i + 1] != 0) {
-                func_8008B13C((u8 *)animations[i + 1], player, root);
+        player = set->players = func_80031BDC(data[0] * sizeof(Player), 0);
+        set->count = data[0];
+        for (i = 0; i < data[0]; i++) {
+            if (data[i + 1] != 0) {
+                func_8008B13C((u8 *)data[i + 1], &player[i], root);
             } else {
-                player->header = NULL;
+                player[i].header = NULL;
             }
-            player++;
         }
     }
     return root;
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008B38C);
-#endif
 
 /* Advance a player by some frames, snapping to the keys. */
 s32 func_8008B5DC(Player *player, s32 frames) {
