@@ -2587,49 +2587,48 @@ FrameCurve func_801E34BC(s32 type) {
 }
 
 /* Reset an actor's script state to run `entries` with the tables `locals`.
- * Differs only in where the -1 constant is loaded. */
-#ifdef NON_MATCHING
+ * The stores form one do/while (0) statement (a statement-macro shape); its
+ * loop notes keep the -1 load at the head of the original's schedule. */
 void func_801E3534(Actor *actor, SlotPool *pool, s32 *entries, s32 *locals) {
     s16 none;
 
     none = -1;
-    actor->h3C = 0xFFFF;
-    actor->parent = 0xFF;
-    actor->b39 = 0x6B;
-    actor->entries = entries;
-    actor->shared = NULL;
-    actor->pc = 0;
-    actor->locals = locals;
-    actor->globals = NULL;
-    actor->depth = 0;
-    actor->anim_state = none;
-    actor->aim_actor = 0;
-    actor->b35 = 0;
-    actor->scaled = 0;
-    actor->b38 = 0;
-    actor->h3A = none;
-    actor->spin[0] = 0;
-    actor->spin[1] = 0;
-    actor->spin[2] = 0;
-    actor->spin_accel[0] = 0;
-    actor->spin_accel[1] = 0;
-    actor->spin_accel[2] = 0;
-    actor->drift[0] = 0;
-    actor->drift[1] = 0;
-    actor->drift[2] = 0;
-    actor->drift_accel[0] = 0;
-    actor->drift_accel[1] = 0;
-    actor->drift_accel[2] = 0;
-    actor->target[0] = 0;
-    actor->target[1] = 0;
-    actor->target[2] = 0;
-    actor->h8E = 1;
-    actor->b36 = 0;
-    actor->h1E = none;
+    do {
+        actor->h3C = 0xFFFF;
+        actor->parent = 0xFF;
+        actor->b39 = 0x6B;
+        actor->entries = entries;
+        actor->shared = NULL;
+        actor->pc = 0;
+        actor->locals = locals;
+        actor->globals = NULL;
+        actor->depth = 0;
+        actor->anim_state = none;
+        actor->aim_actor = 0;
+        actor->b35 = 0;
+        actor->scaled = 0;
+        actor->b38 = 0;
+        actor->h3A = none;
+        actor->spin[0] = 0;
+        actor->spin[1] = 0;
+        actor->spin[2] = 0;
+        actor->spin_accel[0] = 0;
+        actor->spin_accel[1] = 0;
+        actor->spin_accel[2] = 0;
+        actor->drift[0] = 0;
+        actor->drift[1] = 0;
+        actor->drift[2] = 0;
+        actor->drift_accel[0] = 0;
+        actor->drift_accel[1] = 0;
+        actor->drift_accel[2] = 0;
+        actor->target[0] = 0;
+        actor->target[1] = 0;
+        actor->target[2] = 0;
+        actor->h8E = 1;
+        actor->b36 = 0;
+        actor->h1E = none;
+    } while (0);
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E3534);
-#endif
 
 /* Call script entry `entry` of `source` in `actor`: queued while the actor is
  * already in a call, else run at once from the entry. */
