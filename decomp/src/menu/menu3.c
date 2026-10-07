@@ -447,7 +447,8 @@ INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu3", D_8006FC10);
  * one pair of sound effects, trails (each spec once), return home, and
  * showing or hiding model parts. An unknown event kind stalls the loop, as
  * in the original.
- * Does not match: the anim byte, the trail search index and pointer, and the sound-flag store get other registers or slots. */
+ * Does not match: only the sound flag: the original sets it (a spilled
+ * byte) after the first sound call's arguments, in the call's delay slot. */
 void func_80074678(Actor *actor, s16 frame, s16 count) {
     Vector unused; /* keeps the original's 16-byte frame slot */
     HitSpec *trails[20];
@@ -456,8 +457,7 @@ void func_80074678(Actor *actor, s16 frame, s16 count) {
     FrameEvent *event;
     HitSpec *spec;
     s32 trail_count;
-    s32 offset;
-    s32 i;
+    s32 offset; /* the event list offset, then the trail search index */
 
     if (count == 0) {
         count = 1;
@@ -497,8 +497,8 @@ void func_80074678(Actor *actor, s16 frame, s16 count) {
                     }
                     break;
                 case 2:
-                    for (i = 0; i < trail_count; i++) {
-                        if (trails[i] == spec) {
+                    for (offset = 0; offset < trail_count; offset++) {
+                        if (trails[offset] == spec) {
                             goto next;
                         }
                     }
