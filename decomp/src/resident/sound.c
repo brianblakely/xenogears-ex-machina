@@ -2047,10 +2047,7 @@ u8 *func_8003D3A4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* Noise on at clock `n`.
- * Nonmatching: the original allocates `data` before `channel`
- * and sets the result before the flag updates. */
-#ifdef NON_MATCHING
+/* Noise on at clock `n`. */
 u8 *func_8003D3D8(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     seq->noise_clock = *data++;
     SpuSetNoiseClock(seq->noise_clock);
@@ -2058,13 +2055,8 @@ u8 *func_8003D3D8(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->state.mode |= 0x20;
     return data;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003D3D8);
-#endif
 
-/* Noise on, adding to the clock (modulo 64).
- * Nonmatching: as 8003d3d8. */
-#ifdef NON_MATCHING
+/* Noise on, adding to the clock (modulo 64). */
 u8 *func_8003D438(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     seq->noise_clock = (*data++ + seq->noise_clock) & 0x3F;
     SpuSetNoiseClock(seq->noise_clock);
@@ -2072,9 +2064,6 @@ u8 *func_8003D438(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->state.mode |= 0x20;
     return data;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003D438);
-#endif
 
 /* Noise on and off. */
 u8 *func_8003D4A4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
