@@ -3715,7 +3715,6 @@ void func_80090300(void) {
     D_800B0078->pc += 1;
 }
 
-#ifdef NON_MATCHING
 /* Event 0xac: start a scripted camera move. Mode 0 (1) moves the target
  * (eye) from its saved point to point A (B) over op2 steps; mode 2 (3) moves
  * it along the same line at op2 units per step. Byte-1 bit 0x80 also snaps
@@ -3735,13 +3734,13 @@ void func_800903BC(void) {
             D_800AF880.target_steps++;
             D_800AF880.target_a = 1;
         }
+        D_800AF880.target_step.vx = (D_800AF880.point_actor_a.vx - D_800AF880.saved_target.vx) / D_800AF880.target_steps;
+        D_800AF880.target_step.vy = (D_800AF880.point_actor_a.vy - D_800AF880.saved_target.vy) / D_800AF880.target_steps;
+        D_800AF880.target_step.vz = (D_800AF880.point_actor_a.vz - D_800AF880.saved_target.vz) / D_800AF880.target_steps;
         D_800AF880.scripted_target.vx = D_800AF880.saved_target.vx;
         D_800AF880.scripted_target.vy = D_800AF880.saved_target.vy;
         D_800AF880.scripted_target.vz = D_800AF880.saved_target.vz;
         D_800AF880.scripted |= 1;
-        D_800AF880.target_step.vx = (D_800AF880.point_actor_a.vx - D_800AF880.saved_target.vx) / D_800AF880.target_steps;
-        D_800AF880.target_step.vy = (D_800AF880.point_actor_a.vy - D_800AF880.saved_target.vy) / D_800AF880.target_steps;
-        D_800AF880.target_step.vz = (D_800AF880.point_actor_a.vz - D_800AF880.saved_target.vz) / D_800AF880.target_steps;
         if (EVENT_OPERAND_BYTE(1) & 0x80) {
             D_800AF880.target.vx = D_800AF880.saved_target.vx;
             D_800AF880.target.vy = D_800AF880.saved_target.vy;
@@ -3757,13 +3756,13 @@ void func_800903BC(void) {
                                  (D_800AF880.saved_target.vy - D_800AF880.point_actor_a.vy) >> 16,
                                  (D_800AF880.saved_target.vz - D_800AF880.point_actor_a.vz) >> 16);
         speed = func_800ACDEC(2);
+        D_800AF880.target_step.vx = -(direction.vx * speed) * 16;
+        D_800AF880.target_step.vy = -(direction.vy * speed) * 16;
+        D_800AF880.target_step.vz = -(direction.vz * speed) * 16;
         D_800AF880.scripted_target.vx = D_800AF880.saved_target.vx;
         D_800AF880.scripted_target.vy = D_800AF880.saved_target.vy;
         D_800AF880.scripted_target.vz = D_800AF880.saved_target.vz;
         D_800AF880.scripted |= 1;
-        D_800AF880.target_step.vx = -(direction.vx * speed) * 16;
-        D_800AF880.target_step.vy = -(direction.vy * speed) * 16;
-        D_800AF880.target_step.vz = -(direction.vz * speed) * 16;
         D_800AF880.target_steps = distance / speed;
         if (EVENT_OPERAND_BYTE(1) & 0x80) {
             D_800AF880.target.vx = D_800AF880.saved_target.vx;
@@ -3780,13 +3779,13 @@ void func_800903BC(void) {
                                  (D_800AF880.saved_eye.vy - D_800AF880.point_actor_b.vy) >> 16,
                                  (D_800AF880.saved_eye.vz - D_800AF880.point_actor_b.vz) >> 16);
         speed = func_800ACDEC(2);
+        D_800AF880.eye_step[0] = -(direction.vx * speed) * 16;
+        D_800AF880.eye_step[1] = -(direction.vy * speed) * 16;
+        D_800AF880.eye_step[2] = -(direction.vz * speed) * 16;
         D_800AF880.scripted_eye[0] = D_800AF880.saved_eye.vx;
         D_800AF880.scripted_eye[1] = D_800AF880.saved_eye.vy;
         D_800AF880.scripted_eye[2] = D_800AF880.saved_eye.vz;
         D_800AF880.scripted |= 2;
-        D_800AF880.eye_step[0] = -(direction.vx * speed) * 16;
-        D_800AF880.eye_step[1] = -(direction.vy * speed) * 16;
-        D_800AF880.eye_step[2] = -(direction.vz * speed) * 16;
         D_800AF880.eye_steps = distance / speed;
         if (EVENT_OPERAND_BYTE(1) & 0x80) {
             D_800AF880.eye.vx = D_800AF880.saved_eye.vx;
@@ -3800,13 +3799,13 @@ void func_800903BC(void) {
             D_800AF880.eye_steps++;
             D_800AF880.target_b = 1;
         }
+        D_800AF880.eye_step[0] = (D_800AF880.point_actor_b.vx - D_800AF880.saved_eye.vx) / D_800AF880.eye_steps;
+        D_800AF880.eye_step[1] = (D_800AF880.point_actor_b.vy - D_800AF880.saved_eye.vy) / D_800AF880.eye_steps;
+        D_800AF880.eye_step[2] = (D_800AF880.point_actor_b.vz - D_800AF880.saved_eye.vz) / D_800AF880.eye_steps;
         D_800AF880.scripted_eye[0] = D_800AF880.saved_eye.vx;
         D_800AF880.scripted_eye[1] = D_800AF880.saved_eye.vy;
         D_800AF880.scripted_eye[2] = D_800AF880.saved_eye.vz;
         D_800AF880.scripted |= 2;
-        D_800AF880.eye_step[0] = (D_800AF880.point_actor_b.vx - D_800AF880.saved_eye.vx) / D_800AF880.eye_steps;
-        D_800AF880.eye_step[1] = (D_800AF880.point_actor_b.vy - D_800AF880.saved_eye.vy) / D_800AF880.eye_steps;
-        D_800AF880.eye_step[2] = (D_800AF880.point_actor_b.vz - D_800AF880.saved_eye.vz) / D_800AF880.eye_steps;
         if (EVENT_OPERAND_BYTE(1) & 0x80) {
             D_800AF880.eye.vx = D_800AF880.saved_eye.vx;
             D_800AF880.eye.vy = D_800AF880.saved_eye.vy;
@@ -3816,9 +3815,6 @@ void func_800903BC(void) {
     }
     D_800B0078->pc += 4;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_800903BC);
-#endif
 
 /* Store the camera target's whole x, z, y in three variables. */
 void func_80090A10(void) {
