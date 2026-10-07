@@ -523,7 +523,12 @@ void func_80072324(void) {
  * cursor }` reproduces that inner loop exactly (duplicated first load, wrap
  * at the top, the +1/-1 pair around the ready test), but its found path
  * keeps its own advance and exit test where the original jumps back into
- * the inner loop's wrap. */
+ * the inner loop's wrap. The original layout is the one stmt.c's loop
+ * rotation gives a for (;;) that loads slot before the loop and at the end
+ * of the body and breaks after `*cursor = 0` (the found test rolled to the
+ * end, the advance at the top): that form reproduces the body exactly, but
+ * its rolled exit code (18 RTL insns) is short enough for jump.c to
+ * duplicate at the entry; the original's was not (somewhere above 22). */
 #ifdef NON_MATCHING
 void func_800723E0(void) {
     s32 position;
@@ -1272,16 +1277,17 @@ void func_80075168(void) {
     }
 }
 
+/* Texture u of the far end of a gauge bar `width` texels long: the bar
+ * sprite's page x plus the width, in 4-bit texels (two per byte column).
+ * The width is read whole into its own temporary (not narrowed to the
+ * stored byte). */
+#define GAUGE_BAR_U(width) ({ s32 width_ = (width); (width_ + ((u8)D_800C3EA4->sprites[0].pageX & 0x3F)) * 2; })
+
 /* Update the gauge shades, then each present member's time bar in the
  * current draw buffer: filled by the turn counter over 56 pixels, coloured
  * for haste or slow. With the member's panel open (state != 0) the bar is
  * the upright party-wide one instead, showing the fuel of a member in a
- * gear.
- * Nonmatching: the original loads the bar width with lw in u1/u3 (only the
- * page x byte is narrowed). `<< 1` lets the u8 store narrow the width to
- * lbu; `* 2` (not narrowed through a multiply) keeps lw but swaps the sum to
- * page + width, since the width is still a memory operand at expansion. */
-#ifdef NON_MATCHING
+ * gear. */
 void func_80075938(void) {
     s32 widths[3];
     s32 i;
@@ -1303,9 +1309,9 @@ void func_80075938(void) {
                        i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x2C) + ((u16)widths[i] + 1), 0x1E);
                 setUV4(&D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer],
                        (D_800C3EA4->sprites[0].pageX & 0x3F) << 1, D_800C3EA4->sprites[0].pageY,
-                       (widths[i] + (D_800C3EA4->sprites[0].pageX & 0x3F)) << 1, D_800C3EA4->sprites[0].pageY,
+                       GAUGE_BAR_U(widths[i]), D_800C3EA4->sprites[0].pageY,
                        (D_800C3EA4->sprites[0].pageX & 0x3F) << 1, D_800C3EA4->sprites[0].pageY + 4,
-                       (widths[i] + (D_800C3EA4->sprites[0].pageX & 0x3F)) << 1, D_800C3EA4->sprites[0].pageY + 4);
+                       GAUGE_BAR_U(widths[i]), D_800C3EA4->sprites[0].pageY + 4);
                 if ((D_800CCCE8.records[i].pilot.status84.half.active |
                      D_800CCCE8.records[i].pilot.status84.half.permanent) & 0x8000) {
                     clut = D_800C3EA4->barCluts[3];
@@ -1329,9 +1335,9 @@ void func_80075938(void) {
                        0x14, 0xCE - widths[i] * 2);
                 setUV4(&D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer],
                        (D_800C3EA4->sprites[0].pageX & 0x3F) << 1, D_800C3EA4->sprites[0].pageY,
-                       (widths[i] + (D_800C3EA4->sprites[0].pageX & 0x3F)) << 1, D_800C3EA4->sprites[0].pageY,
+                       GAUGE_BAR_U(widths[i]), D_800C3EA4->sprites[0].pageY,
                        (D_800C3EA4->sprites[0].pageX & 0x3F) << 1, D_800C3EA4->sprites[0].pageY + 4,
-                       (widths[i] + (D_800C3EA4->sprites[0].pageX & 0x3F)) << 1, D_800C3EA4->sprites[0].pageY + 4);
+                       GAUGE_BAR_U(widths[i]), D_800C3EA4->sprites[0].pageY + 4);
                 D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].clut = D_800C3EA4->barCluts[1];
                 if (D_800D2D28->unkCB != 0) {
                     D_800D2D28->barShown[3] = 1;
@@ -1342,9 +1348,6 @@ void func_80075938(void) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80075938);
-#endif
 
 /* Battle end, outcome state 1: unless 800c492a is set, release every battle
  * resource. */

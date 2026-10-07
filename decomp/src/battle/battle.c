@@ -1677,14 +1677,8 @@ u16 func_80084D28(void) {
  * the party; 0x2000 both; 0x8000 keeps only downed slots (+0x7c bit
  * 0x8000); 0x4000 the member alone. `own` takes the member's reachable
  * enemies (80084750). Sets the current target 800c3e2c and returns the
- * selection. Nonmatching: the selection lives in $s5 here, $s6 in the
- * original, and in the downed loop the original keeps the slot byte in $s2
- * across both calls (and the counters in other registers). Writing the
- * release call once per branch (`if (!(...status7C & 0x8000)) { release;
- * continue; }` for pilot and gear) reproduces the shared $s2 byte and the
- * $s6 selection, but cross-jumping then merges the two tests and places the
- * release before the found block. */
-#ifdef NON_MATCHING
+ * selection. Each downed test keeps its own store and release (merged
+ * again by the compiler). */
 u16 func_80084DE4(u16 selection, u16 fallback, u8 member, u8 mode, u8 own) {
     u8 downed = 0;
     u8 side;
@@ -1733,10 +1727,18 @@ u16 func_80084DE4(u16 selection, u16 fallback, u8 member, u8 mode, u8 own) {
         for (i = 0; i < 11; i++) {
             slot = i;
             if (func_80089C9C(D_800C3D64, slot)) {
-                if (D_800D32A0[i].unk1 == 0 ? D_800CCCE8.records[i].pilot.status7C & 0x8000
-                                            : D_800CCCE8.records[i].gear.status7C & 0x8000) {
+                if (D_800D32A0[i].unk1 == 0) {
+                    if (D_800CCCE8.records[i].pilot.status7C & 0x8000) {
+                        D_800C3E2C = slot;
+                        D_800C3E90[count] = slot;
+                        count++;
+                    } else {
+                        D_800C3D64 &= func_80089C48(slot);
+                    }
+                } else if (D_800CCCE8.records[i].gear.status7C & 0x8000) {
                     D_800C3E2C = slot;
-                    D_800C3E90[count++] = slot;
+                    D_800C3E90[count] = slot;
+                    count++;
                 } else {
                     D_800C3D64 &= func_80089C48(slot);
                 }
@@ -1748,15 +1750,12 @@ u16 func_80084DE4(u16 selection, u16 fallback, u8 member, u8 mode, u8 own) {
     } else if (selection & 0x4000) {
         D_800C3E2C = member;
         D_800C3D64 = func_80089C08(member);
-        for (i = 0; i < 11; i++) {
-            D_800C3E90[i] = 0xFF;
+        for (count = 0; count < 11; count++) {
+            D_800C3E90[count] = 0xFF;
         }
     }
     return selection;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80084DE4);
-#endif
 
 /* Select a target for selection word `target` (80084de4): each frame
  * highlight the current target (mode 0), all candidates (1) or those in the
@@ -1928,10 +1927,12 @@ void func_80085454(u8 queue) {
  * formed from the events address), while the healing stores use the
  * BATTLE_AREA view of the work table. The signed halfword locals (have and
  * amount, ep and cost) give the original's 0x58 frame and register copies.
- * Nonmatching: the induction registers differ (slot in $s3 and the amounts
- * pointer in $s2, swapped) and the latch increments the work pointer first;
- * the original increments amounts, fuel, work, record offset, slot. */
-#ifdef NON_MATCHING
+ * Fuel gain stores the sum into the work table inside its maximum test, so
+ * the store address is formed before the sum (loop.c then reduces the work
+ * pointer before the amounts and fuel pointers, as the original's latch
+ * shows), and sets the refresh flag itself; cross-jumping merges that store
+ * with the shared one, but its extra slot reference ranks slot above the
+ * amounts pointer in global allocation ($s2/$s3). */
 void func_80085618(u8 queue) {
     s32 slot;
     s32 left;
@@ -2026,21 +2027,19 @@ void func_80085618(u8 queue) {
             }
             break;
         case 11:
-            value = D_800CCCE8.records[slot].gear.fuel + D_800C3EB0.events[queue].amounts[slot];
-            BATTLE_AREA.work.records[slot].gear.fuel = value;
-            if (D_800CCCE8.records[slot].gear.maxFuel < value) {
+            if (D_800CCCE8.records[slot].gear.maxFuel <
+                (BATTLE_AREA.work.records[slot].gear.fuel =
+                     D_800CCCE8.records[slot].gear.fuel + D_800C3EB0.events[queue].amounts[slot])) {
                 D_800CCCE8.records[slot].gear.fuel = D_800CCCE8.records[slot].gear.maxFuel;
             }
-            break;
+            D_800C3EAC->reaction[slot] = 1;
+            continue;
         default:
             continue;
         }
         D_800C3EAC->reaction[slot] = 1;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085618);
-#endif
 
 /* Revive slot at full HP and clear its timed statuses (the active halves of
  * the status words 0x7c-0x80 and 0x84-0x8c). */
@@ -2203,7 +2202,6 @@ u8 func_80085EB4(u8 mode, u8 member) {
  * member's text `id` into the shared image (two entries per image cell),
  * upload it and place its quad after `column` + `offset` + 1 steps.
  * Returns the next index. */
-#ifdef NON_MATCHING
 s32 func_80086028(member, index, column, id, pixels, offset)
 u8 member;
 s32 index;
@@ -2226,14 +2224,12 @@ u8 offset;
     rect.w = 0x1E;
     rect.h = 13;
     LoadImage(&rect, *pixels);
-    func_80076C78(&D_800D2DB4->list11[index * 2 + D_800CCB04.buffer], (column + (offset + 1)) * 16 + 0x50 + index * 4,
+    func_80076C78(&D_800D2DB4->list11[index * 2 + D_800CCB04.buffer], (column + 1 + offset) * 16 + 0x50 + index * 4,
                   0xC8 - index * 16, cell * 0x78, 0x1A, width);
     D_800D2DB4->counts[11]++;
-    return index + 1;
+    index++;
+    return index;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80086028);
-#endif
 
 /* Record attack input `code` in the combo history (+0x2cc, length +0x2d6)
  * and show it (list 12) with the deathblows it completes or leads into:
@@ -2741,18 +2737,18 @@ u8 func_80087AF0(u8 member, u8 cost) {
 
 /* Move `actor` into `target`'s formation group when it is another group
  * with room (under four members): leave the old group, take the first free
- * member place and stand at that place of the group's area. (Nonmatching:
- * the original computes the enemy offset (actor >= 3) << 3 before testing
- * the target and keeps the branch: 0 in the delay slot, the offset copied on
- * the fall-through. Every precomputed form tried (a temporary, if/else, a
- * reused base, D_800C3EB0.slots) lets jump.c fold the branch into a
- * store-flag mask; this ternary computes the offset inside the branch.) */
-#ifdef NON_MATCHING
+ * member place and stand at that place of the group's area. The actor's
+ * side offset is evaluated once before the target test (`actorBase`, never
+ * read) and again inside it; CSE shares the two, which keeps the branch
+ * (0 in the delay slot, the offset copied on the fall-through) instead of
+ * jump.c's store-flag mask. */
 void func_80087EDC(u8 actor, u8 target) {
     u8 base;
     s32 member;
+    s32 actorBase;
 
     if (D_800C3EB4[actor].group != D_800C3EB4[target].group) {
+        actorBase = (actor >= 3) * 8;
         base = target < 3 ? (actor >= 3) * 8 : 0;
         if (D_800D301C[D_800C3EB4[target].group + base].count < 4) {
             func_800883AC(actor);
@@ -2775,9 +2771,6 @@ void func_80087EDC(u8 actor, u8 target) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80087EDC);
-#endif
 
 /* Move `actor` alone into `target`'s formation group when that group is
  * another one and empty (entries from 0x10, or 0x18 for an enemy joining a
