@@ -411,11 +411,14 @@ void func_80070C84(void) {
  * the actors' facings.
  * One word pointer serves as the palette block and then walks the model
  * and collision offset tables.
- * NON_MATCHING (2 differences left): the original computes the mesh sum
- * entry[1] + geometry in $v0 and only the final +0x10 in $a0 (ours ties
- * the chain into $a0), and stores unkA0[0] before unk90 while giving the
- * unk90 address the early register ($s1); in source order unkA0[0] first,
- * global-alloc gives the unkA0 address $s1 instead. */
+ * The chained unk90 = unkA0[0] store keeps the unk90 address pseudo first
+ * (it is expanded before the inner store) while storing unkA0[0] first.
+ * NON_MATCHING (1 difference left): the original computes the mesh sum
+ * entry[1] + geometry in $v0 and only the final +0x10 in $a0; ours ties the
+ * chain into $a0. local-alloc (combine_regs) only refuses that tie when the
+ * sum or the result is a pseudo it does not allocate (used in more than one
+ * block or dying twice): routing the result through `table` or `x` gives the
+ * exact mesh code but their own loops then take the $a0 preference. */
 #ifdef NON_MATCHING
 void func_80070CC8(void) {
     VECTOR unused = {0, -100, 2000, 0};
@@ -595,8 +598,7 @@ void func_80070CC8(void) {
     D_800B0080.unkA4[0] = 0;
     D_800B0080.unkA0[2] = 0;
     D_800B0080.unkA0[1] = 0;
-    D_800B0080.unk90 = 0;
-    D_800B0080.unkA0[0] = 0;
+    D_800B0080.unk90 = D_800B0080.unkA0[0] = 0;
     D_800B0080.unk98 = 0x1000;
     D_800B0080.unkB0 = 0;
     D_800B0080.unkAE = 0;
