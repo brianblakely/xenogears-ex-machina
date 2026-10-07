@@ -1251,11 +1251,10 @@ s32 func_800767C8(Actor *actor) {
         }                                                                      \
     }
 
-#ifdef NON_MATCHING
 /* Read a player's pad (analog sticks or the d-pad) and turn it into the
  * actor's commands, guard/dash flags and its four directional speeds,
- * giving the move speed and heading.
- * Does not match: only the side flag update swaps a0/v1 (the mask and the flag word). Declared s32 with a bare return so the early exit keeps the original's empty delay slot. */
+ * giving the move speed and heading. Declared s32 with a bare return so
+ * the early exit keeps the original's empty delay slot. */
 s32 func_80076884(Actor *actor) {
     u8 stick_y;
     u8 stick_x;
@@ -1303,8 +1302,8 @@ s32 func_80076884(Actor *actor) {
         } else {
             actor->unkCE = actor->unkCC;
         }
-        actor->flags = (actor->flags & ~0x20000) | ((D_800928F4 & 1) << 17);
         actor->unk648 += 0x800;
+        ACTOR_FLAG_BITS(actor)->flag17 = D_800928F4;
         actor->unkFC += 0x800;
     }
     if (pressed & 0x10) {
@@ -1400,9 +1399,6 @@ s32 func_80076884(Actor *actor) {
         actor->flags |= 0x80000;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80076884);
-#endif
 
 /* Per-frame actor status: count down its timers, drain its charge, apply
  * this frame's damage to its hit points (with the hit sound), update its
