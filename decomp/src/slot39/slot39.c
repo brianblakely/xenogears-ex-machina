@@ -1499,7 +1499,9 @@ void func_801C9270(s32 port) {
  * with a known constant whenever it can (const 0 costs less than a reg), so
  * at cse time the original's copy source was not known to be 0 in that
  * block. A standalone 2.6.3 test (`a = 0; b = a; ... if (b)`) folds the
- * test away as here. */
+ * test away as here. With `marked` as s32 the test survives (11) but
+ * the copy is still folded to 0 and the andi is lost; other widths of
+ * either variable and both assignment orders score 15-28. */
 u8 func_801C93A8(void) {
     char path[64];
     u8 present[2];
@@ -2150,7 +2152,10 @@ void func_801CAE08(u8 mode) {
  * &codes[1] (r81) and &GAME_NAMES[1] (r84, life 26) are weighed in that
  * order at 110, 220 and 440, and the copy loop's &decoded (r105, life 13)
  * fails at 880. r84 needs one more doubling (or a lifetime under about
- * 15) to stay in the loop. A 20-minute permuter run found nothing valid. */
+ * 15) to stay in the loop. A 20-minute permuter run found nothing valid.
+ * A pointer variable for &GAME_NAMES[1] (set before the row loop, at the
+ * row start or in the inner loop) and the row pointer as &names[n] give
+ * the same or worse code (25-50). */
 void func_801CB184(void) {
     u8 codes[24];
     u8 decoded[20];
@@ -2708,7 +2713,8 @@ u8 func_801CBD90(u8 kind) {
  *   weight must come out lower some other way.
  * - Scheduling: the full-card block (`proceed = 0` / `again = 0` sit
  *   between the argument loads in the original) and `written += 0x200`
- *   (the original fills the header[3] load delay with it). */
+ *   (the original fills the header[3] load delay with it).
+ * src as u8/u32/s16 or declared first or last changes nothing (117). */
 u8 func_801CC6D8(void) {
     char destName[64];
     char other[8];
