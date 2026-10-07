@@ -1514,8 +1514,13 @@ extern u8 D_80050A94[]; /* encoded note -> semitone */
  *
  * The two tick counters share a word. Keep the original signed addition
  * when packing it: the low half is not masked before adding the high half.
- * NON_MATCHING: the operand temporaries, lookahead branches and register
- * allocation differ; the original function is 0x59c bytes. */
+ * The encoded note byte reuses `opcode` (the original copies it for the two
+ * table indexes).
+ * NON_MATCHING: same size; left: the encoded note takes $a2 and the duration
+ * $a0 (original both $a1); the lookahead loop also hoists the 0x99 constant
+ * (original only 0x80 and 0x81); the duration adjustment reuses the first
+ * unk5C load (original reloads it); and three loads after the portamento
+ * division are ordered differently. */
 #ifdef NON_MATCHING
 void func_8003C6E8(SoundSeq *seq, SoundSeqChannel *channels, s16 count) {
     s16 remaining_channels;
@@ -1529,7 +1534,6 @@ void func_8003C6E8(SoundSeq *seq, SoundSeqChannel *channels, s16 count) {
     s16 duration;
     u16 gate;
     u16 fraction;
-    u8 encoded;
     s32 note;
     u8 length;
     s32 new_note;
@@ -1551,9 +1555,9 @@ void func_8003C6E8(SoundSeq *seq, SoundSeqChannel *channels, s16 count) {
                         channel->volume = opcode << 8;
                     }
                     channel->flags2 |= 0x100;
-                    encoded = *position++;
-                    note = channel->current_note = (u8)channel->transpose + D_80050A94[encoded];
-                    length = D_800509B0[encoded];
+                    opcode = *position++;
+                    note = channel->current_note = (u8)channel->transpose + D_80050A94[opcode];
+                    length = D_800509B0[opcode];
                     if (length == 0) {
                         length = *position++;
                     }
@@ -1596,41 +1600,39 @@ void func_8003C6E8(SoundSeq *seq, SoundSeqChannel *channels, s16 count) {
                 channel->flags |= 0x200;
             }
             loop = &channel->loops[channel->loop_depth];
-            opcode = *position;
-            while (opcode >= 0x80) {
+            for (opcode = *position; opcode >= 0x80; opcode = *position) {
                 if (opcode == 0x90) {
                     position = channel->loop;
-                    if (position == NULL) {
-                        break;
+                    if (position != NULL) {
+                        continue;
                     }
-                } else {
-                    if (opcode == 0x80) {
-                        channel->flags &= ~0x200;
-                        break;
-                    }
-                    if (opcode == 0x81) {
-                        channel->flags |= 0x200;
-                        break;
-                    }
-                    if ((u32)((u8)opcode - 0xB0) < 2) {
-                        channel->flags &= ~0x200;
-                        break;
-                    }
-                    if (opcode == 0x99 && loop->count != 0) {
-                        position = loop->start;
-                    } else {
-                        if (opcode == 0x99) {
-                            loop--;
-                        }
-                        if (opcode == 0x9A && loop->count == 0) {
-                            position = loop->end;
-                            loop--;
-                        } else {
-                            position += D_80050824[(s16)(opcode - 0x80)];
-                        }
-                    }
+                    break;
                 }
-                opcode = *position;
+                if (opcode == 0x80) {
+                    channel->flags &= ~0x200;
+                    break;
+                }
+                if (opcode == 0x81) {
+                    channel->flags |= 0x200;
+                    break;
+                }
+                if ((u32)((u8)opcode - 0xB0) < 2) {
+                    channel->flags &= ~0x200;
+                    break;
+                }
+                if (opcode == 0x99) {
+                    if (loop->count != 0) {
+                        position = loop->start;
+                        continue;
+                    }
+                    loop--;
+                }
+                if (opcode == 0x9A && loop->count == 0) {
+                    position = loop->end;
+                    loop--;
+                } else {
+                    position += D_80050824[(s16)(opcode - 0x80)];
+                }
             }
             if (opcode < 0x80) {
                 channel->flags |= 0x1000;
