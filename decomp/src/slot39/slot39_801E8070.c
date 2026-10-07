@@ -95,10 +95,13 @@ void func_801E8474(s32 count, MenuCommandImages *images) {
  * grow its cursor and label columns one choice per two frames (until an
  * empty choice, ffff), counting the choices. */
 #ifdef NON_MATCHING
+/* Loop-invariant motion differs: the original hoists both &D_801EA1EC and
+ * &D_801EA1EC[1] (s4, s5 = s4 + 4) before the outer loop and keeps `offset`
+ * in s3; this build hoists &D_801EA1EC[1] only before the label loop. */
 void func_801E86C8(u8 offset) {
     s32 n;
     s32 i;
-    u8 growing;
+    s32 growing;
 
     D_800625A0->spriteLists->firstCount = 0;
     D_800625A0->spriteLists->secondCount = 0;

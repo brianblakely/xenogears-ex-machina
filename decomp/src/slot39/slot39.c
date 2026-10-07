@@ -2129,6 +2129,9 @@ void func_801CAE08(u8 mode) {
  * to the first zero pair go through 80033b34 into a 20-byte buffer that is
  * copied back whole. */
 #ifdef NON_MATCHING
+/* Loop-invariant motion differs: this build hoists &GAME_NAMES[1] out of the
+ * row loop into s2 (one more saved register, ra at 0x54), the original
+ * reloads it into t0 for every row. */
 void func_801CB184(void) {
     u8 codes[24];
     u8 decoded[20];
