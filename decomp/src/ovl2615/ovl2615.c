@@ -564,9 +564,9 @@ void func_801E5D2C(void) {
 }
 
 /* Render the ten battle messages 0-9 into text images. The original frame
- * reserves eight additional bytes; their source use remains unresolved. */
-#ifdef NON_MATCHING
+ * reserves eight bytes that no instruction touches. */
 void func_801E5E78(void) {
+    SVECTOR unused; /* unused in the original; reserves 8 bytes */
     s32 i;
 
     for (i = 0; i < 10; i++) {
@@ -574,12 +574,12 @@ void func_801E5E78(void) {
         func_80034EAC(func_800338D8(i), D_800C3E5C[i], 2, 0);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E5E78);
-#endif
 
 /* Draw each present member's gauge glyphs (the second set dimmed), its
- * portrait and its two digit glyphs, placed by the party layout's columns. */
+ * portrait and its two digit glyphs, placed by the party layout's columns.
+ * NON_MATCHING: the original doubles the dimmed set's first part (s0) in the
+ * second func_80076A6C call's delay slot; here it is doubled after the call
+ * (4 bytes shorter, rest shifted). */
 #ifdef NON_MATCHING
 void func_801E5EE8(void) {
     s32 i;
