@@ -6693,24 +6693,26 @@ void func_801DB5E4(u8 mode) {
  * confirm until it runs out or the player cancels. Returns the targets
  * marked last (0 when cancelled or unusable). */
 #ifdef NON_MATCHING
-/* Remaining: two commutative operand orders. The original adds the index
- * first (addu s7,fp,t0 for &counts[idx] and addu v0,fp,v0 for the cleared
- * id), this build the base first. Everything else matches (2 differing
- * instructions, local scorer): the inventory base is one pointer set once
- * (spilled and rematerialised into t0 for both uses), the id is cleared
- * through inv->ids taken after the count reaches zero, and 801e31c0 is
- * called without a prototype (its result is used unmasked). With
- * INVENTORY used directly CSE knows the base and orders the adds as the
- * original, but the clear folds into 150(&counts[idx]).
- * Mechanism (GCC source): expand emits the pointer first for every pointer
- * + index form (pointer_int_sum, both_summands), so idx-first can only come
- * from cse's fold_rtx, which puts an operand with a known constant value
- * second. The original's base must therefore be known constant in the
- * blocks of both adds while still being one spilled pseudo. Tried: the
- * clear as inv->ids[idx], ((u8 *)inv)[idx + 150], inv->counts[idx + 150],
- * a u8 *base = D_8006F5C4 (all fold into 0x96(s7), 69-75), D_8006F5C4[idx
- * + 150] (right order, but loop hoists the address, 68), and inv set at
- * the loop top or before the count test (42-79). */
+/* Remaining: one commutative operand order. The original clears the id as
+ * addu v0,fp,v0 (index first, v0 = inventory + 150); this build adds the
+ * base first (2 differing instructions, local scorer). Everything else
+ * matches: the inventory base is one pointer set once (spilled and
+ * rematerialised into t0 for both uses), the id is cleared through
+ * inv->ids taken after the count reaches zero, and 801e31c0 is called
+ * without a prototype (its result is used unmasked). Setting inv after
+ * the 801d397c call puts it in the extended block of the loop preheader,
+ * so the rerun cse knows its value there and orders the hoisted
+ * &counts[idx] index first as the original does.
+ * Mechanism (GCC source): expand emits the pointer first for pointer +
+ * index forms unless the pointer is not a register (expand_binop swaps
+ * then), and cse's fold_rtx puts an operand second when its value is a
+ * known constant; the clear block is not in an extended block where the
+ * base is known. Tried for the clear: inv->ids[idx], *(inv->ids + idx),
+ * ((u8 *)inv + 150)[idx], inv->counts[idx + 150] (all fold into 0x96 of
+ * the count address, 111-115), a second pointer or inv set again in the
+ * clear block (33-75), INVENTORY used directly for the count, decrement
+ * and clear (correct orders, but loop.c then moves the clear's base + 150
+ * out of the loop because it forces the already-moved base, 111-143). */
 u8 func_801DB920(s32 row, s32 entry) {
     u16 marks;
     u8 running;
@@ -6723,7 +6725,6 @@ u8 func_801DB920(s32 row, s32 entry) {
     Inventory *inv;
     u8 *ids;
 
-    inv = INVENTORY;
     marks = 0;
     running = 1;
     slot = D_800625A0->firstMember;
@@ -6739,6 +6740,7 @@ u8 func_801DB920(s32 row, s32 entry) {
     all = item->target & 1;
     if (marks) {
         func_801D397C(2, 0x10, 0xe, 0x90, 0xb0, 0, 0, 4, 0);
+        inv = INVENTORY;
         while (running) {
             func_801C7BF4();
             if (redraw) {
