@@ -2397,34 +2397,13 @@ u8 func_801CB9E8(u8 port, u8 slot) {
  * and three more bytes), the play time and file digit `digit`, each name
  * encoded in place, the disc, then the game data copy (801e4a28) and the names
  * decoded back. */
-#ifdef NON_MATCHING
-/* Copy a 20-byte name buffer over `dst` (a statement macro). */
-#define COPY_NAME(dst, src, j)     \
-    do {                           \
-        for (j = 0; j < 20; j++) { \
-            (dst)[j] = (src)[j];   \
-        }                          \
-    } while (0)
-
-/* Remaining: the name pointer's lui/addiu is scheduled first in the block
- * before the name loop; the original places it after the play-time load
- * (5 differing instructions, local scorer, for every order of the three
- * payload stores and the name initialisation). The COPY_NAME block gives
- * the original's s0 name pointer / s1 row index allocation.
- * Sched1 dump (-dS): the block's sinks (name = GAME_NAMES, i = 0, the
- * hoisted &codes/&encoded and the three stores) tie on priority and are
- * taken bottom-up by descending LUID, so the original's order (i, &codes,
- * &encoded, time load, name, stores) needs the name set to come after the
- * time load and after the loop-hoisted addresses in insn order, or to be a
- * register birth (set once). All 24 orders of the four statements score
- * 5-8; name = D_8006D634.names[0][0], a for-init name, name per row
- * (&GAME_NAMES[i * 20]) and `i = 0` reuse do not help. */
 void func_801CBA4C(MenuSavePayload *payload, u8 port, u8 digit) {
     u8 codes[24];
     u8 encoded[20];
     s32 i;
     s32 j;
     u8 *name;
+    u8 *names;
 
     for (j = 0; j < 16; j++) {
         D_8006F958[j] = D_8005A3A0[j];
@@ -2445,15 +2424,17 @@ void func_801CBA4C(MenuSavePayload *payload, u8 port, u8 digit) {
     payload->time = D_80059488;
     payload->unk1F = 0;
     payload->digit = digit;
-    name = GAME_NAMES;
+    names = GAME_NAMES;
     for (i = 0; i < 31; i++) {
+        name = &names[i * 20];
         for (j = 0; j < 20; j++) {
             codes[j] = name[j];
             encoded[j] = 0;
         }
         func_80033C20(codes, encoded);
-        COPY_NAME(name, encoded, j);
-        name += 20;
+        for (j = 0; j < 20; j++) {
+            name[j] = encoded[j];
+        }
     }
     if (!D_801E96A5) {
         D_8006F008 = func_80028530() - 1;
@@ -2463,9 +2444,6 @@ void func_801CBA4C(MenuSavePayload *payload, u8 port, u8 digit) {
     func_801E4A28((SaveData *)payload);
     func_801CB184();
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CBA4C);
-#endif
 
 /* The save: refresh the cards (none: returns 1), then run the file cursor
  * until cancel or confirm. An unformatted card asks to format it; an empty
