@@ -130,9 +130,8 @@ void func_801C528C(u8 allocate) {
 /* Load the screen's resources: the card icon TIM into the work block's save
  * header, the palette data, the sprite sheet and label texts, and the menu
  * sound bank when sound is on. */
-/* NON_MATCHING: original frame 0x80 bytes; this C needs 0x20. */
-#ifdef NON_MATCHING
 void func_801C5390(void) {
+    u8 unused[0x60]; /* unused in the original; reserves 96 bytes */
     MenuArchive *archive = D_8005945C;
     void *data;
 
@@ -164,9 +163,6 @@ void func_801C5390(void) {
     D_800625A0->effect_bank = D_8006259C;
     func_800320E8(archive);
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C5390);
-#endif
 
 /* Reset the screen state, mark which characters may join, take the current
  * party (members that may not join become empty) and load the resources. */
@@ -205,10 +201,9 @@ void func_801C5714(void) {
 }
 
 /* Upload the text CLUT: 16 black entries except white entry 1 at (0, 0x1C0). */
-/* NON_MATCHING: original frame 0x28 bytes; this C needs 0x20. */
-#ifdef NON_MATCHING
 void func_801C5724(void) {
     RECT rect;
+    RECT unused; /* unused in the original; reserves 8 bytes */
     u16 *clut = func_80031BDC(0x20, 0);
 
     bzero(clut, 0x20);
@@ -221,9 +216,6 @@ void func_801C5724(void) {
     DrawSync(0);
     func_800320E8(clut);
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C5724);
-#endif
 
 /* Set up label `index`'s two quads: mode 0 maps the text rendered for the
  * command column at row + index; otherwise the list layout, dimmed unless
@@ -332,9 +324,8 @@ void func_801C5B90(void) {
 }
 
 /* Look up the four cursor/frame sprites of the sheet. */
-/* NON_MATCHING: original frame 0x50 bytes; this C needs 0x28. */
-#ifdef NON_MATCHING
 void func_801C5BEC(void) {
+    s32 unused[10]; /* unused in the original; reserves 40 bytes */
 
     func_80026338(D_800625A0->sprite_sheet, 0xFE, &D_800625A0->sprites[0].unk0,
                   &D_800625A0->sprites[0].tpage_mode, &D_800625A0->sprites[0].clut_x,
@@ -353,9 +344,6 @@ void func_801C5BEC(void) {
                   &D_800625A0->sprites[3].clut_y, &D_800625A0->sprites[3].page_x,
                   &D_800625A0->sprites[3].page_y);
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C5BEC);
-#endif
 
 /* Clear the party list's flags 3 and 4. */
 void func_801C5CF4(void) {
@@ -1065,12 +1053,11 @@ void func_801C8E74(s32 index) {
 
 /* Draw every shown panel; style-0 panels are projected with an identity
  * rotation at depth 0x200. */
-/* NON_MATCHING: original frame 0x60 bytes; this C needs 0x58. */
-#ifdef NON_MATCHING
 void func_801C9098(void) {
     SVECTOR rotation;
     VECTOR translation;
     MATRIX matrix;
+    SVECTOR unused; /* unused in the original; reserves 8 bytes */
     Panel *panel;
     s32 i;
 
@@ -1113,9 +1100,6 @@ void func_801C9098(void) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C9098);
-#endif
 
 /* Per-frame screen drawing: panels, markers, labels and status panels while
  * active, then the fade. */

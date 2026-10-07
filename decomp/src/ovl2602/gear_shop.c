@@ -847,11 +847,9 @@ u32 func_801D1078(u8 item, u8 kind) {
  * table price) labels, the bars of the members who can use it and the marks
  * of those holding it. Returns the sell price.
  */
-/* Frame layout unresolved: the original reserves 16 additional bytes
- * that the recovered operations do not explain. */
-#ifdef NON_MATCHING
 u32 func_801D1304(u8 id, u8 kind) {
     RECT rect;
+    u8 unused[16]; /* unused in the original; reserves 16 bytes */
     u8 codes[14];
     u8 text[16];
     s32 divisors[5];
@@ -952,9 +950,6 @@ u32 func_801D1304(u8 id, u8 kind) {
     D_800625A0->details->group2D0_buffer = D_800625A0->buffer;
     return price;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/gear_shop", func_801D1304);
-#endif
 
 /*
  * Draw the eight visible rows of a list from entry `top`: each part's name,
@@ -1087,9 +1082,7 @@ void func_801D1F20(u32 gold, u8 *ids, u8 *amounts, s32 n, u8 *inv_ids, u8 *inv_c
  * held parts to sell, eight rows at a time, with the running total and the
  * gold after the sale; confirming settles the sale. Every row uses `kind`;
  * `remove` controls inventory removal and the settlement ignores `member`.
- * Nonmatching: five temporary-register differences in the quantity return.
  */
-#ifdef NON_MATCHING
 void func_801D2054(s32 n, u8 *ids, u8 *counts, u8 kind, u8 remove, u8 *unused_kinds, u8 member) {
     u8 running = 1;
     u8 first = 1;
@@ -1240,8 +1233,8 @@ void func_801D2054(s32 n, u8 *ids, u8 *counts, u8 kind, u8 remove, u8 *unused_ki
         case 2:
             index = top + row;
             if (selectable[index] && chosen[index] - 1 >= 0) {
-                redraw = 1;
                 total -= price;
+                redraw = 1;
                 held[index]++;
                 new_gold -= price;
                 chosen[index]--;
@@ -1250,9 +1243,6 @@ void func_801D2054(s32 n, u8 *ids, u8 *counts, u8 kind, u8 remove, u8 *unused_ki
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/gear_shop", func_801D2054);
-#endif
 
 /* Run the sell list for inventory 3 (150 entries). */
 void func_801D2784(void) {

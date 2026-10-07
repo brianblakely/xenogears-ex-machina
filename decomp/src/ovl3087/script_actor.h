@@ -105,7 +105,7 @@ s16 func_800BEF24(BattleActor *actor, BattleActor *target);
 s16 func_800BEF8C(BattleActor *actor);
 void func_800BF2B8(BattleActor *actor);
 s32 func_800BF354(void);
-void func_800BF600(s32 arg);
+void func_800BF600(s32 command, BattleActor *actor); /* battle: run command during the actor's motion */
 s32 func_800BF720(void);
 void func_800BF7C8(BattleActor *actor, s32 arg1, void (*callback)(BattleActor *actor));
 

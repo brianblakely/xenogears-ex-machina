@@ -95,10 +95,13 @@ void func_801E8474(s32 count, MenuCommandImages *images) {
  * grow its cursor and label columns one choice per two frames (until an
  * empty choice, ffff), counting the choices. */
 #ifdef NON_MATCHING
+/* Loop-invariant motion differs: the original hoists both &D_801EA1EC and
+ * &D_801EA1EC[1] (s4, s5 = s4 + 4) before the outer loop and keeps `offset`
+ * in s3; this build hoists &D_801EA1EC[1] only before the label loop. */
 void func_801E86C8(u8 offset) {
     s32 n;
     s32 i;
-    u8 growing;
+    s32 growing;
 
     D_800625A0->spriteLists->firstCount = 0;
     D_800625A0->spriteLists->secondCount = 0;
@@ -227,7 +230,6 @@ void func_801E8DA8(u8 image, u8 row) {
 
 /* Set `poly`'s blending for `mode`: 0 opaque, 1 additive-dim, 2 plain,
  * 3 dim. */
-#ifdef NON_MATCHING
 void func_801E8EAC(POLY_FT4 *poly, u8 mode) {
     u8 shade;
 
@@ -236,15 +238,13 @@ void func_801E8EAC(POLY_FT4 *poly, u8 mode) {
     case 1:
         poly->tpage |= 0x20;
         SetSemiTrans(poly, 1);
+    case 3:
         shade = 0x21;
         break;
     case 0:
         SetSemiTrans(poly, 0);
     case 2:
         shade = 0x80;
-        break;
-    case 3:
-        shade = 0x21;
         break;
     default:
         return;
@@ -253,9 +253,6 @@ void func_801E8EAC(POLY_FT4 *poly, u8 mode) {
     poly->g0 = shade;
     poly->b0 = shade;
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801E8070", func_801E8EAC);
-#endif
 
 /* Set the blending of portrait `index`'s quads of the current buffer: plain
  * (2), or dim (3) when the dim flag `mode` is set. Every edge list is walked
@@ -359,7 +356,6 @@ void func_801E9340(char *name, void *buffer, s32 size) {
  * close and the drive to settle, from the disc label and files 18 and 28.
  * Returns 0 when loaded, 2 when no disc label was read, 3 for the other
  * disc. */
-#ifdef NON_MATCHING
 s32 func_801E93A0(s32 disc) {
     DiscLabel label = { { 0 } };
     u8 pos[4];
@@ -414,19 +410,18 @@ retry:
     VSync(3);
     func_8002954C(0x17, &label, 0x10, 0, 0);
     func_80028A60(0);
-    result = 2;
     if (label.tag == 0x4e45585f) {
-        result = 3;
         if (label.disc == disc + '0') {
             func_8002954C(0x18, D_8004FDF0, 0x8000, 0, 0);
             result = 0;
             func_80028A60(0);
             func_8002954C(0x28, D_8004FDF4, 0x7a, 0, 0);
             func_80028A60(0);
+        } else {
+            result = 3;
         }
+    } else {
+        result = 2;
     }
     return result;
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801E8070", func_801E93A0);
-#endif

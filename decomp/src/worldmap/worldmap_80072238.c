@@ -31,9 +31,7 @@ s32 func_800879E0();
 s32 func_80088C90();
 
 /* Enter the world map: set up the display, load or restore the area, start the
- * subsystems, the music and the area's actors. The C body still differs in
- * scheduling the initial state stores. */
-#ifdef NON_MATCHING
+ * subsystems, the music and the area's actors. */
 void func_80072238(void) {
     RECT rect;
     ActorSpawn *spawn;
@@ -57,14 +55,15 @@ void func_80072238(void) {
     func_80073530();
     func_8009766C();
     D_8009BE4C = D_8009A180;
-    D_8009CCA4 = 2;
-    D_8009D3CC = 4;
     D_8009D804 = 0;
     D_8009CEC0 = 0;
     D_8009C7E8 = 0;
     D_8009BD34 = 0;
     D_8009D144 = 0;
-    D_8009C178 = D_80059198 = 1;
+    D_80059198 = 1;
+    D_8009CCA4 = 2;
+    D_8009D3CC = 4;
+    D_8009C178 = 1;
     D_8009CD40 = func_80086700;
     func_80098044();
     if (D_8009C894 == 0) {
@@ -212,9 +211,6 @@ void func_80072238(void) {
     func_80033698(0x130, 0x1E0);
 }
 
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80072238);
-#endif
 
 /* Leave the world map: stop audio, release actor handles, shut down each
  * subsystem and free the area buffers. */
@@ -456,7 +452,7 @@ void func_80073448(s32 id) {
 }
 
 /* Unpack the area file and resolve its section offsets to pointers. */
-#ifdef NON_MATCHING /* decoded base and spot-block operands differ */
+#ifdef NON_MATCHING /* the reloaded area pointer lands in s0 (block) instead of v0 copied to a0 */
 void func_80073530(void) {
     u8 *block;
     u8 *base;

@@ -41,12 +41,11 @@ void func_8007334C(u32 *ot, Matrix *view) {
 }
 
 /* Fire a projectile of the given kind from a point toward the actor's
- * target (or away from origin when given), in the first free slot.
- * Nonmatching: the original reserves eight more frame bytes. */
-#ifdef NON_MATCHING
+ * target (or away from origin when given), in the first free slot. */
 void func_80073424(Vector *from, Vector *origin, Actor *actor, s32 kind, s32 arg4, s32 arg5) {
     Vector toward;
     Vector aim;
+    SVector unused; /* unused in the original; reserves 8 bytes */
     Actor *opponent;
     ShotKind *info;
     Shot *shot;
@@ -89,9 +88,6 @@ void func_80073424(Vector *from, Vector *origin, Actor *actor, s32 kind, s32 arg
     shot->prev = shot->pos;
     shot->active = 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80073424);
-#endif
 
 /* Move an actor's shots: expire, hit the floor, home in on the opponent's
  * core, draw the trail for their look and update speed and homing. */
@@ -347,12 +343,11 @@ void func_80073F34(Actor *actor, HitSpec *hit) {
 }
 
 /* Resolve a hit on an actor's model: impact effects at the hit points and,
- * when it lands, a charged shot, a projectile or a trail segment.
- * Nonmatching: the original reserves sixteen more frame bytes. */
-#ifdef NON_MATCHING
+ * when it lands, a charged shot, a projectile or a trail segment. */
 void func_800740E4(Actor *actor, HitSpec *hit, s32 lands) {
     Vector a;
     Vector b;
+    Vector unused; /* unused in the original; reserves 16 bytes */
     s32 style;
     s32 power;
     s32 single;
@@ -445,9 +440,6 @@ void func_800740E4(Actor *actor, HitSpec *hit, s32 lands) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_800740E4);
-#endif
 
 INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu3", D_8006FC10);
 
@@ -1431,10 +1423,12 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80076884);
 /* Per-frame actor status: count down its timers, drain its charge, apply
  * this frame's damage to its hit points (with the hit sound), update its
  * gauge and knock it out when the hit points run out.
- * Does not match: the charge is tested in its load register and copied,
- * and the knock-out block rereads the flags after each store. */
+ * Does not match (1356 vs 1344 bytes): the charge is tested in its load
+ * register and copied, the knock-out test leaves two delay slots empty, and
+ * the knock-out block rereads the flags after each store. */
 #ifdef NON_MATCHING
 void func_80077038(Actor *actor) {
+    s32 unused[2]; /* unused in the original; reserves 8 bytes */
     s32 charge;
     u8 state;
     u8 gauge;
@@ -3876,10 +3870,8 @@ void func_8007D6B8(void) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Spawn up to count ground particles in free cells around a position: on
- * the ground below a random point within 32 units, rising for 20 frames.
- * Does not match: the x coordinate is kept pre-shifted for the map index. */
+ * the ground below a random point within 32 units, rising for 20 frames. */
 void func_8007D7A8(Vector *pos, s32 count) {
     SceneCell10 *cell = D_800926BC;
     s32 i;
@@ -3893,18 +3885,17 @@ void func_8007D7A8(Vector *pos, s32 count) {
         if (cell->unk6 == 0) {
             x = pos->vx + (rand() % 64 - 32);
             cell->unk0 = x;
+            x = (s16)x;
             z = pos->vz + (rand() % 64 - 32);
             cell->unk4 = z;
-            cell->unk2 = cell->unk8 = D_800928DC[((s16)z >> 8) * 128 + ((s16)x >> 8)].height;
+            z = (s16)z;
+            cell->unk2 = cell->unk8 = D_800928DC[(x >> 8) + (z >> 8) * 128].height;
             cell->unk7 = -(rand() % 10 + 10);
             count--;
             cell->unk6 = 20;
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007D7A8);
-#endif
 
 /* Draw and advance this buffer's half of the ground particles: project
  * them three at a time into point tiles, then let each fall (accelerating)

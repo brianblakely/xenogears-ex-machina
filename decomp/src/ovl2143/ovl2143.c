@@ -1855,7 +1855,7 @@ s16 func_801E0988(s16 value, s16 divisor, s16 minimum) {
  * (modes 4/5: the three values cycling by row). */
 ImageAnim *func_801E0A00(ImageAnim *anim, ImageAnim *target, u16 mode, u16 flags, ColorRow *colors,
                          s16 x, s16 y, s16 z, s16 x2, s16 y2, s16 z2, s16 x3, s16 y3, s16 w, s16 h,
-                         u16 speed, s16 divisor, s16 base, FrameCurve curve) {
+                         s16 speed, s16 divisor, s16 base, FrameCurve curve) {
     RECT rect;
     s32 half;
     s32 i, col;
@@ -3659,11 +3659,10 @@ s32 func_801E5CD8(Actor *actor, s32 which) {
 /* Run an actor's animation events of the current frame (anchors and their
  * light columns, channel stops, node visibility, calls into the masked
  * actors and image animations), then advance the frame, looping at the
- * loop frame. Differs only in the scheduling of the call loop setup
- * (type 8), where the original reads an unset local as u16. */
-#ifdef NON_MATCHING
+ * loop frame. The call event (type 8) reads a local the original never
+ * sets; it is spilled, so it is loaded from its stack slot. */
 void func_801E5D44(Actor *actor, SlotPool *pool, s32 arg2) {
-    u16 unset[4];
+    u16 unset;
     AnimEvent *event;
     AnimEvent *call;
     AnimEvent *anchor;
@@ -3675,6 +3674,7 @@ void func_801E5D44(Actor *actor, SlotPool *pool, s32 arg2) {
     u16 y;
     u16 x2;
     u16 y2;
+    u16 z2;
     u16 saved_mask;
     s16 saved_index;
     s32 bit;
@@ -3740,18 +3740,19 @@ void func_801E5D44(Actor *actor, SlotPool *pool, s32 arg2) {
         case 8:
             /* The original tests a local it never sets. */
             call = event;
-            other = D_801E8670;
-            state = unset[0];
+            state = unset;
             saved_index = D_801E86B0;
             saved_mask = D_801E863C;
             bit = 1 << saved_index;
-            for (i = 0; i < 8; i++, other++) {
-                if (((actor->mask >> i) & 1) && *other != NULL &&
-                    (entry = call->u.call.entry) > 0) {
-                    if (state != 0) {
-                        func_801E8394(actor, i, bit, entry);
-                    } else {
-                        func_801E8330(i, bit, entry);
+            for (i = 0, other = D_801E8670; i < 8; i++, other++) {
+                if ((actor->mask >> i) & 1) {
+                    entry = call->u.call.entry;
+                    if (*other != NULL && entry > 0) {
+                        if (state != 0) {
+                            func_801E8394(actor, i, bit, entry);
+                        } else {
+                            func_801E8330(i, bit, entry);
+                        }
                     }
                 }
             }
@@ -3776,6 +3777,7 @@ void func_801E5D44(Actor *actor, SlotPool *pool, s32 arg2) {
                     y = event->u.image.y;
                     x2 = event->u.image.x2;
                     y2 = event->u.image.y2;
+                    z2 = event->u.image.h10;
                     if (event->u.image.mode & 0x80) {
                         if (actor->h90 < 0) {
                             break;
@@ -3788,7 +3790,7 @@ void func_801E5D44(Actor *actor, SlotPool *pool, s32 arg2) {
                         }
                     }
                     func_801E0A00(&actor->records30[event->index], target, event->u.image.mode & 0x7F,
-                                  event->u.image.b12 | 0x700, (ColorRow *)m, x, y, 0, x2, y2, event->u.image.h10,
+                                  event->u.image.b12 | 0x700, (ColorRow *)m, x, y, 0, x2, y2, z2,
                                   x, y, event->u.image.b13, event->u.image.b14, event->u.image.h16,
                                   event->u.image.h18, event->u.image.h1A, curve);
                 }
@@ -3808,9 +3810,6 @@ void func_801E5D44(Actor *actor, SlotPool *pool, s32 arg2) {
         actor->anim_pos = actor->anim_start;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E5D44);
-#endif
 
 /* Stop an actor's animation. */
 void func_801E632C(Actor *actor) {
