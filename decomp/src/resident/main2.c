@@ -146,10 +146,12 @@ void func_80033518(void) {
     D_80059368 = NULL;
 }
 
-/* Install a loaded font block (protected from release).
- * Nonmatching: the font field loads are scheduled above the global stores. */
-#ifdef NON_MATCHING
+/* Install a loaded font block (protected from release): its header
+ * halfwords are read in turn (glyph offset, then the character ranges). */
 void func_80033558(u16 *font) {
+    u16 *p;
+    s32 offset;
+
     if (font == NULL) {
         func_800324B8(0x20);
         return;
@@ -157,16 +159,15 @@ void func_80033558(u16 *font) {
     func_800320A4(font);
     D_8005936C = font;
     D_8005935C = (u8 *)font;
-    D_8005934C = *(font + 2);
-    D_80059350 = *(font + 3);
-    D_80059354 = *(font + 4);
-    D_80059358 = *(font + 5);
-    D_8005935C = (u8 *)font + *(font + 1);
-    D_80059364 = *(font + 6);
+    p = font + 1;
+    offset = *p++;
+    D_8005934C = *p++;
+    D_80059350 = *p++;
+    D_80059354 = *p++;
+    D_80059358 = *p++;
+    D_80059364 = *p;
+    D_8005935C = (u8 *)font + offset;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80033558);
-#endif
 
 /* Install a loaded system data block (protected from release). */
 void func_800335F4(u8 *data) {
@@ -370,10 +371,8 @@ u8 func_80033CD0(u8 *window) {
 
 /* Decode `value` as ten decimal digit codes in palette `color` (with a
  * sign code when `sign` is set) into text; leading zeros are dropped for
- * plain palettes.
- * Nonmatching: the digit loop matches, but the leading-zero scan's loop
- * rotation and tail register allocation still differ (240 vs 228 bytes). */
-#ifdef NON_MATCHING
+ * plain palettes. The leading-zero scan tests its end first in an
+ * unrotated loop, as the original does. */
 void func_80033CF0(u32 value, s32 color, s32 sign) {
     u32 divisor = 1000000000;
     u32 remaining = value;
@@ -397,7 +396,10 @@ void func_80033CF0(u32 value, s32 color, s32 sign) {
     p = D_8005A0C8;
     D_8005A0C8[0] = color;
     if ((color & 0xFFF0) == color) {
-        while (p != &D_8005A0C8[10]) {
+        while (1) {
+            if (p == &D_8005A0C8[10]) {
+                break;
+            }
             if (*++p != color) {
                 break;
             }
@@ -408,9 +410,6 @@ void func_80033CF0(u32 value, s32 color, s32 sign) {
     }
     func_80033ABC(p);
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80033CF0);
-#endif
 
 void func_80033DD4(Window *window, u8 *text) {
     u8 *previous = window->text;
@@ -2841,8 +2840,11 @@ void func_80038AD4(s32 address, s32 size);
  * keeps the current type and -2 changes nothing. A new type moves the work
  * area to the top of SPU memory and clears it (error 0x20, reverb off,
  * when there is no room).
- * Nonmatching: the flag set for a new type is scheduled before the work area
- * allocation instead of into the branch after it. */
+ * Nonmatching: the original sets the changed flag (ori $s5,1) only in the
+ * delay slot of the allocation check; setting it after the failure branch
+ * fills that slot too but leaves a second copy at the branch join (420
+ * bytes vs 416), and setting it before the check is scheduled above the
+ * allocation call. */
 #ifdef NON_MATCHING
 void func_80038934(s32 type, s32 depth, s32 delay, s32 feedback) {
     SpuReverbAttr attr; /* unused */
@@ -2868,14 +2870,15 @@ void func_80038934(s32 type, s32 depth, s32 delay, s32 feedback) {
         }
         size = D_800508E8[type];
         address = 0x80000 - size;
-        changed = 1;
-        if ((D_800594D8 = func_800395B8(size, address, 5)) == 0) {
+        D_800594D8 = func_800395B8(size, address, 5);
+        if (D_800594D8 == 0) {
             func_8003F6B0(0x20);
             type = 0;
             feedback = 0;
             delay = 0;
             depth = 0;
         }
+        changed = 1;
     }
     D_80059409 = type;
     D_8005A3C0.unk2C = depth;
@@ -3129,8 +3132,10 @@ void *func_80039024(s32 size) {
 }
 
 /* Release a block of driver memory.
- * Nonmatching: the original keeps the pool head and the block address in
- * separate registers from the walk. */
+ * Nonmatching: the original keeps the pool head ($s0) apart from the walk
+ * pointer ($v0, copied after DisableEvent); this C walks in $s0 (132 vs
+ * 136 bytes). Only a dead store (prev = head; entry = prev) reproduces the
+ * copy, which is not taken. */
 #ifdef NON_MATCHING
 void func_80039144(void *data) {
     SoundBlock *head = D_80059410;

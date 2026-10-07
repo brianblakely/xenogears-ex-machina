@@ -18,6 +18,12 @@ CLASSIFICATION := decomp/targets/resident/classification.txt
 SPLIT_ALSO := decomp/targets/resident/slus_006.69.yaml
 # The heap unit addresses its small globals through $gp.
 GP_heap := 8
+# The heap report file unit (80032DCC-80032E7C) owns its file handle as a
+# $gp small common but addresses other units' small globals absolutely
+# (80032E04's stores of D_800592B8 match only so).
+GP_heap_80032DCC := 8
+MASPSX_heap_80032DCC := --aspsx-version=2.34 --use-comm-section
+EXTERN_heap_80032DCC := absolute
 # The sound driver unit is compiled by GCC 2.6.3.
 CC_sound := 2.6.3
 # The sprite unit (8001C8DC-8002709C) is compiled by the Cygnus CDK GCC

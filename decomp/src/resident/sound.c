@@ -823,8 +823,9 @@ extern void func_8003E724(SoundChannel *state, u32 voice);
 /* Start the channels of a sequence at the data offsets listed in its
  * header: default note, volume, pan and modulators, muted when the
  * sequence's mute mask says so.
- * Nonmatching: the original schedules the modulator loop
- * pointer and the id load later. */
+ * Nonmatching: the original schedules the modulator loop pointer
+ * (addiu $a0,$s1,0x60) after the id load; this build places it first in
+ * the block, ahead of the 0x170/0x10 constants (one instruction moved). */
 #ifdef NON_MATCHING
 void func_8003B424(SoundSeq *seq) {
     s32 count = seq->channels;
@@ -867,7 +868,7 @@ void func_8003B424(SoundSeq *seq) {
             channel->id.full = header->unk10;
             channel->priority = 0x10;
             channel->voice_bit = index;
-            channel->start = channel->position = (u8 *)header + *offset;
+            channel->position = channel->start = (u8 *)header + *offset;
             channel->transpose = 0x3C;
             channel->gate_fraction = 0xF;
             channel->loop_depth = 0xFFFF;
@@ -2046,10 +2047,7 @@ u8 *func_8003D3A4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* Noise on at clock `n`.
- * Nonmatching: the original allocates `data` before `channel`
- * and sets the result before the flag updates. */
-#ifdef NON_MATCHING
+/* Noise on at clock `n`. */
 u8 *func_8003D3D8(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     seq->noise_clock = *data++;
     SpuSetNoiseClock(seq->noise_clock);
@@ -2057,13 +2055,8 @@ u8 *func_8003D3D8(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->state.mode |= 0x20;
     return data;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003D3D8);
-#endif
 
-/* Noise on, adding to the clock (modulo 64).
- * Nonmatching: as 8003d3d8. */
-#ifdef NON_MATCHING
+/* Noise on, adding to the clock (modulo 64). */
 u8 *func_8003D438(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     seq->noise_clock = (*data++ + seq->noise_clock) & 0x3F;
     SpuSetNoiseClock(seq->noise_clock);
@@ -2071,9 +2064,6 @@ u8 *func_8003D438(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->state.mode |= 0x20;
     return data;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003D438);
-#endif
 
 /* Noise on and off. */
 u8 *func_8003D4A4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
@@ -2330,16 +2320,18 @@ extern s32 (*D_800508A4[])(SoundModulator *modulator); /* modulator waves by sha
 
 /* Vibrato with an explicit shape (low nibble of the third operand; bit 4
  * selects a one-sided wave).
- * Nonmatching: register allocation of rate/mode and the shape copy
- * differ. */
+ * Nonmatching: the original loads the rate before the depth, masks the
+ * shape into $a2 for the call and copies it back to the mode register
+ * (andi $a2,$s3,0xf; move $s3,$a2), and stores the shape, target and
+ * flags before taking the modulator address; this build masks in place and
+ * moves the shape to $a2 at the call (as 8003DD24/8003E04C). */
 #ifdef NON_MATCHING
 u8 *func_8003D9A4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
-    s16 rate = data[0];
     s32 depth = ((s8 *)data)[1];
+    s16 rate = data[0];
     s32 mode = data[2];
     SoundModulator *modulator;
     s32 flags;
-    s32 shape;
 
     if (depth != 0 && rate != 0) {
         if (depth < 0) {
@@ -2347,18 +2339,19 @@ u8 *func_8003D9A4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
         } else {
             depth = depth * depth;
         }
+        depth <<= 14;
         rate += rate * rate / 64;
         flags = ((mode & 0x10) == 0) * 2;
-        shape = mode & 0xF;
+        mode &= 0xF;
         modulator = &channel->modulator[0];
-        modulator->step = func_8003E290(depth << 14, rate, shape);
+        modulator->step = func_8003E290(depth, rate, mode);
         modulator->period = 0x400;
         modulator->rate = rate;
         modulator->delay = 0;
-        modulator->shape = shape;
+        modulator->shape = mode;
         modulator->target = 0;
         modulator->flags = flags + 1;
-        modulator->wave = D_800508A4[shape];
+        modulator->wave = D_800508A4[mode];
         channel->modulators |= 1;
         func_8003E3E0(modulator);
     }
@@ -3188,9 +3181,7 @@ void func_8003EFA0(SoundChannel *state, u32 voice) {
 
 /* Run the modulators of `count` channels: after its delay each running
  * modulator adds its wave (faded in over its period) to the pitch, level
- * or pan offset of its channel and flags the update.
- * Nonmatching: the period copy lands in the other register. */
-#ifdef NON_MATCHING
+ * or pan offset of its channel and flags the update. */
 void func_8003EFE4(SoundSeq *seq, SoundSeqChannel *channel, s16 count) {
     SoundModulator *modulator;
     u16 changes;
@@ -3213,8 +3204,8 @@ void func_8003EFE4(SoundSeq *seq, SoundSeqChannel *channel, s16 count) {
                             modulator->delay_count--;
                         } else {
                             value = modulator->wave(modulator);
-                            period = modulator->period_count;
-                            if (period < 0x400) {
+                            if (modulator->period_count < 0x400) {
+                                period = modulator->period_count;
                                 modulator->period_count = period + modulator->period;
                                 value = (value >> 10) * period;
                             }
@@ -3243,9 +3234,6 @@ void func_8003EFE4(SoundSeq *seq, SoundSeqChannel *channel, s16 count) {
         channel++;
     } while (--count != 0);
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003EFE4);
-#endif
 
 /* Switch a modulator off. */
 void func_8003F190(SoundModulator *modulator) {

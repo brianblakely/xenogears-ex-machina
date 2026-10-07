@@ -157,30 +157,32 @@ void func_8001CBE8(Task *task) {
 
 /* Link `node` at the head of the main task list under `owner`; it counts as
  * active while the active flag (800591ac) is set. */
-/* Nonmatching: task-word scheduling and the active-branch pointer copies. */
-#ifdef NON_MATCHING
+/* The node is written through a second pointer to it (the original keeps
+ * the node in $t3 and the inactive branch's copy in $v1); the owner's
+ * serial is read once the owner is linked. */
 void func_8001CC18(Task *owner, Task *node) {
-    node->owner = owner;
-    node->destroy = func_8001CD94;
-    node->update = NULL;
-    node->next = D_8005958C;
-    D_8005958C = node;
-    node->id.bits.serial = D_80059184++;
-    node->link.bits.owner_serial = owner->id.bits.serial;
-    node->link.bits.flag29 = 0;
-    node->link.bits.flag30 = 0;
-    node->link.bits.active = 0;
+    Task *self = &node[0];
+    u32 serial;
+
+    self->owner = owner;
+    serial = owner->id.bits.serial;
+    self->destroy = func_8001CD94;
+    self->update = NULL;
+    self->next = D_8005958C;
+    D_8005958C = self;
+    self->link.bits.owner_serial = serial;
+    self->link.bits.flag29 = 0;
+    self->link.bits.flag30 = 0;
+    self->link.bits.active = 0;
+    self->id.bits.serial = D_80059184++;
     if (D_800591AC != 0) {
         D_80059464++;
-        node->link.bits.active = 1;
+        self->link.bits.active = 1;
     } else {
-        node->link.bits.active = 0;
+        self->link.bits.active = 0;
     }
     D_80059188++;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001CC18);
-#endif
 
 /* Allocate a task with `size` bytes after its node on the main list. */
 Task *func_8001CD08(Task *owner, s32 size) {

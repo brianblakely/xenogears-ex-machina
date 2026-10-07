@@ -127,6 +127,12 @@ segments:
       # (8002C3D8 compiles identically under both).
       - [0x1CBE8, c, main_8002C3E8]
       - [0x22094, c, heap]
+      # Heap report file unit: 80032E04 stores D_800592B8 absolutely, which
+      # the heap unit (80032BDC) loads through $gp, so a unit starts after
+      # 80032C18 (its own $gp stores); 80032DCC, the first user of the
+      # report file handle D_80059348, is chosen (80032CB8/80032D60 address
+      # no small globals and compile identically either way).
+      - [0x235CC, c, heap_80032DCC]
       - [0x2367C, c, main2]
       # Sound driver unit (GCC 2.6.3) to 8003F738. Its start lies in
       # 80039E18-8003A094: 80039DB8 needs 2.7.2, 8003A094 and later match

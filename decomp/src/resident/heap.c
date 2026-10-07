@@ -534,10 +534,13 @@ INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/heap", D_80018998);
  * equal callers. Skip/count apply to finished rows; zero count is unlimited.
  * Column flags: 1 number, 2 header, 4 data, 8 size, 0x10 owner, 0x20 caller,
  * 0x40 caller symbol, 0x80 contents, 0x8000 total free bytes.
- * Nonmatching: the original reserves an additional untouched 64-byte stack
- * area and compares tag/kind with one packed-word mask. */
+ * Nonmatching: the frame (0x80) matches; the number and data counters
+ * take $s3/$s4 swapped, and the original keeps header->next in $a0 for the
+ * grouped-row path (reloading it only for mode 3) where this build reloads
+ * it in the shared block (892 vs 896 bytes). */
 #ifdef NON_MATCHING
 void func_8003278C(s32 mode, s32 skip, s32 count, s32 flags) {
+    char unused[64]; /* unused in the original; reserves 64 bytes */
     s32 number = 0;
     s32 limited = 0;
     HeapHeader *header;
@@ -734,23 +737,3 @@ void func_80032D60(void) {
         node = next;
     }
 }
-
-/* Report output to the host file. */
-void func_80032DCC(char *line) {
-    func_8004C470(D_80059348, line, strlen(line));
-}
-
-/* Write the full heap report to the host file `name`.
- * Nonmatching: the original stores the output hook with lui/sw, not $gp. */
-#ifdef NON_MATCHING
-void func_80032E04(char *name) {
-    func_8004C38C();
-    D_80059348 = PCcreat(name, 0);
-    D_800592B8 = func_80032DCC;
-    func_8003278C(1, 0, 0, -1);
-    D_800592B8 = func_800379C8;
-    PCclose(D_80059348);
-}
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_80032E04);
-#endif
