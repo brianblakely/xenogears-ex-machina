@@ -384,10 +384,10 @@ void func_801DCE18(ModelList *list, s32 release_models) {
  * surfaces, its image animations (advanced by `ticks`) and its channels'
  * ribbons. A channel whose frame count wraps to 0 leaves the channel pointer
  * where it is, so the next channel index redraws it (as the original).
- * NON_MATCHING: same frame and code shape (8 bytes longer); the actor and
- * `placed` swap s5/s6, the shadow's placed->t stores and the billboard scale
- * loads are scheduled differently, and the solid ribbon's 1 - side addresses
- * are formed in another order. */
+ * NON_MATCHING: same size, frame and instructions except registers: the
+ * actor and `placed` (then the records24 pointer and end1) swap s5/s6, and
+ * the 2D ribbon's trail reads add the channel pointer as the second operand
+ * (addu v1, k4, ch) where this C adds it first. */
 #ifdef NON_MATCHING
 void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, u32 *ot, s32 buffer) {
     MATRIX *scratch = (MATRIX *)0x1F800000;
@@ -409,6 +409,7 @@ void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, 
     ImageAnim *anim;
     Channel *ch;
     VECTOR *end0, *end1;
+    VECTOR *start0, *start1;
     s32 oldest;
 
     if (!actor->active) {
@@ -441,8 +442,8 @@ void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, 
         v.vz = 0;
         func_8003F738(&v, placed);
         placed->t[0] = back.vx;
-        placed->t[2] = back.vz;
         placed->t[1] = actor->h60;
+        placed->t[2] = back.vz;
         CompMatrix(m, placed, placed);
         shade = actor->scale - (actor->h60 - actor->parts->pos[1]) / 4;
         if (shade < 0) {
@@ -508,11 +509,11 @@ void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, 
         SetLightMatrix(scratch);
         CompMatrix(view, &part->world, scratch);
         if (part->billboard > 0) {
+            scratch->m[0][0] = actor->scale;
             scratch->m[0][2] = 0;
             scratch->m[1][0] = 0;
             scratch->m[1][2] = 0;
             scratch->m[2][0] = 0;
-            scratch->m[0][0] = actor->scale;
             scratch->m[2][2] = actor->scale;
             if (part->billboard == 1) {
                 scratch->m[0][1] = view->m[0][1];
@@ -520,8 +521,8 @@ void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, 
                 scratch->m[2][1] = view->m[2][1];
             } else {
                 scratch->m[0][1] = 0;
-                scratch->m[2][1] = 0;
                 scratch->m[1][1] = actor->scale;
+                scratch->m[2][1] = 0;
             }
         }
         SetRotMatrix(scratch);
@@ -529,7 +530,7 @@ void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, 
         func_8002C700(models->models[part->model], part->packets[buffer], (s32)ot, mode);
     }
     record = actor->records24;
-    for (i = 0; i < actor->count10D; i++, record++) {
+    for (i = 0; i < actor->count10D; record++, i++) {
         VECTOR out;
         SVECTOR sun;
 
@@ -638,12 +639,14 @@ void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, 
                 ch->particle->fade[0] = ch->fade[0];
                 ch->particle->fade[1] = ch->fade[1];
                 ch->particle->fade[2] = ch->fade[2];
-                ch->particle->x0 = ch->trail.pos[0][1 - side].vx;
-                ch->particle->y0 = ch->trail.pos[0][1 - side].vy;
-                ch->particle->z0 = ch->trail.pos[0][1 - side].vz;
-                ch->particle->x2 = ch->trail.pos[1][1 - side].vx;
-                ch->particle->y2 = ch->trail.pos[1][1 - side].vy;
-                ch->particle->z2 = ch->trail.pos[1][1 - side].vz;
+                start0 = &ch->trail.pos[0][1 - side];
+                ch->particle->x0 = start0->vx;
+                ch->particle->y0 = start0->vy;
+                ch->particle->z0 = start0->vz;
+                start1 = &ch->trail.pos[1][1 - side];
+                ch->particle->x2 = start1->vx;
+                ch->particle->y2 = start1->vy;
+                ch->particle->z2 = start1->vz;
             }
             ch->particle->x1 = end0->vx;
             ch->particle->y1 = end0->vy;
@@ -659,6 +662,20 @@ void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DCEC8);
 #endif
 
+/* Step a track value: add the next signed byte, or after the escape byte
+ * -0x80 replace the value with the following little-endian halfword. */
+#define TRACK_STEP(slot, field)                                                \
+    do {                                                                       \
+        s32 delta = *(s8 *)(slot)->u.track.pos++;                              \
+        if (delta != -0x80) {                                                  \
+            (field) += delta;                                                  \
+        } else {                                                               \
+            s32 low = *(slot)->u.track.pos++;                                  \
+            s32 high = *(s8 *)(slot)->u.track.pos++;                           \
+            (field) = low | (high << 8);                                       \
+        }                                                                      \
+    } while (0)
+
 /* Step the tweens attached to each node of a hierarchy: its rotation
  * (attachment 0: set, delta or add from a track, interpolate, approach,
  * spin, or turn toward a point within a growing limit), position
@@ -669,8 +686,7 @@ INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DCEC8);
  * `tag`). As in the original, the "spin" stop clears the step of the last
  * slot a computing kind used, which may belong to an earlier node. */
 #ifdef NON_MATCHING
-s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, u16 tag, s16 scale) {
-    ModelPart *part = parts;
+s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, s32 tag, s32 scale) {
     PoolSlot *slot;
     PoolSlot *last;
     u8 *track;
@@ -685,142 +701,121 @@ s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, u16 tag, s16 scale) {
     s16 sx, sy, sz;
 
     count = parts->count;
-    for (i = 0; i < count; i++, part++) {
-        slot = part->attachments[0];
+    for (i = 0; i < count; i++, parts++) {
+        slot = parts->attachments[0];
         if (slot != NULL) {
             kind = slot->kind;
             switch (kind & 0xF) {
             case 0:
                 track = slot->u.track.pos;
                 if (!(kind & 0x10)) {
-                    part->rot.vx = *(u16 *)track;
+                    parts->rot.vx = *(u16 *)track;
                     track += 2;
                     slot->u.track.pos += 2;
                 }
                 if (!(kind & 0x20)) {
-                    part->rot.vy = *(u16 *)track;
+                    parts->rot.vy = *(u16 *)track;
                     track += 2;
                     slot->u.track.pos += 2;
                 }
                 if (!(kind & 0x40)) {
-                    part->rot.vz = *(u16 *)track;
+                    parts->rot.vz = *(u16 *)track;
                     slot->u.track.pos += 2;
                 }
                 goto check_rot;
             case 1:
                 if (!(kind & 0x10)) {
-                    track = slot->u.track.pos++;
-                    if ((s8)track[0] != -0x80) {
-                        part->rot.vx += (s8)track[0];
-                    } else {
-                        slot->u.track.pos = track + 2;
-                        slot->u.track.pos = track + 3;
-                        part->rot.vx = track[1] | ((s8)track[2] << 8);
-                    }
+                    TRACK_STEP(slot, parts->rot.vx);
                 }
                 if (!(kind & 0x20)) {
-                    track = slot->u.track.pos++;
-                    if ((s8)track[0] != -0x80) {
-                        part->rot.vy += (s8)track[0];
-                    } else {
-                        slot->u.track.pos = track + 2;
-                        slot->u.track.pos = track + 3;
-                        part->rot.vy = track[1] | ((s8)track[2] << 8);
-                    }
+                    TRACK_STEP(slot, parts->rot.vy);
                 }
                 if (!(kind & 0x40)) {
-                    track = slot->u.track.pos++;
-                    if ((s8)track[0] != -0x80) {
-                        part->rot.vz += (s8)track[0];
-                    } else {
-                        slot->u.track.pos = track + 2;
-                        slot->u.track.pos = track + 3;
-                        part->rot.vz = track[1] | ((s8)track[2] << 8);
-                    }
+                    TRACK_STEP(slot, parts->rot.vz);
                 }
                 goto check_rot;
             case 2:
                 track = slot->u.track.pos;
                 if (!(kind & 0x10)) {
-                    part->rot.vx += *(u16 *)track;
+                    parts->rot.vx += *(u16 *)track;
                     track += 2;
                     slot->u.track.pos += 2;
                 }
                 if (!(kind & 0x20)) {
-                    part->rot.vy += *(u16 *)track;
+                    parts->rot.vy += *(u16 *)track;
                     track += 2;
                     slot->u.track.pos += 2;
                 }
                 if (!(kind & 0x40)) {
-                    part->rot.vz += *(u16 *)track;
+                    parts->rot.vz += *(u16 *)track;
                     slot->u.track.pos += 2;
                 }
                 goto check_rot;
             case 3:
                 time = (s16)(slot->time + 1);
-                part->rot.vx = slot->u.value[0] + slot->u.value[3] * time / slot->duration;
-                part->rot.vy = slot->u.value[1] + slot->u.value[4] * time / slot->duration;
+                parts->rot.vx = slot->u.value[0] + slot->u.value[3] * time / slot->duration;
+                parts->rot.vy = slot->u.value[1] + slot->u.value[4] * time / slot->duration;
                 last = slot;
-                part->rot.vz = slot->u.value[2] + slot->u.value[5] * time / slot->duration;
+                parts->rot.vz = slot->u.value[2] + slot->u.value[5] * time / slot->duration;
                 goto check_rot;
             case 4:
-                sx = (slot->u.value[3] - part->rot.vx) / slot->duration;
-                sy = (slot->u.value[4] - part->rot.vy) / slot->duration;
-                sz = (slot->u.value[5] - part->rot.vz) / slot->duration;
+                sx = (slot->u.value[3] - parts->rot.vx) / slot->duration;
+                sy = (slot->u.value[4] - parts->rot.vy) / slot->duration;
+                sz = (slot->u.value[5] - parts->rot.vz) / slot->duration;
                 last = slot;
                 if (sx == 0 && sy == 0 && sz == 0) {
                     slot->time = slot->duration;
-                    part->rot.vx = slot->u.value[3];
-                    part->rot.vy = slot->u.value[4];
-                    part->rot.vz = slot->u.value[5];
+                    parts->rot.vx = slot->u.value[3];
+                    parts->rot.vy = slot->u.value[4];
+                    parts->rot.vz = slot->u.value[5];
                 } else {
-                    part->rot.vx += sx;
-                    part->rot.vz += sz;
-                    part->rot.vy += sy;
+                    parts->rot.vx += sx;
+                    parts->rot.vz += sz;
+                    parts->rot.vy += sy;
                     slot->time = 0;
                 }
                 goto check_rot;
             case 5:
                 slot->u.value[0] += slot->u.value[3];
-                part->rot.vx += slot->u.value[0];
+                parts->rot.vx += slot->u.value[0];
                 slot->u.value[1] += slot->u.value[4];
-                part->rot.vy += slot->u.value[1];
+                parts->rot.vy += slot->u.value[1];
                 slot->u.value[2] += slot->u.value[5];
                 last = slot;
-                part->rot.vz += slot->u.value[2];
+                parts->rot.vz += slot->u.value[2];
                 goto check_rot;
             case 7:
             case 8:
-                dx = slot->u.value[3] - part->pos[0];
-                dy = slot->u.value[4] - part->pos[1];
-                dz = slot->u.value[5] - part->pos[2];
+                dx = slot->u.value[3] - parts->pos[0];
+                dy = slot->u.value[4] - parts->pos[1];
+                dz = slot->u.value[5] - parts->pos[2];
                 dist = SquareRoot0(dx * dx + dy * dy + dz * dz) + 1;
                 last = slot;
-                turn = (ratan2(-dx, -dz) - part->rot.vy) & 0xFFF;
+                turn = (ratan2(-dx, -dz) - parts->rot.vy) & 0xFFF;
                 if (turn >= 0x800) {
                     turn -= 0x1000;
                 }
                 limit = slot->u.value[1] + (dist + slot->time) * slot->u.value[2] / slot->u.value[0];
                 angle = turn < 0 ? -turn : turn;
                 if (angle < limit) {
-                    part->rot.vy += turn;
+                    parts->rot.vy += turn;
                 } else if (turn < 0) {
-                    part->rot.vy -= limit;
+                    parts->rot.vy -= limit;
                 } else {
-                    part->rot.vy += limit;
+                    parts->rot.vy += limit;
                 }
                 if ((kind & 0xF) == 7) {
-                    turn = (ratan2(dy, SquareRoot0(dx * dx + dz * dz)) - part->rot.vx) & 0xFFF;
+                    turn = (ratan2(dy, SquareRoot0(dx * dx + dz * dz)) - parts->rot.vx) & 0xFFF;
                     if (turn >= 0x800) {
                         turn -= 0x1000;
                     }
                     angle = turn < 0 ? -turn : turn;
                     if (angle < limit) {
-                        part->rot.vx += turn;
+                        parts->rot.vx += turn;
                     } else if (turn < 0) {
-                        part->rot.vx -= limit;
+                        parts->rot.vx -= limit;
                     } else {
-                        part->rot.vx += limit;
+                        parts->rot.vx += limit;
                     }
                 }
                 if (last->time < 0x7D00) {
@@ -840,7 +835,7 @@ s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, u16 tag, s16 scale) {
                     }
                     result |= 0x200;
                     func_801DF7A8(pool, slot);
-                    part->attachments[0] = NULL;
+                    parts->attachments[0] = NULL;
                 } else {
                     if (slot->tag == tag) {
                         result |= 4;
@@ -861,60 +856,39 @@ s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, u16 tag, s16 scale) {
                 break;
             }
         rot_done:
-            part->rotate = 1;
-            part->dirty = 1;
+            parts->rotate = 1;
+            parts->dirty = 1;
         }
-        slot = part->attachments[1];
+        slot = parts->attachments[1];
         if (slot != NULL) {
             kind = slot->kind;
             switch (kind & 0xF) {
             case 0:
                 track = slot->u.track.pos;
                 if (!(kind & 0x10)) {
-                    part->pos[0] = *(s16 *)track;
+                    parts->pos[0] = *(s16 *)track;
                     track += 2;
                     slot->u.track.pos += 2;
                 }
                 if (!(kind & 0x20)) {
-                    part->pos[1] = *(s16 *)track;
+                    parts->pos[1] = *(s16 *)track;
                     track += 2;
                     slot->u.track.pos += 2;
                 }
                 if (!(kind & 0x40)) {
-                    part->pos[2] = *(s16 *)track;
+                    parts->pos[2] = *(s16 *)track;
                     slot->u.track.pos += 2;
                 }
                 break;
             case 1:
                 if (!(kind & 0x10)) {
-                    track = slot->u.track.pos++;
-                    if ((s8)track[0] != -0x80) {
-                        part->pos[0] += (s8)track[0];
-                    } else {
-                        slot->u.track.pos = track + 2;
-                        slot->u.track.pos = track + 3;
-                        part->pos[0] = track[1] | ((s8)track[2] << 8);
-                    }
+                    TRACK_STEP(slot, parts->pos[0]);
                 }
                 if (!(kind & 0x20)) {
-                    track = slot->u.track.pos++;
-                    if ((s8)track[0] != -0x80) {
-                        part->pos[1] += (s8)track[0];
-                    } else {
-                        slot->u.track.pos = track + 2;
-                        slot->u.track.pos = track + 3;
-                        part->pos[1] = track[1] | ((s8)track[2] << 8);
-                    }
+                    TRACK_STEP(slot, parts->pos[1]);
                 }
                 if (!(kind & 0x40)) {
-                    track = slot->u.track.pos++;
-                    if ((s8)track[0] != -0x80) {
-                        part->pos[2] += (s8)track[0];
-                    } else {
-                        slot->u.track.pos = track + 2;
-                        slot->u.track.pos = track + 3;
-                        part->pos[2] = track[1] | ((s8)track[2] << 8);
-                    }
+                    TRACK_STEP(slot, parts->pos[2]);
                 }
                 break;
             case 2:
@@ -939,46 +913,46 @@ s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, u16 tag, s16 scale) {
                 } else {
                     move.vz = 0;
                 }
-                move.vx = move.vx * part->scale[0] >> 12;
-                move.vy = move.vy * part->scale[1] >> 12;
-                move.vz = move.vz * part->scale[2] >> 12;
-                ApplyMatrix(&part->world, &move, &moved);
-                part->pos[0] += scale * moved.vx >> 12;
-                part->pos[1] += scale * moved.vy >> 12;
-                part->pos[2] += scale * moved.vz >> 12;
+                move.vx = move.vx * parts->scale[0] >> 12;
+                move.vy = move.vy * parts->scale[1] >> 12;
+                move.vz = move.vz * parts->scale[2] >> 12;
+                ApplyMatrix(&parts->world, &move, &moved);
+                parts->pos[0] += scale * moved.vx >> 12;
+                parts->pos[1] += scale * moved.vy >> 12;
+                parts->pos[2] += scale * moved.vz >> 12;
                 break;
             case 3:
                 time = (s16)(slot->time + 1);
-                part->pos[0] = slot->u.value[0] + slot->u.value[3] * time / slot->duration;
-                part->pos[1] = slot->u.value[1] + slot->u.value[4] * time / slot->duration;
+                parts->pos[0] = slot->u.value[0] + slot->u.value[3] * time / slot->duration;
+                parts->pos[1] = slot->u.value[1] + slot->u.value[4] * time / slot->duration;
                 last = slot;
-                part->pos[2] = slot->u.value[2] + slot->u.value[5] * time / slot->duration;
+                parts->pos[2] = slot->u.value[2] + slot->u.value[5] * time / slot->duration;
                 break;
             case 4:
-                sx = (slot->u.value[3] - part->pos[0]) / slot->duration;
-                sy = (slot->u.value[4] - part->pos[1]) / slot->duration;
-                sz = (slot->u.value[5] - part->pos[2]) / slot->duration;
+                sx = (slot->u.value[3] - parts->pos[0]) / slot->duration;
+                sy = (slot->u.value[4] - parts->pos[1]) / slot->duration;
+                sz = (slot->u.value[5] - parts->pos[2]) / slot->duration;
                 last = slot;
                 if (sx == 0 && sy == 0 && sz == 0) {
                     slot->time = slot->duration;
-                    part->pos[0] = slot->u.value[3];
-                    part->pos[1] = slot->u.value[4];
-                    part->pos[2] = slot->u.value[5];
+                    parts->pos[0] = slot->u.value[3];
+                    parts->pos[1] = slot->u.value[4];
+                    parts->pos[2] = slot->u.value[5];
                 } else {
-                    part->pos[0] += sx;
-                    part->pos[1] += sy;
-                    part->pos[2] += sz;
+                    parts->pos[0] += sx;
+                    parts->pos[1] += sy;
+                    parts->pos[2] += sz;
                     slot->time = 0;
                 }
                 break;
             case 5:
                 slot->u.value[0] += slot->u.value[3];
-                part->pos[0] += slot->u.value[0];
+                parts->pos[0] += slot->u.value[0];
                 slot->u.value[1] += slot->u.value[4];
-                part->pos[1] += slot->u.value[1];
+                parts->pos[1] += slot->u.value[1];
                 slot->u.value[2] += slot->u.value[5];
                 last = slot;
-                part->pos[2] += slot->u.value[2];
+                parts->pos[2] += slot->u.value[2];
                 break;
             }
             if (++slot->time < slot->duration) {
@@ -992,7 +966,7 @@ s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, u16 tag, s16 scale) {
                 }
                 result |= 0x200;
                 func_801DF7A8(pool, slot);
-                part->attachments[1] = NULL;
+                parts->attachments[1] = NULL;
             } else {
                 if (slot->tag == tag) {
                     result |= 4;
@@ -1010,18 +984,18 @@ s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, u16 tag, s16 scale) {
                     }
                 }
             }
-            part->dirty = 1;
+            parts->dirty = 1;
         }
-        slot = part->attachments[2];
+        slot = parts->attachments[2];
         if (slot != NULL) {
             kind = slot->kind & 0xF;
             switch (kind) {
             case 3:
                 time = (s16)(slot->time + 1);
-                part->scale[0] = slot->u.value[0] + slot->u.value[3] * time / slot->duration;
-                part->scale[1] = slot->u.value[1] + slot->u.value[4] * time / slot->duration;
+                parts->scale[0] = slot->u.value[0] + slot->u.value[3] * time / slot->duration;
+                parts->scale[1] = slot->u.value[1] + slot->u.value[4] * time / slot->duration;
                 last = slot;
-                part->scale[2] = slot->u.value[2] + slot->u.value[5] * time / slot->duration;
+                parts->scale[2] = slot->u.value[2] + slot->u.value[5] * time / slot->duration;
                 break;
             case 4:
                 sx = (slot->u.value[3] - slot->u.value[0]) / slot->duration;
@@ -1030,27 +1004,27 @@ s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, u16 tag, s16 scale) {
                 last = slot;
                 if (sx == 0 && sy == 0 && sz == 0) {
                     slot->time = slot->duration;
-                    part->scale[0] = slot->u.value[3];
-                    part->scale[1] = slot->u.value[4];
-                    part->scale[2] = slot->u.value[5];
+                    parts->scale[0] = slot->u.value[3];
+                    parts->scale[1] = slot->u.value[4];
+                    parts->scale[2] = slot->u.value[5];
                 } else {
                     last->u.value[0] += sx;
                     last->u.value[1] += sy;
                     last->u.value[2] += sz;
-                    part->scale[0] = last->u.value[0];
-                    part->scale[1] = last->u.value[1];
-                    part->scale[2] = last->u.value[2];
+                    parts->scale[0] = last->u.value[0];
+                    parts->scale[1] = last->u.value[1];
+                    parts->scale[2] = last->u.value[2];
                     slot->time = 0;
                 }
                 break;
             case 5:
                 slot->u.value[0] += slot->u.value[3];
-                part->scale[0] += slot->u.value[0];
+                parts->scale[0] += slot->u.value[0];
                 slot->u.value[1] += slot->u.value[4];
-                part->scale[1] += slot->u.value[1];
+                parts->scale[1] += slot->u.value[1];
                 slot->u.value[2] += slot->u.value[5];
                 last = slot;
-                part->scale[2] += slot->u.value[2];
+                parts->scale[2] += slot->u.value[2];
                 break;
             }
             if (++slot->time < slot->duration) {
@@ -1064,7 +1038,7 @@ s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, u16 tag, s16 scale) {
                 }
                 result |= 0x200;
                 func_801DF7A8(pool, slot);
-                part->attachments[2] = NULL;
+                parts->attachments[2] = NULL;
             } else {
                 if (slot->tag == tag) {
                     result |= 4;
@@ -1077,8 +1051,8 @@ s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, u16 tag, s16 scale) {
                     last->u.value[5] = 0;
                 }
             }
-            part->rotate = 1;
-            part->dirty = 1;
+            parts->rotate = 1;
+            parts->dirty = 1;
         }
     }
     return result;
@@ -4314,8 +4288,8 @@ void func_801E738C(s32 slot_count) {
  * group into a free model list and build the hierarchy at `pos`, set up its
  * shadow quads, image animations and records24, reset its script (unless bit
  * 6) and keep a compacted copy of its model group (unless bit 1).
- * NON_MATCHING (4 bytes longer): register allocation differs (the original
- * has actor s3, file then the loop index s4, links s0, desc/p s2), and the
+ * NON_MATCHING (same size): register allocation differs (the original has
+ * actor s3, file then the loop index s4, links s0, desc/p s2), and the
  * original rematerializes &D_801E85F4 after func_801DC22C where this C keeps
  * it in s0. */
 #ifdef NON_MATCHING
@@ -4454,7 +4428,7 @@ void func_801E742C(s32 index, u16 flags, ActorScript *script, ActorFile *file, s
         p = desc->records;
         record = func_80031BDC(actor->count10D * sizeof(Record24), 0);
         actor->records24 = record;
-        for (i = 0; i < actor->count10D; i++, record++) {
+        for (i = 0; i < actor->count10D; record++, i++) {
             count = p[17];
             record->h0 = *p++;
             /* The parameters are read in order. */

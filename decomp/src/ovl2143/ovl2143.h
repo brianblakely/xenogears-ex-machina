@@ -705,7 +705,7 @@ void func_8003852C(void *bank);              /* release a sound effect bank */
 void MulMatrix2(MATRIX *m, MATRIX *out);  /* out = m * out (rotation) */
 u32 func_801DC5C0(ModelPart *parts, s32 scale);
 u32 func_801DC848(ModelPart *parts, s32 scale);
-s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, u16 arg2, s16 scale);
+s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, s32 tag, s32 scale);
 void func_801E5D44(Actor *actor, SlotPool *pool, s32 arg2);
 void func_801E7298(Actor *actor);
 void func_801E6F64(Sprite *sprite);
