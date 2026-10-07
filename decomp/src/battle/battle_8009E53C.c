@@ -5006,12 +5006,17 @@ chosen:
             }
             break;
         case 0x1D: /* start a tween of a part */
-            b1 = (word = *pc++) >> 8;
-            b0 = word;
-            b3 = (word = *pc++) >> 8;
-            func_800AF678(object, pool, &object->hierarchy[arg], b0, b1, (u8)word, b3, *pc++, *pc++, *pc++, *pc++,
-                          *pc++, *pc++, *pc++);
-            flags = -1;
+            {
+                u8 mode;
+                u8 smooth;
+
+                mode = (word = *pc++) >> 8;
+                b0 = word;
+                smooth = (word = *pc++) >> 8;
+                func_800AF678(object, pool, &object->hierarchy[arg], b0, mode, (u8)word, smooth, *pc++, *pc++,
+                              *pc++, *pc++, *pc++, *pc++, *pc++);
+                flags = -1;
+            }
             break;
         case 0x1E:
             object->field37 = arg;
@@ -5398,15 +5403,9 @@ chosen:
             }
             break;
         case 0x41: /* turn by angles */
-            {
-                s16 x = *pc++;
-                s16 y = *pc++;
-                s16 z = *pc++;
-
-                flags = -1;
-                func_800ADF1C(pool, object->hierarchy, arg, (s16)(object->hierarchy->rotation.vx + x),
-                              (s16)(object->hierarchy->rotation.vy + y), (s16)(object->hierarchy->rotation.vz + z));
-            }
+            func_800ADF1C(pool, object->hierarchy, arg, (s16)(object->hierarchy->rotation.vx + *pc++),
+                          (s16)(object->hierarchy->rotation.vy + *pc++), (s16)(object->hierarchy->rotation.vz + *pc++));
+            flags = -1;
             break;
         case 0x42:
         case 0x43: /* turn towards the object's position */
