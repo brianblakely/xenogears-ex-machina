@@ -914,15 +914,10 @@ void func_80072D84(POLY_G4 *poly0, POLY_G4 *poly1, s32 x, s32 y, s32 w, s32 h) {
     poly1->y3 = y + h;
 }
 
-#ifdef NON_MATCHING
 /* Add the menu backdrop to `ot`: a gouraud quad at (x, y), w by h, whose
  * corner colors each fade toward a new random color (as func_800734B8).
- * The difference of two bytes is kept in a short. Does not match: only the
- * two loads of the red difference are swapped; the original loads the
- * to-red ($s6) before the from-red ($s7), here the from-red comes first.
- * (With func_800734B8's form, delta = (to - from) * n / d, the loads are
- * right but the from-red pointer is set up and advanced before the fade
- * counter pointer instead of after it.) */
+ * Each channel's difference of two bytes is formed in the channel's int and
+ * kept in a short for the fade step. */
 void func_80072F98(u32 *ot, POLY_G4 *poly, s32 x, s32 y, s32 w, s32 h) {
     s32 i;
     u8 from;
@@ -951,13 +946,16 @@ void func_80072F98(u32 *ot, POLY_G4 *poly, s32 x, s32 y, s32 w, s32 h) {
             D_80076F9C[i].b = (func_80074AF0() & 0xFF) / 3 + 16;
         }
         from = D_80076F8C[i].r;
-        delta = D_80076F9C[i].r - from;
+        r = D_80076F9C[i].r - from;
+        delta = r;
         r = D_80076F8C[i].r + delta * D_80076FAC[i] / D_80076FBC[i];
         from = D_80076F8C[i].g;
-        delta = D_80076F9C[i].g - from;
+        g = D_80076F9C[i].g - from;
+        delta = g;
         g = D_80076F8C[i].g + delta * D_80076FAC[i] / D_80076FBC[i];
         from = D_80076F8C[i].b;
-        delta = D_80076F9C[i].b - from;
+        b = D_80076F9C[i].b - from;
+        delta = b;
         b = D_80076F8C[i].b + delta * D_80076FAC[i] / D_80076FBC[i];
         switch (i) {
         case 0:
@@ -985,9 +983,6 @@ void func_80072F98(u32 *ot, POLY_G4 *poly, s32 x, s32 y, s32 w, s32 h) {
     poly->tag = (poly->tag & 0xFF000000) | (*ot & 0xFFFFFF);
     *ot = (*ot & 0xFF000000) | ((u32)poly & 0xFFFFFF);
 }
-#else
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80072F98);
-#endif
 
 /* Set up the menu frame quads of both buffers at (x, y), w by h, with random
  * pale yellow corner fades. */
