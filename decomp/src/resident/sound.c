@@ -823,8 +823,9 @@ extern void func_8003E724(SoundChannel *state, u32 voice);
 /* Start the channels of a sequence at the data offsets listed in its
  * header: default note, volume, pan and modulators, muted when the
  * sequence's mute mask says so.
- * Nonmatching: the original schedules the modulator loop
- * pointer and the id load later. */
+ * Nonmatching: the original schedules the modulator loop pointer
+ * (addiu $a0,$s1,0x60) after the id load; this build places it first in
+ * the block, ahead of the 0x170/0x10 constants (one instruction moved). */
 #ifdef NON_MATCHING
 void func_8003B424(SoundSeq *seq) {
     s32 count = seq->channels;
@@ -867,7 +868,7 @@ void func_8003B424(SoundSeq *seq) {
             channel->id.full = header->unk10;
             channel->priority = 0x10;
             channel->voice_bit = index;
-            channel->start = channel->position = (u8 *)header + *offset;
+            channel->position = channel->start = (u8 *)header + *offset;
             channel->transpose = 0x3C;
             channel->gate_fraction = 0xF;
             channel->loop_depth = 0xFFFF;
