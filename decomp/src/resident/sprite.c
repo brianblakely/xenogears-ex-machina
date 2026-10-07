@@ -1074,7 +1074,7 @@ void func_8001E9BC(Sprite *sprite, u_long *ot) {
 }
 
 /* Whether a frame table entry takes its image from the sequencer (second byte bit 7). */
-u8 func_8001EE68(u8 *frame) {
+s32 func_8001EE68(u8 *frame) {
     return frame[1] >> 7;
 }
 
@@ -2087,6 +2087,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
     case 0xDB:
         {
             u8 *half = func_8001FBA4(sprite, code);
+            s32 value;
 
             value = ((half[1] << 8) | half[0]) << (s8)code[1];
             half[0] = value;
@@ -2096,6 +2097,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
     case 0xDC:
         {
             u8 *half = func_8001FBA4(sprite, code);
+            s32 value;
 
             value = ((half[1] << 8) | half[0]) >> (s8)code[1];
             half[0] = value;
@@ -2246,8 +2248,12 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         ((SpriteModelRenderer *)sprite->renderer)->model = buffer;
         break;
     case 0xB5:
-        if (sprite->render.word & 3) {
-            func_80022000(sprite, (s8)code[0] << 8);
+        {
+            s16 scale = code[0] << 8;
+
+            if (sprite->render.word & 3) {
+                func_80022000(sprite, scale);
+            }
         }
         break;
     case 0xE7:
@@ -2256,9 +2262,9 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
     case 0xE9: {
         s32 value;
 
-        value = code[0] | (s16)(code[1] << 8);
+        value = (code[0] | (s16)(code[1] << 8)) * 2;
         if (sprite->renderer != NULL) {
-            sprite->renderer->scale_x += value * 2;
+            sprite->renderer->scale_x += value;
             sprite->render.bits.dirty = 1;
         }
         break;
@@ -2266,9 +2272,9 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
     case 0xEA: {
         s32 value;
 
-        value = code[0] | (s16)(code[1] << 8);
+        value = (code[0] | (s16)(code[1] << 8)) * 2;
         if (sprite->renderer != NULL) {
-            sprite->renderer->scale_y += value * 2;
+            sprite->renderer->scale_y += value;
             sprite->render.bits.dirty = 1;
         }
         break;
@@ -2276,9 +2282,9 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
     case 0xEB: {
         s32 value;
 
-        value = code[0] | (s16)(code[1] << 8);
+        value = (code[0] | (s16)(code[1] << 8)) * 2;
         if (sprite->renderer != NULL) {
-            sprite->renderer->scale_z += value * 2;
+            sprite->renderer->scale_z += value;
             sprite->render.bits.dirty = 1;
         }
         break;
