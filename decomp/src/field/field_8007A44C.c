@@ -782,7 +782,7 @@ s32 func_8007BEF4(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge
             }
             bits = D_800AF880.components.collision_attributes[triangles[current].attribute].word & mask;
             *attribute = bits;
-            if (((actor->flags >> 8) & 7) & (bits >> 5)) {
+            if ((actor->flags >> 8) & ((bits >> 5) & 7)) {
                 current = -1;
                 break;
             }
@@ -856,20 +856,13 @@ void func_8007C670(s32 *low, s32 *high, s32 extent) {
     *high = base;
 }
 
-#ifdef NON_MATCHING
 /* Walk the actor's collision layer from its current triangle to the one
  * under position + probe (X/Z, in 16.16): across the edge each normal clip
  * rejects, at most 32 steps. On arrival return 0 with the point's height in
  * `floor` (skipped for mode -1). Return -1 when the walk leaves the mesh,
  * runs out of steps or enters a triangle whose attribute the actor may not
  * cross (masked off by the actor's layer bits or 800b21cc; 800000 rejects
- * layer 0), leaving the edge last crossed in `edge`.
- * NON_MATCHING: three separate rejection tests let loop.c move their shared
- * "triangle = -1" exit block before the walk as in the original. Left: the
- * original keeps the start position's X/Z loads in registers for `origin`
- * (ours reloads their high halves), so `origin` and `mask` swap stack slots,
- * and the layer-bit tests apply "& 3"/"& 7" to the attribute side (fold
- * reassociation) where the original masks the actor bits. */
+ * layer 0), leaving the edge last crossed in `edge`. */
 s32 func_8007C694(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge, SVECTOR *floor, s32 mode) {
     VECTOR normal;
     CollisionTriangle *triangles;
@@ -877,12 +870,12 @@ s32 func_8007C694(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge
     s32 triangle;
     s32 current;
     s32 point;
+    u32 mask;
     s32 origin;
     s32 a;
     s32 b;
     s32 c;
     s32 side;
-    u32 mask;
     u32 attribute;
     s32 steps;
 
@@ -892,12 +885,12 @@ s32 func_8007C694(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge
     if (triangle == -1) {
         return -1;
     }
+    point = (((position[0] + probe->vx) >> 16) << 16) + ((position[2] + probe->vz) >> 16);
+    origin = ((position[0] >> 16) << 16) + (position[2] >> 16);
     floor->vx = (position[0] + probe->vx) >> 16;
-    point = (floor->vx << 16) + ((position[2] + probe->vz) >> 16);
+    floor->vz = (position[2] + probe->vz) >> 16;
     mask = 0;
     floor->vy = 0;
-    floor->vz = (position[2] + probe->vz) >> 16;
-    origin = ((position[0] >> 16) << 16) + (position[2] >> 16);
     if (!((actor->layer_flags >> (actor->layer + 3)) & 1)) {
         mask = -(D_800B2078.party_processing_mode == 0);
     }
@@ -959,11 +952,11 @@ s32 func_8007C694(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge
             break;
         }
         attribute = D_800AF880.components.collision_attributes[triangles[triangle].attribute].word & mask;
-        if (((actor->flags >> 9) & 3) & (attribute >> 3)) {
+        if ((actor->flags >> 9) & ((attribute >> 3) & 3)) {
             triangle = -1;
             break;
         }
-        if (((actor->flags >> 8) & 7) & (attribute >> 5)) {
+        if ((actor->flags >> 8) & ((attribute >> 5) & 7)) {
             triangle = -1;
             break;
         }
@@ -1012,9 +1005,6 @@ s32 func_8007C694(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge
     }
     return -1;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8007C694);
-#endif
 
 /* Allocate `words` words of the scratchpad. */
 u32 *func_8007CD3C(s32 words) {
@@ -1222,8 +1212,8 @@ s32 func_8007D3D4(FieldActor *actor, s32 layer, s32 *floor, VECTOR *normal, s16 
     s32 bump;
     s32 current;
 
-    current = actor->triangle[layer];
     triangles = D_800AF880.components.collision_triangles[layer];
+    current = actor->triangle[layer];
     vertices = D_800AF880.components.collision_vertices[layer];
     if (current != -1) {
         point = (((actor->position[0] + actor->unk030[0]) >> 16) << 16) +
