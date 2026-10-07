@@ -4512,23 +4512,13 @@ void func_800AAB34(BattleObject *object) {
  * angular and linear velocities (substeps + 1 times), take a pending jump
  * whose condition came true (2E distance, 37 ground, 36 timer), then run
  * its commands until one waits. flags are the animation flags of the step
- * (-1 when called to start a script). The command word is signed (its
- * byte views are u8): `arg = word >> 8` narrowed to a byte compiles to srl,
- * but combine still sees the sign-extended source and cannot bound arg's
- * upper bits, which keeps the original's `andi 0xFF` at every use of arg
- * (no path uses arg before the fetch). Unsigned uses of the high byte are
- * narrowed with (u8), as the original's srl there shows. Jump offsets are in
- * bytes from the command's start (SCRIPT_JUMP). b0..b3 are the low/high
- * bytes of the first and second parameter words, shared by many commands
- * (function-scope in the original: an argument-only byte sits in a saved
- * register), as is the looked-up animation of 11/12. Nonmatching: every
- * case has the original's instruction shape except 13/14/1B/41/42 and the
- * register allocation: the original has b0/b1/b2 in $s1/$s2/$s7, start and
- * arg in $s5/$s6 and b3 caller-saved in $a3 (save slot 0x1C8), here start,
- * arg, b1, b0, b2, b3 get $s1, $s2, $s5, $s6, $s1, $s7 (global-alloc order
- * start > arg > b1 > b0 by priority); the frame is 8 bytes smaller (one
- * unused spill slot before 65's camera values, whose y the original keeps
- * in $s5). */
+ * (-1 when called to start a script). The command word is signed; its
+ * opcode and argument views are unsigned bytes. Jump offsets are in bytes
+ * from the command's start (SCRIPT_JUMP). b0..b3 are the low/high bytes of
+ * the first and second parameter words, shared by several commands, as is
+ * the looked-up animation of 11/12. Still NON_MATCHING: parameter lifetimes,
+ * caller saves, turn-command scheduling and camera temporaries differ from
+ * the original; the compiled frame is eight bytes smaller. */
 void func_800AAD54(BattleObject *object, EffectPool *pool, s32 flags, s32 steps, s32 substeps) {
     VECTOR delta;
     SVECTOR velocity;
@@ -5100,7 +5090,7 @@ chosen:
                 object->active = arg & 1;
             }
             break;
-        case 0x25: /* attach the objects of a mask to a m1 */
+        case 0x25: /* attach the objects of a mask to a part */
             {
                 MATRIX m;
                 VECTOR offset;
@@ -5406,9 +5396,15 @@ chosen:
             }
             break;
         case 0x41: /* turn by angles */
-            func_800ADF1C(pool, object->hierarchy, arg, (s16)(object->hierarchy->rotation.vx + *pc++),
-                          (s16)(object->hierarchy->rotation.vy + *pc++), (s16)(object->hierarchy->rotation.vz + *pc++));
-            flags = -1;
+            {
+                s32 x = *pc++;
+                s32 y = *pc++;
+                s32 z = *pc++;
+
+                func_800ADF1C(pool, object->hierarchy, arg, (s16)(object->hierarchy->rotation.vx + x),
+                              (s16)(object->hierarchy->rotation.vy + y), (s16)(object->hierarchy->rotation.vz + z));
+                flags = -1;
+            }
             break;
         case 0x42:
         case 0x43: /* turn towards the object's position */
