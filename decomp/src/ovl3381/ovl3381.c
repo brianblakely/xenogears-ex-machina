@@ -81,9 +81,14 @@ void func_801FC278(TaskNode *node) {
  * 128x128 area around the screen centre, textured from the displayed buffer,
  * with each corner also pushed out onto the circle of its larger coordinate
  * (the square grid mapped onto a disc).
- * NON_MATCHING: the row loop strength-reduces row * 8 (for v) into its own
- * induction slot where the original recomputes it from the row counter and
- * keeps y0/y1 as copies of theirs; the rest follows from that allocation. */
+ * NON_MATCHING (frame and column/corner code now as the original; 81
+ * instruction lines differ, all in the row loop's register and slot use):
+ * the original recomputes v = row * 8 from the row counter at each row
+ * (sll into a slot) and keeps y0 and y1 as two row induction variables
+ * copied into row slots; here row * 8 becomes its own induction variable
+ * and y1 is formed from y0 in the row body. Computing v in the column
+ * loop (as in ovl3387) gets the sll from the counter but loses the y0/y1
+ * copies. */
 #ifdef NON_MATCHING
 void func_801FC2C0(void) {
     TileTask *task;
@@ -100,8 +105,8 @@ void func_801FC2C0(void) {
     for (half = 0; half != 2; half++) {
         for (row = 0; row < 16; row++) {
             y0 = row * 8 - 64;
-            y1 = y0 + 8;
             for (column = 0; column < 16; column++) {
+                y1 = y0 + 8;
                 x0 = column * 8 - 64;
                 x1 = x0 + 8;
                 tile = &task->tiles[half][row][column];
