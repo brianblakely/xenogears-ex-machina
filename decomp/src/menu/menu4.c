@@ -1243,17 +1243,16 @@ stick_done:
 
 INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu4", D_8007008C);
 
-#ifdef NON_MATCHING
 /* The controller menu pair (menus 5 and 6) for the current mode: run the
  * menu of the available port (both in mode 2, where an unavailable port's
  * menu returns to menu 5 instead of 4), note when neither port is
- * available, set which sides the pads drive, then draw. Does not match:
- * the original rereads D_80092710 after each store, does not keep menu 5's
- * address in a register, and cross-jumps less. */
+ * available, set which sides the pads drive, then draw. Mode 5 runs menu
+ * 5 for port 1 without resetting D_80092754 and steps the second side's
+ * pick for port 2. */
 void func_80081A44(void) {
     switch (D_800928C8) {
     case 1:
-        switch (D_80092710) {
+        switch ((s32)D_80092710) {
         case 0:
             D_80092754 = 0;
             func_8008162C(&D_800915AC[5], 0);
@@ -1290,7 +1289,7 @@ void func_80081A44(void) {
         D_80099D9E = 0;
         break;
     case 3:
-        switch (D_80092710) {
+        switch ((s32)D_80092710) {
         case 0:
             D_80092754 = 0;
             func_8008162C(&D_800915AC[5], 0);
@@ -1307,7 +1306,7 @@ void func_80081A44(void) {
         D_80099D9E = 1;
         break;
     case 4:
-        switch (D_80092710) {
+        switch ((s32)D_80092710) {
         case 0:
             D_80092754 = 0;
             func_8008162C(&D_800915AC[5], 0);
@@ -1324,9 +1323,8 @@ void func_80081A44(void) {
         D_80099D9E = 1;
         break;
     case 5:
-        switch (D_80092710) {
+        switch ((s32)D_80092710) {
         case 0:
-            D_80092754 = 0;
             func_8008162C(&D_800915AC[5], 0);
             break;
         case 1:
@@ -1352,9 +1350,6 @@ void func_80081A44(void) {
     }
     func_8007FBEC();
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_80081A44);
-#endif
 
 /* One frame of the menu layer: pending refresh, the shown menu's input
  * (with the extra-speed button) and its drawing. */
