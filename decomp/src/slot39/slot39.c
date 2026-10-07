@@ -2184,13 +2184,15 @@ void func_801CB28C(s32 *save) {
  * its last byte, apply it; message 5c ends the load, a failure shows message
  * 3e and continues. */
 #ifdef NON_MATCHING
-/* Remaining: register allocation and block placement. A do/while (0)
- * block (statement macro) from `done = 0` through the checksum test moves
- * the close-and-release and checksum-ok paths out of line as the original
- * places them (GCC moves loop-exit blocks out of loops); passing
- * p = buffer + 0x100 to 801cb28c and a goto read-retry loop then leave the
- * 0x100 compare constant spilled and 0xff in s8 as in the original, 24
- * differing instructions (local scorer). */
+/* Remaining: register allocation and block placement. 3 differing
+ * instructions (local scorer) with: result/first/again initialised in
+ * that order, result = 0 after the 62 message, the open loop followed by
+ * if (file != 0), a do/while (0) block (statement macro) from the
+ * buffer allocation (with done = 0 after it) through the checksum test,
+ * a goto read-retry loop whose body is another such block, u8 sum, and
+ * p = buffer + 0x100 passed to 801cb28c. Left: the open test's delay slot
+ * and the 0x100 compare constant (the original's is a spilled invariant
+ * reloaded into a3). */
 u8 func_801CB304(void) {
     char path[64];
     s32 first;
