@@ -6773,10 +6773,16 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_80098CAC
 #endif
 
 #ifdef NON_MATCHING
+/* Event arc jump: set up a parabolic move to an operand position (modes
+ * 0-2) or step it (3; 0xf re-reads the floor triangles).
+ * NON_MATCHING: case 2's abs(peak - (y >> 16)) keeps the difference in s0
+ * (`subu s0,s0,v0; bgez s0; move a0,s0; negu a0,a0`) where the original
+ * keeps it in v0 and negates it into a0 (`negu a0,v0`); the folded
+ * ternary, if-statement and temporary forms do not reproduce it. */
 void func_80099214(void) {
     VECTOR normals[4];
     SVECTOR points[4];
-    u8 unused[0x20];
+    SVECTOR unused[4]; /* unused in the original; reserves 0x20 bytes */
     FieldModel *model;
     u8 *code;
     u16 pc;
@@ -7403,13 +7409,11 @@ void func_8009AE3C(s32 target, s32 steps) {
     D_800AF880.flags &= 0xDFFF;
 }
 
-#ifdef NON_MATCHING
 /* Walk party slot `slot`'s member one gather step toward (x, z). Returns 0
  * when the member is absent, disabled or has arrived (it is then placed at
  * (x, z) facing `facing`, or its own heading for 0xff) and -1 while it is
  * still walking; a member stuck for 0x40 steps or an override warps. */
 s32 func_8009AEE0(s32 slot, s32 x, s32 z, s32 facing) {
-    FieldDescriptor *descriptor;
     FieldModel *model;
     FieldActor *actor;
     FieldActor *saved;
@@ -7420,18 +7424,16 @@ s32 func_8009AEE0(s32 slot, s32 x, s32 z, s32 facing) {
     s32 distance;
     s32 dz;
     VECTOR delta;
-    u16 heading;
 
     member = D_8005A444[slot];
     if (member == 0xFF) {
         return 0;
     }
-    descriptor = &D_800AF880.components.descriptors[member];
-    if (descriptor->flags & 0x20) {
+    if (D_800AF880.components.descriptors[member].flags & 0x20) {
         return 0;
     }
-    model = descriptor->model;
-    actor = descriptor->actor;
+    model = D_800AF880.components.descriptors[member].model;
+    actor = D_800AF880.components.descriptors[member].actor;
     if (model->unk18 == 0) {
         model->unk18 = 0x4000000 / (u16)actor->unk76;
     }
@@ -7447,15 +7449,13 @@ s32 func_8009AEE0(s32 slot, s32 x, s32 z, s32 facing) {
     arrive:
         if (!(actor->flags & 0x8000)) {
             if (facing == 0xFF) {
-                heading = actor->heading_goal | 0x8000;
+                actor->heading_goal = actor->heading = actor->heading_goal | 0x8000;
             } else {
-                heading = D_800AEA34[facing] | 0x8000;
+                actor->heading_goal = actor->heading = D_800AEA34[facing] | 0x8000;
             }
         } else {
-            heading = actor->unk11C | 0x8000;
+            actor->heading_goal = actor->heading = actor->unk11C | 0x8000;
         }
-        actor->heading = heading;
-        actor->heading_goal = heading;
         actor->position[0] = x << 16;
         actor->position[2] = z << 16;
         actor->stuck = 0;
@@ -7482,9 +7482,6 @@ s32 func_8009AEE0(s32 slot, s32 x, s32 z, s32 facing) {
     }
     return -1;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_8009AEE0);
-#endif
 
 /* Force the party position. */
 void func_8009B15C(void) {
