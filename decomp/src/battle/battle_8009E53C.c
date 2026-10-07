@@ -4551,6 +4551,12 @@ void func_800AAD54(BattleObject *object, EffectPool *pool, s32 flags, s32 steps,
     u8 b2;
     u8 b3;
     Animation *animation;
+    u8 mode;
+    u8 part;
+    u8 c0;
+    u8 c1;
+    u8 c2;
+    u8 c3;
 
     if (steps == 0 || object->script == NULL) {
         return;
@@ -4961,7 +4967,7 @@ chosen:
                 } else {
                     target = NULL;
                 }
-                if (((b1 = (s16)word >> 8) & 0x7F) < 4) {
+                if (((mode = (s16)word >> 8) & 0x7F) < 4) {
                     colors = NULL;
                 } else {
                     colors = (ColorRow *)D_800D2FC0;
@@ -4977,7 +4983,7 @@ chosen:
                 z2 = *pc++;
                 x3 = *pc++;
                 y3 = *pc++;
-                if (b1 & 0x80) {
+                if (mode & 0x80) {
                     if (object->placement[0] < 0) {
                         pc += 5;
                         break;
@@ -4993,7 +4999,7 @@ chosen:
                         y2 += object->placement[3];
                     }
                 }
-                func_800A3640(&object->images[arg], target, b1 & 0x7F, b2 | 0x700, colors, x, y, z,
+                func_800A3640(&object->images[arg], target, mode & 0x7F, b2 | 0x700, colors, x, y, z,
                               x2, y2, z2, x3, y3, (s16)*pc++, (s16)*pc++, (s16)*pc++, (s16)*pc++,
                               (s16)*pc++, curve);
             } else {
@@ -5108,7 +5114,7 @@ chosen:
                 u16 ax, ay, az;
 
                 word = *pc++;
-                b1 = word >> 8;
+                part = word >> 8;
                 func_800AF438(object, (u8)word, &word);
                 ax = *pc++;
                 ay = *pc++;
@@ -5116,12 +5122,12 @@ chosen:
                 for (i = 0; i < 13; i++) {
                     if (((s16)word >> i) & 1) {
                         if (D_800D3368[i] != NULL) {
-                            D_800D3368[i]->parentPart = b1;
+                            D_800D3368[i]->parentPart = part;
                             D_800D3368[i]->field5C = object->slot;
                             D_800D3368[i]->field5D = arg & 2;
                             D_800D3368[i]->field36 = 1;
                             if (arg & 1) {
-                                ModelPart *at = &object->hierarchy[b1];
+                                ModelPart *at = &object->hierarchy[part];
 
                                 SetRotMatrix(&at->world);
                                 m.t[0] = 0;
@@ -5662,11 +5668,11 @@ chosen:
                 s16 mode;
 
                 word = *pc++;
-                b1 = word >> 8;
-                b0 = word;
+                c1 = word >> 8;
+                c0 = word;
                 word = *pc++;
-                b3 = word >> 8;
-                b2 = word;
+                c3 = word >> 8;
+                c2 = word;
                 if (op == 0x65) {
                     camX = D_800D335C.vx;
                     camY = D_800D335C.vy;
@@ -5676,26 +5682,26 @@ chosen:
                     camY = D_800D3354.vy;
                     camZ = D_800D3354.vz;
                 }
-                x = func_800AF438(object, b1, &value);
+                x = func_800AF438(object, c1, &value);
                 value = *pc++;
                 mode = 2;
-                if (b1 == 0xF6) {
+                if (c1 == 0xF6) {
                     x = object->position[0];
                     y = object->position[2];
                     value += object->position[1];
-                } else if (b1 == 0xF5) {
-                    x = D_800658C8->cameras[b2].lookAt[0];
-                    y = D_800658C8->cameras[b2].lookAt[2];
-                    value += D_800658C8->cameras[b2].lookAt[1];
-                } else if (b1 == 0xF4) {
-                    x = D_800658C8->cameras[b2].eye[0];
-                    y = D_800658C8->cameras[b2].eye[2];
-                    value += D_800658C8->cameras[b2].eye[1];
+                } else if (c1 == 0xF5) {
+                    x = D_800658C8->cameras[c2].lookAt[0];
+                    y = D_800658C8->cameras[c2].lookAt[2];
+                    value += D_800658C8->cameras[c2].lookAt[1];
+                } else if (c1 == 0xF4) {
+                    x = D_800658C8->cameras[c2].eye[0];
+                    y = D_800658C8->cameras[c2].eye[2];
+                    value += D_800658C8->cameras[c2].eye[1];
                 } else if (D_800D3368[x] != NULL) {
                     value = func_800AA600(x) * (s16)value / 4096;
                     mode = 0;
                     y = -1;
-                    if (b1 == 0xF9) {
+                    if (c1 == 0xF9) {
                         for (y = 0; y < 13; y++) {
                             if ((D_800C3E30 >> y) & 1) {
                                 break;
@@ -5707,7 +5713,7 @@ chosen:
                     mode = 0;
                     y = -1;
                 }
-                ((void (*)())func_800B0164)(pool, op - 0x5E, arg + mode, b0, camX, camY, camZ, x, (s16)value, y, b3);
+                ((void (*)())func_800B0164)(pool, op - 0x5E, arg + mode, c0, camX, camY, camZ, x, (s16)value, y, c3);
             }
             break;
         case 0x67: /* start a camera turn */
@@ -5718,11 +5724,11 @@ chosen:
                 u16 to;
 
                 word = *pc++;
-                b1 = word >> 8;
-                b0 = word;
+                c1 = word >> 8;
+                c0 = word;
                 word = *pc++;
-                b3 = word >> 8;
-                b2 = word;
+                c3 = word >> 8;
+                c2 = word;
                 angle = *pc++;
                 word = *pc++;
                 if (arg & 0x20) {
@@ -5731,42 +5737,42 @@ chosen:
                     base = object->hierarchy->rotation.vy;
                 }
                 arg &= 0x1F;
-                if (b1 == 0) {
+                if (c1 == 0) {
                     from = D_800C3B90 & 0xFFF;
-                } else if (b1 == 1) {
+                } else if (c1 == 1) {
                     from = D_800C3BA0 & 0xFFF;
-                } else if (b1 == 2) {
+                } else if (c1 == 2) {
                     from = D_800C3B94 & 0xFFF;
                 } else {
-                    if (b1 == 3) {
+                    if (c1 == 3) {
                         from = D_800C3B98;
-                    } else if (b1 == 4) {
+                    } else if (c1 == 4) {
                         from = D_800C3BA4;
-                    } else if (b1 == 5) {
+                    } else if (c1 == 5) {
                         from = D_800C3BA8;
-                    } else if (b1 == 6) {
+                    } else if (c1 == 6) {
                         from = D_800C3B9C;
                     }
                     angle = (s16)angle * D_800658C8->objectScale >> 12;
                     word = (s16)word * D_800658C8->objectScale >> 12;
                 }
-                if (b2 & 0x20) {
+                if (c2 & 0x20) {
                     from += angle;
-                } else if (b1 < 2) {
+                } else if (c1 < 2) {
                     from = (angle + base) & 0xFFF;
-                } else if (b1 < 3) {
+                } else if (c1 < 3) {
                     from = angle & 0xFFF;
                 } else {
                     from = angle;
                 }
                 to = from;
-                if (b2 & 0x40) {
+                if (c2 & 0x40) {
                     to += (u16)word;
-                } else if (b1 < 3) {
+                } else if (c1 < 3) {
                     u16 start2;
                     s32 turn;
 
-                    if (b1 < 2) {
+                    if (c1 < 2) {
                         start2 = (angle + base) & 0xFFF;
                     } else {
                         start2 = angle & 0xFFF;
@@ -5780,7 +5786,7 @@ chosen:
                 } else {
                     to = (u16)word;
                 }
-                ((void (*)())func_800B0164)(pool, b1, arg + 2, b0, (s16)from, 0, 0, (s16)to, 0, 0, b3);
+                ((void (*)())func_800B0164)(pool, c1, arg + 2, c0, (s16)from, 0, 0, (s16)to, 0, 0, c3);
             }
             break;
         case 0x68: /* start the camera */
