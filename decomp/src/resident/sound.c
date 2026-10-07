@@ -2317,17 +2317,12 @@ u8 *func_8003D8B8(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
 extern s32 (*D_800508A4[])(SoundModulator *modulator); /* modulator waves by shape */
 
 /* Vibrato with an explicit shape (low nibble of the third operand; bit 4
- * selects a one-sided wave).
- * Nonmatching: the original loads the rate before the depth, masks the
- * shape into $a2 for the call and copies it back to the mode register
- * (andi $a2,$s3,0xf; move $s3,$a2), and stores the shape before the target;
- * this build masks in place and moves the shape to $a2 at the call (as
- * 8003DD24/8003E04C). */
-#ifdef NON_MATCHING
+ * selects a one-sided wave). The mode is a halfword: the masked shape is
+ * computed for the call and copied back into it, like the rate. */
 u8 *func_8003D9A4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
-    s32 depth = ((s8 *)data)[1];
     s16 rate = data[0];
-    s32 mode = data[2];
+    s32 depth = ((s8 *)data)[1];
+    s16 mode = data[2];
     SoundModulator *modulator;
     s32 flags;
 
@@ -2346,18 +2341,15 @@ u8 *func_8003D9A4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
         modulator->period = 0x400;
         modulator->rate = rate;
         modulator->delay = 0;
-        modulator->wave = D_800508A4[mode];
-        modulator->target = 0;
+        modulator->wave = D_800508A4[(u16)mode];
         modulator->shape = mode;
+        modulator->target = 0;
         modulator->flags = flags + 1;
         channel->modulators |= 1;
         func_8003E3E0(modulator);
     }
     return data + 3;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003D9A4);
-#endif
 
 /* Set the pitch modulator's period. */
 u8 *func_8003DAB0(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
@@ -2455,39 +2447,33 @@ u8 *func_8003DC50(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
 }
 
 /* Tremolo with an explicit shape (low nibble of the third operand; bit 4
- * selects a one-sided wave).
- * Nonmatching: rate and mode take $s3/$s2 (original $s2/$s3), and the
- * shape is masked in place instead of into $a2 and copied back (see
- * 8003D9A4). */
-#ifdef NON_MATCHING
+ * selects a one-sided wave), as 8003D9A4. */
 u8 *func_8003DD24(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     s16 rate = data[0];
     s32 depth = ((s8 *)data)[1];
-    s32 mode = data[2];
+    s16 mode = data[2];
     SoundModulator *modulator;
     s32 flags;
 
     if (depth != 0 && rate != 0) {
+        depth <<= 24;
         rate += rate * rate / 64;
         flags = ((mode & 0x10) == 0) * 2;
         mode &= 0xF;
         modulator = &channel->modulator[1];
-        modulator->step = func_8003E290(depth << 24, rate, mode);
-        modulator->period = 0x400;
+        modulator->step = func_8003E290(depth, rate, mode);
         modulator->rate = rate;
+        modulator->period = 0x400;
         modulator->delay = 0;
-        modulator->wave = D_800508A4[mode];
-        modulator->target = 1;
+        modulator->wave = D_800508A4[(u16)mode];
         modulator->shape = mode;
+        modulator->target = 1;
         modulator->flags = flags + 1;
         channel->modulators |= 2;
         func_8003E3E0(modulator);
     }
     return data + 3;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003DD24);
-#endif
 
 /* Set the volume modulator's period. */
 u8 *func_8003DE18(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
@@ -2582,39 +2568,33 @@ u8 *func_8003DF78(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
 }
 
 /* Auto-pan with an explicit shape (low nibble of the third operand; bit 4
- * selects a one-sided wave).
- * Nonmatching: rate and mode take $s3/$s2 (original $s2/$s3), and the
- * shape is masked in place instead of into $a2 and copied back (see
- * 8003D9A4). */
-#ifdef NON_MATCHING
+ * selects a one-sided wave), as 8003D9A4. */
 u8 *func_8003E04C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     s16 rate = data[0];
     s32 depth = ((s8 *)data)[1];
-    s32 mode = data[2];
+    s16 mode = data[2];
     SoundModulator *modulator;
     s32 flags;
 
     if (depth != 0 && rate != 0) {
+        depth <<= 24;
         rate += rate * rate / 64;
         flags = ((mode & 0x10) == 0) * 2;
         mode &= 0xF;
         modulator = &channel->modulator[2];
-        modulator->step = func_8003E290(depth << 24, rate, mode);
-        modulator->period = 0x400;
+        modulator->step = func_8003E290(depth, rate, mode);
         modulator->rate = rate;
+        modulator->period = 0x400;
         modulator->delay = 0;
-        modulator->wave = D_800508A4[mode];
-        modulator->target = 2;
+        modulator->wave = D_800508A4[(u16)mode];
         modulator->shape = mode;
+        modulator->target = 2;
         modulator->flags = flags + 1;
         channel->modulators |= 4;
         func_8003E3E0(modulator);
     }
     return data + 3;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003E04C);
-#endif
 
 /* Pan modulator on and off. */
 u8 *func_8003E140(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
