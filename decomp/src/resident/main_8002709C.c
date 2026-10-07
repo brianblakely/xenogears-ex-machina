@@ -21,6 +21,11 @@
 #include "console.h"
 #include "sound.h"
 
+/* The CD mode byte, first of the CdlSetmode parameter (main_8002A260.c
+ * declares the whole 4-byte parameter). Read as a scalar: an array or
+ * aggregate view makes GCC keep its address in a register. */
+extern u8 D_80059F18;
+
 /* Create a panoramic backdrop (heap tag 4). `colours` (three RGB words:
  * sky, horizon, ground) enables the fills, NULL leaves them off. */
 Panorama *func_8002709C(s32 tex_x, s32 tex_y, s32 width, s32 height, s32 clut_x, s32 clut_y,
@@ -190,10 +195,8 @@ s32 func_800273C4(Panorama *panorama, SVECTOR *eye, SVECTOR *target, MATRIX *vie
 
 /* Draw the strip of a panoramic backdrop from texture column `start`,
  * `bottom` its bottom screen row, scaled down by `zoom` (8.8): up to eight
- * quads across the screen, one per texture page.
- * Nonmatching: the original keeps a second copy of `bottom` for the quads'
- * lower corners and saves `bottom`, `top` and `ot` around GetTPage. */
-#ifdef NON_MATCHING
+ * quads across the screen, one per texture page. The quads' lower row is
+ * an s16 copy of `bottom` taken in the loop. */
 void func_800278F8(Panorama *panorama, s32 start, s32 bottom, s32 zoom, u_long *ot, s32 buffer) {
     s32 left;
     s16 u;
@@ -205,6 +208,8 @@ void func_800278F8(Panorama *panorama, s32 start, s32 bottom, s32 zoom, u_long *
     s16 page_x;
     s16 cols;
     s16 x1;
+    s16 y;
+    s32 tex_x;
     s32 i;
     POLY_FT4 *quad;
 
@@ -222,8 +227,9 @@ void func_800278F8(Panorama *panorama, s32 start, s32 bottom, s32 zoom, u_long *
     x = 0;
     quad = panorama->quads[buffer & 1];
     if (top > 0) {
-        page_u = (panorama->tex_x % 64) << (2 - panorama->mode);
-        for (i = 0; i < 8; i++, quad++) {
+        tex_x = panorama->tex_x;
+        page_u = (tex_x % 64) << (2 - panorama->mode);
+        for (i = 0; i < 8; quad++, i++) {
             page_x = panorama->tex_x + (u >> (2 - panorama->mode));
             cols = (u + page_u) & ((0x100 >> panorama->mode) - 1);
             w = 0x100 - cols;
@@ -236,21 +242,22 @@ void func_800278F8(Panorama *panorama, s32 start, s32 bottom, s32 zoom, u_long *
                 w = x1 * (zoom + 0x100) / 256;
             }
             next = (s16)(u + w) % panorama->width;
+            y = bottom;
             quad->x0 = x;
             quad->x1 = x + x1;
             quad->x2 = x;
-            quad->y2 = bottom;
+            quad->y2 = y;
             quad->x3 = x + x1;
-            quad->y3 = bottom;
-            quad->u0 = cols;
+            quad->y3 = y;
             quad->y0 = bottom - top;
             quad->y1 = bottom - top;
-            quad->u1 = cols + w - 1;
+            quad->u0 = cols;
             quad->v0 = panorama->v;
-            quad->u2 = cols;
+            quad->u1 = cols + w - 1;
             quad->v1 = panorama->v;
-            quad->u3 = cols + w - 1;
+            quad->u2 = cols;
             quad->v2 = panorama->v + panorama->height;
+            quad->u3 = cols + w - 1;
             quad->v3 = panorama->v + panorama->height;
             u = next;
             quad->tpage = GetTPage(panorama->mode, 0, page_x / 64 * 64, panorama->tex_y / 256 * 256);
@@ -262,9 +269,6 @@ void func_800278F8(Panorama *panorama, s32 start, s32 bottom, s32 zoom, u_long *
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002709C", func_800278F8);
-#endif
 
 /* Release a block if there is one. */
 void func_80027D40(void *block) {
@@ -805,14 +809,13 @@ void func_80028ECC(s32 index) {
  * data in *data (0 when one is available, 1 otherwise). With the PC file
  * server, first read the next sector: a frame's first sector reserves a free
  * run of slots for all its sectors, later sectors fill them. */
-/* Nonmatching: close; the original reads the CD mode byte without keeping its address in a
- * register (as a scalar, where 8002a428's unit uses an array), the payload and slot-offset
- * registers ($s5/$s4) are swapped, and the frame size is reloaded after the slot stores. */
-#ifdef NON_MATCHING
+/* Slots are accessed as halfwords (state, sequence, free-run length): the
+ * state store then may alias the frame size global, which is reloaded after
+ * it (8002B8B0 does the same). */
 s32 func_80028F30(u8 **data, StreamFrame **frame) {
     StreamRing *ring = D_8004FE30;
     StreamSlot *slots;
-    StreamSlot *slot;
+    u16 *slot;
     StreamFrame *header;
     u8 *payload;
     s32 count;
@@ -829,70 +832,69 @@ s32 func_80028F30(u8 **data, StreamFrame **frame) {
     payload = payload + count * 8 + 0x24;
     if (D_8004FE48 != NULL && D_8004FE4C != -1 && D_8004FDF8 > 0) {
         if (D_80059F60 == 0) {
-            for (i = 0; i < D_8004FE40; i += slot->length) {
-                slot = &D_8004FE2C[i];
-                if (slot->state == 0) {
+            for (i = 0; i < D_8004FE40; i += slot[2]) {
+                slot = (u16 *)&D_8004FE2C[i];
+                if (slot[0] == 0) {
                     break;
                 }
             }
             if (i >= D_8004FE40) {
                 goto search;
             }
-            offset = i << 11;
-            if (D_80059F18[0] & 8) {
+            if (D_80059F18 & 8) {
                 func_8004C398(D_8004FE4C, D_800596F8, 8);
                 if (D_800596F8[0] == 1) {
                     goto skip;
                 }
             }
+            offset = i << 11;
             D_80059F54 = (u8 *)D_8004FE08 + offset;
             header = (StreamFrame *)D_80059F54;
             func_8004C398(D_8004FE4C, (u8 *)header, 0x20);
             D_80059F5C = header->sectors;
             D_8005A4B8 = header->word8;
-            if (slot->length < D_80059F5C) {
-                if (D_80059F18[0] & 8) {
+            if (slot[2] < D_80059F5C) {
+                if (D_80059F18 & 8) {
                     PClseek(D_8004FE4C, -0x28, 1);
                 } else {
                     PClseek(D_8004FE4C, -0x20, 1);
                 }
-                *frame = NULL;
-                goto search_all;
+                goto search;
             }
-            slot->state = 3;
-            slot->sequence = D_8004FE26;
-            rest = slot->length - D_80059F5C;
+            slot[1] = D_8004FE26;
+            slot[0] = 3;
+            rest = slot[2] - D_80059F5C;
             if (rest >= 3) {
-                slot->length = D_80059F5C + 1;
-                slot[D_80059F5C + 1].length = rest - 1;
-                slot[D_80059F5C + 1].state = 0;
+                slot[2] = D_80059F5C + 1;
+                slot[(D_80059F5C + 1) * 4 + 2] = rest - 1;
+                slot[(D_80059F5C + 1) * 4] = 0;
                 func_80028ECC(D_80059F5C + 1);
             }
             D_8004FE26++;
             D_80059F58 = (u8 *)D_8004FE08 + offset + D_80059F5C * 32;
             func_8004C398(D_8004FE4C, D_80059F58, 0x7E0);
-            if (D_80059F18[0] & 8) {
+            if (D_80059F18 & 8) {
                 PClseek(D_8004FE4C, 0x118, 1);
             }
             D_8004FE10 = i;
             D_8004FDF8 -= 0x800;
             D_80059F60++;
         } else {
-            if (D_80059F18[0] & 8) {
+            if (D_80059F18 & 8) {
                 func_8004C398(D_8004FE4C, D_800596F8, 8);
                 if (D_800596F8[0] == 1) {
                 skip:
                     PClseek(D_8004FE4C, 0x918, 1);
-                    *frame = NULL;
-                    goto search_all;
+                    goto search;
                 }
             }
-            slot = &D_8004FE2C[++D_8004FE10];
-            slot->state = 3;
-            slot->sequence = D_8004FE26++;
+            slot = (u16 *)&D_8004FE2C[++D_8004FE10];
+            slot[1] = D_8004FE26;
+            slot[0] = 3;
+            D_8004FE26++;
             func_8004C398(D_8004FE4C, D_80059F54 + D_80059F60 * 32, 0x20);
             func_8004C398(D_8004FE4C, D_80059F58 + D_80059F60 * 0x7E0, 0x7E0);
-            if (D_80059F18[0] & 8) {
+            if (D_80059F18 & 8) {
                 PClseek(D_8004FE4C, 0x118, 1);
             }
             D_8004FDF8 -= 0x800;
@@ -903,7 +905,6 @@ s32 func_80028F30(u8 **data, StreamFrame **frame) {
     }
 search:
     *frame = NULL;
-search_all:
     for (i = 0; i < count; i++, slots++) {
         if (slots->state == 3 && slots->sequence == D_8004FE24) {
             break;
@@ -921,13 +922,8 @@ search_all:
     D_8004FE24 += header->sectors;
     return 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002709C", func_80028F30);
-#endif
 
 /* Release a ring chunk: clear its slot's state and return the old state (0xffff without a ring, 0 for no chunk). */
-/* Nonmatching: the original keeps the ring in $a1 (so the 0xffff return fills the branch delay slot); GCC puts it in $v0. */
-#ifdef NON_MATCHING
 u16 func_8002945C(u8 *chunk) {
     StreamRing *ring = D_8004FE30;
     StreamSlot *slots;
@@ -938,19 +934,16 @@ u16 func_8002945C(u8 *chunk) {
     if (ring == NULL) {
         return 0xFFFF;
     }
-    slots = ring->slots;
     if (chunk == NULL) {
         return 0;
     }
+    slots = ring->slots;
     payload = (u8 *)ring + ring->count * 8 + 0x24;
     index = (u32)(chunk - payload) >> 11;
     state = slots[index].state;
     slots[index].state = 0;
     return state;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002709C", func_8002945C);
-#endif
 
 /* Release a run of ring chunks (the chunk header's halfword 3 counts them), merge the freed run and return the first slot's old state. */
 u16 func_800294B4(u8 *chunk) {
@@ -1075,10 +1068,10 @@ s32 func_80029690(s32 file, void *destination, s32 mode, s32 flags) {
         D_8004FE28 = 0;
         D_8004FE24 = 0;
         func_80028AAC();
-        for (i = 3, mode_byte = &D_80059F18[3]; i >= 0; i--) {
+        for (i = 3, mode_byte = &D_80059F18 + 3; i >= 0; i--) {
             *mode_byte-- = 0;
         }
-        D_80059F18[0] = flags | 0xA0;
+        D_80059F18 = flags | 0xA0;
         if (D_8004FE48 == NULL) {
             return 0;
         }

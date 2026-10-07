@@ -19,6 +19,10 @@
 #include "console.h"
 #include "sound.h"
 
+/* CdlSetmode parameter: the mode byte, then 3 zero bytes. The stream unit
+ * (main_8002709C.c) declares only its mode byte. */
+extern u8 D_80059F18[4];
+
 /* Allocate a stream ring of `count` 2,048-byte sectors (plus the slot
  * header), then select and reset it. Returns the ring or NULL. */
 StreamRing *func_8002A260(s32 count, s32 mode) {
@@ -121,9 +125,11 @@ void func_8002A524(FileEntry *table) {
 
 /* Load the files following `first` into `table` (allocated when NULL). On an
  * allocation failure everything loaded is freed and NULL returned.
- * Nonmatching: GCC strength-reduces &table[i]; the original recomputes it. */
-#ifdef NON_MATCHING
+ * The original recomputes &table[i] and first + i each pass, as GCC does
+ * for a loop the loop optimizer does not see (here a goto loop under the
+ * count guard); the terminator is written through the index. */
 FileEntry *func_8002A57C(s32 first, FileEntry *table) {
+    u8 unused[8]; /* unused in the original; reserves 8 bytes */
     s32 count;
     s32 owned = 0;
     s32 i;
@@ -137,7 +143,9 @@ FileEntry *func_8002A57C(s32 first, FileEntry *table) {
                 return NULL;
             }
         }
-        for (i = 0; i < count; i++) {
+        i = 0;
+        if (count > 0) {
+        next:
             table[i].id = first + i + 1;
             table[i].data = func_80031BDC(func_800288EC(first + i + 1), 0);
             if (table[i].data == NULL) {
@@ -147,17 +155,18 @@ FileEntry *func_8002A57C(s32 first, FileEntry *table) {
                 }
                 return NULL;
             }
+            if (++i < count) {
+                goto next;
+            }
         }
-        table[count].id = 0;
-        table[count].data = NULL;
+        i = count;
+        table[i].id = 0;
+        table[i].data = NULL;
     } else {
         table = NULL;
     }
     return table;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002A260", func_8002A57C);
-#endif
 
 /* CD command-complete callback: advance the seek/read state machine
  * (D_8004FE1C). Status 2 is success; on failure the retry reason is kept in
@@ -485,10 +494,9 @@ failed:
 /* CD data callback of stream reads: store each sector in the next free slot
  * of the stream ring (numbering it with D_8004FE26), stop after the last one,
  * and retry through the command state machine when a sector arrives out of
- * order or no slot is free.
- * Nonmatching: the original reloads D_8004FE26 for the increment, copies the
- * slot index before incrementing it and stores the slot state first. */
-#ifdef NON_MATCHING
+ * order or no slot is free. The slot's sequence and state are written as
+ * halfwords, the sequence first, which keeps the original's reload of
+ * D_8004FE26 for the increment after the state store. */
 void func_8002B2F0(u8 status, u8 *result) {
     StreamSlot *slot;
     s32 index;
@@ -507,8 +515,9 @@ void func_8002B2F0(u8 status, u8 *result) {
         }
         if (D_8004FDF8 > 0) {
             for (tried = 0; tried < D_8004FE40; tried++) {
-                index = D_8004FE10++;
-                slot = &D_8004FE2C[index];
+                slot = &D_8004FE2C[D_8004FE10];
+                index = D_8004FE10;
+                D_8004FE10++;
                 if (D_8004FE10 >= D_8004FE40) {
                     D_8004FE10 = 0;
                 }
@@ -525,8 +534,9 @@ void func_8002B2F0(u8 status, u8 *result) {
                 CdGetSector(D_800596F8, 0x200);
                 goto failed;
             }
-            slot->state = 1;
-            slot->sequence = D_8004FE26++;
+            ((u16 *)slot)[1] = D_8004FE26;
+            ((u16 *)slot)[0] = 1;
+            D_8004FE26++;
             CdGetSector((u8 *)D_8004FE08 + index * 0x800, 0x200);
             D_8004FDF8 -= 0x800;
             D_8004FE04++;
@@ -558,13 +568,8 @@ retry:
     CdSyncCallback(func_8002A68C);
     CdControlF(1, NULL);
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002A260", func_8002B2F0);
-#endif
 
-/* A second, identical copy of the stream data callback 8002B2F0.
- * Nonmatching as 8002B2F0. */
-#ifdef NON_MATCHING
+/* A second, identical copy of the stream data callback 8002B2F0. */
 void func_8002B5D0(u8 status, u8 *result) {
     StreamSlot *slot;
     s32 index;
@@ -583,8 +588,9 @@ void func_8002B5D0(u8 status, u8 *result) {
         }
         if (D_8004FDF8 > 0) {
             for (tried = 0; tried < D_8004FE40; tried++) {
-                index = D_8004FE10++;
-                slot = &D_8004FE2C[index];
+                slot = &D_8004FE2C[D_8004FE10];
+                index = D_8004FE10;
+                D_8004FE10++;
                 if (D_8004FE10 >= D_8004FE40) {
                     D_8004FE10 = 0;
                 }
@@ -601,8 +607,9 @@ void func_8002B5D0(u8 status, u8 *result) {
                 CdGetSector(D_800596F8, 0x200);
                 goto failed;
             }
-            slot->state = 1;
-            slot->sequence = D_8004FE26++;
+            ((u16 *)slot)[1] = D_8004FE26;
+            ((u16 *)slot)[0] = 1;
+            D_8004FE26++;
             CdGetSector((u8 *)D_8004FE08 + index * 0x800, 0x200);
             D_8004FDF8 -= 0x800;
             D_8004FE04++;
@@ -634,9 +641,6 @@ retry:
     CdSyncCallback(func_8002A68C);
     CdControlF(1, NULL);
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002A260", func_8002B5D0);
-#endif
 
 /* Stream data step of PC file server reads, called in place of the CD
  * data callback: read a sector from the file server into the next free ring slot
@@ -644,10 +648,7 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002A260", func_8002B5
  * the last sector.
  * Slots are four halfwords: state, sequence, free-run length and reserved.
  * Accessing the state and sequence as halfwords preserves the original
- * store-before-counter-read order.
- * Nonmatching: the original copies the selected index before computing
- * the next cursor; this C reverses those two instructions. */
-#ifdef NON_MATCHING
+ * store-before-counter-read order. */
 void func_8002B8B0(void) {
     u16 *slot;
     s32 index;
@@ -655,8 +656,9 @@ void func_8002B8B0(void) {
 
     if (D_8004FDF8 > 0) {
         for (i = 0; i < D_8004FE40; i++) {
-            index = D_8004FE10++;
-            slot = (u16 *)&D_8004FE2C[index];
+            slot = (u16 *)&D_8004FE2C[D_8004FE10];
+            index = D_8004FE10;
+            D_8004FE10++;
             if (D_8004FE10 >= D_8004FE40) {
                 D_8004FE10 = 0;
             }
@@ -685,9 +687,6 @@ void func_8002B8B0(void) {
     }
     D_8004FDF8 = 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002A260", func_8002B8B0);
-#endif
 
 
 void func_8002BA40(void) {

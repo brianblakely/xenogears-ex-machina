@@ -248,75 +248,61 @@ void func_801C5A40(void) {
 
 /* Set up label `index`'s two quads: mode 0 maps the text rendered for the
  * command column at row + index; otherwise the list layout, dimmed unless
- * bit 7 is set, with the highlight from the low bits. */
-#ifdef NON_MATCHING
-void func_801C5ABC(MenuLabel *label, s32 index, s32 row, s32 mode) {
+ * bit 7 is set, with the highlight from the low bits. Old-style definition:
+ * mode arrives as a promoted int and is narrowed where it is tested. */
+void func_801C5ABC(label, index, row, mode)
+    MenuLabel *label;
+    s32 index;
+    s32 row;
+    u8 mode;
+{
     POLY_FT4 *poly;
-    s32 column;
-    s32 line;
-    s32 u;
     s32 i;
-    s32 dim;
+    u8 dim;
 
-    i = 0;
-    column = index & 1;
-    line = index / 2;
-    u = (line & 1) << 7;
-    poly = label->poly;
-
-loop:
-    dim = 0;
-    SetPolyFT4(poly);
-    SetSemiTrans(poly, 0);
-    SetShadeTex(poly, 0);
-    poly->r0 = 0x80;
-    poly->g0 = 0x80;
-    poly->b0 = 0x80;
-    if ((u8)mode == 0) {
-        label->highlight = column;
-        poly->tpage = GetTPage(0, 0, 0x140, 0);
-        poly->u0 = u;
-        poly->v0 = ((index + row) / 4) * 13;
-        poly->u1 = u + label->width;
-        poly->v1 = ((index + row) / 4) * 13;
-        poly->u2 = u;
-        poly->v2 = ((index + row) / 4) * 13 + 13;
-        poly->u3 = u + label->width;
-        poly->v3 = ((index + row) / 4) * 13 + 13;
-    } else {
-        if (!(mode & 0x80)) {
-            dim = 0x20;
-            SetSemiTrans(poly, 1);
-            poly->r0 = dim;
-            poly->g0 = dim;
-            poly->b0 = dim;
+    for (i = 0; i < 2; i++) {
+        poly = &label->poly[i];
+        dim = 0;
+        SetPolyFT4(poly);
+        SetSemiTrans(poly, 0);
+        SetShadeTex(poly, 0);
+        poly->r0 = 0x80;
+        poly->g0 = 0x80;
+        poly->b0 = 0x80;
+        if (mode == 0) {
+            label->highlight = index & 1;
+            poly->tpage = GetTPage(0, 0, 0x140, 0);
+            poly->u0 = ((index / 2) & 1) << 7;
+            poly->v0 = ((index + row) / 4) * 13;
+            poly->u1 = (((index / 2) & 1) << 7) + label->width;
+            poly->v1 = ((index + row) / 4) * 13;
+            poly->u2 = ((index / 2) & 1) << 7;
+            poly->v2 = ((index + row) / 4) * 13 + 13;
+            poly->u3 = (((index / 2) & 1) << 7) + label->width;
+            poly->v3 = ((index + row) / 4) * 13 + 13;
+        } else {
+            if (!(mode & 0x80)) {
+                dim = 0x20;
+                SetSemiTrans(poly, 1);
+                poly->r0 = dim;
+                poly->g0 = dim;
+                poly->b0 = dim;
+            }
+            label->highlight = (mode & 0x7F) - 1;
+            poly->tpage = GetTPage(0, 0, 0x180, 0x80) | dim;
+            poly->u0 = (index & 1) * 0x60;
+            poly->v0 = (index / 2) * 13 + row;
+            poly->u1 = (index & 1) * 0x60 + label->width;
+            poly->v1 = (index / 2) * 13 + row;
+            poly->u2 = (index & 1) * 0x60;
+            poly->v2 = (index / 2) * 13 + row + 13;
+            poly->u3 = (index & 1) * 0x60 + label->width;
+            poly->v3 = (index / 2) * 13 + row + 13;
         }
-        label->highlight = (u8)(mode & 0x7F) - 1;
-        poly->tpage = dim | GetTPage(0, 0, 0x180, 0x80);
-        poly->u0 = column * 0x60;
-        poly->v0 = line * 13 + row;
-        poly->u1 = column * 0x60 + label->width;
-        poly->v1 = line * 13 + row;
-        poly->u2 = column * 0x60;
-        poly->v2 = line * 13 + row + 13;
-        poly->u3 = column * 0x60 + label->width;
-        poly->v3 = line * 13 + row + 13;
-    }
-    if (label->highlight) {
-        poly->clut = D_80059414;
-    } else {
-        poly->clut = D_800595D4;
-    }
-    i++;
-    poly++;
-    if (i < 2) {
-        goto loop;
+        label->poly[i].clut = label->highlight ? D_80059414 : D_800595D4;
     }
     label->projected = 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C5ABC);
-#endif
 
 /* Render `count` label texts (pairs of text ids) into VRAM, two per line,
  * and set up their quads. */
@@ -1690,7 +1676,17 @@ u8 func_801CB2F0(u8 *codes) {
 /* The name entry loop: zoom the view in, open the grid, move the cursor over
  * the character grid (skipping blank cells) and edit the name until it is
  * confirmed with a non-empty name; then store it for the three characters
- * of the portrait list (trailing blanks cut), and close the screen. */
+ * of the portrait list (trailing blanks cut), and close the screen.
+ * NON_MATCHING: the register allocation differs (2684 of 2688 bytes): the
+ * original gives running fp and 15 s5, leaving the 0xCF constant spilled
+ * (reloaded into t3 at each compare, 0x88-byte frame); here 0xCF gets fp and
+ * running is spilled to the stack (0x90-byte frame), and 15, the 1/6
+ * multiplier and dirty rotate through s5-s7. Global-alloc priorities
+ * here: multiplier 948 > dirty 762 > 15 652 > 0xCF 476 > running 304; the
+ * case bodies differ only by the 0xCF reloads (cases 0, 2, 3, 4 bytes each).
+ * Any extra copy of the loop exit test (e.g. an empty loop in a case) gives
+ * running two more references and fp, spilling 0xCF as the original does;
+ * 15 would still have to outrank the multiplier and dirty. */
 void func_801CB33C(void) {
     u8 codes[24];
     u8 name[24];
@@ -1788,7 +1784,8 @@ void func_801CB33C(void) {
             break;
         case 0:
             col++;
-            c = D_801CBEC0[(row + (col / 6) * 9) * 6 + col % 6];
+            index = (row + (col / 6) * 9) * 6 + col % 6;
+            c = D_801CBEC0[index];
             if (c == 0xFF) {
                 col = 0;
             } else if (c == 0xF || c == 0xCF) {
@@ -1799,7 +1796,8 @@ void func_801CB33C(void) {
             if (--col < 0) {
                 col = 22;
             } else {
-                c = D_801CBEC0[(row + (col / 6) * 9) * 6 + col % 6];
+                index = (row + (col / 6) * 9) * 6 + col % 6;
+                c = D_801CBEC0[index];
                 if (c == 0xF || c == 0xCF) {
                     col--;
                 }
@@ -1809,7 +1807,8 @@ void func_801CB33C(void) {
             if (++row >= 5) {
                 row = 0;
             }
-            c = D_801CBEC0[(row + (col / 6) * 9) * 6 + col % 6];
+            index = (row + (col / 6) * 9) * 6 + col % 6;
+            c = D_801CBEC0[index];
             if (c == 0xCF) {
                 row = 0;
             } else if (c == 0xF) {
@@ -1820,7 +1819,8 @@ void func_801CB33C(void) {
             if (--row < 0) {
                 row = 4;
             }
-            c = D_801CBEC0[(row + (col / 6) * 9) * 6 + col % 6];
+            index = (row + (col / 6) * 9) * 6 + col % 6;
+            c = D_801CBEC0[index];
             if (c == 0xF || c == 0xCF) {
                 row--;
             }

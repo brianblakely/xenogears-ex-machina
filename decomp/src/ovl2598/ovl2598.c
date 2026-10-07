@@ -219,76 +219,61 @@ void func_801C5724(void) {
 
 /* Set up label `index`'s two quads: mode 0 maps the text rendered for the
  * command column at row + index; otherwise the list layout, dimmed unless
- * bit 7 is set, with the highlight from the low bits. */
-#ifdef NON_MATCHING
-void func_801C57A0(MenuLabel *label, s32 index, s32 row, u8 mode) {
-    POLY_FT4 *poly = label->poly;
-    s32 column = index & 1;
-    s32 line = index / 2;
-    s32 u = (line & 1) << 7;
-    s32 i = 0;
-    s32 dim;
-    s32 v;
-    s32 list_u;
+ * bit 7 is set, with the highlight from the low bits. Old-style definition:
+ * mode arrives as a promoted int and is narrowed where it is tested. */
+void func_801C57A0(label, index, row, mode)
+    MenuLabel *label;
+    s32 index;
+    s32 row;
+    u8 mode;
+{
+    POLY_FT4 *poly;
+    s32 i;
+    u8 dim;
 
-loop:
-    dim = 0;
-    SetPolyFT4(poly);
-    SetSemiTrans(poly, 0);
-    SetShadeTex(poly, 0);
-    poly->r0 = 0x80;
-    poly->g0 = 0x80;
-    poly->b0 = 0x80;
-    if (mode == 0) {
-        label->highlight = column;
-        poly->tpage = GetTPage(0, 0, 0x140, 0);
-        poly->u0 = u;
-        v = ((index + row) / 4) * 13;
-        poly->v0 = v;
-        poly->u1 = u + label->width;
-        poly->v1 = v;
-        poly->u2 = u;
-        v += 13;
-        poly->v2 = v;
-        poly->u3 = u + label->width;
-        poly->v3 = v;
-    } else {
-        if (!(mode & 0x80)) {
-            dim = 0x20;
-            SetSemiTrans(poly, 1);
-            poly->r0 = dim;
-            poly->g0 = dim;
-            poly->b0 = dim;
+    for (i = 0; i < 2; i++) {
+        poly = &label->poly[i];
+        dim = 0;
+        SetPolyFT4(poly);
+        SetSemiTrans(poly, 0);
+        SetShadeTex(poly, 0);
+        poly->r0 = 0x80;
+        poly->g0 = 0x80;
+        poly->b0 = 0x80;
+        if (mode == 0) {
+            label->highlight = index & 1;
+            poly->tpage = GetTPage(0, 0, 0x140, 0);
+            poly->u0 = ((index / 2) & 1) << 7;
+            poly->v0 = ((index + row) / 4) * 13;
+            poly->u1 = (((index / 2) & 1) << 7) + label->width;
+            poly->v1 = ((index + row) / 4) * 13;
+            poly->u2 = ((index / 2) & 1) << 7;
+            poly->v2 = ((index + row) / 4) * 13 + 13;
+            poly->u3 = (((index / 2) & 1) << 7) + label->width;
+            poly->v3 = ((index + row) / 4) * 13 + 13;
+        } else {
+            if (!(mode & 0x80)) {
+                dim = 0x20;
+                SetSemiTrans(poly, 1);
+                poly->r0 = dim;
+                poly->g0 = dim;
+                poly->b0 = dim;
+            }
+            label->highlight = (mode & 0x7F) - 1;
+            poly->tpage = GetTPage(0, 0, 0x180, 0x80) | dim;
+            poly->u0 = (index & 1) * 0x60;
+            poly->v0 = (index / 2) * 13 + row;
+            poly->u1 = (index & 1) * 0x60 + label->width;
+            poly->v1 = (index / 2) * 13 + row;
+            poly->u2 = (index & 1) * 0x60;
+            poly->v2 = (index / 2) * 13 + row + 13;
+            poly->u3 = (index & 1) * 0x60 + label->width;
+            poly->v3 = (index / 2) * 13 + row + 13;
         }
-        label->highlight = (mode & 0x7F) - 1;
-        poly->tpage = dim | GetTPage(0, 0, 0x180, 0x80);
-        list_u = column * 0x60;
-        v = line * 13 + row;
-        poly->u0 = list_u;
-        poly->v0 = v;
-        poly->v1 = v;
-        v += 13;
-        poly->u2 = list_u;
-        poly->v2 = v;
-        poly->u1 = list_u + label->width;
-        poly->v3 = v;
-        poly->u3 = list_u + label->width;
-    }
-    if (label->highlight) {
-        poly->clut = D_80059414;
-    } else {
-        poly->clut = D_800595D4;
-    }
-    i++;
-    poly++;
-    if (i < 2) {
-        goto loop;
+        label->poly[i].clut = label->highlight ? D_80059414 : D_800595D4;
     }
     label->projected = 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C57A0);
-#endif
 
 /* Render `count` label texts (pairs of text ids) into VRAM, two per line,
  * and set up their quads. */
@@ -1342,11 +1327,11 @@ void func_801C9908(void) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Build a status panel's layout sprites and face for character `id` in row
  * `slot` (x/y tables, row height) and its name label quad. */
 void func_801C9A08(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_height) {
     s32 i;
+    s32 face;
 
     panel->layout_count = 0;
     for (i = 0; i < 9; i++) {
@@ -1357,7 +1342,8 @@ void func_801C9A08(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_h
                               x[i], row_height * slot + y[i], 0x1000);
         }
     }
-    func_8002675C(D_800625A0->sprite_sheet, id + 0x14E, panel->face, D_800625A0->buffer_index,
+    face = id;
+    func_8002675C(D_800625A0->sprite_sheet, face + 0x14E, panel->face, D_800625A0->buffer_index,
                   x[9], row_height * slot + y[9], 0x1000);
     SetPolyFT4(&panel->label[D_800625A0->buffer_index]);
     (panel->label + D_800625A0->buffer_index)->r0 = 0x80;
@@ -1365,7 +1351,7 @@ void func_801C9A08(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_h
     (panel->label + D_800625A0->buffer_index)->b0 = 0x80;
     SetSemiTrans(&panel->label[D_800625A0->buffer_index], 0);
     panel->label[D_800625A0->buffer_index].tpage = GetTPage(0, 0, 0x180, 0);
-    panel->label[D_800625A0->buffer_index].clut = (id & 1) ? D_80059414 : D_800595D4;
+    panel->label[D_800625A0->buffer_index].clut = (face & 1) ? D_80059414 : D_800595D4;
     (panel->label + D_800625A0->buffer_index)->x0 = x[16];
     (panel->label + D_800625A0->buffer_index)->y0 = y[16] + row_height * slot;
     (panel->label + D_800625A0->buffer_index)->x1 = x[16] + 0x48;
@@ -1383,9 +1369,6 @@ void func_801C9A08(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_h
     (panel->label + D_800625A0->buffer_index)->u3 = D_801CB344[id / 2] * 4 + 0x48;
     (panel->label + D_800625A0->buffer_index)->v3 = D_801CB390[id / 2] + 13;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C9A08);
-#endif
 
 /* Build a status panel's level digits and the green digits of the record's
  * next value (+0x63) for character `id` in row `slot`. */
@@ -1584,16 +1567,19 @@ void func_801CAB04(void) {
 /* Swap the party member and the list member picked by the two cursor
  * positions unless either is empty or locked (D_8006F94C); an exchange that
  * would leave the party empty is undone. Returns whether they were swapped. */
-#ifdef NON_MATCHING
 u8 func_801CAB48(u8 list, s32 row, s32 page, u8 prev_list, s32 prev_row, s32 prev_page) {
-    u8 party_ok = 1;
-    u8 member_ok = 1;
-    u8 swapped = 0;
+    u8 party_ok;
+    u8 member_ok;
+    u8 swapped;
     u8 slot;
     u8 index;
     u8 id;
     u8 count;
     s32 i;
+
+    swapped = 0;
+    party_ok = 1;
+    member_ok = 1;
 
     if (list == 0) {
         slot = row;
@@ -1602,20 +1588,21 @@ u8 func_801CAB48(u8 list, s32 row, s32 page, u8 prev_list, s32 prev_row, s32 pre
         slot = prev_row;
         index = row + page;
     }
-    if (D_800625A0->flags->party[slot] == 0xFF ||
-        (func_801C5018(D_8006F94C, D_800625A0->flags->party[slot]) & 0xFFFF)) {
+    if (D_800625A0->flags->party[slot] == 0xFF) {
+        party_ok = 0;
+    } else if (func_801C5018(D_8006F94C, D_800625A0->flags->party[slot]) & 0xFFFF) {
         party_ok = 0;
     }
-    if (D_800625A0->members[index] == 0xFF ||
-        (func_801C5018(D_8006F94C, D_800625A0->members[index]) & 0xFFFF)) {
+    if (D_800625A0->members[index] == 0xFF) {
+        member_ok = 0;
+    } else if (func_801C5018(D_8006F94C, D_800625A0->members[index]) & 0xFFFF) {
         member_ok = 0;
     }
     if (party_ok && member_ok) {
         id = D_800625A0->flags->party[slot];
         D_800625A0->flags->party[slot] = D_800625A0->members[index];
         D_800625A0->members[index] = id;
-        count = 0;
-        for (i = 0; i < 3; i++) {
+        for (i = 0, count = 0; i < 3; i++) {
             if (D_800625A0->flags->party[i] != 0xFF) {
                 count++;
             }
@@ -1630,20 +1617,16 @@ u8 func_801CAB48(u8 list, s32 row, s32 page, u8 prev_list, s32 prev_row, s32 pre
     }
     return swapped;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801CAB48);
-#endif
 
 /* The party screen loop: open the list panel, then move the cursor between
  * the party (list 0) and the member list (list 1) and pick two entries to
  * swap them, until cancelled; finally store the party. */
-#ifdef NON_MATCHING
 void func_801CAD14(void) {
     u8 running = 1;
     s32 row = 0;
     s32 page = 0;
     s32 shown_page;
-    s32 list;
+    u8 list;
     u8 picking;
     u8 prev_list;
     s32 prev_row;
@@ -1683,7 +1666,7 @@ void func_801CAD14(void) {
                 prev_row = row;
                 row = 0;
                 prev_list = list;
-                list ^= 1;
+                list = !list;
                 prev_page = page;
                 func_801C9270(2);
             } else if (func_801CAB48(list, row, page, prev_list, prev_row, prev_page)) {
@@ -1747,9 +1730,6 @@ void func_801CAD14(void) {
         D_8006F368[i] = D_800625A0->flags->party[i];
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801CAD14);
-#endif
 
 /* Overlay entry: allocate and set up the party screen, run it and leave. */
 void func_801CB0A8(void) {

@@ -432,7 +432,6 @@ s16 func_80084D00(s32 probe, s16 *hit) {
  * collision faces flat (x, z) and record every face whose outline contains
  * the probe (face number and its attribute) in D_8009D718. Returns a word-sized
  * count of table entries; the caller narrows it to s16. */
-#ifdef NON_MATCHING /* range-check scheduling and loop register allocation differ */
 s32 func_80084DB8(s32 probe, s32 index) {
     s32 flag;
     SceneObject *object;
@@ -440,52 +439,41 @@ s32 func_80084DB8(s32 probe, s32 index) {
     Mesh *mesh;
     SVECTOR *vertices;
     MeshFace *face;
-    s16 *hit_face;
-    s16 *hit_kind;
     s32 count;
     s32 i;
-    s32 dz;
+    s32 dx, dz, far;
     s32 hits;
 
     object = &D_8009C620[index];
-    index = ((VECTOR *)probe)->vx;
-    index >>= 12;
-    index -= object->position.vx;
-    FACE_TEST_SCRATCH->u.test.delta.vx = index;
-    index = index >= 0 ? index : -index;
-    index = index < 0x800;
-    index ^= 1;
+    dx = (((VECTOR *)probe)->vx >> 12) - object->position.vx;
+    FACE_TEST_SCRATCH->u.test.delta.vx = dx;
+    dx = dx >= 0 ? dx : -dx;
+    far = dx >= 0x800;
     dz = object->position.vz - (((VECTOR *)probe)->vz >> 12);
     FACE_TEST_SCRATCH->u.test.delta.vz = dz;
     dz = dz >= 0 ? dz : -dz;
-    dz = dz < 0x800;
-    dz ^= 1;
-    index |= dz;
+    far |= dz >= 0x800;
     scratch = FACE_TEST_SCRATCH;
-    if (index) {
+    if (far) {
         return 0;
     }
     scratch->m = object->matrix;
-    i = 0;
     scratch->m.t[2] = 0;
     scratch->m.t[0] = 0;
-    dz = object->position.vy;
+    scratch->m.t[1] = object->position.vy;
     scratch->p[0].vz = 0x800;
     scratch->p[0].vy = 0x800;
     scratch->p[0].vx = 0x800;
-    scratch->m.t[1] = dz;
     hits = 0;
     ScaleMatrix(&scratch->m, &scratch->p[0]);
     SetRotMatrix(&scratch->m);
     SetTransMatrix(&scratch->m);
     mesh = (Mesh *)object->unk44;
-    scratch->u.test.point = (scratch->u.test.delta.vz << 16) | (scratch->u.test.delta.vx & 0xFFFF);
     count = mesh->unk0;
     vertices = mesh->vertices;
+    scratch->u.test.point = (scratch->u.test.delta.vz << 16) | (scratch->u.test.delta.vx & 0xFFFF);
     face = mesh->faces;
-    hit_face = D_8009D718;
-    hit_kind = D_8009D718 + 1;
-    for (; i < count; i++, face++) {
+    for (i = 0; i < count; i++, face++) {
         gte_RotTrans(&vertices[face->corner[0]], &scratch->p[0], &flag);
         gte_RotTrans(&vertices[face->corner[1]], &scratch->p[1], &flag);
         gte_RotTrans(&vertices[face->corner[2]], &scratch->p[2], &flag);
@@ -504,17 +492,12 @@ s32 func_80084DB8(s32 probe, s32 index) {
         if (func_8004A70C(scratch->u.test.edge[0], scratch->u.test.edge[1], scratch->u.test.point) > 0) {
             continue;
         }
-        *hit_face = i;
-        hit_face += 2;
-        *hit_kind = face->kind;
+        D_8009D718[hits] = i;
+        D_8009D718[hits + 1] = face->kind;
         hits += 2;
-        hit_kind += 2;
     }
     return hits;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80084DB8);
-#endif
 
 /* Project `position` onto face `face` of scene object `index`: `offset` gets
  * the object-relative x/z, `normal` the face normal and offset->vy the
@@ -1077,8 +1060,12 @@ extern u16 D_8009AD40[8];
  * the view cone, then drawn by distance: far as one to three 64-texel quads,
  * middle as three 4-quad layers of 32 texels, near as three layers of 4x4
  * generated 16-texel quads. At most 0xF1 quads are added per frame. */
-#ifdef NON_MATCHING /* register allocation: the original spills more (0x50-byte frame) and keeps the
-                    * screen matrix, corner and flag-mask addresses in other saved registers */
+/* NON_MATCHING: same size, frame (0x50) and spill slots (screen copy, corner,
+ * row offset copy); global register allocation differs: the original gives
+ * layer t1, row/column a2/a3, the column offset t2 and quad t3 before the four
+ * projected corners, which end up in t6-t9, leaving s0 for &flag; here the
+ * corners take t0-t2/a3 first, so layer gets s0 and &flag t9. */
+#ifdef NON_MATCHING
 void func_80086798(void) {
     DriftScratch *scratch;
     PolyFT4 *quad;
@@ -1090,9 +1077,6 @@ void func_80086798(void) {
     s32 dx;
     s32 dz;
     s32 packed;
-    s32 zero;
-    s32 row_offset;
-    s32 column_offset;
     u16 uv;
     s32 sxy0;
     s32 sxy1;
@@ -1147,16 +1131,15 @@ void func_80086798(void) {
             dz -= 0x2000;
         }
         dz = -dz;
-        zero = 0;
         packed = ((dz - scratch->view.vz) << 16) | ((dx - scratch->view.vx) & 0xFFFF);
-        gte_ldsxy3(packed, scratch->edge[1], zero);
+        gte_ldsxy3(packed, scratch->edge[1], 0);
         gte_nclip();
         gte_stopz(&scratch->flag);
         if (scratch->flag > 0) {
             continue;
         }
         packed = ((dz - scratch->view.vz) << 16) | ((dx - scratch->view.vx) & 0xFFFF);
-        gte_ldsxy3(zero, scratch->edge[0], packed);
+        gte_ldsxy3(0, scratch->edge[0], packed);
         gte_nclip();
         gte_stopz(&scratch->flag);
         if (scratch->flag > 0) {
@@ -1194,10 +1177,14 @@ void func_80086798(void) {
                         gte_getsxy2(sxy3);
                         if (ON_SCREEN(sxy0, sxy1, sxy2, sxy3)) {
                             gte_stsz4c(scratch->sz);
-                            scratch->z = scratch->sz[1] < scratch->sz[0] ? scratch->sz[0] : scratch->sz[1];
-                            if (scratch->z < scratch->sz[2]) {
+                            if (scratch->sz[0] > scratch->sz[1]) {
+                                scratch->z = scratch->sz[0];
+                            } else {
+                                scratch->z = scratch->sz[1];
+                            }
+                            if (scratch->sz[2] > scratch->z) {
                                 scratch->z = scratch->sz[2];
-                            } else if (scratch->z < scratch->sz[3]) {
+                            } else if (scratch->sz[3] > scratch->z) {
                                 scratch->z = scratch->sz[3];
                             }
                             if (scratch->z > 0xD00) {
@@ -1241,10 +1228,14 @@ void func_80086798(void) {
                             gte_getsxy2(sxy3);
                             if (ON_SCREEN(sxy0, sxy1, sxy2, sxy3)) {
                                 gte_stsz4c(scratch->sz);
-                                scratch->z = scratch->sz[1] < scratch->sz[0] ? scratch->sz[0] : scratch->sz[1];
-                                if (scratch->z < scratch->sz[2]) {
+                                if (scratch->sz[0] > scratch->sz[1]) {
+                                    scratch->z = scratch->sz[0];
+                                } else {
+                                    scratch->z = scratch->sz[1];
+                                }
+                                if (scratch->sz[2] > scratch->z) {
                                     scratch->z = scratch->sz[2];
-                                } else if (scratch->z < scratch->sz[3]) {
+                                } else if (scratch->sz[3] > scratch->z) {
                                     scratch->z = scratch->sz[3];
                                 }
                                 addPrimLen9(D_8009BE3C->ot + (scratch->z >> 4), quad);
@@ -1268,10 +1259,12 @@ void func_80086798(void) {
         } else {
             /* near: three layers of 4x4 16-texel quads over a 0x180 square */
             for (layer = 0; layer < 3; layer++) {
-                scratch->corner[0].vx = scratch->corner[2].vx = scratch->far[0].vx;
-                scratch->corner[0].vz = scratch->corner[1].vz = scratch->far[0].vz;
-                scratch->corner[1].vx = scratch->corner[3].vx = scratch->far[0].vx + 0x180;
-                scratch->corner[2].vz = scratch->corner[3].vz = scratch->far[0].vz - 0x180;
+                s32 x, z;
+
+                x = scratch->corner[0].vx = scratch->corner[2].vx = scratch->far[0].vx;
+                z = scratch->corner[0].vz = scratch->corner[1].vz = scratch->far[0].vz;
+                scratch->corner[1].vx = scratch->corner[3].vx = x + 0x180;
+                scratch->corner[2].vz = scratch->corner[3].vz = z - 0x180;
                 scratch->corner[0].vy = scratch->corner[1].vy = scratch->corner[2].vy = scratch->corner[3].vy =
                     scratch->far[0].vy - layer * 8;
                 gte_ldv0(&scratch->corner[0]);
@@ -1286,14 +1279,14 @@ void func_80086798(void) {
                 if (scratch->flag & 0x7F85E000) {
                     continue;
                 }
-                for (row = 0, row_offset = 0; row < 4; row++, row_offset += 0x60) {
-                    for (column = 0, column_offset = 0; column < 4; column++, column_offset += 0x60) {
-                        scratch->corner[0].vx = scratch->corner[2].vx = scratch->far[0].vx + column_offset;
-                        scratch->corner[0].vz = scratch->corner[1].vz = scratch->far[0].vz - row_offset;
-                        scratch->corner[1].vx = scratch->corner[3].vx =
-                            (s16)(scratch->far[0].vx + column_offset) + 0x60;
-                        scratch->corner[2].vz = scratch->corner[3].vz =
-                            (s16)(scratch->far[0].vz - row_offset) - 0x60;
+                for (row = 0; row < 4; row++) {
+                    for (column = 0; column < 4; column++) {
+                        s32 x, z;
+
+                        x = scratch->corner[0].vx = scratch->corner[2].vx = scratch->far[0].vx + column * 0x60;
+                        z = scratch->corner[0].vz = scratch->corner[1].vz = scratch->far[0].vz - row * 0x60;
+                        scratch->corner[1].vx = scratch->corner[3].vx = x + 0x60;
+                        scratch->corner[2].vz = scratch->corner[3].vz = z - 0x60;
                         gte_ldv3c(&scratch->corner[0]);
                         gte_rtpt();
                         uv = scratch->uv[layer + scratch->uv_index] + ((row << 12) + (column << 4));
@@ -1307,11 +1300,14 @@ void func_80086798(void) {
                                 gte_getsxy2(sxy3);
                                 if (ON_SCREEN(sxy0, sxy1, sxy2, sxy3)) {
                                     gte_stsz4c(scratch->sz);
-                                    scratch->z =
-                                        scratch->sz[1] < scratch->sz[0] ? scratch->sz[0] : scratch->sz[1];
-                                    if (scratch->z < scratch->sz[2]) {
+                                    if (scratch->sz[0] > scratch->sz[1]) {
+                                        scratch->z = scratch->sz[0];
+                                    } else {
+                                        scratch->z = scratch->sz[1];
+                                    }
+                                    if (scratch->sz[2] > scratch->z) {
                                         scratch->z = scratch->sz[2];
-                                    } else if (scratch->z < scratch->sz[3]) {
+                                    } else if (scratch->sz[3] > scratch->z) {
                                         scratch->z = scratch->sz[3];
                                     }
                                     addPrimLen9(D_8009BE3C->ot + (scratch->z >> 4), quad);
@@ -1496,10 +1492,20 @@ void func_80087B84(VECTOR *direction, VECTOR *up, MATRIX *m) {
     func_8004A8EC(m, m);
 }
 
+/* Compiled-out debug trace of the ferry's resumed position. */
+#define FERRY_TRACE_POSITION(actor) do { } while (0)
+
 /* Start the area's ferry: before scene 0xCD it rests at a fixed dock;
  * otherwise it resumes its route (first time: at waypoint 0), advancing
- * when within 8 units of the waypoint, and heads for the next one. */
-#ifdef NON_MATCHING /* prologue load and one post-call load scheduled early */
+ * when within 8 units of the waypoint, and heads for the next one.
+ * NON_MATCHING: only the prologue differs: the D_8009C610 load is
+ * scheduled ahead of the stack adjustment (the original adjusts sp and
+ * saves s0 first, then loads it). This is sched2: the load has no
+ * dependence on the saves; at the last cycles the s0 save wins the tie by
+ * potential hazard after the index copy (a0 -> s0) is placed, leaving the
+ * blocked load for the top. A local copy of index (s32/s16/u8) or other
+ * id/index types do not change it. */
+#ifdef NON_MATCHING
 s32 func_80087C6C(s32 index) {
     WorldmapActor *actor;
     SceneObject *object;
@@ -1534,6 +1540,7 @@ s32 func_80087C6C(s32 index) {
         }
         actor->position.vz = z << 12;
         actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+        FERRY_TRACE_POSITION(actor);
         scratch->work.vx = D_8009AF80[actor->u.step] << 12;
         scratch->work.vz = D_8009AF90[actor->u.step] << 12;
         distance = func_80094154(&actor->position, &scratch->work);
@@ -1544,8 +1551,8 @@ s32 func_80087C6C(s32 index) {
             actor->u.step = (actor->u.step + 1) & 7;
         }
         scratch->work.vx = D_8009AF80[actor->u.step] - (actor->position.vx >> 12);
-        scratch->work.vy = 0;
         scratch->work.vz = D_8009AF90[actor->u.step] - (actor->position.vz >> 12);
+        scratch->work.vy = 0;
         func_80093534(&scratch->work);
         VectorNormal(&scratch->work, &scratch->work);
         for (i = 0; i < 0x20; i++) {
@@ -1629,9 +1636,9 @@ s32 func_80087FD0(s32 index) {
         object->position.vx = actor->position.vx >> 12;
         object->position.vy = actor->position.vy >> 12;
         object->position.vz = actor->position.vz >> 12;
-        scratch->work.vx = (u16)D_8006EE54.unk60 - (actor->position.vx >> 12);
-        scratch->work.vz = (u16)D_8006EE54.unk64 - (actor->position.vz >> 12);
-        scratch->work.vy = D_8006EE54.unk62;
+        scratch->work.vx = D_8006EE54.unk60 - (actor->position.vx >> 12);
+        scratch->work.vz = D_8006EE54.unk64 - (actor->position.vz >> 12);
+        scratch->work.vy = (s16)D_8006EE54.unk62;
         func_80093534(&scratch->work);
         dock = SquareRoot0(scratch->work.vx * scratch->work.vx + scratch->work.vz * scratch->work.vz);
         if (dock < 0x100 && scratch->work.vy >= -0xBF) {
@@ -1734,9 +1741,9 @@ s32 func_80088720(s32 index) {
     scratch = FLIGHT_SCRATCH;
     D_8009C620[base].matrix = D_8009C620[base + 1].matrix = D_8009C620[base + 2].matrix =
         D_8009C620[base + 3].matrix = FLIGHT_SCRATCH->tail_matrix;
-    scratch->work.vx = (u16)D_8006EE54.unk60 - (actor->position.vx >> 12);
-    scratch->work.vz = (u16)D_8006EE54.unk64 - (actor->position.vz >> 12);
-    scratch->work.vy = D_8006EE54.unk62;
+    scratch->work.vx = D_8006EE54.unk60 - (actor->position.vx >> 12);
+    scratch->work.vz = D_8006EE54.unk64 - (actor->position.vz >> 12);
+    scratch->work.vy = (s16)D_8006EE54.unk62;
     func_80093534(&scratch->work);
     if (SquareRoot0(scratch->work.vx * scratch->work.vx + scratch->work.vz * scratch->work.vz) < 0x300 && scratch->work.vy < -0x240) {
         actor->turn = 0;
@@ -2266,7 +2273,6 @@ void func_80089748(void) {
 /* Draw the live particles: build each one's billboard quad (kind shape,
  * scaled and optionally rolled), place it relative to the camera target,
  * project it and add the visible ones to the ordering table. */
-#ifdef NON_MATCHING /* one fewer saved register: the 0xFFFFFF mask is hoisted */
 void func_80089C78(void) {
     ParticleScratch *scratch;
     EffectSlot *slot;
@@ -2288,8 +2294,8 @@ void func_80089C78(void) {
             continue;
         }
         scratch->scale.vx = (u16)slot->rot[0];
-        scratch->scale.vz = 0x1000;
         scratch->scale.vy = (u16)slot->rot[1];
+        scratch->scale.vz = 0x1000;
         scratch->m = scratch->identity;
         if (((u8 *)&slot->fade)[3] & 1) {
             RotMatrixZ(slot->unk2, &scratch->m);
@@ -2303,8 +2309,8 @@ void func_80089C78(void) {
         scratch->offset.vz = (slot->position.vz >> 12) - camera_z;
         func_80093534(&scratch->offset);
         scratch->centre.vx = scratch->offset.vx;
-        scratch->centre.vz = -scratch->offset.vz;
         scratch->centre.vy = slot->position.vy >> 12;
+        scratch->centre.vz = -scratch->offset.vz;
         gte_SetRotMatrix(&scratch->view);
         gte_ldv0(&scratch->centre);
         gte_rtv0();
@@ -2317,7 +2323,7 @@ void func_80089C78(void) {
         gte_ldv3(&scratch->v[0], &scratch->v[1], &scratch->v[2]);
         gte_rtpt();
         gte_stflg(&scratch->flag);
-        if (scratch->flag < 0) {
+        if (scratch->flag & 0x80000000) {
             continue;
         }
         gte_stsxy3(&quad->x0, &quad->x1, &quad->x2);
@@ -2340,18 +2346,15 @@ void func_80089C78(void) {
             quad->g0 = ((u8 *)&slot->colour)[1];
             quad->b0 = ((u8 *)&slot->colour)[2];
             quad->tpage = slot->code;
-            *(u16 *)&quad->u0 = D_8009AFF0[EFFECT_ENABLED(slot)].uv[0];
-            *(u16 *)&quad->u1 = D_8009AFF0[EFFECT_ENABLED(slot)].uv[1];
-            *(u16 *)&quad->u2 = D_8009AFF0[EFFECT_ENABLED(slot)].uv[2];
-            *(u16 *)&quad->u3 = D_8009AFF0[EFFECT_ENABLED(slot)].uv[3];
+            *(u16 *)&quad->u0 = D_8009AFF0[EFFECT_ENABLED(slot) * 4];
+            *(u16 *)&quad->u1 = D_8009AFF0[EFFECT_ENABLED(slot) * 4 + 1];
+            *(u16 *)&quad->u2 = D_8009AFF0[EFFECT_ENABLED(slot) * 4 + 2];
+            *(u16 *)&quad->u3 = D_8009AFF0[EFFECT_ENABLED(slot) * 4 + 3];
             addPrim(&D_8009BE3C->ot[scratch->sz >> 4], quad);
             quad++;
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80089C78);
-#endif
 
 /* Create the party leader's model sprite at the scene's entry position; in
  * movement modes 1-7 follow the player or start hidden. Fill the position

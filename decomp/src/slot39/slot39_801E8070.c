@@ -91,14 +91,22 @@ void func_801E8474(s32 count, MenuCommandImages *images) {
     }
 }
 
+/* Append the sprites of text `text` to a sprite list and its count. A
+ * statement macro: its do/while (0) loop notes keep the table addresses
+ * hoisted to the function entry as in the original. */
+#define ADD_SPRITES(count, list, text)                                                                  \
+    do {                                                                                                \
+        (count) += func_8002675C(D_800625A0->sheet, (text), &(list)[(count) * 2], D_800625A0->bufferIndex, \
+                                 0xa0, 0x96, 0x1000);                                                   \
+    } while (0)
+
 /* Open the choice window of the command at `offset` past the top cursor:
  * grow its cursor and label columns one choice per two frames (until an
  * empty choice, ffff), counting the choices. */
-#ifdef NON_MATCHING
 void func_801E86C8(u8 offset) {
     s32 n;
     s32 i;
-    u8 growing;
+    s32 growing;
 
     D_800625A0->spriteLists->firstCount = 0;
     D_800625A0->spriteLists->secondCount = 0;
@@ -109,10 +117,8 @@ void func_801E86C8(u8 offset) {
         D_800625A0->choiceCount = 0;
         for (i = 0; i < n; i++) {
             if (D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2] != 0xffff) {
-                D_800625A0->spriteLists->firstCount +=
-                    func_8002675C(D_800625A0->sheet, D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2],
-                                  &D_800625A0->spriteLists->first[D_800625A0->spriteLists->firstCount * 2],
-                                  D_800625A0->bufferIndex, 0xa0, 0x96, 0x1000);
+                ADD_SPRITES(D_800625A0->spriteLists->firstCount, D_800625A0->spriteLists->first,
+                            D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2]);
                 D_800625A0->choiceCount++;
             } else {
                 growing = 0;
@@ -127,10 +133,8 @@ void func_801E86C8(u8 offset) {
         D_800625A0->spriteLists->secondCount = 0;
         for (i = 0; i < n; i++) {
             if (D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2] != 0xffff) {
-                D_800625A0->spriteLists->secondCount +=
-                    func_8002675C(D_800625A0->sheet, D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2 + 1],
-                                  &D_800625A0->spriteLists->second[D_800625A0->spriteLists->secondCount * 2],
-                                  D_800625A0->bufferIndex, 0xa0, 0x96, 0x1000);
+                ADD_SPRITES(D_800625A0->spriteLists->secondCount, D_800625A0->spriteLists->second,
+                            D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2 + 1]);
             }
         }
         D_800625A0->spriteLists->secondStart = D_800625A0->bufferIndex;
@@ -141,9 +145,6 @@ void func_801E86C8(u8 offset) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801E8070", func_801E86C8);
-#endif
 
 /* Lay out the command cursor sprites for `count` commands (images of the
  * `images`, the chosen one `cursor` taking its lit image,
@@ -227,7 +228,6 @@ void func_801E8DA8(u8 image, u8 row) {
 
 /* Set `poly`'s blending for `mode`: 0 opaque, 1 additive-dim, 2 plain,
  * 3 dim. */
-#ifdef NON_MATCHING
 void func_801E8EAC(POLY_FT4 *poly, u8 mode) {
     u8 shade;
 
@@ -236,15 +236,13 @@ void func_801E8EAC(POLY_FT4 *poly, u8 mode) {
     case 1:
         poly->tpage |= 0x20;
         SetSemiTrans(poly, 1);
+    case 3:
         shade = 0x21;
         break;
     case 0:
         SetSemiTrans(poly, 0);
     case 2:
         shade = 0x80;
-        break;
-    case 3:
-        shade = 0x21;
         break;
     default:
         return;
@@ -253,9 +251,6 @@ void func_801E8EAC(POLY_FT4 *poly, u8 mode) {
     poly->g0 = shade;
     poly->b0 = shade;
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801E8070", func_801E8EAC);
-#endif
 
 /* Set the blending of portrait `index`'s quads of the current buffer: plain
  * (2), or dim (3) when the dim flag `mode` is set. Every edge list is walked
@@ -359,7 +354,6 @@ void func_801E9340(char *name, void *buffer, s32 size) {
  * close and the drive to settle, from the disc label and files 18 and 28.
  * Returns 0 when loaded, 2 when no disc label was read, 3 for the other
  * disc. */
-#ifdef NON_MATCHING
 s32 func_801E93A0(s32 disc) {
     DiscLabel label = { { 0 } };
     u8 pos[4];
@@ -414,19 +408,18 @@ retry:
     VSync(3);
     func_8002954C(0x17, &label, 0x10, 0, 0);
     func_80028A60(0);
-    result = 2;
     if (label.tag == 0x4e45585f) {
-        result = 3;
         if (label.disc == disc + '0') {
             func_8002954C(0x18, D_8004FDF0, 0x8000, 0, 0);
             result = 0;
             func_80028A60(0);
             func_8002954C(0x28, D_8004FDF4, 0x7a, 0, 0);
             func_80028A60(0);
+        } else {
+            result = 3;
         }
+    } else {
+        result = 2;
     }
     return result;
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801E8070", func_801E93A0);
-#endif

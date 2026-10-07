@@ -39,7 +39,14 @@ void func_801E4048(void) {
 
 /* Place the formation: party and enemy presence, ids and groups from the
  * formation record, group membership and each member's standing position
- * from the battle scene data. */
+ * from the battle scene data.
+ * NON_MATCHING: the original indexes the formation record (D_8006F9DC) with
+ * i itself; here loop optimization combines its repeated reads into reduced
+ * pointers (and eliminates i), and the later loops' registers differ.
+ * In the loop dump the two FORMATION_ID (and FLAGS3) reads are combined
+ * givs (benefit 4) and reduced; the original keeps every byte-array access
+ * on a register incremented with i (a0, like a mult-1 DEST_REG giv the
+ * address givs were expressed from). */
 #ifdef NON_MATCHING
 void func_801E4160(void) {
     s32 i;
@@ -239,14 +246,22 @@ void func_801E4AC0(void) {
     }
 }
 
+/* Compiled-out debug trace of an item entering a battle list. */
+#define LIST_ITEM_TRACE(id) do { } while (0)
+
+/* Enter item `id` into slot `n` of the battle item list `list`. */
+#define LIST_ITEM(list, n, id)       \
+    do {                             \
+        LIST_ITEM_TRACE(id);         \
+        (list)[n] = (id);            \
+    } while (0)
+
 /* Build the battle item lists from the inventory (counts capped at 99, empty
  * slots cleared) and the special item list from ids 50..72. */
-#ifdef NON_MATCHING
 void func_801E4CD0(void) {
     s32 i;
     u8 *count;
     u8 listed;
-    u32 id;
 
     for (i = 0; i < BATTLE_ITEMS; i++) {
         D_800D2CE0[i] = 0;
@@ -264,7 +279,7 @@ void func_801E4CD0(void) {
     listed = 0;
     for (i = 0; i < INVENTORY_SLOTS && listed < BATTLE_ITEMS; i++) {
         if (D_8006F65A[i] != 0 && D_8006F65A[i] < 49) {
-            D_800D2CE0[listed] = D_8006F65A[i];
+            LIST_ITEM(D_800D2CE0, listed, D_8006F65A[i]);
             D_800D2CB0[listed] = D_8006F5C4[i];
             D_800D2FE4[listed] = D_8006F65A[i];
             listed++;
@@ -272,9 +287,8 @@ void func_801E4CD0(void) {
     }
     D_800C3EAC->last_item = 47;
     for (i = 0, listed = 0; i < 100; i++) {
-        id = D_8006F3D0[i];
-        if ((u32)(id - 50) < 23) {
-            D_800C3D70[listed] = id;
+        if (D_8006F3D0[i] >= 50 && D_8006F3D0[i] < 73) {
+            LIST_ITEM(D_800C3D70, listed, D_8006F3D0[i]);
             D_800D3688[listed] = D_8006F36C[i];
             listed++;
         }
@@ -284,9 +298,6 @@ void func_801E4CD0(void) {
         D_800D3688[listed] = 0;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E4CD0);
-#endif
 
 /* Start the turn timers, draw a random turn order of the eleven slots, let
  * enemies flagged 0x200 act first, then rebase every present timer so the
@@ -564,9 +575,9 @@ void func_801E5D2C(void) {
 }
 
 /* Render the ten battle messages 0-9 into text images. The original frame
- * reserves eight additional bytes; their source use remains unresolved. */
-#ifdef NON_MATCHING
+ * reserves eight bytes that no instruction touches. */
 void func_801E5E78(void) {
+    SVECTOR unused; /* unused in the original; reserves 8 bytes */
     s32 i;
 
     for (i = 0; i < 10; i++) {
@@ -574,16 +585,14 @@ void func_801E5E78(void) {
         func_80034EAC(func_800338D8(i), D_800C3E5C[i], 2, 0);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E5E78);
-#endif
 
 /* Draw each present member's gauge glyphs (the second set dimmed), its
  * portrait and its two digit glyphs, placed by the party layout's columns. */
-#ifdef NON_MATCHING
 void func_801E5EE8(void) {
     s32 i;
     s32 part;
+    s32 first; /* first dimmed glyph: two prims per part */
+    s32 k;
 
     for (i = 0; i < 3; i++) {
         if (D_800C3EB4.slot[i].id != NO_COMBATANT) {
@@ -591,11 +600,12 @@ void func_801E5EE8(void) {
                 0x52, &D_800C3EA4->member_gauge[i].prim[D_800D2D28->gauge_parts[i] * 2],
                 i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x44), 0x24);
             part = D_800D2D28->gauge_parts[i];
+            first = part * 2;
             D_800D2D28->gauge_parts[i] += func_80076A6C(
                 0x53, &D_800C3EA4->member_gauge[i].prim[part * 2],
                 i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x44), 0x24);
-            for (part = part * 2; part < D_800D2D28->gauge_parts[i] * 2; part += 2) {
-                func_80076C34(&D_800C3EA4->member_gauge[i].prim[part + D_800CCB34]);
+            for (k = first; k < D_800D2D28->gauge_parts[i] * 2; k += 2) {
+                func_80076C34(&D_800C3EA4->member_gauge[i].prim[k + D_800CCB34]);
             }
             func_80076A10(0x61 + i, D_800C3EA4->portrait[i],
                           i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x1C), 0x14);
@@ -611,9 +621,6 @@ void func_801E5EE8(void) {
     D_800D2D28->bA2 = D_800CCB34;
     D_800D2D28->b83 = D_800CCB34;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E5EE8);
-#endif
 
 /* Setup phase 3, first frame: the gauge panels and each member's glyphs. */
 void func_801E6290(void) {

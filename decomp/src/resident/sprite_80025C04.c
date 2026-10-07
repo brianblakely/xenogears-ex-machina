@@ -50,10 +50,6 @@ void func_80025C04(s32 count, s32 scale, u16 *dst, u16 *src) {
  * or made grey (3), offset by the tint and clamped; the result moves from
  * that towards the `base` pixel by `factor` / 32 (at most 1) and goes to
  * `dst`, except for transparent (zero) source pixels. */
-/* Nonmatching: the original sign-extends the red component in $v0 for the
- * base subtraction; GCC extends it in $a0 and shares that value with the
- * packed output. Five instructions differ. */
-#ifdef NON_MATCHING
 void func_80025D4C(s32 count, u16 *src, u16 *base, u16 *dst, s32 red, s32 green, s32 blue, s32 mode,
                    s32 factor) {
     VECTOR delta;
@@ -67,7 +63,7 @@ void func_80025D4C(s32 count, u16 *src, u16 *base, u16 *dst, s32 red, s32 green,
     s32 grey;
     u32 grey_green;
     u32 grey_blue;
-    u32 colour;
+    u16 colour;
 
     if (factor > 0x20) {
         factor = 0x20;
@@ -130,7 +126,7 @@ void func_80025D4C(s32 count, u16 *src, u16 *base, u16 *dst, s32 red, s32 green,
         gte_gpf12();
         gte_stlvl(&delta);
         if (pixel != 0) {
-            colour = (r + ((u16)delta.vx & 0x1F)) | 0x8000;
+            colour = (u16)(r + ((u16)delta.vx & 0x1F)) | 0x8000;
             *dst = colour | (g + (delta.vy & 0x3E0)) | (b + (delta.vz & 0x7C00));
         }
         src++;
@@ -138,9 +134,6 @@ void func_80025D4C(s32 count, u16 *src, u16 *base, u16 *dst, s32 red, s32 green,
         dst++;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80025C04", func_80025D4C);
-#endif
 
 /* Draw entry `id` of a sprite sheet at screen (x, y), scaled and turned
  * by `angle`: each of its parts becomes a textured quad (every second one
@@ -507,8 +500,10 @@ void func_80026B9C(void) {
 /* Queue the sheet entry as textured quads at (x, y), linking each quad at
  * `ot`. Its signed texture coordinates supply the offsets within its VRAM
  * page. Leave the queue untouched unless every part fits before its end. */
-/* Nonmatching: register allocation and store scheduling differ; the C
- * candidate is four bytes shorter than the original. */
+/* The texture column variable is reused for the part's u coordinate.
+ * Nonmatching: the left edge and v take $s4/$s3 swapped (original $s3/$s4),
+ * which also moves the v0/v1 stores after the x0 store as in the original
+ * (same size). */
 #ifdef NON_MATCHING
 void func_80026BA4(u16 *sheet, s32 id, s32 x, s32 y, u_long *ot) {
     s16 *entry;
@@ -516,7 +511,7 @@ void func_80026BA4(u16 *sheet, s32 id, s32 x, s32 y, u_long *ot) {
     POLY_FT4 *poly;
     s32 i;
     s32 count;
-    s32 u, v, w, h, left, top, mode;
+    s32 v, w, h, left, top, mode;
     s32 page_x, page_y, column, texture_u;
 
     entry = (s16 *)(sheet[id + 2] + (s32)sheet);
@@ -542,7 +537,7 @@ void func_80026BA4(u16 *sheet, s32 id, s32 x, s32 y, u_long *ot) {
             h = (s16)part->h;
             left = (s16)part->x;
             top = (s16)part->y;
-            u = (s16)part->u;
+            column = (s16)part->u;
             poly->clut = GetClut(part->clut_x, part->clut_y);
             poly->tpage = GetTPage(mode, 0, page_x, page_y);
             poly->x0 = left + x;
@@ -557,10 +552,10 @@ void func_80026BA4(u16 *sheet, s32 id, s32 x, s32 y, u_long *ot) {
             poly->y1 = top + y;
             poly->y2 = top + y + h;
             poly->y3 = top + y + h;
-            poly->u0 = u;
-            poly->u1 = u + w;
-            poly->u2 = u;
-            poly->u3 = u + w;
+            poly->u0 = column;
+            poly->u1 = column + w;
+            poly->u2 = column;
+            poly->u3 = column + w;
             AddPrim(ot, poly);
         }
     }

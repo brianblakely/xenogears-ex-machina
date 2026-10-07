@@ -995,7 +995,10 @@ void func_800931B0(void) {
 }
 
 /* Build `steps` fades of 256 CLUT entries towards `colour` (entry 0 stays transparent). */
-#ifdef NON_MATCHING /* the original keeps colour*t products inside the inner loop */
+/* NON_MATCHING: same instructions and frame; the register allocation differs
+ * (the original copies `out` to t5 and gives g/b t9/t8, the r*t product a1
+ * and the packed result a0). */
+#ifdef NON_MATCHING
 void func_800931D8(u16 *clut, u16 *out, s32 steps, u8 *colour) {
     CVECTOR c;
     s32 r, g, b;
@@ -1009,14 +1012,14 @@ void func_800931D8(u16 *clut, u16 *out, s32 steps, u8 *colour) {
     for (i = 0; i < steps; i++) {
         t = (i << 12) / steps;
         src = clut;
-        inv = 0x1000 - t;
         for (j = 0; j < 0x100; j++) {
             if (*src == 0) {
                 *out = *src;
             } else {
+                inv = 0x1000 - t;
                 c.r = (*src & 0x1F) << 3;
-                c.g = (*src >> 2) & 0xF8;
-                c.b = (*src >> 7) & 0xF8;
+                c.g = ((*src >> 5) & 0x1F) << 3;
+                c.b = ((*src >> 10) & 0x1F) << 3;
                 *out = (*src & 0x8000) | ((c.r * inv + r * t) >> 15) | (((c.g * inv + g * t) >> 15) << 5) |
                        (((c.b * inv + b * t) >> 15) << 10);
             }

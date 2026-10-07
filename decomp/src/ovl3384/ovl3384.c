@@ -49,10 +49,8 @@ void func_801FC0CC(TaskNode *node) {
 
 /* Draw every piece: place it by its position and rotation under the model's
  * matrix and the camera, project its corners into its primitive and queue it.
- * NON_MATCHING: only the switch dispatch differs; the original loads the jump
- * table address before scaling the index (lui in the range check's delay
- * slot, table in v0, index in v1), this C scales the index first. */
-#ifdef NON_MATCHING
+ * Each primitive kind has its own case (the compiler merges the identical
+ * ones afterwards). */
 void func_801FC1A8(TaskNode *node) {
     DebrisTask *debris;
     Piece *piece;
@@ -86,11 +84,12 @@ void func_801FC1A8(TaskNode *node) {
         if (kind & 8) {
             RotTransPers4(&piece->vertex[0], &piece->vertex[1], &piece->vertex[2], &piece->vertex[3],
                           &sxy[0], &sxy[1], &sxy[2], &sxy[3], &p, &flag);
+            AddPrim(D_8005956C, prim);
         } else {
             RotTransPers3(&piece->vertex[0], &piece->vertex[1], &piece->vertex[2], &sxy[0], &sxy[1],
                           &sxy[2], &p, &flag);
+            AddPrim(D_8005956C, prim);
         }
-        AddPrim(D_8005956C, prim);
         /* The corners' places in POLY_F3/F4/FT3/G3/GT3/FT4/G4/GT4. */
         switch (kind) {
         case 0:
@@ -105,6 +104,10 @@ void func_801FC1A8(TaskNode *node) {
             *(s32 *)(prim + 0x14) = sxy[3];
             break;
         case 4:
+            *(s32 *)(prim + 0x8) = sxy[0];
+            *(s32 *)(prim + 0x10) = sxy[1];
+            *(s32 *)(prim + 0x18) = sxy[2];
+            break;
         case 16:
             *(s32 *)(prim + 0x8) = sxy[0];
             *(s32 *)(prim + 0x10) = sxy[1];
@@ -116,6 +119,11 @@ void func_801FC1A8(TaskNode *node) {
             *(s32 *)(prim + 0x20) = sxy[2];
             break;
         case 12:
+            *(s32 *)(prim + 0x8) = sxy[0];
+            *(s32 *)(prim + 0x10) = sxy[1];
+            *(s32 *)(prim + 0x18) = sxy[2];
+            *(s32 *)(prim + 0x20) = sxy[3];
+            break;
         case 24:
             *(s32 *)(prim + 0x8) = sxy[0];
             *(s32 *)(prim + 0x10) = sxy[1];
@@ -133,20 +141,14 @@ void func_801FC1A8(TaskNode *node) {
         desc = (PacketDesc *)((u8 *)desc + (desc->words + 1) * 4);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3384/asm/nonmatchings/ovl3384", func_801FC1A8);
-#endif
 
 /* Opcode entry: break `model` (placed by `matrix`) into one piece per
  * primitive. Each piece keeps its corners about its centre and flies from the
  * model's origin outward at `speed` plus a random part of `speed_range`,
  * spinning by a random part of `spin_range`, falling under `gravity`, for
  * `life` frames. `prims` holds the model's primitives, or 0 to build them
- * (twice: one copy per display buffer).
- * NON_MATCHING: only the callee-saved registers of four values differ (the
- * original has model s0, life/buffer s1, matrix/size s2, debris s4; this C
- * gets s4, s0, s1, s2). */
-#ifdef NON_MATCHING
+ * (twice: one copy per display buffer). The primitives are read through
+ * `source`, a copy of `model` (the original keeps the two apart). */
 void func_801FC4C4(Model *model, u8 *prims, MATRIX *matrix, s32 gravity, s32 speed, s32 speed_range,
                    s32 spin_range, s32 life) {
     DebrisTask *debris;
@@ -160,6 +162,7 @@ void func_801FC4C4(Model *model, u8 *prims, MATRIX *matrix, s32 gravity, s32 spe
     MATRIX m;
     s32 count, size, kind, i, r;
     u8 *buffer;
+    Model *source;
 
     debris = func_8001D1D8(sizeof(DebrisTask), NULL, func_801FC0CC, func_801FC1A8, func_801FC074);
     debris->model = model;
@@ -169,18 +172,19 @@ void func_801FC4C4(Model *model, u8 *prims, MATRIX *matrix, s32 gravity, s32 spe
     debris->pieces = piece;
     debris->matrix = *matrix;
     debris->life = life;
-    size = func_800B16A4(model);
+    source = model;
+    size = func_800B16A4(source);
     if (prims == NULL) {
         buffer = func_80031BDC(size * 2, 0);
-        func_800B1720(model, buffer, 0, 1);
+        func_800B1720(source, buffer, 0, 1);
         memcpy(buffer + size, buffer, size);
     } else {
         buffer = prims;
     }
     debris->prims[0] = buffer;
     debris->prims[1] = buffer + size;
-    desc = (PacketDesc *)(model->packets + (s32)model);
-    vertices = (SVECTOR *)(model->vertices + (s32)model);
+    desc = (PacketDesc *)(source->packets + (s32)source);
+    vertices = (SVECTOR *)(source->vertices + (s32)source);
     for (i = 0; i != count; i++) {
         /* Bit 8 selects the unlit command layout; descriptor flags bit 0
          * selects lighting. Vertex indices follow its header and colours. */
@@ -340,6 +344,3 @@ void func_801FC4C4(Model *model, u8 *prims, MATRIX *matrix, s32 gravity, s32 spe
         desc = (PacketDesc *)((u8 *)desc + (desc->words + 1) * 4);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3384/asm/nonmatchings/ovl3384", func_801FC4C4);
-#endif

@@ -316,10 +316,10 @@ void func_80078D24(void) {
     func_800320E8(D_8009BCB0[1]);
     func_800320E8(D_8009C180);
     func_800976A0();
-    D_8006F94E = 0x110;
+    D_8006F94E.scene = 0x110;
     D_8006F954[0] = 0;
     D_8009BBC4 = 1;
-    D_8006F950 = D_8009BD38.vy;
+    D_8006F94E.heading = D_8009BD38.vy;
 }
 
 /* Start a scripted camera looking down from yaw 0x680. */
@@ -853,10 +853,10 @@ void func_8007A8AC(void) {
     func_800320E8(D_8009BCB0[1]);
     func_800320E8(D_8009C180);
     func_800976A0();
-    D_8006F94E = 0x11A;
+    D_8006F94E.scene = 0x11A;
     D_8006F954[0] = 0;
     D_8009BBC4 = 1;
-    D_8006F950 = D_8009BD38.vy;
+    D_8006F94E.heading = D_8009BD38.vy;
 }
 
 /* Restart an actor's timed sequence at its first step. */

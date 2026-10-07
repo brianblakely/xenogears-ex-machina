@@ -8,28 +8,22 @@
 #include "gte.h"
 
 /* Draw the elapsed time (frames at 30 per second) as minutes, seconds and
- * hundredths. Does not match:
- * the minutes are computed into another register and copied. */
-#ifdef NON_MATCHING
+ * hundredths. */
 void func_80083CE8(void) {
     char text[32];
     s32 minutes;
     s32 seconds;
 
+    seconds = D_80092944 % 1800;
     minutes = D_80092944 / 1800;
-    seconds = D_80092944 - minutes * 1800;
     sprintf(text, "%02d'%02d''%02d", minutes, seconds / 30, D_80092944 % 30 * 99 / 30);
     func_8007EBE0((s32)text);
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_80083CE8);
-#endif
 
 /* Update an actor's glow light (fading it) at its position relative to its
- * opponent, and the spot light at its position relative to the camera.
- * Nonmatching: the original reserves 0x20 more frame bytes. */
-#ifdef NON_MATCHING
+ * opponent, and the spot light at its position relative to the camera. */
 void func_80083DCC(LightRig *rig, Actor *actor, s32 index) {
+    Matrix unused; /* unused in the original; reserves 32 bytes */
     Node *light = rig->lights[index];
     u8 glow = actor->glow;
     s32 level = glow;
@@ -71,17 +65,13 @@ void func_80083DCC(LightRig *rig, Actor *actor, s32 index) {
     NODE_LIGHT(light)->direction[2] -= D_8009871C.vz;
     func_80030A30(2, NODE_LIGHT(light));
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_80083DCC);
-#endif
 
 /* Draw the 3D arena: aim the camera, pose the actors, then draw the floor,
- * the actors and their shadows, the look-at marker and the sky.
- * Nonmatching: the original reserves 0x10 more frame bytes. */
-#ifdef NON_MATCHING
+ * the actors and their shadows, the look-at marker and the sky. */
 s32 func_800840CC(LightRig *rig) {
     Matrix floor;
     Matrix camera;
+    Vector unused; /* unused in the original; reserves 16 bytes */
     OtPair *layer = rig->layer;
     Light *light;
 
@@ -139,17 +129,13 @@ s32 func_800840CC(LightRig *rig) {
     func_80031678(D_80092938, &D_80095580[D_800928A0]);
     return 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_800840CC);
-#endif
 
 /* Draw the 3D scene: aim the camera, give both actors the camera matrix,
- * light and draw them, then the view's layer and the backdrop sprites.
- * Nonmatching: the original reserves 0x30 more frame bytes and places the
- * camera matrix 0x20 bytes later. */
-#ifdef NON_MATCHING
+ * light and draw them, then the view's layer and the backdrop sprites. */
 s32 func_800846A0(LightRig *rig) {
+    Matrix unused0; /* unused in the original; reserves 32 bytes */
     Matrix camera;
+    Vector unused1; /* unused in the original; reserves 16 bytes */
     OtPair *layer = rig->layer;
     Light *light;
 
@@ -180,9 +166,6 @@ s32 func_800846A0(LightRig *rig) {
     AddPrim(D_80092938, &D_800955C8[D_800928A0]);
     return 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_800846A0);
-#endif
 
 /* Draw a 3D view: update its layer, link this buffer's ordering table, finish. */
 s32 func_800849E0(LightRig *rig) {
@@ -790,8 +773,19 @@ void func_80085EAC(s32 mirrored, s16 *out, s32 y) {
  * outlines and gauge quads of both sides (left from the corner layout,
  * right mirrored), the arrow triangles and the marks. The mirror loop runs
  * over six arrows and so also writes three past the array into the marks,
- * which are set afterwards. Does not match:
- * the arrow mirroring and final mark stores are scheduled differently. */
+ * which are set afterwards. Does not match: only the two decrement loads
+ * (arrows[1][1].y0 at 0x292, .x2 at 0x298) differ; the original keeps them
+ * at their source positions (after the marks[1].y0 store and after the 0x1E
+ * stores), here they move below the length stores, and the registers of the
+ * hoisted marks[2]/[3] constants and of the 0x1E/length constants differ.
+ * The loads are not alias-pinned here (buf+offset accesses are told apart);
+ * sched1 moves each load next to its decrement because the loaded pseudo is
+ * set once (a register birth), and the original's loads staying at their
+ * source positions give the 0x1E and length constants other registers.
+ * Loading into s16 temporaries that are then decremented (`y = ...; y--;`,
+ * set twice, not births) leaves 23 differing lines instead of 55: the stores
+ * then match, but sched1 hoists both loads to the top of the block (before
+ * the 0x13/0x1E stores) and two marks[2]/[3] constants swap t2/t3. */
 #ifdef NON_MATCHING
 void func_80085EC8(OverlayBuffer *buf) {
     s32 i;
@@ -893,8 +887,8 @@ void func_80085EC8(OverlayBuffer *buf) {
         *(u32 *)&buf->arrows[1][i].r0 = 0x2000FF00;
         buf->arrows[1][i].y0 = buf->arrows[0][i].y0;
         buf->arrows[1][i].y1 = buf->arrows[0][i].y1;
-        buf->arrows[1][i].x0 = 0x140 - buf->arrows[0][i].x0;
         buf->arrows[1][i].y2 = buf->arrows[0][i].y2;
+        buf->arrows[1][i].x0 = 0x140 - buf->arrows[0][i].x0;
         buf->arrows[1][i].x1 = 0x140 - buf->arrows[0][i].x1;
         buf->arrows[1][i].x2 = 0x140 - buf->arrows[0][i].x2;
     }
@@ -1001,15 +995,17 @@ void func_800866D4(TimImage *tim, s32 x, s32 y, PolyFT4 *quad, s32 depth) {
 
 /* Build the HUD packets: the two name plates (left and mirrored right)
  * from the name TIM, the icon and gauge sprites, the gauge bar quads from
- * the bar TIM, the HUD texture page modes and the gauge palette. Does not match:
- * the HUD and icon base addresses are held in saved registers from early on. */
-#ifdef NON_MATCHING
+ * the bar TIM, the HUD texture page modes and the gauge palette. One sprite
+ * pair pointer walks the icons and then the gauges (the original keeps it
+ * in $s2). Each bar quad gets its colour/code word and then its length, and
+ * the gauge sprite its length, code, size and texture position. */
 void func_800868E0(StageFiles *files) {
     TimImage tim;
     Rect rect;
     s16 *clut;
     Hud *hud = &D_80095698;
-    SpritePair *icon = hud->icon;
+    SpritePair *pair;
+    PolyFT4 *bar;
 
     OpenTIM(files->name_tim);
     ReadTIM(&tim);
@@ -1017,6 +1013,7 @@ void func_800868E0(StageFiles *files) {
     clut[0] = 0;
     clut[1] = 0x8000;
     LoadImage(tim.crect, tim.caddr);
+    pair = hud->icon;
     LoadImage(tim.prect, tim.paddr);
     func_800864B4(&tim, 6, 7, hud->name_l, 0);
     func_800866D4(&tim, 0x13A - tim.prect->w * 4, 7, hud->name_r, 0);
@@ -1024,47 +1021,50 @@ void func_800868E0(StageFiles *files) {
     D_80095918[1] = D_80095918[0];
     SetDrawTPage(&D_80095918[2], 0, 1, GetTPage(0, 0, 0x380, 0x100));
     D_80095918[3] = D_80095918[2];
-    ((PacketTag *)&icon[0].s[0])->len = 4;
-    icon[0].s[0].code = 0x65;
-    *(u32 *)&icon[0].s[0].x0 = 0x90007;
-    *(u16 *)&icon[0].s[0].u0 = 0;
-    *(u32 *)&icon[0].s[0].w = 0x160016;
-    icon[0].s[0].clut = GetClut(0, 0x1F6);
-    icon[1] = icon[0];
-    icon[2] = icon[1];
-    icon[2].s[0].x0 = 0x123;
-    icon[2].s[0].u0 = 0x20;
-    icon[2].s[0].clut = GetClut(0, 0x1F7);
-    icon[3] = icon[2];
+    ((PacketTag *)&pair[0].s[0])->len = 4;
+    pair[0].s[0].code = 0x65;
+    *(u32 *)&pair[0].s[0].x0 = 0x90007;
+    *(u16 *)&pair[0].s[0].u0 = 0;
+    *(u32 *)&pair[0].s[0].w = 0x160016;
+    pair[0].s[0].clut = GetClut(0, 0x1F6);
+    D_80095698.icon[2] = D_80095698.icon[1] = pair[0];
+    pair = &D_80095698.icon[2];
+    pair[0].s[0].x0 = 0x123;
+    pair[0].s[0].u0 = 0x20;
+    pair[0].s[0].clut = GetClut(0, 0x1F7);
+    pair[1] = pair[0];
     OpenTIM(files->bar_tim);
     ReadTIM(&tim);
+    bar = D_80095698.bar_l;
+    pair = D_80095698.gauge;
     LoadImage(tim.prect, tim.paddr);
-    func_800864B4(&tim, 6, 0x20, D_80095698.bar_l, 0);
+    func_800864B4(&tim, 6, 0x20, bar, 0);
     func_800866D4(&tim, 0x13A - tim.prect->w * 4, 0x20, D_80095698.bar_r, 0);
-    *(u32 *)&D_80095698.gauge[0].s[0].w = 0x80040;
     D_80092860 = D_80095698.bar_l[0].v0;
     D_80092864 = D_80095698.bar_r[0].v0;
     *(u32 *)&D_80095698.bar_l[0].r0 = 0x2C000080;
-    *(u32 *)&D_80095698.bar_l[1].r0 = 0x2C000080;
-    *(u32 *)&D_80095698.bar_r[0].r0 = 0x2C000080;
-    *(u32 *)&D_80095698.bar_r[1].r0 = 0x2C000080;
     ((PacketTag *)&D_80095698.bar_l[0])->len = 9;
+    *(u32 *)&D_80095698.bar_l[1].r0 = 0x2C000080;
     ((PacketTag *)&D_80095698.bar_l[1])->len = 9;
+    *(u32 *)&D_80095698.bar_r[0].r0 = 0x2C000080;
     ((PacketTag *)&D_80095698.bar_r[0])->len = 9;
+    *(u32 *)&D_80095698.bar_r[1].r0 = 0x2C000080;
     ((PacketTag *)&D_80095698.bar_r[1])->len = 9;
-    ((PacketTag *)&D_80095698.gauge[0].s[0])->len = 4;
-    D_80095698.gauge[0].s[0].code = 0x65;
-    *(u16 *)&D_80095698.gauge[0].s[0].u0 = 0x80;
-    D_80095698.bar_l[1].clut = hud->name_l[0].clut;
-    D_80095698.bar_l[0].clut = hud->name_l[0].clut;
-    D_80095698.bar_r[1].clut = hud->name_l[0].clut;
-    D_80095698.bar_r[0].clut = hud->name_l[0].clut;
-    D_80095698.gauge[0].s[0].clut = GetClut(0x3A0, 0x110);
-    *(u32 *)&D_80095698.gauge[0].s[0].x0 = 0xB001E;
-    D_80095698.gauge[2] = D_80095698.gauge[0];
-    *(u32 *)&D_80095698.gauge[2].s[0].x0 = 0x1500E3;
-    *(u16 *)&D_80095698.gauge[2].s[0].u0 = 0x880;
-    D_80095698.gauge[1] = D_80095698.gauge[0];
+    ((PacketTag *)&pair[0].s[0])->len = 4;
+    pair[0].s[0].code = 0x65;
+    *(u32 *)&pair[0].s[0].w = 0x80040;
+    *(u16 *)&pair[0].s[0].u0 = 0x80;
+    D_80095698.bar_l[1].clut = D_80095698.name_l[0].clut;
+    D_80095698.bar_l[0].clut = D_80095698.name_l[0].clut;
+    D_80095698.bar_r[1].clut = D_80095698.name_l[0].clut;
+    D_80095698.bar_r[0].clut = D_80095698.name_l[0].clut;
+    pair[0].s[0].clut = GetClut(0x3A0, 0x110);
+    *(u32 *)&pair[0].s[0].x0 = 0xB001E;
+    pair[2] = pair[0];
+    pair = &D_80095698.gauge[2];
+    *(u16 *)&pair[0].s[0].u0 = 0x880;
+    *(u32 *)&pair[0].s[0].x0 = 0x1500E3;
+    pair[-1] = pair[-2];
     D_80095698.gauge[3] = D_80095698.gauge[2];
     rect.x = 0x3A0;
     rect.y = 0x110;
@@ -1072,9 +1072,6 @@ void func_800868E0(StageFiles *files) {
     rect.h = 1;
     LoadImage(&rect, D_80091814);
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_800868E0);
-#endif
 
 /* Link this buffer's overlay packets into the overlay ordering table. */
 void func_80086E24(void) {
@@ -1132,19 +1129,14 @@ s32 func_80086FF8(Actor *actor, PolyF4 *packet) {
 
 /* Link the HUD and map overlay for this frame: each side's arrows (one per
  * point), state marks, name plates, icons, gauges, the charge bars (flashing
- * when nearly full) and the level bars (tinted by the level). Does not match:
- * one fewer saved register is used (register allocation of the buffer, HUD and count temporaries). */
-#ifdef NON_MATCHING
+ * when nearly full) and the level bars (tinted by the level). The level
+ * tints are written as loop-invariant expressions inside the loops (the
+ * original's moved invariants include a copy of the repeated green term). */
 void func_80087068(Actor *left, Actor *right) {
     OverlayBuffer *buf;
-    Hud *hud;
-    DrawTPage *tpage;
-    PolyF4 *mark;
     PolyFT4 *bar;
     s32 n;
     s32 level;
-    s32 green;
-    s32 blue;
 
     buf = &D_8009A2F8[D_800928A0];
     n = left->unkF2;
@@ -1167,27 +1159,22 @@ void func_80087068(Actor *left, Actor *right) {
     if (n > 2) {
         AddPrim(D_80092938, &buf->arrows[1][2]);
     }
-    mark = &buf->marks[2];
-    if (func_80086FF8(left, mark)) {
-        AddPrim(D_80092938, mark);
+    if (func_80086FF8(left, &buf->marks[2])) {
+        AddPrim(D_80092938, &buf->marks[2]);
     }
-    mark = &buf->marks[3];
-    if (func_80086FF8(right, mark)) {
-        AddPrim(D_80092938, mark);
+    if (func_80086FF8(right, &buf->marks[3])) {
+        AddPrim(D_80092938, &buf->marks[3]);
     }
-    hud = &D_80095698;
-    AddPrim(D_80092938, &hud->name_l[D_800928A0]);
-    AddPrim(D_80092938, &hud->name_r[D_800928A0]);
-    AddPrim(D_80092938, &hud->icon[D_800928A0]);
-    AddPrim(D_80092938, &hud->icon[2 + D_800928A0]);
-    tpage = D_80095918;
-    AddPrim(D_80092938, &tpage[D_800928A0]);
-    AddPrim(D_80092938, &hud->gauge[D_800928A0]);
-    AddPrim(D_80092938, &hud->gauge[2 + D_800928A0]);
-    tpage += 2;
-    AddPrim(D_80092938, &tpage[D_800928A0]);
-    AddPrim(D_80092938, &hud->bar_r[D_800928A0]);
-    AddPrim(D_80092938, &hud->bar_l[D_800928A0]);
+    AddPrim(D_80092938, &D_80095698.name_l[D_800928A0]);
+    AddPrim(D_80092938, &D_80095698.name_r[D_800928A0]);
+    AddPrim(D_80092938, &D_80095698.icon[D_800928A0]);
+    AddPrim(D_80092938, &D_80095698.icon[2 + D_800928A0]);
+    AddPrim(D_80092938, &D_80095918[D_800928A0]);
+    AddPrim(D_80092938, &D_80095698.gauge[D_800928A0]);
+    AddPrim(D_80092938, &D_80095698.gauge[2 + D_800928A0]);
+    AddPrim(D_80092938, &D_80095918[2 + D_800928A0]);
+    AddPrim(D_80092938, &D_80095698.bar_r[D_800928A0]);
+    AddPrim(D_80092938, &D_80095698.bar_l[D_800928A0]);
     AddPrim(D_80092938, &buf->marks[0]);
     AddPrim(D_80092938, &buf->marks[1]);
     AddPrim(D_80092938, &buf->frame[0]);
@@ -1214,23 +1201,19 @@ void func_80087068(Actor *left, Actor *right) {
     bar->v0 = bar->v1 = D_80092860 - (n - 0x40);
     if (left->level != 0) {
         level = 0x100 - left->level;
-        green = (level * 3) >> 3;
-        blue = level >> 1;
         for (n = 0; n < 3; n++) {
-            buf->bars_lit[n].g0 = green;
-            buf->bars_lit[n].b0 = blue;
-            buf->bars_lit[n].r0 = green + ((left->level * 255) >> 8);
+            buf->bars_lit[n].r0 = ((level * 3) >> 3) + ((left->level * 255) >> 8);
+            buf->bars_lit[n].g0 = (level * 3) >> 3;
+            buf->bars_lit[n].b0 = level >> 1;
         }
         func_80086E70(D_80092938, (GaugeBar *)&buf->bars_lit[0], left->unkC1, 0);
     }
     if (right->level != 0) {
         level = 0x100 - right->level;
-        green = (level * 3) >> 3;
-        blue = level >> 1;
         for (n = 3; n < 6; n++) {
-            buf->bars_lit[n].g0 = green;
-            buf->bars_lit[n].b0 = blue;
-            buf->bars_lit[n].r0 = green + ((right->level * 255) >> 8);
+            buf->bars_lit[n].r0 = ((level * 3) >> 3) + ((right->level * 255) >> 8);
+            buf->bars_lit[n].g0 = (level * 3) >> 3;
+            buf->bars_lit[n].b0 = level >> 1;
         }
         func_80086E70(D_80092938, (GaugeBar *)&buf->bars_lit[3], right->unkC1, 1);
     }
@@ -1239,9 +1222,6 @@ void func_80087068(Actor *left, Actor *right) {
     }
     AddPrim(D_80092938, buf);
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_80087068);
-#endif
 
 /* Build the overlay packets for buffer 0 and copy them to buffer 1. */
 void func_800875EC(void) {
@@ -1334,19 +1314,18 @@ void func_80087830(void) {
 
 /* Load the stage's icon, backdrop and extra TIM images into VRAM, noting
  * the icon and backdrop palettes and texture pages; the backdrop palette's
- * first entry is transparent and the rest semi-transparent. Does not match:
- * the icon table is walked with two pointers and the loop counter is kept. */
-#ifdef NON_MATCHING
+ * first entry is transparent and the rest semi-transparent. */
 void func_800878DC(StageFiles *files) {
     TimImage tim;
+    s32 unused[2]; /* unused in the original; reserves 8 bytes */
     s16 *clut;
     s32 i;
 
     for (i = 0; i < 4; i++) {
         OpenTIM(files->icon_tims[i]);
         ReadTIM(&tim);
-        D_80091934.icons[i].clut = GetClut(tim.crect->x, tim.crect->y);
-        D_80091934.icons[i].tpage = GetTPage(1, 1, tim.prect->x, tim.prect->y);
+        D_80091934.icons[i * 2 + 1] = GetClut(tim.crect->x, tim.crect->y);
+        D_80091934.icons[i * 2] = GetTPage(1, 1, tim.prect->x, tim.prect->y);
         LoadImage(tim.crect, tim.caddr);
         LoadImage(tim.prect, tim.paddr);
     }
@@ -1354,7 +1333,7 @@ void func_800878DC(StageFiles *files) {
     ReadTIM(&tim);
     D_800927D8 = GetClut(tim.crect->x, tim.crect->y);
     D_800927D4 = GetTPage(0, 2, tim.prect->x, tim.prect->y);
-    D_800927DC = tim.prect->x << 2;
+    D_800927DC = tim.prect->x * 4;
     D_800927E0 = tim.prect->y;
     clut = (s16 *)tim.caddr;
     clut[0] = 0;
@@ -1370,9 +1349,6 @@ void func_800878DC(StageFiles *files) {
         LoadImage(tim.prect, tim.paddr);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_800878DC);
-#endif
 
 /* Build an actor's textured backdrop quad (64x64 texels) for both buffers. */
 void func_80087AB0(Actor *actor) {
@@ -1391,13 +1367,11 @@ void func_80087AB0(Actor *actor) {
 }
 
 /* Draw an actor's ground shadow: a square sized by its height, centred
- * under it and tilted to the ground normal there.
- * Nonmatching: the original reserves 0x10 more frame bytes before the
- * normal, matrix and projected depths. */
-#ifdef NON_MATCHING
+ * under it and tilted to the ground normal there. */
 void func_80087B74(Actor *actor, u32 *ot, Matrix *view) {
     SVector corners[4];
     Vector centre;
+    Vector unused; /* unused in the original; reserves 16 bytes */
     SVector normal;
     Matrix m;
     s32 otz;
@@ -1459,9 +1433,6 @@ void func_80087B74(Actor *actor, u32 *ot, Matrix *view) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_80087B74);
-#endif
 
 /* Record a position in the path list (up to 31 entries). */
 void func_80087E38(Vector *pos) {

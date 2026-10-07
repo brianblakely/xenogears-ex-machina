@@ -213,9 +213,16 @@ typedef struct {
 extern MonitorState *D_8005A39C;
 extern s32 D_80062590[3];      /* party slots (0xff empty) */
 extern s32 D_8005A444[3];      /* party members' actors */
-extern MonitorDescriptor *D_800AFB10;
-extern s32 D_800AFB0C;         /* descriptors */
-extern MonitorTriangle *D_800AFB24[4];
+/* The field's object tables: descriptor count and list, and the walkmesh
+ * triangles of each layer. */
+typedef struct {
+    s32 count;                       /* 800afb0c */
+    MonitorDescriptor *descriptors;  /* 800afb10 */
+    u8 unk8[0x10];
+    MonitorTriangle *triangles[4];   /* 800afb24 */
+} FieldObjects;
+
+extern FieldObjects D_800AFB0C;
 extern s32 D_800B226C;         /* player actor */
 extern s32 D_800ADBFC;         /* event actors */
 extern s32 D_800ADB40;

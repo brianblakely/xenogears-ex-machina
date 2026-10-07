@@ -921,10 +921,10 @@ void func_80080218(void) {
     func_800320E8(D_8009BCB0[1]);
     func_800320E8(D_8009C180);
     func_800976A0();
-    D_8006F94E = 0x84;
+    D_8006F94E.scene = 0x84;
     D_8006F954[0] = 2;
     D_8009BBC4 = 1;
-    D_8006F950 = D_8009BD38.vy;
+    D_8006F94E.heading = D_8009BD38.vy;
 }
 
 /* Restart an actor's timed sequence at its first step. */

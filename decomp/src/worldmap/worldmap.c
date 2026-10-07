@@ -3,7 +3,6 @@
 /* Overlay entry: set up the display, start a new game's world state if none
  * is set, enter the requested mode and run its main loop until the world
  * map is left, then hand over to the next scene. */
-#ifdef NON_MATCHING /* irreducible mode loop; layout and allocation differ */
 void func_80070CFC(void) {
     void (*step)(void);
     void *data;
@@ -18,35 +17,35 @@ void func_80070CFC(void) {
     InitGeom();
     D_800591AE = 1;
     if (D_8006F954[0] == 0) {
-        D_8006F952 = 0xFFF;
-        D_8006F950 = 0xC00;
-        D_8006F94E = 0x400;
+        D_8006F94E.scene = 0x400;
+        D_8006F94E.area = 0xFFF;
+        D_8006F94E.heading = 0xC00;
         D_8006F954[0] = 1;
         D_8006EE54.flags = 0x4003;
+        D_8006EE54.unk6A = 1;
         D_8006EE54.unk60 = 0x6680;
         D_8006EE54.unk62 = 0xFF00;
         D_8006EE54.unk64 = 0x2A00;
-        D_8006EE54.z = 0x2C00;
-        D_8006F368[1] = 0xA;
-        D_8006D940[0].gear = 0xF;
-        D_8006D940[1].gear = 2;
-        D_8006D940[3].gear = 4;
-        D_8006F368[2] = 5;
-        D_8006D940[4].gear = 5;
-        D_8006D940[5].gear = 6;
-        D_8006D940[7].gear = 7;
-        D_8006D940[8].gear = 8;
-        D_8006D940[2].gear = 3;
-        D_8006D940[9].gear = 3;
-        D_8006EE54.unk6A = 1;
         D_8006EE66 = 0;
         D_8006EE54.x = 0x7580;
+        D_8006EE54.z = 0x2C00;
         D_8006EE54.heading = 0;
+        D_8006F368[1] = 0xA;
+        D_8006F368[2] = 5;
         D_8006F368[0] = 0;
         D_8006F8E5 = 0;
         D_8006F8E6 = 0;
         D_8006F8E7 = 0;
+        D_8006D940[0].gear = 0xF;
+        D_8006D940[1].gear = 2;
+        D_8006D940[2].gear = 3;
+        D_8006D940[3].gear = 4;
+        D_8006D940[4].gear = 5;
+        D_8006D940[5].gear = 6;
         D_8006D940[6].gear = 9;
+        D_8006D940[7].gear = 7;
+        D_8006D940[8].gear = 8;
+        D_8006D940[9].gear = 3;
         D_8006D940[10].gear = 9;
         D_8006EF8E[0].flags = 0x400;
         D_8006EF8E[0].x = 0x7500;
@@ -59,8 +58,8 @@ void func_80070CFC(void) {
         D_8006EF8E[2].z = 0x2E58;
         D_8006EE78[2] = 1;
         D_8006EE78[0] = D_8009AF80[D_8006EE78[1]];
-        D_8006F160 = 0x7FFFFFF;
         D_8006EE78[1] = D_8009AF90[D_8006EE78[1]];
+        D_8006F160 = 0x7FFFFFF;
     }
     func_80032498(3, 0);
     func_80028470(0x24, 0);
@@ -74,18 +73,17 @@ void func_80070CFC(void) {
     }
     D_8009BBC4 = 0;
     mode = D_8006F954[0] & 0x7FFF;
-    D_8009BD0C = (D_8006F94E & 0x3FFF) - 0x400;
-    D_8009D3D4 = D_8006F952;
-    D_8009C584 = D_8006F950;
+    D_8009BD0C = (D_8006F94E.scene & 0x3FFF) - 0x400;
+    D_8009D3D4 = D_8006F94E.area;
+    D_8009C584 = D_8006F94E.heading;
     D_8009C5A8 = mode;
-    D_8006F954[0] = mode;
+    D_8006F94E.mode = mode;
     func_80071B9C(mode, D_8006EF64[0]);
     step = D_8009A058[D_8009C5A8].enter;
-    if (step == NULL) {
-        goto check;
+    if (step != NULL) {
+        step();
     }
-    goto run;
-    do {
+    while (D_8009D7CC >= 2) {
         D_8009A058[D_8009C5A8].start();
         func_80097800();
         DrawSync(0);
@@ -94,23 +92,23 @@ void func_80070CFC(void) {
         D_8009C894 = D_8009D7CC;
         func_800712D0();
         step = D_8009A058[D_8009C5A8].leave;
-    run:
         step();
-    check:;
-    } while (D_8009D7CC >= 2);
-    if (D_8009D7CC == 0) {
+    }
+    switch (D_8009D7CC) {
+    case 0:
         func_800199CC(1);
         func_8001996C(1);
         if (D_8009BBC4 == 0) {
             if ((s16)D_8009D7D8->pad == 3) {
                 func_80094364(&D_8009D55C.target, 3, D_8006EF64[0]);
             }
-            D_8006F950 = D_8009BD38.vy;
-            D_8006F94E = ((s16 *)D_8009D7D8->data)[4];
+            D_8006F94E.scene = ((s16 *)D_8009D7D8->data)[4];
+            D_8006F94E.heading = D_8009BD38.vy;
             D_8006F954[0] = ((s16 *)D_8009D7D8->data)[5];
         }
         D_8006EF68 = D_8009BD0C + 0x400;
-    } else if (D_8009D7CC == 1) {
+        break;
+    case 1:
         func_800199CC(2);
         func_8001996C(2);
         D_800594F8 = 0;
@@ -123,7 +121,8 @@ void func_80070CFC(void) {
         D_8004F2FC = D_80062528;
         D_80062528 = func_80039850(D_80062648);
         func_80039A80(D_80062528, 0x7F, 0);
-    } else {
+        break;
+    default:
         func_8001996C(0);
         rect.x = 0;
         rect.y = 0;
@@ -131,19 +130,16 @@ void func_80070CFC(void) {
         rect.h = 0x1AF;
         ClearImage(&rect, 0, 0, 0x40);
         DrawSync(0);
+        break;
     }
     D_800591AE = 0;
     func_800762FC();
     func_80019ACC(0);
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap", func_80070CFC);
-#endif
 
 /* The world-map main loop: gather input, flip the display buffers, run the
  * frame, and handle pause, encounters and leaving for another scene until
  * D_8009D554 clears. */
-#ifdef NON_MATCHING /* seven instruction positions still differ in scene-exit load scheduling */
 void func_800712D0(void) {
     WorldmapView *view;
     /* The live gear-byte base also reaches the party IDs 0x57D bytes earlier. */
@@ -255,11 +251,10 @@ void func_800712D0(void) {
                     func_800762FC();
                     func_80075B58();
                 } else if (D_8009BE10 < 8) {
-                    u16 *return_flags = &D_8006EE68;
                     D_8009D554 = 0;
                     D_8009D7CC = 0;
                     D_8009D7D8 = &D_8009B6C4[2];
-                    *return_flags |= 0x2000;
+                    D_8006EE54.flags |= 0x2000;
                 }
             }
         } else {
@@ -285,18 +280,15 @@ void func_800712D0(void) {
     PutDispEnv(&D_8009BBC8[1].disp);
 }
 
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap", func_800712D0);
-#endif
-
 /* Mode step that has nothing to do; always reports done. */
 s32 func_80071A50(void) {
     return 1;
 }
 
 /* One world-map frame: input, actors, camera, terrain, sky and HUD. */
-#ifdef NON_MATCHING /* eight extra bytes of the original frame remain unexplained */
 s32 func_80071A58(void) {
+    SVECTOR unused; /* unused in the original; reserves 8 bytes */
+
     if (D_8009D144 == 0) {
         func_80097440(&D_8009BD40);
     } else {
@@ -326,13 +318,8 @@ s32 func_80071A58(void) {
     return 1;
 }
 
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap", func_80071A58);
-#endif
-
 /* Select the file set of an area (by index, or for the low indices by the
  * position against the threshold table) and derive its file numbers. */
-#ifdef NON_MATCHING /* last three loads scheduled differently */
 void func_80071B9C(s32 index, s32 position) {
     WorldmapArea *area;
     s32 i;
@@ -346,26 +333,22 @@ void func_80071B9C(s32 index, s32 position) {
         area = &D_8009B57C[index + 2];
     }
     D_8009D3C4 = area->file + 1;
-    D_8009C174 = area->file + 3;
     D_8009C17C = area->file + 2;
-    D_8009D3D0 = area->file + 5;
+    D_8009C174 = area->file + 3;
     D_8009CC98 = area->file + 4;
-    D_8009D800 = area->file + 7;
+    D_8009D3D0 = area->file + 5;
     D_8009D3C8 = area->file + 6;
-    D_8009BCD8 = area->file + 9;
+    D_8009D800 = area->file + 7;
     D_8009BCC8 = area->file + 8;
+    D_8009BCD8 = area->file + 9;
+    D_8009BD08 = area->file + 10;
     D_8009D160 = area->param2;
     D_8009D2B4 = area->param4;
-    D_8009BD08 = area->file + 10;
     D_8009D7CC = area->param6;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap", func_80071B9C);
-#endif
 
 /* Allocate buffers for each party member's model and gear model, then read
  * them all with one list. */
-#ifdef NON_MATCHING /* second loop's index/pointer registers differ */
 void func_80071CDC(void) {
     s32 i;
     s32 j;
@@ -376,9 +359,9 @@ void func_80071CDC(void) {
         member = D_8006F368[i];
         if (member != 0xFF) {
             D_8009CD34[i] = func_80031BDC(func_800288EC(member + 2), 0);
-            gear = D_8006D940[member].gear;
-            if (gear != 0xFF) {
-                D_8009BDF8[i] = func_80031BDC(func_800288EC(gear + 0x13), 0);
+            j = D_8006D940[member].gear;
+            if (j != 0xFF) {
+                D_8009BDF8[i] = func_80031BDC(func_800288EC(j + 0x13), 0);
             } else {
                 D_8009BDF8[i] = NULL;
             }
@@ -408,9 +391,6 @@ void func_80071CDC(void) {
     D_8009D3F8[i].dest = NULL;
     func_80029AFC(D_8009D3F8, 0, 0);
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap", func_80071CDC);
-#endif
 
 /* Allocate and read the three area files into their resident buffers. */
 void func_80071EF0(void) {

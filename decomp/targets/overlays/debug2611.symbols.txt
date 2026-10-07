@@ -1,0 +1,1 @@
+D_8028007C = 0x8028007C; // size:0xC force_not_migration:True

@@ -12,7 +12,7 @@
 void func_8007E634(MenuFiles *files) {
     TimImage image;
     SceneSprite *banner;
-    s32 unused[2]; /* never used; the original frame keeps its slot */
+    s32 unused[2]; /* unused in the original; reserves 8 bytes */
     s16 *palette;
     s32 i;
 
@@ -99,14 +99,14 @@ void func_8007E954(s32 value) {
     D_800912DC = value;
 }
 
-#ifdef NON_MATCHING
 /* Draw one character at the text cursor (at most 101 quads a frame; '('
  * only advances) and move the cursor right by its scaled width. Declared
  * int without a return value, as the original's unfilled delay slot shows.
- * Does not match: the original loads the glyph width before storing the
- * first vertex, and the texture page/CLUT before the packet length. */
+ * The vertices, UVs and colour word are written through casts of the packet
+ * fields (not struct member stores), so no global load moves above them;
+ * the texture page/CLUT and the length are member stores. */
 s32 func_8007E964(s32 ch) {
-    PolyFT4Words *quad;
+    PolyFT4 *quad;
     Glyph *glyph;
     s32 right;
 
@@ -116,29 +116,26 @@ s32 func_8007E964(s32 ch) {
         glyph = func_8007E8AC(ch);
         if (glyph != NULL) {
             if (ch != '(') {
-                quad->xy0 = D_800926E8 | (D_800926EC << 16);
                 ch = glyph->width | 3; /* the quad width, in the same variable */
+                *(u32 *)&quad->x0 = D_800926E8 | (D_800926EC << 16);
                 right = D_800926E8 + ((ch * D_800912DC) >> 8);
-                quad->xy1 = right | (D_800926EC << 16);
-                quad->xy2 = D_800926E8 | ((D_800926EC + glyph->height) << 16);
-                quad->xy3 = right | ((D_800926EC + glyph->height) << 16);
-                quad->uv0 = glyph->u | (glyph->v << 8);
-                quad->uv1 = (glyph->u + ch) | (glyph->v << 8);
-                quad->uv2 = glyph->u | ((glyph->v + (glyph->height + 1)) << 8);
-                quad->uv3 = (glyph->u + ch) | ((glyph->v + (glyph->height + 1)) << 8);
-                quad->len = 9;
-                quad->rgbc = D_800926F0 | (D_800926F4 << 8) | (D_800926F8 << 16) | 0x2C000000;
+                *(u32 *)&quad->x1 = right | (D_800926EC << 16);
+                *(u32 *)&quad->x2 = D_800926E8 | ((D_800926EC + glyph->height) << 16);
+                *(u32 *)&quad->x3 = right | ((D_800926EC + glyph->height) << 16);
+                *(u16 *)&quad->u0 = glyph->u | (glyph->v << 8);
+                *(u16 *)&quad->u1 = (glyph->u + ch) | (glyph->v << 8);
+                *(u16 *)&quad->u2 = glyph->u | ((glyph->v + (glyph->height + 1)) << 8);
+                *(u16 *)&quad->u3 = (glyph->u + ch) | ((glyph->v + (glyph->height + 1)) << 8);
                 quad->tpage = D_800926E0;
                 quad->clut = D_800926E4;
+                setlen(quad, 9);
+                *(u32 *)&quad->r0 = D_800926F0 | (D_800926F4 << 8) | (D_800926F8 << 16) | 0x2C000000;
                 D_800926DC++;
             }
             D_800926E8 += ((glyph->width * D_800912DC) >> 8) + 2;
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_8007E964);
-#endif
 
 /* Width of a text string in pixels at the current text scale. */
 s32 func_8007EB6C(u8 *text) {
@@ -187,7 +184,7 @@ void func_8007ECF0(u8 *text) {
 
 /* Draw a line of text shifted left by an offset, then move to the next line. */
 void func_8007ED84(u8 *text, s32 offset) {
-    s32 unused[2]; /* never used; the original frame keeps its slot */
+    s32 unused[2]; /* unused in the original; reserves 8 bytes */
     s32 x = D_800926E8;
 
     D_800926E8 = x - offset;
@@ -228,31 +225,26 @@ void func_8007EE68(s32 highlight) {
     D_800926F8 = 0xFF;
 }
 
-#ifdef NON_MATCHING
 /* Build the list of the 49 entries (or, when filtering, of those whose
- * required level the current level reaches) and order it when filtering.
- * Does not match: the source and entry pointers get swapped registers. */
+ * required level the current level reaches) and order it when filtering. */
 void func_8007EEE8(s32 filter) {
     s32 level = D_8006EF64;
     ListEntry **list = func_80031BDC(0xC4, 1);
     MoveList *source;
     s32 i;
 
-    source = D_80092874;
     D_800928EC = list;
+    source = D_80092874;
     D_80092888 = 0;
-    for (i = 0; i < 49; i++, source++) {
+    for (i = 0; i < 49; source++, i++) {
         if (!filter || source->level <= level) {
-            list[D_80092888++] = &D_80091964[i];
+            D_800928EC[D_80092888++] = &D_80091964[i];
         }
     }
     if (filter) {
         func_8008895C();
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_8007EEE8);
-#endif
 
 /* Allocate and lay out the 49 portrait slots: palette rows 511 down and
  * a 7x7 grid of image areas. */
@@ -284,18 +276,18 @@ void func_8007EFB4(void) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Draw the portrait of a list entry (the index wraps around the list) on
  * the left or right side. At fade 64 it is shown full size and unshaded;
- * below, it is shaded and shrunk by fade / 16.
- * Does not match: the vertex arithmetic is scheduled differently. */
+ * below, it is shaded and shrunk by fade / 16, inset from x and grown from
+ * a 0x34 by 0x38 base. */
 void func_8007F05C(s32 index, PolyFT4Words *quad, s32 right_side, s32 x, s32 fade) {
     GridCell *cell;
-    s32 shrink;
+    s32 inset;
     s32 top;
     s32 bottom;
     s32 left;
-    s32 right;
+    s32 width;
+    s32 height;
     s32 u;
 
     if (right_side) {
@@ -309,28 +301,31 @@ void func_8007F05C(s32 index, PolyFT4Words *quad, s32 right_side, s32 x, s32 fad
     if (index < 0) {
         index += D_80092888;
     }
-    cell = &D_8009270C[D_800928EC[index]->id];
+    index = D_800928EC[index]->id;
+    cell = &D_8009270C[index];
     if (fade == 0x40) {
         quad->len = 9;
         ((u8 *)&quad->rgbc)[3] = 0x2D;
         quad->xy0 = x | 0x300000;
-        right = x + 0x3C;
-        quad->xy1 = right | 0x300000;
+        quad->xy1 = (x + 0x3C) | 0x300000;
         quad->xy2 = x | 0x700000;
-        quad->xy3 = right | 0x700000;
+        quad->xy3 = (x + 0x3C) | 0x700000;
     } else {
         fade += 0x40;
-        shrink = (fade - 0x40) >> 4;
         quad->len = 9;
         quad->rgbc = fade | (fade << 8) | (fade << 16) | 0x2C000000;
-        left = x - (shrink - 4);
-        top = 0x34 - shrink;
+        fade -= 0x40;
+        fade >>= 4; /* from here on, how far the portrait shrinks */
+        inset = fade - 4;
+        left = x - inset;
+        top = 0x34 - fade;
         quad->xy0 = left | (top << 16);
-        right = left + 0x34 + shrink * 2;
-        bottom = top + 0x38 + shrink * 2;
-        quad->xy1 = right | (top << 16);
+        width = 0x34;
+        quad->xy1 = (left + width + fade * 2) | (top << 16);
+        height = 0x38;
+        bottom = top + height + fade * 2;
         quad->xy2 = left | (bottom << 16);
-        quad->xy3 = right | (bottom << 16);
+        quad->xy3 = (left + width + fade * 2) | (bottom << 16);
     }
     u = cell->image_x * 2;
     quad->uv0 = u | (cell->image_y << 8);
@@ -341,9 +336,6 @@ void func_8007F05C(s32 index, PolyFT4Words *quad, s32 right_side, s32 x, s32 fad
     quad->tpage = GetTPage(1, 0, cell->image_x & 0xFF80, cell->image_y);
     AddPrim(D_80092938, quad);
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_8007F05C);
-#endif
 
 /* Draw the two-player selection: each side's pick, sliding in from its
  * previous one (the long way round wraps), with its neighbours when the
@@ -427,26 +419,21 @@ void func_8007F834(void) {
     D_80092744 = 0;
 }
 
-#ifdef NON_MATCHING
-/* Leave the settings screen: camera mode 1 and flags 0xc on both actors.
- * Does not match: the original addresses both flag words through two
- * address registers in the opposite register order. */
+/* Leave the settings screen: camera mode 1, and both actors' previous
+ * stance effect state (unkD4 bits 2-3) set to 3. */
 void func_8007F854(void) {
-    s32 unused[2]; /* never used; the original frame keeps its slot */
+    s32 unused[2]; /* unused in the original; reserves 8 bytes */
 
     D_800912F0 = 1;
     func_80083C0C(1);
     D_80092734 = (Menu *)NULL;
     func_8007F834();
-    D_8009872C.unkD4 |= 0xC;
-    D_80097010.unkD4 |= 0xC;
+    ACTOR_STANCE_BITS(&D_8009872C)->prev_stance = 3;
+    ACTOR_STANCE_BITS(&D_80097010)->prev_stance = 3;
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_8007F854);
-#endif
 
 void func_8007F8B4(void) {
-    s32 unused[2]; /* never used; the original frame keeps its slot */
+    s32 unused[2]; /* unused in the original; reserves 8 bytes */
 
     func_80083C0C(1);
     D_80092734 = (Menu *)NULL;
@@ -529,7 +516,7 @@ INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu4", D_8006FF7C);
 void func_8007FBEC(void) {
     MenuPage *page;
     s32 active;
-    s32 unused[2]; /* never used; the original frame keeps its slot */
+    s32 unused[2]; /* unused in the original; reserves 8 bytes */
 
     func_8007E894(0xA0, 0x8C);
     active = D_80092710 ^ 1;
@@ -1245,17 +1232,16 @@ stick_done:
 
 INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu4", D_8007008C);
 
-#ifdef NON_MATCHING
 /* The controller menu pair (menus 5 and 6) for the current mode: run the
  * menu of the available port (both in mode 2, where an unavailable port's
  * menu returns to menu 5 instead of 4), note when neither port is
- * available, set which sides the pads drive, then draw. Does not match:
- * the original rereads D_80092710 after each store, does not keep menu 5's
- * address in a register, and cross-jumps less. */
+ * available, set which sides the pads drive, then draw. Mode 5 runs menu
+ * 5 for port 1 without resetting D_80092754 and steps the second side's
+ * pick for port 2. */
 void func_80081A44(void) {
     switch (D_800928C8) {
     case 1:
-        switch (D_80092710) {
+        switch ((s32)D_80092710) {
         case 0:
             D_80092754 = 0;
             func_8008162C(&D_800915AC[5], 0);
@@ -1273,8 +1259,16 @@ void func_80081A44(void) {
         break;
     case 2:
         D_80092754 = 1;
-        D_800915AC[5].parent = (D_80092710 & 1) ? 5 : 4;
-        D_800915AC[6].parent = (D_80092710 & 2) ? 5 : 4;
+        if (D_80092710 & 1) {
+            D_800915AC[5].parent = 5;
+        } else {
+            D_800915AC[5].parent = 4;
+        }
+        if (D_80092710 & 2) {
+            D_800915AC[6].parent = 5;
+        } else {
+            D_800915AC[6].parent = 4;
+        }
         func_8008162C(&D_800915AC[5], 0);
         func_8008162C(&D_800915AC[6], 1);
         if (D_80092710 == 3) {
@@ -1284,7 +1278,7 @@ void func_80081A44(void) {
         D_80099D9E = 0;
         break;
     case 3:
-        switch (D_80092710) {
+        switch ((s32)D_80092710) {
         case 0:
             D_80092754 = 0;
             func_8008162C(&D_800915AC[5], 0);
@@ -1301,7 +1295,7 @@ void func_80081A44(void) {
         D_80099D9E = 1;
         break;
     case 4:
-        switch (D_80092710) {
+        switch ((s32)D_80092710) {
         case 0:
             D_80092754 = 0;
             func_8008162C(&D_800915AC[5], 0);
@@ -1318,9 +1312,8 @@ void func_80081A44(void) {
         D_80099D9E = 1;
         break;
     case 5:
-        switch (D_80092710) {
+        switch ((s32)D_80092710) {
         case 0:
-            D_80092754 = 0;
             func_8008162C(&D_800915AC[5], 0);
             break;
         case 1:
@@ -1346,15 +1339,11 @@ void func_80081A44(void) {
     }
     func_8007FBEC();
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_80081A44);
-#endif
 
 /* One frame of the menu layer: pending refresh, the shown menu's input
  * (with the extra-speed button) and its drawing. */
-/* NON_MATCHING: the compiled frame is 0x18; the original reserves 0x20. */
-#ifdef NON_MATCHING
 void func_80081D2C(void) {
+    s32 unused[2]; /* unused in the original; reserves 8 bytes */
     Menu *menu;
 
     if (D_8009275C != 0) {
@@ -1376,10 +1365,6 @@ void func_80081D2C(void) {
     }
     func_8008151C(D_80092734);
 }
-
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_80081D2C);
-#endif
 
 /* Dim the screen below the top band with the half-grey fade tiles. */
 void func_80081E00(void) {
@@ -1463,13 +1448,10 @@ void func_80081ECC(void) {
     func_80087830();
 }
 
-/* Draw the large direction arrow at a map position (8.8 fixed point). Does not match:
- * the start point is stored and re-read from the stack, and s5/s6 are swapped. */
-#ifdef NON_MATCHING
+/* Draw the large direction arrow at a map position (8.8 fixed point). */
 void func_80082178(s32 x, s32 z, s32 direction) {
-    Vector start;
-    s32 centre_x;
-    s32 centre_z;
+    s32 start_x;
+    s32 start_z;
     s32 last_x;
     s32 last_z;
     s32 next_x;
@@ -1477,35 +1459,29 @@ void func_80082178(s32 x, s32 z, s32 direction) {
     s32 angle;
     s32 i;
 
-    centre_x = x >> 8;
-    centre_z = z >> 8;
-    last_x = start.vx = centre_x + ((func_8003F8B0(direction + 0x280) * 10) >> 12);
-    last_z = start.vz = centre_z + ((func_8003F8CC(direction + 0x280) * 10) >> 12);
+    x >>= 8;
+    z >>= 8;
+    last_x = start_x = x + ((func_8003F8B0(direction + 0x280) * 10) >> 12);
+    last_z = start_z = z + ((func_8003F8CC(direction + 0x280) * 10) >> 12);
     angle = direction + 0x580;
     for (i = 0; i < 6; i++) {
-        next_x = centre_x + ((func_8003F8B0(angle) * 24) >> 12);
-        next_z = centre_z + ((func_8003F8CC(angle) * 24) >> 12);
+        next_x = x + ((func_8003F8B0(angle) * 24) >> 12);
+        next_z = z + ((func_8003F8CC(angle) * 24) >> 12);
         func_80087698(last_x, last_z, next_x, next_z);
         last_x = next_x;
         last_z = next_z;
         angle += 0x100;
     }
-    next_x = centre_x + ((func_8003F8B0(direction - 0x280) * 10) >> 12);
-    next_z = centre_z + ((func_8003F8CC(direction - 0x280) * 10) >> 12);
+    next_x = x + ((func_8003F8B0(direction - 0x280) * 10) >> 12);
+    next_z = z + ((func_8003F8CC(direction - 0x280) * 10) >> 12);
     func_80087698(last_x, last_z, next_x, next_z);
-    func_80087698(start.vx, start.vz, next_x, next_z);
+    func_80087698(start_x, start_z, next_x, next_z);
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_80082178);
-#endif
 
-/* Draw the small direction arrow at a map position (8.8 fixed point). Does not match:
- * the start point is stored and re-read from the stack, and s5/s6 are swapped. */
-#ifdef NON_MATCHING
+/* Draw the small direction arrow at a map position (8.8 fixed point). */
 void func_80082300(s32 x, s32 z, s32 direction) {
-    Vector start;
-    s32 centre_x;
-    s32 centre_z;
+    s32 start_x;
+    s32 start_z;
     s32 last_x;
     s32 last_z;
     s32 next_x;
@@ -1513,27 +1489,24 @@ void func_80082300(s32 x, s32 z, s32 direction) {
     s32 angle;
     s32 i;
 
-    centre_x = x >> 8;
-    centre_z = z >> 8;
-    last_x = start.vx = centre_x + ((func_8003F8B0(direction + 0x100) * 16) >> 12);
-    last_z = start.vz = centre_z + ((func_8003F8CC(direction + 0x100) * 16) >> 12);
+    x >>= 8;
+    z >>= 8;
+    last_x = start_x = x + ((func_8003F8B0(direction + 0x100) * 16) >> 12);
+    last_z = start_z = z + ((func_8003F8CC(direction + 0x100) * 16) >> 12);
     angle = direction + 0x78A;
     for (i = 0; i < 3; i++) {
-        next_x = centre_x + ((func_8003F8B0(angle) * 32) >> 12);
-        next_z = centre_z + ((func_8003F8CC(angle) * 32) >> 12);
+        next_x = x + ((func_8003F8B0(angle) * 32) >> 12);
+        next_z = z + ((func_8003F8CC(angle) * 32) >> 12);
         func_80087698(last_x, last_z, next_x, next_z);
         last_x = next_x;
         last_z = next_z;
         angle += 0x75;
     }
-    next_x = centre_x + ((func_8003F8B0(direction - 0x100) * 16) >> 12);
-    next_z = centre_z + ((func_8003F8CC(direction - 0x100) * 16) >> 12);
+    next_x = x + ((func_8003F8B0(direction - 0x100) * 16) >> 12);
+    next_z = z + ((func_8003F8CC(direction - 0x100) * 16) >> 12);
     func_80087698(last_x, last_z, next_x, next_z);
-    func_80087698(start.vx, start.vz, next_x, next_z);
+    func_80087698(start_x, start_z, next_x, next_z);
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_80082300);
-#endif
 
 /* Copy the stored map position. */
 void func_80082458(SVector *out) {
@@ -1794,11 +1767,10 @@ void func_80082C4C(StageFiles *files) {
     func_800732AC(D_80092788[1], D_80092788[0], 0xA00);
 }
 
-#ifdef NON_MATCHING
 /* Draw the arena wall: a ring of 32 two-storey textured segments around
  * the scene centre, starting behind the given position, depth-cued and
- * skipped when too far away.
- * Does not match: GCC folds the camera offset into x + 0x3f80 - camera, the original keeps the output table in $fp and addresses the packet bytes from quad + 0x2f. */
+ * skipped when too far away. The wall's corners are taken relative to the
+ * camera as 16-bit offsets. */
 void func_80082E60(u32 *ot, Vector *pos) {
     Vector centre;
     SVector base0;
@@ -1809,27 +1781,29 @@ void func_80082E60(u32 *ot, Vector *pos) {
     SVector top1;
     s32 z[4];
     PolyFT4 *quad;
+    PolyFT4 *next;
     s32 angle;
     s32 depth;
     s32 i;
 
     centre = *pos;
     i = 0;
-    centre.vx -= 0x3F80;
     quad = D_80092788[D_800928A0];
+    centre.vx -= 0x3F80;
     centre.vz -= 0x3F80;
-    angle = (ratan2(centre.vx, centre.vz) & 0xFFF0) - 0x100;
-    mid1.vy = mid0.vy = -0x290;
-    base1.vy = base0.vy = 0;
-    top1.vy = top0.vy = -0x520;
-    base0.vx = ((func_8003F8B0(angle) * 0x3F80) >> 12) - (D_80096FA8.vx - 0x3F80);
-    base0.vz = ((func_8003F8CC(angle) * 0x3F80) >> 12) - (D_80096FA8.vz - 0x3F80);
+    angle = ratan2(centre.vx, centre.vz) & 0xFFF0;
+    angle -= 0x100;
+    mid0.vy = mid1.vy = -0x290;
+    base0.vy = base1.vy = 0;
+    top0.vy = top1.vy = -0x520;
+    base0.vx = ((func_8003F8B0(angle) * 0x3F80) >> 12) - (s16)(D_80096FA8.vx - 0x3F80);
+    base0.vz = ((func_8003F8CC(angle) * 0x3F80) >> 12) - (s16)(D_80096FA8.vz - 0x3F80);
     angle += 0x10;
     for (; i < 32; i++) {
         top0.vx = mid0.vx = base0.vx;
         top0.vz = mid0.vz = base0.vz;
-        top1.vx = mid1.vx = base1.vx = ((func_8003F8B0(angle) * 0x3F80) >> 12) - (D_80096FA8.vx - 0x3F80);
-        top1.vz = mid1.vz = base1.vz = ((func_8003F8CC(angle) * 0x3F80) >> 12) - (D_80096FA8.vz - 0x3F80);
+        top1.vx = mid1.vx = base1.vx = ((func_8003F8B0(angle) * 0x3F80) >> 12) - (s16)(D_80096FA8.vx - 0x3F80);
+        top1.vz = mid1.vz = base1.vz = ((func_8003F8CC(angle) * 0x3F80) >> 12) - (s16)(D_80096FA8.vz - 0x3F80);
         gte_ldv3(&base0, &base1, &mid0);
         gte_rtpt();
         gte_dpcs();
@@ -1837,6 +1811,7 @@ void func_80082E60(u32 *ot, Vector *pos) {
         gte_stsz3v(&z[0], &z[1], &z[2]);
         gte_ldv3(&mid1, &top0, &top1);
         gte_rtpt();
+        next = &quad[1];
         depth = z[0];
         if (depth < z[1]) {
             depth = z[1];
@@ -1844,24 +1819,24 @@ void func_80082E60(u32 *ot, Vector *pos) {
         if (depth <= z[2]) {
             depth = z[2];
         }
-        *(u32 *)&quad[1].x0 = *(u32 *)&quad[0].x2;
+        *(u32 *)&next->x0 = *(u32 *)&quad[0].x2;
         gte_stsxy(&quad[0].x3);
-        gte_stsxy3(&quad[0].x3, &quad[1].x2, &quad[1].x3);
+        gte_stsxy3(&quad[0].x3, &next->x2, &next->x3);
         gte_stsz(&z[3]);
-        *(u32 *)&quad[1].x1 = *(u32 *)&quad[0].x3;
+        *(u32 *)&next->x1 = *(u32 *)&quad[0].x3;
         if (depth <= z[3]) {
             depth = z[3];
         }
         if (depth < 0x1C00) {
-            gte_strgb(&quad[0].r0);
-            gte_strgb(&quad[1].r0);
             depth >>= 4;
+            gte_strgb(&quad[0].r0);
+            gte_strgb(&next->r0);
             ((PacketTag *)&quad[0])->len = 9;
             quad[0].code = 0x2C;
-            ((PacketTag *)&quad[1])->len = 9;
-            quad[1].code = 0x2C;
+            ((PacketTag *)next)->len = 9;
+            next->code = 0x2C;
             AddPrim(&ot[depth], &quad[0]);
-            AddPrim(&ot[depth], &quad[1]);
+            AddPrim(&ot[depth], next);
         }
         quad += 2;
         angle += 0x10;
@@ -1869,9 +1844,6 @@ void func_80082E60(u32 *ot, Vector *pos) {
         base0.vz = base1.vz;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_80082E60);
-#endif
 
 /* Put the look-at point somewhere random around the scene centre and set
  * the idle camera motion parameters. */

@@ -16,8 +16,8 @@ void func_801E62E0(u8 *data) {
  * first image column, then 12-byte entries. The data after the table is
  * copied; sprite entries upload their image list (or reuse an earlier one)
  * and fill their slot's row; model entries place the model on every enemy
- * slot of their type, and of later model entries sharing their data. */
-#ifdef NON_MATCHING
+ * slot of their type, and of later model entries sharing their data.
+ * The placement mode reuses j (its unknown bits keep the andi 0xffff). */
 void func_801E6314(u8 *data) {
     s32 count;
     s32 k;
@@ -26,13 +26,14 @@ void func_801E6314(u8 *data) {
     u8 *base;
     s16 columns[16];
     s32 types[SLOT_COUNT];
+    SVECTOR unused; /* unused in the original; reserves 8 bytes */
     EnemyEntry *entry;
     EnemyEntry *other;
     s32 table;
     s32 j, s, i;
     s32 column;
     u32 index;
-    s32 type, same, placed, mode;
+    s32 type, same, placed;
     s32 enemy;
 
     images = 0;
@@ -56,12 +57,11 @@ void func_801E6314(u8 *data) {
                  * original). */
                 continue;
             }
-            column += 0x40;
-            same = 0;
             type = slot - 3;
             D_800C3EB0.rows[slot].data = NULL;
-            for (i = 3; i != SLOT_COUNT; i++) {
-                if (type == types[i]) {
+            column += 0x40;
+            for (j = 3, same = 0; j != SLOT_COUNT; j++) {
+                if (type == types[j]) {
                     same++;
                 }
             }
@@ -77,25 +77,27 @@ void func_801E6314(u8 *data) {
                 }
             }
             for (s = 3; s != SLOT_COUNT; s++) {
-                if (types[s] < 8 && types[s] == type && s != 0) {
-                    enemy = s;
-                    mode = (same >= 2) ? 2 : 0;
+                if (types[s] < 8 && types[s] == type && (enemy = s) != 0) {
+                    j = (same >= 2) ? 2 : 0;
                     if (placed != 0) {
-                        mode = 7;
+                        j = 7;
                         if (same == placed + 1) {
-                            mode = 5;
+                            j = 5;
                         }
                     }
-                    func_800A8BF0(enemy, (u16)(mode | 0x80), (u8 *)(entry->offset + (s32)base),
+                    j |= 0x80;
+                    func_800A8BF0(enemy, (u16)j, (u8 *)(entry->offset + (s32)base),
                                   (u8 *)(entry->images + (s32)data), (s16)(column - 0x40), 0x100, 0,
-                                  (s16)(enemy - (s16)(placed++ - 0x1C0)), 0);
+                                  (s16)(enemy - (s16)(placed - 0x1C0)), 0);
+                    placed++;
                     func_800BB350(enemy);
                 }
             }
         } else {
-            index = entry->images;
-            if (index >= 8) {
-                func_80022A70((u8 *)(index + (s32)data), column, 0x100);
+            if (entry->images < 8) {
+                index = entry->images;
+            } else {
+                func_80022A70((u8 *)(entry->images + (s32)data), column, 0x100);
                 index = images;
                 columns[images++] = column;
                 column += func_80022A00((u8 *)(entry->images + (s32)data)) << 6;
@@ -103,8 +105,8 @@ void func_801E6314(u8 *data) {
                     column = 0;
                 }
             }
-            D_800C3EB0.rows[slot].y = 0x100;
             D_800C3EB0.rows[slot].data = (u8 *)(entry->offset + (s32)base);
+            D_800C3EB0.rows[slot].y = 0x100;
             D_800C3EB0.rows[slot].x = columns[index];
             D_800C3EB0.rows[slot].variant = entry->variant;
         }
@@ -112,9 +114,6 @@ void func_801E6314(u8 *data) {
         slot++;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/battle_loader", func_801E6314);
-#endif
 
 /* Each enemy slot's sprite from its type's row, when that row has data
  * (`data`, the enemy set file, is passed but unused). */

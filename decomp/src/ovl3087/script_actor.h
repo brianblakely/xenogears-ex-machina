@@ -54,13 +54,6 @@ typedef struct BattleModel {
     BattleActor body; /* 0x38 */
 } BattleModel;
 
-/* The battle work area at 800c3eb0; the actor table is at 0x8c8c. */
-typedef struct {
-    u8 pad0[0x8C8C];
-    BattleActor *actors[16];
-} BattleWork;
-extern BattleWork D_800C3EB0;
-
 /* The actor chosen by the attack target search (800bdeb4). */
 typedef struct {
     BattleActor *target;

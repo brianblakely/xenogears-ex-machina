@@ -18,6 +18,7 @@
 #include "glyph_lists.h"
 #include "item_command.h"
 #include "result_input.h"
+#include "area.h"
 
 /* Byte attribute `attribute` (0-23) of combatant `slot`: store `value` when
  * `read` is 0, else return it. */
@@ -2269,11 +2270,13 @@ void func_8007FEC4(void) {
     D_800D2DB4->lineY = 0x64;
 }
 
+/* The digit strings of a turn slot as one byte run (TurnSlot.digits),
+ * addressed by shifting the slot index (slots are 0x40 bytes). */
+#define SLOT_DIGITS(m) ((u8 *)D_800C3EAC + ((m) << 6) + 8)
+
 /* Build the member's number strings 2-4 (glyphs 0x83 + digit, no leading
  * zeros) from 800d2c0c, set up the list block and, unless the member is
- * character 7, the menu lists; then show them.
- * Nonmatching: the original walks the values with a pointer and keeps k. */
-#ifdef NON_MATCHING
+ * character 7, the menu lists; then show them. */
 void func_8007FF14(u8 member) {
     s32 k;
     s32 n;
@@ -2282,23 +2285,23 @@ void func_8007FF14(u8 member) {
 
     func_8009A2D4(member);
     for (k = 2; k < 5; k++) {
-        value = D_800D2C0C[k - 2][0];
-        D_800C3EAC->slots[member].digits[k][0] = 0xFF;
-        D_800C3EAC->slots[member].digits[k][1] = 0xFF;
-        D_800C3EAC->slots[member].digits[k][2] = 0xFF;
+        value = *D_800D2C0C[k - 2];
+        SLOT_DIGITS(member)[k * 4] = 0xFF;
+        SLOT_DIGITS(member)[k * 4 + 1] = 0xFF;
+        SLOT_DIGITS(member)[k * 4 + 2] = 0xFF;
         n = 0;
         digit = value / 100;
         if (digit != 0) {
             value -= digit * 100;
             n = 1;
-            D_800C3EAC->slots[member].digits[k][0] = digit + 0x83;
+            SLOT_DIGITS(member)[k * 4] = digit + 0x83;
         }
         digit = value / 10;
         if (digit != 0 || n != 0) {
             value -= digit * 10;
-            D_800C3EAC->slots[member].digits[k][n++] = digit + 0x83;
+            SLOT_DIGITS(member)[k * 4 + n++] = digit + 0x83;
         }
-        D_800C3EAC->slots[member].digits[k][n] = value + 0x83;
+        SLOT_DIGITS(member)[k * 4 + n] = value + 0x83;
     }
     func_8007FEC4();
     if (D_800D2D24[member] != 7) {
@@ -2310,9 +2313,6 @@ void func_8007FF14(u8 member) {
         D_800D2D28->unkC7 = 1;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80079ED8", func_8007FF14);
-#endif
 
 /* Leave a member's menu: clear UI +0xad, +0xc7, +0xa8, turn a 2 at 800d32a1
  * into 1 and release *800d2db4. */

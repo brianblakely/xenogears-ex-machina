@@ -147,11 +147,16 @@ Burst *func_801FC470(void) {
  * 320x224 grid (textured from the copy at 0x2c0,0x100), each corner's
  * distance from the centre (variant 1: twice it; otherwise 3/5 of it). */
 #ifdef NON_MATCHING
-/* Same operations; the original keeps v (row * 16) apart and computes the
- * second triangle's (v - 101) * 16 per column, steps both column x offsets
- * (col * 256 - 0x9b0 / - 0x950) as spilled induction variables and needs a
- * 0x78-byte frame; here GCC folds (v - 101) * 16 into a row induction
- * variable and allocates a 0x68-byte frame. */
+/* Same operations. v = row * 16 is written in the column loop so loop.c
+ * hoists it to the row body instead of making it a row induction variable
+ * (the original recomputes it from the row counter), and the shading bytes
+ * are stored r, g, b in order. Remaining: the original also hoists the
+ * second triangle's (v - 101) * 16 to the column body (s3) and copies the
+ * column offsets (col * 16 - 155/149) * 16 into a frame slot and s4 before
+ * the corner loop; here (v - 101) * 16 stays in the corner loop's second arm
+ * (8 bytes shorter) and the k/u/u_right/v_bottom registers rotate. Writing
+ * the four offsets as row/column variables loses the column induction
+ * variables altogether. */
 Burst *func_801FC4A8(Burst *burst) {
     BurstCell *cell;
     SVECTOR *triangle;
@@ -181,24 +186,20 @@ Burst *func_801FC4A8(Burst *burst) {
     burst->rot.vz = 0;
     for (half = 0; half != 2; half++) {
         for (row = 0; row != 14; row++) {
-            v = row * 16;
             for (col = 0; col != 20; col++) {
+                v = row * 16;
                 cell = &burst->cells[half][row][col];
                 triangle = half == 0 ? D_801FCE18 : D_801FCE30;
                 for (k = 0; k != 3; k++) {
-                    cell->corner[k].vx = triangle[k].vx;
-                    cell->corner[k].vy = triangle[k].vy;
-                    cell->corner[k].vz = triangle[k].vz;
+                    copyVector(&cell->corner[k], &triangle[k]);
                     if (half == 0) {
-                        cell->corner[k].vx += col * 0x100 - 0x9B0;
-                        cell->corner[k].vy += row * 0x100 - 0x6B0;
+                        cell->corner[k].vx += (col * 16 - 155) * 16;
+                        cell->corner[k].vy += (row * 16 - 107) * 16;
                     } else {
-                        cell->corner[k].vx += col * 0x100 - 0x950;
+                        cell->corner[k].vx += (col * 16 - 149) * 16;
                         cell->corner[k].vy += (v - 101) * 16;
                     }
-                    square.vx = cell->corner[k].vx;
-                    square.vy = cell->corner[k].vy;
-                    square.vz = cell->corner[k].vz;
+                    copyVector(&square, &cell->corner[k]);
                     func_8004A414(&square, &square);
                     if (D_801FCE14 != 0) {
                         cell->distance[k] = SquareRoot0(square.vx + square.vy) * 2;
@@ -210,9 +211,15 @@ Burst *func_801FC4A8(Burst *burst) {
                     prim = &cell->prim[k];
                     SetPolyGT3(prim);
                     SetShadeTex(prim, 0);
-                    prim->r0 = prim->g0 = prim->b0 = 0x80;
-                    prim->r1 = prim->g1 = prim->b1 = 0x80;
-                    prim->r2 = prim->g2 = prim->b2 = 0x80;
+                    prim->r0 = 0x80;
+                    prim->g0 = 0x80;
+                    prim->b0 = 0x80;
+                    prim->r1 = 0x80;
+                    prim->g1 = 0x80;
+                    prim->b1 = 0x80;
+                    prim->r2 = 0x80;
+                    prim->g2 = 0x80;
+                    prim->b2 = 0x80;
                     prim->code |= 2;
                     prim->tpage = GetTPage(2, 0, col * 16 + 0x2C0, 0x100);
                     u = (col * 16) & 0x3F;
@@ -261,37 +268,43 @@ void func_801FC898(void) {
  * background, run and draw the effect in both display buffers while the
  * background colour fades, then restore the pages, clear the screen and the
  * background colour. */
-#ifdef NON_MATCHING
-/* Same operations; the original's 0x58-byte frame keeps the saved background
- * colour bytes at sp+0x10 and the page copies at sp+0x1c/0x20 below the RECT
- * at sp+0x28 (no fp) and walks the screen copy with a pointer beside the
- * counter; here they live in registers or spill slots above the RECT
- * (0x48-byte frame). */
 void func_801FC8F4(void) {
+    /* What the effect overwrites and restores afterwards: the background
+     * colour and the two texture pages. */
+    struct {
+        u8 colour[3];
+        s32 unused[2]; /* unused in the original; reserves 8 bytes */
+        u8 *pages[2];
+    } saved;
     RECT rect;
-    u8 *pages0, *pages1;
     u16 *screen;
+    u16 *p;
     DrawBuffer *next;
     POLY_F4 *prim;
     Burst *burst;
-    u8 isbg, r, g, b;
+    BattleWork *work;
+    DrawBuffer *buffers;
+    DrawBuffer *shown;
+    DrawBuffer *back;
+    u8 isbg;
     s32 frames = 0xA4;
     s32 i;
 
-    pages0 = func_80031BDC(0x8000, 1);
-    pages1 = func_80031BDC(0x8000, 1);
+    saved.pages[0] = func_80031BDC(0x8000, 1);
+    saved.pages[1] = func_80031BDC(0x8000, 1);
     rect.x = D_800C3668.x0;
     rect.y = D_800C3668.y0;
     rect.w = 0x40;
     rect.h = 0x100;
-    StoreImage(&rect, pages0);
+    StoreImage(&rect, saved.pages[0]);
     rect.x = D_800C3668.x1;
     rect.y = D_800C3668.y1;
     rect.w = 0x40;
     rect.h = 0x100;
-    StoreImage(&rect, pages1);
+    StoreImage(&rect, saved.pages[1]);
     DrawSync(0);
     screen = func_80031BDC(0x30000, 1);
+    p = screen;
     rect.x = 0;
     rect.y = 0;
     rect.w = 0x140;
@@ -299,7 +312,7 @@ void func_801FC8F4(void) {
     StoreImage(&rect, screen);
     DrawSync(0);
     for (i = 0; i != 0x14000; i++) {
-        screen[i] |= 0x8000;
+        *p++ |= 0x8000;
     }
     rect.x = 0x2C0;
     rect.y = 0x100;
@@ -308,27 +321,30 @@ void func_801FC8F4(void) {
     LoadImage(&rect, screen);
     DrawSync(0);
     func_800320E8(screen);
-    next = &D_800C3EB0.buffers[0];
-    if (D_800C3EB0.current == next) {
-        next = &D_800C3EB0.buffers[1];
+    work = &D_800C3EB0;
+    back = &work->buffers[0];
+    shown = work->current;
+    buffers = back;
+    if (shown == buffers) {
+        back = &buffers[1];
     }
-    D_800C3EB0.current = next;
-    D_800C3EB0.ot = next->ot;
-    ClearOTagR(next->ot, 0x1000);
-    r = D_800C3EB0.buffers[1].draw.r0;
-    g = D_800C3EB0.buffers[1].draw.g0;
-    b = D_800C3EB0.buffers[1].draw.b0;
-    isbg = D_800C3EB0.buffers[0].draw.isbg;
-    D_800C3EB0.buffer = 0;
-    D_800C3EB0.current = &D_800C3EB0.buffers[0];
-    D_800C3EB0.buffers[0].draw.isbg = 0;
-    D_800C3EB0.buffers[1].draw.isbg = 0;
-    D_800C3EB0.buffers[0].draw.r0 = 0;
-    D_800C3EB0.buffers[1].draw.r0 = 0;
-    D_800C3EB0.buffers[0].draw.g0 = 0;
-    D_800C3EB0.buffers[1].draw.g0 = 0;
-    D_800C3EB0.buffers[0].draw.b0 = 0;
-    D_800C3EB0.buffers[1].draw.b0 = 0;
+    work->current = back;
+    work->ot = back->ot;
+    ClearOTagR(back->ot, 0x1000);
+    saved.colour[0] = work->buffers[1].draw.r0;
+    saved.colour[1] = work->buffers[1].draw.g0;
+    saved.colour[2] = work->buffers[1].draw.b0;
+    isbg = work->buffers[0].draw.isbg;
+    work->buffer = 0;
+    work->current = &buffers[0];
+    work->buffers[0].draw.isbg = 0;
+    work->buffers[1].draw.isbg = 0;
+    work->buffers[0].draw.r0 = 0;
+    work->buffers[1].draw.r0 = 0;
+    work->buffers[0].draw.g0 = 0;
+    work->buffers[1].draw.g0 = 0;
+    work->buffers[0].draw.b0 = 0;
+    work->buffers[1].draw.b0 = 0;
     burst = func_801FC470();
     while (frames != 0) {
         if (frames > 0) {
@@ -366,14 +382,14 @@ void func_801FC8F4(void) {
     rect.y = D_800C3668.y0;
     rect.w = 0x40;
     rect.h = 0x100;
-    LoadImage(&rect, pages0);
+    LoadImage(&rect, saved.pages[0]);
     rect.x = D_800C3668.x1;
     rect.y = D_800C3668.y1;
     rect.w = 0x40;
     rect.h = 0x100;
-    LoadImage(&rect, pages1);
-    func_800320E8(pages0);
-    func_800320E8(pages1);
+    LoadImage(&rect, saved.pages[1]);
+    func_800320E8(saved.pages[0]);
+    func_800320E8(saved.pages[1]);
     DrawSync(0);
     rect.x = 0;
     rect.y = 0;
@@ -399,14 +415,11 @@ void func_801FC8F4(void) {
     AddPrim(&D_800C3EB0.ot[0xFFE], prim);
     D_800C3EB0.buffers[1].draw.isbg = isbg;
     D_800C3EB0.buffers[0].draw.isbg = isbg;
-    D_800C3EB0.buffers[1].draw.r0 = r;
-    D_800C3EB0.buffers[0].draw.r0 = r;
-    D_800C3EB0.buffers[1].draw.g0 = g;
-    D_800C3EB0.buffers[0].draw.g0 = g;
-    D_800C3EB0.buffers[1].draw.b0 = b;
-    D_800C3EB0.buffers[0].draw.b0 = b;
+    D_800C3EB0.buffers[1].draw.r0 = saved.colour[0];
+    D_800C3EB0.buffers[0].draw.r0 = saved.colour[0];
+    D_800C3EB0.buffers[1].draw.g0 = saved.colour[1];
+    D_800C3EB0.buffers[0].draw.g0 = saved.colour[1];
+    D_800C3EB0.buffers[1].draw.b0 = saved.colour[2];
+    D_800C3EB0.buffers[0].draw.b0 = saved.colour[2];
     func_801FC400(burst);
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3387/asm/nonmatchings/ovl3387", func_801FC8F4);
-#endif

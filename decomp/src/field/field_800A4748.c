@@ -54,16 +54,20 @@ void func_800A47D4(void) {
     }
 }
 
-#ifdef NON_MATCHING
+/* Start the screen distortion: on first use allocate its buffers, build the
+ * 20x17 grid of 16x16 textured quads (rows 14-16 sample the saved strips at
+ * (3c0, 0)) and the screen/strip copy commands; unless resuming, read the
+ * six targets and the step count from the operands. The strip loop reuses
+ * the row counter and reads the strip x through a pointer to the table
+ * (its own induction pointer; y is read from the table). */
 void func_800A484C(s32 resume) {
     RECT rect;
     s32 row;
     s32 column;
-    s32 i;
     POLY_FT4 *poly;
+    DVECTOR *strips;
     POLY_FT4 *copy;
     s32 u;
-    s32 v;
 
     D_800B2078.unk2078 = 1;
     if (D_800ADB24 == 0) {
@@ -74,8 +78,8 @@ void func_800A484C(s32 resume) {
         D_800ADB24 = 1;
         for (row = 0; row < 17; row++) {
             for (column = 0; column < 20; column++) {
-                poly = (POLY_FT4 *)D_800B2078.effect_buffers[2] + row * 20 + column;
-                copy = (POLY_FT4 *)D_800B2078.effect_buffers[3] + row * 20 + column;
+                poly = (POLY_FT4 *)D_800B2078.effect_buffers[2] + (column + row * 20);
+                copy = (POLY_FT4 *)D_800B2078.effect_buffers[3] + (column + row * 20);
                 SetPolyFT4(poly);
                 SetSemiTrans(poly, 0);
                 poly->r0 = 0x80;
@@ -91,26 +95,24 @@ void func_800A484C(s32 resume) {
                 poly->y3 = row * 16 + 16;
                 if (row >= 14) {
                     u = (column * 16) & 0x3F;
-                    v = (column >> 2) * 16 + (row - 14) * 80;
                     poly->u0 = u;
-                    poly->v0 = v;
+                    poly->v0 = (column >> 2) * 16 + (row - 14) * 80;
                     poly->u1 = u + 16;
-                    poly->v1 = v;
+                    poly->v1 = (column >> 2) * 16 + (row - 14) * 80;
                     poly->u2 = u;
-                    poly->v2 = v + 16;
+                    poly->v2 = (column >> 2) * 16 + ((row - 14) * 80 + 16);
                     poly->u3 = u + 16;
-                    poly->v3 = v + 16;
+                    poly->v3 = (column >> 2) * 16 + ((row - 14) * 80 + 16);
                     poly->tpage = GetTPage(2, 0, 0x3C0, 0);
                     *copy = *poly;
                 } else {
-                    u = (column * 16) & 0x3F;
-                    poly->u0 = u;
+                    poly->u0 = (column * 16) & 0x3F;
                     poly->v0 = row * 16;
-                    poly->u1 = u + 16;
+                    poly->u1 = ((column * 16) & 0x3F) + 16;
                     poly->v1 = row * 16;
-                    poly->u2 = u;
+                    poly->u2 = (column * 16) & 0x3F;
                     poly->v2 = row * 16 + 16;
-                    poly->u3 = u + 16;
+                    poly->u3 = ((column * 16) & 0x3F) + 16;
                     poly->v3 = row * 16 + 16;
                     poly->tpage = GetTPage(2, 0, (column * 16) & 0xFFC0, 0);
                     *copy = *poly;
@@ -127,12 +129,13 @@ void func_800A484C(s32 resume) {
         SetDrawMove(D_800B2078.effect_buffers[1], &rect, 0, 0x100);
         rect.w = 0x40;
         rect.h = 0x10;
-        for (i = 0; i < 15; i++) {
-            rect.x = D_800AEB24[i].x;
-            rect.y = D_800AEB24[i].y;
-            SetDrawMove((DR_MOVE *)D_800B2078.effect_buffers[0] + i + 1, &rect, 0x3C0, i * 16);
-            rect.y = D_800AEB24[i].y + 0x100;
-            SetDrawMove((DR_MOVE *)D_800B2078.effect_buffers[1] + i + 1, &rect, 0x3C0, i * 16);
+        strips = D_800AEB24;
+        for (row = 0; row < 15; row++) {
+            rect.x = strips[row].vx;
+            rect.y = D_800AEB24[row].vy;
+            SetDrawMove((DR_MOVE *)D_800B2078.effect_buffers[0] + (row + 1), &rect, 0x3C0, row * 16);
+            rect.y = D_800AEB24[row].vy + 0x100;
+            SetDrawMove((DR_MOVE *)D_800B2078.effect_buffers[1] + (row + 1), &rect, 0x3C0, row * 16);
         }
     }
     if (resume == 0) {
@@ -141,9 +144,6 @@ void func_800A484C(s32 resume) {
     }
     D_800B2078.unk207A = 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800A4748", func_800A484C);
-#endif
 
 /* Move the six screen effect values to the given whole targets over
  * `steps` frames. */
@@ -173,7 +173,20 @@ void func_800A4CC4(s32 a, s32 b, s32 c, s32 d, s32 e, s32 f, s32 steps) {
     D_800B2078.effect_step[5] = step5;
 }
 
-#ifdef NON_MATCHING
+/* The distortion grid of the buffer being drawn: 20 x 17 textured quads. */
+#define EFFECT_QUAD(row, column) \
+    (((POLY_FT4 *)D_800B2078.effect_buffers[2 + D_800ADB08])[(row) * 20 + (column)])
+/* The buffer's strip copy commands. */
+#define EFFECT_MOVES ((DR_MOVE *)D_800B2078.effect_buffers[D_800ADB08])
+
+/* Draw the screen distortion: step the six effect values (amplitude,
+ * frequency and phase speed in x and y; once released, clear them when the
+ * steps run out and stop), then bend the grid along two sine waves: rows
+ * 14-16 hold the saved strips, rows 0-13 the screen, and row 13's lower
+ * edge takes the next wave. The quad corners are addressed through the grid
+ * index throughout; GCC substitutes the tested row/column constants
+ * (column 0/19, row 13/16) into it. The step is shared by both branches
+ * (one block that the released case jumps into). */
 void func_800A4DAC(void) {
     s32 amplitude_x;
     s32 amplitude_y;
@@ -185,23 +198,29 @@ void func_800A4DAC(void) {
     s32 column;
     s32 wave_x;
     s32 wave_y;
-    s32 value;
-    POLY_FT4 *grid;
     POLY_FT4 *poly;
-    DR_MOVE *moves;
+    s16 *phase;
+    s32 speed_x;
+    s32 speed_y;
 
     if (D_800B2078.unk2078 == 0) {
         return;
     }
-    if (D_800B2078.effect_steps > 0) {
-        D_800B2078.effect_value[0] += D_800B2078.effect_step[0];
-        D_800B2078.effect_value[1] += D_800B2078.effect_step[1];
-        D_800B2078.effect_steps--;
-        D_800B2078.effect_value[2] += D_800B2078.effect_step[2];
-        D_800B2078.effect_value[3] += D_800B2078.effect_step[3];
-        D_800B2078.effect_value[4] += D_800B2078.effect_step[4];
-        D_800B2078.effect_value[5] += D_800B2078.effect_step[5];
-    } else if (D_800B2078.unk207A != 0) {
+    if (D_800B2078.unk207A == 0) {
+        if (D_800B2078.effect_steps > 0) {
+        step:
+            D_800B2078.effect_value[0] += D_800B2078.effect_step[0];
+            D_800B2078.effect_value[1] += D_800B2078.effect_step[1];
+            D_800B2078.effect_value[2] += D_800B2078.effect_step[2];
+            D_800B2078.effect_steps--;
+            D_800B2078.effect_value[3] += D_800B2078.effect_step[3];
+            D_800B2078.effect_value[4] += D_800B2078.effect_step[4];
+            D_800B2078.effect_value[5] += D_800B2078.effect_step[5];
+        }
+    } else {
+        if (D_800B2078.effect_steps > 0) {
+            goto step;
+        }
         D_800B2078.effect_value[5] = 0;
         D_800B2078.effect_value[4] = 0;
         D_800B2078.effect_value[3] = 0;
@@ -210,96 +229,91 @@ void func_800A4DAC(void) {
         D_800B2078.effect_value[0] = 0;
         D_800B2078.unk2078 = 0;
     }
+    phase = EFFECT_PHASE;
     amplitude_x = WHOLE(D_800B2078.effect_value[0]);
     amplitude_y = WHOLE(D_800B2078.effect_value[1]);
     frequency_x = WHOLE(D_800B2078.effect_value[2]);
     frequency_y = WHOLE(D_800B2078.effect_value[3]);
-    EFFECT_PHASE[0] += WHOLE(D_800B2078.effect_value[4]);
-    EFFECT_PHASE[1] += WHOLE(D_800B2078.effect_value[5]);
+    speed_x = WHOLE(D_800B2078.effect_value[4]);
+    speed_y = WHOLE(D_800B2078.effect_value[5]);
+    phase[0] += speed_x;
+    phase[1] += speed_y;
 
     /* Rows 14-16 (the saved strips) continue the wave below the screen. */
     phase_y = EFFECT_PHASE[1] + frequency_y * 11;
     for (row = 14; row < 17; row++) {
         wave_y = (func_8003F8CC(phase_y) * amplitude_y) >> 12;
-        phase_y += frequency_y;
         phase_x = EFFECT_PHASE[0];
+        phase_y += frequency_y;
         for (column = 0; column < 20; column++) {
             wave_x = (func_8003F8CC(phase_x) * amplitude_x) >> 12;
             phase_x += frequency_x;
-            grid = D_800B2078.effect_buffers[2 + D_800ADB08];
-            poly = &grid[row * 20 + column];
+            poly = &EFFECT_QUAD(row, column);
             if (column != 0) {
-                value = column * 16 + wave_x;
-                poly[-1].x3 = poly[-1].x1 = poly->x2 = poly->x0 = value;
+                EFFECT_QUAD(row, column).x0 = EFFECT_QUAD(row, column).x2 =
+                    EFFECT_QUAD(row, column - 1).x1 = EFFECT_QUAD(row, column - 1).x3 =
+                        column * 16 + wave_x;
                 if (column == 19) {
-                    grid[row * 20 + 19].x3 = grid[row * 20 + 19].x1 = wave_x + 0x140;
+                    EFFECT_QUAD(row, column).x1 = EFFECT_QUAD(row, column).x3 = wave_x + 0x140;
                 }
             } else {
-                grid[row * 20].x2 = grid[row * 20].x0 = 0;
+                EFFECT_QUAD(row, column).x0 = EFFECT_QUAD(row, column).x2 = 0;
             }
-            value = row * 16 + wave_y - 0x30;
-            grid = D_800B2078.effect_buffers[2 + D_800ADB08];
-            grid[row * 20 + column - 20].y3 = grid[row * 20 + column - 20].y2 =
-                grid[row * 20 + column].y1 = grid[row * 20 + column].y0 = value;
+            EFFECT_QUAD(row, column).y0 = EFFECT_QUAD(row, column).y1 =
+                EFFECT_QUAD(row - 1, column).y2 = EFFECT_QUAD(row - 1, column).y3 =
+                    row * 16 + wave_y - 0x30;
             if (row == 16) {
-                grid[16 * 20 + column].y3 = grid[16 * 20 + column].y2 = 0xE0;
+                EFFECT_QUAD(row, column).y2 = EFFECT_QUAD(row, column).y3 = 0xE0;
             }
             addPrim(&D_800C426C->ot[1], poly);
         }
     }
-    moves = D_800B2078.effect_buffers[D_800ADB08];
-    addPrim(&D_800C426C->ot[1], &moves[0]);
+    addPrim(&D_800C426C->ot[1], &EFFECT_MOVES[0]);
 
     /* Rows 0-13: the screen itself. */
     phase_y = EFFECT_PHASE[1];
     for (row = 0; row < 14; row++) {
         wave_y = (func_8003F8CC(phase_y) * amplitude_y) >> 12;
-        phase_y += frequency_y;
         phase_x = EFFECT_PHASE[0];
+        phase_y += frequency_y;
         for (column = 0; column < 20; column++) {
             wave_x = (func_8003F8CC(phase_x) * amplitude_x) >> 12;
             phase_x += frequency_x;
-            grid = D_800B2078.effect_buffers[2 + D_800ADB08];
-            poly = &grid[row * 20 + column];
+            poly = &EFFECT_QUAD(row, column);
             if (row != 0) {
                 if (row == 13) {
-                    value = wave_y + 0xF0;
-                    grid[13 * 20 + column].y1 = grid[13 * 20 + column].y0 =
-                        grid[12 * 20 + column].y3 = grid[12 * 20 + column].y2 = value;
+                    EFFECT_QUAD(row - 1, column).y2 = EFFECT_QUAD(row - 1, column).y3 =
+                        EFFECT_QUAD(row, column).y0 = EFFECT_QUAD(row, column).y1 =
+                            row * 16 + wave_y + 0x20;
                     wave_y = (func_8003F8CC(phase_y) * amplitude_y) >> 12;
-                    grid = D_800B2078.effect_buffers[2 + D_800ADB08];
-                    grid[13 * 20 + column].y3 = grid[13 * 20 + column].y2 = wave_y + 0xF0;
+                    EFFECT_QUAD(row, column).y2 = EFFECT_QUAD(row, column).y3 =
+                        row * 16 + wave_y + 0x20;
                 } else {
-                    value = row * 16 + wave_y + 0x20;
-                    poly[-20].y3 = poly[-20].y2 = poly->y1 = poly->y0 = value;
+                    EFFECT_QUAD(row, column).y0 = EFFECT_QUAD(row, column).y1 =
+                        EFFECT_QUAD(row - 1, column).y2 = EFFECT_QUAD(row - 1, column).y3 =
+                            row * 16 + 0x20 + wave_y;
                 }
             } else {
-                grid[column].y1 = grid[column].y0 = 0x20;
+                EFFECT_QUAD(row, column).y0 = EFFECT_QUAD(row, column).y1 = 0x20;
             }
             if (column != 0) {
-                value = column * 16 + wave_x;
-                grid = D_800B2078.effect_buffers[2 + D_800ADB08];
-                grid[row * 20 + column - 1].x3 = grid[row * 20 + column - 1].x1 =
-                    grid[row * 20 + column].x2 = grid[row * 20 + column].x0 = value;
+                EFFECT_QUAD(row, column).x0 = EFFECT_QUAD(row, column).x2 =
+                    EFFECT_QUAD(row, column - 1).x1 = EFFECT_QUAD(row, column - 1).x3 =
+                        column * 16 + wave_x;
                 if (column == 19) {
-                    grid[row * 20 + 19].x3 = grid[row * 20 + 19].x1 = 0x140;
+                    EFFECT_QUAD(row, column).x1 = EFFECT_QUAD(row, column).x3 = 0x140;
                 }
             } else {
-                grid = D_800B2078.effect_buffers[2 + D_800ADB08];
-                grid[row * 20].x2 = grid[row * 20].x0 = 0;
+                EFFECT_QUAD(row, column).x0 = EFFECT_QUAD(row, column).x2 = 0;
             }
             addPrim(&D_800C426C->ot[1], poly);
         }
     }
     for (row = 0; row < 15; row++) {
-        moves = D_800B2078.effect_buffers[D_800ADB08];
-        addPrim(&D_800C426C->ot[1], &moves[row + 1]);
+        addPrim(&D_800C426C->ot[1], &EFFECT_MOVES[row + 1]);
     }
     addPrim(&D_800C426C->ot[1], &D_800B1E18[D_800ADB08]);
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800A4748", func_800A4DAC);
-#endif
 
 /* Store three words at +14 of `object`. */
 void func_800A55B8(s32 *object, s32 a, s32 b, s32 c) {
@@ -1003,7 +1017,7 @@ void func_800A7218(void) {
         if (D_800C3A38 != 0xFF || (D_800ADB80 & 0x40)) {
             mode = 3;
         }
-        func_801D37CC(D_800C3A20 + 2, D_800C3A2A, D_800C3A2C, D_800C3A2E, 1, mode, D_800C3A3A, D_800C3A22,
+        func_801D37CC(FIELD_MOVIE.file + 2, D_800C3A2A, D_800C3A2C, D_800C3A2E, 1, mode, D_800C3A3A, D_800C3A22,
                       D_800C3A24, D_800C3A26, D_800C3A28, 0xE0, func_800A7120);
         func_80028470(4, 0);
     }
@@ -1140,8 +1154,8 @@ u32 func_800A7744(void) {
 extern u32 *D_800C390C; /* converted pixels */
 
 /* Convert the 24-bit screen (five 96-pixel columns at x 0) to 15-bit
- * pixels at (0..0x140, 100). */
-void func_800A77C4(void) {
+ * pixels at (0..0x140, 100). Both callers pass 0, which it ignores. */
+void func_800A77C4(s32 unused) {
     RECT rect;
     u32 *packed;
     u32 *pixels;
@@ -1243,14 +1257,11 @@ s32 func_800A7948(void) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Play the requested field movie (800c3a20..): move the movie library
  * (file 0xa9) into place, park the VRAM the movie uses, stop the field's
  * effects and the 801e module, then decode and present frames by movie
  * mode until it ends or is skipped; finally restore VRAM, the display and
- * the field stream. The original addresses the movie parameters as one
- * aggregate (800c3a3a and 800c3a2e off one hoisted base), which field.h
- * does not declare yet. */
+ * the field stream. */
 void func_800A7C58(void) {
     RECT rect;
     u8 *data;
@@ -1267,7 +1278,7 @@ void func_800A7C58(void) {
     D_800AFE74 = 0;
     func_800A7394();
     func_80028470(0x18, 0);
-    func_8002A2D0(D_800C3A20);
+    func_8002A2D0(FIELD_MOVIE.file);
     func_80028470(4, 0);
     func_800A7394();
     if (D_800B2078.unk2264 != 0) {
@@ -1356,7 +1367,7 @@ void func_800A7C58(void) {
         if (D_800ADB74 == 2 && D_800ADB84 != 0) {
             break;
         }
-    } while ((s16)D_800C3A3A != 0 || D_800B06A0 < D_800C3A2E);
+    } while ((s16)FIELD_MOVIE.unk3A != 0 || D_800B06A0 < FIELD_MOVIE.unk2E);
     VSync(0);
     DrawSync(0);
     func_801D43B0();
@@ -1370,14 +1381,14 @@ void func_800A7C58(void) {
     func_800A74F8();
     func_80077884();
     setRECT(&rect, 0, D_800ADB78 << 8, 0x1E0, 0xE0);
-    MoveImage(&rect, 0, 0);
+    MoveImage(&rect, 0, D_800ADB78 << 8);
     DrawSync(0);
     VSync(0);
     D_800C426C = &D_800B249C[1];
     PutDispEnv(&D_800B249C[1].disp);
     PutDrawEnv(&D_800C426C->draw);
     if (D_800ADB74 != 2) {
-        func_800A77C4();
+        func_800A77C4(0);
     }
     VSync(0);
     D_800B249C[0].disp.isrgb24 = 0;
@@ -1412,9 +1423,6 @@ void func_800A7C58(void) {
     D_800ADB74 = 0;
     D_800ADB6C = -1;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800A4748", func_800A7C58);
-#endif
 
 void func_80070340(u32 *tim, s16 x, s16 y, s16 clut_x, s16 clut_y, s16 clut_w, s16 clut_h);
 
@@ -1531,13 +1539,32 @@ void func_800A84C0(void) {
 /* Build the status panel: load its image, allocate the quads of both
  * buffers and texture each piece from its frame (flip in flags bits 0-3,
  * 4- or 8-bit page by bits 4-7). The original passes the coordinates to
- * 8007a44c unconverted (no s16 prototype in scope: a separate unit). */
+ * 8007a44c unconverted (no s16 prototype in scope: a separate unit).
+ * NON_MATCHING: the original indexes the layout table as i * 8 from hoisted
+ * bases (fp = layout + 6, s7 = layout) with a second counter for i, stores
+ * the first buffer pointer by symbol, and has v in t0 and w in t1; GCC here
+ * strength-reduces the layout addresses (i * 8 and layout + 4 + i * 8) and
+ * keeps &D_800AFC60 in s0 for the first store. The flat field reads give the
+ * frame table's per-field addressing (score 123 -> 106; a scalar
+ * D_800AFC64 for the second buffer gives 99 but grows the function). */
+/* The layout and frame tables read as flat halfword arrays, one field at a
+ * time, as the original indexes them (n * 4 + field). */
+#define PIECE(n, field) (((u16 *)D_800AEF10)[(n) * 4 + (field)])
+#define FRAME(n, field) (((u16 *)D_800AEB68)[(n) * 4 + (field)])
+enum { PIECE_X, PIECE_Y, PIECE_FRAME, PIECE_FLAGS };
+enum { FRAME_U, FRAME_V, FRAME_W, FRAME_H };
 void func_800A8BA4(void) {
     POLY_FT4 *quad;
     POLY_FT4 *copy;
-    PanelFrame *frame;
     s32 mode;
     s32 i;
+    s32 x;
+    s32 y;
+    s32 frame;
+    s32 u;
+    s32 v;
+    s32 w;
+    s32 h;
 
     func_800A8314();
     mode = 0;
@@ -1551,7 +1578,7 @@ void func_800A8BA4(void) {
         SetPolyFT4(quad);
         setRGB0(quad, 0x80, 0x80, 0x80);
         quad->clut = GetClut(0, 0xE8);
-        switch ((D_800AEF10[i].flags >> 4) & 0xF) {
+        switch ((PIECE(i, PIECE_FLAGS) >> 4) & 0xF) {
         case 0:
             mode = 1;
             break;
@@ -1561,32 +1588,33 @@ void func_800A8BA4(void) {
         }
         quad->tpage = GetTPage(0, mode, 0x380, 0);
         SetSemiTrans(quad, 1);
-        frame = &D_800AEB68[D_800AEF10[i].frame];
-        quad->x0 = D_800AEF10[i].x;
-        quad->y0 = D_800AEF10[i].y;
-        quad->y1 = D_800AEF10[i].y;
-        quad->x2 = D_800AEF10[i].x;
-        quad->x1 = D_800AEF10[i].x + frame->w;
-        quad->y2 = D_800AEF10[i].y + frame->h;
-        quad->x3 = D_800AEF10[i].x + frame->w;
-        quad->y3 = D_800AEF10[i].y + frame->h;
-        switch (D_800AEF10[i].flags & 0xF) {
+        frame = PIECE(i, PIECE_FRAME);
+        x = PIECE(i, PIECE_X);
+        y = PIECE(i, PIECE_Y);
+        w = FRAME(frame, FRAME_W);
+        h = FRAME(frame, FRAME_H);
+        u = FRAME(frame, FRAME_U);
+        v = FRAME(frame, FRAME_V);
+        quad->x0 = x;
+        quad->y0 = y;
+        quad->y1 = y;
+        quad->x2 = x;
+        quad->x1 = x + w;
+        quad->y2 = y + h;
+        quad->x3 = x + w;
+        quad->y3 = y + h;
+        switch (PIECE(i, PIECE_FLAGS) & 0xF) {
         case 0:
-            func_8007A44C(quad, frame->u, frame->v, frame->u + frame->w, frame->v, frame->u,
-                          frame->v + frame->h, frame->u + frame->w, frame->v + frame->h);
+            func_8007A44C(quad, u, v, u + w, v, u, v + h, u + w, v + h);
             break;
         case 1:
-            func_8007A44C(quad, frame->u + frame->w - 1, frame->v, frame->u - 1, frame->v,
-                          frame->u + frame->w - 1, frame->v + frame->h, frame->u - 1, frame->v + frame->h);
+            func_8007A44C(quad, u + w - 1, v, u - 1, v, u + w - 1, v + h, u - 1, v + h);
             break;
         case 2:
-            func_8007A44C(quad, frame->u, frame->v + frame->h - 1, frame->u + frame->w, frame->v + frame->h - 1,
-                          frame->u, frame->v - 1, frame->u + frame->w, frame->v - 1);
+            func_8007A44C(quad, u, v + h - 1, u + w, v + h - 1, u, v - 1, u + w, v - 1);
             break;
         case 3:
-            func_8007A44C(quad, frame->u + frame->w - 1, frame->v + frame->h - 1, frame->u - 1,
-                          frame->v + frame->h - 1, frame->u + frame->w - 1, frame->v - 1, frame->u - 1,
-                          frame->v - 1);
+            func_8007A44C(quad, u + w - 1, v + h - 1, u - 1, v + h - 1, u + w - 1, v - 1, u - 1, v - 1);
             break;
         }
         *copy = *quad;
@@ -1608,19 +1636,27 @@ typedef struct {
 } ParticleSprite;
 extern ParticleSprite D_800AF27C[];
 
-#ifdef NON_MATCHING
 /* Set up a particle's quad in both buffers from sprite `sprite` with
- * semi-transparency rate `abr`. The original scales each term by 16
- * before subtracting (GCC folds x * 16 - w * 16 into (x - w) * 16) and
- * computes w * 16 twice. */
+ * semi-transparency rate `abr`.
+ * The corners scale each term by 16 before subtracting/adding: x * 16
+ * and y * 16 are computed once, but w * 16 and h * 16 twice (once for the
+ * left/top edge, once for the right/bottom). Shifting in the differences
+ * keeps GCC from folding x * 16 - w * 16 into (x - w) * 16, and the
+ * (u16) view of the half sizes in the sums (a no-op on their values) keeps
+ * CSE from sharing the second w * 16 / h * 16 with the first.
+ * The second buffer's quad is taken as a pointer up front; the block copy
+ * then starts from a copy of it (addiu v1,s0,0x78; move a2,v1). */
 void func_800A8EAC(Particle *particle, s32 sprite, s32 abr) {
     POLY_FT4 *quad;
+    POLY_FT4 *copy;
     s32 half_w;
     s32 half_h;
     s32 x;
     s32 y;
+    SVECTOR unused[11]; /* unused in the original; reserves 88 bytes */
 
     quad = &particle->quads[0];
+    copy = &particle->quads[1];
     SetPolyFT4(quad);
     half_w = D_800AF27C[sprite].half_w;
     half_h = D_800AF27C[sprite].half_h;
@@ -1631,14 +1667,14 @@ void func_800A8EAC(Particle *particle, s32 sprite, s32 abr) {
     particle->corners[2].vz = 0;
     particle->corners[3].vz = 0;
     setRGB0(quad, 0x80, 0x80, 0x80);
-    particle->corners[0].vx = x * 16 - half_w * 16;
-    particle->corners[0].vy = y * 16 - half_h * 16;
-    particle->corners[1].vx = half_w * 16 + x * 16;
-    particle->corners[1].vy = y * 16 - half_h * 16;
-    particle->corners[2].vx = x * 16 - half_w * 16;
-    particle->corners[2].vy = half_h * 16 + y * 16;
-    particle->corners[3].vx = half_w * 16 + x * 16;
-    particle->corners[3].vy = half_h * 16 + y * 16;
+    particle->corners[0].vx = (x << 4) - (half_w << 4);
+    particle->corners[0].vy = (y << 4) - (half_h << 4);
+    particle->corners[1].vx = (u16)half_w * 16 + (x << 4);
+    particle->corners[1].vy = (y << 4) - (half_h << 4);
+    particle->corners[2].vx = (x << 4) - (half_w << 4);
+    particle->corners[2].vy = (u16)half_h * 16 + (y << 4);
+    particle->corners[3].vx = (u16)half_w * 16 + (x << 4);
+    particle->corners[3].vy = (u16)half_h * 16 + (y << 4);
     func_8007A44C(quad, D_800AF27C[sprite].uv[0][0], D_800AF27C[sprite].uv[0][1] + 0x40,
                   D_800AF27C[sprite].uv[1][0] - 1, D_800AF27C[sprite].uv[1][1] + 0x40,
                   D_800AF27C[sprite].uv[2][0], D_800AF27C[sprite].uv[2][1] + 0x3F,
@@ -1646,11 +1682,8 @@ void func_800A8EAC(Particle *particle, s32 sprite, s32 abr) {
     SetSemiTrans(quad, 1);
     quad->tpage = GetTPage(0, abr, 0x3C0, 0x140);
     quad->clut = GetClut(0x100, 0xF7);
-    particle->quads[1] = *quad;
+    *copy = *quad;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800A4748", func_800A8EAC);
-#endif
 
 extern RECT D_800AFC28;
 typedef struct {

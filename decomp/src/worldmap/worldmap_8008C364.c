@@ -2,8 +2,8 @@
 
 /* Place a party member's vehicle actor: parked at its spot, with the
  * player when riding, or hidden (3) when the member has no vehicle. */
-#ifdef NON_MATCHING /* eight extra bytes of the original frame remain unexplained */
 s32 func_8008C364(WorldmapActor *actor, s32 member) {
+    SVECTOR unused; /* unused in the original; reserves 8 bytes */
     s32 result;
     u32 state;
 
@@ -56,10 +56,6 @@ s32 func_8008C364(WorldmapActor *actor, s32 member) {
     }
     return result;
 }
-
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8008C364", func_8008C364);
-#endif
 
 /* Start party vehicle 0: place it, and while its member rides (movement
  * modes 1-3) put it under the player, reset the saved camera target and the
@@ -152,18 +148,17 @@ s32 func_8008C75C(s32 index) {
 /* Update the player's vehicle (actor slot 4): drive it by the pad, record
  * the trail, board and park the other party vehicles on command, and save
  * its spot and heading. */
-#ifdef NON_MATCHING /* original 0x58-byte frame and boarding target registers still differ */
 s32 func_8008C844(s32 index) {
+    MATRIX unused; /* unused in the original; reserves 32 bytes */
     WorldmapActor *actor;
-    WorldmapActor *target;
     ActorScratch *scratch;
     TrailPoint *point;
     s32 value;
     u16 trail;
     s32 result = 1;
 
-    actor = &D_8009BE24[index];
     scratch = (ActorScratch *)0x1F800000;
+    actor = &D_8009BE24[index];
     switch (actor->unk4) {
     case 4:
         actor->state = 0x10;
@@ -303,9 +298,8 @@ s32 func_8008C844(s32 index) {
         break;
     case 10:
         func_800941C4(&actor->position, &D_8009BE24[D_8009BD60].position, &actor->motion, &actor->heading);
-        target = &D_8009BE24[D_8009BD60];
-        actor->u.step = target->position.vx >> 12;
-        actor->unk54 = target->position.vz >> 12;
+        actor->u.step = D_8009BE24[D_8009BD60].position.vx >> 12;
+        actor->unk54 = D_8009BE24[D_8009BD60].position.vz >> 12;
         func_800245D8(actor->handle, 1);
         actor->state++;
     case 11:
@@ -443,9 +437,6 @@ s32 func_8008C844(s32 index) {
     D_8006EE54.unk5A = actor->heading;
     return result;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8008C364", func_8008C844);
-#endif
 
 /* Start party vehicle 1: place it, and while its member rides (movement
  * modes 1-3) put it under the player; modes 4-7 mark it boarded. Save its
@@ -529,13 +520,13 @@ s32 func_8008D590(s32 index) {
 /* Update party vehicle actor `index` (slots 4-6): take commands (1 go to an
  * actor, 2 park, 3 leave the flying vehicle, 5 go to the player, 8 board),
  * follow the player's trail while ridden, and save its spot and heading. */
-#ifdef NON_MATCHING /* original frame size, saved-state addressing and result scheduling differ */
 s32 func_8008D678(s32 index) {
     WorldmapActor *actor;
     WorldmapActor *target;
     ActorScratch *scratch;
     TrailPoint *point;
     s32 flag;
+    s32 slot;
 
     actor = &D_8009BE24[index];
     scratch = (ActorScratch *)0x1F800000;
@@ -713,14 +704,14 @@ s32 func_8008D678(s32 index) {
     if (actor->state != 2 && (D_8009BE10 == 2 || D_8006F364[index] != 7)) {
         func_80074794(1, &actor->position);
     }
-    D_8006EF8E[index - 4].x = actor->position.vx >> 12;
-    D_8006EF8E[index - 4].z = actor->position.vz >> 12;
-    (&D_8006EE5A)[index - 4] = actor->heading;
+    /* Save the spot (D_8006EF8E[slot].x/z) and heading (D_8006EE5A[slot])
+     * as offsets into the resident state. */
+    slot = index - 4;
+    STATE_U16(0x13C + slot * 6) = actor->position.vx >> 12;
+    STATE_U16(0x13E + slot * 6) = actor->position.vz >> 12;
+    STATE_U16(6 + (index - 4) * 2) = actor->heading;
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8008C364", func_8008D678);
-#endif
 
 /* Start party vehicle 2: place it, and while its member rides (movement
  * modes 1-3) put it under the player; modes 4-7 mark it boarded. Save its
@@ -803,9 +794,9 @@ s32 func_8008DF0C(s32 index) {
 
 /* Restore the saved vehicle position (world units to 20.12). */
 void func_8008DFF4(VECTOR *position) {
-    position->vx = D_8006EE54.unk60 << 12;
-    position->vy = D_8006EE54.unk62 << 12;
-    position->vz = D_8006EE54.unk64 << 12;
+    position->vx = (s16)D_8006EE54.unk60 << 12;
+    position->vy = (s16)D_8006EE54.unk62 << 12;
+    position->vz = (s16)D_8006EE54.unk64 << 12;
 }
 
 /* Save the vehicle position in world units. */

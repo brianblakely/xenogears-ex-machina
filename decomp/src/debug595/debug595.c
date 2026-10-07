@@ -212,11 +212,7 @@ void func_80281B00(char *name) {
  * scene, 2 memory, 3 event and party state, 4 event actors, 5 CPU time,
  * 6 event variables, 7 particle editor, 8 items, 9 accessories, 10
  * encounters, 11 fog colours, 12 CPU/GPU summary, 13 RGB calculation.
- * Returns the screen shown.
- * Differs from the original only in where the GearNum list pointer's setup
- * is scheduled and in the original reloading D_800AFB10 for each argument
- * group of the "P0=" line. */
-#ifdef NON_MATCHING
+ * Returns the screen shown. */
 s32 func_80281B90(u32 *ot) {
     void *seq;
     MonitorActor *actor;
@@ -224,7 +220,6 @@ s32 func_80281B90(u32 *ot) {
     s32 step;
     s32 a;
     u32 id;
-    s32 *slot;
     u8 *rate;
     s32 *player;
     s32 length;
@@ -233,9 +228,9 @@ s32 func_80281B90(u32 *ot) {
     if (D_800C268C == 1) {
         return 0;
     }
-    for (i = 0; i < D_800AFB0C; i++) {
-        if (D_800AFB10[i].flags & 0x2000) {
-            if (D_800AFB10[i].instance->loaded == 0) {
+    for (i = 0; i < D_800AFB0C.count; i++) {
+        if (D_800AFB0C.descriptors[i].flags & 0x2000) {
+            if (D_800AFB0C.descriptors[i].instance->loaded == 0) {
                 func_800379C8("MIME ERROR %d\n", i);
             }
         }
@@ -286,9 +281,9 @@ channels:
     case 12:
         func_800379C8("\nCPU=%04d GPU=%04d\n", D_800ADBA0, D_800ADBA4);
         func_800379C8("PolyCount %d / %d\n", D_80059578, D_800595C0);
-        func_800379C8("Pos X%6d Z=%6d Y=%6d\n", D_800AFB10[D_800B226C].actor->pos[0].part.whole,
-                      D_800AFB10[D_800B226C].actor->pos[2].part.whole,
-                      D_800AFB10[D_800B226C].actor->pos[1].part.whole);
+        func_800379C8("Pos X%6d Z=%6d Y=%6d\n", D_800AFB0C.descriptors[D_800B226C].actor->pos[0].part.whole,
+                      D_800AFB0C.descriptors[D_800B226C].actor->pos[2].part.whole,
+                      D_800AFB0C.descriptors[D_800B226C].actor->pos[1].part.whole);
         goto free_size;
     case 13:
         func_800379C8("RGB CALC\n\n");
@@ -392,17 +387,17 @@ channels:
         break;
     case 1:
         func_800379C8("---------- Player Info -----\n");
-        func_800379C8("Pos X%6d Z%6d Y%6d\n", D_800AFB10[D_800B226C].actor->pos[0].part.whole,
-                      D_800AFB10[D_800B226C].actor->pos[2].part.whole,
-                      D_800AFB10[D_800B226C].actor->pos[1].part.whole);
-        actor = D_800AFB10[D_800B226C].actor;
+        func_800379C8("Pos X%6d Z%6d Y%6d\n", D_800AFB0C.descriptors[D_800B226C].actor->pos[0].part.whole,
+                      D_800AFB0C.descriptors[D_800B226C].actor->pos[2].part.whole,
+                      D_800AFB0C.descriptors[D_800B226C].actor->pos[1].part.whole);
+        actor = D_800AFB0C.descriptors[D_800B226C].actor;
         func_800379C8("Pol=%d Pri=%d ID=%x:%x\n", actor->triangle[actor->layer], actor->layer,
-                      D_800AFB24[actor->layer][actor->triangle[actor->layer]].attribute, actor->id);
-        func_800379C8("P0=%d P1=%d P2=%d C=%d\n", D_800AFB10[D_800B226C].actor->triangle[0],
-                      D_800AFB10[D_800B226C].actor->triangle[1],
-                      D_800AFB10[D_800B226C].actor->triangle[2], D_800ADB02);
-        func_800379C8("MFflag=%x MFlag2=%x N=%d\n", D_800AFB10[D_800B226C].actor->flags,
-                      D_800AFB10[D_800B226C].actor->flags2, D_800AFB10[D_800B226C].actor->count);
+                      D_800AFB0C.triangles[actor->layer][actor->triangle[actor->layer]].attribute, actor->id);
+        func_800379C8("P0=%d P1=%d P2=%d C=%d\n", D_800AFB0C.descriptors[D_800B226C].actor->triangle[0],
+                      D_800AFB0C.descriptors[D_800B226C].actor->triangle[1],
+                      D_800AFB0C.descriptors[D_800B226C].actor->triangle[2], D_800ADB02);
+        func_800379C8("MFflag=%x MFlag2=%x N=%d\n", D_800AFB0C.descriptors[D_800B226C].actor->flags,
+                      D_800AFB0C.descriptors[D_800B226C].actor->flags2, D_800AFB0C.descriptors[D_800B226C].actor->count);
         func_800379C8("\n---------- Scene Info ------\n");
         func_800379C8("SCRZ=%d DIP=%d Scale=%d\n", D_800AF9F8, D_800AF9FC, (s16)D_800AF9FE);
         a = func_8009A514() & 0xFFFF;
@@ -422,7 +417,7 @@ channels:
         func_800379C8("Length=%d (%d)\n", length >> 12, (length * 2) >> 12);
         func_800379C8("Wave=%02x Music=%02x\n", D_8004F33C, D_8004F338);
         func_800379C8("Total Aactor =%d\n", D_800ADBFC);
-        func_800379C8("Total Object =%d\n", D_800AFB0C);
+        func_800379C8("Total Object =%d\n", D_800AFB0C.count);
         break;
     case 2:
         func_800379C8("---------- Memory Info -----\n");
@@ -483,17 +478,12 @@ free_size:
         func_800379C8("\n");
         func_800379C8("GearRide=%d %d %d\n", D_8005A39C->ride[0], D_8005A39C->ride[1], D_8005A39C->ride[2]);
         func_800379C8("GearNum=");
-        slot = D_80062590;
-        i = 0;
-        while (1) {
-            party = *slot++;
+        for (i = 0; i < 3; i++) {
+            party = D_80062590[i];
             if (party == 0xFF) {
                 break;
             }
             func_800379C8(" %d", D_8005A39C->slots[party].gear);
-            if (++i >= 3) {
-                break;
-            }
         }
         func_800379C8("\nTYPE=");
         for (i = 0; i < 3; i++) {
@@ -503,7 +493,7 @@ free_size:
             if (D_8005A444[i] == 0xFF) {
                 break;
             }
-            switch ((D_800AFB10[D_8005A444[i]].actor->flags >> 8) & 7) {
+            switch ((D_800AFB0C.descriptors[D_8005A444[i]].actor->flags >> 8) & 7) {
             case 1:
                 func_800379C8("People ");
                 break;
@@ -514,12 +504,12 @@ free_size:
                 func_800379C8("Play ");
                 break;
             default:
-                func_800379C8("?%d ", (D_800AFB10[D_8005A444[i]].actor->flags >> 8) & 7);
+                func_800379C8("?%d ", (D_800AFB0C.descriptors[D_8005A444[i]].actor->flags >> 8) & 7);
                 break;
             }
         }
         func_800379C8(" ID=");
-        id = D_800AFB10[D_800B226C].actor->id;
+        id = D_800AFB0C.descriptors[D_800B226C].actor->id;
         if (!(id & 0x80)) {
             func_800379C8("C");
         } else {
@@ -540,18 +530,18 @@ free_size:
         func_800379C8("---------- Event DEBUG -----\n");
         for (i = D_8028597C, n = 0; i < D_800ADBFC; i++, n++) {
             func_800379C8("ActNum=%3d RUN=%04x\n", i,
-                          D_800AFB10[i].actor->threads[D_800AFB10[i].actor->thread].pc);
-            func_800379C8("P0=%d P1=%d P2=%d P=%d I=%x:%x\n", D_800AFB10[i].actor->triangle[0],
-                          D_800AFB10[i].actor->triangle[1], D_800AFB10[i].actor->triangle[2],
-                          D_800AFB10[i].actor->layer,
-                          D_800AFB24[D_800AFB10[i].actor->layer]
-                                    [D_800AFB10[i].actor->triangle[D_800AFB10[i].actor->layer]]
+                          D_800AFB0C.descriptors[i].actor->threads[D_800AFB0C.descriptors[i].actor->thread].pc);
+            func_800379C8("P0=%d P1=%d P2=%d P=%d I=%x:%x\n", D_800AFB0C.descriptors[i].actor->triangle[0],
+                          D_800AFB0C.descriptors[i].actor->triangle[1], D_800AFB0C.descriptors[i].actor->triangle[2],
+                          D_800AFB0C.descriptors[i].actor->layer,
+                          D_800AFB0C.triangles[D_800AFB0C.descriptors[i].actor->layer]
+                                    [D_800AFB0C.descriptors[i].actor->triangle[D_800AFB0C.descriptors[i].actor->layer]]
                                         .attribute,
-                          D_800AFB10[i].actor->id);
-            func_800379C8("Pos X%6d Z%6d Y%6d\n", D_800AFB10[i].actor->pos[0].part.whole,
-                          D_800AFB10[i].actor->pos[2].part.whole, D_800AFB10[i].actor->pos[1].part.whole);
-            func_800379C8("M1=%x M2=%x", D_800AFB10[i].actor->flags, D_800AFB10[i].actor->flags2);
-            if (!(D_800AFB10[i].actor->flags2 & 0x4000000)) {
+                          D_800AFB0C.descriptors[i].actor->id);
+            func_800379C8("Pos X%6d Z%6d Y%6d\n", D_800AFB0C.descriptors[i].actor->pos[0].part.whole,
+                          D_800AFB0C.descriptors[i].actor->pos[2].part.whole, D_800AFB0C.descriptors[i].actor->pos[1].part.whole);
+            func_800379C8("M1=%x M2=%x", D_800AFB0C.descriptors[i].actor->flags, D_800AFB0C.descriptors[i].actor->flags2);
+            if (!(D_800AFB0C.descriptors[i].actor->flags2 & 0x4000000)) {
                 func_800379C8("\n\n");
             } else {
                 func_800379C8(" TALK OFF\n\n");
@@ -704,9 +694,6 @@ free_size:
     }
     return D_80285984;
 }
-#else
-INCLUDE_ASM(".local/decomp/debug595/asm/nonmatchings/debug595", func_80281B90);
-#endif
 
 /* Particle emitter editor screen: list the edited emitter's parameters
  * (rows 0-21) or its eight angle offsets (rows 22+), with the cursor row and
@@ -1194,13 +1181,20 @@ void func_80284EA4(void) {
     }
 }
 
-#ifdef NON_MATCHING
+/* Skip a section's position and offset, read its size and upload its
+ * pixels at `rect`, leaving `p` past the pixels. */
+#define LOAD_SECTION_IMAGE(rect, p) do {     \
+        (p) += 4;                            \
+        (rect).w = *(p)++;                   \
+        (rect).h = *(p)++;                   \
+        LoadImage(&(rect), (u_long *)(p));   \
+        (p) += (rect).w * (rect).h;          \
+    } while (0)
+
 /* Load an image archive's sections into VRAM; sections of kind 0x1100 and
  * 0x1101 are placed by `mode0`/`mode1`: 1 at the given origin plus the
  * section offset, 2 also plus the section position, else at the position.
- * Returns 1 for an unknown section kind, 0 after all sections are loaded.
- * NON_MATCHING: the loop increment is scheduled before mflo; the original
- * advances the payload pointer before incrementing the section index. */
+ * Returns 1 for an unknown section kind, 0 after all sections are loaded. */
 s32 func_80284FB4(u32 *archive, s16 mode0, s16 x0, s16 y0, s16 mode1, u16 x1, u16 y1) {
     s32 count;
     s32 i;
@@ -1247,17 +1241,10 @@ s32 func_80284FB4(u32 *archive, s16 mode0, s16 x0, s16 y0, s16 mode1, u16 x1, u1
                 break;
             }
         }
-        p += 4;
-        rect.w = *p++;
-        rect.h = *p++;
-        LoadImage(&rect, (u_long *)p);
-        p += rect.w * rect.h;
+        LOAD_SECTION_IMAGE(rect, p);
     }
     return 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/debug595/asm/nonmatchings/debug595", func_80284FB4);
-#endif
 
 /* Print the name of sound bank `bank` (effects, music and voice banks). */
 void func_802851B0(s32 bank) {

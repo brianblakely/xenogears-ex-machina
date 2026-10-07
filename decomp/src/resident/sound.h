@@ -238,10 +238,10 @@ typedef struct SoundSeq {
     u32 ticks;
     u32 unk2C;
     u16 unk30;
-    s16 unk32;
-    s16 unk34;
+    u16 unk32;
+    u16 unk34;
     u16 unk36;
-    s16 unk38;
+    u16 unk38;
     u16 unk3A;
     s16 unk3C;
     s16 unk3E;

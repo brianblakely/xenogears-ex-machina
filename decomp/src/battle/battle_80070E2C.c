@@ -17,6 +17,7 @@
 #include "glyph_lists.h"
 #include "item_command.h"
 #include "result_input.h"
+#include "area.h"
 
 /* Start the 801e5000 module: reserve its heap span and load it. */
 void func_80070E2C(void) {
@@ -119,7 +120,7 @@ void func_80070F40(void) {
         D_800C3E54 = func_800397FC(D_80062648, 0x7F, 0);
     }
     D_800D3364 = D_8005949C;
-    D_800C3EB0 = D_8005949C;
+    D_800C3EB0.formation = D_8005949C;
     func_80077990();
     D_800D3298 = 1;
     func_800BC404(D_800D39DC);
@@ -359,11 +360,9 @@ void func_80071AE0(void) {
 
 /* Start the turn of the acting slot (turn state actor + 1; none when 0). An
  * enemy runs its AI script (unless mode is set) and shows its name; a party
- * member gets its panel highlight and its command menu. Then each slot's
- * default target is chosen and the turn's actions play out.
- * Nonmatching: the original adds the panel x before 0x28 for the right
- * corners and allocates the y constant to $a1. */
-#ifdef NON_MATCHING
+ * member gets its panel highlight (a 24x24 square) and its command menu.
+ * Then each slot's default target is chosen and the turn's actions play
+ * out. */
 void func_80071B94(u8 mode) {
     s32 i;
     s32 offset;
@@ -417,11 +416,8 @@ void func_80071B94(u8 mode) {
         for (offset = 7 * sizeof(EnemyReaction); offset >= 0; offset -= sizeof(EnemyReaction)) {
             ((EnemyReaction *)((u8 *)D_800C3D18 + offset))->unk1[1] = 0;
         }
-        setXY4(&D_800C3EA4->unk63C8[D_800CCB04.buffer],
-               D_800C3EAC->actor * 0x60 + (D_800C3254[D_800D3280 * 3 + D_800C3EAC->actor] + 0x10), 8,
-               D_800C3EAC->actor * 0x60 + (D_800C3254[D_800D3280 * 3 + D_800C3EAC->actor] + 0x28), 8,
-               D_800C3EAC->actor * 0x60 + (D_800C3254[D_800D3280 * 3 + D_800C3EAC->actor] + 0x10), 0x20,
-               D_800C3EAC->actor * 0x60 + (D_800C3254[D_800D3280 * 3 + D_800C3EAC->actor] + 0x28), 0x20);
+        setXYWH(&D_800C3EA4->unk63C8[D_800CCB04.buffer],
+                D_800C3EAC->actor * 0x60 + (D_800C3254[D_800D3280 * 3 + D_800C3EAC->actor] + 0x10), 8, 0x18, 0x18);
         D_800C3EA4->unk6414 = D_800CCB04.buffer;
         D_800C3EA4->unk6415 = 1;
         actor = D_800C3EAC->actor;
@@ -471,9 +467,6 @@ void func_80071B94(u8 mode) {
     func_800718BC();
     D_800D3298 = 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80071B94);
-#endif
 
 /* Party members held by the mask 800d2c9e lose their ready flag, restart
  * their turn timer from its reload value and show the held marker. */
@@ -522,7 +515,15 @@ void func_80072324(void) {
 
 /* Select the next slot to act: the forced slot, else the next ready slot in
  * the turn order from the cursor; then run the turn procedure. With slots
- * acting together, run their pass instead. */
+ * acting together, run their pass instead.
+ * Nonmatching: the original loads the first slot before the loop and jumps
+ * to its ready test, the loop starting at the position wrap (332 bytes);
+ * this lays the loop out from the slot load (300 bytes). An inner
+ * `while (ready[slot = order[position]] != 1) { advance; exit at the
+ * cursor }` reproduces that inner loop exactly (duplicated first load, wrap
+ * at the top, the +1/-1 pair around the ready test), but its found path
+ * keeps its own advance and exit test where the original jumps back into
+ * the inner loop's wrap. */
 #ifdef NON_MATCHING
 void func_800723E0(void) {
     s32 position;
@@ -544,8 +545,7 @@ void func_800723E0(void) {
                 slot = D_800D2DCC.order[position];
                 if (D_800D2DCC.ready[slot] == 1) {
                     D_800C3EAC->actor = slot + 1;
-                    *cursor = position + 1;
-                    if (*cursor == 11) {
+                    if ((*cursor = position + 1) == 11) {
                         *cursor = 0;
                     }
                 }
@@ -567,7 +567,12 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_800723
 /* Rebuild the alive mask: knocked-out slots lose their HP (gear +0x104) and
  * leave the turn order unless held by 800c3608; set the outcome when a side
  * is defeated; when every alive slot waits (+0x80 bit 0x1000), release the
- * first. */
+ * first. The outcome is the battle area's member, so the mask is reloaded
+ * after it is set. Nonmatching: in the enemy loop the original walks a
+ * pointer from &D_800C3D18[0].unk3 (la $s5) where this keeps an index, and
+ * its $s3/$s4 induction registers are swapped. An explicit EnemyReaction
+ * pointer (or pointer arithmetic on D_800C3D18) makes ready[] the walked
+ * pointer instead. */
 #ifdef NON_MATCHING
 void func_8007252C(void) {
     s32 slot;
@@ -613,12 +618,12 @@ void func_8007252C(void) {
         }
     }
     if (!(D_800D39DC & 0x7F8)) {
-        D_800C48EA = 1;
+        D_800C3EB0.outcome = 1;
     }
     if (!(D_800D39DC & 7)) {
-        D_800C48EA = 0x81;
+        D_800C3EB0.outcome = 0x81;
     }
-    if (D_800C48EA == 0) {
+    if (D_800C3EB0.outcome == 0) {
         waiting = D_800D39DC;
         for (slot = 0; slot < 11; slot++) {
             if (func_80089C9C(waiting, slot) && (D_800CCCE8.records[slot].pilot.status80 & 0x1000)) {
@@ -723,11 +728,11 @@ u8 mode;
 /* Split the member's panel values into digit glyph codes: HP (3 digits) and
  * maximum HP (3), or in a gear its HP (5); leading zeros become blanks (0xff).
  * Returns the warning level: 2 at an eighth of the maximum or less, 1 at a
- * quarter or less, else 0. */
-#ifdef NON_MATCHING
+ * quarter or less, else 0. Each digit is stored as soon as it is split
+ * off; the leading-zero loops index the digit arrays. */
 u8 func_80072F38(s32 member, u8 inGear) {
     u8 warning;
-    u8 *digit;
+    s32 i;
     s16 hp100;
     s16 hp10;
     s16 max100;
@@ -756,55 +761,52 @@ u8 func_80072F38(s32 member, u8 inGear) {
         }
     }
     hp100 = D_800D2D38 / 100;
-    D_800D2D38 %= 100;
+    D_800D2D38 -= hp100 * 100;
+    D_800C3E08[0] = hp100;
     hp10 = D_800D2D38 / 10;
-    D_800D2D38 %= 10;
+    D_800D2D38 -= hp10 * 10;
+    D_800C3E08[1] = hp10;
+    D_800C3E08[2] = D_800D2D38;
     max100 = D_800D2FE0 / 100;
-    D_800D2FE0 %= 100;
+    D_800D2FE0 -= max100 * 100;
+    D_800D2D54[4] = max100;
     max10 = D_800D2FE0 / 10;
-    D_800D2FE0 %= 10;
+    D_800D2FE0 -= max10 * 10;
+    D_800D2D54[5] = max10;
+    D_800D2D54[6] = D_800D2FE0;
     gear10000 = D_800D3018 / 10000;
     D_800D3018 -= gear10000 * 10000;
+    D_800D2D88[0] = gear10000;
     gear1000 = D_800D3018 / 1000;
     D_800D3018 -= gear1000 * 1000;
+    D_800D2D88[1] = gear1000;
     gear100 = D_800D3018 / 100;
     D_800D3018 -= gear100 * 100;
+    D_800D2D88[2] = gear100;
     gear10 = D_800D3018 / 10;
     D_800D3018 -= gear10 * 10;
-    D_800C3E08[0] = hp100;
-    D_800C3E08[1] = hp10;
-    D_800D2D54[4] = max100;
-    D_800D2D54[5] = max10;
-    D_800D2D88[0] = gear10000;
-    D_800D2D88[1] = gear1000;
-    D_800D2D88[2] = gear100;
     D_800D2D88[3] = gear10;
-    D_800C3E08[2] = D_800D2D38;
-    D_800D2D54[6] = D_800D2FE0;
     D_800D2D88[4] = D_800D3018;
-    for (digit = D_800C3E08; digit < D_800C3E08 + 2; digit++) {
-        if (*digit != 0) {
+    for (i = 0; i < 2; i++) {
+        if (D_800C3E08[i] != 0) {
             break;
         }
-        *digit = 0xFF;
+        D_800C3E08[i] = 0xFF;
     }
-    for (digit = &D_800D2D54[4]; digit < &D_800D2D54[6]; digit++) {
-        if (*digit != 0) {
+    for (i = 0; i < 2; i++) {
+        if (D_800D2D54[i + 4] != 0) {
             break;
         }
-        *digit = 0xFF;
+        D_800D2D54[i + 4] = 0xFF;
     }
-    for (digit = D_800D2D88; digit < D_800D2D88 + 4; digit++) {
-        if (*digit != 0) {
+    for (i = 0; i < 4; i++) {
+        if (D_800D2D88[i] != 0) {
             break;
         }
-        *digit = 0xFF;
+        D_800D2D88[i] = 0xFF;
     }
     return warning;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80072F38);
-#endif
 
 /* Build the member's four-digit panel value (the 800d32a0 value or record
  * +0xdc) as glyphs. */
@@ -832,12 +834,16 @@ void func_80073380(s32 member) {
 
 /* Build each present member's status glyphs by its panel state (0: the
  * status label, 1: the party-wide label, 2/3: the cursor window), and
- * record the draw buffer they were built for. */
-#ifdef NON_MATCHING
+ * record the draw buffer they were built for. In state 3 each outcome is
+ * written out, so both stores address the panel arrays from the switch's
+ * D_800D2D28 + member (cross-jumping later merges the two identical
+ * stores). The first new part index of the label (`start`, set once) is
+ * doubled just before its glyph call. */
 void func_80073538(void) {
     s32 member;
     s32 first;
     s32 part;
+    s32 start;
 
     D_800D2D28->statusParts[3] = 0;
     for (member = 0; member < 3; member++) {
@@ -854,11 +860,11 @@ void func_80073538(void) {
                 0x52, D_800C3EA4->status[member][D_800D2D28->statusParts[member]],
                 member * 0x60 + (D_800C3254[D_800D3280 * 3 + member] + 0x48), 0x1C);
             first = D_800D2D28->statusParts[member];
-            part = first * 2;
+            start = first * 2;
             D_800D2D28->statusParts[member] += func_80076A6C(
                 0x53, D_800C3EA4->status[member][first],
                 member * 0x60 + (D_800C3254[D_800D3280 * 3 + member] + 0x48), 0x1C);
-            for (; part < D_800D2D28->statusParts[member] * 2; part += 2) {
+            for (part = start; part < D_800D2D28->statusParts[member] * 2; part += 2) {
                 func_80076C34(&D_800C3EA4->status[member][0][part + D_800CCB04.buffer]);
             }
             D_800D2D28->statusBuffer[member] = D_800CCB04.buffer;
@@ -868,17 +874,21 @@ void func_80073538(void) {
             D_800D2D28->statusParts[3] = func_80025FA8(D_800D2F5C, 0x52, D_800C3EA4->status[3][0], D_800CCB04.buffer,
                                             0x10, 0x98, 0x1000, 0x1000, 0xC00);
             first = D_800D2D28->statusParts[3];
-            part = first * 2;
+            start = first * 2;
             D_800D2D28->statusParts[3] += func_80025FA8(D_800D2F5C, 0x53, D_800C3EA4->status[3][first],
                                              D_800CCB04.buffer, 0x10, 0x98, 0x1000, 0x1000, 0xC00);
-            for (; part < D_800D2D28->statusParts[3] * 2; part += 2) {
+            for (part = start; part < D_800D2D28->statusParts[3] * 2; part += 2) {
                 func_80076C34(&D_800C3EA4->status[3][0][part + D_800CCB04.buffer]);
             }
             D_800D2D28->statusBuffer[3] = D_800CCB04.buffer;
             break;
         case 3:
-            if (D_800D32A0[member].unk1 != 0 && D_800D2D24[member] != 7) {
-                D_800D2D28->unkCC[member] = 0;
+            if (D_800D32A0[member].unk1 != 0) {
+                if (D_800D2D24[member] != 7) {
+                    D_800D2D28->unkCC[member] = 0;
+                } else {
+                    D_800D2D28->statusParts[member] = 0;
+                }
             } else {
                 D_800D2D28->statusParts[member] = 0;
             }
@@ -893,9 +903,6 @@ void func_80073538(void) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80073538);
-#endif
 
 /* When enabled, shade the current flat quad at graphics +0x63c8 grey by
  * +0x6410 and add it with its draw mode to the ordering table. */
@@ -1271,7 +1278,9 @@ void func_80075168(void) {
  * the upright party-wide one instead, showing the fuel of a member in a
  * gear.
  * Nonmatching: the original loads the bar width with lw in u1/u3 (only the
- * page x byte is narrowed). */
+ * page x byte is narrowed). `<< 1` lets the u8 store narrow the width to
+ * lbu; `* 2` (not narrowed through a multiply) keeps lw but swaps the sum to
+ * page + width, since the width is still a memory operand at expansion. */
 #ifdef NON_MATCHING
 void func_80075938(void) {
     s32 widths[3];
@@ -1396,64 +1405,69 @@ void func_80076544(void) {
 }
 
 /* Start the panel cursor window's opening over the member's panel (wider
- * for a member with the 800d32a0 flag unless it is character 7). */
-#ifdef NON_MATCHING
+ * for a member with the 800d32a0 flag unless it is character 7). The panel
+ * x table is taken into a local after the index is formed, so its address
+ * is loaded before the index is scaled. */
 void func_800765C4(s32 member) {
-    u16 *panelX = &D_800C3254[D_800D3280 * 3 + member];
+    s32 index = D_800D3280 * 3 + member;
+    u16 *table = D_800C3254;
+    u16 *panelX = &table[index];
     s32 x;
 
     x = *panelX + 0x48;
     D_800D2D28->unk34 = member * 0x60 + x;
     D_800D2D28->unk44 = 0x1C;
     if (D_800D32A0[member].unk1 != 0 && D_800D2D24[member] != 7) {
-        x = *panelX + 0x44;
-        D_800D2D28->unk34 = member * 0x60 + x;
+        D_800D2D28->unk34 = member * 0x60 + 0x44 + *panelX;
         D_800D2D28->unk44 = 0x24;
     }
     D_800D2D28->unk3C = 0x10;
     D_800D2D28->unk4C = 0x98;
     D_800D2D28->unk54 = D_800D2D28->unk34 - (D_800D2D28->unk3C + 5);
-    D_800D2D28->unk5C = D_800D2D28->unk4C - (D_800D2D28->unk44 + 5);
+    D_800D2D28->unk5C = D_800D2D28->unk4C - 5 - D_800D2D28->unk44;
     D_800D2D28->unk54 = (D_800D2D28->unk54 << 8) / D_800D2D28->unk5C;
     D_800D2D28->unk104 = 0x800;
-    D_800D2D28->unkA9 = 6;
     D_800D2D28->unk5C = 0x100;
     D_800D2D28->unk64 = 0;
     D_800D2D28->unk6C = 0;
     D_800D2D28->unk106 = 0;
+    D_800D2D28->unkA9 = 6;
     D_800D2D28->unkAB = 1;
     D_800D2D28->unk90[member]--;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_800765C4);
-#endif
 
 /* Step the panel cursor window's opening: move the party-wide status label
  * by the pending steps, rebuild it semi-transparent at its growing scale,
  * and mark the member's panel open once the label reaches the window.
- * The original keeps x and y in 8-byte stack slots. */
-#ifdef NON_MATCHING
+ * The original keeps x and y in memory (8-byte stack slots at sp+0x28 and
+ * sp+0x30, so its y load is not forwarded from the +0x6c store); here they
+ * are two-element u16 arrays only for that shape (the second element is
+ * unused). The first new part index (`start`, set once) is doubled before
+ * the second call, just ahead of it. */
 void func_80076710(s32 member) {
-    u16 x;
-    u16 y;
+    u16 x[2];
+    u16 y[2];
     s32 i;
+    s32 first;
     s32 part;
+    s32 start;
 
     for (i = 0; i < D_800D2D28->unkA9; i++) {
         D_800D2D28->unk64 -= D_800D2D28->unk54;
         D_800D2D28->unk6C += D_800D2D28->unk5C;
-        x = ((u32)D_800D2D28->unk64 >> 8) + D_800D2D28->unk34;
-        y = ((u32)D_800D2D28->unk6C >> 8) + D_800D2D28->unk44;
+        x[0] = ((u32)D_800D2D28->unk64 >> 8) + D_800D2D28->unk34;
+        y[0] = ((u32)D_800D2D28->unk6C >> 8) + D_800D2D28->unk44;
     }
     D_800D2D28->unkA9 = 0;
     D_800D2D28->statusParts[3] = 0;
-    D_800D2D28->statusParts[3] = func_80025FA8(D_800D2F5C, 0x52, D_800C3EA4->status[3][0], D_800CCB04.buffer, x, y,
+    D_800D2D28->statusParts[3] = func_80025FA8(D_800D2F5C, 0x52, D_800C3EA4->status[3][0], D_800CCB04.buffer, x[0], y[0],
                                        D_800D2D28->unk104, D_800D2D28->unk104, D_800D2D28->unk106);
-    part = D_800D2D28->statusParts[3] * 2;
-    D_800D2D28->statusParts[3] += func_80025FA8(D_800D2F5C, 0x53, D_800C3EA4->status[3][D_800D2D28->statusParts[3]],
-                                        D_800CCB04.buffer, x, y, D_800D2D28->unk104, D_800D2D28->unk104,
+    first = D_800D2D28->statusParts[3];
+    start = first * 2;
+    D_800D2D28->statusParts[3] += func_80025FA8(D_800D2F5C, 0x53, D_800C3EA4->status[3][first],
+                                        D_800CCB04.buffer, x[0], y[0], D_800D2D28->unk104, D_800D2D28->unk104,
                                         D_800D2D28->unk106);
-    for (; part < D_800D2D28->statusParts[3] * 2; part += 2) {
+    for (part = start; part < D_800D2D28->statusParts[3] * 2; part += 2) {
         SetSemiTrans(&D_800C3EA4->status[3][0][part + D_800CCB04.buffer], 1);
     }
     D_800D2D28->statusBuffer[3] = D_800CCB04.buffer;
@@ -1462,16 +1476,13 @@ void func_80076710(s32 member) {
         D_800D2D28->unk106 += 0x80;
     }
     D_800D2D28->unkAB = 0;
-    if (D_800D2D28->unk3C >= x) {
+    if (D_800D2D28->unk3C >= x[0]) {
         D_800D2D28->unk90[member] = 1;
     }
-    if (y >= D_800D2D28->unk4C) {
+    if (y[0] >= D_800D2D28->unk4C) {
         D_800D2D28->unk90[member] = 1;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80076710);
-#endif
 
 /* Upload an image and wait for the transfer. */
 void func_800769E8(RECT *rect, u32 *pixels) {
@@ -1926,38 +1937,36 @@ void func_8007819C(void) {
 /* Upload each present member's portrait TIM (0x460 bytes per character in
  * `portraits`; character 0xb for the second and third member when 800d3294
  * is set) to the texture and CLUT places of sprite `glyph + member`, the
- * image moved 6 per member.
- * Nonmatching: the original keeps one address register per sprite field. */
-#ifdef NON_MATCHING
+ * image moved 6 per member. `sprites` holds the six func_80026338 outputs
+ * (SpriteInfo order) per member; the outputs are passed through a pointer
+ * set before the loop and read back from the array, indexed flat. */
 void func_80078310(u8 *portraits, u8 glyph) {
     TIM_IMAGE tim;
-    SpriteInfo sprites[3];
+    s32 sprites[3 * 6];
     s32 i;
     u8 character;
+    s32 *info = sprites;
 
     for (i = 0; i < 3; i++) {
-        character = D_800D2D24[i];
-        if (character != 0x7F) {
+        if (D_800D2D24[i] != 0x7F) {
+            character = D_800D2D24[i];
             if (D_800D3294 != 0 && (i == 1 || i == 2)) {
                 character = 0xB;
             }
             OpenTIM((u32 *)(portraits + character * 0x460));
             ReadTIM(&tim);
-            func_80026338(D_800D2F5C, glyph + i, &sprites[i].unk0, &sprites[i].tpageMode, &sprites[i].clutX,
-                          &sprites[i].clutY, &sprites[i].pageX, &sprites[i].pageY);
-            tim.crect->x = sprites[i].clutX;
-            tim.crect->y = sprites[i].clutY;
-            tim.prect->x = sprites[i].pageX + i * 6;
-            tim.prect->y = sprites[i].pageY;
+            func_80026338(D_800D2F5C, glyph + i, info + i * 6, info + (i * 6 + 1), info + (i * 6 + 2),
+                          info + (i * 6 + 3), info + (i * 6 + 4), info + (i * 6 + 5));
+            tim.crect->x = sprites[i * 6 + 2];
+            tim.crect->y = sprites[i * 6 + 3];
+            tim.prect->x = sprites[i * 6 + 4] + i * 6;
+            tim.prect->y = sprites[i * 6 + 5];
             LoadImage(tim.crect, tim.caddr);
             LoadImage(tim.prect, tim.paddr);
             DrawSync(0);
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80078310);
-#endif
 
 /* Reset every slot's turn timers from its speed (unused slots 0xff), its
  * ready flag and slow alternation, and clear the order buffer. */

@@ -254,74 +254,64 @@ void func_801C5A6C(void) {
     D_800625A0->buffer = 0;
 }
 
-/* Set up both buffers' quads of label `index` (two columns, 13-pixel rows from `row`). */
-#ifdef NON_MATCHING
-void func_801C5A7C(Label *label, s32 index, s32 row, s32 mode) {
+/* Set up both buffers' quads of label `index` (two columns, 13-pixel rows
+ * from `row`): mode 0 maps the text rendered for the command column;
+ * otherwise the list layout, dimmed unless bit 7 is set, with the highlight
+ * from the low bits. Old-style definition: mode arrives as a promoted int
+ * and is narrowed where it is tested. */
+void func_801C5A7C(label, index, row, mode)
+    Label *label;
+    s32 index;
+    s32 row;
+    u8 mode;
+{
     POLY_FT4 *poly;
     s32 i;
-    s32 semi;
-    s32 column;
-    s32 line;
-    s32 u;
+    u8 dim;
 
-    i = 0;
-    column = index & 1;
-    line = index / 2;
-    u = (line & 1) << 7;
-    poly = label->poly;
-loop:
-        semi = 0;
+    for (i = 0; i < 2; i++) {
+        poly = &label->poly[i];
+        dim = 0;
         SetPolyFT4(poly);
         SetSemiTrans(poly, 0);
         SetShadeTex(poly, 0);
         poly->r0 = 0x80;
         poly->g0 = 0x80;
         poly->b0 = 0x80;
-        if ((u8)mode == 0) {
-            label->highlight = column;
+        if (mode == 0) {
+            label->highlight = index & 1;
             poly->tpage = GetTPage(0, 0, 0x140, 0);
-            poly->u0 = u;
+            poly->u0 = ((index / 2) & 1) << 7;
             poly->v0 = ((index + row) / 4) * 13;
-            poly->u1 = u + label->width;
+            poly->u1 = (((index / 2) & 1) << 7) + label->width;
             poly->v1 = ((index + row) / 4) * 13;
-            poly->u2 = u;
+            poly->u2 = ((index / 2) & 1) << 7;
             poly->v2 = ((index + row) / 4) * 13 + 13;
-            poly->u3 = u + label->width;
+            poly->u3 = (((index / 2) & 1) << 7) + label->width;
             poly->v3 = ((index + row) / 4) * 13 + 13;
         } else {
             if (!(mode & 0x80)) {
-                semi = 0x20;
+                dim = 0x20;
                 SetSemiTrans(poly, 1);
-                poly->r0 = semi;
-                poly->g0 = semi;
-                poly->b0 = semi;
+                poly->r0 = dim;
+                poly->g0 = dim;
+                poly->b0 = dim;
             }
-            label->highlight = (u8)(mode & 0x7F) - 1;
-            poly->tpage = semi | GetTPage(0, 0, 0x180, 0x80);
-            poly->u0 = column * 0x60;
-            poly->v0 = line * 13 + row;
-            poly->u1 = column * 0x60 + label->width;
-            poly->v1 = line * 13 + row;
-            poly->u2 = column * 0x60;
-            poly->v2 = line * 13 + row + 13;
-            poly->u3 = column * 0x60 + label->width;
-            poly->v3 = line * 13 + row + 13;
+            label->highlight = (mode & 0x7F) - 1;
+            poly->tpage = GetTPage(0, 0, 0x180, 0x80) | dim;
+            poly->u0 = (index & 1) * 0x60;
+            poly->v0 = (index / 2) * 13 + row;
+            poly->u1 = (index & 1) * 0x60 + label->width;
+            poly->v1 = (index / 2) * 13 + row;
+            poly->u2 = (index & 1) * 0x60;
+            poly->v2 = (index / 2) * 13 + row + 13;
+            poly->u3 = (index & 1) * 0x60 + label->width;
+            poly->v3 = (index / 2) * 13 + row + 13;
         }
-        if (label->highlight) {
-            poly->clut = D_80059414;
-        } else {
-            poly->clut = D_800595D4;
-        }
-        i++;
-        poly++;
-    if (i < 2) {
-        goto loop;
+        label->poly[i].clut = label->highlight ? D_80059414 : D_800595D4;
     }
     label->projected = 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801C5A7C);
-#endif
 
 /* Render `count` labels (text ids in pairs) into VRAM and set up their quads. */
 void func_801C5CBC(Label *labels, u8 *text_ids, s32 row, s32 count) {

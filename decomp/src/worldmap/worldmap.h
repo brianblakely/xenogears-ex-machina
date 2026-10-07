@@ -93,9 +93,9 @@ typedef struct {
     u16 unk5A;
     u16 unk5C;
     u16 unk5E;
-    s16 unk60;   /* saved vehicle position */
-    s16 unk62;
-    s16 unk64;
+    u16 unk60;   /* saved vehicle position */
+    u16 unk62;
+    u16 unk64;
     u16 vehicle_heading; /* 8006ee66 */
     u16 flags;   /* 8006ee68: 0x4000 vehicle, 0x2000 restore, low bits kind */
     s16 unk6A;
@@ -331,8 +331,15 @@ extern SVECTOR D_8009BD38; /* camera angle */
 extern s32 D_8009D3F0;    /* camera distance */
 extern s32 D_8009BE0C;
 
-extern s16 D_8006F94E; /* next scene */
-extern u16 D_8006F950; /* heading carried into the next scene */
+/* Resident scene hand-over words; mode is the first flag word (D_8006F954). */
+typedef struct {
+    s16 scene;   /* 8006f94e: next scene */
+    u16 heading; /* heading carried into the next scene */
+    u16 area;    /* area carried into the world map */
+    u16 mode;    /* 8006f954: world-map mode and flags */
+} SceneResume;
+
+extern SceneResume D_8006F94E;
 extern s32 D_8009BBC4;
 
 /* Scene object (0x54 bytes): a transformed sprite set linked to a parent. */
@@ -1793,12 +1800,8 @@ typedef struct {
     SVECTOR v[4];
 } ParticleShape;
 
-typedef struct {
-    u16 uv[4];
-} ParticleUV;
-
 extern ParticleShape D_8009B040[];
-extern ParticleUV D_8009AFF0[];
+extern u16 D_8009AFF0[]; /* four packed u,v pairs per kind */
 
 extern SVECTOR D_8009A340[4][3]; /* map player marker triangles */
 extern u16 D_8009B6F4[64];       /* 32 map dot positions: interleaved X/Z */
@@ -1846,7 +1849,6 @@ typedef struct {
 
 extern WorldmapMode D_8009A058[]; /* per mode */
 extern u8 D_800591AE, D_800594F8;
-extern u16 D_8006F952;            /* area carried into the world map */
 extern u32 D_8006F160;            /* map flags */
 extern s16 D_8006EF68;
 extern s32 D_8009BD0C;

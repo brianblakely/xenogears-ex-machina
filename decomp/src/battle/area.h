@@ -68,8 +68,13 @@ typedef struct {
     BattleWork work;            /* 0x8E38: D_800CCCE8 */
 } BattleArea;
 
-/* battle_core.h declares the area's first member as D_800C3EB0. */
-#define BATTLE_AREA (*(BattleArea *)&D_800C3EB0)
+/* The battle area: one global from 800c3eb0 (the other battle overlays
+ * declare it with their own view). Member accesses fold into the symbol
+ * (D_800C3EB0+4 for the slots, which splat also labels D_800C3EB4); code
+ * that addresses the area from its address in a register (8008a684's stores,
+ * the late units) uses BATTLE_AREA. */
+extern BattleArea D_800C3EB0;
+#define BATTLE_AREA (*(BattleArea *)(void *)&D_800C3EB0)
 
 /* Layout checks. */
 typedef char BattleAreaCheck[(sizeof(BattleSlot) == 0x1C && sizeof(BattleEvent) == 0x48 && sizeof(PathPoint) == 6 &&

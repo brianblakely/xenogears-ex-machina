@@ -9,6 +9,9 @@
  */
 #include "menu.h"
 
+/* Declared here only: slot39_801DBE54.c calls it without a prototype. */
+void func_801D7CFC(u8 slot, u8 mode, u8 arg2);
+
 /* Run the command at `offset` past the top cursor (0 back, 1 load/save file,
  * 2..6 the field-menu screens, 7/8 the title file screen's load and new game,
  * 9 reset), then restore the command window. Returns 0 when the menu ends. */
@@ -493,21 +496,18 @@ void func_801C6400(void) {
 /* Load the menu resources: the card file header template (name prefixes,
  * "SC" header, icon palette and pixels), the TIM list, sprite sheet and
  * label text, the party's portraits and, with sound, the effect bank. */
-#ifdef NON_MATCHING
 void func_801C65F4(void) {
     TIM_IMAGE tim;
-    SheetEntry entries[3];
+    s32 tex[3 * 6]; /* per entry 80026338's six outputs: -, mode, clut x/y, page x/y */
     MenuResources *res;
-    void *icon;
-    void *list;
-    void *portraits;
+    void *data;
     s32 i;
     u8 id;
 
     res = D_8005945C;
     func_8003342C(res);
-    icon = func_80032E88(res->files[0], 1);
-    OpenTIM(icon);
+    data = func_80032E88(res->files[0], 1);
+    OpenTIM(data);
     ReadTIM(&D_800625A0->card->icon);
     strcpy(D_800625A0->card->prefix, "BASLUS-00664");
     strcpy((char *)D_800625A0->card->otherPrefix, "BASLUS-01160");
@@ -518,37 +518,37 @@ void func_801C65F4(void) {
     bzero(D_800625A0->card->saveTitle, sizeof(D_800625A0->card->saveTitle));
     memmove(D_800625A0->card->savePalette, D_800625A0->card->icon.caddr, sizeof(D_800625A0->card->savePalette));
     memmove(D_800625A0->card->saveIcon, D_800625A0->card->icon.paddr, sizeof(D_800625A0->card->saveIcon));
-    func_800320E8(icon);
-    list = func_80032E88(res->files[1], 1);
-    func_8002DD20(list);
-    func_800320E8(list);
+    func_800320E8(data);
+    data = func_80032E88(res->files[1], 1);
+    func_8002DD20(data);
+    func_800320E8(data);
     D_800625A0->sheet = func_80032E88(res->files[2], 0);
     D_800625A0->labels = func_80032E88(res->files[3], 0);
-    func_80026338(D_800625A0->sheet, 0xe0, &entries[0].unk0, &entries[0].mode, &entries[0].clutX,
-                  &entries[0].clutY, &entries[0].pageX, &entries[0].pageY);
-    func_80026338(D_800625A0->sheet, 0x14b, &entries[0].unk0, &entries[0].mode, &entries[0].clutX,
-                  &entries[0].clutY, &entries[0].pageX, &entries[0].pageY);
-    func_80026338(D_800625A0->sheet, 0x14c, &entries[1].unk0, &entries[1].mode, &entries[1].clutX,
-                  &entries[1].clutY, &entries[1].pageX, &entries[1].pageY);
-    func_80026338(D_800625A0->sheet, 0x14d, &entries[2].unk0, &entries[2].mode, &entries[2].clutX,
-                  &entries[2].clutY, &entries[2].pageX, &entries[2].pageY);
-    entries[1].pageX += 0xc;
-    portraits = func_80032E88(res->files[4], 1);
+    func_80026338(D_800625A0->sheet, 0xe0, &tex[0], &tex[1], &tex[2],
+                  &tex[3], &tex[4], &tex[5]);
+    func_80026338(D_800625A0->sheet, 0x14b, &tex[0], &tex[1], &tex[2],
+                  &tex[3], &tex[4], &tex[5]);
+    func_80026338(D_800625A0->sheet, 0x14c, &tex[6], &tex[7], &tex[8],
+                  &tex[9], &tex[10], &tex[11]);
+    func_80026338(D_800625A0->sheet, 0x14d, &tex[12], &tex[13], &tex[14],
+                  &tex[15], &tex[16], &tex[17]);
+    tex[10] += 0xc;
+    data = func_80032E88(res->files[4], 1);
     for (i = 0; i < 3; i++) {
         id = D_800625A0->party->ids[i];
         if (id != 0xff) {
-            OpenTIM((u8 *)portraits + id * 0xb20);
+            OpenTIM((u8 *)data + id * 0xb20);
             ReadTIM(&tim);
-            tim.crect->x = entries[i].clutX;
-            tim.crect->y = entries[i].clutY;
-            tim.prect->x = entries[i].pageX;
-            tim.prect->y = entries[i].pageY;
+            tim.crect->x = tex[i * 6 + 2];
+            tim.crect->y = tex[i * 6 + 3];
+            tim.prect->x = tex[i * 6 + 4];
+            tim.prect->y = tex[i * 6 + 5];
             LoadImage(tim.crect, tim.caddr);
             LoadImage(tim.prect, tim.paddr);
         }
     }
     DrawSync(0);
-    func_800320E8(portraits);
+    func_800320E8(data);
     if (D_80059178 != 0) {
         func_80028470(0x10, 2);
         D_8006259C = func_80031BDC(func_800288EC(5), 0);
@@ -560,9 +560,6 @@ void func_801C65F4(void) {
     D_800625A0->effectBank = D_8006259C;
     func_800320E8(res);
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C65F4);
-#endif
 
 /* Set up the party: the starting top cursor, which characters are present,
  * the party slots (and which have a gear), the first occupied slot; then
@@ -1492,9 +1489,23 @@ void func_801C9270(s32 port) {
  * while the cards stay as they were, mark this game's files and place the
  * cursor marker. */
 #ifdef NON_MATCHING
+/* Remaining: the original keeps `marked` (always 0 here) as a copy of noCard
+ * (`move s6,s4` in the first branch's delay slot) and tests it before
+ * setting party +0b; this build folds it to a constant whatever the
+ * assignment form (marked = noCard = 0, noCard = 0; marked = noCard). The
+ * original's frame holds 48 more bytes its code never touches (10
+ * differing instructions, local scorer). The copy reads s4 right after
+ * `move s4,zero`, so the source value is 0 there; cse replaces a register
+ * with a known constant whenever it can (const 0 costs less than a reg), so
+ * at cse time the original's copy source was not known to be 0 in that
+ * block. A standalone 2.6.3 test (`a = 0; b = a; ... if (b)`) folds the
+ * test away as here. With `marked` as s32 the test survives (11) but
+ * the copy is still folded to 0 and the andi is lost; other widths of
+ * either variable and both assignment orders score 15-28. */
 u8 func_801C93A8(void) {
     char path[64];
     u8 present[2];
+    u8 unused[48]; /* unused in the original; reserves 48 bytes */
     MenuState *state;
     s32 port;
     s32 i;
@@ -1722,12 +1733,9 @@ s32 func_801C9D34(s32 mode) {
 
 /* Move the cursor from `slot` a row down for `mode`: 0 to the next slot
  * below holding a file, else to the first file after the next row; 1 the
- * same for this game's files; 2 a row down when that card is present. */
-#ifdef NON_MATCHING
-/* Matches except the placement of the second mode-0 loop's store block (see
- * 801ca1d4). */
+ * same for this game's files; 2 a row down when that card is present.
+ * Mode 2 keeps the shape of the other modes' scans as single-pass loops. */
 void func_801C9EF4(s32 mode, s32 slot) {
-    s32 next;
     s32 i;
 
     switch (mode) {
@@ -1776,33 +1784,30 @@ void func_801C9EF4(s32 mode, s32 slot) {
         }
         break;
     case 2:
-        next = slot + 3;
-        if (D_800625A0->card->present[next / 15]) {
-            if (next < 30) {
-                D_800625A0->card->cursor = next;
-            } else {
+        if (D_800625A0->card->present[(slot + 3) / 15]) {
+            for (; slot + 3 < 30; slot += 3) {
+                D_800625A0->card->cursor = slot + 3;
+                break;
+            }
+            if (slot + 3 >= 30) {
                 i = D_800625A0->card->cursor + 3;
-                if (i < 30 && i + 1 < 30) {
-                    D_800625A0->card->cursor = i + 1;
+                if (i < 30) {
+                    for (; i + 1 < 30; i++) {
+                        D_800625A0->card->cursor = i + 1;
+                        break;
+                    }
                 }
             }
         }
         break;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C9EF4);
-#endif
 
 /* Move the cursor from `slot` a row up for `mode`: 0 to the next slot above
  * holding a file, else to the last file before the previous row; 1 the same
  * for this game's files; 2 a row up when that card is present. */
-#ifdef NON_MATCHING
-/* Matches except the placement of the second mode-0 loop's store block: the
- * original moves it before case 2, this build after case 2's first store. */
 void func_801CA1D4(s32 mode, s32 slot) {
     s32 cursor;
-    s32 next;
     s32 i;
 
     switch (mode) {
@@ -1852,23 +1857,24 @@ void func_801CA1D4(s32 mode, s32 slot) {
         }
         break;
     case 2:
-        next = slot - 3;
-        if (D_800625A0->card->present[next / 15]) {
-            if (next >= 0) {
-                D_800625A0->card->cursor = next;
-            } else {
+        if (D_800625A0->card->present[(slot - 3) / 15]) {
+            for (; slot - 3 >= 0; slot -= 3) {
+                D_800625A0->card->cursor = slot - 3;
+                break;
+            }
+            if (slot - 3 < 0) {
                 i = D_800625A0->card->cursor - 3;
-                if (i >= 0 && i - 1 >= 0) {
-                    D_800625A0->card->cursor = i - 1;
+                if (i >= 0) {
+                    for (; i - 1 >= 0; i--) {
+                        D_800625A0->card->cursor = i - 1;
+                        break;
+                    }
                 }
             }
         }
         break;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CA1D4);
-#endif
 
 /* Move the cursor from `slot` right for `mode`: 0 to the next slot holding
  * a file, 1 to the next slot holding this game's file, 2 one slot on when
@@ -2134,6 +2140,22 @@ void func_801CAE08(u8 mode) {
  * to the first zero pair go through 80033b34 into a 20-byte buffer that is
  * copied back whole. */
 #ifdef NON_MATCHING
+/* Loop-invariant motion differs: this build hoists &GAME_NAMES[1] (a
+ * movable the inner loop already moved) out of the row loop into s2, the
+ * original reloads it into t0 for every row. GCC's loop pass doubles the
+ * loop's insn count for every such re-moved invariant, so the original had
+ * one more before it (fp+16, fp+17 and this one are moved here); writing
+ * every access as GAME_NAMES[n + i] keeps it but loses the name pointer.
+ * Wrapping the inner loop in a do/while (0) block gets 19 -> 13 differing
+ * instructions (local scorer).
+ * Loop dump (-dL): the row loop has 55 insns; &codes (r109, life 26),
+ * &codes[1] (r81) and &GAME_NAMES[1] (r84, life 26) are weighed in that
+ * order at 110, 220 and 440, and the copy loop's &decoded (r105, life 13)
+ * fails at 880. r84 needs one more doubling (or a lifetime under about
+ * 15) to stay in the loop. A 20-minute permuter run found nothing valid.
+ * A pointer variable for &GAME_NAMES[1] (set before the row loop, at the
+ * row start or in the inner loop) and the row pointer as &names[n] give
+ * the same or worse code (25-50). */
 void func_801CB184(void) {
     u8 codes[24];
     u8 decoded[20];
@@ -2179,7 +2201,49 @@ void func_801CB28C(s32 *save) {
  * 100h chunks into a 2100h block and, when the payload's eight-bit sum matches
  * its last byte, apply it; message 5c ends the load, a failure shows message
  * 3e and continues. */
-#ifdef NON_MATCHING
+/* Read the save file in 100h chunks into a 2100h block (a failed read
+ * closes the file and frees the block) and apply it when its sum
+ * matches (a statement macro). */
+#define READ_SAVE()                                          \
+    do {                                                     \
+        D_800625A0->party->unk2F = 0;                        \
+        buffer = func_80031BDC(0x2100, 1);                   \
+        done = 0;                                            \
+        p = buffer;                                          \
+        D_800625A0->party->unkB = 0;                         \
+        func_801CAE08(1);                                    \
+        do {                                                 \
+            func_801C7BF4();                                 \
+            retry = 5;                                       \
+            do {                                             \
+                if (read(fd, p, 0x100) != 0x100) {           \
+                    fd = 0;                                  \
+                    func_801C8CA4(port);                     \
+                }                                            \
+            } while (fd == 0 && --retry != 0);               \
+            if (fd == 0) {                                   \
+                close(file);                                 \
+                goto release;                                \
+            }                                                \
+            done += 0x100;                                   \
+            p += 0x100;                                      \
+        } while (done < D_800625A0->card->saveBlocks << 13); \
+        close(fd);                                           \
+        p = buffer + 0x100;                                  \
+        sum = 0;                                             \
+        for (i = 0; i < 0x1eff; i++) {                       \
+            sum += *p++;                                     \
+        }                                                    \
+        if (sum == *p) {                                     \
+            p = buffer + 0x100;                              \
+            func_801C72BC(1);                                \
+            func_801CB28C((s32 *)p);                         \
+            func_801C72BC(0x11);                             \
+        } else {                                             \
+            fd = 0;                                          \
+        }                                                    \
+    } while (0)
+
 u8 func_801CB304(void) {
     char path[64];
     s32 first;
@@ -2192,12 +2256,13 @@ u8 func_801CB304(void) {
     s32 done;
     u8 *buffer;
     u8 *p;
-    s32 sum;
+    u8 sum;
     s32 i;
+    s32 failed; /* open's failure result, held in a variable */
 
     result = 1;
-    again = 1;
     first = 1;
+    again = 1;
     func_801CADB0();
     do {
         if (func_801C93A8()) {
@@ -2214,9 +2279,9 @@ u8 func_801CB304(void) {
             D_800625A0->party->unk2F = 0;
             D_800625A0->party->unkB = 0;
             D_800625A0->loadState = 1;
-            result = 0;
             D_800625A0->party->unkB = 0;
             func_801CACF8(0x62, 0xff, 0);
+            result = 0;
             break;
         }
         D_800625A0->party->unk2F = 1;
@@ -2233,56 +2298,23 @@ u8 func_801CB304(void) {
             }
             strcat(path,
                    D_800625A0->card->files[D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]]].name);
-            if (!func_801CACF8(0x65, 0xff, 1)) {
+            if (!(u8)func_801CACF8(0x65, 0xff, 1)) {
                 D_800625A0->card->unk4F80 = 0xff;
             } else {
                 func_801D2F4C(0x3b);
                 retry = 5;
                 D_800625A0->sounds = 0;
+                failed = -1;
                 do {
                     fd = open(path, 1);
-                    if (fd == -1) {
+                    if (fd == failed) {
                         fd = 0;
                         func_801C8CA4(port);
                     }
-                    file = fd;
                 } while (fd == 0 && --retry != 0);
-                if (fd != 0) {
-                    done = 0;
-                    D_800625A0->party->unk2F = 0;
-                    buffer = func_80031BDC(0x2100, 1);
-                    p = buffer;
-                    D_800625A0->party->unkB = 0;
-                    func_801CAE08(1);
-                    do {
-                        func_801C7BF4();
-                        retry = 5;
-                        do {
-                            if (read(fd, p, 0x100) != 0x100) {
-                                fd = 0;
-                                func_801C8CA4(port);
-                            }
-                        } while (fd == 0 && --retry != 0);
-                        if (fd == 0) {
-                            close(file);
-                            goto release;
-                        }
-                        done += 0x100;
-                        p += 0x100;
-                    } while (done < D_800625A0->card->saveBlocks << 13);
-                    close(fd);
-                    p = buffer + 0x100;
-                    sum = 0;
-                    for (i = 0; i < 0x1eff; i++) {
-                        sum += *p++;
-                    }
-                    if ((u8)sum == *p) {
-                        func_801C72BC(1);
-                        func_801CB28C((s32 *)(buffer + 0x100));
-                        func_801C72BC(0x11);
-                    } else {
-                        fd = 0;
-                    }
+                file = fd;
+                if (file != 0) {
+                    READ_SAVE();
                 release:
                     func_800320E8(buffer);
                 }
@@ -2317,9 +2349,6 @@ u8 func_801CB304(void) {
     D_800625A0->cardsPresent = 1;
     return result;
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CB304);
-#endif
 
 /* The unformatted-card question for `port`: show message 29h + 3 * port and
  * wait while no input comes and the cards stay as they were; a card change
@@ -2373,13 +2402,13 @@ u8 func_801CB9E8(u8 port, u8 slot) {
  * and three more bytes), the play time and file digit `digit`, each name
  * encoded in place, the disc, then the game data copy (801e4a28) and the names
  * decoded back. */
-#ifdef NON_MATCHING
 void func_801CBA4C(MenuSavePayload *payload, u8 port, u8 digit) {
     u8 codes[24];
     u8 encoded[20];
     s32 i;
     s32 j;
     u8 *name;
+    u8 *names;
 
     for (j = 0; j < 16; j++) {
         D_8006F958[j] = D_8005A3A0[j];
@@ -2397,11 +2426,12 @@ void func_801CBA4C(MenuSavePayload *payload, u8 port, u8 digit) {
             payload->ids[i] = 0xff;
         }
     }
+    payload->time = D_80059488;
     payload->unk1F = 0;
     payload->digit = digit;
-    payload->time = D_80059488;
-    name = GAME_NAMES;
+    names = GAME_NAMES;
     for (i = 0; i < 31; i++) {
+        name = &names[i * 20];
         for (j = 0; j < 20; j++) {
             codes[j] = name[j];
             encoded[j] = 0;
@@ -2410,7 +2440,6 @@ void func_801CBA4C(MenuSavePayload *payload, u8 port, u8 digit) {
         for (j = 0; j < 20; j++) {
             name[j] = encoded[j];
         }
-        name += 20;
     }
     if (!D_801E96A5) {
         D_8006F008 = func_80028530() - 1;
@@ -2420,9 +2449,6 @@ void func_801CBA4C(MenuSavePayload *payload, u8 port, u8 digit) {
     func_801E4A28((SaveData *)payload);
     func_801CB184();
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CBA4C);
-#endif
 
 /* The save: refresh the cards (none: returns 1), then run the file cursor
  * until cancel or confirm. An unformatted card asks to format it; an empty
@@ -2431,9 +2457,6 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CBA4C);
  * header (title 801ca8c0) and the checksummed payload (801cba4c) to a
  * temporary file and renames it to the prefix and digit, then reports 5c or
  * 35 and refreshes the listing. With `kind` 0 one save ends it. */
-#ifdef NON_MATCHING
-/* Differs in register allocation: the original keeps ff in a saved register
- * (and so spills `again`). */
 u8 func_801CBD90(u8 kind) {
     char finalName[64];
     char tempName[64];
@@ -2653,10 +2676,10 @@ u8 func_801CBD90(u8 kind) {
             }
             D_800625A0->markers->unk144[0] = 1;
             D_800625A0->sounds = 1;
-            if (!kind) {
-                again = 0;
+            if (kind) {
+                break;
             }
-            break;
+            /* fall through: a single save ends it */
         case 2:
             again = 0;
             break;
@@ -2666,9 +2689,6 @@ u8 func_801CBD90(u8 kind) {
     D_800625A0->cardsPresent = 1;
     return result;
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CBD90);
-#endif
 
 /* The file screen's copy command: pick a file and copy it to the other
  * card (asking first; no card, a full card or an existing file there
@@ -2677,7 +2697,24 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CBD90);
  * card and 44 otherwise, and refreshes the listing. Returns 1 when there
  * was no card. */
 #ifdef NON_MATCHING
-/* Differs in register allocation and spills (the original keeps &tempName in a saved register). */
+/* Remaining (local scorer 117; nm_diff 80 lines):
+ * - Block placement: the original emits the copy-failure block (close both,
+ *   rebuild the temporary name, erase it) between the open-temp failure
+ *   block and the header write. Placing it there with
+ *   `} else if (0) { fail: ... } else {` reproduces the layout and every
+ *   other difference except the two below (nm_diff 50 lines).
+ * - Allocation: the original keeps &tempName (hoisted out of the outer loop)
+ *   in fp and spills src to 4e0 (stored by sw, read back by lbu). Here src
+ *   (refs 14, live 266, priority 1578) outranks &tempName (refs 17, live
+ *   515, priority 1320). Writing the three src retry loops as goto loops
+ *   drops src to 11 refs and gives exactly the original allocation, but
+ *   those loops then lose the lbu (the argument mask is combined away) and
+ *   the srcFd copy placement, so the originals are real loops and src's
+ *   weight must come out lower some other way.
+ * - Scheduling: the full-card block (`proceed = 0` / `again = 0` sit
+ *   between the argument loads in the original) and `written += 0x200`
+ *   (the original fills the header[3] load delay with it).
+ * src as u8/u32/s16 or declared first or last changes nothing (117). */
 u8 func_801CC6D8(void) {
     char destName[64];
     char other[8];
@@ -2697,12 +2734,13 @@ u8 func_801CC6D8(void) {
     u8 noCard;
     u8 exists;
     u8 retry;
-    u8 phase;
+    s32 phase;
     s32 fd;
     s32 srcFd;
     s32 destFd;
     s32 written;
     s32 i;
+    s32 slot;
 
     full = 0;
     first = 1;
@@ -2777,17 +2815,18 @@ u8 func_801CC6D8(void) {
                     src = 1;
                 }
                 if (D_800625A0->card->result[dest] == -2) {
-                    if (!func_801CB8AC(dest)) {
+                    if (func_801CB8AC(dest)) {
+                        func_801D2F4C(0x26);
+                        if (func_80040574(other)) {
+                            func_801D32B4();
+                            func_801CACF8(0x5c, 0xff, 0);
+                        } else {
+                            func_801D32B4();
+                            proceed = 0;
+                        }
+                    } else {
                         D_800625A0->markers->unk144[0] = 1;
                         continue;
-                    }
-                    func_801D2F4C(0x26);
-                    if (func_80040574(other)) {
-                        func_801D32B4();
-                        func_801CACF8(0x5c, 0xff, 0);
-                    } else {
-                        func_801D32B4();
-                        proceed = 0;
                     }
                 }
             }
@@ -2871,13 +2910,13 @@ u8 func_801CC6D8(void) {
                                         func_801C8CA4(dest);
                                     }
                                 } while (fd == 0 && --retry != 0);
-                                written = 0x200;
                                 if (fd == 0) {
                                     close(srcFd);
                                     close(destFd);
                                     destFd = 0;
                                     func_800405B4(tempName);
                                 }
+                                written = 0x200;
                                 phase = 0;
                                 func_801CAE08(1);
                                 for (;;) {
@@ -2939,17 +2978,17 @@ u8 func_801CC6D8(void) {
                     D_800625A0->sounds = 0;
                     func_801CACF8(0x5c, 0xff, 0);
                 } else {
-                    func_801CACF8(full ? 0xac : 0x44, 0xff, 0);
+                    func_801CACF8(!full ? 0x44 : 0xac, 0xff, 0);
                 }
                 func_801CAE08(0);
                 D_800625A0->card->mode = 2;
                 while (D_800625A0->cardPollTimer != 1) {
                     func_801C7BF4();
                 }
-                for (i = 0; i < 32; i++) {
-                    D_800625A0->card->fileSlots[i] = 0xff;
-                    D_800625A0->card->ours[i] = 0;
-                    D_800625A0->card->files[i].state = 0;
+                for (slot = 0; slot < 32; slot++) {
+                    D_800625A0->card->fileSlots[slot] = 0xff;
+                    D_800625A0->card->ours[slot] = 0;
+                    D_800625A0->card->files[slot].state = 0;
                 }
                 D_800625A0->card->scanned[0] = 0;
                 D_800625A0->card->scanned[1] = 0;
@@ -5462,9 +5501,7 @@ void func_801D74EC(u8 slot, u8 gear) {
 
 /* Lay out the detail panel's value derived from record +77..+79 of party
  * slot `slot` ((+78 + +77) * 10 + +79) * 22 shown in hundredths with one
- * decimal) or, with `gear`, its gear's +68 (five digits). Only the register
- * allocation differs (the gear and the tenth digit trade saved registers). */
-#ifdef NON_MATCHING
+ * decimal) or, with `gear`, its gear's +68 (five digits). */
 void func_801D7884(u8 slot, u8 gear) {
     s32 digits;
     s32 first;
@@ -5473,7 +5510,7 @@ void func_801D7884(u8 slot, u8 gear) {
     u8 digit;
     u16 value;
     u16 whole;
-    u16 tenth;
+    s32 tenth;
 
     if (!gear) {
         value = ((D_8006D8A0[D_800625A0->party->ids[slot]].accessories[4] + D_8006D8A0[D_800625A0->party->ids[slot]].accessories[3]) *
@@ -5483,7 +5520,8 @@ void func_801D7884(u8 slot, u8 gear) {
         whole = value / 100;
         digits = 3;
         first = 6;
-        tenth = (value - whole * 100) / 10;
+        tenth = value;
+        tenth = (tenth - whole * 100) / 10;
         func_801C80B8(whole);
         x = D_801E9D30;
     } else {
@@ -5504,7 +5542,7 @@ void func_801D7884(u8 slot, u8 gear) {
     }
     if (!gear) {
         D_800625A0->block358->list1C70Count +=
-            func_8002675C(D_800625A0->sheet, tenth,
+            func_8002675C(D_800625A0->sheet, (u16)tenth,
                           &D_800625A0->block358->list1C70[D_800625A0->block358->list1C70Count * 2],
                           D_800625A0->bufferIndex, D_801E9D30 + 0x20, D_801E9D34, 0x1000);
     }
@@ -5518,9 +5556,6 @@ void func_801D7884(u8 slot, u8 gear) {
                           D_800625A0->block358->list1C70[i * 2 + D_800625A0->bufferIndex].y0);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D7884);
-#endif
 
 /* Build the status panels of party slot `slot` for `mode` and show them. */
 void func_801D7C3C(u8 slot, u8 mode) {
@@ -6333,46 +6368,50 @@ void func_801DA518(void) {
     func_800320E8(D_800625A0->tables->items);
 }
 
+/* Column of item entry `i`: its x offset and its name's left edge (8-aligned).
+ * A statement macro (do/while (0)). */
+#define ITEM_COLUMN(i, x, left)            \
+    do {                                   \
+        (x) = ((i) % 2) * 0x88;            \
+        (left) = ((x) + 0x28) & 0xfff8;    \
+    } while (0)
+
 /* Build the 16 visible entries of the item list from scroll row `row`: an
  * entry without an id or count is emptied; otherwise the count is capped at
  * 99 and the item name and two-digit count are rendered into the image area
  * and laid out, greyed when the item cannot be used here. */
-#ifdef NON_MATCHING
-/* Differs in register allocation: this keeps 0xcccccccd in a saved register
- * and spills `row`; the original materialises the constant at each use. */
+/* The counts are addressed from the ids (D_8006F65A - 150), as the original
+ * does. */
 void func_801DA5BC(s32 row) {
     u8 codes[4];
     u8 text[8];
     RECT rect;
     s32 i;
-    s32 tens;
+    u8 tens;
     s32 x;
     s32 left;
     u16 y;
     u8 kind;
     u8 grey;
     u8 *image;
-    u8 *ids;
-    u8 *counts;
 
     image = func_80031BDC(0x3f6, 0);
     codes[1] = 0;
     codes[3] = 0;
-    ids = D_8006F65A;
-    counts = ids - 150;
     for (i = 0; i < 16; i++) {
-        if (ids[row * 2 + i] != 0) {
-            if (counts[row * 2 + i] != 0) {
-                if (counts[row * 2 + i] >= 100) {
-                    counts[row * 2 + i] = 99;
+        if (D_8006F65A[row * 2 + i] != 0) {
+            if ((D_8006F65A - 150)[row * 2 + i] != 0) {
+                if ((D_8006F65A - 150)[row * 2 + i] >= 100) {
+                    (D_8006F65A - 150)[row * 2 + i] = 99;
                 }
-                D_800625A0->block42C->names[i].width = func_80034EAC(func_80033818(ids[row * 2 + i]), image, 0x24, 0);
-                tens = counts[row * 2 + i] / 10;
-                codes[0] = tens + 0x10;
-                if (tens == 0) {
+                D_800625A0->block42C->names[i].width = func_80034EAC(func_80033818(D_8006F65A[row * 2 + i]), image, 0x24, 0);
+                tens = (D_8006F65A - 150)[row * 2 + i] / 10;
+                if (tens != 0) {
+                    codes[0] = tens + 0x10;
+                } else {
                     codes[0] = 0xc3;
                 }
-                codes[2] = counts[row * 2 + i] % 10 + 0x10;
+                codes[2] = (D_8006F65A - 150)[row * 2 + i] % 10 + 0x10;
                 func_80033B34(codes, text, 2);
                 D_800625A0->block42C->values[i].width = func_80034EAC(text, image, 0x24, 1);
                 rect.x = (i & 1) * 0x18 + 0x180;
@@ -6381,7 +6420,7 @@ void func_801DA5BC(s32 row) {
                 rect.h = 0xd;
                 LoadImage(&rect, image);
                 DrawSync(0);
-                kind = D_800625A0->tables->items[ids[row * 2 + i]].use;
+                kind = D_800625A0->tables->items[D_8006F65A[row * 2 + i]].use;
                 if (kind & 0x20) {
                     grey = kind & 0x80;
                     if (D_80059171 == 0) {
@@ -6392,9 +6431,8 @@ void func_801DA5BC(s32 row) {
                 }
                 func_801E7C50(&D_800625A0->block42C->names[i], i, 0x80, grey | 1);
                 func_801E7C50(&D_800625A0->block42C->values[i], i, 0x80, grey | 2);
-                x = (i % 2) * 0x88;
+                ITEM_COLUMN(i, x, left);
                 y = (i / 2) * 0x10 | 0xe;
-                left = (x + 0x28) & 0xfff8;
                 func_801C851C(D_800625A0->block42C->names[i].verts, left, y, D_800625A0->block42C->names[i].width,
                               0xd);
                 left = (x + 0x90) & 0xfff8;
@@ -6404,20 +6442,17 @@ void func_801DA5BC(s32 row) {
                 D_800625A0->block42C->values[i].count = D_800625A0->bufferIndex;
                 D_800625A0->block42C->shown[i] = 1;
             } else {
-                ids[row * 2 + i] = 0;
+                D_8006F65A[row * 2 + i] = 0;
                 D_800625A0->block42C->shown[i] = 0;
             }
         } else {
-            counts[row * 2 + i] = 0;
+            (D_8006F65A - 150)[row * 2 + i] = 0;
             D_800625A0->block42C->shown[i] = 0;
         }
     }
     func_800320E8(image);
     D_800625A0->party->unk48 = 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DA5BC);
-#endif
 
 /* Show the description of item list entry `entry` at scroll row `row`: the
  * item's message line, a copy of its name and count texts and, for items
@@ -6664,8 +6699,26 @@ void func_801DB5E4(u8 mode) {
  * confirm until it runs out or the player cancels. Returns the targets
  * marked last (0 when cancelled or unusable). */
 #ifdef NON_MATCHING
-/* Register allocation differs: the original spills `row` and keeps the
- * inventory index in a saved register. */
+/* Remaining: one commutative operand order. The original clears the id as
+ * addu v0,fp,v0 (index first, v0 = inventory + 150); this build adds the
+ * base first (2 differing instructions, local scorer). Everything else
+ * matches: the inventory base is one pointer set once (spilled and
+ * rematerialised into t0 for both uses), the id is cleared through
+ * inv->ids taken after the count reaches zero, and 801e31c0 is called
+ * without a prototype (its result is used unmasked). Setting inv after
+ * the 801d397c call puts it in the extended block of the loop preheader,
+ * so the rerun cse knows its value there and orders the hoisted
+ * &counts[idx] index first as the original does.
+ * Mechanism (GCC source): expand emits the pointer first for pointer +
+ * index forms unless the pointer is not a register (expand_binop swaps
+ * then), and cse's fold_rtx puts an operand second when its value is a
+ * known constant; the clear block is not in an extended block where the
+ * base is known. Tried for the clear: inv->ids[idx], *(inv->ids + idx),
+ * ((u8 *)inv + 150)[idx], inv->counts[idx + 150] (all fold into 0x96 of
+ * the count address, 111-115), a second pointer or inv set again in the
+ * clear block (33-75), INVENTORY used directly for the count, decrement
+ * and clear (correct orders, but loop.c then moves the clear's base + 150
+ * out of the loop because it forces the already-moved base, 111-143). */
 u8 func_801DB920(s32 row, s32 entry) {
     u16 marks;
     u8 running;
@@ -6675,6 +6728,8 @@ u8 func_801DB920(s32 row, s32 entry) {
     s32 all;
     s32 i;
     MenuItem *item;
+    Inventory *inv;
+    u8 *ids;
 
     marks = 0;
     running = 1;
@@ -6691,9 +6746,9 @@ u8 func_801DB920(s32 row, s32 entry) {
     all = item->target & 1;
     if (marks) {
         func_801D397C(2, 0x10, 0xe, 0x90, 0xb0, 0, 0, 4, 0);
+        inv = INVENTORY;
         while (running) {
             func_801C7BF4();
-            marks = 0;
             if (redraw) {
                 redraw = 0;
                 func_801DA5BC(row);
@@ -6701,6 +6756,7 @@ u8 func_801DB920(s32 row, s32 entry) {
                 func_801DB39C(1);
                 func_801DB5E4(0);
             }
+            marks = 0;
             D_800625A0->markers->visible[0] = D_800625A0->markers->visible[1] = D_800625A0->markers->visible[2] = 0;
             if (all) {
                 for (i = 0; i < 3; i++) {
@@ -6714,7 +6770,7 @@ u8 func_801DB920(s32 row, s32 entry) {
                 D_800625A0->markers->visible[slot] = 1;
             }
             D_800625A0->party->unk2F = 1;
-            if (INVENTORY->counts[row * 2 + entry] == 0) {
+            if (inv->counts[row * 2 + entry] == 0) {
                 running = 0;
             }
             if (!running) {
@@ -6732,8 +6788,9 @@ u8 func_801DB920(s32 row, s32 entry) {
                 if (used) {
                     func_801C8574(0x37);
                     redraw = 1;
-                    if (--INVENTORY->counts[row * 2 + entry] == 0) {
-                        INVENTORY->ids[row * 2 + entry] = 0;
+                    if (--inv->counts[row * 2 + entry] == 0) {
+                        ids = inv->ids;
+                        ids[row * 2 + entry] = 0;
                     }
                 } else {
                     func_801C8574(4);

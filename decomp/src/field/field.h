@@ -162,6 +162,18 @@ typedef struct FieldActor {
  * sixteen bits at a time. */
 #define ACTOR_FLAG_HALF(actor, n) (((u16 *)(actor))[n])
 
+/* Bit-field view of the actor's +134 word: bits 0-3 animation bank, bit 4
+ * its flag, bits 5-6 a two-bit field cleared on reset, bit 7 the platform
+ * link flag. */
+typedef struct {
+    u32 bank : 4;
+    u32 bank_flag : 1;
+    u32 unk5 : 2;
+    u32 linked : 1;
+    u32 unk8 : 24;
+} ActorBits134;
+#define ACTOR_BITS134(actor) (*(ActorBits134 *)&(actor)->unk134)
+
 /* A 14-byte collision triangle; +0c indexes the attribute table. */
 typedef struct {
     s16 unk00[6];
@@ -184,28 +196,47 @@ typedef struct {
     s16 unk84;       /* 84 */
     u8 unk86[0x90 - 0x86];
     s32 unk90;       /* 90 */
-    RECT rect;       /* 94 */
-} TextBox;
+} TextBox;           /* the resident code reads the window area that follows at +94 */
+
+/* A dialogue window's frame (window + 0ac): its area and the backing and
+ * border packets. The window code addresses these members from the frame,
+ * so its address (800c2744 + window) is the base it keeps. */
+typedef struct {
+    RECT rect;                  /* 00 (0AC): the window's area */
+    u8 unk08[0x18 - 0x08];
+    DR_MODE back_modes[2];      /* 18 (0C4): per buffer */
+    TILE back[2];               /* 30 (0DC): the backing tile per buffer */
+    DR_MODE border_modes[2][10]; /* 50 (0FC): per buffer, eight used */
+    SPRT border[2][10];         /* 140 (1EC): per buffer, eight used */
+} DialogueFrame;
+
+/* A dialogue window's choice (window + 37c): its state, the selectable
+ * lines and the cursor packets. The window code addresses the packets from
+ * this struct's base. */
+typedef struct {
+    s16 status;       /* 00 (37C): zero while a choice is shown */
+    s16 first;        /* 02 (37E): first selectable line */
+    s16 count;        /* 04 (380): selectable line count */
+    s16 index;        /* 06 (382): selected line */
+    DR_MODE modes[2]; /* 08 (384): per buffer */
+    SPRT cursor[2];   /* 20 (39C): the choice cursor per buffer */
+} DialogueChoice;
+
+/* A dialogue window's waiting prompt (window + 3c4). */
+typedef struct {
+    s16 status;       /* 00 (3C4): zero while waiting for the player */
+    u8 unk02[2];
+    DR_MODE modes[2]; /* 04 (3C8): per buffer */
+    SPRT sprite[2];   /* 1C (3E0): the waiting prompt per buffer */
+} DialoguePrompt;
 
 /* One of the four 0x498-byte dialogue windows at 800c2698. */
 typedef struct {
     DR_MODE modes[2]; /* 000: per buffer */
-    TextBox text;    /* 018: its rect (0ac) is the window's area */
-    u8 unk0B4[0xC4 - 0xB4];
-    DR_MODE back_modes[2];      /* 0C4: per buffer */
-    TILE back[2];               /* 0DC: the backing tile per buffer */
-    DR_MODE border_modes[2][10]; /* 0FC: per buffer, eight used */
-    SPRT border[2][10];         /* 1EC: per buffer, eight used */
-    s16 status;      /* 37C: zero while displayed */
-    s16 unk37E;      /* 37E: first line */
-    s16 unk380;      /* 380: line count */
-    s16 unk382;      /* 382 */
-    DR_MODE choice_modes[2];    /* 384: per buffer */
-    SPRT choice[2];             /* 39C: the choice cursor per buffer */
-    s16 unk3C4;      /* 3C4 */
-    u8 unk3C6[2];
-    DR_MODE prompt_modes[2];    /* 3C8: per buffer */
-    SPRT prompt[2];             /* 3E0: the waiting prompt per buffer */
+    TextBox text;    /* 018 */
+    DialogueFrame frame; /* 0AC */
+    DialogueChoice choice; /* 37C */
+    DialoguePrompt prompt; /* 3C4 */
     s16 timer;       /* 408: opening steps left */
     s16 prompt_delay; /* 40A */
     u16 style;       /* 40C: 1 above, 0x81 below the speaker; 0x20 portrait on
@@ -1053,7 +1084,7 @@ extern s32 D_8004F34C; /* current map */
 extern u8 D_800625FC[2][0x22]; /* pad buffers */
 
 /* Field state. */
-extern u8 D_800ADFCC[][2]; /* per music: wave file, release shared bank */
+extern u8 D_800ADFCC[]; /* per music, two bytes: wave file, release shared bank */
 extern s32 D_800AFC54;
 extern void *D_800C3A1C; /* music-wave gather buffer */
 extern s16 D_800ADB54;
@@ -1073,8 +1104,8 @@ extern s32 D_800ADBCC; /* pending party slot */
 extern FieldEventParams D_800B0080;
 extern Record78 D_800B02CC[];
 extern u16 D_800AE060[][2]; /* movie sound timeline: time, sound */
-/* Field movie parameters (800c3a20..800c3a3a), set by the movie events. */
-extern s16 D_800C3A20; /* movie file */
+/* Field movie parameters (800c3a22..800c3a3a) by halfword; the whole
+ * block is D_800C3A20 (FieldMovieRequest, field_script.h). */
 extern u16 D_800C3A22;
 extern u16 D_800C3A24;
 extern u16 D_800C3A26;

@@ -2267,10 +2267,10 @@ ImageAnim *func_800A3640(anim, target, mode, flags, colors, x, y, z, x2, y2, z2,
 /* Advance an image animation by `ticks` + 1: when its curve selects another
  * frame, rebuild the image (resident decoders or fades) and copy the
  * overlap into its target image. Returns the frame, or a negative value
- * once the animation ended. With FrameCurve returning s16 (as the curves
- * 800A3490-800A35C8 do) this differs only in the operand order of the frame
- * compare; written frame != anim->frame, GCC no longer returns the loaded
- * frame straight from the compare. */
+ * once the animation ended. Nonmatching: only the operand order of the
+ * frame compare differs (beq $s1, $v0 in the original); written
+ * frame != anim->frame, GCC no longer returns the loaded frame straight
+ * from the compare. */
 s16 func_800A3E98(ImageAnim *anim, s32 ticks) {
     RECT src;
     RECT dst;
@@ -2279,6 +2279,7 @@ s16 func_800A3E98(ImageAnim *anim, s32 ticks) {
     u16 *work;
     u16 result;
     s16 frame;
+    s32 value;
     s32 x;
     s32 y;
 
@@ -2286,7 +2287,8 @@ s16 func_800A3E98(ImageAnim *anim, s32 ticks) {
         return -1;
     }
     anim->time += anim->speed * (ticks + 1);
-    frame = result = anim->curve(anim->time, anim->divisor, anim->base);
+    value = result = anim->curve(anim->time, anim->divisor, anim->base);
+    frame = value;
     if (frame < 0) {
         func_800A429C(anim);
         return frame;
@@ -2511,21 +2513,18 @@ void func_800A4820(void) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Draw the scene hierarchy's visible model parts under view: billboard parts
  * (field52 1: upright, 2: facing the view) drop the parts' rotation, and
  * field52 selects the model drawing mode (4-7: 2-5); plain parts (field52 0)
  * draw at ordering-table depth 16 into ot[depth - 1]. */
-void func_800A48EC(ModelList *models, ModelPart *root, MATRIX *view, s32 arg3, s32 arg4, u32 *ot, s32 buffer,
+void func_800A48EC(ModelList *models, ModelPart *part, MATRIX *view, s32 arg3, s32 arg4, u32 *ot, s32 buffer,
                    s32 depth) {
     MATRIX *m;
-    ModelPart *part;
     s32 shift;
     u32 count;
     s32 i;
     s32 mode;
 
-    part = root;
     m = (MATRIX *)0x1F800040;
     count = part++->index - 1;
     shift = D_80050100;
@@ -2579,9 +2578,6 @@ void func_800A48EC(ModelList *models, ModelPart *root, MATRIX *view, s32 arg3, s
     }
     D_80050100 = shift;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A48EC);
-#endif
 
 /* Push point (relative to origin, in the ground plane) out of the first
  * listed circle (x, z, radius) it lies inside, onto its rim; whether it was
@@ -2636,8 +2632,9 @@ void func_800A4CF8(s32 index) {
  * projected horizon (near and far, clamped to the screen), then the tiles
  * of the scrolling ceiling under a camera turned and tilted with the view,
  * each front-facing tile textured from the scroll position. Differs in the
- * tile loop's register allocation (the original keeps three copies of the
- * half tile size and reloads the tag masks per row). */
+ * tile loop's register allocation: the original also copies half (for the
+ * multiplies) and u0 before the rows and loads the tag masks per row; here
+ * the masks and the row copy of half are hoisted out of both loops. */
 void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *view, u32 *ot,
                    s32 buffer) {
     SVECTOR unused; /* declared, never used (its slot stays in the frame) */
@@ -2655,6 +2652,7 @@ void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *vi
     s32 tilt;
     s32 size;
     s32 half;
+    s32 halfU;
     s32 u0;
     s32 v0;
     s32 u;
@@ -2757,8 +2755,9 @@ void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *vi
     vertex = &sky->grid[0][0];
     n = buffer * 64;
     for (row = 0; row < 8; row++) {
+        halfU = half;
         v = (row & 1) * half + v0;
-        vEnd = v + half - 1;
+        vEnd = v + halfU - 1;
         for (col = 0; col < 8; col++) {
             gte_ldv3(&vertex[0], &vertex[1], &vertex[9]);
             gte_rtpt();
@@ -2776,8 +2775,8 @@ void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *vi
                 u = (col & 1) * half + u0;
                 sky->tiles[n].u0 = u;
                 sky->tiles[n].u2 = u;
-                sky->tiles[n].u1 = u + half - 1;
-                sky->tiles[n].u3 = u + half - 1;
+                sky->tiles[n].u1 = u + halfU - 1;
+                sky->tiles[n].u3 = u + halfU - 1;
                 addPrim(ot, &sky->tiles[n]);
             }
             n++;
@@ -4376,12 +4375,8 @@ void *func_800AA820(s32 mode) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Reset a battle object's state. */
 void func_800AA898(BattleObject *object, EffectPool *pool, u8 **scripts, u8 **animations) {
-    object->field3C = 0xFFFF;
-    object->field5C = 0xFF;
-    object->field39 = 0x6B;
     object->scripts = scripts;
     object->extra = NULL;
     object->script = NULL;
@@ -4394,6 +4389,9 @@ void func_800AA898(BattleObject *object, EffectPool *pool, u8 **scripts, u8 **an
     object->field37 = 0;
     object->field38 = 0;
     object->field3A = -1;
+    object->field3C = 0xFFFF;
+    object->field5C = 0xFF;
+    object->field39 = 0x6B;
     object->motion[0] = 0;
     object->motion[1] = 0;
     object->motion[2] = 0;
@@ -4413,9 +4411,6 @@ void func_800AA898(BattleObject *object, EffectPool *pool, u8 **scripts, u8 **an
     object->field36 = 0;
     object->field1E = -1;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800AA898);
-#endif
 
 /* Start target's effect script id on object (ids from 0x50 come from the
  * target's extra file), or queue it (up to five) while one is running. */

@@ -18,6 +18,7 @@
 #include "glyph_lists.h"
 #include "item_command.h"
 #include "result_input.h"
+#include "area.h"
 
 /* Word view of BattleDraw.buffer, alongside the low-byte view in battle_core.h. */
 extern s32 D_800CCB34_word __asm__("D_800CCB34");
@@ -201,15 +202,15 @@ void func_8008D328(void) {
  * skipped) and shades them (from 0x2000 by a slot item's availability:
  * shaded semi-transparent, else full brightness). With `fade` fade the lists
  * instead (8008d328) and return their buffer; otherwise return the draw
- * buffer. Nonmatching: 18 instruction differences in the glyph call's
- * destination/count setup (8008d740-8008d7ac); the rest matches. */
-#ifdef NON_MATCHING
+ * buffer. The list's first new glyph (`first`, set once) starts each
+ * shading loop. */
 s32 func_8008D598(u8 member, u8 page, u8 fade) {
     u16 lists[2];
     u8 sets[2];
     s32 i;
     s32 j;
     s32 n;
+    s32 first;
     s32 id;
     u16 shade;
     u32 value;
@@ -238,7 +239,7 @@ s32 func_8008D598(u8 member, u8 page, u8 fade) {
                     continue;
                 }
             }
-            n = D_800D2D28->unkD0[lists[i]] * 2;
+            first = D_800D2D28->unkD0[lists[i]] * 2;
             D_800D2D28->unkD0[lists[i]] +=
                 func_80076A10(id, &D_800C3EA4->unk641C[lists[i]][D_800D2D28->unkD0[lists[i]] * 2],
                              ((s16 *)D_800C2F4C[sets[i]])[j + 1], ((s16 *)D_800C2F4C[sets[i]])[j + 2]);
@@ -251,7 +252,7 @@ s32 func_8008D598(u8 member, u8 page, u8 fade) {
                 }
             }
             if (value != 0) {
-                for (; n < D_800D2D28->unkD0[lists[i]] * 2; n += 2) {
+                for (n = first; n < D_800D2D28->unkD0[lists[i]] * 2; n += 2) {
                     SetSemiTrans(&D_800C3EA4->unk641C[lists[i]][n + D_800CCB04.buffer], 1);
                     SetShadeTex(&D_800C3EA4->unk641C[lists[i]][n + D_800CCB04.buffer], 0);
                     (D_800C3EA4->unk641C[lists[i]] + (n + D_800CCB34_word))->r0 = value;
@@ -260,7 +261,7 @@ s32 func_8008D598(u8 member, u8 page, u8 fade) {
                     D_800C3EA4->unk641C[lists[i]][n + D_800CCB04.buffer].tpage |= 0x20;
                 }
             } else {
-                for (; n < D_800D2D28->unkD0[lists[i]] * 2; n += 2) {
+                for (n = first; n < D_800D2D28->unkD0[lists[i]] * 2; n += 2) {
                     (D_800C3EA4->unk641C[lists[i]] + (n + D_800CCB34_word))->r0 = 0x80;
                     (D_800C3EA4->unk641C[lists[i]] + (n + D_800CCB34_word))->g0 = 0x80;
                     (D_800C3EA4->unk641C[lists[i]] + (n + D_800CCB34_word))->b0 = 0x80;
@@ -271,9 +272,6 @@ s32 func_8008D598(u8 member, u8 page, u8 fade) {
     }
     return D_800CCB34_word;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8008CCCC", func_8008D598);
-#endif
 
 /* Place a window's four corner glyphs (the alternate set while the battle
  * is ending) at its corners in the current draw buffer. */
@@ -2170,33 +2168,40 @@ void func_80096018(void) {
 /* Element adjustment of an attack/defense pair: the command's element (or
  * the attacker's own element status) against the target's weakness, its
  * resistance statuses (which may also force hit result 4) and its single
- * element guards, then a 20% boost for either side's +0x32 bit 0x10. */
+ * element guards, then a 20% boost for either side's +0x32 bit 0x10. The
+ * guard switch tests the target's guard bits shifted back into place
+ * (status = bits << 8, computed once). defenseScale is a signed char (the
+ * defense division keeps its sign correction).
+ * Nonmatching: element, bits and flag are allocated $t0/$t1/$t2 here and
+ * $t1/$t2/$t0 in the original; the original tests element == 0 with an
+ * andi but forms element & own without one. */
 void func_80096494(u16 *attack, u16 *defense, s8 *hit) {
-    s32 ether = 0;
+    u8 ether = 0;
     u8 flag = 0;
     u8 element;
     u8 bits;
     u8 targetGear;
+    u16 own;
     u16 status;
     s8 scale;
-    s32 defenseScale;
+    s8 defenseScale;
 
     targetGear = D_800C34B0->records[D_800C3E50].flags15A >> 7;
     element = D_800C3DFC->attributes[2] & 0x3F;
     bits = D_800C3E34->pilot.weakness & 0x3F;
     if (!(D_800C34B0->records[D_800C3E04].flags15A >> 7)) {
-        status = D_800C3E00->pilot.status8C.half.active | D_800C3E00->pilot.status8C.half.permanent;
+        own = D_800C3E00->pilot.status8C.half.active | D_800C3E00->pilot.status8C.half.permanent;
     } else {
-        status = D_800D2D6C->status84.half.active | D_800D2D6C->status84.half.permanent;
+        own = D_800D2D6C->status84.half.active | D_800D2D6C->status84.half.permanent;
     }
-    status >>= 12;
+    own >>= 12;
     if (D_800C3DFC->flagsA & 0x100) {
         ether = 1;
     }
-    if (element == 0 && status != 0) {
-        element = status;
+    if (element == 0 && own != 0) {
+        element = own;
     }
-    if (element & status) {
+    if (element & own) {
         flag = 1;
     }
     scale = 10;
@@ -2240,24 +2245,25 @@ void func_80096494(u16 *attack, u16 *defense, s8 *hit) {
             *hit = 4;
         }
     }
+    status = bits << 8;
     switch (element) {
     case 1:
-        if ((bits << 8) & 0x200) {
+        if (status & 0x200) {
             scale += 3;
         }
         break;
     case 2:
-        if ((bits << 8) & 0x100) {
+        if (status & 0x100) {
             scale += 3;
         }
         break;
     case 4:
-        if ((bits << 8) & 0x800) {
+        if (status & 0x800) {
             scale += 3;
         }
         break;
     case 8:
-        if ((bits << 8) & 0x400) {
+        if (status & 0x400) {
             scale += 3;
         }
         break;
