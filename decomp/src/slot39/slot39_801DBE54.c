@@ -1004,11 +1004,14 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801DE5
  * (worn special parts are dropped). Without a new part the kept one goes
  * back. Returns 1 when character 4 changed weapon. */
 #ifdef NON_MATCHING
-/* Differs: the original's frame is 0x28 (this builds 0x18: the extra slots
- * are left by two more compare-and-branch pseudos that combine deletes, so the
- * original has two more such compares) and it converts `gear` at each use;
- * the inventory update code otherwise has the same shape. */
+/* The equipment lists and records are addressed through the one GameData
+ * object, as the original does (it forms the list addresses from the
+ * record address it loaded). Remaining: register assignment (the original
+ * copies slot to t0 and part to a0 and converts `gear` at each test; this
+ * build converts gear once in a3 and keeps slot in v1, so every list
+ * pointer and flag moves down one register). */
 s32 func_801DF0D4(u8 slot, u8 part, u8 special, u8 gear) {
+    VECTOR unused; /* unused in the original; reserves 16 bytes */
     u8 *ids;
     u8 *counts;
     u8 *at;
@@ -1032,7 +1035,7 @@ s32 func_801DF0D4(u8 slot, u8 part, u8 special, u8 gear) {
     length = 100;
     if (special) {
         if (!gear) {
-            at = &D_8006D8A0[D_800625A0->party->ids[slot]].specials[part];
+            at = &D_8006D634.chars[D_800625A0->party->ids[slot]].specials[part];
             selected = *at;
             kept = D_800625A0->labels360->parts[1][part];
             if (selected == 0) {
@@ -1045,7 +1048,7 @@ s32 func_801DF0D4(u8 slot, u8 part, u8 special, u8 gear) {
                 D_8006F8BA[*at] = 100;
             }
         } else {
-            at = &D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk4[part];
+            at = &D_8006D634.gears[D_8006D634.chars[D_800625A0->party->ids[slot]].gear].unk4[part];
             selected = *at;
             kept = D_800625A0->labels360->parts[1][part];
             if (selected == 0) {
@@ -1061,38 +1064,38 @@ s32 func_801DF0D4(u8 slot, u8 part, u8 special, u8 gear) {
     } else if (!gear) {
         if (part == 0) {
             id = D_800625A0->party->ids[slot];
-            selected = D_8006D8A0[id].weapons[0];
+            selected = D_8006D634.chars[id].weapons[0];
             kept = D_800625A0->labels360->parts[0][0];
             if (selected == 0) {
-                D_8006D8A0[id].weapons[0] = kept;
+                D_8006D634.chars[id].weapons[0] = kept;
                 swap = 0;
             } else if (id == 4) {
                 result = 1;
             }
         } else {
-            ids = D_8006F4FC;
-            counts = D_8006F434;
+            ids = D_8006D634.accessoryIds;
+            counts = D_8006D634.accessoryCounts;
             kept = D_800625A0->labels360->parts[2][part - 1];
-            selected = D_8006D8A0[D_800625A0->party->ids[slot]].accessories[part - 1];
+            selected = D_8006D634.chars[D_800625A0->party->ids[slot]].accessories[part - 1];
             length = 200;
         }
     } else {
         if (part == 0) {
             id = D_800625A0->party->ids[slot];
-            selected = D_8006DFAC[D_8006D8A0[id].gear].unkC[0];
+            selected = D_8006D634.gears[D_8006D634.chars[id].gear].unkC[0];
             kept = D_800625A0->labels360->parts[0][0];
             if (selected == 0) {
-                D_8006DFAC[D_8006D8A0[id].gear].unkC[0] = kept;
+                D_8006D634.gears[D_8006D634.chars[id].gear].unkC[0] = kept;
                 swap = 0;
             } else if (id == 4) {
                 result = 1;
             }
         } else {
-            ids = D_8006F84E;
-            counts = D_8006F7B8;
+            ids = D_8006D634.gearAccessoryIds;
+            counts = D_8006D634.gearAccessoryCounts;
             length = 150;
             kept = D_800625A0->labels360->parts[2][part - 1];
-            selected = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk9[part - 1];
+            selected = D_8006D634.gears[D_8006D634.chars[D_800625A0->party->ids[slot]].gear].unk9[part - 1];
         }
     }
     if (swap) {
