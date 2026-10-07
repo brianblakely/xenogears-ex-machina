@@ -148,18 +148,17 @@ s32 func_8008C75C(s32 index) {
 /* Update the player's vehicle (actor slot 4): drive it by the pad, record
  * the trail, board and park the other party vehicles on command, and save
  * its spot and heading. */
-#ifdef NON_MATCHING /* original 0x58-byte frame and boarding target registers still differ */
 s32 func_8008C844(s32 index) {
+    MATRIX unused; /* unused in the original; reserves 32 bytes */
     WorldmapActor *actor;
-    WorldmapActor *target;
     ActorScratch *scratch;
     TrailPoint *point;
     s32 value;
     u16 trail;
     s32 result = 1;
 
-    actor = &D_8009BE24[index];
     scratch = (ActorScratch *)0x1F800000;
+    actor = &D_8009BE24[index];
     switch (actor->unk4) {
     case 4:
         actor->state = 0x10;
@@ -299,9 +298,8 @@ s32 func_8008C844(s32 index) {
         break;
     case 10:
         func_800941C4(&actor->position, &D_8009BE24[D_8009BD60].position, &actor->motion, &actor->heading);
-        target = &D_8009BE24[D_8009BD60];
-        actor->u.step = target->position.vx >> 12;
-        actor->unk54 = target->position.vz >> 12;
+        actor->u.step = D_8009BE24[D_8009BD60].position.vx >> 12;
+        actor->unk54 = D_8009BE24[D_8009BD60].position.vz >> 12;
         func_800245D8(actor->handle, 1);
         actor->state++;
     case 11:
@@ -439,9 +437,6 @@ s32 func_8008C844(s32 index) {
     D_8006EE54.unk5A = actor->heading;
     return result;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8008C364", func_8008C844);
-#endif
 
 /* Start party vehicle 1: place it, and while its member rides (movement
  * modes 1-3) put it under the player; modes 4-7 mark it boarded. Save its
