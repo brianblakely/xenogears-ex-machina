@@ -1116,12 +1116,13 @@ s32 func_80086FF8(Actor *actor, PolyF4 *packet) {
 /* Link the HUD and map overlay for this frame: each side's arrows (one per
  * point), state marks, name plates, icons, gauges, the charge bars (flashing
  * when nearly full) and the level bars (tinted by the level). Does not match:
- * one fewer saved register is used (register allocation of the buffer, HUD and count temporaries). */
+ * the original adds each HUD array's offset to the HUD base register before
+ * the index (as if the arrays were separate symbols related by CSE), keeps the
+ * HUD base in $s1 and the count in $s2 (here $s3/$s1), and fills the delay
+ * slot after the first mark test. */
 #ifdef NON_MATCHING
 void func_80087068(Actor *left, Actor *right) {
     OverlayBuffer *buf;
-    Hud *hud;
-    DrawTPage *tpage;
     PolyF4 *mark;
     PolyFT4 *bar;
     s32 n;
@@ -1158,19 +1159,16 @@ void func_80087068(Actor *left, Actor *right) {
     if (func_80086FF8(right, mark)) {
         AddPrim(D_80092938, mark);
     }
-    hud = &D_80095698;
-    AddPrim(D_80092938, &hud->name_l[D_800928A0]);
-    AddPrim(D_80092938, &hud->name_r[D_800928A0]);
-    AddPrim(D_80092938, &hud->icon[D_800928A0]);
-    AddPrim(D_80092938, &hud->icon[2 + D_800928A0]);
-    tpage = D_80095918;
-    AddPrim(D_80092938, &tpage[D_800928A0]);
-    AddPrim(D_80092938, &hud->gauge[D_800928A0]);
-    AddPrim(D_80092938, &hud->gauge[2 + D_800928A0]);
-    tpage += 2;
-    AddPrim(D_80092938, &tpage[D_800928A0]);
-    AddPrim(D_80092938, &hud->bar_r[D_800928A0]);
-    AddPrim(D_80092938, &hud->bar_l[D_800928A0]);
+    AddPrim(D_80092938, &D_80095698.name_l[D_800928A0]);
+    AddPrim(D_80092938, &D_80095698.name_r[D_800928A0]);
+    AddPrim(D_80092938, &D_80095698.icon[D_800928A0]);
+    AddPrim(D_80092938, &D_80095698.icon[2 + D_800928A0]);
+    AddPrim(D_80092938, &D_80095918[D_800928A0]);
+    AddPrim(D_80092938, &D_80095698.gauge[D_800928A0]);
+    AddPrim(D_80092938, &D_80095698.gauge[2 + D_800928A0]);
+    AddPrim(D_80092938, &D_80095918[2 + D_800928A0]);
+    AddPrim(D_80092938, &D_80095698.bar_r[D_800928A0]);
+    AddPrim(D_80092938, &D_80095698.bar_l[D_800928A0]);
     AddPrim(D_80092938, &buf->marks[0]);
     AddPrim(D_80092938, &buf->marks[1]);
     AddPrim(D_80092938, &buf->frame[0]);
