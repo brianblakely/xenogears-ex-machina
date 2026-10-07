@@ -2886,18 +2886,33 @@ conveyed:
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_80082620);
 #endif
 
-#ifdef NON_MATCHING
+/* Sweep `actor`'s move against the collision layers. The controlled actor
+ * borrows the 0x600 flags of the party members in slots 1 and 2 for the
+ * sweep; its own are restored afterwards. */
+#define ACTOR_SWEEP(actor, index, saved, result, move, edge, heading)                                   \
+    do {                                                                                                \
+        (saved) = (actor)->flags;                                                                       \
+        if ((index) == D_800B2078.controlled) {                                                         \
+            if (D_8005A444[1] != 0xFF) {                                                                \
+                (actor)->flags =                                                                        \
+                    (saved) | (D_800AF880.components.descriptors[D_8005A444[1]].actor->flags & 0x600);  \
+            }                                                                                           \
+            if (D_8005A444[2] != 0xFF) {                                                                \
+                (actor)->flags |= D_800AF880.components.descriptors[D_8005A444[2]].actor->flags & 0x600; \
+            }                                                                                           \
+        }                                                                                               \
+        if (!((actor)->flags & 0x41800) && (actor)->unk074 == 0xFF && D_800ADB98 == 0) {                \
+            (result) = func_8007BAC0((move), (actor), (edge), (heading));                               \
+        } else {                                                                                        \
+            (result) = func_8007B814((move), (actor), (edge), (heading));                               \
+        }                                                                                               \
+        (actor)->flags = ((actor)->flags & ~0x600) | ((saved) & 0x600);                                 \
+    } while (0)
+
 /* Move actor `index` for this frame: choose its walk/run mode, turn its
  * requested heading into a velocity (80081f80) plus its additive motion,
  * sweep that against the collision layers, then pick its animation and
  * store the result as its velocity (+30).
- * NON_MATCHING (16 edits): only index and descriptor swap $s5/$s6. Global
- * allocation takes descriptor (4 refs over 261 insns) before index (3 refs
- * over 111); the original allocates index first, which needs index's live
- * length below ~98 insns or descriptor's above ~296 (or one ref fewer for
- * descriptor). Writing the switch on unkE8 as an if-chain or duplicating
- * the stop block at its gotos (cross-jumped back to one copy) does not do
- * it; the duplicates raise model's refs and swap model/heading instead.
  * The (u16) view of the first heading test keeps jump threading from
  * merging it with the second, as in the original. */
 void func_80082BB8(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
@@ -2963,21 +2978,7 @@ void func_80082BB8(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
     }
     result = -1;
     if (actor->triangle[actor->layer] != -1) {
-        saved = actor->flags;
-        if (index == D_800B2078.controlled) {
-            if (D_8005A444[1] != 0xFF) {
-                actor->flags = saved | (D_800AF880.components.descriptors[D_8005A444[1]].actor->flags & 0x600);
-            }
-            if (D_8005A444[2] != 0xFF) {
-                actor->flags |= D_800AF880.components.descriptors[D_8005A444[2]].actor->flags & 0x600;
-            }
-        }
-        if (!(actor->flags & 0x41800) && actor->unk074 == 0xFF && D_800ADB98 == 0) {
-            result = func_8007BAC0(&move, actor, edge, heading);
-        } else {
-            result = func_8007B814(&move, actor, edge, heading);
-        }
-        actor->flags = (actor->flags & ~0x600) | (saved & 0x600);
+        ACTOR_SWEEP(actor, index, saved, result, &move, edge, heading);
     }
     if (result == -1) {
         goto stop;
@@ -3041,9 +3042,6 @@ moved:
     actor->unk40[1] = 0;
     actor->unk40[2] = 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_80082BB8);
-#endif
 
 /* Ease `value` 0x4000 towards zero, bounded by +-`limit`. */
 s32 func_80083178(s32 value, s32 limit) {
