@@ -361,8 +361,10 @@ void func_80071AE0(void) {
  * enemy runs its AI script (unless mode is set) and shows its name; a party
  * member gets its panel highlight and its command menu. Then each slot's
  * default target is chosen and the turn's actions play out.
- * Nonmatching: the original adds the panel x before 0x28 for the right
- * corners and allocates the y constant to $a1. */
+ * Nonmatching (1752 vs 1756 bytes): in the panel highlight's right
+ * corners the original sums into $v0 where this uses $v1, and for the last
+ * corner it loads the actor byte after the buffer offset (keeping a
+ * load-delay nop) where this schedules it earlier. */
 #ifdef NON_MATCHING
 void func_80071B94(u8 mode) {
     s32 i;
@@ -419,9 +421,9 @@ void func_80071B94(u8 mode) {
         }
         setXY4(&D_800C3EA4->unk63C8[D_800CCB04.buffer],
                D_800C3EAC->actor * 0x60 + (D_800C3254[D_800D3280 * 3 + D_800C3EAC->actor] + 0x10), 8,
-               D_800C3EAC->actor * 0x60 + (D_800C3254[D_800D3280 * 3 + D_800C3EAC->actor] + 0x28), 8,
+               D_800C3EAC->actor * 0x60 + D_800C3254[D_800D3280 * 3 + D_800C3EAC->actor] + 0x28, 8,
                D_800C3EAC->actor * 0x60 + (D_800C3254[D_800D3280 * 3 + D_800C3EAC->actor] + 0x10), 0x20,
-               D_800C3EAC->actor * 0x60 + (D_800C3254[D_800D3280 * 3 + D_800C3EAC->actor] + 0x28), 0x20);
+               D_800C3EAC->actor * 0x60 + D_800C3254[D_800D3280 * 3 + D_800C3EAC->actor] + 0x28, 0x20);
         D_800C3EA4->unk6414 = D_800CCB04.buffer;
         D_800C3EA4->unk6415 = 1;
         actor = D_800C3EAC->actor;
