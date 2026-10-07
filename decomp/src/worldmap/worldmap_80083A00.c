@@ -432,7 +432,10 @@ s16 func_80084D00(s32 probe, s16 *hit) {
  * collision faces flat (x, z) and record every face whose outline contains
  * the probe (face number and its attribute) in D_8009D718. Returns a word-sized
  * count of table entries; the caller narrows it to s16. */
-#ifdef NON_MATCHING /* range-check scheduling and loop register allocation differ */
+/* NON_MATCHING: the range checks put each slti result in v0 (the original
+ * keeps both in a1/v0 in place) and i = 0 is scheduled before the
+ * scratch matrix address setup. */
+#ifdef NON_MATCHING
 s32 func_80084DB8(s32 probe, s32 index) {
     s32 flag;
     SceneObject *object;
@@ -440,8 +443,6 @@ s32 func_80084DB8(s32 probe, s32 index) {
     Mesh *mesh;
     SVECTOR *vertices;
     MeshFace *face;
-    s16 *hit_face;
-    s16 *hit_kind;
     s32 count;
     s32 i;
     s32 dz;
@@ -479,12 +480,10 @@ s32 func_80084DB8(s32 probe, s32 index) {
     SetRotMatrix(&scratch->m);
     SetTransMatrix(&scratch->m);
     mesh = (Mesh *)object->unk44;
-    scratch->u.test.point = (scratch->u.test.delta.vz << 16) | (scratch->u.test.delta.vx & 0xFFFF);
     count = mesh->unk0;
     vertices = mesh->vertices;
+    scratch->u.test.point = (scratch->u.test.delta.vz << 16) | (scratch->u.test.delta.vx & 0xFFFF);
     face = mesh->faces;
-    hit_face = D_8009D718;
-    hit_kind = D_8009D718 + 1;
     for (; i < count; i++, face++) {
         gte_RotTrans(&vertices[face->corner[0]], &scratch->p[0], &flag);
         gte_RotTrans(&vertices[face->corner[1]], &scratch->p[1], &flag);
@@ -504,11 +503,9 @@ s32 func_80084DB8(s32 probe, s32 index) {
         if (func_8004A70C(scratch->u.test.edge[0], scratch->u.test.edge[1], scratch->u.test.point) > 0) {
             continue;
         }
-        *hit_face = i;
-        hit_face += 2;
-        *hit_kind = face->kind;
+        D_8009D718[hits] = i;
+        D_8009D718[hits + 1] = face->kind;
         hits += 2;
-        hit_kind += 2;
     }
     return hits;
 }
