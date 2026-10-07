@@ -1489,11 +1489,13 @@ void func_801C9270(s32 port) {
 /* Remaining: the original keeps `marked` (always 0 here) as a copy of noCard
  * (`move s6,s4` in the first branch's delay slot) and tests it before
  * setting party +0b; this build folds it to a constant whatever the
- * assignment form (marked = noCard = 0, noCard = 0; marked = noCard), and
- * its frame is 0xe8 (0x30 more; the 0x58-0xc8 gap is never accessed). */
+ * assignment form (marked = noCard = 0, noCard = 0; marked = noCard). The
+ * original's frame holds 48 more bytes its code never touches (10
+ * differing instructions, local scorer). */
 u8 func_801C93A8(void) {
     char path[64];
     u8 present[2];
+    u8 unused[48]; /* unused in the original; reserves 48 bytes */
     MenuState *state;
     s32 port;
     s32 i;
