@@ -560,25 +560,9 @@ void func_800723E0(void) {
 /* Rebuild the alive mask: knocked-out slots lose their HP (gear +0x104) and
  * leave the turn order unless held by 800c3608; set the outcome when a side
  * is defeated; when every alive slot waits (+0x80 bit 0x1000), release the
- * first. The outcome is the battle area's member, so the mask is reloaded
- * after it is set. Nonmatching: in the enemy loop the original walks a
- * pointer from &D_800C3D18[0].unk3 (la $s5) where this keeps an index, and
- * its $s3/$s4 induction registers are swapped. An explicit EnemyReaction
- * pointer (or pointer arithmetic on D_800C3D18) makes ready[] the walked
- * pointer instead. loop.c combines the unk3 address giv with the
- * (slot - 3) * 4 giv because `reg + symbol` costs no more than the original
- * address (cost 3); it stays a separate pointer giv only when the field is
- * read at reg + 3 (cost 1) while slot - 3 is still a giv for present[] and
- * ready[]. `&D_800C3D18[slot - 3]` folds to slot * 4 + (sym - 12) and drops
- * that giv (present[] then uses slot, ready[] a pointer); an
- * `enemy = slot - 3` variable keeps it but ready[] still gets a pointer.
- * Follow-up: explicit byte/struct reaction walks put ready[] in a pointer
- * and emit 888 rather than 908 bytes. Independent actor/enemy counters,
- * flat byte/row views, split party/enemy array views and a defeated-slot
- * statement macro do not match. Nested pilot/gear arms with duplicated
- * eligibility tails reduce the nmscore edit score to 31, still 888 bytes;
- * retain the simpler indexed draft below (912 bytes vs 908 original). */
-#ifdef NON_MATCHING
+ * first. Pilot and gear slots handle their own knockout/held state before
+ * checking ordinary participation. The outcome is the battle area's
+ * member, so the mask is reloaded after it is set. */
 void func_8007252C(void) {
     s32 slot;
     s32 waiting; /* The mask remains word sized between slot-bit calls. */
@@ -603,22 +587,27 @@ void func_8007252C(void) {
                     if (!func_80089C9C(D_800C3608, slot)) {
                         D_800CCCE8.records[slot].pilot.hp = 0;
                         D_800D2DCC.ready[slot] = 0xFF;
-                        continue;
+                    } else {
+                        D_800D39DC |= func_80089C08(slot);
                     }
-                    D_800D39DC |= func_80089C08(slot);
-                    continue;
+                } else {
+                    if (D_800C3EB4[slot].hidden == 0 && D_800C3D18[slot - 3].unk3 == 0) {
+                        D_800D39DC |= func_80089C08(slot);
+                    }
                 }
-            } else if (D_800CCCE8.records[slot].gear.status7C & 0xC000) {
-                if (!func_80089C9C(D_800C3608, slot)) {
-                    D_800CCCE8.records[slot].gear.hp = 0;
-                    D_800D2DCC.ready[slot] = 0xFF;
-                    continue;
+            } else {
+                if (D_800CCCE8.records[slot].gear.status7C & 0xC000) {
+                    if (!func_80089C9C(D_800C3608, slot)) {
+                        D_800CCCE8.records[slot].gear.hp = 0;
+                        D_800D2DCC.ready[slot] = 0xFF;
+                    } else {
+                        D_800D39DC |= func_80089C08(slot);
+                    }
+                } else {
+                    if (D_800C3EB4[slot].hidden == 0 && D_800C3D18[slot - 3].unk3 == 0) {
+                        D_800D39DC |= func_80089C08(slot);
+                    }
                 }
-                D_800D39DC |= func_80089C08(slot);
-                continue;
-            }
-            if (D_800C3EB4[slot].hidden == 0 && D_800C3D18[slot - 3].unk3 == 0) {
-                D_800D39DC |= func_80089C08(slot);
             }
         }
     }
@@ -645,9 +634,6 @@ void func_8007252C(void) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_8007252C);
-#endif
 
 /* Add every other primitive from `first` to the ordering table. */
 void func_800728B8(POLY_FT4 *prims, s32 count, s32 first) {
