@@ -181,7 +181,9 @@ INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/load_modes", func_801E8320);
 /* Load mode (shatter): copy the screen (made semi-transparent) to
  * 0x2c0,0x100, then for at least 82 frames and until the four setup phases
  * are done (one per idle disc frame, 8001bb0c between the first two), fade
- * the background and run the shatter on the scratchpad stack. */
+ * the background and run the shatter on the scratchpad stack.
+ * NON_MATCHING: s3/s4 swapped (the original keeps frames in s3 and
+ * first/shatter in s4, copying the first buffer pointer from v1). */
 #ifdef NON_MATCHING
 void func_801E8588(void) {
     RECT rect;
@@ -522,7 +524,8 @@ INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/load_modes", func_801E8DF0);
 #endif
 
 /* Load mode (burst): like the shatter mode, but the background fades before
- * the burst runs on the scratchpad stack. */
+ * the burst runs on the scratchpad stack.
+ * NON_MATCHING: the same s3/s4 swap as func_801E8588. */
 #ifdef NON_MATCHING
 void func_801E91E8(void) {
     RECT rect;
