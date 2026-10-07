@@ -569,9 +569,9 @@ void func_80074AB4(Actor *actor) {
 /* Step an actor's animation player by the elapsed animation steps and
  * record the frame; stepped/done go to the pose record. */
 #define ANIM_ADVANCE(actor, player, steps)                                     \
-    stepped = (steps);                                                         \
     actor->flags = (actor->flags & ~0x800) |                                   \
                    ((func_8008B730(player, steps, actor->anim_speed) & 1) << 11); \
+    stepped = (steps);                                                         \
     speed = actor->anim_speed
 
 #ifdef NON_MATCHING
@@ -579,7 +579,9 @@ void func_80074AB4(Actor *actor) {
  * (or a forced restart) resets the player, speed and parts; then advance
  * by the accumulated speed and apply the move's end rule (stop, chain to
  * the next move, hold, or loop).
- * Does not match: the original keeps the step count in a saved register ($s1, one more saved register and a larger frame), which shifts the register choice throughout. */
+ * Does not match: same size; the saved registers of the shown speed, the
+ * stepped count and the cached ~0x1000 mask are assigned in another order
+ * ($s6/$s7/$s5 vs $s7/$s5/$s6) and the loop counter is cleared later. */
 void func_80074BA4(Actor *actor) {
     s32 steps;
     Pose *pose = actor->pose;
@@ -609,8 +611,8 @@ void func_80074BA4(Actor *actor) {
             actor->flags &= ~0x2000000;
         }
         actor->unk4F = ((u8 *)actor->unk7C)[actor->anim * 2 + 1] * actor->unk15F2 / 256;
-        func_80074998(actor);
         player = &((ModelSet *)actor->node->data)->players[actor->anim];
+        func_80074998(actor);
         func_8008B0D8(player);
         actor->unk99E = 0;
         actor->event_frame = -1;
