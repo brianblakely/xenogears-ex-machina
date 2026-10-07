@@ -3634,11 +3634,9 @@ u32 func_8007CD14(s32 flag, s32 top, s32 middle, s32 low) {
     return (low & 0x7F) | ((flag << 7) & 0x80) | (top << 24) | ((middle << 8) & 0xFFFF00);
 }
 
-#ifdef NON_MATCHING
 /* Start a line segment of a key between two positions for the current
  * owner (once per key and owner), with the given texture column, linked to
- * the segment started on the previous frame.
- * Does not match: loads are scheduled ahead of the original statement order. */
+ * the segment started on the previous frame. */
 void func_8007CD44(s32 column, Vector *from, Vector *to, s32 key) {
     Sparkle *sparkle;
     Sparkle *other;
@@ -3665,31 +3663,28 @@ void func_8007CD44(s32 column, Vector *from, Vector *to, s32 key) {
     sparkle->frame = 0;
     sparkle->x = from->vx;
     sparkle->y = from->vy;
-    sparkle->u.line.owner = D_800928E8;
     sparkle->z = from->vz;
+    sparkle->u.line.owner = D_800928E8;
     sparkle->u.line.x = to->vx;
     sparkle->u.line.y = to->vy;
+    sparkle->u.line.z = to->vz;
+    sparkle->u.line.stamp = D_800926A4;
     prim = sparkle->prim;
     prim->u0 = prim->u1 = prim->u2 = prim->u3 = (u8)D_80092698 * 4 + 8 + column * 4;
     prim->v0 = prim->v1 = prim->v2 = prim->v3 = D_8009269C;
     sparkle->u.line.key = key;
     sparkle->u.line.prev = NULL;
-    sparkle->u.line.stamp = D_800926A4;
-    sparkle->u.line.z = to->vz;
     prim->tpage = D_80092694;
     prim->clut = D_800926A0;
     prim->code &= ~1;
     sparkle->prim[1] = *prim;
-    for (i = 0, other = D_80092AD8; i < SPARKLE_COUNT; i++, other++) {
+    for (other = D_80092AD8, i = 0; i < SPARKLE_COUNT; i++, other++) {
         if (other->active && other->u.line.key == key && other != sparkle && other->type == 2 &&
             other->u.line.stamp == (u16)(D_800926A4 - 1)) {
             sparkle->u.line.prev = other;
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007CD44);
-#endif
 
 /* Draw the scene effects: the passes that need the view and its derived
  * matrix, then the screen-space passes under the view matrix. */
