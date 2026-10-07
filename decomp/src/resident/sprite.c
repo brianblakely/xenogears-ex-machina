@@ -1753,12 +1753,16 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         sprite->y = vector.vy << 16;
         sprite->z = vector.vz << 16;
         break;
-    case 0xBC:
+    case 0xBC: {
+        u8 arg;
+        u8 transform;
+        s32 index;
+
         arg = code[0];
-        n = arg & 0x3F;
+        index = arg & 0x3F;
         if (arg & 0x80) {
             transform = sprite->render.bits.no_view;
-            switch (n) {
+            switch (index) {
             case 38:
                 vector.vx = D_800C3EB0[sprite->frame_bits.unknown30 | ((sprite->motion.word & 3) << 2)].x;
                 vector.vy = 0;
@@ -1766,18 +1770,10 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                 break;
             case 36:
                 ((Task *)sprite->block)->link.word |= 0x40000000;
-                vector.vx = sprite->x >> 16;
-                vector.vy = sprite->y >> 16;
-                transform = 0;
-                vector.vz = sprite->z >> 16;
-                break;
+                goto own_position;
             case 37:
                 ((Task *)sprite->block)->link.word &= ~0x40000000;
-                vector.vx = sprite->x >> 16;
-                vector.vy = sprite->y >> 16;
-                transform = 0;
-                vector.vz = sprite->z >> 16;
-                break;
+                goto own_position;
             case 23:
                 ReadGeomOffset(&sum.vx, &sum.vy);
                 vector.vx = (0xA0 - sum.vx) * 2;
@@ -1786,6 +1782,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                 vector.vz = sprite->z >> 16;
                 break;
             case 24:
+            own_position:
                 vector.vx = sprite->x >> 16;
                 vector.vy = sprite->y >> 16;
                 transform = 0;
@@ -1800,34 +1797,19 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                 break;
             case 32:
                 other = D_800C3E1C;
-                vector.vx = other->x >> 16;
-                vector.vy = other->y >> 16;
-                vector.vz = other->z >> 16;
-                vector.vy -= other->height;
-                break;
+                goto focus_top;
             case 33:
                 other = D_800C3E1C;
-                vector.vx = other->x >> 16;
-                vector.vy = other->y >> 16;
-                vector.vz = other->z >> 16;
-                vector.vy -= other->height - (other->height - other->extent_depth) / 2;
-                break;
+                goto focus_middle;
             case 34:
                 other = D_800C3E1C;
-                vector.vx = other->x >> 16;
-                vector.vy = other->y >> 16;
-                vector.vz = other->z >> 16;
-                vector.vy -= other->extent_depth;
-                break;
+                goto focus_depth;
             case 35:
                 other = D_800C3E1C;
-                vector.vx = other->x >> 16;
-                vector.vy = other->y >> 16;
-                vector.vz = other->z >> 16;
-                vector.vy -= other->extent_depth - (u16)other->extent_depth / 2;
-                break;
+                goto focus_half_depth;
             case 18:
                 other = sprite->word74;
+            focus_top:
                 vector.vx = other->x >> 16;
                 vector.vy = other->y >> 16;
                 vector.vz = other->z >> 16;
@@ -1835,6 +1817,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                 break;
             case 19:
                 other = sprite->word74;
+            focus_middle:
                 vector.vx = other->x >> 16;
                 vector.vy = other->y >> 16;
                 vector.vz = other->z >> 16;
@@ -1842,6 +1825,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                 break;
             case 20:
                 other = sprite->word74;
+            focus_depth:
                 vector.vx = other->x >> 16;
                 vector.vy = other->y >> 16;
                 vector.vz = other->z >> 16;
@@ -1849,6 +1833,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                 break;
             case 21:
                 other = sprite->word74;
+            focus_half_depth:
                 vector.vx = other->x >> 16;
                 vector.vy = other->y >> 16;
                 vector.vz = other->z >> 16;
@@ -1866,22 +1851,16 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                 break;
             case 1:
                 other = D_800C3E1C;
-                vector.vx = other->x >> 16;
-                vector.vy = other->y >> 16;
-                vector.vz = other->z >> 16;
-                break;
+                goto focus_position;
             case 9:
-                n = 11;
-                other = sprite->word74;
-                goto group_place;
+                index = 11;
+                goto own_group;
             case 8:
-                n = 12;
-                other = sprite->word74;
-                goto group_place;
+                index = 12;
+                goto own_group;
             case 10:
-                n = 13;
-                other = sprite->word74;
-                goto group_place;
+                index = 13;
+                goto own_group;
             case 11:
             case 12:
             case 13:
@@ -1894,15 +1873,8 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                     break;
                 }
                 goto group_place;
-            case 25:
-            case 26:
-            case 27:
-            case 28:
-            case 29:
-            case 30:
-            case 31:
-                other = D_800C3E1C;
-                n -= 14;
+            own_group:
+                other = sprite->word74;
             group_place:
                 if (other->renderer == NULL) {
                     break;
@@ -1910,9 +1882,10 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                 if ((other->render.word & 3) != 1) {
                     break;
                 }
+                value = index - 10;
                 if (other->renderer->pointer34 != NULL) {
-                    x = other->renderer->pointer34[n - 10].byte0;
-                    y = other->renderer->pointer34[n - 10].byte1;
+                    x = other->renderer->pointer34[value].byte0;
+                    y = other->renderer->pointer34[value].byte1;
                 } else {
                     x = 0;
                     y = 0;
@@ -1924,26 +1897,40 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                 y = y * other->scale / 4096;
                 func_80021B04(&vector, x + (other->x >> 16), y + (other->y >> 16), other->z >> 16);
                 break;
+            case 25:
+            case 26:
+            case 27:
+            case 28:
+            case 29:
+            case 30:
+            case 31:
+                other = D_800C3E1C;
+                index -= 14;
+                goto group_place;
             case 0:
                 other = sprite->word74;
+            focus_position:
                 vector.vx = other->x >> 16;
                 vector.vy = other->y >> 16;
                 vector.vz = other->z >> 16;
                 break;
-            case 2:
+            case 2: {
+                s32 members;
+
                 func_80021B14(&sum, 0, 0, 0);
-                for (count = 0; (other = D_800D363C[count]) != NULL; count++) {
+                for (members = 0; (other = D_800D363C[members]) != NULL; members++) {
                     sum.vx += other->x;
                     sum.vy += other->y;
                     sum.vz += other->z;
                 }
-                sum.vx /= count;
-                sum.vy /= count;
-                sum.vz /= count;
+                sum.vx /= members;
+                sum.vy /= members;
+                sum.vz /= members;
                 vector.vx = sum.vx >> 16;
                 vector.vy = sum.vy >> 16;
                 vector.vz = sum.vz >> 16;
                 break;
+            }
             case 3:
                 other = D_800C3E1C;
                 sum.vx = other->x;
@@ -1959,24 +1946,27 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                 vector.vy = sum.vy >> 16;
                 vector.vz = sum.vz >> 16;
                 break;
-            case 4:
+            case 4: {
+                s32 members;
+
                 func_80021B14(&sum, 0, 0, 0);
-                for (count = 0; (other = D_800D363C[count]) != NULL; count++) {
+                for (members = 0; (other = D_800D363C[members]) != NULL; members++) {
                     sum.vx += other->x;
                     sum.vy += other->y;
                     sum.vz += other->z;
                 }
-                count++;
+                members++;
                 sum.vx += sprite->x;
-                sum.vx /= count;
+                sum.vx /= members;
                 sum.vy += sprite->y;
-                sum.vy /= count;
+                sum.vy /= members;
                 sum.vz += sprite->z;
-                sum.vz /= count;
+                sum.vz /= members;
                 vector.vx = sum.vx >> 16;
                 vector.vy = sum.vy >> 16;
                 vector.vz = sum.vz >> 16;
                 break;
+            }
             case 5:
                 func_80021B14(&sum, 0, 0, 0);
                 sum.vx /= count;
@@ -2023,6 +2013,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
             }
         }
         break;
+    }
     case 0xD1:
         p = func_8001FBA4(sprite, code);
         *p *= *func_8001FBA4(sprite, code + 1);
@@ -2101,7 +2092,9 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
     case 0xBB:
         sprite->half30 += (s8)code[0];
         break;
-    case 0x93:
+    case 0x93: {
+        s32 i;
+
         other = sprite->word70;
         if (other != NULL && (sprite->render.word & 3)) {
             if (func_8001EE68((u8 *)((SpriteSource *)sprite->image)->frames) == 0) {
@@ -2109,8 +2102,8 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
             }
             if (sprite->renderer != NULL && other->renderer->pointer34 != NULL) {
                 func_8001D4E8(sprite);
-                for (n = 0; n != 8; n++) {
-                    sprite->renderer->pointer34[n] = other->renderer->pointer34[n];
+                for (i = 0; i != 8; i++) {
+                    sprite->renderer->pointer34[i] = other->renderer->pointer34[i];
                 }
                 sprite->renderer->offset_x = other->renderer->offset_x;
                 sprite->renderer->offset_y = other->renderer->offset_y;
@@ -2118,6 +2111,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
             func_8001D2B0(sprite, sprite->frame);
         }
         break;
+    }
     case 0xBA:
         func_80023290(sprite, code[0]);
         break;
