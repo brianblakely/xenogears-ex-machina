@@ -4587,9 +4587,8 @@ chosen:
 
     start = pc;
     while (running) {
-        word = *pc++;
+        arg = (word = *pc++) >> 8;
         op = word;
-        arg = word >> 8;
         switch (op) {
         case 0x00: /* end */
             pc = start;
