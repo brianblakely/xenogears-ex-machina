@@ -2749,10 +2749,13 @@ void func_801E37D0(Actor *actor) {
  * probe's block frees 16 bytes that 0x25's `d` reuses before n/word (whose
  * slots are made when their address is first taken) and 0x25's matrix and
  * vectors; spilled scalars follow in declaration order.
- * NON_MATCHING (12 bytes shorter): case bodies 1D 22 41 still differ in size
- * (jump table checked case by case; 41 shares its call tail with 40/42 where
- * the original's 42 keeps `changed = -1` last), the frame is 0x160 vs 0x168
- * and registers are allocated differently (actor/pc in s3/s2 vs s4/s3). */
+ * NON_MATCHING (4 bytes longer): case bodies 1D (4 shorter: `reference` is
+ * loaded straight into a3, the original loads it into s0 and copies it) and
+ * 22 (8 longer: `changed` is reloaded after the 0xff compare clobbers its
+ * reload register) differ in size (jump table checked case by case), the
+ * frame is 0x160 vs 0x168, and global allocation differs (actor/pc in s3/s2
+ * vs s4/s3: the original's local allocation also takes s2 in some block,
+ * e.g. 0x3C keeps its volume byte in s2 with s1 free). */
 #ifdef NON_MATCHING
 void func_801E39F0(Actor *actor, SlotPool *pool, s32 changed, s32 ticks, s32 arg4) {
     Actor *self;
@@ -3349,7 +3352,7 @@ aim:
             break;
         }
         case 0x41: { /* turn the root by a rotation */
-            s16 rx, ry, rz;
+            s32 rx, ry, rz;
             ModelPart *root;
 
             rx = *pc++;
@@ -3377,8 +3380,8 @@ aim:
             if (dx == 0 && dy == 0 && dz == 0) {
                 break;
             }
-            changed = -1;
             func_801E59D4(pool, actor->parts, arg, (s16)pitch, (s16)yaw, (s16)roll);
+            changed = -1;
             break;
         case 0x44:
             actor->spin[0] = *pc++;
