@@ -1082,11 +1082,13 @@ void func_800245D8(Sprite *sprite, s32 animation) {
  * overlay registers (800bc158) at the eye (10, 12) or look-at (11, 13)
  * position, 12 and 13 becoming 10 and 11 with a frame shown; then the
  * auxiliary node gets its kind's update callback. */
-/* Nonmatching: the original copies the task pointer to $a2 and passes it back to $a0 for each 800bc158 call; this build keeps it in $a0. */
-#ifdef NON_MATCHING
+/* The sprite and auxiliary node are reached through the task's first node;
+ * the 800bc158 calls take the task itself, which the original keeps in its
+ * own register. */
 void func_80024730(SpriteTask *task) {
-    Sprite *sprite = &task->sprite;
-    Task *auxiliary = &task->auxiliary;
+    SpriteTask *self = (SpriteTask *)&task->task;
+    Sprite *sprite = &self->sprite;
+    Task *auxiliary = &self->auxiliary;
     s32 kind = ((SpriteFlagBits *)&sprite->flags)->type;
 
     switch (kind) {
@@ -1121,7 +1123,7 @@ void func_80024730(SpriteTask *task) {
         sprite->z = D_8006F9AC.vz;
         break;
     case 7:
-        func_8001CD6C(&task->task, func_80022E8C);
+        func_8001CD6C(&self->task, func_80022E8C);
         break;
     case 8:
         sprite->colour_flags = 0x68;
@@ -1138,6 +1140,3 @@ void func_80024730(SpriteTask *task) {
     }
     func_80025224(auxiliary, kind);
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80024730);
-#endif
