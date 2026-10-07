@@ -2613,46 +2613,45 @@ done:
     return shown;
 }
 
+/* A formation group's row of links: rows are 0x40 bytes, addressed from the
+ * formation start, so the links (at +0x140) begin 40 entries in. */
+#define LINK_ROW(formation, group) ((GroupLink *)((u8 *)(formation) + ((group) << 6)))
+
 /* Plan the approach route from `actor` to `target`: the actor's position,
  * then the route points the formation lists between their groups. Returns
- * 1 when the actor's character is 4. The link row is taken through a
- * pointer (links + from) so that from * 0x40 is added before to * 8, as in
- * the original. Nonmatching: the original adds the row as formation +
- * from * 0x40 (here from * 0x40 + formation) and loads the actor's group
- * before the target's in the first and third link reads. */
-#ifdef NON_MATCHING
+ * 1 when the actor's character is 4. The formation is read once per point
+ * and the link row is taken anew for each read. */
 s32 func_800877E0(u8 actor, u8 target) {
     s32 result = 0;
     s32 i;
+    GroupLink *row;
+    Formation *formation;
 
     for (i = 0; i < 9; i++) {
-        D_800C48EC[i].x = 0xFFFF;
-        D_800C48EC[i].z = 0xFFFF;
+        D_800C3EB0.path[i].x = 0xFFFF;
+        D_800C3EB0.path[i].z = 0xFFFF;
     }
-    D_800C48EC[0].x = D_800C3EB4[actor].x;
-    D_800C48EC[0].z = D_800C3EB4[actor].z;
-    D_800C48EC[0].flag = 0;
+    D_800C3EB0.path[0].x = D_800C3EB0.slots[actor].x;
+    D_800C3EB0.path[0].z = D_800C3EB0.slots[actor].z;
+    D_800C3EB0.path[0].run = 0;
     for (i = 1; i < 8; i++) {
-        if ((*(D_800D3364->links + D_800C3EB4[actor].group))[D_800C3EB4[target].group].points[i - 1] == 0xFF) {
+        formation = D_800D3364;
+        row = LINK_ROW(formation, D_800C3EB0.slots[actor].group);
+        if (row[D_800C3EB0.slots[target].group + 40].points[i - 1] == 0xFF) {
             break;
         }
-        D_800C48EC[i].x =
-            D_800D3364->areas[(*(D_800D3364->links + D_800C3EB4[actor].group))[D_800C3EB4[target].group].points[i - 1] & 7]
-                .centre.x;
-        D_800C48EC[i].z =
-            D_800D3364->areas[(*(D_800D3364->links + D_800C3EB4[actor].group))[D_800C3EB4[target].group].points[i - 1] & 7]
-                .centre.z;
-        D_800C48EC[i].flag =
-            (*(D_800D3364->links + D_800C3EB4[actor].group))[D_800C3EB4[target].group].points[i - 1] & 0x80;
+        row = LINK_ROW(formation, D_800C3EB0.slots[actor].group);
+        D_800C3EB0.path[i].x = formation->areas[row[D_800C3EB0.slots[target].group + 40].points[i - 1] & 7].centre.x;
+        row = LINK_ROW(formation, D_800C3EB0.slots[actor].group);
+        D_800C3EB0.path[i].z = formation->areas[row[D_800C3EB0.slots[target].group + 40].points[i - 1] & 7].centre.z;
+        row = LINK_ROW(formation, D_800C3EB0.slots[actor].group);
+        D_800C3EB0.path[i].run = row[D_800C3EB0.slots[target].group + 40].points[i - 1] & 0x80;
     }
     if (D_800D2D24[actor] == 4) {
         result = 1;
     }
     return result;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800877E0);
-#endif
 
 /* Reset every event to type 0xff for `actor` against `target`'s bit. */
 void func_800879A8(u8 actor, u8 target) {
