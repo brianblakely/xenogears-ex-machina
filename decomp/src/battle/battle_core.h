@@ -615,8 +615,17 @@ extern u16 D_800D2C32; /* fuel gained by charging */
 
 /* Gear boarding (800826cc). */
 extern u8 D_80059179;
-extern u8 D_8006F368[3]; /* the party's character ids */
-extern u8 D_8006F8E5[3]; /* per party member: entered a gear */
+/* Game data party state (8006f364): joined members, the three party
+ * character ids and whether each party slot entered its gear. */
+typedef struct {
+    u16 joined;
+    u16 available;
+    u8 party[3];      /* 0x004: character ids */
+    u8 pad7[0x57A];
+    u8 inGear[3];     /* 0x581 */
+} PartyState;
+
+extern PartyState D_8006F364;
 void func_80088490(s32 slot);
 void func_8009AEFC(u8 slot);
 void func_800BAF48(s32 slot);

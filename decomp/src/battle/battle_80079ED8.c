@@ -18,6 +18,7 @@
 #include "glyph_lists.h"
 #include "item_command.h"
 #include "result_input.h"
+#include "area.h"
 
 /* Byte attribute `attribute` (0-23) of combatant `slot`: store `value` when
  * `read` is 0, else return it. */

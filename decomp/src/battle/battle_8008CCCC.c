@@ -18,6 +18,7 @@
 #include "glyph_lists.h"
 #include "item_command.h"
 #include "result_input.h"
+#include "area.h"
 
 /* Word view of BattleDraw.buffer, alongside the low-byte view in battle_core.h. */
 extern s32 D_800CCB34_word __asm__("D_800CCB34");

@@ -622,8 +622,7 @@ u8 member;
 
 /* The member boards its gear: it takes a formation group of its own, its
  * records and panel switch to the gear, and the game data notes that the
- * party member (8006f368) entered a gear unless 80059179 is set. */
-#ifdef NON_MATCHING
+ * party member entered a gear unless 80059179 is set. */
 void func_800826CC(u8 member) {
     s32 i;
 
@@ -639,14 +638,11 @@ void func_800826CC(u8 member) {
     D_800C3EB4[member].gear = 1;
     D_800C3EAC->reaction[member] = 1;
     for (i = 0; i < 3; i++) {
-        if (D_800D2D24[member] == D_8006F368[i] && D_80059179 == 0) {
-            D_8006F8E5[i] = 1;
+        if (D_8006F364.party[i] == D_800D2D24[member] && D_80059179 == 0) {
+            D_8006F364.inGear[i] = 1;
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800826CC);
-#endif
 
 /* Confirm the selected entry of the member's main command window: entries
  * 4, 6 and 7 board the gear and end the menu; 0 opens page 7 when available,
