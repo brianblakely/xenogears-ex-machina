@@ -55,6 +55,14 @@ void func_800A47D4(void) {
 }
 
 #ifdef NON_MATCHING
+/* Start the screen distortion: on first use allocate its buffers, build the
+ * 20x17 grid of 16x16 textured quads (rows 14-16 sample the saved strips at
+ * (3c0, 0)) and the screen/strip copy commands; unless resuming, read the
+ * six targets and the step count from the operands.
+ * NON_MATCHING: global allocation numbers the grid loop's registers one
+ * apart (row s7 and copy s3 here, s3 and s4 in the original), and the strip
+ * loop reads the x sources through a symbol-relative offset where the
+ * original walks a pointer (it also keeps the y pointer as base + 2). */
 void func_800A484C(s32 resume) {
     RECT rect;
     s32 row;
@@ -74,8 +82,8 @@ void func_800A484C(s32 resume) {
         D_800ADB24 = 1;
         for (row = 0; row < 17; row++) {
             for (column = 0; column < 20; column++) {
-                poly = (POLY_FT4 *)D_800B2078.effect_buffers[2] + row * 20 + column;
-                copy = (POLY_FT4 *)D_800B2078.effect_buffers[3] + row * 20 + column;
+                poly = (POLY_FT4 *)D_800B2078.effect_buffers[2] + (column + row * 20);
+                copy = (POLY_FT4 *)D_800B2078.effect_buffers[3] + (column + row * 20);
                 SetPolyFT4(poly);
                 SetSemiTrans(poly, 0);
                 poly->r0 = 0x80;
@@ -91,26 +99,24 @@ void func_800A484C(s32 resume) {
                 poly->y3 = row * 16 + 16;
                 if (row >= 14) {
                     u = (column * 16) & 0x3F;
-                    v = (column >> 2) * 16 + (row - 14) * 80;
                     poly->u0 = u;
-                    poly->v0 = v;
+                    poly->v0 = (column >> 2) * 16 + (row - 14) * 80;
                     poly->u1 = u + 16;
-                    poly->v1 = v;
+                    poly->v1 = (column >> 2) * 16 + (row - 14) * 80;
                     poly->u2 = u;
-                    poly->v2 = v + 16;
+                    poly->v2 = (column >> 2) * 16 + ((row - 14) * 80 + 16);
                     poly->u3 = u + 16;
-                    poly->v3 = v + 16;
+                    poly->v3 = (column >> 2) * 16 + ((row - 14) * 80 + 16);
                     poly->tpage = GetTPage(2, 0, 0x3C0, 0);
                     *copy = *poly;
                 } else {
-                    u = (column * 16) & 0x3F;
-                    poly->u0 = u;
+                    poly->u0 = (column * 16) & 0x3F;
                     poly->v0 = row * 16;
-                    poly->u1 = u + 16;
+                    poly->u1 = ((column * 16) & 0x3F) + 16;
                     poly->v1 = row * 16;
-                    poly->u2 = u;
+                    poly->u2 = (column * 16) & 0x3F;
                     poly->v2 = row * 16 + 16;
-                    poly->u3 = u + 16;
+                    poly->u3 = ((column * 16) & 0x3F) + 16;
                     poly->v3 = row * 16 + 16;
                     poly->tpage = GetTPage(2, 0, (column * 16) & 0xFFC0, 0);
                     *copy = *poly;
@@ -128,11 +134,11 @@ void func_800A484C(s32 resume) {
         rect.w = 0x40;
         rect.h = 0x10;
         for (i = 0; i < 15; i++) {
-            rect.x = D_800AEB24[i].x;
-            rect.y = D_800AEB24[i].y;
-            SetDrawMove((DR_MOVE *)D_800B2078.effect_buffers[0] + i + 1, &rect, 0x3C0, i * 16);
-            rect.y = D_800AEB24[i].y + 0x100;
-            SetDrawMove((DR_MOVE *)D_800B2078.effect_buffers[1] + i + 1, &rect, 0x3C0, i * 16);
+            rect.x = D_800AEB24[i].vx;
+            rect.y = D_800AEB24[i].vy;
+            SetDrawMove((DR_MOVE *)D_800B2078.effect_buffers[0] + (i + 1), &rect, 0x3C0, i * 16);
+            rect.y = D_800AEB24[i].vy + 0x100;
+            SetDrawMove((DR_MOVE *)D_800B2078.effect_buffers[1] + (i + 1), &rect, 0x3C0, i * 16);
         }
     }
     if (resume == 0) {
@@ -1526,14 +1532,19 @@ void func_800A84C0(void) {
  * buffers and texture each piece from its frame (flip in flags bits 0-3,
  * 4- or 8-bit page by bits 4-7). The original passes the coordinates to
  * 8007a44c unconverted (no s16 prototype in scope: a separate unit).
- * NON_MATCHING: the original addresses D_800AFC60/D_800AFC64 by symbol
- * (no hoisted base), indexes the layout and frame tables as i * 8 from
- * hoisted bases (fp = layout + 6, s5 = frames + 4) with a second copy of
- * i, and has v in t0 and w in t1; GCC here strength-reduces the table
- * pointers and keeps &D_800AFC60 in a register. Indexing both tables as
- * flat u16 arrays ((u16 *)table)[n * 4 + field] and storing the second
- * buffer through a scalar D_800AFC64 reproduces the frame-table addressing
- * (score 123 -> 99), but the layout reads stay strength-reduced. */
+ * NON_MATCHING: the original indexes the layout table as i * 8 from hoisted
+ * bases (fp = layout + 6, s7 = layout) with a second counter for i, stores
+ * the first buffer pointer by symbol, and has v in t0 and w in t1; GCC here
+ * strength-reduces the layout addresses (i * 8 and layout + 4 + i * 8) and
+ * keeps &D_800AFC60 in s0 for the first store. The flat field reads give the
+ * frame table's per-field addressing (score 123 -> 106; a scalar
+ * D_800AFC64 for the second buffer gives 99 but grows the function). */
+/* The layout and frame tables read as flat halfword arrays, one field at a
+ * time, as the original indexes them (n * 4 + field). */
+#define PIECE(n, field) (((u16 *)D_800AEF10)[(n) * 4 + (field)])
+#define FRAME(n, field) (((u16 *)D_800AEB68)[(n) * 4 + (field)])
+enum { PIECE_X, PIECE_Y, PIECE_FRAME, PIECE_FLAGS };
+enum { FRAME_U, FRAME_V, FRAME_W, FRAME_H };
 void func_800A8BA4(void) {
     POLY_FT4 *quad;
     POLY_FT4 *copy;
@@ -1559,7 +1570,7 @@ void func_800A8BA4(void) {
         SetPolyFT4(quad);
         setRGB0(quad, 0x80, 0x80, 0x80);
         quad->clut = GetClut(0, 0xE8);
-        switch ((D_800AEF10[i].flags >> 4) & 0xF) {
+        switch ((PIECE(i, PIECE_FLAGS) >> 4) & 0xF) {
         case 0:
             mode = 1;
             break;
@@ -1569,13 +1580,13 @@ void func_800A8BA4(void) {
         }
         quad->tpage = GetTPage(0, mode, 0x380, 0);
         SetSemiTrans(quad, 1);
-        frame = D_800AEF10[i].frame;
-        x = D_800AEF10[i].x;
-        y = D_800AEF10[i].y;
-        w = D_800AEB68[frame].w;
-        h = D_800AEB68[frame].h;
-        u = D_800AEB68[frame].u;
-        v = D_800AEB68[frame].v;
+        frame = PIECE(i, PIECE_FRAME);
+        x = PIECE(i, PIECE_X);
+        y = PIECE(i, PIECE_Y);
+        w = FRAME(frame, FRAME_W);
+        h = FRAME(frame, FRAME_H);
+        u = FRAME(frame, FRAME_U);
+        v = FRAME(frame, FRAME_V);
         quad->x0 = x;
         quad->y0 = y;
         quad->y1 = y;
@@ -1584,7 +1595,7 @@ void func_800A8BA4(void) {
         quad->y2 = y + h;
         quad->x3 = x + w;
         quad->y3 = y + h;
-        switch (D_800AEF10[i].flags & 0xF) {
+        switch (PIECE(i, PIECE_FLAGS) & 0xF) {
         case 0:
             func_8007A44C(quad, u, v, u + w, v, u, v + h, u + w, v + h);
             break;

@@ -365,12 +365,10 @@ void func_800A9B54(Particle *particle, MATRIX *view, s16 angle, s32 depth_mode, 
     }
 }
 
-#ifdef NON_MATCHING
 /* Step a particle: while delayed count down and at launch place it and
  * its velocity in the emitter's frame (0 owner-facing, 1 801e module, 2
  * owner's transform, 3 owner-facing and scaled); afterwards move it,
- * fade its colour, draw it and count its life down. Differs only in the
- * scheduling of the unk38 update (the original loads unk38.vx first). */
+ * fade its colour, draw it and count its life down. */
 void func_800A9F18(Record78 *emitter, Particle *particle, MATRIX *view) {
     VECTOR v;
     SVECTOR sv;
@@ -479,12 +477,12 @@ void func_800A9F18(Record78 *emitter, Particle *particle, MATRIX *view) {
         particle->velocity.vx += particle->unk28.vx;
         particle->velocity.vy += particle->unk28.vy;
         particle->velocity.vz += particle->unk28.vz;
-        particle->unk38.vy += particle->unk40.vy;
-        particle->unk38.vx += particle->unk40.vx;
-        particle->unk38.vz += particle->unk40.vz;
         particle->position.vx += particle->velocity.vx;
         particle->position.vy += particle->velocity.vy;
         particle->position.vz += particle->velocity.vz;
+        particle->unk38.vx += particle->unk40.vx;
+        particle->unk38.vy += particle->unk40.vy;
+        particle->unk38.vz += particle->unk40.vz;
         particle->unk48[0] = func_800A9B1C(particle->unk48[0], particle->unk4C[0]);
         particle->unk48[1] = func_800A9B1C(particle->unk48[1], particle->unk4C[1]);
         particle->unk48[2] = func_800A9B1C(particle->unk48[2], particle->unk4C[2]);
@@ -500,9 +498,6 @@ void func_800A9F18(Record78 *emitter, Particle *particle, MATRIX *view) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800A9274", func_800A9F18);
-#endif
 
 extern u8 D_800AF474[8]; /* spawn offset per view octant */
 
@@ -1139,8 +1134,11 @@ void func_800AC308(void) {
 
 #ifdef NON_MATCHING
 /* Set up the text roll: the white top and bottom fades (640 wide, 24
- * tall at 0 and c8) and the 16 lines of sprites. Differs only in when
- * the scheduler loads the constants 0x280 and 0x80. */
+ * tall at 0 and c8) and the 16 lines of sprites.
+ * NON_MATCHING: differs only in when the scheduler loads the constant
+ * 0x280: the original loads it with 0xff at the top of the block, this
+ * after the colour stores (moving the x stores or holding 0x280 in a
+ * local does not change it). */
 void func_800AC3AC(void) {
     SPRT *sprite;
     s32 i;
@@ -1202,10 +1200,10 @@ void func_800AC3AC(void) {
         setRGB0(sprite, 0x80, 0x80, 0x80);
         SetSemiTrans(sprite, 0);
         sprite->clut = GetClut(0, 0x1FF);
-        sprite->h = 0x10;
         sprite->u0 = 0;
         sprite->v0 = i * 16;
         sprite->w = 0x80;
+        sprite->h = 0x10;
         sprite->x0 = 0x40;
         sprite->y0 = i * 16;
         sprite[4] = *sprite;

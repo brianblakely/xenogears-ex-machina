@@ -68,7 +68,7 @@ typedef struct {
 
 /* The screen distortion (800a484c). */
 extern s32 D_800ADB24;         /* distortion buffers allocated */
-extern RECT D_800AEB24[15];    /* saved strip sources */
+extern DVECTOR D_800AEB24[15]; /* saved strip sources (x, y) */
 
 
 
