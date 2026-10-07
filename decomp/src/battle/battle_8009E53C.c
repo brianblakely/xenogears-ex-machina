@@ -4996,20 +4996,14 @@ chosen:
                 u8 mode;
                 u8 kind;
                 u8 smooth;
-                s16 *parameters;
 
-                word = *pc++;
+                mode = (word = *pc++) >> 8;
                 flags = -1;
                 flagsC = word;
-                mode = word >> 8;
-                word = *pc++;
+                smooth = (word = *pc++) >> 8;
                 kind = word;
-                smooth = word >> 8;
-                parameters = (s16 *)pc;
-                pc += 7;
-                func_800AF678(object, pool, &object->hierarchy[arg], flagsC, mode, kind, smooth, parameters[0],
-                              parameters[1], parameters[2], parameters[3], parameters[4], parameters[5],
-                              parameters[6]);
+                func_800AF678(object, pool, &object->hierarchy[arg], flagsC, mode, kind, smooth, *pc++, *pc++,
+                              *pc++, *pc++, *pc++, *pc++, *pc++);
             }
             break;
         case 0x1E:
