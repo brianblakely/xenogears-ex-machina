@@ -2000,7 +2000,13 @@ void func_8008B518(void) {
 
 #ifdef NON_MATCHING
 /* Event 0x1b: scroll the current actor's textured polygons by (op1, op3)
- * texels in both draw buffers. */
+ * texels in both draw buffers.
+ * Each branch steps the group pointer itself, which gives it the original's
+ * allocation priority (group s1, other s2, prims s3).
+ * NON_MATCHING: only the else branch's step is placed differently: the
+ * original steps the group pointer in the delay slot of the FT3/FT4 branch
+ * (bnez; addiu s1,s1,4); here the slot takes the FT3 path's packet copy
+ * (move t0,s3) and each path steps the pointer itself. */
 void func_8008B5D4(void) {
     FieldInstance *instance;
     POLY_FT3 *ft3;
@@ -2030,11 +2036,13 @@ void func_8008B5D4(void) {
         header = *group;
         code = header & 0xFF;
         count = header >> 16;
-        if (code == 0xC4 || code == 0xC8) {
+        if (code == 0xC4) {
+            group++;
+        } else if (code == 0xC8) {
             group++;
         } else {
-            group++;
             if (!(header & 8)) {
+                group++;
                 ft3 = (POLY_FT3 *)prims;
                 ft3_other = (POLY_FT3 *)other;
                 for (i = 0; i < count; i++) {
@@ -2057,6 +2065,7 @@ void func_8008B5D4(void) {
                 prims = (u8 *)ft3;
                 other = (u8 *)ft3_other;
             } else {
+                group++;
                 ft4 = (POLY_FT4 *)prims;
                 ft4_other = (POLY_FT4 *)other;
                 for (i = 0; i < count; i++) {
