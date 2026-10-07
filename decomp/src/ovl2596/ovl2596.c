@@ -1684,14 +1684,12 @@ void func_801E3A18(void) {
  * whose level is reached and whose seven counter requirements the current
  * record meets; stop at the first whose level is not reached. Returns its
  * index, or 0. */
-#ifdef NON_MATCHING
-/* NON_MATCHING: the original hoists the 0x8000 shift base out of the
- * skill loop into t6; this C loads it at the shift in every iteration. */
 u8 func_801E3BE0(u8 id) {
     u8 count;
     u8 learnt;
     u8 j;
     u8 k;
+    s32 bit;
 
     count = 7;
     if (D_8006F8EA & 0x4000) {
@@ -1699,7 +1697,8 @@ u8 func_801E3BE0(u8 id) {
     }
     learnt = 0xFF;
     for (j = 0; j < count; j++) {
-        if (D_8006D634.skills[id].counterSkills & (0x8000 >> j)) {
+        bit = 0x8000;
+        if (D_8006D634.skills[id].counterSkills & (bit >> j)) {
             continue;
         }
         if (D_801E44E8->characters[id].counterLevels[j] > D_8006D8A0[id].level) {
@@ -1721,9 +1720,6 @@ u8 func_801E3BE0(u8 id) {
     D_8006D634.skills[id].counterSkills |= 0x8000 >> learnt;
     return learnt;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E3BE0);
-#endif
 
 /* Learn the first of the character's twelve level skills whose level is
  * reached and which is not yet known. Returns its number (1-12), or 0. */
