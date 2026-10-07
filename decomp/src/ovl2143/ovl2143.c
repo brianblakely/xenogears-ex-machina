@@ -2186,9 +2186,13 @@ void func_801E1880(Actor **actors) {
  * then `count` zeroed entries. On an allocation failure the record is left
  * empty. The original keeps the loop state in caller-saved registers across
  * SetPolyGT3 (saved on the stack).
- * NON_MATCHING (8 bytes shorter): register allocation and spills differ
- * throughout (the original spills `record` and keeps fewer values live
- * across SetPolyGT3: it saves 8 caller-saved registers there, this C 12). */
+ * NON_MATCHING (4 bytes shorter): register allocation and spills differ
+ * throughout (the original keeps `record` in a stack slot at 0x10 and
+ * reloads it at each use; this C gives it a caller-saved register). In the
+ * strip loop the original multiplies v_step by k and k + 1 at each use,
+ * reloading v_step from its stack home, and computes first + 1 per triangle;
+ * this C strength-reduces them (a `goto`-formed strip loop reproduces that
+ * but not the rest). Its triangle loops also leave v_step * (k + 1) inside. */
 #ifdef NON_MATCHING
 void func_801E1A14(Record24 *record, u16 *table, s16 angle_base, s32 scale, s16 ox, s16 oy, s16 oz,
                    s32 count, s16 tx, s16 ty, s16 u_span, s16 v_span, s16 clut_x, s16 clut_y, u8 b0,
@@ -2199,19 +2203,19 @@ void func_801E1A14(Record24 *record, u16 *table, s16 angle_base, s32 scale, s16 
     RingPoint *points;
     RingPoint *point;
     RingPoly *polys;
-    POLY_GT3 *prim;
     u16 *counts;
     u16 *radii;
     u8 *angles;
+    Record24Entry *entry;
     u16 tpage, clut;
     s32 page_x, page_y;
     s32 u_base, v_base;
     s16 u_step;
-    s32 u, u_next;
     u16 v_step;
     s32 start, first;
+    s32 u, u_next;
     s32 i, k, b;
-    u16 n;
+    s32 n;
     u16 total;
 
     record->rings = *table++;
@@ -2283,44 +2287,43 @@ void func_801E1A14(Record24 *record, u16 *table, s16 angle_base, s32 scale, s16 
     v_base = ty - (page_y << 8);
     start = 0;
     u_step = u_span / (record->rings - 1);
-    for (i = 0, u = 0, u_next = u_step; i < record->rings - 1; i++, u += u_step, u_next += u_step) {
+    for (i = 0, u = 0; i < record->rings - 1; i++, u += u_step) {
+        u_next = u + u_step;
         n = counts[1];
-        if (counts[0] < n) {
+        if (counts[0] < counts[1]) {
             n = counts[0];
         }
         v_step = v_span / n;
         first = start;
         for (k = 0; k < n; k++, first++) {
             polys->index[0] = first;
-            polys->index[2] = first + 1;
             polys->index[1] = first + counts[0] + 1;
+            polys->index[2] = first + 1;
             for (b = 0; b < 2; b++) {
-                prim = &polys->prim[b];
-                SetPolyGT3(prim);
-                prim->tpage = tpage;
-                prim->u0 = u_base + u;
-                prim->v0 = v_base + v_step * k;
-                prim->clut = clut;
-                prim->u1 = u_base + u_next;
-                prim->v1 = v_base + v_step * k;
-                prim->u2 = u_base + u;
-                prim->v2 = v_base + v_step * (k + 1);
+                SetPolyGT3(&polys->prim[b]);
+                polys->prim[b].tpage = tpage;
+                polys->prim[b].u0 = u_base + u;
+                polys->prim[b].v0 = v_base + v_step * k;
+                polys->prim[b].clut = clut;
+                polys->prim[b].u1 = u_base + u_next;
+                polys->prim[b].v1 = v_base + v_step * k;
+                polys->prim[b].u2 = u_base + u;
+                polys->prim[b].v2 = v_base + v_step * (k + 1);
             }
             polys++;
             polys->index[0] = first + counts[0] + 1;
-            polys->index[2] = first + 1;
             polys->index[1] = first + counts[0] + 2;
+            polys->index[2] = first + 1;
             for (b = 0; b < 2; b++) {
-                prim = &polys->prim[b];
-                SetPolyGT3(prim);
-                prim->tpage = tpage;
-                prim->u0 = u_base + u_next;
-                prim->v0 = v_base + v_step * k;
-                prim->clut = clut;
-                prim->u1 = u_base + u_next;
-                prim->v1 = v_base + v_step * (k + 1);
-                prim->u2 = u_base + u;
-                prim->v2 = v_base + v_step * (k + 1);
+                SetPolyGT3(&polys->prim[b]);
+                polys->prim[b].tpage = tpage;
+                polys->prim[b].u0 = u_base + u_next;
+                polys->prim[b].v0 = v_base + v_step * k;
+                polys->prim[b].clut = clut;
+                polys->prim[b].u1 = u_base + u_next;
+                polys->prim[b].v1 = v_base + v_step * (k + 1);
+                polys->prim[b].u2 = u_base + u;
+                polys->prim[b].v2 = v_base + v_step * (k + 1);
             }
             polys++;
         }
@@ -2335,19 +2338,20 @@ void func_801E1A14(Record24 *record, u16 *table, s16 angle_base, s32 scale, s16 
     record->b[5] = b5;
     record->entry_count = count;
     if ((s16)count > 0) {
-        record->block18 = func_80031BDC((s16)count * sizeof(Record24Entry), 0);
-        if (record->block18 == NULL) {
+        entry = func_80031BDC((s16)count * sizeof(Record24Entry), 0);
+        if (entry == NULL) {
             record->entry_count = 0;
         }
-        for (i = 0; i < record->entry_count; i++) {
-            record->block18[i].h0 = 0;
-            record->block18[i].h2 = 0;
-            record->block18[i].h4 = 0;
-            record->block18[i].h6 = 0;
-            record->block18[i].h8 = 0;
-            record->block18[i].hA = 0;
-            record->block18[i].hC = 0;
-            record->block18[i].hE = 0;
+        record->block18 = entry;
+        for (i = 0; i < record->entry_count; i++, entry++) {
+            entry->h0 = 0;
+            entry->h2 = 0;
+            entry->h4 = 0;
+            entry->h6 = 0;
+            entry->h8 = 0;
+            entry->hA = 0;
+            entry->hC = 0;
+            entry->hE = 0;
         }
     } else {
         record->block18 = NULL;
