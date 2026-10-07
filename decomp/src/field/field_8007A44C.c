@@ -862,8 +862,12 @@ void func_8007C670(s32 *low, s32 *high, s32 extent) {
  * runs out of steps or enters a triangle whose attribute the actor may not
  * cross (masked off by the actor's layer bits or 800b21cc; 800000 rejects
  * layer 0), leaving the edge last crossed in `edge`.
- * Does not match: the original places the rejection's "triangle = -1" block
- * before the walk and keeps the start position's X/Z loads for `origin`. */
+ * NON_MATCHING: three separate rejection tests let loop.c move their shared
+ * "triangle = -1" exit block before the walk as in the original. Left: the
+ * original keeps the start position's X/Z loads in registers for `origin`
+ * (ours reloads their high halves), so `origin` and `mask` swap stack slots,
+ * and the layer-bit tests apply "& 3"/"& 7" to the attribute side (fold
+ * reassociation) where the original masks the actor bits. */
 s32 func_8007C694(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge, SVECTOR *floor, s32 mode) {
     VECTOR normal;
     CollisionTriangle *triangles;
@@ -875,7 +879,7 @@ s32 func_8007C694(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge
     s32 a;
     s32 b;
     s32 c;
-    u32 side;
+    s32 side;
     u32 mask;
     u32 attribute;
     s32 steps;
@@ -953,8 +957,15 @@ s32 func_8007C694(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge
             break;
         }
         attribute = D_800AF880.components.collision_attributes[triangles[triangle].attribute].word & mask;
-        if ((((actor->flags >> 9) & 3) & (attribute >> 3)) || (((actor->flags >> 8) & 7) & (attribute >> 5))
-            || ((attribute & 0x800000) && actor->layer == 0)) {
+        if (((actor->flags >> 9) & 3) & (attribute >> 3)) {
+            triangle = -1;
+            break;
+        }
+        if (((actor->flags >> 8) & 7) & (attribute >> 5)) {
+            triangle = -1;
+            break;
+        }
+        if ((attribute & 0x800000) && actor->layer == 0) {
             triangle = -1;
             break;
         }
@@ -1759,17 +1770,17 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8007EE0C
 
 extern DVECTOR D_800ADF34[]; /* icon texture origin per frame */
 
-#ifdef NON_MATCHING
 /* Point both buffers' icon of `window` at frame `frame`: a 64x64 texture
- * square and the frame's CLUT row. Differs only in the order of the first
- * two independent instructions (sll before lui). */
+ * square and the frame's CLUT row. */
 void func_8007F5AC(s32 window, s32 frame) {
     DialogueWindow *w;
+    DVECTOR *tex;
     s16 *u;
     s16 *v;
 
     w = &D_800C2698[window];
-    u = &D_800ADF34[frame].vx;
+    tex = D_800ADF34;
+    u = &tex[frame].vx;
     v = &D_800ADF34[frame].vy;
     D_800C2698[window].icon[1].u0 = w->icon[0].u0 = *u;
     D_800C2698[window].icon[1].v0 = w->icon[0].v0 = *v;
@@ -1781,9 +1792,6 @@ void func_8007F5AC(s32 window, s32 frame) {
     D_800C2698[window].icon[1].v3 = w->icon[0].v3 = *v + 0x40;
     D_800C2698[window].icon[1].clut = w->icon[0].clut = GetClut(0, frame + 0xE0);
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8007F5AC);
-#endif
 
 /* Close dialogue window `window` unless it is busy; -1 when busy. */
 s32 func_8007F6F8(s16 window) {
@@ -2550,11 +2558,17 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_800815F0
 
 #ifdef NON_MATCHING
 /* Record the controlled actor `index`'s state in the next movement-history
- * slot, unless party processing is suspended. */
+ * slot, unless party processing is suspended.
+ * NON_MATCHING: the original addresses the unk30 and triangle stores through
+ * registers holding 800b1510+0x10 / -0xa and reads the history index through
+ * a register once the heading is stored; ours addresses all of them
+ * absolutely (lui $at). Frame and statement order match. */
 void func_80081C54(s32 index) {
     FieldModel *model;
     FieldActor *actor;
     s32 i;
+    VECTOR unused0; /* unused in the original; reserves 16 bytes */
+    SVECTOR unused1; /* unused in the original; reserves 8 bytes */
 
     actor = D_800AF880.components.descriptors[index].actor;
     model = D_800AF880.components.descriptors[index].model;
@@ -2884,7 +2898,12 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_80082620
 /* Move actor `index` for this frame: choose its walk/run mode, turn its
  * requested heading into a velocity (80081f80) plus its additive motion,
  * sweep that against the collision layers, then pick its animation and
- * store the result as its velocity (+30). */
+ * store the result as its velocity (+30).
+ * NON_MATCHING: ours threads the idle test's "heading & 0x8000" jump straight
+ * into the turn branch; the original re-tests it (andi at 80082cf8), so its
+ * two tests were not identical to jump threading (a (s16)heading < 0 form
+ * avoids the threading but tests with bgez). Also index/descriptor swap
+ * s5/s6 and the unk0EA test is laid out differently. */
 void func_80082BB8(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
     VECTOR move;
     SVECTOR edge[2];
@@ -3059,34 +3078,29 @@ void func_800831D0(SVECTOR *out, VECTOR *in) {
     out->vz = in->vz >> 16;
 }
 
-#ifdef NON_MATCHING
 /* While the actor moves, turn its heading a quarter (left with flag bit 0,
- * else right) once, apply it, and mark the heading as turned.
- * NON_MATCHING: the original keeps the goal store ahead of the heading reload
- * for the call (ours moves the store into its delay slot). */
+ * else right) once, apply it, and mark the heading as turned. */
 void func_800831F4(void *owner, FieldActor *actor, FieldDescriptor *descriptor, s32 flags) {
     s16 heading;
     s16 turned;
-    s32 unused[2]; /* never used; the original frame reserves it */
 
     if (actor->unk030[0] != 0 || actor->unk030[2] != 0) {
         heading = actor->heading_goal;
         if (!(heading & 0x8000)) {
             if (flags & 1) {
                 turned = heading - 0x400;
+                actor->heading = turned & 0xFFF;
+                actor->heading_goal = turned & 0xFFF;
             } else {
                 turned = heading + 0x400;
+                actor->heading = turned & 0xFFF;
+                actor->heading_goal = turned & 0xFFF;
             }
-            actor->heading = turned & 0xFFF;
-            actor->heading_goal = turned & 0xFFF;
             func_80081F80(owner, actor->heading, descriptor);
-            actor->heading = actor->heading_goal = actor->heading_goal | 0x8000;
+            actor->heading_goal = actor->heading = actor->heading_goal | 0x8000;
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_800831F4);
-#endif
 
 /* POLYCHECK: the lowest floor height of descriptor `index`'s collision model
  * under x/z (0, with the height and the last hit's normal), or -1. */
@@ -3623,8 +3637,8 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8008492C
  * commit the planar move (or roll it back on a blocking attribute or a
  * ceiling), then fall, land or rise onto the floor, and record the
  * controlled actor's history. Returns -1 when the actor did not move.
- * NON_MATCHING: the original keeps the two rollback tails apart and schedules the
- * flag and attribute test differently. */
+ * NON_MATCHING: only register choice differs: the original keeps the
+ * position height (y) in $a0 and the floor-scan pointer in $a1; ours swaps them. */
 #ifdef NON_MATCHING
 s32 func_80084A40(s32 index, s32 lowest, FieldDescriptor *descriptor, FieldActor *actor, s32 status) {
     s32 floors[4];
@@ -3644,6 +3658,7 @@ s32 func_80084A40(s32 index, s32 lowest, FieldDescriptor *descriptor, FieldActor
     s32 y;
     s32 bump;
     u32 attributes;
+    u32 layers;
 
     sprite = D_800AF880.components.descriptors[index].model;
     if (index == D_800B2078.controlled) {
@@ -3731,7 +3746,8 @@ s32 func_80084A40(s32 index, s32 lowest, FieldDescriptor *descriptor, FieldActor
             actor->layer = ids[i];
         }
         attributes = func_80080968(actor);
-        if ((attributes >> 5) & ((actor->flags >> 8) & 7)) {
+        layers = (actor->flags >> 8) & 7;
+        if (layers & (attributes >> 5)) {
             if (D_800C268C == 0) {
                 func_800379C8("ERROR ID1 ACT=%d\n", index);
             }
@@ -3817,9 +3833,9 @@ s32 func_80084A40(s32 index, s32 lowest, FieldDescriptor *descriptor, FieldActor
         }
     }
     actor->position[0] = old.vx;
+    actor->position[2] = old.vz;
     actor->layer = old_layer;
     actor->unkF0 = 0;
-    actor->position[2] = old.vz;
     for (i = 0; i < 4; i++) {
         actor->triangle[i] = old_triangles[i];
     }
@@ -3834,13 +3850,15 @@ s32 func_80084A40(s32 index, s32 lowest, FieldDescriptor *descriptor, FieldActor
     sprite->position[1] = actor->position[1];
     sprite->position[2] = actor->position[2];
     D_800AF880.components.descriptors[index].matrix.t[1] = actor->position[1] >> 16;
-    goto done;
+done:
+    func_80081C54(index);
+    return 0;
 
 rollback:
     actor->position[0] = old.vx;
+    actor->position[2] = old.vz;
     actor->layer = old_layer;
     actor->unkF0 = 0;
-    actor->position[2] = old.vz;
     for (i = 0; i < 4; i++) {
         actor->triangle[i] = old_triangles[i];
     }
@@ -3859,7 +3877,6 @@ rollback:
     sprite->position[1] = actor->position[1];
     sprite->position[2] = actor->position[2];
     D_800AF880.components.descriptors[index].matrix.t[1] = actor->position[1] >> 16;
-done:
     func_80081C54(index);
     return 0;
 }
