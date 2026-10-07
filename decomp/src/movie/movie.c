@@ -2158,17 +2158,15 @@ s32 func_800763BC(u8 keep) {
     func_80076488();
 }
 
-#ifdef NON_MATCHING
 /* Clear the screen, reopen the movie library and stream the movie, running
  * three decode steps per frame (their VSync counters are kept for the
  * monitor) until the frame callback or a button ends it; a movie that ended
- * on the second buffer is copied to the first. The two unused arrays
- * reproduce the original's frame. Same instructions except one delay slot:
- * the original leaves the short-file exit's jump to the final return 0 unfilled. */
+ * on the second buffer is copied to the first. The short-file exit falls
+ * off the end without a return value, as in the original. */
 s32 func_80076488(void) {
-    u8 unused0[0x90];
+    u8 unused0[0x90]; /* unused in the original; reserves 144 bytes */
     RECT screen;
-    u8 unused1[0x200];
+    u8 unused1[0x200]; /* unused in the original; reserves 512 bytes */
     RECT copy;
     s32 file;
     s32 select;
@@ -2255,12 +2253,9 @@ s32 func_80076488(void) {
             VSync(0);
             PutDispEnv(&D_80077124[1].disp);
         }
+        return 0;
     }
-    return 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80076488);
-#endif
 
 /* The movie library's frame callback: the buffer the frame went to; the
  * last frame ends the movie. */
