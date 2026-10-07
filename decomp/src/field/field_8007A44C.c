@@ -3073,12 +3073,8 @@ void func_800831D0(SVECTOR *out, VECTOR *in) {
     out->vz = in->vz >> 16;
 }
 
-#ifdef NON_MATCHING
 /* While the actor moves, turn its heading a quarter (left with flag bit 0,
- * else right) once, apply it, and mark the heading as turned.
- * NON_MATCHING: the original keeps the goal store (sh 0x106) ahead of the
- * heading reload for the call; ours schedules it after the reload and reorg
- * moves it into the jal delay slot. Frame (0x20) and everything else match. */
+ * else right) once, apply it, and mark the heading as turned. */
 void func_800831F4(void *owner, FieldActor *actor, FieldDescriptor *descriptor, s32 flags) {
     s16 heading;
     s16 turned;
@@ -3088,19 +3084,18 @@ void func_800831F4(void *owner, FieldActor *actor, FieldDescriptor *descriptor, 
         if (!(heading & 0x8000)) {
             if (flags & 1) {
                 turned = heading - 0x400;
+                actor->heading = turned & 0xFFF;
+                actor->heading_goal = turned & 0xFFF;
             } else {
                 turned = heading + 0x400;
+                actor->heading = turned & 0xFFF;
+                actor->heading_goal = turned & 0xFFF;
             }
-            actor->heading = turned & 0xFFF;
-            actor->heading_goal = turned & 0xFFF;
             func_80081F80(owner, actor->heading, descriptor);
             actor->heading_goal = actor->heading = actor->heading_goal | 0x8000;
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_800831F4);
-#endif
 
 /* POLYCHECK: the lowest floor height of descriptor `index`'s collision model
  * under x/z (0, with the height and the last hit's normal), or -1. */
