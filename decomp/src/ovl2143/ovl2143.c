@@ -3318,10 +3318,15 @@ aim:
         case 0x3B:
             word = *pc++;
             break;
-        case 0x3C: /* play a sound */
+        case 0x3C: { /* play a sound */
+            u8 sound, volume;
+
             word = *pc++;
-            func_8003A3B8((u8)word + func_801E5CD8(actor, arg), 0, (u16)word >> 8);
+            sound = word;
+            volume = word >> 8;
+            func_8003A3B8(sound + func_801E5CD8(actor, arg), 0, volume);
             break;
+        }
         case 0x3D: /* run the queued calls once `arg` is among them */
             word = actor->depth;
             if ((s16)word < 2) {
