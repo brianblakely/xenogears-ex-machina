@@ -3838,14 +3838,15 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801E78
 /* The original's quad loop is not loop-optimized (the palette and the
  * texture window are recomputed for each quad), hence the goto loop; the
  * window is PsyQ's setUVWH. Remaining: global allocation (the original
- * gives index fp, mode s7, i s6, half s5; here index wins s5: wrapping the
- * quad body in a do/while (0) block gets index and half right but swaps
- * mode and i), the semi-transparency bit is or-ed the other way round and
- * the clut store goes through a copy of the quad pointer. */
+ * gives index fp, mode s7, i s6, half s5; here index wins s5) and the clut
+ * store, which the original makes through a copy of the quad pointer (in
+ * the palette test's delay slot). A do/while (0) block around the whole
+ * loop body, through the goto, fixes the allocation: 3 differing
+ * instructions remain, the copy (local scorer). */
 void func_801E7C50(MenuLabelSlot *label, s32 index, s32 first, u8 mode) {
     POLY_FT4 *poly;
     s32 i;
-    s32 semi;
+    u16 semi;
     s32 half;
     s32 row;
     s32 column;
