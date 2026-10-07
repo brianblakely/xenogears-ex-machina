@@ -811,10 +811,7 @@ void func_80028ECC(s32 index) {
  * run of slots for all its sectors, later sectors fill them. */
 /* Slots are accessed as halfwords (state, sequence, free-run length): the
  * state store then may alias the frame size global, which is reloaded after
- * it as in the original (8002B8B0 does the same).
- * Nonmatching: payload and offset take $s4/$s5 swapped (original: payload
- * $s5, offset $s4); everything else matches. */
-#ifdef NON_MATCHING
+ * it (8002B8B0 does the same). */
 s32 func_80028F30(u8 **data, StreamFrame **frame) {
     StreamRing *ring = D_8004FE30;
     StreamSlot *slots;
@@ -844,13 +841,13 @@ s32 func_80028F30(u8 **data, StreamFrame **frame) {
             if (i >= D_8004FE40) {
                 goto search;
             }
-            offset = i << 11;
             if (D_80059F18 & 8) {
                 func_8004C398(D_8004FE4C, D_800596F8, 8);
                 if (D_800596F8[0] == 1) {
                     goto skip;
                 }
             }
+            offset = i << 11;
             D_80059F54 = (u8 *)D_8004FE08 + offset;
             header = (StreamFrame *)D_80059F54;
             func_8004C398(D_8004FE4C, (u8 *)header, 0x20);
@@ -925,9 +922,6 @@ search:
     D_8004FE24 += header->sectors;
     return 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002709C", func_80028F30);
-#endif
 
 /* Release a ring chunk: clear its slot's state and return the old state (0xffff without a ring, 0 for no chunk). */
 u16 func_8002945C(u8 *chunk) {
