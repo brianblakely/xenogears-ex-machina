@@ -2161,7 +2161,16 @@ void func_801CAE08(u8 mode) {
  * (notes and labels count). With threshold 1 + non-fixed registers (about
  * 28, two moves before it: 22) r84 stays only if 22 * span < 440, i.e. an
  * inner loop under 20 luids, or with a row loop of 72+ insns. The inner
- * loop as do/while, while, nested ifs or a goto exit scores 25-53. */
+ * loop as do/while, while, nested ifs or a goto exit scores 25-53.
+ * A third doubling also works: with `name = GAME_NAMES + n;` set inside
+ * the inner loop the GAME_NAMES constant is a further re-moved invariant
+ * before r84, and &GAME_NAMES[1] then stays in the row loop exactly as in
+ * the original (t0). But that name is no longer a row induction variable:
+ * the row loop keeps n + GAME_NAMES as an add per row (s0 + s4) instead of
+ * the original's separate walking pointer (26 with name set again before
+ * the copy loop, 29 without; the row loop never strength-reduces it).
+ * Also tried: n as a row index with GAME_NAMES[n * 20 + i + 1] or a
+ * [31][20] view (35-57), (GAME_NAMES + n)[i] reads (58-65). */
 void func_801CB184(void) {
     u8 codes[24];
     u8 decoded[20];
@@ -2702,25 +2711,6 @@ u8 func_801CBD90(u8 kind) {
  * temporary file that is then renamed; it reports 5c, or ac for a full
  * card and 44 otherwise, and refreshes the listing. Returns 1 when there
  * was no card. */
-#ifdef NON_MATCHING
-/* Remaining (local scorer 117; nm_diff 80 lines):
- * - Block placement: the original emits the copy-failure block (close both,
- *   rebuild the temporary name, erase it) between the open-temp failure
- *   block and the header write. Placing it there with
- *   `} else if (0) { fail: ... } else {` reproduces the layout and every
- *   other difference except the two below (nm_diff 50 lines).
- * - Allocation: the original keeps &tempName (hoisted out of the outer loop)
- *   in fp and spills src to 4e0 (stored by sw, read back by lbu). Here src
- *   (refs 14, live 266, priority 1578) outranks &tempName (refs 17, live
- *   515, priority 1320). Writing the three src retry loops as goto loops
- *   drops src to 11 refs and gives exactly the original allocation, but
- *   those loops then lose the lbu (the argument mask is combined away) and
- *   the srcFd copy placement, so the originals are real loops and src's
- *   weight must come out lower some other way.
- * - Scheduling: the full-card block (`proceed = 0` / `again = 0` sit
- *   between the argument loads in the original) and `written += 0x200`
- *   (the original fills the header[3] load delay with it).
- * src as u8/u32/s16 or declared first or last changes nothing (117). */
 u8 func_801CC6D8(void) {
     char destName[64];
     char other[8];
@@ -2803,11 +2793,11 @@ u8 func_801CC6D8(void) {
                 func_801D32B4();
             }
             if (proceed && D_801EA900[dest] >= 15) {
-                proceed = 0;
                 D_801EA900[dest] = 0;
                 D_800625A0->party->unk2F = 0;
-                again = 0;
                 func_801CACF8(0xac, 0xff, 0);
+                proceed = 0;
+                again = 0;
             }
             if (proceed) {
                 dest = D_800625A0->card->cursor / 15 == 0;
@@ -2936,7 +2926,12 @@ u8 func_801CC6D8(void) {
                                             }
                                         } while (fd == 0 && --retry != 0);
                                         if (fd == 0) {
-                                            goto fail;
+                                            close(srcFd);
+                                            close(destFd);
+                                            strcpy(tempName, other);
+                                            strcat(tempName, D_801C50B8);
+                                            func_800405B4(tempName);
+                                            break;
                                         }
                                         phase = 1;
                                     } else {
@@ -2948,28 +2943,25 @@ u8 func_801CC6D8(void) {
                                             }
                                         } while (fd == 0 && --retry != 0);
                                         if (fd == 0) {
-                                            goto fail;
+                                            close(srcFd);
+                                            close(destFd);
+                                            strcpy(tempName, other);
+                                            strcat(tempName, D_801C50B8);
+                                            func_800405B4(tempName);
+                                            break;
                                         }
-                                        written += 0x200;
                                         phase = 0;
+                                        written += 0x200;
                                         if (written >= header[3] << 13) {
+                                            close(destFd);
+                                            close(fd);
+                                            strcpy(tempName, other);
+                                            strcat(tempName, D_801C50B8);
+                                            func_800405A4(tempName, destName);
                                             break;
                                         }
                                     }
                                 }
-                                close(destFd);
-                                close(fd);
-                                strcpy(tempName, other);
-                                strcat(tempName, D_801C50B8);
-                                func_800405A4(tempName, destName);
-                                goto copied;
-                            fail:
-                                close(srcFd);
-                                close(destFd);
-                                strcpy(tempName, other);
-                                strcat(tempName, D_801C50B8);
-                                func_800405B4(tempName);
-                            copied:;
                             }
                         }
                     }
@@ -3012,9 +3004,6 @@ u8 func_801CC6D8(void) {
     D_800625A0->cardsPresent = 1;
     return result;
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CC6D8);
-#endif
 
 /* The file screen's delete command: pick a file with the cursor, confirm and
  * erase it, then force the cards to be scanned again. Returns 1 when the
@@ -6728,7 +6717,18 @@ void func_801DB5E4(u8 mode) {
  * Also tried: ids = inv->ids before the decrement (12), &inv->ids[idx]
  * through a pointer (115), ids += idx, idx[ids], (u8 *)inv + 150 (2). A
  * 30-minute permuter run (func_801e31c0 declared K&R in its copy, as the
- * permuter cannot type an undeclared call) found nothing below the base. */
+ * permuter cannot type an undeclared call) found nothing below the base.
+ * Closest structure found (8, only the count base differs): count and
+ * decrement through INVENTORY, the clear as `inv = INVENTORY; ids =
+ * inv->ids;` (cse then knows inv in the clear block and orders the clear
+ * index first), plus a second, never-read `inv = INVENTORY` before the
+ * loop that keeps loop.c from hoisting the clear; without it the clear's
+ * base + 150 is moved out (115). The extra store is a dead assignment, so
+ * it is not used; the count base then gets its own register (v1) where
+ * the original rematerialises one equivalence register (t0) for both the
+ * count base and the clear. Also tried (74-143): the clear's inv set
+ * inside case 4 / before the decrement, inv set at entry for the item
+ * lookup, counts through inv and the clear resetting inv. */
 u8 func_801DB920(s32 row, s32 entry) {
     u16 marks;
     u8 running;
