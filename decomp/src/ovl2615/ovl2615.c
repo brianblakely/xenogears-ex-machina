@@ -239,18 +239,22 @@ void func_801E4AC0(void) {
     }
 }
 
+/* Compiled-out debug trace of an item entering a battle list. */
+#define LIST_ITEM_TRACE(id) do { } while (0)
+
+/* Enter item `id` into slot `n` of the battle item list `list`. */
+#define LIST_ITEM(list, n, id)       \
+    do {                             \
+        LIST_ITEM_TRACE(id);         \
+        (list)[n] = (id);            \
+    } while (0)
+
 /* Build the battle item lists from the inventory (counts capped at 99, empty
- * slots cleared) and the special item list from ids 50..72.
- * NON_MATCHING: in the copy loops the original stores the id before loading
- * the count (D_8006F5C4[i], D_8006F36C[i]); here the load is scheduled first
- * (the arrays have distinct symbols, so the scheduler sees no conflict). A
- * loop boundary after the id store reproduces the original order. */
-#ifdef NON_MATCHING
+ * slots cleared) and the special item list from ids 50..72. */
 void func_801E4CD0(void) {
     s32 i;
     u8 *count;
     u8 listed;
-    u32 id;
 
     for (i = 0; i < BATTLE_ITEMS; i++) {
         D_800D2CE0[i] = 0;
@@ -268,7 +272,7 @@ void func_801E4CD0(void) {
     listed = 0;
     for (i = 0; i < INVENTORY_SLOTS && listed < BATTLE_ITEMS; i++) {
         if (D_8006F65A[i] != 0 && D_8006F65A[i] < 49) {
-            D_800D2CE0[listed] = D_8006F65A[i];
+            LIST_ITEM(D_800D2CE0, listed, D_8006F65A[i]);
             D_800D2CB0[listed] = D_8006F5C4[i];
             D_800D2FE4[listed] = D_8006F65A[i];
             listed++;
@@ -276,9 +280,8 @@ void func_801E4CD0(void) {
     }
     D_800C3EAC->last_item = 47;
     for (i = 0, listed = 0; i < 100; i++) {
-        id = D_8006F3D0[i];
-        if ((u32)(id - 50) < 23) {
-            D_800C3D70[listed] = id;
+        if (D_8006F3D0[i] >= 50 && D_8006F3D0[i] < 73) {
+            LIST_ITEM(D_800C3D70, listed, D_8006F3D0[i]);
             D_800D3688[listed] = D_8006F36C[i];
             listed++;
         }
@@ -288,9 +291,6 @@ void func_801E4CD0(void) {
         D_800D3688[listed] = 0;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E4CD0);
-#endif
 
 /* Start the turn timers, draw a random turn order of the eleven slots, let
  * enemies flagged 0x200 act first, then rebase every present timer so the
@@ -583,9 +583,9 @@ void func_801E5E78(void) {
  * portrait and its two digit glyphs, placed by the party layout's columns.
  * NON_MATCHING: the original doubles the dimmed set's first part (s0) in the
  * second func_80076A6C call's delay slot; here it is doubled after the call
- * (4 bytes shorter, rest shifted). A loop boundary between the two calls and
- * the doubling (e.g. the calls in a do { } while (0)) reproduces the
- * original; the actual construct is not recovered yet. */
+ * (4 bytes shorter, rest shifted). Loop boundaries do not reproduce it:
+ * the calls in a do { } while (0) keep the doubling after the gauge store
+ * and swap s4/s5; the dimming loop in one keeps it after the store too. */
 #ifdef NON_MATCHING
 void func_801E5EE8(void) {
     s32 i;

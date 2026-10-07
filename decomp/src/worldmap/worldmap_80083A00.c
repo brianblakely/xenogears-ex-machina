@@ -432,9 +432,9 @@ s16 func_80084D00(s32 probe, s16 *hit) {
  * collision faces flat (x, z) and record every face whose outline contains
  * the probe (face number and its attribute) in D_8009D718. Returns a word-sized
  * count of table entries; the caller narrows it to s16. */
-/* NON_MATCHING: the range checks put each slti result in v0 (the original
- * keeps both in a1/v0 in place) and i = 0 is scheduled before the
- * scratch matrix address setup. */
+/* NON_MATCHING: the first range check puts its slti result in v0 (the
+ * original keeps it in a1 in place) and the z-delta loads take v0/v1 the
+ * other way round. */
 #ifdef NON_MATCHING
 s32 func_80084DB8(s32 probe, s32 index) {
     s32 flag;
@@ -467,14 +467,12 @@ s32 func_80084DB8(s32 probe, s32 index) {
         return 0;
     }
     scratch->m = object->matrix;
-    i = 0;
     scratch->m.t[2] = 0;
     scratch->m.t[0] = 0;
-    dz = object->position.vy;
+    scratch->m.t[1] = object->position.vy;
     scratch->p[0].vz = 0x800;
     scratch->p[0].vy = 0x800;
     scratch->p[0].vx = 0x800;
-    scratch->m.t[1] = dz;
     hits = 0;
     ScaleMatrix(&scratch->m, &scratch->p[0]);
     SetRotMatrix(&scratch->m);
@@ -484,7 +482,7 @@ s32 func_80084DB8(s32 probe, s32 index) {
     vertices = mesh->vertices;
     scratch->u.test.point = (scratch->u.test.delta.vz << 16) | (scratch->u.test.delta.vx & 0xFFFF);
     face = mesh->faces;
-    for (; i < count; i++, face++) {
+    for (i = 0; i < count; i++, face++) {
         gte_RotTrans(&vertices[face->corner[0]], &scratch->p[0], &flag);
         gte_RotTrans(&vertices[face->corner[1]], &scratch->p[1], &flag);
         gte_RotTrans(&vertices[face->corner[2]], &scratch->p[2], &flag);
@@ -1493,13 +1491,15 @@ void func_80087B84(VECTOR *direction, VECTOR *up, MATRIX *m) {
     func_8004A8EC(m, m);
 }
 
+/* Compiled-out debug trace of the ferry's resumed position. */
+#define FERRY_TRACE_POSITION(actor) do { } while (0)
+
 /* Start the area's ferry: before scene 0xCD it rests at a fixed dock;
  * otherwise it resumes its route (first time: at waypoint 0), advancing
  * when within 8 units of the waypoint, and heads for the next one.
- * NON_MATCHING: the D_8009C610 load is scheduled ahead of the stack
- * adjustment (the original saves s0 first), and the waypoint load after the
- * resumed route's ground-height call lands in v1 above the vy store (the
- * original reloads it into v0 after the store; one instruction more). */
+ * NON_MATCHING: only the prologue differs: the D_8009C610 load is
+ * scheduled ahead of the stack adjustment (the original adjusts sp and
+ * saves s0 first, then loads it). */
 #ifdef NON_MATCHING
 s32 func_80087C6C(s32 index) {
     WorldmapActor *actor;
@@ -1535,6 +1535,7 @@ s32 func_80087C6C(s32 index) {
         }
         actor->position.vz = z << 12;
         actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+        FERRY_TRACE_POSITION(actor);
         scratch->work.vx = D_8009AF80[actor->u.step] << 12;
         scratch->work.vz = D_8009AF90[actor->u.step] << 12;
         distance = func_80094154(&actor->position, &scratch->work);
