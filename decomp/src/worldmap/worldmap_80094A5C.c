@@ -13,10 +13,10 @@ void func_80099708(u32 *heights, u32 *ot, s32 depth, SVECTOR *origin);
  * the target cell is walkable (step[0] = target), else the boundary result. */
 /* NON_MATCHING: size and instructions now line up (corner cases test the
  * first neighbour and return its nonzero result directly; the scale
- * argument is reused for the result as the original allocates it), but in
- * the prologue the original keeps `from` in a1 and `crossing` in t0 (here
- * v1/a1, and the product temp t0 instead of t1) and stores the from corner
- * before the to corner. */
+ * argument is reused for the result as the original allocates it; the
+ * walkable-cell test passes `from` as a temporary), but in the prologue the
+ * original keeps `crossing` in t0 (here a3), its product temp in t1 (here t0)
+ * and loads the from corner straight into a1 (here through v0). */
 #ifdef NON_MATCHING
 s32 func_80094A5C(VECTOR *position, VECTOR *direction, s32 scale, s32 mode) {
     CellProbe *probe;
@@ -174,7 +174,8 @@ s32 func_80094A5C(VECTOR *position, VECTOR *direction, s32 scale, s32 mode) {
     }
     if (scale == 0) {
         func_80093354(&probe->step[1]);
-        if (func_80094060(mode, func_80093F18(&probe->step[1])) == 0) {
+        from = func_80093F18(&probe->step[1]);
+        if (func_80094060(mode, from) == 0) {
             probe->step[0] = probe->step[1];
             return 1;
         }
