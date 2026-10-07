@@ -640,17 +640,15 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801DD7
         D_800625A0->party->unk20[1] = 0;               \
     } while (0)
 
-#ifdef NON_MATCHING
-/* Nonmatching: the original schedules the copy of `slot` into s2 after the
- * other locals' initial values (this build puts it first); its jump table
- * also lands at 801c512c when built from C. */
-/* The arts screen of party slot `slot` (`kind` 0 the character's, 1 its
+/* The arts screen of party slot `member` (`kind` 0 the character's, 1 its
  * gear's, 2 the gear's other list): a cursor over twelve rows (two columns,
  * one for kind 2), the selected art's description; confirm uses a usable
- * art, 9/10 switch party members, cancel leaves. `zoom` first zooms in. */
-void func_801DDF24(u8 slot, u8 zoom, u8 kind) {
+ * art, 9/10 switch party members, cancel leaves. `zoom` first zooms in. `slot` is
+ * the member currently shown. */
+void func_801DDF24(u8 member, u8 zoom, u8 kind) {
     s32 cursor;
     s32 cursorShown;
+    u8 slot;
     u8 slotShown;
     u8 windows;
     u8 running;
@@ -659,6 +657,7 @@ void func_801DDF24(u8 slot, u8 zoom, u8 kind) {
     windows = 1;
     cursor = 0;
     cursorShown = 0xff;
+    slot = member;
     slotShown = 0xff;
     func_801DC1D4(kind);
     func_801DB02C(0);
@@ -727,9 +726,6 @@ void func_801DDF24(u8 slot, u8 zoom, u8 kind) {
     func_801E8044(8, D_800625A0->party->unk38);
     func_801DB340(0);
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801DDF24);
-#endif
 
 /* Run the 801ddf24 screen for party slot `slot`; always continues the menu. */
 u8 func_801DE29C(u8 slot, u8 arg1) {
