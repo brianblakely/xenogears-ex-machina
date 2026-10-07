@@ -1504,7 +1504,12 @@ s32 func_800347C0(TextBox *text);
  * (subreg) sets are not register births, so sched1 hoists the corner
  * computations to the top of the block where the original computes each
  * next to its first store; side and bottom swap a3/t1; the reloads that
- * follow alternate t8/t9 the other way round. */
+ * follow alternate t8/t9 the other way round. The original also computes
+ * the portrait's y + 4 before the style & 0x20 test (in its delay slot),
+ * which a variable set next to icon_x reproduces, but with the current
+ * reload parity that scores worse (161 vs 102 by instruction text). All
+ * 3^7 inline/s32/s16 choices for the seven border values were scored;
+ * none removes the hoisting. */
 void func_8007E1C0(u32 *ot, s32 buffer, s32 w) {
     RECT area;
     s32 x;
@@ -1824,7 +1829,16 @@ s32 func_80033728(void *messages, void *message);
  * Reload spills $t0 here (for a stack-argument reload); alter_reg gives a
  * slot to every pseudo kicked out of a spilled register, so the original
  * probably had one more pseudo in $t0 after global-alloc that was then
- * retried into another register, leaving its slot unused. */
+ * retried into another register, leaving its slot unused.
+ * Correction: spill_hard_reg only gives a slot to a pseudo whose retry
+ * failed. 8007e1c0's seven never-accessed slots (which our build now
+ * reproduces) come from combine instead: when it folds an HImode load
+ * plus its sll/sra sign extension into one lh, it leaves a (use (reg))
+ * of the dead shift temporary; that pseudo has no hard register, gets a
+ * stack slot and is never referenced. The extra 8 bytes here are most
+ * likely one more such fold (an s16 value used both as a halfword and
+ * sign-extended); routing text_speed through an s16 local does not
+ * produce it. */
 s32 func_8007F8DC(s16 x, s16 y, void *message, s32 w, s32 columns, s32 rows, s32 owner, s32 speaker,
                   s32 mode, s32 turned, s32 flags) {
     s32 target_x;
