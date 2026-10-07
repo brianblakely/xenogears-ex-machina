@@ -4534,17 +4534,18 @@ void func_800AAD54(BattleObject *object, EffectPool *pool, s32 flags, s32 steps,
     s16 word;
     u16 value;
     BattleObject *self;
-    BattleObject *created;
     u16 *pc;
     u16 *start;
     s32 running;
     s32 reloadScene;
+    BattleObject *created;
     u8 op;
     u8 arg;
     u8 b0;
     u8 b1;
     u8 b2;
     u8 b3;
+    Animation *animation;
 
     if (steps == 0 || object->script == NULL) {
         return;
@@ -4793,9 +4794,9 @@ chosen:
             break;
         case 0x11: /* play an animation */
             {
-                Animation *animation = (Animation *)func_800AF518(object, arg, &i);
                 u8 loop;
 
+                animation = (Animation *)func_800AF518(object, arg, &i);
                 word = *pc++;
                 if (i == 0) {
                     loop = word >> 8;
@@ -4807,15 +4808,12 @@ chosen:
             }
             break;
         case 0x12:
-            {
-                Animation *animation = (Animation *)func_800AF518(object, arg, &i);
-
-                word = *pc++;
-                if (i == 0) {
-                    func_800A2704(pool, object->hierarchy, (u16 *)animation, (u8)(word >> 8), (u8)word);
-                    flags = -1;
-                    object->field8E = ABS(ANIMATION_SPAN(animation) * (object->scale1C * object->hierarchy->scale[2] >> 12) >> 12);
-                }
+            animation = (Animation *)func_800AF518(object, arg, &i);
+            word = *pc++;
+            if (i == 0) {
+                func_800A2704(pool, object->hierarchy, (u16 *)animation, (u8)(word >> 8), (u8)word);
+                flags = -1;
+                object->field8E = ABS(ANIMATION_SPAN(animation) * (object->scale1C * object->hierarchy->scale[2] >> 12) >> 12);
             }
             break;
         case 0x13:
@@ -5095,7 +5093,6 @@ chosen:
                 VECTOR axisY;
                 VECTOR axisZ;
                 SVECTOR unit;
-                SVECTOR *u = &unit;
                 u16 ax, ay, az;
 
                 word = *pc++;
@@ -5122,17 +5119,17 @@ chosen:
                                 unit.vx = 0x1000;
                                 unit.vy = 0;
                                 unit.vz = 0;
-                                gte_ldv0(u);
+                                gte_ldv0(&unit);
                                 gte_rtv0tr();
                                 gte_stlvnl(&axisX);
                                 unit.vx = 0;
                                 unit.vy = 0x1000;
-                                gte_ldv0(u);
+                                gte_ldv0(&unit);
                                 gte_rtv0tr();
                                 gte_stlvnl(&axisY);
                                 unit.vy = 0;
                                 unit.vz = 0x1000;
-                                gte_ldv0(u);
+                                gte_ldv0(&unit);
                                 gte_rtv0tr();
                                 gte_stlvnl(&axisZ);
                                 offset.vx = D_800D3368[i]->hierarchy->translation[0] - at->world.t[0];
@@ -5496,8 +5493,8 @@ chosen:
             {
                 ModelPart *root = object->hierarchy;
                 s32 dx = object->position[0] - root->translation[0];
-                s32 dz = object->position[2] - root->translation[2];
                 s32 dy = object->position[1] - root->translation[1];
+                s32 dz = object->position[2] - root->translation[2];
 
                 if (arg == 0) {
                     arg = 1;
@@ -5541,8 +5538,8 @@ chosen:
                 VECTOR hit;
                 SVECTOR point;
 
-                point.vy = 0;
                 point.vx = object->position[0];
+                point.vy = 0;
                 point.vz = object->position[2];
                 func_800A5870(&point, func_800A579C(&point), &hit);
                 object->position[1] = point.vy;
@@ -5799,18 +5796,18 @@ chosen:
             }
             break;
         case 0x69:
-            if (D_800C3B84 == 0xFF) {
+            if (D_800C3B84 != 0xFF) {
+                if (D_800C3B88 & 1) {
+                    pc = start;
+                    running = 0;
+                } else {
+                    D_800C3B84 = 0xFF;
+                }
+            } else {
                 D_800C3B84 = arg;
                 pc = start;
                 running = 0;
-                break;
             }
-            if (D_800C3B88 & 1) {
-                pc = start;
-                running = 0;
-                break;
-            }
-            D_800C3B84 = 0xFF;
             break;
         case 0x6A:
             D_800C3B8C = 1;
@@ -5830,9 +5827,11 @@ chosen:
             break;
         case 0x6E:
             {
-                BattleObject *other = D_800D3368[func_800AF438(object, arg, &word)];
+                u8 index = func_800AF438(object, arg, &word);
+                BattleObject *other;
 
                 word = *pc++;
+                other = D_800D3368[index];
                 if (other != NULL && other->field38 == (word & 1)) {
                     pc = start;
                     running = 0;
