@@ -1489,19 +1489,20 @@ void func_801C9270(s32 port) {
  * while the cards stay as they were, mark this game's files and place the
  * cursor marker. */
 #ifdef NON_MATCHING
-/* Remaining: the original keeps `marked` (always 0 here) as a copy of noCard
- * (`move s6,s4` in the first branch's delay slot) and tests it before
- * setting party +0b; this build folds it to a constant whatever the
- * assignment form (marked = noCard = 0, noCard = 0; marked = noCard). The
- * original's frame holds 48 more bytes its code never touches (10
- * differing instructions, local scorer). The copy reads s4 right after
- * `move s4,zero`, so the source value is 0 there; cse replaces a register
- * with a known constant whenever it can (const 0 costs less than a reg), so
- * at cse time the original's copy source was not known to be 0 in that
- * block. A standalone 2.6.3 test (`a = 0; b = a; ... if (b)`) folds the
- * test away as here. With `marked` as s32 the test survives (11) but
- * the copy is still folded to 0 and the andi is lost; other widths of
- * either variable and both assignment orders score 15-28. */
+/* Remaining: one instruction. The original sets `marked` as a copy of noCard
+ * (`move s6,s4` in the first branch's delay slot); this build stores the
+ * constant (`move s6,zero`). Everything else matches, including the test of
+ * `marked` before setting party +0b: `marked` is reused as the flag for the
+ * cursor-marker test at the end (unk2F != 0), so it is not a constant there
+ * and the test survives (a permuter run found this; 15 -> 2 differing
+ * instructions, local scorer). The copy reads s4 right after `move s4,zero`,
+ * so its source value is 0 there; cse replaces a register with a known
+ * constant whenever it can (const 0 costs less than a pseudo), so at cse
+ * time the original's copy source was not known to be 0 in that block (a
+ * join label, a call result or a value only combine reduces to 0); every
+ * assignment form here (marked = noCard = 0, noCard = marked = 0,
+ * noCard = 0; marked = noCard) folds it. The original's frame holds 48 more
+ * bytes its code never touches. */
 u8 func_801C93A8(void) {
     char path[64];
     u8 present[2];
@@ -1612,7 +1613,8 @@ u8 func_801C93A8(void) {
             D_800625A0->party->unkB = 1;
         }
         state = D_800625A0;
-        if (state->party->unk2F != 0 && state->markers->unk144[0] != 0) {
+        marked = state->party->unk2F != 0;
+        if (marked && state->markers->unk144[0] != 0) {
             setXY4(&state->markers->polys[state->markers->current[0]],
                    D_801E9894[D_801E981C[state->card->cursor]][0] + 8, D_801E9914[D_801E981C[state->card->cursor]][0] - 6,
                    D_801E9894[D_801E981C[state->card->cursor]][0] + 0x18, D_801E9914[D_801E981C[state->card->cursor]][0] - 6,
