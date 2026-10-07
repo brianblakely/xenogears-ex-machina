@@ -190,10 +190,8 @@ s32 func_800273C4(Panorama *panorama, SVECTOR *eye, SVECTOR *target, MATRIX *vie
 
 /* Draw the strip of a panoramic backdrop from texture column `start`,
  * `bottom` its bottom screen row, scaled down by `zoom` (8.8): up to eight
- * quads across the screen, one per texture page.
- * Nonmatching: the original keeps a second copy of `bottom` for the quads'
- * lower corners and saves `bottom`, `top` and `ot` around GetTPage. */
-#ifdef NON_MATCHING
+ * quads across the screen, one per texture page. The quads' lower row is
+ * an s16 copy of `bottom` taken in the loop. */
 void func_800278F8(Panorama *panorama, s32 start, s32 bottom, s32 zoom, u_long *ot, s32 buffer) {
     s32 left;
     s16 u;
@@ -205,6 +203,8 @@ void func_800278F8(Panorama *panorama, s32 start, s32 bottom, s32 zoom, u_long *
     s16 page_x;
     s16 cols;
     s16 x1;
+    s16 y;
+    s32 tex_x;
     s32 i;
     POLY_FT4 *quad;
 
@@ -222,8 +222,9 @@ void func_800278F8(Panorama *panorama, s32 start, s32 bottom, s32 zoom, u_long *
     x = 0;
     quad = panorama->quads[buffer & 1];
     if (top > 0) {
-        page_u = (panorama->tex_x % 64) << (2 - panorama->mode);
-        for (i = 0; i < 8; i++, quad++) {
+        tex_x = panorama->tex_x;
+        page_u = (tex_x % 64) << (2 - panorama->mode);
+        for (i = 0; i < 8; quad++, i++) {
             page_x = panorama->tex_x + (u >> (2 - panorama->mode));
             cols = (u + page_u) & ((0x100 >> panorama->mode) - 1);
             w = 0x100 - cols;
@@ -236,21 +237,22 @@ void func_800278F8(Panorama *panorama, s32 start, s32 bottom, s32 zoom, u_long *
                 w = x1 * (zoom + 0x100) / 256;
             }
             next = (s16)(u + w) % panorama->width;
+            y = bottom;
             quad->x0 = x;
             quad->x1 = x + x1;
             quad->x2 = x;
-            quad->y2 = bottom;
+            quad->y2 = y;
             quad->x3 = x + x1;
-            quad->y3 = bottom;
-            quad->u0 = cols;
+            quad->y3 = y;
             quad->y0 = bottom - top;
             quad->y1 = bottom - top;
-            quad->u1 = cols + w - 1;
+            quad->u0 = cols;
             quad->v0 = panorama->v;
-            quad->u2 = cols;
+            quad->u1 = cols + w - 1;
             quad->v1 = panorama->v;
-            quad->u3 = cols + w - 1;
+            quad->u2 = cols;
             quad->v2 = panorama->v + panorama->height;
+            quad->u3 = cols + w - 1;
             quad->v3 = panorama->v + panorama->height;
             u = next;
             quad->tpage = GetTPage(panorama->mode, 0, page_x / 64 * 64, panorama->tex_y / 256 * 256);
@@ -262,9 +264,6 @@ void func_800278F8(Panorama *panorama, s32 start, s32 bottom, s32 zoom, u_long *
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002709C", func_800278F8);
-#endif
 
 /* Release a block if there is one. */
 void func_80027D40(void *block) {
@@ -805,9 +804,14 @@ void func_80028ECC(s32 index) {
  * data in *data (0 when one is available, 1 otherwise). With the PC file
  * server, first read the next sector: a frame's first sector reserves a free
  * run of slots for all its sectors, later sectors fill them. */
-/* Nonmatching: close; the original reads the CD mode byte without keeping its address in a
- * register (as a scalar, where 8002a428's unit uses an array), the payload and slot-offset
- * registers ($s5/$s4) are swapped, and the frame size is reloaded after the slot stores. */
+/* Nonmatching: the original reads the CD mode byte as a scalar (lui/lbu
+ * %lo each time); any array, union or struct access to D_80059F18 makes
+ * GCC 2.6.3 load its address into a pseudo that CSE then keeps in $s4,
+ * which pushes `data` onto the stack (with a scalar alias the frame and
+ * $fp/$s7 match). Remaining with that alias: payload/offset take $s4/$s5
+ * swapped, the frame is 0x48 (original 0x50), the frame size store
+ * D_80059F5C is scheduled after the slot length load and is not reloaded
+ * after `slot->state = 3`, and the -0x20 PClseek is not cross-jumped. */
 #ifdef NON_MATCHING
 s32 func_80028F30(u8 **data, StreamFrame **frame) {
     StreamRing *ring = D_8004FE30;

@@ -66,8 +66,11 @@ void func_80033B34(u16 *codes, u8 *out, u32 count);
 
 /* Load directory 16 file 3 into the saved game data, decode the first
  * 31 twenty-byte name slots, and reset the battle setup counters.
- * NON_MATCHING: the compiler keeps the second-column name pointer in
- * an extra saved register; the original rebuilds it for each name. */
+ * NON_MATCHING: the code bytes go through two pointers into the workspace
+ * as in the original ($s3/$s2 here $s5/$s4), but the compiler also hoists
+ * the second-column base (D_8006D635) and the 0xF terminator out of the
+ * name loop into saved registers; the original rebuilds them (and a copy
+ * of the name offset) before each name's byte loop. */
 #ifdef NON_MATCHING
 void func_8001B970(void) {
     u16 codes[12]; /* 24-byte workspace; at most ten codes per name */
@@ -77,6 +80,8 @@ void func_8001B970(void) {
     u16 *counter;
     s32 offset;
     s32 i;
+    u8 *low;
+    u8 *high;
 
     func_80028470(16, 0);
     func_80032498(2, 0);
@@ -86,10 +91,12 @@ void func_8001B970(void) {
     name = (u8 *)&D_8006D634;
     memmove(name, file, 0x2358);
     func_800320E8(file);
+    low = (u8 *)codes;
+    high = (u8 *)codes + 1;
     for (offset = 0; offset < 0x26C; offset += 20) {
         for (i = 0; i < 20; i += 2) {
-            ((u8 *)codes)[i] = name[i];
-            ((u8 *)codes)[i + 1] = D_8006D635[offset + i];
+            low[i] = name[i];
+            high[i] = D_8006D635[offset + i];
             if (name[i] == 0xF && D_8006D635[offset + i] == 0) {
                 break;
             }

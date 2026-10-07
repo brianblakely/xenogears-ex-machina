@@ -65,6 +65,11 @@ typedef struct {
     s16 half6;
 } SpriteRendererEntry;
 
+/* A screen offset in pixels (copied as one pair). */
+typedef struct {
+    s8 x, y;
+} SpriteOffset;
+
 /* A sprite's renderer (its part list header). */
 typedef struct {
     s16 angle_x, angle_y, angle_z; /* +0x0 */
@@ -73,8 +78,7 @@ typedef struct {
     SpritePart *parts[2];          /* +0x2c: two part lists (0x18 bytes per part); 80025718 draws the one of the queue being filled */
     SpriteRendererEntry *pointer34; /* +0x34: 8 entries */
     struct Sprite *next_pending;   /* +0x38 */
-    s8 offset_x;                   /* +0x3c: screen offset, before scaling */
-    s8 offset_y;                   /* +0x3d */
+    SpriteOffset offset;           /* +0x3c: screen offset, before scaling */
     u8 unknown3e[2];
     s32 word40;                    /* +0x40 */
     SVECTOR light_angles;          /* +0x44: lit models (800257f0) */
