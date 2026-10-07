@@ -104,7 +104,10 @@ void func_8007E954(s32 value) {
  * only advances) and move the cursor right by its scaled width. Declared
  * int without a return value, as the original's unfilled delay slot shows.
  * Does not match: the original loads the glyph width before storing the
- * first vertex, and the texture page/CLUT before the packet length. */
+ * first vertex, and the texture page/CLUT before the packet length. Reading
+ * the width first and D_800912DC as aggregate (struct/array) memory makes
+ * everything up to the third UV match (the scale load then stays behind the
+ * first vertex store); the rest is the packet length/colour schedule. */
 s32 func_8007E964(s32 ch) {
     PolyFT4Words *quad;
     Glyph *glyph;
