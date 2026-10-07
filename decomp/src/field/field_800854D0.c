@@ -10466,8 +10466,12 @@ void func_800A31E8(void) {
     func_800A3074(0x22, WHOLE(D_800AF880.components.descriptors[D_800B2078.controlled].actor->position[1]));
 }
 
-#ifdef NON_MATCHING
+/* Read the field state block at D_8005A4E4 back (the inverse of
+ * func_800A3F4C): descriptor count, view, collision attributes, D_800B2078
+ * and the per-actor records, keeping each actor's list pointer and
+ * allocating its link and unk114 blocks as the record says. */
 void func_800A3474(void) {
+    FieldDescriptor *descriptor;
     s32 i;
     s32 flags;
     s32 *list;
@@ -10486,11 +10490,12 @@ void func_800A3474(void) {
     COPY_BLOCK(&D_800AF880, D_800AFC50, 0x1C8);
     D_800AFC50 += 0x1C8;
     for (i = 0; i < D_800ADBFC; i++) {
-        COPY_BLOCK(&D_800AF880.components.descriptors[i].rotation, D_800AFC50, 8);
+        descriptor = &D_800AF880.components.descriptors[i];
+        COPY_BLOCK(&descriptor->rotation, D_800AFC50, 8);
         D_800AFC50 += 8;
         COPY_BLOCK(&flags, D_800AFC50, 4);
-        D_800AFC50 += 4;
         D_800AF880.components.descriptors[i].flags = flags;
+        D_800AFC50 += 4;
         D_800AFC50 += 0x30;
         list = D_800AF880.components.descriptors[i].actor->list;
         COPY_BLOCK(D_800AF880.components.descriptors[i].actor, D_800AFC50, 0x138);
@@ -10510,9 +10515,6 @@ void func_800A3474(void) {
     COPY_BLOCK(D_800C3A68, D_800AFC50, 0x800);
     D_800AFC50 += 0x800;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_800A3474);
-#endif
 
 #ifdef NON_MATCHING
 /* Read the descriptor count, view block and per-actor records from the
