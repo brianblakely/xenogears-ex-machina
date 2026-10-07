@@ -231,31 +231,26 @@ void func_8007EE68(s32 highlight) {
     D_800926F8 = 0xFF;
 }
 
-#ifdef NON_MATCHING
 /* Build the list of the 49 entries (or, when filtering, of those whose
- * required level the current level reaches) and order it when filtering.
- * Does not match: the source and entry pointers get swapped registers. */
+ * required level the current level reaches) and order it when filtering. */
 void func_8007EEE8(s32 filter) {
     s32 level = D_8006EF64;
     ListEntry **list = func_80031BDC(0xC4, 1);
     MoveList *source;
     s32 i;
 
-    source = D_80092874;
     D_800928EC = list;
+    source = D_80092874;
     D_80092888 = 0;
-    for (i = 0; i < 49; i++, source++) {
+    for (i = 0; i < 49; source++, i++) {
         if (!filter || source->level <= level) {
-            list[D_80092888++] = &D_80091964[i];
+            D_800928EC[D_80092888++] = &D_80091964[i];
         }
     }
     if (filter) {
         func_8008895C();
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_8007EEE8);
-#endif
 
 /* Allocate and lay out the 49 portrait slots: palette rows 511 down and
  * a 7x7 grid of image areas. */
