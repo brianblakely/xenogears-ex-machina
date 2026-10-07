@@ -435,6 +435,7 @@ typedef struct {
     s16 origin[3];        /* 0x464 */
     u8 pad46A[2];
     s16 colours[3];       /* 0x46C: the colour matrix's first column */
+    u8 pad472[2];
     u8 back[3];           /* 0x474: the GTE back colour */
     u8 pad477[0x50C - 0x477];
     s32 actors;           /* 0x50C: offsets in the scene data (0: none) */
@@ -598,14 +599,16 @@ typedef struct {
     u8 pad68[0x7C - 0x68];
 } ModelPart;
 
-/* The stage model record (pointer 800d33e4). */
+/* The stage model record. */
 typedef struct {
     void *model;          /* 0x00 */
     ModelPart *parts;     /* 0x04 */
     u8 pad8[0x1C - 8];
     s16 pose;             /* 0x1C */
 } StageModel;
-extern StageModel *D_800D33E4;
+/* The battle object list (800d3368); its last entry is the stage model. */
+extern StageModel *D_800D3368[32];
+#define STAGE_MODEL 31
 
 /* The stage file: its texture image list and part positions. */
 typedef struct {

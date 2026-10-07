@@ -61,31 +61,23 @@ s32 func_801E70E8(s32 *images) {
  * origin and colour matrix, build the stage objects (lights, backdrop, fog,
  * animations) and publish the actors and lights. Returns whether the stage
  * has fog (its colour goes to tint); 0 without a stage or scene. */
-#ifdef NON_MATCHING
-/* Register allocation differs: the original keeps stage and colours on the
- * stack and the scene data in s6. Frame and register lifetimes remain
- * unresolved. The original computes actors and entries without branches
- * ((data + offset) & -(offset != 0): sltu, negu, and); GCC 2.6.3 folds every
- * single-expression form of that (and the ternary) into a branch, and only a
- * separately assigned mask reproduces it. There the three offsets share s0
- * and the three pointers s2 (s0 also holds size and source - 1, s2 the motion
- * list), as if one offset and one pointer temporary were reused; the second
- * stage loop also has no counter (the 0x18 offset alone tests >= 0). */
+/* The relocated section pointers stay NULL for a zero offset (the original
+ * converts these tests to masks), and a failed allocation returns without a
+ * value: the original leaves the allocator's NULL in v0. */
 u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin, s16 *colours,
                  u8 *tint) {
     BattleScene *data;
-    BattleScene *source;
     StageInfo *info;
     StageObject *object;
     ModelPart *part;
     PartPosition *position;
-    s32 *motion_list;
     s32 *table;
     u8 *motions[4];
     u8 *first_motion;
     u16 motion_count;
-    void *actors;
     s32 *lights;
+    void *actors;
+    u8 *pointer;
     StageLight *entries;
     s32 size;
     s32 i;
@@ -107,7 +99,7 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
     for (i = 1; i >= 0; i--) {
         D_800C3D50[i] = NULL;
     }
-    for (j = 1; j >= 0; j--) {
+    for (j = 0; j < 2; j++) {
         D_800C3DA0[j].motion = NULL;
     }
     D_800D361A = 0;
@@ -116,9 +108,9 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
         func_800A8BF0(0x1F, 0xC4, stage, stage, 0, 0, 0, 0, 0);
         func_801E70E8(stage->images);
         position = stage->positions;
-        part = D_800D33E4->parts;
+        part = D_800D3368[STAGE_MODEL]->parts;
         D_800C3E38 = part;
-        D_800C3E48 = D_800D33E4->model;
+        D_800C3E48 = D_800D3368[STAGE_MODEL]->model;
         for (i = 1; i < part->count; i++, position++) {
             part[i].x = position->x;
             part[i].y = position->y;
@@ -126,33 +118,46 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
             part[i].rotation = position->rotation;
         }
     }
-    source = data;
-    size = ((s32 *)source)[-1];
+    table = (s32 *)data;
+    size = table[-1];
     data = func_80031BDC(size, 0);
     D_800658C8 = data;
     if (data == NULL) {
-        return 0;
+        return; /* no value: v0 still holds the NULL block */
     }
-    memcpy(data, source, size);
-    func_800320B8((s32 *)source - 1);
-    func_800320E8((s32 *)source - 1);
+    memcpy(data, table, size);
+    func_800320B8(table - 1);
+    func_800320E8(table - 1);
     made = 0;
     placed = 0;
-    actors = data->actors != 0 ? (u8 *)data + data->actors : NULL;
-    lights = (s32 *)((u8 *)data + data->lights);
-    entries = data->lights != 0 ? (StageLight *)(lights + 1) : NULL;
+    size = data->actors;
+    pointer = (u8 *)data + size;
+    actors = NULL;
+    if (size != 0) {
+        actors = pointer;
+    }
+    size = data->lights;
+    pointer = (u8 *)data + size + 4; /* the entries follow the count */
+    lights = (s32 *)((u8 *)data + size);
+    entries = NULL;
+    if (size != 0) {
+        entries = (StageLight *)pointer;
+    }
     /* Reset from the list payload, then use its first relocated entry. */
-    motion_list = (s32 *)((u8 *)data + data->motion);
-    func_8003342C(motion_list);
+    size = data->motion;
+    pointer = (u8 *)data + size;
+    func_8003342C(pointer);
     info = &data->info;
-    table = (s32 *)motion_list[1];
+    table = (s32 *)((s32 *)pointer)[1];
     if (stage != NULL) {
-        func_800AA898(D_800D33E4, &D_800C3D0C, motion_list + 2, 0);
-        func_800AA934(D_800D33E4, D_800D33E4, &D_800C3D0C, 0);
-        func_8009EF3C(D_800C3E38, D_800D33E4->pose);
+        func_800AA898(D_800D3368[STAGE_MODEL], &D_800C3D0C, (s32 *)pointer + 2, 0);
+        func_800AA934(D_800D3368[STAGE_MODEL], D_800D3368[STAGE_MODEL], &D_800C3D0C, 0);
+        func_8009EF3C(D_800C3E38, D_800D3368[STAGE_MODEL]->pose);
     }
     for (i = 0; i < 4; i++) {
-        motions[i] = (u8 *)table + *table;
+        size = *table;
+        pointer = (u8 *)table + size;
+        motions[i] = pointer;
     }
     /* Read the header before the output matrix stores, as the original does. */
     first_motion = motions[0];
@@ -238,9 +243,6 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
     *scene = data;
     return fog;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/stage", func_801E7210);
-#endif
 
 /* Build the stage backdrop: its placement, the 9 x 9 floor grid spaced by
  * step, the tiles' texture page and palette, the fills and fades in the
