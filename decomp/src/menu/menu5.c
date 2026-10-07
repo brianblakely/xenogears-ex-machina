@@ -1118,8 +1118,9 @@ s32 func_80086FF8(Actor *actor, PolyF4 *packet) {
  * when nearly full) and the level bars (tinted by the level). Does not match:
  * the original adds each HUD array's offset to the HUD base register before
  * the index (as if the arrays were separate symbols related by CSE), keeps the
- * HUD base in $s1 and the count in $s2 (here $s3/$s1), and fills the delay
- * slot after the first mark test. */
+ * HUD base in $s1 and the count in $s2, and saves one more register
+ * (frame 0x30 vs 0x28); it also fills the delay slot after the first mark
+ * test. */
 #ifdef NON_MATCHING
 void func_80087068(Actor *left, Actor *right) {
     OverlayBuffer *buf;
