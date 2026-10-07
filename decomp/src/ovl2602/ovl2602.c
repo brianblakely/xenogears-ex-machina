@@ -294,69 +294,70 @@ void func_801C5C98(void) {
     D_800625A0->buffer = 0;
 }
 
-/* Set up both buffers' quads of label `index` (two columns, 13-pixel rows from `row`). */
+/* Set up both buffers' quads of label `index` (two columns, 13-pixel rows from `row`).
+ * NON_MATCHING: same code as ovl2600 func_801C5ABC (see there): index and
+ * column swap callee-saved registers and the CLUT store lacks the original's
+ * v1 copy of poly. */
 #ifdef NON_MATCHING
 void func_801C5CA8(Label *label, s32 index, s32 row, s32 mode) {
     POLY_FT4 *poly;
-    s32 i;
-    s32 semi;
     s32 column;
     s32 line;
     s32 u;
-    s32 v;
+    s32 i;
+    u8 dim;
 
     column = index & 1;
+    i = 0;
     line = index / 2;
     u = (line & 1) << 7;
     poly = label->poly;
-    i = 0;
+
 loop:
-        semi = 0;
-        SetPolyFT4(poly);
-        SetSemiTrans(poly, 0);
-        SetShadeTex(poly, 0);
-        poly->r0 = 0x80;
-        poly->g0 = 0x80;
-        poly->b0 = 0x80;
-        if ((u8)mode == 0) {
-            label->highlight = column;
-            poly->tpage = GetTPage(0, 0, 0x140, 0);
-            poly->u0 = u;
-            v = ((index + row) / 4) * 13;
-            poly->v0 = v;
-            poly->u1 = u + label->width;
-            poly->v1 = v;
-            poly->u2 = u;
-            poly->v2 = v + 13;
-            poly->u3 = u + label->width;
-            poly->v3 = v + 13;
-        } else {
-            if (!(mode & 0x80)) {
-                semi = 0x20;
-                SetSemiTrans(poly, 1);
-                poly->r0 = semi;
-                poly->g0 = semi;
-                poly->b0 = semi;
-            }
-            label->highlight = (mode & 0x7F) - 1;
-            poly->tpage = semi | GetTPage(0, 0, 0x180, 0x80);
-            poly->u0 = column * 0x60;
-            v = line * 13 + row;
-            poly->v0 = v;
-            poly->v1 = v;
-            poly->u2 = column * 0x60;
-            poly->v2 = v + 13;
-            poly->u1 = column * 0x60 + label->width;
-            poly->v3 = v + 13;
-            poly->u3 = column * 0x60 + label->width;
+    dim = 0;
+    SetPolyFT4(poly);
+    SetSemiTrans(poly, 0);
+    SetShadeTex(poly, 0);
+    poly->r0 = 0x80;
+    poly->g0 = 0x80;
+    poly->b0 = 0x80;
+    if ((u8)mode == 0) {
+        label->highlight = column;
+        poly->tpage = GetTPage(0, 0, 0x140, 0);
+        poly->u0 = u;
+        poly->v0 = ((index + row) / 4) * 13;
+        poly->u1 = u + label->width;
+        poly->v1 = ((index + row) / 4) * 13;
+        poly->u2 = u;
+        poly->v2 = ((index + row) / 4) * 13 + 13;
+        poly->u3 = u + label->width;
+        poly->v3 = ((index + row) / 4) * 13 + 13;
+    } else {
+        if (!(mode & 0x80)) {
+            dim = 0x20;
+            SetSemiTrans(poly, 1);
+            poly->r0 = dim;
+            poly->g0 = dim;
+            poly->b0 = dim;
         }
-        if (label->highlight) {
-            poly->clut = D_80059414;
-        } else {
-            poly->clut = D_800595D4;
-        }
-        i++;
-        poly++;
+        label->highlight = (u8)(mode & 0x7F) - 1;
+        poly->tpage = GetTPage(0, 0, 0x180, 0x80) | dim;
+        poly->u0 = column * 0x60;
+        poly->v0 = line * 13 + row;
+        poly->u1 = column * 0x60 + label->width;
+        poly->v1 = line * 13 + row;
+        poly->u2 = column * 0x60;
+        poly->v2 = line * 13 + row + 13;
+        poly->u3 = column * 0x60 + label->width;
+        poly->v3 = line * 13 + row + 13;
+    }
+    if (label->highlight) {
+        poly->clut = D_80059414;
+    } else {
+        poly->clut = D_800595D4;
+    }
+    i++;
+    poly++;
     if (i < 2) {
         goto loop;
     }
