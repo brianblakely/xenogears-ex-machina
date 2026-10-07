@@ -100,19 +100,24 @@ void func_80031A30(void) {
 }
 
 /* Make [start, end) one free block followed by the end marker.
- * Nonmatching: register allocation of the header update. */
+ * Nonmatching: the symbol-data clears are scheduled after the first header
+ * update, and the owner default is loaded before the end-marker header. */
 #ifdef NON_MATCHING
+#define FORGET_HEAP_SYMBOLS() do { \
+    D_80059334 = NULL; \
+    D_80059338 = NULL; \
+} while (0)
+
 void func_80031A68(HeapHeader *first, u8 *end) {
     first = (HeapHeader *)((u32)first & ~3);
     end = (u8 *)((u32)end & ~3);
+    D_80059320 = (u8 *)(first + 1);
     first->tag = 0;
     first->kind = 0x21;
-    D_80059320 = (u8 *)(first + 1);
-    D_80059318 = 0x20;
     first->next = end;
+    D_80059318 = 0x20;
     D_8005932C = 0;
-    D_80059334 = NULL;
-    D_80059338 = NULL;
+    FORGET_HEAP_SYMBOLS();
     D_8005931C = 10;
     HEAP_HEADER(end)->next = end;
     HEAP_HEADER(end)->tag = 1;
@@ -120,6 +125,8 @@ void func_80031A68(HeapHeader *first, u8 *end) {
     D_80059FCC[0] = NULL;
     func_80031A30();
 }
+
+#undef FORGET_HEAP_SYMBOLS
 #else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_80031A68);
 #endif
