@@ -530,10 +530,6 @@ void SetTransMatrix(MATRIX *m);                /* SetTransMatrix */
 extern View *D_8005919C;
 
 /* This overlay's data. */
-typedef struct {
-    s32 w0;
-    s32 w4;
-} Pair;
 
 /* A point attached to an actor node (0x14 bytes): its world position is
  * the node's matrix applied to `offset` (func_801E1880). */
@@ -546,7 +542,7 @@ typedef struct {
 } Anchor;
 
 extern s32 D_801E85CC;
-extern Pair D_801E85F4[8];
+extern ModelList D_801E85F4[8];
 extern u16 D_801E863C;
 extern s32 D_801E8640;
 extern Anchor D_801E8648[2];

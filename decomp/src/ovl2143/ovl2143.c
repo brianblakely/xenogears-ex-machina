@@ -4302,7 +4302,7 @@ void func_801E738C(s32 slot_count) {
         D_801E8670[i] = 0;
     }
     for (j = 7; j >= 0; j--) {
-        D_801E85F4[j].w0 = 0;
+        D_801E85F4[j].models = NULL;
     }
     /* Both anchors' active flags, by byte offset. */
     for (offset = sizeof(Anchor); offset >= 0; offset -= sizeof(Anchor)) {
@@ -4315,10 +4315,11 @@ void func_801E738C(s32 slot_count) {
  * group into a free model list and build the hierarchy at `pos`, set up its
  * shadow quads, image animations and records24, reset its script (unless bit
  * 6) and keep a compacted copy of its model group (unless bit 1).
- * NON_MATCHING (same size): register allocation differs (the original has
- * actor s3, file then the loop index s4, links s0, desc/p s2), and the
- * original rematerializes &D_801E85F4 after func_801DC22C where this C keeps
- * it in s0. */
+ * The model list is attached even when the files were already relocated.
+ * NON_MATCHING (same size, same instructions): register allocation only.
+ * The original has actor s3, file then the prim loop index s4, desc and p
+ * sharing s2, images s5 and group s6 (this C: actor s2, file/index s3, desc
+ * s6, p s0, images s4, group s5); links s0 and size s1 already agree. */
 #ifdef NON_MATCHING
 void func_801E742C(s32 index, u16 flags, ActorScript *script, ActorFile *file, s16 x, s16 y, s16 z,
                    s16 w, s16 *pos) {
@@ -4331,6 +4332,7 @@ void func_801E742C(s32 index, u16 flags, ActorScript *script, ActorFile *file, s
     u8 *group;
     HierarchyLink *links;
     s32 size;
+    u8 *compact;
     s32 i, k;
     s32 count;
     Record24 *record;
@@ -4385,13 +4387,13 @@ void func_801E742C(s32 index, u16 flags, ActorScript *script, ActorFile *file, s
         D_801E8638 = func_80031BDC(size, 1);
         memcpy(D_801E8638, group, size);
         for (D_801E8634 = 0; D_801E8634 < 8; D_801E8634++) {
-            if (D_801E85F4[D_801E8634].w0 == 0) {
+            if (D_801E85F4[D_801E8634].models == NULL) {
                 break;
             }
         }
-        func_801DC22C(D_801E8638, (ModelList *)&D_801E85F4[D_801E8634]);
-        actor->models = (ModelList *)&D_801E85F4[D_801E8634];
+        func_801DC22C(D_801E8638, &D_801E85F4[D_801E8634]);
     }
+    actor->models = &D_801E85F4[D_801E8634];
     if (!(flags & 0x40)) {
         if (actor->flags & 4) {
             actor->parts = func_801DC2D0(actor->models, links, 2, 0, 0, 0, 0, 0);
@@ -4455,13 +4457,13 @@ void func_801E742C(s32 index, u16 flags, ActorScript *script, ActorFile *file, s
         p = desc->records;
         record = func_80031BDC(actor->count10D * sizeof(Record24), 0);
         actor->records24 = record;
-        for (i = 0; i < actor->count10D; record++, i++) {
+        for (i = 0; i < actor->count10D; i++, record++) {
             count = p[17];
             record->h0 = *p++;
             /* The parameters are read in order. */
             func_801E1A14(record, (u16 *)info->tables[i], *p++, *p++, *p++, *p++, *p++, count, x + *p++,
-                          y + *p++, *p++, *p++, z + *p++, w, *p++, *p++, *p++, *p++, *p++, *p++);
-            p += 2;
+                          y + *p++, *p++, *p++, z + *p++, w, *p++, *p++, *p++, *p++, *p++, *p);
+            p += 2; /* past the last parameter and the entry count read above */
             for (k = 0; k < count; k++) {
                 record->block18[k].h6 = *p++;
                 record->block18[k].hE = *p++;
@@ -4471,9 +4473,9 @@ void func_801E742C(s32 index, u16 flags, ActorScript *script, ActorFile *file, s
             }
         }
     }
+    actor->index = index;
     actor->b22 = 0;
     actor->active = 1;
-    actor->index = index;
     if (!(flags & 0x40)) {
         block = script->script;
         actor->ownerB0 = script->owner;
@@ -4484,12 +4486,12 @@ void func_801E742C(s32 index, u16 flags, ActorScript *script, ActorFile *file, s
         func_8002C644(D_801E8638);
         func_8002C4BC(D_801E8638);
         size = func_80031894(D_801E8638);
-        group = func_80031BDC(size, 0);
-        memcpy(group, D_801E8638, size);
+        compact = func_80031BDC(size, 0);
+        memcpy(compact, D_801E8638, size);
         func_800320E8(D_801E8638);
         func_801DCE18(actor->models, 0);
-        func_801DC22C(group, actor->models);
-        actor->group = group;
+        func_801DC22C(compact, actor->models);
+        actor->group = compact;
     } else {
         actor->group = NULL;
     }
