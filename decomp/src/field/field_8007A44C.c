@@ -708,12 +708,12 @@ s32 func_8007BEF4(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge
     triangles = D_800AF880.components.collision_triangles[actor->layer];
     vertices = D_800AF880.components.collision_vertices[actor->layer];
     if (current != -1) {
-        floor->vx = (position[0] + probe->vx) >> 16;
-        point = (floor->vx << 16) + ((position[2] + probe->vz) >> 16);
+        point = (((position[0] + probe->vx) >> 16) << 16) + ((position[2] + probe->vz) >> 16);
         origin = ((position[0] >> 16) << 16) + (position[2] >> 16);
+        floor->vx = (position[0] + probe->vx) >> 16;
+        floor->vz = (position[2] + probe->vz) >> 16;
         mask = 0;
         floor->vy = 0;
-        floor->vz = (position[2] + probe->vz) >> 16;
         if (!((actor->layer_flags >> (actor->layer + 3)) & 1)) {
             mask = -(D_800B2078.party_processing_mode == 0);
         }
@@ -1220,9 +1220,9 @@ s32 func_8007D3D4(FieldActor *actor, s32 layer, s32 *floor, VECTOR *normal, s16 
                 ((actor->position[2] + actor->unk030[2]) >> 16);
         origin = ((actor->position[0] >> 16) << 16) + (actor->position[2] >> 16);
         query.vx = (actor->position[0] + actor->unk030[0]) >> 16;
+        query.vz = (actor->position[2] + actor->unk030[2]) >> 16;
         mask = 0;
         query.vy = 0;
-        query.vz = (actor->position[2] + actor->unk030[2]) >> 16;
         steps = 0;
         if (!((actor->layer_flags >> (layer + 3)) & 1)) {
             mask = -(D_800B2078.party_processing_mode == 0);
