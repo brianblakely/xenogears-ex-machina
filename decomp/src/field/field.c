@@ -913,14 +913,12 @@ void func_800723E4(DVECTOR *a, DVECTOR *b, DVECTOR *out) {
  * the 800af984-relative addresses after the call back into absolute ones. */
 #define CAMERA_RESET_ORBIT() do { func_80070594(&D_800AF880.orbit); } while (0)
 
-#ifdef NON_MATCHING
-/* The camera's initial state.
- * NON_MATCHING (2 edits): everything matches except that the original
- * schedules `lui $v0, 0x1000` (up.vy/unk050.vy) before the eye.vx store
- * right after the call; ours stores eye.vx first. The eye pointer gives the
- * original's $s0-relative eye.vx with absolute eye.vy/vz. */
+/* The camera's initial state. The eye pointer gives the original's
+ * $s0-relative eye.vx with absolute eye.vy/vz; the up vectors' y is loaded
+ * once ahead of the eye stores. */
 void func_8007254C(void) {
     VECTOR *eye;
+    s32 up_y;
 
     D_800AF880.target_a = 8;
     D_800AF880.target_b = 8;
@@ -949,11 +947,12 @@ void func_8007254C(void) {
     D_800AF880.orbit_angles.vz = 0;
     CAMERA_RESET_ORBIT();
     eye = &D_800AF880.eye;
+    up_y = 0x10000000;
     eye->vx = 0;
     eye->vy = 0;
     eye->vz = 0;
-    D_800AF880.up.vy = 0x10000000;
-    D_800AF880.unk050.vy = 0x10000000;
+    D_800AF880.up.vy = up_y;
+    D_800AF880.unk050.vy = up_y;
     D_800AF880.elevation = 0x1E;
     D_800AF880.projection = 0x200;
     D_800AF880.target.vx = 0;
@@ -981,9 +980,6 @@ void func_8007254C(void) {
     D_800AF880.target_steps = 0;
     D_800AF880.eye_steps = 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007254C);
-#endif
 
 /* Turn the camera heading by an octant when the current one is blocked or
  * a shoulder button asks for it, then step the heading toward its goal. */
