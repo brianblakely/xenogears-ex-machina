@@ -2139,63 +2139,30 @@ void func_801CAE08(u8 mode) {
 /* Decode the 31 names of the game data in place: each name's code pairs up
  * to the first zero pair go through 80033b34 into a 20-byte buffer that is
  * copied back whole. */
-#ifdef NON_MATCHING
-/* Loop-invariant motion differs: this build hoists &GAME_NAMES[1] (a
- * movable the inner loop already moved) out of the row loop into s2, the
- * original reloads it into t0 for every row. GCC's loop pass doubles the
- * loop's insn count for every such re-moved invariant, so the original had
- * one more before it (fp+16, fp+17 and this one are moved here); writing
- * every access as GAME_NAMES[n + i] keeps it but loses the name pointer.
- * Wrapping the inner loop in a do/while (0) block gets 19 -> 13 differing
- * instructions (local scorer).
- * Loop dump (-dL): the row loop has 55 insns; &codes (r109, life 26),
- * &codes[1] (r81) and &GAME_NAMES[1] (r84, life 26) are weighed in that
- * order at 110, 220 and 440, and the copy loop's &decoded (r105, life 13)
- * fails at 880. r84 needs one more doubling (or a lifetime under about
- * 15) to stay in the loop. A 20-minute permuter run found nothing valid.
- * A pointer variable for &GAME_NAMES[1] (set before the row loop, at the
- * row start or in the inner loop) and the row pointer as &names[n] give
- * the same or worse code (25-50).
- * Why life 26: move_movables extends a moved register's life to its whole
- * loop, so each invariant re-moved here weighs the inner loop's luid span
- * (notes and labels count). With threshold 1 + non-fixed registers (about
- * 28, two moves before it: 22) r84 stays only if 22 * span < 440, i.e. an
- * inner loop under 20 luids, or with a row loop of 72+ insns. The inner
- * loop as do/while, while, nested ifs or a goto exit scores 25-53.
- * A third doubling also works: with `name = GAME_NAMES + n;` set inside
- * the inner loop the GAME_NAMES constant is a further re-moved invariant
- * before r84, and &GAME_NAMES[1] then stays in the row loop exactly as in
- * the original (t0). But that name is no longer a row induction variable:
- * the row loop keeps n + GAME_NAMES as an add per row (s0 + s4) instead of
- * the original's separate walking pointer (26 with name set again before
- * the copy loop, 29 without; the row loop never strength-reduces it).
- * Also tried: n as a row index with GAME_NAMES[n * 20 + i + 1] or a
- * [31][20] view (35-57), (GAME_NAMES + n)[i] reads (58-65). */
 void func_801CB184(void) {
     u8 codes[24];
     u8 decoded[20];
     s32 n;
     s32 i;
-    u8 *name;
+    u8 *src;
+    u8 *dst;
 
-    name = GAME_NAMES;
-    for (n = 0; n < 31 * 20; n += 20, name += 20) {
+    for (n = 0; n < 31; n++) {
         for (i = 0; i < 20; i += 2) {
-            codes[i] = name[i];
-            codes[i + 1] = GAME_NAMES[n + i + 1];
-            if (name[i] == 0 && GAME_NAMES[n + i + 1] == 0) {
+            src = &GAME_NAMES[n * 20];
+            codes[i] = src[i];
+            codes[i + 1] = GAME_NAMES[n * 20 + i + 1];
+            if (src[i] == 0 && GAME_NAMES[n * 20 + i + 1] == 0) {
                 break;
             }
         }
         func_80033B34(codes, decoded, i / 2);
+        dst = &GAME_NAMES[n * 20];
         for (i = 0; i < 20; i++) {
-            name[i] = decoded[i];
+            dst[i] = decoded[i];
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CB184);
-#endif
 
 /* Apply a loaded save: its derived tables, play time and the 16 resident
  * words copied from the game data, then finish (801cb184). */
