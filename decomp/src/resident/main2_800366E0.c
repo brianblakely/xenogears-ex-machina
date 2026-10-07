@@ -1259,18 +1259,15 @@ void func_8003890C(SoundBank *bank, s32 enable) {
 extern s32 D_800508E8[10]; /* reverb work area size of each reverb type */
 void func_80038AD4(s32 address, s32 size);
 
+/* Compiled-out debug trace of the reverb work area allocation. */
+#define REVERB_TRACE_ALLOC(address) do { } while (0)
+
 /* Set the reverb type, depth, delay and feedback: type 0 turns it off, -1
  * keeps the current type and -2 changes nothing. A new type moves the work
  * area to the top of SPU memory and clears it (error 0x20, reverb off,
- * when there is no room).
- * Nonmatching: the original sets the changed flag (ori $s5,1) only in the
- * delay slot of the allocation check; setting it after the failure branch
- * fills that slot too but leaves a second copy at the branch join (420
- * bytes vs 416), and setting it before the check is scheduled above the
- * allocation call. */
-#ifdef NON_MATCHING
+ * when there is no room). */
 void func_80038934(s32 type, s32 depth, s32 delay, s32 feedback) {
-    SpuReverbAttr attr; /* unused */
+    SpuReverbAttr attr; /* unused in the original; reserves 20 bytes */
     long current;
     s32 changed = 0;
     s32 size;
@@ -1294,6 +1291,8 @@ void func_80038934(s32 type, s32 depth, s32 delay, s32 feedback) {
         size = D_800508E8[type];
         address = 0x80000 - size;
         D_800594D8 = func_800395B8(size, address, 5);
+        REVERB_TRACE_ALLOC(D_800594D8);
+        changed = 1;
         if (D_800594D8 == 0) {
             func_8003F6B0(0x20);
             type = 0;
@@ -1301,7 +1300,6 @@ void func_80038934(s32 type, s32 depth, s32 delay, s32 feedback) {
             delay = 0;
             depth = 0;
         }
-        changed = 1;
     }
     D_80059409 = type;
     D_8005A3C0.unk2C = depth;
@@ -1318,9 +1316,6 @@ void func_80038934(s32 type, s32 depth, s32 delay, s32 feedback) {
         SpuSetReverbModeFeedback(feedback);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2_800366E0", func_80038934);
-#endif
 
 extern s32 D_800595DC; /* next SPU address to clear */
 extern s32 D_800595E0; /* bytes left to clear */
