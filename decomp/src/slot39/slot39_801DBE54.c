@@ -797,8 +797,9 @@ void func_801DE474(u8 wide, u8 page) {
  * scroll limit. */
 #ifdef NON_MATCHING
 /* Remaining: the gear switch's `< 50` tails are cross-jumped into the
- * character switch's, `used = 0` is scheduled before `i = 0`, and the drawing
- * loop keeps `kind` in a register and forms &D_801EA7F8[top + i] in one. */
+ * character switch's (the original keeps both), and the drawing loop keeps
+ * `kind` in a hoisted register and forms &D_801EA7F8[top + i] from a hoisted
+ * (spilled) address where the original reloads kind and uses %hi/%lo. */
 s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
     RECT rect;
     u8 codes[4];
@@ -838,8 +839,7 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
             count = 200;
             accessory = &D_800625A0->tables->accessories[D_800625A0->labels360->parts[2][part - 1]];
             own = accessory->groups;
-            used = 0;
-            for (i = 0; i < 3; i++) {
+            for (i = 0, used = 0; i < 3; i++) {
                 accessory = &D_800625A0->tables->accessories[D_800625A0->labels360->parts[2][i]];
                 used |= accessory->groups;
             }
@@ -850,10 +850,9 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
     } else if (part != 0) {
         kind = 5;
         count = 150;
-        used = 0;
         gearAccessory = &D_800625A0->tables->gearAccessories[D_800625A0->labels360->parts[2][part - 1]];
         own = gearAccessory->groups;
-        for (i = 0; i < 3; i++) {
+        for (i = 0, used = 0; i < 3; i++) {
             gearAccessory = &D_800625A0->tables->gearAccessories[D_800625A0->labels360->parts[2][i]];
             used |= gearAccessory->groups;
         }
