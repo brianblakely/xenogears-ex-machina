@@ -9514,7 +9514,10 @@ void func_800A06E8(void) {
 #ifdef NON_MATCHING
 /* Event 16: the current actor becomes party character operand 1 (ff, fe, fd: party slots 2, 1, 0). A party member takes its slot (slot 0 becomes the controlled actor), its sprite (or sprite 800ae294[character] of the alternate set 800b2268) and map entry variable 2; others hide and end their script.
  * NON_MATCHING: the original reuses the 800b2268 value loaded for the test in
- * the sprite index; this form reloads it. */
+ * the sprite index, adding it after sprites + (index + 1); this form reloads
+ * it and folds the + 1 into the load offset. (Writing the sum as
+ * `sprites + (index + 1) - -alt` reproduces both, apart from a v0/v1 swap,
+ * but is not plausible source.) */
 void func_800A08B8(void) {
     FieldDescriptor *descriptor;
     s32 character;
