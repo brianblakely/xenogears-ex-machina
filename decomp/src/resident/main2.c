@@ -894,54 +894,37 @@ void func_80034888(Window *window, u_long *ot, s32 buffer) {
     AddPrim(ot, window->unk30);
 }
 
-/* The one-line layout window (0x80059FD8) and its line (0x8005A068). */
-extern s16 D_80059FD8; /* x */
-extern s16 D_80059FDA; /* y */
-extern s16 D_80059FE0; /* unk8 */
-extern s16 D_80059FE2; /* width */
-extern s16 D_80059FE4; /* lines */
-extern u16 D_80059FE8; /* flags */
-extern s16 D_80059FEA; /* stride */
-extern u8 *D_80059FF4; /* text */
-extern WindowLine *D_8005A000; /* layout */
-extern void *D_8005A004; /* image */
-extern u8 D_8005A040;
-extern u8 D_8005A041;
-extern u8 D_8005A042;
-extern u8 D_8005A044;
-extern s16 D_8005A05C;
+/* The one-line layout window and its line. */
+extern Window D_80059FD8;
 extern WindowLine D_8005A068;
 
 /* Lay out one line of `text` into `image` in the layout window, `width`
- * made odd. Returns the laid-out width in pixels.
- * Nonmatching: the original stores in a different order and sign-extends the width. */
-#ifdef NON_MATCHING
+ * made odd. Returns the laid-out width in pixels. */
 s32 func_80034EAC(u8 *text, void *image, s16 width, s32 flags) {
-    D_80059FE2 = width;
+    Window *window = &D_80059FD8;
+
+    window->width = width;
     width |= 1;
-    D_80059FE4 = 1;
-    D_80059FE2 = width;
-    D_80059FE0 = width << 2;
-    D_80059FF4 = text;
-    D_8005A040 = 1;
-    D_80059FEA = width + 3;
-    D_8005A05C = 0;
-    D_8005A044 = 0;
-    D_8005A042 = 0;
-    D_8005A004 = image;
-    D_80059FE8 = 0;
-    D_80059FDA = 0;
-    D_80059FD8 = 0;
-    D_8005A041 = 100;
-    D_8005A000 = &D_8005A068;
+    window->lines = 1;
+    window->width = width;
+    window->unk8 = width * 4;
+    window->stride = width + 3;
+    window->text = text;
+    window->unk68 = 1;
+    window->unk84 = 0;
+    window->unk6C = 0;
+    window->unk6A = 0;
+    window->image = image;
+    window->flags = 0;
+    window->y = 0;
+    window->x = 0;
+    window->unk69 = 100;
+    window->layout = &D_8005A068;
     D_8005A068.width = 0;
     D_8005A068.plane = flags & 1;
-    func_80033DF0((Window *)&D_80059FD8);
-    return D_8005A000->width * 4;
+    func_80033DF0(window);
+    return window->layout->width * 4;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80034EAC);
-#endif
 
 /* Draw class of a character: 2 for a narrow glyph, else 3. */
 s32 func_80034F98(u16 first, u16 second) {
