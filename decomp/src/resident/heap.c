@@ -169,8 +169,12 @@ void func_80031BC4(s32 *caller, s32 *size) {
  * (or takes the highest exact fit). The block is tagged with the current
  * owner tag and allocation class and records its caller. Exhaustion is fatal
  * unless failures are quiet (then NULL).
- * Nonmatching: the original keeps the intermediate header-word stores and
- * allocates registers differently. */
+ * Nonmatching: the split path matches up to registers (the new class is
+ * read and reset between the class and tag updates, which keeps the class
+ * store and reloads the header word). The whole-block and top-carve paths
+ * still lose the store after the tag update (the original keeps three
+ * header-word stores, this build two: 904 vs 916 bytes); the spare/mode
+ * branch chain is laid out differently and registers differ. */
 #ifdef NON_MATCHING
 void *func_80031BDC(s32 size, s32 mode) {
     u32 caller;
@@ -272,15 +276,14 @@ end:
     }
 split:
     rest = (HeapHeader *)(candidate_data + size);
-    kind = D_80059318;
-    D_80059318 = 0x20;
     rest->next = candidate->next;
     rest->tag = candidate->tag;
     rest->kind = candidate->kind;
     rest->keep = candidate->keep;
     rest->caller = candidate->caller;
     candidate->next = (u8 *)(rest + 1);
-    candidate->kind = kind;
+    candidate->kind = D_80059318;
+    D_80059318 = 0x20;
     candidate->tag = D_8005931C;
     candidate->keep = 0;
     candidate->caller = caller;
@@ -533,12 +536,7 @@ INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/heap", D_80018998);
  * equal owner tags/allocation classes (ignoring keep/caller); mode 3 groups
  * equal callers. Skip/count apply to finished rows; zero count is unlimited.
  * Column flags: 1 number, 2 header, 4 data, 8 size, 0x10 owner, 0x20 caller,
- * 0x40 caller symbol, 0x80 contents, 0x8000 total free bytes.
- * Nonmatching: the frame (0x80) matches; the number and data counters
- * take $s3/$s4 swapped, and the original keeps header->next in $a0 for the
- * grouped-row path (reloading it only for mode 3) where this build reloads
- * it in the shared block (892 vs 896 bytes). */
-#ifdef NON_MATCHING
+ * 0x40 caller symbol, 0x80 contents, 0x8000 total free bytes. */
 void func_8003278C(s32 mode, s32 skip, s32 count, s32 flags) {
     char unused[64]; /* unused in the original; reserves 64 bytes */
     s32 number = 0;
@@ -589,9 +587,13 @@ void func_8003278C(s32 mode, s32 skip, s32 count, s32 flags) {
     size = 0;
     while (header->tag != 1) {
         size += header->next - (u8 *)header - 0x10;
-        if ((mode == 2 && header->tag == HEAP_HEADER(header->next)->tag &&
-                         header->kind == HEAP_HEADER(header->next)->kind) ||
-            (mode == 3 && header->caller == HEAP_HEADER(header->next)->caller)) {
+        if (mode == 2 && header->tag == HEAP_HEADER(header->next)->tag &&
+            header->kind == HEAP_HEADER(header->next)->kind) {
+            number++;
+            header = HEAP_HEADER(header->next);
+            continue;
+        }
+        if (mode == 3 && header->caller == HEAP_HEADER(header->next)->caller) {
             number++;
             header = HEAP_HEADER(header->next);
             continue;
@@ -609,9 +611,9 @@ void func_8003278C(s32 mode, s32 skip, s32 count, s32 flags) {
             break;
         }
         number++;
-        data = header->next;
+        header = HEAP_HEADER(header->next);
         size = 0;
-        header = HEAP_HEADER(data);
+        data = (u8 *)(header + 1);
     }
     if (flags & 1) {
         func_80032BDC(D_800592A0);
@@ -633,9 +635,6 @@ void func_8003278C(s32 mode, s32 skip, s32 count, s32 flags) {
     }
     func_80032BDC(D_80059264);
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_8003278C);
-#endif
 
 /* Allocate a protected block owned by tag 7 (class 0x2F), from the top. */
 void *func_80032B0C(s32 size) {
