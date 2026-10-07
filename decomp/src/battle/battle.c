@@ -2750,7 +2750,18 @@ u8 func_80087AF0(u8 member, u8 cost) {
  * offset variable with `base += offset` or an if-only arm (cse skip-blocks
  * then keeps target * 28 across the join, adding $s5), `base = offset; if
  * (target >= 3) base = 0` (bnez layout), and the 800881B8-style party or
- * enemy flag with `flag ? 0 : 8` / `flag * 8` in the arm (computed there).) */
+ * enemy flag with `flag ? 0 : 8` / `flag * 8` in the arm (computed there).
+ * jump.c's store-flag and else-hoisting patterns need the then-arm to be a
+ * single insn; a two-insn arm that later collapses to the copy reproduces
+ * the original exactly (measured: `offset = (actor >= 3) * 8;` before the
+ * test and the arm `member = offset; base = member;`), but that relay
+ * through the loop counter is not plausible source. Also tried without
+ * effect: u8/s16/u16/s32 offsets with `base = offset`, (s16)/(u16) casts,
+ * `base = offset & 0xff`, the 800883ac-style `base = (actor >= 3) * 8`
+ * followed by `base = target < 3 ? base : 0`, products and masks with
+ * (target < 3), and `&&` forms. `offset & 0xf8` in the arm also matches
+ * (combine drops the mask) but adds arithmetic the original has no
+ * reason for.) */
 #ifdef NON_MATCHING
 void func_80087EDC(u8 actor, u8 target) {
     u8 base;

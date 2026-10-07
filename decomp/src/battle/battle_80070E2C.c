@@ -571,7 +571,13 @@ void func_800723E0(void) {
  * read at reg + 3 (cost 1) while slot - 3 is still a giv for present[] and
  * ready[]. `&D_800C3D18[slot - 3]` folds to slot * 4 + (sym - 12) and drops
  * that giv (present[] then uses slot, ready[] a pointer); an
- * `enemy = slot - 3` variable keeps it but ready[] still gets a pointer. */
+ * `enemy = slot - 3` variable keeps it but ready[] still gets a pointer.
+ * Follow-up: explicit byte/struct reaction walks put ready[] in a pointer
+ * and emit 888 rather than 908 bytes. Independent actor/enemy counters,
+ * flat byte/row views, split party/enemy array views and a defeated-slot
+ * statement macro do not match. Nested pilot/gear arms with duplicated
+ * eligibility tails reduce the nmscore edit score to 31, still 888 bytes;
+ * retain the simpler indexed draft below (912 bytes vs 908 original). */
 #ifdef NON_MATCHING
 void func_8007252C(void) {
     s32 slot;
