@@ -1133,12 +1133,8 @@ s32 func_801E83C0(s32 thread, u8 *insn) {
     return length;
 }
 
-#ifdef NON_MATCHING
-/* Opcode 45: actor a attacks actor b (animation c, value d) and waits.
- * (The original masks the actor ids separately at each use.)
- * NON_MATCHING: this C schedules the D_801E9C20[attacker] load above the
- * D_800C4000[target] store (the original keeps it after) and gives length
- * and attacker s2/s1 where the original has s1/s2. */
+/* Opcode 45: actor a attacks actor b (animation c, value d) and waits;
+ * value d becomes b's code in the first presentation event. */
 s32 func_801E84A4(s32 thread, u8 *insn) {
     s32 length = 0;
     u8 attacker;
@@ -1149,7 +1145,7 @@ s32 func_801E84A4(s32 thread, u8 *insn) {
     target = func_801E5A98((u8)D_800D3278->operands[1]);
     D_800C3EAC->unk2DA = 0;
     func_80085388();
-    D_800C4000[target] = D_800D3278->operands[3];
+    D_800C3EB0.events[0].codes[target] = D_800D3278->operands[3];
     if (D_801E9C20[attacker] == 0) {
         D_800D3278->actionRunning[attacker] = 1;
         D_801E9C20[attacker] = 1;
@@ -1164,9 +1160,6 @@ s32 func_801E84A4(s32 thread, u8 *insn) {
     }
     return length;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E84A4);
-#endif
 
 /* Opcode 46. */
 s32 func_801E8600(s32 thread, u8 *insn) {
