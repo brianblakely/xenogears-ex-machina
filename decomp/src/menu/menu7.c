@@ -1137,9 +1137,9 @@ INCLUDE_ASM("decomp/src/menu", func_8008BC04);
 
 /* Set the mesh light direction (a fixed down-left vector) and project
  * its vertices onto the ground plane for the shadow packets. */
-#ifdef NON_MATCHING
 void func_8008BCC8(Mesh *mesh, u8 *work) {
     Vector direction;
+    Vector unused; /* unused in the original; reserves 16 bytes */
 
     direction.vx = -8;
     direction.vy = -8;
@@ -1150,9 +1150,6 @@ void func_8008BCC8(Mesh *mesh, u8 *work) {
     D_8009A2C8.vz <<= 4;
     func_8008C3A8(mesh->data, work, mesh->count);
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008BCC8);
-#endif
 
 /* Draw a mesh's primitive groups (flag 8: quads, else triangles) into the
  * given packets and ordering table using the vertex work area. */
@@ -1743,8 +1740,8 @@ void func_8008D9F0(Spark *spark) {
 
 /* Move and draw every live spark of an emitter: gravity, a bounce on the
  * ground plane, projection relative to the camera through the scratchpad. */
-#ifdef NON_MATCHING
 void func_8008DA48(Emitter *emitter, u32 *ot, Matrix *view) {
+    SVector unused[5]; /* unused in the original; reserves 40 bytes */
     Spark *spark;
     void (*draw)(void *, u32 *);
     s32 i;
@@ -1774,18 +1771,13 @@ void func_8008DA48(Emitter *emitter, u32 *ot, Matrix *view) {
         spark = (Spark *)((u8 *)spark + emitter->size);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008DA48);
-#endif
 
 /* Copy one model part's local transform. */
-#ifdef NON_MATCHING
 void func_8008DBC0(SparkModel *model, s16 part, Matrix *out) {
+    Matrix unused; /* unused in the original; reserves 32 bytes */
+
     *out = model->list->parts[part]->matrix;
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008DBC0);
-#endif
 
 /* Create the menu's spark emitter: 256 orange three-point sparks. */
 void func_8008DC28(void) {
@@ -1909,18 +1901,23 @@ void func_8008E0C8(void) {
 /* Advance the glow field one step: seed the two bottom rows with random
  * heat, let every cell take the cooled average of its neighbours below,
  * then keep the result for the next step.
- * Does not match: GCC does not strength-reduce the five neighbour loads
- * into separate pointers as the original does. */
+ * Does not match (408 vs 388 bytes): the original also keeps the row
+ * counter and a separate destination-row pointer, uses $s5 for the
+ * quotient (frame 0x30 vs 0x28), and the first loop swaps $s0/$s1. */
 void func_8008E120(void) {
     s16 *new;
     s16 *old;
     s16 *seed;
     s32 heat;
     s32 value;
-    s32 row;
     s32 i;
     s32 x;
     s32 y;
+    s16 *up;
+    s16 *right;
+    s16 *left;
+    s16 *down_right;
+    s16 *down_left;
 
     if (D_80092844 != NULL) {
         heat = 0;
@@ -1938,15 +1935,20 @@ void func_8008E120(void) {
             seed[x] = seed[x + 0x70] = heat;
         }
         old = D_8009283C;
+        up = old - 0x70;
+        right = old + 1;
+        left = old - 1;
+        down_right = old + 0x71;
+        down_left = old + 0x6F;
         for (y = 0x2F; y > 1; y--) {
+            i = y * 0x70 + 1;
             for (x = 1; x < 0x70; x++) {
-                value = (old[(y - 1) * 0x70 + x] + old[y * 0x70 + x + 1] + old[y * 0x70 + x - 1] +
-                         old[(y + 1) * 0x70 + x + 1] + old[(y + 1) * 0x70 + x - 1]) /
-                        5;
+                value = (up[i] + right[i] + left[i] + down_right[i] + down_left[i]) / 5;
                 if (value > 3) {
                     value -= 3;
                 }
                 new[(y - 1) * 0x70 + x] = value;
+                i++;
             }
         }
         func_8008E0C8();
@@ -2202,8 +2204,11 @@ void func_8008EB88(Actor *owner, s32 id, Vector *pos, s32 mode) {
 #ifdef NON_MATCHING
 /* Play one of a character's command sounds (random 1-6 when index is 0):
  * up to two effects from the shared pair table.
- * Nonmatching: the frame size and saved-register allocation differ. */
+ * Nonmatching: saved-register allocation differs (original s0 table,
+ * s1 entry offset, s2 owner, s3 mode, s4 pos; compiled s0 owner, s2 mode,
+ * s3 pos, s4 table) and the prologue saves are ordered differently. */
 void func_8008EBD0(Actor *owner, s32 index, Vector *pos, s32 mode) {
+    s32 unused[2]; /* unused in the original; reserves 8 bytes */
     s32 entry;
     SoundPair *table;
 
@@ -2243,10 +2248,10 @@ void func_8008ECEC(u8 tag) {
 
 /* Stop the sounds a character's command sound entry started. Does not
  * match: the table base and the entry offset swap $s1/$s2 and the flag
- * load of the second id is scheduled after its mask. The original also
- * reserves eight more frame bytes. */
+ * load of the second id is scheduled after its mask. */
 #ifdef NON_MATCHING
 void func_8008ED6C(Actor *owner, s32 index) {
+    s32 unused[2]; /* unused in the original; reserves 8 bytes */
     s32 entry;
     SoundPair *table;
 
@@ -2266,10 +2271,9 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008ED6C);
 #endif
 
 /* Accelerate an actor toward the speed limit (or brake to a stop, harder
- * when not guarding) for two ticks, and turn it toward a heading.
- * Nonmatching: the original reserves sixteen more frame bytes. */
-#ifdef NON_MATCHING
+ * when not guarding) for two ticks, and turn it toward a heading. */
 void func_8008EE1C(Actor *actor, s16 heading, s16 limit) {
+    s32 unused[4]; /* unused in the original; reserves 16 bytes */
     s32 brake = actor->brake;
     s32 accel = actor->accel;
     s32 moving;
@@ -2297,9 +2301,6 @@ void func_8008EE1C(Actor *actor, s16 heading, s16 limit) {
     actor->target_angle = func_8008B650(actor->target_angle, heading, 0x40);
     actor->unkCE = 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008EE1C);
-#endif
 
 /* Opponent command: act, then wait a second. */
 void func_8008EF00(Actor *actor, Brain *brain) {

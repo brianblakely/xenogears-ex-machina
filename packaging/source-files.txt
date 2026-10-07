@@ -783,6 +783,7 @@ tools/matching_coverage.py
 tools/matching_diff.py
 tools/matching_ram.py
 tools/packed_container.py
+tools/permuter_import.py
 tools/psyq_signatures.py
 tools/reference/README.md
 tools/reference/capture.py

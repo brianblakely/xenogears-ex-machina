@@ -347,11 +347,9 @@ void func_801C5CBC(Label *labels, u8 *text_ids, s32 row, s32 count) {
 }
 
 /* Upload a 16-colour palette with only colour 1 set (7fff, white) at (0, 1c0). */
-/* Frame layout unresolved: the original reserves 8 additional bytes
- * that the recovered operations do not explain. */
-#ifdef NON_MATCHING
 void func_801C5E6C(void) {
     RECT rect;
+    RECT unused; /* unused in the original; reserves 8 bytes */
     u16 *palette;
 
     palette = func_80031BDC(0x20, 0);
@@ -365,9 +363,6 @@ void func_801C5E6C(void) {
     DrawSync(0);
     func_800320E8(palette);
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801C5E6C);
-#endif
 
 /* Load the text palettes and render the four command labels. */
 void func_801C5EE8(void) {
@@ -378,10 +373,8 @@ void func_801C5EE8(void) {
 }
 
 /* Look up the four sprite sheet entries the screen draws. */
-/* Frame layout unresolved: the original reserves 40 additional bytes
- * that the recovered operations do not explain. */
-#ifdef NON_MATCHING
 void func_801C5F44(void) {
+    s32 unused[10]; /* unused in the original; reserves 40 bytes */
     SheetEntry *e;
 
     e = &D_800625A0->sheet_entries[0];
@@ -393,9 +386,6 @@ void func_801C5F44(void) {
     e = &D_800625A0->sheet_entries[3];
     func_80026338(D_800625A0->sprite_sheet, 0x101, &e->unk0, &e->mode, &e->clut_x, &e->clut_y, &e->page_x, &e->page_y);
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801C5F44);
-#endif
 
 /* Draw the cursor at `position`; with `frame` also place its shade and edge lines. */
 void func_801C604C(s32 position, u8 frame) {
@@ -1188,13 +1178,11 @@ void func_801C9890(s32 index) {
 }
 
 /* Draw every shown panel; panels that are not flat get their own 3D matrices. */
-/* Frame layout unresolved: the original reserves 8 additional bytes
- * that the recovered operations do not explain. */
-#ifdef NON_MATCHING
 void func_801C9AB4(void) {
     SVECTOR rotation;
     VECTOR translation;
     MATRIX matrix;
+    SVECTOR unused; /* unused in the original; reserves 8 bytes */
     Panel *panel;
     s32 i;
 
@@ -1237,9 +1225,6 @@ void func_801C9AB4(void) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801C9AB4);
-#endif
 
 /* Link the shown markers; markers that follow the file cursor move to its slot first. */
 void func_801C9C2C(void) {

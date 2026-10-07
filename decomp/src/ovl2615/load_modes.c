@@ -19,10 +19,8 @@ static inline void swap_buffers(void) {
 }
 
 /* Shatter update: fade every cell and (variant 0) push it away. */
-#ifdef NON_MATCHING
-/* The original reserves 8 more stack bytes than the recovered locals.
- * The frame layout remains unresolved. */
 void func_801E7F4C(TaskNode *node) {
+    SVECTOR unused; /* unused in the original; reserves 8 bytes */
     ShatterTask *task = node->object;
     ShatterCell *cell;
     POLY_FT3 *prim;
@@ -44,9 +42,6 @@ void func_801E7F4C(TaskNode *node) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/load_modes", func_801E7F4C);
-#endif
 
 /* Shatter drawing callback: into the current ordering table. */
 void func_801E8088(TaskNode *node) {
@@ -186,7 +181,9 @@ INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/load_modes", func_801E8320);
 /* Load mode (shatter): copy the screen (made semi-transparent) to
  * 0x2c0,0x100, then for at least 82 frames and until the four setup phases
  * are done (one per idle disc frame, 8001bb0c between the first two), fade
- * the background and run the shatter on the scratchpad stack. */
+ * the background and run the shatter on the scratchpad stack.
+ * NON_MATCHING: s3/s4 swapped (the original keeps frames in s3 and
+ * first/shatter in s4, copying the first buffer pointer from v1). */
 #ifdef NON_MATCHING
 void func_801E8588(void) {
     RECT rect;
@@ -298,9 +295,13 @@ void func_801E893C(void) {
 
 /* Burst update: variant 1 turns faster and faster, rising and fading after
  * 67 frames; variant 0 twists and rises, fading after 25 frames. The empty
- * loops over the 2x14x20 grid are left from removed work. */
+ * loops over the 2x14x20 grid are left from removed work.
+ * NON_MATCHING: frame and size now match; the original keeps the task in a1
+ * and loads each field after the previous store (here the loads are hoisted
+ * and the frame counter takes a0). */
 #ifdef NON_MATCHING
 void func_801E8964(TaskNode *node) {
+    SVECTOR unused; /* unused in the original; reserves 8 bytes */
     BurstTask *burst = node->object;
     s32 frame;
     s32 i, j, k;
@@ -527,7 +528,8 @@ INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/load_modes", func_801E8DF0);
 #endif
 
 /* Load mode (burst): like the shatter mode, but the background fades before
- * the burst runs on the scratchpad stack. */
+ * the burst runs on the scratchpad stack.
+ * NON_MATCHING: the same s3/s4 swap as func_801E8588. */
 #ifdef NON_MATCHING
 void func_801E91E8(void) {
     RECT rect;

@@ -237,19 +237,15 @@ void func_80280A9C(void) {
 }
 
 /* Open the debug text window while any button is pressed. */
-#ifdef NON_MATCHING
-/* The original reserves 0x30 more stack bytes than the recovered locals.
- * The frame layout remains unresolved. */
 void func_8028103C(void) {
+    s32 unused[12]; /* unused in the original; reserves 48 bytes */
+
     if (D_800C3EB0.pressed != 0) {
         func_8003748C();
         func_800374E8(0x10, 0x10, 0x140, 0x100, 0x3E8, 0, 0x340, 0, 0x340, 0x20, 0);
         func_80036E4C(0x7FFF, 0x8000);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/debug2611/asm/nonmatchings/debug2611", func_8028103C);
-#endif
 
 /* The heap monitor: buttons toggle its display flags and step, left/right
  * (repeating after 8 frames) scroll its first block. */
@@ -501,9 +497,11 @@ void func_8028191C(void) {
 
 /* The actor tool: for the selected battle actor print its model state, and
  * with the pad move its position, rotation, scale or light (the control
- * mode, cycled by button 2; button 8 cycles the step shift). */
-#ifdef NON_MATCHING
-void func_80281980(void) {
+ * mode, cycled by button 2; button 8 cycles the step shift). Declared
+ * int-returning (old implicit int) without a value: $v0 stays live at exit,
+ * so the switch's default branch slot takes the index shift, not the table
+ * address. */
+s32 func_80281980(void) {
     DebugActor *actor = D_800C3568;
     SVECTOR v;
     VECTOR step;
@@ -611,9 +609,6 @@ void func_80281980(void) {
         break;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/debug2611/asm/nonmatchings/debug2611", func_80281980);
-#endif
 
 /* Dump main memory to the next numbered host file (mem_0, mem_1, ...). */
 void func_80281F98(void) {

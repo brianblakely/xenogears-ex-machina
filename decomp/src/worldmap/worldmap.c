@@ -143,7 +143,6 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap", func_80070CFC);
 /* The world-map main loop: gather input, flip the display buffers, run the
  * frame, and handle pause, encounters and leaving for another scene until
  * D_8009D554 clears. */
-#ifdef NON_MATCHING /* seven instruction positions still differ in scene-exit load scheduling */
 void func_800712D0(void) {
     WorldmapView *view;
     /* The live gear-byte base also reaches the party IDs 0x57D bytes earlier. */
@@ -255,11 +254,10 @@ void func_800712D0(void) {
                     func_800762FC();
                     func_80075B58();
                 } else if (D_8009BE10 < 8) {
-                    u16 *return_flags = &D_8006EE68;
                     D_8009D554 = 0;
                     D_8009D7CC = 0;
                     D_8009D7D8 = &D_8009B6C4[2];
-                    *return_flags |= 0x2000;
+                    D_8006EE54.flags |= 0x2000;
                 }
             }
         } else {
@@ -285,18 +283,15 @@ void func_800712D0(void) {
     PutDispEnv(&D_8009BBC8[1].disp);
 }
 
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap", func_800712D0);
-#endif
-
 /* Mode step that has nothing to do; always reports done. */
 s32 func_80071A50(void) {
     return 1;
 }
 
 /* One world-map frame: input, actors, camera, terrain, sky and HUD. */
-#ifdef NON_MATCHING /* eight extra bytes of the original frame remain unexplained */
 s32 func_80071A58(void) {
+    SVECTOR unused; /* unused in the original; reserves 8 bytes */
+
     if (D_8009D144 == 0) {
         func_80097440(&D_8009BD40);
     } else {
@@ -325,10 +320,6 @@ s32 func_80071A58(void) {
     }
     return 1;
 }
-
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap", func_80071A58);
-#endif
 
 /* Select the file set of an area (by index, or for the low indices by the
  * position against the threshold table) and derive its file numbers. */

@@ -230,11 +230,9 @@ void func_801C5A30(void) {
 }
 
 /* Upload the text CLUT: 16 black entries except white entry 1 at (0, 0x1C0). */
-#ifdef NON_MATCHING
-/* Frame layout unresolved: the original reserves eight more bytes than the
- * recovered RECT and saved registers require. */
 void func_801C5A40(void) {
     RECT rect;
+    RECT unused; /* unused in the original; reserves 8 bytes */
     u16 *clut = func_80031BDC(0x20, 0);
 
     bzero(clut, 0x20);
@@ -247,9 +245,6 @@ void func_801C5A40(void) {
     DrawSync(0);
     func_800320E8(clut);
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C5A40);
-#endif
 
 /* Set up label `index`'s two quads: mode 0 maps the text rendered for the
  * command column at row + index; otherwise the list layout, dimmed unless
@@ -357,10 +352,8 @@ void func_801C5EAC(void) {
 }
 
 /* Look up the four cursor/frame sprites of the sheet. */
-#ifdef NON_MATCHING
-/* Frame layout unresolved: the original reserves 0x28 additional bytes despite
- * having no recovered automatic data beyond call arguments. */
 void func_801C5F08(void) {
+    s32 unused[10]; /* unused in the original; reserves 40 bytes */
     func_80026338(D_800625A0->sprite_sheet, 0xFE, &D_800625A0->sprites[0].unk0,
                   &D_800625A0->sprites[0].tpage_mode, &D_800625A0->sprites[0].clut_x,
                   &D_800625A0->sprites[0].clut_y, &D_800625A0->sprites[0].page_x,
@@ -378,9 +371,6 @@ void func_801C5F08(void) {
                   &D_800625A0->sprites[3].clut_y, &D_800625A0->sprites[3].page_x,
                   &D_800625A0->sprites[3].page_y);
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C5F08);
-#endif
 
 /* Clear the party list's flags 3 and 4. */
 void func_801C6010(void) {
@@ -940,13 +930,11 @@ void func_801C874C(s32 index) {
 
 /* Draw every shown panel; style-0 panels are projected with an identity
  * rotation at depth 0x200. */
-#ifdef NON_MATCHING
-/* Frame layout unresolved: the original reserves eight more bytes than the
- * recovered vectors, matrix and saved registers require. */
 void func_801C8970(void) {
     SVECTOR rotation;
     VECTOR translation;
     MATRIX matrix;
+    SVECTOR unused; /* unused in the original; reserves 8 bytes */
     Panel *panel;
     s32 i;
 
@@ -989,9 +977,6 @@ void func_801C8970(void) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C8970);
-#endif
 
 /* Draw the four cursor markers when markers are on; a marker that follows
  * the file cursor is first moved to the selected slot's position. */

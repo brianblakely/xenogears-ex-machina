@@ -332,7 +332,7 @@ u16 func_801E57C4(ScriptThread *thread);
 void func_801E57F8(u8 *insn, u8 count, u8 immediateMask, u8 signedForm);
 u8 func_801E58EC(s16 a, s16 b, u8 op);
 s32 func_801E5DCC(s32 thread, u8 *insn);
-void func_801E5B00(s16 x, s16 y);
+void func_801E5B00(); /* K&R (s16 x, s16 y); callers pass ints unconverted */
 void func_801E6750(u8 actor, s32 flags, s32 x, s32 y, s32 width);
 u8 func_801E6CE8(u16 message, u8 actor, u16 flags);
 void func_801E7A5C(s32 thread, u8 *insn);

@@ -1722,12 +1722,9 @@ s32 func_801C9D34(s32 mode) {
 
 /* Move the cursor from `slot` a row down for `mode`: 0 to the next slot
  * below holding a file, else to the first file after the next row; 1 the
- * same for this game's files; 2 a row down when that card is present. */
-#ifdef NON_MATCHING
-/* Matches except the placement of the second mode-0 loop's store block (see
- * 801ca1d4). */
+ * same for this game's files; 2 a row down when that card is present.
+ * Mode 2 keeps the shape of the other modes' scans as single-pass loops. */
 void func_801C9EF4(s32 mode, s32 slot) {
-    s32 next;
     s32 i;
 
     switch (mode) {
@@ -1776,33 +1773,30 @@ void func_801C9EF4(s32 mode, s32 slot) {
         }
         break;
     case 2:
-        next = slot + 3;
-        if (D_800625A0->card->present[next / 15]) {
-            if (next < 30) {
-                D_800625A0->card->cursor = next;
-            } else {
+        if (D_800625A0->card->present[(slot + 3) / 15]) {
+            for (; slot + 3 < 30; slot += 3) {
+                D_800625A0->card->cursor = slot + 3;
+                break;
+            }
+            if (slot + 3 >= 30) {
                 i = D_800625A0->card->cursor + 3;
-                if (i < 30 && i + 1 < 30) {
-                    D_800625A0->card->cursor = i + 1;
+                if (i < 30) {
+                    for (; i + 1 < 30; i++) {
+                        D_800625A0->card->cursor = i + 1;
+                        break;
+                    }
                 }
             }
         }
         break;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C9EF4);
-#endif
 
 /* Move the cursor from `slot` a row up for `mode`: 0 to the next slot above
  * holding a file, else to the last file before the previous row; 1 the same
  * for this game's files; 2 a row up when that card is present. */
-#ifdef NON_MATCHING
-/* Matches except the placement of the second mode-0 loop's store block: the
- * original moves it before case 2, this build after case 2's first store. */
 void func_801CA1D4(s32 mode, s32 slot) {
     s32 cursor;
-    s32 next;
     s32 i;
 
     switch (mode) {
@@ -1852,23 +1846,24 @@ void func_801CA1D4(s32 mode, s32 slot) {
         }
         break;
     case 2:
-        next = slot - 3;
-        if (D_800625A0->card->present[next / 15]) {
-            if (next >= 0) {
-                D_800625A0->card->cursor = next;
-            } else {
+        if (D_800625A0->card->present[(slot - 3) / 15]) {
+            for (; slot - 3 >= 0; slot -= 3) {
+                D_800625A0->card->cursor = slot - 3;
+                break;
+            }
+            if (slot - 3 < 0) {
                 i = D_800625A0->card->cursor - 3;
-                if (i >= 0 && i - 1 >= 0) {
-                    D_800625A0->card->cursor = i - 1;
+                if (i >= 0) {
+                    for (; i - 1 >= 0; i--) {
+                        D_800625A0->card->cursor = i - 1;
+                        break;
+                    }
                 }
             }
         }
         break;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CA1D4);
-#endif
 
 /* Move the cursor from `slot` right for `mode`: 0 to the next slot holding
  * a file, 1 to the next slot holding this game's file, 2 one slot on when
@@ -2134,6 +2129,9 @@ void func_801CAE08(u8 mode) {
  * to the first zero pair go through 80033b34 into a 20-byte buffer that is
  * copied back whole. */
 #ifdef NON_MATCHING
+/* Loop-invariant motion differs: this build hoists &GAME_NAMES[1] out of the
+ * row loop into s2 (one more saved register, ra at 0x54), the original
+ * reloads it into t0 for every row. */
 void func_801CB184(void) {
     u8 codes[24];
     u8 decoded[20];
@@ -6338,41 +6336,40 @@ void func_801DA518(void) {
  * 99 and the item name and two-digit count are rendered into the image area
  * and laid out, greyed when the item cannot be used here. */
 #ifdef NON_MATCHING
-/* Differs in register allocation: this keeps 0xcccccccd in a saved register
- * and spills `row`; the original materialises the constant at each use. */
+/* The counts are addressed from the ids (D_8006F65A - 150), as the original
+ * does. Differs only in the x/y layout block: the original computes the
+ * column offset before the row (i / 2 and y in s0, x in s1); this build
+ * schedules y first (y in s1, x in s0). */
 void func_801DA5BC(s32 row) {
     u8 codes[4];
     u8 text[8];
     RECT rect;
     s32 i;
-    s32 tens;
+    u8 tens;
     s32 x;
     s32 left;
     u16 y;
     u8 kind;
     u8 grey;
     u8 *image;
-    u8 *ids;
-    u8 *counts;
 
     image = func_80031BDC(0x3f6, 0);
     codes[1] = 0;
     codes[3] = 0;
-    ids = D_8006F65A;
-    counts = ids - 150;
     for (i = 0; i < 16; i++) {
-        if (ids[row * 2 + i] != 0) {
-            if (counts[row * 2 + i] != 0) {
-                if (counts[row * 2 + i] >= 100) {
-                    counts[row * 2 + i] = 99;
+        if (D_8006F65A[row * 2 + i] != 0) {
+            if ((D_8006F65A - 150)[row * 2 + i] != 0) {
+                if ((D_8006F65A - 150)[row * 2 + i] >= 100) {
+                    (D_8006F65A - 150)[row * 2 + i] = 99;
                 }
-                D_800625A0->block42C->names[i].width = func_80034EAC(func_80033818(ids[row * 2 + i]), image, 0x24, 0);
-                tens = counts[row * 2 + i] / 10;
-                codes[0] = tens + 0x10;
-                if (tens == 0) {
+                D_800625A0->block42C->names[i].width = func_80034EAC(func_80033818(D_8006F65A[row * 2 + i]), image, 0x24, 0);
+                tens = (D_8006F65A - 150)[row * 2 + i] / 10;
+                if (tens != 0) {
+                    codes[0] = tens + 0x10;
+                } else {
                     codes[0] = 0xc3;
                 }
-                codes[2] = counts[row * 2 + i] % 10 + 0x10;
+                codes[2] = (D_8006F65A - 150)[row * 2 + i] % 10 + 0x10;
                 func_80033B34(codes, text, 2);
                 D_800625A0->block42C->values[i].width = func_80034EAC(text, image, 0x24, 1);
                 rect.x = (i & 1) * 0x18 + 0x180;
@@ -6381,7 +6378,7 @@ void func_801DA5BC(s32 row) {
                 rect.h = 0xd;
                 LoadImage(&rect, image);
                 DrawSync(0);
-                kind = D_800625A0->tables->items[ids[row * 2 + i]].use;
+                kind = D_800625A0->tables->items[D_8006F65A[row * 2 + i]].use;
                 if (kind & 0x20) {
                     grey = kind & 0x80;
                     if (D_80059171 == 0) {
@@ -6404,11 +6401,11 @@ void func_801DA5BC(s32 row) {
                 D_800625A0->block42C->values[i].count = D_800625A0->bufferIndex;
                 D_800625A0->block42C->shown[i] = 1;
             } else {
-                ids[row * 2 + i] = 0;
+                D_8006F65A[row * 2 + i] = 0;
                 D_800625A0->block42C->shown[i] = 0;
             }
         } else {
-            counts[row * 2 + i] = 0;
+            (D_8006F65A - 150)[row * 2 + i] = 0;
             D_800625A0->block42C->shown[i] = 0;
         }
     }
@@ -6664,8 +6661,9 @@ void func_801DB5E4(u8 mode) {
  * confirm until it runs out or the player cancels. Returns the targets
  * marked last (0 when cancelled or unusable). */
 #ifdef NON_MATCHING
-/* Register allocation differs: the original spills `row` and keeps the
- * inventory index in a saved register. */
+/* Differs: the original clears the used-up id through &D_8006F5C4 + 0x96
+ * (reloaded into t0, as is the counts base before the loop); this build
+ * addresses D_8006F65A directly. */
 u8 func_801DB920(s32 row, s32 entry) {
     u16 marks;
     u8 running;
@@ -6733,7 +6731,7 @@ u8 func_801DB920(s32 row, s32 entry) {
                     func_801C8574(0x37);
                     redraw = 1;
                     if (--INVENTORY->counts[row * 2 + entry] == 0) {
-                        INVENTORY->ids[row * 2 + entry] = 0;
+                        D_8006F65A[row * 2 + entry] = 0;
                     }
                 } else {
                     func_801C8574(4);

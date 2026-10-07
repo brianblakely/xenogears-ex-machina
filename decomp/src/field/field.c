@@ -2708,23 +2708,22 @@ void func_80077D2C(void) {
 
 extern s32 D_800ADB9C;
 
-#ifdef NON_MATCHING
+/* "Clear OTAG". The original assembler left a stray byte (0x6b) in the
+ * string's alignment padding, so the literal is linked as original rodata. */
+INCLUDE_RODATA(".local/decomp/field/asm/nonmatchings/field", D_8006FB80);
+extern char D_8006FB80[];
+
 /* Field pre-frame work: record the VSync counter, clear the order table,
- * run 80074700, start the debug "Clear OTAG" timer and 800a31e8.
- * The instructions match; the original rodata has a non-zero padding byte
- * (0x6b) after "Clear OTAG" that a C literal cannot reproduce. */
+ * run 80074700, start the debug "Clear OTAG" timer and 800a31e8. */
 void func_80077DAC(void) {
     D_800ADB9C = VSync(1);
     func_80073FE0();
     func_80074700();
     if (D_800C268C == 0) {
-        func_80281B00("Clear OTAG");
+        func_80281B00(D_8006FB80);
     }
     func_800A31E8();
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80077DAC);
-#endif
 
 #ifdef NON_MATCHING
 /* -1 when the field may leave (800adbd0 is 1, 800b2344 clear, and the
