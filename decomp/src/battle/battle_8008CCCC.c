@@ -2170,16 +2170,23 @@ void func_80096018(void) {
 /* Element adjustment of an attack/defense pair: the command's element (or
  * the attacker's own element status) against the target's weakness, its
  * resistance statuses (which may also force hit result 4) and its single
- * element guards, then a 20% boost for either side's +0x32 bit 0x10. */
+ * element guards, then a 20% boost for either side's +0x32 bit 0x10.
+ * Nonmatching (4 instruction edits): in both target branches the resist
+ * bit is taken from the status copy ($v1: srl/andi $v0,$v1) where the
+ * original reads the freshly combined word ($v0). */
 void func_80096494(u16 *attack, u16 *defense, s8 *hit) {
-    s32 ether = 0;
+    s8 ether = 0;
     u8 flag = 0;
+    s8 resist;
     u8 element;
     u8 bits;
     u8 targetGear;
-    u16 status;
+    u32 status;
     s8 scale;
-    s32 defenseScale;
+    s8 defenseScale;
+    u32 guards;
+    u16 word;
+    u8 own;
 
     targetGear = D_800C34B0->records[D_800C3E50].flags15A >> 7;
     element = D_800C3DFC->attributes[2] & 0x3F;
@@ -2189,14 +2196,14 @@ void func_80096494(u16 *attack, u16 *defense, s8 *hit) {
     } else {
         status = D_800D2D6C->status84.half.active | D_800D2D6C->status84.half.permanent;
     }
-    status >>= 12;
+    own = status >> 12;
     if (D_800C3DFC->flagsA & 0x100) {
         ether = 1;
     }
-    if (element == 0 && status != 0) {
-        element = status;
+    if (element == 0 && own != 0) {
+        element = own;
     }
-    if (element & status) {
+    if (element & own) {
         flag = 1;
     }
     scale = 10;
@@ -2210,16 +2217,18 @@ void func_80096494(u16 *attack, u16 *defense, s8 *hit) {
             scale += 2;
         }
     }
-    flag = 0;
+    resist = 0;
     if (!targetGear) {
-        status = D_800C3E34->pilot.status8C.half.active | D_800C3E34->pilot.status8C.half.permanent;
-        bits = (status & 0xF00) >> 8;
-        flag = (status >> 1) & 1;
+        word = D_800C3E34->pilot.status8C.half.active | D_800C3E34->pilot.status8C.half.permanent;
+        bits = (word & 0xF00) >> 8;
+        status = word;
+        resist = (word >> 1) & 1;
     } else {
-        status = D_800D2DC8->status84.half.active | D_800D2DC8->status84.half.permanent;
-        bits = (status & 0xF00) >> 8;
-        if (status & 2) {
-            flag = 1;
+        word = D_800D2DC8->status84.half.active | D_800D2DC8->status84.half.permanent;
+        bits = (word & 0xF00) >> 8;
+        status = word;
+        if (word & 2) {
+            resist = 1;
         }
     }
     if ((element & bits) && ether) {
@@ -2231,7 +2240,7 @@ void func_80096494(u16 *attack, u16 *defense, s8 *hit) {
             *hit = 4;
         }
     }
-    if ((element & bits) && flag) {
+    if ((element & bits) && resist) {
         scale -= 3;
         if (status & 4) {
             scale -= 3;
@@ -2240,24 +2249,25 @@ void func_80096494(u16 *attack, u16 *defense, s8 *hit) {
             *hit = 4;
         }
     }
+    guards = bits << 8;
     switch (element) {
-    case 1:
-        if ((bits << 8) & 0x200) {
-            scale += 3;
-        }
-        break;
-    case 2:
-        if ((bits << 8) & 0x100) {
+    case 8:
+        if (guards & 0x400) {
             scale += 3;
         }
         break;
     case 4:
-        if ((bits << 8) & 0x800) {
+        if (guards & 0x800) {
             scale += 3;
         }
         break;
-    case 8:
-        if ((bits << 8) & 0x400) {
+    case 1:
+        if (guards & 0x200) {
+            scale += 3;
+        }
+        break;
+    case 2:
+        if (guards & 0x100) {
             scale += 3;
         }
         break;
