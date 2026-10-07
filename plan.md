@@ -2,8 +2,10 @@
 
 **Recover the complete original program first; port it second; extend it third.**
 
-An independent Xenogears decompilation, native PC port and modding toolkit, led on
-Arch Linux. Recover game-specific code and data formats from the user's original
+An independent Xenogears decompilation, native multiplatform port and modding
+toolkit, led on Arch Linux. Target Linux, Windows, macOS, Android and Meta Horizon
+OS; keep full authoring/editors desktop-focused and support prebuilt play on mobile
+and headsets. Recover game-specific code and data formats from the user's original
 images and observed execution, not another Xenogears project's implementation.
 General-purpose compilers, decompilers, emulators and libraries are welcome.
 
@@ -31,6 +33,46 @@ Complete the active phase before advancing. A checked task requires its stated
 implementation and test, not another generated acceptance registry. Preserve past
 findings at their measured scope; no existing host-reference result implies a
 PS1 binary match, complete discovery or native gameplay.
+
+## Native architecture — Phases 2 onward
+
+Use a library-first Rust/C runtime, not a new general-purpose engine. Keep the
+recovered C as the authoritative original-game implementation; use Rust for new
+native infrastructure and narrow, source-correlated portability adapters. Do not
+require a wholesale Rust rewrite or a second independently updated game-state
+model. These choices add no work to Phase 1's original-compatible matching exit.
+
+- **SDL3:** Default desktop/Android platform layer for game windows/surfaces,
+  keyboard/mouse/touch/controllers, audio-device I/O and lifecycle integration.
+  Reuse applicable services on Horizon OS; use native APIs only for demonstrated
+  gaps. SDL is not the game renderer or the VR abstraction; do not add a parallel
+  Windows XInput path for capabilities already supplied through SDL.
+- **wgpu:** Shared game renderer across flat, stereo and XR presentation. Use the
+  appropriate Vulkan/Direct3D 12/Metal backends per target. Ordinary game surfaces
+  integrate with SDL; headset output integrates with OpenXR-owned swapchains
+  through a narrow graphics adapter, not a second renderer or per-frame CPU copy.
+- **OpenXR:** Horizon immersive sessions, headset/controller poses and actions,
+  stereo views, predicted display timing and frame submission. An Android app
+  displayed as a flat panel is not evidence of stereo or immersive support.
+- **GPUI:** Desktop application interface for launcher/settings, bindings, asset
+  import, save/mod management and later tools. Original dialogue, battle menus
+  and other game UI stay in game presentation. Qualify GPUI on actual devices
+  before adopting it beyond desktop; otherwise use a platform-appropriate client
+  of the same services. Settings must be accessible on-device and in-headset.
+
+Keep application services (validation, settings persistence, session control and
+available save/mod operations) independent of widgets. GUIs and agents call the
+same typed operations and observe acknowledged results; no capability exists only
+in a GUI callback. Logical separation does not require separate executables or
+processes: settings must remain accessible while playing.
+
+Give each host explicit window, GPU-resource, input-focus and lifecycle ownership.
+Coordinate SDL and GPUI event handling under platform main-thread requirements;
+do not start competing application loops. OpenXR drives headset frame scheduling,
+not SDL window refresh or GPUI repaint. One owner mutates simulation state through
+commands; presentation consumes read-only state and never advances gameplay per
+eye, UI repaint or spectator view. Keep graphical dependencies optional so the
+headless runtime needs no GPUI, wgpu, OpenXR or SDL video/audio initialization.
 
 ## Phase 0 — Preserve the research and build baseline
 
@@ -102,21 +144,38 @@ code that can instead be compiled and compared on the original target.
 **Goal:** Adapt the recovered program through thin platform boundaries, without a
 second independently maintained game-rules implementation.
 
-- [ ] Establish C++/C integration, local asset import and native platform services
-  for storage, input, graphics, audio and timing. Preserve source correlation;
-  isolate pointer-width, arithmetic, layout and PS1-specific adaptations.
+- [ ] Establish Rust/C integration, local asset import and native storage, input,
+  graphics, audio and timing through the boundaries above. Preserve source
+  correlation; isolate pointer-width, arithmetic, layout and PS1-specific
+  adaptations. Keep a narrow C ABI with explicit ownership, buffer bounds and
+  error/unwind rules; do not mirror game logic in Rust or serialize native pointers
+  and device handles as game state.
 - [ ] Separate authoritative simulation from presentation and host pacing. One
   runtime serves humans, agents, tests and editor previews; no CPU emulator ships.
+  Expose read-only presentation data, retaining pre-projection geometry/transforms,
+  cameras and recovered ordering/masking semantics needed for multiple views;
+  a final 2D framebuffer must not be the only presentation interface.
 - [ ] Implement direct typed engine actions and structured full introspection,
   semantic readiness/valid actions, exact stepping, bounded run-until, unlocked
   speed, debugging, snapshots/replay and typed go-anywhere scenario setup.
-- [ ] Run without a window, display server, GPU, input device or audio device.
-  Make optional screenshots/spectator streams read-only and independent of time.
+- [ ] Build/run the headless target without the graphical stack, a window, display
+  server, GPU, input device or audio device. Advance logical audio/media progress
+  even without output devices; optional screenshots/spectator streams are read-only
+  and independent of simulation time.
+- [ ] Prove the integration risks with small working paths: a live SDL/wgpu game
+  surface alongside a GPUI settings control; Android startup, asset access and
+  suspend/resume; and an actual Horizon headset rendering a stereo test scene
+  through wgpu/OpenXR. Verify swapchain/device ownership and synchronization,
+  frame scheduling and head tracking while simulation is paused. These are
+  foundation checks, not the full UX or VR feature work of Phases 5, 6 and 10.
 - [ ] Demonstrate a small original-game execution path through the real native
-  services. Use the retained behavioral tests to detect portability regressions.
+  services, including direct commands, inspection and snapshot/restore. Compare
+  authoritative outcomes with presentation attached and absent; use the retained
+  behavioral tests to detect portability regressions.
 
-**Exit:** A tested shared, agent-ready runtime boundary exists. Defining schemas
-alone does not implement it. No authoring engine is required before native play.
+**Exit:** A tested shared, agent-ready Rust/C runtime and qualified platform/graphics
+integration paths exist. Defining schemas or cross-compiling alone does not prove
+integration. No authoring engine or full application UI is required before play.
 
 ## Phase 3 — First end-to-end native playable slice
 
@@ -130,9 +189,13 @@ alone does not implement it. No authoring engine is required before native play.
   access, valid setup, snapshots, replay and equivalent stepped/unthrottled runs.
 - [ ] Attach/change/disconnect optional spectator output without changing state
   or simulation pacing. Image-free headless play must need no GPU or audio device.
+- [ ] Run the same slice on desktop and Android, including Horizon flat-panel
+  play. Verify asset import, saves and lifecycle recovery on actual mobile/headset
+  devices; do not maintain separate platform-specific game logic.
 
-**Exit:** The complete native slice works end to end under both clients. Its
-integration evidence, not a TypeScript authoring prerequisite, closes this phase.
+**Exit:** The complete native slice works end to end under human/agent clients and
+on the target platform hosts. Its integration evidence, not a TypeScript authoring
+prerequisite, closes this phase; full stereo/VR qualification remains later work.
 
 ## Phase 4 — Complete native gameplay on both discs
 
@@ -151,13 +214,14 @@ integration evidence, not a TypeScript authoring prerequisite, closes this phase
 **Exit:** Both discs and all original systems work natively with human/agent parity;
 unknown behavior and progression workarounds cannot be reported as completion.
 
-## Phase 5 — Modern rendering and optional PS1 fidelity
+## Phase 5 — Modern rendering, stereo and optional PS1 fidelity
 
-**Goal:** Modern presentation by default, with original quirks individually selectable.
+**Goal:** Modern flat/stereo presentation by default; original quirks stay selectable.
 
-- [ ] Support Vulkan/Direct3D 12/Metal, arbitrary resolution/aspect ratio and
-  presentation framerate, resizing/high-DPI, correct projection/FOV/UI safe areas,
-  and interpolation without changing simulation/RNG/script/animation timing.
+- [ ] Use wgpu's appropriate Vulkan/Direct3D 12/Metal backends across the targets;
+  support arbitrary resolution/aspect ratio and presentation framerate,
+  resizing/high-DPI, correct projection/FOV/UI safe areas and interpolation
+  without changing simulation/RNG/script/animation timing.
 - [ ] Implement Modern, PS1-style and Custom profiles: affine texturing, projected
   vertex snapping, color precision, dithering, low-resolution rasterization and
   recovered ordering/transparency quirks at their appropriate rendering stages.
@@ -167,20 +231,40 @@ unknown behavior and progression workarounds cannot be reported as completion.
   back-face rejection from clipping, intentional hiding and gameplay activation.
 - [ ] Validate wider framing/content issues separately, cross-backend visuals and
   unchanged gameplay with rendering skipped, offscreen or spectator-streamed.
+- [ ] Qualify Horizon flat virtual-screen play, then seated stereo-screen play
+  through OpenXR. Render both eyes from the same simulation state using the
+  headset's views/projections; place game UI, sprite planes and FMVs deliberately.
+  Preserve monoscopic media as such rather than claiming reconstructed 3D content.
+- [ ] Verify paused-game head tracking, display-paced XR rendering independent of
+  simulation rate, and spectator attach/detach without extra game updates or RNG
+  changes. Measure sustained headset frame pacing; never run game logic per eye.
 
-**Exit:** Display options and fidelity profiles work without altering game rules.
+**Exit:** Display options, stereo-screen play and fidelity profiles work without
+altering game rules; flat presentation remains available.
 
-## Phase 6 — PC controls and application UX
+## Phase 6 — Cross-platform controls and application UX
 
 **Goal:** Native human input uses the same authoritative command path as agents.
 
-- [ ] Implement keyboard/mouse, SDL3 controllers and Windows XInput, action/context
-  bindings, rebinding, direction/run/jump/confirm/cancel and camera left/right.
-- [ ] Make menus mouse-browsable with wheel scrolling; Tab toggles the game menu,
-  Esc toggles the app menu. Keep focus/capture transitions explicit.
-- [ ] Verify equivalent actions and no OS-event injection requirement for agents.
+- [ ] Implement SDL3 keyboard/mouse/controller/touch input and OpenXR controller
+  actions, context bindings and rebinding for direction/run/jump/confirm/cancel
+  and camera left/right. Translate platform events into shared typed actions;
+  agents issue those actions directly without SDL or OS-event injection.
+- [ ] Make menus mouse-browsable with wheel scrolling; on desktop, Tab toggles the
+  game menu and Esc toggles the app menu. Provide touch/headset equivalents and
+  explicit focus/capture transitions without rebuilding original game UI in GPUI.
+- [ ] Deliver the GPUI desktop launcher/settings and available application-service
+  screens. Apply changes through shared validation, acknowledgment and persistence;
+  changing settings from an agent uses the same path. Add later save/mod/editor
+  screens when their owning phases implement those services.
+- [ ] Qualify mobile and in-headset application controls, using GPUI only where
+  device integration is proven. Verify controller reconnects, live settings changes
+  and return to play; a desktop companion is not a substitute for headset settings.
+- [ ] Verify equivalent human/agent actions and explicit pause policy during app
+  interactions; opening settings must not accidentally advance or stall simulation.
 
-**Exit:** Every original system is comfortably playable through PC controls.
+**Exit:** Every original system and application settings are usable through the
+appropriate desktop, touch and headset controls, with human/agent action parity.
 
 ## Phase 7 — Mods and source-oriented agent authoring
 
@@ -192,8 +276,9 @@ unknown behavior and progression workarounds cannot be reported as completion.
   serializable progress. Integrate custom tasks with snapshots/replay and errors.
 - [ ] Build the small TypeScript/optional TSX source-to-playable bridge here:
   source/parameters -> supervised Node build -> IR -> meshes/world/collision/events
-  -> native package. Native C++/events/Lua own gameplay; prebuilt play needs no
-  Node, browser, QML, authoring tools or second runtime.
+  -> native package. The shared native runtime/events/Lua own gameplay; prebuilt
+  desktop/mobile/headset play needs no Node, browser, QML, authoring tools or
+  second runtime. Keep the supervised source-build/authoring workflow on desktop.
 - [ ] Support reusable procedural solids, surfaces/arbitrary meshes and optional
   external/original assets. Start with a wall/door/collectible, then two rooms,
   an arched passage, elevation change, custom object, NPC and one-time reward.
@@ -216,8 +301,9 @@ source-preserving human/agent edits and prebuilt headless play are demonstrated.
 
 - [ ] Complete ordinary saves and supported original-save import/export; implement
   save states, rewind and fast-forward, including event/Lua/audio/media progress.
-- [ ] Verify deterministic restore across modes, long runs, errors and package
-  changes. Reject incompatible states explicitly rather than silently migrating.
+- [ ] Verify deterministic restore across flat/stereo/XR and headless modes,
+  long runs, errors and package changes. Qualify supported cross-device save/state
+  interchange; reject incompatible states explicitly rather than silently migrating.
 
 **Exit:** Saves and time controls preserve required state and timing semantics.
 
@@ -233,11 +319,17 @@ source-preserving human/agent edits and prebuilt headless play are demonstrated.
 
 **Exit:** Options work without disguising missing original logic or breaking progression.
 
-## Phase 10 — Extended camera, media and headphone audio
+## Phase 10 — Extended camera, VR, media and headphone audio
 
 **Goal:** Add optional presentation features grounded in original behavior.
 
-- [ ] Implement playable first-person mode and clearer FMVs with an original option.
+- [ ] Extend Horizon stereo-screen play with seated diorama viewing, then a
+  separately qualified optional immersive first-person mode. Retain flat/stereo
+  play; VR must not require first-person gameplay. Separate head pose from scripted
+  cameras and provide recentering, world-scale and comfort controls.
+- [ ] Implement playable first-person mode on flat displays and clearer FMVs with
+  an original option. Qualify sprite planes, missing surfaces, masks/effects and
+  UI/media placement per camera mode; 2D assets do not become volumetric in stereo.
 - [ ] Implement Wide-derived headphone surround only after verifying the actual
   Wide signal and intended playback model. Distinguish matrix encoding from
   phase-based expansion; select a justified reconstruction/decoder and HRTF path
@@ -245,13 +337,14 @@ source-preserving human/agent edits and prebuilt headless play are demonstrated.
 - [ ] Retain selectable original Mono, Stereo and undecoded Wide; verify effects,
   music and FMV routing, device changes and synchronization.
 
-**Exit:** Optional camera/media/audio features are verified without fidelity overclaims.
+**Exit:** Diorama and immersive modes, flat-display first-person play and optional
+media/audio features are verified independently, without fidelity overclaims.
 
 ## Phase 11 — Graphical level and cutscene editors
 
 **Goal:** Human clients of the same source/build/runtime/debug services agents use.
 
-- [ ] Deliver graphical level, geometry, object, event and cutscene editing,
+- [ ] Deliver GPUI desktop level, geometry, object, event and cutscene editing,
   selection/source attribution, preview, diagnostics, undo/redo and transactions.
 - [ ] Preserve components, stable IDs and handwritten source; do not promise
   arbitrary code round-tripping. No operation exists only in a GUI callback.
@@ -272,15 +365,22 @@ source-preserving human/agent edits and prebuilt headless play are demonstrated.
 
 ## Phase 13 — Release qualification
 
-**Goal:** A reproducible, distributable PC game/toolkit with complete requested coverage.
+**Goal:** Reproducible desktop/mobile/headset play and a desktop modding toolkit.
 
-- [ ] Qualify Arch-first Linux, Windows and macOS builds/backends, installation,
-  upgrades, input/audio devices, performance and headless/no-image operation.
+- [ ] Qualify Arch-first Linux, Windows, macOS, Android and Meta Horizon OS builds,
+  appropriate graphics backends, installation/upgrades, input/audio devices,
+  performance and headless/no-image operation. Distinguish desktop authoring/tools
+  from mobile/headset play; prebuilt packages use the same runtime contracts.
+- [ ] Test mobile storage/asset import, save persistence, background/resume,
+  surface/device recreation and controller/audio reconnects on actual devices.
+  Qualify sustained performance/thermal behavior and XR frame pacing, stereo,
+  tracking, session transitions and in-headset settings; a cross-build is not enough.
 - [ ] Run original-game, agent, authoring, mod, editor, save/time and presentation
   regressions; verify defaults, optional original behavior and error diagnostics.
 - [ ] Audit licenses and the explicit authored-source allowlist; distribute no
   original images, extracted assets, personal saves or unreviewed dependencies.
-- [ ] Document supported revisions, limitations, reproducible commands and user
-  workflows. Ship tested artifacts, not merely completed specifications.
+- [ ] Document supported revisions, devices/OS versions, presentation modes,
+  limitations, reproducible commands and user workflows. Ship tested artifacts,
+  not merely completed specifications.
 
 **Exit:** All preceding phase outcomes remain passing in the supported release builds.
