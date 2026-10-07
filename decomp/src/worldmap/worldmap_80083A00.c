@@ -1497,20 +1497,7 @@ void func_80087B84(VECTOR *direction, VECTOR *up, MATRIX *m) {
 
 /* Start the area's ferry: before scene 0xCD it rests at a fixed dock;
  * otherwise it resumes its route (first time: at waypoint 0), advancing
- * when within 8 units of the waypoint, and heads for the next one.
- * NON_MATCHING: only the prologue differs: the D_8009C610 load is
- * scheduled ahead of the stack adjustment (the original adjusts sp and
- * saves s0 first, then loads it). This is sched2: the load has no
- * dependence on the saves; at the last cycles the s0 save wins the tie by
- * potential hazard after the index copy (a0 -> s0) is placed, leaving the
- * blocked load for the top. A local copy of index (s32/s16/u8) or other
- * id/index types do not change it. sched2 trace (-dR): the original order
- * (sp, s0 save, load, index copy, ra..s1 saves) needs the load chosen over
- * the s0 save at T-26; both have priority 1 and a store always has the
- * greater potential hazard, so the original's load must have had priority
- * >= 2 or depended on the s0 save, i.e. different RTL before the call; an
- * area local, a void cast of the call and u16/s16 ids leave it unchanged. */
-#ifdef NON_MATCHING
+ * when within 8 units of the waypoint, and heads for the next one. */
 s32 func_80087C6C(s32 index) {
     WorldmapActor *actor;
     SceneObject *object;
@@ -1521,7 +1508,7 @@ s32 func_80087C6C(s32 index) {
     u16 z;
 
     id = D_8009B674[D_8009C610];
-    func_80087F60();
+    func_80087F60(index);
     scratch = FERRY_SCRATCH;
     actor = &D_8009BE24[index];
     actor->turn = 0x4000;
@@ -1572,12 +1559,9 @@ s32 func_80087C6C(s32 index) {
     }
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80087C6C);
-#endif
-
-/* Link the four objects before the area's scene object to it. */
-s32 func_80087F60(void) {
+/* Link the four objects before the area's scene object to it. The actor
+ * dispatcher supplies an index, which this area-wide handler does not use. */
+s32 func_80087F60(s32 index) {
     u16 object;
 
     object = D_8009B674[D_8009C610];

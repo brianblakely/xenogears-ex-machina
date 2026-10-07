@@ -1281,7 +1281,7 @@ typedef struct {
 
 extern FerryHeading D_8009CD68[32];
 s32 func_80094154(VECTOR *a, VECTOR *b); /* distance */
-s32 func_80087F60(void);
+s32 func_80087F60(s32 index);
 
 /* Scratchpad work area of the airship update. */
 typedef struct {

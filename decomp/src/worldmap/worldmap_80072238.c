@@ -25,7 +25,6 @@ s32 func_8008E4F4();
 s32 func_800907C4();
 s32 func_80092BE4();
 s32 func_80092DF8();
-s32 func_80087F60();
 s32 func_8008868C();
 s32 func_800879E0();
 s32 func_80088C90();
