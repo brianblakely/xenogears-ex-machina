@@ -822,7 +822,14 @@ void func_8008B0D8(Player *player) {
  * original has it right after the allocation. Taking the base from `anim`
  * frees the copy (the draft's earlier form) but sched1 then puts it last in
  * its block and the header store reads $t1; no order of the base, `anim`
- * and header statements (26 tried) gives both. */
+ * and header statements (26 tried) gives both.
+ * A scheduling barrier (an empty do-while(0), i.e. loop notes) right before
+ * `player->keys = key` with `anim = record; base = (u32)anim; player->header
+ * = anim` places the base copy exactly as the original (everything after
+ * the calls then matches), but combine folds the parameter copy into
+ * $s0 = $a0; taking the header store from the parameter instead keeps
+ * $t1 but stores $t1 and moves the record walker ahead of the anim->keys
+ * load (3 differences). */
 void func_8008B13C(AnimRecord *record, Player *player, Node *root) {
     Node **nodes = ((ModelSet *)root->data)->nodes;
     AnimHeader *anim;
