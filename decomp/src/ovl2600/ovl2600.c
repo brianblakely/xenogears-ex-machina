@@ -1672,21 +1672,15 @@ u8 func_801CB2F0(u8 *codes) {
     return i / 2;
 }
 
-#ifdef NON_MATCHING
 /* The name entry loop: zoom the view in, open the grid, move the cursor over
  * the character grid (skipping blank cells) and edit the name until it is
  * confirmed with a non-empty name; then store it for the three characters
  * of the portrait list (trailing blanks cut), and close the screen.
- * NON_MATCHING: the register allocation differs (2684 of 2688 bytes): the
- * original gives running fp and 15 s5, leaving the 0xCF constant spilled
- * (reloaded into t3 at each compare, 0x88-byte frame); here 0xCF gets fp and
- * running is spilled to the stack (0x90-byte frame), and 15, the 1/6
- * multiplier and dirty rotate through s5-s7. Global-alloc priorities
- * here: multiplier 948 > dirty 762 > 15 652 > 0xCF 476 > running 304; the
- * case bodies differ only by the 0xCF reloads (cases 0, 2, 3, 4 bytes each).
- * Any extra copy of the loop exit test (e.g. an empty loop in a case) gives
- * running two more references and fp, spilling 0xCF as the original does;
- * 15 would still have to outrank the multiplier and dirty. */
+ * Confirming (11) is written first in the switch and again where a blank
+ * cell is picked (4); cross-jumping later merges the two copies into the
+ * one after case 4, but the copies give 15 and `running` the references
+ * that put them in s5 and fp (0xCF stays without a register and is
+ * reloaded at each compare), and make 15 the first constant loop.c hoists. */
 void func_801CB33C(void) {
     u8 codes[24];
     u8 name[24];
@@ -1701,7 +1695,6 @@ void func_801CB33C(void) {
     s32 i;
     s32 k;
     s32 last;
-    u8 *p;
 
     func_801CB25C(codes, name);
     dirty = 0;
@@ -1749,14 +1742,19 @@ void func_801CB33C(void) {
         }
         func_801C9C34();
         switch (D_800625A0->input_code) {
+        case 11:
+            if (codes[0] != 0xF) {
+                running = 0;
+            }
+            break;
         case 5:
             if (D_800625A0->entry->length) {
                 D_800625A0->entry->length--;
             }
             codes[D_800625A0->entry->length * 2] = 0xF;
-            dirty = 1;
             codes[D_800625A0->entry->length * 2 + 1] = 0;
             func_80033B34(codes, name, func_801CB2F0(codes));
+            dirty = 1;
             break;
         case 4:
             index = (row + (col / 6) * 9) * 6 + col % 6;
@@ -1777,7 +1775,6 @@ void func_801CB33C(void) {
                 }
                 break;
             }
-        case 11:
             if (codes[0] != 0xF) {
                 running = 0;
             }
@@ -1837,18 +1834,16 @@ void func_801CB33C(void) {
             break;
         }
     }
-    last = 0;
-    for (i = 0; i < 3; i++) {
+    for (i = 0, last = 0; i < 3; i++) {
         for (k = 0; k < 20; k++) {
             D_8006D634.names[D_800625A0->portraits[i]][k] = 0;
         }
-        p = name;
         for (k = 0; k < 18; k++) {
-            D_8006D634.names[D_800625A0->portraits[i]][k] = *p;
-            if (*p == 0) {
+            D_8006D634.names[D_800625A0->portraits[i]][k] = name[k];
+            if (name[k] == 0) {
                 break;
             }
-            if (*p++ != 0x4F) {
+            if (name[k] != 0x4F) {
                 last = k;
             }
         }
@@ -1869,9 +1864,6 @@ void func_801CB33C(void) {
     func_801CA39C();
     func_801C7A18(3);
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801CB33C);
-#endif
 
 /* Overlay entry: allocate and set up the name entry screen, run it and leave. */
 void func_801CBDBC(void) {
