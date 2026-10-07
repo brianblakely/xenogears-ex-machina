@@ -1930,10 +1930,9 @@ void func_80085454(u8 queue) {
  * Fuel gain stores the sum into the work table inside its maximum test, so
  * the store address is formed before the sum (loop.c then reduces the work
  * pointer before the amounts and fuel pointers, as the original's latch
- * shows). Nonmatching: slot and the amounts pointer are allocated $s3/$s2
- * where the original has $s2/$s3 (global priorities 5575 vs 5786 here; the
- * original ranks slot first). */
-#ifdef NON_MATCHING
+ * shows), and sets the refresh flag itself; cross-jumping merges that store
+ * with the shared one, but its extra slot reference ranks slot above the
+ * amounts pointer in global allocation ($s2/$s3). */
 void func_80085618(u8 queue) {
     s32 slot;
     s32 left;
@@ -2033,16 +2032,14 @@ void func_80085618(u8 queue) {
                      D_800CCCE8.records[slot].gear.fuel + D_800C3EB0.events[queue].amounts[slot])) {
                 D_800CCCE8.records[slot].gear.fuel = D_800CCCE8.records[slot].gear.maxFuel;
             }
-            break;
+            D_800C3EAC->reaction[slot] = 1;
+            continue;
         default:
             continue;
         }
         D_800C3EAC->reaction[slot] = 1;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085618);
-#endif
 
 /* Revive slot at full HP and clear its timed statuses (the active halves of
  * the status words 0x7c-0x80 and 0x84-0x8c). */
