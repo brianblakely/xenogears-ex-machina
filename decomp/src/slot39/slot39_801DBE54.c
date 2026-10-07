@@ -352,9 +352,11 @@ void func_801DC3D8(u8 slot, u8 kind) {
  * two text lines, a copy of its name and its target labels; an unused row
  * hides them. */
 #ifdef NON_MATCHING
-/* Differs in register allocation (the original keeps `row` in a1 and gives
- * slot s4, row & 0xff s3 and the effect s5) and the first switch's shared
- * `text` sum takes its operands the other way round. */
+/* Differs in register allocation: the original gives slot s4, row & 0xff s3
+ * and the effect s5 (here slot s5 and the effect s4), and the second
+ * 801e8070 call's constant arguments s0/s1/s2 rotate. Writing the gear
+ * text index with row & ~1 keeps row in a1 and lets the three text sums
+ * share one add, as in the original. */
 void func_801DCE60(u8 slot, u8 row, u8 kind) {
     RECT rect;
     MenuEffect *effect;
@@ -372,7 +374,7 @@ void func_801DCE60(u8 slot, u8 row, u8 kind) {
         text = (D_8006D8A0[D_800625A0->party->ids[slot]].gear << 5) + row * 2;
         break;
     case 2:
-        text = D_8006D8A0[D_800625A0->party->ids[slot]].gear * 8 + (row & 0xfe);
+        text = D_8006D8A0[D_800625A0->party->ids[slot]].gear * 8 + (row & ~1);
         break;
     }
     if (D_800625A0->block430->shown[row] != 0) {
