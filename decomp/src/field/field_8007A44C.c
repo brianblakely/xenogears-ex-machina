@@ -1186,17 +1186,12 @@ s32 func_8007CD80(VECTOR *point, SVECTOR *edge, DVECTOR *segment) {
     return -1;
 }
 
-#ifdef NON_MATCHING
 /* Find the floor of collision layer `layer` under the actor's next
  * position: walk the layer's triangles from the actor's current one toward
  * the point (at most 32 steps), then take the found triangle's plane
  * height and normal, the triangle, and its floor range; attribute bit
  * 800000 blocks the layer unless it is disabled for the actor or party
- * processing runs. Returns -1 when the walk leaves the mesh.
- * NON_MATCHING: control flow and the body match; in the block before the
- * walk the original loads position/unk030 into a1/v1/a3/a0 (ours
- * a2/v1/a3/a1) and schedules the layer spill and the mask/query.vy stores
- * later. */
+ * processing runs. Returns -1 when the walk leaves the mesh. */
 s32 func_8007D3D4(FieldActor *actor, s32 layer, s32 *floor, VECTOR *normal, s16 *triangle, s32 *upper) {
     SVECTOR query;
     CollisionTriangle *triangles;
@@ -1223,10 +1218,10 @@ s32 func_8007D3D4(FieldActor *actor, s32 layer, s32 *floor, VECTOR *normal, s16 
         query.vz = (actor->position[2] + actor->unk030[2]) >> 16;
         mask = 0;
         query.vy = 0;
-        steps = 0;
         if (!((actor->layer_flags >> (layer + 3)) & 1)) {
             mask = -(D_800B2078.party_processing_mode == 0);
         }
+        steps = 0;
         do {
             a = (vertices[triangles[current].unk00[0]].vx << 16) + vertices[triangles[current].unk00[0]].vz;
             b = (vertices[triangles[current].unk00[1]].vx << 16) + vertices[triangles[current].unk00[1]].vz;
@@ -1309,9 +1304,6 @@ s32 func_8007D3D4(FieldActor *actor, s32 layer, s32 *floor, VECTOR *normal, s16 
     }
     return -1;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8007D3D4);
-#endif
 
 /* Normalise a 20.12 vector, pointing it along its largest component. */
 void func_8007D818(VECTOR *v, VECTOR *out) {
