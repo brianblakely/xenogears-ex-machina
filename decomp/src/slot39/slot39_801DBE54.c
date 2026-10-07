@@ -624,9 +624,24 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801DD790);
 #endif
 
+/* The arts screen's windows are up: clear `windows`, zoom in when `zoom`
+ * asks for it and drop the panel redraw flags. A statement macro. */
+#define FINISH_OPENING(windows, zoom)                  \
+    do {                                               \
+        (windows) = 0;                                 \
+        if (zoom) {                                    \
+            func_801D1E80();                           \
+            func_801D29A8(0, 0);                       \
+            func_801C7BF4();                           \
+        }                                              \
+        D_800625A0->party->redraw6 = 0;                \
+        D_800625A0->party->unk20[1] = 0;               \
+    } while (0)
+
 #ifdef NON_MATCHING
-/* Nonmatching: its jump table lands at 801c512c now; GCC allocates one
- * more saved register (frame 0x70, the original's 0x68). */
+/* Nonmatching: the original schedules the copy of `slot` into s2 after the
+ * other locals' initial values (this build puts it first); its jump table
+ * also lands at 801c512c when built from C. */
 /* The arts screen of party slot `slot` (`kind` 0 the character's, 1 its
  * gear's, 2 the gear's other list): a cursor over twelve rows (two columns,
  * one for kind 2), the selected art's description; confirm uses a usable
@@ -638,11 +653,11 @@ void func_801DDF24(u8 slot, u8 zoom, u8 kind) {
     u8 windows;
     u8 running;
 
+    running = 1;
     windows = 1;
     cursor = 0;
     cursorShown = 0xff;
     slotShown = 0xff;
-    running = 1;
     func_801DC1D4(kind);
     func_801DB02C(0);
     do {
@@ -662,14 +677,7 @@ void func_801DDF24(u8 slot, u8 zoom, u8 kind) {
             func_801D397C(5, 0xc, 0x86, 0xac, 0x38, 0, 1, 4, 0);
             func_801D397C(4, D_801E9794[kind], 0xa6, D_801E97A0[kind], 0x18, 0, 1, 4, 0);
             func_801D397C(3, 0xc8, 0x86, 0x50, 0x18, 0, 1, 4, 0);
-            windows = 0;
-            if (zoom) {
-                func_801D1E80();
-                func_801D29A8(0, 0);
-                func_801C7BF4();
-            }
-            D_800625A0->party->redraw6 = 0;
-            D_800625A0->party->unk20[1] = 0;
+            FINISH_OPENING(windows, zoom);
         }
         switch (D_800625A0->input) {
         case 4:
