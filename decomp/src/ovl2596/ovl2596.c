@@ -555,11 +555,7 @@ void func_801E03B8(u8 member) {
 /* Build the member's seven gauge rows: for each, the value before and after
  * the battle out of the highest (801dfa38) as a bar and its change bar, the
  * value, and when it changed an arrow and the change shaded by direction.
- * NON_MATCHING: same size and instructions; only the allocation of the first
- * digit loop differs: the original gives the digit index k s0, the x giv s2
- * and the row i s3 (k = 23 set in the jal delay slot), here the x giv gets
- * s0, i s2 and k s3. */
-#ifdef NON_MATCHING
+ * The value's digits are entries 23-25 of func_8008AAA0's digit buffer. */
 void func_801E03FC(u8 member) {
     s32 max;
     s32 i;
@@ -573,13 +569,13 @@ void func_801E03FC(u8 member) {
 
     max = func_801DFA38(member);
     for (i = 0; i < 7; i++) {
-        top = i * 8 + 0x92;
-        bottom = i * 8 + 0x98;
         D_800D334C->rowACount[i] = 0;
         D_800D334C->rowBCount[i] = 0;
         func_801DF910(D_800CDD10[member][i], D_800CDD10[member + 3][i], max);
         func_801DF710(D_800D334C->barA[i], 0);
         func_801DF710(D_800D334C->barB[i], D_801E44E0);
+        top = i * 8 + 0x92;
+        bottom = i * 8 + 0x98;
         (D_800D334C->barA[i] + D_800CCB34.index)->x0 = 0x78;
         (D_800D334C->barA[i] + D_800CCB34.index)->y0 = top;
         (D_800D334C->barA[i] + D_800CCB34.index)->x1 = D_801E44D8 + 0x78;
@@ -603,8 +599,9 @@ void func_801E03FC(u8 member) {
         (D_800D334C->barB[i] + D_800CCB34.index)->y3 = bottom;
         D_800D334C->barBuffer[i] = D_800CCB34.index;
         func_8008AAA0(D_801E44CC);
-        for (j = 0, k = 23; j < 3; j++) {
-            digit = D_800C3CE3[k++];
+        for (j = 0; j < 3; j++) {
+            k = j + 23;
+            digit = D_800C3CE3[k];
             if (digit != 0xFF) {
                 D_800D334C->rowACount[i] += func_80076A10(digit, &D_800D334C->rowA[i][D_800D334C->rowACount[i] * 2], j * 8 + 0xB8, i * 8 + 0x90);
             }
@@ -626,9 +623,6 @@ void func_801E03FC(u8 member) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E03FC);
-#endif
 
 /* Play effect id of the system effect bank. */
 void func_801E09C0(u8 id) {
