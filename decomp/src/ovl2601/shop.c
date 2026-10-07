@@ -964,11 +964,9 @@ u8 func_801CF780(void) {
  * sell price (half the table price) labels, the bars of the members who can
  * equip it and the marks of those holding it. Returns the sell price.
  */
-/* Frame layout unresolved: the original reserves 16 additional bytes
- * that the recovered operations do not explain. */
-#ifdef NON_MATCHING
 u32 func_801CFF58(u8 id, u8 kind) {
     RECT rect;
+    u8 unused[16]; /* unused in the original; reserves 16 bytes */
     u8 codes[14];
     u8 text[16];
     s32 divisors[5];
@@ -1072,9 +1070,6 @@ u32 func_801CFF58(u8 id, u8 kind) {
     D_800625A0->details->group2D0_buffer = D_800625A0->buffer;
     return price;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/shop", func_801CFF58);
-#endif
 
 /*
  * Draw the eight visible rows of a list from entry `top`: each item's name,
@@ -1243,9 +1238,7 @@ void func_801D0C18(u32 gold, u8 *ids, u8 *amounts, s32 n, u8 *inv_ids, u8 *inv_c
  * the sale; confirming settles the sale. Items of kind 2 flagged unsellable
  * are left out. With `same_kind` every item is of kind `kind`, otherwise
  * `kinds` gives each one's kind; `member` is the member selling equipment.
- * Nonmatching: five temporary-register differences in the quantity return.
  */
-#ifdef NON_MATCHING
 void func_801D0E68(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds, u8 member) {
     u8 running = 1;
     u8 first = 1;
@@ -1415,8 +1408,8 @@ void func_801D0E68(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds,
         case 2:
             index = top + row;
             if (selectable[index] && chosen[index] - 1 >= 0) {
-                redraw = 1;
                 total -= price;
+                redraw = 1;
                 held[index]++;
                 new_gold -= price;
                 chosen[index]--;
@@ -1425,9 +1418,6 @@ void func_801D0E68(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds,
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/shop", func_801D0E68);
-#endif
 
 /*
  * Sell list 0: choose a party member by portrait, then sell from that

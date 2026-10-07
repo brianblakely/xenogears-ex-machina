@@ -44,10 +44,10 @@ void func_80088CBC(s32 index) {
 }
 
 /* Menu mode start-up: frame callback, display and windows, the start
- * state from the boot word, then the mode's first screen.
- * Nonmatching: the original reserves eight more frame bytes. */
-#ifdef NON_MATCHING
+ * state from the boot word, then the mode's first screen. */
 void func_80088D1C(void) {
+    s32 unused[2]; /* unused in the original; reserves 8 bytes */
+
     DrawSyncCallback(func_80088C00);
     InitGeom();
     func_80032498(6, D_80091BB0);
@@ -80,9 +80,6 @@ void func_80088D1C(void) {
     D_800928D0 = 7;
     func_8008E620();
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu6", func_80088D1C);
-#endif
 
 INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu6", D_80070284);
 

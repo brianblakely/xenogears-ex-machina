@@ -132,6 +132,13 @@ small headers beside the source. A function that is understood but does not yet
 match stays linked as assembly inside `#ifdef NON_MATCHING ... #else
 INCLUDE_ASM(...) #endif`; the coverage report counts it separately.
 
+Register allocation and scheduling differences can be searched with the pinned
+decomp-permuter: `python3 tools/permuter_import.py <config.mk> <func>` prepares
+`.local/permuter/<func>` from the unit's exact compiler settings, then
+`permuter -j8 --best-only .local/permuter/<func>`. Its candidates are hints, often
+nonsense C; keep only a readable, semantically identical rewrite that `make verify`
+accepts.
+
 ## Recover incrementally
 
 Retain original assembly/data privately so unconverted callees can execute in the

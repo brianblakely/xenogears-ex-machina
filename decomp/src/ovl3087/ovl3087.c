@@ -19,7 +19,7 @@ void func_801E95E4(u8 actor, s16 arg1, s16 arg2, s16 arg3);
 void func_801E9694(u8 actor, s16 arg1, s16 arg2, s16 arg3);
 void func_801E9700(u8 actor, u16 arg1);
 void func_801E9760(u8 actor, u8 target);
-void func_801E9894(u8 actor, u8 target);
+void func_801E9894(u8 actor, u16 target);
 void func_801E9AD4(s32 model);
 void func_801E9B2C(void);
 
@@ -273,7 +273,10 @@ u8 func_801E5A98(s32 id) {
 /* Show the next of five portraits at (x, y) and mirror the current
  * buffer's quad horizontally by swapping its second and third vertices.
  */
-void func_801E5B00(s16 x, s16 y) {
+void func_801E5B00(x, y)
+s16 x;
+s16 y;
+{
     BattleGraphics *graphics;
     s32 x1;
     s32 y1;
@@ -543,12 +546,10 @@ void func_801E6750(u8 actor, s32 flags, s32 x, s32 y, s32 width) {
     D_800D3278->portraitBuffer = D_800CCB34.index;
 }
 
-#ifdef NON_MATCHING
 /* Show message of the script's message file in the layout of opcode 1a,
  * with the speaker's portrait unless flag 2 is set; returns 1 once the
  * message has been dismissed. Flags: 1 portrait left, 2 no portrait,
- * 4 lower window, 8 no window, 0x10 window style. (The original sets the
- * default line count after the window pointer reload.) */
+ * 4 lower window, 8 no window, 0x10 window style. */
 u8 func_801E6CE8(u16 message, u8 actor, u16 flags) {
     u16 x;
     u16 y;
@@ -574,8 +575,9 @@ u8 func_801E6CE8(u16 message, u8 actor, u16 flags) {
                 y = 0x8C;
             }
         }
-        height = 4;
-        if (D_800D3278->window[3] < 5) {
+        if (D_800D3278->window[3] >= 5) {
+            height = 4;
+        } else {
             height = D_800D3278->window[3];
         }
         height = height * 13 + 0x14;
@@ -635,10 +637,10 @@ u8 func_801E6CE8(u16 message, u8 actor, u16 flags) {
         func_800346D4(D_800D2DAC);
         func_800716D8();
         D_800D2D28->unkC8 = 0;
-        done = 1;
         if (!(flags & 8)) {
             func_8008FA60(0);
         }
+        done = 1;
         D_800D3278->windowOpen = 0;
         for (i = 0; i < 5; i++) {
             D_800D3278->window[i] = D_801E9C10[i];
@@ -646,9 +648,6 @@ u8 func_801E6CE8(u16 message, u8 actor, u16 flags) {
     }
     return done;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E6CE8);
-#endif
 
 /* Opcode 18: show a message from the thread's speaker; repeats until the
  * message is done. */
@@ -1136,7 +1135,10 @@ s32 func_801E83C0(s32 thread, u8 *insn) {
 
 #ifdef NON_MATCHING
 /* Opcode 45: actor a attacks actor b (animation c, value d) and waits.
- * (The original masks the actor ids separately at each use.) */
+ * (The original masks the actor ids separately at each use.)
+ * NON_MATCHING: this C schedules the D_801E9C20[attacker] load above the
+ * D_800C4000[target] store (the original keeps it after) and gives length
+ * and attacker s2/s1 where the original has s1/s2. */
 s32 func_801E84A4(s32 thread, u8 *insn) {
     s32 length = 0;
     u8 attacker;
