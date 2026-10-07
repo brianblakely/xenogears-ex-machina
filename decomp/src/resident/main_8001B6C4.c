@@ -65,20 +65,13 @@ u8 D_8005947C; /* pending scene + 1 */
 void func_80033B34(u16 *codes, u8 *out, u32 count);
 
 /* Load directory 16 file 3 into the saved game data, decode the first
- * 31 twenty-byte name slots, and reset the battle setup counters.
- * NON_MATCHING: the code bytes go through two pointers into the workspace
- * as in the original ($s3/$s2 here $s5/$s4), but the compiler also hoists
- * the second-column base (D_8006D635) and the 0xF terminator out of the
- * name loop into saved registers; the original rebuilds them (and a copy
- * of the name offset) before each name's byte loop. */
-#ifdef NON_MATCHING
+ * 31 twenty-byte name slots, and reset the battle setup counters. */
 void func_8001B970(void) {
     u16 codes[12]; /* 24-byte workspace; at most ten codes per name */
     u8 decoded[20];
     void *file;
-    u8 *name;
     u16 *counter;
-    s32 offset;
+    s32 slot;
     s32 i;
     u8 *low;
     u8 *high;
@@ -88,35 +81,29 @@ void func_8001B970(void) {
     file = func_80031BDC(func_800288EC(3), 1);
     func_800295D8(3, file, 0, 0x80);
     func_80028A60(0);
-    name = (u8 *)&D_8006D634;
-    memmove(name, file, 0x2358);
+    memmove(&D_8006D634, file, 0x2358);
     func_800320E8(file);
-    low = (u8 *)codes;
-    high = (u8 *)codes + 1;
-    for (offset = 0; offset < 0x26C; offset += 20) {
+    for (slot = 0; slot < 31; slot++) {
         for (i = 0; i < 20; i += 2) {
-            low[i] = name[i];
-            high[i] = D_8006D635[offset + i];
-            if (name[i] == 0xF && D_8006D635[offset + i] == 0) {
+            low = (u8 *)codes;
+            high = low + 1;
+            low[i] = D_8006D634.names[slot][i];
+            high[i] = D_8006D635[slot * 20 + i];
+            if (D_8006D634.names[slot][i] == 0xF && D_8006D635[slot * 20 + i] == 0) {
                 break;
             }
         }
         func_80033B34(codes, decoded, i / 2);
         for (i = 0; i < 20; i++) {
-            name[i] = decoded[i];
+            D_8006D634.names[slot][i] = decoded[i];
         }
-        name += 20;
     }
-    counter = &D_8005A3C6;
-    for (i = 19; i >= 0; i--) {
+    for (i = 19, counter = &D_8005A3C6; i >= 0; i--) {
         *counter-- = 0;
     }
     D_800594CC = 6;
     D_8005947C = 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8001B6C4", func_8001B970);
-#endif
 
 /* Pass the scene selector 8006f9de and three resident tables to 800379d8. */
 void func_8001BB0C(void) {

@@ -806,7 +806,11 @@ void func_8001E368(Sprite *sprite, u_long *ot, s32 height) {
 /* Nonmatching: the RotTransPers4 depth output is the last word of a 16-byte
  * aggregate at 0x50 (0x50-0x5B never accessed), which reproduces the frame;
  * only the part width ($t0 in the original) and the column span ($a3)
- * take each other's registers (score 8). */
+ * take each other's registers (score 8). Global allocation takes the width
+ * byte first because sched1 puts du = w - 1 right after its load, giving du
+ * the longer life (16 insns against 14); storing u1 before u0/v0 shortens du
+ * enough to fix the registers but then that store is first (score 2), and
+ * an s32 u also fixes them but merges the u - 1 test into u. */
 #ifdef NON_MATCHING
 void func_8001E3D8(Sprite *sprite, u_long *ot) {
     SpriteRenderer *renderer;
@@ -1533,12 +1537,14 @@ u8 *func_8001FBA4(Sprite *sprite, u8 *code) {
  * `code`: motion, placement, colour, renderer angles and scales, byte
  * arithmetic on the sprite's stack and frame variables, sounds, models. */
 /* Nonmatching: same size, frame, case layout and tail sharing as the
- * original; left (about 35 instructions): 0xCD keeps the angle in a second
- * register for the angle_x store, case 38 loads the motion word before the
- * frame bits (with the frame bits operand first the loads are in order but
- * take $v1/$v0 swapped), 0xF5 accumulates the model address in $s0 (the
- * original in $a0, copied to $s0 in the call's delay slot), and 0xBD, 0xB8,
- * 0xC4, 0xAC and 0xA3 order or allocate one load or operand differently. */
+ * original; left (about 10 instructions): case 38 loads the motion word
+ * before the frame bits (with the frame bits operand first the loads are in
+ * order but take $v1/$v0 swapped), 0xAC sets
+ * $a0 before loading the direction (which then goes through $a0, original
+ * through $s3 with $a0 set after the load), 0xBD loads the code byte before
+ * the D_8006BE20 pointer, and 0xB8 reads the code byte with lbu after the
+ * stack index (original lb first; a block-local s32 for it fixes 0xB8 but
+ * moves the code byte of 0xE6 and 0xC4 from $v1 to $a1). */
 #ifdef NON_MATCHING
 void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
     SVECTOR vector;
@@ -1674,7 +1680,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         if (sprite->renderer != NULL) {
             value = code[0] | (s16)(code[1] << 8);
             bits = value;
-            angle = (value & 0x1FF) * 8;
+            angle = (value & 0x1FF) << 3;
             group = (bits >> 9) & 7;
             if (!((bits >> 12) & 1)) {
                 if (group != 0) {
@@ -2206,24 +2212,29 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
             sprite->b0.wordb0 &= ~0x400;
         }
         break;
-    case 0xF5:
+    case 0xF5: {
+        s32 offset;
+        ModelBuffer *data;
+
         func_80032498(5, 0);
-        buffer = (s8)code[2];
-        buffer <<= 16;
-        buffer += code[1] << 8;
-        buffer += code[0];
-        buffer += (s32)code;
-        func_8002C59C((SpriteModel *)buffer);
+        offset = (s8)code[2];
+        offset <<= 16;
+        offset += code[1] << 8;
+        offset += code[0];
+        offset += (s32)code;
+        data = (ModelBuffer *)offset;
+        func_8002C59C((SpriteModel *)offset);
         if (((SpriteModelRenderer *)sprite->renderer)->packets[0] != NULL) {
             func_800320E8(((SpriteModelRenderer *)sprite->renderer)->packets[0]);
         }
-        func_8002CB54((ModelBuffer *)buffer, &((SpriteModelRenderer *)sprite->renderer)->packets[0],
+        func_8002CB54(data, &((SpriteModelRenderer *)sprite->renderer)->packets[0],
                       &((SpriteModelRenderer *)sprite->renderer)->packets[1]);
-        func_8002C8CC((ModelBuffer *)buffer, ((SpriteModelRenderer *)sprite->renderer)->packets[0], 0);
+        func_8002C8CC(data, ((SpriteModelRenderer *)sprite->renderer)->packets[0], 0);
         memcpy(((SpriteModelRenderer *)sprite->renderer)->packets[1],
-               ((SpriteModelRenderer *)sprite->renderer)->packets[0], ((ModelBuffer *)buffer)->size);
-        ((SpriteModelRenderer *)sprite->renderer)->model = (ModelBuffer *)buffer;
+               ((SpriteModelRenderer *)sprite->renderer)->packets[0], data->size);
+        ((SpriteModelRenderer *)sprite->renderer)->model = data;
         break;
+    }
     case 0xF6:
         func_80032498(5, 0);
         buffer = (s8)code[2];
@@ -2354,18 +2365,27 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
             sprite->render.bits.dirty = 1;
         }
         break;
-    case 0xC4:
-        n = (rand() & 0xFF) * code[0] / 256;
-        func_80021B04(&vector, 0, 0, (n - (code[0] >> 1)) * 16);
+    case 0xC4: {
+        s32 offset;
+
+        offset = (rand() & 0xFF) * code[0] / 256;
+        offset -= code[0] >> 1;
+        func_80021B04(&vector, 0, 0, offset * 16);
         func_8003F738(&vector, &m);
         ApplyMatrixLV(&m, (VECTOR *)&sprite->speed_x, &sum);
         sprite->speed_x = sum.vx;
         sprite->speed_y = sum.vy;
         sprite->speed_z = sum.vz;
         break;
-    case 0xAC:
-        func_80021FE0(sprite, sprite->direction + ((rand() & 0xFF) * code[0] / 256 - (code[0] >> 1)) * 16);
+    }
+    case 0xAC: {
+        s32 offset;
+
+        offset = (rand() & 0xFF) * code[0] / 256;
+        offset -= code[0] >> 1;
+        func_80021FE0(sprite, sprite->direction + offset * 16);
         break;
+    }
     case 0xA9:
         value = func_80022CAC(sprite, (s8)code[0] * sprite->scale / 4096) << 16;
         if ((sprite->motion.word >> 2) & 1) {
