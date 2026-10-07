@@ -583,9 +583,9 @@ void func_801E5E78(void) {
  * portrait and its two digit glyphs, placed by the party layout's columns.
  * NON_MATCHING: the original doubles the dimmed set's first part (s0) in the
  * second func_80076A6C call's delay slot; here it is doubled after the call
- * (4 bytes shorter, rest shifted). A loop boundary between the two calls and
- * the doubling (e.g. the calls in a do { } while (0)) reproduces the
- * original; the actual construct is not recovered yet. */
+ * (4 bytes shorter, rest shifted). Loop boundaries do not reproduce it:
+ * the calls in a do { } while (0) keep the doubling after the gauge store
+ * and swap s4/s5; the dimming loop in one keeps it after the store too. */
 #ifdef NON_MATCHING
 void func_801E5EE8(void) {
     s32 i;

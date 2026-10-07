@@ -521,8 +521,10 @@ s32 func_8008D590(s32 index) {
  * actor, 2 park, 3 leave the flying vehicle, 5 go to the player, 8 board),
  * follow the player's trail while ridden, and save its spot and heading. */
 #ifdef NON_MATCHING /* saved-state tail differs: the original keeps one base (8006ef90) in a
-                      * register for the z and heading stores and sets the result 1 in the
-                      * delay slots before the tail */
+                      * register for the z (+2) and heading (-0x13e) stores, so it addresses
+                      * D_8006EF8E and D_8006EE5A from one symbol, and sets the result 1 in
+                      * the delay slots before the tail. Addressing both as offsets of
+                      * D_8006EE54 gives a register base but folds index - 4 into it */
 s32 func_8008D678(s32 index) {
     SVECTOR unused; /* unused in the original; reserves 8 bytes */
     WorldmapActor *actor;

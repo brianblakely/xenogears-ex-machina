@@ -182,8 +182,11 @@ INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/load_modes", func_801E8320);
  * 0x2c0,0x100, then for at least 82 frames and until the four setup phases
  * are done (one per idle disc frame, 8001bb0c between the first two), fade
  * the background and run the shatter on the scratchpad stack.
- * NON_MATCHING: s3/s4 swapped (the original keeps frames in s3 and
- * first/shatter in s4, copying the first buffer pointer from v1). */
+ * NON_MATCHING: taking the first buffer after swap_buffers() gives the
+ * original's s3/s4 assignment, but the address is recomputed after
+ * ClearOTagR; the original copies swap_buffers()' &buffers[0] (v1) into s4
+ * before its comparison and stores s4 there. With the pointer taken before
+ * swap_buffers(), it is computed into s3 and s3/s4 swap. */
 #ifdef NON_MATCHING
 void func_801E8588(void) {
     RECT rect;
@@ -220,8 +223,8 @@ void func_801E8588(void) {
     DrawSync(0);
     func_800320E8(screen);
     work = &D_800C3EB0;
-    first = &work->buffers[0];
     swap_buffers();
+    first = &work->buffers[0];
     work->buffer = 0;
     work->current = first;
     work->buffers[0].draw.isbg = 1;
@@ -529,7 +532,7 @@ INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/load_modes", func_801E8DF0);
 
 /* Load mode (burst): like the shatter mode, but the background fades before
  * the burst runs on the scratchpad stack.
- * NON_MATCHING: the same s3/s4 swap as func_801E8588. */
+ * NON_MATCHING: the same first-buffer difference as func_801E8588. */
 #ifdef NON_MATCHING
 void func_801E91E8(void) {
     RECT rect;
@@ -566,8 +569,8 @@ void func_801E91E8(void) {
     DrawSync(0);
     func_800320E8(screen);
     work = &D_800C3EB0;
-    first = &work->buffers[0];
     swap_buffers();
+    first = &work->buffers[0];
     work->buffer = 0;
     work->current = first;
     work->buffers[0].draw.isbg = 1;
