@@ -1294,18 +1294,16 @@ extern s32 D_80059540;           /* timed ticks */
  * the staged voice registers, advances every playing sequence (tempo,
  * fade, pitch and pan slides, beats, channel data) and stages the next
  * voice registers (modulators, then volumes and pitches, where the
- * Mono/Stereo pan law applies).
- * Nonmatching: the original reads both slides' new values relative to the
- * master slide's frame-count address held in $s0 (lh -6($s0), lhu 6($s0));
- * GCC 2.6.3 here reads them as absolute globals. Everything else matches. */
-#ifdef NON_MATCHING
+ * Mono/Stereo pan law applies). Each slide's new value is read through a
+ * copy of its 16.16 value. */
 s32 func_8003C020(void) {
     u32 start;
     u32 end;
     SoundSeq *seq;
     s16 count;
     SoundSeqChannel *channels;
-    s32 volume;
+    s16 volume;
+    SoundFixed value;
 
     if (D_8005957C & 0x40) {
         return 0;
@@ -1314,15 +1312,17 @@ s32 func_8003C020(void) {
     if (D_80059504++ & 1) {
         if (D_8005A3C0.master_slide.frames != 0) {
             func_8003C484(&D_8005A3C0.master_slide);
-            volume = D_8005A3C0.master_slide.value.part.whole;
+            value = D_8005A3C0.master_slide.value;
+            volume = value.part.whole;
             D_8005A3C0.master = volume;
             func_80038E6C(volume, &D_8005A3C0.attr.mvol, 0);
             D_8005A3C0.attr.mask |= 3;
         }
         if (D_8005A3C0.cd_slide.frames != 0) {
             func_8003C484(&D_8005A3C0.cd_slide);
-            D_8005A3C0.attr.cd.volume.left = D_8005A3C0.attr.cd.volume.right = D_8005A3C0.cd =
-                D_8005A3C0.cd_slide.value.part.whole;
+            value = D_8005A3C0.cd_slide.value;
+            volume = value.part.whole;
+            D_8005A3C0.attr.cd.volume.left = D_8005A3C0.attr.cd.volume.right = D_8005A3C0.cd = volume;
             D_8005A3C0.attr.mask |= 0xC0;
         }
         if (D_8005A3C0.attr.mask != 0) {
@@ -1411,10 +1411,6 @@ s32 func_8003C020(void) {
     }
     return 0;
 }
-
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003C020);
-#endif
 
 /* Step a linear slide; on its last frame land exactly on the target. */
 void func_8003C484(SoundSlide *slide) {

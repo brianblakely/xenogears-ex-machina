@@ -532,15 +532,16 @@ extern u8 D_80050240[]; /* the built-in font (packed) */
  * supplied through 8003747C), load the font (packed; the built-in one when
  * `font` is NULL) to VRAM at (tex_x, tex_y) with its four CLUTs at
  * (clut_x, clut_y), and make it the report output.
- * Nonmatching: the allocation's size arms are merged, and the font flags
- * are read in another order. */
+ * Nonmatching: the two size arms end in the same `addiu a0, v0, 0xd4` and
+ * are cross-jumped (the original shifts the 16-byte arm's size in $a0),
+ * and the original passes the block through $a1 to $s0 at the join. */
 #ifdef NON_MATCHING
 Console *func_800374E8(s32 left, s32 top, s32 width, s32 height, s32 capacity, u32 flags,
                        s32 tex_x, s32 tex_y, s32 clut_x, s32 clut_y, void *font) {
     Console *console;
     u8 *data;
     s16 lower;
-    s32 wide;
+    s16 wide;
     s32 rows;
     u8 *pixels;
     RECT rect;
