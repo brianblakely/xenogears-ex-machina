@@ -803,7 +803,14 @@ void func_8001E368(Sprite *sprite, u_long *ot, s32 height) {
  * Parts of one group share a matrix: the renderer's, or its product with the
  * group entry's rotation and offset; groups masked by render byte 1
  * (8004faf8) are skipped. */
-/* Nonmatching: the original frame has 12 more bytes of locals between the angles and the RotTransPers4 outputs (an 8-byte aggregate and an addressable word no code uses), and it keeps the part width in $t0 and the column span in $a3 (swapped here). */
+/* Nonmatching: the original frame has 12 more bytes of locals between the
+ * angles and the RotTransPers4 outputs (0x50-0x5B, never accessed), and it
+ * keeps the part width in $t0 and the column span in $a3 (swapped here).
+ * One unused 12-byte aggregate (long[3], s16[6], DVECTOR[3], u8[12]) is
+ * BLKmode, so GCC aligns it to 8 and reserves 16 bytes: the outputs then sit
+ * 4 bytes too high (score 22, with only that offset and the $t0/$a3 swap
+ * left); an 8-byte aggregate plus an unused word would fit, but an unused
+ * word scalar is not allowed as padding. */
 #ifdef NON_MATCHING
 void func_8001E3D8(Sprite *sprite, u_long *ot) {
     SpriteRenderer *renderer;
