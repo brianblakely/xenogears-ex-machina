@@ -433,9 +433,8 @@ s16 func_80084D00(s32 probe, s16 *hit) {
  * the probe (face number and its attribute) in D_8009D718. Returns a word-sized
  * count of table entries; the caller narrows it to s16. */
 /* NON_MATCHING: the first range check puts its slti result in v0 (the
- * original keeps it in a1 in place), the z-delta loads take v0/v1 the
- * other way round, and i = 0 is scheduled before the scratch matrix
- * address setup. */
+ * original keeps it in a1 in place) and the z-delta loads take v0/v1 the
+ * other way round. */
 #ifdef NON_MATCHING
 s32 func_80084DB8(s32 probe, s32 index) {
     s32 flag;
@@ -468,7 +467,6 @@ s32 func_80084DB8(s32 probe, s32 index) {
         return 0;
     }
     scratch->m = object->matrix;
-    i = 0;
     scratch->m.t[2] = 0;
     scratch->m.t[0] = 0;
     scratch->m.t[1] = object->position.vy;
@@ -484,7 +482,7 @@ s32 func_80084DB8(s32 probe, s32 index) {
     vertices = mesh->vertices;
     scratch->u.test.point = (scratch->u.test.delta.vz << 16) | (scratch->u.test.delta.vx & 0xFFFF);
     face = mesh->faces;
-    for (; i < count; i++, face++) {
+    for (i = 0; i < count; i++, face++) {
         gte_RotTrans(&vertices[face->corner[0]], &scratch->p[0], &flag);
         gte_RotTrans(&vertices[face->corner[1]], &scratch->p[1], &flag);
         gte_RotTrans(&vertices[face->corner[2]], &scratch->p[2], &flag);
