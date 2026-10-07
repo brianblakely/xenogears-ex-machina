@@ -1,0 +1,2 @@
+D_80070394 = 0x80070394; // size:0x28 force_not_migration:True
+D_800704D4 = 0x800704D4; // size:0xC force_not_migration:True

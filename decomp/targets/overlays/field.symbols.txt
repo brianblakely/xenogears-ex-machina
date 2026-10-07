@@ -2,3 +2,4 @@ D_800AFF2C = 0x800AFF2C; // size:0xA0
 D_800B11AC = 0x800B11AC; // size:0x2F8
 D_800AEF10 = 0x800AEF10; // size:0x368
 D_800ADC34 = 0x800ADC34; // size:0x10
+D_8006FB80 = 0x8006FB80; // size:0xC force_not_migration:True

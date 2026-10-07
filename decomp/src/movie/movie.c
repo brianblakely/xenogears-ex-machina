@@ -1760,10 +1760,11 @@ void func_800753B8(void) {
     func_800320E8(bank);
 }
 
-#ifdef NON_MATCHING
+extern char D_80070394[];
+extern char D_800704D4[];
+
 /* Load the battle sound bank from the host PC, waiting for its transfer,
- * then the battle music sequence. The instructions match; the original
- * rodata has a non-zero padding byte (0x08) after "battle2.smd". */
+ * then the battle music sequence. */
 void func_8007548C(void) {
     void *bank;
 
@@ -1772,11 +1773,12 @@ void func_8007548C(void) {
     while (func_8003BDFC(0) != 0) {
     }
     func_800320E8(bank);
-    D_8007700C = func_80039850(func_80028570("c:\\work\\cdrom\\sound\\music\\battle2.smd", 0));
+    D_8007700C = func_80039850(func_80028570(D_80070394, 0));
 }
-#else
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_8007548C);
-#endif
+
+/* "c:\\work\\cdrom\\sound\\music\\battle2.smd". The original assembler left a
+ * stray byte (0x08) in its alignment padding; it is linked as original rodata. */
+INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_80070394);
 
 void func_80075508(void) {
     func_80039A80(D_8007700C, 0x7F, 0);
@@ -1955,13 +1957,10 @@ u32 func_80075D4C(s32 index) {
     return ((record[6] << 24) + (record[5] << 16) + (record[4] << 8)) | record[3];
 }
 
-#ifdef NON_MATCHING
 /* The menu's FAT check: list twenty directory records from the cursor
  * (Up/Down by one, Triangle/Cross by twenty) with their first sector and
  * their size or, toggled by L1, their host file name; R1 switches between
- * decimal and hexadecimal. Circle returns to the menu. The instructions
- * match; the original rodata has two non-zero padding bytes (0x0894) after
- * "Size%9d\n" that a C literal cannot reproduce. */
+ * decimal and hexadecimal. Circle returns to the menu. */
 void func_80075D8C(void) {
     s32 directory;
     s32 offset;
@@ -2062,7 +2061,7 @@ void func_80075D8C(void) {
                     func_8003700C("Size%9x\n", func_80075D4C(index));
                     index++;
                 } else {
-                    func_8003700C("Size%9d\n", func_80075D4C(index));
+                    func_8003700C(D_800704D4, func_80075D4C(index));
                     index++;
                 }
             }
@@ -2082,9 +2081,10 @@ void func_80075D8C(void) {
     } while (button != 2);
     func_80028470(directory, offset);
 }
-#else
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80075D8C);
-#endif
+
+/* "Size%9d\n". The original assembler left stray bytes (0x94, 0x08) in its
+ * alignment padding; it is linked as original rodata. */
+INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_800704D4);
 
 /* The menu's movie test: play the selected movie with the display blanked
  * until it starts, then clear the screen and restore the menu's buffers.
