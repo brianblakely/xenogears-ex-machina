@@ -2513,21 +2513,18 @@ void func_800A4820(void) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Draw the scene hierarchy's visible model parts under view: billboard parts
  * (field52 1: upright, 2: facing the view) drop the parts' rotation, and
  * field52 selects the model drawing mode (4-7: 2-5); plain parts (field52 0)
  * draw at ordering-table depth 16 into ot[depth - 1]. */
-void func_800A48EC(ModelList *models, ModelPart *root, MATRIX *view, s32 arg3, s32 arg4, u32 *ot, s32 buffer,
+void func_800A48EC(ModelList *models, ModelPart *part, MATRIX *view, s32 arg3, s32 arg4, u32 *ot, s32 buffer,
                    s32 depth) {
     MATRIX *m;
-    ModelPart *part;
     s32 shift;
     u32 count;
     s32 i;
     s32 mode;
 
-    part = root;
     m = (MATRIX *)0x1F800040;
     count = part++->index - 1;
     shift = D_80050100;
@@ -2581,9 +2578,6 @@ void func_800A48EC(ModelList *models, ModelPart *root, MATRIX *view, s32 arg3, s
     }
     D_80050100 = shift;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A48EC);
-#endif
 
 /* Push point (relative to origin, in the ground plane) out of the first
  * listed circle (x, z, radius) it lies inside, onto its rim; whether it was
