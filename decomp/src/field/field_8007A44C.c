@@ -1651,7 +1651,6 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8007E1C0
 
 extern u8 D_800594D4[3];    /* window colour */
 
-#ifdef NON_MATCHING
 /* Build dialogue window `w`'s packets for both buffers: the backing draw
  * mode and semi-transparent tile in the window colour, the prompt and
  * choice cursor sprites, the eight border sprites (texture windows from
@@ -1660,14 +1659,8 @@ extern u8 D_800594D4[3];    /* window colour */
  * (as the original indexes them; it keeps the loop large enough that the
  * w * 0x498 chain stays in it), and the border pair is copied through
  * element pointers, which keeps the setRGB0 address for the copy source.
- * NON_MATCHING (1 swapped pair): after the prompt's GetClut the original
- * loads 0xc0 ($s4) before rematerialising 0xc ($t2); ours the other way.
- * The 0xc pseudo (shared by both blocks) is spilled and reloaded into $t2
- * at its store, so the order is sched2's luid tie-break: the original's
- * 0xc0 set already precedes the w store before sched2, i.e. in sched1 it
- * was not a register birth hugging its store. All 24 orders of the
- * w/u0/v0/h stores (prompt only or both blocks) and a local `v` assigned
- * 0xc0 in both blocks (cse folds the second set) leave this pair. */
+ * The prompt sprite is 12x8 and the choice cursor 8x12.
+ */
 void func_8007EE0C(s32 w) {
     RECT area;
     s32 i;
@@ -1687,9 +1680,9 @@ void func_8007EE0C(s32 w) {
     SetSprt(&D_800C2698[w].prompt.sprite[0]);
     setRGB0(&D_800C2698[w].prompt.sprite[0], 0x80, 0x80, 0x80);
     D_800C2698[w].prompt.sprite[0].clut = GetClut(0x100, 0xF6);
-    D_800C2698[w].prompt.sprite[0].w = 0xC;
     D_800C2698[w].prompt.sprite[0].u0 = 0x80;
     D_800C2698[w].prompt.sprite[0].v0 = 0xC0;
+    D_800C2698[w].prompt.sprite[0].w = 0xC;
     D_800C2698[w].prompt.sprite[0].h = 8;
     D_800C2698[w].prompt.sprite[0].x0 = 0;
     D_800C2698[w].prompt.sprite[0].y0 = 0;
@@ -1703,10 +1696,10 @@ void func_8007EE0C(s32 w) {
     SetSprt(&D_800C2698[w].choice.cursor[0]);
     setRGB0(&D_800C2698[w].choice.cursor[0], 0x80, 0x80, 0x80);
     D_800C2698[w].choice.cursor[0].clut = GetClut(0x100, 0xF6);
-    D_800C2698[w].choice.cursor[0].w = 0xC;
     D_800C2698[w].choice.cursor[0].u0 = 0x80;
     D_800C2698[w].choice.cursor[0].v0 = 0xC0;
-    D_800C2698[w].choice.cursor[0].h = 8;
+    D_800C2698[w].choice.cursor[0].w = 8;
+    D_800C2698[w].choice.cursor[0].h = 0xC;
     D_800C2698[w].choice.cursor[0].x0 = 0;
     D_800C2698[w].choice.cursor[0].y0 = 0;
     D_800C2698[w].choice.cursor[1] = D_800C2698[w].choice.cursor[0];
@@ -1742,9 +1735,6 @@ void func_8007EE0C(s32 w) {
     D_800C2698[w].icon[0].tpage = GetTPage(1, 0, 0x2C0, 0x100);
     D_800C2698[w].icon[1] = D_800C2698[w].icon[0];
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8007EE0C);
-#endif
 
 extern DVECTOR D_800ADF34[]; /* icon texture origin per frame */
 
