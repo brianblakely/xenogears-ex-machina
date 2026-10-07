@@ -1536,7 +1536,12 @@ u8 *func_8001FBA4(Sprite *sprite, u8 *code) {
 /* Run the script command `op` (0x8a-0xfc) of a sprite on its operand bytes
  * `code`: motion, placement, colour, renderer angles and scales, byte
  * arithmetic on the sprite's stack and frame variables, sounds, models. */
-/* Nonmatching: the interpreter compiles to the original's cases and jump tables but not byte-identically: the original shares case tails differently (36/37 jump into case 24, 32-35 into 18-21), keeps the operand pointer in $s1 without $s4, and schedules case 38's stores differently. */
+/* Nonmatching: same size, frame, case layout and tail sharing as the
+ * original; left (about 40 instructions): 0xCD keeps the angle in a second
+ * register for the angle_x store, case 38 loads the motion word before the
+ * frame bits, 0xF5 accumulates the model address in $s0 (the original in
+ * $a0, copied to $s0 in the call's delay slot), and 0xBD, 0xB8, 0xC4, 0xAC
+ * and 0xA3 order or allocate one load or operand differently. */
 #ifdef NON_MATCHING
 void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
     SVECTOR vector;
@@ -1924,10 +1929,11 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                 if ((other->render.word & 3) != 1) {
                     break;
                 }
-                value = index - 10;
                 if (other->renderer->pointer34 != NULL) {
-                    x = other->renderer->pointer34[value].byte0;
-                    y = other->renderer->pointer34[value].byte1;
+                    s32 entry = index - 10;
+
+                    x = other->renderer->pointer34[entry].byte0;
+                    y = other->renderer->pointer34[entry].byte1;
                 } else {
                     x = 0;
                     y = 0;
