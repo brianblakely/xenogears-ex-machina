@@ -534,10 +534,13 @@ INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/heap", D_80018998);
  * equal callers. Skip/count apply to finished rows; zero count is unlimited.
  * Column flags: 1 number, 2 header, 4 data, 8 size, 0x10 owner, 0x20 caller,
  * 0x40 caller symbol, 0x80 contents, 0x8000 total free bytes.
- * Nonmatching: the original reserves an additional untouched 64-byte stack
- * area and compares tag/kind with one packed-word mask. */
+ * Nonmatching: the frame (0x80) matches; the number and data counters
+ * take $s3/$s4 swapped, and the original keeps header->next in $a0 for the
+ * grouped-row path (reloading it only for mode 3) where this build reloads
+ * it in the shared block (892 vs 896 bytes). */
 #ifdef NON_MATCHING
 void func_8003278C(s32 mode, s32 skip, s32 count, s32 flags) {
+    char unused[64]; /* unused in the original; reserves 64 bytes */
     s32 number = 0;
     s32 limited = 0;
     HeapHeader *header;
