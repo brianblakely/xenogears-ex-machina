@@ -1759,17 +1759,17 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8007EE0C
 
 extern DVECTOR D_800ADF34[]; /* icon texture origin per frame */
 
-#ifdef NON_MATCHING
 /* Point both buffers' icon of `window` at frame `frame`: a 64x64 texture
- * square and the frame's CLUT row. Differs only in the order of the first
- * two independent instructions (sll before lui). */
+ * square and the frame's CLUT row. */
 void func_8007F5AC(s32 window, s32 frame) {
     DialogueWindow *w;
+    DVECTOR *tex;
     s16 *u;
     s16 *v;
 
     w = &D_800C2698[window];
-    u = &D_800ADF34[frame].vx;
+    tex = D_800ADF34;
+    u = &tex[frame].vx;
     v = &D_800ADF34[frame].vy;
     D_800C2698[window].icon[1].u0 = w->icon[0].u0 = *u;
     D_800C2698[window].icon[1].v0 = w->icon[0].v0 = *v;
@@ -1781,9 +1781,6 @@ void func_8007F5AC(s32 window, s32 frame) {
     D_800C2698[window].icon[1].v3 = w->icon[0].v3 = *v + 0x40;
     D_800C2698[window].icon[1].clut = w->icon[0].clut = GetClut(0, frame + 0xE0);
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8007F5AC);
-#endif
 
 /* Close dialogue window `window` unless it is busy; -1 when busy. */
 s32 func_8007F6F8(s16 window) {
