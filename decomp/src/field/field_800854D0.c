@@ -6684,6 +6684,13 @@ void func_80098C3C(void) {
 }
 
 #ifdef NON_MATCHING
+/* Walk the current actor to an operand position over a step count derived
+ * from its speed (first call sets the step, later calls advance it); at the
+ * end snap to the target (when the slot asks) and continue with the next
+ * instruction, then update the model matrix and its animation.
+ * NON_MATCHING: the original keeps D_800B0078 in t0 throughout and loads all
+ * six position/target words of the step branch before its first store; GCC
+ * here uses a2 and interleaves the loads and stores. */
 void func_80098CAC(s32 mode) {
     VECTOR from;
     FieldModel *model;
@@ -6754,10 +6761,10 @@ void func_80098CAC(s32 mode) {
             D_800B0078->unk030[2] = D_800B0078->target[2];
             D_800B0078->position[1] += D_800B0078->target[1];
             D_800B0078->unk030[0] = D_800B0078->target[0];
-            D_800B00C0 = animation;
             D_800B0078->slots[D_800B0078->slot].value--;
-            D_800B0078->unk102--;
+            D_800B00C0 = animation;
         }
+        D_800B0078->unk102--;
         D_800AF880.components.descriptors[D_800AFD1C].matrix.t[0] = WHOLE(D_800B0078->position[0]);
         D_800AF880.components.descriptors[D_800AFD1C].matrix.t[1] = WHOLE(D_800B0078->position[1]);
         D_800AF880.components.descriptors[D_800AFD1C].matrix.t[2] = WHOLE(D_800B0078->position[2]);
@@ -6771,8 +6778,8 @@ void func_80098CAC(s32 mode) {
     if (D_800B0078->unkE8 != animation && !(D_800B0078->flags & 0x2000000)) {
         D_800B0078->unkE8 = animation;
         func_800821F4(model, animation, D_800B06B8);
-        ((void (*)(void *, s32, FieldDescriptor *))func_80081F80)(model, D_800B0078->heading, D_800B06B8);
     }
+    ((void (*)(void *, s32, FieldDescriptor *))func_80081F80)(model, D_800B0078->heading, D_800B06B8);
 }
 #else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_80098CAC);
