@@ -2266,7 +2266,11 @@ void func_8008BF38(s32 slot) {
 
 #ifdef NON_MATCHING
 /* Take party slot `slot`'s member out of the party: its actor gets the
- * lead's sprite and is hidden, and the slot's ids are cleared. */
+ * lead's sprite and is hidden, and the slot's ids are cleared. The
+ * descriptor table pointer is read through its address, which the original
+ * keeps in s0 across the calls.
+ * NON_MATCHING: only s5/s6 are swapped: the original gives slot * 4 s5 and
+ * &D_8005A444[slot] s6. */
 void func_8008C180(s32 slot) {
     FieldDescriptor *descriptor;
     FieldActor *actor;
@@ -2274,18 +2278,22 @@ void func_8008C180(s32 slot) {
     s32 current;
     u16 pc;
     s32 index;
+    FieldDescriptor **table;
+    FieldDescriptor *member_descriptor;
 
     if (D_8005A444[slot] != 0xFF) {
+        table = &D_800AF880.components.descriptors;
         descriptor = D_800B06B8;
         actor = D_800B0078;
         current = D_800AFD1C;
         pc = actor->pc;
-        D_800B06B8 = &D_800AF880.components.descriptors[D_8005A444[slot]];
+        D_800B06B8 = &(*table)[D_8005A444[slot]];
         D_800B0078 = D_800B06B8->actor;
         func_80080A74(D_8005A444[slot]);
         index = D_8005A444[slot];
         D_800AFD1C = index;
-        D_800AF880.components.descriptors[index].flags = (D_800AF880.components.descriptors[index].flags & 0xF07F) | 0x200;
+        member_descriptor = &(*table)[index];
+        member_descriptor->flags = (member_descriptor->flags & 0xF07F) | 0x200;
         func_80076AC0(index, 0, D_8005A414[0], 1, 0, 0, 1);
         member = D_800B0078;
         member->flags |= 1;
@@ -3148,13 +3156,11 @@ void func_8008EA58(void) {
     D_800B0078->pc += 0xC;
 }
 
-#ifdef NON_MATCHING
 /* Event 0x60: once sound is available, request movie op1 with parameters
  * op3/op5; op7's low nibble picks the display layout (0: half-width at
  * x 0x140, 1: full 16-bit, 2: full 24-bit) and its 0xc0 bits the fade. */
 void func_8008EC30(void) {
     s32 mode;
-    s32 layout;
 
     if (D_800ADBDC == 0) {
         D_800B00C0 = 1;
@@ -3164,12 +3170,11 @@ void func_8008EC30(void) {
     FIELD_MOVIE.file = func_800ACDEC(1);
     FIELD_MOVIE.unk2A = func_800ACDEC(3);
     FIELD_MOVIE.unk2E = func_800ACDEC(5);
-    mode = func_800ACDEC(7);
-    FIELD_MOVIE.mode = mode;
-    D_800ADB80 = mode & 0xC0;
+    mode = FIELD_MOVIE.mode = func_800ACDEC(7);
     FIELD_MOVIE.width = 0x140;
     FIELD_MOVIE.height = 0x100;
     FIELD_MOVIE.mode &= 0xF;
+    D_800ADB80 = mode & 0xC0;
     FIELD_MOVIE.sound_start = 1;
     switch (FIELD_MOVIE.mode) {
     case 0:
@@ -3203,9 +3208,6 @@ void func_8008EC30(void) {
     D_800B00C0 = 1;
     D_800B0078->pc += 9;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_8008EC30);
-#endif
 
 /* Event 0x67: request movie op1 with parameters op3/op5/op7, mode op9 (0xfe
  * marks 800c3a3a, 0x40 the fade), window position op11/op13 and size
