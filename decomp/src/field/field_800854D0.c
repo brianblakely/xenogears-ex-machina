@@ -5872,7 +5872,7 @@ void func_800962C0(void) {
     }
 }
 
-void func_8009635C(s32 item);
+s32 func_8009635C(s32 item);
 
 /* Give one of item operand 1. */
 void func_8009631C(void) {
@@ -5883,10 +5883,10 @@ void func_8009631C(void) {
 s32 func_800951B8(s32 item);
 
 
-#ifdef NON_MATCHING
 /* Add one of `item` (list in the high byte) up to 99, or take a free slot.
- * NON_MATCHING: the original shares the final count store of both paths. */
-void func_8009635C(s32 item) {
+ * Declared int without a return value, as the original's unfilled branch
+ * delay slot shows (v0 stays live to the exit). */
+s32 func_8009635C(s32 item) {
     s32 slot;
     u8 *counts;
     u8 *ids;
@@ -5906,9 +5906,6 @@ void func_8009635C(s32 item) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_8009635C);
-#endif
 
 /* Take one of item operand 1; an emptied slot's id becomes 0xFF. */
 void func_8009640C(void) {
