@@ -3132,8 +3132,10 @@ void *func_80039024(s32 size) {
 }
 
 /* Release a block of driver memory.
- * Nonmatching: the original keeps the pool head and the block address in
- * separate registers from the walk. */
+ * Nonmatching: the original keeps the pool head ($s0) apart from the walk
+ * pointer ($v0, copied after DisableEvent); this C walks in $s0 (132 vs
+ * 136 bytes). Only a dead store (prev = head; entry = prev) reproduces the
+ * copy, which is not taken. */
 #ifdef NON_MATCHING
 void func_80039144(void *data) {
     SoundBlock *head = D_80059410;
