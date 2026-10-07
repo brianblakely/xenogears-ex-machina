@@ -3831,19 +3831,53 @@ void func_801E78C8(s32 file) {
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801E78C8);
 #endif
 
-/* Set up `label`'s two quads for label image `index`: mode 0 takes the
- * image from the 140 column pages (rows from `first`); otherwise from the
- * 180 page (+80 keeps it opaque, else dimmed), with palette choice
- * `mode & 7f` - 1. Hides the label. */
-#ifdef NON_MATCHING
-/* The original's quad loop is not loop-optimized (the palette and the
- * texture window are recomputed for each quad), hence the goto loop; the
- * window is PsyQ's setUVWH. Remaining: global allocation (the original
- * gives index fp, mode s7, i s6, half s5; here index wins s5) and the clut
- * store, which the original makes through a copy of the quad pointer (in
- * the palette test's delay slot). A do/while (0) block around the whole
- * loop body, through the goto, fixes the allocation: 3 differing
- * instructions remain, the copy (local scorer). */
+/* Point the current quad at its palette (D_80059414 or the plain
+ * D_800595D4). A statement macro. */
+#define SET_QUAD_CLUT()                                                \
+    do {                                                               \
+        POLY_FT4 *p = poly;                                            \
+        p->clut = label->palette != 0 ? D_80059414 : D_800595D4;      \
+    } while (0)
+
+/* Set up the current quad of `label`: mode 0 takes image `index` from the
+ * 140 column pages (rows from `first`); otherwise from the 180 page (+80
+ * keeps it opaque, else dimmed) with palette choice `mode & 7f` - 1. A
+ * statement macro. */
+#define SET_QUAD()                                                     \
+    do {                                                               \
+        semi = 0;                                                      \
+        func_801E927C(poly);                                           \
+        if (mode == 0) {                                               \
+            label->palette = half;                                     \
+            poly->tpage = GetTPage(0, 0, 0x140, 0);                    \
+            setUVWH(poly, column, (index + first) / 4 * 0xd, label->width, 0xd); \
+        } else {                                                       \
+            if (!(mode & 0x80)) {                                      \
+                semi = 0x20;                                           \
+                SetSemiTrans(poly, 1);                                 \
+                setRGB0(poly, semi, semi, semi);                       \
+            }                                                          \
+            label->palette = (mode & 0x7f) - 1;                        \
+            poly->tpage = semi | GetTPage(0, 0, 0x180, 0x80);          \
+            setUVWH(poly, half * 0x60, row * 0xd + first, label->width, 0xd); \
+        }                                                              \
+        SET_QUAD_CLUT();                                               \
+    } while (0)
+
+/* Step to the next quad, back to `loop` for the second one. A statement
+ * macro. */
+#define NEXT_QUAD()                                                    \
+    do {                                                               \
+        i++;                                                           \
+        poly++;                                                        \
+        if (i < 2) {                                                   \
+            goto loop;                                                 \
+        }                                                              \
+    } while (0)
+
+/* Set up `label`'s two quads for label image `index` (the quad loop is
+ * not loop-optimized: each quad's palette and window are recomputed) and
+ * hide the label. */
 void func_801E7C50(MenuLabelSlot *label, s32 index, s32 first, u8 mode) {
     POLY_FT4 *poly;
     s32 i;
@@ -3858,37 +3892,10 @@ void func_801E7C50(MenuLabelSlot *label, s32 index, s32 first, u8 mode) {
     column = (row & 1) << 7;
     poly = label->polys;
 loop:
-    semi = 0;
-    func_801E927C(poly);
-    if (mode == 0) {
-        label->palette = half;
-        poly->tpage = GetTPage(0, 0, 0x140, 0);
-        setUVWH(poly, column, (index + first) / 4 * 0xd, label->width, 0xd);
-    } else {
-        if (!(mode & 0x80)) {
-            semi = 0x20;
-            SetSemiTrans(poly, 1);
-            setRGB0(poly, semi, semi, semi);
-        }
-        label->palette = (mode & 0x7f) - 1;
-        poly->tpage = semi | GetTPage(0, 0, 0x180, 0x80);
-        setUVWH(poly, half * 0x60, row * 0xd + first, label->width, 0xd);
-    }
-    if (label->palette != 0) {
-        poly->clut = D_80059414;
-    } else {
-        poly->clut = D_800595D4;
-    }
-    i++;
-    poly++;
-    if (i < 2) {
-        goto loop;
-    }
+    SET_QUAD();
+    NEXT_QUAD();
     label->visible = 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801E7C50);
-#endif
 
 /* Render `count` labels (text ids in `layout`) in pairs into one 28x13
  * image each (two columns of 32 from x 140, rows of 13 from label `first`),
