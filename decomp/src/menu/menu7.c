@@ -2194,36 +2194,26 @@ void func_8008EB88(Actor *owner, s32 id, Vector *pos, s32 mode) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Play one of a character's command sounds (random 1-6 when index is 0):
- * up to two effects from the shared pair table.
- * Nonmatching: saved-register allocation differs (original s0 table,
- * s1 entry offset, s2 owner, s3 mode, s4 pos; compiled s0 owner, s2 mode,
- * s3 pos, s4 table) and the prologue saves are ordered differently. */
+ * up to two effects from the shared pair table. */
 void func_8008EBD0(Actor *owner, s32 index, Vector *pos, s32 mode) {
-    s32 unused[2]; /* unused in the original; reserves 8 bytes */
     s32 entry;
-    SoundPair *table;
 
     if (index == 0) {
         index = rand() % 6 + 1;
     }
     entry = owner->sounds[index];
     if (entry != 0xFF) {
-        table = D_80091EE0;
-        index = D_80091EE0[entry].first;
+        index = D_80091EE0[entry * 2];
         if (index != 0) {
             func_8008E78C(index | 0x60000, mode, pos, (index & 0x7F) | ((owner->flags >> 20) & 0x80));
         }
-        index = table[entry].second;
+        index = D_80091EE0[entry * 2 + 1];
         if (index != 0) {
             func_8008E78C(index | 0x60000, mode, pos, (index & 0x7F) | ((owner->flags >> 20) & 0x80));
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008EBD0);
-#endif
 
 /* Stop every voice started with the given tag. */
 void func_8008ECEC(u8 tag) {
@@ -2240,30 +2230,22 @@ void func_8008ECEC(u8 tag) {
 }
 
 /* Stop the sounds a character's command sound entry started. Declared int
- * without a return value, as the original's unfilled last delay slot shows.
- * Does not match: the table base and the entry offset swap $s1/$s2. */
-#ifdef NON_MATCHING
+ * without a return value, as the original's unfilled last delay slot shows. */
 s32 func_8008ED6C(Actor *owner, s32 index) {
-    s32 unused[2]; /* unused in the original; reserves 8 bytes */
     s32 entry;
-    SoundPair *table;
 
     entry = owner->sounds[index];
     if (entry != 0xFF) {
-        table = D_80091EE0;
-        index = D_80091EE0[entry].first;
+        index = D_80091EE0[entry * 2];
         if (index != 0) {
             func_8008ECEC((index & 0x7F) | ((owner->flags >> 20) & 0x80));
         }
-        index = table[entry].second;
+        index = D_80091EE0[entry * 2 + 1];
         if (index != 0) {
             func_8008ECEC((index & 0x7F) | ((owner->flags >> 20) & 0x80));
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008ED6C);
-#endif
 
 /* Accelerate an actor toward the speed limit (or brake to a stop, harder
  * when not guarding) for two ticks, and turn it toward a heading. */

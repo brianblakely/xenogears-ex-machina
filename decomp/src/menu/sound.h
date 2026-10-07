@@ -24,12 +24,7 @@ extern u8 D_80091F70[];
 extern u8 D_80091F80[];
 extern u8 D_80091F90[];
 extern u8 D_80091FA0[];
-typedef struct {
-    u8 first;
-    u8 second;
-} SoundPair;
-
-extern SoundPair D_80091EE0[]; /* command sounds: up to two effect ids each */
+extern u8 D_80091EE0[]; /* command sounds: two effect ids (0: none) per entry */
 extern volatile s32 D_80059488; /* vertical blanks counted */
 
 void func_80039FF8(void);                                      /* sound driver reset */
