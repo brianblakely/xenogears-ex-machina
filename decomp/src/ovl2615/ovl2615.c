@@ -42,7 +42,11 @@ void func_801E4048(void) {
  * from the battle scene data.
  * NON_MATCHING: the original indexes the formation record (D_8006F9DC) with
  * i itself; here loop optimization combines its repeated reads into reduced
- * pointers (and eliminates i), and the later loops' registers differ. */
+ * pointers (and eliminates i), and the later loops' registers differ.
+ * In the loop dump the two FORMATION_ID (and FLAGS3) reads are combined
+ * givs (benefit 4) and reduced; the original keeps every byte-array access
+ * on a register incremented with i (a0, like a mult-1 DEST_REG giv the
+ * address givs were expressed from). */
 #ifdef NON_MATCHING
 void func_801E4160(void) {
     s32 i;
@@ -588,7 +592,9 @@ void func_801E5E78(void) {
  * second func_80076A6C call's delay slot; here it is doubled after the call
  * (4 bytes shorter, rest shifted). Loop boundaries do not reproduce it:
  * the calls in a do { } while (0) keep the doubling after the gauge store
- * and swap s4/s5; the dimming loop in one keeps it after the store too. */
+ * and swap s4/s5; the dimming loop in one keeps it after the store too.
+ * 2.6.3 sched1 moves a doubling written before the call (part crosses the
+ * call, so it is not tied to it) down past the call to its first use. */
 #ifdef NON_MATCHING
 void func_801E5EE8(void) {
     s32 i;

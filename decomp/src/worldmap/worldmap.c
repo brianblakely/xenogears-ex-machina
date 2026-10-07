@@ -8,7 +8,9 @@
  * 0x7580 (a3 there); the original stores 0xFF00 to the s16 unk62 as a
  * positive constant, addresses the flag word after the setup calls
  * directly (through a3 here), reloads D_8009D7CC after the loop test and
- * reads the next scene's word 5 after storing word 4. */
+ * reads the next scene's word 5 after storing word 4. Storing 0xFF00
+ * through STATE_U16(0xE) gives the original's ori; moving the x = 0x7580
+ * store up after unk64 puts 0x7580 in a3 loaded early but stores x early. */
 #ifdef NON_MATCHING
 void func_80070CFC(void) {
     void (*step)(void);
