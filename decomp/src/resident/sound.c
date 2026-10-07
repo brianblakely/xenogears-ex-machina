@@ -3190,9 +3190,7 @@ void func_8003EFA0(SoundChannel *state, u32 voice) {
 
 /* Run the modulators of `count` channels: after its delay each running
  * modulator adds its wave (faded in over its period) to the pitch, level
- * or pan offset of its channel and flags the update.
- * Nonmatching: the period copy lands in the other register. */
-#ifdef NON_MATCHING
+ * or pan offset of its channel and flags the update. */
 void func_8003EFE4(SoundSeq *seq, SoundSeqChannel *channel, s16 count) {
     SoundModulator *modulator;
     u16 changes;
@@ -3215,8 +3213,8 @@ void func_8003EFE4(SoundSeq *seq, SoundSeqChannel *channel, s16 count) {
                             modulator->delay_count--;
                         } else {
                             value = modulator->wave(modulator);
-                            period = modulator->period_count;
-                            if (period < 0x400) {
+                            if (modulator->period_count < 0x400) {
+                                period = modulator->period_count;
                                 modulator->period_count = period + modulator->period;
                                 value = (value >> 10) * period;
                             }
@@ -3245,9 +3243,6 @@ void func_8003EFE4(SoundSeq *seq, SoundSeqChannel *channel, s16 count) {
         channel++;
     } while (--count != 0);
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003EFE4);
-#endif
 
 /* Switch a modulator off. */
 void func_8003F190(SoundModulator *modulator) {
