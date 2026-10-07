@@ -103,7 +103,12 @@ ShatterTask *func_801E82EC(void) {
 
 /* Set up the shatter: the screen as two triangles per 32x32 cell over a
  * 320x224 grid (textured from the copy at 0x2c0,0x100), each cell 0x2000
- * away at its place on the grid. */
+ * away at its place on the grid.
+ * NON_MATCHING: the original frame is 0xb0 (0x10-0x47 never accessed) and
+ * its column loop reads the row's two heights and col * 0x20 from copies of
+ * the strength-reduced row/column values (spilled, like the caller-saved
+ * t0-t5 around each call); here those values are used directly, so the
+ * frame is 0x70 and the spills differ. */
 #ifdef NON_MATCHING
 ShatterTask *func_801E8320(ShatterTask *task) {
     ShatterCell *cell;

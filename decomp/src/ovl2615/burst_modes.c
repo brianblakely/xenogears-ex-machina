@@ -10,7 +10,8 @@
  * loops over the 2x14x20 grid are left from removed work.
  * NON_MATCHING: frame and size now match; the original keeps the task in a1
  * and loads each field after the previous store (here the loads are hoisted
- * and the frame counter takes a0). */
+ * and the frame counter takes a0). Reaching trans through its own VECTOR
+ * pointer reproduces the original load order but keeps that pointer in a2. */
 #ifdef NON_MATCHING
 void func_801E8964(TaskNode *node) {
     SVECTOR unused; /* unused in the original; reserves 8 bytes */
@@ -147,7 +148,10 @@ BurstTask *func_801E8DB8(void) {
 
 /* Set up the burst: the screen as two triangles per 16x16 cell over a
  * 320x224 grid (textured from the copy at 0x2c0,0x100), each corner's
- * distance from the centre (variant 1: twice it; otherwise 3/5 of it). */
+ * distance from the centre (variant 1: twice it; otherwise 3/5 of it).
+ * NON_MATCHING: as func_801E8320, the original works from spilled copies of
+ * the strength-reduced row/column offsets and keeps 0x80 in s7; register
+ * allocation and spills differ (1032 bytes here, 1016 in the original). */
 #ifdef NON_MATCHING
 BurstTask *func_801E8DF0(BurstTask *burst) {
     BurstCell *cell;

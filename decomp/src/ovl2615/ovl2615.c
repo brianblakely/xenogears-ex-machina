@@ -39,7 +39,10 @@ void func_801E4048(void) {
 
 /* Place the formation: party and enemy presence, ids and groups from the
  * formation record, group membership and each member's standing position
- * from the battle scene data. */
+ * from the battle scene data.
+ * NON_MATCHING: the original indexes the formation record (D_8006F9DC) with
+ * i itself; here loop optimization combines its repeated reads into reduced
+ * pointers (and eliminates i), and the later loops' registers differ. */
 #ifdef NON_MATCHING
 void func_801E4160(void) {
     s32 i;
