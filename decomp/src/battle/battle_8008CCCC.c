@@ -4097,16 +4097,15 @@ void func_8009B1E4(void) {
     D_8006ECF4[10].field17 = 7;
 }
 
-#ifdef NON_MATCHING
 /* Raise an attack's damage: by half for each of characters 0 and 3 in the
  * party below half HP (gear HP in a gear) and again below a quarter; then a
  * critical chance (10%, 60% with attacker flag 0x200) multiplies it by 1.5
- * (2 with attacker flag 0x400). */
+ * (2 with attacker flag 0x400). Each HP test is written per record kind
+ * (cross-jumping merges the two tails), and the chance and scale defaults
+ * follow the bonus. */
 void func_8009B46C(u16 *damage) {
     u8 count = 0;
     u8 i;
-    u32 hp;
-    u32 maxHp;
     s32 chance;
     s16 scale;
 
@@ -4116,39 +4115,43 @@ void func_8009B46C(u16 *damage) {
 
         if (record->pilot.characterId == 0) {
             if (D_800CCCE8.records[i].flags15A & 0x80) {
-                maxHp = record->gear.maxHp;
-                hp = record->gear.hp;
+                if (record->gear.hp < record->gear.maxHp >> 1) {
+                    count++;
+                }
+                if (record->gear.hp < record->gear.maxHp >> 2) {
+                    count++;
+                }
             } else {
-                maxHp = record->pilot.maxHp;
-                hp = record->pilot.hp;
-            }
-            if (hp < maxHp >> 1) {
-                count++;
-            }
-            if (hp < maxHp >> 2) {
-                count++;
+                if (record->pilot.hp < record->pilot.maxHp >> 1) {
+                    count++;
+                }
+                if (record->pilot.hp < record->pilot.maxHp >> 2) {
+                    count++;
+                }
             }
         }
         if (record->pilot.characterId == 3) {
             if (D_800CCCE8.records[i].flags15A & 0x80) {
-                maxHp = gear->maxHp;
-                hp = gear->hp;
+                if (gear->hp < gear->maxHp >> 1) {
+                    count++;
+                }
+                if (gear->hp < gear->maxHp >> 2) {
+                    count++;
+                }
             } else {
-                maxHp = record->pilot.maxHp;
-                hp = record->pilot.hp;
-            }
-            if (hp < maxHp >> 1) {
-                count++;
-            }
-            if (hp < maxHp >> 2) {
-                count++;
+                if (record->pilot.hp < record->pilot.maxHp >> 1) {
+                    count++;
+                }
+                if (record->pilot.hp < record->pilot.maxHp >> 2) {
+                    count++;
+                }
             }
         }
     }
-    chance = 10;
     if (count) {
         *damage += count * (*damage >> 1);
     }
+    chance = 10;
     scale = 3;
     if (D_800C3E00->pilot.flags32 & 0x400) {
         scale = 4;
@@ -4160,9 +4163,6 @@ void func_8009B46C(u16 *damage) {
         *damage = scale * *damage >> 1;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8008CCCC", func_8009B46C);
-#endif
 
 /* Show the message for an applied status, named by its kind and flag bit. */
 void func_8009B684(u8 kind, u16 flag) {
