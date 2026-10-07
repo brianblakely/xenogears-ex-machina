@@ -100,8 +100,12 @@ void func_80085738(void) {
 
 #ifdef NON_MATCHING
 /* Load a movie's sound-effect bank (file 0x115 + bank) and seek the movie
- * sound timeline past the bank's 0xffff-terminated runs. */
+ * sound timeline past the bank's 0xffff-terminated runs.
+ * NON_MATCHING: the original copies the loaded bank from s0 into s1 (s0
+ * then holds the file) and recomputes bank + 1 in the loop test; this
+ * keeps the bank in s1 directly and hoists bank + 1 into s0. */
 void func_80085788(void) {
+    u16 *times;
     s32 bank;
     s32 file;
     s32 pos;
@@ -119,9 +123,10 @@ void func_80085788(void) {
         func_8003BDFC(0x10);
         func_80028470(4, 0);
         pos = 0;
+        times = &D_800AE060[0][0];
         for (i = 0; i < bank + 1; i++) {
             while (1) {
-                if (D_800AE060[pos][0] == 0xFFFF) {
+                if (times[pos * 2] == 0xFFFF) {
                     break;
                 }
                 pos++;
@@ -3109,7 +3114,6 @@ void func_8008E9F8(void) {
     D_800B00C0 = 1;
 }
 
-#ifdef NON_MATCHING
 /* Event 0xa0: once sound is available, request a movie: file op1, the
  * parameters at 800c3a2a/2c/2e from op3/op5/op7 and its sound bank op9
  * (selected operands, flags byte 11), with the default window and fade. */
@@ -3126,9 +3130,9 @@ void func_8008EA58(void) {
     FIELD_MOVIE.sound_bank = func_8009D088(9, EVENT_OPERAND_BYTE(0xB));
     FIELD_MOVIE.width = 0x140;
     D_800ADB80 = 0x40;
-    FIELD_MOVIE.depth24 = 1;
     FIELD_MOVIE.height = 0x100;
     FIELD_MOVIE.source_x = 0;
+    FIELD_MOVIE.depth24 = 1;
     FIELD_MOVIE.y = 0;
     FIELD_MOVIE.x = 0;
     FIELD_MOVIE.source_y = 0x100;
@@ -3139,9 +3143,6 @@ void func_8008EA58(void) {
     D_800B00C0 = 1;
     D_800B0078->pc += 0xC;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_8008EA58);
-#endif
 
 #ifdef NON_MATCHING
 /* Event 0x60: once sound is available, request movie op1 with parameters
@@ -4437,30 +4438,31 @@ void func_80092808(void) {
  * is 40 units along direction `angle` from the running actor (publishing
  * the field id first when 800adbec asks). Returns -1 while walking (mode 1
  * retries the instruction) and 0 once it has arrived or is stuck, when it
- * stops, turns and the instruction continues. */
+ * stops, turns and the instruction continues.
+ * NON_MATCHING: register allocation only: the original keeps x in s0 and z
+ * in s1 (here swapped) and joins the two goal paths with z in a3 (copied
+ * from s1 when mode != 0). */
 s32 func_80092894(s32 angle, s32 mode, s32 x, s32 z) {
-    FieldDescriptor *descriptor;
     FieldActor *player;
     FieldModel *model;
-    s16 from_x;
-    s16 from_z;
+    s32 from_x;
+    s32 from_z;
     s32 reach;
-    s32 dx;
-    s32 dz;
     s32 value;
     s32 field;
+    s32 direction;
+    s32 dx;
+    s32 dz;
     VECTOR delta;
-    u16 heading;
 
     D_800B2078.encounter_inhibition = -1;
-    descriptor = &D_800AF880.components.descriptors[D_800B2078.controlled];
-    player = descriptor->actor;
-    model = descriptor->model;
+    player = D_800AF880.components.descriptors[D_800B2078.controlled].actor;
+    model = D_800AF880.components.descriptors[D_800B2078.controlled].model;
     player->layer_flags |= 0x38;
     model->unk18 = 0x80000;
+    reach = func_80099A8C(8) * 2;
     from_x = WHOLE(player->position[0]);
     from_z = WHOLE(player->position[2]);
-    reach = func_80099A8C(8) * 2;
     if (mode == 0) {
         if (D_800ADBDC == 0 || D_800ADBE4 == 0) {
             D_800B00C0 = 1;
@@ -4473,9 +4475,9 @@ s32 func_80092894(s32 angle, s32 mode, s32 x, s32 z) {
             func_800A3074(2, value);
             D_8004F34C = field;
         }
-        angle = D_800B06B8->rotation.vy + angle - 0x400;
-        x = D_800B0078->unk60 + WHOLE(D_800B0078->position[0]) + ((func_8003F8CC(angle) * 40) >> 12);
-        z = D_800B0078->unk64 + WHOLE(D_800B0078->position[2]) + (-(func_8003F8B0(angle) * 40) >> 12);
+        direction = D_800B06B8->rotation.vy + angle - 0x400;
+        x = D_800B0078->unk60 + WHOLE(D_800B0078->position[0]) + ((func_8003F8CC(direction) * 40) >> 12);
+        z = D_800B0078->unk64 + WHOLE(D_800B0078->position[2]) + (-(func_8003F8B0(direction) * 40) >> 12);
     }
     dx = x - from_x;
     dz = z - from_z;
@@ -4483,22 +4485,9 @@ s32 func_80092894(s32 angle, s32 mode, s32 x, s32 z) {
     delta.vy = 0;
     delta.vz = dz;
     if (reach < func_80099A4C(dx, dz)) {
-        if (player->last_position[0] == WHOLE(player->position[0]) &&
-            player->last_position[1] == WHOLE(player->position[1]) &&
-            player->last_position[2] == WHOLE(player->position[2])) {
-            player->stuck++;
-        } else {
-            player->stuck = 0;
-        }
-        if ((s16)player->stuck <= 0x40) {
-            player->heading_goal = player->heading = func_8007B694(&delta);
-            D_800B00C0 = 1;
-            if (mode != 0) {
-                D_800B0078->pc -= 1;
-            }
-            return -1;
-        }
+        goto walk;
     }
+arrive:
     player->heading_goal = player->heading = player->heading_goal | 0x8000;
     model->unk18 = 0;
     player->unkE8 = 0;
@@ -4513,6 +4502,23 @@ s32 func_80092894(s32 angle, s32 mode, s32 x, s32 z) {
     player->stuck = 0;
     D_800B0078->pc += 6;
     return 0;
+walk:
+    if (player->last_position[0] == WHOLE(player->position[0]) &&
+        player->last_position[1] == WHOLE(player->position[1]) &&
+        player->last_position[2] == WHOLE(player->position[2])) {
+        player->stuck++;
+    } else {
+        player->stuck = 0;
+    }
+    if ((s16)player->stuck > 0x40) {
+        goto arrive;
+    }
+    player->heading_goal = player->heading = func_8007B694(&delta);
+    D_800B00C0 = 1;
+    if (mode != 0) {
+        D_800B0078->pc -= 1;
+    }
+    return -1;
 }
 #else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_80092894);
@@ -5872,7 +5878,7 @@ void func_800962C0(void) {
     }
 }
 
-void func_8009635C(s32 item);
+s32 func_8009635C(s32 item);
 
 /* Give one of item operand 1. */
 void func_8009631C(void) {
@@ -5883,10 +5889,10 @@ void func_8009631C(void) {
 s32 func_800951B8(s32 item);
 
 
-#ifdef NON_MATCHING
 /* Add one of `item` (list in the high byte) up to 99, or take a free slot.
- * NON_MATCHING: the original shares the final count store of both paths. */
-void func_8009635C(s32 item) {
+ * Declared int without a return value, as the original's unfilled branch
+ * delay slot shows (v0 stays live to the exit). */
+s32 func_8009635C(s32 item) {
     s32 slot;
     u8 *counts;
     u8 *ids;
@@ -5906,9 +5912,6 @@ void func_8009635C(s32 item) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_8009635C);
-#endif
 
 /* Take one of item operand 1; an emptied slot's id becomes 0xFF. */
 void func_8009640C(void) {
@@ -6776,10 +6779,16 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_80098CAC
 #endif
 
 #ifdef NON_MATCHING
+/* Event arc jump: set up a parabolic move to an operand position (modes
+ * 0-2) or step it (3; 0xf re-reads the floor triangles).
+ * NON_MATCHING: case 2's abs(peak - (y >> 16)) keeps the difference in s0
+ * (`subu s0,s0,v0; bgez s0; move a0,s0; negu a0,a0`) where the original
+ * keeps it in v0 and negates it into a0 (`negu a0,v0`); the folded
+ * ternary, if-statement and temporary forms do not reproduce it. */
 void func_80099214(void) {
     VECTOR normals[4];
     SVECTOR points[4];
-    u8 unused[0x20];
+    SVECTOR unused[4]; /* unused in the original; reserves 0x20 bytes */
     FieldModel *model;
     u8 *code;
     u16 pc;
@@ -7406,13 +7415,11 @@ void func_8009AE3C(s32 target, s32 steps) {
     D_800AF880.flags &= 0xDFFF;
 }
 
-#ifdef NON_MATCHING
 /* Walk party slot `slot`'s member one gather step toward (x, z). Returns 0
  * when the member is absent, disabled or has arrived (it is then placed at
  * (x, z) facing `facing`, or its own heading for 0xff) and -1 while it is
  * still walking; a member stuck for 0x40 steps or an override warps. */
 s32 func_8009AEE0(s32 slot, s32 x, s32 z, s32 facing) {
-    FieldDescriptor *descriptor;
     FieldModel *model;
     FieldActor *actor;
     FieldActor *saved;
@@ -7423,18 +7430,16 @@ s32 func_8009AEE0(s32 slot, s32 x, s32 z, s32 facing) {
     s32 distance;
     s32 dz;
     VECTOR delta;
-    u16 heading;
 
     member = D_8005A444[slot];
     if (member == 0xFF) {
         return 0;
     }
-    descriptor = &D_800AF880.components.descriptors[member];
-    if (descriptor->flags & 0x20) {
+    if (D_800AF880.components.descriptors[member].flags & 0x20) {
         return 0;
     }
-    model = descriptor->model;
-    actor = descriptor->actor;
+    model = D_800AF880.components.descriptors[member].model;
+    actor = D_800AF880.components.descriptors[member].actor;
     if (model->unk18 == 0) {
         model->unk18 = 0x4000000 / (u16)actor->unk76;
     }
@@ -7450,15 +7455,13 @@ s32 func_8009AEE0(s32 slot, s32 x, s32 z, s32 facing) {
     arrive:
         if (!(actor->flags & 0x8000)) {
             if (facing == 0xFF) {
-                heading = actor->heading_goal | 0x8000;
+                actor->heading_goal = actor->heading = actor->heading_goal | 0x8000;
             } else {
-                heading = D_800AEA34[facing] | 0x8000;
+                actor->heading_goal = actor->heading = D_800AEA34[facing] | 0x8000;
             }
         } else {
-            heading = actor->unk11C | 0x8000;
+            actor->heading_goal = actor->heading = actor->unk11C | 0x8000;
         }
-        actor->heading = heading;
-        actor->heading_goal = heading;
         actor->position[0] = x << 16;
         actor->position[2] = z << 16;
         actor->stuck = 0;
@@ -7485,9 +7488,6 @@ s32 func_8009AEE0(s32 slot, s32 x, s32 z, s32 facing) {
     }
     return -1;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_8009AEE0);
-#endif
 
 /* Force the party position. */
 void func_8009B15C(void) {
@@ -7773,7 +7773,11 @@ void func_8009BB0C(void) {
 
 #ifdef NON_MATCHING
 /* Event 0xa9: once this actor's dialogue window has its answer (or is
- * still being typed), highlight lines op1 >> 4 .. op1 & 0xf as a choice. */
+ * still being typed), highlight lines op1 >> 4 .. op1 & 0xf as a choice.
+ * NON_MATCHING: after the 0xff store the original loads the actor, the
+ * script base and the operand before reloading `window`, and stores
+ * unk37e, unk382 and unk380 in that order; GCC here reloads `window` first
+ * and stores unk382 before unk37e. */
 void func_8009BC98(void) {
     s32 window;
     u32 first;
@@ -7781,7 +7785,7 @@ void func_8009BC98(void) {
     if (func_8009CD18(&window) == 0) {
         D_800AFC7C += 8;
         if (func_80033CD0(&D_800C2698[window].text) == 1 ||
-            (D_800C2698[window].text.unk84 != 0 && D_800C2698[window].text.unk6C != 0)) {
+            ((&D_800C2698[window].text)->unk84 != 0 && (&D_800C2698[window].text)->unk6C != 0)) {
             D_800C2698[window].status = 0;
             D_800B0078->unk081 = 0xFF;
             first = EVENT_OPERAND_BYTE(1) >> 4;
@@ -8846,7 +8850,11 @@ void func_8009E574(s32 x, s32 z) {
 }
 
 #ifdef NON_MATCHING
-/* Set the current actor's height `y` (whole units). */
+/* Set the current actor's height `y` (whole units).
+ * NON_MATCHING: the original opens an empty 0x18-byte frame with no saved
+ * registers and computes `y << 16` before loading D_800B0078 (load delay
+ * left as a nop); an unused 0x18-byte local reproduces the frame but not
+ * that order. */
 void func_8009E810(s32 y) {
     D_800B0078->position[1] = y << 16;
     D_800B0078->unkEC = y;
@@ -9191,7 +9199,12 @@ s16 func_8009E330(s32 offset);
 #ifdef NON_MATCHING
 /* Place the current actor at entry point `entry` of the bytecode's entry
  * table (when present): layer, x/z, camera octant and facing (0xFF: from
- * variables 8 and 6). */
+ * variables 8 and 6).
+ * NON_MATCHING: the original sets the return 0 in the first branch's delay
+ * slot, keeps heading/facing in a1, stores D_800AF880.heading as the
+ * sign-extended (heading << 16) >> 16 shared with heading_high, and copies
+ * facing to v1 before its three stores; GCC here folds the extension away
+ * (heading's range is known) and stores facing straight from a0. */
 s32 func_8009FA54(s32 entry) {
     s32 marker;
     s32 record;
@@ -9501,7 +9514,10 @@ void func_800A06E8(void) {
 #ifdef NON_MATCHING
 /* Event 16: the current actor becomes party character operand 1 (ff, fe, fd: party slots 2, 1, 0). A party member takes its slot (slot 0 becomes the controlled actor), its sprite (or sprite 800ae294[character] of the alternate set 800b2268) and map entry variable 2; others hide and end their script.
  * NON_MATCHING: the original reuses the 800b2268 value loaded for the test in
- * the sprite index; this form reloads it. */
+ * the sprite index, adding it after sprites + (index + 1); this form reloads
+ * it and folds the + 1 into the load offset. (Writing the sum as
+ * `sprites + (index + 1) - -alt` reproduces both, apart from a v0/v1 swap,
+ * but is not plausible source.) */
 void func_800A08B8(void) {
     FieldDescriptor *descriptor;
     s32 character;
@@ -9659,7 +9675,11 @@ void func_800A0EE8(void) {
     D_800B00C0 = 1;
 }
 
-#ifdef NON_MATCHING
+/* Layer model command for the current actor's layer (yields while
+ * D_800ADB2C or func_8008A558 is busy): operand 1 = 0 deactivates the
+ * layer's model, 1 starts loading its two resources (files 0x6ba/0x6bb +
+ * 2 * operand 5), 2 waits for the load and then builds the model at the
+ * actor's position. */
 void func_800A0FD8(void) {
     s32 layer;
 
@@ -9689,29 +9709,26 @@ void func_800A0FD8(void) {
         D_800B0078->pc += 2;
         break;
     case 2:
-        if (func_80028A60(1) != 0) {
+        if (func_80028A60(1) == 0) {
+            func_800ACDEC(2);
+            func_801E742C(layer, 0, D_8005A420[layer], D_8005A450[layer],
+                          (s16)(0x240 - (layer + D_800B2078.unk225F[layer]) * 64), 0x100, 0,
+                          (s16)(layer + 0xFC), &D_800B2078.layer_angles[layer]);
+            D_800B2078.layer_depths[layer] = D_801E8670[layer]->scale;
+            func_800320E8(D_8005A450[layer]);
+            D_800B0078->pc += 4;
+            D_800B0078->layer_flags |= 0x2000;
+            D_801E8670[layer]->scale = (D_800B0078->scale[0] * 5) >> 6;
+            D_801E8670[layer]->y = D_800B0078->position[1] >> 16;
+            D_801E8670[layer]->model->x = WHOLE(D_800B0078->position[0]);
+            D_801E8670[layer]->model->z = WHOLE(D_800B0078->position[2]);
+        } else {
             D_800B0078->pc--;
-            break;
         }
-        func_800ACDEC(2);
-        func_801E742C(layer, 0, D_8005A420[layer], D_8005A450[layer],
-                      0x240 - ((layer + D_800B2078.unk225F[layer]) << 6), 0x100, 0, layer + 0xFC,
-                      &D_800B2078.layer_angles[layer]);
-        D_800B2078.layer_depths[layer] = D_801E8670[layer]->scale;
-        func_800320E8(D_8005A450[layer]);
-        D_800B0078->pc += 4;
-        D_800B0078->layer_flags |= 0x2000;
-        D_801E8670[layer]->scale = (D_800B0078->scale[0] * 5) >> 6;
-        D_801E8670[layer]->y = D_800B0078->position[1] >> 16;
-        D_801E8670[layer]->model->x = WHOLE(D_800B0078->position[0]);
-        D_801E8670[layer]->model->z = WHOLE(D_800B0078->position[2]);
         break;
     }
     D_800B00C0 = 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_800A0FD8);
-#endif
 
 /* Give the current actor the field's first sprite on the next free 801e
  * layer (operand 1: layer parameter) and show it. */
@@ -10448,8 +10465,12 @@ void func_800A31E8(void) {
     func_800A3074(0x22, WHOLE(D_800AF880.components.descriptors[D_800B2078.controlled].actor->position[1]));
 }
 
-#ifdef NON_MATCHING
+/* Read the field state block at D_8005A4E4 back (the inverse of
+ * func_800A3F4C): descriptor count, view, collision attributes, D_800B2078
+ * and the per-actor records, keeping each actor's list pointer and
+ * allocating its link and unk114 blocks as the record says. */
 void func_800A3474(void) {
+    FieldDescriptor *descriptor;
     s32 i;
     s32 flags;
     s32 *list;
@@ -10468,11 +10489,12 @@ void func_800A3474(void) {
     COPY_BLOCK(&D_800AF880, D_800AFC50, 0x1C8);
     D_800AFC50 += 0x1C8;
     for (i = 0; i < D_800ADBFC; i++) {
-        COPY_BLOCK(&D_800AF880.components.descriptors[i].rotation, D_800AFC50, 8);
+        descriptor = &D_800AF880.components.descriptors[i];
+        COPY_BLOCK(&descriptor->rotation, D_800AFC50, 8);
         D_800AFC50 += 8;
         COPY_BLOCK(&flags, D_800AFC50, 4);
-        D_800AFC50 += 4;
         D_800AF880.components.descriptors[i].flags = flags;
+        D_800AFC50 += 4;
         D_800AFC50 += 0x30;
         list = D_800AF880.components.descriptors[i].actor->list;
         COPY_BLOCK(D_800AF880.components.descriptors[i].actor, D_800AFC50, 0x138);
@@ -10492,11 +10514,13 @@ void func_800A3474(void) {
     COPY_BLOCK(D_800C3A68, D_800AFC50, 0x800);
     D_800AFC50 += 0x800;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_800A3474);
-#endif
 
 #ifdef NON_MATCHING
+/* Read the descriptor count, view block and per-actor records from the
+ * block at D_8005A4E4, passing each model its record (func_80021D50).
+ * NON_MATCHING: the original forms the first descriptor pointer offset
+ * first (`addu a0,s1,v0`) and keeps it in a0 with the actor in a1; the
+ * pointer local here adds base first and swaps a0/a1 through both blocks. */
 void func_800A3C8C(void) {
     s32 changed;
     s32 i;
@@ -10527,12 +10551,11 @@ void func_800A3C8C(void) {
             func_80021D50(descriptor->model, D_800AFC50);
         }
         record = D_800AFC50;
-        descriptor = &D_800AF880.components.descriptors[i];
         D_800AFC50 = record + 0x168;
-        if (descriptor->actor->unk134 & 0x80) {
+        if (D_800AF880.components.descriptors[i].actor->unk134 & 0x80) {
             D_800AFC50 = record + 0x174;
         }
-        if (descriptor->actor->state.word & 0x1000) {
+        if (D_800AF880.components.descriptors[i].actor->state.word & 0x1000) {
             D_800AFC50 += 0x10;
         }
     }
@@ -10542,6 +10565,13 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_800A3C8C
 #endif
 
 #ifdef NON_MATCHING
+/* Write the field state block at D_8005A4E4 (descriptor count, view,
+ * collision attributes, D_800B2078, per-actor records and D_800C3A68) and
+ * print its size.
+ * NON_MATCHING: the original adds the descriptor base before the index for
+ * the rotation copy (a descriptor pointer for that copy alone reproduces
+ * it) and holds &D_8005A4E4 in s1, loaded before D_800C268C, for the size
+ * computed in the branch delay slot. */
 void func_800A3F4C(void) {
     s32 i;
     s32 flags;

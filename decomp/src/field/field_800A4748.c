@@ -1531,13 +1531,24 @@ void func_800A84C0(void) {
 /* Build the status panel: load its image, allocate the quads of both
  * buffers and texture each piece from its frame (flip in flags bits 0-3,
  * 4- or 8-bit page by bits 4-7). The original passes the coordinates to
- * 8007a44c unconverted (no s16 prototype in scope: a separate unit). */
+ * 8007a44c unconverted (no s16 prototype in scope: a separate unit).
+ * NON_MATCHING: the original addresses D_800AFC60/D_800AFC64 by symbol
+ * (no hoisted base), indexes the layout and frame tables as i * 8 from
+ * hoisted bases (fp = layout + 6, s5 = frames + 4) with a second copy of
+ * i, and has v in t0 and w in t1; GCC here strength-reduces the table
+ * pointers and keeps &D_800AFC60 in a register. */
 void func_800A8BA4(void) {
     POLY_FT4 *quad;
     POLY_FT4 *copy;
-    PanelFrame *frame;
     s32 mode;
     s32 i;
+    s32 x;
+    s32 y;
+    s32 frame;
+    s32 u;
+    s32 v;
+    s32 w;
+    s32 h;
 
     func_800A8314();
     mode = 0;
@@ -1561,32 +1572,33 @@ void func_800A8BA4(void) {
         }
         quad->tpage = GetTPage(0, mode, 0x380, 0);
         SetSemiTrans(quad, 1);
-        frame = &D_800AEB68[D_800AEF10[i].frame];
-        quad->x0 = D_800AEF10[i].x;
-        quad->y0 = D_800AEF10[i].y;
-        quad->y1 = D_800AEF10[i].y;
-        quad->x2 = D_800AEF10[i].x;
-        quad->x1 = D_800AEF10[i].x + frame->w;
-        quad->y2 = D_800AEF10[i].y + frame->h;
-        quad->x3 = D_800AEF10[i].x + frame->w;
-        quad->y3 = D_800AEF10[i].y + frame->h;
+        frame = D_800AEF10[i].frame;
+        x = D_800AEF10[i].x;
+        y = D_800AEF10[i].y;
+        w = D_800AEB68[frame].w;
+        h = D_800AEB68[frame].h;
+        u = D_800AEB68[frame].u;
+        v = D_800AEB68[frame].v;
+        quad->x0 = x;
+        quad->y0 = y;
+        quad->y1 = y;
+        quad->x2 = x;
+        quad->x1 = x + w;
+        quad->y2 = y + h;
+        quad->x3 = x + w;
+        quad->y3 = y + h;
         switch (D_800AEF10[i].flags & 0xF) {
         case 0:
-            func_8007A44C(quad, frame->u, frame->v, frame->u + frame->w, frame->v, frame->u,
-                          frame->v + frame->h, frame->u + frame->w, frame->v + frame->h);
+            func_8007A44C(quad, u, v, u + w, v, u, v + h, u + w, v + h);
             break;
         case 1:
-            func_8007A44C(quad, frame->u + frame->w - 1, frame->v, frame->u - 1, frame->v,
-                          frame->u + frame->w - 1, frame->v + frame->h, frame->u - 1, frame->v + frame->h);
+            func_8007A44C(quad, u + w - 1, v, u - 1, v, u + w - 1, v + h, u - 1, v + h);
             break;
         case 2:
-            func_8007A44C(quad, frame->u, frame->v + frame->h - 1, frame->u + frame->w, frame->v + frame->h - 1,
-                          frame->u, frame->v - 1, frame->u + frame->w, frame->v - 1);
+            func_8007A44C(quad, u, v + h - 1, u + w, v + h - 1, u, v - 1, u + w, v - 1);
             break;
         case 3:
-            func_8007A44C(quad, frame->u + frame->w - 1, frame->v + frame->h - 1, frame->u - 1,
-                          frame->v + frame->h - 1, frame->u + frame->w - 1, frame->v - 1, frame->u - 1,
-                          frame->v - 1);
+            func_8007A44C(quad, u + w - 1, v + h - 1, u - 1, v + h - 1, u + w - 1, v - 1, u - 1, v - 1);
             break;
         }
         *copy = *quad;
