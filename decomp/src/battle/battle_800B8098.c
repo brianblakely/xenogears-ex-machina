@@ -710,8 +710,9 @@ void func_800B9C00(sprite, other)
  * (800B9284), 0xF4 sets the command sound and step, 0xFB swaps stage
  * objects, 0xFC sets a stage object's byte, 0xFD/0xF9 and commands run
  * 800AA320 on the event's targets, 0xFE turns the turn's slot to them and
- * ends (state 10), 0xFF ends (state 9). Nonmatching: the original keeps
- * slot in s2 and type in s3; here they are swapped. */
+ * ends (state 10), 0xFF ends (state 9). Nonmatching: only the shared tail
+ * calling 800BEE2C with the next event's target mask differs, in register
+ * choice ($a3/$v1/$a1 for the counter's %hi, value and the area). */
 void func_800B9C78(void) {
     s32 slot;
     BattleSprite *sprite;
@@ -724,7 +725,8 @@ void func_800B9C78(void) {
         return;
     }
     func_800BF9EC();
-    func_800BEFF4(BATTLE_AREA.events[D_800C360C].actor);
+    slot = BATTLE_AREA.events[D_800C360C].actor;
+    func_800BEFF4(slot);
     func_800BF3E8(D_800C3610->sprite);
     slot = D_800C3610->slot;
     sprite = BATTLE_AREA.sprites[slot];
