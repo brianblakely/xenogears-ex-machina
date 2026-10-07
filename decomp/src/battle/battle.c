@@ -2426,9 +2426,10 @@ s32 func_80086B88(s32 step, u8 member) {
  * entries per image cell) and place its quad after `column` + 1 steps, then
  * upload the step's fuel cost digits and place their quad. Returns the next
  * index. The fuel cost is read through the draw state (800ccb34 + 0x60d8):
- * the draw state and the work area form one aggregate. Nonmatching: the
- * original stores the digit rectangles from the frame base (not from the
- * call's rectangle address) and swaps $s7/$fp (index, digit pointer). */
+ * the draw state and the work area form one aggregate. The digit rectangle
+ * is filled with setRECT (stored from the frame base, apart from the call's
+ * rectangle address). Nonmatching: $s7/$fp (index, digit pointer) are
+ * swapped and the 0xFF compare uses $t0 for the constant. */
 #ifdef NON_MATCHING
 s32 func_80086C88(u8 member, s32 index, s32 column, u8 step, u32 **pixels) {
     RECT rect;
@@ -2439,7 +2440,7 @@ s32 func_80086C88(u8 member, s32 index, s32 column, u8 step, u32 **pixels) {
     s32 count;
     s32 i;
     u8 *fuel;
-    s32 x;
+    s16 x;
 
     count = 0;
     fuel = &D_800C3CF4[5];
@@ -2459,10 +2460,7 @@ s32 func_80086C88(u8 member, s32 index, s32 column, u8 step, u32 **pixels) {
     x = index * 8 + 0x3DE;
     for (i = 0; i < 4; i++) {
         if (fuel[i] != 0xFF) {
-            digits[count].x = x;
-            digits[count].y = 0;
-            digits[count].w = 6;
-            digits[count].h = 0xD;
+            setRECT(&digits[count], x, 0, 6, 0xD);
             func_800769E8(&digits[count], D_800C3E5C[fuel[i]].pixels);
             x += 2;
             count++;
