@@ -18,10 +18,9 @@ void func_801E62E0(u8 *data) {
  * and fill their slot's row; model entries place the model on every enemy
  * slot of their type, and of later model entries sharing their data.
  * NON_MATCHING: the original casts the flags with andi 0xffff after the
- * ori (dropped here), schedules column += 0x40 / same = 0 after the 0x8000
- * row offset, and loads a sprite entry's image offset into a0 with a copy
- * in s0 (here straight into s0, the row offset taking that delay slot and
- * v1 instead of a0). */
+ * ori (dropped here) and loads a sprite entry's image offset into a0 with a
+ * copy in s0 (here straight into s0, the row offset taking that delay slot
+ * and v1 instead of a0); same = 0 is set one instruction later. */
 #ifdef NON_MATCHING
 void func_801E6314(u8 *data) {
     s32 count;
@@ -62,10 +61,10 @@ void func_801E6314(u8 *data) {
                  * original). */
                 continue;
             }
-            column += 0x40;
-            same = 0;
             type = slot - 3;
             D_800C3EB0.rows[slot].data = NULL;
+            same = 0;
+            column += 0x40;
             for (j = 3; j != SLOT_COUNT; j++) {
                 if (type == types[j]) {
                     same++;

@@ -585,7 +585,10 @@ void func_800739B8(void) {
 /* Scroll the horizon texture with the camera yaw, transform the two horizon
  * quads of this buffer and link them, inside their texture windows, into the
  * ordering table. */
-#ifdef NON_MATCHING /* setup scheduling, UV copies and one row-address operand differ */
+/* NON_MATCHING: the original sets up func_8004A92C's arguments first (a0/a1
+ * at the very top) and keeps right and the heading address in t1/t2 (here
+ * t2/t1); one row address adds offset + quad where this adds quad + offset. */
+#ifdef NON_MATCHING
 void func_80073B04(void) {
     SVECTOR *corners;
     HorizonScratch *scratch;
@@ -597,9 +600,10 @@ void func_80073B04(void) {
     s32 otz;
     u32 *ot;
 
+    right = D_8009BD38.vy >> 2;
     corners = D_8009A300[0];
     i = 0;
-    u = (D_8009BD38.vy >> 2) & 0x7F;
+    u = right & 0x7F;
     right = u | 0x80;
     *(u16 *)&D_8009C744[D_8009D7F0].u0 = *(u16 *)&D_8009C744[D_8009D7F0 + 2].u0 = u;
     *(u16 *)&D_8009C744[D_8009D7F0].u1 = *(u16 *)&D_8009C744[D_8009D7F0 + 2].u1 = right;

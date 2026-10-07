@@ -432,10 +432,6 @@ s16 func_80084D00(s32 probe, s16 *hit) {
  * collision faces flat (x, z) and record every face whose outline contains
  * the probe (face number and its attribute) in D_8009D718. Returns a word-sized
  * count of table entries; the caller narrows it to s16. */
-/* NON_MATCHING: the first range check puts its slti result in v0 (the
- * original keeps it in a1 in place) and the z-delta loads take v0/v1 the
- * other way round. */
-#ifdef NON_MATCHING
 s32 func_80084DB8(s32 probe, s32 index) {
     s32 flag;
     SceneObject *object;
@@ -445,25 +441,20 @@ s32 func_80084DB8(s32 probe, s32 index) {
     MeshFace *face;
     s32 count;
     s32 i;
-    s32 dz;
+    s32 dx, dz, far;
     s32 hits;
 
     object = &D_8009C620[index];
-    index = ((VECTOR *)probe)->vx;
-    index >>= 12;
-    index -= object->position.vx;
-    FACE_TEST_SCRATCH->u.test.delta.vx = index;
-    index = index >= 0 ? index : -index;
-    index = index < 0x800;
-    index ^= 1;
+    dx = (((VECTOR *)probe)->vx >> 12) - object->position.vx;
+    FACE_TEST_SCRATCH->u.test.delta.vx = dx;
+    dx = dx >= 0 ? dx : -dx;
+    far = dx >= 0x800;
     dz = object->position.vz - (((VECTOR *)probe)->vz >> 12);
     FACE_TEST_SCRATCH->u.test.delta.vz = dz;
     dz = dz >= 0 ? dz : -dz;
-    dz = dz < 0x800;
-    dz ^= 1;
-    index |= dz;
+    far |= dz >= 0x800;
     scratch = FACE_TEST_SCRATCH;
-    if (index) {
+    if (far) {
         return 0;
     }
     scratch->m = object->matrix;
@@ -507,9 +498,6 @@ s32 func_80084DB8(s32 probe, s32 index) {
     }
     return hits;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80084DB8);
-#endif
 
 /* Project `position` onto face `face` of scene object `index`: `offset` gets
  * the object-relative x/z, `normal` the face normal and offset->vy the

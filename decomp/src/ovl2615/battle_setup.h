@@ -666,7 +666,7 @@ StageBackdrop *func_801E7914(s16 texX, s16 texY, s16 width, s16 height, s16 size
                              CVECTOR *colour, s16 v0C, s16 v0E);
 void func_801E7EC4(void *actors, StageLight *lights, s32 count);
 
-/* The later-compiler units (battle_loader.c, load_modes.c). */
+/* The later-compiler units (battle_loader.c, load_modes.c, burst_modes.c). */
 typedef struct {
     s16 m[3][3];
     s32 t[3];
@@ -861,8 +861,8 @@ void func_80022224(void *binding, void *data, Point image, Point clut, s32 a4);
 void func_80038428(void *bank);                            /* link an effect bank */
 void func_800B14B8(void);
 
-/* Screen transitions (load_modes.c): the screen split into cells that fly
- * apart (shatter, 801e8588) or ripple (burst, 801e91e8). */
+/* Screen transitions (load_modes.c, burst_modes.c): the screen split into
+ * cells that fly apart (shatter, 801e8588) or ripple (burst, 801e91e8). */
 typedef struct {
     SVECTOR rot;         /* +00 */
     u8 pad8[8];
@@ -968,5 +968,19 @@ void func_801E8D48(void *block);
 BurstTask *func_801E8DB8(void);
 BurstTask *func_801E8DF0(BurstTask *task);
 void func_801E91E8(void);
+
+/* Load modes (load_modes.c, burst_modes.c): flip to the other display
+ * buffer and clear its ordering table. */
+static inline void swap_buffers(void) {
+    BattleWork *work = &D_800C3EB0;
+    DrawBuffer *next = &work->buffers[0];
+
+    if (work->current == next) {
+        next = &work->buffers[1];
+    }
+    work->current = next;
+    work->ot = next->ot;
+    ClearOTagR(next->ot, 0x1000);
+}
 
 #endif
