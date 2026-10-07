@@ -2898,7 +2898,12 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_80082620
 /* Move actor `index` for this frame: choose its walk/run mode, turn its
  * requested heading into a velocity (80081f80) plus its additive motion,
  * sweep that against the collision layers, then pick its animation and
- * store the result as its velocity (+30). */
+ * store the result as its velocity (+30).
+ * NON_MATCHING: ours threads the idle test's "heading & 0x8000" jump straight
+ * into the turn branch; the original re-tests it (andi at 80082cf8), so its
+ * two tests were not identical to jump threading (a (s16)heading < 0 form
+ * avoids the threading but tests with bgez). Also index/descriptor swap
+ * s5/s6 and the unk0EA test is laid out differently. */
 void func_80082BB8(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
     VECTOR move;
     SVECTOR edge[2];
