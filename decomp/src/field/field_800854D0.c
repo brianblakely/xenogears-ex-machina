@@ -1998,20 +1998,10 @@ void func_8008B518(void) {
     D_800B0078->pc += 8;
 }
 
-#ifdef NON_MATCHING
 /* Event 0x1b: scroll the current actor's textured polygons by (op1, op3)
- * texels in both draw buffers.
- * Each branch steps the group pointer itself, which gives it the original's
- * allocation priority (group s1, other s2, prims s3).
- * NON_MATCHING: only the else branch's step is placed differently: the
- * original steps the group pointer in the delay slot of the FT3/FT4 branch
- * (bnez; addiu s1,s1,4); here the slot takes the FT3 path's packet copy
- * (move t0,s3) and each path steps the pointer itself. One step before the
- * FT3/FT4 test gives the original's code exactly except that `other` then
- * outranks `group` in global allocation (group s2, other s1): group has 27
- * loop-weighted references over 131 insns against other's 13 over 42, and
- * would need about 31; statement order in the prologue and declaration
- * order do not change it. */
+ * texels in both draw buffers. Each polygon's two group words are stepped
+ * over one at a time (the two steps combine into one add, but count twice
+ * in allocation, which gives group s1, other s2, prims s3). */
 void func_8008B5D4(void) {
     FieldInstance *instance;
     POLY_FT3 *ft3;
@@ -2041,13 +2031,11 @@ void func_8008B5D4(void) {
         header = *group;
         code = header & 0xFF;
         count = header >> 16;
-        if (code == 0xC4) {
-            group++;
-        } else if (code == 0xC8) {
+        if (code == 0xC4 || code == 0xC8) {
             group++;
         } else {
+            group++;
             if (!(header & 8)) {
-                group++;
                 ft3 = (POLY_FT3 *)prims;
                 ft3_other = (POLY_FT3 *)other;
                 for (i = 0; i < count; i++) {
@@ -2063,14 +2051,14 @@ void func_8008B5D4(void) {
                     ft3_other->v0 = ft3->v0;
                     ft3_other->v1 = ft3->v1;
                     ft3_other->v2 = ft3->v2;
-                    group += 2;
+                    group++;
+                    group++;
                     ft3++;
                     ft3_other++;
                 }
                 prims = (u8 *)ft3;
                 other = (u8 *)ft3_other;
             } else {
-                group++;
                 ft4 = (POLY_FT4 *)prims;
                 ft4_other = (POLY_FT4 *)other;
                 for (i = 0; i < count; i++) {
@@ -2090,7 +2078,8 @@ void func_8008B5D4(void) {
                     ft4_other->v1 = ft4->v1;
                     ft4_other->v2 = ft4->v2;
                     ft4_other->v3 = ft4->v3;
-                    group += 2;
+                    group++;
+                    group++;
                     ft4++;
                     ft4_other++;
                 }
@@ -2101,9 +2090,6 @@ void func_8008B5D4(void) {
     }
     D_800B0078->pc += 5;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_8008B5D4);
-#endif
 
 /* Event: once the disc is idle, stop the stream, decode the pending party
  * sprite into its block, release the buffer and apply it; wait otherwise. */
