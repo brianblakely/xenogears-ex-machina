@@ -734,23 +734,3 @@ void func_80032D60(void) {
         node = next;
     }
 }
-
-/* Report output to the host file. */
-void func_80032DCC(char *line) {
-    func_8004C470(D_80059348, line, strlen(line));
-}
-
-/* Write the full heap report to the host file `name`.
- * Nonmatching: the original stores the output hook with lui/sw, not $gp. */
-#ifdef NON_MATCHING
-void func_80032E04(char *name) {
-    func_8004C38C();
-    D_80059348 = PCcreat(name, 0);
-    D_800592B8 = func_80032DCC;
-    func_8003278C(1, 0, 0, -1);
-    D_800592B8 = func_800379C8;
-    PCclose(D_80059348);
-}
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/heap", func_80032E04);
-#endif
