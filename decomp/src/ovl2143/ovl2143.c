@@ -2740,47 +2740,46 @@ void func_801E37D0(Actor *actor) {
  * that release or hand over (0x14 with 0xfd, 0x16, 0x17, 0x5b) return without
  * storing it, and 0x15 copies into an uninitialised block when all actor
  * slots 8 and 9 are used, as in the original.
- * The decoded word is a plain halfword (its low byte read through a u8
- * view), so stores through actor pointers do not make CSE forget it.
- * NON_MATCHING (20 bytes shorter): the case bodies are in the original's
- * order (jump table checked case by case, 19 of 0x71 bodies still differ in
- * size: 13 15 1A 1D 21 25 28 2E 36 37 38 39 40 41 42 4F 5D 63 6F); the
- * original zero-extends the srl-derived bytes (`arg`, `entry`, `high2`) at
- * each use (andi 0xff) but not the lbu-derived ones (`reference`, `low2`)
- * (combine knows their high bits are zero here; a test use of `arg` before
- * the loop, making it live at entry, reproduces every andi and fixes 4F, so
- * the original's bytes are not tracked by combine for some such reason),
- * keeps m/ex/ey/ez and the d/v vectors in block scopes (v and d share a slot,
- * so n and word sit at 0x68/0x6c), and allocates registers differently. */
+ * The script word is an s16 (its bytes taken as (u8)word and
+ * (u8)(word >> 8)): the arithmetic shift narrowed to a byte compiles to
+ * srl, but combine cannot prove the byte's high bits clear, so the original
+ * zero-extends `arg`, `entry` and `high2` (andi 0xff) at every use in a
+ * later block.
+ * Block-scope aggregates take the stack slots of the original: the landing
+ * probe's block frees 16 bytes that 0x25's `d` reuses before n/word (whose
+ * slots are made when their address is first taken) and 0x25's matrix and
+ * vectors; spilled scalars follow in declaration order.
+ * NON_MATCHING (4 bytes longer): case bodies 1D (4 shorter: `reference` is
+ * loaded straight into a3, the original loads it into s0 and copies it) and
+ * 22 (8 longer: `changed` is reloaded after the 0xff compare clobbers its
+ * reload register) differ in size (jump table checked case by case), the
+ * frame is 0x160 vs 0x168, and global allocation differs (actor/pc in s3/s2
+ * vs s4/s3: the original's local allocation also takes s2 in some block,
+ * e.g. 0x3C keeps its volume byte in s2 with s1 free). */
 #ifdef NON_MATCHING
 void func_801E39F0(Actor *actor, SlotPool *pool, s32 changed, s32 ticks, s32 arg4) {
     Actor *self;
     Actor *other;
-    Actor *copy;
     ModelPart *part;
     ModelPart *node;
     VECTOR moved;
     SVECTOR step;
     RECT rect;
-    VECTOR d;
     s32 n;
     u16 *pc;
     u16 *start;
     u16 *counter;
     /* Reused by word decoding and actor-mask resolution. Save decoded
      * bytes before a resolver overwrites the halfword. */
-    u16 word;
-    MATRIX m;
-    VECTOR ex, ey, ez;
-    SVECTOR v;
-    u16 raw;
+    s16 word;
     u16 operand;
     u8 reference, entry, low2, high2;
     u8 op, arg;
     s32 running, redraw;
+    Actor *copy;
+    s32 found;
     s32 i, key;
-    s32 dx, dy, dz, dist, pitch, yaw;
-    s16 c0, c1, c2;
+    s32 dx, dy, dz, dist, pitch, yaw, roll;
     u8 depth;
 
     if (ticks == 0 || actor->pc == 0) {
@@ -2814,12 +2813,15 @@ void func_801E39F0(Actor *actor, SlotPool *pool, s32 changed, s32 ticks, s32 arg
         actor->w4C = 0;
     } else {
         if (actor->w54 != 0) {
-            v.vx = actor->parts->pos[0];
-            v.vy = 0;
-            v.vz = actor->parts->pos[2];
-            v.vy = actor->h60;
-            if (v.vy < actor->parts->pos[1]) {
-                actor->parts->pos[1] = v.vy;
+            SVECTOR unused; /* unused in the original; reserves 8 bytes */
+            SVECTOR probe;
+
+            probe.vx = actor->parts->pos[0];
+            probe.vy = 0;
+            probe.vz = actor->parts->pos[2];
+            probe.vy = actor->h60;
+            if (probe.vy < actor->parts->pos[1]) {
+                actor->parts->pos[1] = probe.vy;
                 pc = (u16 *)actor->w54;
                 actor->w54 = 0;
                 goto aim;
@@ -2839,10 +2841,9 @@ aim:
     }
     while (running) {
         start = pc;
-        raw = *pc++;
-        word = raw;
-        arg = raw >> 8;
-        op = *(u8 *)&word;
+        word = *pc++;
+        arg = word >> 8;
+        op = (u8)word;
         switch (op) {
         case 0x00: /* wait */
             pc = start;
@@ -2927,7 +2928,7 @@ aim:
             word = operand;
             if (n == 0) {
                 entry = operand >> 8;
-                func_801DF7F4(pool, actor->parts, (u16 *)key, entry, *(u8 *)&word);
+                func_801DF7F4(pool, actor->parts, (u16 *)key, entry, (u8)word);
                 changed = -1;
                 size = (s16)((u16 *)key)[8] * (actor->scale * actor->parts->scale[2] >> 12) >> 12;
                 actor->h8E = size < 0 ? -size : size;
@@ -2936,14 +2937,12 @@ aim:
             break;
         }
         case 0x13: /* tween to keyframe */
-            raw = *pc++;
-            word = raw;
-            entry = raw >> 8;
-            reference = *(u8 *)&word;
-            raw = *pc++;
-            word = raw;
-            high2 = raw >> 8;
-            low2 = *(u8 *)&word;
+            word = *pc++;
+            entry = word >> 8;
+            reference = (u8)word;
+            word = *pc++;
+            high2 = word >> 8;
+            low2 = (u8)word;
             key = func_801E6910(actor, reference, &n);
             if (D_801E85CC != 0) {
                 func_801DEF10(actor->parts, (s16 *)key);
@@ -2955,10 +2954,9 @@ aim:
             func_801E632C(actor);
             break;
         case 0x14: /* call an entry in the masked actors */
-            raw = *pc++;
-            word = raw;
-            reference = *(u8 *)&word;
-            entry = raw >> 8;
+            word = *pc++;
+            reference = (u8)word;
+            entry = word >> 8;
             i = func_801E6830(actor, reference, &word);
             func_801E6830(actor, arg, &word);
             depth = actor->depth;
@@ -2979,7 +2977,9 @@ aim:
                 return;
             }
             break;
-        case 0x15: /* clone this actor into a free slot 8 or 9 */
+        case 0x15: { /* clone this actor into a free slot 8 or 9 */
+            ModelPart *parts;
+
             word = *pc++;
             for (n = 8; n < 10; n++) {
                 if (D_801E8670[n] == NULL) {
@@ -3005,21 +3005,24 @@ aim:
             copy->count10E = 0;
             copy->index = n;
             func_801E8510(copy);
-            copy->parts = func_80031BDC(actor->parts->count * sizeof(ModelPart), 1);
+            parts = func_80031BDC(actor->parts->count * sizeof(ModelPart), 1);
+            copy->parts = parts;
             for (n = 0; n < actor->parts->count; n++) {
-                copy->parts[n] = actor->parts[n];
+                parts[n] = actor->parts[n];
                 if (actor->parts[n].parent != NULL) {
-                    copy->parts[n].parent = copy->parts + (actor->parts[n].parent - actor->parts);
+                    parts[n].parent =
+                        parts + ((u32)actor->parts[n].parent - (u32)actor->parts) / sizeof(ModelPart);
                 }
-                copy->parts[n].visible = 0;
-                copy->parts[n].attachments[0] = NULL;
-                copy->parts[n].attachments[1] = NULL;
+                parts[n].visible = 0;
+                parts[n].attachments[0] = NULL;
+                parts[n].attachments[1] = NULL;
             }
-            func_801E6578(pool, (s16)word, actor->parts, copy->parts);
+            func_801E6578(pool, word, actor->parts, parts);
             if (arg != 0xFF) {
                 func_801E35D0(copy, copy, pool, arg);
             }
             break;
+        }
         case 0x16: /* merge back into the actor this one was cloned from */
             func_801E6668(actor->parts, D_801E8670[actor->b21]->parts);
             func_801E8030(actor->index);
@@ -3037,12 +3040,15 @@ aim:
         case 0x19: /* stop the animation */
             func_801E632C(actor);
             break;
-        case 0x1A: /* move a VRAM rectangle (arg bit 0: by the actor's image offset) */
+        case 0x1A: { /* move a VRAM rectangle (arg bit 0: by the actor's image offset) */
+            s16 x, y;
+
             rect.x = *pc++;
             rect.y = *pc++;
-            dx = *pc++;
-            dy = *pc++;
-            rect.w = ((s16)*pc++ + 1) / 2 * 2;
+            x = *pc++;
+            y = *pc++;
+            rect.w = *pc++;
+            rect.w = (rect.w + 1) / 2 * 2;
             rect.h = *pc++;
             if (arg & 1) {
                 if (actor->h90 < 0) {
@@ -3050,34 +3056,21 @@ aim:
                 }
                 rect.x += actor->h90;
                 rect.y += actor->h92;
-                dx += actor->h90;
-                dy += actor->h92;
+                x += actor->h90;
+                y += actor->h92;
             }
-            MoveImage(&rect, (s16)dx, (s16)dy);
-            break;
-        case 0x1D: { /* tween node `arg` between two poses */
-            s32 x0, y0, z0, x1, y1, z1, duration;
-
-            raw = *pc++;
-            word = raw;
-            entry = raw >> 8;
-            reference = *(u8 *)&word;
-            raw = *pc++;
-            word = raw;
-            high2 = raw >> 8;
-            low2 = *(u8 *)&word;
-            changed = -1;
-            x0 = (s16)*pc++;
-            y0 = (s16)*pc++;
-            z0 = (s16)*pc++;
-            x1 = (s16)*pc++;
-            y1 = (s16)*pc++;
-            z1 = (s16)*pc++;
-            duration = (s16)*pc++;
-            func_801E6974(actor, pool, &actor->parts[arg], reference, entry, low2,
-                          high2, x0, y0, z0, x1, y1, z1, duration);
+            MoveImage(&rect, x, y);
             break;
         }
+        case 0x1D: /* tween node `arg` between two poses */
+            word = *pc++;
+            entry = word >> 8;
+            reference = (u8)word;
+            word = *pc++;
+            changed = -1;
+            func_801E6974(actor, pool, &actor->parts[arg], reference, entry, (u8)word, word >> 8,
+                          *pc++, *pc++, *pc++, *pc++, *pc++, *pc++, *pc++);
+            break;
         case 0x1E: /* use the scaled hierarchy update */
             actor->scaled = arg;
             break;
@@ -3153,12 +3146,17 @@ aim:
                 actor->active = arg & 1;
             }
             break;
-        case 0x25: /* attach the masked actors to node (high byte), keeping
-                    * their place (arg bit 0) or at an offset */
-            raw = *pc++;
-            word = raw;
-            entry = raw >> 8;
-            func_801E6830(actor, *(u8 *)&word, &word);
+        case 0x25: { /* attach the masked actors to node (high byte), keeping
+                      * their place (arg bit 0) or at an offset */
+            VECTOR d;
+            MATRIX m;
+            VECTOR ex, ey, ez;
+            SVECTOR v;
+            s16 c0, c1, c2;
+
+            word = *pc++;
+            entry = word >> 8;
+            func_801E6830(actor, (u8)word, &word);
             c0 = *pc++;
             c1 = *pc++;
             c2 = *pc++;
@@ -3206,6 +3204,7 @@ aim:
                 }
             }
             break;
+        }
         case 0x26: /* detach the masked actors */
             func_801E6830(actor, arg, &word);
             for (n = 0; n < 8; n++) {
@@ -3222,35 +3221,40 @@ aim:
             }
             break;
         case 0x28:
-        case 0x29: /* wait until the distance (in h8e units) passes `arg` while
+        case 0x29: { /* wait until the distance (in h8e units) passes `arg` while
                     * node (low byte) tweens with the given time */
+            ModelPart *tween;
+
             dist = func_801E6338(actor);
             if (actor->h8E == 0) {
                 actor->h8E = 1;
             }
             word = *pc++;
-            node = &actor->parts[*(u8 *)&word];
+            tween = &actor->parts[(u8)word];
+            entry = word >> 8;
             dist /= actor->h8E;
-            n = 0;
-            if (node->attachments[0] != NULL) {
-                n = (word >> 8) == node->attachments[0]->time;
-            } else if (node->attachments[1] != NULL &&
-                       node->attachments[1]->time == ((word >> 8) & 0xFF)) {
-                n = 1;
+            found = 0;
+            if (tween->attachments[0] != NULL) {
+                found = entry == tween->attachments[0]->time;
+            } else if (tween->attachments[1] != NULL && tween->attachments[1]->time == entry) {
+                found = 1;
             }
-            if (!n) {
-                pc = start;
-                running = 0;
-            } else if (op == 0x28) {
-                if (dist >= arg) {
+            if (found) {
+                if (op == 0x28) {
+                    if (dist >= arg) {
+                        pc = start;
+                        running = 0;
+                    }
+                } else if (dist < arg) {
                     pc = start;
                     running = 0;
                 }
-            } else if (dist < arg) {
+            } else {
                 pc = start;
                 running = 0;
             }
             break;
+        }
         case 0x2A: /* wait while nearer than h8e */
             if (func_801E6338(actor) >= actor->h8E) {
                 pc = start;
@@ -3276,7 +3280,7 @@ aim:
 
             word = *pc++;
             counter = (u16 *)((u8 *)start + (s16)word);
-            limit = (word = *counter++) >> 8;
+            limit = (u16)(word = *counter++) >> 8;
             *counter = word = *counter + 1;
             if ((s16)word < limit) {
                 pc = counter + 1;
@@ -3304,12 +3308,12 @@ aim:
             break;
         case 0x38: /* move node `arg` toward the target */
             word = *pc++;
-            func_801E5B50(pool, actor->parts, 0, arg, *(u8 *)&word, word >> 8,
+            func_801E5B50(pool, actor->parts, 0, arg, (u8)word, (u8)(word >> 8),
                           actor->target[0], actor->target[1], actor->target[2]);
             break;
         case 0x39: /* the same, flag 1 */
             word = *pc++;
-            func_801E5B50(pool, actor->parts, 1, arg, *(u8 *)&word, word >> 8,
+            func_801E5B50(pool, actor->parts, 1, arg, (u8)word, (u8)(word >> 8),
                           actor->target[0], actor->target[1], actor->target[2]);
             break;
         case 0x33:
@@ -3317,10 +3321,15 @@ aim:
         case 0x3B:
             word = *pc++;
             break;
-        case 0x3C: /* play a sound */
+        case 0x3C: { /* play a sound */
+            u8 sound, volume;
+
             word = *pc++;
-            func_8003A3B8(*(u8 *)&word + func_801E5CD8(actor, arg), 0, word >> 8);
+            sound = word;
+            volume = word >> 8;
+            func_8003A3B8(sound + func_801E5CD8(actor, arg), 0, volume);
             break;
+        }
         case 0x3D: /* run the queued calls once `arg` is among them */
             word = actor->depth;
             if ((s16)word < 2) {
@@ -3332,21 +3341,29 @@ aim:
                 }
             }
             break;
-        case 0x40: /* turn the root to a rotation */
-            c0 = *pc++;
-            c1 = *pc++;
-            c2 = *pc++;
+        case 0x40: { /* turn the root to a rotation */
+            s16 rx, ry, rz;
+
+            rx = *pc++;
+            ry = *pc++;
+            rz = *pc++;
             changed = -1;
-            func_801E59D4(pool, actor->parts, arg, c0, c1, c2);
+            func_801E59D4(pool, actor->parts, arg, rx, ry, rz);
             break;
-        case 0x41: /* turn the root by a rotation */
-            c0 = *pc++;
-            c1 = *pc++;
-            c2 = *pc++;
+        }
+        case 0x41: { /* turn the root by a rotation */
+            s32 rx, ry, rz;
+            ModelPart *root;
+
+            rx = *pc++;
+            ry = *pc++;
+            rz = *pc++;
+            root = actor->parts;
             changed = -1;
-            func_801E59D4(pool, actor->parts, arg, (s16)(actor->parts->rot.vx + c0),
-                          (s16)(actor->parts->rot.vy + c1), (s16)(actor->parts->rot.vz + c2));
+            func_801E59D4(pool, actor->parts, arg, (s16)(root->rot.vx + rx), (s16)(root->rot.vy + ry),
+                          (s16)(root->rot.vz + rz));
             break;
+        }
         case 0x42:
         case 0x43: /* turn the root toward the target (0x43: heading only) */
             dy = actor->target[1] - actor->parts->pos[1];
@@ -3359,11 +3376,12 @@ aim:
                 pitch = ratan2(dy, SquareRoot0(dx * dx + dz * dz));
             }
             yaw = ratan2(-dx, -dz);
+            roll = 0;
             if (dx == 0 && dy == 0 && dz == 0) {
                 break;
             }
+            func_801E59D4(pool, actor->parts, arg, (s16)pitch, (s16)yaw, (s16)roll);
             changed = -1;
-            func_801E59D4(pool, actor->parts, arg, (s16)pitch, (s16)yaw, 0);
             break;
         case 0x44:
             actor->spin[0] = *pc++;
