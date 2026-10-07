@@ -995,9 +995,11 @@ void func_800931B0(void) {
 }
 
 /* Build `steps` fades of 256 CLUT entries towards `colour` (entry 0 stays transparent). */
-/* NON_MATCHING: same instructions and frame; the register allocation differs
- * (the original copies `out` to t5 and gives g/b t9/t8, the r*t product a1
- * and the packed result a0). */
+/* NON_MATCHING: same size and frame. Loading b before g gives g t9, and the
+ * for-increment order gives the original's j++, src++, out++ (delay slot).
+ * Global allocation still differs: here `out` keeps a1 and b takes a0; the
+ * original copies `out` to t5, gives b t8, the r*t product a1 (so its r sum
+ * is formed before the c.b store) and the packed result a0. */
 #ifdef NON_MATCHING
 void func_800931D8(u16 *clut, u16 *out, s32 steps, u8 *colour) {
     CVECTOR c;
@@ -1007,12 +1009,12 @@ void func_800931D8(u16 *clut, u16 *out, s32 steps, u8 *colour) {
     u16 *src;
 
     r = colour[0];
-    g = colour[1];
     b = colour[2];
+    g = colour[1];
     for (i = 0; i < steps; i++) {
         t = (i << 12) / steps;
         src = clut;
-        for (j = 0; j < 0x100; j++) {
+        for (j = 0; j < 0x100; j++, src++, out++) {
             if (*src == 0) {
                 *out = *src;
             } else {
@@ -1023,8 +1025,6 @@ void func_800931D8(u16 *clut, u16 *out, s32 steps, u8 *colour) {
                 *out = (*src & 0x8000) | ((c.r * inv + r * t) >> 15) | (((c.g * inv + g * t) >> 15) << 5) |
                        (((c.b * inv + b * t) >> 15) << 10);
             }
-            src++;
-            out++;
         }
     }
 }
