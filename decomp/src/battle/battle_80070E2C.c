@@ -516,23 +516,20 @@ void func_80072324(void) {
 /* Select the next slot to act: the forced slot, else the next ready slot in
  * the turn order from the cursor; then run the turn procedure. With slots
  * acting together, run their pass instead.
- * Nonmatching: the original loads the first slot before the loop and jumps
- * to its ready test, the loop starting at the position wrap (332 bytes);
- * this lays the loop out from the slot load (300 bytes). An inner
- * `while (ready[slot = order[position]] != 1) { advance; exit at the
- * cursor }` reproduces that inner loop exactly (duplicated first load, wrap
- * at the top, the +1/-1 pair around the ready test), but its found path
- * keeps its own advance and exit test where the original jumps back into
- * the inner loop's wrap. The original layout is the one stmt.c's loop
- * rotation gives a for (;;) that loads slot before the loop and at the end
- * of the body and breaks after `*cursor = 0` (the found test rolled to the
- * end, the advance at the top): that form reproduces the body exactly, but
- * its rolled exit code (18 RTL insns) is short enough for jump.c to
- * duplicate at the entry; the original's was not (somewhere above 22). */
+ * Nonmatching: stmt.c rolls the found test (ready check, actor, cursor
+ * update, break) to the loop end and enters with a jump, as the original
+ * does; with the cursor read as the struct member (loop.c's hoisted address
+ * copied from the entry load) everything else matches. But jump.c (after
+ * deleting unused sets) counts 20 RTL insns of rolled exit code here and
+ * GCC 2.6.3 copies exit code of up to 22 insns to the loop entry (measured
+ * with throwaway stores: 22 copied, 23 kept); the original's was not copied,
+ * so its source spent at least 3 more RTL insns there that later passes
+ * remove. Not found: an s16 slot in `ready[slot = order[position]]` reaches
+ * 23 but leaves sign-extension copies; u8/u16 reach 22 and add andi masks;
+ * re-reading the cursor after the store keeps the load. */
 #ifdef NON_MATCHING
 void func_800723E0(void) {
     s32 position;
-    u8 *cursor;
     s32 slot;
 
     if (D_800D39E0 == 0) {
@@ -544,21 +541,23 @@ void func_800723E0(void) {
             D_800D2DCC.timers[1][slot - 1] = 0;
         } else {
             D_800C3EAC->actor = 0;
-            cursor = &D_800D2DCC.cursor;
-            position = *cursor;
-            do {
-                slot = D_800D2DCC.order[position];
-                if (D_800D2DCC.ready[slot] == 1) {
-                    D_800C3EAC->actor = slot + 1;
-                    if ((*cursor = position + 1) == 11) {
-                        *cursor = 0;
+            position = D_800D2DCC.cursor;
+            for (;;) {
+                if (D_800D2DCC.ready[D_800D2DCC.order[position]] == 1) {
+                    D_800C3EAC->actor = D_800D2DCC.order[position] + 1;
+                    if ((D_800D2DCC.cursor = position + 1) == 11) {
+                        D_800D2DCC.cursor = 0;
+                        break;
                     }
                 }
                 position++;
                 if (position == 11) {
                     position = 0;
                 }
-            } while (position != *cursor);
+                if (position == D_800D2DCC.cursor) {
+                    break;
+                }
+            }
         }
         func_80071B94(0);
     } else {
@@ -577,7 +576,13 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_800723
  * pointer from &D_800C3D18[0].unk3 (la $s5) where this keeps an index, and
  * its $s3/$s4 induction registers are swapped. An explicit EnemyReaction
  * pointer (or pointer arithmetic on D_800C3D18) makes ready[] the walked
- * pointer instead. */
+ * pointer instead. loop.c combines the unk3 address giv with the
+ * (slot - 3) * 4 giv because `reg + symbol` costs no more than the original
+ * address (cost 3); it stays a separate pointer giv only when the field is
+ * read at reg + 3 (cost 1) while slot - 3 is still a giv for present[] and
+ * ready[]. `&D_800C3D18[slot - 3]` folds to slot * 4 + (sym - 12) and drops
+ * that giv (present[] then uses slot, ready[] a pointer); an
+ * `enemy = slot - 3` variable keeps it but ready[] still gets a pointer. */
 #ifdef NON_MATCHING
 void func_8007252C(void) {
     s32 slot;

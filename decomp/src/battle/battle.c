@@ -2742,7 +2742,15 @@ u8 func_80087AF0(u8 member, u8 cost) {
  * the target and keeps the branch: 0 in the delay slot, the offset copied on
  * the fall-through. Every precomputed form tried (a temporary, if/else, a
  * reused base, D_800C3EB0.slots) lets jump.c fold the branch into a
- * store-flag mask; this ternary computes the offset inside the branch.) */
+ * store-flag mask; this ternary computes the offset inside the branch.
+ * With BRANCH_COST 1 jump.c only folds `base = 0; if (c) base = x` and it
+ * first hoists the else when the then-arm is one REG/SUBREG/constant set,
+ * so the original's then-arm was still several insns at jump1 and jump2 and
+ * became a copy of the earlier offset only through CSE. Also tried: an
+ * offset variable with `base += offset` or an if-only arm (cse skip-blocks
+ * then keeps target * 28 across the join, adding $s5), `base = offset; if
+ * (target >= 3) base = 0` (bnez layout), and the 800881B8-style party or
+ * enemy flag with `flag ? 0 : 8` / `flag * 8` in the arm (computed there).) */
 #ifdef NON_MATCHING
 void func_80087EDC(u8 actor, u8 target) {
     u8 base;

@@ -2164,16 +2164,22 @@ void func_80096018(void) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Element adjustment of an attack/defense pair: the command's element (or
  * the attacker's own element status) against the target's weakness, its
  * resistance statuses (which may also force hit result 4) and its single
  * element guards, then a 20% boost for either side's +0x32 bit 0x10.
- * Nonmatching (4 instruction edits): in both target branches the resist
- * bit is taken from the status copy ($v1: srl/andi $v0,$v1) where the
- * original reads the freshly combined word ($v0). CSE folds the resist's
- * zero_extend of word into status = word; with a u32 word the copy is
- * kept but local-alloc's reg-copy optimization still redirects the use. */
+ * Both target branches test the resist bit with the same statement macro;
+ * jump.c turns the first into a bit extract (resist is still 0 there) and
+ * keeps the branch in the second. */
+
+/* Mark the target resistant when its status word has bit 0x2. */
+#define STATUS_RESIST(word, resist) \
+    do {                            \
+        if ((word) & 2) {           \
+            (resist) = 1;           \
+        }                           \
+    } while (0)
+
 void func_80096494(u16 *attack, u16 *defense, s8 *hit) {
     s8 ether = 0;
     u8 flag = 0;
@@ -2222,14 +2228,12 @@ void func_80096494(u16 *attack, u16 *defense, s8 *hit) {
         word = D_800C3E34->pilot.status8C.half.active | D_800C3E34->pilot.status8C.half.permanent;
         bits = (word & 0xF00) >> 8;
         status = word;
-        resist = (word >> 1) & 1;
+        STATUS_RESIST(word, resist);
     } else {
         word = D_800D2DC8->status84.half.active | D_800D2DC8->status84.half.permanent;
         bits = (word & 0xF00) >> 8;
         status = word;
-        if (word & 2) {
-            resist = 1;
-        }
+        STATUS_RESIST(word, resist);
     }
     if ((element & bits) && ether) {
         scale -= 3;
@@ -2287,9 +2291,6 @@ void func_80096494(u16 *attack, u16 *defense, s8 *hit) {
         *defense += *defense / 5U;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8008CCCC", func_80096494);
-#endif
 
 /* Ether check: unless rand % 100 falls below the attacker's +0x5b plus the
  * descriptor's +0x14, the action fails (code 0x38 at +0x5fc7). */
