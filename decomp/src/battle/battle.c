@@ -2428,9 +2428,17 @@ s32 func_80086B88(s32 step, u8 member) {
  * index. The fuel cost is read through the draw state (800ccb34 + 0x60d8):
  * the draw state and the work area form one aggregate. The digit rectangle
  * is filled with setRECT (stored from the frame base, apart from the call's
- * rectangle address). Nonmatching: $s7/$fp (index, digit pointer) are
- * swapped and the 0xFF compare uses $t0 for the constant. */
-#ifdef NON_MATCHING
+ * rectangle address); the cost quad is placed by a statement macro (its
+ * loop block weights the index for register allocation as in the
+ * original). */
+
+/* Place entry `index`'s fuel cost quad (`count` digits) in list 13. */
+#define PLACE_FUEL_COST(index, column, count)                                                                     \
+    do {                                                                                                          \
+        func_80076C78(&D_800D2DB4->list13[(index) * 2 + D_800CCB04.buffer], (index) * 4 + ((column) + 1) * 16 + 0xEA, \
+                      0xC8 - (index) * 16, (index) * 32 + 0x78, 0, (count) * 8);                                  \
+    } while (0)
+
 s32 func_80086C88(u8 member, s32 index, s32 column, u8 step, u32 **pixels) {
     RECT rect;
     RECT digits[4];
@@ -2466,15 +2474,11 @@ s32 func_80086C88(u8 member, s32 index, s32 column, u8 step, u32 **pixels) {
             count++;
         }
     }
-    func_80076C78(&D_800D2DB4->list13[index * 2 + D_800CCB04.buffer], index * 4 + (column + 1) * 16 + 0xEA,
-                  0xC8 - index * 16, index * 32 + 0x78, 0, count * 8);
+    PLACE_FUEL_COST(index, column, count);
     D_800D2DB4->counts[11]++;
     D_800D2DB4->counts[13]++;
     return index + 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80086C88);
-#endif
 
 /* Record gear combo step `step` for the member: unless the target fights in
  * a gear (record +0x15a bit 0x80) or the attack level is 4, the step's flag
