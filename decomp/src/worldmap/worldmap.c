@@ -3,7 +3,12 @@
 /* Overlay entry: set up the display, start a new game's world state if none
  * is set, enter the requested mode and run its main loop until the world
  * map is left, then hand over to the next scene. */
-#ifdef NON_MATCHING /* irreducible mode loop; layout and allocation differ */
+/* NON_MATCHING: the new-game defaults are scheduled differently (the original
+ * loads the shared constants 0x400, 0x7580, 3, 5 and 9 into a1/a3/a0/v1
+ * early and stores 0xFF00 to the s16 unk62 as a positive constant), the
+ * flag word after the setup calls is addressed through a3, and the leave
+ * path keeps D_8009D7CC from the loop test instead of reloading it. */
+#ifdef NON_MATCHING
 void func_80070CFC(void) {
     void (*step)(void);
     void *data;
@@ -98,7 +103,8 @@ void func_80070CFC(void) {
         step();
     check:;
     } while (D_8009D7CC >= 2);
-    if (D_8009D7CC == 0) {
+    switch (D_8009D7CC) {
+    case 0:
         func_800199CC(1);
         func_8001996C(1);
         if (D_8009BBC4 == 0) {
@@ -110,7 +116,8 @@ void func_80070CFC(void) {
             D_8006F954[0] = ((s16 *)D_8009D7D8->data)[5];
         }
         D_8006EF68 = D_8009BD0C + 0x400;
-    } else if (D_8009D7CC == 1) {
+        break;
+    case 1:
         func_800199CC(2);
         func_8001996C(2);
         D_800594F8 = 0;
@@ -123,7 +130,8 @@ void func_80070CFC(void) {
         D_8004F2FC = D_80062528;
         D_80062528 = func_80039850(D_80062648);
         func_80039A80(D_80062528, 0x7F, 0);
-    } else {
+        break;
+    default:
         func_8001996C(0);
         rect.x = 0;
         rect.y = 0;
@@ -131,6 +139,7 @@ void func_80070CFC(void) {
         rect.h = 0x1AF;
         ClearImage(&rect, 0, 0, 0x40);
         DrawSync(0);
+        break;
     }
     D_800591AE = 0;
     func_800762FC();
