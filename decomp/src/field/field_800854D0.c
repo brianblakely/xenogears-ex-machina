@@ -5504,6 +5504,9 @@ void func_80095300(void) {
 #define EVENT_ZONE_CORNER(k) ((EVENT_ZONE.corner[k].z << 16) + EVENT_ZONE.corner[k].x)
 /* The actor the player controls. */
 #define CONTROLLED_ACTOR (D_800AF880.components.descriptors[D_800B2078.controlled].actor)
+/* The trigger zone named by the operand byte code[1]. */
+#define CODE_ZONE(code) (D_800ADBF4[(code)[1]])
+#define CODE_ZONE_CORNER(code, k) ((CODE_ZONE(code).corner[k].z << 16) + CODE_ZONE(code).corner[k].x)
 
 /* Call (operand 2) when the controlled actor stands inside trigger zone
  * operand 1 and the call stack has room; otherwise skip. */
@@ -5533,28 +5536,27 @@ void func_8009533C(void) {
     D_800B0078->pc += 4;
 }
 
-#ifdef NON_MATCHING
 /* As func_8009533C, also requiring the zone's height within the
  * controlled actor's vertical extent.
- * NON_MATCHING: the zone address now has the original (scaled index +
- * table) shape, but the zone and actor address chains are emitted one after
- * the other; the original interleaves them (actor index multiply, zone byte,
- * actor add, zone multiply, actor load, zone add), which neither a Zone/actor
- * pointer local nor operand order in the first comparison reproduces. */
+ * The operand address is formed from pc and then rebased on the bytecode
+ * (set twice, so sched keeps it where the original has it). */
 void func_80095520(void) {
+    u8 *code;
     s32 point;
     s32 a;
     s32 b;
     s32 c;
     s32 d;
 
-    if (EVENT_ZONE.corner[0].y < WHOLE(CONTROLLED_ACTOR->position[1]) &&
-        WHOLE(CONTROLLED_ACTOR->position[1]) - (u16)CONTROLLED_ACTOR->height < EVENT_ZONE.corner[0].y) {
-        a = EVENT_ZONE_CORNER(0);
-        b = EVENT_ZONE_CORNER(1);
+    code = (u8 *)D_800B0078->pc;
+    code += (s32)D_800ADC00;
+    if (WHOLE(CONTROLLED_ACTOR->position[1]) > CODE_ZONE(code).corner[0].y &&
+        WHOLE(CONTROLLED_ACTOR->position[1]) - (u16)CONTROLLED_ACTOR->height < CODE_ZONE(code).corner[0].y) {
+        a = CODE_ZONE_CORNER(code, 0);
+        b = CODE_ZONE_CORNER(code, 1);
         point = (WHOLE(CONTROLLED_ACTOR->position[2]) << 16) + WHOLE(CONTROLLED_ACTOR->position[0]);
-        c = EVENT_ZONE_CORNER(2);
-        d = EVENT_ZONE_CORNER(3);
+        c = CODE_ZONE_CORNER(code, 2);
+        d = CODE_ZONE_CORNER(code, 3);
         if (func_8004A70C(a, b, point) >= 0 && func_8004A70C(b, c, point) >= 0 &&
             func_8004A70C(c, d, point) >= 0 && func_8004A70C(d, a, point) >= 0 &&
             (D_800B0078->state.word & 0x1C0) != 0x100) {
@@ -5567,9 +5569,6 @@ void func_80095520(void) {
     D_800AFC7C += 1;
     D_800B0078->pc += 4;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_80095520);
-#endif
 
 /* Continue when the controlled actor is inside trigger zone operand 1,
  * else jump to operand 2. */
@@ -5596,28 +5595,27 @@ void func_80095734(void) {
     D_800AFC7C += 1;
 }
 
-#ifdef NON_MATCHING
 /* Continue when the controlled actor is inside trigger zone operand 1 and
  * the zone's height lies within the actor's body, else jump to operand 2.
- * NON_MATCHING: the zone address now has the original (scaled index +
- * table) shape, but the zone and actor address chains are emitted one after
- * the other; the original interleaves them (actor index multiply, zone byte,
- * actor add, zone multiply, actor load, zone add), which neither a Zone/actor
- * pointer local nor operand order in the first comparison reproduces. */
+ * The operand address is formed from pc and then rebased on the bytecode
+ * (set twice, so sched keeps it where the original has it). */
 void func_800958C0(void) {
+    u8 *code;
     s32 point;
     s32 a;
     s32 b;
     s32 c;
     s32 d;
 
-    if (EVENT_ZONE.corner[0].y < WHOLE(CONTROLLED_ACTOR->position[1]) &&
-        WHOLE(CONTROLLED_ACTOR->position[1]) - (u16)CONTROLLED_ACTOR->height < EVENT_ZONE.corner[0].y) {
-        a = EVENT_ZONE_CORNER(0);
-        b = EVENT_ZONE_CORNER(1);
+    code = (u8 *)D_800B0078->pc;
+    code += (s32)D_800ADC00;
+    if (WHOLE(CONTROLLED_ACTOR->position[1]) > CODE_ZONE(code).corner[0].y &&
+        WHOLE(CONTROLLED_ACTOR->position[1]) - (u16)CONTROLLED_ACTOR->height < CODE_ZONE(code).corner[0].y) {
+        a = CODE_ZONE_CORNER(code, 0);
+        b = CODE_ZONE_CORNER(code, 1);
         point = (WHOLE(CONTROLLED_ACTOR->position[2]) << 16) + WHOLE(CONTROLLED_ACTOR->position[0]);
-        c = EVENT_ZONE_CORNER(2);
-        d = EVENT_ZONE_CORNER(3);
+        c = CODE_ZONE_CORNER(code, 2);
+        d = CODE_ZONE_CORNER(code, 3);
         if (func_8004A70C(a, b, point) >= 0 && func_8004A70C(b, c, point) >= 0 &&
             func_8004A70C(c, d, point) >= 0 && func_8004A70C(d, a, point) >= 0) {
             D_800B0078->pc += 4;
@@ -5627,9 +5625,6 @@ void func_800958C0(void) {
     D_800B0078->pc = func_800ACDB8(2);
     D_800AFC7C += 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_800958C0);
-#endif
 
 /* Project a selected actor's origin to the screen. */
 void func_80095A7C(s32 *x, s32 *y) {
