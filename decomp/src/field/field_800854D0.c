@@ -3464,11 +3464,10 @@ void func_80085EEC(void);
 void func_8001B66C(void);
 s32 func_8008A558(void);
 
-#ifdef NON_MATCHING
 /* Select the field music track (operand 1). Without D_800ADB1C the track is
  * only recorded; otherwise yield until the music system can take a change.
- * NON_MATCHING: the original places the second yield after the change branch,
- * storing the comparison's constant 1. */
+ * The two "busy" yields are separate branches that GCC merges into one tail
+ * after the change branch, storing the comparison's constant 1. */
 void func_8008F7B8(void) {
     s32 track;
 
@@ -3483,9 +3482,9 @@ void func_8008F7B8(void) {
         D_800B0078->pc += 3;
     } else if (func_8008A558() != 0 || D_800ADBDC == 0) {
         D_800B00C0 = 1;
-    } else if (D_8004F354 == 1 || D_8004F308 == -1) {
+    } else if (D_8004F354 == 1) {
         D_800B00C0 = 1;
-    } else {
+    } else if (D_8004F308 != -1) {
         if (track != D_8004F324) {
             func_8001B66C();
             D_8004F324 = track;
@@ -3493,11 +3492,10 @@ void func_8008F7B8(void) {
             func_80085B20(track, 0);
         }
         D_800B0078->pc += 3;
+    } else {
+        D_800B00C0 = 1;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_8008F7B8);
-#endif
 
 /* Start a camera shake toward three amplitudes over a frame count. */
 void func_8008F90C(void) {
