@@ -220,8 +220,8 @@ ModelList *func_8009EBA8(u8 *group, ModelList *list) {
  * naming neither a listed model nor 0xFFFF: a root part, then one part per
  * pair with its packets for both buffers (built with mode; offset by (x0, y0)
  * and (x1, y1) when offset is set). Returns the root, NULL on failure. */
-ModelPart *func_8009EC4C(ModelList *list, u16 *hierarchy, s32 mode, s32 offset, u16 x0, u16 y0,
-                         u16 x1, u16 y1) {
+ModelPart *func_8009EC4C(ModelList *list, u16 *hierarchy, s32 mode, s32 offset, s16 x0, s16 y0,
+                         s16 x1, s16 y1) {
     ModelPart *root;
     ModelPart *part;
     u16 *pair;
@@ -857,26 +857,23 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
 }
 
 #ifdef NON_MATCHING
-/* Apply one packed delta of a tween track to dst (computed as `type`): a
- * signed byte added to it or, after the escape byte -0x80, a signed
- * little-endian halfword replacing it (the cursor is stored before each byte
- * is read). */
-#define TRACK_DELTA(slot, dst, type)                                           \
+/* Apply one packed delta of a tween track to dst: a signed byte added to it
+ * or, after the escape byte -0x80, a signed little-endian halfword replacing
+ * it (the cursor is stored before each byte is read). */
+#define TRACK_DELTA(slot, dst)                                                 \
     {                                                                          \
         u8 *at = (slot)->u.track.cursor++;                                     \
-        type value;                                                            \
-        s32 low, high;                                                         \
+        s32 byte, high;                                                        \
                                                                                \
-        if ((s8)at[0] != -0x80) {                                              \
-            value = dst + (s8)at[0];                                           \
+        if ((byte = (s8)at[0]) != -0x80) {                                     \
+            dst += byte;                                                       \
         } else {                                                               \
             (slot)->u.track.cursor = at + 2;                                   \
-            low = at[1];                                                       \
+            byte = at[1];                                                      \
             (slot)->u.track.cursor = at + 3;                                   \
             high = (s8)at[2] << 8;                                             \
-            value = high | low;                                                \
+            dst = byte | high;                                                 \
         }                                                                      \
-        dst = value;                                                           \
     }
 
 /* Step the tweens attached to each node of a hierarchy: its rotation
@@ -932,13 +929,13 @@ s32 func_800A0838(EffectPool *pool, ModelPart *part, s32 tag, s32 scale) {
                 goto check_rot;
             case 1:
                 if (!(kind & 0x10)) {
-                    TRACK_DELTA(slot, part->rotation.vx, s16);
+                    TRACK_DELTA(slot, part->rotation.vx);
                 }
                 if (!(kind & 0x20)) {
-                    TRACK_DELTA(slot, part->rotation.vy, s16);
+                    TRACK_DELTA(slot, part->rotation.vy);
                 }
                 if (!(kind & 0x40)) {
-                    TRACK_DELTA(slot, part->rotation.vz, s16);
+                    TRACK_DELTA(slot, part->rotation.vz);
                 }
                 goto check_rot;
             case 2:
@@ -1091,13 +1088,13 @@ s32 func_800A0838(EffectPool *pool, ModelPart *part, s32 tag, s32 scale) {
                 break;
             case 1:
                 if (!(kind & 0x10)) {
-                    TRACK_DELTA(slot, part->translation[0], s32);
+                    TRACK_DELTA(slot, part->translation[0]);
                 }
                 if (!(kind & 0x20)) {
-                    TRACK_DELTA(slot, part->translation[1], s32);
+                    TRACK_DELTA(slot, part->translation[1]);
                 }
                 if (!(kind & 0x40)) {
-                    TRACK_DELTA(slot, part->translation[2], s32);
+                    TRACK_DELTA(slot, part->translation[2]);
                 }
                 break;
             case 2:
