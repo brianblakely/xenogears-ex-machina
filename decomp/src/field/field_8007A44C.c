@@ -3379,12 +3379,7 @@ void func_8008399C(s32 index, FieldDescriptor *descriptor, FieldActor *player) {
 /* The controlled actor's contacts: against every other actor (its floor
  * polygon, its box, or its radius) either ride it, stand below it or push
  * it, recording the lowest ceiling; then remember the ridden actor, and
- * integrate the actor's own position against the floor.
- * NON_MATCHING: one instruction: the original schedules the `linked` reset's
- * spill store (sw $zero, 0x70($sp)) after the second unk030 load, ours
- * before the first (sched1 ties broken by insn order put it first; moving
- * the statement changes the register allocation instead). */
-#ifdef NON_MATCHING
+ * integrate the actor's own position against the floor. */
 void func_80084158(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
     VECTOR next;
     SVECTOR cell;
@@ -3412,7 +3407,6 @@ void func_80084158(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
     next.vy = actor->position[1];
     next.vz = actor->position[2];
     next.vx += actor->unk030[0];
-    linked = 0;
     next.vy += actor->unk030[1];
     next.vz += actor->unk030[2];
     func_800831D0(&cell, &next);
@@ -3422,6 +3416,7 @@ void func_80084158(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
     status = 0;
     z = cell.vz;
     lowest = 0x7FFFFFFF;
+    linked = 0;
     entry_flags = actor->flags;
     link = actor->unk074;
     for (u = 0; u < D_800ADBFC; u++) {
@@ -3482,8 +3477,8 @@ void func_80084158(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
             }
             bottom = other->position[1] >> 16;
             top = bottom - (u16)other->height;
+        owned:
             if (actor->unk074 == u) {
-            owned:
                 if ((entry_flags & 0x40800) == 0) {
                     goto ride;
                 }
@@ -3576,9 +3571,6 @@ void func_80084158(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
     }
     func_8007CD60(0x20);
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_80084158);
-#endif
 
 #ifdef NON_MATCHING
 /* -1 when the actor's motion, collision state or layer prevents idling.
