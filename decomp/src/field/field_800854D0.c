@@ -112,7 +112,12 @@ void func_80085738(void) {
  * variable used in the exit test after a conditional jump); a user
  * variable in the condition (i < (n = bank + 1)) is renamed in the entry
  * copy of the test and still hoisted, and `i <= bank` compares without the
- * add. */
+ * add. The loop dump shows why: the bottom test follows NOTE_INSN_LOOP_VTOP,
+ * where scan_loop clears maybe_never, so its bank + 1 is movable unless the
+ * register is used earlier in the loop body; even a variable first set
+ * before the loop (`i < (file = bank + 1)`) is moved as a global movable.
+ * while, do-while with a guard, `bank + 1 > i` and a (long) bound are all
+ * hoisted the same way. */
 void func_80085788(void) {
     u16 *times;
     s32 bank;
@@ -6770,17 +6775,17 @@ void func_80098CAC(s32 mode) {
 #ifdef NON_MATCHING
 /* Event arc jump: set up a parabolic move to an operand position (modes
  * 0-2) or step it (3; 0xf re-reads the floor triangles).
- * NON_MATCHING: case 2's abs(peak - (y >> 16)) keeps the difference in s0
- * (`subu s0,s0,v0; bgez s0; move a0,s0; negu a0,a0`) where the original
- * keeps it in v0 and negates it into a0 (`negu a0,v0`); the folded
- * ternary, if-statement and temporary forms do not reproduce it. abs is
- * the single abssi2 insn here; local-alloc ties the difference to peak
- * (local to case 2, dying at the subtraction). A difference set twice
- * avoids the tie but then takes a0 from the abs output's suggestion.
- * The 2.7.2 abssi2 template itself always ends `negu %0,%0`, so the
- * original's `move a0,v0` (delay slot) and `negu a0,v0` are a two-arm
- * branch (each arm writing a0 from v0) rather than abs; an explicit if/else
- * into a temporary is still coalesced into one register here. */
+ * NON_MATCHING: case 2's |peak - (y >> 16)| is written as the two-arm
+ * branch the original has (`bgez v0; move a0,v0; negu a0,v0`; the abssi2
+ * template of both 2.6.3 and 2.7.2 ends `negu %0,%0`, and the folded ternary
+ * becomes abs). Here the arms write steps (s2) and a `move a0,s2` follows,
+ * where the original writes a0 directly. Any fresh temporary for the arms
+ * is coalesced with the difference into a0: global.c's expand_preferences
+ * merges the copy preferences (a0, from the argument copy) at the arm copy
+ * where the difference dies; steps only escapes that because its own v0
+ * preference (the return copy) wins for the difference. The `t = d;
+ * if (d < 0) t = -d;` form makes them conflict, but CSE then rewrites -d
+ * as -t (t lives past the join, so it becomes the canonical register). */
 void func_80099214(void) {
     VECTOR normals[4];
     SVECTOR points[4];
@@ -6844,7 +6849,13 @@ void func_80099214(void) {
         y = (y << 16) - D_800B0078->position[1];
         model->velocity[1] = -(SquareRoot0(model->gravity.s.whole * (peak << 1)) << 16);
         SquareRoot0(peak);
-        steps = SquareRoot0(abs(peak - (y >> 16)));
+        distance = peak - (y >> 16);
+        if (distance >= 0) {
+            steps = distance;
+        } else {
+            steps = -distance;
+        }
+        steps = SquareRoot0(steps);
         if (steps < 0) {
             steps = -steps;
         }
@@ -6946,6 +6957,19 @@ s32 func_80099A8C(s32 x) {
 }
 
 #ifdef NON_MATCHING
+/* Turn-move toward the slot's target (mode 1: operand position plus the
+ * target offset, 2: another actor, 3: an angle from the target offset,
+ * 0/4: operand position). Within reach (or when the slot's step count is
+ * 0) set the final heading, clear the slot and return 0; otherwise count
+ * down, face the target and return -1.
+ * NON_MATCHING: only case 2's gravity sum differs (4 bytes short): the
+ * original loads D_800AFB10 into a0 and D_800B0078 into a1 before the
+ * descriptor add, leaving a load-delay nop after `lw s0,0x4c`, and adds
+ * other + self. Here the D_800B0078 load is a single-set pseudo (a register
+ * birth), which sched1 boosts next to its use. Holding it in a variable
+ * assigned twice moves the load up (score 13) but needs a dead second
+ * assignment; operand order, casts, index temporaries and an `extra`
+ * temporary give 19-30. 900 s of permuter found nothing. */
 s32 func_80099AC0(s32 speed) {
     VECTOR delta;
     FieldModel *model;
@@ -7883,11 +7907,14 @@ void func_8009C12C(void) {
  * indexed as flat arrays, which keeps their bases in registers as the
  * original does.
  * NON_MATCHING: only the second file's address differs: the original
- * computes it into a0, GCC here into s1 (c * 2 + &D_800AE1E1). The sum
- * is allocated before c * 2 and find_reg's first pass takes s1 (already
- * used, free once the PLACE base dies); the original's first pass must
- * have found s1 taken. Other spellings of the index (D_800AE1E0[c][1],
- * 1 + c * 2, a row pointer) all give 6 or worse. */
+ * computes it into a0, GCC here into s1 (c * 2 + &D_800AE1E1). c * 2 is
+ * local to its block, so local-alloc gives it s1 before global allocation;
+ * the sum (global: it crosses the beq) then gets a preference for s1 from
+ * its first operand and takes it, as c * 2 dies there. The original's sum
+ * had no usable s1 preference (c * 2 not yet allocated, or s1 preferred by
+ * a conflicting pseudo) and took a0, the first free register. Other
+ * spellings of the index (D_800AE1E0[c][1], 1 + c * 2, a row pointer, an
+ * index variable) give 6 or worse; 900 s of permuter found nothing. */
 #define PLACE(i, k) (((s16 *)D_800AEAE4)[(i) * 8 + (k)])
 #define FILES(c, k) (((u8 *)D_800AE1E0)[(c) * 2 + (k)])
 s32 func_8009C154(s32 character) {
