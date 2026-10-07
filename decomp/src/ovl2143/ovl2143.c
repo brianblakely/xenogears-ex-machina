@@ -2743,8 +2743,7 @@ void func_801E37D0(Actor *actor) {
  * The script word is an s16 (its bytes taken as (u8)word and
  * (u8)(word >> 8)): the arithmetic shift narrowed to a byte compiles to
  * srl, but combine cannot prove the byte's high bits clear, so the original
- * zero-extends `arg`, `entry` and `high2` (andi 0xff) at every use in a
- * later block.
+ * zero-extends decoded bytes (andi 0xff) at later byte consumers.
  * Block-scope aggregates take the stack slots of the original: the landing
  * probe's block frees 16 bytes that 0x25's `d` reuses before n/word (whose
  * slots are made when their address is first taken) and 0x25's matrix and
@@ -2758,14 +2757,12 @@ void func_801E37D0(Actor *actor) {
  * 0x26 keeps its 0xff marker in a block-scope variable: as a constant it
  * would join the other 0xff loads, which loop.c then hoists out of the
  * interpreter loop (the original loads 0xff at each use).
- * NON_MATCHING (same text size): the frame is 0x160 bytes rather than the
- * original 0x168; the final eight bytes of local storage remain unresolved.
- * Per-case scheduling and allocation also remain: 0x41 loads the -1 for
- * `changed` earlier,
- * 0x42 has dx/dz in s1/s0 (s0/s1 in the original, whose 0x4f uses other
- * registers for its own offsets; giving either case block-scope offsets
- * moves `arg` out of s5), 0x4f keeps dy in s2 instead of a2, and the
- * table load before the 0x6e mask test is placed earlier. */
+ * The 16-bit roll argument recovers the original 0x168-byte frame.
+ * NON_MATCHING: the 8164-byte text size and relocations agree, with four
+ * differing words. In 0x4F the vertical offset uses s2 rather than a2 (the
+ * subtraction and multiply); in 0x6E the actor-pointer and operand loads
+ * are swapped. The shared offset scalars follow each opcode's component
+ * order: 0x42/0x43 use Z, Y, X; 0x4F uses X, Y, Z. */
 #ifdef NON_MATCHING
 void func_801E39F0(Actor *actor, SlotPool *pool, s32 changed, s32 ticks, s32 arg4) {
     Actor *self;
@@ -2788,8 +2785,11 @@ void func_801E39F0(Actor *actor, SlotPool *pool, s32 changed, s32 ticks, s32 arg
     s32 running, redraw;
     Actor *copy;
     s32 found;
-    s32 i, key;
-    s32 dx, dy, dz, dist, pitch, yaw, roll;
+    s32 key;
+    s32 offset0, offset1, offset2, dist;
+    s32 pitch;
+    s32 yaw;
+    s16 roll;
     u8 depth;
 
     if (ticks == 0 || actor->pc == 0) {
@@ -3372,25 +3372,27 @@ aim:
             ry = *pc++;
             rz = *pc++;
             root = actor->parts;
+            rx = (s16)(root->rot.vx + rx);
+            ry = (s16)(root->rot.vy + ry);
+            rz = (s16)(root->rot.vz + rz);
+            func_801E59D4(pool, actor->parts, arg, (s16)rx, (s16)ry, (s16)rz);
             changed = -1;
-            func_801E59D4(pool, actor->parts, arg, (s16)(root->rot.vx + rx), (s16)(root->rot.vy + ry),
-                          (s16)(root->rot.vz + rz));
             break;
         }
         case 0x42:
         case 0x43: /* turn the root toward the target (0x43: heading only) */
-            dy = actor->target[1] - actor->parts->pos[1];
-            dx = actor->target[0] - actor->parts->pos[0];
-            dz = actor->target[2] - actor->parts->pos[2];
+            offset1 = actor->target[1] - actor->parts->pos[1];
+            offset2 = actor->target[0] - actor->parts->pos[0];
+            offset0 = actor->target[2] - actor->parts->pos[2];
             if (op == 0x43) {
                 pitch = 0;
-                dy = 0;
+                offset1 = 0;
             } else {
-                pitch = ratan2(dy, SquareRoot0(dx * dx + dz * dz));
+                pitch = ratan2(offset1, SquareRoot0(offset2 * offset2 + offset0 * offset0));
             }
-            yaw = ratan2(-dx, -dz);
+            yaw = ratan2(-offset2, -offset0);
             roll = 0;
-            if (dx == 0 && dy == 0 && dz == 0) {
+            if (offset2 == 0 && offset1 == 0 && offset0 == 0) {
                 break;
             }
             func_801E59D4(pool, actor->parts, arg, (s16)pitch, (s16)yaw, (s16)roll);
@@ -3460,19 +3462,21 @@ aim:
             actor->drift_accel[1] += *pc++;
             actor->drift_accel[2] += *pc++;
             break;
-        case 0x4F: /* drift toward the target over `arg` frames */
-            dx = actor->target[0] - actor->parts->pos[0];
-            dy = actor->target[1] - actor->parts->pos[1];
-            dz = actor->target[2] - actor->parts->pos[2];
+        case 0x4F: { /* drift toward the target over `arg` frames */
+            s32 dist_drift;
+            offset0 = actor->target[0] - actor->parts->pos[0];
+            offset1 = actor->target[1] - actor->parts->pos[1];
+            offset2 = actor->target[2] - actor->parts->pos[2];
             if (arg == 0) {
                 arg = 1;
             }
-            dist = SquareRoot0(dx * dx + dy * dy + dz * dz) / arg;
-            actor->drift[2] = (dist << 12) / (actor->scale * actor->parts->scale[2] >> 12) / 2;
-            if (((ratan2(-dx, -dz) - (u16)actor->parts->rot.vy + 0x400) & 0xFFF) < 0x800) {
+            dist_drift = SquareRoot0(offset0 * offset0 + offset1 * offset1 + offset2 * offset2) / arg;
+            actor->drift[2] = (dist_drift << 12) / (actor->scale * actor->parts->scale[2] >> 12) / 2;
+            if (((ratan2(-offset0, -offset2) - (u16)actor->parts->rot.vy + 0x400) & 0xFFF) < 0x800) {
                 actor->drift[2] = -actor->drift[2];
             }
             break;
+        }
         case 0x50: /* set the target */
             actor->aim_actor = 0;
             actor->target[0] = *pc++;
