@@ -399,39 +399,36 @@ u8 func_801DFA38(u8 slot) {
 
 /* Build the summary window: the member's portrait title and the 27 text
  * glyphs, shading the marked ones with their colour. */
-#ifdef NON_MATCHING
 void func_801DFAA8(u8 member) {
-    s16 colours[2][3];
+    s16 colours[6]; /* two RGB shading colours */
     s32 i;
     s32 start;
     s32 k;
 
-    colours[0][0] = 0x80;
-    colours[0][1] = 0x40;
-    colours[0][2] = 0x40;
-    colours[1][0] = 0x40;
-    colours[1][1] = 0x40;
-    colours[1][2] = 0x40;
+    colours[0] = 0x80;
+    colours[1] = 0x40;
+    colours[2] = 0x40;
+    colours[3] = 0x40;
+    colours[4] = 0x40;
+    colours[5] = 0x40;
     D_800D334C->runs[0].count = func_80076A10(member + 0xFC, D_800D334C->title[0], 0x3E, 0xA4);
     D_800D334C->runs[0].buffer = D_800CCB34;
     D_800D334C->runs[1].count = 0;
     for (i = 0; i < 27; i++) {
         start = D_800D334C->runs[1].count;
-        if (D_800C32C4[i].glyph != 0xFF) {
-            D_800D334C->runs[1].count += func_80076A10(D_800C32C4[i].glyph, &D_800D334C->text[start * 2], D_800C3318[i], D_800C3350[i]);
-            if (D_800C32C4[i].shaded != 0) {
+        if (D_800C32C4[i * 3] != 0xFF) {
+            D_800D334C->runs[1].count += func_80076A10(D_800C32C4[i * 3], &D_800D334C->text[start * 2], D_800C3318[i], D_800C3350[i]);
+            if (D_800C32C4[i * 3 + 1] != 0) {
                 for (k = start; k < D_800D334C->runs[1].count; k++) {
                     SetShadeTex(&D_800D334C->text[k * 2 + D_800CCB34], 0);
-                    setRGB0(&D_800D334C->text[k * 2 + D_800CCB34], colours[D_800C32C4[i].colour][0], colours[D_800C32C4[i].colour][1], colours[D_800C32C4[i].colour][2]);
+                    setRGB0(&D_800D334C->text[k * 2 + D_800CCB34], colours[D_800C32C4[i * 3 + 2] * 3],
+                            colours[D_800C32C4[i * 3 + 2] * 3 + 1], colours[D_800C32C4[i * 3 + 2] * 3 + 2]);
                 }
             }
         }
     }
     D_800D334C->runs[1].buffer = D_800CCB34;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801DFAA8);
-#endif
 
 /* Build the summary's first member value (three digits); clear the other
  * summary number runs. */
