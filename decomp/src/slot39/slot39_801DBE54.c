@@ -3333,12 +3333,13 @@ void func_801E5B88(void) {
 
 /* Set up the 32x32 cursor sprite and the purple-to-black shaded band
  * (0,4a)-(140,8a) for both buffers. */
-#ifdef NON_MATCHING
 void func_801E5E4C(void) {
     s32 *x;
     s32 *y;
     s32 i;
+    s32 right; /* the band's right edge */
 
+    right = 0x140;
     i = 0;
     x = &D_801E99F0;
     y = &D_801E99F8;
@@ -3368,17 +3369,14 @@ void func_801E5E4C(void) {
         (D_800625A0->block34C->band + i)->b3 = 0x10;
         (D_800625A0->block34C->band + i)->x0 = 0;
         (D_800625A0->block34C->band + i)->y0 = 0x4a;
-        (D_800625A0->block34C->band + i)->x1 = 0x140;
+        (D_800625A0->block34C->band + i)->x1 = right;
         (D_800625A0->block34C->band + i)->y1 = 0x4a;
         (D_800625A0->block34C->band + i)->x2 = 0;
         (D_800625A0->block34C->band + i)->y2 = 0x8a;
-        (D_800625A0->block34C->band + i)->x3 = 0x140;
+        (D_800625A0->block34C->band + i)->x3 = right;
         (D_800625A0->block34C->band + i)->y3 = 0x8a;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801E5E4C);
-#endif
 
 /* Lay out the three save views' frames (nine images each, 50 apart) and
  * their 72x13 name quads (label rows 6 + view). */
