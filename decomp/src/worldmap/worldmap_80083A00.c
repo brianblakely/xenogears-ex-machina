@@ -432,9 +432,10 @@ s16 func_80084D00(s32 probe, s16 *hit) {
  * collision faces flat (x, z) and record every face whose outline contains
  * the probe (face number and its attribute) in D_8009D718. Returns a word-sized
  * count of table entries; the caller narrows it to s16. */
-/* NON_MATCHING: the range checks put each slti result in v0 (the original
- * keeps both in a1/v0 in place) and i = 0 is scheduled before the
- * scratch matrix address setup. */
+/* NON_MATCHING: the first range check puts its slti result in v0 (the
+ * original keeps it in a1 in place), the z-delta loads take v0/v1 the
+ * other way round, and i = 0 is scheduled before the scratch matrix
+ * address setup. */
 #ifdef NON_MATCHING
 s32 func_80084DB8(s32 probe, s32 index) {
     s32 flag;
@@ -470,11 +471,10 @@ s32 func_80084DB8(s32 probe, s32 index) {
     i = 0;
     scratch->m.t[2] = 0;
     scratch->m.t[0] = 0;
-    dz = object->position.vy;
+    scratch->m.t[1] = object->position.vy;
     scratch->p[0].vz = 0x800;
     scratch->p[0].vy = 0x800;
     scratch->p[0].vx = 0x800;
-    scratch->m.t[1] = dz;
     hits = 0;
     ScaleMatrix(&scratch->m, &scratch->p[0]);
     SetRotMatrix(&scratch->m);
