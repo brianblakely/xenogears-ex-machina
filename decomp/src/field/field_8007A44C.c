@@ -1467,10 +1467,10 @@ void func_8007DECC(void) {
 
 /* Set a dialogue window's rectangle. */
 void func_8007E114(s32 window, s32 x, s32 y, s32 w, s32 h) {
-    D_800C2698[window].text.rect.x = x;
-    D_800C2698[window].text.rect.y = y;
-    D_800C2698[window].text.rect.w = w;
-    D_800C2698[window].text.rect.h = h;
+    D_800C2698[window].frame.rect.x = x;
+    D_800C2698[window].frame.rect.y = y;
+    D_800C2698[window].frame.rect.w = w;
+    D_800C2698[window].frame.rect.h = h;
 }
 
 /* Place a quad's corners at (x, y) with size (w, h), optionally mirrored. */
@@ -1503,8 +1503,9 @@ s32 func_800347C0(TextBox *text);
  * the window grows from its centre (at least 16 pixels each way) and
  * slides; then the waiting prompt, the eight border pieces, the portrait,
  * the choice cursor and the backing tile.
- * Does not match yet: the original spills `buffer` and the area to the
- * stack (0xa8-byte frame) and keeps `ot` in fp; the layout of the
+ * NON_MATCHING (849 edits): x/y/width/height spill as in the original, but
+ * the original also spills `buffer` (0x20) and more values to a 0xa8-byte
+ * frame (ours 0x80) and keeps `ot` in fp and `w` in $s7; the layout of the
  * statements is otherwise as here. */
 void func_8007E1C0(u32 *ot, s32 buffer, s32 w) {
     RECT area;
@@ -1528,10 +1529,10 @@ void func_8007E1C0(u32 *ot, s32 buffer, s32 w) {
     if (D_800C2698[w].busy != 0) {
         return;
     }
-    x = D_800C2698[w].text.rect.x;
-    y = D_800C2698[w].text.rect.y;
-    width = D_800C2698[w].text.rect.w;
-    height = D_800C2698[w].text.rect.h;
+    x = D_800C2698[w].frame.rect.x;
+    y = D_800C2698[w].frame.rect.y;
+    width = D_800C2698[w].frame.rect.w;
+    height = D_800C2698[w].frame.rect.h;
     if (D_800C2698[w].timer != 0) {
         steps = D_800B2078.text_speed * 2;
         grown_w = ((width << 16) / steps) * (D_800B2078.text_speed - D_800C2698[w].timer);
@@ -1575,33 +1576,33 @@ void func_8007E1C0(u32 *ot, s32 buffer, s32 w) {
     right = x + width - 8;
     bottom = y + height - 9;
     side = height - 0x12;
-    D_800C2698[w].border[buffer][0].x0 = left;
-    D_800C2698[w].border[buffer][0].y0 = top;
-    D_800C2698[w].border[buffer][2].y0 = top;
-    D_800C2698[w].border[buffer][4].x0 = left;
-    D_800C2698[w].border[buffer][2].x0 = right;
-    D_800C2698[w].border[buffer][6].x0 = right;
-    D_800C2698[w].border[buffer][3].x0 = left;
-    D_800C2698[w].border[buffer][1].x0 = right;
-    D_800C2698[w].border[buffer][4].y0 = bottom;
-    D_800C2698[w].border[buffer][6].y0 = bottom;
-    D_800C2698[w].border[buffer][3].y0 = y + 9;
-    D_800C2698[w].border[buffer][1].y0 = y + 9;
+    D_800C2698[w].frame.border[buffer][0].x0 = left;
+    D_800C2698[w].frame.border[buffer][0].y0 = top;
+    D_800C2698[w].frame.border[buffer][2].y0 = top;
+    D_800C2698[w].frame.border[buffer][4].x0 = left;
+    D_800C2698[w].frame.border[buffer][2].x0 = right;
+    D_800C2698[w].frame.border[buffer][6].x0 = right;
+    D_800C2698[w].frame.border[buffer][3].x0 = left;
+    D_800C2698[w].frame.border[buffer][1].x0 = right;
+    D_800C2698[w].frame.border[buffer][4].y0 = bottom;
+    D_800C2698[w].frame.border[buffer][6].y0 = bottom;
+    D_800C2698[w].frame.border[buffer][3].y0 = y + 9;
+    D_800C2698[w].frame.border[buffer][1].y0 = y + 9;
     if (side < 0) {
         side = 0;
     }
-    D_800C2698[w].border[buffer][3].h = side;
-    D_800C2698[w].border[buffer][1].h = side;
-    D_800C2698[w].border[buffer][5].y0 = top;
-    D_800C2698[w].border[buffer][5].x0 = x + 8;
-    D_800C2698[w].border[buffer][7].x0 = x + 8;
-    D_800C2698[w].border[buffer][7].y0 = bottom;
-    D_800C2698[w].border[buffer][5].w = width - 0x10;
-    D_800C2698[w].border[buffer][7].w = width - 0x10;
+    D_800C2698[w].frame.border[buffer][3].h = side;
+    D_800C2698[w].frame.border[buffer][1].h = side;
+    D_800C2698[w].frame.border[buffer][5].y0 = top;
+    D_800C2698[w].frame.border[buffer][5].x0 = x + 8;
+    D_800C2698[w].frame.border[buffer][7].x0 = x + 8;
+    D_800C2698[w].frame.border[buffer][7].y0 = bottom;
+    D_800C2698[w].frame.border[buffer][5].w = width - 0x10;
+    D_800C2698[w].frame.border[buffer][7].w = width - 0x10;
     if (!(D_800C2698[w].style & 0x40)) {
         for (i = 0; i < 8; i++) {
-            addPrim(ot, &D_800C2698[w].border[buffer][i]);
-            addPrim(ot, &D_800C2698[w].border_modes[buffer][i]);
+            addPrim(ot, &D_800C2698[w].frame.border[buffer][i]);
+            addPrim(ot, &D_800C2698[w].frame.border_modes[buffer][i]);
         }
     }
     icon_w = 0x40;
@@ -1633,13 +1634,13 @@ void func_8007E1C0(u32 *ot, s32 buffer, s32 w) {
         addPrim(ot, &D_800C2698[w].choice[buffer]);
         addPrim(ot, &D_800C2698[w].choice_modes[buffer]);
     }
-    D_800C2698[w].back[buffer].x0 = x;
-    D_800C2698[w].back[buffer].y0 = y + 1;
-    D_800C2698[w].back[buffer].w = width;
-    D_800C2698[w].back[buffer].h = height - 2;
+    D_800C2698[w].frame.back[buffer].x0 = x;
+    D_800C2698[w].frame.back[buffer].y0 = y + 1;
+    D_800C2698[w].frame.back[buffer].w = width;
+    D_800C2698[w].frame.back[buffer].h = height - 2;
     if (!(D_800C2698[w].style & 0x40)) {
-        addPrim(ot, &D_800C2698[w].back[buffer]);
-        addPrim(ot, &D_800C2698[w].back_modes[buffer]);
+        addPrim(ot, &D_800C2698[w].frame.back[buffer]);
+        addPrim(ot, &D_800C2698[w].frame.back_modes[buffer]);
     }
 }
 #else
@@ -1656,29 +1657,31 @@ extern RECT D_800ADF04[];   /* prompt frames */
  * mode and semi-transparent tile in the window colour, the prompt and
  * choice cursor sprites, the eight border sprites (texture windows from
  * 800ade9c) and the portrait quad.
- * Does not match: the original addresses these members from a base at
- * window + 0ac (800c2744) and then from the border sprites (800c2884), where
- * this code shares window + 0c4; the source form giving that base is not
- * known yet. */
+ * NON_MATCHING (415 edits, was 652): the nested DialogueFrame (window + 0ac)
+ * now gives the original's 800c2744 base, setRGB0 on the packet addresses
+ * keeps them in $s1 and the fixed-frame RECT copies go field by field.
+ * Left: the choice and prompt packets are addressed from window + 37c and
+ * + 3c4 bases (suggesting further nested structs, which would move status,
+ * unk380/382 used by field_800854D0.c), $s0/$s5 and $s1/$s0 swap, and the
+ * 0xc/8 width/height constants are kept the other way round. */
 void func_8007EE0C(s32 w) {
     RECT area;
     s32 i;
 
-    SetDrawMode(&D_800C2698[w].back_modes[0], 0, 0, GetTPage(0, 2, 0x280, 0x1F0), NULL);
-    SetDrawMode(&D_800C2698[w].back_modes[1], 0, 0, GetTPage(0, 2, 0x280, 0x1F0), NULL);
-    SetTile(&D_800C2698[w].back[0]);
-    D_800C2698[w].back[0].r0 = D_800594D4[0];
-    D_800C2698[w].back[0].g0 = D_800594D4[1];
-    D_800C2698[w].back[0].b0 = D_800594D4[2];
-    SetSemiTrans(&D_800C2698[w].back[0], 1);
-    D_800C2698[w].back[1] = D_800C2698[w].back[0];
-    area = D_800ADF04[0];
+    SetDrawMode(&D_800C2698[w].frame.back_modes[0], 0, 0, GetTPage(0, 2, 0x280, 0x1F0), NULL);
+    SetDrawMode(&D_800C2698[w].frame.back_modes[1], 0, 0, GetTPage(0, 2, 0x280, 0x1F0), NULL);
+    SetTile(&D_800C2698[w].frame.back[0]);
+    setRGB0(&D_800C2698[w].frame.back[0], D_800594D4[0], D_800594D4[1], D_800594D4[2]);
+    SetSemiTrans(&D_800C2698[w].frame.back[0], 1);
+    D_800C2698[w].frame.back[1] = D_800C2698[w].frame.back[0];
+    area.x = D_800ADF04[0].x;
+    area.y = D_800ADF04[0].y;
+    area.w = D_800ADF04[0].w;
+    area.h = D_800ADF04[0].h;
     SetDrawMode(&D_800C2698[w].prompt_modes[0], 0, 0, GetTPage(0, 0, 0x298, 0x1C0), &area);
     SetDrawMode(&D_800C2698[w].prompt_modes[1], 0, 0, GetTPage(0, 0, 0x298, 0x1C0), &area);
     SetSprt(&D_800C2698[w].prompt[0]);
-    D_800C2698[w].prompt[0].r0 = 0x80;
-    D_800C2698[w].prompt[0].g0 = 0x80;
-    D_800C2698[w].prompt[0].b0 = 0x80;
+    setRGB0(&D_800C2698[w].prompt[0], 0x80, 0x80, 0x80);
     D_800C2698[w].prompt[0].clut = GetClut(0x100, 0xF6);
     D_800C2698[w].prompt[0].w = 0xC;
     D_800C2698[w].prompt[0].u0 = 0x80;
@@ -1687,13 +1690,14 @@ void func_8007EE0C(s32 w) {
     D_800C2698[w].prompt[0].x0 = 0;
     D_800C2698[w].prompt[0].y0 = 0;
     D_800C2698[w].prompt[1] = D_800C2698[w].prompt[0];
-    area = D_800ADEDC[0];
+    area.x = D_800ADEDC[0].x;
+    area.y = D_800ADEDC[0].y;
+    area.w = D_800ADEDC[0].w;
+    area.h = D_800ADEDC[0].h;
     SetDrawMode(&D_800C2698[w].choice_modes[0], 0, 0, GetTPage(0, 0, 0x288, 0x1C0), &area);
     SetDrawMode(&D_800C2698[w].choice_modes[1], 0, 0, GetTPage(0, 0, 0x288, 0x1C0), &area);
     SetSprt(&D_800C2698[w].choice[0]);
-    D_800C2698[w].choice[0].r0 = 0x80;
-    D_800C2698[w].choice[0].g0 = 0x80;
-    D_800C2698[w].choice[0].b0 = 0x80;
+    setRGB0(&D_800C2698[w].choice[0], 0x80, 0x80, 0x80);
     D_800C2698[w].choice[0].clut = GetClut(0x100, 0xF6);
     D_800C2698[w].choice[0].w = 0xC;
     D_800C2698[w].choice[0].u0 = 0x80;
@@ -1705,21 +1709,19 @@ void func_8007EE0C(s32 w) {
     D_800C2698[w].prompt_delay = 2;
     for (i = 0; i < 8; i++) {
         area = D_800ADE9C[i];
-        SetDrawMode(&D_800C2698[w].border_modes[0][i], 0, 0, GetTPage(0, 2, 0x280, 0x1F0), &area);
-        SetDrawMode(&D_800C2698[w].border_modes[1][i], 0, 0, GetTPage(0, 2, 0x280, 0x1F0), &area);
-        SetSprt(&D_800C2698[w].border[0][i]);
-        D_800C2698[w].border[0][i].r0 = 0x80;
-        D_800C2698[w].border[0][i].g0 = 0x80;
-        D_800C2698[w].border[0][i].b0 = 0x80;
-        D_800C2698[w].border[0][i].clut = GetClut(0x100, 0xF4);
-        SetSemiTrans(&D_800C2698[w].border[0][i], 1);
-        D_800C2698[w].border[0][i].u0 = 0x80;
-        D_800C2698[w].border[0][i].v0 = 0xC0;
-        D_800C2698[w].border[0][i].w = D_800ADE9C[i].w;
-        D_800C2698[w].border[0][i].x0 = 0;
-        D_800C2698[w].border[0][i].y0 = 0;
-        D_800C2698[w].border[0][i].h = D_800ADE9C[i].h;
-        D_800C2698[w].border[1][i] = D_800C2698[w].border[0][i];
+        SetDrawMode(&D_800C2698[w].frame.border_modes[0][i], 0, 0, GetTPage(0, 2, 0x280, 0x1F0), &area);
+        SetDrawMode(&D_800C2698[w].frame.border_modes[1][i], 0, 0, GetTPage(0, 2, 0x280, 0x1F0), &area);
+        SetSprt(&D_800C2698[w].frame.border[0][i]);
+        setRGB0(&D_800C2698[w].frame.border[0][i], 0x80, 0x80, 0x80);
+        D_800C2698[w].frame.border[0][i].clut = GetClut(0x100, 0xF4);
+        SetSemiTrans(&D_800C2698[w].frame.border[0][i], 1);
+        D_800C2698[w].frame.border[0][i].u0 = 0x80;
+        D_800C2698[w].frame.border[0][i].v0 = 0xC0;
+        D_800C2698[w].frame.border[0][i].w = D_800ADE9C[i].w;
+        D_800C2698[w].frame.border[0][i].x0 = 0;
+        D_800C2698[w].frame.border[0][i].y0 = 0;
+        D_800C2698[w].frame.border[0][i].h = D_800ADE9C[i].h;
+        D_800C2698[w].frame.border[1][i] = D_800C2698[w].frame.border[0][i];
     }
     area.x = 0;
     area.y = 0;
@@ -1728,9 +1730,7 @@ void func_8007EE0C(s32 w) {
     SetDrawMode(&D_800C2698[w].icon_modes[0], 0, 0, GetTPage(1, 0, 0x2C0, 0x100), &area);
     SetDrawMode(&D_800C2698[w].icon_modes[1], 0, 0, GetTPage(1, 0, 0x2C0, 0x100), &area);
     SetPolyFT4(&D_800C2698[w].icon[0]);
-    D_800C2698[w].icon[0].r0 = 0x80;
-    D_800C2698[w].icon[0].g0 = 0x80;
-    D_800C2698[w].icon[0].b0 = 0x80;
+    setRGB0(&D_800C2698[w].icon[0], 0x80, 0x80, 0x80);
     D_800C2698[w].icon[0].clut = GetClut(0, 0xE0);
     D_800C2698[w].icon[0].tpage = GetTPage(1, 0, 0x2C0, 0x100);
     D_800C2698[w].icon[1] = D_800C2698[w].icon[0];
