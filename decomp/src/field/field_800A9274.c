@@ -1149,10 +1149,8 @@ void func_800AC308(void) {
     func_80028A60(0);
 }
 
-#ifdef NON_MATCHING
 /* Set up the text roll: the white top and bottom fades (640 wide, 24
- * tall at 0 and c8) and the 16 lines of sprites. Differs only in when
- * the scheduler loads the constants 0x280 and 0x80. */
+ * tall at 0 and c8) and the 16 lines of sprites. */
 void func_800AC3AC(void) {
     SPRT *sprite;
     s32 i;
@@ -1164,25 +1162,12 @@ void func_800AC3AC(void) {
     D_800AF788[0][0].r1 = D_800AF788[0][0].g1 = D_800AF788[0][0].b1 = 0xFF;
     D_800AF788[1][0].r2 = D_800AF788[1][0].g2 = D_800AF788[1][0].b2 = 0xFF;
     D_800AF788[1][0].r3 = D_800AF788[1][0].g3 = D_800AF788[1][0].b3 = 0xFF;
-    D_800AF788[0][0].y3 = D_800AF788[0][0].y2 = 0x18;
     D_800AF788[0][0].r2 = D_800AF788[0][0].g2 = D_800AF788[0][0].b2 = 0;
     D_800AF788[0][0].r3 = D_800AF788[0][0].g3 = D_800AF788[0][0].b3 = 0;
     D_800AF788[1][0].r0 = D_800AF788[1][0].g0 = D_800AF788[1][0].b0 = 0;
     D_800AF788[1][0].r1 = D_800AF788[1][0].g1 = D_800AF788[1][0].b1 = 0;
-    D_800AF788[0][0].x0 = 0;
-    D_800AF788[0][0].y0 = 0;
-    D_800AF788[0][0].x1 = 0x280;
-    D_800AF788[0][0].y1 = 0;
-    D_800AF788[0][0].x2 = 0;
-    D_800AF788[0][0].x3 = 0x280;
-    D_800AF788[1][0].x0 = 0;
-    D_800AF788[1][0].y0 = 0xC8;
-    D_800AF788[1][0].y1 = 0xC8;
-    D_800AF788[1][0].y2 = 0xE0;
-    D_800AF788[1][0].y3 = 0xE0;
-    D_800AF788[1][0].x1 = 0x280;
-    D_800AF788[1][0].x2 = 0;
-    D_800AF788[1][0].x3 = 0x280;
+    setXY4(&D_800AF788[0][0], 0, 0, 0x280, 0, 0, 0x18, 0x280, 0x18);
+    setXY4(&D_800AF788[1][0], 0, 0xC8, 0x280, 0xC8, 0, 0xE0, 0x280, 0xE0);
     D_800AF788[0][0].u0 = 0;
     D_800AF788[0][0].v0 = 0;
     D_800AF788[0][0].u1 = 2;
@@ -1191,14 +1176,7 @@ void func_800AC3AC(void) {
     D_800AF788[0][0].v2 = 2;
     D_800AF788[0][0].u3 = 2;
     D_800AF788[0][0].v3 = 2;
-    D_800AF788[1][0].u0 = 0;
-    D_800AF788[1][0].v0 = 0;
-    D_800AF788[1][0].u1 = 2;
-    D_800AF788[1][0].v1 = 0;
-    D_800AF788[1][0].u2 = 0;
-    D_800AF788[1][0].v2 = 2;
-    D_800AF788[1][0].u3 = 2;
-    D_800AF788[1][0].v3 = 2;
+    setUV4(&D_800AF788[1][0], 0, 0, 2, 0, 0, 2, 2, 2);
     D_800AF788[0][0].tpage = GetTPage(1, 2, 0x3C0, 0x100);
     D_800AF788[1][0].tpage = GetTPage(1, 2, 0x3C0, 0x100);
     D_800AF788[0][0].clut = GetClut(0, 0x1FF);
@@ -1214,10 +1192,10 @@ void func_800AC3AC(void) {
         setRGB0(sprite, 0x80, 0x80, 0x80);
         SetSemiTrans(sprite, 0);
         sprite->clut = GetClut(0, 0x1FF);
-        sprite->h = 0x10;
         sprite->u0 = 0;
         sprite->v0 = i * 16;
         sprite->w = 0x80;
+        sprite->h = 0x10;
         sprite->x0 = 0x40;
         sprite->y0 = i * 16;
         sprite[4] = *sprite;
@@ -1235,9 +1213,6 @@ void func_800AC3AC(void) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800A9274", func_800AC3AC);
-#endif
 
 /* Draw the text roll: its two fades, then each line scrolled up a pixel
  * from the other buffer's position. */
