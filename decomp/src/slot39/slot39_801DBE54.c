@@ -351,12 +351,6 @@ void func_801DC3D8(u8 slot, u8 kind) {
  * 0 the character's, 1 the gear's, 2 the gear's paired rows): the entry's
  * two text lines, a copy of its name and its target labels; an unused row
  * hides them. */
-#ifdef NON_MATCHING
-/* Differs in register allocation: the original gives slot s4, row & 0xff s3
- * and the effect s5 (here slot s5 and the effect s4), and the second
- * 801e8070 call's constant arguments s0/s1/s2 rotate. Writing the gear
- * text index with row & ~1 keeps row in a1 and lets the three text sums
- * share one add, as in the original. */
 void func_801DCE60(u8 slot, u8 row, u8 kind) {
     RECT rect;
     MenuEffect *effect;
@@ -364,6 +358,7 @@ void func_801DCE60(u8 slot, u8 row, u8 kind) {
     u16 text;
     u16 target;
     u8 all;
+    u8 targetKind;
     s32 i;
 
     switch (kind) {
@@ -408,16 +403,13 @@ void func_801DCE60(u8 slot, u8 row, u8 kind) {
         func_801E8044(8, D_800625A0->party->unk38);
         switch (kind) {
         case 0:
-            effect = D_800625A0->tables->effects[D_800625A0->party->ids[slot]] + row;
-            effect += 22;
+            effect = D_800625A0->tables->effects[D_800625A0->party->ids[slot]] + row + 22;
             break;
         case 1:
-            effect = (D_800625A0->tables->effects + 11)[D_8006D8A0[D_800625A0->party->ids[slot]].gear] + row;
-            effect += 21;
+            effect = (D_800625A0->tables->effects + 11)[D_8006D8A0[D_800625A0->party->ids[slot]].gear] + row + 21;
             break;
         case 2:
-            effect = (D_800625A0->tables->effects + 11)[D_8006D8A0[D_800625A0->party->ids[slot]].gear] + (row >> 1);
-            effect += 37;
+            effect = (D_800625A0->tables->effects + 11)[D_8006D8A0[D_800625A0->party->ids[slot]].gear] + (row >> 1) + 37;
             break;
         }
         target = effect->target;
@@ -429,8 +421,8 @@ void func_801DCE60(u8 slot, u8 row, u8 kind) {
             all = 1;
         }
         func_801E8070(8, D_800625A0->labels10E0, D_801EA550, D_801E9EA0, D_800625A0->party->unk38, all, 0, 2);
-        func_801E8070(8, D_800625A0->labels10E0, D_801EA550, D_801E9EA0, D_800625A0->party->unk38,
-                      (effect->target & 3) + 3, 0, 2);
+        targetKind = (effect->target & 3) + 3;
+        func_801E8070(8, D_800625A0->labels10E0, D_801EA550, D_801E9EA0, D_800625A0->party->unk38, targetKind, 0, 2);
         D_800625A0->block430->headA.count = D_800625A0->bufferIndex;
         D_800625A0->block430->headB.count = D_800625A0->bufferIndex;
         D_800625A0->block430->extra[0].count = D_800625A0->bufferIndex;
@@ -445,9 +437,6 @@ void func_801DCE60(u8 slot, u8 row, u8 kind) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801DCE60);
-#endif
 
 /* Shade the file list screen's texts by `mode` (801e8eac): windows 5 and 6,
  * each built name and value of the first twelve rows, the cursor, the
@@ -474,14 +463,6 @@ void func_801DD5E8(u8 mode) {
  * gear's, 2 the gear's other list) from the menu: select the targets (the
  * whole party for all-target arts, else the cursor's slot) and use it on
  * confirm while its cost can be paid, until cancelled. */
-#ifdef NON_MATCHING
-/* Same code shape as the original; remaining: global register allocation
- * (original s2 kind/used, s3 kind&0xff, s4 targets, s5 slot&0xff) and v0/v1
- * swapped in the `left` subtraction. do/while (0) blocks (statement macros)
- * around `used = 0` plus the case-4 target loop and around `used = 1;
- * hit = 1;` (refs inside count double for the allocator), with
- * `targets = 0` after the redraw block, leave 29 differing instructions
- * (local scorer): `left` and the gear maximum's address registers. */
 void func_801DD790(u8 slot, s32 row, u8 kind) {
     MenuEffect *effect;
     s32 x;
@@ -489,9 +470,6 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
     s32 all;
     s32 i;
     s32 sound;
-    s32 left;
-    s32 now;
-    s32 max;
     u8 redraw;
     u8 hit;
     u8 targets;
@@ -540,12 +518,13 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
         }
         D_800625A0->party->unk2F = 1;
         if (kind != 2) {
-            left = D_8006D8A0[D_800625A0->party->ids[slot]].ep - effect->cost;
+            if (D_8006D8A0[D_800625A0->party->ids[slot]].ep - effect->cost < 0) {
+                targets = 0;
+            }
         } else {
-            left = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk38 - effect->gearCost;
-        }
-        if (left < 0) {
-            targets = 0;
+            if (D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk38 - effect->gearCost < 0) {
+                targets = 0;
+            }
         }
         if (!targets) {
             break;
@@ -560,16 +539,16 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
                 hit = 0;
                 if (func_801C865C(targets, i)) {
                     if (kind != 2) {
-                        now = D_8006D8A0[D_800625A0->party->ids[i]].hp;
-                        max = D_8006D8A0[D_800625A0->party->ids[i]].hpMax;
+                        if (D_8006D8A0[D_800625A0->party->ids[i]].hp != D_8006D8A0[D_800625A0->party->ids[i]].hpMax) {
+                            used = 1;
+                            hit = 1;
+                        }
                     } else {
-                        /* the maximum is read from party slot `row` */
-                        now = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[i]].gear].unk60;
-                        max = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[row]].gear].unk64;
-                    }
-                    if (now != max) {
-                        used = 1;
-                        hit = 1;
+                        if (D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[i]].gear].unk60 !=
+                            D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[row]].gear].unk64) {
+                            used = 1;
+                            hit = 1;
+                        }
                     }
                     if (hit) {
                         func_801E35BC(D_800625A0->tables, D_800625A0->party->ids[slot], D_800625A0->party->ids[i],
@@ -614,9 +593,6 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
     }
     func_801D4EA0(2);
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801DD790);
-#endif
 
 /* The arts screen's windows are up: clear `windows`, zoom in when `zoom`
  * asks for it and drop the panel redraw flags. A statement macro. */
@@ -2002,10 +1978,8 @@ void func_801E2368(void) {
  * 801e05d0 screen, 1 and 2 the 801ddf24 screen modes, 3 toggles the flag
  * when the member has a gear; member 7 and the flag D_80059179 refuse),
  * switching members with 9/10, until cancelled. The first 801d9704 call
- * passes the slot before it is set, as the original does. Nonmatching: the
- * slot and the shown slot take each other's saved registers, and the
- * original calls 801d7cfc with the slot unmasked (as without a prototype). */
-#ifdef NON_MATCHING
+ * passes the slot before it is set, as the original does; 801d7cfc is
+ * called without a prototype in this unit (the slot goes unmasked). */
 u8 func_801E23CC(void) {
     s32 slot;
     u8 shown;
@@ -2023,9 +1997,9 @@ u8 func_801E23CC(void) {
     while (stay) {
         func_801C7BF4();
         if (slot != shown) {
+            func_801DFE2C(slot);
+            func_801D2EC0(slot, 1);
             shown = slot;
-            func_801DFE2C(shown);
-            func_801D2EC0(shown, 1);
             page = D_8006F8E5[slot] ? 6 : 0;
             func_801E2324(page);
             func_801E8070(6, D_800625A0->labels18E0, D_801EA56E, D_801E9F48, D_800625A0->party->unk54, 4, 7, 6);
@@ -2148,9 +2122,6 @@ u8 func_801E23CC(void) {
     D_800625A0->party->redraw3 = 0;
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801E23CC);
-#endif
 
 /* Open the 801d3488 screen: its three blocks and view 3. */
 void func_801E2AE0(void) {
