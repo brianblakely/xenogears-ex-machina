@@ -6661,43 +6661,8 @@ void func_801DB5E4(u8 mode) {
  * usable here, select targets (the whole party for all-target items, else
  * the cursor's slot; left/right move it) and use the item on them on
  * confirm until it runs out or the player cancels. Returns the targets
- * marked last (0 when cancelled or unusable). */
-#ifdef NON_MATCHING
-/* Remaining: one commutative operand order. The original clears the id as
- * addu v0,fp,v0 (index first, v0 = inventory + 150); this build adds the
- * base first (2 differing instructions, local scorer). Everything else
- * matches: the inventory base is one pointer set once (spilled and
- * rematerialised into t0 for both uses), the id is cleared through
- * inv->ids taken after the count reaches zero, and 801e31c0 is called
- * without a prototype (its result is used unmasked). Setting inv after
- * the 801d397c call puts it in the extended block of the loop preheader,
- * so the rerun cse knows its value there and orders the hoisted
- * &counts[idx] index first as the original does.
- * Mechanism (GCC source): expand emits the pointer first for pointer +
- * index forms unless the pointer is not a register (expand_binop swaps
- * then), and cse's fold_rtx puts an operand second when its value is a
- * known constant; the clear block is not in an extended block where the
- * base is known. Tried for the clear: inv->ids[idx], *(inv->ids + idx),
- * ((u8 *)inv + 150)[idx], inv->counts[idx + 150] (all fold into 0x96 of
- * the count address, 111-115), a second pointer or inv set again in the
- * clear block (33-75), INVENTORY used directly for the count, decrement
- * and clear (correct orders, but loop.c then moves the clear's base + 150
- * out of the loop because it forces the already-moved base, 111-143).
- * Also tried: ids = inv->ids before the decrement (12), &inv->ids[idx]
- * through a pointer (115), ids += idx, idx[ids], (u8 *)inv + 150 (2). A
- * 30-minute permuter run (func_801e31c0 declared K&R in its copy, as the
- * permuter cannot type an undeclared call) found nothing below the base.
- * Closest structure found (8, only the count base differs): count and
- * decrement through INVENTORY, the clear as `inv = INVENTORY; ids =
- * inv->ids;` (cse then knows inv in the clear block and orders the clear
- * index first), plus a second, never-read `inv = INVENTORY` before the
- * loop that keeps loop.c from hoisting the clear; without it the clear's
- * base + 150 is moved out (115). The extra store is a dead assignment, so
- * it is not used; the count base then gets its own register (v1) where
- * the original rematerialises one equivalence register (t0) for both the
- * count base and the clear. Also tried (74-143): the clear's inv set
- * inside case 4 / before the decrement, inv set at entry for the item
- * lookup, counts through inv and the clear resetting inv. */
+ * marked last (0 when cancelled or unusable). The item ids are read through
+ * `ids`, taken from the inventory record at entry and again for the clear. */
 u8 func_801DB920(s32 row, s32 entry) {
     u16 marks;
     u8 running;
@@ -6707,14 +6672,14 @@ u8 func_801DB920(s32 row, s32 entry) {
     s32 all;
     s32 i;
     MenuItem *item;
-    Inventory *inv;
     u8 *ids;
 
     marks = 0;
     running = 1;
     slot = D_800625A0->firstMember;
     D_801E9785 = 0;
-    item = &D_800625A0->tables->items[D_8006F65A[row * 2 + entry]];
+    ids = INVENTORY->ids;
+    item = &D_800625A0->tables->items[ids[row * 2 + entry]];
     redraw = 1;
     if (item->use & 0x80) {
         marks = 1;
@@ -6725,7 +6690,6 @@ u8 func_801DB920(s32 row, s32 entry) {
     all = item->target & 1;
     if (marks) {
         func_801D397C(2, 0x10, 0xe, 0x90, 0xb0, 0, 0, 4, 0);
-        inv = INVENTORY;
         while (running) {
             func_801C7BF4();
             if (redraw) {
@@ -6749,7 +6713,7 @@ u8 func_801DB920(s32 row, s32 entry) {
                 D_800625A0->markers->visible[slot] = 1;
             }
             D_800625A0->party->unk2F = 1;
-            if (inv->counts[row * 2 + entry] == 0) {
+            if (INVENTORY->counts[row * 2 + entry] == 0) {
                 running = 0;
             }
             if (!running) {
@@ -6767,8 +6731,8 @@ u8 func_801DB920(s32 row, s32 entry) {
                 if (used) {
                     func_801C8574(0x37);
                     redraw = 1;
-                    if (--inv->counts[row * 2 + entry] == 0) {
-                        ids = inv->ids;
+                    if (--INVENTORY->counts[row * 2 + entry] == 0) {
+                        ids = INVENTORY->ids;
                         ids[row * 2 + entry] = 0;
                     }
                 } else {
@@ -6800,9 +6764,6 @@ u8 func_801DB920(s32 row, s32 entry) {
     }
     return marks;
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DB920);
-#endif
 
 /* Swap inventory entries `a` and `b` (item id and count). */
 void func_801DBD4C(s32 a, s32 b) {
