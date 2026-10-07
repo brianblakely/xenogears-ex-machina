@@ -501,9 +501,11 @@ void func_8028191C(void) {
 
 /* The actor tool: for the selected battle actor print its model state, and
  * with the pad move its position, rotation, scale or light (the control
- * mode, cycled by button 2; button 8 cycles the step shift). */
-#ifdef NON_MATCHING
-void func_80281980(void) {
+ * mode, cycled by button 2; button 8 cycles the step shift). Declared
+ * int-returning (old implicit int) without a value: $v0 stays live at exit,
+ * so the switch's default branch slot takes the index shift, not the table
+ * address. */
+s32 func_80281980(void) {
     DebugActor *actor = D_800C3568;
     SVECTOR v;
     VECTOR step;
@@ -611,9 +613,6 @@ void func_80281980(void) {
         break;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/debug2611/asm/nonmatchings/debug2611", func_80281980);
-#endif
 
 /* Dump main memory to the next numbered host file (mem_0, mem_1, ...). */
 void func_80281F98(void) {
