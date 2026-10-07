@@ -193,6 +193,32 @@
           platforms = [ system ];
         };
       };
+      # Random/manual C permutation against a target object: register-allocation
+      # and scheduling search for nonmatching functions (tools/permuter_import.py).
+      decompPermuter = pkgs.stdenvNoCC.mkDerivation {
+        pname = "decomp-permuter";
+        version = "2026-8556c81d";
+        src = pkgs.fetchzip {
+          extension = "tar.gz";
+          url = "https://codeload.github.com/simonlindholm/decomp-permuter/tar.gz/8556c81d80d1c1af98a858c8f4dc951357f29139";
+          hash = "sha256-7pwxQ7sWMtO+c07+X9CDZle+kN7qLZAdNklrFSpinU8=";
+        };
+        dontBuild = true;
+        installPhase = ''
+          mkdir -p "$out/lib/decomp-permuter" "$out/bin"
+          cp -R . "$out/lib/decomp-permuter/"
+          printf '#!%s\nexec %s %s "$@"\n' "${pkgs.runtimeShell}" \
+            "${pkgs.python3.withPackages (ps: [ ps.toml ])}/bin/python3" \
+            "$out/lib/decomp-permuter/permuter.py" > "$out/bin/permuter"
+          chmod +x "$out/bin/permuter"
+        '';
+        meta = {
+          description = "Automatic C permutation to match a target object";
+          homepage = "https://github.com/simonlindholm/decomp-permuter";
+          license = pkgs.lib.licenses.mit;
+          platforms = [ system ];
+        };
+      };
       pylibyaml = pkgs.python3Packages.buildPythonPackage {
         pname = "pylibyaml";
         version = "0.1.0";
@@ -313,6 +339,7 @@
             psxGcc272cdk
             maspsx
             splat
+            decompPermuter
             pkgs.gnumake
             pkgs.diffutils
             pkgs.git
