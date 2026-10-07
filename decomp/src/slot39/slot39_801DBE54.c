@@ -795,53 +795,59 @@ void func_801DE474(u8 wide, u8 page) {
     func_801D397C(4, 0x10, 0xc, 0x80, h, 0, 1, 4, 0);
 }
 
-#ifdef NON_MATCHING
-/* Same logic as the original; register allocation and stack layout differ. */
 /* Build the equipment candidate list for part `part` of party slot `slot`
  * (`special` special parts, `gear` the gear's lists) and draw its rows from
  * `top`: usable weapons of a class below 5, special parts of the kept part's
  * class, or accessories whose groups are free or held by the replaced one
  * (entry 0 of the accessory list stays empty for removing). Returns the
  * scroll limit. */
+#ifdef NON_MATCHING
+/* Remaining: the gear switch's `< 50` tails are cross-jumped into the
+ * character switch's, `used = 0` is scheduled before `i = 0`, and the drawing
+ * loop keeps `kind` in a register and forms &D_801EA7F8[top + i] in one. */
 s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
+    RECT rect;
     u8 codes[4];
     u8 text[8];
-    RECT rect;
+    s32 length;
+    u8 kind;
+    s32 count;
     MenuWeapon *weapon;
     MenuAccessory *accessory;
     MenuWeapon *keptWeapon;
     GearWeapon *gearWeapon;
-    MenuGearAccessory *gearAccessory;
     GearWeapon *keptGearWeapon;
-    s32 length;
-    s32 count;
-    s32 i;
-    s32 tens;
+    MenuGearAccessory *gearAccessory;
     u16 own;
     u16 used;
-    u16 groups;
-    u8 kind;
+    s32 i;
+    u8 tens;
     u8 ok;
     u8 *image;
+    u8 *name;
 
     codes[1] = 0;
     codes[3] = 0;
     if (special) {
-        kind = part + 1;
-        count = 100;
         if (!gear) {
+            kind = part + 1;
+            count = 100;
             keptWeapon = &D_800625A0->tables->weapons[D_800625A0->labels360->parts[0][part]];
         } else {
+            kind = part + 1;
+            count = 100;
             keptGearWeapon = &D_800625A0->tables->gearWeapons[D_800625A0->labels360->parts[0][part]];
         }
     } else if (!gear) {
         if (part != 0) {
             kind = 5;
             count = 200;
-            own = D_800625A0->tables->accessories[D_800625A0->labels360->parts[2][part - 1]].groups;
+            accessory = &D_800625A0->tables->accessories[D_800625A0->labels360->parts[2][part - 1]];
+            own = accessory->groups;
             used = 0;
             for (i = 0; i < 3; i++) {
-                used |= D_800625A0->tables->accessories[D_800625A0->labels360->parts[2][i]].groups;
+                accessory = &D_800625A0->tables->accessories[D_800625A0->labels360->parts[2][i]];
+                used |= accessory->groups;
             }
         } else {
             kind = 0;
@@ -850,10 +856,12 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
     } else if (part != 0) {
         kind = 5;
         count = 150;
-        own = D_800625A0->tables->gearAccessories[D_800625A0->labels360->parts[2][part - 1]].groups;
         used = 0;
+        gearAccessory = &D_800625A0->tables->gearAccessories[D_800625A0->labels360->parts[2][part - 1]];
+        own = gearAccessory->groups;
         for (i = 0; i < 3; i++) {
-            used |= D_800625A0->tables->gearAccessories[D_800625A0->labels360->parts[2][i]].groups;
+            gearAccessory = &D_800625A0->tables->gearAccessories[D_800625A0->labels360->parts[2][i]];
+            used |= gearAccessory->groups;
         }
     } else {
         kind = 0;
@@ -866,65 +874,80 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
     length = kind == 5;
     for (i = 0; i < count; i++) {
         if (!gear) {
-            accessory = &D_800625A0->tables->accessories[D_8006F4FC[i]];
-            weapon = &D_800625A0->tables->weapons[D_8006F3D0[i]];
+            accessory = &D_800625A0->tables->accessories[D_8006D634.accessoryIds[i]];
+            weapon = &D_800625A0->tables->weapons[D_8006D634.weaponIds[i]];
         } else {
-            gearWeapon = &D_800625A0->tables->gearWeapons[D_8006F754[i]];
-            gearAccessory = &D_800625A0->tables->gearAccessories[D_8006F84E[i]];
+            gearWeapon = &D_800625A0->tables->gearWeapons[D_8006D634.gearPartIds[i]];
+            gearAccessory = &D_800625A0->tables->gearAccessories[D_8006D634.gearAccessoryIds[i]];
         }
         ok = 0;
         if (!gear) {
-            if (kind == 0) {
+            switch (kind) {
+            case 0:
                 if (func_801C865C(weapon->users, D_800625A0->party->ids[slot]) && weapon->kind < 5 &&
-                    D_8006F3D0[i] < 50) {
+                    D_8006D634.weaponIds[i] < 50) {
                     ok = 1;
                 }
-            } else if (kind < 5) {
+                break;
+            case 1:
+            case 2:
+            case 3:
+            case 4:
                 if (func_801C865C(weapon->users, D_800625A0->party->ids[slot]) &&
-                    weapon->kind == keptWeapon->kind && D_8006F3D0[i] >= 50) {
+                    weapon->kind == keptWeapon->kind && D_8006D634.weaponIds[i] >= 50) {
                     ok = 1;
                 }
-            } else if (kind == 5) {
+                break;
+            case 5:
                 if (func_801C865C(accessory->users, D_800625A0->party->ids[slot])) {
-                    groups = accessory->groups;
-                    if (groups == 0 || (own & groups) || !(used & groups)) {
+                    if (accessory->groups == 0 || (own & accessory->groups) || !(used & accessory->groups)) {
                         ok = 1;
                     }
                 }
+                break;
             }
-        } else if (kind == 0) {
-            if (func_801C8678(gearWeapon->users, D_8006D8A0[D_800625A0->party->ids[slot]].gear) &&
-                gearWeapon->kind < 5 && D_8006F754[i] < 50) {
-                ok = 1;
-            }
-        } else if (kind < 5) {
-            if (func_801C8678(gearWeapon->users, D_8006D8A0[D_800625A0->party->ids[slot]].gear) &&
-                gearWeapon->kind == keptGearWeapon->kind && D_8006F754[i] >= 50) {
-                ok = 1;
-            }
-        } else if (kind == 5) {
-            if (func_801C8678(gearAccessory->users, D_8006D8A0[D_800625A0->party->ids[slot]].gear)) {
-                groups = gearAccessory->groups;
-                if (groups == 0 || (own & groups) || !(used & groups)) {
+        } else {
+            switch (kind) {
+            case 0:
+                if (func_801C8678(gearWeapon->users, D_8006D8A0[D_800625A0->party->ids[slot]].gear) &&
+                    gearWeapon->kind < 5 && D_8006D634.gearPartIds[i] < 50) {
                     ok = 1;
                 }
+                break;
+            case 1:
+            case 2:
+            case 3:
+            case 4:
+                if (func_801C8678(gearWeapon->users, D_8006D8A0[D_800625A0->party->ids[slot]].gear) &&
+                    gearWeapon->kind == keptGearWeapon->kind && D_8006D634.gearPartIds[i] >= 50) {
+                    ok = 1;
+                }
+                break;
+            case 5:
+                if (func_801C8678(gearAccessory->users, D_8006D8A0[D_800625A0->party->ids[slot]].gear)) {
+                    if (gearAccessory->groups == 0 || (own & gearAccessory->groups) ||
+                        !(used & gearAccessory->groups)) {
+                        ok = 1;
+                    }
+                }
+                break;
             }
         }
         if (ok) {
             if (!gear) {
                 if (kind != 5) {
-                    D_801EA730[length] = D_8006F3D0[i];
-                    D_801EA7F8[length] = D_8006F36C[i];
+                    D_801EA730[length] = D_8006D634.weaponIds[i];
+                    D_801EA7F8[length] = D_8006D634.weaponCounts[i];
                 } else {
-                    D_801EA730[length] = D_8006F4FC[i];
-                    D_801EA7F8[length] = D_8006F434[i];
+                    D_801EA730[length] = D_8006D634.accessoryIds[i];
+                    D_801EA7F8[length] = D_8006D634.accessoryCounts[i];
                 }
             } else if (kind != 5) {
-                D_801EA730[length] = D_8006F754[i];
-                D_801EA7F8[length] = D_8006F6F0[i];
+                D_801EA730[length] = D_8006D634.gearPartIds[i];
+                D_801EA7F8[length] = D_8006D634.gearPartCounts[i];
             } else {
-                D_801EA730[length] = D_8006F84E[i];
-                D_801EA7F8[length] = D_8006F7B8[i];
+                D_801EA730[length] = D_8006D634.gearAccessoryIds[i];
+                D_801EA7F8[length] = D_8006D634.gearAccessoryCounts[i];
             }
             length++;
         }
@@ -934,24 +957,18 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
         if (D_801EA730[top + i] != 0) {
             if (!gear) {
                 if (kind != 5) {
-                    D_800625A0->block434->names[i].width =
-                        func_80034EAC(func_80033848(D_801EA730[top + i]), image, 0x24, 0);
+                    name = func_80033848(D_801EA730[top + i]);
                 } else {
-                    D_800625A0->block434->names[i].width =
-                        func_80034EAC(func_800337E8(D_801EA730[top + i]), image, 0x24, 0);
+                    name = func_800337E8(D_801EA730[top + i]);
                 }
             } else if (kind != 5) {
-                D_800625A0->block434->names[i].width =
-                    func_80034EAC(func_80033A5C(D_801EA730[top + i]), image, 0x24, 0);
+                name = func_80033A5C(D_801EA730[top + i]);
             } else {
-                D_800625A0->block434->names[i].width =
-                    func_80034EAC(func_80033A2C(D_801EA730[top + i]), image, 0x24, 0);
+                name = func_80033A2C(D_801EA730[top + i]);
             }
+            D_800625A0->block434->names[i].width = func_80034EAC(name, image, 0x24, 0);
             tens = D_801EA7F8[top + i] / 10;
-            codes[0] = tens + 0x10;
-            if ((u8)tens == 0) {
-                codes[0] = 0xc3;
-            }
+            codes[0] = tens != 0 ? tens + 0x10 : 0xc3;
             codes[2] = D_801EA7F8[top + i] % 10 + 0x10;
             func_80033B34(codes, text, 2);
             D_800625A0->block434->values[i].width = func_80034EAC(text, image, 0x24, 1);
