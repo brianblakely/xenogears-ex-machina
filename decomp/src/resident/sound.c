@@ -927,22 +927,18 @@ extern u32 D_80059504;           /* effect start clock */
 /* Start effect `id` (bank in the high half) on the effect channels from
  * index `code & 0xFF` with priority `code >> 8`, at `volume` (scaled by
  * the bank's per-effect volume) and `pan`.
- * Nonmatching: register allocation differs: the original keeps the volume
- * and the level in $fp and `code` in $s0 (here $s0 and $s1), tests the
- * level with srl (an s32 level gives sra; a u32 one spills it), and
- * schedules the pan reload and modulator pointer later. */
-#ifdef NON_MATCHING
+ * The level replaces the volume (16-bit store; clamped when bit 15 is set). */
 void func_8003B644(s16 code, s32 id, s16 volume, s16 pan) {
     SoundBank *bank = D_80059440;
     s32 bank_id = id >> 16;
     SoundSeq *effects = D_800595D8;
     SoundSequence *instruments;
-    s32 level;
     u16 *offset;
     SoundSeqChannel *channel;
     s32 count;
     u8 priority;
     s32 i;
+    u8 *volumes;
 
     while (bank->id != bank_id) {
         bank = bank->next;
@@ -954,9 +950,10 @@ void func_8003B644(s16 code, s32 id, s16 volume, s16 pan) {
     if (instruments == NULL) {
         instruments = D_80059558;
     }
-    level = (u32)(volume * ((u8 *)bank + bank->volumes)[id & 0xFFFF]) >> 7;
-    if ((level >> 15) & 1) {
-        level = 0x7FFF;
+    volumes = (u8 *)bank + bank->volumes;
+    volume = (u32)(volume * volumes[id & 0xFFFF]) >> 7;
+    if ((u16)volume > 0x7FFF) {
+        volume = 0x7FFF;
     }
     offset = &bank->effect[(id & 0xFFFF) * 2];
     priority = code >> 8;
@@ -987,8 +984,9 @@ void func_8003B644(s16 code, s32 id, s16 volume, s16 pan) {
             channel->duration_adjust = 0;
             channel->detune = 0;
             channel->previous_note = 0;
-            channel->volume = level;
+            channel->volume = volume;
             channel->level.value = 0x7F000000;
+            channel->pan = pan;
             channel->unk70 = 0;
             channel->pitch_mod = 0;
             channel->level_mod = 0;
@@ -996,7 +994,6 @@ void func_8003B644(s16 code, s32 id, s16 volume, s16 pan) {
             channel->state.unkC = 0;
             channel->state.unkE = 0;
             channel->modulators = 0;
-            channel->pan = pan;
             for (i = 3; i >= 0; i--) {
                 channel->modulator[i].flags = 0;
             }
@@ -1020,9 +1017,6 @@ void func_8003B644(s16 code, s32 id, s16 volume, s16 pan) {
     effects->flags |= 0x8000;
     EnableEvent(D_800595BC);
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003B644);
-#endif
 
 /* Free a sequence's snapshot chain. */
 void func_8003B930(SoundSeq *seq) {
