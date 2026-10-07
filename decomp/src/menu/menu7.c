@@ -2252,11 +2252,11 @@ void func_8008ECEC(u8 tag) {
     }
 }
 
-/* Stop the sounds a character's command sound entry started. Does not
- * match: the table base and the entry offset swap $s1/$s2 and the flag
- * load of the second id is scheduled after its mask. */
+/* Stop the sounds a character's command sound entry started. Declared int
+ * without a return value, as the original's unfilled last delay slot shows.
+ * Does not match: the table base and the entry offset swap $s1/$s2. */
 #ifdef NON_MATCHING
-void func_8008ED6C(Actor *owner, s32 index) {
+s32 func_8008ED6C(Actor *owner, s32 index) {
     s32 unused[2]; /* unused in the original; reserves 8 bytes */
     s32 entry;
     SoundPair *table;
@@ -2264,11 +2264,13 @@ void func_8008ED6C(Actor *owner, s32 index) {
     entry = owner->sounds[index];
     if (entry != 0xFF) {
         table = D_80091EE0;
-        if (D_80091EE0[entry].first != 0) {
-            func_8008ECEC((D_80091EE0[entry].first & 0x7F) | ((owner->flags >> 20) & 0x80));
+        index = D_80091EE0[entry].first;
+        if (index != 0) {
+            func_8008ECEC((index & 0x7F) | ((owner->flags >> 20) & 0x80));
         }
-        if (table[entry].second != 0) {
-            func_8008ECEC((table[entry].second & 0x7F) | ((owner->flags >> 20) & 0x80));
+        index = table[entry].second;
+        if (index != 0) {
+            func_8008ECEC((index & 0x7F) | ((owner->flags >> 20) & 0x80));
         }
     }
 }
