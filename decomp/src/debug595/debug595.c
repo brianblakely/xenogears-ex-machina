@@ -1186,8 +1186,11 @@ void func_80284EA4(void) {
  * 0x1101 are placed by `mode0`/`mode1`: 1 at the given origin plus the
  * section offset, 2 also plus the section position, else at the position.
  * Returns 1 for an unknown section kind, 0 after all sections are loaded.
- * NON_MATCHING: the loop increment is scheduled before mflo; the original
- * advances the payload pointer before incrementing the section index. */
+ * NON_MATCHING: the loop increment is scheduled between mult and mflo; the
+ * original advances the payload pointer before incrementing the section
+ * index. Any loop boundary just before the increment (e.g. the body in a
+ * do { } while (0)) reproduces the original, so the original body probably
+ * ended in a construct that is not recovered yet. */
 s32 func_80284FB4(u32 *archive, s16 mode0, s16 x0, s16 y0, s16 mode1, u16 x1, u16 y1) {
     s32 count;
     s32 i;
