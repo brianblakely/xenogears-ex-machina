@@ -50,10 +50,6 @@ void func_80025C04(s32 count, s32 scale, u16 *dst, u16 *src) {
  * or made grey (3), offset by the tint and clamped; the result moves from
  * that towards the `base` pixel by `factor` / 32 (at most 1) and goes to
  * `dst`, except for transparent (zero) source pixels. */
-/* Nonmatching: the original sign-extends the red component in $v0 for the
- * base subtraction; GCC extends it in $a0 and shares that value with the
- * packed output. Five instructions differ. */
-#ifdef NON_MATCHING
 void func_80025D4C(s32 count, u16 *src, u16 *base, u16 *dst, s32 red, s32 green, s32 blue, s32 mode,
                    s32 factor) {
     VECTOR delta;
@@ -67,7 +63,7 @@ void func_80025D4C(s32 count, u16 *src, u16 *base, u16 *dst, s32 red, s32 green,
     s32 grey;
     u32 grey_green;
     u32 grey_blue;
-    u32 colour;
+    u16 colour;
 
     if (factor > 0x20) {
         factor = 0x20;
@@ -130,7 +126,7 @@ void func_80025D4C(s32 count, u16 *src, u16 *base, u16 *dst, s32 red, s32 green,
         gte_gpf12();
         gte_stlvl(&delta);
         if (pixel != 0) {
-            colour = (r + ((u16)delta.vx & 0x1F)) | 0x8000;
+            colour = (u16)(r + ((u16)delta.vx & 0x1F)) | 0x8000;
             *dst = colour | (g + (delta.vy & 0x3E0)) | (b + (delta.vz & 0x7C00));
         }
         src++;
@@ -138,9 +134,6 @@ void func_80025D4C(s32 count, u16 *src, u16 *base, u16 *dst, s32 red, s32 green,
         dst++;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80025C04", func_80025D4C);
-#endif
 
 /* Draw entry `id` of a sprite sheet at screen (x, y), scaled and turned
  * by `angle`: each of its parts becomes a textured quad (every second one
