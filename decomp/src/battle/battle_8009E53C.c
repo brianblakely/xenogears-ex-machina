@@ -4518,8 +4518,8 @@ void func_800AAB34(BattleObject *object) {
  * the first and second parameter words, shared by several commands, as is
  * the looked-up animation of 11/12. Still NON_MATCHING: decoded-byte register
  * allocation, part-reset loop scheduling and camera temporaries differ from
- * the original. The compiled frame is eight bytes smaller because the decoded
- * high fields do not use the original caller-save home. */
+ * the original. The compiled frame is eight bytes smaller; the decoded high
+ * fields still do not use the original caller-save home. */
 void func_800AAD54(BattleObject *object, EffectPool *pool, s32 flags, s32 steps, s32 substeps) {
     VECTOR delta;
     SVECTOR velocity;
