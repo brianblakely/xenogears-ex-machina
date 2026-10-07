@@ -2184,16 +2184,18 @@ void func_801CB28C(s32 *save) {
  * its last byte, apply it; message 5c ends the load, a failure shows message
  * 3e and continues. */
 #ifdef NON_MATCHING
-/* Remaining: register allocation and block placement. 3 differing
- * instructions (local scorer) with: result/first/again initialised in
- * that order, result = 0 after the 62 message, the open loop followed by
- * if (file != 0), a do/while (0) block (statement macro) from the
- * buffer allocation (with done = 0 after it) through the checksum test,
- * a goto read-retry loop whose body is another such block, u8 sum, and
- * p = buffer + 0x100 passed to 801cb28c. Left: the open test's delay slot
- * and the 0x100 compare constant (the original's is a spilled invariant
- * reloaded into a3; comparing against a variable set to 0x100 at the start
- * reproduces that, leaving only the delay slot). */
+/* Remaining: the open retry loop. As a real loop (do/while) its -1 is
+ * hoisted into s0 as in the original, but loop.c then doubles the outer
+ * loop's insn count for that re-moved invariant and no longer hoists the
+ * read size 0x100 out of the outer loop (it stays in s6 instead of being a
+ * spilled invariant rematerialised into a3, which shifts fp/s7/s6). As the
+ * goto loop below everything else matches: the -1 is loaded inside the loop
+ * and the port argument there is not re-masked (6 differing instructions,
+ * local scorer). Recipe: file = fd after the open loop (fills the delay
+ * slot of its test and keeps the exit branch from being threaded), a
+ * do/while (0) block from the buffer allocation through the checksum test
+ * (moves the success block out of line), and the read retry as a real
+ * do/while loop followed by the close-and-release exit. */
 u8 func_801CB304(void) {
     char path[64];
     s32 first;
@@ -2206,12 +2208,12 @@ u8 func_801CB304(void) {
     s32 done;
     u8 *buffer;
     u8 *p;
-    s32 sum;
+    u8 sum;
     s32 i;
 
     result = 1;
-    again = 1;
     first = 1;
+    again = 1;
     func_801CADB0();
     do {
         if (func_801C93A8()) {
@@ -2228,9 +2230,9 @@ u8 func_801CB304(void) {
             D_800625A0->party->unk2F = 0;
             D_800625A0->party->unkB = 0;
             D_800625A0->loadState = 1;
-            result = 0;
             D_800625A0->party->unkB = 0;
             func_801CACF8(0x62, 0xff, 0);
+            result = 0;
             break;
         }
         D_800625A0->party->unk2F = 1;
@@ -2253,50 +2255,55 @@ u8 func_801CB304(void) {
                 func_801D2F4C(0x3b);
                 retry = 5;
                 D_800625A0->sounds = 0;
-                do {
-                    fd = open(path, 1);
-                    if (fd == -1) {
-                        fd = 0;
-                        func_801C8CA4(port);
-                    }
-                    file = fd;
-                } while (fd == 0 && --retry != 0);
-                if (fd != 0) {
-                    done = 0;
-                    D_800625A0->party->unk2F = 0;
-                    buffer = func_80031BDC(0x2100, 1);
-                    p = buffer;
-                    D_800625A0->party->unkB = 0;
-                    func_801CAE08(1);
+            open_again:
+                fd = open(path, 1);
+                if (fd == -1) {
+                    fd = 0;
+                    func_801C8CA4(port);
+                }
+                if (fd == 0 && --retry != 0) {
+                    goto open_again;
+                }
+                file = fd;
+                if (file != 0) {
                     do {
-                        func_801C7BF4();
-                        retry = 5;
+                        D_800625A0->party->unk2F = 0;
+                        buffer = func_80031BDC(0x2100, 1);
+                        done = 0;
+                        p = buffer;
+                        D_800625A0->party->unkB = 0;
+                        func_801CAE08(1);
                         do {
-                            if (read(fd, p, 0x100) != 0x100) {
-                                fd = 0;
-                                func_801C8CA4(port);
+                            func_801C7BF4();
+                            retry = 5;
+                            do {
+                                if (read(fd, p, 0x100) != 0x100) {
+                                    fd = 0;
+                                    func_801C8CA4(port);
+                                }
+                            } while (fd == 0 && --retry != 0);
+                            if (fd == 0) {
+                                close(file);
+                                goto release;
                             }
-                        } while (fd == 0 && --retry != 0);
-                        if (fd == 0) {
-                            close(file);
-                            goto release;
+                            done += 0x100;
+                            p += 0x100;
+                        } while (done < D_800625A0->card->saveBlocks << 13);
+                        close(fd);
+                        p = buffer + 0x100;
+                        sum = 0;
+                        for (i = 0; i < 0x1eff; i++) {
+                            sum += *p++;
                         }
-                        done += 0x100;
-                        p += 0x100;
-                    } while (done < D_800625A0->card->saveBlocks << 13);
-                    close(fd);
-                    p = buffer + 0x100;
-                    sum = 0;
-                    for (i = 0; i < 0x1eff; i++) {
-                        sum += *p++;
-                    }
-                    if ((u8)sum == *p) {
-                        func_801C72BC(1);
-                        func_801CB28C((s32 *)(buffer + 0x100));
-                        func_801C72BC(0x11);
-                    } else {
-                        fd = 0;
-                    }
+                        if (sum == *p) {
+                            p = buffer + 0x100;
+                            func_801C72BC(1);
+                            func_801CB28C((s32 *)p);
+                            func_801C72BC(0x11);
+                        } else {
+                            fd = 0;
+                        }
+                    } while (0);
                 release:
                     func_800320E8(buffer);
                 }
