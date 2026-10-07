@@ -624,12 +624,12 @@ ModelList *func_801DC22C(u8 *group, ModelList *list);
 ModelPart *func_801DC2D0(ModelList *group, HierarchyLink *links, s32 mode, s32 configure,
                          s16 param0, s16 param1, s16 param2, s16 param3);
 void func_801E1A14(Record24 *record, u16 *table, s16 angle_base, s32 scale, s16 ox, s16 oy, s16 oz,
-                   s16 count, s16 tx, s16 ty, s16 u_span, s16 v_span, s16 clut_x, s16 clut_y, u8 b0,
+                   s32 count, s16 tx, s16 ty, s16 u_span, s16 v_span, s16 clut_x, s16 clut_y, u8 b0,
                    u8 b1, u8 b2, u8 b3, u8 b4, u8 b5);
 void func_801E3534(Actor *actor, SlotPool *pool, s32 *entries, s32 *locals);
 void func_801E8510(Actor *actor);
 
-s16 ratan2(s32 y, s32 x);
+s32 ratan2(s32 y, s32 x);
 s32 func_8003F8B0(s32 angle);                 /* sine (4096 = 1.0) */
 MATRIX *func_80049ACC(MATRIX *m, MATRIX *scale); /* scale a matrix's columns */
 struct Particle *func_801E0248(struct ParticlePool *pool, s16 semi_trans);
