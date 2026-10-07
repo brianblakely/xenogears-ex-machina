@@ -363,7 +363,9 @@ void func_801DC3D8(u8 slot, u8 kind) {
  * two text lines, a copy of its name and its target labels; an unused row
  * hides them. */
 #ifdef NON_MATCHING
-/* Differs in the first switch's tail merging and register allocation. */
+/* Differs in register allocation (the original keeps `row` in a1 and gives
+ * slot s4, row & 0xff s3 and the effect s5) and the first switch's shared
+ * `text` sum takes its operands the other way round. */
 void func_801DCE60(u8 slot, u8 row, u8 kind) {
     RECT rect;
     MenuEffect *effect;
@@ -419,11 +421,11 @@ void func_801DCE60(u8 slot, u8 row, u8 kind) {
             effect += 22;
             break;
         case 1:
-            effect = D_800625A0->tables->effects[11 + D_8006D8A0[D_800625A0->party->ids[slot]].gear] + row;
+            effect = (D_800625A0->tables->effects + 11)[D_8006D8A0[D_800625A0->party->ids[slot]].gear] + row;
             effect += 21;
             break;
         case 2:
-            effect = D_800625A0->tables->effects[11 + D_8006D8A0[D_800625A0->party->ids[slot]].gear] + (row >> 1);
+            effect = (D_800625A0->tables->effects + 11)[D_8006D8A0[D_800625A0->party->ids[slot]].gear] + (row >> 1);
             effect += 37;
             break;
         }
@@ -1010,8 +1012,10 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801DE5
  * (worn special parts are dropped). Without a new part the kept one goes
  * back. Returns 1 when character 4 changed weapon. */
 #ifdef NON_MATCHING
-/* Differs: the original's frame is 0x28 (this builds 0x18) and it converts
- * `gear` at each use; the inventory update code otherwise has the same shape. */
+/* Differs: the original's frame is 0x28 (this builds 0x18: the extra slots
+ * are left by two more compare-and-branch pseudos that combine deletes, so the
+ * original has two more such compares) and it converts `gear` at each use;
+ * the inventory update code otherwise has the same shape. */
 s32 func_801DF0D4(u8 slot, u8 part, u8 special, u8 gear) {
     u8 *ids;
     u8 *counts;

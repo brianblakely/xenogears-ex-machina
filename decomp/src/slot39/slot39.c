@@ -6657,7 +6657,9 @@ void func_801DB5E4(u8 mode) {
 #ifdef NON_MATCHING
 /* Differs: the original clears the used-up id through &D_8006F5C4 + 0x96
  * (reloaded into t0, as is the counts base before the loop); this build
- * addresses D_8006F65A directly. */
+ * addresses D_8006F65A directly (INVENTORY->ids reorders the saved registers).
+ * The original also uses 801e31c0's result unmasked, as an implicitly
+ * declared (int) function would be. */
 u8 func_801DB920(s32 row, s32 entry) {
     u16 marks;
     u8 running;
