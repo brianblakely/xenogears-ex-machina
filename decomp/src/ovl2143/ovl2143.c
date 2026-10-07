@@ -2755,11 +2755,16 @@ void func_801E37D0(Actor *actor) {
  * carry 0x3C's sound and volume (so `reference` crosses a call and takes
  * s0), and 0x13/0x14 reuse `op` and `depth` for their extra bytes and the
  * resolved actor index (their registers and the zero-extensions at use).
- * NON_MATCHING (8 bytes longer): loop.c hoists the 0xff compare constant
- * out of the interpreter loop (6 uses; the original loads it at each use),
- * which shifts the reload registers in 0x14, 0x15, 0x22 and later cases;
- * further per-case register choices remain (e.g. 0x28 keeps the distance
- * in a1 where the original uses a2). */
+ * 0x26 keeps its 0xff marker in a block-scope variable: as a constant it
+ * would join the other 0xff loads, which loop.c then hoists out of the
+ * interpreter loop (the original loads 0xff at each use).
+ * NON_MATCHING (4 bytes shorter): per-case scheduling and allocation remain:
+ * 0x15 orders its 0xffff/-1 and 0x10d/0x10e stores differently, 0x1D and
+ * the turn opcodes 0x40/0x41 load the -1 for `changed` earlier, 0x42
+ * has dx/dz in s1/s0 (s0/s1 in the original, whose 0x4f uses other
+ * registers for its own offsets; giving either case block-scope offsets
+ * moves `arg` out of s5), 0x4f keeps dy in s2 instead of a2, and the
+ * table load before the 0x6e mask test is placed earlier. */
 #ifdef NON_MATCHING
 void func_801E39F0(Actor *actor, SlotPool *pool, s32 changed, s32 ticks, s32 arg4) {
     Actor *self;
@@ -3210,14 +3215,17 @@ aim:
             }
             break;
         }
-        case 0x26: /* detach the masked actors */
+        case 0x26: { /* detach the masked actors */
+            u8 none;
+
             func_801E6830(actor, arg, &word);
-            for (n = 0; n < 8; n++) {
+            for (n = 0, none = 0xFF; n < 8; n++) {
                 if ((((s16)word >> n) & 1) && D_801E8670[n] != NULL) {
-                    D_801E8670[n]->parent = 0xFF;
+                    D_801E8670[n]->parent = none;
                 }
             }
             break;
+        }
         case 0x27: /* recompose the hierarchy */
             if (actor->scaled) {
                 func_801DC848(actor->parts, actor->scale);
@@ -3287,13 +3295,15 @@ aim:
             counter = (u16 *)((u8 *)start + (s16)word);
             limit = (u16)(word = *counter++) >> 8;
             *counter = word = *counter + 1;
+            counter++;
             if ((s16)word < limit) {
-                pc = counter + 1;
+                pc = counter;
             }
             break;
         }
         case 0x32: /* jump */
-            pc = (u16 *)((u8 *)start + (s16)*pc);
+            word = *pc;
+            pc = (u16 *)((u8 *)start + (s16)word);
             break;
         case 0x35: /* jump at random (half the time) */
             word = *pc++;
