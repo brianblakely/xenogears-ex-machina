@@ -251,6 +251,9 @@ typedef struct {
 #define setUV4(p, _u0, _v0, _u1, _v1, _u2, _v2, _u3, _v3) \
     (p)->u0 = _u0, (p)->v0 = _v0, (p)->u1 = _u1, (p)->v1 = _v1, \
     (p)->u2 = _u2, (p)->v2 = _v2, (p)->u3 = _u3, (p)->v3 = _v3
+#define setUVWH(p, _u0, _v0, _w, _h) \
+    (p)->u0 = (_u0), (p)->v0 = (_v0), (p)->u1 = (_u0) + (_w), (p)->v1 = (_v0), \
+    (p)->u2 = (_u0), (p)->v2 = (_v0) + (_h), (p)->u3 = (_u0) + (_w), (p)->v3 = (_v0) + (_h)
 #define setSemiTrans(p, abe) \
     ((abe) ? setcode(p, getcode(p) | 0x02) : setcode(p, getcode(p) & ~0x02))
 #define setShadeTex(p, tge) \

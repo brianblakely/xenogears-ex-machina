@@ -3836,12 +3836,13 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801E78
  * 180 page (+80 keeps it opaque, else dimmed), with palette choice
  * `mode & 7f` - 1. Hides the label. */
 #ifdef NON_MATCHING
-/* The original's quad loop is not loop-optimized (the palette, u and v are
- * recomputed for each quad), hence the goto loop. Remaining: global
- * allocation (the original gives index fp, mode s7, i s6, half s5; here
- * index wins s5), mode 0 keeps index + first apart from its /4 rounding
- * copy and copies column for u2, and the stores keep source order where
- * this build fills load delays with them (528 vs 536 bytes). */
+/* The original's quad loop is not loop-optimized (the palette and the
+ * texture window are recomputed for each quad), hence the goto loop; the
+ * window is PsyQ's setUVWH. Remaining: global allocation (the original
+ * gives index fp, mode s7, i s6, half s5; here index wins s5: wrapping the
+ * quad body in a do/while (0) block gets index and half right but swaps
+ * mode and i), the semi-transparency bit is or-ed the other way round and
+ * the clut store goes through a copy of the quad pointer. */
 void func_801E7C50(MenuLabelSlot *label, s32 index, s32 first, u8 mode) {
     POLY_FT4 *poly;
     s32 i;
@@ -3849,9 +3850,6 @@ void func_801E7C50(MenuLabelSlot *label, s32 index, s32 first, u8 mode) {
     s32 half;
     s32 row;
     s32 column;
-    u8 u;
-    u8 v;
-    s32 n;
 
     i = 0;
     half = index & 1;
@@ -3864,36 +3862,16 @@ loop:
     if (mode == 0) {
         label->palette = half;
         poly->tpage = GetTPage(0, 0, 0x140, 0);
-        poly->u0 = column;
-        n = index + first;
-        v = n / 4 * 0xd;
-        poly->v0 = v;
-        poly->u1 = column + label->width;
-        poly->v1 = v;
-        poly->u2 = column;
-        poly->v2 = v + 0xd;
-        poly->u3 = column + label->width;
-        poly->v3 = v + 0xd;
+        setUVWH(poly, column, (index + first) / 4 * 0xd, label->width, 0xd);
     } else {
         if (!(mode & 0x80)) {
             semi = 0x20;
             SetSemiTrans(poly, 1);
-            poly->r0 = semi;
-            poly->g0 = semi;
-            poly->b0 = semi;
+            setRGB0(poly, semi, semi, semi);
         }
         label->palette = (mode & 0x7f) - 1;
         poly->tpage = semi | GetTPage(0, 0, 0x180, 0x80);
-        u = half * 0x60;
-        v = row * 0xd + first;
-        poly->u0 = u;
-        poly->v0 = v;
-        poly->u1 = u + label->width;
-        poly->v1 = v;
-        poly->u2 = u;
-        poly->v2 = v + 0xd;
-        poly->u3 = u + label->width;
-        poly->v3 = v + 0xd;
+        setUVWH(poly, half * 0x60, row * 0xd + first, label->width, 0xd);
     }
     if (label->palette != 0) {
         poly->clut = D_80059414;
