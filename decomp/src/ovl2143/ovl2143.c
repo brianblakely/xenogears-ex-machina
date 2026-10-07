@@ -2776,12 +2776,12 @@ void func_801E37D0(Actor *actor) {
  * that release or hand over (0x14 with 0xfd, 0x16, 0x17, 0x5b) return without
  * storing it, and 0x15 copies into an uninitialised block when all actor
  * slots 8 and 9 are used, as in the original.
- * NON_MATCHING (100 bytes shorter): the case bodies are in the original's
- * order (jump table checked case by case); still different: the original
- * passes every operand through the `word` slot (sh to 0x6c even when only
- * the register value is used), reuses `n` (0x68) as the counter of most
- * loops, keeps m/ex/ey/ez and the d/v vectors in block scopes (v and d share
- * a slot), and allocates registers differently throughout. */
+ * NON_MATCHING (20 bytes shorter): the case bodies are in the original's
+ * order (jump table checked case by case, 26 of 0x71 bodies still differ in
+ * size); the original zero-extends `arg` at each use (andi 0xff), uses the
+ * register copy of an operand where this C reloads `word` (lh 0x6c), keeps
+ * m/ex/ey/ez and the d/v vectors in block scopes (v and d share a slot, so
+ * n and word sit at 0x68/0x6c), and allocates registers differently. */
 #ifdef NON_MATCHING
 void func_801E39F0(Actor *actor, SlotPool *pool, s32 changed, s32 ticks, s32 arg4) {
     Actor *self;
@@ -3114,14 +3114,24 @@ aim:
             }
             break;
         case 0x20: /* wait for the tweens to end */
-            if (changed == -1 || (changed & 0x100)) {
+            if (changed != -1) {
+                if (changed & 0x100) {
+                    pc = start;
+                    running = 0;
+                }
+            } else {
                 pc = start;
                 running = 0;
             }
             break;
         case 0x21: /* wait for the tweens tagged `arg` */
             actor->h3C = arg;
-            if (changed == -1 || (changed & 1)) {
+            if (changed != -1) {
+                if (changed & 1) {
+                    pc = start;
+                    running = 0;
+                }
+            } else {
                 pc = start;
                 running = 0;
             }
@@ -3274,7 +3284,7 @@ aim:
             }
             break;
         case 0x2B: /* wait while farther than h8e */
-            if (actor->h8E >= func_801E6338(actor)) {
+            if (func_801E6338(actor) <= actor->h8E) {
                 pc = start;
                 running = 0;
             }
@@ -3327,7 +3337,7 @@ aim:
         case 0x33:
         case 0x34:
         case 0x3B:
-            pc++;
+            word.value = *pc++;
             break;
         case 0x3C: /* play a sound */
             word.value = *pc++;
@@ -3496,20 +3506,20 @@ aim:
             }
             break;
         case 0x5D:
-            actor->parts[(s16)*pc++].billboard = arg;
+            word.value = *pc++;
+            actor->parts[(s16)word.value].billboard = arg;
             break;
         case 0x5E:
-            actor->scale = *pc++;
+            word.value = *pc++;
+            actor->scale = word.value;
             break;
         case 0x5F:
-            actor->flags = *pc++;
+            word.value = *pc++;
+            actor->flags = word.value;
             break;
         case 0x62:
-            c0 = pc[0];
-            c1 = pc[1];
-            c2 = pc[2];
-            func_801E7094(actor, &actor->parts[c0], arg, c1, c2, pc[3]);
-            pc += 4;
+            /* The operands are read in order. */
+            func_801E7094(actor, &actor->parts[(s16)*pc++], arg, (s16)*pc++, (s16)*pc++, (s16)*pc++);
             break;
         case 0x63: /* start an event animation and jump */
             word.value = *pc++;
@@ -3524,7 +3534,8 @@ aim:
             actor->h3E = *pc++;
             break;
         case 0x6B:
-            actor->parts[(s16)*pc++].yxz = arg;
+            word.value = *pc++;
+            actor->parts[(s16)word.value].yxz = arg;
             break;
         case 0x6C: /* wait while the resident is busy */
             if (func_800286CC() != 0) {
