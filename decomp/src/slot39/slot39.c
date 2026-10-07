@@ -2712,10 +2712,23 @@ u8 func_801CBD90(u8 kind) {
  * card and 44 otherwise, and refreshes the listing. Returns 1 when there
  * was no card. */
 #ifdef NON_MATCHING
-/* Differs in register allocation and spills (the original keeps &tempName
- * in a saved register) and block placement; do/while (0) blocks around the
- * read/write retry sections get 131 -> 111 differing instructions (local
- * scorer) but not the allocation. */
+/* Remaining (local scorer 117; nm_diff 80 lines):
+ * - Block placement: the original emits the copy-failure block (close both,
+ *   rebuild the temporary name, erase it) between the open-temp failure
+ *   block and the header write. Placing it there with
+ *   `} else if (0) { fail: ... } else {` reproduces the layout and every
+ *   other difference except the two below (nm_diff 50 lines).
+ * - Allocation: the original keeps &tempName (hoisted out of the outer loop)
+ *   in fp and spills src to 4e0 (stored by sw, read back by lbu). Here src
+ *   (refs 14, live 266, priority 1578) outranks &tempName (refs 17, live
+ *   515, priority 1320). Writing the three src retry loops as goto loops
+ *   drops src to 11 refs and gives exactly the original allocation, but
+ *   those loops then lose the lbu (the argument mask is combined away) and
+ *   the srcFd copy placement, so the originals are real loops and src's
+ *   weight must come out lower some other way.
+ * - Scheduling: the full-card block (`proceed = 0` / `again = 0` sit
+ *   between the argument loads in the original) and `written += 0x200`
+ *   (the original fills the header[3] load delay with it). */
 u8 func_801CC6D8(void) {
     char destName[64];
     char other[8];
@@ -2735,12 +2748,13 @@ u8 func_801CC6D8(void) {
     u8 noCard;
     u8 exists;
     u8 retry;
-    u8 phase;
+    s32 phase;
     s32 fd;
     s32 srcFd;
     s32 destFd;
     s32 written;
     s32 i;
+    s32 slot;
 
     full = 0;
     first = 1;
@@ -2815,17 +2829,18 @@ u8 func_801CC6D8(void) {
                     src = 1;
                 }
                 if (D_800625A0->card->result[dest] == -2) {
-                    if (!func_801CB8AC(dest)) {
+                    if (func_801CB8AC(dest)) {
+                        func_801D2F4C(0x26);
+                        if (func_80040574(other)) {
+                            func_801D32B4();
+                            func_801CACF8(0x5c, 0xff, 0);
+                        } else {
+                            func_801D32B4();
+                            proceed = 0;
+                        }
+                    } else {
                         D_800625A0->markers->unk144[0] = 1;
                         continue;
-                    }
-                    func_801D2F4C(0x26);
-                    if (func_80040574(other)) {
-                        func_801D32B4();
-                        func_801CACF8(0x5c, 0xff, 0);
-                    } else {
-                        func_801D32B4();
-                        proceed = 0;
                     }
                 }
             }
@@ -2909,13 +2924,13 @@ u8 func_801CC6D8(void) {
                                         func_801C8CA4(dest);
                                     }
                                 } while (fd == 0 && --retry != 0);
-                                written = 0x200;
                                 if (fd == 0) {
                                     close(srcFd);
                                     close(destFd);
                                     destFd = 0;
                                     func_800405B4(tempName);
                                 }
+                                written = 0x200;
                                 phase = 0;
                                 func_801CAE08(1);
                                 for (;;) {
@@ -2977,17 +2992,17 @@ u8 func_801CC6D8(void) {
                     D_800625A0->sounds = 0;
                     func_801CACF8(0x5c, 0xff, 0);
                 } else {
-                    func_801CACF8(full ? 0xac : 0x44, 0xff, 0);
+                    func_801CACF8(!full ? 0x44 : 0xac, 0xff, 0);
                 }
                 func_801CAE08(0);
                 D_800625A0->card->mode = 2;
                 while (D_800625A0->cardPollTimer != 1) {
                     func_801C7BF4();
                 }
-                for (i = 0; i < 32; i++) {
-                    D_800625A0->card->fileSlots[i] = 0xff;
-                    D_800625A0->card->ours[i] = 0;
-                    D_800625A0->card->files[i].state = 0;
+                for (slot = 0; slot < 32; slot++) {
+                    D_800625A0->card->fileSlots[slot] = 0xff;
+                    D_800625A0->card->ours[slot] = 0;
+                    D_800625A0->card->files[slot].state = 0;
                 }
                 D_800625A0->card->scanned[0] = 0;
                 D_800625A0->card->scanned[1] = 0;
