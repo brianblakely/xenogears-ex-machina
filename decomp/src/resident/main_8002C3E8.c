@@ -753,13 +753,15 @@ void func_8002DD20(u32 *list) {
  * Each type has a placement mode (1: base + offset, 2: base + origin +
  * offset, otherwise origin + offset) and a base position. Returns 1 at an
  * unknown image type, else 0.
- * Nonmatching: switch delay slots, shared placement tails and the loop
- * increment scheduling differ. */
+ * Nonmatching: the original leaves the first case branch's delay slot
+ * empty, shares the mode-1 y store with the default tail (the add moving
+ * into the jump's delay slot), and schedules the loop increment after the
+ * size multiply (516 vs 508 bytes). */
 #ifdef NON_MATCHING
 s32 func_8002DDE4(s32 *images, s16 mode, s32 x, s32 y, s16 mode2, u16 x2, u16 y2) {
     RECT rect;
-    s32 base_x = x;
-    s32 base_y = y;
+    u16 base_x = x;
+    u16 base_y = y;
     s32 count = images[0];
     u16 *p = (u16 *)(images + (count + 1));
     s32 type;
