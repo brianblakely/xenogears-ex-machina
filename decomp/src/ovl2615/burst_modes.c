@@ -5,17 +5,23 @@
  * load_modes (see ovl2615.mk). */
 #include "battle_setup.h"
 
+/* One burst frame: speed up, count the frame and turn one spin field. */
+#define BURST_STEP(burst, frame, dspeed, spin, dspin) \
+    do {                                              \
+        (burst)->speed += (dspeed);                   \
+        (frame) = ++(burst)->frame;                   \
+        (burst)->spin += (dspin);                     \
+    } while (0)
+
 /* Burst update: variant 1 turns faster and faster, rising and fading after
  * 67 frames; variant 0 twists and rises, fading after 25 frames. The empty
  * loops over the 2x14x20 grid are left from removed work.
- * NON_MATCHING: frame and size now match; the original keeps the task in a1
- * and loads each field after the previous store (here the loads are hoisted
- * and the frame counter takes a0). Reaching trans through its own VECTOR
- * pointer reproduces the original load order but keeps that pointer in a2.
- * The original's first branch equals this draft compiled without sched1
- * (-fno-schedule-insns): sched1 here hoists the trans.vz load next to the
- * angle load (all four stores are independent ready roots and the angle
- * store is taken before the trans load launches). */
+ * NON_MATCHING: 4 bytes long. The BURST_STEP block keeps sched1 from
+ * hoisting the trans.vz load above the spin store, as in the original, but
+ * its end barrier also ties the code after it: in the first branch the frame
+ * test cannot fill the trans.vz load delay (a nop instead of the original's
+ * slti), and in the second the speed reload stays after the trans.vz load
+ * (the original loads it before the frame store). */
 #ifdef NON_MATCHING
 void func_801E8964(TaskNode *node) {
     SVECTOR unused; /* unused in the original; reserves 8 bytes */
@@ -24,9 +30,7 @@ void func_801E8964(TaskNode *node) {
     s32 i, j, k;
 
     if (D_801E9680 != 0) {
-        burst->speed++;
-        frame = ++burst->frame;
-        burst->angle += 0xA0;
+        BURST_STEP(burst, frame, 1, angle, 0xA0);
         burst->trans.vz -= 0x3C;
         if (frame >= 0x43) {
             burst->brightness -= 0x18;
@@ -34,9 +38,7 @@ void func_801E8964(TaskNode *node) {
             burst->twist += 0x80;
         }
     } else {
-        burst->speed += 10;
-        frame = ++burst->frame;
-        burst->twist += 0x600;
+        BURST_STEP(burst, frame, 10, twist, 0x600);
         burst->trans.vz -= burst->speed;
         if (frame >= 0x19) {
             burst->brightness -= 0x14;
