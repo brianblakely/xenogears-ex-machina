@@ -840,7 +840,12 @@ void func_80073380(s32 member) {
 
 /* Build each present member's status glyphs by its panel state (0: the
  * status label, 1: the party-wide label, 2/3: the cursor window), and
- * record the draw buffer they were built for. */
+ * record the draw buffer they were built for. In state 3 each outcome is
+ * written out, so both stores address the panel arrays from the switch's
+ * D_800D2D28 + member (cross-jumping later merges the two identical
+ * stores). Nonmatching (1316 vs 1312 bytes): the hoisted 0xC00 angle of
+ * the state-1 calls is rematerialised into $t1 before each call here; the
+ * original reloads it once into $s0 and reuses it for the second call. */
 #ifdef NON_MATCHING
 void func_80073538(void) {
     s32 member;
@@ -885,8 +890,12 @@ void func_80073538(void) {
             D_800D2D28->statusBuffer[3] = D_800CCB04.buffer;
             break;
         case 3:
-            if (D_800D32A0[member].unk1 != 0 && D_800D2D24[member] != 7) {
-                D_800D2D28->unkCC[member] = 0;
+            if (D_800D32A0[member].unk1 != 0) {
+                if (D_800D2D24[member] != 7) {
+                    D_800D2D28->unkCC[member] = 0;
+                } else {
+                    D_800D2D28->statusParts[member] = 0;
+                }
             } else {
                 D_800D2D28->statusParts[member] = 0;
             }
