@@ -359,7 +359,6 @@ void func_801E9340(char *name, void *buffer, s32 size) {
  * close and the drive to settle, from the disc label and files 18 and 28.
  * Returns 0 when loaded, 2 when no disc label was read, 3 for the other
  * disc. */
-#ifdef NON_MATCHING
 s32 func_801E93A0(s32 disc) {
     DiscLabel label = { { 0 } };
     u8 pos[4];
@@ -414,19 +413,18 @@ retry:
     VSync(3);
     func_8002954C(0x17, &label, 0x10, 0, 0);
     func_80028A60(0);
-    result = 2;
     if (label.tag == 0x4e45585f) {
-        result = 3;
         if (label.disc == disc + '0') {
             func_8002954C(0x18, D_8004FDF0, 0x8000, 0, 0);
             result = 0;
             func_80028A60(0);
             func_8002954C(0x28, D_8004FDF4, 0x7a, 0, 0);
             func_80028A60(0);
+        } else {
+            result = 3;
         }
+    } else {
+        result = 2;
     }
     return result;
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801E8070", func_801E93A0);
-#endif
