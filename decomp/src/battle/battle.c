@@ -2737,18 +2737,18 @@ u8 func_80087AF0(u8 member, u8 cost) {
 
 /* Move `actor` into `target`'s formation group when it is another group
  * with room (under four members): leave the old group, take the first free
- * member place and stand at that place of the group's area. (Nonmatching:
- * the original computes the enemy offset (actor >= 3) << 3 before testing
- * the target and keeps the branch: 0 in the delay slot, the offset copied on
- * the fall-through. Every precomputed form tried (a temporary, if/else, a
- * reused base, D_800C3EB0.slots) lets jump.c fold the branch into a
- * store-flag mask; this ternary computes the offset inside the branch.) */
-#ifdef NON_MATCHING
+ * member place and stand at that place of the group's area. The actor's
+ * side offset is evaluated once before the target test (`actorBase`, never
+ * read) and again inside it; CSE shares the two, which keeps the branch
+ * (0 in the delay slot, the offset copied on the fall-through) instead of
+ * jump.c's store-flag mask. */
 void func_80087EDC(u8 actor, u8 target) {
     u8 base;
     s32 member;
+    s32 actorBase;
 
     if (D_800C3EB4[actor].group != D_800C3EB4[target].group) {
+        actorBase = (actor >= 3) * 8;
         base = target < 3 ? (actor >= 3) * 8 : 0;
         if (D_800D301C[D_800C3EB4[target].group + base].count < 4) {
             func_800883AC(actor);
@@ -2771,9 +2771,6 @@ void func_80087EDC(u8 actor, u8 target) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80087EDC);
-#endif
 
 /* Move `actor` alone into `target`'s formation group when that group is
  * another one and empty (entries from 0x10, or 0x18 for an enemy joining a
