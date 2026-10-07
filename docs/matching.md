@@ -137,7 +137,69 @@ decomp-permuter: `python3 tools/permuter_import.py <config.mk> <func>` prepares
 `.local/permuter/<func>` from the unit's exact compiler settings, then
 `permuter -j8 --best-only .local/permuter/<func>`. Its candidates are hints, often
 nonsense C; keep only a readable, semantically identical rewrite that `make verify`
-accepts.
+accepts. Its parser misreads `sizeof(X) + y` (parenthesise the sizeof in base.c) and
+fails on calls to undeclared functions (declare them K&R in base.c).
+
+`python3 tools/nonmatching_score.py <config.mk> [func...]` compiles a target's
+NON_MATCHING drafts into a side build and ranks them by remaining instruction
+differences. It compares relocated instructions without their immediates, so a wrong
+struct offset or symbol offset scores as equal; confirm near misses in the real image.
+
+## What counts as recovered source
+
+- An unused aggregate local (`RECT unused; /* unused in the original; reserves 8
+  bytes */`) may reproduce a frame slot that the original code never reads or writes.
+  GCC 2.x allocates unused aggregates; leftover locals are ordinary shipped code.
+- Named `do { ... } while (0)` statement macros may wrap real statement groups (the
+  original used them; they add a loop note that changes scheduling, allocation weight
+  and block placement). An empty one is allowed only as a named, commented,
+  compiled-out debug macro at a plausible place.
+- Never-read locals, dead assignments or dead stores that exist only to steer CSE,
+  scheduling or allocation are rejected even when they match (battle 80087EDC was
+  withdrawn for this). No new inline asm, register pinning or `.word`; the existing
+  GTE, `break` and scratchpad-stack macros are original style.
+- Strings whose alignment padding holds stray assembler bytes stay original data:
+  mark the symbol `force_not_migration:True`, link it with INCLUDE_RODATA beside the
+  function and reference it as `extern char[]`.
+- K&R definitions, unprototyped calls and implicit-int returns are legitimate where
+  the original passes unpromoted arguments or keeps `$v0` live.
+- Unit compiler settings are qualified per unit; compiling every remaining draft under
+  single-flag variants (`-fno-schedule-insns[2]`, `-fno-strength-reduce`, CSE and loop
+  options, `-O1`) produced no match, so do not change unit flags to fix one function.
+
+## Matching levers (GCC 2.6.3/2.7.2)
+
+Most matches came from data shape, not statement shuffling:
+
+- Declare globals as the real struct other units already use. A member at a nonzero
+  offset (`area.slots[i]` = `%lo(area+4)`) orders and reuses addresses differently
+  from a separate symbol or offset 0. Index flat tables exactly as the original does
+  (`tbl[i*2+1]`), use bit-field views where it inserts/extracts bits, the operands'
+  real signedness, and PsyQ macros (`setXYWH`, `setRECT`, `setUVWH`) instead of
+  hand-written corner arithmetic.
+- sched1 places a pseudo set exactly once (a "register birth") next to its use; a
+  variable assigned twice (`p = base; p += off;`) keeps an earlier load early.
+- Global allocation ranks pseudos by references (weighted by loop depth) over live
+  length. Statements duplicated in each branch, later merged by cross-jumping, still
+  add references; reusing one scratch variable for several roles or narrowing a block
+  scope also changes the order. `$sN` permutations are usually this.
+- CSE: if/else arms create a join label it cannot reuse values across; a `(u16)` view
+  stops sharing of an identical expression; a local copy of a global pointer or a
+  shift keeps `base + index*size` base-first.
+- loop.c moves an invariant when threshold x savings x lifetime >= loop insn count
+  (threshold 52, 26 with calls, minus 3 per moved insn on 2.6.3; inner-loop invariants
+  double the outer loop's count). A larger original body (per-branch statements,
+  statement macros) keeps invariants in the loop; identical address computations
+  pair into reduced pointers where distinct ones stay indexed.
+- jump.c copies loop exit blocks shorter than about 22-26 insns to the loop entry and
+  cross-jumps identical tails; keep tails distinct where the original does.
+- Script interpreters read a signed 16-bit word: bytes taken as `word >> 8` into a
+  `u8` get `andi 0xff` at every later use because combine cannot prove the upper bits.
+- Store order of independent statements is free to search (semantics unchanged).
+
+Inspect decisions with cc1 RTL dumps (`-dL` loop, `-dS`/`-dR` scheduling, `-dl`/`-dg`
+allocation) on the preprocessed unit; the comments of each NON_MATCHING draft record
+what has been measured for it.
 
 ## Recover incrementally
 
