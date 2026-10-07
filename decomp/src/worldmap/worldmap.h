@@ -1793,12 +1793,8 @@ typedef struct {
     SVECTOR v[4];
 } ParticleShape;
 
-typedef struct {
-    u16 uv[4];
-} ParticleUV;
-
 extern ParticleShape D_8009B040[];
-extern ParticleUV D_8009AFF0[];
+extern u16 D_8009AFF0[]; /* four packed u,v pairs per kind */
 
 extern SVECTOR D_8009A340[4][3]; /* map player marker triangles */
 extern u16 D_8009B6F4[64];       /* 32 map dot positions: interleaved X/Z */

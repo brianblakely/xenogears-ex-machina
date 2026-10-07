@@ -452,7 +452,6 @@ void func_80073448(s32 id) {
 }
 
 /* Unpack the area file and resolve its section offsets to pointers. */
-#ifdef NON_MATCHING /* the reloaded area pointer lands in s0 (block) instead of v0 copied to a0 */
 void func_80073530(void) {
     u8 *block;
     u8 *base;
@@ -463,9 +462,8 @@ void func_80073530(void) {
     block = D_8009C180;
     D_8009C180 = func_80032E88(block, 0);
     func_800320E8(block);
-    block = D_8009C180;
-    base = block;
-    area = (AreaHeader *)block;
+    base = D_8009C180;
+    area = (AreaHeader *)base;
     block = base + area->spots;
     D_8009CD48 = base + area->off8;
     D_8009D308 = base + area->offC;
@@ -476,7 +474,7 @@ void func_80073530(void) {
     D_8009D77C = base + area->off20;
     D_8009D7C8 = base + area->off24;
     for (i = 0; i < 16; i++) {
-        D_8009D73C[i] = base + area->models[i];
+        D_8009D73C[i] = D_8009C180 + area->models[i];
     }
     D_8009D3F4 = (WorldmapSpot *)(block + ((SpotHeader *)block)->spots);
     D_8009BD00 = table = (s32 *)(block + ((SpotHeader *)block)->table);
@@ -485,9 +483,6 @@ void func_80073530(void) {
     D_8009BD00[2] = (s32)block + table[2];
     D_8009BD00[3] = (s32)block + table[3];
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80073530);
-#endif
 
 /* Allocate the two 4 KiB work buffers. */
 void func_8007369C(void) {

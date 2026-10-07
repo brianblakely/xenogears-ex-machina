@@ -9,7 +9,10 @@ Char#%d:". */
 
 /* Print the battle state page chosen by the resident debug page number:
  * 1 enemy HP and the effect records, 2 the command records, 3 the acting
- * enemy's AI flags, 4 the party's and the characters' work values. */
+ * enemy's AI flags, 4 the party's and the characters' work values.
+ * NON_MATCHING: only the order of the effect table loop's setup differs:
+ * the original clears the record offset (s1) in the "No Cd..." call's delay
+ * slot and sets y = 0x10 (s0) after the format pointer; here y is set first. */
 #ifdef NON_MATCHING
 void func_8028022C(void) {
     s32 i, j;
@@ -52,15 +55,14 @@ void func_8028022C(void) {
         func_80037058(0, 0x20);
         func_8003700C("No  An  Sb  Tg  No  An  Sb  Tg  \n");
         for (i = 0; i < 32; i++) {
-            y = (i / 2 + 5) * 8;
             x = (i % 2) * 0x90;
-            func_80037058(x, y);
+            func_80037058(x, (i / 2 + 5) * 8);
             func_8003700C("%X", i);
-            func_80037058(x + 0x24, y);
+            func_80037058(x + 0x24, (i / 2 + 5) * 8);
             func_8003700C("%X", D_800C3FFE[i].anim);
-            func_80037058(x + 0x48, y);
+            func_80037058(x + 0x48, (i / 2 + 5) * 8);
             func_8003700C("%X", D_800C3FFE[i].sub);
-            func_80037058(x + 0x6C, y);
+            func_80037058(x + 0x6C, (i / 2 + 5) * 8);
             func_8003700C("%X", D_800C3FFE[i].target);
         }
         break;
