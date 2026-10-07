@@ -2196,11 +2196,10 @@ void func_80078ED4(s16 *params) {
     params[6] = 0x30;
 }
 
-#ifdef NON_MATCHING
 /* Reset an actor for a new round: position and motion, model scale,
  * movement and health values, shots, trails, pose and flags, its side's hit
- * record and the combo, brain and effect state.
- * Does not match: the original keeps flag word 0xd4 in a register across the pose flag updates but reloads the flag word 0xd0 after each group, and schedules the header copies earlier. */
+ * record and the combo, brain and effect state. The stance fields are
+ * cleared as bit-fields (one read-modify-write of word 0xd4). */
 void func_80078F00(Actor *actor) {
     SceneHeader *header = actor->header;
     s32 i;
@@ -2241,14 +2240,15 @@ void func_80078F00(Actor *actor) {
     actor->unk4E = 0xFF;
     actor->anim = 0;
     actor->unkC3 = 0;
-    actor->unkD4 &= ~0xC;
-    actor->unkD4 &= ~3;
     actor->flags &= ~0x1000;
     actor->flags |= 0x2000000;
     actor->flags |= 0x20000;
     actor->unkCE = actor->unkCC + 0x800;
+    ACTOR_STANCE_BITS(actor)->prev_stance = 0;
+    ACTOR_STANCE_BITS(actor)->stance = 0;
     actor->flags &= ~0x800000;
     actor->unk15F0 = header->unkF;
+    actor->unk15F2 = actor->unk15F4 = header->unkC;
     actor->unk15F6 = 0x100;
     actor->unk15F8 = 0;
     actor->unk1654 = 0;
@@ -2259,7 +2259,6 @@ void func_80078F00(Actor *actor) {
     actor->flags &= ~4;
     actor->flags &= ~2;
     actor->flags &= ~0x38;
-    actor->unk15F2 = actor->unk15F4 = header->unkC;
     actor->unkD4 &= ~0x10;
     actor->unk84 = D_8009264C;
     D_8009264C[2] = 1;
@@ -2275,9 +2274,6 @@ void func_80078F00(Actor *actor) {
     actor->unk1668 = 0;
     actor->unkD4 &= ~0x40;
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80078F00);
-#endif
 
 /* Per-frame anchors of an actor: home between its feet, dust when landing
  * or skidding, cells thrown up while it stands in deep ground, the upper
