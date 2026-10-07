@@ -2842,8 +2842,11 @@ void func_80038AD4(s32 address, s32 size);
  * keeps the current type and -2 changes nothing. A new type moves the work
  * area to the top of SPU memory and clears it (error 0x20, reverb off,
  * when there is no room).
- * Nonmatching: the flag set for a new type is scheduled before the work area
- * allocation instead of into the branch after it. */
+ * Nonmatching: the original sets the changed flag (ori $s5,1) only in the
+ * delay slot of the allocation check; setting it after the failure branch
+ * fills that slot too but leaves a second copy at the branch join (420
+ * bytes vs 416), and setting it before the check is scheduled above the
+ * allocation call. */
 #ifdef NON_MATCHING
 void func_80038934(s32 type, s32 depth, s32 delay, s32 feedback) {
     SpuReverbAttr attr; /* unused */
@@ -2869,14 +2872,15 @@ void func_80038934(s32 type, s32 depth, s32 delay, s32 feedback) {
         }
         size = D_800508E8[type];
         address = 0x80000 - size;
-        changed = 1;
-        if ((D_800594D8 = func_800395B8(size, address, 5)) == 0) {
+        D_800594D8 = func_800395B8(size, address, 5);
+        if (D_800594D8 == 0) {
             func_8003F6B0(0x20);
             type = 0;
             feedback = 0;
             delay = 0;
             depth = 0;
         }
+        changed = 1;
     }
     D_80059409 = type;
     D_8005A3C0.unk2C = depth;
