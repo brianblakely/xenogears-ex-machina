@@ -924,15 +924,17 @@ extern u32 D_80059504;           /* effect start clock */
 /* Start effect `id` (bank in the high half) on the effect channels from
  * index `code & 0xFF` with priority `code >> 8`, at `volume` (scaled by
  * the bank's per-effect volume) and `pan`.
- * Nonmatching: register allocation differs (the original keeps
- * `id` on the stack and the level in the volume's register). */
+ * Nonmatching: register allocation differs: the original keeps the volume
+ * and the level in $fp and `code` in $s0 (here $s0 and $s1), tests the
+ * level with srl (an s32 level gives sra; a u32 one spills it), and
+ * schedules the pan reload and modulator pointer later. */
 #ifdef NON_MATCHING
 void func_8003B644(s16 code, s32 id, s16 volume, s16 pan) {
     SoundBank *bank = D_80059440;
     s32 bank_id = id >> 16;
     SoundSeq *effects = D_800595D8;
     SoundSequence *instruments;
-    u32 level;
+    s32 level;
     u16 *offset;
     SoundSeqChannel *channel;
     s32 count;
@@ -954,9 +956,9 @@ void func_8003B644(s16 code, s32 id, s16 volume, s16 pan) {
         level = 0x7FFF;
     }
     offset = &bank->effect[(id & 0xFFFF) * 2];
+    priority = code >> 8;
     channel = &effects->channel[code & 0xFF];
     count = D_80059404;
-    priority = code >> 8;
     DisableEvent(D_800595BC);
     do {
         channel->id.full = id;
@@ -970,6 +972,7 @@ void func_8003B644(s16 code, s32 id, s16 volume, s16 pan) {
             }
             channel->flags2 = 0x170;
             channel->flags3 = 0;
+            channel->position = channel->start = (u8 *)bank + *offset;
             channel->transpose = 0x3C;
             channel->gate_fraction = 0xF;
             channel->loop_depth = 0xFFFF;
@@ -991,12 +994,11 @@ void func_8003B644(s16 code, s32 id, s16 volume, s16 pan) {
             channel->state.unkE = 0;
             channel->modulators = 0;
             channel->pan = pan;
-            channel->position = channel->start = (u8 *)bank + *offset;
             for (i = 3; i >= 0; i--) {
                 channel->modulator[i].flags = 0;
             }
-            channel->instruments = instruments;
             channel->unk25 = bank->unk16;
+            channel->instruments = instruments;
             if (instruments != NULL) {
                 func_8003E5BC(0, channel);
             }
@@ -1008,7 +1010,7 @@ void func_8003B644(s16 code, s32 id, s16 volume, s16 pan) {
             channel->flags = 0;
             func_8003E83C(&channel->state, channel->voice);
         }
-        offset += 2;
+        offset++;
         channel++;
         count--;
     } while (count != 0);
@@ -1292,14 +1294,16 @@ extern s32 D_80059540;           /* timed ticks */
  * the staged voice registers, advances every playing sequence (tempo,
  * fade, pitch and pan slides, beats, channel data) and stages the next
  * voice registers (modulators, then volumes and pitches, where the
- * Mono/Stereo pan law applies). The global address reuse and register
- * allocation still differ from the original. */
+ * Mono/Stereo pan law applies).
+ * Nonmatching: the original reads both slides' new values relative to the
+ * master slide's frame-count address held in $s0 (lh -6($s0), lhu 6($s0));
+ * GCC 2.6.3 here reads them as absolute globals. Everything else matches. */
 #ifdef NON_MATCHING
 s32 func_8003C020(void) {
     u32 start;
     u32 end;
     SoundSeq *seq;
-    s32 count;
+    s16 count;
     SoundSeqChannel *channels;
     s32 volume;
 
@@ -1357,7 +1361,7 @@ s32 func_8003C020(void) {
             seq->unk50 += 0x10000;
             if (--seq->unk36 == 0) {
                 seq->unk36 = seq->unk3A;
-                if (++seq->unk34 > (u16)seq->unk38) {
+                if (++seq->unk34 > seq->unk38) {
                     seq->unk34 = 1;
                     seq->unk32++;
                 }
@@ -1368,19 +1372,20 @@ s32 func_8003C020(void) {
                 func_8003C4C4(seq, channels, count);
                 func_8003C6E8(seq, channels, count);
             }
-            if (seq->voices == 0) {
+            if (seq->voices != 0) {
+                seq->unk24++;
+                if (seq->fade.value == 0) {
+                    func_80039C4C((SoundTrack *)seq);
+                    seq->flags |= 0x100;
+                }
+                if (seq->unk32 == seq->unk1E) {
+                    seq->flags &= ~0x20;
+                    func_8003A838(seq, 0, 0);
+                    seq->unk1E = 0;
+                }
+            } else {
                 seq->flags &= 0x7FFF;
                 break;
-            }
-            seq->unk24++;
-            if (seq->fade.value == 0) {
-                func_80039C4C((SoundTrack *)seq);
-                seq->flags |= 0x100;
-            }
-            if (seq->unk32 == seq->unk1E) {
-                seq->flags &= ~0x20;
-                func_8003A838(seq, 0, 0);
-                seq->unk1E = 0;
             }
         }
     }

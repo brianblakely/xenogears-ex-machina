@@ -118,12 +118,17 @@ void func_800222BC(Sprite *sprite, s32 *data) {
  * the angle's facing group (one, four or eight groups; the others mirror
  * one), and when the group changes replay the animation's commands from its
  * start up to the current command (80022660), keeping the countdown. */
-/* Nonmatching: the original keeps the angle unextended in $a3 (extending it only for the shifts) and orders the facing-group tests differently. */
+/* Nonmatching: control flow and cross-jumping now match; register
+ * allocation differs (the original keeps the angle in $a3 and the old step
+ * in $t0, here $a2/$a3), the case-0 animation load is not hoisted above
+ * the step store, and after the switch the original reloads the frame bits
+ * word for the frame/count reset instead of reusing the compared one. */
 #ifdef NON_MATCHING
 void func_800223B0(Sprite *sprite, s16 angle) {
     s32 old = sprite->frame_bits.step;
-    s16 countdown;
-    s32 flip;
+    u16 *animation;
+    s32 offset;
+    s32 countdown;
 
     sprite->word80 = angle;
     if ((angle + 0x400) & 1) {
@@ -136,47 +141,53 @@ void func_800223B0(Sprite *sprite, s16 angle) {
     }
     switch (sprite->frame_bits.phase) {
     case 0:
-        if (((angle + 0x400) & 0xFFF) > 0x800) {
+        if ((s16)((angle + 0x400) & 0xFFF) > 0x800) {
             sprite->motion.word |= 4;
         } else {
             sprite->motion.word &= ~4;
         }
         sprite->frame_bits.step = 0;
-        sprite->facings = sprite->animation + 3;
-        sprite->frame_table = (u16 *)(sprite->animation[2] + 4 + (s32)sprite->animation);
+        animation = sprite->animation;
+        sprite->facings = animation + 3;
+        offset = animation[2] + 4;
+        sprite->frame_table = (u16 *)(offset + (s32)animation);
         break;
     case 1:
         angle = ((angle + 0x600) >> 10) & 3;
-        if (angle >= 3) {
-            sprite->motion.word |= 4;
-            sprite->frame_table = (u16 *)(sprite->animation[3] + 6 + (s32)sprite->animation);
-        } else {
+        if (angle < 3) {
             sprite->motion.word &= ~4;
-            sprite->frame_table = (u16 *)(*(u16 *)((u8 *)sprite->animation + angle * 2 + 4) + ((u8 *)sprite->animation + (angle * 2 + 4)));
+            sprite->frame_table = (u16 *)(sprite->animation[angle + 2] + (s32)&sprite->animation[angle + 2]);
+        } else {
+            sprite->motion.word |= 4;
+            offset = sprite->animation[3] + 6;
+            sprite->frame_table = (u16 *)(offset + (s32)sprite->animation);
         }
         sprite->frame_bits.step = angle;
         break;
     case 2:
         angle = ((angle + 0x500) >> 9) & 7;
-        if (angle >= 5) {
+        if (angle < 5) {
+            sprite->motion.word &= ~4;
+            sprite->frame_table = (u16 *)(sprite->animation[angle + 2] + (s32)&sprite->animation[angle + 2]);
+        } else {
             angle = (angle - 5) ^ 3;
             sprite->motion.word |= 4;
-            sprite->frame_table = (u16 *)(*(u16 *)((u8 *)sprite->animation + angle * 2 + 4) + ((u8 *)sprite->animation + (angle * 2 + 4)));
-        } else {
-            sprite->motion.word &= ~4;
-            sprite->frame_table = (u16 *)(*(u16 *)((u8 *)sprite->animation + angle * 2 + 4) + ((u8 *)sprite->animation + (angle * 2 + 4)));
+            sprite->frame_table = (u16 *)(sprite->animation[angle + 2] + (s32)&sprite->animation[angle + 2]);
         }
         sprite->frame_bits.step = angle;
         break;
     }
     if (old != sprite->frame_bits.step) {
-        u8 *target = sprite->script;
+        u8 *target;
         s32 count = sprite->frame_bits.field22;
 
-        countdown = sprite->countdown;
         sprite->frame_bits.frame = 0x3F;
         sprite->frame_bits.field22 = 0;
-        sprite->script = (u8 *)(sprite->animation[1] + 2 + (s32)sprite->animation);
+        animation = sprite->animation;
+        countdown = sprite->countdown;
+        target = sprite->script;
+        offset = animation[1] + 2;
+        sprite->script = (u8 *)(offset + (s32)animation);
         func_80022660(sprite, target, count);
         sprite->countdown = countdown;
     }
