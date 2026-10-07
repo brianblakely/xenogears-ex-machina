@@ -4315,17 +4315,17 @@ void func_801E738C(s32 slot_count) {
  * group into a free model list and build the hierarchy at `pos`, set up its
  * shadow quads, image animations and records24, reset its script (unless bit
  * 6) and keep a compacted copy of its model group (unless bit 1).
- * The model list is attached even when the files were already relocated.
- * NON_MATCHING (same size, same instructions): register allocation only.
- * The original has actor s3, file then the prim loop index s4, desc and p
- * sharing s2, images s5 and group s6 (this C: actor s2, file/index s3, desc
- * s6, p s0, images s4, group s5); links s0 and size s1 already agree. */
-#ifdef NON_MATCHING
+ * The model list is attached even when the files were already relocated. */
 void func_801E742C(s32 index, u16 flags, ActorScript *script, ActorFile *file, s16 x, s16 y, s16 z,
                    s16 w, s16 *pos) {
     Actor *actor;
     ActorInfo *info;
-    ActorDesc *desc;
+    /* The descriptor, read as its header and then as the records24
+     * parameter words that follow it. */
+    union {
+        ActorDesc *header;
+        s16 *p;
+    } desc;
     SoundBlock *bank;
     ScriptBlock *block;
     void *images;
@@ -4336,7 +4336,6 @@ void func_801E742C(s32 index, u16 flags, ActorScript *script, ActorFile *file, s
     s32 i, k;
     s32 count;
     Record24 *record;
-    s16 *p;
     POLY_FT4 *prim;
 
     func_80032498(4, 0);
@@ -4363,16 +4362,16 @@ void func_801E742C(s32 index, u16 flags, ActorScript *script, ActorFile *file, s
         }
     }
     info = file->info;
-    desc = info->desc;
+    desc.header = info->desc;
     images = file->images;
     group = file->group;
     links = file->links;
     D_801E8670[index] = actor;
-    actor->size[0] = desc->size[0];
-    actor->size[1] = desc->size[1];
-    actor->size[2] = desc->size[2];
-    actor->reference = desc->reference;
-    actor->flags = desc->flags;
+    actor->size[0] = desc.header->size[0];
+    actor->size[1] = desc.header->size[1];
+    actor->size[2] = desc.header->size[2];
+    actor->reference = desc.header->reference;
+    actor->flags = desc.header->flags;
     size = (u8 *)links - group;
     if (actor->flags & 0x200) {
         func_80030988(2, 2, 0x40, 0x40);
@@ -4439,10 +4438,10 @@ void func_801E742C(s32 index, u16 flags, ActorScript *script, ActorFile *file, s
         actor->prims[i].u3 = 0xF;
         actor->prims[i].v3 = 0xEF;
     }
-    actor->scale = desc->scale;
-    actor->channel_count = desc->channel_count;
+    actor->scale = desc.header->scale;
+    actor->channel_count = desc.header->channel_count;
     func_801E8510(actor);
-    actor->count10E = desc->count30;
+    actor->count10E = desc.header->count30;
     if (actor->count10E != 0) {
         actor->records30 = func_80031BDC(actor->count10E * sizeof(ImageAnim), 0);
         for (i = 0; i < actor->count10E; i++) {
@@ -4452,24 +4451,26 @@ void func_801E742C(s32 index, u16 flags, ActorScript *script, ActorFile *file, s
             actor->records30[i].work = NULL;
         }
     }
-    actor->count10D = desc->count24;
+    actor->count10D = desc.header->count24;
     if (actor->count10D != 0) {
-        p = desc->records;
+        desc.p = desc.header->records;
         record = func_80031BDC(actor->count10D * sizeof(Record24), 0);
         actor->records24 = record;
         for (i = 0; i < actor->count10D; i++, record++) {
-            count = p[17];
-            record->h0 = *p++;
+            count = desc.p[17];
+            record->h0 = *desc.p++;
             /* The parameters are read in order. */
-            func_801E1A14(record, (u16 *)info->tables[i], *p++, *p++, *p++, *p++, *p++, count, x + *p++,
-                          y + *p++, *p++, *p++, z + *p++, w, *p++, *p++, *p++, *p++, *p++, *p);
-            p += 2; /* past the last parameter and the entry count read above */
+            func_801E1A14(record, (u16 *)info->tables[i], *desc.p++, *desc.p++, *desc.p++,
+                          *desc.p++, *desc.p++, count, x + *desc.p++, y + *desc.p++, *desc.p++,
+                          *desc.p++, z + *desc.p++, w, *desc.p++, *desc.p++, *desc.p++, *desc.p++,
+                          *desc.p++, *desc.p);
+            desc.p += 2; /* past the last parameter and the entry count read above */
             for (k = 0; k < count; k++) {
-                record->block18[k].h6 = *p++;
-                record->block18[k].hE = *p++;
-                record->block18[k].h0 = *p++;
-                record->block18[k].h2 = *p++;
-                record->block18[k].h4 = *p++;
+                record->block18[k].h6 = *desc.p++;
+                record->block18[k].hE = *desc.p++;
+                record->block18[k].h0 = *desc.p++;
+                record->block18[k].h2 = *desc.p++;
+                record->block18[k].h4 = *desc.p++;
             }
         }
     }
@@ -4496,9 +4497,6 @@ void func_801E742C(s32 index, u16 flags, ActorScript *script, ActorFile *file, s
         actor->group = NULL;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E742C);
-#endif
 
 /* Advance the scene by the elapsed half-frames: step every actor, carry the
  * carried ones, place the anchors, then draw the actors and particles. */
