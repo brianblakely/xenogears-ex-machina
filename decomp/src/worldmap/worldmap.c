@@ -365,7 +365,6 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap", func_80071B9C);
 
 /* Allocate buffers for each party member's model and gear model, then read
  * them all with one list. */
-#ifdef NON_MATCHING /* second loop's index/pointer registers differ */
 void func_80071CDC(void) {
     s32 i;
     s32 j;
@@ -376,9 +375,9 @@ void func_80071CDC(void) {
         member = D_8006F368[i];
         if (member != 0xFF) {
             D_8009CD34[i] = func_80031BDC(func_800288EC(member + 2), 0);
-            gear = D_8006D940[member].gear;
-            if (gear != 0xFF) {
-                D_8009BDF8[i] = func_80031BDC(func_800288EC(gear + 0x13), 0);
+            j = D_8006D940[member].gear;
+            if (j != 0xFF) {
+                D_8009BDF8[i] = func_80031BDC(func_800288EC(j + 0x13), 0);
             } else {
                 D_8009BDF8[i] = NULL;
             }
@@ -408,9 +407,6 @@ void func_80071CDC(void) {
     D_8009D3F8[i].dest = NULL;
     func_80029AFC(D_8009D3F8, 0, 0);
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap", func_80071CDC);
-#endif
 
 /* Allocate and read the three area files into their resident buffers. */
 void func_80071EF0(void) {
