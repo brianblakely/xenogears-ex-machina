@@ -227,7 +227,6 @@ void func_801E8DA8(u8 image, u8 row) {
 
 /* Set `poly`'s blending for `mode`: 0 opaque, 1 additive-dim, 2 plain,
  * 3 dim. */
-#ifdef NON_MATCHING
 void func_801E8EAC(POLY_FT4 *poly, u8 mode) {
     u8 shade;
 
@@ -236,15 +235,13 @@ void func_801E8EAC(POLY_FT4 *poly, u8 mode) {
     case 1:
         poly->tpage |= 0x20;
         SetSemiTrans(poly, 1);
+    case 3:
         shade = 0x21;
         break;
     case 0:
         SetSemiTrans(poly, 0);
     case 2:
         shade = 0x80;
-        break;
-    case 3:
-        shade = 0x21;
         break;
     default:
         return;
@@ -253,9 +250,6 @@ void func_801E8EAC(POLY_FT4 *poly, u8 mode) {
     poly->g0 = shade;
     poly->b0 = shade;
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801E8070", func_801E8EAC);
-#endif
 
 /* Set the blending of portrait `index`'s quads of the current buffer: plain
  * (2), or dim (3) when the dim flag `mode` is set. Every edge list is walked
