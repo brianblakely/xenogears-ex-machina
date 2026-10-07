@@ -1097,7 +1097,13 @@ void func_800734B8(u32 *ot, POLY_G4 *poly, s32 x, s32 y, s32 w, s32 h) {
  * settings. The menu cursor is kept across the screens it opens. The unused
  * name reproduces the original's frame. Does not match: only the setup
  * stores differ: the original loads the constant 1 into $v1 first and keeps
- * the stores in source order, here the four stores of 1 are grouped. */
+ * the stores in source order, here the four stores of 1 are grouped. Here
+ * sched1 puts the load of 1 just before its first store (a pseudo set once
+ * is a register birth, which adjust_priority schedules at once), so it
+ * shares $v0 with -1/0xC80/2 and sched2 must group the stores; in the
+ * original the load stays above the D_80077450 store, as for a pseudo set
+ * more than once (the stores themselves do not alias-pin: distinct
+ * globals and struct members are disambiguated alike). */
 void func_800737EC(void) {
     char name[8] = "trouble";
     s32 button;
