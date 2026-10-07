@@ -6661,8 +6661,9 @@ void func_801DB5E4(u8 mode) {
  * confirm until it runs out or the player cancels. Returns the targets
  * marked last (0 when cancelled or unusable). */
 #ifdef NON_MATCHING
-/* Register allocation differs: the original spills `row` and keeps the
- * inventory index in a saved register. */
+/* Differs: the original clears the used-up id through &D_8006F5C4 + 0x96
+ * (reloaded into t0, as is the counts base before the loop); this build
+ * addresses D_8006F65A directly. */
 u8 func_801DB920(s32 row, s32 entry) {
     u16 marks;
     u8 running;
@@ -6730,7 +6731,7 @@ u8 func_801DB920(s32 row, s32 entry) {
                     func_801C8574(0x37);
                     redraw = 1;
                     if (--INVENTORY->counts[row * 2 + entry] == 0) {
-                        INVENTORY->ids[row * 2 + entry] = 0;
+                        D_8006F65A[row * 2 + entry] = 0;
                     }
                 } else {
                     func_801C8574(4);
