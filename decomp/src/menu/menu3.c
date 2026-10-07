@@ -2287,12 +2287,11 @@ void func_80078F00(Actor *actor) {
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80078F00);
 #endif
 
-#ifdef NON_MATCHING
 /* Per-frame anchors of an actor: home between its feet, dust when landing
  * or skidding, cells thrown up while it stands in deep ground, the upper
  * anchor and core, the charged glow and its effect, and the stance effects
- * (7 and 9) when the stance changes.
- * Does not match: the stance word and the flag word swap v0/v1 in the stance-1 branch, and the final flag update uses a0/a1 instead of v1/a0. */
+ * (7 and 9) when the stance changes. The stance state and last frame's
+ * flag 15 are stored through bit-fields. */
 void func_8007920C(Actor *actor) {
     Vector foot_a;
     Vector foot_b;
@@ -2342,19 +2341,19 @@ void func_8007920C(Actor *actor) {
     }
     if (actor->unkC5 != 4) {
         if (actor->unkC4 != 1) {
-            actor->unkD4 &= ~3;
+            ACTOR_STANCE_BITS(actor)->stance = 0;
         } else {
-            actor->unkD4 = (actor->unkD4 & ~3) | 1;
+            ACTOR_STANCE_BITS(actor)->stance = 1;
             if (actor->flags & 0x8000) {
-                actor->unkD4 = (actor->unkD4 & ~3) | 2;
+                ACTOR_STANCE_BITS(actor)->stance = 2;
             }
         }
         if (actor->unkC5 == 2) {
-            actor->unkD4 |= 3;
+            ACTOR_STANCE_BITS(actor)->stance = 3;
         }
     }
-    state = actor->unkD4 & 3;
-    if (state != ((actor->unkD4 >> 2) & 3)) {
+    state = ACTOR_STANCE_BITS(actor)->stance;
+    if (state != ACTOR_STANCE_BITS(actor)->prev_stance) {
         switch (state) {
         case 0:
         case 3:
@@ -2371,13 +2370,10 @@ void func_8007920C(Actor *actor) {
             break;
         }
     }
+    ACTOR_FLAG_BITS(actor)->flag16 = ACTOR_FLAG_BITS(actor)->flag15;
     actor->unkC6 = actor->unkC4;
-    actor->flags = (actor->flags & ~0x10000) | (((actor->flags >> 15) & 1) << 16);
-    actor->unkD4 = (actor->unkD4 & ~0xC) | ((actor->unkD4 & 3) << 2);
+    ACTOR_STANCE_BITS(actor)->prev_stance = ACTOR_STANCE_BITS(actor)->stance;
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007920C);
-#endif
 
 /* Frame both actors with the camera: look at their midpoint, choose the
  * side (left or right of the line between them) whose eye point is nearer

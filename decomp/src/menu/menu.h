@@ -346,6 +346,27 @@ typedef struct Actor {
     s16 unk1668;
 } Actor;
 
+/* An actor's flag word as bit-fields (8007920c): bit 16 keeps last
+ * frame's bit 15 (the 0x8000 dash flag). */
+typedef struct {
+    u32 unk0 : 15;
+    u32 flag15 : 1;
+    u32 flag16 : 1;
+    u32 unk17 : 15;
+} ActorFlagBits;
+
+/* The low bits of an actor's unkD4 word as bit-fields (8007920c): the
+ * stance effect shown (0 none, 1 stance 1, 2 stance 1 dashing, 3 move)
+ * and last frame's. */
+typedef struct {
+    u32 stance : 2;
+    u32 prev_stance : 2;
+    u32 unk4 : 28;
+} ActorStanceBits;
+
+#define ACTOR_FLAG_BITS(actor) ((ActorFlagBits *)&(actor)->flags)
+#define ACTOR_STANCE_BITS(actor) ((ActorStanceBits *)&(actor)->unkD4)
+
 
 /* A move's frame event: runs its spec (header offset) on frames first..last. */
 typedef struct {
