@@ -731,11 +731,11 @@ u8 mode;
 /* Split the member's panel values into digit glyph codes: HP (3 digits) and
  * maximum HP (3), or in a gear its HP (5); leading zeros become blanks (0xff).
  * Returns the warning level: 2 at an eighth of the maximum or less, 1 at a
- * quarter or less, else 0. */
-#ifdef NON_MATCHING
+ * quarter or less, else 0. Each digit is stored as soon as it is split
+ * off; the leading-zero loops index the digit arrays. */
 u8 func_80072F38(s32 member, u8 inGear) {
     u8 warning;
-    u8 *digit;
+    s32 i;
     s16 hp100;
     s16 hp10;
     s16 max100;
@@ -764,55 +764,52 @@ u8 func_80072F38(s32 member, u8 inGear) {
         }
     }
     hp100 = D_800D2D38 / 100;
-    D_800D2D38 %= 100;
+    D_800D2D38 -= hp100 * 100;
+    D_800C3E08[0] = hp100;
     hp10 = D_800D2D38 / 10;
-    D_800D2D38 %= 10;
+    D_800D2D38 -= hp10 * 10;
+    D_800C3E08[1] = hp10;
+    D_800C3E08[2] = D_800D2D38;
     max100 = D_800D2FE0 / 100;
-    D_800D2FE0 %= 100;
+    D_800D2FE0 -= max100 * 100;
+    D_800D2D54[4] = max100;
     max10 = D_800D2FE0 / 10;
-    D_800D2FE0 %= 10;
+    D_800D2FE0 -= max10 * 10;
+    D_800D2D54[5] = max10;
+    D_800D2D54[6] = D_800D2FE0;
     gear10000 = D_800D3018 / 10000;
     D_800D3018 -= gear10000 * 10000;
+    D_800D2D88[0] = gear10000;
     gear1000 = D_800D3018 / 1000;
     D_800D3018 -= gear1000 * 1000;
+    D_800D2D88[1] = gear1000;
     gear100 = D_800D3018 / 100;
     D_800D3018 -= gear100 * 100;
+    D_800D2D88[2] = gear100;
     gear10 = D_800D3018 / 10;
     D_800D3018 -= gear10 * 10;
-    D_800C3E08[0] = hp100;
-    D_800C3E08[1] = hp10;
-    D_800D2D54[4] = max100;
-    D_800D2D54[5] = max10;
-    D_800D2D88[0] = gear10000;
-    D_800D2D88[1] = gear1000;
-    D_800D2D88[2] = gear100;
     D_800D2D88[3] = gear10;
-    D_800C3E08[2] = D_800D2D38;
-    D_800D2D54[6] = D_800D2FE0;
     D_800D2D88[4] = D_800D3018;
-    for (digit = D_800C3E08; digit < D_800C3E08 + 2; digit++) {
-        if (*digit != 0) {
+    for (i = 0; i < 2; i++) {
+        if (D_800C3E08[i] != 0) {
             break;
         }
-        *digit = 0xFF;
+        D_800C3E08[i] = 0xFF;
     }
-    for (digit = &D_800D2D54[4]; digit < &D_800D2D54[6]; digit++) {
-        if (*digit != 0) {
+    for (i = 0; i < 2; i++) {
+        if (D_800D2D54[i + 4] != 0) {
             break;
         }
-        *digit = 0xFF;
+        D_800D2D54[i + 4] = 0xFF;
     }
-    for (digit = D_800D2D88; digit < D_800D2D88 + 4; digit++) {
-        if (*digit != 0) {
+    for (i = 0; i < 4; i++) {
+        if (D_800D2D88[i] != 0) {
             break;
         }
-        *digit = 0xFF;
+        D_800D2D88[i] = 0xFF;
     }
     return warning;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80072F38);
-#endif
 
 /* Build the member's four-digit panel value (the 800d32a0 value or record
  * +0xdc) as glyphs. */
