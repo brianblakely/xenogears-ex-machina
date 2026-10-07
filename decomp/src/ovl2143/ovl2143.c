@@ -2758,10 +2758,9 @@ void func_801E37D0(Actor *actor) {
  * 0x26 keeps its 0xff marker in a block-scope variable: as a constant it
  * would join the other 0xff loads, which loop.c then hoists out of the
  * interpreter loop (the original loads 0xff at each use).
- * NON_MATCHING (4 bytes shorter): per-case scheduling and allocation remain:
- * 0x15 orders its 0xffff/-1 and 0x10d/0x10e stores differently, 0x1D and
- * the turn opcodes 0x40/0x41 load the -1 for `changed` earlier, 0x42
- * has dx/dz in s1/s0 (s0/s1 in the original, whose 0x4f uses other
+ * NON_MATCHING (same size): per-case scheduling and allocation remain:
+ * 0x1D and the turn opcodes 0x40/0x41 load the -1 for `changed` earlier,
+ * 0x42 has dx/dz in s1/s0 (s0/s1 in the original, whose 0x4f uses other
  * registers for its own offsets; giving either case block-scope offsets
  * moves `arg` out of s5), 0x4f keeps dy in s2 instead of a2, and the
  * table load before the 0x6e mask test is placed earlier. */
@@ -2999,8 +2998,8 @@ aim:
             }
             *copy = *actor;
             D_801E8670[n] = copy;
-            copy->h3C = 0xFFFF;
             copy->anim_state = -1;
+            copy->h3C = 0xFFFF;
             copy->parent = 0xFF;
             copy->h40 = 0;
             copy->aim_actor = 0;
@@ -3011,9 +3010,9 @@ aim:
             copy->b39 = 0x6B;
             copy->pc = 0;
             copy->b21 = actor->index;
+            copy->index = n;
             copy->count10D = 0;
             copy->count10E = 0;
-            copy->index = n;
             func_801E8510(copy);
             parts = func_80031BDC(actor->parts->count * sizeof(ModelPart), 1);
             copy->parts = parts;
