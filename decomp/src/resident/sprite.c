@@ -1586,7 +1586,8 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
     case 0xC5: {
         s32 n;
 
-        n = code[0] / (D_80059198 + 1);
+        n = code[0];
+        n /= D_80059198 + 1;
         while (--n != -1) {
             func_80022CDC(sprite);
         }
@@ -1603,7 +1604,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         }
         break;
     case 0xCC:
-        sprite->frames = sprite->script + (code[0] | (s16)(code[1] << 8));
+        sprite->frames = sprite->script + ((s16)(code[1] << 8) | code[0]);
         break;
     case 0x8C:
         other = sprite->word74;
@@ -1760,14 +1761,26 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         }
         break;
     }
-    case 0xC0:
-        distance = ((s32)((rand() & 0xFF) * code[0]) >> 8) * sprite->scale / 4096;
+    case 0xC0: {
+        s32 distance;
+        s32 angle;
+
+        distance = rand() & 0xFF;
+        distance *= code[0];
+        distance >>= 8;
+        distance = distance * sprite->scale / 4096;
         angle = rand();
         sprite->x += func_80022CAC(sprite, func_8003F8CC(angle)) * distance * 16;
         sprite->z -= func_80022CAC(sprite, func_8003F8B0(angle)) * distance * 16;
         break;
-    case 0xC1:
-        distance = ((s32)((rand() & 0xFF) * code[0]) >> 8) * sprite->scale / 4096;
+    }
+    case 0xC1: {
+        s32 distance;
+
+        distance = rand() & 0xFF;
+        distance *= code[0];
+        distance >>= 8;
+        distance = distance * sprite->scale / 4096;
         func_80021B04(&vector, func_80022CAC(sprite, distance), 0, 0);
         func_80021B04(&angles, rand(), rand(), 0);
         func_80021B14(&sum, sprite->x >> 16, sprite->y >> 16, sprite->z >> 16);
@@ -1780,6 +1793,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         sprite->y = vector.vy << 16;
         sprite->z = vector.vz << 16;
         break;
+    }
     case 0xBC: {
         u8 arg;
         u8 transform;
