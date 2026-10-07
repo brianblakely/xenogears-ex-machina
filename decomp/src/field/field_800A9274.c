@@ -863,8 +863,18 @@ extern RECT D_800AF5C0[5]; /* pieces of file 0x802's 320-wide image */
 
 #ifdef NON_MATCHING
 /* Upload the pieces of file 0x802's image whose game flag (800ab748) is
- * clear to the 8-bit page area at (300, 100). The original keeps one
- * pointer per piece field and spills most of its variables. */
+ * clear to the 8-bit page area at (300, 100).
+ * NON_MATCHING (score 171 -> 139): the original indexes the piece table
+ * with i * 8 against bases held in registers (constants CSE reuses as
+ * related values: &x in t0 rematerialized, h = (i * 8) + (sym + 6) hoisted
+ * out of the row loop, y and w as copies of the outer field pointers) and
+ * spills file, pixels, i and the x pointer. Reading h in the row test and
+ * the outer w and h through a flat halfword view gives the original's outer
+ * pointers (h, w, y from one sym + 6 base); the row loop still reads x, y
+ * and w symbol-relative, so nothing else is hoisted and nothing spills.
+ * Every struct/flat/pointer mix of the nine reads was scored (best 139). */
+#define PIECE(n, field) (((s16 *)D_800AF5C0)[(n) * 4 + (field)])
+enum { PIECE_X, PIECE_Y, PIECE_W, PIECE_H };
 void func_800AB808(void) {
     TIM_IMAGE tim;
     u_long *file;
@@ -882,15 +892,15 @@ void func_800AB808(void) {
         for (i = 0; i < 5; i++) {
             if (func_800AB748(i) == -1 && tim.paddr != NULL) {
                 row_pixels = pixels;
-                for (row = 0; row < D_800AF5C0[i].h; row++) {
+                for (row = 0; row < PIECE(i, PIECE_H); row++) {
                     memcpy(row_pixels, tim.paddr + (D_800AF5C0[i].y + row) * 0x50 + D_800AF5C0[i].x / 4,
                            D_800AF5C0[i].w);
                     row_pixels += D_800AF5C0[i].w / 4 * 4;
                 }
                 tim.prect->x = D_800AF5C0[i].x / 2 + 0x300;
                 tim.prect->y = D_800AF5C0[i].y + 0x100;
-                tim.prect->w = D_800AF5C0[i].w / 2;
-                tim.prect->h = D_800AF5C0[i].h;
+                tim.prect->w = PIECE(i, PIECE_W) / 2;
+                tim.prect->h = PIECE(i, PIECE_H);
                 LoadImage(tim.prect, (u_long *)pixels);
                 DrawSync(0);
             }
