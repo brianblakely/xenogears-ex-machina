@@ -2749,13 +2749,14 @@ void func_801E37D0(Actor *actor) {
  * probe's block frees 16 bytes that 0x25's `d` reuses before n/word (whose
  * slots are made when their address is first taken) and 0x25's matrix and
  * vectors; spilled scalars follow in declaration order.
- * NON_MATCHING (4 bytes longer): case bodies 1D (4 shorter: `reference` is
- * loaded straight into a3, the original loads it into s0 and copies it) and
- * 22 (8 longer: `changed` is reloaded after the 0xff compare clobbers its
- * reload register) differ in size (jump table checked case by case), the
- * frame is 0x160 vs 0x168, and global allocation differs (actor/pc in s3/s2
- * vs s4/s3: the original's local allocation also takes s2 in some block,
- * e.g. 0x3C keeps its volume byte in s2 with s1 free). */
+ * Case 0x4A keeps its offsets and distance in block-scope variables: they
+ * live in one basic block, so local allocation gives them s0-s2, which
+ * moves pc and actor to the original's s3/s4.
+ * NON_MATCHING (4 bytes longer): the remaining differences are per-case
+ * register choices for the byte operands (e.g. 0x13 loads `reference`
+ * into a3 where the original uses s0 and low2 into s0 where it uses fp;
+ * 0x14 keeps its mask byte in s6/s1 where the original uses s7/s1), the
+ * 0x22 reload of `changed` after the 0xff compare, and the frame layout. */
 #ifdef NON_MATCHING
 void func_801E39F0(Actor *actor, SlotPool *pool, s32 changed, s32 ticks, s32 arg4) {
     Actor *self;
@@ -3415,13 +3416,17 @@ aim:
             if (arg != 0xFB) {
                 break;
             }
-            dx = actor->parts->pos[0] - actor->target[0];
-            dy = actor->parts->pos[1] - actor->target[1];
-            dz = actor->parts->pos[2] - actor->target[2];
-            dist = SquareRoot0(dx * dx + dy * dy + dz * dz) + 1;
-            actor->parts->pos[0] = actor->target[0] + dx * actor->h8E / dist;
-            actor->parts->pos[1] = actor->target[1] + dy * actor->h8E / dist;
-            actor->parts->pos[2] = actor->target[2] + dz * actor->h8E / dist;
+            {
+                s32 dx, dy, dz, dist;
+
+                dx = actor->parts->pos[0] - actor->target[0];
+                dy = actor->parts->pos[1] - actor->target[1];
+                dz = actor->parts->pos[2] - actor->target[2];
+                dist = SquareRoot0(dx * dx + dy * dy + dz * dz) + 1;
+                actor->parts->pos[0] = actor->target[0] + dx * actor->h8E / dist;
+                actor->parts->pos[1] = actor->target[1] + dy * actor->h8E / dist;
+                actor->parts->pos[2] = actor->target[2] + dz * actor->h8E / dist;
+            }
             break;
         case 0x4B:
             actor->drift[0] = *pc++;
