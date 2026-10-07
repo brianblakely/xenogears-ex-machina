@@ -682,10 +682,11 @@ done:
  * `mode` is 0x80). Returns 0 with the floor point (and, unless `mode` is -1,
  * its plane height) in `floor`, else -1 with the crossed edge in `edge`.
  * The masked attribute of the last triangle goes to `attribute`.
- * NON_MATCHING: control flow, frame and the walk match; the original keeps
- * `probe` in t0 and computes the origin from the position words loaded for
- * the point (ours reloads position[0] by halfword after the floor->vx
- * store), and loads actor->flags before shifting the attribute bits. */
+ * NON_MATCHING: everything matches except the first block of the walk
+ * set-up: ours reads position[0] through the incoming a1 (still holding the
+ * argument) where the original reloads `position` from its stack slot
+ * (0x28) into t1 and then loads position[0] after the probe words (four
+ * instructions scheduled differently). */
 s32 func_8007BEF4(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge, SVECTOR *floor, s32 mode,
                   s32 *attribute) {
     VECTOR normal;
