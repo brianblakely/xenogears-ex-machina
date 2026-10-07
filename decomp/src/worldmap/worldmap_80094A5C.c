@@ -285,10 +285,13 @@ s32 func_80085760(VECTOR *from, VECTOR *to, s32 index, s32 face);
  * move leaves through edge n) onto the neighbouring faces, sliding along an
  * edge whose neighbour is a wall (kind 1) and dropping back to the terrain
  * when an edge has no neighbour. Returns 1 when the position stands on a face. */
-/* NON_MATCHING: 16 bytes short. The original copies each neighbour face
- * (loaded with lh) into a0 before testing it against -1 and sets face from
- * that copy; here face (u16) reloads it with lhu. Declaring face s32 gives
- * the copies but loses the original's 0xb8 frame (its 0x30-0x8f spill area). */
+/* NON_MATCHING: 4 bytes short. Testing the neighbour field itself and then
+ * stepping face to it reproduces the single-edge cases (the lh value is
+ * copied instead of reloaded with lhu). In the two-edge cases `second` is
+ * still reloaded with lhu (the original copies the lh value into a3), `first`
+ * takes t0 (v1) and `edges` is formed with nor (the original xors with s7,
+ * -1), so the three cases' walls tails are not cross-jumped as in the
+ * original. Declaring face s32 loses the original's 0xb8 frame. */
 #ifdef NON_MATCHING
 s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s32 mode) {
     s16 object;
@@ -382,58 +385,55 @@ s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s
                 D_8009C840 = object;
                 break;
             case 1:
-                first = faces[(s16)face].next[0];
-                if (first == -1) {
+                if (faces[(s16)face].next[0] == -1) {
                     result = func_800951A8(position, direction, out, scale, mode);
                     D_8009C16C = -1;
                     D_8009C840 = -1;
                     walking = 0;
                     break;
                 }
-                face = first;
-                if (faces[first].kind == 1) {
+                face = faces[(s16)face].next[0];
+                if (faces[(s16)face].kind == 1) {
                     result = 0;
                     walking = 0;
                     func_800952B0(direction, out, &scratch->side[0]);
                 }
                 break;
             case 2:
-                first = faces[(s16)face].next[1];
-                if (first == -1) {
+                if (faces[(s16)face].next[1] == -1) {
                     result = func_800951A8(position, direction, out, scale, mode);
                     D_8009C16C = -1;
                     D_8009C840 = -1;
                     walking = 0;
                     break;
                 }
-                face = first;
-                if (faces[first].kind == 1) {
+                face = faces[(s16)face].next[1];
+                if (faces[(s16)face].kind == 1) {
                     result = 0;
                     walking = 0;
                     func_800952B0(direction, out, &scratch->side[1]);
                 }
                 break;
             case 4:
-                first = faces[(s16)face].next[2];
-                if (first == -1) {
+                if (faces[(s16)face].next[2] == -1) {
                     result = func_800951A8(position, direction, out, scale, mode);
                     D_8009C16C = -1;
                     D_8009C840 = -1;
                     walking = 0;
                     break;
                 }
-                face = first;
-                if (faces[first].kind == 1) {
+                face = faces[(s16)face].next[2];
+                if (faces[(s16)face].kind == 1) {
                     result = 0;
                     walking = 0;
                     func_800952B0(direction, out, &scratch->side[2]);
                 }
                 break;
             case 3:
+                edges = faces[(s16)face].next[0] != -1;
                 first = faces[(s16)face].next[0];
                 second = faces[(s16)face].next[1];
-                edges = first != -1;
-                if (second != -1) {
+                if (faces[(s16)face].next[1] != -1) {
                     edges |= 2;
                 }
                 switch (edges) {
@@ -484,10 +484,10 @@ s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s
                 }
                 break;
             case 5:
+                edges = faces[(s16)face].next[0] != -1;
                 first = faces[(s16)face].next[0];
                 second = faces[(s16)face].next[2];
-                edges = first != -1;
-                if (second != -1) {
+                if (faces[(s16)face].next[2] != -1) {
                     edges |= 2;
                 }
                 switch (edges) {
@@ -538,10 +538,10 @@ s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s
                 }
                 break;
             case 6:
+                edges = faces[(s16)face].next[1] != -1;
                 first = faces[(s16)face].next[1];
                 second = faces[(s16)face].next[2];
-                edges = first != -1;
-                if (second != -1) {
+                if (faces[(s16)face].next[2] != -1) {
                     edges |= 2;
                 }
                 switch (edges) {
