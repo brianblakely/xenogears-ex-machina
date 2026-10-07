@@ -847,11 +847,9 @@ u32 func_801D1078(u8 item, u8 kind) {
  * table price) labels, the bars of the members who can use it and the marks
  * of those holding it. Returns the sell price.
  */
-/* Frame layout unresolved: the original reserves 16 additional bytes
- * that the recovered operations do not explain. */
-#ifdef NON_MATCHING
 u32 func_801D1304(u8 id, u8 kind) {
     RECT rect;
+    u8 unused[16]; /* unused in the original; reserves 16 bytes */
     u8 codes[14];
     u8 text[16];
     s32 divisors[5];
@@ -952,9 +950,6 @@ u32 func_801D1304(u8 id, u8 kind) {
     D_800625A0->details->group2D0_buffer = D_800625A0->buffer;
     return price;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/gear_shop", func_801D1304);
-#endif
 
 /*
  * Draw the eight visible rows of a list from entry `top`: each part's name,
