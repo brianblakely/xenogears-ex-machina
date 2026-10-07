@@ -19,6 +19,10 @@
 #include "console.h"
 #include "sound.h"
 
+/* CdlSetmode parameter: the mode byte, then 3 zero bytes. The stream unit
+ * (main_8002709C.c) declares only its mode byte. */
+extern u8 D_80059F18[4];
+
 /* Allocate a stream ring of `count` 2,048-byte sectors (plus the slot
  * header), then select and reset it. Returns the ring or NULL. */
 StreamRing *func_8002A260(s32 count, s32 mode) {
