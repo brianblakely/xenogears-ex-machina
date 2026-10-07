@@ -1805,9 +1805,9 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
             transform = sprite->render.bits.no_view;
             switch (index) {
             case 38:
-                vector.vx = D_800C3EB0[sprite->frame_bits.unknown30 | ((sprite->motion.word & 3) << 2)].x;
+                vector.vx = D_800C3EB0[((sprite->motion.word & 3) << 2) | sprite->frame_bits.unknown30].x;
                 vector.vy = 0;
-                vector.vz = D_800C3EB0[sprite->frame_bits.unknown30 | ((sprite->motion.word & 3) << 2)].z;
+                vector.vz = D_800C3EB0[((sprite->motion.word & 3) << 2) | sprite->frame_bits.unknown30].z;
                 break;
             case 36:
                 ((Task *)sprite->block)->link.word |= 0x40000000;
@@ -1998,10 +1998,10 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                 }
                 members++;
                 sum.vx += sprite->x;
-                sum.vx /= members;
                 sum.vy += sprite->y;
-                sum.vy /= members;
                 sum.vz += sprite->z;
+                sum.vx /= members;
+                sum.vy /= members;
                 sum.vz /= members;
                 vector.vx = sum.vx >> 16;
                 vector.vy = sum.vy >> 16;
@@ -2358,8 +2358,8 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         if (sprite->frame_bits.sequencer_owned == 1 && ((SpriteSequencer *)sprite->sequencer)->word4 != 0) {
             sprite->word1c = ((SpriteSequencer *)sprite->sequencer)->word4;
         } else {
+            sprite->word1c = (((s8)code[0] << 6) * (s16)sprite->word82 / 4096) << 5;
             n = 0x10000 / sprite->motion.bits.divisor;
-            sprite->word1c = ((s8)code[0] * 64 * (s16)sprite->word82 / 4096) << 5;
             sprite->word1c *= n * n / 256;
             sprite->word1c /= 256;
             sprite->word1c *= (D_80059198 + 1) * (D_80059198 + 1);
