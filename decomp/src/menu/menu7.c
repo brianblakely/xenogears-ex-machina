@@ -1894,13 +1894,10 @@ void func_8008E0C8(void) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Advance the glow field one step: seed the two bottom rows with random
  * heat, let every cell take the cooled average of its neighbours below,
- * then keep the result for the next step.
- * Does not match (408 vs 400 bytes): the original also keeps the source
- * index i in $s1 (so the quotient lands in $s5, frame 0x30 vs 0x28), the
- * first loop swaps $s0/$s1, and the loop setup is ordered differently. */
+ * then keep the result for the next step. The seeding loop and the
+ * source index share i. */
 void func_8008E120(void) {
     s16 *new;
     s16 *old;
@@ -1921,7 +1918,7 @@ void func_8008E120(void) {
         heat = 0;
         new = D_80092840;
         seed = &new[47 * 0x70];
-        for (x = 0; x < 0x70; x++) {
+        for (i = 0; i < 0x70; i++) {
             switch (rand() & 3) {
             case 0:
                 heat = 0x180;
@@ -1930,7 +1927,7 @@ void func_8008E120(void) {
                 heat = 0;
                 break;
             }
-            seed[x] = seed[x + 0x70] = heat;
+            seed[i] = seed[i + 0x70] = heat;
         }
         old = D_8009283C;
         up = old - 0x70;
@@ -1953,9 +1950,6 @@ void func_8008E120(void) {
         func_8008E0C8();
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008E120);
-#endif
 
 /* Draw a full-screen grey tile of the given level, additive or subtractive,
  * with the draw mode that selects the blend. */
