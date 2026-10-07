@@ -284,18 +284,18 @@ void func_8007EFB4(void) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Draw the portrait of a list entry (the index wraps around the list) on
  * the left or right side. At fade 64 it is shown full size and unshaded;
- * below, it is shaded and shrunk by fade / 16.
- * Does not match: the vertex arithmetic is scheduled differently. */
+ * below, it is shaded and shrunk by fade / 16, inset from x and grown from
+ * a 0x34 by 0x38 base. */
 void func_8007F05C(s32 index, PolyFT4Words *quad, s32 right_side, s32 x, s32 fade) {
     GridCell *cell;
-    s32 shrink;
+    s32 inset;
     s32 top;
     s32 bottom;
     s32 left;
-    s32 right;
+    s32 width;
+    s32 height;
     s32 u;
 
     if (right_side) {
@@ -309,28 +309,31 @@ void func_8007F05C(s32 index, PolyFT4Words *quad, s32 right_side, s32 x, s32 fad
     if (index < 0) {
         index += D_80092888;
     }
-    cell = &D_8009270C[D_800928EC[index]->id];
+    index = D_800928EC[index]->id;
+    cell = &D_8009270C[index];
     if (fade == 0x40) {
         quad->len = 9;
         ((u8 *)&quad->rgbc)[3] = 0x2D;
         quad->xy0 = x | 0x300000;
-        right = x + 0x3C;
-        quad->xy1 = right | 0x300000;
+        quad->xy1 = (x + 0x3C) | 0x300000;
         quad->xy2 = x | 0x700000;
-        quad->xy3 = right | 0x700000;
+        quad->xy3 = (x + 0x3C) | 0x700000;
     } else {
         fade += 0x40;
-        shrink = (fade - 0x40) >> 4;
         quad->len = 9;
         quad->rgbc = fade | (fade << 8) | (fade << 16) | 0x2C000000;
-        left = x - (shrink - 4);
-        top = 0x34 - shrink;
+        fade -= 0x40;
+        fade >>= 4; /* from here on, how far the portrait shrinks */
+        inset = fade - 4;
+        left = x - inset;
+        top = 0x34 - fade;
         quad->xy0 = left | (top << 16);
-        right = left + 0x34 + shrink * 2;
-        bottom = top + 0x38 + shrink * 2;
-        quad->xy1 = right | (top << 16);
+        width = 0x34;
+        quad->xy1 = (left + width + fade * 2) | (top << 16);
+        height = 0x38;
+        bottom = top + height + fade * 2;
         quad->xy2 = left | (bottom << 16);
-        quad->xy3 = right | (bottom << 16);
+        quad->xy3 = (left + width + fade * 2) | (bottom << 16);
     }
     u = cell->image_x * 2;
     quad->uv0 = u | (cell->image_y << 8);
@@ -341,9 +344,6 @@ void func_8007F05C(s32 index, PolyFT4Words *quad, s32 right_side, s32 x, s32 fad
     quad->tpage = GetTPage(1, 0, cell->image_x & 0xFF80, cell->image_y);
     AddPrim(D_80092938, quad);
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_8007F05C);
-#endif
 
 /* Draw the two-player selection: each side's pick, sliding in from its
  * previous one (the long way round wraps), with its neighbours when the
