@@ -2054,35 +2054,32 @@ u8 func_801E23CC(void) {
                 if (D_800625A0->party->ids[slot] != 7) {
                     D_800625A0->party->redrawA = 0;
                     func_801E05D0(slot, 0, 1);
-                    shown = 0xff;
                     func_801DE36C();
                     func_801D8DE4(slot, 0, 0, 1);
                     func_801D8EA4(slot, 0, 0, 1);
                     D_800625A0->party->redrawA = 1;
                 } else {
                     func_801C8574(4);
-                    shown = 0xff;
                 }
+                shown = 0xff;
                 break;
             case 1:
                 if (D_800625A0->party->ids[slot] != 7) {
                     func_801DDF24(slot, 0, 1);
                     func_801DC2CC(1);
-                    shown = 0xff;
                 } else {
                     func_801C8574(4);
-                    shown = 0xff;
                 }
+                shown = 0xff;
                 break;
             case 2:
                 if (D_800625A0->party->ids[slot] != 7) {
                     func_801DDF24(slot, 0, 2);
                     func_801DC2CC(2);
-                    shown = 0xff;
                 } else {
                     func_801C8574(4);
-                    shown = 0xff;
                 }
+                shown = 0xff;
                 break;
             case 3:
                 if (D_80059179 == 0) {
@@ -2094,11 +2091,10 @@ u8 func_801E23CC(void) {
                         D_8006F8E5[slot] = 1;
                     }
                     func_801D7CFC(slot, 1, D_8006F8E5[slot]);
-                    shown = 0xff;
                 } else {
                     func_801C8574(4);
-                    shown = 0xff;
                 }
+                shown = 0xff;
                 break;
             }
             D_800625A0->party->unk54[4] = 1;
