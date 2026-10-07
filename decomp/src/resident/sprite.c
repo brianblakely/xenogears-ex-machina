@@ -803,15 +803,6 @@ void func_8001E368(Sprite *sprite, u_long *ot, s32 height) {
  * Parts of one group share a matrix: the renderer's, or its product with the
  * group entry's rotation and offset; groups masked by render byte 1
  * (8004faf8) are skipped. */
-/* Nonmatching: the RotTransPers4 depth output is the last word of a 16-byte
- * aggregate at 0x50 (0x50-0x5B never accessed), which reproduces the frame;
- * only the part width ($t0 in the original) and the column span ($a3)
- * take each other's registers (score 8). Global allocation takes the width
- * byte first because sched1 puts du = w - 1 right after its load, giving du
- * the longer life (16 insns against 14); storing u1 before u0/v0 shortens du
- * enough to fix the registers but then that store is first (score 2), and
- * an s32 u also fixes them but merges the u - 1 test into u. */
-#ifdef NON_MATCHING
 void func_8001E3D8(Sprite *sprite, u_long *ot) {
     SpriteRenderer *renderer;
     u32 flags;
@@ -832,7 +823,6 @@ void func_8001E3D8(Sprite *sprite, u_long *ot) {
     long flag;
     POLY_FT4 *poly;
     s16 w, h, x, y;
-    s32 width, height, left, top;
     u8 u;
     s32 v, du, dv;
 
@@ -942,8 +932,9 @@ void func_8001E3D8(Sprite *sprite, u_long *ot) {
                 du = parts[i].w - 1;
                 dv = parts[i].h - 1;
                 if (poly->x3 < poly->x0) {
-                    if (u - 1 >= 0) {
-                        u--;
+                    s32 cropped_u = u - 1;
+                    if (cropped_u >= 0) {
+                        u = cropped_u;
                     } else {
                         u = 0;
                         du = parts[i].w - 2;
@@ -959,9 +950,6 @@ void func_8001E3D8(Sprite *sprite, u_long *ot) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001E3D8);
-#endif
 
 /* Draw a sprite's shadow: its parts as black quads (POLY_FT4 from the queue
  * block) flattened onto its floor height, the view matrix scaled by the
