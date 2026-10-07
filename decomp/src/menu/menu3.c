@@ -466,7 +466,8 @@ void func_80074678(Actor *actor, s16 frame, s16 count) {
         return;
     }
     actor->event_frame = frame;
-    offset = ((s16 *)actor->unk900)[actor->anim];
+    offset = actor->anim;
+    offset = ((s16 *)actor->unk900)[offset];
     if (offset != 0) {
         sounded = 0;
         D_80092650 = 0;
@@ -889,10 +890,8 @@ s32 func_80075750(s32 x0, s32 z0, s32 x1, s32 z1, s32 px, s32 pz, s32 radius) {
     return along <= len + radius ? hit : 0;
 }
 
-#ifdef NON_MATCHING
 /* Like func_80075750, and on a hit store where the segment enters the
- * circle around the point in D_80092654/D_80092658. Does not match: the
- * segment length and the products are allocated to other registers. */
+ * circle around the point in D_80092654/D_80092658. */
 s32 func_80075888(s32 x0, s32 z0, s32 x1, s32 z1, s32 px, s32 pz, s32 radius) {
     Vector d;
     Vector sq;
@@ -932,15 +931,12 @@ s32 func_80075888(s32 x0, s32 z0, s32 x1, s32 z1, s32 px, s32 pz, s32 radius) {
         if (diff < 0) {
             diff = -diff;
         }
-        along -= SquareRoot0(diff);
-        D_80092654 = along * ux / 4096 + x0;
-        D_80092658 = along * uz / 4096 + z0;
+        diff = along - SquareRoot0(diff); /* the entry distance along the segment */
+        D_80092654 = diff * ux / 4096 + x0;
+        D_80092658 = diff * uz / 4096 + z0;
     }
     return hit;
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80075888);
-#endif
 
 /* Whether a point comes within radius of any edge of a quad given as four
  * corner vectors; clears the crossing point to the point first. */
