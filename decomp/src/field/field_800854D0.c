@@ -5491,27 +5491,30 @@ void func_80095300(void) {
     D_800B0078->pc += 3;
 }
 
-#ifdef NON_MATCHING
+/* Trigger zone operand 1 and one of its corners packed as (z << 16) + x,
+ * the point format of func_8004A70C.  The zone is addressed inside each
+ * access (not through a Zone pointer): GCC then forms the address as
+ * (scaled index + table), which ties the zone byte's register differently
+ * from `zone = &D_800ADBF4[i]' (base + scaled index). */
+#define EVENT_ZONE (D_800ADBF4[EVENT_OPERAND_BYTE(1)])
+#define EVENT_ZONE_CORNER(k) ((EVENT_ZONE.corner[k].z << 16) + EVENT_ZONE.corner[k].x)
+
 /* Call (operand 2) when the controlled actor stands inside trigger zone
- * operand 1 and the call stack has room; otherwise skip.
- * NON_MATCHING: the original loads the zone number after computing the
- * actor's point (instruction scheduling). */
+ * operand 1 and the call stack has room; otherwise skip. */
 void func_8009533C(void) {
     FieldActor *player;
-    Zone *zone;
     s32 point;
     s32 a;
     s32 b;
     s32 c;
     s32 d;
 
-    zone = &D_800ADBF4[EVENT_OPERAND_BYTE(1)];
+    a = EVENT_ZONE_CORNER(0);
     player = D_800AF880.components.descriptors[D_800B2078.controlled].actor;
     point = (WHOLE(player->position[2]) << 16) + WHOLE(player->position[0]);
-    a = (zone->corner[0].z << 16) + zone->corner[0].x;
-    b = (zone->corner[1].z << 16) + zone->corner[1].x;
-    c = (zone->corner[2].z << 16) + zone->corner[2].x;
-    d = (zone->corner[3].z << 16) + zone->corner[3].x;
+    b = EVENT_ZONE_CORNER(1);
+    c = EVENT_ZONE_CORNER(2);
+    d = EVENT_ZONE_CORNER(3);
     if (func_8004A70C(a, b, point) >= 0 && func_8004A70C(b, c, point) >= 0 &&
         func_8004A70C(c, d, point) >= 0 && func_8004A70C(d, a, point) >= 0 &&
         (D_800B0078->state.word & 0x1C0) != 0x100) {
@@ -5523,9 +5526,6 @@ void func_8009533C(void) {
     D_800AFC7C += 1;
     D_800B0078->pc += 4;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_8009533C);
-#endif
 
 #ifdef NON_MATCHING
 /* As func_8009533C, also requiring the zone's height within the
