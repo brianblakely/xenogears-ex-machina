@@ -70,8 +70,6 @@ void movie_slice_decoded(void) {
  * bytes), `slice` is the macroblock column width, `sectors` the ring length,
  * `limit` the decode-call limit; `mode` bit 0 selects 24-bit output.
  * Returns 0, or -1 when no ring could be allocated. */
-#ifdef NON_MATCHING
-/* Same instructions; parameters limit, mode and the masked height land in s7/s1/s6 in the original and s1/s6/s7 here. */
 s32 movie_open(u16 width, u16 height, u16 scale, u16 slice, u16 sectors, u16 limit, u16 mode) {
     s32 product;
     s32 slice_bytes;
@@ -87,8 +85,8 @@ s32 movie_open(u16 width, u16 height, u16 scale, u16 slice, u16 sectors, u16 lim
     }
     DecDCTReset(0);
     product = width * height * (scale << 1);
-    movie_vlc_limit = limit;
     movie_color_mode = mode & 3;
+    movie_vlc_limit = limit;
     movie_decoder.vlc_buffers[0] = func_80031BDC(product / 256, 0);
     movie_decoder.vlc_buffers[1] = func_80031BDC(product / 256, 0);
     if (movie_color_mode & 1) {
@@ -128,9 +126,6 @@ s32 movie_open(u16 width, u16 height, u16 scale, u16 slice, u16 sectors, u16 lim
     movie_player_state = 1;
     return 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", movie_open);
-#endif
 
 /* Start streaming `file` from `sector`: frames `first_frame` to `last_frame`,
  * CD-XA audio of `channel` when `select` bit 0 is set, `hold` keeps the first
