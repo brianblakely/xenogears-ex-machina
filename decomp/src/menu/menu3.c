@@ -2089,14 +2089,14 @@ s32 func_80078704(Vector *a, Vector *b, Actor *actor, Vector **anchor) {
     return 3;
 }
 
-#ifdef NON_MATCHING
 /* Keep two close actors apart: when their bodies overlap in height, take
  * each one's anchor across the line between their start positions, and if
  * those are closer than the actors' radii, push both apart along the line
  * between them, each by the other's share of their combined speed.
- * Does not match: only the delay slot of the last height test's first branch: the original leaves it empty (a nop); declaring the function s32 reproduces that but rotates the registers of the anchor point arithmetic. */
-void func_80078920(Actor *first, Actor *second) {
-    Vector unused; /* keeps the original's 16-byte frame slot */
+ * Declared int without a return value, as the original's unfilled delay
+ * slot in the last height test shows. */
+s32 func_80078920(Actor *first, Actor *second) {
+    Vector unused; /* unused in the original; reserves 16 bytes */
     Vector point_a;
     Vector point_b;
     Vector mid;
@@ -2106,8 +2106,8 @@ void func_80078920(Actor *first, Actor *second) {
     s32 radius_a;
     s32 radius_b;
     s32 dist;
-    s32 push;
-    s32 angle;
+    s32 sum;
+    s32 angle; /* first the reach to the first anchor, then the push angle */
     s32 speed_a;
     s32 speed_b;
     s32 total;
@@ -2141,23 +2141,23 @@ void func_80078920(Actor *first, Actor *second) {
         dist = func_80088838(&point_a, &point_b);
         total = radius_a + radius_b;
         if (dist < total) {
-            push = func_80088838(&first->start, &point_a);
-            if (func_80088838(&first->start, &point_b) < push) {
-                push = dist + total;
+            angle = func_80088838(&first->start, &point_a);
+            if (func_80088838(&first->start, &point_b) < angle) {
+                dist += total;
             } else {
-                push = total - dist;
+                dist = total - dist;
             }
             angle = ratan2(first->start.vx - second->start.vx, first->start.vz - second->start.vz);
             speed_a = func_80088754(&first->velocity);
             speed_b = func_80088754(&second->velocity);
-            total = speed_a + speed_b;
-            if (total == 0) {
+            sum = speed_a + speed_b;
+            if (sum == 0) {
                 speed_b = 1;
                 speed_a = 1;
-                total = 2;
+                sum = 2;
             }
-            speed_a = (speed_a * push << 8) / total;
-            speed_b = (speed_b * push << 8) / total;
+            speed_a = (speed_a * dist << 8) / sum;
+            speed_b = (speed_b * dist << 8) / sum;
             first->pos.vx += (func_8003F8B0(angle) * speed_b) >> 20;
             first->pos.vz += (func_8003F8CC(angle) * speed_b) >> 20;
             second->pos.vx -= (func_8003F8B0(angle) * speed_a) >> 20;
@@ -2165,9 +2165,6 @@ void func_80078920(Actor *first, Actor *second) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80078920);
-#endif
 
 /* Move an actor by its velocity: take the floor height and cell kind (bits
  * 29-30; both set also sets 0x90b), keep it in the arena, and land it on
