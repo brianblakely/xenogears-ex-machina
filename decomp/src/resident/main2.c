@@ -428,9 +428,9 @@ void func_80033DD4(Window *window, u8 *text) {
  * in $v0 and keeps its own call (the original computes it in $a1 and shares
  * the func_80033DD4 call with the func_80033728 path), the number insertion
  * loads window->text after the jump instead of before it in cases 9/10, case
- * 15 zero-extends the resource index at the shared call, and the line row
- * sum, the case 4 selection load and one glyph-path addition are ordered
- * differently. */
+ * 15 zero-extends the resource index at the shared call (and increments the
+ * budget first), and the case 4 selection load and one glyph-path addition
+ * are ordered differently. */
 #ifdef NON_MATCHING
 void func_80033DF0(Window *window) {
     s32 remaining = window->unk69;
@@ -466,7 +466,7 @@ void func_80033DF0(Window *window) {
         }
         current_line = window->y;
         line_slot = window->unk18 % (window->lines + 1);
-        window->layout[current_line].row = window->unkE + (line_slot / 2) * 13;
+        window->layout[current_line].row = (line_slot / 2) * 13 + window->unkE;
         window->layout[current_line].clut = !(line_slot & 1) ? D_800595D4 : D_80059414;
         window->layout[current_line].plane = line_slot & 1;
         window->layout[current_line].slot = line_slot;
