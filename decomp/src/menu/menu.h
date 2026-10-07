@@ -354,7 +354,8 @@ typedef struct {
     u32 unk12 : 3;
     u32 flag15 : 1;
     u32 flag16 : 1;
-    u32 unk17 : 15;
+    u32 flag17 : 1;    /* the actor faces the other way (D_800928F4) */
+    u32 unk18 : 14;
 } ActorFlagBits;
 
 /* The low bits of an actor's unkD4 word as bit-fields (8007920c): the

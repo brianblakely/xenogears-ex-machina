@@ -916,9 +916,11 @@ void func_80072D84(POLY_G4 *poly0, POLY_G4 *poly1, s32 x, s32 y, s32 w, s32 h) {
 
 #ifdef NON_MATCHING
 /* Add the menu backdrop to `ot`: a gouraud quad at (x, y), w by h, whose
- * corner colors each fade toward a new random color. Same instructions,
- * different register allocation: the original keeps the corner index and its
- * word offset apart, spilling the offset and the from-green pointer. */
+ * corner colors each fade toward a new random color. Does not match (912 vs
+ * 896 bytes): the original loads each from-component again for the final
+ * add after the three divisions (here CSE reuses the value loaded for the
+ * difference), keeps the corner index and its word offset apart and spills
+ * the offset and the from-green pointer. */
 void func_80072F98(u32 *ot, POLY_G4 *poly, s32 x, s32 y, s32 w, s32 h) {
     s32 i;
     s32 r;

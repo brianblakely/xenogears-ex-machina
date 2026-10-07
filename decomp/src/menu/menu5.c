@@ -773,8 +773,11 @@ void func_80085EAC(s32 mirrored, s16 *out, s32 y) {
  * outlines and gauge quads of both sides (left from the corner layout,
  * right mirrored), the arrow triangles and the marks. The mirror loop runs
  * over six arrows and so also writes three past the array into the marks,
- * which are set afterwards. Does not match:
- * the arrow mirroring and final mark stores are scheduled differently. */
+ * which are set afterwards. Does not match: only the two decrement loads
+ * (arrows[1][1].y0 at 0x292, .x2 at 0x298) differ; the original keeps them
+ * at their source positions (after the marks[1].y0 store and after the 0x1E
+ * stores), here they move below the length stores, and the registers of the
+ * hoisted marks[2]/[3] constants and of the 0x1E/length constants differ. */
 #ifdef NON_MATCHING
 void func_80085EC8(OverlayBuffer *buf) {
     s32 i;
@@ -984,15 +987,20 @@ void func_800866D4(TimImage *tim, s32 x, s32 y, PolyFT4 *quad, s32 depth) {
 
 /* Build the HUD packets: the two name plates (left and mirrored right)
  * from the name TIM, the icon and gauge sprites, the gauge bar quads from
- * the bar TIM, the HUD texture page modes and the gauge palette. Does not match:
- * the HUD and icon base addresses are held in saved registers from early on. */
+ * the bar TIM, the HUD texture page modes and the gauge palette. One sprite
+ * pair pointer walks the icons and then the gauges (the original keeps it
+ * in $s2). Does not match: only the bar block after func_800866D4 (about 20
+ * instructions): the original stores the gauge size word before loading the
+ * two bar texel rows and loads the name CLUT after the four bar colour
+ * stores, so its constant registers differ; the rest is identical. */
 #ifdef NON_MATCHING
 void func_800868E0(StageFiles *files) {
     TimImage tim;
     Rect rect;
     s16 *clut;
     Hud *hud = &D_80095698;
-    SpritePair *icon = hud->icon;
+    SpritePair *pair;
+    PolyFT4 *bar;
 
     OpenTIM(files->name_tim);
     ReadTIM(&tim);
@@ -1000,6 +1008,7 @@ void func_800868E0(StageFiles *files) {
     clut[0] = 0;
     clut[1] = 0x8000;
     LoadImage(tim.crect, tim.caddr);
+    pair = hud->icon;
     LoadImage(tim.prect, tim.paddr);
     func_800864B4(&tim, 6, 7, hud->name_l, 0);
     func_800866D4(&tim, 0x13A - tim.prect->w * 4, 7, hud->name_r, 0);
@@ -1007,24 +1016,26 @@ void func_800868E0(StageFiles *files) {
     D_80095918[1] = D_80095918[0];
     SetDrawTPage(&D_80095918[2], 0, 1, GetTPage(0, 0, 0x380, 0x100));
     D_80095918[3] = D_80095918[2];
-    ((PacketTag *)&icon[0].s[0])->len = 4;
-    icon[0].s[0].code = 0x65;
-    *(u32 *)&icon[0].s[0].x0 = 0x90007;
-    *(u16 *)&icon[0].s[0].u0 = 0;
-    *(u32 *)&icon[0].s[0].w = 0x160016;
-    icon[0].s[0].clut = GetClut(0, 0x1F6);
-    icon[1] = icon[0];
-    icon[2] = icon[1];
-    icon[2].s[0].x0 = 0x123;
-    icon[2].s[0].u0 = 0x20;
-    icon[2].s[0].clut = GetClut(0, 0x1F7);
-    icon[3] = icon[2];
+    ((PacketTag *)&pair[0].s[0])->len = 4;
+    pair[0].s[0].code = 0x65;
+    *(u32 *)&pair[0].s[0].x0 = 0x90007;
+    *(u16 *)&pair[0].s[0].u0 = 0;
+    *(u32 *)&pair[0].s[0].w = 0x160016;
+    pair[0].s[0].clut = GetClut(0, 0x1F6);
+    D_80095698.icon[2] = D_80095698.icon[1] = pair[0];
+    pair = &D_80095698.icon[2];
+    pair[0].s[0].x0 = 0x123;
+    pair[0].s[0].u0 = 0x20;
+    pair[0].s[0].clut = GetClut(0, 0x1F7);
+    pair[1] = pair[0];
     OpenTIM(files->bar_tim);
     ReadTIM(&tim);
+    bar = D_80095698.bar_l;
+    pair = D_80095698.gauge;
     LoadImage(tim.prect, tim.paddr);
-    func_800864B4(&tim, 6, 0x20, D_80095698.bar_l, 0);
+    func_800864B4(&tim, 6, 0x20, bar, 0);
     func_800866D4(&tim, 0x13A - tim.prect->w * 4, 0x20, D_80095698.bar_r, 0);
-    *(u32 *)&D_80095698.gauge[0].s[0].w = 0x80040;
+    *(u32 *)&pair[0].s[0].w = 0x80040;
     D_80092860 = D_80095698.bar_l[0].v0;
     D_80092864 = D_80095698.bar_r[0].v0;
     *(u32 *)&D_80095698.bar_l[0].r0 = 0x2C000080;
@@ -1035,19 +1046,20 @@ void func_800868E0(StageFiles *files) {
     ((PacketTag *)&D_80095698.bar_l[1])->len = 9;
     ((PacketTag *)&D_80095698.bar_r[0])->len = 9;
     ((PacketTag *)&D_80095698.bar_r[1])->len = 9;
-    ((PacketTag *)&D_80095698.gauge[0].s[0])->len = 4;
-    D_80095698.gauge[0].s[0].code = 0x65;
-    *(u16 *)&D_80095698.gauge[0].s[0].u0 = 0x80;
-    D_80095698.bar_l[1].clut = hud->name_l[0].clut;
-    D_80095698.bar_l[0].clut = hud->name_l[0].clut;
-    D_80095698.bar_r[1].clut = hud->name_l[0].clut;
-    D_80095698.bar_r[0].clut = hud->name_l[0].clut;
-    D_80095698.gauge[0].s[0].clut = GetClut(0x3A0, 0x110);
-    *(u32 *)&D_80095698.gauge[0].s[0].x0 = 0xB001E;
-    D_80095698.gauge[2] = D_80095698.gauge[0];
-    *(u32 *)&D_80095698.gauge[2].s[0].x0 = 0x1500E3;
-    *(u16 *)&D_80095698.gauge[2].s[0].u0 = 0x880;
-    D_80095698.gauge[1] = D_80095698.gauge[0];
+    ((PacketTag *)&pair[0].s[0])->len = 4;
+    pair[0].s[0].code = 0x65;
+    *(u16 *)&pair[0].s[0].u0 = 0x80;
+    D_80095698.bar_l[1].clut = D_80095698.name_l[0].clut;
+    D_80095698.bar_l[0].clut = D_80095698.name_l[0].clut;
+    D_80095698.bar_r[1].clut = D_80095698.name_l[0].clut;
+    D_80095698.bar_r[0].clut = D_80095698.name_l[0].clut;
+    pair[0].s[0].clut = GetClut(0x3A0, 0x110);
+    *(u32 *)&pair[0].s[0].x0 = 0xB001E;
+    pair[2] = pair[0];
+    pair = &D_80095698.gauge[2];
+    *(u16 *)&pair[0].s[0].u0 = 0x880;
+    *(u32 *)&pair[0].s[0].x0 = 0x1500E3;
+    pair[-1] = pair[-2];
     D_80095698.gauge[3] = D_80095698.gauge[2];
     rect.x = 0x3A0;
     rect.y = 0x110;
@@ -1115,21 +1127,14 @@ s32 func_80086FF8(Actor *actor, PolyF4 *packet) {
 
 /* Link the HUD and map overlay for this frame: each side's arrows (one per
  * point), state marks, name plates, icons, gauges, the charge bars (flashing
- * when nearly full) and the level bars (tinted by the level). Does not match:
- * the original adds each HUD array's offset to the HUD base register before
- * the index (as if the arrays were separate symbols related by CSE), keeps the
- * HUD base in $s1 and the count in $s2, and saves one more register
- * (frame 0x30 vs 0x28); it also fills the delay slot after the first mark
- * test. */
-#ifdef NON_MATCHING
+ * when nearly full) and the level bars (tinted by the level). The level
+ * tints are written as loop-invariant expressions inside the loops (the
+ * original's moved invariants include a copy of the repeated green term). */
 void func_80087068(Actor *left, Actor *right) {
     OverlayBuffer *buf;
-    PolyF4 *mark;
     PolyFT4 *bar;
     s32 n;
     s32 level;
-    s32 green;
-    s32 blue;
 
     buf = &D_8009A2F8[D_800928A0];
     n = left->unkF2;
@@ -1152,13 +1157,11 @@ void func_80087068(Actor *left, Actor *right) {
     if (n > 2) {
         AddPrim(D_80092938, &buf->arrows[1][2]);
     }
-    mark = &buf->marks[2];
-    if (func_80086FF8(left, mark)) {
-        AddPrim(D_80092938, mark);
+    if (func_80086FF8(left, &buf->marks[2])) {
+        AddPrim(D_80092938, &buf->marks[2]);
     }
-    mark = &buf->marks[3];
-    if (func_80086FF8(right, mark)) {
-        AddPrim(D_80092938, mark);
+    if (func_80086FF8(right, &buf->marks[3])) {
+        AddPrim(D_80092938, &buf->marks[3]);
     }
     AddPrim(D_80092938, &D_80095698.name_l[D_800928A0]);
     AddPrim(D_80092938, &D_80095698.name_r[D_800928A0]);
@@ -1196,23 +1199,19 @@ void func_80087068(Actor *left, Actor *right) {
     bar->v0 = bar->v1 = D_80092860 - (n - 0x40);
     if (left->level != 0) {
         level = 0x100 - left->level;
-        green = (level * 3) >> 3;
-        blue = level >> 1;
         for (n = 0; n < 3; n++) {
-            buf->bars_lit[n].g0 = green;
-            buf->bars_lit[n].b0 = blue;
-            buf->bars_lit[n].r0 = green + ((left->level * 255) >> 8);
+            buf->bars_lit[n].r0 = ((level * 3) >> 3) + ((left->level * 255) >> 8);
+            buf->bars_lit[n].g0 = (level * 3) >> 3;
+            buf->bars_lit[n].b0 = level >> 1;
         }
         func_80086E70(D_80092938, (GaugeBar *)&buf->bars_lit[0], left->unkC1, 0);
     }
     if (right->level != 0) {
         level = 0x100 - right->level;
-        green = (level * 3) >> 3;
-        blue = level >> 1;
         for (n = 3; n < 6; n++) {
-            buf->bars_lit[n].g0 = green;
-            buf->bars_lit[n].b0 = blue;
-            buf->bars_lit[n].r0 = green + ((right->level * 255) >> 8);
+            buf->bars_lit[n].r0 = ((level * 3) >> 3) + ((right->level * 255) >> 8);
+            buf->bars_lit[n].g0 = (level * 3) >> 3;
+            buf->bars_lit[n].b0 = level >> 1;
         }
         func_80086E70(D_80092938, (GaugeBar *)&buf->bars_lit[3], right->unkC1, 1);
     }
@@ -1221,9 +1220,6 @@ void func_80087068(Actor *left, Actor *right) {
     }
     AddPrim(D_80092938, buf);
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_80087068);
-#endif
 
 /* Build the overlay packets for buffer 0 and copy them to buffer 1. */
 void func_800875EC(void) {
