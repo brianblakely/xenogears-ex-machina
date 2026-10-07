@@ -585,10 +585,11 @@ void func_800739B8(void) {
 /* Scroll the horizon texture with the camera yaw, transform the two horizon
  * quads of this buffer and link them, inside their texture windows, into the
  * ordering table. */
-/* NON_MATCHING: the original sets up func_8004A92C's arguments first (a0/a1
- * at the very top) and keeps right and the heading address in t1/t2 (here
- * t2/t1). Computing u in one expression fixes those two but swaps u and its
- * store copy (a2/a3) and moves the 0x3F00 stores. */
+/* NON_MATCHING: only registers differ: the original loads the heading
+ * through t2 straight into u (a3) and keeps right in t1 (here the heading
+ * address is in t1 and the shifted heading in t2). Computing u in one
+ * expression fixes those but swaps u and its store copy (a2/a3) and moves
+ * the 0x3F00 stores. */
 #ifdef NON_MATCHING
 void func_80073B04(void) {
     SVECTOR *corners;
@@ -603,8 +604,6 @@ void func_80073B04(void) {
     u32 *ot;
 
     right = D_8009BD38.vy >> 2;
-    corners = D_8009A300[0];
-    i = 0;
     u = right & 0x7F;
     right = u | 0x80;
     *(u16 *)&D_8009C744[D_8009D7F0].u0 = *(u16 *)&D_8009C744[D_8009D7F0 + 2].u0 = u;
@@ -618,6 +617,8 @@ void func_80073B04(void) {
     scratch->angle.vx = 0;
     scratch->angle.vy = D_8009BD38.vy;
     func_8004A92C(&scratch->angle, &scratch->rotation);
+    corners = D_8009A300[0];
+    i = 0;
     offset = 0;
     scratch->rotation.t[2] = 0;
     scratch->rotation.t[1] = 0;
