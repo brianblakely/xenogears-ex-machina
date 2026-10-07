@@ -19,15 +19,11 @@
 #include "stage.h"
 #include "action_file.h"
 
-#ifdef NON_MATCHING
 /* The battle's intro swirl: the screen shatters (800B73EC) while the
  * battle module's set-up phases 0-2 and the scene files load, one step per
  * frame once the disc is idle, for at least 86 frames; then phase 3. The
  * screen copied to VRAM (0x2C0, 0x100) with its pixels made opaque feeds
- * the shards, and the background fades from white. Nonmatching: the
- * original copies the first buffer's address to a saved register before
- * the compare (filling the load delay) where this copies it in the branch
- * delay slot. */
+ * the shards, and the background fades from white. */
 void func_800B7870(void) {
     RECT rect;
     u16 *pixels;
@@ -40,6 +36,7 @@ void func_800B7870(void) {
     BattleArea *area;
     BattleArea *frame;
     FrameBuffer *first;
+    FrameBuffer *next;
     ScreenShatter *shatter;
 
     frames = 86;
@@ -66,8 +63,7 @@ void func_800B7870(void) {
     func_800320E8(pixels);
     area = &BATTLE_AREA;
     buffer = &area->buffers[0];
-    first = buffer;
-    if (area->current == first) {
+    if (area->current == (first = buffer)) {
         buffer = &area->buffers[1];
     }
     area->current = buffer;
@@ -89,13 +85,13 @@ void func_800B7870(void) {
             frames--;
         }
         frame = &BATTLE_AREA;
-        buffer = &frame->buffers[0];
-        if (frame->current == buffer) {
-            buffer = &frame->buffers[1];
+        next = &frame->buffers[0];
+        if (frame->current == next) {
+            next = &frame->buffers[1];
         }
-        frame->current = buffer;
-        frame->ot = buffer->ot;
-        ClearOTagR(buffer->ot, 0x1000);
+        frame->current = next;
+        frame->ot = next->ot;
+        ClearOTagR(next->ot, 0x1000);
         frame->buffer = 1 - frame->buffer;
         D_800C3CB4 = frame->ot;
         if (func_800286CC() == 0) {
@@ -134,9 +130,6 @@ void func_800B7870(void) {
     func_80028A60(0);
     func_801E5840(3);
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B7870", func_800B7870);
-#endif
 
 /* Clear D_800D2FDC. */
 void func_800B7C28(void) {
