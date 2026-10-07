@@ -1105,9 +1105,8 @@ void func_801E1FB8(u32 experience) {
 /* Hide the battle windows and reload the results resources: archive file
  * 2 of directory 0x10 (its items 1-4: text, a table, the glyph sprites and
  * the portraits). */
-/* NON_MATCHING: original frame 0x80 bytes; this C needs 0x20. */
-#ifdef NON_MATCHING
 void func_801E211C(void) {
+    u8 unused[0x60]; /* unused in the original; reserves 96 bytes */
     ResultArchive *archive;
     void *data;
 
@@ -1136,9 +1135,6 @@ void func_801E211C(void) {
     func_800320E8(archive);
     func_80076EA4();
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E211C);
-#endif
 
 /* Total the experience and gold of the defeated enemies, add the gold (up
  * to 9999999), clear empty party slots, grant the rewards and run the
