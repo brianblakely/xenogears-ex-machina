@@ -644,10 +644,7 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002A260", func_8002B5
  * the last sector.
  * Slots are four halfwords: state, sequence, free-run length and reserved.
  * Accessing the state and sequence as halfwords preserves the original
- * store-before-counter-read order.
- * Nonmatching: the original copies the selected index before computing
- * the next cursor; this C reverses those two instructions. */
-#ifdef NON_MATCHING
+ * store-before-counter-read order. */
 void func_8002B8B0(void) {
     u16 *slot;
     s32 index;
@@ -655,8 +652,9 @@ void func_8002B8B0(void) {
 
     if (D_8004FDF8 > 0) {
         for (i = 0; i < D_8004FE40; i++) {
-            index = D_8004FE10++;
-            slot = (u16 *)&D_8004FE2C[index];
+            slot = (u16 *)&D_8004FE2C[D_8004FE10];
+            index = D_8004FE10;
+            D_8004FE10++;
             if (D_8004FE10 >= D_8004FE40) {
                 D_8004FE10 = 0;
             }
@@ -685,9 +683,6 @@ void func_8002B8B0(void) {
     }
     D_8004FDF8 = 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002A260", func_8002B8B0);
-#endif
 
 
 void func_8002BA40(void) {
