@@ -9193,21 +9193,16 @@ s32 func_8009FA00(s32 id) {
 s16 func_8009E330(s32 offset);
 
 
-#ifdef NON_MATCHING
 /* Place the current actor at entry point `entry` of the bytecode's entry
  * table (when present): layer, x/z, camera octant and facing (0xFF: from
- * variables 8 and 6).
- * NON_MATCHING: the original branches straight to the epilogue with the
- * return 0 in the delay slot (the early return here jumps over a separate
- * return block), keeps the heading in a1 and stores vy, heading, heading_high
- * in that order (here heading_high is stored first, which is what keeps the
- * (heading << 16) >> 16 extension). */
+ * variables 8 and 6). One angle variable holds the camera heading and then
+ * the facing; because the facing sets bit 15, the heading's sign extension
+ * for the 32-bit copy stays in the code. */
 s32 func_8009FA54(s32 entry) {
     s32 marker;
     s32 record;
     s32 x;
-    s16 heading;
-    s32 facing;
+    s32 angle;
 
     marker = D_800ADC00[0];
     if (marker != 0xFF) {
@@ -9217,23 +9212,20 @@ s32 func_8009FA54(s32 entry) {
     D_800B0078->layer = D_800ADC00[record + 5];
     x = func_8009E330(record + 1);
     func_8009E574(x, func_8009E330(record + 3));
-    heading = ((D_800ADC00[record + 6] + 4) & 7) << 9;
+    angle = ((D_800ADC00[record + 6] + 4) & 7) << 9;
     if (D_800ADC00[record + 6] == marker) {
-        heading = ((func_800A3018(8) + 4) & 7) << 9;
+        angle = ((func_800A3018(8) + 4) & 7) << 9;
     }
-    D_800AF880.heading_high = heading << 16;
-    D_800AF880.heading_angles.vy = heading;
-    D_800AF880.heading = D_800AF880.heading_high >> 16;
-    facing = (((D_800ADC00[record + 7] - 2) & 7) << 9) | 0x8000;
+    D_800AF880.heading_angles.vy = angle;
+    D_800AF880.heading = (s16)angle;
+    D_800AF880.heading_high = angle << 16;
+    angle = (((D_800ADC00[record + 7] - 2) & 7) << 9) | 0x8000;
     if (D_800ADC00[record + 7] == marker) {
-        facing = (((func_800A3018(6) - 2) & 7) << 9) | 0x8000;
+        angle = (((func_800A3018(6) - 2) & 7) << 9) | 0x8000;
     }
-    D_800B0078->unk108 = D_800B0078->heading_goal = D_800B0078->heading = facing;
+    D_800B0078->unk108 = D_800B0078->heading_goal = D_800B0078->heading = angle;
     return 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_8009FA54);
-#endif
 
 extern s32 D_8004F34C;
 void func_8001AD1C(void);
