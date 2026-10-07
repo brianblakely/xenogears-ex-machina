@@ -1358,7 +1358,14 @@ void func_8007D93C(s32 channel) {
 
 #ifdef NON_MATCHING
 /* Link each active fade channel's tile and draw mode into `ot` (channel 1
- * one entry further); a channel whose levels reached zero stops. */
+ * one entry further); a channel whose levels reached zero stops.
+ * NON_MATCHING (measured 118 instruction edits; ours 604 bytes, original
+ * 692): the original strength-reduces more of the loop (the mode and tile
+ * offsets buffer*12/16 + i*0x58 and the tile base as separate induction
+ * values, spilled with ot, the fade base and the 0xff000000 mask to a
+ * 0x78-byte frame), computes ot + (i == 1) with a store-flag instead of a
+ * branch, and loads abr with lh. Passing the tile/mode expressions to
+ * addPrim directly reproduces the spills but not the tile colour stores. */
 void func_8007DA44(u32 *ot, s32 buffer) {
     DR_MODE *mode;
     TILE *tile;
@@ -2155,7 +2162,13 @@ s32 func_80080A18(void) {
 
 #ifdef NON_MATCHING
 /* Reset event actor `index` to its defaults and settle it on the floor of
- * each collision layer under its descriptor's position. */
+ * each collision layer under its descriptor's position.
+ * NON_MATCHING (measured 46 edits): in the floor loop the original passes
+ * point + i computed afresh each iteration (sp+0x58 + i*8) while it clears
+ * the point through a stride-8 induction register based at normal
+ * (0x40($s2)); ours shares one register for both. Also the 0x10/0x60
+ * constant stores at the top, two loop-invariant masks and the +134 mask
+ * are scheduled/allocated differently. */
 void func_80080A74(s32 index) {
     VECTOR normal[4];
     SVECTOR point[4];
@@ -2721,7 +2734,12 @@ s32 func_800825AC(s32 from, s32 to) {
 #ifdef NON_MATCHING
 /* An actor's additive motion before it moves: the terrain push and conveyor
  * of the floor it stands on, the platform it rides and its gear layer's
- * drift. */
+ * drift.
+ * NON_MATCHING (measured 83 edits): actor/terrain take s1/s2 swapped and
+ * angle/radius s0/s1 swapped against the original; the original also
+ * sign-extends turn.vy into angle only just before the heading test. With
+ * angle declared s16 the allocation matches (12 edits) but the final
+ * direction would then be truncated, so that is not used. */
 void func_80082620(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
     u32 terrain;
     VECTOR conveyor;
@@ -3362,7 +3380,10 @@ void func_8008399C(s32 index, FieldDescriptor *descriptor, FieldActor *player) {
  * polygon, its box, or its radius) either ride it, stand below it or push
  * it, recording the lowest ceiling; then remember the ridden actor, and
  * integrate the actor's own position against the floor.
- * NON_MATCHING: the original schedules the `linked` reset after the second position load. */
+ * NON_MATCHING: one instruction: the original schedules the `linked` reset's
+ * spill store (sw $zero, 0x70($sp)) after the second unk030 load, ours
+ * before the first (sched1 ties broken by insn order put it first; moving
+ * the statement changes the register allocation instead). */
 #ifdef NON_MATCHING
 void func_80084158(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
     VECTOR next;
@@ -3561,7 +3582,11 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_80084158
 
 #ifdef NON_MATCHING
 /* -1 when the actor's motion, collision state or layer prevents idling.
- * NON_MATCHING: the original places the layer-1 -1 return after the last test. */
+ * NON_MATCHING: the original places the layer-1 `return -1` block at the end
+ * (beq into it, falling into the epilogue) after the layer-2 store-flag code,
+ * while still reloading layer_flags for every test. The separate-if form
+ * here reloads but keeps that return inline; every nested/else form tried
+ * lets CSE reuse layer_flags instead. */
 s32 func_8008492C(FieldActor *actor) {
     if ((actor->unk014 & 0x420000) || D_800ADB98 != 0 || actor->unk030[0] != 0 ||
         actor->unk030[1] != 0 || actor->unk030[2] != 0 || D_800ADC0C != 1 || actor->unk074 != 0xFF ||

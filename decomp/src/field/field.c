@@ -910,7 +910,12 @@ void func_800723E4(DVECTOR *a, DVECTOR *b, DVECTOR *out) {
 }
 
 #ifdef NON_MATCHING
-/* The camera's initial state. */
+/* The camera's initial state.
+ * NON_MATCHING (measured 69 differing lines): after func_80070594 the original
+ * addresses most fields relative to 800af984 kept in $s0 (CSE's related
+ * value from the first store); here cse2 folds those back into absolute
+ * addresses because the register is a known constant, so ours keeps no $s0
+ * and is 27 instructions longer. */
 void func_8007254C(void) {
     D_800AF880.target_a = 8;
     D_800AF880.target_b = 8;
