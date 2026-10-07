@@ -318,7 +318,20 @@ void func_800B1F0C(u32 *ot) {
  * Nonmatching: only the allocation of the first five saved registers differs
  * (the original has v0 $s0, the cursor $s1, prims $s2, vertices $s3, entry and
  * then the 0x00FFFFFF mask $s4; here v0 ranks below entry and lands in $s4,
- * shifting prims/vertices/entry down by one). */
+ * shifting prims/vertices/entry down by one). Global-alloc order here: prims
+ * 1.39 (137 refs/688), cursor 1.34 (133/696), vertices 0.92, entry 0.60
+ * (8/40), v0 0.48 (62/647), v2 0.43, v1 0.40. v0 is live around the loop
+ * (the first switch has a default path), so it conflicts with everything
+ * and would need about twice prims' references to be allocated first. The
+ * original order is reproduced only if something non-conflicting with v0
+ * takes $s0 first (a separate code-byte temporary does: it then gets $s0,
+ * and v0 can share it in pass 0) AND v0 outranks entry AND the cursor
+ * outranks prims; with separate temporaries v0 drops to 46 refs (0.37) and
+ * equal refs leave v2/v1 ahead of v0 (shorter lives), so v0 needs refs that
+ * v1/v2 lack. A do { } while (0) adds one loop level to the references
+ * inside it (tested: a wrapped gte_ldv3 gives v0..v2 +1 each); wrapping the
+ * lighting blocks gives v0 70 refs (above entry) but prims 151 vs cursor
+ * 139, and wrapping the vertex fetches lifts vertices above prims. */
 void func_800B1F6C(entry, buffer, ot, unused, bias, blend)
     ScriptEntry *entry;
     u8 *buffer;
