@@ -1369,11 +1369,10 @@ void func_801E0434(u8 slot, u8 gear) {
  * parts (801df890). Each frame redraws what changed; the first opens the
  * windows and, with `fade`, waits for the view to settle. */
 #ifdef NON_MATCHING
-/* Differs only in scheduling (8 instructions): the original stores
- * `running` (sb 0x38) right after loading the constant 1, before the other
- * initial values (this build stores it after `part`), and in list-mode
- * confirm sets `reset` (s0) right after the 801df5d0 call (this build fills
- * the load delay after the 801db0a8 call with it). */
+/* Differs only in scheduling (2 instructions): in list-mode confirm the
+ * original sets `reset` (s0) right after the 801df5d0 call; this build
+ * fills the load delay after the 801db0a8 call with it (with reset = 1
+ * first, reload reuses s0 for the marker's constant 1). */
 void func_801E05D0(u8 slot, u8 fade, u8 gear) {
     u8 running;
     u8 panel;
@@ -1397,13 +1396,13 @@ void func_801E05D0(u8 slot, u8 fade, u8 gear) {
     u8 swapped;
 
     running = 1;
+    first = 1;
     panel = 1;
     special = 0;
     drawnSlot = 0xff;
     part = 0;
-    first = 1;
-    row = 0;
     drawnPart = 0xff;
+    row = 0;
     drawnRow = 0xff;
     previewed = 0;
     cursor = 0;
