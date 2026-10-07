@@ -89,7 +89,8 @@ void func_801E9694(s16 actor, s16 x, s16 y, s16 z) {
     func_80021BF8(self, func_801E93E8);
 }
 
-#ifdef NON_MATCHING
+/* Set actor n's idle animation (0, or 0x11 when unk34 is set) and run
+ * command `arg1` during its motion. */
 void func_801E9700(s32 actor, s32 arg1) {
     BattleActor *self = D_800C3EB0.actors[actor];
 
@@ -98,11 +99,8 @@ void func_801E9700(s32 actor, s32 arg1) {
     } else {
         self->idleAnimation = 0x11;
     }
-    func_800BF600(arg1);
+    func_800BF600(arg1, self);
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/script_actor", func_801E9700);
-#endif
 
 /* Actor n attacks the target the battle search picks (itself when none):
  * wait for the next frame, run the attack, wait again. */

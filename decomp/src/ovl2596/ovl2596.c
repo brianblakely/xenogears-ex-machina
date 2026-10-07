@@ -1105,9 +1105,8 @@ void func_801E1FB8(u32 experience) {
 /* Hide the battle windows and reload the results resources: archive file
  * 2 of directory 0x10 (its items 1-4: text, a table, the glyph sprites and
  * the portraits). */
-/* NON_MATCHING: original frame 0x80 bytes; this C needs 0x20. */
-#ifdef NON_MATCHING
 void func_801E211C(void) {
+    u8 unused[0x60]; /* unused in the original; reserves 96 bytes */
     ResultArchive *archive;
     void *data;
 
@@ -1136,9 +1135,6 @@ void func_801E211C(void) {
     func_800320E8(archive);
     func_80076EA4();
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E211C);
-#endif
 
 /* Total the experience and gold of the defeated enemies, add the gold (up
  * to 9999999), clear empty party slots, grant the rewards and run the
@@ -1289,9 +1285,8 @@ void func_801E2794(void) {
 /* Write each party member's HP, EP, counters and gear HP and fuel back to
  * the game data, clamped to their maximums (HP 1 when knocked out, gear HP a
  * tenth of the maximum when destroyed). */
-/* NON_MATCHING: original frame 0x8 bytes; this C needs 0x0. */
-#ifdef NON_MATCHING
 void func_801E2888(void) {
+    s32 unused[2]; /* unused in the original; reserves 8 bytes */
     u8 slot;
     u8 k;
     Combatant *record;
@@ -1346,9 +1341,6 @@ void func_801E2888(void) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E2888);
-#endif
 
 /* Distribute the experience won: party members that stand share it (less
  * the penalty), every other character gets a reserve share of a third;
@@ -1693,8 +1685,8 @@ void func_801E3A18(void) {
  * record meets; stop at the first whose level is not reached. Returns its
  * index, or 0. */
 #ifdef NON_MATCHING
-/* The original keeps id in a copy and reloads the current record inside
- * the requirement loop; this C lets GCC hoist it. */
+/* NON_MATCHING: the original hoists the 0x8000 shift base out of the
+ * skill loop into t6; this C loads it at the shift in every iteration. */
 u8 func_801E3BE0(u8 id) {
     u8 count;
     u8 learnt;
@@ -1710,11 +1702,11 @@ u8 func_801E3BE0(u8 id) {
         if (D_8006D634.skills[id].counterSkills & (0x8000 >> j)) {
             continue;
         }
-        if (D_8006D8A0[id].level < D_801E44E8->characters[id].counterLevels[j]) {
+        if (D_801E44E8->characters[id].counterLevels[j] > D_8006D8A0[id].level) {
             break;
         }
         for (k = 0; k < 7; k++) {
-            if (D_801E44EC->counters[k] < D_801E44E8->characters[id].requirements[j][k]) {
+            if (D_801E44E8->characters[id].requirements[j][k] > D_801E44EC->counters[k]) {
                 break;
             }
         }
