@@ -2632,8 +2632,9 @@ void func_800A4CF8(s32 index) {
  * projected horizon (near and far, clamped to the screen), then the tiles
  * of the scrolling ceiling under a camera turned and tilted with the view,
  * each front-facing tile textured from the scroll position. Differs in the
- * tile loop's register allocation (the original keeps three copies of the
- * half tile size and reloads the tag masks per row). */
+ * tile loop's register allocation: the original also copies half (for the
+ * multiplies) and u0 before the rows and loads the tag masks per row; here
+ * the masks and the row copy of half are hoisted out of both loops. */
 void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *view, u32 *ot,
                    s32 buffer) {
     SVECTOR unused; /* declared, never used (its slot stays in the frame) */
@@ -2651,6 +2652,7 @@ void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *vi
     s32 tilt;
     s32 size;
     s32 half;
+    s32 halfU;
     s32 u0;
     s32 v0;
     s32 u;
@@ -2753,8 +2755,9 @@ void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *vi
     vertex = &sky->grid[0][0];
     n = buffer * 64;
     for (row = 0; row < 8; row++) {
+        halfU = half;
         v = (row & 1) * half + v0;
-        vEnd = v + half - 1;
+        vEnd = v + halfU - 1;
         for (col = 0; col < 8; col++) {
             gte_ldv3(&vertex[0], &vertex[1], &vertex[9]);
             gte_rtpt();
@@ -2772,8 +2775,8 @@ void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *vi
                 u = (col & 1) * half + u0;
                 sky->tiles[n].u0 = u;
                 sky->tiles[n].u2 = u;
-                sky->tiles[n].u1 = u + half - 1;
-                sky->tiles[n].u3 = u + half - 1;
+                sky->tiles[n].u1 = u + halfU - 1;
+                sky->tiles[n].u3 = u + halfU - 1;
                 addPrim(ot, &sky->tiles[n]);
             }
             n++;

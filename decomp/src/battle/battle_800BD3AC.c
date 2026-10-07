@@ -607,16 +607,19 @@ void func_800BE6E8(s32 value, u8 *text, s32 digits, u8 leading, s32 base) {
  * more each) with the stack in the scratchpad, draw, time the frame and
  * present it; the outermost frame also runs the battle menu, a pending sound
  * request and the deferred free of the objects' extra files. Nonmatching:
- * the original rematerialises the frame's address at each use instead of
- * keeping it in a saved register. */
+ * the original stores the frame ticks through a temporary base and
+ * rematerialises &BATTLE_AREA + 0x8000 after the VSync call (and builds its
+ * argument straight in $a0); this keeps the base in $s0 across the call and
+ * builds the argument in $a2. */
 void func_800BE790(void) {
-    BattleArea *frame = &BATTLE_AREA;
+    BattleArea *frame;
     FrameBuffer *buffer;
     s32 skipped;
 
     D_800C37D0++;
     func_80019CA0();
     D_800D309C.start = VSync(-1);
+    frame = &BATTLE_AREA;
     buffer = &frame->buffers[0];
     if (frame->current == buffer) {
         buffer = &frame->buffers[1];
@@ -643,7 +646,8 @@ void func_800BE790(void) {
     func_8001D468();
     func_8001C9F8();
     func_8001C964();
-    for (skipped = D_80059494 - 1; skipped != -1; skipped--) {
+    skipped = D_80059494;
+    while (--skipped != -1) {
         func_800BBAB8();
         func_8001C964();
     }
@@ -663,19 +667,19 @@ void func_800BE790(void) {
     if (D_80059494 >= 5) {
         D_80059494 = 4;
     }
-    frame->frameTicks = D_80059494 + D_80059198;
+    BATTLE_AREA.frameTicks = D_80059494 + D_80059198;
     VSync(D_80059198 != 0 ? D_80059198 + 1 : 0);
-    PutDispEnv(&frame->current->dispEnv);
-    PutDrawEnv(&frame->current->drawEnv);
+    PutDispEnv(&BATTLE_AREA.current->dispEnv);
+    PutDrawEnv(&BATTLE_AREA.current->drawEnv);
     func_80025044();
-    DrawOTag(&frame->current->ot[0xFFF]);
+    DrawOTag(&BATTLE_AREA.current->ot[0xFFF]);
     func_800BEB04();
     if (D_800C37D0 == 1) {
         if (D_800C3610 != NULL) {
             D_800C3610->update(D_800C3610);
         }
         if (D_800591B4 != 0) {
-            u16 sound = D_800591B4;
+            s32 sound = D_800591B4;
 
             D_800591B4 = 0;
             func_800B8068(sound);
