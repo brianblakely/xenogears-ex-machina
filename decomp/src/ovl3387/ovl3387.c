@@ -150,13 +150,19 @@ Burst *func_801FC470(void) {
 /* Same operations. v = row * 16 is written in the column loop so loop.c
  * hoists it to the row body instead of making it a row induction variable
  * (the original recomputes it from the row counter), and the shading bytes
- * are stored r, g, b in order. Remaining: the original also hoists the
- * second triangle's (v - 101) * 16 to the column body (s3) and copies the
- * column offsets (col * 16 - 155/149) * 16 into a frame slot and s4 before
- * the corner loop; here (v - 101) * 16 stays in the corner loop's second arm
- * (8 bytes shorter) and the k/u/u_right/v_bottom registers rotate. Writing
- * the four offsets as row/column variables loses the column induction
- * variables altogether. */
+ * are stored r, g, b in order. The u2/v2 stores are written in both arms
+ * (cross-jumping merges them); their extra references give u, the prim
+ * offset, v_bottom, u_right and k the original's s1-s5 in the prim loop.
+ * Remaining (corner loop only): the original hoists the second triangle's
+ * (v - 101) * 16 out of the corner loop into s3, keeps the copy of the
+ * column offset (col * 16 - 149) * 16 in s4 and the copy of
+ * (col * 16 - 155) * 16 in a frame slot (0x2c), and selects the triangle
+ * into v1; here (v - 101) * 16 stays in the second arm (loop.c finds it not
+ * desirable: 5 movables already moved, 87 insns), the two copies are in
+ * s4/s3 and the triangle is selected into v0 (8 bytes shorter). A row-level
+ * variable for (row * 16 - 107) * 16 shortens the corner loop enough to
+ * hoist (v - 101) * 16, but the column loop then hoists it further, to a
+ * row induction variable. */
 Burst *func_801FC4A8(Burst *burst) {
     BurstCell *cell;
     SVECTOR *triangle;
@@ -230,14 +236,16 @@ Burst *func_801FC4A8(Burst *burst) {
                         prim->v0 = v;
                         prim->u1 = u_right;
                         prim->v1 = v;
+                        prim->u2 = u;
+                        prim->v2 = v_bottom;
                     } else {
                         prim->u0 = u_right;
                         prim->v0 = v;
                         prim->u1 = u_right;
                         prim->v1 = v_bottom;
+                        prim->u2 = u;
+                        prim->v2 = v_bottom;
                     }
-                    prim->u2 = u;
-                    prim->v2 = v_bottom;
                 }
             }
         }
