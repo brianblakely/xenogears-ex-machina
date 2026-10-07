@@ -190,8 +190,6 @@ void func_8001BBAC(void) {
 /* A random byte from the requested range. Low 0xff is returned unchanged;
  * otherwise high 0 returns 0 and equal bounds return low. A span of 0xff
  * uses the whole random byte; smaller signed spans use modulo span + 1. */
-/* Nonmatching: GCC 2.6.3 cross-jumps the low == high return into the tail of the modulo result; the original keeps its own. */
-#ifdef NON_MATCHING
 u8 func_8001BD40(u8 low, u8 high) {
     s32 span;
 
@@ -199,10 +197,10 @@ u8 func_8001BD40(u8 low, u8 high) {
         if (high == 0) {
             return 0;
         }
-        span = high - low;
         if (low == high) {
             return low;
         }
+        span = high - low;
         if (span < 0xFF) {
             return low + (u8)rand() % (span + 1);
         }
@@ -210,9 +208,6 @@ u8 func_8001BD40(u8 low, u8 high) {
     }
     return low;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8001B6C4", func_8001BD40);
-#endif
 
 /* Menu buffer: no background clear, dithering, and a 256x216 display area 10 lines down. */
 void func_8001BDDC(MenuBuffer *buffer) {
