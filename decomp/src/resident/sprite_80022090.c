@@ -688,7 +688,7 @@ void func_80023538(Sprite *sprite, u16 *animation) {
         }
     one_sided:
         if ((sprite->render.word & 3) == 1) {
-            sprite->renderer->offset_x = sprite->renderer->offset_y = 0;
+            sprite->renderer->offset.x = sprite->renderer->offset.y = 0;
             if (!((sprite->flags >> 20) & 1) && sprite->renderer->pointer34 != NULL) {
                 func_800234AC(sprite);
             }

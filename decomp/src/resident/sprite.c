@@ -750,8 +750,8 @@ void func_8001E148(Sprite *sprite) {
         func_80022038(sprite);
     }
     shift = (sprite->flags >> 8) & 0x1F;
-    offset_y = sprite->renderer->offset_y;
-    offset_x = sprite->renderer->offset_x;
+    offset_y = sprite->renderer->offset.y;
+    offset_x = sprite->renderer->offset.x;
     offset_y <<= shift;
     offset_x <<= shift;
     if ((sprite->motion.word >> 2) & 1) {
@@ -840,8 +840,8 @@ void func_8001E3D8(Sprite *sprite, u_long *ot) {
     flags = sprite->flags;
     mirror = (sprite->motion.word >> 2) & 1;
     shift = (flags >> 8) & 0x1F;
-    origin_y = renderer->offset_y;
-    origin_x = renderer->offset_x;
+    origin_y = renderer->offset.y;
+    origin_x = renderer->offset.x;
     parts = renderer->parts[1];
     origin_y <<= shift;
     origin_x <<= shift;
@@ -2145,8 +2145,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                 for (i = 0; i != 8; i++) {
                     sprite->renderer->pointer34[i] = other->renderer->pointer34[i];
                 }
-                sprite->renderer->offset_x = other->renderer->offset_x;
-                sprite->renderer->offset_y = other->renderer->offset_y;
+                sprite->renderer->offset = other->renderer->offset;
             }
             func_8001D2B0(sprite, sprite->frame);
         }
@@ -2272,7 +2271,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         }
         break;
     case 0xBD:
-        func_80023B84(sprite, D_8006BE20 + ((u16 *)D_8006BE20)[code[0] + 1], sprite->image);
+        func_80023B84(sprite, (u8 *)(((u16 *)D_8006BE20)[code[0] + 1] + (s32)D_8006BE20), sprite->image);
         break;
     case 0xE0:
         func_80023B84(sprite, code + (((s8)code[1] << 8) + code[0]), sprite->image);
@@ -2301,13 +2300,13 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         break;
     case 0xB6:
         if (sprite->renderer != NULL) {
-            sprite->renderer->angle_x += (s8)code[0] * 16;
+            sprite->renderer->angle_x += (s16)(code[0] << 8) >> 4;
             sprite->render.bits.dirty = 1;
         }
         break;
     case 0xB7:
         if (sprite->renderer != NULL) {
-            sprite->renderer->angle_y += (s8)code[0] * 16;
+            sprite->renderer->angle_y += (s16)(code[0] << 8) >> 4;
             sprite->render.bits.dirty = 1;
         }
         break;
@@ -2347,7 +2346,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         sprite->z += func_80022CAC(sprite, (s8)code[0] * sprite->scale / 4096) << 16;
         break;
     case 0xA8:
-        sprite->direction += (s8)code[0] * 16;
+        sprite->direction += (s16)(code[0] << 8) >> 4;
         func_80022974(sprite);
         break;
     case 0x8A:
@@ -2367,23 +2366,23 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         }
         break;
     case 0xA5:
-        sprite->speed += ((s8)code[0] * 16 * (D_80059198 + 1) * (s16)sprite->word82 / 4096) << 8;
+        sprite->speed += (((s8)code[0] << 4) * (D_80059198 + 1) * (s16)sprite->word82 / 4096) << 8;
         func_80022974(sprite);
         break;
     case 0xA6:
         if (sprite->frame_bits.sequencer_owned != 1) {
             sprite->speed_y +=
-                (((s8)code[0] * 16 * (D_80059198 + 1) * (s16)sprite->word82 / 4096) << 16) / sprite->motion.bits.divisor;
+                ((((s8)code[0] << 4) * (D_80059198 + 1) * (s16)sprite->word82 / 4096) << 16) / sprite->motion.bits.divisor;
         }
         break;
     case 0xA0:
-        sprite->speed = ((s8)code[0] * 16 * (D_80059198 + 1) * (s16)sprite->word82 / 4096) << 8;
+        sprite->speed = (((s8)code[0] << 4) * (D_80059198 + 1) * (s16)sprite->word82 / 4096) << 8;
         func_80022974(sprite);
         break;
     case 0xA1:
         if (sprite->frame_bits.sequencer_owned != 1 ||
             (sprite->speed_y = ((SpriteSequencer *)sprite->sequencer)->word0) == 0) {
-            sprite->speed_y = ((s8)code[0] * 16 * (D_80059198 + 1) * (s16)sprite->word82 / 4096) << 8;
+            sprite->speed_y = (((s8)code[0] << 4) * (D_80059198 + 1) * (s16)sprite->word82 / 4096) << 8;
         }
         sprite->speed_y <<= 8;
         sprite->speed_y /= sprite->motion.bits.divisor;
