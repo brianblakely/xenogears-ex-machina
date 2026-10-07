@@ -2550,49 +2550,37 @@ void func_800815F0(void) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Record the controlled actor `index`'s state in the next movement-history
- * slot, unless party processing is suspended.
- * NON_MATCHING: the original addresses the unk30 and triangle stores through
- * registers holding 800b1510+0x10 / -0xa and reads the history index through
- * a register once the heading is stored; ours addresses all of them
- * absolutely (lui $at). Frame and statement order match. */
+ * slot, unless party processing is suspended. */
 void func_80081C54(s32 index) {
     FieldModel *model;
     FieldActor *actor;
     s32 i;
-    VECTOR unused0; /* unused in the original; reserves 16 bytes */
-    SVECTOR unused1; /* unused in the original; reserves 8 bytes */
+    FieldDescriptor *descriptor;
 
-    actor = D_800AF880.components.descriptors[index].actor;
-    model = D_800AF880.components.descriptors[index].model;
+    descriptor = &D_800AF880.components.descriptors[index];
+    actor = descriptor->actor;
+    model = descriptor->model;
     if (index == D_800B2078.controlled && D_800B2078.party_processing_mode == 0) {
-        D_800B14F0[D_800B2078.history[0]].model_velocity[0] = model->velocity[0];
-        D_800B14F0[D_800B2078.history[0]].model_velocity[1] = model->velocity[1];
-        D_800B14F0[D_800B2078.history[0]].model_velocity[2] = model->velocity[2];
-        D_800B14F0[D_800B2078.history[0]].unk30[0] = actor->unk50[0];
-        D_800B14F0[D_800B2078.history[0]].unk30[1] = actor->unk50[1];
-        D_800B14F0[D_800B2078.history[0]].unk30[2] = actor->unk50[2];
-        D_800B14F0[D_800B2078.history[0]].heading = actor->heading_goal & 0xFFF;
-        D_800B14F0[D_800B2078.history[0]].model84 = model->unk84;
-        D_800B14F0[D_800B2078.history[0]].position[0] = WHOLE(actor->position[0]);
-        D_800B14F0[D_800B2078.history[0]].position[1] = WHOLE(actor->position[1]);
-        D_800B14F0[D_800B2078.history[0]].position[2] = WHOLE(actor->position[2]);
-        D_800B14F0[D_800B2078.history[0]].unk12 = actor->unkE8;
-        D_800B14F0[D_800B2078.history[0]].unk40 = actor->unk014;
-        D_800B14F0[D_800B2078.history[0]].flags = actor->flags;
-        D_800B14F0[D_800B2078.history[0]].layer_flags = actor->layer_flags;
+        copyVector((VECTOR *)D_800B14F0[D_800B2360[0]].model_velocity, (VECTOR *)model->velocity);
+        copyVector((VECTOR *)D_800B14F0[D_800B2360[0]].unk30, (VECTOR *)actor->unk50);
+        D_800B14F0[D_800B2360[0]].heading = actor->heading_goal & 0xFFF;
+        D_800B14F0[D_800B2360[0]].model84 = model->unk84;
+        D_800B14F0[D_800B2360[0]].position[0] = actor->position[0] >> 16;
+        D_800B14F0[D_800B2360[0]].position[1] = actor->position[1] >> 16;
+        D_800B14F0[D_800B2360[0]].position[2] = actor->position[2] >> 16;
+        D_800B14F0[D_800B2360[0]].unk12 = actor->unkE8;
+        D_800B14F0[D_800B2360[0]].unk40 = actor->unk014;
+        D_800B14F0[D_800B2360[0]].flags = actor->flags;
+        D_800B14F0[D_800B2360[0]].layer_flags = actor->layer_flags;
         for (i = 0; i < 4; i++) {
-            D_800B14F0[D_800B2078.history[0]].triangle[i] = actor->triangle[i];
+            D_800B14F0[D_800B2360[0]].triangle[i] = actor->triangle[i];
         }
-        D_800B14F0[D_800B2078.history[0]].layer = actor->layer;
+        D_800B14F0[D_800B2360[0]].layer = actor->layer;
         D_800C3910 = 0;
-        D_800B2078.history[0] = (D_800B2078.history[0] - 1) & 0x1F;
+        D_800B2360[0] = (D_800B2360[0] - 1) & 0x1F;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_80081C54);
-#endif
 
 /* -1 when the actor's bits 9-10 meet bits 3-4 of +14, else 0. */
 s32 func_80081F5C(FieldActor *actor) {
