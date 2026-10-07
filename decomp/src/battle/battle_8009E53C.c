@@ -4553,7 +4553,6 @@ void func_800AAD54(BattleObject *object, EffectPool *pool, s32 flags, s32 steps,
     Animation *animation;
     u8 m1;
     u8 c0;
-    u8 c2;
     u8 c3;
 
     if (steps == 0 || object->script == NULL) {
@@ -5670,7 +5669,7 @@ chosen:
                 c0 = word;
                 word = *pc++;
                 c3 = word >> 8;
-                c2 = word;
+                b2 = word;
                 if (op == 0x65) {
                     camX = D_800D335C.vx;
                     camY = D_800D335C.vy;
@@ -5688,13 +5687,13 @@ chosen:
                     y = object->position[2];
                     value += object->position[1];
                 } else if (m1 == 0xF5) {
-                    x = D_800658C8->cameras[c2].lookAt[0];
-                    y = D_800658C8->cameras[c2].lookAt[2];
-                    value += D_800658C8->cameras[c2].lookAt[1];
+                    x = D_800658C8->cameras[b2].lookAt[0];
+                    y = D_800658C8->cameras[b2].lookAt[2];
+                    value += D_800658C8->cameras[b2].lookAt[1];
                 } else if (m1 == 0xF4) {
-                    x = D_800658C8->cameras[c2].eye[0];
-                    y = D_800658C8->cameras[c2].eye[2];
-                    value += D_800658C8->cameras[c2].eye[1];
+                    x = D_800658C8->cameras[b2].eye[0];
+                    y = D_800658C8->cameras[b2].eye[2];
+                    value += D_800658C8->cameras[b2].eye[1];
                 } else if (D_800D3368[x] != NULL) {
                     value = func_800AA600(x) * (s16)value / 4096;
                     mode = 0;
@@ -5726,7 +5725,7 @@ chosen:
                 c0 = word;
                 word = *pc++;
                 c3 = word >> 8;
-                c2 = word;
+                b2 = word;
                 angle = *pc++;
                 word = *pc++;
                 if (arg & 0x20) {
@@ -5754,7 +5753,7 @@ chosen:
                     angle = (s16)angle * D_800658C8->objectScale >> 12;
                     word = (s16)word * D_800658C8->objectScale >> 12;
                 }
-                if (c2 & 0x20) {
+                if (b2 & 0x20) {
                     from += angle;
                 } else if (m1 < 2) {
                     from = (angle + base) & 0xFFF;
@@ -5764,7 +5763,7 @@ chosen:
                     from = angle;
                 }
                 to = from;
-                if (c2 & 0x40) {
+                if (b2 & 0x40) {
                     to += (u16)word;
                 } else if (m1 < 3) {
                     u16 start2;
