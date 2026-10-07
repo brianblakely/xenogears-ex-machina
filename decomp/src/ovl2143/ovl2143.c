@@ -2758,12 +2758,11 @@ void func_801E37D0(Actor *actor) {
  * would join the other 0xff loads, which loop.c then hoists out of the
  * interpreter loop (the original loads 0xff at each use).
  * The 16-bit roll argument recovers the original 0x168-byte frame.
- * NON_MATCHING: the 8164-byte text size and relocations agree, with four
- * differing words. In 0x4F the vertical offset uses s2 rather than a2 (the
- * subtraction and multiply); in 0x6E the actor-pointer and operand loads
- * are swapped. The shared offset scalars follow each opcode's component
- * order: 0x42/0x43 use Z, Y, X; 0x4F uses X, Y, Z. */
-#ifdef NON_MATCHING
+ * The shared offset scalars follow 0x42/0x43's Z, Y, X component order.
+ * In 0x4F, dist holds the vertical difference for the norm; the horizontal
+ * offsets survive the norm call for the heading. Case 0x6E consumes its
+ * word even when the resolved actor is absent, and keeps the observed
+ * actor pointer local to that wait. */
 void func_801E39F0(Actor *actor, SlotPool *pool, s32 changed, s32 ticks, s32 arg4) {
     Actor *self;
     Actor *other;
@@ -3465,12 +3464,12 @@ aim:
         case 0x4F: { /* drift toward the target over `arg` frames */
             s32 dist_drift;
             offset0 = actor->target[0] - actor->parts->pos[0];
-            offset1 = actor->target[1] - actor->parts->pos[1];
+            dist = actor->target[1] - actor->parts->pos[1];
             offset2 = actor->target[2] - actor->parts->pos[2];
             if (arg == 0) {
                 arg = 1;
             }
-            dist_drift = SquareRoot0(offset0 * offset0 + offset1 * offset1 + offset2 * offset2) / arg;
+            dist_drift = SquareRoot0(offset0 * offset0 + dist * dist + offset2 * offset2) / arg;
             actor->drift[2] = (dist_drift << 12) / (actor->scale * actor->parts->scale[2] >> 12) / 2;
             if (((ratan2(-offset0, -offset2) - (u16)actor->parts->rot.vy + 0x400) & 0xFFF) < 0x800) {
                 actor->drift[2] = -actor->drift[2];
@@ -3563,14 +3562,18 @@ aim:
         case 0x6D:
             actor->b38 = arg & 1;
             break;
-        case 0x6E: /* wait while an actor's b38 equals the word's bit 0 */
-            other = D_801E8670[func_801E6830(actor, arg, &word) & 0xFF];
+        case 0x6E: { /* wait while an actor's b38 equals the word's bit 0 */
+            Actor *observed;
+
+            entry = func_801E6830(actor, arg, &word);
             word = *pc++;
-            if (other != NULL && other->b38 == (word & 1)) {
+            observed = D_801E8670[entry & 0xFF];
+            if (observed != NULL && observed->b38 == (word & 1)) {
                 pc = start;
                 running = 0;
             }
             break;
+        }
         case 0x6F:
             actor->h3A = arg ? D_801E863C : -1;
             break;
@@ -3622,9 +3625,6 @@ aim:
         func_800796F4();
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E39F0);
-#endif
 
 /* Turn a node to (rx, ry, rz): at once when `duration` is below 2, else
  * through its first attachment (a kind-3 tween of the shortest angle
