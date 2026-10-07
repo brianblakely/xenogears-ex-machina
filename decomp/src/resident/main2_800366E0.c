@@ -531,11 +531,7 @@ extern u8 D_80050240[]; /* the built-in font (packed) */
  * `capacity` characters per frame: allocate it (unless a block was
  * supplied through 8003747C), load the font (packed; the built-in one when
  * `font` is NULL) to VRAM at (tex_x, tex_y) with its four CLUTs at
- * (clut_x, clut_y), and make it the report output.
- * Nonmatching: the two size arms end in the same `addiu a0, v0, 0xd4` and
- * are cross-jumped (the original shifts the 16-byte arm's size in $a0),
- * and the original passes the block through $a1 to $s0 at the join. */
-#ifdef NON_MATCHING
+ * (clut_x, clut_y), and make it the report output. */
 Console *func_800374E8(s32 left, s32 top, s32 width, s32 height, s32 capacity, u32 flags,
                        s32 tex_x, s32 tex_y, s32 clut_x, s32 clut_y, void *font) {
     Console *console;
@@ -543,16 +539,23 @@ Console *func_800374E8(s32 left, s32 top, s32 width, s32 height, s32 capacity, u
     s16 lower;
     s16 wide;
     s32 rows;
-    u8 *pixels;
+    u8 *p;             /* the console block, later the font pixels */
     RECT rect;
+    s32 size;
 
     if (D_800593A0 != 0) {
-        console = (Console *)D_800593A0;
+        p = (u8 *)D_800593A0;
     } else {
         func_800324B8(0x32);
-        console = func_80031BDC(((flags & 1) ? capacity * 16 : capacity * 32) + sizeof(Console),
-                                ((flags >> 2) ^ 1) & 1);
+        if (!(flags & 1)) {
+            size = capacity * 32 + sizeof(Console);
+        } else {
+            size = capacity * 16;
+            size += sizeof(Console);
+        }
+        p = func_80031BDC(size, ((flags >> 2) ^ 1) & 1);
     }
+    console = (Console *)p;
     console->buffer[0] = (u8 *)(console + 1);
     if (flags & 1) {
         console->buffer[1] = console->buffer[0];
@@ -594,13 +597,13 @@ Console *func_800374E8(s32 left, s32 top, s32 width, s32 height, s32 capacity, u
     rect.y = tex_y;
     rect.w = 0x20;
     rect.h = rows;
-    pixels = data + 4;
+    p = data + 4;
     if (console->unk14 == 0) {
         console->flags2E |= 8;
         memmove(console->widths, data + 4, 0x60);
-        pixels = data + 0x64;
+        p = data + 0x64;
     }
-    LoadImage(&rect, (u_long *)pixels);
+    LoadImage(&rect, (u_long *)p);
     console->tpage_id = GetTPage(0, 0, tex_x, tex_y);
     rect.x = clut_x;
     rect.y = clut_y;
@@ -625,9 +628,6 @@ Console *func_800374E8(s32 left, s32 top, s32 width, s32 height, s32 capacity, u
     func_800320E8(data);
     return console;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2_800366E0", func_800374E8);
-#endif
 
 /* Sort `count` elements of `size` bytes at `base` in place (selection
  * sort): `compare` is positive when its second element goes first. */
