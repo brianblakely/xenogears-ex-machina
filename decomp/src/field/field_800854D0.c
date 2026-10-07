@@ -2006,7 +2006,12 @@ void func_8008B518(void) {
  * NON_MATCHING: only the else branch's step is placed differently: the
  * original steps the group pointer in the delay slot of the FT3/FT4 branch
  * (bnez; addiu s1,s1,4); here the slot takes the FT3 path's packet copy
- * (move t0,s3) and each path steps the pointer itself. */
+ * (move t0,s3) and each path steps the pointer itself. One step before the
+ * FT3/FT4 test gives the original's code exactly except that `other` then
+ * outranks `group` in global allocation (group s2, other s1): group has 27
+ * loop-weighted references over 131 insns against other's 13 over 42, and
+ * would need about 31; statement order in the prologue and declaration
+ * order do not change it. */
 void func_8008B5D4(void) {
     FieldInstance *instance;
     POLY_FT3 *ft3;
@@ -10555,7 +10560,8 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_800A3C8C
  * &D_8005A4E4 in s1 and loads it and D_800AFC50 before testing D_800C268C
  * (the subtraction lands in the branch delay slot); here both follow the
  * test, and computing the size before the test keeps the address in v0
- * loaded after D_800AFC50. */
+ * loaded after D_800AFC50. The original's s1 is the loop counter's
+ * register; a snapshot pointer taken at the top goes to s2 instead. */
 void func_800A3F4C(void) {
     s32 i;
     s32 flags;

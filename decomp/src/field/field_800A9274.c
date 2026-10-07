@@ -1139,7 +1139,10 @@ void func_800AC308(void) {
  * 0x280: the original loads it with 0xff at the top of the block, this
  * after the colour stores (moving the x stores or holding 0x280 in a
  * local does not change it; a local assigned twice, so not a register
- * birth for sched1, puts it above the GetTPage arguments instead). */
+ * birth for sched1, puts it above the GetTPage arguments instead). Sched2
+ * orders these constant loads by their sched1 position, so the original
+ * had li 0x280 between li 0xff and li 0x18 there, which neither a birth
+ * (placed at its first use) nor a non-birth (scheduled last) gives. */
 void func_800AC3AC(void) {
     SPRT *sprite;
     s32 i;
