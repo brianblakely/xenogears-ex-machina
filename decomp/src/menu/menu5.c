@@ -876,8 +876,8 @@ void func_80085EC8(OverlayBuffer *buf) {
         *(u32 *)&buf->arrows[1][i].r0 = 0x2000FF00;
         buf->arrows[1][i].y0 = buf->arrows[0][i].y0;
         buf->arrows[1][i].y1 = buf->arrows[0][i].y1;
-        buf->arrows[1][i].x0 = 0x140 - buf->arrows[0][i].x0;
         buf->arrows[1][i].y2 = buf->arrows[0][i].y2;
+        buf->arrows[1][i].x0 = 0x140 - buf->arrows[0][i].x0;
         buf->arrows[1][i].x1 = 0x140 - buf->arrows[0][i].x1;
         buf->arrows[1][i].x2 = 0x140 - buf->arrows[0][i].x2;
     }
