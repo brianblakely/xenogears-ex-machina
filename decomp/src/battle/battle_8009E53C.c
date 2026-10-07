@@ -4512,17 +4512,13 @@ void func_800AAB34(BattleObject *object) {
  * angular and linear velocities (substeps + 1 times), take a pending jump
  * whose condition came true (2E distance, 37 ground, 36 timer), then run
  * its commands until one waits. flags are the animation flags of the step
- * (-1 when called to start a script). The command word is signed (its
- * byte views are u8): `arg = word >> 8` narrowed to a byte compiles to srl,
- * but combine still sees the sign-extended source and cannot bound arg's
- * upper bits, which keeps the original's `andi 0xFF` at every use of arg
- * (no path uses arg before the fetch). Unsigned uses of the high byte are
- * narrowed with (u8), as the original's srl there shows. Jump offsets are in
- * bytes from the command's start (SCRIPT_JUMP). Nonmatching: the frame is
- * 0x10 smaller and stack slots shift, the register allocation differs
- * (start/op/arg in $s1/$s6/$s5 instead of $s5/$fp/$s6), and some
- * `word >> 8` after a call are reloaded from word's slot where the original
- * keeps the value in a saved register. */
+ * (-1 when called to start a script). The command word is signed; its
+ * opcode and argument views are unsigned bytes. Jump offsets are in bytes
+ * from the command's start (SCRIPT_JUMP). b0..b3 are the low/high bytes of
+ * the first and second parameter words, shared by several commands, as is
+ * the looked-up animation of 11/12. Still NON_MATCHING: parameter lifetimes,
+ * caller saves, turn-command scheduling and camera temporaries differ from
+ * the original; the compiled frame is eight bytes smaller. */
 void func_800AAD54(BattleObject *object, EffectPool *pool, s32 flags, s32 steps, s32 substeps) {
     VECTOR delta;
     SVECTOR velocity;
@@ -4534,13 +4530,20 @@ void func_800AAD54(BattleObject *object, EffectPool *pool, s32 flags, s32 steps,
     s16 word;
     u16 value;
     BattleObject *self;
-    BattleObject *created;
     u16 *pc;
     u16 *start;
     s32 running;
     s32 reloadScene;
     u8 op;
     u8 arg;
+    u8 b0;
+    u8 b1;
+    u8 b2;
+    u8 b3;
+    Animation *animation;
+    u8 m1;
+    u8 c0;
+    u8 c3;
 
     if (steps == 0 || object->script == NULL) {
         return;
@@ -4612,20 +4615,20 @@ chosen:
             running = 0;
             break;
         case 0x01: /* wait frames */
-            if (flags == -1) {
+            if (flags != -1) {
+                word = *pc++;
+                object->scriptWait += steps;
+                if ((s16)object->scriptWait < (s16)word) {
+                    pc = start;
+                    running = 0;
+                } else {
+                    object->scriptWait = 0;
+                    steps = 0;
+                }
+            } else {
                 pc = start;
                 running = 0;
-                break;
             }
-            word = *pc++;
-            object->scriptWait += steps;
-            if ((s16)object->scriptWait < (s16)word) {
-                pc = start;
-                running = 0;
-                break;
-            }
-            object->scriptWait = 0;
-            steps = 0;
             break;
         case 0x02:
             if (object->field35 != 0) {
@@ -4674,6 +4677,7 @@ chosen:
                     if (func_800286CC() == 0) {
                         struct ObjectData *data;
                         ObjectScripts *scripts;
+                        u8 **animations;
                         DVECTOR image;
                         DVECTOR clut;
 
@@ -4693,8 +4697,9 @@ chosen:
                         }
                         scripts = ((ObjectScriptFile *)object->extra)->scripts;
                         func_8003342C(scripts);
-                        func_8003342C(scripts->animations);
-                        object->moreAnimations = scripts->animations;
+                        animations = scripts->animations;
+                        func_8003342C(animations);
+                        object->moreAnimations = animations;
                         DrawSync(0);
                         func_80031F70(object->extra, (u8 *)object->extraData->soundsEnd - (u8 *)object->extra);
                         if (object->extraData->sounds != object->extraData->image) {
@@ -4787,78 +4792,64 @@ chosen:
             break;
         case 0x11: /* play an animation */
             {
-                Animation *animation = (Animation *)func_800AF518(object, arg, &i);
+                u8 loop;
 
+                animation = (Animation *)func_800AF518(object, arg, &i);
                 word = *pc++;
                 if (i == 0) {
-                    func_800A2434(pool, object->hierarchy, (u16 *)animation, (u8)(word >> 8), (u8)word);
+                    loop = word >> 8;
+                    func_800A2434(pool, object->hierarchy, (u16 *)animation, loop, (u8)word);
                     flags = -1;
                     object->field8E = ABS(ANIMATION_SPAN(animation) * (object->scale1C * object->hierarchy->scale[2] >> 12) >> 12);
-                    func_800AE1BC(object, animation, (u8)(word >> 8));
+                    func_800AE1BC(object, animation, loop);
                 }
             }
             break;
         case 0x12:
-            {
-                Animation *animation = (Animation *)func_800AF518(object, arg, &i);
-
-                word = *pc++;
-                if (i == 0) {
-                    func_800A2704(pool, object->hierarchy, (u16 *)animation, (u8)(word >> 8), (u8)word);
-                    flags = -1;
-                    object->field8E = ABS(ANIMATION_SPAN(animation) * (object->scale1C * object->hierarchy->scale[2] >> 12) >> 12);
-                }
+            animation = (Animation *)func_800AF518(object, arg, &i);
+            word = *pc++;
+            if (i == 0) {
+                func_800A2704(pool, object->hierarchy, (u16 *)animation, (u8)(word >> 8), (u8)word);
+                flags = -1;
+                object->field8E = ABS(ANIMATION_SPAN(animation) * (object->scale1C * object->hierarchy->scale[2] >> 12) >> 12);
             }
             break;
         case 0x13:
-            {
-                u8 index;
-                u8 smooth;
-                u8 duration;
-                u8 tag;
-
-                smooth = (word = *pc++) >> 8;
-                flags = -1;
-                index = word;
-                duration = (word = *pc++) >> 8;
-                tag = word;
-                func_800A1CF4(pool, object->hierarchy, (s16 *)func_800AF518(object, index, &i), duration, arg, tag, smooth);
-                func_800AEEEC(object);
-            }
+            b1 = (word = *pc++) >> 8;
+            b0 = word;
+            b3 = (word = *pc++) >> 8;
+            b2 = word;
+            func_800A1CF4(pool, object->hierarchy, (s16 *)func_800AF518(object, b0, &i), b3, arg, b2, b1);
+            flags = -1;
+            func_800AEEEC(object);
             break;
         case 0x14: /* start a script on the objects of a mask */
-            {
-                u8 source;
-                u8 script;
-                u8 target;
-                u8 saved;
-
-                word = *pc++;
-                target = word;
-                script = word >> 8;
-                source = func_800AF438(object, target, &word);
-                func_800AF438(object, arg, &word);
-                saved = object->queueCount;
-                if (arg == 0xFD) {
-                    object->queueCount = 0;
-                }
-                for (i = 0; i < 13; i++) {
-                    if (((s16)word >> i) & 1) {
-                        if (target == 0xFF) {
-                            func_800AA934(D_800D3368[i], D_800D3368[i], pool, script);
-                        } else {
-                            func_800AA934(D_800D3368[i], D_800D3368[source], pool, script);
-                        }
+            word = *pc++;
+            b0 = word;
+            b1 = word >> 8;
+            b3 = func_800AF438(object, b0, &word);
+            func_800AF438(object, arg, &word);
+            b2 = object->queueCount;
+            if (arg == 0xFD) {
+                object->queueCount = 0;
+            }
+            for (i = 0; i < 13; i++) {
+                if (((s16)word >> i) & 1) {
+                    if (b0 == 0xFF) {
+                        func_800AA934(D_800D3368[i], D_800D3368[i], pool, b1);
+                    } else {
+                        func_800AA934(D_800D3368[i], D_800D3368[b3], pool, b1);
                     }
                 }
-                object->queueCount = saved;
-                if (arg == 0xFD) {
-                    return;
-                }
+            }
+            object->queueCount = b2;
+            if (arg == 0xFD) {
+                return;
             }
             break;
         case 0x15: /* create a copy of the object */
             {
+                BattleObject *created;
                 ModelPart *parts;
                 ModelPart *from;
                 ModelPart *to;
@@ -4918,9 +4909,7 @@ chosen:
             return;
         case 0x18:
             {
-                s16 loop = *pc++;
-
-                func_800AE1BC(object, (Animation *)func_800AF518(object, arg, &i), loop);
+                func_800AE1BC(object, (Animation *)func_800AF518(object, arg, &i), (s16)*pc++);
             }
             break;
         case 0x19:
@@ -4931,12 +4920,14 @@ chosen:
                 RECT rect;
                 u16 x;
                 u16 y;
+                s16 w;
 
                 rect.x = *pc++;
                 rect.y = *pc++;
                 x = *pc++;
                 y = *pc++;
-                rect.w = ((s16)*pc++ + 1) / 2 * 2;
+                w = *pc++;
+                rect.w = (w + 1) / 2 * 2;
                 rect.h = *pc++;
                 if (arg & 1) {
                     if (object->placement[0] < 0) {
@@ -4954,8 +4945,6 @@ chosen:
             if (arg < object->imageCount) {
                 ImageAnim *target;
                 ColorRow *colors;
-                s32 mode;
-                u8 flagsB;
                 FrameCurve curve;
                 s16 x, y, z, x2, y2, z2, x3, y3;
 
@@ -4965,13 +4954,13 @@ chosen:
                 } else {
                     target = NULL;
                 }
-                mode = (s16)word >> 8;
-                colors = NULL;
-                if ((mode & 0x7F) >= 4) {
+                if (((m1 = (s16)word >> 8) & 0x7F) < 4) {
+                    colors = NULL;
+                } else {
                     colors = (ColorRow *)D_800D2FC0;
                 }
                 word = *pc++;
-                flagsB = word;
+                b2 = word;
                 curve = func_800AA820((u8)(word >> 8));
                 x = *pc++;
                 y = *pc++;
@@ -4981,23 +4970,23 @@ chosen:
                 z2 = *pc++;
                 x3 = *pc++;
                 y3 = *pc++;
-                if (mode & 0x80) {
+                if (m1 & 0x80) {
                     if (object->placement[0] < 0) {
                         pc += 5;
                         break;
                     }
                     x3 += object->placement[2];
                     y3 += object->placement[3];
-                    if ((flagsB & 0xF) == 1) {
+                    if ((b2 & 0xF) == 1) {
                         x += object->placement[2];
                         y += object->placement[3];
                     }
-                    if ((flagsB >> 4) == 1) {
+                    if ((b2 >> 4) == 1) {
                         x2 += object->placement[2];
                         y2 += object->placement[3];
                     }
                 }
-                func_800A3640(&object->images[arg], target, mode & 0x7F, flagsB | 0x700, colors, x, y, z,
+                func_800A3640(&object->images[arg], target, m1 & 0x7F, b2 | 0x700, colors, x, y, z,
                               x2, y2, z2, x3, y3, (s16)*pc++, (s16)*pc++, (s16)*pc++, (s16)*pc++,
                               (s16)*pc++, curve);
             } else {
@@ -5011,18 +5000,15 @@ chosen:
             break;
         case 0x1D: /* start a tween of a part */
             {
-                u8 flagsC;
                 u8 mode;
-                u8 kind;
                 u8 smooth;
 
                 mode = (word = *pc++) >> 8;
-                flags = -1;
-                flagsC = word;
+                b0 = word;
                 smooth = (word = *pc++) >> 8;
-                kind = word;
-                func_800AF678(object, pool, &object->hierarchy[arg], flagsC, mode, kind, smooth, *pc++, *pc++,
+                func_800AF678(object, pool, &object->hierarchy[arg], b0, mode, (u8)word, smooth, *pc++, *pc++,
                               *pc++, *pc++, *pc++, *pc++, *pc++);
+                flags = -1;
             }
             break;
         case 0x1E:
@@ -5038,53 +5024,66 @@ chosen:
             }
             break;
         case 0x20: /* wait for the animation to loop */
-            if (flags == -1 || (flags & 0x100)) {
+            if (flags != -1) {
+                if (flags & 0x100) {
+                    pc = start;
+                    running = 0;
+                }
+            } else {
                 pc = start;
                 running = 0;
             }
             break;
         case 0x21:
             object->field3C = arg;
-            if (flags == -1 || (flags & 1)) {
-                pc = start;
-                running = 0;
-            }
-            break;
-        case 0x22:
-            if (flags == -1) {
-                pc = start;
-                running = 0;
-                break;
-            }
-            word = *pc++;
-            if (arg == 0xFF) {
-                if (!(flags & 0x400)) {
+            if (flags != -1) {
+                if (flags & 1) {
                     pc = start;
                     running = 0;
-                    break;
                 }
             } else {
-                object->field3C = arg;
-                if (!(flags & 4)) {
-                    pc = start;
-                    running = 0;
-                    break;
-                }
-            }
-            object->field42++;
-            if (object->field42 < (s16)word) {
                 pc = start;
                 running = 0;
-                break;
             }
-            object->field42 = 0;
+            break;
+        case 0x22: /* wait for the animation to loop word times */
+            if (flags != -1) {
+                word = *pc++;
+                if (arg == 0xFF) {
+                    if (!(flags & 0x400)) {
+                        pc = start;
+                        running = 0;
+                    } else {
+                        object->field42++;
+                        if (object->field42 < (s16)word) {
+                            pc = start;
+                            running = 0;
+                        } else {
+                            object->field42 = 0;
+                        }
+                    }
+                } else {
+                    object->field3C = arg;
+                    if (!(flags & 4)) {
+                        pc = start;
+                        running = 0;
+                    } else {
+                        object->field42++;
+                        if (object->field42 < (s16)word) {
+                            pc = start;
+                            running = 0;
+                        } else {
+                            object->field42 = 0;
+                        }
+                    }
+                }
+            } else {
+                pc = start;
+                running = 0;
+            }
             break;
         case 0x23:
-            {
-                s16 part = *pc++;
-
-                func_800AFA98(object, &object->hierarchy[part], arg);
-            }
+            func_800AFA98(object, &object->hierarchy[(s16)*pc++], arg);
             break;
         case 0x24:
             if (object != NULL) {
@@ -5099,12 +5098,10 @@ chosen:
                 VECTOR axisY;
                 VECTOR axisZ;
                 SVECTOR unit;
-                SVECTOR *u = &unit;
-                u8 part;
                 u16 ax, ay, az;
 
                 word = *pc++;
-                part = word >> 8;
+                m1 = word >> 8;
                 func_800AF438(object, (u8)word, &word);
                 ax = *pc++;
                 ay = *pc++;
@@ -5112,12 +5109,12 @@ chosen:
                 for (i = 0; i < 13; i++) {
                     if (((s16)word >> i) & 1) {
                         if (D_800D3368[i] != NULL) {
-                            D_800D3368[i]->parentPart = part;
+                            D_800D3368[i]->parentPart = m1;
                             D_800D3368[i]->field5C = object->slot;
                             D_800D3368[i]->field5D = arg & 2;
                             D_800D3368[i]->field36 = 1;
                             if (arg & 1) {
-                                ModelPart *at = &object->hierarchy[part];
+                                ModelPart *at = &object->hierarchy[m1];
 
                                 SetRotMatrix(&at->world);
                                 m.t[0] = 0;
@@ -5127,17 +5124,17 @@ chosen:
                                 unit.vx = 0x1000;
                                 unit.vy = 0;
                                 unit.vz = 0;
-                                gte_ldv0(u);
+                                gte_ldv0(&unit);
                                 gte_rtv0tr();
                                 gte_stlvnl(&axisX);
                                 unit.vx = 0;
                                 unit.vy = 0x1000;
-                                gte_ldv0(u);
+                                gte_ldv0(&unit);
                                 gte_rtv0tr();
                                 gte_stlvnl(&axisY);
                                 unit.vy = 0;
                                 unit.vz = 0x1000;
-                                gte_ldv0(u);
+                                gte_ldv0(&unit);
                                 gte_rtv0tr();
                                 gte_stlvnl(&axisZ);
                                 offset.vx = D_800D3368[i]->hierarchy->translation[0] - at->world.t[0];
@@ -5180,32 +5177,31 @@ chosen:
                 ModelPart *part;
                 s32 frames;
                 s32 found;
-                u8 kind;
 
                 if (object->field8E == 0) {
                     object->field8E = 1;
                 }
                 word = *pc++;
-                kind = word >> 8;
+                b1 = word >> 8;
                 part = &object->hierarchy[(u8)word];
                 frames = distance / object->field8E;
                 found = 0;
                 if (part->effects[0] != NULL) {
-                    found = kind == (s16)part->effects[0]->field10;
-                } else if (part->effects[1] != NULL && (s16)part->effects[1]->field10 == kind) {
+                    found = b1 == (s16)part->effects[0]->field10;
+                } else if (part->effects[1] != NULL && (s16)part->effects[1]->field10 == b1) {
                     found = 1;
                 }
-                if (!found) {
-                    pc = start;
-                    running = 0;
-                    break;
-                }
-                if (op == 0x28) {
-                    if (frames >= arg) {
+                if (found) {
+                    if (op == 0x28) {
+                        if (frames >= arg) {
+                            pc = start;
+                            running = 0;
+                        }
+                    } else if (frames < arg) {
                         pc = start;
                         running = 0;
                     }
-                } else if (frames < arg) {
+                } else {
                     pc = start;
                     running = 0;
                 }
@@ -5218,7 +5214,7 @@ chosen:
             }
             break;
         case 0x2B:
-            if (object->field8E >= func_800AEEF8(object)) {
+            if (func_800AEEF8(object) <= object->field8E) {
                 pc = start;
                 running = 0;
             }
@@ -5340,15 +5336,10 @@ chosen:
             }
             break;
         case 0x3C: /* play a sound */
-            {
-                u8 sound;
-                u8 volume;
-
-                word = *pc++;
-                sound = word;
-                volume = word >> 8;
-                func_8003A3B8(sound + func_800AE220(object, arg), 0, volume);
-            }
+            word = *pc++;
+            b0 = word;
+            b1 = word >> 8;
+            func_8003A3B8(b0 + func_800AE220(object, arg), 0, b1);
             break;
         case 0x3D: /* replay the queued scripts when one is arg */
             word = object->queueCount;
@@ -5361,38 +5352,34 @@ chosen:
             }
             break;
         case 0x3E: /* jump when the targets were all hit so */
-            {
-                s32 all = 1;
-                u8 result;
-
-                for (i = 0; i < 13; i++) {
-                    if ((D_800C3E30 >> i) & 1) {
-                        switch (D_800C3FE8[D_800C360C - 1].codes[i]) {
-                        case 0:
-                        case 1:
-                            result = 0;
-                            break;
-                        case 2:
-                        case 3:
-                        case 5:
-                            result = 5;
-                            break;
-                        default:
-                            result = 4;
-                            break;
-                        }
-                        if (result != arg && arg < 8) {
-                            all = 0;
-                        }
-                        if (arg == 8 && (D_800D3368[i] == NULL || !(D_800D3368[i]->flags4A & 2))) {
-                            all = 0;
-                        }
+            b0 = 1;
+            for (i = 0; i < 13; i++) {
+                if ((D_800C3E30 >> i) & 1) {
+                    switch (D_800C3FE8[D_800C360C - 1].codes[i]) {
+                    case 0:
+                    case 1:
+                        b1 = 0;
+                        break;
+                    case 2:
+                    case 3:
+                    case 5:
+                        b1 = 5;
+                        break;
+                    default:
+                        b1 = 4;
+                        break;
+                    }
+                    if (b1 != arg && arg < 8) {
+                        b0 = 0;
+                    }
+                    if (arg == 8 && (D_800D3368[i] == NULL || !(D_800D3368[i]->flags4A & 2))) {
+                        b0 = 0;
                     }
                 }
-                word = *pc++;
-                if (all) {
-                    pc = SCRIPT_JUMP(start, (s16)word);
-                }
+            }
+            word = *pc++;
+            if (b0) {
+                pc = SCRIPT_JUMP(start, (s16)word);
             }
             break;
         case 0x3F:
@@ -5404,19 +5391,19 @@ chosen:
                 s16 y = *pc++;
                 s16 z = *pc++;
 
-                flags = -1;
                 func_800ADF1C(pool, object->hierarchy, arg, x, y, z);
+                flags = -1;
             }
             break;
         case 0x41: /* turn by angles */
             {
-                s16 x = *pc++;
-                s16 y = *pc++;
-                s16 z = *pc++;
+                s32 x = *pc++;
+                s32 y = *pc++;
+                s32 z = *pc++;
 
-                flags = -1;
                 func_800ADF1C(pool, object->hierarchy, arg, (s16)(object->hierarchy->rotation.vx + x),
                               (s16)(object->hierarchy->rotation.vy + y), (s16)(object->hierarchy->rotation.vz + z));
+                flags = -1;
             }
             break;
         case 0x42:
@@ -5437,8 +5424,8 @@ chosen:
                 }
                 yaw = ratan2(-dx, -dz);
                 if (dx != 0 || dy != 0 || dz != 0) {
-                    flags = -1;
                     func_800ADF1C(pool, object->hierarchy, arg, pitch, yaw, 0);
+                    flags = -1;
                 }
             }
             break;
@@ -5511,8 +5498,8 @@ chosen:
             {
                 ModelPart *root = object->hierarchy;
                 s32 dx = object->position[0] - root->translation[0];
-                s32 dz = object->position[2] - root->translation[2];
                 s32 dy = object->position[1] - root->translation[1];
+                s32 dz = object->position[2] - root->translation[2];
 
                 if (arg == 0) {
                     arg = 1;
@@ -5556,8 +5543,8 @@ chosen:
                 VECTOR hit;
                 SVECTOR point;
 
-                point.vy = 0;
                 point.vx = object->position[0];
+                point.vy = 0;
                 point.vz = object->position[2];
                 func_800A5870(&point, func_800A579C(&point), &hit);
                 object->position[1] = point.vy;
@@ -5588,15 +5575,15 @@ chosen:
             break;
         case 0x59:
             object->field58 = 0;
-            object->position[0] = SCENE_CAMERAS(D_800658C8)[arg].eye[0];
-            object->position[1] = SCENE_CAMERAS(D_800658C8)[arg].eye[1];
-            object->position[2] = SCENE_CAMERAS(D_800658C8)[arg].eye[2];
+            object->position[0] = D_800658C8->cameras[arg].eye[0];
+            object->position[1] = D_800658C8->cameras[arg].eye[1];
+            object->position[2] = D_800658C8->cameras[arg].eye[2];
             break;
         case 0x5A:
             object->field58 = 0;
-            object->position[0] = SCENE_CAMERAS(D_800658C8)[arg].lookAt[0];
-            object->position[1] = SCENE_CAMERAS(D_800658C8)[arg].lookAt[1];
-            object->position[2] = SCENE_CAMERAS(D_800658C8)[arg].lookAt[2];
+            object->position[0] = D_800658C8->cameras[arg].lookAt[0];
+            object->position[1] = D_800658C8->cameras[arg].lookAt[1];
+            object->position[2] = D_800658C8->cameras[arg].lookAt[2];
             break;
         case 0x5B: /* set the queue mode; 2 replays the queue */
             word = object->queueCount;
@@ -5638,11 +5625,11 @@ chosen:
             break;
         case 0x60: /* the centre of the slot's area */
             {
-                SceneArea *area = &SCENE_AREAS(D_800658C8)[D_800C3EB4[object->slot].group];
+                s32 group = D_800C3EB4[object->slot].group;
 
+                object->position[0] = (D_800658C8->areas[group].x0 + D_800658C8->areas[group].x1) >> 1;
                 object->position[1] = 0;
-                object->position[0] = (area->x0 + area->x1) >> 1;
-                object->position[2] = (area->z0 + area->z1) >> 1;
+                object->position[2] = (D_800658C8->areas[group].z0 + D_800658C8->areas[group].z1) >> 1;
             }
             break;
         case 0x61:
@@ -5652,14 +5639,7 @@ chosen:
             }
             break;
         case 0x62:
-            {
-                s16 part = *pc++;
-                s16 x = *pc++;
-                s16 y = *pc++;
-                s16 z = *pc++;
-
-                func_800AFD98(object, &object->hierarchy[part], arg, x, y, z);
-            }
+            func_800AFD98(object, &object->hierarchy[(s16)*pc++], arg, (s16)*pc++, (s16)*pc++, (s16)*pc++);
             break;
         case 0x63: /* start the object's own animation */
             word = *pc++;
@@ -5671,24 +5651,21 @@ chosen:
             pc = SCRIPT_JUMP(start, (s16)word);
             break;
         case 0x64:
-            word = *pc++;
-            OBJECT_FIELD3E(object) = word;
+            OBJECT_FIELD3E(object) = *pc++;
             break;
         case 0x65:
         case 0x66: /* start a camera effect */
             {
-                u8 kind;
-                u8 code;
-                u8 last;
                 s16 camX, camY, camZ;
                 s16 x, y;
                 s16 mode;
 
                 word = *pc++;
-                code = word >> 8;
-                kind = word;
+                m1 = word >> 8;
+                c0 = word;
                 word = *pc++;
-                last = word >> 8;
+                c3 = word >> 8;
+                b2 = word;
                 if (op == 0x65) {
                     camX = D_800D335C.vx;
                     camY = D_800D335C.vy;
@@ -5698,26 +5675,26 @@ chosen:
                     camY = D_800D3354.vy;
                     camZ = D_800D3354.vz;
                 }
-                x = func_800AF438(object, code, &value);
+                x = func_800AF438(object, m1, &value);
                 value = *pc++;
                 mode = 2;
-                if (code == 0xF6) {
+                if (m1 == 0xF6) {
                     x = object->position[0];
                     y = object->position[2];
                     value += object->position[1];
-                } else if (code == 0xF5) {
-                    x = SCENE_CAMERAS(D_800658C8)[(u8)word].lookAt[0];
-                    y = SCENE_CAMERAS(D_800658C8)[(u8)word].lookAt[2];
-                    value += SCENE_CAMERAS(D_800658C8)[(u8)word].lookAt[1];
-                } else if (code == 0xF4) {
-                    x = SCENE_CAMERAS(D_800658C8)[(u8)word].eye[0];
-                    y = SCENE_CAMERAS(D_800658C8)[(u8)word].eye[2];
-                    value += SCENE_CAMERAS(D_800658C8)[(u8)word].eye[1];
+                } else if (m1 == 0xF5) {
+                    x = D_800658C8->cameras[b2].lookAt[0];
+                    y = D_800658C8->cameras[b2].lookAt[2];
+                    value += D_800658C8->cameras[b2].lookAt[1];
+                } else if (m1 == 0xF4) {
+                    x = D_800658C8->cameras[b2].eye[0];
+                    y = D_800658C8->cameras[b2].eye[2];
+                    value += D_800658C8->cameras[b2].eye[1];
                 } else if (D_800D3368[x] != NULL) {
                     value = func_800AA600(x) * (s16)value / 4096;
                     mode = 0;
                     y = -1;
-                    if (code == 0xF9) {
+                    if (m1 == 0xF9) {
                         for (y = 0; y < 13; y++) {
                             if ((D_800C3E30 >> y) & 1) {
                                 break;
@@ -5729,26 +5706,22 @@ chosen:
                     mode = 0;
                     y = -1;
                 }
-                ((void (*)())func_800B0164)(pool, op - 0x5E, arg + mode, kind, camX, camY, camZ, x, (s16)value, y, last);
+                ((void (*)())func_800B0164)(pool, op - 0x5E, arg + mode, c0, camX, camY, camZ, x, (s16)value, y, c3);
             }
             break;
         case 0x67: /* start a camera turn */
             {
-                u8 kind;
-                u8 type;
-                u8 flagsD;
-                u8 last;
                 u16 angle;
                 u16 base;
                 u16 from;
                 u16 to;
 
                 word = *pc++;
-                type = word >> 8;
-                kind = word;
+                m1 = word >> 8;
+                c0 = word;
                 word = *pc++;
-                last = word >> 8;
-                flagsD = word;
+                c3 = word >> 8;
+                b2 = word;
                 angle = *pc++;
                 word = *pc++;
                 if (arg & 0x20) {
@@ -5757,62 +5730,56 @@ chosen:
                     base = object->hierarchy->rotation.vy;
                 }
                 arg &= 0x1F;
-                switch (type) {
-                case 0:
+                if (m1 == 0) {
                     from = D_800C3B90 & 0xFFF;
-                    break;
-                case 1:
+                } else if (m1 == 1) {
                     from = D_800C3BA0 & 0xFFF;
-                    break;
-                case 2:
+                } else if (m1 == 2) {
                     from = D_800C3B94 & 0xFFF;
-                    break;
-                case 3:
-                    from = D_800C3B98;
-                    goto scaled;
-                case 4:
-                    from = D_800C3BA4;
-                    goto scaled;
-                case 5:
-                    from = D_800C3BA8;
-                    goto scaled;
-                case 6:
-                    from = D_800C3B9C;
-                default:
-                scaled:
+                } else {
+                    if (m1 == 3) {
+                        from = D_800C3B98;
+                    } else if (m1 == 4) {
+                        from = D_800C3BA4;
+                    } else if (m1 == 5) {
+                        from = D_800C3BA8;
+                    } else if (m1 == 6) {
+                        from = D_800C3B9C;
+                    }
                     angle = (s16)angle * D_800658C8->objectScale >> 12;
                     word = (s16)word * D_800658C8->objectScale >> 12;
-                    break;
                 }
-                if (flagsD & 0x20) {
+                if (b2 & 0x20) {
                     from += angle;
-                } else if (type < 2) {
+                } else if (m1 < 2) {
                     from = (angle + base) & 0xFFF;
-                } else if (type < 3) {
+                } else if (m1 < 3) {
                     from = angle & 0xFFF;
                 } else {
                     from = angle;
                 }
-                if (flagsD & 0x40) {
-                    to = from + word;
-                } else if (type < 3) {
-                    s32 turn;
+                to = from;
+                if (b2 & 0x40) {
+                    to += (u16)word;
+                } else if (m1 < 3) {
                     u16 start2;
+                    s32 turn;
 
-                    if (type < 2) {
+                    if (m1 < 2) {
                         start2 = (angle + base) & 0xFFF;
                     } else {
                         start2 = angle & 0xFFF;
                     }
-                    turn = (word - angle) & 0xFFF;
+                    turn = (u16)(word - angle) & 0xFFF;
+                    to = turn;
                     if (turn >= 0x800) {
-                        turn |= 0xF000;
+                        to = turn | 0xF000;
                     }
-                    to = turn + start2;
+                    to += start2;
                 } else {
-                    to = word;
+                    to = (u16)word;
                 }
-                ((void (*)())func_800B0164)(pool, type, arg + 2, kind, (s16)from, 0, 0, (s16)to, 0, 0, last);
+                ((void (*)())func_800B0164)(pool, m1, arg + 2, c0, (s16)from, 0, 0, (s16)to, 0, 0, c3);
             }
             break;
         case 0x68: /* start the camera */
@@ -5834,18 +5801,18 @@ chosen:
             }
             break;
         case 0x69:
-            if (D_800C3B84 == 0xFF) {
+            if (D_800C3B84 != 0xFF) {
+                if (D_800C3B88 & 1) {
+                    pc = start;
+                    running = 0;
+                } else {
+                    D_800C3B84 = 0xFF;
+                }
+            } else {
                 D_800C3B84 = arg;
                 pc = start;
                 running = 0;
-                break;
             }
-            if (D_800C3B88 & 1) {
-                pc = start;
-                running = 0;
-                break;
-            }
-            D_800C3B84 = 0xFF;
             break;
         case 0x6A:
             D_800C3B8C = 1;
@@ -5865,9 +5832,11 @@ chosen:
             break;
         case 0x6E:
             {
-                BattleObject *other = D_800D3368[func_800AF438(object, arg, &word)];
+                u8 index = func_800AF438(object, arg, &word);
+                BattleObject *other;
 
                 word = *pc++;
+                other = D_800D3368[index];
                 if (other != NULL && other->field38 == (word & 1)) {
                     pc = start;
                     running = 0;

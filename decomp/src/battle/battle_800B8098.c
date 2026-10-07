@@ -66,10 +66,10 @@ void func_800B81BC(s32 arg0) {
     func_800B8840();
     func_801E62E0(arg0);
     func_80038310(D_800595AC);
-    func_80021B04(&D_800D30A0[0], D_800658C8->eye[0], D_800658C8->eye[1], D_800658C8->eye[2]);
-    func_80021B04(&D_800D3354, D_800658C8->eye[0], D_800658C8->eye[1], D_800658C8->eye[2]);
-    func_80021B04(&D_800D30A0[1], D_800658C8->lookAt[0], D_800658C8->lookAt[1], D_800658C8->lookAt[2]);
-    func_80021B04(&D_800D335C, D_800658C8->lookAt[0], D_800658C8->lookAt[1], D_800658C8->lookAt[2]);
+    func_80021B04(&D_800D30A0[0], D_800658C8->cameras[0].eye[0], D_800658C8->cameras[0].eye[1], D_800658C8->cameras[0].eye[2]);
+    func_80021B04(&D_800D3354, D_800658C8->cameras[0].eye[0], D_800658C8->cameras[0].eye[1], D_800658C8->cameras[0].eye[2]);
+    func_80021B04(&D_800D30A0[1], D_800658C8->cameras[0].lookAt[0], D_800658C8->cameras[0].lookAt[1], D_800658C8->cameras[0].lookAt[2]);
+    func_80021B04(&D_800D335C, D_800658C8->cameras[0].lookAt[0], D_800658C8->cameras[0].lookAt[1], D_800658C8->cameras[0].lookAt[2]);
     SetDispMask(1);
 }
 

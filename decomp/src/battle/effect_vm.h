@@ -26,25 +26,6 @@
 #define ABS(x) ((x) < 0 ? -(x) : (x))
 #endif
 
-/* A rectangle of the scene's ground (8 bytes; the scene data's areas at
- * 0x100, one per formation group). */
-typedef struct {
-    u16 x0;
-    u16 z0;
-    u16 x1;
-    u16 z1;
-} SceneArea;
-
-#define SCENE_AREAS(scene) ((SceneArea *)((u8 *)(scene) + 0x100))
-
-/* The scene data's camera presets (12 bytes each, at 0x47C). */
-typedef struct {
-    s16 lookAt[3];
-    s16 eye[3];
-} SceneCamera;
-
-#define SCENE_CAMERAS(scene) ((SceneCamera *)((u8 *)(scene) + 0x47C))
-
 /* The travel of an animation (its s16 at 0x10), in model units. */
 #define ANIMATION_SPAN(animation) (((s16 *)(animation))[8])
 
