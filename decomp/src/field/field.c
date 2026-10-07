@@ -1556,9 +1556,7 @@ void func_8007409C(MATRIX *to, MATRIX *from) {
  * black), look at it from the camera's height and distance, turn the
  * needle toward the controlled actor's heading, and draw the needle,
  * letters, ring and pointer quads; also leave the upright view in the
- * model pass matrix.
- * NON_MATCHING: the original keeps the matrix addresses in two more callee-saved registers in the letter loop. */
-#ifdef NON_MATCHING
+ * model pass matrix. */
 void func_80074108(void) {
     MATRIX base;
     MATRIX look;
@@ -1571,6 +1569,9 @@ void func_80074108(void) {
     s32 i;
     s32 j;
     u8 blocked;
+    s16 view;
+    s16 *offset_x;
+    s16 *offset_z;
 
     blocked = D_800AF880.heading_blocks[1];
     for (i = 0; i < 8; i++) {
@@ -1600,7 +1601,8 @@ void func_80074108(void) {
     base.t[2] = 0x80;
     SetRotMatrix(&base);
     SetTransMatrix(&base);
-    D_800ADB4A = D_800AF880.components.descriptors[D_800B2078.unk233E].actor->heading_goal + (D_800AF880.view_angle + 0x400);
+    view = D_800AF880.view_angle + 0x400;
+    D_800ADB4A = D_800AF880.components.descriptors[D_800B2078.unk233E].actor->heading_goal + view;
     D_800ADB48 = func_80073988(D_800ADB48, D_800ADB4A, 0x40);
     angles.vx = 0;
     angles.vy = D_800ADB48;
@@ -1634,8 +1636,10 @@ void func_80074108(void) {
     if (D_800B2078.script_control[1] == 0 && D_800ADC18 == 0 && D_8004F378 == 0) {
         for (i = 16; i < 20; i++) {
             func_80070594(&turn);
-            turn.t[0] = D_800ADC34[i - 16].vx;
-            turn.t[2] = D_800ADC34[i - 16].vy;
+            offset_x = &D_800ADC34[i - 16].vx;
+            offset_z = &D_800ADC34[i - 16].vy;
+            turn.t[0] = *offset_x;
+            turn.t[2] = *offset_z;
             CompMatrix(&base, &turn, &placed);
             func_8007409C(&placed, &tilt);
             func_8007AC58(D_800C426C->overlay_ot, &D_800B06BC[i], &placed, D_800ADB08);
@@ -1651,9 +1655,6 @@ void func_80074108(void) {
     SetGeomOffset(0xA0, 0x70);
     SetGeomScreen(D_800AF880.projection);
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80074108);
-#endif
 
 /* Whether any shown descriptor (flag 0x40 clear) has flag 0x8000. */
 s32 func_8007469C(void) {
