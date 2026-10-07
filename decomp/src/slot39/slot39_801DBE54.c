@@ -3198,8 +3198,8 @@ void func_801E53CC(u8 index) {
  * its position for both buffers, and the two draw modes (blend mode 2). */
 void func_801E56E8(s32 index) {
     MenuImage *image;
-    u16 *x;
-    u16 *y;
+    s16 *x;
+    s16 *y;
     s32 i;
     RECT window;
 
@@ -3245,8 +3245,8 @@ void func_801E56E8(s32 index) {
  * top/right and left/bottom lines and their vertices, for both buffers. */
 void func_801E5924(s32 index) {
     MenuImage *image;
-    u16 *x;
-    u16 *y;
+    s16 *x;
+    s16 *y;
     s32 i;
 
     x = D_801E9894[index];

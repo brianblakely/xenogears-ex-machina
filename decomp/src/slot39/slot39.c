@@ -1492,6 +1492,9 @@ void func_801C9270(s32 port) {
  * while the cards stay as they were, mark this game's files and place the
  * cursor marker. */
 #ifdef NON_MATCHING
+/* Remaining: the original keeps `marked` (always 0 here) as a copy of noCard
+ * and tests it before setting party +0b (this build folds it away), and its
+ * frame is 0xe8 (0x30 more: six more dead address pseudos). */
 u8 func_801C93A8(void) {
     char path[64];
     u8 present[2];

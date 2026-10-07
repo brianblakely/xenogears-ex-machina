@@ -1150,8 +1150,8 @@ extern s32 D_801EA578[];         /* label image x per row pair */
 extern s32 D_801EA5C4[];         /* label image y per row pair */
 extern s32 D_801EA590[];         /* view name image x (D_801EA578 from row 6) */
 extern s32 D_801EA5DC[];         /* view name image y */
-extern u16 D_801E9894[32][2];    /* image block x */
-extern u16 D_801E9914[32][2];    /* image block y */
+extern s16 D_801E9894[32][2];    /* image block x */
+extern s16 D_801E9914[32][2];    /* image block y */
 extern s32 D_801EA34C[20]; /* field block part images, ffff none */
 extern s32 D_801E9A78[20];
 extern s32 D_801E9A00[]; /* highlight positions: x */
