@@ -7883,27 +7883,30 @@ void func_8009C12C(void) {
  * (upload loaded images, or release shown ones) and return -1; a slot
  * already holding it is selected (bits 2-4 of the actor state) and 0
  * returned; otherwise the next free slot starts loading its image files and
- * -1 is returned. */
-s32 func_8009C154(s16 character) {
+ * -1 is returned. The placement (800aeae4) and file (800ae1e0) tables are
+ * indexed as flat arrays, which keeps their bases in registers as the
+ * original does.
+ * NON_MATCHING: only the second file's address differs: the original
+ * computes it into a0, GCC here into s1 (c * 2 + &D_800AE1E1). */
+#define PLACE(i, k) (((s16 *)D_800AEAE4)[(i) * 8 + (k)])
+#define FILES(c, k) (((u8 *)D_800AE1E0)[(c) * 2 + (k)])
+s32 func_8009C154(s32 character) {
     s32 i;
-    s32 tries;
     s32 found;
-    s32 count;
 
     for (i = 0; i < 3; i++) {
         if (D_800B06A4[i].b == 1) {
-            if (func_80028A60(1) != 0) {
-                return -1;
-            }
-            D_800B06A4[i].b = 2;
-            func_80070340(D_800ADB10, D_800AEAE4[i][0].x, D_800AEAE4[i][0].y, D_800AEAE4[i][0].clut_x,
-                          D_800AEAE4[i][0].clut_y, 0x100, 1);
-            if (D_800B06A4[i].c == 0) {
-                func_80070340(D_800ADB10, D_800AEAE4[i][1].x, D_800AEAE4[i][1].y, D_800AEAE4[i][1].clut_x,
-                              D_800AEAE4[i][1].clut_y, 0x100, 1);
-            } else {
-                func_80070340(D_800ADB14, D_800AEAE4[i][1].x, D_800AEAE4[i][1].y, D_800AEAE4[i][1].clut_x,
-                              D_800AEAE4[i][1].clut_y, 0x100, 1);
+            if (func_80028A60(1) == 0) {
+                D_800B06A4[i].b = 2;
+                func_80070340(D_800ADB10, PLACE(i, 0), PLACE(i, 1), PLACE(i, 2),
+                              PLACE(i, 3), 0x100, 1);
+                if (D_800B06A4[i].c == 0) {
+                    func_80070340(D_800ADB10, PLACE(i, 4), PLACE(i, 5), PLACE(i, 6),
+                                  PLACE(i, 7), 0x100, 1);
+                } else {
+                    func_80070340(D_800ADB14, PLACE(i, 4), PLACE(i, 5), PLACE(i, 6),
+                                  PLACE(i, 7), 0x100, 1);
+                }
             }
             return -1;
         }
@@ -7923,13 +7926,13 @@ s32 func_8009C154(s16 character) {
         }
     }
     found = 0;
-    for (tries = 0; tries < 3; tries++) {
+    for (i = 0; i < 3; i++) {
         D_800ADB0C++;
         if (D_800ADB0C >= 3) {
             D_800ADB0C = 0;
         }
         if (func_8009C538(D_800B06A4[D_800ADB0C].a) == 0) {
-            found = 1;
+            found++;
             break;
         }
     }
@@ -7941,17 +7944,18 @@ s32 func_8009C154(s16 character) {
     D_800B06A4[D_800ADB0C].a = character;
     D_800B06A4[D_800ADB0C].b = 1;
     D_800B06A4[D_800ADB0C].c = 0;
-    D_800B00C8[0].file = D_800AE1E0[character][0] + 0x46;
-    D_800ADB10 = D_800B00C8[0].destination = func_80031BDC(func_800288EC(D_800B00C8[0].file), 0);
-    count = 1;
-    if (D_800AE1E0[character][1] != D_800AE1E0[character][0]) {
+    i = 0;
+    D_800B00C8[i].file = FILES(character, 0) + 0x46;
+    D_800B00C8[i].destination = D_800ADB10 = func_80031BDC(func_800288EC(D_800B00C8[i].file), 0);
+    i++;
+    if (FILES(character, 1) != FILES(character, 0)) {
         D_800B06A4[D_800ADB0C].c = 1;
-        D_800B00C8[1].file = D_800AE1E0[character][1] + 0x46;
-        count = 2;
-        D_800ADB14 = D_800B00C8[1].destination = func_80031BDC(func_800288EC(D_800B00C8[1].file), 0);
+        D_800B00C8[i].file = FILES(character, 1) + 0x46;
+        D_800B00C8[i].destination = D_800ADB14 = func_80031BDC(func_800288EC(D_800B00C8[i].file), 0);
+        i++;
     }
-    D_800B00C8[count].file = 0;
-    D_800B00C8[count].destination = NULL;
+    D_800B00C8[i].file = 0;
+    D_800B00C8[i].destination = NULL;
     func_80029AFC(D_800B00C8, 0, 0);
     return -1;
 }
@@ -7972,10 +7976,19 @@ s32 func_8009C538(s32 id) {
 }
 
 #ifdef NON_MATCHING
+/* The window opener (8007f8dc), as this caller passes the message id. */
+s32 func_8007F8DC(s16 x, s16 y, s32 message, s32 window, s32 columns, s32 rows, s32 owner, s32 speaker,
+                  s32 mode, s32 turned, s32 flags);
+
 /* Open this actor's dialogue window for message op1 above/below speaker
  * `speaker` (mode 0 follows the speaker, mode 3 is centred, others use the
  * fixed full-width box); op3 overrides the style byte. Returns -1 while the
- * window cannot open yet (the instruction is retried) and 0 once opened. */
+ * window cannot open yet (the instruction is retried) and 0 once opened.
+ * NON_MATCHING: two differences remain. GCC keeps the D_800ADB64 value
+ * (known to be 0xff past its test) in s0 and compares the character with
+ * it, where the original loads the constant again (like the actor pointer
+ * reload in 800a2030); and in the "above" placement the original loads y
+ * before computing rows * 14. */
 s32 func_8009C5A8(s32 speaker, s32 mode) {
     s32 owned;
     s32 x;
@@ -7986,175 +7999,180 @@ s32 func_8009C5A8(s32 speaker, s32 mode) {
     s32 idle;
     s32 combined;
     s32 columns;
-    u8 rows;
+    s32 rows;
     s32 progress;
     s32 low;
-    s32 style;
+    u32 style;
     s32 top;
-    s16 left;
+    s32 left;
+    s32 right;
+    s32 bottom;
     s32 flags;
 
     D_800AFC7C += 0x20;
     if (D_800ADB2C != 0 || D_800AFD04 != 0 || D_800C4268 != 0 || D_800ADB64 != 0xFF ||
         (D_800ADB70 == 0 && func_8008A558() != 0) ||
-        ((u8)D_800B0078->character != 0xFF && func_8009C154((u8)D_800B0078->character) == -1)) {
+        (D_800B0078->character != 0xFF && func_8009C154(D_800B0078->character) == -1)) {
         D_800B00C0 = 1;
         return -1;
     }
     D_800C4268++;
-    if (func_8009CD18(&owned) != -1) {
-        D_800B00C0 = 1;
-        D_800C2698[owned].cleared = 0;
-        return -1;
-    }
-    D_800AFC7C += 8;
-    message = func_800ACDB8(1);
-    if (func_80080720() != 0) {
-        window = func_80080760();
-        if (window != 0xFFFF) {
-            D_800C2698[window].cleared = 0;
-            D_800B00C0 = 1;
-            return -1;
-        }
-    } else {
-        window = func_800807B4();
-    }
-    idle = 0;
-    combined = 0;
-    for (i = 0; i < 4; i++) {
-        if (D_800C2698[i].busy == 0) {
-            idle++;
-            combined |= D_800C2698[i].style;
-        }
-    }
-    columns = func_8003373C(D_800ADBF0, message);
-    rows = func_80033760(D_800ADBF0, message);
-    if (mode == 0 || mode == 3) {
-        if (D_800B0078->unk82 != 0) {
-            columns = D_800B0078->unk82;
-        }
-        if (D_800B0078->unk83 != 0) {
-            rows = D_800B0078->unk83;
-        }
-    }
-    progress = D_800B0078->unk84;
-    low = progress & 0xFFFF;
-    D_800B0078->unk84 = low;
-    style = low;
-    if (EVENT_OPERAND_BYTE(3) != 0) {
-        style = (progress & 0xFF00) | EVENT_OPERAND_BYTE(3);
-        D_800B0078->unk84 = low | (style << 16);
-    }
-    top = 0x10;
-    switch ((style >> 4) & 3) {
-    case 1:
-        goto above;
-    case 0:
-        if (((((D_800B0078->state.word >> 9) & 7) - func_8009A514()) & 7) >= 5) {
-            if (!(combined & 0x80) && idle == 0) {
-                goto above;
-            }
-        } else if (combined & 0x80) {
-            goto above;
-        }
-        /* fall through */
-    case 2:
-        D_800C2698[window].style = 0x81;
-        if (mode == 0 || mode == 3) {
-            func_8007F814(speaker, &x, &y, -0x40);
-            top = 0x94;
-            if (mode == 0) {
-                top = y + 0x30;
-            } else {
-                x = 0xA0;
-            }
-            if ((u8)D_800B0078->character != 0xFF && !(style & 2)) {
-                columns += 0x11;
-                if (columns < 0x18) {
-                    columns = 0x29;
-                }
-                rows = 4;
-                top = 0x94;
+    if (func_8009CD18(&owned) == -1) {
+        D_800AFC7C += 8;
+        message = func_800ACDB8(1);
+        if (func_80080720() != 0) {
+            window = func_80080760();
+            if (window != 0xFFFF) {
+                D_800C2698[window].cleared = 0;
+                D_800B00C0 = 1;
+                return -1;
             }
         } else {
-            columns = 0x48;
-            rows = 4;
-            top = 0x94;
-            x = 0xA0;
+            window = func_800807B4();
         }
-        break;
-    above:
-        D_800C2698[window].style = 1;
+        for (i = 0, idle = 0, combined = 0; i < 4; i++) {
+            if (D_800C2698[i].busy == 0) {
+                idle++;
+                combined |= (s16)D_800C2698[i].style;
+            }
+        }
+        columns = func_8003373C(D_800ADBF0, message);
+        rows = func_80033760(D_800ADBF0, message);
         if (mode == 0 || mode == 3) {
-            func_8007F814(speaker, &x, &y, -0x40);
-            top = 0x14;
-            if (mode == 0) {
-                top = y - rows * 14 - 0x24;
-            } else {
-                x = 0xA0;
+            if (D_800B0078->unk82 != 0) {
+                columns = D_800B0078->unk82;
             }
-            if ((u8)D_800B0078->character != 0xFF && !(style & 2)) {
-                rows = 4;
-                if (columns < 0x18) {
-                    columns = 0x18;
-                }
-                columns += 0x11;
-                top = 0x10;
+            if (D_800B0078->unk83 != 0) {
+                rows = D_800B0078->unk83;
             }
-        } else {
-            columns = 0x48;
-            rows = 4;
-            top = 0x10;
-            x = 0xA0;
         }
-        break;
-    }
-    left = x - 8 - columns * 2;
-    if (left < 0xC) {
-        left = 0xC;
-    }
-    if (left + 0x10 + columns * 4 >= 0x135) {
-        left = 0x124 - columns * 4;
-    }
-    if (top < 0x10) {
+        progress = D_800B0078->unk84;
+        low = progress & 0xFFFF;
+        D_800B0078->unk84 = low;
+        style = low;
+        if (EVENT_OPERAND_BYTE(3) != 0) {
+            style = (progress & 0xFF00) | EVENT_OPERAND_BYTE(3);
+            D_800B0078->unk84 = low | (style << 16);
+        }
         top = 0x10;
-    }
-    if (top + 8 + rows * 14 >= 0xD5) {
-        top = 0xCC - rows * 14;
-    }
-    if (mode == 0 || mode == 3) {
-        if (D_800B0078->unk88 != 0) {
-            left = D_800B0078->unk88;
+        switch ((style >> 4) & 3) {
+        case 0:
+            /* Automatic: below unless the camera faces the speaker's side
+             * and a free window is above. */
+            if (((D_800B0078->state.bits.octant - (u16)func_8009A514()) & 7) >= 5) {
+                if (!(combined & 0x80) && idle == 0) {
+                    goto above;
+                }
+                goto below;
+            }
+            if (!(combined & 0x80)) {
+                goto below;
+            }
+            /* fall through */
+        case 1:
+        above:
+            D_800C2698[window].style = 1;
+            if (mode == 0 || mode == 3) {
+                func_8007F814(speaker, &x, &y, -0x40);
+                if (mode == 0) {
+                    top = y - rows * 14 - 0x24;
+                } else {
+                    top = 0x14;
+                    x = 0xA0;
+                }
+                if (D_800B0078->character != 0xFF && !(style & 2)) {
+                    rows = 4;
+                    if (columns < 0x18) {
+                        columns = 0x18;
+                    }
+                    columns += 0x11;
+                    top = 0x10;
+                }
+            } else {
+                columns = 0x48;
+                rows = 4;
+                top = 0x10;
+                x = 0xA0;
+            }
+            break;
+        case 2:
+        below:
+            D_800C2698[window].style = 0x81;
+            if (mode == 0 || mode == 3) {
+                func_8007F814(speaker, &x, &y, -0x40);
+                if (mode == 0) {
+                    top = y + 0x30;
+                } else {
+                    top = 0x94;
+                    x = 0xA0;
+                }
+                if (D_800B0078->character != 0xFF && !(style & 2)) {
+                    if (columns < 0x18) {
+                        columns = 0x18;
+                    }
+                    columns += 0x11;
+                    rows = 4;
+                    top = 0x94;
+                }
+            } else {
+                top = 0x94;
+                columns = 0x48;
+                rows = 4;
+                x = 0xA0;
+            }
+            break;
         }
-        if (D_800B0078->unk8A != 0) {
-            top = D_800B0078->unk8A;
+        left = x - (columns * 2 + 8);
+        if (left < 0xC) {
+            left = 0xC;
         }
-        if (D_800B0078->unk82 != 0) {
-            columns = D_800B0078->unk82;
+        right = left + 0x10;
+        if (right + columns * 4 >= 0x135) {
+            left = 0x124 - columns * 4;
         }
-        if (D_800B0078->unk83 != 0) {
-            rows = D_800B0078->unk83;
+        if (top < 0x10) {
+            top = 0x10;
         }
-        if ((u8)D_800B0078->character != 0xFF && !(style & 2)) {
-            rows = 4;
+        bottom = top + 8;
+        if (bottom + rows * 14 >= 0xD5) {
+            top = 0xCC - rows * 14;
         }
+        if (mode == 0 || mode == 3) {
+            if (D_800B0078->unk88 != 0) {
+                left = D_800B0078->unk88;
+            }
+            if (D_800B0078->unk8A != 0) {
+                top = D_800B0078->unk8A;
+            }
+            if (D_800B0078->unk82 != 0) {
+                columns = D_800B0078->unk82;
+            }
+            if (D_800B0078->unk83 != 0) {
+                rows = D_800B0078->unk83;
+            }
+            if (D_800B0078->character != 0xFF && !(style & 2)) {
+                rows = 4;
+            }
+        }
+        if (style & 0x40) {
+            D_800C2698[window].style |= 0x40;
+        }
+        flags = 0;
+        if (!(style & 0xC)) {
+            flags = ((((((s16)D_800AF880.components.descriptors[speaker].actor->heading_goal >> 9) -
+                        (u16)func_8009A514()) + 1) & 7) >= 4) << 10;
+        } else if (style & 4) {
+            flags = 0x400;
+        }
+        func_8007F8DC(left, top, message, window, columns, rows, D_800AFD1C, speaker, mode, flags, style);
+        func_8009CCF8(window);
+        D_800B0078->heading |= 0x8000;
+        D_800B0078->pc += 4;
+        return 0;
     }
-    if (style & 0x40) {
-        D_800C2698[window].style |= 0x40;
-    }
-    flags = 0;
-    if (!(style & 0xC)) {
-        flags = (((((s16)D_800AF880.components.descriptors[speaker].actor->heading_goal >> 9) - func_8009A514()) + 1) &
-                 7) >= 4;
-        flags <<= 10;
-    } else if (style & 4) {
-        flags = 0x400;
-    }
-    func_8007F8DC(left, top, message, window, columns, rows, D_800AFD1C, speaker, mode, flags, style);
-    func_8009CCF8(window);
-    D_800B0078->heading |= 0x8000;
-    D_800B0078->pc += 4;
-    return 0;
+    D_800B00C0 = 1;
+    D_800C2698[owned].cleared = 0;
+    return -1;
 }
 #else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_8009C5A8);

@@ -1530,7 +1530,10 @@ void func_800A84C0(void) {
  * (no hoisted base), indexes the layout and frame tables as i * 8 from
  * hoisted bases (fp = layout + 6, s5 = frames + 4) with a second copy of
  * i, and has v in t0 and w in t1; GCC here strength-reduces the table
- * pointers and keeps &D_800AFC60 in a register. */
+ * pointers and keeps &D_800AFC60 in a register. Indexing both tables as
+ * flat u16 arrays ((u16 *)table)[n * 4 + field] and storing the second
+ * buffer through a scalar D_800AFC64 reproduces the frame-table addressing
+ * (score 123 -> 99), but the layout reads stay strength-reduced. */
 void func_800A8BA4(void) {
     POLY_FT4 *quad;
     POLY_FT4 *copy;
