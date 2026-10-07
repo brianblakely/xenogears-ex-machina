@@ -1201,11 +1201,7 @@ void func_80072D74(void) {
 /* Per-frame camera update: in mode 1 follow the scripted target and eye
  * interpolations; in modes 0 and 2 follow the controlled actor (mode 2
  * returns to 0 once both goals are reached or after 64 frames), keeping
- * the eye above the floor; then move the camera toward its goals.
- * NON_MATCHING: in case 0 the original addresses target_a absolutely and
- * target_b through its own address register; ours CSEs both from the &mode
- * register of the switch dispatch (0x50/0x54 off it), changing registers. */
-#ifdef NON_MATCHING
+ * the eye above the floor; then move the camera toward its goals. */
 void func_80073230(void) {
     VECTOR position;
     VECTOR normal;
@@ -1223,8 +1219,16 @@ void func_80073230(void) {
     case 0:
         D_800ADBB0 = 0;
         if (!(D_800ADBAC & 3)) {
-            D_800AF880.target_a = D_800AF880.target_a < 9 ? 8 : D_800AF880.target_a - 2;
-            D_800AF880.target_b = D_800AF880.target_b < 9 ? 8 : D_800AF880.target_b - 2;
+            if (D_800AF880.target_a < 9) {
+                D_800AF880.target_a = 8;
+            } else {
+                D_800AF880.target_a -= 2;
+            }
+            if (D_800AF880.target_b < 9) {
+                D_800AF880.target_b = 8;
+            } else {
+                D_800AF880.target_b -= 2;
+            }
         }
         D_800ADBAC++;
     follow:
@@ -1284,9 +1288,6 @@ void func_80073230(void) {
     func_80072D74();
     D_800AF880.heading_angles.vy &= 0xFFF;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80073230);
-#endif
 
 /* Rotate `point` in X/Z about `center` by the camera heading angles. */
 void func_80073684(VECTOR *point, VECTOR *center) {
