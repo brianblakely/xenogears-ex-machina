@@ -663,7 +663,6 @@ extern u8 D_800C3D44;
 extern u8 D_800C3D5C;
 extern s32 D_800C3DEC;
 extern u8 D_800C3E28[2]; /* direction input: [0] the previous, [1] the current */
-extern Formation *D_800C3EB0;
 extern s32 D_800D2D3C;     /* 801de000 module blocks */
 extern s32 D_800D2F60;
 extern u8 D_800D2D50;

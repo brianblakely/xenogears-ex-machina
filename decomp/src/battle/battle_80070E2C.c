@@ -17,6 +17,7 @@
 #include "glyph_lists.h"
 #include "item_command.h"
 #include "result_input.h"
+#include "area.h"
 
 /* Start the 801e5000 module: reserve its heap span and load it. */
 void func_80070E2C(void) {
@@ -119,7 +120,7 @@ void func_80070F40(void) {
         D_800C3E54 = func_800397FC(D_80062648, 0x7F, 0);
     }
     D_800D3364 = D_8005949C;
-    D_800C3EB0 = D_8005949C;
+    D_800C3EB0.formation = D_8005949C;
     func_80077990();
     D_800D3298 = 1;
     func_800BC404(D_800D39DC);
