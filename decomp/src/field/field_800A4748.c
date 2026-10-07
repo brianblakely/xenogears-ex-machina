@@ -1628,7 +1628,6 @@ typedef struct {
 } ParticleSprite;
 extern ParticleSprite D_800AF27C[];
 
-#ifdef NON_MATCHING
 /* Set up a particle's quad in both buffers from sprite `sprite` with
  * semi-transparency rate `abr`.
  * The corners scale each term by 16 before subtracting/adding: x * 16
@@ -1637,11 +1636,11 @@ extern ParticleSprite D_800AF27C[];
  * keeps GCC from folding x * 16 - w * 16 into (x - w) * 16, and the
  * (u16) view of the half sizes in the sums (a no-op on their values) keeps
  * CSE from sharing the second w * 16 / h * 16 with the first.
- * NON_MATCHING: only the copy to the second buffer differs: the original
- * forms &particle->quads[1] in v1 and copies it into the block-move
- * pointer a2 (addiu v1,s0,0x78; move a2,v1); here it is formed in a2. */
+ * The second buffer's quad is taken as a pointer up front; the block copy
+ * then starts from a copy of it (addiu v1,s0,0x78; move a2,v1). */
 void func_800A8EAC(Particle *particle, s32 sprite, s32 abr) {
     POLY_FT4 *quad;
+    POLY_FT4 *copy;
     s32 half_w;
     s32 half_h;
     s32 x;
@@ -1649,6 +1648,7 @@ void func_800A8EAC(Particle *particle, s32 sprite, s32 abr) {
     SVECTOR unused[11]; /* unused in the original; reserves 88 bytes */
 
     quad = &particle->quads[0];
+    copy = &particle->quads[1];
     SetPolyFT4(quad);
     half_w = D_800AF27C[sprite].half_w;
     half_h = D_800AF27C[sprite].half_h;
@@ -1674,11 +1674,8 @@ void func_800A8EAC(Particle *particle, s32 sprite, s32 abr) {
     SetSemiTrans(quad, 1);
     quad->tpage = GetTPage(0, abr, 0x3C0, 0x140);
     quad->clut = GetClut(0x100, 0xF7);
-    particle->quads[1] = *quad;
+    *copy = *quad;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800A4748", func_800A8EAC);
-#endif
 
 extern RECT D_800AFC28;
 typedef struct {
