@@ -7982,7 +7982,6 @@ s32 func_8009C538(s32 id) {
     return 0;
 }
 
-#ifdef NON_MATCHING
 /* The window opener (8007f8dc), as this caller passes the message id. */
 s32 func_8007F8DC(s16 x, s16 y, s32 message, s32 window, s32 columns, s32 rows, s32 owner, s32 speaker,
                   s32 mode, s32 turned, s32 flags);
@@ -7991,12 +7990,13 @@ s32 func_8007F8DC(s16 x, s16 y, s32 message, s32 window, s32 columns, s32 rows, 
  * `speaker` (mode 0 follows the speaker, mode 3 is centred, others use the
  * fixed full-width box); op3 overrides the style byte. Returns -1 while the
  * window cannot open yet (the instruction is retried) and 0 once opened.
- * NON_MATCHING: only the "above" placement's schedule differs: the
- * original loads y before computing rows * 14 for top. */
+ * The "above" placement copies y into its own variable first, which keeps
+ * the load ahead of rows * 14 as the original schedules it. */
 s32 func_8009C5A8(s32 speaker, s32 mode) {
     s32 owned;
     s32 x;
     s32 y;
+    s32 anchor;
     u16 message;
     s32 window;
     s32 i;
@@ -8082,7 +8082,8 @@ s32 func_8009C5A8(s32 speaker, s32 mode) {
             if (mode == 0 || mode == 3) {
                 func_8007F814(speaker, &x, &y, -0x40);
                 if (mode == 0) {
-                    top = y - rows * 14 - 0x24;
+                    anchor = y;
+                    top = anchor - rows * 14 - 0x24;
                 } else {
                     top = 0x14;
                     x = 0xA0;
@@ -8181,9 +8182,6 @@ s32 func_8009C5A8(s32 speaker, s32 mode) {
     D_800C2698[owned].cleared = 0;
     return -1;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_8009C5A8);
-#endif
 
 /* Set talk-inhibit bit `bit`. */
 void func_8009CCF8(s32 bit) {
