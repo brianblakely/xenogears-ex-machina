@@ -1494,7 +1494,12 @@ void func_801C9270(s32 port) {
  * setting party +0b; this build folds it to a constant whatever the
  * assignment form (marked = noCard = 0, noCard = 0; marked = noCard). The
  * original's frame holds 48 more bytes its code never touches (10
- * differing instructions, local scorer). */
+ * differing instructions, local scorer). The copy reads s4 right after
+ * `move s4,zero`, so the source value is 0 there; cse replaces a register
+ * with a known constant whenever it can (const 0 costs less than a reg), so
+ * at cse time the original's copy source was not known to be 0 in that
+ * block. A standalone 2.6.3 test (`a = 0; b = a; ... if (b)`) folds the
+ * test away as here. */
 u8 func_801C93A8(void) {
     char path[64];
     u8 present[2];
@@ -2140,7 +2145,12 @@ void func_801CAE08(u8 mode) {
  * one more before it (fp+16, fp+17 and this one are moved here); writing
  * every access as GAME_NAMES[n + i] keeps it but loses the name pointer.
  * Wrapping the inner loop in a do/while (0) block gets 19 -> 13 differing
- * instructions (local scorer). */
+ * instructions (local scorer).
+ * Loop dump (-dL): the row loop has 55 insns; &codes (r109, life 26),
+ * &codes[1] (r81) and &GAME_NAMES[1] (r84, life 26) are weighed in that
+ * order at 110, 220 and 440, and the copy loop's &decoded (r105, life 13)
+ * fails at 880. r84 needs one more doubling (or a lifetime under about
+ * 15) to stay in the loop. A 20-minute permuter run found nothing valid. */
 void func_801CB184(void) {
     u8 codes[24];
     u8 decoded[20];
@@ -2198,7 +2208,14 @@ void func_801CB28C(s32 *save) {
  * slot of its test and keeps the exit branch from being threaded), the
  * READ_SAVE block from the buffer allocation through the checksum test
  * (moves the success block out of line), and the read retry as a real
- * do/while loop followed by the close-and-release exit. */
+ * do/while loop followed by the close-and-release exit.
+ * Loop dump (-dL) of the do/while form: move_movables doubles insn_count
+ * cumulatively for each already-moved invariant it considers, in insn
+ * order, so the open loop's -1 (r154, earlier in the body) is weighed
+ * before the read loop's 0x100 (r164, life 39 against 246 insns, now
+ * quadrupled) and 0x100 becomes "not desirable". The original must not
+ * present the -1 as a re-moved invariant ahead of 0x100. Also tried: port
+ * as s32, while (1)/for (;;) open loops with break (28-38 instructions). */
 /* Read the save file in 100h chunks into a 2100h block (a failed read
  * closes the file and frees the block) and apply it when its sum
  * matches (a statement macro). */
@@ -2416,7 +2433,15 @@ u8 func_801CB9E8(u8 port, u8 slot) {
  * before the name loop; the original places it after the play-time load
  * (5 differing instructions, local scorer, for every order of the three
  * payload stores and the name initialisation). The COPY_NAME block gives
- * the original's s0 name pointer / s1 row index allocation. */
+ * the original's s0 name pointer / s1 row index allocation.
+ * Sched1 dump (-dS): the block's sinks (name = GAME_NAMES, i = 0, the
+ * hoisted &codes/&encoded and the three stores) tie on priority and are
+ * taken bottom-up by descending LUID, so the original's order (i, &codes,
+ * &encoded, time load, name, stores) needs the name set to come after the
+ * time load and after the loop-hoisted addresses in insn order, or to be a
+ * register birth (set once). All 24 orders of the four statements score
+ * 5-8; name = D_8006D634.names[0][0], a for-init name, name per row
+ * (&GAME_NAMES[i * 20]) and `i = 0` reuse do not help. */
 void func_801CBA4C(MenuSavePayload *payload, u8 port, u8 digit) {
     u8 codes[24];
     u8 encoded[20];
@@ -2712,10 +2737,23 @@ u8 func_801CBD90(u8 kind) {
  * card and 44 otherwise, and refreshes the listing. Returns 1 when there
  * was no card. */
 #ifdef NON_MATCHING
-/* Differs in register allocation and spills (the original keeps &tempName
- * in a saved register) and block placement; do/while (0) blocks around the
- * read/write retry sections get 131 -> 111 differing instructions (local
- * scorer) but not the allocation. */
+/* Remaining (local scorer 117; nm_diff 80 lines):
+ * - Block placement: the original emits the copy-failure block (close both,
+ *   rebuild the temporary name, erase it) between the open-temp failure
+ *   block and the header write. Placing it there with
+ *   `} else if (0) { fail: ... } else {` reproduces the layout and every
+ *   other difference except the two below (nm_diff 50 lines).
+ * - Allocation: the original keeps &tempName (hoisted out of the outer loop)
+ *   in fp and spills src to 4e0 (stored by sw, read back by lbu). Here src
+ *   (refs 14, live 266, priority 1578) outranks &tempName (refs 17, live
+ *   515, priority 1320). Writing the three src retry loops as goto loops
+ *   drops src to 11 refs and gives exactly the original allocation, but
+ *   those loops then lose the lbu (the argument mask is combined away) and
+ *   the srcFd copy placement, so the originals are real loops and src's
+ *   weight must come out lower some other way.
+ * - Scheduling: the full-card block (`proceed = 0` / `again = 0` sit
+ *   between the argument loads in the original) and `written += 0x200`
+ *   (the original fills the header[3] load delay with it). */
 u8 func_801CC6D8(void) {
     char destName[64];
     char other[8];
@@ -2735,12 +2773,13 @@ u8 func_801CC6D8(void) {
     u8 noCard;
     u8 exists;
     u8 retry;
-    u8 phase;
+    s32 phase;
     s32 fd;
     s32 srcFd;
     s32 destFd;
     s32 written;
     s32 i;
+    s32 slot;
 
     full = 0;
     first = 1;
@@ -2815,17 +2854,18 @@ u8 func_801CC6D8(void) {
                     src = 1;
                 }
                 if (D_800625A0->card->result[dest] == -2) {
-                    if (!func_801CB8AC(dest)) {
+                    if (func_801CB8AC(dest)) {
+                        func_801D2F4C(0x26);
+                        if (func_80040574(other)) {
+                            func_801D32B4();
+                            func_801CACF8(0x5c, 0xff, 0);
+                        } else {
+                            func_801D32B4();
+                            proceed = 0;
+                        }
+                    } else {
                         D_800625A0->markers->unk144[0] = 1;
                         continue;
-                    }
-                    func_801D2F4C(0x26);
-                    if (func_80040574(other)) {
-                        func_801D32B4();
-                        func_801CACF8(0x5c, 0xff, 0);
-                    } else {
-                        func_801D32B4();
-                        proceed = 0;
                     }
                 }
             }
@@ -2909,13 +2949,13 @@ u8 func_801CC6D8(void) {
                                         func_801C8CA4(dest);
                                     }
                                 } while (fd == 0 && --retry != 0);
-                                written = 0x200;
                                 if (fd == 0) {
                                     close(srcFd);
                                     close(destFd);
                                     destFd = 0;
                                     func_800405B4(tempName);
                                 }
+                                written = 0x200;
                                 phase = 0;
                                 func_801CAE08(1);
                                 for (;;) {
@@ -2977,17 +3017,17 @@ u8 func_801CC6D8(void) {
                     D_800625A0->sounds = 0;
                     func_801CACF8(0x5c, 0xff, 0);
                 } else {
-                    func_801CACF8(full ? 0xac : 0x44, 0xff, 0);
+                    func_801CACF8(!full ? 0x44 : 0xac, 0xff, 0);
                 }
                 func_801CAE08(0);
                 D_800625A0->card->mode = 2;
                 while (D_800625A0->cardPollTimer != 1) {
                     func_801C7BF4();
                 }
-                for (i = 0; i < 32; i++) {
-                    D_800625A0->card->fileSlots[i] = 0xff;
-                    D_800625A0->card->ours[i] = 0;
-                    D_800625A0->card->files[i].state = 0;
+                for (slot = 0; slot < 32; slot++) {
+                    D_800625A0->card->fileSlots[slot] = 0xff;
+                    D_800625A0->card->ours[slot] = 0;
+                    D_800625A0->card->files[slot].state = 0;
                 }
                 D_800625A0->card->scanned[0] = 0;
                 D_800625A0->card->scanned[1] = 0;
@@ -6706,7 +6746,16 @@ void func_801DB5E4(u8 mode) {
  * through inv->ids taken after the count reaches zero, and 801e31c0 is
  * called without a prototype (its result is used unmasked). With
  * INVENTORY used directly CSE knows the base and orders the adds as the
- * original, but the clear folds into 150(&counts[idx]). */
+ * original, but the clear folds into 150(&counts[idx]).
+ * Mechanism (GCC source): expand emits the pointer first for every pointer
+ * + index form (pointer_int_sum, both_summands), so idx-first can only come
+ * from cse's fold_rtx, which puts an operand with a known constant value
+ * second. The original's base must therefore be known constant in the
+ * blocks of both adds while still being one spilled pseudo. Tried: the
+ * clear as inv->ids[idx], ((u8 *)inv)[idx + 150], inv->counts[idx + 150],
+ * a u8 *base = D_8006F5C4 (all fold into 0x96(s7), 69-75), D_8006F5C4[idx
+ * + 150] (right order, but loop hoists the address, 68), and inv set at
+ * the loop top or before the count test (42-79). */
 u8 func_801DB920(s32 row, s32 entry) {
     u16 marks;
     u8 running;
