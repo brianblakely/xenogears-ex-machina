@@ -442,8 +442,8 @@ void func_80070CC8(void) {
 
     size = D_8005A4E0->sizes[BUNDLE_PALETTES] + 0x10;
     palettes = func_80031BDC(size, 1);
-    entry = palettes;
     func_8007008C(size, BUNDLE_COMPONENT(BUNDLE_PALETTES), palettes);
+    entry = palettes;
     count = *entry++;
     for (i = 0; i < count; i++) {
         func_800771F8((u32 *)(*entry++ + (s32)palettes));
@@ -451,8 +451,8 @@ void func_80070CC8(void) {
 
     size = D_8005A4E0->sizes[BUNDLE_IMAGES] + 0x10;
     images = func_80031BDC(size, 0);
-    entry = images;
     func_8007008C(size, BUNDLE_COMPONENT(BUNDLE_IMAGES), images);
+    entry = images;
     count = *entry;
     for (i = 0; i < count; i++) {
         x = D_800B1F78.slot[i].x;
