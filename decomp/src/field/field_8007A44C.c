@@ -1356,20 +1356,14 @@ void func_8007D93C(s32 channel) {
     D_800B2078.fades[channel].abr = 2;
 }
 
-#ifdef NON_MATCHING
 /* Link each active fade channel's tile and draw mode into `ot` (channel 1
- * one entry further); a channel whose levels reached zero stops.
- * NON_MATCHING (measured 118 instruction edits; ours 604 bytes, original
- * 692): the original strength-reduces more of the loop (the mode and tile
- * offsets buffer*12/16 + i*0x58 and the tile base as separate induction
- * values, spilled with ot, the fade base and the 0xff000000 mask to a
- * 0x78-byte frame), computes ot + (i == 1) with a store-flag instead of a
- * branch, and loads abr with lh. Passing the tile/mode expressions to
- * addPrim directly reproduces the spills but not the tile colour stores. */
+ * one entry further); a channel whose levels reached zero stops. The
+ * channel's prims are addressed directly in each statement (loop strength
+ * reduction turns them into the original's separate induction values), and
+ * the entry flag is a variable so it is computed with a store-flag. The
+ * original reads abr signed (lh). */
 void func_8007DA44(u32 *ot, s32 buffer) {
-    DR_MODE *mode;
-    TILE *tile;
-    u32 *entry;
+    s32 second;
     s32 i;
 
     for (i = 0; i < 2; i++) {
@@ -1378,15 +1372,13 @@ void func_8007DA44(u32 *ot, s32 buffer) {
             D_800AFE3C[i].x = 0;
             D_800AFE3C[i].y = 0;
             D_800AFE3C[i].h = 0xE0;
-            mode = &D_800B2078.fades[i].modes[buffer];
-            SetDrawMode(mode, 0, 0, GetTPage(0, D_800B2078.fades[i].abr, 0, 0), &D_800AFE3C[i]);
-            tile = &D_800B2078.fades[i].tiles[buffer];
-            tile->r0 = D_800B2078.fades[i].level[0] >> 8;
-            tile->g0 = D_800B2078.fades[i].level[1] >> 8;
-            tile->b0 = D_800B2078.fades[i].level[2] >> 8;
-            entry = &ot[i == 1];
-            addPrim(entry, tile);
-            addPrim(entry, mode);
+            SetDrawMode(&D_800B2078.fades[i].modes[buffer], 0, 0, GetTPage(0, (s16)D_800B2078.fades[i].abr, 0, 0),
+                        &D_800AFE3C[i]);
+            setRGB0(&D_800B2078.fades[i].tiles[buffer], D_800B2078.fades[i].level[0] >> 8,
+                    D_800B2078.fades[i].level[1] >> 8, D_800B2078.fades[i].level[2] >> 8);
+            second = i == 1;
+            addPrim(&ot[second], &D_800B2078.fades[i].tiles[buffer]);
+            addPrim(&ot[second], &D_800B2078.fades[i].modes[buffer]);
             if (D_800B2078.fades[i].level[0] >> 8 == 0 && D_800B2078.fades[i].level[1] >> 8 == 0
                 && D_800B2078.fades[i].level[2] >> 8 == 0) {
                 D_800B2078.fades[i].active = 0;
@@ -1395,10 +1387,6 @@ void func_8007DA44(u32 *ot, s32 buffer) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8007DA44);
-#endif
-
 
 /* Move a displayed window's choice (+382 over +380 lines) with the pad and
  * light its line; a window with +410 set lights none. */
