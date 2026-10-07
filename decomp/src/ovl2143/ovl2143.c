@@ -658,6 +658,20 @@ void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, 
     }
 }
 
+/* Step one coordinate along a delta track: a signed byte delta, or -0x80
+ * followed by an absolute 16-bit value (low byte first). */
+#define TRACK_STEP(dst, pos)                \
+    {                                       \
+        s8 d = *(pos)++;                    \
+        if (d != -0x80) {                   \
+            (dst) += d;                     \
+        } else {                            \
+            low = *(pos)++;                 \
+            high = *(s8 *)(pos)++;          \
+            (dst) = low | (high << 8);      \
+        }                                   \
+    }
+
 /* Step the tweens attached to each node of a hierarchy: its rotation
  * (attachment 0: set, delta or add from a track, interpolate, approach,
  * spin, or turn toward a point within a growing limit), position
@@ -666,28 +680,22 @@ void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, 
  * released (or restarted when looping: tracks rewind, others stop). Returns
  * flags: 0x100/0x200/0x400 some tween ran/ended/looped (1/2/4 when it has
  * `tag`). As in the original, the "spin" stop clears the step of the last
- * slot a computing kind used, which may belong to an earlier node.
- * NON_MATCHING (12 bytes shorter): the original stores the third rotation
- * delta in both arms (its other track steps share one store), the position
- * track steps keep the delta and track pointer in a0/v1 the other way round,
- * and a few temporaries get other registers. */
-#ifdef NON_MATCHING
+ * slot a computing kind used, which may belong to an earlier node. */
 s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, s32 tag, s32 scale) {
     PoolSlot *slot;
     PoolSlot *last;
     u8 *track;
     SVECTOR move;
     VECTOR moved;
-    u32 count;
     u32 i;
+    u32 count;
     s32 result = 0;
     u32 kind;
     u32 pos_kind;
     u8 mode;
-    s32 time;
+    s16 time;
     s32 dx, dy, dz, dist, limit, turn;
-    s16 sx, sy, sz;
-    s32 delta, low, high;
+    s32 low, high;
 
     count = parts->count;
     for (i = 0; i < count; i++, parts++) {
@@ -714,34 +722,13 @@ s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, s32 tag, s32 scale) {
                 break;
             case 1:
                 if (!(kind & 0x10)) {
-                    delta = *(s8 *)slot->u.track.pos++;
-                    if (delta != -0x80) {
-                        parts->rot.vx += delta;
-                    } else {
-                        low = *slot->u.track.pos++;
-                        high = *(s8 *)slot->u.track.pos++;
-                        parts->rot.vx = low | (high << 8);
-                    }
+                    TRACK_STEP(parts->rot.vx, slot->u.track.pos);
                 }
                 if (!(kind & 0x20)) {
-                    delta = *(s8 *)slot->u.track.pos++;
-                    if (delta != -0x80) {
-                        parts->rot.vy += delta;
-                    } else {
-                        low = *slot->u.track.pos++;
-                        high = *(s8 *)slot->u.track.pos++;
-                        parts->rot.vy = low | (high << 8);
-                    }
+                    TRACK_STEP(parts->rot.vy, slot->u.track.pos);
                 }
                 if (!(kind & 0x40)) {
-                    delta = *(s8 *)slot->u.track.pos++;
-                    if (delta != -0x80) {
-                        parts->rot.vz += delta;
-                    } else {
-                        low = *slot->u.track.pos++;
-                        high = *(s8 *)slot->u.track.pos++;
-                        parts->rot.vz = low | (high << 8);
-                    }
+                    TRACK_STEP(parts->rot.vz, slot->u.track.pos);
                 }
                 break;
             case 2:
@@ -762,13 +749,14 @@ s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, s32 tag, s32 scale) {
                 }
                 break;
             case 3:
-                time = (s16)(slot->time + 1);
+                time = slot->time + 1;
                 parts->rot.vx = slot->u.value[0] + slot->u.value[3] * time / slot->duration;
                 parts->rot.vy = slot->u.value[1] + slot->u.value[4] * time / slot->duration;
                 last = slot;
                 parts->rot.vz = slot->u.value[2] + slot->u.value[5] * time / slot->duration;
                 break;
-            case 4:
+            case 4: {
+                s16 sx, sy, sz;
                 sx = (slot->u.value[3] - parts->rot.vx) / slot->duration;
                 sy = (slot->u.value[4] - parts->rot.vy) / slot->duration;
                 sz = (slot->u.value[5] - parts->rot.vz) / slot->duration;
@@ -780,11 +768,12 @@ s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, s32 tag, s32 scale) {
                     parts->rot.vz = slot->u.value[5];
                 } else {
                     parts->rot.vx += sx;
-                    parts->rot.vz += sz;
                     parts->rot.vy += sy;
+                    parts->rot.vz += sz;
                     slot->time = 0;
                 }
                 break;
+            }
             case 5:
                 slot->u.value[0] += slot->u.value[3];
                 parts->rot.vx += slot->u.value[0];
@@ -889,34 +878,13 @@ s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, s32 tag, s32 scale) {
                 break;
             case 1:
                 if (!(pos_kind & 0x10)) {
-                    delta = *(s8 *)slot->u.track.pos++;
-                    if (delta != -0x80) {
-                        parts->pos[0] += delta;
-                    } else {
-                        low = *slot->u.track.pos++;
-                        high = *(s8 *)slot->u.track.pos++;
-                        parts->pos[0] = low | (high << 8);
-                    }
+                    TRACK_STEP(parts->pos[0], slot->u.track.pos);
                 }
                 if (!(pos_kind & 0x20)) {
-                    delta = *(s8 *)slot->u.track.pos++;
-                    if (delta != -0x80) {
-                        parts->pos[1] += delta;
-                    } else {
-                        low = *slot->u.track.pos++;
-                        high = *(s8 *)slot->u.track.pos++;
-                        parts->pos[1] = low | (high << 8);
-                    }
+                    TRACK_STEP(parts->pos[1], slot->u.track.pos);
                 }
                 if (!(pos_kind & 0x40)) {
-                    delta = *(s8 *)slot->u.track.pos++;
-                    if (delta != -0x80) {
-                        parts->pos[2] += delta;
-                    } else {
-                        low = *slot->u.track.pos++;
-                        high = *(s8 *)slot->u.track.pos++;
-                        parts->pos[2] = low | (high << 8);
-                    }
+                    TRACK_STEP(parts->pos[2], slot->u.track.pos);
                 }
                 break;
             case 2:
@@ -950,13 +918,14 @@ s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, s32 tag, s32 scale) {
                 parts->pos[2] += scale * moved.vz >> 12;
                 break;
             case 3:
-                time = (s16)(slot->time + 1);
+                time = slot->time + 1;
                 parts->pos[0] = slot->u.value[0] + slot->u.value[3] * time / slot->duration;
                 parts->pos[1] = slot->u.value[1] + slot->u.value[4] * time / slot->duration;
                 last = slot;
                 parts->pos[2] = slot->u.value[2] + slot->u.value[5] * time / slot->duration;
                 break;
-            case 4:
+            case 4: {
+                s16 sx, sy, sz;
                 sx = (slot->u.value[3] - parts->pos[0]) / slot->duration;
                 sy = (slot->u.value[4] - parts->pos[1]) / slot->duration;
                 sz = (slot->u.value[5] - parts->pos[2]) / slot->duration;
@@ -973,6 +942,7 @@ s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, s32 tag, s32 scale) {
                     slot->time = 0;
                 }
                 break;
+            }
             case 5:
                 slot->u.value[0] += slot->u.value[3];
                 parts->pos[0] += slot->u.value[0];
@@ -1021,13 +991,14 @@ s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, s32 tag, s32 scale) {
             mode = slot->kind & 0xF;
             switch (mode) {
             case 3:
-                time = (s16)(slot->time + 1);
+                time = slot->time + 1;
                 parts->scale[0] = slot->u.value[0] + slot->u.value[3] * time / slot->duration;
                 parts->scale[1] = slot->u.value[1] + slot->u.value[4] * time / slot->duration;
                 last = slot;
                 parts->scale[2] = slot->u.value[2] + slot->u.value[5] * time / slot->duration;
                 break;
-            case 4:
+            case 4: {
+                s16 sx, sy, sz;
                 sx = (slot->u.value[3] - slot->u.value[0]) / slot->duration;
                 sy = (slot->u.value[4] - slot->u.value[1]) / slot->duration;
                 sz = (slot->u.value[5] - slot->u.value[2]) / slot->duration;
@@ -1047,6 +1018,7 @@ s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, s32 tag, s32 scale) {
                     slot->time = 0;
                 }
                 break;
+            }
             case 5:
                 slot->u.value[0] += slot->u.value[3];
                 parts->scale[0] += slot->u.value[0];
@@ -1089,9 +1061,6 @@ s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, s32 tag, s32 scale) {
     }
     return result;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DDBF8);
-#endif
 
 /* Apply a keyframe to the nodes after the root: each rotation or position
  * that changed is set unless the node's tween is kept (tag 0xff). Returns
@@ -2217,9 +2186,13 @@ void func_801E1880(Actor **actors) {
  * then `count` zeroed entries. On an allocation failure the record is left
  * empty. The original keeps the loop state in caller-saved registers across
  * SetPolyGT3 (saved on the stack).
- * NON_MATCHING (8 bytes shorter): register allocation and spills differ
- * throughout (the original spills `record` and keeps fewer values live
- * across SetPolyGT3: it saves 8 caller-saved registers there, this C 12). */
+ * NON_MATCHING (4 bytes shorter): register allocation and spills differ
+ * throughout (the original keeps `record` in a stack slot at 0x10 and
+ * reloads it at each use; this C gives it a caller-saved register). In the
+ * strip loop the original multiplies v_step by k and k + 1 at each use,
+ * reloading v_step from its stack home, and computes first + 1 per triangle;
+ * this C strength-reduces them (a `goto`-formed strip loop reproduces that
+ * but not the rest). Its triangle loops also leave v_step * (k + 1) inside. */
 #ifdef NON_MATCHING
 void func_801E1A14(Record24 *record, u16 *table, s16 angle_base, s32 scale, s16 ox, s16 oy, s16 oz,
                    s32 count, s16 tx, s16 ty, s16 u_span, s16 v_span, s16 clut_x, s16 clut_y, u8 b0,
@@ -2230,19 +2203,19 @@ void func_801E1A14(Record24 *record, u16 *table, s16 angle_base, s32 scale, s16 
     RingPoint *points;
     RingPoint *point;
     RingPoly *polys;
-    POLY_GT3 *prim;
     u16 *counts;
     u16 *radii;
     u8 *angles;
+    Record24Entry *entry;
     u16 tpage, clut;
     s32 page_x, page_y;
     s32 u_base, v_base;
     s16 u_step;
-    s32 u, u_next;
     u16 v_step;
     s32 start, first;
+    s32 u, u_next;
     s32 i, k, b;
-    u16 n;
+    s32 n;
     u16 total;
 
     record->rings = *table++;
@@ -2314,44 +2287,43 @@ void func_801E1A14(Record24 *record, u16 *table, s16 angle_base, s32 scale, s16 
     v_base = ty - (page_y << 8);
     start = 0;
     u_step = u_span / (record->rings - 1);
-    for (i = 0, u = 0, u_next = u_step; i < record->rings - 1; i++, u += u_step, u_next += u_step) {
+    for (i = 0, u = 0; i < record->rings - 1; i++, u += u_step) {
+        u_next = u + u_step;
         n = counts[1];
-        if (counts[0] < n) {
+        if (counts[0] < counts[1]) {
             n = counts[0];
         }
         v_step = v_span / n;
         first = start;
         for (k = 0; k < n; k++, first++) {
             polys->index[0] = first;
-            polys->index[2] = first + 1;
             polys->index[1] = first + counts[0] + 1;
+            polys->index[2] = first + 1;
             for (b = 0; b < 2; b++) {
-                prim = &polys->prim[b];
-                SetPolyGT3(prim);
-                prim->tpage = tpage;
-                prim->u0 = u_base + u;
-                prim->v0 = v_base + v_step * k;
-                prim->clut = clut;
-                prim->u1 = u_base + u_next;
-                prim->v1 = v_base + v_step * k;
-                prim->u2 = u_base + u;
-                prim->v2 = v_base + v_step * (k + 1);
+                SetPolyGT3(&polys->prim[b]);
+                polys->prim[b].tpage = tpage;
+                polys->prim[b].u0 = u_base + u;
+                polys->prim[b].v0 = v_base + v_step * k;
+                polys->prim[b].clut = clut;
+                polys->prim[b].u1 = u_base + u_next;
+                polys->prim[b].v1 = v_base + v_step * k;
+                polys->prim[b].u2 = u_base + u;
+                polys->prim[b].v2 = v_base + v_step * (k + 1);
             }
             polys++;
             polys->index[0] = first + counts[0] + 1;
-            polys->index[2] = first + 1;
             polys->index[1] = first + counts[0] + 2;
+            polys->index[2] = first + 1;
             for (b = 0; b < 2; b++) {
-                prim = &polys->prim[b];
-                SetPolyGT3(prim);
-                prim->tpage = tpage;
-                prim->u0 = u_base + u_next;
-                prim->v0 = v_base + v_step * k;
-                prim->clut = clut;
-                prim->u1 = u_base + u_next;
-                prim->v1 = v_base + v_step * (k + 1);
-                prim->u2 = u_base + u;
-                prim->v2 = v_base + v_step * (k + 1);
+                SetPolyGT3(&polys->prim[b]);
+                polys->prim[b].tpage = tpage;
+                polys->prim[b].u0 = u_base + u_next;
+                polys->prim[b].v0 = v_base + v_step * k;
+                polys->prim[b].clut = clut;
+                polys->prim[b].u1 = u_base + u_next;
+                polys->prim[b].v1 = v_base + v_step * (k + 1);
+                polys->prim[b].u2 = u_base + u;
+                polys->prim[b].v2 = v_base + v_step * (k + 1);
             }
             polys++;
         }
@@ -2366,19 +2338,20 @@ void func_801E1A14(Record24 *record, u16 *table, s16 angle_base, s32 scale, s16 
     record->b[5] = b5;
     record->entry_count = count;
     if ((s16)count > 0) {
-        record->block18 = func_80031BDC((s16)count * sizeof(Record24Entry), 0);
-        if (record->block18 == NULL) {
+        entry = func_80031BDC((s16)count * sizeof(Record24Entry), 0);
+        if (entry == NULL) {
             record->entry_count = 0;
         }
-        for (i = 0; i < record->entry_count; i++) {
-            record->block18[i].h0 = 0;
-            record->block18[i].h2 = 0;
-            record->block18[i].h4 = 0;
-            record->block18[i].h6 = 0;
-            record->block18[i].h8 = 0;
-            record->block18[i].hA = 0;
-            record->block18[i].hC = 0;
-            record->block18[i].hE = 0;
+        record->block18 = entry;
+        for (i = 0; i < record->entry_count; i++, entry++) {
+            entry->h0 = 0;
+            entry->h2 = 0;
+            entry->h4 = 0;
+            entry->h6 = 0;
+            entry->h8 = 0;
+            entry->hA = 0;
+            entry->hC = 0;
+            entry->hE = 0;
         }
     } else {
         record->block18 = NULL;
@@ -2395,12 +2368,7 @@ INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E1A14);
  * triangles, and the visible triangles are lit (front and back colours) and
  * queued. As in the original, a triangle the GTE flags as off screen does
  * not advance the triangle pointer, and one variable is both the collision
- * loop's counter and the GTE flag store.
- * NON_MATCHING: same size and instructions except the normal-clearing and
- * normal-averaging loops: the original strength-reduces their point address
- * to &p[i].normal[2] (fields at -0xa..0), this C to &p[i] (fields at
- * 0xa..0x14). */
-#ifdef NON_MATCHING
+ * loop's counter and the GTE flag store. */
 void func_801E22F8(Record24 *record, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buffer, s32 scale,
                    s16 floor) {
     VECTOR d;
@@ -2482,10 +2450,11 @@ void func_801E22F8(Record24 *record, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buff
     }
     p = *record->block1C;
     for (i = 0; i < record->points; i++) {
-        p[i].normal_count = 0;
-        p[i].normal[0] = 0;
-        p[i].normal[1] = 0;
-        p[i].normal[2] = 0;
+        p->normal_count = 0;
+        p->normal[0] = 0;
+        p->normal[1] = 0;
+        p->normal[2] = 0;
+        p++;
     }
     poly = record->block20;
     p = *record->block1C;
@@ -2519,9 +2488,10 @@ void func_801E22F8(Record24 *record, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buff
     }
     p = *record->block1C;
     for (i = 0; i < record->points; i++) {
-        p[i].normal[0] /= (s16)p[i].normal_count;
-        p[i].normal[1] /= (s16)p[i].normal_count;
-        p[i].normal[2] /= (s16)p[i].normal_count;
+        p->normal[0] /= (s16)p->normal_count;
+        p->normal[1] /= (s16)p->normal_count;
+        p->normal[2] /= (s16)p->normal_count;
+        p++;
     }
     SetRotMatrix(m);
     SetTransMatrix(m);
@@ -2588,9 +2558,6 @@ void func_801E22F8(Record24 *record, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buff
         poly++;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E22F8);
-#endif
 
 /* Release a record's heap blocks. */
 void func_801E3438(Record24 *record) {
@@ -4339,7 +4306,7 @@ void func_801E738C(s32 slot_count) {
         D_801E8670[i] = 0;
     }
     for (j = 7; j >= 0; j--) {
-        D_801E85F4[j].w0 = 0;
+        D_801E85F4[j].models = NULL;
     }
     /* Both anchors' active flags, by byte offset. */
     for (offset = sizeof(Anchor); offset >= 0; offset -= sizeof(Anchor)) {
@@ -4352,26 +4319,27 @@ void func_801E738C(s32 slot_count) {
  * group into a free model list and build the hierarchy at `pos`, set up its
  * shadow quads, image animations and records24, reset its script (unless bit
  * 6) and keep a compacted copy of its model group (unless bit 1).
- * NON_MATCHING (same size): register allocation differs (the original has
- * actor s3, file then the loop index s4, links s0, desc/p s2), and the
- * original rematerializes &D_801E85F4 after func_801DC22C where this C keeps
- * it in s0. */
-#ifdef NON_MATCHING
+ * The model list is attached even when the files were already relocated. */
 void func_801E742C(s32 index, u16 flags, ActorScript *script, ActorFile *file, s16 x, s16 y, s16 z,
                    s16 w, s16 *pos) {
     Actor *actor;
     ActorInfo *info;
-    ActorDesc *desc;
+    /* The descriptor, read as its header and then as the records24
+     * parameter words that follow it. */
+    union {
+        ActorDesc *header;
+        s16 *p;
+    } desc;
     SoundBlock *bank;
     ScriptBlock *block;
     void *images;
     u8 *group;
     HierarchyLink *links;
     s32 size;
+    u8 *compact;
     s32 i, k;
     s32 count;
     Record24 *record;
-    s16 *p;
     POLY_FT4 *prim;
 
     func_80032498(4, 0);
@@ -4398,16 +4366,16 @@ void func_801E742C(s32 index, u16 flags, ActorScript *script, ActorFile *file, s
         }
     }
     info = file->info;
-    desc = info->desc;
+    desc.header = info->desc;
     images = file->images;
     group = file->group;
     links = file->links;
     D_801E8670[index] = actor;
-    actor->size[0] = desc->size[0];
-    actor->size[1] = desc->size[1];
-    actor->size[2] = desc->size[2];
-    actor->reference = desc->reference;
-    actor->flags = desc->flags;
+    actor->size[0] = desc.header->size[0];
+    actor->size[1] = desc.header->size[1];
+    actor->size[2] = desc.header->size[2];
+    actor->reference = desc.header->reference;
+    actor->flags = desc.header->flags;
     size = (u8 *)links - group;
     if (actor->flags & 0x200) {
         func_80030988(2, 2, 0x40, 0x40);
@@ -4422,13 +4390,13 @@ void func_801E742C(s32 index, u16 flags, ActorScript *script, ActorFile *file, s
         D_801E8638 = func_80031BDC(size, 1);
         memcpy(D_801E8638, group, size);
         for (D_801E8634 = 0; D_801E8634 < 8; D_801E8634++) {
-            if (D_801E85F4[D_801E8634].w0 == 0) {
+            if (D_801E85F4[D_801E8634].models == NULL) {
                 break;
             }
         }
-        func_801DC22C(D_801E8638, (ModelList *)&D_801E85F4[D_801E8634]);
-        actor->models = (ModelList *)&D_801E85F4[D_801E8634];
+        func_801DC22C(D_801E8638, &D_801E85F4[D_801E8634]);
     }
+    actor->models = &D_801E85F4[D_801E8634];
     if (!(flags & 0x40)) {
         if (actor->flags & 4) {
             actor->parts = func_801DC2D0(actor->models, links, 2, 0, 0, 0, 0, 0);
@@ -4474,10 +4442,10 @@ void func_801E742C(s32 index, u16 flags, ActorScript *script, ActorFile *file, s
         actor->prims[i].u3 = 0xF;
         actor->prims[i].v3 = 0xEF;
     }
-    actor->scale = desc->scale;
-    actor->channel_count = desc->channel_count;
+    actor->scale = desc.header->scale;
+    actor->channel_count = desc.header->channel_count;
     func_801E8510(actor);
-    actor->count10E = desc->count30;
+    actor->count10E = desc.header->count30;
     if (actor->count10E != 0) {
         actor->records30 = func_80031BDC(actor->count10E * sizeof(ImageAnim), 0);
         for (i = 0; i < actor->count10E; i++) {
@@ -4487,30 +4455,32 @@ void func_801E742C(s32 index, u16 flags, ActorScript *script, ActorFile *file, s
             actor->records30[i].work = NULL;
         }
     }
-    actor->count10D = desc->count24;
+    actor->count10D = desc.header->count24;
     if (actor->count10D != 0) {
-        p = desc->records;
+        desc.p = desc.header->records;
         record = func_80031BDC(actor->count10D * sizeof(Record24), 0);
         actor->records24 = record;
-        for (i = 0; i < actor->count10D; record++, i++) {
-            count = p[17];
-            record->h0 = *p++;
+        for (i = 0; i < actor->count10D; i++, record++) {
+            count = desc.p[17];
+            record->h0 = *desc.p++;
             /* The parameters are read in order. */
-            func_801E1A14(record, (u16 *)info->tables[i], *p++, *p++, *p++, *p++, *p++, count, x + *p++,
-                          y + *p++, *p++, *p++, z + *p++, w, *p++, *p++, *p++, *p++, *p++, *p++);
-            p += 2;
+            func_801E1A14(record, (u16 *)info->tables[i], *desc.p++, *desc.p++, *desc.p++,
+                          *desc.p++, *desc.p++, count, x + *desc.p++, y + *desc.p++, *desc.p++,
+                          *desc.p++, z + *desc.p++, w, *desc.p++, *desc.p++, *desc.p++, *desc.p++,
+                          *desc.p++, *desc.p);
+            desc.p += 2; /* past the last parameter and the entry count read above */
             for (k = 0; k < count; k++) {
-                record->block18[k].h6 = *p++;
-                record->block18[k].hE = *p++;
-                record->block18[k].h0 = *p++;
-                record->block18[k].h2 = *p++;
-                record->block18[k].h4 = *p++;
+                record->block18[k].h6 = *desc.p++;
+                record->block18[k].hE = *desc.p++;
+                record->block18[k].h0 = *desc.p++;
+                record->block18[k].h2 = *desc.p++;
+                record->block18[k].h4 = *desc.p++;
             }
         }
     }
+    actor->index = index;
     actor->b22 = 0;
     actor->active = 1;
-    actor->index = index;
     if (!(flags & 0x40)) {
         block = script->script;
         actor->ownerB0 = script->owner;
@@ -4521,19 +4491,16 @@ void func_801E742C(s32 index, u16 flags, ActorScript *script, ActorFile *file, s
         func_8002C644(D_801E8638);
         func_8002C4BC(D_801E8638);
         size = func_80031894(D_801E8638);
-        group = func_80031BDC(size, 0);
-        memcpy(group, D_801E8638, size);
+        compact = func_80031BDC(size, 0);
+        memcpy(compact, D_801E8638, size);
         func_800320E8(D_801E8638);
         func_801DCE18(actor->models, 0);
-        func_801DC22C(group, actor->models);
-        actor->group = group;
+        func_801DC22C(compact, actor->models);
+        actor->group = compact;
     } else {
         actor->group = NULL;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E742C);
-#endif
 
 /* Advance the scene by the elapsed half-frames: step every actor, carry the
  * carried ones, place the anchors, then draw the actors and particles. */
