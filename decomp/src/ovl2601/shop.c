@@ -1243,9 +1243,7 @@ void func_801D0C18(u32 gold, u8 *ids, u8 *amounts, s32 n, u8 *inv_ids, u8 *inv_c
  * the sale; confirming settles the sale. Items of kind 2 flagged unsellable
  * are left out. With `same_kind` every item is of kind `kind`, otherwise
  * `kinds` gives each one's kind; `member` is the member selling equipment.
- * Nonmatching: five temporary-register differences in the quantity return.
  */
-#ifdef NON_MATCHING
 void func_801D0E68(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds, u8 member) {
     u8 running = 1;
     u8 first = 1;
@@ -1415,8 +1413,8 @@ void func_801D0E68(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds,
         case 2:
             index = top + row;
             if (selectable[index] && chosen[index] - 1 >= 0) {
-                redraw = 1;
                 total -= price;
+                redraw = 1;
                 held[index]++;
                 new_gold -= price;
                 chosen[index]--;
@@ -1425,9 +1423,6 @@ void func_801D0E68(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds,
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/shop", func_801D0E68);
-#endif
 
 /*
  * Sell list 0: choose a party member by portrait, then sell from that
