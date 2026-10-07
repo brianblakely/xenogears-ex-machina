@@ -8,10 +8,6 @@
  * inventory with a cursor, the selected entry's description and its
  * windows. Confirm selects an entry, uses it when selected again or swaps
  * it with the selected one; cancel clears the selection or leaves. */
-#ifdef NON_MATCHING
-/* Nonmatching: its jump table lands at 801c50fc now; the scheduling around
- * the 0x51eb851f division differs and the case-4 tails cross-jump
- * differently. */
 u8 func_801DBE54(void) {
     u8 running;
     u8 windows;
@@ -20,7 +16,6 @@ u8 func_801DBE54(void) {
     s32 cursor;
     s32 cursorShown;
     s32 selected;
-    s32 next;
 
     running = 1;
     windows = 1;
@@ -33,12 +28,12 @@ u8 func_801DBE54(void) {
     func_801DBDB4();
     func_801DB02C(0);
     func_801DB02C(1);
-    do {
+    while (running) {
         func_801C7BF4();
         if (scroll != scrollShown) {
             func_801DA5BC(scroll);
-            scrollShown = scroll;
             func_801D3344(0xc, (u16)D_801EA72C * scroll / 100 + 0x12, (u16)D_801EA724);
+            scrollShown = scroll;
         }
         func_801DB0A8(cursor, scroll, 0, 0);
         if (cursor != cursorShown) {
@@ -57,16 +52,17 @@ u8 func_801DBE54(void) {
         case 4:
             if (selected == 0xff) {
                 selected = scroll * 2 + cursor;
-            } else if (scroll * 2 + cursor == selected) {
-                if (func_801DB920(scroll, cursor)) {
+            } else {
+                if (scroll * 2 + cursor == selected) {
+                    if (func_801DB920(scroll, cursor)) {
+                        scrollShown = 0xff;
+                        cursorShown = 0xff;
+                    }
+                } else {
+                    func_801DBD4C(scroll * 2 + cursor, selected);
                     scrollShown = 0xff;
                     cursorShown = 0xff;
                 }
-                selected = 0xff;
-            } else {
-                func_801DBD4C(scroll * 2 + cursor, selected);
-                scrollShown = 0xff;
-                cursorShown = 0xff;
                 selected = 0xff;
             }
             break;
@@ -78,50 +74,46 @@ u8 func_801DBE54(void) {
             }
             break;
         case 1:
-            next = cursor + 2;
-            if (next >= 16) {
+            if (cursor + 2 >= 16) {
                 if (D_801EA728 < ++scroll) {
                     scroll--;
                 }
             } else {
-                cursor = next;
+                cursor += 2;
             }
             cursorShown = 0xff;
             break;
         case 3:
-            next = cursor - 2;
-            if (next < 0) {
+            if (cursor - 2 < 0) {
                 if (--scroll < 0) {
                     scroll++;
                 }
             } else {
-                cursor = next;
+                cursor -= 2;
             }
             cursorShown = 0xff;
             break;
         case 0:
-            next = cursor + 1;
-            if (next >= 16) {
+            if (cursor + 1 >= 16) {
                 if (D_801EA728 < ++scroll) {
                     scroll--;
                 } else {
                     cursor = 14;
                 }
             } else {
-                cursor = next;
+                cursor++;
             }
             cursorShown = 0xff;
             break;
         case 2:
-            next = cursor - 1;
-            if (next < 0) {
+            if (cursor - 1 < 0) {
                 if (--scroll < 0) {
                     scroll++;
                 } else {
                     cursor = 1;
                 }
             } else {
-                cursor = next;
+                cursor--;
             }
             cursorShown = 0xff;
             break;
@@ -140,16 +132,13 @@ u8 func_801DBE54(void) {
             cursorShown = 0xff;
             break;
         }
-    } while (running);
+    }
     func_801D2484();
     func_801DB340(0);
     func_801DB340(1);
     func_801E8044(8, D_800625A0->party->unk38);
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801DBE54);
-#endif
 
 /* Open the file list screen of `kind` (0 load, 1 save, 2 the other labels). */
 void func_801DC1D4(u8 kind) {
