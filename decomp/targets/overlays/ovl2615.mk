@@ -10,10 +10,15 @@ LINKER_EXTRA := .local/decomp/ovl2615/undefined_syms_auto.txt .local/decomp/ovl2
 SOURCE_DIRS := decomp/src/ovl2615
 # Division checks are expanded inline (break 7 / break 6) in this image.
 MASPSX_FLAGS := --aspsx-version=2.34 --expand-div
-# battle_loader (801e62e0-801e70e8) and load_modes (801e7f4c-801e95bc) are
-# Cygnus CDK GCC 2.7.2 units with a later ASPSX (positive li as addiu), like
-# the 0x801fc000 battle modules; stage (801e70e8-801e7f4c) is GCC 2.6.3 again.
+# battle_loader (801e62e0-801e70e8), load_modes (801e7f4c-801e8964) and
+# burst_modes (801e8964-801e95bc) are Cygnus CDK GCC 2.7.2 units with a later
+# ASPSX (positive li as addiu), like the 0x801fc000 battle modules; stage
+# (801e70e8-801e7f4c) is GCC 2.6.3 again. burst_modes was split from
+# load_modes: its jump table (0x34) follows load_modes' (0x20) at 4 mod 8
+# with no pad, so it starts a new unit (docs/matching.md, jump tables).
 CC_battle_loader := 2.7.2-cdk
 CC_load_modes := 2.7.2-cdk
+CC_burst_modes := 2.7.2-cdk
 MASPSX_battle_loader := --aspsx-version=2.56
 MASPSX_load_modes := --aspsx-version=2.56
+MASPSX_burst_modes := --aspsx-version=2.56
