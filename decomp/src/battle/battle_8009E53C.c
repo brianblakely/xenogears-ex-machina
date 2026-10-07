@@ -886,10 +886,9 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
  * `tag`). As in the original, the "spin" stop clears the step of the last
  * slot a computing kind used, which may belong to an earlier node. Tag and
  * scale remain full words; packed escapes advance the cursor before reading
- * each byte. Nonmatching: the track pointer and delta take $a0/$v1 where the
- * original has $v1/$a0, the approach case stores vy before vz, the last
- * delta's two stores are cross-jumped into one, and several reload
- * temporaries ($t2-$t4) differ. */
+ * each byte. Nonmatching: only the approach case's add block differs: the
+ * original stores vx, vz, vy (loading vz before storing vx), this order
+ * vy, vx, vz (other orders change the step registers). */
 s32 func_800A0838(EffectPool *pool, ModelPart *part, s32 tag, s32 scale) {
     Tween *slot;
     Tween *last;
@@ -900,8 +899,10 @@ s32 func_800A0838(EffectPool *pool, ModelPart *part, s32 tag, s32 scale) {
     u32 count;
     s32 result = 0;
     u8 kind;
-    s32 time;
-    s32 dx, dy, dz, dist, limit, turn, angle;
+    u8 type;
+    u8 mode;
+    s16 time;
+    s32 dx, dy, dz, dist, limit, turn;
     s16 sx, sy, sz;
 
     count = part->index;
@@ -956,7 +957,7 @@ s32 func_800A0838(EffectPool *pool, ModelPart *part, s32 tag, s32 scale) {
                 }
                 goto check_rot;
             case 3:
-                time = (s16)(slot->time + 1);
+                time = slot->time + 1;
                 part->rotation.vx = slot->u.values[0] + slot->u.values[3] * time / slot->duration;
                 part->rotation.vy = slot->u.values[1] + slot->u.values[4] * time / slot->duration;
                 last = slot;
@@ -973,9 +974,9 @@ s32 func_800A0838(EffectPool *pool, ModelPart *part, s32 tag, s32 scale) {
                     part->rotation.vy = slot->u.values[4];
                     part->rotation.vz = slot->u.values[5];
                 } else {
+                    part->rotation.vy += sy;
                     part->rotation.vx += sx;
                     part->rotation.vz += sz;
-                    part->rotation.vy += sy;
                     slot->time = 0;
                 }
                 goto check_rot;
@@ -1000,8 +1001,7 @@ s32 func_800A0838(EffectPool *pool, ModelPart *part, s32 tag, s32 scale) {
                     turn -= 0x1000;
                 }
                 limit = slot->u.values[1] + (dist + slot->time) * slot->u.values[2] / slot->u.values[0];
-                angle = turn < 0 ? -turn : turn;
-                if (angle < limit) {
+                if (ABS(turn) < limit) {
                     part->rotation.vy += turn;
                 } else if (turn < 0) {
                     part->rotation.vy -= limit;
@@ -1013,8 +1013,7 @@ s32 func_800A0838(EffectPool *pool, ModelPart *part, s32 tag, s32 scale) {
                     if (turn >= 0x800) {
                         turn -= 0x1000;
                     }
-                    angle = turn < 0 ? -turn : turn;
-                    if (angle < limit) {
+                    if (ABS(turn) < limit) {
                         part->rotation.vx += turn;
                     } else if (turn < 0) {
                         part->rotation.vx -= limit;
@@ -1067,53 +1066,53 @@ s32 func_800A0838(EffectPool *pool, ModelPart *part, s32 tag, s32 scale) {
         }
         if (part->effects[1] != NULL) {
             slot = (Tween *)part->effects[1];
-            kind = slot->field2;
-            switch (kind & 0xF) {
+            type = slot->field2;
+            switch (type & 0xF) {
             case 0:
                 track = slot->u.track.cursor;
-                if (!(kind & 0x10)) {
+                if (!(type & 0x10)) {
                     part->translation[0] = *(s16 *)track;
                     track += 2;
                     slot->u.track.cursor += 2;
                 }
-                if (!(kind & 0x20)) {
+                if (!(type & 0x20)) {
                     part->translation[1] = *(s16 *)track;
                     track += 2;
                     slot->u.track.cursor += 2;
                 }
-                if (!(kind & 0x40)) {
+                if (!(type & 0x40)) {
                     part->translation[2] = *(s16 *)track;
                     slot->u.track.cursor += 2;
                 }
                 break;
             case 1:
-                if (!(kind & 0x10)) {
+                if (!(type & 0x10)) {
                     TRACK_DELTA(slot, part->translation[0]);
                 }
-                if (!(kind & 0x20)) {
+                if (!(type & 0x20)) {
                     TRACK_DELTA(slot, part->translation[1]);
                 }
-                if (!(kind & 0x40)) {
+                if (!(type & 0x40)) {
                     TRACK_DELTA(slot, part->translation[2]);
                 }
                 break;
             case 2:
                 track = slot->u.track.cursor;
-                if (!(kind & 0x10)) {
+                if (!(type & 0x10)) {
                     move.vx = *(u16 *)track;
                     track += 2;
                     slot->u.track.cursor += 2;
                 } else {
                     move.vx = 0;
                 }
-                if (!(kind & 0x20)) {
+                if (!(type & 0x20)) {
                     move.vy = *(u16 *)track;
                     track += 2;
                     slot->u.track.cursor += 2;
                 } else {
                     move.vy = 0;
                 }
-                if (!(kind & 0x40)) {
+                if (!(type & 0x40)) {
                     move.vz = *(u16 *)track;
                     slot->u.track.cursor += 2;
                 } else {
@@ -1128,7 +1127,7 @@ s32 func_800A0838(EffectPool *pool, ModelPart *part, s32 tag, s32 scale) {
                 part->translation[2] += scale * moved.vz >> 12;
                 break;
             case 3:
-                time = (s16)(slot->time + 1);
+                time = slot->time + 1;
                 part->translation[0] = slot->u.values[0] + slot->u.values[3] * time / slot->duration;
                 part->translation[1] = slot->u.values[1] + slot->u.values[4] * time / slot->duration;
                 last = slot;
@@ -1174,12 +1173,12 @@ s32 func_800A0838(EffectPool *pool, ModelPart *part, s32 tag, s32 scale) {
                         result |= 4;
                     }
                     result |= 0x400;
-                    if ((kind & 0xF) < 3) {
+                    if ((type & 0xF) < 3) {
                         slot->time = 0;
                         slot->u.track.cursor = slot->u.track.start;
                     } else {
                         slot->time = -1;
-                        if ((kind & 0xF) == 5) {
+                        if ((type & 0xF) == 5) {
                             last->u.values[3] = 0;
                             last->u.values[4] = 0;
                             last->u.values[5] = 0;
@@ -1196,10 +1195,10 @@ s32 func_800A0838(EffectPool *pool, ModelPart *part, s32 tag, s32 scale) {
         }
         if (part->effects[2] != NULL) {
             slot = (Tween *)part->effects[2];
-            kind = slot->field2 & 0xF;
-            switch (kind) {
+            mode = slot->field2 & 0xF;
+            switch (mode) {
             case 3:
-                time = (s16)(slot->time + 1);
+                time = slot->time + 1;
                 part->scale[0] = slot->u.values[0] + slot->u.values[3] * time / slot->duration;
                 part->scale[1] = slot->u.values[1] + slot->u.values[4] * time / slot->duration;
                 last = slot;
@@ -1249,7 +1248,7 @@ s32 func_800A0838(EffectPool *pool, ModelPart *part, s32 tag, s32 scale) {
                     }
                     result |= 0x400;
                     slot->time = -1;
-                    if (kind == 5) {
+                    if (mode == 5) {
                         last->u.values[3] = 0;
                         last->u.values[4] = 0;
                         last->u.values[5] = 0;
