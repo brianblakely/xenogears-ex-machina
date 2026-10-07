@@ -242,7 +242,9 @@ void func_801E4AC0(void) {
 /* Build the battle item lists from the inventory (counts capped at 99, empty
  * slots cleared) and the special item list from ids 50..72.
  * NON_MATCHING: in the copy loops the original stores the id before loading
- * the count (D_8006F5C4[i], D_8006F36C[i]); here the load is scheduled first. */
+ * the count (D_8006F5C4[i], D_8006F36C[i]); here the load is scheduled first
+ * (the arrays have distinct symbols, so the scheduler sees no conflict). A
+ * loop boundary after the id store reproduces the original order. */
 #ifdef NON_MATCHING
 void func_801E4CD0(void) {
     s32 i;
