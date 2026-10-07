@@ -1406,12 +1406,13 @@ void func_80076544(void) {
 }
 
 /* Start the panel cursor window's opening over the member's panel (wider
- * for a member with the 800d32a0 flag unless it is character 7).
- * Nonmatching: only the panel x index's scaling (sll) is scheduled before
- * the table's lui/addiu here, after them in the original. */
-#ifdef NON_MATCHING
+ * for a member with the 800d32a0 flag unless it is character 7). The panel
+ * x table is taken into a local after the index is formed, so its address
+ * is loaded before the index is scaled. */
 void func_800765C4(s32 member) {
-    u16 *panelX = &D_800C3254[D_800D3280 * 3 + member];
+    s32 index = D_800D3280 * 3 + member;
+    u16 *table = D_800C3254;
+    u16 *panelX = &table[index];
     s32 x;
 
     x = *panelX + 0x48;
@@ -1435,9 +1436,6 @@ void func_800765C4(s32 member) {
     D_800D2D28->unkAB = 1;
     D_800D2D28->unk90[member]--;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_800765C4);
-#endif
 
 /* Step the panel cursor window's opening: move the party-wide status label
  * by the pending steps, rebuild it semi-transparent at its growing scale,
