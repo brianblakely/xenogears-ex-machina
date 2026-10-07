@@ -1498,8 +1498,12 @@ void func_80087B84(VECTOR *direction, VECTOR *up, MATRIX *m) {
 
 /* Start the area's ferry: before scene 0xCD it rests at a fixed dock;
  * otherwise it resumes its route (first time: at waypoint 0), advancing
- * when within 8 units of the waypoint, and heads for the next one. */
-#ifdef NON_MATCHING /* prologue load and one post-call load scheduled early */
+ * when within 8 units of the waypoint, and heads for the next one.
+ * NON_MATCHING: the D_8009C610 load is scheduled ahead of the stack
+ * adjustment (the original saves s0 first), and the waypoint load after the
+ * resumed route's ground-height call lands in v1 above the vy store (the
+ * original reloads it into v0 after the store; one instruction more). */
+#ifdef NON_MATCHING
 s32 func_80087C6C(s32 index) {
     WorldmapActor *actor;
     SceneObject *object;
@@ -1544,8 +1548,8 @@ s32 func_80087C6C(s32 index) {
             actor->u.step = (actor->u.step + 1) & 7;
         }
         scratch->work.vx = D_8009AF80[actor->u.step] - (actor->position.vx >> 12);
-        scratch->work.vy = 0;
         scratch->work.vz = D_8009AF90[actor->u.step] - (actor->position.vz >> 12);
+        scratch->work.vy = 0;
         func_80093534(&scratch->work);
         VectorNormal(&scratch->work, &scratch->work);
         for (i = 0; i < 0x20; i++) {

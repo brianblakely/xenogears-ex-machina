@@ -452,7 +452,8 @@ void func_80073448(s32 id) {
 }
 
 /* Unpack the area file and resolve its section offsets to pointers. */
-#ifdef NON_MATCHING /* the reloaded area pointer lands in s0 (block) instead of v0 copied to a0 */
+#ifdef NON_MATCHING /* the original loads the unpacked area pointer into v0 and copies it to a0 (one
+                     * instruction more); here it is loaded straight into a0 */
 void func_80073530(void) {
     u8 *block;
     u8 *base;
@@ -463,9 +464,8 @@ void func_80073530(void) {
     block = D_8009C180;
     D_8009C180 = func_80032E88(block, 0);
     func_800320E8(block);
-    block = D_8009C180;
-    base = block;
-    area = (AreaHeader *)block;
+    base = D_8009C180;
+    area = (AreaHeader *)base;
     block = base + area->spots;
     D_8009CD48 = base + area->off8;
     D_8009D308 = base + area->offC;

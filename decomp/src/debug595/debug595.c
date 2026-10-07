@@ -213,9 +213,10 @@ void func_80281B00(char *name) {
  * 6 event variables, 7 particle editor, 8 items, 9 accessories, 10
  * encounters, 11 fog colours, 12 CPU/GPU summary, 13 RGB calculation.
  * Returns the screen shown.
- * Differs from the original only in where the GearNum list pointer's setup
- * is scheduled and in the original reloading D_800AFB10 for each argument
- * group of the "P0=" line. */
+ * Differs from the original only in the "P0=" line: after storing each
+ * stack argument the original reloads D_800AFB10 and re-adds the entry
+ * offset (two extra reloads, 7 instructions); here the entry address stays
+ * in t1. */
 #ifdef NON_MATCHING
 s32 func_80281B90(u32 *ot) {
     void *seq;
@@ -224,7 +225,6 @@ s32 func_80281B90(u32 *ot) {
     s32 step;
     s32 a;
     u32 id;
-    s32 *slot;
     u8 *rate;
     s32 *player;
     s32 length;
@@ -483,17 +483,12 @@ free_size:
         func_800379C8("\n");
         func_800379C8("GearRide=%d %d %d\n", D_8005A39C->ride[0], D_8005A39C->ride[1], D_8005A39C->ride[2]);
         func_800379C8("GearNum=");
-        slot = D_80062590;
-        i = 0;
-        while (1) {
-            party = *slot++;
+        for (i = 0; i < 3; i++) {
+            party = D_80062590[i];
             if (party == 0xFF) {
                 break;
             }
             func_800379C8(" %d", D_8005A39C->slots[party].gear);
-            if (++i >= 3) {
-                break;
-            }
         }
         func_800379C8("\nTYPE=");
         for (i = 0; i < 3; i++) {
