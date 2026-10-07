@@ -10075,13 +10075,11 @@ s32 func_800A1EC8(s32 limit) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Run every active actor's event script for this frame (only the first while
  * D_800ADB74 is 1): pick its highest-priority slot (or start event 1), run it
  * and keep its resume PC; stop once the field starts a transition. Declared
- * int without a value like func_800A1EC8.
- * NON_MATCHING: the original reloads the actor pointer after the transition
- * test instead of keeping the one loaded for the layer check. */
+ * int without a value like func_800A1EC8. The running descriptor is
+ * published before its actor is read (the actor pointer is loaded again). */
 s32 func_800A2030(void) {
     FieldDescriptor *descriptor;
     FieldActor *actor;
@@ -10106,9 +10104,9 @@ s32 func_800A2030(void) {
             return;
         }
         descriptor = &D_800AF880.components.descriptors[index];
+        D_800B06B8 = descriptor;
         actor = descriptor->actor;
         actor->flags &= ~0x1000000;
-        D_800B06B8 = descriptor;
         D_800AFD1C = index;
         D_800B0078 = actor;
         priority = 0xF;
@@ -10139,9 +10137,6 @@ s32 func_800A2030(void) {
     next:;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_800A2030);
-#endif
 
 s32 func_800A1EC8(s32 limit);
 extern s32 D_800AFFEC;
