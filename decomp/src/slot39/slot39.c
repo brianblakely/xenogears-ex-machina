@@ -2155,7 +2155,13 @@ void func_801CAE08(u8 mode) {
  * 15) to stay in the loop. A 20-minute permuter run found nothing valid.
  * A pointer variable for &GAME_NAMES[1] (set before the row loop, at the
  * row start or in the inner loop) and the row pointer as &names[n] give
- * the same or worse code (25-50). */
+ * the same or worse code (25-50).
+ * Why life 26: move_movables extends a moved register's life to its whole
+ * loop, so each invariant re-moved here weighs the inner loop's luid span
+ * (notes and labels count). With threshold 1 + non-fixed registers (about
+ * 28, two moves before it: 22) r84 stays only if 22 * span < 440, i.e. an
+ * inner loop under 20 luids, or with a row loop of 72+ insns. The inner
+ * loop as do/while, while, nested ifs or a goto exit scores 25-53. */
 void func_801CB184(void) {
     u8 codes[24];
     u8 decoded[20];
@@ -6718,7 +6724,11 @@ void func_801DB5E4(u8 mode) {
  * the count address, 111-115), a second pointer or inv set again in the
  * clear block (33-75), INVENTORY used directly for the count, decrement
  * and clear (correct orders, but loop.c then moves the clear's base + 150
- * out of the loop because it forces the already-moved base, 111-143). */
+ * out of the loop because it forces the already-moved base, 111-143).
+ * Also tried: ids = inv->ids before the decrement (12), &inv->ids[idx]
+ * through a pointer (115), ids += idx, idx[ids], (u8 *)inv + 150 (2). A
+ * 30-minute permuter run (func_801e31c0 declared K&R in its copy, as the
+ * permuter cannot type an undeclared call) found nothing below the base. */
 u8 func_801DB920(s32 row, s32 entry) {
     u16 marks;
     u8 running;

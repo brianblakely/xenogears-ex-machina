@@ -781,7 +781,22 @@ void func_801DE474(u8 wide, u8 page) {
  * cross-jump time the original's two tails must still have differed, e.g.
  * in their branch targets), and the drawing loop keeps
  * `kind` in a hoisted register and forms &D_801EA7F8[top + i] from a hoisted
- * (spilled) address where the original reloads kind and uses %hi/%lo. */
+ * (spilled) address where the original reloads kind and uses %hi/%lo.
+ * Jump2 dump: the tails differ only in the branch RTL. `if (A && B && id <
+ * 50) ok = 1;` gives (eq v0 0)(label)(pc), `if (!A || .. || id >= 50)
+ * break; ok = 1;` gives (ne v0 0)(pc)(label) (mips inverts GEU by swapping
+ * the arms); both print beqz. Either switch's case 0 in the second form
+ * keeps both case-0 tails (119 -> 113). Case 1-4's bnez has the forms
+ * (eq)(pc)(label) (if form) and (ne)(label)(pc) (break form), and the
+ * latter equals gear case 5's last test, which precedes the shared ok = 1,
+ * so that tail is cross-jumped into case 5 instead; 16 pairings of six
+ * condition forms (and/or chains, nested ifs, separate breaks) score
+ * 101-131 and none keeps both 1-4 tails. So some other source difference
+ * separates the original's tails.
+ * Loop dump (drawing loop, 182 insns): kind's zero-extension (two matching
+ * movables, life 4) and the D_801EA7F8 address (savings 2, life 4) weigh
+ * about 28 * 2 * 4 >= 182 and move; staying needs fewer matching uses,
+ * shorter lives or a loop of about 225 insns. */
 s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
     RECT rect;
     u8 codes[4];
@@ -997,7 +1012,13 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801DE5
  * extension is tied into a3. The original re-extends at every test, so its
  * later tests were not in cse reach of the first one. Tried (no change):
  * a K&R definition, the ids choice as if/else or ?:, result = 0 after
- * the choice. */
+ * the choice, the special/gear nest as an if chain (`special && !gear`,
+ * `special`, `!gear`). A do { } while (0) around the ids choice stops cse1
+ * at its NOTE_INSN_LOOP_END (3 extensions survive), but cse2 runs after
+ * loop.c, ignores loop notes and merges them again (247-255). Between the
+ * first test and the second the original has only the skipped ids block
+ * and the special branch, and neither ends a cse path, so the original
+ * must have had a label there that cse cannot pass. */
 s32 func_801DF0D4(u8 slot, u8 part, u8 special, u8 gear) {
     VECTOR unused; /* unused in the original; reserves 16 bytes */
     u8 *ids;
@@ -3755,7 +3776,12 @@ void func_801E781C(s32 index, u8 rebuild) {
  * second_y and third_y), the pattern of a pseudo allocated after the block
  * locals, i.e. one local-alloc did not take (not single-block or not
  * dying exactly once), which then pushes the card pointer to a3. Tried:
- * second_y/third_y set before the first store or written inline. */
+ * second_y/third_y set before the first store or written inline, each
+ * case's stores in a do { } while (0) block (81), still = 0 first in each
+ * case (74). local-alloc only ties a pseudo whose reg_qty is -2 (lives in
+ * one block, dies once); the original's three different offset registers
+ * mean three pseudos, each untied from its chain. A 12-minute permuter
+ * run found only a cosmetic 300 -> 295 change. */
 #ifdef NON_MATCHING
 void func_801E78C8(s32 file) {
     s32 i;
