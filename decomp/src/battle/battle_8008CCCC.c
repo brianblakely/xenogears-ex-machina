@@ -4101,7 +4101,12 @@ void func_8009B1E4(void) {
 /* Raise an attack's damage: by half for each of characters 0 and 3 in the
  * party below half HP (gear HP in a gear) and again below a quarter; then a
  * critical chance (10%, 60% with attacker flag 0x200) multiplies it by 1.5
- * (2 with attacker flag 0x400). */
+ * (2 with attacker flag 0x400).
+ * Nonmatching (register allocation only): the original gives count $a0,
+ * maxHp $v1, hp and the record offset $a1, the record $a2 (here count $a2,
+ * hp $v1, maxHp/offset $a0, record $a1), and damage $s2, chance $s0 (here
+ * damage $s0, chance $s2). Declaration orders, block-scoped hp/maxHp,
+ * if/else chance/scale and do-while wrappers do not change it. */
 void func_8009B46C(u16 *damage) {
     u8 count = 0;
     u8 i;

@@ -522,7 +522,12 @@ void func_80072324(void) {
 
 /* Select the next slot to act: the forced slot, else the next ready slot in
  * the turn order from the cursor; then run the turn procedure. With slots
- * acting together, run their pass instead. */
+ * acting together, run their pass instead.
+ * Nonmatching (83 vs 73 instructions): the original loop is rotated - the
+ * entry duplicates the order/ready loads and jumps to the ready test, the
+ * loop top is the wrap and exit test - and the cursor wrap compares the
+ * stored (u8)(position + 1) without reloading it; do-while, for(;;) and
+ * while(1) forms here all keep the plain bottom-tested layout. */
 #ifdef NON_MATCHING
 void func_800723E0(void) {
     s32 position;
@@ -567,7 +572,12 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_800723
 /* Rebuild the alive mask: knocked-out slots lose their HP (gear +0x104) and
  * leave the turn order unless held by 800c3608; set the outcome when a side
  * is defeated; when every alive slot waits (+0x80 bit 0x1000), release the
- * first. */
+ * first.
+ * Nonmatching (score 39): in the enemy loop the original strength-reduces
+ * D_800C3D18[slot - 3].unk3 to a pointer ($s5 from 0x800c3d1b, step 4)
+ * where this keeps an index ($s5 from 0, addressed with %lo), which also
+ * swaps $s3/$s4; after the loops the original reloads the alive mask
+ * after the 800c48ea store, here CSE keeps it ($v1). */
 #ifdef NON_MATCHING
 void func_8007252C(void) {
     s32 slot;

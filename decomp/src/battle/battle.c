@@ -1928,7 +1928,9 @@ void func_80085454(u8 queue) {
  * treats both HP and amount as signed halfwords; healing wraps to the
  * stored width before the maximum check. The original healing stores use
  * the battle-area view of the work table. Frame/register allocation still
- * differs (original frame 0x58). */
+ * differs (original frame 0x58): the original addresses the slots, the
+ * event queue and the knocked-out mask from one base ($s7 = the events,
+ * $s4/$s5 = base - 0x138/-0x130) with pointer givs in $s3..$s6. */
 #ifdef NON_MATCHING
 void func_80085618(u8 queue) {
     s32 slot;
@@ -2733,7 +2735,12 @@ u8 func_80087AF0(u8 member, u8 cost) {
 /* Move `actor` into `target`'s formation group when it is another group
  * with room (under four members): leave the old group, take the first free
  * member place and stand at that place of the group's area. (Nonmatching:
- * the original computes the enemy offset before testing the target.) */
+ * the original computes the enemy offset before testing the target and
+ * keeps a branch (beqz with base = 0 in the slot, base = offset on the
+ * fall-through) with the target's slot address recomputed after it. Every
+ * form computing the offset first loses: if/else and `x = 0; if` become an
+ * and-mask (jump.c store-flag), `x = offset; if (...) x = 0` keeps the
+ * branch but CSE carries the target address across it.) */
 #ifdef NON_MATCHING
 void func_80087EDC(u8 actor, u8 target) {
     u8 base;
