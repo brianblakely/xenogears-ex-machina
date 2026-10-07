@@ -112,9 +112,9 @@ void func_801DE69C(void) {
                 D_800D32F8[i]->runs[1].count += func_80076A10(0xE8, &D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2], 0x88, i * 0x20 + 0x20);
                 D_800D32F8[i]->runs[1].count += func_80076A10(0xE9, &D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2], 0x88, i * 0x20 + 0x28);
                 SetShadeTex(&D_800D32F8[i]->labels[(D_800D32F8[i]->runs[1].count - 2) * 2 + D_800CCB00.buffer], 0);
-                setRGB0(&D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2 + D_800CCB34] - 4, 0x80, 0x40, 0x40);
+                setRGB0(&D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2 + D_800CCB34.index] - 4, 0x80, 0x40, 0x40);
                 SetShadeTex(&D_800D32F8[i]->labels[(D_800D32F8[i]->runs[1].count - 1) * 2 + D_800CCB00.buffer], 0);
-                setRGB0(&D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2 + D_800CCB34] - 2, 0x40, 0x80, 0x40);
+                setRGB0(&D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2 + D_800CCB34.index] - 2, 0x40, 0x80, 0x40);
             }
         }
         D_800D32F8[i]->runs[1].buffer = D_800CCB00.buffer;
@@ -200,7 +200,7 @@ void func_801DEDC0(u8 fromGameData) {
                     D_800D32F8[i]->runs[2].count += func_80076A10(digit, &D_800D32F8[i]->field780[D_800D32F8[i]->runs[2].count * 2], j * 8 + 0x90, i * 0x20 + 0x20);
                 }
             }
-            D_800D32F8[i]->runs[2].buffer = D_800CCB34;
+            D_800D32F8[i]->runs[2].buffer = D_800CCB34.index;
             if (D_800D32F8[0]->flag15F8 != 0) {
                 if (fromGameData == 0) {
                     func_8008AAA0(D_800D32A5[i].level2);
@@ -214,14 +214,14 @@ void func_801DEDC0(u8 fromGameData) {
                         D_800D32F8[i]->runs[3].count += func_80076A10(digit, &D_800D32F8[i]->field870[D_800D32F8[i]->runs[3].count * 2], j * 8 + 0x90, i * 0x20 + 0x28);
                     }
                 }
-                D_800D32F8[i]->runs[3].buffer = D_800CCB34;
+                D_800D32F8[i]->runs[3].buffer = D_800CCB34.index;
                 for (j = 0; j < D_800D32F8[i]->runs[2].count; j++) {
-                    SetShadeTex(&D_800D32F8[i]->field780[j * 2 + D_800CCB34], 0);
-                    setRGB0(&D_800D32F8[i]->field780[j * 2 + D_800CCB34], 0x80, 0x40, 0x40);
+                    SetShadeTex(&D_800D32F8[i]->field780[j * 2 + D_800CCB34.index], 0);
+                    setRGB0(&D_800D32F8[i]->field780[j * 2 + D_800CCB34.index], 0x80, 0x40, 0x40);
                 }
                 for (j = 0; j < D_800D32F8[i]->runs[3].count; j++) {
-                    SetShadeTex(&D_800D32F8[i]->field870[j * 2 + D_800CCB34], 0);
-                    setRGB0(&D_800D32F8[i]->field870[j * 2 + D_800CCB34], 0x40, 0x80, 0x40);
+                    SetShadeTex(&D_800D32F8[i]->field870[j * 2 + D_800CCB34.index], 0);
+                    setRGB0(&D_800D32F8[i]->field870[j * 2 + D_800CCB34.index], 0x40, 0x80, 0x40);
                 }
             }
         }
@@ -248,7 +248,7 @@ void func_801DF270(void) {
                     D_800D32F8[i]->runs[8].count += func_80076A10(digit, &D_800D32F8[i]->fieldC80[D_800D32F8[i]->runs[8].count * 2], j * 8 + 0xB0, i * 0x20 + 0x20);
                 }
             }
-            D_800D32F8[i]->runs[8].buffer = D_800CCB34;
+            D_800D32F8[i]->runs[8].buffer = D_800CCB34.index;
             if (D_800D32F8[0]->flag15F8 != 0) {
                 func_8008AAA0(D_800CDCB8[i].value2);
                 for (j = 0; j < 8; j++) {
@@ -258,7 +258,7 @@ void func_801DF270(void) {
                         D_800D32F8[i]->runs[9].count += func_80076A10(digit, &D_800D32F8[i]->fieldF00[D_800D32F8[i]->runs[9].count * 2], j * 8 + 0xB0, i * 0x20 + 0x28);
                     }
                 }
-                D_800D32F8[i]->runs[9].buffer = D_800CCB34;
+                D_800D32F8[i]->runs[9].buffer = D_800CCB34.index;
             }
         }
     }
@@ -283,7 +283,7 @@ void func_801DF4C0(void) {
                     D_800D32F8[i]->runs[10].count += func_80076A10(digit, &D_800D32F8[i]->field1180[D_800D32F8[i]->runs[10].count * 2], j * 8 + 0xF8, i * 0x20 + 0x20);
                 }
             }
-            D_800D32F8[i]->runs[10].buffer = D_800CCB34;
+            D_800D32F8[i]->runs[10].buffer = D_800CCB34.index;
             if (D_800D32F8[0]->flag15F8 != 0) {
                 func_8008AAA0(D_800CDCD0[i].value2);
                 for (j = 0; j < 7; j++) {
@@ -293,7 +293,7 @@ void func_801DF4C0(void) {
                         D_800D32F8[i]->runs[11].count += func_80076A10(digit, &D_800D32F8[i]->field13B0[D_800D32F8[i]->runs[11].count * 2], j * 8 + 0xF8, i * 0x20 + 0x28);
                     }
                 }
-                D_800D32F8[i]->runs[11].buffer = D_800CCB34;
+                D_800D32F8[i]->runs[11].buffer = D_800CCB34.index;
             }
         }
     }
@@ -382,7 +382,7 @@ void func_801DF910(u8 from, u8 to, s32 max) {
 }
 
 /* The highest of a slot's seven entries in both byte tables. */
-u8 func_801DFA38(u8 slot) {
+s32 func_801DFA38(u8 slot) {
     u8 best = 0;
     s32 i;
 
@@ -417,7 +417,7 @@ void func_801DFAA8(u8 member) {
     colours[1][1] = 0x40;
     colours[1][2] = 0x40;
     D_800D334C->runs[0].count = func_80076A10(member + 0xFC, D_800D334C->title[0], 0x3E, 0xA4);
-    D_800D334C->runs[0].buffer = D_800CCB34;
+    D_800D334C->runs[0].buffer = D_800CCB34.index;
     D_800D334C->runs[1].count = 0;
     for (i = 0; i < 27; i++) {
         start = D_800D334C->runs[1].count;
@@ -425,13 +425,13 @@ void func_801DFAA8(u8 member) {
             D_800D334C->runs[1].count += func_80076A10(D_800C32C4[i].glyph, &D_800D334C->text[start * 2], D_800C3318[i], D_800C3350[i]);
             if (D_800C32C4[i].shaded != 0) {
                 for (k = start; k < D_800D334C->runs[1].count; k++) {
-                    SetShadeTex(&D_800D334C->text[k * 2 + D_800CCB34], 0);
-                    setRGB0(&D_800D334C->text[k * 2 + D_800CCB34], colours[D_800C32C4[i].colour][0], colours[D_800C32C4[i].colour][1], colours[D_800C32C4[i].colour][2]);
+                    SetShadeTex(&D_800D334C->text[k * 2 + D_800CCB34.index], 0);
+                    setRGB0(&D_800D334C->text[k * 2 + D_800CCB34.index], colours[D_800C32C4[i].colour][0], colours[D_800C32C4[i].colour][1], colours[D_800C32C4[i].colour][2]);
                 }
             }
         }
     }
-    D_800D334C->runs[1].buffer = D_800CCB34;
+    D_800D334C->runs[1].buffer = D_800CCB34.index;
 }
 #else
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801DFAA8);
@@ -456,7 +456,7 @@ void func_801DFD58(u8 member) {
             D_800D334C->runs[2].count += func_80076A10(digit, &D_800D334C->glyphs1630[D_800D334C->runs[2].count * 2], j * 8 + 0xB8, 0x80);
         }
     }
-    D_800D334C->runs[2].buffer = D_800CCB34;
+    D_800D334C->runs[2].buffer = D_800CCB34.index;
 }
 
 /* Build the summary's second member value (two digits). */
@@ -473,7 +473,7 @@ void func_801DFE6C(u8 member) {
             D_800D334C->runs[4].count += func_80076A10(digit, &D_800D334C->glyphs1720[D_800D334C->runs[4].count * 2], j * 8 + 0xC0, 0x88);
         }
     }
-    D_800D334C->runs[4].buffer = D_800CCB34;
+    D_800D334C->runs[4].buffer = D_800CCB34.index;
 }
 
 /* Build the summary's change of the member's first stat since the battle
@@ -507,10 +507,10 @@ void func_801DFF50(u8 member) {
             }
         }
         for (j = 0; j < D_800D334C->runs[3].count; j++) {
-            SetShadeTex(&D_800D334C->glyphs17C0[j * 2 + D_800CCB34], 0);
-            setRGB0(&D_800D334C->glyphs17C0[j * 2 + D_800CCB34], 0x80, 0x40, 0x40);
+            SetShadeTex(&D_800D334C->glyphs17C0[j * 2 + D_800CCB34.index], 0);
+            setRGB0(&D_800D334C->glyphs17C0[j * 2 + D_800CCB34.index], 0x80, 0x40, 0x40);
         }
-        D_800D334C->runs[3].buffer = D_800CCB34;
+        D_800D334C->runs[3].buffer = D_800CCB34.index;
     }
 }
 
@@ -544,10 +544,10 @@ void func_801E0184(u8 member) {
             }
         }
         for (j = 0; j < D_800D334C->runs[5].count; j++) {
-            SetShadeTex(&D_800D334C->glyphs1900[j * 2 + D_800CCB34], 0);
-            setRGB0(&D_800D334C->glyphs1900[j * 2 + D_800CCB34], 0x80, 0x40, 0x40);
+            SetShadeTex(&D_800D334C->glyphs1900[j * 2 + D_800CCB34.index], 0);
+            setRGB0(&D_800D334C->glyphs1900[j * 2 + D_800CCB34.index], 0x80, 0x40, 0x40);
         }
-        D_800D334C->runs[5].buffer = D_800CCB34;
+        D_800D334C->runs[5].buffer = D_800CCB34.index;
     }
 }
 
@@ -561,16 +561,22 @@ void func_801E03B8(u8 member) {
 
 /* Build the member's seven gauge rows: for each, the value before and after
  * the battle out of the highest (801dfa38) as a bar and its change bar, the
- * value, and when it changed an arrow and the change shaded by direction. */
+ * value, and when it changed an arrow and the change shaded by direction.
+ * NON_MATCHING: same size and instructions; only the allocation of the first
+ * digit loop differs: the original gives the digit index k s0, the x giv s2
+ * and the row i s3 (k = 23 set in the jal delay slot), here the x giv gets
+ * s0, i s2 and k s3. */
 #ifdef NON_MATCHING
 void func_801E03FC(u8 member) {
     s32 max;
     s32 i;
     s32 j;
     s32 digit;
-    s16 x;
-    s16 top;
-    s16 bottom;
+    s32 left;
+    s32 n;
+    s32 k;
+    s32 top;
+    s32 bottom;
 
     max = func_801DFA38(member);
     for (i = 0; i < 7; i++) {
@@ -581,49 +587,49 @@ void func_801E03FC(u8 member) {
         func_801DF910(D_800CDD10[member][i], D_800CDD10[member + 3][i], max);
         func_801DF710(D_800D334C->barA[i], 0);
         func_801DF710(D_800D334C->barB[i], D_801E44E0);
-        D_800D334C->barA[i][D_800CCB34].x0 = 0x78;
-        D_800D334C->barA[i][D_800CCB34].y0 = top;
-        D_800D334C->barA[i][D_800CCB34].x1 = D_801E44D8 + 0x78;
-        D_800D334C->barA[i][D_800CCB34].y1 = top;
-        D_800D334C->barA[i][D_800CCB34].x2 = 0x78;
-        D_800D334C->barA[i][D_800CCB34].y2 = bottom;
-        D_800D334C->barA[i][D_800CCB34].x3 = D_801E44D8 + 0x78;
-        D_800D334C->barA[i][D_800CCB34].y3 = bottom;
+        (D_800D334C->barA[i] + D_800CCB34.index)->x0 = 0x78;
+        (D_800D334C->barA[i] + D_800CCB34.index)->y0 = top;
+        (D_800D334C->barA[i] + D_800CCB34.index)->x1 = D_801E44D8 + 0x78;
+        (D_800D334C->barA[i] + D_800CCB34.index)->y1 = top;
+        (D_800D334C->barA[i] + D_800CCB34.index)->x2 = 0x78;
+        (D_800D334C->barA[i] + D_800CCB34.index)->y2 = bottom;
+        (D_800D334C->barA[i] + D_800CCB34.index)->x3 = D_801E44D8 + 0x78;
+        (D_800D334C->barA[i] + D_800CCB34.index)->y3 = bottom;
         if (D_801E44E0 == 2) {
-            x = D_801E44D8 + 0x78;
+            left = D_801E44D8 + 0x78;
         } else {
-            x = D_801E44D8 - (D_801E44DC - 0x78);
+            left = D_801E44D8 + 0x78 - D_801E44DC;
         }
-        D_800D334C->barB[i][D_800CCB34].x0 = x;
-        D_800D334C->barB[i][D_800CCB34].y0 = top;
-        D_800D334C->barB[i][D_800CCB34].x1 = x + D_801E44DC;
-        D_800D334C->barB[i][D_800CCB34].y1 = top;
-        D_800D334C->barB[i][D_800CCB34].x2 = x;
-        D_800D334C->barB[i][D_800CCB34].y2 = bottom;
-        D_800D334C->barB[i][D_800CCB34].x3 = x + D_801E44DC;
-        D_800D334C->barB[i][D_800CCB34].y3 = bottom;
-        D_800D334C->barBuffer[i] = D_800CCB34;
+        (D_800D334C->barB[i] + D_800CCB34.index)->x0 = left;
+        (D_800D334C->barB[i] + D_800CCB34.index)->y0 = top;
+        (D_800D334C->barB[i] + D_800CCB34.index)->x1 = left + D_801E44DC;
+        (D_800D334C->barB[i] + D_800CCB34.index)->y1 = top;
+        (D_800D334C->barB[i] + D_800CCB34.index)->x2 = left;
+        (D_800D334C->barB[i] + D_800CCB34.index)->y2 = bottom;
+        (D_800D334C->barB[i] + D_800CCB34.index)->x3 = left + D_801E44DC;
+        (D_800D334C->barB[i] + D_800CCB34.index)->y3 = bottom;
+        D_800D334C->barBuffer[i] = D_800CCB34.index;
         func_8008AAA0(D_801E44CC);
-        for (j = 0; j < 3; j++) {
-            digit = D_800C3CE3[j + 23];
+        for (j = 0, k = 23; j < 3; j++) {
+            digit = D_800C3CE3[k++];
             if (digit != 0xFF) {
                 D_800D334C->rowACount[i] += func_80076A10(digit, &D_800D334C->rowA[i][D_800D334C->rowACount[i] * 2], j * 8 + 0xB8, i * 8 + 0x90);
             }
         }
-        D_800D334C->rowABuffer[i] = D_800CCB34;
+        D_800D334C->rowABuffer[i] = D_800CCB34.index;
         if (D_801E44D4 != 0) {
             D_800D334C->rowBCount[i] = func_80076A10(D_801E44E4, D_800D334C->rowB[i], 0xD8, i * 8 + 0x90);
             func_8008AAA0(D_801E44D4);
-            x = 0xE0;
+            n = 0;
             for (j = 0; j < 3; j++) {
                 digit = D_800C3CFA[j];
                 if (digit != 0xFF) {
-                    D_800D334C->rowBCount[i] += func_80076A10(digit, &D_800D334C->rowB[i][D_800D334C->rowBCount[i] * 2], x, i * 8 + 0x90);
-                    x += 8;
+                    D_800D334C->rowBCount[i] += func_80076A10(digit, &D_800D334C->rowB[i][D_800D334C->rowBCount[i] * 2], n * 8 + 0xE0, i * 8 + 0x90);
+                    n++;
                 }
             }
-            func_801DF840(D_800D334C->rowB[i], D_801E44E0 - 2, D_800D334C->rowBCount[i], D_800CCB34);
-            D_800D334C->rowBBuffer[i] = D_800CCB34;
+            func_801DF840(D_800D334C->rowB[i], D_801E44E0 - 2, D_800D334C->rowBCount[i], D_800CCB34.index);
+            D_800D334C->rowBBuffer[i] = D_800CCB34.index;
         }
     }
 }
@@ -678,14 +684,14 @@ void func_801E0ACC(u8 member) {
         func_8008F8F4(1, 0x28, 0x78, 0xE8, 0x58, 0, 1);
     }
     D_800D334C->runs[0].count = func_80076A10(member + 0xFC, D_800D334C->title[0], 0x40, 0xA4);
-    D_800D334C->runs[0].buffer = D_800CCB34;
+    D_800D334C->runs[0].buffer = D_800CCB34.index;
     D_800D2D28->waitingCross = 0;
     image = func_8008AC00(0x1B);
     func_80076D58(D_800D334C->glyphs34B0[0], 1, 2);
     func_80076D58(D_800D334C->glyphs34B0[1], 0, 3);
     for (i = 0; i < 16; i++) {
         if (func_80089C6C(newCounter, i) != 0) {
-            s32 *buffer = &D_800CCB34;
+            s32 *buffer = &D_800CCB34.index;
 
             width = func_80034EAC(func_80033784(D_800D2D24[member], i), image, 0x1B, 0);
             rect.x = 0x3C0;
@@ -695,7 +701,7 @@ void func_801E0ACC(u8 member) {
             func_800769E8(&rect, image);
             func_80076C78(&D_800D334C->glyphs34B0[1][*buffer], 0x52, 0x9C, 0, 0x1A, width);
             SetShadeTex(&D_800D334C->glyphs34B0[1][*buffer], 0);
-            setRGB0(&D_800D334C->glyphs34B0[1][D_800CCB34], 0, 0x80, 0);
+            setRGB0(&D_800D334C->glyphs34B0[1][D_800CCB34.index], 0, 0x80, 0);
             D_800D334C->buffer34B0[1] = *buffer;
             func_80076C78(&D_800D334C->glyphs34B0[0][*buffer], width + 0x5A, 0x9C, D_800D2FA0[2], D_800D2FA0[3], D_800D2FA0[0]);
             D_800D334C->buffer34B0[0] = *buffer;
@@ -705,7 +711,7 @@ void func_801E0ACC(u8 member) {
     }
     for (i = 0; i < 16; i++) {
         if (func_80089C6C(newLevel, i) != 0) {
-            s32 *buffer = &D_800CCB34;
+            s32 *buffer = &D_800CCB34.index;
 
             width = func_80034EAC(func_80033908(D_800D2D24[member] * 16 + i), image, 0x1B, 0);
             rect.x = 0x3C0;
@@ -715,7 +721,7 @@ void func_801E0ACC(u8 member) {
             func_800769E8(&rect, image);
             func_80076C78(&D_800D334C->glyphs34B0[1][*buffer], 0x52, 0x9C, 0, 0x1A, width);
             SetShadeTex(&D_800D334C->glyphs34B0[1][*buffer], 0);
-            setRGB0(&D_800D334C->glyphs34B0[1][D_800CCB34], 0x80, 0x80, 0);
+            setRGB0(&D_800D334C->glyphs34B0[1][D_800CCB34.index], 0x80, 0x80, 0);
             D_800D334C->buffer34B0[1] = *buffer;
             func_80076C78(&D_800D334C->glyphs34B0[0][*buffer], width + 0x5A, 0x9C, D_800D2FA0[2], D_800D2FA0[3], D_800D2FA0[0]);
             D_800D334C->buffer34B0[0] = *buffer;
@@ -734,7 +740,7 @@ void func_801E1044(void) {
     for (i = 0; i < 7; i++) {
         D_800D334C->count2D30 += func_80076A10(D_800C3388[i], D_800D334C->glyphs2D30[D_800D334C->count2D30], D_800C3390[i], D_800C33A0[i]);
     }
-    D_800D334C->buffer2D30 = D_800CCB34;
+    D_800D334C->buffer2D30 = D_800CCB34.index;
 }
 
 /* Build the spoils window's numbers: the experience (six digits) and the
@@ -752,7 +758,7 @@ void func_801E10F8(u32 experience) {
             D_800D334C->run2F60.count += func_80076A10(digit, D_800D334C->glyphs2F60[D_800D334C->run2F60.count], i * 8 + 0xD8, 0x50);
         }
     }
-    D_800D334C->run2F60.buffer = D_800CCB34;
+    D_800D334C->run2F60.buffer = D_800CCB34.index;
     func_8008AAA0(D_8006EF58);
     for (i = 0; i < 9; i++) {
         n = i + 24;
@@ -761,7 +767,7 @@ void func_801E10F8(u32 experience) {
             D_800D334C->run3140.count += func_80076A10(digit, D_800D334C->glyphs3140[D_800D334C->run3140.count], i * 8 + 0xC0, 0x60);
         }
     }
-    D_800D334C->run3140.buffer = D_800CCB34;
+    D_800D334C->run3140.buffer = D_800CCB34.index;
 }
 
 /* Build the spoils window's two icons. */
@@ -770,7 +776,7 @@ void func_801E126C(void) {
 
     func_80076D58(D_800D334C->glyphs3410[0], 0, 2);
     func_80076D58(D_800D334C->glyphs3410[1], 1, 2);
-    buffer = &D_800CCB34;
+    buffer = &D_800CCB34.index;
     func_80076C78(&D_800D334C->glyphs3410[0][*buffer], 0x20, 0x20, D_800D2F90[2], D_800D2F90[3], D_800D2F90[0]);
     func_80076C78(&D_800D334C->glyphs3410[1][*buffer], 0xB8, 0x40, D_800D2F90[6], D_800D2F90[7], D_800D2F90[4]);
     D_800D334C->buffer3410 = *buffer;
@@ -906,8 +912,8 @@ void func_801E1690(void) {
             rect.w = 0x1E;
             rect.h = 0xD;
             func_800769E8(&rect, text[count]);
-            func_80076C78(&D_800D334C->listA[count][D_800CCB34], 0x2C, count * 16 + 0x30, 0, count * 13, width);
-            func_80076C78(&D_800D334C->listB[count][D_800CCB34], 0x94, count * 16 + 0x30, counts[i] * 8 + 0x78, 0, 8);
+            func_80076C78(&D_800D334C->listA[count][D_800CCB34.index], 0x2C, count * 16 + 0x30, 0, count * 13, width);
+            func_80076C78(&D_800D334C->listB[count][D_800CCB34.index], 0x94, count * 16 + 0x30, counts[i] * 8 + 0x78, 0, 8);
             count++;
         }
     }
@@ -916,7 +922,7 @@ void func_801E1690(void) {
         func_800320E8(text[i]);
     }
     D_800D334C->listCount = count;
-    D_800D334C->listBuffer = D_800CCB34;
+    D_800D334C->listBuffer = D_800CCB34.index;
 }
 #else
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E1690);
