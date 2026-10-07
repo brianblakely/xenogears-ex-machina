@@ -62,33 +62,35 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002C3E8", func_8002C3
 /* Undo 8002C3E8: turn a relocated model group's addresses back into
  * offsets. Returns the number of models.
  * Nonmatching: the original walks the models through one pointer at their
- * list fields. */
+ * list fields ($a3 = group + 0x2c, the tables at -0x14..-0x8); here the
+ * model pointer itself ($t1, group + 0x18) is kept for the first table, the
+ * other fields use the list-field pointer as in the original (236 vs 224
+ * bytes). */
 #ifdef NON_MATCHING
 s32 func_8002C4BC(ModelGroup *group) {
-    s32 flags = group->flags;
+    s32 i = group->flags; /* reused as the model index after the flag update */
     s32 count = group->count;
     Model *model;
-    ModelListEntry *entry;
-    s32 i;
+    ModelList *list;
+    ModelListEntry *entries;
     s32 n;
 
-    if (flags & 1) {
-        group->flags = flags & ~1;
+    if (i & 1) {
+        group->flags = i & ~1;
         for (i = 0, model = group->models; i < count; i++, model++) {
             model->table0 -= (s32)group;
             model->table8 -= (s32)group;
             model->table4 -= (s32)group;
             model->primitives -= (s32)group;
             if (model->list != NULL) {
-                n = model->list->last;
+                list = model->list;
+                entries = list->entries;
+                n = list->last;
                 if (n != -1) {
-                    entry = &model->list->entries[n];
-                    do {
-                        n--;
-                        entry->first -= (s32)group;
-                        entry->second -= (s32)group;
-                        entry--;
-                    } while (n != -1);
+                    for (; n != -1; n--) {
+                        entries[n].first -= (s32)group;
+                        entries[n].second -= (s32)group;
+                    }
                 }
                 model->list = (ModelList *)((u8 *)model->list - (s32)group);
             }
