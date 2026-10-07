@@ -6367,9 +6367,12 @@ void func_800979F0(void) {
 
 #include "field_motion.h"
 
-#ifdef NON_MATCHING
+/* Walk the current actor toward its move target (move modes 0-3: operand
+ * position, offset from the target, another actor's reach, or a point at an
+ * angle): set the step from its speed, face along it and return 0 once within
+ * reach or out of steps, else -1. */
 s32 func_80097A50(s32 speed) {
-    VECTOR unused; /* the original frame holds 0x10 unused bytes */
+    VECTOR unused; /* unused in the original; reserves 16 bytes */
     VECTOR delta;
     VECTOR direction;
     VECTOR step;
@@ -6440,8 +6443,8 @@ s32 func_80097A50(s32 speed) {
     step.vz = -((direction.vz * scale) >> 4);
     D_800B0078->unk40[0] = step.vx;
     D_800B0078->unk40[1] = step.vy;
-    D_800B0078->unk40[1] = 0;
     D_800B0078->unk40[2] = step.vz;
+    D_800B0078->unk40[1] = 0;
     distance = func_80099A04(x - from_x, y - from_y, z - from_z);
     if (WHOLE(D_800B0078->unk40[0]) == 0 && WHOLE(D_800B0078->unk40[2]) == 0) {
         turning = 0;
@@ -6469,13 +6472,10 @@ s32 func_80097A50(s32 speed) {
     }
     D_800B0078->unkEC = (D_800B0078->position[1] + step.vy) >> 16;
     D_800B0078->flags |= 0x40000;
-    D_800B00C0 = 1;
     D_800B0078->slots[D_800B0078->slot].value--;
+    D_800B00C0 = 1;
     return -1;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_80097A50);
-#endif
 
 s32 func_80099AC0(s32 speed);
 
