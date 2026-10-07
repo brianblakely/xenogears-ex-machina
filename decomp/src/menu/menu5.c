@@ -781,7 +781,11 @@ void func_80085EAC(s32 mirrored, s16 *out, s32 y) {
  * The loads are not alias-pinned here (buf+offset accesses are told apart);
  * sched1 moves each load next to its decrement because the loaded pseudo is
  * set once (a register birth), and the original's loads staying at their
- * source positions give the 0x1E and length constants other registers. */
+ * source positions give the 0x1E and length constants other registers.
+ * Loading into s16 temporaries that are then decremented (`y = ...; y--;`,
+ * set twice, not births) leaves 23 differing lines instead of 55: the stores
+ * then match, but sched1 hoists both loads to the top of the block (before
+ * the 0x13/0x1E stores) and two marks[2]/[3] constants swap t2/t3. */
 #ifdef NON_MATCHING
 void func_80085EC8(OverlayBuffer *buf) {
     s32 i;
@@ -993,14 +997,8 @@ void func_800866D4(TimImage *tim, s32 x, s32 y, PolyFT4 *quad, s32 depth) {
  * from the name TIM, the icon and gauge sprites, the gauge bar quads from
  * the bar TIM, the HUD texture page modes and the gauge palette. One sprite
  * pair pointer walks the icons and then the gauges (the original keeps it
- * in $s2). Does not match: only the bar block after func_800866D4 (about 20
- * instructions): the original stores the gauge size word before loading the
- * two bar texel rows and loads the name CLUT after the four bar colour
- * stores, so its constant registers differ; the rest is identical. The
- * accesses are all to constant addresses (a pointer to the HUD is folded
- * into them), which GCC tells apart; routing them through hud/bar/pair
- * pointers changes nothing in this block. */
-#ifdef NON_MATCHING
+ * in $s2). Each bar quad gets its colour/code word and then its length, and
+ * the gauge sprite its length, code, size and texture position. */
 void func_800868E0(StageFiles *files) {
     TimImage tim;
     Rect rect;
@@ -1042,19 +1040,19 @@ void func_800868E0(StageFiles *files) {
     LoadImage(tim.prect, tim.paddr);
     func_800864B4(&tim, 6, 0x20, bar, 0);
     func_800866D4(&tim, 0x13A - tim.prect->w * 4, 0x20, D_80095698.bar_r, 0);
-    *(u32 *)&pair[0].s[0].w = 0x80040;
     D_80092860 = D_80095698.bar_l[0].v0;
     D_80092864 = D_80095698.bar_r[0].v0;
     *(u32 *)&D_80095698.bar_l[0].r0 = 0x2C000080;
-    *(u32 *)&D_80095698.bar_l[1].r0 = 0x2C000080;
-    *(u32 *)&D_80095698.bar_r[0].r0 = 0x2C000080;
-    *(u32 *)&D_80095698.bar_r[1].r0 = 0x2C000080;
     ((PacketTag *)&D_80095698.bar_l[0])->len = 9;
+    *(u32 *)&D_80095698.bar_l[1].r0 = 0x2C000080;
     ((PacketTag *)&D_80095698.bar_l[1])->len = 9;
+    *(u32 *)&D_80095698.bar_r[0].r0 = 0x2C000080;
     ((PacketTag *)&D_80095698.bar_r[0])->len = 9;
+    *(u32 *)&D_80095698.bar_r[1].r0 = 0x2C000080;
     ((PacketTag *)&D_80095698.bar_r[1])->len = 9;
     ((PacketTag *)&pair[0].s[0])->len = 4;
     pair[0].s[0].code = 0x65;
+    *(u32 *)&pair[0].s[0].w = 0x80040;
     *(u16 *)&pair[0].s[0].u0 = 0x80;
     D_80095698.bar_l[1].clut = D_80095698.name_l[0].clut;
     D_80095698.bar_l[0].clut = D_80095698.name_l[0].clut;
@@ -1074,9 +1072,6 @@ void func_800868E0(StageFiles *files) {
     rect.h = 1;
     LoadImage(&rect, D_80091814);
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_800868E0);
-#endif
 
 /* Link this buffer's overlay packets into the overlay ordering table. */
 void func_80086E24(void) {

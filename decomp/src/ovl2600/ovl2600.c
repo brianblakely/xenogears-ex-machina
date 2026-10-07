@@ -1681,7 +1681,12 @@ u8 func_801CB2F0(u8 *codes) {
  * original gives running fp and 15 s5, leaving the 0xCF constant spilled
  * (reloaded into t3 at each compare, 0x88-byte frame); here 0xCF gets fp and
  * running is spilled to the stack (0x90-byte frame), and 15, the 1/6
- * multiplier and dirty rotate through s5-s7. */
+ * multiplier and dirty rotate through s5-s7. Global-alloc priorities
+ * here: multiplier 948 > dirty 762 > 15 652 > 0xCF 476 > running 304; the
+ * case bodies differ only by the 0xCF reloads (cases 0, 2, 3, 4 bytes each).
+ * Any extra copy of the loop exit test (e.g. an empty loop in a case) gives
+ * running two more references and fp, spilling 0xCF as the original does;
+ * 15 would still have to outrank the multiplier and dirty. */
 void func_801CB33C(void) {
     u8 codes[24];
     u8 name[24];

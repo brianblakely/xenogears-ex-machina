@@ -1103,7 +1103,11 @@ void func_800734B8(u32 *ot, POLY_G4 *poly, s32 x, s32 y, s32 w, s32 h) {
  * shares $v0 with -1/0xC80/2 and sched2 must group the stores; in the
  * original the load stays above the D_80077450 store, as for a pseudo set
  * more than once (the stores themselves do not alias-pin: distinct
- * globals and struct members are disambiguated alike). */
+ * globals and struct members are disambiguated alike). Storing the 1s
+ * through `last` (assigned again later, so not a birth) gives $v1 and the
+ * original's store order and leaves one difference: sched1 then puts the
+ * load of 1 above the SetDefDrawEnv argument setup instead of just below
+ * it. */
 void func_800737EC(void) {
     char name[8] = "trouble";
     s32 button;

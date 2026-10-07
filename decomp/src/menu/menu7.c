@@ -817,7 +817,12 @@ void func_8008B0D8(Player *player) {
  * the $s1 = $s0 base copy is scheduled last in its block (into the loop
  * branch's delay slot) where the original places it right after the
  * allocation; the base is set only once here, so sched1 treats the copy as
- * a register birth and places it latest. */
+ * a register birth and places it latest. Wrapping everything from the
+ * `player->keys` store through the channel loop in a do { } while (0)
+ * (a loop-note scheduling barrier right after the allocation) places the
+ * copy as the original does and leaves only the header store. Storing the
+ * $s0 copy instead (anim assigned before the store) lets combine fold the
+ * parameter copy into $s0 = $a0, which the original does not. */
 void func_8008B13C(AnimRecord *record, Player *player, Node *root) {
     Node **nodes = ((ModelSet *)root->data)->nodes;
     AnimHeader *anim;
