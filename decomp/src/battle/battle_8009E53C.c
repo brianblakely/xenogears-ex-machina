@@ -3973,7 +3973,13 @@ void func_800A96B4(s32 set) {
  * then free the files. Nonmatching: GCC hoists index * 2 + 13 out of the
  * loop and spills angle instead of y and z. Forms that keep index * 2 in the
  * loop (k + 13 first) let the threshold also hoist y's sign extension; the
- * original hoists only x's. */
+ * original hoists only x's. From the -dL dump (59 real insns, threshold 26
+ * with the call, -3 per moved insn, test threshold * savings * life >= insns):
+ * here index * 2 and + 13 move (26 -> 20), x's two insns move (-> 14), y's
+ * do not (14 * 4 < 59). With index * 2 kept in the loop and only x moved,
+ * y stays only if the loop has 81..104 insns, so the original's loop body is
+ * longer at loop time or differs in its movables. Writing the slot in two
+ * statements does not help (CSE reassociates to (index * 2 + 13) + k). */
 void func_800A979C(s32 index, s16 x, s16 y, s16 z, s16 angle) {
     GearPartFile *parts;
     s16 *entry;
