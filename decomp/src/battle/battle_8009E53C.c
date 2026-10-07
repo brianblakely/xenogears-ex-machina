@@ -4376,12 +4376,8 @@ void *func_800AA820(s32 mode) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Reset a battle object's state. */
 void func_800AA898(BattleObject *object, EffectPool *pool, u8 **scripts, u8 **animations) {
-    object->field3C = 0xFFFF;
-    object->field5C = 0xFF;
-    object->field39 = 0x6B;
     object->scripts = scripts;
     object->extra = NULL;
     object->script = NULL;
@@ -4394,6 +4390,9 @@ void func_800AA898(BattleObject *object, EffectPool *pool, u8 **scripts, u8 **an
     object->field37 = 0;
     object->field38 = 0;
     object->field3A = -1;
+    object->field3C = 0xFFFF;
+    object->field5C = 0xFF;
+    object->field39 = 0x6B;
     object->motion[0] = 0;
     object->motion[1] = 0;
     object->motion[2] = 0;
@@ -4413,9 +4412,6 @@ void func_800AA898(BattleObject *object, EffectPool *pool, u8 **scripts, u8 **an
     object->field36 = 0;
     object->field1E = -1;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800AA898);
-#endif
 
 /* Start target's effect script id on object (ids from 0x50 come from the
  * target's extra file), or queue it (up to five) while one is running. */
