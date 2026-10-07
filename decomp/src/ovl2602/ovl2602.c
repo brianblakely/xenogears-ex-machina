@@ -294,78 +294,64 @@ void func_801C5C98(void) {
     D_800625A0->buffer = 0;
 }
 
-/* Set up both buffers' quads of label `index` (two columns, 13-pixel rows from `row`).
- * NON_MATCHING: same code as ovl2600 func_801C5ABC (see there): index and
- * column swap callee-saved registers and the CLUT store lacks the original's
- * v1 copy of poly. */
-#ifdef NON_MATCHING
-void func_801C5CA8(Label *label, s32 index, s32 row, s32 mode) {
+/* Set up both buffers' quads of label `index` (two columns, 13-pixel rows
+ * from `row`): mode 0 maps the text rendered for the command column;
+ * otherwise the list layout, dimmed unless bit 7 is set, with the highlight
+ * from the low bits. Old-style definition: mode arrives as a promoted int
+ * and is narrowed where it is tested. */
+void func_801C5CA8(label, index, row, mode)
+    Label *label;
+    s32 index;
+    s32 row;
+    u8 mode;
+{
     POLY_FT4 *poly;
-    s32 column;
-    s32 line;
-    s32 u;
     s32 i;
     u8 dim;
 
-    column = index & 1;
-    i = 0;
-    line = index / 2;
-    u = (line & 1) << 7;
-    poly = label->poly;
-
-loop:
-    dim = 0;
-    SetPolyFT4(poly);
-    SetSemiTrans(poly, 0);
-    SetShadeTex(poly, 0);
-    poly->r0 = 0x80;
-    poly->g0 = 0x80;
-    poly->b0 = 0x80;
-    if ((u8)mode == 0) {
-        label->highlight = column;
-        poly->tpage = GetTPage(0, 0, 0x140, 0);
-        poly->u0 = u;
-        poly->v0 = ((index + row) / 4) * 13;
-        poly->u1 = u + label->width;
-        poly->v1 = ((index + row) / 4) * 13;
-        poly->u2 = u;
-        poly->v2 = ((index + row) / 4) * 13 + 13;
-        poly->u3 = u + label->width;
-        poly->v3 = ((index + row) / 4) * 13 + 13;
-    } else {
-        if (!(mode & 0x80)) {
-            dim = 0x20;
-            SetSemiTrans(poly, 1);
-            poly->r0 = dim;
-            poly->g0 = dim;
-            poly->b0 = dim;
+    for (i = 0; i < 2; i++) {
+        poly = &label->poly[i];
+        dim = 0;
+        SetPolyFT4(poly);
+        SetSemiTrans(poly, 0);
+        SetShadeTex(poly, 0);
+        poly->r0 = 0x80;
+        poly->g0 = 0x80;
+        poly->b0 = 0x80;
+        if (mode == 0) {
+            label->highlight = index & 1;
+            poly->tpage = GetTPage(0, 0, 0x140, 0);
+            poly->u0 = ((index / 2) & 1) << 7;
+            poly->v0 = ((index + row) / 4) * 13;
+            poly->u1 = (((index / 2) & 1) << 7) + label->width;
+            poly->v1 = ((index + row) / 4) * 13;
+            poly->u2 = ((index / 2) & 1) << 7;
+            poly->v2 = ((index + row) / 4) * 13 + 13;
+            poly->u3 = (((index / 2) & 1) << 7) + label->width;
+            poly->v3 = ((index + row) / 4) * 13 + 13;
+        } else {
+            if (!(mode & 0x80)) {
+                dim = 0x20;
+                SetSemiTrans(poly, 1);
+                poly->r0 = dim;
+                poly->g0 = dim;
+                poly->b0 = dim;
+            }
+            label->highlight = (mode & 0x7F) - 1;
+            poly->tpage = GetTPage(0, 0, 0x180, 0x80) | dim;
+            poly->u0 = (index & 1) * 0x60;
+            poly->v0 = (index / 2) * 13 + row;
+            poly->u1 = (index & 1) * 0x60 + label->width;
+            poly->v1 = (index / 2) * 13 + row;
+            poly->u2 = (index & 1) * 0x60;
+            poly->v2 = (index / 2) * 13 + row + 13;
+            poly->u3 = (index & 1) * 0x60 + label->width;
+            poly->v3 = (index / 2) * 13 + row + 13;
         }
-        label->highlight = (u8)(mode & 0x7F) - 1;
-        poly->tpage = GetTPage(0, 0, 0x180, 0x80) | dim;
-        poly->u0 = column * 0x60;
-        poly->v0 = line * 13 + row;
-        poly->u1 = column * 0x60 + label->width;
-        poly->v1 = line * 13 + row;
-        poly->u2 = column * 0x60;
-        poly->v2 = line * 13 + row + 13;
-        poly->u3 = column * 0x60 + label->width;
-        poly->v3 = line * 13 + row + 13;
-    }
-    if (label->highlight) {
-        poly->clut = D_80059414;
-    } else {
-        poly->clut = D_800595D4;
-    }
-    i++;
-    poly++;
-    if (i < 2) {
-        goto loop;
+        label->poly[i].clut = label->highlight ? D_80059414 : D_800595D4;
     }
     label->projected = 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801C5CA8);
-#endif
 
 /* Render `count` labels (text ids in pairs) into VRAM and set up their quads. */
 void func_801C5EE8(Label *labels, u8 *text_ids, s32 row, s32 count) {
@@ -1729,38 +1715,29 @@ void func_801CB690(void) {
 /*
  * Advance the camera move one update: x and y move the model's depth and
  * height, z the model code's camera distance; each axis stops (clears its
- * motion bit) at its target. Nonmatching: x and y keep the 16.16 offset in
- * v1 and the whole part in a0 where the original has the offset in a0 and
- * divides into v1; z does not address from[2] off offset[2] (the original's
- * a3 = &offset[2], from[2] at -36(a3)).
+ * motion bit) at its target. The whole part of the 16.16 offset is written
+ * out in each comparison and store.
  */
-#ifdef NON_MATCHING
 void func_801CBA2C(void) {
     s32 i;
-    s32 travelled;
-    s32 distance;
 
     if (D_800625A0->view_motion & 1) {
         for (i = 0; i < D_801D9050.frames; i++) {
             D_801D9050.offset[0] += D_801D9050.step[0];
         }
         if (D_801D9050.negative[0] == 0) {
-            travelled = D_801D9050.offset[0];
-            distance = travelled / 0x10000;
-            if (distance + D_801D9050.from[0] >= D_801D9050.to[0]) {
+            if (D_801D9050.offset[0] / 0x10000 + D_801D9050.from[0] >= D_801D9050.to[0]) {
                 D_800625A0->model_translation.vz = D_801D9050.to[0];
                 D_800625A0->view_motion &= 6;
             } else {
-                D_800625A0->model_translation.vz = distance + D_801D9050.from[0];
+                D_800625A0->model_translation.vz = D_801D9050.offset[0] / 0x10000 + D_801D9050.from[0];
             }
         } else {
-            travelled = D_801D9050.offset[0];
-            distance = travelled / 0x10000;
-            if (D_801D9050.to[0] >= D_801D9050.from[0] - distance) {
+            if (D_801D9050.to[0] >= D_801D9050.from[0] - D_801D9050.offset[0] / 0x10000) {
                 D_800625A0->model_translation.vz = D_801D9050.to[0];
                 D_800625A0->view_motion &= 6;
             } else {
-                D_800625A0->model_translation.vz = D_801D9050.from[0] - distance;
+                D_800625A0->model_translation.vz = D_801D9050.from[0] - D_801D9050.offset[0] / 0x10000;
             }
         }
     }
@@ -1769,49 +1746,40 @@ void func_801CBA2C(void) {
             D_801D9050.offset[1] += D_801D9050.step[1];
         }
         if (D_801D9050.negative[1] == 0) {
-            travelled = D_801D9050.offset[1];
-            distance = travelled / 0x10000;
-            if (distance + D_801D9050.from[1] >= D_801D9050.to[1]) {
+            if (D_801D9050.offset[1] / 0x10000 + D_801D9050.from[1] >= D_801D9050.to[1]) {
                 D_800625A0->model_translation.vy = D_801D9050.to[1];
                 D_800625A0->view_motion &= 5;
             } else {
-                D_800625A0->model_translation.vy = distance + D_801D9050.from[1];
+                D_800625A0->model_translation.vy = D_801D9050.offset[1] / 0x10000 + D_801D9050.from[1];
             }
         } else {
-            travelled = D_801D9050.offset[1];
-            distance = travelled / 0x10000;
-            if (D_801D9050.to[1] >= D_801D9050.from[1] - distance) {
+            if (D_801D9050.to[1] >= D_801D9050.from[1] - D_801D9050.offset[1] / 0x10000) {
                 D_800625A0->model_translation.vy = D_801D9050.to[1];
                 D_800625A0->view_motion &= 5;
             } else {
-                D_800625A0->model_translation.vy = D_801D9050.from[1] - distance;
+                D_800625A0->model_translation.vy = D_801D9050.from[1] - D_801D9050.offset[1] / 0x10000;
             }
         }
     }
     if (D_800625A0->view_motion & 4) {
-        D_801D9050.offset[2] = travelled = D_801D9050.offset[2] + D_801D9050.step[2];
+        D_801D9050.offset[2] += D_801D9050.step[2];
         if (D_801D9050.negative[2] == 0) {
-            distance = travelled / 0x10000;
-            if (distance + D_801D9050.from[2] >= D_801D9050.to[2]) {
+            if (D_801D9050.offset[2] / 0x10000 + D_801D9050.from[2] >= D_801D9050.to[2]) {
                 D_801E8674->view->distance = D_801D9050.to[2];
                 D_800625A0->view_motion &= 3;
             } else {
-                D_801E8674->view->distance = distance + D_801D9050.from[2];
+                D_801E8674->view->distance = D_801D9050.offset[2] / 0x10000 + D_801D9050.from[2];
             }
         } else {
-            distance = travelled / 0x10000;
-            if (D_801D9050.to[2] >= D_801D9050.from[2] - distance) {
+            if (D_801D9050.to[2] >= D_801D9050.from[2] - D_801D9050.offset[2] / 0x10000) {
                 D_801E8674->view->distance = D_801D9050.to[2];
                 D_800625A0->view_motion &= 3;
             } else {
-                D_801E8674->view->distance = D_801D9050.from[2] - distance;
+                D_801E8674->view->distance = D_801D9050.from[2] - D_801D9050.offset[2] / 0x10000;
             }
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CBA2C);
-#endif
 
 /* Load the model's matrices, then the view's. */
 void func_801CBDA0(void) {

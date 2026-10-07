@@ -147,10 +147,16 @@ Burst *func_801FC470(void) {
  * 320x224 grid (textured from the copy at 0x2c0,0x100), each corner's
  * distance from the centre (variant 1: twice it; otherwise 3/5 of it). */
 #ifdef NON_MATCHING
-/* Same operations; the original keeps v (row * 16) out of strength
- * reduction (recomputed from the row counter) and computes the second
- * triangle's (v - 101) * 16 per column; here both become row induction
- * variables (the frame slots and s-registers shift accordingly). */
+/* Same operations. v = row * 16 is written in the column loop so loop.c
+ * hoists it to the row body instead of making it a row induction variable
+ * (the original recomputes it from the row counter), and the shading bytes
+ * are stored r, g, b in order. Remaining: the original also hoists the
+ * second triangle's (v - 101) * 16 to the column body (s3) and copies the
+ * column offsets (col * 16 - 155/149) * 16 into a frame slot and s4 before
+ * the corner loop; here (v - 101) * 16 stays in the corner loop's second arm
+ * (8 bytes shorter) and the k/u/u_right/v_bottom registers rotate. Writing
+ * the four offsets as row/column variables loses the column induction
+ * variables altogether. */
 Burst *func_801FC4A8(Burst *burst) {
     BurstCell *cell;
     SVECTOR *triangle;
@@ -180,8 +186,8 @@ Burst *func_801FC4A8(Burst *burst) {
     burst->rot.vz = 0;
     for (half = 0; half != 2; half++) {
         for (row = 0; row != 14; row++) {
-            v = row * 16;
             for (col = 0; col != 20; col++) {
+                v = row * 16;
                 cell = &burst->cells[half][row][col];
                 triangle = half == 0 ? D_801FCE18 : D_801FCE30;
                 for (k = 0; k != 3; k++) {
@@ -205,9 +211,15 @@ Burst *func_801FC4A8(Burst *burst) {
                     prim = &cell->prim[k];
                     SetPolyGT3(prim);
                     SetShadeTex(prim, 0);
-                    prim->r0 = prim->g0 = prim->b0 = 0x80;
-                    prim->r1 = prim->g1 = prim->b1 = 0x80;
-                    prim->r2 = prim->g2 = prim->b2 = 0x80;
+                    prim->r0 = 0x80;
+                    prim->g0 = 0x80;
+                    prim->b0 = 0x80;
+                    prim->r1 = 0x80;
+                    prim->g1 = 0x80;
+                    prim->b1 = 0x80;
+                    prim->r2 = 0x80;
+                    prim->g2 = 0x80;
+                    prim->b2 = 0x80;
                     prim->code |= 2;
                     prim->tpage = GetTPage(2, 0, col * 16 + 0x2C0, 0x100);
                     u = (col * 16) & 0x3F;

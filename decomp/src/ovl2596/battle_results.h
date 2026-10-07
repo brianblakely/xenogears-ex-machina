@@ -234,14 +234,10 @@ extern u8 D_801E44E4;       /* arrow glyph */
 /* Per slot byte tables, 8 bytes per slot; the second set starts 3 slots on. */
 extern u8 D_800CDD10[6][8];
 
-/* The summary window's text: 27 glyph entries and their positions. */
-typedef struct {
-    u8 glyph;             /* 0xff: none */
-    u8 shaded;
-    u8 colour;            /* index into the shading colours */
-} SummaryGlyph;
+/* The summary window's text: 27 glyph entries of three bytes (glyph, 0xff:
+ * none; shaded flag; index into the shading colours) and their positions. */
 
-extern SummaryGlyph D_800C32C4[27];
+extern u8 D_800C32C4[27 * 3];
 extern s16 D_800C3318[27];
 extern s16 D_800C3350[27];
 
