@@ -523,7 +523,12 @@ void func_80072324(void) {
  * cursor }` reproduces that inner loop exactly (duplicated first load, wrap
  * at the top, the +1/-1 pair around the ready test), but its found path
  * keeps its own advance and exit test where the original jumps back into
- * the inner loop's wrap. */
+ * the inner loop's wrap. The original layout is the one stmt.c's loop
+ * rotation gives a for (;;) that loads slot before the loop and at the end
+ * of the body and breaks after `*cursor = 0` (the found test rolled to the
+ * end, the advance at the top): that form reproduces the body exactly, but
+ * its rolled exit code (18 RTL insns) is short enough for jump.c to
+ * duplicate at the entry; the original's was not (somewhere above 22). */
 #ifdef NON_MATCHING
 void func_800723E0(void) {
     s32 position;
