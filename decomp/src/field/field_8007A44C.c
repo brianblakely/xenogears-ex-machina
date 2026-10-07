@@ -3059,12 +3059,12 @@ void func_800831D0(SVECTOR *out, VECTOR *in) {
 #ifdef NON_MATCHING
 /* While the actor moves, turn its heading a quarter (left with flag bit 0,
  * else right) once, apply it, and mark the heading as turned.
- * NON_MATCHING: the original keeps the goal store ahead of the heading reload
- * for the call (ours moves the store into its delay slot). */
+ * NON_MATCHING: the original keeps the goal store (sh 0x106) ahead of the
+ * heading reload for the call; ours schedules it after the reload and reorg
+ * moves it into the jal delay slot. Frame (0x20) and everything else match. */
 void func_800831F4(void *owner, FieldActor *actor, FieldDescriptor *descriptor, s32 flags) {
     s16 heading;
     s16 turned;
-    s32 unused[2]; /* never used; the original frame reserves it */
 
     if (actor->unk030[0] != 0 || actor->unk030[2] != 0) {
         heading = actor->heading_goal;
@@ -3077,7 +3077,7 @@ void func_800831F4(void *owner, FieldActor *actor, FieldDescriptor *descriptor, 
             actor->heading = turned & 0xFFF;
             actor->heading_goal = turned & 0xFFF;
             func_80081F80(owner, actor->heading, descriptor);
-            actor->heading = actor->heading_goal = actor->heading_goal | 0x8000;
+            actor->heading_goal = actor->heading = actor->heading_goal | 0x8000;
         }
     }
 }
