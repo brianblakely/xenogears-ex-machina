@@ -2586,48 +2586,51 @@ FrameCurve func_801E34BC(s32 type) {
     return (FrameCurve)func_801E0850;
 }
 
-/* Reset an actor's script state to run `entries` with the tables `locals`.
- * The stores form one do/while (0) statement (a statement-macro shape); its
- * loop notes keep the -1 load at the head of the original's schedule. */
+/* Reset actor `a`'s script state: run `list` with the tables `tables`, no
+ * animation (`none`), no motion. A statement macro (do/while (0)). */
+#define RESET_SCRIPT(a, list, tables, none) \
+    do {                             \
+        (a)->h3C = 0xFFFF;           \
+        (a)->parent = 0xFF;          \
+        (a)->b39 = 0x6B;             \
+        (a)->entries = (list);       \
+        (a)->shared = NULL;          \
+        (a)->pc = 0;                 \
+        (a)->locals = (tables);      \
+        (a)->globals = NULL;         \
+        (a)->depth = 0;              \
+        (a)->anim_state = (none);    \
+        (a)->aim_actor = 0;          \
+        (a)->b35 = 0;                \
+        (a)->scaled = 0;             \
+        (a)->b38 = 0;                \
+        (a)->h3A = (none);           \
+        (a)->spin[0] = 0;            \
+        (a)->spin[1] = 0;            \
+        (a)->spin[2] = 0;            \
+        (a)->spin_accel[0] = 0;      \
+        (a)->spin_accel[1] = 0;      \
+        (a)->spin_accel[2] = 0;      \
+        (a)->drift[0] = 0;           \
+        (a)->drift[1] = 0;           \
+        (a)->drift[2] = 0;           \
+        (a)->drift_accel[0] = 0;     \
+        (a)->drift_accel[1] = 0;     \
+        (a)->drift_accel[2] = 0;     \
+        (a)->target[0] = 0;          \
+        (a)->target[1] = 0;          \
+        (a)->target[2] = 0;          \
+        (a)->h8E = 1;                \
+        (a)->b36 = 0;                \
+        (a)->h1E = (none);           \
+    } while (0)
+
+/* Reset an actor's script state to run `entries` with the tables `locals`. */
 void func_801E3534(Actor *actor, SlotPool *pool, s32 *entries, s32 *locals) {
     s16 none;
 
     none = -1;
-    do {
-        actor->h3C = 0xFFFF;
-        actor->parent = 0xFF;
-        actor->b39 = 0x6B;
-        actor->entries = entries;
-        actor->shared = NULL;
-        actor->pc = 0;
-        actor->locals = locals;
-        actor->globals = NULL;
-        actor->depth = 0;
-        actor->anim_state = none;
-        actor->aim_actor = 0;
-        actor->b35 = 0;
-        actor->scaled = 0;
-        actor->b38 = 0;
-        actor->h3A = none;
-        actor->spin[0] = 0;
-        actor->spin[1] = 0;
-        actor->spin[2] = 0;
-        actor->spin_accel[0] = 0;
-        actor->spin_accel[1] = 0;
-        actor->spin_accel[2] = 0;
-        actor->drift[0] = 0;
-        actor->drift[1] = 0;
-        actor->drift[2] = 0;
-        actor->drift_accel[0] = 0;
-        actor->drift_accel[1] = 0;
-        actor->drift_accel[2] = 0;
-        actor->target[0] = 0;
-        actor->target[1] = 0;
-        actor->target[2] = 0;
-        actor->h8E = 1;
-        actor->b36 = 0;
-        actor->h1E = none;
-    } while (0);
+    RESET_SCRIPT(actor, entries, locals, none);
 }
 
 /* Call script entry `entry` of `source` in `actor`: queued while the actor is
