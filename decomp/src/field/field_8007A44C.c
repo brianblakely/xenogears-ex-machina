@@ -2547,11 +2547,17 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_800815F0
 
 #ifdef NON_MATCHING
 /* Record the controlled actor `index`'s state in the next movement-history
- * slot, unless party processing is suspended. */
+ * slot, unless party processing is suspended.
+ * NON_MATCHING: the original addresses the unk30 and triangle stores through
+ * registers holding 800b1510+0x10 / -0xa and reads the history index through
+ * a register once the heading is stored; ours addresses all of them
+ * absolutely (lui $at). Frame and statement order match. */
 void func_80081C54(s32 index) {
     FieldModel *model;
     FieldActor *actor;
     s32 i;
+    VECTOR unused0; /* unused in the original; reserves 16 bytes */
+    SVECTOR unused1; /* unused in the original; reserves 8 bytes */
 
     actor = D_800AF880.components.descriptors[index].actor;
     model = D_800AF880.components.descriptors[index].model;
