@@ -856,7 +856,6 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
     }
 }
 
-#ifdef NON_MATCHING
 /* Apply one packed delta of a tween track to dst: a signed byte added to it
  * or, after the escape byte -0x80, a signed little-endian halfword replacing
  * it (the cursor is stored before each byte is read). */
@@ -886,9 +885,7 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
  * `tag`). As in the original, the "spin" stop clears the step of the last
  * slot a computing kind used, which may belong to an earlier node. Tag and
  * scale remain full words; packed escapes advance the cursor before reading
- * each byte. Nonmatching: only the approach case's add block differs: the
- * original stores vx, vz, vy (loading vz before storing vx), this order
- * vy, vx, vz (other orders change the step registers). */
+ * each byte. Each approach case keeps its own steps. */
 s32 func_800A0838(EffectPool *pool, ModelPart *part, s32 tag, s32 scale) {
     Tween *slot;
     Tween *last;
@@ -903,7 +900,6 @@ s32 func_800A0838(EffectPool *pool, ModelPart *part, s32 tag, s32 scale) {
     u8 mode;
     s16 time;
     s32 dx, dy, dz, dist, limit, turn;
-    s16 sx, sy, sz;
 
     count = part->index;
     for (i = 0; i < count; i++, part++) {
@@ -963,7 +959,9 @@ s32 func_800A0838(EffectPool *pool, ModelPart *part, s32 tag, s32 scale) {
                 last = slot;
                 part->rotation.vz = slot->u.values[2] + slot->u.values[5] * time / slot->duration;
                 goto check_rot;
-            case 4:
+            case 4: {
+                s16 sx, sy, sz;
+
                 sx = (slot->u.values[3] - part->rotation.vx) / slot->duration;
                 sy = (slot->u.values[4] - part->rotation.vy) / slot->duration;
                 sz = (slot->u.values[5] - part->rotation.vz) / slot->duration;
@@ -974,12 +972,13 @@ s32 func_800A0838(EffectPool *pool, ModelPart *part, s32 tag, s32 scale) {
                     part->rotation.vy = slot->u.values[4];
                     part->rotation.vz = slot->u.values[5];
                 } else {
-                    part->rotation.vy += sy;
                     part->rotation.vx += sx;
+                    part->rotation.vy += sy;
                     part->rotation.vz += sz;
                     slot->time = 0;
                 }
                 goto check_rot;
+            }
             case 5:
                 slot->u.values[0] += slot->u.values[3];
                 part->rotation.vx += slot->u.values[0];
@@ -1133,7 +1132,9 @@ s32 func_800A0838(EffectPool *pool, ModelPart *part, s32 tag, s32 scale) {
                 last = slot;
                 part->translation[2] = slot->u.values[2] + slot->u.values[5] * time / slot->duration;
                 break;
-            case 4:
+            case 4: {
+                s16 sx, sy, sz;
+
                 sx = (slot->u.values[3] - part->translation[0]) / slot->duration;
                 sy = (slot->u.values[4] - part->translation[1]) / slot->duration;
                 sz = (slot->u.values[5] - part->translation[2]) / slot->duration;
@@ -1150,6 +1151,7 @@ s32 func_800A0838(EffectPool *pool, ModelPart *part, s32 tag, s32 scale) {
                     slot->time = 0;
                 }
                 break;
+            }
             case 5:
                 slot->u.values[0] += slot->u.values[3];
                 part->translation[0] += slot->u.values[0];
@@ -1204,7 +1206,9 @@ s32 func_800A0838(EffectPool *pool, ModelPart *part, s32 tag, s32 scale) {
                 last = slot;
                 part->scale[2] = slot->u.values[2] + slot->u.values[5] * time / slot->duration;
                 break;
-            case 4:
+            case 4: {
+                s16 sx, sy, sz;
+
                 sx = (slot->u.values[3] - slot->u.values[0]) / slot->duration;
                 sy = (slot->u.values[4] - slot->u.values[1]) / slot->duration;
                 sz = (slot->u.values[5] - slot->u.values[2]) / slot->duration;
@@ -1224,6 +1228,7 @@ s32 func_800A0838(EffectPool *pool, ModelPart *part, s32 tag, s32 scale) {
                     slot->time = 0;
                 }
                 break;
+            }
             case 5:
                 slot->u.values[0] += slot->u.values[3];
                 part->scale[0] += slot->u.values[0];
@@ -1266,9 +1271,6 @@ s32 func_800A0838(EffectPool *pool, ModelPart *part, s32 tag, s32 scale) {
     }
     return result;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A0838);
-#endif
 
 /* Apply an animation frame to a hierarchy's parts: the listed rotations (unless
  * flag 1) and translations (unless flag 2), marking each changed part; parts
@@ -2222,14 +2224,10 @@ ImageAnim *func_800A3640(anim, target, mode, flags, colors, x, y, z, x2, y2, z2,
     return anim;
 }
 
-#ifdef NON_MATCHING
 /* Advance an image animation by `ticks` + 1: when its curve selects another
  * frame, rebuild the image (resident decoders or fades) and copy the
  * overlap into its target image. Returns the frame, or a negative value
- * once the animation ended. Nonmatching: only the operand order of the
- * frame compare differs (beq $s1, $v0 in the original); written
- * frame != anim->frame, GCC no longer returns the loaded frame straight
- * from the compare. */
+ * once the animation ended. */
 s16 func_800A3E98(ImageAnim *anim, s32 ticks) {
     RECT src;
     RECT dst;
@@ -2252,7 +2250,8 @@ s16 func_800A3E98(ImageAnim *anim, s32 ticks) {
         func_800A429C(anim);
         return frame;
     }
-    if (anim->frame != frame) {
+    value = anim->frame;
+    if (frame != value) {
         anim->frame = result;
         switch (anim->mode) {
         case 0:
@@ -2319,9 +2318,6 @@ s16 func_800A3E98(ImageAnim *anim, s32 ticks) {
     }
     return frame;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A3E98);
-#endif
 
 /* Stop an image animation: restore its original pixels to VRAM (resident
  * decoder modes) and release its blocks. */
