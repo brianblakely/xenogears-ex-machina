@@ -3445,19 +3445,13 @@ void func_800A7064(Surface *surface, u16 *table, s16 angle_base, s32 scale, s16 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A7064);
 #endif
 
-#ifdef NON_MATCHING
 /* Simulate and draw a surface (hair or cloth): each strand's
  * segments hang from their start pulled by `wind` (plus each point's sag),
  * keep their length, stay above `floor` and are pushed out of the surface's
  * collision spheres; then the points' normals are averaged from their
  * triangles, and the visible triangles are lit (front and back colours) and
  * queued. As in the original, a triangle the GTE flags as off screen does
- * not advance the triangle pointer. Nonmatching: loop invariant motion
- * hoists addPrim's 0x00FFFFFF mask out of the triangle loop (into $t2),
- * which the original computes per triangle; the rest is identical. (cc1
- * 2.6.3 moves an invariant when threshold * savings * life >= the loop's
- * insns, the threshold starting at 52 and dropping 3 per moved register: here
- * 37 * 10 >= 291, so the original's loop must differ in length or order.) */
+ * not advance the triangle pointer. */
 void func_800A7948(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buffer, s32 scale,
                    s16 floor) {
     VECTOR d;
@@ -3472,7 +3466,6 @@ void func_800A7948(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buff
     s32 otz;
     SurfacePoint *p, *q;
     SurfacePoly *poly;
-    POLY_GT3 *prim;
     SurfaceEntry *entry;
     s32 len, radius;
     s32 i;
@@ -3596,7 +3589,6 @@ void func_800A7948(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buff
     poly = surface->polyList;
     p = *surface->strands;
     for (i = 0; i < surface->polys; i++) {
-        prim = &poly->prim[buffer];
         gte_ldv3(p[poly->index[0]].pos, p[poly->index[1]].pos, p[poly->index[2]].pos);
         gte_rtpt();
         k = 0;
@@ -3606,7 +3598,7 @@ void func_800A7948(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buff
         }
         gte_nclip();
         gte_stopz(&opz);
-        gte_stsxy3(&prim->x0, &prim->x1, &prim->x2);
+        gte_stsxy3(&poly->prim[buffer].x0, &poly->prim[buffer].x1, &poly->prim[buffer].x2);
         gte_avsz3();
         gte_stotz(&otz);
         otz >>= D_80050100;
@@ -3628,7 +3620,7 @@ void func_800A7948(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buff
         gte_ldv0(&normal);
         gte_ldrgb(rgb);
         gte_nccs();
-        gte_strgb(&prim->r0);
+        gte_strgb(&poly->prim[buffer].r0);
         if (opz < 0) {
             normal.vx = p[poly->index[1]].normal[0];
             normal.vy = p[poly->index[1]].normal[1];
@@ -3640,7 +3632,7 @@ void func_800A7948(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buff
         }
         gte_ldv0(&normal);
         gte_nccs();
-        gte_strgb(&prim->r1);
+        gte_strgb(&poly->prim[buffer].r1);
         if (opz < 0) {
             normal.vx = p[poly->index[2]].normal[0];
             normal.vy = p[poly->index[2]].normal[1];
@@ -3652,14 +3644,11 @@ void func_800A7948(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buff
         }
         gte_ldv0(&normal);
         gte_nccs();
-        gte_strgb(&prim->r2);
+        gte_strgb(&poly->prim[buffer].r2);
         addPrim(ot + otz, &poly->prim[buffer]);
         poly++;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A7948);
-#endif
 
 /* Free a surface's buffers (once). */
 void func_800A8A88(Surface *surface) {
