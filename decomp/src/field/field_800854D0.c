@@ -6942,7 +6942,14 @@ s32 func_80099A8C(s32 x) {
  * birth), which sched1 boosts next to its use. Holding it in a variable
  * assigned twice moves the load up (score 13) but needs a dead second
  * assignment; operand order, casts, index temporaries and an `extra`
- * temporary give 19-30. 900 s of permuter found nothing. */
+ * temporary give 19-30. 900 s of permuter found nothing.
+ * sched1 trace: the D_800AFB10 load (emitted before the index chain) wins
+ * the load-hazard tie against the chain's subu and lands after it, so it
+ * no longer overlaps the call result and local-alloc gives it $v0 (the
+ * original's base is in $a0 and D_800B0078 in $a1, both live across the
+ * chain). Pointer-sum forms of the descriptor index, the other actor
+ * assigned inside the sum, and a split `extra` sum give the same 19-21;
+ * another 700 s of permuter found nothing. */
 s32 func_80099AC0(s32 speed) {
     VECTOR delta;
     FieldModel *model;

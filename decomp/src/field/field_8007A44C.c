@@ -2164,20 +2164,21 @@ s32 func_80080A18(void) {
 #ifdef NON_MATCHING
 /* Reset event actor `index` to its defaults and settle it on the floor of
  * each collision layer under its descriptor's position.
- * NON_MATCHING (10 edits): only the first constant stores differ: the
- * original hoists the 0x10 (+18/+1c) constant into $v1 above the +0 store
- * and loads 0xff for +74/+75 later; ours hoists the 0xff constant instead.
- * This is local-alloc: the original's 0x10 and 0xff(QI) both overlap the
- * 0x60 (+1a) constant, which takes $v0, so both get $v1 and sched2 floats
- * the 0x10 load up. All 120 orders of the five statements give >= 10:
- * unk18, height, fraction, unk074, unk075 gets 0x10 into $v1 but 0xff into
- * $v0; unk18, fraction, unk074, height, unk075 the reverse (the sets are
- * sched1 register births, so each constant sits next to its first store).
- * The (point + i)-> and (normal + layer)-> forms keep the point clears off
- * the call argument as the original does. All 5040 orders of the seven
- * first stores (flags .. unk075) were compiled: none beats this one; a
- * shared s32 temporary for 0x10/0xff stops being a register birth and is
- * hoisted to the function entry; do { } while (0) groups split the block. */
+ * NON_MATCHING (4 edits): only the +4 store is misplaced. With this order
+ * (flags, unk18, layer_flags, fraction, unk074, height, unk075) local-alloc
+ * gives the original's registers (0x10 in $v1 across the 0x800 constant,
+ * 0x60 in $v0, the 0xff bytes in $v1); sched2 then keeps the +4 store after
+ * the +18/+1c stores (higher luid), where the original stores +4 right after
+ * +0 and loads 0x60 before the +18 store. That needs the 0x60 load ahead of
+ * the 0xff load in luid order, which the register births (each constant set
+ * next to its first store) never give while 0xff spans the 0x60 store.
+ * All 5040 orders of these seven stores were compiled (none exact; this is
+ * the best); the earlier draft order gave 10. The (point + i)-> and
+ * (normal + layer)-> forms keep the point clears off the call argument as
+ * the original does; a shared s32 temporary for 0x10/0xff stops being a
+ * register birth and is hoisted to the function entry; do { } while (0)
+ * groups split the block.
+ */
 void func_80080A74(s32 index) {
     VECTOR normal[4];
     SVECTOR point[4];
@@ -2186,10 +2187,10 @@ void func_80080A74(s32 index) {
 
     actor = D_800AF880.components.descriptors[index].actor;
     actor->flags = 0xB0;
-    actor->layer_flags = 0x800;
-    actor->unk074 = 0xFF;
     actor->unk18 = 0x10;
+    actor->layer_flags = 0x800;
     actor->gravity.s.fraction = 0x10;
+    actor->unk074 = 0xFF;
     actor->height = 0x60;
     actor->unk075 = 0xFF;
     actor->unk40[0] = 0;
