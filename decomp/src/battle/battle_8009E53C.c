@@ -2267,10 +2267,10 @@ ImageAnim *func_800A3640(anim, target, mode, flags, colors, x, y, z, x2, y2, z2,
 /* Advance an image animation by `ticks` + 1: when its curve selects another
  * frame, rebuild the image (resident decoders or fades) and copy the
  * overlap into its target image. Returns the frame, or a negative value
- * once the animation ended. With FrameCurve returning s16 (as the curves
- * 800A3490-800A35C8 do) this differs only in the operand order of the frame
- * compare; written frame != anim->frame, GCC no longer returns the loaded
- * frame straight from the compare. */
+ * once the animation ended. Nonmatching: only the operand order of the
+ * frame compare differs (beq $s1, $v0 in the original); written
+ * frame != anim->frame, GCC no longer returns the loaded frame straight
+ * from the compare. */
 s16 func_800A3E98(ImageAnim *anim, s32 ticks) {
     RECT src;
     RECT dst;
@@ -2279,6 +2279,7 @@ s16 func_800A3E98(ImageAnim *anim, s32 ticks) {
     u16 *work;
     u16 result;
     s16 frame;
+    s32 value;
     s32 x;
     s32 y;
 
@@ -2286,7 +2287,8 @@ s16 func_800A3E98(ImageAnim *anim, s32 ticks) {
         return -1;
     }
     anim->time += anim->speed * (ticks + 1);
-    frame = result = anim->curve(anim->time, anim->divisor, anim->base);
+    value = result = anim->curve(anim->time, anim->divisor, anim->base);
+    frame = value;
     if (frame < 0) {
         func_800A429C(anim);
         return frame;
