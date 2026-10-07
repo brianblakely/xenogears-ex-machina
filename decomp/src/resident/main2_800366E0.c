@@ -664,10 +664,7 @@ extern u8 *D_800658C8;            /* the loaded music's instrument data */
 /* Load the music of `scene` from directory 12/3: its sequence (file
  * 6 + 2 * scene) and wave bank (file 7 + 2 * scene + `variant`). Returns 0
  * with the sequence, 0 and the bank data after its first word, or -1 with
- * zeros when the directory has no such scene.
- * Nonmatching: the original computes the bank's file number twice, in
- * forms GCC here folds into one, and so keeps more values in registers. */
-#ifdef NON_MATCHING
+ * zeros when the directory has no such scene. */
 s32 func_800379D8(s32 scene, s32 variant, u8 **sequence, s32 *unused, u8 **bank) {
     s32 group;
     s32 index;
@@ -675,6 +672,7 @@ s32 func_800379D8(s32 scene, s32 variant, u8 **sequence, s32 *unused, u8 **bank)
     u8 *samples;
     u8 *data;
     s32 file;
+    s32 base;
 
     func_800284B4(&group, &index);
     func_80028470(12, 3);
@@ -685,15 +683,16 @@ s32 func_800379D8(s32 scene, s32 variant, u8 **sequence, s32 *unused, u8 **bank)
         *unused = 0;
         *bank = NULL;
     } else {
-        scene *= 2;
-        samples = func_80031BDC(func_800288EC(scene + (variant + 7)), 1);
+        base = scene * 2;
+        samples = func_80031BDC(func_800288EC(base + 7 + variant), 1);
         func_800320A4(samples);
-        file = scene + 6;
+        file = base + 6;
         data = func_80031BDC(func_800288EC(file), 1);
         func_800320A4(data);
         D_8005A1DC[0].file = file;
         D_8005A1DC[0].destination = data;
-        D_8005A1DC[1].file = scene + 7 + variant;
+        base += variant + 7;
+        D_8005A1DC[1].file = base;
         D_8005A1DC[1].destination = samples;
         D_8005A1DC[2].file = 0;
         D_8005A1DC[2].destination = NULL;
@@ -706,9 +705,6 @@ s32 func_800379D8(s32 scene, s32 variant, u8 **sequence, s32 *unused, u8 **bank)
     func_80028470(group, index);
     return result;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2_800366E0", func_800379D8);
-#endif
 
 /* A voice whose volume pair follows the output mode (D_80059518). */
 typedef struct {

@@ -500,8 +500,10 @@ void func_80026B9C(void) {
 /* Queue the sheet entry as textured quads at (x, y), linking each quad at
  * `ot`. Its signed texture coordinates supply the offsets within its VRAM
  * page. Leave the queue untouched unless every part fits before its end. */
-/* Nonmatching: register allocation and store scheduling differ; the C
- * candidate is four bytes shorter than the original. */
+/* The texture column variable is reused for the part's u coordinate.
+ * Nonmatching: the left edge and v take $s4/$s3 swapped (original $s3/$s4),
+ * which also moves the v0/v1 stores after the x0 store as in the original
+ * (same size). */
 #ifdef NON_MATCHING
 void func_80026BA4(u16 *sheet, s32 id, s32 x, s32 y, u_long *ot) {
     s16 *entry;
@@ -509,7 +511,7 @@ void func_80026BA4(u16 *sheet, s32 id, s32 x, s32 y, u_long *ot) {
     POLY_FT4 *poly;
     s32 i;
     s32 count;
-    s32 u, v, w, h, left, top, mode;
+    s32 v, w, h, left, top, mode;
     s32 page_x, page_y, column, texture_u;
 
     entry = (s16 *)(sheet[id + 2] + (s32)sheet);
@@ -535,7 +537,7 @@ void func_80026BA4(u16 *sheet, s32 id, s32 x, s32 y, u_long *ot) {
             h = (s16)part->h;
             left = (s16)part->x;
             top = (s16)part->y;
-            u = (s16)part->u;
+            column = (s16)part->u;
             poly->clut = GetClut(part->clut_x, part->clut_y);
             poly->tpage = GetTPage(mode, 0, page_x, page_y);
             poly->x0 = left + x;
@@ -550,10 +552,10 @@ void func_80026BA4(u16 *sheet, s32 id, s32 x, s32 y, u_long *ot) {
             poly->y1 = top + y;
             poly->y2 = top + y + h;
             poly->y3 = top + y + h;
-            poly->u0 = u;
-            poly->u1 = u + w;
-            poly->u2 = u;
-            poly->u3 = u + w;
+            poly->u0 = column;
+            poly->u1 = column + w;
+            poly->u2 = column;
+            poly->u3 = column + w;
             AddPrim(ot, poly);
         }
     }
