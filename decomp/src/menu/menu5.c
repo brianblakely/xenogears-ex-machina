@@ -1322,19 +1322,24 @@ void func_80087830(void) {
 
 /* Load the stage's icon, backdrop and extra TIM images into VRAM, noting
  * the icon and backdrop palettes and texture pages; the backdrop palette's
- * first entry is transparent and the rest semi-transparent. Does not match:
- * the icon table is walked with two pointers and the loop counter is kept. */
+ * first entry is transparent and the rest semi-transparent. Does not match
+ * (468 vs 452 bytes): the original walks the icon palettes and pages with
+ * two separate pointers (s2, s3 = s2 - 2), keeps the loop counter and so
+ * also saves s4. */
 #ifdef NON_MATCHING
 void func_800878DC(StageFiles *files) {
     TimImage tim;
+    s32 unused[2]; /* unused in the original; reserves 8 bytes */
     s16 *clut;
     s32 i;
+    MapTable *table;
 
+    table = &D_80091934;
     for (i = 0; i < 4; i++) {
         OpenTIM(files->icon_tims[i]);
         ReadTIM(&tim);
-        D_80091934.icons[i].clut = GetClut(tim.crect->x, tim.crect->y);
-        D_80091934.icons[i].tpage = GetTPage(1, 1, tim.prect->x, tim.prect->y);
+        table->icons[i].clut = GetClut(tim.crect->x, tim.crect->y);
+        table->icons[i].tpage = GetTPage(1, 1, tim.prect->x, tim.prect->y);
         LoadImage(tim.crect, tim.caddr);
         LoadImage(tim.prect, tim.paddr);
     }
@@ -1342,7 +1347,7 @@ void func_800878DC(StageFiles *files) {
     ReadTIM(&tim);
     D_800927D8 = GetClut(tim.crect->x, tim.crect->y);
     D_800927D4 = GetTPage(0, 2, tim.prect->x, tim.prect->y);
-    D_800927DC = tim.prect->x << 2;
+    D_800927DC = tim.prect->x * 4;
     D_800927E0 = tim.prect->y;
     clut = (s16 *)tim.caddr;
     clut[0] = 0;
