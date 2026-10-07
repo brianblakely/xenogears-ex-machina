@@ -147,11 +147,8 @@ void func_801FC1A8(TaskNode *node) {
  * model's origin outward at `speed` plus a random part of `speed_range`,
  * spinning by a random part of `spin_range`, falling under `gravity`, for
  * `life` frames. `prims` holds the model's primitives, or 0 to build them
- * (twice: one copy per display buffer).
- * NON_MATCHING: only the callee-saved registers of four values differ (the
- * original has model s0, life/buffer s1, matrix/size s2, debris s4; this C
- * gets s4, s0, s1, s2). */
-#ifdef NON_MATCHING
+ * (twice: one copy per display buffer). The primitives are read through
+ * `source`, a copy of `model` (the original keeps the two apart). */
 void func_801FC4C4(Model *model, u8 *prims, MATRIX *matrix, s32 gravity, s32 speed, s32 speed_range,
                    s32 spin_range, s32 life) {
     DebrisTask *debris;
@@ -165,6 +162,7 @@ void func_801FC4C4(Model *model, u8 *prims, MATRIX *matrix, s32 gravity, s32 spe
     MATRIX m;
     s32 count, size, kind, i, r;
     u8 *buffer;
+    Model *source;
 
     debris = func_8001D1D8(sizeof(DebrisTask), NULL, func_801FC0CC, func_801FC1A8, func_801FC074);
     debris->model = model;
@@ -174,18 +172,19 @@ void func_801FC4C4(Model *model, u8 *prims, MATRIX *matrix, s32 gravity, s32 spe
     debris->pieces = piece;
     debris->matrix = *matrix;
     debris->life = life;
-    size = func_800B16A4(model);
+    source = model;
+    size = func_800B16A4(source);
     if (prims == NULL) {
         buffer = func_80031BDC(size * 2, 0);
-        func_800B1720(model, buffer, 0, 1);
+        func_800B1720(source, buffer, 0, 1);
         memcpy(buffer + size, buffer, size);
     } else {
         buffer = prims;
     }
     debris->prims[0] = buffer;
     debris->prims[1] = buffer + size;
-    desc = (PacketDesc *)(model->packets + (s32)model);
-    vertices = (SVECTOR *)(model->vertices + (s32)model);
+    desc = (PacketDesc *)(source->packets + (s32)source);
+    vertices = (SVECTOR *)(source->vertices + (s32)source);
     for (i = 0; i != count; i++) {
         /* Bit 8 selects the unlit command layout; descriptor flags bit 0
          * selects lighting. Vertex indices follow its header and colours. */
@@ -345,6 +344,3 @@ void func_801FC4C4(Model *model, u8 *prims, MATRIX *matrix, s32 gravity, s32 spe
         desc = (PacketDesc *)((u8 *)desc + (desc->words + 1) * 4);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3384/asm/nonmatchings/ovl3384", func_801FC4C4);
-#endif
