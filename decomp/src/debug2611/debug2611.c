@@ -237,19 +237,15 @@ void func_80280A9C(void) {
 }
 
 /* Open the debug text window while any button is pressed. */
-#ifdef NON_MATCHING
-/* The original reserves 0x30 more stack bytes than the recovered locals.
- * The frame layout remains unresolved. */
 void func_8028103C(void) {
+    s32 unused[12]; /* unused in the original; reserves 48 bytes */
+
     if (D_800C3EB0.pressed != 0) {
         func_8003748C();
         func_800374E8(0x10, 0x10, 0x140, 0x100, 0x3E8, 0, 0x340, 0, 0x340, 0x20, 0);
         func_80036E4C(0x7FFF, 0x8000);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/debug2611/asm/nonmatchings/debug2611", func_8028103C);
-#endif
 
 /* The heap monitor: buttons toggle its display flags and step, left/right
  * (repeating after 8 frames) scroll its first block. */
