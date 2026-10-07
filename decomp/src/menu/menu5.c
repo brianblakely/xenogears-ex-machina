@@ -773,22 +773,21 @@ void func_80085EAC(s32 mirrored, s16 *out, s32 y) {
  * outlines and gauge quads of both sides (left from the corner layout,
  * right mirrored), the arrow triangles and the marks. The mirror loop runs
  * over six arrows and so also writes three past the array into the marks,
- * which are set afterwards. Does not match: only the two decrement loads
- * (arrows[1][1].y0 at 0x292, .x2 at 0x298) differ; the original keeps them
- * at their source positions (after the marks[1].y0 store and after the 0x1E
- * stores), here they move below the length stores, and the registers of the
- * hoisted marks[2]/[3] constants and of the 0x1E/length constants differ.
- * The loads are not alias-pinned here (buf+offset accesses are told apart);
- * sched1 moves each load next to its decrement because the loaded pseudo is
- * set once (a register birth), and the original's loads staying at their
- * source positions give the 0x1E and length constants other registers.
- * Loading into s16 temporaries that are then decremented (`y = ...; y--;`,
- * set twice, not births) leaves 23 differing lines instead of 55: the stores
- * then match, but sched1 hoists both loads to the top of the block (before
- * the 0x13/0x1E stores) and two marks[2]/[3] constants swap t2/t3. */
+ * which are set afterwards. The two decrements load into s16 temporaries
+ * (set twice, so not register births that sched1 would move down to the
+ * decrement), which gives the original's late decrement stores.
+ * Does not match: the two loads (arrows[1][1].y0 at 0x292, .x2 at 0x298)
+ * are hoisted to the top of the block by sched1 (they have no dependences
+ * here: buf+offset accesses are told apart), where the original keeps them
+ * at their source positions, after the marks[1].y0/y1 stores and after the
+ * 0x1E stores; so here the 0x1E and length constants take $v0 instead of
+ * $v1/$a0 and the marks[2].x0 / marks[3].x3 constants swap $t2/$t3.
+ * Plain `--` (load pseudos set once) moves the loads below the length
+ * stores instead; a pointer to the arrow is worse. */
 #ifdef NON_MATCHING
 void func_80085EC8(OverlayBuffer *buf) {
     s32 i;
+    s16 x, y;
 
     SetDrawTPage(&buf->tpage[0], 0, 1, GetTPage(0, 2, 0, 0));
     SetDrawTPage(&buf->tpage[1], 0, 0, GetTPage(0, 1, 0, 0));
@@ -901,9 +900,13 @@ void func_80085EC8(OverlayBuffer *buf) {
     buf->marks[1].x1 = 0xE3;
     buf->marks[1].x3 = 0xDE;
     buf->marks[1].y0 = buf->marks[1].y1 = 0x13;
-    buf->arrows[1][1].y0--;
+    y = buf->arrows[1][1].y0;
+    y--;
+    buf->arrows[1][1].y0 = y;
     buf->marks[1].y2 = buf->marks[1].y3 = buf->marks[0].x0 = buf->marks[0].x2 = 0x1E;
-    buf->arrows[1][1].x2--;
+    x = buf->arrows[1][1].x2;
+    x--;
+    buf->arrows[1][1].x2 = x;
     ((PacketTag *)&buf->marks[2])->len = ((PacketTag *)&buf->marks[1])->len =
         ((PacketTag *)&buf->marks[0])->len = 5;
     *(u32 *)&buf->marks[2].r0 = 0x280000FF;

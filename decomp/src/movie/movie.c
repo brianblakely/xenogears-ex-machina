@@ -1095,19 +1095,17 @@ void func_800734B8(u32 *ot, POLY_G4 *poly, s32 x, s32 y, s32 w, s32 h) {
  * then the movie test, CD-ROM monitor, CD-ROM check, FAT check, disc change
  * test and a return to the kernel. Square and Cross speed up the frame
  * settings. The menu cursor is kept across the screens it opens. The unused
- * name reproduces the original's frame. Does not match: only the setup
- * stores differ: the original loads the constant 1 into $v1 first and keeps
- * the stores in source order, here the four stores of 1 are grouped. Here
- * sched1 puts the load of 1 just before its first store (a pseudo set once
- * is a register birth, which adjust_priority schedules at once), so it
- * shares $v0 with -1/0xC80/2 and sched2 must group the stores; in the
- * original the load stays above the D_80077450 store, as for a pseudo set
- * more than once (the stores themselves do not alias-pin: distinct
- * globals and struct members are disambiguated alike). Storing the 1s
- * through `last` (assigned again later, so not a birth) gives $v1 and the
- * original's store order and leaves one difference: sched1 then puts the
- * load of 1 above the SetDefDrawEnv argument setup instead of just below
- * it. */
+ * name reproduces the original's frame. The setup's 1s are stored through
+ * `last` (the original keeps them in $v1, the register `last` gets in the
+ * loop): a constant 1 would be a pseudo set once, which sched1 places just
+ * before its first store, sharing $v0 with -1/0xC80/2 so that sched2 groups
+ * the four stores of 1. Does not match: one instruction is out of place:
+ * the load of 1 into $v1 comes right after the func_8002C3D8 call, above
+ * the SetDefDrawEnv argument setup (lui/addiu $s1, $a0-$a3), where the
+ * original has it just below that setup, before the D_80077450 store.
+ * Both sched1 and sched2 keep it there here; moving `last = 1` anywhere
+ * between the call and the first store of 1, or making `last` hold the
+ * call's result first, changes nothing. */
 void func_800737EC(void) {
     char name[8] = "trouble";
     s32 button;
@@ -1134,15 +1132,16 @@ void func_800737EC(void) {
     func_80028A60(0);
     func_801D3538(320, 256, 128, 16, 32, 0x800, 3);
     D_80077450 = func_8002C3D8();
+    last = 1;
     D_800773A0 = -1;
     D_8007739C = 0xC80;
     D_80077394 = 0;
     D_800773B0 = 0;
-    D_80077454 = 1;
-    D_80077448 = 1;
+    D_80077454 = last;
+    D_80077448 = last;
     D_8007711C = 0;
-    D_800773A4 = 1;
-    D_80077398 = 1;
+    D_800773A4 = last;
+    D_80077398 = last;
     D_80077444 = 2;
     D_8007743C = 0;
     D_800773A8 = 0;
