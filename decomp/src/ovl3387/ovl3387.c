@@ -261,37 +261,43 @@ void func_801FC898(void) {
  * background, run and draw the effect in both display buffers while the
  * background colour fades, then restore the pages, clear the screen and the
  * background colour. */
-#ifdef NON_MATCHING
-/* Same operations; the original's 0x58-byte frame keeps the saved background
- * colour bytes at sp+0x10 and the page copies at sp+0x1c/0x20 below the RECT
- * at sp+0x28 (no fp) and walks the screen copy with a pointer beside the
- * counter; here they live in registers or spill slots above the RECT
- * (0x48-byte frame). */
 void func_801FC8F4(void) {
+    /* What the effect overwrites and restores afterwards: the background
+     * colour and the two texture pages. */
+    struct {
+        u8 colour[3];
+        s32 unused[2]; /* unused in the original; reserves 8 bytes */
+        u8 *pages[2];
+    } saved;
     RECT rect;
-    u8 *pages0, *pages1;
     u16 *screen;
+    u16 *p;
     DrawBuffer *next;
     POLY_F4 *prim;
     Burst *burst;
-    u8 isbg, r, g, b;
+    BattleWork *work;
+    DrawBuffer *buffers;
+    DrawBuffer *shown;
+    DrawBuffer *back;
+    u8 isbg;
     s32 frames = 0xA4;
     s32 i;
 
-    pages0 = func_80031BDC(0x8000, 1);
-    pages1 = func_80031BDC(0x8000, 1);
+    saved.pages[0] = func_80031BDC(0x8000, 1);
+    saved.pages[1] = func_80031BDC(0x8000, 1);
     rect.x = D_800C3668.x0;
     rect.y = D_800C3668.y0;
     rect.w = 0x40;
     rect.h = 0x100;
-    StoreImage(&rect, pages0);
+    StoreImage(&rect, saved.pages[0]);
     rect.x = D_800C3668.x1;
     rect.y = D_800C3668.y1;
     rect.w = 0x40;
     rect.h = 0x100;
-    StoreImage(&rect, pages1);
+    StoreImage(&rect, saved.pages[1]);
     DrawSync(0);
     screen = func_80031BDC(0x30000, 1);
+    p = screen;
     rect.x = 0;
     rect.y = 0;
     rect.w = 0x140;
@@ -299,7 +305,7 @@ void func_801FC8F4(void) {
     StoreImage(&rect, screen);
     DrawSync(0);
     for (i = 0; i != 0x14000; i++) {
-        screen[i] |= 0x8000;
+        *p++ |= 0x8000;
     }
     rect.x = 0x2C0;
     rect.y = 0x100;
@@ -308,27 +314,30 @@ void func_801FC8F4(void) {
     LoadImage(&rect, screen);
     DrawSync(0);
     func_800320E8(screen);
-    next = &D_800C3EB0.buffers[0];
-    if (D_800C3EB0.current == next) {
-        next = &D_800C3EB0.buffers[1];
+    work = &D_800C3EB0;
+    back = &work->buffers[0];
+    shown = work->current;
+    buffers = back;
+    if (shown == buffers) {
+        back = &buffers[1];
     }
-    D_800C3EB0.current = next;
-    D_800C3EB0.ot = next->ot;
-    ClearOTagR(next->ot, 0x1000);
-    r = D_800C3EB0.buffers[1].draw.r0;
-    g = D_800C3EB0.buffers[1].draw.g0;
-    b = D_800C3EB0.buffers[1].draw.b0;
-    isbg = D_800C3EB0.buffers[0].draw.isbg;
-    D_800C3EB0.buffer = 0;
-    D_800C3EB0.current = &D_800C3EB0.buffers[0];
-    D_800C3EB0.buffers[0].draw.isbg = 0;
-    D_800C3EB0.buffers[1].draw.isbg = 0;
-    D_800C3EB0.buffers[0].draw.r0 = 0;
-    D_800C3EB0.buffers[1].draw.r0 = 0;
-    D_800C3EB0.buffers[0].draw.g0 = 0;
-    D_800C3EB0.buffers[1].draw.g0 = 0;
-    D_800C3EB0.buffers[0].draw.b0 = 0;
-    D_800C3EB0.buffers[1].draw.b0 = 0;
+    work->current = back;
+    work->ot = back->ot;
+    ClearOTagR(back->ot, 0x1000);
+    saved.colour[0] = work->buffers[1].draw.r0;
+    saved.colour[1] = work->buffers[1].draw.g0;
+    saved.colour[2] = work->buffers[1].draw.b0;
+    isbg = work->buffers[0].draw.isbg;
+    work->buffer = 0;
+    work->current = &buffers[0];
+    work->buffers[0].draw.isbg = 0;
+    work->buffers[1].draw.isbg = 0;
+    work->buffers[0].draw.r0 = 0;
+    work->buffers[1].draw.r0 = 0;
+    work->buffers[0].draw.g0 = 0;
+    work->buffers[1].draw.g0 = 0;
+    work->buffers[0].draw.b0 = 0;
+    work->buffers[1].draw.b0 = 0;
     burst = func_801FC470();
     while (frames != 0) {
         if (frames > 0) {
@@ -366,14 +375,14 @@ void func_801FC8F4(void) {
     rect.y = D_800C3668.y0;
     rect.w = 0x40;
     rect.h = 0x100;
-    LoadImage(&rect, pages0);
+    LoadImage(&rect, saved.pages[0]);
     rect.x = D_800C3668.x1;
     rect.y = D_800C3668.y1;
     rect.w = 0x40;
     rect.h = 0x100;
-    LoadImage(&rect, pages1);
-    func_800320E8(pages0);
-    func_800320E8(pages1);
+    LoadImage(&rect, saved.pages[1]);
+    func_800320E8(saved.pages[0]);
+    func_800320E8(saved.pages[1]);
     DrawSync(0);
     rect.x = 0;
     rect.y = 0;
@@ -399,14 +408,11 @@ void func_801FC8F4(void) {
     AddPrim(&D_800C3EB0.ot[0xFFE], prim);
     D_800C3EB0.buffers[1].draw.isbg = isbg;
     D_800C3EB0.buffers[0].draw.isbg = isbg;
-    D_800C3EB0.buffers[1].draw.r0 = r;
-    D_800C3EB0.buffers[0].draw.r0 = r;
-    D_800C3EB0.buffers[1].draw.g0 = g;
-    D_800C3EB0.buffers[0].draw.g0 = g;
-    D_800C3EB0.buffers[1].draw.b0 = b;
-    D_800C3EB0.buffers[0].draw.b0 = b;
+    D_800C3EB0.buffers[1].draw.r0 = saved.colour[0];
+    D_800C3EB0.buffers[0].draw.r0 = saved.colour[0];
+    D_800C3EB0.buffers[1].draw.g0 = saved.colour[1];
+    D_800C3EB0.buffers[0].draw.g0 = saved.colour[1];
+    D_800C3EB0.buffers[1].draw.b0 = saved.colour[2];
+    D_800C3EB0.buffers[0].draw.b0 = saved.colour[2];
     func_801FC400(burst);
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3387/asm/nonmatchings/ovl3387", func_801FC8F4);
-#endif
