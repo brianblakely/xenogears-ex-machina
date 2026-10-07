@@ -1546,7 +1546,13 @@ void func_800A84C0(void) {
  * strength-reduces the layout addresses (i * 8 and layout + 4 + i * 8) and
  * keeps &D_800AFC60 in s0 for the first store. The flat field reads give the
  * frame table's per-field addressing (score 123 -> 106; a scalar
- * D_800AFC64 for the second buffer gives 99 but grows the function). */
+ * D_800AFC64 for the second buffer gives 99 but grows the function).
+ * The loop dump shows the cause: the first switch's i * 8 and the one CSE
+ * shares across the x/y/frame and second flags reads are combined into
+ * one giv (benefit 4, lifetime 41) and reduced; the original's layout
+ * counter keeps both shifts unreduced. A second counter `n` (for (i = 0,
+ * n = 0; ...; i++, n++)) is reduced and eliminated the same way, and
+ * do { } while (0) blocks around the reads or stores make it worse. */
 /* The layout and frame tables read as flat halfword arrays, one field at a
  * time, as the original indexes them (n * 4 + field). */
 #define PIECE(n, field) (((u16 *)D_800AEF10)[(n) * 4 + (field)])
