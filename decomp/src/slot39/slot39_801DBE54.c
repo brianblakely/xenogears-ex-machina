@@ -1689,23 +1689,44 @@ void func_801E1398(void) {
     func_800320E8(D_800625A0->block438);
 }
 
+/* Rate target `i` of the row: a nonzero target counts towards the average,
+ * and a nonzero value adds its percentage of a target other than ffff (at
+ * most 100); then step to the next value. A statement macro. */
+#define RATE_TARGET()                                                   \
+    do {                                                                \
+        value = *values;                                                \
+        off = i * 2;                                                    \
+        line = (s32)table + id * 0x110;                                 \
+        target = *(u16 *)(off + (r * 14 + line));                       \
+        if (value != 0) {                                               \
+            if (target != 0) {                                          \
+                if (target != 0xffff) {                                 \
+                    percent = value * 100 / target;                     \
+                    if (percent >= 100) {                               \
+                        sum += 100;                                     \
+                    } else {                                            \
+                        sum += percent;                                 \
+                    }                                                   \
+                }                                                       \
+                count++;                                                \
+            }                                                           \
+        } else if (target != 0) {                                       \
+            count++;                                                    \
+        }                                                               \
+        i++;                                                            \
+        values++;                                                       \
+    } while (0)
+
 /* Return party slot `slot`'s average completion (percent, each capped at
  * 100) of the seven targets of row `row` of its table (+438 +2578), counting
  * nonzero target entries (ffff contributes zero); rows from 7 need
  * game flag 4000. */
-#ifdef NON_MATCHING
-/* The original's target loop is not loop-optimized (each target address is
- * recomputed), hence the goto loop; the u16 copy of `row` zero-extends it
- * once before the loop, in place in a1, and the address is formed from the
- * index offset and the table line as in the original. Remaining: i/values
- * take t2/t1 (the original t1/t2: `values` wins the global allocation
- * priority here); a do/while (0) block around the loop body, whose refs
- * then count double, fixes that and leaves only the final address add's
- * operand order (2 differing instructions, local scorer). */
+/* The target loop is a goto loop (the original recomputes each target
+ * address); the u16 copy of `row` zero-extends it once, in place. */
 u32 func_801E1418(u8 slot, u8 row) {
     u32 sum;
     s32 off;
-    u8 *line;
+    s32 line;
     u16 r;
     s32 i;
     u32 count;
@@ -1725,27 +1746,7 @@ u32 func_801E1418(u8 slot, u8 row) {
         table = D_800625A0->block438->unk2578;
         values = D_8006D8A0[id].unk90;
     loop:
-        value = *values;
-        off = i * 2;
-        line = table + id * 0x110;
-        target = *(u16 *)(off + (r * 14 + line));
-        if (value != 0) {
-            if (target != 0) {
-                if (target != 0xffff) {
-                    percent = value * 100 / target;
-                    if (percent >= 100) {
-                        sum += 100;
-                    } else {
-                        sum += percent;
-                    }
-                }
-                count++;
-            }
-        } else if (target != 0) {
-            count++;
-        }
-        i++;
-        values++;
+        RATE_TARGET();
         if (i < 7) {
             goto loop;
         }
@@ -1755,9 +1756,6 @@ u32 func_801E1418(u8 slot, u8 row) {
     }
     return 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801E1418);
-#endif
 
 /* Lay out row `row` of the 801e1544 screen: mode 1 its five sheet images
  * (D_801E97AC); mode 2 its completion `percent` as three digits into
