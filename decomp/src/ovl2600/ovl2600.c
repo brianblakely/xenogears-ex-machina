@@ -1696,11 +1696,10 @@ u8 func_801CB2F0(u8 *codes) {
  * confirmed with a non-empty name; then store it for the three characters
  * of the portrait list (trailing blanks cut), and close the screen.
  * NON_MATCHING: the register allocation differs (2684 of 2688 bytes): the
- * original gives
- * running fp and 15 s5, leaving the 0xCF constant spilled (reloaded into t3
- * at each compare, 0x88-byte frame); here 0xCF gets fp and running is
- * spilled to the stack (0x90-byte frame), and 15/the 1/6 multiplier/dirty
- * rotate through s5-s7. */
+ * original gives running fp and 15 s5, leaving the 0xCF constant spilled
+ * (reloaded into t3 at each compare, 0x88-byte frame); here 0xCF gets fp and
+ * running is spilled to the stack (0x90-byte frame), and 15, the 1/6
+ * multiplier and dirty rotate through s5-s7. */
 void func_801CB33C(void) {
     u8 codes[24];
     u8 name[24];
