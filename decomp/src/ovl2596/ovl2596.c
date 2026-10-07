@@ -1685,8 +1685,8 @@ void func_801E3A18(void) {
  * record meets; stop at the first whose level is not reached. Returns its
  * index, or 0. */
 #ifdef NON_MATCHING
-/* The original keeps id in a copy and reloads the current record inside
- * the requirement loop; this C lets GCC hoist it. */
+/* NON_MATCHING: the original hoists the 0x8000 shift base out of the
+ * skill loop into t6; this C loads it at the shift in every iteration. */
 u8 func_801E3BE0(u8 id) {
     u8 count;
     u8 learnt;
@@ -1702,11 +1702,11 @@ u8 func_801E3BE0(u8 id) {
         if (D_8006D634.skills[id].counterSkills & (0x8000 >> j)) {
             continue;
         }
-        if (D_8006D8A0[id].level < D_801E44E8->characters[id].counterLevels[j]) {
+        if (D_801E44E8->characters[id].counterLevels[j] > D_8006D8A0[id].level) {
             break;
         }
         for (k = 0; k < 7; k++) {
-            if (D_801E44EC->counters[k] < D_801E44E8->characters[id].requirements[j][k]) {
+            if (D_801E44E8->characters[id].requirements[j][k] > D_801E44EC->counters[k]) {
                 break;
             }
         }
