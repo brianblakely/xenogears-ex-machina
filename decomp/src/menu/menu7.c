@@ -1012,17 +1012,13 @@ s32 func_8008B650(s32 from, s32 to, s32 step) {
     return angle;
 }
 
-#ifdef NON_MATCHING
 /* Advance a player by some frames (clamped to the animation's end) and
  * move every target 1/steps of the way to its key or channel value.
  * Channel streams hold a byte per frame: 0xxxxxxx a 7-bit delta, 10xxxxxx
  * hold the previous delta for x following frames, 11xxxxxx plus a byte
  * a signed 14-bit delta.
  * Returns whether the end was reached in a final step (1 without an
- * animation). Nonmatching: the original copies the command byte to $v1
- * before testing bit 7 of the loaded byte and uses the copy on both paths;
- * here the 7-bit delta path uses the loaded byte (one more instruction in
- * the delay slot). */
+ * animation). */
 s32 func_8008B730(Player *player, s32 frames, s32 steps) {
     Key *key;
     Channel *channel;
@@ -1079,7 +1075,7 @@ s32 func_8008B730(Player *player, s32 frames, s32 steps) {
                         channel->hold = value;
                     }
                 } else {
-                    channel->delta = (command << 25) >> 25;
+                    channel->delta = ((u8)command << 25) >> 25; /* 7-bit signed delta */
                 }
             }
             channel->value += channel->delta;
@@ -1102,9 +1098,6 @@ s32 func_8008B730(Player *player, s32 frames, s32 steps) {
     }
     return 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008B730);
-#endif
 
 /* Create a task running entry(arg) on its own stack of `words` words and
  * run it until it first yields. */
