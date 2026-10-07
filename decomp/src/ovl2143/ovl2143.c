@@ -2758,8 +2758,10 @@ void func_801E37D0(Actor *actor) {
  * 0x26 keeps its 0xff marker in a block-scope variable: as a constant it
  * would join the other 0xff loads, which loop.c then hoists out of the
  * interpreter loop (the original loads 0xff at each use).
- * NON_MATCHING (same size): per-case scheduling and allocation remain:
- * 0x1D and the turn opcodes 0x40/0x41 load the -1 for `changed` earlier,
+ * NON_MATCHING (same text size): the frame is 0x160 bytes rather than the
+ * original 0x168; the final eight bytes of local storage remain unresolved.
+ * Per-case scheduling and allocation also remain: 0x41 loads the -1 for
+ * `changed` earlier,
  * 0x42 has dx/dz in s1/s0 (s0/s1 in the original, whose 0x4f uses other
  * registers for its own offsets; giving either case block-scope offsets
  * moves `arg` out of s5), 0x4f keeps dy in s2 instead of a2, and the
@@ -3076,9 +3078,9 @@ aim:
             entry = word >> 8;
             reference = (u8)word;
             word = *pc++;
-            changed = -1;
             func_801E6974(actor, pool, &actor->parts[arg], reference, entry, (u8)word, word >> 8,
                           *pc++, *pc++, *pc++, *pc++, *pc++, *pc++, *pc++);
+            changed = -1;
             break;
         case 0x1E: /* use the scaled hierarchy update */
             actor->scaled = arg;
@@ -3358,8 +3360,8 @@ aim:
             rx = *pc++;
             ry = *pc++;
             rz = *pc++;
-            changed = -1;
             func_801E59D4(pool, actor->parts, arg, rx, ry, rz);
+            changed = -1;
             break;
         }
         case 0x41: { /* turn the root by a rotation */
