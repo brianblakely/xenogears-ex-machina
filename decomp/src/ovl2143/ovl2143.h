@@ -244,7 +244,7 @@ typedef struct {
 /* Two triangles' textured primitives (one per buffer) and their vertex
  * indices (0x58 bytes). */
 typedef struct {
-    u16 index[3];
+    s16 index[3];
     u8 pad6[2];
     POLY_GT3 prim[2];
 } RingPoly;
@@ -515,7 +515,7 @@ void SetSemiTrans(void *p, s32 abe);            /* SetSemiTrans */
 void SetPolyFT4(POLY_FT4 *p);                 /* SetPolyFT4 */
 
 /* Resident maths. */
-s32 func_8003F8CC(s16 angle);                    /* cosine (4096 = 1.0) */
+s32 func_8003F8CC(s32 angle);                    /* cosine (4096 = 1.0) */
 s32 SquareRoot0(s32 value);                    /* square root */
 
 /* libgte. */
@@ -630,12 +630,12 @@ void func_801E3534(Actor *actor, SlotPool *pool, s32 *entries, s32 *locals);
 void func_801E8510(Actor *actor);
 
 s16 ratan2(s32 y, s32 x);
-s32 func_8003F8B0(s16 angle);                 /* sine (4096 = 1.0) */
+s32 func_8003F8B0(s32 angle);                 /* sine (4096 = 1.0) */
 MATRIX *func_80049ACC(MATRIX *m, MATRIX *scale); /* scale a matrix's columns */
 struct Particle *func_801E0248(struct ParticlePool *pool, s16 semi_trans);
 s16 func_801E1258(ImageAnim *anim, s32 ticks);
 void func_801E22F8(Record24 *record, SVECTOR *light, MATRIX *m, u32 *ot, s32 buffer, s32 scale,
-                   s32 floor);
+                   s16 floor);
 
 void VectorNormal(VECTOR *v0, VECTOR *v1);
 VECTOR *ApplyMatrix(MATRIX *m, SVECTOR *v0, VECTOR *v1);
