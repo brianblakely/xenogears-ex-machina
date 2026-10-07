@@ -808,23 +808,28 @@ void func_8008B0D8(Player *player) {
 
 #ifdef NON_MATCHING
 /* Bind an animation to a model set node: its constant keys and streamed
- * channels drive node angle (short way round) or 0x2C components.
- * Does not match: only the copies of the data pointer differ (4 bytes
- * short). The original copies $a0 to $t1 and $t1 to $s0 (the header) at
- * entry and copies $s0 to $s1 after the allocation for the channel
- * streams; here `data` itself lives in $s1 from entry ($s1 = $a0,
- * $s0 = $s1). A separate base pointer set after the allocation gets a
- * caller-saved register instead. */
-void func_8008B13C(u8 *data, Player *player, Node *root) {
+ * channels drive node angle (short way round) or 0x2C components. The
+ * animation pointer parameter is reused as the record walker (the original
+ * keeps both in $t1), and the channel streams are based on a copy of the
+ * header pointer (kept in $s1).
+ * Does not match: 2 instructions differ. The header store in the first
+ * call's delay slot reads $t1 where the original stores the $s0 copy, and
+ * the $s1 = $s0 base copy is scheduled last in its block (into the loop
+ * branch's delay slot) where the original places it right after the
+ * allocation; the base is set only once here, so sched1 treats the copy as
+ * a register birth and places it latest. */
+void func_8008B13C(AnimRecord *record, Player *player, Node *root) {
     Node **nodes = ((ModelSet *)root->data)->nodes;
-    AnimHeader *anim = (AnimHeader *)data;
-    AnimRecord *record;
+    AnimHeader *anim;
     Key *key;
     Channel *channel;
     Node *node;
     u32 i;
+    u32 base;
 
-    player->header = anim;
+    player->header = (AnimHeader *)record;
+    anim = (AnimHeader *)record;
+    base = (u32)anim;
     func_800324B8(0x10);
     key = func_80031BDC(anim->keys * sizeof(Key) + anim->channels * sizeof(Channel), 0);
     player->keys = key;
@@ -865,8 +870,8 @@ void func_8008B13C(u8 *data, Player *player, Node *root) {
     }
     for (i = 0; i < anim->channels; i++) {
         node = nodes[record->node];
-        channel->current = (u8 *)(record->value + (u32)data);
-        channel->start = (u8 *)(record->value + (u32)data);
+        channel->current = (u8 *)(record->value + base);
+        channel->start = (u8 *)(record->value + base);
         switch (record->kind & 0x7F) {
         case 3:
             channel->target = &node->unk44.vx;
@@ -957,7 +962,7 @@ Node *func_8008B38C(ModelSetFile *file) {
         set->count = data[0];
         for (i = 0; i < data[0]; i++) {
             if (data[i + 1] != 0) {
-                func_8008B13C((u8 *)data[i + 1], &player[i], root);
+                func_8008B13C((AnimRecord *)data[i + 1], &player[i], root);
             } else {
                 player[i].header = NULL;
             }

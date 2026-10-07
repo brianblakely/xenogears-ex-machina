@@ -10,25 +10,21 @@ void func_80099708(u32 *heights, u32 *ot, s32 depth, SVECTOR *origin);
 
 /* Move a position along a direction across the terrain cells: probe the
  * cell boundaries crossed (by the corner's side for diagonal moves); 1 when
- * the target cell is walkable (step[0] = target), else the boundary result. */
-/* NON_MATCHING: size and instructions now line up (corner cases test the
- * first neighbour and return its nonzero result directly; the scale
- * argument is reused for the result as the original allocates it; the
- * walkable-cell test passes `from` as a temporary), but in the prologue the
- * original keeps `crossing` in t0 (here a3), its product temp in t1 (here t0)
- * and loads the from corner straight into a1 (here through v0). */
-#ifdef NON_MATCHING
+ * the target cell is walkable (step[0] = target), else the boundary result.
+ * The cell probes take the mode as an s16 row. */
 s32 func_80094A5C(VECTOR *position, VECTOR *direction, s32 scale, s32 mode) {
     CellProbe *probe;
     s32 from;
     s32 to;
     u32 crossing;
     s32 side;
+    s16 row = mode;
 
     SCRATCH_VECTOR[1].vx = position->vx + ((direction->vx * scale) >> 12);
     SCRATCH_VECTOR[1].vz = position->vz + ((direction->vz * scale) >> 12);
     crossing = 0;
-    from = position->vx >> 19;
+    from = position->vx;
+    from >>= 19;
     to = SCRATCH_VECTOR[1].vx >> 19;
     ((SVECTOR *)0x1F8000A0)->vx = from;
     ((SVECTOR *)0x1F8000A0)->vz = position->vz >> 19;
@@ -52,16 +48,16 @@ s32 func_80094A5C(VECTOR *position, VECTOR *direction, s32 scale, s32 mode) {
     case 7:
         break;
     case 1:
-        scale = func_8009443C(position, direction, probe->step, mode);
+        scale = func_8009443C(position, direction, probe->step, row);
         break;
     case 2:
-        scale = func_800945C8(position, direction, probe->step, mode);
+        scale = func_800945C8(position, direction, probe->step, row);
         break;
     case 4:
-        scale = func_80094750(position, direction, probe->step, mode);
+        scale = func_80094750(position, direction, probe->step, row);
         break;
     case 8:
-        scale = func_800948D8(position, direction, probe->step, mode);
+        scale = func_800948D8(position, direction, probe->step, row);
         break;
     case 5:
         probe->step[0].vx = (position->vx & 0xFFF80000) + 0x80000;
@@ -75,19 +71,19 @@ s32 func_80094A5C(VECTOR *position, VECTOR *direction, s32 scale, s32 mode) {
         probe->step[4].vz = (probe->step[3].vz << 16) | (probe->step[3].vx & 0xFFFF);
         side = func_8004A70C(probe->step[4].vx, probe->step[4].vy, probe->step[4].vz);
         if (side < 0) {
-            scale = func_8009443C(position, direction, probe->step, mode);
+            scale = func_8009443C(position, direction, probe->step, row);
             if (scale != 0) {
                 return scale;
             }
-            scale = func_80094750(position, direction, probe->step, mode);
+            scale = func_80094750(position, direction, probe->step, row);
         } else if (side > 0) {
-            scale = func_80094750(position, direction, probe->step, mode);
+            scale = func_80094750(position, direction, probe->step, row);
             if (scale != 0) {
                 return scale;
             }
-            scale = func_8009443C(position, direction, probe->step, mode);
+            scale = func_8009443C(position, direction, probe->step, row);
         } else {
-            scale = func_8009443C(position, direction, probe->step, mode);
+            scale = func_8009443C(position, direction, probe->step, row);
         }
         break;
     case 6:
@@ -102,19 +98,19 @@ s32 func_80094A5C(VECTOR *position, VECTOR *direction, s32 scale, s32 mode) {
         probe->step[4].vz = (probe->step[3].vz << 16) | (probe->step[3].vx & 0xFFFF);
         side = func_8004A70C(probe->step[4].vx, probe->step[4].vy, probe->step[4].vz);
         if (side > 0) {
-            scale = func_800945C8(position, direction, probe->step, mode);
+            scale = func_800945C8(position, direction, probe->step, row);
             if (scale != 0) {
                 return scale;
             }
-            scale = func_80094750(position, direction, probe->step, mode);
+            scale = func_80094750(position, direction, probe->step, row);
         } else if (side < 0) {
-            scale = func_80094750(position, direction, probe->step, mode);
+            scale = func_80094750(position, direction, probe->step, row);
             if (scale != 0) {
                 return scale;
             }
-            scale = func_800945C8(position, direction, probe->step, mode);
+            scale = func_800945C8(position, direction, probe->step, row);
         } else {
-            scale = func_800945C8(position, direction, probe->step, mode);
+            scale = func_800945C8(position, direction, probe->step, row);
         }
         break;
     case 9:
@@ -129,19 +125,19 @@ s32 func_80094A5C(VECTOR *position, VECTOR *direction, s32 scale, s32 mode) {
         probe->step[4].vz = (probe->step[3].vz << 16) | (probe->step[3].vx & 0xFFFF);
         side = func_8004A70C(probe->step[4].vx, probe->step[4].vy, probe->step[4].vz);
         if (side > 0) {
-            scale = func_8009443C(position, direction, probe->step, mode);
+            scale = func_8009443C(position, direction, probe->step, row);
             if (scale != 0) {
                 return scale;
             }
-            scale = func_800948D8(position, direction, probe->step, mode);
+            scale = func_800948D8(position, direction, probe->step, row);
         } else if (side < 0) {
-            scale = func_800948D8(position, direction, probe->step, mode);
+            scale = func_800948D8(position, direction, probe->step, row);
             if (scale != 0) {
                 return scale;
             }
-            scale = func_8009443C(position, direction, probe->step, mode);
+            scale = func_8009443C(position, direction, probe->step, row);
         } else {
-            scale = func_8009443C(position, direction, probe->step, mode);
+            scale = func_8009443C(position, direction, probe->step, row);
         }
         break;
     case 10:
@@ -156,26 +152,26 @@ s32 func_80094A5C(VECTOR *position, VECTOR *direction, s32 scale, s32 mode) {
         probe->step[4].vz = (probe->step[3].vz << 16) | (probe->step[3].vx & 0xFFFF);
         side = func_8004A70C(probe->step[4].vx, probe->step[4].vy, probe->step[4].vz);
         if (side < 0) {
-            scale = func_800945C8(position, direction, probe->step, mode);
+            scale = func_800945C8(position, direction, probe->step, row);
             if (scale != 0) {
                 return scale;
             }
-            scale = func_800948D8(position, direction, probe->step, mode);
+            scale = func_800948D8(position, direction, probe->step, row);
         } else if (side > 0) {
-            scale = func_800948D8(position, direction, probe->step, mode);
+            scale = func_800948D8(position, direction, probe->step, row);
             if (scale != 0) {
                 return scale;
             }
-            scale = func_800945C8(position, direction, probe->step, mode);
+            scale = func_800945C8(position, direction, probe->step, row);
         } else {
-            scale = func_800945C8(position, direction, probe->step, mode);
+            scale = func_800945C8(position, direction, probe->step, row);
         }
         break;
     }
     if (scale == 0) {
         func_80093354(&probe->step[1]);
         from = func_80093F18(&probe->step[1]);
-        if (func_80094060(mode, from) == 0) {
+        if (func_80094060(row, from) == 0) {
             probe->step[0] = probe->step[1];
             return 1;
         }
@@ -183,9 +179,6 @@ s32 func_80094A5C(VECTOR *position, VECTOR *direction, s32 scale, s32 mode) {
     }
     return scale;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80094A5C);
-#endif
 
 /* Probe a move and choose the direction to slide along: 1 when free, 0 when
  * the obstacle deflects it (out holds the slide direction). */

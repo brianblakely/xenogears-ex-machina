@@ -52,11 +52,11 @@ typedef struct {
     u32 unk30;         /* CLUT cycle position */
     s32 unk34;         /* +0x34 panel cursor window: x */
     s32 unk38;
-    s32 unk3C;         /* y */
+    u32 unk3C;         /* y */
     s32 unk40;
     s32 unk44;         /* width */
     s32 unk48;
-    s32 unk4C;         /* height */
+    u32 unk4C;         /* height */
     s32 unk50;
     u32 unk54;         /* x step (8.8) */
     s32 unk58;
@@ -615,8 +615,17 @@ extern u16 D_800D2C32; /* fuel gained by charging */
 
 /* Gear boarding (800826cc). */
 extern u8 D_80059179;
-extern u8 D_8006F368[3]; /* the party's character ids */
-extern u8 D_8006F8E5[3]; /* per party member: entered a gear */
+/* Game data party state (8006f364): joined members, the three party
+ * character ids and whether each party slot entered its gear. */
+typedef struct {
+    u16 joined;
+    u16 available;
+    u8 party[3];      /* 0x004: character ids */
+    u8 pad7[0x57A];
+    u8 inGear[3];     /* 0x581 */
+} PartyState;
+
+extern PartyState D_8006F364;
 void func_80088490(s32 slot);
 void func_8009AEFC(u8 slot);
 void func_800BAF48(s32 slot);
@@ -663,7 +672,6 @@ extern u8 D_800C3D44;
 extern u8 D_800C3D5C;
 extern s32 D_800C3DEC;
 extern u8 D_800C3E28[2]; /* direction input: [0] the previous, [1] the current */
-extern Formation *D_800C3EB0;
 extern s32 D_800D2D3C;     /* 801de000 module blocks */
 extern s32 D_800D2F60;
 extern u8 D_800D2D50;

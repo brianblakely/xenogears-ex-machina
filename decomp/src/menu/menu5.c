@@ -777,7 +777,11 @@ void func_80085EAC(s32 mirrored, s16 *out, s32 y) {
  * (arrows[1][1].y0 at 0x292, .x2 at 0x298) differ; the original keeps them
  * at their source positions (after the marks[1].y0 store and after the 0x1E
  * stores), here they move below the length stores, and the registers of the
- * hoisted marks[2]/[3] constants and of the 0x1E/length constants differ. */
+ * hoisted marks[2]/[3] constants and of the 0x1E/length constants differ.
+ * The loads are not alias-pinned here (buf+offset accesses are told apart);
+ * sched1 moves each load next to its decrement because the loaded pseudo is
+ * set once (a register birth), and the original's loads staying at their
+ * source positions give the 0x1E and length constants other registers. */
 #ifdef NON_MATCHING
 void func_80085EC8(OverlayBuffer *buf) {
     s32 i;
@@ -992,7 +996,10 @@ void func_800866D4(TimImage *tim, s32 x, s32 y, PolyFT4 *quad, s32 depth) {
  * in $s2). Does not match: only the bar block after func_800866D4 (about 20
  * instructions): the original stores the gauge size word before loading the
  * two bar texel rows and loads the name CLUT after the four bar colour
- * stores, so its constant registers differ; the rest is identical. */
+ * stores, so its constant registers differ; the rest is identical. The
+ * accesses are all to constant addresses (a pointer to the HUD is folded
+ * into them), which GCC tells apart; routing them through hud/bar/pair
+ * pointers changes nothing in this block. */
 #ifdef NON_MATCHING
 void func_800868E0(StageFiles *files) {
     TimImage tim;

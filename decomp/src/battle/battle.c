@@ -622,8 +622,7 @@ u8 member;
 
 /* The member boards its gear: it takes a formation group of its own, its
  * records and panel switch to the gear, and the game data notes that the
- * party member (8006f368) entered a gear unless 80059179 is set. */
-#ifdef NON_MATCHING
+ * party member entered a gear unless 80059179 is set. */
 void func_800826CC(u8 member) {
     s32 i;
 
@@ -639,14 +638,11 @@ void func_800826CC(u8 member) {
     D_800C3EB4[member].gear = 1;
     D_800C3EAC->reaction[member] = 1;
     for (i = 0; i < 3; i++) {
-        if (D_800D2D24[member] == D_8006F368[i] && D_80059179 == 0) {
-            D_8006F8E5[i] = 1;
+        if (D_8006F364.party[i] == D_800D2D24[member] && D_80059179 == 0) {
+            D_8006F364.inGear[i] = 1;
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800826CC);
-#endif
 
 /* Confirm the selected entry of the member's main command window: entries
  * 4, 6 and 7 board the gear and end the menu; 0 opens page 7 when available,
@@ -1681,7 +1677,9 @@ u16 func_80084D28(void) {
  * the party; 0x2000 both; 0x8000 keeps only downed slots (+0x7c bit
  * 0x8000); 0x4000 the member alone. `own` takes the member's reachable
  * enemies (80084750). Sets the current target 800c3e2c and returns the
- * selection. */
+ * selection. Nonmatching: the selection lives in $s5 here, $s6 in the
+ * original, and in the downed loop the original keeps the slot byte in $s2
+ * across both calls (and the counters in other registers). */
 #ifdef NON_MATCHING
 u16 func_80084DE4(u16 selection, u16 fallback, u8 member, u8 mode, u8 own) {
     u8 downed = 0;
@@ -1706,8 +1704,8 @@ u16 func_80084DE4(u16 selection, u16 fallback, u8 member, u8 mode, u8 own) {
     if (selection & 0x8000) {
         downed = 1;
     }
-    partyFirst = 0;
     if (selection & 0x1000) {
+        partyFirst = 0;
         side = 0;
         mask = 0xFFF8;
     } else {
@@ -2761,41 +2759,35 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80087EDC);
 /* Move `actor` alone into `target`'s formation group when that group is
  * another one and empty (entries from 0x10, or 0x18 for an enemy joining a
  * party member): it becomes the only member, at the group's position.
- * Nonmatching: this differs only in the order of the two group-entry stores
- * (the original sets the count at +0 first, then the member mask, with this
- * same schedule); written count first, GCC hoists the second group reload
- * above the count store. */
-#ifdef NON_MATCHING
+ * The slots are read as members of the battle area (D_800C3EB0+4), which
+ * keeps the group reload below the count store. */
 void func_800881B8(u8 actor, u8 target) {
     u8 base;
     s32 party;
 
-    if (D_800C3EB4[actor].group != D_800C3EB4[target].group) {
+    if (D_800C3EB0.slots[actor].group != D_800C3EB0.slots[target].group) {
         party = actor < 3;
         if (target < 3) {
             base = party ? 0x10 : 0x18;
         } else {
             base = 0x10;
         }
-        if (D_800D301C[D_800C3EB4[target].group + base].count == 0) {
+        if (D_800D301C[D_800C3EB0.slots[target].group + base].count == 0) {
             func_800883AC(actor);
-            D_800C3EB4[actor].group = D_800C3EB4[target].group;
-            D_800C3EB4[actor].member = 0;
-            D_800D301C[D_800C3EB4[actor].group + base].members = 1;
-            D_800D301C[D_800C3EB4[actor].group + base].count = 1;
+            D_800C3EB0.slots[actor].group = D_800C3EB0.slots[target].group;
+            D_800C3EB0.slots[actor].member = 0;
+            D_800D301C[D_800C3EB0.slots[actor].group + base].count = 1;
+            D_800D301C[D_800C3EB0.slots[actor].group + base].members = 1;
             if (actor < 3) {
-                D_800C3EB4[actor].x = D_800D3364->positions[D_800C3EB4[actor].group].x;
-                D_800C3EB4[actor].z = D_800D3364->positions[D_800C3EB4[actor].group].z;
+                D_800C3EB0.slots[actor].x = D_800D3364->positions[D_800C3EB0.slots[actor].group].x;
+                D_800C3EB0.slots[actor].z = D_800D3364->positions[D_800C3EB0.slots[actor].group].z;
             } else {
-                D_800C3EB4[actor].x = D_800D3364->positions[D_800C3EB4[actor].group].enemyX;
-                D_800C3EB4[actor].z = D_800D3364->positions[D_800C3EB4[actor].group].enemyZ;
+                D_800C3EB0.slots[actor].x = D_800D3364->positions[D_800C3EB0.slots[actor].group].enemyX;
+                D_800C3EB0.slots[actor].z = D_800D3364->positions[D_800C3EB0.slots[actor].group].enemyZ;
             }
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800881B8);
-#endif
 
 /* Drop a slot from its formation group (enemy entries from 8, flagged slots
  * add 0x10). */

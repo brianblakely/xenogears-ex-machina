@@ -1487,7 +1487,11 @@ void func_80087B84(VECTOR *direction, VECTOR *up, MATRIX *m) {
  * when within 8 units of the waypoint, and heads for the next one.
  * NON_MATCHING: only the prologue differs: the D_8009C610 load is
  * scheduled ahead of the stack adjustment (the original adjusts sp and
- * saves s0 first, then loads it). */
+ * saves s0 first, then loads it). This is sched2: the load has no
+ * dependence on the saves; at the last cycles the s0 save wins the tie by
+ * potential hazard after the index copy (a0 -> s0) is placed, leaving the
+ * blocked load for the top. A local copy of index (s32/s16/u8) or other
+ * id/index types do not change it. */
 #ifdef NON_MATCHING
 s32 func_80087C6C(s32 index) {
     WorldmapActor *actor;

@@ -909,14 +909,19 @@ void func_800723E4(DVECTOR *a, DVECTOR *b, DVECTOR *out) {
     out->vy = b[0].vy + ((t * ub.vz) >> 12);
 }
 
+/* Reset the orbit camera. Its do-while scope is what keeps cse2 from folding
+ * the 800af984-relative addresses after the call back into absolute ones. */
+#define CAMERA_RESET_ORBIT() do { func_80070594(&D_800AF880.orbit); } while (0)
+
 #ifdef NON_MATCHING
 /* The camera's initial state.
- * NON_MATCHING (measured 69 differing lines): after func_80070594 the original
- * addresses most fields relative to 800af984 kept in $s0 (CSE's related
- * value from the first store); here cse2 folds those back into absolute
- * addresses because the register is a known constant, so ours keeps no $s0
- * and is 27 instructions longer. */
+ * NON_MATCHING (2 edits): everything matches except that the original
+ * schedules `lui $v0, 0x1000` (up.vy/unk050.vy) before the eye.vx store
+ * right after the call; ours stores eye.vx first. The eye pointer gives the
+ * original's $s0-relative eye.vx with absolute eye.vy/vz. */
 void func_8007254C(void) {
+    VECTOR *eye;
+
     D_800AF880.target_a = 8;
     D_800AF880.target_b = 8;
     D_800AF880.heading_velocity = 0x400000;
@@ -942,10 +947,11 @@ void func_8007254C(void) {
     D_800AF880.orbit_angles.vx = 0;
     D_800AF880.orbit_angles.vy = 0;
     D_800AF880.orbit_angles.vz = 0;
-    func_80070594(&D_800AF880.orbit);
-    D_800AF880.eye.vx = 0;
-    D_800AF880.eye.vy = 0;
-    D_800AF880.eye.vz = 0;
+    CAMERA_RESET_ORBIT();
+    eye = &D_800AF880.eye;
+    eye->vx = 0;
+    eye->vy = 0;
+    eye->vz = 0;
     D_800AF880.up.vy = 0x10000000;
     D_800AF880.unk050.vy = 0x10000000;
     D_800AF880.elevation = 0x1E;

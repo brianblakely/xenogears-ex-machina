@@ -1620,20 +1620,13 @@ u8 func_801CAB48(u8 list, s32 row, s32 page, u8 prev_list, s32 prev_row, s32 pre
 
 /* The party screen loop: open the list panel, then move the cursor between
  * the party (list 0) and the member list (list 1) and pick two entries to
- * swap them, until cancelled; finally store the party.
- * NON_MATCHING: the original tests `list` zero-extended (andi) but passes it
- * to func_801CA810/func_801CAB48 unextended, copies it unextended into
- * prev_list (which is extended when passed), and flips it from the extended
- * value (xori s2, s0, 1); no u8/int/u16/s16 typing of list/prev_list here
- * reproduces all three (u8 list with s32 prev_list leaves only the call
- * extensions and the flip/copy order). */
-#ifdef NON_MATCHING
+ * swap them, until cancelled; finally store the party. */
 void func_801CAD14(void) {
     u8 running = 1;
     s32 row = 0;
     s32 page = 0;
     s32 shown_page;
-    s32 list;
+    u8 list;
     u8 picking;
     u8 prev_list;
     s32 prev_row;
@@ -1673,7 +1666,7 @@ void func_801CAD14(void) {
                 prev_row = row;
                 row = 0;
                 prev_list = list;
-                list ^= 1;
+                list = !list;
                 prev_page = page;
                 func_801C9270(2);
             } else if (func_801CAB48(list, row, page, prev_list, prev_row, prev_page)) {
@@ -1737,9 +1730,6 @@ void func_801CAD14(void) {
         D_8006F368[i] = D_800625A0->flags->party[i];
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801CAD14);
-#endif
 
 /* Overlay entry: allocate and set up the party screen, run it and leave. */
 void func_801CB0A8(void) {

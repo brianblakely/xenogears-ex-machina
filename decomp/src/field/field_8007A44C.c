@@ -1467,10 +1467,10 @@ void func_8007DECC(void) {
 
 /* Set a dialogue window's rectangle. */
 void func_8007E114(s32 window, s32 x, s32 y, s32 w, s32 h) {
-    D_800C2698[window].text.rect.x = x;
-    D_800C2698[window].text.rect.y = y;
-    D_800C2698[window].text.rect.w = w;
-    D_800C2698[window].text.rect.h = h;
+    D_800C2698[window].frame.rect.x = x;
+    D_800C2698[window].frame.rect.y = y;
+    D_800C2698[window].frame.rect.w = w;
+    D_800C2698[window].frame.rect.h = h;
 }
 
 /* Place a quad's corners at (x, y) with size (w, h), optionally mirrored. */
@@ -1503,8 +1503,9 @@ s32 func_800347C0(TextBox *text);
  * the window grows from its centre (at least 16 pixels each way) and
  * slides; then the waiting prompt, the eight border pieces, the portrait,
  * the choice cursor and the backing tile.
- * Does not match yet: the original spills `buffer` and the area to the
- * stack (0xa8-byte frame) and keeps `ot` in fp; the layout of the
+ * NON_MATCHING (849 edits): x/y/width/height spill as in the original, but
+ * the original also spills `buffer` (0x20) and more values to a 0xa8-byte
+ * frame (ours 0x80) and keeps `ot` in fp and `w` in $s7; the layout of the
  * statements is otherwise as here. */
 void func_8007E1C0(u32 *ot, s32 buffer, s32 w) {
     RECT area;
@@ -1528,10 +1529,10 @@ void func_8007E1C0(u32 *ot, s32 buffer, s32 w) {
     if (D_800C2698[w].busy != 0) {
         return;
     }
-    x = D_800C2698[w].text.rect.x;
-    y = D_800C2698[w].text.rect.y;
-    width = D_800C2698[w].text.rect.w;
-    height = D_800C2698[w].text.rect.h;
+    x = D_800C2698[w].frame.rect.x;
+    y = D_800C2698[w].frame.rect.y;
+    width = D_800C2698[w].frame.rect.w;
+    height = D_800C2698[w].frame.rect.h;
     if (D_800C2698[w].timer != 0) {
         steps = D_800B2078.text_speed * 2;
         grown_w = ((width << 16) / steps) * (D_800B2078.text_speed - D_800C2698[w].timer);
@@ -1575,33 +1576,33 @@ void func_8007E1C0(u32 *ot, s32 buffer, s32 w) {
     right = x + width - 8;
     bottom = y + height - 9;
     side = height - 0x12;
-    D_800C2698[w].border[buffer][0].x0 = left;
-    D_800C2698[w].border[buffer][0].y0 = top;
-    D_800C2698[w].border[buffer][2].y0 = top;
-    D_800C2698[w].border[buffer][4].x0 = left;
-    D_800C2698[w].border[buffer][2].x0 = right;
-    D_800C2698[w].border[buffer][6].x0 = right;
-    D_800C2698[w].border[buffer][3].x0 = left;
-    D_800C2698[w].border[buffer][1].x0 = right;
-    D_800C2698[w].border[buffer][4].y0 = bottom;
-    D_800C2698[w].border[buffer][6].y0 = bottom;
-    D_800C2698[w].border[buffer][3].y0 = y + 9;
-    D_800C2698[w].border[buffer][1].y0 = y + 9;
+    D_800C2698[w].frame.border[buffer][0].x0 = left;
+    D_800C2698[w].frame.border[buffer][0].y0 = top;
+    D_800C2698[w].frame.border[buffer][2].y0 = top;
+    D_800C2698[w].frame.border[buffer][4].x0 = left;
+    D_800C2698[w].frame.border[buffer][2].x0 = right;
+    D_800C2698[w].frame.border[buffer][6].x0 = right;
+    D_800C2698[w].frame.border[buffer][3].x0 = left;
+    D_800C2698[w].frame.border[buffer][1].x0 = right;
+    D_800C2698[w].frame.border[buffer][4].y0 = bottom;
+    D_800C2698[w].frame.border[buffer][6].y0 = bottom;
+    D_800C2698[w].frame.border[buffer][3].y0 = y + 9;
+    D_800C2698[w].frame.border[buffer][1].y0 = y + 9;
     if (side < 0) {
         side = 0;
     }
-    D_800C2698[w].border[buffer][3].h = side;
-    D_800C2698[w].border[buffer][1].h = side;
-    D_800C2698[w].border[buffer][5].y0 = top;
-    D_800C2698[w].border[buffer][5].x0 = x + 8;
-    D_800C2698[w].border[buffer][7].x0 = x + 8;
-    D_800C2698[w].border[buffer][7].y0 = bottom;
-    D_800C2698[w].border[buffer][5].w = width - 0x10;
-    D_800C2698[w].border[buffer][7].w = width - 0x10;
+    D_800C2698[w].frame.border[buffer][3].h = side;
+    D_800C2698[w].frame.border[buffer][1].h = side;
+    D_800C2698[w].frame.border[buffer][5].y0 = top;
+    D_800C2698[w].frame.border[buffer][5].x0 = x + 8;
+    D_800C2698[w].frame.border[buffer][7].x0 = x + 8;
+    D_800C2698[w].frame.border[buffer][7].y0 = bottom;
+    D_800C2698[w].frame.border[buffer][5].w = width - 0x10;
+    D_800C2698[w].frame.border[buffer][7].w = width - 0x10;
     if (!(D_800C2698[w].style & 0x40)) {
         for (i = 0; i < 8; i++) {
-            addPrim(ot, &D_800C2698[w].border[buffer][i]);
-            addPrim(ot, &D_800C2698[w].border_modes[buffer][i]);
+            addPrim(ot, &D_800C2698[w].frame.border[buffer][i]);
+            addPrim(ot, &D_800C2698[w].frame.border_modes[buffer][i]);
         }
     }
     icon_w = 0x40;
@@ -1633,13 +1634,13 @@ void func_8007E1C0(u32 *ot, s32 buffer, s32 w) {
         addPrim(ot, &D_800C2698[w].choice[buffer]);
         addPrim(ot, &D_800C2698[w].choice_modes[buffer]);
     }
-    D_800C2698[w].back[buffer].x0 = x;
-    D_800C2698[w].back[buffer].y0 = y + 1;
-    D_800C2698[w].back[buffer].w = width;
-    D_800C2698[w].back[buffer].h = height - 2;
+    D_800C2698[w].frame.back[buffer].x0 = x;
+    D_800C2698[w].frame.back[buffer].y0 = y + 1;
+    D_800C2698[w].frame.back[buffer].w = width;
+    D_800C2698[w].frame.back[buffer].h = height - 2;
     if (!(D_800C2698[w].style & 0x40)) {
-        addPrim(ot, &D_800C2698[w].back[buffer]);
-        addPrim(ot, &D_800C2698[w].back_modes[buffer]);
+        addPrim(ot, &D_800C2698[w].frame.back[buffer]);
+        addPrim(ot, &D_800C2698[w].frame.back_modes[buffer]);
     }
 }
 #else
@@ -1656,29 +1657,31 @@ extern RECT D_800ADF04[];   /* prompt frames */
  * mode and semi-transparent tile in the window colour, the prompt and
  * choice cursor sprites, the eight border sprites (texture windows from
  * 800ade9c) and the portrait quad.
- * Does not match: the original addresses these members from a base at
- * window + 0ac (800c2744) and then from the border sprites (800c2884), where
- * this code shares window + 0c4; the source form giving that base is not
- * known yet. */
+ * NON_MATCHING (415 edits, was 652): the nested DialogueFrame (window + 0ac)
+ * now gives the original's 800c2744 base, setRGB0 on the packet addresses
+ * keeps them in $s1 and the fixed-frame RECT copies go field by field.
+ * Left: the choice and prompt packets are addressed from window + 37c and
+ * + 3c4 bases (suggesting further nested structs, which would move status,
+ * unk380/382 used by field_800854D0.c), $s0/$s5 and $s1/$s0 swap, and the
+ * 0xc/8 width/height constants are kept the other way round. */
 void func_8007EE0C(s32 w) {
     RECT area;
     s32 i;
 
-    SetDrawMode(&D_800C2698[w].back_modes[0], 0, 0, GetTPage(0, 2, 0x280, 0x1F0), NULL);
-    SetDrawMode(&D_800C2698[w].back_modes[1], 0, 0, GetTPage(0, 2, 0x280, 0x1F0), NULL);
-    SetTile(&D_800C2698[w].back[0]);
-    D_800C2698[w].back[0].r0 = D_800594D4[0];
-    D_800C2698[w].back[0].g0 = D_800594D4[1];
-    D_800C2698[w].back[0].b0 = D_800594D4[2];
-    SetSemiTrans(&D_800C2698[w].back[0], 1);
-    D_800C2698[w].back[1] = D_800C2698[w].back[0];
-    area = D_800ADF04[0];
+    SetDrawMode(&D_800C2698[w].frame.back_modes[0], 0, 0, GetTPage(0, 2, 0x280, 0x1F0), NULL);
+    SetDrawMode(&D_800C2698[w].frame.back_modes[1], 0, 0, GetTPage(0, 2, 0x280, 0x1F0), NULL);
+    SetTile(&D_800C2698[w].frame.back[0]);
+    setRGB0(&D_800C2698[w].frame.back[0], D_800594D4[0], D_800594D4[1], D_800594D4[2]);
+    SetSemiTrans(&D_800C2698[w].frame.back[0], 1);
+    D_800C2698[w].frame.back[1] = D_800C2698[w].frame.back[0];
+    area.x = D_800ADF04[0].x;
+    area.y = D_800ADF04[0].y;
+    area.w = D_800ADF04[0].w;
+    area.h = D_800ADF04[0].h;
     SetDrawMode(&D_800C2698[w].prompt_modes[0], 0, 0, GetTPage(0, 0, 0x298, 0x1C0), &area);
     SetDrawMode(&D_800C2698[w].prompt_modes[1], 0, 0, GetTPage(0, 0, 0x298, 0x1C0), &area);
     SetSprt(&D_800C2698[w].prompt[0]);
-    D_800C2698[w].prompt[0].r0 = 0x80;
-    D_800C2698[w].prompt[0].g0 = 0x80;
-    D_800C2698[w].prompt[0].b0 = 0x80;
+    setRGB0(&D_800C2698[w].prompt[0], 0x80, 0x80, 0x80);
     D_800C2698[w].prompt[0].clut = GetClut(0x100, 0xF6);
     D_800C2698[w].prompt[0].w = 0xC;
     D_800C2698[w].prompt[0].u0 = 0x80;
@@ -1687,13 +1690,14 @@ void func_8007EE0C(s32 w) {
     D_800C2698[w].prompt[0].x0 = 0;
     D_800C2698[w].prompt[0].y0 = 0;
     D_800C2698[w].prompt[1] = D_800C2698[w].prompt[0];
-    area = D_800ADEDC[0];
+    area.x = D_800ADEDC[0].x;
+    area.y = D_800ADEDC[0].y;
+    area.w = D_800ADEDC[0].w;
+    area.h = D_800ADEDC[0].h;
     SetDrawMode(&D_800C2698[w].choice_modes[0], 0, 0, GetTPage(0, 0, 0x288, 0x1C0), &area);
     SetDrawMode(&D_800C2698[w].choice_modes[1], 0, 0, GetTPage(0, 0, 0x288, 0x1C0), &area);
     SetSprt(&D_800C2698[w].choice[0]);
-    D_800C2698[w].choice[0].r0 = 0x80;
-    D_800C2698[w].choice[0].g0 = 0x80;
-    D_800C2698[w].choice[0].b0 = 0x80;
+    setRGB0(&D_800C2698[w].choice[0], 0x80, 0x80, 0x80);
     D_800C2698[w].choice[0].clut = GetClut(0x100, 0xF6);
     D_800C2698[w].choice[0].w = 0xC;
     D_800C2698[w].choice[0].u0 = 0x80;
@@ -1705,21 +1709,19 @@ void func_8007EE0C(s32 w) {
     D_800C2698[w].prompt_delay = 2;
     for (i = 0; i < 8; i++) {
         area = D_800ADE9C[i];
-        SetDrawMode(&D_800C2698[w].border_modes[0][i], 0, 0, GetTPage(0, 2, 0x280, 0x1F0), &area);
-        SetDrawMode(&D_800C2698[w].border_modes[1][i], 0, 0, GetTPage(0, 2, 0x280, 0x1F0), &area);
-        SetSprt(&D_800C2698[w].border[0][i]);
-        D_800C2698[w].border[0][i].r0 = 0x80;
-        D_800C2698[w].border[0][i].g0 = 0x80;
-        D_800C2698[w].border[0][i].b0 = 0x80;
-        D_800C2698[w].border[0][i].clut = GetClut(0x100, 0xF4);
-        SetSemiTrans(&D_800C2698[w].border[0][i], 1);
-        D_800C2698[w].border[0][i].u0 = 0x80;
-        D_800C2698[w].border[0][i].v0 = 0xC0;
-        D_800C2698[w].border[0][i].w = D_800ADE9C[i].w;
-        D_800C2698[w].border[0][i].x0 = 0;
-        D_800C2698[w].border[0][i].y0 = 0;
-        D_800C2698[w].border[0][i].h = D_800ADE9C[i].h;
-        D_800C2698[w].border[1][i] = D_800C2698[w].border[0][i];
+        SetDrawMode(&D_800C2698[w].frame.border_modes[0][i], 0, 0, GetTPage(0, 2, 0x280, 0x1F0), &area);
+        SetDrawMode(&D_800C2698[w].frame.border_modes[1][i], 0, 0, GetTPage(0, 2, 0x280, 0x1F0), &area);
+        SetSprt(&D_800C2698[w].frame.border[0][i]);
+        setRGB0(&D_800C2698[w].frame.border[0][i], 0x80, 0x80, 0x80);
+        D_800C2698[w].frame.border[0][i].clut = GetClut(0x100, 0xF4);
+        SetSemiTrans(&D_800C2698[w].frame.border[0][i], 1);
+        D_800C2698[w].frame.border[0][i].u0 = 0x80;
+        D_800C2698[w].frame.border[0][i].v0 = 0xC0;
+        D_800C2698[w].frame.border[0][i].w = D_800ADE9C[i].w;
+        D_800C2698[w].frame.border[0][i].x0 = 0;
+        D_800C2698[w].frame.border[0][i].y0 = 0;
+        D_800C2698[w].frame.border[0][i].h = D_800ADE9C[i].h;
+        D_800C2698[w].frame.border[1][i] = D_800C2698[w].frame.border[0][i];
     }
     area.x = 0;
     area.y = 0;
@@ -1728,9 +1730,7 @@ void func_8007EE0C(s32 w) {
     SetDrawMode(&D_800C2698[w].icon_modes[0], 0, 0, GetTPage(1, 0, 0x2C0, 0x100), &area);
     SetDrawMode(&D_800C2698[w].icon_modes[1], 0, 0, GetTPage(1, 0, 0x2C0, 0x100), &area);
     SetPolyFT4(&D_800C2698[w].icon[0]);
-    D_800C2698[w].icon[0].r0 = 0x80;
-    D_800C2698[w].icon[0].g0 = 0x80;
-    D_800C2698[w].icon[0].b0 = 0x80;
+    setRGB0(&D_800C2698[w].icon[0], 0x80, 0x80, 0x80);
     D_800C2698[w].icon[0].clut = GetClut(0, 0xE0);
     D_800C2698[w].icon[0].tpage = GetTPage(1, 0, 0x2C0, 0x100);
     D_800C2698[w].icon[1] = D_800C2698[w].icon[0];
@@ -2163,12 +2163,12 @@ s32 func_80080A18(void) {
 #ifdef NON_MATCHING
 /* Reset event actor `index` to its defaults and settle it on the floor of
  * each collision layer under its descriptor's position.
- * NON_MATCHING (measured 46 edits): in the floor loop the original passes
- * point + i computed afresh each iteration (sp+0x58 + i*8) while it clears
- * the point through a stride-8 induction register based at normal
- * (0x40($s2)); ours shares one register for both. Also the 0x10/0x60
- * constant stores at the top, two loop-invariant masks and the +134 mask
- * are scheduled/allocated differently. */
+ * NON_MATCHING (10 edits): only the first constant stores differ: the
+ * original hoists the 0x10 (+18/+1c) constant into $v1 above the +0 store
+ * and loads 0xff for +74/+75 later; ours hoists the 0xff constant instead
+ * (the store order and statement permutations tried do not change it).
+ * The (point + i)-> and (normal + layer)-> forms keep the point clears off
+ * the call argument as the original does. */
 void func_80080A74(s32 index) {
     VECTOR normal[4];
     SVECTOR point[4];
@@ -2178,10 +2178,10 @@ void func_80080A74(s32 index) {
     actor = D_800AF880.components.descriptors[index].actor;
     actor->flags = 0xB0;
     actor->layer_flags = 0x800;
+    actor->unk074 = 0xFF;
     actor->unk18 = 0x10;
     actor->gravity.s.fraction = 0x10;
     actor->height = 0x60;
-    actor->unk074 = 0xFF;
     actor->unk075 = 0xFF;
     actor->unk40[0] = 0;
     actor->unk40[1] = 0;
@@ -2218,13 +2218,13 @@ void func_80080A74(s32 index) {
     actor->state.bits.unk18 = 0;
     for (i = 0; i < 8; i++) {
         actor->slots[i].countdown = 0;
-        actor->slots[i].resume_pc = 0xFFFF;
-        actor->slots[i].tag = 0xFF;
         actor->slots[i].unk16 = 0;
         actor->slots[i].unk22 = 0;
         actor->slots[i].move_mode = 0;
         actor->slots[i].priority = 15;
         actor->slots[i].value = 0xFFFF;
+        actor->slots[i].resume_pc = 0xFFFF;
+        actor->slots[i].tag = 0xFF;
     }
     actor->unk120 = NULL;
     actor->unkE4 = 0xFF;
@@ -2243,7 +2243,7 @@ void func_80080A74(s32 index) {
     actor->state.bits.depth = 0;
     actor->state.bits.octant = 0;
     actor->state.bits.unk12 = 0;
-    actor->unk134 &= ~0x60;
+    ACTOR_BITS134(actor).unk5 = 0;
     actor->unk102 = rand();
     actor->scale[0] = 0x1000;
     actor->scale[1] = 0x1000;
@@ -2269,15 +2269,15 @@ void func_80080A74(s32 index) {
             normal[i].vx = 0;
             normal[i].vy = 0;
             normal[i].vz = 0;
-            point[i].vx = 0;
-            point[i].vy = 0;
-            point[i].vz = 0;
+            (point + i)->vx = 0;
+            (point + i)->vy = 0;
+            (point + i)->vz = 0;
         }
     }
     actor->unk014 = func_80080968(actor);
-    actor->unk50[0] = normal[actor->layer].vx;
-    actor->unk50[1] = normal[actor->layer].vy;
-    actor->unk50[2] = normal[actor->layer].vz;
+    actor->unk50[0] = (normal + actor->layer)->vx;
+    actor->unk50[1] = (normal + actor->layer)->vy;
+    actor->unk50[2] = (normal + actor->layer)->vz;
     if (!(D_800AF880.components.descriptors[index].flags & 0x80)) {
         D_800AF880.components.descriptors[index].matrix.t[1] = point[actor->layer].vy;
     }
@@ -2735,11 +2735,14 @@ s32 func_800825AC(s32 from, s32 to) {
 /* An actor's additive motion before it moves: the terrain push and conveyor
  * of the floor it stands on, the platform it rides and its gear layer's
  * drift.
- * NON_MATCHING (measured 83 edits): actor/terrain take s1/s2 swapped and
- * angle/radius s0/s1 swapped against the original; the original also
- * sign-extends turn.vy into angle only just before the heading test. With
- * angle declared s16 the allocation matches (12 edits) but the final
- * direction would then be truncated, so that is not used. */
+ * NON_MATCHING (14 edits): allocation now matches (a block-local `dir`
+ * takes $s0 before radius, so actor/terrain/radius land as in the
+ * original). Left: the original computes ratan2 - angle in a temporary
+ * ($v0) and only the final - 0x800 into $s0, where ours reuses angle for
+ * the difference; and it schedules the turn.vy sign extension (sra) into
+ * the heading test's delay slot, so the heading load uses $v1, not $a0.
+ * One variable for angle and the result gives the temporary but puts
+ * radius in $s0 (local-alloc) and swaps actor/terrain. */
 void func_80082620(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
     u32 terrain;
     VECTOR conveyor;
@@ -2760,6 +2763,7 @@ void func_80082620(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
     s32 other_z;
     s32 radius;
     s32 angle;
+    s32 dir;
 
     push_x = 0;
     push_z = 0;
@@ -2848,9 +2852,10 @@ conveyed:
                 actor->link->radius = func_800825AC(index, actor->unk074);
             }
             radius = actor->link->radius;
-            angle = (s16)ratan2(other_z - self_z, other_x - self_x) - angle - 0x800;
-            actor->unk40[0] += other_x + func_8003F8CC(angle) * radius * 16 - self_x;
-            actor->unk40[2] += other_z + func_8003F8B0(angle) * radius * 16 - self_z;
+            angle = (s16)ratan2(other_z - self_z, other_x - self_x) - angle;
+            dir = angle - 0x800;
+            actor->unk40[0] += other_x + func_8003F8CC(dir) * radius * 16 - self_x;
+            actor->unk40[2] += other_z + func_8003F8B0(dir) * radius * 16 - self_z;
         }
     }
     if ((actor->layer_flags & 0x22000) == 0x22000) {
@@ -2869,11 +2874,11 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_80082620
  * requested heading into a velocity (80081f80) plus its additive motion,
  * sweep that against the collision layers, then pick its animation and
  * store the result as its velocity (+30).
- * NON_MATCHING: ours threads the idle test's "heading & 0x8000" jump straight
- * into the turn branch; the original re-tests it (andi at 80082cf8), so its
- * two tests were not identical to jump threading (a (s16)heading < 0 form
- * avoids the threading but tests with bgez). Also index/descriptor swap
- * s5/s6 and the unk0EA test is laid out differently. */
+ * NON_MATCHING (16 edits): only index and descriptor swap $s5/$s6. Global
+ * allocation takes descriptor (4 refs over 261 insns) before index (3 refs
+ * over 111); the original allocates index first. The (u16) view of the
+ * first heading test keeps jump threading from merging it with the second,
+ * as in the original. */
 void func_80082BB8(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
     VECTOR move;
     SVECTOR edge[2];
@@ -2911,7 +2916,7 @@ void func_80082BB8(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
     if (func_8008492C(actor) == -1) {
         moving = 1;
     }
-    if ((heading & 0x8000) && moving == 0 && !(actor->flags & 0x40800)) {
+    if (((u16)heading & 0x8000) && moving == 0 && !(actor->flags & 0x40800)) {
         goto idle;
     }
     if (!(heading & 0x8000)) {
@@ -2924,9 +2929,9 @@ void func_80082BB8(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
         move.vz += actor->unk40[2];
         actor->heading_goal = heading;
     } else {
+        heading = actor->heading_goal & 0xFFF;
         move.vx = actor->unk40[0];
         move.vy = actor->unk40[1];
-        heading = actor->heading_goal & 0xFFF;
         move.vz = actor->unk40[2];
     }
     if (func_80082494(&move.vx, actor) != 0) {
@@ -2953,10 +2958,10 @@ void func_80082BB8(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
         }
         actor->flags = (actor->flags & ~0x600) | (saved & 0x600);
     }
-    if (result != -1) {
-        goto moved;
+    if (result == -1) {
+        goto stop;
     }
-    goto stop;
+    goto moved;
 idle:
     mode = actor->unkE6;
     actor->heading |= 0x8000;
@@ -3010,10 +3015,10 @@ moved:
     }
     actor->unk030[0] = move.vx;
     actor->unk030[1] = move.vy;
+    actor->unk030[2] = move.vz;
     actor->unk40[0] = 0;
     actor->unk40[1] = 0;
     actor->unk40[2] = 0;
-    actor->unk030[2] = move.vz;
 }
 #else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_80082BB8);
@@ -3572,34 +3577,25 @@ void func_80084158(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
     func_8007CD60(0x20);
 }
 
-#ifdef NON_MATCHING
-/* -1 when the actor's motion, collision state or layer prevents idling.
- * NON_MATCHING: the original places the layer-1 `return -1` block at the end
- * (beq into it, falling into the epilogue) after the layer-2 store-flag code,
- * while still reloading layer_flags for every test. The separate-if form
- * here reloads but keeps that return inline; every nested/else form tried
- * lets CSE reuse layer_flags instead. */
+/* 0 when the actor may idle: no motion, collision or script state is
+ * pending and none of its disabled layers (layer flag bits 0-2) is the
+ * layer it stands on; -1 otherwise. */
 s32 func_8008492C(FieldActor *actor) {
-    if ((actor->unk014 & 0x420000) || D_800ADB98 != 0 || actor->unk030[0] != 0 ||
-        actor->unk030[1] != 0 || actor->unk030[2] != 0 || D_800ADC0C != 1 || actor->unk074 != 0xFF ||
-        (actor->flags & 0x401800)) {
-        return -1;
-    }
-    if ((actor->layer_flags & 1) && actor->layer == 0) {
-        return -1;
-    }
-    if ((actor->layer_flags & 2) && actor->layer == 1) {
-        return -1;
-    }
-    if ((actor->layer_flags & 4) && actor->layer == 2) {
-        return -1;
-    } else {
+    if (!(actor->unk014 & 0x420000) && D_800ADB98 == 0 && actor->unk030[0] == 0 && actor->unk030[1] == 0 &&
+        actor->unk030[2] == 0 && D_800ADC0C == 1 && actor->unk074 == 0xFF && !(actor->flags & 0x401800)) {
+        if ((actor->layer_flags & 1) && actor->layer == 0) {
+            return -1;
+        }
+        if ((actor->layer_flags & 2) && actor->layer == 1) {
+            return -1;
+        }
+        if ((actor->layer_flags & 4) && actor->layer == 2) {
+            return -1;
+        }
         return 0;
     }
+    return -1;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8008492C);
-#endif
 
 /* Move an actor to its next position: query every collision layer's floor
  * and ceiling there, sort the layers by floor, choose the actor's layer,

@@ -421,7 +421,7 @@ void func_80089E2C(Node *node, Model *model);
 void func_80089E54(Node *node, ModelSet *set);
 void func_80089C88(Node *parent, Node *child);
 void func_8008A184(Model *model, ModelFile *file);
-void func_8008B13C(u8 *data, Player *player, Node *root);
+void func_8008B13C(AnimRecord *record, Player *player, Node *root);
 void func_8008B0D8(Player *player);
 void func_8008BE4C(ModelPrims *prims, Mesh *mesh);
 void func_8008BD70(Mesh *mesh, ModelPrim *prims, u32 *ot, u8 *work);
