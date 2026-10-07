@@ -93,9 +93,9 @@ typedef struct {
     u16 unk5A;
     u16 unk5C;
     u16 unk5E;
-    s16 unk60;   /* saved vehicle position */
-    s16 unk62;
-    s16 unk64;
+    u16 unk60;   /* saved vehicle position */
+    u16 unk62;
+    u16 unk64;
     u16 vehicle_heading; /* 8006ee66 */
     u16 flags;   /* 8006ee68: 0x4000 vehicle, 0x2000 restore, low bits kind */
     s16 unk6A;

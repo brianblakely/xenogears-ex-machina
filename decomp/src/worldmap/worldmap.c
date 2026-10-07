@@ -5,10 +5,9 @@
  * map is left, then hand over to the next scene. */
 /* NON_MATCHING: only the new-game block and the mode read differ. The
  * original loads 0x400 (a1) and 0x7580 (a3) early and stores the two gear
- * 9s after the zeroed bytes, where here 0x7580 takes v1 after them; it
- * stores 0xFF00 to the s16 unk62 as a positive constant (ori); and after
- * the setup calls it addresses the flag word directly, where here the
- * load and store share its address in a3. */
+ * 9s after the zeroed bytes, where here 0x7580 takes v1 after them; and
+ * after the setup calls it addresses the flag word directly, where here
+ * the load and store share its address in a3. */
 #ifdef NON_MATCHING
 void func_80070CFC(void) {
     void (*step)(void);

@@ -1636,9 +1636,9 @@ s32 func_80087FD0(s32 index) {
         object->position.vx = actor->position.vx >> 12;
         object->position.vy = actor->position.vy >> 12;
         object->position.vz = actor->position.vz >> 12;
-        scratch->work.vx = (u16)D_8006EE54.unk60 - (actor->position.vx >> 12);
-        scratch->work.vz = (u16)D_8006EE54.unk64 - (actor->position.vz >> 12);
-        scratch->work.vy = D_8006EE54.unk62;
+        scratch->work.vx = D_8006EE54.unk60 - (actor->position.vx >> 12);
+        scratch->work.vz = D_8006EE54.unk64 - (actor->position.vz >> 12);
+        scratch->work.vy = (s16)D_8006EE54.unk62;
         func_80093534(&scratch->work);
         dock = SquareRoot0(scratch->work.vx * scratch->work.vx + scratch->work.vz * scratch->work.vz);
         if (dock < 0x100 && scratch->work.vy >= -0xBF) {
@@ -1741,9 +1741,9 @@ s32 func_80088720(s32 index) {
     scratch = FLIGHT_SCRATCH;
     D_8009C620[base].matrix = D_8009C620[base + 1].matrix = D_8009C620[base + 2].matrix =
         D_8009C620[base + 3].matrix = FLIGHT_SCRATCH->tail_matrix;
-    scratch->work.vx = (u16)D_8006EE54.unk60 - (actor->position.vx >> 12);
-    scratch->work.vz = (u16)D_8006EE54.unk64 - (actor->position.vz >> 12);
-    scratch->work.vy = D_8006EE54.unk62;
+    scratch->work.vx = D_8006EE54.unk60 - (actor->position.vx >> 12);
+    scratch->work.vz = D_8006EE54.unk64 - (actor->position.vz >> 12);
+    scratch->work.vy = (s16)D_8006EE54.unk62;
     func_80093534(&scratch->work);
     if (SquareRoot0(scratch->work.vx * scratch->work.vx + scratch->work.vz * scratch->work.vz) < 0x300 && scratch->work.vy < -0x240) {
         actor->turn = 0;
