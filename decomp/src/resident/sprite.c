@@ -1627,7 +1627,8 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         s32 n;
 
         if (code[0] & 0x80) {
-            D_80059428 = (code[0] & 0x7F) + 1;
+            n = (code[0] & 0x7F) + 1;
+            D_80059428 = n;
         } else {
             n = (code[0] + 1) * sprite->motion.bits.divisor / 256;
             if (n == 0) {
@@ -1806,8 +1807,8 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
             switch (index) {
             case 38:
                 vector.vx = D_800C3EB0[((sprite->motion.word & 3) << 2) | sprite->frame_bits.unknown30].x;
-                vector.vy = 0;
                 vector.vz = D_800C3EB0[((sprite->motion.word & 3) << 2) | sprite->frame_bits.unknown30].z;
+                vector.vy = 0;
                 break;
             case 36:
                 ((Task *)sprite->block)->link.word |= 0x40000000;
