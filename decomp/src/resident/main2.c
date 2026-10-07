@@ -423,10 +423,14 @@ void func_80033DD4(Window *window, u8 *text) {
  * planes; text controls pause, change reveal speed, insert resource/name/number
  * text and return to the byte after an inserted message's saved position.
  * Pointer increments below retain the control stream's original resume slots.
- * NON_MATCHING: same size; the inserted-text paths still differ: the original
- * builds the resource/name arguments straight in $a0/$a1 (here in $v0/$v1 with
- * copies, the control parameter taking $a0 instead of $a3), and a few loads
- * and operands are ordered differently. */
+ * The control parameter reuses `first` (both live in $a3 in the original).
+ * NON_MATCHING: same size; left: the name insertion (case 5) builds the name
+ * in $v0 and keeps its own call (the original computes it in $a1 and shares
+ * the func_80033DD4 call with the func_80033728 path), the number insertion
+ * loads window->text after the jump instead of before it in cases 9/10, case
+ * 15 zero-extends the resource index at the shared call, and the line row
+ * sum, the case 4 selection load and one glyph-path addition are ordered
+ * differently. */
 #ifdef NON_MATCHING
 void func_80033DF0(Window *window) {
     s32 remaining = window->unk69;
@@ -434,7 +438,6 @@ void func_80033DF0(Window *window) {
     s32 current_line;
     u16 first;
     u16 second;
-    u16 parameter;
     u16 glyph_width;
     u8 byte;
     u8 old_speed;
@@ -502,13 +505,12 @@ void func_80033DF0(Window *window) {
                 window->text += 3;
                 return;
             case 1:
-                parameter = window->text[2];
-                if (parameter != 0) {
-                    old_speed = window->unk68;
-                    remaining += parameter;
-                    window->unk68 = parameter;
-                    window->unk69 = parameter;
-                    window->unk6A = old_speed;
+                first = window->text[2];
+                if (first != 0) {
+                    remaining += first;
+                    window->unk6A = window->unk68;
+                    window->unk68 = first;
+                    window->unk69 = first;
                 } else {
                     window->unk68 = window->unk6A;
                     window->unk69 = window->unk6A;
@@ -522,31 +524,31 @@ void func_80033DF0(Window *window) {
                 window->unk6C = 1;
                 return;
             case 3:
-                parameter = window->text[2];
+                first = window->text[2];
                 second = window->text[3];
                 window->text += 3;
-                resource = D_80059360[parameter];
+                resource = D_80059360[first];
                 remaining++;
                 goto insert_resource;
             case 4:
                 category = window->selection;
-                second = category & 0xFF;
+                second = category;
                 category &= 0xFF00;
                 window->text++;
                 switch (category) {
-                case 0x000: resource = D_80059360[22]; goto insert_resource;
-                case 0x100: resource = D_80059360[23]; goto insert_resource;
-                case 0x200: resource = D_80059360[17]; goto insert_resource;
-                case 0x300: resource = D_80059360[51]; goto insert_resource;
-                case 0x400: resource = D_80059360[50]; goto insert_resource;
+                case 0x000: resource = D_80059360[22]; second &= 0xFF; goto insert_resource;
+                case 0x100: resource = D_80059360[23]; second &= 0xFF; goto insert_resource;
+                case 0x200: resource = D_80059360[17]; second &= 0xFF; goto insert_resource;
+                case 0x300: resource = D_80059360[51]; second &= 0xFF; goto insert_resource;
+                case 0x400: resource = D_80059360[50]; second &= 0xFF; goto insert_resource;
                 }
                 break;
             case 5:
-                parameter = window->text[2];
+                first = window->text[2];
                 window->text += 2;
-                index = parameter;
-                if (parameter >= 0x80) {
-                    index = D_8006F2E8[parameter];
+                index = first;
+                if (first >= 0x80) {
+                    index = D_8006F2E8[first];
                     if (index == 0xFF) {
                         name = func_80033728(D_80059360[26], 0);
                         goto insert_name;
@@ -559,24 +561,24 @@ insert_name:
                 break;
             case 6:
                 remaining++;
-                parameter = window->text[2];
+                first = window->text[2];
                 window->text += 2;
                 resource = D_80059360[23];
-                second = parameter;
+                second = first;
                 goto insert_resource;
             case 7:
                 remaining++;
-                parameter = window->text[2];
+                first = window->text[2];
                 window->text += 2;
                 resource = D_80059360[24];
-                second = parameter;
+                second = first;
                 goto insert_resource;
             case 8:
                 remaining++;
-                parameter = window->text[2];
+                first = window->text[2];
                 window->text += 2;
                 resource = D_80059360[25];
-                second = parameter;
+                second = first;
                 goto insert_resource;
             case 9:
                 palette = 0;
@@ -594,10 +596,10 @@ insert_name:
                 palette = 1;
                 sign = 1;
 insert_number:
-                parameter = window->text[2];
+                first = window->text[2];
                 window->text += 2;
                 remaining++;
-                func_80033CF0(window->values[parameter], palette, sign);
+                func_80033CF0(window->values[first], palette, sign);
                 func_80033DD4(window, D_8005A0E4);
                 break;
             case 13:
@@ -615,10 +617,10 @@ insert_number:
                 window->text += 3;
                 return;
             case 15:
-                parameter = window->text[2];
+                first = window->text[2];
                 window->text += 2;
                 resource = D_80059360[49];
-                second = D_80050238[parameter];
+                second = D_80050238[first];
                 remaining++;
 insert_resource:
                 remaining--;
