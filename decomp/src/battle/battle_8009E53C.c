@@ -220,8 +220,8 @@ ModelList *func_8009EBA8(u8 *group, ModelList *list) {
  * naming neither a listed model nor 0xFFFF: a root part, then one part per
  * pair with its packets for both buffers (built with mode; offset by (x0, y0)
  * and (x1, y1) when offset is set). Returns the root, NULL on failure. */
-ModelPart *func_8009EC4C(ModelList *list, u16 *hierarchy, s32 mode, s32 offset, u16 x0, u16 y0,
-                         u16 x1, u16 y1) {
+ModelPart *func_8009EC4C(ModelList *list, u16 *hierarchy, s32 mode, s32 offset, s16 x0, s16 y0,
+                         s16 x1, s16 y1) {
     ModelPart *root;
     ModelPart *part;
     u16 *pair;
@@ -555,68 +555,61 @@ void func_8009F794(ModelList *list, s32 release) {
 /* The in-place matrix product used to scale the shadow's rotation. */
 void func_80049ACC(MATRIX *m, MATRIX *scale);
 SpriteRecord *func_800A2E88(SpritePool *pool, s16 abe);
-void func_800A7948(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buffer, s32 scale, s32 floor);
+void func_800A7948(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buffer, s32 scale, s16 floor);
 
 /* Draw an active object: attenuate its two tracked lights, draw its ground
  * shadow and visible model parts, carry the cloth anchors/collision centres
  * with their model parts, step image animations and extend sprite trails.
  * When a trail's signed age becomes zero (including its initial -1 to 0),
  * it keeps the same channel cursor for the next iteration, matching the
- * original's conditional pointer advance.
- * Nonmatching: the frame size agrees, but scratch-pointer registers, spill
- * slots and instruction scheduling differ. */
-#ifdef NON_MATCHING
+ * original's conditional pointer advance. */
 void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, s32 skipped, u32 *ot,
                    s32 buffer) {
-    MATRIX *scratch = (MATRIX *)0x1F800000;
-    MATRIX *lighting = (MATRIX *)0x1F800020;
-    MATRIX *camera = (MATRIX *)0x1F800040;
+    u32 count;
     ModelList *models;
     ModelPart *part;
     ModelPart *root;
-    s16 *intensity;
+    u16 scale;
+    MATRIX *scratch = (MATRIX *)0x1F800000;
+    MATRIX *lighting = (MATRIX *)0x1F800020;
+    MATRIX *camera = (MATRIX *)0x1F800040;
     SVECTOR point;
     VECTOR forward;
     VECTOR origin;
-    VECTOR transformed;
-    SVECTOR wind;
+    s32 depth;
+    s32 nextDepth;
     Surface *surface;
     SurfaceEntry *entry;
     ImageAnim *image;
     ColorFade *channel;
-    DVECTOR *screen0;
-    DVECTOR *screen1;
     VECTOR *world0;
     VECTOR *world1;
+    VECTOR *prev0;
+    VECTOR *prev1;
     POLY_FT4 *shadow;
     s16 dx, dy, dz;
     s32 distance;
     s32 shadowScale;
-    s32 depth;
-    s32 nextDepth;
     s32 index;
     s32 slot;
-    u16 scale;
-    u32 count;
     s32 i;
     s32 j;
 
     if (object->active) {
         models = object->field0;
-        scale = object->scale1C;
         part = object->hierarchy;
+        scale = object->scale1C;
         root = part;
         count = part->index;
-        intensity = &D_800D3304[0].active;
-        for (i = 0; i < 2; i++, intensity += sizeof(Tracker) / sizeof(s16)) {
-            if (*intensity != 0) {
-                dx = D_800D3304[i].x - root->translation[0];
-                dy = D_800D3304[i].y - ((root->translation[1] - object->scale24 * (scale * root->scale[1] >> 12)) >> 13);
-                dz = D_800D3304[i].z - root->translation[2];
+        for (i = 0; i < 2; i++) {
+            if (D_800D3304[i].active != 0) {
+                dx = D_800D3304[i].x - part->translation[0];
+                dy = D_800D3304[i].y - ((part->translation[1] - object->scale24 * (scale * part->scale[1] >> 12)) >> 13);
+                dz = D_800D3304[i].z - part->translation[2];
                 distance = SquareRoot0(dx * dx + dy * dy + dz * dz) + 1;
-                light->m[i + 1][0] = ((dx << 12) / distance) * *intensity / (*intensity + distance);
-                light->m[i + 1][1] = ((dy << 12) / distance) * *intensity / (*intensity + distance);
-                light->m[i + 1][2] = ((dz << 12) / distance) * *intensity / (*intensity + distance);
+                light->m[i + 1][0] = ((dx << 12) / distance) * D_800D3304[i].active / (D_800D3304[i].active + distance);
+                light->m[i + 1][1] = ((dy << 12) / distance) * D_800D3304[i].active / (D_800D3304[i].active + distance);
+                light->m[i + 1][2] = ((dz << 12) / distance) * D_800D3304[i].active / (D_800D3304[i].active + distance);
             } else {
                 light->m[i + 1][0] = 0;
                 light->m[i + 1][1] = 0;
@@ -645,8 +638,8 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
             point.vz = 0;
             func_8003F738(&point, lighting);
             lighting->t[0] = origin.vx;
-            lighting->t[2] = origin.vz;
             lighting->t[1] = object->groundY;
+            lighting->t[2] = origin.vz;
             CompMatrix(view, lighting, lighting);
             shadowScale = object->scale1C - (object->groundY - object->hierarchy->translation[1]) / 4;
             if (shadowScale < 0) {
@@ -664,8 +657,8 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
             func_80049ACC(lighting, scratch);
             SetRotMatrix(lighting);
             SetTransMatrix(lighting);
-            point.vy = 0;
             point.vx = object->scale26;
+            point.vy = 0;
             point.vz = object->scale28;
             gte_ldv0(&point);
             gte_rtps();
@@ -698,7 +691,7 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
                 depth = nextDepth;
             }
             depth >>= D_80050100;
-            addPrim(ot + depth, shadow);
+            addPrim(ot + depth, &object->shadow[buffer]);
             if (depth >= 0x2D9) {
                 depth = 0x2D8;
             }
@@ -712,20 +705,20 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
                 SetLightMatrix(scratch);
                 CompMatrix(camera, &part->world, scratch);
                 if ((s16)part->field52 > 0) {
+                    scratch->m[0][0] = object->scale1C;
                     scratch->m[0][2] = 0;
                     scratch->m[1][0] = 0;
                     scratch->m[1][2] = 0;
                     scratch->m[2][0] = 0;
-                    scratch->m[0][0] = object->scale1C;
                     scratch->m[2][2] = object->scale1C;
-                    if (part->field52 == 1) {
+                    if ((s16)part->field52 == 1) {
                         scratch->m[0][1] = camera->m[0][1];
                         scratch->m[1][1] = camera->m[1][1];
                         scratch->m[2][1] = camera->m[2][1];
                     } else {
                         scratch->m[0][1] = 0;
-                        scratch->m[2][1] = 0;
                         scratch->m[1][1] = object->scale1C;
+                        scratch->m[2][1] = 0;
                     }
                 }
                 SetRotMatrix(scratch);
@@ -734,8 +727,11 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
             }
         }
         surface = object->surfaces;
-        for (i = 0; i < object->surfaceCount; i++, surface++) {
+        for (i = 0; i < object->surfaceCount; surface++, i++) {
             if ((s16)surface->h0 >= 0) {
+                VECTOR transformed;
+                SVECTOR wind;
+
                 wind.vx = -D_800D39E8 * func_8003F8CC(root->rotation.vy + 0x400) / 0x1000;
                 wind.vz = D_800D39E8 * func_8003F8B0(root->rotation.vy + 0x400) / 0x1000;
                 wind.vy = OBJECT_FIELD3E(object);
@@ -800,17 +796,15 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
                         channel->sprite->fade[1] = channel->step[1];
                         channel->sprite->fade[2] = channel->step[2];
                         index = (channel->time + channel->field5E) & 7;
-                        screen0 = &channel->history.screen.first[index];
-                        screen1 = &channel->history.screen.second[index];
-                        channel->sprite->x0 = screen0->vx;
-                        channel->sprite->y0 = screen0->vy;
-                        channel->sprite->x2 = screen1->vx;
-                        channel->sprite->y2 = screen1->vy;
+                        channel->sprite->x0 = (channel->history.screen.first + index)->vx;
+                        channel->sprite->y0 = (channel->history.screen.first + index)->vy;
+                        channel->sprite->x2 = (channel->history.screen.second + index)->vx;
+                        channel->sprite->y2 = (channel->history.screen.second + index)->vy;
                     }
-                    channel->sprite->x1 = channel->history.screen.first[channel->time].vx;
-                    channel->sprite->y1 = channel->history.screen.first[channel->time].vy;
-                    channel->sprite->x3 = channel->history.screen.second[channel->time].vx;
-                    channel->sprite->y3 = channel->history.screen.second[channel->time].vy;
+                    channel->sprite->x1 = (channel->history.screen.first + channel->time)->vx;
+                    channel->sprite->y1 = (channel->history.screen.first + channel->time)->vy;
+                    channel->sprite->x3 = (channel->history.screen.second + channel->time)->vx;
+                    channel->sprite->y3 = (channel->history.screen.second + channel->time)->vy;
                 } else {
                     CompMatrix(&root->transform, &root[channel->field0].world, scratch);
                     SetRotMatrix(scratch);
@@ -840,12 +834,14 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
                         channel->sprite->fade[0] = channel->step[0];
                         channel->sprite->fade[1] = channel->step[1];
                         channel->sprite->fade[2] = channel->step[2];
-                        channel->sprite->x0 = channel->history.world.first[1 - slot].vx;
-                        channel->sprite->y0 = channel->history.world.first[1 - slot].vy;
-                        channel->sprite->z0 = channel->history.world.first[1 - slot].vz;
-                        channel->sprite->x2 = channel->history.world.second[1 - slot].vx;
-                        channel->sprite->y2 = channel->history.world.second[1 - slot].vy;
-                        channel->sprite->z2 = channel->history.world.second[1 - slot].vz;
+                        prev0 = &channel->history.world.first[1 - slot];
+                        prev1 = &channel->history.world.second[1 - slot];
+                        channel->sprite->x0 = prev0->vx;
+                        channel->sprite->y0 = prev0->vy;
+                        channel->sprite->z0 = prev0->vz;
+                        channel->sprite->x2 = prev1->vx;
+                        channel->sprite->y2 = prev1->vy;
+                        channel->sprite->z2 = prev1->vz;
                     }
                     channel->sprite->x1 = world0->vx;
                     channel->sprite->y1 = world0->vy;
@@ -859,11 +855,27 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_8009F844);
-#endif
 
 #ifdef NON_MATCHING
+/* Apply one packed delta of a tween track to dst: a signed byte added to it
+ * or, after the escape byte -0x80, a signed little-endian halfword replacing
+ * it (the cursor is stored before each byte is read). */
+#define TRACK_DELTA(slot, dst)                                                 \
+    {                                                                          \
+        u8 *at = (slot)->u.track.cursor++;                                     \
+        s32 byte, high;                                                        \
+                                                                               \
+        if ((byte = (s8)at[0]) != -0x80) {                                     \
+            dst += byte;                                                       \
+        } else {                                                               \
+            (slot)->u.track.cursor = at + 2;                                   \
+            byte = at[1];                                                      \
+            (slot)->u.track.cursor = at + 3;                                   \
+            high = (s8)at[2] << 8;                                             \
+            dst = byte | high;                                                 \
+        }                                                                      \
+    }
+
 /* Step the tweens attached to each node of a hierarchy: its rotation
  * (attachment 0: set, delta or add from a track, interpolate, approach,
  * spin, or turn toward a point within a growing limit), position
@@ -874,26 +886,29 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_8009F8
  * `tag`). As in the original, the "spin" stop clears the step of the last
  * slot a computing kind used, which may belong to an earlier node. Tag and
  * scale remain full words; packed escapes advance the cursor before reading
- * each byte. Nonmatching: spill slots, registers and scheduling still differ. */
-s32 func_800A0838(EffectPool *pool, ModelPart *parts, s32 tag, s32 scale) {
-    ModelPart *part = parts;
+ * each byte. Nonmatching: only the approach case's add block differs: the
+ * original stores vx, vz, vy (loading vz before storing vx), this order
+ * vy, vx, vz (other orders change the step registers). */
+s32 func_800A0838(EffectPool *pool, ModelPart *part, s32 tag, s32 scale) {
     Tween *slot;
     Tween *last;
     u8 *track;
     SVECTOR move;
     VECTOR moved;
-    u32 count;
     u32 i;
+    u32 count;
     s32 result = 0;
-    s32 kind;
-    s32 time;
-    s32 dx, dy, dz, dist, limit, turn, angle;
+    u8 kind;
+    u8 type;
+    u8 mode;
+    s16 time;
+    s32 dx, dy, dz, dist, limit, turn;
     s16 sx, sy, sz;
 
-    count = parts->index;
+    count = part->index;
     for (i = 0; i < count; i++, part++) {
-        slot = (Tween *)part->effects[0];
-        if (slot != NULL) {
+        if (part->effects[0] != NULL) {
+            slot = (Tween *)part->effects[0];
             kind = slot->field2;
             switch (kind & 0xF) {
             case 0:
@@ -915,43 +930,13 @@ s32 func_800A0838(EffectPool *pool, ModelPart *parts, s32 tag, s32 scale) {
                 goto check_rot;
             case 1:
                 if (!(kind & 0x10)) {
-                    track = slot->u.track.cursor++;
-                    if ((s8)track[0] != -0x80) {
-                        part->rotation.vx += (s8)track[0];
-                    } else {
-                        s32 low;
-
-                        slot->u.track.cursor = track + 2;
-                        low = track[1];
-                        slot->u.track.cursor = track + 3;
-                        part->rotation.vx = low | ((s8)track[2] << 8);
-                    }
+                    TRACK_DELTA(slot, part->rotation.vx);
                 }
                 if (!(kind & 0x20)) {
-                    track = slot->u.track.cursor++;
-                    if ((s8)track[0] != -0x80) {
-                        part->rotation.vy += (s8)track[0];
-                    } else {
-                        s32 low;
-
-                        slot->u.track.cursor = track + 2;
-                        low = track[1];
-                        slot->u.track.cursor = track + 3;
-                        part->rotation.vy = low | ((s8)track[2] << 8);
-                    }
+                    TRACK_DELTA(slot, part->rotation.vy);
                 }
                 if (!(kind & 0x40)) {
-                    track = slot->u.track.cursor++;
-                    if ((s8)track[0] != -0x80) {
-                        part->rotation.vz += (s8)track[0];
-                    } else {
-                        s32 low;
-
-                        slot->u.track.cursor = track + 2;
-                        low = track[1];
-                        slot->u.track.cursor = track + 3;
-                        part->rotation.vz = low | ((s8)track[2] << 8);
-                    }
+                    TRACK_DELTA(slot, part->rotation.vz);
                 }
                 goto check_rot;
             case 2:
@@ -972,7 +957,7 @@ s32 func_800A0838(EffectPool *pool, ModelPart *parts, s32 tag, s32 scale) {
                 }
                 goto check_rot;
             case 3:
-                time = (s16)(slot->time + 1);
+                time = slot->time + 1;
                 part->rotation.vx = slot->u.values[0] + slot->u.values[3] * time / slot->duration;
                 part->rotation.vy = slot->u.values[1] + slot->u.values[4] * time / slot->duration;
                 last = slot;
@@ -989,9 +974,9 @@ s32 func_800A0838(EffectPool *pool, ModelPart *parts, s32 tag, s32 scale) {
                     part->rotation.vy = slot->u.values[4];
                     part->rotation.vz = slot->u.values[5];
                 } else {
+                    part->rotation.vy += sy;
                     part->rotation.vx += sx;
                     part->rotation.vz += sz;
-                    part->rotation.vy += sy;
                     slot->time = 0;
                 }
                 goto check_rot;
@@ -1016,8 +1001,7 @@ s32 func_800A0838(EffectPool *pool, ModelPart *parts, s32 tag, s32 scale) {
                     turn -= 0x1000;
                 }
                 limit = slot->u.values[1] + (dist + slot->time) * slot->u.values[2] / slot->u.values[0];
-                angle = turn < 0 ? -turn : turn;
-                if (angle < limit) {
+                if (ABS(turn) < limit) {
                     part->rotation.vy += turn;
                 } else if (turn < 0) {
                     part->rotation.vy -= limit;
@@ -1029,8 +1013,7 @@ s32 func_800A0838(EffectPool *pool, ModelPart *parts, s32 tag, s32 scale) {
                     if (turn >= 0x800) {
                         turn -= 0x1000;
                     }
-                    angle = turn < 0 ? -turn : turn;
-                    if (angle < limit) {
+                    if (ABS(turn) < limit) {
                         part->rotation.vx += turn;
                     } else if (turn < 0) {
                         part->rotation.vx -= limit;
@@ -1044,34 +1027,36 @@ s32 func_800A0838(EffectPool *pool, ModelPart *parts, s32 tag, s32 scale) {
                 goto rot_done;
             default:
             check_rot:
-                if (++slot->time < slot->duration) {
+                if (++slot->time >= slot->duration) {
+                    if (!slot->field1) {
+                        if (slot->kind == tag) {
+                            result |= 2;
+                        }
+                        result |= 0x200;
+                        func_800A23E8(pool, (EffectEntry *)slot);
+                        part->effects[0] = NULL;
+                    } else {
+                        if (slot->kind == tag) {
+                            result |= 4;
+                        }
+                        result |= 0x400;
+                        if ((kind & 0xF) < 3) {
+                            slot->time = 0;
+                            slot->u.track.cursor = slot->u.track.start;
+                        } else {
+                            slot->time = -1;
+                            if ((kind & 0xF) == 5) {
+                                last->u.values[3] = 0;
+                                last->u.values[4] = 0;
+                                last->u.values[5] = 0;
+                            }
+                        }
+                    }
+                } else {
                     if (slot->kind == tag) {
                         result |= 1;
                     }
                     result |= 0x100;
-                } else if (!slot->field1) {
-                    if (slot->kind == tag) {
-                        result |= 2;
-                    }
-                    result |= 0x200;
-                    func_800A23E8(pool, (EffectEntry *)slot);
-                    part->effects[0] = NULL;
-                } else {
-                    if (slot->kind == tag) {
-                        result |= 4;
-                    }
-                    result |= 0x400;
-                    if ((kind & 0xF) < 3) {
-                        slot->time = 0;
-                        slot->u.track.cursor = slot->u.track.start;
-                    } else {
-                        slot->time = -1;
-                        if ((kind & 0xF) == 5) {
-                            last->u.values[3] = 0;
-                            last->u.values[4] = 0;
-                            last->u.values[5] = 0;
-                        }
-                    }
                 }
                 break;
             }
@@ -1079,85 +1064,55 @@ s32 func_800A0838(EffectPool *pool, ModelPart *parts, s32 tag, s32 scale) {
             part->flag5 = 1;
             part->flag4 = 1;
         }
-        slot = (Tween *)part->effects[1];
-        if (slot != NULL) {
-            kind = slot->field2;
-            switch (kind & 0xF) {
+        if (part->effects[1] != NULL) {
+            slot = (Tween *)part->effects[1];
+            type = slot->field2;
+            switch (type & 0xF) {
             case 0:
                 track = slot->u.track.cursor;
-                if (!(kind & 0x10)) {
+                if (!(type & 0x10)) {
                     part->translation[0] = *(s16 *)track;
                     track += 2;
                     slot->u.track.cursor += 2;
                 }
-                if (!(kind & 0x20)) {
+                if (!(type & 0x20)) {
                     part->translation[1] = *(s16 *)track;
                     track += 2;
                     slot->u.track.cursor += 2;
                 }
-                if (!(kind & 0x40)) {
+                if (!(type & 0x40)) {
                     part->translation[2] = *(s16 *)track;
                     slot->u.track.cursor += 2;
                 }
                 break;
             case 1:
-                if (!(kind & 0x10)) {
-                    track = slot->u.track.cursor++;
-                    if ((s8)track[0] != -0x80) {
-                        part->translation[0] += (s8)track[0];
-                    } else {
-                        s32 low;
-
-                        slot->u.track.cursor = track + 2;
-                        low = track[1];
-                        slot->u.track.cursor = track + 3;
-                        part->translation[0] = low | ((s8)track[2] << 8);
-                    }
+                if (!(type & 0x10)) {
+                    TRACK_DELTA(slot, part->translation[0]);
                 }
-                if (!(kind & 0x20)) {
-                    track = slot->u.track.cursor++;
-                    if ((s8)track[0] != -0x80) {
-                        part->translation[1] += (s8)track[0];
-                    } else {
-                        s32 low;
-
-                        slot->u.track.cursor = track + 2;
-                        low = track[1];
-                        slot->u.track.cursor = track + 3;
-                        part->translation[1] = low | ((s8)track[2] << 8);
-                    }
+                if (!(type & 0x20)) {
+                    TRACK_DELTA(slot, part->translation[1]);
                 }
-                if (!(kind & 0x40)) {
-                    track = slot->u.track.cursor++;
-                    if ((s8)track[0] != -0x80) {
-                        part->translation[2] += (s8)track[0];
-                    } else {
-                        s32 low;
-
-                        slot->u.track.cursor = track + 2;
-                        low = track[1];
-                        slot->u.track.cursor = track + 3;
-                        part->translation[2] = low | ((s8)track[2] << 8);
-                    }
+                if (!(type & 0x40)) {
+                    TRACK_DELTA(slot, part->translation[2]);
                 }
                 break;
             case 2:
                 track = slot->u.track.cursor;
-                if (!(kind & 0x10)) {
+                if (!(type & 0x10)) {
                     move.vx = *(u16 *)track;
                     track += 2;
                     slot->u.track.cursor += 2;
                 } else {
                     move.vx = 0;
                 }
-                if (!(kind & 0x20)) {
+                if (!(type & 0x20)) {
                     move.vy = *(u16 *)track;
                     track += 2;
                     slot->u.track.cursor += 2;
                 } else {
                     move.vy = 0;
                 }
-                if (!(kind & 0x40)) {
+                if (!(type & 0x40)) {
                     move.vz = *(u16 *)track;
                     slot->u.track.cursor += 2;
                 } else {
@@ -1172,7 +1127,7 @@ s32 func_800A0838(EffectPool *pool, ModelPart *parts, s32 tag, s32 scale) {
                 part->translation[2] += scale * moved.vz >> 12;
                 break;
             case 3:
-                time = (s16)(slot->time + 1);
+                time = slot->time + 1;
                 part->translation[0] = slot->u.values[0] + slot->u.values[3] * time / slot->duration;
                 part->translation[1] = slot->u.values[1] + slot->u.values[4] * time / slot->duration;
                 last = slot;
@@ -1205,43 +1160,45 @@ s32 func_800A0838(EffectPool *pool, ModelPart *parts, s32 tag, s32 scale) {
                 part->translation[2] += slot->u.values[2];
                 break;
             }
-            if (++slot->time < slot->duration) {
+            if (++slot->time >= slot->duration) {
+                if (!slot->field1) {
+                    if (slot->kind == tag) {
+                        result |= 2;
+                    }
+                    result |= 0x200;
+                    func_800A23E8(pool, (EffectEntry *)slot);
+                    part->effects[1] = NULL;
+                } else {
+                    if (slot->kind == tag) {
+                        result |= 4;
+                    }
+                    result |= 0x400;
+                    if ((type & 0xF) < 3) {
+                        slot->time = 0;
+                        slot->u.track.cursor = slot->u.track.start;
+                    } else {
+                        slot->time = -1;
+                        if ((type & 0xF) == 5) {
+                            last->u.values[3] = 0;
+                            last->u.values[4] = 0;
+                            last->u.values[5] = 0;
+                        }
+                    }
+                }
+            } else {
                 if (slot->kind == tag) {
                     result |= 1;
                 }
                 result |= 0x100;
-            } else if (!slot->field1) {
-                if (slot->kind == tag) {
-                    result |= 2;
-                }
-                result |= 0x200;
-                func_800A23E8(pool, (EffectEntry *)slot);
-                part->effects[1] = NULL;
-            } else {
-                if (slot->kind == tag) {
-                    result |= 4;
-                }
-                result |= 0x400;
-                if ((kind & 0xF) < 3) {
-                    slot->time = 0;
-                    slot->u.track.cursor = slot->u.track.start;
-                } else {
-                    slot->time = -1;
-                    if ((kind & 0xF) == 5) {
-                        last->u.values[3] = 0;
-                        last->u.values[4] = 0;
-                        last->u.values[5] = 0;
-                    }
-                }
             }
             part->flag4 = 1;
         }
-        slot = (Tween *)part->effects[2];
-        if (slot != NULL) {
-            kind = slot->field2 & 0xF;
-            switch (kind) {
+        if (part->effects[2] != NULL) {
+            slot = (Tween *)part->effects[2];
+            mode = slot->field2 & 0xF;
+            switch (mode) {
             case 3:
-                time = (s16)(slot->time + 1);
+                time = slot->time + 1;
                 part->scale[0] = slot->u.values[0] + slot->u.values[3] * time / slot->duration;
                 part->scale[1] = slot->u.values[1] + slot->u.values[4] * time / slot->duration;
                 last = slot;
@@ -1277,29 +1234,31 @@ s32 func_800A0838(EffectPool *pool, ModelPart *parts, s32 tag, s32 scale) {
                 part->scale[2] += slot->u.values[2];
                 break;
             }
-            if (++slot->time < slot->duration) {
+            if (++slot->time >= slot->duration) {
+                if (!slot->field1) {
+                    if (slot->kind == tag) {
+                        result |= 2;
+                    }
+                    result |= 0x200;
+                    func_800A23E8(pool, (EffectEntry *)slot);
+                    part->effects[2] = NULL;
+                } else {
+                    if (slot->kind == tag) {
+                        result |= 4;
+                    }
+                    result |= 0x400;
+                    slot->time = -1;
+                    if (mode == 5) {
+                        last->u.values[3] = 0;
+                        last->u.values[4] = 0;
+                        last->u.values[5] = 0;
+                    }
+                }
+            } else {
                 if (slot->kind == tag) {
                     result |= 1;
                 }
                 result |= 0x100;
-            } else if (!slot->field1) {
-                if (slot->kind == tag) {
-                    result |= 2;
-                }
-                result |= 0x200;
-                func_800A23E8(pool, (EffectEntry *)slot);
-                part->effects[2] = NULL;
-            } else {
-                if (slot->kind == tag) {
-                    result |= 4;
-                }
-                result |= 0x400;
-                slot->time = -1;
-                if (kind == 5) {
-                    last->u.values[3] = 0;
-                    last->u.values[4] = 0;
-                    last->u.values[5] = 0;
-                }
             }
             part->flag5 = 1;
             part->flag4 = 1;
@@ -3494,21 +3453,27 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A70
  * collision spheres; then the points' normals are averaged from their
  * triangles, and the visible triangles are lit (front and back colours) and
  * queued. As in the original, a triangle the GTE flags as off screen does
- * not advance the triangle pointer. */
+ * not advance the triangle pointer. Nonmatching: loop invariant motion
+ * hoists addPrim's 0x00FFFFFF mask out of the triangle loop (into $t2),
+ * which the original computes per triangle; the rest is identical. */
 void func_800A7948(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buffer, s32 scale,
-                   s32 floor) {
+                   s16 floor) {
     VECTOR d;
-    VECTOR e1, e2, n;
     SVECTOR normal;
+    VECTOR e1;
+    VECTOR e2;
+    VECTOR n;
+    SVECTOR spare; /* unused in the original; reserves 8 bytes */
     u8 rgb[4];
-    s32 flag, opz, otz;
+    s32 k; /* the sphere counter, then the GTE flag */
+    s32 opz;
+    s32 otz;
     SurfacePoint *p, *q;
-    SurfacePoint *points;
     SurfacePoly *poly;
     POLY_GT3 *prim;
     SurfaceEntry *entry;
     s32 len, radius;
-    s32 i, k;
+    s32 i;
 
     if (surface->centres == NULL) {
         return;
@@ -3537,7 +3502,7 @@ void func_800A7948(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buff
             q->pos[0] = p->pos[0] + p->length * d.vx * scale / 0x100000;
             q->pos[1] = p->pos[1] + p->length * d.vy * scale / 0x100000;
             q->pos[2] = p->pos[2] + p->length * d.vz * scale / 0x100000;
-            if ((s16)floor < q->pos[1]) {
+            if (floor < q->pos[1]) {
                 q->pos[1] = floor;
             }
             entry = surface->entries;
@@ -3546,7 +3511,7 @@ void func_800A7948(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buff
                 d.vy = q->pos[1] - entry->hA;
                 d.vz = q->pos[2] - entry->hC;
                 len = SquareRoot0(d.vx * d.vx + d.vy * d.vy + d.vz * d.vz);
-                radius = (s16)(entry->h2 * scale / 4096);
+                radius = (s16)(entry->hE * scale / 4096);
                 if (len >= radius) {
                     continue;
                 }
@@ -3579,21 +3544,23 @@ void func_800A7948(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buff
             p++;
         } while (p->length != 0);
     }
-    points = *surface->strands;
+    p = *surface->strands;
     for (i = 0; i < surface->points; i++) {
-        points[i].normalCount = 0;
-        points[i].normal[0] = 0;
-        points[i].normal[1] = 0;
-        points[i].normal[2] = 0;
+        p->normalCount = 0;
+        p->normal[0] = 0;
+        p->normal[1] = 0;
+        p->normal[2] = 0;
+        p++;
     }
     poly = surface->polyList;
+    p = *surface->strands;
     for (i = 0; i < surface->polys; i++, poly++) {
-        e1.vx = points[poly->index[0]].pos[0] - points[poly->index[1]].pos[0];
-        e1.vy = points[poly->index[0]].pos[1] - points[poly->index[1]].pos[1];
-        e1.vz = points[poly->index[0]].pos[2] - points[poly->index[1]].pos[2];
-        e2.vx = points[poly->index[0]].pos[0] - points[poly->index[2]].pos[0];
-        e2.vy = points[poly->index[0]].pos[1] - points[poly->index[2]].pos[1];
-        e2.vz = points[poly->index[0]].pos[2] - points[poly->index[2]].pos[2];
+        e1.vx = p[poly->index[0]].pos[0] - p[poly->index[1]].pos[0];
+        e1.vy = p[poly->index[0]].pos[1] - p[poly->index[1]].pos[1];
+        e1.vz = p[poly->index[0]].pos[2] - p[poly->index[1]].pos[2];
+        e2.vx = p[poly->index[0]].pos[0] - p[poly->index[2]].pos[0];
+        e2.vy = p[poly->index[0]].pos[1] - p[poly->index[2]].pos[1];
+        e2.vz = p[poly->index[0]].pos[2] - p[poly->index[2]].pos[2];
         gte_ldopv1(&e1);
         gte_ldopv2(&e2);
         gte_op0();
@@ -3602,29 +3569,37 @@ void func_800A7948(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buff
         n.vy /= 8;
         n.vz /= 8;
         VectorNormal(&n, &e1);
-        for (k = 0; k < 3; k++) {
-            points[poly->index[k]].normal[0] += e1.vx;
-            points[poly->index[k]].normal[1] += e1.vy;
-            points[poly->index[k]].normal[2] += e1.vz;
-            points[poly->index[k]].normalCount++;
-        }
+        p[poly->index[0]].normal[0] += e1.vx;
+        p[poly->index[0]].normal[1] += e1.vy;
+        p[poly->index[0]].normal[2] += e1.vz;
+        p[poly->index[0]].normalCount++;
+        p[poly->index[1]].normal[0] += e1.vx;
+        p[poly->index[1]].normal[1] += e1.vy;
+        p[poly->index[1]].normal[2] += e1.vz;
+        p[poly->index[1]].normalCount++;
+        p[poly->index[2]].normal[0] += e1.vx;
+        p[poly->index[2]].normal[1] += e1.vy;
+        p[poly->index[2]].normal[2] += e1.vz;
+        p[poly->index[2]].normalCount++;
     }
+    p = *surface->strands;
     for (i = 0; i < surface->points; i++) {
-        points[i].normal[0] /= (s16)points[i].normalCount;
-        points[i].normal[1] /= (s16)points[i].normalCount;
-        points[i].normal[2] /= (s16)points[i].normalCount;
+        p->normal[0] /= (s16)p->normalCount;
+        p->normal[1] /= (s16)p->normalCount;
+        p->normal[2] /= (s16)p->normalCount;
+        p++;
     }
     SetRotMatrix(m);
     SetTransMatrix(m);
     poly = surface->polyList;
-    points = *surface->strands;
+    p = *surface->strands;
     for (i = 0; i < surface->polys; i++) {
         prim = &poly->prim[buffer];
-        gte_ldv3(points[poly->index[0]].pos, points[poly->index[1]].pos, points[poly->index[2]].pos);
+        gte_ldv3(p[poly->index[0]].pos, p[poly->index[1]].pos, p[poly->index[2]].pos);
         gte_rtpt();
-        flag = 0;
-        gte_stflg(&flag);
-        if (flag & 0x40000) {
+        k = 0;
+        gte_stflg(&k);
+        if (k & 0x40000) {
             continue;
         }
         gte_nclip();
@@ -3633,44 +3608,50 @@ void func_800A7948(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buff
         gte_avsz3();
         gte_stotz(&otz);
         otz >>= D_80050100;
-        for (k = 0; k < 3; k++) {
-            if (opz < 0) {
-                if (k == 0) {
-                    rgb[0] = surface->b[0];
-                    rgb[1] = surface->b[1];
-                    rgb[2] = surface->b[2];
-                }
-                normal.vx = points[poly->index[k]].normal[0];
-                normal.vy = points[poly->index[k]].normal[1];
-                normal.vz = points[poly->index[k]].normal[2];
-            } else {
-                if (k == 0) {
-                    rgb[0] = surface->b[3];
-                    rgb[1] = surface->b[4];
-                    rgb[2] = surface->b[5];
-                }
-                normal.vx = -points[poly->index[k]].normal[0];
-                normal.vy = -points[poly->index[k]].normal[1];
-                normal.vz = -points[poly->index[k]].normal[2];
-            }
-            gte_ldv0(&normal);
-            if (k == 0) {
-                gte_ldrgb(rgb);
-            }
-            gte_nccs();
-            switch (k) {
-            case 0:
-                gte_strgb(&prim->r0);
-                break;
-            case 1:
-                gte_strgb(&prim->r1);
-                break;
-            case 2:
-                gte_strgb(&prim->r2);
-                break;
-            }
+        if (opz < 0) {
+            rgb[0] = surface->b[0];
+            rgb[1] = surface->b[1];
+            rgb[2] = surface->b[2];
+            normal.vx = p[poly->index[0]].normal[0];
+            normal.vy = p[poly->index[0]].normal[1];
+            normal.vz = p[poly->index[0]].normal[2];
+        } else {
+            rgb[0] = surface->b[3];
+            rgb[1] = surface->b[4];
+            rgb[2] = surface->b[5];
+            normal.vx = -p[poly->index[0]].normal[0];
+            normal.vy = -p[poly->index[0]].normal[1];
+            normal.vz = -p[poly->index[0]].normal[2];
         }
-        addPrim(ot + otz, prim);
+        gte_ldv0(&normal);
+        gte_ldrgb(rgb);
+        gte_nccs();
+        gte_strgb(&prim->r0);
+        if (opz < 0) {
+            normal.vx = p[poly->index[1]].normal[0];
+            normal.vy = p[poly->index[1]].normal[1];
+            normal.vz = p[poly->index[1]].normal[2];
+        } else {
+            normal.vx = -p[poly->index[1]].normal[0];
+            normal.vy = -p[poly->index[1]].normal[1];
+            normal.vz = -p[poly->index[1]].normal[2];
+        }
+        gte_ldv0(&normal);
+        gte_nccs();
+        gte_strgb(&prim->r1);
+        if (opz < 0) {
+            normal.vx = p[poly->index[2]].normal[0];
+            normal.vy = p[poly->index[2]].normal[1];
+            normal.vz = p[poly->index[2]].normal[2];
+        } else {
+            normal.vx = -p[poly->index[2]].normal[0];
+            normal.vy = -p[poly->index[2]].normal[1];
+            normal.vz = -p[poly->index[2]].normal[2];
+        }
+        gte_ldv0(&normal);
+        gte_nccs();
+        gte_strgb(&prim->r2);
+        addPrim(ot + otz, &poly->prim[buffer]);
         poly++;
     }
 }
@@ -3722,8 +3703,11 @@ void func_800A8B0C(void) {
  * files with its images placed at x, y, z, w (flag 1: the model file is
  * already set up, no images; 4: no script file; 0x40: a plain object with no
  * scripts; 0x80: the script file is shared; 2: its models stay in the loaded
- * group), its root at position when given. Nonmatching: the register
- * allocator keeps header in $fp and spills flags, the original the reverse. */
+ * group), its root at position when given. Nonmatching: the saved
+ * registers are assigned in a different order (the original has modelFile
+ * $s2, object $s3, the counter $s4, images $s5, models $s6, position $s7;
+ * here object $s2, modelFile and the counter $s3, images $s4, models $s5,
+ * position $s6), and the surface loop's increments are ordered differently. */
 void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *scriptFile, ObjectModelFile *modelFile, s16 x, s16 y,
                    s16 z, s16 w, SVECTOR *position) {
     BattleObject *object;
@@ -3735,12 +3719,11 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *scriptFile, ObjectMod
     u8 *models;
     u16 *hierarchy;
     s32 size;
-    s16 on;
     s32 i;
     s32 j;
     Surface *surface;
     s16 *stream;
-    s16 keyCount;
+    s32 keyCount;
     u8 *copy;
 
     func_80032498(4, 0);
@@ -3780,11 +3763,13 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *scriptFile, ObjectMod
             func_80030988(2, 2, 0x40, 0x40);
         }
         if (!(flags & 1)) {
-            on = 0;
+            i = 0; /* the images' on flag (the original reuses the loop counter) */
             if (!(flags & 0x40)) {
-                on = !(object->flags4A & 4);
+                s32 bit = object->flags4A & 4;
+
+                i = !bit;
             }
-            func_8002DDE4(images, on, x, y, on, z, w);
+            func_8002DDE4(images, i, x, y, i, z, w);
             D_800C3B70 = func_80031BDC(size, 1);
             memcpy(D_800C3B70, models, size);
             for (D_800C3B6C = 0; D_800C3B6C < 20; D_800C3B6C++) {
@@ -3795,12 +3780,14 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *scriptFile, ObjectMod
             func_8009EBA8(D_800C3B70, (ModelList *)&D_800C3ACC[D_800C3B6C]);
         }
         object->field0 = (ModelList *)&D_800C3ACC[D_800C3B6C];
-        if (flags & 0x40) {
-            object->hierarchy = func_8009EC4C(object->field0, hierarchy, 0, 0, 0, 0, 0, 0);
-        } else if (object->flags4A & 4) {
-            object->hierarchy = func_8009EC4C(object->field0, hierarchy, 2, 0, 0, 0, 0, 0);
+        if (!(flags & 0x40)) {
+            if (object->flags4A & 4) {
+                object->hierarchy = func_8009EC4C(object->field0, hierarchy, 2, 0, 0, 0, 0, 0);
+            } else {
+                object->hierarchy = func_8009EC4C(object->field0, hierarchy, 2, 1, x, y, z, w);
+            }
         } else {
-            object->hierarchy = func_8009EC4C(object->field0, hierarchy, 2, 1, x, y, z, w);
+            object->hierarchy = func_8009EC4C(object->field0, hierarchy, 0, 0, 0, 0, 0, 0);
         }
         if (position != NULL) {
             object->hierarchy->translation[0] = position->vx;
@@ -3862,10 +3849,10 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *scriptFile, ObjectMod
             for (i = 0; i < object->surfaceCount; i++) {
                 keyCount = stream[17];
                 surface->h0 = *stream++;
-                func_800A7064(surface, header->meshData[i], stream[0], stream[1], stream[2], stream[3], stream[4], keyCount,
-                              x + stream[5], y + stream[6], stream[7], stream[8], z + stream[9], w, stream[10],
-                              stream[11], stream[12], stream[13], stream[14], stream[15]);
-                stream += 17;
+                func_800A7064(surface, header->meshData[i], *stream++, *stream++, *stream++, *stream++, *stream++,
+                              keyCount, x + *stream++, y + *stream++, *stream++, *stream++, z + *stream++, w,
+                              *stream++, *stream++, *stream++, *stream++, *stream++, *stream);
+                stream += 2;
                 for (j = 0; j < keyCount; j++) {
                     surface->entries[j].h6 = *stream++;
                     surface->entries[j].hE = *stream++;
@@ -4600,9 +4587,8 @@ chosen:
 
     start = pc;
     while (running) {
-        word = *pc++;
+        arg = (word = *pc++) >> 8;
         op = word;
-        arg = word >> 8;
         switch (op) {
         case 0x00: /* end */
             pc = start;
@@ -4625,19 +4611,19 @@ chosen:
             steps = 0;
             break;
         case 0x02:
-            if (object->field35 == 0) {
+            if (object->field35 != 0) {
+                if (func_800BF6F8() != 0) {
+                    pc = start;
+                    running = 0;
+                    break;
+                }
+                D_80059464 = 0;
+                D_800591AC = 0;
+                object->field35 = 0;
+                func_80080C6C(object->slot);
+            } else {
                 reloadScene = 1;
-                break;
             }
-            if (func_800BF6F8() != 0) {
-                pc = start;
-                running = 0;
-                break;
-            }
-            D_80059464 = 0;
-            D_800591AC = 0;
-            object->field35 = 0;
-            func_80080C6C(object->slot);
             break;
         case 0x03:
             if (object->field35 != 0) {
@@ -4811,13 +4797,15 @@ chosen:
             {
                 u8 index;
                 u32 smooth;
+                u32 duration;
+                u8 tag;
 
-                word = *pc++;
+                smooth = (word = *pc++) >> 8;
                 flags = -1;
                 index = word;
-                smooth = word >> 8;
-                word = *pc++;
-                func_800A1CF4(pool, object->hierarchy, (s16 *)func_800AF518(object, index, &i), word >> 8, arg, (u8)word, smooth);
+                duration = (word = *pc++) >> 8;
+                tag = word;
+                func_800A1CF4(pool, object->hierarchy, (s16 *)func_800AF518(object, index, &i), duration, arg, tag, smooth);
                 func_800AEEEC(object);
             }
             break;
@@ -4867,8 +4855,8 @@ chosen:
                 }
                 *created = *object;
                 D_800D3368[i] = created;
-                created->field3C = 0xFFFF;
                 created->animation = -1;
+                created->field3C = 0xFFFF;
                 created->scriptWait = 0;
                 created->field58 = 0;
                 created->field5C = 0xFF;
@@ -4879,16 +4867,17 @@ chosen:
                 created->field39 = 0x6B;
                 created->script = NULL;
                 created->slot2 = object->slot;
+                created->slot = i;
                 created->surfaceCount = 0;
                 created->imageCount = 0;
-                created->slot = i;
                 func_800AA6E0(created);
                 parts = func_80031BDC(object->hierarchy->index * sizeof(ModelPart), 1);
                 created->hierarchy = parts;
                 for (i = 0; i < object->hierarchy->index; i++) {
                     parts[i] = object->hierarchy[i];
                     if (object->hierarchy[i].parent != NULL) {
-                        parts[i].parent = &parts[object->hierarchy[i].parent - object->hierarchy];
+                        parts[i].parent =
+                            &parts[((u8 *)object->hierarchy[i].parent - (u8 *)object->hierarchy) / sizeof(ModelPart)];
                     }
                     parts[i].flag7 = 0;
                     parts[i].effects[0] = NULL;
@@ -4951,8 +4940,7 @@ chosen:
                 s32 mode;
                 u8 flagsB;
                 FrameCurve curve;
-                s16 *parameters;
-                u16 x, y, z, x2, y2, z2, x3, y3;
+                s16 x, y, z, x2, y2, z2, x3, y3;
 
                 word = *pc++;
                 if ((u8)word != 0xFF && (u8)word < object->imageCount) {
@@ -4992,11 +4980,9 @@ chosen:
                         y2 += object->placement[3];
                     }
                 }
-                parameters = (s16 *)pc;
-                pc += 5;
                 func_800A3640(&object->images[arg], target, mode & 0x7F, flagsB | 0x700, colors, x, y, z,
-                              x2, y2, z2, x3, y3, parameters[0], parameters[1], parameters[2], parameters[3],
-                              parameters[4], curve);
+                              x2, y2, z2, x3, y3, (s16)*pc++, (s16)*pc++, (s16)*pc++, (s16)*pc++,
+                              (s16)*pc++, curve);
             } else {
                 pc += 15;
             }
@@ -5012,20 +4998,14 @@ chosen:
                 u8 mode;
                 u8 kind;
                 u8 smooth;
-                s16 *parameters;
 
-                word = *pc++;
+                mode = (word = *pc++) >> 8;
                 flags = -1;
                 flagsC = word;
-                mode = word >> 8;
-                word = *pc++;
+                smooth = (word = *pc++) >> 8;
                 kind = word;
-                smooth = word >> 8;
-                parameters = (s16 *)pc;
-                pc += 7;
-                func_800AF678(object, pool, &object->hierarchy[arg], flagsC, mode, kind, smooth, parameters[0],
-                              parameters[1], parameters[2], parameters[3], parameters[4], parameters[5],
-                              parameters[6]);
+                func_800AF678(object, pool, &object->hierarchy[arg], flagsC, mode, kind, smooth, *pc++, *pc++,
+                              *pc++, *pc++, *pc++, *pc++, *pc++);
             }
             break;
         case 0x1E:

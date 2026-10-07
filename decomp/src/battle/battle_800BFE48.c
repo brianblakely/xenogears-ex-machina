@@ -477,16 +477,16 @@ void func_800C0F70(void) {
     D_800C3A6C = 0;
 }
 
-#ifdef NON_MATCHING
 /* Set up a command file's parts: transfer its wave bank (freeing the file
  * from it when last), link its sound bank and upload its images; its sound
- * bank. Nonmatching: the original keeps D_800C3A6C's address in a saved
- * register (and reloads the debugger word's) where this is the reverse. */
+ * bank. The wave bank handle is stored through its address taken before
+ * the transfer call, and the debugger word is read at its fixed address,
+ * as in 800B3F04. */
 SoundSystem *func_800C0FAC(s32 *file) {
+    SoundSystem *bank = NULL;
     s32 *offsets = file;
     s32 *entry;
     s32 n;
-    SoundSystem *bank = NULL;
     VramPoint image;
     VramPoint clut;
 
@@ -501,9 +501,13 @@ SoundSystem *func_800C0FAC(s32 *file) {
             func_800C0F70();
             D_800C3620 = 0;
             D_800C3622 = 0;
-            D_800C3A6C = func_80037FD8(entry, 0);
+            {
+                s32 *waves = &D_800C3A6C;
+
+                *waves = func_80037FD8(entry, 0);
+            }
             while (func_8003BDFC(0) != 0) {
-                if (D_80010000 != -1) {
+                if (*(s32 *)0x80010000 != -1) {
                     __asm__ volatile(".word 0x0001000D"); /* break 1 */
                 }
             }
@@ -522,9 +526,6 @@ SoundSystem *func_800C0FAC(s32 *file) {
     }
     return bank;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800BFE48", func_800C0FAC);
-#endif
 
 /* Free the sound bank of a command file. */
 void func_800C1140(s32 *file) {

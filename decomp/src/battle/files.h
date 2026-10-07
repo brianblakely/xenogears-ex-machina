@@ -27,7 +27,7 @@ typedef struct {
 
 /* Resident services. */
 void func_8003342C(void *archive); /* relocate an archive's offsets */
-void func_8002DDE4(void *images, s32 on, s32 a, s32 b, s32 c, s32 d, s32 e); /* upload images */
+void func_8002DDE4(void *images, s16 on, s32 a, s32 b, s16 c, s32 d, s32 e); /* upload images */
 
 
 #endif

@@ -705,14 +705,11 @@ void func_800B9C00(sprite, other)
     func_800B9B54(sprite, other);
 }
 
-#ifdef NON_MATCHING
 /* Step the current event of a gear's turn (after any delay): control events
  * (800B9284), 0xF4 sets the command sound and step, 0xFB swaps stage
  * objects, 0xFC sets a stage object's byte, 0xFD/0xF9 and commands run
  * 800AA320 on the event's targets, 0xFE turns the turn's slot to them and
- * ends (state 10), 0xFF ends (state 9). Nonmatching: only the shared tail
- * calling 800BEE2C with the next event's target mask differs, in register
- * choice ($a3/$v1/$a1 for the counter's %hi, value and the area). */
+ * ends (state 10), 0xFF ends (state 9). */
 void func_800B9C78(void) {
     s32 slot;
     BattleSprite *sprite;
@@ -751,7 +748,8 @@ void func_800B9C78(void) {
         D_800C360C++;
         return;
     case 0xFD:
-        func_800BEE2C(slot, BATTLE_AREA.events[D_800C360C++].targetMask, 2);
+        D_800C360C++;
+        func_800BEE2C(slot, BATTLE_AREA.events[D_800C360C - 1].targetMask, 2);
         return;
     case 0xF3:
     case 0xF5:
@@ -779,13 +777,11 @@ void func_800B9C78(void) {
     default:
         D_800C3610->field4A = 1;
         func_800B8048(sprite);
-        func_800BEE2C(slot, BATTLE_AREA.events[D_800C360C++].targetMask, type);
+        D_800C360C++;
+        func_800BEE2C(slot, BATTLE_AREA.events[D_800C360C - 1].targetMask, type);
         return;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800B9C78);
-#endif
 
 /* The battle menu's update (not reentered): finish a requested sound
  * command, step a gear's events, run the menu's pending action (field49:
