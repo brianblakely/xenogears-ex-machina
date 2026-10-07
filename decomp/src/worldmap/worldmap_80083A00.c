@@ -2270,7 +2270,6 @@ void func_80089748(void) {
 /* Draw the live particles: build each one's billboard quad (kind shape,
  * scaled and optionally rolled), place it relative to the camera target,
  * project it and add the visible ones to the ordering table. */
-#ifdef NON_MATCHING /* one fewer saved register: the 0xFFFFFF mask is hoisted */
 void func_80089C78(void) {
     ParticleScratch *scratch;
     EffectSlot *slot;
@@ -2292,8 +2291,8 @@ void func_80089C78(void) {
             continue;
         }
         scratch->scale.vx = (u16)slot->rot[0];
-        scratch->scale.vz = 0x1000;
         scratch->scale.vy = (u16)slot->rot[1];
+        scratch->scale.vz = 0x1000;
         scratch->m = scratch->identity;
         if (((u8 *)&slot->fade)[3] & 1) {
             RotMatrixZ(slot->unk2, &scratch->m);
@@ -2307,8 +2306,8 @@ void func_80089C78(void) {
         scratch->offset.vz = (slot->position.vz >> 12) - camera_z;
         func_80093534(&scratch->offset);
         scratch->centre.vx = scratch->offset.vx;
-        scratch->centre.vz = -scratch->offset.vz;
         scratch->centre.vy = slot->position.vy >> 12;
+        scratch->centre.vz = -scratch->offset.vz;
         gte_SetRotMatrix(&scratch->view);
         gte_ldv0(&scratch->centre);
         gte_rtv0();
@@ -2321,7 +2320,7 @@ void func_80089C78(void) {
         gte_ldv3(&scratch->v[0], &scratch->v[1], &scratch->v[2]);
         gte_rtpt();
         gte_stflg(&scratch->flag);
-        if (scratch->flag < 0) {
+        if (scratch->flag & 0x80000000) {
             continue;
         }
         gte_stsxy3(&quad->x0, &quad->x1, &quad->x2);
@@ -2344,18 +2343,15 @@ void func_80089C78(void) {
             quad->g0 = ((u8 *)&slot->colour)[1];
             quad->b0 = ((u8 *)&slot->colour)[2];
             quad->tpage = slot->code;
-            *(u16 *)&quad->u0 = D_8009AFF0[EFFECT_ENABLED(slot)].uv[0];
-            *(u16 *)&quad->u1 = D_8009AFF0[EFFECT_ENABLED(slot)].uv[1];
-            *(u16 *)&quad->u2 = D_8009AFF0[EFFECT_ENABLED(slot)].uv[2];
-            *(u16 *)&quad->u3 = D_8009AFF0[EFFECT_ENABLED(slot)].uv[3];
+            *(u16 *)&quad->u0 = D_8009AFF0[EFFECT_ENABLED(slot) * 4];
+            *(u16 *)&quad->u1 = D_8009AFF0[EFFECT_ENABLED(slot) * 4 + 1];
+            *(u16 *)&quad->u2 = D_8009AFF0[EFFECT_ENABLED(slot) * 4 + 2];
+            *(u16 *)&quad->u3 = D_8009AFF0[EFFECT_ENABLED(slot) * 4 + 3];
             addPrim(&D_8009BE3C->ot[scratch->sz >> 4], quad);
             quad++;
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80089C78);
-#endif
 
 /* Create the party leader's model sprite at the scene's entry position; in
  * movement modes 1-7 follow the player or start hidden. Fill the position
