@@ -569,19 +569,15 @@ void func_80074AB4(Actor *actor) {
 /* Step an actor's animation player by the elapsed animation steps and
  * record the frame; stepped/done go to the pose record. */
 #define ANIM_ADVANCE(actor, player, steps)                                     \
-    actor->flags = (actor->flags & ~0x800) |                                   \
-                   ((func_8008B730(player, steps, actor->anim_speed) & 1) << 11); \
+    ACTOR_FLAG_BITS(actor)->flag11 = func_8008B730(player, steps, actor->anim_speed); \
     stepped = (steps);                                                         \
     speed = actor->anim_speed
 
-#ifdef NON_MATCHING
 /* Record an actor's pose for this frame and run its animation: a new move
  * (or a forced restart) resets the player, speed and parts; then advance
  * by the accumulated speed and apply the move's end rule (stop, chain to
- * the next move, hold, or loop).
- * Does not match: same size; the saved registers of the shown speed, the
- * stepped count and the cached ~0x1000 mask are assigned in another order
- * ($s6/$s7/$s5 vs $s7/$s5/$s6) and the loop counter is cleared later. */
+ * the next move, hold, or loop). The end-of-animation result goes to flag
+ * 11 through a bit-field store. */
 void func_80074BA4(Actor *actor) {
     s32 steps;
     Pose *pose = actor->pose;
@@ -625,13 +621,13 @@ void func_80074BA4(Actor *actor) {
         }
     }
     {
-        s16 before = actor->unk99E;
+        s32 before = actor->unk99E;
 
         actor->unk99E += actor->unk4F + actor->unk52;
         steps = (actor->unk99E >> 4) - (before >> 4);
     }
-    actor->unk99A = steps;
     actor->unk998 = player->frame;
+    actor->unk99A = steps;
     for (i = 0; i < steps; i++) {
         if (actor->anim_speed != 1) {
             if (--actor->anim_speed <= 0) {
@@ -653,7 +649,6 @@ void func_80074BA4(Actor *actor) {
         }
         break;
     case 1:
-        stepped = steps;
         actor->flags &= ~0x1000;
         ANIM_ADVANCE(actor, player, steps);
         if (actor->flags & 0x800) {
@@ -686,9 +681,6 @@ void func_80074BA4(Actor *actor) {
     ((Move *)pose)->unk9 = stepped;
     ((Move *)pose)->unkA = speed;
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80074BA4);
-#endif
 
 /* Record the outcome of a bout from the player's side: how it was lost,
  * or which limit the win stayed within and how the opponent ended. */

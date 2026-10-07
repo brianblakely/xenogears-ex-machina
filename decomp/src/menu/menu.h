@@ -349,7 +349,9 @@ typedef struct Actor {
 /* An actor's flag word as bit-fields (8007920c): bit 16 keeps last
  * frame's bit 15 (the 0x8000 dash flag). */
 typedef struct {
-    u32 unk0 : 15;
+    u32 unk0 : 11;
+    u32 flag11 : 1;    /* the animation reached its end */
+    u32 unk12 : 3;
     u32 flag15 : 1;
     u32 flag16 : 1;
     u32 unk17 : 15;
