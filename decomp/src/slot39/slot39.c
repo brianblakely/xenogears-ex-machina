@@ -2196,26 +2196,6 @@ void func_801CB28C(s32 *save) {
  * 100h chunks into a 2100h block and, when the payload's eight-bit sum matches
  * its last byte, apply it; message 5c ends the load, a failure shows message
  * 3e and continues. */
-#ifdef NON_MATCHING
-/* Remaining: the open retry loop. As a real loop (do/while) its -1 is
- * hoisted into s0 as in the original, but loop.c then doubles the outer
- * loop's insn count for that re-moved invariant and no longer hoists the
- * read size 0x100 out of the outer loop (it stays in s6 instead of being a
- * spilled invariant rematerialised into a3, which shifts fp/s7/s6). As the
- * goto loop below everything else matches: the -1 is loaded inside the loop
- * and the port argument there is not re-masked (6 differing instructions,
- * local scorer). Recipe: file = fd after the open loop (fills the delay
- * slot of its test and keeps the exit branch from being threaded), the
- * READ_SAVE block from the buffer allocation through the checksum test
- * (moves the success block out of line), and the read retry as a real
- * do/while loop followed by the close-and-release exit.
- * Loop dump (-dL) of the do/while form: move_movables doubles insn_count
- * cumulatively for each already-moved invariant it considers, in insn
- * order, so the open loop's -1 (r154, earlier in the body) is weighed
- * before the read loop's 0x100 (r164, life 39 against 246 insns, now
- * quadrupled) and 0x100 becomes "not desirable". The original must not
- * present the -1 as a re-moved invariant ahead of 0x100. Also tried: port
- * as s32, while (1)/for (;;) open loops with break (28-38 instructions). */
 /* Read the save file in 100h chunks into a 2100h block (a failed read
  * closes the file and frees the block) and apply it when its sum
  * matches (a statement macro). */
@@ -2273,6 +2253,7 @@ u8 func_801CB304(void) {
     u8 *p;
     u8 sum;
     s32 i;
+    s32 failed; /* open's failure result, held in a variable */
 
     result = 1;
     first = 1;
@@ -2318,15 +2299,14 @@ u8 func_801CB304(void) {
                 func_801D2F4C(0x3b);
                 retry = 5;
                 D_800625A0->sounds = 0;
-            open_again:
-                fd = open(path, 1);
-                if (fd == -1) {
-                    fd = 0;
-                    func_801C8CA4(port);
-                }
-                if (fd == 0 && --retry != 0) {
-                    goto open_again;
-                }
+                failed = -1;
+                do {
+                    fd = open(path, 1);
+                    if (fd == failed) {
+                        fd = 0;
+                        func_801C8CA4(port);
+                    }
+                } while (fd == 0 && --retry != 0);
                 file = fd;
                 if (file != 0) {
                     READ_SAVE();
@@ -2364,9 +2344,6 @@ u8 func_801CB304(void) {
     D_800625A0->cardsPresent = 1;
     return result;
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CB304);
-#endif
 
 /* The unformatted-card question for `port`: show message 29h + 3 * port and
  * wait while no input comes and the cards stay as they were; a card change
