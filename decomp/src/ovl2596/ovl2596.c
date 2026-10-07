@@ -474,16 +474,14 @@ void func_801DFE6C(u8 member) {
 
 /* Build the summary's change of the member's first stat since the battle
  * began: an up or down arrow and the difference, shaded red. */
-#ifdef NON_MATCHING
 void func_801DFF50(u8 member) {
     s32 before;
     s32 after;
     s32 difference;
     s32 arrow;
     s32 j;
-    s16 x;
+    s32 n;
     s32 digit;
-    s32 k;
 
     before = D_800CDCE8[member].valueA;
     after = D_8006D8A0[D_800D2D24[member]].maxHp;
@@ -496,36 +494,31 @@ void func_801DFF50(u8 member) {
     if (difference != 0) {
         D_800D334C->runs[3].count = func_80076A10(arrow, D_800D334C->glyphs17C0, 0xD8, 0x80);
         func_8008AAA0(difference);
-        x = 0xE0;
+        n = 0;
         for (j = 0; j < 3; j++) {
             digit = D_800C3CFA[j];
             if (digit != 0xFF) {
-                D_800D334C->runs[3].count += func_80076A10(digit, &D_800D334C->glyphs17C0[D_800D334C->runs[3].count * 2], x, 0x80);
-                x += 8;
+                D_800D334C->runs[3].count += func_80076A10(digit, &D_800D334C->glyphs17C0[D_800D334C->runs[3].count * 2], n * 8 + 0xE0, 0x80);
+                n++;
             }
         }
-        for (k = 0; k < D_800D334C->runs[3].count; k++) {
-            SetShadeTex(&D_800D334C->glyphs17C0[k * 2 + D_800CCB34], 0);
-            setRGB0(&D_800D334C->glyphs17C0[k * 2 + D_800CCB34], 0x80, 0x40, 0x40);
+        for (j = 0; j < D_800D334C->runs[3].count; j++) {
+            SetShadeTex(&D_800D334C->glyphs17C0[j * 2 + D_800CCB34], 0);
+            setRGB0(&D_800D334C->glyphs17C0[j * 2 + D_800CCB34], 0x80, 0x40, 0x40);
         }
         D_800D334C->runs[3].buffer = D_800CCB34;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801DFF50);
-#endif
 
 /* Build the summary's change of the member's second stat, like 801dff50. */
-#ifdef NON_MATCHING
 void func_801E0184(u8 member) {
     s32 before;
     s32 after;
     s32 difference;
     s32 arrow;
     s32 j;
-    s16 x;
+    s32 n;
     s32 digit;
-    s32 k;
 
     before = D_800CDCE8[member].valueB;
     after = D_8006D8A0[D_800D2D24[member]].maxEp;
@@ -538,24 +531,21 @@ void func_801E0184(u8 member) {
     if (difference != 0) {
         D_800D334C->runs[5].count = func_80076A10(arrow, D_800D334C->glyphs1900, 0xD8, 0x88);
         func_8008AAA0(difference);
-        x = 0xE0;
+        n = 0;
         for (j = 0; j < 2; j++) {
             digit = D_800C3CFB[j];
             if (digit != 0xFF) {
-                D_800D334C->runs[5].count += func_80076A10(digit, &D_800D334C->glyphs1900[D_800D334C->runs[5].count * 2], x, 0x88);
-                x += 8;
+                D_800D334C->runs[5].count += func_80076A10(digit, &D_800D334C->glyphs1900[D_800D334C->runs[5].count * 2], n * 8 + 0xE0, 0x88);
+                n++;
             }
         }
-        for (k = 0; k < D_800D334C->runs[5].count; k++) {
-            SetShadeTex(&D_800D334C->glyphs1900[k * 2 + D_800CCB34], 0);
-            setRGB0(&D_800D334C->glyphs1900[k * 2 + D_800CCB34], 0x80, 0x40, 0x40);
+        for (j = 0; j < D_800D334C->runs[5].count; j++) {
+            SetShadeTex(&D_800D334C->glyphs1900[j * 2 + D_800CCB34], 0);
+            setRGB0(&D_800D334C->glyphs1900[j * 2 + D_800CCB34], 0x80, 0x40, 0x40);
         }
         D_800D334C->runs[5].buffer = D_800CCB34;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E0184);
-#endif
 
 /* Build the summary's member numbers and their changes. */
 void func_801E03B8(u8 member) {
