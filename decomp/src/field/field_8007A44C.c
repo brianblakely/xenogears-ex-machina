@@ -1937,7 +1937,6 @@ void func_8007FFE8(void) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Draw the dialogue windows: advance the cursor animation, draw the
  * selected window (+412) first and the others by rank (+410), renumber the
  * ranks, then link the frame's text draw mode into `ot`. */
@@ -1962,7 +1961,7 @@ void func_8008004C(u32 *ot, s32 buffer) {
         }
     }
     next = 0;
-    for (i = 3; i >= 0; i--) {
+    for (i = 0; i < 4; i++) {
         order[i] = 0xFFFF;
     }
     for (i = 0; i < 4; i++) {
@@ -1980,7 +1979,7 @@ void func_8008004C(u32 *ot, s32 buffer) {
                     func_800345E0(text);
                 }
                 if (text->unk82 == 0) {
-                    func_80034714(text, text->unk90);
+                    func_80034714(text, D_800C2698[i].text.unk90);
                 }
                 func_80034888(text, ot, buffer);
             }
@@ -2004,7 +2003,7 @@ void func_8008004C(u32 *ot, s32 buffer) {
                             func_800345E0(text);
                         }
                         if (text->unk82 == 0) {
-                            func_80034714(text, text->unk90);
+                            func_80034714(text, D_800C2698[i].text.unk90);
                         }
                         func_80034888(text, ot, buffer);
                         if (func_80033CD0(text) != 0 && D_800C2698[i].status != 0) {
@@ -2021,14 +2020,11 @@ void func_8008004C(u32 *ot, s32 buffer) {
             }
         }
     }
-    for (i = 0; i < 4; i++) {
-        D_800C2698[i].age = order[i];
+    for (rank = 0; rank < 4; rank++) {
+        D_800C2698[rank].age = order[rank];
     }
     addPrim(ot, &D_800B1DF4[D_800ADB08][0]);
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8008004C);
-#endif
 
 /* Close each idle dialogue window whose timer ran out (unless flag 4 keeps
  * it) or that was cleared, and count the timers down. */
