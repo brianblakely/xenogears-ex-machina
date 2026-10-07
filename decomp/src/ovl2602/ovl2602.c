@@ -752,14 +752,12 @@ void func_801C7870(u8 index) {
 }
 
 /* Animate marker `index` and draw it beside row `row` (at its previous place when `fixed`). */
-#ifdef NON_MATCHING
 void func_801C78EC(s32 row, s32 unused, u8 fixed, u8 index) {
     Marker *marker;
     POLY_FT4 *poly;
-    u8 visible;
+    s32 visible;
     s32 y;
 
-    visible = 1;
     marker = D_800625A0->markers[index];
     if (++marker->timer >= 6) {
         if (--marker->frame < 0) {
@@ -767,10 +765,10 @@ void func_801C78EC(s32 row, s32 unused, u8 fixed, u8 index) {
         }
         marker->timer = 0;
     }
-    if (!fixed) {
-        y = row * 13 + 0x32;
+    if (fixed) {
         visible = 1;
     } else {
+        y = row * 13 + 0x32;
         visible = 1;
     }
     if (visible) {
@@ -785,9 +783,6 @@ void func_801C78EC(s32 row, s32 unused, u8 fixed, u8 index) {
         D_800625A0->flags->marker_shown[index] = 0;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801C78EC);
-#endif
 
 /* Remove marker `index`. */
 void func_801C7A88(u8 index) {
