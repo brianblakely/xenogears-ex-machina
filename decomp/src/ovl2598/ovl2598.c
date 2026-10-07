@@ -1635,7 +1635,13 @@ u8 func_801CAB48(u8 list, s32 row, s32 page, u8 prev_list, s32 prev_row, s32 pre
 
 /* The party screen loop: open the list panel, then move the cursor between
  * the party (list 0) and the member list (list 1) and pick two entries to
- * swap them, until cancelled; finally store the party. */
+ * swap them, until cancelled; finally store the party.
+ * NON_MATCHING: the original tests `list` zero-extended (andi) but passes it
+ * to func_801CA810/func_801CAB48 unextended, copies it unextended into
+ * prev_list (which is extended when passed), and flips it from the extended
+ * value (xori s2, s0, 1); no u8/int/u16/s16 typing of list/prev_list here
+ * reproduces all three (u8 list with s32 prev_list leaves only the call
+ * extensions and the flip/copy order). */
 #ifdef NON_MATCHING
 void func_801CAD14(void) {
     u8 running = 1;

@@ -51,7 +51,10 @@ void func_801FC0CC(TaskNode *node) {
  * matrix and the camera, project its corners into its primitive and queue it.
  * NON_MATCHING: only the switch dispatch differs; the original loads the jump
  * table address before scaling the index (lui in the range check's delay
- * slot, table in v0, index in v1), this C scales the index first. */
+ * slot, table in v0, index in v1), this C scales the index first. Here
+ * loop.c hoists the table address out of the piece loop (life 3, savings 2
+ * against 140 loop insns) and reload rematerializes it into t0; the
+ * original's loop keeps it at the dispatch. */
 #ifdef NON_MATCHING
 void func_801FC1A8(TaskNode *node) {
     DebrisTask *debris;

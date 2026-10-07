@@ -398,7 +398,11 @@ u8 func_801DFA38(u8 slot) {
 }
 
 /* Build the summary window: the member's portrait title and the 27 text
- * glyphs, shading the marked ones with their colour. */
+ * glyphs, shading the marked ones with their colour.
+ * NON_MATCHING: the original strength-reduces the three entry fields into
+ * separate pointers (s5/s6/s7 = &D_800C32C4[i].glyph/.shaded/.colour, frame
+ * 0x48 with s6/s7); here loop.c hoists i * 3 out of the shading loop and
+ * addresses all three fields off that one giv (frame 0x40). */
 #ifdef NON_MATCHING
 void func_801DFAA8(u8 member) {
     s16 colours[2][3];
@@ -859,7 +863,10 @@ void func_801E1590(u8 *ids, u8 *counts, u8 *categories) {
 
 /* Build the spoils window's item list: collect the drops, render each
  * item's name into VRAM with its count, then add the drops to the
- * inventory. */
+ * inventory.
+ * NON_MATCHING: i and the &ids[i] pointer swap s2/s3, and the original's
+ * &text[count] pointer starts from its own sp + 0x38 where this C bases it
+ * on the ids pointer (sp + 0x18, stores at 0x20($s1)). */
 #ifdef NON_MATCHING
 void func_801E1690(void) {
     u8 ids[8];

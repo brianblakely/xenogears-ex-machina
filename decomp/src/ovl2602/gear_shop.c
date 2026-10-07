@@ -451,7 +451,10 @@ void func_801CFAB8(u8 slot, u8 gear) {
 /*
  * Swing the camera to the edited gear's view for the current command, open
  * the lamps, indicator and flicker, and wait until the lamps and indicator
- * are open. Nonmatching: the first two stores are scheduled in the other order.
+ * are open. Nonmatching: the first two stores are scheduled in the other order
+ * (the original's sched1 puts the gear * 2 shift between the from[1] and
+ * from[0] stores, giving the shift v1 and the D_801D6DFC load v0; the order
+ * of the copy and target statements does not change it here).
  */
 #ifdef NON_MATCHING
 void func_801CFC60(void) {
