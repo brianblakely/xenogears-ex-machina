@@ -781,7 +781,11 @@ void func_80085EAC(s32 mirrored, s16 *out, s32 y) {
  * The loads are not alias-pinned here (buf+offset accesses are told apart);
  * sched1 moves each load next to its decrement because the loaded pseudo is
  * set once (a register birth), and the original's loads staying at their
- * source positions give the 0x1E and length constants other registers. */
+ * source positions give the 0x1E and length constants other registers.
+ * Loading into s16 temporaries that are then decremented (`y = ...; y--;`,
+ * set twice, not births) leaves 23 differing lines instead of 55: the stores
+ * then match, but sched1 hoists both loads to the top of the block (before
+ * the 0x13/0x1E stores) and two marks[2]/[3] constants swap t2/t3. */
 #ifdef NON_MATCHING
 void func_80085EC8(OverlayBuffer *buf) {
     s32 i;

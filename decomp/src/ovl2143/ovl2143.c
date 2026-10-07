@@ -2746,7 +2746,10 @@ void func_801E37D0(Actor *actor) {
  * order (jump table checked case by case, 19 of 0x71 bodies still differ in
  * size: 13 15 1A 1D 21 25 28 2E 36 37 38 39 40 41 42 4F 5D 63 6F); the
  * original zero-extends the srl-derived bytes (`arg`, `entry`, `high2`) at
- * each use (andi 0xff) but not the lbu-derived ones (`reference`, `low2`),
+ * each use (andi 0xff) but not the lbu-derived ones (`reference`, `low2`)
+ * (combine knows their high bits are zero here; a test use of `arg` before
+ * the loop, making it live at entry, reproduces every andi and fixes 4F, so
+ * the original's bytes are not tracked by combine for some such reason),
  * keeps m/ex/ey/ez and the d/v vectors in block scopes (v and d share a slot,
  * so n and word sit at 0x68/0x6c), and allocates registers differently. */
 #ifdef NON_MATCHING
