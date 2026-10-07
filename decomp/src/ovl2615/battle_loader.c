@@ -16,7 +16,12 @@ void func_801E62E0(u8 *data) {
  * first image column, then 12-byte entries. The data after the table is
  * copied; sprite entries upload their image list (or reuse an earlier one)
  * and fill their slot's row; model entries place the model on every enemy
- * slot of their type, and of later model entries sharing their data. */
+ * slot of their type, and of later model entries sharing their data.
+ * NON_MATCHING: the original casts the flags with andi 0xffff after the
+ * ori (dropped here), schedules column += 0x40 / same = 0 after the 0x8000
+ * row offset, and loads a sprite entry's image offset into a0 with a copy
+ * in s0 (here straight into s0, the row offset taking that delay slot and
+ * v1 instead of a0). */
 #ifdef NON_MATCHING
 void func_801E6314(u8 *data) {
     s32 count;
@@ -26,6 +31,7 @@ void func_801E6314(u8 *data) {
     u8 *base;
     s16 columns[16];
     s32 types[SLOT_COUNT];
+    SVECTOR unused; /* unused in the original; reserves 8 bytes */
     EnemyEntry *entry;
     EnemyEntry *other;
     s32 table;
@@ -60,8 +66,8 @@ void func_801E6314(u8 *data) {
             same = 0;
             type = slot - 3;
             D_800C3EB0.rows[slot].data = NULL;
-            for (i = 3; i != SLOT_COUNT; i++) {
-                if (type == types[i]) {
+            for (j = 3; j != SLOT_COUNT; j++) {
+                if (type == types[j]) {
                     same++;
                 }
             }
