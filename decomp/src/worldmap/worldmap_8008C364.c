@@ -520,8 +520,11 @@ s32 func_8008D590(s32 index) {
 /* Update party vehicle actor `index` (slots 4-6): take commands (1 go to an
  * actor, 2 park, 3 leave the flying vehicle, 5 go to the player, 8 board),
  * follow the player's trail while ridden, and save its spot and heading. */
-#ifdef NON_MATCHING /* original frame size, saved-state addressing and result scheduling differ */
+#ifdef NON_MATCHING /* saved-state tail differs: the original keeps one base (8006ef90) in a
+                      * register for the z and heading stores and sets the result 1 in the
+                      * delay slots before the tail */
 s32 func_8008D678(s32 index) {
+    SVECTOR unused; /* unused in the original; reserves 8 bytes */
     WorldmapActor *actor;
     WorldmapActor *target;
     ActorScratch *scratch;
