@@ -351,12 +351,6 @@ void func_801DC3D8(u8 slot, u8 kind) {
  * 0 the character's, 1 the gear's, 2 the gear's paired rows): the entry's
  * two text lines, a copy of its name and its target labels; an unused row
  * hides them. */
-#ifdef NON_MATCHING
-/* Differs in register allocation: the original gives slot s4, row & 0xff s3
- * and the effect s5 (here slot s5 and the effect s4), and the second
- * 801e8070 call's constant arguments s0/s1/s2 rotate. Writing the gear
- * text index with row & ~1 keeps row in a1 and lets the three text sums
- * share one add, as in the original. */
 void func_801DCE60(u8 slot, u8 row, u8 kind) {
     RECT rect;
     MenuEffect *effect;
@@ -364,6 +358,7 @@ void func_801DCE60(u8 slot, u8 row, u8 kind) {
     u16 text;
     u16 target;
     u8 all;
+    u8 targetKind;
     s32 i;
 
     switch (kind) {
@@ -408,16 +403,13 @@ void func_801DCE60(u8 slot, u8 row, u8 kind) {
         func_801E8044(8, D_800625A0->party->unk38);
         switch (kind) {
         case 0:
-            effect = D_800625A0->tables->effects[D_800625A0->party->ids[slot]] + row;
-            effect += 22;
+            effect = D_800625A0->tables->effects[D_800625A0->party->ids[slot]] + row + 22;
             break;
         case 1:
-            effect = (D_800625A0->tables->effects + 11)[D_8006D8A0[D_800625A0->party->ids[slot]].gear] + row;
-            effect += 21;
+            effect = (D_800625A0->tables->effects + 11)[D_8006D8A0[D_800625A0->party->ids[slot]].gear] + row + 21;
             break;
         case 2:
-            effect = (D_800625A0->tables->effects + 11)[D_8006D8A0[D_800625A0->party->ids[slot]].gear] + (row >> 1);
-            effect += 37;
+            effect = (D_800625A0->tables->effects + 11)[D_8006D8A0[D_800625A0->party->ids[slot]].gear] + (row >> 1) + 37;
             break;
         }
         target = effect->target;
@@ -429,8 +421,8 @@ void func_801DCE60(u8 slot, u8 row, u8 kind) {
             all = 1;
         }
         func_801E8070(8, D_800625A0->labels10E0, D_801EA550, D_801E9EA0, D_800625A0->party->unk38, all, 0, 2);
-        func_801E8070(8, D_800625A0->labels10E0, D_801EA550, D_801E9EA0, D_800625A0->party->unk38,
-                      (effect->target & 3) + 3, 0, 2);
+        targetKind = (effect->target & 3) + 3;
+        func_801E8070(8, D_800625A0->labels10E0, D_801EA550, D_801E9EA0, D_800625A0->party->unk38, targetKind, 0, 2);
         D_800625A0->block430->headA.count = D_800625A0->bufferIndex;
         D_800625A0->block430->headB.count = D_800625A0->bufferIndex;
         D_800625A0->block430->extra[0].count = D_800625A0->bufferIndex;
@@ -445,9 +437,6 @@ void func_801DCE60(u8 slot, u8 row, u8 kind) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801DCE60);
-#endif
 
 /* Shade the file list screen's texts by `mode` (801e8eac): windows 5 and 6,
  * each built name and value of the first twelve rows, the cursor, the
