@@ -6336,41 +6336,40 @@ void func_801DA518(void) {
  * 99 and the item name and two-digit count are rendered into the image area
  * and laid out, greyed when the item cannot be used here. */
 #ifdef NON_MATCHING
-/* Differs in register allocation: this keeps 0xcccccccd in a saved register
- * and spills `row`; the original materialises the constant at each use. */
+/* The counts are addressed from the ids (D_8006F65A - 150), as the original
+ * does. Differs only in the x/y layout block: the original computes the
+ * column offset before the row (i / 2 and y in s0, x in s1); this build
+ * schedules y first (y in s1, x in s0). */
 void func_801DA5BC(s32 row) {
     u8 codes[4];
     u8 text[8];
     RECT rect;
     s32 i;
-    s32 tens;
+    u8 tens;
     s32 x;
     s32 left;
     u16 y;
     u8 kind;
     u8 grey;
     u8 *image;
-    u8 *ids;
-    u8 *counts;
 
     image = func_80031BDC(0x3f6, 0);
     codes[1] = 0;
     codes[3] = 0;
-    ids = D_8006F65A;
-    counts = ids - 150;
     for (i = 0; i < 16; i++) {
-        if (ids[row * 2 + i] != 0) {
-            if (counts[row * 2 + i] != 0) {
-                if (counts[row * 2 + i] >= 100) {
-                    counts[row * 2 + i] = 99;
+        if (D_8006F65A[row * 2 + i] != 0) {
+            if ((D_8006F65A - 150)[row * 2 + i] != 0) {
+                if ((D_8006F65A - 150)[row * 2 + i] >= 100) {
+                    (D_8006F65A - 150)[row * 2 + i] = 99;
                 }
-                D_800625A0->block42C->names[i].width = func_80034EAC(func_80033818(ids[row * 2 + i]), image, 0x24, 0);
-                tens = counts[row * 2 + i] / 10;
-                codes[0] = tens + 0x10;
-                if (tens == 0) {
+                D_800625A0->block42C->names[i].width = func_80034EAC(func_80033818(D_8006F65A[row * 2 + i]), image, 0x24, 0);
+                tens = (D_8006F65A - 150)[row * 2 + i] / 10;
+                if (tens != 0) {
+                    codes[0] = tens + 0x10;
+                } else {
                     codes[0] = 0xc3;
                 }
-                codes[2] = counts[row * 2 + i] % 10 + 0x10;
+                codes[2] = (D_8006F65A - 150)[row * 2 + i] % 10 + 0x10;
                 func_80033B34(codes, text, 2);
                 D_800625A0->block42C->values[i].width = func_80034EAC(text, image, 0x24, 1);
                 rect.x = (i & 1) * 0x18 + 0x180;
@@ -6379,7 +6378,7 @@ void func_801DA5BC(s32 row) {
                 rect.h = 0xd;
                 LoadImage(&rect, image);
                 DrawSync(0);
-                kind = D_800625A0->tables->items[ids[row * 2 + i]].use;
+                kind = D_800625A0->tables->items[D_8006F65A[row * 2 + i]].use;
                 if (kind & 0x20) {
                     grey = kind & 0x80;
                     if (D_80059171 == 0) {
@@ -6402,11 +6401,11 @@ void func_801DA5BC(s32 row) {
                 D_800625A0->block42C->values[i].count = D_800625A0->bufferIndex;
                 D_800625A0->block42C->shown[i] = 1;
             } else {
-                ids[row * 2 + i] = 0;
+                D_8006F65A[row * 2 + i] = 0;
                 D_800625A0->block42C->shown[i] = 0;
             }
         } else {
-            counts[row * 2 + i] = 0;
+            (D_8006F65A - 150)[row * 2 + i] = 0;
             D_800625A0->block42C->shown[i] = 0;
         }
     }
